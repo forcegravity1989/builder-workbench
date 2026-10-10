@@ -1,10 +1,5 @@
 import type { CliInstallStatus } from '../../../../shared/cli-install-types'
-import type {
-  ComputerUsePermissionSetupResult,
-  ComputerUsePermissionStatusResult
-} from '../../../../shared/computer-use-permissions-types'
 import {
-  COMPUTER_USE_SKILL_NAME,
   ORCA_LINEAR_SKILL_NAME,
   ORCA_CLI_SKILL_NAME,
   ORCHESTRATION_SKILL_NAME,
@@ -26,37 +21,29 @@ import {
 } from '@/lib/orchestration-setup-state'
 import type { EventProps } from '../../../../shared/telemetry-events'
 
-export type OnboardingFeatureSetupId =
-  | 'browserUse'
-  | 'computerUse'
-  | 'orchestration'
-  | 'linearTickets'
+export type OnboardingFeatureSetupId = 'browserUse' | 'orchestration' | 'linearTickets'
 
 export type OnboardingFeatureSetupSelection = Record<OnboardingFeatureSetupId, boolean>
 
 export const DEFAULT_ONBOARDING_FEATURE_SETUP_SELECTION: OnboardingFeatureSetupSelection = {
   browserUse: true,
-  computerUse: true,
   orchestration: true,
   linearTickets: false
 }
 
 export const ONBOARDING_FEATURE_SETUP_IDS: readonly OnboardingFeatureSetupId[] = [
   'browserUse',
-  'computerUse',
   'orchestration',
   'linearTickets'
 ]
 
 const ONBOARDING_PROGRESS_FEATURE_SETUP_IDS: readonly OnboardingFeatureSetupId[] = [
   'browserUse',
-  'computerUse',
   'orchestration'
 ]
 
 const FEATURE_SKILL_NAMES: Record<OnboardingFeatureSetupId, string> = {
   browserUse: ORCA_CLI_SKILL_NAME,
-  computerUse: COMPUTER_USE_SKILL_NAME,
   orchestration: ORCHESTRATION_SKILL_NAME,
   linearTickets: ORCA_LINEAR_SKILL_NAME
 }
@@ -66,7 +53,6 @@ const FEATURE_TELEMETRY_IDS: Record<
   EventProps<'onboarding_feature_setup_toggled'>['feature']
 > = {
   browserUse: 'browser_use',
-  computerUse: 'computer_use',
   orchestration: 'orchestration',
   linearTickets: 'linear_tickets'
 }
@@ -81,7 +67,6 @@ export type OnboardingFeatureSetupResult = {
   cliTouched: boolean
   skillCommandsCopied: boolean
   skillInstallCommand: string | null
-  computerUsePermissionsOpened: boolean
   warnings: OnboardingFeatureSetupWarning[]
 }
 
@@ -90,8 +75,6 @@ export type OnboardingFeatureSetupDeps = {
   showCliRegistrationPrompt?: () => Promise<void>
   installCli: () => Promise<CliInstallStatus>
   writeClipboardText: (text: string) => Promise<void>
-  getComputerUsePermissionStatus: () => Promise<ComputerUsePermissionStatusResult>
-  openComputerUsePermissionSetup: () => Promise<ComputerUsePermissionSetupResult>
   setStorageItem: (key: string, value: string) => void
   removeStorageItem: (key: string) => void
   notifyOrchestrationStateChanged: () => void
@@ -141,7 +124,8 @@ export function onboardingFeatureSetupTelemetrySelection(
 ): EventProps<'onboarding_feature_setup_terminal_opened'> {
   return {
     browser_use: selection.browserUse,
-    computer_use: selection.computerUse,
+    // Why: Computer use was removed on 2026-10-10; the telemetry key stays with a constant value.
+    computer_use: false,
     linear_tickets: selection.linearTickets,
     orchestration: selection.orchestration,
     // Why: Linear skill setup is a recommended add-on, not onboarding progress.
@@ -164,7 +148,7 @@ export function onboardingFeatureSetupRunTelemetry(
     cli_touched: result.cliTouched,
     skill_commands_copied: result.skillCommandsCopied,
     skill_install_command_prepared: result.skillInstallCommand !== null,
-    computer_use_permissions_opened: result.computerUsePermissionsOpened,
+    computer_use_permissions_opened: false,
     warning_count: result.warnings.length
   }
 }
@@ -190,8 +174,6 @@ export function createOnboardingFeatureSetupDeps(
     installCli: () =>
       isWsl ? window.api.cli.installWsl(wslDistroRequest) : window.api.cli.install(),
     writeClipboardText: (text) => window.api.ui.writeClipboardText(text),
-    getComputerUsePermissionStatus: () => window.api.computerUsePermissions.getStatus(),
-    openComputerUsePermissionSetup: () => window.api.computerUsePermissions.openSetup(),
     setStorageItem: (key, value) => localStorage.setItem(key, value),
     removeStorageItem: (key) => localStorage.removeItem(key),
     notifyOrchestrationStateChanged: notifyOrchestrationSetupStateChanged
@@ -222,7 +204,6 @@ export async function runOnboardingFeatureSetup(
   let cliTouched = false
   let skillCommandsCopied = false
   const skillInstallCommand = buildOnboardingFeatureSetupSkillCommand(selection)
-  let computerUsePermissionsOpened = false
 
   deps.setStorageItem(BROWSER_USE_ENABLED_STORAGE_KEY, selection.browserUse ? '1' : '0')
   deps.setStorageItem(ORCHESTRATION_ENABLED_STORAGE_KEY, selection.orchestration ? '1' : '0')
@@ -237,7 +218,6 @@ export async function runOnboardingFeatureSetup(
       cliTouched,
       skillCommandsCopied,
       skillInstallCommand,
-      computerUsePermissionsOpened,
       warnings
     }
   }
@@ -272,36 +252,6 @@ export async function runOnboardingFeatureSetup(
     warnings.push({ featureId: 'cli', message: formatFeatureSetupError(error) })
   }
 
-  if (selection.computerUse) {
-    try {
-      const status = await deps.getComputerUsePermissionStatus()
-      // Why: when the macOS helper app is missing (e.g. dev builds without
-      // `pnpm build:computer-macos`), the status reports all permissions as
-      // not-granted alongside a helperUnavailableReason. Without this guard we
-      // would call openSetup, which throws an IPC handler error instead of
-      // degrading gracefully.
-      if (status.helperUnavailableReason) {
-        warnings.push({
-          featureId: 'computerUse',
-          message: status.helperUnavailableReason
-        })
-      } else {
-        const needsMacPermissions =
-          status.platform === 'darwin' &&
-          status.permissions.some((permission) => permission.status !== 'granted')
-        if (needsMacPermissions) {
-          await deps.openComputerUsePermissionSetup()
-          computerUsePermissionsOpened = true
-        }
-      }
-    } catch (error) {
-      warnings.push({
-        featureId: 'computerUse',
-        message: formatFeatureSetupError(error)
-      })
-    }
-  }
-
   skillCommandsCopied = await copySkillCommands(selection, deps, warnings, agentRuntime)
 
   return {
@@ -309,7 +259,6 @@ export async function runOnboardingFeatureSetup(
     cliTouched,
     skillCommandsCopied,
     skillInstallCommand,
-    computerUsePermissionsOpened,
     warnings
   }
 }

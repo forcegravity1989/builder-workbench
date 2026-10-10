@@ -3,10 +3,8 @@ import {
   agentPromptSentSchema,
   agentStartedSchema,
   appOpenedSchema,
-  appStarredOrcaSchema,
   featureInteractionUsageBucketReachedSchema,
   repoAddedSchema,
-  starNagOutcomeEventSchema,
   workspaceCreatedSchema
 } from './telemetry-app-event-schemas'
 import {
@@ -98,8 +96,6 @@ import {
 // Versioning: breaking changes (rename/re-mean/remove a key) need a new event name; in-place edits blend pre/post rows unmixably. Additive-optional fields are safe.
 export const eventSchemas = {
   app_opened: appOpenedSchema,
-  app_starred_orca: appStarredOrcaSchema,
-  star_nag_outcome: starNagOutcomeEventSchema,
   feature_interaction_usage_bucket_reached: featureInteractionUsageBucketReachedSchema,
 
   repo_added: repoAddedSchema,

@@ -800,8 +800,6 @@
         "5f32ac08f3": "Completa la lista de configuración inicial para los flujos de trabajo principales de Orca.",
         "8ac3de82f5": "Dictado local de voz a texto con modelos en el dispositivo.",
         "6a50cdcd7c": "Voz",
-        "0059bd17f3": "Permite que los agentes controlen cualquier app en tu computadora.",
-        "b35e92364b": "Computer Use",
         "cd50cec5d7": "Coordina múltiples coding agents a través de Orca.",
         "58a868e8e4": "Orquestación",
         "7c79d3b7bf": "Opcional",
@@ -1157,7 +1155,6 @@
         "6ca6ff404e": "ORCA",
         "520304a067": "logotipo de Orca",
         "ce44fad849": "Dependencias faltantes",
-        "c1cf168479": "Ocultar",
         "00cee697c1": "Ejecuta \"gh auth login\" en una terminal para conectar tu cuenta de GitHub.",
         "9f96d018b7": "La CLI de GitHub no está autenticada",
         "73e1ad4282": "Orca usa GitHub CLI (gh) para mostrar pull requests, issues y checks.",
@@ -1167,9 +1164,6 @@
         "cd21242762": "Agrega un proyecto para comenzar.",
         "9c00bd4adf": "Selecciona un espacio de trabajo en la barra lateral para comenzar.",
         "16e9e3df89": "con estrella",
-        "0d0ace8861": "Dar estrella en GitHub",
-        "ec43b38ba7": "Con estrella en GitHub",
-        "157bb5ecbb": "Abrir GitHub",
         "preflightDismiss": "Descartar"
       },
       "LinearIssueMarkdownDescriptionEditor": {
@@ -1568,22 +1562,6 @@
       },
       "SelectedTextCopyMenu": {
         "9b40d7b018": "Copiar"
-      },
-      "StarNagCard": {
-        "92b0f9d921": "está autenticado y vuelve a intentarlo.",
-        "cd8c34aac1": "gh",
-        "cf82170065": "No se pudo dar estrella al repositorio. Asegúrate de que",
-        "30c36231c1": "Orca es de código abierto. Si te ayudó hoy, una estrella en GitHub ayuda a otros desarrolladores a encontrarlo.",
-        "b5e685e4d9": "Descartar",
-        "5f6df21046": "¿Disfrutando de Orca?",
-        "2d67b6c849": "Dar estrella en GitHub",
-        "af3c9bbb37": "Dando estrella...",
-        "68a41bc3aa": "No se pudo dar estrella con",
-        "996bf76e46": "Abre GitHub para terminar en tu navegador.",
-        "d32015fec7": "Abriendo...",
-        "157bb5ecbb": "Abrir GitHub",
-        "8c967b4d15": "Más tarde",
-        "73dfd4eb8d": "No volver a preguntar"
       },
       "TaskPage": {
         "513cddfa7a": "Verificando…",
@@ -3115,24 +3093,6 @@
       },
       "status": {
         "bar": {
-          "PetStatusSegment": {
-            "3668339495": "Quitar {{value0}}",
-            "cd8c6c654c": "Ajustes de mascota…",
-            "ed176ad68f": "Importar bundle .codex-pet…",
-            "59b5955621": "Subir el tuyo…",
-            "0608ad02a2": "Elige mascota",
-            "b75484a01a": "Tamaño de mascota",
-            "c6aa805b1b": "píxeles",
-            "2f7bbaa457": "Tamaño",
-            "34c25dfe9c": "Mascota",
-            "aec479308a": "Menú de mascotas",
-            "cef0ab4636": "No se pudo importar el bundle de mascota",
-            "2021d4f6db": "Importar un bundle de mascota requiere reiniciar la app por completo (no solo recargarla).",
-            "f395c9a685": "No se pudo importar el archivo",
-            "e6234bcc17": "Subir una mascota personalizada requiere reiniciar la app por completo (no solo recargarla).",
-            "6d0a8cd179": "Mostrar mascota",
-            "1fbc51cc77": "Ocultar mascota"
-          },
           "PortsStatusSegment": {
             "4ebf90c12e": "No se detectaron puertos externos",
             "7dac3ecc9d": "Puertos externos",
@@ -5724,11 +5684,6 @@
           "b4e9d3f2a1c5": "Se importaron {{value0}} cookies de {{value1}} a {{value2}}.",
           "c5a273a809": "Desde {{value0}}"
         },
-        "BrowserUseComputerUseNotice": {
-          "15b5e680ba": "Abrir Computer Use",
-          "79209b37b9": "Si importar cookies no encaja, Computer Use puede controlar apps locales y usar sesiones de navegador existentes donde aplique. Instala el skill Computer Use; macOS también requiere permisos de privacidad.",
-          "333984cf90": "Usar una sesión de navegador existente"
-        },
         "BrowserUseEnableSwitch": {
           "aea3f45349": "Activar Agent Browser Use"
         },
@@ -5868,27 +5823,6 @@
           "54038660e0": "comando",
           "25350d670f": "personalizado"
         },
-        "ComputerUsePane": {
-          "1735461723": "Permite a los agents inspeccionar y operar apps de escritorio locales.",
-          "93255aaf18": "Skill Computer Use",
-          "45f8e22c2e": "Abrir",
-          "d95d1cfab8": "Actualizar",
-          "0c29da5805": "Listo",
-          "3383ea1aab": "No se pudieron restablecer los permisos de Computer Use",
-          "f189f448a3": "Restablecer acceso de Computer Use",
-          "5c45349665": "No se pudieron abrir los permisos de Computer Use",
-          "7801ac08ec": "Los permisos de Computer Use solo se requieren en macOS",
-          "740766c291": "La configuración de Computer Use ya está completa",
-          "697005758f": "Se abrió Privacidad y seguridad de macOS",
-          "2168fa5ab0": "No se pudieron cargar los permisos de Computer Use",
-          "0c9a33f468": "Captura ventanas de apps para que los agents puedan inspeccionar el estado visual.",
-          "07bbe4c4cb": "Capturas de pantalla",
-          "4d03dec2d0": "Lee árboles de interfaz de apps y realiza las acciones solicitadas.",
-          "6b5a2cd3a5": "Accesibilidad",
-          "6b17602073": "Restablecer acceso",
-          "506f2acf7a": "Restableciendo acceso...",
-          "4b65070096": "darwin"
-        },
         "DeveloperPermissionsPane": {
           "4c17304beb": "Actualizar",
           "6326a4c5cc": "Usa estos controles cuando una CLI, una app local o una herramienta de automatización necesite permisos de privacidad de macOS. Orca no pregunta al iniciar.",
@@ -5928,9 +5862,6 @@
           "0277901cf7": "Agrega una entrada Agents a la barra lateral izquierda con un feed en hilos de worktrees para agentes completados, preguntas bloqueantes, estado sin leer y eventos de creación de worktrees. Experimental: el modelo de eventos y la UI pueden cambiar.",
           "a05bcdaf57": "Vista Agents",
           "f63ea281e3": "Feed en hilos en la barra lateral izquierda para finalizaciones de agentes y estados bloqueantes.",
-          "ca2219fe5e": "Muestra una pequeña mascota animada fijada en la esquina inferior derecha. Elige un personaje (Claudino, OpenCode, Gremlin) o carga tu propio PNG, APNG, GIF, WebP, JPG o SVG desde el menú de mascota de la barra de estado. Ocúltala cuando quieras desde el mismo menú sin desactivar este ajuste.",
-          "dd6f0a1d45": "Mascota",
-          "0e89a574ae": "Mascota animada flotante en la esquina inferior derecha.",
           "agentHibernation": {
             "copy": "Detiene los terminales de agentes en segundo plano que estén inactivos después del intervalo configurado y reanuda las sesiones compatibles cuando las vuelves a abrir. La suspensión de agentes conserva las opciones de inicio de los agentes iniciados por Orca. Los agentes iniciados manualmente pueden reanudarse con tus valores predeterminados actuales de Orca. Experimental mientras ajustamos el modelo de seguridad.",
             "description": "Detiene los terminales de agentes en segundo plano que estén inactivos después del intervalo configurado y reanuda las sesiones compatibles cuando las vuelves a abrir.",
@@ -6046,22 +5977,6 @@
           "36b2a5dc6d": "Muestra un diálogo de confirmación antes de cerrar una pestaña fijada.",
           "projectRuntime": "Runtime del proyecto",
           "projectRuntimeDescription": "Runtime predeterminado para proyectos locales de Windows que no lo sobrescriben."
-        },
-        "GeneralSupportSection": {
-          "af7d9f4396": "¡Gracias por el apoyo!",
-          "6922c1fa2b": "Dale una estrella a Orca en GitHub",
-          "511782265b": "Apoya el proyecto con una estrella de GitHub mediante la CLI gh.",
-          "55a87e5fd1": "Apoya a Orca",
-          "964acc6bb4": "Dar una estrella",
-          "73b327e793": "Intentar otra vez",
-          "c9f96d4234": "error",
-          "397719bee5": "Dando una estrella...",
-          "1e29570462": "dando estrella",
-          "9d181300e3": "con estrella",
-          "5c49f02662": "oculto",
-          "b3f0584f5d": "cargando",
-          "cb65c75b11": "Abriendo...",
-          "f2d4f877b2": "Abrir GitHub"
         },
         "GeneralUpdateSettingsSection": {
           "8a52ca1d02": "Notas de la versión",
@@ -6978,8 +6893,6 @@
           "6d119427ef": "Lista de verificación de incorporación",
           "eb1176a14e": "Dictado local de voz a texto con modelos en el dispositivo.",
           "5063bb47a5": "Voz",
-          "7118953f14": "Permite que los agentes controlen cualquier app en tu computadora.",
-          "c9841721cb": "Computer Use",
           "475980f53d": "Coordina varios agentes de codificación a través de Orca.",
           "00c3a7950d": "Orquestación",
           "21f09426ea": "Opcional. Orca funciona con tus inicios de sesión de proveedores existentes; agrega cuentas solo si quieres que Orca te ayude a cambiar entre ellas.",
@@ -8036,20 +7949,6 @@
             }
           }
         },
-        "computer": {
-          "use": {
-            "search": {
-              "6e88da3508": "skill",
-              "798be54d7e": "automatización",
-              "e27f8bafbf": "captura de pantalla",
-              "26c1290d83": "grabación de pantalla",
-              "82f01c2d2c": "accesibilidad",
-              "fefb452f5b": "uso de la computadora",
-              "9210db582b": "Permite que los agentes inspeccionen capturas de pantalla y controlen aplicaciones locales cuando lo pidas.",
-              "442bec10fe": "Uso de la computadora"
-            }
-          }
-        },
         "developer": {
           "permissions": {
             "search": {
@@ -8129,15 +8028,6 @@
             "fa72e71f05": "agentes",
             "4d63251595": "Feed en hilos en la barra lateral izquierda para finalizaciones de agentes y estados bloqueantes.",
             "ccc5548ac5": "Vista de agentes",
-            "9af7a518db": "personaje",
-            "791fefc0b0": "esquina",
-            "65df471ab2": "animado",
-            "9f5609bfb8": "superposición",
-            "2a33975d72": "mascota",
-            "b54cea709b": "compañero",
-            "051203d37c": "mascota",
-            "6b5a56ac35": "Mascota animada flotante en la esquina inferior derecha.",
-            "87d99e634b": "Mascota",
             "agentHibernation": {
               "agent": "agente",
               "agents": "agentes",
@@ -8193,13 +8083,6 @@
         },
         "general": {
           "search": {
-            "bdfb6dc21b": "me gusta",
-            "e6b01c8e30": "comentarios",
-            "b65665703a": "soporte",
-            "06ea5a69a6": "github",
-            "e4fb4516d0": "estrella",
-            "e0b8c8bc25": "Apoya el proyecto con una estrella de GitHub mediante la CLI gh.",
-            "36a72f0d9e": "Dar una estrella a Orca en GitHub",
             "c61b14be7c": "grok",
             "5d9ba08673": "copiloto",
             "f472e97440": "aider",
@@ -9044,20 +8927,6 @@
             "33031c1465": "tamaño del texto",
             "0fe0073f0c": "Tamaño de fuente predeterminado del terminal para nuevos paneles y actualizaciones en vivo.",
             "5930244899": "Tamaño de fuente",
-            "warp_import": {
-              "title": "Importar desde Warp",
-              "description": "Importa temas de Warp como temas de terminal de Orca.",
-              "keyword_warp": "warp",
-              "keyword_themes": "temas",
-              "keyword_yaml": "yaml",
-              "keyword_legacy_title": "Importar temas desde Warp"
-            },
-            "yaml_import": {
-              "title": "Importar desde YAML",
-              "description": "Importa archivos YAML de temas como temas de terminal de Orca.",
-              "keyword_yaml": "yaml",
-              "keyword_custom": "personalizado"
-            },
             "ask_before_closing_running_terminals_title": "Preguntar antes de cerrar terminales en ejecución",
             "ask_before_closing_running_terminals_description": "Muestra una confirmación antes de cerrar un terminal que tiene un comando o agente en ejecución.",
             "scrollSpeed": {
@@ -9176,43 +9045,6 @@
           "19ad21615a": "Generar títulos de pestañas automáticamente",
           "b036c7a409": "Deriva nombres de pestañas breves y estables a partir del primer prompt conocido del agente. Los cambios de nombre manuales siempre tienen prioridad."
         },
-        "WarpThemeImportModal": {
-          "title": "Importar desde Warp",
-          "description": "Importa temas de Warp como temas de terminal de Orca.",
-          "yaml_title": "Importar YAML de tema",
-          "yaml_description": "Importa archivos YAML de temas (formato Warp) como temas de terminal de Orca.",
-          "yaml_no_themes_found": "No se encontraron temas en los archivos seleccionados.",
-          "choose_file": "Elegir archivo",
-          "choose_folder": "Elegir carpeta",
-          "loading": "Cargando temas de Warp...",
-          "found_theme_one": "Se encontró 1 tema",
-          "found_theme_other": "Se encontraron {{value0}} temas",
-          "found_in_source": " en {{value0}}",
-          "clear_all": "Borrar selección",
-          "select_all": "Seleccionar todo",
-          "colors_only": "Solo colores",
-          "no_themes_found": "No se encontraron temas personalizados de Warp.",
-          "builtin_themes_hint": "Los temas preinstalados de Warp forman parte de la app de Warp y no se pueden leer desde el disco. Orca ya incluye la mayoría, como Dracula, Gruvbox, Solarized y Tokyo Night.",
-          "custom_theme_yaml_hint": "Los temas personalizados y de la comunidad deben existir como archivos YAML en una carpeta de temas de Warp para que la importación automática los encuentre. Si clonaste el repositorio público de temas de Warp, usa Elegir carpeta para importar esa copia.",
-          "choose_manually": "Elige un archivo YAML de tema o una carpeta para importarlo manualmente.",
-          "skipped_files": "Archivos omitidos",
-          "more_skipped_files": "{{value0}} archivos omitidos más.",
-          "cancel": "Cancelar",
-          "import_theme_one": "Importar 1 tema",
-          "import_theme_other": "Importar {{value0}} temas",
-          "import_themes": "Importar temas"
-        },
-        "useWarpThemeImport": {
-          "unknown_error": "Error desconocido",
-          "imported_one": "Se importó 1 tema",
-          "imported_other": "Se importaron {{value0}} temas",
-          "import_failed": "No se pudieron importar los temas",
-          "over_limit_one": "Importar estos temas superaría el límite de {{value0}} temas personalizados de terminal. Deselecciona 1 tema nuevo e inténtalo de nuevo.",
-          "over_limit_other": "Importar estos temas superaría el límite de {{value0}} temas personalizados de terminal. Deselecciona {{value1}} temas nuevos e inténtalo de nuevo."
-        },
-        "YamlThemeImportButton": {
-          "label": "Importar desde YAML"
-        },
         "cli": {
           "source": {
             "control": {
@@ -9313,20 +9145,6 @@
               }
             }
           }
-        },
-        "computerUseSummary": {
-          "permissionsRequired_one": "Se requiere 1 permiso antes de que los agentes puedan operar ventanas de apps.",
-          "permissionsRequired_other": "Se requieren {{value0}} permisos antes de que los agentes puedan operar ventanas de apps.",
-          "checkingTitle": "Comprobando el acceso a Computer Use.",
-          "checkingDescription": "Orca está comprobando los permisos de privacidad de macOS para el helper de Computer Use.",
-          "unavailableTitle": "Computer Use no está disponible.",
-          "unavailableDescription": "Los permisos de Computer Use no están disponibles porque {{value0}}.",
-          "readyTitle": "Computer Use está listo.",
-          "readyDescription": "Los agentes pueden inspeccionar y operar ventanas de apps cuando se lo pidas.",
-          "permissionsTitle": "Completa la configuración para usar apps locales."
-        },
-        "computerUseSkillRuntime": {
-          "thisDevice": "Este dispositivo"
         },
         "WorkspaceDirectorySetting": {
           "1a2b3c4d5e": "Predeterminado del cliente",
@@ -11469,15 +11287,6 @@
           }
         }
       },
-      "pet": {
-        "pet": {
-          "models": {
-            "7433516faf": "Gremlin",
-            "a84d5677ff": "OpenCode",
-            "2528586aa7": "Claudino"
-          }
-        }
-      },
       "onboarding": {
         "AgentStep": {
           "e6a369bd04": "Agentes populares",
@@ -11801,13 +11610,10 @@
         "wall": {
           "AgentCapabilitiesSetupAction": {
             "b8dc9dd8a2": "Instalado",
-            "1b51644c2d": "Permite que los agentes controlen el escritorio, muevan el cursor, hagan clic y escriban en cualquier app.",
-            "362a07517d": "Uso de computadora",
             "5e8fe5a72d": "Da a los agentes acceso directo al navegador de Orca para que puedan probar páginas, hacer capturas de pantalla y actuar según lo que ven.",
             "e638da007a": "Uso del navegador por agentes",
             "c61c91e642": "Permite que los agentes se coordinen a través de Orca para mantener en marcha tareas grandes de varios pasos hasta completarlas.",
             "ac07f8887f": "Orquestación de agentes",
-            "e9eb197e12": "Permisos de uso de computadora abiertos",
             "3a59452a67": "Comando de skill copiado e insertado abajo para revisarlo.",
             "c605f51f2b": "Configuración de capacidades lista",
             "1aa657d8f4": "La configuración de algunas capacidades necesita atención",
@@ -11850,21 +11656,6 @@
           "BrowserUseSkillSetupCard": {
             "cbc45022d4": "Permite a los agentes navegar y verificar páginas en el navegador de Orca.",
             "d5bb1cd4ba": "Skill Browser Use"
-          },
-          "ComputerUseAnimatedVisual": {
-            "d8401975b1": "aprobado",
-            "f27676a92c": "estado:",
-            "6804cb356f": "clic enviado",
-            "1719b28a81": "encontrado \"Aprobar\"",
-            "79445f7512": "aprobar la nota en mi aplicación",
-            "99a8624bcb": ">",
-            "2adb561b44": "Sesión de Claude Code iniciada",
-            "94787f01f8": "Claude Code",
-            "9cddfe96b2": "app local",
-            "9634d870d1": "Aprobar",
-            "3cc2df3671": "Hecho",
-            "bdd5312213": "Pendiente",
-            "c11dda000b": "Aprobado"
           },
           "EditorAnimatedVisual": {
             "7a763daf2f": "itálico",
@@ -12015,13 +11806,9 @@
               "setup": {
                 "status": {
                   "8eccfcb314": "Instalado",
-                  "21d4f79c93": "haz clic en Instalar CLI y skills para abrir la configuración de acceso de macOS",
-                  "5c9293e51a": "comprobando acceso a la app",
                   "aae94eeb52": "Haz clic en Instalar CLI y skills",
                   "aa8e143a2f": "No se pudo comprobar la instalación",
-                  "9b33e7fb13": "Comprobando instalación",
-                  "4c8e1f92a7": "abre Orca Desktop en este Mac",
-                  "6d2b0a84e1": "No disponible en esta compilación"
+                  "9b33e7fb13": "Comprobando instalación"
                 }
               }
             }
@@ -14018,22 +13805,6 @@
       },
       "ShortcutKeyCombo": {
         "07eb4985a1": "Doble toque en {{value0}}"
-      },
-      "star": {
-        "nag": {
-          "StarNagToastHost": {
-            "starredThanks": "Star enviada — ¡gracias!",
-            "githubOpened": "GitHub abierto",
-            "opening": "Abriendo…",
-            "starring": "Enviando star…",
-            "openGithub": "Abrir GitHub",
-            "starOnGithub": "Dar star en GitHub",
-            "onboardingCompleted": "¡Onboarding completado!",
-            "body": "Si Orca te está gustando, una star en GitHub ayuda a que otros desarrolladores lo descubran.",
-            "dismiss": "Descartar",
-            "later": "Más tarde"
-          }
-        }
       },
       "nativeChat": {
         "contextMenu": {

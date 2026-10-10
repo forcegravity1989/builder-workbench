@@ -1,10 +1,4 @@
 import type {
-  ComputerUsePermissionId,
-  ComputerUsePermissionResetResult,
-  ComputerUsePermissionSetupResult,
-  ComputerUsePermissionStatusResult
-} from '../../shared/computer-use-permissions-types'
-import type {
   DeveloperPermissionId,
   DeveloperPermissionRequestResult,
   DeveloperPermissionState,
@@ -46,10 +40,4 @@ export type DeveloperPermissionsApi = {
     host: string
     port: number
   }) => Promise<LocalNetworkConnectionTestResult>
-}
-
-export type ComputerUsePermissionsApi = {
-  getStatus: () => Promise<ComputerUsePermissionStatusResult>
-  openSetup: (args?: { id?: ComputerUsePermissionId }) => Promise<ComputerUsePermissionSetupResult>
-  reset: () => Promise<ComputerUsePermissionResetResult>
 }

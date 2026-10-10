@@ -6,7 +6,6 @@ import { createStore } from 'zustand/vanilla'
 import { describe, expect, it } from 'vitest'
 import { getDefaultSettings } from '../../../shared/constants'
 import {
-  selectAppRootSurfacePetEnabled,
   selectAppRootSurfaceTelemetryOptedIn,
   selectAppRootSurfaceVoiceEnabled
 } from './app-root-surface-settings'
@@ -21,7 +20,6 @@ describe('app root surface settings selectors', () => {
       renderCount += 1
       return {
         voiceEnabled: useStore(store, selectAppRootSurfaceVoiceEnabled),
-        petEnabled: useStore(store, selectAppRootSurfacePetEnabled),
         telemetryOptedIn: useStore(store, selectAppRootSurfaceTelemetryOptedIn)
       }
     })
@@ -34,7 +32,6 @@ describe('app root surface settings selectors', () => {
 
     expect(renderCount).toBe(1)
     expect(view.result.current.voiceEnabled).toBe(false)
-    expect(view.result.current.petEnabled).toBe(false)
     expect(view.result.current.telemetryOptedIn).toBe('unknown')
     view.unmount()
   })

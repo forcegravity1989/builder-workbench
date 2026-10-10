@@ -41,26 +41,11 @@ export class StatsCollector {
   /** Set by flushAsync so the quit flush is the final write; see scheduleSave. */
   private quitFlushStarted = false
   private quitFlushPromise: Promise<void> | null = null
-  // Why: star-nag lives in its own service but needs to observe the running
-  // agent-spawned counter. A lightweight listener avoids cyclic imports and
-  // keeps StatsCollector unaware of how the counter is consumed.
-  private agentStartListeners: ((totalAgentsSpawned: number) => void)[] = []
 
   constructor() {
     const data = loadStatsFile(getStatsFile())
     this.events = data.events
     this.aggregates = data.aggregates
-  }
-
-  onAgentStarted(listener: (totalAgentsSpawned: number) => void): () => void {
-    this.agentStartListeners.push(listener)
-    return () => {
-      this.agentStartListeners = this.agentStartListeners.filter((l) => l !== listener)
-    }
-  }
-
-  getTotalAgentsSpawned(): number {
-    return this.aggregates.totalAgentsSpawned
   }
 
   // ── Recording ──────────────────────────────────────────────────────
@@ -185,17 +170,6 @@ export class StatsCollector {
     switch (event.type) {
       case 'agent_start':
         this.aggregates.totalAgentsSpawned++
-        // Why: notify listeners synchronously AFTER increment so observers
-        // see the post-increment count. Listener errors are swallowed to
-        // keep stat recording robust — a buggy listener must not lose the
-        // event from the on-disk log.
-        for (const listener of this.agentStartListeners) {
-          try {
-            listener(this.aggregates.totalAgentsSpawned)
-          } catch (err) {
-            console.error('[stats] agent-start listener threw:', err)
-          }
-        }
         break
       case 'pr_created':
         this.aggregates.totalPRsCreated++

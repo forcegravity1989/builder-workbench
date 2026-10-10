@@ -15,31 +15,6 @@ export type TerminalCustomTheme = {
   unsupportedFeatures?: string[]
 }
 
-export type WarpThemeImportSource =
-  | { kind: 'auto' }
-  | { kind: 'chooseFile' }
-  | { kind: 'chooseFolder' }
-
-export type WarpThemeImportPreviewTheme = TerminalCustomTheme & {
-  selectionValue: string
-}
-
-export type WarpThemeImportSkippedFile = {
-  label: string
-  reason: string
-}
-
-export type WarpThemeImportPreview = {
-  found: boolean
-  /** True when the user dismissed the native picker without selecting anything. */
-  canceled?: boolean
-  desktopOnly?: boolean
-  sourceLabel?: string
-  themes: WarpThemeImportPreviewTheme[]
-  skippedFiles: WarpThemeImportSkippedFile[]
-  error?: string
-}
-
 export const MAX_TERMINAL_CUSTOM_THEMES = 200
 export const CUSTOM_TERMINAL_THEME_PREFIX = 'custom:'
 

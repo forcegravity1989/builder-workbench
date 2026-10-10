@@ -25,16 +25,6 @@ export function getRuntimeFeatureInteractionId(
   if (method.startsWith('emulator.')) {
     return null
   }
-  if (method === 'computer.permissions') {
-    return 'computer-use-setup'
-  }
-  if (
-    method.startsWith('computer.') &&
-    method !== 'computer.capabilities' &&
-    method !== 'computer.permissionsStatus'
-  ) {
-    return 'computer-use'
-  }
   return method.startsWith('orchestration.') ? 'agent-orchestration' : null
 }
 

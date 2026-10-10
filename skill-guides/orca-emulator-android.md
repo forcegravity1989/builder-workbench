@@ -114,5 +114,5 @@ ORCA emulator logcat --lines 100 --json
 ORCA emulator kill --json
 ```
 
-See also: `orca-emulator` for iOS simulators, `orca-cli` for terminals, worktrees, and the
-built-in browser, and `computer-use` for desktop UI outside the emulator.
+See also: `orca-emulator` for iOS simulators and `orca-cli` for terminals, worktrees, and the
+built-in browser.

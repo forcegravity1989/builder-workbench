@@ -8,44 +8,6 @@ import { getEphemeralVmsSearchEntry } from './ephemeral-vms-search'
 
 export const getExperimentalPaneSearchEntries = createLocalizedCatalog(
   (): SettingsSearchEntry[] => [
-    {
-      title: translate('auto.components.settings.experimental.search.87d99e634b', 'Pet'),
-      description: translate(
-        'auto.components.settings.experimental.search.6b5a56ac35',
-        'Floating animated pet in the bottom-right corner.'
-      ),
-      keywords: [
-        ...translateSearchKeyword(
-          'auto.components.settings.experimental.search.0d24759f14',
-          'experimental'
-        ),
-        ...translateSearchKeyword('auto.components.settings.experimental.search.051203d37c', 'pet'),
-        ...translateSearchKeyword(
-          'auto.components.settings.experimental.search.b54cea709b',
-          'sidekick'
-        ),
-        ...translateSearchKeyword(
-          'auto.components.settings.experimental.search.2a33975d72',
-          'mascot'
-        ),
-        ...translateSearchKeyword(
-          'auto.components.settings.experimental.search.9f5609bfb8',
-          'overlay'
-        ),
-        ...translateSearchKeyword(
-          'auto.components.settings.experimental.search.65df471ab2',
-          'animated'
-        ),
-        ...translateSearchKeyword(
-          'auto.components.settings.experimental.search.791fefc0b0',
-          'corner'
-        ),
-        ...translateSearchKeyword(
-          'auto.components.settings.experimental.search.9af7a518db',
-          'character'
-        )
-      ]
-    },
     getNativeChatExperimentalSearchEntry(),
     {
       title: translate(
@@ -197,7 +159,6 @@ function findEntry(title: string): SettingsSearchEntry {
 
 export function getExperimentalSearchEntry() {
   return {
-    pet: findEntry(translate('auto.components.settings.experimental.search.87d99e634b', 'Pet')),
     nativeChat: findEntry(
       translate('auto.components.settings.experimental.search.nativeChat.title', 'Chat UI')
     ),

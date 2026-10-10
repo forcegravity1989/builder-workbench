@@ -149,24 +149,19 @@ describe('getTerminalPaneSearchEntries', () => {
     'Customize Light Mode',
     'Match dark mode terminal theme',
     'Use Separate Theme In Light Mode',
-    'import',
-    'Warp',
-    'YAML'
+    'import'
   ])('matches terminal appearance search for %s', (query) => {
     expect(matchesSettingsSearch(query, getAppearancePaneSearchEntries())).toBe(true)
   })
 
-  it.each(['ghostty', 'warp', 'yaml'])(
-    'omits desktop-only %s search results on web clients',
-    (query) => {
-      const desktopEntries = getAppearancePaneSearchEntries()
-      const webEntries = getAppearancePaneSearchEntries({ showDesktopThemeImports: false })
+  it.each(['ghostty'])('omits desktop-only %s search results on web clients', (query) => {
+    const desktopEntries = getAppearancePaneSearchEntries()
+    const webEntries = getAppearancePaneSearchEntries({ showDesktopThemeImports: false })
 
-      expect(matchesSettingsSearch(query, desktopEntries)).toBe(true)
-      expect(matchesSettingsSearch(query, webEntries)).toBe(false)
-      expect(matchesSettingsSearch('font size', webEntries)).toBe(true)
-    }
-  )
+    expect(matchesSettingsSearch(query, desktopEntries)).toBe(true)
+    expect(matchesSettingsSearch(query, webEntries)).toBe(false)
+    expect(matchesSettingsSearch('font size', webEntries)).toBe(true)
+  })
 
   it('includes the system tray appearance entry only when desktop tray controls are shown', () => {
     const desktopEntries = getAppearancePaneSearchEntries({ showSystemTray: true })

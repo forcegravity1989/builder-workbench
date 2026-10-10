@@ -1,7 +1,6 @@
 import { LinearIcon } from '@/components/icons/LinearIcon'
 import { getAccountsPaneSearchEntries } from '@/components/settings/accounts-search'
 import { getAgentsPaneSearchEntries } from '@/components/settings/agents-search'
-import { getComputerUsePaneSearchEntries } from '@/components/settings/computer-use-search'
 import { getGeneralPaneSearchEntries } from '@/components/settings/general-search'
 import { getIntegrationsPaneSearchEntries } from '@/components/settings/integrations-search'
 import { getLinearAgentSkillPaneSearchEntries } from '@/components/settings/linear-agent-skill-search'
@@ -11,12 +10,12 @@ import { getOrchestrationPaneSearchEntries } from '@/components/settings/orchest
 import { getVoicePaneSearchEntries } from '@/components/settings/voice-pane-search'
 import { translate } from '@/i18n/i18n'
 import type { SettingsNavSection } from '@/lib/settings-navigation-types'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import {
   Blocks,
   Bot,
   CircleUserRound,
   Mic,
-  MousePointerClick,
   Network,
   SlidersHorizontal,
   UserCog
@@ -59,19 +58,28 @@ export function buildCapabilitySettingsSections({
       group: 'capabilities',
       badge: translate('auto.hooks.useSettingsNavigationMetadata.7c79d3b7bf', 'Optional')
     },
-    {
-      id: 'orchestration',
-      title: translate('auto.hooks.useSettingsNavigationMetadata.58a868e8e4', 'Orchestration'),
-      description: translate(
-        'auto.hooks.useSettingsNavigationMetadata.cd50cec5d7',
-        'Coordinate multiple coding agents through Orca.'
-      ),
-      icon: Network,
-      searchEntries: getOrchestrationPaneSearchEntries({
-        includeNestedWorkerDepth: !isWebClient
-      }),
-      group: 'capabilities'
-    },
+    // Why: the Workbench shell drives agents through its own plan/acceptance sessions;
+    // Orca's multi-agent orchestration setup is not a Workbench surface.
+    ...(isWorkbenchShell()
+      ? []
+      : [
+          {
+            id: 'orchestration',
+            title: translate(
+              'auto.hooks.useSettingsNavigationMetadata.58a868e8e4',
+              'Orchestration'
+            ),
+            description: translate(
+              'auto.hooks.useSettingsNavigationMetadata.cd50cec5d7',
+              'Coordinate multiple coding agents through Orca.'
+            ),
+            icon: Network,
+            searchEntries: getOrchestrationPaneSearchEntries({
+              includeNestedWorkerDepth: !isWebClient
+            }),
+            group: 'capabilities'
+          }
+        ]),
     // Why: only surfaced once Linear is connected — a capability that needs a
     // linked provider before the agent skill has anything to act on.
     ...(isLinearConnected
@@ -91,17 +99,6 @@ export function buildCapabilitySettingsSections({
       : []),
     ...(showDesktopOnlySettings
       ? [
-          {
-            id: 'computer-use',
-            title: translate('auto.hooks.useSettingsNavigationMetadata.b35e92364b', 'Computer Use'),
-            description: translate(
-              'auto.hooks.useSettingsNavigationMetadata.0059bd17f3',
-              'Enable agents to control any app on your computer.'
-            ),
-            icon: MousePointerClick,
-            searchEntries: getComputerUsePaneSearchEntries(),
-            group: 'capabilities'
-          },
           {
             id: 'voice',
             title: translate('auto.hooks.useSettingsNavigationMetadata.6a50cdcd7c', 'Voice'),

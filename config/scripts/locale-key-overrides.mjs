@@ -59,11 +59,6 @@ const BASE_LOCALE_KEY_OVERRIDES = {
     zh: '实验性',
     ja: '実験的機能'
   },
-  'auto.hooks.useSettingsNavigationMetadata.b35e92364b': {
-    ko: '컴퓨터 사용',
-    zh: '计算机控制',
-    ja: 'コンピュータ操作'
-  },
   'auto.hooks.useSettingsNavigationMetadata.94295ebfb3': {
     ko: '단축키',
     zh: '快捷键',
@@ -249,25 +244,10 @@ const BASE_LOCALE_KEY_OVERRIDES = {
     zh: '启用',
     ja: '有効化'
   },
-  'auto.components.settings.GeneralSupportSection.73b327e793': {
-    ko: '다시 시도',
-    zh: '重试',
-    ja: '再試行'
-  },
   'auto.components.settings.PrivacyDiagnosticBundleControls.2801d4ce22': {
     ko: '참조 ID 복사',
     zh: '复制参考 ID',
     ja: '参照 ID をコピー'
-  },
-  'auto.components.settings.ComputerUsePane.4b65070096': {
-    ko: 'darwin',
-    zh: 'darwin',
-    ja: 'darwin'
-  },
-  'auto.components.settings.ComputerUsePane.bf51e4a542': {
-    ko: 'USB 장치',
-    zh: 'USB 设备',
-    ja: 'USB デバイス'
   },
   'auto.components.settings.OrchestrationSkillAgentCoverage.ffe13e36fb': {
     ko: '누락',

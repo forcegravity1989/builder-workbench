@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { Check, Globe2, Loader2, MonitorCog, Terminal, Workflow } from 'lucide-react'
+import { Check, Globe2, Loader2, Terminal, Workflow } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -74,9 +74,6 @@ export function AgentCapabilitiesSetupAction(props: {
       if (featureSetup.browserUse) {
         recordFeatureInteraction('agent-browser-setup')
       }
-      if (featureSetup.computerUse) {
-        recordFeatureInteraction('computer-use-setup')
-      }
       if (featureSetup.orchestration) {
         recordFeatureInteraction('agent-orchestration-setup')
       }
@@ -104,14 +101,6 @@ export function AgentCapabilitiesSetupAction(props: {
               'Skill command copied and inserted below for review.'
             )
           }
-        )
-      }
-      if (result.computerUsePermissionsOpened) {
-        toast.message(
-          translate(
-            'auto.components.feature.wall.AgentCapabilitiesSetupAction.e9eb197e12',
-            'Opened Computer Use permissions'
-          )
         )
       }
       if (result.skillInstallCommand) {
@@ -185,22 +174,6 @@ const AGENT_CAPABILITY_SETUP_ROWS: readonly AgentCapabilitySetupRow[] = [
       )
     },
     icon: <Globe2 className="size-4" />
-  },
-  {
-    id: 'computerUse',
-    get title() {
-      return translate(
-        'auto.components.feature.wall.AgentCapabilitiesSetupAction.362a07517d',
-        'Computer Use'
-      )
-    },
-    get description() {
-      return translate(
-        'auto.components.feature.wall.AgentCapabilitiesSetupAction.1b51644c2d',
-        'Let agents control the desktop, moving the cursor, clicking, and typing in any app.'
-      )
-    },
-    icon: <MonitorCog className="size-4" />
   }
 ]
 

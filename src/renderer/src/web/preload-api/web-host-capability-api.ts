@@ -3,17 +3,12 @@ import type {
   PreloadApi,
   RefreshAgentsResult
 } from '../../../../preload/api-types'
-import type {
-  ComputerUsePermissionSetupResult,
-  ComputerUsePermissionStatusResult
-} from '../../../../shared/computer-use-permissions-types'
 import type { SkillFreshnessInventory } from '../../../../shared/skill-freshness'
 import type { SkillDiscoveryResult } from '../../../../shared/skills'
 import type { SkillDeletePlan, SkillDeleteResult } from '../../../../shared/skill-delete-contract'
 import { SKILL_DELETE_CAPABILITY } from '../../../../shared/skill-install-capability'
 import { callRuntimeResult, getRemoteRuntimeStatus } from './web-runtime-calls'
 import { requireActiveEnvironmentOrNull } from './web-runtime-session'
-import { getBrowserPlatform } from './web-storage'
 
 export function createPreflightApi(): NonNullable<Partial<PreloadApi>['preflight']> {
   const fallbackStatus: PreflightStatus = {
@@ -107,39 +102,6 @@ export function createDeveloperPermissionsApi(): NonNullable<
         testedAt: Date.now(),
         failure: 'unsupported'
       } as const)
-  }
-}
-
-export function createComputerUsePermissionsApi(): NonNullable<
-  Partial<PreloadApi>['computerUsePermissions']
-> {
-  return {
-    getStatus: () =>
-      callRuntimeResult<ComputerUsePermissionStatusResult>(
-        'computer.permissionsStatus',
-        {},
-        15_000
-      ),
-    openSetup: (args) =>
-      callRuntimeResult<ComputerUsePermissionSetupResult>(
-        'computer.permissions',
-        args ?? {},
-        15_000
-      ).catch(() => ({
-        platform: getBrowserPlatform(),
-        helperAppPath: null,
-        openedSettings: false,
-        launchedHelper: false,
-        nextStep: 'Computer-use permissions are managed on the Orca server.'
-      })),
-    reset: () =>
-      Promise.resolve({
-        platform: getBrowserPlatform(),
-        helperAppPath: null,
-        helperUnavailableReason: 'web_client',
-        bundleId: null,
-        permissions: []
-      })
   }
 }
 

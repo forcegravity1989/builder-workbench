@@ -1,8 +1,4 @@
 import type { KeybindingActionId, KeybindingFileSnapshot } from '../../shared/keybindings'
-import type {
-  WarpThemeImportPreview,
-  WarpThemeImportSource
-} from '../../shared/terminal-custom-themes'
 import type { GhosttyImportPreview, GlobalSettings } from '../../shared/global-settings-types'
 
 export type SettingsApi = {
@@ -16,7 +12,6 @@ export type SettingsApi = {
   updatePRBotAuthorOverride: (args: { author: string; isBot: boolean }) => Promise<GlobalSettings>
   listFonts: () => Promise<string[]>
   previewGhosttyImport: () => Promise<GhosttyImportPreview>
-  previewWarpThemeImport: (source: WarpThemeImportSource) => Promise<WarpThemeImportPreview>
   /** Subscribe to out-of-band settings updates (e.g. View > Appearance toggles) to stay in sync with main. */
   onChanged: (callback: (updates: Partial<GlobalSettings>) => void) => () => void
 }

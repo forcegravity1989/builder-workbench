@@ -188,7 +188,6 @@ const LINUX_PACKAGE_PREFIXES = [
   'config/scripts/run-linux-cli-launch-contract',
   'config/scripts/run-headless-linux-pairing-docker',
   'config/scripts/static-appimage-package-contract',
-  'native/computer-use-linux/',
   'resources/linux/',
   'config/scripts/run-headless-serve'
 ]
@@ -196,7 +195,6 @@ const LINUX_PACKAGE_PREFIXES = [
 const WINDOWS_PACKAGE_PREFIXES = [
   ...SHARED_PACKAGE_PREFIXES,
   'native/windows-cli-launcher/',
-  'native/computer-use-windows/',
   'resources/win32/',
   'config/scripts/build-windows-cli-launcher',
   'config/scripts/windows-pty-native-capability',
@@ -236,7 +234,6 @@ const WINDOWS_PACKAGE_TESTS = [
   'src/main/wsl/wsl-w1-w3-contract.test.ts',
   'src/shared/source-scan/source-tree-scan.test.ts',
   'src/main/cli/wsl-cli-powershell-boundary.test.ts',
-  'src/main/computer/desktop-script-runtime-host.win32.test.ts',
   'src/main/cursor/hook-service.test.ts',
   'src/main/orca-profiles/profile-index-store.test.ts',
   'src/main/startup/windows-install-dir-acl-repair.win32.test.ts',

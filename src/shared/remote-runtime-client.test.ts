@@ -415,16 +415,16 @@ describe('sendRemoteRuntimeRequest', () => {
     }
   })
 
-  it('preserves structured failure data for remote computer-use recovery hints', async () => {
+  it('preserves structured failure data for remote recovery hints', async () => {
     const server = await createOneShotServer({
       response: (requestId) => ({
         id: requestId,
         ok: false,
         error: {
-          code: 'app_not_found',
-          message: 'app not found: Gmail',
+          code: 'repo_not_found',
+          message: 'repo not found: web',
           data: {
-            nextSteps: ['Target the desktop browser app/window that contains Gmail.']
+            nextSteps: ['Run `orca repo list --json` and retry with the exact repo selector.']
           }
         },
         _meta: { runtimeId: 'runtime-test' }
@@ -433,17 +433,17 @@ describe('sendRemoteRuntimeRequest', () => {
 
     const response = await sendRemoteRuntimeRequest(
       server.pairing,
-      'computer.getAppState',
-      { app: 'Gmail' },
+      'repo.show',
+      { repo: 'web' },
       1000
     )
 
     expect(response).toMatchObject({
       ok: false,
       error: {
-        code: 'app_not_found',
+        code: 'repo_not_found',
         data: {
-          nextSteps: [expect.stringContaining('desktop browser app/window')]
+          nextSteps: [expect.stringContaining('orca repo list')]
         }
       }
     })

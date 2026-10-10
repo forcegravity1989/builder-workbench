@@ -803,8 +803,6 @@
         "5f32ac08f3": "핵심 Orca 워크플로에 대한 온보딩 체크리스트를 완료하세요.",
         "8ac3de82f5": "온디바이스 모델을 사용한 로컬 음성-텍스트 받아쓰기.",
         "6a50cdcd7c": "음성",
-        "0059bd17f3": "agents가 컴퓨터의 모든 앱을 제어할 수 있도록 하세요.",
-        "b35e92364b": "컴퓨터 사용",
         "cd50cec5d7": "Orca를 통해 여러 코딩 agents를 조정합니다.",
         "58a868e8e4": "오케스트레이션",
         "7c79d3b7bf": "선택 사항",
@@ -1162,7 +1160,6 @@
         "6ca6ff404e": "Orca",
         "520304a067": "Orca 로고",
         "ce44fad849": "종속성 누락",
-        "c1cf168479": "숨기기",
         "00cee697c1": "GitHub 계정을 연결하려면 terminal에서 \"gh auth login\"을 실행하세요.",
         "9f96d018b7": "GitHub CLI가 인증되지 않았습니다.",
         "73e1ad4282": "Orca는 GitHub CLI(gh)를 사용하여 PR, 이슈 및 검사를 표시합니다.",
@@ -1172,9 +1169,6 @@
         "cd21242762": "시작하려면 프로젝트를 추가하세요.",
         "9c00bd4adf": "시작하려면 사이드바에서 워크스페이스를 선택하세요.",
         "16e9e3df89": "별표가 붙은",
-        "0d0ace8861": "GitHub에서 별표 주기",
-        "ec43b38ba7": "GitHub에 별표 표시됨",
-        "157bb5ecbb": "GitHub 열기",
         "preflightDismiss": "닫기"
       },
       "LinearIssueMarkdownDescriptionEditor": {
@@ -1573,22 +1567,6 @@
       },
       "SelectedTextCopyMenu": {
         "9b40d7b018": "복사"
-      },
-      "StarNagCard": {
-        "92b0f9d921": "인증된 후 다시 시도하세요.",
-        "cd8c34aac1": "gh",
-        "cf82170065": "repo에 스타를 표시할 수 없습니다. 다음을 확인하세요",
-        "30c36231c1": "Orca는 오픈 소스입니다. 오늘 도움이 되었다면 GitHub 스타가 다른 개발자가 Orca를 찾는 데 도움이 됩니다.",
-        "b5e685e4d9": "닫기",
-        "5f6df21046": "Orca를 즐기고 있나요?",
-        "2d67b6c849": "GitHub에서 별표 주기",
-        "af3c9bbb37": "스타 표시 중…",
-        "68a41bc3aa": "별표를 추가할 수 없음:",
-        "996bf76e46": "브라우저에서 GitHub를 열어 완료하세요.",
-        "d32015fec7": "여는 중...",
-        "157bb5ecbb": "GitHub 열기",
-        "8c967b4d15": "나중에",
-        "73dfd4eb8d": "다시 묻지 않기"
       },
       "TaskPage": {
         "513cddfa7a": "확인 중…",
@@ -3120,24 +3098,6 @@
       },
       "status": {
         "bar": {
-          "PetStatusSegment": {
-            "3668339495": "{{value0}} 제거",
-            "cd8c6c654c": "애완동물 설정…",
-            "ed176ad68f": ".codex-pet 번들 가져오기…",
-            "59b5955621": "직접 업로드하세요…",
-            "0608ad02a2": "애완동물 선택",
-            "b75484a01a": "애완동물 크기",
-            "c6aa805b1b": "px",
-            "2f7bbaa457": "크기",
-            "34c25dfe9c": "애완 동물",
-            "aec479308a": "애완동물 메뉴",
-            "cef0ab4636": "애완동물 번들을 가져오지 못했습니다.",
-            "2021d4f6db": "Pet 번들 가져오기에는 전체 앱을 다시 시작해야 합니다(단순히 다시 로드하는 것이 아님).",
-            "f395c9a685": "파일을 가져오지 못했습니다.",
-            "e6234bcc17": "맞춤 애완동물 업로드에는 앱 전체를 다시 시작해야 합니다(단순히 다시 로드하는 것이 아님).",
-            "6d0a8cd179": "애완동물 표시",
-            "1fbc51cc77": "애완동물 숨기기"
-          },
           "PortsStatusSegment": {
             "4ebf90c12e": "외부 포트가 감지되지 않았습니다.",
             "7dac3ecc9d": "외부 포트",
@@ -5714,11 +5674,6 @@
           "b4e9d3f2a1c5": "{{value1}}에서 {{value0}}개의 쿠키를 {{value2}}(으)로 가져왔습니다.",
           "c5a273a809": "{{value0}}에서"
         },
-        "BrowserUseComputerUseNotice": {
-          "15b5e680ba": "컴퓨터 사용 열기",
-          "79209b37b9": "쿠키 가져오기가 적합하지 않은 경우 컴퓨터 사용은 로컬 앱을 제어할 수 있으며 해당되는 경우 기존 로그인 브라우저 세션을 사용할 수 있습니다. Computer Use 스킬을 설치하십시오. macOS에도 개인정보 보호 권한이 필요합니다.",
-          "333984cf90": "기존 브라우저 세션 사용"
-        },
         "BrowserUseEnableSwitch": {
           "aea3f45349": "Agent 브라우저 사용 활성화"
         },
@@ -5858,27 +5813,6 @@
           "54038660e0": "명령",
           "25350d670f": "custom"
         },
-        "ComputerUsePane": {
-          "1735461723": "agents가 로컬 데스크톱 앱을 검사하고 작동할 수 있습니다.",
-          "93255aaf18": "Computer Use 스킬",
-          "45f8e22c2e": "열기",
-          "d95d1cfab8": "새로고침",
-          "0c29da5805": "준비됨",
-          "3383ea1aab": "컴퓨터 사용 권한을 재설정할 수 없습니다.",
-          "f189f448a3": "컴퓨터 사용 액세스 재설정",
-          "5c45349665": "컴퓨터 사용 권한을 열 수 없습니다.",
-          "7801ac08ec": "컴퓨터 사용 권한은 macOS에서만 필요합니다.",
-          "740766c291": "컴퓨터 사용 설정이 이미 완료되었습니다.",
-          "697005758f": "macOS 개인정보 보호 및 보안 오픈",
-          "2168fa5ab0": "컴퓨터 사용 권한을 로드할 수 없습니다.",
-          "0c9a33f468": "agents가 시각적 상태를 검사할 수 있도록 앱 창을 캡처합니다.",
-          "07bbe4c4cb": "스크린샷",
-          "4d03dec2d0": "앱 인터페이스 트리를 읽고 요청된 작업을 수행합니다.",
-          "6b5a2cd3a5": "접근성",
-          "6b17602073": "액세스 재설정",
-          "506f2acf7a": "액세스 재설정 중...",
-          "4b65070096": "darwin"
-        },
         "DeveloperPermissionsPane": {
           "4c17304beb": "새로고침",
           "6326a4c5cc": "CLI, 로컬 앱 또는 자동화 도구에 macOS 개인 정보 보호 액세스가 필요한 경우 이러한 컨트롤을 사용하십시오. Orca는 시작 시 묻지 않습니다.",
@@ -5918,9 +5852,6 @@
           "0277901cf7": "완료된 Agents, 차단 질문, 읽지 않은 상태 및 작업 트리 생성 이벤트에 대한 스레드 작업 트리 피드가 있는 Agents 항목을 왼쪽 사이드바에 추가합니다. 실험적 — 이벤트 모델과 UI가 변경될 수 있습니다.",
           "a05bcdaf57": "Agents 보기",
           "f63ea281e3": "agent 완료 및 차단 상태에 대한 스레드 왼쪽 사이드바 피드입니다.",
-          "ca2219fe5e": "오른쪽 하단에 고정된 작은 애니메이션 애완동물을 표시합니다. 캐릭터(Claudino, OpenCode, Gremlin)를 선택하거나 상태 표시줄 애완동물 메뉴에서 자신만의 PNG, APNG, GIF, WebP, JPG 또는 SVG를 업로드하세요. 이 설정을 비활성화하지 않고 동일한 메뉴에서 언제든지 숨길 수 있습니다.",
-          "dd6f0a1d45": "애완 동물",
-          "0e89a574ae": "오른쪽 하단에 떠 있는 애니메이션 애완동물.",
           "agentHibernation": {
             "copy": "설정된 유휴 시간이 지난 백그라운드 agent terminals을 중지하고, 다시 열 때 지원되는 세션을 재개합니다. Agent 최대 절전은 Orca에서 시작한 agent의 시작 옵션을 보존합니다. 수동으로 시작한 agent는 현재 Orca 기본값으로 재개될 수 있습니다. 안전 모델을 조정하는 동안 제공되는 실험적 기능입니다.",
             "description": "설정된 유휴 시간이 지난 백그라운드 agent terminals을 중지하고, 다시 열 때 지원되는 세션을 재개합니다.",
@@ -6036,22 +5967,6 @@
           "36b2a5dc6d": "고정된 탭을 닫기 전에 확인 대화상자를 표시합니다.",
           "projectRuntime": "프로젝트 런타임",
           "projectRuntimeDescription": "별도로 재정의하지 않은 로컬 Windows 프로젝트의 기본 런타임입니다."
-        },
-        "GeneralSupportSection": {
-          "af7d9f4396": "지원해 주셔서 감사합니다!",
-          "6922c1fa2b": "GitHub에서 Orca 스타 누르기",
-          "511782265b": "gh CLI를 통해 GitHub 스타로 프로젝트를 지원하세요.",
-          "55a87e5fd1": "Orca 지원",
-          "964acc6bb4": "스타",
-          "73b327e793": "다시 시도",
-          "c9f96d4234": "오류",
-          "397719bee5": "스타 표시 중...",
-          "1e29570462": "스타 표시",
-          "9d181300e3": "별표가 붙은",
-          "5c49f02662": "숨겨진",
-          "b3f0584f5d": "로드 중",
-          "cb65c75b11": "여는 중...",
-          "f2d4f877b2": "GitHub 열기"
         },
         "GeneralUpdateSettingsSection": {
           "8a52ca1d02": "릴리스 노트",
@@ -6968,8 +6883,6 @@
           "6d119427ef": "온보딩 체크리스트",
           "eb1176a14e": "온디바이스 모델을 사용한 로컬 음성-텍스트 받아쓰기.",
           "5063bb47a5": "음성",
-          "7118953f14": "agents가 컴퓨터의 모든 앱을 제어할 수 있도록 하세요.",
-          "c9841721cb": "컴퓨터 사용",
           "475980f53d": "Orca를 통해 여러 코딩 agents를 조정합니다.",
           "00c3a7950d": "오케스트레이션",
           "21f09426ea": "선택 사항. Orca는 기존 공급자 로그인과 함께 작동합니다. Orca가 계정 간 전환을 돕도록 원하는 경우에만 계정을 추가하세요.",
@@ -8026,20 +7939,6 @@
             }
           }
         },
-        "computer": {
-          "use": {
-            "search": {
-              "6e88da3508": "스킬",
-              "798be54d7e": "오토메이션",
-              "e27f8bafbf": "스크린샷",
-              "26c1290d83": "화면 녹화",
-              "82f01c2d2c": "접근성",
-              "fefb452f5b": "컴퓨터 사용",
-              "9210db582b": "요청 시 agents가 스크린샷을 검사하고 로컬 앱을 작동할 수 있도록 허용합니다.",
-              "442bec10fe": "컴퓨터 사용"
-            }
-          }
-        },
         "developer": {
           "permissions": {
             "search": {
@@ -8119,15 +8018,6 @@
             "fa72e71f05": "에이전트",
             "4d63251595": "agent 완료 및 차단 상태에 대한 스레드 왼쪽 사이드바 피드입니다.",
             "ccc5548ac5": "Agents 보기",
-            "9af7a518db": "캐릭터",
-            "791fefc0b0": "모서리",
-            "65df471ab2": "애니메이션",
-            "9f5609bfb8": "오버레이",
-            "2a33975d72": "마스코트",
-            "b54cea709b": "사이드킥",
-            "051203d37c": "애완 동물",
-            "6b5a56ac35": "오른쪽 하단에 떠 있는 애니메이션 애완동물.",
-            "87d99e634b": "애완 동물",
             "agentHibernation": {
               "agent": "agent",
               "agents": "에이전트",
@@ -8183,13 +8073,6 @@
         },
         "general": {
           "search": {
-            "bdfb6dc21b": "좋아요",
-            "e6b01c8e30": "피드백",
-            "b65665703a": "지원",
-            "06ea5a69a6": "GitHub",
-            "e4fb4516d0": "스타",
-            "e0b8c8bc25": "gh CLI를 통해 GitHub 스타로 프로젝트를 지원하세요.",
-            "36a72f0d9e": "GitHub에서 Orca에 스타 주기",
             "c61b14be7c": "그로크",
             "5d9ba08673": "Copilot",
             "f472e97440": "aider",
@@ -9034,20 +8917,6 @@
             "33031c1465": "텍스트 크기",
             "0fe0073f0c": "새 창 및 라이브 업데이트의 기본 terminal 글꼴 크기입니다.",
             "5930244899": "글꼴 크기",
-            "warp_import": {
-              "title": "Warp에서 가져오기",
-              "description": "Warp 테마를 Orca terminal 테마로 가져옵니다.",
-              "keyword_warp": "warp",
-              "keyword_themes": "themes",
-              "keyword_yaml": "yaml",
-              "keyword_legacy_title": "Warp에서 테마 가져오기"
-            },
-            "yaml_import": {
-              "title": "YAML에서 가져오기",
-              "description": "테마 YAML 파일을 Orca terminal 테마로 가져옵니다.",
-              "keyword_yaml": "yaml",
-              "keyword_custom": "custom"
-            },
             "ask_before_closing_running_terminals_title": "실행 중인 Terminals을 닫기 전에 확인",
             "ask_before_closing_running_terminals_description": "실행 중인 명령이나 agent가 있는 terminal을 닫기 전에 확인을 표시합니다.",
             "scrollSpeed": {
@@ -9181,43 +9050,6 @@
             }
           }
         },
-        "WarpThemeImportModal": {
-          "title": "Warp에서 가져오기",
-          "description": "Warp 테마를 Orca terminal 테마로 가져옵니다.",
-          "yaml_title": "테마 YAML 가져오기",
-          "yaml_description": "YAML 파일(Warp 형식)을 Orca terminal 테마로 가져옵니다.",
-          "yaml_no_themes_found": "선택한 파일에서 테마를 찾을 수 없습니다.",
-          "choose_file": "파일 선택",
-          "choose_folder": "폴더 선택",
-          "loading": "Warp 테마 로드 중...",
-          "found_theme_one": "테마 1개를 찾았습니다.",
-          "found_theme_other": "테마 {{value0}}개를 찾았습니다.",
-          "found_in_source": "{{value0}}에서",
-          "clear_all": "모두 지우기",
-          "select_all": "모두 선택",
-          "colors_only": "색상만",
-          "no_themes_found": "사용자 지정 Warp 테마를 찾을 수 없습니다.",
-          "builtin_themes_hint": "Warp의 사전 로드 테마는 Warp 앱의 일부라 디스크에서 읽을 수 없습니다. Orca에는 Dracula, Gruvbox, Solarized, Tokyo Night 등 대부분의 테마가 이미 포함되어 있습니다.",
-          "custom_theme_yaml_hint": "사용자 지정 및 커뮤니티 테마는 자동 가져오기가 찾을 수 있도록 Warp 테마 폴더에 YAML 파일로 있어야 합니다. Warp의 공개 테마 repo를 클론했다면 Choose Folder를 사용해 해당 체크아웃을 가져오세요.",
-          "choose_manually": "수동으로 가져올 테마 YAML 파일 또는 폴더를 선택하세요.",
-          "skipped_files": "건너뛴 파일",
-          "more_skipped_files": "건너뛴 파일 {{value0}}개 더 있음",
-          "cancel": "취소",
-          "import_theme_one": "테마 1개 가져오기",
-          "import_theme_other": "테마 {{value0}}개 가져오기",
-          "import_themes": "테마 가져오기"
-        },
-        "useWarpThemeImport": {
-          "unknown_error": "알 수 없는 오류",
-          "imported_one": "테마 1개를 가져왔습니다.",
-          "imported_other": "테마 {{value0}}개를 가져왔습니다.",
-          "import_failed": "테마를 가져오지 못했습니다.",
-          "over_limit_one": "이 테마를 가져오면 사용자 지정 terminal 테마 {{value0}}개 제한을 초과합니다. 새 테마 1개를 선택 해제하고 다시 시도하세요.",
-          "over_limit_other": "이 테마들을 가져오면 사용자 지정 terminal 테마 {{value0}}개 제한을 초과합니다. 새 테마 {{value1}}개를 선택 해제하고 다시 시도하세요."
-        },
-        "YamlThemeImportButton": {
-          "label": "YAML에서 가져오기"
-        },
         "cli": {
           "source": {
             "control": {
@@ -9318,20 +9150,6 @@
               }
             }
           }
-        },
-        "computerUseSummary": {
-          "permissionsRequired_one": "agents가 앱 창을 조작하려면 먼저 1 권한이 필요합니다.",
-          "permissionsRequired_other": "agents가 앱 창을 조작하려면 먼저 {{value0}} 권한이 필요합니다.",
-          "checkingTitle": "Computer Use 액세스 확인 중입니다.",
-          "checkingDescription": "Orca가 Computer Use 도우미의 macOS 개인정보 보호 권한을 확인하고 있습니다.",
-          "unavailableTitle": "Computer Use를 사용할 수 없습니다.",
-          "unavailableDescription": "{{value0}} 때문에 Computer Use 권한을 사용할 수 없습니다.",
-          "readyTitle": "Computer Use를 사용할 준비가 되었습니다.",
-          "readyDescription": "요청하면 Agents가 앱 창을 검사하고 조작할 수 있습니다.",
-          "permissionsTitle": "로컬 앱을 사용하려면 설정을 완료하세요."
-        },
-        "computerUseSkillRuntime": {
-          "thisDevice": "이 기기"
         },
         "WorkspaceDirectorySetting": {
           "1a2b3c4d5e": "클라이언트 기본값",
@@ -11512,15 +11330,6 @@
           }
         }
       },
-      "pet": {
-        "pet": {
-          "models": {
-            "7433516faf": "그렘린",
-            "a84d5677ff": "OpenCode",
-            "2528586aa7": "클라우디노"
-          }
-        }
-      },
       "onboarding": {
         "AgentStep": {
           "e6a369bd04": "인기 agents",
@@ -11844,13 +11653,10 @@
         "wall": {
           "AgentCapabilitiesSetupAction": {
             "b8dc9dd8a2": "설치됨",
-            "1b51644c2d": "agents가 데스크톱을 제어하고, 커서를 이동하고, 클릭하고, 모든 앱에서 입력할 수 있도록 하세요.",
-            "362a07517d": "컴퓨터 사용",
             "5e8fe5a72d": "agents가 Orca의 브라우저에 직접 액세스할 수 있도록 하여 페이지를 테스트하고, 스크린샷을 캡처하고, 표시된 내용에 따라 조치를 취할 수 있도록 하세요.",
             "e638da007a": "Agent 브라우저 사용",
             "c61c91e642": "agents가 Orca를 통해 조정하여 대규모 다단계 작업을 완료할 수 있도록 하세요.",
             "ac07f8887f": "Agent 오케스트레이션",
-            "e9eb197e12": "열린 컴퓨터 사용 권한",
             "3a59452a67": "리뷰를 위해 스킬 명령을 아래에 복사하여 삽입했습니다.",
             "c605f51f2b": "기능 설정 준비 완료",
             "1aa657d8f4": "일부 기능 설정에 주의가 필요합니다.",
@@ -11893,21 +11699,6 @@
           "BrowserUseSkillSetupCard": {
             "cbc45022d4": "agents가 Orca 브라우저에서 페이지를 탐색하고 확인할 수 있습니다.",
             "d5bb1cd4ba": "Browser Use 스킬"
-          },
-          "ComputerUseAnimatedVisual": {
-            "d8401975b1": "승인됨",
-            "f27676a92c": "상태:",
-            "6804cb356f": "클릭 전송됨",
-            "1719b28a81": "'승인'을 찾았습니다.",
-            "79445f7512": "내 앱에서 메모 승인",
-            "99a8624bcb": ">",
-            "2adb561b44": "Claude Code 세션이 시작되었습니다.",
-            "94787f01f8": "Claude Code",
-            "9cddfe96b2": "로컬 앱",
-            "9634d870d1": "승인",
-            "3cc2df3671": "완료",
-            "bdd5312213": "보류 중",
-            "c11dda000b": "승인됨"
           },
           "EditorAnimatedVisual": {
             "7a763daf2f": "이탤릭체",
@@ -12058,13 +11849,9 @@
               "setup": {
                 "status": {
                   "8eccfcb314": "설치됨",
-                  "21d4f79c93": "CLI 및 스킬 설치를 클릭하여 macOS 액세스 설정을 엽니다.",
-                  "5c9293e51a": "앱 액세스 확인 중",
                   "aae94eeb52": "CLI 및 스킬 설치를 클릭하세요.",
                   "aa8e143a2f": "설치를 확인할 수 없습니다.",
-                  "9b33e7fb13": "설치 확인 중",
-                  "4c8e1f92a7": "이 Mac에서 Orca Desktop을 여세요",
-                  "6d2b0a84e1": "이 빌드에서는 사용할 수 없습니다"
+                  "9b33e7fb13": "설치 확인 중"
                 }
               }
             }
@@ -14096,22 +13883,6 @@
       },
       "ShortcutKeyCombo": {
         "07eb4985a1": "{{value0}} 두 번 누르기"
-      },
-      "star": {
-        "nag": {
-          "StarNagToastHost": {
-            "starredThanks": "별표를 눌러주셔서 감사합니다!",
-            "githubOpened": "GitHub 열림",
-            "opening": "여는 중…",
-            "starring": "별표 누르는 중…",
-            "openGithub": "GitHub 열기",
-            "starOnGithub": "GitHub에서 별표 누르기",
-            "onboardingCompleted": "온보딩 완료!",
-            "body": "Orca가 마음에 드신다면 GitHub 별표가 다른 개발자가 Orca를 발견하는 데 도움이 됩니다.",
-            "dismiss": "닫기",
-            "later": "Later"
-          }
-        }
       },
       "nativeChat": {
         "contextMenu": {

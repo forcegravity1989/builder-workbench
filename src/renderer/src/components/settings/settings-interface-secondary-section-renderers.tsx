@@ -29,7 +29,6 @@ export function renderAppearanceSettingsSection(context: SettingsRenderContext):
           onRequestFontSuggestions={interactions.requestFontSuggestions}
           systemPrefersDark={model.systemPrefersDark}
           ghostty={model.ghostty}
-          warpThemes={model.warpThemes}
         />
       ) : null}
     </SettingsSection>

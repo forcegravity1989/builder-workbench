@@ -712,7 +712,7 @@ describe('web UI preload API', () => {
     expect(stored.contextualToursSeenIds).toEqual(['tasks', 'browser'])
   })
 
-  it('proxies host skill discovery and computer-use permission APIs for paired web clients', async () => {
+  it('proxies host skill discovery for paired web clients', async () => {
     const calls: { method: string; params: unknown }[] = []
     vi.doMock('./web-runtime-client', () => ({
       WebRuntimeClient: class {
@@ -725,53 +725,21 @@ describe('web UI preload API', () => {
               result: {
                 skills: [
                   {
-                    id: 'home:computer-use',
-                    name: 'computer-use',
+                    id: 'home:orchestration',
+                    name: 'orchestration',
                     description: null,
                     providers: ['agent-skills'],
                     sourceKind: 'home',
                     sourceLabel: 'Home',
                     rootPath: '/skills',
-                    directoryPath: '/skills/computer-use',
-                    skillFilePath: '/skills/computer-use/SKILL.md',
+                    directoryPath: '/skills/orchestration',
+                    skillFilePath: '/skills/orchestration/SKILL.md',
                     installed: true,
                     updatedAt: null
                   }
                 ],
                 sources: [],
                 scannedAt: 123
-              },
-              _meta: { runtimeId: 'runtime-1' }
-            })
-          }
-          if (method === 'computer.permissionsStatus') {
-            return Promise.resolve({
-              id: method,
-              ok: true,
-              result: {
-                platform: 'darwin',
-                helperAppPath: '/Applications/Orca Computer Use.app',
-                helperUnavailableReason: null,
-                permissions: [
-                  { id: 'accessibility', status: 'granted' },
-                  { id: 'screenshots', status: 'granted' }
-                ]
-              },
-              _meta: { runtimeId: 'runtime-1' }
-            })
-          }
-          if (method === 'computer.permissions') {
-            return Promise.resolve({
-              id: method,
-              ok: true,
-              result: {
-                platform: 'darwin',
-                helperAppPath: '/Applications/Orca Computer Use.app',
-                permissionId:
-                  params && typeof params === 'object' ? (params as { id?: string }).id : undefined,
-                openedSettings: true,
-                launchedHelper: true,
-                nextStep: null
               },
               _meta: { runtimeId: 'runtime-1' }
             })
@@ -796,25 +764,11 @@ describe('web UI preload API', () => {
     await expect(
       globals.window.api.skills.discover({ cwd: '/repo/worktree' })
     ).resolves.toMatchObject({
-      skills: [{ name: 'computer-use', installed: true }],
+      skills: [{ name: 'orchestration', installed: true }],
       scannedAt: 123
     })
-    const permissionsStatus = await globals.window.api.computerUsePermissions.getStatus()
-    expect(permissionsStatus.helperUnavailableReason).toBeNull()
-    expect(permissionsStatus.permissions).toContainEqual({ id: 'accessibility', status: 'granted' })
-    await expect(
-      globals.window.api.computerUsePermissions.openSetup({ id: 'accessibility' })
-    ).resolves.toMatchObject({
-      openedSettings: true,
-      launchedHelper: true,
-      permissionId: 'accessibility'
-    })
     expect(calls).toEqual(
-      expect.arrayContaining([
-        { method: 'skills.discover', params: { cwd: '/repo/worktree' } },
-        { method: 'computer.permissionsStatus', params: {} },
-        { method: 'computer.permissions', params: { id: 'accessibility' } }
-      ])
+      expect.arrayContaining([{ method: 'skills.discover', params: { cwd: '/repo/worktree' } }])
     )
   })
 
@@ -878,35 +832,6 @@ describe('web UI preload API', () => {
     installWebPreloadApi()
 
     await expect(globals.window.api.skills.discover({ cwd: '/repo' })).rejects.toThrow(
-      'runtime disconnected'
-    )
-  })
-
-  it('rejects paired web computer-use status failures instead of marking the helper unavailable', async () => {
-    vi.doMock('./web-runtime-client', () => ({
-      WebRuntimeClient: class {
-        call(method: string): Promise<RuntimeRpcResponse<unknown>> {
-          if (method === 'computer.permissionsStatus') {
-            return Promise.reject(new Error('runtime disconnected'))
-          }
-          return Promise.resolve({
-            id: method,
-            ok: true,
-            result: {},
-            _meta: { runtimeId: 'runtime-1' }
-          })
-        }
-
-        close(): void {}
-      }
-    }))
-
-    const globals = installBrowserGlobals('Linux')
-    writeStoredRuntimeEnvironment(globals.storage)
-    const { installWebPreloadApi } = await import('./web-preload-api')
-    installWebPreloadApi()
-
-    await expect(globals.window.api.computerUsePermissions.getStatus()).rejects.toThrow(
       'runtime disconnected'
     )
   })

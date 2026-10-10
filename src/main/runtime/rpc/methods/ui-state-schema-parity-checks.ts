@@ -4,8 +4,8 @@ import type { WorkspaceCleanupUIState } from '../../../../shared/workspace-clean
 import type { UiUpdateFieldsSchema } from './client-ui-schemas'
 import type { AssertNoMissingKeys, AssertNoMissingValues } from './ui-state-schema-parity'
 
-// Why: state only the main process ever writes (store.updateUI, star-nag's own
-// IPC, window lifecycle). Clients never send these, so keeping them out of the
+// Why: state only the main process ever writes (store.updateUI, window
+// lifecycle). Clients never send these, so keeping them out of the
 // strict schema is deliberate — but it must stay deliberate rather than
 // forgotten, which is what the parity assertion below enforces.
 type MainOwnedUIState =
@@ -13,12 +13,6 @@ type MainOwnedUIState =
   | 'dashboardPopoutBounds'
   | '_expandedWorktreeCardPropertiesDefaulted'
   | '_jiraIssueWorktreeCardPropertyDefaulted'
-  | 'starNagBaselineAgents'
-  | 'starNagAppVersion'
-  | 'starNagNextThreshold'
-  | 'starNagCompleted'
-  | 'starNagDeferredUntil'
-  | 'starNagAgentValueMomentAppVersion'
 const _uiUpdateParity: AssertNoMissingKeys<
   Omit<PersistedUIState, MainOwnedUIState>,
   z.infer<UiUpdateFieldsSchema>

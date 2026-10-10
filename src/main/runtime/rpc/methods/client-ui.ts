@@ -12,6 +12,24 @@ import { FeatureInteractionIdParam, UiUpdate } from './client-ui-schemas'
 
 import { TerminalQuickCommandsUpdate } from './terminal-quick-command-rpc-schema'
 
+// Why: pet / sidekick state was removed on 2026-10-10 but older paired clients still send it;
+// the schema keeps the keys parseable and this strips them before they reach the store.
+const REMOVED_UI_FIELDS = new Set([
+  'petVisible',
+  'petId',
+  'customPets',
+  'petSize',
+  'sidekickVisible',
+  'sidekickId',
+  'customSidekicks',
+  'sidekickSize'
+])
+function omitRemovedUiFields<T extends object>(state: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(state).filter(([key]) => !REMOVED_UI_FIELDS.has(key))
+  ) as Partial<T>
+}
+
 export const CLIENT_UI_METHODS = [
   defineMethod({
     name: 'settings.get',
@@ -68,7 +86,9 @@ export const CLIENT_UI_METHODS = [
     // an unlisted key would make the dispatcher reject an old client's ENTIRE payload.
     handler: (params, { runtime }) => ({
       ui: omitPairingLocalUiFields(
-        runtime.updateUIState(omitPairingLocalUiFields(params) as Partial<PersistedUIState>)
+        runtime.updateUIState(
+          omitRemovedUiFields(omitPairingLocalUiFields(params)) as Partial<PersistedUIState>
+        )
       )
     })
   }),

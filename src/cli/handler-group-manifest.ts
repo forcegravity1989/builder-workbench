@@ -174,26 +174,6 @@ export const HANDLER_GROUPS: readonly HandlerGroup[] = [
     load: async () => (await import('./handlers/emulator.js')).EMULATOR_HANDLERS
   },
   {
-    name: 'computer',
-    keys: [
-      'computer capabilities',
-      'computer list-apps',
-      'computer permissions',
-      'computer list-windows',
-      'computer get-app-state',
-      'computer click',
-      'computer perform-secondary-action',
-      'computer scroll',
-      'computer drag',
-      'computer type-text',
-      'computer press-key',
-      'computer hotkey',
-      'computer paste-text',
-      'computer set-value'
-    ],
-    load: async () => (await import('./handlers/computer.js')).COMPUTER_HANDLERS
-  },
-  {
     name: 'agent-hooks',
     keys: ['agent hooks prepare-codex', 'agent hooks status', 'agent hooks off', 'agent hooks on'],
     load: async () => (await import('./handlers/agent-hooks.js')).AGENT_HOOK_HANDLERS

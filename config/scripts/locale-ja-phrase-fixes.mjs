@@ -65,11 +65,6 @@ export const JA_PHRASE_FIXES = [
   { pattern: /一般的な/g, replacement: '一般', whenEnIncludes: 'General' },
   { pattern: /高度な/g, replacement: '詳細設定', whenEnIncludes: 'Advanced' },
   { pattern: /実験的(?!機能)/g, replacement: '実験的機能', whenEnIncludes: 'Experimental' },
-  {
-    pattern: /コンピュータの使用/g,
-    replacement: 'コンピュータ操作',
-    whenEnIncludes: 'Computer Use'
-  },
   { pattern: /検索設定/g, replacement: '設定を検索', whenEnIncludes: 'Search settings' },
   { pattern: /検索スキル/g, replacement: 'スキルを検索', whenEnIncludes: 'Search skills' },
   { pattern: /検索ブロック/g, replacement: 'ブロックを検索', whenEnIncludes: 'Search blocks' },
@@ -122,16 +117,6 @@ export const JA_PHRASE_FIXES = [
     pattern: /壊れたチェック/g,
     replacement: '失敗したチェック',
     whenEnIncludes: 'broken check'
-  },
-  {
-    pattern: /コンピューターの使用/g,
-    replacement: 'コンピュータ操作',
-    whenEnIncludes: 'Computer Use'
-  },
-  {
-    pattern: /コンピューター使用/g,
-    replacement: 'コンピュータ操作',
-    whenEnIncludes: 'Computer Use'
   },
   { pattern: /携帯電話/g, replacement: 'スマートフォン', whenEnIncludes: 'phone' },
   {

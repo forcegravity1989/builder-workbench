@@ -84,7 +84,7 @@ describe('restart-survival E2E routing', () => {
     'src/renderer/src/components/tab-bar/BrowserTab.tsx',
     'src/main/terminal/pty-manager.ts',
     // The status/types entries name whole files, not a suffix any longer name may end with.
-    'src/shared/computer-use-runtime-types.ts'
+    'src/shared/other-runtime-types.ts'
   ])('does not route %s', (path) => {
     expect(restartSurvivalRoute.matches(path)).toBe(false)
   })

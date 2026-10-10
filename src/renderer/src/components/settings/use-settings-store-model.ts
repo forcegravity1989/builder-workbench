@@ -8,7 +8,6 @@ import { isMacUserAgent, isWindowsUserAgent } from '@/components/terminal-pane/p
 import { useConfirmationDialog } from '@/components/confirmation-dialog-context'
 import { isWebClientLocation } from '@/hooks/useSettingsNavigationMetadata'
 import {
-  COMPUTER_USE_SKILL_NAME,
   LINEAR_AGENT_SKILL_NAMES,
   ORCHESTRATION_SKILL_NAME
 } from '@/lib/agent-feature-install-commands'
@@ -22,7 +21,6 @@ import { useLinearProviderConnected } from '@/hooks/useLinearProviderConnected'
 import { useSkillFreshness } from '@/hooks/useSkillFreshness'
 import { getFallbackTerminalFonts, mergeFontSuggestions } from './SettingsConstants'
 import { useGhosttyImport } from './useGhosttyImport'
-import { useWarpThemeImport } from './useWarpThemeImport'
 import { getInitialMountedSectionIds } from './settings-load-performance'
 import {
   buildRepoIdToHostSelection,
@@ -96,11 +94,6 @@ export function useSettingsStoreModel() {
     discoveryTarget: activeSkillRuntime.discoveryTarget,
     sourceKinds: GLOBAL_AGENT_SKILL_SOURCE_KINDS
   })
-  const computerUseSkill = useInstalledAgentSkill(COMPUTER_USE_SKILL_NAME, {
-    enabled: showDesktopOnlySettings,
-    discoveryTarget: activeSkillRuntime.discoveryTarget,
-    sourceKinds: GLOBAL_AGENT_SKILL_SOURCE_KINDS
-  })
   const skillFreshnessApplies = activeSkillRuntime.canUseLocalSkillFreshness
   const { inventory: skillFreshnessInventory } = useSkillFreshness(skillFreshnessApplies)
   const [voiceModelStatesLoading, setVoiceModelStatesLoading] = useState(showDesktopOnlySettings)
@@ -109,7 +102,6 @@ export function useSettingsStoreModel() {
   const [prevScrollbackRows, setPrevScrollbackRows] = useState(settings?.terminalScrollbackRows)
   // Why: keep Ghostty import state at Settings level so the modal survives section remounts.
   const ghostty = useGhosttyImport(updateSettings, settings)
-  const warpThemes = useWarpThemeImport(updateSettings, settings)
   const [fontSuggestions, setFontSuggestions] = useState<string[]>(
     mergeFontSuggestions([], getFallbackTerminalFonts())
   )
@@ -172,7 +164,6 @@ export function useSettingsStoreModel() {
     linearConnected,
     orchestrationSkill,
     linearSkill,
-    computerUseSkill,
     skillFreshnessApplies,
     skillFreshnessInventory,
     voiceModelStatesLoading,
@@ -182,7 +173,6 @@ export function useSettingsStoreModel() {
     prevScrollbackRows,
     setPrevScrollbackRows,
     ghostty,
-    warpThemes,
     fontSuggestions,
     setFontSuggestions,
     terminalFontSuggestions,

@@ -803,8 +803,6 @@
         "5f32ac08f3": "完成 Orca 核心工作流程的入门清单。",
         "8ac3de82f5": "使用设备端模型进行本地语音转文字听写。",
         "6a50cdcd7c": "语音",
-        "0059bd17f3": "使智能体能够控制您计算机上的任何应用程序。",
-        "b35e92364b": "计算机控制",
         "cd50cec5d7": "通过 Orca 协调多个编码智能体。",
         "58a868e8e4": "编排",
         "7c79d3b7bf": "可选",
@@ -1160,7 +1158,6 @@
         "6ca6ff404e": "ORCA",
         "520304a067": "Orca 标志",
         "ce44fad849": "缺少依赖项",
-        "c1cf168479": "隐藏",
         "00cee697c1": "在终端中运行“gh auth login”以连接您的 GitHub 账户。",
         "9f96d018b7": "GitHub CLI 未经过身份验证",
         "73e1ad4282": "Orca 使用 GitHub CLI (gh) 来显示PR、议题和检查。",
@@ -1170,9 +1167,6 @@
         "cd21242762": "添加一个项目即可开始。",
         "9c00bd4adf": "从侧边栏中选择一个工作区开始。",
         "16e9e3df89": "已加星标",
-        "0d0ace8861": "在 GitHub 上加星标",
-        "ec43b38ba7": "已在 GitHub 上加星标",
-        "157bb5ecbb": "打开 GitHub",
         "preflightDismiss": "关闭"
       },
       "LinearIssueMarkdownDescriptionEditor": {
@@ -1571,22 +1565,6 @@
       },
       "SelectedTextCopyMenu": {
         "9b40d7b018": "复制"
-      },
-      "StarNagCard": {
-        "92b0f9d921": "已通过身份验证并重试。",
-        "cd8c34aac1": "gh",
-        "cf82170065": "无法为该仓库加注星标。确保",
-        "30c36231c1": "Orca 是开源项目。如果它今天帮到了你，GitHub 星标会帮助其他开发者找到它。",
-        "b5e685e4d9": "关闭",
-        "5f6df21046": "喜欢 Orca 吗？",
-        "2d67b6c849": "在 GitHub 上加星标",
-        "af3c9bbb37": "正在加星标...",
-        "68a41bc3aa": "无法使用以下方式加星:",
-        "996bf76e46": "在浏览器中打开 GitHub 以完成操作。",
-        "d32015fec7": "正在打开...",
-        "157bb5ecbb": "打开 GitHub",
-        "8c967b4d15": "稍后",
-        "73dfd4eb8d": "不再询问"
       },
       "TaskPage": {
         "513cddfa7a": "正在验证...",
@@ -3135,24 +3113,6 @@
       },
       "status": {
         "bar": {
-          "PetStatusSegment": {
-            "3668339495": "删除 {{value0}}",
-            "cd8c6c654c": "宠物设置...",
-            "ed176ad68f": "导入 .codex-pet 包...",
-            "59b5955621": "上传您自己的...",
-            "0608ad02a2": "选择宠物",
-            "b75484a01a": "宠物尺寸",
-            "c6aa805b1b": "像素",
-            "2f7bbaa457": "尺寸",
-            "34c25dfe9c": "宠物",
-            "aec479308a": "宠物菜单",
-            "cef0ab4636": "导入宠物包失败",
-            "2021d4f6db": "Pet 包导入需要完全重启应用（不仅是重新加载）。",
-            "f395c9a685": "导入文件失败",
-            "e6234bcc17": "自定义宠物上传需要完全重启应用（不仅是重新加载）。",
-            "6d0a8cd179": "显示宠物",
-            "1fbc51cc77": "隐藏宠物"
-          },
           "PortsStatusSegment": {
             "4ebf90c12e": "未检测到外部端口",
             "7dac3ecc9d": "外部端口",
@@ -5780,11 +5740,6 @@
           "b4e9d3f2a1c5": "已从 {{value1}} 导入 {{value0}} 个 Cookie 到 {{value2}}。",
           "c5a273a809": "从 {{value0}}"
         },
-        "BrowserUseComputerUseNotice": {
-          "15b5e680ba": "开放计算机使用",
-          "79209b37b9": "如果 cookie 导入不合适，“计算机使用”可以控制本地应用程序，并可以在适用的情况下使用现有的登录浏览器会话。安装计算机使用技能； macOS 还需要隐私权限。",
-          "333984cf90": "使用现有的浏览器会话"
-        },
         "BrowserUseEnableSwitch": {
           "aea3f45349": "启用智能体浏览器使用"
         },
@@ -5924,27 +5879,6 @@
           "54038660e0": "命令",
           "25350d670f": "风俗"
         },
-        "ComputerUsePane": {
-          "1735461723": "使智能体能够检查和操作本地桌面应用程序。",
-          "93255aaf18": "计算机控制技能",
-          "45f8e22c2e": "打开",
-          "d95d1cfab8": "刷新",
-          "0c29da5805": "就绪",
-          "3383ea1aab": "无法重置计算机使用权限",
-          "f189f448a3": "重置计算机使用访问权限",
-          "5c45349665": "无法打开计算机使用权限",
-          "7801ac08ec": "仅在 macOS 上需要计算机使用权限",
-          "740766c291": "计算机使用设置已完成",
-          "697005758f": "打开 macOS 隐私和安全",
-          "2168fa5ab0": "无法加载计算机使用权限",
-          "0c9a33f468": "捕获应用程序窗口，以便智能体可以检查视觉状态。",
-          "07bbe4c4cb": "截图",
-          "4d03dec2d0": "读取应用程序界面树并执行请求的操作。",
-          "6b5a2cd3a5": "无障碍",
-          "6b17602073": "重置访问权限",
-          "506f2acf7a": "正在重置访问...",
-          "4b65070096": "darwin"
-        },
         "DeveloperPermissionsPane": {
           "4c17304beb": "刷新",
           "6326a4c5cc": "当 CLI、本地应用程序或自动化工具需要 macOS 隐私访问时，请使用这些控件。 Orca 在启动时不会询问。",
@@ -5984,9 +5918,6 @@
           "0277901cf7": "将智能体条目添加到左侧边栏，其中包含已完成智能体、阻塞待办、未读状态和工作树创建事件的线程工作树提要。实验性——事件模型和 UI 可能会改变。",
           "a05bcdaf57": "智能体查看",
           "f63ea281e3": "用于智能体完成和阻塞状态的螺纹左侧边栏提要。",
-          "ca2219fe5e": "显示固定在右下角的小动画宠物。从状态栏宠物菜单中选择一个角色（Claudino、OpenCode、Gremlin）或上传您自己的 PNG、APNG、GIF、WebP、JPG 或 SVG。随时从同一菜单隐藏它，而不禁用此设置。",
-          "dd6f0a1d45": "宠物",
-          "0e89a574ae": "右下角漂浮的动画宠物。",
           "agentHibernation": {
             "copy": "在配置的空闲时间后停止后台智能体终端，并在你再次打开时恢复受支持的会话。智能体睡眠会保留由 Orca 启动的智能体的启动选项。手动启动的智能体可能会使用当前的 Orca 默认值恢复。我们仍在调校安全模型，此功能为实验性功能。",
             "description": "在配置的空闲时间后停止后台智能体终端，并在你再次打开时恢复受支持的会话。",
@@ -6102,22 +6033,6 @@
           "36b2a5dc6d": "关闭固定标签页前显示确认对话框。",
           "projectRuntime": "项目运行时",
           "projectRuntimeDescription": "不覆盖此项的本地 Windows 项目的默认运行时。"
-        },
-        "GeneralSupportSection": {
-          "af7d9f4396": "感谢您的支持！",
-          "6922c1fa2b": "GitHub 上的 Star Orca",
-          "511782265b": "通过 gh CLI 通过 GitHub star 支持该项目。",
-          "55a87e5fd1": "支持 Orca",
-          "964acc6bb4": "加星标",
-          "73b327e793": "重试",
-          "c9f96d4234": "错误",
-          "397719bee5": "正在加星标...",
-          "1e29570462": "正在加星标",
-          "9d181300e3": "已加星标",
-          "5c49f02662": "隐",
-          "b3f0584f5d": "加载中",
-          "cb65c75b11": "正在打开...",
-          "f2d4f877b2": "打开 GitHub"
         },
         "GeneralUpdateSettingsSection": {
           "8a52ca1d02": "发行说明",
@@ -7034,8 +6949,6 @@
           "6d119427ef": "入门清单",
           "eb1176a14e": "使用设备上模型进行本地语音到文本听写。",
           "5063bb47a5": "语音",
-          "7118953f14": "使智能体能够控制您计算机上的任何应用程序。",
-          "c9841721cb": "计算机控制",
           "475980f53d": "通过 Orca 协调多个编码智能体。",
           "00c3a7950d": "编排",
           "21f09426ea": "可选。 Orca 可与您现有的提供商登录配合使用；仅当您希望 Orca 帮助在账户之间切换时才添加账户。",
@@ -8096,20 +8009,6 @@
             }
           }
         },
-        "computer": {
-          "use": {
-            "search": {
-              "6e88da3508": "技能",
-              "798be54d7e": "自动化",
-              "e27f8bafbf": "截屏",
-              "26c1290d83": "屏幕录制",
-              "82f01c2d2c": "可达性",
-              "fefb452f5b": "计算机控制",
-              "9210db582b": "当您要求时，允许智能体检查屏幕截图并操作本地应用程序。",
-              "442bec10fe": "计算机控制"
-            }
-          }
-        },
         "developer": {
           "permissions": {
             "search": {
@@ -8189,15 +8088,6 @@
             "fa72e71f05": "智能体",
             "4d63251595": "用于智能体完成和阻塞状态的螺纹左侧边栏提要。",
             "ccc5548ac5": "智能体查看",
-            "9af7a518db": "特点",
-            "791fefc0b0": "角落",
-            "65df471ab2": "动画",
-            "9f5609bfb8": "覆盖",
-            "2a33975d72": "吉祥物",
-            "b54cea709b": "伙伴",
-            "051203d37c": "宠物",
-            "6b5a56ac35": "右下角漂浮的动画宠物。",
-            "87d99e634b": "宠物",
             "agentHibernation": {
               "agent": "智能体",
               "agents": "智能体",
@@ -8253,13 +8143,6 @@
         },
         "general": {
           "search": {
-            "bdfb6dc21b": "喜欢",
-            "e6b01c8e30": "反馈",
-            "b65665703a": "支持",
-            "06ea5a69a6": "GitHub",
-            "e4fb4516d0": "星星",
-            "e0b8c8bc25": "点赞 GitHub star 支持该项目（通过 gh CLI ",
-            "36a72f0d9e": "GitHub 上的 Star Orca",
             "c61b14be7c": "grok",
             "5d9ba08673": "copilot",
             "f472e97440": "助手",
@@ -9104,20 +8987,6 @@
             "33031c1465": "文字大小",
             "0fe0073f0c": "新窗格和实时更新的默认终端字体大小。",
             "5930244899": "字体大小",
-            "warp_import": {
-              "title": "从 Warp 导入",
-              "description": "将 Warp 主题导入为 Orca 终端主题。",
-              "keyword_warp": "warp",
-              "keyword_themes": "themes",
-              "keyword_yaml": "yaml",
-              "keyword_legacy_title": "从 Warp 导入主题"
-            },
-            "yaml_import": {
-              "title": "从 YAML 导入",
-              "description": "将主题 YAML 文件导入为 Orca 终端主题。",
-              "keyword_yaml": "yaml",
-              "keyword_custom": "自定义"
-            },
             "ask_before_closing_running_terminals_title": "关闭运行中的终端前询问",
             "ask_before_closing_running_terminals_description": "在关闭有运行中命令或智能体的终端前显示确认。",
             "scrollSpeed": {
@@ -9251,43 +9120,6 @@
             }
           }
         },
-        "WarpThemeImportModal": {
-          "title": "从 Warp 导入",
-          "description": "将 Warp 主题导入为 Orca 终端主题。",
-          "yaml_title": "导入主题 YAML",
-          "yaml_description": "将主题 YAML 文件（Warp 格式）导入为 Orca 终端主题。",
-          "yaml_no_themes_found": "所选文件中未找到主题。",
-          "choose_file": "选择文件",
-          "choose_folder": "选择文件夹",
-          "loading": "正在加载 Warp 主题...",
-          "found_theme_one": "找到 1 个主题",
-          "found_theme_other": "找到 {{value0}} 个主题",
-          "found_in_source": " 位于 {{value0}}",
-          "clear_all": "全部清除",
-          "select_all": "全选",
-          "colors_only": "仅颜色",
-          "no_themes_found": "未找到自定义 Warp 主题。",
-          "builtin_themes_hint": "Warp 的预装主题是 Warp 应用的一部分，无法从磁盘读取。Orca 已包含其中大多数，如 Dracula、Gruvbox、Solarized 和 Tokyo Night。",
-          "custom_theme_yaml_hint": "自定义和社区主题必须以 YAML 文件形式存在于 Warp themes 文件夹中，自动导入才能发现它们。如果你克隆了 Warp 的公开主题仓库，请使用 Choose Folder 导入该仓库副本。",
-          "choose_manually": "选择主题 YAML 文件或文件夹以手动导入。",
-          "skipped_files": "已跳过文件",
-          "more_skipped_files": "还有 {{value0}} 个已跳过的文件。",
-          "cancel": "取消",
-          "import_theme_one": "导入 1 个主题",
-          "import_theme_other": "导入 {{value0}} 个主题",
-          "import_themes": "导入主题"
-        },
-        "useWarpThemeImport": {
-          "unknown_error": "未知错误",
-          "imported_one": "已导入 1 个主题",
-          "imported_other": "已导入 {{value0}} 个主题",
-          "import_failed": "导入主题失败",
-          "over_limit_one": "导入这些主题会超出 {{value0}} 个自定义终端主题的上限。请取消选择 1 个新主题后重试。",
-          "over_limit_other": "导入这些主题会超出 {{value0}} 个自定义终端主题的上限。请取消选择 {{value1}} 个新主题后重试。"
-        },
-        "YamlThemeImportButton": {
-          "label": "从 YAML 导入"
-        },
         "cli": {
           "source": {
             "control": {
@@ -9388,20 +9220,6 @@
               }
             }
           }
-        },
-        "computerUseSummary": {
-          "permissionsRequired_one": "在智能体可操作应用窗口前需要 1 项权限。",
-          "permissionsRequired_other": "在智能体可操作应用窗口前需要 {{value0}} 项权限。",
-          "checkingTitle": "正在检查计算机控制访问权限。",
-          "checkingDescription": "Orca 正在检查计算机控制助手的 macOS 隐私权限。",
-          "unavailableTitle": "计算机控制不可用。",
-          "unavailableDescription": "Computer Use 权限不可用，因为 {{value0}}。",
-          "readyTitle": "计算机控制已就绪。",
-          "readyDescription": "当你要求时，智能体可以检查并操作应用窗口。",
-          "permissionsTitle": "完成设置以使用本地应用。"
-        },
-        "computerUseSkillRuntime": {
-          "thisDevice": "此设备"
         },
         "WorkspaceDirectorySetting": {
           "1a2b3c4d5e": "客户端默认值",
@@ -11552,15 +11370,6 @@
           }
         }
       },
-      "pet": {
-        "pet": {
-          "models": {
-            "7433516faf": "格雷姆林",
-            "a84d5677ff": "OpenCode",
-            "2528586aa7": "克劳迪诺"
-          }
-        }
-      },
       "onboarding": {
         "AgentStep": {
           "e6a369bd04": "热门智能体",
@@ -11884,13 +11693,10 @@
         "wall": {
           "AgentCapabilitiesSetupAction": {
             "b8dc9dd8a2": "已安装",
-            "1b51644c2d": "让智能体控制桌面、手机光标、单击并在任何应用程序中键入。",
-            "362a07517d": "计算机控制",
             "5e8fe5a72d": "让智能体直接访问 Orca 的浏览器，以便测试页面、捕获屏幕截图并根据所见内容执行操作。",
             "e638da007a": "智能体浏览器使用",
             "c61c91e642": "让智能体通过 Orca 进行协调，以确保大型、多步骤的任务顺利完成。",
             "ac07f8887f": "智能体编排",
-            "e9eb197e12": "打开计算机使用权限",
             "3a59452a67": "技能命令已复制并插入到下方以供评审。",
             "c605f51f2b": "能力设置就绪",
             "1aa657d8f4": "一些能力设置需要注意",
@@ -11933,21 +11739,6 @@
           "BrowserUseSkillSetupCard": {
             "cbc45022d4": "使智能体能够在 Orca 浏览器中导航和验证页面。",
             "d5bb1cd4ba": "浏览器使用技能"
-          },
-          "ComputerUseAnimatedVisual": {
-            "d8401975b1": "已批准",
-            "f27676a92c": "状态：",
-            "6804cb356f": "点击发送",
-            "1719b28a81": "找到“批准”",
-            "79445f7512": "批准我的应用程序中的注释",
-            "99a8624bcb": ">",
-            "2adb561b44": "Claude Code 会话已开始",
-            "94787f01f8": "Claude Code",
-            "9cddfe96b2": "本地应用程序",
-            "9634d870d1": "批准",
-            "3cc2df3671": "完成",
-            "bdd5312213": "待办的",
-            "c11dda000b": "已批准"
           },
           "EditorAnimatedVisual": {
             "7a763daf2f": "斜体",
@@ -12098,13 +11889,9 @@
               "setup": {
                 "status": {
                   "8eccfcb314": "已安装",
-                  "21d4f79c93": "单击安装 CLI 和技能以打开 macOS 访问设置",
-                  "5c9293e51a": "检查应用程序访问权限",
                   "aae94eeb52": "单击安装 CLI 和技能",
                   "aa8e143a2f": "无法检查安装",
-                  "9b33e7fb13": "检查安装",
-                  "4c8e1f92a7": "在此 Mac 上打开 Orca Desktop",
-                  "6d2b0a84e1": "此版本不可用"
+                  "9b33e7fb13": "检查安装"
                 }
               }
             }
@@ -14101,22 +13888,6 @@
       },
       "ShortcutKeyCombo": {
         "07eb4985a1": "双击 {{value0}}"
-      },
-      "star": {
-        "nag": {
-          "StarNagToastHost": {
-            "starredThanks": "已加星，谢谢！",
-            "githubOpened": "已打开 GitHub",
-            "opening": "正在打开…",
-            "starring": "正在加星…",
-            "openGithub": "打开 GitHub",
-            "starOnGithub": "在 GitHub 上加星",
-            "onboardingCompleted": "入门流程已完成！",
-            "body": "如果你目前喜欢 Orca，在 GitHub 上加星可以帮助其他开发者发现它。",
-            "dismiss": "关闭",
-            "later": "稍后"
-          }
-        }
       },
       "nativeChat": {
         "contextMenu": {

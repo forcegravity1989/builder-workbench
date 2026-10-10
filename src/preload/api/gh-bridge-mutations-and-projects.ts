@@ -34,7 +34,6 @@ import type {
   UpdatePullRequestBySlugArgs,
   UpdateProjectItemFieldArgs
 } from '../../shared/github/project-request-types'
-import type { AppStarSource } from '../../shared/gh-star-source'
 import type { PreloadApi } from '../api-types'
 
 export const ghMutationsAndProjectsApi = {
@@ -149,8 +148,6 @@ export const ghMutationsAndProjectsApi = {
     ipcRenderer.on('gh:workItemMutated', listener)
     return () => ipcRenderer.removeListener('gh:workItemMutated', listener)
   },
-  checkOrcaStarred: (): Promise<boolean | null> => ipcRenderer.invoke('gh:checkOrcaStarred'),
-  starOrca: (source: AppStarSource): Promise<boolean> => ipcRenderer.invoke('gh:starOrca', source),
   rateLimit: (args?: { force?: boolean }): Promise<GetRateLimitResult> =>
     ipcRenderer.invoke('gh:rateLimit', args),
   diagnoseAuth: (args?: { host?: string }): Promise<GhAuthDiagnostic> =>

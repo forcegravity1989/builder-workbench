@@ -74,12 +74,13 @@ export const onboardingChecklistItemSchema = z.enum([
 ])
 export const onboardingFeatureSetupFeatureSchema = z.enum([
   'browser_use',
-  'computer_use',
   'orchestration',
   'linear_tickets'
 ])
 export const onboardingFeatureSetupSelectionSchema = {
   browser_use: z.boolean(),
+  // Why: Computer use was removed on 2026-10-10; the key stays (always false) so the event keeps
+  // its shape instead of being renamed — see the versioning rule in telemetry-event-registry.ts.
   computer_use: z.boolean(),
   linear_tickets: z.boolean(),
   orchestration: z.boolean(),

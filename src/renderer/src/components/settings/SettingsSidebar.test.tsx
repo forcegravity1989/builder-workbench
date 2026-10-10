@@ -66,8 +66,8 @@ function renderSidebar(
                 installStatus: 'installed'
               },
               {
-                id: 'computer-use',
-                title: 'Computer Use',
+                id: 'orchestration-current',
+                title: 'Orchestration Current',
                 icon: Bot,
                 installStatus: 'up-to-date'
               },

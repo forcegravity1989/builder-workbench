@@ -35,7 +35,6 @@ export function ExperimentalPane({
   hiddenExperimentalUnlocked = false
 }: ExperimentalPaneProps): React.JSX.Element {
   const searchQuery = useAppStore((s) => s.settingsSearchQuery)
-  const showPet = matchesSettingsSearch(searchQuery, [getExperimentalSearchEntry().pet])
   const showNativeChat = matchesSettingsSearch(searchQuery, [
     getExperimentalSearchEntry().nativeChat
   ])
@@ -63,40 +62,6 @@ export function ExperimentalPane({
     <div className="space-y-4">
       {showAgentDashboard ? (
         <AgentDashboardExperimentalSetting settings={settings} updateSettings={updateSettings} />
-      ) : null}
-
-      {showPet ? (
-        <SearchableSetting
-          title={translate('auto.components.settings.ExperimentalPane.dd6f0a1d45', 'Pet')}
-          description={translate(
-            'auto.components.settings.ExperimentalPane.0e89a574ae',
-            'Floating animated pet in the bottom-right corner.'
-          )}
-          keywords={getExperimentalSearchEntry().pet.keywords}
-          className="space-y-3 py-2"
-          id="experimental-pet"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 shrink space-y-1.5">
-              <Label>
-                {translate('auto.components.settings.ExperimentalPane.dd6f0a1d45', 'Pet')}
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                {translate(
-                  'auto.components.settings.ExperimentalPane.ca2219fe5e',
-                  'Shows a small animated pet pinned to the bottom-right corner. Pick a character (Claudino, OpenCode, Gremlin) or upload your own PNG, APNG, GIF, WebP, JPG, or SVG from the status-bar pet menu. Hide it any time from the same menu without disabling this setting.'
-                )}
-              </p>
-            </div>
-            <Switch
-              aria-label={translate('auto.components.settings.ExperimentalPane.dd6f0a1d45', 'Pet')}
-              checked={settings.experimentalPet}
-              onCheckedChange={(checked) => {
-                updateSettings({ experimentalPet: checked })
-              }}
-            />
-          </div>
-        </SearchableSetting>
       ) : null}
 
       {showNativeChat ? (

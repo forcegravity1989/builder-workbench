@@ -18,8 +18,6 @@ function makeInput(
     featureInteractions: {},
     hasConnectedTaskSource: false,
     browserUseSkillInstalled: false,
-    computerUseSkillInstalled: false,
-    computerUsePermissionsReady: false,
     orchestrationSkillInstalled: false,
     gitRepoCount: 0,
     worktreesByRepo: {},
@@ -104,8 +102,6 @@ describe('getFeatureWallSetupProgress', () => {
         hasSetupScript: true,
         gitRepoCount: 2,
         browserUseSkillInstalled: true,
-        computerUseSkillInstalled: true,
-        computerUsePermissionsReady: true,
         orchestrationSkillInstalled: true
       })
     )
@@ -143,8 +139,6 @@ describe('getFeatureWallSetupProgress', () => {
         hasSetupScript: true,
         gitRepoCount: 2,
         browserUseSkillInstalled: true,
-        computerUseSkillInstalled: true,
-        computerUsePermissionsReady: true,
         orchestrationSkillInstalled: true
       })
     )
@@ -236,7 +230,6 @@ describe('getFeatureWallSetupProgress', () => {
       makeInput({
         featureInteractions: {
           'agent-browser-setup': { firstInteractedAt: 1_700_000_000_000, interactionCount: 1 },
-          'computer-use-setup': { firstInteractedAt: 1_700_000_000_001, interactionCount: 1 },
           'agent-orchestration-setup': {
             firstInteractedAt: 1_700_000_000_002,
             interactionCount: 1
@@ -248,14 +241,12 @@ describe('getFeatureWallSetupProgress', () => {
     expect(progress.stepDone['agent-capabilities']).toBe(false)
   })
 
-  it('marks agent capabilities complete only when required skills and permissions are ready', () => {
+  it('marks agent capabilities complete only when required skills are ready', () => {
     expect(
       getFeatureWallSetupProgress(
         makeInput({
           browserUseSkillInstalled: true,
-          computerUseSkillInstalled: true,
-          computerUsePermissionsReady: false,
-          orchestrationSkillInstalled: true
+          orchestrationSkillInstalled: false
         })
       ).stepDone['agent-capabilities']
     ).toBe(false)
@@ -263,45 +254,10 @@ describe('getFeatureWallSetupProgress', () => {
     const progress = getFeatureWallSetupProgress(
       makeInput({
         browserUseSkillInstalled: true,
-        computerUseSkillInstalled: true,
-        computerUsePermissionsReady: true,
         orchestrationSkillInstalled: true
       })
     )
 
     expect(progress.stepDone['agent-capabilities']).toBe(true)
-  })
-
-  it('does not block agent capabilities on unavailable Computer Use access', () => {
-    const progress = getFeatureWallSetupProgress(
-      makeInput({
-        browserUseSkillInstalled: true,
-        computerUseSkillInstalled: true,
-        computerUsePermissionsReady: false,
-        computerUseUnavailable: true,
-        orchestrationSkillInstalled: true
-      })
-    )
-
-    expect(progress.stepDone['agent-capabilities']).toBe(true)
-  })
-
-  it('marks the Orca CLI setup row complete when installed skills are ready and Computer Use is unavailable', () => {
-    const progress = getFeatureWallSetupProgress(
-      makeInput({
-        browserUseSkillInstalled: true,
-        computerUseSkillInstalled: true,
-        computerUsePermissionsReady: false,
-        computerUseUnavailable: true,
-        orchestrationSkillInstalled: true
-      })
-    )
-
-    expect(progress.stepDone).toMatchObject({
-      'agent-capabilities': true
-    })
-    expect(getFirstIncompleteFeatureWallSetupStepId(progress.stepDone)).not.toBe(
-      'agent-capabilities'
-    )
   })
 })

@@ -40,7 +40,7 @@ const child = String.raw`
     const modules = Object.keys(require.cache)
     writeSync(1, JSON.stringify({
       importMs, totalMs, modules: modules.length,
-      featureFormatters: modules.filter((file) => ['browser', 'terminal', 'project', 'automation', 'workspace', 'computer'].some((name) => basename(file) === name + '-format.js')),
+      featureFormatters: modules.filter((file) => ['browser', 'terminal', 'project', 'automation', 'workspace'].some((name) => basename(file) === name + '-format.js')),
       stdout: createHash('sha256').update(stdout).digest('hex'),
       stderr: createHash('sha256').update(stderr).digest('hex'),
       exitCode: process.exitCode || 0
@@ -52,7 +52,7 @@ const cases = [
   ['--help'],
   ['help', 'terminal', 'read'],
   ['does-not-exist'],
-  ['computer', 'click', '--does-not-exist'],
+  ['terminal', 'read', '--does-not-exist'],
   ['does-not-exist', '--json']
 ]
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)]

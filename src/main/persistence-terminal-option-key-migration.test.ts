@@ -256,22 +256,6 @@ describe('Store', () => {
     expect(store.getSettings().terminalMacOptionAsAltMigrated).toBe(true)
   })
 
-  it('migrates the legacy experimentalSidekick setting to experimentalPet', async () => {
-    writeDataFile({
-      schemaVersion: 1,
-      repos: [],
-      worktreeMeta: {},
-      settings: { experimentalSidekick: true },
-      ui: {},
-      githubCache: { pr: {}, issue: {} },
-      workspaceSession: {}
-    })
-
-    const store = await createStore()
-
-    expect(store.getSettings().experimentalPet).toBe(true)
-  })
-
   it('migrates the legacy experimental compact worktree cards setting', async () => {
     writeDataFile({
       schemaVersion: 1,

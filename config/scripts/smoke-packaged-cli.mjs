@@ -53,7 +53,6 @@ try {
   const list = JSON.parse((await run(['skills', 'list', '--json'])).stdout)
   assert(list.topics.some((topic) => topic.name === 'orca-cli'))
   assert.match((await run(['skills', 'get', 'orca-cli'])).stdout, /name: orca-cli/)
-  assert.match((await run(['skills', 'get', 'computer-use'])).stdout, /name: computer-use/)
   const install = JSON.parse(
     (
       await run([

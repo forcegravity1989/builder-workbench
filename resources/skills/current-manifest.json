@@ -6,7 +6,7 @@
       "sourcePath": "skills/bw-knowledge-docs",
       "releaseRevision": 1,
       "packageDigest": "9507ff68e1785a5e2f7ab27408ea58d2313c293f8527944b87121fe6d72464d9",
-      "gitTreeSha": "e3ce47fa25054226bcb1ee45e0db1720b4b3056d",
+      "gitTreeSha": "20baf6b636bbf676bc2a7e1cfd8ee80df8673435",
       "files": [
         {
           "path": "SKILL.md",
@@ -19,30 +19,12 @@
         },
         {
           "path": "roles.md",
-          "size": 1821,
+          "size": 1793,
           "executable": false,
           "classification": "text",
-          "exactSha256": "51ac6895a70316ae212239171bf3de38e71fd223ce8fc3307b7dde1eced10619",
+          "exactSha256": "ed8cff91ff35964fd9a25a9602fc5ea5127b08f5575f7c3392e90ad30ea646be",
           "textNormalizedSha256": "ed8cff91ff35964fd9a25a9602fc5ea5127b08f5575f7c3392e90ad30ea646be",
           "identitySha256": "ed8cff91ff35964fd9a25a9602fc5ea5127b08f5575f7c3392e90ad30ea646be"
-        }
-      ]
-    },
-    {
-      "name": "computer-use",
-      "sourcePath": "skills/computer-use",
-      "releaseRevision": 9,
-      "packageDigest": "a2d2a62e5a187120026ac0951fcfaa36e32d68e5e1dd3f57419d1d27764c8119",
-      "gitTreeSha": "fab1436f0d73889492279544eadebc9bcc2694b6",
-      "files": [
-        {
-          "path": "SKILL.md",
-          "size": 1865,
-          "executable": false,
-          "classification": "text",
-          "exactSha256": "da1df6e6dab96373add40b36a5dee7d6b29e5a92e0cf827466ea1ad364546961",
-          "textNormalizedSha256": "da1df6e6dab96373add40b36a5dee7d6b29e5a92e0cf827466ea1ad364546961",
-          "identitySha256": "da1df6e6dab96373add40b36a5dee7d6b29e5a92e0cf827466ea1ad364546961"
         }
       ]
     },
@@ -86,17 +68,17 @@
       "name": "orca-cli",
       "sourcePath": "skills/orca-cli",
       "releaseRevision": 37,
-      "packageDigest": "f5e4d304469c6455612c4ccea8985fb2206be0b8de402d1de8f758dde3f902ab",
-      "gitTreeSha": "0c90a5b8b422a93ca806af6df3b65445ab5b2072",
+      "packageDigest": "79439daf662339b97fedf1081553ee30c9265fe5d7d343210d9ff304cd3e72bc",
+      "gitTreeSha": "7a67ebed57f4cbe2cddbe5697f701b0b2cd7fca3",
       "files": [
         {
           "path": "SKILL.md",
-          "size": 2237,
+          "size": 2134,
           "executable": false,
           "classification": "text",
-          "exactSha256": "b21b9b80475c35996b9c046379b9c9fa788f2d357c9e917befd8ab1b37df2e77",
-          "textNormalizedSha256": "b21b9b80475c35996b9c046379b9c9fa788f2d357c9e917befd8ab1b37df2e77",
-          "identitySha256": "b21b9b80475c35996b9c046379b9c9fa788f2d357c9e917befd8ab1b37df2e77"
+          "exactSha256": "63af1f4c3173d629efdb65916ed55e20036a75bdd59d89663da7e00a3f6eb719",
+          "textNormalizedSha256": "63af1f4c3173d629efdb65916ed55e20036a75bdd59d89663da7e00a3f6eb719",
+          "identitySha256": "63af1f4c3173d629efdb65916ed55e20036a75bdd59d89663da7e00a3f6eb719"
         }
       ]
     },
@@ -176,17 +158,17 @@
       "name": "orchestration",
       "sourcePath": "skills/orchestration",
       "releaseRevision": 29,
-      "packageDigest": "1816d97bb3597c8b110a5e7d48056e95aeeb8c2fe0d882d5cb04ee9257061618",
-      "gitTreeSha": "ebd864919dd8cab9d7049fc624c9afeebce2767c",
+      "packageDigest": "380ce765fa6aab07ccd6976f400aacd87ca0acf8c9daf1c9d43ea3dfea4ba8c1",
+      "gitTreeSha": "780567c50623ee71e222994cabf99bca5f955610",
       "files": [
         {
           "path": "SKILL.md",
-          "size": 3862,
+          "size": 3628,
           "executable": false,
           "classification": "text",
-          "exactSha256": "f7da0dd40d8681e2b0303fa0fa2f7ee4e36f2eca6495a4af57b92b9857dff732",
-          "textNormalizedSha256": "f7da0dd40d8681e2b0303fa0fa2f7ee4e36f2eca6495a4af57b92b9857dff732",
-          "identitySha256": "f7da0dd40d8681e2b0303fa0fa2f7ee4e36f2eca6495a4af57b92b9857dff732"
+          "exactSha256": "23c5a93794920527227658d80d75240f4351af12a8a39822193beea5bf68e408",
+          "textNormalizedSha256": "23c5a93794920527227658d80d75240f4351af12a8a39822193beea5bf68e408",
+          "identitySha256": "23c5a93794920527227658d80d75240f4351af12a8a39822193beea5bf68e408"
         }
       ]
     },

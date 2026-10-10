@@ -293,7 +293,6 @@ module.exports = {
     'out/main/wsl-transcript-fs-process-entry.js',
     'out/main/session-scanner-opencode-sqlite-worker-entry.js',
     'out/main/plugin-host-entry.js',
-    'out/main/computer-sidecar.js',
     'out/main/parcel-watcher-process-entry.js',
     'out/main/chunks/**',
     'resources/**',
@@ -411,7 +410,6 @@ module.exports = {
       chmodSync(join(resourcesDir, filename), 0o755)
     }
     if (context.electronPlatformName === 'darwin') {
-      await signMacComputerUseHelper(join(resourcesDir, 'Orca Computer Use.app'), context.packager)
       await signMacStandaloneHelper(
         join(resourcesDir, '..', 'MacOS', 'orca-notification-status'),
         'orca-notification-status',
@@ -466,10 +464,6 @@ module.exports = {
       {
         from: 'node_modules/agent-browser/bin/agent-browser-win32-x64.exe',
         to: 'agent-browser-win32-x64.exe'
-      },
-      {
-        from: 'native/computer-use-windows/runtime.ps1',
-        to: 'computer-use-windows/runtime.ps1'
       },
       featureWallResources
     ]
@@ -549,10 +543,6 @@ module.exports = {
         from: 'node_modules/agent-browser/bin/agent-browser-darwin-${arch}',
         to: 'agent-browser-darwin-${arch}'
       },
-      {
-        from: 'native/computer-use-macos/.build/release/Orca Computer Use.app',
-        to: 'Orca Computer Use.app'
-      },
       featureWallResources
     ],
     // Why: the notification-status helper must execute from Contents/MacOS —
@@ -621,10 +611,6 @@ module.exports = {
         from: 'node_modules/agent-browser/bin/agent-browser-linux-${arch}',
         to: 'agent-browser-linux-${arch}'
       },
-      {
-        from: 'native/computer-use-linux/runtime.py',
-        to: 'computer-use-linux/runtime.py'
-      },
       featureWallResources
     ],
     // Keep local artifacts aligned with the release pipeline.
@@ -644,10 +630,6 @@ module.exports = {
     depends: [
       ...debElectronRuntimeDependencies,
       'python3',
-      'python3-gi',
-      'gir1.2-atspi-2.0',
-      'at-spi2-core',
-      'xdotool',
       'xclip',
       'xvfb'
     ],
@@ -666,8 +648,6 @@ module.exports = {
     depends: [
       ...rpmElectronRuntimeDependencies,
       'python3',
-      'python3-gobject',
-      'xdotool',
       'xclip',
       'xorg-x11-server-Xvfb'
     ],
@@ -733,33 +713,6 @@ function chmodMacServeSimHelpers(resourcesDir, electronPlatformName) {
   }
 }
 
-async function signMacComputerUseHelper(helperAppPath, packager) {
-  if (!existsSync(helperAppPath)) {
-    if (isMacRelease) {
-      throw new Error(`Missing Orca Computer Use helper app at ${helperAppPath}`)
-    }
-    return
-  }
-  const codeSigningInfo =
-    isMacRelease && process.env.CSC_LINK && packager?.codeSigningInfo?.value
-      ? await packager.codeSigningInfo.value
-      : null
-  const identity =
-    process.env.ORCA_COMPUTER_MACOS_SIGN_IDENTITY ??
-    process.env.CSC_NAME ??
-    findInstalledMacSigningIdentity(codeSigningInfo?.keychainFile) ??
-    (isMacRelease ? null : '-')
-  if (!identity) {
-    throw new Error('Missing signing identity for Orca Computer Use helper app')
-  }
-  // Why: TCC grants attach to this nested app's code identity. Sign it before
-  // the outer Orca.app is sealed so production builds preserve that identity.
-  execFileSync('codesign', codesignArgs(identity, helperAppPath), { stdio: 'inherit' })
-  execFileSync('codesign', ['--verify', '--deep', '--strict', helperAppPath], {
-    stdio: 'inherit'
-  })
-}
-
 async function signMacStandaloneHelper(helperPath, helperName, packager) {
   if (!existsSync(helperPath)) {
     if (isMacRelease) {
@@ -786,21 +739,6 @@ async function signMacStandaloneHelper(helperPath, helperName, packager) {
   args.push(helperPath)
   execFileSync('codesign', args, { stdio: 'inherit' })
   execFileSync('codesign', ['--verify', '--strict', helperPath], { stdio: 'inherit' })
-}
-
-function codesignArgs(identity, targetPath) {
-  const args = ['--force', '--deep', '--sign', identity]
-  if (isMacRelease) {
-    args.push(
-      '--options',
-      'runtime',
-      '--timestamp',
-      '--entitlements',
-      resolve(__dirname, '../resources/build/entitlements.computer-use.mac.plist')
-    )
-  }
-  args.push(targetPath)
-  return args
 }
 
 function findInstalledMacSigningIdentity(keychainFile) {

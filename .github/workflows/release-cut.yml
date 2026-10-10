@@ -1272,14 +1272,11 @@ jobs:
           retry_wait_seconds: 30
           command: pnpm install --frozen-lockfile
 
-      # Why: `pnpm build:release` verifies the Linux computer-use provider by
-      # importing AT-SPI bindings, which are runtime package deps but are not
-      # present on stock GitHub Ubuntu release runners.
       # Why: `rpm` is needed by electron-builder's fpm backend to produce the
       # .rpm artifact. Stock Ubuntu runners do not ship it.
-      - name: Install Linux computer-use provider dependencies
+      - name: Install Linux packaging dependencies
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y python3-gi gir1.2-atspi-2.0 at-spi2-core xclip xdotool rpm
+        run: sudo apt-get update && sudo apt-get install -y rpm
 
       # Why: telemetry's transport gate (`src/main/telemetry/client.ts:IS_OFFICIAL_BUILD`)
       # requires the build identity to be the literal string `stable` or `rc`,

@@ -231,10 +231,7 @@ describe('worker thread entry guard', () => {
   it('passes a clean worker entry', () => {
     const plugin = createPlainNodeEntryGuardPlugin()
     const bundle = {
-      'warp-theme-parser-worker.js': workerChunk(
-        'warp-theme-parser-worker',
-        'require("node:worker_threads")'
-      )
+      'stt-worker.js': workerChunk('stt-worker', 'require("node:worker_threads")')
     } as Rollup.OutputBundle
 
     expect(() => runWorkerWriteBundle(plugin, bundle)).not.toThrow()

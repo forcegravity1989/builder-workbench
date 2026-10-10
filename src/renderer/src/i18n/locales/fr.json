@@ -922,8 +922,6 @@
         "5f32ac08f3": "Terminez la checklist d'intégration pour les workflows essentiels d'Orca.",
         "8ac3de82f5": "Dictée vocale locale avec modèles embarqués sur l'appareil.",
         "6a50cdcd7c": "Voix",
-        "0059bd17f3": "Permettez aux agents de contrôler n'importe quelle app de votre ordinateur.",
-        "b35e92364b": "Computer Use",
         "cd50cec5d7": "Coordonnez plusieurs agents de codage via Orca.",
         "58a868e8e4": "Orchestration",
         "7c79d3b7bf": "Facultatif",
@@ -1314,7 +1312,6 @@
         "6ca6ff404e": "ORCA",
         "520304a067": "Logo Orca",
         "ce44fad849": "Dépendances manquantes",
-        "c1cf168479": "Masquer",
         "00cee697c1": "Exécutez \"gh auth login\" dans un terminal pour connecter votre compte GitHub.",
         "9f96d018b7": "GitHub CLI n'est pas authentifiée",
         "73e1ad4282": "Orca utilise la GitHub CLI (gh) pour afficher les pull requests, les tickets et les vérifications.",
@@ -1324,9 +1321,6 @@
         "cd21242762": "Ajoutez un projet pour commencer.",
         "9c00bd4adf": "Sélectionnez un espace de travail dans la barre latérale pour commencer.",
         "16e9e3df89": "favori",
-        "0d0ace8861": "Mettre une étoile sur GitHub",
-        "ec43b38ba7": "Étoile ajoutée sur GitHub",
-        "157bb5ecbb": "Ouvrir GitHub",
         "preflightDismiss": "Ignorer"
       },
       "LinearIssueMarkdownDescriptionEditor": {
@@ -1731,22 +1725,6 @@
       },
       "SelectedTextCopyMenu": {
         "9b40d7b018": "Copier"
-      },
-      "StarNagCard": {
-        "92b0f9d921": "soit authentifiée et réessayez.",
-        "cd8c34aac1": "gh",
-        "cf82170065": "Impossible de mettre une étoile au dépôt. Vérifiez que",
-        "30c36231c1": "Orca est open source. Si ça vous a aidé aujourd'hui, une étoile GitHub aide d'autres développeurs à le découvrir.",
-        "b5e685e4d9": "Ignorer",
-        "5f6df21046": "Vous appréciez Orca ?",
-        "2d67b6c849": "Mettre une étoile sur GitHub",
-        "af3c9bbb37": "Ajout de l'étoile…",
-        "68a41bc3aa": "Impossible de mettre une étoile avec",
-        "996bf76e46": "Ouvrez GitHub pour terminer dans votre navigateur.",
-        "d32015fec7": "Ouverture...",
-        "157bb5ecbb": "Ouvrir GitHub",
-        "8c967b4d15": "Plus tard",
-        "73dfd4eb8d": "Ne plus demander"
       },
       "TaskPage": {
         "513cddfa7a": "Vérification…",
@@ -3332,24 +3310,6 @@
       },
       "status": {
         "bar": {
-          "PetStatusSegment": {
-            "3668339495": "Supprimer {{value0}}",
-            "cd8c6c654c": "Paramètres du compagnon…",
-            "ed176ad68f": "Importer un bundle .codex-pet…",
-            "59b5955621": "Téléverser le vôtre…",
-            "0608ad02a2": "Choisir un compagnon",
-            "b75484a01a": "Taille du compagnon",
-            "c6aa805b1b": "px",
-            "2f7bbaa457": "Taille",
-            "34c25dfe9c": "Compagnon",
-            "aec479308a": "Menu du compagnon",
-            "cef0ab4636": "Échec de l'importation du bundle de compagnon",
-            "2021d4f6db": "L'importation d'un bundle de compagnon nécessite un redémarrage complet de l'app (pas seulement un rechargement).",
-            "f395c9a685": "Échec de l'importation du fichier",
-            "e6234bcc17": "L'ajout d'un compagnon personnalisé nécessite un redémarrage complet de l'app (pas seulement un rechargement).",
-            "6d0a8cd179": "Afficher le compagnon",
-            "1fbc51cc77": "Masquer le compagnon"
-          },
           "PortsStatusSegment": {
             "4ebf90c12e": "Aucun port externe détecté",
             "7dac3ecc9d": "Ports externes",
@@ -6465,11 +6425,6 @@
           "c5a273a809": "Depuis {{value0}}",
           "b5c0479e21": "User agent non modifié"
         },
-        "BrowserUseComputerUseNotice": {
-          "15b5e680ba": "Ouvrir Computer Use",
-          "79209b37b9": "Si l'import de cookies ne convient pas, Computer Use peut contrôler des apps locales et, le cas échéant, réutiliser des sessions de navigateur déjà connectées. Installez la skill Computer Use ; macOS exige aussi des autorisations de confidentialité.",
-          "333984cf90": "Utiliser une session de navigateur existante"
-        },
         "BrowserUseEnableSwitch": {
           "aea3f45349": "Activer Agent Browser Use"
         },
@@ -6609,30 +6564,6 @@
           "54038660e0": "command",
           "25350d670f": "custom"
         },
-        "ComputerUsePane": {
-          "1735461723": "Permet aux agents d'inspecter et de piloter des applications de bureau locales.",
-          "93255aaf18": "Compétence Computer Use",
-          "45f8e22c2e": "Ouvert",
-          "d95d1cfab8": "Actualiser",
-          "0c29da5805": "Prêt",
-          "3383ea1aab": "Impossible de réinitialiser les autorisations Computer Use",
-          "f189f448a3": "Réinitialiser l'accès Computer Use",
-          "5c45349665": "Impossible d'ouvrir les autorisations Computer Use",
-          "7801ac08ec": "Les autorisations Computer Use ne sont requises que sur macOS",
-          "740766c291": "La configuration de Computer Use est déjà terminée",
-          "697005758f": "Panneau Confidentialité et sécurité de macOS ouvert",
-          "2168fa5ab0": "Impossible de charger les autorisations Computer Use",
-          "0c9a33f468": "Capture les fenêtres des applications pour que les agents puissent inspecter leur état visuel.",
-          "07bbe4c4cb": "Captures d'écran",
-          "4d03dec2d0": "Lit les arborescences d'interface des applications et effectue les actions demandées.",
-          "6b5a2cd3a5": "Accessibilité",
-          "6b17602073": "Réinitialiser l'accès",
-          "506f2acf7a": "Réinitialisation de l'accès...",
-          "4b65070096": "darwin",
-          "statusGranted": "Accordée",
-          "statusUnsupported": "macOS uniquement",
-          "statusNotEnabled": "Non activé"
-        },
         "DeveloperPermissionsPane": {
           "4c17304beb": "Actualiser",
           "6326a4c5cc": "Utilisez ces contrôles quand une CLI, une application locale ou un outil d'automatisation a besoin d'une autorisation de confidentialité macOS. Orca ne le demande pas au démarrage.",
@@ -6719,9 +6650,6 @@
             "title": "Nouveau style de carte",
             "toggleLabel": "Activer le nouveau style de carte"
           },
-          "ca2219fe5e": "Affiche un petit compagnon animé épinglé dans le coin inférieur droit. Choisissez un personnage (Claudino, OpenCode, Gremlin) ou importez votre propre PNG, APNG, GIF, WebP, JPG ou SVG depuis le menu compagnon de la barre d'état. Masquez-le à tout moment depuis le même menu sans désactiver ce réglage.",
-          "dd6f0a1d45": "Compagnon",
-          "0e89a574ae": "Compagnon animé flottant dans le coin inférieur droit.",
           "nativeChat": {
             "title": "Chat UI",
             "description": "Prévisualisez la surface de chat de bureau pour les sessions de terminal d'agents prises en charge.",
@@ -6823,22 +6751,6 @@
           "projectRuntime": "Runtime des projets",
           "projectRuntimeDescription": "Runtime par défaut pour les projets Windows locaux qui ne le remplacent pas."
         },
-        "GeneralSupportSection": {
-          "af7d9f4396": "Merci pour votre soutien !",
-          "6922c1fa2b": "Ajouter une étoile à Orca sur GitHub",
-          "511782265b": "Soutenez le projet avec une étoile GitHub via la CLI gh.",
-          "55a87e5fd1": "Soutenir Orca",
-          "964acc6bb4": "Ajouter une étoile",
-          "73b327e793": "Réessayer",
-          "c9f96d4234": "error",
-          "397719bee5": "Ajout de l'étoile...",
-          "1e29570462": "ajout de l'étoile",
-          "9d181300e3": "favori",
-          "5c49f02662": "masqué",
-          "b3f0584f5d": "chargement",
-          "cb65c75b11": "Ouverture...",
-          "f2d4f877b2": "Ouvrir GitHub"
-        },
         "GeneralUpdateSettingsSection": {
           "8a52ca1d02": "Notes de version",
           "d89806cc89": "est prête à être installée.",
@@ -6903,43 +6815,6 @@
           "d2f33670a9": "Importer depuis Ghostty",
           "273e7e81fe": "Configurations",
           "1f744a72f4": "Configuration"
-        },
-        "WarpThemeImportModal": {
-          "title": "Importer depuis Warp",
-          "description": "Importez des thèmes Warp comme thèmes de terminal Orca.",
-          "yaml_title": "Importer un thème YAML",
-          "yaml_description": "Importez des fichiers YAML de thèmes (format Warp) comme thèmes de terminal Orca.",
-          "yaml_no_themes_found": "Aucun thème trouvé dans les fichiers sélectionnés.",
-          "choose_file": "Choisir un fichier",
-          "choose_folder": "Choisir un dossier",
-          "loading": "Chargement des thèmes Warp...",
-          "found_theme_one": "1 thème trouvé",
-          "found_theme_other": "{{value0}} thèmes trouvés",
-          "found_in_source": " dans {{value0}}",
-          "clear_all": "Tout effacer",
-          "select_all": "Tout sélectionner",
-          "colors_only": "Couleurs uniquement",
-          "no_themes_found": "Aucun thème Warp personnalisé trouvé.",
-          "builtin_themes_hint": "Les thèmes préinstallés de Warp font partie de l'application Warp et ne peuvent pas être lus depuis le disque. Orca inclut déjà la plupart d'entre eux, comme Dracula, Gruvbox, Solarized et Tokyo Night.",
-          "custom_theme_yaml_hint": "Les thèmes personnalisés et communautaires doivent exister sous forme de fichiers YAML dans un dossier de thèmes Warp pour que l'import automatique puisse les détecter. Si vous avez cloné le dépôt public de thèmes de Warp, utilisez « Choisir un dossier » pour importer ce clone.",
-          "choose_manually": "Choisissez un fichier ou un dossier YAML de thèmes à importer manuellement.",
-          "skipped_files": "Fichiers ignorés",
-          "more_skipped_files": "{{value0}} autres fichiers ignorés.",
-          "cancel": "Annuler",
-          "import_theme_one": "Importer 1 thème",
-          "import_theme_other": "Importer {{value0}} thèmes",
-          "import_themes": "Importer des thèmes"
-        },
-        "useWarpThemeImport": {
-          "unknown_error": "Erreur inconnue",
-          "imported_one": "1 thème importé",
-          "imported_other": "{{value0}} thèmes importés",
-          "import_failed": "Échec de l'importation des thèmes",
-          "over_limit_one": "Importer ces thèmes dépasserait la limite de {{value0}} thèmes de terminal personnalisés. Désélectionnez 1 nouveau thème et réessayez.",
-          "over_limit_other": "Importer ces thèmes dépasserait la limite de {{value0}} thèmes de terminal personnalisés. Désélectionnez {{value1}} nouveaux thèmes et réessayez."
-        },
-        "YamlThemeImportButton": {
-          "label": "Importer depuis YAML"
         },
         "BranchPrefixFeedback": {
           "6c40c0908f": "Le préfixe ne peut pas contenir d'espaces ni de caractères spéciaux comme ~ ^ : ? * [ \\",
@@ -7809,8 +7684,6 @@
           "6d119427ef": "Checklist d'intégration",
           "eb1176a14e": "Dictée vocale locale avec modèles embarqués sur l'appareil.",
           "5063bb47a5": "Voix",
-          "7118953f14": "Permettez aux agents de contrôler n'importe quelle app de votre ordinateur.",
-          "c9841721cb": "Computer Use",
           "475980f53d": "Coordonnez plusieurs agents de codage via Orca.",
           "00c3a7950d": "Orchestration",
           "21f09426ea": "Facultatif. Orca fonctionne avec vos connexions de fournisseurs existantes ; ajoutez des comptes uniquement si vous voulez qu'Orca aide à basculer entre eux.",
@@ -8879,20 +8752,6 @@
             }
           }
         },
-        "computer": {
-          "use": {
-            "search": {
-              "6e88da3508": "skill",
-              "798be54d7e": "automatisation",
-              "e27f8bafbf": "capture d'écran",
-              "26c1290d83": "enregistrement d'écran",
-              "82f01c2d2c": "accessibilité",
-              "fefb452f5b": "computer use",
-              "9210db582b": "Autoriser les agents à analyser des captures d'écran et à piloter des applications locales à votre demande.",
-              "442bec10fe": "Computer Use"
-            }
-          }
-        },
         "developer": {
           "permissions": {
             "search": {
@@ -8992,15 +8851,6 @@
             "fa72e71f05": "agents",
             "4d63251595": "Flux groupé dans la barre latérale gauche pour les achèvements d'agents et les états bloquants.",
             "ccc5548ac5": "Vue Agents",
-            "9af7a518db": "personnage",
-            "791fefc0b0": "coin",
-            "65df471ab2": "animé",
-            "9f5609bfb8": "superposition",
-            "2a33975d72": "mascotte",
-            "b54cea709b": "compagnon",
-            "051203d37c": "animal",
-            "6b5a56ac35": "Compagnon animé flottant dans le coin inférieur droit.",
-            "87d99e634b": "Compagnon",
             "nativeChat": {
               "title": "Chat UI",
               "description": "Prévisualisez la surface de chat de bureau pour les sessions de terminal d'agents prises en charge.",
@@ -9035,13 +8885,6 @@
         },
         "general": {
           "search": {
-            "bdfb6dc21b": "j'aime",
-            "e6b01c8e30": "commentaires",
-            "b65665703a": "assistance",
-            "06ea5a69a6": "github",
-            "e4fb4516d0": "étoile",
-            "e0b8c8bc25": "Soutenez le projet avec une étoile GitHub via la CLI gh.",
-            "36a72f0d9e": "Ajouter une étoile à Orca sur GitHub",
             "c61b14be7c": "grok",
             "5d9ba08673": "copilot",
             "f472e97440": "aider",
@@ -9786,20 +9629,6 @@
             "fd752b3cac": "importer",
             "73e9422f19": "Import unique des paramètres de terminal Ghostty pris en charge.",
             "a979df0083": "Importer depuis Ghostty",
-            "warp_import": {
-              "title": "Importer depuis Warp",
-              "description": "Importez des thèmes Warp comme thèmes de terminal Orca.",
-              "keyword_warp": "warp",
-              "keyword_themes": "thèmes",
-              "keyword_yaml": "yaml",
-              "keyword_legacy_title": "Importer des thèmes depuis Warp"
-            },
-            "yaml_import": {
-              "title": "Importer depuis YAML",
-              "description": "Importez des fichiers YAML de thèmes comme thèmes de terminal Orca.",
-              "keyword_yaml": "yaml",
-              "keyword_custom": "custom"
-            },
             "4cec42dbf7": "intl",
             "b495dc6a9f": "jis",
             "d8d6f7a3c5": "macos",
@@ -10147,20 +9976,6 @@
         "ProviderHostScopeControl": {
           "scope_label": "{{value0}} : {{value1}}",
           "change_host": "Ouvrir les serveurs distants"
-        },
-        "computerUseSkillRuntime": {
-          "thisDevice": "Cet appareil"
-        },
-        "computerUseSummary": {
-          "checkingTitle": "Vérification de l'accès Computer Use.",
-          "checkingDescription": "Orca vérifie les autorisations de confidentialité macOS pour l'assistant Computer Use.",
-          "unavailableTitle": "Computer Use est indisponible.",
-          "unavailableDescription": "Les autorisations Computer Use sont indisponibles car {{value0}}.",
-          "readyTitle": "Computer Use est prêt.",
-          "readyDescription": "Les agents peuvent inspecter et manipuler des fenêtres d'applications à votre demande.",
-          "permissionsTitle": "Terminez la configuration pour utiliser les applications locales.",
-          "permissionsRequired_one": "1 autorisation requise avant que les agents puissent manipuler des fenêtres d'applications.",
-          "permissionsRequired_other": "{{value0}} autorisations requises avant que les agents puissent manipuler des fenêtres d'applications."
         },
         "providerAccountScope": {
           "remoteServer": "Serveur distant : {{value0}}",
@@ -12674,15 +12489,6 @@
           }
         }
       },
-      "pet": {
-        "pet": {
-          "models": {
-            "7433516faf": "Gremlin",
-            "a84d5677ff": "OpenCode",
-            "2528586aa7": "Claudino"
-          }
-        }
-      },
       "onboarding": {
         "AgentStep": {
           "e6a369bd04": "Agents populaires",
@@ -13016,13 +12822,10 @@
         "wall": {
           "AgentCapabilitiesSetupAction": {
             "b8dc9dd8a2": "Installés",
-            "1b51644c2d": "Laissez les agents contrôler le bureau : déplacer le curseur, cliquer et taper dans n'importe quelle application.",
-            "362a07517d": "Computer Use",
             "5e8fe5a72d": "Donnez aux agents un accès direct au navigateur d'Orca pour tester des pages, capturer des captures d'écran et agir sur ce qu'ils voient.",
             "e638da007a": "Agent Browser Use",
             "c61c91e642": "Laissez les agents se coordonner via Orca pour faire avancer jusqu'au bout les grandes tâches en plusieurs étapes.",
             "ac07f8887f": "Orchestration d'agents",
-            "e9eb197e12": "Autorisations Computer Use ouvertes",
             "3a59452a67": "Commande de skill copiée et insérée ci-dessous pour vérification.",
             "c605f51f2b": "Configuration des capacités prête",
             "1aa657d8f4": "Certaines configurations de capacités demandent votre attention",
@@ -13065,21 +12868,6 @@
           "BrowserUseSkillSetupCard": {
             "cbc45022d4": "Permet aux agents de naviguer et de vérifier des pages dans le navigateur d'Orca.",
             "d5bb1cd4ba": "Skill Browser Use"
-          },
-          "ComputerUseAnimatedVisual": {
-            "d8401975b1": "approuvée",
-            "f27676a92c": "statut :",
-            "6804cb356f": "clic envoyé",
-            "1719b28a81": "trouvé « Approve »",
-            "79445f7512": "approuver la note dans mon app",
-            "99a8624bcb": ">",
-            "2adb561b44": "Session Claude Code démarrée",
-            "94787f01f8": "Claude Code",
-            "9cddfe96b2": "Application locale",
-            "9634d870d1": "Approuver",
-            "3cc2df3671": "Terminé",
-            "bdd5312213": "En attente",
-            "c11dda000b": "Approuvé"
           },
           "EditorAnimatedVisual": {
             "7a763daf2f": "italique",
@@ -13230,13 +13018,9 @@
               "setup": {
                 "status": {
                   "8eccfcb314": "Installés",
-                  "21d4f79c93": "cliquez sur Installer CLI & Skills pour ouvrir les réglages d'accès macOS",
-                  "5c9293e51a": "vérification de l'accès à l'app",
                   "aae94eeb52": "Cliquez sur Installer CLI & Skills",
                   "aa8e143a2f": "Impossible de vérifier l'installation",
-                  "9b33e7fb13": "Vérification de l'installation",
-                  "4c8e1f92a7": "ouvrez Orca Desktop sur ce Mac",
-                  "6d2b0a84e1": "Indisponible dans ce build"
+                  "9b33e7fb13": "Vérification de l'installation"
                 }
               }
             }
@@ -15256,22 +15040,6 @@
       },
       "ShortcutKeyCombo": {
         "07eb4985a1": "Appuyez deux fois sur {{value0}}"
-      },
-      "star": {
-        "nag": {
-          "StarNagToastHost": {
-            "starredThanks": "Étoile ajoutée — merci !",
-            "githubOpened": "GitHub ouvert",
-            "opening": "Ouverture…",
-            "starring": "Ajout de l'étoile…",
-            "openGithub": "Ouvrir GitHub",
-            "starOnGithub": "Mettre une étoile sur GitHub",
-            "onboardingCompleted": "Prise en main terminée !",
-            "body": "Si Orca vous plaît jusqu'ici, une étoile GitHub aide d'autres développeurs à le découvrir.",
-            "dismiss": "Ignorer",
-            "later": "Plus tard"
-          }
-        }
       },
       "nativeChat": {
         "contextMenu": {

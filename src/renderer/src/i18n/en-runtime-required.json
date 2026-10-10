@@ -123,14 +123,6 @@
         "e6996f4024": "· updated",
         "ff84e1f54c": "{{value0}} {{value1}} as viewed"
       },
-      "StarNagCard": {
-        "68a41bc3aa": "Could not star with",
-        "73dfd4eb8d": "Don't ask again",
-        "92b0f9d921": "is authenticated and try again.",
-        "996bf76e46": "Open GitHub to finish in your browser.",
-        "cd8c34aac1": "gh",
-        "cf82170065": "Could not star the repo. Make sure"
-      },
       "TaskPage": {
         "163df31e0e": "https://example.atlassian.net",
         "171b7739d8": "mrs",
@@ -171,7 +163,25 @@
         "closeAsDuplicateDescription": "Duplicate of another issue in this repository",
         "closeAsDuplicateSubmit": "Close duplicate",
         "closeAsNotPlannedDescription": "Won't fix, can't repro, stale",
+        "codehubAssign": "Assign",
+        "codehubAssigned": "Assignee updated",
+        "codehubAutoMerge": "Merge when the pipeline succeeds",
+        "codehubAutoMergeButton": "Auto-merge",
+        "codehubChecks": "Pipelines",
+        "codehubCloseCompleted": "Close as completed",
+        "codehubCloseDuplicate": "Close as duplicate",
+        "codehubCloseMr": "Close",
+        "codehubCloseNotPlanned": "Close as not planned",
         "codehubDuplicateOf": "#",
+        "codehubLoadMore": "Load more",
+        "codehubLoadedScope": "Search and filters apply to loaded tasks",
+        "codehubNoDescription": "No description",
+        "codehubNoLoadedMatches": "No matches in loaded tasks",
+        "codehubNoPipelines": "No pipelines",
+        "codehubOpenProject": "Open project in CodeHub",
+        "codehubReopen": "Reopen",
+        "codehubReviewers": "Reviewers, comma-separated",
+        "codehubSetReviewers": "Set reviewers",
         "d079be2dc8": "No assigned issues. Try searching for something.",
         "d0e3c8f933": "No matching GitHub work",
         "d6d08c1650": "Select a project to see GitLab work items.",
@@ -437,21 +447,6 @@
           }
         },
         "wall": {
-          "ComputerUseAnimatedVisual": {
-            "1719b28a81": "found \"Approve\"",
-            "2adb561b44": "Claude Code session started",
-            "3cc2df3671": "Done",
-            "6804cb356f": "click sent",
-            "79445f7512": "approve the note in my app",
-            "94787f01f8": "Claude Code",
-            "9634d870d1": "Approve",
-            "99a8624bcb": ">",
-            "9cddfe96b2": "Local app",
-            "bdd5312213": "Pending",
-            "c11dda000b": "Approved",
-            "d8401975b1": "approved",
-            "f27676a92c": "status:"
-          },
           "FeatureWallSetupChecklist": {
             "b1f1981c5e": "See tasks"
           },
@@ -1121,13 +1116,6 @@
         "CommitMessageAiPane": {
           "841ed9884a": "Used by repositories that have not customized Source Control AI."
         },
-        "ComputerUsePane": {
-          "07bbe4c4cb": "Screenshots",
-          "0c9a33f468": "Capture app windows so agents can inspect visual state.",
-          "4b65070096": "darwin",
-          "4d03dec2d0": "Read app interface trees and perform requested actions.",
-          "6b5a2cd3a5": "Accessibility"
-        },
         "EphemeralVmRuntimesSection": {
           "cleaned": "Cleaned up temporary VM runtime.",
           "cleanupFailedToast": "Couldn’t clean up temporary VM runtime.",
@@ -1152,15 +1140,6 @@
         "GeneralRemoteServerUpdates": {
           "reviewUpdateOne": "1 update available",
           "reviewUpdates": "{{value0}} updates available"
-        },
-        "GeneralSupportSection": {
-          "1e29570462": "starring",
-          "511782265b": "Support the project with a GitHub star via the gh CLI.",
-          "5c49f02662": "hidden",
-          "73b327e793": "Try Again",
-          "9d181300e3": "starred",
-          "b3f0584f5d": "loading",
-          "c9f96d4234": "error"
         },
         "GeneralUpdateSettingsSection": {
           "3394d1f663": "checking",
@@ -1441,12 +1420,6 @@
           "901985625d": "toggle",
           "b6536a1d12": "extracting"
         },
-        "WarpThemeImportModal": {
-          "found_theme_one": "Found 1 theme",
-          "found_theme_other": "Found {{value0}} themes",
-          "import_theme_one": "Import 1 Theme",
-          "import_theme_other": "Import {{value0}} Themes"
-        },
         "WslCliRegistration": {
           "41a1480d3e": "install",
           "7c3bb36706": "remove",
@@ -1535,13 +1508,6 @@
               "remoteRuntime": "Bitbucket credentials saved here are stored on this local machine only. Set ORCA_BITBUCKET_* environment variables on the remote runtime instead."
             }
           }
-        },
-        "computerUseSkillRuntime": {
-          "thisDevice": "This device"
-        },
-        "computerUseSummary": {
-          "permissionsRequired_one": "1 permission required before agents can operate app windows.",
-          "permissionsRequired_other": "{{value0}} permissions required before agents can operate app windows."
         },
         "experimental": {
           "search": {
@@ -1694,12 +1660,6 @@
               }
             }
           }
-        },
-        "useWarpThemeImport": {
-          "imported_one": "Imported 1 theme",
-          "imported_other": "Imported {{value0}} themes",
-          "over_limit_one": "Importing these themes would exceed the {{value0}} custom terminal theme limit. Deselect 1 new theme and try again.",
-          "over_limit_other": "Importing these themes would exceed the {{value0}} custom terminal theme limit. Deselect {{value1}} new themes and try again."
         }
       },
       "shared": {
