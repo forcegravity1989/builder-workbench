@@ -2,7 +2,7 @@
 
 > 给实现与技术评审者在动代码前读取；§1 是 2026-10-09 对主干 `main` 听写代码的读码结论，§2 起是设计。用户与范围见 [intent](intent.md)，链状态见 [STATUS](STATUS.md)。实现取舍变化时更新；落地后把稳定模块心智回写 06-module，薄挂载登记进 [ref/upstream.md](../../../ref/upstream.md)。
 >
-> 状态：草案，等 intent gate；未决项见本篇 §4。在 [architecture](../../architecture.md) 里的定位：其 §1 构建交付（会话里对 agent 下指令），§2 ②执行、⑤壳，§3 Orca 执行核与 BW 叠层。
+> 状态：intent 已认、实现选型已裁（2026-10-10，§4）；第一版不含朗读；推理库升级一项按要导入的模型族再裁。spec 待立。在 [architecture](../../architecture.md) 里的定位：其 §1 构建交付（会话里对 agent 下指令），§2 ②执行、⑤壳，§3 Orca 执行核与 BW 叠层。
 
 ## §1 现状（读码结论，2026-10-09）
 
@@ -74,30 +74,29 @@
 
 ### 2.1 原则
 
-- **薄挂载**：引擎、目录、后处理、朗读全部是 BW 模块（`src/{shared,main,renderer/src}/workbench/speech/`），经上游已有的工厂注入接管；上游文件只改登记与一行转发，每处登记进 ref/upstream.md 扩点表。
+- **薄挂载**：引擎、目录、后处理全部是 BW 模块（`src/{shared,main,renderer/src}/workbench/speech/`），经上游已有的工厂注入接管；上游文件只改登记与一行转发，每处登记进 ref/upstream.md 扩点表。
 - **状态只从真实探测推导**：模型 `ready` 来自文件校验；端点「可用」来自「测一下」真连或最近一次真实转写；配置存在只显示「未测」。
 - **不留双路径**：接管后 `openai-*` 两个文件退役删除，OpenAI 变成端点列表里的一条预置端点；`userModels`、`terminalConfirmBeforeInsert`、`language` 三个死字段随新设置结构一并清掉。
-- **本地默认，远端明示**：默认推荐本地模型；选了远端端点的模型，指示器显示端点名。音频离机前是否再确认一次是产品决定，列在 intent 待决 3，本篇按推荐（选端点即授权）写。
+- **本地默认，远端明示**：默认推荐本地模型；选了远端端点的模型，指示器显示端点名。音频离机前不再确认（intent 已决 3：选端点即授权）。
 - **一次改一族**：新模型族只增数据文件与 worker 的一个映射项，不改会话服务。
 
 ### 2.2 分层
 
 ```text
-渲染层  DictationController(上游) ──热词钩子──▶ workbench/speech/hotwords.ts(项目词典)
-        workbench/speech/VoiceSettingsSections.tsx(端点/导入/词典/朗读) ──挂进──▶ VoicePane(上游，1 处挂载)
-        workbench/speech/read-aloud.ts(播放 PCM，朗读按钮/自动朗读)
-预加载  window.api.speech(上游，不改) + window.api.workbenchSpeech(新：端点/导入/朗读/后处理配置)
+渲染层  DictationController(上游) ──热词钩子──▶ workbench/speech/hotwords.ts(词典 → 热词)
+        workbench/speech/WorkbenchVoiceSections.tsx(线程数/端点/导入/词典/句尾风格) ──挂进──▶ VoicePane(上游，1 处挂载)
+预加载  window.api.speech(上游，不改) + window.api.workbenchSpeech(新：端点/导入/词典/后处理配置)
 主进程  workbench/speech/
           registry.ts        目录 = 内置 catalog.json ∪ 导入 manifest ∪ 端点派生模型
-          engines/           SttEngine / TtsEngine 接口
-            sherpa-stt.ts    复用上游 stt-worker 协议，升 1.13.8，线程/provider 可配，VAD 可选
-            sherpa-tts.ts    tts-worker.ts：OfflineTts.generateAsync 流式回 PCM
+          engines/           SttEngine 接口（TtsEngine 第二版）
+            sherpa-stt.ts    sherpa-stt-worker.ts：按 manifest 建配置，线程/provider 可配；钉 1.12.37
             remote-stt.ts    OpenAI 兼容 /audio/transcriptions（multipart；可选 stream）
-            remote-tts.ts    OpenAI 兼容 /audio/speech（pcm/wav 流）
-          postprocess/       pipeline.ts + stages/{strip,lexicon,itn,punct-style,punct-model}.ts
+          postprocess/       pipeline.ts + stages/{strip,lexicon,itn,punct-style,punct-model}.ts；itn 调 native/itn 小进程
+          lexicon.ts         从术语库与人名库编译词典
           endpoints.ts       端点表 + 密钥（SecretStore，每端点一文件）+ 探测
           speech-service.ts  实现上游 SttService 同形接口，经 setSpeechServiceFactories 注入
           ipc.ts / rpc.ts    workbenchSpeech:* 与 workbench.speech.* 注册（薄挂载）
+原生     native/itn/         rustfst + WeTextProcessing 中英 FST，stdin/stdout 行协议，随包
 共享     workbench/speech/{manifest,engine,endpoint,postprocess,settings}.ts  契约与 zod
 ```
 
@@ -112,8 +111,9 @@ type SpeechManifest = {
   label: string; languages: string[]            // 'zh','en','multi'
   source: 'builtin' | 'imported' | 'endpoint'
   // sherpa
-  family?: 'transducer' | 'paraformer' | 'whisper' | 'senseVoice' | 'nemoCtc' | 'zipformerCtc'
-         | 'dolphin' | 'fireRedAsr' | 'moonshine' | 'vits' | 'matcha' | 'kokoro' | 'kitten'
+  family?: 'transducer' | 'paraformer' | 'whisper' | 'senseVoice' | 'nemoCtc'   // 1.12.37 五族，第一版
+         | 'zipformerCtc' | 'dolphin' | 'fireRedAsr' | 'moonshine'              // 需升 1.13.8，§4 问 4
+         | 'vits' | 'matcha' | 'kokoro' | 'kitten'                              // TTS，第二版
   streaming?: boolean; sampleRate?: number; modelingUnit?: 'bpe' | 'cjkchar' | 'cjkchar+bpe'
   files?: { role: string; name: string; sizeBytes: number; sha256: string }[]
   mirrors?: { base: string; revision?: string }[]   // 为空 = 只能本机导入
@@ -125,7 +125,7 @@ type SpeechManifest = {
 // src/shared/workbench/speech/endpoint.ts
 type SpeechEndpoint = {
   id: string; label: string; baseUrl: string          // 如 https://gw.internal/v1
-  protocol: 'openai-audio'                            // v1 只此一种；DashScope 原生待裁决
+  protocol: 'openai-audio'                            // 只此一种（2026-10-10 裁：不接 DashScope 原生）
   apiKeyRef: string                                   // 密钥文件名，正文不进设置
   stt?: { model: string; language?: string; stream?: boolean; promptHotwords?: boolean }
   tts?: { model: string; voice: string; format: 'pcm' | 'wav'; speed?: number }
@@ -140,7 +140,7 @@ interface SttEngine {
   stop(): Promise<void>
   transcribeFile?(path: string): AsyncIterable<SttEvent>   // 留口给会议录音，v1 不实现
 }
-interface TtsEngine {
+interface TtsEngine {                                  // 第二版实现；第一版只保留类型
   synthesize(text: string, opts: { voice?: string; speed?: number },
              onChunk: (pcm: Float32Array, sampleRate: number) => void): Promise<void>
   cancel(): void
@@ -151,7 +151,7 @@ type PostprocessStage = 'strip' | 'lexicon' | 'itn' | 'punctStyle' | 'punctModel
 type PostprocessConfig = {
   stages: Record<PostprocessStage, boolean>
   punctStyle: { trailing: 'keep' | 'comma' | 'space' | 'none' }
-  lexicon: { global: boolean; project: boolean; replaceThreshold: 0.85; markThreshold: 0.65 }
+  lexicon: { terms: boolean; people: boolean; replaceThreshold: 0.85; markThreshold: 0.65 }  // 术语库 / 人名库两路开关
 }
 
 // src/shared/workbench/speech/settings.ts  → GlobalSettings.workbenchSpeech（新键，薄挂载 3 处）
@@ -160,7 +160,7 @@ type WorkbenchSpeechSettings = {
   endpoints: SpeechEndpoint[]
   imported: SpeechManifest[]
   mirrors: { base: string }[]                 // 覆盖内置目录的下载源
-  tts: { enabled: boolean; modelId: string; autoReadAgentReplies: boolean; speed: number }
+  tts?: { enabled: boolean; modelId: string; autoReadAgentReplies: boolean; speed: number }  // 第二版；第一版不写入
   postprocess: PostprocessConfig
 }
 ```
@@ -169,49 +169,59 @@ type WorkbenchSpeechSettings = {
 
 ### 2.4 引擎
 
-**本地 sherpa（CPU）**。升 `sherpa-onnx` 到 1.13.8（主包与本仓用到的五个平台包同步）。worker 协议沿用 `init / feed / stop / teardown`，`init` 改为按 manifest 的 `family + files[role]` 建配置，不再按文件名猜；`numThreads` 默认 `min(4, cpus-1)`、`provider` 从设置读；流式族保留端点检测参数；离线族保留 30 秒上限、静点切块。可选 VAD（silero，约 2 MB）：开启后只把有声段送离线模型，远端路径也用它裁掉静音。重采样换成抗混叠实现（先用 1.13.8 `LinearResampler`，实测仍混叠则自写 FIR 抽取）。热词：transducer 族走 `createOfflineStream(handle, hotwords)`，其余族热词只进后处理词典。
+**本地 sherpa（CPU）**。第一版钉 `sherpa-onnx` 1.12.37（§4 问 4 未裁：朗读推迟后升级的直接理由消失，等要导入的模型族确定再裁）。BW 自己的 `sherpa-stt-worker.ts` 沿用上游 `init / feed / stop / teardown` 协议，`init` 改为按 manifest 的 `family + files[role]` 建配置，不再按文件名猜，覆盖现版五族（transducer / paraformer / whisper / nemo-ctc / senseVoice）；`numThreads` 默认 `min(4, cpus-1)`、`provider` 从设置读；流式族保留端点检测参数；离线族保留 30 秒上限、静点切块。热词：transducer 族走上游已有的热词文件，其余族热词只进后处理词典。VAD、`LinearResampler`、标点模型、zipformerCtc / dolphin / fireRedAsr / moonshine 四个新族都在 1.13.8，升级裁定后再进；在那之前重采样沿用上游线性插值。
 
-**远端 OpenAI 兼容**。一条端点可同时配 STT 与 TTS。STT：`POST {baseUrl}/audio/transcriptions`（multipart：`model`、`language`、`prompt`=热词串、`response_format=json`），`stream=true` 时读 SSE 增量出 `partial`；仍攒整段，10 分钟上限继承；请求走 Electron `net.fetch`，系统代理与企业 CA 生效。TTS：`POST {baseUrl}/audio/speech`（`model`、`voice`、`input`、`response_format=pcm`，16-bit 24 kHz；不支持 pcm 的端点退 wav），流式读 body 切块回放。密钥一端点一文件 `~/.orca/speech-endpoint-<id>.enc`，复用 `SecretStore`。预置端点 `openai`（`https://api.openai.com/v1`）承接原 OpenAI 两模型，旧密钥文件首启迁入一次后删除。
+**远端 OpenAI 兼容**（2026-10-10 裁：只做这一种协议，不接 DashScope 原生）。STT：`POST {baseUrl}/audio/transcriptions`（multipart：`model`、`language`、`prompt`=热词串、`response_format=json`），`stream=true` 时读 SSE 增量出 `partial`；仍攒整段，10 分钟上限继承；请求走 Electron `net.fetch`，系统代理与企业 CA 生效。端点结构保留 `tts` 字段给第二版，第一版不读。密钥一端点一文件 `~/.orca/speech-endpoint-<id>.enc`，复用 `SecretStore`。预置端点 `openai`（`https://api.openai.com/v1`）承接原 OpenAI 两模型，旧密钥文件首启迁入一次后删除。
 
 ### 2.5 模型目录与导入
 
 - 内置目录从 TS 常量改成 `resources/speech/catalog.json`（schema = `SpeechManifest`），构建时校验；镜像 `mirrors[]` 写 HuggingFace 与 ModelScope 两条，设置里可加内网镜像并置顶。
-- 导入：设置 →「导入模型」选目录；目录里有 `manifest.json` 直接读，没有则按文件名识别族（encoder/decoder/joiner/tokens、model.onnx+tokens、kokoro voices.bin 等）生成草稿让人确认 `family / languages / streaming`，写入 `imported[]`，文件原地引用不复制。导入项状态按文件存在与大小校验推导。
-- 端点派生模型：每条端点的 `stt.model` / `tts.model` 各生成一条 `source: 'endpoint'` 的 manifest，出现在同一个模型下拉里，`ready` = 端点最近探测成功。
+- 导入：设置 →「导入模型」选目录；目录里有 `manifest.json` 直接读，没有则按文件名识别族（encoder/decoder/joiner/tokens、model.onnx+tokens 等）生成草稿让人确认 `family / languages / streaming`，写入 `imported[]`，文件原地引用不复制。导入项状态按文件存在与大小校验推导。
+- 端点派生模型：每条端点的 `stt.model` 生成一条 `source: 'endpoint'` 的 manifest（`tts.model` 第二版），出现在同一个模型下拉里，`ready` = 端点最近探测成功。
 - 配对端目录接口继续返回上游的 `provider: 'local' | 'openai'` 形状：`sherpa` → `local`，`remote` → `openai`（旧客户端只认这两个值）。
 
 ### 2.6 后处理流水线
 
 顺序固定：`strip`（剥 SenseVoice 富标签、压空格）→ `lexicon`（拼音 / 音素模糊匹配 + 别名精确匹配 + 黑名单窗口）→ `itn`（数字、小数、百分比、电话、金额、日期）→ `punctStyle`（句尾句号按设置改逗号 / 空格 / 删，保留问号）→ 可选 `punctModel`（只对无标点的流式族，ct-transformer zh-en）。词典命中片段冻结，后续阶段不再改。`partial` 只过 `strip`，`final` 全过。本地与远端两种引擎产出都经同一条流水线。
 
-- 词典：全局 `~/.orca/speech-lexicon.txt` + 项目 `.bw/voice/lexicon.txt`，行格式 `目标词|别名1|别名2 ~~~ 黑名单1|黑名单2`（照 HaujetZhao/asr-hotword）；拼音用 `pinyin-pro`（MIT，无依赖），模糊簇 zh/z、ch/c、sh/s、n/l、in/ing、en/eng、an/ang；最小 2 音节；双阈值 0.85 替换 / 0.65 只记日志；同一份词典同时喂 transducer 热词与远端 `prompt`。
-- ITN 路线待裁决（§4 问 2）：A）把 `~/projects/输入法/poc/itn-rustfst`（rustfst + WeTextProcessing 中英 FST，已验证）做成随包小进程 `native/itn/`，stdin/stdout 行协议；B）TypeScript 自写规则（覆盖数字 / 小数 / 百分比 / 电话 / 金额，日期时间后补）；C）sherpa `ruleFsts`（本机实测覆盖不够，列出只为排除）。推荐 A，B 作过渡。
+- 词典来源（2026-10-10 裁）：术语库与人名库，人不手写词典文件。`lexicon.ts` 把两个库编译成流水线读的内部形式（每条 = 目标词 + 别名 + 黑名单，照 HaujetZhao/asr-hotword 的三段），库改一次就重编。两个库的正本与格式本仓还没有（intent 已决 2 的剩余待决），建议落点：术语库 = 被管项目词表（CONTEXT 类文件）里的词条 + 全局一份 `~/.orca/speech-terms.txt`；人名库 = 项目成员（远端协作者或 git 作者）+ 全局一份 `~/.orca/speech-people.txt`；spec 立项时定。拼音用 `pinyin-pro`（MIT，无依赖），模糊簇 zh/z、ch/c、sh/s、n/l、in/ing、en/eng、an/ang；最小 2 音节；双阈值 0.85 替换 / 0.65 只记日志；同一份编译结果同时喂 transducer 热词与远端 `prompt`。
+- ITN（2026-10-10 裁定 A）：把 `~/projects/输入法/poc/itn-rustfst`（rustfst + WeTextProcessing 中英 FST，已验证：29 MB 常驻、3.5 ms/句）做成随包小进程 `native/itn/`，stdin/stdout 行协议，主进程按需拉起、闲置回收；`config/electron-builder.config.cjs` 按平台加 extraResources，三平台各构建一次。TypeScript 自写规则不做；sherpa `ruleFsts` 实测覆盖不够，排除。
 - 不做：通用错字纠错模型（macro-correct 横评 BERT 类误纠 0.46%～0.76%、LLM 18%～23%）与 LLM 后编辑（ASR-EC 基准结论「prompting is not effective」），`PostprocessStage` 留枚举位不实现。
 - 日志只记「改了什么词」计数，不记原文与音频。
 
 ### 2.7 朗读
 
-主进程 `tts-worker.ts` 持有一个 `OfflineTts`（kokoro 多语 / matcha 中文为首批内置），`generateAsync` 的 `onProgress` 把 PCM 块经 IPC 推到渲染层；渲染层 `read-aloud.ts` 用 `AudioContext` 排队播放，支持打断。入口两处：原生 chat 最后一条回复旁「朗读」（挂载同 composer 麦克风按钮的位置）、设置「自动朗读 agent 回复」（只读原生 chat 的 assistant 消息，不读终端滚屏）。远端 TTS 同一播放器。配对端不做。
+第一版不做（2026-10-10 裁：第一版只做听写侧）。`TtsEngine`、`SpeechEndpoint.tts`、`WorkbenchSpeechSettings.tts` 只保留类型，不实现、不注册、不显示。第二版范围：本地 `OfflineTts`（需升 1.13.8）与远端 `/audio/speech`、渲染层播放与打断、回复行「朗读」按钮、「自动朗读 agent 回复」；立项时另评审。
 
 ### 2.8 设置面
 
-Voice 面板下方挂 BW 段（`isWorkbenchShell()` 时渲染）：推理（线程数）、端点表（地址 / 密钥 / STT 模型 / TTS 模型 / 测一下 / 状态与时间）、模型（内置目录含镜像切换、导入、各项状态）、词典（全局路径、项目文件是否存在、命中计数）、朗读（开关、模型、速度、试听）、后处理（各阶段开关、句尾风格）。
+Voice 面板下方挂 BW 段（`isWorkbenchShell()` 时渲染）：推理（线程数）、端点表（地址 / 密钥 / STT 模型 / 测一下 / 状态与时间）、模型（内置目录含镜像切换、导入、各项状态）、词典（术语库与人名库各自来源、条数、命中计数）、后处理（各阶段开关、句尾风格）。朗读段第二版。
 
 ### 2.9 薄挂载清单（实现时登记进 ref/upstream.md）
 
-| 上游文件 | 改动 | 性质 |
-|---|---|---|
-| `startup/main-process-preflight.ts` | `setSpeechServiceFactories(workbenchSpeechServiceFactories)`（壳开启时） | 1 行替换 |
-| `ipc/speech.ts` | `speech:getCatalog` 改读 `manager.getCatalog()`；其余不动 | 1 行转发 |
-| `runtime-mobile-speech-catalog.ts` | 三处 `SPEECH_MODEL_CATALOG` / `getCatalogModel` 改读 manager | 3 行转发 |
-| `speech-model-deletion.ts` | `getCatalogModel` 改读 manager | 1 行转发 |
-| `ipc/register-core-handlers/register-core-handlers.ts`、`preload/index.ts`、`runtime/rpc/methods/index.ts` | 注册 `workbenchSpeech:*` / `workbench.speech.*` | 注册行 |
-| `global-settings-types.ts`、`default-global-settings.ts`、`normalize-loaded-global-settings.ts` | 新键 `workbenchSpeech` | 3 处字段 |
-| `components/dictation/DictationController.tsx` | 起听写前 `await resolveDictationHotwords()`（壳外返回 undefined） | 1 处钩子 |
-| `components/settings/VoicePane.tsx` | 末尾挂 `WorkbenchVoiceSections` | 1 处挂载 |
-| `native-chat` 回复行 | 「朗读」按钮 | 1 处挂载 |
-| `package.json`、`electron-builder.config.cjs` | `sherpa-onnx*` 升 1.13.8；ITN 小进程随包（若选 A） | 版本与资源 |
-| 退役 | `openai-transcription-client.ts`、`openai-api-key-store.ts`、`OpenAiTranscription*.tsx` | 删除，功能由端点承接 |
+承载方式 2026-10-10 裁定：BW 叠层模块 + 上游薄挂载。行号是 2026-10-10 `main` 的实际行号。
+
+| 阶段 | 上游文件 | 行 | 现在 → 改成 | 性质 |
+|---|---|---|---|---|
+| 1 | `src/main/startup/main-process-preflight.ts` | 250 | `setSpeechServiceFactories(electronSpeechServiceFactories)` → 壳开启时注入 `workbenchSpeechServiceFactories`，否则原样 | 改 1 行 |
+| 1 | `src/main/ipc/speech.ts` | 17 | `return SPEECH_MODEL_CATALOG` → `getSpeechModelManager(store).getCatalog()` | 改 1 行 |
+| 1 | `src/main/runtime/runtime-mobile-speech-catalog.ts` | 20 · 42 · 79 | `SPEECH_MODEL_CATALOG.map` / `getCatalogModel(id)` ×2 → 改读 manager 目录 | 改 3 行 |
+| 1 | `src/main/speech/speech-model-deletion.ts` | 56 | `getCatalogModel(modelId)` → 改读 manager 目录 | 改 1 行 |
+| 1 | `src/shared/global-settings-types.ts` | 491 旁 | 加 `workbenchSpeech?: WorkbenchSpeechSettings` | +1 字段 |
+| 1 | `src/shared/constants.ts`、`src/main/persistence/loading-store/normalize-loaded-global-settings.ts` | 默认值 / 归一 | 新键默认值与读回归一 | 各 +1 处 |
+| 1 | `src/main/ipc/register-core-handlers/register-core-handlers.ts` | 241 旁 | 加 `registerWorkbenchSpeechHandlers(store)` | +1 行 |
+| 1 | `src/preload/index.ts` | 185 旁 | 加 `workbenchSpeech: workbenchSpeechApi` | +1 行 |
+| 1 | `src/main/runtime/rpc/methods/index.ts` | 65 旁 | 加 `...WORKBENCH_SPEECH_METHODS` | +1 行 |
+| 2 | `src/main/ipc/speech.ts` | 24–36 | 删 `speech:getOpenAiApiKeyStatus / saveOpenAiApiKey / clearOpenAiApiKey` 三条处理器 | 删 13 行 |
+| 2 | `src/preload/api/speech-bridge.ts` | 密钥三方法 | 删 | 删约 9 行 |
+| 2 | `src/renderer/src/components/settings/VoicePane.tsx` | 150–209 · 231–250 | 删 OpenAI 密钥保存 / 清除与两段 JSX；252 前挂 `<WorkbenchVoiceSections/>` | 删约 80 行 + 挂 1 处 |
+| 2 | 退役 | 整文件 | `openai-transcription-client.ts`、`openai-api-key-store.ts`、`OpenAiTranscriptionKeyDialog.tsx`、`OpenAiTranscriptionSettingsRow.tsx`、`voice-pane-search.ts` 的 OpenAI 条目，连同测试 | 删 5 文件 |
+| 3 | `src/renderer/src/components/dictation/DictationController.tsx` | 187 | 第二参 `undefined` → `await resolveDictationHotwords()`（壳外返回 undefined） | 改 1 行 |
+| 3 | `config/electron-builder.config.cjs` | extraResources | `native/itn/` 产物按平台随包 | +1 段 |
+| 4 | `package.json` | 194 · 315–317 | 不动（钉 1.12.37）；升级另裁 | — |
+| — | 上游 `stt-worker.ts`、`stt-service.ts` | — | 壳开启时不加载，不删，留给上游合并 | 不动 |
+
+第二版再挂：`native-chat/NativeChatMessageRow.tsx` 回复行「朗读」按钮。
 
 ### 2.10 存储与隐私
 
@@ -233,7 +243,7 @@ Voice 面板下方挂 BW 段（`isWorkbenchShell()` 时渲染）：推理（线�
 | V06 | 选端点派生模型听写，同一句经同一条流水线上屏；指示器显示端点名 |
 | V07 | 杀进程重开：端点、导入模型、词典路径原样读回，探测状态显示「上次时间」且重测 |
 | V08 | 线程数改 4，worker 以 4 线程建 recognizer（日志可核） |
-| V09 | 朗读：选本地 TTS 模型，点一条 agent 回复的「朗读」出声，再点打断 |
+| V09 | （第二版）朗读：选本地 TTS 模型，点一条 agent 回复的「朗读」出声，再点打断 |
 | V10 | 旧 OpenAI 密钥文件首启迁成端点 `openai`，旧文件删除，原两模型仍可选 |
 | VJ01 | 旅程：接入项目 → 写项目词典 → 会话屏口述带术语和数字的指令 → 回车发给 agent → 重启后再说一次结果一致 |
 | VJ02 | 旅程：进内网机器 → 加镜像 → 下载一个小模型 → 加端点并测通 → 两种引擎各听写一次 |
@@ -242,27 +252,28 @@ Voice 面板下方挂 BW 段（`isWorkbenchShell()` 时渲染）：推理（线�
 
 ### 3.2 里程碑
 
-| 里程碑 | 内容 | 今天实测 / 依据 |
+| 阶段 | 内容 | 今天实测 / 依据 |
 |---|---|---|
-| 阶段 1 契约与接管 | 共享契约、`speech-service.ts` 经工厂注入接管现有 12 模型行为不变、目录数据化、设置新键 | 工厂注入点已读；目录与 worker 协议已读；0 行为变化可用现有听写核 |
-| 阶段 2 远端端点 | 端点表、密钥、`net.fetch`、测一下、OpenAI 迁成预置端点、退役旧文件 | OpenAI 客户端 137 行已读，接口形状可直接泛化 |
-| 阶段 3 后处理 | strip / lexicon / punctStyle + 项目词典 + 热词钩子；ITN 按裁决落 A 或 B | 调研数据与 poc 已核；`pinyin-pro` 无依赖 |
-| 阶段 4 升 1.13.8 + 导入 | 主包与五个平台包升级、worker 按 manifest 建配置、导入流程、镜像、VAD、重采样 | 1.13.8 Node 包接口已读；`npm view` 核实主包 `sherpa-onnx` 与 darwin-arm64 / darwin-x64 / linux-arm64 / linux-x64 / win-x64 五个平台包 1.13.8 均已发布（win-ia32 本仓不用） |
-| 阶段 5 朗读 | tts-worker、播放、朗读按钮、自动朗读、远端 TTS | `OfflineTts.generateAsync` + `onProgress` 已读；kokoro / matcha 模型文件清单待核 |
+| 1 契约与接管 | 共享契约、`speech-service.ts` 经工厂注入接管现有 12 模型行为不变、目录数据化、设置新键、三处注册 | 注入点 `preflight.ts:250`、目录 5 处引用、worker init 协议已逐文件读 |
+| 2 远端端点 | 端点表、密钥、`net.fetch`、测一下、OpenAI 迁成预置端点、退役旧文件 | OpenAI 客户端 137 行已读，接口形状可直接泛化 |
+| 3 后处理与词典 | strip / lexicon / punctStyle + 词典编译（术语库、人名库）+ 热词钩子 + ITN 小进程 `native/itn/` | 调研数据与 rustfst 验证程序已核（29 MB 常驻、3.5 ms/句）；`pinyin-pro` 无依赖；两个库的来源待 spec 定 |
+| 4 导入与镜像 | manifest 驱动 worker（现版五族）、导入流程、镜像；钉 1.12.37 | worker 五族分支与文件角色已读；`npm view` 核实 1.13.8 主包与 darwin-arm64 / darwin-x64 / linux-arm64 / linux-x64 / win-x64 五个平台包已发布，升级裁定后可用 |
+| 第二版 | 朗读（tts-worker、播放、朗读按钮、自动朗读、远端 TTS）；`sherpa-onnx` 升级与新模型族 | `OfflineTts.generateAsync` + `onProgress` 已读；kokoro / matcha 模型文件清单待核 |
 
 ### 3.3 风险与未验证
 
-- `sherpa-onnx` 1.12.37 → 1.13.8 的 C API 变化可能影响上游 worker 的裸 `require` 调用，阶段 4 要在三平台各跑一次。
+- 若裁定升 `sherpa-onnx` 1.13.8，C API 变化可能影响 worker 的裸 `require` 调用，要在三平台各跑一次；第一版钉 1.12.37 没有这项风险。
+- ITN 小进程是本仓第一个随包的 Rust 产物，三平台构建链（含 Windows）未搭，阶段 3 前要先打通一次。
 - 远端 SSE 增量格式各服务不一，`stream` 默认关。
 - Qwen3-ASR 目前只能走远端端点（如 DashScope OpenAI 兼容模式）或等 Node 绑定补配置键；本地不承诺。
 - 配对端只做兼容，新引擎在手机上是否可选未验。
 - Windows 非 ASCII 路径对导入模型同样适用，导入时要走同一套 ASCII 缓存判断。
 
-## §4 待决（实现选型，与 intent 的产品待决同一张决策投影拍板）
+## §4 已裁（2026-10-10，评审卡回传）
 
-1. 承载方式：BW 叠层模块 + 上游薄挂载（推荐），还是原地重写 `src/main/speech/`。
-2. 数字转写（ITN）路线：A 复用已验证的 Rust FST 验证程序做随包小进程（推荐）；B TypeScript 自写规则；C sherpa 自带规则 FST（实测不够用，列出只为排除）。
-3. 远端协议：只做 OpenAI 兼容（推荐），还是同时接 DashScope 原生接口。
-4. `sherpa-onnx` 由 1.12.37 升到 1.13.8（推荐），还是钉住现版只做远端与后处理。
+1. 承载方式：**A** BW 叠层模块 + 上游薄挂载（§2.9）。
+2. 数字转写：**A** 复用已验证的 Rust FST 程序做随包小进程 `native/itn/`（§2.6）。
+3. 远端协议：**A** 只做 OpenAI 兼容（§2.4）。
+4. `sherpa-onnx` 升不升 1.13.8：**未裁**（批注「tts 先不管，所以 sherpa-onnx 升不升不清楚」）。本篇按钉 1.12.37 写；升级的触发条件 = 要导入 zipformerCtc / dolphin / fireRedAsr / moonshine 任一新族，或第二版朗读立项；到时单独裁。
 
-产品待决（第一版范围、词典来源、远端隐私、intent 认不认）在 [intent](intent.md)。决策投影：<https://claude.ai/artifact/3utgbpR4X8qkbKp5DqeVtS>（私有，拍板结果回传到它的数据库，再由会话回写本篇与 intent，然后开 spec）。
+产品侧已决（第一版只听写、词典来源术语库与人名库、选端点即授权、intent 认）在 [intent](intent.md)。决策投影：<https://claude.ai/artifact/3utgbpR4X8qkbKp5DqeVtS>（私有；答案在它的数据库 `gates/voice`，version 3）。
