@@ -25,9 +25,8 @@
 
 `## 本周纳入` 先写已经挂了这个版本的 `#iid`,再写新拆。从别的版本遗留后又纳入本版的,可写 `#iid（自 <旧版本> 遗留）` 给人阅读；评论不是版本归属正本，新拆的不写遗留。
 
-## 标签
+## 历史标签与导入
 
-确认版本后,先给**这个更新指标与版本计划 Issue 自身**改标题为「更新指标 + 制定版本计划 <版本名>」,并增加 `bw:plan:<版本名>`(界面靠这个判断本周做过)。纳入的业务 Issue 也增加本版 plan，保留已有旧版 plan；一个 Issue 可以同时属于多个版本。完整标签纪律听 `issue-state.md`。裸 `codehub-cli issue update --labels …` 是整张替换——先读回全部标签、加入本版 plan 后完整写回；GitHub 精确 `--add-label`。写后读回，确认没有盖掉既有 `bw:plan` / `bw:status` / `bw:released` / `bw:category`。纳入的 Issue 还没有 `bw:category:*` 的再补 `{prototype|build|optimize|growth|ops}`。
-版本名推荐 `vX.X`(如 `v0.3` / `v1.0`),人要用别的也行。不要打 `bw:week`。会话里改标签不会走 Workbench 投影,要自己打。
+旧流程曾通过 `bw:plan:<版本>`、`bw:status:*`、`bw:released:*` 与 `bw:category:*` 标签表达纳入、执行和交付关系，并可能挂 provider 里程碑。这些只用于核对当时的记录，不指导现行新写或恢复旧状态机。
 
-codehub 再挂同名里程碑(没有就建,起止默认本周周一到周五)。挂不上就说,不回滚标签,不阻塞评论。GitHub 不投影。计划屏「创建版本」只建系统入口和标签，新版目标在 JSON,里程碑同样只补充。
+导入前保留原评论/提交来源，将用户已确认的版本与目标映射到现行计划的任务引用；未确认关联留待核。当前状态读 provider 原生字段，当前材料契约见 [version-records.md](version-records.md)，Issue 写入边界见 [issue-state.md](issue-state.md)。不改历史评论来伪装当时已采用新契约。

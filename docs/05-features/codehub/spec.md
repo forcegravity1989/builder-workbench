@@ -72,4 +72,4 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 
 任务列表不挂在 GitHub 的 `listWorkItems` 后面，避免远程解析失败时静默降级。归档不用「提交已经在分支上」代替平台合入证据，以免没数据时显示成已完成。
 
-待决项见 [intent](intent.md)：边界是否含计划 / 验收、关单不写状态标签是否长期保留、合入证据何时才允许离开未知。可点原型仍缺。
+待决项见 [intent](intent.md)：边界是否含计划 / 验收、合入证据何时才允许离开未知。两种 provider 均使用原生 Issue 状态；CodeHub 以关单评论记录理由，GitHub 使用原生关闭原因，不写工作状态标签。可点原型仍缺。

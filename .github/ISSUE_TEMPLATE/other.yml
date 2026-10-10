@@ -1,16 +1,21 @@
-name: Other
-description: Report another Orca issue type
-title: '[Other]: '
+name: 讨论或预研
+description: 记录尚需判断价值、范围或方案的 Workbench 问题
 body:
   - type: markdown
     attributes:
       value: |
-        Please write your issue in English.
-
+        预研先明确要回答的问题及判断条件，不直接承诺实现。需要保留、合并或关闭由人决定。
   - type: textarea
-    id: details
+    id: problem
     attributes:
-      label: Details
-      description: Share the context, request, or issue. Include a short summary here too.
+      label: 问题与范围
+      description: 什么问题需要讨论？已有事实、原始来源和范围是什么？
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收条件
+      description: 需要回答哪些问题，出现什么证据后继续、停止或作决定？未知处写待确认。
     validations:
       required: true
