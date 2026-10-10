@@ -153,7 +153,7 @@ export function getScheduleFlag(
   const dayOfWeek = raw === 'weekly' ? (getOptionalDayFlag(flags) ?? 1) : 1
   const rrule = PRESET_TRIGGERS.has(raw as AutomationSchedulePreset)
     ? buildAutomationRrule({
-        preset: raw as Exclude<AutomationSchedulePreset, 'custom'>,
+        preset: raw as Exclude<AutomationSchedulePreset, 'custom' | 'once'>,
         hour,
         minute,
         dayOfWeek

@@ -2,6 +2,7 @@ import { toast } from 'sonner'
 import type {
   Automation,
   AutomationCreateInput,
+  AutomationSchedulePreset,
   AutomationUpdateInput
 } from '../../../../shared/automations-types'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
@@ -72,7 +73,8 @@ export async function saveOrcaAutomation(
     draft.preset === 'custom'
       ? draft.customSchedule.trim()
       : buildAutomationRrule({
-          preset: draft.preset,
+          // 'once' 走 onceAt 而非 rrule，编辑器接线前的草稿不可能持有它。
+          preset: draft.preset as Exclude<AutomationSchedulePreset, 'custom' | 'once'>,
           hour: time.hour,
           minute: time.minute,
           dayOfWeek: Number(draft.dayOfWeek)

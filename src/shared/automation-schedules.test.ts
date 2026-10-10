@@ -314,4 +314,40 @@ describe('automation schedules', () => {
     expect(() => parseSchedule('FREQ=MINUTELY;INTERVAL=abc')).toThrow()
     expect(() => parseSchedule('FREQ=DAILY;BYHOUR=9;BYMINUTE=0;COUNT=0')).toThrow()
   })
+
+  it('computes every-90-minute occurrences from dtstart without hour boundaries', () => {
+    const rrule = 'FREQ=MINUTELY;INTERVAL=90'
+    const dtstart = new Date('2026-05-13T10:00:00').getTime()
+    // 出现集：11:30、13:00、14:30……不受小时边界影响。
+    expect(nextAutomationOccurrenceAfter(rrule, dtstart, dtstart)).toBe(
+      new Date('2026-05-13T11:30:00').getTime()
+    )
+    expect(
+      nextAutomationOccurrenceAfter(rrule, dtstart, new Date('2026-05-13T12:00:00').getTime())
+    ).toBe(new Date('2026-05-13T13:00:00').getTime())
+    expect(
+      latestAutomationOccurrenceAtOrBefore(rrule, dtstart, new Date('2026-05-13T14:20:00').getTime())
+    ).toBe(new Date('2026-05-13T13:00:00').getTime())
+    // dtstart 后不足一个间隔：尚无出现。
+    expect(
+      latestAutomationOccurrenceAtOrBefore(rrule, dtstart, new Date('2026-05-13T11:00:00').getTime())
+    ).toBeNull()
+
+    // buildAutomationRrule：间隔与次数上限往返。
+    expect(
+      buildAutomationRrule({
+        preset: 'every_n_minutes',
+        hour: 9,
+        minute: 0,
+        intervalMinutes: 90,
+        runCountCap: 5
+      })
+    ).toBe('FREQ=MINUTELY;INTERVAL=90;COUNT=5')
+    expect(
+      buildAutomationRrule({ preset: 'every_n_hours', hour: 9, minute: 0, intervalMinutes: 120 })
+    ).toBe('FREQ=MINUTELY;INTERVAL=120')
+    expect(buildAutomationRrule({ preset: 'daily', hour: 9, minute: 0, runCountCap: 3 })).toBe(
+      'FREQ=DAILY;BYHOUR=9;BYMINUTE=0;COUNT=3'
+    )
+  })
 })

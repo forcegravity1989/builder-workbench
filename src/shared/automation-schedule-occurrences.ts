@@ -40,25 +40,43 @@ function scanDayCandidates(rule: ParsedRrule, anchor: number, direction: 1 | -1)
   return null
 }
 
+function withRunCountCap(rrule: string, cap: number | undefined): string {
+  return cap === undefined ? rrule : `${rrule};COUNT=${Math.max(1, Math.floor(cap))}`
+}
+
 export function buildAutomationRrule(args: {
-  preset: Exclude<AutomationSchedulePreset, 'custom'>
+  preset: Exclude<AutomationSchedulePreset, 'custom' | 'once'>
   hour: number
   minute: number
   dayOfWeek?: number
+  /** every_n_minutes / every_n_hours 的间隔（统一换算为分钟）。 */
+  intervalMinutes?: number
+  /** 可选执行次数上限 → ;COUNT=n。仅预设节奏可用；自定义 cron 不支持（存储只在 rrule）。 */
+  runCountCap?: number
 }): string {
   const hour = Math.max(0, Math.min(23, Math.floor(args.hour)))
   const minute = Math.max(0, Math.min(59, Math.floor(args.minute)))
+  if (args.preset === 'every_n_minutes' || args.preset === 'every_n_hours') {
+    const interval = Math.max(1, Math.floor(args.intervalMinutes ?? 60))
+    return withRunCountCap(`FREQ=MINUTELY;INTERVAL=${interval}`, args.runCountCap)
+  }
   if (args.preset === 'hourly') {
-    return `FREQ=HOURLY;BYMINUTE=${minute}`
+    return withRunCountCap(`FREQ=HOURLY;BYMINUTE=${minute}`, args.runCountCap)
   }
   if (args.preset === 'weekdays') {
-    return `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=${hour};BYMINUTE=${minute}`
+    return withRunCountCap(
+      `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=${hour};BYMINUTE=${minute}`,
+      args.runCountCap
+    )
   }
   if (args.preset === 'weekly') {
     const day = DAY_CODES[Math.max(0, Math.min(6, Math.floor(args.dayOfWeek ?? 1)))]
-    return `FREQ=WEEKLY;BYDAY=${day};BYHOUR=${hour};BYMINUTE=${minute}`
+    return withRunCountCap(
+      `FREQ=WEEKLY;BYDAY=${day};BYHOUR=${hour};BYMINUTE=${minute}`,
+      args.runCountCap
+    )
   }
-  return `FREQ=DAILY;BYHOUR=${hour};BYMINUTE=${minute}`
+  return withRunCountCap(`FREQ=DAILY;BYHOUR=${hour};BYMINUTE=${minute}`, args.runCountCap)
 }
 
 export function buildAutomationCronSchedule(args: {
@@ -107,6 +125,16 @@ export function nextAutomationOccurrenceAfter(
     }
     throw new Error('Unable to compute next automation run.')
   }
+  if (rule.freq === 'MINUTELY') {
+    // 间隔型走 dtstart + k×interval 纯数学（k≥1，dtstart 只是锚点），不受小时边界影响。
+    const intervalMs = rule.interval * MINUTE_MS
+    const k = Math.max(1, Math.ceil((after - dtstart) / intervalMs))
+    let candidate = dtstart + k * intervalMs
+    if (candidate <= after) {
+      candidate += intervalMs
+    }
+    return candidate
+  }
   if (rule.freq === 'HOURLY') {
     const start = Math.max(dtstart, after)
     const base = new Date(start)
@@ -142,6 +170,11 @@ export function latestAutomationOccurrenceAtOrBefore(
       candidate -= MINUTE_MS
     }
     return null
+  }
+  if (rule.freq === 'MINUTELY') {
+    const intervalMs = rule.interval * MINUTE_MS
+    const k = Math.floor((now - dtstart) / intervalMs)
+    return k >= 1 ? dtstart + k * intervalMs : null
   }
   if (rule.freq === 'HOURLY') {
     const base = new Date(now)
