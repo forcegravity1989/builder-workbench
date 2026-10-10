@@ -17,6 +17,22 @@ export type CodeHubFileRead =
   /** 其他失败：CLI 缺失、未登录、网络、无权限。 */
   | { kind: 'failed'; error: string }
 
+/**
+ * `--jq` 输出是 JSON 编码值（如 `'"master"'`）；带引号直接当 `--ref` 会 404 Commit Not Found，
+ * 必须剥掉编码才是可用的分支名。
+ */
+function parseJqString(text: string): string | null {
+  if (!text || text === 'null') {
+    return null
+  }
+  try {
+    const parsed = JSON.parse(text) as unknown
+    return typeof parsed === 'string' ? parsed.trim() : null
+  } catch {
+    return text.trim()
+  }
+}
+
 export async function fetchCodeHubRepoFileRaw(args: {
   remote: CodeHubRemote
   execOptions?: CodeHubExecOptions
@@ -44,14 +60,15 @@ export async function fetchCodeHubRepoFileRaw(args: {
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
     const lower = message.toLowerCase()
-    if (lower.includes('branch not found') || lower.includes('ref not found')) {
+    if (
+      lower.includes('branch not found') ||
+      lower.includes('ref not found') ||
+      // ref 解析不到 commit 也是「分支读不到」，不能混同「仓里没有该文件」。
+      lower.includes('commit not found')
+    ) {
       return { kind: 'ref-missing' }
     }
-    if (
-      lower.includes('404') ||
-      lower.includes('not found') ||
-      lower.includes('does not exist')
-    ) {
+    if (lower.includes('404') || lower.includes('not found') || lower.includes('does not exist')) {
       return { kind: 'absent' }
     }
     return { kind: 'failed', error: message }
@@ -68,8 +85,7 @@ export async function viewCodeHubProject(args: {
       ['project', 'view', ...projectArgs(args.remote), '--jq', '.default_branch'],
       args.execOptions
     )
-    const text = stdout.trim()
-    return { exists: true, defaultBranch: text && text !== 'null' ? text : null, error: null }
+    return { exists: true, defaultBranch: parseJqString(stdout.trim()), error: null }
   } catch (first) {
     // --jq 形态不可用或查询失败:退回裸 project view(main 正本 probe_repo)判存在性。
     try {
