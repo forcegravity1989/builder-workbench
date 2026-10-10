@@ -15,7 +15,7 @@
 | 术语 | 含义与边界 | 相关正本 |
 |---|---|---|
 | Builder / 构建者 | 使用 Workbench、负责方向和验收的人；普通说明可称“用户” | [产品主张][claim] |
-| Connector / 连接器 | 执行工具（Claude Code、Codex）接入外部服务用的 MCP 服务，配置在执行工具自己那里；已添加、已登录、连得上是三种不同状态 | [Connector 规格](docs/05-features/connectors/spec.md) |
+| Connector / 连接器 | 执行工具（Claude Code、Codex）接入外部服务用的 MCP 服务，配置在执行工具自己那里；已添加、已登录、连得上是三种不同状态 | [Connector 规格][connectors] |
 | 开工工具 / Agent CLI | 执行工作的工具，如 Claude Code、Codex、Cursor、Open Design；不等于其调用的模型 | [会话与执行][session] |
 | 插件 / Plugin | 外部技能库的分发包，不等于单个技能或工作流；设置页列出不等于支持安装、更新或启停 | [技能与蒸馏][skills] |
 | 技能 / Skill | 可复用做法包，含 SKILL.md 及支撑文件；列出、被引用与实际注入是不同状态 | [技能与蒸馏][skills] |
@@ -109,6 +109,7 @@
 [backwards]: docs/01-principles/02-working-backwards.md
 [arch]: docs/architecture.md
 [shell]: docs/06-module/桌面壳.md
+[connectors]: docs/05-features/connectors/spec.md
 [session]: docs/06-module/会话与执行.md
 [skills]: docs/06-module/技能与蒸馏.md
 [prompt]: docs/06-module/系统提示词与渐进加载.md

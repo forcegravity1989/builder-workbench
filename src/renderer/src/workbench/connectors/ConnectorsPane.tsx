@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LoaderCircle, Plus, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { OnboardingInlineCommandTerminal } from '@/components/onboarding/OnboardingInlineCommandTerminal'
@@ -25,6 +25,8 @@ const AGENTS: ConnectorAgent[] = ['claude', 'codex']
 
 type Running = { commandLine: string; title: string }
 
+type Loaded = ConnectorListResult & { forRepo: string | null }
+
 function useConnectorShell(): { shell: ConnectorShell; shellOverride: string | undefined } {
   return useMemo(() => {
     // 命令按 PowerShell 语法拼；Windows 上不论默认终端是什么都钉 PowerShell。
@@ -35,49 +37,69 @@ function useConnectorShell(): { shell: ConnectorShell; shellOverride: string | u
   }, [])
 }
 
-function useCurrentProject(): { id: string; name: string; path: string } | null {
+function useActiveRepo(): { id: string; name: string } | null {
   const activeRepoId = useAppStore((s) => s.activeRepoId)
   const repo = useAppStore((s) => s.repos.find((r) => r.id === activeRepoId))
-  // SSH 仓库上的项目级 connector 在远端机器，本页只管本机。
-  return repo && !repo.connectionId
-    ? { id: repo.id, name: repo.displayName, path: repo.path }
-    : null
+  return useMemo(() => (repo ? { id: repo.id, name: repo.displayName } : null), [repo])
 }
 
 export function ConnectorsPane(): React.JSX.Element {
-  const project = useCurrentProject()
+  const activeRepo = useActiveRepo()
   const { shell, shellOverride } = useConnectorShell()
   const detection = useDetectedAgents(null)
   const installedAgents = useMemo(
     () => AGENTS.filter((a) => detection.detectedIds?.includes(a)),
     [detection.detectedIds]
   )
-  const [result, setResult] = useState<ConnectorListResult | null>(null)
+  const [result, setResult] = useState<Loaded | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [running, setRunning] = useState<Running | null>(null)
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null)
 
-  const projectId = project?.id ?? null
+  const repoId = activeRepo?.id ?? null
+  // 一次列表要好几秒；切项目、连点重新检测、终端多次报结束都会叠请求，只认最后一次。
+  const latestRequest = useRef(0)
   const reload = useCallback(async (): Promise<void> => {
+    const request = ++latestRequest.current
     setLoading(true)
     setLoadError(null)
     try {
-      setResult(await listConnectors(projectId))
+      const next = await listConnectors(repoId)
+      if (request === latestRequest.current) {
+        setResult({ ...next, forRepo: repoId })
+      }
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : String(error))
+      if (request === latestRequest.current) {
+        setLoadError(error instanceof Error ? error.message : String(error))
+      }
     } finally {
-      setLoading(false)
+      if (request === latestRequest.current) {
+        setLoading(false)
+      }
     }
-  }, [projectId])
+  }, [repoId])
 
   useEffect(() => {
     void reload()
   }, [reload])
 
+  // 只有主进程确认在本机项目目录里读过，才算有当前项目（SSH 或目录不在时它回 null）。
+  const projectPath = result && result.forRepo === activeRepo?.id ? result.projectPath : null
+  const project = useMemo(
+    () => (activeRepo && projectPath ? { name: activeRepo.name, path: projectPath } : null),
+    [activeRepo, projectPath]
+  )
   const rows = useMemo(() => (result ? mergeConnectorRows(result) : []), [result])
-  const existingNames = useMemo(() => new Set(rows.map((r) => r.name)), [rows])
+  const existing = useMemo(
+    () => new Map(rows.map((r) => [r.name, AGENTS.filter((a) => r.agents[a])])),
+    [rows]
+  )
+  const recheck = (): void => {
+    void detection.refresh()
+    void reload()
+  }
 
   const run = (commands: Parameters<typeof renderCommandLine>[0], title: string): void => {
     setRunning({ commandLine: renderCommandLine(commands, shell, project?.path), title })
@@ -113,7 +135,8 @@ export function ConnectorsPane(): React.JSX.Element {
             variant="ghost"
             size="icon-sm"
             aria-label="重新检测"
-            onClick={() => void reload()}
+            disabled={loading}
+            onClick={recheck}
           >
             {loading ? (
               <LoaderCircle className="size-3.5 animate-spin" />
@@ -155,7 +178,7 @@ export function ConnectorsPane(): React.JSX.Element {
         ) : (
           <ConnectorAddPanel
             installedAgents={installedAgents}
-            existingNames={existingNames}
+            existing={existing}
             project={project}
             shell={shell}
             onRun={(commandLine, title) => setRunning({ commandLine, title })}

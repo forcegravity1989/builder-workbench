@@ -14,8 +14,8 @@ import {
 import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
 import { WorkspaceScopeError } from './workspace-scope-error'
 
-/** `claude mcp list` 会逐个连一遍服务；实测 8 个约 6.5 秒，留足余量。 */
-const LIST_TIMEOUT_MS = 30_000
+/** `claude mcp list` 会并行连一遍服务，单个服务自己最多等约 30 秒；整体留到 60 秒。 */
+const LIST_TIMEOUT_MS = 60_000
 
 export type ConnectorRuntimeHost = {
   listRepos(): Pick<Repo, 'id' | 'path' | 'connectionId' | 'executionHostId'>[]

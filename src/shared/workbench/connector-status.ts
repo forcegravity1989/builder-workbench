@@ -12,42 +12,42 @@ import {
 export type ConnectorProbe = { state: ConnectorState; detail?: string }
 
 /**
- * `claude mcp list` 的行形如 `name: target - ✔ Connected`。名称取第一个 `: `
- * 之前，状态取最后一个 ` - ` 之后——目标里可能含 ` - `，名称里不会含 `: `。
+ * `claude mcp list` 的行形如 `name: target - ✔ Connected`。名称取第一个 `: ` 之前；
+ * 状态从目标后第一个「 - 状态符号」起算——目标与失败原因里都可能出现 ` - `。
+ * 名称不合规的行（插件与 claude.ai 账号里的服务，名称带冒号或空格）不列。
  */
+const CLAUDE_LINE = /^([^:\s]+): (.*?) - ([✔✘!⏸⊘].*|- .*)$/
+
 export function parseClaudeMcpList(
   stdout: string
 ): Map<string, ConnectorProbe & { target: string }> {
   const out = new Map<string, ConnectorProbe & { target: string }>()
   for (const raw of stdout.split(/\r?\n/)) {
-    const line = raw.trim()
-    const colon = line.indexOf(': ')
-    const dash = line.lastIndexOf(' - ')
-    if (colon <= 0 || dash <= colon) {
+    const m = CLAUDE_LINE.exec(raw.trim())
+    if (!m || !isValidConnectorName(m[1])) {
       continue
     }
-    const name = line.slice(0, colon)
-    if (!isValidConnectorName(name)) {
-      continue
-    }
-    out.set(name, { ...claudeStatus(line.slice(dash + 3)), target: line.slice(colon + 2, dash) })
+    out.set(m[1], { ...claudeStatus(m[3]), target: m[2] })
   }
   return out
 }
 
 function claudeStatus(text: string): ConnectorProbe {
-  if (/Connected/i.test(text) && !/Failed/i.test(text)) {
+  if (/^✔ Connected\b/.test(text)) {
     return { state: 'connected' }
   }
-  if (/Needs authentication/i.test(text)) {
+  if (/^! Needs authentication\b/.test(text)) {
     return { state: 'needs-auth' }
   }
-  if (/Pending approval/i.test(text)) {
+  if (text.startsWith('⏸')) {
     return { state: 'pending-approval' }
   }
-  const failed = /Failed to connect\s*[—-]?\s*(.*)$/i.exec(text)
-  if (failed) {
-    return { state: 'failed', detail: failed[1]?.trim() || undefined }
+  if (text.startsWith('⊘')) {
+    return { state: 'disabled' }
+  }
+  if (text.startsWith('✘')) {
+    const reason = /^✘ [^—]*—\s*(.+)$/.exec(text)?.[1] ?? text.slice(1).trim()
+    return { state: 'failed', detail: reason }
   }
   return { state: 'unknown', detail: text }
 }
@@ -73,9 +73,18 @@ export function parseCodexMcpListJson(stdout: string): CodexConnectorRow[] | nul
     if (typeof rec.name !== 'string') {
       continue
     }
+    if (isCodexPluginServer(rec.transport)) {
+      continue
+    }
     rows.push({ name: rec.name, target: codexTarget(rec.transport), ...codexState(rec) })
   }
   return rows
+}
+
+// 插件自带的服务不在 config.toml 里，`codex mcp remove` 删不掉；与 Claude 侧插件服务一样不列。
+function isCodexPluginServer(transport: unknown): boolean {
+  const cwd = (transport as Record<string, unknown> | null)?.cwd
+  return typeof cwd === 'string' && /[\\/]plugins[\\/]cache[\\/]/.test(cwd)
 }
 
 function codexTarget(transport: unknown): ConnectorTarget | null {

@@ -47,7 +47,8 @@ export const CONNECTOR_CATALOG: readonly ConnectorCatalogEntry[] = [
   { name: 'context7', title: 'Context7', url: 'https://mcp.context7.com/mcp', oauth: false }
 ]
 
-const NAME_PATTERN = /^[A-Za-z0-9_-]{1,64}$/
+// 首字符不许是 `-`：否则两家 CLI 会把名称当成选项。
+const NAME_PATTERN = /^[A-Za-z0-9_][A-Za-z0-9_-]{0,63}$/
 
 export function isValidConnectorName(name: string): boolean {
   return NAME_PATTERN.test(name)
@@ -105,12 +106,21 @@ export function splitCommandLine(line: string): string[] | null {
 
 export type ConnectorShell = 'posix' | 'powershell'
 
+// PowerShell 里 `,` 是数组、`@` 开头是展开、`-` 开头可能被脚本吞掉（npm 的 .ps1
+// 垫片会消费裸 `--`，`--%` 会停止解析）；POSIX 里开头的 `=` 会被 zsh 展开成路径。
+const SAFE_ARG: Record<ConnectorShell, RegExp> = {
+  posix: /^[A-Za-z0-9_\-./:@%+,][A-Za-z0-9_\-./:=@%+,]*$/,
+  powershell: /^[A-Za-z0-9_./:%+][A-Za-z0-9_\-./:=%+]*$/
+}
+
 export function quoteShellArg(arg: string, shell: ConnectorShell): string {
-  if (/^[A-Za-z0-9_\-./:=@%+,]+$/.test(arg)) {
+  if (SAFE_ARG[shell].test(arg)) {
     return arg
   }
-  // PowerShell 与 POSIX 单引号内都不展开变量；内部单引号的转义写法不同。
-  return shell === 'powershell' ? `'${arg.replace(/'/g, "''")}'` : `'${arg.replace(/'/g, `'\\''`)}'`
+  // 单引号内两边都不展开变量。PowerShell 把弯单引号也当单引号，一并成对转义。
+  return shell === 'powershell'
+    ? `'${arg.replace(/['\u2018-\u201B]/g, (q) => q + q)}'`
+    : `'${arg.replace(/'/g, `'\\''`)}'`
 }
 
 function joinArgs(args: string[], shell: ConnectorShell): string {
@@ -179,7 +189,7 @@ export function buildLoginCommand(agent: ConnectorAgent, name: string): Connecto
   return { agent, argv: [agent, 'mcp', 'login', name] }
 }
 
-/** 不带范围：Claude Code 从名称所在的那一级移除。 */
+/** 不带范围：名称只在一级时 Claude Code 从那一级移除；同名在多级时它会拒绝，终端里如实报错。 */
 export function buildRemoveCommand(agent: ConnectorAgent, name: string): ConnectorCommand {
   return { agent, argv: [agent, 'mcp', 'remove', name] }
 }

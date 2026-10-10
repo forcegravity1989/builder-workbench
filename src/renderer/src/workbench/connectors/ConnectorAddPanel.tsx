@@ -21,7 +21,8 @@ type CustomKind = 'http' | 'sse' | 'stdio'
 
 type Props = {
   installedAgents: ConnectorAgent[]
-  existingNames: ReadonlySet<string>
+  /** 名称 → 已经装了它的执行工具。同名即同一个 connector，可以补装到没装的工具上。 */
+  existing: ReadonlyMap<string, ConnectorAgent[]>
   project: { name: string; path: string } | null
   shell: ConnectorShell
   onRun: (commandLine: string, title: string) => void
@@ -30,7 +31,7 @@ type Props = {
 
 export function ConnectorAddPanel({
   installedAgents,
-  existingNames,
+  existing,
   project,
   shell,
   onRun,
@@ -44,9 +45,12 @@ export function ConnectorAddPanel({
   const [agents, setAgents] = useState<ConnectorAgent[]>(installedAgents)
   const [scope, setScope] = useState<ConnectorScope>('user')
 
+  const missingFor = (n: string): ConnectorAgent[] =>
+    installedAgents.filter((a) => !existing.get(n)?.includes(a))
   const pick = (next: ConnectorCatalogEntry | 'custom'): void => {
     setEntry(next)
     setName(next === 'custom' ? '' : next.name)
+    setAgents(next === 'custom' ? installedAgents : missingFor(next.name))
   }
 
   const target = useMemo((): ConnectorTarget | null => {
@@ -75,8 +79,11 @@ export function ConnectorAddPanel({
       }
     : null
   const duplicate =
-    plan && existingNames.has(plan.name)
-      ? `已有名为 ${plan.name} 的 connector，换个名称或先移除它。`
+    plan && plan.agents.some((a) => existing.get(plan.name)?.includes(a))
+      ? `${plan.name} 已装在${plan.agents
+          .filter((a) => existing.get(plan.name)?.includes(a))
+          .map((a) => AGENT_LABEL[a])
+          .join('、')}上：取消勾选，或换个名称。`
       : null
   const problem = plan ? (duplicate ?? validateInstallPlan(plan)) : null
   // 有当前项目就在其目录下执行：Claude Code 的「仅当前项目」按执行目录记录。
@@ -104,9 +111,9 @@ export function ConnectorAddPanel({
           <CatalogCard
             key={item.name}
             title={item.title}
-            sub={item.oauth ? '浏览器登录' : '免登录'}
+            sub={catalogSub(item, existing.get(item.name) ?? [], missingFor(item.name))}
             active={entry !== 'custom' && entry?.name === item.name}
-            disabled={existingNames.has(item.name)}
+            disabled={missingFor(item.name).length === 0}
             onClick={() => pick(item)}
           />
         ))}
@@ -218,6 +225,20 @@ export function ConnectorAddPanel({
   )
 }
 
+function catalogSub(
+  item: ConnectorCatalogEntry,
+  installedOn: ConnectorAgent[],
+  missing: ConnectorAgent[]
+): string {
+  if (installedOn.length === 0) {
+    return item.oauth ? '浏览器登录' : '免登录'
+  }
+  if (missing.length === 0) {
+    return '已添加'
+  }
+  return `已装在 ${installedOn.map((a) => AGENT_LABEL[a]).join('、')}，可补装`
+}
+
 function CatalogCard(props: {
   title: string
   sub: string
@@ -236,7 +257,7 @@ function CatalogCard(props: {
       )}
     >
       <div className="text-sm font-medium">{props.title}</div>
-      <div className="text-xs text-muted-foreground">{props.disabled ? '已添加' : props.sub}</div>
+      <div className="text-xs text-muted-foreground">{props.sub}</div>
     </button>
   )
 }
