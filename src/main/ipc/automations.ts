@@ -1,4 +1,5 @@
-import { ipcMain } from 'electron'
+import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { readFile } from 'node:fs/promises'
 import type { Store } from '../persistence'
 import type { AutomationService } from '../automations/service'
 import type {
@@ -135,4 +136,24 @@ export function registerAutomationHandlers(store: Store, service: AutomationServ
   ipcMain.handle('automations:rendererReady', (): void => {
     service.setRendererReady()
   })
+  // Import entry: one trip picks the portable file and reads it, so the renderer
+  // never handles a bare path. Read failures reject the invoke and surface there.
+  ipcMain.handle(
+    'automations:pickImportFile',
+    async (event): Promise<{ canceled: true } | { canceled: false; content: string }> => {
+      const options = {
+        filters: [{ name: 'Automation', extensions: ['json'] }],
+        properties: ['openFile' as const]
+      }
+      const window = BrowserWindow.fromWebContents(event.sender)
+      const picked = window
+        ? await dialog.showOpenDialog(window, options)
+        : await dialog.showOpenDialog(options)
+      const filePath = picked.canceled ? undefined : picked.filePaths[0]
+      if (!filePath) {
+        return { canceled: true }
+      }
+      return { canceled: false, content: await readFile(filePath, 'utf8') }
+    }
+  )
 }

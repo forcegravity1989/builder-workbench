@@ -1,6 +1,7 @@
 import React from 'react'
 import type { AutomationsPageController } from './use-automations-page-controller'
 import { AutomationsListPanel } from './AutomationsListPanel'
+import { createAutomationPortableFileActions } from './automation-portable-file-actions'
 import { nextAutomationListSort } from './automation-list-view'
 
 export function AutomationsPageListPanel({
@@ -56,6 +57,9 @@ export function AutomationsPageListPanel({
       hostCatalog.selectHost({ kind: 'all' })
     }
   }
+  const portableActions = createAutomationPortableFileActions({
+    openCreateDialog: editorActions.openCreateDialog
+  })
   return (
     <AutomationsListPanel
       hasListItems={hasListItems}
@@ -104,6 +108,8 @@ export function AutomationsPageListPanel({
       setActivePaneTab={setActivePaneTab}
       runNow={(row) => void runActions.runNow(row)}
       openEditDialog={(row) => void editorActions.openEditDialog(row)}
+      exportAutomation={(row) => void portableActions.exportAutomation(row)}
+      importAutomation={() => void portableActions.importAutomation()}
       toggleAutomation={(row) => void managementActions.toggleAutomation(row)}
       requestDeleteAutomation={managementActions.requestDeleteAutomation}
       requestExternalAction={externalActions.requestExternalAction}

@@ -1,5 +1,5 @@
 import React from 'react'
-import { History, Plus, RefreshCw } from 'lucide-react'
+import { History, Plus, RefreshCw, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { translate } from '@/i18n/i18n'
@@ -28,6 +28,8 @@ type AutomationListToolbarProps = {
   onOpenRuns: () => void
   openCreateDialog: (template?: AutomationTemplate) => void
   canCreateAutomation: boolean
+  /** 导入可移植 JSON：选文件 → 校验 → 预填编辑器（宿主/项目/工作区留空）。 */
+  onImport: () => void
 }
 
 export function AutomationListToolbar({
@@ -44,7 +46,8 @@ export function AutomationListToolbar({
   isRefreshing,
   onOpenRuns,
   openCreateDialog,
-  canCreateAutomation
+  canCreateAutomation,
+  onImport
 }: AutomationListToolbarProps): React.JSX.Element {
   return (
     <div className="flex shrink-0 items-end justify-between gap-3 pb-4">
@@ -100,6 +103,16 @@ export function AutomationListToolbar({
         >
           <History className="size-4" />
           {translate('auto.components.automations.AutomationListToolbar.runs', 'Runs')}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onImport}
+          disabled={!canCreateAutomation}
+        >
+          <Upload className="size-4" />
+          {translate('auto.components.automations.AutomationListToolbar.importAction', 'Import')}
         </Button>
         <Button
           type="button"

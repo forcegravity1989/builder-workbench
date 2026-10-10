@@ -1,5 +1,5 @@
 import React from 'react'
-import { MoreHorizontal, Pause, Pencil, Play, Trash2 } from 'lucide-react'
+import { FileDown, MoreHorizontal, Pause, Pencil, Play, Trash2 } from 'lucide-react'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -81,6 +81,8 @@ export type AutomationListLocalRowProps = {
   onSelect: (rowKey: string) => void
   onRunNow: (row: AutomationListRow) => void
   onEdit: (row: AutomationListRow) => void
+  /** 导出可移植 JSON；只读动作，不受 owner fence 限制。 */
+  onExport: (row: AutomationListRow) => void
   onToggle: (row: AutomationListRow) => void
   onDelete: (row: AutomationListRow) => void
 }
@@ -132,6 +134,7 @@ export function AutomationListLocalRow({
   onSelect,
   onRunNow,
   onEdit,
+  onExport,
   onToggle,
   onDelete
 }: AutomationListLocalRowProps): React.JSX.Element {
@@ -194,6 +197,11 @@ export function AutomationListLocalRow({
         icon={<Pencil className="size-3.5" />}
         label={translate('auto.components.automations.AutomationsPage.f4612e3f78', 'Edit')}
         onSelect={() => onEdit(row)}
+      />
+      <MenuItem
+        icon={<FileDown className="size-3.5" />}
+        label={translate('auto.components.automations.AutomationsPage.exportAction', 'Export')}
+        onSelect={() => onExport(row)}
       />
       <MenuItem
         disabled={!allows(row, 'toggle')}
@@ -310,6 +318,10 @@ export function AutomationListLocalRow({
               <DropdownMenuItem disabled={!allows(row, 'edit')} onSelect={() => onEdit(row)}>
                 <Pencil className="size-3.5" />
                 {translate('auto.components.automations.AutomationsPage.f4612e3f78', 'Edit')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => onExport(row)}>
+                <FileDown className="size-3.5" />
+                {translate('auto.components.automations.AutomationsPage.exportAction', 'Export')}
               </DropdownMenuItem>
               <DropdownMenuItem disabled={!allows(row, 'toggle')} onSelect={() => onToggle(row)}>
                 {automation.enabled ? (

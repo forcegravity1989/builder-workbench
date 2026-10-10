@@ -44,6 +44,8 @@ export const automationsApi = {
   snapshotWorkspaceName: (args: { workspaceId: string; displayName: string }): Promise<number> =>
     ipcRenderer.invoke('automations:snapshotWorkspaceName', args),
   rendererReady: (): Promise<void> => ipcRenderer.invoke('automations:rendererReady'),
+  pickImportFile: (): Promise<{ canceled: true } | { canceled: false; content: string }> =>
+    ipcRenderer.invoke('automations:pickImportFile'),
   onDispatchRequested: (callback: (request: AutomationDispatchRequest) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, request: AutomationDispatchRequest) =>
       callback(request)

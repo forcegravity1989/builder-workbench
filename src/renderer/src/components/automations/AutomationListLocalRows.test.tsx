@@ -142,6 +142,7 @@ function renderLocalRows(handlers: {
       onSelect={handlers.onSelect}
       onRunNow={vi.fn()}
       onEdit={vi.fn()}
+      onExport={vi.fn()}
       onToggle={vi.fn()}
       onDelete={handlers.onDelete ?? vi.fn()}
     />

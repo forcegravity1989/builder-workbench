@@ -59,7 +59,7 @@ export function useAutomationEditorActions({
   ): void => {
     editRequestRef.current += 1
     const target = request?.draft ?? getDefaultTarget()
-    local.setCreateHostStableKey(request ? hostStableKey(request.host) : null)
+    local.setCreateHostStableKey(request?.host ? hostStableKey(request.host) : null)
     setEditingRowKey(null)
     setEditingAutomationId(null)
     setEditingExternalTarget(null)

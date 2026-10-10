@@ -46,6 +46,8 @@ export type AutomationsApi = {
   markDispatchResult: (result: AutomationDispatchResult) => Promise<AutomationRun>
   snapshotWorkspaceName: (args: { workspaceId: string; displayName: string }) => Promise<number>
   rendererReady: () => Promise<void>
+  /** Portable-file import entry: picks the file and reads it in one trip. */
+  pickImportFile: () => Promise<{ canceled: true } | { canceled: false; content: string }>
   onDispatchRequested: (callback: (request: AutomationDispatchRequest) => void) => () => void
   onChanged: (callback: (payload: AutomationsChangedPayload) => void) => () => void
 }

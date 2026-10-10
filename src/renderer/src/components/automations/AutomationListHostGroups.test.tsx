@@ -89,6 +89,7 @@ async function render(options: {
         onSelect={vi.fn()}
         onRunNow={vi.fn()}
         onEdit={vi.fn()}
+        onExport={vi.fn()}
         onToggle={vi.fn()}
         onDelete={vi.fn()}
         onRecover={vi.fn()}

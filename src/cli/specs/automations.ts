@@ -99,6 +99,34 @@ export const AUTOMATION_COMMAND_SPECS: CommandSpec[] = [
     ]
   },
   {
+    path: ['automations', 'export'],
+    summary: 'Export one automation to a portable JSON file',
+    usage: 'orca automations export <id> [--file <path>]',
+    allowedFlags: [...GLOBAL_FLAGS, 'id', 'file'],
+    positionalArgs: ['id'],
+    notes: [
+      'Machine-bound fields (host, project, workspace, enablement, counters, timestamps, webhook token) are not exported.',
+      'Without --file the portable JSON is written to stdout.'
+    ],
+    examples: [
+      'orca automations export 2f9e...',
+      'orca automations export 2f9e... --file daily-review.json'
+    ]
+  },
+  {
+    path: ['automations', 'import'],
+    summary: 'Import an automation from a portable JSON file',
+    usage:
+      'orca automations import <file> --repo <selector>|--workspace <selector>|--project <id> [--host <id>|--project-host-setup <id>]',
+    allowedFlags: [...GLOBAL_FLAGS, ...AUTOMATION_TARGET_FLAGS],
+    positionalArgs: ['file'],
+    notes: [
+      'The target must be given explicitly; the imported automation starts disabled.',
+      'An existing automation with the same name is reported, not overwritten.'
+    ],
+    examples: ['orca automations import daily-review.json --repo my-repo']
+  },
+  {
     path: ['automations', 'remove'],
     destructive: true,
     summary: 'Remove an Orca automation and its run history',

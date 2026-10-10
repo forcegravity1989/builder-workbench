@@ -55,11 +55,16 @@ export const HANDLER_GROUPS: readonly HandlerGroup[] = [
       'automations show',
       'automations create',
       'automations edit',
+      'automations export',
+      'automations import',
       'automations remove',
       'automations run',
       'automations runs'
     ],
-    load: async () => (await import('./handlers/automations.js')).AUTOMATION_HANDLERS
+    load: async () => ({
+      ...(await import('./handlers/automations.js')).AUTOMATION_HANDLERS,
+      ...(await import('./handlers/automation-portable-handlers.js')).AUTOMATION_PORTABLE_HANDLERS
+    })
   },
   {
     name: 'project',

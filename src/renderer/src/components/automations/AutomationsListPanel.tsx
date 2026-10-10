@@ -97,6 +97,8 @@ type AutomationsListPanelProps = {
   setActivePaneTab: (tab: AutomationPaneTab) => void
   runNow: (row: AutomationListRow) => void
   openEditDialog: (row: AutomationListRow) => void
+  exportAutomation: (row: AutomationListRow) => void
+  importAutomation: () => void
   toggleAutomation: (row: AutomationListRow) => void
   requestDeleteAutomation: (row: AutomationListRow) => void
   requestExternalAction: (
@@ -155,6 +157,8 @@ export function AutomationsListPanel(props: AutomationsListPanelProps): React.JS
     setActivePaneTab,
     runNow,
     openEditDialog,
+    exportAutomation,
+    importAutomation,
     toggleAutomation,
     requestDeleteAutomation,
     requestExternalAction,
@@ -285,6 +289,7 @@ export function AutomationsListPanel(props: AutomationsListPanelProps): React.JS
     },
     onRunNow: runNow,
     onEdit: openEditDialog,
+    onExport: exportAutomation,
     onToggle: toggleAutomation,
     onDelete: requestDeleteAutomation
   }
@@ -309,6 +314,7 @@ export function AutomationsListPanel(props: AutomationsListPanelProps): React.JS
         onOpenRuns={onOpenRuns}
         openCreateDialog={openCreateDialog}
         canCreateAutomation={canCreateAutomation}
+        onImport={importAutomation}
       />
 
       {listFilterActive || legacyScopeStableKey !== null ? (

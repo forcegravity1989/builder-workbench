@@ -96,7 +96,7 @@ async function resolveDefaultTarget(
   }
 }
 
-async function getExplicitTarget(
+export async function getExplicitTarget(
   flags: Map<string, string | boolean>,
   cwd: string,
   client: Parameters<CommandHandler>[0]['client']

@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-10 新增（定时任务：配置导入导出，portable schema）
+
+- **变更类型**：新增
+- **变更摘要**：定时任务可导出为可移植 JSON 并在另一台机器导入。可移植子集（`schemaVersion:1`）：名称、提示词、precheck、agent、调度（rrule+dtstart，一次性任务为 `onceAt`+空 rrule）、时区、宽限、工作区模式、基线分支、会话复用；机器绑定字段（宿主、项目、工作区、启用态、scheduledRunCount、时间戳、webhookToken）绝不投影也绝不接受——导入文件只能携带配置，不能携带状态。schema 校验指名报错（缺失/类型不符字段名进错误消息），不部分导入。三入口：CLI `orca automations export <id> [--file]`（缺省 stdout）、CLI `orca automations import <file> --repo|--workspace|--project`（目标显式必传，导入起停用 `enabled:false`，同名不覆盖直接报错）、UI 列表行菜单「Export」（复用 `fs.saveDownloadedFile` 保存对话框，零新 IPC）+ 工具栏「Import」（新 IPC `automations:pickImportFile` 一次完成选文件+读内容 → 共享 parser 校验 → 预填原生编辑器，宿主/项目/工作区留空让人选）。导入预填的调度映射诚实往返：预设 rrule 映射回 preset+time；every_n 与未识别的合法调度走 custom 原文（保存透传 customSchedule，不改写）；一次性任务在 UI 指名拒绝（编辑器无法表达一次性时刻，保存路径会撒谎），提示引导用 CLI 导入——CLI 侧全类型支持。`AutomationEditorRequest` 的 create 变体 host 改可选（导入不钉宿主）、draft 可选键扩 6 个（precheck/baseBranch/宽限/savedSchedule/scheduleWarning）。
+- **涉及文件**：
+  - `src/shared/automation-portable-schema.ts`（新增：投影/校验纯函数 + schemaVersion）
+  - `src/shared/automation-portable-schema.test.ts`（新增 2 例：往返+机器绑定排除、指名报错）
+  - `src/cli/handlers/automation-portable-handlers.ts`（新增：export/import 两 handler，独立文件过 max-lines 预算）
+  - `src/cli/handlers/automations.ts`（getExplicitTarget 导出供 import 复用）
+  - `src/cli/specs/automations.ts`（export/import 命令 spec）
+  - `src/cli/handler-group-manifest.ts`（automations 组加两 key、合并加载两 handler 表）
+  - `src/main/ipc/automations.ts`（`automations:pickImportFile`：showOpenDialog+readFile 一次往返）
+  - `src/preload/api/automation-api.ts` / `automations-bridge.ts`（pickImportFile 类型与桥接）
+  - `src/renderer/src/components/automations/automation-portable-file-actions.ts`（新增：导出/导入动作 + buildAutomationImportRequest 调度反向映射）
+  - `src/renderer/src/components/automations/automation-editor-request.ts`（create 变体 host 可选 + draft 扩键）
+  - `src/renderer/src/components/automations/use-automation-editor-actions.ts`（可选 host 适配）
+  - `src/renderer/src/components/automations/AutomationListLocalRow.tsx`（行菜单双入口加 Export）
+  - `src/renderer/src/components/automations/AutomationsListPanel.tsx` / `AutomationListToolbar.tsx` / `AutomationsPageListPanel.tsx`（exportAutomation/importAutomation 穿透 + Import 按钮）
+  - 三个测试文件补新 props（AutomationListLocalRows/AutomationListHostGroups/AutomationsListPanel .test.tsx）
+- **验证**：schema 2/2；renderer automations 813/813；main automations 207/208（1 失败为 external-manager-scoped Windows `where`/`which` 预存，与 Task 4 基线一致）；CLI specs/handlers/help/manifest 441/445（4 失败全为 orchestration-* Windows 引号渲染预存）；main ipc 无 automations 相关失败（18 失败全为 pty/wsl/watcher Windows 预存）；`pnpm run typecheck` 三工程零错误；oxlint 改动文件 EXIT=0；oxfmt 已格式化；双 ratchet 绿（vitest 257=基线——新增 2 例在 src/shared 不受 ratchet 约束范围；max-lines 7 豁免无新增）。
+
 ## 2026-10-10 新增（定时任务：serve 模式 webhook 触发，每任务 token）
 
 - **变更类型**：新增（webhook 端点 + token）/ 重构（三文件拆分过 max-lines 门禁）

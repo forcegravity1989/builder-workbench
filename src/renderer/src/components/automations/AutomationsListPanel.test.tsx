@@ -131,6 +131,8 @@ function renderPanel(
           setActivePaneTab={options.setActivePaneTab ?? (() => undefined)}
           runNow={() => undefined}
           openEditDialog={() => undefined}
+          exportAutomation={() => undefined}
+          importAutomation={() => undefined}
           toggleAutomation={() => undefined}
           requestDeleteAutomation={() => undefined}
           requestExternalAction={() => undefined}
