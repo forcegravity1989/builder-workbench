@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>集成卡片样张</title>
+<!--
+  Connector（集成）卡片可点样张。来源：docs/05-features/connectors/spec.md §2–§5、§9（改前）。
+  虚线框里的是样张控制（改前 / 改后、平台、状态读自哪里、每张卡的状态、模拟按回车），不是产品界面。
+  「内网补」格子是待内网填的命令与链接。
+-->
+<style>
+:root {
+  --bg: #f6f4ee; --panel: #fdfcf8; --card: #fffefa; --fg: #2b2a27; --muted: #75716a; --line: #e6e1d6;
+  --accent: #c96442; --accent-fg: #fffefa; --ok: #2f7d55; --ok-soft: #e4f2ea; --warn: #a2601b; --warn-soft: #fbf0df;
+  --bad: #a33a2b; --bad-soft: #f6e3df; --code: #f1ede4; --term: #fffefa; --sel: #2f3a36; --sel-fg: #f4f1ea;
+  --ctrl: #6a5acd; --ctrl-soft: #efedfb;
+  --sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1b1a18; --panel: #22211e; --card: #272623; --fg: #ece8df; --muted: #a39e94; --line: #3a3833;
+  --accent: #d9774f; --accent-fg: #1b1a18; --ok: #6cc394; --ok-soft: #1f3529; --warn: #e3a35c; --warn-soft: #3a2c19;
+  --bad: #ec8a7b; --bad-soft: #3b211d; --code: #2f2d29; --term: #1f1e1b; --sel: #d8d3c7; --sel-fg: #1b1a18;
+  --ctrl: #a99cf0; --ctrl-soft: #2a2740; color-scheme: dark } }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 14px; line-height: 1.55; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.controls { border: 1.5px dashed var(--ctrl); background: var(--ctrl-soft); border-radius: 10px; padding: 10px 12px; margin: 16px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.controls .tag { font-size: 12px; color: var(--ctrl); font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--card); }
+.seg button { border: 0; background: transparent; color: var(--fg); padding: 4px 10px; font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--ctrl); color: #fff; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 6px; }
+.chips button { border: 1px dashed var(--ctrl); background: transparent; color: var(--ctrl); border-radius: 999px; padding: 1px 9px; font-size: 12px; }
+.chips button[aria-pressed="true"] { background: var(--ctrl); color: #fff; border-style: solid; }
+
+.shell { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 90px); border-top: 1px solid var(--line); }
+.side { background: var(--panel); border-right: 1px solid var(--line); padding: 16px 12px; display: grid; align-content: start; gap: 2px; }
+.side .group { font-size: 12px; color: var(--muted); margin: 14px 8px 4px; letter-spacing: .08em; }
+.side .item { padding: 6px 10px; border-radius: 8px; color: var(--fg); }
+.side .item.on { background: color-mix(in srgb, var(--accent) 14%, transparent); font-weight: 600; }
+main { padding: 28px 32px 64px; max-width: 920px; width: 100%; }
+h1 { font-size: 24px; margin: 0 0 4px; }
+.subtitle { color: var(--muted); margin: 0 0 22px; }
+h3 { font-size: 14px; margin: 26px 0 4px; }
+.sec-desc { color: var(--muted); font-size: 12px; margin: 0 0 10px; }
+.stack { display: grid; gap: 12px; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 12px; }
+.head { display: flex; gap: 12px; align-items: flex-start; }
+.icon { width: 26px; height: 26px; flex: none; color: var(--fg); }
+.head .name { font-weight: 600; }
+.head .via { color: var(--muted); font-size: 13px; }
+.head .via code { font-size: 12px; }
+.badge { margin-left: auto; flex: none; border-radius: 999px; padding: 2px 10px; font-size: 12px; border: 1px solid transparent; white-space: nowrap; }
+.badge.ok { color: var(--ok); background: var(--ok-soft); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+.badge.warn { color: var(--warn); background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+.badge.muted { color: var(--muted); background: var(--code); }
+.spin { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--muted); border-top-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -1px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+.body { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 10px; }
+.scope { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: flex; gap: 12px; align-items: center; justify-content: space-between; font-size: 13px; }
+.scope .note { color: var(--muted); font-size: 12px; }
+.scope button { border: 0; background: transparent; color: var(--fg); white-space: nowrap; }
+.line { color: var(--muted); font-size: 13px; margin: 0; }
+.cmd { font-family: var(--mono); font-size: 13px; background: var(--code); border-radius: 8px; padding: 7px 10px; overflow-wrap: anywhere; }
+.cmd::before { content: ">_ "; color: var(--muted); }
+.todo { display: inline-block; border: 1px dashed var(--warn); color: var(--warn); border-radius: 6px; padding: 0 6px; font-family: var(--sans); font-size: 12px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { border: 1px solid var(--line); background: var(--card); color: var(--fg); border-radius: 8px; padding: 5px 12px; font-size: 13px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.ctrl { border: 1.5px dashed var(--ctrl); color: var(--ctrl); background: transparent; }
+.term { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--term); }
+.term .desc { border-bottom: 1px solid var(--line); padding: 8px 12px; color: var(--muted); font-size: 12px; }
+.term pre { margin: 0; padding: 10px 12px; min-height: 150px; font-family: var(--mono); font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.term .hl { background: var(--sel); color: var(--sel-fg); }
+.term .hl .todo { color: inherit; border-color: currentColor; }
+.right { display: flex; justify-content: flex-end; gap: 8px; }
+.legacy .card { opacity: .92; }
+.mini { display: flex; align-items: center; gap: 12px; }
+
+@media (max-width: 760px) {
+  .shell { grid-template-columns: 1fr; }
+  .side { display: none; }
+  main { padding: 20px 16px 48px; }
+  .controls { margin: 12px 16px; }
+  .scope { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+
+<div class="controls" aria-label="样张控制">
+  <span class="tag">样张控制</span>
+  <span class="seg" id="ctl-view"><button data-v="before">改前（今天）</button><button data-v="after">改后</button></span>
+  <span class="seg" id="ctl-platform"><button data-v="darwin">macOS</button><button data-v="win32">Windows</button><button data-v="linux">Linux</button></span>
+  <span class="seg" id="ctl-scope"><button data-v="local">本机</button><button data-v="remote">远端 Orca 服务器</button><button data-v="wsl">项目在 WSL</button></span>
+</div>
+
+<div class="shell">
+  <nav class="side" aria-label="设置">
+    <div class="item">← 返回应用</div>
+    <div class="group">AI 能力</div>
+    <div class="item">智能体</div><div class="item">AI 提供商账户</div><div class="item">编排</div>
+    <div class="group">初始设置</div>
+    <div class="item">通用</div><div class="item on">集成</div>
+    <div class="group">工作流程</div>
+    <div class="item">Automations</div><div class="item">Git 和源代码控制</div><div class="item">任务来源</div>
+  </nav>
+  <main id="main"></main>
+</div>
+
+<script>
+const ICONS = {
+  github: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg>',
+  term: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m5 7 5 5-5 5M12 17h7"/></svg>',
+  chat: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg>',
+  box: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>'
+};
+const TODO = (what) => `<span class="todo">内网补：${what}</span>`;
+
+// spec §5 命令表：三卡同一张表。install 为 null = 本平台没有一行装法（只给说明链接）。
+// authProbe = 是否报登录状态（静态登记，spec §4）：false 时装好即「已安装」。
+const CARDS = {
+  github: {
+    name: 'GitHub', cli: 'gh', icon: 'github', label: 'GitHub CLI', authProbe: true,
+    notInstalled: '安装 GitHub CLI 以启用拉取请求、议题和检查。',
+    install: { darwin: 'brew install gh', win32: 'winget install --id GitHub.cli -e', linux: null },
+    login: 'gh auth login', authStatus: 'gh auth status'
+  },
+  codehub: {
+    name: 'CodeHub', cli: 'codehub-cli', icon: 'term', label: 'codehub-cli', authProbe: true,
+    notInstalled: '安装 codehub-cli 以读取 Issue、创建与合入 MR。',
+    install: { darwin: TODO('安装命令'), win32: TODO('安装命令'), linux: TODO('安装命令') },
+    login: 'codehub-cli auth login', authStatus: 'codehub-cli auth status'
+  },
+  welink: {
+    name: 'WeLink', cli: 'welink-cli', icon: 'chat', label: 'welink-cli', authProbe: false,
+    notInstalled: '安装 welink-cli 以向项目群发送通知。',
+    install: { darwin: TODO('安装命令'), win32: TODO('安装命令'), linux: TODO('安装命令') },
+    login: TODO('登录命令'), authStatus: TODO('登录状态命令')
+  }
+};
+const STATE_LABEL = { checking: '检查中', 'not-installed': '未安装', 'not-authenticated': '未登录', installed: '已安装', connected: '已连接', unavailable: '不可用' };
+const statesFor = (c) => ['checking', 'not-installed', c.authProbe ? 'not-authenticated' : 'installed', ...(c.authProbe ? ['connected'] : []), 'unavailable'];
+const PROMPT = { darwin: 'builder@mac ~ % ', win32: 'PS C:\\Users\\builder> ', linux: 'builder@linux:~$ ' };
+const WHERE = { remote: '远程服务器 dev-box', wsl: 'WSL（Ubuntu）' };
+
+const ui = {
+  view: 'after', platform: 'darwin', scope: 'local',
+  card: { github: 'not-authenticated', codehub: 'not-installed', welink: 'not-installed' },
+  term: {}, // id -> { cmd, title, ran, out, next }
+  pending: {} // id -> 重新检查的计时器（同一张卡只认最后一次）
+};
+const canSetup = () => ui.scope === 'local';
+
+function badge(state) {
+  if (state === 'checking') return '<span class="badge muted" aria-label="检查中"><span class="spin"></span> 检查中</span>';
+  return `<span class="badge ${state === 'connected' ? 'ok' : 'warn'}">${STATE_LABEL[state]}</span>`;
+}
+
+// 账户范围只看是否连了远端 Orca 服务器；WSL 时仍显示本机（spec §4）
+function scopeRow() {
+  return ui.scope === 'remote'
+    ? '<div class="scope"><div><b>账户范围：远程服务器 dev-box</b><div class="note">此提供商的凭据和账户检查由该远程服务器拥有。</div></div><button>⧉ 打开远程服务器</button></div>'
+    : '<div class="scope"><div><b>账户范围：Local Mac</b><div class="note">此提供商的凭据和账户检查由该桌面客户端拥有。</div></div><button>⧉ 打开远程服务器</button></div>';
+}
+const elsewhere = () => canSetup() ? '' : `<p class="line">状态读自 ${WHERE[ui.scope]}，在那里运行这条命令。</p>`;
+
+function stateBody(id) {
+  const c = CARDS[id], s = ui.card[id], ok = canSetup();
+  const install = c.install[ui.platform];
+  const recheck = `<button class="btn ghost" data-act="recheck" data-id="${id}">重新检查</button>`;
+  if (s === 'checking' || s === 'connected') return '';
+  if (s === 'unavailable') return `<p class="line">${c.label} 的状态检查超时或无法运行。</p><div class="btns">${recheck}</div>`;
+  if (s === 'not-installed') {
+    return `<p class="line">${c.notInstalled}</p>
+      ${install ? `<div class="cmd">${install}</div>` : ''}${install ? elsewhere() : ''}
+      <div class="btns">
+        ${install && ok ? `<button class="btn primary" data-act="install" data-id="${id}">安装 ${c.label}</button>` : ''}
+        <button class="btn">↗ 安装说明</button>
+        ${recheck}
+      </div>`;
+  }
+  if (s === 'not-authenticated') {
+    return `<p class="line">已安装，还没登录。</p>
+      <div class="cmd">${c.login}</div>${elsewhere()}
+      <div class="btns">
+        ${ok ? `<button class="btn primary" data-act="login" data-id="${id}">登录</button>` : ''}
+        <button class="btn">↗ 了解更多</button>
+        ${recheck}
+      </div>`;
+  }
+  // installed：登记为不报登录状态的 CLI（spec §4、§5）
+  return `<p class="line">登录状态不自动检测。</p>
+    <div class="cmd">${c.login}</div>${elsewhere()}
+    <div class="btns">
+      ${ok ? `<button class="btn primary" data-act="login" data-id="${id}">登录</button>
+      <button class="btn" data-act="status" data-id="${id}">查看登录状态</button>` : ''}
+      ${recheck}
+    </div>`;
+}
+
+function terminal(id) {
+  const t = ui.term[id], prompt = PROMPT[ui.platform];
+  const out = t.out.length ? '\n' + t.out.join('\n') + '\n' + prompt : '';
+  return `<div class="term" aria-label="${t.title}">
+      <div class="desc">命令已填入，按回车执行。</div>
+      <pre>${prompt}<span class="${t.ran ? '' : 'hl'}">${t.cmd}</span>${out}</pre>
+    </div>
+    <div class="right">
+      ${t.ran ? '' : `<button class="btn ctrl" data-act="enter" data-id="${id}">样张：模拟按回车</button>`}
+      <button class="btn" data-act="done" data-id="${id}">完成</button>
+    </div>`;
+}
+
+function card(id) {
+  const c = CARDS[id], s = ui.card[id];
+  const chips = `<div class="chips" aria-label="样张：${c.name} 状态">${statesFor(c).map((x) =>
+    `<button data-act="set" data-id="${id}" data-s="${x}" aria-pressed="${s === x}">${STATE_LABEL[x]}</button>`).join('')}</div>`;
+  const body = ui.term[id] ? terminal(id) : stateBody(id);
+  return `<div>${chips}<section class="card">
+      <div class="head">${ICONS[c.icon]}<div><div class="name">${c.name}</div><div class="via">通过 <code>${c.cli}</code> CLI。</div></div>${badge(s)}</div>
+      <div class="body">${scopeRow()}${body}</div>
+    </section></div>`;
+}
+
+function after() {
+  return `<h1>集成</h1>
+    <h3>代码托管</h3><div class="stack">${card('github')}${card('codehub')}</div>
+    <h3>项目群</h3><div class="stack">${card('welink')}</div>`;
+}
+
+// 改前：今天 Orca 原生集成页（spec §9），只读
+function legacy(name, icon, via, badgeHtml, inner) {
+  return `<section class="card"><div class="head">${ICONS[icon]}<div><div class="name">${name}</div><div class="via">${via}</div></div>${badgeHtml}</div>${inner ? `<div class="body">${inner}</div>` : ''}</section>`;
+}
+function before() {
+  const w = (t) => `<span class="badge warn">${t}</span>`;
+  const optional = (name, via, btn) => legacy(name, 'box', via, w('Not configured'), `<div class="btns"><button class="btn">${btn}</button><span class="line">Optional setup</span></div>`);
+  return `<h1>集成</h1><p class="subtitle">连接 GitHub、GitLab、Linear 和源托管服务。</p>
+    <div class="legacy">
+    <h3>评审提供商</h3><p class="sec-desc">连接 Orca 可用于 pull request、merge request、检查和评审状态的源代码主机。</p>
+    <div class="stack">
+      ${legacy('GitHub', 'github', '通过 <code>gh</code> CLI。', w('Not authenticated'), `${scopeRow()}<p class="line">GitHub CLI 已安装但未通过身份验证。请在终端中运行此命令：</p><div class="cmd">gh auth login</div><div class="btns"><button class="btn">↗ 了解更多</button><button class="btn ghost">重新检查</button></div>`)}
+      ${legacy('GitLab', 'box', '通过 <code>glab</code> CLI。', w('Not installed'), `${scopeRow()}<p class="line">安装 GitLab CLI 以启用合并请求、议题和流水线。</p><div class="btns"><button class="btn primary">↗ 安装 GitLab CLI</button><button class="btn ghost">重新检查</button></div>`)}
+      ${legacy('CodeHub', 'term', 'Issues and merge requests via the <code>codehub-cli</code> CLI.', w('Not installed'), `<p class="line">codehub-cli is not on PATH.</p><div class="btns"><button class="btn ghost">重新检查</button></div>`)}
+      ${optional('Bitbucket', 'Bitbucket Cloud 拉取请求。', '连接 Bitbucket')}
+      ${optional('Azure DevOps', 'Azure Repos 拉取请求。', '连接 Azure DevOps')}
+      ${optional('Gitea', 'Gitea 拉取请求。', '连接 Gitea')}
+    </div>
+    <h3>任务提供商</h3><p class="sec-desc">连接 Orca 可用于浏览任务并使用关联上下文启动工作区的议题跟踪器。</p>
+    <div class="stack">
+      ${legacy('Linear', 'box', '从 Linear 浏览、创建并开始工作。', w('Not connected'), `<div class="btns"><button class="btn primary">添加 Linear 访问</button></div>`)}
+      ${legacy('Jira', 'box', '从 Jira Cloud 议题浏览、创建并开始工作。', w('Not connected'), `<div class="btns"><button class="btn primary">连接 Jira</button></div>`)}
+    </div>
+    <p class="line" style="margin-top:14px">没有 WeLink 卡。</p></div>`;
+}
+
+function render() {
+  for (const [ctl, key] of [['ctl-view', 'view'], ['ctl-platform', 'platform'], ['ctl-scope', 'scope']]) {
+    document.querySelectorAll(`#${ctl} button`).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === ui[key])));
+  }
+  document.getElementById('main').innerHTML = ui.view === 'after' ? after() : before();
+}
+
+// 重新检查：先显示检查中，再落到 next；同一张卡只认最后一次；终端打开时保持挂载（spec §5、I09）
+function recheck(id, next) {
+  clearTimeout(ui.pending[id]);
+  ui.card[id] = 'checking'; render();
+  ui.pending[id] = setTimeout(() => { delete ui.pending[id]; ui.card[id] = next; render(); }, 700);
+}
+
+function openTerminal(id, act) {
+  const c = CARDS[id];
+  if (!canSetup()) return;
+  if (act === 'install' && c.install[ui.platform]) ui.term[id] = { cmd: c.install[ui.platform], title: `安装 ${c.label}`, ran: false, out: [], next: c.authProbe ? 'not-authenticated' : 'installed' };
+  if (act === 'login') ui.term[id] = { cmd: c.login, title: `登录 · ${c.name}`, ran: false, out: [], next: c.authProbe ? 'connected' : 'installed' };
+  if (act === 'status') ui.term[id] = { cmd: c.authStatus, title: '查看登录状态', ran: false, out: [], next: ui.card[id] };
+}
+
+document.addEventListener('click', (e) => {
+  const seg = e.target.closest('.seg button');
+  if (seg) { ui[{ 'ctl-view': 'view', 'ctl-platform': 'platform', 'ctl-scope': 'scope' }[seg.parentElement.id]] = seg.dataset.v; render(); return; }
+  const b = e.target.closest('[data-act]');
+  if (!b) return;
+  const id = b.dataset.id;
+  switch (b.dataset.act) {
+    case 'set': clearTimeout(ui.pending[id]); delete ui.term[id]; ui.card[id] = b.dataset.s; render(); break;
+    case 'recheck': recheck(id, ui.card[id]); break;
+    case 'install': case 'login': case 'status': openTerminal(id, b.dataset.act); render(); break;
+    case 'enter': {
+      const t = ui.term[id]; t.ran = true;
+      t.out = t.next === 'connected' ? ['✓ 授权完成（浏览器）', '✓ Logged in'] : t.title.startsWith('安装') ? ['==> 安装完成'] : ['（CLI 原样输出）'];
+      recheck(id, t.next); break;
+    }
+    case 'done': {
+      const t = ui.term[id]; delete ui.term[id];
+      recheck(id, t?.ran ? t.next : ui.card[id] === 'checking' ? 'not-installed' : ui.card[id]); break;
+    }
+  }
+});
+
+// 深链：#view=after&platform=win32&scope=local&github=not-installed&open=github:install（截图与评审用）
+// 先应用全部键，最后再开终端；开不了（远端 / 本平台无命令）就忽略。
+const params = new URLSearchParams(location.hash.slice(1));
+for (const [k, v] of params) {
+  if (k in CARDS && statesFor(CARDS[k]).includes(v)) ui.card[k] = v;
+  else if (['view', 'platform', 'scope'].includes(k)) ui[k] = v;
+}
+for (const v of params.getAll('open')) {
+  const [id, act] = v.split(':');
+  if (id in CARDS) openTerminal(id, act);
+}
+render();
+</script>
+</body>
+</html>
