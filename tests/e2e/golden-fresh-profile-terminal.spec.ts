@@ -3,8 +3,9 @@ import { mkdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { mkdtemp } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import type { ElectronApplication, Page } from '@stablyai/playwright-test'
+import type { ElectronApplication } from '@stablyai/playwright-test'
 import { test, expect } from './helpers/orca-app'
+import { openSidebarProjectDialog } from './helpers/sidebar-project-dialog'
 import { ensureTerminalVisible, waitForActiveWorktree, waitForSessionReady } from './helpers/store'
 import {
   focusActiveTerminalInput,
@@ -41,17 +42,6 @@ async function stubFolderPicker(
   }, selectedPath)
 }
 
-async function selectCodexAndSkipToProject(page: Page): Promise<void> {
-  const codexButton = page.getByRole('button', { name: /^Codex\s/ }).first()
-  if (!(await codexButton.isVisible())) {
-    await page.getByText(/Show \d+ more agents/).click()
-  }
-  await codexButton.click()
-  const footer = page.locator('footer').filter({ has: page.getByRole('button', { name: /Skip/i }) })
-  await footer.getByRole('button', { name: /^Skip to project setup$/i }).click()
-  await expect(page.getByRole('dialog', { name: /Add a project/i })).toBeVisible()
-}
-
 test('fresh profile opens a live project terminal @golden', async ({
   electronApp,
   orcaPage,
@@ -59,9 +49,9 @@ test('fresh profile opens a live project terminal @golden', async ({
 }) => {
   await waitForSessionReady(orcaPage)
   await expect(orcaPage.locator('#root')).toBeVisible()
-  await expect(orcaPage.getByRole('heading', { name: /Pick your default agent/i })).toBeVisible()
+  await expect(orcaPage.getByText('Add a project to get started.')).toBeVisible()
 
-  await selectCodexAndSkipToProject(orcaPage)
+  await openSidebarProjectDialog(orcaPage)
   const repoPath = await createGitRepo()
   registerPostElectronShutdownCleanup(async () =>
     rmSync(path.dirname(repoPath), { recursive: true, force: true })

@@ -202,12 +202,7 @@ export function renderFloatingTerminalPanelSurface({
           />
         </div>
 
-        <div
-          className="relative min-h-0 flex-1 overflow-hidden bg-background"
-          data-contextual-tour-target={
-            hasVisibleFloatingTabs ? 'floating-workspace-surface' : undefined
-          }
-        >
+        <div className="relative min-h-0 flex-1 overflow-hidden bg-background">
           {/* Why also gated on a settled viewport: a restored-maximized panel derives its
               rect from the live viewport, so mounting terminals before the window finishes
               maximizing fits them to a grid it is about to leave, and the correcting fit

@@ -81,7 +81,6 @@ await build({
   format: 'cjs',
   bundle: true,
   packages: 'external',
-  define: { ORCA_FEATURE_WALL_ENABLED: 'true' },
   plugins: [
     {
       name: 'labelled-local-fixtures',

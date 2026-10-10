@@ -48,16 +48,6 @@ for (let tick = 0; tick < 800; tick += 1) {
 `
 }
 
-async function closeFeatureTips(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const store = window.__store
-    store?.getState().markFeatureTipsSeen(['orca-cli', 'cmd-j-palette', 'voice-dictation'])
-    if (store?.getState().activeModal === 'feature-tips') {
-      store.getState().closeModal()
-    }
-  })
-}
-
 async function pinActiveTerminalNearBottom(page: Page): Promise<{
   tabId: string
   targetViewportY: number
@@ -146,7 +136,6 @@ test.describe('Terminal pinned viewport with streaming agent across worktree swi
     testRepoPath
   }) => {
     await waitForSessionReady(orcaPage)
-    await closeFeatureTips(orcaPage)
     const firstWorktreeId = await waitForActiveWorktree(orcaPage)
     const secondWorktreeId = (await getAllWorktreeIds(orcaPage)).find(
       (id) => id !== firstWorktreeId

@@ -12,7 +12,6 @@ import type { RendererProcessMemory } from '../../shared/renderer-process-memory
 
 export type CrashReportsApi = {
   getLatestPending: () => Promise<CrashReportRecord | null>
-  getLatestReport: () => Promise<CrashReportRecord | null>
   dismiss: (args: { reportId: string }) => Promise<CrashReportRecord | null>
   recordRendererError: (
     args: ReactErrorBoundaryReportArgs
@@ -26,16 +25,4 @@ export type CrashReportsApi = {
   readHeapStatistics: () => RendererHeapStatistics | null
   /** This renderer's OS-level footprint, which the heap counters never include. */
   readProcessMemory?: () => Promise<RendererProcessMemory | null>
-}
-
-export type FeedbackApi = {
-  submit: (args: {
-    feedback: string
-    submitAnonymously?: boolean
-    githubLogin: string | null
-    githubEmail: string | null
-    images?: { contentType: string; data: Uint8Array }[]
-  }) => Promise<
-    { ok: true; imagesDelivered?: boolean } | { ok: false; status: number | null; error: string }
-  >
 }

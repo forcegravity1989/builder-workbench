@@ -170,7 +170,7 @@ test('focuses the pane a client split creates on a paired remote workspace @head
       .toEqual([false, true])
 
     const headerSplit = client.page.locator(
-      'button[data-contextual-tour-target="terminal-pane-split-target"]'
+      '.pane-title-bar[data-active-pane] button[aria-label="Split Terminal Right"]'
     )
     await expect(headerSplit).toBeVisible()
     await headerSplit.click()

@@ -16,7 +16,6 @@ import { registerHostedReviewHandlers } from '../hosted-review'
 import { registerLinearHandlers } from '../linear'
 import { registerJiraHandlers } from '../jira'
 import { registerBitbucketHandlers } from '../bitbucket'
-import { registerFeedbackHandlers } from '../feedback'
 import { registerCrashReportingHandlers } from '../crash-reporting'
 import { registerExportHandlers } from '../export'
 import { registerStatsHandlers } from '../stats'
@@ -159,7 +158,6 @@ export function registerCoreHandlers(
   registerLinearHandlers()
   registerJiraHandlers()
   registerBitbucketHandlers()
-  registerFeedbackHandlers()
   if (crashReports) {
     registerCrashReportingHandlers(crashReports)
   }

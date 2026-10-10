@@ -184,10 +184,7 @@ export function TaskPageCodeHubItemList({
           <div className="px-4 py-12 text-center">
             <p className="text-base font-medium text-foreground">
               {mrView
-                ? translate(
-                    'auto.components.TaskPage.codehubEmptyMrs',
-                    'No CodeHub merge requests'
-                  )
+                ? translate('auto.components.TaskPage.codehubEmptyMrs', 'No CodeHub merge requests')
                 : translate('auto.components.TaskPage.codehubEmptyIssues', 'No CodeHub issues')}
             </p>
           </div>
@@ -291,7 +288,6 @@ export function TaskPageCodeHubItemList({
                         type="button"
                         variant="outline"
                         size="xs"
-                        data-contextual-tour-target="tasks-start-workspace"
                         className="min-w-[72px] gap-1 bg-background/80 font-semibold"
                         onClick={(event) => {
                           event.stopPropagation()
@@ -330,7 +326,6 @@ export function TaskPageCodeHubItemList({
                       type="button"
                       variant="outline"
                       size="xs"
-                      data-contextual-tour-target="tasks-start-workspace"
                       className="min-w-[72px] gap-1 bg-background/80 font-semibold"
                       onClick={(event) => {
                         event.stopPropagation()

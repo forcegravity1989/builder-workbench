@@ -5,10 +5,10 @@ test.skip(process.platform === 'win32', 'POSIX fresh-startup golden; Windows has
 test.describe('POSIX fresh startup golden', () => {
   test.use({ dismissOnboarding: false, seedTestRepo: false })
 
-  test('fresh profile reaches onboarding normally @posix-profile-index-golden', async ({
+  test('fresh profile reaches the first-run landing normally @posix-profile-index-golden', async ({
     orcaPage
   }) => {
-    await expect(orcaPage.getByRole('heading', { name: /Pick your default agent/i })).toBeVisible({
+    await expect(orcaPage.getByText('Add a project to get started.')).toBeVisible({
       timeout: 30_000
     })
   })

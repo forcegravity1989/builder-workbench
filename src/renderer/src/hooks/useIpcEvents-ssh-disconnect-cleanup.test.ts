@@ -134,7 +134,6 @@ describe('useIpcEvents updater integration', () => {
           onStateChanged: () => () => {},
           onOpenSettings: () => () => {},
           consumePendingOpenSettings: () => Promise.resolve(false),
-          onOpenFeatureTour: () => () => {},
           onToggleLeftSidebar: () => () => {},
           onToggleRightSidebar: () => () => {},
           onToggleWorktreePalette: () => () => {},

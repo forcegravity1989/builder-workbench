@@ -91,10 +91,7 @@ export function TaskPageGitLabFilters({
           />
         </div>
       </div>
-      <div
-        className="min-w-0 rounded-md rounded-b-none border border-border/50 bg-muted/50 px-3 pt-2 pb-0 shadow-sm"
-        data-contextual-tour-target="tasks-search-presets"
-      >
+      <div className="min-w-0 rounded-md rounded-b-none border border-border/50 bg-muted/50 px-3 pt-2 pb-0 shadow-sm">
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <div className="flex flex-wrap gap-2">
@@ -125,10 +122,7 @@ export function TaskPageGitLabFilters({
                 : null}
             </div>
           </div>
-          <div
-            className="flex shrink-0 items-center gap-2"
-            data-contextual-tour-target="tasks-actions"
-          >
+          <div className="flex shrink-0 items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

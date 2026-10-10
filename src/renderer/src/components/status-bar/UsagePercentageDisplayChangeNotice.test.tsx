@@ -151,7 +151,7 @@ describe('UsagePercentageDisplayChangeNotice', () => {
   })
 
   it('does not open while another modal is open', () => {
-    storeState.activeModal = 'feature-tips'
+    storeState.activeModal = 'quick-open'
     act(() => {
       root.render(
         <UsagePercentageDisplayChangeNotice hasVisibleUsageMeters>

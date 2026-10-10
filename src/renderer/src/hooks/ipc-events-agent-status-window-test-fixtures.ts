@@ -36,7 +36,6 @@ export function buildWindowApi(args: {
         onStateChanged: () => () => {},
         onOpenSettings: () => () => {},
         consumePendingOpenSettings: () => Promise.resolve(false),
-        onOpenFeatureTour: () => () => {},
         onToggleLeftSidebar: () => () => {},
         onToggleRightSidebar: () => () => {},
         onToggleWorktreePalette: () => () => {},

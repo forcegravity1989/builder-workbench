@@ -91,13 +91,7 @@ export function AutomationListToolbar({
         </Tooltip>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onOpenRuns}
-          data-contextual-tour-target="automations-runs"
-        >
+        <Button type="button" variant="outline" size="sm" onClick={onOpenRuns}>
           <History className="size-4" />
           {translate('auto.components.automations.AutomationListToolbar.runs', 'Runs')}
         </Button>
@@ -107,7 +101,6 @@ export function AutomationListToolbar({
           className="shrink-0"
           onClick={() => openCreateDialog()}
           disabled={!canCreateAutomation}
-          data-contextual-tour-target="automations-create"
         >
           <Plus className="size-4" />
           {translate('auto.components.automations.AutomationsPage.newAutomation', 'New Automation')}

@@ -20,7 +20,6 @@ type ComposerAsyncStateInput = Pick<
   | 'selectedRepoHookContextKey'
   | 'selectedRepoIsGit'
   | 'selectedRepoSettings'
-  | 'setName'
 >
 
 import { useState, useRef, useEffect } from 'react'
@@ -28,7 +27,6 @@ import type { OrcaHooks, SetupAgentStartupPolicy } from '../../../../shared/orca
 import type { IssueCommandReadResult } from '@/runtime/runtime-hooks-client'
 import type { WorkspaceCreateErrorDisplay } from '@/lib/workspace-create-error-format'
 import type { GitHubWorkItem } from '../../../../shared/github/work-item-types'
-import { CONTEXTUAL_TOUR_ENABLE_AUTO_WORKSPACE_NAME_EVENT } from '@/components/contextual-tours/contextual-tour-composer-events'
 import type { GitHubRepositoryIdentity } from '../../../../shared/github/pull-request-types'
 import { getRepoSetupAgentStartupPolicy } from './setup-policy-decisions'
 import type { SmartGitHubPrStartPointSelection } from './source-selection-decisions'
@@ -52,8 +50,7 @@ export function useComposerAsyncState(input: ComposerAsyncStateInput) {
     selectedRepoConnectionId,
     selectedRepoHookContextKey,
     selectedRepoIsGit,
-    selectedRepoSettings,
-    setName
+    selectedRepoSettings
   } = input
   const { getInitialAutoManagedWorkspaceName, getInitialGitHubPrStartPointSelection } = decisions
 
@@ -165,24 +162,6 @@ export function useComposerAsyncState(input: ComposerAsyncStateInput) {
   const smartGitHubPrStartPointSelectionRef = useRef<SmartGitHubPrStartPointSelection | null>(
     initialSmartGitHubPrStartPointSelection
   )
-
-  useEffect(() => {
-    const clearAutoManagedName = (): void => {
-      if (nameRef.current === lastAutoNameRef.current) {
-        setName('')
-        lastAutoNameRef.current = ''
-        setCreateError(null)
-      }
-    }
-
-    window.addEventListener(CONTEXTUAL_TOUR_ENABLE_AUTO_WORKSPACE_NAME_EVENT, clearAutoManagedName)
-    return () => {
-      window.removeEventListener(
-        CONTEXTUAL_TOUR_ENABLE_AUTO_WORKSPACE_NAME_EVENT,
-        clearAutoManagedName
-      )
-    }
-  }, [setName])
 
   const composerRef = useRef<HTMLDivElement | null>(null)
 

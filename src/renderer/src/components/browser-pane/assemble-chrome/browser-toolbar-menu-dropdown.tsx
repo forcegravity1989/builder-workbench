@@ -122,7 +122,6 @@ export function BrowserToolbarMenuDropdown({
               browserSessionImportState?.profileId === effectiveProfileId &&
               browserSessionImportState.status === 'importing'
             }
-            data-contextual-tour-target="browser-import-cookies-control"
           >
             <Import className="mr-2 size-3.5" />
             {translate(

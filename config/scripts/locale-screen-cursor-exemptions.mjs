@@ -12,10 +12,7 @@ const SCREEN_CURSOR_ENVALUES = new Set([
 ])
 
 // Bare "Cursor" is ambiguous; these keys are the terminal/theme cursor settings (screen cursor).
-const SCREEN_CURSOR_KEYS = new Set([
-  'auto.components.settings.TerminalWindowSection.c9e1fdf42f',
-  'auto.components.onboarding.ThemeStep.ab2a583a97'
-])
+const SCREEN_CURSOR_KEYS = new Set(['auto.components.settings.TerminalWindowSection.c9e1fdf42f'])
 
 export function isScreenCursorContext(brand, enValue, key) {
   if (brand !== 'Cursor') {

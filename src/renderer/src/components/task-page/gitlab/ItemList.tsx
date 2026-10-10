@@ -109,7 +109,6 @@ export function TaskPageGitLabItemList({
                     <Button
                       variant="ghost"
                       size="icon-xs"
-                      data-contextual-tour-target="tasks-start-workspace"
                       onClick={(event) => {
                         event.stopPropagation()
                         handleUseGitLabItem(item)

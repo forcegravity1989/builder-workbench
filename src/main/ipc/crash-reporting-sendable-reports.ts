@@ -29,19 +29,6 @@ export async function getLatestPendingReport(
   )
 }
 
-export async function getLatestSendableReport(
-  store: CrashReportStore
-): Promise<Awaited<ReturnType<CrashReportStore['getLatestPending']>>> {
-  const reports = await store.listRecent()
-  return (
-    reports.find(
-      (report) =>
-        (report.status === 'pending' || report.status === 'dismissed') &&
-        !submittedReportIds.has(report.id)
-    ) ?? null
-  )
-}
-
 export async function getRequestedCrashReport(
   store: CrashReportStore,
   args?: { reportId?: string }

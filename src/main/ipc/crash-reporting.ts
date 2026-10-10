@@ -18,7 +18,6 @@ import {
 import { recordRendererBreadcrumbFromRenderer } from './crash-reporting-renderer-breadcrumbs'
 import {
   getLatestPendingReport,
-  getLatestSendableReport,
   getRequestedCrashReport,
   inFlightSubmissions,
   submittedReportIds
@@ -46,9 +45,6 @@ export function _getCrashReportingStateSizesForTests(): {
 export function registerCrashReportingHandlers(store: CrashReportStore): void {
   ipcMain.removeHandler('crashReports:getLatestPending')
   ipcMain.handle('crashReports:getLatestPending', () => getLatestPendingReport(store))
-
-  ipcMain.removeHandler('crashReports:getLatestReport')
-  ipcMain.handle('crashReports:getLatestReport', () => getLatestSendableReport(store))
 
   ipcMain.removeHandler('crashReports:dismiss')
   ipcMain.handle('crashReports:dismiss', async (_event, args: { reportId: string }) => {

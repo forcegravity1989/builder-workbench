@@ -46,13 +46,6 @@ describe('workspace kanban outside dismiss keep-open targets', () => {
     expect(isWorkspaceBoardKeepOpenTarget(action as unknown as EventTarget)).toBe(true)
   })
 
-  it('keeps the board open when the contextual tour panel is clicked', () => {
-    const panel = new FakeElement(['[data-contextual-tour-panel]'])
-    const nextButton = new FakeElement([], panel)
-
-    expect(isWorkspaceBoardKeepOpenTarget(nextButton as unknown as EventTarget)).toBe(true)
-  })
-
   it('does not keep the board open for generic outside content', () => {
     const target = new FakeElement()
 

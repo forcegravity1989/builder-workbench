@@ -1,16 +1,9 @@
 import type { FloatingWorkspacePanelOwnedAction } from '@/lib/floating-workspace-shortcut-policy'
 import type { KeybindingActionId, PhysicalModifierToken } from '../../../../shared/keybindings'
 
-export type FloatingWorkspaceTourInteractionSnapshot = {
-  wasPreviouslyInteracted?: boolean
-  persisted?: Promise<void>
-  recordFeatureInteractionForTour: boolean
-}
-
 export type FloatingTerminalPanelProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  tourInteractionSnapshot?: FloatingWorkspaceTourInteractionSnapshot | null | undefined
 }
 
 export type FloatingPanelShortcutInput = Partial<

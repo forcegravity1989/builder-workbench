@@ -23,16 +23,6 @@ type RevealFrame = {
   maxThumbTop: number | null
 }
 
-async function closeFeatureTips(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const store = window.__store
-    store?.getState().markFeatureTipsSeen(['orca-cli', 'cmd-j-palette', 'voice-dictation'])
-    if (store?.getState().activeModal === 'feature-tips') {
-      store.getState().closeModal()
-    }
-  })
-}
-
 async function waitForPhaseOneAtBottom(page: Page, tabId: string): Promise<void> {
   await expect
     .poll(
@@ -195,7 +185,6 @@ test.describe('terminal streaming refocus viewport', () => {
     orcaPage
   }) => {
     await waitForSessionReady(orcaPage)
-    await closeFeatureTips(orcaPage)
     await waitForActiveWorktree(orcaPage)
     await ensureTerminalVisible(orcaPage)
     await waitForActiveTerminalManager(orcaPage, 30_000)

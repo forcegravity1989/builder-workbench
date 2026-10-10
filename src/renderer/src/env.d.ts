@@ -1,7 +1,6 @@
 /// <reference types="vite/client" />
 
 import type { PaneManager } from '@/lib/pane-manager/pane-manager'
-import type { OnboardingFeatureSetupDeps } from '@/components/onboarding/onboarding-feature-setup'
 import type { languages } from 'monaco-editor'
 import type { MonacoE2EProbe } from './components/editor/monaco-e2e-probe'
 import type { TerminalWorktreeParkingDebugVerdict } from './components/terminal-pane/terminal-parking-e2e-overrides'
@@ -69,7 +68,6 @@ declare global {
   // oxlint-disable-next-line typescript-eslint/consistent-type-definitions -- declaration merging requires interface
   interface Window {
     __paneManagers?: Map<string, PaneManager>
-    __onboardingFeatureSetupDeps?: OnboardingFeatureSetupDeps
     __terminalParkingDebug?: {
       parkDelayMs: number
       parkedTabIds: () => string[]

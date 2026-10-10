@@ -2,37 +2,16 @@
 
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Bot, GitBranch, Mic, Network, Puzzle } from 'lucide-react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getDefaultSettings } from '../../../../shared/constants'
 import { SettingsSidebar } from './SettingsSidebar'
 import { TooltipProvider } from '../ui/tooltip'
-import type { SettingsSetupGuideProgress } from './settings-setup-guide-progress'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
-
-const mocks = vi.hoisted(() => ({
-  useSettingsSetupGuideProgress: vi.fn()
-}))
 
 vi.mock('@/hooks/useShortcutLabel', () => ({
   useShortcutLabel: () => '⌘F',
   useShortcutKeyComboDetails: () => [{ keys: ['⌘', 'F'], doubleTap: false }]
 }))
-
-vi.mock('./settings-setup-guide-progress', () => ({
-  useSettingsSetupGuideProgress: mocks.useSettingsSetupGuideProgress
-}))
-
-function makeSetupGuideProgress(
-  overrides: Partial<SettingsSetupGuideProgress> = {}
-): SettingsSetupGuideProgress {
-  return {
-    ready: true,
-    doneCount: 5,
-    total: 8,
-    firstIncompleteStepId: 'agent-capabilities',
-    ...overrides
-  }
-}
 
 function renderSidebar(
   activeSectionId = 'orchestration',
@@ -119,11 +98,6 @@ function renderSidebar(
 }
 
 describe('SettingsSidebar', () => {
-  beforeEach(() => {
-    mocks.useSettingsSetupGuideProgress.mockReset()
-    mocks.useSettingsSetupGuideProgress.mockReturnValue(makeSetupGuideProgress())
-  })
-
   afterEach(() => {
     document.body.innerHTML = ''
   })
@@ -152,43 +126,5 @@ describe('SettingsSidebar', () => {
     expect(markup).toContain('Update available')
     expect(markup).toContain('Review skill')
     expect(markup).toContain('Optional')
-  })
-
-  it('does not render the setup guide row before progress readiness settles', () => {
-    mocks.useSettingsSetupGuideProgress.mockReturnValue(
-      makeSetupGuideProgress({
-        ready: false,
-        doneCount: 7,
-        firstIncompleteStepId: 'setup-script'
-      })
-    )
-
-    expect(renderSidebar()).not.toContain('Onboarding checklist')
-  })
-
-  it('renders incomplete setup progress with the full checklist total', () => {
-    const markup = renderSidebar()
-
-    expect(markup).toContain('Onboarding checklist')
-    expect(markup).toContain('Onboarding checklist, 5 of 8 done. Show setup guide.')
-    expect(markup).toContain('5 of 8 setup steps complete')
-  })
-
-  it('does not render the setup guide row after every checklist step is complete', () => {
-    mocks.useSettingsSetupGuideProgress.mockReturnValue(
-      makeSetupGuideProgress({
-        doneCount: 8,
-        firstIncompleteStepId: null
-      })
-    )
-
-    expect(renderSidebar()).not.toContain('Onboarding checklist')
-  })
-
-  it('keeps the setup guide row available from Settings when incomplete', () => {
-    const markup = renderSidebar('setup-guide')
-
-    expect(markup).toContain('aria-current="page"')
-    expect(markup).toContain('Onboarding checklist')
   })
 })

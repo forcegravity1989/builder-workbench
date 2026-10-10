@@ -156,7 +156,6 @@ export const LOCALE_PHRASE_FIXES = {
     { pattern: /嗓音/g, replacement: '语音', whenEnIncludes: 'Voice' },
     { pattern: /电脑使用/g, replacement: '计算机控制', whenEnIncludes: 'Computer Use' },
     { pattern: /快捷方式/g, replacement: '快捷键', whenEnIncludes: 'Shortcuts' },
-    { pattern: /入职清单/g, replacement: '入门清单', whenEnIncludes: 'Onboarding checklist' },
     { pattern: /发射代理/g, replacement: '启动代理', whenEnIncludes: 'Launch agent' },
     { pattern: /地位/g, replacement: '状态', whenEnIncludes: 'Status' },
     { pattern: /受让人/g, replacement: '负责人', whenEnIncludes: 'assignee' },

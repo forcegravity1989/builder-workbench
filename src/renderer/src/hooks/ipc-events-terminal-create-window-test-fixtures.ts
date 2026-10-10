@@ -36,7 +36,6 @@ export function buildTerminalCreateWindow(args: {
         onStateChanged: () => () => {},
         onOpenSettings: () => () => {},
         consumePendingOpenSettings: () => Promise.resolve(false),
-        onOpenFeatureTour: () => () => {},
         onToggleLeftSidebar: () => () => {},
         onToggleRightSidebar: () => () => {},
         onToggleWorktreePalette: () => () => {},

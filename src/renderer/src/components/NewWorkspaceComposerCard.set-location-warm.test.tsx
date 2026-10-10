@@ -39,10 +39,6 @@ vi.mock('@/store', () => ({
   )
 }))
 
-vi.mock('@/components/contextual-tours/use-contextual-tour', () => ({
-  useContextualTour: vi.fn()
-}))
-
 vi.mock('@/components/ui/tooltip', () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   TooltipContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,

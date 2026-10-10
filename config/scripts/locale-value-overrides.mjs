@@ -4,7 +4,6 @@ import { ZH_VALUE_OVERRIDES } from './locale-zh-value-overrides.mjs'
 
 export const LOCALE_VALUE_OVERRIDES = {
   es: {
-    'Explore Orca': 'Explorar Orca',
     'OpenCode Go': 'OpenCode Go',
     'Open in Cursor': 'Abrir en Cursor',
     'Local project, Git repo, or folder with many repos':
@@ -94,7 +93,6 @@ export const LOCALE_VALUE_OVERRIDES = {
     Advanced: '고급',
     'Computer Use': '컴퓨터 사용',
     Shortcuts: '단축키',
-    'Onboarding checklist': '온보딩 체크리스트',
     Integrations: '연동',
     split: '분할',
     space: '스페이스',
@@ -117,7 +115,6 @@ export const LOCALE_VALUE_OVERRIDES = {
     'Copy reference ID': '참조 ID 복사',
     'Try Again': '다시 시도',
     'Restart now': '지금 재시작',
-    'Restart Orca': 'Orca 재시작',
     'Hide sleeping': '슬립 중인 항목 숨기기',
     'Open Linear tasks': 'Linear 작업 열기',
     New: '새로 만들기',
@@ -260,7 +257,6 @@ export const LOCALE_VALUE_OVERRIDES = {
     Advanced: '高级',
     'Computer Use': '计算机控制',
     Shortcuts: '快捷键',
-    'Onboarding checklist': '入门清单',
     Integrations: '集成',
     split: '拆分',
     space: '空间',
@@ -282,7 +278,6 @@ export const LOCALE_VALUE_OVERRIDES = {
     'Copy reference ID': '复制参考 ID',
     'Try Again': '重试',
     'Restart now': '立即重启',
-    'Restart Orca': '重启 Orca',
     'Hide sleeping': '隐藏休眠项',
     'Open Linear tasks': '打开 Linear 任务',
     New: '新建',
@@ -469,7 +464,6 @@ export const LOCALE_VALUE_OVERRIDES = {
     Advanced: '詳細設定',
     'Computer Use': 'コンピュータ操作',
     Shortcuts: 'ショートカット',
-    'Onboarding checklist': 'オンボーディングチェックリスト',
     Integrations: '連携',
     split: '分割',
     space: 'スペース',
@@ -491,7 +485,6 @@ export const LOCALE_VALUE_OVERRIDES = {
     'Copy reference ID': '参照 ID をコピー',
     'Try Again': '再試行',
     'Restart now': '今すぐ再起動',
-    'Restart Orca': 'Orca を再起動',
     'Hide sleeping': 'スリープ中を非表示',
     'Open Linear tasks': 'Linear タスクを開く',
     New: '新規',

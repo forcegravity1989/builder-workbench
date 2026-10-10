@@ -43,7 +43,6 @@ const SETTINGS_NAV_TARGETS = [
   'automations',
   'orca-account',
   'linear',
-  'setup-guide',
   'servers',
   'mobile-emulator',
   'repo'

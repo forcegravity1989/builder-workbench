@@ -101,11 +101,6 @@ describe('BrowserNavigationControlRow', () => {
     expect(controls.navigate).toHaveBeenCalledWith('https://picked.example/')
   })
 
-  it('anchors the contextual tour on whichever backend renders the row', () => {
-    renderRow()
-    expect(document.querySelector('[data-contextual-tour-target="browser-toolbar"]')).not.toBeNull()
-  })
-
   // Why: the row must not assume its middle is an address bar — a surface with no URL to type
   // still gets the same history controls in the same chrome.
   it('renders a non-address identity widget in the same slot', () => {

@@ -24,7 +24,6 @@ import {
   selectAppRootSurfaceVoiceEnabled
 } from './app-root-surface-settings'
 import type { FloatingWorkspacePanelState } from './use-floating-workspace-panel'
-import type { OnboardingGate } from './use-onboarding-and-feature-tips'
 
 const QuickOpen = lazy(() => import('../components/QuickOpen'))
 const WorktreeJumpPalette = lazy(() => import('../components/WorktreeJumpPalette'))
@@ -34,9 +33,6 @@ const WorkspaceCleanupDialog = lazy(
 const StatusBar = lazy(() =>
   import('../components/status-bar/StatusBar').then((module) => ({ default: module.StatusBar }))
 )
-const SetupGuideModal = lazy(() => import('../components/setup-guide/SetupGuideModal'))
-const FeatureWallModal = lazy(() => import('../components/feature-wall/FeatureWallModal'))
-const FeatureTipsModal = lazy(() => import('../components/feature-tips/FeatureTipsModal'))
 const AddRepoDialog = lazy(() => import('../components/sidebar/AddRepoDialog'))
 const NonGitFolderDialog = lazy(() => import('../components/sidebar/NonGitFolderDialog'))
 const AddProjectFromFolderDialog = lazy(
@@ -68,16 +64,6 @@ const UnexpectedSignoutCard = lazy(() =>
 const RemoteServerUpdateDialog = lazy(
   () => import('../components/settings/RemoteServerUpdateDialog')
 )
-const ContextualTourOverlay = lazy(() =>
-  import('../components/contextual-tours/ContextualTourOverlay').then((module) => ({
-    default: module.ContextualTourOverlay
-  }))
-)
-const SetupGuideTelemetryObserver = lazy(() =>
-  import('../components/setup-guide/SetupGuideTelemetryObserver').then((module) => ({
-    default: module.SetupGuideTelemetryObserver
-  }))
-)
 const FloatingTerminalPanel = lazy(() =>
   import('../components/floating-terminal/FloatingTerminalPanel').then((module) => ({
     default: module.FloatingTerminalPanel
@@ -85,8 +71,6 @@ const FloatingTerminalPanel = lazy(() =>
 )
 // Why: lazy so the WebP asset + overlay module aren't fetched unless the experimental flag is on.
 const PetOverlay = lazy(() => import('../components/pet/PetOverlay'))
-// Why: lazy so onboarding's step modules + assets aren't fetched for users past first-launch.
-const OnboardingFlow = lazy(() => import('../components/onboarding/OnboardingFlow'))
 
 type BoundaryProps = {
   boundaryId: string
@@ -128,9 +112,8 @@ function shouldMountUpdateCardForStatus(status: UpdateStatus): boolean {
  */
 export function AppRootSurfaces(props: {
   floatingWorkspace: FloatingWorkspacePanelState
-  onboardingGate: OnboardingGate
 }): React.JSX.Element {
-  const { floatingWorkspace, onboardingGate } = props
+  const { floatingWorkspace } = props
   const { mountedLazyModalIds, shouldMountAddRepoDialog } = useLazyModalMounts()
   const activeView = useAppStore((s) => s.activeView)
   const activeModal = useAppStore((s) => s.activeModal)
@@ -144,10 +127,8 @@ export function AppRootSurfaces(props: {
   const petVisible = useAppStore((s) => s.petVisible)
   const dictationState = useAppStore((s) => s.dictationState)
   const updateStatus = useAppStore((s) => s.updateStatus)
-  const activeContextualTourId = useAppStore((s) => s.activeContextualTourId)
   const hasSshCredentialRequest = useAppStore((s) => s.sshCredentialQueue.length > 0)
 
-  const shouldMountSetupGuideTelemetryObserver = persistedUIReady
   const shouldMountUpdateCard = shouldMountUpdateCardForStatus(updateStatus)
   const shouldMountDictationController = voiceEnabled || dictationState !== 'idle'
   const renderPetOverlay = shouldRenderPetOverlay({ persistedUIReady, petEnabled, petVisible })
@@ -168,7 +149,6 @@ export function AppRootSurfaces(props: {
             <FloatingTerminalPanel
               open={floatingWorkspace.open}
               onOpenChange={floatingWorkspace.setOpenWithFocus}
-              tourInteractionSnapshot={floatingWorkspace.tourInteractionSnapshotRef.current}
             />
           </OverlayBoundary>
         </Suspense>
@@ -246,32 +226,7 @@ export function AppRootSurfaces(props: {
             <WorktreeJumpPalette />
           </ModalBoundary>
         ) : null}
-        {mountedLazyModalIds.has('setup-guide') ? (
-          <ModalBoundary boundaryId="modal.setup-guide" resetKey={activeModal === 'setup-guide'}>
-            <SetupGuideModal />
-          </ModalBoundary>
-        ) : null}
-        {mountedLazyModalIds.has('feature-wall') ? (
-          <ModalBoundary boundaryId="modal.feature-wall" resetKey={activeModal === 'feature-wall'}>
-            <FeatureWallModal />
-          </ModalBoundary>
-        ) : null}
-        {mountedLazyModalIds.has('feature-tips') ? (
-          <ModalBoundary boundaryId="modal.feature-tips" resetKey={activeModal === 'feature-tips'}>
-            <FeatureTipsModal />
-          </ModalBoundary>
-        ) : null}
       </Suspense>
-      {shouldMountSetupGuideTelemetryObserver ? (
-        <Suspense fallback={null}>
-          <SetupGuideTelemetryObserver />
-        </Suspense>
-      ) : null}
-      {activeContextualTourId !== null ? (
-        <Suspense fallback={null}>
-          <ContextualTourOverlay />
-        </Suspense>
-      ) : null}
       {/* Why: mount only after UI hydration, else a hidden pet flashes while the store still holds default visibility. */}
       {renderPetOverlay ? (
         <Suspense fallback={null}>
@@ -342,32 +297,10 @@ export function AppRootSurfaces(props: {
           resetKey={activeModal}
           compact
           title={translate('auto.App.722d03aa62', 'The crash report dialog hit an error.')}
-          description={translate(
-            'auto.App.acd66311dc',
-            'Use the Help menu after retrying if you still need diagnostics.'
-          )}
         >
           <CrashReportDialog />
         </RecoverableRenderErrorBoundary>
       )}
-      {onboardingGate.onboarding && onboardingGate.shouldRender ? (
-        <Suspense fallback={null}>
-          <RecoverableRenderErrorBoundary
-            boundaryId="modal.onboarding"
-            surface="modal"
-            title={translate('auto.App.f02d37278a', 'Onboarding hit an error.')}
-            description={translate(
-              'auto.App.221a95ba38',
-              'Retry onboarding or close it and continue in the app.'
-            )}
-          >
-            <OnboardingFlow
-              onboarding={onboardingGate.onboarding}
-              onOnboardingChange={onboardingGate.setOnboarding}
-            />
-          </RecoverableRenderErrorBoundary>
-        </Suspense>
-      ) : null}
       {shouldMountDictationController ? (
         <Suspense fallback={null}>
           <OverlayBoundary boundaryId="overlay.dictation" resetKey={activeView}>

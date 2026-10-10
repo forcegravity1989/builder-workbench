@@ -15,10 +15,6 @@ export const CROSS_LOCALE_KEY_OVERRIDES = {
     zh: 'reviewed-by',
     ja: 'reviewed-by'
   },
-  'auto.components.onboarding.OnboardingFlow.a5e5da02f7': {
-    zh: '集成',
-    ja: '連携'
-  },
   // Search-match fragment concatenated flush after the visible theme count; MT dropped the
   // en leading space that separates it from the count.
   'auto.components.settings.SettingsFormControls.c822571b2e': {
@@ -141,10 +137,6 @@ export const CROSS_LOCALE_KEY_OVERRIDES = {
   },
   // Terminal cursor-color group: the on-screen cursor, not the Cursor editor.
   'auto.components.settings.TerminalWindowSection.c9e1fdf42f': {
-    ko: '커서',
-    zh: '光标'
-  },
-  'auto.components.onboarding.ThemeStep.ab2a583a97': {
     ko: '커서',
     zh: '光标'
   },

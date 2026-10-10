@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { getAgentCatalog } from '@/lib/agent-catalog'
 import { getScreenSubmitModifierLabel } from '@/lib/screen-submit-shortcut'
 import { resolveProjectCloneUrlPrefill } from '@/lib/project-clone-url-prefill'
-import { useContextualTour } from '@/components/contextual-tours/use-contextual-tour'
+import { useRecordFeatureUse } from '@/hooks/use-record-feature-use'
 import {
   AddRemoteHostDialog,
   type AddRemoteHostMode
@@ -57,7 +57,6 @@ export default function NewWorkspaceComposerCard(
 ): React.JSX.Element {
   useTranslation()
   const {
-    contextualTourSource,
     containerClassName,
     composerRef,
     onComposerNodeChange,
@@ -83,7 +82,6 @@ export default function NewWorkspaceComposerCard(
   const ephemeralVmRecipes = props.ephemeralVmRecipes ?? EMPTY_EPHEMERAL_VM_RECIPES
   const { isFileDragOver, dragHandlers } = useComposerFileDragOver()
   const openModal = useAppStore((state) => state.openModal)
-  const activeModal = useAppStore((state) => state.activeModal)
   const defaultTuiAgent = useAppStore((state) => state.settings?.defaultTuiAgent ?? null)
   const disabledTuiAgents = useAppStore(
     (state) => state.settings?.disabledTuiAgents ?? DEFAULT_DISABLED_TUI_AGENTS
@@ -273,14 +271,7 @@ export default function NewWorkspaceComposerCard(
     agentTrigger?.focus()
   }, [composerRef])
 
-  useContextualTour(
-    'workspace-creation',
-    projectOptions.length > 0 && Boolean(selectedProjectId),
-    contextualTourSource ??
-      (activeModal === 'new-workspace-composer'
-        ? 'workspace_creation_modal'
-        : 'workspace_creation_visible')
-  )
+  useRecordFeatureUse('workspace-creation', projectOptions.length > 0 && Boolean(selectedProjectId))
 
   return (
     <div

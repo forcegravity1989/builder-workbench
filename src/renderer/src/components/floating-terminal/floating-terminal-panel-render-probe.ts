@@ -71,17 +71,6 @@ export function findByProp(node: unknown, propName: string): ReactElementLike {
   return found
 }
 
-export function collectPropValues(node: unknown, propName: string): unknown[] {
-  const values: unknown[] = []
-  visit(node, (entry) => {
-    const value = entry.props[propName]
-    if (value !== undefined) {
-      values.push(value)
-    }
-  })
-  return values
-}
-
 export function runEffects(): void {
   const layoutEffects = hookRuntime.layoutEffects.splice(0)
   for (const effect of layoutEffects) {
@@ -108,16 +97,11 @@ export async function flushAsyncWork(): Promise<void> {
 
 export async function renderPanel(
   open: boolean,
-  onOpenChange: (open: boolean) => void = vi.fn(),
-  tourInteractionSnapshot?: {
-    wasPreviouslyInteracted: boolean
-    persisted?: Promise<void>
-    recordFeatureInteractionForTour: boolean
-  } | null
+  onOpenChange: (open: boolean) => void = vi.fn()
 ): Promise<unknown> {
   hookRuntime.index = 0
   const { FloatingTerminalPanel } = await import('./FloatingTerminalPanel')
-  return FloatingTerminalPanel({ open, onOpenChange, tourInteractionSnapshot })
+  return FloatingTerminalPanel({ open, onOpenChange })
 }
 
 export function getPanelStyleBounds(element: unknown): FloatingTerminalPanelBounds {

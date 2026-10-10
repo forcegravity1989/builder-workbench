@@ -13,7 +13,7 @@ import { useWorkspaceBoardTaskStatusSync } from './use-workspace-board-task-stat
 import { useWorkspaceKanbanStatusActions } from './use-workspace-kanban-status-actions'
 import { useWorkspaceKanbanWorktreeActions } from './use-workspace-kanban-worktree-actions'
 import type { Worktree } from '../../../../shared/worktree/types'
-import { useContextualTour } from '@/components/contextual-tours/use-contextual-tour'
+import { useRecordFeatureUse } from '@/hooks/use-record-feature-use'
 import { getWorktreeHostIdentity } from '../../../../shared/worktree/host-qualified-identity'
 import WorkspaceKanbanDrawerView from './WorkspaceKanbanDrawerView'
 import { useWorkspaceKanbanBoardProjection } from './use-workspace-kanban-board-projection'
@@ -233,7 +233,7 @@ function WorkspaceKanbanDrawerContent({
 
   useWorkspaceKanbanShiftWheelScroll(boardRef, laneScrollerRef, open, isPointerDragActiveRef)
   useWorkspaceKanbanOutsideDismiss({ open, boardRef, preserveOpenForMenu, onOpenChange })
-  useContextualTour('workspace-board', open && !dragPreview, 'workspace_board_visible')
+  useRecordFeatureUse('workspace-board', open && !dragPreview)
 
   return (
     <WorkspaceKanbanDrawerView

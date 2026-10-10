@@ -1,9 +1,7 @@
 import type { PersistedUIState } from '../../../../../shared/persisted-ui-state-types'
 import type { TaskResumeState, TaskViewPresetId } from '../../../../../shared/ui-chrome-types'
 import type { FeatureInteractionState } from '../../../../../shared/feature-interactions'
-import type { ContextualTourId } from '../../../../../shared/contextual-tours'
 import { normalizeFeatureInteractions } from '../../../../../shared/feature-interactions'
-import { normalizeContextualTourIds } from '../../../../../shared/contextual-tours'
 import type { UISlice } from './ui-slice-contract'
 import {
   sanitizeAcknowledgedAgentsByPaneKey,
@@ -126,17 +124,6 @@ export function mergeFeatureInteractionState(
       : incomingRecord
   }
   return merged
-}
-
-export function mergeContextualTourSeenIds(
-  current: readonly ContextualTourId[],
-  incoming: PersistedUIState['contextualToursSeenIds']
-): ContextualTourId[] {
-  const merged = new Set<ContextualTourId>(normalizeContextualTourIds(current))
-  for (const id of normalizeContextualTourIds(incoming)) {
-    merged.add(id)
-  }
-  return [...merged]
 }
 
 /** Stale acks/marks are inert (paneKey reuse beats them via stateStartedAt); the sanitizers only bound growth past HYDRATE_MAX_AGE_MS. */

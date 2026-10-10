@@ -105,13 +105,12 @@ async function readColumnSnapshot(page: Page, ptyId: string): Promise<ColumnSnap
   return { xtermCols, ptyCols }
 }
 
-async function closeRightSidebarAndFeatureTips(page: Page): Promise<void> {
+async function closeRightSidebar(page: Page): Promise<void> {
   await page.evaluate(() => {
     const store = window.__store
     if (!store) {
       return
     }
-    store.getState().markFeatureTipsSeen(['orca-cli', 'cmd-j-palette', 'voice-dictation'])
     if (store.getState().rightSidebarOpen) {
       store.getState().setRightSidebarOpen(false)
     }
@@ -130,7 +129,7 @@ test.describe('Terminal column desync repro', () => {
     test.setTimeout(120_000)
     await waitForSessionReady(orcaPage)
     await waitForActiveWorktree(orcaPage)
-    await closeRightSidebarAndFeatureTips(orcaPage)
+    await closeRightSidebar(orcaPage)
     await ensureTerminalVisible(orcaPage)
     const ptyId = await settleTerminal(orcaPage)
 
@@ -174,7 +173,7 @@ test.describe('Terminal column desync repro', () => {
     test.setTimeout(120_000)
     await waitForSessionReady(orcaPage)
     await waitForActiveWorktree(orcaPage)
-    await closeRightSidebarAndFeatureTips(orcaPage)
+    await closeRightSidebar(orcaPage)
     await ensureTerminalVisible(orcaPage)
     const ptyId = await settleTerminal(orcaPage)
 
@@ -211,7 +210,7 @@ test.describe('Terminal column desync repro', () => {
       return
     }
 
-    await closeRightSidebarAndFeatureTips(orcaPage)
+    await closeRightSidebar(orcaPage)
     await ensureTerminalVisible(orcaPage)
     const ptyId = await settleTerminal(orcaPage)
     await orcaPage.setViewportSize({ width: 1280, height: 800 })
@@ -253,7 +252,7 @@ test.describe('Terminal column desync repro', () => {
       return
     }
 
-    await closeRightSidebarAndFeatureTips(orcaPage)
+    await closeRightSidebar(orcaPage)
     await ensureTerminalVisible(orcaPage)
     const ptyId = await settleTerminal(orcaPage)
 
@@ -286,7 +285,7 @@ test.describe('Terminal column desync repro', () => {
     test.setTimeout(180_000)
     await waitForSessionReady(orcaPage)
     await waitForActiveWorktree(orcaPage)
-    await closeRightSidebarAndFeatureTips(orcaPage)
+    await closeRightSidebar(orcaPage)
     await ensureTerminalVisible(orcaPage)
     await orcaPage.setViewportSize({ width: 1280, height: 800 })
     await orcaPage.waitForTimeout(300)
@@ -349,7 +348,7 @@ test.describe('Terminal column desync repro', () => {
 
     await waitForSessionReady(orcaPage)
     await waitForActiveWorktree(orcaPage)
-    await closeRightSidebarAndFeatureTips(orcaPage)
+    await closeRightSidebar(orcaPage)
     await ensureTerminalVisible(orcaPage)
     await orcaPage.setViewportSize({ width: 1440, height: 900 })
     await orcaPage.waitForTimeout(300)
@@ -368,7 +367,7 @@ test.describe('Terminal column desync repro', () => {
       await orcaPage.waitForFunction(() => Boolean(window.__store), null, { timeout: 30_000 })
       await waitForSessionReady(orcaPage)
       await waitForActiveWorktree(orcaPage)
-      await closeRightSidebarAndFeatureTips(orcaPage)
+      await closeRightSidebar(orcaPage)
       await ensureTerminalVisible(orcaPage)
 
       // Resize narrower while the split panes are mounting / their PTYs spawn.
@@ -434,7 +433,7 @@ test.describe('Terminal column desync repro', () => {
       }
       await waitForSessionReady(orcaPage)
       await waitForActiveWorktree(orcaPage)
-      await closeRightSidebarAndFeatureTips(orcaPage)
+      await closeRightSidebar(orcaPage)
       await ensureTerminalVisible(orcaPage)
 
       // Resize down while the terminal is mounting / the PTY is spawning.

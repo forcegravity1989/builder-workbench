@@ -290,10 +290,7 @@ export function AutomationsListPanel(props: AutomationsListPanelProps): React.JS
   }
 
   return (
-    <section
-      className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-4 md:px-5"
-      data-contextual-tour-target="automations-list"
-    >
+    <section className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-4 md:px-5">
       <AutomationListToolbar
         toolbarRef={toolbarRef}
         listSearchQuery={listSearchQuery}

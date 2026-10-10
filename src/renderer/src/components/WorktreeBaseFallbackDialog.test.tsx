@@ -2,7 +2,7 @@
 
 import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
 import WorktreeBaseFallbackDialog from './WorktreeBaseFallbackDialog'
@@ -15,10 +15,7 @@ const initialState = useAppStore.getInitialState()
 let root: Root | null = null
 
 async function renderDialog(activeModal: AppState['activeModal'] = 'none'): Promise<void> {
-  useAppStore.setState({
-    activeModal,
-    setContextualToursBlockingSurfaceVisible: vi.fn()
-  })
+  useAppStore.setState({ activeModal })
   const container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)

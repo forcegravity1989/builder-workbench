@@ -25,58 +25,44 @@ export function CrashReportDialog(): React.JSX.Element | null {
     setOpen(true)
   }, [])
 
-  const loadCrashReport = useCallback(
-    async (promptIfPresent: boolean): Promise<void> => {
-      setLoading(true)
-      try {
-        const nextReport = promptIfPresent
-          ? await window.api.crashReports.getLatestPending()
-          : await window.api.crashReports.getLatestReport()
-        let displayedReport = nextReport
-        if (nextReport?.status === 'pending' && promptIfPresent) {
-          try {
-            // Why: startup crash prompts are one-shot. The lazy dialog keeps the
-            // report data locally if the user sends immediately, while Help >
-            // Report Crash can still reopen dismissed unsent reports.
-            await window.api.crashReports.dismiss({ reportId: nextReport.id })
-            displayedReport = { ...nextReport, status: 'dismissed' as const }
-          } catch (error) {
-            console.error('Failed to dismiss crash report after startup prompt:', error)
-          }
-        }
-        if (!mountedRef.current) {
-          return
-        }
-        setReport(displayedReport)
-        if (nextReport && promptIfPresent) {
-          setOpen(true)
-        }
-      } catch (error) {
-        console.error('Failed to load crash report:', error)
-      } finally {
-        if (mountedRef.current) {
-          setLoading(false)
+  const loadPendingCrashReport = useCallback(async (): Promise<void> => {
+    setLoading(true)
+    try {
+      const nextReport = await window.api.crashReports.getLatestPending()
+      let displayedReport = nextReport
+      if (nextReport?.status === 'pending') {
+        try {
+          // Why: startup crash prompts are one-shot. The lazy dialog keeps the
+          // report data locally if the user sends immediately.
+          await window.api.crashReports.dismiss({ reportId: nextReport.id })
+          displayedReport = { ...nextReport, status: 'dismissed' as const }
+        } catch (error) {
+          console.error('Failed to dismiss crash report after startup prompt:', error)
         }
       }
-    },
-    [mountedRef]
-  )
+      if (!mountedRef.current) {
+        return
+      }
+      setReport(displayedReport)
+      if (nextReport) {
+        setOpen(true)
+      }
+    } catch (error) {
+      console.error('Failed to load crash report:', error)
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false)
+      }
+    }
+  }, [mountedRef])
 
   useEffect(() => {
     if (promptedThisLaunch.current) {
       return
     }
     promptedThisLaunch.current = true
-    void loadCrashReport(true)
-  }, [loadCrashReport])
-
-  useEffect(() => {
-    return window.api.ui.onOpenCrashReport(() => {
-      setReport(null)
-      setOpen(true)
-      void loadCrashReport(false)
-    })
-  }, [loadCrashReport])
+    void loadPendingCrashReport()
+  }, [loadPendingCrashReport])
 
   useEffect(() => {
     const pendingReport = takePendingReactErrorBoundaryReport()

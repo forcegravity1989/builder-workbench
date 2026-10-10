@@ -591,7 +591,9 @@ test('recovery error stays visible until toolbar retry repairs registration', as
     ipcMain.handle('browser:isGuestRegistered', () => false)
   })
   await orcaPage
-    .locator('[data-contextual-tour-target="browser-toolbar"]')
+    .locator('[data-browser-chrome-address-slot]')
+    .first()
+    .locator('xpath=..')
     .locator('button')
     .nth(2)
     .click()
@@ -658,7 +660,9 @@ test('attachment keeps recovery error until document readiness', async ({
     }
   )
   await orcaPage
-    .locator('[data-contextual-tour-target="browser-toolbar"]')
+    .locator('[data-browser-chrome-address-slot]')
+    .first()
+    .locator('xpath=..')
     .locator('button')
     .nth(2)
     .click()

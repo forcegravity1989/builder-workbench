@@ -174,7 +174,6 @@ const SHARED_PACKAGE_PREFIXES = [
   'skills/',
   'skill-guides/',
   'resources/build/',
-  'resources/onboarding/',
   'resources/plugins/',
   'resources/skills/',
   ...NATIVE_RUNTIME_PREFIXES

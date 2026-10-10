@@ -8,7 +8,7 @@ import {
 describe('isLazyModalId', () => {
   it('recognizes only lazily retained root modal ids', () => {
     expect(isLazyModalId('quick-open')).toBe(true)
-    expect(isLazyModalId('feature-tips')).toBe(true)
+    expect(isLazyModalId('worktree-palette')).toBe(true)
     expect(isLazyModalId('new-workspace-composer')).toBe(false)
     expect(isLazyModalId('delete-worktree')).toBe(false)
     expect(isLazyModalId('none')).toBe(false)
@@ -30,9 +30,9 @@ describe('resolveMountedLazyModalIds', () => {
 
   it('adds newly opened lazy modal ids without mutating the existing set', () => {
     const mounted = new Set<LazyModalId>(['quick-open'])
-    const resolved = resolveMountedLazyModalIds('feature-wall', mounted)
+    const resolved = resolveMountedLazyModalIds('worktree-palette', mounted)
 
-    expect(resolved).toEqual(new Set(['quick-open', 'feature-wall']))
+    expect(resolved).toEqual(new Set(['quick-open', 'worktree-palette']))
     expect(resolved).not.toBe(mounted)
     expect(mounted).toEqual(new Set(['quick-open']))
   })

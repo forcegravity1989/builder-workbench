@@ -125,30 +125,6 @@ export function createSystemTrayDeferred(
   }
 }
 
-export function sendOpenFeatureTour(targetWindow?: BrowserWindow | null): void {
-  const webContents =
-    targetWindow && !targetWindow.isDestroyed()
-      ? targetWindow.webContents
-      : state.mainWindow?.webContents
-  webContents?.send('ui:openFeatureTour')
-}
-
-export function sendOpenSetupGuide(targetWindow?: BrowserWindow | null): void {
-  const webContents =
-    targetWindow && !targetWindow.isDestroyed()
-      ? targetWindow.webContents
-      : state.mainWindow?.webContents
-  webContents?.send('ui:openSetupGuide')
-}
-
-export function sendOpenCrashReport(targetWindow?: BrowserWindow | null): void {
-  const webContents =
-    targetWindow && !targetWindow.isDestroyed()
-      ? targetWindow.webContents
-      : state.mainWindow?.webContents
-  webContents?.send('ui:openCrashReport')
-}
-
 // Why: on renderer crash-loop the breaker stops auto-reloading and the window goes blank, so a main-process dialog is the only retry/quit surface.
 export async function showRendererRecoveryPrompt(
   recentRecoveryCount: number,

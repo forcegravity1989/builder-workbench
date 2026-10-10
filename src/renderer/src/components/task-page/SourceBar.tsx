@@ -50,10 +50,7 @@ export function TaskPageSourceBar({
   } = model
   return (
     <div className="flex items-center justify-between gap-2">
-      <div
-        className="flex min-w-0 flex-wrap items-center gap-2"
-        data-contextual-tour-target="tasks-source-filters"
-      >
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         {/* Why: Close is anchored left with the source icons for one compact band, clear of the app sidebar on the right. */}
         <Tooltip>
           <TooltipTrigger asChild>

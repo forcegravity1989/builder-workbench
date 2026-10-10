@@ -206,11 +206,11 @@ describe('feature interactions', () => {
       const directRecord = new RegExp(
         `recordFeatureInteraction(?:\\?\\.)?\\(\\s*['"]${escaped}['"]`
       )
-      const contextualTourRecord = new RegExp(`useContextualTour\\(\\s*['"]${escaped}['"]`)
+      const recordFeatureUse = new RegExp(`useRecordFeatureUse\\(\\s*['"]${escaped}['"]`)
       const runtimeMappingReturn = new RegExp(`return[^\\n]*['"]${escaped}['"]`)
       return (
         !directRecord.test(productionText) &&
-        !contextualTourRecord.test(productionText) &&
+        !recordFeatureUse.test(productionText) &&
         !runtimeMappingReturn.test(productionText)
       )
     })

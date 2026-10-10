@@ -50,7 +50,6 @@ export default function WorkspaceKanbanSettingsMenu({
                 'auto.components.sidebar.WorkspaceKanbanSettingsMenu.26cbc92150',
                 'Workspace board settings'
               )}
-              data-contextual-tour-target="workspace-board-settings"
               className="text-muted-foreground"
             >
               <Settings className="size-3.5" />

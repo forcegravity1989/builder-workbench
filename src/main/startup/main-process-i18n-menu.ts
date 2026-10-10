@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app } from 'electron'
 import { ensureMainI18n, setMainUiLanguage } from '../i18n/main-i18n'
 import {
   registerAppMenu,
@@ -8,13 +8,7 @@ import {
 import { zoomDashboardPopoutIfFocused } from '../window/dashboard-popout-window'
 import { recordCrashBreadcrumb } from '../crash-reporting/crash-breadcrumb-store'
 import { mainProcessState as state } from './main-process-state'
-import {
-  openSettingsFromSystemMenu,
-  runUserInitiatedUpdateCheck,
-  sendOpenCrashReport,
-  sendOpenFeatureTour,
-  sendOpenSetupGuide
-} from './main-window-actions'
+import { openSettingsFromSystemMenu, runUserInitiatedUpdateCheck } from './main-window-actions'
 import { ensureAutoUpdaterConfigured } from '../window/attach-main-window-services'
 import { logStartupMilestone } from './startup-diagnostics'
 
@@ -39,19 +33,6 @@ export async function initializeMainProcessI18nAndMenu(): Promise<void> {
       recordCrashBreadcrumb('manual_reload_requested', { ignoreCache })
     },
     onOpenSettings: openSettingsFromSystemMenu,
-    onOpenSetupGuide: (targetWindow) => {
-      recordCrashBreadcrumb('setup_guide_opened')
-      sendOpenSetupGuide(targetWindow instanceof BrowserWindow ? targetWindow : null)
-    },
-    onOpenCrashReport: (targetWindow) => {
-      recordCrashBreadcrumb('crash_report_opened')
-      sendOpenCrashReport(targetWindow instanceof BrowserWindow ? targetWindow : null)
-    },
-    onOpenFeatureTour: (targetWindow) => {
-      recordCrashBreadcrumb('feature_tour_opened')
-      // Why: use the invoking BrowserWindow so hidden/E2E and multi-window flows route to the right renderer, not global focus.
-      sendOpenFeatureTour(targetWindow instanceof BrowserWindow ? targetWindow : null)
-    },
     // Why: menu zoom must act on the window the user is looking at — routing to
     // the main window while the dashboard pop-out is focused zooms behind it.
     onZoomIn: () => {

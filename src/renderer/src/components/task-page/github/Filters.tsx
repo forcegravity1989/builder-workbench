@@ -58,10 +58,7 @@ export function TaskPageGitHubFilters({
     // Why: top of the joined GitHub list card — pairs with the
     // table shell below (rounded-t-none border-t-0) as one surface.
     // Workbench puts Issues/PRs, presets, and Filters on that one row.
-    <div
-      className="flex min-w-0 flex-col gap-2.5 rounded-md rounded-b-none border border-border/50 bg-muted/35 px-3 py-2.5"
-      data-contextual-tour-target="tasks-search-presets"
-    >
+    <div className="flex min-w-0 flex-col gap-2.5 rounded-md rounded-b-none border border-border/50 bg-muted/35 px-3 py-2.5">
       <div
         className={cn(
           'flex min-w-0',
@@ -145,10 +142,7 @@ export function TaskPageGitHubFilters({
               </button>
             ) : null}
           </div>
-          <div
-            className="flex shrink-0 items-center gap-2"
-            data-contextual-tour-target="tasks-actions"
-          >
+          <div className="flex shrink-0 items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

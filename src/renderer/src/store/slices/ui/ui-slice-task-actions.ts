@@ -1,6 +1,5 @@
 import type { UISlice, UISliceGet, UISliceSet } from './ui-slice-contract'
 import { findPrevLiveNonTaskStackHistoryIndex } from '../worktree-nav-history'
-import { hasFeatureInteraction } from '../../../../../shared/feature-interactions'
 import {
   normalizeVisibleTaskProviders,
   restoreAvailableDefaultTaskProvider,
@@ -32,16 +31,6 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
     newWorkspaceDraft: null,
     openTaskPage: (data = {}, options = {}) => {
       if (options.recordTasksInteraction !== false) {
-        const wasTasksPreviouslyInteracted = hasFeatureInteraction(
-          get().featureInteractions,
-          'tasks'
-        )
-        set((state) => ({
-          contextualTourNavigationInteractionSnapshot: {
-            ...state.contextualTourNavigationInteractionSnapshot,
-            tasks: wasTasksPreviouslyInteracted
-          }
-        }))
         get().recordFeatureInteraction?.('tasks')
       }
       if (data.openGitHubWorkItem) {

@@ -209,7 +209,6 @@ export function TaskPageLinearIssueTable({
                     // Why: solid primary when a workspace is already linked so Open reads stronger than Start.
                     variant={attachedWorkspace ? 'default' : 'ghost'}
                     size="icon-xs"
-                    data-contextual-tour-target="tasks-start-workspace"
                     onClick={(event) => {
                       event.stopPropagation()
                       handleOpenOrUseLinearItem(issue)

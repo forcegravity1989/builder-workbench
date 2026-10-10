@@ -69,7 +69,7 @@ async function setWindowWidth(electronApp: ElectronApplication, width: number): 
 }
 
 function browserToolbar(page: Page): Locator {
-  return page.locator('[data-contextual-tour-target="browser-toolbar"]').first()
+  return page.locator('[data-browser-chrome-address-slot]').first().locator('xpath=..')
 }
 
 async function toolbarWidth(page: Page): Promise<number> {

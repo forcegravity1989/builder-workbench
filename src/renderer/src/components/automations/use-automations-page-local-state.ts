@@ -5,7 +5,7 @@ import type {
   ExternalAutomationManager
 } from '../../../../shared/automations-types'
 import type { OrcaHooks } from '../../../../shared/orca-yaml-hook-types'
-import { useContextualTour } from '@/components/contextual-tours/use-contextual-tour'
+import { useRecordFeatureUse } from '@/hooks/use-record-feature-use'
 import type { AutomationCreateTarget, AutomationDraft } from './AutomationEditorDialog'
 import { AUTOMATION_DEFAULT_TIME } from './automation-draft-model'
 import type { AutomationActionNotice } from './automation-row-action-dispatch'
@@ -106,10 +106,9 @@ export function useAutomationsPageLocalState(store: AutomationsPageStoreState) {
     job: ExternalAutomationJob
     scope: ExternalAutomationScope
   } | null>(null)
-  useContextualTour(
+  useRecordFeatureUse(
     'automations',
-    !isLoading && !createOpen && !deleteTarget && !externalDeleteTarget,
-    'automations_open'
+    !isLoading && !createOpen && !deleteTarget && !externalDeleteTarget
   )
   const [editingExternalTarget, setEditingExternalTarget] = useState<{
     manager: ExternalAutomationManager

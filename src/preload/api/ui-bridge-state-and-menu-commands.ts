@@ -36,21 +36,6 @@ export const uiStateAndMenuCommandsApi = {
   },
   consumePendingMarkdownFileOpens: (): Promise<MarkdownDocument[]> =>
     ipcRenderer.invoke('ui:consumePendingMarkdownFileOpens'),
-  onOpenSetupGuide: (callback: () => void): (() => void) => {
-    const listener = (_event: Electron.IpcRendererEvent) => callback()
-    ipcRenderer.on('ui:openSetupGuide', listener)
-    return () => ipcRenderer.removeListener('ui:openSetupGuide', listener)
-  },
-  onOpenFeatureTour: (callback: () => void): (() => void) => {
-    const listener = (_event: Electron.IpcRendererEvent) => callback()
-    ipcRenderer.on('ui:openFeatureTour', listener)
-    return () => ipcRenderer.removeListener('ui:openFeatureTour', listener)
-  },
-  onOpenCrashReport: (callback: () => void): (() => void) => {
-    const listener = (_event: Electron.IpcRendererEvent) => callback()
-    ipcRenderer.on('ui:openCrashReport', listener)
-    return () => ipcRenderer.removeListener('ui:openCrashReport', listener)
-  },
   onToggleLeftSidebar: (callback: () => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent) => callback()
     ipcRenderer.on('ui:toggleLeftSidebar', listener)

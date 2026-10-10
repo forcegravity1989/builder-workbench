@@ -1,4 +1,3 @@
-import { useContextualTour } from '@/components/contextual-tours/use-contextual-tour'
 import { createFloatingTerminalPanelDragActions } from './floating-terminal-panel-drag-actions'
 import type { FloatingTerminalPanelProps } from './floating-terminal-panel-types'
 import { useFloatingTerminalCloseActions } from './use-floating-terminal-close-actions'
@@ -21,19 +20,12 @@ import { useFloatingTerminalShortcutDetails } from './use-floating-terminal-shor
 
 export function useFloatingTerminalPanelController({
   open,
-  onOpenChange,
-  tourInteractionSnapshot
+  onOpenChange
 }: FloatingTerminalPanelProps) {
   const storeState = useFloatingTerminalPanelStoreState()
   const shortcutDetails = useFloatingTerminalShortcutDetails()
   const localState = useFloatingTerminalPanelLocalState()
   const items = useFloatingTerminalPanelItems({ ...storeState, open })
-
-  useContextualTour('floating-workspace', open, 'floating_workspace_visible', {
-    recordFeatureInteraction: tourInteractionSnapshot?.recordFeatureInteractionForTour ?? false,
-    featureInteractionPersisted: tourInteractionSnapshot?.persisted,
-    wasFeaturePreviouslyInteracted: tourInteractionSnapshot?.wasPreviouslyInteracted
-  })
 
   const editorCloseQueue = useFloatingTerminalEditorCloseQueue({ ...storeState, ...localState })
   const geometry = useFloatingTerminalPanelGeometry({ ...storeState, ...localState })

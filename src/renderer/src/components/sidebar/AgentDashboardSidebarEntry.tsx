@@ -68,7 +68,6 @@ export default function AgentDashboardSidebarEntry(): React.JSX.Element {
   return (
     <button
       type="button"
-      data-contextual-tour-target="agents-sidebar"
       onClick={() => {
         if (openAsPopout) {
           void window.api.dashboard.openPopout()

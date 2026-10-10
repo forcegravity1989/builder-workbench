@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { syncZoomCSSVar } from '@/lib/ui-zoom'
 import { installCodexDetachedPaneRestartExecutor } from '@/components/terminal-pane/codex-detached-pane-restart-scheduler'
 import { useAppStore } from '../store'
@@ -34,7 +34,6 @@ import {
   type ExecutionHostId
 } from '../../../shared/execution-host'
 import { mapWithConcurrency } from '../../../shared/map-with-concurrency'
-import type { OnboardingState } from '../../../shared/onboarding-state-types'
 import { restoreLocalStructuredSessionTabsOnce } from '../runtime/local-structured-session-tabs-sync'
 import { ensureLocalRuntimeCapabilities } from '../runtime/local-runtime-capabilities'
 
@@ -54,15 +53,8 @@ async function listRuntimeSessionHostIdsForStartup(): Promise<ExecutionHostId[]>
  * the workspace session, SSH reconnect, and terminal restoration — then unlocks the session
  * writer. A failure anywhere leaves disk state untouched and boots in degraded no-save mode.
  */
-export function useAppStartupHydration(onOnboardingLoaded: (state: OnboardingState) => void): void {
+export function useAppStartupHydration(): void {
   const actions = useStartupActions()
-  // Why a ref: the boot chain must not restart if a caller passes a new callback identity.
-  // Synced in an effect (declared before the chain below, so it lands first on mount) because
-  // a render-phase write can leak from a render React discards.
-  const onOnboardingLoadedRef = useRef(onOnboardingLoaded)
-  useEffect(() => {
-    onOnboardingLoadedRef.current = onOnboardingLoaded
-  }, [onOnboardingLoaded])
 
   useEffect(() => installCodexDetachedPaneRestartExecutor(), [])
 
@@ -97,16 +89,12 @@ export function useAppStartupHydration(onOnboardingLoaded: (state: OnboardingSta
           useAppStore.getState().settings,
           getSystemPrefersDark()
         )
-        // Why: start keybindings + onboarding now so their IPC overlaps the local catalog scans; await them at their original spots. The .catch marks rejections handled if an earlier await throws first.
+        // Why: start keybindings now so its IPC overlaps the local catalog scans; await it at its original spot. The .catch marks rejections handled if an earlier await throws first.
         // Why: browser session profiles are NOT started early — on a remote runtime the RPC may be unconnected and a failed fetch clears the list.
         const keybindingsPromise = timeRendererStartupStep('fetch-keybindings', () =>
           actions.fetchKeybindings()
         )
         keybindingsPromise.catch(() => {})
-        const onboardingPromise = timeRendererStartupStep('onboarding-get', () =>
-          window.api.onboarding.get()
-        )
-        onboardingPromise.catch(() => {})
         // Why: await ui.get() (not overlap) so persisted view settings hydrate before the local catalog/session steps and first paint reflects them.
         const persistedUI = await timeRendererStartupStep('ui-get', () => window.api.ui.get())
         uiHydrated = timeRendererStartupSyncStep('hydrate-persisted-ui', () =>
@@ -232,11 +220,6 @@ export function useAppStartupHydration(onOnboardingLoaded: (state: OnboardingSta
           void timeRendererStartupStep('fetch-browser-session-profiles', () =>
             actions.fetchBrowserSessionProfiles()
           ).catch(() => {})
-          const onboardingState = await onboardingPromise
-          if (!cancelled) {
-            onOnboardingLoadedRef.current(onboardingState)
-          }
-
           // Why: re-establish SSH before terminal reconnect so SSH-backed tabs route through pty.attach; passphrase targets defer to tab focus to avoid stacked credential dialogs.
           // Why: never dial runtime-owned (ephemeral-VM) targets from the renderer — ssh.connect would dispose the runtime layer's live relay session; filter them out here too.
           const connectionIds = (sessionRead.session.activeConnectionIdsAtShutdown ?? []).filter(
@@ -297,7 +280,7 @@ export function useAppStartupHydration(onOnboardingLoaded: (state: OnboardingSta
           actions.setHydrationSucceeded(true)
           actions.setTerminalStartupRestorationReady(true)
           // Why the explicit opt-in: unconditional seeding hijacks every empty dev
-          // profile's active workspace, making onboarding/empty-state flows untestable.
+          // profile's active workspace, making empty-state flows untestable.
           if (
             import.meta.env.DEV &&
             String(import.meta.env.VITE_ACTIVITY_DEV_FIXTURE).toLowerCase() === 'true'

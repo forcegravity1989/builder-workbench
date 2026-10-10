@@ -60,8 +60,7 @@ export function StatusBarUsageEmptyCta(): React.JSX.Element {
                 'Agent usage limits'
               )}
             </div>
-            {/* Why: permanently hide the teaching CTA — styling mirrors the
-                SetupGuideSidebarEntry hover-state icon (muted → foreground). */}
+            {/* Why: permanently hide the teaching CTA; the icon goes muted → foreground on hover. */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
