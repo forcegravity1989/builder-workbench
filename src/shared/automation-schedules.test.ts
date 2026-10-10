@@ -282,37 +282,30 @@ describe('automation schedules', () => {
   })
 
   it('parses MINUTELY interval and COUNT rules and reverse-maps them', () => {
-    // 解析：间隔与次数是 RRULE 标准语义；BYHOUR/BYMINUTE 仅对日历型生效。
+    // 解析：间隔是 RRULE 标准语义；BYHOUR/BYMINUTE 仅对日历型生效；
+    // COUNT 容忍出现但不生效（2026-10-10 再审砍除执行次数上限）。
     const parsed = parseSchedule('FREQ=MINUTELY;INTERVAL=90;COUNT=5')
-    expect(parsed).toMatchObject({ kind: 'rrule', freq: 'MINUTELY', interval: 90, count: 5 })
+    expect(parsed).toMatchObject({ kind: 'rrule', freq: 'MINUTELY', interval: 90 })
 
-    // 缺省：无 INTERVAL=1、无 COUNT=null，与存量表达式解析结果一致。
+    // 缺省：无 INTERVAL=1，与存量表达式解析结果一致。
     expect(parseSchedule('FREQ=DAILY;BYHOUR=9;BYMINUTE=0')).toMatchObject({
       freq: 'DAILY',
-      interval: 1,
-      count: null
+      interval: 1
     })
 
     // 反映射：90 分钟不是整小时 → every_n_minutes；120 分钟 → every_n_hours。
     expect(parseAutomationRrule('FREQ=MINUTELY;INTERVAL=90;COUNT=5')).toMatchObject({
       preset: 'every_n_minutes',
-      intervalMinutes: 90,
-      runCountCap: 5
+      intervalMinutes: 90
     })
     expect(parseAutomationRrule('FREQ=MINUTELY;INTERVAL=120')).toMatchObject({
       preset: 'every_n_hours',
       intervalMinutes: 120
     })
-    // 日历型带 COUNT 也能读回上限。
-    expect(parseAutomationRrule('FREQ=DAILY;BYHOUR=9;BYMINUTE=0;COUNT=3')).toMatchObject({
-      preset: 'daily',
-      runCountCap: 3
-    })
 
-    // 非法值拒绝：INTERVAL/COUNT 必须是正整数。
+    // 非法值拒绝：INTERVAL 必须是正整数。
     expect(() => parseSchedule('FREQ=MINUTELY;INTERVAL=0')).toThrow()
     expect(() => parseSchedule('FREQ=MINUTELY;INTERVAL=abc')).toThrow()
-    expect(() => parseSchedule('FREQ=DAILY;BYHOUR=9;BYMINUTE=0;COUNT=0')).toThrow()
   })
 
   it('computes every-90-minute occurrences from dtstart without hour boundaries', () => {
@@ -333,21 +326,17 @@ describe('automation schedules', () => {
       latestAutomationOccurrenceAtOrBefore(rrule, dtstart, new Date('2026-05-13T11:00:00').getTime())
     ).toBeNull()
 
-    // buildAutomationRrule：间隔与次数上限往返。
+    // buildAutomationRrule：间隔表达往返（执行次数上限已砍，不再拼 COUNT）。
     expect(
       buildAutomationRrule({
         preset: 'every_n_minutes',
         hour: 9,
         minute: 0,
-        intervalMinutes: 90,
-        runCountCap: 5
+        intervalMinutes: 90
       })
-    ).toBe('FREQ=MINUTELY;INTERVAL=90;COUNT=5')
+    ).toBe('FREQ=MINUTELY;INTERVAL=90')
     expect(
       buildAutomationRrule({ preset: 'every_n_hours', hour: 9, minute: 0, intervalMinutes: 120 })
     ).toBe('FREQ=MINUTELY;INTERVAL=120')
-    expect(buildAutomationRrule({ preset: 'daily', hour: 9, minute: 0, runCountCap: 3 })).toBe(
-      'FREQ=DAILY;BYHOUR=9;BYMINUTE=0;COUNT=3'
-    )
   })
 })

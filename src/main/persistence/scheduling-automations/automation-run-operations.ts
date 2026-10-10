@@ -192,9 +192,6 @@ export function updateAutomationRun(
     outputSnapshot: Object.hasOwn(result, 'outputSnapshot')
       ? normalizeAutomationRunOutputSnapshot(result.outputSnapshot)
       : normalizeAutomationRunOutputSnapshot(current.outputSnapshot),
-    promptSnapshot: Object.hasOwn(result, 'promptSnapshot')
-      ? (result.promptSnapshot ?? null)
-      : (current.promptSnapshot ?? null),
     precheckResult: Object.hasOwn(result, 'precheckResult')
       ? normalizeAutomationPrecheckResult(result.precheckResult)
       : normalizeAutomationPrecheckResult(current.precheckResult),

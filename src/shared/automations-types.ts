@@ -41,7 +41,6 @@ export type AutomationSchedulePreset =
   | 'once'
   | 'every_n_minutes'
   | 'every_n_hours'
-export type AutomationConcurrencyPolicy = 'skip' | 'allow'
 export type AutomationRunUsageProvider = 'claude' | 'codex'
 export type AutomationRunUsageStatus = 'known' | 'unavailable'
 export type AutomationRunUsageAttribution = 'provider_session_time_window'
@@ -142,10 +141,6 @@ export type Automation = {
   /** 已实际派发的调度次数（跳过/错过/手动不累计）。持久正本：运行历史会被保留
    *  策略裁剪，不能从 runs 数（铁律一：杀进程重开数字能重新计算）。 */
   scheduledRunCount?: number
-  /** 到点时上次仍在运行怎么办；缺省 'skip'（存量任务默认值变化见发布说明）。 */
-  concurrencyPolicy?: AutomationConcurrencyPolicy
-  /** 派发时是否把最近一次成功运行的输出附于提示词末尾；缺省 false。 */
-  carryLastRunOutput?: boolean
   missedRunPolicy: AutomationMissedRunPolicy
   missedRunGraceMinutes: number
   createdAt: number
@@ -172,9 +167,6 @@ export type AutomationRun = {
    *  run reopening must target the pane that actually executed the run. */
   terminalPaneKey: string | null
   terminalPtyId: string | null
-  /** 派发时实际递交的完整提示词（含一次性上下文与携带的上次结果）。存量运行为
-   *  null，详情页显示「未记录」，不造假。 */
-  promptSnapshot?: string | null
   outputSnapshot: AutomationRunOutputSnapshot | null
   precheckResult: AutomationPrecheckResult | null
   usage: AutomationRunUsage | null
@@ -223,8 +215,6 @@ export type AutomationCreateInput = {
   onceAt?: number
   enabled?: boolean
   missedRunGraceMinutes?: number
-  concurrencyPolicy?: AutomationConcurrencyPolicy
-  carryLastRunOutput?: boolean
 }
 
 export type AutomationUpdateInput = Partial<
@@ -247,8 +237,6 @@ export type AutomationUpdateInput = Partial<
     | 'dtstart'
     | 'enabled'
     | 'missedRunGraceMinutes'
-    | 'concurrencyPolicy'
-    | 'carryLastRunOutput'
   >
 > & {
   /** 一次性时刻：null 显式清除（一次性⇄循环切换），undefined 未提供。 */
@@ -261,9 +249,6 @@ export type AutomationDispatchRequest = {
   dispatchToken: string
   /** This run's one-shot context, appended to the saved prompt at dispatch. Never written back to the record. */
   oneShotPrompt?: string | null
-  /** 携带的上次成功运行输出（carryLastRunOutput 开启时由主进程取好随派发下发），
-   *  渲染侧与主进程用同一纯函数拼装，保证快照 == 递交。 */
-  carriedOutput?: string | null
 }
 
 export type AutomationDispatchResult = {
@@ -278,8 +263,6 @@ export type AutomationDispatchResult = {
   precheckResult?: AutomationPrecheckResult | null
   usage?: AutomationRunUsage | null
   error?: string | null
-  /** 派发时实际递交的完整提示词；与运行行的 promptSnapshot 同源。 */
-  promptSnapshot?: string | null
 }
 
 export type ExternalAutomationProvider = 'hermes' | 'openclaw'

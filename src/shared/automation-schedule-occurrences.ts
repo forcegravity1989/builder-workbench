@@ -40,10 +40,6 @@ function scanDayCandidates(rule: ParsedRrule, anchor: number, direction: 1 | -1)
   return null
 }
 
-function withRunCountCap(rrule: string, cap: number | undefined): string {
-  return cap === undefined ? rrule : `${rrule};COUNT=${Math.max(1, Math.floor(cap))}`
-}
-
 export function buildAutomationRrule(args: {
   preset: Exclude<AutomationSchedulePreset, 'custom' | 'once'>
   hour: number
@@ -51,32 +47,24 @@ export function buildAutomationRrule(args: {
   dayOfWeek?: number
   /** every_n_minutes / every_n_hours 的间隔（统一换算为分钟）。 */
   intervalMinutes?: number
-  /** 可选执行次数上限 → ;COUNT=n。仅预设节奏可用；自定义 cron 不支持（存储只在 rrule）。 */
-  runCountCap?: number
 }): string {
   const hour = Math.max(0, Math.min(23, Math.floor(args.hour)))
   const minute = Math.max(0, Math.min(59, Math.floor(args.minute)))
   if (args.preset === 'every_n_minutes' || args.preset === 'every_n_hours') {
     const interval = Math.max(1, Math.floor(args.intervalMinutes ?? 60))
-    return withRunCountCap(`FREQ=MINUTELY;INTERVAL=${interval}`, args.runCountCap)
+    return `FREQ=MINUTELY;INTERVAL=${interval}`
   }
   if (args.preset === 'hourly') {
-    return withRunCountCap(`FREQ=HOURLY;BYMINUTE=${minute}`, args.runCountCap)
+    return `FREQ=HOURLY;BYMINUTE=${minute}`
   }
   if (args.preset === 'weekdays') {
-    return withRunCountCap(
-      `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=${hour};BYMINUTE=${minute}`,
-      args.runCountCap
-    )
+    return `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;BYHOUR=${hour};BYMINUTE=${minute}`
   }
   if (args.preset === 'weekly') {
     const day = DAY_CODES[Math.max(0, Math.min(6, Math.floor(args.dayOfWeek ?? 1)))]
-    return withRunCountCap(
-      `FREQ=WEEKLY;BYDAY=${day};BYHOUR=${hour};BYMINUTE=${minute}`,
-      args.runCountCap
-    )
+    return `FREQ=WEEKLY;BYDAY=${day};BYHOUR=${hour};BYMINUTE=${minute}`
   }
-  return withRunCountCap(`FREQ=DAILY;BYHOUR=${hour};BYMINUTE=${minute}`, args.runCountCap)
+  return `FREQ=DAILY;BYHOUR=${hour};BYMINUTE=${minute}`
 }
 
 export function buildAutomationCronSchedule(args: {

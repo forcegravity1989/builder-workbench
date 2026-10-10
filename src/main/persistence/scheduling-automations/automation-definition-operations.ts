@@ -107,10 +107,6 @@ export function createAutomation(
     dtstart: input.dtstart,
     // 一次性建档：nextRunAt 直写 onceAt，不走出现计算（design「调度解析」）。
     ...(input.onceAt != null ? { onceAt: input.onceAt } : {}),
-    ...(input.concurrencyPolicy ? { concurrencyPolicy: input.concurrencyPolicy } : {}),
-    ...(input.carryLastRunOutput !== undefined
-      ? { carryLastRunOutput: input.carryLastRunOutput }
-      : {}),
     enabled: input.enabled ?? true,
     nextRunAt:
       input.onceAt != null

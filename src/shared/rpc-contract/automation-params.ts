@@ -39,7 +39,6 @@ export const AutomationOnceAt = z
   .positive()
   .nullable()
   .optional()
-export const AutomationConcurrencyPolicy = z.enum(['skip', 'allow']).optional()
 
 export const AutomationPrecheck = z
   .object({
@@ -225,8 +224,6 @@ export const AutomationCreate = z
     rrule: requiredString('Missing trigger'),
     dtstart: requiredNumber('Missing trigger start time'),
     onceAt: AutomationOnceAt,
-    concurrencyPolicy: AutomationConcurrencyPolicy,
-    carryLastRunOutput: OptionalBoolean,
     enabled: OptionalBoolean,
     missedRunGraceMinutes: OptionalPositiveInt,
     destination: Destination
@@ -267,8 +264,6 @@ export const AutomationUpdateFields = z
     rrule: OptionalString,
     dtstart: requiredNumber('Missing trigger start time').optional(),
     onceAt: AutomationOnceAt,
-    concurrencyPolicy: AutomationConcurrencyPolicy,
-    carryLastRunOutput: OptionalBoolean,
     enabled: OptionalBoolean,
     missedRunGraceMinutes: OptionalPositiveInt
   })

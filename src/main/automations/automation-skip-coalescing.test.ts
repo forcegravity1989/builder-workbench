@@ -170,13 +170,19 @@ describe('repeated skipped_unavailable coalescing', () => {
     const service = attachedService(store)
 
     await evaluateAt(store, service, automation.id, '2026-05-13T09:01:00')
+    // run #1 先落定终态再关窗：固定并发行为对非终态运行先记 skipped_overlap（service
+    // 测试另有专例看护）；本例看的是关窗后的拒绝折叠，上一次运行必须已结束。
+    const firstRun = store
+      .listAutomationRuns(automation.id)
+      .find((run) => run.status === 'dispatching')
+    store.updateAutomationRun({ runId: firstRun!.id, status: 'completed', workspaceId: null })
     service.setWebContents(null)
     await evaluateAt(store, service, automation.id, '2026-05-14T09:01:00')
     await evaluateAt(store, service, automation.id, '2026-05-15T09:01:00')
     await evaluateAt(store, service, automation.id, '2026-05-16T09:01:00')
 
     const runs = store.listAutomationRuns(automation.id)
-    expect(runs.map((run) => run.status)).toEqual(['skipped_unavailable', 'dispatching'])
+    expect(runs.map((run) => run.status)).toEqual(['skipped_unavailable', 'completed'])
     expect(runs[0]).toMatchObject({
       error: NO_WINDOW,
       occurrenceCount: 3,

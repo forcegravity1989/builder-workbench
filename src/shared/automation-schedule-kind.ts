@@ -4,7 +4,6 @@
  * 和人的暂停开关 enabled 分开呈现。
  */
 import type { Automation } from './automations-types'
-import { parseSchedule } from './automation-schedule-parsing'
 
 /** onceAt 存在即一次性；此时 rrule 为空。判别只写在这一处。 */
 export function isOneShotAutomation(automation: Pick<Automation, 'onceAt'>): boolean {
@@ -14,10 +13,7 @@ export function isOneShotAutomation(automation: Pick<Automation, 'onceAt'>): boo
 export type AutomationLifecycleState = 'active' | 'finished'
 
 export function deriveLifecycleState(
-  automation: Pick<
-    Automation,
-    'onceAt' | 'scheduledRunCount' | 'rrule' | 'missedRunGraceMinutes'
-  >,
+  automation: Pick<Automation, 'onceAt' | 'scheduledRunCount' | 'missedRunGraceMinutes'>,
   now: number
 ): AutomationLifecycleState {
   if (isOneShotAutomation(automation)) {
@@ -27,20 +23,6 @@ export function deriveLifecycleState(
     const graceMs = automation.missedRunGraceMinutes * 60 * 1000
     return now > (automation.onceAt as number) + graceMs ? 'finished' : 'active'
   }
-  const cap = automationRunCountCap(automation.rrule)
-  if (cap !== null && (automation.scheduledRunCount ?? 0) >= cap) {
-    return 'finished'
-  }
+  // 循环任务不因次数终结（2026-10-10 再审砍除执行次数上限）。
   return 'active'
-}
-
-/** COUNT 只存在于 rrule；cron 与无 COUNT 的 rrule 没有上限。解析失败按无上限
- *  处理——读回不重判输入（同 isRunnableAutomationSchedule 的宽恕语义）。 */
-export function automationRunCountCap(rrule: string): number | null {
-  try {
-    const parsed = parseSchedule(rrule)
-    return parsed.kind === 'rrule' ? parsed.count : null
-  } catch {
-    return null
-  }
 }
