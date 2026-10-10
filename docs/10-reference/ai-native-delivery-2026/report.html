@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
 <meta name="evidence-revision" content="ed5a0930b70dd68b7cf588d45d42173b135e7c48">
-<meta name="source-sha256-README" content="682008a4693a42d2bfc17d4bcf79abd14d5170f2147834f8b8085b5aa574969a">
+<meta name="source-sha256-README" content="03043bffaaf94690731e02c14dcfe6d0481b8f754baa33361f161b64b06a75e9">
 <meta name="source-sha256-anthropic-sdlc" content="91883f57aad44683a2290a08d8055502d44b7418cf9ee9190d6c4771ec68f490">
 <meta name="source-sha256-workbuddy-codebuddy" content="0249ec805e7026ce8d45ba360a7379e9ab50ae0385b1e6eccc9425d3e62069fe">
 <meta name="source-sha256-orca" content="ab3a4c74f6031010fbb4706d6084c038b8f72d5560b273eb6034010c0017f7c3">
@@ -436,7 +436,7 @@ button:focus-visible { outline: 3px solid #bf790b; outline-offset: 3px; }
 <h2 id="overview-heading-1">两份独立阅读文件</h2>
 <ul>
 <li><strong><a href="#overview">完整总报告</a></strong>：本页结论与七份专题合为一个离线 HTML，样式和阅读交互均在文件内；可先读结论，再展开专题。原始引文和钉提交的仓库证据需要联网查看。</li>
-<li><strong><span>新的高保真原型 <small class="separate-delivery">（独立交付：prototype.html）</small></span></strong>：独立的跨屏讨论提案，用一条虚构的资料导入交付故事，让总览、计划、验收与指标共享同一结果。可编辑范围、处理阻塞、查证据并由人记录决定；示例数据和模拟宿主能力均有标识。它不替换当前已确认的原型或规格。</li>
+<li><strong><span>新的高保真原型 <small class="separate-delivery">（独立交付：prototype.html）</small></span></strong>：独立的跨屏讨论提案，用 BW 自身 v0.5 的真实材料区分已交付、未知与待决定事项；缺口可带入下一轮候选计划，验收结果和后续安排回到总览。实际快照、周/阶段目标提案及虚构试点演示分别标识。它不替换当前已确认的原型或规格。</li>
 </ul>
 <p>原型的目的是检验“是否更容易做出下一步决定”，不是预先批准新功能。单文件交付便于保存和转交；内容与可编辑原型源码仍留在仓内对应目录。</p>
 <h2 id="overview-heading-2">阅读地图：七份专题，不把一篇文章当行业共识</h2>
@@ -2076,7 +2076,7 @@ node docs/10-reference/ai-native-delivery-2026/bundle-report.mjs --check
 </tbody></table>
 <p>后续读取顺序：先读结论与证据表，再读建议和局限；引用某个数字前回原文核对样本、任务与窗口。建议、实例和来源事实不可混写成行业统一规范。</p>
 </article></details></section>
-<details class="bundle-manifest"><summary>内容正源与版本校验</summary><p>下列 SHA-256 以统一换行后的 Markdown 计算；它标识本文件包含的版本，不证明研究结论永远有效。修改正源后运行 <code>bundle-report.mjs</code> 重新生成；<code>--check</code> 可检查投影是否过期。独立专题 HTML 继续由 <code>render.mjs</code> 生成。</p><table><thead><tr><th>Markdown 正源</th><th>SHA-256</th></tr></thead><tbody><tr><td>README.md</td><td><code>682008a4693a42d2bfc17d4bcf79abd14d5170f2147834f8b8085b5aa574969a</code></td></tr><tr><td>anthropic-sdlc.md</td><td><code>91883f57aad44683a2290a08d8055502d44b7418cf9ee9190d6c4771ec68f490</code></td></tr><tr><td>workbuddy-codebuddy.md</td><td><code>0249ec805e7026ce8d45ba360a7379e9ab50ae0385b1e6eccc9425d3e62069fe</code></td></tr><tr><td>orca.md</td><td><code>ab3a4c74f6031010fbb4706d6084c038b8f72d5560b273eb6034010c0017f7c3</code></td></tr><tr><td>openai-codex.md</td><td><code>fca28fec276a643033d50aa7ccda1f4c0f36024889442bc2619142c71bfb1301</code></td></tr><tr><td>cursor-linear.md</td><td><code>d1ca46b9b556e0881e32410098d423e14c33706d799151aed04f3ed5513f618a</code></td></tr><tr><td>spotify.md</td><td><code>fec448d49f34d17497b7fa2345119277176d1be9d765d887998b827562872b45</code></td></tr><tr><td>evidence-and-metrics.md</td><td><code>df9e4966fd3d225f4a1cfff822e96ad8f6e58e6df0cf62f2a2c6e5efbd89e68c</code></td></tr></tbody></table></details>
+<details class="bundle-manifest"><summary>内容正源与版本校验</summary><p>下列 SHA-256 以统一换行后的 Markdown 计算；它标识本文件包含的版本，不证明研究结论永远有效。修改正源后运行 <code>bundle-report.mjs</code> 重新生成；<code>--check</code> 可检查投影是否过期。独立专题 HTML 继续由 <code>render.mjs</code> 生成。</p><table><thead><tr><th>Markdown 正源</th><th>SHA-256</th></tr></thead><tbody><tr><td>README.md</td><td><code>03043bffaaf94690731e02c14dcfe6d0481b8f754baa33361f161b64b06a75e9</code></td></tr><tr><td>anthropic-sdlc.md</td><td><code>91883f57aad44683a2290a08d8055502d44b7418cf9ee9190d6c4771ec68f490</code></td></tr><tr><td>workbuddy-codebuddy.md</td><td><code>0249ec805e7026ce8d45ba360a7379e9ab50ae0385b1e6eccc9425d3e62069fe</code></td></tr><tr><td>orca.md</td><td><code>ab3a4c74f6031010fbb4706d6084c038b8f72d5560b273eb6034010c0017f7c3</code></td></tr><tr><td>openai-codex.md</td><td><code>fca28fec276a643033d50aa7ccda1f4c0f36024889442bc2619142c71bfb1301</code></td></tr><tr><td>cursor-linear.md</td><td><code>d1ca46b9b556e0881e32410098d423e14c33706d799151aed04f3ed5513f618a</code></td></tr><tr><td>spotify.md</td><td><code>fec448d49f34d17497b7fa2345119277176d1be9d765d887998b827562872b45</code></td></tr><tr><td>evidence-and-metrics.md</td><td><code>df9e4966fd3d225f4a1cfff822e96ad8f6e58e6df0cf62f2a2c6e5efbd89e68c</code></td></tr></tbody></table></details>
 <footer>生成投影，不在 HTML 手工维护正文。事实、厂商主张、研究推断与 BW 已交付能力分别判断。</footer>
 </main></div>
 <script>

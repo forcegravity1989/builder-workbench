@@ -10,7 +10,7 @@
   <body>
     <div class="window-bar">
       <span class="app-mark">W</span><span>Workbench</span
-      ><span class="window-context">客户资料导入</span>
+      ><span class="window-context">Builders’ Workbench</span>
       <div class="window-controls" aria-hidden="true">
         <span>−</span><span>□</span><span>×</span>
       </div>
@@ -18,7 +18,7 @@
     <div class="desktop-shell">
       <aside class="sidebar host-sidebar" aria-label="Workbench 侧栏">
         <button class="project-identity" data-action="projects">
-          <span class="project-avatar">客</span><strong>客户资料导入</strong
+          <span class="project-avatar">B</span><strong>Builders’ Workbench</strong
           ><span data-icon="chevrons"></span>
         </button>
         <nav id="navigation" aria-label="项目内导航"></nav>
@@ -40,7 +40,7 @@
         <div class="repo-list">
           <div class="repo-name">
             <span data-icon="chevron-down"></span><span data-icon="folder"></span
-            ><strong>customer-import</strong>
+            ><strong>builder-workbench</strong>
           </div>
           <button class="sidebar-item worktree" data-action="workspace" data-workspace="main">
             <span data-icon="branch"></span><span>main</span>
@@ -55,9 +55,9 @@
           <button
             class="sidebar-item worktree"
             data-action="workspace"
-            data-workspace="fix/mapping-hint"
+            data-workspace="trial/delivery-loop"
           >
-            <span data-icon="branch"></span><span>fix/mapping-hint</span
+            <span data-icon="branch"></span><span>trial/delivery-loop</span
             ><span class="worktree-dot"></span>
           </button>
         </div>
@@ -79,12 +79,12 @@
     </div>
     <footer class="prototype-toolbar">
       <button class="quiet-link" data-action="design">
-        交互提案 · 示例数据 <span data-icon="info"></span></button
+        交互提案 · 事实 / 演示分开 <span data-icon="info"></span></button
       ><span class="spacer"></span><label for="scenario">场景</label
       ><select id="scenario" class="input">
-        <option value="blocked">当前版本 · 试用受阻</option>
-        <option value="repaired">修复后 · 待核对</option>
-        <option value="empty">本版无材料 · 指标未读</option></select
+        <option value="baseline">BW v0.5 · 真实材料</option>
+        <option value="blocked">下一周 · 受阻演示</option>
+        <option value="repaired">下一周 · 复测演示</option></select
       ><button class="quiet-link" data-action="reset">重置</button
       ><button class="quiet-link" data-action="theme">Apple / Claude</button>
     </footer>
