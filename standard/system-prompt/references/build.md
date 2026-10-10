@@ -1,23 +1,13 @@
 # 改仓 — 和 Workbench 怎么配合
 
-主提示词的纪律照守。这里只补被管仓里看不见的落点。
+主提示词的纪律照守。这里只补改仓与交付的落点。
 
 ## 改动落在哪
 
-改动留在 Workbench 已打开的工作目录，先用 `git rev-parse --show-toplevel` 和 `git branch --show-current` 核对。
-业务 Issue 使用 `<仓>/.bw/worktrees/issue-<号>`、分支 `bw/issue-<号>`；资产盘点使用已打开的常驻工作树、分支 `bw/ops-audit`，不另开业务树。
-已接回的旧平级业务树继续使用。不碰人的主检出。
+使用宿主已打开的项目、工作树和执行身份，先用 `git rev-parse --show-toplevel` 和 `git branch --show-current` 核对。隔离分支与 PR/MR 按被管项目 AGENTS 和实际工作树配置执行，不碰人的主检出或他人改动。
 
-提交 + 开 MR 后把地址打屏。没产出就停,不空提交、空 MR。
-
-## 干完推到「待评审」
-
-提完 MR 后按 `issue-state.md` 改此 Issue 的状态标签,不要关 issue、不要 merge。
-
-- CodeHub：先读回这个 Issue 的全部标签，只移除 `bw:status:*` 并加入 `bw:status:inreview`，保留其余标签。将结果按逗号连接，作为完整集合传给 `codehub-cli issue update <iid> -p <path> -H <host> --labels "<完整标签集合>"`，写后读回核对。`--labels` 按全量替换处理，不能只传状态标签。
-- GitHub:`gh issue edit <n> --remove-label bw:status:inprogress --add-label bw:status:inreview`
+提交并开 PR/MR 后回显真实地址、实际验证与剩余问题。合入与 Issue 关闭分别遵循人的明确授权。没产出不空提交、不开空 PR/MR。
 
 ## 不是改仓的事
 
-贴 issue 评论、打/摘标签、挂里程碑:直接在远端做,不必为此开 MR。
-权限不够就说出来;该贴的评论、该打的标签照做。推到待评审的那一下标签就走这条,不必另开 MR。
+在用户已授权的范围内改写 Issue、精确增删标签或处理原生状态，直接在远端执行，不为这些操作空开 PR/MR。写前读取最新对象，只修改授权内容；CodeHub 标签全量替换时保留其余标签。写后独立读回；权限不足或写入失败如实报告。
