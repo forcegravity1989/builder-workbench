@@ -134,6 +134,8 @@ export type ConnectorAgentListing =
 export type ConnectorListResult = {
   /** 实际读状态的目录；null = 用户主目录（没选项目或项目不在本机）。 */
   projectPath: string | null
+  /** 读 Codex 用的目录，也是安装类 Codex 命令要写的目录（Orca 同步来源）。 */
+  codexHome: string
   claude: ConnectorAgentListing
   codex: ConnectorAgentListing
 }

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { mergeConnectorRows, parseClaudeMcpList, parseCodexMcpListJson } from './connector-status'
-import { buildInstallCommands, renderCommandLine, validateInstallPlan } from './connectors'
+import {
+  buildInstallCommands,
+  renderCommandLine,
+  validateInstallPlan,
+  withCodexHome
+} from './connectors'
 
 // 前五行与 Codex 前三项取自 2026-10-10 沙盒实测：Claude Code 2.1.280 `claude mcp list`、
 // Codex 0.153.4 `codex mcp list --json`；其余是同一格式下的边界行。
@@ -81,6 +86,7 @@ describe('connector 状态协议', () => {
     const codex = parseCodexMcpListJson(CODEX_LIST)!
     const rows = mergeConnectorRows({
       projectPath: null,
+      codexHome: '/Users/me/.codex',
       claude: { status: 'ok', rows: [...claude].map(([name, p]) => ({ name, ...p })) },
       codex: {
         status: 'ok',
@@ -125,6 +131,15 @@ describe('connector 命令协议', () => {
     // PowerShell 下 `-` 开头的参数一律加引号：npm 的 .ps1 垫片会吞掉裸 `--`。
     expect(renderCommandLine(commands.slice(0, 2), 'powershell', 'C:\\Users\\me\\repo')).toBe(
       "Set-Location -LiteralPath 'C:\\Users\\me\\repo'; if ($?) { claude mcp add '--transport' http '-s' local linear https://mcp.linear.app/mcp; if ($LASTEXITCODE -eq 0) { claude mcp login linear } }"
+    )
+
+    // Codex 命令显式写系统目录（Orca 托管目录会被同步覆盖），Claude 命令不带。
+    const homed = withCodexHome([commands[1], commands[2]], '/Users/me/.codex')
+    expect(renderCommandLine(homed, 'posix')).toBe(
+      'claude mcp login linear && CODEX_HOME=/Users/me/.codex codex mcp add linear --url https://mcp.linear.app/mcp'
+    )
+    expect(renderCommandLine(homed, 'powershell')).toBe(
+      "claude mcp login linear; if ($LASTEXITCODE -eq 0) { $env:CODEX_HOME = '/Users/me/.codex'; codex mcp add linear '--url' https://mcp.linear.app/mcp }"
     )
 
     const stdio = {

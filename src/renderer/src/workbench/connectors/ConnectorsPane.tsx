@@ -14,6 +14,7 @@ import {
   buildLoginCommand,
   buildRemoveCommand,
   renderCommandLine,
+  withCodexHome,
   type ConnectorAgent,
   type ConnectorShell
 } from '../../../../shared/workbench/connectors'
@@ -102,7 +103,14 @@ export function ConnectorsPane(): React.JSX.Element {
   }
 
   const run = (commands: Parameters<typeof renderCommandLine>[0], title: string): void => {
-    setRunning({ commandLine: renderCommandLine(commands, shell, project?.path), title })
+    setRunning({
+      commandLine: renderCommandLine(
+        withCodexHome(commands, result?.codexHome ?? null),
+        shell,
+        project?.path
+      ),
+      title
+    })
   }
   const login = (row: ConnectorRow): void => {
     const agents = AGENTS.filter((a) => row.agents[a]?.state === 'needs-auth')
@@ -179,6 +187,7 @@ export function ConnectorsPane(): React.JSX.Element {
           <ConnectorAddPanel
             installedAgents={installedAgents}
             existing={existing}
+            codexHome={result?.codexHome ?? null}
             project={project}
             shell={shell}
             onRun={(commandLine, title) => setRunning({ commandLine, title })}

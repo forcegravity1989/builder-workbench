@@ -11,6 +11,7 @@ import {
   type ConnectorListRequest,
   type ConnectorListResult
 } from '../../shared/workbench/connector-status'
+import { getSystemCodexHomePath } from '../codex/codex-home-paths'
 import { resolveCommandOnLocalPath } from '../ipc/command-path-resolver'
 import { WorkspaceScopeError } from './workspace-scope-error'
 
@@ -44,7 +45,8 @@ async function projectDir(
 async function runAgentList(
   bin: 'claude' | 'codex',
   args: string[],
-  cwd: string
+  cwd: string,
+  env?: NodeJS.ProcessEnv
 ): Promise<
   | { missing: true }
   | { missing: false; code: number | null; stdout: string; stderr: string; timedOut: boolean }
@@ -53,7 +55,7 @@ async function runAgentList(
   if (!program) {
     return { missing: true }
   }
-  const result = await runProcess({ program, args, cwd, timeoutMs: LIST_TIMEOUT_MS })
+  const result = await runProcess({ program, args, cwd, env, timeoutMs: LIST_TIMEOUT_MS })
   return { missing: false, ...result }
 }
 
@@ -75,8 +77,9 @@ async function listClaude(cwd: string): Promise<ConnectorAgentListing> {
   return { status: 'ok', rows }
 }
 
-async function listCodex(cwd: string): Promise<ConnectorAgentListing> {
-  const run = await runAgentList('codex', ['mcp', 'list', '--json'], cwd).catch(
+async function listCodex(cwd: string, codexHome: string): Promise<ConnectorAgentListing> {
+  const env = { ...process.env, CODEX_HOME: codexHome }
+  const run = await runAgentList('codex', ['mcp', 'list', '--json'], cwd, env).catch(
     (error: unknown) => ({
       missing: false as const,
       code: null,
@@ -123,6 +126,8 @@ export async function listConnectors(
 ): Promise<ConnectorListResult> {
   const projectPath = await projectDir(host, request.repoId)
   const cwd = projectPath ?? homedir()
-  const [claude, codex] = await Promise.all([listClaude(cwd), listCodex(cwd)])
-  return { projectPath, claude, codex }
+  // Orca 起 Codex 会话前从系统目录同步配置；显式设了 CODEX_HOME 的环境（如沙盒验证）以它为准。
+  const codexHome = process.env.CODEX_HOME?.trim() || getSystemCodexHomePath()
+  const [claude, codex] = await Promise.all([listClaude(cwd), listCodex(cwd, codexHome)])
+  return { projectPath, codexHome, claude, codex }
 }

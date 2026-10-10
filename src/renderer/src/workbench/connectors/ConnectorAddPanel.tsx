@@ -6,6 +6,7 @@ import {
   buildInstallCommands,
   CONNECTOR_CATALOG,
   renderCommandLine,
+  withCodexHome,
   splitCommandLine,
   validateInstallPlan,
   type ConnectorAgent,
@@ -23,6 +24,7 @@ type Props = {
   installedAgents: ConnectorAgent[]
   /** 名称 → 已经装了它的执行工具。同名即同一个 connector，可以补装到没装的工具上。 */
   existing: ReadonlyMap<string, ConnectorAgent[]>
+  codexHome: string | null
   project: { name: string; path: string } | null
   shell: ConnectorShell
   onRun: (commandLine: string, title: string) => void
@@ -32,6 +34,7 @@ type Props = {
 export function ConnectorAddPanel({
   installedAgents,
   existing,
+  codexHome,
   project,
   shell,
   onRun,
@@ -88,7 +91,13 @@ export function ConnectorAddPanel({
   const problem = plan ? (duplicate ?? validateInstallPlan(plan)) : null
   // 有当前项目就在其目录下执行：Claude Code 的「仅当前项目」按执行目录记录。
   const commandLine =
-    plan && !problem ? renderCommandLine(buildInstallCommands(plan), shell, project?.path) : ''
+    plan && !problem
+      ? renderCommandLine(
+          withCodexHome(buildInstallCommands(plan), codexHome),
+          shell,
+          project?.path
+        )
+      : ''
 
   if (installedAgents.length === 0) {
     return (

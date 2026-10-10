@@ -136,7 +136,19 @@ export type ConnectorInstallPlan = {
   scope: ConnectorScope
 }
 
-export type ConnectorCommand = { agent: ConnectorAgent; argv: string[] }
+/** `codexHome` 只对 Codex 命令生效：显式写进 Orca 同步来源的目录，见 {@link withCodexHome}。 */
+export type ConnectorCommand = { agent: ConnectorAgent; argv: string[]; codexHome?: string }
+
+/**
+ * Orca 的终端把 CODEX_HOME 指向它托管的运行目录，并在每次起 Codex 会话前用系统目录覆盖它；
+ * 在那里改的 connector 会被冲掉。所以 Codex 命令一律显式指向系统目录（同步来源）。
+ */
+export function withCodexHome(
+  commands: ConnectorCommand[],
+  codexHome: string | null
+): ConnectorCommand[] {
+  return codexHome ? commands.map((c) => (c.agent === 'codex' ? { ...c, codexHome } : c)) : commands
+}
 
 export function validateInstallPlan(plan: ConnectorInstallPlan): string | null {
   if (!isValidConnectorName(plan.name)) {
@@ -203,7 +215,16 @@ export function renderCommandLine(
   shell: ConnectorShell,
   cwd?: string
 ): string {
-  const lines = commands.map((c) => joinArgs(c.argv, shell))
+  const lines = commands.map((c) => {
+    const line = joinArgs(c.argv, shell)
+    if (!c.codexHome) {
+      return line
+    }
+    // PowerShell 赋值是表达式模式，裸路径会被当成运算，值必须加引号。
+    return shell === 'powershell'
+      ? `$env:CODEX_HOME = '${c.codexHome.replace(/['\u2018-\u201B]/g, (q) => q + q)}'; ${line}`
+      : `CODEX_HOME=${quoteShellArg(c.codexHome, shell)} ${line}`
+  })
   if (shell === 'powershell') {
     const chain = lines
       .map((l, i) => (i === 0 ? l : `if ($LASTEXITCODE -eq 0) { ${l} }`))
