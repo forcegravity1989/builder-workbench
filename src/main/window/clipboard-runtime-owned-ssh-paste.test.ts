@@ -49,7 +49,6 @@ vi.mock('../ipc/filesystem-auth', () => ({
 vi.mock('../ipc/runtime-environment-transport-routing', () => ({
   callRuntimeEnvironment: callRuntimeEnvironmentMock
 }))
-vi.mock('./dashboard-popout-window', () => ({ isDashboardPopoutRenderer: () => false }))
 
 import { registerClipboardHandlers } from './clipboard-ipc-handlers'
 import {

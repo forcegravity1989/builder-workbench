@@ -8,6 +8,7 @@ import { buildSettingsProjectList } from '@/components/settings/settings-project
 import { getSshPaneSearchEntries } from '@/components/settings/ssh-search'
 import { translate } from '@/i18n/i18n'
 import type { SettingsNavSection } from '@/lib/settings-navigation-types'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { getRepoKindLabel } from '../../../shared/repo-kind'
 import type { Repo } from '../../../shared/repo-types'
 import {
@@ -126,17 +127,22 @@ export function buildRemoteSettingsSections(
           }
         ]
       : []),
-    {
-      id: 'experimental',
-      title: translate('auto.hooks.useSettingsNavigationMetadata.225071c560', 'Experimental'),
-      description: translate(
-        'auto.hooks.useSettingsNavigationMetadata.4a728cd56b',
-        'New features that are still taking shape. Give them a try.'
-      ),
-      icon: FlaskConical,
-      searchEntries: getExperimentalPaneSearchEntries(),
-      group: 'experimental'
-    },
+    // Why: Orca's experiments are not Workbench surfaces; the shell lists no Experimental page.
+    ...(isWorkbenchShell()
+      ? []
+      : [
+          {
+            id: 'experimental',
+            title: translate('auto.hooks.useSettingsNavigationMetadata.225071c560', 'Experimental'),
+            description: translate(
+              'auto.hooks.useSettingsNavigationMetadata.4a728cd56b',
+              'New features that are still taking shape. Give them a try.'
+            ),
+            icon: FlaskConical,
+            searchEntries: getExperimentalPaneSearchEntries(),
+            group: 'experimental'
+          }
+        ]),
     ...(showDesktopOnlySettings
       ? [
           {

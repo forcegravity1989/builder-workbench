@@ -30,6 +30,7 @@ import { buildInterfaceSettingsSections } from './settings-navigation-interface-
 import { buildRemoteSettingsSections } from './settings-navigation-remote-sections'
 import { buildWorkflowSettingsSections } from './settings-navigation-workflow-sections'
 import { useWindowsTerminalCapabilityOwnerKey } from './useWindowsTerminalCapabilityOwnerKey'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export { isWebClientLocation } from '@/lib/web-client-location'
 
@@ -108,7 +109,7 @@ export function useSettingsNavigationMetadata(): SettingsNavSection[] {
     useShallow((state) => {
       const policy = getClientCreationActionPolicy(state, state.activeWorktreeId)
       return [
-        policy['managed-browser'].state === 'enabled',
+        !isWorkbenchShell() && policy['managed-browser'].state === 'enabled',
         policy['mobile-emulator'].state === 'enabled'
       ] as const
     })

@@ -25,7 +25,6 @@ describe('web viewport shell', () => {
   it('uses a percentage height chain only for native Electron shells', () => {
     const css = readSource('src/renderer/src/assets/main.css')
     const nativeIndex = readSource('src/renderer/index.html')
-    const popoutIndex = readSource('src/renderer/popout.html')
     const webIndex = readSource('src/renderer/web-index.html')
     const appSource = readSource('src/renderer/src/App.tsx')
 
@@ -33,7 +32,6 @@ describe('web viewport shell', () => {
       /html\.native-shell,\s*html\.native-shell body,\s*html\.native-shell #root,\s*html\.native-shell \.app-layout\s*\{\s*height: 100%;\s*\}/
     )
     expect(nativeIndex).toContain('<html class="native-shell">')
-    expect(popoutIndex).toContain('<html class="native-shell">')
     expect(webIndex).not.toContain('native-shell')
     expect(appSource).toContain('className="app-layout"')
     expect(appSource).not.toContain('h-dvh')

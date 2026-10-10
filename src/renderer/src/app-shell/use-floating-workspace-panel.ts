@@ -10,6 +10,7 @@ import {
 } from '../components/floating-terminal/floating-terminal-panel-view-state'
 import { useAppStore } from '../store'
 import { selectFloatingVisibleTabCount } from '../store/selectors'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export type FloatingWorkspacePanelState = ReturnType<typeof useFloatingWorkspacePanel>
 
@@ -29,7 +30,11 @@ export function useFloatingWorkspacePanel() {
     recordFeatureInteractionForTour: boolean
   } | null>(null)
 
-  const enabled = useAppStore((s) => s.settings?.floatingTerminalEnabled === true)
+  // Why: the Workbench shell does not offer the floating workspace; gating the flag here turns off
+  // the panel, its toggle button, the shortcuts and the toggle event in one place.
+  const enabled = useAppStore(
+    (s) => !isWorkbenchShell() && s.settings?.floatingTerminalEnabled === true
+  )
   // Why tracked separately: the flag reads false while settings are still loading, and a
   // false read at boot must not be treated as the user disabling the feature. The store
   // initializes `settings` to null (not undefined) - fetchSettings replaces it atomically.

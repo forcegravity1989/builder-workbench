@@ -81,7 +81,6 @@ const SETTINGS_ALIASES: Record<string, string[]> = {
   mobile: ['phone'],
   voice: ['dictation'],
   'computer-use': ['computer use'],
-  stats: ['usage'],
   privacy: ['telemetry']
 }
 

@@ -20,6 +20,7 @@ import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
 import type { ArtifactWriteRequest } from '../../../../shared/artifacts'
 import { ArtifactPublishButton } from '@/components/artifacts/ArtifactPublishButton'
 import { markdownArtifactSourceKey } from './markdown-artifact-upload'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 type EditorPanelHeaderProps = {
   activeFile: OpenFile
@@ -317,7 +318,7 @@ export function EditorPanelHeader({
           </Tooltip>
         </TooltipProvider>
       )}
-      {isMarkdown && !isDiffSurface && createMarkdownArtifactRequest ? (
+      {isMarkdown && !isDiffSurface && createMarkdownArtifactRequest && !isWorkbenchShell() ? (
         <ArtifactPublishButton
           sourceKey={markdownArtifactSourceKey(activeFile)}
           className="size-6 [&_svg]:size-3.5!"

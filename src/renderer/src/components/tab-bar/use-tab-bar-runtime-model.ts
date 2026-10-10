@@ -31,6 +31,7 @@ import { DEFAULT_DISABLED_TUI_AGENTS } from '../../../../shared/tui-agent-select
 import { shouldShowWindowsShellMenu } from './windows-shell-menu-visibility'
 import { createUnifiedTabLookup } from './tab-bar-item-model'
 import { getClientCreationActionPolicy } from '@/lib/client-creation-action-policy'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 const isWindows = navigator.userAgent.includes('Windows')
 export const isMacOs = navigator.userAgent.includes('Mac')
@@ -242,7 +243,8 @@ export function useTabBarRuntimeModel({
     useShallow((state) => {
       const policy = getClientCreationActionPolicy(state, worktreeId)
       return [
-        policy['managed-browser'].state === 'enabled',
+        // Why: the Workbench shell has no "new browser tab" entry point; existing browser tabs stay.
+        !isWorkbenchShell() && policy['managed-browser'].state === 'enabled',
         policy['mobile-emulator'].state === 'enabled'
       ] as const
     })

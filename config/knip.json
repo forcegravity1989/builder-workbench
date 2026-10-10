@@ -17,7 +17,6 @@
     "src/main/agent-hooks/managed-agent-hook-controls.ts",
     "src/main/claude-accounts/keychain.ts",
     "src/renderer/src/main.tsx",
-    "src/renderer/src/popout.tsx",
     "src/renderer/src/web/main.tsx",
     "src/renderer/src/**/*.worker.ts",
     "src/cli/index.ts",

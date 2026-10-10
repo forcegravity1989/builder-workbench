@@ -9,7 +9,6 @@ vi.mock('@/store', () => ({
   useAppStore: (
     selector: (state: {
       settings: {
-        experimentalAgentDashboardMode: 'in-window'
         experimentalAgentDashboardShowIdle: boolean
       }
       updateSettings: typeof updateSettings
@@ -17,7 +16,6 @@ vi.mock('@/store', () => ({
   ) =>
     selector({
       settings: {
-        experimentalAgentDashboardMode: 'in-window',
         experimentalAgentDashboardShowIdle: false
       },
       updateSettings
@@ -27,7 +25,6 @@ vi.mock('@/store', () => ({
 vi.mock('@/components/ui/dropdown-menu', () => ({
   DropdownMenu: ({ children }: { children: ReactNode }) => <>{children}</>,
   DropdownMenuContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuSeparator: () => <hr />,
   DropdownMenuTrigger: ({ children }: { children: ReactNode }) => <>{children}</>
 }))
 
@@ -56,7 +53,7 @@ describe('AgentDashboardSettingsMenu', () => {
     document.body.appendChild(container)
     root = createRoot(container)
     act(() => {
-      root?.render(<AgentDashboardSettingsMenu onSwitchToPopout={vi.fn()} onOpenChange={vi.fn()} />)
+      root?.render(<AgentDashboardSettingsMenu onOpenChange={vi.fn()} />)
     })
 
     const toggle = container.querySelector<HTMLButtonElement>(

@@ -40,8 +40,7 @@ function AgentDashboardDrawerBody({
 }): React.JSX.Element {
   const snapshot = useLiveDashboardSnapshot()
 
-  // In-window ack/reveal act on the local store directly — the pop-out's IPC
-  // relay is gated to the pop-out renderer and would reject calls from here.
+  // Ack/reveal act on the local store directly.
   const handleAckAgent = useCallback((paneKey: string) => {
     useAppStore.getState().acknowledgeAgents([paneKey])
   }, [])
@@ -53,13 +52,6 @@ function AgentDashboardDrawerBody({
     [onClose]
   )
 
-  // Switching to pop-out from the board hands the surface over rather than
-  // leaving an in-window board that the setting says should be a window.
-  const handleSwitchToPopout = useCallback(() => {
-    onClose()
-    void window.api.dashboard.openPopout?.()
-  }, [onClose])
-
   return (
     <AgentKanbanBoard
       snapshot={snapshot}
@@ -69,12 +61,7 @@ function AgentDashboardDrawerBody({
       onAckAgent={handleAckAgent}
       onRevealAgent={handleRevealAgent}
       onClose={onClose}
-      headerActions={
-        <AgentDashboardSettingsMenu
-          onSwitchToPopout={handleSwitchToPopout}
-          onOpenChange={onMenuOpenChange}
-        />
-      }
+      headerActions={<AgentDashboardSettingsMenu onOpenChange={onMenuOpenChange} />}
     />
   )
 }
@@ -85,9 +72,9 @@ type AgentDashboardDrawerProps = {
 }
 
 /**
- * The in-window Agent Dashboard surface: the same board as the pop-out window,
- * presented like the workspace kanban board — a non-modal companion sheet that
- * expands from the sidebar edge and keeps the rest of the app interactive.
+ * The in-window Agent Dashboard surface, presented like the workspace kanban
+ * board — a non-modal companion sheet that expands from the sidebar edge and
+ * keeps the rest of the app interactive.
  */
 export function AgentDashboardDrawer({
   leftSidebarStyle,
@@ -99,8 +86,8 @@ export function AgentDashboardDrawer({
   const sidebarWidth = useAppStore((s) => s.sidebarWidth)
   const [menuOpen, setMenuOpen] = useState(false)
   // Why: like closeWorkspaceBoard, reset the menu flag on close — Radix never
-  // reports close for a menu unmounted with the sheet (e.g. the pop-out
-  // hand-off), and a stale true would block outside-dismiss on reopen.
+  // reports close for a menu unmounted with the sheet, and a stale true would
+  // block outside-dismiss on reopen.
   const close = useCallback(() => {
     setMenuOpen(false)
     setOpen(false)

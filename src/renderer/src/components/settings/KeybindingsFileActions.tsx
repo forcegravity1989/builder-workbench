@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger
 } from '../ui/dropdown-menu'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 function openFailureMessage(reason: string): string {
   switch (reason) {
@@ -158,12 +159,26 @@ export function KeybindingsFileActions(): React.JSX.Element {
         variant="ghost"
         size="xs"
         className="rounded-none border-0 shadow-none"
-        onClick={() => void editKeybindingsInOrca()}
+        // Why: in-app editing opens the file in the floating workspace, which the Workbench shell
+        // does not offer, so the shell's primary action opens it with the default app instead.
+        onClick={() => void (isWorkbenchShell() ? openKeybindingsFile() : editKeybindingsInOrca())}
       >
-        <FileText className="size-3" />
-        {translate(
-          'auto.components.settings.KeybindingsFileActions.1c2be2b2c6',
-          'Edit File in Orca'
+        {isWorkbenchShell() ? (
+          <>
+            <ExternalLink className="size-3" />
+            {translate(
+              'auto.components.settings.KeybindingsFileActions.98f1a23e1c',
+              'Open with Default App'
+            )}
+          </>
+        ) : (
+          <>
+            <FileText className="size-3" />
+            {translate(
+              'auto.components.settings.KeybindingsFileActions.1c2be2b2c6',
+              'Edit File in Orca'
+            )}
+          </>
         )}
       </Button>
       <DropdownMenu>

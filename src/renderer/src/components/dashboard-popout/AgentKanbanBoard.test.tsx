@@ -88,10 +88,11 @@ function renderBoard(
   } = {}
 ): void {
   const snapshot: DashboardSnapshot = { generatedAt: 1, cards, ...options }
-  render(<AgentKanbanBoard snapshot={snapshot} />)
+  render(<AgentKanbanBoard onAckAgent={ackAgent} onRevealAgent={revealAgent} snapshot={snapshot} />)
 }
 
-const ackAgent = vi.fn(async () => {})
+const ackAgent = vi.fn()
+const revealAgent = vi.fn()
 
 describe('AgentKanbanBoard', () => {
   beforeEach(async () => {
@@ -101,8 +102,6 @@ describe('AgentKanbanBoard', () => {
       'matchMedia',
       vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
     )
-    // The board relays seen-acks through the dashboard preload API.
-    ;(window as unknown as { api: unknown }).api = { dashboard: { ackAgent } }
   })
   afterEach(() => {
     cleanup()
@@ -251,11 +250,19 @@ describe('AgentKanbanBoard', () => {
     vi.useFakeTimers()
     vi.setSystemTime(100_000)
 
-    const { rerender } = render(<AgentKanbanBoard snapshot={{ generatedAt: 1, cards: [] }} />)
+    const { rerender } = render(
+      <AgentKanbanBoard
+        onAckAgent={ackAgent}
+        onRevealAgent={revealAgent}
+        snapshot={{ generatedAt: 1, cards: [] }}
+      />
+    )
     expect(vi.getTimerCount()).toBe(0)
 
     rerender(
       <AgentKanbanBoard
+        onAckAgent={ackAgent}
+        onRevealAgent={revealAgent}
         snapshot={{ generatedAt: 2, cards: [card({ startedAt: 0, finishedAt: null })] }}
       />
     )
@@ -291,7 +298,11 @@ describe('AgentKanbanBoard', () => {
   it('keeps the terminal dialog open across bucket moves and card removal', () => {
     const agent = card({ paneKey: 'pk-1', bucket: 'done', worktreeName: 'wt1' })
     const { rerender } = render(
-      <AgentKanbanBoard snapshot={{ generatedAt: 1, cards: [agent], showIdle: true }} />
+      <AgentKanbanBoard
+        onAckAgent={ackAgent}
+        onRevealAgent={revealAgent}
+        snapshot={{ generatedAt: 1, cards: [agent], showIdle: true }}
+      />
     )
     expect(screen.getByTestId('terminal-dialog').dataset.open).toBe('false')
 
@@ -301,20 +312,38 @@ describe('AgentKanbanBoard', () => {
     // Sending a message flips the agent done → working; the dialog must
     // follow the card to its new bucket instead of closing.
     const moved = { ...agent, bucket: 'working' as const, dotState: 'working' as const }
-    rerender(<AgentKanbanBoard snapshot={{ generatedAt: 2, cards: [moved] }} />)
+    rerender(
+      <AgentKanbanBoard
+        onAckAgent={ackAgent}
+        onRevealAgent={revealAgent}
+        snapshot={{ generatedAt: 2, cards: [moved] }}
+      />
+    )
     expect(screen.getByTestId('terminal-dialog').dataset.open).toBe('true')
     expect(screen.getByTestId('terminal-dialog').dataset.bucket).toBe('working')
 
     // Even a vanished card (pane closed) keeps the dialog up — the user
     // dismisses it explicitly, but stale live routing is cleared.
-    rerender(<AgentKanbanBoard snapshot={{ generatedAt: 3, cards: [] }} />)
+    rerender(
+      <AgentKanbanBoard
+        onAckAgent={ackAgent}
+        onRevealAgent={revealAgent}
+        snapshot={{ generatedAt: 3, cards: [] }}
+      />
+    )
     expect(screen.getByTestId('terminal-dialog').dataset.open).toBe('true')
     expect(screen.getByTestId('terminal-dialog').dataset.ptyId).toBeUndefined()
   })
 
   it('relays a seen-ack when a dialog opens and when the open agent changes state', () => {
     const agent = card({ paneKey: 'pk-ack', bucket: 'done', unseen: true })
-    const { rerender } = render(<AgentKanbanBoard snapshot={{ generatedAt: 1, cards: [agent] }} />)
+    const { rerender } = render(
+      <AgentKanbanBoard
+        onAckAgent={ackAgent}
+        onRevealAgent={revealAgent}
+        snapshot={{ generatedAt: 1, cards: [agent] }}
+      />
+    )
     // unseen comes straight from the snapshot (the shared ack map).
     expect(screen.getByTestId('card').dataset.unseen).toBe('true')
 
@@ -325,6 +354,8 @@ describe('AgentKanbanBoard', () => {
     // The ack round-trips through the main window; the next snapshot mutes it.
     rerender(
       <AgentKanbanBoard
+        onAckAgent={ackAgent}
+        onRevealAgent={revealAgent}
         snapshot={{
           generatedAt: 2,
           cards: [{ ...agent, bucket: 'idle', unseen: false }],
@@ -340,6 +371,8 @@ describe('AgentKanbanBoard', () => {
     // seeing), so the card never flips bold under an open dialog.
     rerender(
       <AgentKanbanBoard
+        onAckAgent={ackAgent}
+        onRevealAgent={revealAgent}
         snapshot={{
           generatedAt: 3,
           cards: [{ ...agent, bucket: 'working' as const, stateChangedAt: 2000, unseen: true }],

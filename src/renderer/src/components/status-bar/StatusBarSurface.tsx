@@ -67,7 +67,6 @@ export function StatusBarSurface({
     handleManageAccounts,
     handleOpenProviderAccounts,
     handleRefresh,
-    handleUsageDetails,
     handleUsageMenuOpenChange,
     hasVisibleUsageMeters,
     iconOnly,
@@ -169,7 +168,6 @@ export function StatusBarSurface({
                   onSignIn={handleOpenProviderAccounts}
                   canSignIn={(provider) => getUsageProviderAccountsSectionId(provider) !== null}
                   onManageAccounts={handleManageAccounts}
-                  onUsageDetails={handleUsageDetails}
                   renderRow={(p, rowNode) => {
                     // Every provider drills into its detail panel (parity with the
                     // per-provider dropdowns on main); Claude/Codex additionally get

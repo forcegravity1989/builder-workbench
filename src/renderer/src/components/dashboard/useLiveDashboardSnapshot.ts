@@ -6,9 +6,7 @@ import { createWorktreeAgentRowsCache } from './worktree-agent-rows-cache'
 
 /**
  * Builds the dashboard snapshot directly from the live renderer store for the
- * in-window screen popover. The pop-out window can't read this store, so it
- * relays a serialized snapshot instead (useDashboardSnapshot); in-window there
- * is no relay, so we derive it here from the same builder the bridge uses.
+ * in-window Agent Dashboard drawer.
  */
 export function useLiveDashboardSnapshot(): DashboardSnapshot {
   const rowsCacheRef = useRef<ReturnType<typeof createWorktreeAgentRowsCache>>(undefined!)
@@ -34,8 +32,7 @@ export function useLiveDashboardSnapshot(): DashboardSnapshot {
   const workspaceStatuses = useAppStore((s) => s.workspaceStatuses)
   // Why: each card carries the host-input profile its preview terminal keys
   // against, so the drawer must watch every slice that resolves an execution
-  // host — exactly the set useDashboardPopoutBridge republishes on. Agent
-  // activity alone cannot heal these: a board whose agents are idle never
+  // host. Agent activity alone cannot heal these: a board whose agents are idle never
   // rebuilds, so an SSH handshake or host swap would leave the preview encoding
   // bytes for the host the pty used to run on. All are low-frequency (each
   // writer bails out when nothing changed) next to agentStatusByPaneKey, which

@@ -43,6 +43,28 @@ git merge orca-upstream/main
 
 合并 upstream 时：不要把 `mobile/` 或 Mobile 页重新合回来。协议文件若 upstream 改了，优先取 upstream，除非叠层已摘钩子。
 
+### 源码：全露的上游工作面（2026-10-10，壳内隐藏 / 删除）
+
+Workbench 壳不提供浮动工作区、内置浏览器的「新建浏览器标签」入口、技能页与技能分享、Artifact 云发布与 Orca 账号、Experimental 页；这些按 `isWorkbenchShell()` 在入口处隐藏，代码保留，非壳模式不变。Stats & Usage 设置页与 Agent Dashboard 弹出窗口两条链从 git 删除（两种模式都没有）：
+
+| 处置 | 路径 | 说明 |
+|---|---|---|
+| **壳内隐藏** | `app-shell/use-floating-workspace-panel.ts`、`status-bar/use-status-bar-controller.ts`、`settings/KeybindingsFileActions.tsx` | 浮动工作区：壳内 `enabled` 恒为假，面板、浮动按钮、状态栏开关、Mod+Alt+A 与切换事件一并失效；设置值 `floatingTerminalEnabled` 不改。快捷键页「Edit File in Orca」在壳内换成「Open with Default App」 |
+| **壳内隐藏** | `tab-bar/use-tab-bar-runtime-model.ts`（「+」菜单与复制标签）、`cmd-j/quick-actions.ts`（New Browser Tab）、`terminal-workspace-keydown.ts` 与 `hooks/ipc-events/content-creation-ipc-bridge.ts`（Mod+Shift+B）、`settings/ShortcutsPane.tsx` 与 `hooks/useSettingsNavigationMetadata.ts`（快捷键行与搜索） | 内置浏览器只摘新建入口；浏览器代码、标签类型、链接路由与 agent 打开的浏览器标签保留 |
+| **壳内隐藏** | `App.tsx`（`SkillFreshnessNudge`）、`app-shell/AppWorkspaceShell.tsx`（`SkillsPage`） | 技能页与技能更新提示；`src/main/skills` 分发链不动，BW 自己的技能走它 |
+| **壳内隐藏** | `editor/EditorPanelHeader.tsx`、`browser-pane/assemble-chrome/browser-page-toolbar.tsx`（发布按钮）、`app-shell/AppRootSurfaces.tsx`（`UnexpectedSignoutCard`） | Artifact 云发布与 Orca 账号登录失效卡；`src/main/orca-profiles` 与 profile-cloud 代码保留（配对通道引用 `profile-cloud-auth-config.ts`） |
+| **壳内隐藏** | `status-bar/ResourceUsageStatusSegment.tsx` + `WorkspaceSpaceCompactPanel.tsx`（「Review」整页）、`terminal-pane/TerminalPaneSurface.tsx` + `TerminalSessionStateSaveFailureDialog.tsx`（「Open Disk Space Analyzer」） | 二者调 `openSpacePage`，壳内该页已改为知识库，属错路由；壳内不显示这两个入口，紧凑空间面板仍可扫描 |
+| **壳内隐藏** | `hooks/settings-navigation-workflow-sections.ts`（Artifacts、Share Skills、Browser 含 Browser Use、Floating Workspace）、`settings-navigation-capability-sections.ts`（Orca Account）、`settings-navigation-remote-sections.ts`（Experimental 整页） | 不进设置导航与 Cmd+J；ArtifactsSettingsPane「Open Artifacts」、ShareSkillsSettingsPane「Open Skills」随页面一起不可达 |
+| **删除** | `src/renderer/src/components/stats/`（31）、`store/slices/{stats,usage-provider-slices}.ts` 与两份用量切片测试（4） | Stats & Usage 设置页：导航目标 `stats`、Cmd+J 别名 `usage`、状态栏用量菜单「Usage details & history」一并删除 |
+| **未删** | `src/main/stats/`、`src/main/{claude,codex,opencode}-usage/`、`src/main/usage/`、preload `claudeUsage` / `codexUsage` / `openCodeUsage` / `stats` | `StatsCollector` 服务遥测、功能交互与运行时；用量扫描另被 `automations/run-usage-collection.ts` 使用，主进程侧不是只为设置页存在 |
+| **删除** | `src/renderer/popout.html`、`src/renderer/src/popout.tsx`、`components/dashboard-popout/{DashboardPopoutRoot,useDashboardSnapshot,dashboard-agent-status-patch}`、`components/dashboard/{DashboardPopoutBridge,useDashboardPopoutBridge,launch-dashboard-agent}`、`src/main/window/dashboard-popout-window`、`src/main/ipc/dashboard-{popout,payload-validation,agent-launch-validation,filter-payload-validation,workspace-payload-validation}`、`clipboard-dashboard-popout-access.test`、preload `dashboard-bridge`（共 24） | Agent Dashboard 弹出窗口；`window.api.dashboard` 命名空间、设置 `experimentalAgentDashboardMode` 与类型 `AgentDashboardMode`、UI 状态 `dashboardPopoutBounds`、错误边界面 `'dashboard-popout'`、Experimental 里的「Open as」与看板菜单的弹出选项、electron.vite 的 popout 入口一并删除；终端预览只接受主窗口 |
+| **未删** | `components/dashboard-popout/` 目录名及看板 / 终端预览 / Agent Map 文件、设置键 `experimentalAgentDashboardPopout`、`RendererSurface` 的 `'dashboard-popout'` 值 | 窗口内 Agent Dashboard 抽屉用这些组件；该设置键实为整个 Agent Dashboard 的开关，改名会丢用户已开的设置；Agent Map 在上游已不可达，另行清理 |
+| **未动** | Mobile Emulator（设置页与「+」菜单项）、Help → Report Crash | 模拟器去留等人裁；Report Crash 由「首启弹层与品牌残留」整批删除 |
+
+i18n：279 个键（256 个本次失去最后引用：Stats 页、用量菜单、弹出窗口与「Open as」模式选择；另 23 个是 `auto.components.stats.*` 命名空间里早已无引用的残键）从 6 个语言目录剪除，`en-runtime-required.json` 由 `sync:localization-runtime-catalog` 重生成；`config/scripts/locale-ko-key-overrides.json` 同步删去 37 条。
+
+合并 upstream 时：不要把 Stats 页、弹出窗口及其 IPC / preload / 入口合回来；upstream 改到这些文件时按删除冲突处理。壳内隐藏的各项只在入口层分支，upstream 对其正文的改动照常合入。
+
 ### 文档（本轮原 `bw-orca` 落仓）
 
 产品文档已换成 **Workbench 旧 `main`**（导入时 tip：`25f38bc80211f9656e229ef31b0e5a10ae28226a`；该路线现归档为 `archive/main-pre-orca`），正本在仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` / `CLAUDE.md` 与 `docs/`。

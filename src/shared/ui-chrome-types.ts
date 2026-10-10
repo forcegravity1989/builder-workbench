@@ -22,9 +22,6 @@ export type FloatingTerminalCwdRequest = {
   requireTrusted?: boolean
 }
 
-/** Presentation mode for the experimental Agent Dashboard. */
-export type AgentDashboardMode = 'in-window' | 'popout'
-
 export type WorktreeCardProperty =
   | 'status'
   | 'unread'

@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest'
  */
 const RENDERER_SRC = import.meta.dirname
 const REPO_SRC = path.resolve(RENDERER_SRC, '../..')
-const ENTRIES = ['main.tsx', 'popout.tsx', 'web/main.tsx']
+const ENTRIES = ['main.tsx', 'web/main.tsx']
 const EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx']
 
 /** `import`/`export ... from` and `import(...)` specifiers, minus type-only ones, which erase. */

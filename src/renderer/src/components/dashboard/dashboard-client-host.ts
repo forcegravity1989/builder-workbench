@@ -18,7 +18,7 @@ export function readDashboardClientHost(): DashboardClientHost {
         ? 'win32'
         : 'linux',
     userAgent,
-    // Why: absent in the pop-out renderer and in tests, where no preload rides along.
+    // Why: absent in tests, where no preload rides along.
     osRelease: readClientOsRelease()
   }
 }

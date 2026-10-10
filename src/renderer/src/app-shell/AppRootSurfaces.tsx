@@ -288,11 +288,14 @@ export function AppRootSurfaces(props: {
             </OverlayBoundary>
           </Suspense>
         ) : null}
-        <Suspense fallback={null}>
-          <OverlayBoundary boundaryId="overlay.unexpected-signout" resetKey={activeView}>
-            <UnexpectedSignoutCard />
-          </OverlayBoundary>
-        </Suspense>
+        {/* Why: the Workbench shell has no Orca account, so a signed-out card has nothing to restore. */}
+        {isWorkbenchShell() ? null : (
+          <Suspense fallback={null}>
+            <OverlayBoundary boundaryId="overlay.unexpected-signout" resetKey={activeView}>
+              <UnexpectedSignoutCard />
+            </OverlayBoundary>
+          </Suspense>
+        )}
         {isWorkbenchShell() ? null : (
           <OverlayBoundary boundaryId="overlay.star-nag" resetKey={activeView}>
             <StarNagCard />

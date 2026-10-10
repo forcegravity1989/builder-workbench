@@ -171,7 +171,25 @@
         "closeAsDuplicateDescription": "Duplicate of another issue in this repository",
         "closeAsDuplicateSubmit": "Close duplicate",
         "closeAsNotPlannedDescription": "Won't fix, can't repro, stale",
+        "codehubAssign": "Assign",
+        "codehubAssigned": "Assignee updated",
+        "codehubAutoMerge": "Merge when the pipeline succeeds",
+        "codehubAutoMergeButton": "Auto-merge",
+        "codehubChecks": "Pipelines",
+        "codehubCloseCompleted": "Close as completed",
+        "codehubCloseDuplicate": "Close as duplicate",
+        "codehubCloseMr": "Close",
+        "codehubCloseNotPlanned": "Close as not planned",
         "codehubDuplicateOf": "#",
+        "codehubLoadMore": "Load more",
+        "codehubLoadedScope": "Search and filters apply to loaded tasks",
+        "codehubNoDescription": "No description",
+        "codehubNoLoadedMatches": "No matches in loaded tasks",
+        "codehubNoPipelines": "No pipelines",
+        "codehubOpenProject": "Open project in CodeHub",
+        "codehubReopen": "Reopen",
+        "codehubReviewers": "Reviewers, comma-separated",
+        "codehubSetReviewers": "Set reviewers",
         "d079be2dc8": "No assigned issues. Try searching for something.",
         "d0e3c8f933": "No matching GitHub work",
         "d6d08c1650": "Select a project to see GitLab work items.",
@@ -2071,47 +2089,6 @@
       "sparse": {
         "SparseCheckoutPresetSelect": {
           "bd6cec2056": "new"
-        }
-      },
-      "stats": {
-        "ClaudeUsagePane": {
-          "02a046792e": "sessions •",
-          "32176e1d44": "turns"
-        },
-        "CodexUsagePane": {
-          "247c93ca92": "• inferred pricing",
-          "79a69522a5": "events",
-          "ae255c3dba": "n/a",
-          "bf1bf2f674": "sessions •"
-        },
-        "OpenCodeUsagePane": {
-          "1e5d410df0": "events",
-          "8095a63426": "n/a",
-          "bc0cb89901": "sessions •"
-        },
-        "StatsPane": {
-          "908c470587": "codex",
-          "eb6a066185": "claude",
-          "eee19cfade": "overview"
-        },
-        "UsageSessionsTable": {
-          "01476891c7": "Last active",
-          "0f03975d59": "Events",
-          "1afc25eb06": "Turns",
-          "21ea00bfa8": "Cache",
-          "a8b7487ff7": "Output",
-          "c17bed0416": "Project",
-          "cfe2282ffa": "Unknown",
-          "e0b988599d": "Total",
-          "f6a2c8d019": "Model",
-          "faf3444859": "Input"
-        },
-        "usage": {
-          "overview": {
-            "sections": {
-              "9564a3b21b": "sessions -"
-            }
-          }
         }
       },
       "status": {

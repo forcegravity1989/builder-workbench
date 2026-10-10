@@ -12,14 +12,8 @@ import type { LinearSlice } from './slices/linear'
 import type { PreflightSlice } from './slices/preflight'
 import type { JiraSlice } from './slices/jira'
 import type { EditorSlice } from './slices/editor'
-import type { StatsSlice } from './slices/stats'
 import type { MemorySlice } from './slices/memory'
 import type { WorkspaceSpaceSlice } from './slices/workspace-space'
-import type {
-  ClaudeUsageSlice,
-  CodexUsageSlice,
-  OpenCodeUsageSlice
-} from './slices/usage-provider-slices'
 import type { BrowserSlice } from './slices/browser'
 import type { RateLimitSlice } from './slices/rate-limits'
 import type { SshSlice } from './slices/ssh'
@@ -58,12 +52,8 @@ export type AppState = RepoSlice &
   PreflightSlice &
   JiraSlice &
   EditorSlice &
-  StatsSlice &
   MemorySlice &
   WorkspaceSpaceSlice &
-  ClaudeUsageSlice &
-  CodexUsageSlice &
-  OpenCodeUsageSlice &
   BrowserSlice &
   RateLimitSlice &
   SshSlice &

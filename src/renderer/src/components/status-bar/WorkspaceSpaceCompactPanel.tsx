@@ -13,7 +13,7 @@ import { translate } from '@/i18n/i18n'
 export function WorkspaceSpaceCompactPanel({
   onOpenFullPage
 }: {
-  onOpenFullPage: () => void
+  onOpenFullPage?: () => void
 }): React.JSX.Element {
   const analysis = useAppStore((state) => state.workspaceSpaceAnalysis)
   const progress = useAppStore((state) => state.workspaceSpaceScanProgress)
@@ -129,12 +129,14 @@ export function WorkspaceSpaceCompactPanel({
                     'Scan'
                   )}
           </Button>
-          <Button variant="ghost" size="xs" onClick={onOpenFullPage}>
-            {translate(
-              'auto.components.status.bar.WorkspaceSpaceCompactPanel.6a5dc3c61a',
-              'Review'
-            )}
-          </Button>
+          {onOpenFullPage ? (
+            <Button variant="ghost" size="xs" onClick={onOpenFullPage}>
+              {translate(
+                'auto.components.status.bar.WorkspaceSpaceCompactPanel.6a5dc3c61a',
+                'Review'
+              )}
+            </Button>
+          ) : null}
         </div>
       </div>
 

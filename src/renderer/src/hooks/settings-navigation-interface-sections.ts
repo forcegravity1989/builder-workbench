@@ -2,10 +2,9 @@ import { getAppearancePaneSearchEntries } from '@/components/settings/appearance
 import { getInputPaneSearchEntries } from '@/components/settings/input-search'
 import { getNotificationsPaneSearchEntries } from '@/components/settings/notifications-search'
 import { getShortcutsPaneSearchEntries } from '@/components/settings/shortcuts-search'
-import { getStatsPaneSearchEntries } from '@/components/stats/stats-search'
 import { translate } from '@/i18n/i18n'
 import type { SettingsNavSection } from '@/lib/settings-navigation-types'
-import { BarChart3, Bell, Keyboard, Palette, TextCursorInput } from 'lucide-react'
+import { Bell, Keyboard, Palette, TextCursorInput } from 'lucide-react'
 import type { SettingsNavigationBuildOptions } from './settings-navigation-build-options'
 
 export function buildInterfaceSettingsSections({
@@ -73,17 +72,6 @@ export function buildInterfaceSettingsSections({
         includeManagedBrowser: managedBrowserCreationEnabled,
         includeMobileEmulator: mobileEmulatorCreationEnabled
       }),
-      group: 'interface'
-    },
-    {
-      id: 'stats',
-      title: translate('auto.hooks.useSettingsNavigationMetadata.d72a58b5b9', 'Stats & Usage'),
-      description: translate(
-        'auto.hooks.useSettingsNavigationMetadata.b351014180',
-        'Orca stats plus Claude, Codex, OpenCode token analytics and Grok subscription usage.'
-      ),
-      icon: BarChart3,
-      searchEntries: getStatsPaneSearchEntries(),
       group: 'interface'
     }
   ]

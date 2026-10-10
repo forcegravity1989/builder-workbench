@@ -61,9 +61,7 @@ export function registerWorkspaceShortcutIpcBridge(unsubs: (() => void)[]): void
   if (window.api.ui.onToggleAgentDashboard) {
     unsubs.push(
       window.api.ui.onToggleAgentDashboard(() => {
-        toggleAgentDashboardFromShortcut(useAppStore.getState(), () => {
-          void window.api.dashboard.openPopout()
-        })
+        toggleAgentDashboardFromShortcut(useAppStore.getState())
       })
     )
   }

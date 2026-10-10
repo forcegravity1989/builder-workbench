@@ -74,10 +74,6 @@ export const getExperimentalPaneSearchEntries = createLocalizedCatalog(
           'kanban'
         ),
         ...translateSearchKeyword(
-          'auto.components.settings.experimental.search.agentDashboard.popout',
-          'pop-out'
-        ),
-        ...translateSearchKeyword(
           'auto.components.settings.experimental.search.agentDashboard.board',
           'board'
         ),

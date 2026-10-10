@@ -23,6 +23,7 @@ import { getKeybindingContext } from './terminal-workspace-model'
 import { resolveTerminalAgentTabShortcut } from './terminal-agent-tab-shortcut'
 import { handleTerminalWorkspaceEditorShortcut } from './terminal-workspace-editor-shortcuts'
 import type { TerminalActivationController } from './use-terminal-activation-actions'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export function handleTerminalWorkspaceKeyDown(
   event: KeyboardEvent,
@@ -105,7 +106,7 @@ export function handleTerminalWorkspaceKeyDown(
     }
     return
   }
-  if (!event.repeat && matchShortcut('tab.newBrowser')) {
+  if (!isWorkbenchShell() && !event.repeat && matchShortcut('tab.newBrowser')) {
     event.preventDefault()
     notifyTerminalCapture('tab.newBrowser')
     const browserWorkspaceId = floatingWorkspaceFocused

@@ -8,17 +8,12 @@ export function toggleAgentDashboardFromShortcut(
     | 'agentDashboardDrawerOpen'
     | 'setSidebarOpen'
     | 'setAgentDashboardDrawerOpen'
-  >,
-  openPopout: () => void
+  >
 ): void {
   if (
     state.activeView === 'settings' ||
     state.settings?.experimentalAgentDashboardPopout !== true
   ) {
-    return
-  }
-  if (state.settings.experimentalAgentDashboardMode === 'popout') {
-    openPopout()
     return
   }
   const nextOpen = !state.agentDashboardDrawerOpen

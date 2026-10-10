@@ -40,7 +40,6 @@ import { saveClipboardImageBufferInRuntime } from './clipboard-runtime-image-upl
 import { readWindowsClipboardImageFileAsPng } from './clipboard-windows-image-file'
 import { buildClipboardImageThumbnail } from './clipboard-image-thumbnail'
 import { writeClipboardTextAndVerify } from './clipboard-text-write-verify'
-import { isDashboardPopoutRenderer } from './dashboard-popout-window'
 
 let trustedClipboardRendererWebContentsId: number | null = null
 
@@ -101,7 +100,7 @@ export function registerClipboardHandlers(store: Store): void {
   scheduleLegacyRemoteClipboardFileCleanup()
 
   ipcMain.handle('clipboard:readText', async (event, options?: ReadClipboardTextOptions) => {
-    assertTrustedClipboardTextSender(event)
+    assertTrustedClipboardSender(event)
     return assertClipboardTextWithinLimitWithYield(clipboard.readText(), options)
   })
   ipcMain.handle(
@@ -178,7 +177,7 @@ export function registerClipboardHandlers(store: Store): void {
     }
   )
   ipcMain.handle('clipboard:writeText', async (event, text: string) => {
-    assertTrustedClipboardTextSender(event)
+    assertTrustedClipboardSender(event)
     const safeText = await assertClipboardTextWriteWithinLimitWithYield(text)
     try {
       clipboard.writeText(safeText)
@@ -190,7 +189,7 @@ export function registerClipboardHandlers(store: Store): void {
     }
   })
   ipcMain.handle('clipboard:writeTerminalText', async (event, text: string) => {
-    assertTrustedClipboardTextSender(event)
+    assertTrustedClipboardSender(event)
     return writeClipboardTextAndVerify(await assertClipboardTextWriteWithinLimitWithYield(text))
   })
   ipcMain.handle('clipboard:writeSelectionText', async (event, text: string) => {
@@ -270,14 +269,6 @@ function makeClipboardFileDeps(
 
 function assertTrustedClipboardSender(event: IpcMainInvokeEvent): void {
   if (!isTrustedClipboardRenderer(event.sender)) {
-    throw new Error('Unauthorized clipboard IPC sender')
-  }
-}
-
-function assertTrustedClipboardTextSender(event: IpcMainInvokeEvent): void {
-  // Why: terminal copy/paste runs in the exact dashboard popout window, but its
-  // clipboard authority must not extend to image, file, or remote operations.
-  if (!isTrustedClipboardRenderer(event.sender) && !isDashboardPopoutRenderer(event.sender)) {
     throw new Error('Unauthorized clipboard IPC sender')
   }
 }

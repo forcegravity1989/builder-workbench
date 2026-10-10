@@ -19,7 +19,7 @@ const SHIM_IMPORT = `import './lib/${SHIM_MODULE}'`
 const OBSERVER_IMPORT = "import './lib/react-commit-cascade-observer'"
 
 /** Entries whose crash reports reach the breadcrumb pipe. */
-const INSTRUMENTED_ENTRIES = ['main.tsx', 'popout.tsx']
+const INSTRUMENTED_ENTRIES = ['main.tsx']
 /**
  * The web preload stubs crashReports.recordBreadcrumb to a no-op
  * (src/renderer/src/web/preload-api/web-diagnostics-api.ts), so instrumenting

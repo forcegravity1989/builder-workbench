@@ -5,15 +5,13 @@ function makeState(
   overrides: {
     activeView?: string
     experimentEnabled?: boolean
-    mode?: 'in-window' | 'popout'
     drawerOpen?: boolean
   } = {}
 ) {
   return {
     activeView: overrides.activeView ?? 'terminal',
     settings: {
-      experimentalAgentDashboardPopout: overrides.experimentEnabled ?? true,
-      experimentalAgentDashboardMode: overrides.mode ?? 'in-window'
+      experimentalAgentDashboardPopout: overrides.experimentEnabled ?? true
     },
     agentDashboardDrawerOpen: overrides.drawerOpen ?? false,
     setSidebarOpen: vi.fn(),
@@ -24,40 +22,25 @@ function makeState(
 describe('toggleAgentDashboardFromShortcut', () => {
   it('stays inert while the Agent Dashboard experiment is off', () => {
     const state = makeState({ experimentEnabled: false })
-    const openPopout = vi.fn()
 
-    toggleAgentDashboardFromShortcut(state as never, openPopout)
+    toggleAgentDashboardFromShortcut(state as never)
 
-    expect(openPopout).not.toHaveBeenCalled()
     expect(state.setAgentDashboardDrawerOpen).not.toHaveBeenCalled()
     expect(state.setSidebarOpen).not.toHaveBeenCalled()
   })
 
   it('stays inert in the Settings view', () => {
     const state = makeState({ activeView: 'settings' })
-    const openPopout = vi.fn()
 
-    toggleAgentDashboardFromShortcut(state as never, openPopout)
+    toggleAgentDashboardFromShortcut(state as never)
 
-    expect(openPopout).not.toHaveBeenCalled()
     expect(state.setAgentDashboardDrawerOpen).not.toHaveBeenCalled()
-  })
-
-  it('opens the pop-out window in popout mode without touching the drawer', () => {
-    const state = makeState({ mode: 'popout' })
-    const openPopout = vi.fn()
-
-    toggleAgentDashboardFromShortcut(state as never, openPopout)
-
-    expect(openPopout).toHaveBeenCalledOnce()
-    expect(state.setAgentDashboardDrawerOpen).not.toHaveBeenCalled()
-    expect(state.setSidebarOpen).not.toHaveBeenCalled()
   })
 
   it('reveals the sidebar when opening the in-window drawer', () => {
     const state = makeState({ drawerOpen: false })
 
-    toggleAgentDashboardFromShortcut(state as never, vi.fn())
+    toggleAgentDashboardFromShortcut(state as never)
 
     expect(state.setSidebarOpen).toHaveBeenCalledWith(true)
     expect(state.setAgentDashboardDrawerOpen).toHaveBeenCalledWith(true)
@@ -68,7 +51,7 @@ describe('toggleAgentDashboardFromShortcut', () => {
     // just dismissed, and the drawer's own collapse effect would fight it.
     const state = makeState({ drawerOpen: true })
 
-    toggleAgentDashboardFromShortcut(state as never, vi.fn())
+    toggleAgentDashboardFromShortcut(state as never)
 
     expect(state.setAgentDashboardDrawerOpen).toHaveBeenCalledWith(false)
     expect(state.setSidebarOpen).not.toHaveBeenCalled()

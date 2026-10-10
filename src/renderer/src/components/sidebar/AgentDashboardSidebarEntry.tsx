@@ -61,7 +61,6 @@ function DashboardBucketCounts({
 export default function AgentDashboardSidebarEntry(): React.JSX.Element {
   const dashboardBucketCounts = useAgentBucketCounts()
   const showIdle = useAppStore((s) => s.settings?.experimentalAgentDashboardShowIdle === true)
-  const openAsPopout = useAppStore((s) => s.settings?.experimentalAgentDashboardMode === 'popout')
   const drawerOpen = useAppStore((s) => s.agentDashboardDrawerOpen)
   const setAgentDashboardDrawerOpen = useAppStore((s) => s.setAgentDashboardDrawerOpen)
 
@@ -69,13 +68,7 @@ export default function AgentDashboardSidebarEntry(): React.JSX.Element {
     <button
       type="button"
       data-contextual-tour-target="agents-sidebar"
-      onClick={() => {
-        if (openAsPopout) {
-          void window.api.dashboard.openPopout()
-        } else {
-          setAgentDashboardDrawerOpen(!drawerOpen)
-        }
-      }}
+      onClick={() => setAgentDashboardDrawerOpen(!drawerOpen)}
       className={cn(
         'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
         'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
