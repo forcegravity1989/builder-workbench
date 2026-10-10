@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-10 优化（定时任务再审收窄：砍除虚假场景 + 调度器收口 + 字段回退）
+
+- **变更类型**：优化（范围收窄）/ 重构（调度器收口）/ 回退（字段摘除）
+- **变更摘要**：携 15 产品 × 9 能力矩阵（官方证据口径）对已 gate 特性再审收窄，砍除零原生先例的虚假场景，保留有 2–4 家先例的真实场景。**砍除**：每 N 分钟/小时预设（upstream rrule 地基不动）、执行次数上限（COUNT 容忍出现但不生效）、每任务并发策略配置（固定为「上次未结束则记 `skipped_overlap` 跳过」，手动 runNow 不受限）、携带上次运行结果、提示词快照（运行历史只留状态/错误/输出尾部）；**保留**：一次性引擎（`onceAt`/`scheduledRunCount`，composer「明早九点跑一次」依赖）、固定跳过行为、导入导出；**新增**：webhook 最小形态（serve 模式端点 + 每任务 token，走 runNow 派发链不递增计数）。调度器收口已落地：生命周期门（一次性超宽限幂等记 `skipped_missed`）→ 一次性派发（`scheduledFor=onceAt`）→ 并发跳过 → 拒绝折叠（同因重复拒绝折叠进首条记录，`occurrenceCount` 计数）。被砍能力不留兼容层与双路径，字段与解析链全量回退；vitest ratchet 基线随删例收紧 259→257。
+- **涉及文件**：
+  - `docs/05-features/automations/research.md`（新增：两轮竞品调研存档，第二轮含能力矩阵与 E1–E11 证据索引）
+  - `docs/05-features/automations/intent.md` / `spec.md` / `design.md` / `STATUS.md`（重写：砍留留痕、验收点 AU02/AU03/AU05 砍除、AU09 webhook 新增、依据段两处降级）
+  - `src/main/automations/service.ts`（调度器收口：固定并发跳过、一次性派发、DEBUG 插桩摘除）
+  - `src/main/automations/dispatch-refusal.ts`（`recordSkippedOverlap` + `recordMissedRun` 幂等守卫）
+  - `src/shared/automations-types.ts` / `src/shared/rpc-contract/automation-params.ts` / `src/main/persistence/scheduling-automations/*`（删 `concurrencyPolicy`/`carryLastRunOutput`/`promptSnapshot`，保留 `onceAt`/`scheduledRunCount`)
+  - `src/shared/automation-schedule-kind.ts`（`deriveLifecycleState` 只保留一次性生命周期）
+  - `src/shared/automation-schedule-parsing.ts` / `automation-schedule-occurrences.ts`（删 count 解析与 `automationRunCountCap`）
+  - `config/vitest-count-baseline.txt`（ratchet 基线 259→257）
+- **验证**：全 automation 测试面 146/147 文件绿；唯一失败为 `external-manager-scoped.test.ts`（HEAD 预存 Windows 平台问题：测试硬编码 `which`，源码在 win32 用 `where`，本次未改动两文件）；typecheck 后台跑批中。
+
 ## 2026-10-09 新增（定时任务特性带入：设计四件套）
 
 - **变更类型**：新增（特性设计文档，未写实现代码）
