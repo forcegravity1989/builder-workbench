@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { invalidateLocalWorktreeMetadataPruneInputs } from '../../local-worktree-metadata-prune-gate'
+import { generateAutomationWebhookToken } from '../../automations/webhook-token'
 import type {
   Automation,
   AutomationCreateInput,
@@ -107,6 +108,8 @@ export function createAutomation(
     dtstart: input.dtstart,
     // 一次性建档：nextRunAt 直写 onceAt，不走出现计算（design「调度解析」）。
     ...(input.onceAt != null ? { onceAt: input.onceAt } : {}),
+    // webhook 凭据建档即铸造：每任务一枚，旧记录无此字段（编辑可补铸）。
+    webhookToken: generateAutomationWebhookToken(),
     enabled: input.enabled ?? true,
     nextRunAt:
       input.onceAt != null
@@ -150,8 +153,12 @@ export function updateAutomation(
   }
   // Why: the renderer forwards a Partial verbatim, so `{ enabled: undefined }` survives structuredClone
   // and would blank the stored value in the spread below. Explicit clears go through the `null` branches.
+  // regenerateWebhookToken 是动作不是字段：摘出后不进合并态，落到 webhookToken 重铸。
+  const regenerateWebhookToken = updates.regenerateWebhookToken === true
   const definedUpdates = Object.fromEntries(
-    Object.entries(updates).filter(([, value]) => value !== undefined)
+    Object.entries(updates).filter(
+      ([key, value]) => value !== undefined && key !== 'regenerateWebhookToken'
+    )
   ) as AutomationUpdateInput
   const repoId = updates.projectId ?? current.projectId
   const repo = operations.state.repos.find((entry) => entry.id === repoId)
@@ -172,8 +179,7 @@ export function updateAutomation(
   // 一次性 ⇄ 循环是两种生命周期：跨界切换时次数清零，改上限/改时间不清（spec「改大
   //  复活、改小到数」没有特例逻辑，清零只发生在生命周期种类切换）。
   const lifecycleKindChanged =
-    Object.hasOwn(definedUpdates, 'onceAt') &&
-    (current.onceAt != null) !== (onceAt != null)
+    Object.hasOwn(definedUpdates, 'onceAt') && (current.onceAt != null) !== (onceAt != null)
   // 联立校验在合并态上做：schema 只看得见本次请求，跨界切换的完整性由存储层守门。
   if (onceAt != null && rrule.trim() !== '') {
     throw new Error('A one-shot automation must not also carry a recurrence.')
@@ -234,6 +240,7 @@ export function updateAutomation(
         : false,
     onceAt: onceAt ?? undefined,
     ...(lifecycleKindChanged ? { scheduledRunCount: 0 } : {}),
+    ...(regenerateWebhookToken ? { webhookToken: generateAutomationWebhookToken() } : {}),
     rrule,
     dtstart,
     nextRunAt: scheduleChanged

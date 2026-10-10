@@ -53,6 +53,7 @@ async function render(
           hostEntry={hostEntry}
           hostLabelById={new Map([['local', 'Local Mac']])}
           runNowAvailability={null}
+          webhookBaseUrl={undefined}
           now={0}
           onRunNow={vi.fn()}
           onEdit={vi.fn()}

@@ -5,7 +5,11 @@ import type {
   AutomationOwnerPrecondition,
   AutomationDestination
 } from '../../shared/automation-owner-precondition'
-import type { Automation, AutomationRun } from '../../shared/automations-types'
+import type {
+  Automation,
+  AutomationRun,
+  AutomationWebhookRunResult
+} from '../../shared/automations-types'
 import type {
   RuntimeAutomationCreateInput,
   RuntimeAutomationUpdateInput
@@ -137,6 +141,25 @@ export class OrcaRuntimeWithAutomationOperations extends OrcaRuntimeWithPtyForeg
     return this.automation.withExternalProbePriority(() =>
       this.automation.runNow(id, expectedOwner as never, oneShotPrompt)
     )
+  }
+
+  /** serve 端点在 token/启用检查后的派发入口；无 owner fence（端点即存储权威）。 */
+  runAutomationWebhook(id: string): Promise<AutomationWebhookRunResult> {
+    return this.automation.withExternalProbePriority(() => this.automation.runWebhook(id))
+  }
+
+  /**
+   * serve 模式 webhook 触发端点的对外基址（http(s)://host:port），由启动器在 RPC
+   * transport 绑定后回填；桌面模式恒为 null——没有端点就没有可展示的地址。
+   */
+  protected automationWebhookBaseUrl: string | null = null
+
+  setAutomationWebhookBaseUrl(url: string | null): void {
+    this.automationWebhookBaseUrl = url
+  }
+
+  getAutomationWebhookBaseUrl(): string | null {
+    return this.automationWebhookBaseUrl
   }
 
   listAutomationsForScope(params = {}): AutomationListResult {

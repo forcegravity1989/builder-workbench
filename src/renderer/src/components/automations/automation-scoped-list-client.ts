@@ -168,6 +168,26 @@ export async function listAutomationsForOwner(
 }
 
 /**
+ * The detail pane's webhook line. `automation.show` is the one method that names
+ * the serve endpoint, and the answer is authority-level so no owner fences it.
+ * Three-valued on purpose: a string is a serve endpoint, null is an
+ * authoritative "no endpoint in this mode", and undefined — an older host that
+ * answers without the field — is unknown, which must not read as either claim.
+ */
+export async function showAutomationWebhookBaseUrl(
+  authority: AutomationAuthorityRef,
+  id: string
+): Promise<string | null | undefined> {
+  const result = await callAuthority<{ webhookBaseUrl?: string | null }>(
+    authority,
+    'automation.show',
+    { id }
+  )
+  const baseUrl = result?.webhookBaseUrl
+  return typeof baseUrl === 'string' ? baseUrl : baseUrl === null ? null : undefined
+}
+
+/**
  * Deliberately unprobed, matching the mutation arms' *absence* of a probe here:
  * history is read-only, and an older host that ignores the precondition answers
  * with the rows it has rather than acting on a fence it never honoured.

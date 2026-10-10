@@ -17,7 +17,7 @@ export type AutomationRunStatus =
   | 'skipped_unavailable'
   | 'skipped_needs_interactive_auth'
   | 'dispatch_failed'
-export type AutomationRunTrigger = 'scheduled' | 'manual'
+export type AutomationRunTrigger = 'scheduled' | 'manual' | 'webhook'
 
 /** Statuses a run can never leave; only these are safe to evict from history. */
 export function isFinalAutomationRunStatus(status: AutomationRunStatus): boolean {
@@ -141,6 +141,9 @@ export type Automation = {
   /** 已实际派发的调度次数（跳过/错过/手动不累计）。持久正本：运行历史会被保留
    *  策略裁剪，不能从 runs 数（铁律一：杀进程重开数字能重新计算）。 */
   scheduledRunCount?: number
+  /** serve 模式 webhook 触发凭据：建档时随机生成一次，编辑可重生成。机器绑定，
+   *  不进导出（design「数据模型」）。旧记录无此字段：编辑重生成后才可被 webhook 触发。 */
+  webhookToken?: string | null
   missedRunPolicy: AutomationMissedRunPolicy
   missedRunGraceMinutes: number
   createdAt: number
@@ -241,7 +244,15 @@ export type AutomationUpdateInput = Partial<
 > & {
   /** 一次性时刻：null 显式清除（一次性⇄循环切换），undefined 未提供。 */
   onceAt?: number | null
+  /** true 时重生成 webhookToken（旧记录无 token 时即铸造一枚）。 */
+  regenerateWebhookToken?: boolean
 }
+
+/** webhook 触发的两种结局：正常派发带回运行记录；上次仍在运行时按固定并发
+ *  行为跳过并记录（skipped_overlap），不派发。 */
+export type AutomationWebhookRunResult =
+  | { outcome: 'dispatched'; run: AutomationRun }
+  | { outcome: 'skipped_overlap' }
 
 export type AutomationDispatchRequest = {
   automation: Automation
@@ -265,105 +276,6 @@ export type AutomationDispatchResult = {
   error?: string | null
 }
 
-export type ExternalAutomationProvider = 'hermes' | 'openclaw'
-export type ExternalAutomationManagerStatus = 'available' | 'unavailable'
-export type ExternalAutomationAction = 'pause' | 'resume' | 'run' | 'delete'
-export type ExternalAutomationRunStatus = 'completed' | 'failed' | 'unknown'
-
-export type ExternalAutomationTarget =
-  | {
-      type: 'local'
-    }
-  | {
-      type: 'ssh'
-      connectionId: string
-    }
-
-export type ExternalAutomationJob = {
-  id: string
-  managerId: string
-  provider: ExternalAutomationProvider
-  name: string
-  schedule: string
-  rawSchedule: string | null
-  enabled: boolean
-  state: string
-  prompt: string | null
-  promptPreview: string
-  nextRunAt: string | null
-  lastRunAt: string | null
-  lastStatus: string | null
-  lastError: string | null
-  workdir: string | null
-  runCount: number
-  runCountSaturated?: true
-  runs: ExternalAutomationRun[]
-}
-
-export type ExternalAutomationRun = {
-  id: string
-  managerId: string
-  provider: ExternalAutomationProvider
-  jobId: string
-  runAt: string | null
-  status: ExternalAutomationRunStatus
-  outputPreview: string | null
-  outputContent: string | null
-  error: string | null
-  outputPath: string | null
-}
-
-export type ExternalAutomationRunsPage = {
-  managerId: string
-  provider: ExternalAutomationProvider
-  target: ExternalAutomationTarget
-  jobId: string
-  page: number
-  pageSize: number
-  total: number
-  totalSaturated?: true
-  runs: ExternalAutomationRun[]
-}
-
-export type ExternalAutomationRunsInput = {
-  managerId: string
-  provider: ExternalAutomationProvider
-  target: ExternalAutomationTarget
-  jobId: string
-  page: number
-  pageSize: number
-}
-
-export type ExternalAutomationCreateInput = {
-  managerId: string
-  provider: ExternalAutomationProvider
-  target: ExternalAutomationTarget
-  name: string
-  prompt: string
-  schedule: string
-  workdir: string | null
-}
-
-export type ExternalAutomationUpdateInput = ExternalAutomationCreateInput & {
-  jobId: string
-}
-
-export type ExternalAutomationManager = {
-  id: string
-  provider: ExternalAutomationProvider
-  label: string
-  targetLabel: string
-  target: ExternalAutomationTarget
-  status: ExternalAutomationManagerStatus
-  error: string | null
-  canManage: boolean
-  jobs: ExternalAutomationJob[]
-}
-
-export type ExternalAutomationActionInput = {
-  managerId: string
-  provider: ExternalAutomationProvider
-  target: ExternalAutomationTarget
-  jobId: string
-  action: ExternalAutomationAction
-}
+// Why: external-manager types moved to their own module for the max-lines budget;
+// re-exported here so the 30+ existing import sites stay unchanged.
+export type * from './external-automations-types'

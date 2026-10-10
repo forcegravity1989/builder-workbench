@@ -15375,7 +15375,10 @@
           "51a470b966": "ssh",
           "b09b2384fd": "Paused",
           "eaa02014f8": "Enabled",
-          "29baf8f4c2": "Source"
+          "29baf8f4c2": "Source",
+          "41323fc6d5": "Webhook",
+          "6491e794fc": "Webhook triggers require serve mode.",
+          "8feb356627": "No token yet — run `orca automations edit --regenerate-webhook-token` to mint one."
         },
         "AutomationEditorDialog": {
           "fb1896a5e7": "Cancel",
@@ -15683,7 +15686,9 @@
               "a95afb7483": "Hourly at :{{minute}}",
               "280ccd2701": "Daily at {{time}}",
               "3f1422adc1": "Weekdays at {{time}}",
-              "cc71e252ba": "{{day}}s at {{time}}"
+              "cc71e252ba": "{{day}}s at {{time}}",
+              "2442f631bf": "Every {{count}} minutes",
+              "6e5092ad81": "Every {{count}} hours"
             }
           }
         },

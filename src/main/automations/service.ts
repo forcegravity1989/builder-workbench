@@ -10,7 +10,8 @@ import {
   type AutomationDispatchRequest,
   type AutomationDispatchResult,
   type AutomationPrecheckResult,
-  type AutomationRun
+  type AutomationRun,
+  type AutomationWebhookRunResult
 } from '../../shared/automations-types'
 import type { ClaudeUsageStore } from '../claude-usage/store'
 import type { CodexUsageStore } from '../codex-usage/store'
@@ -27,16 +28,12 @@ import {
 import { createAutomationRunWriter, type AutomationRunWriter } from './automation-run-writer'
 import { reportAutomationScheduleDrift } from './schedule-drift-report'
 import {
-  describeScheduledRefusal,
-  missedBeyondGrace,
-  recordMissedRun,
   recordRefusedAutomationRun,
   recordSkippedOverlap,
-  recordUnevaluableAutomation,
   sendRendererDispatch,
   NO_DISPATCH_HOST
 } from './dispatch-refusal'
-import { deriveLifecycleState, isOneShotAutomation } from '../../shared/automation-schedule-kind'
+import { createDueRunEvaluator } from './due-run-evaluator'
 import type {
   AutomationsChangedPayload,
   PublishAutomationsChanged
@@ -50,7 +47,6 @@ export class AutomationService {
   private timer: ReturnType<typeof setInterval> | null = null
   private webContents: AutomationRendererChannel | null = null
   private rendererReady = false
-  private evaluating = false
   private readonly claudeUsage: ClaudeUsageStore | null
   private readonly codexUsage: CodexUsageStore | null
   private readonly allowRemoteHostScheduling: boolean
@@ -58,6 +54,8 @@ export class AutomationService {
   private readonly publish: PublishAutomationsChanged | null
   private readonly runs: AutomationRunWriter
   private readonly completionWatcher: AutomationRunCompletionWatcher | null
+  /** The tick loop's due-pass; created in the constructor over this service's state. */
+  private readonly evaluateDueRuns: () => Promise<void>
   /** Installed by desktop IPC registration, where external probes live; null on
    *  runtime servers. Orca's own automation traffic parks queued external
    *  probes behind this lease, whichever transport carried it. */
@@ -83,6 +81,15 @@ export class AutomationService {
     this.headlessDispatcher = opts.headlessDispatcher ?? null
     this.publish = opts.onAutomationsChanged ?? null
     this.runs = createAutomationRunWriter(store, this.publish)
+    this.evaluateDueRuns = createDueRunEvaluator({
+      store,
+      runs: this.runs,
+      tickMs: this.tickMs,
+      resolveTarget: (automation) => this.resolveTarget(automation),
+      canDispatch: () => this.canDispatch(),
+      requestDispatch: (automation, run, target, oneShotPrompt, dispatchKind) =>
+        this.requestDispatch(automation, run, target, oneShotPrompt, dispatchKind)
+    })
     this.completionWatcher = opts.terminalObserver
       ? new AutomationRunCompletionWatcher({
           observer: opts.terminalObserver,
@@ -148,6 +155,33 @@ export class AutomationService {
     const run = this.runs.createRun(automation, Date.now(), 'manual')
     const target = this.resolveTarget(automation)
     return await this.requestDispatch(automation, run, target, oneShotPrompt)
+  }
+
+  /**
+   * Webhook 触发：外部手动等价物。与 runNow 的差别只有一处——并发照调度的固定
+   * 行为约束（上次仍在运行 → 记 skipped_overlap，不派发）；计数与一次性机会仍
+   * 按手动语义不消耗（design「webhook 触发」）。token 与启用检查在端点，不在这里。
+   */
+  async runWebhook(automationId: string): Promise<AutomationWebhookRunResult> {
+    const automation = this.store.listAutomations().find((entry) => entry.id === automationId)
+    if (!automation) {
+      throw new Error('Automation not found.')
+    }
+    const now = Date.now()
+    if (
+      this.store
+        .listAutomationRuns(automation.id)
+        .some((run) => !isFinalAutomationRunStatus(run.status))
+    ) {
+      recordSkippedOverlap({ runs: this.runs, automation, scheduledFor: now })
+      return { outcome: 'skipped_overlap' }
+    }
+    const run = this.runs.createRun(automation, now, 'webhook')
+    const target = this.resolveTarget(automation)
+    return {
+      outcome: 'dispatched',
+      run: await this.requestDispatch(automation, run, target)
+    }
   }
 
   /** The run-history row doc:94 pairs with the typed refusal an execute fence throws. */
@@ -224,107 +258,6 @@ export class AutomationService {
       claudeUsage: this.claudeUsage,
       codexUsage: this.codexUsage
     })
-  }
-
-  private async evaluateDueRuns(): Promise<void> {
-    if (this.evaluating) {
-      return
-    }
-    this.evaluating = true
-    try {
-      const now = Date.now()
-      for (const automation of this.store.listAutomations()) {
-        if (!automation.enabled || automation.nextRunAt > now) {
-          continue
-        }
-        if (deriveLifecycleState(automation, now) === 'finished') {
-          // 一次性超宽限仍未派发：先补记 skipped_missed（不静默），此后每 tick
-          // 走这里都是幂等空转（createRun 去重 + recordMissedRun 幂等）。
-          if (
-            isOneShotAutomation(automation) &&
-            (automation.scheduledRunCount ?? 0) === 0 &&
-            missedBeyondGrace({
-              automation,
-              scheduledFor: automation.onceAt as number,
-              now,
-              tickMs: this.tickMs
-            })
-          ) {
-            recordMissedRun({
-              runs: this.runs,
-              automation,
-              scheduledFor: automation.onceAt as number
-            })
-          }
-          continue
-        }
-        // Isolated per record (#16303): an unreadable schedule throws out of the
-        // occurrence math, and an uncaught throw here skipped every later due row.
-        try {
-          await this.evaluateAutomation(automation, now)
-        } catch (error) {
-          recordUnevaluableAutomation({ runs: this.runs, automation, error })
-        }
-      }
-    } finally {
-      this.evaluating = false
-    }
-  }
-
-  private async evaluateAutomation(automation: Automation, now: number): Promise<void> {
-    const oneShot = isOneShotAutomation(automation)
-    // 一次性不走出现计算：nextRunAt 建档时直写 onceAt。
-    const scheduledFor = oneShot
-      ? (automation.onceAt as number)
-      : this.store.getLatestAutomationOccurrence(automation, now)
-    if (scheduledFor === null) {
-      this.store.advanceAutomationNextRun(automation.id, now)
-      return
-    }
-    if (missedBeyondGrace({ automation, scheduledFor, now, tickMs: this.tickMs })) {
-      recordMissedRun({ runs: this.runs, automation, scheduledFor })
-      if (!oneShot) {
-        this.store.advanceAutomationNextRun(automation.id, now)
-      }
-      return
-    }
-    // 并发固定行为（2026-10-10 再审：不提供每任务策略开关）：上次仍在运行（非终态）
-    // → 记 skipped_overlap（同因折叠），不消耗次数额度；一次性不推进 nextRunAt，
-    // 宽限内等上次跑完再派，超宽限由上面 missed 分支统一落 skipped_missed。
-    if (
-      this.store
-        .listAutomationRuns(automation.id)
-        .some((run) => !isFinalAutomationRunStatus(run.status))
-    ) {
-      recordSkippedOverlap({ runs: this.runs, automation, scheduledFor })
-      if (!oneShot) {
-        this.store.advanceAutomationNextRun(automation.id, now)
-      }
-      return
-    }
-    // Resolved before the run exists: a refusal repeats every occurrence, and a
-    // */5 automation would otherwise write ~288 identical rows a day — past
-    // retention, which would evict the automation's real history.
-    const target = this.resolveTarget(automation)
-    const refusal = describeScheduledRefusal({ target, canDispatch: this.canDispatch() })
-    if (refusal && this.runs.repeatSkip(automation.id, refusal, scheduledFor)) {
-      // 派发被拒不计次数：宽限内下个 tick 自然重试（一次性没有下次出现可推进）。
-      if (!oneShot) {
-        this.store.advanceAutomationNextRun(automation.id, now)
-      }
-      return
-    }
-
-    await this.requestDispatch(
-      automation,
-      this.runs.createRun(automation, scheduledFor),
-      target,
-      undefined,
-      'scheduled'
-    )
-    if (!oneShot) {
-      this.store.advanceAutomationNextRun(automation.id, now)
-    }
   }
 
   private resolveTarget(automation: Automation): AutomationRunTargetResult {

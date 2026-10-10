@@ -34,6 +34,7 @@ async function renderRunsTab(historyUnavailable: boolean): Promise<HTMLButtonEle
             ? { message: 'Server update required', recovery: 'update-server', severity: 'failure' }
             : null
         }
+        selectedWebhookBaseUrl={undefined}
         activePaneTab="runs"
         relativeNow={0}
         externalActionKey={null}

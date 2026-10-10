@@ -4,6 +4,7 @@ import type {
   AutomationCreateInput,
   AutomationRun,
   AutomationUpdateInput,
+  AutomationWebhookRunResult,
   AutomationWorkspaceMode
 } from '../../shared/automations-types'
 import type { Repo } from '../../shared/repo-types'
@@ -151,10 +152,9 @@ export class RuntimeAutomationController {
     const current = this.show(id)
     const patch: AutomationUpdateInput = {}
     this.copyPatchValues(updates, patch)
-    const targetChanged =
-      hasRuntimeAutomationUpdateValue(updates, 'repo') ||
-      hasRuntimeAutomationUpdateValue(updates, 'workspace') ||
-      hasRuntimeAutomationUpdateValue(updates, 'workspaceMode')
+    const targetChanged = (['repo', 'workspace', 'workspaceMode'] as const).some((key) =>
+      hasRuntimeAutomationUpdateValue(updates, key)
+    )
     if (targetChanged) {
       const target = await this.resolveTarget(updates, current)
       assertAutomationRunContextMatchesTarget(updates.runContext, target.repo)
@@ -194,15 +194,19 @@ export class RuntimeAutomationController {
     return { removed: true, id }
   }
 
+  private assertService(): AutomationService {
+    if (!this.service) {
+      throw new Error('runtime_unavailable')
+    }
+    return this.service
+  }
+
   async runNow(
     id: string,
     expectedOwner?: AutomationOwnerPrecondition,
     oneShotPrompt?: string
   ): Promise<AutomationRun> {
-    if (!this.service) {
-      throw new Error('runtime_unavailable')
-    }
-    const service = this.service
+    const service = this.assertService()
     return await runAutomationNowFenced({
       automationId: id,
       service,
@@ -221,6 +225,11 @@ export class RuntimeAutomationController {
         })
       }
     })
+  }
+
+  /** Webhook 入口（serve 端点在 token/启用检查后调用）；无 owner fence——端点即存储权威。 */
+  async runWebhook(id: string): Promise<AutomationWebhookRunResult> {
+    return await this.assertService().runWebhook(id)
   }
 
   private copyPatchValues(

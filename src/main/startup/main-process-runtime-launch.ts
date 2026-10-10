@@ -7,6 +7,7 @@ import {
   migrateMobilePairingDataToCanonicalUserDataPath
 } from '../persistence'
 import { OrcaRuntimeRpcServer } from '../runtime/runtime-rpc'
+import { createRuntimeAutomationWebhookHandler } from '../runtime/rpc/automation-webhook-handler'
 import { registerMobileHandlers } from '../ipc/mobile'
 import { getLocalPtyProvider, registerHeadlessPtyRuntime } from '../ipc/pty'
 import { LocalPtyProvider } from '../providers/local-pty-provider'
@@ -80,6 +81,8 @@ function installRuntimeRpc(
     // Why: STA-2370 — the desktop app binds the WS listener to loopback until the user pairs a device;
     // `orca serve` is an explicit remote opt-in, and E2E keeps the wide bind its harness connects over.
     exposeNetworkByDefault: Boolean(serveOptions) || isE2E,
+    // Why: only serve mode mounts the webhook route — desktop mode constructs no handler.
+    ...(serveOptions ? { httpRequestHandler: createRuntimeAutomationWebhookHandler(runtime) } : {}),
     ...(isE2E ? { wsPort: e2eWsPort } : {}),
     ...(devWsPort !== undefined ? { wsPort: devWsPort } : {}),
     ...(serveOptions?.wsPort !== undefined
@@ -160,6 +163,10 @@ async function launchServeMode(
     console.error('[runtime] Failed to start headless RPC transport:', error)
     throw error
   })
+  // Why: the webhook route rides the serve port; publish its http base for display. Desktop never sets it.
+  runtime.setAutomationWebhookBaseUrl(
+    runtimeRpc.getWebSocketEndpoint()?.replace(/^ws(s?):/u, 'http$1:') ?? null
+  )
   // Why: a phone paired to a headless host still registers and unregisters its token;
   // it simply never receives a push, because nothing dispatches notifications here.
   startDesktopPushService(runtimeRpc)

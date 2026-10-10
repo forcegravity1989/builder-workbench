@@ -39,6 +39,7 @@ function runtimeStub() {
     ),
     listAutomationRuns: vi.fn(() => []),
     showAutomation: vi.fn(() => ({ id: 'a1' })),
+    getAutomationWebhookBaseUrl: vi.fn(() => null),
     automationOwnerPrecondition: vi.fn(() => SSH_OWNER),
     updateAutomation: vi.fn(async () => ({ id: 'a1' })),
     deleteAutomation: vi.fn(() => ({ removed: true, id: 'a1' })),
@@ -145,7 +146,8 @@ describe('owner preconditions', () => {
     const runtime = runtimeStub()
     expect(await invoke('automation.show', { id: 'a1' }, runtime)).toEqual({
       automation: { id: 'a1' },
-      owner: SSH_OWNER
+      owner: SSH_OWNER,
+      webhookBaseUrl: null
     })
   })
 
@@ -153,7 +155,8 @@ describe('owner preconditions', () => {
     const runtime = runtimeStub()
     runtime.automationOwnerPrecondition.mockReturnValue(null as never)
     expect(await invoke('automation.show', { id: 'a1' }, runtime)).toEqual({
-      automation: { id: 'a1' }
+      automation: { id: 'a1' },
+      webhookBaseUrl: null
     })
   })
 

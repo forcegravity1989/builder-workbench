@@ -9,6 +9,7 @@ import {
 } from './automation-host-client'
 import { automationAuthorityCatalogKey } from './automation-host-catalog-types'
 import { useSelectedAutomationRunHistory } from './use-selected-automation-run-history'
+import { useSelectedAutomationWebhook } from './use-selected-automation-webhook'
 import type { AutomationsPageDestinationState } from './use-automations-page-destination-state'
 import type { AutomationsPageListState } from './use-automations-page-list-state'
 import type { AutomationsPageLocalState } from './use-automations-page-local-state'
@@ -138,6 +139,11 @@ export function useAutomationsPageRefresh({
     navigation: pendingAutomationRunNavigation,
     reloadToken: runHistoryReloadToken,
     onSettled: local.setSelectedAutomationRuns
+  })
+  useSelectedAutomationWebhook({
+    selected: selectedRow,
+    context: destination.automationDispatchContext,
+    onSettled: local.setSelectedAutomationWebhook
   })
   useEffect(() => {
     const onAutomationsChanged = (): void => {

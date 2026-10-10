@@ -265,6 +265,8 @@ export function formatFlagHelp(flag: string): string {
     time: '--time <HH:MM>        Time used with daily/weekdays/weekly presets',
     day: '--day <0-6>           Day used with weekly preset, Sunday=0',
     timezone: '--timezone <tz>       IANA timezone for the automation',
+    'regenerate-webhook-token':
+      '--regenerate-webhook-token  Mint a fresh serve-mode webhook token for this automation',
     enabled: '--enabled              Enable the automation',
     disabled: '--disabled             Disable the automation',
     'reuse-session':

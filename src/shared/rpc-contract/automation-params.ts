@@ -265,7 +265,11 @@ export const AutomationUpdateFields = z
     dtstart: requiredNumber('Missing trigger start time').optional(),
     onceAt: AutomationOnceAt,
     enabled: OptionalBoolean,
-    missedRunGraceMinutes: OptionalPositiveInt
+    missedRunGraceMinutes: OptionalPositiveInt,
+    // Why an action flag, not a value: the token is minted server-side; a client
+    // only asks for a fresh one (also backfills legacy records minted before
+    // the field existed).
+    regenerateWebhookToken: OptionalBoolean
   })
   .superRefine((value, ctx) => {
     // 联立规则只判本次请求；合并态（如清除 onceAt 而不带新 rrule）由存储层守门。

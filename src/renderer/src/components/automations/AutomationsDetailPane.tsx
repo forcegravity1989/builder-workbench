@@ -45,6 +45,11 @@ type AutomationsDetailPaneProps = {
   selectedRuns: AutomationRun[]
   /** Set when the selected automation's history read failed; its runs are unknown. */
   selectedRunsNotice: AutomationActionNotice | null
+  /**
+   * The selected automation's webhook endpoint base, asked of its own authority.
+   * Undefined = not answered (unknown); null = no endpoint outside serve mode.
+   */
+  selectedWebhookBaseUrl: string | null | undefined
   activePaneTab: AutomationPaneTab
   relativeNow: number
   externalActionKey: string | null
@@ -90,6 +95,7 @@ export function AutomationsDetailPane({
   selectedExternalRunPage,
   selectedRuns,
   selectedRunsNotice,
+  selectedWebhookBaseUrl,
   activePaneTab,
   relativeNow,
   externalActionKey,
@@ -244,6 +250,7 @@ export function AutomationsDetailPane({
             <AutomationDetail
               automation={selected}
               runs={selectedRuns}
+              webhookBaseUrl={selectedWebhookBaseUrl}
               projectName={selectedRepoDisplayName}
               projectDefaultBaseRef={selectedRepoDefaultBaseRef}
               workspaceName={selectedWorkspaceName}

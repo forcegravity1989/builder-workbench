@@ -31,7 +31,12 @@ export const AUTOMATION_METHODS = [
     name: 'automation.list',
     params: AutomationList,
     // The projection retains `automations`, so old clients ignore the added owner metadata.
-    handler: (params, { runtime }) => runtime.listAutomationsForScope(params)
+    handler: (params, { runtime }) => ({
+      ...runtime.listAutomationsForScope(params),
+      // Why additive: the detail UI and CLI show display the webhook address from
+      // it; null honestly means "no endpoint in this mode" (desktop).
+      webhookBaseUrl: runtime.getAutomationWebhookBaseUrl()
+    })
   }),
   defineMethod({
     name: 'automation.show',
@@ -42,7 +47,11 @@ export const AUTOMATION_METHODS = [
     handler: (params, { runtime }) => {
       const automation = runtime.showAutomation(params.id, params.expectedOwner)
       const owner = runtime.automationOwnerPrecondition(params.id)
-      return owner ? { automation, owner } : { automation }
+      return {
+        automation,
+        ...(owner ? { owner } : {}),
+        webhookBaseUrl: runtime.getAutomationWebhookBaseUrl()
+      }
     }
   }),
   defineMethod({

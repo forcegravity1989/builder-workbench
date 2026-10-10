@@ -23,6 +23,12 @@ import { AutomationPromptDisclosure } from './AutomationPromptDisclosure'
 type AutomationDetailProps = {
   automation: Automation | null
   runs: AutomationRun[]
+  /**
+   * Asked of the row's own authority. Undefined = not answered (old host, failed
+   * read, or still loading) and renders nothing; null = no endpoint outside
+   * serve mode; a string is the POST base the caller needs.
+   */
+  webhookBaseUrl: string | null | undefined
   projectName: string
   workspaceName: string
   projectDefaultBaseRef: string | null
@@ -102,6 +108,7 @@ function ToolbarIconButton({
 export function AutomationDetail({
   automation,
   runs,
+  webhookBaseUrl,
   projectName,
   workspaceName,
   projectDefaultBaseRef,
@@ -316,6 +323,36 @@ export function AutomationDetail({
           value={usageCoverage}
         />
       </div>
+
+      {webhookBaseUrl !== undefined ? (
+        <div className="rounded-md border border-border/50 bg-muted/20 px-4 py-3 shadow-sm">
+          <div className="text-[11px] font-medium uppercase text-muted-foreground">
+            {translate('auto.components.automations.AutomationDetail.41323fc6d5', 'Webhook')}
+          </div>
+          {webhookBaseUrl === null ? (
+            <div className="mt-1 text-sm text-muted-foreground">
+              {translate(
+                'auto.components.automations.AutomationDetail.6491e794fc',
+                'Webhook triggers require serve mode.'
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="mt-1 break-all text-sm font-medium">
+                POST {webhookBaseUrl}/webhooks/automations/{automation.id}
+              </div>
+              <div className="mt-1 break-all text-sm text-muted-foreground">
+                {automation.webhookToken
+                  ? `x-webhook-token: ${automation.webhookToken}`
+                  : translate(
+                      'auto.components.automations.AutomationDetail.8feb356627',
+                      'No token yet — run `orca automations edit --regenerate-webhook-token` to mint one.'
+                    )}
+              </div>
+            </>
+          )}
+        </div>
+      ) : null}
 
       <AutomationPromptDisclosure
         key={`${automation.id}:${automation.prompt}`}

@@ -190,6 +190,7 @@ describe('AutomationPromptDisclosure', () => {
         workspaceName="Synthetic workspace"
         projectDefaultBaseRef={null}
         runNowAvailability={null}
+        webhookBaseUrl={undefined}
         now={1}
         {...detailCallbacks}
       />
@@ -207,6 +208,7 @@ describe('AutomationPromptDisclosure', () => {
         workspaceName="Synthetic workspace"
         projectDefaultBaseRef={null}
         runNowAvailability={null}
+        webhookBaseUrl={undefined}
         now={2}
         {...detailCallbacks}
       />
@@ -223,6 +225,7 @@ describe('AutomationPromptDisclosure', () => {
         workspaceName="Synthetic workspace"
         projectDefaultBaseRef={null}
         runNowAvailability={null}
+        webhookBaseUrl={undefined}
         now={3}
         {...detailCallbacks}
       />

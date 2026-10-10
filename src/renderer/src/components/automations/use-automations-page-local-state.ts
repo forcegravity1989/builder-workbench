@@ -25,6 +25,7 @@ import type {
 } from './automation-page-state'
 import type { ExternalAutomationScope } from './external-automation-scope-client'
 import type { SelectedAutomationRunHistoryOutcome } from './use-selected-automation-run-history'
+import type { SelectedAutomationWebhookOutcome } from './use-selected-automation-webhook'
 import type { AutomationsPageStoreState } from './use-automations-page-store-state'
 
 /** React-owned values for the page; host/catalog state remains in dedicated hooks. */
@@ -39,6 +40,13 @@ export function useAutomationsPageLocalState(store: AutomationsPageStoreState) {
       ownerKey: null,
       runs: [],
       notice: null
+    })
+  const [selectedAutomationWebhook, setSelectedAutomationWebhook] =
+    useState<SelectedAutomationWebhookOutcome>({
+      automationId: null,
+      rowKey: null,
+      ownerKey: null,
+      baseUrl: undefined
     })
   const [runHistoryReloadToken, setRunHistoryReloadToken] = useState(0)
   const [failedAuthorityKeys, setFailedAuthorityKeys] = useState<ReadonlySet<string>>(
@@ -163,6 +171,8 @@ export function useAutomationsPageLocalState(store: AutomationsPageStoreState) {
     setAutomationHostTargetKey,
     selectedAutomationRuns,
     setSelectedAutomationRuns,
+    selectedAutomationWebhook,
+    setSelectedAutomationWebhook,
     runHistoryReloadToken,
     setRunHistoryReloadToken,
     failedAuthorityKeys,

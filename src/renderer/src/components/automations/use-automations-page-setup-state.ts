@@ -30,6 +30,7 @@ export function useAutomationsPageSetupState({
     setAutomationYamlHooksByRepoKey,
     setupDecisionTouchedRef,
     selectedAutomationRuns,
+    selectedAutomationWebhook,
     draft,
     automationHostTargetKey,
     selectedAutomationRunPageId
@@ -170,6 +171,15 @@ export function useAutomationsPageSetupState({
         : [],
     [selected, selectedRunsMatchSelection, selectedAutomationRunsWithWorkspaceNames]
   )
+  // Same match discipline as the runs: an answer fetched for another row or
+  // another incarnation of this row must not render as this selection's.
+  const selectedWebhookBaseUrl =
+    selectedRow !== null &&
+    selectedAutomationWebhook.rowKey === selectedRow.key &&
+    selectedAutomationWebhook.ownerKey ===
+      capturedAutomationOwnerKey(capturedAutomationOwner(capturedAutomationOwners, selectedRow.key))
+      ? selectedAutomationWebhook.baseUrl
+      : undefined
   const selectedAutomationRunPage = selectedAutomationRunPageId
     ? (selectedRuns.find((run) => run.id === selectedAutomationRunPageId) ?? null)
     : null
@@ -190,6 +200,7 @@ export function useAutomationsPageSetupState({
     markSetupDecisionTouched,
     selectedRuns,
     selectedRunsNotice,
+    selectedWebhookBaseUrl,
     selectedAutomationRunPage,
     worktrees,
     automationHostTarget

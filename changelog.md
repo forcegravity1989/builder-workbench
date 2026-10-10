@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-10-10 新增（定时任务：serve 模式 webhook 触发，每任务 token）
+
+- **变更类型**：新增（webhook 端点 + token）/ 重构（三文件拆分过 max-lines 门禁）
+- **变更摘要**：serve 模式在 WS 端口的 plain-HTTP 面挂载 `POST /webhooks/automations/<id>`，请求带 `x-webhook-token` 头；契约 404（路径/id 未知）→ 401（token 不符）→ 409（停用）→ 200 `{outcome:'dispatched',runId,status}` 或 `{outcome:'skipped_overlap'}`，非法调用如实 4xx、不触发、不写运行行。token 建档随机生成一次、`--regenerate-webhook-token` 重生成、恒定时间比较；机器绑定不进导出。实现为 service 独立 `runWebhook` 入口（与计划「runNow 加 trigger 参数」的偏差：webhook 受固定并发约束跳过并记录，runNow 不查并发——独立入口避免策略分叉），计数与一次性机会照手动语义不消耗。桌面模式不构造 handler（无端点）；详情页 webhook 区块三态诚实：serve 显示 POST URL + token，桌面显示「需要 serve 模式」，老 host 未知不渲染。`automation.list/show` additive 返回 `webhookBaseUrl`。为过 max-lines 门禁拆分三处 T1/T6 遗留超限：ExternalAutomation 类型拆 `external-automations-types.ts`（re-export 保持 30+ import 不动）、触发语义三用例拆 `service-trigger-semantics.test.ts`、tick 评估循环拆 `due-run-evaluator.ts`。
+- **涉及文件**：
+  - `src/main/runtime/rpc/automation-webhook-handler.ts`（新增：端点 handler + runtime 适配器）
+  - `src/main/automations/webhook-token.ts`（新增：token 生成/恒定时间校验）
+  - `src/main/runtime/rpc/ws-transport-http-listener.ts`（新增：plain-HTTP 组合抽离，ws-transport 回到限内）
+  - `src/main/automations/service.ts`（runWebhook 入口；evaluateDueRuns/evaluateAutomation 拆出）
+  - `src/main/automations/due-run-evaluator.ts`（新增：tick 评估循环）
+  - `src/main/automations/service-trigger-semantics.test.ts`（新增：webhook/一次性/重叠三用例拆分）
+  - `src/shared/external-automations-types.ts`（新增：外部管理器类型拆分，automations-types re-export）
+  - `src/main/startup/main-process-runtime-launch.ts`（serve 挂 handler、发布 webhookBaseUrl）
+  - `src/main/runtime/runtime-automation-controller.ts`（runWebhook 委托 + assertService 收口）
+  - `src/renderer/src/components/automations/`（详情页 webhook 区块：`use-selected-automation-webhook.ts` 新增 + AutomationDetail/DetailPane/PageSurface/setup-state/local-state/refresh/scoped-list-client 七文件穿透）
+  - `src/shared/automations-types.ts`（webhookToken 字段 + AutomationWebhookRunResult + trigger:'webhook'）
+  - `src/main/automations/webhook-token.test.ts`（新增 2 例：恒定时间校验/不匹配拒绝）
+- **验证**：main automations 207/208（1 失败为 external-manager-scoped Windows `where`/`which` 预存平台问题）；rpc methods 13/13、ws-transport 族 41/41、service+trigger 18/18、renderer automations 811/811、CLI 30/30；`pnpm run typecheck` 三工程 exit 0；oxlint 全部改动文件零错误（三处遗留超限经拆分归零，无新豁免）；双 ratchet 绿（vitest 257=基线、max-lines 7 豁免无新增）；ai-vault 2 例 Windows 路径分隔符预存失败与本次无关。
+
 ## 2026-10-10 新增（定时任务：CLI 一次性与间隔触发表达）
 
 - **变更类型**：新增

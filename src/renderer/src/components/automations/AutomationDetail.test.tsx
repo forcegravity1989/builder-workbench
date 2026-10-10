@@ -32,6 +32,7 @@ async function render(overrides: Partial<Automation>): Promise<HTMLDivElement> {
           workspaceName="main"
           projectDefaultBaseRef="main"
           runNowAvailability={null}
+          webhookBaseUrl={undefined}
           now={0}
           onRunNow={vi.fn()}
           onEdit={vi.fn()}

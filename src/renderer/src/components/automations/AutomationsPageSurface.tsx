@@ -266,6 +266,7 @@ export function AutomationsPageSurface({
           selectedExternalRunPage={selectedExternalRunPage}
           selectedRuns={setup.selectedRuns}
           selectedRunsNotice={setup.selectedRunsNotice}
+          selectedWebhookBaseUrl={setup.selectedWebhookBaseUrl}
           selectedHostEntry={destination.rowRecoveryHost(selectedRow?.key ?? null)}
           recoverSelectedRuns={(action) => {
             hostCatalog.recover(action, destination.rowRecoveryHost(selectedRow?.key ?? null))

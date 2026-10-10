@@ -25,6 +25,8 @@ export type AutomationShowPayload = {
   automation: Automation
   /** Present only when the authority can project an owner; an older host sends none. */
   owner?: AutomationOwnerPrecondition
+  /** Serve mode's webhook base (http(s)://host:port); null/absent = no endpoint (desktop or older host). */
+  webhookBaseUrl?: string | null
 }
 
 const ORPHAN_HOST_LABEL = 'orphan (no host can run this automation)'
@@ -49,6 +51,26 @@ function formatListItemSelector(item: AutomationListItem): string {
     return `ssh:${selector.targetId} (generation ${selector.targetGeneration})`
   }
   return selector.kind === 'orphan' ? `orphan — ${selector.issue}` : 'self'
+}
+
+/**
+ * Webhook lines for show. The address is only real in serve mode; desktop gets an
+ * honest "requires serve mode", and a legacy record without a token says how to
+ * mint one instead of printing a URL nothing can authenticate against.
+ */
+function formatWebhookLines(automation: Automation, baseUrl: string | null | undefined): string[] {
+  if (!baseUrl) {
+    return ['webhook: unavailable (webhook triggers require serve mode)']
+  }
+  if (!automation.webhookToken) {
+    return [
+      'webhook: no token yet — `orca automations edit --regenerate-webhook-token` to mint one'
+    ]
+  }
+  return [
+    `webhook: POST ${baseUrl}/webhooks/automations/${automation.id} (header x-webhook-token)`,
+    `webhookToken: ${automation.webhookToken}`
+  ]
 }
 
 export function formatAutomationList(result: AutomationListPayload): string {
@@ -104,6 +126,7 @@ export function formatAutomationShow(result: AutomationShowPayload): string {
     `target: ${automation.executionTargetType}:${automation.executionTargetId}`,
     // Omitted rather than guessed: a host that reports no owner has none to report.
     ...(result.owner ? [`host: ${formatOwnerSelector(result.owner.selector)}`] : []),
+    ...formatWebhookLines(automation, result.webhookBaseUrl),
     `prompt: ${automation.prompt}`
   ].join('\n')
 }

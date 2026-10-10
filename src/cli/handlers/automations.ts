@@ -227,6 +227,7 @@ export const AUTOMATION_HANDLERS: Record<string, CommandHandler> = {
       timezone: getOptionalStringFlag(flags, 'timezone'),
       enabled: getEnabledFlag(flags),
       missedRunGraceMinutes: getOptionalPositiveIntegerFlag(flags, 'missed-run-grace-minutes'),
+      ...(flags.get('regenerate-webhook-token') === true ? { regenerateWebhookToken: true } : {}),
       ...schedule
     } satisfies AutomationUpdateParams
     const expectedOwner = await resolveExpectedOwner(client, id)

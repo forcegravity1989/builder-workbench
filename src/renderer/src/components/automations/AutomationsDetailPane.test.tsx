@@ -28,6 +28,7 @@ function renderDetailPane(options: {
   onActivePaneTabChange?: (tab: AutomationPaneTab) => void
   selected?: ReturnType<typeof makeAutomation> | null
   selectedExternal?: null
+  selectedWebhookBaseUrl?: string | null
 }) {
   const selected =
     options.selected !== undefined
@@ -49,6 +50,7 @@ function renderDetailPane(options: {
           selectedExternalRunPage={null}
           selectedRuns={[]}
           selectedRunsNotice={null}
+          selectedWebhookBaseUrl={options.selectedWebhookBaseUrl}
           activePaneTab={activePaneTab}
           relativeNow={1000}
           externalActionKey={null}
@@ -172,6 +174,7 @@ describe('AutomationsDetailPane tab keyboard navigation', () => {
             selectedExternalRunPage={null}
             selectedRuns={[]}
             selectedRunsNotice={null}
+            selectedWebhookBaseUrl={undefined}
             activePaneTab="overview"
             relativeNow={1000}
             externalActionKey={null}

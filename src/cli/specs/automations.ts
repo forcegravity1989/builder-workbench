@@ -20,6 +20,7 @@ const AUTOMATION_STATE_FLAGS = [
   'reuse-session',
   'fresh-session'
 ]
+const AUTOMATION_WEBHOOK_FLAGS = ['regenerate-webhook-token']
 
 export const AUTOMATION_COMMAND_SPECS: CommandSpec[] = [
   {
@@ -74,7 +75,7 @@ export const AUTOMATION_COMMAND_SPECS: CommandSpec[] = [
     path: ['automations', 'edit'],
     summary: 'Edit an Orca automation',
     usage:
-      'orca automations edit <id> [--name <name>] [--trigger <preset|once|every|cron|rrule>] [--at <ISO timestamp>] [--json]',
+      'orca automations edit <id> [--name <name>] [--trigger <preset|once|every|cron|rrule>] [--at <ISO timestamp>] [--regenerate-webhook-token] [--json]',
     allowedFlags: [
       ...GLOBAL_FLAGS,
       'id',
@@ -84,12 +85,17 @@ export const AUTOMATION_COMMAND_SPECS: CommandSpec[] = [
       ...AUTOMATION_PRECHECK_FLAGS,
       ...AUTOMATION_TARGET_FLAGS,
       ...AUTOMATION_SCHEDULE_FLAGS,
-      ...AUTOMATION_STATE_FLAGS
+      ...AUTOMATION_STATE_FLAGS,
+      ...AUTOMATION_WEBHOOK_FLAGS
     ],
     positionalArgs: ['id'],
+    notes: [
+      'Use --regenerate-webhook-token to mint a fresh serve-mode webhook token (also backfills records created before tokens existed).'
+    ],
     examples: [
       'orca automations edit 2f9e... --disabled',
-      'orca automations edit --id 2f9e... --trigger "30 * * * *" --json'
+      'orca automations edit --id 2f9e... --trigger "30 * * * *" --json',
+      'orca automations edit 2f9e... --regenerate-webhook-token'
     ]
   },
   {

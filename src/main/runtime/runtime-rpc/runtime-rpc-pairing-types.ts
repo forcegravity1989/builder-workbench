@@ -13,6 +13,7 @@ import type {
   PairingProvisionRelayParams
 } from '../../../shared/mobile-relay-credential-contract'
 import type { RelayDeviceBinding, RelayRevokeOutboxItem } from '../relay/relay-revoke-outbox'
+import type { HttpUpgradeRequestHandler } from '../rpc/ws-transport'
 
 export const DEFAULT_WS_PORT = 6768
 
@@ -50,6 +51,9 @@ export type OrcaRuntimeRpcServerOptions = {
    */
   pinnedBindHost?: string
   webClientRoot?: string
+  // Why: serve mode's non-WS routes (automation webhooks) ride the same port; absent in
+  // desktop mode, so no endpoint exists there.
+  httpRequestHandler?: HttpUpgradeRequestHandler
   // Why: test-only overrides for the two constants below; production must not pass these (defaults set by §3.1).
   keepaliveIntervalMs?: number
   longPollCap?: number

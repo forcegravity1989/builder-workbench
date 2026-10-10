@@ -9,6 +9,7 @@ import type { DeviceRegistry } from '../device-registry'
 import type { E2EEKeypair } from '../e2ee-keypair'
 import type { UnpairedDeviceAuthThrottle } from '../rpc/unpaired-device-auth-throttle'
 import type { MobileSocketWiring } from '../rpc/mobile-socket-wiring'
+import type { HttpUpgradeRequestHandler } from '../rpc/ws-transport'
 import { RelayRevokeOutbox } from '../relay/relay-revoke-outbox'
 import { PushUnregisterOutbox } from '../push/push-unregister-outbox'
 import { RuntimeBinaryMessageRouter } from '../runtime-binary-message-router'
@@ -41,6 +42,8 @@ export class RuntimeRpcState {
   protected readonly exposeNetworkByDefault: boolean
   protected readonly pinnedBindHost: string | null
   protected readonly webClientRoot: string | undefined
+  // Why: serve mode's non-WS routes (automation webhooks); undefined in desktop mode.
+  protected readonly httpRequestHandler: HttpUpgradeRequestHandler | undefined
   // Why: STA-2370 — the host the WS listener is currently bound to, so pairing can widen loopback→all-interfaces once.
   protected wsBoundHost: string | null = null
   // Why: STA-2370 — in-flight widen so concurrent pairing requests share a single rebind.
@@ -103,6 +106,7 @@ export class RuntimeRpcState {
     exposeNetworkByDefault = false,
     pinnedBindHost,
     webClientRoot,
+    httpRequestHandler,
     keepaliveIntervalMs = KEEPALIVE_INTERVAL_MS,
     longPollCap = LONG_POLL_CAP,
     metadataOwnershipPollMs = RUNTIME_METADATA_OWNERSHIP_POLL_MS,
@@ -119,6 +123,7 @@ export class RuntimeRpcState {
     this.exposeNetworkByDefault = exposeNetworkByDefault
     this.pinnedBindHost = pinnedBindHost ?? null
     this.webClientRoot = webClientRoot
+    this.httpRequestHandler = httpRequestHandler
     this.keepaliveIntervalMs = keepaliveIntervalMs
     this.longPollCap = longPollCap
     this.metadataOwnershipPollMs = metadataOwnershipPollMs
