@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Workbench — Input</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="primitives.css">
+</head>
+<body>
+<div class="pv-col" style="max-width:420px">
+  <div class="field">
+    <div class="field-head"><label data-slot="label" for="b">Branch name</label><span class="field-desc">Created from the base branch of this repository.</span></div>
+    <input data-slot="input" id="b" class="is-focus" value="feature/login-flow">
+    <span class="field-trail">Base: main · 3 commits ahead</span>
+  </div>
+  <div class="field">
+    <label data-slot="label" for="p">Worktree path</label>
+    <input data-slot="input" id="p" aria-invalid="true" value="~/projects/orca">
+    <span class="field-error">A worktree already exists at this path.</span>
+  </div>
+</div>
+</body>
+</html>

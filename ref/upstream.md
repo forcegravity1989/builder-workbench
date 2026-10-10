@@ -52,7 +52,7 @@ git merge orca-upstream/main
 | 处置 | 路径 | 说明 |
 |---|---|---|
 | **保留 → `ref/`** | 原 `docs/reference/**`（约 40 篇） | upstream 工程参考，便于对照协议与平台边界 |
-| **保留 → `ref/STYLEGUIDE.md`** | 原 `docs/STYLEGUIDE.md` | UI 叠层仍可能要对照 Orca 设计约束；勿与 Workbench `docs/04-design-system/` 混为正本 |
+| **保留 → `ref/STYLEGUIDE.md`** | 原 `docs/STYLEGUIDE.md` | Orca 设计约束原文；Workbench [`docs/04-design-system/`](../docs/04-design-system/README.md) 以它为基并加叠层增补，冲突以它为准 |
 | **删除（不进本分支）** | `docs/site/**`（~123） | Orca 对外文档站 |
 | | `docs/assets/**`、`docs/readme/**` | README 多语言与营销素材 |
 | | `docs/relay-region-correction/**`、`docs/review-evidence/**` | 专项工程笔记 / PR 证据 |
