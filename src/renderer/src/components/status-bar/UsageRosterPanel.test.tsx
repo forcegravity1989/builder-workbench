@@ -121,6 +121,7 @@ describe('UsageRow', () => {
           onSignIn={() => {}}
           canSignIn={() => true}
           onManageAccounts={() => {}}
+          onUsageDetails={() => {}}
         />
       </TooltipProvider>
     )
@@ -284,6 +285,7 @@ describe('UsageRosterPanel density picker', () => {
             onSignIn={() => {}}
             canSignIn={() => true}
             onManageAccounts={() => {}}
+            onUsageDetails={() => {}}
           />
         </TooltipProvider>
       )

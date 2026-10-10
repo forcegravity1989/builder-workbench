@@ -412,6 +412,7 @@ describe('settings navigation metadata', () => {
 
     expect(importLines).not.toMatch(/components\/settings\/Settings(?:'|")/)
     expect(importLines).not.toMatch(/components\/settings\/[A-Z][A-Za-z]+Pane(?:'|")/)
+    expect(importLines).not.toMatch(/components\/stats\/StatsPane(?:'|")/)
   })
 
   it('does not import Settings page or pane UI modules from the quick action registry', () => {
@@ -427,5 +428,6 @@ describe('settings navigation metadata', () => {
 
     expect(importLines).not.toMatch(/components\/settings\/Settings(?:'|")/)
     expect(importLines).not.toMatch(/components\/settings\/[A-Z][A-Za-z]+Pane(?:'|")/)
+    expect(importLines).not.toMatch(/components\/stats\/StatsPane(?:'|")/)
   })
 })

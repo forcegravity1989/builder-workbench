@@ -58,10 +58,15 @@ const REQUIRED_KEYS: Record<string, string> = {
   'auto.components.settings.cli.source.control.integration.cards.statusNotInstalled':
     'Not installed',
   'auto.components.settings.cli.source.control.integration.cards.statusNotAuthenticated':
-    'Not authenticated'
+    'Not authenticated',
+  // Stats — provider rows
+  'auto.components.stats.usage.overview.sections.statusScanning': 'Scanning',
+  'auto.components.stats.usage.overview.sections.statusEnabled': 'Enabled',
+  'auto.components.stats.usage.overview.sections.statusOff': 'Off'
 }
 
 const INTERPOLATED_KEYS: Record<string, string[]> = {
+  'auto.components.stats.StatsPane.trackingSince': ['{{value0}}'],
   'auto.components.settings.computerUseSummary.permissionsRequired_one': [],
   'auto.components.settings.computerUseSummary.permissionsRequired_other': ['{{value0}}'],
   'auto.components.settings.computerUseSummary.unavailableDescription': ['{{value0}}'],

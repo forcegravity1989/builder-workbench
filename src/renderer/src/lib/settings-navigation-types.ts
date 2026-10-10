@@ -32,6 +32,7 @@ const SETTINGS_NAV_TARGETS = [
   'dev',
   'voice',
   'shortcuts',
+  'stats',
   'ssh',
   'experimental',
   'plugins',

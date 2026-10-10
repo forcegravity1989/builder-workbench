@@ -1,6 +1,7 @@
 import type React from 'react'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { Button } from '../ui/button'
 
 export function CloudVmSetupGuide(): React.JSX.Element {
@@ -33,22 +34,25 @@ export function CloudVmSetupGuide(): React.JSX.Element {
           )}
         </li>
       </ol>
-      <Button
-        type="button"
-        size="sm"
-        onClick={() =>
-          openSettingsTarget({
-            pane: 'experimental',
-            repoId: null,
-            sectionId: 'ephemeral-vms'
-          })
-        }
-      >
-        {translate(
-          'auto.components.settings.CloudVmSetupGuide.openSetup',
-          'Set up environment recipes'
-        )}
-      </Button>
+      {/* Why: environment recipes live on the Experimental page, which the Workbench shell does not list. */}
+      {isWorkbenchShell() ? null : (
+        <Button
+          type="button"
+          size="sm"
+          onClick={() =>
+            openSettingsTarget({
+              pane: 'experimental',
+              repoId: null,
+              sectionId: 'ephemeral-vms'
+            })
+          }
+        >
+          {translate(
+            'auto.components.settings.CloudVmSetupGuide.openSetup',
+            'Set up environment recipes'
+          )}
+        </Button>
+      )}
     </section>
   )
 }

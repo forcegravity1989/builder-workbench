@@ -14,8 +14,14 @@ import { createLinearSlice } from './slices/linear'
 import { createPreflightSlice } from './slices/preflight'
 import { createJiraSlice } from './slices/jira'
 import { createEditorSlice } from './slices/editor'
+import { createStatsSlice } from './slices/stats'
 import { createMemorySlice } from './slices/memory'
 import { createWorkspaceSpaceSlice } from './slices/workspace-space'
+import {
+  createClaudeUsageSlice,
+  createCodexUsageSlice,
+  createOpenCodeUsageSlice
+} from './slices/usage-provider-slices'
 import { createBrowserSlice } from './slices/browser'
 import { createRateLimitSlice } from './slices/rate-limits'
 import { createSshSlice } from './slices/ssh'
@@ -82,8 +88,12 @@ export const useAppStore = create<AppState>()(
         ...createPreflightSlice(...a),
         ...createJiraSlice(...a),
         ...createEditorSlice(...a),
+        ...createStatsSlice(...a),
         ...createMemorySlice(...a),
         ...createWorkspaceSpaceSlice(...a),
+        ...createClaudeUsageSlice(...a),
+        ...createCodexUsageSlice(...a),
+        ...createOpenCodeUsageSlice(...a),
         ...createBrowserSlice(...a),
         ...createRateLimitSlice(...a),
         ...createSshSlice(...a),

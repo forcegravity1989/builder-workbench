@@ -31,6 +31,7 @@ import {
 } from '../../../../shared/execution-host'
 import { isMacUserAgent } from '@/components/terminal-pane/pane-helpers'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { resolveAvailableBrowserSessionHostId } from './browser-session-host-selection'
 export { getBrowserPaneCombinedSearchEntries }
 
@@ -119,7 +120,10 @@ export function BrowserPane({
   const showSshWorkspaceRouting = matchesSettingsSearch(searchQuery, [
     getBrowserPaneSearchEntries()[9]
   ])
-  const showBrowserUse = matchesSettingsSearch(searchQuery, getBrowserUsePaneSearchEntries())
+  // Why: Browser Use (agents driving Orca's browser via the Orca CLI) is not a Workbench surface;
+  // the rest of this page stays because link routing and cookie import are configured only here.
+  const showBrowserUse =
+    !isWorkbenchShell() && matchesSettingsSearch(searchQuery, getBrowserUsePaneSearchEntries())
   const isMac = isMacUserAgent()
   const linkRoutingDescription = getBrowserLinkRoutingDescription(
     { isMac },

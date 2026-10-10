@@ -1,4 +1,5 @@
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type { SettingsNavIcon, SettingsNavSection } from '@/lib/settings-navigation-types'
 import type { CmdJQuickAction } from './quick-actions'
 import { isClipboardTextByteLengthOverLimit } from '../../../../shared/clipboard-text'
@@ -81,6 +82,8 @@ const SETTINGS_ALIASES: Record<string, string[]> = {
   mobile: ['phone'],
   voice: ['dictation'],
   'computer-use': ['computer use'],
+  // Why: the Workbench shell does not list the Stats & Usage page, so `usage` must not resolve to it.
+  ...(isWorkbenchShell() ? {} : { stats: ['usage'] }),
   privacy: ['telemetry']
 }
 

@@ -210,6 +210,11 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
     openSettingsTarget({ pane: 'accounts', repoId: null })
     openSettingsPage()
   }
+  const handleUsageDetails = (): void => {
+    setUsageMenuOpen(false)
+    openSettingsTarget({ pane: 'stats', repoId: null })
+    openSettingsPage()
+  }
   const handleOpenProviderAccounts = (provider: ProviderRateLimits['provider']): void => {
     const sectionId = getUsageProviderAccountsSectionId(provider)
     if (!sectionId) {
@@ -238,6 +243,7 @@ export function useStatusBarController(floatingTerminalOpen: boolean) {
     handleManageAccounts,
     handleOpenProviderAccounts,
     handleRefresh,
+    handleUsageDetails,
     handleUsageMenuOpenChange,
     hasVisibleUsageMeters,
     iconOnly,

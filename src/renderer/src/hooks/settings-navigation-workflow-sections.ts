@@ -31,8 +31,8 @@ export function buildWorkflowSettingsSections(
   terminalPaneSearchEntries: SettingsNavSection['searchEntries']
 ): SettingsNavSection[] {
   const showDesktopOnlySettings = !isWebClient
-  // Why: the Workbench shell does not offer artifact publishing, skill sharing, the built-in
-  // browser's entry points or the floating workspace, so their settings pages are not listed.
+  // Why: the Workbench shell does not offer artifact publishing, skill sharing or the floating
+  // workspace, so their settings pages are not listed.
   const workbenchShell = isWorkbenchShell()
   return [
     {
@@ -135,7 +135,7 @@ export function buildWorkflowSettingsSections(
       searchEntries: getQuickCommandsPaneSearchEntries(),
       group: 'workflows'
     },
-    ...(showDesktopOnlySettings && !workbenchShell
+    ...(showDesktopOnlySettings
       ? [
           {
             id: 'browser',

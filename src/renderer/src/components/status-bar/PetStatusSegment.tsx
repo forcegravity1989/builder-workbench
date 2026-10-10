@@ -17,6 +17,7 @@ import { useAppStore } from '../../store'
 import { BUNDLED_PET, BUNDLED_PETS, findBundledPet, isBundledPetId } from '../pet/pet-models'
 import { PET_SIZE_MAX, PET_SIZE_MIN } from '../../../../shared/pet-types'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 // Why: cluster pet-related controls (show/hide, character picker, custom
 // upload + removal, jump-to-settings) behind a single status-bar segment. Only
@@ -272,19 +273,24 @@ function PetStatusSegmentInner(): React.JSX.Element {
             </DropdownMenuSubContent>
           </DropdownMenuPortal>
         </DropdownMenuSub>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={() => {
-            openSettingsTarget({
-              pane: 'experimental',
-              repoId: null,
-              sectionId: 'experimental-pet'
-            })
-            openSettingsPage()
-          }}
-        >
-          {translate('auto.components.status.bar.PetStatusSegment.cd8c6c654c', 'Pet settings…')}
-        </DropdownMenuItem>
+        {/* Why: pet settings live on the Experimental page, which the Workbench shell does not list. */}
+        {isWorkbenchShell() ? null : (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={() => {
+                openSettingsTarget({
+                  pane: 'experimental',
+                  repoId: null,
+                  sectionId: 'experimental-pet'
+                })
+                openSettingsPage()
+              }}
+            >
+              {translate('auto.components.status.bar.PetStatusSegment.cd8c6c654c', 'Pet settings…')}
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )
