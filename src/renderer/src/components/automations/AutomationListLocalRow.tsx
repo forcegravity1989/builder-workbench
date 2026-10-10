@@ -20,6 +20,10 @@ import { AgentIcon } from '@/lib/agent-catalog'
 import { cn } from '@/lib/utils'
 import type { AutomationRun } from '../../../../shared/automations-types'
 import { getAutomationRunRepoId } from '../../../../shared/automation-run-identity'
+import {
+  deriveLifecycleState,
+  isOneShotAutomation
+} from '../../../../shared/automation-schedule-kind'
 import { formatUiAutomationSchedule } from './automation-schedule-label'
 import {
   getExecutionHostLabel,
@@ -39,7 +43,10 @@ import {
   getLocalAutomationLastRunSnapshot
 } from './automation-list-last-run'
 import { AutomationListLastRunCell } from './AutomationListLastRunCell'
-import { formatAutomationDateTimeWithRelative } from './automation-page-parts'
+import {
+  formatAutomationDateTime,
+  formatAutomationDateTimeWithRelative
+} from './automation-page-parts'
 import { getAutomationTargetAvailability } from './automation-target-availability'
 import { getAgentLabel } from './automation-draft-model'
 import type { AutomationListRow } from './automation-list-row-identity'
@@ -158,10 +165,17 @@ export function AutomationListLocalRow({
   const projectLabel =
     automationRepo?.displayName ??
     translate('auto.components.automations.AutomationsPage.13118faadf', 'Unknown project')
-  const scheduleLabel = formatUiAutomationSchedule(automation.rrule)
-  const nextRunLabel = automation.enabled
-    ? formatAutomationDateTimeWithRelative(automation.nextRunAt, relativeNow)
-    : translate('auto.components.automations.enablement.paused', 'Paused')
+  // 一次性任务 rrule 为空：调度列显示 onceAt 时刻，不落到「Invalid schedule」。
+  const scheduleLabel = isOneShotAutomation(automation)
+    ? `${translate('auto.components.automations.automation.schedule.once', 'Once at')} ${formatAutomationDateTime(automation.onceAt)}`
+    : formatUiAutomationSchedule(automation.rrule)
+  // 「已结束」是现算的生命周期推导，优先于人的暂停开关；两者分开呈现。
+  const nextRunLabel =
+    deriveLifecycleState(automation, relativeNow) === 'finished'
+      ? translate('auto.components.automations.enablement.finished', 'Finished')
+      : automation.enabled
+        ? formatAutomationDateTimeWithRelative(automation.nextRunAt, relativeNow)
+        : translate('auto.components.automations.enablement.paused', 'Paused')
   const isSelected = isSelectedLocal && selectedRowKey === row.key
   const agentLabel = getAgentLabel(automation.agentId)
   const hostId =

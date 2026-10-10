@@ -5,9 +5,16 @@ import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getAgentCatalog, AgentIcon } from '@/lib/agent-catalog'
 import type { Automation, AutomationRun } from '../../../../shared/automations-types'
+import {
+  deriveLifecycleState,
+  isOneShotAutomation
+} from '../../../../shared/automation-schedule-kind'
 import { formatUiAutomationSchedule } from './automation-schedule-label'
 import { formatAutomationPrecheckTimeout } from '../../../../shared/automation-precheck'
-import { formatAutomationDateTimeWithRelative } from './automation-page-parts'
+import {
+  formatAutomationDateTime,
+  formatAutomationDateTimeWithRelative
+} from './automation-page-parts'
 import {
   formatAutomationCost,
   formatAutomationTokens,
@@ -245,14 +252,20 @@ export function AutomationDetail({
       <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-5 rounded-md border border-border/50 bg-muted/30 px-4 py-3 shadow-sm">
         <DetailMetric
           label={translate('auto.components.automations.AutomationDetail.18763ded26', 'Schedule')}
-          value={formatUiAutomationSchedule(automation.rrule)}
+          value={
+            isOneShotAutomation(automation)
+              ? `${translate('auto.components.automations.automation.schedule.once', 'Once at')} ${formatAutomationDateTime(automation.onceAt)}`
+              : formatUiAutomationSchedule(automation.rrule)
+          }
         />
         <DetailMetric
           label={translate('auto.components.automations.AutomationDetail.578ff46987', 'Next run')}
           value={
-            automation.enabled
-              ? formatAutomationDateTimeWithRelative(automation.nextRunAt, now)
-              : 'Paused'
+            deriveLifecycleState(automation, now) === 'finished'
+              ? translate('auto.components.automations.enablement.finished', 'Finished')
+              : automation.enabled
+                ? formatAutomationDateTimeWithRelative(automation.nextRunAt, now)
+                : 'Paused'
           }
         />
         <DetailMetric

@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-10 新增（定时任务：automation-composer Skill 正源）
+
+- **变更类型**：新增（纯文档）
+- **变更摘要**：Task 6 分发副本（`skills/automation-composer/SKILL.md`，随 composer 自动化提示词内嵌）补上产品正源 `standard/skills/automation-composer/SKILL.md`，按 SKILL-MD-SPEC 撰写：目的与边界、五步执行流程（起草展示 → `create --disabled` → 试跑 → `runs --json` 读回迭代 → 交还启用）、边界与失败四条。三条硬约束与分发副本一致：不执行 `--enabled`（启用是用户的决定）、试跑前告知真实副作用、读回失败如实报告；另加 CLI 不可用报错停止不换可执行文件硬试（分发副本的 CLI 解析段同规则）。`standard/skills/README.md` 技能表登记一行，注明分发形态为提示词内嵌（非 Stub 与原生指南）。
+- **涉及文件**：
+  - `standard/skills/automation-composer/SKILL.md`（新增正源，version 0.1.0）
+  - `standard/skills/README.md`（技能表加「自动化作曲」行）
+- **验证**：文档检查——对照 SKILL-MD-SPEC 自检（name 与目录一致、description 含触发场景与边界、正文按任务组织无冗余章节、命令面 `orca automations create --disabled/run/runs --json/edit` 均已在 CLI specs 验证存在）；正源与分发副本 SOP 段落逐条对齐（副本仅多 CLI 解析段，为会话运行时所需）；未改任何运行时代码，不伪造界面验证。
+
+## 2026-10-10 新增（定时任务：AI 创建自动化 composer 会话编排）
+
+- **变更类型**：新增
+- **变更摘要**：计划屏页头新增「AI 创建自动化」入口（与「配置自动化」并列），背后的编排复用 ensure/start-cycle-automation 模式：进屏注册一条禁用态 composer 自动化（身份 `bw-composer:<项目+仓库+宿主>`，不含 workflow——项目级入口两屏共用一条；提示词 = 分发副本 `skills/automation-composer/SKILL.md` 的 `?raw` 内容，BW 所有字段进屏覆盖同步，人所有字段永不触碰；调度为 schema 占位 daily 09:00，`enabled:false` 禁用定时，runNow 不检查 enabled 故手动可跑）。点入口弹一句话 Dialog，用户描述作为 oneShotPrompt 随 runNow 一次性投递（不写回记录），轮询打开本次匹配的运行终端（30s/1s，同周期启动）。Skill 正文写入三条硬约束：不执行 `--enabled`、试跑前告知真实副作用、读回失败如实报告；操作序列对齐 spec（起草展示 → `create --disabled` → `run` 试跑 → `runs --json` 读回 → `edit` 迭代 → 人启用）。测试对冲：composer 装配协议新增 1 例（ratchet +1），ensure-cycle-automation 的两个 skip 守卫例合并为一例保留全部分支断言（-1），净 0 基线 257 不变。
+- **涉及文件**：
+  - `skills/automation-composer/SKILL.md`（新增分发副本初版：自包含 composer SOP + CLI 解析段；正源 `standard/skills/` 随 Task 7 建立后同步）
+  - `src/renderer/src/workbench/version-cycle/ensure-composer-automation.ts`（新增：注册/覆盖同步/并发去重 + useEnsureComposerAutomation hook）
+  - `src/renderer/src/workbench/version-cycle/start-composer-session.ts`（新增：owner fence → runNow(oneShotPrompt=用户描述) → 轮询开终端）
+  - `src/renderer/src/workbench/version-cycle/AutomationComposerButton.tsx`（新增：页头按钮 + 一句话 Dialog）
+  - `src/renderer/src/workbench/version-cycle/ensure-composer-automation.test.ts`（新增 1 例：创建装配协议）
+  - `src/renderer/src/workbench/version-cycle/ensure-cycle-automation.ts`（导出 pinnedAuthority/destinationFor 供 composer 复用）
+  - `src/renderer/src/workbench/version-cycle/ensure-cycle-automation.test.ts`（skip 两例合并对冲 ratchet）
+  - `src/renderer/src/workbench/version-cycle/CycleWorkspaceProvider.tsx` / `cycle-workspace-context.ts` / `CycleWorkspaceShell.tsx`（compose 回调与 context 穿透）
+  - `src/renderer/src/workbench/version-planning/PlanningSections.tsx` / `PlanningBoard.tsx` / `planning-dialogs.css`（页头入口与 textarea 样式）
+- **验证**：version-cycle + version-planning 42/42；renderer workbench 全量 135/135；ratchet 257=基线（+1/-1 对冲）；`pnpm run typecheck` 三工程零错误（CycleWorkspaceShell 的 CycleEntry 字面量补 compose 一处）；oxlint 改动文件 EXIT=0；oxfmt 已格式化。真壳 AU06 全链路（入口→会话→试跑→人启用）为 Task 9 E2E 必验项，本次未做真壳验证。
+
 ## 2026-10-10 新增（定时任务：配置导入导出，portable schema）
 
 - **变更类型**：新增
