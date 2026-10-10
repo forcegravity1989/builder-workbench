@@ -53,7 +53,7 @@
     grid.append(node)
     return node
   }
-  const scheduled = (item) => Number.isInteger(item.start) && Number.isInteger(item.end)
+  const scheduled = (item) => Number.isInteger(item?.start) && Number.isInteger(item?.end)
   function commit(before, message) {
     history.push(before)
     if (history.length > 30) {
@@ -118,7 +118,12 @@
       )
     )
   function gesture(event, node, track, preview, message, options = {}) {
-    const { cleanup = () => {}, onStart = () => {}, describe = () => message } = options
+    const {
+      cleanup = () => {},
+      onStart = () => {},
+      onComplete = () => {},
+      describe = () => message
+    } = options
     if (event.button !== 0 || event.shiftKey || cancelGesture) {
       cleanup()
       return
@@ -208,9 +213,14 @@
         previousSelection.forEach((entry) => selected.add(entry))
         render()
         feedback(cancelled ? '已取消拖动。' : `${invalid}；整次调整已取消。`)
-      } else if (JSON.stringify(state) !== JSON.stringify(before)) {
-        node.dataset.dragged = 'true'
-        commit(before, message)
+      } else {
+        if (JSON.stringify(state) !== JSON.stringify(before)) {
+          node.dataset.dragged = 'true'
+          commit(before, message)
+        }
+        if (started) {
+          onComplete()
+        }
       }
     }
     const up = (next) => {
@@ -236,6 +246,39 @@
     node.addEventListener('lostpointercapture', cancel)
     frame = requestAnimationFrame(autoScroll)
   }
+  function creationRow(group) {
+    const entry = row(group ? 'creation-row' : 'empty-row', '＋ 新交付项')
+    const track = element('div', 'bar-track creation-track')
+    track.append(element('span', 'track-hint', '拖出计划时段，松开后填写交付项名称'))
+    entry.append(track)
+    track.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0 || event.shiftKey) {
+        return
+      }
+      const anchor = pointDay(event, track)
+      const range = { start: anchor, end: anchor }
+      const ghost = element('div', 'plan-bar ghost')
+      track.append(ghost)
+      positionBar(ghost, range)
+      gesture(
+        event,
+        track,
+        track,
+        (_delta, point) => {
+          range.start = Math.min(anchor, point)
+          range.end = Math.max(anchor, point)
+          positionBar(ghost, range)
+        },
+        '新增交付项时段',
+        {
+          cleanup: () => ghost.remove(),
+          onComplete: () => edit('item', undefined, anchor, { ...range, group: group?.id }),
+          describe: (_delta, point) =>
+            `新交付项 ${dateAt(Math.min(anchor, point))} — ${dateAt(Math.max(anchor, point))}`
+        }
+      )
+    })
+  }
   function render() {
     if (cancelGesture) {
       cancelGesture()
@@ -250,7 +293,7 @@
     $('#undo-plan').disabled = !history.length
     $('#source-description').textContent =
       state.mode === 'empty'
-        ? '空画布起步：先带入工作，再安排时段。'
+        ? '空画布起步：直接拖出时段，或先粘贴交付项。'
         : 'Agent 初稿示意：预置草案，可继续调整；未调用模型。'
     $('#start-empty').setAttribute('aria-pressed', String(state.mode === 'empty'))
     $('#start-draft').setAttribute('aria-pressed', String(state.mode === 'draft'))
@@ -541,16 +584,10 @@
             track.append(bar)
           }
         })
+      creationRow(group)
     })
-    if (!items.length) {
-      const empty = row('empty-row', '尚未带入交付项')
-      empty.append(
-        element(
-          'div',
-          'empty-canvas',
-          '粘贴一列交付项，或从 Agent 初稿示意开始。日期、负责人和结果可以随后补充。'
-        )
-      )
+    if (!groups.length) {
+      creationRow()
     }
     refreshSelection()
   }
@@ -562,10 +599,15 @@
       select.append(option)
     })
   }
-  function edit(kind, value, point = 5) {
+  function edit(kind, value, point = 5, defaults = {}) {
     editing = { kind, value }
     form.reset()
     fillGroups(form.elements.group)
+    if (kind === 'item' && !state.groups.length) {
+      const option = element('option', '', '未分组交付项（自动建立）')
+      option.value = ''
+      form.elements.group.append(option)
+    }
     const labels = {
       item: '交付项',
       milestone: '里程碑',
@@ -589,7 +631,7 @@
     form.elements.end.required = false
     form.elements.name.value = value?.name || value?.title || ''
     form.elements.name.disabled = kind === 'boundary'
-    form.elements.group.value = value?.group || state.groups[0]?.id || ''
+    form.elements.group.value = value?.group || defaults.group || state.groups[0]?.id || ''
     form.elements.stage.value = value?.stage || '开发'
     form.elements.owner.value = value?.owner || ''
     form.elements.start.value = dateAt(
@@ -597,10 +639,10 @@
         ? value.end
         : kind === 'milestone'
           ? (value?.day ?? point)
-          : (value?.start ?? point)
+          : (value?.start ?? defaults.start ?? point)
     )
-    form.elements.end.value = dateAt(value?.end ?? point + 4)
-    if (kind === 'item' && !scheduled(value)) {
+    form.elements.end.value = dateAt(value?.end ?? defaults.end ?? point + 4)
+    if (kind === 'item' && !scheduled(value) && defaults.start === undefined) {
       form.elements.start.value = ''
       form.elements.end.value = ''
     }
@@ -643,7 +685,7 @@
     }
     const before = snapshot()
     if (kind === 'item') {
-      Object.assign(value, {
+      const fields = {
         name,
         outcome,
         start: noDates ? null : start,
@@ -651,7 +693,19 @@
         group: form.elements.group.value,
         stage: form.elements.stage.value,
         owner: form.elements.owner.value.trim()
-      })
+      }
+      if (value) {
+        Object.assign(value, fields)
+      } else {
+        if (!fields.group) {
+          fields.group = id()
+          state.groups.push({ id: fields.group, title: '未分组交付项', outcome: '' })
+        }
+        const item = { id: id(), ...fields }
+        state.items.push(item)
+        selected.clear()
+        selected.add(item.id)
+      }
     } else if (kind === 'milestone') {
       if (value) {
         Object.assign(value, { name, outcome, day: start })
@@ -669,7 +723,7 @@
     dialog.close()
     commit(
       before,
-      `更新${kind === 'item' ? '交付项' : kind === 'milestone' ? '里程碑' : kind === 'boundary' ? '迭代边界' : '目标'}「${name}」`
+      `${value ? '更新' : '新增'}${kind === 'item' ? '交付项' : kind === 'milestone' ? '里程碑' : kind === 'boundary' ? '迭代边界' : '目标'}「${name}」`
     )
   })
   $('#add-goal').addEventListener('click', () => edit('group'))

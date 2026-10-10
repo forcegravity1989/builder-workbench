@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>版本计划 · 编排画布</title>
     <link rel="stylesheet" href="../../04-design-system/styles.css" />
-    <link rel="stylesheet" href="prototype/timeline.css" />
-    <script src="prototype/timeline.js" defer></script>
+    <link rel="stylesheet" href="prototype/timeline.css?v=20261010-create-range" />
+    <script src="prototype/timeline.js?v=20261010-create-range" defer></script>
   </head>
   <body class="timeline-prototype">
     <main class="plan-page">
@@ -25,7 +25,7 @@
       <section class="canvas-entry" aria-label="开始制定计划">
         <div>
           <strong>从哪里开始</strong
-          ><span id="source-description">空画布：先带入工作，再安排时段。</span>
+          ><span id="source-description">空画布：直接拖出时段，或先粘贴交付项。</span>
         </div>
         <div class="entry-actions">
           <button type="button" class="tl-button" id="start-empty">空画布</button
@@ -81,7 +81,7 @@
             ><span><i class="legend-diamond"></i>里程碑</span
             ><span><i class="legend-boundary"></i>迭代边界</span>
           </div>
-          <span>空白行拖出排期 · 拖动条目与端点 · Shift 多选 · Esc 取消 · 双击补充详情</span>
+          <span>新交付项行拖出时段 · 未排期行直接安排 · 拖动条目与端点 · Esc 取消</span>
         </div>
       </section>
       <p class="review-note">

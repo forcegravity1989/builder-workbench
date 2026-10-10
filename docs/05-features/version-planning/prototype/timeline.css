@@ -364,6 +364,8 @@
   margin-top: 2px;
 }
 .bar-track {
+  touch-action: none;
+  user-select: none;
   background-image: linear-gradient(
     to right,
     transparent calc(100% - 1px),
@@ -679,11 +681,11 @@
 .empty-row {
   min-height: 130px;
 }
-.empty-canvas {
-  display: flex;
-  align-items: center;
-  padding: 24px;
-  color: var(--color-neutral-600);
+.creation-track {
+  cursor: crosshair;
+}
+.creation-track.dragging .track-hint {
+  visibility: hidden;
 }
 .plan-bar {
   cursor: grab !important;
