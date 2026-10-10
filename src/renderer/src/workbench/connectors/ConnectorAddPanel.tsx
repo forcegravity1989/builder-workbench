@@ -80,10 +80,10 @@ export function ConnectorAddPanel({
     : null
   const duplicate =
     plan && plan.agents.some((a) => existing.get(plan.name)?.includes(a))
-      ? `${plan.name} 已装在${plan.agents
+      ? `${plan.name} 已装在 ${plan.agents
           .filter((a) => existing.get(plan.name)?.includes(a))
           .map((a) => AGENT_LABEL[a])
-          .join('、')}上：取消勾选，或换个名称。`
+          .join('、')} 上：取消勾选，或换个名称。`
       : null
   const problem = plan ? (duplicate ?? validateInstallPlan(plan)) : null
   // 有当前项目就在其目录下执行：Claude Code 的「仅当前项目」按执行目录记录。
