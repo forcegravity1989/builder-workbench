@@ -1,0 +1,43 @@
+.wb-weekly-page {
+  height: 100%;
+  overflow: auto;
+}
+.wb-weekly-body {
+  max-width: 1500px;
+  padding: 20px 28px 40px;
+  margin: 0 auto;
+}
+.wb-weekly-controls,
+.wb-weekly-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.wb-weekly-controls {
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+.wb-weekly-controls > .wb-weekly-actions {
+  margin-left: auto;
+}
+.wb-weekly-controls select,
+.wb-weekly-controls input {
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-bg);
+  color: inherit;
+  padding: 6px;
+}
+.wb-weekly-error {
+  margin: 10px 0;
+  color: var(--color-danger, #c00000);
+}
+@media (max-width: 760px) {
+  .wb-weekly-body {
+    padding: 16px 12px;
+  }
+  .wb-weekly-controls > .wb-weekly-actions {
+    margin-left: 0;
+  }
+}

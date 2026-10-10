@@ -16,6 +16,7 @@ type ProjectPage =
   | { kind: 'wall' }
   | { kind: 'onboard'; options: ProjectOnboardOptions }
   | { kind: 'charter'; options: CharterEditOptions }
+  | { kind: 'weekly-report' }
   | null
 
 let projectPage: ProjectPage = null
@@ -31,6 +32,11 @@ function setProjectPage(page: ProjectPage): void {
 export function openProjectWall(): void {
   useAppStore.getState().openActivityPage()
   setProjectPage({ kind: 'wall' })
+}
+
+export function openWeeklyReport(): void {
+  useAppStore.getState().openActivityPage()
+  setProjectPage({ kind: 'weekly-report' })
 }
 
 export function openProjectOnboard(options: ProjectOnboardOptions = {}): void {

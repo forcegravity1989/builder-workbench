@@ -381,7 +381,7 @@ function ReadyAcceptanceBoard({
       />
       {reportOpen && (
         <AcceptanceReportDialog
-          report={report}
+          report={report ?? null}
           onClose={() => setReportOpen(false)}
           onCopy={async () => {
             if (report) {

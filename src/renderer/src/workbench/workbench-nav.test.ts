@@ -7,26 +7,17 @@ afterEach(() => {
 })
 
 describe('resolveWorkbenchNav', () => {
-  it('maps Orca slots onto Workbench nav', () => {
+  it('maps Orca slots and fixed workflow workspaces onto Workbench navigation', () => {
     expect(resolveWorkbenchNav('activity')).toBe('overview')
     expect(resolveWorkbenchNav(WORKBENCH_PLAN_SLOT)).toBe('plan')
     expect(resolveWorkbenchNav('tasks')).toBe('tasks')
     expect(resolveWorkbenchNav('automations')).toBe('automations')
     expect(resolveWorkbenchNav('space')).toBe('knowledge')
-  })
-
-  it('splits the shared artifacts slot by the BW cycle sub-view', () => {
     setCycleView('acceptance')
     expect(resolveWorkbenchNav(WORKBENCH_PLAN_SLOT)).toBe('acceptance')
     setCycleView('plan')
     expect(resolveWorkbenchNav(WORKBENCH_PLAN_SLOT)).toBe('plan')
-  })
-
-  it('leaves execution dimmed', () => {
     expect(resolveWorkbenchNav('terminal')).toBe(null)
-  })
-
-  it('restores the board through native automation/history workspace navigation', () => {
     expect(resolveWorkbenchNav('terminal', { branch: 'bw/week-plan' })).toBe('plan')
     expect(resolveWorkbenchNav('terminal', { branch: 'refs/heads/bw/week-acceptance' })).toBe(
       'acceptance'

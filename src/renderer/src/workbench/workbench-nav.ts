@@ -10,6 +10,7 @@ import type { Worktree } from '../../../shared/worktree/types'
 
 export type WorkbenchNavId =
   | 'overview'
+  | 'weekly-report'
   | 'plan'
   | 'acceptance'
   | 'tasks'

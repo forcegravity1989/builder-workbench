@@ -4,7 +4,7 @@
 
 目标分支是主干 `main`（原 `bw-orca`，2026-09-30 扶正）。交互迁移须按当前 BW 意图重新决策；旧 Rust main（`archive/main-pre-orca`）与原型只能提供历史参考，不能视为现行实现正本。
 
-总览 / 知识库挂在现有 `activity` / `space` 槽位；计划与验收从 `artifacts` 准备固定树后进入原生 `terminal`，在唯一工作区旁挂业务板（侧栏两个独立入口，保留原生项目列表，原生会话/工具侧栏不另实现）；任务挂 `tasks`（均不扩 `TopLevelView`）。知识库已对齐 V7「文档 / 代码 / 对账」。
+总览与周报挂在现有 `activity` 槽位，知识库挂 `space` 槽位；计划与验收从 `artifacts` 准备固定树后进入原生 `terminal`，在唯一工作区旁挂业务板（侧栏两个独立入口，保留原生项目列表，原生会话/工具侧栏不另实现）；任务挂 `tasks`（均不扩 `TopLevelView`）。知识库已对齐 V7「文档 / 代码 / 对账」。
 
 项目墙与接入页在 `activity` 内容槽内切换，共用 Orca 的侧栏、标题栏和窗口控件。新增 BW 屏的宽度与窗口拖动约束见 [桌面壳](../../../../docs/06-module/桌面壳.md#bw-屏幕接入规范)。
 
@@ -46,11 +46,11 @@ ORCA_BACKGROUND_LAUNCH=1 REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench
 
 ## 品牌与开关
 
-| Env | 作用 |
-|-----|------|
-| `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` | 启用 Workbench 壳 |
-| `ORCA_PRODUCT_NAME=Workbench` | 打包名；且默认打开壳 |
-| `ORCA_APP_ID=com.stablyai.workbench.dev` | 与正式 Orca 并行安装 |
+| Env                                            | 作用                 |
+| ---------------------------------------------- | -------------------- |
+| `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` | 启用 Workbench 壳    |
+| `ORCA_PRODUCT_NAME=Workbench`                  | 打包名；且默认打开壳 |
+| `ORCA_APP_ID=com.stablyai.workbench.dev`       | 与正式 Orca 并行安装 |
 
 打包：`pnpm run build:mac:workbench`（本机仅 arm64，脚本 `config/scripts/build-mac-workbench.mjs`）。
 

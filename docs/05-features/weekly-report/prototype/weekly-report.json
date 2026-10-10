@@ -1,0 +1,426 @@
+{
+  "schemaVersion": 1,
+  "project": {
+    "name": "Builders’ Workbench",
+    "repository": "github.com/forcegravity1989/builder-workbench"
+  },
+  "period": {
+    "start": "2026-10-05",
+    "endExclusive": "2026-10-11",
+    "timezone": "Asia/Shanghai"
+  },
+  "version": "v0.5",
+  "generatedAt": "2026-10-10T17:34:35+08:00",
+  "sections": {
+    "goals": [
+      [
+        "Orca-BW 重构版上线",
+        "项目接入、计划、CodeHub任务、验收屏交付及验证报告",
+        "未记录",
+        "人工确认达成"
+      ],
+      [
+        "对齐运维全景并逐步补齐交付自动化",
+        "本次验收交付差距矩阵；资产迁移及真实流程验证由 #253 继续跟踪",
+        "未记录",
+        "差距矩阵人工确认达成"
+      ],
+      [
+        "提升版本计划的实际使用",
+        "使用周一屏的被管理项目数目标6，优化特性与采集能力",
+        "未记录",
+        "人工确认未达；本周验收窗口0，历史周峰值2／目标6"
+      ]
+    ],
+    "progress": [
+      [
+        "版本验收",
+        "v0.5验收材料与showcase已归档；G1、G2由人确认达成，G3未达。",
+        "未记录后续版本承诺。"
+      ],
+      [
+        "指标与项目纳入",
+        "指标采集修复已合入；白名单新增3个CodeHub绿区项目，纳入项目共4个；使用周一屏历史周峰值2，未达目标6。",
+        "按#255安排，随项目真实归档计划、黄区网络可达后继续推进；未自动纳入新版本。"
+      ],
+      [
+        "安装与计划验收体验",
+        "包内依赖、计划验收协作、指标加载、指标会话入口、固定分支接入及Windows技能命令修复已合入。",
+        "新反馈#301仍开放，后续计划未记录。"
+      ],
+      [
+        "工作规范",
+        "统一Issue提单格式、计划任务关联及原生关闭语义的PR已合入。",
+        "关联Issue后开工的流程补充PR #319仍待评审。"
+      ]
+    ],
+    "risks": [
+      [
+        "未知",
+        "使用周一屏项目数目标6未达；本周验收窗口0，历史周峰值2。",
+        "随真实项目接入并归档计划继续推进；两个黄区项目待网络打通。",
+        "未指派",
+        "未记录",
+        "目标未达"
+      ],
+      [
+        "未知",
+        "开发方法资产迁移#253仍开放；真实自动化、provider归档与E2E有待验证项。",
+        "按#253跟踪的真实旅程验证收口；未预填通过。",
+        "未指派",
+        "未记录",
+        "开放"
+      ],
+      [
+        "未知",
+        "项目接入仍有仓库识别与CLI引导反馈；批量接入与集成卡片为未合入草案。",
+        "#301继续跟踪；#305/#324待评审与人确认。",
+        "未指派",
+        "未记录",
+        "开放"
+      ]
+    ],
+    "milestones": [],
+    "requirements": [
+      [
+        "Orca-BW 重构版上线",
+        "#247 G1交付跟踪",
+        "未记录",
+        "未指派",
+        "已关闭（已处理）",
+        "10月8日按人确认收口，G1验收达成；仍有E2E遗留。"
+      ],
+      [
+        "盘点开发交付流程差距",
+        "#253 开发方法资产迁移",
+        "未记录",
+        "未指派",
+        "开放",
+        "本周未见新Issue进展；远端仍开放。"
+      ],
+      [
+        "盘点开发交付流程差距",
+        "#254 运维全景差距盘点",
+        "未记录",
+        "未指派",
+        "已关闭（已处理）",
+        "此前已关闭；本周G2由人确认达成，依据差距矩阵。"
+      ],
+      [
+        "提升版本计划的实际使用",
+        "#255 周一屏使用指标",
+        "未记录",
+        "未指派",
+        "已关闭（已处理）",
+        "采集能力与白名单已交付并关闭；推广目标6未达，历史周峰值2、本周验收窗口0。"
+      ],
+      [
+        "未纳入当前计划",
+        "#284 指标资产迁移",
+        "未记录",
+        "未指派",
+        "开放",
+        "PR #292本周已合入；Issue仍开放，不据PR合入改成完成。"
+      ],
+      [
+        "未纳入当前计划",
+        "#302 项目墙信息与密度",
+        "未记录",
+        "未指派",
+        "开放",
+        "10月9日登记，尚未关闭。"
+      ],
+      [
+        "未纳入当前计划",
+        "#315 批量接入",
+        "未记录",
+        "未指派",
+        "开放",
+        "PR #305仅有规格及原型草案，尚未合入。"
+      ],
+      [
+        "未纳入当前计划",
+        "#316 语音听写",
+        "未记录",
+        "未指派",
+        "开放",
+        "PR #306为立项草案，尚未合入。"
+      ],
+      [
+        "未纳入当前计划",
+        "#317 首启与品牌残留",
+        "未记录",
+        "未指派",
+        "开放",
+        "PR #308已提出，尚未合入。"
+      ],
+      [
+        "未纳入当前计划",
+        "#323 代码托管与WeLink集成",
+        "未记录",
+        "未指派",
+        "开放",
+        "PR #324为设计草案，安装与登录的内网命令待核实。"
+      ]
+    ],
+    "problems": [
+      [
+        "#301 项目接入反馈",
+        "开放",
+        "未指派",
+        "10月9日登记仓库识别、CLI引导等群反馈，尚未关闭。",
+        "处理范围和验收计划待明确。"
+      ],
+      [
+        "#197 [项目方向与周目标|bw自身规划] 版本计划创建后无编辑按钮修改",
+        "已关闭（已处理）",
+        "未指派",
+        "本周已关闭；具体处理结论见原 Issue",
+        "—"
+      ],
+      [
+        "#196 各电脑样式不一致，出现多余的留白，长宽不一致",
+        "已关闭（已处理）",
+        "未指派",
+        "本周已关闭；具体处理结论见原 Issue",
+        "—"
+      ],
+      [
+        "#193 [AI上报][workbench配色] Claude配色时Apple预览仍为Claude",
+        "已关闭（已处理）",
+        "未指派",
+        "本周已关闭；具体处理结论见原 Issue",
+        "—"
+      ],
+      [
+        "#187 [构建与会话自动化|用户反馈] 偶发在orca开启会话时，worktree中除了开启的对应的claude，cursor的窗口外，还会有一个空的对应目录的terminal",
+        "已关闭（已处理）",
+        "未指派",
+        "本周已关闭；具体处理结论见原 Issue",
+        "—"
+      ],
+      [
+        "#186 [构建与会话自动化|用户反馈] 偶发issue转换到进行中，创建会话时会需要workspace授权，导致prompt注入失败",
+        "已关闭（已处理）",
+        "未指派",
+        "本周已关闭；具体处理结论见原 Issue",
+        "—"
+      ],
+      [
+        "#185 页面下方的弹窗弹出后不会自动关闭，常驻在页面上",
+        "已关闭（已处理）",
+        "未指派",
+        "本周已关闭；具体处理结论见原 Issue",
+        "—"
+      ],
+      [
+        "#152 接入已有 GitHub 仓时漏列有权限仓库，手填后也未推导本机路径",
+        "不再计划",
+        "未指派",
+        "按仓库规划不再计划",
+        "—"
+      ]
+    ],
+    "members": [
+      [
+        "yuzhup",
+        "GitHub参与者；PR作者；已指派Issue处理人",
+        "可核实范围为其PR与已指派Issue；未记录正式项目角色"
+      ],
+      [
+        "forcegravity1989",
+        "GitHub参与者；PR作者",
+        "可核实范围为其PR与已指派Issue；未记录正式项目角色"
+      ],
+      ["cfdcfd", "GitHub参与者；PR作者", "可核实范围为其PR与已指派Issue；未记录正式项目角色"]
+    ]
+  },
+  "problemSummary": "已分类 Bug：本周新增 0 单，关闭 7 单（已处理 6 单、不再计划 1 单），当前未关闭 0 单；未分类用户反馈 1 条。",
+  "sources": [
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/blob/2f58a39278331da5897cbf7b1c998534b67d95c8/.bw/planning/v0.5/data.json",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/blob/2f58a39278331da5897cbf7b1c998534b67d95c8/.bw/planning/v0.5/acceptance.json",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/300",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/292",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/299",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/255#issuecomment-6051613480",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/293",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/294",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/295",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/297",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/298",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/311",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/319",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/253",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/247#issuecomment-6053973788",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/301",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/305",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/324",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/254#issuecomment-5908294056",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/284",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/302",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/315",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/316",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/306",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/317",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/308",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/323",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/182",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/304",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/161",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/157",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/322",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/321",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/320",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/313",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/307",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/296",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/263",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/260",
+      "summary": "取数截至 2026-10-10T17:34:35+08:00；计划/验收按已合入材料，Issue 保留关闭原因。"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/197",
+      "summary": "Bug 标签；关闭原因 completed；关闭时间 2026-10-10T08:13:48Z"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/196",
+      "summary": "Bug 标签；关闭原因 completed；关闭时间 2026-10-10T08:14:36Z"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/193",
+      "summary": "Bug 标签；关闭原因 completed；关闭时间 2026-10-10T08:15:02Z"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/187",
+      "summary": "Bug 标签；关闭原因 completed；关闭时间 2026-10-10T08:26:48Z"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/186",
+      "summary": "Bug 标签；关闭原因 completed；关闭时间 2026-10-10T08:28:00Z"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/185",
+      "summary": "Bug 标签；关闭原因 completed；关闭时间 2026-10-10T08:27:20Z"
+    },
+    {
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/152",
+      "summary": "Bug 标签；关闭原因 not_planned；关闭时间 2026-10-10T08:11:17Z"
+    }
+  ],
+  "manual": {}
+}
