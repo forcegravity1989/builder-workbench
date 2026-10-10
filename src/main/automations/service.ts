@@ -31,10 +31,12 @@ import {
   missedBeyondGrace,
   recordMissedRun,
   recordRefusedAutomationRun,
+  recordSkippedOverlap,
   recordUnevaluableAutomation,
   sendRendererDispatch,
   NO_DISPATCH_HOST
 } from './dispatch-refusal'
+import { deriveLifecycleState, isOneShotAutomation } from '../../shared/automation-schedule-kind'
 import type {
   AutomationsChangedPayload,
   PublishAutomationsChanged
@@ -235,6 +237,27 @@ export class AutomationService {
         if (!automation.enabled || automation.nextRunAt > now) {
           continue
         }
+        if (deriveLifecycleState(automation, now) === 'finished') {
+          // 一次性超宽限仍未派发：先补记 skipped_missed（不静默），此后每 tick
+          // 走这里都是幂等空转（createRun 去重 + recordMissedRun 幂等）。
+          if (
+            isOneShotAutomation(automation) &&
+            (automation.scheduledRunCount ?? 0) === 0 &&
+            missedBeyondGrace({
+              automation,
+              scheduledFor: automation.onceAt as number,
+              now,
+              tickMs: this.tickMs
+            })
+          ) {
+            recordMissedRun({
+              runs: this.runs,
+              automation,
+              scheduledFor: automation.onceAt as number
+            })
+          }
+          continue
+        }
         // Isolated per record (#16303): an unreadable schedule throws out of the
         // occurrence math, and an uncaught throw here skipped every later due row.
         try {
@@ -249,29 +272,59 @@ export class AutomationService {
   }
 
   private async evaluateAutomation(automation: Automation, now: number): Promise<void> {
-    const scheduledFor = this.store.getLatestAutomationOccurrence(automation, now)
+    const oneShot = isOneShotAutomation(automation)
+    // 一次性不走出现计算：nextRunAt 建档时直写 onceAt。
+    const scheduledFor = oneShot
+      ? (automation.onceAt as number)
+      : this.store.getLatestAutomationOccurrence(automation, now)
     if (scheduledFor === null) {
       this.store.advanceAutomationNextRun(automation.id, now)
       return
     }
     if (missedBeyondGrace({ automation, scheduledFor, now, tickMs: this.tickMs })) {
       recordMissedRun({ runs: this.runs, automation, scheduledFor })
-      this.store.advanceAutomationNextRun(automation.id, now)
+      if (!oneShot) {
+        this.store.advanceAutomationNextRun(automation.id, now)
+      }
       return
     }
-
+    // 并发固定行为（2026-10-10 再审：不提供每任务策略开关）：上次仍在运行（非终态）
+    // → 记 skipped_overlap（同因折叠），不消耗次数额度；一次性不推进 nextRunAt，
+    // 宽限内等上次跑完再派，超宽限由上面 missed 分支统一落 skipped_missed。
+    if (
+      this.store
+        .listAutomationRuns(automation.id)
+        .some((run) => !isFinalAutomationRunStatus(run.status))
+    ) {
+      recordSkippedOverlap({ runs: this.runs, automation, scheduledFor })
+      if (!oneShot) {
+        this.store.advanceAutomationNextRun(automation.id, now)
+      }
+      return
+    }
     // Resolved before the run exists: a refusal repeats every occurrence, and a
     // */5 automation would otherwise write ~288 identical rows a day — past
     // retention, which would evict the automation's real history.
     const target = this.resolveTarget(automation)
     const refusal = describeScheduledRefusal({ target, canDispatch: this.canDispatch() })
     if (refusal && this.runs.repeatSkip(automation.id, refusal, scheduledFor)) {
-      this.store.advanceAutomationNextRun(automation.id, now)
+      // 派发被拒不计次数：宽限内下个 tick 自然重试（一次性没有下次出现可推进）。
+      if (!oneShot) {
+        this.store.advanceAutomationNextRun(automation.id, now)
+      }
       return
     }
 
-    await this.requestDispatch(automation, this.runs.createRun(automation, scheduledFor), target)
-    this.store.advanceAutomationNextRun(automation.id, now)
+    await this.requestDispatch(
+      automation,
+      this.runs.createRun(automation, scheduledFor),
+      target,
+      undefined,
+      'scheduled'
+    )
+    if (!oneShot) {
+      this.store.advanceAutomationNextRun(automation.id, now)
+    }
   }
 
   private resolveTarget(automation: Automation): AutomationRunTargetResult {
@@ -294,7 +347,8 @@ export class AutomationService {
     automation: Automation,
     run: AutomationRun,
     target: AutomationRunTargetResult,
-    oneShotPrompt?: string
+    oneShotPrompt?: string,
+    dispatchKind: 'scheduled' | 'manual' = 'manual'
   ): Promise<AutomationRun> {
     if (!target.ok) {
       return this.runs.updateRun({
@@ -306,6 +360,9 @@ export class AutomationService {
     }
     if (!this.canDispatchToRenderer()) {
       if (this.headlessDispatcher) {
+        if (dispatchKind === 'scheduled') {
+          this.store.recordAutomationScheduledDispatch(automation.id)
+        }
         return await runHeadlessAutomationDispatch({
           automation,
           run,
@@ -324,6 +381,10 @@ export class AutomationService {
         workspaceId: automation.workspaceId,
         error: NO_DISPATCH_HOST
       })
+    }
+    // 计数只在真实派发点：手动（runNow/试跑）不递增——试跑不吃掉一次性机会。
+    if (dispatchKind === 'scheduled') {
+      this.store.recordAutomationScheduledDispatch(automation.id)
     }
     const updated = this.runs.updateRun({
       runId: run.id,

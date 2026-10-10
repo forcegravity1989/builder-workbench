@@ -17,6 +17,30 @@ import type { AutomationRunWriter } from './automation-run-writer'
 
 export const NO_DISPATCH_HOST = 'No Orca window was available to launch the automation.'
 
+/** 到点时上次仍在运行（策略为跳过）的固定句子；折叠只认字节相同的原因。 */
+export const OVERLAP_SKIP = 'The previous run was still active, so this occurrence was skipped.'
+
+/** 并发跳过记录：复用拒绝合并机制同因折叠（skipped_overlap），高频任务不刷爆历史；
+ *  不消耗次数额度（调用方负责不推进次数）。 */
+export function recordSkippedOverlap(input: {
+  runs: AutomationRunWriter
+  automation: Automation
+  scheduledFor: number
+}): void {
+  if (
+    input.runs.repeatSkip(input.automation.id, OVERLAP_SKIP, input.scheduledFor, 'skipped_overlap')
+  ) {
+    return
+  }
+  const run = input.runs.createRun(input.automation, input.scheduledFor)
+  input.runs.updateRun({
+    runId: run.id,
+    status: 'skipped_overlap',
+    workspaceId: input.automation.workspaceId,
+    error: OVERLAP_SKIP
+  })
+}
+
 /** A record the tick could not evaluate at all — its schedule no longer resolves (#16303). */
 export const UNEVALUABLE_SCHEDULE =
   'Orca could not evaluate this automation and skipped the occurrence.'
@@ -159,6 +183,11 @@ export function recordMissedRun(input: {
   scheduledFor: number
 }): void {
   const missed = input.runs.createRun(input.automation, input.scheduledFor)
+  // createRun 对同 (automationId, scheduledFor) 去重：已记过 skipped_missed 就不再写。
+  // 一次性任务超宽限后每 tick 都会走到，幂等避免重复写行。
+  if (missed.status === 'skipped_missed') {
+    return
+  }
   input.runs.updateRun({
     runId: missed.id,
     status: 'skipped_missed',
