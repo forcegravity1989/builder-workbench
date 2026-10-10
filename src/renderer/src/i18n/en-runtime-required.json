@@ -2091,6 +2091,47 @@
           "bd6cec2056": "new"
         }
       },
+      "stats": {
+        "ClaudeUsagePane": {
+          "02a046792e": "sessions •",
+          "32176e1d44": "turns"
+        },
+        "CodexUsagePane": {
+          "247c93ca92": "• inferred pricing",
+          "79a69522a5": "events",
+          "ae255c3dba": "n/a",
+          "bf1bf2f674": "sessions •"
+        },
+        "OpenCodeUsagePane": {
+          "1e5d410df0": "events",
+          "8095a63426": "n/a",
+          "bc0cb89901": "sessions •"
+        },
+        "StatsPane": {
+          "908c470587": "codex",
+          "eb6a066185": "claude",
+          "eee19cfade": "overview"
+        },
+        "UsageSessionsTable": {
+          "01476891c7": "Last active",
+          "0f03975d59": "Events",
+          "1afc25eb06": "Turns",
+          "21ea00bfa8": "Cache",
+          "a8b7487ff7": "Output",
+          "c17bed0416": "Project",
+          "cfe2282ffa": "Unknown",
+          "e0b988599d": "Total",
+          "f6a2c8d019": "Model",
+          "faf3444859": "Input"
+        },
+        "usage": {
+          "overview": {
+            "sections": {
+              "9564a3b21b": "sessions -"
+            }
+          }
+        }
+      },
       "status": {
         "bar": {
           "PortsStatusSegment": {

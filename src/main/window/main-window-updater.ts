@@ -102,7 +102,7 @@ export function registerUpdaterHandlers(_store: Store): void {
   ipcMain.handle('updater:dismissNudge', () => dismissNudge())
   ipcMain.handle('updater:dismissAvailableUpdate', () => dismissAvailableUpdate())
   // Why: the response carries a local package path and the reveal touches the native desktop, so
-  // neither may be reached from a guest, stale window, or utility renderer.
+  // neither may be reached from a guest, dashboard popout, stale window, or utility renderer.
   ipcMain.handle('updater:getLinuxPackageInstallInstructions', (event) => {
     assertTrustedUpdaterRecoverySender(event)
     return getLinuxPackageInstallInstructions()

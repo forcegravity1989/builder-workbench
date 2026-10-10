@@ -10,8 +10,10 @@ import type { AgentRowState } from '@/lib/agent-row-decay-state'
 /**
  * Project a row state onto the published card vocabulary.
  *
- * `unverifiable` stays renderer-local: `DashboardCardDotState` is a fixed card vocabulary, so
- * publishing `idle` keeps the board rendering the card instead of an unknown state.
+ * `unverifiable` stays renderer-local: `DashboardCardDotState` is validated against a fixed
+ * allowlist in main (`dashboard-payload-validation.ts`) and read by pop-out windows that may
+ * predate the member, so a new value would be dropped rather than rendered. Publishing today's
+ * `idle` keeps those surfaces at today's behavior instead of silently losing the card.
  */
 export function dashboardCardDotState(state: AgentRowState): DashboardCardDotState {
   return state === 'unverifiable' ? 'idle' : state

@@ -43,9 +43,9 @@ git merge orca-upstream/main
 
 合并 upstream 时：不要把 `mobile/` 或 Mobile 页重新合回来。协议文件若 upstream 改了，优先取 upstream，除非叠层已摘钩子。
 
-### 源码：全露的上游工作面（2026-10-10，壳内隐藏 / 删除）
+### 源码：全露的上游工作面（2026-10-10，壳内隐藏）
 
-Workbench 壳不提供浮动工作区、内置浏览器的「新建浏览器标签」入口与 Browser Use、技能页与技能分享、Artifact 云发布与 Orca 账号、Experimental 页、Stats & Usage 页；这些按 `isWorkbenchShell()` 在入口处隐藏，代码保留，非壳模式不变。只有 Agent Dashboard 弹出窗口一条链从 git 删除（两种模式都没有）：
+Workbench 壳不提供浮动工作区、内置浏览器的「新建浏览器标签」入口与 Browser Use、技能页与技能分享、Artifact 云发布与 Orca 账号、Experimental 页、Stats & Usage 页、Agent Dashboard 弹出窗口；这些按 `isWorkbenchShell()` 在入口处隐藏，代码保留，非壳模式不变。本批不从 git 删除任何文件：
 
 | 处置 | 路径 | 说明 |
 |---|---|---|
@@ -58,14 +58,13 @@ Workbench 壳不提供浮动工作区、内置浏览器的「新建浏览器标�
 | **壳内隐藏** | `hooks/settings-navigation-workflow-sections.ts`（Artifacts、Share Skills、Floating Workspace）、`settings-navigation-capability-sections.ts`（Orca Account）、`settings-navigation-remote-sections.ts`（Experimental 整页） | 不进设置导航与 Cmd+J；ArtifactsSettingsPane「Open Artifacts」、ShareSkillsSettingsPane「Open Skills」随页面一起不可达 |
 | **壳内隐藏** | `status-bar/PetStatusSegment.tsx`（「Pet settings…」）、`settings/CloudVmSetupGuide.tsx`（「Set up environment recipes」） | 二者跳 Experimental 页，壳内不列该页，入口不渲染 |
 | **壳内隐藏** | `hooks/settings-navigation-interface-sections.ts`（`stats` 导航）、`cmd-j/palette-results.ts`（别名 `usage`）、`status-bar/StatusBarSurface.tsx` + `UsageRosterPanel.tsx`（「Usage details & history」） | Stats & Usage 页是 Claude / Codex / OpenCode 用量统计开关的唯一界面，自动化的用量归因读它，所以只藏入口不删；`components/stats/`、`store/slices/{stats,usage-provider-slices}.ts` 与主进程 `src/main/stats/`、各 `*-usage/` 照常保留 |
-| **删除** | `src/renderer/popout.html`、`src/renderer/src/popout.tsx`、`components/dashboard-popout/{DashboardPopoutRoot,useDashboardSnapshot,dashboard-agent-status-patch}`、`components/dashboard/{DashboardPopoutBridge,useDashboardPopoutBridge,launch-dashboard-agent}`、`src/main/window/dashboard-popout-window`、`src/main/ipc/dashboard-{popout,payload-validation,agent-launch-validation,filter-payload-validation,workspace-payload-validation}`、`clipboard-dashboard-popout-access.test`、preload `dashboard-bridge`（共 24） | Agent Dashboard 弹出窗口；`window.api.dashboard` 命名空间、设置 `experimentalAgentDashboardMode` 与类型 `AgentDashboardMode`、UI 状态 `dashboardPopoutBounds`、错误边界面 `'dashboard-popout'`、Experimental 里的「Open as」与看板菜单的弹出选项、electron.vite 的 popout 入口一并删除；终端预览只接受主窗口 |
-| **未删** | `components/dashboard-popout/` 目录名及看板 / 终端预览 / Agent Map 文件、设置键 `experimentalAgentDashboardPopout`、`RendererSurface` 的 `'dashboard-popout'` 值 | 窗口内 Agent Dashboard 抽屉用这些组件；该设置键实为整个 Agent Dashboard 的开关，改名会丢用户已开的设置 |
-| **未删** | `components/dashboard-popout/` 下约 50 个 Agent Map 文件、`shared/dashboard-snapshot.ts` 的 `DashboardSpawnAgentArgs` / `DashboardSleepWorkspaceArgs`、`AgentKanbanBoard` 的默认容器类、`src/main/ipc/terminal-preview.ts` 的预览 viewer 键前缀 `dashboard-popout:` | Agent Map 在上游已不可达；这些是弹出窗口删除后的残留，另行清理 |
+| **壳内隐藏** | `hooks/ipc-events/agent-dashboard-command.ts`（快捷键）、`sidebar/AgentDashboardSidebarEntry.tsx`（侧栏入口）、`dashboard/AgentDashboardSettingsMenu.tsx`（看板菜单里的「Open as」） | Agent Dashboard 弹出窗口：壳内忽略 `experimentalAgentDashboardMode: 'popout'`，看板一律在窗口内打开，看板菜单不给弹出选项；Experimental 页里的「Open as」随整页不可达。弹出窗口的入口 HTML、主进程窗口与 IPC、preload `dashboard` 桥、快照校验、`dashboardPopoutBounds` 等全部保留 |
+| **未动** | `components/dashboard-popout/` 下约 50 个 Agent Map 文件、`shared/dashboard-snapshot.ts` 的 `DashboardSpawnAgentArgs` / `DashboardSleepWorkspaceArgs` | Agent Map 在上游已不可达，另行清理 |
 | **未动** | Mobile Emulator（设置页与「+」菜单项）、Help → Report Crash | 模拟器去留等人裁；Report Crash 由「首启弹层与品牌残留」整批删除 |
 
-i18n：31 个键从 6 个语言目录剪除（8 个随弹出窗口与「Open as」模式选择失去引用；另 23 个是 `auto.components.stats.*` 命名空间里早已无引用的残键），`en-runtime-required.json` 由 `sync:localization-runtime-catalog` 重生成；`config/scripts/locale-ko-key-overrides.json` 同步删去 7 条。
+i18n：本批不剪键；6 个语言目录与 `config/scripts/locale-ko-key-overrides.json` 与主干一致，`en-runtime-required.json` 由 `sync:localization-runtime-catalog` 重生成。
 
-合并 upstream 时：不要把弹出窗口及其 IPC / preload / 入口合回来；upstream 改到这些文件时按删除冲突处理。壳内隐藏的各项只在入口层分支，upstream 对其正文的改动照常合入。
+合并 upstream 时：壳内隐藏的各项只在入口层分支，upstream 对其正文的改动照常合入。
 
 ### 文档（本轮原 `bw-orca` 落仓）
 

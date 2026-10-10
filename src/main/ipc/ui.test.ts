@@ -212,6 +212,25 @@ describe('UI IPC', () => {
     expect(selectAll).toHaveBeenCalledOnce()
   })
 
+  it('allows native selection fallback from the exact dashboard popout renderer', () => {
+    const copy = vi.fn()
+    const selectAll = vi.fn()
+    const event = makeUIEvent({ id: 42 })
+    const isDashboardPopoutRenderer = vi.fn((sender: unknown) => sender === event.sender)
+    fromWebContentsMock.mockReturnValue({ webContents: { copy, selectAll } })
+
+    registerUIHandlers(makeStore() as never, { isDashboardPopoutRenderer })
+
+    const handler = getNativeSelectionActionHandler()
+    handler?.(event, 'copy')
+    handler?.(event, 'select-all')
+    handler?.(makeUIEvent({ id: 43 }), 'copy')
+
+    expect(isDashboardPopoutRenderer).toHaveBeenCalledWith(event.sender)
+    expect(copy).toHaveBeenCalledOnce()
+    expect(selectAll).toHaveBeenCalledOnce()
+  })
+
   it('ignores native paste fallback from stale or browser senders', () => {
     const paste = vi.fn()
     const pasteAndMatchStyle = vi.fn()

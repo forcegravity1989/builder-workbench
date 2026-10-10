@@ -27,6 +27,7 @@ import type { TerminalColorOverrides } from './terminal-color-overrides'
 import type { TerminalQuickCommand } from './terminal-quick-command-types'
 import type { TuiAgent } from './tui-agent'
 import type {
+  AgentDashboardMode,
   BranchPrefixStrategy,
   FloatingTerminalTriggerLocation,
   LeftSidebarAppearanceMode,
@@ -436,13 +437,14 @@ export type GlobalSettings = {
   experimentalSidekick?: boolean
   /** Experimental: left-sidebar Agents view — threaded feed of agent completions, blocking/unread state, worktree creation. */
   experimentalActivity: boolean
-  /** Experimental: in-window Agent Dashboard (Kanban board for monitoring and opening agent terminals
-   *  across worktrees). Key name predates the pop-out window's removal; kept so persisted opt-ins survive. */
+  /** Experimental: pop-out Kanban dashboard for monitoring and opening agent terminals across worktrees. */
   experimentalAgentDashboardPopout?: boolean
   /** Set after the one-time legacy Agents tab introduction has been acknowledged. */
   agentsSidebarIntroShown?: boolean
   /** True when the profile previously opted into the legacy Agents view. */
   agentsSidebarMigratedFromExperimental?: boolean
+  /** How the Agent Dashboard opens: an in-window companion board or a separate pop-out window. Defaults to in-window. */
+  experimentalAgentDashboardMode?: AgentDashboardMode
   /** Includes stale quiet agents as a fourth Agent Dashboard column. */
   experimentalAgentDashboardShowIdle?: boolean
   /** One-shot migration guard for defaulting the Agents view off; later explicit opt-ins persist normally. */

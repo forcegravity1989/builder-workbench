@@ -42,6 +42,7 @@ test('keeps the visible Agent Dashboard interactive during a 100-pane status rep
         settings: {
           ...store.getState().settings,
           experimentalAgentDashboardPopout: true,
+          experimentalAgentDashboardMode: 'drawer',
           experimentalAgentDashboardShowIdle: true,
           tabAutoGenerateTitle: false
         }

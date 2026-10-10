@@ -44,7 +44,10 @@ export function getTrustedUIRendererWindow(): BrowserWindow | null {
   return renderer ? BrowserWindow.fromWebContents(renderer) : null
 }
 
-export function registerUIHandlers(store: Store): void {
+export function registerUIHandlers(
+  store: Store,
+  options: { isDashboardPopoutRenderer?: (sender: WebContents) => boolean } = {}
+): void {
   // Why: UI view-state is shared between the desktop renderer and mobile (ui.set
   // RPC). Broadcast every change so the desktop re-hydrates when mobile (or
   // another window) updates it — bi-directional sync, mirroring settings:changed.
@@ -88,7 +91,10 @@ export function registerUIHandlers(store: Store): void {
 
   ipcMain.removeAllListeners('ui:performNativeSelectionAction')
   ipcMain.on('ui:performNativeSelectionAction', (event, action: unknown) => {
-    if (!isTrustedUIRenderer(event.sender)) {
+    if (
+      !isTrustedUIRenderer(event.sender) &&
+      options.isDashboardPopoutRenderer?.(event.sender) !== true
+    ) {
       return
     }
     const target = BrowserWindow.fromWebContents(event.sender)?.webContents

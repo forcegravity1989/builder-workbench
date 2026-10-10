@@ -174,7 +174,7 @@ export class OrcaRuntimeWithAttachRemoteTerminalSourceRangeConsumer extends Orca
     return this.serializeTerminalBufferFromAvailableState(ptyId, opts)
   }
 
-  /** Raw keystroke pass-through for the Agent Dashboard's terminal preview.
+  /** Raw keystroke pass-through for the pop-out dashboard's terminal preview.
    *  Honors the mobile-presence lock like the main window's pty:write path. */
   async writeTerminalPreviewInput(ptyId: string, data: string): Promise<boolean> {
     if (data.length === 0 || this.getDriver(ptyId).kind === 'mobile') {

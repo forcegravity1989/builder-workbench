@@ -5,6 +5,7 @@ import { AgentQuestionIcon } from '@/components/AgentQuestionIcon'
 import { DASHBOARD_BUCKET_ORDER, type DashboardBucket } from '../../../../shared/dashboard-snapshot'
 import { useAgentBucketCounts } from '@/components/dashboard/useAgentBucketCounts'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 const DASHBOARD_BUCKET_DOT_CLASS: Record<'working' | 'done' | 'idle', string> = {
   working: 'bg-yellow-500',
@@ -61,6 +62,10 @@ function DashboardBucketCounts({
 export default function AgentDashboardSidebarEntry(): React.JSX.Element {
   const dashboardBucketCounts = useAgentBucketCounts()
   const showIdle = useAppStore((s) => s.settings?.experimentalAgentDashboardShowIdle === true)
+  // Why: see toggleAgentDashboardFromShortcut — the Workbench shell always opens the board in-window.
+  const openAsPopout = useAppStore(
+    (s) => !isWorkbenchShell() && s.settings?.experimentalAgentDashboardMode === 'popout'
+  )
   const drawerOpen = useAppStore((s) => s.agentDashboardDrawerOpen)
   const setAgentDashboardDrawerOpen = useAppStore((s) => s.setAgentDashboardDrawerOpen)
 
@@ -68,7 +73,13 @@ export default function AgentDashboardSidebarEntry(): React.JSX.Element {
     <button
       type="button"
       data-contextual-tour-target="agents-sidebar"
-      onClick={() => setAgentDashboardDrawerOpen(!drawerOpen)}
+      onClick={() => {
+        if (openAsPopout) {
+          void window.api.dashboard.openPopout()
+        } else {
+          setAgentDashboardDrawerOpen(!drawerOpen)
+        }
+      }}
       className={cn(
         'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
         'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'

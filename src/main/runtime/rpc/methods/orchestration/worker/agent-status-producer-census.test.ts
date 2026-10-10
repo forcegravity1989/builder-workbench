@@ -23,6 +23,12 @@ vi.mock('../../../../../git/worktree', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   listWorktreesStrict
 }))
+// The push path reaches the dashboard popout window, whose electron re-export cannot load here.
+vi.mock('@electron-toolkit/utils', () => ({
+  is: { dev: false },
+  optimizer: { watchWindowShortcuts: vi.fn() },
+  electronApp: { setAppUserModelId: vi.fn() }
+}))
 
 import type Database from '../../../../../sqlite/sync-database'
 import {

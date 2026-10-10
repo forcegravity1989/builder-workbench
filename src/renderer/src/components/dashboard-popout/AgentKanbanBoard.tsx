@@ -21,6 +21,20 @@ import {
 import './agent-board-transitions.css'
 import { translate } from '@/i18n/i18n'
 
+/** Ack an agent in the pop-out window: relayed over IPC to the main renderer.
+ *  ?. shields dialog-opening from dev-HMR preload skew (renderer updates hot,
+ *  the preload only on app restart) — acks just no-op until restart. */
+function ackAgentViaPopoutRelay(paneKey: string): void {
+  void window.api.dashboard.ackAgent?.(paneKey)
+}
+
+/** Reveal an agent from the pop-out window: raise the main window and route it
+ *  to the agent's pane via IPC. Same `?.` HMR-skew guard as the ack relay —
+ *  both channels ship together, so a stale preload lacks both. */
+function revealAgentViaPopoutRelay(args: AgentRevealArgs): void {
+  void window.api.dashboard.revealAgent?.(args)
+}
+
 function bucketLabel(bucket: DashboardBucket): string {
   switch (bucket) {
     case 'attention':
@@ -100,24 +114,31 @@ function KanbanColumn({
 
 type AgentKanbanBoardProps = {
   snapshot: DashboardSnapshot
-  /** Sizing for the outermost container; the drawer fills its host. */
+  /** Sizing for the outermost container. The pop-out fills the window
+   *  (h-screen w-screen); the in-window drawer fills its host (h-full w-full). */
   containerClassName?: string
-  /** Marks an agent as seen. */
-  onAckAgent: (paneKey: string) => void
-  /** Focuses the agent's pane. */
-  onRevealAgent: (args: AgentRevealArgs) => void
-  /** When provided, renders a close control in the header. */
+  /** Marks an agent as seen. Defaults to the pop-out IPC relay; the in-window
+   *  host acks the store directly. */
+  onAckAgent?: (paneKey: string) => void
+  /** Focuses the agent's pane. Defaults to the pop-out IPC relay; the in-window
+   *  host activates the worktree/pane locally and closes the overlay. */
+  onRevealAgent?: (args: AgentRevealArgs) => void
+  /** When provided, renders a close control in the header (in-window mode). The
+   *  pop-out relies on its native window controls, so it omits this. */
   onClose?: () => void
-  /** Header controls rendered before the close button (the drawer's settings menu). */
+  /** Header controls rendered before the close button. The in-window host
+   *  passes its settings menu; the pop-out renderer has no store to drive it. */
   headerActions?: React.ReactNode
 }
 
-/** The agent board: status columns fed by a snapshot, hosted by the in-window drawer. */
+/** The agent board: status columns fed by a snapshot. Shared by the pop-out
+ *  window and the in-window drawer — the two differ only in sizing and
+ *  how ack/reveal are routed. */
 export function AgentKanbanBoard({
   snapshot,
   containerClassName = 'h-screen w-screen',
-  onAckAgent,
-  onRevealAgent,
+  onAckAgent = ackAgentViaPopoutRelay,
+  onRevealAgent = revealAgentViaPopoutRelay,
   onClose,
   headerActions
 }: AgentKanbanBoardProps): React.JSX.Element {
@@ -217,7 +238,8 @@ export function AgentKanbanBoard({
   }, [dialogCard?.paneKey, dialogCard?.unseen, onAckAgent])
 
   return (
-    // Why: the card's repo tooltip needs a provider; nesting inside the main
+    // Why: the pop-out is its own React root with no app-level provider, and the
+    // card's repo tooltip needs one in both hosts. Nesting inside the main
     // window's provider is harmless.
     <TooltipProvider delayDuration={300}>
       <div

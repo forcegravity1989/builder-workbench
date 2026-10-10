@@ -4071,6 +4071,8 @@
           "01476891c7": "Last active",
           "abfc4a4943": "Cache reuse rate:",
           "7e76c84153": "Recent sessions",
+          "32176e1d44": "turns",
+          "02a046792e": "sessions •",
           "f97435845c": "Top project:",
           "7dc9e5613b": "By project",
           "c3fdbc5474": "Top model:",
@@ -4123,6 +4125,8 @@
           "0c36b100be": "Last active",
           "0bd8655475": "Most recent local Codex sessions in this scope.",
           "0cb0983c07": "Recent sessions",
+          "79a69522a5": "events",
+          "bf1bf2f674": "sessions •",
           "829ee743f2": "Top project:",
           "b98718aaab": "By project",
           "95d2d89285": "Top model:",
@@ -4147,6 +4151,8 @@
           "4fe8820098": "All local Codex usage",
           "201766b754": "Orca worktrees only",
           "bf6cf2d4dd": "Unknown",
+          "ae255c3dba": "n/a",
+          "247c93ca92": "• inferred pricing",
           "8a6655f7a2": " • Last scan error: {{value0}}",
           "rangeLast7Days": "Last 7 days",
           "rangeLast30Days": "Last 30 days",
@@ -4163,6 +4169,8 @@
           "d97bdf6e27": "Last active",
           "81817a641a": "Most recent local OpenCode sessions in this scope.",
           "4799177b1c": "Recent sessions",
+          "1e5d410df0": "events",
+          "bc0cb89901": "sessions •",
           "048ffe4d65": "Top project:",
           "0f0a1684bb": "By project",
           "a15206a63a": "Top model:",
@@ -4187,6 +4195,7 @@
           "144a6050e9": "All local OpenCode usage",
           "e04c58327c": "Orca worktrees only",
           "362231082f": "Unknown",
+          "8095a63426": "n/a",
           "6cc7782458": " • Last scan error: {{value0}}",
           "rangeLast7Days": "Last 7 days",
           "rangeLast30Days": "Last 30 days",
@@ -4222,6 +4231,9 @@
           "7d26110cea": "Codex",
           "85457c02fe": "Claude",
           "b2cf4310ce": "Overview",
+          "908c470587": "codex",
+          "eb6a066185": "claude",
+          "eee19cfade": "overview",
           "grokUsageTab": "Grok",
           "trackingSince": "Tracking since {{value0}}"
         },
@@ -4291,6 +4303,7 @@
               "544d6d4c16": "Claude"
             },
             "sections": {
+              "9564a3b21b": "sessions -",
               "32330a6e66": "{{value0}}: {{value1}} tokens",
               "57d1448ef8": "Enable",
               "f6df0d7d6d": "More",
@@ -4323,6 +4336,18 @@
           "32176e1d44": "turns",
           "79a69522a5": "events",
           "02a046792e": "sessions •"
+        },
+        "UsageSessionsTable": {
+          "1afc25eb06": "Turns",
+          "0f03975d59": "Events",
+          "21ea00bfa8": "Cache",
+          "e0b988599d": "Total",
+          "01476891c7": "Last active",
+          "c17bed0416": "Project",
+          "f6a2c8d019": "Model",
+          "faf3444859": "Input",
+          "a8b7487ff7": "Output",
+          "cfe2282ffa": "Unknown"
         },
         "GrokUsagePane": {
           "g8h9i0j1k2": "Grok usage",
@@ -7063,9 +7088,14 @@
           },
           "agentDashboard": {
             "title": "Agent Dashboard",
-            "description": "Kanban board for monitoring agents across worktrees.",
+            "description": "Kanban board for monitoring agents across worktrees, in-window or as a pop-out.",
             "copy": "Adds an Agent Dashboard entry to the left sidebar. Monitor agents that need you, are working, or are done, with optional idle agents.",
-            "toggleLabel": "Toggle Agent Dashboard"
+            "toggleLabel": "Toggle Agent Dashboard",
+            "modeLabel": "Open as",
+            "modeCopy": "Show the dashboard as an in-window board beside the sidebar or a separate pop-out window.",
+            "modeAriaLabel": "Agent Dashboard open mode",
+            "modeInWindow": "In-window",
+            "modePopout": "Pop-out"
           }
         },
         "FloatingWorkspacePane": {
@@ -9414,10 +9444,11 @@
             },
             "agentDashboard": {
               "title": "Agent Dashboard",
-              "description": "Kanban board for monitoring agents across worktrees.",
+              "description": "Kanban board for monitoring agents across worktrees, in-window or as a pop-out.",
               "dashboard": "dashboard",
               "agent": "agent",
               "kanban": "kanban",
+              "popout": "pop-out",
               "board": "board",
               "inWindow": "in-window",
               "worktrees": "worktrees"
@@ -17343,6 +17374,10 @@
     "placeholder": {
       "title": "Agent dashboard",
       "description": "This is where all your agents will show up at a glance. The board is coming soon."
+    },
+    "recoverableError": {
+      "title": "Orca dashboard hit an error.",
+      "description": "The dashboard could not finish rendering. Retry to remount it, or reopen it."
     },
     "bucket": {
       "attention": "Needs You",

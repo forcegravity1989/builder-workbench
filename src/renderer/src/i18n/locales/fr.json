@@ -3781,6 +3781,8 @@
           "01476891c7": "Dernière activité",
           "abfc4a4943": "Taux de réutilisation du cache :",
           "7e76c84153": "Sessions récentes",
+          "32176e1d44": "tours",
+          "02a046792e": "sessions •",
           "f97435845c": "Projet principal :",
           "7dc9e5613b": "Par projet",
           "c3fdbc5474": "Modèle principal :",
@@ -3833,6 +3835,8 @@
           "0c36b100be": "Dernière activité",
           "0bd8655475": "Sessions locales Codex les plus récentes dans ce périmètre.",
           "0cb0983c07": "Sessions récentes",
+          "79a69522a5": "événements",
+          "bf1bf2f674": "sessions •",
           "829ee743f2": "Projet principal :",
           "b98718aaab": "Par projet",
           "95d2d89285": "Modèle principal :",
@@ -3857,6 +3861,8 @@
           "4fe8820098": "Toute l'utilisation locale de Codex",
           "201766b754": "Worktrees Orca uniquement",
           "bf6cf2d4dd": "Inconnu",
+          "ae255c3dba": "n/d",
+          "247c93ca92": "• tarification déduite",
           "8a6655f7a2": " • Dernière erreur d'analyse : {{value0}}",
           "rangeLast7Days": "7 derniers jours",
           "rangeLast30Days": "30 derniers jours",
@@ -3873,6 +3879,8 @@
           "d97bdf6e27": "Dernière activité",
           "81817a641a": "Sessions locales OpenCode les plus récentes dans ce périmètre.",
           "4799177b1c": "Sessions récentes",
+          "1e5d410df0": "événements",
+          "bc0cb89901": "sessions •",
           "048ffe4d65": "Projet principal :",
           "0f0a1684bb": "Par projet",
           "a15206a63a": "Modèle principal :",
@@ -3897,6 +3905,7 @@
           "144a6050e9": "Toute l'utilisation locale d'OpenCode",
           "e04c58327c": "Worktrees Orca uniquement",
           "362231082f": "Inconnu",
+          "8095a63426": "n/d",
           "6cc7782458": " • Dernière erreur d'analyse : {{value0}}",
           "rangeLast7Days": "7 derniers jours",
           "rangeLast30Days": "30 derniers jours",
@@ -3932,6 +3941,9 @@
           "7d26110cea": "Codex",
           "85457c02fe": "Claude",
           "b2cf4310ce": "Vue d'ensemble",
+          "908c470587": "codex",
+          "eb6a066185": "claude",
+          "eee19cfade": "vue d'ensemble",
           "grokUsageTab": "Grok",
           "trackingSince": "Suivi depuis {{value0}}"
         },
@@ -4001,6 +4013,7 @@
               "544d6d4c16": "Claude"
             },
             "sections": {
+              "9564a3b21b": "sessions -",
               "32330a6e66": "{{value0}} : {{value1}} tokens",
               "57d1448ef8": "Activer",
               "f6df0d7d6d": "Plus",
@@ -4033,6 +4046,18 @@
           "32176e1d44": "tours",
           "79a69522a5": "événements",
           "02a046792e": "sessions •"
+        },
+        "UsageSessionsTable": {
+          "1afc25eb06": "Tours",
+          "0f03975d59": "Événements",
+          "21ea00bfa8": "Cache",
+          "e0b988599d": "Total",
+          "01476891c7": "Dernière activité",
+          "c17bed0416": "Projet",
+          "f6a2c8d019": "Modèle",
+          "faf3444859": "Entrée",
+          "a8b7487ff7": "Sortie",
+          "cfe2282ffa": "Inconnu"
         },
         "GrokUsagePane": {
           "g8h9i0j1k2": "Utilisation Grok",
@@ -6712,7 +6737,12 @@
             "title": "Tableau de bord des agents",
             "description": "Tableau Kanban pour surveiller les agents de tous les worktrees, dans la fenêtre ou en fenêtre indépendante.",
             "copy": "Ajoute une entrée Tableau de bord des agents à la barre latérale gauche. Surveillez les agents qui ont besoin de vous, qui travaillent ou qui ont terminé, avec en option les agents inactifs.",
-            "toggleLabel": "Activer le tableau de bord des agents"
+            "toggleLabel": "Activer le tableau de bord des agents",
+            "modeLabel": "Mode d'affichage",
+            "modeCopy": "Affiche le tableau de bord dans la fenêtre, à côté de la barre latérale, ou dans une fenêtre indépendante.",
+            "modeAriaLabel": "Mode d'ouverture du tableau de bord des agents",
+            "modeInWindow": "Dans la fenêtre",
+            "modePopout": "Fenêtre indépendante"
           }
         },
         "FloatingWorkspacePane": {
@@ -16032,6 +16062,10 @@
     "placeholder": {
       "title": "Tableau de bord des agents",
       "description": "C'est ici que tous vos agents s'afficheront d'un coup d'œil. Le tableau arrive bientôt."
+    },
+    "recoverableError": {
+      "title": "Le tableau de bord Orca a rencontré une erreur.",
+      "description": "Le tableau de bord n'a pas pu terminer son rendu. Réessayez pour le recharger, ou rouvrez-le."
     },
     "bucket": {
       "attention": "Vous concerne",

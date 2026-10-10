@@ -5,6 +5,7 @@ import {
   rebuildAppMenu,
   getNextDefaultOnAppearanceSettingValue
 } from '../menu/register-app-menu'
+import { zoomDashboardPopoutIfFocused } from '../window/dashboard-popout-window'
 import { recordCrashBreadcrumb } from '../crash-reporting/crash-breadcrumb-store'
 import { mainProcessState as state } from './main-process-state'
 import {
@@ -51,9 +52,23 @@ export async function initializeMainProcessI18nAndMenu(): Promise<void> {
       // Why: use the invoking BrowserWindow so hidden/E2E and multi-window flows route to the right renderer, not global focus.
       sendOpenFeatureTour(targetWindow instanceof BrowserWindow ? targetWindow : null)
     },
-    onZoomIn: () => state.mainWindow?.webContents.send('terminal:zoom', 'in'),
-    onZoomOut: () => state.mainWindow?.webContents.send('terminal:zoom', 'out'),
-    onZoomReset: () => state.mainWindow?.webContents.send('terminal:zoom', 'reset'),
+    // Why: menu zoom must act on the window the user is looking at — routing to
+    // the main window while the dashboard pop-out is focused zooms behind it.
+    onZoomIn: () => {
+      if (!zoomDashboardPopoutIfFocused('in')) {
+        state.mainWindow?.webContents.send('terminal:zoom', 'in')
+      }
+    },
+    onZoomOut: () => {
+      if (!zoomDashboardPopoutIfFocused('out')) {
+        state.mainWindow?.webContents.send('terminal:zoom', 'out')
+      }
+    },
+    onZoomReset: () => {
+      if (!zoomDashboardPopoutIfFocused('reset')) {
+        state.mainWindow?.webContents.send('terminal:zoom', 'reset')
+      }
+    },
     onToggleLeftSidebar: () => state.mainWindow?.webContents.send('ui:toggleLeftSidebar'),
     onToggleRightSidebar: () => state.mainWindow?.webContents.send('ui:toggleRightSidebar'),
     onToggleAppearance: (key) => {

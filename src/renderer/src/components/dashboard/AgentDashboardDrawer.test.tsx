@@ -59,6 +59,9 @@ beforeEach(() => {
   mocks.activateAndRevealWorkspace.mockReturnValue({ primaryTabId: null })
   mocks.blockingOverlay = false
   mocks.boardProps = null
+  ;(window as unknown as { api: unknown }).api = {
+    dashboard: { openPopout: vi.fn().mockResolvedValue(undefined) }
+  }
 })
 
 afterEach(() => {
@@ -88,6 +91,16 @@ describe('AgentDashboardDrawer', () => {
     view.rerender(<AgentDashboardDrawer statusBarVisible />)
     fireEvent.keyDown(document.body, { key: 'Escape' })
     expect(useAppStore.getState().agentDashboardDrawerOpen).toBe(false)
+  })
+
+  it('does not hand the drawer over to an agent map popout', () => {
+    render(<AgentDashboardDrawer statusBarVisible />)
+    expect(mocks.boardProps).toBeNull()
+
+    act(() => useAppStore.setState({ agentDashboardDrawerOpen: true }))
+    expect(mocks.boardProps).not.toBeNull()
+    expect(mocks.boardProps?.onOpenMap).toBeUndefined()
+    expect(mocks.boardProps?.initialView).toBeUndefined()
   })
 
   type RevealAgent = (args: {
