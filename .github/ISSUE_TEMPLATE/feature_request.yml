@@ -1,39 +1,24 @@
-name: Feature request
-description: Suggest an improvement for Orca
-title: '[Feature]: '
+name: 提出需求
+description: 提出 Workbench 的具体用户需求或改进
 type: Feature
 labels:
-  - enhancement
+  - Feature
 body:
   - type: markdown
     attributes:
       value: |
-        Use this form for new features or workflow improvements.
-
-        Please write your issue in English.
-
+        先查已有 Issue。描述用户问题与可判断的结果，方案可以待定；不要将旧实现或未经确认的设想直接当成开发承诺。
   - type: textarea
     id: problem
     attributes:
-      label: Problem or use case
-      description: What are you trying to do, and what is missing today? Include a short summary here too.
-      placeholder: It is hard to switch between the same few repositories throughout the day.
+      label: 问题描述
+      description: 为谁解决什么问题？可写已有替代、关联 Issue 或原型。
     validations:
       required: true
-
   - type: textarea
-    id: proposal
+    id: acceptance
     attributes:
-      label: Proposed solution
-      description: Describe the change you want to see
-      placeholder: Add a pinned repositories section to the home screen.
-    validations:
-      required: true
-
-  - type: textarea
-    id: alternatives
-    attributes:
-      label: Alternatives or additional context
-      description: Workarounds, related tools, mockups, or anything else that helps
+      label: 验收条件
+      description: 用户获得什么结果、怎样判断？需要先讨论的范围或判据写待确认。
     validations:
       required: false

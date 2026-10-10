@@ -2,7 +2,7 @@
 name: metrics-refresh
 description: Use when 从总览配置指标，或计划/验收发现指标定义、特性归属、脚本与实际读数有缺口，需要准备或修复采集能力。
 metadata:
-  version: 0.5.0
+  version: 0.5.2
 ---
 
 # 配置与核对指标
