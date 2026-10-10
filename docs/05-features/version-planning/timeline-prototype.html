@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh" data-theme="claude">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>版本计划 · 二维时间轴框架</title>
+    <link rel="stylesheet" href="../../04-design-system/styles.css" />
+    <link rel="stylesheet" href="prototype/timeline.css" />
+    <script src="prototype/timeline.js" defer></script>
+  </head>
+  <body class="timeline-prototype">
+    <main class="plan-page">
+      <header class="page-header">
+        <div>
+          <div class="breadcrumb">Builders’ Workbench <span>/</span> 版本计划</div>
+          <div class="title-line"><h1>示例项目 · v0.6</h1><span class="draft-badge">草案</span></div>
+          <p class="page-description">把版本要交付的结果，安排到共同的时间轴上。</p>
+        </div>
+        <span class="prototype-badge">交互原型 · 示例数据</span>
+      </header>
+
+      <section class="version-context" aria-label="版本目标和范围">
+        <div class="context-label">版本承诺</div>
+        <div><strong>让核心业务流程可用、可核对、可交付</strong><p>本版范围：核心流程、数据核对、交付准备。跨项目联动留待后续版本。</p></div>
+        <div class="version-period"><span>计划周期</span><strong>10 月 12 日 — 11 月 22 日</strong><small>2026 年 · 6 周</small></div>
+      </section>
+
+      <section class="plan-section" aria-labelledby="timeline-heading">
+        <div class="plan-toolbar">
+          <div class="toolbar-title"><h2 id="timeline-heading">版本时间轴</h2><span id="item-count"></span></div>
+          <div class="toolbar-actions">
+            <div class="scale-control" role="group" aria-label="时间刻度">
+              <button type="button" data-scale="week" aria-pressed="true">周</button>
+              <button type="button" data-scale="day" aria-pressed="false">日</button>
+            </div>
+            <button type="button" class="tl-button" id="add-milestone">＋ 里程碑</button>
+            <button type="button" class="tl-button tl-primary" id="add-item">＋ 交付项</button>
+          </div>
+        </div>
+        <div class="timeline-scroll" tabindex="0" aria-label="版本计划时间轴，可横向滚动">
+          <div class="timeline-grid" id="timeline-grid"></div>
+        </div>
+        <div class="timeline-footer">
+          <div class="legend"><span><i class="legend-bar"></i>计划时段</span><span><i class="legend-diamond"></i>里程碑</span><span><i class="legend-boundary"></i>迭代边界</span></div>
+          <span>点击交付项或里程碑，查看与修改计划。</span>
+        </div>
+      </section>
+      <p class="review-note">框架草案：示例日期与交付内容用于评审视图，不代表真实项目的版本承诺。</p>
+      <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+    </main>
+
+    <dialog id="plan-editor" aria-labelledby="editor-title">
+      <form id="editor-form">
+        <div class="editor-heading"><div><span id="editor-kind">交付项</span><h2 id="editor-title">编辑计划</h2></div><button type="button" class="close-button" id="close-editor" aria-label="关闭">×</button></div>
+        <label>名称<input name="name" required maxlength="60" /></label>
+        <div id="item-fields">
+          <label>所属版本目标<select name="group"></select></label>
+          <div class="form-row"><label>工作类型<select name="stage"><option>设计</option><option>开发</option><option>验证</option><option>交付</option></select></label><label>负责人<input name="owner" maxlength="30" placeholder="可选" /></label></div>
+        </div>
+        <div class="form-row"><label id="start-label">开始日期<input name="start" type="date" required /></label><label id="end-label">结束日期<input name="end" type="date" /></label></div>
+        <label id="outcome-label">交付结果<input name="outcome" required maxlength="160" /></label>
+        <p class="editor-note">本页修改仅用于原型演示，刷新后恢复示例。</p>
+        <p class="form-error" id="form-error" role="alert"></p>
+        <div class="editor-actions"><button class="tl-button" type="button" id="cancel-editor">取消</button><button class="tl-button tl-primary" type="submit">更新示例计划</button></div>
+      </form>
+    </dialog>
+  </body>
+</html>

@@ -2,6 +2,8 @@
 
 > 给接手开发、评审和验收的人读取。只记录认可、实现和证据缺口；有真实认可或运行结果时更新。价值见 [intent](intent.md)，行为见 [spec](spec.md)，工程设计见 [design](design.md)。
 
+当前新增设计方向：用户明确先形成版本执行计划的二维时间轴框架，再讨论与执行流串联。[时间轴原型](timeline-prototype.html) 与 [spec 的框架草案](spec.md#版本执行计划框架设计草案) 用示例表达版本范围、准备阶段、多迭代、交付项时段和里程碑条件；具体分组与交互待人评审。该原型仅在内存演示，生产页面、材料协议、Issue 关联及既有六环结论均未改变；不把框架草案计作已交付能力。
+
 目标平台为主干 main（原 bw-orca，2026-09-30 扶正）的 Electron/Orca 叠层。2026-09-24 用户合入 [设计 PR #264](https://github.com/forcegravity1989/builder-workbench/pull/264)，基线为 ba3955e6a9fa0dbf144096f5cb0609f2a89f39cb，并明确授权开工；产品方向与 v8 高保真作为实施输入，详细设计未逐项细审，未决项必须由实施窗口直接请用户确认。
 
 用户已确认本轮高保真并要求提交特性资产：计划与验收统一在右板首行提供协作卡片、“配置自动化”与启动按钮，原生标签栏不增加 BW 按钮；分支名移至页头，异常文件随同一启动入口带入会话。原型说明、首次/异常场景选择集中到页面末尾并明确不进入最终界面。该入口迁移已在 PR #279 实施：CycleStartCard 落地两屏首行，tab-bar-surface 的 CycleStartButton 薄挂载与 startMaterialRequest 独立通道已退役删除；数据问题上下文经 automation.runNow 的可选 oneShotPrompt 随保存提示单次合并递交（capability 门控）。组件/契约测试与静态检查通过，真壳未运行，不能视为真壳验证通过。
