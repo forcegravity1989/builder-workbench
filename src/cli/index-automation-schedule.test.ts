@@ -42,6 +42,13 @@ vi.mock('child_process', async () => {
 
 import { main } from './index'
 import { useWorktreeAwarenessEnvironment } from './index-test-harness'
+import {
+  buildWorktree,
+  okFixture,
+  queueFixtures,
+  worktreeListFixture,
+  workspaceDestinationFixtures
+} from './test-fixtures'
 
 describe('orca cli worktree awareness', () => {
   useWorktreeAwarenessEnvironment({
@@ -182,5 +189,167 @@ describe('orca cli worktree awareness', () => {
     expect(process.exitCode).toBe(1)
 
     process.exitCode = priorExitCode
+  })
+
+  it('creates a one-shot automation from --trigger once --at and refuses once without --at', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const priorExitCode = process.exitCode
+
+    // once 缺 --at：没有目标时刻的一次性无从调度，触达 runtime 前拒绝。
+    await main(
+      [
+        'automations',
+        'create',
+        '--name',
+        'Nightly check',
+        '--trigger',
+        'once',
+        '--prompt',
+        'Check the repo',
+        '--provider',
+        'codex',
+        '--json'
+      ],
+      '/tmp/repo'
+    )
+    expect(callMock).not.toHaveBeenCalled()
+    expect([...logSpy.mock.calls, ...errSpy.mock.calls].flat().join('\n')).toContain(
+      '--trigger once requires --at'
+    )
+
+    // once + 未来时刻：rrule 置空、onceAt 落目标时间，展示为 Once at 而非 Invalid schedule。
+    callMock.mockReset()
+    logSpy.mockClear()
+    errSpy.mockClear()
+    const at = new Date(Date.now() + 3 * 86_400_000)
+    queueFixtures(
+      callMock,
+      worktreeListFixture([buildWorktree('/tmp/repo/feature', 'feature/foo', 'abc', 'repo-1')]),
+      ...workspaceDestinationFixtures(),
+      okFixture('req_automation_create', {
+        automation: {
+          id: 'auto-1',
+          name: 'Nightly check',
+          prompt: 'Check the repo',
+          agentId: 'codex',
+          projectId: 'repo-1',
+          executionTargetType: 'local',
+          executionTargetId: 'local',
+          schedulerOwner: 'local_host_service',
+          workspaceMode: 'existing',
+          workspaceId: 'repo-1::/tmp/repo/feature',
+          baseBranch: null,
+          timezone: 'America/Toronto',
+          rrule: '',
+          dtstart: 1,
+          onceAt: at.getTime(),
+          enabled: true,
+          nextRunAt: at.getTime(),
+          missedRunPolicy: 'run_once_within_grace',
+          missedRunGraceMinutes: 720,
+          createdAt: 1,
+          updatedAt: 1
+        }
+      })
+    )
+
+    await main(
+      [
+        'automations',
+        'create',
+        '--name',
+        'Nightly check',
+        '--trigger',
+        'once',
+        '--at',
+        at.toISOString(),
+        '--prompt',
+        'Check the repo',
+        '--provider',
+        'codex'
+      ],
+      '/tmp/repo/feature/src'
+    )
+
+    expect(callMock).toHaveBeenNthCalledWith(
+      4,
+      'automation.create',
+      expect.objectContaining({
+        rrule: '',
+        onceAt: at.getTime(),
+        dtstart: expect.any(Number)
+      })
+    )
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('Once at')
+
+    process.exitCode = priorExitCode
+    logSpy.mockRestore()
+    errSpy.mockRestore()
+  })
+
+  // 间隔表达按引擎既定语义归一为分钟（MINUTELY 数学，dtstart 锚点）：
+  // HOURLY 分支不感知 INTERVAL，写 FREQ=HOURLY;INTERVAL=2 会实跑成每小时。
+  it.each([
+    { trigger: 'every 90m', rrule: 'FREQ=MINUTELY;INTERVAL=90' },
+    { trigger: 'every 2h', rrule: 'FREQ=MINUTELY;INTERVAL=120' }
+  ])('maps --trigger $trigger onto $rrule', async ({ trigger, rrule }) => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const priorExitCode = process.exitCode
+    queueFixtures(
+      callMock,
+      worktreeListFixture([buildWorktree('/tmp/repo/feature', 'feature/foo', 'abc', 'repo-1')]),
+      ...workspaceDestinationFixtures(),
+      okFixture('req_automation_create', {
+        automation: {
+          id: 'auto-1',
+          name: 'Interval check',
+          prompt: 'Check the repo',
+          agentId: 'codex',
+          projectId: 'repo-1',
+          executionTargetType: 'local',
+          executionTargetId: 'local',
+          schedulerOwner: 'local_host_service',
+          workspaceMode: 'existing',
+          workspaceId: 'repo-1::/tmp/repo/feature',
+          baseBranch: null,
+          timezone: 'America/Toronto',
+          rrule,
+          dtstart: 1,
+          enabled: true,
+          nextRunAt: 2,
+          missedRunPolicy: 'run_once_within_grace',
+          missedRunGraceMinutes: 720,
+          createdAt: 1,
+          updatedAt: 1
+        }
+      })
+    )
+
+    await main(
+      [
+        'automations',
+        'create',
+        '--name',
+        'Interval check',
+        '--trigger',
+        trigger,
+        '--prompt',
+        'Check the repo',
+        '--provider',
+        'codex',
+        '--json'
+      ],
+      '/tmp/repo/feature/src'
+    )
+
+    expect(callMock).toHaveBeenNthCalledWith(
+      4,
+      'automation.create',
+      expect.objectContaining({ rrule })
+    )
+
+    process.exitCode = priorExitCode
+    logSpy.mockRestore()
   })
 })

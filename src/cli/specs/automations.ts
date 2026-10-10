@@ -11,7 +11,7 @@ const AUTOMATION_TARGET_FLAGS = [
   'workspace-mode',
   'base-branch'
 ]
-const AUTOMATION_SCHEDULE_FLAGS = ['trigger', 'schedule', 'time', 'day', 'timezone']
+const AUTOMATION_SCHEDULE_FLAGS = ['trigger', 'schedule', 'time', 'at', 'day', 'timezone']
 const AUTOMATION_PRECHECK_FLAGS = ['precheck', 'precheck-timeout']
 const AUTOMATION_STATE_FLAGS = [
   'enabled',
@@ -41,7 +41,7 @@ export const AUTOMATION_COMMAND_SPECS: CommandSpec[] = [
     path: ['automations', 'create'],
     summary: 'Create a scheduled Orca automation',
     usage:
-      'orca automations create --name <name> --trigger <preset|cron|rrule> --prompt <text> --provider <agent> [--precheck <command>] [--repo <selector>|--workspace <selector>|--project <id> [--host <id>]|--project-host-setup <id>] [--json]',
+      'orca automations create --name <name> --trigger <preset|once|every|cron|rrule> [--at <ISO timestamp>] --prompt <text> --provider <agent> [--precheck <command>] [--repo <selector>|--workspace <selector>|--project <id> [--host <id>]|--project-host-setup <id>] [--json]',
     allowedFlags: [
       ...GLOBAL_FLAGS,
       'name',
@@ -53,7 +53,7 @@ export const AUTOMATION_COMMAND_SPECS: CommandSpec[] = [
       ...AUTOMATION_STATE_FLAGS
     ],
     notes: [
-      'Trigger accepts hourly, daily, weekdays, weekly, a 5-field cron expression, or an RRULE string.',
+      'Trigger accepts hourly, daily, weekdays, weekly, once (with --at <ISO timestamp>), every <N><m|h>, a 5-field cron expression, or an RRULE string.',
       'When --repo is omitted, the CLI uses the enclosing Orca worktree when one can be resolved from cwd.',
       'Use --project with --host, or --project-host-setup, to run on a specific project host setup.',
       '--host runtime:<environment-id> targets that paired Orca server; use the id from `orca environment list`, not the environment name.',
@@ -64,6 +64,8 @@ export const AUTOMATION_COMMAND_SPECS: CommandSpec[] = [
     ],
     examples: [
       'orca automations create --name "Daily review" --trigger daily --prompt "Review open changes" --provider codex',
+      'orca automations create --name "Release check" --trigger once --at 2026-10-11T09:00:00 --prompt "Verify the release" --provider claude',
+      'orca automations create --name "Interval check" --trigger "every 90m" --prompt "Check sync status" --provider codex',
       'orca automations create --name "Weekday triage" --trigger "0 9 * * 1-5" --prompt "Triage issues" --provider claude --repo my-repo',
       'orca automations create --name "PR review" --trigger hourly --precheck "gh pr list --json number -q .[0].number" --prompt "Review requested PRs" --provider codex'
     ]
@@ -71,7 +73,8 @@ export const AUTOMATION_COMMAND_SPECS: CommandSpec[] = [
   {
     path: ['automations', 'edit'],
     summary: 'Edit an Orca automation',
-    usage: 'orca automations edit <id> [--name <name>] [--trigger <preset|cron|rrule>] [--json]',
+    usage:
+      'orca automations edit <id> [--name <name>] [--trigger <preset|once|every|cron|rrule>] [--at <ISO timestamp>] [--json]',
     allowedFlags: [
       ...GLOBAL_FLAGS,
       'id',

@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-10 新增（定时任务：CLI 一次性与间隔触发表达）
+
+- **变更类型**：新增
+- **变更摘要**：`orca automations create/edit --trigger` 新增两类表达。`once --at <ISO时间戳>`：一次性任务，写 `onceAt`、rrule 置空；缺 `--at`、`--at` 非法或非未来时刻在触达 runtime 前拒绝，`--at` 只能配 `once`。`every <N><m|h>`：间隔任务，归一为 `FREQ=MINUTELY;INTERVAL=<分钟>`——引擎间隔语义是 MINUTELY 数学（dtstart 锚点），HOURLY 分支不感知 INTERVAL，按计划字面写 `FREQ=HOURLY;INTERVAL=2` 会实跑成每小时，故按引擎实际语义归一。编辑时 `--trigger` 显式清一次性（`onceAt: null`），支持循环⇄一次性互转（跨界切换次数清零由存储层既有逻辑处理）；建档不送空 onceAt。wire 侧两处修正：create 的 rrule 放行空串（一次性联立 superRefine 守门，无 onceAt 的空 rrule 仍拒）；update 的 rrule 改保空串（原 OptionalString 会把 `''` 折回 undefined，搁浅循环→一次性切换）。CLI 展示 once 感知：一次性任务显示「Once at \<ISO\>」而非「Invalid schedule」。
+- **涉及文件**：
+  - `src/cli/handlers/automation-schedule-flag.ts`（新增：调度触发解析独立模块——once/every 解析、`--at` 校验、循环分支返回 `onceAt: null`；自 handler-flags 抽出以过 max-lines 门禁）
+  - `src/cli/handlers/automation-handler-flags.ts`（摘除调度块，仅留 provider/enabled/reuse/precheck/source-context/workspace-mode）
+  - `src/cli/handlers/automations.ts`（create 剥离空 onceAt）
+  - `src/shared/rpc-contract/automation-params.ts`（create rrule 空串放行、update rrule 保空串）
+  - `src/cli/automation-format.ts`（`Once at` 展示标签）
+  - `src/cli/specs/automations.ts` / `src/cli/help.ts` / `src/cli/bundled-skill-guides.ts`（flag 注册、用法、帮助、内嵌指南同步）
+  - `src/cli/index-automation-schedule.test.ts`（新增 3 例）
+- **验证**：定向 10/10 绿；全 src/cli + automation 面 2278 通过、14 失败均为预存平台/叠层问题（parity 与 orchestration-gate 经 HEAD stash 基线复现同样失败，client-recovery 为 Windows Unix socket EACCES，均与本次改动无关）；`pnpm run typecheck` 三工程 exit 0；src/cli 不在 vitest-count-ratchet 桶内，无额度影响。
+
 ## 2026-10-10 优化（定时任务再审收窄：砍除虚假场景 + 调度器收口 + 字段回退）
 
 - **变更类型**：优化（范围收窄）/ 重构（调度器收口）/ 回退（字段摘除）

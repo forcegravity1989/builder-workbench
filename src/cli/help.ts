@@ -259,8 +259,9 @@ export function formatFlagHelp(flag: string): string {
     provider: '--provider <agent>     Agent id such as codex, claude, or gemini',
     'source-context':
       '--source-context <json|null> Explicit TaskSourceContext for automation task/provider data',
-    trigger: '--trigger <schedule>   Automation schedule preset, cron, or RRULE',
+    trigger: '--trigger <schedule>   Automation schedule preset, once, every N, cron, or RRULE',
     schedule: '--schedule <schedule>  Alias for --trigger',
+    at: '--at <ISO timestamp>   Target time used with the once trigger',
     time: '--time <HH:MM>        Time used with daily/weekdays/weekly presets',
     day: '--day <0-6>           Day used with weekly preset, Sunday=0',
     timezone: '--timezone <tz>       IANA timezone for the automation',
@@ -286,32 +287,15 @@ export function formatFlagHelp(flag: string): string {
     profile: '--profile <id>        Browser profile id',
     'show-profile': '--show-profile        Include tab profile in text output',
     'no-ua-spoof': "--no-ua-spoof         Keep Electron's native user agent",
-    format: '--format <png|jpeg>    Screenshot image format'
-  }
-
-  if (flag === 'current') {
-    return '--current              Use the current Orca worktree linked Linear issue'
-  }
-  if (flag === 'comments') {
-    return '--comments             Include threaded Linear comments'
-  }
-  if (flag === 'children') {
-    return '--children             Include recursive child issues'
-  }
-  if (flag === 'depth') {
-    return '--depth <n>            Child issue depth for --children/--full'
-  }
-  if (flag === 'attachments') {
-    return '--attachments          Include attachment metadata and URLs'
-  }
-  if (flag === 'relations') {
-    return '--relations            Include blocking, related, and duplicate links'
-  }
-  if (flag === 'activity') {
-    return '--activity             Include issue field-change history'
-  }
-  if (flag === 'full') {
-    return '--full                 Include all supported V1 issue context within caps'
+    format: '--format <png|jpeg>    Screenshot image format',
+    current: '--current              Use the current Orca worktree linked Linear issue',
+    comments: '--comments             Include threaded Linear comments',
+    children: '--children             Include recursive child issues',
+    depth: '--depth <n>            Child issue depth for --children/--full',
+    attachments: '--attachments          Include attachment metadata and URLs',
+    relations: '--relations            Include blocking, related, and duplicate links',
+    activity: '--activity             Include issue field-change history',
+    full: '--full                 Include all supported V1 issue context within caps'
   }
 
   return helpByFlag[flag] ?? `--${flag}`

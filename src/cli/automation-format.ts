@@ -29,6 +29,13 @@ export type AutomationShowPayload = {
 
 const ORPHAN_HOST_LABEL = 'orphan (no host can run this automation)'
 
+/** A one-shot has no recurrence to label; an empty rrule is its data, not an error. */
+function formatScheduleLabel(automation: Automation): string {
+  return automation.onceAt != null
+    ? `Once at ${new Date(automation.onceAt).toISOString()}`
+    : formatAutomationSchedule(automation.rrule)
+}
+
 function formatOwnerSelector(selector: AutomationOwnerPrecondition['selector']): string {
   if (selector.kind === 'ssh') {
     return `ssh:${selector.targetId} (generation ${selector.targetGeneration})`
@@ -54,7 +61,7 @@ export function formatAutomationList(result: AutomationListPayload): string {
       const status = automation.enabled ? 'enabled' : 'disabled'
       const item = hosts.get(automation.id)
       const host = item ? `\nhost: ${formatListItemSelector(item)}` : ''
-      return `${automation.id}  ${automation.name}  ${automation.agentId}  ${status}\n${formatAutomationSchedule(automation.rrule)}  next: ${new Date(automation.nextRunAt).toISOString()}${host}`
+      return `${automation.id}  ${automation.name}  ${automation.agentId}  ${status}\n${formatScheduleLabel(automation)}  next: ${new Date(automation.nextRunAt).toISOString()}${host}`
     })
     .join('\n\n')
 }
@@ -77,8 +84,10 @@ export function formatAutomationShow(result: AutomationShowPayload): string {
     `name: ${automation.name}`,
     `provider: ${automation.agentId}`,
     `enabled: ${automation.enabled}`,
-    `schedule: ${formatAutomationSchedule(automation.rrule)}`,
-    `rrule: ${automation.rrule}`,
+    `schedule: ${formatScheduleLabel(automation)}`,
+    automation.onceAt != null
+      ? `onceAt: ${new Date(automation.onceAt).toISOString()}`
+      : `rrule: ${automation.rrule}`,
     `precheck: ${
       automation.precheck
         ? `${automation.precheck.command} (timeout ${formatAutomationPrecheckTimeout(

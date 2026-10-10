@@ -42,10 +42,10 @@ import {
   getPrecheckFlag,
   getProviderFlag,
   getReuseSessionFlag,
-  getScheduleFlag,
   getSourceContextFlag,
   getWorkspaceModeFlag
 } from './automation-handler-flags'
+import { getScheduleFlag } from './automation-schedule-flag'
 
 type AutomationCreateParams = Omit<AutomationCreateInput, 'projectId' | 'timezone'> & {
   destination?: AutomationDestination
@@ -174,6 +174,8 @@ export const AUTOMATION_HANDLERS: Record<string, CommandHandler> = {
     if (!schedule) {
       throw new RuntimeClientError('invalid_argument', 'Missing required --trigger')
     }
+    // onceAt: null 是编辑语义（显式清一次性）；建档没有可清的，不送。
+    const { onceAt, ...scheduleFields } = schedule
     const target = await resolveDefaultTarget(flags, cwd, client)
     const sourceContext = getSourceContextFlag(flags)
     const workspaceMode =
@@ -194,7 +196,8 @@ export const AUTOMATION_HANDLERS: Record<string, CommandHandler> = {
       timezone: getOptionalStringFlag(flags, 'timezone'),
       enabled: getEnabledFlag(flags),
       missedRunGraceMinutes: getOptionalPositiveIntegerFlag(flags, 'missed-run-grace-minutes'),
-      ...schedule
+      ...scheduleFields,
+      ...(onceAt != null ? { onceAt } : {})
     } satisfies AutomationCreateParams
     const destination = await resolveAutomationDestination(client, target)
     const result = await client.call<{ automation: Automation }>('automation.create', {

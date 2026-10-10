@@ -6,7 +6,8 @@ import {
   OptionalPositiveInt,
   OptionalString,
   requiredNumber,
-  requiredString
+  requiredString,
+  requiredStringAllowingEmpty
 } from './rpc-param-primitives'
 import { normalizeExecutionHostId } from '../execution-host'
 import { isValidAutomationSchedule } from '../automation-schedule-parsing'
@@ -33,12 +34,7 @@ export const ExecutionHostId = requiredString('Missing host id').transform((valu
 })
 
 // 一次性触发时刻：存在即一次性（此时 rrule 必须为空）；null 显式清除回到循环。
-export const AutomationOnceAt = z
-  .number()
-  .int()
-  .positive()
-  .nullable()
-  .optional()
+export const AutomationOnceAt = z.number().int().positive().nullable().optional()
 
 export const AutomationPrecheck = z
   .object({
@@ -221,7 +217,9 @@ export const AutomationCreate = z
     setupDecision: SetupDecision,
     reuseSession: OptionalBoolean,
     timezone: OptionalString,
-    rrule: requiredString('Missing trigger'),
+    // Why allowing empty: a one-shot carries onceAt and an empty recurrence; the
+    // superRefine below is the gate that keeps empty rrule meaningful only then.
+    rrule: requiredStringAllowingEmpty('Missing trigger'),
     dtstart: requiredNumber('Missing trigger start time'),
     onceAt: AutomationOnceAt,
     enabled: OptionalBoolean,
@@ -261,7 +259,9 @@ export const AutomationUpdateFields = z
     setupDecision: SetupDecision,
     reuseSession: OptionalBoolean,
     timezone: OptionalString,
-    rrule: OptionalString,
+    // Why plain string: OptionalString folds '' back to undefined, which would
+    // strand a recurring automation's stored rrule against a new onceAt on edit.
+    rrule: OptionalPlainString,
     dtstart: requiredNumber('Missing trigger start time').optional(),
     onceAt: AutomationOnceAt,
     enabled: OptionalBoolean,
