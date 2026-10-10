@@ -36,8 +36,8 @@ export function createAutomationRunWriter(
       announce(run.automationId, result.usage ? 'usage' : 'run')
       return run
     },
-    repeatSkip: (automationId, error, scheduledFor): AutomationRun | null => {
-      const run = store.recordRepeatedAutomationSkip(automationId, error, scheduledFor)
+    repeatSkip: (automationId, error, scheduledFor, status): AutomationRun | null => {
+      const run = store.recordRepeatedAutomationSkip(automationId, error, scheduledFor, status)
       if (run) {
         announce(automationId, 'run')
       }

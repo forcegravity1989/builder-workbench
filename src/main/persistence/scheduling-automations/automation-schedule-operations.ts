@@ -30,3 +30,24 @@ export function getLatestAutomationOccurrence(
 ): number | null {
   return latestAutomationOccurrenceAtOrBefore(automation.rrule, automation.dtstart, now)
 }
+
+/** 实际派发记账：scheduledRunCount 是持久正本（历史会被保留策略裁剪，不能从
+ *  runs 数）。只在真实派发点调用；跳过/错过/手动不累计。 */
+export function recordAutomationScheduledDispatch(
+  state: PersistedState,
+  flush: () => void,
+  id: string,
+  now = Date.now()
+): void {
+  const index = (state.automations ?? []).findIndex((entry) => entry.id === id)
+  if (index === -1) {
+    return
+  }
+  // Replaced, not patched in place: the list projection caches on array identity.
+  state.automations = (state.automations ?? []).map((entry) =>
+    entry.id === id
+      ? { ...entry, scheduledRunCount: (entry.scheduledRunCount ?? 0) + 1, updatedAt: now }
+      : entry
+  )
+  flush()
+}

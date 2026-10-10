@@ -32,12 +32,14 @@ export const ExecutionHostId = requiredString('Missing host id').transform((valu
   return hostId
 })
 
-export const AutomationSchedule = requiredString('Missing trigger').refine(
-  isValidAutomationSchedule,
-  {
-    message: 'Invalid automation trigger'
-  }
-)
+// 一次性触发时刻：存在即一次性（此时 rrule 必须为空）；null 显式清除回到循环。
+export const AutomationOnceAt = z
+  .number()
+  .int()
+  .positive()
+  .nullable()
+  .optional()
+export const AutomationConcurrencyPolicy = z.enum(['skip', 'allow']).optional()
 
 export const AutomationPrecheck = z
   .object({
@@ -204,48 +206,88 @@ export const AutomationRuns = z.object({
   cursor: OptionalString
 })
 
-export const AutomationCreate = z.object({
-  creationKey: OptionalString,
-  name: requiredString('Missing automation name'),
-  prompt: requiredString('Missing automation prompt'),
-  precheck: AutomationPrecheck,
-  agentId: TuiAgent,
-  runContext: WorkspaceRunContext,
-  sourceContext: TaskSourceContext,
-  repo: OptionalString,
-  workspace: OptionalString,
-  workspaceMode: AutomationWorkspaceMode,
-  baseBranch: OptionalPlainString,
-  setupDecision: SetupDecision,
-  reuseSession: OptionalBoolean,
-  timezone: OptionalString,
-  rrule: AutomationSchedule,
-  dtstart: requiredNumber('Missing trigger start time'),
-  enabled: OptionalBoolean,
-  missedRunGraceMinutes: OptionalPositiveInt,
-  destination: Destination
-})
+export const AutomationCreate = z
+  .object({
+    creationKey: OptionalString,
+    name: requiredString('Missing automation name'),
+    prompt: requiredString('Missing automation prompt'),
+    precheck: AutomationPrecheck,
+    agentId: TuiAgent,
+    runContext: WorkspaceRunContext,
+    sourceContext: TaskSourceContext,
+    repo: OptionalString,
+    workspace: OptionalString,
+    workspaceMode: AutomationWorkspaceMode,
+    baseBranch: OptionalPlainString,
+    setupDecision: SetupDecision,
+    reuseSession: OptionalBoolean,
+    timezone: OptionalString,
+    rrule: requiredString('Missing trigger'),
+    dtstart: requiredNumber('Missing trigger start time'),
+    onceAt: AutomationOnceAt,
+    concurrencyPolicy: AutomationConcurrencyPolicy,
+    carryLastRunOutput: OptionalBoolean,
+    enabled: OptionalBoolean,
+    missedRunGraceMinutes: OptionalPositiveInt,
+    destination: Destination
+  })
+  .superRefine((value, ctx) => {
+    // 一次性与循环互斥：onceAt 存在则 rrule 必须为空；否则 rrule 必须是合法调度。
+    if (value.onceAt != null) {
+      if (value.rrule.trim() !== '') {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'A one-shot automation must not also carry a recurrence',
+          path: ['rrule']
+        })
+      }
+      return
+    }
+    if (!isValidAutomationSchedule(value.rrule)) {
+      ctx.addIssue({ code: 'custom', message: 'Invalid automation trigger', path: ['rrule'] })
+    }
+  })
 
-export const AutomationUpdateFields = z.object({
-  name: OptionalString,
-  prompt: OptionalString,
-  precheck: AutomationPrecheck,
-  agentId: TuiAgent.optional(),
-  runContext: WorkspaceRunContext,
-  sourceContext: TaskSourceContext,
-  repo: OptionalString,
-  workspace: OptionalString,
-  workspaceMode: AutomationWorkspaceMode,
-  // Why: update patches distinguish omitted from null so callers can clear a saved base branch.
-  baseBranch: OptionalNullablePlainString,
-  setupDecision: SetupDecision,
-  reuseSession: OptionalBoolean,
-  timezone: OptionalString,
-  rrule: AutomationSchedule.optional(),
-  dtstart: requiredNumber('Missing trigger start time').optional(),
-  enabled: OptionalBoolean,
-  missedRunGraceMinutes: OptionalPositiveInt
-})
+export const AutomationUpdateFields = z
+  .object({
+    name: OptionalString,
+    prompt: OptionalString,
+    precheck: AutomationPrecheck,
+    agentId: TuiAgent.optional(),
+    runContext: WorkspaceRunContext,
+    sourceContext: TaskSourceContext,
+    repo: OptionalString,
+    workspace: OptionalString,
+    workspaceMode: AutomationWorkspaceMode,
+    // Why: update patches distinguish omitted from null so callers can clear a saved base branch.
+    baseBranch: OptionalNullablePlainString,
+    setupDecision: SetupDecision,
+    reuseSession: OptionalBoolean,
+    timezone: OptionalString,
+    rrule: OptionalString,
+    dtstart: requiredNumber('Missing trigger start time').optional(),
+    onceAt: AutomationOnceAt,
+    concurrencyPolicy: AutomationConcurrencyPolicy,
+    carryLastRunOutput: OptionalBoolean,
+    enabled: OptionalBoolean,
+    missedRunGraceMinutes: OptionalPositiveInt
+  })
+  .superRefine((value, ctx) => {
+    // 联立规则只判本次请求；合并态（如清除 onceAt 而不带新 rrule）由存储层守门。
+    if (value.onceAt != null) {
+      if (value.rrule !== undefined && value.rrule.trim() !== '') {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'A one-shot automation must not also carry a recurrence',
+          path: ['rrule']
+        })
+      }
+      return
+    }
+    if (value.rrule !== undefined && !isValidAutomationSchedule(value.rrule)) {
+      ctx.addIssue({ code: 'custom', message: 'Invalid automation trigger', path: ['rrule'] })
+    }
+  })
 
 export const AutomationUpdate = z.object({
   id: requiredString('Missing automation id'),

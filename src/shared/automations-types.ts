@@ -247,11 +247,13 @@ export type AutomationUpdateInput = Partial<
     | 'dtstart'
     | 'enabled'
     | 'missedRunGraceMinutes'
-    | 'onceAt'
     | 'concurrencyPolicy'
     | 'carryLastRunOutput'
   >
->
+> & {
+  /** 一次性时刻：null 显式清除（一次性⇄循环切换），undefined 未提供。 */
+  onceAt?: number | null
+}
 
 export type AutomationDispatchRequest = {
   automation: Automation

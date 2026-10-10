@@ -49,7 +49,9 @@ export const AUTOMATION_METHODS = [
     name: 'automation.create',
     params: AutomationCreate,
     handler: async (params, { runtime }) => ({
-      automation: await runtime.createAutomation(params)
+      // wire 的 onceAt: null 等同未提供（一次性建档只认正数时刻），边界归一避免
+      // 空值流入内部类型；update 不归一——null 在那里是显式清除信号。
+      automation: await runtime.createAutomation({ ...params, onceAt: params.onceAt ?? undefined })
     })
   }),
   defineMethod({

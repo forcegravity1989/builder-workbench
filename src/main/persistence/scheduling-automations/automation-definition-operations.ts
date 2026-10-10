@@ -105,8 +105,17 @@ export function createAutomation(
     timezone: input.timezone,
     rrule: input.rrule,
     dtstart: input.dtstart,
+    // 一次性建档：nextRunAt 直写 onceAt，不走出现计算（design「调度解析」）。
+    ...(input.onceAt != null ? { onceAt: input.onceAt } : {}),
+    ...(input.concurrencyPolicy ? { concurrencyPolicy: input.concurrencyPolicy } : {}),
+    ...(input.carryLastRunOutput !== undefined
+      ? { carryLastRunOutput: input.carryLastRunOutput }
+      : {}),
     enabled: input.enabled ?? true,
-    nextRunAt: nextAutomationOccurrenceAfter(input.rrule, input.dtstart, now),
+    nextRunAt:
+      input.onceAt != null
+        ? input.onceAt
+        : nextAutomationOccurrenceAfter(input.rrule, input.dtstart, now),
     missedRunPolicy: 'run_once_within_grace',
     missedRunGraceMinutes: input.missedRunGraceMinutes ?? 720,
     createdAt: now,
@@ -155,9 +164,27 @@ export function updateAutomation(
   const schedulerOwner =
     selectorMoveRequested && repo ? getAutomationSchedulerOwner(repo) : current.schedulerOwner
   const contexts = getAutomationContextsForRepo(repo, operations.state.projectHostSetups ?? [])
+  const onceAt = Object.hasOwn(definedUpdates, 'onceAt')
+    ? (definedUpdates.onceAt ?? undefined)
+    : current.onceAt
   const rrule = updates.rrule ?? current.rrule
   const dtstart = updates.dtstart ?? current.dtstart
-  const scheduleChanged = updates.rrule !== undefined || updates.dtstart !== undefined
+  const scheduleChanged =
+    updates.rrule !== undefined ||
+    updates.dtstart !== undefined ||
+    Object.hasOwn(definedUpdates, 'onceAt')
+  // 一次性 ⇄ 循环是两种生命周期：跨界切换时次数清零，改上限/改时间不清（spec「改大
+  //  复活、改小到数」没有特例逻辑，清零只发生在生命周期种类切换）。
+  const lifecycleKindChanged =
+    Object.hasOwn(definedUpdates, 'onceAt') &&
+    (current.onceAt != null) !== (onceAt != null)
+  // 联立校验在合并态上做：schema 只看得见本次请求，跨界切换的完整性由存储层守门。
+  if (onceAt != null && rrule.trim() !== '') {
+    throw new Error('A one-shot automation must not also carry a recurrence.')
+  }
+  if (onceAt == null && rrule.trim() === '') {
+    throw new Error('A recurring automation requires a schedule.')
+  }
   const workspaceMode = updates.workspaceMode ?? current.workspaceMode
   const merged: Automation = {
     ...current,
@@ -209,10 +236,14 @@ export function updateAutomation(
       workspaceMode === 'existing'
         ? (updates.reuseSession ?? current.reuseSession ?? false)
         : false,
+    onceAt: onceAt ?? undefined,
+    ...(lifecycleKindChanged ? { scheduledRunCount: 0 } : {}),
     rrule,
     dtstart,
     nextRunAt: scheduleChanged
-      ? nextAutomationOccurrenceAfter(rrule, dtstart, Date.now())
+      ? onceAt != null
+        ? onceAt
+        : nextAutomationOccurrenceAfter(rrule, dtstart, Date.now())
       : current.nextRunAt,
     updatedAt: Date.now()
   }

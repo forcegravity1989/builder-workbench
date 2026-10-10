@@ -121,7 +121,8 @@ export function recordRepeatedAutomationSkip(
   operations: AutomationRunOperations,
   automationId: string,
   error: string,
-  scheduledFor: number
+  scheduledFor: number,
+  status: 'skipped_unavailable' | 'skipped_overlap' = 'skipped_unavailable'
 ): AutomationRun | null {
   const runs = operations.state.automationRuns ?? []
   const latest = runs
@@ -130,9 +131,10 @@ export function recordRepeatedAutomationSkip(
       (newest, run) => (!newest || run.createdAt > newest.createdAt ? run : newest),
       null
     )
+  // 同因折叠 = 同 status + 同 error 文本；skipped_overlap 复用同一折叠机制，防高频任务刷爆历史。
   if (
     !latest ||
-    latest.status !== 'skipped_unavailable' ||
+    latest.status !== status ||
     latest.trigger !== 'scheduled' ||
     latest.error !== error
   ) {
@@ -190,6 +192,9 @@ export function updateAutomationRun(
     outputSnapshot: Object.hasOwn(result, 'outputSnapshot')
       ? normalizeAutomationRunOutputSnapshot(result.outputSnapshot)
       : normalizeAutomationRunOutputSnapshot(current.outputSnapshot),
+    promptSnapshot: Object.hasOwn(result, 'promptSnapshot')
+      ? (result.promptSnapshot ?? null)
+      : (current.promptSnapshot ?? null),
     precheckResult: Object.hasOwn(result, 'precheckResult')
       ? normalizeAutomationPrecheckResult(result.precheckResult)
       : normalizeAutomationPrecheckResult(current.precheckResult),

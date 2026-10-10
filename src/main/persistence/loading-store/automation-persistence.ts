@@ -37,7 +37,8 @@ import {
 } from '../scheduling-automations/automation-run-operations'
 import {
   advanceAutomationNextRun as advanceAutomationNextRunOperation,
-  getLatestAutomationOccurrence as getLatestAutomationOccurrenceOperation
+  getLatestAutomationOccurrence as getLatestAutomationOccurrenceOperation,
+  recordAutomationScheduledDispatch as recordAutomationScheduledDispatchOperation
 } from '../scheduling-automations/automation-schedule-operations'
 import {
   assertAutomationOwnerFence as assertAutomationOwnerFenceOperation,
@@ -170,13 +171,15 @@ export class AutomationPersistence {
   recordRepeatedAutomationSkip(
     automationId: string,
     error: string,
-    scheduledFor: number
+    scheduledFor: number,
+    status?: 'skipped_unavailable' | 'skipped_overlap'
   ): AutomationRun | null {
     return recordRepeatedAutomationSkipOperation(
       getAutomationRunOperations(this),
       automationId,
       error,
-      scheduledFor
+      scheduledFor,
+      status
     )
   }
 
@@ -194,6 +197,15 @@ export class AutomationPersistence {
 
   advanceAutomationNextRun(id: string, now = Date.now()): Automation {
     return advanceAutomationNextRunOperation(
+      this[automationPersistenceContext].runtime.state,
+      () => this[automationPersistenceContext].flushBarriers.flush(),
+      id,
+      now
+    )
+  }
+
+  recordAutomationScheduledDispatch(id: string, now = Date.now()): void {
+    recordAutomationScheduledDispatchOperation(
       this[automationPersistenceContext].runtime.state,
       () => this[automationPersistenceContext].flushBarriers.flush(),
       id,
