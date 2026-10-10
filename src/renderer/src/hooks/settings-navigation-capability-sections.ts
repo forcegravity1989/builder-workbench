@@ -10,7 +10,7 @@ import { OrcaLogoSettingsIcon } from '@/components/settings/orca-logo-settings-i
 import { getOrchestrationPaneSearchEntries } from '@/components/settings/orchestration-search'
 import { getVoicePaneSearchEntries } from '@/components/settings/voice-pane-search'
 import { translate } from '@/i18n/i18n'
-import { workbenchConnectorNavSections } from '@/workbench/connectors/connectors-settings'
+import { workbenchAgentConnectorSearchEntries } from '@/workbench/connectors/connectors-settings'
 import type { SettingsNavSection } from '@/lib/settings-navigation-types'
 import {
   Blocks,
@@ -73,7 +73,6 @@ export function buildCapabilitySettingsSections({
       }),
       group: 'capabilities'
     },
-    ...workbenchConnectorNavSections(),
     // Why: only surfaced once Linear is connected — a capability that needs a
     // linked provider before the agent skill has anything to act on.
     ...(isLinearConnected
@@ -193,7 +192,10 @@ export function buildSetupSettingsSections({
         'Connect GitHub, GitLab, Linear, and source-hosting services.'
       ),
       icon: Blocks,
-      searchEntries: getIntegrationsPaneSearchEntries(),
+      searchEntries: [
+        ...getIntegrationsPaneSearchEntries(),
+        ...workbenchAgentConnectorSearchEntries()
+      ],
       group: 'setup'
     }
   ]

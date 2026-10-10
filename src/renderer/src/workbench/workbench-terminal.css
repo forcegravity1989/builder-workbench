@@ -3,12 +3,14 @@ html[data-skin='ds'] {
   --orca-pane-title-height: 28px;
 }
 
+/* Title bars also carry the drop-target attribute; chromeless ones float over the
+   first terminal rows, so painting them hides the prompt. */
 html[data-skin='ds'] .pane-manager-root,
-html[data-skin='ds'] [data-native-file-drop-target='terminal'] {
+html[data-skin='ds'] [data-native-file-drop-target='terminal']:not(.pane-title-bar) {
   background: var(--color-card);
 }
 
-html[data-skin='ds'] .pane-title-bar {
+html[data-skin='ds'] .pane-title-bar:not([data-chromeless]) {
   background: var(--color-card) !important;
   color: var(--color-neutral-700);
   border-bottom-color: var(--color-divider);

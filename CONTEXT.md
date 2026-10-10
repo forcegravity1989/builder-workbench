@@ -15,8 +15,8 @@
 | 术语 | 含义与边界 | 相关正本 |
 |---|---|---|
 | Builder / 构建者 | 使用 Workbench、负责方向和验收的人；普通说明可称“用户” | [产品主张][claim] |
-| Connector / 连接器 | 执行工具（Claude Code、Codex）接入外部服务用的 MCP 服务，配置在执行工具自己那里；已添加、已登录、连得上是三种不同状态 | [Connector 规格][connectors] |
-| 开工工具 / Agent CLI | 执行工作的工具，如 Claude Code、Codex、Cursor、Open Design；不等于其调用的模型 | [会话与执行][session] |
+| Connector / 连接器 | 外部工具与服务的统称，Orca 界面上叫「集成」；含开工工具、仓库平台 CLI、项目群工具、执行工具接入的 MCP 服务及 Orca 会话宿主；配置/安装不等于连通或登录 | [桌面壳][shell]、[集成规格][connectors] |
+| 开工工具 / Agent CLI | 执行工作的工具，如 Claude Code、Cursor、Open Design；属于 Connector，不等于其调用的模型 | [会话与执行][session] |
 | 插件 / Plugin | 外部技能库的分发包，不等于单个技能或工作流；设置页列出不等于支持安装、更新或启停 | [技能与蒸馏][skills] |
 | 技能 / Skill | 可复用做法包，含 SKILL.md 及支撑文件；列出、被引用与实际注入是不同状态 | [技能与蒸馏][skills] |
 | 工作流 / Workflow | 一类工作的步骤与技能组合；现行类别选择默认工作流，不是通用聊天流程引擎 | [技能与蒸馏][skills] |

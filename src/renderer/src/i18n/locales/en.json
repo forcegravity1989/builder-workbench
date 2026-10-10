@@ -10551,16 +10551,12 @@
                 "cards": {
                   "d5b3be8ecd": "Re-check",
                   "8cbc39f862": "Learn more",
-                  "707180d09c": "glab auth login",
-                  "4be0616873": "The GitLab CLI is installed but not authenticated. Run this command in a terminal:",
                   "54a640af7a": "Install GitLab CLI",
                   "b56fd5676a": "Install the GitLab CLI to enable merge requests, issues, and pipelines.",
                   "faddeb763d": "GitLab CLI status is not available in this runtime yet.",
                   "a47f71e357": "CLI.",
                   "2a6b359e75": "glab",
                   "1f2b347bd3": "Merge requests, issues, todos, and pipelines via the",
-                  "8d90249d22": "gh auth login",
-                  "2e44dda68a": "The GitHub CLI is installed but not authenticated. Run this command in a terminal:",
                   "7755c28af5": "Install GitHub CLI",
                   "23cb5a0dee": "Install the GitHub CLI to enable pull requests, issues, and checks.",
                   "6f30fc4216": "GitHub CLI status is not available in this runtime yet.",
@@ -10574,7 +10570,14 @@
                   "codehubDescription": "Issues and merge requests via the",
                   "codehubAvailable": "Available",
                   "codehubUnavailable": "codehub-cli status is not available in this runtime yet.",
-                  "codehubMissing": "codehub-cli is not on PATH."
+                  "codehubMissing": "codehub-cli is not on PATH.",
+                  "signIn": "Sign in",
+                  "installGuide": "Install guide",
+                  "ghSignInNeeded": "The GitHub CLI is installed but not signed in. You can also run this in any terminal:",
+                  "glabSignInNeeded": "The GitLab CLI is installed but not signed in. You can also run this in any terminal:",
+                  "codehubAuthStatus": "Check sign-in",
+                  "codehubSignInHint": "Sign-in is not checked automatically.",
+                  "codehubMissingNext": "Get it from your team’s distribution channel, then re-check."
                 }
               }
             }
@@ -11722,6 +11725,10 @@
           "targetDescription": "Higher values increase contrast where possible. Background colors stay unchanged.",
           "subtle": "Subtle",
           "strong": "Strong"
+        },
+        "IntegrationSetupTerminal": {
+          "description": "The command is filled in. Press Enter to run it; sign-ins open your browser and finish when you approve.",
+          "done": "Done"
         }
       },
       "right": {

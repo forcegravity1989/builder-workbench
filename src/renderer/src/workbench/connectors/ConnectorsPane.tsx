@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LoaderCircle, Plus, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { OnboardingInlineCommandTerminal } from '@/components/onboarding/OnboardingInlineCommandTerminal'
+import {
+  IntegrationSetupTerminal,
+  useSetupTerminalShell
+} from '@/components/settings/IntegrationSetupTerminal'
 import { useDetectedAgents } from '@/hooks/useDetectedAgents'
 import { useAppStore } from '@/store'
 import {
@@ -28,16 +31,6 @@ type Running = { commandLine: string; title: string }
 
 type Loaded = ConnectorListResult & { forRepo: string | null }
 
-function useConnectorShell(): { shell: ConnectorShell; shellOverride: string | undefined } {
-  return useMemo(() => {
-    // 命令按 PowerShell 语法拼；Windows 上不论默认终端是什么都钉 PowerShell。
-    const isWindows = window.api.platform.get().platform === 'win32'
-    return isWindows
-      ? { shell: 'powershell', shellOverride: 'powershell.exe' }
-      : { shell: 'posix', shellOverride: undefined }
-  }, [])
-}
-
 function useActiveRepo(): { id: string; name: string } | null {
   const activeRepoId = useAppStore((s) => s.activeRepoId)
   const repo = useAppStore((s) => s.repos.find((r) => r.id === activeRepoId))
@@ -46,7 +39,7 @@ function useActiveRepo(): { id: string; name: string } | null {
 
 export function ConnectorsPane(): React.JSX.Element {
   const activeRepo = useActiveRepo()
-  const { shell, shellOverride } = useConnectorShell()
+  const shell: ConnectorShell = useSetupTerminalShell().family
   const detection = useDetectedAgents(null)
   const installedAgents = useMemo(
     () => AGENTS.filter((a) => detection.detectedIds?.includes(a)),
@@ -126,11 +119,6 @@ export function ConnectorsPane(): React.JSX.Element {
       `移除 ${row.name}`
     )
   }
-  const finishRun = (): void => {
-    setRunning(null)
-    setAdding(false)
-    void reload()
-  }
 
   return (
     <div className="space-y-4">
@@ -162,24 +150,16 @@ export function ConnectorsPane(): React.JSX.Element {
       </div>
 
       {running ? (
-        <div className="space-y-2">
-          <OnboardingInlineCommandTerminal
-            key={running.commandLine}
-            command={running.commandLine}
-            title={running.title}
-            description="命令已填入终端，按回车执行。需要登录的会打开浏览器，授权完成后终端才结束。"
-            ariaLabel={running.title}
-            shellOverride={shellOverride}
-            forceHostRuntime
-            onCommandFinished={() => void reload()}
-            onTerminalExit={finishRun}
-          />
-          <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={finishRun}>
-              完成
-            </Button>
-          </div>
-        </div>
+        <IntegrationSetupTerminal
+          id="agent-connectors"
+          command={running.commandLine}
+          title={running.title}
+          onCheck={() => void reload()}
+          onClose={() => {
+            setRunning(null)
+            setAdding(false)
+          }}
+        />
       ) : adding ? (
         detection.detectedIds === null ? (
           <p className="text-xs text-muted-foreground">正在检测本机执行工具…</p>

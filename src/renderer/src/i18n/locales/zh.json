@@ -9295,22 +9295,33 @@
                 "cards": {
                   "d5b3be8ecd": "重新检查",
                   "8cbc39f862": "了解更多",
-                  "707180d09c": "glab auth login",
-                  "4be0616873": "GitLab CLI 已安装但未通过身份验证。请在终端中运行此命令：",
                   "54a640af7a": "安装 GitLab CLI",
                   "b56fd5676a": "安装 GitLab CLI 以启用合并请求、议题和流水线。",
                   "faddeb763d": "此运行时暂不支持 GitLab CLI 状态。",
                   "a47f71e357": "CLI。",
                   "2a6b359e75": "glab",
                   "1f2b347bd3": "通过",
-                  "8d90249d22": "gh auth login",
-                  "2e44dda68a": "GitHub CLI 已安装但未通过身份验证。请在终端中运行此命令：",
                   "7755c28af5": "安装 GitHub CLI",
                   "23cb5a0dee": "安装 GitHub CLI 以启用拉取请求、议题和检查。",
                   "6f30fc4216": "此运行时暂不支持 GitHub CLI 状态。",
                   "6b2cfb52b4": "gh",
                   "b4d900e7f1": "通过",
-                  "account_scope_prefix": "账户范围"
+                  "account_scope_prefix": "账户范围",
+                  "signIn": "登录",
+                  "installGuide": "安装说明",
+                  "ghSignInNeeded": "GitHub CLI 已安装但还没登录。也可以在任意终端运行：",
+                  "glabSignInNeeded": "GitLab CLI 已安装但还没登录。也可以在任意终端运行：",
+                  "codehubAuthStatus": "查看登录状态",
+                  "codehubSignInHint": "登录状态不自动检测。",
+                  "codehubMissingNext": "从团队的分发渠道获取安装包，装好后点「重新检查」。",
+                  "statusConnected": "已连接",
+                  "statusNotInstalled": "未安装",
+                  "statusNotAuthenticated": "未登录",
+                  "statusUnavailable": "不可用",
+                  "codehubDescription": "通过",
+                  "codehubAvailable": "可用",
+                  "codehubUnavailable": "当前运行环境还拿不到 codehub-cli 状态。",
+                  "codehubMissing": "codehub-cli 不在 PATH 上。"
                 }
               }
             }
@@ -10182,6 +10193,10 @@
           "saveFailed": "无法保存可见性默认设置。",
           "updateServer": "请更新此服务器以配置来源默认设置。",
           "updateServerDefaults": "请更新此服务器以配置可见性默认设置。"
+        },
+        "IntegrationSetupTerminal": {
+          "description": "命令已填入终端，按回车执行。需要登录的会打开浏览器，授权完成后才结束。",
+          "done": "完成"
         }
       },
       "right": {

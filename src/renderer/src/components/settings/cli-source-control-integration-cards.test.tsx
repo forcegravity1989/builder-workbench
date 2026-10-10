@@ -54,6 +54,11 @@ let root: Root | null = null
 let container: HTMLDivElement | null = null
 
 async function renderCard(card: React.ReactNode): Promise<HTMLDivElement> {
+  // Cards pick install commands by platform and open docs through the preload bridge.
+  ;(window as unknown as { api: unknown }).api = {
+    platform: { get: () => ({ platform: 'darwin' }) },
+    shell: { openUrl: vi.fn() }
+  }
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -73,6 +78,7 @@ describe('CLI source-control integration card account scope', () => {
     root = null
     container?.remove()
     container = null
+    delete (window as unknown as { api?: unknown }).api
     mocks.store.current = null
     mocks.preflight.statuses.ghStatus = 'connected'
     mocks.preflight.statuses.glabStatus = 'connected'
@@ -130,7 +136,7 @@ describe('CLI source-control integration card account scope', () => {
     expect(rendered.textContent).toContain('glab auth login')
   })
 
-  it('shows codehub-cli as available without an auth action', async () => {
+  it('offers codehub-cli sign-in actions without claiming a sign-in state', async () => {
     mocks.store.current = {
       settings: { activeRuntimeEnvironmentId: null },
       openSettingsPage: vi.fn(),
@@ -142,7 +148,9 @@ describe('CLI source-control integration card account scope', () => {
     expect(rendered.textContent).toContain('CodeHub')
     expect(rendered.textContent).toContain('Available')
     expect(rendered.textContent).toContain('codehub-cli')
-    expect(rendered.textContent).not.toContain('auth login')
+    expect(rendered.textContent).toContain('Sign in')
+    expect(rendered.textContent).toContain('Check sign-in')
+    expect(rendered.textContent).not.toContain('Connected')
     expect(rendered.textContent).not.toContain('Account scope')
   })
 

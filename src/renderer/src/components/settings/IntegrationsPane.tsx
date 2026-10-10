@@ -9,6 +9,7 @@ import {
 import { JiraIntegrationCard, LinearIntegrationCard } from './task-tracker-integration-cards'
 import { useIntegrationProviderStatusRefresh } from './use-integration-provider-status-refresh'
 import { translate } from '@/i18n/i18n'
+import { WorkbenchAgentConnectorsSection } from '@/workbench/connectors/connectors-settings'
 export { getIntegrationsPaneSearchEntries } from './integrations-search'
 
 export function IntegrationsPane(): React.JSX.Element {
@@ -55,6 +56,8 @@ export function IntegrationsPane(): React.JSX.Element {
           <JiraIntegrationCard />
         </div>
       </section>
+
+      <WorkbenchAgentConnectorsSection />
     </div>
   )
 }

@@ -1,52 +1,37 @@
-import { Plug } from 'lucide-react'
-import { SettingsSection } from '@/components/settings/SettingsSection'
-import type { SettingsRenderContext } from '@/components/settings/settings-render-context'
-import type { SettingsNavSection } from '@/lib/settings-navigation-types'
+import { SearchableSetting } from '@/components/settings/SearchableSetting'
+import type { SettingsSearchEntry } from '@/components/settings/settings-search'
 import { isWorkbenchShell } from '../is-workbench-shell'
 import { ConnectorsPane } from './ConnectorsPane'
 
-// Orca 设置页的薄挂载：导航元数据与分节渲染各一处调用，只在 Workbench 壳里出现。
-const SECTION_ID = 'connectors'
-const TITLE = 'Connector'
-const DESCRIPTION = '让 Claude Code、Codex 读写外部服务：挑选、安装、登录、查看状态。'
+// 集成页的薄挂载：执行工具接入外部服务（MCP）作为集成页的一节，只在 Workbench 壳出现。
 
-export function workbenchConnectorNavSections(): SettingsNavSection[] {
-  if (!isWorkbenchShell()) {
-    return []
-  }
-  return [
-    {
-      id: SECTION_ID,
-      title: TITLE,
-      description: DESCRIPTION,
-      icon: Plug,
-      searchEntries: [
-        {
-          title: TITLE,
-          description: DESCRIPTION,
-          keywords: ['connector', 'mcp', '连接器', 'linear', 'notion', 'jira', 'sentry', 'figma']
-        }
-      ],
-      group: 'capabilities'
-    }
-  ]
+const SECTION_ID = 'workbench-agent-connectors'
+
+const SEARCH_ENTRY: SettingsSearchEntry = {
+  title: '执行工具的外部服务',
+  description: 'Claude Code、Codex 接入的 MCP 服务',
+  keywords: ['connector', 'mcp', '连接器', 'linear', 'notion', 'jira', 'sentry', 'figma'],
+  targetSectionId: SECTION_ID
 }
 
-export function renderWorkbenchConnectorsSettingsSection(
-  context: SettingsRenderContext
-): React.JSX.Element | null {
+export function workbenchAgentConnectorSearchEntries(): SettingsSearchEntry[] {
+  return isWorkbenchShell() ? [SEARCH_ENTRY] : []
+}
+
+export function WorkbenchAgentConnectorsSection(): React.JSX.Element | null {
   if (!isWorkbenchShell()) {
     return null
   }
-  const { navigation, view } = context
   return (
-    <SettingsSection
+    <SearchableSetting
+      title={SEARCH_ENTRY.title}
+      description={SEARCH_ENTRY.description}
+      keywords={SEARCH_ENTRY.keywords}
+      className="max-w-none space-y-3"
       id={SECTION_ID}
-      title={TITLE}
-      description={DESCRIPTION}
-      searchEntries={navigation.getSectionSearchEntries(SECTION_ID)}
     >
-      {view.isSectionMounted(SECTION_ID) ? <ConnectorsPane /> : null}
-    </SettingsSection>
+      <h3 className="text-sm font-semibold text-foreground">执行工具的外部服务</h3>
+      <ConnectorsPane />
+    </SearchableSetting>
   )
 }
