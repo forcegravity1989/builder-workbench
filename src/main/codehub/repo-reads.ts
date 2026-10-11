@@ -17,6 +17,13 @@ export type CodeHubFileRead =
   /** 其他失败：CLI 缺失、未登录、网络、无权限。 */
   | { kind: 'failed'; error: string }
 
+export type CodeHubProjectView =
+  | { kind: 'available'; defaultBranch: string | null }
+  /** 项目明确不存在；权限、登录、网络和超时不能落到这个结果。 */
+  | { kind: 'no-repo'; error: string }
+  /** 查询没有完成，调用方应向用户呈现失败原因。 */
+  | { kind: 'failed'; error: string }
+
 /**
  * `--jq` 输出是 JSON 编码值（如 `'"master"'`）；带引号直接当 `--ref` 会 404 Commit Not Found，
  * 必须剥掉编码才是可用的分支名。
@@ -31,6 +38,24 @@ function parseJqString(text: string): string | null {
   } catch {
     return text.trim()
   }
+}
+
+function projectViewError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+function classifyProjectViewError(message: string): 'no-repo' | 'failed' {
+  const lower = message.toLowerCase()
+  if (
+    /\b404\b/.test(lower) ||
+    lower.includes('project not found') ||
+    lower.includes('repository not found') ||
+    lower.includes('no such project') ||
+    lower.includes('project does not exist')
+  ) {
+    return 'no-repo'
+  }
+  return 'failed'
 }
 
 export async function fetchCodeHubRepoFileRaw(args: {
@@ -79,21 +104,21 @@ export async function fetchCodeHubRepoFileRaw(args: {
 export async function viewCodeHubProject(args: {
   remote: CodeHubRemote
   execOptions?: CodeHubExecOptions
-}): Promise<{ exists: boolean; defaultBranch: string | null; error: string | null }> {
+}): Promise<CodeHubProjectView> {
   try {
     const stdout = await runCodeHubCli(
       ['project', 'view', ...projectArgs(args.remote), '--jq', '.default_branch'],
       args.execOptions
     )
-    return { exists: true, defaultBranch: parseJqString(stdout.trim()), error: null }
+    return { kind: 'available', defaultBranch: parseJqString(stdout.trim()) }
   } catch (first) {
     // --jq 形态不可用或查询失败:退回裸 project view(main 正本 probe_repo)判存在性。
     try {
       await runCodeHubCli(['project', 'view', ...projectArgs(args.remote)], args.execOptions)
-      return { exists: true, defaultBranch: null, error: null }
-    } catch {
-      const message = first instanceof Error ? first.message : String(first)
-      return { exists: false, defaultBranch: null, error: message }
+      return { kind: 'available', defaultBranch: null }
+    } catch (second) {
+      const message = projectViewError(second) || projectViewError(first)
+      return { kind: classifyProjectViewError(message), error: message }
     }
   }
 }

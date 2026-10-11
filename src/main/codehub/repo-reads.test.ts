@@ -21,21 +21,19 @@ describe('viewCodeHubProject', () => {
     // codehub-cli --jq 输出 JSON 编码字符串（'"master"'）；带引号当 ref 会 404 Commit Not Found。
     runCodeHubCliMock.mockResolvedValue('"master"\n')
     const view = await viewCodeHubProject({ remote })
-    expect(view).toEqual({ exists: true, defaultBranch: 'master', error: null })
+    expect(view).toEqual({ kind: 'available', defaultBranch: 'master' })
   })
 
   it('treats empty or null --jq output as unknown default branch', async () => {
     runCodeHubCliMock.mockResolvedValue('')
     await expect(viewCodeHubProject({ remote })).resolves.toEqual({
-      exists: true,
-      defaultBranch: null,
-      error: null
+      kind: 'available',
+      defaultBranch: null
     })
     runCodeHubCliMock.mockResolvedValue('null')
     await expect(viewCodeHubProject({ remote })).resolves.toEqual({
-      exists: true,
-      defaultBranch: null,
-      error: null
+      kind: 'available',
+      defaultBranch: null
     })
   })
 
@@ -44,7 +42,27 @@ describe('viewCodeHubProject', () => {
       .mockRejectedValueOnce(new Error('unknown flag: --jq'))
       .mockResolvedValueOnce('{}')
     const view = await viewCodeHubProject({ remote })
-    expect(view).toEqual({ exists: true, defaultBranch: null, error: null })
+    expect(view).toEqual({ kind: 'available', defaultBranch: null })
+  })
+
+  it('keeps auth and network failures out of the no-repo result', async () => {
+    runCodeHubCliMock
+      .mockRejectedValueOnce(new Error('HTTP 403: Forbidden'))
+      .mockRejectedValueOnce(new Error('HTTP 403: Forbidden'))
+    await expect(viewCodeHubProject({ remote })).resolves.toEqual({
+      kind: 'failed',
+      error: 'HTTP 403: Forbidden'
+    })
+  })
+
+  it('classifies an explicitly missing project as no-repo', async () => {
+    runCodeHubCliMock
+      .mockRejectedValueOnce(new Error('HTTP 404: Project Not Found'))
+      .mockRejectedValueOnce(new Error('HTTP 404: Project Not Found'))
+    await expect(viewCodeHubProject({ remote })).resolves.toEqual({
+      kind: 'no-repo',
+      error: 'HTTP 404: Project Not Found'
+    })
   })
 })
 

@@ -39,12 +39,11 @@ export async function probeRemoteCharter(params: CharterProbeRequest): Promise<C
   if (codehubRemote) {
     // 先解默认分支(内源仓多为 master;main 正本 project_default_branch),兼作存在性探测。
     const view = await viewCodeHubProject({ remote: codehubRemote })
-    if (!view.exists) {
-      const error = view.error ?? '仓库不存在或没有权限'
-      if (error.toLowerCase().includes('not installed')) {
-        return { kind: 'failed', error }
-      }
-      return { kind: 'no-repo', error }
+    if (view.kind === 'failed') {
+      return { kind: 'failed', error: view.error }
+    }
+    if (view.kind === 'no-repo') {
+      return { kind: 'no-repo', error: view.error }
     }
     const ref = view.defaultBranch || 'main'
     const read = await fetchCodeHubRepoFileRaw({
