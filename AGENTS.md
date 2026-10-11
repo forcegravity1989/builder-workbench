@@ -54,7 +54,7 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 - Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。提单格式与纳入计划时的补充见 [Issue 格式](standard/system-prompt/references/issue-state.md)，计划关联使用材料中的任务引用。不恢复已退役的状态标签或另造平行协议。工具与会话沿本机设置和原生入口。
 - Workbench MVP 本地零业务数据库。用 `gh` / `codehub-cli` / `git` / 文件独立读回；不用 V3 的 `sqlite3` 路径。项目约定和指标资产的归属读 [architecture](docs/architecture.md)，不能将资产盘点变成代写项目开发规范。
 - 入口层不写业务正本；计划 JSON 保存版本/目标与任务关联，Issue 原生字段保存实际状态。
-- 日常 BW 工作先依据当前仓库的代码、调用链和现行正本选方案，不要求查询或等待 Orca 上游；优先复用原生执行核和薄挂载。只有会影响后续方案选择的稳定边界才写入对应正本；周期性上游核对由 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md) 承担，未被人采纳的候选不写入仓库。
+- 日常 BW 工作先依据当前仓库的代码、调用链和现行正本选方案，不要求查询或等待 Orca 上游；按“先复用原生能力 → 再用 BW 薄挂载或自有模块接入 → 只有确实必须改变 Orca 核心、协议或宿主路由时才停在方案层交人决定”的顺序判断。优先复用原生执行核和薄挂载。只有会影响后续方案选择的稳定边界才写入对应正本；周期性上游核对由 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md) 承担，未被人采纳的候选不写入仓库。
 - 先查清当前 BW 仓内已采用的 Orca 代码、提示词和真实调用链，核对能力归属、宿主路由、权限及扩展点，再比较复用与最小适配；不把尚未摸清能力当成产品限制，不另造平行实现、平行规范或特殊通道。具体边界读 [architecture](docs/architecture.md) 与 [upstream](ref/upstream.md)。
 - 方案纠正或重做时，同一交付内清除被替代的尝试代码、错误文档、配置及入口引用，必要的测试随正确行为更新；不为错误方案留兼容层、回退或双路径。现行正本只写有效方案，历史由 Git 追溯，不另建错误尝试台账；不扩 scope，未建如实标未建。
 - V3 与旧 Rust 三 crate 已不在本分支；不能用已删除的 `crates/` 解释现行 Electron 壳。历史在 `v3` 分支与 `archive/main-pre-orca`（旧 main 归档），必要时看 [旧模块挪移记录](docs/10-reference/v3-and-module-migration.md)。

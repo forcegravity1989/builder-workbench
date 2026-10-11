@@ -92,6 +92,7 @@ git merge orca-upstream/main
 - 工作树版本偏好、Git history 的窗口/固定 revision/`committedAt`、GitHub/CodeHub 的真实 `mergedAt` 字段透传。
 - WSL/SSH/配对沿用原生宿主身份和执行路由；BW 不新增本机专属连接层。
 - 原生 provider 标签和身份抽取保持单一实现；不要把已经去重的实现合回来。
+- BW Skill 分发登记保持一致：`resources/skills/current-manifest.json` 与 `snapshot-registry.json` 必须继续登记 `bw-knowledge-docs`、`metrics-refresh`、`version-acceptance`、`week-planning`。manifest/registry 由 `config/scripts/generate-skill-bundle-manifest.mjs` 从根级 `skills/` 生成；三个产品流程的正文正源仍是 `standard/skills/`，运行时指南由 `config/scripts/generate-bundled-skill-guides.mjs` 生成，不手改生成物。
 
 相关行为正本分别在 `docs/05-features/`、`docs/architecture.md` 和源码契约中；本篇只保留同步时必须知道的取舍。
 
