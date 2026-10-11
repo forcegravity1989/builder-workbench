@@ -15,6 +15,7 @@
 | 任务 | 读取路径与动作 |
 |---|---|
 | 叠层 / 与 Orca、旧 main 的差异 | 读 [ref/upstream.md](ref/upstream.md)。主干 `main` 即叠层（原 `bw-orca`）；Orca Mobile 产品已删；`standard/` 已从旧 main（现 `archive/main-pre-orca`）合入。叠层 UI 在 `src/renderer/src/workbench/` |
+| 叠层实现、运行或打包 | 读 [SYNC](src/renderer/src/workbench/SYNC.md) 的代码落点、开发命令与构建入口；产品行为读 [architecture](docs/architecture.md)，上游版本与同步取舍读 [ref/upstream.md](ref/upstream.md) |
 | 仓外 IDE 新会话 | 本篇 → [workbench-start](.claude/skills/workbench-start/SKILL.md)，按意图与影响分流开发、验证和交付；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。Workbench 发起的项目执行会话读产品传入提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill |
 | 特性级变更 | 对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，`plan.md` 仅大风险升 gate。交付按 02 §6.2 六环链，新工作先过 §6.3 带入三问；迁移在 Orca 上重新决策，按实际改动补链 |
 | 小 bug、文案、无新增用户价值的整理 | 先确认所属特性与已有行为依据；依据齐备则直接修、验证、commit/PR 留痕，不为小修新立特性。所属独立特性的必要文档缺失时，按 [02 §6.3](docs/01-principles/02-working-backwards.md) 补齐本次定义并完成缺失决定的人确认，再改依赖这些决定的代码；粒度听 [01](docs/01-principles/01-document-organization.md) |

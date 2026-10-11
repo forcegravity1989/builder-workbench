@@ -1,6 +1,6 @@
-# Workbench 同步策略
+# Workbench 叠层开发与运行说明
 
-> **维护约定**：给维护 Electron 叠层的开发者读；只管代码边界与运行入口。产品目标见 [architecture](../../../../docs/architecture.md)，上游快照、删迁记录与同步取舍见 [ref/upstream.md](../../../../ref/upstream.md)；边界或命令变化时更新。
+> **维护约定**：给维护 Electron 叠层的开发者读；只管代码边界、开发运行入口和构建入口，不写产品目标或上游版本记录。正文结构为「原则 → 日常调试 → 品牌与开关 → 禁止」；代码落点、命令或边界变化时更新。产品目标见 [architecture](../../../../docs/architecture.md)，上游快照、删迁记录与同步取舍见 [ref/upstream.md](../../../../ref/upstream.md)。
 
 目标分支是主干 `main`（原 `bw-orca`，2026-09-30 扶正）。交互迁移须按当前 BW 意图重新决策；旧 Rust main（`archive/main-pre-orca`）与原型只能提供历史参考，不能视为现行实现正本。
 
