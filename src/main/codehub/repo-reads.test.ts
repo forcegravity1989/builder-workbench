@@ -53,6 +53,7 @@ describe('viewCodeHubProject', () => {
       kind: 'failed',
       error: 'HTTP 403: Forbidden'
     })
+    expect(runCodeHubCliMock).toHaveBeenCalledTimes(1)
   })
 
   it('classifies an explicitly missing project as no-repo', async () => {

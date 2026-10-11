@@ -44,6 +44,17 @@ function projectViewError(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
+function isJqUnsupportedError(message: string): boolean {
+  const lower = message.toLowerCase()
+  return (
+    lower.includes('--jq') &&
+    (lower.includes('unknown flag') ||
+      lower.includes('unknown option') ||
+      lower.includes('unrecognized option') ||
+      lower.includes('invalid option'))
+  )
+}
+
 function classifyProjectViewError(message: string): 'no-repo' | 'failed' {
   const lower = message.toLowerCase()
   if (
@@ -112,12 +123,17 @@ export async function viewCodeHubProject(args: {
     )
     return { kind: 'available', defaultBranch: parseJqString(stdout.trim()) }
   } catch (first) {
-    // --jq 形态不可用或查询失败:退回裸 project view(main 正本 probe_repo)判存在性。
+    const firstMessage = projectViewError(first)
+    // 只有 CLI 明确不支持 --jq 才退回裸 project view；权限、网络等失败不能被
+    // 第二次调用的结果覆盖，否则可能把一次失败误报成「项目不存在」。
+    if (!isJqUnsupportedError(firstMessage)) {
+      return { kind: classifyProjectViewError(firstMessage), error: firstMessage }
+    }
     try {
       await runCodeHubCli(['project', 'view', ...projectArgs(args.remote)], args.execOptions)
       return { kind: 'available', defaultBranch: null }
     } catch (second) {
-      const message = projectViewError(second) || projectViewError(first)
+      const message = projectViewError(second) || firstMessage
       return { kind: classifyProjectViewError(message), error: message }
     }
   }
