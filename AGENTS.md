@@ -21,11 +21,12 @@
 | 改客群、飞轮或对外主张 | 先议再改 03；特性 intent 不得偷偷改写产品主张，不把草稿界面说成已交付 |
 | 改代码或现行设计 | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 Electron 叠层与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步相应特性资料；指南待旅程验证后补。视觉协同读 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/)，按文件归属与对应负责人协调 |
 | 改文档 | 先读下节维护流程 → 原则 01 → 目标文件原文头部约定与相关正本；用 [docs 地图](docs/README.md) 找去处。盘点、瘦身、职责/格式治理与模型指令整改使用 [project-knowledge](.claude/skills/project-knowledge/SKILL.md)，包含 HTML 决策、只读扫描和逐轮反哺；普通开发的必要文档同步不启动全库盘点 |
+| 周期复核 Orca/BW 边界 | 读 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md)；先读当前 BW 正本，再核对 Orca 公开版本；只把人采纳的稳定变化写回对应正本 |
 | 改 `standard/` | 先读 [standard/README](standard/README.md) 与 [系统提示词与渐进加载](docs/06-module/系统提示词与渐进加载.md)的维护对照；写 Skill 再读 [SKILL-MD-SPEC](standard/skills/SKILL-MD-SPEC.md)。本仓知识库不等于给被管项目分发的规范。合入记录见 [ref/upstream.md](ref/upstream.md) |
 
 Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍须落回 `docs/05-features/<id>/`。找不到设计落点先澄清并补正本，再写代码；未锁定决策先走 grill/domain-modeling。跨会话以仓内正本及可追溯的 commit/PR 为据，不凭上次聊天改代码。
 
-两份 Skill 是任何使用者均可采用的仓内试用方法；项目规则仍以本篇和原则为准。仓内采用不等于已分发到 `standard/`，方法按真实任务反馈维护。
+仓内 Skills 是任何使用者均可采用的试用方法；项目规则仍以本篇和原则为准。仓内采用不等于已分发到 `standard/`，方法按真实任务反馈维护。
 
 ## 文档怎么读、怎么维护
 
@@ -52,7 +53,8 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 - Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。提单格式与纳入计划时的补充见 [Issue 格式](standard/system-prompt/references/issue-state.md)，计划关联使用材料中的任务引用。不恢复已退役的状态标签或另造平行协议。工具与会话沿本机设置和原生入口。
 - Workbench MVP 本地零业务数据库。用 `gh` / `codehub-cli` / `git` / 文件独立读回；不用 V3 的 `sqlite3` 路径。项目约定和指标资产的归属读 [architecture](docs/architecture.md)，不能将资产盘点变成代写项目开发规范。
 - 入口层不写业务正本；计划 JSON 保存版本/目标与任务关联，Issue 原生字段保存实际状态。
-- 先查清 Orca 已有代码、提示词和真实调用链，核对能力归属、宿主路由、权限及扩展点，再比较复用与最小适配；不把尚未摸清能力当成产品限制，不另造平行实现、平行规范或特殊通道。具体边界读 [architecture](docs/architecture.md) 与 [upstream](ref/upstream.md)。
+- 日常 BW 工作先依据当前仓库的代码、调用链和现行正本选方案，不要求查询或等待 Orca 上游；优先复用原生执行核和薄挂载。只有会影响后续方案选择的稳定边界才写入对应正本；周期性上游核对由 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md) 承担，未被人采纳的候选不写入仓库。
+- 先查清当前 BW 仓内已采用的 Orca 代码、提示词和真实调用链，核对能力归属、宿主路由、权限及扩展点，再比较复用与最小适配；不把尚未摸清能力当成产品限制，不另造平行实现、平行规范或特殊通道。具体边界读 [architecture](docs/architecture.md) 与 [upstream](ref/upstream.md)。
 - 方案纠正或重做时，同一交付内清除被替代的尝试代码、错误文档、配置及入口引用，必要的测试随正确行为更新；不为错误方案留兼容层、回退或双路径。现行正本只写有效方案，历史由 Git 追溯，不另建错误尝试台账；不扩 scope，未建如实标未建。
 - V3 与旧 Rust 三 crate 已不在本分支；不能用已删除的 `crates/` 解释现行 Electron 壳。历史在 `v3` 分支与 `archive/main-pre-orca`（旧 main 归档），必要时看 [旧模块挪移记录](docs/10-reference/v3-and-module-migration.md)。
 
