@@ -138,6 +138,7 @@ h1 {
 .track {
   position: relative;
   background: #fff;
+  border-color: #e3e6eb;
   touch-action: none;
   user-select: none;
   overflow: visible;
@@ -168,19 +169,19 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-right: 1px solid #000;
+  border-right: 1px solid #e3e6eb;
   background: white;
   font-weight: 400;
 }
 .date-band > .weekend,
 .weekday-band > .weekend {
-  background: #d0cece;
+  background: #f1f2f4;
 }
 .day-shade {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-right: 1px solid #000;
+  border-right: 1px solid #e3e6eb;
   pointer-events: none;
 }
 .segment {
