@@ -3,22 +3,29 @@
   "version": "v0.6",
   "cycleId": "d54e65f2-a5e9-45f5-8ffe-04de112ca9d8",
   "summary": {
-    "progress": "上版 v0.5 计划与验收已归档：G1 六环补齐、G3 周一屏看护指标交付；G2 遗留 #253（BW 开发方法资产迁移）未完成，带入本版。",
-    "risks": "v0.7+ 候选（本版不做）：① 帮助 builder 的项目持续对外呈现价值的牵引功能（解决计划/验收屏只着眼单一版本、一个月维度看不到商业价值）；② 四屏特性级/探索项：#155 图表底座与拖拽排期、#202 Leader 跨项目视角、#245 计划托管探针。"
+    "progress": "上版 v0.5 计划与验收已归档：G1 六环补齐、G3 周一屏看护指标交付；G2 遗留 #253（BW 开发方法资产迁移）未完成，带入本版。本版按会议 Top3 调整目标：工程能力落地与呈现、伴飞梳理特性与指标、项目墙（leader 看全）。",
+    "risks": ""
   },
   "goals": [
     {
       "goalId": "G1",
-      "title": "高效交付（工程化能力）",
-      "deliverable": "1. PR 合入链路打通：CI 门禁 + E2E 用例执行 + claude bot 检视 PR。\n2. release skill 完善：出包 → 打 tag → release 上传脚本化，含版本描述标准格式与规范、验收报告。",
-      "acceptance": "1. 一次真实 PR 走通：CI 非全红、claude bot 可召唤并回执、E2E 被触发执行；每个 BW 特性 ≥1 条 E2E 用户旅程用例通过。\n2. 一次真实发布走通：release skill 按脚本完成出包 → tag → release 上传并读回，版本描述合规范、验收报告产出。",
+      "title": "工程能力：BW 落地（包括intent\\spec\\原型等） + 组内 6 项目适配",
+      "deliverable": "1. 组内 6 个项目工程化能力适配\n2. Workbench 自身交付链修复：PR 合入链路打通（CI 门禁 + E2E 用例执行 + claude bot 检视 PR）。\n3. release skill 完善：出包 → 打 tag → release 上传脚本化，含版本描述标准格式与规范、验收报告。",
+      "acceptance": "1. BW 里能看清 6 个项目流水线是否正常、当前状态与待收敛信息。\n2. 一次真实 PR 走通：CI 非全红、claude bot 可召唤并回执、E2E 被触发执行；每个 BW 特性 ≥1 条 E2E 用户旅程用例通过。\n3. 一次真实发布走通：release skill 按脚本完成出包 → tag → release 上传并读回，版本描述合规范、验收报告产出。",
       "metricTargets": []
     },
     {
       "goalId": "G2",
-      "title": "项目管理：已有特性 BUG 与易用性收敛 + 验收屏周报",
-      "deliverable": "1. 项目墙 / 总览 / 计划屏 / 验收屏等已有特性的 BUG 与易用性清单逐条收敛（纳入项有结论）。\n2. 验收屏周报。",
-      "acceptance": "1. 无遗留相关open issue。\n2. 验收屏周报在BW项目真实实战交付一次。",
+      "title": "伴飞：帮 builders 梳理特性与指标（四屏问题顺带收敛）",
+      "deliverable": "1. 逐项目梳理 builders 的特性与核心指标，形成统一一版并录入真实数据（特性树 + 核心指标）。\n2. 伴飞过程中把 总览 / 指标 / 计划屏 / 验收屏 的 BUG 与易用性清单逐条收敛。",
+      "acceptance": "1. 组内 6 个项目完成特性与核心指标梳理、可在 BW 读回其特性与指标（阶段目标：至少完成一半 3/6）。\n2. 无遗留相关 open issue。",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G3",
+      "title": "项目墙：leader 一屏看全（含团队/可见模型）",
+      "deliverable": "1. 项目墙统一汇总各项目状态，可进入单项目详情。\n2. 团队/成员可见模型：团队项目默认对组内成员可见，区分个人 / 团队项目（不以共享整台机器为主）。",
+      "acceptance": "1. leader 在项目墙一屏看清组内 6 个项目健康 / 状态，可进入任一项目详情。\n2. 一个团队项目默认对组内成员可见、无需重复导入，可独立读回。",
       "metricTargets": []
     }
   ],
@@ -62,25 +69,19 @@
     {
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 339,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 340,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 158,
-      "goalId": "G2"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 302,
-      "goalId": "G2"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 315,
-      "goalId": "G2"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 333,
       "goalId": "G2"
     },
     {
@@ -92,8 +93,38 @@
     {
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 334,
+      "number": 333,
       "goalId": "G2"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 341,
+      "goalId": "G2"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 302,
+      "goalId": "G3"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 315,
+      "goalId": "G3"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 202,
+      "goalId": "G3"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 342,
+      "goalId": "G3"
     }
   ]
 }
