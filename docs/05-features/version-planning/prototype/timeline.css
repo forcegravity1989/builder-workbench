@@ -132,6 +132,7 @@ h1 {
   display: flex;
 }
 .month-band > div {
+  flex-shrink: 0;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -248,13 +249,29 @@ h1 {
   color: #222;
   outline: none;
 }
+.side-b.pending-rail {
+  padding: 1px 4px;
+  justify-content: flex-start;
+  gap: 1px;
+}
+.pending-rail strong {
+  line-height: 17px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
 .backlog {
   display: flex;
   gap: 4px;
-  flex-wrap: wrap;
-  margin-top: 5px;
+  height: 18px;
+  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
 }
 .unscheduled {
+  flex-shrink: 0;
   padding: 1px 4px;
   border: 1px solid #7f728e;
   border-radius: 2px;

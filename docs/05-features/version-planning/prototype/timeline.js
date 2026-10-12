@@ -2,46 +2,9 @@
 ;(() => {
   const origin = Date.UTC(2026, 6, 1)
   const days = 92
-  const pixels = (characters) => Math.round(7 * characters + 5)
-  const columnIndex = (letters) =>
-    [...letters].reduce((value, letter) => value * 26 + letter.charCodeAt(0) - 64, 0) - 3
-  const columnWidths = Array(days)
-  const widthGroups = [
-    [2.35546875, 'C:J,AH:AL,AO:AP,BM:BN,BQ:BR,BT:BU'],
-    [3.35546875, 'M:O,Q,T:U,X,AB:AE,AR,AU:AW,BB:BE,BH:BL,BX:BY,CD:CE,CK:CN'],
-    [12.35546875, 'K,Y'],
-    [13.5, 'R,AF,AM,AS,AZ,BO,BV,CB,CG'],
-    [17.2109375, 'S'],
-    [17.85546875, 'L,P,V:W,Z:AA,AG,AQ,AT,AX:AY,BA,BF:BG,BP'],
-    [15.35546875, 'BS,BW,BZ:CA,CC,CH:CI'],
-    [28.5, 'AN'],
-    [5.85546875, 'CF'],
-    [18.35546875, 'CJ'],
-    [14.140625, 'CO'],
-    [14.35546875, 'CP']
-  ]
-  widthGroups.forEach(([width, ranges]) =>
-    ranges.split(',').forEach((range) => {
-      const [first, last = first] = range.split(':')
-      for (let day = columnIndex(first); day <= columnIndex(last); day++) {
-        columnWidths[day] = pixels(width)
-      }
-    })
-  )
-  if (
-    columnWidths.some((width) => !Number.isFinite(width)) ||
-    columnWidths.filter(Boolean).length !== days
-  ) {
-    throw new Error('日期列宽不完整')
-  }
-  const columnEdges = [0]
-  columnWidths.forEach((width) => columnEdges.push(columnEdges.at(-1) + width))
-  const chartWidth = columnEdges.at(-1)
-  const rowHeights = [
-    16.5, 14.6, 14.6, 16.5, 16.5, 60.65, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 16.5, 45.65, 27.45,
-    58.3, 34.85
-  ].map((height) => Math.max(24, Math.round((height * 4) / 3)))
-  let layoutRowHeights = [...rowHeights]
+  const dayWidth = 40
+  const rowHeight = 40
+  const chartWidth = days * dayWidth
   const dateAt = (day) => new Date(origin + day * 86400000).toISOString().slice(0, 10)
   const date = (day) => new Date(origin + day * 86400000)
   const $ = (query) => document.querySelector(query)
@@ -179,9 +142,9 @@
     refreshSelection()
   }
   function position(node, item) {
-    node.style.left = `${columnEdges[item.start]}px`
-    node.style.width = `${columnEdges[item.end + 1] - columnEdges[item.start]}px`
-    node.style.top = `${Math.max(1, Math.round((layoutRowHeights[item.lane] - 24) / 2))}px`
+    node.style.left = `${item.start * dayWidth}px`
+    node.style.width = `${(item.end - item.start + 1) * dayWidth}px`
+    node.style.top = `${Math.max(1, Math.round((rowHeight - 24) / 2))}px`
     node.style.background = item.node || item.lane === 4 ? item.color || colors[0] : colors[0]
     node.style.color = item.textColor || '#000000'
     node.setAttribute(
@@ -189,26 +152,8 @@
       `${item.name || '新时段'}，${dateAt(item.start)} 至 ${dateAt(item.end)}`
     )
   }
-  const rawDay = (event, track) => {
-    const x = event.clientX - track.getBoundingClientRect().left
-    if (x < 0) {
-      return Math.floor(x / columnWidths[0])
-    }
-    if (x >= chartWidth) {
-      return days + Math.floor((x - chartWidth) / columnWidths.at(-1))
-    }
-    let low = 0
-    let high = days
-    while (low + 1 < high) {
-      const middle = Math.floor((low + high) / 2)
-      if (columnEdges[middle] <= x) {
-        low = middle
-      } else {
-        high = middle
-      }
-    }
-    return low
-  }
+  const rawDay = (event, track) =>
+    Math.floor((event.clientX - track.getBoundingClientRect().left) / dayWidth)
   const pointDay = (event, track) => Math.max(0, Math.min(days - 1, rawDay(event, track)))
   function gesture(event, node, track, preview, describe, options = {}) {
     if (event.button !== 0 || event.shiftKey || cancelGesture || activeEdit) {
@@ -582,7 +527,7 @@
     node.style.gridColumn = String(column)
     if (row <= 6 && column > 1) {
       node.classList.add('header-cell')
-      node.style.top = `${layoutRowHeights.slice(0, row - 1).reduce((sum, height) => sum + height, 0)}px`
+      node.style.top = `${(row - 1) * rowHeight}px`
     }
     grid.append(node)
     return node
@@ -626,11 +571,10 @@
       return
     }
     grid.replaceChildren()
-    layoutRowHeights = [...rowHeights]
-    grid.style.setProperty('--a', `${pixels(7.85546875)}px`)
-    grid.style.setProperty('--b', `${pixels(26)}px`)
+    grid.style.setProperty('--a', '60px')
+    grid.style.setProperty('--b', '187px')
     grid.style.setProperty('--chart', `${chartWidth}px`)
-    grid.style.gridTemplateRows = layoutRowHeights.map((height) => `${height}px`).join(' ')
+    grid.style.gridTemplateRows = `repeat(${laneNames.length}, ${rowHeight}px)`
     const iteration = cell('side-a iteration-label', 1, 1)
     iteration.style.gridRow = '1 / 6'
     iteration.textContent = '迭代'
@@ -657,7 +601,22 @@
         })
         const pending = state.items.filter((item) => item.lane === lane && !scheduled(item))
         if (pending.length) {
+          rail.classList.add('pending-rail')
+          rail.querySelector('strong').title = name
           const backlog = element('div', 'backlog')
+          backlog.setAttribute('aria-label', `${name}未排期项`)
+          backlog.addEventListener(
+            'wheel',
+            (event) => {
+              if (event.ctrlKey || backlog.scrollWidth <= backlog.clientWidth) {
+                return
+              }
+              event.preventDefault()
+              event.stopPropagation()
+              backlog.scrollLeft += event.deltaX || event.deltaY
+            },
+            { passive: false }
+          )
           pending.forEach((item) => backlog.append(backlogNode(item)))
           rail.append(backlog)
         }
@@ -671,8 +630,7 @@
           ['2026 年 9 月', 30]
         ]) {
           const month = element('div', '', label)
-          const start = label.includes('7 月') ? 0 : label.includes('8 月') ? 31 : 62
-          month.style.width = `${columnEdges[start + count] - columnEdges[start]}px`
+          month.style.width = `${count * dayWidth}px`
           track.append(month)
         }
       } else if (lane < 3) {
@@ -686,7 +644,7 @@
               ? String(current.getUTCDate())
               : ['日', '一', '二', '三', '四', '五', '六'][current.getUTCDay()]
           )
-          dayCell.style.width = `${columnWidths[day]}px`
+          dayCell.style.width = `${dayWidth}px`
           track.append(dayCell)
         }
       } else {
@@ -694,8 +652,8 @@
         track.setAttribute('aria-label', `${name}泳道`)
         for (let day = 0; day < days; day++) {
           const shade = element('div', 'day-shade')
-          shade.style.left = `${columnEdges[day]}px`
-          shade.style.width = `${columnWidths[day]}px`
+          shade.style.left = `${day * dayWidth}px`
+          shade.style.width = `${dayWidth}px`
           track.append(shade)
         }
         state.items
@@ -727,26 +685,6 @@
         }
       }
     })
-    grid.querySelectorAll('.side-b[data-lane]').forEach((rail) => {
-      const backlog = rail.querySelector('.backlog')
-      if (!backlog) {
-        return
-      }
-      const lane = Number(rail.dataset.lane)
-      const contentHeight =
-        rail.querySelector('strong').getBoundingClientRect().height +
-        backlog.getBoundingClientRect().height +
-        13
-      layoutRowHeights[lane] = Math.max(rowHeights[lane], Math.ceil(contentHeight))
-    })
-    grid.style.gridTemplateRows = layoutRowHeights.map((height) => `${height}px`).join(' ')
-    grid.querySelectorAll('.header-cell').forEach((node) => {
-      const row = Number(node.style.gridRow)
-      node.style.top = `${layoutRowHeights.slice(0, row - 1).reduce((sum, height) => sum + height, 0)}px`
-    })
-    state.items
-      .filter(scheduled)
-      .forEach((item) => position(grid.querySelector(`.segment[data-item="${item.id}"]`), item))
     refreshSelection()
   }
   function colorNodes(color) {
