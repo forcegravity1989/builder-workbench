@@ -12,6 +12,7 @@
   const scroll = $('.sheet-scroll')
   const status = $('#gesture-status')
   const menu = $('#node-menu')
+  let currentTheme = 'gtsllm'
   const initialRows = [
     '月份',
     '日期',
@@ -36,8 +37,9 @@
     kind: ['month', 'date', 'weekday'][id] || (id === 5 ? 'node' : 'range'),
     role: id < 3 ? 'calendar' : id === 4 ? 'build' : 'plan',
     external: id === 16,
-    fill: id < 5 ? '#8DB4E2' : null,
-    textColor: '#000000',
+    defaultTone: id < 5 ? 'iteration' : 'plan',
+    fill: null,
+    textColor: null,
     itemColor: id === 4 || id === 5 ? '#FFC000' : '#FFFFFF'
   }))
   const colors = ['#FFFFFF', '#FFC000', '#FFFF00', '#D9D9D9']
@@ -45,7 +47,15 @@
   const nextId = () => `segment-${++sequence}`
   const selected = new Set()
   const history = []
+  const future = []
+  const keyboardInput = document.createElement('input')
+  keyboardInput.className = 'keyboard-input'
+  keyboardInput.maxLength = 100
+  keyboardInput.autocomplete = 'off'
+  keyboardInput.setAttribute('aria-label', '画布键盘输入')
+  document.body.append(keyboardInput)
   let activeLane = 8
+  let activeCell
   let selectedRow
   let cancelGesture
   let activeEdit
@@ -131,6 +141,7 @@
       return
     }
     history.push(before)
+    future.length = 0
     if (history.length > 30) {
       history.shift()
     }
@@ -146,10 +157,22 @@
       node.classList.toggle('active-lane', Number(node.dataset.lane) === activeLane)
       node.classList.toggle('selected-row', Number(node.dataset.lane) === selectedRow)
     })
+    grid.querySelector('.cell-focus')?.remove()
+    if (activeCell && !selectedRow) {
+      const track = grid.querySelector(`.track[data-lane="${activeCell.rowId}"]`)
+      if (track) {
+        const focus = element('div', 'cell-focus')
+        focus.style.left = `${activeCell.day * dayWidth}px`
+        focus.dataset.lane = activeCell.rowId
+        focus.dataset.day = activeCell.day
+        track.append(focus)
+      }
+    }
   }
-  function select(item, extend = false) {
+  function select(item, extend = false, day) {
     selectedRow = undefined
     activeLane = item.lane
+    activeCell = scheduled(item) ? { rowId: item.lane, day: day ?? item.start } : undefined
     if (!extend) {
       selected.clear()
     }
@@ -159,13 +182,204 @@
       selected.add(item.id)
     }
     refreshSelection()
+    focusKeyboard()
+  }
+  function itemAtCell() {
+    return (
+      activeCell &&
+      state.items.find(
+        (item) =>
+          item.lane === activeCell.rowId &&
+          scheduled(item) &&
+          item.start <= activeCell.day &&
+          item.end >= activeCell.day
+      )
+    )
+  }
+  function selectCell(rowId, day, focus = true) {
+    if (!planRow(rowFor(rowId))) {
+      return
+    }
+    activeLane = rowId
+    activeCell = { rowId, day: Math.max(0, Math.min(days - 1, day)) }
+    selectedRow = undefined
+    selected.clear()
+    const item = itemAtCell()
+    if (item) {
+      selected.add(item.id)
+    }
+    refreshSelection()
+    if (focus) {
+      revealCell()
+      focusKeyboard()
+    }
+  }
+  function keyboardRect() {
+    if (activeCell && !selectedRow) {
+      const track = grid.querySelector(`.track[data-lane="${activeCell.rowId}"]`)
+      if (track) {
+        const rect = track.getBoundingClientRect()
+        return {
+          left: rect.left + activeCell.day * dayWidth,
+          top: rect.top,
+          right: rect.left + (activeCell.day + 1) * dayWidth,
+          bottom: rect.bottom
+        }
+      }
+    }
+    const item = state.items.find((entry) => selected.has(entry.id))
+    return grid
+      .querySelector(
+        item ? `[data-item="${item.id}"]` : `.side-b[data-lane="${selectedRow ?? activeLane}"]`
+      )
+      ?.getBoundingClientRect()
+  }
+  function focusKeyboard() {
+    if (activeEdit || cancelGesture) {
+      return
+    }
+    keyboardInput.classList.remove('editing-input')
+    keyboardInput.value = ''
+    keyboardInput.style.width = '1px'
+    const rect = keyboardRect()
+    if (rect) {
+      keyboardInput.style.left = `${rect.left}px`
+      keyboardInput.style.top = `${rect.top}px`
+    }
+    const row = rowFor(activeCell?.rowId ?? selectedRow ?? activeLane)
+    keyboardInput.setAttribute(
+      'aria-label',
+      activeCell && !selectedRow
+        ? `${row?.name || ''}，${dateAt(activeCell.day)}，活动格`
+        : `${row?.name || ''}，画布键盘输入`
+    )
+    keyboardInput.focus({ preventScroll: true })
+  }
+  function revealCell() {
+    const rect = keyboardRect()
+    if (!rect) {
+      return
+    }
+    const viewport = scroll.getBoundingClientRect()
+    const left = grid.querySelector('.side-b')?.getBoundingClientRect().right ?? viewport.left
+    if (activeCell && !selectedRow && rect.left < left) {
+      scroll.scrollLeft -= left - rect.left
+    } else if (activeCell && !selectedRow && rect.right > viewport.right) {
+      scroll.scrollLeft += rect.right - viewport.right
+    }
+    const top = viewport.top + rowHeight * 3
+    if (rect.top < top) {
+      scroll.scrollTop -= top - rect.top
+    } else if (rect.bottom > viewport.bottom) {
+      scroll.scrollTop += rect.bottom - viewport.bottom
+    }
+  }
+  function navigate(key, reverse = false) {
+    const rows = state.rows.filter(planRow)
+    if (!rows.length) {
+      return
+    }
+    let index = Math.max(
+      0,
+      rows.findIndex((row) => row.id === (selectedRow ?? activeCell?.rowId ?? activeLane))
+    )
+    if (selectedRow && key !== 'Tab' && key !== 'ArrowRight') {
+      if (['ArrowUp', 'ArrowDown', 'Enter'].includes(key)) {
+        const delta = key === 'ArrowUp' || (key === 'Enter' && reverse) ? -1 : 1
+        index = Math.max(0, Math.min(rows.length - 1, index + delta))
+        selectPlanRow(rows[index])
+      }
+      return
+    }
+    let day = activeCell?.day ?? 0
+    if (selectedRow) {
+      selectCell(rows[index].id, 0)
+      return
+    }
+    if (key === 'Tab') {
+      day += reverse ? -1 : 1
+      if (day >= days && index < rows.length - 1) {
+        day = 0
+        index++
+      } else if (day < 0 && index > 0) {
+        day = days - 1
+        index--
+      }
+    } else if (key === 'ArrowLeft') {
+      day--
+    } else if (key === 'ArrowRight') {
+      day++
+    } else {
+      index += key === 'ArrowUp' || (key === 'Enter' && reverse) ? -1 : 1
+    }
+    index = Math.max(0, Math.min(rows.length - 1, index))
+    selectCell(rows[index].id, day)
+  }
+  function bindEditor(input, finish, rect, composing = false, blurSave = true) {
+    const custom = input === keyboardInput
+    const reposition = () => {
+      if (!custom) {
+        return
+      }
+      const bounds = rect?.() || keyboardRect()
+      if (bounds) {
+        const width = Math.max(180, Math.min(360, bounds.right - bounds.left))
+        input.style.left = `${Math.max(8, Math.min(bounds.left, innerWidth - width - 8))}px`
+        input.style.top = `${bounds.top + 7}px`
+        input.style.width = `${width}px`
+      }
+    }
+    const complete = (save, move, restoreFocus = true) => {
+      input.removeEventListener('keydown', keydown)
+      input.removeEventListener('blur', blur)
+      input.removeEventListener('compositionstart', start)
+      input.removeEventListener('compositionend', end)
+      finish(save)
+      if (custom) {
+        input.classList.remove('editing-input')
+      }
+      if (move) {
+        navigate(move.key, move.reverse)
+      } else if (restoreFocus) {
+        focusKeyboard()
+      }
+    }
+    const keydown = (event) => {
+      if (composing || event.isComposing || event.keyCode === 229) {
+        return
+      }
+      if (['Enter', 'Escape', 'Tab'].includes(event.key)) {
+        event.preventDefault()
+        event.stopPropagation()
+        complete(
+          event.key !== 'Escape',
+          event.key === 'Escape' ? undefined : { key: event.key, reverse: event.shiftKey }
+        )
+      }
+    }
+    const blur = () => complete(blurSave, undefined, false)
+    const start = () => {
+      composing = true
+    }
+    const end = () => {
+      composing = false
+    }
+    activeEdit = { cancel: () => complete(false), reposition }
+    input.addEventListener('keydown', keydown)
+    input.addEventListener('blur', blur)
+    input.addEventListener('compositionstart', start)
+    input.addEventListener('compositionend', end)
+    if (custom) {
+      input.classList.add('editing-input')
+    }
+    reposition()
   }
   function position(node, item) {
     node.style.left = `${item.start * dayWidth}px`
     node.style.width = `${(item.end - item.start + 1) * dayWidth}px`
     node.style.top = `${Math.max(1, Math.round((rowHeight - 24) / 2))}px`
-    node.style.background = styledItem(item) ? item.color || colors[0] : colors[0]
-    node.style.color = item.textColor || '#000000'
+    node.style.background = styledItem(item) ? item.color || 'var(--surface)' : 'var(--surface)'
+    node.style.color = item.textColor || 'var(--foreground)'
     node.setAttribute(
       'aria-label',
       `${item.name || '新时段'}，${dateAt(item.start)} 至 ${dateAt(item.end)}`
@@ -175,7 +389,14 @@
     Math.floor((event.clientX - track.getBoundingClientRect().left) / dayWidth)
   const pointDay = (event, track) => Math.max(0, Math.min(days - 1, rawDay(event, track)))
   function gesture(event, node, track, preview, describe, options = {}) {
-    if (event.button !== 0 || event.shiftKey || cancelGesture || activeEdit) {
+    if (
+      event.button !== 0 ||
+      event.shiftKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      cancelGesture ||
+      activeEdit
+    ) {
       options.cleanup?.()
       return
     }
@@ -185,6 +406,10 @@
     const previousSelection = [...selected]
     const previousSelectedRow = options.previousSelectedRow ?? selectedRow
     const previousActiveLane = options.previousActiveLane ?? activeLane
+    const previousActiveCell =
+      options.previousActiveCell === undefined
+        ? structuredClone(activeCell)
+        : options.previousActiveCell
     const initialX = event.clientX
     const initialPoint = rawDay(event, track)
     let current = event
@@ -253,6 +478,7 @@
         state = before
         selectedRow = planRow(rowFor(previousSelectedRow)) ? previousSelectedRow : undefined
         activeLane = planRow(rowFor(previousActiveLane)) ? previousActiveLane : undefined
+        activeCell = previousActiveCell
         selected.clear()
         previousSelection.forEach((entry) => selected.add(entry))
         render()
@@ -262,6 +488,8 @@
       } else if (started) {
         commit(before)
         options.onComplete?.()
+      } else {
+        options.onTap?.()
       }
     }
     const up = (next) => {
@@ -284,7 +512,7 @@
     node.addEventListener('lostpointercapture', cancel)
     frame = requestAnimationFrame(autoScroll)
   }
-  function editName(item, draft = false) {
+  function editName(item, draft = false, options = {}) {
     if (activeEdit || cancelGesture) {
       return
     }
@@ -295,16 +523,20 @@
     }
     const track = grid.querySelector(`.track[data-lane="${item.lane}"]`)
     let node = draft ? undefined : grid.querySelector(`.segment[data-item="${item.id}"]`)
-    if (!node) {
+    if (!node && !options.input) {
       node = segmentNode(item, track, true)
       track.append(node)
     }
-    node.classList.add('editing')
-    const input = element('input', 'inline-name')
-    input.value = item.name || ''
+    node?.classList.add('editing')
+    const input = options.input || element('input', 'inline-name')
+    if (!options.preserveValue) {
+      input.value = item.name || ''
+    }
     input.maxLength = 100
     input.setAttribute('aria-label', '时段名称')
-    node.replaceChildren(input)
+    if (!options.input) {
+      node.replaceChildren(input)
+    }
     let done = false
     const finish = (save) => {
       if (done) {
@@ -322,28 +554,53 @@
         }
         selected.clear()
         selected.add(draft ? state.items.at(-1).id : item.id)
+        if (scheduled(item)) {
+          activeCell = {
+            rowId: item.lane,
+            day: activeCell?.rowId === item.lane ? activeCell.day : item.start
+          }
+        }
+        commit(before)
+      } else if (save && !draft) {
+        const before = snapshot()
+        state.items = state.items.filter((entry) => entry.id !== item.id)
+        selected.clear()
         commit(before)
       }
       render()
     }
-    activeEdit = { cancel: () => finish(false) }
-    input.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === 'Escape') {
-        event.preventDefault()
-        event.stopPropagation()
-        finish(event.key === 'Enter')
+    bindEditor(
+      input,
+      finish,
+      () => {
+        const target = grid.querySelector(`[data-item="${item.id}"]`)
+        return !scheduled(item) && target ? target.getBoundingClientRect() : keyboardRect()
+      },
+      options.composing
+    )
+    if (!options.preserveValue) {
+      input.focus({ preventScroll: true })
+      if (options.input) {
+        input.setSelectionRange(input.value.length, input.value.length)
+      } else {
+        input.select()
       }
-    })
-    input.addEventListener('blur', () => finish(true))
-    input.focus()
-    input.select()
+    }
   }
   function makeRange(event, track, lane) {
-    if (event.target.closest('.segment') || event.button !== 0 || event.shiftKey || activeEdit) {
+    if (
+      event.target.closest('.segment, input') ||
+      event.button !== 0 ||
+      event.shiftKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      activeEdit
+    ) {
       return
     }
     const previousSelectedRow = selectedRow
     const previousActiveLane = activeLane
+    const previousActiveCell = structuredClone(activeCell)
     activeLane = lane
     selectedRow = undefined
     refreshSelection()
@@ -351,12 +608,11 @@
       (item) => item.lane === lane && !scheduled(item) && selected.has(item.id)
     )
     const row = rowFor(lane)
+    const anchor = pointDay(event, track)
     if (row.kind === 'node' && !pending) {
-      selected.clear()
-      refreshSelection()
+      selectCell(lane, anchor)
       return
     }
-    const anchor = pointDay(event, track)
     const range = {
       lane,
       start: anchor,
@@ -367,6 +623,7 @@
     }
     const ghost = segmentNode(range, track, true)
     ghost.classList.add('ghost')
+    ghost.hidden = true
     track.append(ghost)
     gesture(
       event,
@@ -391,8 +648,16 @@
       {
         previousSelectedRow,
         previousActiveLane,
+        previousActiveCell,
+        onStart: () => {
+          activeCell = { rowId: lane, day: anchor }
+          ghost.hidden = false
+          refreshSelection()
+        },
+        onTap: () => selectCell(lane, anchor),
         cleanup: () => ghost.remove(),
         onComplete: () => {
+          activeCell = { rowId: lane, day: range.start }
           if (pending) {
             const before = snapshot()
             Object.assign(pending, { start: range.start, end: range.end })
@@ -424,7 +689,7 @@
         return
       }
       if (!activeEdit) {
-        select(item, event.shiftKey)
+        select(item, event.shiftKey || event.ctrlKey || event.metaKey, pointDay(event, track))
       }
     })
     node.addEventListener('dblclick', (event) => {
@@ -432,7 +697,7 @@
       editName(item)
     })
     node.addEventListener('pointerdown', (event) => {
-      if (event.button !== 0 || event.shiftKey || activeEdit) {
+      if (event.button !== 0 || event.shiftKey || event.ctrlKey || event.metaKey || activeEdit) {
         return
       }
       const edge = event.target.closest('.resize-start')
@@ -481,14 +746,16 @@
               select(item)
             }
             node.dataset.dragged = 'true'
+          },
+          onComplete: () => {
+            activeCell = { rowId: item.lane, day: item.start }
+            refreshSelection()
+            focusKeyboard()
           }
         }
       )
     })
     node.addEventListener('contextmenu', (event) => {
-      if (!styledItem(item)) {
-        return
-      }
       event.preventDefault()
       if (activeEdit || cancelGesture) {
         return
@@ -507,7 +774,7 @@
     node.setAttribute('aria-label', `${item.name}，未排期`)
     node.addEventListener('click', (event) => {
       if (!activeEdit) {
-        select(item, event.shiftKey)
+        select(item, event.shiftKey || event.ctrlKey || event.metaKey)
       }
     })
     node.addEventListener('pointerdown', (event) => {
@@ -548,7 +815,9 @@
           onComplete: () => {
             const before = snapshot()
             Object.assign(item, { start: range.start, end: range.end })
+            activeCell = { rowId: item.lane, day: range.start }
             commit(before)
+            focusKeyboard()
           }
         }
       )
@@ -606,21 +875,28 @@
     }
     selected.clear()
     selectedRow = row.id
+    activeCell = undefined
     activeLane = row.id
     refreshSelection()
+    revealCell()
+    focusKeyboard()
   }
-  function editRowName(row, draft) {
+  function editRowName(row, draft, options = {}) {
     if (cancelGesture || activeEdit || !planRow(row)) {
       return
     }
     menu.hidden = true
     const before = draft?.before || snapshot()
     const label = grid.querySelector(`.side-b[data-lane="${row.id}"] strong`)
-    const input = element('input', 'row-name-input')
-    input.value = draft ? '' : row.name
+    const input = options.input || element('input', 'row-name-input')
+    if (!options.preserveValue) {
+      input.value = draft ? '' : row.name
+    }
     input.maxLength = 100
     input.setAttribute('aria-label', '计划行名称')
-    label.replaceChildren(input)
+    if (!options.input) {
+      label.replaceChildren(input)
+    }
     let done = false
     const finish = (save) => {
       if (done) {
@@ -636,28 +912,39 @@
         state = before
         activeLane = draft.activeLane
         selectedRow = draft.selectedRow
+        activeCell = draft.activeCell
         selected.clear()
         draft.selectedItems.forEach((id) => selected.add(id))
       }
       render()
     }
-    activeEdit = { cancel: () => finish(false) }
-    input.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === 'Escape') {
-        event.preventDefault()
-        event.stopPropagation()
-        finish(event.key === 'Enter')
+    bindEditor(
+      input,
+      finish,
+      () => grid.querySelector(`.side-b[data-lane="${row.id}"] strong`)?.getBoundingClientRect(),
+      options.composing,
+      !draft
+    )
+    if (!options.preserveValue) {
+      input.focus({ preventScroll: true })
+      if (options.input) {
+        input.setSelectionRange(input.value.length, input.value.length)
+      } else {
+        input.select()
       }
-    })
-    input.addEventListener('blur', () => finish(!draft))
-    input.focus()
-    input.select()
+    }
   }
   function insertRow(index, kind) {
     if (cancelGesture || activeEdit) {
       return
     }
-    const draft = { before: snapshot(), activeLane, selectedRow, selectedItems: [...selected] }
+    const draft = {
+      before: snapshot(),
+      activeLane,
+      activeCell: structuredClone(activeCell),
+      selectedRow,
+      selectedItems: [...selected]
+    }
     const row = {
       id: ++sequence,
       name: '',
@@ -665,12 +952,13 @@
       role: 'plan',
       external: false,
       fill: null,
-      textColor: '#000000',
+      textColor: null,
       itemColor: kind === 'node' ? colors[1] : colors[0]
     }
     state.rows.splice(Math.max(3, Math.min(index, state.rows.length)), 0, row)
     activeLane = row.id
     selectedRow = row.id
+    activeCell = undefined
     selected.clear()
     menu.hidden = true
     render()
@@ -723,11 +1011,23 @@
       deletion.setAttribute('aria-label', '删除行')
       deletion.setAttribute('aria-description', counts)
       deletion.append(element('small', 'menu-count', counts))
-      const currentFill = row.fill || (row.external ? '#FFFF00' : '#CCC0DA')
+      const currentFill = getComputedStyle(
+        grid.querySelector(`.side-b[data-lane="${row.id}"]`)
+      ).backgroundColor
+      const effectiveFill =
+        row.fill ||
+        {
+          'rgb(255, 255, 255)': '#FFFFFF',
+          'rgb(255, 192, 0)': '#FFC000',
+          'rgb(255, 255, 0)': '#FFFF00',
+          'rgb(217, 217, 217)': '#D9D9D9',
+          'rgb(141, 180, 226)': '#8DB4E2',
+          'rgb(204, 192, 218)': '#CCC0DA'
+        }[currentFill]
       fillMenuBar(
         ['白色', '橙色', '黄色', '灰色', '蓝色', '紫色'],
         [...colors, '#8DB4E2', '#CCC0DA'],
-        currentFill,
+        effectiveFill,
         (fill) => markRow(row, 'fill', fill)
       )
       const text = menuGroup('文字')
@@ -742,6 +1042,7 @@
         choice.style.color = color
       })
     }
+    themeMenuGroup()
     placeMenu(event.clientX, event.clientY)
   }
   function render() {
@@ -754,6 +1055,11 @@
     if (!planRow(rowFor(selectedRow))) {
       selectedRow = undefined
     }
+    if (activeCell && !planRow(rowFor(activeCell.rowId))) {
+      activeCell = undefined
+    }
+    const hadFocus =
+      document.activeElement === keyboardInput || grid.contains(document.activeElement)
     selected.forEach((id) => {
       if (!state.items.some((item) => item.id === id)) {
         selected.delete(id)
@@ -781,14 +1087,14 @@
     state.rows.forEach((row, index) => {
       const { id: lane, name } = row
       const rail = cell(
-        `side-b${!planRow(row) ? ' blue-rail' : ''}${row.external ? ' external-lane' : ''}`,
+        `side-b${row.defaultTone === 'iteration' ? ' blue-rail' : ''}${row.external ? ' external-lane' : ''}`,
         index + 1,
         2
       )
       if (row.fill) {
         rail.style.background = row.fill
       }
-      rail.style.color = row.textColor || '#000000'
+      rail.style.color = row.textColor || 'var(--foreground)'
       const label = element('strong', '', name)
       rail.append(label)
       rail.addEventListener('contextmenu', (event) => {
@@ -799,6 +1105,7 @@
       if (planRow(row)) {
         rail.dataset.lane = lane
         label.tabIndex = 0
+        label.addEventListener('focus', () => selectPlanRow(row))
         label.addEventListener('dblclick', () => editRowName(row))
         rail.addEventListener('click', (event) => {
           if (!event.target.closest('.unscheduled, input')) {
@@ -893,6 +1200,9 @@
       }
     })
     refreshSelection()
+    if (hadFocus) {
+      focusKeyboard()
+    }
   }
   function colorNodes(color) {
     if (cancelGesture || activeEdit) {
@@ -940,6 +1250,38 @@
     group.append(element('span', 'menu-label', label))
     menu.append(group)
     return group
+  }
+  function setTheme(theme) {
+    if (cancelGesture || activeEdit) {
+      return
+    }
+    currentTheme = theme
+    document.documentElement.dataset.theme = theme
+    $('#theme-name').textContent = theme === 'orca' ? 'Orca 主题' : 'GTSLLM 主题'
+    menu.hidden = true
+    focusKeyboard()
+  }
+  function themeMenuGroup() {
+    const group = menuGroup('主题', 'theme-options')
+    ;[
+      ['GTSLLM', 'gtsllm'],
+      ['Orca', 'orca']
+    ].forEach(([name, theme]) => {
+      const choice = menuOption(name, () => setTheme(theme), undefined, group)
+      choice.setAttribute('role', 'menuitemradio')
+      choice.setAttribute('aria-label', `主题：${name}`)
+      choice.setAttribute('aria-checked', String(currentTheme === theme))
+    })
+  }
+  function showThemeMenu(event) {
+    event.preventDefault()
+    if (cancelGesture || activeEdit) {
+      return
+    }
+    menu.replaceChildren()
+    menu.classList.add('compact-menu')
+    themeMenuGroup()
+    placeMenu(event.clientX, event.clientY)
   }
   function insertMenuGroup(label, index) {
     const group = menuGroup(label)
@@ -992,22 +1334,53 @@
         .filter((item) => selected.has(item.id) && styledItem(item))
         .map((item) => item.color || colors[0])
     )
-    fillMenuBar(
-      ['白色', '橙色', '黄色', '灰色'],
-      colors,
-      fills.size === 1 ? [...fills][0] : undefined,
-      colorNodes
-    )
-    menuOption('5  红字 / 黑字', toggleTextColor)
+    menuOption('取消排期', () => {
+      if (cancelGesture || activeEdit) {
+        return
+      }
+      const items = state.items.filter((item) => selected.has(item.id) && scheduled(item))
+      if (!items.length) {
+        return
+      }
+      const before = snapshot()
+      items.forEach((item) => {
+        item.start = null
+        item.end = null
+      })
+      activeCell = undefined
+      menu.hidden = true
+      commit(before)
+      focusKeyboard()
+    })
+    if (fills.size) {
+      fillMenuBar(
+        ['白色', '橙色', '黄色', '灰色'],
+        colors,
+        fills.size === 1 ? [...fills][0] : undefined,
+        colorNodes
+      )
+      menuOption('Alt+5  红字 / 黑字', toggleTextColor)
+    }
+    themeMenuGroup()
     placeMenu(x, y)
   }
+  $('.page-heading').addEventListener('contextmenu', showThemeMenu)
+  scroll.addEventListener('contextmenu', (event) => {
+    if (!event.defaultPrevented && !event.target.closest('input')) {
+      showThemeMenu(event)
+    }
+  })
   document.addEventListener('pointerdown', (event) => {
     if (!event.target.closest('#node-menu')) {
       menu.hidden = true
     }
   })
   document.addEventListener('paste', (event) => {
-    if (event.target.closest('input,textarea,[contenteditable]')) {
+    if (
+      (!canvasFocus(event.target) && !cancelGesture) ||
+      (event.target.closest('input,textarea,[contenteditable]') &&
+        (event.target !== keyboardInput || activeEdit))
+    ) {
       return
     }
     if (cancelGesture || activeEdit) {
@@ -1047,12 +1420,102 @@
     )
     commit(before)
   })
-  document.addEventListener('keydown', (event) => {
-    if (event.target.closest('input,textarea,[contenteditable]')) {
+  function canvasFocus(target) {
+    return (
+      target === keyboardInput ||
+      target === scroll ||
+      Boolean(target.closest('.side-b[data-lane], .segment, .unscheduled'))
+    )
+  }
+  function beginKeyboardEdit(preserveValue = false, composing = false) {
+    if (activeEdit || cancelGesture) {
       return
     }
-    const undoKey = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z'
-    if ((cancelGesture || activeEdit) && event.key !== 'Escape' && !undoKey) {
+    const options = { input: keyboardInput, preserveValue, composing }
+    const row = rowFor(selectedRow)
+    if (planRow(row)) {
+      editRowName(row, undefined, options)
+      return
+    }
+    const item = itemAtCell() || state.items.find((entry) => selected.has(entry.id))
+    if (item) {
+      editName(item, false, options)
+      return
+    }
+    if (!activeCell) {
+      keyboardInput.value = ''
+      return
+    }
+    const cellRow = rowFor(activeCell.rowId)
+    if (!planRow(cellRow)) {
+      return
+    }
+    editName(
+      {
+        lane: cellRow.id,
+        start: activeCell.day,
+        end: activeCell.day,
+        name: '',
+        node: cellRow.kind === 'node',
+        color: cellRow.itemColor
+      },
+      true,
+      options
+    )
+  }
+  keyboardInput.addEventListener('compositionstart', () => {
+    if (!activeEdit) {
+      beginKeyboardEdit(true, true)
+    }
+  })
+  keyboardInput.addEventListener('input', () => {
+    if (!activeEdit) {
+      beginKeyboardEdit(true)
+    }
+  })
+  scroll.addEventListener('focus', () => {
+    if (!activeCell && !selectedRow && !selected.size) {
+      selectCell(activeLane, 0)
+    } else {
+      focusKeyboard()
+    }
+  })
+  scroll.addEventListener('scroll', () => {
+    if (activeEdit) {
+      activeEdit.reposition?.()
+    } else if (document.activeElement === keyboardInput) {
+      const rect = keyboardRect()
+      if (rect) {
+        keyboardInput.style.left = `${rect.left}px`
+        keyboardInput.style.top = `${rect.top}px`
+      }
+    }
+  })
+  document.addEventListener('keydown', (event) => {
+    if (event.target.closest('#node-menu')) {
+      if (event.key === 'Escape') {
+        menu.hidden = true
+        focusKeyboard()
+        event.preventDefault()
+      }
+      return
+    }
+    if (
+      (!canvasFocus(event.target) && !cancelGesture) ||
+      (event.target.closest('input,textarea,[contenteditable]') &&
+        (event.target !== keyboardInput || activeEdit))
+    ) {
+      return
+    }
+    if (event.isComposing || event.keyCode === 229) {
+      return
+    }
+    const modifier = event.ctrlKey || event.metaKey
+    const undoKey = modifier && event.key.toLowerCase() === 'z' && !event.shiftKey
+    const redoKey =
+      modifier &&
+      (event.key.toLowerCase() === 'y' || (event.key.toLowerCase() === 'z' && event.shiftKey))
+    if ((cancelGesture || activeEdit) && event.key !== 'Escape' && !undoKey && !redoKey) {
       event.preventDefault()
       return
     }
@@ -1064,11 +1527,12 @@
       } else {
         selected.clear()
         selectedRow = undefined
+        activeCell = undefined
         refreshSelection()
         menu.hidden = true
       }
       event.preventDefault()
-    } else if (undoKey) {
+    } else if (undoKey || redoKey) {
       event.preventDefault()
       if (cancelGesture) {
         cancelGesture()
@@ -1078,41 +1542,57 @@
         activeEdit.cancel()
         return
       }
-      if (history.length) {
-        state = history.pop()
+      const source = redoKey ? future : history
+      const destination = redoKey ? history : future
+      if (source.length) {
+        destination.push(snapshot())
+        state = source.pop()
         selected.clear()
         selectedRow = undefined
         menu.hidden = true
         render()
       }
-    } else if (event.key === 'Delete' || event.key === 'Backspace') {
-      const items = state.items.filter((item) => selected.has(item.id) && scheduled(item))
+    } else if (event.key === 'Delete') {
+      const covered = itemAtCell()
+      const items = state.items.filter(
+        (item) => selected.has(item.id) || (!selected.size && item.id === covered?.id)
+      )
       if (!items.length) {
         return
       }
       event.preventDefault()
       const before = snapshot()
-      items.forEach((item) => {
-        item.start = null
-        item.end = null
-      })
+      const ids = new Set(items.map((item) => item.id))
+      state.items = state.items.filter((item) => !ids.has(item.id))
+      selected.clear()
       commit(before)
-    } else if (/^[1-4]$/.test(event.key) && !event.ctrlKey && !event.metaKey) {
+      feedback('条目已清除，可撤销')
+    } else if (/^[1-4]$/.test(event.key) && event.altKey && !modifier) {
+      event.preventDefault()
       colorNodes(colors[Number(event.key) - 1])
-    } else if (event.key === '5' && !event.ctrlKey && !event.metaKey) {
+    } else if (event.key === '5' && event.altKey && !modifier) {
+      event.preventDefault()
       toggleTextColor()
-    } else if (event.key === 'Enter') {
-      const row = rowFor(selectedRow)
-      if (planRow(row)) {
-        event.preventDefault()
-        editRowName(row)
-        return
-      }
-      const item = state.items.find((entry) => selected.has(entry.id) && scheduled(entry))
-      if (item) {
-        event.preventDefault()
-        editName(item)
-      }
+    } else if (event.key === 'F2' && !modifier && !event.altKey) {
+      event.preventDefault()
+      beginKeyboardEdit()
+    } else if (
+      ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Tab'].includes(event.key) &&
+      !modifier &&
+      !event.altKey
+    ) {
+      event.preventDefault()
+      navigate(event.key, event.shiftKey)
+    } else if (
+      event.key.length === 1 &&
+      !modifier &&
+      !event.altKey &&
+      event.target !== keyboardInput
+    ) {
+      event.preventDefault()
+      focusKeyboard()
+      keyboardInput.value = event.key
+      beginKeyboardEdit(true)
     }
   })
   render()
