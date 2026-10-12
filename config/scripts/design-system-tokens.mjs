@@ -139,13 +139,15 @@ function resolver(vars, palette) {
 function driftErrors() {
   const css = fs.readFileSync(MAIN_CSS, 'utf8')
   const light = declarations(css, ':root')
-  const dark = new Map([...light, ...declarations(css, '.dark')])
+  const darkOwn = declarations(css, '.dark')
+  const dark = new Map([...light, ...darkOwn])
+  const inMain = (name) => light.has(name) || darkOwn.has(name)
   const palette = tailwindPalette()
   const byTheme = { [first]: resolver(light, palette), dark: resolver(dark, palette) }
   const errors = []
   const listed = new Set(tokens.color.tokens.map((t) => t.name))
   for (const t of tokens.color.tokens) {
-    if (!light.has(t.name)) {
+    if (!inMain(t.name)) {
       // Not an Orca token: must say so, so a token Orca renames does not silently drop out.
       if (!/^(Addition|Overlay role)\b/.test(t.usage ?? '')) {
         errors.push(
@@ -156,6 +158,10 @@ function driftErrors() {
     }
     for (const theme of [first, ...rest]) {
       const source = theme === first ? light.get(t.name) : dark.get(t.name)
+      if (source === undefined) {
+        // Declared only under .dark: main.css gives no light value to compare.
+        continue
+      }
       const expected = byTheme[theme]?.(source)
       const actual = normalize(themed(t.value, theme))
       if (expected === null) {
@@ -165,10 +171,15 @@ function driftErrors() {
       }
     }
   }
-  for (const [name, source] of light) {
-    const value = byTheme[first](source)
-    if (!listed.has(name) && value && /^(#|rgba?\(|oklch\(|hsla?\()/.test(value)) {
-      errors.push(`${name}: colour in main.css but missing from tokens.json`)
+  for (const [theme, vars] of [
+    [first, light],
+    ['dark', darkOwn]
+  ]) {
+    for (const [name, source] of vars) {
+      const value = byTheme[theme](source)
+      if (!listed.has(name) && value && /^(#|rgba?\(|oklch\(|hsla?\()/.test(value)) {
+        errors.push(`${name} (${theme}): colour in main.css but missing from tokens.json`)
+      }
     }
   }
   const stack = (v) => v.replace(/\s+/g, ' ').trim()
