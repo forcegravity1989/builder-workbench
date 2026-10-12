@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-12 文档同步（定时任务特性收尾）
+
+- **变更类型**：优化（文档同步，纯文档无代码改动）
+- **变更摘要**：定时任务增强特性实现收尾的文档同步。新增发布说明草稿 `docs/05-features/automations/release-notes.md`（spec/design 两处要求「发布说明写明」）：并发默认值变化（允许并行 → 跳过，存量任务适用，视为修 bug）置顶，一次性/间隔/webhook/导入导出/AI 创建自动化五项新增能力与界面变化分节；发布后归档，正式发布由人取用。06-module 两篇同步：「会话与执行」页头入口补「AI 创建自动化」并新增 composer 编排段（ensure-composer-automation 项目级禁用态注册、start-composer-session oneShotPrompt 递交、启用留人不执行 `--enabled`）；「系统提示词与渐进加载」补 composer 提示词来源差异（不走 cycle-prompt 渲染，分发副本 ?raw 内嵌全文）。STATUS.md 全表更新：六环表第 3 环 →●（砍留重排后设计全部实施）、第 4/5 环证据刷新；AU04/AU06/AU08/AU09 ○→◐（入口已落地待真壳证据）；已知债段——COUNT/concurrencyPolicy/carryLastRunOutput/promptSnapshot 回退完成、发布说明草稿已建。特性矩阵第 8 行与脚注⁴从「未写实现代码」更新为「已实现，AU01 ✅」。
+- **涉及文件**：
+  - `docs/05-features/automations/release-notes.md`（新增：发布说明草稿）
+  - `docs/06-module/会话与执行.md`（composer 入口与编排段）
+  - `docs/06-module/系统提示词与渐进加载.md`（composer 提示词来源）
+  - `docs/05-features/automations/STATUS.md`（六环表/验收点矩阵/已知债全表更新）
+  - `docs/05-features/README.md`（特性矩阵第 8 行与脚注⁴）
+- **验证**：文档检查——release-notes 与 spec/design 的并发行为表述逐条对齐（固定跳过、手动不受限、存量适用、无策略开关）；06-module 两篇新增段与 Task 6 实现一致（bw-composer 身份、oneShotPrompt 不写回、启用留人）；STATUS 状态与各任务 changelog 证据一致，未冒充未验项（AUJ01/AU07 保持 ○）；未改任何运行时代码，不伪造界面验证。
+
 ## 2026-10-12 新增（定时任务：AU01 一次性到点真壳 E2E）+ 修复（onceAt 转发缺失）
 
 - **变更类型**：新增（验收驱动脚本）/ 修复（runtime 控制器字段转发）/ 重构（copyPatchValues 拆分过 max-lines 门禁）
