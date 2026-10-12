@@ -1,12 +1,52 @@
 /* Prototype data is fictional. All edits stay in this page. */
 ;(() => {
   const origin = Date.UTC(2026, 6, 1)
-  const days = 92
+  let viewStart = 0
+  let viewEnd = 91
+  let days = viewEnd - viewStart + 1
   const dayWidth = 40
   const rowHeight = 40
-  const chartWidth = days * dayWidth
+  let chartWidth = days * dayWidth
   const dateAt = (day) => new Date(origin + day * 86400000).toISOString().slice(0, 10)
   const date = (day) => new Date(origin + day * 86400000)
+  const clampDay = (day) => Math.max(viewStart, Math.min(viewEnd, day))
+  const calendarUrl = new URL('calendar.local.json', document.currentScript.src)
+  let calendar = { years: new Set(), restDays: new Set(), workDays: new Set() }
+  function parseDay(value) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith('0000')) {
+      return undefined
+    }
+    const timestamp = Date.parse(`${value}T00:00:00.000Z`)
+    if (!Number.isFinite(timestamp) || new Date(timestamp).toISOString().slice(0, 10) !== value) {
+      return undefined
+    }
+    return (timestamp - origin) / 86400000
+  }
+  function validPlanDay(day) {
+    return Number.isInteger(day) && parseDay(dateAt(day)) === day
+  }
+  function getDayMeta(day) {
+    const current = date(day)
+    const iso = dateAt(day)
+    const weekend = [0, 6].includes(current.getUTCDay())
+    const rest = calendar.restDays.has(iso)
+    const work = calendar.workDays.has(iso)
+    const configured = calendar.years.has(current.getUTCFullYear())
+    return {
+      rest: rest || (!work && weekend),
+      className: rest ? 'rest-day' : work ? 'workday' : weekend ? 'weekend' : '',
+      badge: rest ? '休' : work ? '班' : '',
+      label: !configured
+        ? '未配置年度日历，按普通周末显示'
+        : rest
+          ? '配置休息日'
+          : work
+            ? '配置工作日'
+            : weekend
+              ? '普通周末'
+              : '普通工作日'
+    }
+  }
   const $ = (query) => document.querySelector(query)
   const grid = $('#timeline-grid')
   const scroll = $('.sheet-scroll')
@@ -93,6 +133,7 @@
     return row?.kind === 'node' || row?.role === 'build'
   }
   const scheduled = (item) => Number.isInteger(item.start) && Number.isInteger(item.end)
+  const visibleItem = (item) => scheduled(item) && item.start <= viewEnd && item.end >= viewStart
   function overlapReason(proposals) {
     const candidates = proposals.map((proposal) => ({
       ...proposal,
@@ -162,7 +203,7 @@
       const track = grid.querySelector(`.track[data-lane="${activeCell.rowId}"]`)
       if (track) {
         const focus = element('div', 'cell-focus')
-        focus.style.left = `${activeCell.day * dayWidth}px`
+        focus.style.left = `${(activeCell.day - viewStart) * dayWidth}px`
         focus.dataset.lane = activeCell.rowId
         focus.dataset.day = activeCell.day
         track.append(focus)
@@ -172,7 +213,9 @@
   function select(item, extend = false, day) {
     selectedRow = undefined
     activeLane = item.lane
-    activeCell = scheduled(item) ? { rowId: item.lane, day: day ?? item.start } : undefined
+    activeCell = scheduled(item)
+      ? { rowId: item.lane, day: clampDay(day ?? item.start) }
+      : undefined
     if (!extend) {
       selected.clear()
     }
@@ -201,7 +244,7 @@
       return
     }
     activeLane = rowId
-    activeCell = { rowId, day: Math.max(0, Math.min(days - 1, day)) }
+    activeCell = { rowId, day: clampDay(day) }
     selectedRow = undefined
     selected.clear()
     const item = itemAtCell()
@@ -220,9 +263,9 @@
       if (track) {
         const rect = track.getBoundingClientRect()
         return {
-          left: rect.left + activeCell.day * dayWidth,
+          left: rect.left + (activeCell.day - viewStart) * dayWidth,
           top: rect.top,
-          right: rect.left + (activeCell.day + 1) * dayWidth,
+          right: rect.left + (activeCell.day - viewStart + 1) * dayWidth,
           bottom: rect.bottom
         }
       }
@@ -291,18 +334,18 @@
       }
       return
     }
-    let day = activeCell?.day ?? 0
+    let day = activeCell?.day ?? viewStart
     if (selectedRow) {
-      selectCell(rows[index].id, 0)
+      selectCell(rows[index].id, viewStart)
       return
     }
     if (key === 'Tab') {
       day += reverse ? -1 : 1
-      if (day >= days && index < rows.length - 1) {
-        day = 0
+      if (day > viewEnd && index < rows.length - 1) {
+        day = viewStart
         index++
-      } else if (day < 0 && index > 0) {
-        day = days - 1
+      } else if (day < viewStart && index > 0) {
+        day = viewEnd
         index--
       }
     } else if (key === 'ArrowLeft') {
@@ -375,8 +418,13 @@
     reposition()
   }
   function position(node, item) {
-    node.style.left = `${item.start * dayWidth}px`
-    node.style.width = `${(item.end - item.start + 1) * dayWidth}px`
+    node.hidden = !visibleItem(item)
+    const start = Math.max(item.start, viewStart)
+    const end = Math.min(item.end, viewEnd)
+    node.style.left = `${(start - viewStart) * dayWidth}px`
+    node.style.width = `${Math.max(1, end - start + 1) * dayWidth}px`
+    node.querySelector('.resize-start')?.toggleAttribute('hidden', item.start < viewStart)
+    node.querySelector('.resize-end')?.toggleAttribute('hidden', item.end > viewEnd)
     node.style.top = `${Math.max(1, Math.round((rowHeight - 24) / 2))}px`
     node.style.background = styledItem(item) ? item.color || 'var(--surface)' : 'var(--surface)'
     node.style.color = item.textColor || 'var(--foreground)'
@@ -386,8 +434,8 @@
     )
   }
   const rawDay = (event, track) =>
-    Math.floor((event.clientX - track.getBoundingClientRect().left) / dayWidth)
-  const pointDay = (event, track) => Math.max(0, Math.min(days - 1, rawDay(event, track)))
+    viewStart + Math.floor((event.clientX - track.getBoundingClientRect().left) / dayWidth)
+  const pointDay = (event, track) => clampDay(rawDay(event, track))
   function gesture(event, node, track, preview, describe, options = {}) {
     if (
       event.button !== 0 ||
@@ -557,7 +605,7 @@
         if (scheduled(item)) {
           activeCell = {
             rowId: item.lane,
-            day: activeCell?.rowId === item.lane ? activeCell.day : item.start
+            day: clampDay(activeCell?.rowId === item.lane ? activeCell.day : item.start)
           }
         }
         commit(before)
@@ -630,7 +678,7 @@
       track,
       track,
       (_delta, point, current) => {
-        if (rawDay(current, track) < 0 || rawDay(current, track) >= days) {
+        if (rawDay(current, track) < viewStart || rawDay(current, track) > viewEnd) {
           return '时段超出日期范围'
         }
         range.start = range.node ? point : Math.min(anchor, point)
@@ -682,6 +730,7 @@
     node.setAttribute('role', 'button')
     if (!item.node) {
       node.append(element('span', 'resize-start'), element('span', 'resize-end'))
+      position(node, item)
     }
     node.addEventListener('click', (event) => {
       if (node.dataset.dragged) {
@@ -714,18 +763,21 @@
         event,
         node,
         track,
-        (delta) => {
+        (delta, _point, current) => {
           const proposals = originals.map(({ entry, start, end }) => ({
             entry,
             start: start + (edge === 'end' ? 0 : delta),
             end: end + (edge === 'start' ? 0 : delta)
           }))
           if (
+            rawDay(current, track) < viewStart ||
+            rawDay(current, track) > viewEnd ||
             proposals.some(
-              (entry) => entry.start < 0 || entry.end >= days || entry.start > entry.end
+              (entry) =>
+                entry.start > entry.end || !validPlanDay(entry.start) || !validPlanDay(entry.end)
             )
           ) {
-            return '时段不能倒置或超出日期范围'
+            return '时段日期无效、倒置或超出日期范围'
           }
           const conflict = overlapReason(proposals)
           if (conflict) {
@@ -748,7 +800,7 @@
             node.dataset.dragged = 'true'
           },
           onComplete: () => {
-            activeCell = { rowId: item.lane, day: item.start }
+            activeCell = { rowId: item.lane, day: clampDay(item.start) }
             refreshSelection()
             focusKeyboard()
           }
@@ -779,7 +831,7 @@
     })
     node.addEventListener('pointerdown', (event) => {
       const track = grid.querySelector(`.track[data-lane="${item.lane}"]`)
-      const range = { ...item, start: 0, end: 0 }
+      const range = { ...item, start: viewStart, end: viewStart }
       const ghost = segmentNode(range, track, true)
       ghost.classList.add('ghost')
       ghost.hidden = true
@@ -791,8 +843,8 @@
         (_delta, point, current) => {
           const rect = track.getBoundingClientRect()
           if (
-            rawDay(current, track) < 0 ||
-            rawDay(current, track) >= days ||
+            rawDay(current, track) < viewStart ||
+            rawDay(current, track) > viewEnd ||
             current.clientY < rect.top ||
             current.clientY > rect.bottom
           ) {
@@ -1042,6 +1094,7 @@
         choice.style.color = color
       })
     }
+    menuOption('时间范围', editRange)
     themeMenuGroup()
     placeMenu(event.clientX, event.clientY)
   }
@@ -1058,10 +1111,13 @@
     if (activeCell && !planRow(rowFor(activeCell.rowId))) {
       activeCell = undefined
     }
+    if (activeCell) {
+      activeCell.day = clampDay(activeCell.day)
+    }
     const hadFocus =
       document.activeElement === keyboardInput || grid.contains(document.activeElement)
     selected.forEach((id) => {
-      if (!state.items.some((item) => item.id === id)) {
+      if (!state.items.some((item) => item.id === id && (!scheduled(item) || visibleItem(item)))) {
         selected.delete(id)
       }
     })
@@ -1137,40 +1193,57 @@
       const track = cell('track', index + 1, 3)
       if (row.kind === 'month') {
         track.classList.add('month-band')
-        for (const [label, count] of [
-          ['2026 年 7 月', 31],
-          ['2026 年 8 月', 31],
-          ['2026 年 9 月', 30]
-        ]) {
-          const month = element('div', '', label)
-          month.style.width = `${count * dayWidth}px`
+        for (let day = viewStart; day <= viewEnd;) {
+          const current = date(day)
+          let next = day + 1
+          while (next <= viewEnd && date(next).getUTCMonth() === current.getUTCMonth()) {
+            next++
+          }
+          const month = element(
+            'div',
+            '',
+            `${current.getUTCFullYear()} 年 ${current.getUTCMonth() + 1} 月`
+          )
+          month.style.width = `${(next - day) * dayWidth}px`
           track.append(month)
+          day = next
         }
       } else if (row.kind === 'date' || row.kind === 'weekday') {
         track.classList.add(row.kind === 'date' ? 'date-band' : 'weekday-band')
-        for (let day = 0; day < days; day++) {
+        for (let day = viewStart; day <= viewEnd; day++) {
           const current = date(day)
+          const meta = getDayMeta(day)
           const dayCell = element(
             'div',
-            [0, 6].includes(current.getUTCDay()) ? 'weekend' : '',
+            meta.className,
             row.kind === 'date'
               ? String(current.getUTCDate())
               : ['日', '一', '二', '三', '四', '五', '六'][current.getUTCDay()]
           )
+          dayCell.title = `${dateAt(day)} · ${meta.label}`
+          dayCell.dataset.date = dateAt(day)
+          dayCell.setAttribute('aria-label', `${dateAt(day)} · ${meta.label}`)
+          if (row.kind === 'date' && meta.badge) {
+            dayCell.append(element('small', 'day-badge', meta.badge))
+          }
           dayCell.style.width = `${dayWidth}px`
           track.append(dayCell)
         }
       } else {
         track.dataset.lane = lane
         track.setAttribute('aria-label', `${name}泳道`)
-        for (let day = 0; day < days; day++) {
+        for (let day = viewStart; day <= viewEnd; day++) {
           const shade = element('div', 'day-shade')
-          shade.style.left = `${day * dayWidth}px`
+          const meta = getDayMeta(day)
+          if (meta.className) {
+            shade.classList.add(meta.className)
+          }
+          shade.style.left = `${(day - viewStart) * dayWidth}px`
           shade.style.width = `${dayWidth}px`
           track.append(shade)
         }
         state.items
-          .filter((item) => item.lane === lane && scheduled(item))
+          .filter((item) => item.lane === lane && visibleItem(item))
           .forEach((item) => track.append(segmentNode(item, track)))
         track.addEventListener('pointerdown', (event) => makeRange(event, track, lane))
         if (row.kind === 'node') {
@@ -1280,6 +1353,7 @@
     }
     menu.replaceChildren()
     menu.classList.add('compact-menu')
+    menuOption('时间范围', editRange)
     themeMenuGroup()
     placeMenu(event.clientX, event.clientY)
   }
@@ -1361,10 +1435,94 @@
       )
       menuOption('Alt+5  红字 / 黑字', toggleTextColor)
     }
+    menuOption('时间范围', editRange)
     themeMenuGroup()
     placeMenu(x, y)
   }
   $('.page-heading').addEventListener('contextmenu', showThemeMenu)
+  function updateRangeLabel() {
+    $('#date-range').textContent = `${dateAt(viewStart)} — ${dateAt(viewEnd)}`
+  }
+  function editRange() {
+    if (activeEdit || cancelGesture) {
+      return
+    }
+    menu.hidden = true
+    const label = $('#date-range')
+    const editor = element('span', 'range-editor')
+    const inputs = ['开始日期', '结束日期'].map((name, index) => {
+      const input = element('input')
+      input.type = 'date'
+      input.min = '0001-01-01'
+      input.max = '9999-12-31'
+      input.required = true
+      input.value = dateAt(index ? viewEnd : viewStart)
+      input.setAttribute('aria-label', name)
+      if (index) {
+        editor.append(element('span', '', '—'))
+      }
+      editor.append(input)
+      return input
+    })
+    label.replaceWith(editor)
+    let done = false
+    const finish = (save) => {
+      if (done) {
+        return
+      }
+      const start = parseDay(inputs[0].value)
+      const end = parseDay(inputs[1].value)
+      if (
+        save &&
+        (!inputs.every((input) => input.checkValidity()) ||
+          start === undefined ||
+          end === undefined ||
+          start > end)
+      ) {
+        feedback('请输入有效起止日期，结束不能早于开始', true)
+        return
+      }
+      if (save && end - start + 1 > 3660) {
+        feedback('范围过长，请缩小到 3660 天以内', true)
+        return
+      }
+      done = true
+      activeEdit = undefined
+      editor.replaceWith(label)
+      if (save) {
+        viewStart = start
+        viewEnd = end
+        days = viewEnd - viewStart + 1
+        chartWidth = days * dayWidth
+        scroll.scrollLeft = 0
+        render()
+      }
+      updateRangeLabel()
+      feedback()
+      focusKeyboard()
+    }
+    activeEdit = { cancel: () => finish(false) }
+    editor.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        finish(event.key === 'Enter')
+      }
+    })
+    editor.addEventListener('focusout', (event) => {
+      if (!editor.contains(event.relatedTarget)) {
+        finish(false)
+      }
+    })
+    inputs[0].focus()
+  }
+  $('#date-range').addEventListener('click', editRange)
+  $('#date-range').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      editRange()
+    }
+  })
   scroll.addEventListener('contextmenu', (event) => {
     if (!event.defaultPrevented && !event.target.closest('input')) {
       showThemeMenu(event)
@@ -1475,7 +1633,7 @@
   })
   scroll.addEventListener('focus', () => {
     if (!activeCell && !selectedRow && !selected.size) {
-      selectCell(activeLane, 0)
+      selectCell(activeLane, viewStart)
     } else {
       focusKeyboard()
     }
@@ -1595,5 +1753,53 @@
       beginKeyboardEdit(true)
     }
   })
+  async function loadCalendar() {
+    try {
+      const response = await fetch(calendarUrl)
+      if (!response.ok) {
+        return
+      }
+      const data = await response.json()
+      const fields = ['years', 'restDays', 'workDays']
+      if (!data || !fields.every((field) => Array.isArray(data[field]))) {
+        return
+      }
+      if (
+        !data.years.every((year) => Number.isInteger(year) && year > 0 && year <= 9999) ||
+        new Set(data.years).size !== data.years.length
+      ) {
+        return
+      }
+      const exceptions = [...data.restDays, ...data.workDays]
+      if (
+        new Set(exceptions).size !== exceptions.length ||
+        !exceptions.every(
+          (iso) =>
+            typeof iso === 'string' &&
+            parseDay(iso) !== undefined &&
+            data.years.includes(Number(iso.slice(0, 4)))
+        )
+      ) {
+        return
+      }
+      calendar = {
+        years: new Set(data.years),
+        restDays: new Set(data.restDays),
+        workDays: new Set(data.workDays)
+      }
+      const refresh = () => {
+        if (activeEdit || cancelGesture) {
+          setTimeout(refresh, 100)
+        } else {
+          render()
+        }
+      }
+      refresh()
+    } catch {
+      // Optional machine-local calendar; unavailable data uses ordinary weekends.
+    }
+  }
+  updateRangeLabel()
   render()
+  loadCalendar()
 })()

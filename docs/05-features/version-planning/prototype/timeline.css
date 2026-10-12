@@ -72,6 +72,21 @@ h1 {
   color: var(--muted-foreground);
   font-size: 11px;
 }
+#date-range {
+  cursor: text;
+}
+.range-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.range-editor input {
+  width: 125px;
+  font: inherit;
+  background: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--selection);
+}
 .sheet-scroll {
   overflow: auto;
   max-height: calc(100vh - 65px);
@@ -201,11 +216,9 @@ h1 {
   border-right: 1px solid var(--strong-line);
   font-weight: 700;
 }
-.month-band > div:first-child {
-  background: var(--iteration-rail);
-}
 .date-band > div,
 .weekday-band > div {
+  position: relative;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -215,8 +228,30 @@ h1 {
   font-weight: 400;
 }
 .date-band > .weekend,
-.weekday-band > .weekend {
+.weekday-band > .weekend,
+.date-band > .rest-day,
+.weekday-band > .rest-day {
   background: var(--weekend);
+}
+.day-badge {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  font-size: 8px;
+  line-height: 1;
+  padding: 1px 2px;
+  border-radius: 2px;
+  color: #fff;
+}
+.rest-day .day-badge {
+  background: #f36f64;
+}
+.workday .day-badge {
+  background: #039feb;
+}
+.day-shade.rest-day {
+  background: var(--weekend);
+  opacity: 0.45;
 }
 .day-shade {
   position: absolute;
