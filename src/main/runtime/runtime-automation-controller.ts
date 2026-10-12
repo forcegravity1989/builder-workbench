@@ -17,7 +17,10 @@ import type {
 } from '../../shared/automation-owner-precondition'
 import { runAutomationNowFenced } from '../automations/refused-manual-run'
 import { paginateAutomationRuns } from '../../shared/automation-run-cursor'
-import { hasRuntimeAutomationUpdateValue } from './runtime-automation-update-value'
+import {
+  copyRuntimeAutomationPatchValues,
+  hasRuntimeAutomationUpdateValue
+} from './runtime-automation-update-value'
 import { assertAutomationRunContextMatchesTarget } from './runtime-automation-run-context'
 
 export type RuntimeAutomationCreateInput = Omit<
@@ -132,6 +135,8 @@ export class RuntimeAutomationController {
         timezone: input.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
         rrule: input.rrule,
         dtstart: input.dtstart,
+        // 丢了 onceAt，store 会对空 rrule 跑出现计算落进 cron 解析（AU01 抓到）。
+        onceAt: input.onceAt,
         enabled: input.enabled,
         missedRunGraceMinutes: input.missedRunGraceMinutes
       },
@@ -151,7 +156,7 @@ export class RuntimeAutomationController {
     }
     const current = this.show(id)
     const patch: AutomationUpdateInput = {}
-    this.copyPatchValues(updates, patch)
+    copyRuntimeAutomationPatchValues(updates, patch)
     const targetChanged = (['repo', 'workspace', 'workspaceMode'] as const).some((key) =>
       hasRuntimeAutomationUpdateValue(updates, key)
     )
@@ -230,33 +235,6 @@ export class RuntimeAutomationController {
   /** Webhook 入口（serve 端点在 token/启用检查后调用）；无 owner fence——端点即存储权威。 */
   async runWebhook(id: string): Promise<AutomationWebhookRunResult> {
     return await this.assertService().runWebhook(id)
-  }
-
-  private copyPatchValues(
-    updates: RuntimeAutomationUpdateInput,
-    patch: AutomationUpdateInput
-  ): void {
-    const keys = [
-      'name',
-      'prompt',
-      'precheck',
-      'agentId',
-      'runContext',
-      'sourceContext',
-      'baseBranch',
-      'setupDecision',
-      'reuseSession',
-      'timezone',
-      'rrule',
-      'dtstart',
-      'enabled',
-      'missedRunGraceMinutes'
-    ] as const
-    for (const key of keys) {
-      if (hasRuntimeAutomationUpdateValue(updates, key)) {
-        Object.assign(patch, { [key]: updates[key] })
-      }
-    }
   }
 
   private async resolveTarget(

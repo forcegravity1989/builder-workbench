@@ -104,6 +104,31 @@ describe('OrcaRuntimeService automation methods', () => {
     expect(automation.id).toBe('auto-1')
   })
 
+  it('forwards a one-shot onceAt on create instead of dropping it into cron parsing', async () => {
+    const store = makeStore()
+    const runtime = new OrcaRuntimeService(store as never)
+
+    await runtime.createAutomation({
+      name: 'One-shot review',
+      prompt: 'Review once',
+      agentId: 'codex',
+      repo: 'repo-1',
+      workspaceMode: 'new_per_run',
+      setupDecision: 'skip',
+      rrule: '',
+      dtstart: 1,
+      onceAt: 123
+    })
+
+    // Why asserted verbatim: a dropped onceAt makes the store compute the next
+    // occurrence from an empty rrule, which dies in cron parsing — the exact
+    // failure the AU01 real-shell drive caught.
+    expect(store.createAutomation).toHaveBeenCalledWith(
+      expect.objectContaining({ rrule: '', onceAt: 123 }),
+      undefined
+    )
+  })
+
   it('rejects a run context that names a different repo path', async () => {
     const store = makeStore()
     const runtime = new OrcaRuntimeService(store as never)

@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-12 新增（定时任务：AU01 一次性到点真壳 E2E）+ 修复（onceAt 转发缺失）
+
+- **变更类型**：新增（验收驱动脚本）/ 修复（runtime 控制器字段转发）/ 重构（copyPatchValues 拆分过 max-lines 门禁）
+- **变更摘要**：AU01 验收点真壳通过。新增 `config/scripts/au01-once-automation-e2e.mjs`：构建产物 serve 模式（`out/main/index.js --serve`，随机端口 + 临时 profile + 临时 git 仓）全链路驱动——`automations create --trigger once --at <ISO> --disabled`（断言 onceAt 毫秒原值落盘、rrule 空、禁用态）→ 人 `edit --enabled` → 等 60s tick 到点真实派发（断言 run trigger='scheduled'、scheduledFor=onceAt，驱动全程不调 `automations run`）→ scheduledRunCount=1 即「已结束」→ SIGTERM 杀进程重起同 profile → run 行/计数/onceAt 读回完全一致（铁律一）。驱动首跑即抓出真缺陷：runtime 控制器 `create` 转发白名单与 `update` 的 copyPatchValues 键表都漏 `onceAt`，store 收不到 onceAt 就对空 rrule 跑出现计算落进 cron 五字段解析报「Cron schedule must have five fields」——两处补转发（update 侧 null 透传保显式清除语义），新增回归测试 1 例（src/main/runtime 不在 ratchet 桶内）。copyPatchValues 拆至 `runtime-automation-update-value.ts`（与 hasRuntimeAutomationUpdateValue 同域）过 max-lines 门禁，无新豁免。
+- **涉及文件**：
+  - `config/scripts/au01-once-automation-e2e.mjs`（新增：AU01 验收驱动，可复跑）
+  - `src/main/runtime/runtime-automation-controller.ts`（create/update 补 onceAt 转发；copyPatchValues 拆出）
+  - `src/main/runtime/runtime-automation-update-value.ts`（新增 copyRuntimeAutomationPatchValues）
+  - `src/main/runtime/orca-runtime-automations.test.ts`（+1 例：一次性 onceAt 建档转发回归）
+  - `docs/05-features/automations/STATUS.md`（AU01 行 ○→✅ 证据登记；六环表第 5 环 ○→◐；现状段更新）
+- **验证**：E2E 终验 PASS（拆分后 bundle 重跑）：create 落 onceAt=1791774483686 原值+空 rrule+禁用 → 人启用 → 到点 run f3b4bcf6 trigger=scheduled status=dispatched scheduledFor=onceAt → scheduledRunCount=1 → 杀进程重起读回一致（1 run row、计数、onceAt）；controller 测试 12/12；main automations+persistence 面 212/213（1 失败为 external-manager-scoped Windows `where`/`which` 预存，与基线一致）；`pnpm run typecheck` 三工程 0 错误；ratchet 257=基线；oxlint 改动文件 EXIT=0（max-lines 拆分后归零）；oxfmt 已格式化。dev:workbench 界面标签（Once at/Finished）目检留人工，未做。
+
+## 2026-10-10 新增（定时任务：已结束标记与一次性调度展示）
+
+- **变更类型**：新增（UI 小件）
+- **变更摘要**：自动化列表行与详情页补一次性任务的生命周期展示，判别全部走收口模块 `automation-schedule-kind.ts`（消费者不写字段判断）：调度列对一次性任务（onceAt 存在、rrule 为空）显示「Once at \<时刻\>」，不再落「Invalid schedule」；下次运行列经 `deriveLifecycleState` 现算「已结束」（一次性已派发或超宽限），优先于人的暂停开关且与 enabled 分开呈现（「已结束」是推导值不是存储状态，铁律一）。skipped_overlap 的运行历史行标签（「Skipped — previous run still active」）前序提交已存在，本次核对无新增。真壳目检并入 Task 9 E2E 同屏验证。
+- **涉及文件**：
+  - `src/renderer/src/components/automations/AutomationListLocalRow.tsx`（调度列 Once at + 下次运行列 Finished）
+  - `src/renderer/src/components/automations/AutomationDetail.tsx`（详情 Schedule/Next run 两处同构）
+- **验证**：renderer automations 811/811（与 HEAD 基线一致，无回归）；ratchet 257=基线；`pnpm run typecheck` 三工程零错误；oxlint 两文件 EXIT=0（max-lines 未触发）；oxfmt 已格式化。真壳界面目检未做，留 Task 9 E2E 同屏验证。
+
 ## 2026-10-10 新增（定时任务：automation-composer Skill 正源）
 
 - **变更类型**：新增（纯文档）
