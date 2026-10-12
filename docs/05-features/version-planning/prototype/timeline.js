@@ -493,7 +493,9 @@
       if (activeEdit || cancelGesture) {
         return
       }
-      select(item)
+      if (!selected.has(item.id)) {
+        select(item)
+      }
       showMenu(event.clientX, event.clientY)
     })
     return node
@@ -705,28 +707,40 @@
     }
     const index = row ? state.rows.findIndex((entry) => entry.id === row.id) : state.rows.length - 1
     menu.replaceChildren()
+    menu.classList.add('compact-menu')
     if (planRow(row)) {
       selectPlanRow(row)
       menuOption('修改行名称', () => editRowName(row))
-      menuOption('上方新增时段行', () => insertRow(index, 'range'))
-      menuOption('上方新增节点行', () => insertRow(index, 'node'))
+      insertMenuGroup('上方新增', index)
     }
     const next = row && !planRow(row) ? 3 : index + 1
-    menuOption('下方新增时段行', () => insertRow(next, 'range'))
-    menuOption('下方新增节点行', () => insertRow(next, 'node'))
+    insertMenuGroup('下方新增', next)
     if (planRow(row)) {
       const items = state.items.filter((item) => item.lane === row.id)
       const count = items.filter(scheduled).length
-      menuOption(`删除行（${count} 个时段、${items.length - count} 个未排期项）`, () =>
-        deleteRow(row)
+      const counts = `${count} 时段 · ${items.length - count} 未排期`
+      const deletion = menuOption('删除行', () => deleteRow(row))
+      deletion.setAttribute('aria-label', '删除行')
+      deletion.setAttribute('aria-description', counts)
+      deletion.append(element('small', 'menu-count', counts))
+      const currentFill = row.fill || (row.external ? '#FFFF00' : '#CCC0DA')
+      fillMenuBar(
+        ['白色', '橙色', '黄色', '灰色', '蓝色', '紫色'],
+        [...colors, '#8DB4E2', '#CCC0DA'],
+        currentFill,
+        (fill) => markRow(row, 'fill', fill)
       )
-      ;['白色', '橙色', '黄色', '灰色', '蓝色', '紫色'].forEach((name, index) => {
-        const fill = [...colors, '#8DB4E2', '#CCC0DA'][index]
-        menuOption(`底色：${name}`, () => markRow(row, 'fill', fill), fill)
+      const text = menuGroup('文字')
+      ;[
+        ['红字', '#C00000'],
+        ['黑字', '#000000']
+      ].forEach(([name, color]) => {
+        const choice = menuOption(name, () => markRow(row, 'textColor', color), undefined, text)
+        choice.setAttribute('role', 'menuitemradio')
+        choice.setAttribute('aria-label', `文字：${name}`)
+        choice.setAttribute('aria-checked', String((row.textColor || '#000000') === color))
+        choice.style.color = color
       })
-      menuOption('文字：红字 / 黑字', () =>
-        markRow(row, 'textColor', row.textColor === '#C00000' ? '#000000' : '#C00000')
-      )
     }
     placeMenu(event.clientX, event.clientY)
   }
@@ -919,7 +933,37 @@
     menu.hidden = true
     commit(before)
   }
-  function menuOption(label, action, fill) {
+  function menuGroup(label, className = '') {
+    const group = element('div', `menu-actions ${className}`)
+    group.setAttribute('role', 'group')
+    group.setAttribute('aria-label', label)
+    group.append(element('span', 'menu-label', label))
+    menu.append(group)
+    return group
+  }
+  function insertMenuGroup(label, index) {
+    const group = menuGroup(label)
+    ;[
+      ['时段', 'range'],
+      ['节点', 'node']
+    ].forEach(([name, kind]) => {
+      const choice = menuOption(name, () => insertRow(index, kind), undefined, group)
+      choice.setAttribute('aria-label', `${label}${name}行`)
+    })
+  }
+  function fillMenuBar(names, fills, currentFill, onSelect) {
+    const group = menuGroup('底色', 'fill-bar')
+    names.forEach((name, index) => {
+      const fill = fills[index]
+      const choice = menuOption('', () => onSelect(fill), fill, group)
+      choice.classList.add('fill-choice')
+      choice.setAttribute('role', 'menuitemradio')
+      choice.setAttribute('aria-label', `底色：${name}`)
+      choice.setAttribute('aria-checked', String(currentFill?.toUpperCase() === fill))
+      choice.title = `底色：${name}`
+    })
+  }
+  function menuOption(label, action, fill, parent = menu) {
     const option = element('button', '', label)
     option.type = 'button'
     option.setAttribute('role', 'menuitem')
@@ -929,7 +973,8 @@
       option.prepend(swatch)
     }
     option.addEventListener('click', action)
-    menu.append(option)
+    parent.append(option)
+    return option
   }
   function placeMenu(x, y) {
     menu.style.left = '0px'
@@ -941,9 +986,18 @@
   }
   function showMenu(x, y) {
     menu.replaceChildren()
-    ;['白色', '橙色', '黄色', '灰色'].forEach((name, index) => {
-      menuOption(`${index + 1}  ${name}`, () => colorNodes(colors[index]), colors[index])
-    })
+    menu.classList.add('compact-menu')
+    const fills = new Set(
+      state.items
+        .filter((item) => selected.has(item.id) && styledItem(item))
+        .map((item) => item.color || colors[0])
+    )
+    fillMenuBar(
+      ['白色', '橙色', '黄色', '灰色'],
+      colors,
+      fills.size === 1 ? [...fills][0] : undefined,
+      colorNodes
+    )
     menuOption('5  红字 / 黑字', toggleTextColor)
     placeMenu(x, y)
   }
