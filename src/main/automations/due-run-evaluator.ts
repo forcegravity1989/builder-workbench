@@ -99,7 +99,7 @@ async function evaluateAutomation(deps: DueRunEvaluatorDeps, automation: Automat
     return
   }
   // 并发固定行为（2026-10-10 再审：不提供每任务策略开关）：上次仍在运行（非终态）
-  // → 记 skipped_overlap（同因折叠），不消耗次数额度；一次性不推进 nextRunAt，
+  // → 记 skipped_overlap（同因折叠），不推进一次性派发计数；一次性不推进 nextRunAt，
   // 宽限内等上次跑完再派，超宽限由上面 missed 分支统一落 skipped_missed。
   if (
     deps.store

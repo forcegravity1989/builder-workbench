@@ -13,6 +13,7 @@ import {
   type AutomationPortableRecord
 } from '../../../../shared/automation-portable-schema'
 import { tryParseAutomationRrule } from '../../../../shared/automation-schedule-parsing'
+import { isOneShotAutomation } from '../../../../shared/automation-schedule-kind'
 import { translate } from '@/i18n/i18n'
 import type { AutomationEditorRequest } from './automation-editor-request'
 import { AUTOMATION_DEFAULT_TIME, formatTimeInput } from './automation-draft-model'
@@ -110,7 +111,7 @@ export function createAutomationPortableFileActions({
         toast.error(error instanceof Error ? error.message : String(error))
         return
       }
-      if (record.onceAt != null) {
+      if (isOneShotAutomation(record)) {
         toast.error(
           translate(
             'auto.components.automations.AutomationsPage.importOneShotUnsupported',

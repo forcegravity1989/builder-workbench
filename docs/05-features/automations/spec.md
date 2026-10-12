@@ -27,7 +27,7 @@
 
 - 调度选择器维持现有五种预设（每小时、每天、工作日、每周、自定义 cron）不变；一次性任务经 composer 会话或 CLI（`--trigger once --at`）创建，不加预设项（2026-10-10 再审：预设增强砍除）。
 - 一次性任务到点触发一次。错过时，在宽限期内（沿用现有 missedRunGraceMinutes）补跑一次；超过宽限，记一条 skipped_missed，任务显示「已结束」。跑完（无论成功失败）即「已结束」，记录保留不删。
-- 自定义 rrule 含 `FREQ=MINUTELY`/`INTERVAL` 时按标准语义解析（起点 + k × 间隔），「每 90 分钟」可经自定义表达；不提供专用预设。
+- 自定义 rrule 含 `FREQ=MINUTELY`/`INTERVAL` 时按标准语义解析（起点 + k × 间隔）；CLI 提供 `--trigger every <N><m|h>` 便捷表达（如 `every 90m`，归一为 `FREQ=MINUTELY;INTERVAL=<分钟>`，按引擎间隔语义）；UI 不提供专用预设。
 - 「已结束」是现算的推导值（一次性过期或已派发），不是存储状态；和用户的暂停开关 enabled 分开呈现。
 - 执行次数上限不支持（2026-10-10 再审砍除）；rrule 里的 `COUNT` 解析容忍不报错、不生效。
 

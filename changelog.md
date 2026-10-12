@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-12 修复与优化（推 PR 前四维检视修正）
+
+- **变更类型**：修复（类型谓词收窄缺失）/ 优化（判别收口、注释清理、文档同步）
+- **变更摘要**：推 PR 前四维 subagent 检视（顶层文档一致性、特性资产同步、实现代码清理、测试配比）发现项的同一交付内修正，共 14 项。代码侧：CLI `automation-format.ts` 与 renderer `automation-portable-file-actions.ts` 两处消费者内联 `onceAt != null` 判别改回收口模块 `isOneShotAutomation`（design「判别收口」）；收口后暴露真类型缺陷——原内联判别带 `!= null` 收窄、无谓词函数不收窄，`new Date(automation.onceAt)` 报 TS2769，给 `isOneShotAutomation` 加类型谓词（true 分支 onceAt 收窄为 number）修复并顺手清掉 `deriveLifecycleState` 内的 `as number` 断言；`automation-definition-operations.ts` lifecycleKindChanged 注释清理被砍能力残留表述（次数上限语境），`dispatch-refusal.ts` / `due-run-evaluator.ts`「不消耗次数额度」措辞改「不推进一次性派发计数」。文档侧：STATUS 与特性矩阵第 8 行 AU07 归类改精确枚举（AU01 ✅；AU04/AU06/AU08/AU09 入口已落地待真壳；AU07 通知未验证）；spec/intent 补间隔触发 CLI 表达（`--trigger every <N><m|h>` 归一引擎间隔语义，UI 不加预设）；architecture §1 用例行全面重写、§2② 入口并列、§2③ 如实登记 composer 分发副本例外（根级手维护副本含 CLI 解析段、standard 存 SOP 正本）；AGENTS.md 计划/验收工作流段补 composer 例外一句（AGENTS 头部范围内修改，PR 正文明列）；ref/upstream.md 扩点清单补「定时任务增强（2026-10 特性批）」行（additive 字段、判别收口、调度器收口三文件按函数对齐等合并保留要求）；docs/README.md 特性枚举补第 8 项定时任务；CONTEXT.md 自动化分组补 5 词条（一次性任务/onceAt 与「已结束」、并发跳过/skipped_overlap、webhook 触发/token、配置导入导出、AI 创建自动化/composer）。
+- **涉及文件**：
+  - `src/shared/automation-schedule-kind.ts`（isOneShotAutomation 加类型谓词；deriveLifecycleState 去 as 断言）
+  - `src/cli/automation-format.ts`、`src/renderer/src/components/automations/automation-portable-file-actions.ts`（判别收口）
+  - `src/main/persistence/scheduling-automations/automation-definition-operations.ts`、`src/main/automations/dispatch-refusal.ts`、`src/main/automations/due-run-evaluator.ts`（注释与措辞清理）
+  - `docs/05-features/automations/STATUS.md`、`docs/05-features/README.md`（AU07 精确枚举）
+  - `docs/05-features/automations/spec.md`、`intent.md`（间隔 CLI 表达）
+  - `docs/architecture.md`（§1/§2②/§2③）、`AGENTS.md`（composer 例外）、`ref/upstream.md`（扩点行）、`docs/README.md`（特性枚举）、`CONTEXT.md`（5 词条 + automation-spec 链接）
+- **验证**：受影响测试面全过——cli automation-format + shared portable-schema + main dispatch-refusal/service-trigger-semantics/persistence automation-run-operations 共 5 文件 18 例，谓词修复后 automation-schedule-kind + automation-format 2 文件 7 例；`pnpm run typecheck` 三工程 0 错误（谓词修复前 2 处 TS2769，修复后归零）；oxlint 改动文件全过、oxfmt 全过（dispatch-refusal 措辞重排一次）。维度④ 3 项测试配比发现（14 例超 ≤10 例配额的理由与归类、ratchet 259→257 真实账目、composer 例贴边）不修代码，PR 正文说明。
+
 ## 2026-10-12 文档同步（定时任务特性收尾）
 
 - **变更类型**：优化（文档同步，纯文档无代码改动）

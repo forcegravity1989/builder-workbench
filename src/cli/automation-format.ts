@@ -9,6 +9,7 @@
  */
 
 import type { Automation, AutomationRun } from '../shared/automations-types'
+import { isOneShotAutomation } from '../shared/automation-schedule-kind'
 import type { AutomationListItem } from '../shared/automation-list-scope'
 import type { AutomationOwnerPrecondition } from '../shared/automation-owner-precondition'
 import { getAutomationLegacyRepoId } from '../shared/automation-run-identity'
@@ -33,7 +34,7 @@ const ORPHAN_HOST_LABEL = 'orphan (no host can run this automation)'
 
 /** A one-shot has no recurrence to label; an empty rrule is its data, not an error. */
 function formatScheduleLabel(automation: Automation): string {
-  return automation.onceAt != null
+  return isOneShotAutomation(automation)
     ? `Once at ${new Date(automation.onceAt).toISOString()}`
     : formatAutomationSchedule(automation.rrule)
 }
@@ -107,7 +108,7 @@ export function formatAutomationShow(result: AutomationShowPayload): string {
     `provider: ${automation.agentId}`,
     `enabled: ${automation.enabled}`,
     `schedule: ${formatScheduleLabel(automation)}`,
-    automation.onceAt != null
+    isOneShotAutomation(automation)
       ? `onceAt: ${new Date(automation.onceAt).toISOString()}`
       : `rrule: ${automation.rrule}`,
     `precheck: ${

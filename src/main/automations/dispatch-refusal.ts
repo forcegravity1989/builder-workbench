@@ -21,7 +21,7 @@ export const NO_DISPATCH_HOST = 'No Orca window was available to launch the auto
 export const OVERLAP_SKIP = 'The previous run was still active, so this occurrence was skipped.'
 
 /** 并发跳过记录：复用拒绝合并机制同因折叠（skipped_overlap），高频任务不刷爆历史；
- *  不消耗次数额度（调用方负责不推进次数）。 */
+ *  不推进一次性派发计数（调用方负责）。 */
 export function recordSkippedOverlap(input: {
   runs: AutomationRunWriter
   automation: Automation

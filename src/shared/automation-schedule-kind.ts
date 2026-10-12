@@ -5,8 +5,11 @@
  */
 import type { Automation } from './automations-types'
 
-/** onceAt 存在即一次性；此时 rrule 为空。判别只写在这一处。 */
-export function isOneShotAutomation(automation: Pick<Automation, 'onceAt'>): boolean {
+/** onceAt 存在即一次性；此时 rrule 为空。判别只写在这一处。
+ *  谓词把 onceAt 收窄为 number，消费者在 true 分支内直接用，不写 as 断言。 */
+export function isOneShotAutomation(
+  automation: Pick<Automation, 'onceAt'>
+): automation is Pick<Automation, 'onceAt'> & { onceAt: number } {
   return automation.onceAt !== undefined && automation.onceAt !== null
 }
 
@@ -21,7 +24,7 @@ export function deriveLifecycleState(
       return 'finished'
     }
     const graceMs = automation.missedRunGraceMinutes * 60 * 1000
-    return now > (automation.onceAt as number) + graceMs ? 'finished' : 'active'
+    return now > automation.onceAt + graceMs ? 'finished' : 'active'
   }
   // 循环任务不因次数终结（2026-10-10 再审砍除执行次数上限）。
   return 'active'

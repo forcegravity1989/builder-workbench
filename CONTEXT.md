@@ -83,6 +83,11 @@
 | 术语 | 含义与边界 | 相关正本 |
 |---|---|---|
 | 定时任务 / 自动创建 Issue | 按时间触发或建 Issue，不代表自动完成；调度与工作验收是两件事 | [整体架构][arch] |
+| 一次性任务 / onceAt | 只到点触发一次的定时任务，由 onceAt 字段判别；跑完或错过超宽限即「已结束」——那是现算推导值，与用户暂停开关 enabled 分开呈现。区别于「一次性上下文」（随手动运行递交的附加上下文） | [定时任务规格][automation-spec] |
+| 并发跳过 / skipped_overlap | 到点时上次仍在运行则跳过本次并记录，同因折叠成一条；固定行为不可配置，手动「立即运行」不受限 | [定时任务规格][automation-spec] |
+| webhook 触发 / webhook token | serve 模式下外部系统带每任务随机 token 调用端点触发一次运行；桌面模式如实提示不可用，触发不改变启用状态 | [定时任务规格][automation-spec] |
+| 配置导入导出 | 定时任务导出为可移植 JSON 子集（机器绑定字段不导出），另一台机器导入、人重新绑定后创建；同名不覆盖 | [定时任务规格][automation-spec] |
+| AI 创建自动化 / composer | 计划屏入口：一句话经 composer 会话起草、试跑、迭代定时任务配置；AI 只创建禁用态任务，启用永远由人操作 | [定时任务规格][automation-spec] |
 | 一次性上下文 / oneShotPrompt | 手动运行自动化时随该次运行带入的附加上下文（如数据文件问题），派发时与已保存提示合并为单次递交，不写回自动化记录；区别于登记时渲染的默认提示，也不随模板更新 | [会话与执行][session] |
 | 采集器 / Collector | 获取指标读数的脚本或工具，不是 Issue 执行器 | [指标协议][metrics] |
 | 项目群通知 / 个人提醒 | 前者给配置的群发事件，后者提示个人处理事项；列词不表示周报触发或个人提醒已实现 | [整体架构][arch] |
@@ -118,4 +123,5 @@
 [week]: standard/system-prompt/references/week-plan-comment.md
 [plan-spec]: docs/05-features/version-planning/spec.md
 [metrics-spec]: docs/05-features/overview-metrics/spec.md
+[automation-spec]: docs/05-features/automations/spec.md
 [skill-spec]: standard/skills/SKILL-MD-SPEC.md

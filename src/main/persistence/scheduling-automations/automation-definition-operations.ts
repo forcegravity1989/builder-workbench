@@ -176,8 +176,8 @@ export function updateAutomation(
     updates.rrule !== undefined ||
     updates.dtstart !== undefined ||
     Object.hasOwn(definedUpdates, 'onceAt')
-  // 一次性 ⇄ 循环是两种生命周期：跨界切换时次数清零，改上限/改时间不清（spec「改大
-  //  复活、改小到数」没有特例逻辑，清零只发生在生命周期种类切换）。
+  // 一次性 ⇄ 循环是两种生命周期：跨界切换时调度派发计数清零，仅改时刻或调度
+  // 字段不清——清零只发生在生命周期种类切换。
   const lifecycleKindChanged =
     Object.hasOwn(definedUpdates, 'onceAt') && (current.onceAt != null) !== (onceAt != null)
   // 联立校验在合并态上做：schema 只看得见本次请求，跨界切换的完整性由存储层守门。
