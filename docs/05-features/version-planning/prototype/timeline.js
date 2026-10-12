@@ -12,7 +12,7 @@
   const scroll = $('.sheet-scroll')
   const status = $('#gesture-status')
   const menu = $('#node-menu')
-  const laneNames = [
+  const initialRows = [
     '月份',
     '日期',
     '星期',
@@ -30,18 +30,29 @@
     '适配昇腾',
     '适配 GDE B 版本',
     'GDE（含 DSP）转测试计划'
-  ]
+  ].map((name, id) => ({
+    id,
+    name,
+    kind: ['month', 'date', 'weekday'][id] || (id === 5 ? 'node' : 'range'),
+    role: id < 3 ? 'calendar' : id === 4 ? 'build' : 'plan',
+    external: id === 16,
+    fill: id < 5 ? '#8DB4E2' : null,
+    textColor: '#000000',
+    itemColor: id === 4 || id === 5 ? '#FFC000' : '#FFFFFF'
+  }))
   const colors = ['#FFFFFF', '#FFC000', '#FFFF00', '#D9D9D9']
   let sequence = 20
   const nextId = () => `segment-${++sequence}`
   const selected = new Set()
   const history = []
   let activeLane = 8
+  let selectedRow
   let cancelGesture
   let activeEdit
   let statusTimer
   let state = {
     version: '示例版本',
+    rows: initialRows,
     items: [
       { id: 'i1', lane: 3, start: 0, end: 29, name: '迭代一', node: false },
       { id: 'i2', lane: 3, start: 30, end: 60, name: '迭代二', node: false },
@@ -65,6 +76,12 @@
     ]
   }
   const snapshot = () => structuredClone(state)
+  const rowFor = (id) => state.rows.find((row) => row.id === id)
+  const planRow = (row) => row && (row.kind === 'range' || row.kind === 'node')
+  const styledItem = (item) => {
+    const row = rowFor(item.lane)
+    return row?.kind === 'node' || row?.role === 'build'
+  }
   const scheduled = (item) => Number.isInteger(item.start) && Number.isInteger(item.end)
   function overlapReason(proposals) {
     const candidates = proposals.map((proposal) => ({
@@ -127,9 +144,11 @@
     })
     grid.querySelectorAll('.side-b[data-lane]').forEach((node) => {
       node.classList.toggle('active-lane', Number(node.dataset.lane) === activeLane)
+      node.classList.toggle('selected-row', Number(node.dataset.lane) === selectedRow)
     })
   }
   function select(item, extend = false) {
+    selectedRow = undefined
     activeLane = item.lane
     if (!extend) {
       selected.clear()
@@ -145,7 +164,7 @@
     node.style.left = `${item.start * dayWidth}px`
     node.style.width = `${(item.end - item.start + 1) * dayWidth}px`
     node.style.top = `${Math.max(1, Math.round((rowHeight - 24) / 2))}px`
-    node.style.background = item.node || item.lane === 4 ? item.color || colors[0] : colors[0]
+    node.style.background = styledItem(item) ? item.color || colors[0] : colors[0]
     node.style.color = item.textColor || '#000000'
     node.setAttribute(
       'aria-label',
@@ -164,6 +183,8 @@
     event.stopPropagation()
     const before = snapshot()
     const previousSelection = [...selected]
+    const previousSelectedRow = options.previousSelectedRow ?? selectedRow
+    const previousActiveLane = options.previousActiveLane ?? activeLane
     const initialX = event.clientX
     const initialPoint = rawDay(event, track)
     let current = event
@@ -230,6 +251,8 @@
       feedback()
       if (cancelled || invalid) {
         state = before
+        selectedRow = planRow(rowFor(previousSelectedRow)) ? previousSelectedRow : undefined
+        activeLane = planRow(rowFor(previousActiveLane)) ? previousActiveLane : undefined
         selected.clear()
         previousSelection.forEach((entry) => selected.add(entry))
         render()
@@ -319,12 +342,16 @@
     if (event.target.closest('.segment') || event.button !== 0 || event.shiftKey || activeEdit) {
       return
     }
+    const previousSelectedRow = selectedRow
+    const previousActiveLane = activeLane
     activeLane = lane
+    selectedRow = undefined
     refreshSelection()
     const pending = state.items.find(
       (item) => item.lane === lane && !scheduled(item) && selected.has(item.id)
     )
-    if (lane === 5 && !pending) {
+    const row = rowFor(lane)
+    if (row.kind === 'node' && !pending) {
       selected.clear()
       refreshSelection()
       return
@@ -335,8 +362,8 @@
       start: anchor,
       end: anchor,
       name: pending?.name || '',
-      node: lane === 5,
-      color: pending?.color || (lane === 4 ? colors[1] : undefined)
+      node: row.kind === 'node',
+      color: pending?.color || row.itemColor
     }
     const ghost = segmentNode(range, track, true)
     ghost.classList.add('ghost')
@@ -362,6 +389,8 @@
           ? dateAt(point)
           : `${dateAt(Math.min(anchor, point))} — ${dateAt(Math.max(anchor, point))}`,
       {
+        previousSelectedRow,
+        previousActiveLane,
         cleanup: () => ghost.remove(),
         onComplete: () => {
           if (pending) {
@@ -457,10 +486,13 @@
       )
     })
     node.addEventListener('contextmenu', (event) => {
-      if (!item.node && item.lane !== 4) {
+      if (!styledItem(item)) {
         return
       }
       event.preventDefault()
+      if (activeEdit || cancelGesture) {
+        return
+      }
       select(item)
       showMenu(event.clientX, event.clientY)
     })
@@ -525,7 +557,7 @@
     const node = element('div', className)
     node.style.gridRow = String(row)
     node.style.gridColumn = String(column)
-    if (row <= 6 && column > 1) {
+    if (row <= 3 && column > 1) {
       node.classList.add('header-cell')
       node.style.top = `${(row - 1) * rowHeight}px`
     }
@@ -566,38 +598,198 @@
     input.focus()
     input.select()
   }
+  function selectPlanRow(row) {
+    if (cancelGesture || activeEdit || !planRow(row)) {
+      return
+    }
+    selected.clear()
+    selectedRow = row.id
+    activeLane = row.id
+    refreshSelection()
+  }
+  function editRowName(row, draft) {
+    if (cancelGesture || activeEdit || !planRow(row)) {
+      return
+    }
+    menu.hidden = true
+    const before = draft?.before || snapshot()
+    const label = grid.querySelector(`.side-b[data-lane="${row.id}"] strong`)
+    const input = element('input', 'row-name-input')
+    input.value = draft ? '' : row.name
+    input.maxLength = 100
+    input.setAttribute('aria-label', '计划行名称')
+    label.replaceChildren(input)
+    let done = false
+    const finish = (save) => {
+      if (done) {
+        return
+      }
+      done = true
+      activeEdit = undefined
+      const name = input.value.trim()
+      if (save && name) {
+        row.name = name
+        commit(before)
+      } else if (draft) {
+        state = before
+        activeLane = draft.activeLane
+        selectedRow = draft.selectedRow
+        selected.clear()
+        draft.selectedItems.forEach((id) => selected.add(id))
+      }
+      render()
+    }
+    activeEdit = { cancel: () => finish(false) }
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        finish(event.key === 'Enter')
+      }
+    })
+    input.addEventListener('blur', () => finish(!draft))
+    input.focus()
+    input.select()
+  }
+  function insertRow(index, kind) {
+    if (cancelGesture || activeEdit) {
+      return
+    }
+    const draft = { before: snapshot(), activeLane, selectedRow, selectedItems: [...selected] }
+    const row = {
+      id: ++sequence,
+      name: '',
+      kind,
+      role: 'plan',
+      external: false,
+      fill: null,
+      textColor: '#000000',
+      itemColor: kind === 'node' ? colors[1] : colors[0]
+    }
+    state.rows.splice(Math.max(3, Math.min(index, state.rows.length)), 0, row)
+    activeLane = row.id
+    selectedRow = row.id
+    selected.clear()
+    menu.hidden = true
+    render()
+    editRowName(row, draft)
+  }
+  function deleteRow(row) {
+    if (cancelGesture || activeEdit || !planRow(rowFor(row.id))) {
+      return
+    }
+    const before = snapshot()
+    const index = state.rows.findIndex((entry) => entry.id === row.id)
+    state.rows.splice(index, 1)
+    state.items = state.items.filter((item) => item.lane !== row.id)
+    activeLane = state.rows.slice(index).find(planRow)?.id || state.rows.slice(3, index).at(-1)?.id
+    selectedRow = undefined
+    selected.clear()
+    menu.hidden = true
+    commit(before)
+    feedback('计划行及其内容已删除，可撤销')
+  }
+  function markRow(row, field, value) {
+    if (cancelGesture || activeEdit || !planRow(rowFor(row.id))) {
+      return
+    }
+    const before = snapshot()
+    row[field] = value
+    menu.hidden = true
+    commit(before)
+  }
+  function showRowMenu(event, row) {
+    event.preventDefault()
+    if (cancelGesture || activeEdit) {
+      return
+    }
+    const index = row ? state.rows.findIndex((entry) => entry.id === row.id) : state.rows.length - 1
+    menu.replaceChildren()
+    if (planRow(row)) {
+      selectPlanRow(row)
+      menuOption('修改行名称', () => editRowName(row))
+      menuOption('上方新增时段行', () => insertRow(index, 'range'))
+      menuOption('上方新增节点行', () => insertRow(index, 'node'))
+    }
+    const next = row && !planRow(row) ? 3 : index + 1
+    menuOption('下方新增时段行', () => insertRow(next, 'range'))
+    menuOption('下方新增节点行', () => insertRow(next, 'node'))
+    if (planRow(row)) {
+      const items = state.items.filter((item) => item.lane === row.id)
+      const count = items.filter(scheduled).length
+      menuOption(`删除行（${count} 个时段、${items.length - count} 个未排期项）`, () =>
+        deleteRow(row)
+      )
+      ;['白色', '橙色', '黄色', '灰色', '蓝色', '紫色'].forEach((name, index) => {
+        const fill = [...colors, '#8DB4E2', '#CCC0DA'][index]
+        menuOption(`底色：${name}`, () => markRow(row, 'fill', fill), fill)
+      })
+      menuOption('文字：红字 / 黑字', () =>
+        markRow(row, 'textColor', row.textColor === '#C00000' ? '#000000' : '#C00000')
+      )
+    }
+    placeMenu(event.clientX, event.clientY)
+  }
   function render() {
     if (cancelGesture || activeEdit) {
       return
     }
+    if (!planRow(rowFor(activeLane))) {
+      activeLane = state.rows.find(planRow)?.id
+    }
+    if (!planRow(rowFor(selectedRow))) {
+      selectedRow = undefined
+    }
+    selected.forEach((id) => {
+      if (!state.items.some((item) => item.id === id)) {
+        selected.delete(id)
+      }
+    })
     grid.replaceChildren()
     grid.style.setProperty('--a', '60px')
     grid.style.setProperty('--b', '187px')
     grid.style.setProperty('--chart', `${chartWidth}px`)
-    grid.style.gridTemplateRows = `repeat(${laneNames.length}, ${rowHeight}px)`
+    grid.style.gridTemplateRows = `repeat(${state.rows.length}, ${rowHeight}px)`
     const iteration = cell('side-a iteration-label', 1, 1)
-    iteration.style.gridRow = '1 / 6'
+    iteration.style.gridRow = '1 / 4'
     iteration.textContent = '迭代'
-    const version = cell('side-a', 6, 1)
-    version.style.gridRow = '6 / 18'
-    const versionLabel = element('div', 'version-label', '版本')
-    const versionName = element('span', 'version-name', state.version)
-    versionName.tabIndex = 0
-    versionName.addEventListener('dblclick', () => editVersion(versionName))
-    versionLabel.append(versionName)
-    version.append(versionLabel)
-    laneNames.forEach((name, lane) => {
+    if (state.rows.length > 3) {
+      const version = cell('side-a', 4, 1)
+      version.style.gridRow = `4 / ${state.rows.length + 1}`
+      const versionLabel = element('div', 'version-label', '版本')
+      const versionName = element('span', 'version-name', state.version)
+      versionName.tabIndex = 0
+      versionName.addEventListener('dblclick', () => editVersion(versionName))
+      versionLabel.append(versionName)
+      version.append(versionLabel)
+      version.addEventListener('contextmenu', (event) => showRowMenu(event))
+    }
+    state.rows.forEach((row, index) => {
+      const { id: lane, name } = row
       const rail = cell(
-        `side-b${lane < 5 ? ' blue-rail' : ''}${lane === 16 ? ' external-lane' : ''}`,
-        lane + 1,
+        `side-b${!planRow(row) ? ' blue-rail' : ''}${row.external ? ' external-lane' : ''}`,
+        index + 1,
         2
       )
-      rail.append(element('strong', '', name))
-      if (lane >= 3) {
+      if (row.fill) {
+        rail.style.background = row.fill
+      }
+      rail.style.color = row.textColor || '#000000'
+      const label = element('strong', '', name)
+      rail.append(label)
+      rail.addEventListener('contextmenu', (event) => {
+        if (!event.target.closest('.unscheduled, input')) {
+          showRowMenu(event, row)
+        }
+      })
+      if (planRow(row)) {
         rail.dataset.lane = lane
-        rail.addEventListener('click', () => {
-          activeLane = lane
-          refreshSelection()
+        label.tabIndex = 0
+        label.addEventListener('dblclick', () => editRowName(row))
+        rail.addEventListener('click', (event) => {
+          if (!event.target.closest('.unscheduled, input')) {
+            selectPlanRow(row)
+          }
         })
         const pending = state.items.filter((item) => item.lane === lane && !scheduled(item))
         if (pending.length) {
@@ -621,8 +813,8 @@
           rail.append(backlog)
         }
       }
-      const track = cell('track', lane + 1, 3)
-      if (lane === 0) {
+      const track = cell('track', index + 1, 3)
+      if (row.kind === 'month') {
         track.classList.add('month-band')
         for (const [label, count] of [
           ['2026 年 7 月', 31],
@@ -633,14 +825,14 @@
           month.style.width = `${count * dayWidth}px`
           track.append(month)
         }
-      } else if (lane < 3) {
-        track.classList.add(lane === 1 ? 'date-band' : 'weekday-band')
+      } else if (row.kind === 'date' || row.kind === 'weekday') {
+        track.classList.add(row.kind === 'date' ? 'date-band' : 'weekday-band')
         for (let day = 0; day < days; day++) {
           const current = date(day)
           const dayCell = element(
             'div',
             [0, 6].includes(current.getUTCDay()) ? 'weekend' : '',
-            lane === 1
+            row.kind === 'date'
               ? String(current.getUTCDate())
               : ['日', '一', '二', '三', '四', '五', '六'][current.getUTCDay()]
           )
@@ -660,12 +852,13 @@
           .filter((item) => item.lane === lane && scheduled(item))
           .forEach((item) => track.append(segmentNode(item, track)))
         track.addEventListener('pointerdown', (event) => makeRange(event, track, lane))
-        if (lane === 5) {
+        if (row.kind === 'node') {
           track.addEventListener('dblclick', (event) => {
             if (event.target.closest('.segment') || activeEdit) {
               return
             }
             activeLane = lane
+            selectedRow = undefined
             const point = pointDay(event, track)
             const candidate = {
               lane,
@@ -673,7 +866,7 @@
               end: point,
               name: '',
               node: true,
-              color: colors[1]
+              color: row.itemColor
             }
             const conflict = overlapReason([candidate])
             if (conflict) {
@@ -691,9 +884,11 @@
     if (cancelGesture || activeEdit) {
       return
     }
-    const nodes = state.items.filter(
-      (item) => selected.has(item.id) && (item.node || item.lane === 4)
-    )
+    if (planRow(rowFor(selectedRow))) {
+      markRow(rowFor(selectedRow), 'fill', color)
+      return
+    }
+    const nodes = state.items.filter((item) => selected.has(item.id) && styledItem(item))
     if (!nodes.length) {
       return
     }
@@ -708,9 +903,12 @@
     if (cancelGesture || activeEdit) {
       return
     }
-    const items = state.items.filter(
-      (item) => selected.has(item.id) && (item.node || item.lane === 4)
-    )
+    const row = rowFor(selectedRow)
+    if (planRow(row)) {
+      markRow(row, 'textColor', row.textColor === '#C00000' ? '#000000' : '#C00000')
+      return
+    }
+    const items = state.items.filter((item) => selected.has(item.id) && styledItem(item))
     if (!items.length) {
       return
     }
@@ -721,26 +919,33 @@
     menu.hidden = true
     commit(before)
   }
+  function menuOption(label, action, fill) {
+    const option = element('button', '', label)
+    option.type = 'button'
+    option.setAttribute('role', 'menuitem')
+    if (fill) {
+      const swatch = element('i', 'swatch')
+      swatch.style.background = fill
+      option.prepend(swatch)
+    }
+    option.addEventListener('click', action)
+    menu.append(option)
+  }
+  function placeMenu(x, y) {
+    menu.style.left = '0px'
+    menu.style.top = '0px'
+    menu.hidden = false
+    const bounds = menu.getBoundingClientRect()
+    menu.style.left = `${Math.max(8, Math.min(x, innerWidth - bounds.width - 8))}px`
+    menu.style.top = `${Math.max(8, Math.min(y, innerHeight - bounds.height - 8))}px`
+  }
   function showMenu(x, y) {
     menu.replaceChildren()
     ;['白色', '橙色', '黄色', '灰色'].forEach((name, index) => {
-      const option = element('button', '', `${index + 1}  ${name}`)
-      option.type = 'button'
-      option.setAttribute('role', 'menuitem')
-      const swatch = element('i', 'swatch')
-      swatch.style.background = colors[index]
-      option.prepend(swatch)
-      option.addEventListener('click', () => colorNodes(colors[index]))
-      menu.append(option)
+      menuOption(`${index + 1}  ${name}`, () => colorNodes(colors[index]), colors[index])
     })
-    const textOption = element('button', '', '5  红字 / 黑字')
-    textOption.type = 'button'
-    textOption.setAttribute('role', 'menuitem')
-    textOption.addEventListener('click', toggleTextColor)
-    menu.append(textOption)
-    menu.style.left = `${Math.min(x, innerWidth - 140)}px`
-    menu.style.top = `${Math.min(y, innerHeight - 150)}px`
-    menu.hidden = false
+    menuOption('5  红字 / 黑字', toggleTextColor)
+    placeMenu(x, y)
   }
   document.addEventListener('pointerdown', (event) => {
     if (!event.target.closest('#node-menu')) {
@@ -765,6 +970,11 @@
       return
     }
     event.preventDefault()
+    const row = rowFor(activeLane)
+    if (!planRow(row)) {
+      feedback('请先右键日期表头侧栏新增计划行', true)
+      return
+    }
     if (entries.length > 100) {
       feedback('一次最多粘贴 100 项', true)
       return
@@ -777,8 +987,8 @@
         name,
         start: null,
         end: null,
-        node: activeLane === 5,
-        color: colors[1]
+        node: row.kind === 'node',
+        color: row.itemColor
       }))
     )
     commit(before)
@@ -799,6 +1009,7 @@
         activeEdit.cancel()
       } else {
         selected.clear()
+        selectedRow = undefined
         refreshSelection()
         menu.hidden = true
       }
@@ -816,6 +1027,8 @@
       if (history.length) {
         state = history.pop()
         selected.clear()
+        selectedRow = undefined
+        menu.hidden = true
         render()
       }
     } else if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -835,6 +1048,12 @@
     } else if (event.key === '5' && !event.ctrlKey && !event.metaKey) {
       toggleTextColor()
     } else if (event.key === 'Enter') {
+      const row = rowFor(selectedRow)
+      if (planRow(row)) {
+        event.preventDefault()
+        editRowName(row)
+        return
+      }
       const item = state.items.find((entry) => selected.has(entry.id) && scheduled(entry))
       if (item) {
         event.preventDefault()
