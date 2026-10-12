@@ -82,7 +82,15 @@ export async function prepareWeeklyReportSession(args: {
   }
   const prompt = buildWeeklyReportPrompt({
     ...promptContext,
-    reportPath: `.bw/weekly-reports/${args.periodStart}/${crypto.randomUUID()}.json`
+    reportPath: `.bw/weekly-reports/${args.periodStart}/${crypto.randomUUID()}.json`,
+    executionContext: {
+      projectId: scope.projectId,
+      repoId: scope.repoId,
+      hostId: scope.hostId,
+      runtimeOwnerEnvironmentId: scope.runtimeOwnerEnvironmentId,
+      worktreeId: worktree.id,
+      workspacePath: worktree.path
+    }
   })
   const state = useAppStore.getState()
   state.setActiveWorktree(worktree.id, scope.hostId)

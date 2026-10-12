@@ -225,6 +225,24 @@
           "identitySha256": "569620311383498536286436311f1d6f4100b27982824ce92bb89840d55a0ec6"
         }
       ]
+    },
+    {
+      "name": "weekly-report",
+      "sourcePath": "skills/weekly-report",
+      "releaseRevision": 1,
+      "packageDigest": "c3c95809c60d5f50d5ab4016dbd4e6003df68653671318c445d3a2a88291d705",
+      "gitTreeSha": "6451a22fc27ffd8c6a489f0190a4f097f8c394fc",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "size": 1927,
+          "executable": false,
+          "classification": "text",
+          "exactSha256": "4143fe3de7031f5e6808bdeac1f96e5e8f373eea7474d71d424f87d92da5fbdf",
+          "textNormalizedSha256": "4143fe3de7031f5e6808bdeac1f96e5e8f373eea7474d71d424f87d92da5fbdf",
+          "identitySha256": "4143fe3de7031f5e6808bdeac1f96e5e8f373eea7474d71d424f87d92da5fbdf"
+        }
+      ]
     }
   ]
 }

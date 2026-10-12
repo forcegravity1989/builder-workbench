@@ -20,7 +20,7 @@
 
 ## 自动提炼
 
-“更新周报”复用原生 `launchAgentInNewTab`、本机工具选择、工作树选择与 prompt delivery，进入该项目真实会话；不创建新自动化或扩计划／验收 workflow。提示使用同一 SYSTEM 模板，携带项目、周期、时区、唯一报告路径及固定列协议，指示会话完整分页取数、保留关闭原因与实际窗口，读取最新人工内容并写后读回。
+“更新周报”复用原生 `launchAgentInNewTab`、本机工具选择、工作树选择与 prompt delivery，进入该项目真实会话；不创建新自动化或扩计划／验收 workflow。提示使用同一 SYSTEM 模板与 [weekly-report Skill](../../../standard/skills/weekly-report/SKILL.md) 的发现 Stub，携带宿主确认的项目／工作区身份、周期、时区、唯一报告路径及生产模板推导的固定列协议。取数、提炼和保存流程留在 Skill 与按需 references，通过随包原生 `ORCA skills get weekly-report` 读取；普通被管项目无需复制 `standard/`，入口代码不重复 SOP。
 
 模型提炼本期方向和关键变化，数字由实际工具记录计算。历史峰值、当前验收窗口和项目纳入数分别陈述；当前快照不能写成历史期末量。提示发送失败如实反馈；输入已接受或 turn 已开始均不证明报告完成。当前周报树加入 Orca 唯一应用级文件监听，按目录与宿主合并去重，沿用统一生命周期，不与编辑器争抢 watch/unwatch。返回报告页面或文件事件触发重新读取，只有有效新文件才成为可阅读版本。
 
