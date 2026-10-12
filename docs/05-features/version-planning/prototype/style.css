@@ -838,7 +838,7 @@ input::placeholder {
   display: flex;
   flex-direction: column;
   padding: 0;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-dialog);
   border-radius: var(--radius-lg);
 }
 .review-dialog > header {
@@ -2018,7 +2018,7 @@ input::placeholder {
   font-weight: 500;
 }
 .ov6-last small {
-  font-family: var(--font-body);
+  font-family: var(--font-sans);
   font-size: 0.9em;
 }
 .ov6-trend {
@@ -2206,7 +2206,7 @@ input::placeholder {
   color: var(--color-neutral-100);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-menu);
   font-size: 0.9em;
   line-height: 1.7;
 }
@@ -2628,7 +2628,7 @@ input::placeholder {
 .ov8-full-records pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font: 12px/1.85 var(--font-body);
+  font: 12px/1.85 var(--font-sans);
 }
 .ov8-full-records a {
   display: inline-flex;

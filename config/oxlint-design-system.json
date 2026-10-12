@@ -18,7 +18,7 @@
   ],
   "settings": {
     "shadcn": {
-      "note": "See docs/STYLEGUIDE.md for the role each token and primitive plays."
+      "note": "See ref/STYLEGUIDE.md and docs/04-design-system/guidelines.md for the role each token and primitive plays."
     }
   },
   "rules": {},

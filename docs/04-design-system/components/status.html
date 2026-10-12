@@ -1,10 +1,9 @@
-<!-- @dsCard group="Components" name="Status & identity · 状态与身份" subtitle="State dots, status tags, avatars — people are circles, agents are squircles" viewport="640x560" -->
 <!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Builder — Status &amp; identity</title>
+<title>Workbench — Status &amp; identity</title>
 <link rel="stylesheet" href="../styles.css" />
 <style>
 .demo { max-width: 620px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-8); }
@@ -47,8 +46,8 @@ code { font-family: var(--font-mono); font-size: 0.92em; }
     <span class="who"><span class="avatar avatar-agent">AG</span><span>build-agent<span class="sub">working · retry 1</span></span></span>
     <span class="who"><span class="avatar avatar-agent" style="background: var(--color-accent)">RV</span><span>review-agent<span class="sub">waiting on checks</span></span></span>
   </div>
-  <p class="note" style="margin-top: var(--space-6)">A status keeps its hue in both themes: todo neutral, progress <code>--color-warning</code>, review <code>--color-accent-2</code>, done <code>--color-success</code>, blocked <code>--color-danger</code>. Agents share the row grammar with people — the square radius is the only tell.</p>
-  <p class="note" lang="zh">状态在两套主题中保持同一色相:todo 中性、progress 警示色、review 第二强调色、done 成功色、blocked 危险色。Agent 与人共用同一行文法 — 方圆角是唯一区别。</p>
+  <p class="note" style="margin-top: var(--space-6)">A status keeps its hue in both themes: todo neutral, progress / review / done <code>--workspace-status-*</code>, blocked <code>--destructive</code>. Agents share the row grammar with people — the square radius is the only tell.</p>
+  <p class="note" lang="zh">状态在两套主题中保持同一色相:todo 中性,progress / review / done 取 <code>--workspace-status-*</code>,blocked 取 <code>--destructive</code>。Agent 与人共用同一行文法 — 方圆角是唯一区别。</p>
 </main>
 </body>
 </html>

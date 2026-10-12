@@ -15,6 +15,12 @@ const DOCS_ONLY_FILES = new Set([
 
 const DOCS_ONLY_PREFIXES = ['docs/', '.github/ISSUE_TEMPLATE/']
 
+// Why: these sit under docs/ but are checked against main.css by check:design-system-tokens.
+const CHECKED_DOCS_FILES = new Set([
+  'docs/04-design-system/tokens.json',
+  'docs/04-design-system/tokens.css'
+])
+
 export const PR_CHECK_JOBS = [
   'static_analysis',
   'typecheck',
@@ -260,6 +266,9 @@ const DESKTOP_IRRELEVANT_PREFIXES = [
 ]
 
 export function isDocsOnlyPath(file) {
+  if (CHECKED_DOCS_FILES.has(file)) {
+    return false
+  }
   if (DOCS_ONLY_FILES.has(file)) {
     return true
   }
