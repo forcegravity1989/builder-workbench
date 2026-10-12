@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="source-sha256" content="0249ec805e7026ce8d45ba360a7379e9ab50ae0385b1e6eccc9425d3e62069fe">
-<title>WorkBuddy 与 CodeBuddy：小团队怎样把 AI 产出变成可交付软件 · BW 研究</title>
+<meta name="source-sha256" content="92f883aadc80aad4eaed8f28ada82c0cb3af027f52686c14374f276559581fb3">
+<title>WorkBuddy 与 CodeBuddy：一个 Builder 怎样把 AI 产出变成可交付软件 · BW 研究</title>
 <link rel="stylesheet" href="report.css">
 </head>
 <body>
@@ -25,9 +25,9 @@
 <a href="#section-8">对 BW：先复用，再精简，再作小实验</a>
 <a href="#section-9">局限与未决</a>
 <a href="#section-10">来源表</a></details></aside>
-<main id="content"><div class="eyebrow">2026.10.09 · 外部研究参考 · 待真实项目验证</div><article><h1 id="section-0">WorkBuddy 与 CodeBuddy：小团队怎样把 AI 产出变成可交付软件</h1>
+<main id="content"><div class="eyebrow">2026.10.09 · 外部研究参考 · 待真实项目验证</div><article><h1 id="section-0">WorkBuddy 与 CodeBuddy：一个 Builder 怎样把 AI 产出变成可交付软件</h1>
 <blockquote>
-<p><strong>读者与边界</strong>：供 1–3 人 Builder 团队及 BW 产品决策者盘点已有能力；研究窗口为 2025-10-09 至 2026-10-09，截止与访问日均为 2026-10-09。本文区分 WorkBuddy 工作台、CodeBuddy IDE/插件、CodeBuddy Code CLI，不以办公案例证明研发成效，不替代 BW 产品原则、规格或实测。结构为结论、时间线、工作故事、指标机制、建议、局限、来源与未决；版本、官方证据或内部实验变化时更新。Markdown 是内容正源，同名 HTML 为阅读投影。</p>
+<p><strong>读者与边界</strong>：供独立负责项目的 Builder、共享 SE/Leader 及 BW 产品决策者盘点已有能力；研究窗口为 2025-10-09 至 2026-10-09，截止与访问日均为 2026-10-09。本文区分 WorkBuddy 工作台、CodeBuddy IDE/插件、CodeBuddy Code CLI，不以办公案例证明研发成效，不替代 BW 产品原则、规格或实测。结构为结论、时间线、工作故事、指标机制、建议、局限、来源与未决；版本、官方证据或内部实验变化时更新。Markdown 是内容正源，同名 HTML 为阅读投影。</p>
 </blockquote>
 <h2 id="section-1">结论：交付动作正在压缩，判断责任仍在人</h2>
 <p><strong>【综合判断】</strong> 腾讯这组产品正在把“提需求、找上下文、写代码、跑工具、预览和发布”放进持续会话，并用工作树隔离、共享上下文和可复用编排减少人来回搬运。对已经有 Orca 的 Builder，BW 的候选价值应落在三个可观察问题：是否选对本次要解决的问题；是否拿到可核对的交付证据；是否因此作出下一次取舍。再加一份计划或总览，并不能自动回答它们。</p>
@@ -38,7 +38,7 @@
 <tr>
 <th>日期与主体</th>
 <th>已发布变化</th>
-<th>对少人交付的意义与边界</th>
+<th>对单 Builder 交付的意义与边界</th>
 </tr>
 </thead>
 <tbody><tr>
@@ -79,17 +79,17 @@
 <p><strong>触发与输入。</strong> 老师正在手工整理预约。Builder 给 WorkBuddy 的代码开发入口说明：谁预约、每时段名额、老师如何查看、数据是否持久保存。官方网页应用指南已经把用户操作与数据保存列为需求重点。<a href="https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/App-Publishing/Web-App">S8</a></p>
 <p><strong>执行与产物。</strong> 同一会话生成应用，按需开启数据库、身份认证和存储，再发布为在线应用；减少的是搭环境、接云服务和部署配置的机械步骤。设计需要修改时，以运行界面和反馈继续迭代。另一本本地应用教程展示了“生成—尝试运行—描述异常—继续排查”的交互方式，但它只覆盖本地工具，不能移作线上可靠性证据。<a href="https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/App-Publishing/Web-App">S8</a>、<a href="https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Practice-Cases/Practice-Seven">S9</a></p>
 <p><strong>仍由人决定。</strong> 是否真需要账号体系、是否收集手机号、取消与超额预约怎么处理、何时公开上线。建议验收必须实际覆盖两人抢最后名额、越权看名单、刷新后读回记录，并观察老师是否真的减少整理时间。这些是本报告提出的验证点，官方教程未给出通过率。发布成功说明地址可访问，不等于用户问题已解决。</p>
-<h3 id="section-5">故事二：两名 Builder 在既有仓库完成一次接口迁移</h3>
-<p><strong>触发与输入。</strong> 已有调用方需要迁移，不能破坏线上兼容。第一人确定目标接口、不改范围和可运行的验收命令；让 CodeBuddy Code 先读工程再提出方案。官方最佳实践强调给具体文件与约束，小而明确的改动无需额外计划过程。<a href="https://www.codebuddy.cn/docs/cli/best-practices">S10</a></p>
-<p><strong>执行与产物。</strong> 将独立模块交给隔离工作树会话，第二人同时核对接口契约和集成环境；Agent 修改、运行测试、根据失败继续，形成 diff、执行输出和 MR。工作树减少文件相互覆盖；重复的跨模块审查可以保存为 Workflow。它压缩分派、上下文重述和反复催促，不能消除共享接口冲突。<a href="https://www.codebuddy.cn/docs/cli/common-workflows">S11</a>、<a href="https://www.codebuddy.cn/docs/cli/workflows">S12</a></p>
-<p><strong>最关键边界。</strong> <code>/goal</code> 的评估器只读会话里已表达的内容，不自己运行命令或读取文件。即使显示达成，第二人仍应在实际合并版本核对测试和集成行为；由负责人决定合入及发布。将“测试通过”设为终态时，还要防止 Agent 改弱判据。这是证据责任的迁移，不能交给绿色状态代替。<a href="https://www.codebuddy.cn/docs/cli/goal">S13</a></p>
+<h3 id="section-5">故事二：一位 Builder 在既有仓库完成一次接口迁移</h3>
+<p><strong>触发与输入。</strong> 已有调用方需要迁移，不能破坏线上兼容。负责该项目的 Builder 确定目标接口、不改范围和可运行的验收命令；让 CodeBuddy Code 先读工程再提出方案。官方最佳实践强调给具体文件与约束，小而明确的改动无需额外计划过程。<a href="https://www.codebuddy.cn/docs/cli/best-practices">S10</a></p>
+<p><strong>执行与产物。</strong> 将独立模块交给隔离工作树会话，让独立审查 agent 核对接口契约；Builder 确认集成环境，必要时请求跨项目共享的 SE 复核高风险边界；Agent 修改、运行测试、根据失败继续，形成 diff、执行输出和 MR。工作树减少文件相互覆盖；重复的跨模块审查可以保存为 Workflow。它压缩分派、上下文重述和反复催促，不能消除共享接口冲突。<a href="https://www.codebuddy.cn/docs/cli/common-workflows">S11</a>、<a href="https://www.codebuddy.cn/docs/cli/workflows">S12</a></p>
+<p><strong>最关键边界。</strong> <code>/goal</code> 的评估器只读会话里已表达的内容，不自己运行命令或读取文件。即使显示达成，这位 Builder 仍应在实际合并版本核对测试和集成行为，并按现有权限决定合入及发布。将“测试通过”设为终态时，还要防止 Agent 改弱判据。这是证据责任的迁移，不能交给绿色状态代替。<a href="https://www.codebuddy.cn/docs/cli/goal">S13</a></p>
 <h2 id="section-6">哪些责任被压缩，哪些仍必须有人承担</h2>
 <table>
 <thead>
 <tr>
 <th>环节</th>
 <th>AI 机制能省下的动作</th>
-<th>1–3 人团队需要保留的判断</th>
+<th>单 Builder 项目需要保留的判断</th>
 </tr>
 </thead>
 <tbody><tr>
@@ -113,7 +113,7 @@
 <td>上线授权、回退条件，以及使用后是否有效</td>
 </tr>
 </tbody></table>
-<p><strong>【综合判断】</strong> 小团队可以把角色交接压成围绕同一个可运行产物的数次决定，不必把产品、设计、开发、测试各做一遍独立填报。团队越小，越应关注从问题到可信结果的总时间，而非 Agent 数、生成代码量或文档份数。</p>
+<p><strong>【综合判断】</strong> 一位 Builder 可以把传统角色动作压成围绕同一个可运行产物的数次决定，不必把产品、设计、开发、测试各做一遍独立填报。应关注从问题到可信结果的总时间，而非 Agent 数、生成代码量或文档份数。</p>
 <h2 id="section-7">指标与效果：现有证据能说明多少</h2>
 <p><strong>【营销证言】</strong> WorkBuddy 产品页有用户声称办公单环节提效超过 90%，同时提到报错、重试和卡顿；页面未披露任务样本、计时方法、失败分母或对照。这既不能外推研发，也不能证明总体交付快了 90%。<a href="https://cloud.tencent.com/product/workbuddy">S14</a></p>
 <p><strong>【可复核的评测设计】</strong> 官方 WorkBuddy Bench 提供 80 个 Code、70 个 Web、50 个 Office、60 个 Security 任务，共 260 个；通过隔离环境记录改动、轨迹、结果和效率。论文说明使用 CodeBuddy Code 与 Claude Code 两种执行框架，各子集评分工具不同，不报告统一平均分。这能支持任务级可重复验证；没有测量小团队几周内的真实用户收益、审阅负担与上线事故，不能作为 WorkBuddy 桌面已提高交付效率的结论。<a href="https://github.com/Tencent/workbuddy-bench">S15</a>、<a href="https://arxiv.org/abs/2607.20911">S16</a></p>
@@ -121,7 +121,7 @@
 <h2 id="section-8">对 BW：先复用，再精简，再作小实验</h2>
 <p><strong>复用。</strong> 会话、工作树、工具、定时和运行状态优先沿 Orca 已有能力衔接；CodeHub 适配解决进入真实仓与真实评审的障碍，本身可有价值，但要用成功交付率与少掉的手工操作证明。</p>
 <p><strong>精简。</strong> WorkBuddy 已提供负责人、起止时间、计划视图和任务流转，并明确计划事项与 AI 会话是两种对象。BW 不能靠“也有计划屏”建立必要性，也应避免让用户在 Issue、聊天、计划和验收中重复描述同一工作。<a href="https://cloud.tencent.com/document/product/1831/138797">S17</a></p>
-<p><strong>实验。</strong> 在一个 1–3 人内部团队的真实交付上，先试“原生 Orca + 一份简短目标/证据记录”，再与 BW 四块比较。总览须减少寻找需干预事项的时间；指标须改变至少一次判断；计划须帮助少做无效工作；验收须发现“实现完成但用户目标未满足”。同时记录新增维护成本。若没有新增决定、只是重排已有信息，优先合并入口或移除必填步骤，而非再铺能力。</p>
+<p><strong>实验。</strong> 在一位 Builder 独立负责的内部项目真实交付上，先试“原生 Orca + 一份简短目标/证据记录”，再与 BW 四块比较。总览须减少寻找需干预事项的时间；指标须改变至少一次判断；计划须帮助少做无效工作；验收须发现“实现完成但用户目标未满足”。同时记录新增维护成本。若没有新增决定、只是重排已有信息，优先合并入口或移除必填步骤，而非再铺能力。</p>
 <p><strong>不适用点。</strong> 动态编排的官方说明提醒大量代理可能比普通对话消耗更多 Token，暂停恢复也仅限同一会话。一次小修不必先建立复杂编排；跨进程持续交付不能凭可恢复按钮推断。小团队应从一个目录或一项任务试跑后再扩大。<a href="https://www.codebuddy.cn/docs/cli/workflows">S12</a></p>
 <p><strong>反证条件。</strong> 若复用原生会话与现有 Issue 已能低成本达成上述结果，BW 四块就缺少独立价值；若真实用户没有可追踪的跨次交付问题，指标闭环也可能只是额外负担。反过来，只有能证明减少失焦、错判完成或重复核对，才值得继续投资。</p>
 <h2 id="section-9">局限与未决</h2>

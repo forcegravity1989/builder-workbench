@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="source-sha256" content="d1ca46b9b556e0881e32410098d423e14c33706d799151aed04f3ed5513f618a">
-<title>Cursor 与 Linear：少人团队怎样组织跨会话的 AI 交付 · BW 研究</title>
+<meta name="source-sha256" content="ee09a3f52314cea65deb41c342d199334fc84ce32a017e0f3e2ef41a51c7aec7">
+<title>Cursor 与 Linear：一个 Builder 怎样组织跨会话的 AI 交付 · BW 研究</title>
 <link rel="stylesheet" href="report.css">
 </head>
 <body>
@@ -21,12 +21,12 @@
 <a href="#section-2">近一年变化：研究、试用与已发布分开看</a>
 <a href="#section-3">三条工作故事：步骤压缩了，哪些判断仍在人</a>
 <a href="#section-7">指标机制：官方数字具体说明了什么</a>
-<a href="#section-8">对 1–3 名 Builder 和 BW 的取舍及反证</a>
+<a href="#section-8">对一位 Builder、共享 SE/Leader 与 BW 的取舍及反证</a>
 <a href="#section-9">局限与未决</a>
 <a href="#section-10">来源表</a></details></aside>
-<main id="content"><div class="eyebrow">2026.10.09 · 外部研究参考 · 待真实项目验证</div><article><h1 id="section-0">Cursor 与 Linear：少人团队怎样组织跨会话的 AI 交付</h1>
+<main id="content"><div class="eyebrow">2026.10.09 · 外部研究参考 · 待真实项目验证</div><article><h1 id="section-0">Cursor 与 Linear：一个 Builder 怎样组织跨会话的 AI 交付</h1>
 <blockquote>
-<p><strong>读者与边界</strong>：供 1–3 人 Builder 团队及 BW 产品决策者盘点存量价值。主要研究 2025-10-09 至 2026-10-09 的变化，截止与访问日均为 2026-10-09；一项更早的客户反馈机制仅作背景。只研究官方公开机制、自用经验与效果口径，不替代 BW 产品原则或实测。结构为结论、时间线、工作故事、指标、建议、局限与来源；产品状态、证据或内部实验变化时更新。Markdown 为内容正源，同名 HTML 为生成投影。</p>
+<p><strong>读者与边界</strong>：供独立负责项目的 Builder、共享 SE/Leader 及 BW 产品决策者盘点存量价值。主要研究 2025-10-09 至 2026-10-09 的变化，截止与访问日均为 2026-10-09；一项更早的客户反馈机制仅作背景。只研究官方公开机制、自用经验与效果口径，不替代 BW 产品原则或实测。结构为结论、时间线、工作故事、指标、建议、局限与来源；产品状态、证据或内部实验变化时更新。Markdown 为内容正源，同名 HTML 为生成投影。</p>
 </blockquote>
 <h2 id="section-1">结论：原生工具已进入项目组织，BW 必须证明增量</h2>
 <p><strong>【综合判断】</strong> “编码工具负责开发、BW 负责计划和验收”的分工已经不够稳固。Cursor 的 Projects 于 2026-09-10 开始向所有用户推出 beta，面向超过一次聊天的工作；Linear 从已有客户请求与项目关系出发，加入 coding sessions、运行环境及浏览器验证。两者正在压缩上下文搬运、持续调度和验证交接。BW 若仅增加四个页面，容易重复已有信息；候选价值应是减少“等人决定什么、证据在哪里、这次交付是否解决原问题”的成本。<a href="https://cursor.com/blog/projects">S4</a>、<a href="https://linear.app/changelog/2026-06-11-coding-sessions">S5</a>、<a href="https://linear.app/changelog/2026-08-20-coding-environments">S6</a></p>
@@ -72,16 +72,16 @@
 </tr>
 </tbody></table>
 <h2 id="section-3">三条工作故事：步骤压缩了，哪些判断仍在人</h2>
-<h3 id="section-4">故事一：两名 Builder 修复真实客户阻塞</h3>
+<h3 id="section-4">故事一：一位 Builder 修复真实客户阻塞</h3>
 <p><strong>【按已发布机制重建的路径，非实测案例】</strong> 客户报告“导出后筛选条件丢失” → 将原始请求关联 issue，写复现条件与期望结果 → 人确认影响和优先级，保留负责人并委派 agent → Linear 会话携带历史、客户请求及讨论，用 Claude Code 或 Codex 产生修改 → 配置环境后运行浏览器旅程，返回差异和前后截图 → 人检查验收、决定发布，再回到原请求确认问题解决。<a href="https://linear.app/changelog/2026-06-11-coding-sessions">S5</a>、<a href="https://linear.app/changelog/2026-08-20-coding-environments">S6</a>、<a href="https://linear.app/docs/assigning-issues">S10</a></p>
 <p>被压缩的是重新解释问题、搭环境、搬运修复与验证结果。人仍需给可复现输入、判断需求是否值得做、处理缺失凭证和环境配置，以及确认测试覆盖真实客户路径。截图证明一次被执行的旅程，不自动证明客户满意或生产环境无回归。</p>
 <h3 id="section-5">故事二：迁移可以跑三周，但“跑完”不等于可发布</h3>
 <p><strong>【官方自用实验】</strong> Cursor 一月披露内部 Solid→React 迁移连续超过三周，通过 CI 和初步检查时仍需仔细评审。早期平权 agent 用共享锁协调，20 个 agent 的有效吞吐只剩两三个；去掉锁后又出现回避难题、反复做安全小改的问题。<a href="https://cursor.com/blog/scaling-agents">S1</a></p>
 <p>七月研究进一步承认早先浏览器实验远未成为打磨完善的软件；多规划者会形成互不兼容的设计，工作者处理冲突会覆盖或放弃修改。一月移除“集成人”以免形成瓶颈，七月在更大规模研究中又引入中立冲突处理 agent。<strong>【判断】</strong> 组织办法依赖任务和规模，不宜抄成固定多 agent 流程。<a href="https://cursor.com/blog/agent-swarm-model-economics">S2</a></p>
-<p>九月的 Projects 自用描述已改为与协调者先确定迁移方案，再逐个 PR 推进，早期密切评审；共享文件保存历史，订阅使工作可持续。<strong>【小团队应用假设】</strong> 一人定义兼容边界，一人验证高风险路径；agent 承担有边界的批次，留下回退条件与未验证项。首个批次不过关就收缩，避免积累一个无人能审的大差异。<a href="https://cursor.com/blog/projects">S4</a></p>
+<p>九月的 Projects 自用描述已改为与协调者先确定迁移方案，再逐个 PR 推进，早期密切评审；共享文件保存历史，订阅使工作可持续。<strong>【单 Builder 应用假设】</strong> 同一位 Builder 定义兼容边界并核对高风险路径，必要时带具体问题请共享 SE 复核；agent 承担有边界的批次，留下回退条件与未验证项。首个批次不过关就收缩，避免积累一个无人能审的大差异。<a href="https://cursor.com/blog/projects">S4</a></p>
 <h3 id="section-6">故事三：跨周继续做什么，从客户请求而非完成数量出发</h3>
 <p><strong>【产品事实与应用推断】</strong> Linear 早在 2025-04-30 已让客户请求关联项目，并汇总项目下 issue 的客户请求；这是研究窗口前的基础。2026 年项目更新可从上次更新后的 issue、文档、讨论和关联 Slack 生成草稿，由人补判断再发布；initiative 将项目连接到高层目标，并能明确取消。<a href="https://linear.app/changelog/2025-04-30-customer-requests-on-projects">S9</a>、<a href="https://linear.app/changelog/2026-06-18-agent-assisted-project-updates">S7</a>、<a href="https://linear.app/changelog/2026-07-02-initiative-properties">S8</a></p>
-<p>对于三名 Builder：几位试用者都卡在导出 → 聚成一个用户问题 → 本周只改最影响完成任务的环节 → 下周自动整理变化和请求 → 人比较失败率、回访与新增投诉，决定继续或取消。工具支持关联和整理；它没有替团队证明需求规模，也没有把“项目完成”变成“用户问题消失”。若团队只做一个产品，问题→issue→交付证据即可，不必再添 initiative 层。</p>
+<p>对于独立负责该项目的一位 Builder：几位试用者都卡在导出 → 聚成一个用户问题 → 本周只改最影响完成任务的环节 → 下周自动整理变化和请求 → 人比较失败率、回访与新增投诉，决定继续或取消。共享 Leader 按需看到同一份变化与决定，支持跨项目取舍。工具支持关联和整理；它没有替 Builder 证明需求规模，也没有把“项目完成”变成“用户问题消失”。对当前这个单人项目，问题→issue→交付证据即可，不必再添 initiative 层。</p>
 <h2 id="section-7">指标机制：官方数字具体说明了什么</h2>
 <table>
 <thead>
@@ -108,7 +108,7 @@
 </tr>
 </tbody></table>
 <p><strong>【可借鉴机制】</strong> Bugbot 从人的反应、评论和人工评审遗漏中生成候选规则，持续评估后启用，也能降级或由人修改。<a href="https://cursor.com/blog/bugbot-learning">S3</a> BW 可借鉴“证据改变后续行为”，但不应让低样本的单次赞同直接固化成规范。</p>
-<h2 id="section-8">对 1–3 名 Builder 和 BW 的取舍及反证</h2>
+<h2 id="section-8">对一位 Builder、共享 SE/Leader 与 BW 的取舍及反证</h2>
 <p>以下均为<strong>待内部验证的建议</strong>，不是本次新增功能要求。</p>
 <table>
 <thead>

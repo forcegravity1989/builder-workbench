@@ -86,14 +86,14 @@
   const baseGoals = [
     {
       id: 'G1',
-      title: '让试点 Builder 交出一个有用户反馈的版本',
-      target: '2 个内部项目各完成一轮；留存可用入口与实际用户反馈',
+      title: '让一个 Builder 交出一个有用户反馈的版本',
+      target: '这个项目完成一轮可用交付；留存可用入口与实际用户反馈',
       metric: '有使用反馈的交付'
     },
     {
       id: 'G2',
       title: '找到并修好完整交付中的首个阻塞',
-      target: '同组 2 个项目复测主路径通过；失败与恢复记录可核对',
+      target: '同一项目复测主路径通过；失败与恢复记录可核对',
       metric: '无需代操作完成主路径'
     }
   ]
@@ -134,14 +134,14 @@
       .filter(([id]) => state.decisions[id] === '未达成')
       .map(([id, n]) => `${id}：${n}`)
       .join('；')
-  const reading = () => (!observed() ? 'Unknown' : repaired() ? '2 / 2' : '1 / 2')
+  const reading = () => (!observed() ? 'Unknown' : repaired() ? '1 / 1' : '0 / 1')
   const canPass = (id) => observed() && repaired() && state.goals.some((g) => g.id === id)
   const allDecided = () => state.goals.every((g) => state.decisions[g.id] === '达成')
   const pendingNext = () => state.goals.some((g) => state.decisions[g.id] === '未达成')
   const versionSelect = () =>
     `<select class="input" data-control="version" aria-label="查看版本"><option value="v0.5" ${historical() ? 'selected' : ''}>v0.5 · 已有材料</option><option value="next" ${historical() ? '' : 'selected'}>下次迭代 · 提案</option></select>`
   const scopeContext = () =>
-    `服务方向：先验证 BW 是否帮助真实交付，而非继续铺开能力。阶段检查点（提案）：10/30 回看，至少 2 个试点连续两周交付有反馈的版本，且整理负担不高于首周基线。周观察窗口（提案）：10/12–10/16；版本号、参与者和负责人尚待落实。`
+    `服务方向：让一个 Builder 负责一个项目的完整交付；共享 SE / Leader 用 BW 看多个项目的方向、阻塞和下一步。阶段检查点（提案）：10/30 回看，观察一组单 Builder 项目是否连续两周交付有反馈的版本，且整理负担不高于首周基线。周观察窗口（提案）：10/12–10/16；版本号、参与者和负责人尚待落实。`
   const planText = () =>
     `${scopeContext()}\n来源：v0.5 G3 未达，原因与下一步空缺；读数 0 只表示已归档计划活动，不能当零用户。\n${state.goals.map((g) => `${g.id} ${g.title}\n判据：${g.target}`).join('\n\n')}\n范围外：${state.deferred ? '团队绩效排行本轮暂缓' : '团队绩效排行仅为 Agent 候选，尚未纳入'}。`
   function overview() {
@@ -165,9 +165,9 @@
           ? '本周目标已核对；下周还要观察能否复用'
           : state.confirmed
             ? '下周先跑完整交付，再决定修什么'
-            : '先用 2 个内部项目查清完整交付卡在哪里'
+            : '先用一个单 Builder 项目查清完整交付卡在哪里'
     return `<header class="page-bar"><h1>总览</h1><span class="spacer"></span><span class="caption">${live ? '仓内快照 · 10.08' : `下次迭代提案${state.scenario !== 'baseline' ? ' · 演示数据' : ''}`}</span>${link('来源与边界', 'sources')}</header><div class="page-scroll"><div class="overview">
-    <section class="direction-head"><div><div class="card-head"><h2>Builders’ Workbench</h2>${tag('v0.5 已内部发布', 'outline')}</div><p>让 Builder 每周交出有人使用的版本，并据反馈决定下一步。</p><span class="caption">待验证的价值主张 · 北极星尚未定义</span></div>${link('项目与阶段目标', 'milestone')}</section>
+    <section class="direction-head"><div><div class="card-head"><h2>Builders’ Workbench</h2>${tag('v0.5 已内部发布', 'outline')}</div><p>让每个 Builder 守住自己的交付闭环，让共享 SE / Leader 看清哪些项目需要支持。</p><span class="caption">当前项目：1 Builder / 项目 · 跨项目共享查看 · 北极星尚未定义</span></div>${link('项目与阶段目标', 'milestone')}</section>
     <section class="milestone-line" aria-label="阶段与本周的关系"><div><span class="caption">已有起点</span><strong>v0.5 交给内部用户</strong><small>发布背景由用户提供</small></div><span class="rail-arrow">→</span><button data-action="plan-context"><span class="caption">10.16 周检 · 提案</span><strong>跑通第一轮真实交付</strong><small>找首个阻塞，收敛下次改动</small></button><span class="rail-arrow">→</span><button data-action="milestone"><span class="caption">10.30 阶段回看 · 提案</span><strong>能否连续两周复用</strong><small>有反馈的交付 + 人的负担</small></button></section>
     <div class="section-head"><h2>${live ? '当前进展' : '本次观察'}</h2>${versionSelect()}<span class="spacer"></span>${tag(live ? '采用待核对' : observed() && !repaired() ? '发现阻塞' : '价值待验证', live || (observed() && !repaired()) ? 'warning' : 'outline')}</div>
     <h3 class="progress-sentence">${result}</h3>
@@ -175,7 +175,7 @@
     <button data-action="${live ? 'baseline-details' : 'evidence'}" data-id="G1"><span>交付</span><strong>${live ? '已内部发布' : reading('G1')}</strong><small>${live ? 'G1、G2 原验收已确认' : '有用户反馈的可用版本 · 项目'}</small></button>
     <button data-action="${live ? 'activity' : 'evidence'}" data-id="G2"><span>${live ? '采用线索' : '主路径'}</span><strong>${live ? '0' : reading('G2')}<em>${live ? ' 个项目' : ''}</em></strong><small>${live ? '已归档计划活动 · 非用户数' : '无需代操作完成 · 项目'}</small></button>
     <button data-action="value-evidence"><span>持续价值</span><strong>Unknown</strong><small>${live ? '尚无“更好交付”的观察' : '第二周复用、负担与方向尚待观察'}</small></button></section>
-    <div class="week-change"><span class="caption">${live ? '本周可确认' : '相对首次观察'}</span><p>${live ? 'G1 / G2 已确认；G3 未达。缺少可比的上周使用记录。' : !observed() ? '尚未开始观察，不预填增长曲线。' : repaired() ? '示例：1 / 2 → 2 / 2；同组复测，不能推定持续受益。' : '示例：A 已交付并获得反馈，B 在会话续接处受阻。'}</p>${link(live ? '原验收' : '观察明细', live ? 'baseline-details' : 'weekly-evidence')}</div>
+    <div class="week-change"><span class="caption">${live ? '本周可确认' : '相对首次观察'}</span><p>${live ? 'G1 / G2 已确认；G3 未达。缺少可比的上周使用记录。' : !observed() ? '尚未开始观察，不预填增长曲线。' : repaired() ? '示例：0 / 1 → 1 / 1；同一 Builder 复测，不能推定持续受益。' : '示例：这个项目在会话续接处受阻，先由 Builder 处理并请求共享 SE 支持。'}</p>${link(live ? '原验收' : '观察明细', live ? 'baseline-details' : 'weekly-evidence')}</div>
     <section class="decision-callout"><div class="decision-copy"><span class="caption">${live ? '现在需要决定' : '本周需要决定'}</span><h3>${escape(gaps)}</h3><p>${live ? '先查清真实使用中的断点，再判断是修 BUG、减步骤还是补能力。' : state.confirmed ? '范围已在原型中确认；尚未生成真实任务或发出请求。' : '日期、对象、负责人和判据仍需人确认；不自动变成项目承诺。'}</p></div>${btn(live ? (state.carried || state.confirmed ? '查看后续提案' : '把缺口带入计划') : pendingNext() ? '带回计划讨论' : state.confirmed ? '查看本周范围' : '审阅本周范围', live ? (state.carried || state.confirmed ? 'plan-context' : 'carry-gap') : pendingNext() ? 'carry-result' : 'plan-context', 'primary')}</section>
     <div class="section-head"><h2>每周看这三件事</h2><span class="caption">证据不足就是未知；没有总体“无风险”灯</span><span class="spacer"></span>${link('查看观察约定', 'weekly-evidence')}</div>
     <div class="watch-row"><div><span class="watch-dot warning"></span><strong>方向</strong><span>用户问题是否得到改善</span><em>待验证</em></div><div><span class="watch-dot ${observed() && !repaired() ? 'warning' : ''}"></span><strong>交付</strong><span>${observed() && !repaired() ? '1 个试点受阻' : '可用结果是否真的交到用户'}</span><em>${live ? '待观察' : observed() ? (repaired() ? '复测通过' : '需处理') : '待观察'}</em></div><div><span class="watch-dot"></span><strong>负担</strong><span>阻断、等待与人工整理时间</span><em>缺基线</em></div></div>
@@ -263,7 +263,7 @@
     return `<div class="section-head"><h2>v0.5 · 原目标与人的判断</h2>${tag('仓内快照', 'outline')}</div><p class="caption">摘要保留原义；原文和口径点开查看。10.08 快照，不代表实时状态。</p><div class="goal-list">${baseline.map((g) => `<article class="goal-row"><span class="goal-id">${g.id}</span><div class="goal-copy"><h3>${g.title}</h3><p>${g.target}</p><div class="row-actions"><span>${g.reason}</span>${link('原始材料', 'baseline-details', `data-id="${g.id}"`)}</div></div><span class="result-label ${g.outcome === '未达成' ? 'failed' : ''}">${g.outcome}</span></article>`).join('')}</div><section class="handoff-row"><div><strong>${state.carried || state.confirmed ? 'G3 已接到下一轮提案（仅原型）' : 'G3 的下一步仍是空白'}</strong><p>原验收记录保持不动；后续提案需要人确认和实际落实。</p></div>${btn('把缺口带入计划', 'carry-gap', 'primary')}</section>`
   }
   function taskTable() {
-    return `<div class="candidate-tasks"><p class="caption">以下是拆解候选，未创建 Issue。</p><table class="table"><thead><tr><th>候选工作</th><th>服务目标</th><th>安排</th></tr></thead><tbody><tr><td>邀请 2 个真实项目跑完整一轮</td><td>G1</td><td>负责人待定</td></tr><tr><td>定位首个断点，决定最小修复</td><td>G2</td><td>见到证据后</td></tr><tr><td>记录人工协助、耗时与使用反馈</td><td>G1 / G2</td><td>与试用同步</td></tr></tbody></table></div>`
+    return `<div class="candidate-tasks"><p class="caption">以下是拆解候选，未创建 Issue。</p><table class="table"><thead><tr><th>候选工作</th><th>服务目标</th><th>安排</th></tr></thead><tbody><tr><td>邀请一个单 Builder 项目跑完整一轮</td><td>G1</td><td>负责人待定</td></tr><tr><td>定位首个断点，决定最小修复</td><td>G2</td><td>见到证据后</td></tr><tr><td>记录 Builder 的人工协助、耗时与使用反馈</td><td>G1 / G2</td><td>与试用同步</td></tr></tbody></table></div>`
   }
   function workflow() {
     const plan = state.view === 'plan'
@@ -271,7 +271,7 @@
       historical()
         ? baselinePanel()
         : `${journey()}<section class="collaborate" id="prepare"><p>${state.confirmed ? '范围已在原型中确认' : '从 v0.5 G3 的未达与空白下一步开始'}</p>${btn(`${icon('message')} ${plan ? '新建计划' : '新建验收'}`, 'start-workflow', 'secondary')}</section><div class="context-strip"><span>阶段方向 · 提案</span><strong>从“发出去”走到“持续帮助真实交付”</strong>${link('10.30 怎样判断', 'milestone')}</div><div class="line-meta"><span>周观察 10.12–10.16 · 提案</span><span class="spacer"></span>${link('上版缺口', 'baseline-details')}</div><div class="section-head" id="goals"><h2>${plan ? '本次先做什么' : '对照原承诺'}</h2>${tag(plan ? (state.confirmed ? '原型内已确认' : '待人确认') : state.scenario === 'baseline' ? '尚无实测' : '演示观察', 'outline')}<span class="spacer"></span>${link('预览纪要', 'minutes', `data-kind="${state.view}"`)}</div>${plan ? planGoals() : acceptanceGoals()}
-    ${plan ? `<div class="outside-scope">${icon('clock')}<span>Agent 建议：团队绩效排行</span><span class="spacer"></span>${state.deferred ? tag('本轮暂缓', 'outline') : link('本轮不做', 'defer')}</div><div class="plan-confirm"><span class="caption">参与项目、负责人待落实；仅确认这个原型的范围。</span>${btn(state.confirmed ? '查看已确认范围' : '确认本轮范围', 'confirm-scope', state.confirmed ? 'secondary' : 'primary')}</div>` : `<p class="summary-note">${state.changed ? '目标已改，旧观察不能验证新范围。' : !observed() ? 'Unknown · 尚未开展下一轮观察。' : repaired() ? '复测 2/2 仍只是一轮；持续复用与整理负担尚待观察。' : '1 个项目在续接处卡住，不能用代码完成替代交付。'}</p><div class="plan-confirm"><span class="caption">结果与下一步会回到同一总览。</span>${btn('回总览看需要决定什么', 'next-overview', 'secondary')}</div>`}
+    ${plan ? `<div class="outside-scope">${icon('clock')}<span>Agent 建议：团队绩效排行</span><span class="spacer"></span>${state.deferred ? tag('本轮暂缓', 'outline') : link('本轮不做', 'defer')}</div><div class="plan-confirm"><span class="caption">项目 Builder、共享 SE / Leader 及观察窗口待落实；仅确认这个原型的范围。</span>${btn(state.confirmed ? '查看已确认范围' : '确认本轮范围', 'confirm-scope', state.confirmed ? 'secondary' : 'primary')}</div>` : `<p class="summary-note">${state.changed ? '目标已改，旧观察不能验证新范围。' : !observed() ? 'Unknown · 尚未开展下一轮观察。' : repaired() ? '复测 1/1 仍只是一轮；持续复用与整理负担尚待观察。' : '这个项目在续接处卡住，不能用代码完成替代交付。'}</p><div class="plan-confirm"><span class="caption">结果与下一步会回到同一总览。</span>${btn('回总览看需要决定什么', 'next-overview', 'secondary')}</div>`}
     <details class="task-disclosure" id="tasks"><summary><strong>任务拆解候选</strong><span class="caption">确认范围后再安排</span></summary>${taskTable()}</details><section class="archive-row" id="archive"><div><strong>归档${plan ? '计划' : '验收'}</strong><span class="caption">在原生会话中准备 PR；原型只填入未发送草稿。</span></div>${btn(`${icon('git')} 归档`, 'archive', 'secondary')}</section>`
     }</div></section></div>`
   }
@@ -309,7 +309,7 @@
   function sources() {
     showModal(
       '事实、提案与演示分别看',
-      `<dl class="detail-facts"><dt>用户背景</dt><dd>v0.5 已交给内部用户使用；不由仓库标签反推。</dd><dt>仓内快照</dt><dd>main 5202485e0，材料更新至 10.08。${sourceLink('.bw/planning/v0.5/data.json', '原计划')} · ${sourceLink('.bw/planning/v0.5/acceptance.json', '原验收')} · ${sourceLink('.bw/metrics.toml', '指标定义')}</dd><dt>已知事实</dt><dd>G1 / G2 人确认达成；G3 人确认未达，原因和下一步为空。已有读数 0 只衡量特定窗口内的已合入计划活动。</dd><dt>未知</dt><dd>活跃用户、真实交付收益、阻断频率、整理负担、北极星。本原型未采集这些事实。</dd><dt>设计提案</dt><dd>10.16 周检、10.30 阶段检查点、2 个试点及候选目标都是讨论建议，尚未成为真实项目承诺。</dd><dt>演示数据</dt><dd>底部可切换“受阻/复测”假设，项目 A / B 和所有试点结果均虚构。刷新清空原型内决定。</dd></dl>`
+      `<dl class="detail-facts"><dt>用户背景</dt><dd>v0.5 已交给内部用户使用；不由仓库标签反推。</dd><dt>仓内快照</dt><dd>main 5202485e0，材料更新至 10.08。${sourceLink('.bw/planning/v0.5/data.json', '原计划')} · ${sourceLink('.bw/planning/v0.5/acceptance.json', '原验收')} · ${sourceLink('.bw/metrics.toml', '指标定义')}</dd><dt>已知事实</dt><dd>G1 / G2 人确认达成；G3 人确认未达，原因和下一步为空。已有读数 0 只衡量特定窗口内的已合入计划活动。</dd><dt>未知</dt><dd>活跃用户、真实交付收益、阻断频率、整理负担、北极星。本原型未采集这些事实。</dd><dt>设计提案</dt><dd>10.16 周检、10.30 阶段检查点、单 Builder 试点及候选目标都是讨论建议，尚未成为真实项目承诺。</dd><dt>演示数据</dt><dd>底部可切换“受阻/复测”假设，单 Builder 项目和所有试点结果均虚构。刷新清空原型内决定。</dd></dl>`
     )
   }
   function baselineDetails() {
@@ -322,7 +322,7 @@
   function milestone() {
     showModal(
       '阶段目标 · 先提出可被推翻的假设',
-      `<h3>BW 是否让少人团队更稳定地交付有用版本？</h3><p>建议 10.30 回看：至少 2 个内部试点连续两周交付带真实使用反馈的版本，人工整理负担不高于各自首周基线。</p><p class="caption">人数、日期、窗口、负责人均待确认；不是现行里程碑制度，也不保证商业价值。</p><table class="table"><thead><tr><th>看到什么</th><th>应该讨论什么</th></tr></thead><tbody><tr><td>有交付、有反馈，能持续复用</td><td>继续小范围试点，核对代价</td></tr><tr><td>代码完成，但用户没用上</td><td>找分发或使用断点，别继续扩功能</td></tr><tr><td>流程变多、人工整理更重</td><td>减步骤；必要时删减 BW 能力</td></tr><tr><td>仍缺观察或可比基线</td><td>保持未知，先补证据</td></tr></tbody></table><p>每周只检查当前版本离这个问题更近了没有。观察窗口附在版本上下文，不另建一套周计划或里程碑数据库。</p>`,
+      `<h3>BW 是否让单 Builder 项目更稳定地交付有用版本？</h3><p>建议 10.30 回看：观察多个单 Builder 项目连续两周是否交付带真实使用反馈的版本，同时记录共享 SE / Leader 的找背景与介入成本；不把项目相加成一个总分。</p><p class="caption">人数、日期、窗口、负责人均待确认；不是现行里程碑制度，也不保证商业价值。</p><table class="table"><thead><tr><th>看到什么</th><th>应该讨论什么</th></tr></thead><tbody><tr><td>有交付、有反馈，能持续复用</td><td>继续小范围试点，核对代价</td></tr><tr><td>代码完成，但用户没用上</td><td>找分发或使用断点，别继续扩功能</td></tr><tr><td>流程变多、人工整理更重</td><td>减步骤；必要时删减 BW 能力</td></tr><tr><td>仍缺观察或可比基线</td><td>保持未知，先补证据</td></tr></tbody></table><p>每周只检查当前版本离这个问题更近了没有。观察窗口附在版本上下文，不另建一套周计划或里程碑数据库。</p>`,
       `${btn('关闭', 'close', 'ghost')}${btn('看本周如何验证', 'plan-context', 'primary')}`
     )
   }
@@ -336,7 +336,7 @@
   function weeklyEvidence() {
     showModal(
       '每周观察：结果、阻断与人的负担',
-      `<table class="table"><thead><tr><th>观察</th><th>保留的材料</th><th>何时干预</th></tr></thead><tbody><tr><td>有用的交付</td><td>版本入口、实际用户任务与反馈</td><td>代码已好，仍无人用或问题未改善</td></tr><tr><td>交付阻断</td><td>首个失败环节、等待时间、负责人</td><td>卡住的工作威胁本周约定；马上处理，不等周五</td></tr><tr><td>人的负担</td><td>协助/补录分钟、重复搬运、首次基线</td><td>比基线更重，优先减步骤</td></tr></tbody></table><p>按同一窗口和同一项目看变化，失败与放弃也保留。两项目只是探索，不做收益率或行业因果结论。</p><p class="caption">建议尽量读取已有文件、Issue、发布记录与反馈。最初的人工观察属于验收材料；未有历史脚本前，不注册为可采集指标。整理本身的成本也要记录。</p><div class="summary-links">${link('看本次试点证据', 'evidence', 'data-id="G1"')}${link('看上版原始缺口', 'baseline-details')}</div>`
+      `<table class="table"><thead><tr><th>观察</th><th>保留的材料</th><th>何时干预</th></tr></thead><tbody><tr><td>有用的交付</td><td>版本入口、实际用户任务与反馈</td><td>代码已好，仍无人用或问题未改善</td></tr><tr><td>交付阻断</td><td>首个失败环节、等待时间、负责人</td><td>卡住的工作威胁本周约定；马上处理，不等周五</td></tr><tr><td>人的负担</td><td>协助/补录分钟、重复搬运、首次基线</td><td>比基线更重，优先减步骤</td></tr></tbody></table><p>按同一窗口和同一项目看变化，失败与放弃也保留。多个项目只用于让共享 SE / Leader 看模式，不汇总成收益率或行业因果结论。</p><p class="caption">建议尽量读取已有文件、Issue、发布记录与反馈。最初的人工观察属于验收材料；未有历史脚本前，不注册为可采集指标。整理本身的成本也要记录。</p><div class="summary-links">${link('看本次试点证据', 'evidence', 'data-id="G1"')}${link('看上版原始缺口', 'baseline-details')}</div>`
     )
   }
   function evidence(id) {
@@ -344,7 +344,7 @@
     const valid = observed()
     showModal(
       `${id} · ${escape(g.title)}`,
-      `<div class="large-number">${reading(id)}</div><p class="caption">${valid ? '下次迭代的假设演示 · 10.12–10.16' : 'Unknown · 没有与当前目标匹配的观察'}</p>${valid ? `<table class="table"><thead><tr><th>试点</th><th>可用成果 / 反馈</th><th>BW 主路径</th></tr></thead><tbody><tr><td>项目 A（虚构）</td><td>版本交到使用方；反馈：可完成约定任务</td><td>独立完成</td></tr><tr><td>项目 B（虚构）</td><td>${repaired() ? '复测版本交到使用方；反馈：阻塞已解除' : '尚未交到用户'}</td><td>${repaired() ? '复测独立完成' : '会话续接中断，需协助'}</td></tr></tbody></table><p class="caption">演示只说明当前一轮结果；演示记录仅表示已有入口与用户反馈，整理分钟、首周基线及第二周复用仍未观测。</p>${repaired() ? '<details><summary>保留首次失败：1 / 2</summary><p>首次项目 B 会话续接受阻；同组复测有熟悉效应，不能抹去等待和协助。</p></details>' : ''}` : `<p>${state.changed ? '目标实质改变，旧演示观察不再用于新判据。' : '还没有下一次试点记录。可以在原生会话里安排观察，但不能自动判定达成。'}</p>`}<details><summary>与原始问题的关系</summary><p>源自 v0.5 G3 未达且没有下一步。这里只提出新的候选范围，没有把原 G3 目标 6 改成 2。</p></details>`
+      `<div class="large-number">${reading(id)}</div><p class="caption">${valid ? '下次迭代的假设演示 · 10.12–10.16' : 'Unknown · 没有与当前目标匹配的观察'}</p>${valid ? `<table class="table"><thead><tr><th>项目</th><th>可用成果 / 反馈</th><th>BW 主路径</th></tr></thead><tbody><tr><td>单 Builder 项目（虚构）</td><td>${repaired() ? '复测版本交到使用方；反馈：阻塞已解除' : '尚未交到用户'}</td><td>${repaired() ? '复测独立完成' : '会话续接中断，需共享 SE 协助'}</td></tr></tbody></table><p class="caption">演示只说明当前一轮结果；演示记录仅表示已有入口与用户反馈，整理分钟、首周基线及第二周复用仍未观测。</p>${repaired() ? '<details><summary>保留首次失败：0 / 1</summary><p>首次这个项目会话续接受阻；同一 Builder 复测有熟悉效应，不能抹去等待和共享 SE 协助。</p></details>' : ''}` : `<p>${state.changed ? '目标实质改变，旧演示观察不再用于新判据。' : '还没有下一次试点记录。可以在原生会话里安排观察，但不能自动判定达成。'}</p>`}<details><summary>与原始问题的关系</summary><p>源自 v0.5 G3 未达且没有下一步。这里只提出新的候选范围，没有把原 G3 目标 6 改成 2。</p></details>`
     )
   }
   function minutes(kind) {
@@ -366,7 +366,7 @@
     const g = state.goals.find((g) => g.id === id)
     showModal(
       `核对 ${id}`,
-      `<p><strong>${escape(g.title)}</strong></p><p class="muted">判据：${escape(g.target)} · 实测：${reading(id)}</p><form id="decision-form"><label for="decision">你的结论（仅原型）</label><select class="input" id="decision"><option>待核对</option><option ${canPass(id) ? '' : 'disabled'}>达成</option><option>未达成</option></select><div id="next-field" hidden><label for="next-step">缺口与下一步</label><textarea class="input" id="next-step" rows="3" maxlength="240">${escape(state.next[id] || '定位项目 B 的续接阻塞，再请同组 Builder 复测；本轮先不新增能力。')}</textarea></div><p id="decision-error" class="form-error"></p></form>`,
+      `<p><strong>${escape(g.title)}</strong></p><p class="muted">判据：${escape(g.target)} · 实测：${reading(id)}</p><form id="decision-form"><label for="decision">你的结论（仅原型）</label><select class="input" id="decision"><option>待核对</option><option ${canPass(id) ? '' : 'disabled'}>达成</option><option>未达成</option></select><div id="next-field" hidden><label for="next-step">缺口与下一步</label><textarea class="input" id="next-step" rows="3" maxlength="240">${escape(state.next[id] || '定位这个项目的续接阻塞，再由同一 Builder 复测；本轮先不新增能力。')}</textarea></div><p id="decision-error" class="form-error"></p></form>`,
       `${btn('取消', 'close', 'ghost')}${btn('记录原型结论', 'save-decision', 'primary')}`
     )
     $('#decision').value = state.decisions[id] || '待核对'
