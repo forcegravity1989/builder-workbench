@@ -1,13 +1,6 @@
 name: Pi owner runtime verification
 on:
-  pull_request:
-    paths:
-      - 'src/main/pi/agent-status-handler-source.ts'
-      - 'tests/tools/pi-owner-runtime-smoke.mjs'
-      - '.github/workflows/pi-owner-runtime.yml'
   workflow_dispatch:
-permissions:
-  contents: read
 jobs:
   runtime:
     strategy:

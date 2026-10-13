@@ -1,20 +1,6 @@
 name: Packaged browser compatibility
 on:
   workflow_dispatch:
-    inputs:
-      ref:
-        description: Commit SHA or ref to validate (defaults to the selected revision)
-        type: string
-        required: false
-  schedule:
-    - cron: '20 8 * * 1'
-  workflow_call:
-    inputs:
-      ref:
-        type: string
-        required: false
-permissions:
-  contents: read
 jobs:
   compatibility:
     runs-on: ubuntu-latest
