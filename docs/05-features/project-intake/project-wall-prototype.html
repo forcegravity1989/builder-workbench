@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>项目墙 · Builder 项目组合</title>
+<style>
+:root{
+ --bg:#faf9f5;--surface:#f0eee6;--card:#fefdfa;--text:#1f1e1d;
+ --accent:#d97757;--accent-2:#4c73a5;--n100:#f6f3ef;--n200:#ebe7e1;--n300:#d7d2ca;--n400:#b8b3ac;--n500:#96918a;--n600:#75716a;--n700:#58554f;--n800:#3d3a36;
+ --acc100:#fef0eb;--acc700:#893a1f;--acc2-100:#edf4fe;--acc2-700:#355781;
+ --ok:#579766;--ok-soft:#e7f1e8;--ok-deep:#286037;
+ --warn:#ce9042;--warn-soft:#feecce;--warn-deep:#774a03;
+ --dang:#c15f4d;--dang-soft:#ffe4df;--dang-deep:#883324;
+ --divider:color-mix(in srgb,var(--text) 12%,transparent);
+ --r-sm:6px;--r-md:8px;--r-lg:12px;
+ --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:13px/1.55 var(--sans)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+button,a,input,select,textarea{outline-offset:3px}
+:focus-visible{outline:2px solid var(--accent-2)}
+button{border:0;background:none}
+button:disabled{cursor:default;opacity:.55}
+a{color:var(--acc2-700)}
+svg{width:16px;height:16px;stroke:currentColor;stroke-width:1.6;fill:none;vertical-align:middle;flex-shrink:0}
+.app{display:flex;min-height:100vh}
+.side{width:234px;flex-shrink:0;border-right:1px solid var(--divider);background:var(--surface);padding:22px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:9px;padding:0 9px 26px;font-weight:650;font-size:14px}
+.brandmark{width:29px;height:29px;display:grid;place-items:center;background:var(--accent);color:white;border-radius:6px;font-size:17px}
+.nav{display:flex;flex-direction:column;gap:5px}
+.nav button{display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;border-radius:6px;color:var(--n700)}
+.nav button:hover{background:rgba(255,255,255,.45)}
+.nav button.active{background:var(--card);color:var(--acc700);box-shadow:0 1px 3px #30211408}
+.nav .count{margin-left:auto;background:var(--n200);padding:0 6px;border-radius:4px;font-size:11px}
+.side-label{font-size:11px;color:var(--n600);padding:23px 12px 8px}
+.side-note{margin-top:26px;border-top:1px solid var(--divider);padding:16px 10px;font-size:12px;color:var(--n600)}
+.side-note strong{display:block;color:var(--n700);margin-bottom:5px;font-weight:550}
+.side-bottom{margin-top:auto;padding:16px 10px 0;color:var(--n600)}
+.side-bottom button{display:flex;gap:9px;align-items:center;padding:0}
+.main{flex:1;min-width:0;padding:27px 28px 30px}
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}
+h1{font-size:24px;line-height:1.3;margin:0 0 7px;font-weight:650;letter-spacing:-.6px}
+.subtitle{color:var(--n600);margin:0;font-size:13px}
+.actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--n300);border-radius:6px;padding:7px 12px;background:var(--card);white-space:nowrap}
+.btn:hover{background:var(--n100)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.primary:hover{background:#c86d50}
+.btn.small{padding:5px 9px;font-size:12px}
+.textbtn{display:inline-flex;align-items:center;gap:5px;color:var(--acc2-700);padding:0;font-size:12px}
+.textbtn:hover{text-decoration:underline}
+.scenario{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--n100);border:1px solid var(--divider);border-radius:6px;padding:9px 12px;margin-bottom:19px}
+.scenario-text{font-size:12px;color:var(--n600)}
+.scenario-text strong{color:var(--n700);font-weight:550}
+.seg{display:inline-flex;border:1px solid var(--n300);border-radius:6px;padding:2px;gap:2px;background:var(--surface);flex-shrink:0}
+.seg button{padding:5px 10px;border-radius:4px;color:var(--n600);font-size:12px}
+.seg button.active{background:var(--card);color:var(--text);box-shadow:0 1px 2px #00000008}
+.hbar{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border:1px solid var(--divider);border-radius:8px;background:var(--card);margin-bottom:20px}
+.health-stat{text-align:left;padding:13px 18px;position:relative;border-right:1px solid var(--divider)}
+.health-stat:last-child{border:0}
+.health-stat.active:after{content:"";position:absolute;bottom:0;height:2px;left:18px;right:18px;background:var(--accent)}
+.health-stat:hover{background:var(--n100)}
+.health-stat .num{font-size:23px;line-height:1.3;font-weight:600;margin-right:7px}
+.health-stat .label{font-size:12px;color:var(--n600)}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--n500);margin-right:6px}
+.dot.red{background:var(--dang)}.dot.amber{background:var(--warn)}.dot.green{background:var(--ok)}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.toolbar-left,.toolbar-right{display:flex;align-items:center;gap:9px}
+.search{display:flex;align-items:center;gap:7px;border:1px solid var(--n300);background:var(--card);border-radius:6px;padding:6px 9px;width:220px;color:var(--n600)}
+.search input{border:0;background:none;width:100%;min-width:0;outline:none;font-size:12px}
+select{background:var(--card);border:1px solid var(--n300);border-radius:6px;padding:6px 8px;font-size:12px}
+.sectionline{display:flex;align-items:center;justify-content:space-between;margin:4px 0 12px;color:var(--n600);font-size:12px}
+.sectionline strong{font-weight:550;color:var(--n700)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.card{border:1px solid var(--divider);background:var(--card);border-radius:8px;padding:17px 17px 0;display:flex;flex-direction:column;min-width:0;position:relative}
+.card:hover{border-color:var(--n400)}
+.crow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.tag{border-radius:4px;background:var(--n100);color:var(--n600);padding:2px 6px;font-size:11px}
+.tags{display:flex;align-items:center;gap:6px;min-width:0}
+.tag.blue{background:var(--acc2-100);color:var(--acc2-700)}
+.badge{display:inline-flex;align-items:center;border-radius:5px;padding:3px 7px;font-size:11px;white-space:nowrap;font-weight:550}
+.badge.red{color:var(--dang-deep);background:var(--dang-soft)}
+.badge.amber{color:var(--warn-deep);background:var(--warn-soft)}
+.badge.green{color:var(--ok-deep);background:var(--ok-soft)}
+.badge.gray{color:var(--n700);background:var(--n200)}
+.cname{font-size:18px;line-height:1.3;font-weight:600;margin:0}
+.cname button{text-align:left;padding:0;font-weight:inherit;font-size:inherit;word-break:break-word}
+.cname button:hover{color:var(--acc700)}
+.cbrief{color:var(--n600);font-size:12px;margin:7px 0 14px;min-height:37px}
+.builder{display:flex;align-items:center;gap:7px;color:var(--n700);font-size:12px;margin-bottom:15px}
+.avatar{display:grid;place-items:center;width:23px;height:23px;border-radius:50%;background:var(--surface);color:var(--n700);font-size:10px;font-weight:600;flex-shrink:0}
+.builder .role{color:var(--n600);margin-left:auto;font-size:11px}
+.commitment{background:var(--n100);padding:11px 12px;border-radius:6px}
+.commit-title{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:11px;color:var(--n600)}
+.commit-title strong{font-size:12px;color:var(--n800);font-weight:550}
+.cfoot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--divider);padding:10px 0;gap:9px}
+.fresh{color:var(--n600);font-size:10px}
+.fresh.stale{color:var(--warn-deep)}
+.footnote{display:flex;justify-content:space-between;gap:15px;margin-top:23px;font-size:11px;color:var(--n600)}
+.empty{background:var(--card);border:1px dashed var(--n300);padding:38px 20px;text-align:center;border-radius:8px}
+.empty h2{font-size:16px;font-weight:550;margin:0 0 8px}.empty p{color:var(--n600);margin:0 0 16px}
+.dback{margin-bottom:18px;color:var(--n600);display:flex;align-items:center;gap:7px;padding:0}
+.dhead{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:18px}
+.dhead h1{font-size:25px}.dhead .builder{margin:12px 0 0;justify-content:flex-start}
+.dhead .builder .role{margin-left:0}
+.dstrip{display:grid;grid-template-columns:repeat(3,1fr);background:var(--card);border:1px solid var(--divider);border-radius:8px;margin-bottom:18px}
+.dimension{padding:15px 17px;border-right:1px solid var(--divider)}.dimension:last-child{border:0}
+.dimension .dimhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:550}
+.dimension p{margin:0;color:var(--n600);font-size:12px}
+.dcols{display:grid;grid-template-columns:1.65fr 1fr;gap:16px;align-items:start}
+.panel{background:var(--card);border:1px solid var(--divider);border-radius:8px;padding:18px;margin-bottom:16px}
+.panel h2{font-size:13px;font-weight:600;margin:0 0 16px;display:flex;justify-content:space-between;align-items:center;gap:9px}
+.panel p{color:var(--n700);font-size:12px;margin:0 0 12px}
+.label{font-size:11px;color:var(--n600);margin-bottom:5px}
+.outcome{font-size:15px;color:var(--text);margin-bottom:18px}
+.datecompare{display:grid;grid-template-columns:1fr 1fr;gap:15px;border-top:1px solid var(--divider);padding-top:15px;margin-top:15px}
+.datecompare strong{font-size:19px;font-weight:550}
+.criterion{display:flex;align-items:flex-start;gap:9px;padding:12px 0;border-bottom:1px solid var(--divider)}
+.criterion:last-child{border:0;padding-bottom:0}.criterion svg{margin-top:2px}
+.criterion .ctext{flex:1;font-size:12px}.criterion small{display:block;color:var(--n600);margin-top:3px}
+.criterion .accepted{color:var(--ok-deep)}
+.read{padding:12px 0;border-top:1px solid var(--divider);font-size:12px}
+.read:first-of-type{border-top:0;padding-top:0}
+.readtop{display:flex;gap:12px;justify-content:space-between}.readtop span{color:var(--n600);font-size:11px}
+.read p{color:var(--n600);margin:5px 0 0;font-size:11px}
+.dependency{border-left:2px solid var(--warn);padding:0 0 0 12px;margin-bottom:16px}
+.dependency strong{font-size:12px;font-weight:550}.dependency p{margin:5px 0;font-size:12px;color:var(--n600)}
+.dependency .depmeta{font-size:11px;color:var(--n600)}
+.draft{font-size:12px;border-top:1px solid var(--divider);padding:11px 0}.draft:first-of-type{border:0}
+.draft .meta{font-size:10px;color:var(--n600);margin:5px 0}
+.local-label{font-size:10px;color:var(--acc2-700);background:var(--acc2-100);border-radius:4px;padding:2px 6px;white-space:nowrap}
+details summary{cursor:pointer;color:var(--n600);font-size:12px}details p{margin:12px 0 0}
+.timeline{border:1px solid var(--divider);border-radius:8px;background:var(--card);overflow:auto}
+.tname{font-weight:550;font-size:13px}.tname small{display:block;color:var(--n600);font-weight:400;font-size:11px;margin-top:4px}
+.shiftline{position:absolute;top:15px;height:2px;background:var(--dang);opacity:.5}
+.timeline-legend{display:flex;gap:20px;color:var(--n600);font-size:11px;margin:12px 0}
+.builder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.buildercard{padding:18px;border:1px solid var(--divider);background:var(--card);border-radius:8px}
+.buildercard h2{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:550;margin:0 0 15px}
+.buildercard .project-link{font-size:12px;text-align:left;padding:0;color:var(--acc2-700);margin-bottom:12px}
+.buildercard p{font-size:12px;color:var(--n600);margin:8px 0}.buildercard .focus{color:var(--n700)}
+.buildercard .load{display:flex;justify-content:space-between;font-size:12px}
+dialog{width:min(560px,calc(100vw - 30px));max-height:85vh;border:1px solid var(--n300);border-radius:10px;padding:23px;background:var(--card);color:var(--text);box-shadow:0 20px 70px #2b251c25}
+dialog::backdrop{background:#29262155}
+dialog h2{font-size:18px;font-weight:600;margin:0 0 8px}
+.modal-intro{font-size:12px;color:var(--n600);margin:0 0 19px}
+.dialog-head{display:flex;justify-content:space-between;gap:10px}
+.closebtn{width:28px;height:28px;display:grid;place-items:center;border-radius:4px}.closebtn:hover{background:var(--surface)}
+.field{display:block;margin:14px 0;font-size:12px;color:var(--n700)}
+.field input,.field textarea,.field select{display:block;width:100%;margin-top:6px;border:1px solid var(--n300);border-radius:6px;padding:8px 10px;background:var(--bg);font-size:13px}
+.field textarea{resize:vertical;min-height:80px}
+.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.rules{padding-left:19px;color:var(--n700);font-size:12px}.rules li{margin-bottom:13px}.rules strong{color:var(--text)}
+.notice{border-left:2px solid var(--accent-2);background:var(--acc2-100);padding:10px 12px;color:var(--acc2-700);font-size:12px}
+.error{color:var(--dang-deep);font-size:12px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 32px);background:var(--n800);color:white;padding:10px 18px;border-radius:6px;z-index:20;font-size:12px;box-shadow:0 3px 14px #0002}
+[hidden]{display:none!important}
+@media(min-width:1500px){.main{padding:30px 36px}.grid{grid-template-columns:repeat(3,1fr);max-width:1500px}}
+@media(max-width:1050px){.side{width:190px;padding:20px 10px}.main{padding:22px}.toolbar{align-items:flex-start;flex-wrap:wrap}.grid{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}.health-stat{padding:12px}.health-stat .label{display:block;margin-top:4px}.dcols{grid-template-columns:1fr}.scenario{align-items:flex-start}}
+@media(max-width:700px){.app{display:block}.side{width:100%;height:auto;position:static;padding:12px;border-right:0;border-bottom:1px solid var(--divider)}.brand{padding:0 3px 12px}.nav{flex-direction:row;overflow:auto;gap:3px}.nav button{padding:7px 10px;white-space:nowrap}.side-label,.healthnav,.side-note,.side-bottom{display:none}.main{padding:20px 14px}.head{flex-wrap:wrap}h1{font-size:22px}.scenario{flex-direction:column;gap:8px}.hbar{margin-bottom:16px}.health-stat{padding:10px 6px;text-align:center}.health-stat .num{font-size:20px;margin-right:0}.health-stat .label{font-size:10px}.health-stat .dot{display:none}.toolbar-left{flex-wrap:wrap;width:100%}.search{width:100%}.toolbar-right{width:100%;justify-content:space-between}.grid{grid-template-columns:1fr}.dstrip{grid-template-columns:1fr}.dimension{border-right:0;border-bottom:1px solid var(--divider)}.dimension:last-child{border:0}.dhead{flex-direction:column}.footnote{flex-direction:column}.builder-grid{grid-template-columns:1fr}.sectionline{gap:10px}.actions{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+/* Version delivery keeps the original palette and card geometry. */
+.promise{margin:7px 0 12px;font-size:13px;line-height:1.6;min-height:42px}
+.stage-mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding-top:10px;border-top:1px solid var(--divider)}
+.stage-item{min-width:0}.stage-label{font-size:10px;color:var(--n600);margin-bottom:5px}
+.stage-result{display:flex;align-items:center;gap:5px;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.stage-result.red,.card-exception.red{color:var(--dang-deep)}.stage-result.amber,.card-exception.amber{color:var(--warn-deep)}.stage-result.green{color:var(--ok-deep)}.stage-result.gray{color:var(--n600)}
+.stage-result .dot{flex-shrink:0}.card-exception{font-size:11px;line-height:1.5;max-width:69%;overflow-wrap:anywhere}
+.cfoot .textbtn{flex-shrink:0}.commitment{margin-bottom:14px}.card .builder{margin-bottom:12px}
+.cycle-table{min-width:660px}.cycle-row{display:grid;grid-template-columns:minmax(170px,1.1fr) repeat(3,minmax(145px,1fr));border-bottom:1px solid var(--divider)}
+.cycle-row:last-child{border-bottom:0}.cycle-row>div{padding:16px 18px;min-width:0}.cycle-head{font-size:11px;color:var(--n600);background:var(--n100)}
+.cycle-cell strong{font-size:12px;font-weight:500}.cycle-cell .stage-result{margin-top:7px}.buffer{font-size:10px;color:var(--n600);line-height:1.5;margin:7px 0 0}
+.builder-project{border-top:1px solid var(--divider);padding-top:14px;margin-top:14px}.builder-project p{font-size:12px;color:var(--n700);margin:6px 0 12px}
+.fact-row{display:flex;justify-content:space-between;gap:15px;font-size:12px;margin:12px 0}.fact-row>span:last-child{text-align:right;overflow-wrap:anywhere}.pr-row{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:10px 0;border-bottom:1px solid var(--divider)}
+.date-fields{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.date-opt{display:flex;align-items:center;gap:7px;font-size:12px;margin:12px 0}.date-opt input{width:auto}
+.panel .notice{font-size:11px;line-height:1.65}.panel>h2 .stage-result{font-weight:400}.panel details summary{cursor:pointer;font-size:12px}
+@media(max-width:700px){.stage-mini{gap:6px}.date-fields{grid-template-columns:1fr 1fr}.cycle-row>div{padding:13px}.card-exception{max-width:64%}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+ <aside class="side" aria-label="项目组合导航">
+  <div class="brand"><span class="brandmark" aria-hidden="true">B</span><span>Builders' Workbench</span></div>
+  <nav class="nav" id="viewnav" aria-label="视图"></nav>
+  <div class="side-note"><strong>一项目，一位主要 Builder</strong>周一计划，周中开发，周五验收。<br>按交付版本对齐承诺与结果。</div>
+  <div class="side-bottom"><button data-action="rules"><span aria-hidden="true">ⓘ</span>健康判据与管理方法</button></div>
+ </aside>
+ <main class="main" id="main"></main>
+</div>
+<dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+<div class="toast" id="toast" role="status" hidden></div>
+<script>
+'use strict';
+const SNAPSHOT='2026-10-12';
+const STORE='bw-projects-v4-drafts-1';
+const ICONS={
+ wall:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+ calendar:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 11h18"/>',
+ person:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
+ search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
+ arrow:'<path d="m9 5 7 7-7 7M4 12h12"/>',
+ back:'<path d="m12 5-7 7 7 7M5 12h15"/>',
+ check:'<path d="m5 12 4 4L19 6"/>',
+ alert:'<path d="m12 3 10 18H2L12 3Z"/><path d="M12 9v5m0 3v1"/>',
+ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+ close:'<path d="m6 6 12 12M6 18 18 6"/>',
+ refresh:'<path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-2l2 3M4 16l2 3a7 7 0 0 0 12-2"/>'
+};
+const STATUS={red:{name:'需介入',short:'介入'},amber:{name:'需关注',short:'关注'},green:{name:'按计划',short:'按计划'},gray:{name:'未知',short:'未知'}};
+const state={mode:'demo',view:'wall',filter:'all',query:'',owner:'all',sort:'health',selected:null};
+let draftStorage=true,draftData={};
+try{const value=JSON.parse(localStorage.getItem(STORE)||'{}');if(value&&typeof value==='object'&&!Array.isArray(value))draftData=value;}catch{draftStorage=false;}
+const el=(tag,attrs,...children)=>{const node=document.createElement(tag);for(const [key,value] of Object.entries(attrs||{})){if(value===null||value===undefined||(value===false&&!key.startsWith('aria-')))continue;if(key==='class')node.className=value;else if(key==='text')node.textContent=value;else if(key.startsWith('on'))node.addEventListener(key.slice(2),value);else if(key==='value')node.value=value;else node.setAttribute(key,key.startsWith('aria-')?String(value):value===true?'':String(value));}for(const child of children.flat(Infinity))if(child!==null&&child!==undefined&&child!==false)node.append(child instanceof Node?child:document.createTextNode(String(child)));return node;};
+function icon(name){const span=el('span',{'aria-hidden':'true'});span.innerHTML='<svg viewBox="0 0 24 24">'+(ICONS[name]||ICONS.clock)+'</svg>';return span;}
+function button(text,action,extra={}){return el('button',{type:'button','data-action':action,...extra},text);}
+function badge(level){return el('span',{class:'badge '+level},el('span',{class:'dot '+level,'aria-hidden':'true'}),STATUS[level].name);}
+function date(value){if(!/^\d{4}-\d{2}-\d{2}$/.test(value||''))return null;const d=new Date(value+'T00:00:00Z');return Number.isNaN(d.getTime())||d.toISOString().slice(0,10)!==value?null:d;}
+function days(a,b=SNAPSHOT){const da=date(a),db=date(b);return da&&db?Math.round((da-db)/86400000):null;}
+function addDays(value,offset){const d=date(value);if(!d)return null;d.setUTCDate(d.getUTCDate()+offset);return d.toISOString().slice(0,10);}
+function fmt(value){return date(value)?Number(value.slice(5,7))+'/'+Number(value.slice(8,10)):'未定';}
+function fresh(read,now=SNAPSHOT){const age=read&&days(now,read.at);return Number.isFinite(age)&&age>=0&&age<=7;}
+function read(source,at=SNAPSHOT){return{source,at};}
+function cycle(extra={}){return{id:'B007',start:'2026-10-12',end:'2026-10-16',planDate:'2026-10-12',acceptDate:'2026-10-16',adjustment:'',...extra};}
+function pr(state,ref,url=null){return{state,ref,url};}
+function weekly(commitment,extra={}){const facts={commitment,plan:{handshake:'confirmed',by:'Builder / PL',at:SNAPSHOT,screen:{ref:'周一计划屏 · 示例',url:null},pr:pr('merged','计划 PR · 示例'),read:read('周一计划屏 / 计划 PR')},development:{prs:[pr('in_progress','实现 PR · 示例')],read:read('实现 PR')},acceptance:{state:'pending',confirmedBy:null,confirmedAt:null,screen:{ref:'周五验收屏 · 示例',url:null},read:read('周五验收屏')},deadline:{state:'on_time',forecast:'2026-10-16',note:'',read:read('版本交付预测')},blocked:null,change:null,...extra};facts.acceptance={...facts.acceptance,cycleId:'B007',commitmentRef:commitment};facts.deadline={read:read('版本交付预测'),...facts.deadline};return facts;}
+const DEMO=[
+ {id:'wb',name:'workbench',category:'研发工作台',version:'v0.5',priority:1,builder:'Builder A',initial:'A',repo:'builder-workbench',outcome:'让 Builder 从版本计划走到可验证的交付。',cycle:cycle(),weekly:weekly('计划与验收两屏跑通真实交付旅程。',{deadline:{state:'delayed',forecast:'2026-10-19',note:'工具调用基线晚于本版本承诺，预计 10/19 完成。'},blocked:{state:'blocked',note:'等待 Builder D 的工具调用基线。',read:read('跨项目依赖')}})},
+ {id:'axo',name:'Axodendron',category:'模型平台',version:'v1.2',priority:2,builder:'Builder B',initial:'B',repo:'axodendron',outcome:'多模型统一接入，切换过程可追溯。',cycle:cycle(),weekly:weekly('交付可追溯的多模型路由试用。')},
+ {id:'dfx',name:'gtsllm-dfx',category:'稳定性',version:'v2.1',priority:1,builder:'Builder C',initial:'C',repo:'gtsllm-dfx',outcome:'线上连续 30 天平稳运行，中断时长低于 20 分钟。',cycle:cycle({end:'2026-10-19',acceptDate:'2026-10-19',adjustment:'示例调整：预留假期 / 协作缓冲，仍属于 B007。'}),weekly:weekly('提交稳定性观测结果并完成人工验收。',{deadline:{state:'on_time',forecast:'2026-10-19',note:''},change:{state:'pending',note:'观测范围有一项待 PL 确认。',read:read('范围变更记录')}})},
+ {id:'eval',name:'模型 / skill 评测',category:'质量能力',version:'v0.3',priority:1,builder:'Builder D',initial:'D',repo:'benchmark',outcome:'建立可复核的模型与 skill 评测基线。',cycle:cycle(),weekly:weekly('发布工具调用评测基线及可复现结果。',{plan:{handshake:'confirmed',by:'Builder D / PL',at:SNAPSHOT,screen:{ref:'周一计划屏 · 示例',url:null},pr:pr('open','计划 PR · 示例'),read:read('周一计划屏 / 计划 PR')}})},
+ {id:'mcp',name:'gtsllm-mcp',category:'工具服务',version:'v1.0',priority:2,builder:'Builder E',initial:'E',repo:'gtsllm-mcp',outcome:'提供可回放、可追踪的工具服务。',cycle:cycle(),weekly:weekly('交付故障回放环境并由人确认验收。',{development:{prs:[pr('merged','实现 PR · 示例')],read:read('实现 PR')},acceptance:{state:'confirmed',confirmedBy:'PL（示例）',confirmedAt:'2026-10-12',screen:{ref:'周五验收屏 · 示例提前验收',url:null},read:read('人确认验收记录')},deadline:{state:'on_time',forecast:'2026-10-12',note:''}})},
+ {id:'knowledge',name:'knowledge-map',category:'知识能力',version:'v0.2',priority:3,builder:'Builder F',initial:'F',repo:'knowledge-map',outcome:'建立首个可验证的知识闭环。',cycle:cycle(),weekly:weekly('交付首个知识闭环的可验收样例。',{plan:{handshake:'unknown',by:null,at:null,screen:null,pr:pr('unknown',null),read:read('旧项目记录','2026-10-02')},development:{prs:[],read:null},acceptance:{state:'unknown',confirmedBy:null,confirmedAt:null,screen:null,read:null},deadline:{state:'unknown',forecast:null,note:''}})}
+];
+const CURRENT=[
+ {id:'wb',name:'workbench',category:'研发工作台',repo:'builder-workbench',outcome:'加速并规范项目运作，用一张工作台连接系统、组件和工作流。'},
+ {id:'axo',name:'Axodendron',category:'模型平台',repo:'axodendron',outcome:'汇集多个模型，提供统一使用入口。'},
+ {id:'dfx',name:'gtsllm-dfx',category:'稳定性',repo:'gtsllm-dfx',outcome:'线上 30 天平稳运行，中断时长小于 20 分钟。'},
+ {id:'eval',name:'模型 / skill 评测',category:'质量能力',repo:'benchmark',outcome:'项目目标尚未定义。'}
+].map(p=>({...p,builder:null,initial:'?',priority:3,version:'未定',cycle:null,weekly:null}));
+function validDraft(d){return d&&typeof d==='object'&&typeof d.action==='string'&&typeof d.created==='string';}
+function allProjects(){return(state.mode==='demo'?DEMO:CURRENT).map(p=>{const raw=draftData[state.mode+':'+p.id];const draft=validDraft(raw)?{...raw,history:Array.isArray(raw.history)?raw.history.filter(validDraft):[]}:null;return{...p,draft};});}
+function validateCycle(c){if(!c||!/^B\d{3}$/.test(c.id||''))return'交付版本编号应为 B00X。';if(!['start','end','planDate','acceptDate'].every(key=>date(c[key])))return'请填写完整且有效的版本日期。';if(days(c.planDate,c.start)<0||days(c.acceptDate,c.planDate)<=0||days(c.end,c.acceptDate)<0)return'日期顺序应为：版本开始 ≤ 计划日期 < 验收日期 ≤ 版本结束。';return null;}
+function getCycle(p){return p.cycle&&!validateCycle(p.cycle)?p.cycle:null;}
+function developmentDates(c){if(!c)return{start:null,end:null};const span=days(c.acceptDate,c.planDate);return{start:addDays(c.planDate,1),end:addDays(c.planDate,Math.max(1,Math.min(3,span-1)))};}
+const rank={red:0,amber:1,gray:2,green:3};
+function worst(items){return items.reduce((best,x)=>rank[x.level]<rank[best.level]?x:best,{level:'green',reason:''});}
+function cycleStages(p,now=SNAPSHOT){
+ const c=getCycle(p),w=p.weekly;const unknown=label=>({level:'gray',short:'未知',reason:label+'依据未接入',date:null});
+ if(!c||!w)return{plan:unknown('计划'),development:unknown('开发'),acceptance:unknown('验收')};
+ const plan=w.plan||{},dev=w.development||{},acc=w.acceptance||{},d=developmentDates(c);
+ let a={level:'green',short:'已握手 · PR 已合入',reason:'计划握手和计划 PR 合入均有记录。',date:c.planDate};
+ const handshakeProof=plan.handshake==='confirmed'&&Boolean(plan.by)&&date(plan.at)&&days(now,plan.at)>=0;
+ const planPRProof=plan.pr?.state==='merged'&&Boolean(plan.pr.ref);
+ if(!['confirmed','pending','rejected','unknown'].includes(plan.handshake)||!['merged','open','in_progress','failed','blocked','unknown'].includes(plan.pr?.state))a={...a,level:'gray',short:'未知',reason:'计划握手 / PR 状态尚无可识别依据。'};
+ else if(plan.handshake==='rejected'||['failed','blocked'].includes(plan.pr?.state))a={...a,level:fresh(plan.read,now)?'red':'gray',short:fresh(plan.read,now)?'计划未达成':'未知',reason:(fresh(plan.read,now)?'':'上次记录：')+'计划握手被拒绝或计划 PR 失败。'+(fresh(plan.read,now)?'':'需刷新依据。')};
+ else if(plan.handshake==='confirmed'&&!handshakeProof||plan.pr?.state==='merged'&&!planPRProof)a={...a,level:'gray',short:'未知',reason:'计划确认人、日期或合入 PR 引用缺失 / 尚未发生。'};
+ else if(!handshakeProof||!planPRProof){
+  if(!fresh(plan.read,now)||plan.handshake==='unknown'||plan.pr?.state==='unknown')a={...a,level:'gray',short:'未知',reason:'计划握手 / 计划 PR 缺少有效依据。'};
+  else if(days(now,c.planDate)>0)a={...a,level:'red',short:!handshakeProof?'握手逾期':'计划 PR 未合入',reason:'计划日期已过，'+(!handshakeProof?'握手尚未确认。':'计划 PR 尚未合入。')};
+  else a={...a,level:days(now,c.planDate)===0?'amber':'green',short:!handshakeProof?'待握手':'计划 PR 待合入',reason:'计划握手与 PR 合入分别确认。'};
+ }
+ const prs=Array.isArray(dev.prs)?dev.prs:[];
+ let b={level:'green',short:'开发中',reason:'实现 PR 的状态用于追溯开发事实。',date:d.start,end:d.end};
+ if(prs.some(x=>x.state==='failed'||x.state==='blocked'))b={...b,level:fresh(dev.read,now)?'red':'gray',short:fresh(dev.read,now)?'实现 PR 阻塞':'未知',reason:(fresh(dev.read,now)?'':'上次记录：')+'实现 PR 存在失败或阻塞。'+(fresh(dev.read,now)?'':'需刷新依据。')};
+ else if(prs.length&&prs.every(x=>x.state==='merged'&&x.ref))b={...b,short:'实现 PR 已合入',reason:'实现 PR 已合入，仍需人确认验收。'};
+ else if(!fresh(dev.read,now)||prs.some(x=>!['merged','open','in_progress','blocked','failed'].includes(x.state))||prs.some(x=>x.state==='merged'&&!x.ref))b={...b,level:'gray',short:'未知',reason:'进行中的实现 PR 需要有效读数。'};
+ else if(prs.length){b={...b,short:prs.some(x=>x.state==='open')?'实现 PR 待合入':'开发中'};if(days(now,c.acceptDate)>=0)b={...b,level:'amber',short:'实现 PR 待合入',reason:'已到验收日期，实现 PR 尚未全部合入。'};}
+ else if(days(now,d.start)<0)b={...b,short:'待开发',reason:'当前依据记录为尚未开始，未到开发日期。'};
+ else b={...b,level:'gray',short:'未知',reason:'开发日期已到，实现 PR 依据未接入。'};
+ let z={level:'green',short:'待人验收',reason:'人确认结果是完成依据。',date:c.acceptDate};
+ if(['pending','failed','confirmed'].includes(acc.state)&&(acc.cycleId!==c.id||acc.commitmentRef!==w.commitment))z={...z,level:'gray',short:'未知',reason:'验收事实尚未关联本版本与本交付承诺。'};
+ else if(acc.state==='failed')z={...z,level:fresh(acc.read,now)?'red':'gray',short:fresh(acc.read,now)?'验收未达':'未知',reason:(fresh(acc.read,now)?'':'上次记录：')+'人工验收未达成。'+(fresh(acc.read,now)?'':'需刷新当前结果。')};
+ else if(acc.state==='confirmed'){
+  if(acc.confirmedBy&&date(acc.confirmedAt)&&days(now,acc.confirmedAt)>=0&&acc.screen?.ref&&acc.cycleId===c.id&&acc.commitmentRef===w.commitment)z={...z,short:'人已确认',reason:'已归档的本版本、本交付承诺的人确认验收记录。'};
+  else z={...z,level:'gray',short:'未知',reason:'验收确认需要本版本、本交付承诺、确认人、日期与验收屏依据。'};
+ }else if(acc.state!=='pending')z={...z,level:'gray',short:'未知',reason:'验收安排 / 结果尚无依据。'};
+ else if(!fresh(acc.read,now))z={...z,level:'gray',short:'未知',reason:'上次记录为待人确认，需刷新当前验收依据。'};
+ else if(days(now,c.acceptDate)>0)z={...z,level:'red',short:'验收逾期',reason:'验收日期已过，当前记录尚无人确认完成。'};
+ else if(days(now,c.acceptDate)===0)z={...z,level:'amber',short:'待人确认',reason:'今日验收，尚未由人确认。'};
+ if(acc.state==='pending'&&acc.cycleId===c.id&&acc.commitmentRef===w.commitment&&fresh(acc.read,now)&&(w.deadline?.state==='delayed'||date(w.deadline?.forecast)&&days(w.deadline.forecast,c.acceptDate)>0)){const live=fresh(w.deadline.read,now);z={...z,level:live?'red':'gray',short:live?'验收延期':'未知',reason:(live?'':'上次预测：')+(w.deadline.note||'预测晚于原版本承诺。')+(live?'':'需刷新预测依据。')};}
+ return{plan:a,development:b,acceptance:z};
+}
+function health(p,now=SNAPSHOT){
+ const stages=cycleStages(p,now),signals=Object.values(stages).map(s=>({level:s.level,reason:s.reason}));const w=p.weekly,c=getCycle(p);
+ if(!p.builder)signals.push({level:'gray',reason:'主要 Builder 待指定。'});
+ if(!c||!w?.commitment)signals.push({level:'gray',reason:'版本与交付承诺尚无依据。'});
+ if(stages.acceptance.short!=='人已确认'&&w?.blocked?.state==='blocked'){const live=fresh(w.blocked.read,now);signals.push({level:live?'red':'gray',reason:(live?'':'上次阻塞：')+(w.blocked.note||'交付存在阻塞。')+(live?'':'需刷新当前依据。')});}
+ if(stages.acceptance.short!=='人已确认'&&(w?.deadline?.state==='delayed'||(date(w?.deadline?.forecast)&&c&&days(w.deadline.forecast,c.acceptDate)>0))){const live=fresh(w.deadline.read,now);signals.push({level:live?'red':'gray',reason:(live?'':'上次预测：')+(w.deadline.note||'预测晚于版本验收承诺。')+(live?'':'需刷新当前依据。')});}
+ if(stages.acceptance.short!=='人已确认'&&w?.change?.state==='pending'){const live=fresh(w.change.read,now);signals.push({level:live?'amber':'gray',reason:(live?'':'上次变更：')+(w.change.note||'承诺范围变更待确认。')+(live?'':'需刷新当前依据。')});}
+ const deadlineKnown=['on_time','delayed'].includes(w?.deadline?.state)&&Boolean(date(w?.deadline?.forecast));
+ if(w&&c&&(!deadlineKnown||!fresh(w.deadline?.read,now))&&stages.acceptance.short!=='人已确认')signals.push({level:'gray',reason:'交付预测缺少当前有效依据。'});
+ const result=worst(signals);return{level:result.level,reason:result.reason,signals,stages,dims:stages};
+}
+function filtered(){return allProjects().filter(p=>(state.filter==='all'||health(p).level===state.filter)&&(state.owner==='all'||(p.builder||'unassigned')===state.owner)&&[p.name,p.outcome,p.builder,p.cycle?.id,p.weekly?.commitment].join(' ').toLowerCase().includes(state.query.toLowerCase())).sort((a,b)=>state.sort==='health'?rank[health(a).level]-rank[health(b).level]||a.priority-b.priority:state.sort==='date'?(getCycle(a)?.acceptDate||'9999').localeCompare(getCycle(b)?.acceptDate||'9999'):a.priority-b.priority);}
+function renderNav(){document.getElementById('viewnav').replaceChildren(...[['wall','wall','项目墙'],['timeline','calendar','版本节奏'],['builders','person','Builder 交付']].map(([view,i,label])=>button([icon(i),label],'view',{class:'navitem'+(state.view===view?' active':''),'data-view':view,'aria-current':state.view===view?'page':null})));}
+function scenario(){return el('div',{class:'scenario'},el('span',{},state.mode==='demo'?'示例场景 · 6 个项目 · 虚构版本与交付事实':'当前项目 · Orca 页面 4 个项目快照 · 版本与交付依据未接入'),el('div',{class:'seg'},button('示例场景','mode',{'data-mode':'demo','aria-pressed':state.mode==='demo',class:state.mode==='demo'?'active':''}),button('当前项目','mode',{'data-mode':'current','aria-pressed':state.mode==='current',class:state.mode==='current'?'active':''})));}
+function overview(){const projects=allProjects();return el('div',{class:'hbar'},...['all','red','amber','green','gray'].map(level=>button([el('strong',{class:'num'},level==='all'?projects.length:projects.filter(p=>health(p).level===level).length),el('span',{class:'label'},level==='all'?'全部项目':STATUS[level].name)],'filter',{class:'health-stat'+(state.filter===level?' active':''),'data-filter':level,'aria-pressed':state.filter===level})));}
+function toolbar(){const owners=[...new Set(allProjects().map(p=>p.builder||'unassigned'))];return el('div',{class:'toolbar'},el('label',{class:'search'},icon('search'),el('input',{type:'search',placeholder:'搜索项目、Builder 或版本',value:state.query,'data-control':'query','aria-label':'搜索项目'})),el('div',{class:'toolbar-right'},el('label',{},'Builder ',el('select',{'data-control':'owner','aria-label':'筛选 Builder'},el('option',{value:'all'},'全部 Builder'),...owners.map(x=>el('option',{value:x},x==='unassigned'?'待指定':x)))),el('select',{'data-control':'sort','aria-label':'排序'},el('option',{value:'health'},'健康优先'),el('option',{value:'date'},'验收日期'),el('option',{value:'priority'},'交付优先级'))));}
+function stageMini(stages){return el('div',{class:'stage-mini'},...Object.entries(stages).map(([key,s])=>el('div',{class:'stage-item'},el('div',{class:'stage-label'},key==='plan'?'周一计划':key==='development'?'周中开发':'周五验收'),el('div',{class:'stage-result '+s.level},el('span',{class:'dot '+s.level,'aria-hidden':'true'}),s.short))));}
+function card(p){const h=health(p),c=getCycle(p);return el('article',{class:'card'},el('div',{class:'crow'},el('div',{class:'tags'},el('span',{class:'tag'},p.category),el('span',{class:'tag'},c?'交付版本 '+c.id:'版本未定')),badge(h.level)),el('h2',{class:'cname'},p.name),el('div',{class:'builder',style:'margin-top:12px'},el('span',{class:'avatar'},p.initial),p.builder||'主要 Builder 待指定'),el('div',{class:'commitment'},el('div',{class:'commit-title'},'本版本交付承诺',el('span',{},c?fmt(c.planDate)+' → '+fmt(c.acceptDate):'—')),el('p',{class:'promise'},p.weekly?.commitment||'—'),stageMini(h.stages)),el('div',{class:'cfoot'},h.level==='red'||h.level==='amber'?el('span',{class:'card-exception '+h.level},h.reason):el('span',{}),button(['查看版本',icon('arrow')],'detail',{class:'textbtn','data-id':p.id})));}
+function timeline(projects){const table=el('div',{class:'cycle-table'},el('div',{class:'cycle-row cycle-head'},el('div',{},'项目 / 交付版本'),el('div',{},'周一 · 计划'),el('div',{},'周中 · 开发'),el('div',{},'周五 · 人验收')));for(const p of projects){const c=getCycle(p),s=cycleStages(p),d=developmentDates(c);table.append(el('div',{class:'cycle-row'},el('div',{},button(p.name,'detail',{class:'textbtn','data-id':p.id}),el('div',{class:'fresh'},(c?c.id:'版本未定')+' · '+(p.builder||'Builder 待指定'))),...['plan','development','acceptance'].map(k=>el('div',{class:'cycle-cell'},el('strong',{},c?(k==='development'?fmt(d.start)+'–'+fmt(d.end):fmt(s[k].date)):'—'),el('div',{class:'stage-result '+s[k].level},el('span',{class:'dot '+s[k].level,'aria-hidden':'true'}),s[k].short),k==='acceptance'&&c?.adjustment?el('p',{class:'buffer'},c.adjustment):null))));}return el('div',{class:'timeline'},table);}
+function builders(projects){const owners=[...new Set(projects.map(p=>p.builder||'unassigned'))];return el('div',{class:'builder-grid'},...owners.map(owner=>{const items=projects.filter(p=>(p.builder||'unassigned')===owner);return el('section',{class:'buildercard'},el('div',{class:'bhead',style:'display:flex;align-items:center;gap:9px;font-size:15px'},el('span',{class:'avatar'},owner==='unassigned'?'?':owner.slice(-1)),el('strong',{},owner==='unassigned'?'主要 Builder 待指定':owner)),...items.map(p=>el('div',{class:'builder-project'},el('div',{class:'crow'},button(p.name,'detail',{class:'textbtn','data-id':p.id}),badge(health(p).level)),el('p',{},(getCycle(p)?.id||'版本未定')+' · '+(p.weekly?.commitment||'—')),stageMini(cycleStages(p)))));}));}
+function renderMain(){const projects=filtered();document.getElementById('main').replaceChildren(el('header',{class:'head'},el('div',{},el('h1',{},state.view==='wall'?'项目墙':state.view==='timeline'?'版本节奏':'Builder 交付'),el('p',{class:'subtitle'},'从计划握手到人确认验收，管理每个项目的交付。')),button([icon('refresh'),'重新计算'],'recalculate',{class:'btn small'})),scenario(),overview(),toolbar(),projects.length?(state.view==='wall'?el('div',{class:'grid'},...projects.map(card)):state.view==='timeline'?timeline(projects):builders(projects)):el('div',{class:'empty'},el('p',{},'没有匹配的项目。'),button('清除筛选','clear',{class:'btn'})),el('footer',{class:'footnote'},el('span',{},'健康由交付事实推导 · 完成由人确认'),button('查看判断规则','rules',{class:'textbtn'})));for(const key of ['owner','sort']){const select=document.querySelector('[data-control="'+key+'"]');if(select)select.value=state[key];}}
+function factRow(label,value){return el('div',{class:'fact-row'},el('span',{class:'label'},label),el('span',{},value||'未知'));}
+function safeURL(value){try{const url=new URL(value);return url.protocol==='https:'||url.protocol==='http:'?url.href:null;}catch{return null;}}
+function evidenceEntry(p,kind,label){const item=p.weekly?.[kind]?.screen;const url=safeURL(item?.url);return url?el('a',{class:'btn small',href:url,target:'_blank',rel:'noreferrer'},label):button(label,'evidence',{class:'btn small','data-id':p.id,'data-kind':kind,disabled:!item?.ref});}
+function prRow(item){if(!item)return factRow('PR','未知');const labels={merged:'已合入',open:'待合入',in_progress:'开发中',blocked:'阻塞',failed:'失败',unknown:'未知'};const url=safeURL(item.url);return el('div',{class:'pr-row'},el('span',{},labels[item.state]||'未知'),url?el('a',{href:url,target:'_blank',rel:'noreferrer'},item.ref||'查看 PR'):el('span',{class:'fresh'},item.ref||'—'));}
+function stagePanel(p,key){
+ const w=p.weekly||{},c=getCycle(p),s=cycleStages(p)[key],data=w[key]||{};
+ const title=key==='plan'?'周一计划屏':key==='development'?'周中开发 · 实现 PR':'周五验收屏';
+ const panel=el('section',{class:'panel'},el('h2',{},title,el('span',{class:'stage-result '+s.level},s.short)));
+ if(!c){panel.append(el('p',{},'版本交付依据尚未接入。'));return panel;}
+ const body=[];
+ if(key==='plan')body.push(factRow('计划日期',c.planDate),factRow('计划握手',data.handshake==='confirmed'?'已确认 · '+(data.by||'确认人未知'):data.handshake==='rejected'?'未达成':data.handshake==='pending'?'待确认':'未知'),evidenceEntry(p,'plan','查看计划屏依据'),el('div',{class:'label',style:'margin-top:15px'},'计划 PR · 计划归档事实'),prRow(data.pr));
+ else if(key==='development'){const d=developmentDates(c);body.push(factRow('开发日期',d.start+' → '+d.end),...(data.prs?.length?data.prs.map(prRow):[factRow('实现 PR','未知')]),el('p',{class:'fresh'},'实现 PR 合入只说明代码事实，不能代替验收。'));}
+ else body.push(factRow('约定验收',c.acceptDate),c.adjustment?el('div',{class:'notice'},c.adjustment):null,factRow('人确认结果',s.level==='gray'?'未知':s.short==='人已确认'?'已确认':data.state==='failed'?'未达成':data.state==='pending'?'待人确认':'未知'),data.confirmedBy?factRow('确认人 / 日期',data.confirmedBy+' · '+data.confirmedAt):null,evidenceEntry(p,'acceptance','查看验收屏依据'),w.deadline?.state==='delayed'?el('p',{class:'stage-result red'},'预测 '+fmt(w.deadline.forecast)+' · '+w.deadline.note):null);
+ if(data.read)body.push(el('p',{class:'fresh'},'事实来源：'+data.read.source+' · '+data.read.at));
+ panel.append(...body.filter(item=>item!==null&&item!==undefined&&item!==false));return panel;
+}
+function detail(p){const c=getCycle(p),h=health(p),draft=p.draft;const decisions=el('section',{class:'panel'},el('h2',{},'管理决定',el('span',{class:'local-label'},'本机草稿')),el('p',{},draft?.action||'记录协调、范围或验收安排。'),draft?.dates?el('div',{class:'notice'},'拟议版本日期：计划 '+fmt(draft.dates.planDate)+' · 验收 '+fmt(draft.dates.acceptDate)+'。未生效，健康继续按原承诺计算。'):null,button('记录下一步决定','decision',{class:'btn small','data-id':p.id}),draft?.history?.length?el('details',{style:'margin-top:14px'},el('summary',{},'草稿历史'),...draft.history.slice(-4).reverse().map(d=>el('div',{class:'draft'},d.action,el('div',{class:'meta'},d.created+' · '+d.kind)))):null);document.getElementById('main').replaceChildren(button([icon('back'),'返回'+(state.view==='wall'?'项目墙':state.view==='timeline'?'版本节奏':'Builder 交付')],'back',{class:'dback'}),el('header',{class:'dhead'},el('div',{},el('h1',{},p.name),el('p',{class:'subtitle'},(p.builder||'主要 Builder 待指定')+' · '+(c?'交付版本 '+c.id:'版本未定'))),badge(h.level)),scenario(),el('div',{class:'dcols'},el('div',{},el('section',{class:'panel'},el('h2',{},'本版本交付承诺'),el('div',{class:'outcome'},p.weekly?.commitment||'—'),c?el('p',{class:'fresh'},'版本日期 '+c.start+' → '+c.end+' · 周一计划 / 周中开发 / 周五人验收'):null,c?button('拟议版本日期','dates',{class:'btn small','data-id':p.id}):null,h.level==='red'||h.level==='amber'?el('p',{class:'stage-result '+h.level},h.reason):null),stagePanel(p,'plan'),stagePanel(p,'development'),stagePanel(p,'acceptance')),el('div',{},decisions,p.weekly?.blocked?el('section',{class:'panel'},el('h2',{},'交付依赖'),el('p',{},p.weekly.blocked.note)):null,p.weekly?.change?el('section',{class:'panel'},el('h2',{},'范围待对齐'),el('p',{},p.weekly.change.note)):null,el('section',{class:'panel'},el('details',{},el('summary',{},'项目资料'),el('p',{},p.outcome),factRow('项目类型',p.category),factRow('项目原版本',p.version),factRow('代码仓',p.repo))))),el('footer',{class:'footnote'},el('span',{},'计划 / 验收屏是证据入口，PR 用于追溯事实。'),el('span',{},state.mode==='demo'?'外部原型示例 · B007 不代表现有仓库协议':'项目快照 · 交付依据未接入')));}
+function render(){renderNav();const p=allProjects().find(p=>p.id===state.selected);if(p)detail(p);else{state.selected=null;renderMain();}}
+let dialogTrigger=null;
+function openDialog(contents){dialogTrigger=document.activeElement;const dialog=document.getElementById('dialog');dialog.replaceChildren(...contents);dialog.showModal();document.getElementById('app').inert=true;}
+function closeDialog(){document.getElementById('dialog').close();}
+document.getElementById('dialog').addEventListener('close',()=>{document.getElementById('app').inert=false;if(dialogTrigger?.isConnected)dialogTrigger.focus();});
+function dialogHeading(title){return el('div',{class:'dialog-head'},el('h2',{id:'dialog-title'},title),button(icon('close'),'close-dialog',{class:'closebtn','aria-label':'关闭对话框'}));}
+function rules(){openDialog([dialogHeading('交付版本怎样判断健康'),el('p',{class:'modal-intro'},'每个项目一位主要 Builder：周一计划握手与计划 PR 合入，周中开发，实现 PR 留痕；周五由人确认验收。'),el('ul',{class:'rules'},el('li',{},el('strong',{},'需介入：'),'已知延期、交付 / 实现 PR 阻塞、计划逾期未达成，或人验收未达 / 逾期。'),el('li',{},el('strong',{},'需关注：'),'当日计划 PR 待合入、范围变更待对齐，或验收当日待人确认。'),el('li',{},el('strong',{},'未知：'),'主要 Builder、版本承诺或当前应有的事实缺失。进行中读数超过 7 天需要刷新；已知红黄信号优先保留。'),el('li',{},el('strong',{},'按计划：'),'当前阶段事实有据，未来阶段按约定等待，暂无已知偏差。归档的人确认验收不因读数年龄自动失效。')),el('div',{class:'notice'},'计划握手、计划 PR 合入、实现 PR 合入、人确认验收是分别记录的事实。PR 合入不能代替人确认；本机决定和拟议日期不会改写承诺或健康。'),el('p',{class:'modal-intro',style:'margin-top:14px'},'B007 是本外部原型的交付版本示例。周一 / 周五表达默认节奏；遇假期可在同一版本约定其他实际日期，不按自然周自动换号。示例缓冲并非真实节假日判断。'),el('div',{class:'dialog-actions'},button('知道了','close-dialog',{class:'btn primary'}))]);}
+function evidence(p,kind){const item=p.weekly?.[kind]?.screen;if(!item?.ref)return;openDialog([dialogHeading(kind==='plan'?'计划屏依据':'验收屏依据'),el('p',{class:'modal-intro'},p.name+' · '+p.cycle.id),el('div',{class:'notice'},item.ref),el('p',{},kind==='plan'?'示例计划屏：交付承诺、主要 Builder 与 PL 的握手结果，及计划 PR 归档记录。':'示例验收屏：交付结果、确认人、确认日期与人确认结果。实现 PR 合入不能代替此记录。'),el('p',{class:'fresh'},'演示引用未连接真实 URL；这里展示占位依据，不生成外部链接。'),el('div',{class:'dialog-actions'},button('关闭','close-dialog',{class:'btn primary'}))]);}
+function dateFields(c){return el('div',{class:'date-fields'},...['start','planDate','acceptDate','end'].map(key=>el('label',{class:'field'},({start:'拟议版本开始',planDate:'拟议计划日期',acceptDate:'拟议验收日期',end:'拟议版本结束'})[key],el('input',{type:'date',name:key,value:c[key],required:true}))));}
+function decision(p,datesOnly=false){const c=getCycle(p),initial=p.draft?.dates&&!validateCycle({...p.draft.dates,id:c?.id})?p.draft.dates:c;const form=el('form',{'data-form':'decision','data-id':p.id},dialogHeading(datesOnly?'拟议版本日期':'记录下一步决定'),el('p',{class:'modal-intro'},p.name+' · '+(c?'交付版本 '+c.id:'版本未定')+'。仅保存本机草稿，不改写计划、PR 或人验收事实。'),el('label',{class:'field'},'管理动作',el('select',{name:'kind'},...['协调依赖','收敛范围','拟议版本日期','补齐依据','安排验收'].map(x=>el('option',{value:x,selected:datesOnly&&x==='拟议版本日期'},x)))),el('label',{class:'field'},'下一步由谁推进、推进什么',el('textarea',{name:'action',required:true,maxlength:300,placeholder:'例如：Builder A 与 PL 对齐延期后的交付范围。'},p.draft?.action||(datesOnly?'与 PL 对齐本版本日期调整，待新计划依据确认。':''))),c?el('details',{open:datesOnly},el('summary',{},'拟议版本日期（可选）'),el('label',{class:'date-opt'},el('input',{type:'checkbox',name:'proposeDates',checked:datesOnly||Boolean(p.draft?.dates)}), '保存以下拟议日期'),dateFields(initial)):null,el('div',{class:'notice'},c?'原承诺：计划 '+c.planDate+' · 验收 '+c.acceptDate+'。拟议日期尚未生效，健康仍按原承诺判断。':'当前项目缺少版本依据，不能通过手填日期改变健康。'),el('p',{class:'error',id:'form-error',role:'alert',hidden:true}),el('div',{class:'dialog-actions'},button('取消','close-dialog',{class:'btn'}),el('button',{type:'submit',class:'btn primary'},'保存管理草稿')));openDialog([form]);document.querySelector('textarea[name="action"]').focus();}
+let toastTimer;
+function toast(message){const node=document.getElementById('toast');node.textContent=message;node.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>node.hidden=true,4500);}
+document.addEventListener('click',event=>{const target=event.target.closest('[data-action]');if(!target)return;const action=target.dataset.action;if(action==='mode'){state.mode=target.dataset.mode;state.selected=null;state.owner='all';state.filter='all';render();}else if(action==='view'){state.view=target.dataset.view;state.selected=null;render();}else if(action==='filter'){state.filter=target.dataset.filter;state.selected=null;render();}else if(action==='detail'){state.selected=target.dataset.id;render();window.scrollTo(0,0);document.querySelector('.dback')?.focus();}else if(action==='back'){const id=state.selected;state.selected=null;render();document.querySelector('button[data-action="detail"][data-id="'+id+'"]')?.focus();}else if(action==='clear'){state.filter='all';state.query='';state.owner='all';render();}else if(action==='rules')rules();else if(action==='decision'||action==='dates'||action==='evidence'){const p=allProjects().find(p=>p.id===target.dataset.id);if(p){if(action==='evidence')evidence(p,target.dataset.kind);else decision(p,action==='dates');}}else if(action==='close-dialog')closeDialog();else if(action==='recalculate'){render();toast('已按当前事实快照重算；未采集新数据。');}});
+document.addEventListener('input',event=>{if(event.target.dataset.control==='query'){const pos=event.target.selectionStart;state.query=event.target.value;renderMain();const input=document.querySelector('[data-control="query"]');input.focus();try{input.setSelectionRange(pos,pos);}catch{}}});
+document.addEventListener('change',event=>{const control=event.target.dataset.control;if(control==='owner'||control==='sort'){state[control]=event.target.value;renderMain();}});
+document.addEventListener('submit',event=>{const form=event.target;if(form.dataset.form!=='decision')return;event.preventDefault();const fd=new FormData(form),action=String(fd.get('action')||'').trim(),p=allProjects().find(p=>p.id===form.dataset.id),c=getCycle(p);let proposed=null,error=action?null:'请填写下一步动作。';if(fd.has('proposeDates')){proposed={id:c?.id,start:String(fd.get('start')||''),end:String(fd.get('end')||''),planDate:String(fd.get('planDate')||''),acceptDate:String(fd.get('acceptDate')||'')};error=error||validateCycle(proposed);}if(error){const err=document.getElementById('form-error');err.textContent=error;err.hidden=false;return;}const key=state.mode+':'+p.id,history=Array.isArray(draftData[key]?.history)?draftData[key].history.filter(validDraft).slice(-19):[];const entry={action,kind:String(fd.get('kind')||''),dates:proposed,created:new Date().toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false})};draftData[key]={...entry,history:[...history,entry]};try{localStorage.setItem(STORE,JSON.stringify(draftData));draftStorage=true;}catch{draftStorage=false;}closeDialog();render();document.querySelector('[data-action="decision"]')?.focus();toast(draftStorage?'管理草稿已保存；原承诺与健康保持不变。':'存储不可用，草稿仅在本次页面内保留。');});
+render();
+if(!draftStorage)toast('本机存储不可用；管理草稿仅在本次页面内保留。');
+window.ProjectWall={health,cycleStages,validateCycle,getCycle,developmentDates,days,fresh,allProjects,state,SNAPSHOT,DEMO,CURRENT,render};
+</script>
+</body>
+</html>
