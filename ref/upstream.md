@@ -90,6 +90,7 @@ git merge orca-upstream/main
 - 自动化编辑器的显式 `target/draft` 请求契约；BW 预填入口依赖该原生能力。
 - 任务详情的 source context、return-to-previous-view 和 worktree history replay；BW 不另建任务详情和历史系统。
 - 工作树版本偏好、Git history 的窗口/固定 revision/`committedAt`、GitHub/CodeHub 的真实 `mergedAt` 字段透传。
+- Terminal→TabGroupSplitLayout 链的 `reserveClosedExplorerToggleSpace` 宿主参数（默认 true=Orca 原行为；BW 计划/验收双栏传 false，避免右上角预留位吃掉侧栏收起后的宽度）；上游合并时保留传参与默认值。
 - WSL/SSH/配对沿用原生宿主身份和执行路由；BW 不新增本机专属连接层。
 - 原生 provider 标签和身份抽取保持单一实现；不要把已经去重的实现合回来。
 - BW Skill 分发登记保持一致：`resources/skills/current-manifest.json` 与 `snapshot-registry.json` 必须继续登记 `bw-knowledge-docs`、`metrics-refresh`、`version-acceptance`、`week-planning`。manifest/registry 由 `config/scripts/generate-skill-bundle-manifest.mjs` 从根级 `skills/` 生成；三个产品流程的正文正源仍是 `standard/skills/`，运行时指南由 `config/scripts/generate-bundled-skill-guides.mjs` 生成，不手改生成物。
