@@ -23,15 +23,6 @@ export function sameAcceptanceSource(left: AcceptanceMaterial, right: Acceptance
   )
 }
 
-export function preparationKey(document: AcceptanceMaterial): string {
-  return JSON.stringify([
-    document.version,
-    document.cycleId,
-    document.candidateRef,
-    document.preparedArtifacts
-  ])
-}
-
 export function sameCandidate(left: CandidateReference, right: CandidateReference): boolean {
   return (
     left.repository === right.repository &&

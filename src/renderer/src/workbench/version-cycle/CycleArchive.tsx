@@ -21,12 +21,18 @@ export function CycleArchive({
   loading: boolean
   sectionRef: Ref<HTMLElement>
 }) {
-  const url =
-    status && 'url' in status && status.url
-      ? status.url
-      : archivePr && archivePr.provider === 'github' && archivePr.repository.includes('/')
-        ? `https://${archivePr.repository}/pull/${archivePr.number}`
-        : null
+  const url = (() => {
+    if (status && 'url' in status && status.url) {
+      return status.url
+    }
+    if (!archivePr || archivePr.provider !== 'github') {
+      return null
+    }
+    // Recorded repository may carry its host ("github.com/o/r") or not ("o/r").
+    const first = archivePr.repository.split('/')[0]
+    const host = first.includes('.') ? archivePr.repository : `github.com/${archivePr.repository}`
+    return `https://${host}/pull/${archivePr.number}`
+  })()
   const label = !archivePr
     ? reachedArchive
       ? '已记录进入归档；PR 链接待模型写入材料。'

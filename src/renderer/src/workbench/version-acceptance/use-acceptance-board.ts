@@ -277,7 +277,6 @@ export function useAcceptanceBoard({
     readOnly,
     loadVersion,
     refreshData,
-    flush: autosave.flush,
     saving: autosave.saving,
     retrySave: autosave.save,
     useRemoteDeletion,

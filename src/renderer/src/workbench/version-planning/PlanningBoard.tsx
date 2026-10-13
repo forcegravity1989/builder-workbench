@@ -38,7 +38,13 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const material = usePlanningMaterial(materialPort, scopeKey, { canSave })
   const plan = material.draft?.document
   const prStatus = useArchivePrStatus(context, plan?.workflow?.archivePr)
-  const progressMinutes = useProgressMinutes(scope, worktreeId, plan?.summary.progressSource)
+  const [minutesRefresh, setMinutesRefresh] = useState(0)
+  const progressMinutes = useProgressMinutes(
+    scope,
+    worktreeId,
+    plan?.summary.progressSource,
+    (context.materialRefresh ?? 0) + minutesRefresh
+  )
   const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
   const [minutesOpen, setMinutesOpen] = useState(false)
@@ -157,6 +163,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
         onConfigure={() => void entry.configure()}
         onRefresh={() =>
           void act(async () => {
+            setMinutesRefresh((value) => value + 1)
             await material.refresh()
             await material.list()
             await prStatus.refresh()

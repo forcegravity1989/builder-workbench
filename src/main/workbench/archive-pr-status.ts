@@ -77,7 +77,7 @@ export async function readArchivePrStatus(
   } catch (reason) {
     return {
       state: 'unknown',
-      reason: reason instanceof Error ? reason.message : String(reason)
+      reason: `PR 状态读取失败：${reason instanceof Error ? reason.message : String(reason)}`
     }
   }
 }

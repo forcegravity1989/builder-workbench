@@ -20,11 +20,13 @@ type Identity = [
  * Inline echo of the referenced acceptance minutes: the progress card shows the
  * read-only derivation whenever summary.progressSource is set. A read failure
  * stays honest — it never falls back to another record or to the latest material.
+ * `refreshToken` re-reads the same source (trunk sync completion, manual refresh).
  */
 export function useProgressMinutes(
   scope: CycleScope | null,
   worktreeId: string | null,
-  source: ProgressSource | undefined
+  source: ProgressSource | undefined,
+  refreshToken?: number
 ): ProgressMinutes {
   const key = JSON.stringify([
     scope
@@ -78,6 +80,6 @@ export function useProgressMinutes(
         }
       }
     )
-  }, [key, identity, history])
+  }, [key, identity, history, refreshToken])
   return state.key === key ? state.value : { kind: 'loading' }
 }
