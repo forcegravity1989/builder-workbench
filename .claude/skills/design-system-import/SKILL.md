@@ -4,11 +4,14 @@ description: >-
   Claude Design 项目(claude.ai/design 的 design system)与仓之间的双向镜像:
   把导出的复杂网页结构转成 agent 可读的仓内规范资产、拉回设计侧改动、
   把仓侧 token 或组件类改动回推设计项目。
-  用户说「把 design 导进来」「设计系统同步一下」「这个导出太复杂了不好读」,
-  或给出一条 claude.ai/design 链接时使用。
+  用户说「把 design 导进来」「这个导出太复杂了不好读」,或给出一条
+  claude.ai/design 链接要导入时使用。本仓 docs/04-design-system/ 已不是
+  Claude Design 镜像,改它不走本 skill。
 ---
 
 # design-system-import — 设计系统落仓与回推
+
+> 本仓 `docs/04-design-system/` 自 2026-10-10 起是与 Orca 对齐的设计系统(见其 README),不再是 Claude Design 镜像:改它直接改仓内文件,不做拉回或回推。本 skill 只用于导入别的 Claude Design 项目。
 
 Claude Design 的项目里混着两种东西:**规范正本**(样式表、token、规范正文、示例页)和**画布件**(让设计画布能渲染、能预览的运行时)。整包搬进仓,agent 读到的一半是噪音;只搬规范正本,仓里就多了一份能读、能改、能与上游核对的资产。
 
@@ -93,4 +96,4 @@ curl -s -X POST --data-raw 'file:///绝对路径/components/buttons.html' http:/
 
 ## 本仓的完成实例
 
-`docs/04-design-system/` 是这套流程跑完的样子:2026-08-31 从项目 `dd2af572-7839-44f2-9cb9-b9619144586d` 导入,14 张示例页 + 双语规范 + 双配色 token。要对着一个真实结果核对判断时,读它的 `README.md`。
+2026-08-31 从项目 `dd2af572-7839-44f2-9cb9-b9619144586d` 导入的结果(14 张示例页 + 双语规范 + 双配色 token)在 Git 历史里:`git show 5202485e07:docs/04-design-system/README.md`。要对着一个真实结果核对判断时读它。2026-10-10 起 `docs/04-design-system/` 已改为与 Orca 对齐的设计系统,不再是 Claude Design 镜像,不对它做拉回或回推。

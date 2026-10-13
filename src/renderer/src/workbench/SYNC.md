@@ -1,6 +1,6 @@
-# Workbench 同步策略
+# Workbench 叠层开发与运行说明
 
-> **维护约定**：给维护 Electron 叠层和同步 Orca 的开发者读；只管代码边界、同步与运行入口。产品目标见 [architecture](../../../../docs/architecture.md)，上游身份与删迁记录见 [ref/upstream.md](../../../../ref/upstream.md)；边界或命令变化时更新。
+> **维护约定**：给维护 Electron 叠层的开发者读；只管代码边界、开发运行入口和构建入口，不写产品目标或上游版本记录。正文结构为「原则 → 日常调试 → 品牌与开关 → 禁止」；代码落点、命令或边界变化时更新。产品目标见 [architecture](../../../../docs/architecture.md)，上游快照、删迁记录与同步取舍见 [ref/upstream.md](../../../../ref/upstream.md)。
 
 目标分支是主干 `main`（原 `bw-orca`，2026-09-30 扶正）。交互迁移须按当前 BW 意图重新决策；旧 Rust main（`archive/main-pre-orca`）与原型只能提供历史参考，不能视为现行实现正本。
 
@@ -8,7 +8,7 @@
 
 项目墙与接入页在 `activity` 内容槽内切换，共用 Orca 的侧栏、标题栏和窗口控件。新增 BW 屏的宽度与窗口拖动约束见 [桌面壳](../../../../docs/06-module/桌面壳.md#bw-屏幕接入规范)。
 
-Workbench 开发方法保留在 `.claude/skills/`；产品 Skill 正源在 `standard/skills/`。计划、验收、指标配置的根级 `skills/` Stub 与 CLI 指南由 `config/scripts/generate-bundled-skill-guides.mjs` 生成，随原生机制分发；合并上游时保留 [upstream 清单](../../../../ref/upstream.md) 中 BW Skill 的 manifest 登记，不手改生成物。不迁 `crates/` 与 `standard/vendor`。
+Workbench 开发方法保留在 `.claude/skills/`；产品 Skill 正源在 `standard/skills/`。计划、验收、指标配置、周报的根级 `skills/` Stub 与 CLI 指南由 `config/scripts/generate-bundled-skill-guides.mjs` 生成，随原生机制分发；合并上游时保留 [upstream 清单](../../../../ref/upstream.md) 中 BW Skill 的 manifest 登记，不手改生成物。不迁 `crates/` 与 `standard/vendor`。
 
 ## 原则
 
@@ -17,9 +17,7 @@ Workbench 开发方法保留在 `.claude/skills/`；产品 Skill 正源在 `stan
 3. **原文件只留薄挂载**：界面用 `isWorkbenchShell()` 条件分支；RPC/CLI 注册与 relay 组合只登记 BW 入口，不向 Orca 工作树、连接、调度类塞入业务。Web/配对、SSH/WSL 沿用原生路由，BW 不重建连接层。
 4. **参考源**：产品意图与现行结构读 `docs/`；Orca 工程参考按需读 `ref/`；旧 Rust 旅程在迁移时重新决策。
 
-## 同步上游
-
-`origin` 是 BW 仓，`origin/main` 是产品主干（原 `bw-orca`，非 Rust 版本）；不是 Orca 上游。身份核对、独立分支与同步步骤统一见 [upstream 同步说明](../../../../ref/upstream.md#upstream-仓)。不得把 BW 的 `origin/main` 当作 Orca 上游 `main` 整支合入。
+上游版本快照、身份核对、差异记录和实际同步取舍统一见 [upstream 同步说明](../../../../ref/upstream.md)。本文件不重复维护上游记录。
 
 ## 日常调试（热加载）
 

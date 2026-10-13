@@ -1,45 +1,43 @@
-# Builder 设计系统 · 仓内规范资产
+# Workbench 设计系统
 
-> **30 秒导读**:这里是 **Builder 设计系统**的仓内正本镜像——Workbench 界面的视觉语言(双配色 Apple/Claude、token 体系、组件类、中文排版层)。**给谁看**:要写界面、做页面、改样式的人和 AI。**从哪来**:镜像自 Claude Design 项目「builder」,只保留规范本体,画布机器件全部剥离。**规范正文**读 [spec.md](spec.md)(英文为准,[spec.zh.md](spec.zh.md) 中文对照);**唯一样式表**是 [styles.css](styles.css);**机读 token** 在 [theme.json](theme.json)。
+> **本篇维护约定**：给要写界面、做原型、改样式的人和任何 code agent（Claude Code、Codex、Cursor……）读取，动手前先读。只写入口：怎么用、文件各是什么、值从哪来、怎么同步；规则正文在 [guidelines.md](guidelines.md)，不在这里重复。文件增删、正本或同步方式变化时更新。
 
-## 60 秒上手
+> **30 秒导读**：Workbench 的界面语言与 Orca 对齐——单色、安静，颜色只留给状态。**值的正本是 [`src/renderer/src/assets/main.css`](../../src/renderer/src/assets/main.css)**，本目录是它的可读镜像加上 Workbench 的增补，全部是普通 Markdown / JSON / CSS / HTML，任何 agent 不需要专门工具就能读。写产品代码看 [guidelines.md](guidelines.md) + [primitives/](primitives/)；做不跑 React 的原型页只链 [styles.css](styles.css)。
 
-1. 页面只链一份样式表:`<link rel="stylesheet" href="styles.css">`,颜色/字体/间距/圆角/阴影一律取 `var(--*)`,不许硬编码 hex 和 px。
-2. 切配色:`<html data-theme="claude">`(默认 Apple);中文页面加 `lang="zh"` 即启用中文排版层——组件零改动。
-3. 要哪个组件,查 [spec.md](spec.md) 的组件对照表,打开对应示例页(纯 HTML 无脚本),浏览器直开、查源码抄标记。
+## 按任务读
 
-## 文件地图
+| 要做什么 | 读 | 用 |
+|---|---|---|
+| 改产品界面（React） | [guidelines.md](guidelines.md) → 对应的 `primitives/<名>.md` | `src/renderer/src/components/ui/` 的原语 + Tailwind token 类（`bg-card`、`text-muted-foreground`） |
+| 改叠层 CSS（`src/renderer/src/workbench/*.css`） | [guidelines.md](guidelines.md)「Workbench 叠层怎么对齐」 | `var(--foreground)` 这类 Orca 名；存量的 `--color-*` 角色名见 tokens.json |
+| 做原型、文档页、验收展示 | [guidelines.md](guidelines.md)「HTML 原型与文档页」 | `<link rel="stylesheet" href="…/04-design-system/styles.css">` + 类名，照示例页抄标记 |
+| 查某个颜色/间距/圆角的值 | [tokens.json](tokens.json) | 每个 token 带 `usage`，说明用在哪、配在什么底上 |
+| 加或改一个 token | 先改 `main.css`（`:root` 与 `.dark` 都给值，`@theme inline` 暴露），再同步 [tokens.json](tokens.json) | `node config/scripts/design-system-tokens.mjs --write` |
+
+深色：应用在根节点加 `.dark`；文档页和原型在 `<html>` 或任意子树加 `data-theme="dark"`。中文页面声明 `lang="zh"` 启用中文排版层。
+
+## 文件
 
 | 路径 | 是什么 |
 |---|---|
-| [spec.md](spec.md) / [spec.zh.md](spec.zh.md) | 规范正文(方向 · 色彩 · 字体 · CJK · 层级 · 交互态 · 组件对照 · 要/不要) |
-| [styles.css](styles.css) | 唯一样式表:两套配色 token + 全部组件类 + `:lang(zh)` 中文层 |
-| [theme.json](theme.json) | 机读主题记录(两套调色板、字体策略、圆角/密度/图标约定) |
-| [components/](components/) | 9 张组件示例页:buttons · forms · cards · navigation · table · dialog(+toast)· command(⌘K)· status(+头像)· settings(页标题 / 小节 / 设置行 / 开关 / 预览卡) |
-| [foundations/](foundations/) | 6 张基础示例页:color · type · cjk(中文排版)· layout · icons · image |
-| [assets/photo.jpg](assets/photo.jpg) | image.html 用的参考照片 |
+| [guidelines.md](guidelines.md) | 规则正文：文案、颜色角色、字体、层级、组件选型、图标、交互反馈、叠层对齐、中文排版、HTML 原型类 |
+| [tokens.json](tokens.json) | 机读 token：颜色（light / dark 两主题，135 个）、字体与 10 个字号样式、间距、圆角、阴影；每个带 `usage` |
+| [tokens.css](tokens.css) | **生成文件，不要手改**——由 tokens.json 生成的 CSS 变量与 Geist `@font-face` |
+| [styles.css](styles.css) | HTML 类词汇（`.btn`、`.card`、`.set-row`…）+ `:lang(zh)` 中文层；引入 tokens.css |
+| [primitives/](primitives/) | 15 个 Orca React 原语：`<名>.md` 用法与 props、`<名>.html` 浅色预览（加 `data-theme="dark"` 看深色）、`primitives.css` 静态复刻样式、`index.d.ts` props 类型 |
+| [components/](components/)、[foundations/](foundations/) | HTML 类词汇的示例页（纯 HTML、无脚本，浏览器直接开） |
 
-## 与现行壳的关系
+图标从 `lucide-react` 引入，不进本目录；Logo 与应用图标在 [`resources/`](../../resources/)；Geist 字体文件在 `src/renderer/src/assets/fonts/`。
 
-**已接线到 Electron 叠层。** 计划/验收两屏与总览的皮肤用 `src/renderer/src/workbench/workbench-tokens.css` 及各屏 CSS，取值尽量 `var(--*)`。本目录 `styles.css` 仍是设计系统正本；旧 Dioxus 壳 `crates/app-shell` 的编译期 `include_str!` 已不在本分支。八屏的版式与旅程仍看 [docs/hifi/](../hifi/)（历史原型）；视觉语言以本目录为准。
+## 值从哪来、怎么不漂
 
-改 token / 组件类 → 改本目录 `styles.css` 与叠层 CSS；改旅程骨架 → 改 `src/renderer/src/workbench/`，不回推设计项目。
+- 颜色：tokens.json 里凡与 `main.css` 同名的 token（104 个），值必须逐一相等；`node config/scripts/design-system-tokens.mjs` 校验这一点并检查 tokens.css 是否过期，已接入 `pnpm run lint`。Tailwind 色板引用按 `tailwindcss/theme.css` 解析。
+- Workbench 增补（usage 以 Addition 开头）与叠层角色（以 Overlay role 开头）不在 `main.css`，由本目录维护；增补要进产品代码时先进 `main.css`。
+- 组件：`primitives/` 是按 `src/renderer/src/components/ui/*.tsx` 的 Tailwind 类逐条翻译的静态复刻，选择器对齐真实的 `data-slot` / `data-variant`。原语改了外观，同步改对应的 `.md` 与 `primitives.css`。
+- 叠层 CSS 当前仍由 `src/renderer/src/workbench/workbench-tokens.css` 给 `--color-*` 角色赋旧暖色值（`data-skin="ds"`）；切到本系统的值是另一项界面改动，本目录描述的是对齐后的目标值。
 
-2026-09-07 仓侧新增了设置文法一组类(`.page-head` / `.section` / `.set-group` / `.set-row` / `.toggle` / `.choice` / `.path`,示例页 `components/settings.html`),参照 Codex 桌面版的设置页;**还没回推到设计项目**,下次走 `design-system-import` 回推。
+## 范围外
 
-## 来源与剥离清单
-
-- 来源:Claude Design 项目「builder」(`dd2af572-7839-44f2-9cb9-b9619144586d`),2026-08-31 落仓。设计系统上游参考:stablyai/orca 的 STYLEGUIDE + multica 的 token 表(来源记录原在项目内 `github.md`)。
-- 剥离(画布/预览机器,不影响规范本体):`_ds_bundle.js`、`support.js`、`Canvas.dc.html`、`theme.html`、`thumbnail.html`、`.thumbnail`、`_ds_manifest.json`、`_builtin.json`、`_adherence.oxlintrc.json`(React/oxlint 向的巡检配置,对本仓不适用;其「禁裸 hex/px」意图已是 spec 正文规则)。
-- 未镜像:`templates/`(landing/deck 起步模板,自带页面机器件)留在设计项目,需要时从那边复制。
-- 改名:`readme.md` → `spec.md`、`readme.zh.md` → `spec.zh.md`(macOS 文件系统大小写不敏感,避开本 README 撞名);`styles.css` 头注释的指向同步改为 spec.md。其余文件逐字一致,示例页首行 `@dsCard` 注释保留(设计画布靠它建卡片索引,别删)。
-
-## 怎么演进
-
-拉回(设计侧改了)与回推(仓侧改了)的完整步骤在 skill **`design-system-import`** 里,那是唯一正本——授权怎么拿、分拣怎么判、回推走哪条链,都在那份。本节只记本资产自己的约定:
-
-- token 先行:新颜色 / 间距先进 `styles.css` 的 `:root`(两套配色都要给值),再谈使用。
-- 三处同步:`styles.css` 是实现正本,token 或约定变了,`theme.json` 与 spec.md / spec.zh.md 一起改。
-- 新组件类先进 spec 的组件对照表、配示例页,再在产品里用。
-- 示例页保持纯 HTML + 一份样式表,无脚本、无构建——这是「查源码即抄」的前提。
-- 各页首行 `@dsCard` 注释保留:设计画布靠它建卡片索引,删了回推就断。
+- 15 个原语之外的 `components/ui/`（accordion、button-group、collapsible、color-picker、context-menu、hover-card、popover、progress、scroll-area、separator、sheet、slider、sonner、toggle、toggle-group、repo-multi-combobox）尚未写说明，用之前直接读源码。
+- 终端符号字体 `Orca Nerd Font Symbols`、只用于单个界面的 `main.css` 配方（工作树卡片激活态、文件树选中、Sonner 细节、终端与 Markdown 预览样式）不登记为 token。
+- claude.ai 上的设计系统页面（[Workbench Design System (Orca)](https://claude.ai/artifact/GysYQpWCHMe1nZEbtxvLVL)，仅所有者可见）是本目录的浏览视图：改动先进仓，再从仓同步过去，不反向改。
