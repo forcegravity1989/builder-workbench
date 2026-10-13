@@ -156,7 +156,8 @@ function SplitNode({
   suppressRightBorder,
   suppressBottomBorder,
   isTabDragActive,
-  hoveredTabInsertion
+  hoveredTabInsertion,
+  reserveClosedExplorerToggleSpace
 }: {
   node: TabGroupLayoutNode
   nodePath: string
@@ -173,6 +174,7 @@ function SplitNode({
   suppressBottomBorder: boolean
   isTabDragActive: boolean
   hoveredTabInsertion: HoveredTabInsertion | null
+  reserveClosedExplorerToggleSpace: boolean
 }): React.JSX.Element {
   const setTabGroupSplitRatio = useAppStore((state) => state.setTabGroupSplitRatio)
   const recordFeatureInteraction = useAppStore((state) => state.recordFeatureInteraction)
@@ -195,7 +197,9 @@ function SplitNode({
         suppressLeftBorder={suppressLeftBorder}
         suppressRightBorder={suppressRightBorder}
         suppressBottomBorder={suppressBottomBorder}
-        reserveClosedExplorerToggleSpace={touchesTopEdge && touchesRightEdge}
+        reserveClosedExplorerToggleSpace={
+          reserveClosedExplorerToggleSpace && touchesTopEdge && touchesRightEdge
+        }
         reserveCollapsedSidebarHeaderSpace={touchesTopEdge && touchesLeftEdge}
         isTabDragActive={isTabDragActive}
         hoveredTabInsertion={
@@ -232,6 +236,7 @@ function SplitNode({
           suppressBottomBorder={isHorizontal ? suppressBottomBorder : true}
           isTabDragActive={isTabDragActive}
           hoveredTabInsertion={hoveredTabInsertion}
+          reserveClosedExplorerToggleSpace={reserveClosedExplorerToggleSpace}
         />
       </div>
       <ResizeHandle
@@ -256,6 +261,7 @@ function SplitNode({
           suppressBottomBorder={suppressBottomBorder}
           isTabDragActive={isTabDragActive}
           hoveredTabInsertion={hoveredTabInsertion}
+          reserveClosedExplorerToggleSpace={reserveClosedExplorerToggleSpace}
         />
       </div>
     </div>
@@ -266,12 +272,14 @@ export default function TabGroupSplitLayout({
   layout,
   worktreeId,
   focusedGroupId,
-  isWorktreeActive
+  isWorktreeActive,
+  reserveClosedExplorerToggleSpace = true
 }: {
   layout: TabGroupLayoutNode
   worktreeId: string
   focusedGroupId?: string
   isWorktreeActive: boolean
+  reserveClosedExplorerToggleSpace?: boolean
 }): React.JSX.Element {
   const dragSplit = useTabDragSplit({ worktreeId, enabled: isWorktreeActive })
   const hasSplits = layout.type === 'split'
@@ -334,6 +342,7 @@ export default function TabGroupSplitLayout({
               suppressBottomBorder={false}
               isTabDragActive={dragSplit.activeDrag !== null}
               hoveredTabInsertion={dragSplit.hoveredTabInsertion}
+              reserveClosedExplorerToggleSpace={reserveClosedExplorerToggleSpace}
             />
           </div>
         </div>

@@ -27,7 +27,8 @@ export const WorktreeSplitSurface = React.memo(function WorktreeSplitSurface({
   isForceParked,
   activityTerminalPortals,
   backgroundMountTabIds,
-  activationDeferredMountTabIds
+  activationDeferredMountTabIds,
+  reserveClosedExplorerToggleSpace = true
 }: {
   worktreeId: string
   worktreePath: string
@@ -40,6 +41,7 @@ export const WorktreeSplitSurface = React.memo(function WorktreeSplitSurface({
   activityTerminalPortals: ActivityTerminalPortalTarget[]
   backgroundMountTabIds: ReadonlySet<string> | null
   activationDeferredMountTabIds: ReadonlySet<string> | null
+  reserveClosedExplorerToggleSpace?: boolean
 }): React.JSX.Element {
   const browserPageIds = useWorktreeBrowserPageIds(worktreeId)
   const needsBrowserGuestPaint = useBrowserGuestPaintRetention(browserPageIds)
@@ -65,6 +67,7 @@ export const WorktreeSplitSurface = React.memo(function WorktreeSplitSurface({
         worktreeId={worktreeId}
         focusedGroupId={focusedGroupId}
         isWorktreeActive={isVisible}
+        reserveClosedExplorerToggleSpace={reserveClosedExplorerToggleSpace}
       />
       <TerminalPaneOverlayLayer
         worktreeId={worktreeId}
