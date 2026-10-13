@@ -16,50 +16,7 @@ name: Windows Update-Survival E2E
 # commits don't spend 30 min of Windows runner time. Push runs have no inputs,
 # so every parameter falls back to a default below.
 on:
-  push:
-    branches:
-      - Jinwoo-H/windows-update-survival
-    paths:
-      - 'tests/tools/win-update-e2e/**'
-      - '.github/workflows/win-update-e2e.yml'
   workflow_dispatch:
-    inputs:
-      from_tag:
-        description: Release tag to install first (e.g. v1.4.124-rc.8)
-        required: true
-        type: string
-      to_tag:
-        description: Release tag to update to (e.g. v1.4.124-rc.9)
-        required: true
-        type: string
-      expect:
-        description: Expected outcome profile
-        required: true
-        type: choice
-        default: cold-restore
-        options:
-          - cold-restore
-          - survival
-      asset_pattern:
-        description: Installer asset glob
-        required: false
-        type: string
-        default: '*windows-setup.exe'
-      soak_seconds:
-        description: Post-relaunch console-window watch duration
-        required: false
-        type: string
-        default: '60'
-
-permissions:
-  contents: read
-
-# Why: cancel a superseded run when iterating — a new push to the branch makes
-# the in-flight Windows job obsolete, so free the runner immediately.
-concurrency:
-  group: win-update-e2e-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   update-e2e:
     name: update ${{ inputs.from_tag || 'v1.4.124-rc.8' }} -> ${{ inputs.to_tag || 'v1.4.124-rc.9' }} (${{ inputs.expect || 'cold-restore' }})

@@ -2,12 +2,6 @@ name: Golden E2E Experiment
 
 on:
   workflow_dispatch:
-    inputs:
-      ref:
-        description: Ref to check out (defaults to the workflow ref)
-        required: false
-        type: string
-
 jobs:
   golden-e2e:
     name: golden e2e ${{ matrix.platform }} experiment

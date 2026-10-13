@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { test, expect } from './helpers/orca-app'
+import { test, expect } from './helpers/workbench-app'
 import type { Page } from '@playwright/test'
 
 /**
@@ -14,7 +14,7 @@ import type { Page } from '@playwright/test'
  * build` time (the E2E globalSetup build picks it up from the environment).
  */
 test.use({
-  orcaAppExtraEnv: {
+  workbenchAppExtraEnv: {
     WORKBENCH_SHELL: '1',
     VITE_WORKBENCH_SHELL: '1',
     ORCA_PRODUCT_NAME: 'Workbench'
@@ -56,7 +56,7 @@ async function waitForFixedWorktree(page: Page, branch: string): Promise<string>
 }
 
 test('BW cycle main chain: fixed trees, version material save and independent read-back', async ({
-  orcaPage,
+  workbenchPage,
   testRepoPath
 }, testInfo) => {
   test.setTimeout(900_000)
@@ -64,23 +64,25 @@ test('BW cycle main chain: fixed trees, version material save and independent re
 
   // The workbench chrome is the readiness signal for the BW shell; the helper
   // already seeded the project repo and its worktrees.
-  await expect(orcaPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
+  await expect(workbenchPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
 
   // ---- 计划屏：固定树正式选择 + 选择真实文件材料 + 自动保存 + 磁盘独立读回 ----
-  await orcaPage.getByRole('button', { name: '计划', exact: true }).click()
-  await expect(orcaPage.getByRole('heading', { name: '版本计划' })).toBeVisible({ timeout: 60_000 })
-  const planTreePath = await waitForFixedWorktree(orcaPage, 'bw/week-plan')
+  await workbenchPage.getByRole('button', { name: '计划', exact: true }).click()
+  await expect(workbenchPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
+    timeout: 60_000
+  })
+  const planTreePath = await waitForFixedWorktree(workbenchPage, 'bw/week-plan')
   await expect
-    .poll(() => orcaPage.evaluate(() => window.__store?.getState().activeView))
+    .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
     .toBe('terminal')
   await expect(
-    orcaPage.getByRole('button', { name: '新建计划', exact: true }).first()
+    workbenchPage.getByRole('button', { name: '新建计划', exact: true }).first()
   ).toBeVisible()
-  await expect(orcaPage.locator('.vc-chat')).toHaveCount(0)
+  await expect(workbenchPage.locator('.vc-chat')).toHaveCount(0)
   await expect
     .poll(
       () =>
-        orcaPage.evaluate(() => {
+        workbenchPage.evaluate(() => {
           const store = window.__store
           return store ? store.getState().activeWorktreeId : null
         }),
@@ -114,14 +116,14 @@ test('BW cycle main chain: fixed trees, version material save and independent re
     }),
     'utf8'
   )
-  const versionSelect = orcaPage.getByLabel('计划版本')
+  const versionSelect = workbenchPage.getByLabel('计划版本')
   await expect(versionSelect.locator('option[value="v9.9"]')).toBeAttached({ timeout: 30_000 })
   await versionSelect.selectOption('v9.9')
 
-  const progress = orcaPage.locator('.vp-preparation textarea').first()
+  const progress = workbenchPage.locator('.vp-preparation textarea').first()
   await expect(progress).toBeEnabled({ timeout: 60_000 })
   await progress.fill('烟测进展：主链接通')
-  await expect(orcaPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
+  await expect(workbenchPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
 
   // Iron-law read-back: the material exists on the fixed worktree's own disk path.
   await expect
@@ -140,47 +142,51 @@ test('BW cycle main chain: fixed trees, version material save and independent re
       { timeout: 30_000, message: 'plan material never landed on disk' }
     )
     .toBe('v9.9:烟测进展：主链接通')
-  await orcaPage.screenshot({ path: testInfo.outputPath('bw-plan-saved.png') })
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-plan-saved.png') })
 
   // ---- 重载读回：流程选版偏好与材料都从宿主恢复 ----
-  await orcaPage.reload()
-  await expect(orcaPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
-  await orcaPage.getByRole('button', { name: '计划', exact: true }).click()
-  await expect(orcaPage.getByRole('heading', { name: '版本计划' })).toBeVisible({ timeout: 60_000 })
+  await workbenchPage.reload()
+  await expect(workbenchPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
+  await workbenchPage.getByRole('button', { name: '计划', exact: true }).click()
+  await expect(workbenchPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
+    timeout: 60_000
+  })
   await expect
     .poll(
       () =>
-        orcaPage
+        workbenchPage
           .getByLabel('计划版本')
           .inputValue()
           .catch(() => ''),
       { timeout: 120_000, message: 'version preference did not survive reload' }
     )
     .toBe('v9.9')
-  await expect(orcaPage.locator('.vp-preparation textarea').first()).toHaveValue(
+  await expect(workbenchPage.locator('.vp-preparation textarea').first()).toHaveValue(
     '烟测进展：主链接通',
     { timeout: 60_000 }
   )
 
   // ---- 验收屏：独立固定树挂载 ----
-  await orcaPage.getByRole('button', { name: '验收', exact: true }).click()
-  await expect(orcaPage.getByRole('heading', { name: '版本验收' })).toBeVisible({ timeout: 60_000 })
-  await waitForFixedWorktree(orcaPage, 'bw/week-acceptance')
+  await workbenchPage.getByRole('button', { name: '验收', exact: true }).click()
+  await expect(workbenchPage.getByRole('heading', { name: '版本验收' })).toBeVisible({
+    timeout: 60_000
+  })
+  await waitForFixedWorktree(workbenchPage, 'bw/week-acceptance')
   await expect
-    .poll(() => orcaPage.evaluate(() => window.__store?.getState().activeView))
+    .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
     .toBe('terminal')
   await expect(
-    orcaPage.getByRole('button', { name: '新建验收', exact: true }).first()
+    workbenchPage.getByRole('button', { name: '新建验收', exact: true }).first()
   ).toBeVisible()
-  await orcaPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.png') })
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.png') })
 
   // ---- 总览：真实数据，未配置保持 Unknown，无演示值 ----
-  await orcaPage.getByRole('button', { name: '总览', exact: true }).click()
-  await expect(orcaPage.getByRole('heading', { name: '总览', exact: true })).toBeVisible({
+  await workbenchPage.getByRole('button', { name: '总览', exact: true }).click()
+  await expect(workbenchPage.getByRole('heading', { name: '总览', exact: true })).toBeVisible({
     timeout: 60_000
   })
-  await expect(orcaPage.getByText('未配置北极星指标')).toBeVisible({
+  await expect(workbenchPage.getByText('未配置北极星指标')).toBeVisible({
     timeout: 60_000
   })
-  await orcaPage.screenshot({ path: testInfo.outputPath('bw-overview-real.png') })
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-overview-real.png') })
 })

@@ -36,13 +36,14 @@ those verification failures:
 
 ## Usage
 
-```
-pnpm win-update-e2e --from <setup.exe> --to <setup.exe> --expect <profile>
-# or download release assets via gh (one call each):
-pnpm win-update-e2e --from-release v1.4.124-rc.9 --to-release v1.4.125-rc.1 --expect cold-restore
-```
+The former `pnpm win-update-e2e` entry was removed with the Orca CI/E2E
+isolation (see `ref/upstream.md`); invoke the runner directly:
 
-Or directly: `node tests/tools/win-update-e2e/run.mjs --from ... --to ... --expect ...`
+```
+node tests/tools/win-update-e2e/run.mjs --from <setup.exe> --to <setup.exe> --expect <profile>
+# or download release assets via gh (one call each):
+node tests/tools/win-update-e2e/run.mjs --from-release v1.4.124-rc.9 --to-release v1.4.125-rc.1 --expect cold-restore
+```
 
 ### Flags
 
@@ -138,7 +139,7 @@ successful teardown removes it.
 **Example.**
 
 ```
-pnpm win-update-e2e \
+node tests/tools/win-update-e2e/run.mjs \
   --from-release v1.4.124-rc.9 --to-release v1.4.125-rc.1 \
   --expect cold-restore --install-dir C:\OrcaE2E
 ```

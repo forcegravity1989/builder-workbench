@@ -13,7 +13,7 @@ whenever `ORCA_E2E_HEADLESS=1`, `ORCA_E2E_HEADFUL=1`, or `ORCA_BACKGROUND_LAUNCH
 
 Rules when adding tests or scripts:
 
-- Launch through `tests/e2e/helpers/orca-app.ts` (or `orca-restart.ts`) — they already set the env.
+- Launch through `tests/e2e/helpers/workbench-app.ts` — it already sets the env.
 - A raw `electron.launch()` outside those helpers must pass `ORCA_BACKGROUND_LAUNCH: '1'`.
 - Do not reveal windows in explicit background or headless runs. Only an explicitly headful run
   may call `showInactive()`; never call `show()` or `bringToFront()` in automated background checks.

@@ -36,61 +36,7 @@ name: Dev Channel Windows Build
 #     -f ref=<sha> -f version=1.4.178-adhoc.20260819010203
 
 on:
-  # Why the inputs are duplicated: workflow_call does not accept `type: choice`,
-  # and workflow_dispatch wants it so the Actions UI offers a menu instead of a
-  # free-text box. The channel allowlist below is what actually enforces the set,
-  # since a workflow_call caller can pass any string.
-  workflow_call:
-    inputs:
-      channel:
-        description: Dev channel whose release this build uploads into
-        required: true
-        type: string
-      tag:
-        description: Existing release tag in the channel repo
-        required: true
-        type: string
-      ref:
-        description: Commit SHA to build — must be the exact commit the mac leg built
-        required: true
-        type: string
-      version:
-        description: Version to package, without the leading v
-        required: true
-        type: string
   workflow_dispatch:
-    inputs:
-      channel:
-        description: Dev channel whose release this build uploads into
-        required: true
-        type: choice
-        options:
-          - hourly
-          - daily
-          - adhoc
-      tag:
-        description: Existing release tag in the channel repo (e.g. v1.4.178-adhoc.20260819010203)
-        required: true
-        type: string
-      ref:
-        description: Commit SHA to build — must be the exact commit the mac leg built
-        required: true
-        type: string
-      version:
-        description: Version to package, without the leading v
-        required: true
-        type: string
-
-permissions:
-  contents: read
-
-concurrency:
-  # Keyed on the tag: re-dispatching the same tag must not race two uploads into
-  # one release, but two different channels (or two adhoc branches) are the
-  # ordinary case and must not wait on each other.
-  group: dev-channel-win-build-${{ inputs.tag }}
-  cancel-in-progress: false
-
 jobs:
   build-win:
     if: github.repository == 'stablyai/orca'

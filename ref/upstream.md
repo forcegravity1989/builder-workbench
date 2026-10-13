@@ -106,6 +106,17 @@ CodeHub 是独立的 `TaskProvider`，不塞回 GitHub 的 `listWorkItems`，也
 - reviewer-agent 召唤制 CI 已迁入默认主干；其现行状态见 [reviewer-agent STATUS](../docs/05-features/reviewer-agent/STATUS.md)。
 - 旧 Rust 旅程、ADR、release/出包入口和历史绿灯不作为当前 Electron 行为证据。
 
+### 2.6 CI / E2E 边界（2026-10-13 隔离）
+
+- 旧 Orca CI/E2E 源保留在仓内不删：旧 workflow、`tests/e2e/` 用例与 helper、`config/scripts/` runner 与契约测试、`tests/tools/` 下 Windows 更新/崩溃 E2E 工具，便于对照 upstream 和后续按需迁移；它们不属于 Workbench 当前流水线的测试集合，冻结为归档源，不随本仓 pr.yml 演进更新（旧契约测试断言的是旧 workflow 结构，属历史身份）。
+- 28 个旧 workflow（含 `release-ref-validation.yml`、`track-community-prs.yaml`、`issue-os-labeler.yaml`）摘除 `pull_request` / `push` / `schedule` / `workflow_call` / `pull_request_target` / `issues` 自动触发，只留 `workflow_dispatch`。注意：`workflow_dispatch.inputs`、`env`、`permissions`、`concurrency` 已随自动触发一并精简，**手动入口不保证可运行**——它们是归档占位，不是维护好的手动链；恢复任何一条旧链必须单独评审其触发器、额度和对 Workbench 的实际价值。
+- 隔离后仍会自动触发的 legacy workflow 只剩本 fork 命不中或空转的：paths 门控的 `cloud-verify.yml`（`cloud/**`）、`skill-update-roundtrip.yml`（`skills/**` 等；`merge_group` 本仓无合并队列）、`docs.yml`（`docs/site/**`）；job 级门控空转的 `readme-downloads-badge` / `cloud-monitor-relay-clock-skew` / `cloud-power-relay-staging`（schedule，job 被 `github.repository == 'stablyai/orca'` 或 `vars.ORCA_CLOUD_OPERATIONS_ENABLED` 门控）、`cloud-recover-relay-staging-c4-image` / `cloud-requeue-relay-staging-c4-recovery`（`workflow_run`，同一 vars 门控）、`release-policy.yml`（release 事件，`stablyai/orca` 门控）。
+- Workbench 自动检查只有 `.github/workflows/pr.yml`（verify：lint / typecheck / 定向 vitest / build:desktop；e2e：`test:e2e:workbench` 单条 Electron 冒烟）；外部代码评审仍由 `.github/workflows/claude-code-review.yml` 召唤制承担。pr.yml 不用 `paths` 过滤——触发级过滤会让被排除的 PR 完全没有检查上报（旧 `code_paths` 探测器规避的正是这个坑）。
+- `tests/playwright.config.ts` 只发现 `tests/e2e/workbench-cycle-smoke.spec.ts`；`config/vitest.config.ts` 只 include `src/**/*.test.ts(x)`。`package.json` 不保留旧 E2E 专项入口；Workbench 壳是构建期烘焙（`isWorkbenchShell()` 读 `import.meta.env.VITE_WORKBENCH_SHELL`），所以 `tests/e2e/global-setup.ts` 在 `electron-vite build --mode e2e` 的子进程 env 里固定注入 `WORKBENCH_SHELL=1 VITE_WORKBENCH_SHELL=1 ORCA_PRODUCT_NAME=Workbench`——单一来源，Windows cmd、POSIX shell 与 CI 一致（不用 `dev:workbench` 那种 POSIX env 前缀写法，那种写法在 Windows cmd 下不成立）。
+- `config/reliability-gates.jsonc` 只登记仍属当前 Workbench 检查范围的 gate（121→63）；`release-cut.yml` 不保留旧 E2E 发布证据 job。lint 与 reliability-gates 链暂保留在 verify 内，待 Workbench 专属质量门禁定义后再替换，避免在没有等价门禁时静默削弱检查。
+- 新链 helper 与保留源的配对关系（副本，不是共享；改保留源不会传导过来，需自觉防漂移）：`tests/e2e/helpers/workbench-app.ts` ↔ `orca-app.ts`；`tests/e2e/helpers/workbench-test-repo.ts` ↔ `seeded-test-repo.ts`。种子仓的持久化文件名与产品无关（`orca-data.json`，见 `src/main/persistence/loading-store/user-data-path.ts`）。
+- 本次隔离不表示 Orca runtime 源码已删除；保留的历史源文件也不表示它们仍属于当前交付门禁。
+
 ## 3. 同步取舍
 
 1. **产品文档冲突**：`docs/`、`AGENTS.md`、`CONTEXT.md`、`README.md`、`CLAUDE.md` 以 BW 正本为准；上游工程说明只进入 `ref/`。
