@@ -4,6 +4,8 @@
 
 **现状（2026-09-30）**：intent 已 gate；spec 已确认（PR 简化形态、CodeHub 经 codehub-cli 开 MR、同远端去重做、原型豁免、单批交付）；名片 PR 化、远端预探测、去重、编辑名片入口已实现（PR #285），**真壳与真实远端端到端未验**。
 
+**项目墙设计候选**：[可交互原型](project-wall-prototype.html)及 intent/spec 对应候选节待评审。候选以同一 B00X 的周一计划握手与计划 PR 合入、周中实现 PR、周五人验收核对交付承诺，并精简卡片重复信息；假期日期缓冲不改版本身份。当前仅有 HTML 示例与此前从 Orca 读取的四个项目名称，未接真实计划、PR 或验收来源，生产代码未变；浏览器原型证据不等于 Electron 交付证据，不提升下表生产实现或 E2E 状态。
+
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
 | 1 intent | ● | [intent.md](intent.md) 已 gate（2026-09-29 遗留决定收口）；带入来源 = 2026-09-29 用户拍板补登记 |
@@ -17,6 +19,6 @@
 1. **名片 PR 全链真实远端未验**——实现已落（bw/project 固定树提交 + push + gh/codehub-cli 开 PR + 待合入提示 + 更新主目录 + 编辑名片补录），但 gh/codehub-cli 登录态、GHES、WSL 仓、配对宿主、CodeHub 实机均未端到端跑过；未验前不宣称团队共享已可用。本机真壳受环境限制（node-pty 重建失败）未拉起。克隆前名片预读的 CodeHub 读侧已于 2026-10-10 对两个内源 host 实机验证（修复 --jq 引号假 absent 后）；MR 创建侧同日以同一代码链（createCodeHubMr 打包实跑）在真实 CodeHub 仓验证可开 MR——应用内曾出现一次单次失败，错误信息未留存，排除法定位为瞬时故障（查重/创建命令现均实测通过）；应用内端到端仍未跑过。
 2. **CodeHub 侧「已合入未更新」无检测、chip 无跳转**——status 只查开放 MR（codehub-cli mr list opened）；GitHub 有 merged 态可提示「更新主目录」，CodeHub 合入后要等主检出读到名片才消失提示缺口，且 MR 无 web 链接可推时 chip 只显示号码、无「查看」入口。
 3. **CodeHub MR 目标分支兜底 master**——沿 main 隐含假设（origin/HEAD 符号引用缺失时），已加 getRepoDefaultBranchName 兜底；内源默认分支为 master 的假设需实机复核。
-4. 墙卡版本/周目标/健康为占位 Unknown（用户拍板暂不细设计）；「本机环境」探测条已删除，真实探测清单（claude/cursor-agent/gh/codehub-cli，三态，不探不会起的东西）随墙健康灯重新决策——main 正本证据：环境条 6 格与三态语义（`crates/app-shell/src/screens/wall/mod.rs` env_bar、`bridge/vm_build.rs probe_env`）、假红修复 07e076ff4（Windows PATHEXT）、假绿修复 e23e3e4ce（探的名字必须等于真起的进程）。
+4. 生产墙卡版本/周目标/健康仍为占位 Unknown；计划、实现 PR 与验收结果的接线待项目墙候选评审后实施。「本机环境」探测条已删除，真实探测清单（claude/cursor-agent/gh/codehub-cli，三态，不探不会起的东西）随墙健康灯重新决策——main 正本证据：环境条 6 格与三态语义（`crates/app-shell/src/screens/wall/mod.rs` env_bar、`bridge/vm_build.rs probe_env`）、假红修复 07e076ff4（Windows PATHEXT）、假绿修复 e23e3e4ce（探的名字必须等于真起的进程）。
 5. 克隆中断残留暂不处理（用户拍板，看实际反馈）。
 6. 远端预探测对 GHES 主机走 githubHostExecOptions 的 host 限定，未实测。
