@@ -1,64 +1,25 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import type { CharterStatus } from '../../../shared/workbench/charter'
+import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import { closeProjectPage, openCharterEdit, openProjectOnboard } from './project-page-state'
-import { readCharterPrStatus } from './charter-port'
-import { CharterPrNotice } from './charter-pr-notice'
-import { readProjectCharter, type ProjectCharter } from './project-charter'
 import { switchActiveProject } from './switch-active-project'
-import { buildWallProjects, type WallProject, type WallRepoSlot } from './workbench-wall-projects'
+import {
+  buildWallProjects,
+  countWallProjectWorktrees,
+  type WallProject
+} from './workbench-wall-projects'
+import { buildWallHostFact } from './wall-host-facts'
+import { useWallAdoptions } from './use-wall-adoptions'
 import { ensureWallProjectGroup, removeRepoFromWallProject } from './wall-project-repo-actions'
+import { ImportBuilderHostsDialog } from './ImportBuilderHostsDialog'
+import {
+  ProjectWallCard,
+  type CardHostTag,
+  type Health,
+  type WallCardView
+} from './ProjectWallCard'
 import './workbench-wall.css'
-
-type Health = 'green' | 'amber' | 'red' | 'unknown'
-
-type WallCard = {
-  project: WallProject
-  brief: string
-  version: string
-  week: string
-  weekGoal: string
-  lastDelivery: string
-  weekDone: number
-  weekTotal: number
-  signal: Health
-  isActive: boolean
-  displayName: string
-}
-
-function Dot({ signal, withLabel }: { signal: Health; withLabel?: boolean }): React.JSX.Element {
-  const cls =
-    signal === 'green'
-      ? 'dot dot-green'
-      : signal === 'amber'
-        ? 'dot dot-amber'
-        : signal === 'red'
-          ? 'dot dot-red'
-          : 'dot'
-  const label =
-    signal === 'green'
-      ? '平稳'
-      : signal === 'amber'
-        ? '需要关注'
-        : signal === 'red'
-          ? '异常'
-          : '无数据'
-  return (
-    <>
-      <span className={cls} title={label} />
-      {withLabel ? <span>{label}</span> : null}
-    </>
-  )
-}
-
-function openRepoLink(slot: WallRepoSlot): void {
-  if (slot.href) {
-    void window.api.shell.openUrl(slot.href)
-    return
-  }
-  void window.api.shell.openPath(slot.path)
-}
 
 async function startAddRepoSlot(project: WallProject): Promise<void> {
   const groupId = await ensureWallProjectGroup(project)
@@ -72,93 +33,144 @@ async function startAddRepoSlot(project: WallProject): Promise<void> {
   })
 }
 
+function formatRefreshTime(timestamp: number | null): string {
+  if (timestamp === null) {
+    return '读取中…'
+  }
+  if (Date.now() - timestamp < 60_000) {
+    return '刚刚'
+  }
+  const at = new Date(timestamp)
+  return `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`
+}
+
 export function ProjectWallPage(): React.JSX.Element {
   const repos = useAppStore((s) => s.repos)
   const projectGroups = useAppStore((s) => s.projectGroups)
   const activeRepoId = useAppStore((s) => s.activeRepoId)
-  const fetchRepos = useAppStore((s) => s.fetchRepos)
-  const [charters, setCharters] = useState<Record<string, ProjectCharter | null>>({})
-  const [charterStatuses, setCharterStatuses] = useState<Record<string, CharterStatus | null>>({})
-  const [charterToken, setCharterToken] = useState(0)
-  const [statusToken, setStatusToken] = useState(0)
+  const runtimeEnvironments = useAppStore((s) => s.runtimeEnvironments)
+  const runtimeStatusByEnvironmentId = useAppStore((s) => s.runtimeStatusByEnvironmentId)
+  const sshTargetLabels = useAppStore((s) => s.sshTargetLabels)
+  const worktreesByRepo = useAppStore((s) => s.worktreesByRepo)
+  const fetchReposForAllHosts = useAppStore((s) => s.fetchReposForAllHosts)
+  const fetchAllWorktrees = useAppStore((s) => s.fetchAllWorktrees)
+
+  const [adoptionToken, setAdoptionToken] = useState(0)
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<number | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [updatingRepoId, setUpdatingRepoId] = useState<string | null>(null)
   const [switchingKey, setSwitchingKey] = useState<string | null>(null)
   const [busyRepoId, setBusyRepoId] = useState<string | null>(null)
 
-  const wallProjects = useMemo(
-    () => buildWallProjects(repos, projectGroups),
-    [repos, projectGroups]
+  // 墙的主机目录 = 当前配对集合:已删主机的残留注册行不上墙(可重算,铁律一)。
+  const hostCatalog = useMemo(
+    () => ({ environmentIds: new Set(runtimeEnvironments.map((env) => env.id)) }),
+    [runtimeEnvironments]
   )
+  const wallProjects = useMemo(
+    () => buildWallProjects(repos, projectGroups, hostCatalog),
+    [repos, projectGroups, hostCatalog]
+  )
+  // 上墙判据:能读到 .bw/project.toml(或本机有名片 PR 证据)的项目才上墙。
+  const { adoptionByKey, loadCount } = useWallAdoptions(wallProjects, adoptionToken)
 
   useEffect(() => {
-    if (wallProjects.length === 0) {
-      return
+    if (loadCount > 0) {
+      setLastRefreshedAt(Date.now())
     }
-    let cancelled = false
-    void (async () => {
-      const next: Record<string, ProjectCharter | null> = {}
-      for (const p of wallProjects) {
-        const primary = repos.find((r) => r.id === p.primaryRepoId)
-        if (!primary) {
-          continue
-        }
-        const result = await readProjectCharter(primary.path)
-        if (cancelled) {
-          return
-        }
-        next[p.key] = result.charter
-      }
-      if (!cancelled) {
-        setCharters(next)
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [wallProjects, repos, charterToken])
+  }, [loadCount])
 
-  // 名片缺失的项目才查 PR 状态;并行、不阻塞名片渲染,查询集合不变不重查。
-  const statusQueryKey = useMemo(() => {
-    return JSON.stringify(
-      wallProjects
-        .filter((p) => charters[p.key] === null)
-        .map((p) => {
-          const primary = repos.find((r) => r.id === p.primaryRepoId)
-          return primary ? `${p.key}|${primary.id}|${primary.path}` : null
-        })
-        .filter(Boolean)
-    )
-  }, [wallProjects, repos, charters])
-
-  useEffect(() => {
-    const targets: { key: string; repoId: string }[] = JSON.parse(statusQueryKey || '[]').map(
-      (entry: string) => {
-        const [key, repoId] = entry.split('|')
-        return { key, repoId }
-      }
-    )
-    if (targets.length === 0) {
-      setCharterStatuses({})
-      return
+  const refreshWall = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      // 刷新 = 重读本机与已配对主机的仓库目录、工作树与名片数据,作用整面墙。
+      await fetchReposForAllHosts()
+      await fetchAllWorktrees()
+      setAdoptionToken((n) => n + 1)
+    } finally {
+      setRefreshing(false)
     }
-    let cancelled = false
-    void Promise.all(
-      targets.map(async (t) => {
-        const repo = useAppStore.getState().repos.find((r) => r.id === t.repoId)
-        if (!repo) {
-          return [t.key, null] as const
+  }, [fetchReposForAllHosts, fetchAllWorktrees])
+
+  const cards = useMemo((): WallCardView[] => {
+    const views: WallCardView[] = []
+    for (const project of wallProjects) {
+      const adoption = adoptionByKey[project.key]
+      if (!adoption?.adopted) {
+        continue
+      }
+      const hostTags: CardHostTag[] = project.hostIds.map((hostId) => {
+        const fact = buildWallHostFact(
+          hostId,
+          runtimeEnvironments,
+          runtimeStatusByEnvironmentId,
+          sshTargetLabels
+        )
+        const hostRows = project.rows.filter((row) => getRepoExecutionHostId(row) === hostId)
+        return {
+          hostId,
+          label: fact.label,
+          online: fact.online,
+          isLocal: hostId === LOCAL_EXECUTION_HOST_ID,
+          worktreeCount: countWallProjectWorktrees(hostRows, worktreesByRepo)
         }
-        return [t.key, await readCharterPrStatus(repo)] as const
       })
-    ).then((entries) => {
-      if (!cancelled) {
-        setCharterStatuses(Object.fromEntries(entries))
-      }
-    })
-    return () => {
-      cancelled = true
+      views.push({
+        project,
+        displayName: adoption.charter?.name?.trim() || project.name,
+        brief: adoption.charter?.brief?.trim() || '',
+        version: '版本未定',
+        week: '本周',
+        goal: '版本目标:还没定',
+        lastDelivery: '仓里还没有发版记录',
+        pct: 0,
+        signal: 'unknown' as Health,
+        isActive: project.repoIds.includes(activeRepoId ?? ''),
+        charter: adoption.charter,
+        status: adoption.status,
+        worktreeCount: countWallProjectWorktrees(project.rows, worktreesByRepo),
+        hostTags,
+        remoteWorktreeCount: hostTags
+          .filter((tag) => !tag.isLocal)
+          .reduce((total, tag) => total + tag.worktreeCount, 0),
+        primaryRepo: repos.find((row) => row.id === project.primaryRepoId)
+      })
     }
-  }, [statusQueryKey, statusToken])
+    return views
+  }, [
+    wallProjects,
+    adoptionByKey,
+    activeRepoId,
+    repos,
+    worktreesByRepo,
+    runtimeEnvironments,
+    runtimeStatusByEnvironmentId,
+    sshTargetLabels
+  ])
+
+  const counts = useMemo(() => {
+    const n = (signal: Health): number => cards.filter((card) => card.signal === signal).length
+    return { green: n('green'), amber: n('amber'), red: n('red'), unknown: n('unknown') }
+  }, [cards])
+  const totalWorktrees = useMemo(
+    () => cards.reduce((total, card) => total + card.worktreeCount, 0),
+    [cards]
+  )
+  // 主机连接事实(runtime 实时推导;未知不装在线,铁律二)。
+  const hostConnections = useMemo(() => {
+    const entries: { label: string; online: boolean | null }[] = [{ label: '本机', online: null }]
+    for (const env of runtimeEnvironments) {
+      const status = runtimeStatusByEnvironmentId.get(env.id)
+      entries.push({
+        label: env.name,
+        online: status === undefined ? null : status.status !== null
+      })
+    }
+    return entries.map((entry) =>
+      entry.online === null ? entry.label : `${entry.label} ${entry.online ? '在线' : '离线'}`
+    )
+  }, [runtimeEnvironments, runtimeStatusByEnvironmentId])
 
   const updateMainCheckout = async (repo: {
     id: string
@@ -172,38 +184,13 @@ export function ProjectWallPage(): React.JSX.Element {
         ...(repo.connectionId ? { connectionId: repo.connectionId } : {})
       })
       toast.success('主检出已拉到最新')
-      setCharterToken((n) => n + 1)
-      setStatusToken((n) => n + 1)
+      setAdoptionToken((n) => n + 1)
     } catch (e) {
       toast.error(`没拉动：${e instanceof Error ? e.message : String(e)}`)
     } finally {
       setUpdatingRepoId(null)
     }
   }
-
-  const cards = useMemo((): WallCard[] => {
-    return wallProjects.map((p) => {
-      const c = charters[p.key]
-      return {
-        project: p,
-        displayName: c?.name?.trim() || p.name,
-        brief: c?.brief?.trim() || '(还没填「想做什么」)',
-        version: '版本未定',
-        week: '本周',
-        weekGoal: '',
-        lastDelivery: '仓里还没有发版记录',
-        weekDone: 0,
-        weekTotal: 0,
-        signal: 'unknown' as Health,
-        isActive: p.repoIds.includes(activeRepoId ?? '')
-      }
-    })
-  }, [wallProjects, charters, activeRepoId])
-
-  const counts = useMemo(() => {
-    const n = (s: Health) => cards.filter((c) => c.signal === s).length
-    return { green: n('green'), amber: n('amber'), red: n('red'), unknown: n('unknown') }
-  }, [cards])
 
   return (
     <div className="wb-wall-page" aria-label="项目墙" data-screen="wall">
@@ -214,12 +201,23 @@ export function ProjectWallPage(): React.JSX.Element {
             <button
               type="button"
               className="wb-btn wb-btn-secondary"
-              title="刷新项目数据"
+              disabled={refreshing}
+              title="重新读取本机与已配对 Builder 主机的仓库目录和名片数据，刷新整面项目墙"
+              data-workbench-refresh
               onClick={() => {
-                void fetchRepos()
+                void refreshWall()
               }}
             >
-              刷新
+              {refreshing ? '刷新中…' : '刷新'}
+            </button>
+            <button
+              type="button"
+              className="wb-btn wb-btn-secondary"
+              title="批量导入共享的 Orca 主机配对配置；只添加 Builder 主机，不克隆项目"
+              data-workbench-import-hosts
+              onClick={() => setImportOpen(true)}
+            >
+              导入 Builder 主机
             </button>
             <button
               type="button"
@@ -240,29 +238,59 @@ export function ProjectWallPage(): React.JSX.Element {
         <div className="healthbar">
           <span className="bar-label">健康概览</span>
           <span className="health-group">
-            <Dot signal="green" />
+            <span className="dot dot-green" title="平稳" />
             平稳 {counts.green}
           </span>
           <span className="health-group">
-            <Dot signal="amber" />
+            <span className="dot dot-amber" title="需要关注" />
             需要关注 {counts.amber}
           </span>
           <span className="health-group">
-            <Dot signal="red" />
+            <span className="dot dot-red" title="异常" />
             异常 {counts.red}
           </span>
           <span className="health-group">
-            <Dot signal="unknown" />
+            <span className="dot" title="无数据" />
             无数据 {counts.unknown}
           </span>
           <span className="ml-auto hint">共 {cards.length} 个项目</span>
         </div>
 
+        <div className="wallbar" aria-label="项目墙概况">
+          <span className="wallbar-item">
+            共 <strong>{totalWorktrees}</strong> 个工作树
+          </span>
+          <span className="wallbar-sep" aria-hidden />
+          <span
+            className="wallbar-item"
+            title="连接状态由 Orca runtime 实时推导，是连接事实，用于导入反馈与离线如实提示；不冒充项目健康"
+            data-workbench-host-connections
+          >
+            主机连接：{hostConnections.join(' · ')}
+          </span>
+          <span className="spacer" style={{ flex: 1 }} />
+          <span className="wallbar-item" data-workbench-refresh-time>
+            上次刷新：{formatRefreshTime(lastRefreshedAt)}
+          </span>
+        </div>
+
         {cards.length === 0 ? (
           <div className="wb-card empty-center">
-            还没有接入任何项目。
-            <br />
-            点击「接入项目」打开本地仓库或克隆远端仓库。
+            {loadCount === 0 ? (
+              '正在读取项目名片…'
+            ) : wallProjects.length === 0 ? (
+              <>
+                还没有接入任何项目。
+                <br />
+                点击「接入项目」打开本地仓库或克隆远端仓库。
+              </>
+            ) : (
+              <>
+                还没有能读到 <code>.bw/project.toml</code> 的项目。
+                <br />
+                未纳入的项目留在左侧 Orca Projects；接入项目或导入 Builder 主机后刷新。
+              </>
+            )}
             <div style={{ marginTop: 12 }}>
               <button
                 type="button"
@@ -277,131 +305,49 @@ export function ProjectWallPage(): React.JSX.Element {
           </div>
         ) : (
           <div className="wall-grid">
-            {cards.map((p) => {
-              const pct = p.weekTotal > 0 ? Math.round((p.weekDone * 100) / p.weekTotal) : 0
-              const goal =
-                p.weekGoal.trim().length === 0
-                  ? '版本目标:还没定'
-                  : `版本目标:${p.weekGoal.trim().slice(0, 30)}${p.weekGoal.trim().length > 30 ? '…' : ''}`
-              const key = p.project.key
-              const primaryRepo = repos.find((r) => r.id === p.project.primaryRepoId)
-              const charterStatus = charterStatuses[key]
-              return (
-                <div
-                  key={key}
-                  className={`pcard${p.isActive ? ' is-active' : ''}`}
-                  data-workbench-project-id={p.project.primaryRepoId}
-                  data-workbench-project-key={key}
-                >
-                  <button
-                    type="button"
-                    className="pcard-main"
-                    disabled={switchingKey === key}
-                    onClick={() => {
-                      setSwitchingKey(key)
-                      void switchActiveProject(p.project.primaryRepoId).finally(() =>
-                        setSwitchingKey(null)
-                      )
-                    }}
-                  >
-                    <div className="pcard-top">
-                      <span className="wb-tag wb-tag-outline wb-mono">
-                        {p.version.trim() || '版本未定'}
-                      </span>
-                      <span className="wb-tag wb-tag-neutral">{p.week}</span>
-                      {p.isActive ? <span className="wb-tag wb-tag-accent">当前</span> : null}
-                      <span className="spacer" style={{ flex: 1 }} />
-                      <Dot signal={p.signal} withLabel />
-                    </div>
-                    <div className="pcard-name">{p.displayName}</div>
-                    <div className="pcard-oneliner">{p.brief.trim() || '(还没填「想做什么」)'}</div>
-                    <div className="pcard-meta">
-                      <span>{goal}</span>
-                      <span>
-                        {p.lastDelivery.startsWith('上次') || p.lastDelivery.startsWith('仓')
-                          ? p.lastDelivery
-                          : `上次交付 ${p.lastDelivery}`}
-                      </span>
-                      <span>{p.project.slots.length} 个代码仓</span>
-                    </div>
-                    <div className="pcard-bar" aria-hidden>
-                      <div className="pcard-bar-fill" style={{ width: `${pct}%` }} />
-                    </div>
-                  </button>
-
-                  <div className="pcard-repos" data-workbench-repo-slots>
-                    <div className="pcard-repos-head">代码仓</div>
-                    {!charters[key] ? (
-                      <CharterPrNotice
-                        status={charterStatus}
-                        variant="wall"
-                        updating={updatingRepoId === p.project.primaryRepoId}
-                        onUpdateMain={
-                          primaryRepo ? () => void updateMainCheckout(primaryRepo) : undefined
-                        }
-                      />
-                    ) : null}
-                    <ul className="pcard-repo-list">
-                      {p.project.slots.map((slot) => (
-                        <li
-                          key={slot.repoId}
-                          className="pcard-repo-row"
-                          data-workbench-repo-slot={slot.repoId}
-                        >
-                          <button
-                            type="button"
-                            className="pcard-repo-link"
-                            title={slot.href ?? slot.path}
-                            onClick={() => openRepoLink(slot)}
-                          >
-                            <span className="pcard-repo-name">{slot.name}</span>
-                            <span className="pcard-repo-url">{slot.linkLabel}</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="wb-btn wb-btn-ghost pcard-repo-remove"
-                            disabled={busyRepoId === slot.repoId}
-                            data-workbench-remove-repo
-                            title="删除代码仓"
-                            onClick={() => {
-                              setBusyRepoId(slot.repoId)
-                              void removeRepoFromWallProject({
-                                project: p.project,
-                                repoId: slot.repoId
-                              }).finally(() => setBusyRepoId(null))
-                            }}
-                          >
-                            删除
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                    <button
-                      type="button"
-                      className="wb-btn wb-btn-secondary pcard-add-repo"
-                      data-workbench-add-repo
-                      onClick={() => {
-                        void startAddRepoSlot(p.project)
-                      }}
-                    >
-                      + 代码仓
-                    </button>
-                    <button
-                      type="button"
-                      className="wb-btn wb-btn-secondary pcard-add-repo"
-                      data-workbench-edit-charter
-                      onClick={() =>
-                        openCharterEdit({ repoId: p.project.primaryRepoId, seedName: p.displayName })
-                      }
-                    >
-                      编辑名片
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
+            {cards.map((card) => (
+              <ProjectWallCard
+                key={card.project.key}
+                card={card}
+                switching={switchingKey === card.project.key}
+                busyRepoId={busyRepoId}
+                updatingMain={updatingRepoId === card.project.primaryRepoId}
+                onOpen={() => {
+                  setSwitchingKey(card.project.key)
+                  void switchActiveProject(card.project.primaryRepoId).finally(() =>
+                    setSwitchingKey(null)
+                  )
+                }}
+                onRemoveRepo={(repoId) => {
+                  setBusyRepoId(repoId)
+                  void removeRepoFromWallProject({ project: card.project, repoId }).finally(() =>
+                    setBusyRepoId(null)
+                  )
+                }}
+                onEditCharter={() =>
+                  openCharterEdit({
+                    repoId: card.project.primaryRepoId,
+                    seedName: card.displayName
+                  })
+                }
+                onAddRepo={() => {
+                  void startAddRepoSlot(card.project)
+                }}
+                onUpdateMain={() => {
+                  if (card.primaryRepo) {
+                    void updateMainCheckout(card.primaryRepo)
+                  }
+                }}
+              />
+            ))}
           </div>
         )}
+
+        <ImportBuilderHostsDialog
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          onImported={refreshWall}
+        />
       </div>
     </div>
   )

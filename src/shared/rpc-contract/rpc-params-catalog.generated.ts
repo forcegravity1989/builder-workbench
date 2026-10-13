@@ -556,8 +556,8 @@ import {
 } from '../skill-upload-session-contract'
 import {
   CharterProbeRequestSchema,
+  CharterReadRequestSchema,
   CharterScopeSchema,
-  CharterStatusRequestSchema,
   CharterSubmitRequestSchema
 } from '../workbench/charter'
 import { CycleSyncSchema } from '../workbench/cycle-sync'
@@ -1191,7 +1191,8 @@ export const RPC_PARAMS_BY_METHOD = {
   'updater.install': null,
   'workbench.archive.proof': ArchiveProofRequestSchema,
   'workbench.charter.probeRemote': CharterProbeRequestSchema,
-  'workbench.charter.status': CharterStatusRequestSchema,
+  'workbench.charter.read': CharterReadRequestSchema,
+  'workbench.charter.status': CharterReadRequestSchema,
   'workbench.charter.submit': CharterSubmitRequestSchema,
   'workbench.cycle.syncTrunk': CycleSyncSchema,
   'workbench.history.list': VersionHistoryListSchema,
