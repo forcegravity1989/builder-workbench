@@ -22,6 +22,8 @@
 
 当前会话边界按用户确认改为完整原生工作区复用，原型同步表达复用范围和紧凑数据问题提示。CycleChat、专用历史嵌入、sessionStorage 会话绑定及迁移弹窗已移除；新建计划/验收走现有自动化，数据问题当时经独立新建会话自动递交（该通道后由 #279 的 oneShotPrompt 单次递交替代），归档把未发送请求贴进左半屏当前显示的终端会话。计划右板已按认可结构调整，最终视觉与交互仍需结合实际数据逐项验看。上述为此前 [PR #275](https://github.com/forcegravity1989/builder-workbench/pull/275) 的会话复用实施，验证范围与资源限制见该 PR；历史烟测及类型检查不能作为本轮新入口通过的证据。
 
+2026-10-13 Issue #333 收敛批（用户在对齐会话逐项拍板，台账见交付 PR）：旅程灯改为只读材料 `workflow.stage`——模型每完成一阶段经 CLI 写入（准备/目标/评审/拆解/归档），灯为灰/绿两态位置比较（shared/version-workflow），恢复会话时由模型校准 stage。旧推导整体删除：评审灯写死、内容计数灯、归档字节证明链（version-archive、archive-evidence*、archive-current-material、archive-source-gap、version-history-archive-check、use-material-archive、archive-port）与按分支名猜 PR。归档/拆解按钮删除，贴草稿通道整体退役（CycleSessionPort、native-session 贴草稿链、use-cycle-request 等待框）；归档卡片改只读状态行，按模型写入的 `workflow.archivePr` 经新 RPC `workbench.archive.prStatus` 薄读取 PR 合入状态（进屏/材料刷新/手动刷新/聚焦节流重读，读不到保持未知）。进展区在有 progressSource 时内联回显派生只读纪要（use-progress-minutes，读取失败如实提示不回退）；「上版验收」按钮保留。`summary.risks` 纳入人工守卫（模型通道写入被拒），UI 标明风险仅由用户填写。schema2 兼容报错中文化、启动卡补迁移行动路径。历史服务全量 list 改为按版本/流程/cycleId 各列最新一条，取消 draft 过滤与 archive-unverified（选源读取时仍按固定修订核对身份）。week-planning / version-acceptance SKILL 与 version-records 契约同步重写（阶段写入纪律、archivePr、risks 守卫、文本周整、评审后同步 Issue 标题标记与标签），bundled guides 与 RPC catalog 已重新生成。证据：workbench vitest 41 文件 229 例全绿（ratchet 基线 257→229 收紧）、typecheck 0 错、bundled-skill-guides / skill-bundle-manifest / rpc-params-catalog verify 绿；真壳未运行——两屏灯、状态行、进展回显与守卫的真实模型旅程待用户实机验证，模型是否按 SKILL 稳定写 stage 待真实会话取证。
+
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
 | intent | ● 已确认 | 沿用三特性边界，用户确认本轮计划/验收共用协作入口与资产同步 |

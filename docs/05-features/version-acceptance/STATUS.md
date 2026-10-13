@@ -14,6 +14,8 @@
 
 指标规则已随 [PR #278](https://github.com/forcegravity1989/builder-workbench/pull/278) 合入并同步本树：只接历史脚本，采用当前目录采集并保留原计划承诺，由人说明可比性。两个指标组件、指标样式及 AcceptanceBoard 两处显示条件沿用已合入实现；本线仅处理资产冲突，不重写生产指标能力。后续验收布局须保留这些接线，指标既有证据见总览指标 STATUS，本轮真壳未验。
 
+2026-10-13 Issue #333 收敛批（与计划屏同批，机制细节见[版本计划 STATUS](../version-planning/STATUS.md) 同轮记录）：旅程灯改为只读材料 `workflow.stage`（准备交付 preparation / 展示验收 showcase / 归档 archive，模型写入，灰/绿两态）；准备灯的证据完备性推导、archiveSignal/decisionSignal/preparationSignal（acceptance-journey.ts）与「检查文件与候选」在线探测（acceptance-candidate-port）整体删除，来源行只呈现记录事实与纯声明比对（artifactCandidateCheck）；人工结论 decision 及证据新鲜度机制保留不变（仅 UI 可写）。归档按钮与「交给会话」未达跟进按钮删除（贴草稿通道整体退役），归档卡片改只读状态行，按 `workflow.archivePr` 薄读取 PR 合入状态（useArchivePrStatus，读不到保持未知）。预览纪要报告的核对行相应精简（保留固定计划核验与结论新鲜度，去掉在线文件/执行探测行）。证据与未验项同计划屏该轮记录：workbench 套件 229 例绿、typecheck 0 错；真壳与真实模型旅程待用户实机验证。
+
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
 | intent | ● 已确认 | 沿用三特性边界，用户确认会话准备材料、逐目标核对及本轮资产同步 |
