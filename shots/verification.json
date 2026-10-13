@@ -1,0 +1,175 @@
+{
+  "core": [
+    {
+      "name": "当前项目全未知",
+      "pass": true
+    },
+    {
+      "name": "覆盖四状态",
+      "pass": true
+    },
+    {
+      "name": "PR不自动验收",
+      "pass": true
+    },
+    {
+      "name": "跨版本",
+      "pass": true
+    },
+    {
+      "name": "跨承诺",
+      "pass": true
+    },
+    {
+      "name": "未来确认",
+      "pass": true
+    },
+    {
+      "name": "缺确认人",
+      "pass": true
+    },
+    {
+      "name": "归档确认不过期",
+      "pass": true
+    },
+    {
+      "name": "未来握手无效",
+      "pass": true
+    },
+    {
+      "name": "逾期有效依据红",
+      "pass": true
+    },
+    {
+      "name": "陈旧异常未知",
+      "pass": true
+    },
+    {
+      "name": "草稿不改承诺",
+      "pass": true
+    },
+    {
+      "name": "非法日期拒绝",
+      "pass": true
+    },
+    {
+      "name": "缓冲同版",
+      "pass": true
+    },
+    {
+      "name": "预测不覆盖人确认",
+      "pass": true
+    },
+    {
+      "name": "紧凑日期不倒挂",
+      "pass": true
+    }
+  ],
+  "ui": [
+    {
+      "name": "弹窗背景隔离",
+      "pass": true
+    },
+    {
+      "name": "Esc恢复焦点",
+      "pass": true
+    },
+    {
+      "name": "保存不改健康",
+      "pass": true
+    },
+    {
+      "name": "刷新保留草稿",
+      "pass": true
+    },
+    {
+      "name": "详情无null",
+      "pass": true
+    },
+    {
+      "name": "卡片冗余移除",
+      "pass": true
+    },
+    {
+      "name": "Builder搜索",
+      "pass": true
+    },
+    {
+      "name": "健康筛选",
+      "pass": true
+    },
+    {
+      "name": "版本节点与缓冲",
+      "pass": true
+    },
+    {
+      "name": "Builder去冗余",
+      "pass": true
+    },
+    {
+      "name": "当前无虚构版本",
+      "pass": true
+    }
+  ],
+  "geometry": [
+    {
+      "width": 1440,
+      "overflow": false,
+      "cards": 6,
+      "bad": 0
+    },
+    {
+      "width": 1206,
+      "overflow": false,
+      "cards": 6,
+      "bad": 0
+    },
+    {
+      "width": 768,
+      "overflow": false,
+      "cards": 6,
+      "bad": 0
+    },
+    {
+      "width": 375,
+      "overflow": false,
+      "cards": 6,
+      "bad": 0
+    }
+  ],
+  "edges": [
+    {
+      "name": "延期不覆盖跨版",
+      "pass": true
+    },
+    {
+      "name": "延期不覆盖跨承诺",
+      "pass": true
+    },
+    {
+      "name": "延期不覆盖未来确认",
+      "pass": true
+    },
+    {
+      "name": "延期不覆盖非法日期",
+      "pass": true
+    },
+    {
+      "name": "延期不覆盖缺确认人",
+      "pass": true
+    },
+    {
+      "name": "延期不覆盖验收失败",
+      "pass": true
+    },
+    {
+      "name": "保留实现PR真实失败",
+      "pass": true
+    },
+    {
+      "name": "无效确认详情显示未知",
+      "pass": true
+    }
+  ],
+  "errors": []
+}
