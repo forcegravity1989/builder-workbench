@@ -4,6 +4,7 @@ import acceptanceStub from '../../../../../skills/version-acceptance/SKILL.md?ra
 import metricsStub from '../../../../../skills/metrics-refresh/SKILL.md?raw'
 import { useAppStore } from '@/store'
 import { nativeMetricsPort } from '../metrics-port'
+import { cycleBranch } from './native-cycle-workspace'
 import { nativeWorkspaceScopeKey, nativeWorkspaceScope } from './native-workspace'
 import type { CycleScope } from './ports'
 
@@ -66,6 +67,9 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
   }
   const workflow = scope.workflow === 'version-acceptance' ? 'acceptance' : 'plan'
   const topic = scope.workflow
+  // Plan/acceptance pin their fixed cycle branch; metrics setup owns its own
+  // tree (metrics-setup.ts) and stays unpinned to avoid a circular import.
+  const branch = topic === 'metrics-refresh' ? null : cycleBranch({ workflow })
   const references = ['version-records', 'metrics']
     .map((name) => `- ${name}：ORCA skills get ${topic} --reference ${name}`)
     .join('\n')
@@ -77,7 +81,8 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
     worktreeId: scope.worktreeId,
     workspacePath: worktree.path,
     workflow: scope.workflow === 'metrics-refresh' ? scope.workflow : workflow,
-    version: null
+    version: null,
+    branch
   }
   const metricsContext = topic === 'metrics-refresh' ? await metricsCatalogContext(scope) : ''
   const values: Record<string, string> = {
@@ -92,7 +97,7 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
     category: '',
     references,
     skill: workflowStubs[topic],
-    version_context: `宿主已确认的执行上下文：\n${JSON.stringify(context, null, 2)}\n${topic === 'metrics-refresh' ? `这是独立指标配置任务，使用原生项目与工作区上下文。\n${metricsContext}` : `材料工具：ORCA bw materials schema --workflow ${workflow}；参数查看 ORCA bw materials context --help、ORCA bw materials select --help、ORCA bw materials list --help、ORCA bw materials read --help、ORCA bw materials save --help。\n先读取当前流程选版与候选；入口已给出版本时直接读回该版，未明确时与用户确认后用 select 同步右侧选版，不按会话标题或日期推断。历史会话不绑定版本，恢复后重新核对当前选版。未明确版本前不写材料。选版后先读回该版材料；验收页面可能已初始化并保存空白草稿，继续使用已有材料，不另建轮次。`}`
+    version_context: `宿主已确认的执行上下文：\n${JSON.stringify(context, null, 2)}\n${topic === 'metrics-refresh' ? `这是独立指标配置任务，使用原生项目与工作区上下文。\n${metricsContext}` : `材料工具：ORCA bw materials schema --workflow ${workflow}；参数查看 ORCA bw materials context --help、ORCA bw materials select --help、ORCA bw materials list --help、ORCA bw materials read --help、ORCA bw materials save --help。\n本会话固定在 ${branch} 工作树：材料只经 ORCA bw materials save 绑定该 worktreeId 写入，不直接编辑文件、不另建工作树或分支；归档提交落在 ${branch}，PR/MR 由 ${branch} 开向主分支。\n先读取当前流程选版与候选；入口已给出版本时直接读回该版，未明确时与用户确认后用 select 同步右侧选版，不按会话标题或日期推断。历史会话不绑定版本，恢复后重新核对当前选版。未明确版本前不写材料。选版后先读回该版材料；验收页面可能已初始化并保存空白草稿，继续使用已有材料，不另建轮次。`}`
   }
   const prompt = systemTemplate.replace(/\{\{([a-z_]+)\}\}/g, (_match, key: string) => {
     if (!(key in values)) {

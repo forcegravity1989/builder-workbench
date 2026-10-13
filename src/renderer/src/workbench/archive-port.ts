@@ -10,11 +10,11 @@ import {
   type ArchiveStatus
 } from '../../../shared/workbench/version-archive'
 import type { ArchiveInput, ArchivePort, CycleSession } from './version-cycle/ports'
+import { cycleBranch } from './version-cycle/native-cycle-workspace'
 import { prepareCycleRequest } from './version-cycle/native-session'
 import { callRuntimeRpc } from '../runtime/runtime-rpc-client'
 import { callMetricRuntime, metricRuntimeRoute } from './metric-runtime-rpc'
 
-const WORKFLOW_BRANCH = { plan: 'bw/week-plan', acceptance: 'bw/week-acceptance' } as const
 const WORKFLOW_NAME = { plan: '版本计划', acceptance: '版本验收' } as const
 const MATERIAL_FILE = { plan: 'data.json', acceptance: 'acceptance.json' } as const
 
@@ -98,7 +98,7 @@ export function nativeArchivePort(
           proof: adopted.proof
         }
       }
-      const branch = WORKFLOW_BRANCH[input.workflow]
+      const branch = cycleBranch({ workflow: input.workflow })
       const review = await callRuntimeRpc<HostedReviewInfo | null>(
         target,
         'hostedReview.forBranch',
@@ -177,7 +177,8 @@ export function nativeArchivePort(
     },
 
     async prepareRequest(input: ArchiveInput, session: CycleSession): Promise<void> {
-      const text = `请核对并归档 ${input.version} 当前已保存的${WORKFLOW_NAME[input.workflow]}（.bw/planning/${input.version}/${MATERIAL_FILE[input.workflow]}），按项目约定提交 PR，给我链接。`
+      const branch = cycleBranch({ workflow: input.workflow })
+      const text = `请核对并归档 ${input.version} 当前已保存的${WORKFLOW_NAME[input.workflow]}（.bw/planning/${input.version}/${MATERIAL_FILE[input.workflow]}）：在当前 ${branch} 固定工作树内提交，推送远端 ${branch} 分支，创建由 ${branch} 到主分支的 PR/MR，给我链接；不要另建工作树或分支。`
       await prepare(session, text)
     }
   }
