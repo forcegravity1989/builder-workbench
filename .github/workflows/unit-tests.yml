@@ -1,16 +1,7 @@
 name: Unit tests
 
 on:
-  workflow_call:
-    inputs:
-      node_versions:
-        description: JSON array of Node.js major versions to test.
-        required: true
-        type: string
-
-permissions:
-  contents: read
-
+  workflow_dispatch:
 jobs:
   test:
     name: tests node ${{ matrix.node }} ${{ matrix.shard }}/${{ matrix.shard_total }}

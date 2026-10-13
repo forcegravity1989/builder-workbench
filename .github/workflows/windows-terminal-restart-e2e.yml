@@ -2,19 +2,6 @@ name: Windows terminal restart E2E
 
 on:
   workflow_dispatch:
-    inputs:
-      ref:
-        description: Ref to check out
-        required: false
-        type: string
-
-permissions:
-  contents: read
-
-concurrency:
-  group: windows-terminal-restart-e2e-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 jobs:
   windows-terminal-restart:
     name: Windows terminal restart regressions

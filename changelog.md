@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-13 修复（CodeHub 仓库停在 GitHub 任务列表时报错答非所问）
+
+- **变更类型**：修复
+- **变更摘要**：CodeHub 仓库（如 gtsllm-dfx）点进任务屏后，若 CodeHub 来源不可用（设置中被隐藏、或 codehub-cli 未装、或 `visibleTaskProviders` 被旧版本进程清洗），任务源停留在 GitHub，弹出「未检测到 GitHub 来源」——对 CodeHub 仓库答非所问（它本就没有 GitHub 来源）。修复：`selectTaskPageUnresolvedSourceRepos` 用 `isCodeHubGitRemote` 标记 CodeHub 仓库；GitHub 列表横幅对 CodeHub 仓库改报「CodeHub 来源不可用：该仓库是 CodeHub 项目。请在设置 → 任务中显示 CodeHub，或安装 codehub-cli」，并提供「打开设置」按钮直达任务设置面板（非 CodeHub 仓库保持原「未检测到 GitHub 来源」+ 重试不变）。
+- **涉及文件**：
+  - `src/renderer/src/components/task-page-cache-selectors.ts`（`TaskPageUnresolvedSourceRepo` 增 `codehub` 标记，selector 判定仓库 remote）
+  - `src/renderer/src/components/task-page/github/List.tsx`（横幅按 `codehub` 分流：专属文案 + 打开设置按钮，替代无意义的 GitHub 重试）
+  - `src/renderer/src/i18n/locales/{zh,en,es,fr,ja,ko}.json`（新增 `codehubSourceUnavailable`/`codehubSourceUnavailableHint`/`openTaskSettings` 三条文案）
+  - `src/renderer/src/components/task-page-cache-selectors.test.ts`（扩展现有用例：CodeHub remote 标记 `codehub: true`，其余 `false`；不增执行例数）
+- **验证**：`task-page-cache-selectors.test.ts` 全过；`typecheck`、`lint` 过（详见 PR）。
+
 ## 2026-10-10 新增（codehub-cli 执行观测埋点）
 
 - **变更类型**：新增（可观测性）

@@ -137,9 +137,12 @@ remain included. CPU and typing were sampled separately.
 ORCA_BACKGROUND_LAUNCH=1 pnpm bench:spinners --sample-ms=5000
 ORCA_BACKGROUND_LAUNCH=1 pnpm bench:spinners --verify-only --scale-factor=1
 ORCA_BACKGROUND_LAUNCH=1 pnpm bench:spinners --verify-only --scale-factor=2
-ORCA_BACKGROUND_LAUNCH=1 ORCA_SPINNER_BENCH=1 ORCA_SPINNER_KEYS=64 \
-  pnpm test:e2e spinner-workspace-perf.spec.ts --workers=1
 ```
+
+The spinner E2E spec (`spinner-workspace-perf.spec.ts`) is retained Orca source:
+since the Orca CI/E2E isolation (see `ref/upstream.md`), the Workbench playwright
+lane discovers only `workbench-cycle-smoke.spec.ts`, so running the spinner spec
+requires temporarily widening `testMatch` in `tests/playwright.config.ts`.
 
 The full-app command rebuilds in `e2e` mode. For a fresh build already made with
 `pnpm exec electron-vite build --mode e2e`, `SKIP_BUILD=1` reuses it. Do not reuse

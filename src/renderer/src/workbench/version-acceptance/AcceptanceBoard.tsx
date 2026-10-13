@@ -379,7 +379,7 @@ function ReadyAcceptanceBoard({
         sectionRef={archiveSection}
         onArchive={() => void prepareArchive()}
       />
-      {reportOpen && (
+      {reportOpen && report && (
         <AcceptanceReportDialog
           report={report}
           onClose={() => setReportOpen(false)}
