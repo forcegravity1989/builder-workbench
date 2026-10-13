@@ -1,56 +1,43 @@
 import type { RefObject } from 'react'
 import { GitPullRequest, PackageCheck, Presentation } from 'lucide-react'
-import type { JourneySignal } from './acceptance-journey'
-
-const TONES: Record<JourneySignal['kind'], string> = {
-  unknown: '',
-  pending: 'pending',
-  failed: 'failed',
-  complete: 'done'
-}
+import {
+  ACCEPTANCE_WORKFLOW_STAGES,
+  workflowStageIndex,
+  type AcceptanceWorkflowStage
+} from '../../../../shared/workbench/version-workflow'
 
 /**
- * The rail locates body sections, including the archive footer. The archive
- * request itself is the button in that footer, same as the plan board.
+ * The rail locates body sections and mirrors the model-recorded SOP stage:
+ * green at or before workflow.stage, gray otherwise. Steps must stay in
+ * ACCEPTANCE_WORKFLOW_STAGES order.
  */
 export function AcceptanceJourney({
-  preparation,
-  decisions,
-  archive,
+  stage,
   startRef,
   resultsRef,
   archiveRef
 }: {
-  preparation: JourneySignal
-  decisions: JourneySignal
-  archive: JourneySignal
+  stage: AcceptanceWorkflowStage | undefined
   startRef: RefObject<HTMLElement | null>
   resultsRef: RefObject<HTMLElement | null>
   archiveRef: RefObject<HTMLElement | null>
 }) {
+  const reached = workflowStageIndex(ACCEPTANCE_WORKFLOW_STAGES, stage)
   const steps = [
-    { id: 'preparation', title: '准备交付', Icon: PackageCheck, signal: preparation },
-    { id: 'results', title: '展示验收', Icon: Presentation, signal: decisions },
-    { id: 'archive', title: '归档', Icon: GitPullRequest, signal: archive }
+    { id: 'preparation', title: '准备交付', Icon: PackageCheck, ref: startRef },
+    { id: 'results', title: '展示验收', Icon: Presentation, ref: resultsRef },
+    { id: 'archive', title: '归档', Icon: GitPullRequest, ref: archiveRef }
   ]
   return (
     <nav className="va-journey" aria-label="验收流程">
-      {steps.map(({ id, title, Icon, signal }) => (
+      {steps.map(({ id, title, Icon, ref }, index) => (
         <button
           key={id}
           type="button"
-          title={`${title} · ${signal.label}`}
-          onClick={() => {
-            const target =
-              id === 'archive'
-                ? archiveRef.current
-                : id === 'preparation'
-                  ? startRef.current
-                  : resultsRef.current
-            target?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-          }}
+          title={`${title} · ${index <= reached ? '模型已记录完成' : '尚未记录完成'}`}
+          onClick={() => ref.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })}
         >
-          <span className={`va-step-icon ${TONES[signal.kind]}`}>
+          <span className={`va-step-icon ${index <= reached ? 'done' : ''}`}>
             <Icon size={16} aria-hidden="true" />
           </span>
           <span>{title}</span>

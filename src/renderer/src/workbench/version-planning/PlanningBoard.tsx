@@ -17,7 +17,8 @@ import { PlanningPersistenceNotice } from './PlanningPersistenceNotice'
 import { PlanningHeader, PlanningJourneyNav } from './PlanningSections'
 import { PlanningProgressSource } from './PlanningProgressSource'
 import { usePlanningViewMemory } from './use-planning-view-memory'
-import { useMaterialArchive } from '../version-cycle/use-material-archive'
+import { useProgressMinutes } from './use-progress-minutes'
+import { useArchivePrStatus } from '../version-cycle/use-archive-pr-status'
 import './version-planning.css'
 
 type PlanningBoardProps = {
@@ -31,12 +32,13 @@ export function PlanningBoard(props: PlanningBoardProps) {
   return <PlanningBoardContent key={identity} {...props} />
 }
 function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardProps) {
-  const { scope, session, worktreeId, materialPort, taskPort, archivePort } = context
+  const { scope, session, worktreeId, materialPort, taskPort } = context
   const scopeKey = scope ? cycleScopeKey(scope) : ''
   const canSave = useCallback(() => !context.syncing, [context.syncing])
   const material = usePlanningMaterial(materialPort, scopeKey, { canSave })
   const plan = material.draft?.document
-  const archive = useMaterialArchive(context, material.draft)
+  const prStatus = useArchivePrStatus(context, plan?.workflow?.archivePr)
+  const progressMinutes = useProgressMinutes(scope, worktreeId, plan?.summary.progressSource)
   const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
   const [minutesOpen, setMinutesOpen] = useState(false)
@@ -117,59 +119,6 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       material.edit(next)
     }
   }
-  const savedForRequest = async () => {
-    if (selection.inProgress()) {
-      throw new Error('正在选择版本，请稍后再操作。')
-    }
-    if (!scope || !worktreeId || !plan) {
-      throw new Error('请先选择版本。')
-    }
-    if (!session) {
-      throw new Error('请先在左侧新建或打开会话。')
-    }
-    const saved = await material.flush()
-    if (currentSelection.current !== selectionKey) {
-      return null
-    }
-    if (!saved) {
-      throw new Error('修改尚未保存，请先处理保存提示，待保存完成后重试。')
-    }
-    return saved
-  }
-  const requestArchive = () =>
-    act(async () => {
-      const saved = await savedForRequest()
-      if (!saved || !scope || !worktreeId || !session) {
-        return
-      }
-      await archivePort.prepareRequest(
-        {
-          ...scope,
-          worktreeId,
-          version: saved.document.version,
-          cycleId: saved.document.cycleId,
-          revision: saved.revision
-        },
-        session
-      )
-      if (currentSelection.current === selectionKey) {
-        updateView({ notice: '归档请求已贴进左侧当前终端，请核对后发送。' })
-      }
-    })
-  const requestDecomposition = () =>
-    act(async () => {
-      const saved = await savedForRequest()
-      if (!saved || !session) {
-        return
-      }
-      await context.sessionPort.prepareRequest(
-        session,
-        `请基于已保存的 ${saved.document.version} 计划（cycleId=${saved.document.cycleId}，revision=${saved.revision}）核对评审后的目标与已有 Issue，避免重复，提出版本任务拆解并关联目标；列出需要我确认的事项，经我确认后执行。不要替人确认评审通过、完成 Issue 或合入 PR。`
-      )
-      if (currentSelection.current === selectionKey) {
-        updateView({ notice: '拆解请求已贴进左侧当前终端，请核对后发送。' })
-      }
-    })
   const openTask = async (task: Extract<CycleTaskRead, { kind: 'ready' }>['task']) => {
     if (!scope || !plan || !worktreeId) {
       return
@@ -188,15 +137,14 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   }
   const state = !plan
     ? ''
-    : archive.archived
-      ? '已归档'
-      : material.draft?.error
-        ? '保存待处理'
-        : material.busy
-          ? '保存中…'
-          : material.draft?.dirty
-            ? '正在保存修改…'
-            : '已保存'
+    : material.draft?.error
+      ? '保存待处理'
+      : material.busy
+        ? '保存中…'
+        : material.draft?.dirty
+          ? '正在保存修改…'
+          : '已保存'
+  const progressSource = plan?.summary.progressSource
   return (
     <div className="vp-board">
       <PlanningHeader
@@ -211,7 +159,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
           void act(async () => {
             await material.refresh()
             await material.list()
-            await archive.refresh()
+            await prStatus.refresh()
           })
         }
       />
@@ -223,11 +171,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       <PlanningPersistenceNotice material={material} onAct={act} />
       <div className="vp-body" inert={selecting} aria-busy={selecting}>
         <PlanningJourneyNav
-          hasProgress={Boolean(plan?.summary.progress.trim())}
-          goalCount={plan?.goals.filter((goal) => goal.title.trim()).length ?? 0}
-          taskCount={plan?.tasks.length ?? 0}
-          archived={archive.archived}
-          archive={archive.status}
+          stage={plan?.workflow?.stage}
           preparationRef={preparation}
           goalsRef={goals}
           tasksRef={tasksSection}
@@ -248,8 +192,8 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
                   worktreeId={worktreeId}
                   plan={plan}
                   disabled={disabled}
-                  onSource={(progressSource) =>
-                    edit({ ...plan, summary: { ...plan.summary, progressSource } })
+                  onSource={(source) =>
+                    edit({ ...plan, summary: { ...plan.summary, progressSource: source } })
                   }
                 />
               ) : (
@@ -258,19 +202,40 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
                 </button>
               )}
             </div>
-            <textarea
-              id="planning-progress"
-              aria-label="版本进展"
-              rows={2}
-              disabled={disabled}
-              value={plan?.summary.progress ?? ''}
-              placeholder="上版验收结果与本版起点"
-              onChange={(event) => {
-                if (plan) {
-                  edit({ ...plan, summary: { ...plan.summary, progress: event.target.value } })
-                }
-              }}
-            />
+            {progressSource && progressMinutes.kind !== 'error' ? (
+              progressMinutes.kind === 'ready' ? (
+                <>
+                  <p className="vp-muted">
+                    上版验收 {progressSource.version} ·{' '}
+                    {progressSource.sourceCommit.slice(0, 12)} · 由固定材料派生的只读纪要
+                  </p>
+                  <pre className="vp-progress-minutes">{progressMinutes.markdown}</pre>
+                </>
+              ) : (
+                <p className="vp-muted" role="status">
+                  正在读取上版验收纪要…
+                </p>
+              )
+            ) : (
+              <>
+                {progressMinutes.kind === 'error' && (
+                  <p role="alert">上版验收纪要读取失败：{progressMinutes.reason}</p>
+                )}
+                <textarea
+                  id="planning-progress"
+                  aria-label="版本进展"
+                  rows={2}
+                  disabled={disabled}
+                  value={plan?.summary.progress ?? ''}
+                  placeholder="上版验收结果与本版起点"
+                  onChange={(event) => {
+                    if (plan) {
+                      edit({ ...plan, summary: { ...plan.summary, progress: event.target.value } })
+                    }
+                  }}
+                />
+              </>
+            )}
             <label htmlFor="planning-risks">风险上报</label>
             <textarea
               id="planning-risks"
@@ -278,7 +243,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
               rows={2}
               disabled={disabled}
               value={plan?.summary.risks ?? ''}
-              placeholder="有风险时填写"
+              placeholder="有风险时填写；仅由你填写，模型不代填"
               onChange={(event) => {
                 if (plan) {
                   edit({ ...plan, summary: { ...plan.summary, risks: event.target.value } })
@@ -305,14 +270,13 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             goalFilter={goalFilter}
             onFilter={(value) => updateView({ goalFilter: value })}
             onTask={(task) => act(() => openTask(task))}
-            onDecompose={() => void requestDecomposition()}
           />
           <CycleArchive
-            status={archive.status}
-            archived={archive.archived}
-            disabled={!plan || selecting || material.busy}
+            archivePr={plan?.workflow?.archivePr}
+            reachedArchive={plan?.workflow?.stage === 'archive'}
+            status={prStatus.status}
+            loading={prStatus.loading}
             sectionRef={archiveSection}
-            onArchive={() => void requestArchive()}
           />
         </div>
       </div>

@@ -207,18 +207,6 @@ export function useAcceptanceBoard({
       fixed.refresh()
       await refreshDraft()
       await catalog.refresh()
-      await output.archiveStatus()
-    } catch (reason) {
-      setError(String(reason))
-    }
-  }
-  async function prepare(text: string) {
-    try {
-      if (!session) {
-        throw new Error('请先选择或开启左侧会话。')
-      }
-      await context.sessionPort.prepareRequest(session, text)
-      setError(null)
     } catch (reason) {
       setError(String(reason))
     }
@@ -294,7 +282,6 @@ export function useAcceptanceBoard({
     retrySave: autosave.save,
     useRemoteDeletion,
     initializationSuppressed,
-    prepare,
     editGoal,
     editReadings
   }

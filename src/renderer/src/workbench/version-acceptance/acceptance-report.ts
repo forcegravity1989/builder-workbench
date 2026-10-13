@@ -9,15 +9,12 @@ import {
   emptyGoalResult,
   type EvidenceCheck
 } from './acceptance-model'
-import type { ArtifactCheck } from './acceptance-candidate-port'
 import { taskReferenceKey } from './acceptance-task-evidence'
 
 export type AcceptanceVerification = {
   plan: EvidenceCheck
-  candidate: EvidenceCheck
   decisions: Record<string, DecisionFreshness>
   issues?: string[]
-  artifacts?: ArtifactCheck[]
 }
 
 const outcomeLabels = { met: '达成', 'not-met': '未达', pending: '待核' }
@@ -52,7 +49,6 @@ export function deriveAcceptanceReport(input: {
     `- 计划修订：${text(document.planRef.revision)}；计划周期：${text(document.planRef.cycleId)}`,
     `- 源码候选：${document.candidateRef ? `${text(document.candidateRef.repository)} @ ${text(document.candidateRef.commit)}` : '待固定'}`,
     `- 计划来源核对：${verification ? text(checkLabel(verification.plan)) : '本报告未重新核对来源'}`,
-    `- 候选核对：${verification ? text(checkLabel(verification.candidate)) : '本报告未重新核对候选'}`,
     '',
     '## 交付材料'
   ]
@@ -72,12 +68,8 @@ export function deriveAcceptanceReport(input: {
     if (artifact.checksum) {
       lines.push(`  校验值：${text(artifact.checksum)}`)
     }
-    const checks = verification?.artifacts?.find((item) => item.artifactId === artifact.artifactId)
     lines.push(
-      `  材料候选：${text(checkLabel(checks?.candidate ?? artifactCandidateCheck(artifact, document.candidateRef)))}`
-    )
-    lines.push(
-      `  文件核对：${checks ? text(checkLabel(checks.availability)) : '尚未核对可用性'}；执行来源：${checks ? text(checkLabel(checks.execution)) : '尚未核对执行记录'}`
+      `  材料候选：${text(checkLabel(artifactCandidateCheck(artifact, document.candidateRef)))}`
     )
   }
   lines.push('', '## 原承诺与验收结果')

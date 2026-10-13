@@ -1,13 +1,13 @@
 import { defineMethod } from '../core'
-import { ArchiveProofRequestSchema } from '../../../../shared/workbench/version-archive'
+import { ArchivePrStatusRequestSchema } from '../../../../shared/workbench/archive-pr-status'
 import { workbenchRuntimeResult } from '../../../workbench/workbench-runtime-result'
-import { readArchiveProof } from '../../../workbench/version-history-runtime'
+import { readArchivePrStatus } from '../../../workbench/archive-pr-status'
 
 export const WORKBENCH_ARCHIVE_METHODS = [
   defineMethod({
-    name: 'workbench.archive.proof',
-    params: ArchiveProofRequestSchema,
+    name: 'workbench.archive.prStatus',
+    params: ArchivePrStatusRequestSchema,
     handler: (params, { runtime }) =>
-      workbenchRuntimeResult(() => readArchiveProof(runtime, params))
+      workbenchRuntimeResult(() => readArchivePrStatus(runtime, params))
   })
 ]

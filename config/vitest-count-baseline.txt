@@ -2,4 +2,4 @@
 # 范围：src/{main,relay,renderer/src,shared}/workbench 套件实际执行例数（含 it.each 展开与 skip/todo）。
 # 核对：pnpm check:vitest-count-ratchet　收紧（只降不升）：--prune　初始化：--init
 # 依据：AGENTS.md 提交前门禁、docs/01-principles/02-working-backwards.md 环 4（2026-09-30 拍板）。
-workbench 257
+workbench 229
