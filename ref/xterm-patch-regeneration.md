@@ -257,12 +257,19 @@ risk.
 
 ## CI Contract
 
-`xterm_patch_sync` in `.github/workflows/pr.yml` runs
-`regenerate-xterm-patches.mjs --check` on every PR and is part of the `verify`
-aggregate. It clones the pinned commit, installs upstream's toolchain, builds
+Historically, an `xterm_patch_sync` job in `.github/workflows/pr.yml` ran
+`regenerate-xterm-patches.mjs --check` on every PR. That job was dropped with the
+Orca CI/E2E isolation (see `ref/upstream.md`); the Workbench CI does not include
+it, so the check is now manual:
+
+```bash
+node config/scripts/regenerate-xterm-patches.mjs --check
+```
+
+It clones the pinned commit, installs upstream's toolchain, builds
 twice, and byte-compares the result against the committed patch. Both builds and
 the diff together are about eight seconds; `npm ci` for upstream's toolchain is
-what the job actually spends its minutes on, and the cache key is the manifest.
+what the run actually spends its minutes on, and the cache key is the manifest.
 
 `config/scripts/regenerate-xterm-patches.test.mjs` covers the pure pieces —
 pnpm's diff flags and normalization, hunk splitting, round-trip stability, the

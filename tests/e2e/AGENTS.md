@@ -1,6 +1,8 @@
-# AGENTS.md — E2E Tests
+# AGENTS.md — Workbench smoke test
 
-## Build the App With `--mode e2e` Before Running Tests
+The directory contains the Workbench Electron smoke test and the small fixture closure it needs, plus the historical Orca E2E specs, fixtures and helpers retained as frozen source after the Orca CI/E2E isolation (see `ref/upstream.md`). `tests/playwright.config.ts` discovers only `workbench-cycle-smoke.spec.ts`, so the legacy files never run in the Workbench lane — do not "clean them up" and do not assume they execute. Keep new coverage focused on Workbench journeys and update this file when the smoke harness changes.
+
+## Build the App With `--mode e2e` Before Running the Smoke Test
 
 E2E tests read Zustand state via `window.__store`. That global is only assigned when the preload bundle is built in `e2e` mode, which is applied when you pass `--mode e2e` to `electron-vite build`. A plain `pnpm build` or `pnpm build:electron-vite` produces an `out/` tree **without** the store exposed, so reusing it with `SKIP_BUILD=1` makes every spec hang on `waitForFunction(() => Boolean(window.__store))` and time out at 30s.
 
@@ -23,7 +25,7 @@ If the test could be rewritten to import the slice and drive it directly without
 
 ## E2E Assertions Must Target the DOM, Not the Store
 
-`window.__store` is fine for _setup_ (seeding a repo, pre-filling a draft, stubbing hydration timing) but the thing a spec finally `expect()`s on must be user-observable — `getByRole`, `toBeVisible`, `toHaveText`, `toContainText`. A spec that both writes to the store and reads it back is asserting that Zustand's setter works, not that Orca works.
+`window.__store` is fine for _setup_ (seeding a repo, pre-filling a draft, stubbing hydration timing) but the thing a spec finally `expect()`s on must be user-observable — `getByRole`, `toBeVisible`, `toHaveText`, `toContainText`. A spec that both writes to the store and reads it back is asserting that Zustand's setter works, not that Workbench works.
 
 Why this matters: the `'create-worktree'` modal key lived on in the `activeModal` union long after `AddWorktreeDialog.tsx` was deleted in #710, so `store.openModal('create-worktree')` + `store.activeModal === 'create-worktree'` round-trips succeeded against a modal that rendered nothing. That tautology is what let #1186 (React error #31 in `StartFromField`) ship — the store-layer test passed while the composer actively crashed for real users.
 
@@ -31,4 +33,4 @@ Concretely:
 
 - Use the store to reach a state; use the DOM to prove the state is correct.
 - If a render-layer regression would leave the store clean but the UI broken, a store-only test will not catch it. Mount the affected subtree and assert on what the user sees.
-- Headless (`ORCA_E2E_HEADLESS=1`) does not exempt you from this rule — Playwright drives the real DOM via CDP regardless of window visibility. The rare cases that need focus or pointer capture use `ORCA_E2E_HEADFUL=1` via `project.metadata.orcaHeadful`.
+- Headless (`ORCA_E2E_HEADLESS=1`) does not exempt you from this rule — Playwright drives the real DOM via CDP regardless of window visibility. The rare cases that need focus or pointer capture use `ORCA_E2E_HEADFUL=1` via `project.metadata.workbenchHeadful`.

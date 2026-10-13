@@ -83,11 +83,10 @@ other — current working tree against the newest release tag, in both skew
 directions — over one scripted terminal journey (subscribe, input, hide/reveal
 snapshot, drop, reconnect).
 
-Run it with:
-
-```bash
-pnpm exec vitest run --config config/vitest.config.ts tests/e2e/cross-version-wire/cross-version-terminal-wire.unit.test.ts
-```
+Since the Orca CI/E2E isolation (see [upstream.md](upstream.md)), the Workbench Vitest
+entrypoint (`config/vitest.config.ts`) only includes `src/**/*.test.ts(x)`. This harness
+is retained in the tree as historical Orca source but is not run by `pnpm test` or PR CI;
+running it requires a Vitest config whose `include` covers `tests/e2e/**/*.unit.test.ts`.
 
 It fails when a frame is refused by the receiving build's decoder (Rule 2), when the
 observed frame sequence changes (Rule 3), or when published snapshot content or
@@ -148,11 +147,8 @@ hand-written. It covers the three skews that surface can fail on:
 - a cursor survives a host restart: the client's fence is refused as stale with the live
   one attached, and resuming from the held cursor replays only what it missed.
 
-Run it with:
-
-```bash
-pnpm exec vitest run --config config/vitest.config.ts tests/e2e/cross-version-wire/cross-version-agent-session-wire.unit.test.ts
-```
+The same isolation applies to this harness: retained as source, not part of the
+Workbench Vitest entrypoint.
 
 The harness covers the terminal stream and the structured agent-session surface. It does
 **not** cover the session-tab sync channel, legacy agent-session publications, file or Git

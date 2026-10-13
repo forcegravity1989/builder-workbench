@@ -11,23 +11,6 @@ name: Windows Crash-Survival E2E
 
 on:
   workflow_dispatch:
-    inputs:
-      expect:
-        description: Expected outcome profile
-        required: true
-        type: choice
-        default: survival
-        options:
-          - survival
-          - orphaned
-
-permissions:
-  contents: read
-
-concurrency:
-  group: win-crash-survival-e2e-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 jobs:
   crash-survival:
     name: crash-survival (packaged build)

@@ -1,8 +1,10 @@
 name: Track Community PRs
 
 on:
-  pull_request_target:
-    types: [opened, reopened, ready_for_review]
+  # Why dispatch-only: Orca's community-PR tracker authenticates as stablyai's
+  # bufo-bot app (BUFO_BOT_PRIVATE_KEY); on this fork the secret does not exist,
+  # so the pull_request_target trigger only produced a red run on every PR.
+  # Isolated with the rest of the Orca CI matrix (ref/upstream.md).
   workflow_dispatch:
     inputs:
       pr_number:
