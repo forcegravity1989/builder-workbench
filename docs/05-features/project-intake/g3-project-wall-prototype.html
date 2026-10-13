@@ -52,20 +52,18 @@
     .main { min-width:0; min-height:0; overflow:hidden; }
     .page { height:100%; overflow:auto; padding:24px 32px 42px; }
     .page-inner { width:min(1060px,100%); margin:0 auto; }
-    .page-head, .card-top, .card-actions, .dialog-head, .dialog-actions, .healthbar, .host-row, .host-main, .overview-head { display:flex; align-items:center; }
+    .page-head, .card-top, .card-actions, .dialog-head, .dialog-actions, .wallbar, .repo-row, .overview-head { display:flex; align-items:center; }
     .page-head { align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:18px; }
     .kicker { margin-bottom:5px; color:var(--muted-foreground); font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase; }
     .page-head h1 { margin:0; font-size:22px; }
     .page-head p { max-width:650px; margin:6px 0 0; color:var(--muted-foreground); font-size:12px; }
     .page-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:7px; padding-top:15px; }
-    .healthbar { flex-wrap:wrap; gap:8px 14px; margin-bottom:14px; padding:8px 12px; border:1px solid var(--color-divider); border-radius:var(--radius-md); background:var(--color-card); color:var(--muted-foreground); font-size:11px; }
-    .healthbar strong { color:var(--color-text); font-weight:500; }
+    .wallbar { flex-wrap:wrap; gap:8px 14px; margin-bottom:14px; padding:8px 12px; border:1px solid var(--color-divider); border-radius:var(--radius-md); background:var(--color-card); color:var(--muted-foreground); font-size:11px; }
+    .wallbar strong { color:var(--color-text); font-weight:500; }
     .health-item { display:inline-flex; align-items:center; gap:5px; }
     .health-sep { width:1px; height:14px; background:var(--color-divider); }
     .status-dot { width:8px; height:8px; flex:none; border-radius:50%; background:var(--color-neutral-400); }
     .status-dot.green { background:var(--color-success); }
-    .status-dot.amber { background:var(--color-warning); }
-    .status-dot.red { background:var(--color-danger); }
     .wall-grid { display:grid; gap:12px; }
     .wall-card { padding:14px; }
     .card-top, .overview-head, .dialog-head { justify-content:space-between; gap:10px; }
@@ -74,24 +72,18 @@
     .card-summary { margin:0; color:var(--muted-foreground); font-size:12px; line-height:1.6; }
     .card-meta { display:flex; flex-wrap:wrap; gap:12px; margin-top:11px; color:var(--muted-foreground); font-size:11px; }
     code, .mono { font-family:var(--font-mono); font-size:10px; }
-    .host-list { display:grid; gap:2px; margin-top:14px; border-top:1px solid var(--color-divider); }
-    .host-row { gap:9px; min-height:48px; padding:7px 8px; border:1px solid transparent; border-bottom:1px solid var(--color-divider); border-radius:var(--radius-sm); cursor:pointer; }
-    .host-row:hover { background:color-mix(in srgb,var(--color-accent) 4%,transparent); }
-    .host-row.selected { border-color:color-mix(in srgb,var(--color-accent) 45%,transparent); background:color-mix(in srgb,var(--color-accent) 7%,transparent); }
-    .host-main { min-width:0; flex:1; gap:8px; }
-    .host-tag { flex:none; }
-    .host-copy { min-width:0; }
-    .host-copy strong, .host-copy span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .host-copy strong { font-size:12px; font-weight:500; }
-    .host-copy span { margin-top:2px; color:var(--muted-foreground); font-size:10px; }
-    .host-side { display:flex; align-items:center; gap:8px; flex:none; }
-    .conn { display:inline-flex; align-items:center; gap:5px; color:var(--muted-foreground); font-size:10px; white-space:nowrap; }
-    .wt-delete-btn { height:24px; padding:0 7px; font-size:10px; color:var(--muted-foreground); }
-    .wt-delete-btn:hover { color:var(--color-danger); }
-    .expand-toggle { width:100%; min-height:32px; padding:0 8px; border:0; border-bottom:1px solid var(--color-divider); border-radius:var(--radius-sm); color:var(--color-accent); background:transparent; cursor:pointer; font-size:11px; text-align:center; }
-    .expand-toggle:hover { background:color-mix(in srgb,var(--color-accent) 6%,transparent); }
-    .card-actions { justify-content:flex-start; gap:8px; padding-top:12px; }
-    .card-actions .hint { margin-left:auto; color:var(--muted-foreground); font-size:10px; }
+    .repo-section { margin-top:14px; border-top:1px solid var(--color-divider); }
+    .repo-head { padding:8px 4px 4px; color:var(--muted-foreground); font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
+    .repo-row { gap:9px; min-height:40px; padding:5px 8px; border:1px solid var(--color-divider); border-radius:var(--radius-sm); background:var(--color-bg); }
+    .repo-link { display:flex; min-width:0; flex:1; align-items:baseline; gap:8px; padding:0; border:0; background:transparent; text-align:left; cursor:pointer; }
+    .repo-name { font-size:12px; font-weight:500; color:var(--color-text); }
+    .repo-url { overflow:hidden; color:var(--muted-foreground); text-overflow:ellipsis; white-space:nowrap; }
+    .repo-host { flex:none; }
+    .repo-delete { flex:none; height:24px; padding:0 7px; font-size:10px; color:var(--muted-foreground); }
+    .repo-delete:hover { color:var(--color-danger); }
+    .repo-note { margin:6px 4px 0; color:var(--muted-foreground); font-size:10px; line-height:1.6; }
+    .card-actions { justify-content:flex-start; flex-wrap:wrap; gap:8px; padding-top:12px; }
+    .card-actions .hint { margin-left:auto; max-width:340px; color:var(--muted-foreground); font-size:10px; line-height:1.5; }
     .overview-stack { display:grid; gap:12px; }
     .overview-card { padding:15px; }
     .overview-title { margin:0; font-size:18px; }
@@ -108,7 +100,8 @@
     .dialog-description { margin:5px 0 16px; color:var(--muted-foreground); font-size:12px; line-height:1.6; }
     .dialog-section { display:grid; gap:8px; margin-top:13px; }
     .dialog-label { color:var(--muted-foreground); font-size:11px; }
-    .file-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:7px; }
+    .dialog-hint { margin:0; color:var(--muted-foreground); font-size:11px; line-height:1.7; }
+    .file-row { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:7px; }
     .file-name { display:flex; align-items:center; min-height:30px; padding:0 9px; overflow:hidden; border:1px solid var(--color-divider); border-radius:var(--radius-sm); color:var(--muted-foreground); background:var(--color-bg); font-family:var(--font-mono); font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
     .import-hosts { display:grid; gap:5px; }
     .import-host { display:flex; align-items:center; gap:8px; min-height:42px; padding:7px 9px; border:1px solid var(--color-divider); border-radius:var(--radius-sm); }
@@ -127,7 +120,7 @@
     <strong>G3 项目墙增量高保真</strong>
     <button class="active" data-theme="light" type="button">浅色</button>
     <button data-theme="dark" type="button">深色</button>
-    <span class="preview-note">对照真实 Workbench / Orca 壳重设计 · 只展开「项目墙 → 总览」主旅程 · 健康无数据不装绿，主机连接由 runtime 实时推导</span>
+    <span class="preview-note">只展开「项目墙 → 总览」G3 主旅程 · 非 G3 墙卡元素（版本/健康等占位）本轮不动、不在原型展开，归项目墙深度优化承载 · 主机连接为 runtime 实时事实</span>
   </div>
 
   <div class="window">
@@ -162,13 +155,13 @@
         <section class="sidebar-section" aria-label="Orca Projects">
           <div class="section-head"><span>Orca Projects</span><span id="native-count">5 worktrees</span></div>
           <div class="native-list" id="native-list">
-            <button class="native-row active" type="button" data-native><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>main · E:\zhuyu\code\builder-workbench</small></span><span class="native-host">本机</span></button>
-            <button class="native-row" type="button" data-native><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>codex/v06-g3-project-wall · …\.codex\worktrees\v06-g3-project-wall</small></span><span class="native-host">本机</span></button>
-            <button class="native-row" type="button" data-native><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>bw/project · …\.bw\worktrees\builder-workbench\project</small></span><span class="native-host">本机</span></button>
-            <button class="native-row" type="button" data-native><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>bw/week-plan · …\.bw\worktrees\builder-workbench\week-plan</small></span><span class="native-host">本机</span></button>
-            <button class="native-row" type="button" data-native><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>bw/metrics-refresh · …\.bw\worktrees\metrics-refresh</small></span><span class="native-host">本机</span></button>
-            <button class="native-row" type="button" data-native data-after-import hidden><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>bw/week-acceptance · ~\orca\workspaces\builder-workbench\week-acceptance</small></span><span class="native-host">Builder 01</span></button>
-            <button class="native-row" type="button" data-native data-after-import hidden><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>main · ~\code\builder-workbench</small></span><span class="native-host">Builder 02</span></button>
+            <button class="native-row active" type="button" data-native data-bw><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>main · E:\zhuyu\code\builder-workbench</small></span><span class="native-host">本机</span></button>
+            <button class="native-row" type="button" data-native data-bw><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>codex/v06-g3-project-wall · …\.codex\worktrees\v06-g3-project-wall</small></span><span class="native-host">本机</span></button>
+            <button class="native-row" type="button" data-native data-bw><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>bw/project · …\.bw\worktrees\builder-workbench\project</small></span><span class="native-host">本机</span></button>
+            <button class="native-row" type="button" data-native data-bw><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>bw/week-plan · …\.bw\worktrees\builder-workbench\week-plan</small></span><span class="native-host">本机</span></button>
+            <button class="native-row" type="button" data-native data-bw><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>bw/metrics-refresh · …\.bw\worktrees\metrics-refresh</small></span><span class="native-host">本机</span></button>
+            <button class="native-row" type="button" data-native data-bw data-after-import hidden><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>bw/week-acceptance · ~\orca\workspaces\builder-workbench\week-acceptance</small></span><span class="native-host">Builder 01</span></button>
+            <button class="native-row" type="button" data-native data-bw data-after-import hidden><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>main · ~\code\builder-workbench</small></span><span class="native-host">Builder 02</span></button>
             <button class="native-row" type="button" data-native data-after-import hidden title="该工作树的分支上没有 .bw/project.toml：只留在 Orca Projects，不进项目墙"><span class="native-dot"></span><span class="native-copy"><strong>builder-workbench</strong><small>codex/overview-journey · ~\code\bw-journey-wt</small></span><span class="native-host">Builder 02</span></button>
           </div>
         </section>
@@ -194,25 +187,19 @@
               </div>
             </header>
 
-            <div class="healthbar" aria-label="项目墙状态">
-              <strong>健康概览</strong>
-              <span class="health-item" title="健康信号只能由版本周期数据推导；数据接入前一律显示无数据，不装绿"><span class="status-dot green"></span>平稳 0</span>
-              <span class="health-item" title="健康信号只能由版本周期数据推导；数据接入前一律显示无数据，不装绿"><span class="status-dot amber"></span>需要关注 0</span>
-              <span class="health-item" title="健康信号只能由版本周期数据推导；数据接入前一律显示无数据，不装绿"><span class="status-dot red"></span>异常 0</span>
-              <span class="health-item" title="健康信号只能由版本周期数据推导；数据接入前一律显示无数据，不装绿"><span class="status-dot"></span>无数据 <span id="health-unknown-count">1</span></span>
+            <div class="wallbar" aria-label="项目墙概况">
+              <span class="health-item">共 <strong id="project-count">1</strong> 个项目 · <strong id="wt-total">5</strong> 个工作树</span>
               <span class="health-sep" aria-hidden="true"></span>
-              <span class="health-item">共 <strong id="project-count">1</strong> 个项目 · <strong id="wt-count">5</strong> 个工作树</span>
-              <span class="health-sep" aria-hidden="true"></span>
-              <span class="health-item" title="连接状态由 Orca runtime 实时推导，是连接事实，不是项目健康">主机连接：<span id="host-connections">本机</span></span>
+              <span class="health-item" title="连接状态由 Orca runtime 实时推导，是连接事实，用于导入反馈与离线如实提示；健康/状态灯设计不在本轮 G3 范围">主机连接：<span id="host-connections">本机</span></span>
               <span class="spacer"></span>
               <span id="refresh-copy">上次刷新：刚刚</span>
             </div>
 
-            <div class="wall-grid">
+            <div class="wall-grid" id="wall-grid">
               <article class="card wall-card" aria-label="项目卡：workbench">
                 <div class="card-top">
                   <div class="source-tags" id="source-tags"><span class="tag tag-neutral" title="本机注册的工作树">本机</span></div>
-                  <span class="health-item" title="项目健康待版本周期数据接入后计算；无数据不装绿"><span class="status-dot"></span>无数据</span>
+                  <span class="tag tag-accent">当前</span>
                 </div>
                 <h2 class="card-name">workbench</h2>
                 <p class="card-summary">1、所有项目都一样。 2、加速并规范项目运作。3、一张工作台打通所有系统，集成各种好用组件和工作流</p>
@@ -222,43 +209,21 @@
                   <span>1 个代码仓 · <span id="card-wt-count">5</span> 个工作树</span>
                 </div>
 
-                <div class="host-list" id="worktree-list" aria-label="workbench 的工作树（点行选中，作为激活目标）">
-                  <div class="host-row selected" data-wt-row data-host="本机" data-branch="main" data-path="E:\zhuyu\code\builder-workbench" data-conn="local" tabindex="0" role="button">
-                    <div class="host-main"><span class="tag tag-neutral host-tag">本机</span><div class="host-copy"><strong>main</strong><span class="mono">E:\zhuyu\code\builder-workbench</span></div></div>
-                    <div class="host-side"><span class="tag tag-accent" id="current-tag">当前</span><button class="btn btn-ghost wt-delete-btn" type="button" data-wt-delete title="解除本机注册（墙与 Orca Projects 同步移除；不删除任何仓库文件）">删除</button></div>
+                <div class="repo-section" aria-label="代码仓注册">
+                  <div class="repo-head">代码仓</div>
+                  <div class="repo-row" id="repo-row-local">
+                    <button class="repo-link" type="button" id="repo-link" title="E:\zhuyu\code\builder-workbench"><span class="repo-name">builder-workbench</span><span class="repo-url mono">zhuyu/code/builder-workbench</span></button>
+                    <span class="tag tag-neutral repo-host">本机</span>
+                    <button class="btn btn-ghost repo-delete" type="button" id="repo-delete" title="解除本机注册：墙与 Orca Projects 同步移除，不删除任何仓库文件。Builder 主机的注册随主机配对管理，不在此列、不可在此删除">删除</button>
                   </div>
-                  <div class="host-row" data-wt-row data-host="本机" data-branch="codex/v06-g3-project-wall" data-path="…\.codex\worktrees\v06-g3-project-wall" data-conn="local" tabindex="0" role="button">
-                    <div class="host-main"><span class="tag tag-neutral host-tag">本机</span><div class="host-copy"><strong>codex/v06-g3-project-wall</strong><span class="mono">…\.codex\worktrees\v06-g3-project-wall</span></div></div>
-                    <div class="host-side"><button class="btn btn-ghost wt-delete-btn" type="button" data-wt-delete title="解除本机注册（墙与 Orca Projects 同步移除；不删除任何仓库文件）">删除</button></div>
-                  </div>
-                  <div class="host-row" data-wt-row data-host="本机" data-branch="bw/project" data-path="…\.bw\worktrees\builder-workbench\project" data-conn="local" tabindex="0" role="button">
-                    <div class="host-main"><span class="tag tag-neutral host-tag">本机</span><div class="host-copy"><strong>bw/project</strong><span class="mono">…\.bw\worktrees\builder-workbench\project</span></div></div>
-                    <div class="host-side"><button class="btn btn-ghost wt-delete-btn" type="button" data-wt-delete title="解除本机注册（墙与 Orca Projects 同步移除；不删除任何仓库文件）">删除</button></div>
-                  </div>
-                  <div class="host-row wt-extra" data-wt-row data-host="本机" data-branch="bw/week-plan" data-path="…\.bw\worktrees\builder-workbench\week-plan" data-conn="local" tabindex="0" role="button" hidden>
-                    <div class="host-main"><span class="tag tag-neutral host-tag">本机</span><div class="host-copy"><strong>bw/week-plan</strong><span class="mono">…\.bw\worktrees\builder-workbench\week-plan</span></div></div>
-                    <div class="host-side"><button class="btn btn-ghost wt-delete-btn" type="button" data-wt-delete title="解除本机注册（墙与 Orca Projects 同步移除；不删除任何仓库文件）">删除</button></div>
-                  </div>
-                  <div class="host-row wt-extra" data-wt-row data-host="本机" data-branch="bw/metrics-refresh" data-path="…\.bw\worktrees\metrics-refresh" data-conn="local" tabindex="0" role="button" hidden>
-                    <div class="host-main"><span class="tag tag-neutral host-tag">本机</span><div class="host-copy"><strong>bw/metrics-refresh</strong><span class="mono">…\.bw\worktrees\metrics-refresh</span></div></div>
-                    <div class="host-side"><button class="btn btn-ghost wt-delete-btn" type="button" data-wt-delete title="解除本机注册（墙与 Orca Projects 同步移除；不删除任何仓库文件）">删除</button></div>
-                  </div>
-                  <div class="host-row wt-extra" data-wt-row data-host="Builder 01" data-branch="bw/week-acceptance" data-path="~\orca\workspaces\builder-workbench\week-acceptance" data-conn="online" data-after-import hidden tabindex="0" role="button" title="Builder 主机的工作树随主机配对管理，不提供单独删除">
-                    <div class="host-main"><span class="tag tag-outline host-tag">Builder 01</span><div class="host-copy"><strong>bw/week-acceptance</strong><span class="mono">~\orca\workspaces\builder-workbench\week-acceptance</span></div></div>
-                    <div class="host-side"><span class="conn"><span class="status-dot green"></span>在线</span></div>
-                  </div>
-                  <div class="host-row wt-extra" data-wt-row data-host="Builder 02" data-branch="main" data-path="~\code\builder-workbench" data-conn="offline" data-after-import hidden tabindex="0" role="button" title="Builder 主机的工作树随主机配对管理，不提供单独删除">
-                    <div class="host-main"><span class="tag tag-outline host-tag">Builder 02</span><div class="host-copy"><strong>main</strong><span class="mono">~\code\builder-workbench</span></div></div>
-                    <div class="host-side"><span class="conn"><span class="status-dot"></span>离线</span></div>
-                  </div>
-                  <button class="expand-toggle" type="button" id="expand-worktrees" data-expanded="false">展开全部 5 个工作树</button>
+                  <p class="repo-note" id="repo-note" hidden>Builder 01 / Builder 02 的注册与 2 个额外工作树见来源标签与左侧 Orca Projects；主机去留随 Orca 主机配对管理。</p>
                 </div>
 
                 <div class="card-actions">
                   <button class="btn btn-primary" type="button" id="open-overview-button">打开项目总览</button>
                   <button class="btn btn-secondary" type="button" id="edit-charter-button">编辑名片</button>
                   <button class="btn btn-secondary" type="button" id="add-repo-button">＋ 代码仓</button>
-                  <span class="hint">点卡片行选中工作树，再激活进入总览</span>
+                  <span class="hint">Builder 主机的工作树明细与切换在左侧 Orca Projects（原生全量列表），BW 各屏沿用所选主机上下文</span>
                 </div>
               </article>
             </div>
@@ -278,9 +243,8 @@
               <article class="card overview-card">
                 <div class="overview-head">
                   <div><span class="tag tag-accent">当前项目</span><h2 class="overview-title">workbench</h2></div>
-                  <span class="health-item" title="项目健康待版本周期数据接入后计算；无数据不装绿"><span class="status-dot"></span>无数据</span>
                 </div>
-                <p class="overview-note">项目墙卡片和 Orca Projects 指向同一项目；总览、计划、验收、知识库沿用当前激活的主机与工作树上下文，不另开会话入口。</p>
+                <p class="overview-note">项目墙卡片和 Orca Projects 指向同一项目；总览、计划、验收、知识库沿用当前激活的主机与工作树上下文。切换 Builder 主机的工作树在 Orca Projects 原生列表进行，BW 屏随所选上下文读取；离线主机读取失败会如实显示，不冒充成功。</p>
                 <div class="overview-grid">
                   <div class="overview-cell"><small>项目名片</small><strong>.bw/project.toml · 已读到</strong></div>
                   <div class="overview-cell"><small>执行主机</small><strong id="ov-host">本机</strong></div>
@@ -302,8 +266,12 @@
   <div class="dialog-backdrop" id="import-dialog" role="presentation" hidden>
     <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="import-title">
       <div class="dialog-head"><h2 id="import-title">导入 Builder 主机</h2><button class="btn btn-icon btn-ghost" type="button" id="close-dialog" aria-label="关闭">×</button></div>
-      <p class="dialog-description">导入共享的 Orca 主机配对配置：批量添加的是 Builder 主机本身，不克隆项目，也不改动 Orca Projects 的全量列表。导入后自动刷新各主机仓库目录；项目是否上墙仍按各项目里能否读到 .bw/project.toml 判定。</p>
-      <div class="dialog-section"><span class="dialog-label">配置文件</span><div class="file-row"><span class="file-name" id="file-name">builder-workbench-hosts.json</span><label class="btn btn-secondary" for="config-file">选择文件</label><input id="config-file" type="file" accept=".json,.toml" hidden></div></div>
+      <p class="dialog-description">导入共享的 Orca 主机配对配置，批量添加 Builder 主机；不克隆项目，也不改动 Orca Projects 的全量列表。导入后自动刷新各主机仓库目录，项目是否上墙仍按各项目里能否读到 .bw/project.toml 判定。</p>
+      <div class="dialog-section">
+        <span class="dialog-label">配置文件</span>
+        <div class="file-row"><span class="file-name" id="file-name">builder-workbench-hosts.json</span><label class="btn btn-secondary" for="config-file">选择文件</label><input id="config-file" type="file" accept=".json,.toml" hidden><button class="btn btn-ghost" type="button" id="download-template">下载模板</button></div>
+        <p class="dialog-hint">结构就是「主机名: 该主机 Orca 分享的配对地址」：每台 Builder 主机把自己的配对地址发给你，按模板合成一个 json 即可导入；名字自己取，导入后用于墙上来源标签。</p>
+      </div>
       <div class="dialog-section"><span class="dialog-label">将导入的主机</span><div class="import-hosts"><label class="import-host"><input type="checkbox" checked><span class="import-copy"><strong>Builder 01</strong><span>remote-orca-01 · 配对配置已验证</span></span><span class="tag tag-neutral">待导入</span></label><label class="import-host"><input type="checkbox" checked><span class="import-copy"><strong>Builder 02</strong><span>remote-orca-02 · 配对配置已验证</span></span><span class="tag tag-neutral">待导入</span></label></div></div>
       <div class="dialog-actions"><button class="btn btn-ghost" type="button" id="cancel-dialog">取消</button><button class="btn btn-primary" type="button" id="confirm-import">导入 2 台主机</button></div>
     </section>
@@ -317,17 +285,12 @@
     const toast = document.getElementById('toast')
     let toastTimer
     let imported = false
-    let expanded = false
 
     function showToast(message) {
       toast.textContent = message
       toast.hidden = false
       clearTimeout(toastTimer)
-      toastTimer = setTimeout(function () { toast.hidden = true }, 3200)
-    }
-
-    function rows() {
-      return Array.prototype.slice.call(document.querySelectorAll('[data-wt-row]'))
+      toastTimer = setTimeout(function () { toast.hidden = true }, 3600)
     }
 
     function showView(view) {
@@ -341,83 +304,33 @@
     }
 
     function updateCounts() {
-      const total = rows().length
-      // 健康计数现算：可见项目卡都没有健康数据源 → 全部计入「无数据」，其余恒为 0（铁律一/二）。
-      const visibleCards = document.querySelectorAll('.wall-card:not([hidden])').length
-      document.getElementById('project-count').textContent = String(visibleCards)
-      document.getElementById('health-unknown-count').textContent = String(visibleCards)
-      document.getElementById('wt-count').textContent = String(total)
-      document.getElementById('card-wt-count').textContent = String(total)
       document.getElementById('native-count').textContent =
         document.querySelectorAll('[data-native]').length + ' worktrees'
-      const toggle = document.getElementById('expand-worktrees')
-      const extras = document.querySelectorAll('.wt-extra')
-      if (extras.length === 0) {
-        toggle.hidden = true
-        return
-      }
-      toggle.hidden = false
-      toggle.textContent = expanded ? '收起工作树列表' : '展开全部 ' + total + ' 个工作树'
-      extras.forEach(function (row) { row.hidden = expanded })
+      const visibleCards = document.querySelectorAll('.wall-card:not([hidden])').length
+      document.getElementById('project-count').textContent = String(visibleCards)
+      const wt = document.querySelectorAll('[data-native][data-bw]:not([hidden])').length
+      document.getElementById('wt-total').textContent = String(wt)
+      document.getElementById('card-wt-count').textContent = String(wt)
     }
 
     function updateSources() {
-      const hosts = []
-      rows().forEach(function (row) {
-        const host = row.dataset.host
-        if (hosts.indexOf(host) === -1) hosts.push(host)
-      })
       const container = document.getElementById('source-tags')
       container.textContent = ''
-      hosts.forEach(function (host) {
+      const hosts = imported
+        ? [['本机', '本机注册的工作树', 'tag tag-neutral'], ['Builder 01', 'Builder 01 在线 · 1 个工作树', 'tag tag-outline'], ['Builder 02', 'Builder 02 离线 · 1 个工作树（连接恢复后可读）', 'tag tag-outline']]
+        : [['本机', '本机注册的工作树', 'tag tag-neutral']]
+      hosts.forEach(function (entry) {
         const tag = document.createElement('span')
-        tag.className = host === '本机' ? 'tag tag-neutral' : 'tag tag-outline'
-        tag.textContent = host
-        if (host !== '本机') {
-          const offline = rows().some(function (row) { return row.dataset.host === host && row.dataset.conn === 'offline' })
-          tag.title = offline ? host + ' 连接离线' : host + ' 在线'
-        } else {
-          tag.title = '本机注册的工作树'
-        }
+        tag.className = entry[2]
+        tag.textContent = entry[0]
+        tag.title = entry[1]
         container.appendChild(tag)
       })
-      document.getElementById('host-count-tag').textContent =
-        hosts.length === 1 ? '仅本机' : '本机 + ' + (hosts.length - 1) + ' 台 Builder 主机'
-      const connCopy = hosts.map(function (host) {
-        if (host === '本机') return '本机'
-        const offline = rows().some(function (row) { return row.dataset.host === host && row.dataset.conn === 'offline' })
-        return host + (offline ? ' 离线' : ' 在线')
-      })
-      document.getElementById('host-connections').textContent = connCopy.join(' · ')
-    }
-
-    function selectRow(row) {
-      rows().forEach(function (item) { item.classList.toggle('selected', item === row) })
-    }
-
-    function activateSelected() {
-      const row = document.querySelector('[data-wt-row].selected')
-      if (!row) {
-        showToast('先在卡片里选中一个工作树，再打开总览')
-        return
-      }
-      if (row.dataset.conn === 'offline') {
-        showToast(row.dataset.host + ' 连接离线，无法激活 ' + row.dataset.branch + '；先在 Orca 主机设置恢复连接后重试')
-        return
-      }
-      const currentTag = document.getElementById('current-tag')
-      if (currentTag) currentTag.remove()
-      const tag = document.createElement('span')
-      tag.className = 'tag tag-accent'
-      tag.id = 'current-tag'
-      tag.textContent = '当前'
-      row.querySelector('.host-side').prepend(tag)
-      document.getElementById('ov-context').textContent = row.dataset.host + ' · ' + row.dataset.branch
-      document.getElementById('ov-host').textContent = row.dataset.host
-      document.getElementById('ov-wt').textContent = row.dataset.branch
-      document.getElementById('ov-path').textContent = row.dataset.path
-      showView('overview')
-      showToast('已激活 ' + row.dataset.host + ' · ' + row.dataset.branch + '；BW 各屏沿用该主机上下文')
+      document.getElementById('host-count-tag').textContent = imported ? '本机 + 2 台 Builder 主机' : '仅本机'
+      document.getElementById('host-connections').textContent = imported
+        ? '本机 · Builder 01 在线 · Builder 02 离线'
+        : '本机'
+      document.getElementById('repo-note').hidden = !imported
     }
 
     document.querySelectorAll('[data-view-target]').forEach(function (button) {
@@ -458,19 +371,33 @@
 
     document.getElementById('config-file').addEventListener('click', function (event) {
       event.preventDefault()
-      showToast('高保真演示：实际实现这里打开系统文件选择器，读取共享的主机配对配置')
+      showToast('高保真演示：实际实现这里打开系统文件选择器，读取按模板合成的主机配对配置')
+    })
+
+    document.getElementById('download-template').addEventListener('click', function () {
+      const template = {
+        说明: '每台主机一条记录：name 是你给这台 Builder 主机取的名字，address 是该主机 Orca 分享的 runtime 配对地址',
+        hosts: [
+          { name: 'Builder 01', address: 'orca-runtime://<builder-01 分享的配对地址>' },
+          { name: 'Builder 02', address: 'orca-runtime://<builder-02 分享的配对地址>' }
+        ]
+      }
+      const blob = new Blob([JSON.stringify(template, null, 2)], { type: 'application/json' })
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = 'builder-hosts-template.json'
+      a.click()
+      URL.revokeObjectURL(a.href)
+      showToast('模板已下载：填好「主机名: 配对地址」后导入即可')
     })
 
     document.getElementById('confirm-import').addEventListener('click', function () {
       closeDialog()
       imported = true
       document.querySelectorAll('[data-after-import]').forEach(function (node) { node.hidden = false })
-      if (!expanded) {
-        document.querySelectorAll('.wt-extra[data-after-import]').forEach(function (row) { row.hidden = true })
-      }
       updateCounts()
       updateSources()
-      showToast('已导入 2 台 Builder 主机并刷新仓库目录：Builder 02 的 codex/overview-journey 没有 .bw/project.toml，只留在 Orca Projects，不上墙')
+      showToast('已导入 2 台 Builder 主机并刷新仓库目录：Builder 02 在线后其工作树可读；它的 codex/overview-journey 没有 .bw/project.toml，只留在 Orca Projects，不上墙')
     })
 
     document.getElementById('refresh-button').addEventListener('click', function (event) {
@@ -496,50 +423,29 @@
     document.getElementById('add-repo-button').addEventListener('click', function () {
       showToast('打开现有「接入项目」向导并挂入本项目组（多仓聚合为同一张墙卡）')
     })
+    document.getElementById('repo-link').addEventListener('click', function () {
+      showToast('打开代码仓位置（远端 URL 或本地路径），与现有墙卡行为一致')
+    })
 
-    document.getElementById('expand-worktrees').addEventListener('click', function () {
-      expanded = !expanded
-      this.dataset.expanded = String(expanded)
+    document.getElementById('open-overview-button').addEventListener('click', function () {
+      if (document.getElementById('repo-row-local').hidden) {
+        showToast('本机注册已解除；先在 Orca Projects 选择工作树，或重新接入项目')
+        return
+      }
+      document.getElementById('ov-context').textContent = '本机 · main'
+      document.getElementById('ov-host').textContent = '本机'
+      document.getElementById('ov-wt').textContent = 'main'
+      document.getElementById('ov-path').textContent = 'E:\\zhuyu\\code\\builder-workbench'
+      showView('overview')
+      showToast('已激活本机 · main；切换 Builder 主机工作树请在左侧 Orca Projects 选择，BW 屏随所选上下文读取')
+    })
+
+    document.getElementById('repo-delete').addEventListener('click', function () {
+      if (!window.confirm('从 Orca 与项目墙解除「builder-workbench（本机）」的注册？不会删除任何仓库文件。')) return
+      document.getElementById('repo-row-local').hidden = true
+      document.querySelector('.wall-card').hidden = true
       updateCounts()
-    })
-
-    document.getElementById('open-overview-button').addEventListener('click', activateSelected)
-
-    document.querySelectorAll('[data-wt-row]').forEach(function (row) {
-      row.addEventListener('click', function (event) {
-        if (event.target.closest('[data-wt-delete]')) return
-        selectRow(row)
-      })
-      row.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          selectRow(row)
-        }
-      })
-    })
-
-    document.querySelectorAll('[data-wt-delete]').forEach(function (button) {
-      button.addEventListener('click', function (event) {
-        event.stopPropagation()
-        const row = button.closest('[data-wt-row]')
-        const label = row.dataset.branch + '（' + row.dataset.host + '）'
-        if (!window.confirm('从 Orca 与项目墙解除「' + label + '」的注册？不会删除任何仓库文件。')) return
-        const wasSelected = row.classList.contains('selected')
-        row.remove()
-        updateCounts()
-        updateSources()
-        if (wasSelected) {
-          const first = document.querySelector('[data-wt-row]')
-          if (first) selectRow(first)
-        }
-        if (rows().length === 0) {
-          document.querySelector('.wall-card').hidden = true
-          updateCounts()
-          showToast('最后一个工作树注册已解除，项目已整体移出项目墙；仓库文件未改动')
-          return
-        }
-        showToast('已解除「' + label + '」的注册；仓库与 worktree 文件未改动')
-      })
+      showToast('已解除本机注册，项目整体移出项目墙；仓库与 worktree 文件未改动。Builder 主机的注册不受影响，随主机配对管理')
     })
 
     document.querySelectorAll('[data-native]').forEach(function (button) {
@@ -547,7 +453,7 @@
         document.querySelectorAll('[data-native]').forEach(function (item) { item.classList.toggle('active', item === button) })
         const host = button.querySelector('.native-host').textContent
         const branch = button.querySelector('.native-copy small').textContent.split(' · ')[0]
-        showToast('Orca Projects 是原生全量列表（含未纳入 BW 的工作树）：' + branch + ' · ' + host)
+        showToast('Orca Projects 是原生全量列表（含未纳入 BW 的工作树）：' + branch + ' · ' + host + '；选中后 BW 各屏沿用该主机上下文')
       })
     })
 
