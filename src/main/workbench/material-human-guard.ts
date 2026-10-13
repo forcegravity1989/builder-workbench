@@ -1,4 +1,8 @@
-import type { AcceptanceMaterial, VersionMaterial } from '../../shared/workbench/version-material'
+import type {
+  AcceptanceMaterial,
+  PlanningMaterial,
+  VersionMaterial
+} from '../../shared/workbench/version-material'
 import type {
   VersionMaterialRead,
   VersionMaterialSave
@@ -11,11 +15,12 @@ export type MaterialSaveCaller = {
 }
 
 /**
- * Channel boundary for human-only conclusion fields (decision/preparationReview).
+ * Channel boundary for human-only material fields: acceptance conclusions
+ * (decision/preparationReview) and the planning risk report (summary.risks).
  * Desktop IPC and paired device sockets arrive with an authenticated clientKind;
  * the local Unix-socket CLI — the channel in-session models execute — arrives
  * without one. A human typing `bw materials save` by hand is refused too:
- * conclusions are recorded in the acceptance UI, the CLI channel round-trips them unchanged.
+ * these fields are recorded in the BW UI, the CLI channel round-trips them unchanged.
  */
 export function isModelSaveChannel(caller: MaterialSaveCaller): boolean {
   return caller.clientKind === undefined
@@ -47,6 +52,19 @@ export function humanFieldChanges(
 }
 
 /**
+ * Plan-side human field: the risk report is typed by the user in the planning
+ * UI. The model channel may create a plan with empty risks and must round-trip
+ * existing risks unchanged.
+ */
+export function planHumanFieldChanges(
+  current: PlanningMaterial | null,
+  incoming: PlanningMaterial
+): string[] {
+  const previous = current?.summary.risks ?? ''
+  return previous === incoming.summary.risks ? [] : ['summary.risks']
+}
+
+/**
  * Save-channel guard: model-channel saves must not touch human conclusions, but must
  * stay able to round-trip them unchanged. The authoritative check runs here on the
  * owning runtime; the CLI client cannot be trusted to enforce it.
@@ -56,16 +74,30 @@ export async function assertHumanFieldsUntouched(
   params: VersionMaterialSave,
   caller: MaterialSaveCaller
 ): Promise<void> {
-  if (params.workflow !== 'acceptance' || !isModelSaveChannel(caller)) {
+  if (!isModelSaveChannel(caller)) {
     return
   }
-  // The acceptance-workflow store decodes with AcceptanceMaterialSchema, so the stored
-  // document for this scope is acceptance material. The save params carry
+  // The workflow store decodes with the matching material schema, so the stored
+  // document for this scope carries that workflow's shape. The save params carry
   // expectedRevision/document on top of the read scope; the store's read path validates
   // with the strict VersionMaterialReadSchema, so strip the save-only keys first.
   const { expectedRevision: _expectedRevision, document: _document, ...readInput } = params
+  if (params.workflow === 'plan') {
+    const current = ((await read(readInput))?.document ?? null) as PlanningMaterial | null
+    const changes = planHumanFieldChanges(current, params.document as PlanningMaterial)
+    if (changes.length > 0) {
+      throw new WorkspaceScopeError(
+        'forbidden',
+        `风险上报由用户在计划界面填写，模型通道不能写入或修改（${changes.join('、')}）；其余字段可照常保存`
+      )
+    }
+    return
+  }
+  if (params.workflow !== 'acceptance') {
+    return
+  }
   const current = ((await read(readInput))?.document ?? null) as AcceptanceMaterial | null
-  const changes = humanFieldChanges(current, params.document)
+  const changes = humanFieldChanges(current, params.document as AcceptanceMaterial)
   if (changes.length > 0) {
     throw new WorkspaceScopeError(
       'forbidden',
