@@ -69,10 +69,15 @@ export const CharterStatusRequestSchema = z.strictObject({
 export type CharterStatusRequest = z.infer<typeof CharterStatusRequestSchema>
 
 /**
- * 墙判据读取请求(G3):与 status 同形——repoId 在 owner runtime 的注册表里解析,
- * hostId 供 owner 侧校验路由,不由调用方指路径。
+ * 墙判据读取请求(G3):与 status 同形但独立定义——生成的 rpc-params 目录按
+ * schema 标识方法参数,共用别名会把 status 的参数也标成 read 的 schema。
+ * repoId 在 owner runtime 的注册表里解析,hostId 供 owner 侧校验路由,
+ * 不由调用方指路径。
  */
-export const CharterReadRequestSchema = CharterStatusRequestSchema
+export const CharterReadRequestSchema = z.strictObject({
+  repoId: z.string().min(1),
+  hostId: z.string().min(1)
+})
 export type CharterReadRequest = z.infer<typeof CharterReadRequestSchema>
 
 /**

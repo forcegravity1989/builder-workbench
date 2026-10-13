@@ -558,6 +558,7 @@ import {
   CharterProbeRequestSchema,
   CharterReadRequestSchema,
   CharterScopeSchema,
+  CharterStatusRequestSchema,
   CharterSubmitRequestSchema
 } from '../workbench/charter'
 import { CycleSyncSchema } from '../workbench/cycle-sync'
@@ -1192,7 +1193,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.archive.proof': ArchiveProofRequestSchema,
   'workbench.charter.probeRemote': CharterProbeRequestSchema,
   'workbench.charter.read': CharterReadRequestSchema,
-  'workbench.charter.status': CharterReadRequestSchema,
+  'workbench.charter.status': CharterStatusRequestSchema,
   'workbench.charter.submit': CharterSubmitRequestSchema,
   'workbench.cycle.syncTrunk': CycleSyncSchema,
   'workbench.history.list': VersionHistoryListSchema,

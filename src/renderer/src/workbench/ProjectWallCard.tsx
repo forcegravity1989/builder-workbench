@@ -221,18 +221,18 @@ export function ProjectWallCard({
           <button
             type="button"
             className="wb-btn wb-btn-secondary"
-            data-workbench-add-repo
-            onClick={onAddRepo}
-          >
-            + 代码仓
-          </button>
-          <button
-            type="button"
-            className="wb-btn wb-btn-secondary"
             data-workbench-edit-charter
             onClick={onEditCharter}
           >
             编辑名片
+          </button>
+          <button
+            type="button"
+            className="wb-btn wb-btn-secondary"
+            data-workbench-add-repo
+            onClick={onAddRepo}
+          >
+            + 代码仓
           </button>
         </div>
       </div>

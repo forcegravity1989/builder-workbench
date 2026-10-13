@@ -212,6 +212,8 @@ export function buildWallProjects(
 
   const groupById = new Map(groups.map((g) => [g.id, g]))
   const uf = createUnionFind()
+  // 行键按 repoId:跨主机撞出同一 repoId(理论上 Orca 允许,实际是同一注册的重复行)时
+  // 隐式并卡——方向与 G3「同一项目一张卡」一致;计数与槽仍按行/host 各自去重。
   const rowKey = (repo: Repo): string => `row:${repo.id}`
 
   // 先让每行自成一个集合。
@@ -289,7 +291,7 @@ export function buildWallProjects(
       groupId: group ? group.id : null,
       name: group ? group.name : (sorted.find(isLocalRow) ?? sorted[0]).displayName || '未命名项目',
       primaryRepoId,
-      repoIds: sorted.map((r) => r.id),
+      repoIds: [...new Set(sorted.map((r) => r.id))],
       rows: sorted,
       hostIds: distinctHostIds(sorted),
       slots
