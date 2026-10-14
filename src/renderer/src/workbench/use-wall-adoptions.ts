@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import type { Repo } from '../../../shared/repo-types'
 import type { CharterStatus } from '../../../shared/workbench/charter'
@@ -51,7 +51,22 @@ export async function resolveWallAdoption(project: WallProject): Promise<WallAdo
 }
 
 /**
- * 整面墙的纳入判据加载:projects 或 token(刷新)变化时重算;
+ * 纳入判定的查询集合键（沿 main 上 statusQueryKey 守卫语义）：
+ * 集合与手动刷新 token 都不变时不重发名片读取与 PR 状态查询（gh/codehub-cli 调用不便宜）。
+ * 主机连接翻转不改键——离线跳过由下一轮 repos 更新或手动「刷新」重算兜底。
+ */
+function adoptionQueryKey(projects: readonly WallProject[], token: number): string {
+  return JSON.stringify([
+    token,
+    projects.map((p) => [
+      p.key,
+      p.rows.map((r) => `${r.id}|${getRepoExecutionHostId(r)}|${r.path}`)
+    ])
+  ])
+}
+
+/**
+ * 整面墙的纳入判据加载:查询集合或 token(刷新)变化时重算;
  * loadCount 在每轮完成后 +1,供页面记录「上次刷新时间」。
  */
 export function useWallAdoptions(
@@ -60,8 +75,14 @@ export function useWallAdoptions(
 ): { adoptionByKey: Record<string, WallAdoption>; loadCount: number } {
   const [adoptionByKey, setAdoptionByKey] = useState<Record<string, WallAdoption>>({})
   const [loadCount, setLoadCount] = useState(0)
+  const queryKey = useMemo(() => adoptionQueryKey(projects, token), [projects, token])
+  // 只在成功落地后记录已加载的键:被取消的轮次不消费键,下一次同键触发仍会重跑。
+  const loadedKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
+    if (loadedKeyRef.current === queryKey) {
+      return
+    }
     let cancelled = false
     void (async () => {
       const entries = await Promise.all(
@@ -72,11 +93,12 @@ export function useWallAdoptions(
       }
       setAdoptionByKey(Object.fromEntries(entries))
       setLoadCount((n) => n + 1)
+      loadedKeyRef.current = queryKey
     })()
     return () => {
       cancelled = true
     }
-  }, [projects, token])
+  }, [queryKey, projects])
 
   return { adoptionByKey, loadCount }
 }
