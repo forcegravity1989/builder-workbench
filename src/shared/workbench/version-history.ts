@@ -42,13 +42,15 @@ export type VersionHistoryProblem = Pick<
 > & { code: string; message: string }
 export type VersionHistoryCatalog = {
   baselineCommit?: string
+  /** Display ref of the trunk baseline the catalog was read at (branch or pinned short form). */
+  baselineRef?: string
   records: VersionHistorySource[]
   /** Unreadable entries remain visible without hiding the valid records. */
   problems: VersionHistoryProblem[]
 }
 /**
  * A plan committed on the cycle branch itself (its HEAD tree), not on the
- * adopted baseline: the acceptance board reads the same branch its session
+ * trunk baseline: the acceptance board reads the same branch its session
  * works in. No commit timestamp — tree entries carry none, and consumers
  * must not invent one.
  */
@@ -65,7 +67,7 @@ export type VersionHistoryPlan = {
   document: PlanningMaterial
   revision: string
   planRef: z.infer<typeof PlanReferenceSchema>
-  /** A committed plan is the data.json bytes on the adopted baseline, not a provider merge record. */
+  /** A committed plan is the data.json bytes on the trunk baseline, not a provider merge record. */
   source:
     | { kind: 'committed'; sourceCommit: string; baselineCommit: string; baselineRef: string }
     | { kind: 'draft'; sourceHostId: string; sourceWorktreeId: string }
