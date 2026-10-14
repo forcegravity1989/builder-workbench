@@ -10,17 +10,21 @@
 
 指标窗口确认的历史脚本限制、每次配置新建会话和“对话气泡＋”图标已同步本屏原型与规格；生产指标接线已随 [PR #278](https://github.com/forcegravity1989/builder-workbench/pull/278) 合入，本线不重复实施。原型配置会话仍为内存演示，不作为采集或模型注入通过的证据。
 
-已明确的旅程：Builder 制定目标后与 PL 评审并现场修改目标，纪要预览/复制服务评审后的填写整理，通常在任务拆解与 PR 合入后，也允许在拆解前；复制不代表评审通过。对应 intent/spec/design 与 week-planning 已同步。生产计划板已采用进展/风险共卡片、目标直接编辑、可选多指标、任务标题栏拆解和一行归档入口；上版验收在进展卡片内，预览纪要在目标标题旁。未选版本保留同一布局，各区为空且不写材料；下拉明确选版，旅程轴只滚动定位。目标补充弹窗及常规保存栏已移除，计划样式限定本屏。整体结构已接线，实际视觉密度、键盘/缩放和原生双栏效果仍待真壳验证。
+已明确的旅程：Builder 制定目标后与 PL 评审并现场修改目标，纪要预览/复制服务评审后的填写整理，通常在任务拆解与 PR 合入后，也允许在拆解前；复制不代表评审通过。对应 intent/spec/design 与 week-planning 已同步。生产计划板已采用进展/风险共卡片、目标直接编辑、可选多指标；该轮的任务标题栏拆解按钮与一行归档入口已于 2026-10-13 收敛批随贴草稿通道退役（见该轮记录），归档卡片改为只读状态行；上版验收在进展卡片内，预览纪要在目标标题旁。未选版本保留同一布局，各区为空且不写材料；下拉明确选版，旅程轴只滚动定位。目标补充弹窗及常规保存栏已移除，计划样式限定本屏。整体结构已接线，实际视觉密度、键盘/缩放和原生双栏效果仍待真壳验证。
 
 进入计划／验收工作区已改为先回显、后台调用原有主干同步；同步期间材料只读，计划自动保存暂停，结束后重读材料与候选。复用在途请求并隔离宿主，完成不重选会话。用户已确认本次使用方式；未新增测试用例，提交证据随伴飞修复分支，真实进屏速度及同步失败体验由用户回验。
 
-直接编辑已接自动保存，复用原材料控制器与 CAS；连续写入串行处理，切版、拆解及归档请求先等待当前修改落盘。冲突和写入错误停止自动写入并保留输入，明确处理后才继续；归档不再锁定编辑，两屏共用自动保存、任务列表、归档卡片和请求等待；当前修订的合入证明驱动归档灯与按钮。相关自动保存、冲突及请求接线的本轮检查结果见交付 PR，历史烟测不能替代新路径的重启与模型并发证据。
+直接编辑已接自动保存，复用原材料控制器与 CAS；连续写入串行处理，切版先等待当前修改落盘。冲突和写入错误停止自动写入并保留输入，明确处理后才继续；归档不锁定编辑，两屏共用自动保存、任务列表和归档状态行；旅程灯只读 workflow.stage（2026-10-13 收敛批起，原请求等待框与合入证明驱动已随按钮退役）。相关自动保存与冲突接线的检查结果见各轮交付 PR，历史烟测不能替代新路径的重启与模型并发证据。
 
 版本进展已增加可选固定验收来源；PlanningProgressSource 提供明确选源、固定修订纪要和原始材料只读查看，不覆盖已有进展。schema 兼容、明确选择、修订失配和跨项目异步隔离的 4 项组件/契约测试通过；真实归档来源读取与模型整理进展仍待真壳及会话验证。原型快照、模拟 DOM 与静态检查只证明相应制品，不替代真人浏览器验看和真壳证据。
 
 本轮验证安排：用户授权各特性窗口先做少量基础 E2E，可合并场景覆盖多个验收点；完整验收点与用户旅程由用户后续协调助手 Agent。2026-09-25 用户调整为优先提交各线 PR，允许难协调的接线遗留。本轮统一收尾已把计划业务接入生产入口并退役旧三屏链条，基础 Electron E2E 仍未全部完成，不代表后两环已齐。
 
 当前会话边界按用户确认改为完整原生工作区复用，原型同步表达复用范围和紧凑数据问题提示。CycleChat、专用历史嵌入、sessionStorage 会话绑定及迁移弹窗已移除；新建计划/验收走现有自动化，数据问题当时经独立新建会话自动递交（该通道后由 #279 的 oneShotPrompt 单次递交替代），归档把未发送请求贴进左半屏当前显示的终端会话。计划右板已按认可结构调整，最终视觉与交互仍需结合实际数据逐项验看。上述为此前 [PR #275](https://github.com/forcegravity1989/builder-workbench/pull/275) 的会话复用实施，验证范围与资源限制见该 PR；历史烟测及类型检查不能作为本轮新入口通过的证据。
+
+2026-10-13 Issue #333 收敛批（用户在对齐会话逐项拍板，台账见交付 PR）：旅程灯改为只读材料 `workflow.stage`——模型每完成一阶段经 CLI 写入（准备/目标/评审/拆解/归档），灯为灰/绿两态位置比较（shared/version-workflow），恢复会话时由模型校准 stage。旧推导整体删除：评审灯写死、内容计数灯、归档字节证明链（version-archive、archive-evidence*、archive-current-material、archive-source-gap、version-history-archive-check、use-material-archive、archive-port）与按分支名猜 PR。归档/拆解按钮删除，贴草稿通道整体退役（CycleSessionPort、native-session 贴草稿链、use-cycle-request 等待框）；归档卡片改只读状态行，按模型写入的 `workflow.archivePr` 经新 RPC `workbench.archive.prStatus` 薄读取 PR 合入状态（进屏/材料刷新/手动刷新/聚焦节流重读，读不到保持未知）。进展区在有 progressSource 时内联回显派生只读纪要（use-progress-minutes，读取失败如实提示不回退）；「上版验收」按钮保留。`summary.risks` 纳入人工守卫（模型通道写入被拒），UI 标明风险仅由用户填写。schema2 兼容报错中文化、启动卡补迁移行动路径。历史服务全量 list 改为按版本/流程/cycleId 各列最新一条，取消 draft 过滤与 archive-unverified（选源读取时仍按固定修订核对身份）。week-planning / version-acceptance SKILL 与 version-records 契约同步重写（阶段写入纪律、archivePr、risks 守卫、文本周整、评审后同步 Issue 标题标记与标签），bundled guides 与 RPC catalog 已重新生成。证据：workbench vitest 41 文件 229 例全绿（ratchet 基线 257→229 收紧）、typecheck 0 错、bundled-skill-guides / skill-bundle-manifest / rpc-params-catalog verify 绿；真壳未运行——两屏灯、状态行、进展回显与守卫的真实模型旅程待用户实机验证，模型是否按 SKILL 稳定写 stage 待真实会话取证。
+
+2026-10-13 真壳验证反馈批（同日第二批，用户实机验证后逐项提出）：①「上版验收」按钮从选源弹窗改为直接跳转验收屏（PlanningProgressSource 组件删除；更丰富视图在验收屏，改源归会话由模型写 progressSource），进展区保持内联回显派生纪要，来源行不再显示提交哈希。②验收纪要（deriveAcceptanceReport）与总览验收摘要改为人话正文——周期、材料修订、固定提交、定义指纹、采集元数据等技术标识全部移出纪要（留材料与 Git 追溯），验收 spec A08 判据同步。③存量材料补写 workflow：v0.4/v0.5/v0.6 计划与 v0.5 验收补 stage=archive；archivePr 仅填可查证者——v0.6 计划 #335（归档提交语明示）、v0.5 计划 #294、v0.5 验收 #326（承载当前字节进 main 的首个合并 PR，ancestry-path 查证），v0.4 无干净 PR 证据只补 stage 不编造。④week-planning references/data-and-runtime.md 新增「补写阶段状态（存量材料升级）」节：会话进入或恢复时发现材料缺 workflow 节即按实际进度补写，被管项目存量灯自愈，不需逐文件手工修。⑤CycleArchive 已归档但无 PR 记录的文案改「已归档；PR 链接未记录」。证据：workbench vitest 41 文件 229 例全绿、typecheck 0 错、bundled guides/manifest 重生成并通过 verify；真壳复验待用户执行。
 
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
@@ -37,7 +41,7 @@
 
 进入计划屏确保 bw/week-plan；原生会话、历史和工具直接复用。流程选版仍存 workbenchSelectedVersion，UI 与材料 CLI 共享；会话切换不改变选版。Tasks 返回依赖原生工作区历史，目标筛选和滚动由 view-memory 保留。
 
-未验证项如实保留：真壳烟测已编写，执行结果见 PR；SSH/WSL、配对宿主、真实到点自动化、真实 provider 归档全链未验证。归档状态按材料身份自动读取，归档证明要求 provider 真实合入提交在采用基线上且合入提交树内材料字节与修订一致；归档与合入状态只作提醒信号，不阻塞开轮与历史读取。CodeHub 无真实合入证据一律 Unknown：归档证据读取现为诚实空函数（registeredCodeHubArchiveReason 接缝），待专项接 codehub-cli 读回真实合入状态（2026-09-30 用户拍板记债）。远程 SSH 工作树暂不自动同步主干（只读中继边界），记债待专项。跨周有限场景按 spec：同版本计划/验收各只一轮活动材料，下一轮不被未归档阻塞，唯一开轮门是当前轮未保存修改。
+未验证项如实保留：真壳烟测已编写，执行结果见 PR；SSH/WSL、配对宿主、真实到点自动化、真实 provider 归档全链未验证。旅程灯只读材料 workflow.stage（模型写入，灰/绿两态）；归档 PR 合入状态按材料记录的 archivePr 经 workbench.archive.prStatus 薄读取，只作提醒信号，不阻塞开轮与历史读取。CodeHub 与非 GitHub 来源读不回 PR 状态一律保持未知，待专项接 codehub-cli 读回真实状态（2026-09-30 用户拍板记债；2026-10-13 起接缝为 archive-pr-status，原字节证明链与 registeredCodeHubArchiveReason 已删除）。远程 SSH 工作树暂不自动同步主干（只读中继边界），记债待专项。跨周有限场景按 spec：同版本计划/验收各只一轮活动材料，下一轮不被未归档阻塞，唯一开轮门是当前轮未保存修改。
 
 没有产品 TDD、真壳 E2E、独立验证 Review 或使用效果证据时，保持缺口；不预填齐全、通过或改善比例。
 
@@ -57,7 +61,7 @@
 | P06 分树、全部原生会话复用、专用新建与数据处理入口 | ◐ | CycleWorkspaceProvider + CycleStartCard（首行协作卡片）+ 原生 Terminal/RightSidebar；数据问题随 runNow oneShotPrompt 单次递交 | cycle-start-request 契约测试与 one-shot 转发/登记协议测试通过（2026-09-30 环 4 盘点：CycleStartCard 的 UI 渲染/交互用例已删，卡片行为归验收点 E2E 与真壳）；多标签/分屏/历史与真实手动运行仍待真壳验证 |
 | P07 自动化登记去重、BW 提示覆盖同步、用户设置保留、真实到点可追溯 | ◐ | 默认关闭态注册（ensure-cycle-automation：creationKey 去重、已有条目覆盖同步提示词、用户设置保留、人启用才到点）+ 页头「配置自动化」预填/编辑入口 | 去重/覆盖同步/同步失败放行单测；真实到点与跨重启去重待人启用后验证 |
 | P08 并发保存冲突处理；重启/切项目/切版本读回一致 | ◐ | useMaterialAutosave + MaterialDraftController CAS + PlanningPersistenceNotice + view-memory | 本轮自动保存检查见 PR；既有控制器测试/烟测不能替代新路径的真实并发及重启读回 |
-| P09 归档只准备会话请求；PR 真实状态定灯色 | ◐ | archivePort.prepareRequest 贴进左半屏当前终端会话，不自动发送；archive 状态自动读取+灯色语义（信号不阻断）；归档旁评审状态文本已移除（2026-09-30 返工批，灯保留），archive-label 已删 | archive-port 测试；UI 呈现交验收点 E2E 与真壳 Review；真实 PR 状态与归档请求仍待真壳及 provider 旅程验证 |
+| P09 归档在会话中发起；旅程灯只读 workflow.stage；状态行按 archivePr 显示真实合入状态 | ◐ | stage 序号比较（shared/version-workflow）+ CycleArchive 只读状态行 + archive-pr-port → workbench.archive.prStatus（薄读取，读不到保持未知）；原 prepareRequest 贴草稿通道与字节证明链已于 2026-10-13 退役删除 | version-workflow 单测；UI 呈现交验收点 E2E 与真壳 Review；模型按 SKILL 写 stage 与真实 PR 状态读取仍待真实会话及 provider 验证 |
 | P10 总览按当前采用基线版本目录读摘要；往返保草稿；坏历史不伪造 | ◐ | use-version-minutes+OverviewPage 双栏+problems 列表 | 组件级+烟测总览；多周真实归档回看待人 |
 
 | 旅程 | 状态 | 覆盖 |

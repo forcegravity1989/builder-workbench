@@ -8,6 +8,12 @@ import type { VersionHistoryProblem } from '../../../shared/workbench/version-hi
 function acceptanceText(minutes: VersionMinutes): string {
   const document = minutes.acceptance!.document
   const outcomes = { met: '达成', 'not-met': '未达', pending: '待决' }
+  const artifactKinds: Record<string, string> = {
+    delivery: '交付件',
+    package: '交付包',
+    verification: '验证报告',
+    showcase: '展示材料'
+  }
   return (
     [
       ...document.results.flatMap((result) => {
@@ -15,19 +21,17 @@ function acceptanceText(minutes: VersionMinutes): string {
         return [
           `### ${goal?.title ?? result.goalId}`,
           result.decision
-            ? `${outcomes[result.decision.outcome]} · ${result.decision.recordedAt}\n\n${result.decision.reason}`
+            ? `${outcomes[result.decision.outcome]} · ${result.decision.recordedAt.slice(0, 10)}${result.decision.reason ? `\n\n${result.decision.reason}` : ''}`
             : '未结论',
           ...result.deliveries.map((item) => `- ${item.title}：${item.location}`),
-          ...result.readings.map(
-            (item) =>
-              `- ${item.ref.name}：${item.value}${item.unit}（${item.collectedAt}；${item.source}）`
-          ),
+          ...result.readings.map((item) => `- ${item.ref.name}：${item.value}${item.unit}`),
           result.note,
           result.nextStep ? `下一步：${result.nextStep}` : ''
         ]
       }),
-      document.candidateRef ? `候选提交：${document.candidateRef.commit}` : '',
-      ...document.preparedArtifacts.map((item) => `- ${item.kind}：${item.location}`),
+      ...document.preparedArtifacts.map(
+        (item) => `- ${artifactKinds[item.kind] ?? item.kind}：${item.location}`
+      ),
       taskDistribution(document)
         .map(([state, count]) => `${state} ${count}`)
         .join(' · ')

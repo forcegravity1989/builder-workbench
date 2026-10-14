@@ -61,7 +61,7 @@ export function useAcceptanceBoard({
   const document = draft?.document
   const fixed = useFixedAcceptancePlan(history, metricScope, document?.planRef)
   const plan = fixed.plan
-  const output = useAcceptanceOutput(context, controller, draft, plan, fixed.verification, setError)
+  const output = useAcceptanceOutput(context, controller, draft, plan, setError)
   const associated = Boolean(document && document.version === context.version)
   const readOnly = busy || Boolean(context.syncing) || !associated || !plan
   const lifetime = useRef({ active: true })
@@ -206,18 +206,6 @@ export function useAcceptanceBoard({
       fixed.refresh()
       await refreshDraft()
       await catalog.refresh()
-      await output.archiveStatus()
-    } catch (reason) {
-      setError(String(reason))
-    }
-  }
-  async function prepare(text: string) {
-    try {
-      if (!session) {
-        throw new Error('请先选择或开启左侧会话。')
-      }
-      await context.sessionPort.prepareRequest(session, text)
-      setError(null)
     } catch (reason) {
       setError(String(reason))
     }
@@ -288,12 +276,10 @@ export function useAcceptanceBoard({
     readOnly,
     loadVersion,
     refreshData,
-    flush: autosave.flush,
     saving: autosave.saving,
     retrySave: autosave.save,
     useRemoteDeletion,
     initializationSuppressed,
-    prepare,
     editGoal,
     editReadings
   }

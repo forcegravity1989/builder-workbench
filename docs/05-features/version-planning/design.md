@@ -25,21 +25,21 @@ BW 业务放在 renderer/workbench 下的 version-cycle、version-planning、ver
 
 | 所有者 | 责任 | 不拥有 |
 |---|---|---|
-| BW version-cycle 共享层 | 项目/版本上下文、版本材料读写与自动保存、目标卡骨架、共用任务/归档 UI、会话请求等待与适配 | 调度器、聊天日志、Issue 正文和状态正本 |
+| BW version-cycle 共享层 | 项目/版本上下文、版本材料读写与自动保存、目标卡骨架、共用任务/归档状态行 UI | 调度器、聊天日志、Issue 正文和状态正本 |
 | 计划 | 版本目标、总结、任务引用、派生纪要 | 验收结论、指标采集实现 |
 | 验收 | 固定计划引用、实际交付、人的结论和后续 | 改写原承诺、自动完成 Issue |
 | 指标 | 定义、窗口、采集和读数；详见 [指标设计](../overview-metrics/design.md) | 版本目标值和验收结论 |
 | Orca | Tasks、工作树、会话、Automations、项目/宿主身份、通用文件与命令权限 | BW 的业务规则 |
 
-共享接口已按职责落地为 renderer 端口 + 原生 RPC：VersionHistoryPort.list/read/readPlan（version-history-port，按固定 Git 提交发现及读取多周记录）、「配置指标」经 CycleWorkspaceProvider 直接进入 bw/metrics-refresh 固定维护树原生会话（提示由指标模块提供；不设端口抽象，原死契约 MetricSetupPort 已随收尾代码批删除）、VersionDocumentPort.read/save(expectedRevision)（version-material-port）、TaskPort.listVersion/openDetail(origin)/refresh（task-port，github.workItem / codehub.viewTask 复用原生读取层，单条失败 kind:'unavailable'）、CycleSessionPort.prepareRequest（version-cycle/ports + native-session，仅识别当前原生焦点并插入未发送草稿）、ArchivePort.readStatus（archive-port）、MetricsPort.list/read/refresh（metrics-port，指标端定义）。底层仍调用原生能力，不另建存储。
+共享接口已按职责落地为 renderer 端口 + 原生 RPC：VersionHistoryPort.list/read/readPlan（version-history-port，按固定 Git 提交发现及读取多周记录）、「配置指标」经 CycleWorkspaceProvider 直接进入 bw/metrics-refresh 固定维护树原生会话（提示由指标模块提供；不设端口抽象，原死契约 MetricSetupPort 已随收尾代码批删除）、VersionDocumentPort.read/save(expectedRevision)（version-material-port）、TaskPort.listVersion/openDetail(origin)/refresh（task-port，github.workItem / codehub.viewTask 复用原生读取层，单条失败 kind:'unavailable'）、ArchivePrPort.readStatus（archive-pr-port → workbench.archive.prStatus，按材料记录的 workflow.archivePr 编号薄读取 PR 合入状态，读不到保持 unknown）、MetricsPort.list/read/refresh（metrics-port，指标端定义）。原 CycleSessionPort.prepareRequest 贴草稿通道与 ArchivePort.readStatus 字节证明链已整体退役删除。底层仍调用原生能力，不另建存储。
 
 ## 版本材料与写入
 
-PlanningBoard 保留未选版本与已选版本的同一骨架：顶部明确选版，正文依次为进展/风险、目标、页内任务和一行归档入口。PlanningJourneyNav 只滚动定位正文，不发起请求、不以点击标记评审完成。VersionGoalCard 的计划分支直接编辑目标、交付件和可选验收说明；验收只读分支不变。PlanGoalMetrics 逐条编辑可选指标承诺，完整保留多指标，定义和采集依据按需展开。预览纪要在目标标题旁，拆解在任务标题栏；取消目标补充弹窗和常规保存栏。计划样式在 version-planning.css、planning-fields.css 和 planning-dialogs.css 内限定，不改变总览。
+PlanningBoard 保留未选版本与已选版本的同一骨架：顶部明确选版，正文依次为进展/风险、目标、页内任务和一行归档状态。PlanningJourneyNav 只滚动定位正文并显示 workflow.stage 灯，不发起请求、不以点击标记评审完成。VersionGoalCard 的计划分支直接编辑目标、交付件和可选验收说明；验收只读分支不变。PlanGoalMetrics 逐条编辑可选指标承诺，完整保留多指标，定义和采集依据按需展开。预览纪要在目标标题旁；进展区在 summary.progressSource 存在时内联回显派生只读纪要（use-progress-minutes），无引用或读取失败时显示文本输入；风险输入仅由用户填写（模型通道被人工守卫拒绝）。取消目标补充弹窗和常规保存栏。计划样式在 version-planning.css、planning-fields.css 和 planning-dialogs.css 内限定，不改变总览。
 
-usePlanningMaterial 继续复用 MaterialDraftController 的本地草稿、远端修订与 CAS，不新增材料副本。usePlanningAutosave 对连续编辑去抖并串行写入；写入期间的新编辑继续保留，在显式 flush 时排空到最新修订后才返回。版本切换及拆解/归档请求先 flush，写入前复核当前范围、材料身份与归档状态。冲突、远端删除或错误暂停自动写入，由 PlanningPersistenceNotice 提供保留双方内容、重读或明确重试；不以自动重试覆盖模型编辑。轮询只发现材料变化；归档状态尚未核实或已归档时不允许写入。组件/控制器检查不替代真壳输入、重启及真实模型并发验证。
+usePlanningMaterial 继续复用 MaterialDraftController 的本地草稿、远端修订与 CAS，不新增材料副本。usePlanningAutosave 对连续编辑去抖并串行写入；写入期间的新编辑继续保留，在显式 flush 时排空到最新修订后才返回。版本切换先 flush，写入前复核当前范围与材料身份。冲突、远端删除或错误暂停自动写入，由 PlanningPersistenceNotice 提供保留双方内容、重读或明确重试；不以自动重试覆盖模型编辑。轮询只发现材料变化，旅程灯随轮询到的 workflow.stage 更新。组件/控制器检查不替代真壳输入、重启及真实模型并发验证。
 
-保留 .bw/planning/<version>/data.json，目标 schema_version=3；原结构里的 plan.goals 演进为稳定 goalId 对应的结果承诺、可选交付说明/验收说明、可选 metricRef 与版本目标。风险和进展保持 summary 语义；版本进展以上版验收纪要为来源，标明所述版本，不把上版结果冒称本版成绩。可选 summary.progressSource 保存明确选定验收的 version/cycleId/sourceCommit/revision，不推断版本顺序。PlanningProgressSource 懒读 VersionHistoryPort.list/read/readPlan，经固定修订核对后用 deriveAcceptanceReport 生成只读纪要，并提供原始 JSON；来源失败不回退，异步结果受工作区及材料身份约束。选择引用不覆盖 summary.progress，内容由会话按授权整理，经同一 CAS 保存；既有 schema3 无引用仍可读，未真实验证模型带入行为。版本周期不由自然周推断。计划入口初态为待选择版本，列举候选不写盘；用户在 UI 或会话明确选择后才加载可编辑材料，明确新建后才创建。禁用 mtime 推断当前版本与自动 init default；加载失败不能新建替代物。
+保留 .bw/planning/<version>/data.json，目标 schema_version=3；原结构里的 plan.goals 演进为稳定 goalId 对应的结果承诺、可选交付说明/验收说明、可选 metricRef 与版本目标。可选 workflow 节记录模型写入的 SOP 阶段（stage/updatedAt/archivePr，契约在 shared/version-workflow 与 version-records），旅程灯只对它做序号比较。风险和进展保持 summary 语义；版本进展以上版验收纪要为来源，标明所述版本，不把上版结果冒称本版成绩。可选 summary.progressSource 保存明确选定验收的 version/cycleId/sourceCommit/revision，不推断版本顺序。use-progress-minutes 懒读 VersionHistoryPort.read/readPlan，经固定修订核对后用 deriveAcceptanceReport 生成内联只读纪要（人话正文，不含技术标识）；「上版验收」按钮跳转验收屏看完整记录与原始材料，不再保留选源弹窗。来源失败不回退，异步结果受工作区及材料身份约束。选择引用不覆盖 summary.progress，内容由会话按授权整理，经同一 CAS 保存；既有 schema3 无引用仍可读，未真实验证模型带入行为。版本周期不由自然周推断。计划入口初态为待选择版本，列举候选不写盘；用户在 UI 或会话明确选择后才加载可编辑材料，明确新建后才创建。禁用 mtime 推断当前版本与自动 init default；加载失败不能新建替代物。
 
 任务只保存 provider/repo/number 与 goalId 的引用，展示状态从 Orca provider 读回；缓存有读取时间，离线不是空任务。三段纪要从目标纯函数生成，不再存 live_notes、transcript、独立可编辑 minutes。协议细节的唯一模型参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
 
@@ -73,11 +73,13 @@ schema2 通过一次显式迁移转为新计划；原文件/提交保留来源�
 
 TaskOrigin 携带项目、页面、版本、目标筛选、滚动和草稿引用。利用原导航历史返回，正文保存仍走原生权限与 mutation/cache；状态刷新不触发完成。项目切换和任务里进一步跳转后仍按有效来源恢复，来源已失效时给明确返回入口，不悄悄落回错误版本。
 
-## 评审、归档与灯色
+## 阶段状态、归档与灯色
 
-会议纪要为评审后填写纪要时使用的纯派生输出；PL 与 Builder 在评审会上直接修改目标原件。预览和复制不设置任务拆解或 PR 合入前置，不确认计划，打开弹窗不写批准。人的决定绑定内容修订；保存、评审、PR 待审、PR 合入分别判断。归档按钮把可编辑请求贴进左半屏当前显示的终端会话，由用户发送；左侧没有终端会话时提示先新建或打开，不私下创建 PR。
+会议纪要为评审后填写纪要时使用的纯派生输出；PL 与 Builder 在评审会上直接修改目标原件。预览和复制不设置任务拆解或 PR 合入前置，不确认计划，打开弹窗不写批准。人的评审决定在会话中明确表达后由模型记录 `workflow.stage=review`；页面不设评审控件，不从打开纪要推定。
 
-PR 关联存 provider/repo/number 和对应文档修订，实际 state/check/review 从原生 provider 读取。合入后的内容与当前草稿修订不同，则提示待归档变化，不能沿用旧绿灯。颜色规则来自 spec，按数据纯函数推导。
+旅程灯唯一数据源是材料里的 `workflow.stage`（模型经 CLI 每完成一阶段写入）：灯位不超过 stage 为绿，否则灰，推导是 shared/version-workflow 的位置比较纯函数，没有内容启发式、计数判断或 provider 探测。stage 是进度信号不是完成权威；材料改动不使灯变色，内容实质调整由模型在会话中回退 stage。
+
+归档在会话中发起：模型写 `stage=archive` → 按项目门禁提 PR → 把 provider/repository/number 写入 `workflow.archivePr`。归档卡片是只读状态行：按 archivePr 经 `workbench.archive.prStatus` 薄读取合入状态（merged/open/closed，一次 `pulls/{n}` 读取；非 GitHub 或读不到保持 unknown），进屏、材料刷新、手动刷新与窗口聚焦（节流）触发重读。原字节级合入证明、按分支名探测 PR、changed/unknown 状态机与贴草稿按钮通道（归档/拆解/未达跟进及等待框）已整体删除，不留双路径。
 
 ## 总览中的版本记录
 

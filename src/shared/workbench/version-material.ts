@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { TaskSourceContextSchema } from '../task-source-context-schema'
 import { normalizeExecutionHostId } from '../execution-host'
 import { validatePlanningVersion } from './version-document'
+import { AcceptanceWorkflowStateSchema, PlanWorkflowStateSchema } from './version-workflow'
 
 const Id = z.string().trim().min(1)
 export const MaterialVersion = z.string().superRefine((value, context) => {
@@ -143,7 +144,10 @@ export const PlanningMaterialSchema = z
       progressSource: PlanningProgressSourceSchema.optional()
     }),
     goals: z.array(VersionGoalSchema),
-    tasks: z.array(VersionTaskReferenceSchema)
+    tasks: z.array(VersionTaskReferenceSchema),
+    // Session-model-written SOP progress; absent means not started. Lamps only
+    // compare positions against it — never a completion authority by itself.
+    workflow: PlanWorkflowStateSchema.optional()
   })
   .superRefine((document, context) => {
     const ids = new Set(document.goals.map((goal) => goal.goalId))
@@ -229,7 +233,9 @@ export const AcceptanceMaterialSchema = z
         note: z.string(),
         nextStep: z.string()
       })
-    )
+    ),
+    // Session-model-written SOP progress; absent means not started.
+    workflow: AcceptanceWorkflowStateSchema.optional()
   })
   .superRefine((document, context) => {
     if (document.planRef.version !== document.version) {
