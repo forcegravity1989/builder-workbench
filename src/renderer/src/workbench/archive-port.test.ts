@@ -183,5 +183,7 @@ it('prepares an editable archive request into the native session composer', asyn
   expect(preparedSession).toBe(session)
   expect(text).toContain('v0.5')
   expect(text).toContain('.bw/planning/v0.5/data.json')
-  expect(text).toContain('按项目约定提交 PR')
+  expect(text).toContain('在当前 bw/week-plan 固定工作树内提交')
+  expect(text).toContain('创建由 bw/week-plan 到主分支的 PR/MR')
+  expect(text).toContain('不要另建工作树或分支')
 })
