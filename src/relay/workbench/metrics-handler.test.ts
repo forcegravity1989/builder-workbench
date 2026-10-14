@@ -54,7 +54,8 @@ describe('workbench.metrics.execute relay executor', () => {
     ).toEqual({ ok: true, value: { configurationCommit: sha, toml: null } })
     expect(readMetricConfiguration).toHaveBeenCalledWith({
       repoPath: '/srv/project',
-      adoptedRef: null
+      pinnedRef: null,
+      configurationCommit: undefined
     })
 
     fingerprintMetricCollector.mockResolvedValue('sha256:fingerprint')
@@ -132,13 +133,13 @@ describe('workbench.metrics.execute relay executor', () => {
   it('surfaces core failures as typed error envelopes', async () => {
     const { MetricCollectorError } = await import('../../main/workbench/metrics/collector-output')
     readMetricConfiguration.mockRejectedValue(
-      new MetricCollectorError('configuration-not-adopted', '试采草稿不能作为正式读数来源')
+      new MetricCollectorError('baseline-invalid', '项目基线已失效；不改用其他分支读取历史')
     )
     expect(
       await call({ target, operation: 'configuration', request: { adoptedRef: null } })
     ).toEqual({
       ok: false,
-      error: { code: 'configuration-not-adopted', message: '试采草稿不能作为正式读数来源' }
+      error: { code: 'baseline-invalid', message: '项目基线已失效；不改用其他分支读取历史' }
     })
   })
 })

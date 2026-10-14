@@ -28,9 +28,9 @@ const Command = z.strictObject({
 })
 
 const ConfigurationRequest = z.strictObject({
+  // Wire name predates the trunk unification; carries the pinned worktreeBaseRef.
   adoptedRef: z.string().min(1).nullable(),
-  configurationCommit: Sha.optional(),
-  synchronize: z.boolean().optional()
+  configurationCommit: Sha.optional()
 })
 const FingerprintRequest = z.strictObject({ configurationCommit: Sha, run: Argv })
 const CollectRequest = z.strictObject({
@@ -77,11 +77,14 @@ export function registerMetricsRelay(dispatcher: Pick<RelayDispatcher, 'onReques
     const { target, operation, request } = Command.parse(params)
     return workbenchRuntimeResult(async () => {
       switch (operation) {
-        case 'configuration':
+        case 'configuration': {
+          const parsed = ConfigurationRequest.parse(request)
           return readMetricConfiguration({
             repoPath: target.repoPath,
-            ...ConfigurationRequest.parse(request)
+            pinnedRef: parsed.adoptedRef,
+            configurationCommit: parsed.configurationCommit
           })
+        }
         case 'fingerprint':
           return fingerprintMetricCollector({
             repoPath: target.repoPath,

@@ -17,7 +17,7 @@ import {
 } from '../../../shared/worktree/create-preparation'
 import type { GitWorktreeExecOptions } from '../../git/worktree-operation-options'
 import { MetricCollectorError } from './collector-output'
-import { adoptedMetricsSource } from './adopted-source'
+import { resolveTrunkBaseline } from '../trunk-baseline'
 
 export const METRICS_CONFIGURATION_PATH = '.bw/metrics.toml'
 /** Protocol default for collector scripts; must stay below the renderer's 910s RPC budget. */
@@ -53,7 +53,7 @@ export function computeMetricsCheckoutRoot(repoPath: string, worktreeBasePath?: 
 export type MetricConfigurationSnapshot = {
   configurationRef: string
   configurationCommit: string
-  /** Head of the adopted source at read time — the real data target, never the checkout. */
+  /** Trunk baseline head at read time — the real data target, never the checkout. */
   dataCommit: string
   toml: string | null
   /** IANA timezone of the host that executed the read. */
@@ -61,40 +61,24 @@ export type MetricConfigurationSnapshot = {
 }
 
 /**
- * Reads .bw/metrics.toml from a fixed revision of the adopted source. Without
- * an explicit configurationCommit the current adopted head pins the catalog;
- * with one, that revision must already be merged into the adopted source, so a
- * configuration draft can never become an official reading source.
+ * Reads .bw/metrics.toml from a fixed revision of the trunk baseline: the main
+ * checkout's HEAD, or the pinned base ref when the repo settings carry one. No
+ * fetch and no branch-name probes — freshness is the「更新代码」button's job,
+ * and this read never moves anything. Without an explicit configurationCommit
+ * the trunk head pins the catalog; official readings only ever reference
+ * commits the catalog issued from this same baseline, so a configuration draft
+ * can never become an official reading source.
  */
 export async function readMetricConfiguration(input: {
   repoPath: string
-  adoptedRef: string | null
+  pinnedRef: string | null
   configurationCommit?: string
-  synchronize?: boolean
   execOptions?: MetricsExecOptions
 }): Promise<MetricConfigurationSnapshot> {
   const { repoPath, execOptions = {} } = input
   const exec = repoExec(repoPath, execOptions)
-  const baseline = await adoptedMetricsSource(
-    repoPath,
-    input.adoptedRef,
-    execOptions,
-    input.synchronize
-  )
-  let configurationCommit = baseline.commit
-  if (input.configurationCommit) {
-    configurationCommit = input.configurationCommit
-    if (configurationCommit !== baseline.commit) {
-      try {
-        await exec(['merge-base', '--is-ancestor', configurationCommit, baseline.commit])
-      } catch {
-        throw new MetricCollectorError(
-          'configuration-not-adopted',
-          '该配置修订不在项目正式采用来源上，试采草稿不能作为正式读数来源'
-        )
-      }
-    }
-  }
+  const baseline = await resolveTrunkBaseline(exec, input.pinnedRef)
+  const configurationCommit = input.configurationCommit ?? baseline.commit
   const blob = await readGitBlobAtOidPath(
     repoPath,
     configurationCommit,
@@ -203,7 +187,7 @@ export async function executeMetricCollection(input: {
       })
     ).stdout.trim()
     if (head !== input.configurationCommit) {
-      throw new MetricCollectorError('execution-root-invalid', '执行根与已采用配置修订不一致')
+      throw new MetricCollectorError('execution-root-invalid', '执行根与指定配置修订不一致')
     }
     const args = [...input.run.slice(1), ...input.args]
     outcome = wsl
