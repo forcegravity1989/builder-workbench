@@ -8,7 +8,11 @@
 # Shipped skill trees are byte-hashed into resources/skills artifacts (size /
 # exactSha256 / gitTreeSha derive from working-tree bytes); a CRLF checkout makes
 # a Windows regeneration disagree with Linux CI on the unreleased tail snapshot.
-/skills/** text eol=lf
+# Scoped to *.md (all current skill files) rather than /** because the bundle
+# protocol supports binary assets (classification: 'binary') and a blanket
+# `text` would corrupt them at check-in; a future non-md TEXT asset needs its
+# own pin — verify:skill-bundle-manifest fails loudly on the resulting drift.
+/skills/**/*.md text eol=lf
 /src/cli/bundled-skill-guides.ts text eol=lf
 # Bundled plugin trees are byte-hashed; CRLF checkout would break the pinned hash.
 /resources/plugins/** text eol=lf
