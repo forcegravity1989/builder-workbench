@@ -16,6 +16,8 @@
 
 2026-10-13 Issue #333 收敛批（与计划屏同批，机制细节见[版本计划 STATUS](../version-planning/STATUS.md) 同轮记录）：旅程灯改为只读材料 `workflow.stage`（准备交付 preparation / 展示验收 showcase / 归档 archive，模型写入，灰/绿两态）；准备灯的证据完备性推导、archiveSignal/decisionSignal/preparationSignal（acceptance-journey.ts）与「检查文件与候选」在线探测（acceptance-candidate-port）整体删除，来源行只呈现记录事实与纯声明比对（artifactCandidateCheck）；人工结论 decision 及证据新鲜度机制保留不变（仅 UI 可写）。归档按钮与「交给会话」未达跟进按钮删除（贴草稿通道整体退役），归档卡片改只读状态行，按 `workflow.archivePr` 薄读取 PR 合入状态（useArchivePrStatus，读不到保持未知）。预览纪要报告的核对行相应精简（保留固定计划核验与结论新鲜度，去掉在线文件/执行探测行）。证据与未验项同计划屏该轮记录：workbench 套件 229 例绿、typecheck 0 错；真壳与真实模型旅程待用户实机验证。
 
+2026-10-13 真壳验证反馈批（同日第二批，与计划屏同批，机制详见[版本计划 STATUS](../version-planning/STATUS.md) 同轮记录）：验收纪要（deriveAcceptanceReport）与总览验收摘要改为人话正文——周期/修订/固定来源/候选提交/定义指纹/采集元数据等技术标识移出纪要，只保留目标结论（含证据变化待核标记）、约定与实际交付、指标实测与目标、Issue 快照（仓库#编号形式）、未达与后续；A08 判据同步修订。存量 v0.5 验收材料补写 workflow.stage=archive 与 archivePr=#326（ancestry-path 查证）。纪要相关测试断言随新格式更新（例数不变）。证据同计划屏该轮：229 例全绿、typecheck 0 错；真壳复验待用户执行。
+
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
 | intent | ● 已确认 | 沿用三特性边界，用户确认会话准备材料、逐目标核对及本轮资产同步 |
@@ -50,7 +52,7 @@
 | A05 Issue 真实状态可刷新、无拆解入口、关闭数≠达成 | ✅ | CycleTasks 共用列表与验收快照+灯色守卫 | board-state/acceptance 测试 |
 | A06 原生详情编辑后按来源返回、保留版本/会话/草稿 | ◐ | returnToPreviousView+view-memory 与原生工作区恢复 | 导航测试；真实 CodeHub/GitHub 往返待人 |
 | A07 同一候选展示、人逐目标判断、未达可保存带入会话 | ✅ | AcceptanceGoalResult decision 流（「交给会话」按钮已随贴草稿通道于 2026-10-13 退役，后续安排在卡内文本框记录、会话中讨论）；材料 RPC save 通过 material-human-guard 拦截 CLI 对人工结论字段与计划 summary.risks 的新增、修改与删除 | material-human-guard 测试（acceptance-interaction 已随环 4 裁剪，UI 交互交验收点 E2E 与真壳）；真实模型会话与人工核对旅程待验 |
-| A08 纪要可复制含候选/来源/待核/未达；归档后总览回看 | ◐ | deriveAcceptanceReport + 标题旁“预览纪要”弹窗（AcceptanceReportDialog）+ 总览双栏 | report 测试；真实归档回看待人 |
+| A08 纪要可复制含结论/交付/指标/未达人话正文；归档后总览回看 | ◐ | deriveAcceptanceReport（技术标识已剔除）+ 标题旁“预览纪要”弹窗（AcceptanceReportDialog）+ 总览双栏 | report 测试；真实归档回看待人 |
 | A09 跨树隔离/并发/重启/脏树不丢输入；包证不符不沿完成态 | ◐ | draft recovery + decision 证据新鲜度（decisionFreshness，证据变化旧结论标待重新核对）；在线候选探测已退役，仅剩纯声明比对 | 恢复测试；脏树真机待人；脏树/未归档提交检查为提示级（会话承担），无代码落点 |
 | A10 原生自动化真实到点、新周期新会话、入口不重复 | ◐ | 默认关闭态注册（creationKey 去重、reuseSession=false、BW 提示覆盖同步、用户设置保留） | 新建验收的手动运行、原生恢复和真实到点均待真壳验证 |
 
