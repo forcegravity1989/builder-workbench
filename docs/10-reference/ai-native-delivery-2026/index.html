@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="source-sha256" content="bbefe317651fa4b14f4b5750229b803b0b50ce1677a0e1f53030ec7f31aee36d">
+<title>梳理 BW 加持能力的价值：AI Coding 之后，一个 Builder 怎样交付真实价值 · BW 研究</title>
+<link rel="stylesheet" href="report.css">
+</head>
+<body>
+<a class="skip" href="#content">跳到正文</a>
+<header class="masthead"><a href="index.html" class="brand">BW / RESEARCH</a><span>AI Coding 之后，项目怎样走到真实交付</span><a class="source" href="README.md">阅读 Markdown 正源</a></header>
+<div class="layout"><aside><nav aria-label="专题报告"><a href="index.html" aria-current="page">总览与阅读地图</a>
+<a href="anthropic-sdlc.html">Claude · AI-native SDLC</a>
+<a href="workbuddy-codebuddy.html">WorkBuddy / CodeBuddy</a>
+<a href="orca.html">Orca · 执行与协作</a>
+<a href="openai-codex.html">OpenAI · 证据与反馈循环</a>
+<a href="cursor-linear.html">Cursor / Linear · 工作组织</a>
+<a href="spotify.html">Spotify · 从执行到用户反馈</a>
+<a href="evidence-and-metrics.html">DORA / METR · 度量与实证</a></nav><details open class="toc"><summary>本篇目录</summary><a href="#section-1">两份独立阅读文件</a>
+<a href="#section-2">阅读地图：七份专题，不把一篇文章当行业共识</a>
+<a href="#section-3">先把初心说清楚：BW 的增量价值是什么</a>
+<a href="#section-4">结合 v0.6 评论后的收敛边界</a>
+<a href="#section-5">已经对齐的用户问题</a>
+<a href="#section-6">这轮研究改变了哪些判断</a>
+<a href="#section-12">一个 Builder 的故事，以及共享 SE/Leader 为什么需要看见它</a>
+<a href="#section-16">对照 BW：三条投资线，四块能力都要经得起反证</a>
+<a href="#section-17">当前仓库给出的具体线索</a>
+<a href="#section-18">下一步：把一个真实项目的故事跑完整</a>
+<a href="#section-19">仍须与真实项目对齐的问题</a>
+<a href="#section-20">给后续模型的接续与维护方式</a></details></aside>
+<main id="content"><div class="eyebrow">2026.10.09 · 外部研究参考 · 待真实项目验证</div><article><h1 id="section-0">梳理 BW 加持能力的价值：AI Coding 之后，一个 Builder 怎样交付真实价值</h1>
+<blockquote>
+<p><strong>30 秒导读</strong>：本轮把“有 Orca 的 Builder 为什么还需要 BW”作为待证明问题。调研覆盖 Anthropic、WorkBuddy/CodeBuddy、Orca、OpenAI、Cursor、Linear、Spotify、DORA 和 METR，重点是 2025-10-09 至 2026-10-09 的变化。研究场景已明确为一项目一 Builder，多个项目共用一位 SE 和一位 Leader。BW 值得验证的是帮助 Builder 守住目标、交付和反馈，让共享支持者看清何处需要介入；四块屏幕是否必要，要用实际交付和新增负担判断。</p>
+<p><strong>维护约定</strong>：供人审议产品方向、未来模型恢复背景时阅读；这里只保存外部研究、仓库基线及研究假设，不替代产品原则、特性规格或验收。结构为阅读地图、用户问题、新发现、BW 对照、试点和未决问题。来源或试点结果改变时更新；外部研究截止 2026-10-09，组织场景依据用户澄清于 2026-10-11 修订。Markdown 为内容正源，HTML 为可再生阅读视图；建议尚未获得产品决定授权。</p>
+</blockquote>
+<h2 id="section-1">两份独立阅读文件</h2>
+<ul>
+<li><strong><a href="report.html">完整总报告</a></strong>：本页结论与七份专题合为一个离线 HTML，样式和阅读交互均在文件内；可先读结论，再展开专题。原始引文和钉提交的仓库证据需要联网查看。</li>
+<li><strong><a href="../../05-features/overview-metrics/ai-native-delivery-proposal/prototype.html">新的高保真原型</a></strong>：独立的跨屏讨论提案，用 BW 自身 v0.5 的真实材料区分已交付、未知与待决定事项；缺口可带入下一轮候选计划，验收结果和后续安排回到总览。实际快照、周/阶段目标提案及虚构试点演示分别标识。它不替换当前已确认的原型或规格。</li>
+</ul>
+<p>原型的目的是检验“是否更容易做出下一步决定”，不是预先批准新功能。单文件交付便于保存和转交；内容与可编辑原型源码仍留在仓内对应目录。</p>
+<h2 id="section-2">阅读地图：七份专题，不把一篇文章当行业共识</h2>
+<table>
+<thead>
+<tr>
+<th>专题</th>
+<th>重点回答什么</th>
+<th>阅读入口</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Anthropic / Claude</td>
+<td>AI-native SDLC、内部真实实践与最新自主性度量有哪些差异</td>
+<td><a href="anthropic-sdlc.html">HTML</a> · <a href="anthropic-sdlc.md">正源</a></td>
+</tr>
+<tr>
+<td>WorkBuddy / CodeBuddy</td>
+<td>项目、Goal、编排、工作树和发布已经覆盖到哪里</td>
+<td><a href="workbuddy-codebuddy.html">HTML</a> · <a href="workbuddy-codebuddy.md">正源</a></td>
+</tr>
+<tr>
+<td>Orca</td>
+<td>执行、协作、评审、可靠性正在怎么演进，BW 吸收了多少</td>
+<td><a href="orca.html">HTML</a> · <a href="orca.md">正源</a></td>
+</tr>
+<tr>
+<td>OpenAI / Codex</td>
+<td>如何让目标可停止、运行证据可复用、失败可反馈</td>
+<td><a href="openai-codex.html">HTML</a> · <a href="openai-codex.md">正源</a></td>
+</tr>
+<tr>
+<td>Cursor / Linear</td>
+<td>从单任务走到持续项目，人与 Agent 怎样分工</td>
+<td><a href="cursor-linear.html">HTML</a> · <a href="cursor-linear.md">正源</a></td>
+</tr>
+<tr>
+<td>Spotify</td>
+<td>从并行代码执行走到真实使用、实验与下一轮改进</td>
+<td><a href="spotify.html">HTML</a> · <a href="spotify.md">正源</a></td>
+</tr>
+<tr>
+<td>DORA / METR</td>
+<td>哪些数字能解释价值，哪些只是活动、感知或代理指标</td>
+<td><a href="evidence-and-metrics.html">HTML</a> · <a href="evidence-and-metrics.md">正源</a></td>
+</tr>
+</tbody></table>
+<p>建议先读本页，再读 Spotify、DORA/METR 和 Anthropic；评估产品重复建设时读 Orca、Cursor/Linear 与 WorkBuddy；讨论执行反馈的实现思路时读 Codex。各专题均附原始链接、日期、证据局限、可借鉴做法与反证。</p>
+<p>六份厂商/实践专题由独立 subagent 深研并落稿，DORA/METR 和本页由主线程综合。分工只是减少遗漏，不能替代事实核查或用户验证。故事明确区分真实自述与依据机制重建的示例。</p>
+<p>专题中保留的多人案例、规模实验和多 Agent 编排，只作为外部机制参考；它们不改变 BW 的默认组织模型，也不构成内部项目的收益证据。</p>
+<h2 id="section-3">先把初心说清楚：BW 的增量价值是什么</h2>
+<p>这份调研承接“梳理 BW 加持能力的价值”这个问题。它不是要证明 AI Coding 提效，也不是要把 BW 做成另一套项目管理软件；要问的是：<strong>当 Orca、Agent 和现有研发工具已经能帮助 Builder 产出代码时，BW 额外帮助 Builder、共享 SE/Leader 和真实用户完成了什么？</strong></p>
+<p>当前最稳妥的价值假设是：BW 把一个 Builder 的连续责任串起来——为什么做、本轮交付什么、用户是否真的用上、哪里受阻、下一步依据什么取舍——并让共享 SE/Leader 能在需要时看见同一份证据。这个假设只有在真实交付中改变了决定、减少了无效劳动或更早让用户用上时才成立；页面数量、任务完成数和 Agent 活跃度都不能单独证明它成立。</p>
+<p>因此，报告中的“项目管理”不是增加审批层，而是检验一条价值链：</p>
+<p><code>目标与问题 → 本版承诺 → 实际交付与使用 → 证据与未知 → 人的下一步决定</code></p>
+<p>一周和一个月是帮助观察这条链的两个时间尺度，不是必须新增的管理仪式。周尺度要回答“这周究竟交付了什么、什么阻断了使用”；月尺度要回答“项目对外产生了什么可持续的价值、是否值得继续投入”。两者都必须允许 Unknown，也必须保留人的判断。</p>
+<h2 id="section-4">结合 v0.6 评论后的收敛边界</h2>
+<p>下面是 owner 对 v0.6 G2 的补充输入，<strong>是产品规划输入，不是本轮调研已经证明的事实，也不是已批准的规格</strong>。它把近期交付和更远的研究问题分开：</p>
+<table>
+<thead>
+<tr>
+<th>层次</th>
+<th>当前应做什么</th>
+<th>要证明什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>v0.6 近期交付</td>
+<td>收敛项目墙、总览、计划、验收的 BUG 与易用性；验收补周报；让计划与验收形成闭环</td>
+<td>Builder 能否少做重复整理，讲清一周交付与阻断；下一轮范围是否由验收证据真正改变</td>
+</tr>
+<tr>
+<td>月度价值问题</td>
+<td>观察项目在月粒度上对外产生的商业价值，而不是把任务完成率叫作价值</td>
+<td>总览/阶段回看能否让 Builder 和 Leader 说清用户或业务发生了什么变化，证据缺口是什么</td>
+</tr>
+<tr>
+<td>更远的牵引假设</td>
+<td>研究“持续对外呈现价值的牵引功能”是否比“里程碑”更准确</td>
+<td>它是否会改变投入、范围或找用户的决定；是否值得独立产品能力</td>
+</tr>
+</tbody></table>
+<p>所以，v0.6 不需要现在就回答长期牵引功能的最终形态；但周报也不能只做一份格式化总结。它应尽量从已有计划、验收和运行/使用证据中整理出“承诺、实际结果、阻断、未知和下一步”，否则只是新增填报。计划—验收闭环的价值也不在于两屏互相跳转，而在于验收结果确实能收敛下一轮承诺。</p>
+<p>这条边界也修正本轮原型的定位：它可以讨论周观察、阶段回看和证据回流，但不把它们包装成已经交付的月度商业价值能力，不预设新的里程碑管理器，也不把假设演示当成收益证据。</p>
+<h2 id="section-5">已经对齐的用户问题</h2>
+<p>v0.5 已交给内部用户使用，这是本轮的用户背景。现在先盘点已有能力：Builder 可能被模型推动着写出大量代码，到周五却讲不清这周交付了什么，几个月后仍没有被用户实际使用的版本。AI Coding 已明显改变设计、实现和测试的成本，不宜继续只研究传统阶段管理。</p>
+<p><strong>用户明确的组织事实：组内五个项目，每个项目只有一位 Builder；多个项目共用一位 SE 和一位 Leader。</strong> 本报告默认“一项目 = 一 Builder = 一个人”。Builder 从用户问题、范围取舍、驾驭 Agent 到交付和反馈，承担连续的项目责任。共享支持不等于每个项目常驻三个人；SE 与 Leader 的具体职责和介入条件仍要结合实际确认。</p>
+<p>若项目因规模或特殊能力需要扩为多人，那是后续适用边界，不作为本轮故事和产品设计的默认起点。现行<a href="../../01-principles/03-press-release-faq-flywheel.md">产品原则 03</a>已以端到端负责的 super builder 为客群；这里修正研究场景，不改写原则，也不新增多人协作产品。</p>
+<p><strong>我们正在检验的命题：</strong> 当一个 Builder 可以让多个 Agent 持续写代码时，他是否仍能掌握“项目为什么做、本轮交付什么、用户用后怎样、下一步如何取舍”？SE/Leader 能否依据同一份材料看清多个项目，及时提供帮助，而不让每个 Builder 再填一套汇报？BW 若能减少失焦和找证据的成本，且没有把一个人的项目变成繁重流程，才有增量价值。</p>
+<h2 id="section-6">这轮研究改变了哪些判断</h2>
+<h3 id="section-7">1. 原生工具的边界已向项目与反馈扩展</h3>
+<p>Cursor 2026-09 的 Projects beta 已包含持久上下文、协调与持续订阅；Linear 把 coding sessions 接到 Issue；WorkBuddy 已有团队项目与计划；Orca 也持续补全任务、执行、审阅和集成路径。因此不能把 BW 的差异建立在“别人只管一段代码”上。<a href="https://cursor.com/blog/projects">Cursor 官方</a>、<a href="https://linear.app/changelog/2026-06-11-coding-sessions">Linear 官方</a>、<a href="https://cloud.tencent.com/document/product/1831/138797">WorkBuddy 官方</a>；细节与状态见对应专题。</p>
+<p>这也不是说 BW 一定没有价值。内部仓库兼容、数据能否互相读回、跨次交付能否接续、是否真的减少人的负担，都要单独验证。</p>
+<h3 id="section-8">2. 传统角色的部分动作被压缩，但责任没有随角色一起消失</h3>
+<p>Anthropic 的企业 playbook 与内部实践不是一条固定流水线：前者给出阶段产物和度量，后者展示原型、已有上下文和按风险处理的方式。Codex 实践重视可执行检查和有证据的修复循环。可以借鉴把上下文、运行和审查结果放到工作对象附近；不能据此要求每个小项目重新走全套文档和审批。<a href="anthropic-sdlc.html">Anthropic 专题</a>、<a href="openai-codex.html">Codex 专题</a></p>
+<p><strong>我们的推论：</strong> 传统产品、设计、开发、测试的许多动作可以由同一位 Builder 借助 Agent 完成，但用户选择、范围取舍、上线质量和结果解释仍需有人负责。默认责任人就是这个 Builder；遇到能力或权限边界时，带具体证据请求共享 SE/Leader 支持。执行可以越来越自主，完成与范围决定仍遵守 BW 的现行人确认规则。</p>
+<h3 id="section-9">3. 真实使用之后的改进值得看，但成熟度必须拆开</h3>
+<p>Spotify 的上下文与 Agent 执行是已有内部实践；2026-09-30 的 Confidence Loop 则处于设计伙伴早期预览，完整自主改进仍是发展方向。它值得研究的地方，是把真实信号整理成可追溯的问题与下一步，而非看到代码完成就结束。<a href="https://confidence.spotify.com/blog/confidence-loop">Confidence Loop 官方</a></p>
+<p><strong>对 BW 的启发：</strong> BUG、卡顿、困惑与反复失败，可以来自同一次实际使用，不必与“产品价值”分成互不关联的工作。先看用户在哪一步失败，再决定本轮做什么；完整实施和效果仍待 BW 试点。</p>
+<h3 id="section-10">4. 提效数字必须分清活动、过程、质量和结果</h3>
+<p>METR 2026 年研究提醒我们，AI 会改变任务组合；当前任务做得更快，不等于价值同比增加。其五月调查也只是自报结果，不能当作真实交付的因果增益。DORA 提供从目标选择度量的框架，但其 2025 样本不能冒充 2026 新实证。<a href="https://metr.org/blog/2026-05-08-task-substitution-and-uplift/">METR 官方</a>、<a href="https://dora.dev/research/2025/measurement-frameworks/">DORA 度量指南</a></p>
+<p><strong>对 BW 的启发：</strong> PR 数、Agent 数、Token 和计划归档次数可用于诊断采用与过程；仍要另看可用版本、实际用户任务、失败与返工、人投入的注意力。没有数据时保留未知，尤其不能用忙碌程度算出绿灯。</p>
+<h3 id="section-11">5. 周交付、月里程碑可以试，但不能当行业统一答案</h3>
+<p>现有材料支持更短的反馈等待、可独立验证的增量和明确责任，没有证明每个单 Builder 项目都该采用同一种周/月节奏。可以把周作为检查承诺和阻塞的提醒，把月作为检查方向的提醒；工作一旦可交付，就不必等提醒日才让用户用。<a href="https://dora.dev/capabilities/working-in-small-batches/">DORA 小批量建议</a></p>
+<p>这是待讨论建议。现行 03 已有通常 1–2 周迭代的表述，本轮不改它；若想引入新的强制周期或放宽现有约束，应先明确要解决的实际问题。</p>
+<h2 id="section-12">一个 Builder 的故事，以及共享 SE/Leader 为什么需要看见它</h2>
+<p>以下三幕是<strong>围绕 BW 自身重建的假设故事，不是已发生的内部案例或收益证据</strong>。角色始终是负责 BW 项目的同一位 Builder；SE 和 Leader 同时支持其他项目。其他五个项目的名称、进展和风险尚未采集，不在这里虚构。</p>
+<h3 id="section-13">周一：Agent 很忙，但这个版本究竟为了谁</h3>
+<p>BW v0.5 已给内部用户使用。负责 BW 的 Builder 让 Agent 继续完善总览、指标和计划；模型又建议加更多图表。若只看代码进展，功能不断增加，却还没有回答“一位内部 Builder 能否独立跑完自己的项目交付”。</p>
+<p>本轮的候选承诺可以先收成一个可观察结果：约一位真实使用者，用现有 BW 跑一轮交付，找到最先阻断他的地方。负责 BW 的 Builder 据此暂缓新图表，先做能让这轮试用发生的修复。这里要检验的价值，是 BW 能否让原定问题始终可见，使 Builder 有依据拒绝 Agent 的扩展建议；一份短文档若同样有效，也应承认。</p>
+<h3 id="section-14">周中：代码完成了，用户仍然过不去</h3>
+<p>假设使用者卡在会话续接，Agent 却已经提交了下一项功能。负责 BW 的 Builder 保留实际失败路径、影响和下一次检查点，先修复再请同一位使用者复测。若问题涉及宿主或权限边界，再把具体阻塞交给共享 SE，请他协助判断最小方案；SE 不因此变成这个项目的第二位日常 Builder。</p>
+<p>总览若只写“完成了多少任务”，看不见这次交付为何还没发生。候选的最小摘要应让人读出：承诺是什么、用户卡在哪、何时再次核对、需要谁提供什么支持。阻塞出现就处理，周五只是回看窗口。</p>
+<h3 id="section-15">周五与阶段回看：Leader 看五个项目，要作什么决定</h3>
+<p>同一位 Leader 面对五个由各自 Builder 负责的项目，不可能重读所有 Agent 会话。每个项目应能用自己的证据回答：本轮约定结果是否交到用户、用户问题有何变化、什么仍未知、下一步做什么、是否需要共享支持。不同项目的证据可以不同，不用代码量或完成率给五个人排名。</p>
+<p>如果 BW 的修复只让首轮跑通，Builder 应如实说“本轮可用，持续复用与人的负担还未知”。Leader 据此决定继续观察还是调整投入；SE 关注反复出现的技术阻塞。阶段回看再问是否持续解决了值得解决的问题，而不是把四周功能相加当里程碑完成。这是待试点的工作方式，不能宣称当前总览已经具备跨项目汇总能力。</p>
+<p><strong>到内部找故事时，沿同一个 Builder 的一次真实交付追问即可：</strong> 原来要改善什么、Agent 推动新增了什么、用户最后拿到什么、何时发现走偏或受阻、SE/Leader 何时才知道、哪条证据改变了下一步。保留失败、暂停和没有反馈的项目；不要为迎合这个故事补造事实。</p>
+<h2 id="section-16">对照 BW：三条投资线，四块能力都要经得起反证</h2>
+<table>
+<thead>
+<tr>
+<th>投资线</th>
+<th>为什么可能值得做</th>
+<th>首先要拿到的证据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Orca 原生使用与适配优化</td>
+<td>恢复、会话接续、评审、性能直接影响 Builder 完成工作</td>
+<td>真实工作中卡在哪里；上游已有修复能否解决；移植后的真壳结果</td>
+</tr>
+<tr>
+<td>CodeHub 等内部兼容</td>
+<td>内部团队能否进入真实仓库、评审与交付，是使用前提</td>
+<td>主路径成功、权限与失败恢复、少掉多少手工搬运</td>
+</tr>
+<tr>
+<td>BW 差异化部分</td>
+<td>可能帮助跨次交付保持目标、识别缺失证据、决定下一步</td>
+<td>比“原生 Orca + 现有工具”多改变了什么决定，代价是多少</td>
+</tr>
+</tbody></table>
+<p>前三者不必争同一个故事。原生可靠性与内部兼容的价值可以直接发生在执行过程中；四块新增界面则要证明各自帮助人完成了什么工作。</p>
+<table>
+<thead>
+<tr>
+<th>已有部分</th>
+<th>本轮建议检验的价值</th>
+<th>应考虑简化的迹象</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>总览</td>
+<td>Builder 看清自己项目的目标与下一步；共享 SE/Leader 用同一份摘要判断哪些项目需要支持</td>
+<td>仍需逐个翻会话、追问进度，或要求 Builder 再填一份周报</td>
+</tr>
+<tr>
+<td>指标</td>
+<td>某条读数确实改变范围、可靠性优先级或继续投入的决定</td>
+<td>指标很多，却只能说明有人用了工具、完成了一些活动</td>
+</tr>
+<tr>
+<td>计划</td>
+<td>把本次要解决的问题收小，清楚哪些模型建议暂不做</td>
+<td>不断拆更多任务，仍没有可让用户试的边界</td>
+</tr>
+<tr>
+<td>验收</td>
+<td>把实现、运行、部署/分发与真实使用分别核对，并留下下一步</td>
+<td>只是重述测试通过；失败有记录，却无人处理下一步</td>
+</tr>
+</tbody></table>
+<p>这些是研究假设，不是新功能清单。先沿现有四块跑一条完整用户旅程；发现问题后，再区分实现 BUG、体验摩擦、数据缺口和产品定义缺口。</p>
+<p>目前没有证据证明 BW 的总览、指标、计划和验收四块页面已经让 Builder 成为 super builder，也没有证据证明它们没有价值；下一步要用真实交付中改变的决定和新增负担来判断。</p>
+<h2 id="section-17">当前仓库给出的具体线索</h2>
+<p>本次已将本地主树快进到 <code>5202485e0773eef8c2c19da540d59bbd07bd45bc</code>（2026-10-08 提交），研究工作树以此为基线。主干现为 Orca Electron 叠层；旧 Rust 路线不是本轮事实来源。</p>
+<ol>
+<li><a href="../../../.bw/planning/v0.5/acceptance.json">v0.5 验收资产</a>的 G3 在 2026-10-05 至 10-08 的观测窗口为 0，人工判定未达成，原因和下一步为空。但<a href="../../../.bw/metrics.toml">指标定义</a>衡量的是合入/归档计划活动，<strong>不是页面点击或全部使用情况</strong>。因此只能把它作为“活动证据与后续决定需要核对”的线索，不能说没有用户。</li>
+<li>验收界面已有缺少下一步的提示和继续对话入口，见<a href="../../../src/renderer/src/workbench/version-acceptance/AcceptanceGoalResult.tsx">实现</a>。这意味着问题可能发生在使用、交接或数据形成过程中，不能未经试用就推导为缺一个按钮。</li>
+<li>当前指标资产明确尚未硬立 BW 北极星。这里应先调查真实结果与使用路径，再决定度量；不能用外部推荐直接代填。</li>
+<li><a href="../../05-features/README.md">现行特性状态</a>仍记录真壳及跨环境证据缺口；内部发布事实与逐旅程验证是不同证据。本次没有运行产品性能基准或 Electron E2E，不给流畅度和可靠性打分。</li>
+</ol>
+<p>另一个需要正式讨论的张力在<a href="../../01-principles/03-press-release-faq-flywheel.md">原则 03</a>：其中把 Cursor/Claude Code 主要描述为构建段工具的竞品表述，面对本轮新资料需要复议。此处提出证据与问题，不直接改写慢变原则。</p>
+<h2 id="section-18">下一步：把一个真实项目的故事跑完整</h2>
+<p><strong>建议先回看已有五个单 Builder 项目，再从一个项目跑通。</strong> 五个项目来自用户给出的组织背景，不能预设它们都遇到相同问题。先各还原最近一次交付和共享 SE/Leader 当时能看见的信息，再选一个有真实使用者、近期能够交付的项目试用 BW，观察 2–4 周；机制可用后再扩到其余项目。试点项目数与每项目人数是两件事，全程默认每项目一位 Builder。这是探索建议，不是已批准安排或统计显著保证。</p>
+<p>每个项目先保留六样东西：目标用户及问题、本次可交付范围、暂不做什么、负责的 Builder、运行/使用证据、下一步。需要共享支持时说明具体请求及下一次检查点，不把每个动作都变成 SE/Leader 的审批。尽量从现有文件、Issue 和会话读回；同时记录 Builder 整理成本，以及 SE/Leader 找背景、判断和介入的成本。</p>
+<p>对照两种实际做法：原生 Orca 加现有研发工具，以及同样基础上使用 BW。保留失败与放弃的任务，避免只拿成功案例。比较的重点是：是否更早让用户用上、是否少走无效方向、是否发现错误完成、是否减少人的重复劳动。前后工具和任务变化要注明，不声称小样本因果证明。</p>
+<p>试点前不必新增大套埋点或第五块屏幕。先用现有能力和少量观察找出最具体的一处阻塞，再决定是修可靠性、减步骤、补连接还是调整产品定义。若原生工具已足够低成本地支持目标，BW 就应接受合并或删减的可能。</p>
+<h2 id="section-19">仍须与真实项目对齐的问题</h2>
+<ul>
+<li>最近一个项目从“决定做”到“有人用”最久等在哪里：范围、权限、可运行成果、发布、试用还是反馈无人接？</li>
+<li>Builder 被模型推动扩范围时，缺的是判断依据、停下来的动作，还是原先目标本就模糊？</li>
+<li>一个真实版本已经发出去，却无人使用，谁负责找使用者并改变下一步？BW 能帮多少，哪些属于产品负责人的工作？</li>
+<li>共享 SE/Leader 查看五个项目时，能否不逐个追问就知道目标、实际进展、证据缺口和需要支持的事项？哪些仍必须面对面讨论？</li>
+<li>一个 Builder 卡住时，是缺能力、权限、用户接触还是决定？BW 的哪一次提示确实改变了下一步，哪些只增加填报？</li>
+</ul>
+<p>这些问题用于检验研究，不预设必须再加功能。</p>
+<h2 id="section-20">给后续模型的接续与维护方式</h2>
+<p>先读本页的用户问题、仓库线索、未决问题，再读相关专题 Markdown；涉及新决定时打开原始来源核对日期和上下文。厂商推荐、内部自述、实验结果、我们的建议，以及 BW 实际交付是不同层次。不要从截图、原型或这份研究推断产品已实现。</p>
+<p>分篇 HTML 共用 <code>report.css</code>，通过 <code>render.mjs</code> 从本目录 Markdown 生成；独立总报告由 <code>bundle-report.mjs</code> 将同一组内容与样式打包进 <code>report.html</code>。仓内依赖可用时：</p>
+<pre><code class="language-sh">node docs/10-reference/ai-native-delivery-2026/render.mjs
+node docs/10-reference/ai-native-delivery-2026/render.mjs --check
+node docs/10-reference/ai-native-delivery-2026/bundle-report.mjs
+node docs/10-reference/ai-native-delivery-2026/bundle-report.mjs --check
+</code></pre>
+<p>独立工作树没有安装依赖时，可把本机已安装的 <code>marked/lib/marked.esm.js</code> 绝对路径作为第一个参数；不把本机路径写进内容正源。修改 Markdown 后再生成 HTML，<code>--check</code> 校验投影是否过期；头部 SHA-256 标识对应源文本，不证明事实永远有效。</p>
+<p>本目录是外部研究参考。确认后的产品决定按仓内约定进入对应正本；报告不自动成为 <code>standard/</code>、模型系统提示或项目执行规则。</p>
+</article><footer>同内容 Markdown 为维护正源；HTML 为生成的阅读视图。外部能力、团队经验与 BW 已交付能力分别判断。</footer></main></div>
+</body>
+</html>
