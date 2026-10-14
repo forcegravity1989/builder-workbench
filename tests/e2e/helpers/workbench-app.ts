@@ -252,7 +252,11 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
     // foreground; a bare env-less launch would re-enable window.show() and
     // app.focus({ steal: true }) on any Linux box with CI set and a real
     // display, e.g. `CI=1 pnpm run test:e2e` on a developer desktop).
-    const showOnVirtualDisplay = !headful && Boolean(process.env.CI && process.env.DISPLAY)
+    // Why Linux-gated: macOS with XQuartz also exports DISPLAY on a real
+    // desktop session; showing there would bypass the accessory activation
+    // policy (Dock tile + menu-bar takeover, tests/AGENTS.md).
+    const showOnVirtualDisplay =
+      !headful && process.platform === 'linux' && Boolean(process.env.CI && process.env.DISPLAY)
     const app = await electron.launch({
       args: [...workbenchAppExtraArgs, ...getWorkbenchElectronLaunchArgs(mainPath, headful)],
       ...(slowMo > 0 ? { slowMo } : {}),
