@@ -47,8 +47,9 @@ export function getWorkbenchElectronLaunchArgs(mainPath: string, headful: boolea
   // mode 4755 in node_modules). Playwright's electron.launch injects
   // --no-sandbox automatically; raw spawn() paths (e.g. second-instance
   // activation) must match or Chromium aborts with SIGTRAP before handshake.
-  // GPU flags keep headless under Xvfb on a software path when the GPU
-  // subprocess cannot initialize.
+  // GPU flags keep the Xvfb run on a software path when the GPU subprocess
+  // cannot initialize (the default project's window IS shown on the virtual
+  // display — see workbench-app.ts showOnVirtualDisplay).
   return [
     ...frameFlags,
     '--no-sandbox',

@@ -28,6 +28,7 @@ import { TEST_REPO_PATH_FILE } from '../global-setup'
 import { cleanupE2EDaemons, closeElectronAppForE2E } from './electron-process-shutdown'
 import { getWorkbenchElectronLaunchArgs } from './workbench-launch-args'
 import { retryTransientMainEvaluate } from './electron-main-evaluate-retry'
+import { runsOnCiVirtualDisplay } from './ci-virtual-display'
 import { getE2ECompletedOnboardingProfile } from './e2e-completed-onboarding-profile'
 import {
   assertElectronResolvedIsolatedHome,
@@ -236,34 +237,16 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
     // in foreground-activation-policy) to keep the window off a developer's
     // real desktop; ORCA_E2E_HEADFUL overrides for runs that need a visible
     // window (e.g. pointer-capture drag tests). Under the GitHub Actions
-    // ubuntu runner's xvfb there is no desktop to disturb and the suppression
-    // backfires: the never-shown window keeps document visibilityState
-    // 'hidden', Chromium pauses requestAnimationFrame outright (the
-    // disable-backgrounding launch flags do not lift visibility gating), and
-    // Playwright actionability's stability check starves — deterministically
-    // after page.reload(), when the fresh document's visibility resyncs
-    // (workbench-cycle-smoke spec:150; pre-reload the initial document still
-    // gets sparse frames, so the same click ran ~15x slow instead of hanging).
-    // Why HEADFUL and not "no env at all": isWindowlessLaunch turns false so
-    // the window maps and frames flow, while isBackgroundLaunch stays true and
-    // the foreground-activation policy survives — showInactive() displays
-    // without focus and the dashboard-popout / focus-existing-window steal
-    // paths stay disabled (tests/AGENTS.md: tests must never take the
-    // foreground; a bare env-less launch would re-enable window.show() and
-    // app.focus({ steal: true }) on any Linux box with CI set and a real
-    // display, e.g. `CI=1 pnpm run test:e2e` on a developer desktop).
-    // Why linux + GITHUB_ACTIONS + DISPLAY (not just CI): macOS with XQuartz
-    // also exports DISPLAY on a real desktop session, where showing would
-    // bypass the accessory activation policy (Dock tile + menu-bar takeover,
-    // tests/AGENTS.md); and a plain `CI=1` on a developer's real Linux desktop
-    // would map the window over the editor. The triple pins this branch to
-    // hosted ubuntu runners under xvfb. Residual (accepted): a self-hosted
-    // Linux runner attached to a real X display would still map the window via
-    // showInactive() — no focus steal; no such runner exists in this repo.
-    const showOnVirtualDisplay =
-      !headful &&
-      process.platform === 'linux' &&
-      Boolean(process.env.GITHUB_ACTIONS && process.env.DISPLAY)
+    // ubuntu runner's xvfb the suppression backfires: a never-shown window
+    // keeps document visibilityState 'hidden', Chromium pauses rAF outright,
+    // and Playwright actionability starves — deterministically after
+    // page.reload() (full root-cause chain and guard rationale in
+    // ci-virtual-display.ts). Launching with ORCA_E2E_HEADFUL=1 there maps the
+    // window via showInactive() — frames flow while isBackgroundLaunch stays
+    // true, so the never-take-the-foreground policy survives (tests/AGENTS.md;
+    // a bare env-less launch would re-enable the window.show() /
+    // app.focus({ steal: true }) paths).
+    const showOnVirtualDisplay = !headful && runsOnCiVirtualDisplay()
     const app = await electron.launch({
       args: [...workbenchAppExtraArgs, ...getWorkbenchElectronLaunchArgs(mainPath, headful)],
       ...(slowMo > 0 ? { slowMo } : {}),
