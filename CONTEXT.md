@@ -15,6 +15,7 @@
 | 术语 | 含义与边界 | 相关正本 |
 |---|---|---|
 | Builder / 构建者 | 使用 Workbench、负责方向和验收的人；普通说明可称“用户” | [产品主张][claim] |
+| Builder 主机 | 团队成员共享的运行 Orca runtime 的机器；Builder 指人、Builder 主机指机器，经 Orca 原生主机配对配置共享给其他 Workbench，不另建账号体系；配对成功不等于持续在线 | [纳入项目规格](docs/05-features/project-intake/spec.md) |
 | Connector / 连接器 | 外部工具与服务的统称，含开工工具、仓库平台 CLI、项目群工具及 Orca 会话宿主；配置/安装不等于连通或登录 | [桌面壳][shell] |
 | 开工工具 / Agent CLI | 执行工作的工具，如 Claude Code、Cursor、Open Design；属于 Connector，不等于其调用的模型 | [会话与执行][session] |
 | 插件 / Plugin | 外部技能库的分发包，不等于单个技能或工作流；设置页列出不等于支持安装、更新或启停 | [技能与蒸馏][skills] |

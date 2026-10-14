@@ -10,7 +10,7 @@
 | Projects / worktree 树 | `components/sidebar/` | 左栏 Projects |
 | 终端 / agent / 建树 | terminal + `worktree-creation-flow` | 执行面 |
 | Explorer / SC / Diff | right-sidebar | 执行面右栏 |
-| **Tasks** | `components/task-page/` | 独立「任务」页签；原样挂载 Orca TaskPage；叠层按当前墙项目收窄同步仓 |
+| **Tasks** | `components/task-page/` | 独立「任务」页签；原样挂载 Orca TaskPage；同步仓范围与原生一致（G3 起不再按墙项目收窄） |
 | Automations | `components/automations/` | 自动化屏 |
 | Settings | `components/settings/` | 设置 |
 | main / shared runtime | `src/main`, `src/shared` | 业务语义 |
@@ -28,8 +28,8 @@
 | 端口与 runtime | `task-port.ts` / `archive-pr-port.ts` / `metrics-port.ts` / `version-material-port.ts` / `version-history-port.ts` / `metric-runtime-rpc.ts` | 消费 `src/main/workbench/` RPC（materials / metrics / history / archive.prStatus / cycle.syncTrunk）；任务读取复用原生 github.workItem / codehub.viewTask，单条失败 kind:'unavailable'；openDetail 经原生 openTaskPage（returnToPreviousView 跳过 tasks 哨兵，来源上下文由 cycle-view-state / view-memory 恢复） |
 | 总览 | `OverviewPage.tsx`、`overview-project-card.tsx`、`overview-north-star-card.tsx`；`overview-metric-zones.tsx`、`overview-metric-chart.tsx`、`overview-zone-series.ts`；`overview-sdlc-zones.tsx`、`overview-sdlc-readings.ts`、`use-overview-sdlc.ts`；`overview-version-minutes.tsx`、`use-version-minutes.ts`、`overview-view-state.ts`、`overview-snapshot-cache.ts`、`use-overview-history.ts`、`use-overview-metric-collection.ts` | 北极星与业务指标经 nativeMetricsPort 读取；ECharts 共用图表支持特性、显隐、日/周及详情。项目统计沿原生 Git/provider 读取，提交按固定修订分页和 %ct 落桶，PR/MR 按 mergedAt，Issue 只绘当前点；截断或失败保持未知。各版本现行材料按 planRef 核对并独立滚动；目录只读采用基线当前文件，不列旧快照或已删除版本；首次准备两种粒度快照，切换与返回只读缓存，主动刷新才重采，筛选按项目/宿主恢复。「配置指标」复用 `version-cycle/metrics-setup` 固定树管线，每次新建会话；指标闭环实施与验证边界见[总览指标 STATUS](../../../../docs/05-features/overview-metrics/STATUS.md) |
 | 知识库保真 | `KnowledgePage` + `use-knowledge-repo` + `knowledge-demo-data` | 文档树与正文读 activeRepo，编辑直接保存该仓；分类走内置规则（单仓分类地图能力已删）；代码占位，对账与建议含演示数据 |
-| 项目墙 | `ProjectWallPage` + `project-page-state`；在 activity 内容槽展示；按 `ProjectGroup` 聚合多仓；卡片展示仓链接；`+ 代码仓` / 删除 | Orca 外壳内切换项目 |
-| 接入项目 | `OnboardProjectPage`：在 activity 内容槽展示；本地仓 / 克隆 → `repo.add`；名片经 `bw/project` 固定树 PR 合入被管仓（无远端降级就地写）、克隆前远端预探测回填、同远端去重；墙卡待合入提示 / 更新主目录 / 编辑名片（`EditCharterPage`）；成功落总览 | architecture §1、[project-intake spec](../../../../docs/05-features/project-intake/spec.md) |
+| 项目墙 | `ProjectWallPage` + `ProjectWallCard` + `project-page-state`；在 activity 内容槽展示；只上能读到 `.bw/project.toml` 的项目（`use-wall-adoptions` 判据，本机含名片 PR 待合入/已合入未更新边缘；远端名片经 `workbench.charter.read` RPC 按 owner runtime 路由）；`workbench-wall-projects` 纯函数按 ProjectGroup + 远端身份跨主机归并、只认当前配对主机目录内的注册行、同主机重复注册去重（仓链接展示拆在 `wall-repo-links`）；卡内来源主机标签与连接事实（`wall-host-facts`）、工作树计数现算、删除只对本机注册；「导入 Builder 主机」（`builder-hosts-import` + `ImportBuilderHostsDialog`）只调用原生配对批量壳；刷新重读全部主机仓库目录/工作树/名片 | architecture §1、[project-intake spec](../../../../docs/05-features/project-intake/spec.md) G3 |
+| 接入项目 | `OnboardProjectPage`：在 activity 内容槽展示；本地仓 / 克隆 → `repo.add`；名片经 `bw/project` 固定树 PR 合入被管仓（无远端降级就地写）、克隆前远端预探测回填、同远端去重；墙卡待合入提示 / 更新主目录 / 编辑名片（`EditCharterPage`）；成功落总览；名片判据读取与 PR 状态共用 charter RPC 链（probeRemote / submit / status / read） | architecture §1、[project-intake spec](../../../../docs/05-features/project-intake/spec.md) |
 | 皮肤 token | `workbench-tokens.css` + `workbench-overview.css`；`version-planning/` 下 version-planning.css（布局）、planning-fields.css（字段）、planning-dialogs.css（对话框）；`version-acceptance/acceptance.css`、`metrics/metric-evidence.css` | `bw-tokens` / hifi-overview；workbench-plan.css 与旧三屏链条已删除 |
 | 热加载调试 | `pnpm run dev:workbench`（electron-vite HMR；独立 `workbench-dev` profile） | — |
 | 品牌打包 | `ORCA_PRODUCT_NAME` / `build:mac:workbench` | — |
