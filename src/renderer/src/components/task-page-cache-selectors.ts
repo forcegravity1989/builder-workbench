@@ -5,6 +5,8 @@ import type {
   WorkItemsCacheSources
 } from '@/store/github/cache-model'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import { isCodeHubGitRemote } from '../../../shared/codehub'
+import type { GitRemoteIdentity } from '../../../shared/git-remote-identity'
 import {
   taskPageWorkItemKey,
   taskPageWorkItemStatusSignature,
@@ -90,6 +92,8 @@ export type TaskPageUnresolvedSourceRepo = {
   repoId: string
   sourceKey: string
   label: string
+  /** True when the repo's git remote identifies a CodeHub project, so the missing GitHub source is expected, not an error. */
+  codehub: boolean
 }
 
 /**
@@ -100,9 +104,18 @@ export type TaskPageUnresolvedSourceRepo = {
  * genuine zero-result query, so surface these repos to the user. The three states
  * are told apart purely by `sources`: present-but-both-null = unresolved (this
  * function), a non-null side = resolved (genuine zero), `null` = not yet fetched.
+ *
+ * Why: a CodeHub-remote repo has no GitHub source by definition; it lands here only
+ * because the task source stayed on GitHub (e.g. CodeHub was hidden or unavailable).
+ * Flag it so the banner can explain the real cause instead of blaming GitHub.
  */
 export function selectTaskPageUnresolvedSourceRepos(
-  repos: readonly { id: string; displayName?: string; path: string }[],
+  repos: readonly {
+    id: string
+    displayName?: string
+    path: string
+    gitRemoteIdentity?: Pick<GitRemoteIdentity, 'remoteUrl' | 'canonicalKey'> | null
+  }[],
   sourceState: readonly TaskPageRepoSourceState[]
 ): TaskPageUnresolvedSourceRepo[] {
   const stateByRepoId = new Map(sourceState.map((state) => [state.repoId, state]))
@@ -113,7 +126,8 @@ export function selectTaskPageUnresolvedSourceRepos(
       unresolved.push({
         repoId: repo.id,
         sourceKey: state.sourceKey,
-        label: repo.displayName ?? repo.path
+        label: repo.displayName ?? repo.path,
+        codehub: isCodeHubGitRemote(repo.gitRemoteIdentity)
       })
     }
   }

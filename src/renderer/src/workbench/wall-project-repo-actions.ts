@@ -35,14 +35,15 @@ export async function removeRepoFromWallProject(args: {
 }): Promise<boolean> {
   const { project, repoId } = args
   const store = useAppStore.getState()
-  const slot = project.slots.find((s) => s.repoId === repoId)
+  const slot = project.slots.find((s) => s.repoId === repoId || s.localRepoId === repoId)
   const label = slot?.name ?? '该代码仓'
-  const isLast = project.repoIds.length <= 1
+  // G3:删除只解除本机注册;其他主机/其他代码仓的注册还在时,项目仍留在墙上。
+  const othersRemain = project.repoIds.some((id) => id !== repoId)
 
   const ok = window.confirm(
-    isLast
-      ? `「${label}」是项目里最后一个代码仓，删除后会从项目墙移除整个项目。确定？`
-      : `从项目「${project.name}」中删除代码仓「${label}」？`
+    othersRemain
+      ? `从本机解除代码仓「${label}」的注册？项目其余注册仍保留在墙上；不删除任何仓库文件。`
+      : `「${label}」是项目里最后一个代码仓注册，删除后会从项目墙移除整个项目。确定？`
   )
   if (!ok) {
     return false

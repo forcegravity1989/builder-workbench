@@ -272,7 +272,7 @@ function AppWorkspaceContent(props: {
                               'Terminal, browser, or editor rendering failed in this workspace. Retry to remount it.'
                             )}
                           >
-                            <Terminal />
+                            <Terminal reserveClosedExplorerToggleSpace={!cycle} />
                           </RecoverableRenderErrorBoundary>
                         </Suspense>
                       </TerminalWorkbenchContainer>
@@ -302,7 +302,21 @@ function AppWorkspaceContent(props: {
                         onMouseDown={resize.onResizeStart}
                       />
                       <Suspense fallback={null}>
-                        <CycleWorkspacePage />
+                        <div
+                          className={`vc-board-slot${
+                            layout.workspaceChromeActive ? ' vc-board-slot-terminal' : ''
+                          }`}
+                        >
+                          {layout.workspaceChromeActive ? (
+                            <div className="vc-board-titlebar" aria-hidden="true">
+                              {/* Why: the closed-sidebar reopen toggle and window controls float above this drag band as z-index siblings; Electron drag hit-test respects no-drag only on DOM descendants, so this carve-out keeps them clickable. Mirrors the TabGroupPanel spacer. */}
+                              {!layout.rightSidebarOpen ? (
+                                <div className="vc-board-titlebar-controls-space" />
+                              ) : null}
+                            </div>
+                          ) : null}
+                          <CycleWorkspacePage />
+                        </div>
                       </Suspense>
                     </>
                   )}

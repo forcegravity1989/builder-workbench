@@ -38,7 +38,6 @@ import { useVisibleSidebarWorktrees } from './worktree-list/listing/use-visible-
 import { useWorktreeStatusMutations } from './worktree-list/drag/use-status-mutations'
 import { shouldFiltersHideAllRows } from './sidebar-empty-state-gate'
 import { buildWorktreeManualOrderCatalog } from './worktree-manual-order-catalog'
-import { useWorkbenchSidebarListScope } from '@/workbench/workbench-sidebar-repo-scope'
 
 type WorktreeListProps = {
   scrollOffsetRef: React.MutableRefObject<number>
@@ -106,10 +105,7 @@ const WorktreeList = React.memo(function WorktreeList({
   )
 
   const agentSendTargetWorktreeId = useAgentSendTargetWorktreeId()
-  const { filterState: storeFilterState, hasFilters, clearFilters } = useSidebarWorktreeFilters()
-  // Why: Workbench 切项目后侧栏只露当前墙项目的仓与工作树（叠层钩子，不持久化 filterRepoIds）。
-  const { filterState, scopeRepos, scopeProjectGroups } =
-    useWorkbenchSidebarListScope(storeFilterState)
+  const { filterState, hasFilters, clearFilters } = useSidebarWorktreeFilters()
   const sortedIds = useSidebarWorktreeSortOrder({ allWorktrees, repoMap, sortBy })
   const manualOrderCatalog = useMemo(
     () => buildWorktreeManualOrderCatalog({ worktrees: allWorktrees, folderWorkspaces }),
@@ -149,11 +145,8 @@ const WorktreeList = React.memo(function WorktreeList({
     folderWorkspaces,
     pairedDeviceIdsByEnvironment
   })
-  const visibleReposForRows = scopeRepos(visibleScope.visibleReposForRows)
-  const visibleProjectGroupsForRows = scopeProjectGroups(
-    visibleScope.visibleProjectGroupsForRows,
-    visibleReposForRows
-  )
+  const visibleReposForRows = visibleScope.visibleReposForRows
+  const visibleProjectGroupsForRows = visibleScope.visibleProjectGroupsForRows
   const externalWorktreeCards = useSidebarExternalWorktreeCards({
     repos,
     visibleReposForRows,

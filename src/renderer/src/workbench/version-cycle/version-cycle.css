@@ -60,7 +60,7 @@
   border-top: 1px solid var(--color-divider);
 }
 
-/* Only the material panel and its divider belong to BW. */
+/* Only the material panel, its divider and the shell-mounted board slot/frame-row chrome belong to BW. */
 .vc-board-col {
   display: flex;
   flex-direction: column;
@@ -69,8 +69,43 @@
   min-height: 0;
   overflow: hidden;
 }
-.vc-board-col > .vp-board,
-.vc-board-col > .va-board {
+.vc-board-slot {
+  display: flex;
+  flex: 1;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.vc-board-slot-terminal {
+  flex-direction: column;
+}
+.vc-board-titlebar {
+  display: flex;
+  flex: 0 0 36px;
+  min-height: 36px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-titlebar, var(--card));
+  -webkit-app-region: drag;
+  user-select: none;
+}
+.vc-board-titlebar-controls-space {
+  flex: 0 0 auto;
+  width: calc(40px + var(--window-controls-width, 0px));
+  margin-left: auto;
+  -webkit-app-region: no-drag;
+}
+.vc-board-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.vc-board-content > .vp-board,
+.vc-board-content > .va-board {
   flex: 1;
   min-height: 0;
   min-width: 0;

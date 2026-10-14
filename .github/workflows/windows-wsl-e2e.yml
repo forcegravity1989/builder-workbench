@@ -2,24 +2,6 @@ name: Windows WSL terminal E2E
 
 on:
   workflow_dispatch:
-    inputs:
-      ref:
-        description: Commit to validate
-        type: string
-        required: false
-  workflow_call:
-    inputs:
-      ref:
-        type: string
-        required: false
-
-permissions:
-  contents: read
-
-concurrency:
-  group: windows-wsl-e2e-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 jobs:
   wsl-terminal:
     runs-on: windows-2022

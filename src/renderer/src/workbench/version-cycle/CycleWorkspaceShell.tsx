@@ -19,7 +19,7 @@ export function CycleWorkspaceShell() {
           正在同步主干，现有材料暂时只读…
         </p>
       )}
-      <div inert={context.syncing} style={{ display: 'contents' }}>
+      <div className="vc-board-content" inert={context.syncing}>
         {!context.worktreeId ? (
           <>
             {(notice || context.error) && (

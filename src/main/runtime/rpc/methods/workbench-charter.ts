@@ -1,6 +1,7 @@
 import { defineMethod } from '../core'
 import {
   CharterProbeRequestSchema,
+  CharterReadRequestSchema,
   CharterStatusRequestSchema,
   CharterSubmitRequestSchema
 } from '../../../../shared/workbench/charter'
@@ -25,5 +26,11 @@ export const WORKBENCH_CHARTER_METHODS = [
     params: CharterStatusRequestSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => nativeCharterService(runtime).status(params))
+  }),
+  defineMethod({
+    name: 'workbench.charter.read',
+    params: CharterReadRequestSchema,
+    handler: (params, { runtime }) =>
+      workbenchRuntimeResult(() => nativeCharterService(runtime).read(params))
   })
 ]

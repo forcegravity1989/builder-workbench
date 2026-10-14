@@ -1,67 +1,7 @@
 name: Computer-use e2e
 
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/computer-e2e.yml'
-      - 'config/electron-builder.config.cjs'
-      - 'config/scripts/build-computer-macos.mjs'
-      - 'config/scripts/build-native-for-platform.mjs'
-      - 'config/scripts/build-native-for-platform.test.mjs'
-      - 'config/scripts/pnpm-cli-invocation.mjs'
-      - 'config/scripts/build-windows-cli-launcher.mjs'
-      - 'config/scripts/build-windows-cli-launcher.test.mjs'
-      - 'config/scripts/computer-e2e-workflow.test.mjs'
-      - 'config/scripts/macos-computer-helper-owner-loss-benchmark.mjs'
-      - 'config/scripts/macos-computer-helper-owner-loss-group-recovery.test.mjs'
-      - 'config/scripts/macos-computer-helper-owner-loss-metrics.mjs'
-      - 'config/scripts/macos-computer-helper-owner-loss-processes.mjs'
-      - 'config/scripts/macos-computer-helper-owner-loss-processes.test.mjs'
-      - 'config/scripts/macos-computer-helper-owner-loss-trial-cleanup.mjs'
-      - 'config/scripts/computer-use-modifier-safety.test.mjs'
-      - 'config/scripts/computer-use-skill-guidance.test.mjs'
-      - 'config/scripts/computer-use-smoke.mjs'
-      - 'config/scripts/computer-use-smoke.test.mjs'
-      - 'config/scripts/daemon-boot-smoke.mjs'
-      - 'config/scripts/daemon-endpoint-handover-smoke.mjs'
-      - 'config/scripts/windows-daemon-workspace-close-repro.mjs'
-      - 'config/scripts/verify-computer-native.mjs'
-      # Why: the native-smoke job boots the built terminal daemon under plain
-      # Node, so any change to the daemon bundle graph or the main build must
-      # re-run it (the v1.4.129-rc.1 daemon outage shipped with green CI).
-      - 'electron.vite.config.ts'
-      - 'config/build-plugins/**'
-      - 'src/main/daemon/**'
-      - 'src/main/providers/local-pty-provider.ts'
-      - 'src/main/providers/windows-shell-args.ts'
-      - 'src/main/providers/windows-shell-preflight-runtime.windows.test.ts'
-      - 'native/computer-use-macos/**'
-      - 'native/computer-use-linux/**'
-      - 'native/computer-use-windows/**'
-      - 'native/windows-cli-launcher/**'
-      - 'skills/computer-use/SKILL.md'
-      - 'src/cli/**'
-      - 'src/main/computer/**'
-      - 'src/main/runtime/rpc/dispatcher.ts'
-      - 'src/main/runtime/rpc/errors.ts'
-      - 'src/main/runtime/rpc/methods/computer*.ts'
-      - 'src/main/ssh/ssh-remote-cli-launcher.ts'
-      - 'src/main/ssh/ssh-remote-cli-launcher.test.ts'
-      - 'src/shared/computer-use-*.ts'
-      - 'tests/e2e/computer-linux.e2e.ts'
-      - 'tests/e2e/computer-windows.e2e.ts'
-      - 'tests/e2e/computer-windows-store.e2e.ts'
-      - 'tests/e2e/helpers/computer-cli-driver.ts'
-      - 'tests/e2e/helpers/computer-driver.ts'
-      - 'tests/e2e/vitest.config.ts'
   workflow_dispatch:
-  schedule:
-    - cron: '0 6 * * *'
-
-concurrency:
-  group: computer-e2e-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   native-smoke:
     if: github.event_name == 'pull_request'

@@ -3,9 +3,11 @@ import { WorktreeSplitSurface } from './TerminalWorktreeSplitSurface'
 import type { TerminalController } from './use-terminal-controller'
 
 export function TerminalSplitWorkspaceSurfaces({
-  controller
+  controller,
+  reserveClosedExplorerToggleSpace = true
 }: {
   controller: TerminalController
+  reserveClosedExplorerToggleSpace?: boolean
 }): React.JSX.Element | null {
   const {
     activationDeferredMountTabIdsByWorktreeRef,
@@ -72,6 +74,7 @@ export function TerminalSplitWorkspaceSurfaces({
               activationDeferredMountTabIds={
                 activationDeferredMountTabIdsByWorktreeRef.current.get(workspace.id) ?? null
               }
+              reserveClosedExplorerToggleSpace={reserveClosedExplorerToggleSpace}
             />
           )
         })}
