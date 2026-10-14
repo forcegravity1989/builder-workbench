@@ -232,6 +232,20 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
     if (recordVideoDir) {
       mkdirSync(recordVideoDir, { recursive: true })
     }
+    // Why: ORCA_E2E_HEADLESS suppresses mainWindow.show() (isWindowlessLaunch
+    // in foreground-activation-policy) to avoid focus stealing and screen
+    // clutter on a developer's real desktop; ORCA_E2E_HEADFUL overrides for
+    // tests that need a visible window (e.g. pointer-capture drag tests).
+    // Under xvfb (CI) there is no desktop to disturb and the suppression
+    // backfires: the never-shown window keeps document visibilityState
+    // 'hidden', Chromium pauses requestAnimationFrame outright (the
+    // disable-backgrounding launch flags do not lift visibility gating), and
+    // Playwright actionability's stability check starves — deterministically
+    // after page.reload(), when the fresh document's visibility resyncs
+    // (workbench-cycle-smoke spec:150; pre-reload the initial document still
+    // gets sparse frames, so the same click ran ~15x slow instead of hanging).
+    // On a virtual display, show the window and let frames flow.
+    const suppressWindowShow = !(process.env.CI && process.env.DISPLAY)
     const app = await electron.launch({
       args: [...workbenchAppExtraArgs, ...getWorkbenchElectronLaunchArgs(mainPath, headful)],
       ...(slowMo > 0 ? { slowMo } : {}),
@@ -239,16 +253,14 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
       // Why: keep NODE_ENV=development so window.__store is exposed and
       // dev-only helpers activate. ORCA_E2E_USER_DATA_DIR overrides the usual
       // shared dev profile so every spec gets a clean persistence root.
-      // Why: ORCA_E2E_HEADLESS suppresses mainWindow.show() so the app
-      // window stays hidden during test runs, avoiding focus stealing and
-      // screen clutter. Playwright interacts via CDP regardless.
-      // Why: ORCA_E2E_HEADLESS suppresses mainWindow.show() for CI/headless
-      // runs. ORCA_E2E_HEADFUL overrides this for tests that need a visible
-      // window (e.g. pointer-capture drag tests).
       env: {
         ...homeIsolation.env,
         NODE_ENV: 'development',
-        ...(headful ? { ORCA_E2E_HEADFUL: '1' } : { ORCA_E2E_HEADLESS: '1' })
+        ...(headful
+          ? { ORCA_E2E_HEADFUL: '1' }
+          : suppressWindowShow
+            ? { ORCA_E2E_HEADLESS: '1' }
+            : {})
       }
     })
     forwardElectronProcessLogs(app, testInfo)
