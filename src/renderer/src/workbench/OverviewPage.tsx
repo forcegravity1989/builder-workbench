@@ -1,9 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useAppStore } from '@/store'
+import { parseExecutionHostId } from '../../../shared/execution-host'
 import { openProjectOnboard } from './project-page-state'
 import { CharterPrNotice } from './charter-pr-notice'
 import { useCharterPrStatus } from './use-charter-pr-status'
 import { readProjectCharter, type ProjectCharter } from './project-charter'
+import {
+  updateTrunkCode,
+  trunkUpdateNotice
+} from './version-cycle/trunk-update-port'
 import {
   nativeWorkspaceScope,
   nativeWorkspaceScopeKey,
@@ -75,6 +81,10 @@ export function OverviewPage(): React.JSX.Element {
       return { plan: null, acceptance: null, error: String(error) }
     }
   }, [baseScope])
+  // 「更新代码」= 总览唯一的同步入口：快进主检出，随后重读三类快照与名片。
+  // 进屏不做任何 git 动作；快进不了保持原样并如实说明。
+  const [trunkToken, setTrunkToken] = useState(0)
+  const [updatingTrunk, setUpdatingTrunk] = useState(false)
   const dataIdentity = JSON.stringify([
     identity,
     activeRepo?.path,
@@ -84,10 +94,12 @@ export function OverviewPage(): React.JSX.Element {
     activeRepo?.gitRemoteIdentity,
     baseWorktree?.path
   ])
+  // 「更新代码」bump trunkToken → 快照缓存换键重读；视图偏好（粒度等）不跟着重置。
+  const cacheIdentity = JSON.stringify([dataIdentity, trunkToken])
   const metrics = useOverviewMetricCollection({
     baseScope,
     baseWorktreeId,
-    identity: dataIdentity,
+    identity: cacheIdentity,
     granularity: view.granularity
   })
   const { catalog, northReading, zoneReadings, busy, refreshing, refreshReadings } = metrics
@@ -96,10 +108,14 @@ export function OverviewPage(): React.JSX.Element {
     baseWorktreeId,
     planWorktreeId: fixedTrees.plan,
     acceptanceWorktreeId: fixedTrees.acceptance,
-    identity: dataIdentity
+    identity: cacheIdentity
   })
   const { history, currentVersion } = historyState
   const problems = [...metrics.problems, ...(historyState.problem ? [historyState.problem] : [])]
+  // 版本区来源标注：目录读的是主检出基线的哪个分支、哪个提交。
+  const historySource = history?.baselineCommit
+    ? `${history.baselineRef ?? '主检出'} @ ${history.baselineCommit.slice(0, 12)}`
+    : null
 
   useEffect(() => {
     if (!activeRepo?.path) {
@@ -124,6 +140,43 @@ export function OverviewPage(): React.JSX.Element {
     charterKey,
     (value) => setCharter({ key: charterKey, value })
   )
+
+  // 「更新代码」点击处理；trunkToken/updatingTrunk 状态声明在 dataIdentity 之前。
+  const updateTrunk = async () => {
+    if (!activeRepo || updatingTrunk) {
+      return
+    }
+    setUpdatingTrunk(true)
+    try {
+      const host = parseExecutionHostId(baseScope?.hostId ?? '')
+      if (host?.kind === 'ssh') {
+        // SSH 项目的主检出走原生远端快进链（与项目墙名片更新同一条）。
+        await window.api.git.fastForward({
+          worktreePath: activeRepo.path,
+          ...(activeRepo.connectionId ? { connectionId: activeRepo.connectionId } : {})
+        })
+        toast.message('主检出已拉到最新')
+      } else if (baseScope && baseWorktreeId) {
+        const result = await updateTrunkCode(
+          { repoId: baseScope.repoId, worktreeId: baseWorktreeId, hostId: baseScope.hostId },
+          baseScope.runtimeOwnerEnvironmentId
+        )
+        toast.message(trunkUpdateNotice(result))
+      }
+    } catch (reason) {
+      const detail = reason instanceof Error ? reason.message : String(reason)
+      toast.message(`代码未更新（${detail}）。请让会话模型处理主检出的代码更新。`)
+    } finally {
+      setUpdatingTrunk(false)
+      // 无论快进成败都重读：bump 使三类快照缓存换键重载，名片文件也重读一遍。
+      setTrunkToken((token) => token + 1)
+      if (activeRepo.path) {
+        void readProjectCharter(activeRepo.path).then((r) =>
+          setCharter({ key: charterKey, value: r.charter })
+        )
+      }
+    }
+  }
 
   const versions = useMemo(() => {
     const found = new Set<string>()
@@ -181,7 +234,6 @@ export function OverviewPage(): React.JSX.Element {
       </div>
     )
   }
-
   const projectName = charter?.name?.trim() || activeRepo.displayName || activeRepo.id
   const north = catalog?.definitions.find((item) => item.role === 'north_star')
 
@@ -189,6 +241,15 @@ export function OverviewPage(): React.JSX.Element {
     <div className="wb-ov">
       <header className="page-head">
         <h1>总览</h1>
+        <button
+          type="button"
+          className="wb-btn wb-btn-secondary wb-btn-sm"
+          disabled={updatingTrunk || !baseScope || !baseWorktreeId}
+          title="把主检出快进到主干最新，并重读总览数据；快进不了会保持原样并说明原因"
+          onClick={() => void updateTrunk()}
+        >
+          {updatingTrunk ? '正在更新…' : '更新代码'}
+        </button>
       </header>
 
       <div className="content">
@@ -237,6 +298,7 @@ export function OverviewPage(): React.JSX.Element {
           historyProblems={history?.problems ?? []}
           busy={historyState.busy}
           onRetry={historyState.reload}
+          source={historySource}
         />
         <OverviewMetricZones
           catalog={catalog}
@@ -260,6 +322,7 @@ export function OverviewPage(): React.JSX.Element {
           baseWorktreePath={baseWorktree?.path ?? null}
           timezone={catalog?.timezone}
           ready={catalog !== null || metrics.loaded}
+          refreshToken={trunkToken}
         />
       </div>
       {refreshing && (

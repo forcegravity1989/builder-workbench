@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { ClipboardCheck, GitBranch } from 'lucide-react'
 import type { MetricsPort } from '../../../../shared/workbench/metrics'
 import type { VersionHistoryPort } from '../../../../shared/workbench/version-history'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import { cycleBranch } from '../version-cycle/native-cycle-workspace'
+import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import { CycleStartCard } from '../version-cycle/CycleStartCard'
 import { AcceptanceGoalCards } from './AcceptanceGoalCards'
@@ -162,11 +164,15 @@ function ReadyAcceptanceBoard({
           className="wb-btn wb-btn-ghost wb-btn-sm"
           disabled={busy || saving}
           onClick={() => {
-            metricWindow.refresh()
-            void refreshData().then(() => prStatus.refresh())
+            void (async () => {
+              toast.message(trunkUpdateNotice(await context.updateCode()))
+              metricWindow.refresh()
+              await refreshData()
+              await prStatus.refresh()
+            })()
           }}
         >
-          刷新数据
+          更新代码
         </button>
         {(saving || draft?.dirty) && (
           <span role="status">{saving ? '正在保存…' : '有改动待保存'}</span>

@@ -32,8 +32,10 @@ export function useOverviewSdlc(args: {
   baseWorktreePath: string | null
   timezone: string
   ready: boolean
+  /** Bumped by the「更新代码」button so its snapshot re-reads after a fast-forward. */
+  refreshToken: number
 }) {
-  const { repo, baseScope, baseWorktreeId, baseWorktreePath, timezone, ready } = args
+  const { repo, baseScope, baseWorktreeId, baseWorktreePath, timezone, ready, refreshToken } = args
   const provider = sdlcProviderOf(repo)
   const key = JSON.stringify([
     repo?.id,
@@ -44,7 +46,8 @@ export function useOverviewSdlc(args: {
     baseScope,
     baseWorktreeId,
     baseWorktreePath,
-    timezone
+    timezone,
+    refreshToken
   ])
   const entry = useMemo(() => cache(key), [key])
   const snapshot = useOverviewSnapshot(entry)
@@ -95,5 +98,5 @@ export function useOverviewSdlc(args: {
   useEffect(() => {
     load()
   }, [load])
-  return { ...snapshot, provider, refresh: () => load(true) }
+  return { ...snapshot, provider }
 }

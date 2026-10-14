@@ -7,7 +7,7 @@ import { MetricLineChart } from './overview-metric-chart'
 import { bucketCommitCounts, type SdlcCommits, type SdlcSeries } from './overview-sdlc'
 import { useOverviewSdlc } from './use-overview-sdlc'
 import { zoneBucketLabels, zoneChartRange } from './overview-zone-series'
-import { OverviewGrain, OverviewRefresh } from './overview-controls'
+import { OverviewGrain } from './overview-controls'
 import { useOverviewViewState } from './overview-view-state'
 
 function evidence<T>(state: SdlcSeries<T> | null): T | undefined {
@@ -81,7 +81,8 @@ export function OverviewSdlcZones({
   baseWorktreeId,
   baseWorktreePath,
   timezone,
-  ready
+  ready,
+  refreshToken
 }: {
   identity: string
   repo: Repo | null
@@ -90,6 +91,7 @@ export function OverviewSdlcZones({
   baseWorktreePath: string | null
   timezone?: string
   ready: boolean
+  refreshToken: number
 }) {
   const [view, setView] = useOverviewViewState(identity)
   const tz = timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -99,7 +101,8 @@ export function OverviewSdlcZones({
     baseWorktreeId,
     baseWorktreePath,
     timezone: tz,
-    ready
+    ready,
+    refreshToken
   })
   const range = useMemo(
     () => zoneChartRange(view.repoGranularity, tz, state.anchor),
@@ -157,7 +160,6 @@ export function OverviewSdlcZones({
               setView({ repoGranularity: value })
             }}
           />
-          <OverviewRefresh label="刷新项目指标" busy={state.busy} onClick={state.refresh} />
         </div>
       </header>
       <div className="wb-sdlc-grid">

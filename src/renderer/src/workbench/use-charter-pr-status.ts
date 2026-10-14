@@ -7,7 +7,7 @@ import { readProjectCharter, type ProjectCharter } from './project-charter'
 
 /**
  * 总览的名片 PR 状态:主检出没有名片才查(省 gh/codehub 调用);
- * 「更新主目录」= 主检出快进(spec 规则 2,main pull_ff 对等)。
+ * 「更新代码」= 主检出快进(spec 规则 2,main pull_ff 对等)。
  */
 export function useCharterPrStatus(
   activeRepo: Repo | undefined,
