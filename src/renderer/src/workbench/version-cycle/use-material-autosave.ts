@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { VersionDocumentIdentity } from '../../../../shared/workbench/version-document'
-import type { VersionDocumentSnapshot } from '../../../../shared/workbench/version-document'
+import type {
+  VersionDocumentIdentity,
+  VersionDocumentSnapshot
+} from '../../../../shared/workbench/version-document'
 import type { MaterialDraft, MaterialDraftController } from '../version-cycle/material-draft'
 
 export type MaterialAutosaveOptions<T extends VersionDocumentIdentity> = {
