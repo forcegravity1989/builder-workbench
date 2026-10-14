@@ -290,7 +290,10 @@ function AppWorkspaceContent(props: {
                         className="vc-split"
                         role="separator"
                         aria-orientation="vertical"
-                        aria-label="调整左右栏宽度"
+                        aria-label={translate(
+                          'auto.app.shell.AppWorkspaceShell.e82b94df8a',
+                          '调整左右栏宽度'
+                        )}
                         onMouseDown={resize.onResizeStart}
                       />
                       <Suspense fallback={null}>
