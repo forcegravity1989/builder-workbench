@@ -88,8 +88,7 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
         preferredVisibleTaskProviders,
         {
           gitlabInstalled: preflightStatusCurrent && preflightStatus?.glab?.installed === true,
-          codehubInstalled:
-            preflightStatusCurrent && preflightStatus?.codehub?.installed === true,
+          codehubInstalled: preflightStatusCurrent && preflightStatus?.codehub?.installed === true,
           linearConnected: linearStatus.connected === true
         },
         defaultTaskSource
@@ -155,12 +154,21 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
   }
 
   const tasksActive = activeView === 'tasks'
+  // BW 壳内任务入口默认带入项目墙当前项目(与验收/计划屏同一解析:activeRepoId ?? repos[0]),
+  // 复用原生 openTaskPage 的 preselectedRepoId 预选契约;页内项目筛选仍可改。
+  const workbenchProjectRepoId = isWorkbenchShell() ? (activeRepoId ?? repos[0]?.id ?? null) : null
 
   const button = (
     <div className="group relative">
       <button
         type="button"
-        onClick={() => openTaskPage()}
+        onClick={() => {
+          if (workbenchProjectRepoId) {
+            openTaskPage({ preselectedRepoId: workbenchProjectRepoId })
+          } else {
+            openTaskPage()
+          }
+        }}
         onPointerEnter={handlePrefetch}
         onFocus={handlePrefetch}
         aria-current={tasksActive ? 'page' : undefined}
