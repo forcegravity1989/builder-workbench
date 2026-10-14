@@ -30,8 +30,7 @@ export function AcceptanceGoalCards({
   sectionRef,
   onOpenIssues,
   onReadings,
-  onGoalChange,
-  onFollowUp
+  onGoalChange
 }: {
   plan: PlanningMaterial
   document: AcceptanceMaterial
@@ -43,7 +42,6 @@ export function AcceptanceGoalCards({
   onOpenIssues(goalId: string, title: string): void
   onReadings(goalId: string, ref: MetricRef, readings: MetricReadingEvidence[]): void
   onGoalChange(next: AcceptanceMaterial, goalId: string): void
-  onFollowUp(text: string): void
 }) {
   return (
     <section id="acceptance-results" ref={sectionRef} aria-label="展示验收">
@@ -100,7 +98,6 @@ export function AcceptanceGoalCards({
                 goal={goal}
                 disabled={readOnly}
                 onChange={(value) => onGoalChange(value, goal.goalId)}
-                onFollowUp={onFollowUp}
               />
             }
           />

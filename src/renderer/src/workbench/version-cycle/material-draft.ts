@@ -71,6 +71,17 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
         this.update({ ...this.value, remote: undefined, error: undefined })
       }
     } else if (remote) {
+      // A poll that reads back the same revision must not republish a freshly
+      // parsed copy: consumers compare document identity (report dialog,
+      // decision freshness) to mean "unchanged", and identity churn on every
+      // 5s poll closed the preview dialog and rehashed evidence for nothing.
+      if (
+        remote.revision === this.value.expectedRevision &&
+        this.value.remote === undefined &&
+        this.value.error === undefined
+      ) {
+        return
+      }
       this.update({ document: remote.document, expectedRevision: remote.revision, dirty: false })
     } else {
       this.update({ ...this.value, error: '材料不存在，保留当前内容；未创建替代文件。' })

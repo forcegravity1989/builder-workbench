@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type Ref } from 'react'
-import { BrainCircuit, ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import type {
   PlanningMaterial,
   VersionTaskSnapshot
@@ -18,7 +18,6 @@ export function CycleTasks({
   goalFilter,
   onFilter,
   onTask,
-  onDecompose,
   onSnapshot,
   snapshot,
   disabled = false
@@ -32,7 +31,6 @@ export function CycleTasks({
   goalFilter: string
   onFilter(value: string): void
   onTask(task: CycleTaskSnapshot): Promise<void>
-  onDecompose?(): void
   onSnapshot?(items: CycleTaskRead[]): void
   snapshot?: VersionTaskSnapshot[]
   disabled?: boolean
@@ -104,12 +102,6 @@ export function CycleTasks({
           {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}版本任务{' '}
           <span className="vp-muted">{plan?.tasks.length ?? 0}</span>
         </button>
-        {onDecompose && (
-          <button className="wb-btn wb-btn-sm" disabled={!plan || disabled} onClick={onDecompose}>
-            <BrainCircuit size={14} />
-            在会话中拆解
-          </button>
-        )}
       </div>
       {open && (
         <>

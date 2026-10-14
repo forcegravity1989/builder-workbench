@@ -17,7 +17,6 @@ import {
 } from '../../shared/workbench/version-history'
 import type { VersionDocumentSnapshot } from '../../shared/workbench/version-document'
 import type { PlanningMaterial } from '../../shared/workbench/version-material'
-import { createArchiveStateChecker, type ArchiveCandidate } from './version-history-archive-check'
 import {
   decodeHistorySnapshot,
   planningMaterialGitPath,
@@ -37,17 +36,9 @@ export type VersionHistoryHost = {
     scope: MetricScope,
     version: string
   ): Promise<VersionDocumentSnapshot<PlanningMaterial> | null>
-  /** Native archive/provider evidence, never inferred only from Git reachability or topology. */
-  archiveState(
-    scope: MetricScope,
-    candidate: ArchiveCandidate
-  ): Promise<
-    { kind: 'adopted'; proof: unknown } | { kind: 'draft' } | { kind: 'unknown'; message: string }
-  >
 }
 
 export function createVersionHistoryService(host: VersionHistoryHost): VersionHistoryPort {
-  const { archiveState } = createArchiveStateChecker(host)
 
   async function verifySource(scope: MetricScope, sourceCommit: string) {
     const baseline = await host.baseline(scope)
@@ -208,29 +199,11 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           })
           continue
         }
-        const adopted = await archiveState(scope, {
-          baseline,
-          sourceCommit,
-          version: path[1],
-          workflow,
-          revision: snapshot.revision,
-          cycleId: snapshot.document.cycleId
-        })
-        if (adopted.kind === 'draft') {
-          continue
-        }
-        if (adopted.kind === 'unknown') {
-          // 归档状态是信号不是可见性门：记录仍列出、仍可读，灯与问题如实呈现未证明。
-          problems.push({
-            version: path[1],
-            sourceCommit,
-            workflow,
-            committedAt,
-            code: 'archive-unverified',
-            message: adopted.message
-          })
-        }
-        const key = JSON.stringify([path[1], workflow, snapshot.revision])
+        // Records are the baseline history itself: every listed commit is on the
+        // adopted branch. One record per version/workflow/cycle round — the newest
+        // commit of a round supersedes its intermediates; older revisions stay
+        // traceable through Git. Readers verify identity again at read time.
+        const key = JSON.stringify([path[1], workflow, snapshot.document.cycleId])
         if (seen.has(key)) {
           continue
         }

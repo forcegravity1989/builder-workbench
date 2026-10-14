@@ -25,10 +25,10 @@
 | C04 无草稿 / 无 Mark ready | ◐ | HostedReview 创建与状态动作 | 组件测试使用模拟；未看真实 MR |
 | C05 未安装 CLI | ◐ | 预检只报 `{ installed }` | `preflight-host-cli-status.test.ts` 锁定探测顺序 |
 | C06 周期里按项目路径打开 | ◐ | `src/renderer/src/workbench/task-port.ts` | `task-port.test.ts`；未从计划屏点进真实详情 |
-| C07 归档保持未知 | ◐ | `archive-source-gap.ts`、`archive-port.ts` | `archive-source-gap.test.ts`；未在 CodeHub 仓库上看见未知原因 |
+| C07 归档保持未知 | ◐ | `src/main/workbench/archive-pr-status.ts`（CodeHub/非 GitHub 一律 unknown；2026-10-13 起原 archive-source-gap/archive-port 接缝已随合入证明链退役删除） | 未在 CodeHub 仓库上看见未知原因 |
 | C08 基线版本目录可选 | ◐ | `version-history-service.ts` 的 `treePlans` | `version-history-service.test.ts` 有「无 provider 合入也列出 data.json」；真壳未选过版本 |
 | CJ01 关闭后重启仍为关闭 | ○ | 任务页 + CLI | 未执行 |
 
 相关单测还有 `src/main/codehub/mutations.test.ts`、`work-items.test.ts`、`src/main/github/issue-update.codehub.test.ts`（GitHub 更新不因旁边有 CodeHub 远程而改道）。
 
-**已知债**：真实 CodeHub 上的列表、关单评论、归档未知文案、从验收打开任务，都没有人看过。合入证据通道未建，C07 会一直是未知，直到 gate 改决定并有可读回的实现。同一提交里的侧栏项目列表和「配置指标进入会话」归版本计划、版本验收和总览指标，不记成本特性已验收。
+**已知债**：真实 CodeHub 上的列表、关单评论、归档未知文案、从验收打开任务，都没有人看过。CodeHub 的 PR/MR 状态读回通道未建，C07 会一直是未知，直到 gate 改决定并有可读回的实现（2026-10-13 起归档状态按 archivePr 薄读取，CodeHub 分支诚实返回 unknown）。同一提交里的侧栏项目列表和「配置指标进入会话」归版本计划、版本验收和总览指标，不记成本特性已验收。

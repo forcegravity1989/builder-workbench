@@ -554,6 +554,7 @@ import {
   SkillUploadChunkRequestSchema,
   SkillUploadCommitRequestSchema
 } from '../skill-upload-session-contract'
+import { ArchivePrStatusRequestSchema } from '../workbench/archive-pr-status'
 import {
   CharterProbeRequestSchema,
   CharterReadRequestSchema,
@@ -563,7 +564,6 @@ import {
 } from '../workbench/charter'
 import { CycleSyncSchema } from '../workbench/cycle-sync'
 import { MetricReadRequestSchema } from '../workbench/metrics'
-import { ArchiveProofRequestSchema } from '../workbench/version-archive'
 import {
   VersionHistoryListSchema,
   VersionHistoryReadPlanSchema,
@@ -1190,7 +1190,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'updater.download': null,
   'updater.getStatus': null,
   'updater.install': null,
-  'workbench.archive.proof': ArchiveProofRequestSchema,
+  'workbench.archive.prStatus': ArchivePrStatusRequestSchema,
   'workbench.charter.probeRemote': CharterProbeRequestSchema,
   'workbench.charter.read': CharterReadRequestSchema,
   'workbench.charter.status': CharterStatusRequestSchema,

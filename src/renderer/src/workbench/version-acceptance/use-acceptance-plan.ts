@@ -5,7 +5,7 @@ import type {
   VersionTreePlan
 } from '../../../../shared/workbench/version-history'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
-import type { EvidenceCheck, PlanReference } from './acceptance-model'
+import type { PlanReference } from './acceptance-model'
 import { assertFixedPlan } from './acceptance-model'
 import type { nativeVersionMaterialPort } from '../version-material-port'
 import { MaterialVersion } from '../../../../shared/workbench/version-material'
@@ -138,11 +138,9 @@ export function useFixedAcceptancePlan(
     }
   }, [history, scope, reference, key, refresh])
   const current = result?.key === key ? result : null
-  const verification: EvidenceCheck = current ?? { kind: 'unknown', reason: '固定计划尚未读取' }
   return {
     refresh: () => setRefresh((value) => value + 1),
     plan: current?.kind === 'verified' ? current.plan : null,
-    verification,
     error: current && current.kind !== 'verified' ? current.reason : null
   }
 }

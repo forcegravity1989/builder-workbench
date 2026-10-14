@@ -8,7 +8,7 @@
 
 AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks 详情与正文编辑、Automations、现有文件打开和命令执行能力。右侧围绕 G1/G2/G3 目标卡展示实际交付、材料、实测与人的结论，下接 Issue 状态区；“预览纪要”在目标区标题旁。材料准备在新建或已有原生验收会话中完成，不再设独立准备摘要、固定包/报告/展示占位或“材料备齐”勾选；候选与材料来源仍保留在记录和纪要中，不建通用发布控制台。
 
-共用 CycleTasks、CycleArchive、useMaterialAutosave 和 useMaterialArchive；承诺区共用骨架，验收业务字段由本页拥有。旧 PlanResultsPane 已随旧三屏链条退役删除，跨版本 results 流程不再并行维护。TaskPort/CycleSessionPort/ArchivePort/VersionDocumentPort 与计划共用（已按当前接线落地），MetricsPort 由指标线提供。页面经 artifacts 准备入口确保 bw/week-acceptance 后进入原生 terminal，右板由 CycleWorkspaceShell 挂载；会话、标签/分屏、历史和工具侧栏完整沿用原生工作区，边界见计划设计。
+共用 CycleTasks、CycleArchive、useMaterialAutosave 和 useArchivePrStatus；承诺区共用骨架，验收业务字段由本页拥有。旧 PlanResultsPane 已随旧三屏链条退役删除，跨版本 results 流程不再并行维护。TaskPort/ArchivePrPort/VersionDocumentPort 与计划共用（已按当前接线落地；原 CycleSessionPort 贴草稿通道与 ArchivePort 字节证明链已整体退役删除），MetricsPort 由指标线提供。页面经 artifacts 准备入口确保 bw/week-acceptance 后进入原生 terminal，右板由 CycleWorkspaceShell 挂载；会话、标签/分屏、历史和工具侧栏完整沿用原生工作区，边界见计划设计。
 
 ## 两个常驻工作树
 
@@ -42,7 +42,7 @@ AcceptanceMetrics 按目标的 metricTargets 与已存 readings 的名称集合�
 
 验收纪要由对应修订确定性生成，预览/复制/归档采用同一函数。已合入记录以目标基线的 commit + 文档路径 + cycleId 为历史身份；总览读取摘要，能打开对应只读原文及来源。每周和补证归档都是可追溯修订，缓存可重建，不另建里程碑表或历史业务数据库。
 
-准备状态、人的结论和归档灯分别推导；保存不是验收认可，候选包可用不是已发版。未达报告合入时归档可以完成而目标仍未达。
+旅程灯只读模型写入的 workflow.stage（灰/绿两态，位置比较），人工结论按 decision 与证据新鲜度推导，归档 PR 合入状态按 archivePr 薄读取；三者互不代替。保存不是验收认可，候选包可用不是已发版。未达报告归档时灯可绿而目标仍未达。来源行只呈现记录事实与纯声明比对（artifactCandidateCheck），在线文件/执行探测（原「检查文件与候选」按钮与 acceptance-candidate-port）已删除。
 
 人的结论按目标绑定证据：只补目标二的材料时，目标一原结论继续保留；更换计划修订、整个源码候选或候选交付包时，全部目标保留原结论并提示重新核对。decision.materialRevision 是固定计划、候选、该目标承诺及结果证据的确定性 SHA-256，不含 decision 本身。preparedArtifacts 中 kind=package 的全局候选包集合（含校验值、位置、生成时间和执行来源）参与所有目标摘要，同一源码提交换包也会使全部目标待核。非 package 材料仅在本目标实际交付位置引用时纳入；其他目标的材料变化不会使此目标失效。不增加候选包选择界面或构建记录服务。该摘要只判断证据变化，不认证判断人身份或替人授权。人的来源与时间单独展示，旧记录没有匹配的证据摘要时按待核呈现。
 
@@ -56,4 +56,4 @@ AcceptanceMetrics 按目标的 metricTargets 与已存 readings 的名称集合�
 
 旧结果不另设页面动作；首行“新建验收”在读取有问题时携带具体文件与诊断。会话读取共享迁移预览并保留原件，按实际上一版与唯一目标对应通过普通验收保存接口合并；不在验收页再建一套迁移算法，不自动覆盖本次已编辑结果，也不将历史 confirmation 当作本次人的认可。
 
-验证保留跨树写入限制、计划/候选固定与变化、材料匹配、报告/灯色及历史索引的既有有效覆盖；本轮只补少量关键行为检查，不为原型控件或原生能力复制大套测试。重复构建恢复须从真实会话和任务取证，不能把尚未接入的行为写成已测。A01–A10/AJ01/AJ02 的完整证据仍需真实 Electron、项目命令、模型和独立读回。验收线负责右板、共享协作入口与必要父级接线；指标组件按上述边界协作，公共原生文件变化先核对并行改动。
+验证保留跨树写入限制、计划/候选固定与变化、材料匹配、报告与历史索引的既有有效覆盖；本轮只补少量关键行为检查，不为原型控件或原生能力复制大套测试。重复构建恢复须从真实会话和任务取证，不能把尚未接入的行为写成已测。A01–A10/AJ01/AJ02 的完整证据仍需真实 Electron、项目命令、模型和独立读回。验收线负责右板、共享协作入口与必要父级接线；指标组件按上述边界协作，公共原生文件变化先核对并行改动。
