@@ -26,6 +26,8 @@
 
 2026-10-13 真壳验证反馈批（同日第二批，用户实机验证后逐项提出）：①「上版验收」按钮从选源弹窗改为直接跳转验收屏（PlanningProgressSource 组件删除；更丰富视图在验收屏，改源归会话由模型写 progressSource），进展区保持内联回显派生纪要，来源行不再显示提交哈希。②验收纪要（deriveAcceptanceReport）与总览验收摘要改为人话正文——周期、材料修订、固定提交、定义指纹、采集元数据等技术标识全部移出纪要（留材料与 Git 追溯），验收 spec A08 判据同步。③存量材料补写 workflow：v0.4/v0.5/v0.6 计划与 v0.5 验收补 stage=archive；archivePr 仅填可查证者——v0.6 计划 #335（归档提交语明示）、v0.5 计划 #294、v0.5 验收 #326（承载当前字节进 main 的首个合并 PR，ancestry-path 查证），v0.4 无干净 PR 证据只补 stage 不编造。④week-planning references/data-and-runtime.md 新增「补写阶段状态（存量材料升级）」节：会话进入或恢复时发现材料缺 workflow 节即按实际进度补写，被管项目存量灯自愈，不需逐文件手工修。⑤CycleArchive 已归档但无 PR 记录的文案改「已归档；PR 链接未记录」。证据：workbench vitest 41 文件 229 例全绿、typecheck 0 错、bundled guides/manifest 重生成并通过 verify；真壳复验待用户执行。
 
+2026-10-14 Issue #355 同步统一批（用户在对齐会话逐项拍板，正本文案见 #355 plan §0）：进屏自动 gitPull 废止——计划/验收屏进屏零 Git 动作、不挂同步提示；页头按钮改「更新代码」并成为唯一同步入口，经新 RPC `workbench.trunk.update`：基线解析（钉值 `worktreeBaseRef` 或主检出当前分支，不再猜 main/master）→ fetch 书签 → 双向 rev-list 对比 → `merge --ff-only`。快进不了（分叉、主检出有本地改动、分支失配、远端不可达）保持原样，统一一句话提示请会话模型处理该分支的代码更新，材料仍照常重读并保留未保存输入；纯草稿状态（树有未合入提交、主干没前进）不是异常、不提示。旧机制同批删除：`trunkPullTarget`、BW 对 `gitPull` 的消费、`resolveAdoptedBaseline` 名字探针、cycle-sync-runtime/port 与旧 syncTrunk 契约。week-planning references 与 version-records 的「刷新数据」协议句改写为「更新代码」新语义。证据：workbench vitest 全绿 226 例（ratchet 基线 228→226：删 trunkPullTarget 4 例、旧基线解析 3 例、configuration-not-adopted 1 例，增基线解析 3 例、同步决策 3 例，指标采用 fetch 1 例原位改写为无 fetch 语义）、typecheck 0 错、rpc-catalog / bundled-skill-guides / skill-bundle-manifest verify 绿；真壳未运行（用户明示本轮不做启动验证）——按钮快进、拒绝提示与「验收合入后计划屏一次更新可见」跨屏场景待用户实机验证。
+
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
 | intent | ● 已确认 | 沿用三特性边界，用户确认本轮计划/验收共用协作入口与资产同步 |
@@ -62,7 +64,7 @@
 | P07 自动化登记去重、BW 提示覆盖同步、用户设置保留、真实到点可追溯 | ◐ | 默认关闭态注册（ensure-cycle-automation：creationKey 去重、已有条目覆盖同步提示词、用户设置保留、人启用才到点）+ 页头「配置自动化」预填/编辑入口 | 去重/覆盖同步/同步失败放行单测；真实到点与跨重启去重待人启用后验证 |
 | P08 并发保存冲突处理；重启/切项目/切版本读回一致 | ◐ | useMaterialAutosave + MaterialDraftController CAS + PlanningPersistenceNotice + view-memory | 本轮自动保存检查见 PR；既有控制器测试/烟测不能替代新路径的真实并发及重启读回 |
 | P09 归档在会话中发起；旅程灯只读 workflow.stage；状态行按 archivePr 显示真实合入状态 | ◐ | stage 序号比较（shared/version-workflow）+ CycleArchive 只读状态行 + archive-pr-port → workbench.archive.prStatus（薄读取，读不到保持未知）；原 prepareRequest 贴草稿通道与字节证明链已于 2026-10-13 退役删除 | version-workflow 单测；UI 呈现交验收点 E2E 与真壳 Review；模型按 SKILL 写 stage 与真实 PR 状态读取仍待真实会话及 provider 验证 |
-| P10 总览按当前采用基线版本目录读摘要；往返保草稿；坏历史不伪造 | ◐ | use-version-minutes+OverviewPage 双栏+problems 列表 | 组件级+烟测总览；多周真实归档回看待人 |
+| P10 总览按主干基线（主检出）版本目录读摘要；往返保草稿；坏历史不伪造 | ◐ | use-version-minutes+OverviewPage 双栏+problems 列表 | 组件级+烟测总览；多周真实归档回看待人 |
 
 | 旅程 | 状态 | 覆盖 |
 |---|---|---|
