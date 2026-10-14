@@ -28,13 +28,13 @@ import type {
   CharterSubmitRequest
 } from '../../shared/workbench/charter'
 import { createGitHubPullRequest } from '../github/client/create/create-github-pull-request'
-import { getRepoDefaultBranchName } from '../source-control/repo-default-branch'
 import { gitExecFileAsync } from '../git/runner'
 import { readGitBlobAtOidPath } from '../git/source-control/git-blob-read'
 import { probeGitRemoteIdentity } from '../repo-git-remote-identity'
 import { createCodeHubMr } from '../codehub/mr-creation'
 import { lookupOpenCharterPr, readCharterStatus } from './charter-pr-status'
 import { resolveWorkbenchGitExecOptions } from './project-git-routing'
+import { runTrunkBaseline } from './trunk-baseline'
 import {
   createWorkbenchWorkspaceResolver,
   nativeWorkbenchWorkspaceHost,
@@ -194,6 +194,23 @@ function createCharterService(runtime: CharterRuntimeHost) {
 
     const body = params.firstTime ? FIRST_CHARTER_BODY : EDIT_CHARTER_BODY
     const title = params.firstTime ? '项目约定' : '项目信息改动'
+    // PR/MR 目标分支统一走主干基线解析：钉值或主检出当前分支；解析不出如实
+    // 失败，不猜名、不设兜底分支。
+    let targetBranch = ''
+    try {
+      const baseline = await runTrunkBaseline(repo.path, repo.worktreeBaseRef ?? null, execOptions)
+      if (!baseline.sync) {
+        throw new Error(`基线 ${baseline.ref} 不是一条可推送的分支`)
+      }
+      targetBranch = baseline.sync.branchName
+    } catch (e) {
+      return {
+        mode: 'failed',
+        stage: 'pr',
+        error: `定不下 PR 目标分支：${execMessage(e)} —— 分支已推到 ${CHARTER_BRANCH},可手动开`,
+        filled
+      }
+    }
     if (isCodeHubGitRemote(identity)) {
       const remote = parseCodeHubRemote(identity.remoteUrl)
       if (!remote) {
@@ -203,16 +220,6 @@ function createCharterService(runtime: CharterRuntimeHost) {
           error: `认不出 CodeHub 远端(${identity.remoteUrl}),分支已推到 ${CHARTER_BRANCH},可手动开 MR`,
           filled
         }
-      }
-      let targetBranch = ''
-      try {
-        const symbolic = await git(['symbolic-ref', 'refs/remotes/origin/HEAD'])
-        targetBranch = symbolic.stdout.trim().replace(/^refs\/remotes\/origin\//, '')
-      } catch {
-        // origin/HEAD 没设过:退回默认分支探测,最后按 main 的内网惯例兜底 master。
-      }
-      if (!targetBranch) {
-        targetBranch = (await getRepoDefaultBranchName(repo.path, null, execOptions)) || 'master'
       }
       try {
         const created = await createCodeHubMr({
@@ -242,10 +249,9 @@ function createCharterService(runtime: CharterRuntimeHost) {
         }
       }
     }
-    const base = (await getRepoDefaultBranchName(treePath, null, execOptions)) || 'main'
     const result = await createGitHubPullRequest(
       treePath,
-      { provider: 'github', base, head: CHARTER_BRANCH, title, body, draft: false },
+      { provider: 'github', base: targetBranch, head: CHARTER_BRANCH, title, body, draft: false },
       executionHostId,
       { localGitExecOptions: execOptions }
     )
