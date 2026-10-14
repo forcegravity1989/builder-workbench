@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/context-menu'
 import { PER_REPO_FETCH_LIMIT } from '@/lib/new-workspace'
 import { getLocalPreflightContext, localPreflightContextKey } from '@/lib/local-preflight-context'
+import { getTaskEligibleRepos } from '@/components/task-page-default-repo-selection'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useRepoMap } from '@/store/selectors'
@@ -156,7 +157,15 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
   const tasksActive = activeView === 'tasks'
   // BW 壳内任务入口默认带入项目墙当前项目(与验收/计划屏同一解析:activeRepoId ?? repos[0]),
   // 复用原生 openTaskPage 的 preselectedRepoId 预选契约;页内项目筛选仍可改。
-  const workbenchProjectRepoId = isWorkbenchShell() ? (activeRepoId ?? repos[0]?.id ?? null) : null
+  // 仅当前项目确属页面口径的合格仓(git + 远端身份未被判无)才传预选:预选落空时
+  // openTaskPage 的预取分支返回空集不回退,反而丢掉首屏预热;不合格按原样无参调用。
+  const currentProjectRepoId = activeRepoId ?? repos[0]?.id ?? null
+  const workbenchProjectRepoId =
+    isWorkbenchShell() &&
+    currentProjectRepoId &&
+    getTaskEligibleRepos(repos).some((repo) => repo.id === currentProjectRepoId)
+      ? currentProjectRepoId
+      : null
 
   const button = (
     <div className="group relative">
