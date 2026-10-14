@@ -188,9 +188,10 @@ export function TaskPageGitHubList({
         {unresolvedSourceRepos.map((r) =>
           r.codehub ? (
             // Why: a CodeHub-remote repo never resolves a GitHub source; the task source
-            // only stayed on GitHub because CodeHub is hidden or its CLI is unavailable.
-            // Explain the real cause and link to Settings → Tasks instead of a GitHub
-            // retry that cannot succeed.
+            // only stayed on GitHub because CodeHub is hidden in settings or the entry
+            // point pinned GitHub. A missing CLI no longer lands here — it surfaces as a
+            // codehubError after the automatic switch. Link to Settings → Tasks instead
+            // of a GitHub retry that cannot succeed.
             <div
               key={`source-unresolved-${r.repoId}`}
               role="status"
@@ -205,7 +206,7 @@ export function TaskPageGitHubList({
                 <span className="font-mono">{r.label}</span> —{' '}
                 {translate(
                   'auto.components.TaskPage.codehubSourceUnavailableHint',
-                  'this repo is a CodeHub project. Show CodeHub in Settings → Tasks, or install codehub-cli.'
+                  'this repo is a CodeHub project. Show CodeHub in Settings → Tasks, or switch to the CodeHub source.'
                 )}
               </span>
               <Button

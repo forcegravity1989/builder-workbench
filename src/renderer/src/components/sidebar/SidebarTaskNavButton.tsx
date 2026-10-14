@@ -88,8 +88,6 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
         preferredVisibleTaskProviders,
         {
           gitlabInstalled: preflightStatusCurrent && preflightStatus?.glab?.installed === true,
-          codehubInstalled:
-            preflightStatusCurrent && preflightStatus?.codehub?.installed === true,
           linearConnected: linearStatus.connected === true
         },
         defaultTaskSource
