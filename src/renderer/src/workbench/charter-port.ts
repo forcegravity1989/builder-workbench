@@ -1,7 +1,12 @@
-import { getRepoExecutionHostId, parseExecutionHostId } from '../../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  getRepoSshConnectionId,
+  parseExecutionHostId
+} from '../../../shared/execution-host'
 import type { Repo } from '../../../shared/repo-types'
 import type {
   CharterIntent,
+  CharterReadResult,
   CharterRemoteProbe,
   CharterScope,
   CharterStatus,
@@ -11,6 +16,7 @@ import type { VersionMaterialResult } from '../../../shared/workbench/version-ma
 import { routeForOwner } from '../lib/worktree-owner-route'
 import { callRuntimeRpc, type RuntimeClientTarget } from '../runtime/runtime-rpc-client'
 import { MetricRuntimeError, callMetricRuntime } from './metric-runtime-rpc'
+import { readProjectCharter } from './project-charter'
 
 /** 克隆前远端名片预读:gh / codehub-cli 在本机执行,固定走本地 runtime。 */
 export async function probeRemoteCharter(url: string): Promise<CharterRemoteProbe> {
@@ -41,6 +47,42 @@ export async function submitProjectCharter(
     (ownerScope) => ({ scope: ownerScope, intent, firstTime }),
     300_000
   )
+}
+
+/**
+ * G3 墙判据:按仓库 owner/runtime 路由读注册仓主检出的 `.bw/project.toml`。
+ * 本机与 SSH 走 fs 桥;runtime 主机经 workbench.charter.read 在 owner 侧读。
+ * 连接失败/IO 失败返回 error——「没读成」不冒充「不存在」(铁律二同源语义)。
+ */
+export async function readRepoCharter(
+  repo: Pick<Repo, 'id' | 'path' | 'connectionId' | 'executionHostId'>,
+  runtimeOwnerEnvironmentId?: string
+): Promise<CharterReadResult> {
+  const hostId = getRepoExecutionHostId(repo)
+  const parsedHost = parseExecutionHostId(hostId)
+  if (parsedHost?.kind !== 'runtime') {
+    const local = await readProjectCharter(repo.path, getRepoSshConnectionId(repo))
+    return { charter: local.charter, existed: local.existed, error: local.error }
+  }
+  const route = routeForOwner({ hostId, runtimeOwnerEnvironmentId })
+  if (!route?.runtimeEnvironmentId) {
+    return { charter: null, existed: false, error: '无法识别仓库所属 runtime 主机' }
+  }
+  try {
+    const result = await callRuntimeRpc<VersionMaterialResult<CharterReadResult>>(
+      { kind: 'environment', environmentId: route.runtimeEnvironmentId },
+      'workbench.charter.read',
+      // runtime-kind 宿主在 owner 侧就是本地注册(与 charter.status 同一路由约定)。
+      { repoId: repo.id, hostId: 'local' },
+      { timeoutMs: 30_000 }
+    )
+    if (!result.ok) {
+      return { charter: null, existed: false, error: result.error.message }
+    }
+    return result.value
+  } catch (e) {
+    return { charter: null, existed: false, error: e instanceof Error ? e.message : String(e) }
+  }
 }
 
 /**

@@ -5,7 +5,6 @@ import { localPreflightContextKey, getLocalPreflightContext } from '@/lib/local-
 import { getProviderRuntimeContextKey } from '@/lib/provider-runtime-context'
 import { useRef } from 'react'
 import { getScreenSubmitShortcutLabel } from '@/lib/screen-submit-shortcut'
-import { useWorkbenchScopedRepos } from '@/workbench/workbench-sidebar-repo-scope'
 export function useTaskPageStoreBindings() {
   useTranslation()
   const settings = useAppStore((s) => s.settings)
@@ -16,8 +15,7 @@ export function useTaskPageStoreBindings() {
   const openTaskPage = useAppStore((s) => s.openTaskPage)
   const closeTaskPage = useAppStore((s) => s.closeTaskPage)
   const activeModal = useAppStore((s) => s.activeModal)
-  const catalogRepos = useAppStore((s) => s.repos)
-  const repos = useWorkbenchScopedRepos(catalogRepos)
+  const repos = useAppStore((s) => s.repos)
   const sshConnectionStates = useAppStore((s) => s.sshConnectionStates)
   const sshTargetLabels = useAppStore((s) => s.sshTargetLabels)
   const runtimeEnvironments = useAppStore((s) => s.runtimeEnvironments)

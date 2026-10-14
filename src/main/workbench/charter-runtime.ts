@@ -15,10 +15,13 @@ import {
   CHARTER_BRANCH,
   PROJECT_TOML_REL,
   fillBlankCharterInToml,
+  parseProjectToml,
   renderProjectToml,
   type ProjectCharter
 } from '../../shared/workbench/project-charter'
 import type {
+  CharterReadRequest,
+  CharterReadResult,
   CharterStatus,
   CharterStatusRequest,
   CharterSubmitOutcome,
@@ -146,7 +149,11 @@ function createCharterService(runtime: CharterRuntimeHost) {
     if (!needPush) {
       try {
         await git(['rev-parse', '--verify', '--quiet', `origin/${CHARTER_BRANCH}`])
-        const ahead = await git(['rev-list', '--count', `origin/${CHARTER_BRANCH}..${CHARTER_BRANCH}`])
+        const ahead = await git([
+          'rev-list',
+          '--count',
+          `origin/${CHARTER_BRANCH}..${CHARTER_BRANCH}`
+        ])
         needPush = Number(ahead.stdout.trim()) > 0
       } catch {
         needPush = true
@@ -166,7 +173,12 @@ function createCharterService(runtime: CharterRuntimeHost) {
       }
       let merged = false
       try {
-        const mainBlob = await readGitBlobAtOidPath(repo.path, 'HEAD', PROJECT_TOML_REL, execOptions)
+        const mainBlob = await readGitBlobAtOidPath(
+          repo.path,
+          'HEAD',
+          PROJECT_TOML_REL,
+          execOptions
+        )
         merged = mainBlob.exists && !mainBlob.failed
       } catch {
         merged = false
@@ -213,7 +225,12 @@ function createCharterService(runtime: CharterRuntimeHost) {
         })
         return {
           mode: 'pr',
-          pr: { provider: 'codehub', number: created.iid, url: created.url, adopted: created.adopted },
+          pr: {
+            provider: 'codehub',
+            number: created.iid,
+            url: created.url,
+            adopted: created.adopted
+          },
           filled
         }
       } catch (e) {
@@ -265,10 +282,28 @@ function createCharterService(runtime: CharterRuntimeHost) {
     return readCharterStatus(repo, execOptions)
   }
 
+  /**
+   * 墙判据(G3):读注册仓主检出的 `.bw/project.toml`。在 owner runtime 本机
+   * 用 node fs 读(与 renderer 本地 readProjectCharter 同语义);「不存在」与
+   * 「没读成」分开回答,不互相冒充。
+   */
+  async function read(params: CharterReadRequest): Promise<CharterReadResult> {
+    const repo = repoById(params.repoId)
+    const { raw, error } = await readTextFileGuarded(join(repo.path, PROJECT_TOML_REL))
+    if (error) {
+      return { charter: null, existed: true, error }
+    }
+    if (raw === null) {
+      return { charter: null, existed: false, error: null }
+    }
+    return { charter: parseProjectToml(raw), existed: true, error: null }
+  }
+
   return {
     probeRemote: probeRemoteCharter,
     submit,
-    status
+    status,
+    read
   }
 }
 
