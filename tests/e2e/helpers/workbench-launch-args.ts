@@ -48,8 +48,9 @@ export function getWorkbenchElectronLaunchArgs(mainPath: string, headful: boolea
   // --no-sandbox automatically; raw spawn() paths (e.g. second-instance
   // activation) must match or Chromium aborts with SIGTRAP before handshake.
   // GPU flags keep the Xvfb run on a software path when the GPU subprocess
-  // cannot initialize (the default project's window IS shown on the virtual
-  // display — see workbench-app.ts showOnVirtualDisplay).
+  // cannot initialize (on GitHub Actions' xvfb the default project's window IS
+  // shown — see showOnVirtualDisplay in workbench-app.ts; a local xvfb run
+  // stays windowless unless ORCA_E2E_FORCE_HEADFUL=1).
   return [
     ...frameFlags,
     '--no-sandbox',
