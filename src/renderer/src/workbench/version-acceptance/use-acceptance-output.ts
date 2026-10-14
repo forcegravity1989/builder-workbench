@@ -5,7 +5,7 @@ import type { MaterialDraft, MaterialDraftController } from '../version-cycle/ma
 import type { CycleTaskRead } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import { decisionFreshness } from './acceptance-decision'
-import { sameAcceptanceSource, type EvidenceCheck } from './acceptance-model'
+import { sameAcceptanceSource } from './acceptance-model'
 import { deriveAcceptanceReport } from './acceptance-report'
 import { captureTaskSnapshot } from './acceptance-task-evidence'
 import type { DecisionFreshness } from './acceptance-decision'
@@ -20,7 +20,6 @@ export function useAcceptanceOutput(
   controller: MaterialDraftController<AcceptanceMaterial>,
   draft: MaterialDraft<AcceptanceMaterial> | null,
   plan: VersionHistoryPlan | null,
-  planVerification: EvidenceCheck,
   onError: (error: string) => void
 ) {
   const document = draft?.document
@@ -101,8 +100,7 @@ export function useAcceptanceOutput(
       const output = deriveAcceptanceReport({
         document,
         plan: plan.document,
-        revision: draft?.dirty ? '未保存草稿' : (draft?.expectedRevision ?? '未保存'),
-        verification: { plan: planVerification, decisions }
+        decisions
       })
       if (lifetime.active && controller.value?.document === document) {
         setReport({

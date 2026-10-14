@@ -35,7 +35,7 @@ export function CycleArchive({
   })()
   const label = !archivePr
     ? reachedArchive
-      ? '已记录进入归档；PR 链接待模型写入材料。'
+      ? '已归档；PR 链接未记录。'
       : '尚未进入归档；在会话中请模型核对材料并提交 PR。'
     : loading || !status
       ? '正在读取归档 PR 状态…'

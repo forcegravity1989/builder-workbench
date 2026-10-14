@@ -62,7 +62,7 @@ export function useAcceptanceBoard({
   const document = draft?.document
   const fixed = useFixedAcceptancePlan(history, metricScope, document?.planRef)
   const plan = fixed.plan
-  const output = useAcceptanceOutput(context, controller, draft, plan, fixed.verification, setError)
+  const output = useAcceptanceOutput(context, controller, draft, plan, setError)
   const associated = Boolean(document && document.version === context.version)
   const readOnly = busy || Boolean(context.syncing) || !associated || !plan
   const lifetime = useRef({ active: true })

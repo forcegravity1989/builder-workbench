@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useAppStore } from '@/store'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { CycleTaskRead } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
+import { setCycleView } from '../cycle-view-state'
 import { CycleArchive } from '../version-cycle/CycleArchive'
 import { CycleStartCard } from '../version-cycle/CycleStartCard'
 import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-workspace'
@@ -15,7 +17,6 @@ import { PlanningTasks } from './PlanningTasks'
 import { PlanningMinutes } from './PlanningMinutes'
 import { PlanningPersistenceNotice } from './PlanningPersistenceNotice'
 import { PlanningHeader, PlanningJourneyNav } from './PlanningSections'
-import { PlanningProgressSource } from './PlanningProgressSource'
 import { usePlanningViewMemory } from './use-planning-view-memory'
 import { useProgressMinutes } from './use-progress-minutes'
 import { useArchivePrStatus } from '../version-cycle/use-archive-pr-status'
@@ -193,28 +194,22 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
           <section className="vp-preparation" ref={preparation}>
             <div className="vp-brief-head">
               <label htmlFor="planning-progress">版本进展</label>
-              {plan ? (
-                <PlanningProgressSource
-                  scope={scope}
-                  worktreeId={worktreeId}
-                  plan={plan}
-                  disabled={disabled}
-                  onSource={(source) =>
-                    edit({ ...plan, summary: { ...plan.summary, progressSource: source } })
-                  }
-                />
-              ) : (
-                <button className="wb-btn wb-btn-sm" disabled>
-                  上版验收
-                </button>
-              )}
+              <button
+                className="wb-btn wb-btn-sm"
+                title="到验收屏查看完整验收记录"
+                onClick={() => {
+                  setCycleView('acceptance')
+                  useAppStore.getState().openArtifactsPage()
+                }}
+              >
+                上版验收
+              </button>
             </div>
             {progressSource && progressMinutes.kind !== 'error' ? (
               progressMinutes.kind === 'ready' ? (
                 <>
                   <p className="vp-muted">
-                    上版验收 {progressSource.version} ·{' '}
-                    {progressSource.sourceCommit.slice(0, 12)} · 由固定材料派生的只读纪要
+                    上版验收 {progressSource.version} 纪要 · 完整记录与来源在验收屏
                   </p>
                   <pre className="vp-progress-minutes">{progressMinutes.markdown}</pre>
                 </>
