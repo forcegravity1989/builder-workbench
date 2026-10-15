@@ -81,14 +81,37 @@ async function readSettledStartIds(page: Page): Promise<string[]> {
 }
 
 /**
+ * CloudDragon 把范围选择记在浏览器 localStorage（按用户名）：同一常驻会话
+ * 里第一次切换后，后续页面加载会异步恢复记住的范围（input 先空、再默认
+ * 值、最后恢复值，实测 ~750ms），表格直接按记住的范围加载。页面打开后
+ * 立刻读 scope 必然落在恢复完成前，会把「已是目标范围的表格」误判成切换
+ * 前基线，之后的「等表格变化」永远等不到。所以先等 scope 值稳定（连续
+ * 两次一致）再决策：稳定值是目标就直接用（省掉切换，实测热会话 ~1.6s
+ * 出全表），不是才走切换。
+ */
+async function readSettledScopeValue(page: Page): Promise<string> {
+  const deadline = Date.now() + TABLE_RENDER_TIMEOUT_MS
+  let previous = ''
+  while (Date.now() < deadline) {
+    const value = await readScopeValue(page)
+    if (value && value === previous) {
+      return value
+    }
+    previous = value
+    await page.waitForTimeout(RENDER_POLL_INTERVAL_MS)
+  }
+  return previous
+}
+
+/**
  * The scope dropdown commits its displayed value before the pipeline table
  * re-renders (measured ~1s lag on the real page): reading rows right after
  * the click returns the previous scope's pipelines. Skip the switch when the
- * scope already reads right, and after switching wait until the table content
- * actually differs from the settled pre-switch baseline.
+ * settled scope already reads right, and after switching wait until the table
+ * content actually differs from the settled pre-switch baseline.
  */
 async function ensureCurrentProjectScope(page: Page): Promise<void> {
-  if ((await readScopeValue(page)) === CURRENT_PROJECT_SCOPE) {
+  if ((await readSettledScopeValue(page)) === CURRENT_PROJECT_SCOPE) {
     return
   }
   const previousIds = await readSettledStartIds(page)

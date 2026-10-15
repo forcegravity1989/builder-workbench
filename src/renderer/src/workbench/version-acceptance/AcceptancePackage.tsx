@@ -234,24 +234,31 @@ export function AcceptancePackage({
         </p>
       )}
       {latest ? (
-        <div className="va-pkg-lines">
-          <div className="va-pkg-line">
-            <p title={latest.project}>{latest.project}</p>
-            <p className="va-pkg-mono" title={latest.version}>
+        <dl className="va-pkg-list">
+          <div>
+            <dt>项目名称</dt>
+            <dd title={latest.project}>{latest.project}</dd>
+          </div>
+          <div>
+            <dt>版本号</dt>
+            <dd className="va-pkg-mono" title={latest.version}>
               {latest.version}
-            </p>
+            </dd>
           </div>
-          <div className="va-pkg-line">
-            <p>{latest.created}</p>
-            <p className="va-pkg-mono" title={latest.files.join('、')}>
+          <div>
+            <dt>创建时间</dt>
+            <dd>{latest.created}</dd>
+          </div>
+          <div>
+            <dt>包文件</dt>
+            <dd className="va-pkg-mono" title={latest.files.join('、')}>
               {latest.files.join('、')}
-            </p>
+            </dd>
           </div>
-        </div>
+        </dl>
       ) : (
         !busy && !error && <p className="va-pkg-empty">该服务暂无制品包。</p>
       )}
-      <p className="va-muted va-pkg-source">数据源：CloudDragon 流水线与制品仓库。</p>
     </section>
   )
 }
