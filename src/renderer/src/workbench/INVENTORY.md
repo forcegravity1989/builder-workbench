@@ -33,7 +33,7 @@
 | 皮肤 token | `workbench-tokens.css` + `workbench-overview.css`；`version-planning/` 下 version-planning.css（布局）、planning-fields.css（字段）、planning-dialogs.css（对话框）；`version-acceptance/acceptance.css`、`metrics/metric-evidence.css` | `bw-tokens` / hifi-overview；workbench-plan.css 与旧三屏链条已删除 |
 | 热加载调试 | `pnpm run dev:workbench`（electron-vite HMR；独立 `workbench-dev` profile） | — |
 | 品牌打包 | `ORCA_PRODUCT_NAME` / `build:mac:workbench` | — |
-| Workbench Skills | `.claude/skills/{workbench-start,project-knowledge,version-report,design-system-import}`；产品剧本正源 `standard/skills/`（week-planning / version-acceptance / metrics-refresh 等），根级 `skills/` Stub 投影由 `config/scripts/generate-bundled-skill-guides.mjs` 生成 | cycle-prompt 内嵌 Stub、指南与 references 经 `ORCA skills get` 按需读取；week-planning 的 planning.py / version-plan.html / data-template.json 已退役删除，check-week-comment.py 保留作历史评论协议 |
+| Workbench Skills | `.claude/skills/{workbench-start,project-knowledge,workbench-release,design-system-import}`；产品剧本正源 `standard/skills/`（week-planning / version-acceptance / metrics-refresh 等），根级 `skills/` Stub 投影由 `config/scripts/generate-bundled-skill-guides.mjs` 生成 | cycle-prompt 内嵌 Stub、指南与 references 经 `ORCA skills get` 按需读取；week-planning 的 planning.py / version-plan.html / data-template.json 已退役删除，check-week-comment.py 保留作历史评论协议；version-report 技能已退役（#332），版本收尾报告并入 workbench-release |
 
 ## 隐藏 / 不建
 
