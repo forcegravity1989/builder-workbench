@@ -33,7 +33,7 @@
 
 ³ 第 6–7 行从已落地提交回写（2026-09-30），intent/spec 为草案，待人 gate。第 6 行接上原先「任务 CodeHub 支持」的占位，目录就是 [codehub/](codehub/)，范围含任务来源与计划/验收读写；spec 缺可点原型。第 7 行是 BW 开发者的 Windows 出包与 GitHub Release，无界面，操作契约在技能。明细见各自 STATUS。
 
-⁴ 第 8 行随 #323 设计 PR 首次登记（2026-10-14），2026-10-15 按人反馈简化重写：集成页收敛为 GitHub / CodeHub / WeLink 三卡，动作全部拼装 Orca 现有能力（现有五态口径、外链安装按钮、复用开发屏终端页签登录、现有 Re-check）；#323 明确本 PR 只交设计，intent/spec/原型均为草案待人 gate，实现待设计确认后启动（阻塞项：codehub-cli / welink-cli 安装说明链接口径待内网补）。明细见其 [STATUS](connectors/STATUS.md)。
+⁴ 第 8 行随 #323 设计 PR 首次登记（2026-10-14），2026-10-15 按人反馈两轮修订（简化为拼装现有能力；命令注入终端执行、人不手敲）：集成页收敛为 GitHub / CodeHub / WeLink 三卡，动作全部拼装 Orca 现有能力（现有五态口径、gh 外链安装保持、welink 安装命令为人确认权威口径、安装 / 登录命令注入开发屏终端页签、现有 Re-check）；#323 明确本 PR 只交设计，intent/spec/原型均为草案待人 gate，实现待设计确认后启动（阻塞项：codehub-cli 安装口径待内网补）。明细见其 [STATUS](connectors/STATUS.md)。
 
 ## 裁决与明细指引
 

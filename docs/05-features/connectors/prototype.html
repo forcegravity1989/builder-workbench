@@ -37,7 +37,7 @@
     .card-body { margin-top: 10px; padding-left: 46px; }
     .card-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
     .card-note { color: var(--muted-foreground); font-size: 12px; margin: 0; }
-    .cmd-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--color-text); }
+    .cmd-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-family: var(--font-mono); font-size: 12px; color: var(--color-text); word-break: break-all; }
     .cmd-row .dollar { color: var(--muted-foreground); }
     .scope-row { display: flex; align-items: center; gap: 6px; color: var(--muted-foreground); font-size: 11px; margin-top: 8px; }
 
@@ -46,14 +46,14 @@
     .review-switch select { height: 22px; padding: 0 4px; border: 1px solid var(--color-divider); border-radius: var(--radius-sm); background: var(--color-card); color: var(--color-text); font-size: 10px; }
     .has-status-badge .review-switch { top: 34px; }
 
-    /* 「打开终端」弹出的开发屏终端页签（演示假体） */
+    /* 「安装 / 登录」弹出的开发屏终端页签（演示假体） */
     .term-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(0,0,0,0.45); }
-    .term-window { width: min(640px, calc(100vw - 48px)); border-radius: 10px; overflow: hidden; border: 1px solid #262626; background: #0d0d0d; color: #d4d4d4; font-family: var(--font-mono); font-size: 12px; box-shadow: 0 18px 50px rgba(0,0,0,0.5); }
+    .term-window { width: min(680px, calc(100vw - 48px)); border-radius: 10px; overflow: hidden; border: 1px solid #262626; background: #0d0d0d; color: #d4d4d4; font-family: var(--font-mono); font-size: 12px; box-shadow: 0 18px 50px rgba(0,0,0,0.5); }
     .term-window-head { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-bottom: 1px solid #262626; color: #a3a3a3; font-size: 11px; font-family: inherit; }
     .term-window-head .close { margin-left: auto; background: none; border: none; color: #a3a3a3; font-size: 14px; cursor: pointer; padding: 0 2px; }
     .term-window-body { padding: 12px 14px; min-height: 96px; }
     .term-line { white-space: pre-wrap; word-break: break-all; line-height: 1.6; }
-    .term-input { display: flex; align-items: center; gap: 0; }
+    .term-input { display: flex; align-items: baseline; gap: 0; }
     .term-input .prompt { color: #4ade80; margin-right: 6px; }
     .caret { display: inline-block; width: 7px; height: 14px; vertical-align: -2px; background: #d4d4d4; animation: blink 1.1s steps(1) infinite; }
     @keyframes blink { 50% { opacity: 0; } }
@@ -109,7 +109,7 @@
 
   <div class="pane-head">
     <h2>集成</h2>
-    <p>Workbench 依赖的三个 CLI 在这里看状态；缺什么有按钮指路，登录在开发屏终端里完成。</p>
+    <p>Workbench 依赖的三个 CLI 在这里看状态；缺什么有按钮指路，命令注入终端执行，人不手敲。</p>
   </div>
 
   <!-- ══════════ 改前：现状（静态证据） ══════════ -->
@@ -125,7 +125,7 @@
           <h5>GitHub <span class="old-desc">— Pull requests, issues, and checks via the <code>gh</code> CLI.</span></h5>
         </div>
         <span class="card-status"><span class="tag tag-warning">未登录</span></span>
-        <span class="old-mark">只把 <code>gh auth login</code> 摆成文字，要自己开终端</span>
+        <span class="old-mark">只把 <code>gh auth login</code> 摆成文字，要自己开终端敲</span>
       </div>
       <div class="card old-card">
         <span class="card-icon">◐</span>
@@ -202,35 +202,34 @@
   </div>
 
   <div class="card legend">
-    <p><strong>评审说明</strong> — 每张卡右上角的下拉是评审用状态切换，不属产品 UI。「安装」跳安装说明链接（演示不真跳）；「打开终端」在开发屏弹一个终端页签（演示假体），人在里面执行登录命令，登完回卡上点「重新检查」翻状态。远端服务器范围下不给安装 / 打开终端按钮。codehub-cli / welink-cli 的安装说明链接待内网补，卡内如实占位。</p>
+    <p><strong>评审说明</strong> — 每张卡右上角的下拉是评审用状态切换，不属产品 UI。点「安装」「登录」在开发屏弹一个终端页签（演示假体），命令已注入执行，按 Enter 模拟完成；gh 的「安装」跳 cli.github.com（现有外链行为），codehub 的安装口径待内网补、如实占位。命令结束后回卡上点「重新检查」翻状态。远端服务器范围下不给安装 / 登录按钮。</p>
   </div>
 
   <script>
     var root = document.documentElement
 
     /* ── 数据：三卡（与 spec 命令表一致） ── */
+    var WELINK_INSTALL = 'npm install -g @welink/welink-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false'
+
     var CLIS = [
       {
         id: 'gh', group: 'codehost', name: 'GitHub', icon: '◐',
         desc: 'Pull requests, issues, and checks via the', cmd: 'gh',
-        installUrl: 'https://cli.github.com',
-        installNote: '按说明中本平台（macOS / Windows）一节安装。',
+        install: { kind: 'link', url: 'https://cli.github.com' },
         login: 'gh auth login',
         status: 'not-installed'
       },
       {
         id: 'codehub', group: 'codehost', name: 'CodeHub', icon: '⌘',
         desc: 'Issues and merge requests via the', cmd: 'codehub-cli',
-        installUrl: null,
-        installNote: '安装说明链接待内网补；codehub-cli 是内网分发的独立二进制。',
+        install: { kind: 'pending' },
         login: 'codehub-cli auth login',
         status: 'not-installed'
       },
       {
         id: 'welink', group: 'im', name: 'WeLink', icon: '◈',
         desc: '项目群通知 via the', cmd: 'welink-cli',
-        installUrl: null,
-        installNote: '安装说明链接待内网补；本机经内网 npm 源 npm install -g @welink/welink-cli 装成（公共 npm 同名包不可用）。',
+        install: { kind: 'command', command: WELINK_INSTALL },
         login: 'welink-cli auth login',
         status: 'not-installed'
       }
@@ -253,11 +252,6 @@
       if (cls) node.className = cls
       if (text != null) node.textContent = text
       return node
-    }
-
-    function findCli(id) {
-      for (var i = 0; i < CLIS.length; i++) if (CLIS[i].id === id) return CLIS[i]
-      return null
     }
 
     function renderCards() {
@@ -321,17 +315,20 @@
         body.appendChild(el('p', 'card-note', '状态在当前运行时不可得（探测不可用）。'))
       } else if (cli.status === 'not-installed') {
         body.appendChild(el('p', 'card-note', '安装 ' + cli.cmd + ' 后即可启用。'))
-        if (cli.installNote) {
-          var note = el('p', 'card-note', cli.installNote)
-          note.dataset.kind = 'install-note'
-          body.appendChild(note)
+        if (cli.install.kind === 'pending') {
+          var pend = el('p', 'card-note', '安装口径待内网补（内网分发二进制）；补齐前不塞猜测命令。')
+          pend.dataset.kind = 'install-pending'
+          body.appendChild(pend)
         }
         if (cli.installClicked) {
-          var jump = el('p', 'card-note', cli.installUrl
-            ? '跳转安装说明：' + cli.installUrl + '（演示不真跳）'
-            : '安装说明链接待内网补（演示占位）')
-          jump.dataset.kind = 'install-jump'
-          body.appendChild(jump)
+          var done = el('p', 'card-note',
+            cli.install.kind === 'link'
+              ? '已跳安装说明 ' + cli.install.url + '（演示不真跳）——装完点「重新检查」。'
+              : cli.install.kind === 'command'
+                ? '安装命令已在终端执行完成（演示）——点「重新检查」。'
+                : '安装口径待内网补（演示占位）——补齐前不给命令。')
+          done.dataset.kind = 'install-done-note'
+          body.appendChild(done)
         }
       } else if (cli.status === 'not-authenticated') {
         body.appendChild(el('p', 'card-note', cli.cmd + ' 已安装但未登录。'))
@@ -340,30 +337,30 @@
         cmdRow.appendChild(el('code', null, cli.login))
         body.appendChild(cmdRow)
         if (cli.loginDone) {
-          var done = el('p', 'card-note', '已在终端完成登录（演示）——点「重新检查」刷新状态。')
-          done.dataset.kind = 'login-done-note'
-          body.appendChild(done)
+          var note = el('p', 'card-note', '登录命令已在终端执行完成（演示）——点「重新检查」刷新状态。')
+          note.dataset.kind = 'login-done-note'
+          body.appendChild(note)
         }
       } else if (cli.status === 'connected') {
         body.appendChild(el('p', 'card-note', cli.cmd + ' 已安装并登录。'))
       }
 
-      /* 操作按钮：本机 + 对应状态才给安装 / 打开终端 */
+      /* 操作按钮：本机 + 对应状态才给安装 / 登录 */
       var actions = el('div', 'card-actions')
       if (!remote && cli.status === 'not-installed') {
         var btnInstall = el('button', 'btn btn-secondary btn-sm', '安装')
         btnInstall.dataset.action = 'install'
         btnInstall.addEventListener('click', function () {
-          cli.installClicked = true
-          renderCards()
+          if (cli.install.kind === 'command') openTerm(cli, 'install')
+          else { cli.installClicked = true; renderCards() }
         })
         actions.appendChild(btnInstall)
       }
       if (!remote && cli.status === 'not-authenticated') {
-        var btnTerm = el('button', 'btn btn-secondary btn-sm', '打开终端')
-        btnTerm.dataset.action = 'open-terminal'
-        btnTerm.addEventListener('click', function () { openTerm(cli) })
-        actions.appendChild(btnTerm)
+        var btnLogin = el('button', 'btn btn-secondary btn-sm', '登录')
+        btnLogin.dataset.action = 'login'
+        btnLogin.addEventListener('click', function () { openTerm(cli, 'login') })
+        actions.appendChild(btnLogin)
       }
       if (cli.status !== 'checking') {
         var btnRecheck = el('button', 'btn btn-ghost btn-sm', '重新检查')
@@ -383,10 +380,12 @@
       return card
     }
 
-    /* ── 「打开终端」：开发屏终端页签（演示假体） ── */
-    function openTerm(cli) {
+    /* ── 终端页签（演示假体）：命令已注入执行 ── */
+    function openTerm(cli, kind) {
       var old = document.querySelector('.term-overlay')
       if (old) old.remove()
+
+      var command = kind === 'install' ? cli.install.command : cli.login
 
       var overlay = el('div', 'term-overlay')
       var win = el('div', 'term-window')
@@ -401,10 +400,10 @@
       var body = el('div', 'term-window-body')
       var line = el('div', 'term-line term-input')
       line.appendChild(el('span', 'prompt', '$'))
-      line.appendChild(el('span', null, cli.login))
+      line.appendChild(el('span', null, command))
       line.appendChild(el('span', 'caret'))
       body.appendChild(line)
-      var hint = el('div', 'term-hint', '在此执行 ' + cli.login + '，按 CLI 自己的提示完成登录；完成后按 Enter（演示）')
+      var hint = el('div', 'term-hint', '命令已注入执行（演示）· 扫码 / 设备码由 CLI 自己呈现 · 按 Enter 模拟完成')
       hint.dataset.kind = 'term-hint'
       body.appendChild(hint)
       win.appendChild(body)
@@ -415,7 +414,8 @@
       function finish() {
         document.removeEventListener('keydown', onEnter)
         overlay.remove()
-        cli.loginDone = true
+        if (kind === 'install') cli.installClicked = true
+        else cli.loginDone = true
         renderCards()
       }
       function onEnter(ev) { if (ev.key === 'Enter') finish() }
