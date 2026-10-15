@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Builder Workbench · 集成页三卡收敛高保真</title>
+  <link rel="stylesheet" href="../../04-design-system/styles.css">
+  <style>
+    html, body { min-height: 100%; }
+    body { max-width: 880px; margin: 0 auto; padding: 0 20px 60px; }
+    [hidden] { display: none !important; }
+    button, input, select { font: inherit; }
+
+    /* 评审切换条 */
+    .preview { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-height: 40px; padding: 6px 14px; margin: 0 -20px; border-bottom: 1px solid var(--color-divider); background: var(--color-card); font-size: 12px; }
+    .preview strong { font-weight: 600; }
+    .preview .group { display: flex; align-items: center; gap: 6px; }
+    .preview-note { margin-left: auto; color: var(--muted-foreground); font-size: 11px; }
+
+    /* 页面骨架：模拟设置 → 集成 */
+    .pane-head { margin: 22px 0 14px; }
+    .pane-head h2 { margin-bottom: 2px; }
+    .pane-head p { color: var(--muted-foreground); font-size: 12px; }
+    .section { margin: 18px 0; }
+    .section-head h4 { margin-bottom: 1px; }
+    .section-head p { color: var(--muted-foreground); font-size: 12px; margin-bottom: 10px; }
+
+    /* 卡片 */
+    .integration-card { position: relative; margin-bottom: 10px; padding: 14px 16px; }
+    .card-top { display: flex; align-items: flex-start; gap: 12px; }
+    .card-icon { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: var(--color-neutral-100); color: var(--color-text); flex: none; }
+    .card-title-row { display: flex; align-items: center; gap: 8px; }
+    .card-title-row h5 { margin: 0; font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--color-text); }
+    .card-desc { color: var(--muted-foreground); font-size: 12px; margin-top: 2px; }
+    .card-desc code { font-family: var(--font-mono); font-size: 11px; }
+    .card-status { margin-left: auto; display: flex; align-items: center; gap: 6px; flex: none; }
+    .card-body { margin-top: 10px; padding-left: 46px; }
+    .card-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .card-note { color: var(--muted-foreground); font-size: 12px; margin: 0; }
+    .scope-row { display: flex; align-items: center; gap: 6px; color: var(--muted-foreground); font-size: 11px; margin-top: 8px; }
+
+    /* 评审用状态切换（不属产品 UI） */
+    .review-switch { position: absolute; top: 10px; right: 12px; display: flex; align-items: center; gap: 4px; color: var(--muted-foreground); font-size: 10px; }
+    .review-switch select { height: 22px; padding: 0 4px; border: 1px solid var(--color-divider); border-radius: var(--radius-sm); background: var(--color-card); color: var(--color-text); font-size: 10px; }
+    .has-status-badge .review-switch { top: 34px; }
+
+    /* 卡片内终端（演示假体） */
+    .mini-term { margin-top: 10px; border-radius: 8px; overflow: hidden; border: 1px solid #262626; background: #0d0d0d; color: #d4d4d4; font-family: var(--font-mono); font-size: 12px; }
+    .mini-term-head { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-bottom: 1px solid #262626; color: #737373; font-size: 10px; }
+    .mini-term-body { padding: 8px 10px; min-height: 58px; }
+    .mini-term-line { white-space: pre-wrap; word-break: break-all; line-height: 1.6; }
+    .mini-term-input { display: flex; align-items: center; gap: 0; }
+    .mini-term-input .prompt { color: #4ade80; margin-right: 6px; }
+    .mini-term-input .cmd { outline: none; white-space: pre; }
+    .caret { display: inline-block; width: 7px; height: 14px; margin-left: 1px; vertical-align: -2px; background: #d4d4d4; animation: blink 1.1s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .term-hint { color: #737373; font-size: 10px; margin-top: 6px; }
+
+    /* 改前视图的旧卡（静态证据） */
+    .old-card { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; padding: 10px 14px; }
+    .old-card .card-icon { width: 28px; height: 28px; }
+    .old-card h5 { margin: 0; font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--color-text); }
+    .old-card .old-desc { color: var(--muted-foreground); font-size: 11px; }
+    .old-card .card-status { gap: 4px; }
+    .old-mark { margin-left: 6px; color: var(--muted-foreground); font-size: 10px; }
+    .cut-reason { color: var(--muted-foreground); font-size: 10px; }
+
+    .legend { margin-top: 26px; padding: 12px 14px; font-size: 11px; color: var(--muted-foreground); }
+    .legend strong { color: var(--color-text); }
+  </style>
+</head>
+<body>
+
+  <div class="preview">
+    <strong>集成页三卡收敛</strong>
+    <span class="group">
+      <span>视图</span>
+      <span class="seg" id="seg-view">
+        <label class="seg-opt"><input type="radio" name="view" value="after" checked><span>改后</span></label>
+        <label class="seg-opt"><input type="radio" name="view" value="before"><span>改前</span></label>
+      </span>
+    </span>
+    <span class="group">
+      <span>平台</span>
+      <span class="seg" id="seg-platform">
+        <label class="seg-opt"><input type="radio" name="platform" value="mac" checked><span>macOS</span></label>
+        <label class="seg-opt"><input type="radio" name="platform" value="win"><span>Windows</span></label>
+      </span>
+    </span>
+    <span class="group">
+      <span>账户范围</span>
+      <span class="seg" id="seg-scope">
+        <label class="seg-opt"><input type="radio" name="scope" value="local" checked><span>本机</span></label>
+        <label class="seg-opt"><input type="radio" name="scope" value="remote"><span>远端服务器</span></label>
+      </span>
+    </span>
+    <span class="group">
+      <span>主题</span>
+      <span class="seg" id="seg-theme">
+        <label class="seg-opt"><input type="radio" name="theme" value="light" checked><span>浅</span></label>
+        <label class="seg-opt"><input type="radio" name="theme" value="dark"><span>深</span></label>
+      </span>
+    </span>
+    <span class="preview-note">评审样张 · 终端为演示假体，不真执行</span>
+  </div>
+
+  <div class="pane-head">
+    <h2>集成</h2>
+    <p>Workbench 依赖的三个 CLI 在这里安装与登录；状态由真实探测读回。</p>
+  </div>
+
+  <!-- ══════════ 改前：现状（静态证据） ══════════ -->
+  <div id="view-before" hidden>
+    <div class="section">
+      <div class="section-head">
+        <h4>Review providers</h4>
+        <p>Connect the source hosts Orca can use for pull requests, merge requests, checks, and review status.</p>
+      </div>
+      <div class="card old-card">
+        <span class="card-icon">◐</span>
+        <div>
+          <h5>GitHub <span class="old-desc">— Pull requests, issues, and checks via the <code>gh</code> CLI.</span></h5>
+        </div>
+        <span class="card-status"><span class="tag tag-warning">未登录</span></span>
+        <span class="old-mark">只把 <code>gh auth login</code> 摆成文字，要自己开终端</span>
+      </div>
+      <div class="card old-card">
+        <span class="card-icon">◐</span>
+        <div><h5>CodeHub <span class="old-desc">— Issues and merge requests via the <code>codehub-cli</code> CLI.</span></h5></div>
+        <span class="card-status"><span class="tag tag-neutral">Available</span></span>
+        <span class="old-mark">只探「在 PATH 上」，不探登录、无登录入口</span>
+      </div>
+      <div class="card old-card">
+        <span class="card-icon">✕</span>
+        <div><h5>GitLab</h5></div>
+        <span class="card-status"><span class="tag tag-outline">—</span></span>
+        <span class="cut-reason">BW 工作流不用</span>
+      </div>
+      <div class="card old-card">
+        <span class="card-icon">✕</span>
+        <div><h5>Bitbucket</h5></div>
+        <span class="card-status"><span class="tag tag-outline">—</span></span>
+        <span class="cut-reason">BW 工作流不用</span>
+      </div>
+      <div class="card old-card">
+        <span class="card-icon">✕</span>
+        <div><h5>Azure DevOps</h5></div>
+        <span class="card-status"><span class="tag tag-outline">—</span></span>
+        <span class="cut-reason">BW 工作流不用</span>
+      </div>
+      <div class="card old-card">
+        <span class="card-icon">✕</span>
+        <div><h5>Gitea</h5></div>
+        <span class="card-status"><span class="tag tag-outline">—</span></span>
+        <span class="cut-reason">BW 工作流不用</span>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-head">
+        <h4>Task providers</h4>
+        <p>Connect issue trackers Orca can use to browse tasks and start workspaces with linked context.</p>
+      </div>
+      <div class="card old-card">
+        <span class="card-icon">✕</span>
+        <div><h5>Linear</h5></div>
+        <span class="card-status"><span class="tag tag-outline">—</span></span>
+        <span class="cut-reason">BW 工作流不用</span>
+      </div>
+      <div class="card old-card">
+        <span class="card-icon">✕</span>
+        <div><h5>Jira</h5></div>
+        <span class="card-status"><span class="tag tag-outline">—</span></span>
+        <span class="cut-reason">BW 工作流不用</span>
+      </div>
+      <div class="card old-card" style="border-style: dashed;">
+        <span class="card-icon">＋</span>
+        <div><h5>WeLink <span class="old-desc">— 项目群通知依赖 <code>welink-cli</code>，本页没有它的卡</span></h5></div>
+        <span class="card-status"><span class="tag tag-danger">缺卡</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ 改后：三卡（数据驱动） ══════════ -->
+  <div id="view-after">
+    <div class="section">
+      <div class="section-head">
+        <h4>代码托管</h4>
+        <p>任务、PR / MR 与评审状态依赖的 CLI。</p>
+      </div>
+      <div id="group-codehost"></div>
+    </div>
+    <div class="section">
+      <div class="section-head">
+        <h4>项目群</h4>
+        <p>版本与验收结论往项目群通知依赖的 CLI。</p>
+      </div>
+      <div id="group-im"></div>
+    </div>
+  </div>
+
+  <div class="card legend">
+    <p><strong>评审说明</strong> — 每张卡右上角的下拉是评审用状态切换，不属产品 UI。点「安装」「登录」会把本平台命令预填进卡片内终端；在终端行按回车（演示）模拟执行，命令结束后自动复查翻状态。远端服务器范围下不给安装 / 登录按钮。codehub-cli 的安装命令待内网确认，卡内如实占位。</p>
+  </div>
+
+  <script>
+    var root = document.documentElement
+
+    /* ── 数据：三卡命令表（与 spec 命令表一致） ── */
+    var CLIS = [
+      {
+        id: 'gh', group: 'codehost', name: 'GitHub', icon: '◐',
+        desc: 'Pull requests, issues, and checks via the', cmd: 'gh',
+        install: { mac: 'brew install gh', win: 'winget install --id GitHub.cli' },
+        installNote: null,
+        login: 'gh auth login',
+        loginFlow: '设备码 / 浏览器流程由 gh 自己在终端里呈现',
+        status: 'not-installed'
+      },
+      {
+        id: 'codehub', group: 'codehost', name: 'CodeHub', icon: '⌘',
+        desc: 'Issues and merge requests via the', cmd: 'codehub-cli',
+        install: { mac: '内网补（安装命令待内网确认）', win: '内网补（安装命令待内网确认）' },
+        installNote: 'codehub-cli 是内网分发的独立二进制；命令未确认前不塞猜测命令。',
+        login: 'codehub-cli auth login',
+        loginFlow: '内网认证流程由 codehub-cli 自己在终端里呈现',
+        status: 'not-installed'
+      },
+      {
+        id: 'welink', group: 'im', name: 'WeLink', icon: '◈',
+        desc: '项目群通知 via the', cmd: 'welink-cli',
+        install: { mac: 'npm install -g @welink/welink-cli', win: 'npm install -g @welink/welink-cli' },
+        installNote: '需内网 npm 源；公共 npm 的同名 welink-cli 是京东前端脚手架，不是 WeLink 的 CLI。',
+        login: 'welink-cli auth login',
+        loginFlow: '扫码登录，在手机 WeLink 上确认',
+        status: 'not-installed'
+      }
+    ]
+
+    var STATUS_META = {
+      'checking':       { label: '检查中',   tag: 'tag-neutral' },
+      'not-installed':  { label: '未安装',   tag: 'tag-warning' },
+      'not-authenticated': { label: '未登录', tag: 'tag-warning' },
+      'connected':      { label: '已连接',   tag: 'tag-success' },
+      'unavailable':    { label: '不可用',   tag: 'tag-danger' }
+    }
+    var STATUS_ORDER = ['checking', 'not-installed', 'not-authenticated', 'connected', 'unavailable']
+
+    var ui = { view: 'after', platform: 'mac', scope: 'local' }
+
+    /* ── 渲染 ── */
+    function el(tag, cls, text) {
+      var node = document.createElement(tag)
+      if (cls) node.className = cls
+      if (text != null) node.textContent = text
+      return node
+    }
+
+    function renderCards() {
+      ['codehost', 'im'].forEach(function (group) {
+        var container = document.getElementById('group-' + group)
+        container.textContent = ''
+        CLIS.filter(function (c) { return c.group === group }).forEach(function (cli) {
+          container.appendChild(renderCard(cli))
+        })
+      })
+    }
+
+    function renderCard(cli) {
+      var meta = STATUS_META[cli.status]
+      var remote = ui.scope === 'remote'
+
+      var card = el('div', 'card integration-card')
+      card.dataset.cli = cli.id
+
+      /* 评审切换（不属产品 UI） */
+      var sw = el('div', 'review-switch')
+      sw.appendChild(el('span', null, '评审切换'))
+      var select = el('select')
+      STATUS_ORDER.forEach(function (s) {
+        var opt = el('option', null, STATUS_META[s].label)
+        opt.value = s
+        if (s === cli.status) opt.selected = true
+        select.appendChild(opt)
+      })
+      select.addEventListener('change', function () {
+        cli.status = select.value
+        cli.termOpen = false
+        renderCards()
+      })
+      sw.appendChild(select)
+      card.appendChild(sw)
+
+      /* 头部：图标 + 名称 + 说明 + 状态徽标 */
+      var top = el('div', 'card-top')
+      top.appendChild(el('span', 'card-icon', cli.icon))
+      var head = el('div')
+      var titleRow = el('div', 'card-title-row')
+      titleRow.appendChild(el('h5', null, cli.name))
+      head.appendChild(titleRow)
+      var desc = el('div', 'card-desc')
+      desc.appendChild(document.createTextNode(cli.desc + ' '))
+      desc.appendChild(el('code', null, cli.cmd))
+      desc.appendChild(document.createTextNode(' CLI.'))
+      head.appendChild(desc)
+      top.appendChild(head)
+      var status = el('span', 'card-status has-status-badge')
+      status.appendChild(el('span', 'tag ' + meta.tag, meta.label))
+      top.appendChild(status)
+      card.appendChild(top)
+
+      /* 主体：按状态换出的操作区 */
+      var body = el('div', 'card-body')
+
+      if (cli.status === 'checking') {
+        body.appendChild(el('p', 'card-note', '正在检查 ' + cli.cmd + ' 的安装与登录状态…'))
+      } else if (cli.status === 'unavailable') {
+        body.appendChild(el('p', 'card-note', remote
+          ? '远端状态读回失败或不可达，可「重新检查」重试。'
+          : '状态探测当前不可用（探测失败或运行时不支持）。'))
+      } else if (cli.status === 'not-installed') {
+        body.appendChild(el('p', 'card-note', '安装 ' + cli.cmd + ' 后即可启用。'))
+        if (cli.installNote) body.appendChild(el('p', 'card-note', cli.installNote))
+      } else if (cli.status === 'not-authenticated') {
+        body.appendChild(el('p', 'card-note', cli.cmd + ' 已安装但未登录。'))
+      } else if (cli.status === 'connected') {
+        body.appendChild(el('p', 'card-note', cli.cmd + ' 已安装并登录。'))
+      }
+
+      /* 操作按钮：本机 + 对应状态才给安装 / 登录 */
+      var actions = el('div', 'card-actions')
+      if (!remote && cli.status === 'not-installed') {
+        var btnInstall = el('button', 'btn btn-secondary btn-sm', '安装')
+        btnInstall.addEventListener('click', function () { openTerm(card, cli, 'install') })
+        actions.appendChild(btnInstall)
+      }
+      if (!remote && cli.status === 'not-authenticated') {
+        var btnLogin = el('button', 'btn btn-secondary btn-sm', '登录')
+        btnLogin.addEventListener('click', function () { openTerm(card, cli, 'login') })
+        actions.appendChild(btnLogin)
+      }
+      if (cli.status !== 'checking') {
+        var btnRecheck = el('button', 'btn btn-ghost btn-sm', '重新检查')
+        btnRecheck.addEventListener('click', function () {
+          cli.status = 'checking'
+          renderCards()
+          setTimeout(function () { cli.status = 'connected'; renderCards() }, 700)
+        })
+        actions.appendChild(btnRecheck)
+      }
+      if (actions.childNodes.length) body.appendChild(actions)
+
+      /* 账户范围行 */
+      var scope = el('div', 'scope-row')
+      scope.appendChild(el('span', null, '账户范围：'))
+      scope.appendChild(el('span', null, remote ? 'Remote server: builder-fleet-01' : '本机桌面'))
+      body.appendChild(scope)
+
+      card.appendChild(body)
+      return card
+    }
+
+    /* ── 卡片内终端（演示假体） ── */
+    function openTerm(card, cli, kind) {
+      if (cli.termOpen) { renderCards(); return }
+      cli.termOpen = true
+
+      var command = kind === 'install' ? cli.install[ui.platform] : cli.login
+      var meta = STATUS_META[cli.status]
+      var remote = ui.scope === 'remote'
+
+      var card2 = renderCard(cli)
+      card2.querySelector('.review-switch select').value = cli.status
+      var body = card2.querySelector('.card-body')
+
+      var term = el('div', 'mini-term')
+      var termHead = el('div', 'mini-term-head')
+      termHead.appendChild(el('span', null, cli.cmd + ' — 卡片内终端'))
+      term.appendChild(termHead)
+      var termBody = el('div', 'mini-term-body')
+      var line = el('div', 'mini-term-line mini-term-input')
+      line.appendChild(el('span', 'prompt', '$'))
+      line.appendChild(el('span', 'cmd', command))
+      var caret = el('span', 'caret')
+      line.appendChild(caret)
+      termBody.appendChild(line)
+      var hint = el('div', 'term-hint', '命令已预填 · 按 Enter 执行（演示） · ' + (kind === 'login' ? cli.loginFlow : '安装输出滚动可见'))
+      termBody.appendChild(hint)
+      term.appendChild(termBody)
+      body.appendChild(term)
+
+      /* 替换原卡（保持位置） */
+      card.replaceWith(card2)
+
+      function run() {
+        caret.remove()
+        hint.textContent = '执行中…（演示）'
+        setTimeout(function () {
+          var out = el('div', 'mini-term-line')
+          out.textContent = kind === 'install'
+            ? '… ' + command.split(' ')[0] + ' 安装完成（演示输出）'
+            : '… 登录成功（演示输出）'
+          termBody.insertBefore(out, hint)
+          hint.textContent = '命令结束 · 自动重新检查…'
+          setTimeout(function () {
+            cli.status = kind === 'install' ? 'not-authenticated' : 'connected'
+            cli.termOpen = false
+            renderCards()
+          }, 900)
+        }, 600)
+      }
+
+      document.addEventListener('keydown', function onEnter(ev) {
+        if (ev.key === 'Enter') { document.removeEventListener('keydown', onEnter); run() }
+      })
+      termBody.addEventListener('click', function () { run() })
+    }
+
+    /* ── 切换条 ── */
+    function bindSeg(name, apply) {
+      document.querySelectorAll('input[name="' + name + '"]').forEach(function (radio) {
+        radio.addEventListener('change', function () { apply(radio.value) })
+      })
+    }
+    bindSeg('view', function (v) {
+      ui.view = v
+      document.getElementById('view-before').hidden = v !== 'before'
+      document.getElementById('view-after').hidden = v !== 'after'
+    })
+    bindSeg('platform', function (v) { ui.platform = v; renderCards() })
+    bindSeg('scope', function (v) { ui.scope = v; renderCards() })
+    bindSeg('theme', function (v) { root.dataset.theme = v })
+
+    renderCards()
+  </script>
+</body>
+</html>
