@@ -33,8 +33,8 @@ export const PACKAGE_PIPELINES = [
 // saved .7z is a valid archive).
 export const LATEST_PACKAGE = {
   project: 'gtsllm-dfx',
-  version: '1.0.0-SNAPSHOT.20261015091143.640856637',
-  created: '2026-10-15 09:13:00',
+  version: '1.0.0-SNAPSHOT.20261015143151.060934033',
+  created: '2026-10-15 14:33:02',
   files: ['gtsllm-dfx-1.0.0-20260225_1000.7z', 'gtsllm-dfx-1.0.0-20260225_1000.7z.hwp7s']
 }
 
