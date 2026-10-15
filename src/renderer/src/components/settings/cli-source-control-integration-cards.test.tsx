@@ -4,11 +4,8 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getExecutionHostLabel } from '../../../../shared/execution-host'
-import {
-  CodeHubIntegrationCard,
-  GitHubIntegrationCard,
-  GitLabIntegrationCard
-} from './cli-source-control-integration-cards'
+import { GitHubIntegrationCard, GitLabIntegrationCard } from './cli-source-control-integration-cards'
+import { CodeHubIntegrationCard } from './bw-cli-integration-cards'
 
 const LOCAL_HOST_LABEL = getExecutionHostLabel('local')
 
@@ -25,12 +22,15 @@ const mocks = vi.hoisted(() => ({
       ghStatus: 'connected',
       glabStatus: 'connected',
       bitbucketStatus: 'not-configured',
-      azureDevOpsStatus: 'not-configured',
-      giteaStatus: 'not-configured',
-      codehubStatus: 'available',
       bitbucketAccount: null,
+      azureDevOpsStatus: 'not-configured',
       azureDevOpsAccount: null,
-      giteaAccount: null
+      azureDevOpsBaseUrl: null,
+      giteaStatus: 'not-configured',
+      giteaAccount: null,
+      giteaBaseUrl: null,
+      codehubStatus: 'connected',
+      welinkStatus: 'connected'
     },
     unavailable: false,
     refresh: vi.fn()
@@ -76,7 +76,8 @@ describe('CLI source-control integration card account scope', () => {
     mocks.store.current = null
     mocks.preflight.statuses.ghStatus = 'connected'
     mocks.preflight.statuses.glabStatus = 'connected'
-    mocks.preflight.statuses.codehubStatus = 'available'
+    mocks.preflight.statuses.codehubStatus = 'connected'
+    mocks.preflight.statuses.welinkStatus = 'connected'
     mocks.preflight.unavailable = false
     mocks.preflight.refresh.mockClear()
   })
@@ -130,7 +131,7 @@ describe('CLI source-control integration card account scope', () => {
     expect(rendered.textContent).toContain('glab auth login')
   })
 
-  it('shows codehub-cli as available without an auth action', async () => {
+  it('shows codehub-cli as connected without an auth action', async () => {
     mocks.store.current = {
       settings: { activeRuntimeEnvironmentId: null },
       openSettingsPage: vi.fn(),
@@ -140,10 +141,10 @@ describe('CLI source-control integration card account scope', () => {
     const rendered = await renderCard(<CodeHubIntegrationCard />)
 
     expect(rendered.textContent).toContain('CodeHub')
-    expect(rendered.textContent).toContain('Available')
+    expect(rendered.textContent).toContain('Connected')
     expect(rendered.textContent).toContain('codehub-cli')
+    expect(rendered.textContent).toContain(`Account scope: ${LOCAL_HOST_LABEL}`)
     expect(rendered.textContent).not.toContain('auth login')
-    expect(rendered.textContent).not.toContain('Account scope')
   })
 
   it('shows codehub-cli as missing from PATH and re-checks on demand', async () => {
@@ -158,6 +159,10 @@ describe('CLI source-control integration card account scope', () => {
 
     expect(rendered.textContent).toContain('Not installed')
     expect(rendered.textContent).toContain('codehub-cli is not on PATH.')
+    // Why (BW #323): no install button until the internal channel is confirmed
+    // — the honest note must be there instead of a guessing action.
+    expect(rendered.textContent).toContain('pending internal confirmation')
+    expect(rendered.textContent).not.toContain('Log in')
     await act(async () => {
       Array.from(rendered.querySelectorAll('button'))
         .find((button) => button.textContent === 'Re-check')

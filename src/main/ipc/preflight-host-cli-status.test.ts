@@ -130,17 +130,21 @@ describe('preflight', () => {
   })
 
   // Why: every preflight run probes (in order) `git --version`, `gh --version`,
-  // `glab --version`, `codehub-cli --version`, then in parallel `gh auth status`
-  // + `glab auth status` — six execFile calls per cycle. Tests below provide
-  // values for all six.
+  // `glab --version`, `codehub-cli --version`, `welink-cli --version`, then in
+  // parallel `gh auth status` + `glab auth status` + `codehub-cli auth status`
+  // + `welink-cli auth status` — nine execFile calls per cycle. Tests below
+  // provide values for all nine.
   it('marks gh as authenticated when gh auth status exits successfully', async () => {
     execFileAsyncMock
       .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
       .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
       .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
 
     const status = await runPreflightCheck()
 
@@ -148,17 +152,18 @@ describe('preflight', () => {
       git: { installed: true },
       gh: { installed: true, authenticated: true },
       glab: { installed: true, authenticated: true },
-      codehub: { installed: true },
+      codehub: { installed: true, authenticated: true },
+      welink: { installed: true, authenticated: true },
       bitbucket: defaultBitbucketStatus,
       azureDevOps: defaultAzureDevOpsStatus,
       gitea: defaultGiteaStatus
     })
-    expect(execFileAsyncMock).toHaveBeenNthCalledWith(5, 'gh', ['auth', 'status'], {
+    expect(execFileAsyncMock).toHaveBeenNthCalledWith(6, 'gh', ['auth', 'status'], {
       encoding: 'utf-8',
       timeout: 5000,
       windowsHide: true
     })
-    expect(execFileAsyncMock).toHaveBeenNthCalledWith(6, 'glab', ['auth', 'status'], {
+    expect(execFileAsyncMock).toHaveBeenNthCalledWith(7, 'glab', ['auth', 'status'], {
       encoding: 'utf-8',
       timeout: 5000,
       windowsHide: true
@@ -171,8 +176,11 @@ describe('preflight', () => {
       .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
       .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
       .mockRejectedValueOnce({ stderr: 'You are not logged into any GitHub hosts.\n' })
       .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
 
     const status = await runPreflightCheck()
 
@@ -185,8 +193,11 @@ describe('preflight', () => {
       .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
       .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
       .mockRejectedValueOnce({ stderr: 'Logged in to github.com account octocat\n' })
       .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
 
     const status = await runPreflightCheck()
 
@@ -199,14 +210,19 @@ describe('preflight', () => {
       .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
       .mockRejectedValueOnce(new Error('command not found: glab'))
       .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
 
     const status = await runPreflightCheck()
 
     expect(status.glab).toEqual({ installed: false, authenticated: false })
     // Why: with glab uninstalled, glab auth status must not run — that
-    // would surface a misleading "command not found" error in logs.
-    expect(execFileAsyncMock).toHaveBeenCalledTimes(5)
+    // would surface a misleading "command not found" error in logs. The
+    // remaining eight calls are the five version probes plus the gh /
+    // codehub / welink auth checks.
+    expect(execFileAsyncMock).toHaveBeenCalledTimes(8)
   })
 
   it('marks glab as installed but unauthenticated when auth status fails', async () => {
@@ -215,12 +231,74 @@ describe('preflight', () => {
       .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
       .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
       .mockRejectedValueOnce({ stderr: 'You are not logged into any GitLab hosts.\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
 
     const status = await runPreflightCheck()
 
     expect(status.glab).toEqual({ installed: true, authenticated: false })
+  })
+
+  // Why (BW #323): welink-cli exits 0 with an EXPIRED token too — it
+  // auto-refreshes on the next command — so exit 0 must read as connected
+  // rather than forcing a re-login (intent 待决 3 draft).
+  it('counts an EXPIRED welink token as authenticated', async () => {
+    execFileAsyncMock
+      .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
+      .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
+      .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({
+        stdout: 'User Token: EXPIRED\nHint: Token will auto-refresh on next command\n'
+      })
+
+    const status = await runPreflightCheck()
+
+    expect(status.welink).toEqual({ installed: true, authenticated: true })
+  })
+
+  it('treats welink as unauthenticated when auth status fails without markers', async () => {
+    execFileAsyncMock
+      .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
+      .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
+      .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockRejectedValueOnce({ stderr: 'not logged in\n' })
+
+    const status = await runPreflightCheck()
+
+    expect(status.welink).toEqual({ installed: true, authenticated: false })
+  })
+
+  // Why (BW #323): codehub-cli prints a host table whose LOGIN column reads
+  // `yes`; partial output can surface on a thrown error, so the markers must
+  // rescue it the same way gh's "Logged in" does.
+  it('reads codehub login markers from a failed auth status output', async () => {
+    execFileAsyncMock
+      .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
+      .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
+      .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
+      .mockRejectedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
+
+    const status = await runPreflightCheck()
+
+    expect(status.codehub).toEqual({ installed: true, authenticated: true })
   })
 
   it('times out hung local preflight probes', async () => {
@@ -398,7 +476,7 @@ describe('preflight', () => {
     // answer, or a forced refresh silently returns to the status it replaced.
     it('does not let a superseded probe overwrite a newer forced refresh', async () => {
       stubWslProbes()
-      // Why gate on phase captured at call time: the stale run's three
+      // Why gate on phase captured at call time: the stale run's five
       // --version probes all start before the refresh, and all report nothing
       // installed, so it never issues auth calls. The two runs are then
       // trivially distinguishable in the cached result.
@@ -504,8 +582,11 @@ describe('preflight', () => {
       .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
       .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
       .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
 
     const status = await runPreflightCheck()
 
@@ -572,21 +653,27 @@ describe('preflight', () => {
       .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
       .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
       .mockRejectedValueOnce({ stderr: 'You are not logged into any GitHub hosts.\n' })
       .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
       .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
       .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
       .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
 
     const firstStatus = await runPreflightCheck()
     const refreshedStatus = await runPreflightCheck(true)
 
     expect(firstStatus.gh).toEqual({ installed: true, authenticated: false })
     expect(refreshedStatus.gh).toEqual({ installed: true, authenticated: true })
-    expect(execFileAsyncMock).toHaveBeenCalledTimes(12)
+    expect(execFileAsyncMock).toHaveBeenCalledTimes(18)
   })
 
   it('awaits the persisted Windows Path refresh before a forced host CLI preflight', async () => {
@@ -606,8 +693,11 @@ describe('preflight', () => {
       .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
       .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
       .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
 
     const check = runPreflightCheck(true)
     await Promise.resolve()
@@ -670,8 +760,11 @@ describe('preflight', () => {
       .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
       .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'github.com\n' })
       .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
 
     registerPreflightHandlers()
 
@@ -681,7 +774,8 @@ describe('preflight', () => {
       git: { installed: true },
       gh: { installed: true, authenticated: true },
       glab: { installed: true, authenticated: true },
-      codehub: { installed: true },
+      codehub: { installed: true, authenticated: true },
+      welink: { installed: true, authenticated: true },
       bitbucket: defaultBitbucketStatus,
       azureDevOps: defaultAzureDevOpsStatus,
       gitea: defaultGiteaStatus
@@ -694,14 +788,20 @@ describe('preflight', () => {
       .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
       .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
       .mockRejectedValueOnce({ stderr: 'You are not logged into any GitHub hosts.\n' })
       .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
       .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
       .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
+      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
       .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
+      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
+      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
 
     registerPreflightHandlers()
 
@@ -712,7 +812,8 @@ describe('preflight', () => {
       git: { installed: true },
       gh: { installed: true, authenticated: false },
       glab: { installed: true, authenticated: true },
-      codehub: { installed: true },
+      codehub: { installed: true, authenticated: true },
+      welink: { installed: true, authenticated: true },
       bitbucket: defaultBitbucketStatus,
       azureDevOps: defaultAzureDevOpsStatus,
       gitea: defaultGiteaStatus
@@ -721,7 +822,8 @@ describe('preflight', () => {
       git: { installed: true },
       gh: { installed: true, authenticated: true },
       glab: { installed: true, authenticated: true },
-      codehub: { installed: true },
+      codehub: { installed: true, authenticated: true },
+      welink: { installed: true, authenticated: true },
       bitbucket: defaultBitbucketStatus,
       azureDevOps: defaultAzureDevOpsStatus,
       gitea: defaultGiteaStatus

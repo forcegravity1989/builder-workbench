@@ -86,21 +86,51 @@ describe('getPreflightIntegrationStatuses', () => {
     })
   })
 
-  it('reports codehub-cli as available only when the binary is on PATH', () => {
+  it('reports codehub-cli auth like gh now that preflight reads auth status', () => {
     expect(getPreflightIntegrationStatuses(connectedPreflight, new Set()).codehubStatus).toBe(
       'not-installed'
     )
     expect(
       getPreflightIntegrationStatuses(
-        { ...connectedPreflight, codehub: { installed: true } },
+        { ...connectedPreflight, codehub: { installed: true, authenticated: true } },
         new Set()
       ).codehubStatus
-    ).toBe('available')
+    ).toBe('connected')
     expect(
       getPreflightIntegrationStatuses(
-        { ...connectedPreflight, codehub: { installed: true } },
+        { ...connectedPreflight, codehub: { installed: true, authenticated: false } },
+        new Set()
+      ).codehubStatus
+    ).toBe('not-authenticated')
+    expect(
+      getPreflightIntegrationStatuses(
+        { ...connectedPreflight, codehub: { installed: true, authenticated: true } },
         new Set(['codehub'])
       ).codehubStatus
+    ).toBe('checking')
+  })
+
+  it('derives welink-cli status from presence and auth readback', () => {
+    expect(getPreflightIntegrationStatuses(connectedPreflight, new Set()).welinkStatus).toBe(
+      'not-installed'
+    )
+    expect(
+      getPreflightIntegrationStatuses(
+        { ...connectedPreflight, welink: { installed: true, authenticated: true } },
+        new Set()
+      ).welinkStatus
+    ).toBe('connected')
+    expect(
+      getPreflightIntegrationStatuses(
+        { ...connectedPreflight, welink: { installed: true, authenticated: false } },
+        new Set()
+      ).welinkStatus
+    ).toBe('not-authenticated')
+    expect(
+      getPreflightIntegrationStatuses(
+        { ...connectedPreflight, welink: { installed: true, authenticated: true } },
+        new Set(['welink'])
+      ).welinkStatus
     ).toBe('checking')
   })
 

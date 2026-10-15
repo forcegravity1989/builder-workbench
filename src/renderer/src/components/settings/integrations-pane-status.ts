@@ -4,11 +4,22 @@ export type GhStatus = 'checking' | 'connected' | 'not-installed' | 'not-authent
 // Why: parallel to GhStatus — GitLab uses glab and the same three failure
 // modes (probe in-flight / installed-but-unauth / missing entirely).
 export type GlabStatus = GhStatus
+// Why (BW #323): WeLink uses welink-cli and mirrors the gh failure modes.
+export type WelinkStatus = GhStatus
 export type BitbucketStatus = 'checking' | 'connected' | 'not-configured' | 'not-authenticated'
 export type AzureDevOpsStatus = 'checking' | 'configured' | 'not-configured' | 'not-authenticated'
 export type GiteaStatus = 'checking' | 'configured' | 'not-configured' | 'not-authenticated'
-export type CodeHubCliStatus = 'checking' | 'available' | 'not-installed'
-export type PreflightRefreshProvider = 'gh' | 'glab' | 'codehub' | 'bitbucket' | 'azureDevOps' | 'gitea'
+// Why (BW #323): codehub-cli now reports auth like gh, so its status carries
+// the same installed-but-unauth middle state instead of a bare "available".
+export type CodeHubCliStatus = 'checking' | 'connected' | 'not-installed' | 'not-authenticated'
+export type PreflightRefreshProvider =
+  | 'gh'
+  | 'glab'
+  | 'codehub'
+  | 'welink'
+  | 'bitbucket'
+  | 'azureDevOps'
+  | 'gitea'
 
 export type PreflightIntegrationStatuses = {
   ghStatus: GhStatus
@@ -22,6 +33,7 @@ export type PreflightIntegrationStatuses = {
   giteaAccount: string | null
   giteaBaseUrl: string | null
   codehubStatus: CodeHubCliStatus
+  welinkStatus: WelinkStatus
 }
 
 type TokenApiPreflightStatus = {
@@ -72,8 +84,21 @@ function ghStatusFromPreflight(status: PreflightStatus['gh']): GhStatus {
   return status.authenticated ? 'connected' : 'not-authenticated'
 }
 
+// Why (BW #323): mirrors ghStatusFromPreflight now that preflight reads
+// `codehub-cli auth status`. Older payloads without the auth readback fall
+// through to not-authenticated — the main process always sends it today.
 function codehubStatusFromPreflight(status: PreflightStatus['codehub']): CodeHubCliStatus {
-  return status?.installed ? 'available' : 'not-installed'
+  if (!status?.installed) {
+    return 'not-installed'
+  }
+  return status.authenticated ? 'connected' : 'not-authenticated'
+}
+
+function welinkStatusFromPreflight(status: PreflightStatus['welink']): WelinkStatus {
+  if (!status?.installed) {
+    return 'not-installed'
+  }
+  return status.authenticated ? 'connected' : 'not-authenticated'
 }
 
 function glabStatusFromPreflight(status: PreflightStatus['glab']): GlabStatus {
@@ -114,7 +139,8 @@ export function getPreflightIntegrationStatuses(
       giteaStatus: 'checking',
       giteaAccount: null,
       giteaBaseUrl: null,
-      codehubStatus: 'checking'
+      codehubStatus: 'checking',
+      welinkStatus: 'checking'
     }
   }
 
@@ -148,6 +174,11 @@ export function getPreflightIntegrationStatuses(
       'codehub',
       refreshingProviders,
       codehubStatusFromPreflight(preflightStatus.codehub)
+    ),
+    welinkStatus: maybeChecking(
+      'welink',
+      refreshingProviders,
+      welinkStatusFromPreflight(preflightStatus.welink)
     )
   }
 }

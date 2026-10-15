@@ -45,6 +45,9 @@ import {
   resolveDetectedTuiAgentIds
 } from '../ipc/tui-agent-detection-commands'
 import { invalidateWslGuestEnvironment } from '../wsl/wsl-guest-environment'
+// Why (BW #323): codehub/welink auth readbacks live in the BW sibling module
+// to keep this upstream file within its line budget.
+import { isCodehubAuthenticated, isWelinkAuthenticated } from './bw-cli-auth-status'
 
 export type PreflightStatus = {
   git: { installed: boolean }
@@ -54,8 +57,12 @@ export type PreflightStatus = {
   // affordances (the GitLab tab in the source picker, MR list, etc.)
   // gate on `glab?.authenticated`.
   glab?: { installed: boolean; authenticated: boolean }
-  // Why: settings only needs to know the CLI is on PATH. Auth stays out of this probe.
-  codehub?: { installed: boolean }
+  // Why: optional like glab — older payloads predate the auth readback. Auth is
+  // read from `codehub-cli auth status` (BW #323); pre-readback payloads only
+  // carried presence.
+  codehub?: { installed: boolean; authenticated: boolean }
+  // Why: BW #323 — welink-cli presence + auth read from `welink-cli auth status`.
+  welink?: { installed: boolean; authenticated: boolean }
   bitbucket?: { configured: boolean; authenticated: boolean; account: string | null }
   azureDevOps?: {
     configured: boolean
@@ -361,16 +368,27 @@ async function executePreflightCheck(
     _resetKnownHostsCache()
   }
 
-  const [gitProbe, ghProbe, glabProbe, codehubProbe] = await Promise.all([
+  const [gitProbe, ghProbe, glabProbe, codehubProbe, welinkProbe] = await Promise.all([
     detectCommandRuntime('git', context),
     detectCommandRuntime('gh', context),
     detectCommandRuntime('glab', context),
-    detectCommandRuntime('codehub-cli', context)
+    detectCommandRuntime('codehub-cli', context),
+    detectCommandRuntime('welink-cli', context)
   ])
 
-  const [ghAuthenticated, glabAuthenticated, bitbucket, azureDevOps, gitea] = await Promise.all([
+  const [
+    ghAuthenticated,
+    glabAuthenticated,
+    codehubAuthenticated,
+    welinkAuthenticated,
+    bitbucket,
+    azureDevOps,
+    gitea
+  ] = await Promise.all([
     ghProbe.installed ? isGhAuthenticated(ghProbe.wslTarget) : Promise.resolve(false),
     glabProbe.installed ? isGlabAuthenticated(glabProbe.wslTarget) : Promise.resolve(false),
+    codehubProbe.installed ? isCodehubAuthenticated(codehubProbe.wslTarget) : Promise.resolve(false),
+    welinkProbe.installed ? isWelinkAuthenticated(welinkProbe.wslTarget) : Promise.resolve(false),
     getBitbucketAuthStatus(),
     getAzureDevOpsAuthStatus(),
     getGiteaAuthStatus()
@@ -380,7 +398,8 @@ async function executePreflightCheck(
     git: { installed: gitProbe.installed },
     gh: { installed: ghProbe.installed, authenticated: ghAuthenticated },
     glab: { installed: glabProbe.installed, authenticated: glabAuthenticated },
-    codehub: { installed: codehubProbe.installed },
+    codehub: { installed: codehubProbe.installed, authenticated: codehubAuthenticated },
+    welink: { installed: welinkProbe.installed, authenticated: welinkAuthenticated },
     bitbucket,
     azureDevOps,
     gitea
