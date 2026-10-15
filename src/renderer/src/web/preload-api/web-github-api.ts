@@ -3,6 +3,7 @@ import {
   GITHUB_MARK_PR_READY_RUNTIME_CAPABILITY,
   GITHUB_MARK_PR_READY_UPDATE_REQUIRED_MESSAGE
 } from '../../../../shared/protocol-version'
+import { ISSUE_STATES_WEB_UNAVAILABLE } from '../../../../shared/github/issue-state-types'
 import { translate } from '@/i18n/i18n'
 import { GITHUB_WEB_RPC_METHODS } from './web-github-routes'
 import type { WebGitHubRuntimeMethod } from './web-github-routes'
@@ -201,7 +202,10 @@ export function createGitHubApi(): WebGitHubApi {
       route<WebGitHubResult<'updateIssueTypeBySlug'>>(
         GITHUB_WEB_RPC_METHODS.updateIssueTypeBySlug,
         args
-      )
+      ),
+    // BW 墙卡读数只在 Electron 壳内使用；web 端未接入 Issue 状态批量读取，
+    // 如实返回读不到（读数端显示 Unknown，不装 0）。
+    issueStates: async () => ({ items: [], error: ISSUE_STATES_WEB_UNAVAILABLE })
   } satisfies WebGitHubApi
 
   return githubApi

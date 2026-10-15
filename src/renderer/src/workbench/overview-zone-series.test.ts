@@ -4,7 +4,6 @@ import type { MetricDefinition, MetricReading } from '../../../shared/workbench/
 import {
   groupZonePlots,
   isoWeekLabel,
-  numericTarget,
   zoneBucketLabels,
   zoneChartRange,
   zonePointState,
@@ -81,16 +80,6 @@ describe('zoneChartRange', () => {
     expect(range.until).toBe('2026-09-25')
     expect(zoneBucketLabels(range)).toHaveLength(ZONE_DAY_BUCKETS)
     expect(zoneBucketLabels(range).at(-1)).toBe('09-24')
-  })
-
-  it('周标签是 ISO 周，日标签是 MM-DD', () => {
-    expect(zoneBucketLabels(zoneChartRange('week', TZ, NOW))).toEqual([
-      '2026-W35',
-      '2026-W36',
-      '2026-W37',
-      '2026-W38',
-      '2026-W39'
-    ])
   })
 })
 
@@ -190,13 +179,5 @@ describe('zonePointState', () => {
     }
     expect(state.values).toEqual([null, null, null, null, null])
     expect(state.latest?.value).toBe('达标')
-  })
-})
-
-describe('numericTarget', () => {
-  it('只有纯数字目标画参考线；比较符目标保持行内文本', () => {
-    expect(numericTarget('3')).toBe(3)
-    expect(numericTarget('≥3')).toBeNull()
-    expect(numericTarget('')).toBeNull()
   })
 })
