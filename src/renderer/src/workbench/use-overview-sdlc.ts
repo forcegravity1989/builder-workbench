@@ -51,19 +51,18 @@ export function useOverviewSdlc(args: {
   ])
   const entry = useMemo(() => cache(key), [key])
   const snapshot = useOverviewSnapshot(entry)
-  const load = useCallback(
-    (force = false) => {
-      if (
-        !ready ||
-        !repo ||
-        !baseScope ||
-        !baseWorktreeId ||
-        !baseWorktreePath ||
-        entry.pending ||
-        (!force && entry.read().loaded)
-      ) {
-        return
-      }
+  const load = useCallback(() => {
+    if (
+      !ready ||
+      !repo ||
+      !baseScope ||
+      !baseWorktreeId ||
+      !baseWorktreePath ||
+      entry.pending ||
+      entry.read().loaded
+    ) {
+      return
+    }
       const anchor = new Date().toISOString()
       // Five weeks cover both chart spans. Fetch native events once, then bucket locally.
       const range = zoneChartRange('week', timezone, anchor)

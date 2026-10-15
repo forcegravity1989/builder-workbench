@@ -29,6 +29,9 @@ const Command = z.strictObject({
 
 const ConfigurationRequest = z.strictObject({
   // Wire name predates the trunk unification; carries the pinned worktreeBaseRef.
+  // The pre-#355 `synchronize` field is deliberately gone: the tolerated skew
+  // direction is new main → older relay (old schema took it as optional); an
+  // older main against a new relay must update instead of keeping a dead field.
   adoptedRef: z.string().min(1).nullable(),
   configurationCommit: Sha.optional()
 })

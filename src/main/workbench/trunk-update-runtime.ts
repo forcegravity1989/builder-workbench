@@ -110,11 +110,18 @@ export function createTrunkUpdateService(runtime: TrunkUpdateRuntime) {
           { remoteName: sync.remoteName, branchName: sync.branchName },
           { ...execOptions, signal: AbortSignal.timeout(TRUNK_SYNC_TIMEOUT_MS) }
         )
+        let commit: string | undefined
+        try {
+          commit = await readTreeHead(treePath, execOptions)
+        } catch {
+          // The fast-forward already succeeded; a failing HEAD read-back must not
+          // demote the honest result — the toast just omits the commit id.
+        }
         return {
           updated: true,
           pulled: decision.behind,
           ref: baseline.ref,
-          commit: await readTreeHead(treePath, execOptions)
+          ...(commit ? { commit } : {})
         }
       } catch (reason) {
         return refuse(`代码未更新（${failureDetail(reason)}）。${askSession}`)

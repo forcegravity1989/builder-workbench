@@ -209,5 +209,8 @@ it('reads the pinned trunk baseline without fetching or touching anything', asyn
   expect(snapshot.dataCommit).toBe(before)
   expect(snapshot.toml).not.toContain('new metric')
   expect(head()).toBe(before)
+  // The origin/main bookmark stays where the push left it: proof that reading
+  // the configuration never fetched behind the scenes.
+  expect(git(['rev-parse', 'refs/remotes/origin/main']).toString().trim()).toBe(before)
   expect(readFileSync(join(root, 'README.md'), 'utf8')).toBe('unfinished plan work')
 }, 60_000)
