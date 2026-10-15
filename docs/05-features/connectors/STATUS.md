@@ -2,11 +2,11 @@
 
 > **维护约定**：本篇记录本特性六环链现状与证据，格式按 [02 §6.2](../../01-principles/02-working-backwards.md)「STATUS 格式」；更新触发：任一环状态或证据变化，随引发它的 PR 同批提交，不记流水。
 
-**现状（2026-10-15）**：设计已经人 gate（两轮修订后拍板「看着计划无问题，可以进行开发」），实现随 #323 同 PR 交付——三卡渲染（代码托管 / 项目群两组）、preflight 补 `welink-cli` 探测与 codehub / welink `auth status` 读回、安装 / 登录命令注入开发屏终端页签执行。真壳验收证据（I01–I10 / IJ01）未采，见已知债 4。
+**现状（2026-10-15）**：设计已经人 gate（两轮修订后拍板「看着计划无问题，可以进行开发」），实现随 #323 同 PR 交付——三卡渲染（代码托管 / 项目群两组）、preflight 补 `welink-cli` 探测与 codehub / welink `auth status` 读回、三卡登录与 welink 安装命令注入开发屏终端页签执行（gh 安装保持外链，codehub 安装占位）。真壳验收证据（I01–I10 / IJ01）未采，见已知债 3。
 
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
-| 1 intent | ✔ | intent.md 已 gate；4 个待决项按草案落地：待决 1（六卡组件 / 状态推导 / 词条保留在仓，只改 `IntegrationsPane` 渲染名单与 `integrations-search` 目录）、待决 3（welink EXPIRED 算 connected）随实现交付，最终去留待人复核；待决 2（codehub 安装口径）仍开放，见已知债 1 |
+| 1 intent | ✔ | intent.md 已 gate（2026-10-15）；待决 1（六卡组件 / 状态推导 / 词条保留在仓，只改 `IntegrationsPane` 渲染名单与 `integrations-search` 目录）与待决 3（welink EXPIRED 算 connected）按草案随实现交付，最终去留待人复核；待决 2（codehub 安装口径，见已知债 1）与待决 4（分组标题五语词条怎么译）仍开放 |
 | 2 spec | ✔ | spec.md 已 gate 并随实现对齐现实：远端运行时无按钮（WSL 工作树属本机范围，按钮保留，I09 同步）、命令注入为本机主进程写入并回车提交（非 `terminal-paste`，那是 SSH 通道）、i18n 照 CodeHub 先例只进 `en.json`；命令表 welink 安装为人确认权威口径 |
 | 3 实现设计 | ✔ | 落地与 spec 实现落点一致：`agent-detection.ts` 补探测编排（每轮 preflight 9 次 execFile：5 版本探测 + 4 auth 读回），codehub / welink 的 auth 读回在 BW 文件 `bw-cli-auth-status.ts`（上游文件受 max-lines 预算约束）；`preflight-api.ts` 补 `codehub.authenticated` 与 `welink` 字段；`integrations-pane-status.ts` 补 codehub / welink 状态推导；CodeHub / WeLink 卡与注入助手在 BW 文件 `bw-cli-integration-cards.tsx` / `cli-command-injection.ts`（同因 max-lines 拆出，经 barrel 导出），GitHub 卡在上游卡模块内接登录注入；三卡注入走 `createTab` + `pendingStartup` + 激活页签；`IntegrationsPane.tsx` 收敛为两组三卡 |
 | 4 TDD | ✔ | 看护落在核心口径：preflight 探测编排与 auth 读回语义（`preflight-host-cli-status.test.ts`：9 次调用序列改写 + 新增 welink EXPIRED 计 connected、无标记判未登录、codehub LOGIN 标记三例）；状态推导纯函数（`integrations-pane-status.test.ts`：codehub 改 auth 语义 + welink 推导）；卡片既有用例随行为更新保持绿（`cli-source-control-integration-cards.test.tsx`），未新增 UI 装配用例 |

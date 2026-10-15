@@ -1,6 +1,6 @@
 # intent — 集成页三卡收敛（Connectors）
 
-> **状态：草案，待人 gate。** 来源 [#323](https://github.com/forcegravity1989/builder-workbench/issues/323)（含 v0.6 自 #301 转入的安装引导遗留）。本篇只写为什么做与范围；目标行为见 [spec.md](spec.md)，链状态见 [STATUS.md](STATUS.md)，可点样张见 [prototype.html](prototype.html)。
+> **状态：已经人 gate（2026-10-15）；待决 1–4 项内决定仍开放。** 来源 [#323](https://github.com/forcegravity1989/builder-workbench/issues/323)（含 v0.6 自 #301 转入的安装引导遗留）。本篇只写为什么做与范围；目标行为见 [spec.md](spec.md)，链状态见 [STATUS.md](STATUS.md)，可点样张见 [prototype.html](prototype.html)。
 >
 > **维护约定**：给判断「BW 集成页该长什么样、三张卡从缺办到通值不值得做」的人读。集成页行为变化、CLI 依赖变化或待决项拍板时更新本篇；不抄实现清单，不记过程流水。
 

@@ -143,6 +143,7 @@ describe('CLI source-control integration card account scope', () => {
     expect(rendered.textContent).toContain('CodeHub')
     expect(rendered.textContent).toContain('Connected')
     expect(rendered.textContent).toContain('codehub-cli')
+    expect(rendered.textContent).toContain(`Account scope: ${LOCAL_HOST_LABEL}`)
     expect(rendered.textContent).not.toContain('auth login')
   })
 
