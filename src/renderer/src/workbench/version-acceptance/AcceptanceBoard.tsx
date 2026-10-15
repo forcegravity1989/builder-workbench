@@ -102,7 +102,7 @@ function ReadyAcceptanceBoard({
   const prStatus = useArchivePrStatus(context, document?.workflow?.archivePr)
   const hasMetrics = Boolean(
     plan?.document.goals.some((goal) => goal.metricTargets.length > 0) ||
-      document?.results.some((result) => result.readings.length > 0)
+    document?.results.some((result) => result.readings.length > 0)
   )
   const metricWindow = useAcceptanceMetricWindow(metrics, metricScope, hasMetrics)
   const [reportOpen, setReportOpen] = useState(false)

@@ -6,10 +6,7 @@ import { openProjectOnboard } from './project-page-state'
 import { CharterPrNotice } from './charter-pr-notice'
 import { useCharterPrStatus } from './use-charter-pr-status'
 import { readProjectCharter, type ProjectCharter } from './project-charter'
-import {
-  updateTrunkCode,
-  trunkUpdateNotice
-} from './version-cycle/trunk-update-port'
+import { updateTrunkCode, trunkUpdateNotice } from './version-cycle/trunk-update-port'
 import {
   nativeWorkspaceScope,
   nativeWorkspaceScopeKey,

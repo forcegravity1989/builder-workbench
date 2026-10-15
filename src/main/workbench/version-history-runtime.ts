@@ -4,10 +4,7 @@ import { PlanningMaterialSchema } from '../../shared/workbench/version-material'
 import type { MetricScope } from '../../shared/workbench/metrics'
 import type { VersionHistoryPort } from '../../shared/workbench/version-history'
 import { getActiveMultiplexer } from '../ssh/ssh-target-registry'
-import {
-  runReadOnlyHistoryGit,
-  type HistoryGitOutcome
-} from './history-git-core'
+import { runReadOnlyHistoryGit, type HistoryGitOutcome } from './history-git-core'
 import { runTrunkBaseline } from './trunk-baseline'
 import { resolveWorkbenchGitExecOptions } from './project-git-routing'
 import { createVersionHistoryService, type VersionHistoryHost } from './version-history-service'

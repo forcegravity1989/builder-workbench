@@ -139,7 +139,9 @@ export function decideTrunkUpdate(input: {
     if (input.ahead > 0) {
       return { action: 'refuse', reason: 'ahead-trunk' }
     }
-    return input.behind > 0 ? { action: 'fast-forward', behind: input.behind } : { action: 'current' }
+    return input.behind > 0
+      ? { action: 'fast-forward', behind: input.behind }
+      : { action: 'current' }
   }
   if (input.behind > 0 && input.ahead > 0) {
     return { action: 'refuse', reason: 'diverged' }

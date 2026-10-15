@@ -65,7 +65,10 @@ export async function resolveTrunkBaseline(
     try {
       commit = (await exec(['rev-parse', '--verify', `${pin}^{commit}`])).stdout.trim()
     } catch {
-      throw new HistorySourceError('baseline-invalid', `项目基线 ${pin} 已失效；不改用其他分支读取历史`)
+      throw new HistorySourceError(
+        'baseline-invalid',
+        `项目基线 ${pin} 已失效；不改用其他分支读取历史`
+      )
     }
     let symbolic = ''
     try {

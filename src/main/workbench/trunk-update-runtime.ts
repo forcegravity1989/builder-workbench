@@ -32,7 +32,11 @@ type TrunkUpdateRuntime = {
  */
 function failureDetail(error: unknown): string {
   const { stderr } = extractExecError(error)
-  const detail = stderr.trim().split('\n').findLast((line) => line.trim()) ?? ''
+  const detail =
+    stderr
+      .trim()
+      .split('\n')
+      .findLast((line) => line.trim()) ?? ''
   return stripCredentialsFromMessage(
     detail.trim() || (error instanceof Error ? error.message : String(error))
   )

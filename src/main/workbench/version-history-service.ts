@@ -39,7 +39,6 @@ export type VersionHistoryHost = {
 }
 
 export function createVersionHistoryService(host: VersionHistoryHost): VersionHistoryPort {
-
   async function verifySource(scope: MetricScope, sourceCommit: string) {
     const baseline = await host.baseline(scope)
     SourceCommit.parse(baseline.commit)
