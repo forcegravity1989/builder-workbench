@@ -387,8 +387,8 @@ shared visual language with the plan board. */
 .va-modal :is(button, summary):focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
-} /* 出包区块：工具行 + 行式元信息，语言对齐 va-result 的行式布局；
-mono 只用于版本号与文件名这类字面量。 */
+} /* 出包区块：工具行 + 两行式最新包信息；mono 只用于版本号与文件名
+这类字面量，超长值行尾省略、悬停显示全文。 */
 .va-pkg {
   border: 1px solid var(--color-divider);
   border-radius: var(--radius-md);
@@ -414,41 +414,36 @@ mono 只用于版本号与文件名这类字面量。 */
   color: var(--color-neutral-600);
   font-size: 0.8rem;
 }
-.va-pkg-artifact {
-  margin-top: var(--space-2);
-}
-.va-pkg-meta {
+.va-pkg-lines {
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding-block: var(--space-1);
-  font-size: 0.8rem;
-}
-.va-pkg-meta > span {
-  flex: none;
-  width: calc(var(--space-3) * 4);
-  color: var(--color-neutral-600);
-}
-.va-pkg-meta > p {
-  margin: 0;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.va-pkg-version {
-  font-family: var(--font-mono);
-}
-.va-pkg-meta > .wb-btn {
-  margin-left: auto;
-}
-.va-pkg-files {
-  display: grid;
+  flex-direction: column;
   gap: var(--space-1);
+  margin-top: var(--space-2);
+  font-size: 0.8rem;
   min-width: 0;
-  font-family: var(--font-mono);
 }
-.va-pkg-files p {
+.va-pkg-line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.va-pkg-line p {
   margin: 0;
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 前值按内容收缩，末值吃满剩余宽度，省略号落在行尾；全文由 title 悬停给出。 */
+.va-pkg-line p:not(:last-child) {
+  flex: none;
+}
+.va-pkg-line p:last-child {
+  flex: 1;
+}
+.va-pkg-mono {
+  font-family: var(--font-mono);
 }
 .va-pkg-empty {
   margin: var(--space-2) 0 0;

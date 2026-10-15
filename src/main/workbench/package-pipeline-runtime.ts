@@ -10,23 +10,14 @@ import type {
   PackagePipelineCatalog,
   PackagePipelinePort
 } from '../../shared/workbench/package-pipeline'
+import { PackagePipelineError, failureText, runOnCloudDragonPage } from './cloud-dragon-session'
 
 /**
- * CloudDragon 出包运行时：每次操作起一个无头本机 Chrome（channel:'chrome'），
- * 依赖内网 SSO 自动登录态完成页面操作。选择器与链路均经真实页面验证：
- * 列表/启动在流水线列表页，制品包在制品仓库服务页；启动走
- * #startLaunch_<流水线> → 执行方案启动 → pr_pipeline；下载走
- * d-icon#artifact_artifactDownloadId 换签名 URL 后由浏览器下载。
+ * CloudDragon 出包运行时：列表/启动在流水线列表页，制品包在制品仓库服务
+ * 页。选择器与链路均经真实页面验证：启动走 #startLaunch_<流水线> →
+ * 执行方案启动 → pr_pipeline；下载走 d-icon#artifact_artifactDownloadId
+ * 换签名 URL 后由浏览器下载。浏览器会话管理在 cloud-dragon-session。
  */
-export class PackagePipelineError extends Error {
-  constructor(
-    readonly code: string,
-    message: string
-  ) {
-    super(message)
-    this.name = 'PackagePipelineError'
-  }
-}
 
 // Why: CloudDragon 项目 ID 属于组织侧配置，当前接入 gtsllm-dfx 所在项目；
 // 配置化（随项目设置存储）是后续任务，不在此扩展协议。
@@ -34,8 +25,7 @@ const CLOUDDRAGON_PROJECT_ID = 'ga751ea99cf714cb1914e68639ac89123'
 const LIST_URL = `https://clouddragon.huawei.com/pipeline/project/${CLOUDDRAGON_PROJECT_ID}/pipeline/list`
 const SERVICES_URL = `https://clouddragon.huawei.com/artifact/project/${CLOUDDRAGON_PROJECT_ID}/services`
 
-const SSO_TIMEOUT_MS = 90_000
-const RENDER_POLL_INTERVAL_MS = 1_000
+const RENDER_POLL_INTERVAL_MS = 500
 const TABLE_RENDER_TIMEOUT_MS = 20_000
 const DIALOG_ACTION_TIMEOUT_MS = 10_000
 const LAUNCH_CONFIRM_TIMEOUT_MS = 30_000
@@ -51,66 +41,88 @@ function assertLocalHost(scope: MetricScope): void {
   }
 }
 
-async function openCloudDragonPage(page: Page, url: string): Promise<void> {
-  await page.goto(url, { waitUntil: 'load' })
-  // SSO redirects through login.huawei.com and back automatically; poll the
-  // URL instead of a fixed sleep so a fast pass-through returns immediately.
-  const deadline = Date.now() + SSO_TIMEOUT_MS
+const CURRENT_PROJECT_SCOPE = '当前项目下的流水线'
+
+// The per-row run button id carries the pipeline name, so the button list is
+// the name list — no text scraping of table cells needed.
+async function readStartIds(page: Page): Promise<string[]> {
+  return page.evaluate<string[]>(`(() => {
+    return Array.from(document.querySelectorAll('button[id^="startLaunch_"]'))
+      .map((button) => button.id.slice('startLaunch_'.length))
+      .filter(Boolean)
+  })()`)
+}
+
+async function readScopeValue(page: Page): Promise<string> {
+  return page.evaluate<string>(`(() => {
+    const input = document.querySelector('input.devui-select-input')
+    return input ? input.value : ''
+  })()`)
+}
+
+/**
+ * 切换前的基线必须是一份「已渲染稳定」的表格快照：页面初始表格属于账号
+ * 默认范围（我关注的流水线），空快照会让这份初始渲染冒充切换后的结果。
+ * 一直为空的表格（账号没有关注任何流水线）返回空基线，正确性由切换后的
+ * 非空等待承担。
+ */
+async function readSettledStartIds(page: Page): Promise<string[]> {
+  const deadline = Date.now() + TABLE_RENDER_TIMEOUT_MS
+  let previous: string[] = []
   while (Date.now() < deadline) {
-    if (!page.url().includes('login.huawei.com')) {
-      return
+    const ids = await readStartIds(page)
+    if (ids.length > 0 && JSON.stringify(ids) === JSON.stringify(previous)) {
+      return ids
     }
-    await page.waitForTimeout(2000)
+    previous = ids
+    await page.waitForTimeout(RENDER_POLL_INTERVAL_MS)
   }
-  throw new PackagePipelineError('sso-timeout', 'CloudDragon 内网登录跳转超时，请确认本机网络与登录态')
+  return previous
 }
 
-async function withCloudDragonPage<T>(run: (page: Page) => Promise<T>): Promise<T> {
-  // Dynamic import keeps playwright-core out of main-process startup until the
-  // acceptance screen actually drives CloudDragon.
-  const { chromium } = await import('playwright-core')
-  let browser: Awaited<ReturnType<typeof chromium.launch>>
-  try {
-    browser = await chromium.launch({ channel: 'chrome', headless: true })
-  } catch (error) {
-    throw new PackagePipelineError(
-      'browser-unavailable',
-      `无法启动本机 Chrome（出包依赖系统安装的 Chrome）：${
-        error instanceof Error ? error.message : String(error)
-      }`
-    )
+/**
+ * The scope dropdown commits its displayed value before the pipeline table
+ * re-renders (measured ~1s lag on the real page): reading rows right after
+ * the click returns the previous scope's pipelines. Skip the switch when the
+ * scope already reads right, and after switching wait until the table content
+ * actually differs from the settled pre-switch baseline.
+ */
+async function ensureCurrentProjectScope(page: Page): Promise<void> {
+  if ((await readScopeValue(page)) === CURRENT_PROJECT_SCOPE) {
+    return
   }
-  try {
-    const page = await (await browser.newContext()).newPage()
-    return await run(page)
-  } finally {
-    await browser.close().catch(() => undefined)
-  }
-}
-
-async function switchScopeToCurrentProject(page: Page): Promise<void> {
+  const previousIds = await readSettledStartIds(page)
   try {
     await page.locator('input.devui-select-input').first().click({ timeout: TABLE_RENDER_TIMEOUT_MS })
-    await page.getByText('当前项目下的流水线', { exact: true }).click({
+    await page.getByText(CURRENT_PROJECT_SCOPE, { exact: true }).click({
       timeout: DIALOG_ACTION_TIMEOUT_MS
     })
   } catch {
     throw new PackagePipelineError('scope-switch-failed', '流水线列表页范围切换失败，页面结构可能已变化')
   }
+  const selectionDeadline = Date.now() + DIALOG_ACTION_TIMEOUT_MS
+  while ((await readScopeValue(page)) !== CURRENT_PROJECT_SCOPE) {
+    if (Date.now() >= selectionDeadline) {
+      throw new PackagePipelineError('scope-switch-failed', '流水线列表页范围切换未生效，请稍后重试')
+    }
+    await page.waitForTimeout(RENDER_POLL_INTERVAL_MS)
+  }
+  const tableDeadline = Date.now() + TABLE_RENDER_TIMEOUT_MS
+  while (Date.now() < tableDeadline) {
+    const ids = await readStartIds(page)
+    if (ids.length > 0 && JSON.stringify(ids) !== JSON.stringify(previousIds)) {
+      return
+    }
+    await page.waitForTimeout(RENDER_POLL_INTERVAL_MS)
+  }
+  throw new PackagePipelineError('scope-switch-failed', '流水线列表未按当前项目范围刷新，请稍后重试')
 }
 
 async function listPipelinesOnPage(page: Page): Promise<string[]> {
-  await openCloudDragonPage(page, LIST_URL)
-  await switchScopeToCurrentProject(page)
-  // The per-row run button id carries the pipeline name, so the button list is
-  // the name list — no text scraping of table cells needed.
+  await ensureCurrentProjectScope(page)
   const deadline = Date.now() + TABLE_RENDER_TIMEOUT_MS
   while (Date.now() < deadline) {
-    const names = await page.evaluate<string[]>(`(() => {
-      return Array.from(document.querySelectorAll('button[id^="startLaunch_"]'))
-        .map((button) => button.id.slice('startLaunch_'.length))
-        .filter(Boolean)
-    })()`)
+    const names = await readStartIds(page)
     if (names.length > 0) {
       return names
     }
@@ -120,8 +132,7 @@ async function listPipelinesOnPage(page: Page): Promise<string[]> {
 }
 
 async function launchPipelineOnPage(page: Page, pipeline: string): Promise<void> {
-  await openCloudDragonPage(page, LIST_URL)
-  await switchScopeToCurrentProject(page)
+  await ensureCurrentProjectScope(page)
   try {
     await page.locator(`#startLaunch_${pipeline}`).click({ timeout: TABLE_RENDER_TIMEOUT_MS })
   } catch {
@@ -167,12 +178,12 @@ async function launchPipelineOnPage(page: Page, pipeline: string): Promise<void>
 }
 
 /**
- * Navigate to the newest software version detail of a service. Version links
- * are listed newest-first; a service with no versions yields null (the panel
- * shows 暂无制品包) instead of an error.
+ * Navigate to the newest software version detail of a service (the page is
+ * already open on the services list). Version links are listed newest-first;
+ * a service with no versions yields null (the panel shows 暂无制品包) instead
+ * of an error.
  */
 async function openNewestVersionDetail(page: Page, service: string): Promise<string | null> {
-  await openCloudDragonPage(page, SERVICES_URL)
   try {
     await page.getByText(service, { exact: true }).first().click({ timeout: TABLE_RENDER_TIMEOUT_MS })
   } catch {
@@ -201,22 +212,20 @@ async function openNewestVersionDetail(page: Page, service: string): Promise<str
   return version
 }
 
+/**
+ * 版本详情表是 DevUI 表格：单元格把完整文本放在 title 属性里，列序为
+ * # / 服务包 / 类型 / 创建时间 / 修改时间，所以第一个日期时间样式的 title
+ * 就是创建时间。
+ */
 async function readVersionDetail(page: Page): Promise<{ created: string; files: string[] }> {
   const deadline = Date.now() + TABLE_RENDER_TIMEOUT_MS
   while (Date.now() < deadline) {
     const detail = await page.evaluate<{ created: string; files: string[] }>(`(() => {
-      const text = document.body.innerText || ''
-      const files = Array.from(
-        new Set(
-          Array.from(document.querySelectorAll('tr, [class*="row"]'))
-            .flatMap((row) => Array.from(row.querySelectorAll('span[title]')))
-            .map((span) => span.getAttribute('title'))
-            .filter((title) => Boolean(title && /\\.(7z|hwp7s)$/i.test(title)))
-        )
-      )
-      const labeled = text.match(/创建时间[:：\\s]*(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})/)
-      const any = text.match(/\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}/)
-      return { files, created: (labeled && labeled[1]) || (any && any[0]) || '' }
+      const titles = Array.from(document.querySelectorAll('[title]'))
+        .map((node) => node.getAttribute('title') || '')
+      const files = Array.from(new Set(titles.filter((title) => /\\.(7z|hwp7s)$/i.test(title))))
+      const created = titles.find((title) => /^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$/.test(title)) || ''
+      return { files, created }
     })()`)
     if (detail.files.length > 0 && detail.created) {
       return detail
@@ -255,10 +264,7 @@ async function downloadOnPage(
   try {
     await download.saveAs(file)
   } catch (error) {
-    throw new PackagePipelineError(
-      'save-failed',
-      `保存制品包失败：${error instanceof Error ? error.message : String(error)}`
-    )
+    throw new PackagePipelineError('save-failed', `保存制品包失败：${failureText(error)}`)
   }
   return { file, bytes: (await stat(file)).size }
 }
@@ -270,12 +276,12 @@ export function packagePipelineService(): PackagePipelinePort {
   return {
     async list({ scope }): Promise<PackagePipelineCatalog> {
       assertLocalHost(scope)
-      const pipelines = await withCloudDragonPage((page) => listPipelinesOnPage(page))
+      const pipelines = await runOnCloudDragonPage(LIST_URL, (page) => listPipelinesOnPage(page))
       return { scope, pipelines }
     },
     async latest({ scope, pipeline }): Promise<PackageLatest | null> {
       assertLocalHost(scope)
-      return withCloudDragonPage(async (page) => {
+      return runOnCloudDragonPage(SERVICES_URL, async (page) => {
         const version = await openNewestVersionDetail(page, pipeline)
         if (!version) {
           return null
@@ -290,7 +296,7 @@ export function packagePipelineService(): PackagePipelinePort {
         throw new PackagePipelineError('launch-busy', '已有一次流水线启动正在进行，请稍候')
       }
       const run = (async () => {
-        await withCloudDragonPage((page) => launchPipelineOnPage(page, pipeline))
+        await runOnCloudDragonPage(LIST_URL, (page) => launchPipelineOnPage(page, pipeline))
         return { pipeline, launchedAt: new Date().toISOString() }
       })()
       launchInFlight = run
@@ -302,7 +308,7 @@ export function packagePipelineService(): PackagePipelinePort {
     },
     async download({ scope, pipeline, directory }): Promise<PackageDownloadReceipt> {
       assertLocalHost(scope)
-      return withCloudDragonPage((page) => downloadOnPage(page, pipeline, directory))
+      return runOnCloudDragonPage(SERVICES_URL, (page) => downloadOnPage(page, pipeline, directory))
     }
   }
 }

@@ -2,7 +2,7 @@ import { VersionDocumentError } from '../../shared/workbench/version-document'
 import type { VersionMaterialResult } from '../../shared/workbench/version-material-request'
 import { MetricCollectorError } from './metrics/collector-output'
 import { HistorySourceError } from './version-history-snapshot'
-import { PackagePipelineError } from './package-pipeline-runtime'
+import { PackagePipelineError } from './cloud-dragon-session'
 import { WorkspaceScopeError } from './workspace-scope-error'
 
 type WorkbenchRuntimeError =

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ClipboardCheck, GitBranch } from 'lucide-react'
 import type { MetricsPort } from '../../../../shared/workbench/metrics'
 import type { PackagePipelinePort } from '../../../../shared/workbench/package-pipeline'
@@ -114,7 +114,14 @@ function ReadyAcceptanceBoard({
   const startCard = useRef<HTMLElement>(null)
   const results = useRef<HTMLElement>(null)
   const archiveSection = useRef<HTMLElement>(null)
+  const packageSection = useRef<HTMLElement>(null)
   const tasks = useRef<HTMLElement>(null)
+  const [packageReady, setPackageReady] = useState(false)
+  // Stable identity keeps AcceptancePackage's load effects from re-firing.
+  const handlePackageLatest = useCallback(
+    (latest: { version: string } | null) => setPackageReady(latest !== null),
+    []
+  )
   const [tasksOpen, setTasksOpen] = useState(false)
   const branch = cycleBranch(entry)
   // Render-time validity: a round or plan change under the same identity drops a
@@ -185,6 +192,8 @@ function ReadyAcceptanceBoard({
         <AcceptanceJourney
           stage={document?.workflow?.stage}
           startRef={startCard}
+          packageRef={packageSection}
+          packageReady={packageReady}
           resultsRef={results}
           archiveRef={archiveSection}
         />
@@ -240,7 +249,12 @@ function ReadyAcceptanceBoard({
                 />
               )}
               <AcceptanceSources document={document} />
-              <AcceptancePackage port={packages} scope={metricScope} />
+              <AcceptancePackage
+                port={packages}
+                scope={metricScope}
+                sectionRef={packageSection}
+                onLatestChange={handlePackageLatest}
+              />
               {plan && (
                 <>
                   <div className="va-section-heading">
@@ -306,7 +320,12 @@ function ReadyAcceptanceBoard({
             </>
           ) : (
             <>
-              <AcceptancePackage port={packages} scope={metricScope} />
+              <AcceptancePackage
+                port={packages}
+                scope={metricScope}
+                sectionRef={packageSection}
+                onLatestChange={handlePackageLatest}
+              />
               <div className="va-section-heading">
                 <h2>本版目标验收</h2>
                 <button className="wb-btn wb-btn-secondary wb-btn-sm" disabled>
