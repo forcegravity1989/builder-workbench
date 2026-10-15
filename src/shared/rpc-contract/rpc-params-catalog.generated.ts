@@ -565,6 +565,12 @@ import {
 import { CycleSyncSchema } from '../workbench/cycle-sync'
 import { MetricReadRequestSchema } from '../workbench/metrics'
 import {
+  PackageDownloadSchema,
+  PackageLatestSchema,
+  PackageLaunchSchema,
+  PackagePipelineListSchema
+} from '../workbench/package-pipeline'
+import {
   VersionHistoryListSchema,
   VersionHistoryReadPlanSchema,
   VersionHistoryReadSchema,
@@ -1210,6 +1216,10 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.metrics.list': CharterScopeSchema,
   'workbench.metrics.read': MetricReadRequestSchema,
   'workbench.metrics.refresh': MetricReadRequestSchema,
+  'workbench.package.download': PackageDownloadSchema,
+  'workbench.package.latest': PackageLatestSchema,
+  'workbench.package.launch': PackageLaunchSchema,
+  'workbench.package.list': PackagePipelineListSchema,
   'workspacePorts.kill': WorkspacePortKillParams,
   'workspacePorts.scan': WorkspacePortScanParams,
   'worktree.activate': WorktreeActivate,

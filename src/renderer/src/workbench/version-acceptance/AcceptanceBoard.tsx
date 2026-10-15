@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ClipboardCheck, GitBranch } from 'lucide-react'
 import type { MetricsPort } from '../../../../shared/workbench/metrics'
+import type { PackagePipelinePort } from '../../../../shared/workbench/package-pipeline'
 import type { VersionHistoryPort } from '../../../../shared/workbench/version-history'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
@@ -8,6 +9,7 @@ import { cycleBranch } from '../version-cycle/native-cycle-workspace'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import { CycleStartCard } from '../version-cycle/CycleStartCard'
 import { AcceptanceGoalCards } from './AcceptanceGoalCards'
+import { AcceptancePackage } from './AcceptancePackage'
 import { AcceptanceSources } from './AcceptanceSources'
 import { AcceptanceSummary } from './AcceptanceSummary'
 import { AcceptanceNotices } from './AcceptanceNotices'
@@ -25,6 +27,7 @@ export type AcceptanceBoardProps = {
   context: VersionCycleContext
   history: VersionHistoryPort
   metrics: MetricsPort
+  packages: PackagePipelinePort
   entry: CycleEntry
 }
 
@@ -60,6 +63,7 @@ function ReadyAcceptanceBoard({
   context,
   history,
   metrics,
+  packages,
   entry,
   recoveryKey
 }: AcceptanceBoardProps & { recoveryKey: string }) {
@@ -236,6 +240,7 @@ function ReadyAcceptanceBoard({
                 />
               )}
               <AcceptanceSources document={document} />
+              <AcceptancePackage port={packages} scope={metricScope} />
               {plan && (
                 <>
                   <div className="va-section-heading">
@@ -301,6 +306,7 @@ function ReadyAcceptanceBoard({
             </>
           ) : (
             <>
+              <AcceptancePackage port={packages} scope={metricScope} />
               <div className="va-section-heading">
                 <h2>本版目标验收</h2>
                 <button className="wb-btn wb-btn-secondary wb-btn-sm" disabled>

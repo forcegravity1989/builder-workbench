@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-15 新增（验收屏「出包」区块真实接入 CloudDragon）
+
+- **变更类型**：新增
+- **变更摘要**：验收屏右半屏「准备交付」与「展示验收」之间新增「出包」区块（有验收文档与无文档两种状态均展示）。流水线下拉框经主进程 Playwright 读取 CloudDragon 流水线列表页（范围「当前项目下的流水线」）真实数据；出包按钮走已实测链路（行内启动按钮 → 执行方案启动 → pr_pipeline）真实启动流水线；最新制品包信息（项目名称、版本号、创建时间、包文件）从制品仓库服务版本包页真实解析；下载按钮先经系统对话框选择目录，再走页面下载链路（签名 URL → 浏览器下载）保存到所选目录。样式遵循验收屏既有行式组件语言（va-pkg-* 类，wb-btn 按钮，mono 用于版本号与文件名字面量）。选择器与链路全部来自本会话真实页面探测验证。
+- **涉及文件**：
+  - `src/shared/workbench/package-pipeline.ts`（新建：出包 RPC 契约，zod schema + Port 类型）
+  - `src/main/workbench/package-pipeline-runtime.ts`（新建：CloudDragon Playwright 运行时——流水线列表/最新包读取/启动/下载四操作，SSO 轮询等待、启动互斥、无权限识别；每次操作独立无头 Chrome）
+  - `src/main/workbench/workbench-runtime-result.ts`（错误联合加入 PackagePipelineError，领域错误走 {ok:false} 信封）
+  - `src/main/runtime/rpc/methods/workbench-package.ts`（新建：workbench.package.list/latest/launch/download 四方法）
+  - `src/main/runtime/rpc/methods/index.ts`（聚合注册 WORKBENCH_PACKAGE_METHODS）
+  - `src/shared/rpc-contract/rpc-params-catalog.generated.ts`（重新生成，+4 方法）
+  - `src/renderer/src/workbench/package-pipeline-port.ts`（新建：渲染进程 port，走 callMetricRuntime owner 路由）
+  - `src/renderer/src/workbench/version-acceptance/AcceptancePackage.tsx`（新建：出包区块 UI——流水线选择+出包、最新包四行信息+下载、busy/error/notice 状态）
+  - `src/renderer/src/workbench/version-acceptance/AcceptancePage.tsx`（注入 nativePackagePipelinePort）
+  - `src/renderer/src/workbench/version-acceptance/AcceptanceBoard.tsx`（两个分支插入 AcceptancePackage）
+  - `src/renderer/src/workbench/version-acceptance/acceptance.css`（va-pkg-* 行式样式）
+  - `package.json` / `pnpm-lock.yaml`（dependencies 加入 playwright-core ^1.59.1，主进程运行时外置引用）
+  - `docs/05-features/version-planning/prototype/app.jsx`（顺手修复 oxlint 报的两个未用参数）
+- **验证**：typecheck 通过；oxlint、anti-slop、code-quality（native/type-aware）、dead-classes、design-system-tokens、max-lines-ratchet、rpc-params-catalog --check 全过；受影响 RPC 注册表测试（core-typed-method-contract、mobile-rpc-allowlist）13 例全过。CloudDragon 链路（SSO、列表、启动、制品读取、下载）此前已用真实页面脚本逐项验证；真壳内实际点击验证由人执行。
+
 ## 2026-10-15 新增（验收屏原型新增「出包」部分 · CodeHub/CloudDragon 变体高保真）
 
 - **变更类型**：新增（原型）
