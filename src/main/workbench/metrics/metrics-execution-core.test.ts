@@ -13,7 +13,6 @@ import {
 let root: string
 let emptyCommit: string
 let configCommit: string
-let draftCommit: string
 let scriptCommit: string
 const collectScript = [
   'const args = process.argv.slice(2);',
@@ -59,13 +58,6 @@ beforeAll(() => {
   write('.bw/metrics.toml', toml)
   write('.bw/scripts/collect.js', collectScript)
   configCommit = commit('adopted configuration')
-  git(['switch', '-c', 'draft-config'])
-  write(
-    '.bw/metrics.toml',
-    `${toml}\n[[leading]]\nname = "draft"\ndef = "d"\ncollect = { kind = "script", run = ["node", ".bw/scripts/collect.js"] }`
-  )
-  draftCommit = commit('draft configuration')
-  git(['switch', 'main'])
   write('.bw/scripts/collect.js', `${collectScript}\n// revised collector`)
   scriptCommit = commit('revised script')
 }, 30_000)
@@ -80,8 +72,8 @@ afterAll(() => {
   }
 })
 
-it('reads the configuration from the adopted source pinned to a real SHA', async () => {
-  const snapshot = await readMetricConfiguration({ repoPath: root, adoptedRef: null })
+it('reads the configuration from the trunk baseline pinned to a real SHA', async () => {
+  const snapshot = await readMetricConfiguration({ repoPath: root, pinnedRef: null })
   expect(snapshot.configurationRef).toBe('main')
   expect(snapshot.configurationCommit).toBe(scriptCommit)
   expect(snapshot.dataCommit).toBe(scriptCommit)
@@ -89,22 +81,16 @@ it('reads the configuration from the adopted source pinned to a real SHA', async
   expect(snapshot.timezone.length).toBeGreaterThan(0)
   const missing = await readMetricConfiguration({
     repoPath: root,
-    adoptedRef: null,
+    pinnedRef: null,
     configurationCommit: emptyCommit
   })
   expect(missing.toml).toBeNull()
 })
 
-it('reports an invalid registered adopted ref instead of switching branches', async () => {
+it('reports an invalid pinned base ref instead of switching branches', async () => {
   await expect(
-    readMetricConfiguration({ repoPath: root, adoptedRef: 'release' })
+    readMetricConfiguration({ repoPath: root, pinnedRef: 'release' })
   ).rejects.toMatchObject({ code: 'baseline-invalid' })
-})
-
-it('refuses a configuration draft that never reached the adopted source', async () => {
-  await expect(
-    readMetricConfiguration({ repoPath: root, adoptedRef: null, configurationCommit: draftCommit })
-  ).rejects.toMatchObject({ code: 'configuration-not-adopted' })
 })
 
 it('fingerprints the pinned script content, not the interpreter token', async () => {
@@ -198,7 +184,7 @@ it('kills a hung collector at its timeout and still cleans the checkout up', asy
   expect(worktrees).not.toContain('.orca-preparing')
 }, 60_000)
 
-it('fetches newly adopted metrics while leaving the old checkout and its draft untouched', async () => {
+it('reads the pinned trunk baseline without fetching or touching anything', async () => {
   const remote = join(root, 'remote.git')
   const author = join(root, 'author')
   git(['init', '--bare', remote])
@@ -214,21 +200,17 @@ it('fetches newly adopted metrics while leaving the old checkout and its draft u
   authorGit(['push', 'origin', 'main'])
   const adopted = authorGit(['rev-parse', 'HEAD']).toString().trim()
   const before = head()
+  expect(adopted).not.toBe(before)
   writeFileSync(join(root, 'README.md'), 'unfinished plan work')
-  const snapshot = await readMetricConfiguration({
-    repoPath: root,
-    adoptedRef: 'main',
-    synchronize: true
-  })
-  expect(snapshot.configurationCommit).toBe(adopted)
-  expect(snapshot.toml).toContain('new metric')
+  // The trunk baseline is a local read: the remote moving on neither fetches
+  // new commits nor touches the checkout — freshness is the button's job.
+  const snapshot = await readMetricConfiguration({ repoPath: root, pinnedRef: 'main' })
+  expect(snapshot.configurationCommit).toBe(before)
+  expect(snapshot.dataCommit).toBe(before)
+  expect(snapshot.toml).not.toContain('new metric')
   expect(head()).toBe(before)
+  // The origin/main bookmark stays where the push left it: proof that reading
+  // the configuration never fetched behind the scenes.
+  expect(git(['rev-parse', 'refs/remotes/origin/main']).toString().trim()).toBe(before)
   expect(readFileSync(join(root, 'README.md'), 'utf8')).toBe('unfinished plan work')
-  const pinned = await readMetricConfiguration({
-    repoPath: root,
-    adoptedRef: 'main',
-    configurationCommit: configCommit
-  })
-  expect(pinned.configurationCommit).toBe(configCommit)
-  expect(pinned.dataCommit).toBe(adopted)
 }, 60_000)

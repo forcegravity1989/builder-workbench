@@ -9,21 +9,7 @@ name: Daemon Relocation Spike
 # default branch); main is never touched.
 
 on:
-  push:
-    branches:
-      - Jinwoo-H/windows-update-survival
-    paths:
-      - 'tests/tools/daemon-relocation-spike/**'
-      - '.github/workflows/daemon-relocation-spike.yml'
-  workflow_dispatch: {}
-
-permissions:
-  contents: read
-
-concurrency:
-  group: daemon-relocation-spike-${{ github.ref }}
-  cancel-in-progress: true
-
+  workflow_dispatch:
 jobs:
   spike:
     name: relocation file-set spike

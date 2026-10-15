@@ -8,7 +8,8 @@ import { WorkspaceScopeError } from './workspace-scope-error'
 import {
   assertHumanFieldsUntouched,
   humanFieldChanges,
-  isModelSaveChannel
+  isModelSaveChannel,
+  planHumanFieldChanges
 } from './material-human-guard'
 
 const revision = `sha256:${'a'.repeat(64)}`
@@ -48,15 +49,17 @@ function acceptanceSave(doc: AcceptanceMaterial): VersionMaterialSave {
     document: doc
   }
 }
-function planSave(): VersionMaterialSave {
-  const plan: PlanningMaterial = {
+function planMaterial(risks = ''): PlanningMaterial {
+  return {
     schema_version: 3,
     version: 'v1',
     cycleId: 'cycle',
-    summary: { progress: '', risks: '' },
+    summary: { progress: '', risks },
     goals: [],
     tasks: []
   }
+}
+function planSave(risks = ''): VersionMaterialSave {
   return {
     repoId: 'repo',
     worktreeId: 'tree',
@@ -64,7 +67,7 @@ function planSave(): VersionMaterialSave {
     workflow: 'plan',
     version: 'v1',
     expectedRevision: null,
-    document: plan
+    document: planMaterial(risks)
   }
 }
 function withDecision(doc: AcceptanceMaterial): AcceptanceMaterial {
@@ -135,9 +138,9 @@ it('refuses model-channel saves that write a decision, including creates', async
   ).rejects.toBeInstanceOf(WorkspaceScopeError)
 })
 
-it('leaves human channels and plan saves untouched', async () => {
+it('leaves human channels untouched on both workflows', async () => {
   const read = async (): Promise<never> => {
-    throw new Error('human and plan channels must not trigger the guard read')
+    throw new Error('human channels must not trigger the guard read')
   }
   await expect(
     assertHumanFieldsUntouched(read, acceptanceSave(withDecision(material())), {
@@ -149,7 +152,33 @@ it('leaves human channels and plan saves untouched', async () => {
       clientKind: 'mobile'
     })
   ).resolves.toBeUndefined()
-  await expect(assertHumanFieldsUntouched(read, planSave(), {})).resolves.toBeUndefined()
+  await expect(
+    assertHumanFieldsUntouched(read, planSave('用户填写的风险'), { clientKind: 'runtime' })
+  ).resolves.toBeUndefined()
+})
+
+it('guards the plan risk report on the model channel', async () => {
+  // Creating a plan with empty risks is fine; pre-filling risks is not.
+  await expect(
+    assertHumanFieldsUntouched(async () => null, planSave(), {})
+  ).resolves.toBeUndefined()
+  await expect(
+    assertHumanFieldsUntouched(async () => null, planSave('模型代填的风险'), {})
+  ).rejects.toMatchObject({ code: 'forbidden' })
+  // Round-tripping the user's risks unchanged passes; editing or dropping them fails.
+  const stored = planMaterial('用户填写的风险')
+  const readStored = async () => ({ document: stored })
+  await expect(
+    assertHumanFieldsUntouched(readStored, planSave('用户填写的风险'), {})
+  ).resolves.toBeUndefined()
+  await expect(
+    assertHumanFieldsUntouched(readStored, planSave('模型改写的风险'), {})
+  ).rejects.toBeInstanceOf(WorkspaceScopeError)
+  await expect(assertHumanFieldsUntouched(readStored, planSave(), {})).rejects.toMatchObject({
+    code: 'forbidden'
+  })
+  expect(planHumanFieldChanges(null, planMaterial())).toEqual([])
+  expect(planHumanFieldChanges(stored, planMaterial())).toEqual(['summary.risks'])
 })
 
 it('feeds the guard read a payload the strict ReadSchema accepts', async () => {

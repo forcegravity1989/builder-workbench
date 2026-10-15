@@ -51,6 +51,10 @@ it('injects bundled discovery assets and the selected owner into an ordinary pro
   expect(result.prompt).toContain('ORCA_CLI_COMMAND')
   expect(result.prompt).toContain('ORCA skills get week-planning')
   expect(result.prompt).toContain('ORCA bw materials schema --workflow plan')
+  expect(result.context).toMatchObject({ branch: 'bw/week-plan' })
+  expect(result.prompt).toContain('本会话固定在 bw/week-plan 工作树')
+  expect(result.prompt).toContain('不另建工作树或分支')
+  expect(result.prompt).toContain('PR/MR 由 bw/week-plan 开向主分支')
   expect(result.prompt).not.toContain('{{')
   expect(result.prompt).not.toContain(String.fromCharCode(92, 110))
   expect(result.prompt).toContain('ORCA bw materials list --help')
@@ -63,6 +67,17 @@ it('injects bundled discovery assets and the selected owner into an ordinary pro
   expect(result.prompt).not.toContain('list/read/save --help')
   expect(result.prompt).not.toContain('/projects/ordinary-plan/standard/')
   expect(result.prompt).not.toMatch(/\borca (?:skills|bw)\b/u)
+  const acceptance = await resolveWorkbenchPromptAssets({
+    projectId: 'project',
+    repoId: 'repo',
+    hostId: 'ssh:host',
+    runtimeOwnerEnvironmentId: 'owner',
+    worktreeId: 'tree',
+    workflow: 'version-acceptance'
+  })
+  expect(acceptance.context).toMatchObject({ branch: 'bw/week-acceptance' })
+  expect(acceptance.prompt).toContain('本会话固定在 bw/week-acceptance 工作树')
+  expect(acceptance.prompt).toContain('ORCA bw materials schema --workflow acceptance')
   await expect(
     resolveWorkbenchPromptAssets({
       projectId: 'project',
@@ -108,6 +123,8 @@ it('routes metric setup to its own native guide without material-write commands'
   expect(result.prompt).not.toContain('ORCA skills get week-planning')
   expect(result.prompt).not.toContain('ORCA bw materials')
   expect(result.context.workflow).toBe('metrics-refresh')
+  expect(result.context).toMatchObject({ branch: null })
+  expect(result.prompt).not.toContain('本会话固定在')
   expect(result.prompt).toContain('当前指标目录')
   expect(result.prompt).toContain('周活跃用户：角色 north_star，目标 >= 100，单位 人')
   expect(result.prompt).toContain('构建时长：指标缺少采集配置（collector-required）')

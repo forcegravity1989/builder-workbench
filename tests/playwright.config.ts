@@ -1,16 +1,16 @@
 import { defineConfig } from '@stablyai/playwright-test'
 
 /**
- * Playwright config for Orca E2E tests.
+ * Playwright config for the Workbench Electron smoke test.
  *
  * Run:
- *   pnpm run test:e2e              — build + run all tests (headless)
+ *   pnpm run test:e2e:workbench    — build + run the Workbench smoke test (headless)
  *   pnpm run test:e2e:headful      — run with visible window (for pointer-capture tests)
  *   SKIP_BUILD=1 pnpm run test:e2e — skip rebuild (faster iteration)
  *
  * globalSetup builds the Electron app and creates a seeded test git repo.
  * globalTeardown cleans up the test repo.
- * Tests use _electron.launch() to start the app — no manual setup needed.
+ * The smoke test uses _electron.launch() to start the app — no manual setup needed.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -28,7 +28,7 @@ export default defineConfig({
   fullyParallel: true,
   // Why: each CI worker launches a real Electron/Chromium process tree against
   // a mutable seeded repo. Release runners showed two apps per VM can contend
-  // on Xvfb/git enough to create false E2E failures, so CI scales by shards.
+  // on Xvfb/git enough to create false E2E failures, so CI uses one worker.
   workers: process.env.CI ? 1 : undefined,
   forbidOnly: !!process.env.CI,
   retries: 0,
@@ -42,18 +42,22 @@ export default defineConfig({
   projects: [
     {
       name: 'electron-headless',
-      testMatch: '**/*.spec.ts',
+      // The Workbench lane intentionally owns one smoke journey. Legacy Orca
+      // specs remain in the tree for source compatibility, but are not part of
+      // the current CI entrypoint.
+      testMatch: 'workbench-cycle-smoke.spec.ts',
       grepInvert: /@headful/,
       metadata: {
-        orcaHeadful: false
+        workbenchHeadful: false
       }
     },
     {
       name: 'electron-headful',
-      testMatch: '**/*.spec.ts',
-      grep: /@headful/,
+      // Keep manual headful verification on the same Workbench smoke journey;
+      // restored legacy Orca specs are source-only compatibility material.
+      testMatch: 'workbench-cycle-smoke.spec.ts',
       metadata: {
-        orcaHeadful: true
+        workbenchHeadful: true
       }
     }
   ]

@@ -23,13 +23,12 @@ and inherit the full suite's setup and forced-GC support. This makes existing
 regression coverage easy to run and attribute; it does not create new workload
 coverage by itself.
 
-`.github/workflows/performance-contracts.yml` runs daily and manually on Linux,
-macOS and Windows, and on PRs changing this tooling or any listed contract file.
-It uploads per-OS JSON test results, plus the source inventory once from Linux
-because that scan is OS-independent. Its schedule starts after merge. Run the existing
-`test:e2e:terminal-perf:scale:report` for rendered typing/frame budgets and
-`test:e2e:ssh-docker-perf` for real transport behavior. Relay unit tests do not
-measure SSH RTT, WSL scheduling or a packaged Electron renderer.
+Since the Orca CI/E2E isolation (see `ref/upstream.md`), `performance-contracts.yml`
+is retained as a dispatch-only historical workflow, and the terminal/SSH E2E entry
+commands it referenced are gone from `package.json`. The current Workbench PR check
+does not claim to measure rendered frame budgets, SSH RTT, WSL scheduling or a
+packaged Electron renderer; those require a separately reintroduced, scoped
+performance lane.
 
 To extend coverage, select a production-path regression with an operation-count,
 identity, queue-admission or retained-memory oracle. Confirm it fails with the

@@ -46,29 +46,7 @@ name: Daily macOS Dev Build
 # drafts, so it holds its number and the next run does not reuse it.
 
 on:
-  schedule:
-    # Once a day, late morning Pacific. Single cron — no DST twin, no clock gate.
-    - cron: '15 18 * * *'
   workflow_dispatch:
-    inputs:
-      force:
-        description: Build even if main has not moved since the last daily
-        required: false
-        default: false
-        type: boolean
-
-permissions:
-  contents: read
-
-concurrency:
-  group: daily-mac-build
-  cancel-in-progress: false
-
-env:
-  DAILY_REPO: stablyai/orca-daily
-  # Keep ~30 days so a regression can be bisected without holding a full year.
-  DAILY_RETAIN_COUNT: 30
-
 jobs:
   build-daily-mac:
     if: github.repository == 'stablyai/orca'

@@ -5,7 +5,14 @@
 /skill-guides/*.md text eol=lf
 /skill-stubs/*.md text eol=lf
 /skill-stubs/_shared/*.md text eol=lf
-/skills/*/SKILL.md text eol=lf
+# Shipped skill trees are byte-hashed into resources/skills artifacts (size /
+# exactSha256 / gitTreeSha derive from working-tree bytes); a CRLF checkout makes
+# a Windows regeneration disagree with Linux CI on the unreleased tail snapshot.
+# Scoped to *.md (all current skill files) rather than /** because the bundle
+# protocol supports binary assets (classification: 'binary') and a blanket
+# `text` would corrupt them at check-in; a future non-md TEXT asset needs its
+# own pin — verify:skill-bundle-manifest fails loudly on the resulting drift.
+/skills/**/*.md text eol=lf
 /src/cli/bundled-skill-guides.ts text eol=lf
 # Bundled plugin trees are byte-hashed; CRLF checkout would break the pinned hash.
 /resources/plugins/** text eol=lf
@@ -35,6 +42,10 @@
 # these carry real CR and CRLF bytes as the terminal emitted them, and line-ending
 # normalisation on a Windows checkout would rewrite the evidence the fixture exists to be.
 /src/main/runtime/__fixtures__/*.txt -text
+# Generated skill bundle artifacts: verify:skill-bundle-manifest compares them
+# byte-for-byte against fresh regeneration output, so a CRLF checkout would fail
+# the gate on every Windows working copy (same class as en-runtime-required below).
+/resources/skills/*.json linguist-generated=true text eol=lf
 # Generated runtime English subset: compared byte-for-byte by
 # verify:localization-runtime-catalog, so a CRLF checkout would fail the gate.
 /src/renderer/src/i18n/en-runtime-required.json linguist-generated=true text eol=lf

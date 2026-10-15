@@ -264,7 +264,7 @@ function AppWorkspaceContent(props: {
                               'Terminal, browser, or editor rendering failed in this workspace. Retry to remount it.'
                             )}
                           >
-                            <Terminal />
+                            <Terminal reserveClosedExplorerToggleSpace={!cycle} />
                           </RecoverableRenderErrorBoundary>
                         </Suspense>
                       </TerminalWorkbenchContainer>
@@ -290,11 +290,28 @@ function AppWorkspaceContent(props: {
                         className="vc-split"
                         role="separator"
                         aria-orientation="vertical"
-                        aria-label="调整左右栏宽度"
+                        aria-label={translate(
+                          'auto.app.shell.AppWorkspaceShell.e82b94df8a',
+                          '调整左右栏宽度'
+                        )}
                         onMouseDown={resize.onResizeStart}
                       />
                       <Suspense fallback={null}>
-                        <CycleWorkspacePage />
+                        <div
+                          className={`vc-board-slot${
+                            layout.workspaceChromeActive ? ' vc-board-slot-terminal' : ''
+                          }`}
+                        >
+                          {layout.workspaceChromeActive ? (
+                            <div className="vc-board-titlebar" aria-hidden="true">
+                              {/* Why: the closed-sidebar reopen toggle and window controls float above this drag band as z-index siblings; Electron drag hit-test respects no-drag only on DOM descendants, so this carve-out keeps them clickable. Mirrors the TabGroupPanel spacer. */}
+                              {!layout.rightSidebarOpen ? (
+                                <div className="vc-board-titlebar-controls-space" />
+                              ) : null}
+                            </div>
+                          ) : null}
+                          <CycleWorkspacePage />
+                        </div>
                       </Suspense>
                     </>
                   )}

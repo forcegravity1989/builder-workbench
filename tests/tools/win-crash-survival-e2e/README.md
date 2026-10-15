@@ -68,7 +68,9 @@ a CLI usage error).
 ## Usage
 
 ```powershell
-pnpm win-crash-survival-e2e --expect survival
+# The former `pnpm win-crash-survival-e2e` entry was removed with the Orca
+# CI/E2E isolation (see ref/upstream.md); invoke the runner directly:
+node tests/tools/win-crash-survival-e2e/run.mjs --expect survival
 # or explicitly point at an installed exe:
 node tests/tools/win-crash-survival-e2e/run.mjs --expect survival --exe-path "C:\Users\<you>\AppData\Local\Programs\orca\Orca.exe"
 ```

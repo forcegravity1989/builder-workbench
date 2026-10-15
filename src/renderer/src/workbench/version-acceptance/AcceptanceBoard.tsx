@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { ClipboardCheck, GitBranch } from 'lucide-react'
 import type { MetricsPort } from '../../../../shared/workbench/metrics'
 import type { VersionHistoryPort } from '../../../../shared/workbench/version-history'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import { cycleBranch } from '../version-cycle/native-cycle-workspace'
+import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import { CycleStartCard } from '../version-cycle/CycleStartCard'
 import { AcceptanceGoalCards } from './AcceptanceGoalCards'
@@ -17,7 +19,7 @@ import { CycleTasks } from '../version-cycle/CycleTasks'
 import { CycleArchive } from '../version-cycle/CycleArchive'
 import { AcceptanceJourney } from './AcceptanceJourney'
 import { AcceptanceReportDialog } from './AcceptanceReportDialog'
-import type { AcceptanceCandidatePort } from './acceptance-candidate-port'
+import { useArchivePrStatus } from '../version-cycle/use-archive-pr-status'
 import { useAcceptanceBoard } from './use-acceptance-board'
 import './acceptance.css'
 
@@ -25,7 +27,6 @@ export type AcceptanceBoardProps = {
   context: VersionCycleContext
   history: VersionHistoryPort
   metrics: MetricsPort
-  candidate: AcceptanceCandidatePort
   entry: CycleEntry
 }
 
@@ -61,7 +62,6 @@ function ReadyAcceptanceBoard({
   context,
   history,
   metrics,
-  candidate,
   entry,
   recoveryKey
 }: AcceptanceBoardProps & { recoveryKey: string }) {
@@ -83,35 +83,29 @@ function ReadyAcceptanceBoard({
     setError,
     busy,
     report,
-    archive,
-    journey,
     decisionSummary,
-    onChecks,
     saveTaskSnapshot,
     scroll,
     document,
     plan,
-    archived,
     readOnly,
     loadVersion,
-    prepare,
     editGoal,
     editReadings,
     buildReport,
     refreshData,
-    flush,
     saving,
     retrySave,
     useRemoteDeletion,
     initializationSuppressed
   } = useAcceptanceBoard({ context, history, recoveryKey })
+  const prStatus = useArchivePrStatus(context, document?.workflow?.archivePr)
   const hasMetrics = Boolean(
     plan?.document.goals.some((goal) => goal.metricTargets.length > 0) ||
     document?.results.some((result) => result.readings.length > 0)
   )
   const metricWindow = useAcceptanceMetricWindow(metrics, metricScope, hasMetrics)
   const [reportOpen, setReportOpen] = useState(false)
-  const [actionNotice, setActionNotice] = useState<string | null>(null)
   const [taskGoalFilter, setTaskGoalFilter] = useState<{ goalId: string; title: string } | null>(
     null
   )
@@ -138,35 +132,6 @@ function ReadyAcceptanceBoard({
       setReportOpen(false)
     }
   }, [report])
-  const prepareArchive = async () => {
-    setActionNotice(null)
-    try {
-      if (!session) {
-        throw new Error('请先在左侧新建或打开会话。')
-      }
-      if (readOnly) {
-        throw new Error('材料正在读取，请稍后重试。')
-      }
-      const saved = await flush()
-      if (!saved) {
-        throw new Error('修改尚未保存，请先处理保存提示。')
-      }
-      await context.archivePort.prepareRequest(
-        {
-          ...scope,
-          worktreeId,
-          version: saved.document.version,
-          cycleId: saved.document.cycleId,
-          revision: saved.revision
-        },
-        session
-      )
-      setError(null)
-      setActionNotice('归档请求已贴进左侧当前终端，请核对后发送。')
-    } catch (reason) {
-      setError(String(reason))
-    }
-  }
   const openReport = () => {
     // Only open on a real derivation; a failure surfaces in the board's error
     // area instead of trapping the user behind a modal "generating…" spinner.
@@ -197,13 +162,17 @@ function ReadyAcceptanceBoard({
         </select>
         <button
           className="wb-btn wb-btn-ghost wb-btn-sm"
-          disabled={busy || saving}
+          disabled={busy || saving || Boolean(context.syncing)}
           onClick={() => {
-            metricWindow.refresh()
-            void refreshData()
+            void (async () => {
+              toast.message(trunkUpdateNotice(await context.updateCode()))
+              metricWindow.refresh()
+              await refreshData()
+              await prStatus.refresh()
+            })()
           }}
         >
-          刷新数据
+          更新代码
         </button>
         {(saving || draft?.dirty) && (
           <span role="status">{saving ? '正在保存…' : '有改动待保存'}</span>
@@ -216,9 +185,7 @@ function ReadyAcceptanceBoard({
       </header>
       <div className="va-content">
         <AcceptanceJourney
-          preparation={journey.preparation}
-          decisions={journey.decisions}
-          archive={journey.archive}
+          stage={document?.workflow?.stage}
           startRef={startCard}
           resultsRef={results}
           archiveRef={archiveSection}
@@ -243,9 +210,9 @@ function ReadyAcceptanceBoard({
             version={context.version}
             sectionRef={startCard}
           />
-          {(actionNotice || entry.notice) && (
+          {entry.notice && (
             <p className="va-notice" role="status">
-              {actionNotice ?? entry.notice}
+              {entry.notice}
             </p>
           )}
           <AcceptanceNotices
@@ -274,11 +241,7 @@ function ReadyAcceptanceBoard({
                   onIssues={() => openTasks()}
                 />
               )}
-              <AcceptanceSources
-                document={document}
-                candidatePort={candidate}
-                onChecks={onChecks}
-              />
+              <AcceptanceSources document={document} />
               {plan && (
                 <>
                   <div className="va-section-heading">
@@ -301,7 +264,6 @@ function ReadyAcceptanceBoard({
                       editReadings(document, goalId, ref, readings)
                     }
                     onGoalChange={(value, goalId) => editGoal(value, goalId)}
-                    onFollowUp={(text) => void prepare(text)}
                   />
                   <CycleTasks
                     sectionRef={tasks}
@@ -373,13 +335,13 @@ function ReadyAcceptanceBoard({
         </div>
       </div>
       <CycleArchive
-        status={archive}
-        archived={archived}
-        disabled={!document || readOnly || saving}
+        archivePr={document?.workflow?.archivePr}
+        reachedArchive={document?.workflow?.stage === 'archive'}
+        status={prStatus.status}
+        loading={prStatus.loading}
         sectionRef={archiveSection}
-        onArchive={() => void prepareArchive()}
       />
-      {reportOpen && (
+      {reportOpen && report && (
         <AcceptanceReportDialog
           report={report}
           onClose={() => setReportOpen(false)}

@@ -1,16 +1,7 @@
 name: Terminal IME E2E
 
 on:
-  # Why workflow_call and not pull_request: pr.yml owns the path filter that decides when an IME
-  # change is worth a real ibus session. A pull_request trigger here would run it on every PR.
-  workflow_call:
   workflow_dispatch:
-  schedule:
-    - cron: '30 9 * * *'
-
-permissions:
-  contents: read
-
 jobs:
   linux-x11:
     name: Linux X11 terminal IME

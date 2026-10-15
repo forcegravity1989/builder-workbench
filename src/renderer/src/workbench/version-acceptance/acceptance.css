@@ -79,14 +79,6 @@ shared visual language with the plan board. */
   border: 1px solid var(--color-divider);
   color: var(--color-neutral-500);
 }
-.va-step-icon.pending {
-  color: var(--color-warning-deep);
-  background: var(--color-warning-soft);
-}
-.va-step-icon.failed {
-  color: var(--color-danger-deep);
-  background: var(--color-danger-soft);
-}
 .va-step-icon.done {
   color: var(--color-success-deep);
   background: var(--color-success-soft);
@@ -323,9 +315,6 @@ shared visual language with the plan board. */
 }
 .va-gap {
   color: var(--color-danger-deep);
-}
-.va-followup-btn {
-  color: var(--color-accent-700);
 }
 .va-notice {
   margin: 0 0 var(--space-2);

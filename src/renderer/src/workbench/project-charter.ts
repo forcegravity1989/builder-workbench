@@ -27,7 +27,10 @@ export {
 } from '../../../shared/workbench/project-charter'
 export type { ProjectCharter } from '../../../shared/workbench/project-charter'
 
-export async function readProjectCharter(repoPath: string): Promise<{
+export async function readProjectCharter(
+  repoPath: string,
+  connectionId?: string | null
+): Promise<{
   charter: ProjectCharter | null
   /** 原文文本，供保真合并与知识库正文展示；缺失或不可读时为 null。 */
   raw: string | null
@@ -35,13 +38,14 @@ export async function readProjectCharter(repoPath: string): Promise<{
   error: string | null
 }> {
   const filePath = joinFsPath(repoPath, PROJECT_TOML_REL)
+  const ssh = connectionId ? { connectionId } : {}
   let exists = false
   try {
-    exists = await window.api.fs.pathExists({ filePath })
+    exists = await window.api.fs.pathExists({ filePath, ...ssh })
     if (!exists) {
       return { charter: null, raw: null, existed: false, error: null }
     }
-    const { content, isBinary } = await window.api.fs.readFile({ filePath })
+    const { content, isBinary } = await window.api.fs.readFile({ filePath, ...ssh })
     if (isBinary) {
       return { charter: null, raw: null, existed: true, error: '名片不是文本文件' }
     }
