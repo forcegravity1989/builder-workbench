@@ -6,7 +6,7 @@
       "sourcePath": "skills/bw-knowledge-docs",
       "releaseRevision": 1,
       "packageDigest": "9507ff68e1785a5e2f7ab27408ea58d2313c293f8527944b87121fe6d72464d9",
-      "gitTreeSha": "e3ce47fa25054226bcb1ee45e0db1720b4b3056d",
+      "gitTreeSha": "20baf6b636bbf676bc2a7e1cfd8ee80df8673435",
       "files": [
         {
           "path": "SKILL.md",
@@ -19,10 +19,10 @@
         },
         {
           "path": "roles.md",
-          "size": 1821,
+          "size": 1793,
           "executable": false,
           "classification": "text",
-          "exactSha256": "51ac6895a70316ae212239171bf3de38e71fd223ce8fc3307b7dde1eced10619",
+          "exactSha256": "ed8cff91ff35964fd9a25a9602fc5ea5127b08f5575f7c3392e90ad30ea646be",
           "textNormalizedSha256": "ed8cff91ff35964fd9a25a9602fc5ea5127b08f5575f7c3392e90ad30ea646be",
           "identitySha256": "ed8cff91ff35964fd9a25a9602fc5ea5127b08f5575f7c3392e90ad30ea646be"
         }

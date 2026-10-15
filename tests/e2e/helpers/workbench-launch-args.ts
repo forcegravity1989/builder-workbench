@@ -8,8 +8,13 @@ export function getWorkbenchElectronLaunchArgs(mainPath: string, headful: boolea
   // Chromium then throttles requestAnimationFrame, and Playwright's click
   // actionability check ("visible, enabled and stable") needs two consecutive
   // animation frames — it starves forever on a throttled renderer. These flags
-  // keep frame delivery alive for occluded/backgrounded test windows; CI's Xvfb
-  // display never needed them, which is why the smoke only flaked on desktops.
+  // keep frame delivery alive for occluded/backgrounded test windows.
+  // They do NOT lift visibility gating: a window that is never shown
+  // (ORCA_E2E_HEADLESS) keeps document visibilityState 'hidden', where
+  // Chromium pauses rAF outright. That starved the CI Xvfb smoke
+  // deterministically after reload — the earlier "Xvfb never needed these"
+  // note was wrong; the fix is showing the window on virtual displays via
+  // ORCA_E2E_HEADFUL=1 (see workbench-app.ts), not more flags.
   const frameFlags = [
     '--disable-backgrounding-occluded-windows',
     '--disable-renderer-backgrounding',
@@ -42,8 +47,10 @@ export function getWorkbenchElectronLaunchArgs(mainPath: string, headful: boolea
   // mode 4755 in node_modules). Playwright's electron.launch injects
   // --no-sandbox automatically; raw spawn() paths (e.g. second-instance
   // activation) must match or Chromium aborts with SIGTRAP before handshake.
-  // GPU flags keep headless under Xvfb on a software path when the GPU
-  // subprocess cannot initialize.
+  // GPU flags keep the Xvfb run on a software path when the GPU subprocess
+  // cannot initialize (on GitHub Actions' xvfb the default project's window IS
+  // shown — see showOnVirtualDisplay in workbench-app.ts; a local xvfb run
+  // stays windowless unless ORCA_E2E_FORCE_HEADFUL=1).
   return [
     ...frameFlags,
     '--no-sandbox',

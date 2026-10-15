@@ -83,3 +83,15 @@ jobs:
 
       - name: Run Workbench smoke
         run: xvfb-run --auto-servernum pnpm run test:e2e:workbench
+
+      # Why: Playwright writes screenshots / error-context / trace under
+      # test-results/ and the runner discards them after the job; without this
+      # every smoke diagnosis restarts from log text alone (the spec:150
+      # actionability stall in #353 could not be inspected any other way).
+      - name: Upload smoke failure evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: workbench-smoke-test-results
+          path: test-results/
+          if-no-files-found: ignore

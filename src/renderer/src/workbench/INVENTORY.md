@@ -10,7 +10,7 @@
 | Projects / worktree 树 | `components/sidebar/` | 左栏 Projects |
 | 终端 / agent / 建树 | terminal + `worktree-creation-flow` | 执行面 |
 | Explorer / SC / Diff | right-sidebar | 执行面右栏 |
-| **Tasks** | `components/task-page/` | 独立「任务」页签；原样挂载 Orca TaskPage；同步仓范围与原生一致（G3 起不再按墙项目收窄） |
+| **Tasks** | `components/task-page/` | 独立「任务」页签；原样挂载 Orca TaskPage；BW 壳内侧栏任务入口经原生 `openTaskPage({ preselectedRepoId })` 默认预选墙当前项目（解析同验收/计划屏），页内筛选可改；不合格/无项目按原生优先级回退（预选 > 持久化 defaultRepoSelection > 全部项目），不另建收窄过滤层 |
 | Automations | `components/automations/` | 自动化屏 |
 | Settings | `components/settings/` | 设置 |
 | main / shared runtime | `src/main`, `src/shared` | 业务语义 |
@@ -19,7 +19,7 @@
 
 | 项 | 落点 | 内容与证据边界 |
 |----|------|-----------------|
-| 多屏导航 | `workbench/WorkbenchSidebarNav.tsx` + `workbench-nav.ts` | 总览 / 计划 / **任务** / 验收 / 自动化 / 知识库；任务入口复用 Orca `SidebarTaskNavButton`；计划、验收均以 artifacts 槽准备固定树，不扩 TopLevelView union |
+| 多屏导航 | `workbench/WorkbenchSidebarNav.tsx` + `workbench-nav.ts` | 总览 / 计划 / **任务** / 验收 / 自动化 / 知识库；任务入口复用 Orca `SidebarTaskNavButton`（BW 壳内点击带当前项目预选，见保留表 Tasks 行）；计划、验收均以 artifacts 槽准备固定树，不扩 TopLevelView union |
 | 计划/验收共用容器 | AppWorkspaceShell + version-cycle/CycleWorkspaceProvider、CycleWorkspaceShell | artifacts 只准备固定树，随后切 terminal；原生 Terminal 唯一挂载，右侧按固定分支附加业务板 |
 | 周期共享层 | version-cycle/（cycle-context、native-workspace、native-session、cycle-prompt、material-draft、CycleStartCard、cycle-start-request、current-cycle-workspace、metrics-setup、use-workflow-version、use-archive-pr-status、ensure-cycle-automation、use-cycle-automation-draft、start-cycle-automation、AutomationConfigureButton、cycle-sync-port） | 原生会话/标签/分屏/历史/工具完整复用；两屏右板首行协作卡片是唯一启动入口：手动运行已登记自动化（保存的提示/模型/工具/复用规则；ensure 按当前 BW 版本覆盖同步提示词，用户设置保留），数据文件问题作为一次性上下文随该次运行合并递交（automation.runNow oneShotPrompt，capability 门控），不再另建会话；「配置自动化」入口在右板页头分支名旁；进屏经 cycle-sync-port 先把采用分支最新拉进固定分支，失败如实提示且不换数据源；归档/拆解/跟进直接在会话中发起，贴草稿通道与等待框已整体退役删除；无 BW 聊天/历史/会话绑定 |
 | 计划业务 | `version-planning/`（PlanningBoard、PlanningSections、PlanningGoals、PlanningTasks、PlanningMinutes、PlanGoalMetrics、PlanningPersistenceNotice、use-planning-view-memory、use-plan-version-selection、use-progress-minutes、plan-summary） | 右侧同构空态与材料单页：直接编辑目标、页内任务、派生纪要、指标选取；旅程轴定位正文并按材料 workflow.stage 点灯（灰/绿两态，位置比较）；进展区在有 progressSource 时内联回显派生只读纪要；风险仅由用户填写（模型通道被人工守卫拒绝）。goalFilter+滚动存 sessionStorage；流程选版走原生偏好 `workbenchSelectedVersion`；页面不创建新材料或另设保存按钮 |

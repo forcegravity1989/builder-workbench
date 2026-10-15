@@ -28,6 +28,7 @@ import { TEST_REPO_PATH_FILE } from '../global-setup'
 import { cleanupE2EDaemons, closeElectronAppForE2E } from './electron-process-shutdown'
 import { getWorkbenchElectronLaunchArgs } from './workbench-launch-args'
 import { retryTransientMainEvaluate } from './electron-main-evaluate-retry'
+import { runsOnCiVirtualDisplay } from './ci-virtual-display'
 import { getE2ECompletedOnboardingProfile } from './e2e-completed-onboarding-profile'
 import {
   assertElectronResolvedIsolatedHome,
@@ -232,6 +233,20 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
     if (recordVideoDir) {
       mkdirSync(recordVideoDir, { recursive: true })
     }
+    // Why: ORCA_E2E_HEADLESS suppresses mainWindow.show() (isWindowlessLaunch
+    // in foreground-activation-policy) to keep the window off a developer's
+    // real desktop; ORCA_E2E_HEADFUL overrides for runs that need a visible
+    // window (e.g. pointer-capture drag tests). Under the GitHub Actions
+    // ubuntu runner's xvfb the suppression backfires: a never-shown window
+    // keeps document visibilityState 'hidden', Chromium pauses rAF outright,
+    // and Playwright actionability starves — deterministically after
+    // page.reload() (full root-cause chain and guard rationale in
+    // ci-virtual-display.ts). Launching with ORCA_E2E_HEADFUL=1 there maps the
+    // window via showInactive() — frames flow while isBackgroundLaunch stays
+    // true, so the never-take-the-foreground policy survives (tests/AGENTS.md;
+    // a bare env-less launch would re-enable the window.show() /
+    // app.focus({ steal: true }) paths).
+    const showOnVirtualDisplay = !headful && runsOnCiVirtualDisplay()
     const app = await electron.launch({
       args: [...workbenchAppExtraArgs, ...getWorkbenchElectronLaunchArgs(mainPath, headful)],
       ...(slowMo > 0 ? { slowMo } : {}),
@@ -239,16 +254,12 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
       // Why: keep NODE_ENV=development so window.__store is exposed and
       // dev-only helpers activate. ORCA_E2E_USER_DATA_DIR overrides the usual
       // shared dev profile so every spec gets a clean persistence root.
-      // Why: ORCA_E2E_HEADLESS suppresses mainWindow.show() so the app
-      // window stays hidden during test runs, avoiding focus stealing and
-      // screen clutter. Playwright interacts via CDP regardless.
-      // Why: ORCA_E2E_HEADLESS suppresses mainWindow.show() for CI/headless
-      // runs. ORCA_E2E_HEADFUL overrides this for tests that need a visible
-      // window (e.g. pointer-capture drag tests).
       env: {
         ...homeIsolation.env,
         NODE_ENV: 'development',
-        ...(headful ? { ORCA_E2E_HEADFUL: '1' } : { ORCA_E2E_HEADLESS: '1' })
+        ...(headful || showOnVirtualDisplay
+          ? { ORCA_E2E_HEADFUL: '1' }
+          : { ORCA_E2E_HEADLESS: '1' })
       }
     })
     forwardElectronProcessLogs(app, testInfo)
