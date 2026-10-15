@@ -58,7 +58,7 @@ export function PlanningHeader({
         )}
       </select>
       <button className="wb-btn wb-btn-ghost wb-btn-sm" disabled={disabled} onClick={onRefresh}>
-        刷新数据
+        更新代码
       </button>
       <span className="vp-muted" role="status">
         {state}

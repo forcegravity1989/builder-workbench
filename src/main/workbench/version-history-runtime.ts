@@ -4,11 +4,8 @@ import { PlanningMaterialSchema } from '../../shared/workbench/version-material'
 import type { MetricScope } from '../../shared/workbench/metrics'
 import type { VersionHistoryPort } from '../../shared/workbench/version-history'
 import { getActiveMultiplexer } from '../ssh/ssh-target-registry'
-import {
-  runAdoptedBaseline,
-  runReadOnlyHistoryGit,
-  type HistoryGitOutcome
-} from './history-git-core'
+import { runReadOnlyHistoryGit, type HistoryGitOutcome } from './history-git-core'
+import { runTrunkBaseline } from './trunk-baseline'
 import { resolveWorkbenchGitExecOptions } from './project-git-routing'
 import { createVersionHistoryService, type VersionHistoryHost } from './version-history-service'
 import { HistorySourceError } from './version-history-snapshot'
@@ -137,21 +134,23 @@ export function nativeVersionHistoryHost(runtime: HistoryRuntime): VersionHistor
     },
     async baseline(scope) {
       const { target, repo } = await workspaceFor(scope)
-      const adoptedRef = repo.worktreeBaseRef?.trim() || null
+      const pinnedRef = repo.worktreeBaseRef?.trim() || null
       const host = parseExecutionHostId(target.hostId)
       if (host?.kind === 'local') {
-        return runAdoptedBaseline(
+        return runTrunkBaseline(
           target.repoPath,
-          adoptedRef,
+          pinnedRef,
           resolveWorkbenchGitExecOptions(runtime, repo)
         )
       }
       if (host?.kind !== 'ssh') {
         throw new WorkspaceScopeError('invalid-scope', '请通过工作树所属的 Orca runtime 读取历史')
       }
+      // Wire field keeps its historical name so an older remote build still
+      // parses the request; it carries the pinned worktreeBaseRef.
       return requestRemote<{ ref: string; commit: string }>(host, target, {
         operation: 'baseline',
-        adoptedRef
+        adoptedRef: pinnedRef
       })
     },
     async worktreeHead(scope) {

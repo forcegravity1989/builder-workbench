@@ -1905,17 +1905,17 @@
     "metrics-refresh": [
       {
         "releaseRevision": 1,
-        "packageDigest": "fd1cc1c324bb2fb98fba981eff82fee9b2d20e6aae4b4dd7e9fe4bf602b74690",
-        "gitTreeSha": "bbb5519be045db72275b59be8b890fdfc55540a2",
+        "packageDigest": "e63ebd57eb7c751238160ab8b23f571908e6937a706be7ddf3ed32c6f03a7946",
+        "gitTreeSha": "aa80c4a07d684732e5374e18c5e14f6377a8a562",
         "files": [
           {
             "path": "SKILL.md",
             "size": 1988,
             "executable": false,
             "classification": "text",
-            "exactSha256": "fb7029fb1387a12c3aca4ce614bbf81d4fd0d5713d228b75a4cc02f59a3bb21a",
-            "textNormalizedSha256": "fb7029fb1387a12c3aca4ce614bbf81d4fd0d5713d228b75a4cc02f59a3bb21a",
-            "identitySha256": "fb7029fb1387a12c3aca4ce614bbf81d4fd0d5713d228b75a4cc02f59a3bb21a"
+            "exactSha256": "10f49cbec47714f38276564d8077b4777ceabfd4cbc65322e88332f9675de61f",
+            "textNormalizedSha256": "10f49cbec47714f38276564d8077b4777ceabfd4cbc65322e88332f9675de61f",
+            "identitySha256": "10f49cbec47714f38276564d8077b4777ceabfd4cbc65322e88332f9675de61f"
           }
         ]
       }
@@ -1923,17 +1923,17 @@
     "version-acceptance": [
       {
         "releaseRevision": 1,
-        "packageDigest": "0da0b52cf8776a8e613253fa3d5459b630ccf5be3f187ec4da51fac7990a7886",
-        "gitTreeSha": "c9dcb7261e3b95852470d5268ab3fdfa493a1b1a",
+        "packageDigest": "16045693f16b5ec4acc643babb744bed4997f6e5a958ff475eddc1328006d9cb",
+        "gitTreeSha": "7140646c772b9970b3c523e6ec0966da5a7fa333",
         "files": [
           {
             "path": "SKILL.md",
             "size": 1674,
             "executable": false,
             "classification": "text",
-            "exactSha256": "bc2c70570f291776096359b9f136c5ca643eee5d63f44eb142195bbe72c500fb",
-            "textNormalizedSha256": "bc2c70570f291776096359b9f136c5ca643eee5d63f44eb142195bbe72c500fb",
-            "identitySha256": "bc2c70570f291776096359b9f136c5ca643eee5d63f44eb142195bbe72c500fb"
+            "exactSha256": "9e1e4cc46976ab537a2bfaf0add092004e98823e7965df3349586eb8fc81a3be",
+            "textNormalizedSha256": "9e1e4cc46976ab537a2bfaf0add092004e98823e7965df3349586eb8fc81a3be",
+            "identitySha256": "9e1e4cc46976ab537a2bfaf0add092004e98823e7965df3349586eb8fc81a3be"
           }
         ]
       }

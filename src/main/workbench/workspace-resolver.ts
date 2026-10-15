@@ -13,6 +13,8 @@ export type WorkbenchWorkspaceTarget = {
   hostId: ExecutionHostId
   repoPath: string
   worktreePath: string
+  /** Native worktree identity: the repo's main checkout, not a path comparison. */
+  isMainWorktree: boolean
 }
 /** Registered repo facts a BW host adapter needs beyond the resolved paths. */
 export type WorkbenchWorkspaceRepo = Pick<
@@ -33,7 +35,13 @@ export type WorkbenchWorkspaceHost = {
   ): Promise<
     Pick<
       Worktree,
-      'id' | 'repoId' | 'path' | 'hostId' | 'runtimeOwnerEnvironmentId' | 'isArchived'
+      | 'id'
+      | 'repoId'
+      | 'path'
+      | 'hostId'
+      | 'runtimeOwnerEnvironmentId'
+      | 'isArchived'
+      | 'isMainWorktree'
     >[]
   >
 }
@@ -73,7 +81,12 @@ export function createWorkbenchWorkspaceResolver(host: WorkbenchWorkspaceHost) {
       throw new WorkspaceScopeError('invalid-scope', '工作树身份不存在、已归档或不唯一')
     }
     return {
-      target: { hostId: hostId.id, repoPath: repo.path, worktreePath: trees[0].path },
+      target: {
+        hostId: hostId.id,
+        repoPath: repo.path,
+        worktreePath: trees[0].path,
+        isMainWorktree: trees[0].isMainWorktree
+      },
       repo
     }
   }
