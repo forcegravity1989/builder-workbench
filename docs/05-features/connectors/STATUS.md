@@ -2,12 +2,12 @@
 
 > **维护约定**：本篇记录本特性六环链现状与证据，格式按 [02 §6.2](../../01-principles/02-working-backwards.md)「STATUS 格式」；更新触发：任一环状态或证据变化，随引发它的 PR 同批提交，不记流水。
 
-**现状（2026-10-10）**：只交设计。intent / spec / 原型为草案，**未经人 gate**；实现由内网按本目录完成，CodeHub、WeLink 的安装与登录细节待内网补。关联 #323。
+**现状（2026-10-15）**：只交设计。intent / spec / 原型**已认**（用户：「先按照我的要求做吧，先保留三张卡」；第 2–5 项按设计默认采用）；实现由内网按本目录完成，CodeHub、WeLink 的安装与登录细节待内网补。关联 #323。
 
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
-| 1 intent | ◐ | [intent.md](intent.md) 草案；带入来源 = 2026-10-10 用户指令（只留 gh，新增 codehub-cli、welink-cli 并提供添加能力）。五个待决项等 gate |
-| 2 spec | ◐ | [spec.md](spec.md) 草案 + 可点原型 [prototype.html](prototype.html)（改前 / 改后、平台、状态位置、每张卡状态可切）；验收点 I01–I10 与旅程 IJ01 已定义；命令表 CodeHub、WeLink 列待内网补 |
+| 1 intent | ● | [intent.md](intent.md) 已认（2026-10-15）；带入来源 = 2026-10-10 用户指令（只留 gh，新增 codehub-cli、welink-cli 并提供添加能力）。第 1 项用户明确，第 2–5 项按设计默认采用 |
+| 2 spec | ● | [spec.md](spec.md) 已认 + 可点原型 [prototype.html](prototype.html)（改前 / 改后、平台、状态位置、每张卡状态可切）；验收点 I01–I10 与旅程 IJ01 已定义；命令表 CodeHub、WeLink 列待内网补 |
 | 3 实现设计 | ◐ | 落点建议写在 spec §7（预检加 WeLink 探测与 CodeHub 登录探测、`PreflightStatus` 两处定义、三卡通用模板、Workbench 壳只留三张卡与任务来源页三行、终端首行遮挡前置修复）；未实现 |
 | 4 TDD | ○ | 未开始；预检探测改动会改既有 `preflight-host-cli-status.test.ts` 的 mock 顺序 |
 | 5 验收点E2E | ○ | 未开始 |
@@ -36,4 +36,4 @@
 2. **CodeHub `auth status` 的退出码含义与站点未核**——命令本身已在 [codehub-cli 用法](../../03-guide/codehub-cli.md) 记录；查的是哪个站点、`CODEHUB_HOST` / `CODEHUB_TOKEN` 环境变量在桌面启动的应用里是否可见，待内网核实。
 3. **Windows 上 npm 装的 CLI**——预检的 `execFile` 认不出 `.cmd` 垫片，会误报未安装（spec §5）。
 4. **前置修复未合入主干**——Workbench 皮肤把无标题终端的透明标题条刷成卡片色、盖住终端首行；修法在 spec §7，PR #309（已关闭）真壳验证过，主干仍有此问题。
-5. **隐藏 Linear、Jira、GitLab 后，Workbench 壳里不能新连这三个任务来源**——已连的不受影响（intent 待决 5）。
+5. **隐藏 Linear、Jira、GitLab 后，Workbench 壳里不能新连这三个任务来源**——已连的不受影响（intent 裁决 5，可推后）。

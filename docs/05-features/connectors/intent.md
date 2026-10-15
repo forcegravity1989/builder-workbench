@@ -1,6 +1,6 @@
 # intent — Connector（集成）卡片：GitHub、CodeHub、WeLink
 
-> **状态：草案，待人 gate。** 2026-10-10 用户发起：「orca 的集成就是 connector，只保留 gh，新增 codehub-cli、welink-cli 两个，同时提供相应的添加能力」。本批只交设计（intent / spec / 原型 / STATUS），实现在内网完成；CodeHub、WeLink 的安装与登录细节由内网补。关联 #323。
+> **状态：已认（2026-10-15）。** 用户：「先按照我的要求做吧，先保留三张卡」。2026-10-10 用户发起：「orca 的集成就是 connector，只保留 gh，新增 codehub-cli、welink-cli 两个，同时提供相应的添加能力」。本批只交设计（intent / spec / 原型 / STATUS），实现在内网完成；CodeHub、WeLink 的安装与登录细节由内网补。关联 #323。
 >
 > **维护约定**：给判断「Builder 怎样在 Workbench 里把三个外部 CLI 接好」的人读。行为与卡片契约见 [spec.md](spec.md)，可点样张见 [prototype.html](prototype.html)，链状态见 [STATUS.md](STATUS.md)。边界变化时改本篇，不把实现清单抄进正文。
 
@@ -28,17 +28,17 @@
 
 - **做**：Workbench 壳的集成页只留 GitHub、CodeHub、WeLink 三张卡；三卡同一模板与状态机；安装、登录在卡片内终端由人执行；WeLink 新增安装与登录探测；CodeHub 补登录探测与账户范围行。
 - **不做**：删 Orca 原生其他卡片的代码（Orca 壳照旧）；代填令牌或密码；代按回车；在 BW 里存凭据；`welink-cli` 发群消息的业务接入（项目名片 `[chat]` 的消费是另一件事）；执行工具的 MCP 服务（PR #309 的「外部服务」一节，已撤）；SSH 远端仓库上的安装。
-- **相邻**：任务页的 CodeHub 来源（[codehub](../codehub/) 特性）读同一个 `codehub-cli`。任务来源页的 GitLab、Linear、Jira 三行会把人带到被隐藏的卡片（待决 5）。
+- **相邻**：任务页的 CodeHub 来源（[codehub](../codehub/) 特性）读同一个 `codehub-cli`。任务来源页的 GitLab、Linear、Jira 三行会把人带到被隐藏的卡片（裁决 5）。
 - **内网补**：CodeHub、WeLink 的安装命令与说明链接；`welink-cli --version` 与 `codehub-cli --version` 是否退出 0（预检靠它判安装）；`welink-cli` 的登录与登录状态命令；两个 CLI 的 `auth status` 退出码含义与它查的是哪个站点。**公共 npm 上同名的 `welink-cli` 不是 WeLink 的 CLI**（是京东前端脚手架，命令名 `welink`），不得作为安装命令。
 
-## 成功判据与待决问题
+## 成功判据与裁决
 
 **判据**：Builder 不离开集成页、不手写命令，就能把三个 CLI 各自从未安装办到已连接；在终端里自己装好、登好的，回到集成页点重新检查即显示已连接；探测超时或出错显示不可用，不显示已连接，也不误报未登录。
 
-**待决（需 gate）**：
+**已裁决（2026-10-15）**：用户原话「先按照我的要求做吧，先保留三张卡」。第 1 项是用户明确的决定；第 2–5 项用户没有逐条裁，按「先按照我的要求做」采用下面的设计默认，内网实现时若与实际冲突，按用户原始要求（只留 gh、新增 codehub-cli 与 welink-cli、能添加）取舍。
 
-1. 集成页只留三张卡：其余六张在 Workbench 壳隐藏、代码不删、Orca 壳不变。
+1. **集成页只留三张卡**（用户明确）：其余六张在 Workbench 壳隐藏、代码不删、Orca 壳不变。
 2. 分两节：「代码托管」（GitHub、CodeHub）、「项目群」（WeLink）；节下与页头都不写说明小字。
 3. 登录探测按 CLI 静态登记：`gh`、`codehub-cli` 用 `auth status` 的退出码（0 = 已登录；CodeHub 的退出码含义与站点由内网核实）；`welink-cli` 在内网核实前登记为「不报登录状态」，卡片显示「已安装」并给「查看登录状态」。
-4. GitHub 卡也改成原地安装与登录（与另两张同模板），而不是保留现在的「跳官网 / 摆命令」。
-5. 任务来源页在 Workbench 壳隐藏 GitLab、Linear、Jira 三行（它们的连接入口指向被隐藏的卡片）；已连上的来源不受影响。
+4. GitHub 卡也改成原地安装与登录（与另两张同模板），这就是用户要求的「添加能力」。
+5. 任务来源页在 Workbench 壳隐藏 GitLab、Linear、Jira 三行（它们的连接入口指向被隐藏的卡片）；已连上的来源不受影响。这一项超出用户原话，只为不留指向空卡片的入口；内网可视情况推后。
