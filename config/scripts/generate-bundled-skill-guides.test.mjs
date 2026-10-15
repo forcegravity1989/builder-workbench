@@ -357,7 +357,7 @@ describe('bundled skill guide generator', () => {
     expect(normalizeMarkdown(attributes)).toContain('/skill-guides/*.md text eol=lf\n')
     expect(normalizeMarkdown(attributes)).toContain('/skill-stubs/*.md text eol=lf\n')
     expect(normalizeMarkdown(attributes)).toContain('/skill-stubs/_shared/*.md text eol=lf\n')
-    expect(normalizeMarkdown(attributes)).toContain('/skills/*/SKILL.md text eol=lf\n')
+    expect(normalizeMarkdown(attributes)).toContain('/skills/**/*.md text eol=lf\n')
     expect(normalizeMarkdown(attributes)).toContain(
       '/src/cli/bundled-skill-guides.ts text eol=lf\n'
     )

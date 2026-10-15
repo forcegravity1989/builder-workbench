@@ -98,7 +98,7 @@ export type CharterStatus = {
     url: string | null
     state: 'open' | 'merged' | 'closed'
   } | null
-  /** 主检出 HEAD 是否已含名片(合入且已更新主目录后为 true)。 */
+  /** 主检出 HEAD 是否已含名片(合入且已「更新代码」后为 true)。 */
   headHasCharter: boolean
   /** renderer 侧查询失败(区别于「查了没有」):呈现为没读到,不冒充无 PR。 */
   queryFailed?: boolean

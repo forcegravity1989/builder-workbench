@@ -80,12 +80,12 @@ describe('acceptance task evidence and report', () => {
   it('keeps missing, empty and failed snapshots distinct without generating an acceptance conclusion', async () => {
     const document = material()
     const absent = await goalEvidenceRevision(document, plan, 'g1')
-    expect(deriveAcceptanceReport({ document, plan, revision: 'draft' }).markdown).toContain(
+    expect(deriveAcceptanceReport({ document, plan }).markdown).toContain(
       '尚未记录 Issue 快照'
     )
     document.taskSnapshot = []
     expect(await goalEvidenceRevision(document, plan, 'g1')).not.toBe(absent)
-    expect(deriveAcceptanceReport({ document, plan, revision: 'draft' }).markdown).toContain(
+    expect(deriveAcceptanceReport({ document, plan }).markdown).toContain(
       '固定计划仍引用 2 项任务'
     )
     document.taskSnapshot = [
@@ -96,18 +96,16 @@ describe('acceptance task evidence and report', () => {
         error: '宿主离线'
       }
     ]
-    const report = deriveAcceptanceReport({ document, plan, revision: 'draft' })
-    expect(report.markdown).toContain('读取失败：宿主离线')
-    expect(report.markdown).toContain('2026-09-25T02:00:00Z')
-    expect(report.markdown).toContain('记录结论：待核')
+    const report = deriveAcceptanceReport({ document, plan })
+    expect(report.markdown).toContain('读取失败（宿主离线）')
+    expect(report.markdown).toContain('结论：待核')
   })
   it('renders the stored provider source and state without changing the evidence', () => {
     const document = material()
     document.taskSnapshot = tasks()
     const before = JSON.stringify(document)
-    const report = deriveAcceptanceReport({ document, plan, revision: 'sha256:recorded' })
-    expect(report.markdown).toContain('状态 opened')
-    expect(report.markdown).toContain('ssh:build')
+    const report = deriveAcceptanceReport({ document, plan })
+    expect(report.markdown).toContain('：opened')
     expect(report.markdown).toContain('codehub.example/team/app')
     expect(JSON.stringify(document)).toBe(before)
   })

@@ -8,7 +8,7 @@
 
 AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks 详情与正文编辑、Automations、现有文件打开和命令执行能力。右侧围绕 G1/G2/G3 目标卡展示实际交付、材料、实测与人的结论，下接 Issue 状态区；“预览纪要”在目标区标题旁。材料准备在新建或已有原生验收会话中完成，不再设独立准备摘要、固定包/报告/展示占位或“材料备齐”勾选；候选与材料来源仍保留在记录和纪要中，不建通用发布控制台。
 
-共用 CycleTasks、CycleArchive、useMaterialAutosave 和 useMaterialArchive；承诺区共用骨架，验收业务字段由本页拥有。旧 PlanResultsPane 已随旧三屏链条退役删除，跨版本 results 流程不再并行维护。TaskPort/CycleSessionPort/ArchivePort/VersionDocumentPort 与计划共用（已按当前接线落地），MetricsPort 由指标线提供。页面经 artifacts 准备入口确保 bw/week-acceptance 后进入原生 terminal，右板由 CycleWorkspaceShell 挂载；会话、标签/分屏、历史和工具侧栏完整沿用原生工作区，边界见计划设计。
+共用 CycleTasks、CycleArchive、useMaterialAutosave 和 useArchivePrStatus；承诺区共用骨架，验收业务字段由本页拥有。旧 PlanResultsPane 已随旧三屏链条退役删除，跨版本 results 流程不再并行维护。TaskPort/ArchivePrPort/VersionDocumentPort 与计划共用（已按当前接线落地；原 CycleSessionPort 贴草稿通道与 ArchivePort 字节证明链已整体退役删除），MetricsPort 由指标线提供。页面经 artifacts 准备入口确保 bw/week-acceptance 后进入原生 terminal，右板由 CycleWorkspaceShell 挂载；会话、标签/分屏、历史和工具侧栏完整沿用原生工作区，边界见计划设计。
 
 ## 两个常驻工作树
 
@@ -16,7 +16,7 @@ AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks �
 
 计划固定 bw/week-plan，验收固定 bw/week-acceptance，目录由 Orca 原生创建与登记策略确定，不强制 .bw 物理目录。通过 Orca 项目/宿主和分支查真实工作区，不仅替换标签，不新增聊天日志或 BW 调度器。
 
-验收树从项目实际采用的基线创建；运行时不硬编码 bw-orca 或 main。每次新运行刷新远端并检查树的干净状态、前次归档与基线差异（现状注：脏树/未归档提交检查为提示级，由会话承担，无代码强制校验落点）。已有脏改动/未归档提交不 reset、不搬树、不强推，恢复该次工作或呈现冲突。先回显固定工作区与现有材料，再后台经 workbench.cycle.syncTrunk 把采用分支最新拉进验收分支（本地宿主 gitPull；失败/冲突如实提示、不阻断、不 reset，由用户在会话中带模型处理；远程 SSH 树暂不自动同步，属只读中继边界，记债待专项），已有同分支其他路径提示真实路径，不擅自删除重建。
+验收树从项目主干基线创建；运行时不硬编码 bw-orca 或 main。每次新运行刷新远端并检查树的干净状态、前次归档与基线差异（现状注：脏树/未归档提交检查为提示级，由会话承担，无代码强制校验落点）。已有脏改动/未归档提交不 reset、不搬树、不强推，恢复该次工作或呈现冲突。先回显固定工作区与现有材料；进屏不做任何 Git 动作，页头「更新代码」经 workbench.trunk.update 把固定树快进到主干最新（fetch 书签 → 双向对比 → merge --ff-only；快进不了保持原样、统一中文提示交会话处理、材料仍照常重读；纯草稿状态不是异常、不提示；远程 SSH 树暂不自动同步，属只读中继边界，记债待专项），已有同分支其他路径提示真实路径，不擅自删除重建。
 
 运行身份包含 projectId、hostId、workflow=acceptance 与 Orca runId；cycleId 为周期上下文，version 为另行核对的材料关联，不作为运行去重前提。运行与历史恢复由 Orca 管理，BW 不保存会话绑定或按标题匹配；专用“新建验收”复用已登记自动化的手动运行并自动打开、聚焦本次原生会话，定时运行仍在后台。首次登记默认 existing 固定工作区、reuseSession=false；后续尊重用户保存的会话复用配置。上午/下午可继续同一运行，计划与验收按各自固定工作区定位。
 
@@ -24,7 +24,7 @@ AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks �
 
 ## 候选与材料
 
-acceptance.json 在验收工作树保存，planRef 从验收分支 HEAD 的固定提交读取（worktreeHead + ls-tree/show，只读白名单命令；进屏同步保证已合入主干的计划在分支上可见），看板与会话在同一工作树看到同一份文件；草案预验收显式带源树、修订及 draft 标识。共享写入核心按项目/流程映射允许写入的树和对象，验收不得修改 plan.data.json。
+acceptance.json 在验收工作树保存，planRef 从验收分支 HEAD 的固定提交读取（worktreeHead + ls-tree/show，只读白名单命令；「更新代码」快进保证已合入主干的计划在分支上可见），看板与会话在同一工作树看到同一份文件；草案预验收显式带源树、修订及 draft 标识。共享写入核心按项目/流程映射允许写入的树和对象，验收不得修改 plan.data.json。
 
 candidateRef 保存项目、完整 commit SHA、版本与来源；preparedArtifacts 保存类别（交付件/包/验证/showcase）、可打开位置、候选、执行入口/工作区、生成时刻及适用时的 hash。项目没有包要求时直接采用其约定交付。数据字段唯一参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
 
@@ -42,7 +42,7 @@ AcceptanceMetrics 按目标的 metricTargets 与已存 readings 的名称集合�
 
 验收纪要由对应修订确定性生成，预览/复制/归档采用同一函数。已合入记录以目标基线的 commit + 文档路径 + cycleId 为历史身份；总览读取摘要，能打开对应只读原文及来源。每周和补证归档都是可追溯修订，缓存可重建，不另建里程碑表或历史业务数据库。
 
-准备状态、人的结论和归档灯分别推导；保存不是验收认可，候选包可用不是已发版。未达报告合入时归档可以完成而目标仍未达。
+旅程灯只读模型写入的 workflow.stage（灰/绿两态，位置比较），人工结论按 decision 与证据新鲜度推导，归档 PR 合入状态按 archivePr 薄读取；三者互不代替。保存不是验收认可，候选包可用不是已发版。未达报告归档时灯可绿而目标仍未达。来源行只呈现记录事实与纯声明比对（artifactCandidateCheck），在线文件/执行探测（原「检查文件与候选」按钮与 acceptance-candidate-port）已删除。
 
 人的结论按目标绑定证据：只补目标二的材料时，目标一原结论继续保留；更换计划修订、整个源码候选或候选交付包时，全部目标保留原结论并提示重新核对。decision.materialRevision 是固定计划、候选、该目标承诺及结果证据的确定性 SHA-256，不含 decision 本身。preparedArtifacts 中 kind=package 的全局候选包集合（含校验值、位置、生成时间和执行来源）参与所有目标摘要，同一源码提交换包也会使全部目标待核。非 package 材料仅在本目标实际交付位置引用时纳入；其他目标的材料变化不会使此目标失效。不增加候选包选择界面或构建记录服务。该摘要只判断证据变化，不认证判断人身份或替人授权。人的来源与时间单独展示，旧记录没有匹配的证据摘要时按待核呈现。
 
@@ -56,4 +56,4 @@ AcceptanceMetrics 按目标的 metricTargets 与已存 readings 的名称集合�
 
 旧结果不另设页面动作；首行“新建验收”在读取有问题时携带具体文件与诊断。会话读取共享迁移预览并保留原件，按实际上一版与唯一目标对应通过普通验收保存接口合并；不在验收页再建一套迁移算法，不自动覆盖本次已编辑结果，也不将历史 confirmation 当作本次人的认可。
 
-验证保留跨树写入限制、计划/候选固定与变化、材料匹配、报告/灯色及历史索引的既有有效覆盖；本轮只补少量关键行为检查，不为原型控件或原生能力复制大套测试。重复构建恢复须从真实会话和任务取证，不能把尚未接入的行为写成已测。A01–A10/AJ01/AJ02 的完整证据仍需真实 Electron、项目命令、模型和独立读回。验收线负责右板、共享协作入口与必要父级接线；指标组件按上述边界协作，公共原生文件变化先核对并行改动。
+验证保留跨树写入限制、计划/候选固定与变化、材料匹配、报告与历史索引的既有有效覆盖；本轮只补少量关键行为检查，不为原型控件或原生能力复制大套测试。重复构建恢复须从真实会话和任务取证，不能把尚未接入的行为写成已测。A01–A10/AJ01/AJ02 的完整证据仍需真实 Electron、项目命令、模型和独立读回。验收线负责右板、共享协作入口与必要父级接线；指标组件按上述边界协作，公共原生文件变化先核对并行改动。

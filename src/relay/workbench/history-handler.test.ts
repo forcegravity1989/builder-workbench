@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const runReadOnlyHistoryGit = vi.hoisted(() => vi.fn())
-const runAdoptedBaseline = vi.hoisted(() => vi.fn())
+const runTrunkBaseline = vi.hoisted(() => vi.fn())
 vi.mock('../../main/workbench/history-git-core', () => ({
-  runReadOnlyHistoryGit,
-  runAdoptedBaseline
+  runReadOnlyHistoryGit
+}))
+vi.mock('../../main/workbench/trunk-baseline', () => ({
+  runTrunkBaseline
 }))
 
 import { registerVersionHistoryRelay } from './history-handler'
@@ -28,7 +30,7 @@ function mount() {
 
 beforeEach(() => {
   runReadOnlyHistoryGit.mockReset()
-  runAdoptedBaseline.mockReset()
+  runTrunkBaseline.mockReset()
   mount()
 })
 
@@ -64,27 +66,35 @@ describe('workbench.history.execute relay executor', () => {
     })
   })
 
-  it('resolves the adopted baseline on the host that owns the filesystem', async () => {
-    runAdoptedBaseline.mockResolvedValue({ ref: 'origin/main', commit: 'c'.repeat(40) })
+  it('resolves the trunk baseline on the host that owns the filesystem', async () => {
+    const baseline = {
+      ref: 'origin/main',
+      commit: 'c'.repeat(40),
+      sync: { remoteName: 'origin', branchName: 'main' }
+    }
+    runTrunkBaseline.mockResolvedValue(baseline)
     const result = await call({ target, operation: 'baseline', adoptedRef: 'origin/main' })
-    expect(runAdoptedBaseline).toHaveBeenCalledWith('/srv/project', 'origin/main')
-    expect(result).toEqual({ ok: true, value: { ref: 'origin/main', commit: 'c'.repeat(40) } })
+    expect(runTrunkBaseline).toHaveBeenCalledWith('/srv/project', 'origin/main')
+    expect(result).toEqual({ ok: true, value: baseline })
   })
 
   it('rejects unknown operations, extra fields and baseline failures honestly', async () => {
     await expect(call({ target, operation: 'exec', args: ['push'] })).rejects.toThrow()
     await expect(call({ target, operation: 'git', args: [], extra: 1 })).rejects.toThrow()
-    runAdoptedBaseline.mockRejectedValue(
-      new HistorySourceError('baseline-unresolved', '无法解析项目采用分支，请先在项目设置明确基线')
+    runTrunkBaseline.mockRejectedValue(
+      new HistorySourceError(
+        'baseline-unresolved',
+        '主检出不在任何分支上，无法确定主干基线；请在项目设置钉定基线分支'
+      )
     )
     expect(await call({ target, operation: 'baseline', adoptedRef: null })).toEqual({
       ok: false,
       error: {
         code: 'baseline-unresolved',
-        message: '无法解析项目采用分支，请先在项目设置明确基线'
+        message: '主检出不在任何分支上，无法确定主干基线；请在项目设置钉定基线分支'
       }
     })
-    runAdoptedBaseline.mockRejectedValue(new Error('relay exploded'))
+    runTrunkBaseline.mockRejectedValue(new Error('relay exploded'))
     expect(await call({ target, operation: 'baseline', adoptedRef: null })).toEqual({
       ok: false,
       error: { code: 'history-failed', message: 'relay exploded' }

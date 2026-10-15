@@ -130,14 +130,6 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
   border: 1px solid var(--color-divider);
   color: var(--color-neutral-500);
 }
-.vp-step-icon.pending {
-  color: var(--color-warning-deep);
-  background: var(--color-warning-soft);
-}
-.vp-step-icon.failed {
-  color: var(--color-danger-deep);
-  background: var(--color-danger-soft);
-}
 .vp-step-icon.done {
   color: var(--color-success-deep);
   background: var(--color-success-soft);
@@ -180,6 +172,19 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
 }
 .vp-preparation textarea {
   min-height: 54px;
+}
+.vp-progress-minutes {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  background: var(--color-neutral-100);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 16rem;
+  overflow: auto;
 }
 .vp-section-heading {
   display: flex;

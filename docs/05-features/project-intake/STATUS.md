@@ -4,6 +4,8 @@
 
 **现状（2026-10-13）**：既有 intent/spec 基线保留；G3 跨主机项目墙对齐稿已补入同一特性，交互高保真已放在 [g3-project-wall-prototype.html](g3-project-wall-prototype.html)，按两轮人工批注修订（批注与修订对照见本轮 commit/PR），待人确认；**G3 生产实现已随本轮落码**（侧栏收窄过滤整体回退、项目墙 `.bw/project.toml` 判据与跨主机稳定身份归并、「导入 Builder 主机」批量配对壳、墙卡来源标签/工作树计数/删除边界/整墙刷新）；掉卡边缘与工作树计数口径已由用户拍板（见 spec 取舍已决 5 与 G3 行为规则）。非 G3 墙卡元素（版本/健康占位、状态灯设计）不由本特性承载，归项目墙深度优化（leader PR #349 与用户后续 PR，用户明示本 PR 先合入、不关注非 G3 美化）。既有名片 PR 化、远端预探测、去重、编辑名片入口仍以 PR #285 和原 STATUS 边界为准。
 
+**现状（2026-10-14，#355 同步统一批）**：「更新主目录」随三屏按钮统一命名改「更新代码」，动作链不变（主检出快进仍走原生 fastForward，本地/SSH 路由不变）；接入完成提示文案与 spec/intent/债项口径同步更新。CodeHub MR 与 GitHub PR 的目标分支删除猜名探测与 `|| 'master'` 兜底，改统一主干基线解析（钉值 `worktreeBaseRef` 或主检出当前分支），解析失败如实报错、不猜名。
+
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
 | 1 intent | ◐ | intent.md 保留基线并补入 G3 对齐增量；待本轮高保真确认 |
@@ -14,9 +16,9 @@
 | 6 旅程E2E | 待建 | G3-01「导入 Builder 主机 → 墙上只见 .bw 项目 → Orca Projects 切远端工作树 → BW 屏读回」已定义、未注册；稳定后专项回补，不造用例凑数 |
 
 **已知债**：
-1. **名片 PR 全链真实远端未验**——实现已落（bw/project 固定树提交 + push + gh/codehub-cli 开 PR + 待合入提示 + 更新主目录 + 编辑名片补录），但 gh/codehub-cli 登录态、GHES、WSL 仓、配对宿主、CodeHub 实机均未端到端跑过；未验前不宣称团队共享已可用。本机真壳受环境限制（node-pty 重建失败）未拉起。克隆前名片预读的 CodeHub 读侧已于 2026-10-10 对两个内源 host 实机验证（修复 --jq 引号假 absent 后）；MR 创建侧同日以同一代码链（createCodeHubMr 打包实跑）在真实 CodeHub 仓验证可开 MR——应用内曾出现一次单次失败，错误信息未留存，排除法定位为瞬时故障（查重/创建命令现均实测通过）；应用内端到端仍未跑过。
-2. **CodeHub 侧「已合入未更新」无检测、chip 无跳转**——status 只查开放 MR（codehub-cli mr list opened）；GitHub 有 merged 态可提示「更新主目录」，CodeHub 合入后要等主检出读到名片才消失提示缺口，且 MR 无 web 链接可推时 chip 只显示号码、无「查看」入口。
-3. **CodeHub MR 目标分支兜底 master**——沿 main 隐含假设（origin/HEAD 符号引用缺失时），已加 getRepoDefaultBranchName 兜底；内源默认分支为 master 的假设需实机复核。
+1. **名片 PR 全链真实远端未验**——实现已落（bw/project 固定树提交 + push + gh/codehub-cli 开 PR + 待合入提示 + 更新代码 + 编辑名片补录），但 gh/codehub-cli 登录态、GHES、WSL 仓、配对宿主、CodeHub 实机均未端到端跑过；未验前不宣称团队共享已可用。本机真壳受环境限制（node-pty 重建失败）未拉起。克隆前名片预读的 CodeHub 读侧已于 2026-10-10 对两个内源 host 实机验证（修复 --jq 引号假 absent 后）；MR 创建侧同日以同一代码链（createCodeHubMr 打包实跑）在真实 CodeHub 仓验证可开 MR——应用内曾出现一次单次失败，错误信息未留存，排除法定位为瞬时故障（查重/创建命令现均实测通过）；应用内端到端仍未跑过。
+2. **CodeHub 侧「已合入未更新」无检测、chip 无跳转**——status 只查开放 MR（codehub-cli mr list opened）；GitHub 有 merged 态可提示「更新代码」，CodeHub 合入后要等主检出读到名片才消失提示缺口，且 MR 无 web 链接可推时 chip 只显示号码、无「查看」入口。
+3. **CodeHub MR 目标分支依赖基线解析**——猜名探测与 `|| 'master'` 兜底已删除（2026-10-14 #355 批），目标分支 = 统一主干基线（钉值或主检出当前分支），解析失败如实报错；无 origin 远端、主检出长期 detached 等特殊形态的内源仓待实机复核。
 4. 墙卡版本/周目标等无数据源占位与健康/状态灯设计不归 G3（2026-10-13 批注拍板：本 PR 不做非 G3 的墙美化），维持现状、归项目墙深度优化——leader PR #349 与用户后续 PR；铁律二仍约束后续状态设计（无数据不装绿）。「本机环境」探测条已删除，真实探测清单（claude/cursor-agent/gh/codehub-cli，三态，不探不会起的东西）随墙健康灯重新决策——main 正本证据：环境条 6 格与三态语义（`crates/app-shell/src/screens/wall/mod.rs` env_bar、`bridge/vm_build.rs probe_env`）、假红修复 07e076ff4（Windows PATHEXT）、假绿修复 e23e3e4ce（探的名字必须等于真起的进程）。
 5. 克隆中断残留暂不处理（用户拍板，看实际反馈）。
 6. 远端预探测对 GHES 主机走 githubHostExecOptions 的 host 限定，未实测。

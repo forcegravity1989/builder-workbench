@@ -5,9 +5,12 @@ import {
   PROJECT_TOML_REL,
   type ProjectCharter
 } from '../../shared/workbench/project-charter'
-import type { CharterIntent } from '../../shared/workbench/charter'
+import type {
+  CharterIntent,
+  CharterProbeRequest,
+  CharterRemoteProbe
+} from '../../shared/workbench/charter'
 import { parseCodeHubRemote } from '../../shared/codehub'
-import type { CharterProbeRequest, CharterRemoteProbe } from '../../shared/workbench/charter'
 import { acquire, extractExecError, ghExecFileAsync, release } from '../github/gh-utils'
 import { parseGitHubRemoteIdentity } from '../github/github-remote-identity-parsing'
 import { githubHostExecOptions } from '../github/github-repository-host'

@@ -8,8 +8,8 @@
 
 | 对象          | 正本                                                     | 边界                                                                                            |
 | ------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| 计划          | bw/week-plan 工作树的 .bw/planning/<version>/data.json   | summary、稳定 goalId、承诺/可选交付与验收说明、metricRef/目标、任务引用                         |
-| 验收          | bw/week-acceptance 工作树的同目录 acceptance.json        | 固定 planRef、候选、材料、readingRef、人的结论与下一步；不改计划                                |
+| 计划          | bw/week-plan 工作树的 .bw/planning/<version>/data.json   | summary、稳定 goalId、承诺/可选交付与验收说明、metricRef/目标、任务引用、workflow 阶段            |
+| 验收          | bw/week-acceptance 工作树的同目录 acceptance.json        | 固定 planRef、候选、材料、readingRef、人的结论与下一步、workflow 阶段；不改计划                 |
 | 指标          | 项目最新已合入配置中的 .bw/metrics.toml 及真实历史采集源 | 新采集固定本次采用的定义/脚本修订；旧 baseline 和归档证据保留，不以常驻树旧文件或旧引用锁住目录 |
 | Issue/会话/PR | 原生 provider / Orca                                     | 材料只存引用，不另建正文、聊天或状态正本                                                        |
 | 纪要/报告     | 从明确材料修订派生                                       | 无第二份手填会议正文                                                                            |
@@ -32,11 +32,11 @@ taskSnapshot 保存验收当时逐项读取的 Issue 状态。每项 ready 含 r
 
 candidateRef 仅保存 repository/version/commit，commit 是完整 SHA。preparedArtifacts 含 artifactId/kind/location/candidateRef/generatedAt，可选 command/executionRoot/checksum；执行根记录在该材料上，不加到 candidateRef。验收树只承载材料，出包从指定源码候选的执行工作区进行。候选变化使不匹配证据待核，不自动沿用成功。
 
-总览 VersionHistoryPort 从项目当前采用基线的版本目录读取材料，一个版本只显示一份当前计划及验收，不扫描旧提交把迁移前文件或旧轮次重新列出。未合入草稿在其工作区读取；损坏的当前文件如实提示，不能因旧提交有坏文件就把可用版本标坏。归档判断先比较当前材料与采用基线的同路径、版本、cycleId 和修订，再核对真实 provider 合入证据；换行风格不造成假差异。选中验收版本后页面会初始化并保存缺失的空白验收；先读回已有材料继续准备，不重复创建轮次。新材料及已归档材料再编辑后均自动保存，归档区显示“当前材料待归档”，不代表用户已填写结论；当前修订合入后才恢复绿色。旧内容由 Git 历史追溯，不增加重复版本入口。
+总览 VersionHistoryPort 从项目主干基线（主检出）的版本目录读取材料，一个版本只显示一份当前计划及验收，不扫描旧提交把迁移前文件或旧轮次重新列出。历史记录按版本、流程与轮次（cycleId）各列最新一条，同一轮的中间修订从 Git 追溯，不再做 provider 合入证明过滤；读取时仍按固定提交核对版本、轮次与修订身份。未合入草稿在其工作区读取；损坏的当前文件如实提示，不能因旧提交有坏文件就把可用版本标坏。选中验收版本后页面会初始化并保存缺失的空白验收；先读回已有材料继续准备，不重复创建轮次。新材料及已归档材料再编辑后均自动保存；旅程灯不因材料改动变色，它只读 workflow.stage。旧内容由 Git 历史追溯，不增加重复版本入口。
 
-archiveCommit 只能在实际合入后由 provider/Git 解析，不能把尚未知的提交写进自身。归档提交固定落在该流程的固定分支（计划 bw/week-plan、验收 bw/week-acceptance）上，PR/MR 由固定分支开向主分支，不从其他分支或新建工作树归档。提交内容保存 cycleId、sourceRevision 等元数据，PR 关联及合入提交由真实来源补全。新归档记录的发现与提交定位由共享层统一实现，两个特性提供纯派生摘要，不各做一套 Git 扫描。
+workflow 是模型写入材料的 SOP 进度节：`stage` 记录最近完成的阶段（计划 preparation/goals/review/breakdown/archive；验收 preparation/showcase/archive），`updatedAt` 记录写入时间，`archivePr`（provider/repository/number）在归档 PR 开出后补上。两屏旅程灯只做序号比较：灯位不超过 stage 即绿，否则灰，没有其他推导。stage 是进度信号不是完成权威：不代表目标达成、不代替人工结论、不代表 PR 已合入；PR 合入状态由界面按 archivePr 向 provider 薄读取显示，读不到保持未知。会话恢复时先把 stage 校准到实际进度；内容实质调整使后续阶段失效时回退。界面不提供修改 stage 的入口，它只经材料保存写入。归档提交固定落在该流程的固定分支（计划 bw/week-plan、验收 bw/week-acceptance）上，PR/MR 由固定分支开向主分支，不从其他分支或新建工作树归档。
 
-preparationReview 是可选的人工材料备齐核对记录，包含 source、recordedAt、materialRevision；修订覆盖版本、轮次、固定计划、候选、准备材料和各目标交付件。它是历史保留字段：验收屏已移除“材料备齐”勾选，准备灯按各目标真实约定推导：约定交付需对应交付证据，指标承诺需对应读数；未约定这两类时可采用目标说明等实际证据，不再由此字段驱动。字段仍受人工守卫保护（模型/CLI 不得代人写入或篡改），旧材料读回时保留原值，不因日历跨周作废，也不证明命令执行或目标达成。
+preparationReview 是历史保留的人工材料备齐核对记录，包含 source、recordedAt、materialRevision。验收屏已移除“材料备齐”勾选，旅程灯只读 workflow.stage，不再由证据完备性或该字段推导。字段仍受人工守卫保护（模型/CLI 不得代人写入或篡改），旧材料读回时保留原值，不因日历跨周作废，也不证明命令执行或目标达成。
 
 ## 写入与人的决定
 
@@ -44,11 +44,11 @@ preparationReview 是可选的人工材料备齐核对记录，包含 source、r
 
 实际工具为 `orca bw materials list/read/save`，共用 `--repo-id <id> --worktree-id <id> --workflow plan|acceptance`，host-id 在所选 runtime 内解释，默认 local；SSH 工作树使用宿主提供的 ssh: 身份。list 不需要版本，只有列举作用；read 需要 `--version <已确认版本>`，返回 document/revision 或 null。save 再传 `--input <schema3 JSON 草稿文件>` 或 `--input-stdin`（二选一）；SSH 会话通过标准输入传 JSON，由 Orca 原生 CLI bridge 转发，不把远端草稿路径交给客户端读文件，更新必须使用刚读到的 `--expected-revision <revision>`；明确新建用 `--create`，二者互斥。普通项目通过 `orca bw materials schema --workflow plan|acceptance --json` 读取随 CLI 打包的结构，无需 BW 源码或运行中的应用；跨字段约束仍由 save 校验。维护正本为 src/shared/workbench/version-material.ts，不能把 schema2 文件直接提交；`--json` 用于机器读取。
 
-冲突命令以非零状态返回 revision-conflict 及 currentRevision，原材料和输入草稿保留；重读并合并后重试，不循环覆盖。页面走同一 runtime RPC，直接编辑自动保存；“刷新数据”重读宿主材料和版本候选并保留未保存输入，指标更新由“刷新指标”显式触发。文件保存不自行采集指标或验证人的身份，存入 reading/decision 字段不能据此点绿灯，业务消费方必须核对真实来源。
+冲突命令以非零状态返回 revision-conflict 及 currentRevision，原材料和输入草稿保留；重读并合并后重试，不循环覆盖。页面走同一 runtime RPC，直接编辑自动保存；“更新代码”先把本屏工作树快进到主干最新、再重读宿主材料和版本候选并保留未保存输入，快进不了时保持原样并提示交会话处理、材料仍照常重读；指标更新由“刷新指标”显式触发。文件保存不自行采集指标或验证人的身份，存入 reading/decision 字段不能据此点绿灯，业务消费方必须核对真实来源。人工字段守卫保护两类内容：验收的 decision/preparationReview 与计划的 summary.risks（风险由用户在界面填写）——模型/CLI 通道写入或修改会被拒绝，原样往返照常保存。写入材料的文本字段保持周整：分段换行、多条用序号或短横线列举，不把多件事挤成一段。
 
 先读 revision，再走同一材料服务 save(expectedRevision)；校验受信任工作树和流程白名单、路径、跨进程互斥、原子替换。不同分支不是一个写入路径。冲突保留双方输入并重读合并；不直接覆盖文件绕过服务。
 
-保存、评审、归档、目标达成和正式发布分别成立。人的决定绑定对象/修订/来源/时间，模型不代签。decision.materialRevision 是版本、验收周期、planRef、candidateRef、全局候选交付包（preparedArtifacts 中 kind=package）、固定计划中本目标的承诺与本目标采用证据的确定性 SHA-256 投影，不含 decision 自身。证据包括 deliveries/readings/note/nextStep、本目标 deliveries.location 引用的其他准备材料，以及固定计划关联到该目标的 Issue 快照。只改一个目标证据，仅该目标需重新确认；planRef、candidateRef 或全局候选交付包改变，保留已有结论但全部标记待重新确认，即使源码提交相同也要核对包的真实来源。未被目标引用的其他准备材料不计入该目标证据。摘要只检测证据变化，不证明签署人的身份，Issue 关闭数不自动决定目标达成。归档按钮只准备简短的未发送请求，准备期间显示可取消的等待；超过 25 秒停止准备，目标会话或输入已变化时不再追加。归档后补证也可直接在原会话继续处理，不要求再次点按钮；后续执行遵从授权；不自动合入、完成 Issue 或发布。旧认可和归档不可直接覆盖新修订。
+保存、评审、归档、目标达成和正式发布分别成立。人的决定绑定对象/修订/来源/时间，模型不代签。decision.materialRevision 是版本、验收周期、planRef、candidateRef、全局候选交付包（preparedArtifacts 中 kind=package）、固定计划中本目标的承诺与本目标采用证据的确定性 SHA-256 投影，不含 decision 自身。证据包括 deliveries/readings/note/nextStep、本目标 deliveries.location 引用的其他准备材料，以及固定计划关联到该目标的 Issue 快照。只改一个目标证据，仅该目标需重新确认；planRef、candidateRef 或全局候选交付包改变，保留已有结论但全部标记待重新确认，即使源码提交相同也要核对包的真实来源。未被目标引用的其他准备材料不计入该目标证据。摘要只检测证据变化，不证明签署人的身份，Issue 关闭数不自动决定目标达成。归档在会话中发起：核对材料与待确认项后更新 stage=archive、按项目门禁提 PR、开出后写入 archivePr 并回显链接；界面没有归档按钮，归档后补证直接在原会话继续处理。后续执行遵从授权；不自动合入、完成 Issue 或发布。旧认可和归档不可直接覆盖新修订。
 
 Issue 关联以固定 plan.tasks 的完整任务身份与 goalId 为准，不能仅凭快照自己声明的 goalId。快照指纹按任务身份稳定排序，保留来源、标题、状态、链接或失败事实，排除仅 readAt 变化；同事实刷新或列表重排不触发重新确认。未关联目标的 Issue 仍进入报告，不影响单目标结论；未记录与已记录空集分别呈现。
 

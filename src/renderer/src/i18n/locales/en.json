@@ -16639,6 +16639,13 @@
           "deleteTable": "Delete table"
         }
       }
+    },
+    "app": {
+      "shell": {
+        "AppWorkspaceShell": {
+          "e82b94df8a": "调整左右栏宽度"
+        }
+      }
     }
   },
   "components": {

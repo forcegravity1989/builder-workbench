@@ -1,6 +1,7 @@
 import type { Page } from '@stablyai/playwright-test'
 import type { PairedElectronClient, RuntimeDesktopPairingOffer } from './paired-electron-client'
 import { revealPairedClientWindow } from './paired-client-window-reveal'
+import { runsOnCiVirtualDisplay } from './ci-virtual-display'
 
 /**
  * Points a freshly launched paired desktop client at the HUB runtime and makes it the active
@@ -77,12 +78,7 @@ export async function rePairPairedElectronClient(
   // Why: removing and re-adding the same HUB changes the environment identity; remount so no pane keeps the retired transport wrapper.
   await client.page.reload()
   // Xvfb needs a mapped window to resume actionability frames after reload.
-  if (
-    process.env.GITHUB_ACTIONS === 'true' &&
-    process.platform === 'linux' &&
-    process.env.DISPLAY &&
-    process.env.ORCA_BACKGROUND_LAUNCH !== '1'
-  ) {
+  if (runsOnCiVirtualDisplay()) {
     await revealPairedClientWindow(client)
   }
   await client.page.waitForFunction(

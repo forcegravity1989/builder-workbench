@@ -17,7 +17,6 @@ import {
 } from '../../shared/workbench/version-history'
 import type { VersionDocumentSnapshot } from '../../shared/workbench/version-document'
 import type { PlanningMaterial } from '../../shared/workbench/version-material'
-import { createArchiveStateChecker, type ArchiveCandidate } from './version-history-archive-check'
 import {
   decodeHistorySnapshot,
   planningMaterialGitPath,
@@ -37,18 +36,9 @@ export type VersionHistoryHost = {
     scope: MetricScope,
     version: string
   ): Promise<VersionDocumentSnapshot<PlanningMaterial> | null>
-  /** Native archive/provider evidence, never inferred only from Git reachability or topology. */
-  archiveState(
-    scope: MetricScope,
-    candidate: ArchiveCandidate
-  ): Promise<
-    { kind: 'adopted'; proof: unknown } | { kind: 'draft' } | { kind: 'unknown'; message: string }
-  >
 }
 
 export function createVersionHistoryService(host: VersionHistoryHost): VersionHistoryPort {
-  const { archiveState } = createArchiveStateChecker(host)
-
   async function verifySource(scope: MetricScope, sourceCommit: string) {
     const baseline = await host.baseline(scope)
     SourceCommit.parse(baseline.commit)
@@ -57,13 +47,13 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     } catch {
       throw new HistorySourceError(
         'unverified-source',
-        '无法证明材料提交已合入项目采用分支；没有改读最新材料'
+        '无法证明材料提交已合入项目主干基线；没有改读最新材料'
       )
     }
     return baseline
   }
 
-  /** A fixed plan must be reachable from its own branch or adopted baseline; archive is a signal. */
+  /** A fixed plan must be reachable from its own branch or the trunk baseline; archive is a signal. */
   async function verifyPlanSource(scope: MetricScope, sourceCommit: string) {
     const baseline = await host.baseline(scope)
     SourceCommit.parse(baseline.commit)
@@ -79,7 +69,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     }
     throw new HistorySourceError(
       'unverified-source',
-      '材料提交不在本分支或采用分支历史上；没有改读最新材料'
+      '材料提交不在本分支或主干基线历史上；没有改读最新材料'
     )
   }
 
@@ -145,7 +135,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
       const baseline = await host.baseline(scope)
       SourceCommit.parse(baseline.commit)
       if (currentOnly) {
-        return readCurrentVersionCatalog(scope, baseline.commit, host.git, readSnapshot)
+        return readCurrentVersionCatalog(scope, baseline, host.git, readSnapshot)
       }
       const log = await host.git(scope, [
         'log',
@@ -208,29 +198,11 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           })
           continue
         }
-        const adopted = await archiveState(scope, {
-          baseline,
-          sourceCommit,
-          version: path[1],
-          workflow,
-          revision: snapshot.revision,
-          cycleId: snapshot.document.cycleId
-        })
-        if (adopted.kind === 'draft') {
-          continue
-        }
-        if (adopted.kind === 'unknown') {
-          // 归档状态是信号不是可见性门：记录仍列出、仍可读，灯与问题如实呈现未证明。
-          problems.push({
-            version: path[1],
-            sourceCommit,
-            workflow,
-            committedAt,
-            code: 'archive-unverified',
-            message: adopted.message
-          })
-        }
-        const key = JSON.stringify([path[1], workflow, snapshot.revision])
+        // Records are the baseline history itself: every listed commit is on the
+        // trunk baseline. One record per version/workflow/cycle round — the newest
+        // commit of a round supersedes its intermediates; older revisions stay
+        // traceable through Git. Readers verify identity again at read time.
+        const key = JSON.stringify([path[1], workflow, snapshot.document.cycleId])
         if (seen.has(key)) {
           continue
         }

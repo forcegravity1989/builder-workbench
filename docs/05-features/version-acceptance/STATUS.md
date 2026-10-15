@@ -14,6 +14,12 @@
 
 指标规则已随 [PR #278](https://github.com/forcegravity1989/builder-workbench/pull/278) 合入并同步本树：只接历史脚本，采用当前目录采集并保留原计划承诺，由人说明可比性。两个指标组件、指标样式及 AcceptanceBoard 两处显示条件沿用已合入实现；本线仅处理资产冲突，不重写生产指标能力。后续验收布局须保留这些接线，指标既有证据见总览指标 STATUS，本轮真壳未验。
 
+2026-10-13 Issue #333 收敛批（与计划屏同批，机制细节见[版本计划 STATUS](../version-planning/STATUS.md) 同轮记录）：旅程灯改为只读材料 `workflow.stage`（准备交付 preparation / 展示验收 showcase / 归档 archive，模型写入，灰/绿两态）；准备灯的证据完备性推导、archiveSignal/decisionSignal/preparationSignal（acceptance-journey.ts）与「检查文件与候选」在线探测（acceptance-candidate-port）整体删除，来源行只呈现记录事实与纯声明比对（artifactCandidateCheck）；人工结论 decision 及证据新鲜度机制保留不变（仅 UI 可写）。归档按钮与「交给会话」未达跟进按钮删除（贴草稿通道整体退役），归档卡片改只读状态行，按 `workflow.archivePr` 薄读取 PR 合入状态（useArchivePrStatus，读不到保持未知）。预览纪要报告的核对行相应精简（保留固定计划核验与结论新鲜度，去掉在线文件/执行探测行）。证据与未验项同计划屏该轮记录：workbench 套件 229 例绿、typecheck 0 错；真壳与真实模型旅程待用户实机验证。
+
+2026-10-13 真壳验证反馈批（同日第二批，与计划屏同批，机制详见[版本计划 STATUS](../version-planning/STATUS.md) 同轮记录）：验收纪要（deriveAcceptanceReport）与总览验收摘要改为人话正文——周期/修订/固定来源/候选提交/定义指纹/采集元数据等技术标识移出纪要，只保留目标结论（含证据变化待核标记）、约定与实际交付、指标实测与目标、Issue 快照（仓库#编号形式）、未达与后续；A08 判据同步修订。存量 v0.5 验收材料补写 workflow.stage=archive 与 archivePr=#326（ancestry-path 查证）。纪要相关测试断言随新格式更新（例数不变）。证据同计划屏该轮：229 例全绿、typecheck 0 错；真壳复验待用户执行。
+
+2026-10-14 Issue #355 同步统一批（与计划屏同批，机制与证据详见[版本计划 STATUS](../version-planning/STATUS.md) 同轮记录）：进屏自动同步废止，验收屏进屏零 Git 动作；页头按钮改「更新代码」，成为唯一同步入口（快进 bw/week-acceptance 树到主干最新，快进不了保持原样、统一提示交会话处理，材料仍照常重读）。纯草稿状态（树有未合入提交、主干没前进）不是异常、不提示。
+
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
 | intent | ● 已确认 | 沿用三特性边界，用户确认会话准备材料、逐目标核对及本轮资产同步 |
@@ -25,7 +31,7 @@
 
 [第八版交互原型](prototype.html) 是本特性的独立入口；来源与离线使用见[版本计划规格](../version-planning/spec.md)，完整历史附件保留在[原始评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip)。原型与包内浏览器检查只证明交互演示，未接远端写回/真实采集/自动化，不表示能力已交付。执行步骤与并行分工位于本任务仓外 plans，不在仓内新增 plan.md。
 
-验收进入固定 bw/week-acceptance 后先回显原生工作区，后台同步主干；同步期间提示并暂停写入，结束重读，失败保留通知。与计划共用自动保存、任务 UI、归档卡片及可取消的请求等待。顶部选版一次，已有验收回显，无验收时基于该版当前计划初始化草稿；不再提供第二次选版或开轮按钮。归档按当前材料与采用基线的一致性及 provider 合入证明推导，CRLF/LF 不产生假差异；归档后继续编辑同一份材料，修改后显示待归档。CodeHub 无真实合入证明仍为 Unknown。指标及交付区域仅按原承诺或已有证据显示，刷新指标读回并保存实际值；Issue 共用计划样式，仍保留验收快照。相关静态与存量测试证据见伴飞修复 PR，真壳体验交用户在新包回验。
+验收进入固定 bw/week-acceptance 后先回显原生工作区；进屏不做任何 Git 动作，页头「更新代码」是唯一同步入口（执行期间提示并暂停写入，无论快进成败都重读材料，失败保留通知）。与计划共用自动保存、任务 UI 和归档状态行（原可取消的请求等待已随贴草稿通道于 2026-10-13 收敛批退役）。顶部选版一次，已有验收回显，无验收时基于该版当前计划初始化草稿；不再提供第二次选版或开轮按钮。旅程灯只读材料 workflow.stage（模型写入，灰/绿两态）；归档 PR 合入状态按 archivePr 薄读取显示，归档后继续编辑同一份材料。CodeHub 读不回 PR 状态时保持未知。指标及交付区域仅按原承诺或已有证据显示，刷新指标读回并保存实际值；Issue 共用计划样式，仍保留验收快照。相关静态与存量测试证据见各轮 PR，真壳体验交用户在新包回验。
 
 未验证项如实保留：真壳烟测 `tests/e2e/workbench-cycle-smoke.spec.ts` 已编写（含验收树与总览读回），执行结果见 PR；真实出包/验证入口、CodeHub Issue 正文编辑及返回验收版本、SSH/WSL 与配对宿主、真实到点自动化、真实 provider 归档全链均未运行。仓外组件示例不计为 E2E，完整旅程后续统一调度。
 
@@ -43,13 +49,13 @@
 |---|---|---|---|
 | A01 独立树、完整原生工作区、单页三阶段 | ◐ | CycleWorkspaceProvider + AcceptanceBoard（图标旅程轴 + 首行协作卡片 + 页头分支） | 组件测试通过；三阶段信息密度和侧栏开合待真壳伴飞 |
 | A02 固定计划修订正确、承诺只读；跨树/草案不混淆 | ◐ | planRef 固定 + readPlan（固定提交字节现读，版本目录来自验收分支 HEAD）+ useFixedAcceptancePlan | version-history-service（真实 Git 仓）/acceptance-version-choices 单测；交互测试已按环 4 裁剪，UI 行为交验收点 E2E 与真壳 |
-| A03 真实入口准备交付；材料可打开绑候选；失败可见不假报 | ◐ | AcceptanceSources 紧凑来源行 + candidate-port（按需检查文件与候选、打开材料）+ 目标卡交付件 | 独立准备卡与备齐勾选已退役，来源及核对守卫保留；真实项目交付准备旅程未验 |
+| A03 真实入口准备交付；材料可打开绑候选；失败可见不假报 | ◐ | AcceptanceSources 紧凑来源行（记录事实+纯声明比对 artifactCandidateCheck；在线探测与「检查文件与候选」按钮已于 2026-10-13 退役）+ 目标卡交付件 | 独立准备卡与备齐勾选已退役；旅程灯只读 workflow.stage；真实项目交付准备旅程未验 |
 | A04 按承诺或已存证据显示指标，旧计划基线保留 | ◐ | 已接入最新目录与历史采集；仅对承诺或已有证据显示采集行，旧 ref 不阻断新采集 | 本轮定向测试及浏览器组件检查通过；真实 Electron 与完整旅程边界见[总览指标 STATUS](../overview-metrics/STATUS.md) |
 | A05 Issue 真实状态可刷新、无拆解入口、关闭数≠达成 | ✅ | CycleTasks 共用列表与验收快照+灯色守卫 | board-state/acceptance 测试 |
 | A06 原生详情编辑后按来源返回、保留版本/会话/草稿 | ◐ | returnToPreviousView+view-memory 与原生工作区恢复 | 导航测试；真实 CodeHub/GitHub 往返待人 |
-| A07 同一候选展示、人逐目标判断、未达可保存带入会话 | ✅ | AcceptanceGoalResult decision 流+prepare 文本；材料 RPC save 通过 material-human-guard 拦截 CLI 对人工结论字段的新增、修改与删除 | material-human-guard 测试（acceptance-interaction 已随环 4 裁剪，UI 交互交验收点 E2E 与真壳）；真实模型会话与人工核对旅程待验 |
-| A08 纪要可复制含候选/来源/待核/未达；归档后总览回看 | ◐ | deriveAcceptanceReport + 标题旁“预览纪要”弹窗（AcceptanceReportDialog）+ 总览双栏 | report 测试；真实归档回看待人 |
-| A09 跨树隔离/并发/重启/脏树不丢输入；包证不符不沿完成态 | ◐ | draft recovery+candidate 核对失效逻辑 | 恢复测试；脏树真机待人；脏树/未归档提交检查为提示级（会话承担），无代码落点 |
+| A07 同一候选展示、人逐目标判断、未达可保存带入会话 | ✅ | AcceptanceGoalResult decision 流（「交给会话」按钮已随贴草稿通道于 2026-10-13 退役，后续安排在卡内文本框记录、会话中讨论）；材料 RPC save 通过 material-human-guard 拦截 CLI 对人工结论字段与计划 summary.risks 的新增、修改与删除 | material-human-guard 测试（acceptance-interaction 已随环 4 裁剪，UI 交互交验收点 E2E 与真壳）；真实模型会话与人工核对旅程待验 |
+| A08 纪要可复制含结论/交付/指标/未达人话正文；归档后总览回看 | ◐ | deriveAcceptanceReport（技术标识已剔除）+ 标题旁“预览纪要”弹窗（AcceptanceReportDialog）+ 总览双栏 | report 测试；真实归档回看待人 |
+| A09 跨树隔离/并发/重启/脏树不丢输入；包证不符不沿完成态 | ◐ | draft recovery + decision 证据新鲜度（decisionFreshness，证据变化旧结论标待重新核对）；在线候选探测已退役，仅剩纯声明比对 | 恢复测试；脏树真机待人；脏树/未归档提交检查为提示级（会话承担），无代码落点 |
 | A10 原生自动化真实到点、新周期新会话、入口不重复 | ◐ | 默认关闭态注册（creationKey 去重、reuseSession=false、BW 提示覆盖同步、用户设置保留） | 新建验收的手动运行、原生恢复和真实到点均待真壳验证 |
 
 | 旅程 | 状态 | 覆盖 |

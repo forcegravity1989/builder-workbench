@@ -8,11 +8,12 @@ import {
 } from 'lucide-react'
 import type { RefObject } from 'react'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
-import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import {
-  archiveJourneyLamp,
-  type ArchiveStatus
-} from '../../../../shared/workbench/version-archive'
+  PLAN_WORKFLOW_STAGES,
+  workflowStageIndex
+} from '../../../../shared/workbench/version-workflow'
+import type { PlanWorkflowStage } from '../../../../shared/workbench/version-workflow'
+import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 export function PlanningHeader({
   currentVersion,
   versions,
@@ -57,7 +58,7 @@ export function PlanningHeader({
         )}
       </select>
       <button className="wb-btn wb-btn-ghost wb-btn-sm" disabled={disabled} onClick={onRefresh}>
-        刷新数据
+        更新代码
       </button>
       <span className="vp-muted" role="status">
         {state}
@@ -70,82 +71,41 @@ export function PlanningHeader({
     </header>
   )
 }
-/** The rail locates sections. Review, decomposition and archive actions live in their cards. */
+/**
+ * The rail locates sections and mirrors the model-recorded SOP stage: a lamp is
+ * green iff its position is at or before workflow.stage, gray otherwise — one
+ * comparison, no content heuristics. Steps must stay in PLAN_WORKFLOW_STAGES order.
+ */
 export function PlanningJourneyNav({
-  hasProgress,
-  goalCount,
-  taskCount,
-  archived,
-  archive,
+  stage,
   preparationRef,
   goalsRef,
   tasksRef,
   archiveRef
 }: {
-  hasProgress: boolean
-  goalCount: number
-  taskCount: number
-  archived: boolean
-  archive: ArchiveStatus
+  stage: PlanWorkflowStage | undefined
   preparationRef: RefObject<HTMLElement | null>
   goalsRef: RefObject<HTMLElement | null>
   tasksRef: RefObject<HTMLElement | null>
   archiveRef: RefObject<HTMLElement | null>
 }) {
-  const lamp = archiveJourneyLamp(archive, archived)
+  const reached = workflowStageIndex(PLAN_WORKFLOW_STAGES, stage)
   const steps = [
-    {
-      label: '准备',
-      Icon: ClipboardList,
-      ref: preparationRef,
-      tone: hasProgress ? 'pending' : '',
-      hint: hasProgress ? '已填写版本进展' : '待填写版本进展'
-    },
-    {
-      label: '目标',
-      Icon: Target,
-      ref: goalsRef,
-      tone: goalCount ? 'pending' : '',
-      hint: goalCount ? '已填写目标，待评审核对' : '待明确目标'
-    },
-    {
-      label: '评审',
-      Icon: Presentation,
-      ref: goalsRef,
-      tone: '',
-      hint: '与 PL 评审并直接修改目标；此处不代替人的评审结论'
-    },
-    {
-      label: '拆解',
-      Icon: BrainCircuit,
-      ref: tasksRef,
-      tone: taskCount ? 'pending' : '',
-      hint: taskCount ? '已关联 Issue，状态以任务读回为准' : '在版本任务卡片中准备拆解请求'
-    },
-    {
-      label: '归档',
-      Icon: GitPullRequest,
-      ref: archiveRef,
-      tone:
-        lamp === 'complete'
-          ? 'done'
-          : lamp === 'failed'
-            ? 'failed'
-            : lamp === 'pending'
-              ? 'pending'
-              : '',
-      hint: '查看归档 PR 状态'
-    }
+    { label: '准备', Icon: ClipboardList, ref: preparationRef },
+    { label: '目标', Icon: Target, ref: goalsRef },
+    { label: '评审', Icon: Presentation, ref: goalsRef },
+    { label: '拆解', Icon: BrainCircuit, ref: tasksRef },
+    { label: '归档', Icon: GitPullRequest, ref: archiveRef }
   ]
   return (
     <nav className="vp-journey" aria-label="计划流程">
-      {steps.map(({ label, Icon, ref, tone, hint }) => (
+      {steps.map(({ label, Icon, ref }, index) => (
         <button
           key={label}
-          title={hint}
+          title={`${label} · ${index <= reached ? '模型已记录完成' : '尚未记录完成'}`}
           onClick={() => ref.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })}
         >
-          <span className={`vp-step-icon ${tone}`}>
+          <span className={`vp-step-icon ${index <= reached ? 'done' : ''}`}>
             <Icon size={16} />
           </span>
           <span>{label}</span>
