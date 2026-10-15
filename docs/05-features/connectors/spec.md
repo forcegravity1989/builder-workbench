@@ -1,6 +1,6 @@
 # spec — 集成页三卡收敛（Connectors）
 
-> **状态：草案，待人 gate；未实现。** 为什么做读 [intent.md](intent.md)，链状态与已知债读 [STATUS.md](STATUS.md)，可点样张 [prototype.html](prototype.html)（能切换改前 / 改后、平台、账户范围和每张卡的状态）。本篇描述一套目标行为，实现落点仅作建议，不代替实现设计。
+> **状态：设计已经人 gate（2026-10-15），实现随 #323 交付。** 为什么做读 [intent.md](intent.md)，链状态与已知债读 [STATUS.md](STATUS.md)，可点样张 [prototype.html](prototype.html)（能切换改前 / 改后、平台、账户范围和每张卡的状态）。本篇描述目标行为与实现口径；真壳验收证据以 [STATUS](STATUS.md) 为准。
 >
 > **维护约定**：给交互设计、实现者与验收者读。目标行为、状态口径或命令表变化时更新；不混写历史方案，不抄代码。
 
@@ -26,7 +26,7 @@ GitHub、CodeHub 的登录同一模板：`gh auth login`（设备码 / 浏览器
 **分支**：
 
 - **已装未登录**：从第 4 步开始。
-- **远端或 WSL**：状态照常显示，但没有「安装」「登录」按钮（往本机终端注入命令装不了远端）。
+- **远端运行时**：状态照常显示，但没有「安装」「登录」按钮——往本机终端注入命令装不了远端机器。WSL 工作树不在此列：开发屏新终端页签本就自动进入该工作树的项目级 WSL 发行版，注入照常可用。
 - **命令失败 / 中断**：终端留在开发屏，输出与退出码可见，人可在终端里重试；卡上状态如实保持，刷新靠「重新检查」。
 
 ## 行为规则与异常
@@ -67,7 +67,7 @@ GitHub、CodeHub 的登录同一模板：`gh auth login`（设备码 / 浏览器
 
 - **探测不可得**：整卡显示 unavailable + 「重新检查」，沿用现有口径，不拆分单卡错误。
 - **杀进程重开**：状态重新探测，不缓存上次的绿灯（铁律一）。
-- **i18n**：卡名、状态与按钮文案进五语词条；命令与链接不翻译。
+- **i18n**：卡名、状态与按钮文案进英文词条（照 CodeHub 卡先例，其余语言经 `translate` 的 defaultValue 回退）；命令与链接不翻译。
 
 ## 验收与衡量
 
@@ -83,7 +83,7 @@ GitHub、CodeHub 的登录同一模板：`gh auth login`（设备码 / 浏览器
 | I06 | `welink-cli` 未安装 | WeLink 卡显示未安装；点「安装」终端页签注入 npm 安装命令（含 registry 参数）执行 |
 | I07 | `welink-cli` 已装未登录 | 卡显示未登录；点「登录」注入 `welink-cli auth login`，扫码由 CLI 呈现 |
 | I08 | 终端内完成登录后点「重新检查」 | 状态翻已连接 |
-| I09 | 账户范围为远端 / WSL | 三卡只报状态与「重新检查」，无安装 / 登录按钮 |
+| I09 | 账户范围为远端运行时 | 三卡只报状态与「重新检查」，无安装 / 登录按钮（WSL 工作树仍属本机范围，按钮保留） |
 | I10 | 三 CLI 已装已登录 | 三卡显示已连接；「重新检查」读数一致 |
 
 旅程（IJ01）：三 CLI 全缺的新机器 → 从集成页看全状态、按按钮指引装好登好（全程不手敲命令）→ 「重新检查」三卡全部已连接；杀进程重开仍全部已连接。
@@ -105,10 +105,10 @@ GitHub、CodeHub 的登录同一模板：`gh auth login`（设备码 / 浏览器
 
 ## 实现落点建议（非实现设计）
 
-- 渲染：`src/renderer/src/components/settings/IntegrationsPane.tsx` 收敛为三卡 + 分组标题；`cli-source-control-integration-cards.tsx` 增 `WeLinkIntegrationCard`（照 `GitHubIntegrationCard` 抄改）、`CodeHubIntegrationCard` 补 not-authenticated 分支（照 gh 卡）。
+- 渲染：`src/renderer/src/components/settings/IntegrationsPane.tsx` 收敛为三卡 + 分组标题；CodeHub / WeLink 两卡落在 BW 自有文件 `bw-cli-integration-cards.tsx`（CodeHub 补 not-authenticated 分支照 gh 卡、WeLink 照 GitHub 卡抄改；上游卡模块 `cli-source-control-integration-cards.tsx` 受 max-lines 预算约束，BW 卡不进），注入助手在 `cli-command-injection.ts`，经 barrel `source-control-integration-cards.tsx` 一并导出。
 - 状态：`source-control-preflight-card-status.ts` / `integrations-pane-status.ts` 增 `welinkStatus`；`CodeHubCliStatus` 补 `not-authenticated` / `connected`。
 - 主进程：`src/main/preflight/agent-detection.ts` 增 `welink-cli` 探测与 codehub / welink 的 `auth status` 读回（照 gh 现成模式）。
-- 命令注入：复用终端 store 现成机制——`createTab(worktreeId, groupId, shell, { pendingStartup: { command, delivery: 'terminal-paste' } })` 建页签并投递启动命令（贴入再提交，现成能力，agent TUI 启动同款路径）；设置页按钮到该动作的接线实现时定。
+- 命令注入：复用终端 store 现成机制——`createTab(worktreeId, undefined, undefined, { pendingStartup: { command } })` 建页签并投递启动命令，随后 `setActiveTabType('terminal')` + `setActiveTab` 把人带到该页签；本机 PTY 的启动命令由主进程写入并回车提交（agent TUI 启动同款路径，`delivery: 'terminal-paste'` 是 SSH 远端的渲染层粘贴通道，本机注入用不到）。
 - 类型：`src/preload/api/preflight-api.ts` 的 `PreflightStatus.codehub` 补 `authenticated`，新增 `welink`。
-- i18n：五语词条新增 / 调整。
+- i18n：英文词条新增 / 调整（`en.json`，照 CodeHub 卡先例；其余语言走 defaultValue 回退）。
 - 以上均为上游 Orca 原生文件，差异随 PR 记入 [ref/upstream.md](../../../ref/upstream.md) 对照。

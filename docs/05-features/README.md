@@ -25,7 +25,7 @@
 | 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ◐ | ◐ | 待建(P-01–P12 已定义，P-08–P12 未实测) | 待建(主旅程与 G3-01 已定义) |
 | 6 | CodeHub 适配 | [codehub/](codehub/)³ | 在用·补链中 | ◐ | ◐ | ◐ | ◐ | ○(C01–C08 已定义) | ○(CJ01 已定义) |
 | 7 | Windows 出包与发布 | [workbench-release/](workbench-release/)³ | 开发方法资产·补链中 | ◐ | ◐ | ◐ | ○ | ○(R01–R04 已定义) | ○(RJ01 已定义) |
-| 8 | 集成页三卡收敛 | [connectors/](connectors/) · [原型](connectors/prototype.html)⁴ | 设计中·待人 gate | ◐ | ◐ | ○ | — | 待建(I01–I10 已定义) | 待建(IJ01 已定义) |
+| 8 | 集成页三卡收敛 | [connectors/](connectors/) · [原型](connectors/prototype.html)⁴ | 在用·补链中 | ● | ● | ● | ● | 待建(I01–I10 已定义) | 待建(IJ01 已定义) |
 
 ¹ 第 4 行：GitHub CI 路径 2026-08/09 在旧 main 侧交付并实测闭环（PR #132 及后续召唤）；2026-09-29 用户拍板迁入产品分支——workflow 与回执脚本（`.github/scripts/check-pr-review.mjs`）已落，实现设计 ●。2026-09-30 扶正后本定义即默认分支 main 的定义，`/code-review` 召唤直接执行它，不再经旧 main 定义中转。验收点 ◐：迁移 PR 自身修改 workflow 文件，按 #132 先例（时为 pull_request 触发下的防篡改跳过）保守不自召——该校验在现行 issue_comment 触发模型下是否适用未复核；主干首场真实召唤待下一条合格 PR 实测，未实测不判过。TDD ◐：回执脚本无单测，以召唤实测为准。台内「请评审」按钮路径规范件在仓但未接线，defer。明细见其 [STATUS](reviewer-agent/STATUS.md) 迁移节。
 
@@ -33,7 +33,7 @@
 
 ³ 第 6–7 行从已落地提交回写（2026-09-30），intent/spec 为草案，待人 gate。第 6 行接上原先「任务 CodeHub 支持」的占位，目录就是 [codehub/](codehub/)，范围含任务来源与计划/验收读写；spec 缺可点原型。第 7 行是 BW 开发者的 Windows 出包与 GitHub Release，无界面，操作契约在技能。明细见各自 STATUS。
 
-⁴ 第 8 行随 #323 设计 PR 首次登记（2026-10-14），2026-10-15 按人反馈两轮修订（简化为拼装现有能力；命令注入终端执行、人不手敲）：集成页收敛为 GitHub / CodeHub / WeLink 三卡，动作全部拼装 Orca 现有能力（现有五态口径、gh 外链安装保持、welink 安装命令为人确认权威口径、安装 / 登录命令注入开发屏终端页签、现有 Re-check）；#323 明确本 PR 只交设计，intent/spec/原型均为草案待人 gate，实现待设计确认后启动（阻塞项：codehub-cli 安装口径待内网补）。明细见其 [STATUS](connectors/STATUS.md)。
+⁴ 第 8 行随 #323 设计 PR 首次登记（2026-10-14），2026-10-15 按人反馈两轮修订后 gate（简化为拼装现有能力；命令注入终端执行、人不手敲），同日实现随同 PR 交付：集成页收敛为 GitHub / CodeHub / WeLink 三卡（代码托管 / 项目群两组），preflight 补 `welink-cli` 探测与 codehub / welink `auth status` 读回，安装 / 登录命令注入开发屏终端页签执行（远端运行时无按钮，WSL 工作树保留）；codehub 安装口径待内网补（卡上如实占位、不给按钮，intent 待决 2）。真壳验收证据（I01–I10 / IJ01）未采。明细见其 [STATUS](connectors/STATUS.md)。
 
 ## 裁决与明细指引
 

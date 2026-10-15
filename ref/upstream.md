@@ -96,6 +96,7 @@ git merge orca-upstream/main
 - BW Skill 分发登记保持一致：`resources/skills/current-manifest.json` 与 `snapshot-registry.json` 必须继续登记 `bw-knowledge-docs`、`metrics-refresh`、`version-acceptance`、`week-planning`。manifest/registry 由 `config/scripts/generate-skill-bundle-manifest.mjs` 从根级 `skills/` 生成；三个产品流程的正文正源仍是 `standard/skills/`，运行时指南由 `config/scripts/generate-bundled-skill-guides.mjs` 生成，不手改生成物。
 - 跨主机项目墙（G3）依赖原生 runtime 配对链：BW「导入 Builder 主机」批量壳只调用 `runtimeEnvironments.verifyAndAddFromPairingCode`（与原生 AddRemoteHostDialog 同一 IPC）与环境列表/状态快照，不建平行配对存储；主机名唯一（大小写敏感）是重复导入幂等的判据。上游合并需保留该链的 renderer API。
 - runtime 配对 env id 每次配对随机新发（`addEnvironmentFromPairingCode` randomUUID）、runtime 主机仓不落本地盘、注册行身份为 (repoId, executionHostId)：**删除主机会留下残留注册行**（Orca 原生列表按项目身份分组故不受影响）。BW 项目墙以「只认当前配对目录内的行 + 稳定身份归并」构造性过滤；上游合并不得假定 env id 稳定或把残留行改成持久身份语义。
+- 设置→集成页按 BW #323 收敛为 GitHub / CodeHub / WeLink 三卡（代码托管 / 项目群两组）：六张隐藏卡的组件、状态推导与词条保留在仓（待决 1 草案），但 `IntegrationsPane` 渲染名单与 `integrations-search` 目录是 BW 口径；preflight 增加 `welink-cli` 探测与 codehub / welink `auth status` 读回（`PreflightStatus.welink`、`codehub.authenticated`），三卡「安装 / 登录」按钮经 `createTab` + `pendingStartup` 注入终端执行（远端范围不给按钮）。CodeHub / WeLink 卡片、注入助手与 codehub / welink auth 读回因上游文件 max-lines 预算拆入 BW 自有新文件（`bw-cli-integration-cards.tsx`、`cli-command-injection.ts`、`bw-cli-auth-status.ts`，经 barrel 导出）。上游合并保留该渲染名单、探测字段与注入路径，不恢复六卡渲染，也不把 BW 卡合回上游卡模块。
 
 相关行为正本分别在 `docs/05-features/`、`docs/architecture.md` 和源码契约中；本篇只保留同步时必须知道的取舍。
 

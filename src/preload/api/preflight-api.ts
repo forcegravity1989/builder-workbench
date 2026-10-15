@@ -9,8 +9,10 @@ export type PreflightStatus = {
   gh: { installed: boolean; authenticated: boolean }
   /** Optional — older preload payloads predating GitLab support omit it; consumers gate on `glab?.installed`. */
   glab?: { installed: boolean; authenticated: boolean }
-  /** Optional — presence only. CodeHub login is not part of this probe. */
-  codehub?: { installed: boolean }
+  /** Optional like glab — older payloads predate the auth readback (BW #323). */
+  codehub?: { installed: boolean; authenticated: boolean }
+  /** Optional — BW #323: welink-cli presence + auth from `welink-cli auth status`. */
+  welink?: { installed: boolean; authenticated: boolean }
   bitbucket?: { configured: boolean; authenticated: boolean; account: string | null }
   azureDevOps?: {
     configured: boolean
