@@ -6,7 +6,7 @@ import { original, remote } from './snapshot.js'
 import { buildMinutes, buildReport } from './summaries.js'
 import { PrototypeTaskList, PrototypeVersionTasks } from './tasks.jsx'
 import { PrototypeLayout } from './layout.jsx'
-import { INITIAL_PACKAGE_RUNS } from '../../version-acceptance/prototype/package-panel.jsx'
+import { LATEST_PACKAGE } from '../../version-acceptance/prototype/package-panel.jsx'
 
 function App() {
   useEffect(() => {
@@ -66,7 +66,6 @@ function App() {
       version: 'v0.5',
       week: 'W39'
     }),
-    [packageRuns, setPackageRuns] = useState(INITIAL_PACKAGE_RUNS),
     [overviewUI, setOverviewUI] = useState({
       feature: '',
       grain: 'week',
@@ -237,38 +236,14 @@ function App() {
     setNotice(
       '原型未接入 CloudDragon；正式界面经 Playwright 同步点击该流水线行的出包按钮。'
     )
-    setPackageRuns((runs) => [
-      {
-        id: `run-new-${runs.length}`,
-        status: 'running',
-        time: new Date().toLocaleString('sv').replace('T', ' '),
-        trigger: '手动',
-        runner: 'a30030291',
-        branch: 'master',
-        version: '--',
-        versionType: 'snapshot',
-        duration: '--',
-        stages: ['Source']
-      },
-      ...runs
-    ])
   }
-  const latestRun = packageRuns[0]
-  const packageTone = latestRun
-    ? latestRun.status === 'running'
-      ? 'yellow'
-      : packageRuns.some((r) => r.status === 'success')
-        ? 'green'
-        : 'red'
-    : 'gray'
-  const packageHint =
-    packageTone === 'yellow'
-      ? '出包运行中'
-      : packageTone === 'green'
-        ? '已有成功出包记录'
-        : packageTone === 'red'
-          ? '出包均未成功'
-          : '尚未出包'
+  function downloadPackage(pkg) {
+    setNotice(
+      '原型未接入下载；正式界面先选择目录，再经 Playwright 点击该版本的下载按钮保存。'
+    )
+  }
+  const packageTone = LATEST_PACKAGE ? 'green' : 'gray'
+  const packageHint = LATEST_PACKAGE ? '已有最新包' : '尚未出包'
   const steps = journeySteps({
     goals,
     current,
@@ -384,7 +359,7 @@ function App() {
         openIssues,
         overviewSelection,
         overviewUI,
-        packageRuns,
+        latestPackage: LATEST_PACKAGE,
         progress,
         promptConversation,
         refreshMetrics,
@@ -414,6 +389,7 @@ function App() {
         taskRows,
         tasks,
         triggerPackage,
+        downloadPackage,
         update,
         updateResult,
         version,

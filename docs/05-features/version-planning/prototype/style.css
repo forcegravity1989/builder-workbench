@@ -3095,68 +3095,64 @@ input::placeholder {
   font-family: var(--font-mono);
   font-size: 0.85em;
 }
-.package-history {
+.package-artifact {
+  border-top: 1px solid var(--color-divider);
+  padding-top: var(--space-3);
+}
+.package-artifact-head {
   display: flex;
-  flex-direction: column;
-}
-.package-run {
-  display: grid;
-  grid-template-columns: 56px 132px 64px minmax(0, 1fr) 64px 72px minmax(0, 200px);
-  gap: var(--space-2);
   align-items: center;
-  padding: var(--space-1) 0;
-  border-bottom: 1px solid var(--color-divider);
-  font-size: 0.85em;
+  justify-content: space-between;
+  gap: var(--space-2);
 }
-.package-run:last-child {
-  border-bottom: 0;
-}
-.package-run-head {
-  font-weight: 600;
-  color: var(--color-neutral-500);
-  font-size: 0.75em;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.package-run-empty {
-  padding: var(--space-3) 0;
-  font-size: 0.85em;
-  color: var(--color-neutral-500);
-}
-.run-status {
-  justify-self: start;
-  font-size: 0.9em;
-}
-.run-time,
-.run-version {
+.package-version {
   font-family: var(--font-mono);
-}
-.run-version {
+  font-size: 0.9em;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.run-stages {
+.package-meta {
   display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  overflow: hidden;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: var(--space-2) 0 0;
+  font-size: 0.8em;
 }
-.run-stages em {
-  font-style: normal;
-  font-size: 0.9em;
-  padding: 1px 6px;
-  border-radius: 999px;
+.package-meta div {
+  display: flex;
+  gap: var(--space-1);
+  align-items: baseline;
+}
+.package-meta dt {
+  color: var(--color-neutral-500);
+}
+.package-meta dd {
+  font-family: var(--font-mono);
+}
+.package-files {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.package-files li {
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  padding: var(--space-1) var(--space-2);
   background: var(--color-neutral-100);
-  color: var(--color-neutral-700);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.package-run[data-status='running'] .run-stages em {
-  background: var(--color-warning-soft);
-  color: var(--color-warning-deep);
-}
-.run-pending {
-  font-style: normal;
+.package-artifact-empty {
+  border-top: 1px solid var(--color-divider);
+  padding-top: var(--space-3);
+  font-size: 0.85em;
   color: var(--color-neutral-500);
 }
 .package-source {

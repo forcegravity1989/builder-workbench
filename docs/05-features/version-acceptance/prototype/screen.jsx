@@ -10,14 +10,15 @@ function AcceptanceContent({
   current,
   goalIssues,
   hasGap,
+  latestPackage,
   openIssues,
-  packageRuns,
   promptConversation,
   refreshMetrics,
   review,
   setModal,
   tasks,
   triggerPackage,
+  downloadPackage,
   updateResult,
   version,
   versionTasks
@@ -50,8 +51,9 @@ function AcceptanceContent({
             <span>CloudDragon</span>
           </div>
           <PackagePanel
-            runs={packageRuns}
+            latest={latestPackage}
             onPackage={triggerPackage}
+            onDownload={downloadPackage}
           />
         </>
       )}

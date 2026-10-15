@@ -109,3 +109,34 @@ lucide-react/dist/esm/lucide-react.js:
    * See the LICENSE file in the root directory of this source tree.
    *)
 */
+/* Appended for the acceptance package panel: the v8 snapshot predates the
+   Download icon (lucide-react 0.577.0, ISC). Same interface as frozen icons;
+   presence is guarded by build.cjs --check dependency validation. */
+;window.BWPrototypeDependencies.Download = (function (React) {
+  var Download = React.forwardRef(function (props, ref) {
+    var size = props.size || 24
+    return React.createElement(
+      'svg',
+      Object.assign(
+        {
+          ref: ref,
+          xmlns: 'http://www.w3.org/2000/svg',
+          width: size,
+          height: size,
+          viewBox: '0 0 24 24',
+          fill: 'none',
+          stroke: 'currentColor',
+          strokeWidth: 2,
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round'
+        },
+        props
+      ),
+      React.createElement('path', { d: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4' }),
+      React.createElement('polyline', { points: '7 10 12 15 17 10' }),
+      React.createElement('line', { x1: 12, x2: 12, y1: 15, y2: 3 })
+    )
+  })
+  Download.displayName = 'Download'
+  return Download
+})(window.BWPrototypeDependencies.React)
