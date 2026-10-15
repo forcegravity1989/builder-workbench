@@ -43,10 +43,7 @@ export type AcceptanceWorkflowState = z.infer<typeof AcceptanceWorkflowStateSche
  * Index of the last completed stage; -1 when absent or unrecognized. A lamp at
  * position i is green iff i <= index — one comparison, gray/green only.
  */
-export function workflowStageIndex(
-  stages: readonly string[],
-  stage: string | undefined
-): number {
+export function workflowStageIndex(stages: readonly string[], stage: string | undefined): number {
   if (stage === undefined) {
     return -1
   }

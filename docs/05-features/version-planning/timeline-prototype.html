@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh" data-theme="gtsllm">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>版本计划画布</title>
+    <link rel="stylesheet" href="prototype/timeline.css?v=range-20261012-r3" />
+    <script src="prototype/timeline.js?v=range-20261012-r3" defer></script>
+  </head>
+  <body>
+    <main>
+      <header class="page-heading">
+        <h1>版本计划</h1>
+        <span>GTSLLM 迭代模板 · 示例数据</span>
+        <span id="theme-name">GTSLLM 主题</span>
+        <span id="date-range" tabindex="0" role="button" aria-label="时间范围"></span>
+      </header>
+      <div id="gesture-status" class="gesture-status" role="status" aria-live="polite" hidden></div>
+      <div class="sheet-scroll" tabindex="0" aria-label="版本计划画布">
+        <div id="timeline-grid" class="sheet"></div>
+      </div>
+    </main>
+    <div id="node-menu" class="node-menu" role="menu" aria-label="画布操作" hidden></div>
+  </body>
+</html>

@@ -80,14 +80,10 @@ describe('acceptance task evidence and report', () => {
   it('keeps missing, empty and failed snapshots distinct without generating an acceptance conclusion', async () => {
     const document = material()
     const absent = await goalEvidenceRevision(document, plan, 'g1')
-    expect(deriveAcceptanceReport({ document, plan }).markdown).toContain(
-      '尚未记录 Issue 快照'
-    )
+    expect(deriveAcceptanceReport({ document, plan }).markdown).toContain('尚未记录 Issue 快照')
     document.taskSnapshot = []
     expect(await goalEvidenceRevision(document, plan, 'g1')).not.toBe(absent)
-    expect(deriveAcceptanceReport({ document, plan }).markdown).toContain(
-      '固定计划仍引用 2 项任务'
-    )
+    expect(deriveAcceptanceReport({ document, plan }).markdown).toContain('固定计划仍引用 2 项任务')
     document.taskSnapshot = [
       {
         kind: 'unavailable',

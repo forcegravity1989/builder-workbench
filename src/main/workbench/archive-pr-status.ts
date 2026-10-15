@@ -47,7 +47,10 @@ export async function readArchivePrStatus(
     return { state: 'unknown', reason: '未解析项目的 GitHub 来源，无法读取 PR 状态' }
   }
   const identity = githubRepoIdentityKey(ownerRepo)
-  if (params.pr.repository !== identity && params.pr.repository !== `${ownerRepo.owner}/${ownerRepo.repo}`) {
+  if (
+    params.pr.repository !== identity &&
+    params.pr.repository !== `${ownerRepo.owner}/${ownerRepo.repo}`
+  ) {
     return { state: 'unknown', reason: 'PR 引用与项目真实 GitHub 来源不一致' }
   }
   const ghOptions = {

@@ -76,9 +76,7 @@ export function deriveAcceptanceReport(input: {
       .filter((ref) => taskReferenceKey(ref) === taskReferenceKey(item.reference))
       .map((ref) => ref.goalId)
       .filter(Boolean)
-    const goalNote = goals.length
-      ? `；目标 ${goals.map((goalId) => text(goalId!)).join('、')}`
-      : ''
+    const goalNote = goals.length ? `；目标 ${goals.map((goalId) => text(goalId!)).join('、')}` : ''
     lines.push(
       item.kind === 'ready'
         ? `- ${text(item.reference.repository)}#${item.reference.number} ${text(item.title)}：${text(item.state)}${goalNote}`

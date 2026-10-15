@@ -16,12 +16,5 @@ export function AcceptancePage({
   const owner = context.scope?.runtimeOwnerEnvironmentId
   const metrics = useMemo(() => nativeMetricsPort(owner), [owner])
   const history = useMemo(() => nativeVersionHistoryPort(owner), [owner])
-  return (
-    <AcceptanceBoard
-      context={context}
-      history={history}
-      metrics={metrics}
-      entry={entry}
-    />
-  )
+  return <AcceptanceBoard context={context} history={history} metrics={metrics} entry={entry} />
 }

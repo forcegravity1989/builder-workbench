@@ -174,9 +174,9 @@ it('guards the plan risk report on the model channel', async () => {
   await expect(
     assertHumanFieldsUntouched(readStored, planSave('模型改写的风险'), {})
   ).rejects.toBeInstanceOf(WorkspaceScopeError)
-  await expect(
-    assertHumanFieldsUntouched(readStored, planSave(), {})
-  ).rejects.toMatchObject({ code: 'forbidden' })
+  await expect(assertHumanFieldsUntouched(readStored, planSave(), {})).rejects.toMatchObject({
+    code: 'forbidden'
+  })
   expect(planHumanFieldChanges(null, planMaterial())).toEqual([])
   expect(planHumanFieldChanges(stored, planMaterial())).toEqual(['summary.risks'])
 })

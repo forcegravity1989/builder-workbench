@@ -39,9 +39,7 @@ export function AcceptanceSources({ document }: { document: AcceptanceMaterial }
         <p className="va-candidate">
           <span>候选提交</span>
           <code>{document.candidateRef?.commit ?? '待固定'}</code>
-          {versionMismatch && (
-            <span className="va-warning">源码候选与验收版本不一致</span>
-          )}
+          {versionMismatch && <span className="va-warning">源码候选与验收版本不一致</span>}
         </p>
         {document.preparedArtifacts.map((artifact) => {
           const declared = artifactCandidateCheck(artifact, document.candidateRef)
