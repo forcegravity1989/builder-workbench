@@ -162,7 +162,7 @@ function ReadyAcceptanceBoard({
         </select>
         <button
           className="wb-btn wb-btn-ghost wb-btn-sm"
-          disabled={busy || saving}
+          disabled={busy || saving || Boolean(context.syncing)}
           onClick={() => {
             void (async () => {
               toast.message(trunkUpdateNotice(await context.updateCode()))

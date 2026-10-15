@@ -1,10 +1,13 @@
-import { isWindowsAbsolutePathLike } from '../../shared/cross-platform-path'
 import { gitExecFileAsync } from '../git/runner'
 import {
   gitOptionsForWorktree,
   gitReadOptionsForWorktree,
   type GitRuntimeOptions
 } from '../git/git-runtime-options'
+import {
+  postponeRepoRefMaintenance,
+  withRepoRefMaintenancePaused
+} from '../git/local-repo-ref-maintenance'
 import type { TrunkSyncTarget } from './trunk-baseline'
 
 /** A user-clicked sync must fail honestly rather than hang the screen. */
@@ -27,16 +30,21 @@ export async function fetchTrunkBookmark(
   options: GitRuntimeOptions = {}
 ): Promise<void> {
   const bookmark = `refs/remotes/${trunkRemoteRef(target)}`
-  await gitExecFileAsync(
-    [
-      'fetch',
-      '--no-tags',
-      '--',
-      target.remoteName,
-      `+refs/heads/${target.branchName}:${bookmark}`
-    ],
-    { ...gitOptionsForWorktree(repoPath, options), timeout: TRUNK_SYNC_TIMEOUT_MS }
-  )
+  // Same ref-maintenance window as the native fetch: an idle pack rewriting
+  // packed-refs (~1.4s) must not make the bookmark update fail on the lock.
+  postponeRepoRefMaintenance()
+  await withRepoRefMaintenancePaused('git-fetch', async () => {
+    await gitExecFileAsync(
+      [
+        'fetch',
+        '--no-tags',
+        '--',
+        target.remoteName,
+        `+refs/heads/${target.branchName}:${bookmark}`
+      ],
+      { ...gitOptionsForWorktree(repoPath, options), timeout: TRUNK_SYNC_TIMEOUT_MS }
+    )
+  })
 }
 
 export type TrunkComparison = { behind: number; ahead: number }
@@ -113,10 +121,10 @@ export type TrunkUpdateDecision =
  */
 export function decideTrunkUpdate(input: {
   isTrunkCheckout: boolean
-  /** Current branch of the main checkout; null for cycle trees (their branch is bw/* by design). */
-  branch: string | null
+  /** Current branch of the target tree (cycle trees sit on bw/* by design). */
+  branch: string
   baselineBranch: string
-  /** Tracked-file modifications; only read for the main checkout. */
+  /** Tracked-file modifications; only consulted for the main checkout. */
   dirty: boolean
   behind: number
   ahead: number
@@ -141,8 +149,8 @@ export function decideTrunkUpdate(input: {
 
 /**
  * The unified refusal sentence (user-settled wording): one line of cause plus
- * the one next step — hand the branch to the session model. Never a stack of
- * git output.
+ * the one next step — hand the branch that actually needs work (the target
+ * tree's own branch) to the session model. Never a stack of git output.
  */
 export function trunkRefusalSentence(
   reason: TrunkRefusalReason,
@@ -157,17 +165,5 @@ export function trunkRefusalSentence(
         : reason === 'ahead-trunk'
           ? `主检出有 ${ahead} 个未合入基线的本地提交`
           : `工作树有 ${ahead} 个未合入提交、主干新增 ${behind} 个，已分叉`
-  return `代码未更新（${cause}）。请让会话模型处理 ${baselineBranch} 分支的代码更新。`
-}
-
-/**
- * Whether a resolved worktree path is the repo's main checkout itself. Windows
- * paths compare case-insensitively; trailing separators never matter.
- */
-export function isMainCheckoutPath(worktreePath: string, repoPath: string): boolean {
-  const normalize = (value: string) => {
-    const trimmed = value.replace(/[/\\]+$/, '')
-    return isWindowsAbsolutePathLike(value) ? trimmed.toLowerCase() : trimmed
-  }
-  return normalize(worktreePath) === normalize(repoPath)
+  return `代码未更新（${cause}）。请让会话模型处理 ${branch} 分支的代码更新。`
 }

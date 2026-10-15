@@ -1,4 +1,5 @@
 import { parseExecutionHostId } from '../../shared/execution-host'
+import { stripCredentialsFromMessage } from '../../shared/git-remote-error'
 import type { TrunkUpdateResult } from '../../shared/workbench/trunk-update'
 import type { MetricScope } from '../../shared/workbench/metrics'
 import { extractExecError } from '../git/exec-error'
@@ -8,7 +9,6 @@ import {
   compareTrunk,
   decideTrunkUpdate,
   fetchTrunkBookmark,
-  isMainCheckoutPath,
   readTreeHead,
   readTrunkCheckoutState,
   trunkRefusalSentence,
@@ -26,11 +26,16 @@ type TrunkUpdateRuntime = {
   listProjects: Parameters<typeof resolveWorkbenchGitExecOptions>[0]['listProjects']
 }
 
-/** One honest line out of a Git/network failure — the refusal sentence stays short. */
+/**
+ * One honest line out of a Git/network failure — the refusal sentence stays
+ * short, and credentials embedded in remote URLs never reach the user surface.
+ */
 function failureDetail(error: unknown): string {
   const { stderr } = extractExecError(error)
   const detail = stderr.trim().split('\n').findLast((line) => line.trim()) ?? ''
-  return (detail.trim() || (error instanceof Error ? error.message : String(error)))
+  return stripCredentialsFromMessage(
+    detail.trim() || (error instanceof Error ? error.message : String(error))
+  )
     .trim()
     .slice(-160)
 }
@@ -54,14 +59,20 @@ export function createTrunkUpdateService(runtime: TrunkUpdateRuntime) {
       if (host?.kind !== 'local') {
         // The remote Git relay is read-only by design; SSH main-checkout updates
         // go through the native fast-forward chain instead (project wall parity).
-        return refuse('远程工作树暂不支持自动同步，请在会话中处理')
+        return refuse('代码未更新（远程工作树暂不支持自动同步）。请在会话中处理。')
       }
       const execOptions = resolveWorkbenchGitExecOptions(runtime, repo)
       let baseline: TrunkBaseline
       try {
-        baseline = await runTrunkBaseline(target.repoPath, repo.worktreeBaseRef ?? null, execOptions)
+        baseline = await runTrunkBaseline(
+          target.repoPath,
+          repo.worktreeBaseRef ?? null,
+          execOptions
+        )
       } catch (reason) {
-        return refuse(reason instanceof Error ? reason.message : String(reason))
+        return refuse(
+          `代码未更新（${reason instanceof Error ? reason.message : String(reason)}）。请在会话中处理。`
+        )
       }
       const sync = baseline.sync
       if (!sync) {
@@ -69,9 +80,20 @@ export function createTrunkUpdateService(runtime: TrunkUpdateRuntime) {
           `代码未更新（基线 ${baseline.ref} 不是可同步的远端分支）。请在项目设置核对基线分支。`
         )
       }
-      const isTrunk = isMainCheckoutPath(target.worktreePath, repo.path)
+      // Main-checkout identity comes from the native worktree record, never a
+      // path comparison that symlinks or short names could fool.
+      const isTrunk = target.isMainWorktree
       const treePath = isTrunk ? target.repoPath : target.worktreePath
-      const askSession = `请让会话模型处理 ${sync.branchName} 分支的代码更新。`
+      let branch: string
+      let dirty: boolean
+      try {
+        const state = await readTrunkCheckoutState(treePath, execOptions)
+        branch = state.branch
+        dirty = state.dirty
+      } catch (reason) {
+        return refuse(`代码未更新（${failureDetail(reason)}）。请在会话中处理。`)
+      }
+      const askSession = `请让会话模型处理 ${branch} 分支的代码更新。`
       try {
         await fetchTrunkBookmark(target.repoPath, sync, execOptions)
       } catch (reason) {
@@ -81,19 +103,18 @@ export function createTrunkUpdateService(runtime: TrunkUpdateRuntime) {
       }
       try {
         const { behind, ahead } = await compareTrunk(treePath, sync, execOptions)
-        const state = isTrunk ? await readTrunkCheckoutState(target.repoPath, execOptions) : null
         const decision = decideTrunkUpdate({
           isTrunkCheckout: isTrunk,
-          branch: state?.branch ?? null,
+          branch,
           baselineBranch: sync.branchName,
-          dirty: state?.dirty ?? false,
+          dirty,
           behind,
           ahead
         })
         if (decision.action === 'refuse') {
           return refuse(
             trunkRefusalSentence(decision.reason, {
-              branch: state?.branch ?? sync.branchName,
+              branch,
               baselineBranch: sync.branchName,
               behind,
               ahead
@@ -114,8 +135,8 @@ export function createTrunkUpdateService(runtime: TrunkUpdateRuntime) {
         try {
           commit = await readTreeHead(treePath, execOptions)
         } catch {
-          // The fast-forward already succeeded; a failing HEAD read-back must not
-          // demote the honest result — the toast just omits the commit id.
+          // The fast-forward already succeeded; a failing HEAD read-back must
+          // not demote the honest result — the toast just omits the commit id.
         }
         return {
           updated: true,

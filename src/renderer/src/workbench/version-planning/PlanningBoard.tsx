@@ -158,7 +158,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       <PlanningHeader
         currentVersion={plan?.version ?? ''}
         versions={material.versions}
-        disabled={!materialPort || selecting}
+        disabled={!materialPort || selecting || Boolean(context.syncing)}
         state={state}
         branch={cycleBranch(entry)}
         onSelect={(version) => void selection.select(version)}

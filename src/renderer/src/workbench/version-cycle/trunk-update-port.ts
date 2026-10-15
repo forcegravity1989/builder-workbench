@@ -27,8 +27,10 @@ export function updateTrunkCode(
     runtimeOwnerEnvironmentId,
     'workbench.trunk.update',
     (ownerScope) => ({ scope: ownerScope }),
-    // The main-side sync bounds itself at 60s; the RPC budget adds headroom.
-    90_000
+    // The main-side chain bounds each step (fetch 60s, guard reads 30s each,
+    // native fast-forward 60s); the RPC budget must outlast the worst case so
+    // the renderer never reports failure while main is still working.
+    300_000
   )
   pending.set(key, request)
   const release = () => {

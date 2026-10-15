@@ -81,8 +81,8 @@ export function OverviewPage(): React.JSX.Element {
       return { plan: null, acceptance: null, error: String(error) }
     }
   }, [baseScope])
-  // 「更新代码」= 总览唯一的同步入口：快进主检出，随后重读三类快照与名片。
-  // 进屏不做任何 git 动作；快进不了保持原样并如实说明。
+  // 「更新代码」bump trunkToken → SDLC 区就地强制重读；history/metrics 快照由
+  // 按钮 handler 各自的 force reload 就地刷新，不换键、不清空显示。
   const [trunkToken, setTrunkToken] = useState(0)
   const [updatingTrunk, setUpdatingTrunk] = useState(false)
   const dataIdentity = JSON.stringify([
@@ -94,21 +94,20 @@ export function OverviewPage(): React.JSX.Element {
     activeRepo?.gitRemoteIdentity,
     baseWorktree?.path
   ])
-  // 「更新代码」bump trunkToken → 快照缓存换键重读；视图偏好（粒度等）不跟着重置。
-  const cacheIdentity = JSON.stringify([dataIdentity, trunkToken])
   const metrics = useOverviewMetricCollection({
     baseScope,
     baseWorktreeId,
-    identity: cacheIdentity,
+    identity: dataIdentity,
     granularity: view.granularity
   })
-  const { catalog, northReading, zoneReadings, busy, refreshing, refreshReadings } = metrics
+  const { catalog, northReading, zoneReadings, busy, refreshing, refreshReadings, reloadCatalog } =
+    metrics
   const historyState = useOverviewHistory({
     baseScope,
     baseWorktreeId,
     planWorktreeId: fixedTrees.plan,
     acceptanceWorktreeId: fixedTrees.acceptance,
-    identity: cacheIdentity
+    identity: dataIdentity
   })
   const { history, currentVersion } = historyState
   const problems = [...metrics.problems, ...(historyState.problem ? [historyState.problem] : [])]
@@ -134,12 +133,10 @@ export function OverviewPage(): React.JSX.Element {
   }, [activeRepo?.path, charterKey])
 
   // 主检出没有名片才查 PR 状态:待合入 / 已合入未更新 / 没查成(spec 规则 2)。
-  const { charterStatus, updatingMain, updateMainCheckout } = useCharterPrStatus(
-    activeRepo,
-    Boolean(charter),
-    charterKey,
-    (value) => setCharter({ key: charterKey, value })
-  )
+  const { charterStatus, updatingMain, updateMainCheckout, refreshCharterStatus } =
+    useCharterPrStatus(activeRepo, Boolean(charter), charterKey, (value) =>
+      setCharter({ key: charterKey, value })
+    )
 
   // 「更新代码」点击处理；trunkToken/updatingTrunk 状态声明在 dataIdentity 之前。
   const updateTrunk = async () => {
@@ -168,8 +165,12 @@ export function OverviewPage(): React.JSX.Element {
       toast.message(`代码未更新（${detail}）。请让会话模型处理主检出的代码更新。`)
     } finally {
       setUpdatingTrunk(false)
-      // 无论快进成败都重读：bump 使三类快照缓存换键重载，名片文件也重读一遍。
+      // 无论快进成败都重读：三类快照就地强制重读（旧值保持显示、错误系列保留
+      // 上次数据回退），trunkToken 触发 SDLC 区重读，名片文件与 PR 状态一并刷新。
       setTrunkToken((token) => token + 1)
+      historyState.reload()
+      reloadCatalog()
+      refreshCharterStatus()
       if (activeRepo.path) {
         void readProjectCharter(activeRepo.path).then((r) =>
           setCharter({ key: charterKey, value: r.charter })

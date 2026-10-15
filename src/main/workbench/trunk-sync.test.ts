@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import {
-  decideTrunkUpdate,
-  isMainCheckoutPath,
-  trunkRefusalSentence
-} from './trunk-sync'
+import { decideTrunkUpdate, trunkRefusalSentence } from './trunk-sync'
 
-const cycle = { isTrunkCheckout: false, branch: null, baselineBranch: 'main', dirty: false }
+const cycle = {
+  isTrunkCheckout: false,
+  branch: 'bw/week-plan',
+  baselineBranch: 'main',
+  dirty: false
+}
 const trunk = { isTrunkCheckout: true, branch: 'main', baselineBranch: 'main', dirty: false }
 
 describe('trunk update decision', () => {
@@ -54,16 +55,17 @@ describe('trunk update decision', () => {
         behind: 2,
         ahead: 4
       })
-    ).toBe('代码未更新（工作树有 4 个未合入提交、主干新增 2 个，已分叉）。请让会话模型处理 main 分支的代码更新。')
-    expect(
-      trunkRefusalSentence('branch-mismatch', {
-        branch: 'hotfix',
-        baselineBranch: 'main',
-        behind: 0,
-        ahead: 0
-      })
-    ).toContain('主检出当前在 hotfix 分支，与基线 main 不一致')
-    expect(isMainCheckoutPath('C:\\repo\\', 'c:\\REPO')).toBe(true)
-    expect(isMainCheckoutPath('/srv/repo/.bw/worktrees/plan', '/srv/repo')).toBe(false)
+    ).toBe(
+      '代码未更新（工作树有 4 个未合入提交、主干新增 2 个，已分叉）。请让会话模型处理 bw/week-plan 分支的代码更新。'
+    )
+    const mismatch = trunkRefusalSentence('branch-mismatch', {
+      branch: 'hotfix',
+      baselineBranch: 'main',
+      behind: 0,
+      ahead: 0
+    })
+    expect(mismatch).toContain('主检出当前在 hotfix 分支，与基线 main 不一致')
+    // The session works where the blocker is: the tree's own branch.
+    expect(mismatch).toContain('请让会话模型处理 hotfix 分支的代码更新。')
   })
 })
