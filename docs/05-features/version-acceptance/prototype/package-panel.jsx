@@ -18,6 +18,13 @@ export const PACKAGE_PIPELINES = [
 // service on the left, open the newest software version, read its detail page.
 // The product screen reaches this via Playwright; acceptance only cares about
 // the final artifact, not how many pipeline runs produced it.
+//
+// Download chain verified against the real page: clicking the per-row icon
+// d-icon#artifact_artifactDownloadId first calls POST /artifact/v1/api/artifact
+// /download for a signed URL (RS384 token, ~12h), then the browser downloads
+// from cmc-szver-artifactory; Playwright waitForEvent('download') +
+// download.saveAs(dir) saves into any user-chosen directory (verified: the
+// saved .7z is a valid archive).
 export const LATEST_PACKAGE = {
   project: 'gtsllm-dfx',
   version: '1.0.0-SNAPSHOT.20261015091143.640856637',
