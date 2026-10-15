@@ -1,8 +1,10 @@
 import { useCycleWorkspace } from './cycle-workspace-context'
 import { PlanningBoard } from '../version-planning/PlanningBoard'
 import { AcceptancePage } from '../version-acceptance/AcceptancePage'
+import { usePackagePipelineWarmup } from '../version-acceptance/use-package-pipeline-warmup'
 export function CycleWorkspaceShell() {
   const workspace = useCycleWorkspace()
+  usePackagePipelineWarmup(workspace?.context)
   if (!workspace) {
     return null
   }

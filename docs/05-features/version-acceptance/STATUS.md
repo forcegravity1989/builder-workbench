@@ -20,6 +20,8 @@
 
 2026-10-14 Issue #355 同步统一批（与计划屏同批，机制与证据详见[版本计划 STATUS](../version-planning/STATUS.md) 同轮记录）：进屏自动同步废止，验收屏进屏零 Git 动作；页头按钮改「更新代码」，成为唯一同步入口（快进 bw/week-acceptance 树到主干最新，快进不了保持原样、统一提示交会话处理，材料仍照常重读）。纯草稿状态（树有未合入提交、主干没前进）不是异常、不提示。
 
+2026-10-15 出包区块批（PR #360，用户会话内逐项拍板：两行四列包信息、GitHub 变体走 gh 不用 playwright、按远端 URL 自动分派、功能分支 MR 验证流程）：旅程轴插入「出包」节点——灯随出包区块读到的最新制品包点亮，不写 stage（stage 仍只有 preparation/showcase/archive 三值）；出包区块一条协议两个宿主，CodeHub 远端走 CloudDragon 常驻 Playwright 会话，GitHub 远端走本机 gh CLI（识别规则：文件名 `bw-package` 前缀的 Actions workflow；本仓实例 `.github/workflows/bw-package.yml`，构建步带 `ORCA_WIN_ADHOC=1` 避免未签名包烙 SignPath publisherName）；验收 SOP（standard/skills/version-acceptance）升 0.5.0 补出包步骤，stub 投影与 manifest 同步再生。证据：门禁全过（typecheck node/web/cli、oxlint、anti-slop、code-quality、各 ratchet、rpc-params-catalog）；esbuild 探针对真仓 10/10（列表/最新包/安装包过滤/远端分派/owner-repo 解析）；CloudDragon 选择器与启动/下载链路经真实页面验证。GitHub 变体端到端（workflow 实跑、真壳验收）待 MR 合入后验证。
+
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
 | intent | ● 已确认 | 沿用三特性边界，用户确认会话准备材料、逐目标核对及本轮资产同步 |
@@ -31,9 +33,9 @@
 
 [第八版交互原型](prototype.html) 是本特性的独立入口；来源与离线使用见[版本计划规格](../version-planning/spec.md)，完整历史附件保留在[原始评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip)。原型与包内浏览器检查只证明交互演示，未接远端写回/真实采集/自动化，不表示能力已交付。执行步骤与并行分工位于本任务仓外 plans，不在仓内新增 plan.md。
 
-验收进入固定 bw/week-acceptance 后先回显原生工作区；进屏不做任何 Git 动作，页头「更新代码」是唯一同步入口（执行期间提示并暂停写入，无论快进成败都重读材料，失败保留通知）。与计划共用自动保存、任务 UI 和归档状态行（原可取消的请求等待已随贴草稿通道于 2026-10-13 收敛批退役）。顶部选版一次，已有验收回显，无验收时基于该版当前计划初始化草稿；不再提供第二次选版或开轮按钮。旅程灯只读材料 workflow.stage（模型写入，灰/绿两态）；归档 PR 合入状态按 archivePr 薄读取显示，归档后继续编辑同一份材料。CodeHub 读不回 PR 状态时保持未知。指标及交付区域仅按原承诺或已有证据显示，刷新指标读回并保存实际值；Issue 共用计划样式，仍保留验收快照。相关静态与存量测试证据见各轮 PR，真壳体验交用户在新包回验。
+验收进入固定 bw/week-acceptance 后先回显原生工作区；进屏不做任何 Git 动作，页头「更新代码」是唯一同步入口（执行期间提示并暂停写入，无论快进成败都重读材料，失败保留通知）。与计划共用自动保存、任务 UI 和归档状态行（原可取消的请求等待已随贴草稿通道于 2026-10-13 收敛批退役）。顶部选版一次，已有验收回显，无验收时基于该版当前计划初始化草稿；不再提供第二次选版或开轮按钮。旅程灯只读材料 workflow.stage（模型写入，灰/绿两态；「出包」灯例外，随出包区块真实包数据点亮）；归档 PR 合入状态按 archivePr 薄读取显示，归档后继续编辑同一份材料。CodeHub 读不回 PR 状态时保持未知。指标及交付区域仅按原承诺或已有证据显示，刷新指标读回并保存实际值；Issue 共用计划样式，仍保留验收快照。相关静态与存量测试证据见各轮 PR，真壳体验交用户在新包回验。
 
-未验证项如实保留：真壳烟测 `tests/e2e/workbench-cycle-smoke.spec.ts` 已编写（含验收树与总览读回），执行结果见 PR；真实出包/验证入口、CodeHub Issue 正文编辑及返回验收版本、SSH/WSL 与配对宿主、真实到点自动化、真实 provider 归档全链均未运行。仓外组件示例不计为 E2E，完整旅程后续统一调度。
+未验证项如实保留：真壳烟测 `tests/e2e/workbench-cycle-smoke.spec.ts` 已编写（含验收树与总览读回），执行结果见 PR；出包区块 GitHub 变体（workflow 实跑与真壳验收，待 PR #360 合入后验证）、项目自有真实出包/验证入口、CodeHub Issue 正文编辑及返回验收版本、SSH/WSL 与配对宿主、真实到点自动化、真实 provider 归档全链均未运行。仓外组件示例不计为 E2E，完整旅程后续统一调度。
 
 2026-09-25 已完成实际组件的仓外示例数据视觉核对：按 v8 对齐紧凑目标卡，在约 920px 右栏宽度下展示三项目标与 Issue 汇总。该检查没有连接 Electron、原生会话、采集脚本或真实 provider，不能计为验收点 E2E。完整旅程与真实到点触发仍按本轮分工留待后续协调验证。
 
@@ -57,6 +59,7 @@
 | A08 纪要可复制含结论/交付/指标/未达人话正文；归档后总览回看 | ◐ | deriveAcceptanceReport（技术标识已剔除）+ 标题旁“预览纪要”弹窗（AcceptanceReportDialog）+ 总览双栏 | report 测试；真实归档回看待人 |
 | A09 跨树隔离/并发/重启/脏树不丢输入；包证不符不沿完成态 | ◐ | draft recovery + decision 证据新鲜度（decisionFreshness，证据变化旧结论标待重新核对）；在线候选探测已退役，仅剩纯声明比对 | 恢复测试；脏树真机待人；脏树/未归档提交检查为提示级（会话承担），无代码落点 |
 | A10 原生自动化真实到点、新周期新会话、入口不重复 | ◐ | 默认关闭态注册（creationKey 去重、reuseSession=false、BW 提示覆盖同步、用户设置保留） | 新建验收的手动运行、原生恢复和真实到点均待真壳验证 |
+| A11 出包区块按远端对接流水线、真实读数、可下载、如实报错 | ◐ | AcceptancePackage + package-pipeline-runtime（CloudDragon/gh 按远端分派）+ AcceptanceJourney 出包灯 | 门禁与真仓探针全过；CodeHub 链路经真实页面验证；GitHub 变体 workflow 实跑与真壳验收待 MR 合入后验证 |
 
 | 旅程 | 状态 | 覆盖 |
 |---|---|---|
