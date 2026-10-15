@@ -89,8 +89,14 @@ jobs:
         shell: bash
         run: pnpm run build:win:workbench
         env:
-          ORCA_LOCAL_BUILD_VERSION: ${{ steps.identity.outputs.version }}
-          ORCA_BUILD_COMMIT: ${{ steps.identity.outputs.commit }}
+          # Why the adhoc channel flag: without it electron-builder stamps
+          # publisherName 'SignPath Foundation' onto this unsigned build, and a
+          # declared publisher that fails signature verification makes the
+          # in-app updater reject the package. The flag also switches version
+          # injection to ORCA_ADHOC_BUILD_VERSION — ORCA_LOCAL_BUILD_VERSION is
+          # ignored while any Windows dev channel is active.
+          ORCA_WIN_ADHOC: '1'
+          ORCA_ADHOC_BUILD_VERSION: ${{ steps.identity.outputs.version }}
 
       - name: Publish installer as a prerelease
         shell: bash
