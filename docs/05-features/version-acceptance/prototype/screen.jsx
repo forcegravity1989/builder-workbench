@@ -3,6 +3,7 @@ import { ChevronRight, ClipboardCheck, ExternalLink, ListTodo, MessageSquare } f
 import { Field, done } from '../../version-planning/prototype/shared.jsx'
 import { files, original } from '../../version-planning/prototype/snapshot.js'
 import { AcceptanceMetricEvidence } from './metric-evidence.jsx'
+import { PackagePanel } from './package-panel.jsx'
 
 function AcceptanceContent({
   disabled = false,
@@ -10,11 +11,13 @@ function AcceptanceContent({
   goalIssues,
   hasGap,
   openIssues,
+  packageRuns,
   promptConversation,
   refreshMetrics,
   review,
   setModal,
   tasks,
+  triggerPackage,
   updateResult,
   version,
   versionTasks
@@ -39,6 +42,18 @@ function AcceptanceContent({
             {current.some(hasGap) ? ` · ${current.filter(hasGap).length} 项未达` : ''}
           </span>
         </div>
+      )}
+      {!disabled && (
+        <>
+          <div className="section-heading package-heading">
+            <h2>出包</h2>
+            <span>CloudDragon</span>
+          </div>
+          <PackagePanel
+            runs={packageRuns}
+            onPackage={triggerPackage}
+          />
+        </>
       )}
       <div className="section-heading acceptance-goals-heading">
         <h2>本版目标验收</h2>
