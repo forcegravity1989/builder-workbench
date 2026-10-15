@@ -9,7 +9,7 @@
 | 1 intent | ● | 2026-10-15 gate 改写正文：价值=leader 按周节奏扫墙读事实、判断与催办归人（周一计划/周二喊定版/周四催承诺）；卡片模型=名片区+读数区，不做健康灯 |
 | 2 spec | ● | 「墙卡读数」节：四行口径（版本=原生选版偏好+主干材料校验与总览同机制；承诺进展=tasks × 原生状态/关闭原因只显「完成 x · 开放 y」；会话=Orca live 口径、离线 ≠ 0；PR 待审=全仓 open PR 计数）+ 三态 + 已移除元素 + 墙头不聚合；验收点 P-13/P-14；扫墙旅程候选；G3 规则折入主题节 |
 | 3 实现设计 | ● | `wall-card-readings`（纯函数：仓坐标解析/进展分解全有或全无/会话计数/离线规则）、`use-wall-readings`（异步编排 queryKey 守卫、会话随 store 心跳同步现算）、`wall-readings-load`（版本链=history 目录+计划树对齐+选版偏好，与总览一致；gh GraphQL 批量；PR 计数沿 listWorkItems/CodeHub 分页与截断诚实）、main `issue-state-batch`、web shim 如实报读不到；architecture 用例表无需改（墙仍属「查看项目概况」共担） |
-| 4 TDD | ● | 新增 10 例（环内 7：wall-card-readings 纯函数；环外 3：issue-state-batch 查询构造/注入拒绝/回执解析），对冲删除 6 例展示/装配类（overview-zone-series 标签文案与参考线 2、task-port openDetail 导航装配 3、workbench-nav 置灰装配 1）——ratchet 226 恰在基线；特性新增 ≤10 例达标 |
+| 4 TDD | ● | 新增 8 例（环内 5：wall-card-readings 纯函数；环外 3：issue-state-batch 查询构造/注入拒绝/回执解析），对冲删除 5 例展示/装配类（zone-series 标签文案 1、task-port openDetail 导航装配 3、workbench-nav 置灰装配 1）；检视轮恢复 zone-series numericTarget 唯一测试（合规核心用例，不应作对冲牺牲）；ratchet 226 恰在基线 |
 | 5 验收点E2E | 待建 | P-01–P-14 点位已定（P-13 读数真实与可复算、P-14 离线 ≠ 0 为本批新增）；注册暂缓不变；P-13 真壳部分验证见本 PR 验证报告与截图 |
 | 6 旅程E2E | 待建 | 基线、跨主机、扫墙三条候选并存未注册 |
 

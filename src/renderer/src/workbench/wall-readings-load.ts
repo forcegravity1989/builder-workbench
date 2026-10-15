@@ -39,15 +39,24 @@ export type PlanContext = {
 }
 
 /**
- * 在项目各注册行（本机在前）里找计划固定树上下文：主工作树 + bw/week-plan。
- * 宿主路由不明确或同分支多工作树的行如实跳过；全部行都解析不出 → null
- * （版本行显示「版本未定」——没选过版与判据不可证都不猜）。
+ * 在项目各注册行里找计划固定树上下文：主工作树 + bw/week-plan。
+ * 活跃仓行优先（与总览活跃上下文同源），再本机在前：同一项目两屏读同一注册行，
+ * 版本不产生分叉。宿主路由不明确或同分支多工作树的行如实跳过；全部行都解析不出
+ * → null（版本行显示「版本未定」——没选过版与判据不可证都不猜）。
  */
 export function resolvePlanContext(
   project: WallProject,
-  worktreesByRepo: Record<string, readonly Worktree[]>
+  worktreesByRepo: Record<string, readonly Worktree[]>,
+  activeRepoId: string | null
 ): PlanContext | null {
-  for (const row of project.rows) {
+  const ordered =
+    activeRepoId && project.rows.some((row) => row.id === activeRepoId)
+      ? [
+          ...project.rows.filter((row) => row.id === activeRepoId),
+          ...project.rows.filter((row) => row.id !== activeRepoId)
+        ]
+      : project.rows
+  for (const row of ordered) {
     const worktrees = worktreesByRepo[row.id] ?? []
     const home = worktrees.find((item) => item.isMainWorktree) ?? worktrees[0]
     if (!home) {
@@ -182,13 +191,17 @@ export async function readVersionAndProgress(context: PlanContext): Promise<{
   }
 }
 
-async function countSlotOpenPrs(repo: Repo): Promise<number> {
+async function countSlotOpenPrs(repo: Repo, current: () => boolean): Promise<number> {
   const provider = sdlcProviderOf(repo)
   if (provider === 'github') {
     const context = getTaskPageRepoSourceContext(repo, 'github')
     const target = getGitHubSourceRuntimeTarget(context)
     let total = 0
+    let source = ''
     for (let page = 1; page <= 10; page++) {
+      if (!current()) {
+        throw new Error('读取已取消')
+      }
       const params = { limit: 100, page, query: 'is:pr is:open', noCache: true }
       const result =
         target.kind === 'environment'
@@ -202,9 +215,16 @@ async function countSlotOpenPrs(repo: Repo): Promise<number> {
       if (result.errors?.prs) {
         throw new Error(result.errors.prs.message)
       }
-      if (!result.sources.prs) {
+      const origin = result.sources.prs
+      if (!origin) {
         throw new Error('未识别仓库数据来源')
       }
+      // 沿 overview-sdlc 守卫：分页期间数据来源漂移则整次读数作废，不拼半真计数。
+      const nextSource = `${origin.host ?? 'github.com'}/${origin.owner}/${origin.repo}`
+      if (source && source !== nextSource) {
+        throw new Error('分页期间数据来源发生变化，请刷新')
+      }
+      source = nextSource
       total += result.items.length
       if (result.items.length < 100) {
         return total
@@ -214,6 +234,9 @@ async function countSlotOpenPrs(repo: Repo): Promise<number> {
   }
   if (provider === 'codehub') {
     for (const limit of [100, 500, 2_000, 10_000]) {
+      if (!current()) {
+        throw new Error('读取已取消')
+      }
       const result = await codehubApi.listTasks({
         repoPath: repo.path,
         repoId: repo.id,
@@ -232,7 +255,8 @@ async function countSlotOpenPrs(repo: Repo): Promise<number> {
 
 export async function readProjectPrs(
   project: WallProject,
-  repos: readonly Repo[]
+  repos: readonly Repo[],
+  current: () => boolean
 ): Promise<WallCountReading> {
   try {
     let total = 0
@@ -241,7 +265,7 @@ export async function readProjectPrs(
       if (!repo) {
         throw new Error(`代码仓注册行缺失：${slot.name}`)
       }
-      total += await countSlotOpenPrs(repo)
+      total += await countSlotOpenPrs(repo, current)
     }
     return { kind: 'value', count: total }
   } catch (error) {

@@ -5,8 +5,7 @@ import {
   countLiveAgentSessions,
   deriveCommitmentProgress,
   deriveSessionReading,
-  issueStateKey,
-  parseTaskRepository
+  issueStateKey
 } from './wall-card-readings'
 
 const NOW = 1_800_000_000_000
@@ -31,20 +30,6 @@ function states(
 }
 
 const REPO = 'github.com/forcegravity1989/builder-workbench'
-
-describe('parseTaskRepository', () => {
-  it('解析 host/owner/repo 三段坐标，其余形态一律 unsupported', () => {
-    expect(parseTaskRepository(REPO)).toEqual({
-      kind: 'github',
-      host: 'github.com',
-      owner: 'forcegravity1989',
-      repo: 'builder-workbench'
-    })
-    expect(parseTaskRepository('owner/repo')).toEqual({ kind: 'unsupported' })
-    expect(parseTaskRepository('a/b/c/d')).toEqual({ kind: 'unsupported' })
-    expect(parseTaskRepository('github.com//repo')).toEqual({ kind: 'unsupported' })
-  })
-})
 
 describe('deriveCommitmentProgress', () => {
   it('按原生关闭原因分解：完成/开放/其他关闭，其他关闭不混入完成', () => {
@@ -76,8 +61,13 @@ describe('deriveCommitmentProgress', () => {
     expect(deriveCommitmentProgress(tasks, states([[REPO, 1, 'OPEN', null]]))).toBeNull()
   })
 
-  it('非 GitHub 任务仓（关闭原因不可读）→ null', () => {
-    const tasks = [{ provider: 'codehub', repository: 'codehub.host/group/proj', number: 7 }]
+  it('非 GitHub 或仓坐标不可解析的任务（关闭原因不可读）→ null', () => {
+    const tasks = [
+      { provider: 'codehub', repository: 'codehub.host/group/proj', number: 7 },
+      { provider: 'github', repository: 'owner/repo', number: 1 },
+      { provider: 'github', repository: 'a/b/c/d', number: 2 },
+      { provider: 'github', repository: 'github.com//repo', number: 3 }
+    ]
     expect(deriveCommitmentProgress(tasks, new Map())).toBeNull()
   })
 })

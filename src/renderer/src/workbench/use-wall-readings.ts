@@ -35,9 +35,14 @@ const LOADING: AsyncReadings = {
   prs: { kind: 'loading' }
 }
 
-function readingsQueryKey(projects: readonly WallProject[], token: number): string {
+function readingsQueryKey(
+  projects: readonly WallProject[],
+  token: number,
+  activeRepoId: string | null
+): string {
   return JSON.stringify([
     token,
+    activeRepoId,
     projects.map((project) => [
       project.key,
       project.rows.map((row) => `${row.id}|${row.path}`),
@@ -51,13 +56,17 @@ export function useWallReadings(
   token: number
 ): Record<string, WallCardReadings> {
   const repos = useAppStore((s) => s.repos)
+  const activeRepoId = useAppStore((s) => s.activeRepoId)
   const worktreesByRepo = useAppStore((s) => s.worktreesByRepo)
   const agentStatusByPaneKey = useAppStore((s) => s.agentStatusByPaneKey)
   const tabsByWorktree = useAppStore((s) => s.tabsByWorktree)
   const runtimeStatusByEnvironmentId = useAppStore((s) => s.runtimeStatusByEnvironmentId)
 
   const [asyncByKey, setAsyncByKey] = useState<Record<string, AsyncReadings>>({})
-  const queryKey = useMemo(() => readingsQueryKey(projects, token), [projects, token])
+  const queryKey = useMemo(
+    () => readingsQueryKey(projects, token, activeRepoId),
+    [projects, token, activeRepoId]
+  )
   // 只在成功落地后记录已加载的键：被取消的轮次不消费键（沿 use-wall-adoptions 守卫语义）。
   const loadedKeyRef = useRef<string | null>(null)
 
@@ -69,7 +78,7 @@ export function useWallReadings(
     void (async () => {
       const entries = await Promise.all(
         projects.map(async (project): Promise<[string, AsyncReadings]> => {
-          const context = resolvePlanContext(project, worktreesByRepo)
+          const context = resolvePlanContext(project, worktreesByRepo, activeRepoId)
           const [versionProgress, prs] = await Promise.all([
             context
               ? readVersionAndProgress(context)
@@ -77,7 +86,7 @@ export function useWallReadings(
                   version: { kind: 'undecided' } as WallVersionReading,
                   progress: { kind: 'hidden' } as WallProgressReading
                 }),
-            readProjectPrs(project, repos)
+            readProjectPrs(project, repos, () => !cancelled)
           ])
           return [project.key, { ...versionProgress, prs }]
         })
@@ -91,8 +100,9 @@ export function useWallReadings(
     return () => {
       cancelled = true
     }
-    // repos/worktreesByRepo 变化已由 queryKey（行 id/路径）守卫；store 引用不进依赖，
-    // 避免每次心跳重发 gh/RPC 查询。
+    // 注册行（id/路径）与活跃仓变化由 queryKey 守卫；工作树集合变化（计划树新建/删除、
+    // 选版落地）由刷新 token 或页面重挂载兜底重算，与整墙刷新语义一致；store 引用
+    // 不进依赖，避免每次心跳重发 gh/RPC 查询。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryKey])
 

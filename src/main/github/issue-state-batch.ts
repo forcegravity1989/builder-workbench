@@ -5,6 +5,8 @@ export type { IssueStateEntry, IssueStatesBatchResult }
 
 // Why: owner/repo/host 直接内插进 GraphQL 查询串，必须白名单校验防注入；
 // numbers 走 int 校验后拼接。gh api graphql 单次查询别名数量控制在 40 以内。
+// 已知限制：白名单不含 ':'，带端口的 GHES host（如 host:8443）会被拒绝并如实
+// 返回 Unknown；团队范围内出现带端口 GHES 时再受控扩展端口形态。
 const SAFE_NAME = /^[A-Za-z0-9_.-]+$/
 const MAX_NUMBERS_PER_CALL = 200
 const NUMBERS_PER_QUERY = 40
