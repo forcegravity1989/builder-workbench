@@ -1,5 +1,6 @@
 import type { Browser, BrowserContext, Page } from 'playwright-core'
 import { getAppEnvironment } from '../../shared/app-environment'
+import { PackagePipelineError, failureText } from './package-pipeline-error'
 
 /**
  * CloudDragon 无头浏览器会话：一个常驻的本机 Chrome（channel:'chrome'），
@@ -7,24 +8,10 @@ import { getAppEnvironment } from '../../shared/app-environment'
  * 空闲 5 分钟自动关闭，下次操作重新拉起。常驻的意义是保持 SSO 登录态
  * 是热的（实测：冷读最新包 ~5.7s，热会话 ~2.8s）。
  */
-export class PackagePipelineError extends Error {
-  constructor(
-    readonly code: string,
-    message: string
-  ) {
-    super(message)
-    this.name = 'PackagePipelineError'
-  }
-}
-
 const SSO_TIMEOUT_MS = 90_000
 const SSO_POLL_INTERVAL_MS = 500
 // 5 分钟空闲覆盖界面每分钟的自动刷新节奏，又不至于永久占用无头 Chrome。
 const SESSION_IDLE_CLOSE_MS = 5 * 60_000
-
-export function failureText(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
 
 type CloudDragonSession = { browser: Browser; context: BrowserContext }
 

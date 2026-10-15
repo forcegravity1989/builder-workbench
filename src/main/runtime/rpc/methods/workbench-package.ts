@@ -12,21 +12,25 @@ export const WORKBENCH_PACKAGE_METHODS = [
   defineMethod({
     name: 'workbench.package.list',
     params: PackagePipelineListSchema,
-    handler: (params) => workbenchRuntimeResult(() => packagePipelineService().list(params))
+    handler: (params, { runtime }) =>
+      workbenchRuntimeResult(() => packagePipelineService(runtime).list(params))
   }),
   defineMethod({
     name: 'workbench.package.latest',
     params: PackageLatestSchema,
-    handler: (params) => workbenchRuntimeResult(() => packagePipelineService().latest(params))
+    handler: (params, { runtime }) =>
+      workbenchRuntimeResult(() => packagePipelineService(runtime).latest(params))
   }),
   defineMethod({
     name: 'workbench.package.launch',
     params: PackageLaunchSchema,
-    handler: (params) => workbenchRuntimeResult(() => packagePipelineService().launch(params))
+    handler: (params, { runtime }) =>
+      workbenchRuntimeResult(() => packagePipelineService(runtime).launch(params))
   }),
   defineMethod({
     name: 'workbench.package.download',
     params: PackageDownloadSchema,
-    handler: (params) => workbenchRuntimeResult(() => packagePipelineService().download(params))
+    handler: (params, { runtime }) =>
+      workbenchRuntimeResult(() => packagePipelineService(runtime).download(params))
   })
 ]
