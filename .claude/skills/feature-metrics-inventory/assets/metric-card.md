@@ -1,6 +1,6 @@
 # 指标口径卡模板（8 字段契约）
 
-> 用法：站 4 每条指标一张卡，人确认后随 PR/Issue 交接 metrics-refresh；正式定义落 `.bw/metrics.toml`（字段约束以指标协议为正本），本卡是盘点与交接载体。8 字段契约与 project-knowledge 的 feature-evidence.md 对齐——该文件是契约正本，本卡是其盘点场景模板。写入项目时删除本用法说明。
+> 用法：站 4 每条指标一张卡，人确认后随 PR/Issue 交接 metrics-refresh；正式定义落 `.bw/metrics.toml`（字段约束以指标协议为正本），本卡是盘点与交接载体。8 字段契约与 project-knowledge 的 feature-evidence.md 对齐——该文件是契约正本，本卡是其盘点场景模板；模板前两行「角色 / 特性归属」为交接定位字段，不属契约 8 字段，其后八行与正本逐一对应。写入项目时删除本用法说明。
 
 ```markdown
 ### <指标名（人话）>

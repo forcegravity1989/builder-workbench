@@ -7,7 +7,8 @@ description: >-
   metric per feature; every stage human-confirmed, then written to the
   project's own assets. 适用「盘点/梳理特性与指标」「项目讲不清名片或北极星」
   「给总览配指标」「续盘上次没盘完的项目」。指标配置写入、采集脚本与合入
-  沿 metrics-refresh 协议；BW 仓自身知识治理转 project-knowledge；
+  沿 metrics-refresh 协议；名片→北极星→特性→指标的全程盘点归本 skill，
+  特性指标验收的证据连接与知识库治理归 project-knowledge；
   版本计划转 week-planning。
 metadata:
   version: 0.1.0-pilot
@@ -23,7 +24,7 @@ metadata:
 
 - 适用于 BW 自身与被管项目的「项目定义 + 可跟踪指标」收敛，主要客群是 1–3 人内部项目（内部工具/平台型居多，常无营收指标、无埋点）。
 - 本 Skill 只做盘点上半程：盘出名片、北极星、特性与指标候选口径，经人确认。指标配置写入、采集脚本、试采与合入沿 metrics-refresh SOP 与指标协议正本（见 [落盘与交接](references/asset-writing.md)），本 Skill 不另写一套。
-- 分流：BW 仓自身文档治理 → project-knowledge；版本计划 → week-planning；被管项目缺开发约定 → project-handbook。加载本 Skill 不新增 push、合入、关闭 Issue 或确认完成的授权；一切远端写入沿项目 PR 流，人审人合。
+- 分流：名片→北极星→特性→指标的全程盘点归本 Skill；已有特性文档的特性指标验收证据连接与知识库治理归 project-knowledge（其 feature-evidence 为口径契约正本，本 Skill 引用遵循、不另立契约）；版本计划 → week-planning；被管项目缺开发约定 → project-handbook。加载本 Skill 不新增 push、合入、关闭 Issue 或确认完成的授权；一切远端写入沿项目 PR 流，人审人合。
 - 路径规则：本目录仅用于定位本 Skill 的 references 与模板；被盘项目以当前会话工作目录与 Git 信息为准，借树使用时分别记录方法路径与目标仓路径。
 
 ## 2. 追问协议（全站点总纲）
@@ -92,5 +93,7 @@ metadata:
 ## 8. 试用状态与来源
 
 - 验收首先是「能在真实项目盘点中带回可确认的产出、且不产生编造」；触发与分流用代表性请求冒烟观察，静态检查不证明行为改善。
-- 方法来源均一手（各 reference 附来源表）：Impact Mapping / OST（Adzic、Torres）、Story Mapping / Working Backwards（Patton、Bryar & Carr）、JTBD（Christensen、Ulwick、Klement）、北极星（Ellis、Amplitude）、DORA / METR / DX / GitHub 度量、Anthropic AI-native SDLC playbook 与 Agent Skills 官方规范、OpenAI skill 与 Goals 指导、Linear / Productboard / Aha! 对象模型。证据上限为一手实践与厂商口径，无受控研究；有效性以试点证据为准，不预填行为改善。
+- 方法内容来源均一手，各 reference 附来源表：Impact Mapping / OST（Adzic、Torres）、Story Mapping / Working Backwards（Patton、Bryar & Carr）、JTBD（Christensen、Ulwick、Klement）、北极星（Ellis、Amplitude）、DORA / METR / DX / GitHub 度量、Anthropic AI-native SDLC playbook、GitLab / Productboard 命名实践与 Linear 状态实践。
+- 工作流与写作结构参照（不是盘点判据，故不入 references 来源表）：Anthropic Agent Skills 官方规范与官方示例 skill（渐进披露、阶段确认门、批量编号提问、草稿标未生效），OpenAI Goals 与工作流指导（受阻停止条件、每站小确认门）。
+- 证据边界：盘点方法自身的有效性未经受控研究验证，以真实试点证据为准；外部来源的证据等级在各来源表逐条标注（如 METR RCT 是度量纪律的受控研究证据，不是对本方法的检验）。不预填行为改善。
 - 反馈回写：在原任务记录哪一站卡住、哪个提问没带回真实信息、哪条纪律被绕过；授权内修本 Skill 原件，方法缺陷不推广到 standard/ 或全仓。

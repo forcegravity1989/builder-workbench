@@ -52,3 +52,8 @@ schema、字段约束、脚本 stdout、窗口与 coverage 纪律全部以[指�
 - `.bw/` 不新增白名单外文件（本 Skill 无状态文件；进度从资产现算，见 SKILL.md 站 0）。
 - 一切写入走项目 PR 流，人审人合；本 Skill 不新增合入、关闭 Issue 或确认完成的授权。
 - 写后读回：逐字段展示给人核对；然后做 reader test（无上下文新会话读落盘文件答三问，答不出打回对应站）。
+
+## 外部主张来源
+
+- Linear changelog「Initiative properties」（2026-07-02）：Proposed/Canceled 为一等状态，理由是「有意搁置必须可见」。
+- 本篇其余内容为仓内正本的读法摘要（指标协议、bw-assets、关键信息维护、metrics-refresh SOP），正本见文内各链接；协议变更时以正本为准并同步本篇摘要。
