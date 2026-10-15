@@ -4,6 +4,12 @@ import { ArrowUpRight, Download } from 'lucide-react'
 // CloudDragon pipeline names captured from the real list page (project
 // ga751ea99), scope dropdown set to 当前项目下的流水线. The product screen
 // reads the same scope; the default matches this project's service pipeline.
+//
+// Launch chain verified against the real page: click the per-row run button
+// #startLaunch_<pipeline> -> dialog 启动流水线 offers 全量启动 / 选择任务启动 /
+// 执行方案启动 -> 执行方案启动 lists the plans (pr_pipeline) -> click the plan
+// to launch. The probe session hit "no permission!" on the final step, so the
+// product must run this inside a session that holds launch rights.
 export const PACKAGE_PIPELINES = [
   'gtsllm-dfx',
   'axodendron',
