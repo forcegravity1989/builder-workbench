@@ -53,14 +53,13 @@ describe('task providers', () => {
     expect(resolveVisibleTaskProvider('github', ['linear'])).toBe('linear')
   })
 
-  it('filters runtime-unavailable providers without changing preference normalization', () => {
+  it('filters runtime-unavailable providers while CodeHub stays lazy-probed', () => {
     expect(
-      filterAvailableTaskProviders(['github', 'gitlab', 'linear'], {
+      filterAvailableTaskProviders(['github', 'gitlab', 'codehub', 'linear'], {
         gitlabInstalled: false,
-        codehubInstalled: false,
         linearConnected: true
       })
-    ).toEqual(['github', 'linear'])
+    ).toEqual(['github', 'codehub', 'linear'])
   })
 
   it('keeps an available saved default visible when provider visibility drifted', () => {
@@ -69,7 +68,6 @@ describe('task providers', () => {
         ['linear'],
         {
           gitlabInstalled: false,
-          codehubInstalled: false,
           linearConnected: true
         },
         'github'
@@ -83,7 +81,6 @@ describe('task providers', () => {
         ['linear'],
         {
           gitlabInstalled: false,
-          codehubInstalled: false,
           linearConnected: true
         },
         'linear'
@@ -97,7 +94,6 @@ describe('task providers', () => {
         ['linear'],
         {
           gitlabInstalled: false,
-          codehubInstalled: false,
           linearConnected: true
         },
         'gitlab'
@@ -111,7 +107,6 @@ describe('task providers', () => {
         ['gitlab'],
         {
           gitlabInstalled: false,
-          codehubInstalled: false,
           linearConnected: true
         },
         'bitbucket'
@@ -123,7 +118,6 @@ describe('task providers', () => {
     expect(
       filterAvailableTaskProviders(['gitlab', 'linear'], {
         gitlabInstalled: false,
-        codehubInstalled: false,
         linearConnected: false
       })
     ).toEqual(['github'])
