@@ -1917,7 +1917,7 @@
         "noGithubSourceDetected": "未检测到 GitHub 来源：",
         "noGithubSourceDetectedHint": "它可能没有 GitHub 远程仓库，或来源无法解析。",
         "codehubSourceUnavailable": "CodeHub 来源不可用：",
-        "codehubSourceUnavailableHint": "该仓库是 CodeHub 项目。请在设置 → 任务中显示 CodeHub，或安装 codehub-cli。",
+        "codehubSourceUnavailableHint": "该仓库是 CodeHub 项目。请在设置 → 任务中显示 CodeHub，或从来源选择器切换到 CodeHub。",
         "openTaskSettings": "打开设置",
         "jiraLinkSourceUnavailable": "无法关联此 Jira 议题。请重新连接 Jira 或选择匹配的站点，然后重试。",
         "loadPageUnreachable": "第 {{value0}} 页超出了 GitHub 搜索可返回的范围。",

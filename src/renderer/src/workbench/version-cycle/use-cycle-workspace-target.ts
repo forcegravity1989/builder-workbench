@@ -1,17 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { toast } from 'sonner'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
 import { useAutoWorktreeBase } from './use-auto-worktree-base'
 import { nativeWorkspaceScope } from './native-workspace'
-import {
-  cycleBranch,
-  cycleScopeKey,
-  cycleScopeForWorktree,
-  ensureCycleWorktree
-} from './native-cycle-workspace'
-import { syncCycleTrunk } from './cycle-sync-port'
+import { cycleScopeKey, cycleScopeForWorktree, ensureCycleWorktree } from './native-cycle-workspace'
+import { updateTrunkCode } from './trunk-update-port'
 import { cycleWorkflowForWorktree } from '../workbench-nav'
+import type { TrunkUpdateResult } from '../../../../shared/workbench/trunk-update'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import type { CycleScope } from './ports'
 
@@ -47,7 +42,6 @@ export function useCycleWorkspaceTarget(
       {
         sequence: number
         busy: boolean
-        problem: string | null
         revision: number
       }
     >
@@ -75,6 +69,9 @@ export function useCycleWorkspaceTarget(
     }
   }, [home])
   const baseScope = useStableCycleScope(base.scope && workflow ? { ...base.scope, workflow } : null)
+  // Screen entry is read-only: it prepares and activates the fixed worktree and
+  // stops there. No fetch, no pull, no sync notices — the「更新代码」button is
+  // the only action that touches Git, and only when the user clicks it.
   useEffect(() => {
     setError(null)
     if (!preparing || !baseScope || !baseSettled || !workflow) {
@@ -103,50 +100,17 @@ export function useCycleWorkspaceTarget(
           [key]: {
             sequence,
             busy: true,
-            problem: null,
             revision: previous[key]?.revision ?? 0
           }
         }))
         const state = useAppStore.getState()
         state.setActiveWorktree(fixed.id, baseScope.hostId)
         state.setActiveView('terminal')
-        // Navigation is complete before the network pull. Its completion may refresh
-        // this workspace's files, but must never navigate back after the user leaves.
-        let problem: string | null = null
-        try {
-          const sync = await syncCycleTrunk(
-            { repoId: baseScope.repoId, worktreeId: fixed.id, hostId: baseScope.hostId },
-            baseScope.runtimeOwnerEnvironmentId
-          )
-          if (!sync.synced) {
-            problem = sync.reason ?? '原因未知'
-          }
-        } catch (reason) {
-          problem = reason instanceof Error ? reason.message : String(reason)
-        }
         setSyncStates((previous) =>
           previous[key]?.sequence === sequence
-            ? {
-                ...previous,
-                [key]: {
-                  ...previous[key],
-                  busy: false,
-                  problem,
-                  revision: previous[key].revision + 1
-                }
-              }
+            ? { ...previous, [key]: { ...previous[key], busy: false } }
             : previous
         )
-        const active = useAppStore.getState()
-        if (
-          problem &&
-          sequence === syncSequence.current &&
-          active.activeView === 'terminal' &&
-          active.activeWorktreeId === fixed.id &&
-          active.activeWorkspaceExecutionHostId === baseScope.hostId
-        ) {
-          toast.message(`${cycleBranch({ workflow })} 未能同步主干最新：${problem}`)
-        }
       } catch (reason) {
         if (current) {
           setError(reason instanceof Error ? reason.message : String(reason))
@@ -156,7 +120,7 @@ export function useCycleWorkspaceTarget(
     return () => {
       current = false
     }
-  }, [preparing, baseScope, baseSettled, workflow, onNotice])
+  }, [preparing, baseScope, baseSettled, workflow])
   const worktree =
     !preparing && workflow && cycleWorkflowForWorktree(selected) === workflow ? selected : null
   const resolved = useMemo(() => {
@@ -172,11 +136,55 @@ export function useCycleWorkspaceTarget(
   const scope = useStableCycleScope(resolved.scope)
   const key = scope && worktree ? JSON.stringify([cycleScopeKey(scope), worktree.id]) : null
   const sync = key ? syncStates[key] : null
+  const updateCode = useCallback(async (): Promise<TrunkUpdateResult> => {
+    if (!scope || !worktree) {
+      return { updated: false, pulled: 0, reason: '工作区尚未就绪，请稍后再试' }
+    }
+    const sequence = ++syncSequence.current
+    const stateKey = JSON.stringify([cycleScopeKey(scope), worktree.id])
+    setSyncStates((previous) => ({
+      ...previous,
+      [stateKey]: {
+        sequence,
+        busy: true,
+        revision: previous[stateKey]?.revision ?? 0
+      }
+    }))
+    let result: TrunkUpdateResult
+    try {
+      result = await updateTrunkCode(
+        { repoId: scope.repoId, worktreeId: worktree.id, hostId: scope.hostId },
+        scope.runtimeOwnerEnvironmentId
+      )
+    } catch (reason) {
+      result = {
+        updated: false,
+        pulled: 0,
+        reason: reason instanceof Error ? reason.message : String(reason)
+      }
+    }
+    // Materials re-read whether the fast-forward happened, was refused or
+    // failed: session-side edits must stay visible through this button.
+    setSyncStates((previous) =>
+      previous[stateKey]?.sequence === sequence
+        ? {
+            ...previous,
+            [stateKey]: {
+              ...previous[stateKey],
+              busy: false,
+              revision: previous[stateKey].revision + 1
+            }
+          }
+        : previous
+    )
+    return result
+  }, [scope, worktree])
   return {
     worktree: resolved.scope ? worktree : null,
     scope,
     syncing: sync?.busy ?? false,
     materialRefresh: sync?.revision ?? 0,
+    updateCode,
     error: error ?? resolved.error ?? (preparing ? base.error : null)
   }
 }

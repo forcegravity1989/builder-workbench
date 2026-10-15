@@ -229,7 +229,7 @@ export async function applyCharterOutcome(args: {
       const label = outcome.pr.provider === 'github' ? 'PR' : 'MR'
       onLog({
         kind: 'ok',
-        text: `名片 ${label} ${outcome.pr.adopted ? '复用已开的' : '已开'}：#${outcome.pr.number}${outcome.pr.url ? `（${outcome.pr.url}）` : ''} —— 平台侧合入前墙卡显示「待合入」，合入后点「更新主目录」落回主检出`
+        text: `名片 ${label} ${outcome.pr.adopted ? '复用已开的' : '已开'}：#${outcome.pr.number}${outcome.pr.url ? `（${outcome.pr.url}）` : ''} —— 平台侧合入前墙卡显示「待合入」，合入后点「更新代码」落回主检出`
       })
       break
     }

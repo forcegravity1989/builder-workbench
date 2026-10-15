@@ -48,7 +48,7 @@ export function CharterPrNotice({
           disabled={updating}
           onClick={onUpdateMain}
         >
-          更新主目录
+          更新代码
         </button>
       </div>
     )

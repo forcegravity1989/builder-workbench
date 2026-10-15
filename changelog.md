@@ -1,40 +1,19 @@
 # Changelog
 
-## 2026-10-15 新增（验收屏「出包」区块真实接入 CloudDragon）
+## 2026-10-14 修复（preflight 预探测拦截 CodeHub 任务来源，探测瞬时失败被会话缓存固化）
 
-- **变更类型**：新增
-- **变更摘要**：验收屏右半屏「准备交付」与「展示验收」之间新增「出包」区块（有验收文档与无文档两种状态均展示）。流水线下拉框经主进程 Playwright 读取 CloudDragon 流水线列表页（范围「当前项目下的流水线」）真实数据；出包按钮走已实测链路（行内启动按钮 → 执行方案启动 → pr_pipeline）真实启动流水线；最新制品包信息（项目名称、版本号、创建时间、包文件）从制品仓库服务版本包页真实解析；下载按钮先经系统对话框选择目录，再走页面下载链路（签名 URL → 浏览器下载）保存到所选目录。样式遵循验收屏既有行式组件语言（va-pkg-* 类，wb-btn 按钮，mono 用于版本号与文件名字面量）。选择器与链路全部来自本会话真实页面探测验证。
+- **变更类型**：修复（行为变更：任务来源可用性判定由 preflight 预探测改为调用时探测）
+- **变更摘要**：正式版任务屏报「CodeHub 来源不可用……请显示 CodeHub 或安装 codehub-cli」，但设置开关已开、CLI 实际可用。根因：任务页生效来源列表在设置开关之外还要过 `preflightStatus.codehub.installed` 运行时过滤，而 preflight 探测（`execFile('codehub-cli', ['--version'])`）把「未安装」「跑不起来」「探测链故障」折叠为同一个 false 并缓存整个应用会话，启动瞬间的失败即固化成"未安装"，CodeHub 图标从来源选择器消失、自动切换被抑制。修复：删除 `TaskProviderAvailability.codehubInstalled` 维度，CodeHub 可用性由实际调用 codehub-cli 决定——CLI 缺失时自动切换照常发生，`runCodeHubCli` 的 ENOENT 分支（"codehub-cli is not installed or not on PATH"）经既有 `codehubError` 红条提示；设置开关与任务页生效列表归一。GitHub 模式横幅成因收敛为「设置隐藏」或「入口显式指定 GitHub」，文案去掉"安装 codehub-cli"、改为提示切换来源。设置面板的 codehub 安装徽章（`use-task-source-provider-readiness.ts`）保留为纯信息展示。
 - **涉及文件**：
-  - `src/shared/workbench/package-pipeline.ts`（新建：出包 RPC 契约，zod schema + Port 类型）
-  - `src/main/workbench/package-pipeline-runtime.ts`（新建：CloudDragon Playwright 运行时——流水线列表/最新包读取/启动/下载四操作，SSO 轮询等待、启动互斥、无权限识别；每次操作独立无头 Chrome）
-  - `src/main/workbench/workbench-runtime-result.ts`（错误联合加入 PackagePipelineError，领域错误走 {ok:false} 信封）
-  - `src/main/runtime/rpc/methods/workbench-package.ts`（新建：workbench.package.list/latest/launch/download 四方法）
-  - `src/main/runtime/rpc/methods/index.ts`（聚合注册 WORKBENCH_PACKAGE_METHODS）
-  - `src/shared/rpc-contract/rpc-params-catalog.generated.ts`（重新生成，+4 方法）
-  - `src/renderer/src/workbench/package-pipeline-port.ts`（新建：渲染进程 port，走 callMetricRuntime owner 路由）
-  - `src/renderer/src/workbench/version-acceptance/AcceptancePackage.tsx`（新建：出包区块 UI——流水线选择+出包、最新包四行信息+下载、busy/error/notice 状态）
-  - `src/renderer/src/workbench/version-acceptance/AcceptancePage.tsx`（注入 nativePackagePipelinePort）
-  - `src/renderer/src/workbench/version-acceptance/AcceptanceBoard.tsx`（两个分支插入 AcceptancePackage）
-  - `src/renderer/src/workbench/version-acceptance/acceptance.css`（va-pkg-* 行式样式）
-  - `package.json` / `pnpm-lock.yaml`（dependencies 加入 playwright-core ^1.59.1，主进程运行时外置引用）
-  - `docs/05-features/version-planning/prototype/app.jsx`（顺手修复 oxlint 报的两个未用参数）
-- **验证**：typecheck 通过；oxlint、anti-slop、code-quality（native/type-aware）、dead-classes、design-system-tokens、max-lines-ratchet、rpc-params-catalog --check 全过；受影响 RPC 注册表测试（core-typed-method-contract、mobile-rpc-allowlist）13 例全过。CloudDragon 链路（SSO、列表、启动、制品读取、下载）此前已用真实页面脚本逐项验证；真壳内实际点击验证由人执行。
-
-## 2026-10-15 新增（验收屏原型新增「出包」部分 · CodeHub/CloudDragon 变体高保真）
-
-- **变更类型**：新增（原型）
-- **变更摘要**：验收屏右半屏在「准备交付」与「展示验收」之间新增「出包」部分，并同步插入旅程轴第 4 节点。第一行为流水线名称下拉框（数据源 CloudDragon 流水线列表页，范围选「当前项目下的流水线」，原型内置 7 条真实抓取的流水线名，默认 gtsllm-dfx）+ 出包按钮（正式界面经 Playwright 同步点击 CloudDragon 对应行的出包按钮）；第二行为最新一条制品包信息（评审结论：验收只关心最终产物，不展示流水线执行历史），按验收屏既有行式组件语言排版——项目名称、版本号（行尾下载按钮）、创建时间、包文件，数据对齐 CloudDragon 制品仓库服务版本包页真实解析结果；下载按钮对应页面下载（正式界面先选目录，再经 Playwright 点击该版本的下载按钮保存）。旅程节点灯色随最新包有无推导（有包绿 / 无包灰）。
-- **涉及文件**：
-  - `docs/05-features/version-acceptance/prototype/package-panel.jsx`（新建：出包工具栏 + 最新包信息行组件，内置真实抓取的流水线名与制品包 mock）
-  - `docs/05-features/version-acceptance/prototype/screen.jsx`（验收内容插入「出包」区块插槽）
-  - `docs/05-features/version-planning/prototype/journey.js`（旅程轴插入「出包」节点，签名扩展 packageTone/packageHint）
-  - `docs/05-features/version-planning/prototype/app.jsx`（LATEST_PACKAGE、triggerPackage/downloadPackage、灯色推导、stageGo 滚动锚点、传参）
-  - `docs/05-features/version-planning/prototype/layout.jsx`（latestPackage/triggerPackage/downloadPackage 透传）
-  - `docs/05-features/version-planning/prototype/style.css`（.package-sheet/.package-toolbar/.package-artifact 行式样式，对齐 delivery-row 组件语言）
-  - `docs/05-features/version-planning/prototype/vendor.js`（末尾追加 lucide Download 图标组件，v8 快照未含该图标；受 build.cjs --check 依赖校验守护）
-  - `docs/05-features/version-planning/prototype/build.cjs`（冻结依赖清单加 Download）
-  - `docs/05-features/version-planning/prototype/runtime.js`（重建产物）
-- **验证**：`node build.cjs --check` 通过（runtime 与源码一致 + monday/friday/overview 三屏合成 DOM 启动 + Download 依赖存在性校验）；真实 Chrome 交互验证 8 项全过（旅程 4 节点、7 个流水线选项、四行包信息与 2 个包文件、出包/下载点击提示、旅程节点高亮 + 灯色绿、无页面错误）。
+  - `src/shared/task-providers.ts`（`TaskProviderAvailability` 删 `codehubInstalled` 字段；`isTaskProviderAvailable` codehub 分支恒 true 并注明 lazy 探测原因）
+  - `src/renderer/src/components/use-task-page-repo-selection.ts`（任务页来源过滤删 codehub preflight 维度及 deps）
+  - `src/renderer/src/store/slices/ui/ui-slice-task-actions.ts`（`openTaskPage` 预取来源过滤删同维度）
+  - `src/renderer/src/components/sidebar/SidebarTaskNavButton.tsx`（侧边栏默认来源解析删同维度）
+  - `src/renderer/src/components/new-workspace/use-smart-workspace-field-availability.ts`（删凑类型的 `codehubInstalled: false`）
+  - `src/renderer/src/components/task-page/github/List.tsx`（横幅注释与默认文案更新）
+  - `src/renderer/src/i18n/locales/{zh,en,es,fr,ja,ko}.json`（`codehubSourceUnavailableHint` 文案收敛）
+  - `src/shared/task-providers.test.ts`（过滤用例改造为验证 CodeHub 不再被运行时过滤；删 `codehubInstalled` 传参，不增执行例数）
+- **验证**：`task-providers.test.ts` 11 例、受影响渲染层 4 套件 36 例全过；`typecheck`、`oxlint`、`oxfmt` 过。未验证：真壳 E2E（任务页 CodeHub 自动切换与错误红条）。
 
 ## 2026-10-13 修复（CodeHub 仓库停在 GitHub 任务列表时报错答非所问）
 

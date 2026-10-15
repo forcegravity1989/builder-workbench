@@ -2,7 +2,6 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { VersionMinutes } from './use-version-minutes'
 import { taskDistribution } from './use-version-minutes'
-import { OverviewRefresh } from './overview-controls'
 import type { VersionHistoryProblem } from '../../../shared/workbench/version-history'
 
 function acceptanceText(minutes: VersionMinutes): string {
@@ -47,7 +46,8 @@ export function OverviewVersionMinutes({
   minutes,
   busy,
   historyProblems,
-  onRetry
+  onRetry,
+  source
 }: {
   versions: string[]
   version: string | null
@@ -56,6 +56,8 @@ export function OverviewVersionMinutes({
   busy: boolean
   historyProblems: VersionHistoryProblem[]
   onRetry(): void
+  /** 「来源：<分支> @ <sha12>」— 版本目录读取的主检出基线，随「更新代码」刷新。 */
+  source?: string | null
 }) {
   const columns = [
     { title: '计划', data: minutes?.plan, text: minutes?.plan?.text, error: minutes?.planError },
@@ -70,6 +72,7 @@ export function OverviewVersionMinutes({
     <section className="card wb-ov-section" id="version-card" aria-label="版本计划与验收">
       <header className="wb-ov-section-head">
         <h2>版本计划与验收</h2>
+        {source && <span className="wb-muted">来源：{source}</span>}
         <nav className="tabs" role="tablist" aria-label="版本">
           {versions.map((item) => (
             <button
@@ -84,7 +87,6 @@ export function OverviewVersionMinutes({
             </button>
           ))}
         </nav>
-        <OverviewRefresh label="刷新版本材料" busy={busy} onClick={onRetry} />
       </header>
       {!version ? (
         <p className="wb-muted wb-ov-section-body">

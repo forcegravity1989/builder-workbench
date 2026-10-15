@@ -34,9 +34,9 @@ import {
 import { WorkspaceScopeError } from './workspace-scope-error'
 
 export type MetricsConfigurationRequest = {
+  /** Wire name predates the trunk unification; carries the pinned worktreeBaseRef. */
   adoptedRef: string | null
   configurationCommit?: string
-  synchronize?: boolean
 }
 export type MetricsFingerprintRequest = { configurationCommit: string; run: string[] }
 export type MetricsCollectRequest = {
@@ -62,7 +62,12 @@ async function runLocalOperation(
 ): Promise<unknown> {
   switch (operation.operation) {
     case 'configuration':
-      return readMetricConfiguration({ repoPath, execOptions, ...operation.request })
+      return readMetricConfiguration({
+        repoPath,
+        execOptions,
+        pinnedRef: operation.request.adoptedRef,
+        configurationCommit: operation.request.configurationCommit
+      })
     case 'fingerprint':
       return fingerprintMetricCollector({ repoPath, execOptions, ...operation.request })
     case 'collect':
@@ -139,7 +144,7 @@ export function nativeMetricsHost(runtime: {
       const execOptions = resolveWorkbenchGitExecOptions(runtime, repo)
       const snapshot = (await executeMetricsOperation(target, execOptions, {
         operation: 'configuration',
-        request: { adoptedRef: repo.worktreeBaseRef?.trim() || null, synchronize: true }
+        request: { adoptedRef: repo.worktreeBaseRef?.trim() || null }
       })) as MetricConfigurationSnapshot
       const { definitions, problems } = decodeMetricDefinitions(
         snapshot.toml,
