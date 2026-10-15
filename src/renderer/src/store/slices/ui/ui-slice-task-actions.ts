@@ -121,7 +121,6 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
         preferredVisibleTaskProviders,
         {
           gitlabInstalled: state.preflightStatus?.glab?.installed === true,
-          codehubInstalled: state.preflightStatus?.codehub?.installed === true,
           linearConnected: state.linearStatus?.connected === true
         },
         state.settings?.defaultTaskSource

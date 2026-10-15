@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-10-15 新增（release skill：发布脚本化 + 版本描述规范 + 验收报告，#332）
+
+- **变更类型**：新增（BW 开发方法资产）
+- **变更摘要**：#332【v0.6|G1】把出包 → tag → release 上传的机械步骤落到 `config/scripts/release-win-workbench.mjs`（预演只读列阻断项 + `--publish` 授权发布 + `gh` 读回；叙事正文经 `--notes-file` 传入，**不用** `--generate-notes`，`--publish` 缺正文即拒绝）。定义 Workbench 专用**版本描述规范**（六节人话骨架：标题定位 / 下载与安装 / 这版有什么变化 / 升级后你可以这样用 / 验证到哪还没验到哪 / 来源；读者是升级试用的人与领导，按**用户认得出的功能**与**用户能走的流程**组织，**禁止**旅程编号 PJ/AJ/MJ/RJ/CJ、文件名、逐条 issue 号、六环 `●◐○` 矩阵进正文——特性树与注册旅程只作取材与查漏依据；取代 `--generate-notes` 的扁平 PR 罗列）与**验收报告规范**（六节人话、给领导看：这版想做成什么 / 实际交付了什么 / 目标达成程度 / 关键流程 / 工作完成情况 / 未达与下一步；结构参考 `docs/05-features/version-acceptance/showcase-v0.5-g1.html` 但不沿用其编号与矩阵），各配骨架模板。`version-report` 技能退役，版本收尾报告职责并入 workbench-release，出包统一到 `build:win:workbench`（不再指向已删除的 `.bw/release/*`）。新增验收点 R05（版本描述合规范）、R06（验收报告合规范）。tag 解析用自带 `parseWorkbenchReleaseTag`（Workbench rc 形态 `vX.Y.Z-rc.YYYYMMDD.N` 与 Orca 的 `-rc.N` 不同），仅复用 `create-draft-release.mjs` 的 `truncateReleaseBody`。
+- **涉及文件**：
+  - `config/scripts/release-win-workbench.mjs`（新增发布脚本）+ `config/scripts/release-win-workbench.test.mjs`（18 例单测：15 纯函数 tag 解析/资产核对/gh 参数/授权闸 + 3 守卫集成阻断项聚合）
+  - `.claude/skills/workbench-release/SKILL.md`（重写为出包/发布/版本描述/验收报告四件事 + 脚本流程）；新增 `references/{release-notes-spec,acceptance-report-spec}.md`、`assets/{release-notes-template.md,acceptance-report-template.html}`
+  - `.claude/skills/version-report/`（退役删除：SKILL.md / assets / references / scripts/report.py）
+  - `docs/05-features/workbench-release/{intent,spec,STATUS}.md`（#332 增量 + 裁决 version-report 退役待人 gate）、`docs/05-features/README.md`（第 7 行 TDD ○→◐、R01–R06）、`src/renderer/src/workbench/INVENTORY.md`、`package.json`（`release:win:workbench`）
+- **验证**：`release-win-workbench.test.mjs` 18/18 过；`typecheck`、`oxlint`（新脚本 + 测试）、`check:readme-local-links` 过；改动文档相对链接 0 断链；`grep version-report` 除 `.bw/planning/v0.4` 历史归档与「已退役」说明散文外归零。**真实发布与验收报告产出（RJ01/R05/R06）留白**：需本机 Windows 出包 + `gh` 登录 + 人授权，属人跑，STATUS 记 ○/◐ 不预填通过。
+
+## 2026-10-14 修复（preflight 预探测拦截 CodeHub 任务来源，探测瞬时失败被会话缓存固化）
+
+- **变更类型**：修复（行为变更：任务来源可用性判定由 preflight 预探测改为调用时探测）
+- **变更摘要**：正式版任务屏报「CodeHub 来源不可用……请显示 CodeHub 或安装 codehub-cli」，但设置开关已开、CLI 实际可用。根因：任务页生效来源列表在设置开关之外还要过 `preflightStatus.codehub.installed` 运行时过滤，而 preflight 探测（`execFile('codehub-cli', ['--version'])`）把「未安装」「跑不起来」「探测链故障」折叠为同一个 false 并缓存整个应用会话，启动瞬间的失败即固化成"未安装"，CodeHub 图标从来源选择器消失、自动切换被抑制。修复：删除 `TaskProviderAvailability.codehubInstalled` 维度，CodeHub 可用性由实际调用 codehub-cli 决定——CLI 缺失时自动切换照常发生，`runCodeHubCli` 的 ENOENT 分支（"codehub-cli is not installed or not on PATH"）经既有 `codehubError` 红条提示；设置开关与任务页生效列表归一。GitHub 模式横幅成因收敛为「设置隐藏」或「入口显式指定 GitHub」，文案去掉"安装 codehub-cli"、改为提示切换来源。设置面板的 codehub 安装徽章（`use-task-source-provider-readiness.ts`）保留为纯信息展示。
+- **涉及文件**：
+  - `src/shared/task-providers.ts`（`TaskProviderAvailability` 删 `codehubInstalled` 字段；`isTaskProviderAvailable` codehub 分支恒 true 并注明 lazy 探测原因）
+  - `src/renderer/src/components/use-task-page-repo-selection.ts`（任务页来源过滤删 codehub preflight 维度及 deps）
+  - `src/renderer/src/store/slices/ui/ui-slice-task-actions.ts`（`openTaskPage` 预取来源过滤删同维度）
+  - `src/renderer/src/components/sidebar/SidebarTaskNavButton.tsx`（侧边栏默认来源解析删同维度）
+  - `src/renderer/src/components/new-workspace/use-smart-workspace-field-availability.ts`（删凑类型的 `codehubInstalled: false`）
+  - `src/renderer/src/components/task-page/github/List.tsx`（横幅注释与默认文案更新）
+  - `src/renderer/src/i18n/locales/{zh,en,es,fr,ja,ko}.json`（`codehubSourceUnavailableHint` 文案收敛）
+  - `src/shared/task-providers.test.ts`（过滤用例改造为验证 CodeHub 不再被运行时过滤；删 `codehubInstalled` 传参，不增执行例数）
+- **验证**：`task-providers.test.ts` 11 例、受影响渲染层 4 套件 36 例全过；`typecheck`、`oxlint`、`oxfmt` 过。未验证：真壳 E2E（任务页 CodeHub 自动切换与错误红条）。
+
 ## 2026-10-13 修复（CodeHub 仓库停在 GitHub 任务列表时报错答非所问）
 
 - **变更类型**：修复
