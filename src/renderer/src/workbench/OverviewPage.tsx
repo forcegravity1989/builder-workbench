@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { useAppStore } from '@/store'
+import { parseExecutionHostId } from '../../../shared/execution-host'
 import { openProjectOnboard } from './project-page-state'
 import { CharterPrNotice } from './charter-pr-notice'
 import { useCharterPrStatus } from './use-charter-pr-status'
 import { readProjectCharter, type ProjectCharter } from './project-charter'
+import { updateTrunkCode, trunkUpdateNotice } from './version-cycle/trunk-update-port'
 import {
   nativeWorkspaceScope,
   nativeWorkspaceScopeKey,
@@ -75,6 +78,10 @@ export function OverviewPage(): React.JSX.Element {
       return { plan: null, acceptance: null, error: String(error) }
     }
   }, [baseScope])
+  // 「更新代码」bump trunkToken → SDLC 区就地强制重读；history/metrics 快照由
+  // 按钮 handler 各自的 force reload 就地刷新，不换键、不清空显示。
+  const [trunkToken, setTrunkToken] = useState(0)
+  const [updatingTrunk, setUpdatingTrunk] = useState(false)
   const dataIdentity = JSON.stringify([
     identity,
     activeRepo?.path,
@@ -90,7 +97,8 @@ export function OverviewPage(): React.JSX.Element {
     identity: dataIdentity,
     granularity: view.granularity
   })
-  const { catalog, northReading, zoneReadings, busy, refreshing, refreshReadings } = metrics
+  const { catalog, northReading, zoneReadings, busy, refreshing, refreshReadings, reloadCatalog } =
+    metrics
   const historyState = useOverviewHistory({
     baseScope,
     baseWorktreeId,
@@ -100,6 +108,10 @@ export function OverviewPage(): React.JSX.Element {
   })
   const { history, currentVersion } = historyState
   const problems = [...metrics.problems, ...(historyState.problem ? [historyState.problem] : [])]
+  // 版本区来源标注：目录读的是主检出基线的哪个分支、哪个提交。
+  const historySource = history?.baselineCommit
+    ? `${history.baselineRef ?? '主检出'} @ ${history.baselineCommit.slice(0, 12)}`
+    : null
 
   useEffect(() => {
     if (!activeRepo?.path) {
@@ -118,12 +130,51 @@ export function OverviewPage(): React.JSX.Element {
   }, [activeRepo?.path, charterKey])
 
   // 主检出没有名片才查 PR 状态:待合入 / 已合入未更新 / 没查成(spec 规则 2)。
-  const { charterStatus, updatingMain, updateMainCheckout } = useCharterPrStatus(
-    activeRepo,
-    Boolean(charter),
-    charterKey,
-    (value) => setCharter({ key: charterKey, value })
-  )
+  const { charterStatus, updatingMain, updateMainCheckout, refreshCharterStatus } =
+    useCharterPrStatus(activeRepo, Boolean(charter), charterKey, (value) =>
+      setCharter({ key: charterKey, value })
+    )
+
+  // 「更新代码」点击处理；trunkToken/updatingTrunk 状态声明在 dataIdentity 之前。
+  const updateTrunk = async () => {
+    if (!activeRepo || updatingTrunk) {
+      return
+    }
+    setUpdatingTrunk(true)
+    try {
+      const host = parseExecutionHostId(baseScope?.hostId ?? '')
+      if (host?.kind === 'ssh') {
+        // SSH 项目的主检出走原生远端快进链（与项目墙名片更新同一条）。
+        await window.api.git.fastForward({
+          worktreePath: activeRepo.path,
+          ...(activeRepo.connectionId ? { connectionId: activeRepo.connectionId } : {})
+        })
+        toast.message('主检出已拉到最新')
+      } else if (baseScope && baseWorktreeId) {
+        const result = await updateTrunkCode(
+          { repoId: baseScope.repoId, worktreeId: baseWorktreeId, hostId: baseScope.hostId },
+          baseScope.runtimeOwnerEnvironmentId
+        )
+        toast.message(trunkUpdateNotice(result))
+      }
+    } catch (reason) {
+      const detail = reason instanceof Error ? reason.message : String(reason)
+      toast.message(`代码未更新（${detail}）。请让会话模型处理主检出的代码更新。`)
+    } finally {
+      setUpdatingTrunk(false)
+      // 无论快进成败都重读：三类快照就地强制重读（旧值保持显示、错误系列保留
+      // 上次数据回退），trunkToken 触发 SDLC 区重读，名片文件与 PR 状态一并刷新。
+      setTrunkToken((token) => token + 1)
+      historyState.reload()
+      reloadCatalog()
+      refreshCharterStatus()
+      if (activeRepo.path) {
+        void readProjectCharter(activeRepo.path).then((r) =>
+          setCharter({ key: charterKey, value: r.charter })
+        )
+      }
+    }
+  }
 
   const versions = useMemo(() => {
     const found = new Set<string>()
@@ -181,7 +232,6 @@ export function OverviewPage(): React.JSX.Element {
       </div>
     )
   }
-
   const projectName = charter?.name?.trim() || activeRepo.displayName || activeRepo.id
   const north = catalog?.definitions.find((item) => item.role === 'north_star')
 
@@ -189,6 +239,15 @@ export function OverviewPage(): React.JSX.Element {
     <div className="wb-ov">
       <header className="page-head">
         <h1>总览</h1>
+        <button
+          type="button"
+          className="wb-btn wb-btn-secondary wb-btn-sm"
+          disabled={updatingTrunk || !baseScope || !baseWorktreeId}
+          title="把主检出快进到主干最新，并重读总览数据；快进不了会保持原样并说明原因"
+          onClick={() => void updateTrunk()}
+        >
+          {updatingTrunk ? '正在更新…' : '更新代码'}
+        </button>
       </header>
 
       <div className="content">
@@ -237,6 +296,7 @@ export function OverviewPage(): React.JSX.Element {
           historyProblems={history?.problems ?? []}
           busy={historyState.busy}
           onRetry={historyState.reload}
+          source={historySource}
         />
         <OverviewMetricZones
           catalog={catalog}
@@ -260,6 +320,7 @@ export function OverviewPage(): React.JSX.Element {
           baseWorktreePath={baseWorktree?.path ?? null}
           timezone={catalog?.timezone}
           ready={catalog !== null || metrics.loaded}
+          refreshToken={trunkToken}
         />
       </div>
       {refreshing && (

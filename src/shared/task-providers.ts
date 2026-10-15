@@ -75,7 +75,6 @@ export function ensureDefaultedTaskProvider(
 
 export type TaskProviderAvailability = {
   gitlabInstalled: boolean
-  codehubInstalled: boolean
   linearConnected: boolean
 }
 
@@ -122,8 +121,12 @@ function isTaskProviderAvailable(
   if (provider === 'gitlab') {
     return availability.gitlabInstalled
   }
+  // Why: CodeHub availability is decided by actually invoking codehub-cli — a
+  // preflight verdict conflates transient probe failures with "not installed"
+  // and caches it for the whole session. A missing CLI surfaces as a typed
+  // codehubError on the task page instead of hiding the source upfront.
   if (provider === 'codehub') {
-    return availability.codehubInstalled
+    return true
   }
   // Why: Jira can be connected from the Tasks surface itself, so hiding it
   // when disconnected would remove the entry point for first-time setup.

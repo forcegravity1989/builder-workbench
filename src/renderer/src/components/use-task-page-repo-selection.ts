@@ -146,7 +146,6 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
         preferredVisibleTaskProviders,
         {
           gitlabInstalled: preflightStatusCurrent && preflightStatus?.glab?.installed === true,
-          codehubInstalled: preflightStatusCurrent && preflightStatus?.codehub?.installed === true,
           linearConnected: linearConnected === true
         },
         defaultTaskSource
@@ -156,8 +155,7 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
       linearConnected,
       preferredVisibleTaskProviders,
       preflightStatusCurrent,
-      preflightStatus?.glab?.installed,
-      preflightStatus?.codehub?.installed
+      preflightStatus?.glab?.installed
     ]
   )
   const sourceOptions = getSourceOptions()

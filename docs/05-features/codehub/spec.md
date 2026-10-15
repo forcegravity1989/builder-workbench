@@ -19,7 +19,7 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 3. 需要结束时，Issue 选择完成、不计划或重复并关闭；或者 MR 直接关闭。
 4. 在计划或验收里点开同一条任务，详情仍来自 CodeHub。
 5. 看归档状态：CodeHub 仓库显示未知和固定原因，不显示成尚未创建，也不显示成已合入。
-6. 开始验收时，从采用基线上已有 `data.json` 的版本目录选择当前计划。
+6. 开始验收时，从主干基线上已有 `data.json` 的版本目录选择当前计划。
 
 ## 行为规则与异常
 
@@ -41,7 +41,7 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 
 ### 验收可选版本
 
-采用基线上 `.bw/planning/<版本>/data.json` 能读成一份计划，该版本就出现在可选列表里。目录名不符合版本约定、文件读不成计划、或提交不在采用基线上的，不列入。未出现在基线上的计划仍可按验收规格做草案预验收。这条规则写在[验收规格](../version-acceptance/spec.md)，实现在版本历史服务的 `treePlans`。
+主干基线上 `.bw/planning/<版本>/data.json` 能读成一份计划，该版本就出现在可选列表里。目录名不符合版本约定、文件读不成计划、或提交不在主干基线上的，不列入。未出现在基线上的计划仍可按验收规格做草案预验收。这条规则写在[验收规格](../version-acceptance/spec.md)，实现在版本历史服务的 `treePlans`。
 
 ### 失败
 
@@ -64,7 +64,7 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 | C05 | CLI 不在 PATH | 可见未安装说明；集成卡片不是「已登录」 |
 | C06 | 计划或验收打开 CodeHub 任务 | 详情来自该项目路径上的 Issue 或 MR |
 | C07 | 仓库远程是 CodeHub | 归档 PR 状态为未知，原因是此来源的 PR 状态暂无法读回；旅程灯仍按 workflow.stage 显示 |
-| C08 | 采用基线上某版本目录有 `data.json` | 验收可以选择该版本的当前计划；坏目录不出现 |
+| C08 | 主干基线上某版本目录有 `data.json` | 验收可以选择该版本的当前计划；坏目录不出现 |
 
 旅程 CJ01：从 CodeHub 仓库打开任务，关闭一条 Issue，重启后再次列出该 Issue 仍为关闭。需要内部 CodeHub 与已登录的 CLI，本次未跑。
 

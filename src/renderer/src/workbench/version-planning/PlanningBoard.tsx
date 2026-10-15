@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { CycleTaskRead } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
+import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { setCycleView } from '../cycle-view-state'
 import { CycleArchive } from '../version-cycle/CycleArchive'
 import { CycleStartCard } from '../version-cycle/CycleStartCard'
@@ -39,12 +41,11 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const material = usePlanningMaterial(materialPort, scopeKey, { canSave })
   const plan = material.draft?.document
   const prStatus = useArchivePrStatus(context, plan?.workflow?.archivePr)
-  const [minutesRefresh, setMinutesRefresh] = useState(0)
   const progressMinutes = useProgressMinutes(
     scope,
     worktreeId,
     plan?.summary.progressSource,
-    (context.materialRefresh ?? 0) + minutesRefresh
+    context.materialRefresh ?? 0
   )
   const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
@@ -157,16 +158,15 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       <PlanningHeader
         currentVersion={plan?.version ?? ''}
         versions={material.versions}
-        disabled={!materialPort || selecting}
+        disabled={!materialPort || selecting || Boolean(context.syncing)}
         state={state}
         branch={cycleBranch(entry)}
         onSelect={(version) => void selection.select(version)}
         onConfigure={() => void entry.configure()}
         onRefresh={() =>
           void act(async () => {
-            setMinutesRefresh((value) => value + 1)
+            toast.message(trunkUpdateNotice(await context.updateCode()))
             await material.refresh()
-            await material.list()
             await prStatus.refresh()
           })
         }

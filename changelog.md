@@ -11,6 +11,21 @@
   - `docs/05-features/workbench-release/{intent,spec,STATUS}.md`（#332 增量 + 裁决 version-report 退役待人 gate）、`docs/05-features/README.md`（第 7 行 TDD ○→◐、R01–R06）、`src/renderer/src/workbench/INVENTORY.md`、`package.json`（`release:win:workbench`）
 - **验证**：`release-win-workbench.test.mjs` 18/18 过；`typecheck`、`oxlint`（新脚本 + 测试）、`check:readme-local-links` 过；改动文档相对链接 0 断链；`grep version-report` 除 `.bw/planning/v0.4` 历史归档与「已退役」说明散文外归零。**真实发布与验收报告产出（RJ01/R05/R06）留白**：需本机 Windows 出包 + `gh` 登录 + 人授权，属人跑，STATUS 记 ○/◐ 不预填通过。
 
+## 2026-10-14 修复（preflight 预探测拦截 CodeHub 任务来源，探测瞬时失败被会话缓存固化）
+
+- **变更类型**：修复（行为变更：任务来源可用性判定由 preflight 预探测改为调用时探测）
+- **变更摘要**：正式版任务屏报「CodeHub 来源不可用……请显示 CodeHub 或安装 codehub-cli」，但设置开关已开、CLI 实际可用。根因：任务页生效来源列表在设置开关之外还要过 `preflightStatus.codehub.installed` 运行时过滤，而 preflight 探测（`execFile('codehub-cli', ['--version'])`）把「未安装」「跑不起来」「探测链故障」折叠为同一个 false 并缓存整个应用会话，启动瞬间的失败即固化成"未安装"，CodeHub 图标从来源选择器消失、自动切换被抑制。修复：删除 `TaskProviderAvailability.codehubInstalled` 维度，CodeHub 可用性由实际调用 codehub-cli 决定——CLI 缺失时自动切换照常发生，`runCodeHubCli` 的 ENOENT 分支（"codehub-cli is not installed or not on PATH"）经既有 `codehubError` 红条提示；设置开关与任务页生效列表归一。GitHub 模式横幅成因收敛为「设置隐藏」或「入口显式指定 GitHub」，文案去掉"安装 codehub-cli"、改为提示切换来源。设置面板的 codehub 安装徽章（`use-task-source-provider-readiness.ts`）保留为纯信息展示。
+- **涉及文件**：
+  - `src/shared/task-providers.ts`（`TaskProviderAvailability` 删 `codehubInstalled` 字段；`isTaskProviderAvailable` codehub 分支恒 true 并注明 lazy 探测原因）
+  - `src/renderer/src/components/use-task-page-repo-selection.ts`（任务页来源过滤删 codehub preflight 维度及 deps）
+  - `src/renderer/src/store/slices/ui/ui-slice-task-actions.ts`（`openTaskPage` 预取来源过滤删同维度）
+  - `src/renderer/src/components/sidebar/SidebarTaskNavButton.tsx`（侧边栏默认来源解析删同维度）
+  - `src/renderer/src/components/new-workspace/use-smart-workspace-field-availability.ts`（删凑类型的 `codehubInstalled: false`）
+  - `src/renderer/src/components/task-page/github/List.tsx`（横幅注释与默认文案更新）
+  - `src/renderer/src/i18n/locales/{zh,en,es,fr,ja,ko}.json`（`codehubSourceUnavailableHint` 文案收敛）
+  - `src/shared/task-providers.test.ts`（过滤用例改造为验证 CodeHub 不再被运行时过滤；删 `codehubInstalled` 传参，不增执行例数）
+- **验证**：`task-providers.test.ts` 11 例、受影响渲染层 4 套件 36 例全过；`typecheck`、`oxlint`、`oxfmt` 过。未验证：真壳 E2E（任务页 CodeHub 自动切换与错误红条）。
+
 ## 2026-10-13 修复（CodeHub 仓库停在 GitHub 任务列表时报错答非所问）
 
 - **变更类型**：修复

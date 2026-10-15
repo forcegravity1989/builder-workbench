@@ -39,7 +39,6 @@ export type VersionHistoryHost = {
 }
 
 export function createVersionHistoryService(host: VersionHistoryHost): VersionHistoryPort {
-
   async function verifySource(scope: MetricScope, sourceCommit: string) {
     const baseline = await host.baseline(scope)
     SourceCommit.parse(baseline.commit)
@@ -48,13 +47,13 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     } catch {
       throw new HistorySourceError(
         'unverified-source',
-        '无法证明材料提交已合入项目采用分支；没有改读最新材料'
+        '无法证明材料提交已合入项目主干基线；没有改读最新材料'
       )
     }
     return baseline
   }
 
-  /** A fixed plan must be reachable from its own branch or adopted baseline; archive is a signal. */
+  /** A fixed plan must be reachable from its own branch or the trunk baseline; archive is a signal. */
   async function verifyPlanSource(scope: MetricScope, sourceCommit: string) {
     const baseline = await host.baseline(scope)
     SourceCommit.parse(baseline.commit)
@@ -70,7 +69,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     }
     throw new HistorySourceError(
       'unverified-source',
-      '材料提交不在本分支或采用分支历史上；没有改读最新材料'
+      '材料提交不在本分支或主干基线历史上；没有改读最新材料'
     )
   }
 
@@ -136,7 +135,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
       const baseline = await host.baseline(scope)
       SourceCommit.parse(baseline.commit)
       if (currentOnly) {
-        return readCurrentVersionCatalog(scope, baseline.commit, host.git, readSnapshot)
+        return readCurrentVersionCatalog(scope, baseline, host.git, readSnapshot)
       }
       const log = await host.git(scope, [
         'log',
@@ -200,7 +199,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           continue
         }
         // Records are the baseline history itself: every listed commit is on the
-        // adopted branch. One record per version/workflow/cycle round — the newest
+        // trunk baseline. One record per version/workflow/cycle round — the newest
         // commit of a round supersedes its intermediates; older revisions stay
         // traceable through Git. Readers verify identity again at read time.
         const key = JSON.stringify([path[1], workflow, snapshot.document.cycleId])
