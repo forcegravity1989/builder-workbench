@@ -1,14 +1,17 @@
 import { React, useState } from 'react'
 import { ArrowUpRight, Download } from 'lucide-react'
 
-// CloudDragon pipeline names captured from the real list page (project ga751ea99).
+// CloudDragon pipeline names captured from the real list page (project
+// ga751ea99), scope dropdown set to 当前项目下的流水线. The product screen
+// reads the same scope; the default matches this project's service pipeline.
 export const PACKAGE_PIPELINES = [
-  '174961_DockerImageSync_1752523205155',
-  '174979_DockerImageSync_1752481806803',
-  '174413_DockerImageSync_1751990402283',
-  '133669_DockerImageSyncToolBox_1752523204855',
-  '133685_DockerImageSyncToolBox_1752483334804',
-  '133100_DockerImageSyncToolBox_1751990401989'
+  'gtsllm-dfx',
+  'axodendron',
+  'benchmark-ai2_pujianfeng',
+  'omdashboard-main',
+  'benchmark-ai2',
+  'benchmark-ai',
+  'dfx'
 ]
 
 // Latest package captured from the real artifact services page: select the
@@ -16,9 +19,8 @@ export const PACKAGE_PIPELINES = [
 // The product screen reaches this via Playwright; acceptance only cares about
 // the final artifact, not how many pipeline runs produced it.
 export const LATEST_PACKAGE = {
+  project: 'gtsllm-dfx',
   version: '1.0.0-SNAPSHOT.20261015091143.640856637',
-  repo: 'sz-software-snapshot',
-  type: 'software',
   created: '2026-10-15 09:13:00',
   files: ['gtsllm-dfx-1.0.0-20260225_1000.7z', 'gtsllm-dfx-1.0.0-20260225_1000.7z.hwp7s']
 }
@@ -54,8 +56,13 @@ export function PackagePanel({ disabled, latest, onPackage, onDownload }) {
       </div>
       {latest ? (
         <div className="package-artifact" data-version={latest.version}>
-          <div className="package-artifact-head">
-            <span className="package-version">{latest.version}</span>
+          <div className="package-meta-row">
+            <span>项目名称</span>
+            <p>{latest.project}</p>
+          </div>
+          <div className="package-meta-row">
+            <span>版本号</span>
+            <p className="package-version">{latest.version}</p>
             <button
               className="btn btn-secondary"
               disabled={disabled}
@@ -65,25 +72,18 @@ export function PackagePanel({ disabled, latest, onPackage, onDownload }) {
               下载
             </button>
           </div>
-          <dl className="package-meta">
-            <div>
-              <dt>制品仓库</dt>
-              <dd>{latest.repo}</dd>
+          <div className="package-meta-row">
+            <span>创建时间</span>
+            <p>{latest.created}</p>
+          </div>
+          <div className="package-meta-row">
+            <span>包文件</span>
+            <div className="package-files">
+              {latest.files.map((name) => (
+                <p key={name}>{name}</p>
+              ))}
             </div>
-            <div>
-              <dt>类型</dt>
-              <dd>{latest.type}</dd>
-            </div>
-            <div>
-              <dt>创建时间</dt>
-              <dd>{latest.created}</dd>
-            </div>
-          </dl>
-          <ul className="package-files">
-            {latest.files.map((name) => (
-              <li key={name}>{name}</li>
-            ))}
-          </ul>
+          </div>
         </div>
       ) : (
         <p className="package-artifact-empty">该服务暂无制品包。</p>

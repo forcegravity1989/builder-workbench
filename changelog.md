@@ -3,18 +3,18 @@
 ## 2026-10-15 新增（验收屏原型新增「出包」部分 · CodeHub/CloudDragon 变体高保真）
 
 - **变更类型**：新增（原型）
-- **变更摘要**：验收屏右半屏在「准备交付」与「展示验收」之间新增「出包」部分，并同步插入旅程轴第 4 节点。第一行为流水线名称下拉框（数据源 CloudDragon 流水线列表页，原型内置 6 条真实抓取的流水线名）+ 出包按钮（正式界面经 Playwright 同步点击 CloudDragon 对应行的出包按钮）；第二行为最新一条制品包信息（评审结论：验收只关心最终产物，不展示流水线执行历史）——版本号、制品仓库、类型、创建时间与包文件列表，数据对齐 CloudDragon 制品仓库服务版本包页真实解析结果（gtsllm-dfx 最新 software 版本），附下载按钮（正式界面先选目录，再经 Playwright 点击该版本的下载按钮保存）。旅程节点灯色随最新包有无推导（有包绿 / 无包灰）。
+- **变更摘要**：验收屏右半屏在「准备交付」与「展示验收」之间新增「出包」部分，并同步插入旅程轴第 4 节点。第一行为流水线名称下拉框（数据源 CloudDragon 流水线列表页，范围选「当前项目下的流水线」，原型内置 7 条真实抓取的流水线名，默认 gtsllm-dfx）+ 出包按钮（正式界面经 Playwright 同步点击 CloudDragon 对应行的出包按钮）；第二行为最新一条制品包信息（评审结论：验收只关心最终产物，不展示流水线执行历史），按验收屏既有行式组件语言排版——项目名称、版本号（行尾下载按钮）、创建时间、包文件，数据对齐 CloudDragon 制品仓库服务版本包页真实解析结果；下载按钮对应页面下载（正式界面先选目录，再经 Playwright 点击该版本的下载按钮保存）。旅程节点灯色随最新包有无推导（有包绿 / 无包灰）。
 - **涉及文件**：
-  - `docs/05-features/version-acceptance/prototype/package-panel.jsx`（新建：出包工具栏 + 最新包信息卡片组件，内置真实抓取的流水线名与制品包 mock）
+  - `docs/05-features/version-acceptance/prototype/package-panel.jsx`（新建：出包工具栏 + 最新包信息行组件，内置真实抓取的流水线名与制品包 mock）
   - `docs/05-features/version-acceptance/prototype/screen.jsx`（验收内容插入「出包」区块插槽）
   - `docs/05-features/version-planning/prototype/journey.js`（旅程轴插入「出包」节点，签名扩展 packageTone/packageHint）
   - `docs/05-features/version-planning/prototype/app.jsx`（LATEST_PACKAGE、triggerPackage/downloadPackage、灯色推导、stageGo 滚动锚点、传参）
   - `docs/05-features/version-planning/prototype/layout.jsx`（latestPackage/triggerPackage/downloadPackage 透传）
-  - `docs/05-features/version-planning/prototype/style.css`（.package-sheet/.package-toolbar/.package-artifact 等样式）
+  - `docs/05-features/version-planning/prototype/style.css`（.package-sheet/.package-toolbar/.package-artifact 行式样式，对齐 delivery-row 组件语言）
   - `docs/05-features/version-planning/prototype/vendor.js`（末尾追加 lucide Download 图标组件，v8 快照未含该图标；受 build.cjs --check 依赖校验守护）
   - `docs/05-features/version-planning/prototype/build.cjs`（冻结依赖清单加 Download）
   - `docs/05-features/version-planning/prototype/runtime.js`（重建产物）
-- **验证**：`node build.cjs --check` 通过（runtime 与源码一致 + monday/friday/overview 三屏合成 DOM 启动 + Download 依赖存在性校验）；真实 Chrome 交互验证 9 项全过（旅程 4 节点、6 个流水线选项、最新包卡片字段与 2 个包文件、出包/下载点击提示、旅程节点高亮 + 灯色绿、下载图标渲染、无页面错误）。
+- **验证**：`node build.cjs --check` 通过（runtime 与源码一致 + monday/friday/overview 三屏合成 DOM 启动 + Download 依赖存在性校验）；真实 Chrome 交互验证 8 项全过（旅程 4 节点、7 个流水线选项、四行包信息与 2 个包文件、出包/下载点击提示、旅程节点高亮 + 灯色绿、无页面错误）。
 
 ## 2026-10-13 修复（CodeHub 仓库停在 GitHub 任务列表时报错答非所问）
 
