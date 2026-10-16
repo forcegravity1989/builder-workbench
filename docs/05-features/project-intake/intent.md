@@ -1,6 +1,6 @@
 # intent — 纳入项目与项目信息记录（project-intake）
 
-> **状态：已 gate**（接入与名片 2026-09-29、跨主机项目墙 2026-10-13、墙卡读数 2026-10-15）。行为细节与验收点见 [spec.md](spec.md)；高保真见 [project-wall-readings-prototype.html](project-wall-readings-prototype.html)（墙卡读数轮）与 [g3-project-wall-prototype.html](g3-project-wall-prototype.html)（跨主机纳入旅程，存档身份）；链状态在 [STATUS.md](STATUS.md)。
+> **状态：已 gate**（接入与名片 2026-09-29、跨主机项目墙 2026-10-13、墙卡读数 2026-10-15、承诺进展口径 2026-10-16）。行为细节与验收点见 [spec.md](spec.md)；高保真见 [project-wall-readings-prototype.html](project-wall-readings-prototype.html)（墙卡读数轮）与 [g3-project-wall-prototype.html](g3-project-wall-prototype.html)（跨主机纳入旅程，存档身份）；链状态在 [STATUS.md](STATUS.md)。
 >
 > **维护约定**：本篇管价值与范围（02 §3.1 骨架）；gate 结论改写正文，不追加聊天流水。
 
@@ -43,10 +43,10 @@
 - knowledge-map 草稿能力从本特性**删除**，归知识库独立特性。
 - 存量旧仓已有 toml **无需补录**；读取端兼容更早的 `north_star` 字段。
 - 克隆远端中断的残留场景暂不处理，看实际用户反馈再定。
-- **墙卡读数四项**（版本/承诺进展/在跑会话/PR 待审）按 2026-10-15 逐项 gate 的口径落地，数据口径与三态见 spec「墙卡读数」；卡片只显数字不跳转；墙头不做跨项目读数聚合（部分项目不可读时聚合会少数，冒充完整）。
+- **墙卡读数四项**（版本/承诺进展/在跑会话/PR 待审）按 2026-10-15 逐项 gate 的口径落地（承诺进展口径 2026-10-16 负责人决策修订为「关闭=完成」，见 spec 取舍 9），数据口径与三态见 spec「墙卡读数」；卡片只显数字不跳转；墙头不做跨项目读数聚合（部分项目不可读时聚合会少数，冒充完整）。
 - **健康灯不做**（2026-10-15）：灯是把动态判断交给机器，当前没有可靠的推导口径；卡片给事实，判断与催办归 leader。将来要做灯，另立特性先定推导口径。
 - **离线 ≠ 0**（2026-10-15）：主机连接事实为离线/未知时，会话读数显示「—」而非 0；在线才给真实计数。
 
 ## 实现落点（现状取证）
 
-`src/renderer/src/workbench/`：`ProjectWallPage` / `OnboardProjectPage` / `OnboardCharterStep` / `EditCharterPage`（名片补录）/ `run-project-onboard` / `charter-port` / `charter-pr-notice` + `use-charter-pr-status`（待合入 chip）/ `project-charter`（renderer fs 包装）/ `workbench-wall-projects`（聚合）/ `switch-active-project` / `wall-project-repo-actions`（组升级/连带删组）/ `use-wall-readings` + `wall-readings-load` + `wall-card-readings`（墙卡读数编排/读取管线/纯函数推导）；`src/shared/workbench/project-charter.ts`（纯函数核心：解析/渲染/保真补空 `fillBlankCharterInToml`，兼容 north_star）与 `charter.ts`（RPC 契约）；`src/main/workbench/charter-runtime.ts` + `charter-remote-probe.ts` + `charter-pr-status.ts`（bw/project 树提交与 PR、克隆前预探测、状态查询）；`src/main/github/issue-state-batch.ts` + `gh:issueStates` IPC/preload/web 登记（Issue 状态与关闭原因批量读回）；`src/main/codehub/mr-creation.ts` + `repo-reads.ts`（CodeHub MR 与远端 raw 读）。散落文档：architecture 用例表与 §3、06-module/桌面壳与关键信息维护。存量合规单测：project-charter（shared：解析/回写/保真补空/归一化）、workbench-wall-projects（组聚合）、wall-card-readings（读数推导纯函数）。
+`src/renderer/src/workbench/`：`ProjectWallPage` / `OnboardProjectPage` / `OnboardCharterStep` / `EditCharterPage`（名片补录）/ `run-project-onboard` / `charter-port` / `charter-pr-notice` + `use-charter-pr-status`（待合入 chip）/ `project-charter`（renderer fs 包装）/ `workbench-wall-projects`（聚合）/ `switch-active-project` / `wall-project-repo-actions`（组升级/连带删组）/ `use-wall-readings` + `wall-readings-load` + `wall-readings-codehub` + `wall-card-readings`（墙卡读数编排/读取管线/CodeHub 任务状态读回/纯函数推导）；`src/shared/workbench/project-charter.ts`（纯函数核心：解析/渲染/保真补空 `fillBlankCharterInToml`，兼容 north_star）与 `charter.ts`（RPC 契约）；`src/main/workbench/charter-runtime.ts` + `charter-remote-probe.ts` + `charter-pr-status.ts`（bw/project 树提交与 PR、克隆前预探测、状态查询）；`src/main/github/issue-state-batch.ts` + `gh:issueStates` IPC/preload/web 登记（GitHub Issue 状态批量读回；承诺进展口径为关闭即完成、只消费状态，CodeHub 任务复用 task-port 的 resolveReferenceRepo/viewTask 语义逐条读回）；`src/main/codehub/mr-creation.ts` + `repo-reads.ts`（CodeHub MR 与远端 raw 读）。散落文档：architecture 用例表与 §3、06-module/桌面壳与关键信息维护。存量合规单测：project-charter（shared：解析/回写/保真补空/归一化）、workbench-wall-projects（组聚合）、wall-card-readings（读数推导纯函数）。

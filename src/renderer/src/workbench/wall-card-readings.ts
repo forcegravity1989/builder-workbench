@@ -1,6 +1,5 @@
 import type { AgentStatusEntry } from '../../../shared/agent-status-types'
 import { isFreshNonDoneAgentStatus } from '../../../shared/agent-status-types'
-import type { IssueStateEntry } from '../../../shared/github/issue-state-types'
 import { resolveAgentStatusWorktreeId } from '../lib/agent-status-worktree-attribution'
 
 /**
@@ -49,39 +48,38 @@ export function parseTaskRepository(repository: string): TaskRepoRef {
 export const issueStateKey = (repository: string, number: number): string =>
   `${repository}#${number}`
 
+/** 墙卡计数用的任务状态回执：只问开/关，平台中立（GitHub state、CodeHub opened/closed/merged 映射为同一形状）。 */
+export type WallTaskState = { state: 'OPEN' | 'CLOSED' }
+
 export type CommitmentProgress = {
   completed: number
   open: number
-  /** 决定不做/重复等其他关闭：不上卡，只供完整分解处使用。 */
-  otherClosed: number
 }
 
 export type CommitmentTask = { provider: string; repository: string; number: number }
 
 /**
- * 承诺进展 = 该版本 tasks × Issue 原生状态/关闭原因。
- * 全有或全无：任一任务读不到状态、或仓库非 GitHub（关闭原因不可读）→ null，
- * 界面显示「—」，不拼半真数字（spec 墙卡读数·承诺进展行）。
+ * 承诺进展 = 该版本 tasks × Issue 原生状态。
+ * 口径（负责人决策 2026-10-16，spec 承诺进展行）：关闭即计完成、开放即计开放，
+ * 关闭原因不参与计数——duplicate/not_planned 关闭同样计入完成，不正当关闭归
+ * 关闭者，读数只如实计关闭事实。全有或全无：任一任务缺状态回执 → null，
+ * 界面显示「—」，不拼半真数字。provider 准入（GitHub/CodeHub）由读取管线
+ * 把关，本函数只看回执。
  */
 export function deriveCommitmentProgress(
   tasks: readonly CommitmentTask[],
-  states: ReadonlyMap<string, IssueStateEntry | undefined>
+  states: ReadonlyMap<string, WallTaskState | undefined>
 ): CommitmentProgress | null {
-  const progress: CommitmentProgress = { completed: 0, open: 0, otherClosed: 0 }
+  const progress: CommitmentProgress = { completed: 0, open: 0 }
   for (const task of tasks) {
-    if (task.provider !== 'github' || parseTaskRepository(task.repository).kind !== 'github') {
-      return null
-    }
     const entry = states.get(issueStateKey(task.repository, task.number))
     if (!entry) {
       return null
     }
     if (entry.state === 'OPEN') {
       progress.open += 1
-    } else if (entry.stateReason === 'COMPLETED') {
-      progress.completed += 1
     } else {
-      progress.otherClosed += 1
+      progress.completed += 1
     }
   }
   return progress
