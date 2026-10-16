@@ -24,6 +24,8 @@
 
 2026-10-15 合入后验证批（PR #360 merge 78e4f61ef 后，修复走 fix/bw-package-playwright-core）：bw-package.yml 在 main 首次实跑（run 38737782455）于 afterPack 守卫 verifyPackagedMainRuntimeDeps 失败——主进程 CloudDragon 会话动态导入的 playwright-core 未登记 PACKAGED_RUNTIME_PACKAGE_ROOTS，打包产物缺 resources/node_modules 复制；PR 门禁不跑 Windows 打包，故只有 workflow 实跑暴露。修复为白名单补 playwright-core（会话用 channel:'chrome' 启动系统 Chrome，无浏览器随包），分支上 run 38738954723 全绿并发布 prerelease v1.4.197-local.1792069349.69244738e038（按设计仅附 orca-windows-setup.exe）。真壳（dev 壳 CDP DOM 断言，不读截图）GitHub 变体：流水线下拉唯一列 BW Package Windows（与 API 过滤一致）、最新包四字段为真实读数且 60 秒自动刷新读到新发布、更新器元数据被排除只显示安装包本体、出包灯随真实包点亮、「出包」点击对无 workflow 的远端分支如实呈现 gh 诊断（HTTP 422）且 busy 清理、读数不受影响。留白：180MB 安装包传输在本机对 release-assets CDN 三次尝试均网络层失败（EOF/TLS 超时/挂起），下载命令与资产解析已验、完整传输待人网络复核；受理→新包出现的界面完整闭环待修复合入 main 后在更新过的验收树上补验。
 
+2026-10-16 执行面 CLI 替换批（用户会话拍板：CodeHub 变体 list/launch 从 Playwright 页面链路改走本机 cloudbuild CLI，制品面 latest/download 保留浏览器会话）：研究结论为 CLI（cb，CloudDragon 1.0 API 官方客户端）覆盖执行面（list/scheme list/scheme execute）但无制品仓库能力（pipeline 1.0 无制品读取/下载命令，outputs 仅在 pipeline2 另一产品），故部分替代。实施：新增 cloud-dragon-cli-ops（list = `cb pipeline list --group <项目ID> -o json` 按名取列表；launch = 名→ID 映射 + `scheme list` 找 pr_pipeline 方案 + `scheme execute --ids <方案ID> --yes`，语义与页面「执行方案启动→pr_pipeline」一致；未装 cb / 未登录 / 命令失败分别映射 cb-missing/cb-auth/cb-failed 可读错误），cloud-dragon-package-ops 收缩为纯制品面（页面版 list/launch 机制、范围切换与 LIST_URL 整体退役），runtime 分派不变、界面协议无感知。cb 凭证自管（cb login，~/.cloudbuild/），与 gh 对称；项目 ID 在 CLI 语义下即 group_id（URL /project/<id>/ 段），--group 与页面「当前项目下的流水线」同范围。证据：typecheck 三套 0 错、oxlint 过；esbuild 冒烟探针验证未登录路径如实映射 cb-auth（PATH 解析 cb.cmd、spawn、flag、错误映射全链路）。留白：登录后的真实 list JSON 解析与真实 launch 受理（含 pr_pipeline 方案存在性）待 cb login 后实测；制品面 Playwright 链路未动、沿用既有验证。
+
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
 | intent | ● 已确认 | 沿用三特性边界，用户确认会话准备材料、逐目标核对及本轮资产同步 |
@@ -61,7 +63,7 @@
 | A08 纪要可复制含结论/交付/指标/未达人话正文；归档后总览回看 | ◐ | deriveAcceptanceReport（技术标识已剔除）+ 标题旁“预览纪要”弹窗（AcceptanceReportDialog）+ 总览双栏 | report 测试；真实归档回看待人 |
 | A09 跨树隔离/并发/重启/脏树不丢输入；包证不符不沿完成态 | ◐ | draft recovery + decision 证据新鲜度（decisionFreshness，证据变化旧结论标待重新核对）；在线候选探测已退役，仅剩纯声明比对 | 恢复测试；脏树真机待人；脏树/未归档提交检查为提示级（会话承担），无代码落点 |
 | A10 原生自动化真实到点、新周期新会话、入口不重复 | ◐ | 默认关闭态注册（creationKey 去重、reuseSession=false、BW 提示覆盖同步、用户设置保留） | 新建验收的手动运行、原生恢复和真实到点均待真壳验证 |
-| A11 出包区块按远端对接流水线、真实读数、可下载、如实报错 | ◐ | AcceptancePackage + package-pipeline-runtime（CloudDragon/gh 按远端分派）+ AcceptanceJourney 出包灯 | 门禁与真仓探针全过；CodeHub 链路经真实页面验证；GitHub 变体 workflow 实跑通过（打包白名单修复后 run 38738954723 全绿发 prerelease），真壳读路径/自动刷新/如实报错已验；安装包完整传输受本机网络限制留白，界面受理→新包闭环待修复合入 main 后补验 |
+| A11 出包区块按远端对接流水线、真实读数、可下载、如实报错 | ◐ | AcceptancePackage + package-pipeline-runtime（执行面 CodeHub→cb CLI/GitHub→gh，制品面 CodeHub→CloudDragon 会话，按远端分派）+ AcceptanceJourney 出包灯 | 门禁与真仓探针全过；GitHub 变体 workflow 实跑通过（run 38738954723 全绿发 prerelease），真壳读路径/自动刷新/如实报错已验；CodeHub 执行面已改走 cb CLI（未登录错误路径冒烟已验，登录后真实 list/launch 待实测），制品面页面链路沿用既有验证；安装包完整传输受本机网络限制留白 |
 
 | 旅程 | 状态 | 覆盖 |
 |---|---|---|
