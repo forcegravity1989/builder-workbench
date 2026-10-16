@@ -23,7 +23,7 @@
 | 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(A01–A10 未逐项) | ○(AJ01/AJ02 已定义) |
 | 3 | 总览指标 | [overview-metrics/](overview-metrics/) · [原型](overview-metrics/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项) | ○(MJ01/MJ02 已定义) |
 | 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·在用（正本随扶正在 main）¹ | ● | ● | ● | ◐¹ | ◐¹ | ○(台内路径 defer) |
-| 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ◐ | ◐ | 待建(P-01–P12 已定义，P-08–P12 未实测) | 待建(主旅程与 G3-01 已定义) |
+| 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ● | ● | 待建(P-01–P14 已定义，P-13 部分真壳验，注册暂缓) | 待建(主旅程/跨主机/扫墙三候选已定义) |
 | 6 | CodeHub 适配 | [codehub/](codehub/)³ | 在用·补链中 | ◐ | ◐ | ◐ | ◐ | ○(C01–C08 已定义) | ○(CJ01 已定义) |
 | 7 | Windows 出包与发布 | [workbench-release/](workbench-release/)³ | 开发方法资产·补链中 | ◐ | ◐ | ◐ | ◐ | ○(R01–R06 已定义) | ○(RJ01 已定义) |
 | 8 | 项目周报 | [weekly-report/](weekly-report/) · [MVP demo](weekly-report/prototype.html) | 真实项目内容与原生操作·主旅程通过 | ● | ● | ● | ●(3例核心协议) | ◐(W01–W04) | ◐(WJ01) |

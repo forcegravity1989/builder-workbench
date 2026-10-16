@@ -35,6 +35,7 @@ describe('web GitHub preload API', () => {
         'enqueuePRRefresh',
         'getProjectViewTable',
         'issue',
+        'issueStates',
         'listAccessibleProjects',
         'listAssignableUsers',
         'listAssignableUsersBySlug',

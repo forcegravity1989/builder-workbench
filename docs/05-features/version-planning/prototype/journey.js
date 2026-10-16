@@ -6,7 +6,8 @@ import {
   Presentation,
   BrainCircuit,
   GitPullRequest,
-  PackageCheck
+  PackageCheck,
+  ArrowUpRight
 } from 'lucide-react'
 export function journeySteps({
   goals,
@@ -16,7 +17,9 @@ export function journeySteps({
   view,
   progress,
   tasks,
-  goalIssues
+  goalIssues,
+  packageTone = 'gray',
+  packageHint = '尚未出包'
 }) {
   const goalTone = goals.some(
     (g) => g.metricId && metrics.find((m) => m.id === g.metricId)?.current === null
@@ -62,6 +65,7 @@ export function journeySteps({
         ]
       : [
           [PackageCheck, '准备交付', deliveryTone, '在会话中准备交付，在目标卡核对材料'],
+          [ArrowUpRight, '出包', packageTone, packageHint],
           [
             Presentation,
             '展示验收',

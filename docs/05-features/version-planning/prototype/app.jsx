@@ -6,6 +6,7 @@ import { original, remote } from './snapshot.js'
 import { buildMinutes, buildReport } from './summaries.js'
 import { PrototypeTaskList, PrototypeVersionTasks } from './tasks.jsx'
 import { PrototypeLayout } from './layout.jsx'
+import { LATEST_PACKAGE } from '../../version-acceptance/prototype/package-panel.jsx'
 
 function App() {
   useEffect(() => {
@@ -231,6 +232,18 @@ function App() {
     )
   }
   const archiveState = 'unknown'
+  function triggerPackage() {
+    setNotice(
+      '原型未接入 CloudDragon；正式界面经 Playwright 同步点击该流水线行的出包按钮。'
+    )
+  }
+  function downloadPackage() {
+    setNotice(
+      '原型未接入下载；正式界面先选择目录，再经 Playwright 点击该版本的下载按钮保存。'
+    )
+  }
+  const packageTone = LATEST_PACKAGE ? 'green' : 'gray'
+  const packageHint = LATEST_PACKAGE ? '已有最新包' : '尚未出包'
   const steps = journeySteps({
     goals,
     current,
@@ -239,7 +252,9 @@ function App() {
     view,
     progress,
     tasks,
-    goalIssues
+    goalIssues,
+    packageTone,
+    packageHint
   })
 
   function stageGo(i) {
@@ -265,6 +280,13 @@ function App() {
       openIssues()
       return
     }
+    if (view === 'friday' && i === 1) {
+      document.querySelector('.package-sheet')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      })
+      return
+    }
     document
       .querySelector(
         view === 'monday' ? (i === 0 ? '.planning-brief' : '.goal-sheet') : '.acceptance-sheet'
@@ -273,7 +295,7 @@ function App() {
         behavior: 'smooth',
         block: 'nearest'
       })
-    if (view === 'friday' && i === 1) {
+    if (view === 'friday' && i === 2) {
       document.querySelector('.decision select')?.focus()
     }
   }
@@ -337,6 +359,7 @@ function App() {
         openIssues,
         overviewSelection,
         overviewUI,
+        latestPackage: LATEST_PACKAGE,
         progress,
         promptConversation,
         refreshMetrics,
@@ -365,6 +388,8 @@ function App() {
         taskList,
         taskRows,
         tasks,
+        triggerPackage,
+        downloadPackage,
         update,
         updateResult,
         version,

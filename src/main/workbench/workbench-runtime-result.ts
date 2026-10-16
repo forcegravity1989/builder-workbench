@@ -2,6 +2,7 @@ import { VersionDocumentError } from '../../shared/workbench/version-document'
 import type { VersionMaterialResult } from '../../shared/workbench/version-material-request'
 import { MetricCollectorError } from './metrics/collector-output'
 import { HistorySourceError } from './version-history-snapshot'
+import { PackagePipelineError } from './package-pipeline-error'
 import { WorkspaceScopeError } from './workspace-scope-error'
 
 type WorkbenchRuntimeError =
@@ -9,13 +10,15 @@ type WorkbenchRuntimeError =
   | WorkspaceScopeError
   | HistorySourceError
   | MetricCollectorError
+  | PackagePipelineError
 
 function isWorkbenchRuntimeError(error: unknown): error is WorkbenchRuntimeError {
   return (
     error instanceof VersionDocumentError ||
     error instanceof WorkspaceScopeError ||
     error instanceof HistorySourceError ||
-    error instanceof MetricCollectorError
+    error instanceof MetricCollectorError ||
+    error instanceof PackagePipelineError
   )
 }
 

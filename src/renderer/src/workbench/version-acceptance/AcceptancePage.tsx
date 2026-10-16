@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import { nativeMetricsPort } from '../metrics-port'
+import { nativePackagePipelinePort } from '../package-pipeline-port'
 import { nativeVersionHistoryPort } from '../version-history-port'
 import { AcceptanceBoard } from './AcceptanceBoard'
 
@@ -16,11 +17,13 @@ export function AcceptancePage({
   const owner = context.scope?.runtimeOwnerEnvironmentId
   const metrics = useMemo(() => nativeMetricsPort(owner), [owner])
   const history = useMemo(() => nativeVersionHistoryPort(owner), [owner])
+  const packages = useMemo(() => nativePackagePipelinePort(owner), [owner])
   return (
     <AcceptanceBoard
       context={context}
       history={history}
       metrics={metrics}
+      packages={packages}
       entry={entry}
     />
   )

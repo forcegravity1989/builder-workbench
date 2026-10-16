@@ -36,6 +36,7 @@
 | 基线分支 / 主干基线 | 对比与快进的参照：仓库设置钉定的基线分支优先，没钉时用主检出当前检出分支；解析不出如实报错，不猜 main/master 名字 | [整体架构][arch] |
 | 项目约定 / 项目名片 | 约定保存于 `.bw/project.toml`，名片是其中基础信息的展示，不是另一份数据源 | [关键信息维护][info] |
 | 目标方向 | 项目希望达到的定性结果，与量化的北极星指标分开 | [关键信息维护][info] |
+| 特性（被管项目）/ 特性卡 | 被管项目持续提供给使用者的一个完整价值单元：人话命名、有用户旅程，盘点后应配一对引领/滞后指标，缺则如实记缺席；总览中呈现为按指标 feature 字段分组的页签，特性卡正本在被管项目自己的文档，不另立界面数据源。与 BW 自身 `docs/05-features/` 的特性是两个层次的概念；特性卡存在不等于指标已有采集 | [特性梳理 Skill][fm-inv] |
 | 接入项目 / Onboarding | 打开本地或克隆远端仓库，再确认基础信息；已有信息先读再确认 | [整体架构][arch] |
 | 产品旅程 | 项目版本、构建交付、治理、反馈、进化五站；站表示用户目标，不等于屏幕、开发阶段或工作类别 | [产品主张][claim] |
 | 项目版本 / 构建交付 | 前者确定版本目标与范围，后者执行并评审结果；旅程站不是远端 Release 对象 | [产品主张][claim] |
@@ -122,3 +123,4 @@
 [plan-spec]: docs/05-features/version-planning/spec.md
 [metrics-spec]: docs/05-features/overview-metrics/spec.md
 [skill-spec]: standard/skills/SKILL-MD-SPEC.md
+[fm-inv]: .claude/skills/feature-metrics-inventory/SKILL.md

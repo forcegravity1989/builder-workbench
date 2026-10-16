@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { ClipboardCheck, GitBranch } from 'lucide-react'
 import type { MetricsPort } from '../../../../shared/workbench/metrics'
+import type { PackagePipelinePort } from '../../../../shared/workbench/package-pipeline'
 import type { VersionHistoryPort } from '../../../../shared/workbench/version-history'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
@@ -10,6 +11,7 @@ import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import { CycleStartCard } from '../version-cycle/CycleStartCard'
 import { AcceptanceGoalCards } from './AcceptanceGoalCards'
+import { AcceptancePackage } from './AcceptancePackage'
 import { AcceptanceSources } from './AcceptanceSources'
 import { AcceptanceSummary } from './AcceptanceSummary'
 import { AcceptanceNotices } from './AcceptanceNotices'
@@ -27,6 +29,7 @@ export type AcceptanceBoardProps = {
   context: VersionCycleContext
   history: VersionHistoryPort
   metrics: MetricsPort
+  packages: PackagePipelinePort
   entry: CycleEntry
 }
 
@@ -62,6 +65,7 @@ function ReadyAcceptanceBoard({
   context,
   history,
   metrics,
+  packages,
   entry,
   recoveryKey
 }: AcceptanceBoardProps & { recoveryKey: string }) {
@@ -112,7 +116,14 @@ function ReadyAcceptanceBoard({
   const startCard = useRef<HTMLElement>(null)
   const results = useRef<HTMLElement>(null)
   const archiveSection = useRef<HTMLElement>(null)
+  const packageSection = useRef<HTMLElement>(null)
   const tasks = useRef<HTMLElement>(null)
+  const [packageReady, setPackageReady] = useState(false)
+  // Stable identity keeps AcceptancePackage's load effects from re-firing.
+  const handlePackageLatest = useCallback(
+    (latest: { version: string } | null) => setPackageReady(latest !== null),
+    []
+  )
   const [tasksOpen, setTasksOpen] = useState(false)
   const branch = cycleBranch(entry)
   // Render-time validity: a round or plan change under the same identity drops a
@@ -187,6 +198,8 @@ function ReadyAcceptanceBoard({
         <AcceptanceJourney
           stage={document?.workflow?.stage}
           startRef={startCard}
+          packageRef={packageSection}
+          packageReady={packageReady}
           resultsRef={results}
           archiveRef={archiveSection}
         />
@@ -242,6 +255,12 @@ function ReadyAcceptanceBoard({
                 />
               )}
               <AcceptanceSources document={document} />
+              <AcceptancePackage
+                port={packages}
+                scope={metricScope}
+                sectionRef={packageSection}
+                onLatestChange={handlePackageLatest}
+              />
               {plan && (
                 <>
                   <div className="va-section-heading">
@@ -307,6 +326,12 @@ function ReadyAcceptanceBoard({
             </>
           ) : (
             <>
+              <AcceptancePackage
+                port={packages}
+                scope={metricScope}
+                sectionRef={packageSection}
+                onLatestChange={handlePackageLatest}
+              />
               <div className="va-section-heading">
                 <h2>本版目标验收</h2>
                 <button className="wb-btn wb-btn-secondary wb-btn-sm" disabled>
