@@ -14,7 +14,11 @@
 
 | 术语 | 含义与边界 | 相关正本 |
 |---|---|---|
-| Builder / 构建者 | 使用 Workbench、负责方向和验收的人；普通说明可称“用户” | [产品主张][claim] |
+| Builder / 构建者 | 使用 Workbench 的人：在组织里带一条产品线、负责方向和验收，并向 Leader 汇报；普通说明可称“用户” | [产品主张][claim] |
+| Leader / 评审者 | Builder 汇报的对象；评审版本承诺、阅读验收结论与总览，是读者不是产品成员，现行无独立入口 | [产品主张][claim] |
+| 高效 / 负责 | 产品两个核心价值：高效指 Builder 驱动 AI 时少搬运、少记账、少带；负责指结果能被没在会话里的人核对 | [产品主张][claim] |
+| 代表用例 / 定承诺 · 交结果 · 看实况 | Builder 向 Leader 交代的三个时刻：版本开始定可验收目标、版本结束逐目标下结论并归档、随时读真实读数；不是屏幕名 | [产品主张][claim] |
+| 上下文底座 / 项目上下文 | 让模型读懂项目、也让 Leader 能核对的那一层：项目身份、度量口径、版本承诺、交付事实、项目知识及送达模型的提示与 Skill；执行底座（worktree、会话等）继承 Orca，两者分开 | [产品主张][claim] |
 | Builder 主机 | 团队成员共享的运行 Orca runtime 的机器；Builder 指人、Builder 主机指机器，经 Orca 原生主机配对配置共享给其他 Workbench，不另建账号体系；配对成功不等于持续在线 | [纳入项目规格](docs/05-features/project-intake/spec.md) |
 | Connector / 连接器 | 外部工具与服务的统称，含开工工具、仓库平台 CLI、项目群工具及 Orca 会话宿主；配置/安装不等于连通或登录 | [桌面壳][shell] |
 | 开工工具 / Agent CLI | 执行工作的工具，如 Claude Code、Cursor、Open Design；属于 Connector，不等于其调用的模型 | [会话与执行][session] |

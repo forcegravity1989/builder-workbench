@@ -12,19 +12,20 @@
 - **特性** = 持续提供给用户的一件完整的事；目录/页面/屏数 ≠ 特性数；组合形态（屏+会话+自动化+Skill）算一个特性。分层看用户身份：被管项目的 Builder ⇒ 产品特性；BW 开发团队自己 ⇒ 开发方法资产。
 - 本表编号自 1 起，与 main 旧矩阵的 F1–F11 无对应关系。
 - 格值：**●** 齐 ／ **◐** 部分 ／ **○** 缺 ／ **待建** = 暂缓（义务定义清楚后再建）／ **—** 不适用。
+- **服务用例 / 底座**：对照 [03 内部 FAQ「价值结构与现状」](../01-principles/03-press-release-faq-flywheel.md)的三个代表用例（定承诺 / 交结果 / 看实况）与上下文底座登记；「—」= 开发方法资产，不计入产品价值。知识库页尚无对应特性，归属待定义。
 - 验收点 E2E 格只记条数概览（如 ◐(P01–P10 未逐项)），逐验收点状态、实现落点与证据在该特性 STATUS 的矩阵小节，不在本表铺开。
 
 ## 特性矩阵
 
-| # | 特性 | 目录 | 分诊 | intent | spec | 实现设计 | TDD | 验收点E2E | 旅程E2E |
-|---|---|---|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
-| 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(A01–A10 未逐项) | ○(AJ01/AJ02 已定义) |
-| 3 | 总览指标 | [overview-metrics/](overview-metrics/) · [原型](overview-metrics/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项) | ○(MJ01/MJ02 已定义) |
-| 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·在用（正本随扶正在 main）¹ | ● | ● | ● | ◐¹ | ◐¹ | ○(台内路径 defer) |
-| 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ● | ● | 待建(P-01–P14 已定义，P-13 部分真壳验，注册暂缓) | 待建(主旅程/跨主机/扫墙三候选已定义) |
-| 6 | CodeHub 适配 | [codehub/](codehub/)³ | 在用·补链中 | ◐ | ◐ | ◐ | ◐ | ○(C01–C08 已定义) | ○(CJ01 已定义) |
-| 7 | Windows 出包与发布 | [workbench-release/](workbench-release/)³ | 开发方法资产·补链中 | ◐ | ◐ | ◐ | ◐ | ○(R01–R06 已定义) | ○(RJ01 已定义) |
+| # | 特性 | 目录 | 服务用例 / 底座 | 分诊 | intent | spec | 实现设计 | TDD | 验收点E2E | 旅程E2E |
+|---|---|---|---|---|:--:|:--:|:--:|:--:|:--:|:--:|
+| 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) | 定承诺；产出版本承诺上下文 | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
+| 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 交结果；产出交付事实上下文 | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(A01–A10 未逐项) | ○(AJ01/AJ02 已定义) |
+| 3 | 总览指标 | [overview-metrics/](overview-metrics/) · [原型](overview-metrics/prototype.html) | 看实况；为定承诺/交结果供度量口径 | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项) | ○(MJ01/MJ02 已定义) |
+| 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | —（BW 自身开发） | 开发方法资产·在用（正本随扶正在 main）¹ | ● | ● | ● | ◐¹ | ◐¹ | ○(台内路径 defer) |
+| 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 上下文底座起点（项目身份）；项目墙读数服务看实况 | 在用·补链中 | ● | ●(原型经拍板豁免) | ● | ● | 待建(P-01–P14 已定义，P-13 部分真壳验，注册暂缓) | 待建(主旅程/跨主机/扫墙三候选已定义) |
+| 6 | CodeHub 适配 | [codehub/](codehub/)³ | 三个用例的宿主准入 | 在用·补链中 | ◐ | ◐ | ◐ | ◐ | ○(C01–C08 已定义) | ○(CJ01 已定义) |
+| 7 | Windows 出包与发布 | [workbench-release/](workbench-release/)³ | —（BW 自身出包；非验收屏出包区块） | 开发方法资产·补链中 | ◐ | ◐ | ◐ | ◐ | ○(R01–R06 已定义) | ○(RJ01 已定义) |
 
 ¹ 第 4 行：GitHub CI 路径 2026-08/09 在旧 main 侧交付并实测闭环（PR #132 及后续召唤）；2026-09-29 用户拍板迁入产品分支——workflow 与回执脚本（`.github/scripts/check-pr-review.mjs`）已落，实现设计 ●。2026-09-30 扶正后本定义即默认分支 main 的定义，`/code-review` 召唤直接执行它，不再经旧 main 定义中转。验收点 ◐：迁移 PR 自身修改 workflow 文件，按 #132 先例（时为 pull_request 触发下的防篡改跳过）保守不自召——该校验在现行 issue_comment 触发模型下是否适用未复核；主干首场真实召唤待下一条合格 PR 实测，未实测不判过。TDD ◐：回执脚本无单测，以召唤实测为准。台内「请评审」按钮路径规范件在仓但未接线，defer。明细见其 [STATUS](reviewer-agent/STATUS.md) 迁移节。
 
