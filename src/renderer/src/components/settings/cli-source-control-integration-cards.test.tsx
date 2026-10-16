@@ -11,6 +11,7 @@ const LOCAL_HOST_LABEL = getExecutionHostLabel('local')
 
 type StoreState = {
   settings: { activeRuntimeEnvironmentId: string | null }
+  activeWorktreeId?: string | null
   openSettingsPage: () => void
   openSettingsTarget: (target: { pane: string; repoId: string | null }) => void
 }
@@ -150,6 +151,7 @@ describe('CLI source-control integration card account scope', () => {
   it('shows codehub-cli as missing from PATH and re-checks on demand', async () => {
     mocks.store.current = {
       settings: { activeRuntimeEnvironmentId: null },
+      activeWorktreeId: 'worktree-1',
       openSettingsPage: vi.fn(),
       openSettingsTarget: vi.fn()
     }
@@ -159,9 +161,13 @@ describe('CLI source-control integration card account scope', () => {
 
     expect(rendered.textContent).toContain('Not installed')
     expect(rendered.textContent).toContain('codehub-cli is not on PATH.')
-    // Why (BW #323): no install button until the internal channel is confirmed
-    // — the honest note must be there instead of a guessing action.
-    expect(rendered.textContent).toContain('pending internal confirmation')
+    // Why (BW #323): the install command is user-confirmed (2026-10-16); the
+    // card shows the exact self-contained command the button injects.
+    expect(rendered.textContent).toContain(
+      'npm install -g @codehub/codehub-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false'
+    )
+    expect(rendered.textContent).toContain('Install CodeHub CLI')
+    expect(rendered.textContent).not.toContain('pending internal confirmation')
     expect(rendered.textContent).not.toContain('Log in')
     await act(async () => {
       Array.from(rendered.querySelectorAll('button'))

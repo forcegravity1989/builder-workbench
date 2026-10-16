@@ -25,6 +25,12 @@ import {
 const WELINK_CLI_INSTALL_COMMAND =
   'npm install -g @welink/welink-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false'
 
+// Why (BW #323): install command confirmed by the user (2026-10-16), same
+// self-contained shape as the welink one — registry and strict-ssl flags act
+// on this command only, so the machine's npm configuration is never touched.
+const CODEHUB_CLI_INSTALL_COMMAND =
+  'npm install -g @codehub/codehub-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false'
+
 export function CodeHubIntegrationCard(): React.JSX.Element {
   const { statuses, unavailable, refresh } = usePreflightCardStatuses('codehub')
   const status = unavailable ? 'unavailable' : statuses.codehubStatus
@@ -79,20 +85,46 @@ export function CodeHubIntegrationCard(): React.JSX.Element {
                   'codehub-cli is not on PATH.'
                 )}
               </p>
-              {/* Why: the install command is not confirmed yet (BW #323 待决 2);
-                  an honest note beats a button that guesses. */}
-              <p className="text-xs text-muted-foreground">
-                {translate(
-                  'auto.components.settings.cli.source.control.integration.cards.codehubInstallPending',
-                  'The install command is pending internal confirmation and will appear here once decided.'
-                )}
-              </p>
-              <Button variant="ghost" size="sm" onClick={refresh}>
-                {translate(
-                  'auto.components.settings.cli.source.control.integration.cards.d5b3be8ecd',
-                  'Re-check'
-                )}
-              </Button>
+              <div className={commandRowClass}>
+                <Terminal className="size-3.5 shrink-0 text-muted-foreground" />
+                <span className="break-all">
+                  {translate(
+                    'auto.components.settings.cli.source.control.integration.cards.codehubInstallCommand',
+                    CODEHUB_CLI_INSTALL_COMMAND
+                  )}
+                </span>
+              </div>
+              {injected ? (
+                <p className="text-xs text-muted-foreground">
+                  {translate(
+                    'auto.components.settings.cli.source.control.integration.cards.commandInjectedNote',
+                    'The command is running in a new terminal tab. Re-check here when it finishes.'
+                  )}
+                </p>
+              ) : null}
+              <div className="flex items-center gap-2">
+                {canInject ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      injectCliCommandIntoTerminal(CODEHUB_CLI_INSTALL_COMMAND)
+                      setInjected(true)
+                    }}
+                  >
+                    {translate(
+                      'auto.components.settings.cli.source.control.integration.cards.codehubInstallButton',
+                      'Install CodeHub CLI'
+                    )}
+                  </Button>
+                ) : null}
+                <Button variant="ghost" size="sm" onClick={refresh}>
+                  {translate(
+                    'auto.components.settings.cli.source.control.integration.cards.d5b3be8ecd',
+                    'Re-check'
+                  )}
+                </Button>
+              </div>
             </>
           ) : (
             <>
@@ -202,6 +234,15 @@ export function WeLinkIntegrationCard(): React.JSX.Element {
                   'Install welink-cli to enable project group notifications.'
                 )}
               </p>
+              <div className={commandRowClass}>
+                <Terminal className="size-3.5 shrink-0 text-muted-foreground" />
+                <span className="break-all">
+                  {translate(
+                    'auto.components.settings.cli.source.control.integration.cards.welinkInstallCommand',
+                    WELINK_CLI_INSTALL_COMMAND
+                  )}
+                </span>
+              </div>
               {injected ? (
                 <p className="text-xs text-muted-foreground">
                   {translate(

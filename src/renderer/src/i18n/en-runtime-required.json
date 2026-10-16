@@ -1554,6 +1554,18 @@
             }
           }
         },
+        "cli": {
+          "source": {
+            "control": {
+              "integration": {
+                "cards": {
+                  "codehubInstallCommand": "npm install -g @codehub/codehub-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false",
+                  "welinkInstallCommand": "npm install -g @welink/welink-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false"
+                }
+              }
+            }
+          }
+        },
         "computerUseSkillRuntime": {
           "thisDevice": "This device"
         },

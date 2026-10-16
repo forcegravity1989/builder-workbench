@@ -27,19 +27,20 @@ export async function isCodehubAuthenticated(wslTarget?: WslPreflightTarget): Pr
 }
 
 // Why (BW #323): welink-cli auth status exits 0 both when logged in and when
-// the token is EXPIRED (it auto-refreshes on the next command), so exit 0
-// counts as connected — the EXPIRED middle state must not force a re-login
-// (intent 待决 3 draft). Marker fallback: a credentials block is present.
+// the token is EXPIRED (it would auto-refresh on the next command). Per the
+// human decision on intent 待决 3 (2026-10-16) an EXPIRED token must read as
+// NOT authenticated — the card offers a re-login instead of a green light on
+// a stale token. Marker fallback: a credentials block without EXPIRED.
 export async function isWelinkAuthenticated(wslTarget?: WslPreflightTarget): Promise<boolean> {
   try {
-    await (wslTarget
+    const result = await (wslTarget
       ? execCommandInWslOrThrow(wslTarget, `${shellQuote('welink-cli')} auth status`)
       : execLocalPreflightCommandOrThrow('welink-cli', ['auth', 'status']))
-    return true
+    return !`${result.stdout}\n${result.stderr}`.includes('EXPIRED')
   } catch (error) {
     const stdout = (error as { stdout?: string }).stdout ?? ''
     const stderr = (error as { stderr?: string }).stderr ?? ''
     const output = `${stdout}\n${stderr}`
-    return output.includes('User Token')
+    return output.includes('User Token') && !output.includes('EXPIRED')
   }
 }

@@ -242,10 +242,11 @@ describe('preflight', () => {
     expect(status.glab).toEqual({ installed: true, authenticated: false })
   })
 
-  // Why (BW #323): welink-cli exits 0 with an EXPIRED token too — it
-  // auto-refreshes on the next command — so exit 0 must read as connected
-  // rather than forcing a re-login (intent 待决 3 draft).
-  it('counts an EXPIRED welink token as authenticated', async () => {
+  // Why (BW #323): welink-cli exits 0 with an EXPIRED token too (it would
+  // auto-refresh on the next command), but per the human decision on intent
+  // 待决 3 (2026-10-16) EXPIRED must read as NOT authenticated — the card
+  // offers a re-login instead of a green light on a stale token.
+  it('treats an EXPIRED welink token as not authenticated', async () => {
     execFileAsyncMock
       .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
       .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
@@ -261,7 +262,7 @@ describe('preflight', () => {
 
     const status = await runPreflightCheck()
 
-    expect(status.welink).toEqual({ installed: true, authenticated: true })
+    expect(status.welink).toEqual({ installed: true, authenticated: false })
   })
 
   it('treats welink as unauthenticated when auth status fails without markers', async () => {

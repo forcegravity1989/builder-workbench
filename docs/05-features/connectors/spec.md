@@ -21,7 +21,7 @@
 4. 点「登录」。开发屏终端页签里 `welink-cli auth login` 已注入执行，WeLink 弹出扫码，人在手机上确认。
 5. 回到集成页点「重新检查」，状态翻**已连接**，卡内不再给安装 / 登录按钮。
 
-GitHub、CodeHub 的登录同一模板：`gh auth login`（设备码 / 浏览器流程）、`codehub-cli auth login`（内网认证）注入终端后，交互流程由各 CLI 自己呈现，卡片不拦截。GitHub 的安装保持现有外链行为（跳 cli.github.com，人按官方说明装）；CodeHub 安装口径待内网补（intent 待决 2）。
+GitHub、CodeHub 的登录同一模板：`gh auth login`（设备码 / 浏览器流程）、`codehub-cli auth login`（内网认证）注入终端后，交互流程由各 CLI 自己呈现，卡片不拦截。GitHub 的安装保持现有外链行为（跳 cli.github.com，人按官方说明装）；CodeHub 安装按钮注入命令表的自包含 npm 命令（口径人确认 2026-10-16）。
 
 **分支**：
 
@@ -37,8 +37,8 @@ GitHub、CodeHub 的登录同一模板：`gh auth login`（设备码 / 浏览器
 |---|---|---|
 | checking | 探测进行中 | preflight 在途或刷新中 |
 | not-installed | CLI 不在 PATH | 现有 `detectCommandRuntime` 探不到可执行文件 |
-| not-authenticated | 已装，`auth status` 报未登录 | gh / codehub-cli / welink-cli 各自 `auth status` 读回（codehub、welink 为本次补齐，照 gh 现成模式） |
-| connected | 已装且已登录 | 同上；welink-cli 的 EXPIRED（自动刷新）算 connected（intent 待决 3） |
+| not-authenticated | 已装，`auth status` 报未登录 | gh / codehub-cli / welink-cli 各自 `auth status` 读回（codehub、welink 为本次补齐，照 gh 现成模式）；welink-cli 的 EXPIRED（本会自动刷新）也归此态（人拍板 2026-10-16） |
+| connected | 已装且已登录 | 同上；welink-cli 输出含 EXPIRED 不算 connected |
 | unavailable | 状态在当前运行时不可得 | 现有 unavailable 口径（探测本身失败或运行时不支持） |
 
 信号只能从探测推导；探测不可得就是 unavailable，不给绿灯（铁律二）。
@@ -48,7 +48,7 @@ GitHub、CodeHub 的登录同一模板：`gh auth login`（设备码 / 浏览器
 | CLI | 安装 | 登录（注入执行） | 状态探测 |
 |---|---|---|---|
 | `gh` | 外链 https://cli.github.com （现有行为，人按官方说明装） | `gh auth login` | `gh auth status` |
-| `codehub-cli` | **内网补**（内网分发二进制，命令或链接待内网确认；补齐前如实占位，不塞猜测） | `codehub-cli auth login` | `codehub-cli auth status` |
+| `codehub-cli` | `npm install -g @codehub/codehub-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false`（人确认 2026-10-16；自包含同 welink，不动机器 npm 配置） | `codehub-cli auth login` | `codehub-cli auth status` |
 | `welink-cli` | `npm install -g @welink/welink-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false` | `welink-cli auth login`（扫码） | `welink-cli auth status` |
 
 - welink 安装命令自带内网 registry 与 `--strict-ssl=false`，机器无需预配 npm 源；公共 npm 的同名 `welink-cli` 是京东前端脚手架，不可用（#323 已警示）。
@@ -68,7 +68,7 @@ GitHub、CodeHub 的登录同一模板：`gh auth login`（设备码 / 浏览器
 
 - **探测不可得**：整卡显示 unavailable + 「重新检查」，沿用现有口径，不拆分单卡错误。
 - **杀进程重开**：状态重新探测，不缓存上次的绿灯（铁律一）。
-- **i18n**：卡名、状态与按钮文案进英文词条（照 CodeHub 卡先例，其余语言经 `translate` 的 defaultValue 回退）；命令与链接不翻译。
+- **i18n**：卡名、状态与按钮文案进英文词条（照 CodeHub 卡先例，其余语言经 `translate` 的 defaultValue 回退）；两个分组标题与描述行补中文（人拍板 2026-10-16，其余语言仍回退英文）；命令与链接不翻译。
 
 ## 验收与衡量
 
@@ -79,7 +79,7 @@ GitHub、CodeHub 的登录同一模板：`gh auth login`（设备码 / 浏览器
 | I01 | 打开设置 → 集成 | 只见三张卡，按代码托管 / 项目群两组排列，六张旧卡不出现 |
 | I02 | `gh` 未安装（本机） | GitHub 卡显示未安装；「安装」跳 cli.github.com（现有行为保持） |
 | I03 | `gh` 已装未登录 | 卡显示未登录；点「登录」开发屏开出终端页签，`gh auth login` 已注入执行 |
-| I04 | `codehub-cli` 未安装 | CodeHub 卡显示未安装；安装入口按待决 2 口径如实呈现 |
+| I04 | `codehub-cli` 未安装 | CodeHub 卡显示未安装；点「安装」终端页签注入 npm 安装命令（含 registry 参数）执行 |
 | I05 | `codehub-cli` 已装未登录 | 卡显示未登录（新增登录探测）；「登录」注入 `codehub-cli auth login` |
 | I06 | `welink-cli` 未安装 | WeLink 卡显示未安装；点「安装」终端页签注入 npm 安装命令（含 registry 参数）执行 |
 | I07 | `welink-cli` 已装未登录 | 卡显示未登录；点「登录」注入 `welink-cli auth login`，扫码由 CLI 呈现 |
@@ -102,7 +102,7 @@ GitHub、CodeHub 的登录同一模板：`gh auth login`（设备码 / 浏览器
 
 **成本 / 风险**：集成页组件是上游 Orca 文件（非 `workbench/` 叠层目录），改动沿 CodeHub 卡先例直改并记入 upstream 对照，上游同步时需人工核对冲突；codehub-cli 安装口径依赖内网补齐。
 
-**待决**：4 项见 [intent 待决](intent.md#成功判据与待决问题)；实现阻塞项为待决 2（codehub-cli 安装口径）。
+**待决**：4 项已全部由人拍板（2026-10-16），落点见 [intent 待决](intent.md#成功判据与待决问题)各条。
 
 ## 实现落点建议（非实现设计）
 

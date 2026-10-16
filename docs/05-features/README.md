@@ -33,7 +33,7 @@
 
 ³ 第 6–7 行从已落地提交回写（2026-09-30），intent/spec 为草案，待人 gate。第 6 行接上原先「任务 CodeHub 支持」的占位，目录就是 [codehub/](codehub/)，范围含任务来源与计划/验收读写；spec 缺可点原型。第 7 行是 BW 开发者的 Windows 出包与 GitHub Release，无界面，操作契约在技能。明细见各自 STATUS。
 
-⁴ 第 8 行随 #323 设计 PR 首次登记（2026-10-14），2026-10-15 按人反馈两轮修订后 gate（简化为拼装现有能力；命令注入终端执行、人不手敲），同日实现随同 PR 交付：集成页收敛为 GitHub / CodeHub / WeLink 三卡（代码托管 / 项目群两组），preflight 补 `welink-cli` 探测与 codehub / welink `auth status` 读回，安装 / 登录命令注入开发屏终端页签执行（远端运行时无按钮，WSL 工作树保留）；codehub 安装口径待内网补（卡上如实占位、不给按钮，intent 待决 2）。真壳验收证据（I01–I10 / IJ01）未采。明细见其 [STATUS](connectors/STATUS.md)。
+⁴ 第 8 行随 #323 设计 PR 首次登记（2026-10-14），2026-10-15 按人反馈两轮修订后 gate（简化为拼装现有能力；命令注入终端执行、人不手敲），同日实现随同 PR 交付：集成页收敛为 GitHub / CodeHub / WeLink 三卡（代码托管 / 项目群两组），preflight 补 `welink-cli` 探测与 codehub / welink `auth status` 读回，安装 / 登录命令注入开发屏终端页签执行（远端运行时无按钮，WSL 工作树保留）。2026-10-16 待决 1–4 全部由人拍板：六卡代码留仓、codehub / welink 安装为自包含 npm 命令且按钮已接、welink EXPIRED 判未登录、分组标题补中文。真壳验收证据（I01–I10 / IJ01）未采。明细见其 [STATUS](connectors/STATUS.md)。
 
 ## 裁决与明细指引
 

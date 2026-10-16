@@ -6310,7 +6310,11 @@
           "9707523939": "PR和构建状态",
           "a565377c38": "未安装",
           "15cf990798": "未经过验证",
-          "f7eb5f0b24": "未安装"
+          "f7eb5f0b24": "未安装",
+          "codeHostGroupTitle": "代码托管",
+          "codeHostGroupDescription": "用于任务、拉取请求、合并请求与评审状态的命令行工具。",
+          "imGroupTitle": "项目群",
+          "imGroupDescription": "用于向项目群发送版本与验收动态的命令行工具。"
         },
         "KagiSessionLinkForm": {
           "92f0b4e472": "清除",
