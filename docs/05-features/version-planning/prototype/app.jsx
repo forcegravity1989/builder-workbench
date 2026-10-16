@@ -284,7 +284,7 @@ function App() {
       return
     }
     if (view === 'friday' && i === 2) {
-      document.querySelector('.showcase-face')?.scrollIntoView({
+      document.querySelector('.acceptance-goals-heading')?.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       })

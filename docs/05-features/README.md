@@ -19,7 +19,7 @@
 | # | 特性 | 目录 | 分诊 | intent | spec | 实现设计 | TDD | 验收点E2E | 旅程E2E |
 |---|---|---|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
-| 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 在用·双面整改草案待人确认⁴ | ◐(整改草案待确认) | ◐(整改草案) | ◐ | ◐ | ◐(A01–A11 未逐项；A12–A14 草案) | ○(AJ01/AJ02 已定义，扩充草案) |
+| 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 在用·单页整改草案待人确认⁴ | ◐(整改草案待确认) | ◐(整改草案) | ◐ | ◐ | ◐(A01–A11 未逐项；A12–A14 草案) | ○(AJ01/AJ02 已定义，扩充草案) |
 | 3 | 总览指标 | [overview-metrics/](overview-metrics/) · [原型](overview-metrics/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项) | ○(MJ01/MJ02 已定义) |
 | 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·在用（正本随扶正在 main）¹ | ● | ● | ● | ◐¹ | ◐¹ | ○(台内路径 defer) |
 | 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ● | ● | 待建(P-01–P14 已定义，P-13 部分真壳验，注册暂缓) | 待建(主旅程/跨主机/扫墙三候选已定义) |
@@ -32,7 +32,7 @@
 
 ³ 第 6–7 行从已落地提交回写（2026-09-30），intent/spec 为草案，待人 gate。第 6 行接上原先「任务 CodeHub 支持」的占位，目录就是 [codehub/](codehub/)，范围含任务来源与计划/验收读写；spec 缺可点原型。第 7 行是 BW 开发者的 Windows 出包与 GitHub Release，无界面，操作契约在技能；#332 增补发布脚本 `release-win-workbench.mjs`、版本描述规范与验收报告规范（含骨架模板），`version-report` 技能退役并入本特性，TDD 由 ○→◐（发布脚本 18 例单测），验收点扩到 R01–R06（R05 版本描述合规范、R06 验收报告合规范），均定义未跑。明细见各自 STATUS。
 
-⁴ 第 2 行 2026-10-16 双面整改草案：吸收周报为 Showcase 面导出件，weekly-report 试点独立屏形态废止（PR #321 未合入 main、保持挂起，处置待用户确认）；生产代码未动，草案条款与 A12–A14 待人确认。明细见其 [STATUS](version-acceptance/STATUS.md) 批次记录与 [spec](version-acceptance/spec.md)「整改草案」条款。
+⁴ 第 2 行 2026-10-16 单页整改草案：周报信息由验收屏承载（导出件经 leader 拍板取消），weekly-report 试点（PR #321 未合入 main、保持挂起）整体废止、处置待用户确认；单页整卡收缩 + 按周呈现 + 会话栏收折。生产代码未动，草案条款与 A12–A14 待人确认。明细见其 [STATUS](version-acceptance/STATUS.md) 批次记录与 [spec](version-acceptance/spec.md)「整改草案」条款。
 
 ## 裁决与明细指引
 

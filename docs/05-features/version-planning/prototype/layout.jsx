@@ -1,4 +1,4 @@
-import { React, useEffect, useState } from 'react'
+import { React, useState } from 'react'
 import { PrototypeHeader, PrototypeSession, PrototypeSidebar, PrototypeSplitter } from './shell.jsx'
 import { Field, Lamp, archiveTone } from './shared.jsx'
 import { PlanningContent, usePlanningDemo } from './screen.jsx'
@@ -78,21 +78,14 @@ function PrototypeLayout({
   const [scenarios, setScenarios] = useState({ monday: 'selected', friday: 'selected' })
   const [sessionStates, setSessionStates] = useState({ monday: 'existing', friday: 'existing' })
   const [sessionWidth, setSessionWidth] = useState(undefined)
-  // 会话栏收折对计划/验收共用（同一壳）；验收板双面（准备/Showcase）由旅程轴「展示验收」联动。
+  // 会话栏收折对计划/验收共用（同一壳）。
   const [chatCollapsed, setChatCollapsed] = useState(false)
-  const [accFace, setAccFace] = useState('prepare')
-  // 验收板人工标记（遗留/风险）、轮次与搜索提升到此层：跳 Issue 详情或切屏返回后保留。
+  // 验收板人工标记（遗留/风险）、周次与搜索提升到此层：跳 Issue 详情或切屏返回后保留。
   // 遗留/风险是人工判断（演示默认：#255 随 G3 未达标记遗留+风险）；
   // 开放 Issue 不自动判遗留，关闭 Issue 不自动判目标达成。
   const [accMarks, setAccMarks] = useState({ 255: { carry: true, risk: true } })
-  const [accRoundId, setAccRoundId] = useState(null)
+  const [accWeekId, setAccWeekId] = useState(null)
   const [accQuery, setAccQuery] = useState('')
-  // 重新进入验收屏回到准备面，与旅程轴 active 重置保持一致。
-  useEffect(() => {
-    if (view === 'friday') {
-      setAccFace('prepare')
-    }
-  }, [view])
   const planning = usePlanningDemo({ setModal, setNotice })
   const firstEntry = weekly && ['empty', 'problem'].includes(scenarios[view])
   const hasProblems = weekly && ['problem', 'partial'].includes(scenarios[view])
@@ -100,8 +93,7 @@ function PrototypeLayout({
   const onScenario = (value) => {
     setScenarios((current) => ({ ...current, [view]: value }))
     setSessionState(['empty', 'problem'].includes(value) ? 'empty' : 'existing')
-    setAccFace('prepare')
-    setAccRoundId(null)
+    setAccWeekId(null)
     setAccQuery('')
     setVersion('v0.5')
     setDraft('')
@@ -173,16 +165,6 @@ function PrototypeLayout({
                     aria-label={label}
                     onClick={() => {
                       if (!firstEntry || i === 0) {
-                        // 归档节点与面无关，不切面；「展示验收」联动 Showcase，其余回准备面。
-                        if (view === 'friday' && !firstEntry && i <= 2) {
-                          const nextFace = i === 2 ? 'showcase' : 'prepare'
-                          if (nextFace !== accFace) {
-                            setAccFace(nextFace)
-                            // 等面切换渲染完再滚动定位。
-                            setTimeout(() => stageGo(i), 0)
-                            return
-                          }
-                        }
                         stageGo(i)
                       }
                     }}
@@ -237,14 +219,12 @@ function PrototypeLayout({
                   <AcceptanceContent
                     disabled={firstEntry}
                     current={firstEntry ? [] : current}
-                    face={accFace}
-                    setFace={setAccFace}
                     marks={accMarks}
                     setMarks={setAccMarks}
                     query={accQuery}
                     setQuery={setAccQuery}
-                    roundId={accRoundId}
-                    setRoundId={setAccRoundId}
+                    weekId={accWeekId}
+                    setWeekId={setAccWeekId}
                     {...{
                       goalIssues,
                       hasGap,
@@ -413,8 +393,7 @@ function PrototypeLayout({
             copied,
             copyText,
             modal,
-            setModal,
-            setNotice
+            setModal
           }}
         />
       )}

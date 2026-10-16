@@ -1,44 +1,43 @@
 import { React, useState } from 'react'
 import {
   Check,
+  ChevronDown,
+  ChevronRight,
   ClipboardCheck,
-  Download,
   ExternalLink,
   History,
   ListTodo,
-  MessageSquare,
-  Pencil,
-  Presentation
+  MessageSquare
 } from 'lucide-react'
 import { Field, Lamp, done, titleForTask } from '../../version-planning/prototype/shared.jsx'
-import { files, original, remote } from '../../version-planning/prototype/snapshot.js'
-import { AcceptanceMetricEvidence, acceptanceMetric } from './metric-evidence.jsx'
+import { files, original } from '../../version-planning/prototype/snapshot.js'
+import { AcceptanceMetricEvidence } from './metric-evidence.jsx'
 import { PackagePanel } from './package-panel.jsx'
 
-// 轮次演示数据¹：跨周版本每周五一轮；「进展刷新」轮不出包、只刷新进展并可导出该周周报，
-// 最终轮做展示验收。正式界面轮次记录来自验收材料，历史轮次从 Git 读回、只读。
-// id 带版本前缀，避免跨版本切换时残留选择落到同号轮次。
-const ROUNDS = {
+// 周次演示数据¹：跨周版本每周五做一次验收——「进展刷新」周不出包、只刷新进展，
+// 最终周做展示验收。界面按周呈现；「轮次」只作为材料协议层的记录维度，不上界面。
+// 历史周只读（正式界面从材料轮次记录读回），供回看既往进展与纪要。
+const WEEKS = {
   'v0.5': [
     {
-      id: 'v0.5:r2',
-      label: '第2轮 · 2026-W40 · 展示验收（本轮）',
-      short: '第2轮（W40）',
+      id: 'v0.5:w40',
+      label: '2026-W40（本周 · 展示验收）',
+      short: '2026-W40 · 本周',
       current: true
     },
     {
-      id: 'v0.5:r1',
-      label: '第1轮 · 2026-W39 · 进展刷新（历史）',
-      short: '第1轮（W39）',
+      id: 'v0.5:w39',
+      label: '2026-W39（进展刷新 · 历史）',
+      short: '2026-W39 · 历史',
       current: false
     }
   ],
-  // 已归档版本的唯一轮次只读：演示「历史轮次回看与重出周报」，不改写已归档记录。
+  // 已归档版本只有历史周：只读回看，演示「不改写已归档记录」。
   'v0.4': [
     {
-      id: 'v0.4:r1',
-      label: '第1轮 · 2026-W38 · 已归档（历史）',
-      short: '第1轮（W38）',
+      id: 'v0.4:w38',
+      label: '2026-W38（已归档 · 历史）',
+      short: '2026-W38 · 已归档',
       current: false
     }
   ]
@@ -54,13 +53,10 @@ const readableState = (t) =>
         : '开放'
 const decisionTone = (g) =>
   g.decision === '达成' ? 'green' : g.decision === '未达' ? 'red' : 'yellow'
-const oneLine = (s, n = 40) => (s.length > n ? `${s.slice(0, n)}…` : s)
 
 function AcceptanceContent({
   disabled = false,
   current,
-  face,
-  setFace,
   goalIssues,
   hasGap,
   latestPackage,
@@ -73,8 +69,8 @@ function AcceptanceContent({
   setQuery,
   refreshMetrics,
   review,
-  roundId,
-  setRoundId,
+  weekId,
+  setWeekId,
   setModal,
   tasks,
   triggerPackage,
@@ -83,16 +79,25 @@ function AcceptanceContent({
   version,
   versionTasks
 }) {
-  // marks/roundId/query 由 layout 持有：跳 Issue 详情或切屏返回后，人工标记与轮次选择保留。
-  const rounds = ROUNDS[version] ?? ROUNDS['v0.5']
-  const round = rounds.find((r) => r.id === roundId) ?? rounds[0]
-  const readOnly = disabled || !round.current
-  // 材料折叠记忆用户开合意图；默认值 = 未填写时展开、已填写时收起（key 含版本与轮次，切换即重置）。
+  // marks/weekId/query 由 layout 持有：跳 Issue 详情或切屏返回后，人工标记与周次选择保留。
+  const weeks = WEEKS[version] ?? WEEKS['v0.5']
+  const week = weeks.find((w) => w.id === weekId) ?? weeks[0]
+  const readOnly = disabled || !week.current
+  // 卡片开合记忆用户意图；默认 = 未填写结论与材料时展开、已填写时收起（key 含版本与周次）。
   const [openGoals, setOpenGoals] = useState({})
-  const detailKey = (g) => `${version}:${round.id}:${g.id}`
-  const isDetailOpen = (g) =>
-    openGoals[detailKey(g)] ??
+  const cardKey = (g) => `${version}:${week.id}:${g.id}`
+  const isCardOpen = (g) =>
+    openGoals[cardKey(g)] ??
     !(g.actualDelivery?.trim() || g.reason?.trim() || g.decision !== '待核对')
+  const toggleCard = (g) => setOpenGoals((s) => ({ ...s, [cardKey(g)]: !isCardOpen(g) }))
+  const setAllCards = (open) =>
+    setOpenGoals((s) => {
+      const next = { ...s }
+      current.forEach((g) => {
+        next[cardKey(g)] = open
+      })
+      return next
+    })
   const q = query.trim().toLowerCase()
   const matches = (text) =>
     String(text ?? '')
@@ -121,52 +126,21 @@ function AcceptanceContent({
       return { ...m, [number]: next }
     })
   }
-  function openWeeklyExport() {
-    setModal({
-      type: 'weekly-export',
-      title: `导出周报 · ${version} · ${round.short}`,
-      version,
-      roundLabel: round.short,
-      goals: current,
-      tasks,
-      hasGap,
-      marks,
-      latestPackage
-    })
-  }
   return (
     <>
       {!disabled && (
-        <div className="face-toolbar">
-          <div className="face-switch" aria-label="验收视图">
-            <button
-              aria-pressed={face === 'prepare'}
-              onClick={() => setFace('prepare')}
-              title="Builders 与工作模型准备材料、逐目标核对"
-            >
-              <Pencil />
-              准备
-            </button>
-            <button
-              aria-pressed={face === 'showcase'}
-              onClick={() => setFace('showcase')}
-              title="拿着验收屏与准备的材料向 Leader/Owner 展示"
-            >
-              <Presentation />
-              Showcase
-            </button>
-          </div>
-          <label className="round-picker" title="轮次为整改草案新增（演示数据¹）：历史轮次只读">
+        <div className="board-toolbar">
+          <label className="week-picker" title="跨周版本按周查看；历史周只读（演示数据¹）">
             <History />
             <select
               className="input"
-              aria-label="刷新轮次"
-              value={round.id}
-              onChange={(event) => setRoundId(event.target.value)}
+              aria-label="验收周次"
+              value={week.id}
+              onChange={(event) => setWeekId(event.target.value)}
             >
-              {rounds.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.label}
+              {weeks.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.label}
                 </option>
               ))}
             </select>
@@ -184,14 +158,21 @@ function AcceptanceContent({
               命中 {visibleGoals.length} 项目标（仅过滤卡片呈现，不改材料）
             </span>
           )}
+          <span className="toolbar-spacer" />
+          <button className="btn btn-ghost" disabled={readOnly} onClick={() => setAllCards(true)}>
+            全部展开
+          </button>
+          <button className="btn btn-ghost" onClick={() => setAllCards(false)}>
+            全部收起
+          </button>
         </div>
       )}
-      {!disabled && !round.current && (
-        <p className="round-readonly" role="status">
-          历史轮次为只读快照；继续编辑请切回本轮。
+      {!disabled && !week.current && (
+        <p className="week-readonly" role="status">
+          历史周为只读快照；继续编辑请切回本周。
         </p>
       )}
-      {face === 'prepare' && !disabled && (
+      {!disabled && (
         <>
           <div className="acceptance-summary">
             <span>
@@ -222,47 +203,76 @@ function AcceptanceContent({
           />
         </>
       )}
-      {face === 'prepare' ? (
-        <>
-          <div className="section-heading acceptance-goals-heading">
-            <h2>本版目标验收</h2>
-            <button className="btn btn-secondary" onClick={review} disabled={disabled}>
-              <ClipboardCheck />
-              预览纪要
-            </button>
-          </div>
-          <section className="acceptance-sheet aligned-goals" key={`${version}-${round.id}`}>
-            {disabled && (
-              <p className="goal-row">尚未选择版本。新建验收，与 Agent 一起确认要核对的版本。</p>
-            )}
-            {!disabled && visibleGoals.length === 0 && (
-              <p className="goal-row search-empty">
-                没有匹配「{query}」的目标或 Issue；清空搜索恢复全部。
-              </p>
-            )}
-            {visibleGoals.map((g) => {
-              const related = goalIssues(g)
-              const shownRelated = q
-                ? related.filter((t) => matches(`#${t.number} ${t.title}`))
-                : related
-              return (
-                <article className="acceptance-row" data-goal={g.id} key={g.id}>
-                  <div className="acceptance-heading">
-                    <Lamp tone={decisionTone(g)} label={`验收结论：${g.decision}`} />
-                    <span className="goal-id">{g.label}</span>
-                    <h3>{g.title}</h3>
-                    <select
-                      className="input decision-inline"
-                      aria-label={`${g.label} 验收结论`}
-                      value={g.decision}
-                      disabled={readOnly}
-                      onChange={(e) => updateResult(g.id, 'decision', e.target.value)}
-                    >
-                      {['待核对', '达成', '未达'].map((x) => (
-                        <option key={x}>{x}</option>
-                      ))}
-                    </select>
-                  </div>
+      <div className="section-heading acceptance-goals-heading">
+        <h2>本版目标验收</h2>
+        <span className="goals-heading-week">{week.short}</span>
+        <button className="btn btn-secondary" onClick={review} disabled={disabled}>
+          <ClipboardCheck />
+          预览纪要
+        </button>
+      </div>
+      <section className="acceptance-sheet goal-cards" key={`${version}-${week.id}`}>
+        {disabled && (
+          <p className="goal-row">尚未选择版本。新建验收，与 Agent 一起确认要核对的版本。</p>
+        )}
+        {!disabled && visibleGoals.length === 0 && (
+          <p className="goal-row search-empty">
+            没有匹配「{query}」的目标或 Issue；清空搜索恢复全部。
+          </p>
+        )}
+        {visibleGoals.map((g) => {
+          const related = goalIssues(g)
+          const shownRelated = q
+            ? related.filter((t) => matches(`#${t.number} ${t.title}`))
+            : related
+          const carry = related.filter((t) => t.state !== 'CLOSED' && marks[t.number]?.carry)
+          const risky = carry.filter((t) => marks[t.number]?.risk)
+          const open = isCardOpen(g)
+          return (
+            <article className="goal-card" data-goal={g.id} data-decision={g.decision} key={g.id}>
+              <div className="goal-card-head">
+                <button
+                  className="goal-card-toggle"
+                  aria-expanded={open}
+                  aria-label={`${open ? '收起' : '展开'} ${g.label} 目标卡`}
+                  onClick={() => toggleCard(g)}
+                >
+                  {open ? <ChevronDown /> : <ChevronRight />}
+                </button>
+                <Lamp tone={decisionTone(g)} label={`验收结论：${g.decision}`} />
+                <span className="goal-id">{g.label}</span>
+                <h3 onClick={() => toggleCard(g)}>{g.title}</h3>
+                <select
+                  className="input decision-inline"
+                  aria-label={`${g.label} 验收结论`}
+                  value={g.decision}
+                  disabled={readOnly}
+                  onClick={(event) => event.stopPropagation()}
+                  onChange={(e) => updateResult(g.id, 'decision', e.target.value)}
+                >
+                  {['待核对', '达成', '未达'].map((x) => (
+                    <option key={x}>{x}</option>
+                  ))}
+                </select>
+                <span className="head-chips">
+                  <button
+                    className="head-chip"
+                    title="定位到 Issue 快照区"
+                    onClick={() => openIssues(g)}
+                  >
+                    <ListTodo />
+                    {done(related)} / {related.length}
+                  </button>
+                  {carry.length > 0 && (
+                    <span className={`head-chip carry${risky.length ? ' risk' : ''}`}>
+                      遗留 {carry.length}
+                      {risky.length ? ` · 风险 ${risky.length}` : ''}
+                    </span>
+                  )}
+                </span>
+              </div>
+              {open && (
+                <div className="goal-card-body">
                   <div className="delivery-row agreed-delivery">
                     <span>约定交付</span>
                     <p>{version === 'v0.4' ? g.metric : g.delivery || '未约定交付件'}</p>
@@ -314,267 +324,142 @@ function AcceptanceContent({
                       <p className="goal-issues-empty">该目标暂无关联 Issue。</p>
                     )}
                   </div>
-                  <details
-                    className="goal-detail"
-                    open={isDetailOpen(g)}
-                    onToggle={(event) =>
-                      setOpenGoals((s) => ({ ...s, [detailKey(g)]: event.target.open }))
-                    }
-                  >
-                    <summary>
-                      材料与依据
-                      {g.actualDelivery?.trim()
-                        ? ` · ${oneLine(g.actualDelivery.trim())}`
-                        : ' · 待填写'}
-                    </summary>
-                    <fieldset disabled={readOnly}>
-                      {g.criteria && (
-                        <div className="criteria-row">
-                          <span>验收标准</span>
-                          <p>{g.criteria}</p>
-                        </div>
-                      )}
-                      <AcceptanceMetricEvidence
-                        goal={g}
-                        updateResult={updateResult}
-                        refreshMetrics={refreshMetrics}
-                        onWindowChange={(window) =>
-                          current.forEach((goal) =>
-                            updateResult(goal.id, 'acceptanceMetricWindow', window)
-                          )
+                  <fieldset disabled={readOnly}>
+                    {g.criteria && (
+                      <div className="criteria-row">
+                        <span>验收标准</span>
+                        <p>{g.criteria}</p>
+                      </div>
+                    )}
+                    <AcceptanceMetricEvidence
+                      goal={g}
+                      updateResult={updateResult}
+                      refreshMetrics={refreshMetrics}
+                      onWindowChange={(window) =>
+                        current.forEach((goal) =>
+                          updateResult(goal.id, 'acceptanceMetricWindow', window)
+                        )
+                      }
+                    />
+                    {version === 'v0.4' && (
+                      <div className="historic-reading">
+                        历史约定 {g.target} · 原记录 {g.reading}
+                      </div>
+                    )}
+                    <div className="result-delivery">
+                      <label>实际交付</label>
+                      <div className="actual">
+                        {version === 'v0.4' ? (
+                          <>
+                            {original.results.deliverables
+                              .filter((d) => d.goal === g.label)
+                              .map((d) => (
+                                <a key={d.id} href={files[d.id]} target="_blank" rel="noreferrer">
+                                  {d.label}
+                                  <ExternalLink />
+                                </a>
+                              ))}
+                            <button
+                              className="history-source"
+                              onClick={() =>
+                                setModal({
+                                  type: 'text',
+                                  title: `${g.label} · 历史依据`,
+                                  text: g.note
+                                })
+                              }
+                            >
+                              原始依据
+                            </button>
+                          </>
+                        ) : (
+                          <Field
+                            label={`${g.label} 实际交付`}
+                            value={g.actualDelivery}
+                            onChange={(v) => updateResult(g.id, 'actualDelivery', v)}
+                            placeholder="填写交付结果或材料链接"
+                          />
+                        )}
+                      </div>
+                    </div>
+                    <div className={`followup ${hasGap(g) ? 'has-gap' : ''}`}>
+                      <label>{hasGap(g) ? '未达项' : '验收依据'}</label>
+                      <Field
+                        label={`${g.label} 验收说明`}
+                        value={g.reason}
+                        onChange={(v) => updateResult(g.id, 'reason', v)}
+                        placeholder={
+                          hasGap(g)
+                            ? '哪些约定未达到，原因是什么'
+                            : '判断依据；指标口径变化时说明是否可比'
                         }
                       />
-                      {version === 'v0.4' && (
-                        <div className="historic-reading">
-                          历史约定 {g.target} · 原记录 {g.reading}
-                        </div>
-                      )}
-                      <div className="result-delivery">
-                        <label>实际交付</label>
-                        <div className="actual">
-                          {version === 'v0.4' ? (
-                            <>
-                              {original.results.deliverables
-                                .filter((d) => d.goal === g.label)
-                                .map((d) => (
-                                  <a key={d.id} href={files[d.id]} target="_blank" rel="noreferrer">
-                                    {d.label}
-                                    <ExternalLink />
-                                  </a>
-                                ))}
-                              <button
-                                className="history-source"
-                                onClick={() =>
-                                  setModal({
-                                    type: 'text',
-                                    title: `${g.label} · 历史依据`,
-                                    text: g.note
-                                  })
-                                }
-                              >
-                                原始依据
-                              </button>
-                            </>
-                          ) : (
-                            <Field
-                              label={`${g.label} 实际交付`}
-                              value={g.actualDelivery}
-                              onChange={(v) => updateResult(g.id, 'actualDelivery', v)}
-                              placeholder="填写交付结果或材料链接"
-                            />
-                          )}
-                        </div>
-                      </div>
-                      <div className={`followup ${hasGap(g) ? 'has-gap' : ''}`}>
-                        <label>{hasGap(g) ? '未达项' : '验收依据'}</label>
+                    </div>
+                    {hasGap(g) && (
+                      <div className="followup next-step">
+                        <label>下一步</label>
                         <Field
-                          label={`${g.label} 验收说明`}
-                          value={g.reason}
-                          onChange={(v) => updateResult(g.id, 'reason', v)}
-                          placeholder={
-                            hasGap(g)
-                              ? '哪些约定未达到，原因是什么'
-                              : '判断依据；指标口径变化时说明是否可比'
-                          }
+                          label={`${g.label} 下一步`}
+                          value={g.next}
+                          onChange={(v) => updateResult(g.id, 'next', v)}
+                          placeholder="本版补齐、带入下版或停止，并说明安排"
                         />
-                      </div>
-                      {hasGap(g) && (
-                        <div className="followup next-step">
-                          <label>下一步</label>
-                          <Field
-                            label={`${g.label} 下一步`}
-                            value={g.next}
-                            onChange={(v) => updateResult(g.id, 'next', v)}
-                            placeholder="本版补齐、带入下版或停止，并说明安排"
-                          />
-                          <button
-                            className="btn btn-ghost"
-                            onClick={() =>
-                              promptConversation(
-                                `请处理 ${version} ${g.label} 的未达项：${
-                                  g.reason || '待补充'
-                                }。下一步：${
-                                  g.next || '请与我讨论安排'
-                                }。核对关联 Issue，与我确认后再更新，不自动标为完成。`
-                              )
-                            }
-                          >
-                            <MessageSquare />
-                            交给会话
-                          </button>
-                        </div>
-                      )}
-                    </fieldset>
-                  </details>
-                </article>
-              )
-            })}
-          </section>
-          {!disabled && versionTasks()}
-        </>
-      ) : (
-        <div className="showcase-face" key={`${version}-${round.id}`}>
-          <div className="showcase-head">
-            <div className="showcase-id">
-              <strong>{version}</strong>
-              <span className="tag tag-outline">{round.short}</span>
-              <span className="showcase-candidate">
-                候选提交 f20f04ae¹ · Issue 快照 {remote.readAt.slice(0, 10)}¹
-                {latestPackage ? ` · 包 ${latestPackage.version.slice(0, 24)}…` : ' · 尚无制品包'}
-              </span>
-            </div>
-            <div className="export-bar">
-              <button className="btn btn-secondary" onClick={review} disabled={disabled}>
-                <ClipboardCheck />
-                预览纪要
-              </button>
-              <button className="btn btn-primary" onClick={openWeeklyExport} disabled={disabled}>
-                <Download />
-                导出周报
-              </button>
-            </div>
-          </div>
-          {disabled && (
-            <p className="goal-row">尚未选择版本。新建验收，与 Agent 一起确认要核对的版本。</p>
-          )}
-          {!disabled && visibleGoals.length === 0 && (
-            <p className="goal-row search-empty">
-              没有匹配「{query}」的目标或 Issue；清空搜索恢复全部。
-            </p>
-          )}
-          {visibleGoals.map((g) => {
-            const related = goalIssues(g)
-            const carry = related.filter((t) => t.state !== 'CLOSED' && marks[t.number]?.carry)
-            const m = acceptanceMetric(g)
-            return (
-              <article className="showcase-card" data-decision={g.decision} key={g.id}>
-                <header>
-                  <Lamp tone={decisionTone(g)} label={`验收结论：${g.decision}`} />
-                  <span className="goal-id">{g.label}</span>
-                  <h3>{g.title}</h3>
-                  <span
-                    className={`decision-tag tag ${
-                      g.decision === '达成'
-                        ? 'tag-success'
-                        : g.decision === '未达'
-                          ? 'tag-danger'
-                          : 'tag-warning'
-                    }`}
-                  >
-                    {g.decision}
-                  </span>
-                </header>
-                <dl className="showcase-grid">
-                  <div>
-                    <dt>约定交付</dt>
-                    <dd>{version === 'v0.4' ? g.metric : g.delivery || '未约定交付件'}</dd>
-                  </div>
-                  <div>
-                    <dt>实际交付</dt>
-                    <dd>
-                      {g.actualDelivery || g.note || '未提供'}
-                      {version === 'v0.4' &&
-                        original.results.deliverables
-                          .filter((d) => d.goal === g.label)
-                          .map((d) => (
-                            <a key={d.id} href={files[d.id]} target="_blank" rel="noreferrer">
-                              {d.label}
-                              <ExternalLink />
-                            </a>
-                          ))}
-                    </dd>
-                  </div>
-                  {m && (
-                    <div>
-                      <dt>指标实测</dt>
-                      <dd>
-                        {m.name}：目标 {g.target || '未约定'} · 基线 {g.metricBaseline ?? '—'} ·
-                        实测 {m.current ?? '未取得'}
-                      </dd>
-                    </div>
-                  )}
-                  <div>
-                    <dt>关联 Issue</dt>
-                    <dd>
-                      {done(related)} / {related.length} 已关闭
-                      {carry.map((t) => (
-                        <span
-                          className={`flag-chip static${marks[t.number]?.risk ? ' risk on' : ' on'}`}
-                          key={t.number}
-                          title={`#${t.number} ${titleForTask(t)}`}
+                        <button
+                          className="btn btn-ghost"
+                          onClick={() =>
+                            promptConversation(
+                              `请处理 ${version} ${g.label} 的未达项：${
+                                g.reason || '待补充'
+                              }。下一步：${
+                                g.next || '请与我讨论安排'
+                              }。核对关联 Issue，与我确认后再更新，不自动标为完成。`
+                            )
+                          }
                         >
-                          #{t.number} {marks[t.number]?.risk ? '遗留·风险' : '遗留'}
-                        </span>
-                      ))}
-                    </dd>
-                  </div>
-                  {hasGap(g) && (
-                    <div>
-                      <dt>未达与下一步</dt>
-                      <dd className="wk-gap">
-                        {g.reason || '待填写'} → {g.next || '待安排'}
-                      </dd>
-                    </div>
-                  )}
-                </dl>
-              </article>
-            )
-          })}
-          {!disabled && (
-            <section className="carryover-card" aria-label="遗留与风险">
-              <h3>
-                <ListTodo />
-                遗留与风险（人工标记）
-              </h3>
-              {carryover.length === 0 ? (
-                <p className="carryover-empty">本轮没有标记遗留的 Issue。</p>
-              ) : (
-                carryover.map((t) => {
-                  const g = current.find((x) => x.label === t.goal)
-                  return (
-                    <div className="carryover-row" key={t.number}>
-                      <span
-                        className={`flag-chip static${marks[t.number]?.risk ? ' risk on' : ' on'}`}
-                      >
-                        {marks[t.number]?.risk ? '遗留 · 风险' : '遗留'}
-                      </span>
-                      <button onClick={() => openIssue(t)}>
-                        #{t.number} {titleForTask(t)}
-                      </button>
-                      <span className="carryover-goal">{t.goal}</span>
-                      <span className="carryover-next">{g?.next || '下一步待会话安排'}</span>
-                    </div>
-                  )
-                })
+                          <MessageSquare />
+                          交给会话
+                        </button>
+                      </div>
+                    )}
+                  </fieldset>
+                </div>
               )}
-              <p className="carryover-note">
-                标记由人在准备面逐条判断；关闭 Issue 不自动等于目标达成，开放 Issue
-                也不自动判为遗留。
-              </p>
-            </section>
+            </article>
+          )
+        })}
+      </section>
+      {!disabled && (
+        <section className="carryover-card" aria-label="遗留与风险">
+          <h3>
+            <ListTodo />
+            遗留与风险（人工标记）
+          </h3>
+          {carryover.length === 0 ? (
+            <p className="carryover-empty">本周没有标记遗留的 Issue。</p>
+          ) : (
+            carryover.map((t) => {
+              const g = current.find((x) => x.label === t.goal)
+              return (
+                <div className="carryover-row" key={t.number}>
+                  <span className={`flag-chip static${marks[t.number]?.risk ? ' risk on' : ' on'}`}>
+                    {marks[t.number]?.risk ? '遗留 · 风险' : '遗留'}
+                  </span>
+                  <button onClick={() => openIssue(t)}>
+                    #{t.number} {titleForTask(t)}
+                  </button>
+                  <span className="carryover-goal">{t.goal}</span>
+                  <span className="carryover-next">{g?.next || '下一步待会话安排'}</span>
+                </div>
+              )
+            })
           )}
-        </div>
+          <p className="carryover-note">
+            标记由人在目标卡内逐条判断；关闭 Issue 不自动等于目标达成，开放 Issue
+            也不自动判为遗留。进展与依据等自然语言内容由人主导填写，模型经人确认后才写入材料，不代笔结论。
+          </p>
+        </section>
       )}
+      {!disabled && versionTasks()}
     </>
   )
 }
