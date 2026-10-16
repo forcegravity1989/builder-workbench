@@ -3620,3 +3620,60 @@ input::placeholder {
   font-size: 0.82em;
   letter-spacing: 0.2em;
 }
+
+/* —— v9.3：计划/验收统一目标卡骨架的补充样式 —— */
+.goal-cards {
+  background: var(--color-card);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+}
+.plan-field textarea {
+  width: 100%;
+  border: 1px dashed var(--color-divider);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.9em;
+  background: transparent;
+  color: var(--color-text);
+  margin-bottom: var(--space-2);
+}
+.plan-story {
+  padding: 0 0 var(--space-2);
+}
+.plan-meta-row {
+  display: flex;
+  gap: var(--space-2);
+}
+.plan-meta-row input {
+  flex: 1;
+  min-width: 0;
+  height: var(--space-8);
+  font-size: 0.83em;
+  padding: var(--space-1) var(--space-2);
+}
+.plan-meta-hint {
+  font-size: 0.72em;
+  color: var(--color-neutral-400);
+  margin-top: 2px;
+}
+.story-meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75em;
+  color: var(--color-neutral-500);
+}
+.task-owner {
+  flex: none;
+  font-size: 0.85em;
+  color: var(--color-neutral-500);
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  padding: 0 var(--space-2);
+}
+.subblock-action {
+  margin-left: auto;
+  font-size: 0.82em;
+}
+.issue-subblock > summary {
+  list-style-position: inside;
+}

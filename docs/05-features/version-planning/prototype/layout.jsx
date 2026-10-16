@@ -47,7 +47,6 @@ function PrototypeLayout({
   risk,
   setDraft,
   setEditingIssue,
-  setExpanded,
   setIssueDraft,
   setIssues,
   setModal,
@@ -58,7 +57,6 @@ function PrototypeLayout({
   setRisk,
   setSelectedIssue,
   setSessions,
-  setTaskFilter,
   setVersion,
   stageGo,
   steps,
@@ -70,7 +68,6 @@ function PrototypeLayout({
   update,
   updateResult,
   version,
-  versionTasks,
   view,
   weekly
 }) {
@@ -148,8 +145,6 @@ function PrototypeLayout({
           selectVersion={(value) => {
             setVersion(value)
             setNotice('')
-            setExpanded(false)
-            setTaskFilter('')
           }}
           {...{
             branch,
@@ -213,12 +208,14 @@ function PrototypeLayout({
                     update={planning.edited(update)}
                     openSource={planning.openSource}
                     {...{
+                      goalIssues,
                       metricPrep,
+                      openIssue,
                       promptConversation,
                       refreshMetrics,
                       review,
                       setNotice,
-                      versionTasks
+                      version
                     }}
                   />
                 ) : (

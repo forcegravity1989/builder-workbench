@@ -28,12 +28,12 @@
 
 2026-10-14 Issue #355 同步统一批（用户在对齐会话逐项拍板，正本文案见 #355 plan §0）：进屏自动 gitPull 废止——计划/验收屏进屏零 Git 动作、不挂同步提示；页头按钮改「更新代码」并成为唯一同步入口，经新 RPC `workbench.trunk.update`：基线解析（钉值 `worktreeBaseRef` 或主检出当前分支，不再猜 main/master）→ fetch 书签 → 双向 rev-list 对比 → `merge --ff-only`。快进不了（分叉、主检出有本地改动、分支失配、远端不可达）保持原样，统一一句话提示请会话模型处理该分支的代码更新，材料仍照常重读并保留未保存输入；纯草稿状态（树有未合入提交、主干没前进）不是异常、不提示。旧机制同批删除：`trunkPullTarget`、BW 对 `gitPull` 的消费、`resolveAdoptedBaseline` 名字探针、cycle-sync-runtime/port 与旧 syncTrunk 契约。week-planning references 与 version-records 的「刷新数据」协议句改写为「更新代码」新语义。证据：workbench vitest 全绿 226 例（ratchet 基线 228→226：删 trunkPullTarget 4 例、旧基线解析 3 例、configuration-not-adopted 1 例，增基线解析 3 例、同步决策 3 例，指标采用 fetch 1 例原位改写为无 fetch 语义）、typecheck 0 错、rpc-catalog / bundled-skill-guides / skill-bundle-manifest verify 绿；真壳未运行（用户明示本轮不做启动验证）——按钮快进、拒绝提示与「验收合入后计划屏一次更新可见」跨屏场景待用户实机验证。
 
-2026-10-16 共用原型壳触碰批（主体在验收特性，本特性无生产代码改动）：验收双面整改草案（leader 反馈 + owner「合二为一」意见，用户拍板）连带修改共用原型壳——会话栏收折为窄轨，计划/验收两屏同享；计划 spec 状态行已加待人确认指针。整改条款、原型证据与待办见[验收 STATUS](../version-acceptance/STATUS.md) 同日批次记录。
+2026-10-16 目标卡骨架统一草案批（主体在验收特性，本特性无生产代码改动）：计划屏与验收屏统一为同一套目标卡语言——整卡收缩（收起=结论行：状态灯、目标句、关联 Issue 完成数；展开=目标句/交付件/验收标准/指标承诺/计划完成与负责人/关联 Issue 分组子块与「在会话中拆解」入口）；计划完成与负责人写入计划材料既有 deadline/owner 字段，验收屏只读展示；拆解创建或更新的 Issue 逐条打 bug/feature 分类标签（已立项，随实施批落地）；页面级全部展开/收起，页面不再另设全量任务区；会话栏收折为窄轨两屏共用。条款见本篇 spec「右侧只有一页」段与[验收规格](../version-acceptance/spec.md)，均待人确认；认可来源（leader 反馈、owner 合并意见、用户逐项拍板）与原型证据见[验收 STATUS](../version-acceptance/STATUS.md) 同日批次记录。验证同验收侧：build.cjs --check 三屏启动通过、runtime 与源码一致。
 
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
 | intent | ● 已确认 | 沿用三特性边界，用户确认本轮计划/验收共用协作入口与资产同步 |
-| spec | ● 实施输入 | 本轮高保真已获用户确认；新入口已按该高保真实施（组件/契约测试为上限，真壳未验），新增或拿不准的行为仍需确认 |
+| spec | ◐ 统一草案 | 已确认行为仍是实施输入（新入口已按该高保真实施，组件/契约测试为上限，真壳未验）；目标卡骨架统一节（2026-10-16）待人确认，其余不变 |
 | 实现设计 | ◐ 部分 | 设计主体已按当前接线落地，取舍差异回写 design；详细设计仍未逐项细审，未决项必须人工确认 |
 | TDD | ◐ 部分 | 以下为 PR #272 前历史证据，不含当前会话复用接线：单测/组件测试全绿：渲染端大套件 388 文件 3477 项，main/workbench + relay 38 文件 203 项，另有 store、launch/settings/hooks 等；三套 tsc 0 错；RPC catalog/投影/manifest 校验绿。覆盖材料事务、CAS 读写、显式迁移、草稿冲突和恢复、派生纪要、流程选版与会话绑定。真实 Git 工作树与文件在测试内创建；SSH/会话/provider 端口使用测试替身，不能视为真实远端与 Electron 旅程。本轮（#279）新增证据：协作卡片入口、one-shot 转发/门控/派发载荷与既有 8 项计划板测试全绿；tsc 因本机内存限制未能运行，缺口如实记入 PR。2026-09-30 返工批证据：ensure 覆盖同步 3 例、trunkPullTarget 解析 3 例、历史服务（自有分支 treePlans/归档信号化/白名单扩展）真实 Git 仓测试全绿、开轮门控 3 例；受触测试文件 vitest 全过；tsc 仍因本机内存未能运行，如实记录 |
 | 验收点 E2E | ◐ 部分 | 真壳 Playwright 烟测 `tests/e2e/workbench-cycle-smoke.spec.ts`（固定树创建→选版→保存→磁盘读回→重载恢复→验收树→总览）已编写，执行结果见 PR；P01–P10 完整验收点尚未逐项运行 |

@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { initial } from './shared.jsx'
 import { original, remote } from './snapshot.js'
 import { buildMinutes, buildReport } from './summaries.js'
-import { PrototypeTaskList, PrototypeVersionTasks } from './tasks.jsx'
+import { PrototypeTaskList } from './tasks.jsx'
 import { PrototypeLayout } from './layout.jsx'
 import { LATEST_PACKAGE } from '../../version-acceptance/prototype/package-panel.jsx'
 
@@ -55,8 +55,6 @@ function App() {
     [configId, setConfigId] = useState(0),
     [notice, setNotice] = useState('')
   const [issues, setIssues] = useState(remote.issues),
-    [expanded, setExpanded] = useState(false),
-    [taskFilter, setTaskFilter] = useState(''),
     [selectedIssue, setSelectedIssue] = useState(null),
     [issueDraft, setIssueDraft] = useState(''),
     [editingIssue, setEditingIssue] = useState(false),
@@ -72,8 +70,7 @@ function App() {
       repoGrain: 'week',
       hidden: []
     })
-  const taskSection = useRef(null),
-    composer = useRef(null),
+  const composer = useRef(null),
     savedScroll = useRef(0)
   const weekly = view === 'monday' || view === 'friday',
     chatVisible = weekly,
@@ -94,8 +91,7 @@ function App() {
       goal: t.goal.split('/').at(-1)
     }))
   const tasks = taskRows(version),
-    goalIssues = (g) => tasks.filter((t) => t.goal === g.label),
-    shownTasks = taskFilter ? tasks.filter((t) => t.goal === taskFilter) : tasks
+    goalIssues = (g) => tasks.filter((t) => t.goal === g.label)
   const issue = issues.find((t) => t.number === selectedIssue),
     hasGap = (g) => g.decision === '未达'
   const update = (id, key, value) =>
@@ -194,16 +190,6 @@ function App() {
     }))
     go('metricsetup')
   }
-  function openIssues(g = null) {
-    setTaskFilter(g?.label || '')
-    setExpanded(true)
-    requestAnimationFrame(() =>
-      taskSection.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest'
-      })
-    )
-  }
   function openIssue(t) {
     savedScroll.current = document.querySelector('.content-scroll')?.scrollTop || 0
     setReturnTo(view)
@@ -272,10 +258,6 @@ function App() {
       archive()
       return
     }
-    if (view === 'monday' && i === 3) {
-      openIssues()
-      return
-    }
     if (view === 'friday' && i === 1) {
       document.querySelector('.package-block')?.scrollIntoView({
         behavior: 'smooth',
@@ -291,7 +273,7 @@ function App() {
       return
     }
     if (view === 'monday') {
-      document.querySelector(i === 0 ? '.planning-brief' : '.goal-sheet')?.scrollIntoView({
+      document.querySelector('.goal-cards')?.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest'
       })
@@ -303,27 +285,6 @@ function App() {
         {...{
           items,
           openIssue
-        }}
-      />
-    )
-  }
-  function versionTasks(prepareRequest = promptConversation, disabled = false) {
-    return (
-      <PrototypeVersionTasks
-        {...{
-          expanded,
-          promptConversation: prepareRequest,
-          setExpanded,
-          setNotice,
-          setTaskFilter,
-          shownTasks: disabled ? [] : shownTasks,
-          taskFilter,
-          taskList,
-          taskSection,
-          tasks: disabled ? [] : tasks,
-          disabled,
-          version,
-          view
         }}
       />
     )
@@ -368,7 +329,6 @@ function App() {
         session,
         setDraft,
         setEditingIssue,
-        setExpanded,
         setIssueDraft,
         setIssues,
         setModal,
@@ -379,7 +339,6 @@ function App() {
         setRisk,
         setSelectedIssue,
         setSessions,
-        setTaskFilter,
         setVersion,
         stageGo,
         steps,
@@ -391,7 +350,6 @@ function App() {
         update,
         updateResult,
         version,
-        versionTasks,
         view,
         weekly
       }}

@@ -12,7 +12,16 @@ import {
   RefreshCw,
   X
 } from 'lucide-react'
-import { Field, Lamp, done, titleForTask } from '../../version-planning/prototype/shared.jsx'
+import {
+  CLASS_LABELS,
+  Field,
+  Lamp,
+  assigneeOf,
+  done,
+  issueClass,
+  readableState,
+  titleForTask
+} from '../../version-planning/prototype/shared.jsx'
 import { files, original } from '../../version-planning/prototype/snapshot.js'
 import { AcceptanceMetricEvidence } from './metric-evidence.jsx'
 import { PackagePanel } from './package-panel.jsx'
@@ -46,24 +55,6 @@ const WEEKS = {
   ]
 }
 
-// Issue 分类：分组展示依赖提单时的 bug/feature 分类标签（配套小需求，见 spec）；
-// 无分类标签的如实归入「未分类」，不猜测。
-const issueClass = (t) =>
-  t.labels?.some((l) => /^(bug|缺陷)/i.test(l.name))
-    ? 'bug'
-    : t.labels?.some((l) => /^(feature|功能)/i.test(l.name))
-      ? 'feature'
-      : 'unclassified'
-const CLASS_LABELS = { bug: 'Bug 类', feature: 'Feature 类', unclassified: '未分类' }
-
-const readableState = (t) =>
-  t.state === 'CLOSED'
-    ? '已关闭'
-    : t.labels?.some((l) => l.name === 'bw:status:inreview')
-      ? '待评审'
-      : t.labels?.some((l) => l.name === 'bw:status:inprogress')
-        ? '进行中'
-        : '开放'
 const decisionTone = (g) =>
   g.decision === '达成' ? 'green' : g.decision === '未达' ? 'red' : 'yellow'
 
@@ -141,6 +132,11 @@ function AcceptanceContent({
         <span className="task-number">#{t.number}</span>
         <span className="task-title">{titleForTask(t)}</span>
       </button>
+      {assigneeOf(t) && (
+        <span className="task-owner" title="责任人（Issue 原生 assignee）">
+          {assigneeOf(t)}
+        </span>
+      )}
       <span className="task-readable-state">{readableState(t)}</span>
       {t.state !== 'CLOSED' && (
         <span className="issue-flags">
@@ -319,6 +315,10 @@ function AcceptanceContent({
                     <div className="story-cell">
                       <span className="story-label">约定交付</span>
                       <p>{version === 'v0.4' ? g.metric : g.delivery || '未约定交付件'}</p>
+                      <span className="story-meta">
+                        计划完成 {g.deadline?.trim() || '未记录'} · 负责人{' '}
+                        {g.owner?.trim() || '未指派'}
+                      </span>
                     </div>
                     <div className="story-cell">
                       <span className="story-label">实际交付</span>

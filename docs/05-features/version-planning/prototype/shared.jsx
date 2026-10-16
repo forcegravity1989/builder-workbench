@@ -47,6 +47,24 @@ const initial = original.plan.goals.map((g, i) => ({
 }))
 const done = (tasks) => tasks.filter((x) => x.state === 'CLOSED').length
 const titleForTask = (t) => t.title.replace(/^【[^】]*】/, '').trim()
+// Issue 分类分组依赖提单分类标签（bug/feature 立项随实施批）；无标签如实归未分类，不猜测。
+const issueClass = (t) =>
+  t.labels?.some((l) => /^(bug|缺陷)/i.test(l.name))
+    ? 'bug'
+    : t.labels?.some((l) => /^(feature|功能)/i.test(l.name))
+      ? 'feature'
+      : 'unclassified'
+const CLASS_LABELS = { bug: 'Bug 类', feature: 'Feature 类', unclassified: '未分类' }
+const readableState = (t) =>
+  t.state === 'CLOSED'
+    ? '已关闭'
+    : t.labels?.some((l) => l.name === 'bw:status:inreview')
+      ? '待评审'
+      : t.labels?.some((l) => l.name === 'bw:status:inprogress')
+        ? '进行中'
+        : '开放'
+// 责任人从 Issue 原生 assignee 读回；快照缺字段时不显示，不手填。
+const assigneeOf = (t) => t.assignee ?? t.assignees?.[0]?.login ?? ''
 const Field = ({ label, value, onChange, placeholder, rows = 1, ...props }) => (
   <textarea
     aria-label={label}
@@ -88,6 +106,10 @@ export {
   initial,
   done,
   titleForTask,
+  issueClass,
+  CLASS_LABELS,
+  readableState,
+  assigneeOf,
   Field,
   lampNames,
   Lamp,
