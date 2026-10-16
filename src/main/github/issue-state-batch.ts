@@ -34,12 +34,15 @@ export async function getIssueStatesBatch(input: {
   if (!SAFE_NAME.test(owner) || !SAFE_NAME.test(repo) || (host && !SAFE_NAME.test(host))) {
     return { items: [], error: '仓库身份含非法字符，拒绝查询' }
   }
-  if (
-    numbers.length === 0 ||
-    numbers.length > MAX_NUMBERS_PER_CALL ||
-    !numbers.every((n) => Number.isInteger(n) && n > 0)
-  ) {
-    return { items: [], error: `编号列表非法（1..${MAX_NUMBERS_PER_CALL} 个正整数）` }
+  if (numbers.length === 0 || !numbers.every((n) => Number.isInteger(n) && n > 0)) {
+    return { items: [], error: '编号列表非法（须为正整数）' }
+  }
+  if (numbers.length > MAX_NUMBERS_PER_CALL) {
+    // 超限与非法分开报因：读者能知道是任务数超单次上限，而不是计划材料坏了。
+    return {
+      items: [],
+      error: `任务数 ${numbers.length} 超单次读取上限（${MAX_NUMBERS_PER_CALL}），请拆分计划材料或提高上限`
+    }
   }
   await acquire()
   try {

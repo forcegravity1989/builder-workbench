@@ -196,7 +196,9 @@ async function countSlotOpenPrs(repo: Repo, current: () => boolean): Promise<num
   if (provider === 'github') {
     const context = getTaskPageRepoSourceContext(repo, 'github')
     const target = getGitHubSourceRuntimeTarget(context)
-    let total = 0
+    // 每页是独立实时查询，created-desc 窗口可能在页间平移：按条目 id 去重后
+    // 取 size（overview-sdlc 同语义），不拼半真计数。
+    const ids = new Set<string>()
     let source = ''
     for (let page = 1; page <= 10; page++) {
       if (!current()) {
@@ -225,9 +227,11 @@ async function countSlotOpenPrs(repo: Repo, current: () => boolean): Promise<num
         throw new Error('分页期间数据来源发生变化，请刷新')
       }
       source = nextSource
-      total += result.items.length
+      for (const item of result.items) {
+        ids.add(item.id)
+      }
       if (result.items.length < 100) {
-        return total
+        return ids.size
       }
     }
     throw new Error('开放 PR 超过完整计数上限（1,000）')
