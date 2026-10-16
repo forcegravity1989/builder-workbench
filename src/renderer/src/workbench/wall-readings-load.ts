@@ -89,18 +89,11 @@ export async function readVersionAndProgress(context: PlanContext): Promise<{
   const historyPort = nativeVersionHistoryPort(scope.runtimeOwnerEnvironmentId)
   const materialPort = nativeVersionMaterialPort(materialScope, scope.runtimeOwnerEnvironmentId)
   try {
-    // 与总览同机制：主干基线目录 + 计划树对齐 + 原生选版偏好，三者齐了才显示版本。
+    // 版本标签只看两个主干事实：原生选版偏好 + 主干基线目录命中。
     const catalog = await historyPort.list({
       scope: { repoId: scope.repoId, worktreeId: home.id, hostId: scope.hostId },
       currentOnly: true
     })
-    const treePlans = await historyPort.listTreePlans({
-      scope: { repoId: scope.repoId, worktreeId: plan.id, hostId: scope.hostId },
-      adoptedCommit: catalog.baselineCommit
-    })
-    if (treePlans.alignment !== 'aligned') {
-      return { version: { kind: 'undecided' }, progress: { kind: 'hidden' } }
-    }
     const contextVersion = await materialPort.context()
     const version = contextVersion.version
     if (
@@ -110,6 +103,21 @@ export async function readVersionAndProgress(context: PlanContext): Promise<{
       )
     ) {
       return { version: { kind: 'undecided' }, progress: { kind: 'hidden' } }
+    }
+    // 计划树对齐只门控承诺进展的材料新鲜度：计划树落后主干时草稿可能是旧文件，
+    // 把旧计数当现状显示等同撒谎；此时版本照显、进展如实「—」并给可行动原因。
+    const treePlans = await historyPort.listTreePlans({
+      scope: { repoId: scope.repoId, worktreeId: plan.id, hostId: scope.hostId },
+      adoptedCommit: catalog.baselineCommit
+    })
+    if (treePlans.alignment !== 'aligned') {
+      return {
+        version: { kind: 'value', version },
+        progress: {
+          kind: 'unknown',
+          reason: '计划树未同步主干基线，承诺进展暂不可读（计划屏「更新代码」可同步）'
+        }
+      }
     }
     const snapshot = await materialPort.read(version)
     if (!snapshot) {
@@ -196,7 +204,10 @@ async function countSlotOpenPrs(repo: Repo, current: () => boolean): Promise<num
   if (provider === 'github') {
     const context = getTaskPageRepoSourceContext(repo, 'github')
     const target = getGitHubSourceRuntimeTarget(context)
-    let total = 0
+    // 每页是独立实时查询，created-desc 窗口可能在页间平移：按条目 id 汇集取 size
+    // 消除重复方向的多计；分页期间发生关闭/合入时窗口平移可能整页跳过边界条目
+    // （漏计方向），与 overview-sdlc 同族限制，按现值读数承受、不装 Unknown。
+    const ids = new Set<string>()
     let source = ''
     for (let page = 1; page <= 10; page++) {
       if (!current()) {
@@ -225,9 +236,11 @@ async function countSlotOpenPrs(repo: Repo, current: () => boolean): Promise<num
         throw new Error('分页期间数据来源发生变化，请刷新')
       }
       source = nextSource
-      total += result.items.length
+      for (const item of result.items) {
+        ids.add(item.id)
+      }
       if (result.items.length < 100) {
-        return total
+        return ids.size
       }
     }
     throw new Error('开放 PR 超过完整计数上限（1,000）')

@@ -28,6 +28,18 @@ describe('getIssueStatesBatch', () => {
     expect(ghExecFileAsync).not.toHaveBeenCalled()
   })
 
+  it('超限与非法分开报因：超上限说上限，不说「列表非法」', async () => {
+    ghExecFileAsync.mockClear()
+    const result = await getIssueStatesBatch({
+      owner: 'o',
+      repo: 'r',
+      numbers: Array.from({ length: 201 }, (_, index) => index + 1)
+    })
+    expect(result.error).toContain('超单次读取上限')
+    expect(result.error).not.toContain('非法')
+    expect(ghExecFileAsync).not.toHaveBeenCalled()
+  })
+
   it('解析别名回执为条目；缺失编号不进 items（调用方按读不到处理）', async () => {
     ghExecFileAsync.mockClear()
     ghExecFileAsync.mockResolvedValueOnce({
