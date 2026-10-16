@@ -35,7 +35,7 @@ function buildReport({ goals, hasGap, historical, taskRows }, forVersion) {
           : forVersion === 'v0.4'
             ? `\n- 历史原记录：${g.reading || '未取得'}（非本期脚本实测）`
             : '\n- 本目标未约定指标'
-      }${selected ? `\n- 验收指标：${selected.name}；区间 ${window.since} 至 ${window.until}（不含）；${window.granularity === 'week' ? '按周' : '按日'}；实际采集来源与读数：尚未取得` : ''}\n- 验收结论：${g.decision}\n- 依据${hasGap(g) ? ' / 未达项' : ''}：${g.reason || '未填写'}${
+      }${selected ? `\n- 验收指标：${selected.name}；区间 ${window.since} 至 ${window.until}（不含）；${window.granularity === 'week' ? '按周' : '按日'}；实际采集来源与读数：尚未取得` : ''}\n- 验收结论：${g.decision}\n- 依据${hasGap(g) ? ' / 未达项' : ''}：${g.reason || (hasGap(g) ? g.actualDelivery : '') || '未填写'}${
         hasGap(g) ? `\n- 下一步：${g.next || '待安排'}` : ''
       }\n- Issue 完成：${done(reportGoalIssues(g))}/${reportGoalIssues(g).length}`
     })
