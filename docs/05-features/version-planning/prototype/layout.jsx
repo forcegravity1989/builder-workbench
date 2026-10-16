@@ -76,18 +76,23 @@ function PrototypeLayout({
   const [sessionWidth, setSessionWidth] = useState(undefined)
   // 会话栏收折对计划/验收共用（同一壳）。
   const [chatCollapsed, setChatCollapsed] = useState(false)
-  // 验收板人工标记（遗留/风险）、周次与会上指导提升到此层：跳 Issue 详情或切屏返回后保留。
-  // 遗留/风险是人工判断（演示默认：#255 随 G3 未达标记遗留+风险）；
+  // 验收板人工标记（遗留/风险）、Issue 级进展备注、周次与会议指导提升到此层：跳 Issue 详情或切屏返回后保留。
+  // 遗留/风险是人工判断（演示默认：#255 随 G3 未达标记遗留+风险，备注为演示预置¹）；
   // 开放 Issue 不自动判遗留，关闭 Issue 不自动判目标达成。
   const [accMarks, setAccMarks] = useState({ 255: { carry: true, risk: true } })
+  const [accNotes, setAccNotes] = useState({
+    255: '白名单采集脚本已交付并可按周出读数；未达主因是被管项目实际接入不足，非能力缺口。带入下版跟踪接入进展。'
+  })
   const [accWeekId, setAccWeekId] = useState(null)
-  // 领导会上指导演示预置¹：按真实口径编写，正式界面不预置、由人现场逐条记录。
+  // 会议指导与遗留演示预置¹：模拟会后从转写稿总结、待人确认的条目；正式界面不预置。
   const [accDirectives, setAccDirectives] = useState([
     {
       id: 1,
+      status: '待确认',
       tag: '纳入下周计划',
       goal: 'G3',
-      text: 'G3 未达不阻塞本版发布；下周计划把被管项目真实接入列为前置依赖，进展在周五验收同步。'
+      text: 'G3 未达不阻塞本版发布；下周计划把被管项目真实接入列为前置依赖，进展在周五验收同步。',
+      source: '会议转写总结（演示）'
     }
   ])
   const planning = usePlanningDemo({ setModal, setNotice })
@@ -224,6 +229,8 @@ function PrototypeLayout({
                     current={firstEntry ? [] : current}
                     marks={accMarks}
                     setMarks={setAccMarks}
+                    notes={accNotes}
+                    setNotes={setAccNotes}
                     directives={accDirectives}
                     setDirectives={setAccDirectives}
                     weekId={accWeekId}
@@ -238,7 +245,6 @@ function PrototypeLayout({
                       review,
                       setModal,
                       setNotice,
-                      tasks,
                       triggerPackage,
                       downloadPackage,
                       updateResult,

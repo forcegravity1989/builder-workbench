@@ -3677,3 +3677,190 @@ input::placeholder {
 .issue-subblock > summary {
   list-style-position: inside;
 }
+
+/* —— v9.4：三轮走查迭代（摘要行删除、出包卡片化、进展下沉 Issue 行、指标状态行、
+   Issue 行按状态/遗留/风险着色、会议指导与遗留·会后） —— */
+.package-block {
+  background: var(--color-card);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+}
+.package-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 0;
+  background: transparent;
+  padding: var(--space-2) var(--space-3);
+}
+.package-toggle > svg {
+  width: var(--space-4);
+  height: var(--space-4);
+  color: var(--color-neutral-500);
+  flex: none;
+}
+.package-toggle h2 {
+  font-size: 1em;
+  font-weight: 600;
+  flex: none;
+}
+.package-vendor {
+  font: 0.8em var(--font-mono);
+  color: var(--color-neutral-500);
+  flex: none;
+}
+.package-block .package-sheet {
+  border: 0;
+  border-top: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+  margin-bottom: 0;
+  padding: var(--space-2) var(--space-3) var(--space-3);
+}
+.head-chip.owner {
+  font-family: var(--font-sans);
+}
+.card-story-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr);
+}
+.story-cell fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.story-cell fieldset:disabled {
+  opacity: 0.75;
+}
+.legacy-reason {
+  margin-top: 2px;
+  font-size: 0.75em;
+  line-height: 1.6;
+  color: var(--color-neutral-500);
+}
+.metric-strip {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  border-top: 1px dashed var(--color-divider);
+  padding: var(--space-1) 0;
+  font-size: 0.82em;
+  color: var(--color-neutral-600);
+  flex-wrap: wrap;
+}
+.metric-strip > svg {
+  width: var(--space-3);
+  height: var(--space-3);
+  color: var(--color-neutral-500);
+  align-self: center;
+}
+.metric-strip-detail {
+  margin-left: auto;
+}
+.metric-strip-detail > summary {
+  cursor: pointer;
+  font-size: 0.95em;
+  color: var(--color-neutral-500);
+}
+.metric-strip-detail fieldset {
+  border: 0;
+  padding: 0;
+  margin: var(--space-1) 0 0;
+  min-width: 0;
+}
+.goal-issue-row[data-tone='open'] {
+  background: color-mix(in srgb, var(--color-warning-soft) 55%, transparent);
+  border-radius: var(--radius-sm);
+}
+.goal-issue-row[data-tone='risk'] {
+  background: color-mix(in srgb, var(--color-danger-soft) 60%, transparent);
+  border-radius: var(--radius-sm);
+}
+.goal-issue-link {
+  flex: 1 1 auto;
+  max-width: 55%;
+}
+.note-toggle {
+  width: var(--space-6);
+  height: var(--space-6);
+  padding: 2px;
+  flex: none;
+}
+.note-toggle svg {
+  width: var(--space-3);
+  height: var(--space-3);
+}
+.issue-note-row {
+  padding: var(--space-1) 0 var(--space-1) calc(var(--space-6));
+}
+.issue-note-row textarea {
+  width: 100%;
+  border: 1px dashed var(--color-divider);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.84em;
+  background: transparent;
+  color: var(--color-text);
+}
+.issue-note-preview {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0 0 var(--space-1) calc(var(--space-6) + var(--space-1));
+  font-size: 0.78em;
+  color: var(--color-neutral-500);
+  text-align: left;
+}
+.issue-note-preview:hover {
+  color: var(--color-text);
+}
+.issue-note-preview svg {
+  width: var(--space-3);
+  height: var(--space-3);
+  flex: none;
+}
+.session-collapse-btn {
+  font-size: 0.8em;
+  gap: var(--space-1);
+  white-space: nowrap;
+  width: auto;
+  height: var(--space-6);
+  padding: 0 var(--space-2);
+}
+.session-collapse-btn svg {
+  width: var(--space-3);
+  height: var(--space-3);
+}
+.directives-card h3 .btn-add-directive {
+  margin-left: auto;
+}
+.directive-status {
+  flex: none;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  font-size: 0.78em;
+  color: var(--color-neutral-500);
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+}
+.directive-status.pending {
+  border-color: var(--color-warning-deep);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-deep);
+}
+.directive-source {
+  display: block;
+  font-size: 0.85em;
+  color: var(--color-neutral-400);
+}
+.directive-actions {
+  display: flex;
+  gap: var(--space-1);
+  flex: none;
+  align-self: center;
+}

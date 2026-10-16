@@ -32,7 +32,7 @@
 
 ³ 第 6–7 行从已落地提交回写（2026-09-30），intent/spec 为草案，待人 gate。第 6 行接上原先「任务 CodeHub 支持」的占位，目录就是 [codehub/](codehub/)，范围含任务来源与计划/验收读写；spec 缺可点原型。第 7 行是 BW 开发者的 Windows 出包与 GitHub Release，无界面，操作契约在技能；#332 增补发布脚本 `release-win-workbench.mjs`、版本描述规范与验收报告规范（含骨架模板），`version-report` 技能退役并入本特性，TDD 由 ○→◐（发布脚本 18 例单测），验收点扩到 R01–R06（R05 版本描述合规范、R06 验收报告合规范），均定义未跑。明细见各自 STATUS。
 
-⁴ 第 1–2 行 2026-10-16 形态整改草案（v9.3 原型）：计划/验收统一目标卡骨架（整卡收缩、Issue 分组子块、计划完成/负责人从计划材料既有字段取）；验收单页承载会前/会中/会后三阶段，页底「领导会上指导」随轮次入材料；跨周版本按轮次记录、界面按周呈现；周报信息由验收屏承载，不设独立周报屏与导出件——weekly-report 试点（PR #321 未合入 main、保持挂起）整体废止，处置待用户确认；Issue bug/feature 分类标签已立项随实施批。生产代码未动，草案条款与 A12–A14 待人确认。明细见[验收 STATUS](version-acceptance/STATUS.md) 与[计划 STATUS](version-planning/STATUS.md) 同日批次记录。
+⁴ 第 1–2 行 2026-10-16 形态整改草案（v9.4 原型）：计划/验收统一目标卡骨架（整卡收缩、Issue 分组子块带 Issue 级进展备注、计划完成/负责人从计划材料既有字段取）；验收单页承载会前/会中/会后三阶段，页底「会议指导与遗留」会后从会议转写总结（issue #374 链路、经 subagent、逐条人确认）随轮次入材料；跨周版本按轮次记录、界面按周呈现；周报信息由验收屏承载，不设独立周报屏与导出件——weekly-report 试点（PR #321 未合入 main、保持挂起）整体废止，处置待用户确认；Issue bug/feature 分类标签已立项随实施批。生产代码未动，草案条款与 A12–A14 待人确认。明细见[验收 STATUS](version-acceptance/STATUS.md) 与[计划 STATUS](version-planning/STATUS.md) 同日批次记录。
 
 ## 裁决与明细指引
 

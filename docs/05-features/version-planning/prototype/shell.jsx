@@ -95,13 +95,13 @@ function PrototypeSession({ collapsed, composer, draft, onToggleCollapse, sessio
       <div className="session-collapse-bar">
         <span role="status">{sessionState === 'empty' ? '尚未打开会话' : '会话已打开'}</span>
         <button
-          className="btn btn-icon btn-ghost"
+          className="btn btn-ghost session-collapse-btn"
           onClick={onToggleCollapse}
           aria-expanded={true}
-          title="收起会话栏；随时展开恢复"
-          aria-label="收起会话栏"
+          title="收起会话栏，板面占满整幅；随时展开恢复"
         >
           <ArrowLeft />
+          收起会话
         </button>
       </div>
       <div className="native-workspace-placeholder">

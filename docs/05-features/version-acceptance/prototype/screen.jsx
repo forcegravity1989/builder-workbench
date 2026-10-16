@@ -1,6 +1,7 @@
 import { React, useState } from 'react'
 import {
   Check,
+  ChartNoAxesCombined,
   ChevronDown,
   ChevronRight,
   ClipboardCheck,
@@ -8,6 +9,7 @@ import {
   History,
   ListTodo,
   MessageSquare,
+  Pencil,
   Plus,
   RefreshCw,
   X
@@ -23,7 +25,7 @@ import {
   titleForTask
 } from '../../version-planning/prototype/shared.jsx'
 import { files, original } from '../../version-planning/prototype/snapshot.js'
-import { AcceptanceMetricEvidence } from './metric-evidence.jsx'
+import { AcceptanceMetricEvidence, acceptanceMetric } from './metric-evidence.jsx'
 import { PackagePanel } from './package-panel.jsx'
 
 // 周次演示数据¹：跨周版本每周五做一次验收——「进展刷新」周不出包、只刷新进展，
@@ -57,8 +59,13 @@ const WEEKS = {
 
 const decisionTone = (g) =>
   g.decision === '达成' ? 'green' : g.decision === '未达' ? 'red' : 'yellow'
+const oneLine = (s, n = 60) => (s.length > n ? `${s.slice(0, n)}…` : s)
+// 处置标签：本次能解决的进本次验收/计划，解决不了的记录遗留。
+const DIRECTIVE_TAGS = ['本次验收已解决', '纳入下周计划', '记录遗留']
 
-const DIRECTIVE_TAGS = ['影响会后发布', '纳入下周计划', '本版跟进']
+function meetingSummaryRequest() {
+  return `会议 ID：____。请用转写脚本获取该会议的语音转文字稿件（链路见 issue #374，沿用周一屏纪要转写先例），定位与本项目相关的议题，务必开 subagent 总结会上指导与遗留问题，不在主会话直接总结。能在本次验收或本次计划解决的，给出处理建议并在对应板块落实；不能解决的，逐条写入「会议指导与遗留」，注明转写来源与原文位置。总结结果逐条经我确认后才写入材料；不要代签结论，不要代我表态。`
+}
 
 function AcceptanceContent({
   disabled = false,
@@ -68,6 +75,8 @@ function AcceptanceContent({
   latestPackage,
   marks,
   setMarks,
+  notes,
+  setNotes,
   directives,
   setDirectives,
   openIssue,
@@ -78,20 +87,20 @@ function AcceptanceContent({
   setWeekId,
   setModal,
   setNotice,
-  tasks,
   triggerPackage,
   downloadPackage,
   updateResult,
   version
 }) {
-  // marks/weekId/directives 由 layout 持有：跳 Issue 详情或切屏返回后保留。
+  // marks/notes/weekId/directives 由 layout 持有：跳 Issue 详情或切屏返回后保留。
   const weeks = WEEKS[version] ?? WEEKS['v0.5']
   const week = weeks.find((w) => w.id === weekId) ?? weeks[0]
   const readOnly = disabled || !week.current
-  // 卡片开合记忆用户意图；默认 = 未填写结论与材料时展开、已填写时收起（key 含版本与周次）。
+  // 卡片开合记忆用户意图；默认 = 未填写结论与进展时展开、已填写时收起（key 含版本与周次）。
   const [openGoals, setOpenGoals] = useState({})
   // 出包区块属会前，默认收起；收起态保留一行最新包摘要，会中不占视野。
   const [pkgOpen, setPkgOpen] = useState(false)
+  const [openNotes, setOpenNotes] = useState({})
   const [directiveDraft, setDirectiveDraft] = useState(null)
   const cardKey = (g) => `${version}:${week.id}:${g.id}`
   const isCardOpen = (g) =>
@@ -119,49 +128,93 @@ function AcceptanceContent({
     if (!directiveDraft?.text.trim()) {
       return
     }
-    setDirectives((list) => [...list, { ...directiveDraft, id: Date.now() }])
+    setDirectives((list) => [
+      ...list,
+      { ...directiveDraft, id: Date.now(), status: '已确认', source: '人工补记' }
+    ])
     setDirectiveDraft(null)
     setNotice('指导已记录（原型内存演示）；正式界面随轮次写入材料，下周计划会话可读回')
   }
-  const issueRow = (t) => (
-    <div className="goal-issue-row" key={t.number}>
-      <span className={`task-state ${t.state === 'CLOSED' ? 'closed' : 'open'}`}>
-        {t.state === 'CLOSED' ? <Check /> : <span className="open-circle" />}
-      </span>
-      <button className="goal-issue-link" onClick={() => openIssue(t)}>
-        <span className="task-number">#{t.number}</span>
-        <span className="task-title">{titleForTask(t)}</span>
-      </button>
-      {assigneeOf(t) && (
-        <span className="task-owner" title="责任人（Issue 原生 assignee）">
-          {assigneeOf(t)}
-        </span>
-      )}
-      <span className="task-readable-state">{readableState(t)}</span>
-      {t.state !== 'CLOSED' && (
-        <span className="issue-flags">
-          <button
-            className={`flag-chip${marks[t.number]?.carry ? ' on' : ''}`}
-            aria-pressed={Boolean(marks[t.number]?.carry)}
-            disabled={readOnly}
-            title="人工判断：验收后是否遗留"
-            onClick={() => toggleMark(t.number, 'carry')}
-          >
-            遗留
+  const issueRow = (t) => {
+    const open = t.state !== 'CLOSED'
+    const tone = !open ? 'closed' : marks[t.number]?.risk ? 'risk' : 'open'
+    const note = notes[t.number] ?? ''
+    const noteOpen = openNotes[t.number] ?? false
+    return (
+      <div key={t.number}>
+        <div className="goal-issue-row" data-tone={tone}>
+          <span className={`task-state ${open ? 'open' : 'closed'}`}>
+            {open ? <span className="open-circle" /> : <Check />}
+          </span>
+          <span className="task-readable-state">{readableState(t)}</span>
+          <button className="goal-issue-link" onClick={() => openIssue(t)}>
+            <span className="task-number">#{t.number}</span>
+            <span className="task-title">{titleForTask(t)}</span>
           </button>
-          <button
-            className={`flag-chip risk${marks[t.number]?.risk ? ' on' : ''}`}
-            aria-pressed={Boolean(marks[t.number]?.risk)}
-            disabled={readOnly || !marks[t.number]?.carry}
-            title="人工判断：遗留是否带风险"
-            onClick={() => toggleMark(t.number, 'risk')}
-          >
-            风险
-          </button>
-        </span>
-      )}
-    </div>
-  )
+          {assigneeOf(t) && (
+            <span className="task-owner" title="责任人（Issue 原生 assignee）">
+              {assigneeOf(t)}
+            </span>
+          )}
+          {open && (
+            <span className="issue-flags">
+              <button
+                className={`flag-chip${marks[t.number]?.carry ? ' on' : ''}`}
+                aria-pressed={Boolean(marks[t.number]?.carry)}
+                disabled={readOnly}
+                title="人工判断：验收后是否遗留"
+                onClick={() => toggleMark(t.number, 'carry')}
+              >
+                遗留
+              </button>
+              <button
+                className={`flag-chip risk${marks[t.number]?.risk ? ' on' : ''}`}
+                aria-pressed={Boolean(marks[t.number]?.risk)}
+                disabled={readOnly || !marks[t.number]?.carry}
+                title="人工判断：遗留是否带风险"
+                onClick={() => toggleMark(t.number, 'risk')}
+              >
+                风险
+              </button>
+              <button
+                className="btn btn-icon btn-ghost note-toggle"
+                aria-expanded={noteOpen}
+                aria-label={`#${t.number} 进展/备注`}
+                title="进展/备注（人主导；遗留或风险的原因会前写在这里）"
+                disabled={readOnly}
+                onClick={() => setOpenNotes((s) => ({ ...s, [t.number]: !noteOpen }))}
+              >
+                <Pencil />
+              </button>
+            </span>
+          )}
+        </div>
+        {noteOpen ? (
+          <div className="issue-note-row">
+            <Field
+              label={`#${t.number} 进展/备注`}
+              value={note}
+              rows={2}
+              disabled={readOnly}
+              placeholder="该 Issue 的进展、遗留/风险原因写在这里；人主导填写，模型经确认后才写入"
+              onChange={(v) => setNotes((m) => ({ ...m, [t.number]: v }))}
+            />
+          </div>
+        ) : (
+          note && (
+            <button
+              className="issue-note-preview"
+              disabled={readOnly}
+              onClick={() => setOpenNotes((s) => ({ ...s, [t.number]: true }))}
+            >
+              <Pencil />
+              {oneLine(note)}
+            </button>
+          )
+        )}
+      </div>
+    )
+  }
   return (
     <>
       {!disabled && (
@@ -196,63 +249,43 @@ function AcceptanceContent({
         </p>
       )}
       {!disabled && (
-        <>
-          <div className="acceptance-summary">
-            <span>
-              <strong>{current.length}</strong> 项目标
-            </span>
-            <span className="summary-issues">
-              <ListTodo />
-              Issue 完成{' '}
-              <strong>
-                {done(tasks)} / {tasks.length}
-              </strong>
-            </span>
-            <button
-              className="summary-refresh"
-              title="刷新 Issue 状态"
-              onClick={() => setNotice('原型未连接远端；保留上次读取的 Issue 状态。')}
-            >
-              <RefreshCw />
-              刷新状态
-            </button>
-            <span className="pending-count">
-              {current.filter((g) => g.decision === '待核对').length} 项待核对
-              {current.some(hasGap) ? ` · ${current.filter(hasGap).length} 项未达` : ''}
-              {tasks.filter((t) => t.state !== 'CLOSED' && marks[t.number]?.carry).length
-                ? ` · ${tasks.filter((t) => t.state !== 'CLOSED' && marks[t.number]?.carry).length} 条人工标记遗留`
-                : ''}
-            </span>
-          </div>
-          <section className="package-block">
-            <button
-              className="section-heading package-heading package-toggle"
-              aria-expanded={pkgOpen}
-              onClick={() => setPkgOpen((v) => !v)}
-            >
-              {pkgOpen ? <ChevronDown /> : <ChevronRight />}
-              <h2>出包</h2>
-              <span>CloudDragon</span>
-              {!pkgOpen && latestPackage && (
-                <span className="package-digest" title={latestPackage.version}>
-                  最新包 {latestPackage.version.slice(0, 28)}… · {latestPackage.created}
-                </span>
-              )}
-            </button>
-            {pkgOpen && (
-              <PackagePanel
-                disabled={readOnly}
-                latest={latestPackage}
-                onPackage={triggerPackage}
-                onDownload={downloadPackage}
-              />
+        <section className="package-block">
+          <button
+            className="package-toggle"
+            aria-expanded={pkgOpen}
+            onClick={() => setPkgOpen((v) => !v)}
+          >
+            {pkgOpen ? <ChevronDown /> : <ChevronRight />}
+            <h2>出包</h2>
+            <span className="package-vendor">CloudDragon</span>
+            {!pkgOpen && latestPackage && (
+              <span className="package-digest" title={latestPackage.version}>
+                最新包 {latestPackage.version.slice(0, 28)}… · {latestPackage.created}
+              </span>
             )}
-          </section>
-        </>
+          </button>
+          {pkgOpen && (
+            <PackagePanel
+              disabled={readOnly}
+              latest={latestPackage}
+              onPackage={triggerPackage}
+              onDownload={downloadPackage}
+            />
+          )}
+        </section>
       )}
       <div className="section-heading acceptance-goals-heading">
         <h2>本版目标验收</h2>
         <span className="goals-heading-week">{week.short}</span>
+        <button
+          className="btn btn-ghost"
+          title="重新读取 Issue 状态"
+          disabled={disabled}
+          onClick={() => setNotice('原型未连接远端；保留上次读取的 Issue 状态。')}
+        >
+          <RefreshCw />
+          刷新 Issue
+        </button>
         <button className="btn btn-secondary" onClick={review} disabled={disabled}>
           <ClipboardCheck />
           预览纪要
@@ -267,6 +300,7 @@ function AcceptanceContent({
           const carry = related.filter((t) => t.state !== 'CLOSED' && marks[t.number]?.carry)
           const risky = carry.filter((t) => marks[t.number]?.risk)
           const open = isCardOpen(g)
+          const m = acceptanceMetric(g)
           const groups = ['bug', 'feature', 'unclassified']
             .map((cls) => [cls, related.filter((t) => issueClass(t) === cls)])
             .filter(([, rows]) => rows.length > 0)
@@ -284,6 +318,21 @@ function AcceptanceContent({
                 <Lamp tone={decisionTone(g)} label={`验收结论：${g.decision}`} />
                 <span className="goal-id">{g.label}</span>
                 <h3 onClick={() => toggleCard(g)}>{g.title}</h3>
+                <span className="head-chips">
+                  <span className="head-chip owner" title="负责人（计划材料 owner 字段）">
+                    负责人 {g.owner?.trim() || '未指派'}
+                  </span>
+                  <span className="head-chip" title="关联 Issue 完成数">
+                    <ListTodo />
+                    {done(related)} / {related.length}
+                  </span>
+                  {carry.length > 0 && (
+                    <span className={`head-chip carry${risky.length ? ' risk' : ''}`}>
+                      遗留 {carry.length}
+                      {risky.length ? ` · 风险 ${risky.length}` : ''}
+                    </span>
+                  )}
+                </span>
                 <select
                   className="input decision-inline"
                   aria-label={`${g.label} 验收结论`}
@@ -296,18 +345,6 @@ function AcceptanceContent({
                     <option key={x}>{x}</option>
                   ))}
                 </select>
-                <span className="head-chips">
-                  <span className="head-chip" title="关联 Issue 完成数">
-                    <ListTodo />
-                    {done(related)} / {related.length}
-                  </span>
-                  {carry.length > 0 && (
-                    <span className={`head-chip carry${risky.length ? ' risk' : ''}`}>
-                      遗留 {carry.length}
-                      {risky.length ? ` · 风险 ${risky.length}` : ''}
-                    </span>
-                  )}
-                </span>
               </div>
               {open && (
                 <div className="goal-card-body">
@@ -315,14 +352,7 @@ function AcceptanceContent({
                     <div className="story-cell">
                       <span className="story-label">约定交付</span>
                       <p>{version === 'v0.4' ? g.metric : g.delivery || '未约定交付件'}</p>
-                      <span className="story-meta">
-                        计划完成 {g.deadline?.trim() || '未记录'} · 负责人{' '}
-                        {g.owner?.trim() || '未指派'}
-                      </span>
-                    </div>
-                    <div className="story-cell">
-                      <span className="story-label">实际交付</span>
-                      {version === 'v0.4' ? (
+                      {version === 'v0.4' && (
                         <div className="actual">
                           {original.results.deliverables
                             .filter((d) => d.goal === g.label)
@@ -345,32 +375,48 @@ function AcceptanceContent({
                             原始依据
                           </button>
                         </div>
-                      ) : (
-                        <Field
-                          label={`${g.label} 实际交付`}
-                          value={g.actualDelivery}
-                          rows={2}
-                          onChange={(v) => updateResult(g.id, 'actualDelivery', v)}
-                          placeholder="交付结果或材料链接（人主导填写）"
-                        />
                       )}
                     </div>
                     <div className="story-cell">
-                      <span className="story-label">指标实测</span>
-                      <fieldset disabled={readOnly} className="story-metric">
-                        <AcceptanceMetricEvidence
-                          goal={g}
-                          updateResult={updateResult}
-                          refreshMetrics={refreshMetrics}
-                          onWindowChange={(window) =>
-                            current.forEach((goal) =>
-                              updateResult(goal.id, 'acceptanceMetricWindow', window)
-                            )
-                          }
+                      <span className="story-label">进展（含实际交付与材料链接）</span>
+                      <fieldset disabled={readOnly}>
+                        <Field
+                          label={`${g.label} 进展`}
+                          value={g.actualDelivery}
+                          rows={2}
+                          onChange={(v) => updateResult(g.id, 'actualDelivery', v)}
+                          placeholder="本周进展、实际交付与材料链接；未达时原因直接写在这里（人主导，模型不代笔）"
                         />
                       </fieldset>
+                      {g.reason?.trim() && (
+                        <p className="legacy-reason">既有未达原因（旧字段读回）：{g.reason}</p>
+                      )}
                     </div>
                   </div>
+                  {m && (
+                    <div className="metric-strip">
+                      <ChartNoAxesCombined />
+                      <span>
+                        指标 {m.name} · 目标 {g.target || '未约定'} · 基线 {g.metricBaseline ?? '—'}{' '}
+                        · 实测 {m.current ?? '未取得'}
+                      </span>
+                      <details className="metric-strip-detail">
+                        <summary>验收指标与取值区间</summary>
+                        <fieldset disabled={readOnly}>
+                          <AcceptanceMetricEvidence
+                            goal={g}
+                            updateResult={updateResult}
+                            refreshMetrics={refreshMetrics}
+                            onWindowChange={(window) =>
+                              current.forEach((goal) =>
+                                updateResult(goal.id, 'acceptanceMetricWindow', window)
+                              )
+                            }
+                          />
+                        </fieldset>
+                      </details>
+                    </div>
+                  )}
                   {g.criteria && (
                     <div className="criteria-row">
                       <span>验收标准</span>
@@ -400,22 +446,8 @@ function AcceptanceContent({
                       ))
                     )}
                   </details>
-                  <fieldset disabled={readOnly}>
-                    <div className={`followup ${hasGap(g) ? 'has-gap' : ''}`}>
-                      <label>{hasGap(g) ? '未达项与原因' : '进展 / 备注'}</label>
-                      <Field
-                        label={`${g.label} ${hasGap(g) ? '未达项' : '进展备注'}`}
-                        value={g.reason}
-                        rows={2}
-                        onChange={(v) => updateResult(g.id, 'reason', v)}
-                        placeholder={
-                          hasGap(g)
-                            ? '哪些约定未达到，原因是什么（会前必须写好）'
-                            : '可填可不填；遗留或风险的原因会前写在这里（人主导，模型不代笔）'
-                        }
-                      />
-                    </div>
-                    {hasGap(g) && (
+                  {hasGap(g) && (
+                    <fieldset disabled={readOnly}>
                       <div className="followup next-step">
                         <label>下一步</label>
                         <Field
@@ -429,7 +461,7 @@ function AcceptanceContent({
                           onClick={() =>
                             promptConversation(
                               `请处理 ${version} ${g.label} 的未达项：${
-                                g.reason || '待补充'
+                                g.actualDelivery || '待补充'
                               }。下一步：${
                                 g.next || '请与我讨论安排'
                               }。核对关联 Issue，与我确认后再更新，不自动标为完成。`
@@ -440,8 +472,8 @@ function AcceptanceContent({
                           交给会话
                         </button>
                       </div>
-                    )}
-                  </fieldset>
+                    </fieldset>
+                  )}
                 </div>
               )}
             </article>
@@ -449,17 +481,29 @@ function AcceptanceContent({
         })}
       </section>
       {!disabled && (
-        <section className="directives-card" aria-label="领导会上指导">
+        <section className="directives-card" aria-label="会议指导与遗留">
           <h3>
             <MessageSquare />
-            领导会上指导（人记录）
+            会议指导与遗留（会后）
             <button
-              className="btn btn-ghost btn-add-directive"
+              className="btn btn-secondary btn-add-directive"
+              disabled={readOnly}
+              title="把会议 ID 交给会话：转写稿 → 本项目议题 → subagent 总结（链路见 issue #374）"
+              onClick={() => {
+                promptConversation(meetingSummaryRequest())
+                setNotice('已把总结请求放入会话草稿；总结结果逐条经你确认后才写入材料')
+              }}
+            >
+              <MessageSquare />
+              从会议转写总结
+            </button>
+            <button
+              className="btn btn-ghost"
               disabled={readOnly}
               onClick={() => setDirectiveDraft({ text: '', tag: DIRECTIVE_TAGS[0], goal: '' })}
             >
               <Plus />
-              记录指导
+              人工补记
             </button>
           </h3>
           {directiveDraft && (
@@ -468,13 +512,13 @@ function AcceptanceContent({
                 label="指导内容"
                 value={directiveDraft.text}
                 rows={2}
-                placeholder="会上领导的关键指导原文或要点；人记录，模型不代笔"
+                placeholder="会上指导或遗留问题要点"
                 onChange={(v) => setDirectiveDraft({ ...directiveDraft, text: v })}
               />
               <div className="directive-form-row">
                 <select
                   className="input"
-                  aria-label="影响标签"
+                  aria-label="处置标签"
                   value={directiveDraft.tag}
                   onChange={(event) =>
                     setDirectiveDraft({ ...directiveDraft, tag: event.target.value })
@@ -511,32 +555,57 @@ function AcceptanceContent({
           )}
           {directives.length === 0 && !directiveDraft && (
             <p className="directives-empty">
-              暂无记录。会上领导的关键指导可能影响会后发布与下周计划，由人逐条记录。
+              暂无记录。会后把会议 ID
+              交给会话，从转写稿总结本项目议题的指导与遗留；本次能解决的进本次验收或计划，解决不了的在这里记录遗留。
             </p>
           )}
           {directives.map((d) => (
             <div className="directive-row" key={d.id}>
+              <span className={`directive-status${d.status === '待确认' ? ' pending' : ''}`}>
+                {d.status}
+              </span>
               <span
                 className={`directive-tag${
-                  d.tag === '影响会后发布' ? ' danger' : d.tag === '纳入下周计划' ? ' warning' : ''
+                  d.tag === '记录遗留' ? ' danger' : d.tag === '纳入下周计划' ? ' warning' : ''
                 }`}
               >
                 {d.tag}
               </span>
               {d.goal && <span className="directive-goal">{d.goal}</span>}
-              <p>{d.text}</p>
-              <button
-                className="btn btn-icon btn-ghost"
-                aria-label="删除该条指导"
-                disabled={readOnly}
-                onClick={() => setDirectives((list) => list.filter((x) => x.id !== d.id))}
-              >
-                <X />
-              </button>
+              <p>
+                {d.text}
+                {d.source && <small className="directive-source">来源：{d.source}</small>}
+              </p>
+              <span className="directive-actions">
+                {d.status === '待确认' && (
+                  <button
+                    className="btn btn-icon btn-ghost"
+                    aria-label="确认该条指导"
+                    title="人确认后写入材料"
+                    disabled={readOnly}
+                    onClick={() =>
+                      setDirectives((list) =>
+                        list.map((x) => (x.id === d.id ? { ...x, status: '已确认' } : x))
+                      )
+                    }
+                  >
+                    <Check />
+                  </button>
+                )}
+                <button
+                  className="btn btn-icon btn-ghost"
+                  aria-label="删除该条指导"
+                  disabled={readOnly}
+                  onClick={() => setDirectives((list) => list.filter((x) => x.id !== d.id))}
+                >
+                  <X />
+                </button>
+              </span>
             </div>
           ))}
           <p className="directives-note">
-            指导随轮次写入材料（草案）：会后发布判断与下周计划会话可读回；人记录原文要点，模型不代笔、不自动生成。
+            总结由会话按转写稿生成（必须开 subagent，见 issue #374
+            链路），逐条经人确认后才随轮次写入材料；模型不代签、不代表态。会后发布判断与下周计划会话可读回。
           </p>
         </section>
       )}
