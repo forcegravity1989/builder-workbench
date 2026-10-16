@@ -77,6 +77,7 @@ function PrototypeSession({ collapsed, composer, draft, onToggleCollapse, sessio
         <button
           className="session-rail-toggle"
           onClick={onToggleCollapse}
+          aria-expanded={false}
           title="展开会话栏"
           aria-label="展开会话栏"
         >
@@ -96,6 +97,7 @@ function PrototypeSession({ collapsed, composer, draft, onToggleCollapse, sessio
         <button
           className="btn btn-icon btn-ghost"
           onClick={onToggleCollapse}
+          aria-expanded={true}
           title="收起会话栏；随时展开恢复"
           aria-label="收起会话栏"
         >

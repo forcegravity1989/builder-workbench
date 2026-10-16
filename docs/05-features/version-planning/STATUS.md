@@ -28,6 +28,8 @@
 
 2026-10-14 Issue #355 同步统一批（用户在对齐会话逐项拍板，正本文案见 #355 plan §0）：进屏自动 gitPull 废止——计划/验收屏进屏零 Git 动作、不挂同步提示；页头按钮改「更新代码」并成为唯一同步入口，经新 RPC `workbench.trunk.update`：基线解析（钉值 `worktreeBaseRef` 或主检出当前分支，不再猜 main/master）→ fetch 书签 → 双向 rev-list 对比 → `merge --ff-only`。快进不了（分叉、主检出有本地改动、分支失配、远端不可达）保持原样，统一一句话提示请会话模型处理该分支的代码更新，材料仍照常重读并保留未保存输入；纯草稿状态（树有未合入提交、主干没前进）不是异常、不提示。旧机制同批删除：`trunkPullTarget`、BW 对 `gitPull` 的消费、`resolveAdoptedBaseline` 名字探针、cycle-sync-runtime/port 与旧 syncTrunk 契约。week-planning references 与 version-records 的「刷新数据」协议句改写为「更新代码」新语义。证据：workbench vitest 全绿 226 例（ratchet 基线 228→226：删 trunkPullTarget 4 例、旧基线解析 3 例、configuration-not-adopted 1 例，增基线解析 3 例、同步决策 3 例，指标采用 fetch 1 例原位改写为无 fetch 语义）、typecheck 0 错、rpc-catalog / bundled-skill-guides / skill-bundle-manifest verify 绿；真壳未运行（用户明示本轮不做启动验证）——按钮快进、拒绝提示与「验收合入后计划屏一次更新可见」跨屏场景待用户实机验证。
 
+2026-10-16 共用原型壳触碰批（主体在验收特性，本特性无生产代码改动）：验收双面整改草案（leader 反馈 + owner「合二为一」意见，用户拍板）连带修改共用原型壳——会话栏收折为窄轨，计划/验收两屏同享；计划 spec 状态行已加待人确认指针。整改条款、原型证据与待办见[验收 STATUS](../version-acceptance/STATUS.md) 同日批次记录。
+
 | 环 | 状态 | 证据或已知债 |
 |---|---|---|
 | intent | ● 已确认 | 沿用三特性边界，用户确认本轮计划/验收共用协作入口与资产同步 |

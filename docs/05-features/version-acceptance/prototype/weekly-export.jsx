@@ -3,7 +3,9 @@ import { Check, Copy, Download } from 'lucide-react'
 import { remote } from '../../version-planning/prototype/snapshot.js'
 import { titleForTask } from '../../version-planning/prototype/shared.jsx'
 
-// 七栏固定列沿已认可的 PT 周报模板（继承自 weekly-report 试点，PR #321）；
+// 七栏固定列沿周报试点（PR #321）继承的 PT 模板（PT：leader 侧固定格式周报模板的代号，
+// 配色 #785ED8 紫题头/#EEDEEE 表头）。栏集为草案基线、非定死契约：按用户旅程可调，
+// 经人与 leader 确认后定稿（见 spec「轮次与周报导出」）。
 // 合并形态下周报不再是独立屏，而是验收材料某一轮次的派生导出件。
 const TEMPLATE = [
   { key: 'goals', title: '目标', columns: ['目标', '交付要求', '计划完成', '当前情况'] },
@@ -112,6 +114,8 @@ export function buildWeeklySections({
             : '开放；本轮材料未记录进展')
     ]),
     problems: [],
+    // 演示预置¹：按单人项目真实口径（继承自周报试点 2026-10-10 快照）；材料中无成员字段，
+    // 正式界面按 Git/PR 参与者记录派生，无记录则写「未记录」，不硬编码人名。
     members: [['gravity', '维护者', '单人项目：需求、开发、验收；其他参与者按 PR 记录核实']]
   }
   const summaries = {
@@ -131,6 +135,7 @@ export function buildWeeklySections({
   }
 }
 
+// 原型演示不做单元格转义；正式实现须转义 | 与换行，避免自由文本破坏 Markdown 表格。
 function toMarkdown(report) {
   return `# ${report.title}\n\n${report.sections
     .map(
@@ -155,8 +160,8 @@ export function WeeklyExportPreview({ modal, setNotice }) {
       <p className="weekly-export-meta">
         来源：{modal.version} 验收材料 · {modal.roundLabel}；Issue 快照读取于{' '}
         {remote.readAt.slice(0, 10)}
-        {modal.latestPackage ? '；出包读数为 CloudDragon 制品页真实字段' : ''}
-        。缺值如实写未知/未记录，不伪造指标、责任人或日期。
+        {modal.latestPackage ? '；出包读数为静态快照（采自 CloudDragon 制品页真实读数）' : ''}
+        。缺值如实写未知/未记录，不伪造指标、责任人或日期；项目成员栏为演示预置¹。
       </p>
       <div className="weekly-sheet" aria-label="周报导出预览">
         {report.sections.map((section) => (

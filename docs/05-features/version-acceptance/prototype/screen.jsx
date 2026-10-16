@@ -17,22 +17,31 @@ import { PackagePanel } from './package-panel.jsx'
 
 // 轮次演示数据¹：跨周版本每周五一轮；「进展刷新」轮不出包、只刷新进展并可导出该周周报，
 // 最终轮做展示验收。正式界面轮次记录来自验收材料，历史轮次从 Git 读回、只读。
+// id 带版本前缀，避免跨版本切换时残留选择落到同号轮次。
 const ROUNDS = {
   'v0.5': [
     {
-      id: 'r2',
+      id: 'v0.5:r2',
       label: '第2轮 · 2026-W40 · 展示验收（本轮）',
       short: '第2轮（W40）',
       current: true
     },
     {
-      id: 'r1',
+      id: 'v0.5:r1',
       label: '第1轮 · 2026-W39 · 进展刷新（历史）',
       short: '第1轮（W39）',
       current: false
     }
   ],
-  'v0.4': [{ id: 'r1', label: '第1轮 · 2026-W38 · 已归档', short: '第1轮（W38）', current: true }]
+  // 已归档版本的唯一轮次只读：演示「历史轮次回看与重出周报」，不改写已归档记录。
+  'v0.4': [
+    {
+      id: 'v0.4:r1',
+      label: '第1轮 · 2026-W38 · 已归档（历史）',
+      short: '第1轮（W38）',
+      current: false
+    }
+  ]
 }
 
 const readableState = (t) =>
@@ -55,11 +64,17 @@ function AcceptanceContent({
   goalIssues,
   hasGap,
   latestPackage,
+  marks,
+  setMarks,
   openIssue,
   openIssues,
   promptConversation,
+  query,
+  setQuery,
   refreshMetrics,
   review,
+  roundId,
+  setRoundId,
   setModal,
   tasks,
   triggerPackage,
@@ -68,14 +83,10 @@ function AcceptanceContent({
   version,
   versionTasks
 }) {
+  // marks/roundId/query 由 layout 持有：跳 Issue 详情或切屏返回后，人工标记与轮次选择保留。
   const rounds = ROUNDS[version] ?? ROUNDS['v0.5']
-  const [roundId, setRoundId] = useState(rounds[0].id)
   const round = rounds.find((r) => r.id === roundId) ?? rounds[0]
   const readOnly = disabled || !round.current
-  // 遗留/风险是人工判断（演示默认：#255 随 G3 未达标记遗留+风险）；
-  // 开放 Issue 不自动判遗留，关闭 Issue 不自动判目标达成。
-  const [marks, setMarks] = useState({ 255: { carry: true, risk: true } })
-  const [query, setQuery] = useState('')
   // 材料折叠记忆用户开合意图；默认值 = 未填写时展开、已填写时收起（key 含版本与轮次，切换即重置）。
   const [openGoals, setOpenGoals] = useState({})
   const detailKey = (g) => `${version}:${round.id}:${g.id}`
@@ -88,9 +99,17 @@ function AcceptanceContent({
       .toLowerCase()
       .includes(q)
   const goalMatches = (g) =>
-    [g.label, g.title, g.delivery, g.criteria, g.actualDelivery, g.reason, g.next].some(
-      (v) => v && matches(v)
-    ) || goalIssues(g).some((t) => matches(`#${t.number} ${t.title}`))
+    [
+      g.label,
+      g.title,
+      g.delivery,
+      g.criteria,
+      g.metric,
+      g.note,
+      g.actualDelivery,
+      g.reason,
+      g.next
+    ].some((v) => v && matches(v)) || goalIssues(g).some((t) => matches(`#${t.number} ${t.title}`))
   const visibleGoals = disabled || !q ? current : current.filter(goalMatches)
   const carryover = tasks.filter((t) => t.state !== 'CLOSED' && marks[t.number]?.carry)
   function toggleMark(number, key) {
@@ -119,10 +138,9 @@ function AcceptanceContent({
     <>
       {!disabled && (
         <div className="face-toolbar">
-          <div className="face-switch" role="tablist" aria-label="验收视图">
+          <div className="face-switch" aria-label="验收视图">
             <button
-              role="tab"
-              aria-selected={face === 'prepare'}
+              aria-pressed={face === 'prepare'}
               onClick={() => setFace('prepare')}
               title="Builders 与工作模型准备材料、逐目标核对"
             >
@@ -130,8 +148,7 @@ function AcceptanceContent({
               准备
             </button>
             <button
-              role="tab"
-              aria-selected={face === 'showcase'}
+              aria-pressed={face === 'showcase'}
               onClick={() => setFace('showcase')}
               title="拿着验收屏与准备的材料向 Leader/Owner 展示"
             >
@@ -162,12 +179,16 @@ function AcceptanceContent({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />
-          {q && <span className="search-hit">命中 {visibleGoals.length} 项目标</span>}
+          {q && (
+            <span className="search-hit">
+              命中 {visibleGoals.length} 项目标（仅过滤卡片呈现，不改材料）
+            </span>
+          )}
         </div>
       )}
       {!disabled && !round.current && (
         <p className="round-readonly" role="status">
-          历史轮次为只读快照（正式界面从 Git 读回该轮记录）；继续编辑请切回本轮。
+          历史轮次为只读快照；继续编辑请切回本轮。
         </p>
       )}
       {face === 'prepare' && !disabled && (
@@ -452,12 +473,12 @@ function AcceptanceContent({
                   <span className="goal-id">{g.label}</span>
                   <h3>{g.title}</h3>
                   <span
-                    className={`decision-tag tag-${
+                    className={`decision-tag tag ${
                       g.decision === '达成'
-                        ? 'success'
+                        ? 'tag-success'
                         : g.decision === '未达'
-                          ? 'danger'
-                          : 'neutral'
+                          ? 'tag-danger'
+                          : 'tag-warning'
                     }`}
                   >
                     {g.decision}

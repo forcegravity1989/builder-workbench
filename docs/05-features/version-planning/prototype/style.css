@@ -3186,7 +3186,7 @@ input::placeholder {
   width: var(--space-3);
   height: var(--space-3);
 }
-.face-switch button[aria-selected='true'] {
+.face-switch button[aria-pressed='true'] {
   background: color-mix(in srgb, var(--color-text) 8%, transparent);
   color: var(--color-text);
   font-weight: 600;
@@ -3449,18 +3449,6 @@ input::placeholder {
   flex: none;
   font-size: 0.8em;
   font-weight: 600;
-}
-.tag-success {
-  color: var(--color-success-deep);
-  background: var(--color-success-soft);
-}
-.tag-danger {
-  color: var(--color-danger-deep);
-  background: var(--color-danger-soft);
-}
-.tag-neutral {
-  color: var(--color-warning-deep);
-  background: var(--color-warning-soft);
 }
 .showcase-grid {
   display: grid;

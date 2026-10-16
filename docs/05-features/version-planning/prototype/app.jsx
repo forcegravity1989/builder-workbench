@@ -138,7 +138,7 @@ function App() {
   }
   function promptConversation(text) {
     setDraft(text)
-    setNotice('已放入会话输入框，尚未发送')
+    setNotice('已放入会话草稿，尚未发送；会话栏收起时展开可见')
     setModal(null)
     requestAnimationFrame(() => composer.current?.querySelector('textarea')?.focus())
   }
@@ -290,12 +290,12 @@ function App() {
       })
       return
     }
-    document
-      .querySelector(view === 'monday' ? (i === 0 ? '.planning-brief' : '.goal-sheet') : null)
-      ?.scrollIntoView({
+    if (view === 'monday') {
+      document.querySelector(i === 0 ? '.planning-brief' : '.goal-sheet')?.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest'
       })
+    }
   }
   function taskList(items) {
     return (
