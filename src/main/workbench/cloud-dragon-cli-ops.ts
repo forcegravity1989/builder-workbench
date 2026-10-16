@@ -17,7 +17,11 @@ const PACKAGE_SCHEME_NAME = 'pr_pipeline'
 
 async function runCb(args: string[]): Promise<string> {
   try {
-    const { stdout } = await commandExecFileAsync('cb', args, {
+    // --group 是 CLI 根级全局 flag：scheme 子命令没有自己的 --group，靠它
+    // 统一限定本项目（CLI 语义的 group_id）；不带时 scheme 调用报
+    // "no group_id set"。
+    const argv = [...args, '--group', CLOUDDRAGON_PROJECT_ID]
+    const { stdout } = await commandExecFileAsync('cb', argv, {
       encoding: 'utf8',
       timeout: CB_TIMEOUT_MS,
       maxBuffer: 10 * 1024 * 1024
@@ -61,7 +65,7 @@ type CloudDragonSchemeList = {
 async function fetchPipelines(): Promise<{ id: string; name: string }[]> {
   // URL 里的 /project/<id>/ 段即 CLI 语义的 group_id，--group 与页面
   // 「当前项目下的流水线」范围一致。
-  const raw = await runCb(['pipeline', 'list', '--group', CLOUDDRAGON_PROJECT_ID, '-o', 'json'])
+  const raw = await runCb(['pipeline', 'list', '-o', 'json'])
   const parsed = parseJson<CloudDragonPipelineList>(
     raw,
     'cb-parse-failed',
