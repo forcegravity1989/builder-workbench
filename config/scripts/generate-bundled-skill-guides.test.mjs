@@ -102,7 +102,7 @@ describe('bundled skill guide generator', () => {
         ? BUNDLED_SKILL_GUIDES.find((guide) => guide.name === name).fullMarkdown
         : source
       expect(projection.length).toBeLessThan(fullSource.length)
-      expect(projection).toContain('discovery stub')
+      expect(projection).toContain('ORCA_CLI_COMMAND')
       expect(projection).toContain(`skills get ${name}`)
     }
   })

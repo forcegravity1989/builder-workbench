@@ -4,13 +4,19 @@ import {
   CalendarClock,
   CalendarRange,
   ClipboardCheck,
+  FileText,
   LayoutDashboard
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { SidebarTaskNavButton } from '@/components/sidebar/SidebarTaskNavButton'
 import { isWorkbenchShell } from './is-workbench-shell'
-import { closeProjectPage, openProjectWall, useProjectPage } from './project-page-state'
+import {
+  closeProjectPage,
+  openProjectWall,
+  openWeeklyReport,
+  useProjectPage
+} from './project-page-state'
 import { setCycleView, useCycleView } from './cycle-view-state'
 import { resolveWorkbenchNav, type WorkbenchNavId } from './workbench-nav'
 
@@ -20,6 +26,7 @@ const NAV_BEFORE_TASKS: { id: WorkbenchNavId; label: string; icon: typeof Layout
   { id: 'acceptance', label: '验收', icon: ClipboardCheck }
 ]
 const NAV_AFTER_TASKS: { id: WorkbenchNavId; label: string; icon: typeof LayoutDashboard }[] = [
+  { id: 'weekly-report', label: '周报', icon: FileText },
   { id: 'automations', label: '自动化', icon: CalendarClock },
   { id: 'knowledge', label: '知识库', icon: BookOpen }
 ]
@@ -79,7 +86,12 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
     return null
   }
 
-  const activeNav = projectPage ? null : resolveWorkbenchNav(activeView, activeWorktree)
+  const activeNav =
+    projectPage?.kind === 'weekly-report'
+      ? 'weekly-report'
+      : projectPage
+        ? null
+        : resolveWorkbenchNav(activeView, activeWorktree)
 
   const go = (id: WorkbenchNavId) => {
     if (id === 'overview') {
@@ -92,6 +104,8 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
       openArtifactsPage()
     } else if (id === 'automations') {
       openAutomationsPage()
+    } else if (id === 'weekly-report') {
+      openWeeklyReport()
     } else {
       openSpacePage()
     }

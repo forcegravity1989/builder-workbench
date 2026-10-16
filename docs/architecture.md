@@ -8,7 +8,7 @@
 
 ### 顶层旅程 · 五站
 
-**项目版本 → 构建交付 → 治理 → 反馈 → 进化**是产品目标，主张以原则 03 为准。五站不是五个已完成模块；导航也不是验收结果。当前导航为总览、计划、任务、验收、自动化、知识库，另有项目墙、接入和设置入口。
+**项目版本 → 构建交付 → 治理 → 反馈 → 进化**是产品目标，主张以原则 03 为准。五站不是五个已完成模块；导航也不是验收结果。当前导航为总览、计划、任务、验收、周报、自动化、知识库，另有项目墙、接入和设置入口。
 
 ### 当前入口与边界
 
@@ -20,6 +20,7 @@
 | 执行工作与管理任务 | Orca 终端、Tasks、worktree | 复用执行核；不能据规划会话可打开就认定所有 Issue 开工都已接 BW 纪律 |
 | 设置定时工作 | Orca Automations | 调度能力在执行核；「配置自动化」入口（右板页头）打开原生编辑器：已登记条目直接编辑，未登记预填创建；BW 提示词随进屏覆盖同步为当前版本、用户设置保留，启用与时间由人确认；真实到点触发与旧自动配置迁移须逐项验证 |
 | 查看项目概况 | 总览与项目墙 | 总览已接北极星、业务/项目指标两区与各版本当前材料，正式内容统一读主检出（主干本地镜像）并标注来源；页头「更新代码」是唯一同步入口（快进主检出后重读快照）。项目墙卡片给四项只读事实读数（版本/承诺进展/在跑会话/PR 待审，现算三态、无健康灯），明细与完整分解归总览。业务按特性及引领/滞后关系展示，项目读取提交及合入 PR/MR 趋势，开放 Issue 只显示当前快照。缺数据保持 Unknown；真实数据与 Electron 旅程待验，见[总览指标 STATUS](05-features/overview-metrics/STATUS.md) |
+| 提炼和查看项目周报 | 项目周报页、原生文件与会话 | 固定七栏模板；更新在 bw/weekly-report 树启动本机配置会话，按原生指南加载 weekly-report Skill，读回新报告才出现新版本；人工保存、历史和导出复用原生文件能力。源码接入与安装版、真实模型验证边界见 [周报 STATUS](05-features/weekly-report/STATUS.md) |
 | 查看和编辑项目知识 | 知识库文档、代码、对账页签 | 文档树与正文已读真实仓库；代码页仍为占位，对账与建议仍有固定演示数据；保存和来源边界见 §3 |
 | 独立评审、出包与发布 | 保留的 reviewer-agent / version-planning 资料、现有 Orca 构建工具 | Electron 的 BW CI/CD、评审与正式交付链待对应任务迁移验证；旧 Rust Release/出包按钮与 ADR 不作为本分支操作说明 |
 
@@ -55,7 +56,7 @@ Issue 原生状态与关闭原因是处理结果正本，版本目标和任务�
 
 ### Orca 执行核与 BW 叠层
 
-Orca 执行核提供终端、会话、worktree、Tasks、Automations 和 Explorer。BW 叠层通过 `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` 启用。壳内槽位：总览=activity 槽 OverviewPage（真实数据），任务=tasks 槽原生 TaskPage，计划/验收=artifacts 准备入口 → 原生 terminal 固定工作区旁的 `CycleWorkspaceShell` 右板（`cycle-view-state.ts` 仅指明准备流程，侧栏两个独立入口，不扩 TopLevelView union），自动化/知识库照旧。叠层外改动保持明确钩子边界；上游身份和同步纪律见 [ref/upstream](../ref/upstream.md)，不要将 BW 的 `origin/main` 合并当作 Orca 升级。
+Orca 执行核提供终端、会话、worktree、Tasks、Automations 和 Explorer。BW 叠层通过 `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` 启用。壳内槽位：总览与周报=activity 槽内项目页切换（OverviewPage / WeeklyReportPage），任务=tasks 槽原生 TaskPage，计划/验收=artifacts 准备入口 → 原生 terminal 固定工作区旁的 `CycleWorkspaceShell` 右板（`cycle-view-state.ts` 仅指明准备流程，侧栏两个独立入口，不扩 TopLevelView union），自动化/知识库照旧。叠层外改动保持明确钩子边界；上游身份和同步纪律见 [ref/upstream](../ref/upstream.md)，不要将 BW 的 `origin/main` 合并当作 Orca 升级。
 
 BW 的业务契约在 `src/shared/workbench/`，材料事务、指标与历史 runtime 及宿主适配在 `src/main/workbench/`，界面在 `src/renderer/src/workbench/`；`src/relay/workbench/` 只在原生 SSH relay 上调用同一材料事务。主 RPC 方法族为 `workbench.materials.*`（材料事务读写）与 `workbench.metrics.{list,read,refresh}`、`workbench.history.{list,read,readPlan}`、`workbench.archive.prStatus`（注册在 `src/main/runtime/rpc/methods/workbench-*.ts`）；SSH 宿主的采集与历史命令走窄执行器 `workbench.metrics.execute` / `workbench.history.execute`，不扩 provider.exec 白名单。Orca RPC/CLI 注册处及 relay 组合入口保持薄挂载，工作树、连接、调度和会话内核不承载 BW 业务。Web/配对是访问方式，SSH/WSL 是执行位置，均复用原生身份与路由；不另加本机专属开关。
 
@@ -81,4 +82,4 @@ BW 的业务契约在 `src/shared/workbench/`，材料事务、指标与历史 r
 
 ## 版本协作与指标边界
 
-三个特性已接入生产入口：[版本计划](05-features/version-planning/design.md)、[版本验收](05-features/version-acceptance/design.md)、[总览指标](05-features/overview-metrics/design.md)。BW 拥有版本材料、目标/验收业务与指标服务；Orca 保持会话、任务详情/编辑、工作树、调度和 provider 正本，通过薄适配复用（原生文件扩点清单见 [ref/upstream](../ref/upstream.md)），不在各屏分别建任务编辑器、会话存储或采集器。业务指标仅采用按日/周可回溯的脚本，源数据及存储由用户项目或服务负责；目录同步最新已合入来源，每次采集固定本次来源，旧计划与验收证据原样留查。“配置指标”每次在固定维护树中新建原生会话并进入该会话。该指标闭环已接入；SSH/WSL 与配对实机、真实到点自动化、真实 provider 归档全链和 Electron 旅程的验证边界见各特性 STATUS，源码接入不能代替验收。
+版本协作、指标与周报已接入源码入口：[版本计划](05-features/version-planning/design.md)、[版本验收](05-features/version-acceptance/design.md)、[总览指标](05-features/overview-metrics/design.md)、[项目周报](05-features/weekly-report/design.md)。BW 拥有版本材料、目标/验收业务与指标服务；Orca 保持会话、任务详情/编辑、工作树、调度和 provider 正本，通过薄适配复用（原生文件扩点清单见 [ref/upstream](../ref/upstream.md)），不在各屏分别建任务编辑器、会话存储或采集器。业务指标仅采用按日/周可回溯的脚本，源数据及存储由用户项目或服务负责；目录同步最新已合入来源，每次采集固定本次来源，旧计划与验收证据原样留查。“配置指标”每次在固定维护树中新建原生会话并进入该会话。该指标闭环已接入；SSH/WSL 与配对实机、真实到点自动化、真实 provider 归档全链和 Electron 旅程的验证边界见各特性 STATUS，源码接入不能代替验收。

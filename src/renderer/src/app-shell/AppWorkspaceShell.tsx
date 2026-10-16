@@ -47,6 +47,11 @@ const OnboardProjectPage = lazy(() =>
 const EditCharterPage = lazy(() =>
   import('../workbench/EditCharterPage').then((m) => ({ default: m.EditCharterPage }))
 )
+const WeeklyReportPage = lazy(() =>
+  import('../workbench/weekly-report/WeeklyReportPage').then((m) => ({
+    default: m.WeeklyReportPage
+  }))
+)
 
 type WorktreeSidebarScrollRefs = {
   scrollOffsetRef: React.MutableRefObject<number>
@@ -98,6 +103,9 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
     }
     if (projectPage?.kind === 'charter') {
       return <EditCharterPage options={projectPage.options} />
+    }
+    if (projectPage?.kind === 'weekly-report') {
+      return <WeeklyReportPage />
     }
   }
   return (

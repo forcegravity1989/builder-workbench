@@ -25,7 +25,7 @@ const CANONICAL_GUIDE_NAMES = [
 
 // BW keeps one source of truth in standard/; the native guide distributor owns packaging.
 const WORKBENCH_GUIDE_SOURCES = Object.fromEntries(
-  ['week-planning', 'version-acceptance', 'metrics-refresh'].map((name) => [
+  ['week-planning', 'version-acceptance', 'metrics-refresh', 'weekly-report'].map((name) => [
     name,
     `standard/skills/${name}/SKILL.md`
   ])

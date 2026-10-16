@@ -26,9 +26,26 @@ function warnExternalWatchFailure(target: EditorExternalWatchTarget, err: unknow
   })
 }
 
+function getWatchOwnershipKey(target: EditorExternalWatchTarget): string {
+  return JSON.stringify([
+    normalizeRuntimePathForComparison(target.worktreePath),
+    target.connectionId ?? null,
+    target.runtimeEnvironmentId
+  ])
+}
+
 /** Keeps editor filesystem subscriptions alive beyond any individual editor surface. */
-export function useEditorExternalWatch(): void {
-  const { targets, targetsKey } = useAppStore(selectEditorExternalWatchTargets)
+export function useEditorExternalWatch(additionalTargets: EditorExternalWatchTarget[] = []): void {
+  const editorTargets = useAppStore(selectEditorExternalWatchTargets)
+  const merged = new Map<string, EditorExternalWatchTarget>()
+  for (const target of [...editorTargets.targets, ...additionalTargets]) {
+    const key = getWatchOwnershipKey(target)
+    if (!merged.has(key)) {
+      merged.set(key, target)
+    }
+  }
+  const targets = [...merged.values()]
+  const targetsKey = targets.map(getEditorExternalWatchTargetKey).join('\n')
   const targetsRef = useRef<EditorExternalWatchTarget[]>([])
   const latestTargetsRef = useRef<EditorExternalWatchTarget[]>(targets)
   latestTargetsRef.current = targets
@@ -41,17 +58,13 @@ export function useEditorExternalWatch(): void {
   useEffect(() => {
     const nextTargets = latestTargetsRef.current
     const previousTargets = targetsRef.current
-    const previousKeys = new Set(previousTargets.map(getEditorExternalWatchTargetKey))
-    const nextKeys = new Set(nextTargets.map(getEditorExternalWatchTargetKey))
-    const removed = previousTargets.filter(
-      (target) => !nextKeys.has(getEditorExternalWatchTargetKey(target))
-    )
-    const added = nextTargets.filter(
-      (target) => !previousKeys.has(getEditorExternalWatchTargetKey(target))
-    )
+    const previousKeys = new Set(previousTargets.map(getWatchOwnershipKey))
+    const nextKeys = new Set(nextTargets.map(getWatchOwnershipKey))
+    const removed = previousTargets.filter((target) => !nextKeys.has(getWatchOwnershipKey(target)))
+    const added = nextTargets.filter((target) => !previousKeys.has(getWatchOwnershipKey(target)))
 
     for (const target of removed) {
-      const key = getEditorExternalWatchTargetKey(target)
+      const key = getWatchOwnershipKey(target)
       const remoteUnsubscribe = remoteWatchUnsubsRef.current.get(key)
       if (remoteUnsubscribe) {
         remoteUnsubscribe()
@@ -102,7 +115,7 @@ export function useEditorExternalWatch(): void {
       dispose()
       fsChangedHandlerRef.current = null
       for (const target of targetsRef.current) {
-        const key = getEditorExternalWatchTargetKey(target)
+        const key = getWatchOwnershipKey(target)
         const remoteUnsubscribe = remoteWatchUnsubs.get(key)
         if (remoteUnsubscribe) {
           remoteUnsubscribe()
@@ -127,7 +140,7 @@ function subscribeRuntimeTarget(
     current: ((payload: FsChangedPayload, runtimeEnvironmentId?: string | null) => void) | null
   }
 ): void {
-  const key = getEditorExternalWatchTargetKey(target)
+  const key = getWatchOwnershipKey(target)
   let cancelled = false
   const pendingUnsubscribe = (): void => {
     cancelled = true
