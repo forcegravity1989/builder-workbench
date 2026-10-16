@@ -12,6 +12,7 @@ import {
   listWorkItems
 } from '../github/client'
 import { getPRFileContents, getWorkItemDetails } from '../github/work-item-details'
+import { getIssueStatesBatch } from '../github/issue-state-batch'
 import type { Store } from '../persistence'
 import { dispatchWorkItem, type WorkItemArgs } from './github-work-item-args'
 import {
@@ -115,6 +116,19 @@ export function registerGitHubWorkItemHandlers(store: Store): void {
       ...getGitHubLocalGitOptionArgs(store, repo)
     )
   })
+
+  // 平台侧批量读取：只认 owner/repo 与本机 gh 登录态，不要求仓库在本机注册
+  // （墙卡承诺进展要读被管项目登记的 issue，仓可能只在 Builder 主机上）。
+  ipcMain.handle(
+    'gh:issueStates',
+    (_event, args: { owner: string; repo: string; host?: string | null; numbers: number[] }) =>
+      getIssueStatesBatch({
+        owner: String(args.owner ?? ''),
+        repo: String(args.repo ?? ''),
+        host: args.host == null ? null : String(args.host),
+        numbers: Array.isArray(args.numbers) ? args.numbers : []
+      })
+  )
 
   ipcMain.handle('gh:workItem', (_event, args: WorkItemArgs) => {
     const repo = assertRegisteredGitHubRepo(args, store)
