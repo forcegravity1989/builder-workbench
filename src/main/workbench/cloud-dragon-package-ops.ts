@@ -21,7 +21,7 @@ const SERVICES_URL = `https://clouddragon.huawei.com/artifact/project/${CLOUDDRA
 
 const RENDER_POLL_INTERVAL_MS = 500
 const TABLE_RENDER_TIMEOUT_MS = 20_000
-const DIALOG_ACTION_TIMEOUT_MS = 10_000
+const VERSION_LINK_CLICK_TIMEOUT_MS = 10_000
 const DOWNLOAD_EVENT_TIMEOUT_MS = 120_000
 
 /**
@@ -57,7 +57,7 @@ async function openNewestVersionDetail(page: Page, service: string): Promise<str
     return null
   }
   await page.locator('a.devui-link', { hasText: version }).first().click({
-    timeout: DIALOG_ACTION_TIMEOUT_MS
+    timeout: VERSION_LINK_CLICK_TIMEOUT_MS
   })
   return version
 }
