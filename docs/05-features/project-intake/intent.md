@@ -1,6 +1,6 @@
 # intent — 纳入项目与项目信息记录（project-intake）
 
-> **状态：已 gate**（接入与名片 2026-09-29、跨主机项目墙 2026-10-13、墙卡读数 2026-10-15）。行为细节与验收点见 [spec.md](spec.md)；高保真见 [project-wall-readings-prototype.html](project-wall-readings-prototype.html)（墙卡读数轮）与 [g3-project-wall-prototype.html](g3-project-wall-prototype.html)（跨主机纳入旅程，存档身份）；链状态在 [STATUS.md](STATUS.md)。
+> **状态：已 gate**（接入与名片 2026-09-29、跨主机项目墙 2026-10-13、墙卡读数 2026-10-15、承诺进展口径 2026-10-16）。行为细节与验收点见 [spec.md](spec.md)；高保真见 [project-wall-readings-prototype.html](project-wall-readings-prototype.html)（墙卡读数轮）与 [g3-project-wall-prototype.html](g3-project-wall-prototype.html)（跨主机纳入旅程，存档身份）；链状态在 [STATUS.md](STATUS.md)。
 >
 > **维护约定**：本篇管价值与范围（02 §3.1 骨架）；gate 结论改写正文，不追加聊天流水。
 

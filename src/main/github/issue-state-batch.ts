@@ -13,15 +13,15 @@ const NUMBERS_PER_QUERY = 40
 
 export function buildIssueStatesQuery(owner: string, repo: string, numbers: number[]): string {
   const selections = numbers
-    .map((number) => `i${number}: issue(number: ${number}) { state stateReason }`)
+    .map((number) => `i${number}: issue(number: ${number}) { state }`)
     .join(' ')
   return `query { repository(owner: "${owner}", name: "${repo}") { ${selections} } }`
 }
 
 /**
- * 批量读一组 issue 编号的原生状态与关闭原因：每仓一次 `gh api graphql`
- * （别名展开），而不是逐号 REST。墙卡「承诺进展」需要区分已完成与其他关闭
- * （决定不做/重复），GitHub search 不支持 reason 限定符，只能走这条链。
+ * 批量读一组 issue 编号的原生状态：每仓一次 `gh api graphql`（别名展开），
+ * 而不是逐号 REST。墙卡「承诺进展」只消费开/关——关闭即计完成、关闭原因
+ * 不参与计数（spec 取舍 9），查询不取 stateReason。
  * 平台侧读取：只需要 owner/repo 与本机 gh 登录态，不要求仓库在本机注册。
  */
 export async function getIssueStatesBatch(input: {
@@ -59,7 +59,7 @@ export async function getIssueStatesBatch(input: {
       ])
       const data = JSON.parse(stdout) as {
         data?: {
-          repository?: Record<string, { state?: string; stateReason?: string | null } | null>
+          repository?: Record<string, { state?: string } | null>
         }
         errors?: { message?: string }[]
       }
@@ -77,7 +77,7 @@ export async function getIssueStatesBatch(input: {
           // 编号不存在/被转移：不进 items，调用方按「读不到该号」如实处理。
           continue
         }
-        items.push({ number, state: node.state, stateReason: node.stateReason ?? null })
+        items.push({ number, state: node.state })
       }
     }
     return { items }
