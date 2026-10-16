@@ -3134,9 +3134,9 @@ input::placeholder {
   color: var(--color-neutral-500);
 }
 
-/* ═══ 2026-10-16 验收屏整改草案（v9.1，按用户走查反馈迭代）：单页整卡收缩目标卡、
-   周次选择、板内搜索、遗留与风险汇总、会话栏收折。壳级改动同时作用计划屏。
-   周报导出已按 leader 拍板取消（信息由验收屏承载），不再保留 PT 导出样式。 ═══ */
+/* ═══ 2026-10-16 验收屏整改草案（v9.2，按用户第二轮走查迭代）：单页整卡收缩目标卡、
+   卡内横排故事行 + Issue 分组收缩子块 + 进展备注、出包区块可收缩、领导会上指导、
+   会话栏收折。壳级改动同时作用计划屏。周报导出与板内搜索已按走查撤销。 ═══ */
 .board-toolbar {
   display: flex;
   align-items: center;
@@ -3160,19 +3160,6 @@ input::placeholder {
   font-size: 0.85em;
   padding: var(--space-1) var(--space-6) var(--space-1) var(--space-2);
 }
-.board-search {
-  flex: 1;
-  min-width: calc(var(--space-8)*3);
-  max-width: calc(var(--space-8)*6);
-  height: var(--space-8);
-  font-size: 0.85em;
-  padding: var(--space-1) var(--space-2);
-}
-.search-hit {
-  font-size: 0.8em;
-  color: var(--color-neutral-500);
-  white-space: nowrap;
-}
 .toolbar-spacer {
   flex: 1;
 }
@@ -3191,14 +3178,60 @@ input::placeholder {
   font-size: 0.85em;
   color: var(--color-text);
 }
-.search-empty {
-  padding: var(--space-4) var(--space-3);
-  color: var(--color-neutral-500);
-  font-size: 0.9em;
-}
 .goals-heading-week {
   font: 0.8em var(--font-mono);
   color: var(--color-neutral-500);
+}
+.acceptance-summary .summary-issues {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-neutral-600);
+}
+.acceptance-summary .summary-issues svg {
+  width: var(--space-3);
+  height: var(--space-3);
+  color: var(--color-neutral-500);
+}
+.summary-refresh {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 0;
+  background: transparent;
+  color: var(--color-neutral-500);
+  font-size: 0.85em;
+  padding: 0;
+}
+.summary-refresh:hover {
+  color: var(--color-text);
+}
+.summary-refresh svg {
+  width: var(--space-3);
+  height: var(--space-3);
+}
+.package-block {
+  margin-bottom: var(--space-3);
+}
+.package-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: var(--space-1) 0;
+}
+.package-toggle > svg {
+  width: var(--space-4);
+  height: var(--space-4);
+  color: var(--color-neutral-500);
+}
+.package-digest {
+  margin-left: var(--space-2);
+  font: 0.78em var(--font-mono);
+  color: var(--color-neutral-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 .goal-card {
   border-bottom: 1px solid var(--color-divider);
@@ -3292,25 +3325,70 @@ input::placeholder {
 .goal-card-body fieldset:disabled {
   opacity: 0.75;
 }
-.goal-issues {
-  margin: var(--space-2) 0 0;
+.card-story-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1.2fr);
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  align-items: start;
 }
-.goal-issues-label {
+.story-cell {
+  min-width: 0;
+}
+.story-label {
+  display: block;
+  font-size: 0.75em;
+  color: var(--color-neutral-500);
+  margin-bottom: 2px;
+}
+.story-cell > p {
+  font-size: 0.87em;
+  line-height: 1.7;
+  color: var(--color-neutral-600);
+}
+.story-cell textarea {
+  width: 100%;
+  border: 1px dashed var(--color-divider);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.86em;
+  background: transparent;
+  color: var(--color-text);
+}
+.story-metric .acceptance-metric-evidence {
+  font-size: 0.92em;
+}
+.story-metric .metric-row select {
+  max-width: 100%;
+}
+.issue-subblock {
+  border-top: 1px dashed var(--color-divider);
+  margin-top: var(--space-2);
+  padding-top: var(--space-1);
+}
+.issue-subblock > summary {
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: 0.8em;
+  font-size: 0.82em;
   color: var(--color-neutral-500);
-  margin-bottom: var(--space-1);
+  padding: var(--space-1) 0;
 }
-.goal-issues-label svg {
+.issue-subblock > summary svg {
   width: var(--space-3);
   height: var(--space-3);
 }
-.goal-issues-label strong {
-  font-family: var(--font-mono);
-  font-weight: 500;
-  color: var(--color-text);
+.issue-group + .issue-group {
+  margin-top: var(--space-1);
+}
+.issue-group-label {
+  display: block;
+  font-size: 0.72em;
+  font-weight: 600;
+  color: var(--color-neutral-400);
+  letter-spacing: 0.05em;
+  padding: var(--space-1) 0 0;
 }
 .goal-issue-row {
   display: flex;
@@ -3320,6 +3398,9 @@ input::placeholder {
   border-top: 1px dashed var(--color-divider);
   font-size: 0.85em;
   min-width: 0;
+}
+.issue-group-label + .goal-issue-row {
+  border-top: 0;
 }
 .goal-issue-link {
   display: flex;
@@ -3384,10 +3465,6 @@ input::placeholder {
   background: var(--color-danger-soft);
   color: var(--color-danger-deep);
 }
-.flag-chip.static {
-  cursor: default;
-  margin-left: var(--space-1);
-}
 .flag-chip:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -3397,66 +3474,106 @@ input::placeholder {
   color: var(--color-neutral-400);
   padding: var(--space-1) 0;
 }
-.carryover-card {
+.directives-card {
   background: var(--color-card);
   border: 1px solid var(--color-divider);
   border-radius: var(--radius-md);
   padding: var(--space-3);
   margin-top: var(--space-3);
 }
-.carryover-card h3 {
+.directives-card h3 {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   font-size: 0.95em;
   margin-bottom: var(--space-2);
 }
-.carryover-card h3 svg {
+.directives-card h3 > svg {
   width: var(--space-3);
   height: var(--space-3);
   color: var(--color-neutral-500);
 }
-.carryover-row {
+.btn-add-directive {
+  margin-left: auto;
+  font-size: 0.82em;
+}
+.directive-form {
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.directive-form textarea {
+  width: 100%;
+  border: 1px dashed var(--color-divider);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.86em;
+  background: transparent;
+  color: var(--color-text);
+}
+.directive-form-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  flex-wrap: wrap;
+}
+.directive-form-row select {
+  height: var(--space-8);
+  font-size: 0.83em;
+  padding: var(--space-1) var(--space-6) var(--space-1) var(--space-2);
+}
+.directive-form-row .btn {
+  font-size: 0.83em;
+}
+.directive-row {
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
-  padding: var(--space-1) 0;
+  padding: var(--space-2) 0;
   border-top: 1px dashed var(--color-divider);
-  font-size: 0.85em;
+  font-size: 0.87em;
   min-width: 0;
 }
-.carryover-row > button {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font-size: 1em;
-  color: var(--color-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.directive-row p {
+  flex: 1;
   min-width: 0;
+  line-height: 1.7;
 }
-.carryover-row > button:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.carryover-goal {
-  font-family: var(--font-mono);
-  font-size: 0.9em;
-  color: var(--color-neutral-500);
+.directive-tag {
   flex: none;
-}
-.carryover-next {
-  margin-left: auto;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  font-size: 0.8em;
   color: var(--color-neutral-500);
-  font-size: 0.92em;
-  text-align: right;
-  max-width: 45%;
+  padding: 0 var(--space-2);
+  white-space: nowrap;
 }
-.carryover-empty,
-.carryover-note {
+.directive-tag.danger {
+  border-color: var(--color-danger-deep);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-deep);
+}
+.directive-tag.warning {
+  border-color: var(--color-warning-deep);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-deep);
+}
+.directive-goal {
+  flex: none;
+  font: 0.85em var(--font-mono);
+  color: var(--color-neutral-500);
+}
+.directive-row .btn-icon {
+  flex: none;
+  align-self: center;
+}
+.directives-empty,
+.directives-note {
   font-size: 0.82em;
   color: var(--color-neutral-500);
+  line-height: 1.7;
 }
 .session-collapse-bar {
   display: flex;

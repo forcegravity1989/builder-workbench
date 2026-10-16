@@ -36,7 +36,6 @@ function PrototypeLayout({
   modal,
   notice,
   openIssue,
-  openIssues,
   overviewSelection,
   overviewUI,
   progress,
@@ -80,12 +79,20 @@ function PrototypeLayout({
   const [sessionWidth, setSessionWidth] = useState(undefined)
   // 会话栏收折对计划/验收共用（同一壳）。
   const [chatCollapsed, setChatCollapsed] = useState(false)
-  // 验收板人工标记（遗留/风险）、周次与搜索提升到此层：跳 Issue 详情或切屏返回后保留。
+  // 验收板人工标记（遗留/风险）、周次与会上指导提升到此层：跳 Issue 详情或切屏返回后保留。
   // 遗留/风险是人工判断（演示默认：#255 随 G3 未达标记遗留+风险）；
   // 开放 Issue 不自动判遗留，关闭 Issue 不自动判目标达成。
   const [accMarks, setAccMarks] = useState({ 255: { carry: true, risk: true } })
   const [accWeekId, setAccWeekId] = useState(null)
-  const [accQuery, setAccQuery] = useState('')
+  // 领导会上指导演示预置¹：按真实口径编写，正式界面不预置、由人现场逐条记录。
+  const [accDirectives, setAccDirectives] = useState([
+    {
+      id: 1,
+      tag: '纳入下周计划',
+      goal: 'G3',
+      text: 'G3 未达不阻塞本版发布；下周计划把被管项目真实接入列为前置依赖，进展在周五验收同步。'
+    }
+  ])
   const planning = usePlanningDemo({ setModal, setNotice })
   const firstEntry = weekly && ['empty', 'problem'].includes(scenarios[view])
   const hasProblems = weekly && ['problem', 'partial'].includes(scenarios[view])
@@ -94,7 +101,6 @@ function PrototypeLayout({
     setScenarios((current) => ({ ...current, [view]: value }))
     setSessionState(['empty', 'problem'].includes(value) ? 'empty' : 'existing')
     setAccWeekId(null)
-    setAccQuery('')
     setVersion('v0.5')
     setDraft('')
     setNotice('')
@@ -221,8 +227,8 @@ function PrototypeLayout({
                     current={firstEntry ? [] : current}
                     marks={accMarks}
                     setMarks={setAccMarks}
-                    query={accQuery}
-                    setQuery={setAccQuery}
+                    directives={accDirectives}
+                    setDirectives={setAccDirectives}
                     weekId={accWeekId}
                     setWeekId={setAccWeekId}
                     {...{
@@ -230,17 +236,16 @@ function PrototypeLayout({
                       hasGap,
                       latestPackage,
                       openIssue,
-                      openIssues,
                       promptConversation,
                       refreshMetrics,
                       review,
                       setModal,
+                      setNotice,
                       tasks,
                       triggerPackage,
                       downloadPackage,
                       updateResult,
-                      version,
-                      versionTasks
+                      version
                     }}
                   />
                 )}

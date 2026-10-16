@@ -277,7 +277,7 @@ function App() {
       return
     }
     if (view === 'friday' && i === 1) {
-      document.querySelector('.package-sheet')?.scrollIntoView({
+      document.querySelector('.package-block')?.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest'
       })
@@ -355,7 +355,6 @@ function App() {
         modal,
         notice,
         openIssue,
-        openIssues,
         overviewSelection,
         overviewUI,
         latestPackage: LATEST_PACKAGE,
