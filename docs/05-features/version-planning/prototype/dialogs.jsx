@@ -2,6 +2,7 @@ import { React, useState } from 'react'
 import { Check, Copy, X } from 'lucide-react'
 import { Lamp, lampNames } from './shared.jsx'
 import { original, remote } from './snapshot.js'
+import { WeeklyExportPreview } from '../../version-acceptance/prototype/weekly-export.jsx'
 
 function PlanningSourcePreview({ modal }) {
   const snapshotCommit = 'f20f04ae57d510178c710c71216b9b734082c28e'
@@ -49,7 +50,7 @@ function PlanningSourcePreview({ modal }) {
   )
 }
 
-function PrototypeDialogs({ copied, copyText, modal, setModal }) {
+function PrototypeDialogs({ copied, copyText, modal, setModal, setNotice }) {
   return (
     <div className="dialog-backdrop" onClick={() => setModal(null)}>
       <section
@@ -77,6 +78,9 @@ function PrototypeDialogs({ copied, copyText, modal, setModal }) {
         </header>
         <div className="dialog-content">
           {modal.type === 'text' && <pre>{modal.text}</pre>}
+          {modal.type === 'weekly-export' && (
+            <WeeklyExportPreview modal={modal} setNotice={setNotice} />
+          )}
           {modal.type === 'planning-source' && <PlanningSourcePreview modal={modal} />}
           {modal.type === 'native-automation' && (
             <div className="prototype-native-editor">

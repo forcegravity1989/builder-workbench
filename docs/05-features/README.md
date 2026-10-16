@@ -19,7 +19,7 @@
 | # | 特性 | 目录 | 分诊 | intent | spec | 实现设计 | TDD | 验收点E2E | 旅程E2E |
 |---|---|---|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
-| 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(A01–A10 未逐项) | ○(AJ01/AJ02 已定义) |
+| 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 在用·双面整改草案待人确认（2026-10-16 吸收周报导出，weekly-report 试点独立屏废止） | ◐(整改草案待确认) | ◐(整改草案) | ◐ | ◐ | ◐(A01–A11 未逐项；A12–A14 草案) | ○(AJ01/AJ02 已定义，扩充草案) |
 | 3 | 总览指标 | [overview-metrics/](overview-metrics/) · [原型](overview-metrics/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项) | ○(MJ01/MJ02 已定义) |
 | 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·在用（正本随扶正在 main）¹ | ● | ● | ● | ◐¹ | ◐¹ | ○(台内路径 defer) |
 | 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ● | ● | 待建(P-01–P14 已定义，P-13 部分真壳验，注册暂缓) | 待建(主旅程/跨主机/扫墙三候选已定义) |

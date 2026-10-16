@@ -35,6 +35,7 @@ function PrototypeLayout({
   minutes,
   modal,
   notice,
+  openIssue,
   openIssues,
   overviewSelection,
   overviewUI,
@@ -77,6 +78,9 @@ function PrototypeLayout({
   const [scenarios, setScenarios] = useState({ monday: 'selected', friday: 'selected' })
   const [sessionStates, setSessionStates] = useState({ monday: 'existing', friday: 'existing' })
   const [sessionWidth, setSessionWidth] = useState(undefined)
+  // 会话栏收折对计划/验收共用（同一壳）；验收板双面（准备/Showcase）由旅程轴「展示验收」联动。
+  const [chatCollapsed, setChatCollapsed] = useState(false)
+  const [accFace, setAccFace] = useState('prepare')
   const planning = usePlanningDemo({ setModal, setNotice })
   const firstEntry = weekly && ['empty', 'problem'].includes(scenarios[view])
   const hasProblems = weekly && ['problem', 'partial'].includes(scenarios[view])
@@ -84,6 +88,7 @@ function PrototypeLayout({
   const onScenario = (value) => {
     setScenarios((current) => ({ ...current, [view]: value }))
     setSessionState(['empty', 'problem'].includes(value) ? 'empty' : 'existing')
+    setAccFace('prepare')
     setVersion('v0.5')
     setDraft('')
     setNotice('')
@@ -111,15 +116,17 @@ function PrototypeLayout({
       />
       {chatVisible && (
         <PrototypeSession
+          collapsed={chatCollapsed}
           width={sessionWidth}
           sessionState={sessionStates[view]}
+          onToggleCollapse={() => setChatCollapsed((c) => !c)}
           {...{
             composer,
             draft
           }}
         />
       )}
-      {chatVisible && <PrototypeSplitter onResize={setSessionWidth} />}
+      {chatVisible && !chatCollapsed && <PrototypeSplitter onResize={setSessionWidth} />}
       <main
         className={`main-pane ${!chatVisible ? 'wide-page' : ''}${view === 'monday' ? ' planning-pane' : ''}`}
       >
@@ -152,6 +159,15 @@ function PrototypeLayout({
                     aria-label={label}
                     onClick={() => {
                       if (!firstEntry || i === 0) {
+                        if (view === 'friday' && !firstEntry) {
+                          const nextFace = i === 2 ? 'showcase' : 'prepare'
+                          if (nextFace !== accFace) {
+                            setAccFace(nextFace)
+                            // 等面切换渲染完再滚动定位。
+                            setTimeout(() => stageGo(i), 0)
+                            return
+                          }
+                        }
                         stageGo(i)
                       }
                     }}
@@ -206,10 +222,13 @@ function PrototypeLayout({
                   <AcceptanceContent
                     disabled={firstEntry}
                     current={firstEntry ? [] : current}
+                    face={accFace}
+                    setFace={setAccFace}
                     {...{
                       goalIssues,
                       hasGap,
                       latestPackage,
+                      openIssue,
                       openIssues,
                       promptConversation,
                       refreshMetrics,
@@ -373,7 +392,8 @@ function PrototypeLayout({
             copied,
             copyText,
             modal,
-            setModal
+            setModal,
+            setNotice
           }}
         />
       )}

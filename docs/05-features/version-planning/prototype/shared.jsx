@@ -11,6 +11,27 @@ const deliveries = [
   'BW CI/CD 勾勾表现状，至少推进 1 项落地',
   '周一屏反馈处理结果'
 ]
+// 验收面演示预置：口径参照 v0.5 真实验收结果（2026-10-10 周报快照与 showcase 归档记录），
+// 供 Showcase 面与周报导出演示；正式界面不预置任何人的结论，全部由人现场核对填写。
+const acceptanceDemo = [
+  {
+    actualDelivery:
+      'F1–F5 六环拆解 Issue（#248–#252）建立并由 umbrella #247 跟踪；验收 E2E 与用户旅程用例随矩阵补齐。',
+    decision: '达成',
+    reason: '拆解与跟踪链在会话中确认，材料已逐项核对。'
+  },
+  {
+    actualDelivery: 'CI/门禁/verify 入口与 PR 评审召唤制迁移盘点完成；落地项随 #254 推进一项。',
+    decision: '待核对',
+    reason: ''
+  },
+  {
+    actualDelivery: '使用周一屏的被管理项目数白名单采集脚本交付（关联 #255），可按周出读数。',
+    decision: '未达',
+    reason: '采集能力已就绪，但使用周一屏的被管理项目数未达目标 6；本验收窗口项目接入不足。',
+    next: '随真实项目接入与归档持续推进；未达项带入下版，不自动承诺。'
+  }
+]
 const initial = original.plan.goals.map((g, i) => ({
   ...g,
   title: currentTitles[i],
@@ -21,7 +42,8 @@ const initial = original.plan.goals.map((g, i) => ({
   actualDelivery: '',
   decision: '待核对',
   reason: '',
-  next: ''
+  next: '',
+  ...acceptanceDemo[i]
 }))
 const done = (tasks) => tasks.filter((x) => x.state === 'CLOSED').length
 const titleForTask = (t) => t.title.replace(/^【[^】]*】/, '').trim()

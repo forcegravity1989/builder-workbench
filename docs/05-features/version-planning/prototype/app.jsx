@@ -233,14 +233,10 @@ function App() {
   }
   const archiveState = 'unknown'
   function triggerPackage() {
-    setNotice(
-      '原型未接入 CloudDragon；正式界面经 Playwright 同步点击该流水线行的出包按钮。'
-    )
+    setNotice('原型未接入 CloudDragon；正式界面经 Playwright 同步点击该流水线行的出包按钮。')
   }
   function downloadPackage() {
-    setNotice(
-      '原型未接入下载；正式界面先选择目录，再经 Playwright 点击该版本的下载按钮保存。'
-    )
+    setNotice('原型未接入下载；正式界面先选择目录，再经 Playwright 点击该版本的下载按钮保存。')
   }
   const packageTone = LATEST_PACKAGE ? 'green' : 'gray'
   const packageHint = LATEST_PACKAGE ? '已有最新包' : '尚未出包'
@@ -287,17 +283,19 @@ function App() {
       })
       return
     }
+    if (view === 'friday' && i === 2) {
+      document.querySelector('.showcase-face')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+      return
+    }
     document
-      .querySelector(
-        view === 'monday' ? (i === 0 ? '.planning-brief' : '.goal-sheet') : '.acceptance-sheet'
-      )
+      .querySelector(view === 'monday' ? (i === 0 ? '.planning-brief' : '.goal-sheet') : null)
       ?.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest'
       })
-    if (view === 'friday' && i === 2) {
-      document.querySelector('.decision select')?.focus()
-    }
   }
   function taskList(items) {
     return (
@@ -356,6 +354,7 @@ function App() {
         minutes,
         modal,
         notice,
+        openIssue,
         openIssues,
         overviewSelection,
         overviewUI,
