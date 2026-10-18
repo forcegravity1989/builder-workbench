@@ -89,7 +89,8 @@ function progressCell(reading: Exclude<WallCardReadings['progress'], { kind: 'hi
   }
   return {
     value: `完成 ${reading.completed} · 开放 ${reading.open}`,
-    title: '该版本 data.json 登记的承诺任务 × Issue 原生状态现算；关闭即计完成，关闭原因不参与计数'
+    title:
+      '该版本 data.json 登记的承诺任务 × Issue 原生状态现算；决定不做/重复等其他关闭不上卡，完整分解在总览'
   }
 }
 

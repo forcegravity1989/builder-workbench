@@ -1,7 +1,8 @@
 export type IssueStateEntry = {
   number: number
-  /** 原生开/关状态。墙卡口径「关闭即完成」只消费此字段（关闭原因不参与计数，spec 取舍 9）。 */
   state: 'OPEN' | 'CLOSED'
+  /** GitHub 原生关闭原因（COMPLETED / NOT_PLANNED / DUPLICATE）；开放 issue 为 null。 */
+  stateReason: string | null
 }
 
 export type IssueStatesBatchResult = {

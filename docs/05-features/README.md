@@ -2,8 +2,8 @@
 
 > **本篇维护约定**
 > - **读者与时机**：开发特性、盘点、排期、回答「BW Electron 叠层现在有哪些特性、六环链走到哪」时读；从 AGENTS「特性级变更」行与 [02 §6.2](../01-principles/02-working-backwards.md) 进入。
-> - **职责与边界**：只装叠层特性清单 × 六环链状态总览 × 冲突裁决。**不装**：特性定义正文（在各特性目录 intent/spec/design/STATUS）、方法论（02 §6.2/6.3）、逐验收点明细（在各特性 STATUS 的「验收点与旅程矩阵」小节）、过程证据（git 历史与 PR 记录）、遗留事项台账（遗留事项只进原生 Issue，见原则 01）。
-> - **结构**：判据与格值 → 特性矩阵 → 裁决与明细指引。
+> - **职责与边界**：只装叠层特性清单 × 六环链状态总览 × 冲突裁决 × 跨特性已知债登记。**不装**：特性定义正文（在各特性目录 intent/spec/design/STATUS）、方法论（02 §6.2/6.3）、逐验收点明细（在各特性 STATUS 的「验收点与旅程矩阵」小节）、过程证据（git 历史与 PR 记录）。
+> - **结构**：判据与格值 → 特性矩阵 → 裁决与明细指引 → 已知债登记。
 > - **更新触发**：特性带入或 intent 确认、分诊/归属变化、任一特性 STATUS 链状态变化、相关 PR 合入。本篇是现状正本，不记流水；改动随引发它的 PR 同批提交。
 > - **正本声明**：仓内本篇为特性清单与链状态的唯一正本。仓外过程稿 `feature-matrix-20260926.md`（f2-review/plans/）自本篇落仓起退役为过程稿，不再作为现状依据；其逐验收点明细已并入各特性 STATUS。本篇不导入旧 main（现 `archive/main-pre-orca`）的旧特性矩阵，不继承其 F1–F11 旧账（[02 §6.2](../01-principles/02-working-backwards.md)）。
 
@@ -18,8 +18,8 @@
 
 | # | 特性 | 目录 | 分诊 | intent | spec | 实现设计 | TDD | 验收点E2E | 旅程E2E |
 |---|---|---|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
-| 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(A01–A10 未逐项) | ○(AJ01/AJ02 已定义) |
+| 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) | 在用·目标卡统一已确认待实施⁴ | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
+| 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 在用·形态整改已确认待实施⁴ | ● | ● | ◐(待按轮次协议重写) | ◐ | ◐(A01–A11 未逐项；A12–A14 已定义未实施) | ○(AJ01/AJ02 已定义) |
 | 3 | 总览指标 | [overview-metrics/](overview-metrics/) · [原型](overview-metrics/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项) | ○(MJ01/MJ02 已定义) |
 | 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·在用（正本随扶正在 main）¹ | ● | ● | ● | ◐¹ | ◐¹ | ○(台内路径 defer) |
 | 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ● | ● | 待建(P-01–P14 已定义，P-13 部分真壳验，注册暂缓) | 待建(主旅程/跨主机/扫墙三候选已定义) |
@@ -32,9 +32,19 @@
 
 ³ 第 6–7 行从已落地提交回写（2026-09-30），intent/spec 为草案，待人 gate。第 6 行接上原先「任务 CodeHub 支持」的占位，目录就是 [codehub/](codehub/)，范围含任务来源与计划/验收读写；spec 缺可点原型。第 7 行是 BW 开发者的 Windows 出包与 GitHub Release，无界面，操作契约在技能；#332 增补发布脚本 `release-win-workbench.mjs`、版本描述规范与验收报告规范（含骨架模板），`version-report` 技能退役并入本特性，TDD 由 ○→◐（发布脚本 18 例单测），验收点扩到 R01–R06（R05 版本描述合规范、R06 验收报告合规范），均定义未跑。明细见各自 STATUS。
 
+⁴ 第 1–2 行形态整改（v9.5 原型，2026-10-18 用户确认，生产未实施）：计划/验收统一目标卡骨架（整卡收缩、Issue 分组子块带 Issue 级进展备注、计划完成/负责人从计划材料既有字段取、拆解打 bug/feature 分类标签）；验收单页承载会前/会中/会后三阶段，页底「会议指导与遗留」由会后 SOP 从会议转写总结（issue #374 链路、经 subagent、逐条人确认）随轮次入材料；跨周版本按轮次记录、界面按周呈现；周报信息由验收屏承载，不设独立周报屏与导出件——weekly-report 试点（PR #321 未合入 main、保持挂起）整体废止，处置待用户确认。明细见[验收 STATUS](version-acceptance/STATUS.md) 与[计划 STATUS](version-planning/STATUS.md) 批次记录。
+
 ## 裁决与明细指引
 
 - 各特性链状态明细以其 `STATUS.md` 六环表与「验收点与旅程矩阵」小节为准（格式正本：[02 §6.2](../01-principles/02-working-backwards.md)「STATUS 格式」）；**本表是总览，冲突时以特性目录为准并回改本表**。
 - 1–3 行共同基线：设计 PR #264 已合入、用户授权实施；真壳 Playwright 烟测 `tests/e2e/workbench-cycle-smoke.spec.ts` 已编写，执行结果见对应 PR；SSH/WSL 实机、真实 provider 归档全链、真实到点自动化、真实出包/验包均未验证。逐条证据与缺口读各 STATUS，不在本表重复。
 
 计划/验收原型的会话区只标识 Orca 原生复用边界；用户已确认右板首行协作入口、自动化配置及首次/异常状态，生产入口迁移已随 PR #279 实施（真壳未验，证据见各 STATUS）。验收原型取消独立交付准备卡，材料在会话准备、在目标卡核对，纪要预览在目标区标题旁；验收右板已按该原型落地。计划原有的直接编辑、自动保存、固定上版来源及正文操作入口保持；两屏实际证据见各 STATUS。原型与模拟 DOM 检查不等同于完整 Electron 真壳及会话旅程验收。
+
+## 已知债登记（跨特性，不因低频豁免）
+
+1. **总览两区及 M02 真实数据体验待验**——业务区已落地 ECharts、特性页签和引领/滞后图表；项目区已接 Git 提交时间及 PR/MR 合入时间，Issue 只绘当前快照；组件与契约证据不代替真壳逐点验收，明细见总览指标 STATUS。
+2. **P07 / A10 原生工作区与自动化实战未验证**——默认关闭态登记及 creationKey 去重已有实现，已有条目按当前 BW 版本覆盖同步提示词、用户设置保留；专用新建按钮调用其手动运行。会话工作区已改为完整复用原生界面，新接线、多标签/分屏、历史、手动运行及到点触发待真壳与真人验证（对照铁律四：定时任务真实到点触发，自动化创建的 Issue 不自动完成）。
+3. **relay collect 信任面重推导**——SSH 实机配套，作为独立任务推进，不随本轮收尾冒充已验证。
+
+其余环境级未验证项（SSH/WSL 与配对实机、真实 GitHub/CodeHub 归档全链、真实出包/验包、多自然周归档回看）逐条登记在各特性 STATUS，不在此另养一份会漂移的副本。

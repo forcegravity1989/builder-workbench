@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
-import { useNow } from '@/hooks/use-now'
 import {
   getRepoExecutionHostId,
   getWorktreeExecutionHostId,
@@ -25,9 +24,9 @@ import type { WallProject } from './workbench-wall-projects'
  * 任一步读不到 → Unknown（「—」），不装绿、不装零（铁律二）；
  * 不推导健康结论，判断归人。
  *
- * 两条链的失效域刻意分开且按项目各自成键：版本链依赖活跃仓与各项目工作树
- * 登记（工作树晚到改指纹自愈重读，与总览实时重算保持同结论）；PR 链只依赖
- * 代码仓槽集合与刷新 token。单项目的变化只重读该项目，不整墙重发 gh/RPC。
+ * 两条链的失效域刻意分开：版本链依赖活跃仓与各项目工作树登记（工作树晚到
+ * 会改指纹自愈重读，与总览实时重算保持同结论）；PR 计数只依赖代码仓槽集合
+ * 与刷新 token，切活跃项目不作废它，避免整墙重发 gh/RPC 调用风暴。
  */
 
 type VersionProgress = {
@@ -59,26 +58,28 @@ function worktreeFingerprint(
     .join('|')
 }
 
-function versionKeyOf(
-  project: WallProject,
+function versionQueryKey(
+  projects: readonly WallProject[],
   token: number,
   activeRepoId: string | null,
   worktreesByRepo: Record<string, readonly Worktree[]>
 ): string {
-  // 活跃仓只影响「含该仓的项目」的行序；不含它的项目键不带活跃仓量，
-  // 切活跃仓时这些项目不重读（兑现按项目失效域）。
-  const activeInProject = project.rows.some((row) => row.id === activeRepoId) ? activeRepoId : null
   return JSON.stringify([
     token,
-    activeInProject,
-    // 远端身份键入指纹：CodeHub 任务解析依赖注册行 gitRemoteIdentity，身份晚到自愈重读。
-    project.rows.map((row) => `${row.id}|${row.path}|${row.gitRemoteIdentity?.canonicalKey ?? ''}`),
-    worktreeFingerprint(project, worktreesByRepo)
+    activeRepoId,
+    projects.map((project) => [
+      project.key,
+      project.rows.map((row) => `${row.id}|${row.path}`),
+      worktreeFingerprint(project, worktreesByRepo)
+    ])
   ])
 }
 
-function prKeyOf(project: WallProject, token: number): string {
-  return JSON.stringify([token, project.slots.map((slot) => slot.repoId)])
+function prQueryKey(projects: readonly WallProject[], token: number): string {
+  return JSON.stringify([
+    token,
+    projects.map((project) => [project.key, project.slots.map((slot) => slot.repoId)])
+  ])
 }
 
 export function useWallReadings(
@@ -94,76 +95,52 @@ export function useWallReadings(
 
   const [versionByKey, setVersionByKey] = useState<Record<string, VersionProgress>>({})
   const [prsByKey, setPrsByKey] = useState<Record<string, WallCountReading>>({})
-  // 按项目失效域 + 「变化集指纹」作 effect 依赖：无关 store 变化（worktree head、
-  // isUnread、注册排序）不改变化集字符串，进行中的轮次不被取消重跑；只有真失效
-  // （指纹/活跃仓/槽集合/刷新 token）才重读，且只重读受影响的项目。
-  const [loadedVersionKeys, setLoadedVersionKeys] = useState<Record<string, string>>({})
-  const [loadedPrKeys, setLoadedPrKeys] = useState<Record<string, string>>({})
-
-  const changedVersion = useMemo(
-    () =>
-      projects.flatMap((project) => {
-        const key = versionKeyOf(project, token, activeRepoId, worktreesByRepo)
-        return loadedVersionKeys[project.key] === key ? [] : [{ project, key }]
-      }),
-    [projects, token, activeRepoId, worktreesByRepo, loadedVersionKeys]
+  const versionKey = useMemo(
+    () => versionQueryKey(projects, token, activeRepoId, worktreesByRepo),
+    [projects, token, activeRepoId, worktreesByRepo]
   )
-  const changedVersionKey = useMemo(
-    () => JSON.stringify(changedVersion.map((entry) => [entry.project.key, entry.key])),
-    [changedVersion]
-  )
-  const changedPr = useMemo(
-    () =>
-      projects.flatMap((project) => {
-        const key = prKeyOf(project, token)
-        return loadedPrKeys[project.key] === key ? [] : [{ project, key }]
-      }),
-    [projects, token, repos, loadedPrKeys]
-  )
-  const changedPrKey = useMemo(
-    () => JSON.stringify(changedPr.map((entry) => [entry.project.key, entry.key])),
-    [changedPr]
-  )
+  const prKey = useMemo(() => prQueryKey(projects, token), [projects, token])
+  // 只在成功落地后记录已加载的键：被取消的轮次不消费键（沿 use-wall-adoptions 守卫语义）。
+  const loadedVersionKeyRef = useRef<string | null>(null)
+  const loadedPrKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (changedVersion.length === 0) {
+    if (loadedVersionKeyRef.current === versionKey) {
       return
     }
     let cancelled = false
     void (async () => {
       const entries = await Promise.all(
-        changedVersion.map(async ({ project }): Promise<[string, VersionProgress]> => {
+        projects.map(async (project): Promise<[string, VersionProgress]> => {
           const context = resolvePlanContext(project, worktreesByRepo, activeRepoId)
           if (!context) {
             return [project.key, UNDECIDED]
           }
-          return [project.key, await readVersionAndProgress(context, project)]
+          return [project.key, await readVersionAndProgress(context)]
         })
       )
       if (cancelled) {
         return
       }
-      setVersionByKey((prev) => ({ ...prev, ...Object.fromEntries(entries) }))
-      setLoadedVersionKeys((prev) => ({
-        ...prev,
-        ...Object.fromEntries(changedVersion.map((entry) => [entry.project.key, entry.key]))
-      }))
+      setVersionByKey(Object.fromEntries(entries))
+      loadedVersionKeyRef.current = versionKey
     })()
     return () => {
       cancelled = true
     }
-    // 依赖是变化集指纹：集合不变不打扰在飞轮次；集合变（真失效或上轮落地）才重跑。
+    // 注册行、活跃仓与工作树登记变化都已在 versionKey 指纹内；store 引用不进依赖，
+    // 避免每次心跳重发 materials/history RPC。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [changedVersionKey])
+  }, [versionKey])
 
   useEffect(() => {
-    if (changedPr.length === 0) {
+    if (loadedPrKeyRef.current === prKey) {
       return
     }
     let cancelled = false
     void (async () => {
       const entries = await Promise.all(
-        changedPr.map(async ({ project }): Promise<[string, WallCountReading]> => [
+        projects.map(async (project): Promise<[string, WallCountReading]> => [
           project.key,
           await readProjectPrs(project, repos, () => !cancelled)
         ])
@@ -171,22 +148,19 @@ export function useWallReadings(
       if (cancelled) {
         return
       }
-      setPrsByKey((prev) => ({ ...prev, ...Object.fromEntries(entries) }))
-      setLoadedPrKeys((prev) => ({
-        ...prev,
-        ...Object.fromEntries(changedPr.map((entry) => [entry.project.key, entry.key]))
-      }))
+      setPrsByKey(Object.fromEntries(entries))
+      loadedPrKeyRef.current = prKey
     })()
     return () => {
       cancelled = true
     }
+    // 槽集合与刷新 token 已在 prKey 内；store 引用不进依赖，理由同上。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [changedPrKey])
+  }, [prKey])
 
-  // 会话计数是同步现算：agent 状态心跳到达即随 store 更新；新鲜度时钟复用
-  // 仓内共享 useNow（与侧栏同模式），不在渲染内直接取 Date.now()。
-  const now = useNow(30_000)
+  // 会话计数是同步现算：agent 状态心跳到达即随 store 更新，不等「刷新」。
   const sessionsByKey = useMemo((): Record<string, WallSessionReading> => {
+    const now = Date.now()
     const result: Record<string, WallSessionReading> = {}
     for (const project of projects) {
       const worktreeIds = new Set<string>()
@@ -220,8 +194,7 @@ export function useWallReadings(
     worktreesByRepo,
     agentStatusByPaneKey,
     tabsByWorktree,
-    runtimeStatusByEnvironmentId,
-    now
+    runtimeStatusByEnvironmentId
   ])
 
   return useMemo((): Record<string, WallCardReadings> => {

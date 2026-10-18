@@ -12,8 +12,12 @@ import { parseGitHubOwnerRepo } from '../github/github-repository-identity'
 import { gitExecFileAsync } from '../git/runner'
 import type { GitRemoteIdentity } from '../../shared/git-remote-identity'
 import { probeGitRemoteIdentity } from '../repo-git-remote-identity'
-import { launchCloudDragonPipeline, listCloudDragonPipelines } from './cloud-dragon-cli-ops'
-import { downloadCloudDragonPackage, readCloudDragonLatest } from './cloud-dragon-package-ops'
+import {
+  downloadCloudDragonPackage,
+  launchCloudDragonPipeline,
+  listCloudDragonPipelines,
+  readCloudDragonLatest
+} from './cloud-dragon-package-ops'
 import {
   downloadGitHubPackage,
   launchGitHubPipeline,
@@ -31,8 +35,7 @@ import {
 
 /**
  * 出包运行时入口：一条协议两个宿主。scope 解析出工作树后按远端身份分流——
- * CodeHub 远端的执行面（list/launch）走本机 cloudbuild CLI、制品面
- * （latest/download）走 CloudDragon 浏览器会话，其余（GitHub）走本机 gh CLI。
+ * CodeHub 远端走 CloudDragon 浏览器链路，其余（GitHub）走本机 gh CLI。
  * 分派只看 remote URL，界面与协议不感知宿主差异。
  */
 
@@ -42,7 +45,7 @@ export type PackageRuntimeHost = {
   listProjects: Parameters<typeof resolveWorkbenchGitExecOptions>[0]['listProjects']
 }
 
-/** 两条链路都依赖本机环境（cb / CloudDragon 登录态、gh 登录 + 本地工作树）。 */
+/** 两条链路都依赖本机环境（CloudDragon 登录态 / gh 登录 + 本地工作树）。 */
 function assertLocalHost(scope: MetricScope): void {
   const host = parseExecutionHostId(scope.hostId)
   if (host?.kind === 'ssh') {

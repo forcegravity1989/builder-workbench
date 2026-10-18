@@ -38,6 +38,11 @@ export const LATEST_PACKAGE = {
   files: ['gtsllm-dfx-1.0.0-20260225_1000.7z', 'gtsllm-dfx-1.0.0-20260225_1000.7z.hwp7s']
 }
 
+/**
+ * 布局与生产 AcceptancePackage（#360 已合入）同构：工具栏一行放
+ * 流水线选择 + 「出包」+「下载」，下方两行四列展示最新包真实读数
+ * （项目名称/版本号/创建时间/包文件）；生产每分钟静默刷新，原型为静态快照。
+ */
 export function PackagePanel({ disabled, latest, onPackage, onDownload }) {
   const [pipeline, setPipeline] = useState(PACKAGE_PIPELINES[0])
   return (
@@ -58,51 +63,40 @@ export function PackagePanel({ disabled, latest, onPackage, onDownload }) {
             <option key={name}>{name}</option>
           ))}
         </select>
-        <button
-          className="btn btn-secondary"
-          disabled={disabled}
-          onClick={() => onPackage(pipeline)}
-        >
+        <button className="btn btn-primary" disabled={disabled} onClick={() => onPackage(pipeline)}>
           <ArrowUpRight />
           出包
         </button>
+        <button
+          className="btn btn-secondary"
+          disabled={disabled || !latest}
+          onClick={() => onDownload(latest)}
+        >
+          <Download />
+          下载
+        </button>
       </div>
       {latest ? (
-        <div className="package-artifact" data-version={latest.version}>
-          <div className="package-meta-row">
-            <span>项目名称</span>
-            <p>{latest.project}</p>
-          </div>
-          <div className="package-meta-row">
-            <span>版本号</span>
-            <p className="package-version">{latest.version}</p>
-            <button
-              className="btn btn-secondary"
-              disabled={disabled}
-              onClick={() => onDownload(latest)}
-            >
-              <Download />
-              下载
-            </button>
-          </div>
-          <div className="package-meta-row">
-            <span>创建时间</span>
-            <p>{latest.created}</p>
-          </div>
-          <div className="package-meta-row">
-            <span>包文件</span>
-            <div className="package-files">
-              {latest.files.map((name) => (
-                <p key={name}>{name}</p>
-              ))}
-            </div>
-          </div>
-        </div>
+        <dl className="package-grid" data-version={latest.version}>
+          <dt>项目名称</dt>
+          <dt>版本号</dt>
+          <dt>创建时间</dt>
+          <dt>包文件</dt>
+          <dd title={latest.project}>{latest.project}</dd>
+          <dd className="package-version" title={latest.version}>
+            {latest.version}
+          </dd>
+          <dd title={latest.created}>{latest.created}</dd>
+          <dd className="package-files" title={latest.files.join('、')}>
+            {latest.files.join('、')}
+          </dd>
+        </dl>
       ) : (
         <p className="package-artifact-empty">该服务暂无制品包。</p>
       )}
       <p className="package-source">
-        数据源：CloudDragon 制品仓库服务版本包页；正式界面经 Playwright 读取，下载先选目录。
+        数据源：CloudDragon 制品仓库服务版本包页；正式界面经 Playwright / gh
+        按远端读取，最新包每分钟静默刷新，下载先选目录。
       </p>
     </section>
   )

@@ -2,7 +2,7 @@
 
 > 给实现与技术评审者动代码前读；本文管对象、候选来源、复用和异常设计。行为见 [spec](spec.md)，共享层见 [计划设计](../version-planning/design.md#共享边界)。设计变化时更新，落地后同步 06-module。
 >
-> 状态：已授权实施；详细设计未逐项细审，未决项须人工确认。定位 architecture §1 项目版本/交付核对，§2 事实、执行与壳。共享核心的实现范围见计划设计及 STATUS，其余接口不表示已有运行能力。
+> 状态：已授权实施；详细设计未逐项细审，未决项须人工确认。定位 architecture §1 项目版本/交付核对，§2 事实、执行与壳。共享核心的实现范围见计划设计及 STATUS，其余接口不表示已有运行能力。**2026-10-18 形态已经用户确认（单页目标卡、周/轮次、会议指导与遗留、会话栏收折，见 [spec](spec.md)）：本篇须先按轮次协议（材料 schema 增轮次、会议指导、Issue 备注与标记、材料链接可选字段）与单页目标卡信息架构重写，再实施相关部分；现文其余部分仍是现行实现的正本。**
 
 ## 页面与复用
 
@@ -16,7 +16,7 @@ AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks �
 
 计划固定 bw/week-plan，验收固定 bw/week-acceptance，目录由 Orca 原生创建与登记策略确定，不强制 .bw 物理目录。通过 Orca 项目/宿主和分支查真实工作区，不仅替换标签，不新增聊天日志或 BW 调度器。
 
-验收树从项目主干基线创建；运行时不硬编码 bw-orca 或 main。每次新运行刷新远端并检查树的干净状态、前次归档与基线差异（现状注：脏树/未归档提交检查为提示级，由会话承担，无代码强制校验落点）。已有脏改动/未归档提交不 reset、不搬树、不强推，恢复该次工作或呈现冲突。先回显固定工作区与现有材料；进屏不做任何 Git 动作，页头「更新代码」经 workbench.trunk.update 把固定树快进到主干最新（fetch 书签 → 双向对比 → merge --ff-only；快进不了保持原样、统一中文提示交会话处理、材料仍照常重读；纯草稿状态不是异常、不提示；远程 SSH 树暂不自动同步，属只读中继边界），已有同分支其他路径提示真实路径，不擅自删除重建。
+验收树从项目主干基线创建；运行时不硬编码 bw-orca 或 main。每次新运行刷新远端并检查树的干净状态、前次归档与基线差异（现状注：脏树/未归档提交检查为提示级，由会话承担，无代码强制校验落点）。已有脏改动/未归档提交不 reset、不搬树、不强推，恢复该次工作或呈现冲突。先回显固定工作区与现有材料；进屏不做任何 Git 动作，页头「更新代码」经 workbench.trunk.update 把固定树快进到主干最新（fetch 书签 → 双向对比 → merge --ff-only；快进不了保持原样、统一中文提示交会话处理、材料仍照常重读；纯草稿状态不是异常、不提示；远程 SSH 树暂不自动同步，属只读中继边界，记债待专项），已有同分支其他路径提示真实路径，不擅自删除重建。
 
 运行身份包含 projectId、hostId、workflow=acceptance 与 Orca runId；cycleId 为周期上下文，version 为另行核对的材料关联，不作为运行去重前提。运行与历史恢复由 Orca 管理，BW 不保存会话绑定或按标题匹配；专用“新建验收”复用已登记自动化的手动运行并自动打开、聚焦本次原生会话，定时运行仍在后台。首次登记默认 existing 固定工作区、reuseSession=false；后续尊重用户保存的会话复用配置。上午/下午可继续同一运行，计划与验收按各自固定工作区定位。
 
@@ -30,7 +30,7 @@ candidateRef 保存项目、完整 commit SHA、版本与来源；preparedArtifa
 
 模型通过宿主下发的项目既有命令准备包和证据。源代码执行区须明确固定候选 SHA；若常驻验收树不适合作为干净源码区，复用原生工作树能力准备候选执行区，验收树仍只承载材料。只包装项目已有能力，不照搬 Rust 发布工具或另写打包器。记录实际执行路径、退出和产物，不因文件名有版本就认为匹配。
 
-出包区块是一条协议两个宿主：`workbench.package.list/latest/launch/download`（shared/workbench/package-pipeline.ts）由 scope 解析出工作树后按远端身份分派（package-pipeline-runtime）——CodeHub 远端分两面：执行面（list/launch）走本机 cloudbuild CLI（cb，cloud-dragon-cli-ops；launch 语义 = 按流水线名找 ID，再按 pr_pipeline 执行方案启动，与页面链路一致），制品面（latest/download）走 CloudDragon 浏览器会话（主进程常驻 Playwright，cloud-dragon-session；CLI 无制品仓库能力，页面选择器经真实页面验证）；其余（GitHub）走本机 gh CLI（github-package-ops）。界面与协议不感知宿主差异；SSH 宿主拒绝出包（依赖本机登录态与工作树）。GitHub 侧的识别规则：仓里文件名以 `bw-package` 前缀开头的 Actions workflow 即出包流水线；最新包读 releases 列表端点而非 `/releases/latest`（后者跳过预发布）；下载只取安装包本体，排除更新器元数据（yml/blockmap/json）。启动经 launchInFlight 互斥，双击不重复触发；最新包每分钟静默刷新，出包灯只随真实包数据点亮，不写 workflow.stage。
+出包区块是一条协议两个宿主：`workbench.package.list/latest/launch/download`（shared/workbench/package-pipeline.ts）由 scope 解析出工作树后按远端身份分派（package-pipeline-runtime）——CodeHub 远端走 CloudDragon 浏览器链路（主进程常驻 Playwright 会话，cloud-dragon-session；页面选择器经真实页面验证），其余（GitHub）走本机 gh CLI（github-package-ops），界面与协议不感知宿主差异；SSH 宿主拒绝出包（依赖本机登录态与工作树）。GitHub 侧的识别规则：仓里文件名以 `bw-package` 前缀开头的 Actions workflow 即出包流水线；最新包读 releases 列表端点而非 `/releases/latest`（后者跳过预发布）；下载只取安装包本体，排除更新器元数据（yml/blockmap/json）。启动经 launchInFlight 互斥，双击不重复触发；最新包每分钟静默刷新，出包灯只随真实包数据点亮，不写 workflow.stage。
 
 构建运行复用原生任务/进程状态关联 runId；恢复先查询仍在运行的任务和已生成产物，不盲目再启动（现状注：「重试不重复启动同一仍运行构建」由会话承担，未建对应代码）。候选改变时将不匹配材料标陈旧；相应材料状态由事实推导，不自动撤销或代写人的判断。正式发布、tag、远端完成与 PR 合入仍按项目的人授权。
 
