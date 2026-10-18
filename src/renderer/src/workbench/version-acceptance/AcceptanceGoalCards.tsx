@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type Ref } from 'react'
+import { ChevronsDownUp, ChevronsUpDown, RefreshCw } from 'lucide-react'
 import type {
   AcceptanceMaterial,
   MetricReadingEvidence,
@@ -16,7 +17,11 @@ import { AcceptanceMetrics } from './AcceptanceMetrics'
 import { AcceptanceGoalResult } from './AcceptanceGoalResult'
 import { AcceptanceDirectives, AcceptanceRounds } from './AcceptanceRounds'
 import { issueMarkFor } from './acceptance-issue-annotations'
-import { decisionFreshness, type DecisionFreshness } from './acceptance-decision'
+import {
+  decisionFreshness,
+  recordHumanDecision,
+  type DecisionFreshness
+} from './acceptance-decision'
 
 type AcceptanceOutcome = NonNullable<AcceptanceMaterial['results'][number]['decision']>['outcome']
 
@@ -213,30 +218,42 @@ export function AcceptanceGoalCards({
     <section id="acceptance-results" ref={sectionRef} aria-label="展示验收">
       <div className="va-goal-toolbar">
         <button
-          className="wb-btn wb-btn-ghost wb-btn-sm"
+          type="button"
+          className="wb-btn wb-btn-ghost wb-btn-sm va-icon-btn"
+          title="全部展开"
+          aria-label="全部展开"
           onClick={() => {
             setExpanded(true)
             setExpandedSignal((value) => value + 1)
           }}
         >
-          全部展开
+          <ChevronsDownUp size={15} aria-hidden="true" />
         </button>
         <button
-          className="wb-btn wb-btn-ghost wb-btn-sm"
+          type="button"
+          className="wb-btn wb-btn-ghost wb-btn-sm va-icon-btn"
+          title="全部收起"
+          aria-label="全部收起"
           onClick={() => {
             setExpanded(false)
             setExpandedSignal((value) => value + 1)
           }}
         >
-          全部收起
+          <ChevronsUpDown size={15} aria-hidden="true" />
         </button>
         <button
           type="button"
-          className="wb-btn wb-btn-ghost wb-btn-sm"
+          className="wb-btn wb-btn-ghost wb-btn-sm va-icon-btn"
+          title={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
+          aria-label={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
           disabled={readOnly || !scope || !plan.tasks.length || refreshing}
           onClick={() => void refreshIssues()}
         >
-          {refreshing ? '刷新中…' : '刷新 Issue'}
+          <RefreshCw
+            size={15}
+            aria-hidden="true"
+            className={refreshing ? 'is-spinning' : undefined}
+          />
         </button>
         {snapshotError && (
           <span className="va-muted" role="status">

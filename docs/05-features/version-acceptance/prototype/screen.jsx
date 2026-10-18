@@ -205,11 +205,22 @@ function AcceptanceContent({
             </select>
           </label>
           <span className="toolbar-spacer" />
-          <button className="btn btn-ghost" disabled={readOnly} onClick={() => setAllCards(true)}>
-            全部展开
+          <button
+            className="btn btn-ghost btn-icon"
+            title="全部展开"
+            aria-label="全部展开"
+            disabled={readOnly}
+            onClick={() => setAllCards(true)}
+          >
+            <ChevronDown />
           </button>
-          <button className="btn btn-ghost" onClick={() => setAllCards(false)}>
-            全部收起
+          <button
+            className="btn btn-ghost btn-icon"
+            title="全部收起"
+            aria-label="全部收起"
+            onClick={() => setAllCards(false)}
+          >
+            <ChevronRight />
           </button>
         </div>
       )}

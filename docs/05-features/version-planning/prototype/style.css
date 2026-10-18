@@ -441,10 +441,22 @@ input::placeholder {
   color: var(--color-neutral-500);
   font-family: var(--font-mono);
 }
-.section-heading .btn {
+.section-heading-actions {
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: inherit;
+  color: inherit;
+  font-family: inherit;
+}
+.section-heading .btn {
   font-size: 0.8em;
   height: var(--space-6);
+  padding: var(--space-1);
+}
+.section-heading .btn-icon {
+  width: var(--space-6);
   padding: var(--space-1);
 }
 .section-heading svg {

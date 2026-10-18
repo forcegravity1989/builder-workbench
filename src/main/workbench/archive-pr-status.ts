@@ -7,7 +7,6 @@ import {
 } from '../github/gh-utils'
 import { githubHostExecOptions } from '../github/github-api-repository'
 import { noteRepositoryRateLimitSpend, repositoryRateLimitGuard } from '../github/rate-limit'
-import { githubRepoIdentityKey } from '../../shared/github/repository-identity-key'
 import { isCodeHubGitRemote, parseCodeHubRemote, type CodeHubRemote } from '../../shared/codehub'
 import type { CodeHubTaskDetail } from '../../shared/codehub-tasks'
 import { viewCodeHubTask } from '../codehub/mutations'
@@ -32,6 +31,27 @@ function normalizedCodeHubIdentity(value: string): string {
     .replace(/\.git$/i, '')
     .replace(/^\/+|\/+$/g, '')
     .toLowerCase()
+}
+
+function normalizedGithubIdentity(value: string): string {
+  return value
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^git@github\.com:/i, 'github.com/')
+    .replace(/^github\.com\//i, '')
+    .replace(/\.git$/i, '')
+    .replace(/^\/+|\/+$/g, '')
+    .toLowerCase()
+}
+
+/** @internal — accepts the host-qualified forms written by older materials. */
+export function githubRepositoryMatches(
+  repository: string,
+  ownerRepo: { owner: string; repo: string }
+): boolean {
+  return (
+    normalizedGithubIdentity(repository) === `${ownerRepo.owner}/${ownerRepo.repo}`.toLowerCase()
+  )
 }
 
 /** @internal — compares the recorded provider reference to the registered remote. */
@@ -171,11 +191,7 @@ export async function readArchivePrStatus(
   if (!ownerRepo) {
     return { state: 'unknown', reason: '未解析项目的 GitHub 来源，无法读取 PR 状态' }
   }
-  const identity = githubRepoIdentityKey(ownerRepo)
-  if (
-    params.pr.repository !== identity &&
-    params.pr.repository !== `${ownerRepo.owner}/${ownerRepo.repo}`
-  ) {
+  if (!githubRepositoryMatches(params.pr.repository, ownerRepo)) {
     return { state: 'unknown', reason: 'PR 引用与项目真实 GitHub 来源不一致' }
   }
   const ghOptions = {

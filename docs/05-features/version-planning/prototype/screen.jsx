@@ -103,26 +103,39 @@ function PlanningContent({
         </div>
       </section>
       <div className="section-heading">
-        <h2>当前版本目标</h2>
-        <span>Top 3</span>
-        <button className="btn btn-ghost" disabled={disabled} onClick={() => setAll(true)}>
-          全部展开
-        </button>
-        <button className="btn btn-ghost" disabled={disabled} onClick={() => setAll(false)}>
-          全部收起
-        </button>
-        <button
-          className="btn btn-secondary planning-configure-metrics"
-          title="新建会话，配置指标"
-          onClick={() => metricPrep(null)}
-        >
-          <ModelSessionIcon />
-          配置指标
-        </button>
-        <button className="btn btn-secondary" onClick={review} disabled={disabled}>
-          <Presentation />
-          预览纪要
-        </button>
+        <h2>当前版本 Top 3 目标</h2>
+        <span className="section-heading-actions">
+          <button
+            className="btn btn-ghost btn-icon"
+            title="全部展开"
+            aria-label="全部展开"
+            disabled={disabled}
+            onClick={() => setAll(true)}
+          >
+            <ChevronDown />
+          </button>
+          <button
+            className="btn btn-ghost btn-icon"
+            title="全部收起"
+            aria-label="全部收起"
+            disabled={disabled}
+            onClick={() => setAll(false)}
+          >
+            <ChevronRight />
+          </button>
+          <button
+            className="btn btn-secondary planning-configure-metrics"
+            title="新建会话，配置指标"
+            onClick={() => metricPrep(null)}
+          >
+            <ModelSessionIcon />
+            配置指标
+          </button>
+          <button className="btn btn-secondary" onClick={review} disabled={disabled}>
+            <Presentation />
+            预览纪要
+          </button>
+        </span>
       </div>
       <section className="goal-cards">
         {disabled && (

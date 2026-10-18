@@ -225,6 +225,9 @@ export function AcceptanceGoalResult({
           )}
         </div>
       </div>
+      {goal.acceptance?.trim() && (
+        <div className="va-goal-acceptance">验收标准：{goal.acceptance}</div>
+      )}
       <div className="va-decision-row">
         <label>
           <span>人的结论</span>
