@@ -45,7 +45,7 @@
 
 进入计划屏确保 bw/week-plan；原生会话、历史和工具直接复用。流程选版仍存 workbenchSelectedVersion，UI 与材料 CLI 共享；会话切换不改变选版。Tasks 返回依赖原生工作区历史，目标筛选和滚动由 view-memory 保留。
 
-未验证项如实保留：真壳烟测已编写，执行结果见 PR；SSH/WSL、配对宿主、真实到点自动化、真实 provider 归档全链未验证。旅程灯只读材料 workflow.stage（模型写入，灰/绿两态）；归档 PR 合入状态按材料记录的 archivePr 经 workbench.archive.prStatus 薄读取，只作提醒信号，不阻塞开轮与历史读取。CodeHub 与非 GitHub 来源读不回 PR 状态一律保持未知，待专项接 codehub-cli 读回真实状态（2026-09-30 用户拍板记债；2026-10-13 起接缝为 archive-pr-status，原字节证明链与 registeredCodeHubArchiveReason 已删除）。远程 SSH 工作树暂不自动同步主干（只读中继边界），记债待专项。跨周有限场景按 spec：同版本计划/验收各只一轮活动材料，下一轮不被未归档阻塞，唯一开轮门是当前轮未保存修改。
+未验证项如实保留：真壳烟测已编写，执行结果见 PR；SSH/WSL、配对宿主、真实到点自动化、真实 provider 归档全链未验证。旅程灯只读材料 workflow.stage（模型写入，灰/绿两态）；归档 PR 合入状态按材料记录的 archivePr 经 workbench.archive.prStatus 薄读取，只作提醒信号，不阻塞开轮与历史读取。CodeHub 现已复用 codehub-cli 读回 MR 状态并做远端身份校验，异常仍保持未知；真实 CodeHub 项目和界面旅程待验证。远程 SSH 工作树暂不自动同步主干（只读中继边界），记债待专项。跨周有限场景按 spec：同版本计划/验收各只一轮活动材料，下一轮不被未归档阻塞，唯一开轮门是当前轮未保存修改。
 
 没有产品 TDD、真壳 E2E、独立验证 Review 或使用效果证据时，保持缺口；不预填齐全、通过或改善比例。
 

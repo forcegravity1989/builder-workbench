@@ -25,13 +25,25 @@ export function CycleArchive({
     if (status && 'url' in status && status.url) {
       return status.url
     }
-    if (!archivePr || archivePr.provider !== 'github') {
+    if (!archivePr || (archivePr.provider !== 'github' && archivePr.provider !== 'codehub')) {
       return null
     }
     // Recorded repository may carry its host ("github.com/o/r") or not ("o/r").
     const first = archivePr.repository.split('/')[0]
-    const host = first.includes('.') ? archivePr.repository : `github.com/${archivePr.repository}`
-    return `https://${host}/pull/${archivePr.number}`
+    if (archivePr.provider === 'github') {
+      const host = first.includes('.') ? archivePr.repository : `github.com/${archivePr.repository}`
+      return `https://${host}/pull/${archivePr.number}`
+    }
+    if (!first.includes('.') && !first.includes(':')) {
+      return null
+    }
+    const project = archivePr.repository
+      .split('/')
+      .slice(1)
+      .filter(Boolean)
+      .map((part) => encodeURIComponent(part))
+      .join('/')
+    return project ? `https://${first}/${project}/-/merge_requests/${archivePr.number}` : null
   })()
   const label = !archivePr
     ? reachedArchive
