@@ -30,7 +30,7 @@ candidateRef 保存项目、完整 commit SHA、版本与来源；preparedArtifa
 
 模型通过宿主下发的项目既有命令准备包和证据。源代码执行区须明确固定候选 SHA；若常驻验收树不适合作为干净源码区，复用原生工作树能力准备候选执行区，验收树仍只承载材料。只包装项目已有能力，不照搬 Rust 发布工具或另写打包器。记录实际执行路径、退出和产物，不因文件名有版本就认为匹配。
 
-出包区块是一条协议两个宿主：`workbench.package.list/latest/launch/download`（shared/workbench/package-pipeline.ts）由 scope 解析出工作树后按远端身份分派（package-pipeline-runtime）——CodeHub 远端走 CloudDragon 浏览器链路（主进程常驻 Playwright 会话，cloud-dragon-session；页面选择器经真实页面验证），其余（GitHub）走本机 gh CLI（github-package-ops），界面与协议不感知宿主差异；SSH 宿主拒绝出包（依赖本机登录态与工作树）。GitHub 侧的识别规则：仓里文件名以 `bw-package` 前缀开头的 Actions workflow 即出包流水线；最新包读 releases 列表端点而非 `/releases/latest`（后者跳过预发布）；下载只取安装包本体，排除更新器元数据（yml/blockmap/json）。启动经 launchInFlight 互斥，双击不重复触发；最新包每分钟静默刷新，出包灯只随真实包数据点亮，不写 workflow.stage。
+出包区块是一条协议两个宿主：`workbench.package.list/latest/launch/download`（shared/workbench/package-pipeline.ts）由 scope 解析出工作树后按远端身份分派（package-pipeline-runtime）——CodeHub 远端分两面：执行面（list/launch）走本机 cloudbuild CLI（cb，cloud-dragon-cli-ops；launch 语义 = 按流水线名找 ID，再按 pr_pipeline 执行方案启动，与页面链路一致），制品面（latest/download）走 CloudDragon 浏览器会话（主进程常驻 Playwright，cloud-dragon-session；CLI 无制品仓库能力，页面选择器经真实页面验证）；其余（GitHub）走本机 gh CLI（github-package-ops）。界面与协议不感知宿主差异；SSH 宿主拒绝出包（依赖本机登录态与工作树）。GitHub 侧的识别规则：仓里文件名以 `bw-package` 前缀开头的 Actions workflow 即出包流水线；最新包读 releases 列表端点而非 `/releases/latest`（后者跳过预发布）；下载只取安装包本体，排除更新器元数据（yml/blockmap/json）。启动经 launchInFlight 互斥，双击不重复触发；最新包每分钟静默刷新，出包灯只随真实包数据点亮，不写 workflow.stage。
 
 构建运行复用原生任务/进程状态关联 runId；恢复先查询仍在运行的任务和已生成产物，不盲目再启动（现状注：「重试不重复启动同一仍运行构建」由会话承担，未建对应代码）。候选改变时将不匹配材料标陈旧；相应材料状态由事实推导，不自动撤销或代写人的判断。正式发布、tag、远端完成与 PR 合入仍按项目的人授权。
 
