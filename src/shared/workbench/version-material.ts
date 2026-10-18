@@ -97,6 +97,7 @@ export const VersionTaskSnapshotSchema = z
       state: Id,
       url: Id,
       labels: z.array(z.string()).optional(),
+      assignee: z.string().optional(),
       readAt: z.iso.datetime({ offset: true })
     }),
     z.strictObject({

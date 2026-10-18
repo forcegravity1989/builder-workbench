@@ -75,7 +75,9 @@ function PlanIssueGroups({
                     <span>#{reference.number} · 状态未知</span>
                   )}
                   <span className="vp-muted">
-                    {read?.kind === 'ready' ? read.task.state : (read?.error ?? '未读取')}
+                    {read?.kind === 'ready'
+                      ? `${read.task.state}${read.task.assignee ? ` · ${read.task.assignee}` : ''}`
+                      : (read?.error ?? '未读取')}
                   </span>
                 </div>
               )
@@ -111,6 +113,9 @@ export function PlanningGoals({
   onTask(task: CycleTaskSnapshot): Promise<void>
 }) {
   const [reads, setReads] = useState<CycleTaskRead[] | null>(null)
+  const [expanded, setExpanded] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [readError, setReadError] = useState<string | null>(null)
   const referenceKey = JSON.stringify(plan?.tasks ?? [])
   useEffect(() => {
     if (!scope || !plan?.tasks.length) {
@@ -123,10 +128,12 @@ export function PlanningGoals({
       (items) => {
         if (active) {
           setReads(items)
+          setReadError(null)
         }
       },
-      () => {
+      (reason) => {
         if (active) {
+          setReadError(reason instanceof Error ? reason.message : String(reason))
           setReads(
             plan.tasks.map((reference) => ({
               reference,
@@ -143,6 +150,21 @@ export function PlanningGoals({
     }
   }, [plan?.tasks, referenceKey, scope, taskPort])
 
+  const refreshIssues = async () => {
+    if (!scope || !plan?.tasks.length || refreshing) {
+      return
+    }
+    setRefreshing(true)
+    setReadError(null)
+    try {
+      setReads(await taskPort.refresh(scope, plan.tasks))
+    } catch (reason) {
+      setReadError(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   const changeGoal = (goal: VersionGoal) => {
     if (plan) {
       edit({
@@ -156,6 +178,25 @@ export function PlanningGoals({
       <div className="vp-section-heading">
         <h2>当前版本目标</h2>
         <span className="vp-muted">Top 3</span>
+        <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={() => setExpanded(true)}>
+          全部展开
+        </button>
+        <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={() => setExpanded(false)}>
+          全部收起
+        </button>
+        <button
+          type="button"
+          className="wb-btn wb-btn-ghost wb-btn-sm"
+          disabled={disabled || !scope || !plan?.tasks.length || refreshing}
+          onClick={() => void refreshIssues()}
+        >
+          {refreshing ? '刷新中…' : '刷新 Issue'}
+        </button>
+        {readError && (
+          <span className="vp-muted" role="status">
+            Issue 状态未知：{readError}
+          </span>
+        )}
         <button className="wb-btn wb-btn-sm" disabled={!plan} onClick={onMinutes}>
           <Presentation size={14} />
           预览纪要
@@ -171,26 +212,23 @@ export function PlanningGoals({
         )}
         {plan?.goals.map((goal, index) => {
           const issueCount = plan.tasks.filter((task) => task.goalId === goal.goalId).length
+          const issueCountLabel = reads === null ? 'Unknown' : issueCount
           return (
             <VersionGoalCard
               key={goal.goalId}
               goal={goal}
               index={index}
               onChange={changeGoal}
+              expanded={expanded}
               summary={
-                issueCount > 0 ? (
-                  <span className="vp-goal-issues">Issue {issueCount}</span>
-                ) : undefined
+                <span className="vp-goal-summary">
+                  {goal.deadline && <span>计划 {goal.deadline}</span>}
+                  <span>负责人 {goal.owner || '未指派'}</span>
+                  {issueCount > 0 && <span>Issue {issueCountLabel}</span>}
+                </span>
               }
               extra={<PlanIssueGroups goal={goal} plan={plan} reads={reads} onTask={onTask} />}
-              metrics={
-                <PlanGoalMetrics
-                  goal={goal}
-                  onChange={changeGoal}
-                  metrics={metrics}
-                  prepare={prepare}
-                />
-              }
+              metrics={<PlanGoalMetrics goal={goal} metrics={metrics} prepare={prepare} />}
             />
           )
         })}

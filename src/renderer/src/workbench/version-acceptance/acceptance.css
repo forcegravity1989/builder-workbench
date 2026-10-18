@@ -94,37 +94,6 @@ shared visual language with the plan board. */
 .va-board details {
   scroll-margin-block-start: var(--space-3);
 }
-.va-summary {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-3);
-  font-size: 12px;
-  color: var(--color-neutral-600);
-}
-.va-summary strong {
-  font-family: var(--font-mono);
-  font-weight: 500;
-  color: var(--color-text);
-}
-.va-summary-issues {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: var(--color-neutral-600);
-  font: inherit;
-  cursor: pointer;
-}
-.va-summary-issues:hover {
-  color: var(--color-accent-700);
-}
-.va-pending-count {
-  margin-left: auto;
-  color: var(--color-neutral-500);
-}
 .va-section-heading {
   display: flex;
   align-items: center;
@@ -206,12 +175,6 @@ shared visual language with the plan board. */
   border-top: 1px solid var(--color-divider);
   font-size: 0.8rem;
 }
-.va-round-block label {
-  flex-direction: row;
-  align-items: center;
-}
-.va-round-block input,
-.va-round-block select,
 .va-directive-row select {
   min-width: 8rem;
 }
@@ -219,8 +182,14 @@ shared visual language with the plan board. */
   flex-basis: 100%;
 }
 .va-round-history {
-  display: inline-block;
-  margin-right: var(--space-2);
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-neutral-600);
+}
+.va-round-snapshot {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-1) 0 var(--space-1) var(--space-2);
   color: var(--color-neutral-600);
 }
 .va-directives {
@@ -353,6 +322,12 @@ shared visual language with the plan board. */
   background: var(--color-card);
   margin-bottom: var(--space-3);
 }
+.va-goal-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3) 0;
+}
 .va-result > label,
 .va-decision {
   margin-top: var(--space-2);
@@ -420,20 +395,26 @@ shared visual language with the plan board. */
   margin: 0;
   color: var(--color-neutral-600);
 }
-.va-goal-issues {
+.va-goal-summary {
   display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  border: 0;
-  background: transparent;
-  padding: var(--space-1);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
   color: var(--color-neutral-500);
-  font: 11px var(--font-mono);
+  font-size: 0.72rem;
   white-space: nowrap;
-  cursor: pointer;
 }
-.va-goal-issues:hover {
-  color: var(--color-accent-700);
+.va-status-met > span:first-child {
+  color: var(--color-success-deep, var(--color-neutral-700));
+}
+.va-status-not-met > span:first-child {
+  color: var(--color-danger-deep);
+}
+.va-status-pending > span:first-child {
+  color: var(--color-neutral-500);
+}
+.va-status-unknown > span:first-child {
+  color: var(--color-neutral-500);
 }
 .va-gap {
   color: var(--color-danger-deep);

@@ -25,7 +25,8 @@ const pendingDirective = {
   text: '补齐材料链接',
   tag: 'record-remaining' as const,
   status: 'pending' as const,
-  source: 'transcript-summary' as const
+  source: 'transcript-summary' as const,
+  sourceRef: 'issue-374#summary'
 }
 const confirmedDirective = {
   ...pendingDirective,
@@ -100,13 +101,10 @@ function withDecision(doc: AcceptanceMaterial): AcceptanceMaterial {
   }
 }
 
-it('classifies the CLI socket as the model channel and authenticated UI sockets as human channels', () => {
+it('names every human-only field the incoming document would add, change or drop', () => {
   expect(isModelSaveChannel({})).toBe(true)
   expect(isModelSaveChannel({ clientKind: 'runtime' })).toBe(false)
   expect(isModelSaveChannel({ clientKind: 'mobile' })).toBe(false)
-})
-
-it('names every human-only field the incoming document would add, change or drop', () => {
   const base = material()
   expect(humanFieldChanges(base, base)).toEqual([])
   expect(humanFieldChanges(null, base)).toEqual([])
@@ -221,6 +219,40 @@ it('refuses model-channel saves that write a decision, including creates', async
       {}
     )
   ).resolves.toBeUndefined()
+  await expect(
+    assertHumanFieldsUntouched(
+      async () => ({ document: material() }),
+      acceptanceSave({
+        ...material(),
+        results: material().results.map((item) => ({
+          ...item,
+          meetingDirectives: [{ ...pendingDirective, source: 'manual' as const }]
+        }))
+      }),
+      {}
+    )
+  ).rejects.toMatchObject({ code: 'forbidden' })
+  await expect(
+    assertHumanFieldsUntouched(
+      async () => ({ document: material() }),
+      acceptanceSave({
+        ...material(),
+        results: material().results.map((item) => ({
+          ...item,
+          rounds: [
+            {
+              ...round,
+              snapshot: {
+                ...round.snapshot,
+                goals: [{ goalId: 'g1', decision: 'met', progress: '模型伪造' }]
+              }
+            }
+          ]
+        }))
+      }),
+      {}
+    )
+  ).rejects.toMatchObject({ code: 'forbidden' })
   await expect(
     assertHumanFieldsUntouched(
       readHumanFields,

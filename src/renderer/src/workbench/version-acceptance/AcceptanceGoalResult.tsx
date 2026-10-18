@@ -1,9 +1,7 @@
-/* eslint-disable max-lines -- Goal result owns the card's human decision, round, Issue and guidance controls. */
+/* eslint-disable max-lines -- Goal result owns the card's human decision, round and Issue controls. */
 import { useEffect, useRef, useState } from 'react'
 import type {
-  AcceptanceMeetingDirective,
   AcceptanceMaterial,
-  AcceptanceRound,
   PlanningMaterial,
   VersionGoal
 } from '../../../../shared/workbench/version-material'
@@ -32,6 +30,10 @@ function issueClass(labels: string[] | undefined): (typeof ISSUE_GROUPS)[number]
   return 'unclassified'
 }
 
+function issueKey(reference: PlanningMaterial['tasks'][number]): string {
+  return `${reference.provider}:${reference.repository}:${reference.number}`
+}
+
 export function AcceptanceGoalResult({
   document,
   plan,
@@ -52,10 +54,22 @@ export function AcceptanceGoalResult({
   const result =
     document.results.find((item) => item.goalId === goal.goalId) ?? emptyGoalResult(goal.goalId)
   const relatedIssues = plan.tasks.filter((task) => task.goalId === goal.goalId)
-  const taskByNumber = new Map(
-    (document.taskSnapshot ?? []).flatMap((item) =>
-      item.kind === 'ready' ? [[item.reference.number, item] as const] : []
+  const snapshotMatchesPlan =
+    document.taskSnapshot !== undefined &&
+    document.taskSnapshot.length === plan.tasks.length &&
+    plan.tasks.every((reference) =>
+      document.taskSnapshot?.some(
+        (item) =>
+          item.reference.provider === reference.provider &&
+          item.reference.repository === reference.repository &&
+          item.reference.number === reference.number
+      )
     )
+  const snapshotByKey = new Map(
+    (snapshotMatchesPlan ? (document.taskSnapshot ?? []) : []).map((item) => [
+      issueKey(item.reference),
+      item
+    ])
   )
   const gap = result.decision?.outcome === 'not-met'
   const [assessment, setAssessment] = useState<{
@@ -92,54 +106,27 @@ export function AcceptanceGoalResult({
         { ...result, ...patch }
       ]
     })
-  const editIssueNote = (number: number, note: string) =>
-    edit({ issueNotes: { ...result.issueNotes, [String(number)]: note } })
-  const editIssueMark = (number: number, mark: 'carry' | 'risk', value: boolean) =>
-    edit({
-      issueMarks: {
-        ...result.issueMarks,
-        [String(number)]: { ...result.issueMarks?.[String(number)], [mark]: value }
+  const editIssueNote = (reference: PlanningMaterial['tasks'][number], note: string) =>
+    edit({ issueNotes: { ...result.issueNotes, [issueKey(reference)]: note } })
+  const editIssueMark = (
+    reference: PlanningMaterial['tasks'][number],
+    mark: 'carry' | 'risk',
+    value: boolean
+  ) => {
+    const key = issueKey(reference)
+    const nextMarks = {
+      ...result.issueMarks,
+      [key]: {
+        ...result.issueMarks?.[key],
+        [mark]: value
       }
-    })
-  const rounds = result.rounds ?? []
-  const currentRound = rounds.toReversed().find((round) => !round.closedAt)
-  const fallbackRound: AcceptanceRound = currentRound ?? {
-    id: `current-${goal.goalId}`,
-    week: '',
-    kind: 'progress',
-    snapshot: { goals: [], issueMarks: {}, issueNotes: {} }
-  }
-  const editRound = (patch: Partial<AcceptanceRound>) => {
-    const next = { ...fallbackRound, ...patch }
-    edit({ rounds: [...rounds.filter((round) => round.id !== next.id), next] })
-  }
-  const directives = result.meetingDirectives ?? []
-  const editDirective = (id: string, patch: Partial<AcceptanceMeetingDirective>) =>
-    edit({
-      meetingDirectives: directives.map((directive) =>
-        directive.id === id ? { ...directive, ...patch } : directive
-      )
-    })
-  const addDirective = () => {
-    let sequence = directives.length + 1
-    while (directives.some((directive) => directive.id === `manual-${sequence}`)) {
-      sequence += 1
     }
-    edit({
-      meetingDirectives: [
-        ...directives,
-        {
-          id: `manual-${sequence}`,
-          text: '',
-          tag: 'record-remaining',
-          status: 'pending',
-          source: 'manual'
-        }
-      ]
-    })
+    const legacyKey = String(reference.number)
+    if (legacyKey !== key) {
+      delete nextMarks[legacyKey]
+    }
+    edit({ issueMarks: nextMarks })
   }
-  const removeDirective = (id: string) =>
-    edit({ meetingDirectives: directives.filter((directive) => directive.id !== id) })
   async function decide(outcome: NonNullable<GoalResult['decision']>['outcome']) {
     setConfirming(true)
     try {
@@ -243,50 +230,9 @@ export function AcceptanceGoalResult({
           <span className="va-muted">暂无材料链接</span>
         )}
       </div>
-      <div className="va-round-block">
-        <strong>当前轮</strong>
-        <label>
-          周次
-          <input
-            aria-label={`${goal.title} 周次`}
-            value={fallbackRound.week}
-            placeholder="例如 2026-W43"
-            onChange={(event) => editRound({ week: event.target.value })}
-          />
-        </label>
-        <label>
-          类型
-          <select
-            aria-label={`${goal.title} 轮次类型`}
-            value={fallbackRound.kind}
-            onChange={(event) => editRound({ kind: event.target.value as AcceptanceRound['kind'] })}
-          >
-            <option value="progress">进展</option>
-            <option value="final">验收</option>
-          </select>
-        </label>
-        {rounds.filter((round) => round.id !== fallbackRound.id).length > 0 && (
-          <details>
-            <summary>
-              历史轮次 · {rounds.filter((round) => round.id !== fallbackRound.id).length}
-            </summary>
-            {rounds
-              .filter((round) => round.id !== fallbackRound.id)
-              .map((round) => (
-                <span className="va-round-history" key={round.id}>
-                  {round.week || '周次未填'} · {round.kind === 'final' ? '验收' : '进展'}
-                </span>
-              ))}
-          </details>
-        )}
-      </div>
       <label className={gap ? 'va-note va-gap' : 'va-note'}>
         {gap ? '未达项' : '验收依据'}
-        <input
-          value={result.note}
-          placeholder={gap ? '哪些约定未达到，原因是什么' : '判断依据；指标口径变化时说明是否可比'}
-          onChange={(event) => edit({ note: event.target.value })}
-        />
+        <span className="va-readonly-note">{result.note || 'Unknown；请在进展中补充事实依据'}</span>
       </label>
       {(goal.deliverable?.trim() || result.deliveries.length > 0) && (
         <AcceptanceDeliveryDetails
@@ -326,11 +272,12 @@ export function AcceptanceGoalResult({
       {relatedIssues.length > 0 && (
         <section className="va-issue-blocks" aria-label={`${goal.title} 关联 Issue`}>
           {ISSUE_GROUPS.map((group) => {
-            const items = relatedIssues.filter((reference) =>
-              taskByNumber.has(reference.number)
-                ? issueClass(taskByNumber.get(reference.number)?.labels) === group.key
+            const items = relatedIssues.filter((reference) => {
+              const snapshot = snapshotByKey.get(issueKey(reference))
+              return snapshot?.kind === 'ready'
+                ? issueClass(snapshot.labels) === group.key
                 : group.key === 'unclassified'
-            )
+            })
             if (!items.length) {
               return null
             }
@@ -340,10 +287,16 @@ export function AcceptanceGoalResult({
                   {group.label} · {items.length}
                 </summary>
                 {items.map((reference) => {
-                  const task = taskByNumber.get(reference.number)
-                  const mark = result.issueMarks?.[String(reference.number)]
+                  const key = issueKey(reference)
+                  const snapshot = snapshotByKey.get(key)
+                  const task = snapshot?.kind === 'ready' ? snapshot : undefined
+                  const unavailableReason = snapshot?.kind === 'unavailable' ? snapshot.error : null
+                  const mark =
+                    result.issueMarks?.[key] ?? result.issueMarks?.[String(reference.number)]
+                  const note =
+                    result.issueNotes?.[key] ?? result.issueNotes?.[String(reference.number)]
                   return (
-                    <div className="va-issue-row" key={reference.number}>
+                    <div className="va-issue-row" key={key}>
                       <div className="va-issue-head">
                         {task ? (
                           <button
@@ -356,14 +309,23 @@ export function AcceptanceGoalResult({
                         ) : (
                           <span>#{reference.number}</span>
                         )}
-                        {!task && <strong>状态未知，打开原生 Issue 核对</strong>}
-                        <span className="va-muted">{task?.state ?? 'Unknown'}</span>
+                        {!task && (
+                          <strong>
+                            {unavailableReason
+                              ? `读取失败：${unavailableReason}`
+                              : '状态未知，打开原生 Issue 核对'}
+                          </strong>
+                        )}
+                        <span className="va-muted">
+                          {task?.state ?? 'Unknown'}
+                          {task?.assignee ? ` · ${task.assignee}` : ''}
+                        </span>
                       </div>
                       <input
                         aria-label={`Issue ${reference.number} 备注`}
-                        value={result.issueNotes?.[String(reference.number)] ?? ''}
+                        value={note ?? ''}
                         placeholder="本轮进展/备注"
-                        onChange={(event) => editIssueNote(reference.number, event.target.value)}
+                        onChange={(event) => editIssueNote(reference, event.target.value)}
                       />
                       <div className="va-issue-marks">
                         <label>
@@ -371,7 +333,7 @@ export function AcceptanceGoalResult({
                             type="checkbox"
                             checked={Boolean(mark?.carry)}
                             onChange={(event) =>
-                              editIssueMark(reference.number, 'carry', event.target.checked)
+                              editIssueMark(reference, 'carry', event.target.checked)
                             }
                           />
                           遗留
@@ -381,7 +343,7 @@ export function AcceptanceGoalResult({
                             type="checkbox"
                             checked={Boolean(mark?.risk)}
                             onChange={(event) =>
-                              editIssueMark(reference.number, 'risk', event.target.checked)
+                              editIssueMark(reference, 'risk', event.target.checked)
                             }
                           />
                           风险
@@ -395,64 +357,6 @@ export function AcceptanceGoalResult({
           })}
         </section>
       )}
-      <section className="va-directives" aria-label={`${goal.title} 会议指导与遗留`}>
-        <div className="va-directives-head">
-          <strong>会议指导与遗留</strong>
-          <button type="button" className="wb-btn wb-btn-ghost wb-btn-sm" onClick={addDirective}>
-            人工补记
-          </button>
-        </div>
-        {directives.length === 0 && <span className="va-muted">暂无待确认指导</span>}
-        {directives.map((directive) => (
-          <div className="va-directive-row" key={directive.id}>
-            <input
-              aria-label="会议指导"
-              value={directive.text}
-              readOnly={directive.status === 'confirmed'}
-              placeholder="记录会议指导或遗留"
-              onChange={(event) => editDirective(directive.id, { text: event.target.value })}
-            />
-            <select
-              aria-label="会议指导标签"
-              value={directive.tag}
-              disabled={directive.status === 'confirmed'}
-              onChange={(event) =>
-                editDirective(directive.id, {
-                  tag: event.target.value as AcceptanceMeetingDirective['tag']
-                })
-              }
-            >
-              <option value="resolved-this-acceptance">本次验收已解决</option>
-              <option value="next-week-plan">纳入下周计划</option>
-              <option value="record-remaining">记录遗留</option>
-            </select>
-            {directive.status === 'confirmed' ? (
-              <span className="va-confirmed">已确认</span>
-            ) : (
-              <button
-                type="button"
-                className="wb-btn wb-btn-secondary wb-btn-sm"
-                disabled={!directive.text.trim()}
-                onClick={() =>
-                  editDirective(directive.id, {
-                    status: 'confirmed',
-                    confirmedAt: new Date().toISOString()
-                  })
-                }
-              >
-                确认
-              </button>
-            )}
-            <button
-              type="button"
-              className="wb-btn wb-btn-ghost wb-btn-sm"
-              onClick={() => removeDirective(directive.id)}
-            >
-              删除
-            </button>
-          </div>
-        ))}
-      </section>
     </fieldset>
   )
 }

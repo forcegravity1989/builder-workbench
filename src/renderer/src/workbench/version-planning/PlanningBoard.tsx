@@ -49,7 +49,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
   const [minutesOpen, setMinutesOpen] = useState(false)
-  const [view, setView] = useState({ key: '', goalFilter: '', notice: '' })
+  const [view, setView] = useState({ key: '', notice: '' })
   const content = useRef<HTMLDivElement>(null)
   const preparation = useRef<HTMLElement>(null)
   const goals = useRef<HTMLElement>(null)
@@ -61,28 +61,18 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const metrics = usePlanMetrics(metricScope, scope?.runtimeOwnerEnvironmentId, plan)
   const minutes = plan ? derivePlanMinutes(plan) : ''
   const selectionKey = JSON.stringify([scopeKey, plan?.version, plan?.cycleId])
-  const goalFilter = view.key === selectionKey ? view.goalFilter : ''
   const notice = view.key === selectionKey ? view.notice : ''
   const updateView = useCallback(
     (patch: Partial<typeof view>) => {
       setView((current) => ({
-        ...(current.key === selectionKey ? current : { goalFilter: '', notice: '' }),
+        ...(current.key === selectionKey ? current : { notice: '' }),
         ...patch,
         key: selectionKey
       }))
     },
     [selectionKey]
   )
-  const restoreGoalFilter = useCallback(
-    (value: string) => updateView({ goalFilter: value }),
-    [updateView]
-  )
-  const viewMemory = usePlanningViewMemory(
-    plan ? selectionKey : null,
-    goalFilter,
-    restoreGoalFilter,
-    content
-  )
+  const viewMemory = usePlanningViewMemory(plan ? selectionKey : null, content)
   const currentSelection = useRef(selectionKey)
   currentSelection.current = selectionKey
   useEffect(

@@ -182,6 +182,7 @@ async function readReference(
       state: item.state,
       url: item.url,
       labels: item.labels,
+      assignee: item.assignees?.[0]?.login,
       readAt: deps.now()
     }
   }
@@ -200,6 +201,7 @@ async function readReference(
       state: detail.state,
       url,
       labels: detail.labels,
+      assignee: detail.assignees?.[0],
       readAt: deps.now()
     }
   }

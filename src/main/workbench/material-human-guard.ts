@@ -68,6 +68,7 @@ function compareHumanField(
 function roundChanges(
   changes: string[],
   goalId: string,
+  currentResult: AcceptanceMaterial['results'][number] | undefined,
   current: AcceptanceMaterial['results'][number]['rounds'],
   incoming: AcceptanceMaterial['results'][number]['rounds']
 ): void {
@@ -76,6 +77,31 @@ function roundChanges(
   for (const [roundId, currentRound] of currentById) {
     const incomingRound = incomingById.get(roundId)
     if (!incomingRound || json(currentRound) !== json(incomingRound)) {
+      changes.push(`results[${goalId}].rounds[${roundId}]`)
+    }
+  }
+  for (const [roundId, incomingRound] of incomingById) {
+    if (currentById.has(roundId)) {
+      continue
+    }
+    // A model may open a new round only by snapshotting the already stored
+    // human fields; it cannot manufacture a conclusion, note or mark in it.
+    const expectedGoals = currentResult
+      ? [
+          {
+            goalId: currentResult.goalId,
+            decision: currentResult.decision?.outcome ?? 'pending',
+            progress: currentResult.progress ?? '',
+            ...(currentResult.nextStep ? { next: currentResult.nextStep } : {})
+          }
+        ]
+      : []
+    const expectedSnapshot = {
+      goals: expectedGoals,
+      issueMarks: currentResult?.issueMarks ?? {},
+      issueNotes: currentResult?.issueNotes ?? {}
+    }
+    if (json(incomingRound.snapshot) !== json(expectedSnapshot)) {
       changes.push(`results[${goalId}].rounds[${roundId}]`)
     }
   }
@@ -105,6 +131,12 @@ function directiveChanges(
     if (currentDirective.text !== incomingDirective.text) {
       changes.push(`results[${goalId}].meetingDirectives[${directiveId}].text`)
     }
+    if (
+      currentDirective.source !== incomingDirective.source ||
+      currentDirective.sourceRef !== incomingDirective.sourceRef
+    ) {
+      changes.push(`results[${goalId}].meetingDirectives[${directiveId}].source`)
+    }
     const statusChanged = currentDirective.status !== incomingDirective.status
     const confirmedAtChanged = currentDirective.confirmedAt !== incomingDirective.confirmedAt
     if (
@@ -129,7 +161,12 @@ function directiveChanges(
     }
     // Models may propose new pending guidance, but cannot create a confirmed
     // human decision (or a timestamp that implies one).
-    if (incomingDirective.status !== 'pending' || incomingDirective.confirmedAt !== undefined) {
+    if (
+      incomingDirective.status !== 'pending' ||
+      incomingDirective.confirmedAt !== undefined ||
+      incomingDirective.source !== 'transcript-summary' ||
+      !incomingDirective.sourceRef?.trim()
+    ) {
       changes.push(`results[${goalId}].meetingDirectives[${directiveId}].status`)
     }
   }
@@ -173,6 +210,7 @@ export function humanFieldChanges(
       currentResult?.progress,
       incomingResult?.progress
     )
+    compareHumanField(changes, `results[${goalId}].note`, currentResult?.note, incomingResult?.note)
     compareHumanField(
       changes,
       `results[${goalId}].issueNotes`,
@@ -185,7 +223,7 @@ export function humanFieldChanges(
       currentResult?.issueMarks,
       incomingResult?.issueMarks
     )
-    roundChanges(changes, goalId, currentResult?.rounds, incomingResult?.rounds)
+    roundChanges(changes, goalId, currentResult, currentResult?.rounds, incomingResult?.rounds)
     directiveChanges(
       changes,
       goalId,

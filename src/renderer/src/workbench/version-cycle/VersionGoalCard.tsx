@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { VersionGoalCardProps } from './ports'
 import './version-cycle.css'
 
@@ -12,11 +12,19 @@ export function VersionGoalCard({
   result,
   actions,
   defaultOpen = !readOnly,
+  expanded,
   summary,
   extra
 }: VersionGoalCardProps) {
   const editable = !readOnly && Boolean(onChange)
-  const [open, setOpen] = useState(defaultOpen)
+  const [open, setOpen] = useState(expanded ?? defaultOpen)
+  const previousExpanded = useRef(expanded)
+  useEffect(() => {
+    if (expanded !== undefined && expanded !== previousExpanded.current) {
+      setOpen(expanded)
+    }
+    previousExpanded.current = expanded
+  }, [expanded])
   return (
     <article className={`vc-goal${open ? ' is-open' : ' is-collapsed'}`} data-goal-id={goal.goalId}>
       <div className="vc-goal-content">
@@ -107,9 +115,9 @@ export function VersionGoalCard({
             )}
           </div>
         ) : null}
-        {extra}
-        {metrics && <div className="vc-goal-metrics">{metrics}</div>}
-        {result && <div className="vc-goal-result">{result}</div>}
+        {open && extra}
+        {open && metrics && <div className="vc-goal-metrics">{metrics}</div>}
+        {open && result && <div className="vc-goal-result">{result}</div>}
       </div>
     </article>
   )

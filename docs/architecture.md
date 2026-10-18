@@ -63,7 +63,7 @@ BW 的业务契约在 `src/shared/workbench/`，材料事务、指标与历史 r
 
 ### 版本材料与选版
 
-计划/验收两屏经 `workbench.materials.*` RPC 与 `ORCA bw materials` CLI 读写固定工作树的 `.bw/planning/<版本>/` 材料，共用同一材料事务核心（version-document-store：expectedRevision、跨进程互斥、原子替换）；会话内的模型经 CLI 操作同一份材料，旧 planning.py 写入器已退役删除。流程选版是原生 worktree 偏好 `workbenchSelectedVersion`（main/workbench/version-selection.ts），context 只读、select 只写偏好，CLI 与 UI 共享；不按会话标题、日期或上次打开项推断版本。旅程灯只读材料的 `workflow.stage`（模型每完成一阶段写入，灰/绿两态；验收屏「出包」灯例外，随出包区块读到的真实制品包点亮）；归档 PR 合入状态按材料记录的 `workflow.archivePr` 薄读取，两屏共用自动保存、任务区和归档状态行，归档后可继续编辑原材料；这不是另一份 Issue 状态正本。完成、合入与发布仍需人决定。
+计划/验收两屏经 `workbench.materials.*` RPC 与 `ORCA bw materials` CLI 读写固定工作树的 `.bw/planning/<版本>/` 材料，共用同一材料事务核心（version-document-store：expectedRevision、跨进程互斥、原子替换）；会话内的模型经 CLI 操作同一份材料，旧 planning.py 写入器已退役删除。流程选版是原生 worktree 偏好 `workbenchSelectedVersion`（main/workbench/version-selection.ts），context 只读、select 只写偏好，CLI 与 UI 共享；不按会话标题、日期或上次打开项推断版本。旅程灯只读材料的 `workflow.stage`（模型每完成一阶段写入，灰/绿两态；验收屏「出包」灯例外，随出包区块读到的真实制品包点亮）；归档 PR 合入状态按材料记录的 `workflow.archivePr` 薄读取。两屏共用自动保存、目标卡骨架、TaskPort 单项 Issue 读回和归档状态行；页面不再维护独立全量任务区，归档后可继续编辑原材料；这不是另一份 Issue 状态正本。完成、合入与发布仍需人决定。
 
 ### 知识库材料
 

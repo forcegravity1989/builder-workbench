@@ -80,14 +80,10 @@ describe('acceptance task evidence and report', () => {
   it('keeps missing, empty and failed snapshots distinct without generating an acceptance conclusion', async () => {
     const document = material()
     const absent = await goalEvidenceRevision(document, plan, 'g1')
-    expect(deriveAcceptanceReport({ document, plan }).markdown).toContain(
-      '尚未记录 Issue 快照'
-    )
+    expect(deriveAcceptanceReport({ document, plan }).markdown).toContain('尚未记录 Issue 快照')
     document.taskSnapshot = []
     expect(await goalEvidenceRevision(document, plan, 'g1')).not.toBe(absent)
-    expect(deriveAcceptanceReport({ document, plan }).markdown).toContain(
-      '固定计划仍引用 2 项任务'
-    )
+    expect(deriveAcceptanceReport({ document, plan }).markdown).toContain('固定计划仍引用 2 项任务')
     document.taskSnapshot = [
       {
         kind: 'unavailable',
@@ -103,10 +99,32 @@ describe('acceptance task evidence and report', () => {
   it('renders the stored provider source and state without changing the evidence', () => {
     const document = material()
     document.taskSnapshot = tasks()
+    document.results[0] = {
+      ...document.results[0],
+      progress: '本轮完成联调',
+      materials: [{ label: '验收截图', url: 'https://example.test/evidence' }],
+      issueNotes: { 'codehub:codehub.example/team/app:1': '补齐证据' },
+      issueMarks: { 'codehub:codehub.example/team/app:1': { carry: true, risk: true } },
+      meetingDirectives: [
+        {
+          id: 'directive-1',
+          text: '下周复核边界',
+          tag: 'next-week-plan',
+          status: 'pending',
+          source: 'transcript-summary',
+          sourceRef: 'issue-374#summary'
+        }
+      ]
+    }
     const before = JSON.stringify(document)
     const report = deriveAcceptanceReport({ document, plan })
     expect(report.markdown).toContain('：opened')
     expect(report.markdown).toContain('codehub.example/team/app')
+    expect(report.markdown).toContain('本轮进展：本轮完成联调')
+    expect(report.markdown).toContain('验收截图')
+    expect(report.markdown).toContain('备注：补齐证据')
+    expect(report.markdown).toContain('标记：遗留、风险')
+    expect(report.markdown).toContain('会议指导：下周复核边界（待确认；AI 总结）')
     expect(JSON.stringify(document)).toBe(before)
   })
 })

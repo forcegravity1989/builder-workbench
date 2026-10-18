@@ -24,7 +24,7 @@ Acceptance 材料继续使用 `schema_version=3`、`identity`、`planRef`、`can
 
 ## 轮次与重启
 
-当前材料代表可编辑轮次；每次周五进展刷新或展示验收结束，模型在会话中把当前人工输入复制到 `rounds`，写入 `week`、`kind`、`closedAt` 和完整 snapshot，再创建下一次当前轮。新轮不自动继承人的结论、Issue 备注或标记；需要沿用时由模型明确复述并保持待核，不能把旧结论变成新轮确认。轮次不由自然周自动推断，`week` 是模型在确定轮次时写入的协议值。
+当前材料代表可编辑轮次；每次周五进展刷新或展示验收结束，模型在会话中把当前人工输入复制到 `rounds`，写入 `week`、`kind`、`closedAt` 和完整 snapshot，再创建下一次当前轮。模型新增的历史 snapshot 只能逐字段复制当前材料，不能制造新的结论、Issue 备注或标记；新轮需要沿用时仍保持待核，不能把旧结论变成新轮确认。轮次不由自然周自动推断，`week` 是模型在确定轮次时写入的协议值。
 
 界面按周列出轮次：当前轮可编辑，历史轮只读。历史材料从固定验收树的 Git 读回，页面以材料中的轮次和 commit 身份呈现，不把最新 Issue 或指标状态覆盖旧快照。重启后只从材料和 Git 重建当前轮、历史轮、备注、标记与待确认指导；内存状态、缓存和页面顺序不作为正本。
 
@@ -58,7 +58,7 @@ Acceptance 材料继续使用 `schema_version=3`、`identity`、`planRef`、`can
 
 ## 人工字段守卫
 
-`material-human-guard` 在 `clientKind === undefined` 的模型保存通道上保护人工字段。保护清单包括 `results[].decision`、`results[].actualDelivery`、`results[].nextStep`、`results[].issueNotes`、`results[].issueMarks`、`results[].meetingDirectives[].text` 以及已确认指导的 `status/confirmedAt`。模型可以新增轮次结构和 `status=pending` 的指导，但不得修改或确认人的结论、备注、标记和已确认条目。人工 UI/明确的人工客户端保存才允许这些字段变化；校验失败整次保存拒绝并保留现有材料。
+`material-human-guard` 在 `clientKind === undefined` 的模型保存通道上保护人工字段。保护清单包括 `results[].decision`、`results[].deliveries`、`results[].progress`、兼容旧字段 `results[].note`、`results[].nextStep`、`results[].issueNotes`、`results[].issueMarks`、`results[].meetingDirectives[].text` 以及已确认指导的 `status/confirmedAt`。模型可以新增只复制当前人工字段的轮次结构，以及带非空 `sourceRef` 的 `source=transcript-summary`、`status=pending` 指导，但不得修改或确认人的结论、备注、标记和已确认条目。人工 UI/明确的人工客户端保存才允许这些字段变化；校验失败整次保存拒绝并保留现有材料。
 
 ## 材料打开、指标和异常
 
@@ -77,7 +77,7 @@ Acceptance 材料继续使用 `schema_version=3`、`identity`、`planRef`、`can
 - **R7 收折**：`usePlanColumnResize` 已控制 BW 右板列宽并派发 fit 事件；在同一壳层增加持久化 collapsed/narrow rail，终端保持挂载，不改 Orca 内部 pane。
 - **R8 转写**：仓内没有 eMeeting 获取脚本，既有 WSL transcript 是会话文件通道；SOP 只接 issue #374/项目提供的转写稿，缺稿不编造。
 - **R9 分类**：原型按 `Bug/缺陷`、`Feature/功能` 标签分组；生产 task snapshot 当前不带 labels，本轮以可选 `labels` 补齐，旧快照显示未分类。
-- **R10 全量任务**：`CycleTasks` 当前承担独立任务快照和筛选；定稿形态将其从验收全量区、计划独立任务区移除，保留 TaskPort 单项详情和目标卡内 Issue 子块。
+- **R10 全量任务**：独立任务区已移除；TaskPort 仍负责单项详情读回与打开，计划/验收只在目标卡 Issue 子块内呈现关联任务，快照只作为卡内状态来源。
 
 ## 验证边界
 
