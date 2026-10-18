@@ -28,7 +28,7 @@
 
 2026-10-14 Issue #355 同步统一批（用户在对齐会话逐项拍板，正本文案见 #355 plan §0）：进屏自动 gitPull 废止——计划/验收屏进屏零 Git 动作、不挂同步提示；页头按钮改「更新代码」并成为唯一同步入口，经新 RPC `workbench.trunk.update`：基线解析（钉值 `worktreeBaseRef` 或主检出当前分支，不再猜 main/master）→ fetch 书签 → 双向 rev-list 对比 → `merge --ff-only`。快进不了（分叉、主检出有本地改动、分支失配、远端不可达）保持原样，统一一句话提示请会话模型处理该分支的代码更新，材料仍照常重读并保留未保存输入；纯草稿状态（树有未合入提交、主干没前进）不是异常、不提示。旧机制同批删除：`trunkPullTarget`、BW 对 `gitPull` 的消费、`resolveAdoptedBaseline` 名字探针、cycle-sync-runtime/port 与旧 syncTrunk 契约。week-planning references 与 version-records 的「刷新数据」协议句改写为「更新代码」新语义。证据：workbench vitest 全绿 226 例（ratchet 基线 228→226：删 trunkPullTarget 4 例、旧基线解析 3 例、configuration-not-adopted 1 例，增基线解析 3 例、同步决策 3 例，指标采用 fetch 1 例原位改写为无 fetch 语义）、typecheck 0 错、rpc-catalog / bundled-skill-guides / skill-bundle-manifest verify 绿；真壳未运行（用户明示本轮不做启动验证）——按钮快进、拒绝提示与「验收合入后计划屏一次更新可见」跨屏场景待用户实机验证。
 
-| 环 | 状态 | 证据或已知债 |
+| 环 | 状态 | 证据或缺口 |
 |---|---|---|
 | intent | ● 已确认 | 沿用三特性边界，用户确认本轮计划/验收共用协作入口与资产同步 |
 | spec | ● 实施输入 | 本轮高保真已获用户确认；新入口已按该高保真实施（组件/契约测试为上限，真壳未验），新增或拿不准的行为仍需确认 |
@@ -43,7 +43,7 @@
 
 进入计划屏确保 bw/week-plan；原生会话、历史和工具直接复用。流程选版仍存 workbenchSelectedVersion，UI 与材料 CLI 共享；会话切换不改变选版。Tasks 返回依赖原生工作区历史，目标筛选和滚动由 view-memory 保留。
 
-未验证项如实保留：真壳烟测已编写，执行结果见 PR；SSH/WSL、配对宿主、真实到点自动化、真实 provider 归档全链未验证。旅程灯只读材料 workflow.stage（模型写入，灰/绿两态）；归档 PR 合入状态按材料记录的 archivePr 经 workbench.archive.prStatus 薄读取，只作提醒信号，不阻塞开轮与历史读取。CodeHub 与非 GitHub 来源读不回 PR 状态一律保持未知，待专项接 codehub-cli 读回真实状态（2026-09-30 用户拍板记债；2026-10-13 起接缝为 archive-pr-status，原字节证明链与 registeredCodeHubArchiveReason 已删除）。远程 SSH 工作树暂不自动同步主干（只读中继边界），记债待专项。跨周有限场景按 spec：同版本计划/验收各只一轮活动材料，下一轮不被未归档阻塞，唯一开轮门是当前轮未保存修改。
+未验证项如实保留：真壳烟测已编写，执行结果见 PR；SSH/WSL、配对宿主、真实到点自动化、真实 provider 归档全链未验证。旅程灯只读材料 workflow.stage（模型写入，灰/绿两态）；归档 PR 合入状态按材料记录的 archivePr 经 workbench.archive.prStatus 薄读取，只作提醒信号，不阻塞开轮与历史读取。CodeHub 与非 GitHub 来源读不回 PR 状态一律保持未知（接缝为 archive-pr-status，诚实返回 unknown）。远程 SSH 工作树暂不自动同步主干（只读中继边界）。跨周有限场景按 spec：同版本计划/验收各只一轮活动材料，下一轮不被未归档阻塞，唯一开轮门是当前轮未保存修改。
 
 没有产品 TDD、真壳 E2E、独立验证 Review 或使用效果证据时，保持缺口；不预填齐全、通过或改善比例。
 
