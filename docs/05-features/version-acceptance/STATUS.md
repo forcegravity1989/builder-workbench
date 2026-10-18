@@ -24,7 +24,7 @@
 
 2026-10-15 合入后验证批（PR #360 merge 78e4f61ef 后，修复走 fix/bw-package-playwright-core）：bw-package.yml 在 main 首次实跑（run 38737782455）于 afterPack 守卫 verifyPackagedMainRuntimeDeps 失败——主进程 CloudDragon 会话动态导入的 playwright-core 未登记 PACKAGED_RUNTIME_PACKAGE_ROOTS，打包产物缺 resources/node_modules 复制；PR 门禁不跑 Windows 打包，故只有 workflow 实跑暴露。修复为白名单补 playwright-core（会话用 channel:'chrome' 启动系统 Chrome，无浏览器随包），分支上 run 38738954723 全绿并发布 prerelease v1.4.197-local.1792069349.69244738e038（按设计仅附 orca-windows-setup.exe）。真壳（dev 壳 CDP DOM 断言，不读截图）GitHub 变体：流水线下拉唯一列 BW Package Windows（与 API 过滤一致）、最新包四字段为真实读数且 60 秒自动刷新读到新发布、更新器元数据被排除只显示安装包本体、出包灯随真实包点亮、「出包」点击对无 workflow 的远端分支如实呈现 gh 诊断（HTTP 422）且 busy 清理、读数不受影响。留白：180MB 安装包传输在本机对 release-assets CDN 三次尝试均网络层失败（EOF/TLS 超时/挂起），下载命令与资产解析已验、完整传输待人网络复核；受理→新包出现的界面完整闭环待修复合入 main 后在更新过的验收树上补验。
 
-| 环 | 状态 | 证据或已知债 |
+| 环 | 状态 | 证据或缺口 |
 |---|---|---|
 | intent | ● 已确认 | 沿用三特性边界，用户确认会话准备材料、逐目标核对及本轮资产同步 |
 | spec | ● 实施输入 | 本轮高保真已获用户确认；新入口与验收布局已按该高保真实施（组件/契约测试为上限，真壳未验），新增或拿不准的行为仍需确认 |
