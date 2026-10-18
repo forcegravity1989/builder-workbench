@@ -78,7 +78,7 @@ docs/01-principles/  ──约束──►  docs/05-features/<id>/intent.md | sp
 ```
 
 - **01-principles → 05-features**：单向约束。写 intent 不得违背已作数的原则篇（尤其 [03](03-press-release-faq-flywheel.md)）。  
-- **05-features → docs**：站验证后改设计正本 / 指南；还没干 → 遗留事项只进原生 Issue，不另开总表、不在文档养台账。  
+- **05-features → docs**：站验证后改设计正本 / 指南；还没干 → 遗留事项只进原生 Issue，不另开总表、不在文档养台账。
 - **不再维护仓根 `iterations/`**：旧实践/交接史实随 V3 清理在 `v3` 分支；现役不设该层。
 
 ### 名字消歧（必读）
