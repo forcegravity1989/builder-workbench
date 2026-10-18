@@ -113,6 +113,7 @@ describe('createTaskPort reads', () => {
       title: '真实标题',
       state: 'open',
       url: 'https://github.com/acme/repo/issues/95',
+      labels: [],
       readAt: '2026-09-26T00:00:00.000Z'
     })
     expect(mocks.lookupGitHub).toHaveBeenCalledWith(

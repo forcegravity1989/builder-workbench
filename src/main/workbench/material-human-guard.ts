@@ -15,8 +15,10 @@ export type MaterialSaveCaller = {
 }
 
 /**
- * Channel boundary for human-only material fields: acceptance conclusions
- * (decision/preparationReview) and the planning risk report (summary.risks).
+ * Channel boundary for human-only material fields: acceptance conclusions and
+ * current-round inputs (decision, delivery, progress, next step, Issue notes/
+ * marks and confirmed guidance), plus preparationReview and the planning risk
+ * report (summary.risks).
  * Desktop IPC and paired device sockets arrive with an authenticated clientKind;
  * the local Unix-socket CLI — the channel in-session models execute — arrives
  * without one. A human typing `bw materials save` by hand is refused too:
@@ -30,23 +32,166 @@ function json(value: unknown): string {
   return JSON.stringify(value ?? null)
 }
 
+function hasHumanValue(value: unknown): boolean {
+  if (value === undefined || value === null) {
+    return false
+  }
+  if (typeof value === 'string') {
+    return value.trim().length > 0
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0
+  }
+  if (typeof value === 'object') {
+    return Object.keys(value).length > 0
+  }
+  return true
+}
+
+function compareHumanField(
+  changes: string[],
+  path: string,
+  current: unknown,
+  incoming: unknown
+): void {
+  if (json(current) === json(incoming)) {
+    return
+  }
+  // A newly created result may carry the empty fields required by schema3.
+  // Non-empty human input on a model-created result is still refused.
+  if (!hasHumanValue(current) && !hasHumanValue(incoming)) {
+    return
+  }
+  changes.push(path)
+}
+
+function roundChanges(
+  changes: string[],
+  goalId: string,
+  current: AcceptanceMaterial['results'][number]['rounds'],
+  incoming: AcceptanceMaterial['results'][number]['rounds']
+): void {
+  const currentById = new Map((current ?? []).map((round) => [round.id, round]))
+  const incomingById = new Map((incoming ?? []).map((round) => [round.id, round]))
+  for (const [roundId, currentRound] of currentById) {
+    const incomingRound = incomingById.get(roundId)
+    if (!incomingRound || json(currentRound) !== json(incomingRound)) {
+      changes.push(`results[${goalId}].rounds[${roundId}]`)
+    }
+  }
+}
+
+function directiveChanges(
+  changes: string[],
+  goalId: string,
+  current: AcceptanceMaterial['results'][number]['meetingDirectives'],
+  incoming: AcceptanceMaterial['results'][number]['meetingDirectives']
+): void {
+  const currentById = new Map((current ?? []).map((directive) => [directive.id, directive]))
+  const incomingById = new Map((incoming ?? []).map((directive) => [directive.id, directive]))
+  for (const [directiveId, currentDirective] of currentById) {
+    const incomingDirective = incomingById.get(directiveId)
+    if (!incomingDirective) {
+      changes.push(`results[${goalId}].meetingDirectives[${directiveId}]`)
+      continue
+    }
+    if (
+      currentDirective.status === 'confirmed' &&
+      json(currentDirective) !== json(incomingDirective)
+    ) {
+      changes.push(`results[${goalId}].meetingDirectives[${directiveId}]`)
+      continue
+    }
+    if (currentDirective.text !== incomingDirective.text) {
+      changes.push(`results[${goalId}].meetingDirectives[${directiveId}].text`)
+    }
+    const statusChanged = currentDirective.status !== incomingDirective.status
+    const confirmedAtChanged = currentDirective.confirmedAt !== incomingDirective.confirmedAt
+    if (
+      statusChanged &&
+      (currentDirective.status === 'confirmed' || incomingDirective.status === 'confirmed')
+    ) {
+      changes.push(`results[${goalId}].meetingDirectives[${directiveId}].status`)
+    }
+    if (
+      confirmedAtChanged &&
+      (currentDirective.status === 'confirmed' ||
+        incomingDirective.status === 'confirmed' ||
+        currentDirective.confirmedAt !== undefined ||
+        incomingDirective.confirmedAt !== undefined)
+    ) {
+      changes.push(`results[${goalId}].meetingDirectives[${directiveId}].confirmedAt`)
+    }
+  }
+  for (const [directiveId, incomingDirective] of incomingById) {
+    if (currentById.has(directiveId)) {
+      continue
+    }
+    // Models may propose new pending guidance, but cannot create a confirmed
+    // human decision (or a timestamp that implies one).
+    if (incomingDirective.status !== 'pending' || incomingDirective.confirmedAt !== undefined) {
+      changes.push(`results[${goalId}].meetingDirectives[${directiveId}].status`)
+    }
+  }
+}
+
 /** Names the human-only fields the incoming document would add, change or drop. */
 export function humanFieldChanges(
   current: AcceptanceMaterial | null,
   incoming: AcceptanceMaterial
 ): string[] {
   const changes: string[] = []
-  if (json(current?.preparationReview) !== json(incoming.preparationReview)) {
-    changes.push('preparationReview')
-  }
-  const currentByGoal = new Map(
-    (current?.results ?? []).map((item) => [item.goalId, item.decision])
+  compareHumanField(
+    changes,
+    'preparationReview',
+    current?.preparationReview,
+    incoming.preparationReview
   )
-  const incomingByGoal = new Map(incoming.results.map((item) => [item.goalId, item.decision]))
+  const currentByGoal = new Map((current?.results ?? []).map((item) => [item.goalId, item]))
+  const incomingByGoal = new Map(incoming.results.map((item) => [item.goalId, item]))
   for (const goalId of new Set([...currentByGoal.keys(), ...incomingByGoal.keys()])) {
-    if (json(currentByGoal.get(goalId)) !== json(incomingByGoal.get(goalId))) {
-      changes.push(`results[${goalId}].decision`)
-    }
+    const currentResult = currentByGoal.get(goalId)
+    const incomingResult = incomingByGoal.get(goalId)
+    const currentDecision = currentResult?.decision
+    const incomingDecision = incomingResult?.decision
+    compareHumanField(changes, `results[${goalId}].decision`, currentDecision, incomingDecision)
+    compareHumanField(
+      changes,
+      `results[${goalId}].actualDelivery`,
+      currentResult?.deliveries,
+      incomingResult?.deliveries
+    )
+    compareHumanField(
+      changes,
+      `results[${goalId}].nextStep`,
+      currentResult?.nextStep,
+      incomingResult?.nextStep
+    )
+    compareHumanField(
+      changes,
+      `results[${goalId}].progress`,
+      currentResult?.progress,
+      incomingResult?.progress
+    )
+    compareHumanField(
+      changes,
+      `results[${goalId}].issueNotes`,
+      currentResult?.issueNotes,
+      incomingResult?.issueNotes
+    )
+    compareHumanField(
+      changes,
+      `results[${goalId}].issueMarks`,
+      currentResult?.issueMarks,
+      incomingResult?.issueMarks
+    )
+    roundChanges(changes, goalId, currentResult?.rounds, incomingResult?.rounds)
+    directiveChanges(
+      changes,
+      goalId,
+      currentResult?.meetingDirectives,
+      incomingResult?.meetingDirectives
+    )
   }
   return changes
 }
@@ -101,7 +246,7 @@ export async function assertHumanFieldsUntouched(
   if (changes.length > 0) {
     throw new WorkspaceScopeError(
       'forbidden',
-      `人工结论字段不能经 CLI 通道写入或修改（${changes.join('、')}）；请在验收界面由人记录，其余字段可照常保存`
+      `人工字段不能经 CLI 通道写入或修改（${changes.join('、')}）；请在验收界面由人记录，其余字段可照常保存`
     )
   }
 }

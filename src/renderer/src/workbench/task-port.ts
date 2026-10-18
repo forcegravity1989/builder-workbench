@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- TaskPort keeps provider adapters and their shared read/open boundary together. */
 import { useAppStore } from '@/store'
 import { codehubApi } from '@/lib/codehub-api'
 import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
@@ -180,6 +181,7 @@ async function readReference(
       title: item.title,
       state: item.state,
       url: item.url,
+      labels: item.labels,
       readAt: deps.now()
     }
   }
@@ -197,6 +199,7 @@ async function readReference(
       title: detail.title,
       state: detail.state,
       url,
+      labels: detail.labels,
       readAt: deps.now()
     }
   }

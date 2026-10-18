@@ -242,6 +242,48 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
   font-size: 11px;
   width: 100%;
 }
+.vp-goal-issues {
+  color: var(--color-neutral-500);
+  font: 11px var(--font-mono);
+  white-space: nowrap;
+}
+.vp-issue-blocks {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+.vp-issue-group {
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-2);
+}
+.vp-issue-group > summary {
+  cursor: pointer;
+  padding-block: var(--space-1);
+  color: var(--color-neutral-700);
+  font-size: 0.75rem;
+}
+.vp-issue-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+  border-top: 1px solid var(--color-divider);
+  padding-block: var(--space-1);
+}
+.vp-issue-link {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--color-accent-700);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .vp-archive-card {
   display: flex;
   align-items: center;

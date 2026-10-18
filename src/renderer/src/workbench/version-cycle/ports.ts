@@ -44,6 +44,7 @@ export type CycleTaskSnapshot = {
   title: string
   state: string
   url: string
+  labels?: string[]
   readAt: string
 }
 export type CycleTaskRead =
@@ -84,4 +85,7 @@ export type VersionGoalCardProps = {
   metrics?: ReactNode
   result?: ReactNode
   actions?: ReactNode
+  defaultOpen?: boolean
+  summary?: ReactNode
+  extra?: ReactNode
 }

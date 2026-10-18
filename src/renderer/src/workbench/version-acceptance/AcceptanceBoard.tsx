@@ -6,6 +6,7 @@ import type { PackagePipelinePort } from '../../../../shared/workbench/package-p
 import type { VersionHistoryPort } from '../../../../shared/workbench/version-history'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
+import type { CycleTaskSnapshot } from '../version-cycle/ports'
 import { cycleBranch } from '../version-cycle/native-cycle-workspace'
 import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
@@ -13,11 +14,8 @@ import { CycleStartCard } from '../version-cycle/CycleStartCard'
 import { AcceptanceGoalCards } from './AcceptanceGoalCards'
 import { AcceptancePackage } from './AcceptancePackage'
 import { AcceptanceSources } from './AcceptanceSources'
-import { AcceptanceSummary } from './AcceptanceSummary'
 import { AcceptanceNotices } from './AcceptanceNotices'
 import { useAcceptanceMetricWindow } from './AcceptanceMetricWindow'
-import { taskSnapshotSummary } from './AcceptanceTasks'
-import { CycleTasks } from '../version-cycle/CycleTasks'
 import { CycleArchive } from '../version-cycle/CycleArchive'
 import { AcceptanceJourney } from './AcceptanceJourney'
 import { AcceptanceReportDialog } from './AcceptanceReportDialog'
@@ -87,7 +85,6 @@ function ReadyAcceptanceBoard({
     setError,
     busy,
     report,
-    decisionSummary,
     saveTaskSnapshot,
     scroll,
     document,
@@ -110,34 +107,29 @@ function ReadyAcceptanceBoard({
   )
   const metricWindow = useAcceptanceMetricWindow(metrics, metricScope, hasMetrics)
   const [reportOpen, setReportOpen] = useState(false)
-  const [taskGoalFilter, setTaskGoalFilter] = useState<{ goalId: string; title: string } | null>(
-    null
-  )
   const startCard = useRef<HTMLElement>(null)
   const results = useRef<HTMLElement>(null)
   const archiveSection = useRef<HTMLElement>(null)
   const packageSection = useRef<HTMLElement>(null)
-  const tasks = useRef<HTMLElement>(null)
   const [packageReady, setPackageReady] = useState(false)
   // Stable identity keeps AcceptancePackage's load effects from re-firing.
   const handlePackageLatest = useCallback(
     (latest: { version: string } | null) => setPackageReady(latest !== null),
     []
   )
-  const [tasksOpen, setTasksOpen] = useState(false)
   const branch = cycleBranch(entry)
-  // Render-time validity: a round or plan change under the same identity drops a
-  // filter whose goal no longer exists in the fixed plan — no stale empty list.
-  const activeGoalFilter =
-    taskGoalFilter && plan?.document.goals.some((goal) => goal.goalId === taskGoalFilter.goalId)
-      ? taskGoalFilter
-      : null
-  /** Locate the snapshot section expanded, optionally narrowed to one goal's references. */
-  const openTasks = (goal?: { goalId: string; title: string } | null) => {
-    setTaskGoalFilter(goal ?? null)
-    setTasksOpen(true)
-    tasks.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-  }
+  const openTask = (task: CycleTaskSnapshot) =>
+    context.taskPort.openDetail(task, {
+      ...scope,
+      page: 'acceptance',
+      version: document?.version ?? context.version ?? '',
+      cycleId: document?.cycleId ?? '',
+      worktreeId,
+      sessionId: session?.sessionId,
+      scrollTop: scroll.current?.scrollTop ?? 0,
+      draftKey: recoveryKey,
+      goalId: task.reference.goalId
+    })
   useEffect(() => {
     if (!report) {
       setReportOpen(false)
@@ -241,19 +233,6 @@ function ReadyAcceptanceBoard({
           />
           {document ? (
             <>
-              {plan && (
-                <AcceptanceSummary
-                  goals={decisionSummary.goals}
-                  pending={decisionSummary.pending}
-                  notMet={decisionSummary.notMet}
-                  issueSummary={
-                    plan.document.tasks.length > 0
-                      ? taskSnapshotSummary(document.taskSnapshot ?? [], plan.document.tasks.length)
-                      : null
-                  }
-                  onIssues={() => openTasks()}
-                />
-              )}
               <AcceptanceSources document={document} />
               <AcceptancePackage
                 port={packages}
@@ -278,48 +257,14 @@ function ReadyAcceptanceBoard({
                     metricWindow={metricWindow.window}
                     readOnly={readOnly}
                     sectionRef={results}
-                    onOpenIssues={(goalId, title) => openTasks({ goalId, title })}
+                    scope={scope}
+                    taskPort={context.taskPort}
+                    onSnapshot={(reads) => saveTaskSnapshot(document, reads)}
+                    onOpenTask={openTask}
                     onReadings={(goalId, ref, readings) =>
                       editReadings(document, goalId, ref, readings)
                     }
                     onGoalChange={(value, goalId) => editGoal(value, goalId)}
-                  />
-                  <CycleTasks
-                    sectionRef={tasks}
-                    plan={plan.document}
-                    scope={scope}
-                    taskPort={context.taskPort}
-                    disabled={readOnly}
-                    open={tasksOpen}
-                    onOpen={setTasksOpen}
-                    goalFilter={activeGoalFilter?.goalId ?? ''}
-                    onFilter={(goalId) =>
-                      setTaskGoalFilter(
-                        goalId
-                          ? {
-                              goalId,
-                              title:
-                                plan.document.goals.find((goal) => goal.goalId === goalId)?.title ??
-                                ''
-                            }
-                          : null
-                      )
-                    }
-                    onTask={(task) =>
-                      context.taskPort.openDetail(task, {
-                        ...scope,
-                        page: 'acceptance',
-                        version: document.version,
-                        cycleId: document.cycleId,
-                        worktreeId,
-                        sessionId: session?.sessionId,
-                        scrollTop: scroll.current?.scrollTop ?? 0,
-                        draftKey: recoveryKey,
-                        goalId: task.reference.goalId
-                      })
-                    }
-                    snapshot={document.taskSnapshot}
-                    onSnapshot={(reads) => saveTaskSnapshot(document, reads)}
                   />
                 </>
               )}

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Version planning and acceptance share one persisted material contract. */
 import { z } from 'zod'
 import { TaskSourceContextSchema } from '../task-source-context-schema'
 import { normalizeExecutionHostId } from '../execution-host'
@@ -47,6 +48,8 @@ export const VersionGoalSchema = z.strictObject({
   title: z.string(),
   deliverable: z.string().optional(),
   acceptance: z.string().optional(),
+  deadline: z.string().optional(),
+  owner: z.string().optional(),
   metricTargets: z.array(
     z.strictObject({
       ref: MetricReferenceSchema,
@@ -93,6 +96,7 @@ export const VersionTaskSnapshotSchema = z
       title: z.string(),
       state: Id,
       url: Id,
+      labels: z.array(z.string()).optional(),
       readAt: z.iso.datetime({ offset: true })
     }),
     z.strictObject({
@@ -209,6 +213,49 @@ const HumanDecision = z.strictObject({
   reason: z.string()
 })
 
+/** Marks and notes belong to the human's current acceptance round. */
+export const AcceptanceIssueMarksSchema = z.strictObject({
+  carry: z.boolean().optional(),
+  risk: z.boolean().optional()
+})
+
+export const AcceptanceMaterialLinkSchema = z.strictObject({
+  label: z.string(),
+  url: z.string()
+})
+
+const AcceptanceRoundGoalSnapshotSchema = z.strictObject({
+  goalId: Id,
+  decision: z.string(),
+  progress: z.string(),
+  next: z.string().optional()
+})
+
+const AcceptanceRoundSnapshotSchema = z.strictObject({
+  goals: z.array(AcceptanceRoundGoalSnapshotSchema),
+  issueMarks: z.record(z.string(), AcceptanceIssueMarksSchema),
+  issueNotes: z.record(z.string(), z.string())
+})
+
+export const AcceptanceRoundSchema = z.strictObject({
+  id: Id,
+  week: Id,
+  kind: z.enum(['progress', 'final']),
+  closedAt: z.iso.datetime({ offset: true }).optional(),
+  snapshot: AcceptanceRoundSnapshotSchema
+})
+
+export const AcceptanceMeetingDirectiveSchema = z.strictObject({
+  id: Id,
+  text: z.string(),
+  tag: z.enum(['resolved-this-acceptance', 'next-week-plan', 'record-remaining']),
+  goalId: Id.optional(),
+  status: z.enum(['pending', 'confirmed']),
+  source: z.enum(['transcript-summary', 'manual']),
+  sourceRef: z.string().optional(),
+  confirmedAt: z.iso.datetime({ offset: true }).optional()
+})
+
 export const AcceptanceMaterialSchema = z
   .strictObject({
     ...Identity,
@@ -228,10 +275,16 @@ export const AcceptanceMaterialSchema = z
       z.strictObject({
         goalId: Id,
         deliveries: z.array(z.strictObject({ title: z.string(), location: z.string() })),
+        materials: z.array(AcceptanceMaterialLinkSchema).optional(),
         readings: z.array(MetricReadingEvidenceSchema),
         decision: HumanDecision.optional(),
         note: z.string(),
-        nextStep: z.string()
+        progress: z.string().optional(),
+        nextStep: z.string(),
+        rounds: z.array(AcceptanceRoundSchema).optional(),
+        meetingDirectives: z.array(AcceptanceMeetingDirectiveSchema).optional(),
+        issueNotes: z.record(z.string(), z.string()).optional(),
+        issueMarks: z.record(z.string(), AcceptanceIssueMarksSchema).optional()
       })
     ),
     // Session-model-written SOP progress; absent means not started.
@@ -252,6 +305,29 @@ export const AcceptanceMaterialSchema = z
         path: ['results']
       })
     }
+    document.results.forEach((result, resultIndex) => {
+      if (result.rounds) {
+        if (new Set(result.rounds.map((round) => round.id)).size !== result.rounds.length) {
+          context.addIssue({
+            code: 'custom',
+            message: 'Round ids must be unique within a goal result',
+            path: ['results', resultIndex, 'rounds']
+          })
+        }
+      }
+      if (result.meetingDirectives) {
+        if (
+          new Set(result.meetingDirectives.map((directive) => directive.id)).size !==
+          result.meetingDirectives.length
+        ) {
+          context.addIssue({
+            code: 'custom',
+            message: 'Meeting directive ids must be unique within a goal result',
+            path: ['results', resultIndex, 'meetingDirectives']
+          })
+        }
+      }
+    })
   })
 
 export type PlanningMaterial = z.infer<typeof PlanningMaterialSchema>
@@ -260,6 +336,10 @@ export type VersionMaterial = PlanningMaterial | AcceptanceMaterial
 export type VersionGoal = z.infer<typeof VersionGoalSchema>
 export type MetricReference = z.infer<typeof MetricReferenceSchema>
 export type MetricReadingEvidence = z.infer<typeof MetricReadingEvidenceSchema>
+export type AcceptanceIssueMarks = z.infer<typeof AcceptanceIssueMarksSchema>
+export type AcceptanceMaterialLink = z.infer<typeof AcceptanceMaterialLinkSchema>
+export type AcceptanceRound = z.infer<typeof AcceptanceRoundSchema>
+export type AcceptanceMeetingDirective = z.infer<typeof AcceptanceMeetingDirectiveSchema>
 
 export type VersionTaskReference = z.infer<typeof VersionTaskReferenceSchema>
 export type VersionTaskSnapshot = z.infer<typeof VersionTaskSnapshotSchema>

@@ -1,5 +1,4 @@
-import { ChevronRight, ListTodo } from 'lucide-react'
-import type { Ref } from 'react'
+import { useEffect, type Ref } from 'react'
 import type {
   AcceptanceMaterial,
   MetricReadingEvidence,
@@ -12,6 +11,7 @@ import type {
   MetricWindow
 } from '../../../../shared/workbench/metrics'
 import { VersionGoalCard } from '../version-cycle/VersionGoalCard'
+import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
 import { AcceptanceMetrics } from './AcceptanceMetrics'
 import { AcceptanceGoalResult } from './AcceptanceGoalResult'
 
@@ -28,7 +28,10 @@ export function AcceptanceGoalCards({
   metricWindow,
   readOnly,
   sectionRef,
-  onOpenIssues,
+  scope,
+  taskPort,
+  onSnapshot,
+  onOpenTask,
   onReadings,
   onGoalChange
 }: {
@@ -39,31 +42,54 @@ export function AcceptanceGoalCards({
   metricWindow: MetricWindow | null
   readOnly: boolean
   sectionRef: Ref<HTMLElement>
-  onOpenIssues(goalId: string, title: string): void
+  scope: CycleScope | null
+  taskPort: TaskPort
+  onSnapshot(reads: CycleTaskRead[]): void
+  onOpenTask(task: CycleTaskSnapshot): Promise<void>
   onReadings(goalId: string, ref: MetricRef, readings: MetricReadingEvidence[]): void
   onGoalChange(next: AcceptanceMaterial, goalId: string): void
 }) {
+  const referenceKey = JSON.stringify(plan.tasks)
+  useEffect(() => {
+    if (readOnly || !scope || !plan.tasks.length || document.taskSnapshot) {
+      return
+    }
+    let active = true
+    void taskPort.listVersion(scope, plan.tasks).then(
+      (reads) => {
+        if (active) {
+          onSnapshot(reads)
+        }
+      },
+      () => {
+        // Keep the absence of a snapshot visible as Unknown; it is not a zero.
+      }
+    )
+    return () => {
+      active = false
+    }
+  }, [document.taskSnapshot, onSnapshot, plan.tasks, readOnly, referenceKey, scope, taskPort])
   return (
     <section id="acceptance-results" ref={sectionRef} aria-label="展示验收">
       {plan.goals.map((goal, index) => {
+        const result = document.results.find((item) => item.goalId === goal.goalId)
         const relatedIssues = plan.tasks.filter((task) => task.goalId === goal.goalId).length
+        const markedIssues = Object.values(result?.issueMarks ?? {}).filter(
+          (mark) => mark.carry || mark.risk
+        ).length
         return (
           <VersionGoalCard
             key={goal.goalId}
             goal={goal}
             index={index}
             readOnly
-            actions={
+            defaultOpen={false}
+            summary={
               relatedIssues > 0 ? (
-                <button
-                  className="va-goal-issues"
-                  title="核对关联 Issue 状态"
-                  onClick={() => onOpenIssues(goal.goalId, goal.title)}
-                >
-                  <ListTodo size={13} aria-hidden="true" />
+                <span className="va-goal-issues" title="关联 Issue 与当前轮标记">
                   Issue {relatedIssues}
-                  <ChevronRight size={13} aria-hidden="true" />
-                </button>
+                  {markedIssues > 0 ? ` · 标记 ${markedIssues}` : ''}
+                </span>
               ) : undefined
             }
             metrics={
@@ -98,6 +124,7 @@ export function AcceptanceGoalCards({
                 goal={goal}
                 disabled={readOnly}
                 onChange={(value) => onGoalChange(value, goal.goalId)}
+                onOpenTask={onOpenTask}
               />
             }
           />
