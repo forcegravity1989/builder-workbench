@@ -13,10 +13,11 @@ const ISSUE_GROUPS = [
 ] as const
 
 function issueClass(labels: string[] | undefined): (typeof ISSUE_GROUPS)[number]['key'] {
-  if (labels?.some((label) => /^(bug|缺陷)/i.test(label))) {
+  const normalized = labels?.map((label) => label.trim()).filter(Boolean) ?? []
+  if (normalized.some((label) => /^(bug|缺陷)/i.test(label))) {
     return 'bug'
   }
-  if (labels?.length) {
+  if (normalized.length) {
     return 'feature'
   }
   return 'unclassified'
@@ -24,6 +25,22 @@ function issueClass(labels: string[] | undefined): (typeof ISSUE_GROUPS)[number]
 
 function issueKey(reference: PlanningMaterial['tasks'][number]) {
   return `${reference.provider}:${reference.repository}:${reference.number}`
+}
+
+function readableTaskState(state: string): string {
+  switch (state.trim().toLowerCase()) {
+    case 'open':
+    case 'opened':
+      return '开放'
+    case 'in_progress':
+    case 'in-progress':
+      return '进行中'
+    case 'closed':
+    case 'merged':
+      return '已关闭'
+    default:
+      return state.trim() || 'Unknown'
+  }
 }
 
 function PlanIssueGroups({
@@ -76,7 +93,7 @@ function PlanIssueGroups({
                   )}
                   <span className="vp-muted">
                     {read?.kind === 'ready'
-                      ? `${read.task.state}${read.task.assignee ? ` · ${read.task.assignee}` : ''}`
+                      ? `${readableTaskState(read.task.state)}${read.task.assignee ? ` · ${read.task.assignee}` : ''}`
                       : (read?.error ?? '未读取')}
                   </span>
                 </div>
@@ -121,6 +138,7 @@ export function PlanningGoals({
   useEffect(() => {
     if (!scope || !plan?.tasks.length) {
       setReads(plan?.tasks.length ? null : [])
+      setReadError(null)
       return
     }
     let active = true

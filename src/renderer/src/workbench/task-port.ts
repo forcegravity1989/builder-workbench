@@ -1,7 +1,3 @@
-/* eslint-disable max-lines -- TaskPort keeps provider adapters and their shared read/open boundary together. */
-import { useAppStore } from '@/store'
-import { codehubApi } from '@/lib/codehub-api'
-import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import type { CodeHubTaskDetail, CodeHubTaskItem } from '../../../shared/codehub-tasks'
@@ -10,7 +6,6 @@ import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import type { Repo } from '../../../shared/repo-types'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
-import type { AppState } from '@/store/types'
 import type {
   CycleScope,
   CycleTaskRead,
@@ -319,14 +314,4 @@ export function createTaskPort(deps: TaskPortDeps): TaskPort {
     refresh: readAll,
     openDetail: (task, origin) => openDetail(deps, task, origin)
   }
-}
-
-export function nativeTaskPort(): TaskPort {
-  return createTaskPort({
-    repos: () => useAppStore.getState().repos,
-    lookupGitHubWorkItem: (args) => lookupGitHubWorkItemForSource(args),
-    viewCodeHubTask: (args) => codehubApi.viewTask(args),
-    openTaskPage: (data, options) => useAppStore.getState().openTaskPage(data, options),
-    now: () => new Date().toISOString()
-  })
 }

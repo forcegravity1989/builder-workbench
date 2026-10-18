@@ -6,7 +6,7 @@ import type { PackagePipelinePort } from '../../../../shared/workbench/package-p
 import type { VersionHistoryPort } from '../../../../shared/workbench/version-history'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
-import type { CycleTaskSnapshot } from '../version-cycle/ports'
+import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
 import { cycleBranch } from '../version-cycle/native-cycle-workspace'
 import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
@@ -116,6 +116,14 @@ function ReadyAcceptanceBoard({
   const handlePackageLatest = useCallback(
     (latest: { version: string } | null) => setPackageReady(latest !== null),
     []
+  )
+  const handleSnapshot = useCallback(
+    (reads: CycleTaskRead[]) => {
+      if (document) {
+        saveTaskSnapshot(document, reads)
+      }
+    },
+    [document, saveTaskSnapshot]
   )
   const branch = cycleBranch(entry)
   const openTask = (task: CycleTaskSnapshot) =>
@@ -259,7 +267,7 @@ function ReadyAcceptanceBoard({
                     sectionRef={results}
                     scope={scope}
                     taskPort={context.taskPort}
-                    onSnapshot={(reads) => saveTaskSnapshot(document, reads)}
+                    onSnapshot={handleSnapshot}
                     onOpenTask={openTask}
                     onReadings={(goalId, ref, readings) =>
                       editReadings(document, goalId, ref, readings)

@@ -35,7 +35,7 @@ BW 业务放在 renderer/workbench 下的 version-cycle、version-planning、ver
 
 ## 版本材料与写入
 
-PlanningBoard 保留未选版本与已选版本的同一骨架：顶部明确选版，正文依次为进展/风险、目标、页内任务和一行归档状态。PlanningJourneyNav 只滚动定位正文并显示 workflow.stage 灯，不发起请求、不以点击标记评审完成。VersionGoalCard 的计划分支直接编辑目标、交付件和可选验收说明；验收只读分支不变。PlanGoalMetrics 逐条编辑可选指标承诺，完整保留多指标，定义和采集依据按需展开。预览纪要在目标标题旁；进展区在 summary.progressSource 存在时内联回显派生只读纪要（use-progress-minutes），无引用或读取失败时显示文本输入；风险输入仅由用户填写（模型通道被人工守卫拒绝）。取消目标补充弹窗和常规保存栏。计划样式在 version-planning.css、planning-fields.css 和 planning-dialogs.css 内限定，不改变总览。
+PlanningBoard 保留未选版本与已选版本的同一骨架：顶部明确选版，正文依次为进展/风险、目标卡（含关联 Issue 子块）和一行归档状态。PlanningJourneyNav 只滚动定位正文并显示 workflow.stage 灯，不发起请求、不以点击标记评审完成。VersionGoalCard 的计划分支直接编辑目标、交付件和可选验收说明；验收只读分支不变。PlanGoalMetrics 展示可选指标承诺与当前读数，指标定义和采集依据按会话 SOP 配置。预览纪要在目标标题旁；进展区在 summary.progressSource 存在时内联回显派生只读纪要（use-progress-minutes），无引用或读取失败时显示文本输入；风险输入仅由用户填写（模型通道被人工守卫拒绝）。取消目标补充弹窗和常规保存栏。计划样式在 version-planning.css、planning-fields.css 和 planning-dialogs.css 内限定，不改变总览。
 
 usePlanningMaterial 继续复用 MaterialDraftController 的本地草稿、远端修订与 CAS，不新增材料副本。usePlanningAutosave 对连续编辑去抖并串行写入；写入期间的新编辑继续保留，在显式 flush 时排空到最新修订后才返回。版本切换先 flush，写入前复核当前范围与材料身份。冲突、远端删除或错误暂停自动写入，由 PlanningPersistenceNotice 提供保留双方内容、重读或明确重试；不以自动重试覆盖模型编辑。轮询只发现材料变化，旅程灯随轮询到的 workflow.stage 更新。组件/控制器检查不替代真壳输入、重启及真实模型并发验证。
 

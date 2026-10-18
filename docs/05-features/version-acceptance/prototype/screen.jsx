@@ -18,7 +18,6 @@ import {
   Field,
   Lamp,
   assigneeOf,
-  done,
   issueClass,
   readableState,
   titleForTask
@@ -74,7 +73,6 @@ function AcceptanceContent({
   directives,
   setDirectives,
   openIssue,
-  promptConversation,
   refreshMetrics,
   review,
   weekId,
@@ -297,9 +295,9 @@ function AcceptanceContent({
                   <span className="head-chip owner" title="负责人（计划材料 owner 字段）">
                     负责人 {g.owner?.trim() || '未指派'}
                   </span>
-                  <span className="head-chip" title="关联 Issue 完成数">
+                  <span className="head-chip" title="关联 Issue 数">
                     <ListTodo />
-                    {done(related)} / {related.length}
+                    关联 Issue · {related.length}
                   </span>
                   {carry.length > 0 && (
                     <span className={`head-chip carry${risky.length ? ' risk' : ''}`}>
@@ -409,7 +407,7 @@ function AcceptanceContent({
                   <details className="issue-subblock">
                     <summary>
                       <ListTodo />
-                      关联 Issue {done(related)} / {related.length} 已关闭
+                      关联 Issue · {related.length}
                       {carry.length > 0 ? ` · 遗留 ${carry.length}` : ''}
                       {risky.length > 0 ? ` · 风险 ${risky.length}` : ''}
                     </summary>
@@ -434,21 +432,6 @@ function AcceptanceContent({
                           onChange={(v) => updateResult(g.id, 'next', v)}
                           placeholder="本版补齐、带入下版或停止，并说明安排"
                         />
-                        <button
-                          className="btn btn-ghost"
-                          onClick={() =>
-                            promptConversation(
-                              `请处理 ${version} ${g.label} 的未达项：${
-                                g.actualDelivery || '待补充'
-                              }。下一步：${
-                                g.next || '请与我讨论安排'
-                              }。核对关联 Issue，与我确认后再更新，不自动标为完成。`
-                            )
-                          }
-                        >
-                          <MessageSquare />
-                          交给会话
-                        </button>
                       </div>
                     </fieldset>
                   )}

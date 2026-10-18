@@ -143,7 +143,7 @@ shared visual language with the plan board. */
 }
 .va-story-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
 }
 .va-story-row > label {
@@ -151,17 +151,40 @@ shared visual language with the plan board. */
   flex-direction: column;
   gap: var(--space-1);
 }
-.va-material-block {
+.va-story-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+}
+.va-story-cell p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.va-material-cell a,
+.va-material-cell > span {
+  overflow-wrap: anywhere;
+}
+.va-decision-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: end;
   gap: var(--space-2);
-  padding-top: var(--space-2);
-  color: var(--color-neutral-600);
-  font-size: 0.8rem;
+  margin-top: var(--space-2);
 }
-.va-material-block a {
-  color: var(--color-accent-700);
+.va-decision-row label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.va-acceptance-criteria {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+.va-acceptance-criteria p {
+  margin: 0;
   overflow-wrap: anywhere;
 }
 .va-round-block,
@@ -237,6 +260,12 @@ shared visual language with the plan board. */
   padding-block: var(--space-1);
   border-top: 1px solid var(--color-divider);
 }
+.va-issue-row.is-carry {
+  background: color-mix(in srgb, var(--color-warning-100, #fff7d6) 72%, transparent);
+}
+.va-issue-row.is-risk {
+  background: color-mix(in srgb, var(--color-danger-100, #ffe3e3) 72%, transparent);
+}
 .va-issue-head {
   display: flex;
   align-items: center;
@@ -286,9 +315,6 @@ shared visual language with the plan board. */
 .va-result-row > label {
   margin-bottom: 0;
   white-space: nowrap;
-}
-.va-primary-delivery {
-  flex: 1;
 }
 .va-note {
   padding-top: var(--space-1);

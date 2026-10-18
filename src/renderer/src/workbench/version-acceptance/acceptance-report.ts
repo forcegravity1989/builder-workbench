@@ -5,6 +5,7 @@ import type {
 import type { DecisionFreshness } from './acceptance-decision'
 import { emptyGoalResult } from './acceptance-model'
 import { taskReferenceKey } from './acceptance-task-evidence'
+import { issueMarkFor, issueNoteFor } from './acceptance-issue-annotations'
 
 const outcomeLabels = { met: '达成', 'not-met': '未达', pending: '待核' }
 function text(value: string): string {
@@ -87,20 +88,13 @@ export function deriveAcceptanceReport(input: {
       .map((ref) => ref.goalId)
       .filter(Boolean)
     const goalNote = goals.length ? `；目标 ${goals.map((goalId) => text(goalId!)).join('、')}` : ''
-    const issueKey = `${item.reference.provider}:${item.reference.repository}:${item.reference.number}`
-    const legacyKeyIsUnique =
-      plan.tasks.filter((reference) => reference.number === item.reference.number).length === 1
     const annotations = goals.flatMap((goalId) => {
       const result = document.results.find((entry) => entry.goalId === goalId)
       if (!result) {
         return []
       }
-      const note =
-        result.issueNotes?.[issueKey] ??
-        (legacyKeyIsUnique ? result.issueNotes?.[String(item.reference.number)] : undefined)
-      const mark =
-        result.issueMarks?.[issueKey] ??
-        (legacyKeyIsUnique ? result.issueMarks?.[String(item.reference.number)] : undefined)
+      const note = issueNoteFor(result, item.reference, plan.tasks)
+      const mark = issueMarkFor(result, item.reference, plan.tasks)
       const labels = [mark?.carry ? '遗留' : null, mark?.risk ? '风险' : null].filter(Boolean)
       return [
         note ? `备注：${text(note)}` : null,

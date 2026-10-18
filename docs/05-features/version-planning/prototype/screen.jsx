@@ -5,7 +5,6 @@ import {
   Lamp,
   ModelSessionIcon,
   assigneeOf,
-  done,
   issueClass,
   readableState,
   titleForTask
@@ -153,9 +152,9 @@ function PlanningContent({
                   {g.title.trim() || '待明确目标'}
                 </h3>
                 <span className="head-chips">
-                  <span className="head-chip" title="关联 Issue 完成数">
+                  <span className="head-chip" title="关联 Issue 数">
                     <ListTodo />
-                    {done(related)} / {related.length}
+                    关联 Issue · {related.length}
                   </span>
                 </span>
               </div>
@@ -275,7 +274,7 @@ function PlanningContent({
                   <details className="issue-subblock">
                     <summary>
                       <ListTodo />
-                      关联 Issue {done(related)} / {related.length}
+                      关联 Issue · {related.length}
                       <button
                         className="btn btn-ghost subblock-action"
                         disabled={disabled}

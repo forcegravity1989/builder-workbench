@@ -15,7 +15,8 @@ export function VersionGoalCard({
   expanded,
   expandedSignal,
   summary,
-  extra
+  extra,
+  hideReadOnlyStory = false
 }: VersionGoalCardProps) {
   const editable = !readOnly && Boolean(onChange)
   const [open, setOpen] = useState(expanded ?? defaultOpen)
@@ -98,7 +99,7 @@ export function VersionGoalCard({
               />
             </label>
           </div>
-        ) : open ? (
+        ) : open && !hideReadOnlyStory ? (
           <div className="vc-goal-story">
             {goal.deliverable?.trim() && (
               <div className="vc-story-cell">

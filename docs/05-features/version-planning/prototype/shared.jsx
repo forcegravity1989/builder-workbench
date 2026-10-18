@@ -55,13 +55,12 @@ const initial = original.plan.goals.map((g, i) => ({
   next: '',
   ...acceptanceDemo[i]
 }))
-const done = (tasks) => tasks.filter((x) => x.state === 'CLOSED').length
 const titleForTask = (t) => t.title.replace(/^【[^】]*】/, '').trim()
-// Issue 分类分组依赖提单分类标签（bug/feature 立项随实施批）；无标签如实归未分类，不猜测。
+// Issue 分类分组依赖提单分类标签：Bug/缺陷归 Bug，其他非空标签默认 Feature，无标签归未分类。
 const issueClass = (t) =>
-  t.labels?.some((l) => /^(bug|缺陷)/i.test(l.name))
+  t.labels?.some((l) => /^(bug|缺陷)/i.test(l.name.trim()))
     ? 'bug'
-    : t.labels?.length
+    : t.labels?.some((l) => l.name.trim())
       ? 'feature'
       : 'unclassified'
 const CLASS_LABELS = { bug: 'Bug 类', feature: 'Feature 类', unclassified: '未分类' }
@@ -114,7 +113,6 @@ export {
   currentTitles,
   deliveries,
   initial,
-  done,
   titleForTask,
   issueClass,
   CLASS_LABELS,

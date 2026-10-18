@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
 import type { VersionHistoryPlan } from '../../../../shared/workbench/version-history'
 import type { MaterialDraft, MaterialDraftController } from '../version-cycle/material-draft'
@@ -34,16 +34,23 @@ export function useAcceptanceOutput(
       lifetime.active = false
     }
   }, [lifetime])
-  function saveTaskSnapshot(source: AcceptanceMaterial, reads: CycleTaskRead[]) {
-    const current = controller.value?.document
-    if (!current || current.version !== context.version || !sameAcceptanceSource(source, current)) {
-      throw new Error('验收来源已变化，任务快照未覆盖新材料。')
-    }
-    controller.edit({
-      ...current,
-      taskSnapshot: captureTaskSnapshot(reads)
-    })
-  }
+  const saveTaskSnapshot = useCallback(
+    (source: AcceptanceMaterial, reads: CycleTaskRead[]) => {
+      const current = controller.value?.document
+      if (
+        !current ||
+        current.version !== context.version ||
+        !sameAcceptanceSource(source, current)
+      ) {
+        throw new Error('验收来源已变化，任务快照未覆盖新材料。')
+      }
+      controller.edit({
+        ...current,
+        taskSnapshot: captureTaskSnapshot(reads)
+      })
+    },
+    [context.version, controller]
+  )
   /** Returns the derived markdown, or null when nothing honest could be produced. */
   async function buildReport(): Promise<string | null> {
     if (!document || !plan) {

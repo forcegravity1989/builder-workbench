@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type {
   AcceptanceMeetingDirective,
   AcceptanceMaterial,
@@ -86,6 +87,7 @@ export function AcceptanceDirectives({
   disabled: boolean
   onChange(document: AcceptanceMaterial, goalId: string): void
 }) {
+  const [targetGoalId, setTargetGoalId] = useState(plan.goals[0]?.goalId ?? '')
   const entries = document.results.flatMap((result) =>
     (result.meetingDirectives ?? []).map((directive) => ({ goalId: result.goalId, directive }))
   )
@@ -100,7 +102,7 @@ export function AcceptanceDirectives({
       goalId
     )
   const add = () => {
-    const target = document.results[0] ?? (plan.goals[0] ? { goalId: plan.goals[0].goalId } : null)
+    const target = document.results.find((result) => result.goalId === targetGoalId) ?? null
     if (!target) {
       return
     }
@@ -137,6 +139,21 @@ export function AcceptanceDirectives({
         >
           人工补记
         </button>
+        <label className="va-directive-target">
+          <span>关联目标</span>
+          <select
+            aria-label="人工补记关联目标"
+            value={targetGoalId}
+            disabled={disabled || document.results.length === 0}
+            onChange={(event) => setTargetGoalId(event.target.value)}
+          >
+            {plan.goals.map((goal) => (
+              <option key={goal.goalId} value={goal.goalId}>
+                {goal.title || goal.goalId}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       {entries.length === 0 && <span className="va-muted">暂无待确认指导</span>}
       {entries.map(({ goalId, directive }) => {

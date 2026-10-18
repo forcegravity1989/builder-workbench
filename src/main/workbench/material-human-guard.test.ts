@@ -134,6 +134,39 @@ it('names every human-only field the incoming document would add, change or drop
   expect(humanFieldChanges(withDecision(base), { ...base, results: [] })).toEqual([
     'results[g1].decision'
   ])
+  const withOpenRound = material({
+    results: [
+      {
+        ...base.results[0],
+        progress: '进行中',
+        issueMarks: { issue1: { carry: true } },
+        issueNotes: { issue1: '下周继续核对' },
+        rounds: [round]
+      }
+    ]
+  })
+  const nextRound = {
+    ...round,
+    id: 'round-2',
+    week: '2026-W40'
+  }
+  expect(
+    humanFieldChanges(withOpenRound, {
+      ...withOpenRound,
+      results: [
+        {
+          ...withOpenRound.results[0],
+          rounds: [{ ...round, closedAt: '2026-10-02T00:00:00Z' }, nextRound]
+        }
+      ]
+    })
+  ).not.toContain('results[g1].rounds[round-2]')
+  expect(
+    humanFieldChanges(withOpenRound, {
+      ...withOpenRound,
+      results: [{ ...withOpenRound.results[0], rounds: [round, nextRound] }]
+    })
+  ).toContain('results[g1].rounds[round-2]')
 })
 
 it('refuses model-channel saves that write a decision, including creates', async () => {

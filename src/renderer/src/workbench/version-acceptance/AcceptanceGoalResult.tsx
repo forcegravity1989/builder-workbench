@@ -1,4 +1,3 @@
-/* eslint-disable max-lines -- Goal result owns the card's human decision, round and Issue controls. */
 import { useEffect, useRef, useState } from 'react'
 import type {
   AcceptanceMaterial,
@@ -13,6 +12,13 @@ import {
 import { emptyGoalResult, type GoalResult } from './acceptance-model'
 import { AcceptanceDeliveryDetails } from './AcceptanceDeliveryDetails'
 import type { CycleTaskSnapshot } from '../version-cycle/ports'
+import {
+  issueKey,
+  issueMarkFor,
+  issueNoteFor,
+  updateIssueMark,
+  updateIssueNote
+} from './acceptance-issue-annotations'
 
 const ISSUE_GROUPS = [
   { key: 'bug', label: 'Bug 类' },
@@ -20,25 +26,40 @@ const ISSUE_GROUPS = [
   { key: 'unclassified', label: '未分类' }
 ] as const
 
+function safeMaterialHref(value: string): string | null {
+  try {
+    const url = new URL(value, window.location.origin)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? value : null
+  } catch {
+    return null
+  }
+}
+
+function readableTaskState(state: string): string {
+  switch (state.trim().toLowerCase()) {
+    case 'open':
+    case 'opened':
+      return '开放'
+    case 'in_progress':
+    case 'in-progress':
+      return '进行中'
+    case 'closed':
+    case 'merged':
+      return '已关闭'
+    default:
+      return state.trim() || 'Unknown'
+  }
+}
+
 function issueClass(labels: string[] | undefined): (typeof ISSUE_GROUPS)[number]['key'] {
-  if (labels?.some((label) => /^(bug|缺陷)/i.test(label))) {
+  const normalized = labels?.map((label) => label.trim()).filter(Boolean) ?? []
+  if (normalized.some((label) => /^(bug|缺陷)/i.test(label))) {
     return 'bug'
   }
-  if (labels?.length) {
+  if (normalized.length) {
     return 'feature'
   }
   return 'unclassified'
-}
-
-function issueKey(reference: PlanningMaterial['tasks'][number]): string {
-  return `${reference.provider}:${reference.repository}:${reference.number}`
-}
-
-function canUseLegacyIssueKey(
-  reference: PlanningMaterial['tasks'][number],
-  relatedIssues: PlanningMaterial['tasks']
-): boolean {
-  return relatedIssues.filter((item) => item.number === reference.number).length === 1
 }
 
 export function AcceptanceGoalResult({
@@ -114,31 +135,14 @@ export function AcceptanceGoalResult({
       ]
     })
   const editIssueNote = (reference: PlanningMaterial['tasks'][number], note: string) => {
-    const key = issueKey(reference)
-    const nextNotes = { ...result.issueNotes, [key]: note }
-    if (canUseLegacyIssueKey(reference, relatedIssues)) {
-      delete nextNotes[String(reference.number)]
-    }
-    edit({ issueNotes: nextNotes })
+    edit({ issueNotes: updateIssueNote(result, reference, plan.tasks, note) })
   }
   const editIssueMark = (
     reference: PlanningMaterial['tasks'][number],
     mark: 'carry' | 'risk',
     value: boolean
   ) => {
-    const key = issueKey(reference)
-    const nextMarks = {
-      ...result.issueMarks,
-      [key]: {
-        ...result.issueMarks?.[key],
-        [mark]: value
-      }
-    }
-    const legacyKey = String(reference.number)
-    if (legacyKey !== key && canUseLegacyIssueKey(reference, relatedIssues)) {
-      delete nextMarks[legacyKey]
-    }
-    edit({ issueMarks: nextMarks })
+    edit({ issueMarks: updateIssueMark(result, reference, plan.tasks, mark, value) })
   }
   async function decide(outcome: NonNullable<GoalResult['decision']>['outcome']) {
     setConfirming(true)
@@ -167,35 +171,63 @@ export function AcceptanceGoalResult({
     <fieldset className="va-result" disabled={disabled || confirming}>
       <legend className="sr-only">{goal.title} 验收结果</legend>
       <div className="va-story-row">
-        <label>
-          进展
+        <div className="va-story-cell">
+          <span className="va-label">约定交付</span>
+          <p>{goal.deliverable?.trim() || '未约定交付件'}</p>
+        </div>
+        <label className="va-story-cell">
+          <span>进展</span>
           <textarea
             rows={2}
             value={(result as GoalResult & { progress?: string }).progress ?? ''}
             placeholder="本轮实际进展；没有读数时保持事实描述"
             onChange={(event) => edit({ progress: event.target.value } as Partial<GoalResult>)}
           />
+          {(goal.deliverable?.trim() || result.deliveries.length > 0) && (
+            <>
+              <span>实际交付</span>
+              <input
+                aria-label={`${goal.title} 实际交付 1`}
+                value={result.deliveries[0]?.title ?? ''}
+                placeholder="填写实际交付结果或材料说明"
+                onChange={(event) =>
+                  edit({
+                    deliveries: [
+                      { ...(result.deliveries[0] ?? { location: '' }), title: event.target.value },
+                      ...result.deliveries.slice(1)
+                    ]
+                  })
+                }
+              />
+            </>
+          )}
         </label>
-        {(goal.deliverable?.trim() || result.deliveries.length > 0) && (
-          <label className="va-primary-delivery">
-            实际交付
-            <input
-              aria-label={`${goal.title} 实际交付 1`}
-              value={result.deliveries[0]?.title ?? ''}
-              placeholder="填写实际交付结果或材料说明"
-              onChange={(event) =>
-                edit({
-                  deliveries: [
-                    { ...(result.deliveries[0] ?? { location: '' }), title: event.target.value },
-                    ...result.deliveries.slice(1)
-                  ]
-                })
-              }
-            />
-          </label>
-        )}
+        <div className="va-story-cell va-material-cell">
+          <span className="va-label">材料</span>
+          {(result.materials ?? []).map((material) =>
+            safeMaterialHref(material.url) ? (
+              <a
+                key={`${material.label}:${material.url}`}
+                href={safeMaterialHref(material.url) ?? undefined}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {material.label || material.url}
+              </a>
+            ) : (
+              <span key={`${material.label}:${material.url}`} className="va-muted">
+                {material.label || material.url}（链接不可打开）
+              </span>
+            )
+          )}
+          {!result.materials?.length && !result.deliveries.length && (
+            <span className="va-muted">暂无材料链接</span>
+          )}
+        </div>
+      </div>
+      <div className="va-decision-row">
         <label>
-          <span className="sr-only">人的结论</span>
+          <span>人的结论</span>
           <select
             className={
               result.decision
@@ -227,22 +259,12 @@ export function AcceptanceGoalResult({
           </button>
         )}
       </div>
-      <div className="va-material-block">
-        <strong>材料</strong>
-        {(result.materials ?? []).map((material) => (
-          <a
-            key={`${material.label}:${material.url}`}
-            href={material.url}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {material.label || material.url}
-          </a>
-        ))}
-        {!result.materials?.length && !result.deliveries.length && (
-          <span className="va-muted">暂无材料链接</span>
-        )}
-      </div>
+      {goal.acceptance?.trim() && (
+        <div className="va-acceptance-criteria">
+          <span className="va-label">验收标准</span>
+          <p>{goal.acceptance}</p>
+        </div>
+      )}
       <label className={gap ? 'va-note va-gap' : 'va-note'}>
         {gap ? '未达项' : '验收依据'}
         <span className="va-readonly-note">{result.note || 'Unknown；请在进展中补充事实依据'}</span>
@@ -304,15 +326,18 @@ export function AcceptanceGoalResult({
                   const snapshot = snapshotByKey.get(key)
                   const task = snapshot?.kind === 'ready' ? snapshot : undefined
                   const unavailableReason = snapshot?.kind === 'unavailable' ? snapshot.error : null
-                  const canUseLegacyKey = canUseLegacyIssueKey(reference, relatedIssues)
-                  const mark =
-                    result.issueMarks?.[key] ??
-                    (canUseLegacyKey ? result.issueMarks?.[String(reference.number)] : undefined)
-                  const note =
-                    result.issueNotes?.[key] ??
-                    (canUseLegacyKey ? result.issueNotes?.[String(reference.number)] : undefined)
+                  const mark = issueMarkFor(result, reference, plan.tasks)
+                  const note = issueNoteFor(result, reference, plan.tasks)
+                  const normalizedState = task?.state.trim().toLowerCase()
+                  const issueTone = mark?.risk
+                    ? ' is-risk'
+                    : mark?.carry ||
+                        (task !== undefined &&
+                          !['closed', 'merged'].includes(normalizedState ?? ''))
+                      ? ' is-carry'
+                      : ''
                   return (
-                    <div className="va-issue-row" key={key}>
+                    <div className={`va-issue-row${issueTone}`} key={key}>
                       <div className="va-issue-head">
                         {task ? (
                           <button
@@ -333,7 +358,7 @@ export function AcceptanceGoalResult({
                           </strong>
                         )}
                         <span className="va-muted">
-                          {task?.state ?? 'Unknown'}
+                          {task ? readableTaskState(task.state) : 'Unknown'}
                           {task?.assignee ? ` · ${task.assignee}` : ''}
                         </span>
                       </div>

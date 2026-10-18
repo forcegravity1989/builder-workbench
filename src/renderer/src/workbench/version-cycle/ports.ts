@@ -92,4 +92,5 @@ export type VersionGoalCardProps = {
   expandedSignal?: number
   summary?: ReactNode
   extra?: ReactNode
+  hideReadOnlyStory?: boolean
 }

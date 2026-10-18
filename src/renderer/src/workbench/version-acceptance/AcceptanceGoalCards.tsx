@@ -15,20 +15,10 @@ import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../
 import { AcceptanceMetrics } from './AcceptanceMetrics'
 import { AcceptanceGoalResult } from './AcceptanceGoalResult'
 import { AcceptanceDirectives, AcceptanceRounds } from './AcceptanceRounds'
-import { recordHumanDecision } from './acceptance-decision'
+import { issueMarkFor } from './acceptance-issue-annotations'
+import { decisionFreshness, type DecisionFreshness } from './acceptance-decision'
 
 type AcceptanceOutcome = NonNullable<AcceptanceMaterial['results'][number]['decision']>['outcome']
-
-function issueKey(reference: PlanningMaterial['tasks'][number]): string {
-  return `${reference.provider}:${reference.repository}:${reference.number}`
-}
-
-function canUseLegacyIssueKey(
-  reference: PlanningMaterial['tasks'][number],
-  references: PlanningMaterial['tasks']
-): boolean {
-  return references.filter((item) => item.number === reference.number).length === 1
-}
 
 function AcceptanceDecisionSelect({
   document,
@@ -151,8 +141,25 @@ export function AcceptanceGoalCards({
   const [expandedSignal, setExpandedSignal] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const [snapshotError, setSnapshotError] = useState<string | null>(null)
+  const [freshnessByGoal, setFreshnessByGoal] = useState<Record<string, DecisionFreshness>>({})
+  useEffect(() => {
+    let active = true
+    void Promise.all(
+      plan.goals.map(
+        async (goal) => [goal.goalId, await decisionFreshness(document, plan, goal.goalId)] as const
+      )
+    ).then((entries) => {
+      if (active) {
+        setFreshnessByGoal(Object.fromEntries(entries))
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [document, plan])
   useEffect(() => {
     if (readOnly || !scope || !plan.tasks.length || snapshotMatchesPlan) {
+      setSnapshotError(null)
       return
     }
     if (snapshotRequested.current === referenceKey) {
@@ -160,23 +167,31 @@ export function AcceptanceGoalCards({
     }
     snapshotRequested.current = referenceKey
     let active = true
-    void taskPort.listVersion(scope, plan.tasks).then(
-      (reads) => {
-        if (active) {
+    void taskPort
+      .listVersion(scope, plan.tasks)
+      .then((reads) => {
+        if (!active) {
+          return
+        }
+        try {
           onSnapshot(reads)
           setSnapshotError(null)
+        } catch (reason) {
+          snapshotRequested.current = null
+          setSnapshotError(reason instanceof Error ? reason.message : String(reason))
         }
-      },
-      (reason) => {
+      })
+      .catch((reason) => {
         snapshotRequested.current = null
-        // Keep the absence of a snapshot visible as Unknown; it is not a zero.
         if (active) {
           setSnapshotError(reason instanceof Error ? reason.message : String(reason))
         }
-      }
-    )
+      })
     return () => {
       active = false
+      if (snapshotRequested.current === referenceKey) {
+        snapshotRequested.current = null
+      }
     }
   }, [onSnapshot, plan.tasks, readOnly, referenceKey, scope, snapshotMatchesPlan, taskPort])
   const refreshIssues = async () => {
@@ -234,25 +249,22 @@ export function AcceptanceGoalCards({
         const relatedIssues = plan.tasks.filter((task) => task.goalId === goal.goalId).length
         const marks = plan.tasks
           .filter((task) => task.goalId === goal.goalId)
-          .map(
-            (task) =>
-              result?.issueMarks?.[issueKey(task)] ??
-              (canUseLegacyIssueKey(task, plan.tasks)
-                ? result?.issueMarks?.[String(task.number)]
-                : undefined)
-          )
+          .map((task) => (result ? issueMarkFor(result, task, plan.tasks) : undefined))
           .filter((mark): mark is NonNullable<typeof mark> => Boolean(mark))
         const carryCount = marks.filter((mark) => mark.carry).length
         const riskCount = marks.filter((mark) => mark.risk).length
         const outcome = result?.decision?.outcome
+        const freshness = freshnessByGoal[goal.goalId]
         const outcomeLabel =
-          outcome === 'met'
-            ? '已达成'
-            : outcome === 'not-met'
-              ? '未达成'
-              : outcome === 'pending'
-                ? '待核'
-                : 'Unknown'
+          freshnessByGoal[goal.goalId] === 'changed'
+            ? '待核（证据已变化）'
+            : outcome === 'met'
+              ? '已达成'
+              : outcome === 'not-met'
+                ? '未达成'
+                : outcome === 'pending'
+                  ? '待核'
+                  : 'Unknown'
         const issueCountLabel = !snapshotMatchesPlan ? 'Unknown' : relatedIssues
         return (
           <VersionGoalCard
@@ -263,9 +275,15 @@ export function AcceptanceGoalCards({
             defaultOpen={false}
             expanded={expanded}
             expandedSignal={expandedSignal}
+            hideReadOnlyStory
             summary={
-              <span className={`va-goal-summary va-status-${outcome ?? 'unknown'}`}>
+              <span
+                className={`va-goal-summary va-status-${freshness === 'changed' ? 'pending' : (outcome ?? 'unknown')}`}
+              >
                 <span aria-label={`状态：${outcomeLabel}`}>●</span>
+                {freshness === 'changed' && (
+                  <span className="va-warning">证据已变化，请重新核对</span>
+                )}
                 <AcceptanceDecisionSelect
                   document={document}
                   plan={plan}

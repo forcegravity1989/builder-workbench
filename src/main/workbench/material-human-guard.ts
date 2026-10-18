@@ -76,12 +76,30 @@ function roundChanges(
   const incomingById = new Map((incoming ?? []).map((round) => [round.id, round]))
   for (const [roundId, currentRound] of currentById) {
     const incomingRound = incomingById.get(roundId)
-    if (!incomingRound || json(currentRound) !== json(incomingRound)) {
+    const closingOnly =
+      incomingRound &&
+      !currentRound.closedAt &&
+      incomingRound.closedAt &&
+      json(currentRound.snapshot) === json(incomingRound.snapshot) &&
+      currentRound.week === incomingRound.week &&
+      currentRound.kind === incomingRound.kind
+    if (!incomingRound || (json(currentRound) !== json(incomingRound) && !closingOnly)) {
       changes.push(`results[${goalId}].rounds[${roundId}]`)
     }
   }
+  const openRoundsClosed = (current ?? [])
+    .filter((round) => !round.closedAt)
+    .every((round) => incomingById.get(round.id)?.closedAt !== undefined)
   for (const [roundId, incomingRound] of incomingById) {
     if (currentById.has(roundId)) {
+      continue
+    }
+    if (
+      incomingRound.closedAt === undefined &&
+      (current ?? []).some((round) => !round.closedAt) &&
+      !openRoundsClosed
+    ) {
+      changes.push(`results[${goalId}].rounds[${roundId}]`)
       continue
     }
     // A model may open a new round only by snapshotting the already stored
@@ -91,8 +109,8 @@ function roundChanges(
           {
             goalId: currentResult.goalId,
             decision: currentResult.decision?.outcome ?? 'pending',
-            progress: currentResult.progress ?? '',
-            ...(currentResult.nextStep ? { next: currentResult.nextStep } : {})
+            progress: currentResult.progress?.trim() ? currentResult.progress : '',
+            ...(currentResult.nextStep?.trim() ? { next: currentResult.nextStep } : {})
           }
         ]
       : []

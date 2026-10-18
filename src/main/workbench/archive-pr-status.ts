@@ -196,7 +196,10 @@ export async function readArchivePrStatus(
       return { state: 'unknown', reason: 'provider 返回了意外的 PR 形状' }
     }
     const merged = typeof parsed.merged_at === 'string' && parsed.merged_at.length > 0
-    const state = merged ? 'merged' : parsed.state === 'closed' ? 'closed' : 'open'
+    if (!merged && parsed.state !== 'open' && parsed.state !== 'closed') {
+      return { state: 'unknown', reason: 'provider 返回了未识别的 PR 状态' }
+    }
+    const state = merged ? 'merged' : parsed.state
     return {
       state,
       ...(typeof parsed.html_url === 'string' && parsed.html_url ? { url: parsed.html_url } : {}),
