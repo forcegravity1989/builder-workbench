@@ -25,17 +25,29 @@ export function CycleArchive({
     if (status && 'url' in status && status.url) {
       return status.url
     }
-    if (!archivePr || archivePr.provider !== 'github') {
+    if (!archivePr || (archivePr.provider !== 'github' && archivePr.provider !== 'codehub')) {
       return null
     }
     // Recorded repository may carry its host ("github.com/o/r") or not ("o/r").
     const first = archivePr.repository.split('/')[0]
-    const host = first.includes('.') ? archivePr.repository : `github.com/${archivePr.repository}`
-    return `https://${host}/pull/${archivePr.number}`
+    if (archivePr.provider === 'github') {
+      const host = first.includes('.') ? archivePr.repository : `github.com/${archivePr.repository}`
+      return `https://${host}/pull/${archivePr.number}`
+    }
+    if (!first.includes('.') && !first.includes(':')) {
+      return null
+    }
+    const project = archivePr.repository
+      .split('/')
+      .slice(1)
+      .filter(Boolean)
+      .map((part) => encodeURIComponent(part))
+      .join('/')
+    return project ? `https://${first}/${project}/-/merge_requests/${archivePr.number}` : null
   })()
   const label = !archivePr
     ? reachedArchive
-      ? '已归档；PR 链接未记录。'
+      ? '已进入归档阶段；PR 链接未记录。'
       : '尚未进入归档；在会话中请模型核对材料并提交 PR。'
     : loading || !status
       ? '正在读取归档 PR 状态…'

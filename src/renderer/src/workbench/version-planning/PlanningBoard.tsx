@@ -15,7 +15,6 @@ import { derivePlanMinutes } from './plan-summary'
 import { usePlanMetrics } from './use-plan-metrics'
 import { usePlanVersionSelection } from './use-plan-version-selection'
 import { PlanningGoals } from './PlanningGoals'
-import { PlanningTasks } from './PlanningTasks'
 import { PlanningMinutes } from './PlanningMinutes'
 import { PlanningPersistenceNotice } from './PlanningPersistenceNotice'
 import { PlanningHeader, PlanningJourneyNav } from './PlanningSections'
@@ -50,12 +49,10 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
   const [minutesOpen, setMinutesOpen] = useState(false)
-  const [tasksOpen, setTasksOpen] = useState(false)
-  const [view, setView] = useState({ key: '', goalFilter: '', notice: '' })
+  const [view, setView] = useState({ key: '', notice: '' })
   const content = useRef<HTMLDivElement>(null)
   const preparation = useRef<HTMLElement>(null)
   const goals = useRef<HTMLElement>(null)
-  const tasksSection = useRef<HTMLElement>(null)
   const archiveSection = useRef<HTMLElement>(null)
   const metricScope = useMemo(
     () => (scope && worktreeId ? { repoId: scope.repoId, hostId: scope.hostId, worktreeId } : null),
@@ -64,28 +61,18 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const metrics = usePlanMetrics(metricScope, scope?.runtimeOwnerEnvironmentId, plan)
   const minutes = plan ? derivePlanMinutes(plan) : ''
   const selectionKey = JSON.stringify([scopeKey, plan?.version, plan?.cycleId])
-  const goalFilter = view.key === selectionKey ? view.goalFilter : ''
   const notice = view.key === selectionKey ? view.notice : ''
   const updateView = useCallback(
     (patch: Partial<typeof view>) => {
       setView((current) => ({
-        ...(current.key === selectionKey ? current : { goalFilter: '', notice: '' }),
+        ...(current.key === selectionKey ? current : { notice: '' }),
         ...patch,
         key: selectionKey
       }))
     },
     [selectionKey]
   )
-  const restoreGoalFilter = useCallback(
-    (value: string) => updateView({ goalFilter: value }),
-    [updateView]
-  )
-  const viewMemory = usePlanningViewMemory(
-    plan ? selectionKey : null,
-    goalFilter,
-    restoreGoalFilter,
-    content
-  )
+  const viewMemory = usePlanningViewMemory(plan ? selectionKey : null, content)
   const currentSelection = useRef(selectionKey)
   currentSelection.current = selectionKey
   useEffect(
@@ -138,7 +125,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       version: plan.version,
       cycleId: plan.cycleId,
       sessionId: session?.sessionId,
-      goalId: goalFilter || undefined,
+      goalId: task.reference.goalId,
       scrollTop: content.current?.scrollTop ?? 0,
       draftKey: planningDraftKey(scopeKey, plan.version)
     })
@@ -182,7 +169,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
           stage={plan?.workflow?.stage}
           preparationRef={preparation}
           goalsRef={goals}
-          tasksRef={tasksSection}
+          tasksRef={goals}
           archiveRef={archiveSection}
         />
         <div className="vp-content" ref={content} onScroll={viewMemory.onScroll}>
@@ -261,16 +248,8 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             sectionRef={goals}
             prepare={() => void act(prepareMetrics)}
             onMinutes={() => setMinutesOpen(true)}
-          />
-          <PlanningTasks
             scope={scope}
-            plan={plan}
             taskPort={taskPort}
-            sectionRef={tasksSection}
-            open={tasksOpen}
-            onOpen={setTasksOpen}
-            goalFilter={goalFilter}
-            onFilter={(value) => updateView({ goalFilter: value })}
             onTask={(task) => act(() => openTask(task))}
           />
           <CycleArchive

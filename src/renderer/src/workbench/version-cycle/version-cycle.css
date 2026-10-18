@@ -1,6 +1,5 @@
 .vc-goal {
-  display: flex;
-  gap: var(--space-3);
+  display: block;
   padding: var(--space-4);
   border-bottom: 1px solid var(--color-divider);
 }
@@ -22,11 +21,47 @@
   align-items: baseline;
   justify-content: space-between;
 }
-.vc-goal-heading h3 {
+.vc-goal-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.vc-goal-toggle strong {
   margin: 0;
   font-size: inherit;
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+.vc-goal-toggle svg {
+  flex: none;
+  color: var(--color-neutral-500);
+}
+.vc-goal.is-collapsed {
+  padding-block: var(--space-3);
+}
+.vc-goal-story {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.vc-story-cell {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+}
+.vc-story-cell p {
+  margin: var(--space-2) 0 0;
 }
 .vc-goal p {
   margin: var(--space-2) 0 0;
@@ -43,6 +78,9 @@
   margin-bottom: var(--space-2);
   color: var(--color-neutral-600);
 }
+.vc-goal-story > label {
+  min-width: 0;
+}
 .vc-goal input,
 .vc-goal textarea {
   width: 100%;
@@ -58,6 +96,11 @@
   margin-top: var(--space-3);
   padding-top: var(--space-3);
   border-top: 1px solid var(--color-divider);
+}
+@media (max-width: 760px) {
+  .vc-goal-story {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Only the material panel, its divider and the shell-mounted board slot/frame-row chrome belong to BW. */
@@ -95,6 +138,17 @@
   width: calc(40px + var(--window-controls-width, 0px));
   margin-left: auto;
   -webkit-app-region: no-drag;
+}
+.vc-session-toggle {
+  align-self: center;
+  margin-left: var(--space-2);
+  padding: 2px var(--space-2);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-size: 11px;
+  cursor: pointer;
 }
 .vc-board-content {
   display: flex;

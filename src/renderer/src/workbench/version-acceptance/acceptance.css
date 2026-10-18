@@ -94,37 +94,6 @@ shared visual language with the plan board. */
 .va-board details {
   scroll-margin-block-start: var(--space-3);
 }
-.va-summary {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-3);
-  font-size: 12px;
-  color: var(--color-neutral-600);
-}
-.va-summary strong {
-  font-family: var(--font-mono);
-  font-weight: 500;
-  color: var(--color-text);
-}
-.va-summary-issues {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: var(--color-neutral-600);
-  font: inherit;
-  cursor: pointer;
-}
-.va-summary-issues:hover {
-  color: var(--color-accent-700);
-}
-.va-pending-count {
-  margin-left: auto;
-  color: var(--color-neutral-500);
-}
 .va-section-heading {
   display: flex;
   align-items: center;
@@ -172,6 +141,157 @@ shared visual language with the plan board. */
   margin: 0;
   min-width: 0;
 }
+.va-story-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.va-story-row > label {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.va-story-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+}
+.va-story-cell p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.va-material-cell a,
+.va-material-cell > span {
+  overflow-wrap: anywhere;
+}
+.va-decision-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.va-decision-row label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.va-acceptance-criteria {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+.va-acceptance-criteria p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.va-round-block,
+.va-directives {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-divider);
+  font-size: 0.8rem;
+}
+.va-directive-row select {
+  min-width: 8rem;
+}
+.va-round-block details {
+  flex-basis: 100%;
+}
+.va-round-history {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-neutral-600);
+}
+.va-round-snapshot {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-1) 0 var(--space-1) var(--space-2);
+  color: var(--color-neutral-600);
+}
+.va-directives {
+  display: grid;
+  align-items: stretch;
+}
+.va-directives-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.va-directive-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: var(--space-1);
+  align-items: center;
+}
+.va-confirmed {
+  color: var(--color-success-deep, var(--color-neutral-600));
+  font-size: 0.75rem;
+}
+.va-muted {
+  color: var(--color-neutral-500);
+}
+.va-issue-blocks {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+.va-issue-group {
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-2);
+}
+.va-issue-group > summary {
+  color: var(--color-neutral-700);
+  font-size: 0.75rem;
+}
+.va-issue-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 1.5fr) auto;
+  gap: var(--space-1);
+  align-items: center;
+  padding-block: var(--space-1);
+  border-top: 1px solid var(--color-divider);
+}
+.va-issue-row.is-carry {
+  background: color-mix(in srgb, var(--color-warning-100, #fff7d6) 72%, transparent);
+}
+.va-issue-row.is-risk {
+  background: color-mix(in srgb, var(--color-danger-100, #ffe3e3) 72%, transparent);
+}
+.va-issue-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.va-issue-head strong,
+.va-issue-link {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.va-issue-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--color-accent-700);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.va-issue-marks {
+  display: flex;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
 .va-result > * {
   grid-column: 1 / -1;
 }
@@ -195,9 +315,6 @@ shared visual language with the plan board. */
 .va-result-row > label {
   margin-bottom: 0;
   white-space: nowrap;
-}
-.va-primary-delivery {
-  flex: 1;
 }
 .va-note {
   padding-top: var(--space-1);
@@ -230,6 +347,12 @@ shared visual language with the plan board. */
   border-radius: var(--radius-md);
   background: var(--color-card);
   margin-bottom: var(--space-3);
+}
+.va-goal-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3) 0;
 }
 .va-result > label,
 .va-decision {
@@ -298,20 +421,39 @@ shared visual language with the plan board. */
   margin: 0;
   color: var(--color-neutral-600);
 }
-.va-goal-issues {
+.va-goal-summary {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  color: var(--color-neutral-500);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+.va-decision-select {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  border: 0;
-  background: transparent;
-  padding: var(--space-1);
-  color: var(--color-neutral-500);
-  font: 11px var(--font-mono);
-  white-space: nowrap;
-  cursor: pointer;
 }
-.va-goal-issues:hover {
-  color: var(--color-accent-700);
+.va-decision-select select {
+  max-width: 7rem;
+  padding: 0 var(--space-1);
+  font-size: inherit;
+}
+.va-decision-select .va-error {
+  color: var(--color-danger-deep);
+}
+.va-status-met > span:first-child {
+  color: var(--color-success-deep, var(--color-neutral-700));
+}
+.va-status-not-met > span:first-child {
+  color: var(--color-danger-deep);
+}
+.va-status-pending > span:first-child {
+  color: var(--color-neutral-500);
+}
+.va-status-unknown > span:first-child {
+  color: var(--color-neutral-500);
 }
 .va-gap {
   color: var(--color-danger-deep);
@@ -417,10 +559,7 @@ shared visual language with the plan board. */
 }
 .va-pkg-list {
   display: grid;
-  grid-template-columns: minmax(4rem, auto) minmax(6rem, 1.1fr) auto minmax(
-      8rem,
-      1.6fr
-    );
+  grid-template-columns: minmax(4rem, auto) minmax(6rem, 1.1fr) auto minmax(8rem, 1.6fr);
   column-gap: var(--space-3);
   row-gap: var(--space-1);
   margin: var(--space-2) 0 0;
@@ -446,4 +585,13 @@ shared visual language with the plan board. */
   margin: var(--space-2) 0 0;
   color: var(--color-neutral-600);
   font-size: 0.8rem;
+}
+@media (max-width: 720px) {
+  .va-story-row,
+  .va-issue-row {
+    grid-template-columns: 1fr;
+  }
+  .va-issue-marks {
+    justify-content: flex-start;
+  }
 }
