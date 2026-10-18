@@ -196,8 +196,8 @@ export async function readVersionAndProgress(
         states.set(issueStateKey(repository, entry.number), { state: entry.state })
       }
     }
-    // CodeHub：身份匹配注册行、先 Issue 后 MR（复用任务屏语义，
-    // 逐条 viewTask 成本与错误语义见 wall-readings-codehub）。
+    // CodeHub：身份匹配注册行（解析同任务屏）、只读 Issue 不做 MR 兜底
+    // （防同号 MR 误计，语义与成本见 wall-readings-codehub）。
     const cycleScope: CycleScope = { ...scope, workflow: 'plan' }
     try {
       const codehubStates = await readCodeHubTaskStates(codehubTasks, project.rows, cycleScope)

@@ -118,7 +118,7 @@ function requireSourceContext(repo: Repo, provider: 'github' | 'codehub'): TaskS
 }
 
 /** CodeHub references carry no issue/MR kind; read as issue first, then MR. */
-export async function viewCodeHubTaskByIid(
+async function viewCodeHubTaskByIid(
   deps: Pick<TaskPortDeps, 'viewCodeHubTask'>,
   repo: Repo,
   iid: number
