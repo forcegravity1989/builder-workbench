@@ -252,10 +252,6 @@ function ReadyAcceptanceBoard({
                 <>
                   <div className="va-section-heading">
                     <h2>本版目标验收</h2>
-                    <button className="wb-btn wb-btn-secondary wb-btn-sm" onClick={openReport}>
-                      <ClipboardCheck size={14} aria-hidden="true" />
-                      预览纪要
-                    </button>
                   </div>
                   <AcceptanceGoalCards
                     plan={plan.document}
@@ -273,6 +269,7 @@ function ReadyAcceptanceBoard({
                       editReadings(document, goalId, ref, readings)
                     }
                     onGoalChange={(value, goalId) => editGoal(value, goalId)}
+                    onReport={openReport}
                   />
                 </>
               )}

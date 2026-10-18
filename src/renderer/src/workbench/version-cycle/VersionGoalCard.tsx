@@ -60,7 +60,7 @@ export function VersionGoalCard({
                 onChange={(event) => onChange?.({ ...goal, title: event.target.value })}
               />
             </label>
-            <label>
+            <label className="vc-goal-detail">
               <span>交付件</span>
               <textarea
                 rows={1}
@@ -70,7 +70,7 @@ export function VersionGoalCard({
                 onChange={(event) => onChange?.({ ...goal, deliverable: event.target.value })}
               />
             </label>
-            <label>
+            <label className="vc-goal-detail">
               <span>验收标准</span>
               <textarea
                 aria-label={`G${index + 1} 验收标准`}
@@ -80,24 +80,26 @@ export function VersionGoalCard({
                 onChange={(event) => onChange?.({ ...goal, acceptance: event.target.value })}
               />
             </label>
-            <label>
-              <span>计划完成</span>
-              <input
-                aria-label={`G${index + 1} 计划完成`}
-                placeholder="可选日期或版本"
-                value={goal.deadline ?? ''}
-                onChange={(event) => onChange?.({ ...goal, deadline: event.target.value })}
-              />
-            </label>
-            <label>
-              <span>负责人</span>
-              <input
-                aria-label={`G${index + 1} 负责人`}
-                placeholder="可选"
-                value={goal.owner ?? ''}
-                onChange={(event) => onChange?.({ ...goal, owner: event.target.value })}
-              />
-            </label>
+            <div className="vc-goal-meta">
+              <label>
+                <span>计划完成</span>
+                <input
+                  aria-label={`G${index + 1} 计划完成`}
+                  placeholder="可选日期或版本"
+                  value={goal.deadline ?? ''}
+                  onChange={(event) => onChange?.({ ...goal, deadline: event.target.value })}
+                />
+              </label>
+              <label>
+                <span>负责人</span>
+                <input
+                  aria-label={`G${index + 1} 负责人`}
+                  placeholder="可选"
+                  value={goal.owner ?? ''}
+                  onChange={(event) => onChange?.({ ...goal, owner: event.target.value })}
+                />
+              </label>
+            </div>
           </div>
         ) : open && !hideReadOnlyStory ? (
           <div className="vc-goal-story">
@@ -121,8 +123,8 @@ export function VersionGoalCard({
             )}
           </div>
         ) : null}
-        {open && extra}
         {open && metrics && <div className="vc-goal-metrics">{metrics}</div>}
+        {open && extra}
         {open && result && <div className="vc-goal-result">{result}</div>}
       </div>
     </article>

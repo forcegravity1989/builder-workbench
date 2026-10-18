@@ -441,10 +441,22 @@ input::placeholder {
   color: var(--color-neutral-500);
   font-family: var(--font-mono);
 }
-.section-heading .btn {
+.section-heading-actions {
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: inherit;
+  color: inherit;
+  font-family: inherit;
+}
+.section-heading .btn {
   font-size: 0.8em;
   height: var(--space-6);
+  padding: var(--space-1);
+}
+.section-heading .btn-icon {
+  width: var(--space-6);
   padding: var(--space-1);
 }
 .section-heading svg {
@@ -3383,12 +3395,33 @@ input::placeholder {
   margin-top: var(--space-1);
 }
 .issue-group-label {
-  display: block;
+  display: inline;
   font-size: 0.72em;
   font-weight: 600;
   color: var(--color-neutral-400);
   letter-spacing: 0.05em;
   padding: var(--space-1) 0 0;
+}
+.issue-group > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: pointer;
+  padding: var(--space-1) 0;
+  color: var(--color-neutral-500);
+  font-size: 0.78em;
+  list-style: none;
+}
+.issue-group > summary::-webkit-details-marker {
+  display: none;
+}
+.issue-group > summary svg {
+  width: var(--space-3);
+  height: var(--space-3);
+}
+.issue-group-count {
+  color: var(--color-neutral-400);
+  font-family: var(--font-mono);
 }
 .goal-issue-row {
   display: flex;

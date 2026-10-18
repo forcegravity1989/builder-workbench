@@ -7,7 +7,6 @@ import {
 } from '../github/gh-utils'
 import { githubHostExecOptions } from '../github/github-api-repository'
 import { noteRepositoryRateLimitSpend, repositoryRateLimitGuard } from '../github/rate-limit'
-import { githubRepoIdentityKey } from '../../shared/github/repository-identity-key'
 import { isCodeHubGitRemote, parseCodeHubRemote, type CodeHubRemote } from '../../shared/codehub'
 import type { CodeHubTaskDetail } from '../../shared/codehub-tasks'
 import { viewCodeHubTask } from '../codehub/mutations'
@@ -32,6 +31,40 @@ function normalizedCodeHubIdentity(value: string): string {
     .replace(/\.git$/i, '')
     .replace(/^\/+|\/+$/g, '')
     .toLowerCase()
+}
+
+function normalizedGithubIdentity(value: string): { host: string; slug: string } | null {
+  const normalized = value
+    .trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^git@github\.com:/i, 'github.com/')
+    .replace(/\.git$/i, '')
+    .replace(/^\/+|\/+$/g, '')
+    .toLowerCase()
+  const parts = normalized.split('/').filter(Boolean)
+  if (parts.length < 2) {
+    return null
+  }
+  const qualified = parts.length >= 3 && (parts[0] === 'github.com' || parts[0].includes('.'))
+  return {
+    host: qualified ? parts[0] : 'github.com',
+    slug: (qualified ? parts.slice(1) : parts).join('/')
+  }
+}
+
+/** @internal — accepts the host-qualified forms written by older materials. */
+export function githubRepositoryMatches(
+  repository: string,
+  ownerRepo: { owner: string; repo: string; host?: string }
+): boolean {
+  const recorded = normalizedGithubIdentity(repository)
+  if (!recorded) {
+    return false
+  }
+  return (
+    recorded.slug === `${ownerRepo.owner}/${ownerRepo.repo}`.toLowerCase() &&
+    recorded.host === (ownerRepo.host?.trim().toLowerCase() || 'github.com')
+  )
 }
 
 /** @internal — compares the recorded provider reference to the registered remote. */
@@ -171,11 +204,7 @@ export async function readArchivePrStatus(
   if (!ownerRepo) {
     return { state: 'unknown', reason: '未解析项目的 GitHub 来源，无法读取 PR 状态' }
   }
-  const identity = githubRepoIdentityKey(ownerRepo)
-  if (
-    params.pr.repository !== identity &&
-    params.pr.repository !== `${ownerRepo.owner}/${ownerRepo.repo}`
-  ) {
+  if (!githubRepositoryMatches(params.pr.repository, ownerRepo)) {
     return { state: 'unknown', reason: 'PR 引用与项目真实 GitHub 来源不一致' }
   }
   const ghOptions = {
@@ -199,7 +228,11 @@ export async function readArchivePrStatus(
     if (!merged && parsed.state !== 'open' && parsed.state !== 'closed') {
       return { state: 'unknown', reason: 'provider 返回了未识别的 PR 状态' }
     }
-    const state = merged ? 'merged' : parsed.state
+    const state: ArchivePrStatusResult['state'] = merged
+      ? 'merged'
+      : parsed.state === 'open'
+        ? 'open'
+        : 'closed'
     return {
       state,
       ...(typeof parsed.html_url === 'string' && parsed.html_url ? { url: parsed.html_url } : {}),

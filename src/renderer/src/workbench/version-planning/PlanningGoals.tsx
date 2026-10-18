@@ -1,5 +1,13 @@
 import { useEffect, useState, type Ref } from 'react'
-import { Plus, Presentation } from 'lucide-react'
+import {
+  ChevronsDownUp,
+  ChevronsUpDown,
+  MessageSquarePlus,
+  Plus,
+  Presentation,
+  RefreshCw,
+  Trash2
+} from 'lucide-react'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
 import { VersionGoalCard } from '../version-cycle/VersionGoalCard'
 import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
@@ -47,20 +55,33 @@ function PlanIssueGroups({
   goal,
   plan,
   reads,
-  onTask
+  onTask,
+  onPrepare
 }: {
   goal: VersionGoal
   plan: PlanningMaterial
   reads: CycleTaskRead[] | null
   onTask(task: CycleTaskSnapshot): Promise<void>
+  onPrepare(): Promise<void>
 }) {
   const related = plan.tasks.filter((task) => task.goalId === goal.goalId)
-  if (!related.length) {
-    return null
-  }
   const byReference = new Map((reads ?? []).map((item) => [issueKey(item.reference), item]))
   return (
-    <section className="vp-issue-blocks" aria-label={`${goal.title} 关联 Issue`}>
+    <details className="vp-issue-blocks" aria-label={`${goal.title} 关联 Issue`}>
+      <summary className="vp-issue-blocks-summary">关联 Issue · {related.length}</summary>
+      <div className="vp-issue-blocks-head">
+        <span className="vp-label">关联 Issue</span>
+        <button
+          type="button"
+          className="wb-btn wb-btn-ghost wb-btn-sm"
+          title="在当前计划会话中逐条拆解关联 Issue"
+          onClick={() => void onPrepare()}
+        >
+          <MessageSquarePlus size={14} aria-hidden="true" />
+          在会话中拆解
+        </button>
+      </div>
+      {!related.length && <p className="vp-muted">该目标暂无关联 Issue；在会话中拆解并关联。</p>}
       {ISSUE_GROUPS.map((group) => {
         const items = related.filter((reference) => {
           const read = byReference.get(issueKey(reference))
@@ -72,7 +93,7 @@ function PlanIssueGroups({
           return null
         }
         return (
-          <details className="vp-issue-group" key={group.key} open>
+          <details className="vp-issue-group" key={group.key}>
             <summary>
               {group.label} · {items.length}
             </summary>
@@ -102,7 +123,7 @@ function PlanIssueGroups({
           </details>
         )
       })}
-    </section>
+    </details>
   )
 }
 
@@ -116,7 +137,8 @@ export function PlanningGoals({
   onMinutes,
   scope,
   taskPort,
-  onTask
+  onTask,
+  onPrepareIssues
 }: {
   plan?: PlanningMaterial
   disabled: boolean
@@ -128,6 +150,7 @@ export function PlanningGoals({
   scope: CycleScope | null
   taskPort: TaskPort
   onTask(task: CycleTaskSnapshot): Promise<void>
+  onPrepareIssues(goal: VersionGoal): Promise<void>
 }) {
   const [reads, setReads] = useState<CycleTaskRead[] | null>(null)
   const [expanded, setExpanded] = useState(true)
@@ -192,46 +215,71 @@ export function PlanningGoals({
       })
     }
   }
+  const removeGoal = (goalId: string) => {
+    if (!plan) {
+      return
+    }
+    edit({
+      ...plan,
+      goals: plan.goals.filter((goal) => goal.goalId !== goalId),
+      tasks: plan.tasks.map((task) =>
+        task.goalId === goalId ? { ...task, goalId: undefined } : task
+      )
+    })
+  }
   return (
     <section ref={sectionRef}>
       <div className="vp-section-heading">
-        <h2>当前版本目标</h2>
-        <span className="vp-muted">Top 3</span>
-        <button
-          className="wb-btn wb-btn-ghost wb-btn-sm"
-          onClick={() => {
-            setExpanded(true)
-            setExpandedSignal((value) => value + 1)
-          }}
-        >
-          全部展开
-        </button>
-        <button
-          className="wb-btn wb-btn-ghost wb-btn-sm"
-          onClick={() => {
-            setExpanded(false)
-            setExpandedSignal((value) => value + 1)
-          }}
-        >
-          全部收起
-        </button>
-        <button
-          type="button"
-          className="wb-btn wb-btn-ghost wb-btn-sm"
-          disabled={disabled || !scope || !plan?.tasks.length || refreshing}
-          onClick={() => void refreshIssues()}
-        >
-          {refreshing ? '刷新中…' : '刷新 Issue'}
-        </button>
+        <h2>当前版本 Top 3 目标</h2>
         {readError && (
           <span className="vp-muted" role="status">
             Issue 状态未知：{readError}
           </span>
         )}
-        <button className="wb-btn wb-btn-sm" disabled={!plan} onClick={onMinutes}>
-          <Presentation size={14} />
-          预览纪要
-        </button>
+        <div className="vp-section-actions" aria-label="目标操作">
+          <button
+            type="button"
+            className="wb-btn wb-btn-ghost wb-btn-sm vp-icon-btn"
+            title="全部展开"
+            aria-label="全部展开"
+            onClick={() => {
+              setExpanded(true)
+              setExpandedSignal((value) => value + 1)
+            }}
+          >
+            <ChevronsDownUp size={15} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="wb-btn wb-btn-ghost wb-btn-sm vp-icon-btn"
+            title="全部收起"
+            aria-label="全部收起"
+            onClick={() => {
+              setExpanded(false)
+              setExpandedSignal((value) => value + 1)
+            }}
+          >
+            <ChevronsUpDown size={15} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="wb-btn wb-btn-ghost wb-btn-sm vp-icon-btn"
+            title={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
+            aria-label={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
+            disabled={disabled || !scope || !plan?.tasks.length || refreshing}
+            onClick={() => void refreshIssues()}
+          >
+            <RefreshCw
+              size={15}
+              aria-hidden="true"
+              className={refreshing ? 'is-spinning' : undefined}
+            />
+          </button>
+          <button className="wb-btn wb-btn-sm" disabled={!plan} onClick={onMinutes}>
+            <Presentation size={14} />
+            预览纪要
+          </button>
+        </div>
       </div>
       <fieldset disabled={disabled} className="vp-goals">
         {(plan?.goals.length ?? 0) === 0 && (
@@ -259,8 +307,34 @@ export function PlanningGoals({
                   {issueCount > 0 && <span>Issue {issueCountLabel}</span>}
                 </span>
               }
-              extra={<PlanIssueGroups goal={goal} plan={plan} reads={reads} onTask={onTask} />}
-              metrics={<PlanGoalMetrics goal={goal} metrics={metrics} prepare={prepare} />}
+              extra={
+                <PlanIssueGroups
+                  goal={goal}
+                  plan={plan}
+                  reads={reads}
+                  onTask={onTask}
+                  onPrepare={() => onPrepareIssues(goal)}
+                />
+              }
+              metrics={
+                <PlanGoalMetrics
+                  goal={goal}
+                  onChange={changeGoal}
+                  metrics={metrics}
+                  prepare={prepare}
+                />
+              }
+              actions={
+                <button
+                  type="button"
+                  className="wb-btn wb-btn-ghost wb-btn-sm vc-goal-delete vp-icon-btn"
+                  title="删除目标"
+                  aria-label={`删除目标 ${index + 1}`}
+                  onClick={() => removeGoal(goal.goalId)}
+                >
+                  <Trash2 size={14} aria-hidden="true" />
+                </button>
+              }
             />
           )
         })}

@@ -197,22 +197,52 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
   font-size: 14px;
   font-weight: 600;
 }
-.vp-section-heading > .wb-btn {
+.vp-section-actions {
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.vp-icon-btn {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 !important;
+}
+.vp-icon-btn .is-spinning {
+  animation: vp-spin 0.9s linear infinite;
+}
+@keyframes vp-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .vp-goal-summary {
   display: inline-flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: var(--space-2);
+  min-width: 0;
   color: var(--color-neutral-500);
   font-size: 0.72rem;
-  white-space: nowrap;
+  white-space: normal;
 }
 .vp-issue-blocks {
   display: grid;
   gap: var(--space-1);
   margin-top: var(--space-2);
+}
+.vp-issue-blocks-summary {
+  color: var(--color-neutral-700);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding-block: var(--space-1);
+}
+.vp-issue-blocks-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
 }
 .vp-issue-group {
   border: 1px solid var(--color-divider);

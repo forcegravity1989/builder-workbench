@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type Ref } from 'react'
+import { ChevronsDownUp, ChevronsUpDown, ClipboardCheck, RefreshCw } from 'lucide-react'
 import type {
   AcceptanceMaterial,
   MetricReadingEvidence,
@@ -15,8 +16,13 @@ import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../
 import { AcceptanceMetrics } from './AcceptanceMetrics'
 import { AcceptanceGoalResult } from './AcceptanceGoalResult'
 import { AcceptanceDirectives, AcceptanceRounds } from './AcceptanceRounds'
+import { HistoricalRoundCards } from './HistoricalRoundCards'
 import { issueMarkFor } from './acceptance-issue-annotations'
-import { decisionFreshness, type DecisionFreshness } from './acceptance-decision'
+import {
+  decisionFreshness,
+  recordHumanDecision,
+  type DecisionFreshness
+} from './acceptance-decision'
 
 type AcceptanceOutcome = NonNullable<AcceptanceMaterial['results'][number]['decision']>['outcome']
 
@@ -104,7 +110,8 @@ export function AcceptanceGoalCards({
   onSnapshot,
   onOpenTask,
   onReadings,
-  onGoalChange
+  onGoalChange,
+  onReport
 }: {
   plan: PlanningMaterial
   document: AcceptanceMaterial
@@ -119,6 +126,7 @@ export function AcceptanceGoalCards({
   onOpenTask(task: CycleTaskSnapshot): Promise<void>
   onReadings(goalId: string, ref: MetricRef, readings: MetricReadingEvidence[]): void
   onGoalChange(next: AcceptanceMaterial, goalId: string): void
+  onReport(): void
 }) {
   const referenceKey = JSON.stringify(plan.tasks)
   const snapshotRequested = useRef<string | null>(null)
@@ -142,6 +150,18 @@ export function AcceptanceGoalCards({
   const [refreshing, setRefreshing] = useState(false)
   const [snapshotError, setSnapshotError] = useState<string | null>(null)
   const [freshnessByGoal, setFreshnessByGoal] = useState<Record<string, DecisionFreshness>>({})
+  const roundEntries = document.results.flatMap((result) =>
+    (result.rounds ?? []).map((round) => ({ round }))
+  )
+  const currentRound = roundEntries.toReversed().find(({ round }) => !round.closedAt)
+  const defaultRoundId = currentRound?.round.id ?? roundEntries[0]?.round.id ?? ''
+  const [selectedRoundId, setSelectedRoundId] = useState(defaultRoundId)
+  useEffect(() => setSelectedRoundId(defaultRoundId), [defaultRoundId])
+  const historicalRoundSelected =
+    roundEntries.length > 0 && !currentRound
+      ? selectedRoundId !== ''
+      : Boolean(currentRound && selectedRoundId !== currentRound.round.id)
+  const viewReadOnly = readOnly || historicalRoundSelected
   useEffect(() => {
     let active = true
     void Promise.all(
@@ -158,7 +178,7 @@ export function AcceptanceGoalCards({
     }
   }, [document, plan])
   useEffect(() => {
-    if (readOnly || !scope || !plan.tasks.length || snapshotMatchesPlan) {
+    if (viewReadOnly || !scope || !plan.tasks.length || snapshotMatchesPlan) {
       setSnapshotError(null)
       return
     }
@@ -193,9 +213,9 @@ export function AcceptanceGoalCards({
         snapshotRequested.current = null
       }
     }
-  }, [onSnapshot, plan.tasks, readOnly, referenceKey, scope, snapshotMatchesPlan, taskPort])
+  }, [onSnapshot, plan.tasks, referenceKey, scope, snapshotMatchesPlan, taskPort, viewReadOnly])
   const refreshIssues = async () => {
-    if (!scope || !plan.tasks.length || refreshing) {
+    if (viewReadOnly || !scope || !plan.tasks.length || refreshing) {
       return
     }
     setRefreshing(true)
@@ -213,30 +233,51 @@ export function AcceptanceGoalCards({
     <section id="acceptance-results" ref={sectionRef} aria-label="展示验收">
       <div className="va-goal-toolbar">
         <button
-          className="wb-btn wb-btn-ghost wb-btn-sm"
+          type="button"
+          className="wb-btn wb-btn-ghost wb-btn-sm va-icon-btn"
+          title="全部展开"
+          aria-label="全部展开"
           onClick={() => {
             setExpanded(true)
             setExpandedSignal((value) => value + 1)
           }}
         >
-          全部展开
+          <ChevronsDownUp size={15} aria-hidden="true" />
         </button>
         <button
-          className="wb-btn wb-btn-ghost wb-btn-sm"
+          type="button"
+          className="wb-btn wb-btn-ghost wb-btn-sm va-icon-btn"
+          title="全部收起"
+          aria-label="全部收起"
           onClick={() => {
             setExpanded(false)
             setExpandedSignal((value) => value + 1)
           }}
         >
-          全部收起
+          <ChevronsUpDown size={15} aria-hidden="true" />
         </button>
         <button
           type="button"
-          className="wb-btn wb-btn-ghost wb-btn-sm"
-          disabled={readOnly || !scope || !plan.tasks.length || refreshing}
+          className="wb-btn wb-btn-ghost wb-btn-sm va-icon-btn"
+          title={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
+          aria-label={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
+          disabled={viewReadOnly || !scope || !plan.tasks.length || refreshing}
           onClick={() => void refreshIssues()}
         >
-          {refreshing ? '刷新中…' : '刷新 Issue'}
+          <RefreshCw
+            size={15}
+            aria-hidden="true"
+            className={refreshing ? 'is-spinning' : undefined}
+          />
+        </button>
+        <button
+          type="button"
+          className="wb-btn wb-btn-secondary wb-btn-sm va-icon-btn"
+          title="预览纪要"
+          aria-label="预览纪要"
+          onClick={onReport}
+        >
+          <ClipboardCheck size={15} aria-hidden="true" />
         </button>
         {snapshotError && (
           <span className="va-muted" role="status">
@@ -244,102 +285,111 @@ export function AcceptanceGoalCards({
           </span>
         )}
       </div>
-      {plan.goals.map((goal, index) => {
-        const result = document.results.find((item) => item.goalId === goal.goalId)
-        const relatedIssues = plan.tasks.filter((task) => task.goalId === goal.goalId).length
-        const marks = plan.tasks
-          .filter((task) => task.goalId === goal.goalId)
-          .map((task) => (result ? issueMarkFor(result, task, plan.tasks) : undefined))
-          .filter((mark): mark is NonNullable<typeof mark> => Boolean(mark))
-        const carryCount = marks.filter((mark) => mark.carry).length
-        const riskCount = marks.filter((mark) => mark.risk).length
-        const outcome = result?.decision?.outcome
-        const freshness = freshnessByGoal[goal.goalId]
-        const outcomeLabel =
-          freshnessByGoal[goal.goalId] === 'changed'
-            ? '待核（证据已变化）'
-            : outcome === 'met'
-              ? '已达成'
-              : outcome === 'not-met'
-                ? '未达成'
-                : outcome === 'pending'
-                  ? '待核'
-                  : 'Unknown'
-        const issueCountLabel = !snapshotMatchesPlan ? 'Unknown' : relatedIssues
-        return (
-          <VersionGoalCard
-            key={goal.goalId}
-            goal={goal}
-            index={index}
-            readOnly
-            defaultOpen={false}
-            expanded={expanded}
-            expandedSignal={expandedSignal}
-            hideReadOnlyStory
-            summary={
-              <span
-                className={`va-goal-summary va-status-${freshness === 'changed' ? 'pending' : (outcome ?? 'unknown')}`}
-              >
-                <span aria-label={`状态：${outcomeLabel}`}>●</span>
-                {freshness === 'changed' && (
-                  <span className="va-warning">证据已变化，请重新核对</span>
-                )}
-                <AcceptanceDecisionSelect
+      <AcceptanceRounds
+        document={document}
+        selectedId={selectedRoundId}
+        onSelect={setSelectedRoundId}
+      />
+      {historicalRoundSelected ? (
+        <HistoricalRoundCards plan={plan} document={document} roundId={selectedRoundId} />
+      ) : (
+        plan.goals.map((goal, index) => {
+          const result = document.results.find((item) => item.goalId === goal.goalId)
+          const relatedIssues = plan.tasks.filter((task) => task.goalId === goal.goalId).length
+          const marks = plan.tasks
+            .filter((task) => task.goalId === goal.goalId)
+            .map((task) => (result ? issueMarkFor(result, task, plan.tasks) : undefined))
+            .filter((mark): mark is NonNullable<typeof mark> => Boolean(mark))
+          const carryCount = marks.filter((mark) => mark.carry).length
+          const riskCount = marks.filter((mark) => mark.risk).length
+          const outcome = result?.decision?.outcome
+          const freshness = freshnessByGoal[goal.goalId]
+          const outcomeLabel =
+            freshnessByGoal[goal.goalId] === 'changed'
+              ? '待核（证据已变化）'
+              : outcome === 'met'
+                ? '已达成'
+                : outcome === 'not-met'
+                  ? '未达成'
+                  : outcome === 'pending'
+                    ? '待核'
+                    : 'Unknown'
+          const issueCountLabel = !snapshotMatchesPlan ? 'Unknown' : relatedIssues
+          return (
+            <VersionGoalCard
+              key={goal.goalId}
+              goal={goal}
+              index={index}
+              readOnly
+              defaultOpen={false}
+              expanded={expanded}
+              expandedSignal={expandedSignal}
+              hideReadOnlyStory
+              summary={
+                <span
+                  className={`va-goal-summary va-status-${freshness === 'changed' ? 'pending' : (outcome ?? 'unknown')}`}
+                >
+                  <span aria-label={`状态：${outcomeLabel}`}>●</span>
+                  {freshness === 'changed' && (
+                    <span className="va-warning">证据已变化，请重新核对</span>
+                  )}
+                  <AcceptanceDecisionSelect
+                    document={document}
+                    plan={plan}
+                    goalId={goal.goalId}
+                    disabled={viewReadOnly}
+                    onChange={(next) => onGoalChange(next, goal.goalId)}
+                  />
+                  <span>负责人 {goal.owner || '未指派'}</span>
+                  {relatedIssues > 0 && <span>Issue {issueCountLabel}</span>}
+                  {carryCount > 0 && <span>遗留 {carryCount}</span>}
+                  {riskCount > 0 && <span>风险 {riskCount}</span>}
+                </span>
+              }
+              result={
+                <AcceptanceGoalResult
+                  decisionSource="验收界面人工确认"
                   document={document}
                   plan={plan}
-                  goalId={goal.goalId}
-                  disabled={readOnly}
-                  onChange={(next) => onGoalChange(next, goal.goalId)}
-                />
-                <span>负责人 {goal.owner || '未指派'}</span>
-                {relatedIssues > 0 && <span>Issue {issueCountLabel}</span>}
-                {carryCount > 0 && <span>遗留 {carryCount}</span>}
-                {riskCount > 0 && <span>风险 {riskCount}</span>}
-              </span>
-            }
-            metrics={
-              goal.metricTargets.length > 0 ||
-              document.results.some(
-                (item) => item.goalId === goal.goalId && item.readings.length > 0
-              ) ? (
-                <AcceptanceMetrics
                   goal={goal}
-                  materialKey={JSON.stringify([
-                    document.version,
-                    document.cycleId,
-                    document.planRef,
-                    document.candidateRef
-                  ])}
-                  readings={
-                    document.results.find((item) => item.goalId === goal.goalId)?.readings ?? []
+                  disabled={viewReadOnly}
+                  onChange={(value) => onGoalChange(value, goal.goalId)}
+                  onOpenTask={onOpenTask}
+                  metrics={
+                    goal.metricTargets.length > 0 ||
+                    document.results.some(
+                      (item) => item.goalId === goal.goalId && item.readings.length > 0
+                    ) ? (
+                      <AcceptanceMetrics
+                        goal={goal}
+                        materialKey={JSON.stringify([
+                          document.version,
+                          document.cycleId,
+                          document.planRef,
+                          document.candidateRef
+                        ])}
+                        readings={
+                          document.results.find((item) => item.goalId === goal.goalId)?.readings ??
+                          []
+                        }
+                        port={metrics}
+                        scope={metricScope}
+                        window={metricWindow}
+                        disabled={viewReadOnly}
+                        onReadings={(ref, readings) => onReadings(goal.goalId, ref, readings)}
+                      />
+                    ) : undefined
                   }
-                  port={metrics}
-                  scope={metricScope}
-                  window={metricWindow}
-                  disabled={readOnly}
-                  onReadings={(ref, readings) => onReadings(goal.goalId, ref, readings)}
                 />
-              ) : undefined
-            }
-            result={
-              <AcceptanceGoalResult
-                decisionSource="验收界面人工确认"
-                document={document}
-                plan={plan}
-                goal={goal}
-                disabled={readOnly}
-                onChange={(value) => onGoalChange(value, goal.goalId)}
-                onOpenTask={onOpenTask}
-              />
-            }
-          />
-        )
-      })}
-      <AcceptanceRounds document={document} />
+              }
+            />
+          )
+        })
+      )}
       <AcceptanceDirectives
         document={document}
         plan={plan}
-        disabled={readOnly}
+        disabled={viewReadOnly}
         onChange={(next, goalId) => onGoalChange(next, goalId)}
       />
     </section>

@@ -27,7 +27,7 @@ import { acceptanceMetric } from './metric-evidence.jsx'
 import { PackagePanel } from './package-panel.jsx'
 
 // 周次演示数据¹：跨周版本每周五做一次验收——「进展刷新」周不出包、只刷新进展，
-// 最终周做展示验收。界面按周呈现；「轮次」只作为材料协议层的记录维度，不上界面。
+// 最终周做展示验收。界面按周呈现，材料轮次在这里以“当前/历史 + 周次”选择器读回。
 // 历史周只读（正式界面从材料轮次记录读回），供回看既往进展与纪要。
 const WEEKS = {
   'v0.5': [
@@ -189,8 +189,50 @@ function AcceptanceContent({
     <>
       {!disabled && (
         <div className="board-toolbar">
-          <label className="week-picker" title="跨周版本按周查看；历史周只读（演示数据¹）">
-            <History />
+          <button
+            className="btn btn-ghost btn-icon"
+            title="全部展开"
+            aria-label="全部展开"
+            disabled={readOnly}
+            onClick={() => setAllCards(true)}
+          >
+            <ChevronDown />
+          </button>
+          <button
+            className="btn btn-ghost btn-icon"
+            title="全部收起"
+            aria-label="全部收起"
+            onClick={() => setAllCards(false)}
+          >
+            <ChevronRight />
+          </button>
+          <button
+            className="btn btn-ghost btn-icon"
+            title="刷新 Issue"
+            aria-label="刷新 Issue"
+            disabled={readOnly}
+            onClick={() => setNotice('原型未连接远端；保留上次读取的 Issue 状态。')}
+          >
+            <RefreshCw />
+          </button>
+          <button
+            className="btn btn-secondary btn-icon"
+            title="预览纪要"
+            aria-label="预览纪要"
+            disabled={readOnly}
+            onClick={review}
+          >
+            <ClipboardCheck />
+          </button>
+        </div>
+      )}
+      {!disabled && (
+        <section className="va-round-block" aria-label="验收轮次">
+          <div className="va-round-picker">
+            <strong>
+              <History />
+              验收轮次
+            </strong>
             <select
               className="input"
               aria-label="验收周次"
@@ -199,19 +241,13 @@ function AcceptanceContent({
             >
               {weeks.map((w) => (
                 <option key={w.id} value={w.id}>
-                  {w.label}
+                  {w.current ? '当前' : '历史'} · {w.short}
                 </option>
               ))}
             </select>
-          </label>
-          <span className="toolbar-spacer" />
-          <button className="btn btn-ghost" disabled={readOnly} onClick={() => setAllCards(true)}>
-            全部展开
-          </button>
-          <button className="btn btn-ghost" onClick={() => setAllCards(false)}>
-            全部收起
-          </button>
-        </div>
+            <span className="va-muted">{readOnly ? '历史轮只读' : '当前轮可编辑'}</span>
+          </div>
+        </section>
       )}
       {!disabled && !week.current && (
         <p className="week-readonly" role="status">
@@ -247,21 +283,6 @@ function AcceptanceContent({
       <div className="section-heading acceptance-goals-heading">
         <h2>本版目标验收</h2>
         <span className="goals-heading-week">{week.short}</span>
-        <span className="heading-actions">
-          <button
-            className="btn btn-ghost"
-            title="重新读取 Issue 状态"
-            disabled={disabled}
-            onClick={() => setNotice('原型未连接远端；保留上次读取的 Issue 状态。')}
-          >
-            <RefreshCw />
-            刷新 Issue
-          </button>
-          <button className="btn btn-secondary" onClick={review} disabled={disabled}>
-            <ClipboardCheck />
-            预览纪要
-          </button>
-        </span>
       </div>
       <section className="acceptance-sheet goal-cards" key={`${version}-${week.id}`}>
         {disabled && (
@@ -415,10 +436,14 @@ function AcceptanceContent({
                       <p className="goal-issues-empty">该目标暂无关联 Issue。</p>
                     ) : (
                       groups.map(([cls, rows]) => (
-                        <div className="issue-group" key={cls}>
-                          <span className="issue-group-label">{CLASS_LABELS[cls]}</span>
+                        <details className="issue-group" key={cls}>
+                          <summary>
+                            <ChevronRight />
+                            <span className="issue-group-label">{CLASS_LABELS[cls]}</span>
+                            <span className="issue-group-count">{rows.length}</span>
+                          </summary>
                           {rows.map(issueRow)}
-                        </div>
+                        </details>
                       ))
                     )}
                   </details>

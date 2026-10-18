@@ -167,6 +167,18 @@ it('names every human-only field the incoming document would add, change or drop
       results: [{ ...withOpenRound.results[0], rounds: [round, nextRound] }]
     })
   ).toContain('results[g1].rounds[round-2]')
+  const secondNewRound = { ...nextRound, id: 'round-3', week: '2026-W41' }
+  expect(
+    humanFieldChanges(withOpenRound, {
+      ...withOpenRound,
+      results: [
+        {
+          ...withOpenRound.results[0],
+          rounds: [{ ...round, closedAt: '2026-10-02T00:00:00Z' }, nextRound, secondNewRound]
+        }
+      ]
+    })
+  ).toContain('results[g1].rounds')
 })
 
 it('refuses model-channel saves that write a decision, including creates', async () => {

@@ -1,4 +1,5 @@
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import type { AppState } from '@/store/types'
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import type { CodeHubTaskDetail, CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'

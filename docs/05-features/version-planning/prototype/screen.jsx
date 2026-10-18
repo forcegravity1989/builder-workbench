@@ -17,7 +17,8 @@ import {
   GitPullRequest,
   ListTodo,
   Presentation,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react'
 import { metrics } from './snapshot.js'
 
@@ -39,6 +40,7 @@ function PlanningContent({
   progress,
   promptConversation,
   refreshMetrics,
+  removeGoal,
   review,
   risk,
   sessionAvailable,
@@ -103,26 +105,39 @@ function PlanningContent({
         </div>
       </section>
       <div className="section-heading">
-        <h2>当前版本目标</h2>
-        <span>Top 3</span>
-        <button className="btn btn-ghost" disabled={disabled} onClick={() => setAll(true)}>
-          全部展开
-        </button>
-        <button className="btn btn-ghost" disabled={disabled} onClick={() => setAll(false)}>
-          全部收起
-        </button>
-        <button
-          className="btn btn-secondary planning-configure-metrics"
-          title="新建会话，配置指标"
-          onClick={() => metricPrep(null)}
-        >
-          <ModelSessionIcon />
-          配置指标
-        </button>
-        <button className="btn btn-secondary" onClick={review} disabled={disabled}>
-          <Presentation />
-          预览纪要
-        </button>
+        <h2>当前版本 Top 3 目标</h2>
+        <span className="section-heading-actions">
+          <button
+            className="btn btn-ghost btn-icon"
+            title="全部展开"
+            aria-label="全部展开"
+            disabled={disabled}
+            onClick={() => setAll(true)}
+          >
+            <ChevronDown />
+          </button>
+          <button
+            className="btn btn-ghost btn-icon"
+            title="全部收起"
+            aria-label="全部收起"
+            disabled={disabled}
+            onClick={() => setAll(false)}
+          >
+            <ChevronRight />
+          </button>
+          <button
+            className="btn btn-secondary planning-configure-metrics"
+            title="新建会话，配置指标"
+            onClick={() => metricPrep(null)}
+          >
+            <ModelSessionIcon />
+            配置指标
+          </button>
+          <button className="btn btn-secondary" onClick={review} disabled={disabled}>
+            <Presentation />
+            预览纪要
+          </button>
+        </span>
       </div>
       <section className="goal-cards">
         {disabled && (
@@ -157,6 +172,15 @@ function PlanningContent({
                     关联 Issue · {related.length}
                   </span>
                 </span>
+                <button
+                  className="btn btn-ghost btn-icon goal-delete"
+                  title="删除目标"
+                  aria-label={`删除目标 ${g.label}`}
+                  disabled={disabled}
+                  onClick={() => removeGoal(g.id)}
+                >
+                  <X />
+                </button>
               </div>
               {open && (
                 <div className="goal-card-body">
