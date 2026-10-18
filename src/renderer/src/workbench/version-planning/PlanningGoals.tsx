@@ -16,7 +16,7 @@ function issueClass(labels: string[] | undefined): (typeof ISSUE_GROUPS)[number]
   if (labels?.some((label) => /^(bug|缺陷)/i.test(label))) {
     return 'bug'
   }
-  if (labels?.some((label) => /^(feature|功能)/i.test(label))) {
+  if (labels?.length) {
     return 'feature'
   }
   return 'unclassified'
@@ -114,6 +114,7 @@ export function PlanningGoals({
 }) {
   const [reads, setReads] = useState<CycleTaskRead[] | null>(null)
   const [expanded, setExpanded] = useState(true)
+  const [expandedSignal, setExpandedSignal] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const [readError, setReadError] = useState<string | null>(null)
   const referenceKey = JSON.stringify(plan?.tasks ?? [])
@@ -178,10 +179,22 @@ export function PlanningGoals({
       <div className="vp-section-heading">
         <h2>当前版本目标</h2>
         <span className="vp-muted">Top 3</span>
-        <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={() => setExpanded(true)}>
+        <button
+          className="wb-btn wb-btn-ghost wb-btn-sm"
+          onClick={() => {
+            setExpanded(true)
+            setExpandedSignal((value) => value + 1)
+          }}
+        >
           全部展开
         </button>
-        <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={() => setExpanded(false)}>
+        <button
+          className="wb-btn wb-btn-ghost wb-btn-sm"
+          onClick={() => {
+            setExpanded(false)
+            setExpandedSignal((value) => value + 1)
+          }}
+        >
           全部收起
         </button>
         <button
@@ -220,6 +233,7 @@ export function PlanningGoals({
               index={index}
               onChange={changeGoal}
               expanded={expanded}
+              expandedSignal={expandedSignal}
               summary={
                 <span className="vp-goal-summary">
                   {goal.deadline && <span>计划 {goal.deadline}</span>}

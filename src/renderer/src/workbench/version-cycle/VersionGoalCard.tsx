@@ -13,18 +13,23 @@ export function VersionGoalCard({
   actions,
   defaultOpen = !readOnly,
   expanded,
+  expandedSignal,
   summary,
   extra
 }: VersionGoalCardProps) {
   const editable = !readOnly && Boolean(onChange)
   const [open, setOpen] = useState(expanded ?? defaultOpen)
   const previousExpanded = useRef(expanded)
+  const previousExpandedSignal = useRef(expandedSignal)
   useEffect(() => {
-    if (expanded !== undefined && expanded !== previousExpanded.current) {
+    const signalChanged = expandedSignal !== previousExpandedSignal.current
+    const valueChanged = expanded !== previousExpanded.current
+    if (expanded !== undefined && (signalChanged || valueChanged)) {
       setOpen(expanded)
     }
     previousExpanded.current = expanded
-  }, [expanded])
+    previousExpandedSignal.current = expandedSignal
+  }, [expanded, expandedSignal])
   return (
     <article className={`vc-goal${open ? ' is-open' : ' is-collapsed'}`} data-goal-id={goal.goalId}>
       <div className="vc-goal-content">

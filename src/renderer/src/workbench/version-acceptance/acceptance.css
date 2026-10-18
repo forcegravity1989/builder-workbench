@@ -404,6 +404,19 @@ shared visual language with the plan board. */
   font-size: 0.72rem;
   white-space: nowrap;
 }
+.va-decision-select {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.va-decision-select select {
+  max-width: 7rem;
+  padding: 0 var(--space-1);
+  font-size: inherit;
+}
+.va-decision-select .va-error {
+  color: var(--color-danger-deep);
+}
 .va-status-met > span:first-child {
   color: var(--color-success-deep, var(--color-neutral-700));
 }

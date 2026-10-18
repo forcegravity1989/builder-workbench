@@ -15,9 +15,85 @@ import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../
 import { AcceptanceMetrics } from './AcceptanceMetrics'
 import { AcceptanceGoalResult } from './AcceptanceGoalResult'
 import { AcceptanceDirectives, AcceptanceRounds } from './AcceptanceRounds'
+import { recordHumanDecision } from './acceptance-decision'
+
+type AcceptanceOutcome = NonNullable<AcceptanceMaterial['results'][number]['decision']>['outcome']
 
 function issueKey(reference: PlanningMaterial['tasks'][number]): string {
   return `${reference.provider}:${reference.repository}:${reference.number}`
+}
+
+function canUseLegacyIssueKey(
+  reference: PlanningMaterial['tasks'][number],
+  references: PlanningMaterial['tasks']
+): boolean {
+  return references.filter((item) => item.number === reference.number).length === 1
+}
+
+function AcceptanceDecisionSelect({
+  document,
+  plan,
+  goalId,
+  disabled,
+  onChange
+}: {
+  document: AcceptanceMaterial
+  plan: PlanningMaterial
+  goalId: string
+  disabled: boolean
+  onChange(document: AcceptanceMaterial): void
+}) {
+  const result = document.results.find((item) => item.goalId === goalId)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const latest = useRef(document)
+  latest.current = document
+  const decide = async (outcome: AcceptanceOutcome) => {
+    setBusy(true)
+    try {
+      const next = await recordHumanDecision({
+        document,
+        plan,
+        goalId,
+        outcome,
+        source: '验收界面人工确认',
+        reason: result?.note ?? '',
+        recordedAt: new Date().toISOString()
+      })
+      if (latest.current !== document) {
+        throw new Error('记录结论期间材料已变化，请核对后重新确认。')
+      }
+      onChange(next)
+      setError(null)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <label className="va-decision-select">
+      <span>人的结论</span>
+      <select
+        aria-label="人的结论"
+        value={result?.decision?.outcome ?? ''}
+        disabled={disabled || busy}
+        onChange={(event) => void decide(event.target.value as AcceptanceOutcome)}
+      >
+        <option value="" disabled>
+          待核对
+        </option>
+        <option value="pending">待核</option>
+        <option value="met">达成</option>
+        <option value="not-met">未达</option>
+      </select>
+      {error && (
+        <span className="va-error" role="alert" title={error}>
+          结论未保存
+        </span>
+      )}
+    </label>
+  )
 }
 
 /**
@@ -72,6 +148,7 @@ export function AcceptanceGoalCards({
     return !result?.decision && !result?.progress && !result?.deliveries.length
   })
   const [expanded, setExpanded] = useState(initialExpanded)
+  const [expandedSignal, setExpandedSignal] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const [snapshotError, setSnapshotError] = useState<string | null>(null)
   useEffect(() => {
@@ -120,10 +197,22 @@ export function AcceptanceGoalCards({
   return (
     <section id="acceptance-results" ref={sectionRef} aria-label="展示验收">
       <div className="va-goal-toolbar">
-        <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={() => setExpanded(true)}>
+        <button
+          className="wb-btn wb-btn-ghost wb-btn-sm"
+          onClick={() => {
+            setExpanded(true)
+            setExpandedSignal((value) => value + 1)
+          }}
+        >
           全部展开
         </button>
-        <button className="wb-btn wb-btn-ghost wb-btn-sm" onClick={() => setExpanded(false)}>
+        <button
+          className="wb-btn wb-btn-ghost wb-btn-sm"
+          onClick={() => {
+            setExpanded(false)
+            setExpandedSignal((value) => value + 1)
+          }}
+        >
           全部收起
         </button>
         <button
@@ -147,7 +236,10 @@ export function AcceptanceGoalCards({
           .filter((task) => task.goalId === goal.goalId)
           .map(
             (task) =>
-              result?.issueMarks?.[issueKey(task)] ?? result?.issueMarks?.[String(task.number)]
+              result?.issueMarks?.[issueKey(task)] ??
+              (canUseLegacyIssueKey(task, plan.tasks)
+                ? result?.issueMarks?.[String(task.number)]
+                : undefined)
           )
           .filter((mark): mark is NonNullable<typeof mark> => Boolean(mark))
         const carryCount = marks.filter((mark) => mark.carry).length
@@ -170,10 +262,17 @@ export function AcceptanceGoalCards({
             readOnly
             defaultOpen={false}
             expanded={expanded}
+            expandedSignal={expandedSignal}
             summary={
               <span className={`va-goal-summary va-status-${outcome ?? 'unknown'}`}>
-                <span aria-label={`状态：${outcomeLabel}`}>● {outcomeLabel}</span>
-                <span>人的结论：{outcomeLabel}</span>
+                <span aria-label={`状态：${outcomeLabel}`}>●</span>
+                <AcceptanceDecisionSelect
+                  document={document}
+                  plan={plan}
+                  goalId={goal.goalId}
+                  disabled={readOnly}
+                  onChange={(next) => onGoalChange(next, goal.goalId)}
+                />
                 <span>负责人 {goal.owner || '未指派'}</span>
                 {relatedIssues > 0 && <span>Issue {issueCountLabel}</span>}
                 {carryCount > 0 && <span>遗留 {carryCount}</span>}

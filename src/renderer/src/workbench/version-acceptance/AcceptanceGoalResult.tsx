@@ -24,7 +24,7 @@ function issueClass(labels: string[] | undefined): (typeof ISSUE_GROUPS)[number]
   if (labels?.some((label) => /^(bug|缺陷)/i.test(label))) {
     return 'bug'
   }
-  if (labels?.some((label) => /^(feature|功能)/i.test(label))) {
+  if (labels?.length) {
     return 'feature'
   }
   return 'unclassified'
@@ -32,6 +32,13 @@ function issueClass(labels: string[] | undefined): (typeof ISSUE_GROUPS)[number]
 
 function issueKey(reference: PlanningMaterial['tasks'][number]): string {
   return `${reference.provider}:${reference.repository}:${reference.number}`
+}
+
+function canUseLegacyIssueKey(
+  reference: PlanningMaterial['tasks'][number],
+  relatedIssues: PlanningMaterial['tasks']
+): boolean {
+  return relatedIssues.filter((item) => item.number === reference.number).length === 1
 }
 
 export function AcceptanceGoalResult({
@@ -106,8 +113,14 @@ export function AcceptanceGoalResult({
         { ...result, ...patch }
       ]
     })
-  const editIssueNote = (reference: PlanningMaterial['tasks'][number], note: string) =>
-    edit({ issueNotes: { ...result.issueNotes, [issueKey(reference)]: note } })
+  const editIssueNote = (reference: PlanningMaterial['tasks'][number], note: string) => {
+    const key = issueKey(reference)
+    const nextNotes = { ...result.issueNotes, [key]: note }
+    if (canUseLegacyIssueKey(reference, relatedIssues)) {
+      delete nextNotes[String(reference.number)]
+    }
+    edit({ issueNotes: nextNotes })
+  }
   const editIssueMark = (
     reference: PlanningMaterial['tasks'][number],
     mark: 'carry' | 'risk',
@@ -122,7 +135,7 @@ export function AcceptanceGoalResult({
       }
     }
     const legacyKey = String(reference.number)
-    if (legacyKey !== key) {
+    if (legacyKey !== key && canUseLegacyIssueKey(reference, relatedIssues)) {
       delete nextMarks[legacyKey]
     }
     edit({ issueMarks: nextMarks })
@@ -291,10 +304,13 @@ export function AcceptanceGoalResult({
                   const snapshot = snapshotByKey.get(key)
                   const task = snapshot?.kind === 'ready' ? snapshot : undefined
                   const unavailableReason = snapshot?.kind === 'unavailable' ? snapshot.error : null
+                  const canUseLegacyKey = canUseLegacyIssueKey(reference, relatedIssues)
                   const mark =
-                    result.issueMarks?.[key] ?? result.issueMarks?.[String(reference.number)]
+                    result.issueMarks?.[key] ??
+                    (canUseLegacyKey ? result.issueMarks?.[String(reference.number)] : undefined)
                   const note =
-                    result.issueNotes?.[key] ?? result.issueNotes?.[String(reference.number)]
+                    result.issueNotes?.[key] ??
+                    (canUseLegacyKey ? result.issueNotes?.[String(reference.number)] : undefined)
                   return (
                     <div className="va-issue-row" key={key}>
                       <div className="va-issue-head">

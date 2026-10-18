@@ -88,6 +88,8 @@ export type VersionGoalCardProps = {
   actions?: ReactNode
   defaultOpen?: boolean
   expanded?: boolean
+  /** Increment this when a toolbar command should reapply the current value. */
+  expandedSignal?: number
   summary?: ReactNode
   extra?: ReactNode
 }

@@ -61,7 +61,7 @@ const titleForTask = (t) => t.title.replace(/^【[^】]*】/, '').trim()
 const issueClass = (t) =>
   t.labels?.some((l) => /^(bug|缺陷)/i.test(l.name))
     ? 'bug'
-    : t.labels?.some((l) => /^(feature|功能)/i.test(l.name))
+    : t.labels?.length
       ? 'feature'
       : 'unclassified'
 const CLASS_LABELS = { bug: 'Bug 类', feature: 'Feature 类', unclassified: '未分类' }

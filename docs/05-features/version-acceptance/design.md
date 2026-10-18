@@ -18,13 +18,14 @@ Acceptance 材料继续使用 `schema_version=3`、`identity`、`planRef`、`can
 - `results[].rounds?: Array<{ id: string; week: string; kind: 'progress' | 'final'; closedAt?: string; snapshot: { goals: Array<{ goalId: string; decision: string; progress: string; next?: string }>; issueMarks: Record<string, { carry?: boolean; risk?: boolean }>; issueNotes: Record<string, string> } }>` 固化每轮人工输入。
 - `results[].meetingDirectives?: Array<{ id: string; text: string; tag: 'resolved-this-acceptance' | 'next-week-plan' | 'record-remaining'; goalId?: string; status: 'pending' | 'confirmed'; source: 'transcript-summary' | 'manual'; sourceRef?: string; confirmedAt?: string }>` 保存会后指导与遗留。
 - `results[].issueNotes?: Record<string, string>` 和 `results[].issueMarks?: Record<string, { carry?: boolean; risk?: boolean }>` 保存当前轮 Issue 级备注与标记。
-- `taskSnapshot[].labels?: string[]` 保存 provider 返回的 Bug/Feature 分类标签；缺字段、空值或无法判断都显示未分类，不猜测。
+- `taskSnapshot[].labels?: string[]` 保存 provider 返回的分类标签；有 `Bug/缺陷` 标签归 Bug，其余有标签默认归 Feature，无标签才归未分类。
 
 计划材料保留现有目标、任务、指标和 `workflow`；任务引用的 provider/repository/number/goalId 仍是 Issue 正本。所有新增字段使用 Zod `optional()`，嵌套字段也只在出现时校验。旧材料缺字段时按一个当前轮、无指导、无 Issue 备注/标记、无目标级新增材料读回。读回不触发迁移或隐式保存，保存只在用户或获授权的模型流程明确写入时发生。
+验收树从项目主干基线创建；运行时不硬编码 bw-orca 或 main。每次新运行刷新远端并检查树的干净状态、前次归档与基线差异（现状注：脏树/未归档提交检查为提示级，由会话承担，无代码强制校验落点）。已有脏改动/未归档提交不 reset、不搬树、不强推，恢复该次工作或呈现冲突。先回显固定工作区与现有材料；进屏不做任何 Git 动作，页头「更新代码」经 workbench.trunk.update 把固定树快进到主干最新（fetch 书签 → 双向对比 → merge --ff-only；快进不了保持原样、统一中文提示交会话处理、材料仍照常重读；纯草稿状态不是异常、不提示；远程 SSH 树暂不自动同步，属只读中继边界），已有同分支其他路径提示真实路径，不擅自删除重建。
 
 ## 轮次与重启
 
-当前材料代表可编辑轮次；每次周五进展刷新或展示验收结束，模型在会话中把当前人工输入复制到 `rounds`，写入 `week`、`kind`、`closedAt` 和完整 snapshot，再创建下一次当前轮。模型新增的历史 snapshot 只能逐字段复制当前材料，不能制造新的结论、Issue 备注或标记；新轮需要沿用时仍保持待核，不能把旧结论变成新轮确认。轮次不由自然周自动推断，`week` 是模型在确定轮次时写入的协议值。
+当前材料代表可编辑轮次；每次周五进展刷新或展示验收结束，模型在会话中把当前人工输入复制到 `rounds`，写入 `week`、`kind`、`closedAt` 和完整 snapshot，再创建下一次当前轮。模型新增的历史 snapshot 只能逐字段复制当前材料，不能制造新的结论、Issue 备注或标记；每个结果只写一个与该结果 `goalId` 相同的 `snapshot.goals` 条目，`decision` 缺省为 `pending`、`progress` 缺省为空字符串，`next` 为空时省略，`issueMarks`/`issueNotes` 逐字复制当前结果。新轮需要沿用时仍保持待核，不能把旧结论变成新轮确认。轮次不由自然周自动推断，`week` 是模型在确定轮次时写入的协议值。
 
 界面按周列出轮次：当前轮可编辑，历史轮只读。历史材料从固定验收树的 Git 读回，页面以材料中的轮次和 commit 身份呈现，不把最新 Issue 或指标状态覆盖旧快照。重启后只从材料和 Git 重建当前轮、历史轮、备注、标记与待确认指导；内存状态、缓存和页面顺序不作为正本。
 
@@ -35,10 +36,11 @@ Acceptance 材料继续使用 `schema_version=3`、`identity`、`planRef`、`can
 1. **结论行（收起态）**：数据推导的结论灯、G 编号与目标、负责人、Issue 计数、遗留/风险标记和结论选择。无数据的灯、计数和标记显示 Unknown/空，不以组件默认值补绿。
 2. **故事行（展开态）**：横排三格「约定交付｜进展｜材料」。计划侧显示既有 deliverable/acceptance、deadline/owner 和唯一的目标级 progress 输入；验收侧 progress 与材料依据来自当前轮结果。旧 `reason` 只作为兼容读回，生产编辑入口统一为 progress。
 3. **指标行**：只读的一行目标、当前读数、窗口和来源状态；配置与刷新在会话/SOP 侧完成。没有承诺或读数时保持 Unknown，不提供卡面指标编辑器。
-4. **Issue 子块**：按 provider labels 分为 Bug 类、Feature 类、未分类三组；每行呈现原生状态、标题、assignee、内联备注和 carry/risk 标记。开放/遗留以黄色、风险以红色显示，颜色只来自真实状态和人工标记。Issue 详情仍由原生 TaskPort 打开；不保存 Issue 正文快照。
+4. **Issue 子块**：按 provider labels 分为 Bug 类、Feature 类、未分类三组；有标签但没有 Bug/缺陷标签的 Issue 默认归 Feature，无标签才归未分类。每行呈现原生状态、标题、assignee、内联备注和 carry/risk 标记。开放/遗留以黄色、风险以红色显示，颜色只来自真实状态和人工标记。Issue 详情仍由原生 TaskPort 打开；不保存 Issue 正文快照。
 5. **未达下一步与会后指导**：未达目标显示 next；会后指导位于页面底部独立块，不在卡内另造“遗留汇总”或注入按钮。
 
 计划卡的 deadline/owner 从既有计划字段读取；计划拆解入口放在目标卡 Issue 子块中，要求新 Issue 使用 Bug/Feature provider 分类标签。验收卡 owner 只读，Issue assignee 只读 provider 值。两屏不提供板内搜索、页顶摘要计数行、全量 Issue 快照区、双面切换或独立周报/导出屏。
+出包区块是一条协议两个宿主：`workbench.package.list/latest/launch/download`（shared/workbench/package-pipeline.ts）由 scope 解析出工作树后按远端身份分派（package-pipeline-runtime）——CodeHub 远端分两面：执行面（list/launch）走本机 cloudbuild CLI（cb，cloud-dragon-cli-ops；launch 语义 = 按流水线名找 ID，再按 pr_pipeline 执行方案启动，与页面链路一致），制品面（latest/download）走 CloudDragon 浏览器会话（主进程常驻 Playwright，cloud-dragon-session；CLI 无制品仓库能力，页面选择器经真实页面验证）；其余（GitHub）走本机 gh CLI（github-package-ops）。界面与协议不感知宿主差异；SSH 宿主拒绝出包（依赖本机登录态与工作树）。GitHub 侧的识别规则：仓里文件名以 `bw-package` 前缀开头的 Actions workflow 即出包流水线；最新包读 releases 列表端点而非 `/releases/latest`（后者跳过预发布）；下载只取安装包本体，排除更新器元数据（yml/blockmap/json）。启动经 launchInFlight 互斥，双击不重复触发；最新包每分钟静默刷新，出包灯只随真实包数据点亮，不写 workflow.stage。
 
 ## 会前、会中、会后
 
@@ -76,7 +78,7 @@ Acceptance 材料继续使用 `schema_version=3`、`identity`、`planRef`、`can
 - **R6 CodeHub**：`codehub-cli` 已有 project/host 参数和 `viewCodeHubTask` 接缝；归档状态按 MR 读取，身份不符或读失败 Unknown，重复刷新使用短缓存/并发合并。
 - **R7 收折**：`usePlanColumnResize` 已控制 BW 右板列宽并派发 fit 事件；在同一壳层增加持久化 collapsed/narrow rail，终端保持挂载，不改 Orca 内部 pane。
 - **R8 转写**：仓内没有 eMeeting 获取脚本，既有 WSL transcript 是会话文件通道；SOP 只接 issue #374/项目提供的转写稿，缺稿不编造。
-- **R9 分类**：原型按 `Bug/缺陷`、`Feature/功能` 标签分组；生产 task snapshot 当前不带 labels，本轮以可选 `labels` 补齐，旧快照显示未分类。
+- **R9 分类**：原型与生产按 `Bug/缺陷` 标签归 Bug，其余有标签归 Feature，无标签归未分类；生产 task snapshot 以可选 `labels` 补齐，旧快照无标签仍归未分类。
 - **R10 全量任务**：独立任务区已移除；TaskPort 仍负责单项详情读回与打开，计划/验收只在目标卡 Issue 子块内呈现关联任务，快照只作为卡内状态来源。
 
 ## 验证边界
