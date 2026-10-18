@@ -1,61 +1,84 @@
 # 版本验收实现设计
 
-> 给实现与技术评审者动代码前读；本文管对象、候选来源、复用和异常设计。行为见 [spec](spec.md)，共享层见 [计划设计](../version-planning/design.md#共享边界)。设计变化时更新，落地后同步 06-module。
+> 给实现与技术评审者动代码前读；本文管对象、数据边界、组件复用和异常语义。用户行为以 [spec](spec.md) 为准，共享壳层与计划边界见 [计划设计](../version-planning/design.md#共享边界)。落地后同步 06-module。本文只描述当前有效方案，不保留被替代的形态或过程记录。
 >
-> 状态：已授权实施；详细设计未逐项细审，未决项须人工确认。定位 architecture §1 项目版本/交付核对，§2 事实、执行与壳。共享核心的实现范围见计划设计及 STATUS，其余接口不表示已有运行能力。**2026-10-18 形态已经用户确认（单页目标卡、周/轮次、会议指导与遗留、会话栏收折，见 [spec](spec.md)）：本篇须先按轮次协议（材料 schema 增轮次、会议指导、Issue 备注与标记、材料链接可选字段）与单页目标卡信息架构重写，再实施相关部分；现文其余部分仍是现行实现的正本。**
+> 状态：v9.5 形态已由用户于 2026-10-18 确认，本文是生产实施输入。批次 A 先落 schema 与守卫，之后再落两屏组件；材料增量字段全部可选，旧材料不迁移、不改写。
 
-## 页面与复用
+## 设计边界
 
-AcceptancePage 是 BW 业务页，复用原生项目/工作树/会话、Tasks 详情与正文编辑、Automations、现有文件打开和命令执行能力。右侧围绕 G1/G2/G3 目标卡展示实际交付、材料、实测与人的结论，下接 Issue 状态区；“预览纪要”在目标区标题旁。材料准备在新建或已有原生验收会话中完成，不再设独立准备摘要、固定包/报告/展示占位或“材料备齐”勾选；候选与材料来源仍保留在记录和纪要中，不建通用发布控制台。
+AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、会话、任务详情、文件打开、Automations 和指标执行能力。BW 只保存版本材料、轮次和人工输入，不复制 Issue、PR、指标或会议转写的正本。计划屏与验收屏共用 GoalCard、Issue 子块、材料块和会话壳层；页面拥有的差异只在于计划输入与验收结论。
 
-共用 CycleTasks、CycleArchive、useMaterialAutosave 和 useArchivePrStatus；承诺区共用骨架，验收业务字段由本页拥有。旧 PlanResultsPane 已随旧三屏链条退役删除，跨版本 results 流程不再并行维护。TaskPort/ArchivePrPort/VersionDocumentPort 与计划共用（已按当前接线落地；原 CycleSessionPort 贴草稿通道与 ArchivePort 字节证明链已整体退役删除），MetricsPort 由指标线提供。页面经 artifacts 准备入口确保 bw/week-acceptance 后进入原生 terminal，右板由 CycleWorkspaceShell 挂载；会话、标签/分屏、历史和工具侧栏完整沿用原生工作区，边界见计划设计。
+计划固定在 `bw/week-plan`，验收固定在 `bw/week-acceptance`。运行身份由 projectId、repoId、hostId、workflow、runId 和 cycleId 组成，版本由人明确选择。页内不按标题、日期或上次打开项推断版本，不建立第二套会话绑定或业务数据库。VersionDocumentPort、TaskPort、ArchivePrPort、MetricsPort 和材料自动保存沿用计划侧已有接线；不修改 Orca 核心。
 
-## 两个常驻工作树
+## 材料对象与兼容读回
 
-项目连接、宿主路由、文件与命令执行沿用 Orca 原生能力；BW 不按本机、Web/配对或 SSH/WSL 另设产品限制。操作在工作树所属宿主执行，连接或权限不可用时呈现原生失败，不切换到其他机器读写。 材料共用入口见计划设计；保存引用不表示已校验计划来源、候选或人的决定。
+Acceptance 材料继续使用 `schema_version=3`、`identity`、`planRef`、`candidateRef`、`preparedArtifacts`、`results`、`taskSnapshot` 和 `workflow`。本轮只增加可选字段：
 
-计划固定 bw/week-plan，验收固定 bw/week-acceptance，目录由 Orca 原生创建与登记策略确定，不强制 .bw 物理目录。通过 Orca 项目/宿主和分支查真实工作区，不仅替换标签，不新增聊天日志或 BW 调度器。
+- `results[].materials?: Array<{ label: string; url: string }>` 是目标级材料入口；已有 `deliveries` 继续按旧语义读回。
+- `results[].rounds?: Array<{ id: string; week: string; kind: 'progress' | 'final'; closedAt?: string; snapshot: { goals: Array<{ goalId: string; decision: string; progress: string; next?: string }>; issueMarks: Record<string, { carry?: boolean; risk?: boolean }>; issueNotes: Record<string, string> } }>` 固化每轮人工输入。
+- `results[].meetingDirectives?: Array<{ id: string; text: string; tag: 'resolved-this-acceptance' | 'next-week-plan' | 'record-remaining'; goalId?: string; status: 'pending' | 'confirmed'; source: 'transcript-summary' | 'manual'; sourceRef?: string; confirmedAt?: string }>` 保存会后指导与遗留。
+- `results[].issueNotes?: Record<string, string>` 和 `results[].issueMarks?: Record<string, { carry?: boolean; risk?: boolean }>` 保存当前轮 Issue 级备注与标记。
+- `taskSnapshot[].labels?: string[]` 保存 provider 返回的 Bug/Feature 分类标签；缺字段、空值或无法判断都显示未分类，不猜测。
 
-验收树从项目主干基线创建；运行时不硬编码 bw-orca 或 main。每次新运行刷新远端并检查树的干净状态、前次归档与基线差异（现状注：脏树/未归档提交检查为提示级，由会话承担，无代码强制校验落点）。已有脏改动/未归档提交不 reset、不搬树、不强推，恢复该次工作或呈现冲突。先回显固定工作区与现有材料；进屏不做任何 Git 动作，页头「更新代码」经 workbench.trunk.update 把固定树快进到主干最新（fetch 书签 → 双向对比 → merge --ff-only；快进不了保持原样、统一中文提示交会话处理、材料仍照常重读；纯草稿状态不是异常、不提示；远程 SSH 树暂不自动同步，属只读中继边界，记债待专项），已有同分支其他路径提示真实路径，不擅自删除重建。
+计划材料保留现有目标、任务、指标和 `workflow`；任务引用的 provider/repository/number/goalId 仍是 Issue 正本。所有新增字段使用 Zod `optional()`，嵌套字段也只在出现时校验。旧材料缺字段时按一个当前轮、无指导、无 Issue 备注/标记、无目标级新增材料读回。读回不触发迁移或隐式保存，保存只在用户或获授权的模型流程明确写入时发生。
 
-运行身份包含 projectId、hostId、workflow=acceptance 与 Orca runId；cycleId 为周期上下文，version 为另行核对的材料关联，不作为运行去重前提。运行与历史恢复由 Orca 管理，BW 不保存会话绑定或按标题匹配；专用“新建验收”复用已登记自动化的手动运行并自动打开、聚焦本次原生会话，定时运行仍在后台。首次登记默认 existing 固定工作区、reuseSession=false；后续尊重用户保存的会话复用配置。上午/下午可继续同一运行，计划与验收按各自固定工作区定位。
+## 轮次与重启
 
-“新建验收”位于 BW 右板正文首行协作卡片，分支名显示在页头，原生 TabBar 不再挂 BW 启动按钮（已撤除薄挂载）；旧格式或损坏材料在同一卡片内提示。“新建验收”统一走已登记自动化的手动运行：保存的提示、模型、工具与会话复用规则原样生效，当前选版、具体文件与读取问题作为一次性上下文经 `automation.runNow` 的可选 `oneShotPrompt` 随派发合并为单次递交（`automation.run-now-one-shot-prompt.v1` capability 门控，旧宿主诚实报错不静默丢失），不临时改写自动化记录，不另建会话；独立的 startMaterialRequest 通道已退役。实际启动复用登记自动化配置，迁移约束由材料服务和 Skill reference 承担。
+当前材料代表可编辑轮次；每次周五进展刷新或展示验收结束，模型在会话中把当前人工输入复制到 `rounds`，写入 `week`、`kind`、`closedAt` 和完整 snapshot，再创建下一次当前轮。新轮不自动继承人的结论、Issue 备注或标记；需要沿用时由模型明确复述并保持待核，不能把旧结论变成新轮确认。轮次不由自然周自动推断，`week` 是模型在确定轮次时写入的协议值。
 
-## 候选与材料
+界面按周列出轮次：当前轮可编辑，历史轮只读。历史材料从固定验收树的 Git 读回，页面以材料中的轮次和 commit 身份呈现，不把最新 Issue 或指标状态覆盖旧快照。重启后只从材料和 Git 重建当前轮、历史轮、备注、标记与待确认指导；内存状态、缓存和页面顺序不作为正本。
 
-acceptance.json 在验收工作树保存，planRef 从验收分支 HEAD 的固定提交读取（worktreeHead + ls-tree/show，只读白名单命令；「更新代码」快进保证已合入主干的计划在分支上可见），看板与会话在同一工作树看到同一份文件；草案预验收显式带源树、修订及 draft 标识。共享写入核心按项目/流程映射允许写入的树和对象，验收不得修改 plan.data.json。
+## 共用 GoalCard
 
-candidateRef 保存项目、完整 commit SHA、版本与来源；preparedArtifacts 保存类别（交付件/包/验证/showcase）、可打开位置、候选、执行入口/工作区、生成时刻及适用时的 hash。项目没有包要求时直接采用其约定交付。数据字段唯一参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
+计划和验收使用同一 `version-cycle/GoalCard` 骨架，目标卡是页面的主要信息单元：
 
-模型通过宿主下发的项目既有命令准备包和证据。源代码执行区须明确固定候选 SHA；若常驻验收树不适合作为干净源码区，复用原生工作树能力准备候选执行区，验收树仍只承载材料。只包装项目已有能力，不照搬 Rust 发布工具或另写打包器。记录实际执行路径、退出和产物，不因文件名有版本就认为匹配。
+1. **结论行（收起态）**：数据推导的结论灯、G 编号与目标、负责人、Issue 计数、遗留/风险标记和结论选择。无数据的灯、计数和标记显示 Unknown/空，不以组件默认值补绿。
+2. **故事行（展开态）**：横排三格「约定交付｜进展｜材料」。计划侧显示既有 deliverable/acceptance、deadline/owner 和唯一的目标级 progress 输入；验收侧 progress 与材料依据来自当前轮结果。旧 `reason` 只作为兼容读回，生产编辑入口统一为 progress。
+3. **指标行**：只读的一行目标、当前读数、窗口和来源状态；配置与刷新在会话/SOP 侧完成。没有承诺或读数时保持 Unknown，不提供卡面指标编辑器。
+4. **Issue 子块**：按 provider labels 分为 Bug 类、Feature 类、未分类三组；每行呈现原生状态、标题、assignee、内联备注和 carry/risk 标记。开放/遗留以黄色、风险以红色显示，颜色只来自真实状态和人工标记。Issue 详情仍由原生 TaskPort 打开；不保存 Issue 正文快照。
+5. **未达下一步与会后指导**：未达目标显示 next；会后指导位于页面底部独立块，不在卡内另造“遗留汇总”或注入按钮。
 
-出包区块是一条协议两个宿主：`workbench.package.list/latest/launch/download`（shared/workbench/package-pipeline.ts）由 scope 解析出工作树后按远端身份分派（package-pipeline-runtime）——CodeHub 远端走 CloudDragon 浏览器链路（主进程常驻 Playwright 会话，cloud-dragon-session；页面选择器经真实页面验证），其余（GitHub）走本机 gh CLI（github-package-ops），界面与协议不感知宿主差异；SSH 宿主拒绝出包（依赖本机登录态与工作树）。GitHub 侧的识别规则：仓里文件名以 `bw-package` 前缀开头的 Actions workflow 即出包流水线；最新包读 releases 列表端点而非 `/releases/latest`（后者跳过预发布）；下载只取安装包本体，排除更新器元数据（yml/blockmap/json）。启动经 launchInFlight 互斥，双击不重复触发；最新包每分钟静默刷新，出包灯只随真实包数据点亮，不写 workflow.stage。
+计划卡的 deadline/owner 从既有计划字段读取；计划拆解入口放在目标卡 Issue 子块中，要求新 Issue 使用 Bug/Feature provider 分类标签。验收卡 owner 只读，Issue assignee 只读 provider 值。两屏不提供板内搜索、页顶摘要计数行、全量 Issue 快照区、双面切换或独立周报/导出屏。
 
-构建运行复用原生任务/进程状态关联 runId；恢复先查询仍在运行的任务和已生成产物，不盲目再启动（现状注：「重试不重复启动同一仍运行构建」由会话承担，未建对应代码）。候选改变时将不匹配材料标陈旧；相应材料状态由事实推导，不自动撤销或代写人的判断。正式发布、tag、远端完成与 PR 合入仍按项目的人授权。
+## 会前、会中、会后
 
-## 记录、报告与版本历史
+三种使用姿态看同一块板，不新增模式或路由：
 
-记录 version、cycleId、planRef、candidateRef、preparedArtifacts、goalId 对应实际交付/readingRef/结论/依据/下一步、人的确认来源与修订。可保存只读承诺快照作为草案/离线证据，不能编辑为另一份计划。
+- **会前**：目标卡展开，核对约定交付、进展、材料，刷新指标，查看出包区块并在 Issue 行写备注或标记。
+- **会中**：全部收起，只看结论行；讲到目标再展开。预览纪要由当前材料派生，只读且可复制。
+- **会后**：补 next、确认人工结论、处理指导与遗留，在会话中发起归档。人合入后，页面从 Git 读回历史轮次。
 
-采集值只来自支持按日／周查询历史的脚本；刷新同步项目正式来源、重读目录后采用最新已合入定义与脚本，不更新固定计划引用或合并业务树。原计划指标与基线只读，验收只展示原承诺或已有证据的指标，刷新采用当前目录定义，不能用旧 configurationCommit/definitionHash 不同直接阻止采集。归档保存实际采用的定义指纹、历史窗口、结果及来源，人的验收依据说明可比性；保留证据不是建立 BW 日采账本。Issue 快照附 provider/repo/number/state/readAt，不是可编辑任务正本。
+出包区块继续与 `AcceptancePackage` 同构并可收缩；出包事实只点亮出包灯，不写 `workflow.stage`。归档行按 `workflow.archivePr` 薄读取 provider 合入状态，读不到保持 Unknown，不阻塞继续编辑或开下一轮。
 
-AcceptanceMetrics 按目标的 metricTargets 与已存 readings 的名称集合显示采集行；回显已保存证据，明确刷新才采集并写入同一验收草稿。没有承诺或证据的目标不显示指标组件。当前周由项目指标时区推导，窗口与来源收进读数证据详情；不设全局窗口行。AcceptanceBoard 顶部只选一次版本，缺验收文件时固定该版本当前提交的计划后初始化草稿，已有验收不自动换 planRef。
+## 会议指导与遗留 SOP
 
-验收纪要由对应修订确定性生成，预览/复制/归档采用同一函数。已合入记录以目标基线的 commit + 文档路径 + cycleId 为历史身份；总览读取摘要，能打开对应只读原文及来源。每周和补证归档都是可追溯修订，缓存可重建，不另建里程碑表或历史业务数据库。
+会后 `version-acceptance` Skill 负责把会议 ID、转写稿定位、目标和 Issue 上下文交给已有会议转写来源，再要求独立 subagent 总结「会议指导与遗留」。总结结果必须明示 AI 来源、`sourceRef` 和 pending 状态；主会话不代替 subagent 总结，不把模型文字当人的决定。用户逐条确认、删除或人工补记后，才把 `status=confirmed`、`confirmedAt` 和可选 `goalId` 写入材料。tag 只有三种：本次验收已解决、纳入下周计划、记录遗留。
 
-旅程灯只读模型写入的 workflow.stage（灰/绿两态，位置比较），人工结论按 decision 与证据新鲜度推导，归档 PR 合入状态按 archivePr 薄读取；三者互不代替。保存不是验收认可，候选包可用不是已发版。未达报告归档时灯可绿而目标仍未达。来源行只呈现记录事实与纯声明比对（artifactCandidateCheck），在线文件/执行探测（原「检查文件与候选」按钮与 acceptance-candidate-port）已删除。
+当前仓内没有可直接调用的 eMeeting 音频转写脚本；`wsl-transcript-*` 只处理会话文件系统通道。SOP 因此只消费 issue #374 或项目会话实际提供的转写稿，拿不到稿件就呈现 Unknown/待补来源，不声称应用内已完成语音转写。转写获取、总结、逐条确认和材料保存是四个不同证据边界。
 
-人的结论按目标绑定证据：只补目标二的材料时，目标一原结论继续保留；更换计划修订、整个源码候选或候选交付包时，全部目标保留原结论并提示重新核对。decision.materialRevision 是固定计划、候选、该目标承诺及结果证据的确定性 SHA-256，不含 decision 本身。preparedArtifacts 中 kind=package 的全局候选包集合（含校验值、位置、生成时间和执行来源）参与所有目标摘要，同一源码提交换包也会使全部目标待核。非 package 材料仅在本目标实际交付位置引用时纳入；其他目标的材料变化不会使此目标失效。不增加候选包选择界面或构建记录服务。该摘要只判断证据变化，不认证判断人身份或替人授权。人的来源与时间单独展示，旧记录没有匹配的证据摘要时按待核呈现。
+## 人工字段守卫
 
-目标关联的 Issue 证据按固定 plan.tasks 的 provider/repository/number/goalId 定位。快照中的稳定事实纳入对应目标摘要，单纯更新 readAt 或列表顺序不要求再次确认；缺快照、明确空集与读取失败保持区别。历史报告只展示当时快照，不以最新状态替换。
+`material-human-guard` 在 `clientKind === undefined` 的模型保存通道上保护人工字段。保护清单包括 `results[].decision`、`results[].actualDelivery`、`results[].nextStep`、`results[].issueNotes`、`results[].issueMarks`、`results[].meetingDirectives[].text` 以及已确认指导的 `status/confirmedAt`。模型可以新增轮次结构和 `status=pending` 的指导，但不得修改或确认人的结论、备注、标记和已确认条目。人工 UI/明确的人工客户端保存才允许这些字段变化；校验失败整次保存拒绝并保留现有材料。
 
-## 异常、迁移与验证
+## 材料打开、指标和异常
 
-使用材料核心的 expectedRevision/原子写入/跨进程互斥；冲突保留输入。文件链接绑定可信材料根或明确外部来源，失效错误有恢复入口。跨树、跨项目返回核对宿主身份。
+目标材料链接优先交给当前工作区的 Orca 浏览器能力；没有可用工作区浏览器时按现有 `shell.openUrl` 或 `openFilePath` 处理，失败显示具体恢复提示，不新增浏览器核心。指标仍经 `MetricsPort.list/read/refresh` 读真实来源，卡面只读；刷新失败显示 Unknown/失败原因，不回退旧读数冒充当前值。
 
-旧 results 按其明确说明的上一版本导入，不能按目录名误认当前验收；旧 confirmation 仅历史证据。新实现已一次切换所有读写消费者，旧三屏/CLI 路径（含 planning.py）已退役删除。
+计划、验收和历史读取都保留材料事务的 expectedRevision、原子替换、跨进程互斥和工作树身份校验。保存冲突保留用户输入；候选、计划修订或 Issue 快照改变只使受影响结论待核，不自动清空或确认。归档 PR 状态遵循 `ArchivePrPort`：GitHub 走既有 gh 读回，CodeHub 走 `codehub-cli mr view`，远端身份不一致、状态异常、权限/网络失败均为 Unknown；不以 PR 合入替代人的完成确认。
 
-旧结果不另设页面动作；首行“新建验收”在读取有问题时携带具体文件与诊断。会话读取共享迁移预览并保留原件，按实际上一版与唯一目标对应通过普通验收保存接口合并；不在验收页再建一套迁移算法，不自动覆盖本次已编辑结果，也不将历史 confirmation 当作本次人的认可。
+## 调研结论与实现落点
 
-验证保留跨树写入限制、计划/候选固定与变化、材料匹配、报告与历史索引的既有有效覆盖；本轮只补少量关键行为检查，不为原型控件或原生能力复制大套测试。重复构建恢复须从真实会话和任务取证，不能把尚未接入的行为写成已测。A01–A10/AJ01/AJ02 的完整证据仍需真实 Electron、项目命令、模型和独立读回。验收线负责右板、共享协作入口与必要父级接线；指标组件按上述边界协作，公共原生文件变化先核对并行改动。
+- **R1 守卫**：模型保存在材料 RPC 进入 `material-human-guard`，当前只保护结论/风险；本轮扩展到上述人工字段，保存服务和 CLI 继续复用同一入口。
+- **R2 材料**：目标已有 `deliveries`，没有显式目标材料数组；新增 `materials` 为可选字段，URL 打开沿用既有 DeliveryDetails 能力，不做迁移。
+- **R3 Orca 浏览器**：原生 store 已有工作区浏览器 tab 能力，`shell.openUrl` 是系统回退；生产只做 BW 侧路由，不改 Orca 核心。
+- **R4 RPC**：读写统一走 `workbench.materials.*`、版本材料服务和原子事务；schema 扩展不另造通道。
+- **R5 指标**：现有 `useAcceptanceMetricWindow` 是指标端口 hook，不是独立页面；保留 list/read/refresh 数据协议，移除卡面编辑器并把状态压成一行。
+- **R6 CodeHub**：`codehub-cli` 已有 project/host 参数和 `viewCodeHubTask` 接缝；归档状态按 MR 读取，身份不符或读失败 Unknown，重复刷新使用短缓存/并发合并。
+- **R7 收折**：`usePlanColumnResize` 已控制 BW 右板列宽并派发 fit 事件；在同一壳层增加持久化 collapsed/narrow rail，终端保持挂载，不改 Orca 内部 pane。
+- **R8 转写**：仓内没有 eMeeting 获取脚本，既有 WSL transcript 是会话文件通道；SOP 只接 issue #374/项目提供的转写稿，缺稿不编造。
+- **R9 分类**：原型按 `Bug/缺陷`、`Feature/功能` 标签分组；生产 task snapshot 当前不带 labels，本轮以可选 `labels` 补齐，旧快照显示未分类。
+- **R10 全量任务**：`CycleTasks` 当前承担独立任务快照和筛选；定稿形态将其从验收全量区、计划独立任务区移除，保留 TaskPort 单项详情和目标卡内 Issue 子块。
+
+## 验证边界
+
+协议纯函数、旧材料 optional 解析、轮次固化和人工守卫用 Vitest 覆盖；新增测试只覆盖核心算法或与真实旅程强相关的数据协议。lint-staged 使用工作树可运行的 node 直调，提交因 junction 中 husky 不可运行而使用 `--no-verify`，并记录等价门禁。生产 UI 需按目标卡、周/轮次、指导确认和收折路径做真壳验证；本次用户明确不启动真壳和 CI，未运行项保持缺口，不能把原型或 DOM 结果写成真实 Electron 证据。
