@@ -63,13 +63,19 @@ function codeHubIdentityMatches(repo: Repo, repository: string): boolean {
   if (!remote) {
     return false
   }
-  const wanted = repository.trim().replace(/\.git$/i, '').replace(/^\/+/, '')
+  const wanted = repository
+    .trim()
+    .replace(/\.git$/i, '')
+    .replace(/^\/+/, '')
   return wanted === remote.project || wanted === `${remote.host}/${remote.project}`
 }
 
 function repoMatchesReference(repo: Repo, reference: CycleTaskReference): boolean {
   if (reference.provider === 'codehub') {
-    return codeHubIdentityMatches(repo, reference.repository) || exactIdentityMatch(repo, reference.repository)
+    return (
+      codeHubIdentityMatches(repo, reference.repository) ||
+      exactIdentityMatch(repo, reference.repository)
+    )
   }
   if (reference.provider === 'github') {
     if (
@@ -90,7 +96,9 @@ export function resolveReferenceRepo(
   reference: CycleTaskReference
 ): Repo | null {
   const wanted = normalizeGitRemoteUrl(reference.repository) ?? reference.repository
-  const matches = deps.repos().filter((repo) => repo.path && repoMatchesReference(repo, { ...reference, repository: wanted }))
+  const matches = deps
+    .repos()
+    .filter((repo) => repo.path && repoMatchesReference(repo, { ...reference, repository: wanted }))
   if (matches.length === 0) {
     return null
   }
@@ -195,7 +203,8 @@ async function readReference(
   throw new Error(`provider ${reference.provider} 尚未接入 Workbench 任务读取`)
 }
 
-function codehubStateOf(state: string): CodeHubTaskItem['state'] {
+/** 墙卡承诺进展复用同一状态归一（closed/merged 均为关闭态），不另造映射。 */
+export function codehubStateOf(state: string): CodeHubTaskItem['state'] {
   const raw = state.toLowerCase()
   return raw === 'merged' ? 'merged' : raw === 'closed' ? 'closed' : 'opened'
 }

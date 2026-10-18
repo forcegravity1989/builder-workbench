@@ -26,7 +26,7 @@
 
 2026-10-16 执行面 CLI 替换批（用户会话拍板：CodeHub 变体 list/launch 从 Playwright 页面链路改走本机 cloudbuild CLI，制品面 latest/download 保留浏览器会话）：研究结论为 CLI（cb，CloudDragon 1.0 API 官方客户端）覆盖执行面（list/scheme list/scheme execute）但无制品仓库能力（pipeline 1.0 无制品读取/下载命令，outputs 仅在 pipeline2 另一产品），故部分替代。实施：新增 cloud-dragon-cli-ops（list = `cb pipeline list -o json` 按名取列表；launch = 名→ID 映射 + `scheme list` 找 pr_pipeline 方案 + `scheme execute --ids <方案ID> --yes`，语义与页面「执行方案启动→pr_pipeline」一致；--group 为 CLI 根级全局 flag，统一注入项目 ID——scheme 子命令无自己的 --group，不带即报 no group_id set；未装 cb / 未登录 / 命令失败分别映射 cb-missing/cb-auth/cb-failed 可读错误），cloud-dragon-package-ops 收缩为纯制品面（页面版 list/launch 机制、范围切换与 LIST_URL 整体退役），runtime 分派不变、界面协议无感知。cb 凭证自管（cb login，~/.cloudbuild/），与 gh 对称；项目 ID 在 CLI 语义下即 group_id（URL /project/<id>/ 段），--group 与页面「当前项目下的流水线」同范围。证据：typecheck 三套 0 错、oxlint/anti-slop/code-quality/各 ratchet 过；登录后 esbuild 探针经产品代码全链实测——list 读出 7 条流水线（与裸 CLI 一致）、gtsllm-dfx 的 pr_pipeline 方案存在（唯一方案，id 1319f0eb…）、launch 真实受理（用户授权一次实跑：status completed→running、latest_jobid 9014bef6…→b0ada8b9…、startTime 更新为当下）；未登录路径先期验证如实映射 cb-auth。留白：cb-missing 分支未实测（本机已装）；制品面 Playwright 链路未动、沿用既有验证。
 
-| 环 | 状态 | 证据或已知债 |
+| 环 | 状态 | 证据或缺口 |
 |---|---|---|
 | intent | ● 已确认 | 沿用三特性边界，用户确认会话准备材料、逐目标核对及本轮资产同步 |
 | spec | ● 实施输入 | 本轮高保真已获用户确认；新入口与验收布局已按该高保真实施（组件/契约测试为上限，真壳未验），新增或拿不准的行为仍需确认 |

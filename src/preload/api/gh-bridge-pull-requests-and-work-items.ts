@@ -7,6 +7,7 @@ import type {
 } from '../../shared/github/pull-request-refresh-types'
 import type { GitHubOwnerRepo } from '../../shared/github/pull-request-types'
 import type { GitHubWorkItem, ListWorkItemsResult } from '../../shared/github/work-item-types'
+import type { IssueStatesBatchResult } from '../../shared/github/issue-state-types'
 import type { GitHubCreateIssueResult } from '../../shared/issue-mutation-types'
 import type { TaskSourceContext } from '../../shared/task-source-context'
 import type { PreloadApi } from '../api-types'
@@ -103,6 +104,12 @@ export const ghPullRequestsAndWorkItemsApi = {
   }): Promise<GitHubCreateIssueResult> => ipcRenderer.invoke('gh:createIssue', args),
   countWorkItems: (args: { repoPath: string; repoId?: string; query?: string }): Promise<number> =>
     ipcRenderer.invoke('gh:countWorkItems', args),
+  issueStates: (args: {
+    owner: string
+    repo: string
+    host?: string | null
+    numbers: number[]
+  }): Promise<IssueStatesBatchResult> => ipcRenderer.invoke('gh:issueStates', args),
   listWorkItems: (args: {
     repoPath: string
     repoId?: string | null
