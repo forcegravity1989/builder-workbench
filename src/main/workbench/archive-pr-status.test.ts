@@ -35,5 +35,9 @@ describe('CodeHub archive PR status protocol', () => {
       githubRepositoryMatches('https://github.com/forcegravity1989/builder-workbench.git', github)
     ).toBe(true)
     expect(githubRepositoryMatches('other/builder-workbench', github)).toBe(false)
+    const enterprise = { owner: 'team', repo: 'app', host: 'ghe.acme.test' }
+    expect(githubRepositoryMatches('ghe.acme.test/team/app', enterprise)).toBe(true)
+    expect(githubRepositoryMatches('https://ghe.acme.test/team/app.git', enterprise)).toBe(true)
+    expect(githubRepositoryMatches('team/app', enterprise)).toBe(false)
   })
 })

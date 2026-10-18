@@ -62,7 +62,8 @@ export function updateIssueMark(
     ...result.issueMarks,
     [key]: {
       ...issueMarkFor(result, reference, relatedIssues),
-      [mark]: value
+      [mark]: value,
+      ...(mark === 'carry' && !value ? { risk: false } : {})
     }
   }
   if (canUseLegacyIssueKey(reference, relatedIssues)) {

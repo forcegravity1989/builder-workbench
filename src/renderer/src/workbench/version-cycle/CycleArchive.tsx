@@ -21,6 +21,34 @@ export function CycleArchive({
   loading: boolean
   sectionRef: Ref<HTMLElement>
 }) {
+  const recordedArchiveUrl = (
+    provider: 'github' | 'codehub',
+    repository: string,
+    number: number
+  ) => {
+    const normalized = repository
+      .trim()
+      .replace(/^https?:\/\//i, '')
+      .replace(/^git@([^:]+):/i, '$1/')
+      .replace(/\.git$/i, '')
+    const parts = normalized.split('/').filter(Boolean)
+    if (provider === 'github') {
+      const qualified = parts.length >= 3 && parts[0].includes('.')
+      const host = qualified ? parts[0] : 'github.com'
+      const project = qualified ? parts.slice(1) : parts
+      return project.length >= 2
+        ? `https://${host}/${project.map((part) => encodeURIComponent(part)).join('/')}/pull/${number}`
+        : null
+    }
+    if (parts.length < 2 || (!parts[0].includes('.') && !parts[0].includes(':'))) {
+      return null
+    }
+    const project = parts
+      .slice(1)
+      .map((part) => encodeURIComponent(part))
+      .join('/')
+    return `https://${parts[0]}/${project}/-/merge_requests/${number}`
+  }
   const url = (() => {
     if (status && 'url' in status && status.url) {
       return status.url
@@ -28,22 +56,7 @@ export function CycleArchive({
     if (!archivePr || (archivePr.provider !== 'github' && archivePr.provider !== 'codehub')) {
       return null
     }
-    // Recorded repository may carry its host ("github.com/o/r") or not ("o/r").
-    const first = archivePr.repository.split('/')[0]
-    if (archivePr.provider === 'github') {
-      const host = first.includes('.') ? archivePr.repository : `github.com/${archivePr.repository}`
-      return `https://${host}/pull/${archivePr.number}`
-    }
-    if (!first.includes('.') && !first.includes(':')) {
-      return null
-    }
-    const project = archivePr.repository
-      .split('/')
-      .slice(1)
-      .filter(Boolean)
-      .map((part) => encodeURIComponent(part))
-      .join('/')
-    return project ? `https://${first}/${project}/-/merge_requests/${archivePr.number}` : null
+    return recordedArchiveUrl(archivePr.provider, archivePr.repository, archivePr.number)
   })()
   const label = !archivePr
     ? reachedArchive

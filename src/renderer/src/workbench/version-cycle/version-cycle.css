@@ -40,12 +40,6 @@
   font-weight: 600;
   overflow-wrap: anywhere;
 }
-.vc-goal-toggle {
-  min-width: 0;
-}
-.vc-goal-toggle strong {
-  min-width: 0;
-}
 .vc-goal-heading > .vc-goal-toggle {
   overflow: visible;
 }
@@ -129,10 +123,12 @@
   font: inherit;
 }
 .vc-goal-title textarea {
-  min-height: 3.2rem;
+  min-height: 2.5rem;
+  field-sizing: content;
 }
 .vc-goal-detail textarea {
-  min-height: 4.5rem;
+  min-height: 3.4rem;
+  field-sizing: content;
 }
 .vc-goal-meta input {
   min-height: 2rem;

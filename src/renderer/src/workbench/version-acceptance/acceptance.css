@@ -198,6 +198,26 @@ shared visual language with the plan board. */
   border-top: 1px solid var(--color-divider);
   font-size: 0.8rem;
 }
+.va-round-picker {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.va-round-picker select {
+  max-width: 22rem;
+}
+.va-historical-goals {
+  display: grid;
+  gap: var(--space-2);
+}
+.va-historical-goals > .va-muted {
+  margin: 0;
+}
+.va-round-card-snapshot p {
+  margin: var(--space-1) 0 0;
+  overflow-wrap: anywhere;
+}
 .va-directive-row select {
   min-width: 8rem;
 }
@@ -242,6 +262,12 @@ shared visual language with the plan board. */
   display: grid;
   gap: var(--space-1);
   margin-top: var(--space-2);
+}
+.va-issue-blocks-summary {
+  color: var(--color-neutral-700);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding-block: var(--space-1);
 }
 .va-issue-group {
   border: 1px solid var(--color-divider);
@@ -372,15 +398,6 @@ shared visual language with the plan board. */
 .va-decision {
   margin-top: var(--space-2);
 }
-.va-goal-acceptance {
-  margin-top: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-sm);
-  background: var(--color-card);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
 .va-result input,
 .va-result textarea,
 .va-board select {
@@ -447,11 +464,13 @@ shared visual language with the plan board. */
 .va-goal-summary {
   display: inline-flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: var(--space-2);
+  min-width: 0;
   color: var(--color-neutral-500);
   font-size: 0.72rem;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .va-decision-select {
   display: inline-flex;

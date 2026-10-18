@@ -33,24 +33,37 @@ function normalizedCodeHubIdentity(value: string): string {
     .toLowerCase()
 }
 
-function normalizedGithubIdentity(value: string): string {
-  return value
+function normalizedGithubIdentity(value: string): { host: string; slug: string } | null {
+  const normalized = value
     .trim()
     .replace(/^https?:\/\//i, '')
     .replace(/^git@github\.com:/i, 'github.com/')
-    .replace(/^github\.com\//i, '')
     .replace(/\.git$/i, '')
     .replace(/^\/+|\/+$/g, '')
     .toLowerCase()
+  const parts = normalized.split('/').filter(Boolean)
+  if (parts.length < 2) {
+    return null
+  }
+  const qualified = parts.length >= 3 && (parts[0] === 'github.com' || parts[0].includes('.'))
+  return {
+    host: qualified ? parts[0] : 'github.com',
+    slug: (qualified ? parts.slice(1) : parts).join('/')
+  }
 }
 
 /** @internal — accepts the host-qualified forms written by older materials. */
 export function githubRepositoryMatches(
   repository: string,
-  ownerRepo: { owner: string; repo: string }
+  ownerRepo: { owner: string; repo: string; host?: string }
 ): boolean {
+  const recorded = normalizedGithubIdentity(repository)
+  if (!recorded) {
+    return false
+  }
   return (
-    normalizedGithubIdentity(repository) === `${ownerRepo.owner}/${ownerRepo.repo}`.toLowerCase()
+    recorded.slug === `${ownerRepo.owner}/${ownerRepo.repo}`.toLowerCase() &&
+    recorded.host === (ownerRepo.host?.trim().toLowerCase() || 'github.com')
   )
 }
 
@@ -215,7 +228,11 @@ export async function readArchivePrStatus(
     if (!merged && parsed.state !== 'open' && parsed.state !== 'closed') {
       return { state: 'unknown', reason: 'provider 返回了未识别的 PR 状态' }
     }
-    const state = merged ? 'merged' : parsed.state
+    const state: ArchivePrStatusResult['state'] = merged
+      ? 'merged'
+      : parsed.state === 'open'
+        ? 'open'
+        : 'closed'
     return {
       state,
       ...(typeof parsed.html_url === 'string' && parsed.html_url ? { url: parsed.html_url } : {}),

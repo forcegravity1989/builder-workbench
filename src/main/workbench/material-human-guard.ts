@@ -72,6 +72,10 @@ function roundChanges(
   current: AcceptanceMaterial['results'][number]['rounds'],
   incoming: AcceptanceMaterial['results'][number]['rounds']
 ): void {
+  const openIncoming = (incoming ?? []).filter((round) => !round.closedAt)
+  if (openIncoming.length > 1) {
+    changes.push(`results[${goalId}].rounds`)
+  }
   const currentById = new Map((current ?? []).map((round) => [round.id, round]))
   const incomingById = new Map((incoming ?? []).map((round) => [round.id, round]))
   for (const [roundId, currentRound] of currentById) {

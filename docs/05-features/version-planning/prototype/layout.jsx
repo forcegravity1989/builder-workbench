@@ -211,6 +211,10 @@ function PrototypeLayout({
                     setProgress={planning.edited(setProgress)}
                     setRisk={planning.edited(setRisk)}
                     update={planning.edited(update)}
+                    removeGoal={(goalId) => {
+                      setGoals((currentGoals) => currentGoals.filter((goal) => goal.id !== goalId))
+                      setNotice('原型示意：已删除目标，关联 Issue 保留在任务来源中。')
+                    }}
                     openSource={planning.openSource}
                     {...{
                       goalIssues,

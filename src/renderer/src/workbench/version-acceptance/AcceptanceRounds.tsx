@@ -5,7 +5,15 @@ import type {
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
 
-export function AcceptanceRounds({ document }: { document: AcceptanceMaterial }) {
+export function AcceptanceRounds({
+  document,
+  selectedId,
+  onSelect
+}: {
+  document: AcceptanceMaterial
+  selectedId: string
+  onSelect(id: string): void
+}) {
   const entries = document.results.flatMap((result) =>
     (result.rounds ?? []).map((round) => ({ goalId: result.goalId, round }))
   )
@@ -21,56 +29,70 @@ export function AcceptanceRounds({ document }: { document: AcceptanceMaterial })
     round,
     entries: entries.filter((entry) => entry.round.id === round.id)
   }))
+  const selectedHistory = historyEntries.find(({ round }) => round.id === selectedId)
   return (
     <section className="va-round-block" aria-label="验收轮次">
-      <strong>当前轮</strong>
-      <span>{current?.round.week || (entries.length === 0 ? '当前材料' : 'Unknown 周次')}</span>
-      <span>
-        {current?.round.kind === 'final'
-          ? '验收'
-          : current
-            ? '进展'
-            : entries.length === 0
-              ? '当前轮'
-              : 'Unknown 类型'}
-      </span>
-      {historyEntries.length > 0 && (
-        <details>
-          <summary>历史轮次 · {historyEntries.length}</summary>
-          {historyEntries.map(({ round, entries: roundEntries }) => (
-            <details className="va-round-history" key={round.id}>
-              <summary>
-                {round.week || 'Unknown 周次'} · {round.kind === 'final' ? '验收' : '进展'}
-              </summary>
-              <div className="va-round-snapshot">
-                {roundEntries.map(({ goalId, round: entryRound }) => (
-                  <div key={`${round.id}:${goalId}`}>
-                    <strong>目标 {goalId}</strong>
-                    {entryRound.snapshot.goals.map((goal) => (
-                      <div key={`${round.id}:${goalId}:${goal.goalId}`}>
-                        结论 {goal.decision || 'Unknown'} · 进展 {goal.progress || 'Unknown'}
-                        {goal.next ? ` · 下一步：${goal.next}` : ''}
-                      </div>
-                    ))}
-                    {Object.entries(entryRound.snapshot.issueNotes).map(([key, note]) => (
-                      <div key={`${round.id}:${goalId}:note:${key}`}>
-                        Issue {key} · 备注：{note || 'Unknown'}
-                      </div>
-                    ))}
-                    {Object.entries(entryRound.snapshot.issueMarks).map(([key, mark]) => (
-                      <div key={`${round.id}:${goalId}:mark:${key}`}>
-                        Issue {key} ·{' '}
-                        {[mark.carry ? '遗留' : null, mark.risk ? '风险' : null]
-                          .filter(Boolean)
-                          .join('、') || '无标记'}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </details>
+      <div className="va-round-picker">
+        <strong>验收轮次</strong>
+        {entries.length > 0 ? (
+          <select
+            aria-label="验收周次"
+            value={selectedId}
+            onChange={(event) => onSelect(event.target.value)}
+          >
+            {current && (
+              <option value={current.round.id}>
+                当前 · {current.round.week || 'Unknown 周次'} ·{' '}
+                {current.round.kind === 'final' ? '验收' : '进展'}
+              </option>
+            )}
+            {historyEntries.map(({ round }) => (
+              <option value={round.id} key={round.id}>
+                历史 · {round.week || 'Unknown 周次'} · {round.kind === 'final' ? '验收' : '进展'}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span>当前材料</span>
+        )}
+        <span className="va-muted">
+          {entries.length === 0
+            ? '当前轮可编辑'
+            : selectedHistory || !current
+              ? '历史轮只读'
+              : '当前轮可编辑'}
+        </span>
+      </div>
+      {selectedHistory && (
+        <div
+          className="va-round-snapshot"
+          aria-label={`${selectedHistory.round.week || '历史'}轮次快照`}
+        >
+          {selectedHistory.entries.map(({ goalId, round: entryRound }) => (
+            <div key={`${selectedHistory.round.id}:${goalId}`}>
+              <strong>目标 {goalId}</strong>
+              {entryRound.snapshot.goals.map((goal) => (
+                <div key={`${selectedHistory.round.id}:${goalId}:${goal.goalId}`}>
+                  结论 {goal.decision || 'Unknown'} · 进展 {goal.progress || 'Unknown'}
+                  {goal.next ? ` · 下一步：${goal.next}` : ''}
+                </div>
+              ))}
+              {Object.entries(entryRound.snapshot.issueNotes).map(([key, note]) => (
+                <div key={`${selectedHistory.round.id}:${goalId}:note:${key}`}>
+                  Issue {key} · 备注：{note || 'Unknown'}
+                </div>
+              ))}
+              {Object.entries(entryRound.snapshot.issueMarks).map(([key, mark]) => (
+                <div key={`${selectedHistory.round.id}:${goalId}:mark:${key}`}>
+                  Issue {key} ·{' '}
+                  {[mark.carry ? '遗留' : null, mark.risk ? '风险' : null]
+                    .filter(Boolean)
+                    .join('、') || '无标记'}
+                </div>
+              ))}
+            </div>
           ))}
-        </details>
+        </div>
       )}
     </section>
   )

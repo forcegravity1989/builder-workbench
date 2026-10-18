@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type {
   AcceptanceMaterial,
   PlanningMaterial,
@@ -69,7 +69,8 @@ export function AcceptanceGoalResult({
   decisionSource,
   disabled,
   onChange,
-  onOpenTask
+  onOpenTask,
+  metrics
 }: {
   document: AcceptanceMaterial
   plan: PlanningMaterial
@@ -78,6 +79,7 @@ export function AcceptanceGoalResult({
   disabled: boolean
   onChange(document: AcceptanceMaterial): void
   onOpenTask(task: CycleTaskSnapshot): Promise<void>
+  metrics?: ReactNode
 }) {
   const result =
     document.results.find((item) => item.goalId === goal.goalId) ?? emptyGoalResult(goal.goalId)
@@ -183,24 +185,6 @@ export function AcceptanceGoalResult({
             placeholder="本轮实际进展；没有读数时保持事实描述"
             onChange={(event) => edit({ progress: event.target.value } as Partial<GoalResult>)}
           />
-          {(goal.deliverable?.trim() || result.deliveries.length > 0) && (
-            <>
-              <span>实际交付</span>
-              <input
-                aria-label={`${goal.title} 实际交付 1`}
-                value={result.deliveries[0]?.title ?? ''}
-                placeholder="填写实际交付结果或材料说明"
-                onChange={(event) =>
-                  edit({
-                    deliveries: [
-                      { ...(result.deliveries[0] ?? { location: '' }), title: event.target.value },
-                      ...result.deliveries.slice(1)
-                    ]
-                  })
-                }
-              />
-            </>
-          )}
         </label>
         <div className="va-story-cell va-material-cell">
           <span className="va-label">材料</span>
@@ -225,60 +209,28 @@ export function AcceptanceGoalResult({
           )}
         </div>
       </div>
-      {goal.acceptance?.trim() && (
-        <div className="va-goal-acceptance">验收标准：{goal.acceptance}</div>
-      )}
-      <div className="va-decision-row">
-        <label>
-          <span>人的结论</span>
-          <select
-            className={
-              result.decision
-                ? freshness === 'current'
-                  ? `va-outcome-${result.decision.outcome}`
-                  : 'va-outcome-pending'
-                : undefined
-            }
-            aria-label={`${goal.title} 人的结论`}
-            value={result.decision?.outcome ?? ''}
-            onChange={(event) =>
-              void decide(event.target.value as NonNullable<GoalResult['decision']>['outcome'])
-            }
-          >
-            <option value="" disabled>
-              待核对
-            </option>
-            <option value="pending">待核</option>
-            <option value="met">达成</option>
-            <option value="not-met">未达</option>
-          </select>
-        </label>
-        {freshness === 'changed' && (
+      {freshness === 'changed' && (
+        <div className="va-decision-row">
           <button
             className="wb-btn wb-btn-sm"
             onClick={() => void decide(result.decision?.outcome ?? 'pending')}
           >
             重新确认此结论
           </button>
-        )}
-      </div>
+        </div>
+      )}
       {goal.acceptance?.trim() && (
         <div className="va-acceptance-criteria">
           <span className="va-label">验收标准</span>
           <p>{goal.acceptance}</p>
         </div>
       )}
+      {metrics && <div className="vc-goal-metrics">{metrics}</div>}
       <label className={gap ? 'va-note va-gap' : 'va-note'}>
         {gap ? '未达项' : '验收依据'}
         <span className="va-readonly-note">{result.note || 'Unknown；请在进展中补充事实依据'}</span>
       </label>
-      {(goal.deliverable?.trim() || result.deliveries.length > 0) && (
-        <AcceptanceDeliveryDetails
-          title={goal.title}
-          result={result}
-          onChange={(deliveries) => edit({ deliveries })}
-        />
-      )}
+      {result.deliveries.length > 0 && <AcceptanceDeliveryDetails result={result} />}
       {result.decision && (
         <p className={freshness === 'changed' ? 'va-warning' : 'va-muted'}>
           {freshness === 'changed'
@@ -307,100 +259,100 @@ export function AcceptanceGoalResult({
           {error}
         </p>
       )}
-      {relatedIssues.length > 0 && (
-        <section className="va-issue-blocks" aria-label={`${goal.title} 关联 Issue`}>
-          {ISSUE_GROUPS.map((group) => {
-            const items = relatedIssues.filter((reference) => {
-              const snapshot = snapshotByKey.get(issueKey(reference))
-              return snapshot?.kind === 'ready'
-                ? issueClass(snapshot.labels) === group.key
-                : group.key === 'unclassified'
-            })
-            if (!items.length) {
-              return null
-            }
-            return (
-              <details className="va-issue-group" key={group.key} open>
-                <summary>
-                  {group.label} · {items.length}
-                </summary>
-                {items.map((reference) => {
-                  const key = issueKey(reference)
-                  const snapshot = snapshotByKey.get(key)
-                  const task = snapshot?.kind === 'ready' ? snapshot : undefined
-                  const unavailableReason = snapshot?.kind === 'unavailable' ? snapshot.error : null
-                  const mark = issueMarkFor(result, reference, plan.tasks)
-                  const note = issueNoteFor(result, reference, plan.tasks)
-                  const normalizedState = task?.state.trim().toLowerCase()
-                  const issueTone = mark?.risk
-                    ? ' is-risk'
-                    : mark?.carry ||
-                        (task !== undefined &&
-                          !['closed', 'merged'].includes(normalizedState ?? ''))
-                      ? ' is-carry'
-                      : ''
-                  return (
-                    <div className={`va-issue-row${issueTone}`} key={key}>
-                      <div className="va-issue-head">
-                        {task ? (
-                          <button
-                            type="button"
-                            className="va-issue-link"
-                            onClick={() => void onOpenTask(task)}
-                          >
-                            #{reference.number} {task.title}
-                          </button>
-                        ) : (
-                          <span>#{reference.number}</span>
-                        )}
-                        {!task && (
-                          <strong>
-                            {unavailableReason
-                              ? `读取失败：${unavailableReason}`
-                              : '状态未知，打开原生 Issue 核对'}
-                          </strong>
-                        )}
-                        <span className="va-muted">
-                          {task ? readableTaskState(task.state) : 'Unknown'}
-                          {task?.assignee ? ` · ${task.assignee}` : ''}
-                        </span>
-                      </div>
-                      <input
-                        aria-label={`Issue ${reference.number} 备注`}
-                        value={note ?? ''}
-                        placeholder="本轮进展/备注"
-                        onChange={(event) => editIssueNote(reference, event.target.value)}
-                      />
-                      <div className="va-issue-marks">
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={Boolean(mark?.carry)}
-                            onChange={(event) =>
-                              editIssueMark(reference, 'carry', event.target.checked)
-                            }
-                          />
-                          遗留
-                        </label>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={Boolean(mark?.risk)}
-                            onChange={(event) =>
-                              editIssueMark(reference, 'risk', event.target.checked)
-                            }
-                          />
-                          风险
-                        </label>
-                      </div>
+      <details className="va-issue-blocks" aria-label={`${goal.title} 关联 Issue`}>
+        <summary className="va-issue-blocks-summary">关联 Issue · {relatedIssues.length}</summary>
+        {!relatedIssues.length && <p className="va-muted">暂无关联 Issue</p>}
+        {ISSUE_GROUPS.map((group) => {
+          const items = relatedIssues.filter((reference) => {
+            const snapshot = snapshotByKey.get(issueKey(reference))
+            return snapshot?.kind === 'ready'
+              ? issueClass(snapshot.labels) === group.key
+              : group.key === 'unclassified'
+          })
+          if (!items.length) {
+            return null
+          }
+          return (
+            <details className="va-issue-group" key={group.key}>
+              <summary>
+                {group.label} · {items.length}
+              </summary>
+              {items.map((reference) => {
+                const key = issueKey(reference)
+                const snapshot = snapshotByKey.get(key)
+                const task = snapshot?.kind === 'ready' ? snapshot : undefined
+                const unavailableReason = snapshot?.kind === 'unavailable' ? snapshot.error : null
+                const mark = issueMarkFor(result, reference, plan.tasks)
+                const note = issueNoteFor(result, reference, plan.tasks)
+                const normalizedState = task?.state.trim().toLowerCase()
+                const issueTone = mark?.risk
+                  ? ' is-risk'
+                  : mark?.carry ||
+                      (task !== undefined && !['closed', 'merged'].includes(normalizedState ?? ''))
+                    ? ' is-carry'
+                    : ''
+                return (
+                  <div className={`va-issue-row${issueTone}`} key={key}>
+                    <div className="va-issue-head">
+                      {task ? (
+                        <button
+                          type="button"
+                          className="va-issue-link"
+                          onClick={() => void onOpenTask(task)}
+                        >
+                          #{reference.number} {task.title}
+                        </button>
+                      ) : (
+                        <span>#{reference.number}</span>
+                      )}
+                      {!task && (
+                        <strong>
+                          {unavailableReason
+                            ? `读取失败：${unavailableReason}`
+                            : '状态未知，打开原生 Issue 核对'}
+                        </strong>
+                      )}
+                      <span className="va-muted">
+                        {task ? readableTaskState(task.state) : 'Unknown'}
+                        {task?.assignee ? ` · ${task.assignee}` : ''}
+                      </span>
                     </div>
-                  )
-                })}
-              </details>
-            )
-          })}
-        </section>
-      )}
+                    <input
+                      aria-label={`Issue ${reference.number} 备注`}
+                      value={note ?? ''}
+                      placeholder="本轮进展/备注"
+                      onChange={(event) => editIssueNote(reference, event.target.value)}
+                    />
+                    <div className="va-issue-marks">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(mark?.carry)}
+                          onChange={(event) =>
+                            editIssueMark(reference, 'carry', event.target.checked)
+                          }
+                        />
+                        遗留
+                      </label>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(mark?.risk)}
+                          disabled={disabled || !mark?.carry}
+                          onChange={(event) =>
+                            editIssueMark(reference, 'risk', event.target.checked)
+                          }
+                        />
+                        风险
+                      </label>
+                    </div>
+                  </div>
+                )
+              })}
+            </details>
+          )
+        })}
+      </details>
     </fieldset>
   )
 }

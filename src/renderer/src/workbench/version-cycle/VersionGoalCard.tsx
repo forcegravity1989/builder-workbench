@@ -123,8 +123,8 @@ export function VersionGoalCard({
             )}
           </div>
         ) : null}
-        {open && extra}
         {open && metrics && <div className="vc-goal-metrics">{metrics}</div>}
+        {open && extra}
         {open && result && <div className="vc-goal-result">{result}</div>}
       </div>
     </article>

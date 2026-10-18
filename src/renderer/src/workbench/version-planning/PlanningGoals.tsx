@@ -1,5 +1,13 @@
 import { useEffect, useState, type Ref } from 'react'
-import { ChevronsDownUp, ChevronsUpDown, Plus, Presentation, RefreshCw, Trash2 } from 'lucide-react'
+import {
+  ChevronsDownUp,
+  ChevronsUpDown,
+  MessageSquarePlus,
+  Plus,
+  Presentation,
+  RefreshCw,
+  Trash2
+} from 'lucide-react'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
 import { VersionGoalCard } from '../version-cycle/VersionGoalCard'
 import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
@@ -47,20 +55,33 @@ function PlanIssueGroups({
   goal,
   plan,
   reads,
-  onTask
+  onTask,
+  onPrepare
 }: {
   goal: VersionGoal
   plan: PlanningMaterial
   reads: CycleTaskRead[] | null
   onTask(task: CycleTaskSnapshot): Promise<void>
+  onPrepare(): Promise<void>
 }) {
   const related = plan.tasks.filter((task) => task.goalId === goal.goalId)
-  if (!related.length) {
-    return null
-  }
   const byReference = new Map((reads ?? []).map((item) => [issueKey(item.reference), item]))
   return (
-    <section className="vp-issue-blocks" aria-label={`${goal.title} 关联 Issue`}>
+    <details className="vp-issue-blocks" aria-label={`${goal.title} 关联 Issue`}>
+      <summary className="vp-issue-blocks-summary">关联 Issue · {related.length}</summary>
+      <div className="vp-issue-blocks-head">
+        <span className="vp-label">关联 Issue</span>
+        <button
+          type="button"
+          className="wb-btn wb-btn-ghost wb-btn-sm"
+          title="在当前计划会话中逐条拆解关联 Issue"
+          onClick={() => void onPrepare()}
+        >
+          <MessageSquarePlus size={14} aria-hidden="true" />
+          在会话中拆解
+        </button>
+      </div>
+      {!related.length && <p className="vp-muted">该目标暂无关联 Issue；在会话中拆解并关联。</p>}
       {ISSUE_GROUPS.map((group) => {
         const items = related.filter((reference) => {
           const read = byReference.get(issueKey(reference))
@@ -72,7 +93,7 @@ function PlanIssueGroups({
           return null
         }
         return (
-          <details className="vp-issue-group" key={group.key} open>
+          <details className="vp-issue-group" key={group.key}>
             <summary>
               {group.label} · {items.length}
             </summary>
@@ -102,7 +123,7 @@ function PlanIssueGroups({
           </details>
         )
       })}
-    </section>
+    </details>
   )
 }
 
@@ -116,7 +137,8 @@ export function PlanningGoals({
   onMinutes,
   scope,
   taskPort,
-  onTask
+  onTask,
+  onPrepareIssues
 }: {
   plan?: PlanningMaterial
   disabled: boolean
@@ -128,6 +150,7 @@ export function PlanningGoals({
   scope: CycleScope | null
   taskPort: TaskPort
   onTask(task: CycleTaskSnapshot): Promise<void>
+  onPrepareIssues(goal: VersionGoal): Promise<void>
 }) {
   const [reads, setReads] = useState<CycleTaskRead[] | null>(null)
   const [expanded, setExpanded] = useState(true)
@@ -284,7 +307,15 @@ export function PlanningGoals({
                   {issueCount > 0 && <span>Issue {issueCountLabel}</span>}
                 </span>
               }
-              extra={<PlanIssueGroups goal={goal} plan={plan} reads={reads} onTask={onTask} />}
+              extra={
+                <PlanIssueGroups
+                  goal={goal}
+                  plan={plan}
+                  reads={reads}
+                  onTask={onTask}
+                  onPrepare={() => onPrepareIssues(goal)}
+                />
+              }
               metrics={
                 <PlanGoalMetrics
                   goal={goal}

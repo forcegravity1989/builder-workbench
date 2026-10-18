@@ -34,8 +34,8 @@ Acceptance 材料继续使用 `schema_version=3`、`identity`、`planRef`、`can
 计划和验收使用同一 `version-cycle/GoalCard` 骨架，目标卡是页面的主要信息单元：
 
 1. **结论行（收起态）**：数据推导的结论灯、G 编号与目标、负责人、Issue 计数、遗留/风险标记和结论选择。无数据的灯、计数和标记显示 Unknown/空，不以组件默认值补绿。
-2. **故事行（展开态）**：横排三格「约定交付｜进展｜材料」。计划侧显示既有 deliverable/acceptance、deadline/owner 和唯一的目标级 progress 输入；验收侧 progress 与材料依据来自当前轮结果。旧 `reason` 只作为兼容读回，生产编辑入口统一为 progress。
-3. **指标行**：只读的一行目标、当前读数、窗口和来源状态；配置与刷新在会话/SOP 侧完成。没有承诺或读数时保持 Unknown，不提供卡面指标编辑器。
+2. **故事行（展开态）**：横排三格「约定交付｜进展｜材料」。计划侧显示既有 deliverable/acceptance、deadline/owner 和唯一的目标级 progress 输入；验收侧 progress 与材料依据来自当前轮结果；存量 `deliveries` 只读回显并通过材料位置打开。旧 `reason` 只作为兼容读回，生产编辑入口统一为 progress。
+3. **指标行**：计划卡允许从项目目录添加/移除承诺、编辑本版目标并展开定义与采集依据；验收卡只读呈现承诺、读数和来源状态。刷新读数/目录及会话配置沿用现有指标能力。没有承诺或读数时保持 Unknown，不把缺数据点绿。
 4. **Issue 子块**：按 provider labels 分为 Bug 类、Feature 类、未分类三组；有标签但没有 Bug/缺陷标签的 Issue 默认归 Feature，无标签才归未分类。每行呈现原生状态、标题、assignee、内联备注和 carry/risk 标记。开放/遗留以黄色、风险以红色显示，颜色只来自真实状态和人工标记。Issue 详情仍由原生 TaskPort 打开；不保存 Issue 正文快照。
 5. **未达下一步与会后指导**：未达目标显示 next；会后指导位于页面底部独立块，不在卡内另造“遗留汇总”或注入按钮。
 

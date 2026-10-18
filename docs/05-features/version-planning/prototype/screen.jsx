@@ -17,7 +17,8 @@ import {
   GitPullRequest,
   ListTodo,
   Presentation,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react'
 import { metrics } from './snapshot.js'
 
@@ -39,6 +40,7 @@ function PlanningContent({
   progress,
   promptConversation,
   refreshMetrics,
+  removeGoal,
   review,
   risk,
   sessionAvailable,
@@ -170,6 +172,15 @@ function PlanningContent({
                     关联 Issue · {related.length}
                   </span>
                 </span>
+                <button
+                  className="btn btn-ghost btn-icon goal-delete"
+                  title="删除目标"
+                  aria-label={`删除目标 ${g.label}`}
+                  disabled={disabled}
+                  onClick={() => removeGoal(g.id)}
+                >
+                  <X />
+                </button>
               </div>
               {open && (
                 <div className="goal-card-body">

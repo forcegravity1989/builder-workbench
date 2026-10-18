@@ -130,6 +130,18 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       draftKey: planningDraftKey(scopeKey, plan.version)
     })
   }
+  const prepareIssues = async (goal: NonNullable<typeof plan>['goals'][number]) => {
+    if (!plan) {
+      return
+    }
+    const references = plan.tasks.filter((task) => task.goalId === goal.goalId)
+    const referenceText = references.length
+      ? references.map((task) => `${task.provider}:${task.repository}#${task.number}`).join('、')
+      : '当前暂无关联 Issue，请先从目标结果出发确认需要拆解的任务'
+    await entry.start(
+      `请在当前版本计划会话中，围绕目标「${goal.title || goal.goalId}」逐条读取并拆解任务。当前关联 Issue：${referenceText}。根据真实 Issue 内容与项目约定，为每条任务补充 Bug 或 Feature 标签和必要的拆解信息；不要凭空改变 Issue 状态或替人确认完成。`
+    )
+  }
   const state = !plan
     ? ''
     : material.draft?.error
@@ -251,6 +263,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             scope={scope}
             taskPort={taskPort}
             onTask={(task) => act(() => openTask(task))}
+            onPrepareIssues={(goal) => act(() => prepareIssues(goal))}
           />
           <CycleArchive
             archivePr={plan?.workflow?.archivePr}
