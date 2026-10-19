@@ -27,8 +27,8 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
 
 ### A. 版本描述（Release 正文）
 
-1. 复制 [`assets/release-notes-template.md`](assets/release-notes-template.md)，按 [版本描述规范](references/release-notes-spec.md) 逐节填写：**人话**，六节节名固定，按**用户认得出的功能**讲这版有什么变化、按**用户能走的流程**讲体验。**不是** `--generate-notes` 的 PR 罗列，也不是已合 issue / 目标 / 验收屏内容的堆叠。特性树（`docs/05-features/README.md`）与注册旅程只作**取材与查漏依据**，正文**不出现**旅程编号（PJ/AJ/MJ/RJ/CJ）、文件名、逐条 issue 号、六环 `●◐○` 矩阵。
-2. 诚实边界（已验/未验同段、缺数 Unknown 不填 0、未做到写原因与下一步），追溯只留末尾一行源码号（需要资产校验值时，发布后读回并经 `gh release edit --notes-file` 补进正文）。存为 `release-notes.md`，**经人确认**后再进入发版本。
+1. 复制 [`assets/release-notes-template.md`](assets/release-notes-template.md)，按 [版本描述规范](references/release-notes-spec.md) 填写：**人话**，正文只有【这版有什么变化】一节（节名固定，不加节、不拆节），按**用户认得出的功能**讲这版有什么变化。**不是** `--generate-notes` 的 PR 罗列，也不是已合 issue / 目标 / 验收屏内容的堆叠。特性树（`docs/05-features/README.md`）与注册旅程只作**取材与查漏依据**，正文**不出现**旅程编号（PJ/AJ/MJ/RJ/CJ）、文件名、逐条 issue 号、六环 `●◐○` 矩阵。
+2. 诚实边界（没做到的写原因与下一步、缺数如实写不填 0、不冒充绿）。存为 `release-notes.md`，**经人确认**后再进入发版本。
 
 ### B. 发版本（触发 bw-release.yml）
 
@@ -82,15 +82,15 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
 | `gh workflow run` 找不到 bw-release.yml | 该 workflow 须先合入目标分支，才能在该 ref 上触发 |
 | HEAD 不在远端 / `gh` 未登录 / 工作区脏 | 停止发布，说明需要的 push、登录或清理动作 |
 | `--publish` 未带 `--notes-file` | 脚本拒绝，不回退 `--generate-notes`；先按规范写正文 |
-| 正文缺节 / 是 PR 罗列 / 混入旅程编号·文件名·issue 号·六环矩阵 / 末尾无源码号 | 不合版本描述规范（非人话或不可溯），退回重写，不发布 |
+| 正文不是【这版有什么变化】单节 / 是 PR 罗列 / 混入旅程编号·文件名·issue 号·六环矩阵 | 不合版本描述规范（非人话），退回重写，不发布 |
 | 验收报告事实无来源 | 留空标注 Unknown，不编造读数/编号/哈希；不预填达成 |
 
 ## 7. 示例
 
-输入：「出包并发版本 v0.6.0-rc.20261101.1」。动作：按规范写 `release-notes.md`（人话讲本版功能变化与用户能走的流程）并经人确认 → 授权后 `gh workflow run bw-release.yml --ref main -f version=0.6.0-rc.20261101.1 -F notes=@release-notes.md` → `gh run watch` 监控 → `gh release view` 读回。输出：Release URL、标签、提交、三资产与 SHA-256。版本收尾另按 D 出验收报告并归档登记。
+输入：「出包并发版本 v0.6.0-rc.20261101.1」。动作：按规范写 `release-notes.md`（人话讲本版功能变化）并经人确认 → 授权后 `gh workflow run bw-release.yml --ref main -f version=0.6.0-rc.20261101.1 -F notes=@release-notes.md` → `gh run watch` 监控 → `gh release view` 读回。输出：Release URL、标签、提交、三资产与 SHA-256。版本收尾另按 D 出验收报告并归档登记。
 
 ## 8. 纪律表
 
 | 必须 | 禁止 | 越界信号 | 你不做的事 |
 |---|---|---|---|
-| 区分出包 / 发布 / 版本描述 / 验收报告；固定动作触发 bw-release.yml，不本地复刻；发布后读回；正文说人话、按功能与流程组织、末尾留源码号 | 未授权触发发布 workflow 或打 tag；上传旧包；用 `--generate-notes`；把 issue/目标/用例扁平罗列当正文；把旅程编号·文件名·issue 号·六环矩阵等黑话写进正文；编造读数 | 需覆盖标签、删 Release、改官方 release-cut、无来源写成绩 | 不合并 PR、不关闭 Issue、不替用户决定版本号、不替人确认版本达成 |
+| 区分出包 / 发布 / 版本描述 / 验收报告；固定动作触发 bw-release.yml，不本地复刻；发布后读回；正文说人话、只有【这版有什么变化】一节、按功能组织 | 未授权触发发布 workflow 或打 tag；上传旧包；用 `--generate-notes`；把 issue/目标/用例扁平罗列当正文；把旅程编号·文件名·issue 号·六环矩阵等黑话写进正文；编造读数 | 需覆盖标签、删 Release、改官方 release-cut、无来源写成绩 | 不合并 PR、不关闭 Issue、不替用户决定版本号、不替人确认版本达成 |
