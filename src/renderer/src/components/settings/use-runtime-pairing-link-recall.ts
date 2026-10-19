@@ -83,7 +83,13 @@ export function useRuntimePairingLinkRecall() {
     }
   }, [])
 
-  const clearGeneratedUrls = (): void => {
+  const clearRevokedLink = (deviceId: string): void => {
+    const currentId =
+      runtimePairingLinkCache.runtimePairingDeviceId ?? loadRuntimePairingLinkReference()?.deviceId
+    if (currentId !== deviceId) {
+      return
+    }
+    linkEditRevisionRef.current += 1
     clearGeneratedRuntimePairingLink()
     if (mountedRef.current) {
       setRuntimePairingUrl(null)
@@ -107,6 +113,6 @@ export function useRuntimePairingLinkRecall() {
     runtimePairingDeviceId,
     setRuntimePairingDeviceId,
     linkEditRevisionRef,
-    clearGeneratedUrls
+    clearRevokedLink
   }
 }

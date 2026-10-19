@@ -39,7 +39,7 @@ export function RuntimePairingUrlGenerator({
     runtimePairingDeviceId,
     setRuntimePairingDeviceId,
     linkEditRevisionRef,
-    clearGeneratedUrls
+    clearRevokedLink
   } = useRuntimePairingLinkRecall()
   const [runtimeAccessGrants, setRuntimeAccessGrants] = useState<RuntimeAccessGrant[]>([])
   const [isLoadingAccessGrants, setIsLoadingAccessGrants] = useState(false)
@@ -149,7 +149,7 @@ export function RuntimePairingUrlGenerator({
   }, [loadNetworkInterfaces])
 
   useEffect(() => {
-    if (intent !== 'another' || networkInterfaces.length === 0 || generatedAddress !== null) {
+    if (intent !== 'another' || networkInterfaces.length === 0) {
       return
     }
     const addressStillAvailable = networkInterfaces.some(
@@ -160,7 +160,7 @@ export function RuntimePairingUrlGenerator({
       runtimePairingLinkCache.selectedAddress = nextAddress
       setSelectedAddress(nextAddress)
     }
-  }, [intent, networkInterfaces, selectedAddress, generatedAddress, setSelectedAddress])
+  }, [intent, networkInterfaces, selectedAddress, setSelectedAddress])
 
   useEffect(() => {
     void loadRuntimeAccessGrants()
@@ -246,10 +246,10 @@ export function RuntimePairingUrlGenerator({
   }
 
   const revokeRuntimeAccess = async (grant: RuntimeAccessGrant): Promise<void> => {
-    linkEditRevisionRef.current += 1
     setRevokingGrantId(grant.deviceId)
     try {
       const result = await window.api.mobile.revokeRuntimeAccess({ deviceId: grant.deviceId })
+      clearRevokedLink(grant.deviceId)
       if (!result.revoked) {
         if (mountedRef.current) {
           toast.error(
@@ -266,9 +266,6 @@ export function RuntimePairingUrlGenerator({
         setRuntimeAccessGrants((current) =>
           current.filter((entry) => entry.deviceId !== grant.deviceId)
         )
-      }
-      if (runtimePairingDeviceId === grant.deviceId) {
-        clearGeneratedUrls()
       }
       if (mountedRef.current) {
         toast.success(
