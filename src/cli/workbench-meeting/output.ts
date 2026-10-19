@@ -69,7 +69,7 @@ export async function writeMeetingOutput(
   const temporary = `${relativePath}.partial-${randomUUID()}`
   const bytes = Buffer.from(`${JSON.stringify(document, null, 2)}\n`, 'utf8')
   const size = 24_000
-  let created = false
+  let published = false
   try {
     for (let offset = 0; offset < bytes.length; offset += size) {
       await ctx.client.call('files.writeBase64Chunk', {
@@ -79,7 +79,6 @@ export async function writeMeetingOutput(
         contentBase64: bytes.subarray(offset, offset + size).toString('base64'),
         append: offset > 0
       })
-      created = true
     }
     for (let offset = 0; offset < bytes.length; offset += size) {
       const read = (
@@ -107,9 +106,10 @@ export async function writeMeetingOutput(
       newRelativePath: relativePath,
       ...provenance
     })
-    created = false
+    published = true
   } finally {
-    if (created) {
+    // The host can create the UUID path before a write response is lost.
+    if (!published) {
       await ctx.client
         .call('files.delete', { worktree, relativePath: temporary, ...provenance })
         .catch(() => {})

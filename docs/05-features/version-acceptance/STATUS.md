@@ -41,7 +41,7 @@
 | A10 自动化真实到点、新会话与入口去重 | ◐ | 复用已登记自动化与单次上下文；真实到点触发未在本轮运行 |
 | A11 出包按远端分派、真实读数与下载 | ◐ | AcceptancePackage、CloudDragon/gh 既有链路；历史页不运行新出包。既有验证见 PR #360 及后续修复，安装包完整传输与最新真壳闭环待验 |
 | A12 统一目标卡、单行 Issue、三阶段同板 | ◐ | VersionGoalCard 及卡内分组、材料块、紧凑指标；类型/静态检查和原型不代替真实视觉验收 |
-| A13 轮次与整页历史、会议指导、无导出件 | ◐ | cycle Git 历史目录、固定完整来源、全页只读、pending→confirmed 人审、取稿与 subagent SOP、周一候选接续；真实内网取稿及跨周重启待人验 |
+| A13 轮次与整页历史、会议指导、无导出件 | ◐ | cycle Git 历史目录、固定完整来源、全页只读；全轮封存时说明只读原因并引导会话接续；pending→confirmed 人审、取稿与 subagent SOP、周一候选接续；真实内网取稿及跨周重启待人验 |
 | A14 两屏共用会话栏收折 | ◐ | usePlanColumnResize 与 AppWorkspaceShell 的 BW 列宽显隐；材料打开展开，Orca 内核未改，真壳终端 fit 待验 |
 | CodeHub 归档 PR 状态 | ◐ | mr view 读取与远端身份核对；缺失/空/未知状态保持 Unknown，短缓存和并发合并。状态映射协议测试可用，真实 CodeHub 项目待验 |
 

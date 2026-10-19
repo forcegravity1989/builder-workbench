@@ -47,6 +47,8 @@ function readableTaskState(state: string): string {
     case 'closed':
     case 'merged':
       return '已关闭'
+    case 'unknown':
+      return 'Unknown'
     default:
       return state.trim() || 'Unknown'
   }

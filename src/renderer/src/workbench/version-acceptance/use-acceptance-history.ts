@@ -228,6 +228,10 @@ export function useAcceptanceHistory(input: {
     currentWeek: roundState?.current?.week,
     locked:
       roundState?.kind === 'conflict' || (roundState?.kind === 'ready' && !roundState.current),
+    notice:
+      !historical && roundState?.kind === 'ready' && !roundState.current
+        ? '已有验收记录均已封存，当前材料只读。如需继续更新，请在验收会话中承接新周。'
+        : null,
     legacyRound: choice?.legacyRound,
     document: historical ? selected?.document : document,
     plan: historical ? (selected?.plan ?? null) : plan,

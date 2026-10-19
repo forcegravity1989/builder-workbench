@@ -37,7 +37,10 @@ describe('meeting transcript acquisition protocol', () => {
 
   it('writes and independently reads back on the selected SSH host before publishing the output', async () => {
     let bytes = Buffer.alloc(0)
+    let publishedBytes = Buffer.alloc(0)
     let corruptRead = false
+    let failWriteResponse = false
+    let failCleanup = false
     const client = new RuntimeClient('unused-test-runtime', 100, null, null)
     let hostId = 'ssh:test-host'
     const call = vi.spyOn(client, 'call').mockImplementation(async (method, input) => {
@@ -53,6 +56,18 @@ describe('meeting transcript acquisition protocol', () => {
         bytes = params.append
           ? Buffer.concat([bytes, Buffer.from(String(params.contentBase64), 'base64')])
           : Buffer.from(String(params.contentBase64), 'base64')
+        if (failWriteResponse) {
+          throw new Error('write response lost')
+        }
+      }
+      if (method === 'files.rename') {
+        publishedBytes = bytes
+      }
+      if (method === 'files.delete') {
+        if (failCleanup) {
+          throw new Error('cleanup unavailable')
+        }
+        bytes = Buffer.alloc(0)
       }
       if (method === 'files.readChunk') {
         const chunk = bytes.subarray(
@@ -98,6 +113,27 @@ describe('meeting transcript acquisition protocol', () => {
       'files.delete',
       expect.objectContaining({ worktree: 'id:ssh-tree' })
     )
+    failWriteResponse = true
+    for (const cleanupUnavailable of [false, true]) {
+      call.mockClear()
+      failCleanup = cleanupUnavailable
+      await expect(writeMeetingOutput(ctx, target, content)).rejects.toThrow('write response lost')
+      const temporary = z
+        .record(z.string(), z.unknown())
+        .parse(call.mock.calls[0]?.[1]).relativePath
+      expect(temporary).toMatch(/^\.bw\/meeting\.json\.partial-[\da-f-]{36}$/)
+      expect(call.mock.calls.map(([method]) => method)).toEqual([
+        'files.writeBase64Chunk',
+        'files.delete'
+      ])
+      expect(call).toHaveBeenLastCalledWith('files.delete', {
+        worktree: target.worktree,
+        relativePath: temporary,
+        ...target.provenance
+      })
+      expect(JSON.parse(publishedBytes.toString('utf8'))).toEqual(content)
+      expect(bytes.length).toBe(cleanupUnavailable ? 24_000 : 0)
+    }
     hostId = 'runtime:paired-host'
     const runtimeTarget = await meetingOutputTarget(
       ctx,

@@ -271,6 +271,11 @@ function ReadyAcceptanceBoard({
               onChange={rounds.select}
             />
           )}
+          {rounds.notice && (
+            <p className="va-notice" role="status">
+              {rounds.notice}
+            </p>
+          )}
           {rounds.catalogError && (
             <p className="va-muted" role="status">
               历史目录读取不完整：{rounds.catalogError}

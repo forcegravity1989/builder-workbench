@@ -119,15 +119,21 @@ export function AcceptanceDirectives({
               aria-label="会议指导标签"
               value={directive.tag}
               disabled={disabled || directive.status === 'confirmed'}
-              onChange={(event) =>
+              onChange={(event) => {
+                const tag = event.target.value
+                if (
+                  tag !== 'resolved-this-acceptance' &&
+                  tag !== 'next-week-plan' &&
+                  tag !== 'record-remaining'
+                ) {
+                  return
+                }
                 replace(
                   currentDirectives.map((item) =>
-                    item.id === directive.id
-                      ? { ...item, tag: event.target.value as AcceptanceMeetingDirective['tag'] }
-                      : item
+                    item.id === directive.id ? { ...item, tag } : item
                   )
                 )
-              }
+              }}
             >
               <option value="resolved-this-acceptance">本次验收已解决</option>
               <option value="next-week-plan">纳入下周计划</option>
