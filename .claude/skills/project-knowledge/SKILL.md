@@ -5,10 +5,12 @@ description: >-
   define content and format contracts, refactor one document with its
   existing debt, connect features to metrics and acceptance evidence,
   and improve the method from real use. Use for 知识库治理、文档规范、逐篇整改、
-  文档瘦身、特性指标验收梳理、知识老化和反哺. Ordinary coding only needs the
+  文档瘦身、特性指标验收梳理、知识老化和反哺. Route full feature-and-metrics
+  inventory (project card → north star → features → leading/lagging metrics)
+  to feature-metrics-inventory. Ordinary coding only needs the
   relevant project knowledge; it does not trigger a full knowledge audit.
 metadata:
-  version: 0.4.2-pilot
+  version: 0.4.3-pilot
 ---
 
 # 项目知识库治理

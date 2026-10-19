@@ -32,7 +32,7 @@ taskSnapshot 保存验收当时逐项读取的 Issue 状态。每项 ready 含 r
 
 candidateRef 仅保存 repository/version/commit，commit 是完整 SHA。preparedArtifacts 含 artifactId/kind/location/candidateRef/generatedAt，可选 command/executionRoot/checksum；执行根记录在该材料上，不加到 candidateRef。验收树只承载材料，出包从指定源码候选的执行工作区进行。候选变化使不匹配证据待核，不自动沿用成功。
 
-总览 VersionHistoryPort 从项目当前采用基线的版本目录读取材料，一个版本只显示一份当前计划及验收，不扫描旧提交把迁移前文件或旧轮次重新列出。历史记录按版本、流程与轮次（cycleId）各列最新一条，同一轮的中间修订从 Git 追溯，不再做 provider 合入证明过滤；读取时仍按固定提交核对版本、轮次与修订身份。未合入草稿在其工作区读取；损坏的当前文件如实提示，不能因旧提交有坏文件就把可用版本标坏。选中验收版本后页面会初始化并保存缺失的空白验收；先读回已有材料继续准备，不重复创建轮次。新材料及已归档材料再编辑后均自动保存；旅程灯不因材料改动变色，它只读 workflow.stage。旧内容由 Git 历史追溯，不增加重复版本入口。
+总览 VersionHistoryPort 从项目主干基线（主检出）的版本目录读取材料，一个版本只显示一份当前计划及验收，不扫描旧提交把迁移前文件或旧轮次重新列出。历史记录按版本、流程与轮次（cycleId）各列最新一条，同一轮的中间修订从 Git 追溯，不再做 provider 合入证明过滤；读取时仍按固定提交核对版本、轮次与修订身份。未合入草稿在其工作区读取；损坏的当前文件如实提示，不能因旧提交有坏文件就把可用版本标坏。选中验收版本后页面会初始化并保存缺失的空白验收；先读回已有材料继续准备，不重复创建轮次。新材料及已归档材料再编辑后均自动保存；旅程灯不因材料改动变色，它只读 workflow.stage。旧内容由 Git 历史追溯，不增加重复版本入口。
 
 workflow 是模型写入材料的 SOP 进度节：`stage` 记录最近完成的阶段（计划 preparation/goals/review/breakdown/archive；验收 preparation/showcase/archive），`updatedAt` 记录写入时间，`archivePr`（provider/repository/number）在归档 PR 开出后补上。两屏旅程灯只做序号比较：灯位不超过 stage 即绿，否则灰，没有其他推导。stage 是进度信号不是完成权威：不代表目标达成、不代替人工结论、不代表 PR 已合入；PR 合入状态由界面按 archivePr 向 provider 薄读取显示，读不到保持未知。会话恢复时先把 stage 校准到实际进度；内容实质调整使后续阶段失效时回退。界面不提供修改 stage 的入口，它只经材料保存写入。归档提交固定落在该流程的固定分支（计划 bw/week-plan、验收 bw/week-acceptance）上，PR/MR 由固定分支开向主分支，不从其他分支或新建工作树归档。
 
@@ -44,7 +44,7 @@ preparationReview 是历史保留的人工材料备齐核对记录，包含 sour
 
 实际工具为 `orca bw materials list/read/save`，共用 `--repo-id <id> --worktree-id <id> --workflow plan|acceptance`，host-id 在所选 runtime 内解释，默认 local；SSH 工作树使用宿主提供的 ssh: 身份。list 不需要版本，只有列举作用；read 需要 `--version <已确认版本>`，返回 document/revision 或 null。save 再传 `--input <schema3 JSON 草稿文件>` 或 `--input-stdin`（二选一）；SSH 会话通过标准输入传 JSON，由 Orca 原生 CLI bridge 转发，不把远端草稿路径交给客户端读文件，更新必须使用刚读到的 `--expected-revision <revision>`；明确新建用 `--create`，二者互斥。普通项目通过 `orca bw materials schema --workflow plan|acceptance --json` 读取随 CLI 打包的结构，无需 BW 源码或运行中的应用；跨字段约束仍由 save 校验。维护正本为 src/shared/workbench/version-material.ts，不能把 schema2 文件直接提交；`--json` 用于机器读取。
 
-冲突命令以非零状态返回 revision-conflict 及 currentRevision，原材料和输入草稿保留；重读并合并后重试，不循环覆盖。页面走同一 runtime RPC，直接编辑自动保存；“刷新数据”重读宿主材料和版本候选并保留未保存输入，指标更新由“刷新指标”显式触发。文件保存不自行采集指标或验证人的身份，存入 reading/decision 字段不能据此点绿灯，业务消费方必须核对真实来源。人工字段守卫保护两类内容：验收的 decision/preparationReview 与计划的 summary.risks（风险由用户在界面填写）——模型/CLI 通道写入或修改会被拒绝，原样往返照常保存。写入材料的文本字段保持周整：分段换行、多条用序号或短横线列举，不把多件事挤成一段。
+冲突命令以非零状态返回 revision-conflict 及 currentRevision，原材料和输入草稿保留；重读并合并后重试，不循环覆盖。页面走同一 runtime RPC，直接编辑自动保存；“更新代码”先把本屏工作树快进到主干最新、再重读宿主材料和版本候选并保留未保存输入，快进不了时保持原样并提示交会话处理、材料仍照常重读；指标更新由“刷新指标”显式触发。文件保存不自行采集指标或验证人的身份，存入 reading/decision 字段不能据此点绿灯，业务消费方必须核对真实来源。人工字段守卫保护两类内容：验收的 decision/preparationReview 与计划的 summary.risks（风险由用户在界面填写）——模型/CLI 通道写入或修改会被拒绝，原样往返照常保存。写入材料的文本字段保持周整：分段换行、多条用序号或短横线列举，不把多件事挤成一段。
 
 先读 revision，再走同一材料服务 save(expectedRevision)；校验受信任工作树和流程白名单、路径、跨进程互斥、原子替换。不同分支不是一个写入路径。冲突保留双方输入并重读合并；不直接覆盖文件绕过服务。
 

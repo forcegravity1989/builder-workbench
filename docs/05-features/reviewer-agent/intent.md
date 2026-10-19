@@ -53,9 +53,3 @@ Issue 处于「待评审」、MR 开着时，一键**「请评审」**：Workben
 | 核心利益？ | 每个 MR 一份不由写码会话出具的评审意见，扫一眼就敢点合或打回。 |
 | 如何知道？ | 发起人 /goal 拍板原话；本仓自身实践（AGENTS.md 靠仓外 `/code-review` 顶着）；过程指标已量评审而无产评审能力。 |
 | 体验什么样？ | Issue 到待评审 → 点「请评审」→ 独立会话读取 Issue/读 diff/对照手册 → 意见落 MR 评论 → 人扫结论点合或打回。原型见 `prototype.html`。 |
-
-## 开放问题（留给评审拍）
-
-1. ~~推到待评审时**自动触发**评审~~——**已谈定**（2026-08-27，发起人拍板）：自动触发**不进 Workbench 内核**，放在 CI 层——GitHub 仓用官方 `claude-code-action` 在 PR 事件上自动 review（认证走订阅 OAuth token，本仓 workflow 见 `.github/workflows/`）；codehub 仓没有这一层，仍走内建「请评审」。Workbench 不做 webhook/定时判断，「定时只建队列」不碰。
-2. 评审结论要不要**结构化读回界面**（Issue 详情标「已评审 n 条意见」）——MVP 不解析评论，人去 MR 上看。
-3. 「当前项目代码开发的 reviewer」是否含未开 MR 的裸 worktree 审（WIP 审）——MVP 评审对象=MR/PR；WIP 审可在评审会话里人工指路，不做专门入口。

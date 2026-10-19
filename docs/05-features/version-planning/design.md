@@ -16,7 +16,7 @@
 | 原生 Terminal / TabBar / RightSidebar | 完整复用会话、标签/分屏、资源管理器与历史；TabBar 不挂 BW 按钮（原 CycleStartButton 薄挂载已撤除），左侧项目列表在计划与验收同样显示。移除 CycleChat、历史嵌入、portal 重发布和 sessionStorage 会话绑定 |
 | main/workbench/version-document-store + `workbench.materials.*` RPC / `ORCA bw materials` CLI | 跨进程 CAS 统一写入；renderer 直接 writeFile 的旧链路已删除 |
 | TaskPageContent → GitHubItemDialog → ConversationTabDescription / GitHubMarkdownComposer | 直接复用页面、正文编辑及 runWorkItemBodyUpdate；BW 不复制详情组件 |
-| use-task-page-detail-routing 的 worktreeNavHistory / goBackWorktree | 导航历史携带 BW 来源；openTaskPage 新增 returnToPreviousView（跳过 tasks 哨兵，返回 BW 来源视图），BW 子视图与屏内上下文由 cycle-view-state 和 use-planning-view-memory 恢复。计划屏 goalFilter+滚动存 sessionStorage（use-planning-view-memory） |
+| use-task-page-detail-routing 的 worktreeNavHistory / goBackWorktree | 导航历史携带 BW 来源；openTaskPage 新增 returnToPreviousView（跳过 tasks 哨兵，返回 BW 来源视图），BW 子视图与屏内滚动位置由 cycle-view-state 和 use-planning-view-memory 恢复。 |
 | shared/automations-types | 复用原生登记和运行记录；「配置自动化」按钮打开原生编辑器：host 按工作树宿主身份，首次登记 existing 固定树、reuseSession=false、prompt 不含 cycleId，后续尊重用户保存的配置。手动运行的一次性上下文走 automation.runNow 可选 oneShotPrompt（派发端合并、capability 门控），接缝登记见 [upstream](../../../ref/upstream.md) |
 
 ## 共享边界
@@ -35,7 +35,7 @@ BW 业务放在 renderer/workbench 下的 version-cycle、version-planning、ver
 
 ## 版本材料与写入
 
-PlanningBoard 保留未选版本与已选版本的同一骨架：顶部明确选版，正文依次为进展/风险、目标、页内任务和一行归档状态。PlanningJourneyNav 只滚动定位正文并显示 workflow.stage 灯，不发起请求、不以点击标记评审完成。VersionGoalCard 的计划分支直接编辑目标、交付件和可选验收说明；验收只读分支不变。PlanGoalMetrics 逐条编辑可选指标承诺，完整保留多指标，定义和采集依据按需展开。预览纪要在目标标题旁；进展区在 summary.progressSource 存在时内联回显派生只读纪要（use-progress-minutes），无引用或读取失败时显示文本输入；风险输入仅由用户填写（模型通道被人工守卫拒绝）。取消目标补充弹窗和常规保存栏。计划样式在 version-planning.css、planning-fields.css 和 planning-dialogs.css 内限定，不改变总览。
+PlanningBoard 保留未选版本与已选版本的同一骨架：顶部明确选版，正文依次为进展/风险、目标卡（含关联 Issue 子块）和一行归档状态。PlanningJourneyNav 只滚动定位正文并显示 workflow.stage 灯，不发起请求、不以点击标记评审完成。VersionGoalCard 的计划分支直接编辑目标、交付件和可选验收说明；验收只读分支不变。PlanGoalMetrics 展示可选指标承诺与当前读数，指标定义和采集依据按会话 SOP 配置。预览纪要在目标标题旁；进展区在 summary.progressSource 存在时内联回显派生只读纪要（use-progress-minutes），无引用或读取失败时显示文本输入；风险输入仅由用户填写（模型通道被人工守卫拒绝）。取消目标补充弹窗和常规保存栏。计划样式在 version-planning.css、planning-fields.css 和 planning-dialogs.css 内限定，不改变总览。
 
 usePlanningMaterial 继续复用 MaterialDraftController 的本地草稿、远端修订与 CAS，不新增材料副本。usePlanningAutosave 对连续编辑去抖并串行写入；写入期间的新编辑继续保留，在显式 flush 时排空到最新修订后才返回。版本切换先 flush，写入前复核当前范围与材料身份。冲突、远端删除或错误暂停自动写入，由 PlanningPersistenceNotice 提供保留双方内容、重读或明确重试；不以自动重试覆盖模型编辑。轮询只发现材料变化，旅程灯随轮询到的 workflow.stage 更新。组件/控制器检查不替代真壳输入、重启及真实模型并发验证。
 
@@ -59,7 +59,7 @@ schema2 通过一次显式迁移转为新计划；原文件/提交保留来源�
 
 ## 会话、任务导航与自动化
 
-计划固定 bw/week-plan，验收固定 bw/week-acceptance，各复用一棵 Orca 登记工作树。项目未设置基址时先写入项目级 .bw/worktrees 并提示，用户已有设置保留；原生创建与默认分支规则不变。入口准备工作区后先切到 terminal，再调用原有 workbench.cycle.syncTrunk 后台同步采用分支；本地宿主仍经 gitPull，不新增同步通道。同步状态按项目、宿主、流程与固定树隔离，同树在途请求去重；同步中材料只读、计划自动保存暂停，完成后经现有读写接口重读材料与候选，脏草稿仍由 CAS 控制器保留并提示冲突。完成回调只刷新材料，不重选工作区或会话。失败/冲突如实提示且不换数据源；远程 SSH 树暂不自动同步，属只读中继边界，记债待专项。看板与会话始终使用同一工作树的文件。切树离开即卸下对应业务板，不持续纠正原生选择。材料身份按项目、宿主、流程和固定树解析。版本仍由人明确选择，不跟会话标题或日期联动，进屏不自动选版、不自动开轮。
+计划固定 bw/week-plan，验收固定 bw/week-acceptance，各复用一棵 Orca 登记工作树。项目未设置基址时先写入项目级 .bw/worktrees 并提示，用户已有设置保留；原生创建与默认分支规则不变。入口准备工作区后切到 terminal；进屏不触发任何 Git 动作。「更新代码」经 workbench.trunk.update 走三指令：解析基线（钉值 worktreeBaseRef 或主检出当前分支，不猜名）、fetch 书签、双向 rev-list 对比、merge --ff-only；本地宿主在 owner runtime 执行，快进复用原生工作树操作锁与 Git 读缓存失效。更新状态按项目、宿主、流程与固定树隔离，同树在途请求去重；执行中材料只读、计划自动保存暂停，完成后经现有读写接口重读材料与候选（无论快进成败都重读），脏草稿仍由 CAS 控制器保留并提示冲突。完成回调只刷新材料，不重选工作区或会话。快进不了（分叉、主检出有本地改动、分支失配、远端不可达）保持原样不换数据源，统一中文提示交会话处理；固定树纯草稿状态（有未合入提交、主干没前进）不是异常、不提示；远程 SSH 树暂不自动同步，属只读中继边界。看板与会话始终使用同一工作树的文件。切树离开即卸下对应业务板，不持续纠正原生选择。材料身份按项目、宿主、流程和固定树解析。版本仍由人明确选择，不跟会话标题或日期联动，进屏不自动选版、不自动开轮。
 
 计划与验收完整复用 Orca 原生会话工作区：顶部新建会话和 Agent 控件、标签/分屏、资源管理器、智能体历史及可收起的工具侧栏均由 Orca 拥有。左侧保留 BW 导航，其下与其他页一样显示项目列表。BW 只在右侧业务板首行放置“新建计划”或“新建验收”，分支与“配置自动化”入口显示在右板页头（一次性配置不占每周主操作区）；移除原生标签栏的 BW 扩展，不另建聊天、历史或会话绑定。
 

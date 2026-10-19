@@ -20,6 +20,30 @@ const decision = {
   materialRevision: revision,
   reason: '人工确认达成'
 }
+const pendingDirective = {
+  id: 'directive-1',
+  text: '补齐材料链接',
+  tag: 'record-remaining' as const,
+  status: 'pending' as const,
+  source: 'transcript-summary' as const,
+  sourceRef: 'issue-374#summary'
+}
+const confirmedDirective = {
+  ...pendingDirective,
+  text: '确认下周继续跟进',
+  status: 'confirmed' as const,
+  confirmedAt: '2026-09-25T01:00:00Z'
+}
+const round = {
+  id: 'round-1',
+  week: '2026-W39',
+  kind: 'progress' as const,
+  snapshot: {
+    goals: [{ goalId: 'g1', decision: 'pending', progress: '进行中' }],
+    issueMarks: { issue1: { carry: true } },
+    issueNotes: { issue1: '下周继续核对' }
+  }
+}
 function material(overrides: Partial<AcceptanceMaterial> = {}): AcceptanceMaterial {
   return {
     schema_version: 3,
@@ -77,13 +101,10 @@ function withDecision(doc: AcceptanceMaterial): AcceptanceMaterial {
   }
 }
 
-it('classifies the CLI socket as the model channel and authenticated UI sockets as human channels', () => {
+it('names every human-only field the incoming document would add, change or drop', () => {
   expect(isModelSaveChannel({})).toBe(true)
   expect(isModelSaveChannel({ clientKind: 'runtime' })).toBe(false)
   expect(isModelSaveChannel({ clientKind: 'mobile' })).toBe(false)
-})
-
-it('names every human-only field the incoming document would add, change or drop', () => {
   const base = material()
   expect(humanFieldChanges(base, base)).toEqual([])
   expect(humanFieldChanges(null, base)).toEqual([])
@@ -113,6 +134,51 @@ it('names every human-only field the incoming document would add, change or drop
   expect(humanFieldChanges(withDecision(base), { ...base, results: [] })).toEqual([
     'results[g1].decision'
   ])
+  const withOpenRound = material({
+    results: [
+      {
+        ...base.results[0],
+        progress: '进行中',
+        issueMarks: { issue1: { carry: true } },
+        issueNotes: { issue1: '下周继续核对' },
+        rounds: [round]
+      }
+    ]
+  })
+  const nextRound = {
+    ...round,
+    id: 'round-2',
+    week: '2026-W40'
+  }
+  expect(
+    humanFieldChanges(withOpenRound, {
+      ...withOpenRound,
+      results: [
+        {
+          ...withOpenRound.results[0],
+          rounds: [{ ...round, closedAt: '2026-10-02T00:00:00Z' }, nextRound]
+        }
+      ]
+    })
+  ).not.toContain('results[g1].rounds[round-2]')
+  expect(
+    humanFieldChanges(withOpenRound, {
+      ...withOpenRound,
+      results: [{ ...withOpenRound.results[0], rounds: [round, nextRound] }]
+    })
+  ).toContain('results[g1].rounds[round-2]')
+  const secondNewRound = { ...nextRound, id: 'round-3', week: '2026-W41' }
+  expect(
+    humanFieldChanges(withOpenRound, {
+      ...withOpenRound,
+      results: [
+        {
+          ...withOpenRound.results[0],
+          rounds: [{ ...round, closedAt: '2026-10-02T00:00:00Z' }, nextRound, secondNewRound]
+        }
+      ]
+    })
+  ).toContain('results[g1].rounds')
 })
 
 it('refuses model-channel saves that write a decision, including creates', async () => {
@@ -136,6 +202,115 @@ it('refuses model-channel saves that write a decision, including creates', async
       {}
     )
   ).rejects.toBeInstanceOf(WorkspaceScopeError)
+
+  const humanFields = material({
+    results: [
+      {
+        ...material().results[0],
+        deliveries: [{ title: '已交付', location: '/tmp/delivery' }],
+        progress: '已完成联调',
+        nextStep: '下周复核',
+        issueNotes: { issue1: '需要补证据' },
+        issueMarks: { issue1: { risk: true } },
+        rounds: [round],
+        meetingDirectives: [confirmedDirective]
+      }
+    ]
+  })
+  const readHumanFields = async () => ({ document: humanFields })
+  await expect(
+    assertHumanFieldsUntouched(
+      readHumanFields,
+      acceptanceSave({
+        ...humanFields,
+        results: humanFields.results.map((item) => ({ ...item, progress: '模型改写' }))
+      }),
+      {}
+    )
+  ).rejects.toMatchObject({ code: 'forbidden' })
+  expect(
+    humanFieldChanges(humanFields, {
+      ...humanFields,
+      results: humanFields.results.map((item) => ({
+        ...item,
+        deliveries: [],
+        nextStep: '',
+        issueNotes: {},
+        issueMarks: {},
+        rounds: [],
+        meetingDirectives: []
+      }))
+    })
+  ).toEqual(
+    expect.arrayContaining([
+      'results[g1].actualDelivery',
+      'results[g1].nextStep',
+      'results[g1].issueNotes',
+      'results[g1].issueMarks',
+      'results[g1].rounds[round-1]',
+      'results[g1].meetingDirectives[directive-1]'
+    ])
+  )
+  await expect(
+    assertHumanFieldsUntouched(
+      async () => ({ document: material() }),
+      acceptanceSave({
+        ...material(),
+        results: material().results.map((item) => ({
+          ...item,
+          meetingDirectives: [pendingDirective]
+        }))
+      }),
+      {}
+    )
+  ).resolves.toBeUndefined()
+  await expect(
+    assertHumanFieldsUntouched(
+      async () => ({ document: material() }),
+      acceptanceSave({
+        ...material(),
+        results: material().results.map((item) => ({
+          ...item,
+          meetingDirectives: [{ ...pendingDirective, source: 'manual' as const }]
+        }))
+      }),
+      {}
+    )
+  ).rejects.toMatchObject({ code: 'forbidden' })
+  await expect(
+    assertHumanFieldsUntouched(
+      async () => ({ document: material() }),
+      acceptanceSave({
+        ...material(),
+        results: material().results.map((item) => ({
+          ...item,
+          rounds: [
+            {
+              ...round,
+              snapshot: {
+                ...round.snapshot,
+                goals: [{ goalId: 'g1', decision: 'met', progress: '模型伪造' }]
+              }
+            }
+          ]
+        }))
+      }),
+      {}
+    )
+  ).rejects.toMatchObject({ code: 'forbidden' })
+  await expect(
+    assertHumanFieldsUntouched(
+      readHumanFields,
+      acceptanceSave({
+        ...humanFields,
+        results: humanFields.results.map((item) => ({
+          ...item,
+          meetingDirectives: [{ ...confirmedDirective, text: '模型改写的指导' }]
+        }))
+      }),
+      {}
+    )
+  ).rejects.toMatchObject({ code: 'forbidden' })
 })
 
 it('leaves human channels untouched on both workflows', async () => {
@@ -174,9 +349,9 @@ it('guards the plan risk report on the model channel', async () => {
   await expect(
     assertHumanFieldsUntouched(readStored, planSave('模型改写的风险'), {})
   ).rejects.toBeInstanceOf(WorkspaceScopeError)
-  await expect(
-    assertHumanFieldsUntouched(readStored, planSave(), {})
-  ).rejects.toMatchObject({ code: 'forbidden' })
+  await expect(assertHumanFieldsUntouched(readStored, planSave(), {})).rejects.toMatchObject({
+    code: 'forbidden'
+  })
   expect(planHumanFieldChanges(null, planMaterial())).toEqual([])
   expect(planHumanFieldChanges(stored, planMaterial())).toEqual(['summary.risks'])
 })

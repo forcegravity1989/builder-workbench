@@ -1912,7 +1912,7 @@
         "noGithubSourceDetected": "No GitHub source detected for",
         "noGithubSourceDetectedHint": "it may have no GitHub remote, or the source could not be resolved.",
         "codehubSourceUnavailable": "Sin fuente de CodeHub disponible para",
-        "codehubSourceUnavailableHint": "este repositorio es un proyecto de CodeHub. Muestra CodeHub en Configuración → Tareas, o instala codehub-cli.",
+        "codehubSourceUnavailableHint": "este repositorio es un proyecto de CodeHub. Muestra CodeHub en Configuración → Tareas, o cambia a la fuente de CodeHub.",
         "openTaskSettings": "Abrir configuración",
         "jiraLinkSourceUnavailable": "Couldn’t link this Jira issue. Reconnect Jira or pick the matching site, then try again.",
         "loadPageUnreachable": "La página {{value0}} está más allá de lo que la búsqueda de GitHub puede devolver.",

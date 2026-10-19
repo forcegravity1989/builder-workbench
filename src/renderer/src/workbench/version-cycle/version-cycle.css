@@ -1,6 +1,5 @@
 .vc-goal {
-  display: flex;
-  gap: var(--space-3);
+  display: block;
   padding: var(--space-4);
   border-bottom: 1px solid var(--color-divider);
 }
@@ -17,16 +16,83 @@
   min-width: 0;
 }
 .vc-goal-heading {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: var(--space-2);
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: start;
 }
-.vc-goal-heading h3 {
+.vc-goal-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.vc-goal-toggle strong {
   margin: 0;
   font-size: inherit;
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+.vc-goal-heading > .vc-goal-toggle {
+  overflow: visible;
+}
+.vc-goal-heading > .vc-goal-toggle strong {
+  display: block;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.45;
+}
+.vc-goal-heading > :is(.vp-goal-summary, .va-goal-summary) {
+  min-width: 0;
+}
+.vc-goal-heading > .vc-goal-delete {
+  justify-self: end;
+}
+.vc-goal-toggle svg {
+  flex: none;
+  color: var(--color-neutral-500);
+}
+.vc-goal.is-collapsed {
+  padding-block: var(--space-3);
+}
+.vc-goal-story {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.vc-goal-story > .vc-goal-title {
+  grid-column: 1 / -1;
+}
+.vc-goal-story > .vc-goal-detail {
+  min-width: 0;
+}
+.vc-goal-story > .vc-goal-meta {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+.vc-goal-meta label {
+  min-width: 0;
+  margin-bottom: 0;
+}
+.vc-story-cell {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+}
+.vc-story-cell p {
+  margin: var(--space-2) 0 0;
 }
 .vc-goal p {
   margin: var(--space-2) 0 0;
@@ -43,6 +109,9 @@
   margin-bottom: var(--space-2);
   color: var(--color-neutral-600);
 }
+.vc-goal-story > label {
+  min-width: 0;
+}
 .vc-goal input,
 .vc-goal textarea {
   width: 100%;
@@ -53,11 +122,44 @@
   color: var(--color-text);
   font: inherit;
 }
+.vc-goal-title textarea {
+  min-height: 2.5rem;
+  field-sizing: content;
+}
+.vc-goal-detail textarea {
+  min-height: 3.4rem;
+  field-sizing: content;
+}
+.vc-goal-meta input {
+  min-height: 2rem;
+  padding-block: var(--space-1);
+}
+.vc-goal-delete {
+  color: var(--color-danger-deep);
+}
 .vc-goal-metrics,
 .vc-goal-result {
   margin-top: var(--space-3);
   padding-top: var(--space-3);
   border-top: 1px solid var(--color-divider);
+}
+@media (max-width: 760px) {
+  .vc-goal-story {
+    grid-template-columns: 1fr;
+  }
+  .vc-goal-story > .vc-goal-meta {
+    grid-template-columns: 1fr;
+  }
+  .vc-goal-heading {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .vc-goal-heading > .vc-goal-toggle {
+    grid-column: 1 / -1;
+  }
+  .vc-goal-heading > .vc-goal-delete {
+    grid-column: 2;
+    grid-row: 2;
+  }
 }
 
 /* Only the material panel, its divider and the shell-mounted board slot/frame-row chrome belong to BW. */
@@ -95,6 +197,17 @@
   width: calc(40px + var(--window-controls-width, 0px));
   margin-left: auto;
   -webkit-app-region: no-drag;
+}
+.vc-session-toggle {
+  align-self: center;
+  margin-left: var(--space-2);
+  padding: 2px var(--space-2);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-size: 11px;
+  cursor: pointer;
 }
 .vc-board-content {
   display: flex;

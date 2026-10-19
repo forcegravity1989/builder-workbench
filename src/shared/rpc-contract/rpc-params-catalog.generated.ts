@@ -562,8 +562,14 @@ import {
   CharterStatusRequestSchema,
   CharterSubmitRequestSchema
 } from '../workbench/charter'
-import { CycleSyncSchema } from '../workbench/cycle-sync'
 import { MetricReadRequestSchema } from '../workbench/metrics'
+import {
+  PackageDownloadSchema,
+  PackageLatestSchema,
+  PackageLaunchSchema,
+  PackagePipelineListSchema
+} from '../workbench/package-pipeline'
+import { TrunkUpdateSchema } from '../workbench/trunk-update'
 import {
   VersionHistoryListSchema,
   VersionHistoryReadPlanSchema,
@@ -1195,7 +1201,6 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.charter.read': CharterReadRequestSchema,
   'workbench.charter.status': CharterStatusRequestSchema,
   'workbench.charter.submit': CharterSubmitRequestSchema,
-  'workbench.cycle.syncTrunk': CycleSyncSchema,
   'workbench.history.list': VersionHistoryListSchema,
   'workbench.history.listTreePlans': VersionTreePlansSchema,
   'workbench.history.read': VersionHistoryReadSchema,
@@ -1210,6 +1215,11 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.metrics.list': CharterScopeSchema,
   'workbench.metrics.read': MetricReadRequestSchema,
   'workbench.metrics.refresh': MetricReadRequestSchema,
+  'workbench.package.download': PackageDownloadSchema,
+  'workbench.package.latest': PackageLatestSchema,
+  'workbench.package.launch': PackageLaunchSchema,
+  'workbench.package.list': PackagePipelineListSchema,
+  'workbench.trunk.update': TrunkUpdateSchema,
   'workspacePorts.kill': WorkspacePortKillParams,
   'workspacePorts.scan': WorkspacePortScanParams,
   'worktree.activate': WorktreeActivate,

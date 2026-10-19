@@ -5,6 +5,7 @@ import type {
 import type { DecisionFreshness } from './acceptance-decision'
 import { emptyGoalResult } from './acceptance-model'
 import { taskReferenceKey } from './acceptance-task-evidence'
+import { issueMarkFor, issueNoteFor } from './acceptance-issue-annotations'
 
 const outcomeLabels = { met: '达成', 'not-met': '未达', pending: '待核' }
 function text(value: string): string {
@@ -12,10 +13,11 @@ function text(value: string): string {
 }
 
 /**
- * Human-facing acceptance minutes: goal conclusions, deliveries, metric
- * readings, next steps and unmet follow-ups only. Technical identity (cycleId,
- * revisions, commits, definition fingerprints, collection metadata) stays in
- * the material and Git — minutes are for the meeting report, not data proofing.
+ * Human-facing acceptance minutes: goal conclusions, progress, deliveries,
+ * material links, Issue facts/annotations and meeting guidance. Technical
+ * identity (cycleId, revisions, commits, definition fingerprints, collection
+ * metadata) stays in the material and Git — minutes are for the meeting report,
+ * not data proofing.
  */
 export function deriveAcceptanceReport(input: {
   document: AcceptanceMaterial
@@ -38,6 +40,10 @@ export function deriveAcceptanceReport(input: {
     lines.push(
       `- 实际交付：${result.deliveries.map((item) => `${text(item.title)}${item.location ? ` · ${text(item.location)}` : ''}`).join('；') || '待补充'}`
     )
+    lines.push(`- 本轮进展：${result.progress?.trim() ? text(result.progress) : '待补充'}`)
+    lines.push(
+      `- 材料：${result.materials?.map((item) => `${text(item.label || item.url)} · ${text(item.url)}`).join('；') || '暂无材料链接'}`
+    )
     for (const target of goal.metricTargets) {
       const reading = result.readings.find((item) => item.ref.name === target.ref.name)
       lines.push(
@@ -59,6 +65,11 @@ export function deriveAcceptanceReport(input: {
     if (result.nextStep.trim()) {
       lines.push(`- 下一步：${text(result.nextStep)}`)
     }
+    for (const directive of result.meetingDirectives ?? []) {
+      lines.push(
+        `- 会议指导：${text(directive.text || '待补充')}（${directive.status === 'confirmed' ? '已确认' : '待确认'}；${directive.source === 'transcript-summary' ? 'AI 总结' : '人工补记'}）`
+      )
+    }
   }
   const snapshot = document.taskSnapshot
   lines.push('', '## 关联 Issue')
@@ -76,14 +87,25 @@ export function deriveAcceptanceReport(input: {
       .filter((ref) => taskReferenceKey(ref) === taskReferenceKey(item.reference))
       .map((ref) => ref.goalId)
       .filter(Boolean)
-    const goalNote = goals.length
-      ? `；目标 ${goals.map((goalId) => text(goalId!)).join('、')}`
-      : ''
-    lines.push(
+    const goalNote = goals.length ? `；目标 ${goals.map((goalId) => text(goalId!)).join('、')}` : ''
+    const annotations = goals.flatMap((goalId) => {
+      const result = document.results.find((entry) => entry.goalId === goalId)
+      if (!result) {
+        return []
+      }
+      const note = issueNoteFor(result, item.reference, plan.tasks)
+      const mark = issueMarkFor(result, item.reference, plan.tasks)
+      const labels = [mark?.carry ? '遗留' : null, mark?.risk ? '风险' : null].filter(Boolean)
+      return [
+        note ? `备注：${text(note)}` : null,
+        labels.length ? `标记：${labels.join('、')}` : null
+      ].filter((value): value is string => value !== null)
+    })
+    const line =
       item.kind === 'ready'
         ? `- ${text(item.reference.repository)}#${item.reference.number} ${text(item.title)}：${text(item.state)}${goalNote}`
         : `- ${text(item.reference.repository)}#${item.reference.number}：读取失败（${text(item.error)}）${goalNote}`
-    )
+    lines.push(`${line}${annotations.length ? ` · ${annotations.join('；')}` : ''}`)
   }
   const gaps = plan.goals.flatMap((goal) => {
     const result = document.results.find((item) => item.goalId === goal.goalId)

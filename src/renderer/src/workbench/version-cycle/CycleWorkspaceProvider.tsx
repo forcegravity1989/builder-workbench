@@ -13,7 +13,7 @@ import { useCycleWorkspaceWorkflow } from './cycle-workspace-view'
 import { useCycleWorkspaceTarget } from './use-cycle-workspace-target'
 import { CycleWorkspaceContext } from './cycle-workspace-context'
 import { nativeVersionMaterialPort } from '../version-material-port'
-import { nativeTaskPort } from '../task-port'
+import { nativeTaskPort } from '../native-task-port'
 import { nativeArchivePrPort } from '../archive-pr-port'
 import './version-cycle.css'
 
@@ -22,7 +22,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const workflow = useCycleWorkspaceWorkflow()
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const { worktree, scope, error, syncing, materialRefresh } = useCycleWorkspaceTarget(
+  const { worktree, scope, error, syncing, materialRefresh, updateCode } = useCycleWorkspaceTarget(
     workflow,
     setNotice
   )
@@ -115,7 +115,8 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
               archivePort,
               error: error ?? version.error,
               syncing,
-              materialRefresh
+              materialRefresh,
+              updateCode
             }
           }
         : null,
@@ -137,7 +138,8 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       archivePort,
       error,
       syncing,
-      materialRefresh
+      materialRefresh,
+      updateCode
     ]
   )
   return <CycleWorkspaceContext.Provider value={value}>{children}</CycleWorkspaceContext.Provider>

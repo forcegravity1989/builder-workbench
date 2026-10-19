@@ -26,9 +26,9 @@ BW 自用的 managed-projects.py 按已合入来源的 Git 历史统计计划活
 
 复用 MetricsPort.list(project)、read(ref,window)、refresh(ref,window)；刷新返回可追溯 run/状态，读取返回 value 或 Unknown 及原因，不能仅用 null 吞掉失败。MetricRef 包含项目、指标名称与定义指纹，名称不唯一须先消歧；leads 是声明关系，不自动证明因果。
 
-VersionHistoryPort.list 的 currentOnly 查询固定本次采用基线 SHA，以 ls-tree 列出该树现有的 data.json / acceptance.json；只解析这些当前文件，返回该基线和每版本一份材料。旧格式或坏文件问题只属于当前版本，不扫描已经替代、迁移或删除的 Git 快照。总览目录与指标目录独立回显，不等待 provider 归档核验。历史 list 仍供计划屏明确的上版验收来源查询使用，read/readPlan 按保存引用核对固定内容；它不作为总览版本菜单来源。
+VersionHistoryPort.list 的 currentOnly 查询固定本次主干基线 SHA，以 ls-tree 列出该树现有的 data.json / acceptance.json；只解析这些当前文件，返回该基线和每版本一份材料。旧格式或坏文件问题只属于当前版本，不扫描已经替代、迁移或删除的 Git 快照。总览目录与指标目录独立回显，不等待 provider 归档核验。历史 list 仍供计划屏明确的上版验收来源查询使用，read/readPlan 按保存引用核对固定内容；它不作为总览版本菜单来源。
 
-总览缓存以项目、宿主、runtime owner 和主工作树路径隔离。固定提交材料和 committed planRef 按完整身份缓存，失败不进入成功缓存；当前草稿返回页面时重读。草稿覆盖显示前通过既有 listTreePlans 校验其固定树包含本次目录采用基线，落后或核对失败的树不能遮住主线现行文件。版本集合来自该基线的现有目录；固定树保存的选中偏好不能添加已删除版本。两个固定树分别核对，仍只呈现所选版本的一套材料。
+总览缓存以项目、宿主、runtime owner 和主工作树路径隔离。固定提交材料和 committed planRef 按完整身份缓存，失败不进入成功缓存；当前草稿返回页面时重读。草稿覆盖显示前通过既有 listTreePlans 校验其固定树包含本次目录主干基线，落后或核对失败的树不能遮住主线现行文件。版本集合来自该基线的现有目录；固定树保存的选中偏好不能添加已删除版本。两个固定树分别核对，仍只呈现所选版本的一套材料。
 
 验收 planRef 与当前计划修订不一致时保留当前计划，提示暂无对应验收；核对一致后读取引用并左右展示。旧承诺的显式引用仍保持内容修订校验，不退回最新材料。总览不另存可编辑副本，不改变流程选版，不再提供 Git 快照的轮次切换。
 
@@ -38,13 +38,13 @@ VersionHistoryPort.list 的 currentOnly 查询固定本次采用基线 SHA，以
 
 项目时区与版本约定明确解析为左闭右开窗口；同一 ref+定义指纹+执行指纹+数据目标+窗口+宿主的刷新合并执行，不让过期请求覆盖后发结果。主进程用 argv 执行已登记采集，不经 shell 拼接；默认超时遵循协议，输出只接收一个合法 JSON，标准错误用于诊断，不当读数。
 
-能力注册为 main RPC（workbench.metrics.list/read/refresh、workbench.history.list/read/readPlan、workbench.archive.prStatus）；SSH 宿主经窄执行器 workbench.metrics.execute / workbench.history.execute 运行采集与历史命令，不扩 provider.exec 白名单。定义唯一正源为 .bw/metrics.toml；目录从项目实际配置来源解析最新已合入提交。单次采集固定该提交的定义、脚本及相关依赖，在隔离 checkout 内执行（preparation lock，finally 清理），BW_METRICS_TIMEZONE / BW_METRICS_DATA_ROOT / BW_METRICS_DATA_COMMIT 显式传递。默认窗口「本周截至采集时刻」保留脚本返回的真实 coverage；历史纪要读取当时保存的 baseline，不被新采集覆盖。
+能力注册为 main RPC（workbench.metrics.list/read/refresh、workbench.history.list/read/readPlan、workbench.archive.prStatus）；SSH 宿主经窄执行器 workbench.metrics.execute / workbench.history.execute 运行采集与历史命令，不扩 provider.exec 白名单。定义唯一正源为 .bw/metrics.toml；目录从主干基线（主检出 HEAD，或钉定基线）解析最新已合入提交，读取不在后台 fetch。单次采集固定该提交的定义、脚本及相关依赖，在隔离 checkout 内执行（preparation lock，finally 清理），BW_METRICS_TIMEZONE / BW_METRICS_DATA_ROOT / BW_METRICS_DATA_COMMIT 显式传递。默认窗口「本周截至采集时刻」保留脚本返回的真实 coverage；历史纪要读取当时保存的 baseline，不被新采集覆盖。
 
 业务定义只接受 script + retro=true，脚本按日/周输出历史 points；仅当前 value 输出不再支持，缺点留缺。源数据与历史存储归用户项目或外部服务所有，BW 不登记每日自动化、bw/ledger 或 readings 日写回。既有历史证据仍按原字段读取，不自动改写或删除。总览读数在本次应用运行内按项目缓存，主动刷新更新；计划/验收保存采用的证据，不积累独立时序台账。缓存按项目、定义/执行指纹与窗口区分，不能当事实正本。
 
 定义变更让旧读数保持历史身份；跨定义不可自动比较。刷新失败时返回错误与旧记录的时间，不给旧记录换新时间。计算改善幅度前检查数值/单位/口径；字符串只展示，不把非数字硬转 0。
 
-新采集按指标名称解析最新已合入目录，执行根须符合本次解析的脚本/依赖修订；固定树落后或未提交脚本不能代用。同步目录只更新明确的配置来源，不合并、重置或覆写计划/验收草稿树。旧 baseline 的 configurationCommit/definitionHash 用于解释历史，不能作为新采集前置锁。证据详情显示 source、collectedAt、configurationCommit 与 collectorRevision，definitionHash 保存在材料中，不作为独立详情项；未提供专门的定义/单位变化比较或确认界面，由人据来源核对可比性，不自动计算跨口径改善。针对性验证覆盖仅脚本更新、验收树落后、草稿试采隔离及旧证据保留。
+新采集按指标名称解析主干基线目录，执行根须符合本次解析的脚本/依赖修订；固定树落后或未提交脚本不能代用。目录读取只认主干基线，不合并、重置或覆写计划/验收草稿树。旧 baseline 的 configurationCommit/definitionHash 用于解释历史，不能作为新采集前置锁。证据详情显示 source、collectedAt、configurationCommit 与 collectorRevision，definitionHash 保存在材料中，不作为独立详情项；未提供专门的定义/单位变化比较或确认界面，由人据来源核对可比性，不自动计算跨口径改善。针对性验证覆盖仅脚本更新、验收树落后、草稿试采隔离及旧证据保留。
 
 ## 项目研发指标
 
@@ -63,7 +63,7 @@ Electron 的 GitHub PR 列表／详情与 CodeHub MR 映射现已透传 mergedAt
 
 “配置指标”每次经 metrics-setup 管线新建原生会话并进入该会话，使用独立固定维护分支 **bw/metrics-refresh**（树名 metrics-refresh），由 cycle-prompt 的 workflow='metrics-refresh' 注入 SYSTEM 与指标 Skill。工作树定位、创建、目录、登记和宿主路由复用 Orca；不硬编码物理目录或项目主分支，不删除重建已有树，不因新会话重置未完成改动，不按标题续接会话。指标模块提供当前定义/错误；项目约定与完整指南按原生发现 Stub/guide 读取，普通项目不依赖自身拥有 standard/。返回总览按项目与宿主恢复版本及指标筛选。入口不添加 BW 配置页、周流程或指标自动化。
 
-配置任务形成定义和脚本的可评审改动，通过项目 PR 流程合入。总览及版本流程同步最新已合入来源；新采集固定本次来源，不锁在旧计划配置提交。未合入草稿只在配置上下文预览和试采，不自动成为正式目录。刷新直接调用 MetricsPort，不启动模型。
+配置任务形成定义和脚本的可评审改动，通过项目 PR 流程合入。总览及版本流程读主干基线（主检出）；新采集固定本次来源，不锁在旧计划配置提交。未合入草稿只在配置上下文预览和试采，不自动成为正式目录。刷新直接调用 MetricsPort，不启动模型。
 
 ## 三屏呈现与迁移
 

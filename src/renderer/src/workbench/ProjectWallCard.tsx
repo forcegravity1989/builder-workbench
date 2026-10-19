@@ -3,9 +3,8 @@ import type { Repo } from '../../../shared/repo-types'
 import type { CharterStatus } from '../../../shared/workbench/charter'
 import { CharterPrNotice } from './charter-pr-notice'
 import type { ProjectCharter } from './project-charter'
+import type { WallCardReadings } from './wall-card-readings'
 import type { WallProject, WallRepoSlot } from './workbench-wall-projects'
-
-export type Health = 'green' | 'amber' | 'red' | 'unknown'
 
 /** 卡内来源主机标签的呈现事实(连接态由 Orca runtime 推导,只作事实,不冒充健康)。 */
 export type CardHostTag = {
@@ -20,12 +19,7 @@ export type WallCardView = {
   project: WallProject
   displayName: string
   brief: string
-  version: string
-  week: string
-  goal: string
-  lastDelivery: string
-  pct: number
-  signal: Health
+  readings: WallCardReadings
   isActive: boolean
   charter: ProjectCharter | null
   status: CharterStatus | null
@@ -36,29 +30,99 @@ export type WallCardView = {
   primaryRepo: Repo | undefined
 }
 
-function Dot({ signal, withLabel }: { signal: Health; withLabel?: boolean }): React.JSX.Element {
-  const cls =
-    signal === 'green'
-      ? 'dot dot-green'
-      : signal === 'amber'
-        ? 'dot dot-amber'
-        : signal === 'red'
-          ? 'dot dot-red'
-          : 'dot'
-  const label =
-    signal === 'green'
-      ? '平稳'
-      : signal === 'amber'
-        ? '需要关注'
-        : signal === 'red'
-          ? '异常'
-          : '无数据'
+/**
+ * 读数格：只显数字不跳转；Unknown 是事实不是错误——灰字「—」，
+ * 不装绿、不装零、不推导健康结论（铁律二，判断归人）。
+ */
+function ReadingCell({
+  label,
+  value,
+  unknown,
+  title
+}: {
+  label: string
+  value: string
+  unknown?: boolean
+  title?: string
+}): React.JSX.Element {
   return (
-    <>
-      <span className={cls} title={label} />
-      {withLabel ? <span>{label}</span> : null}
-    </>
+    <div className="pcard-reading">
+      <span className="pcard-reading-label">{label}</span>
+      <span
+        className={`pcard-reading-value${unknown ? ' is-unknown' : ''}`}
+        {...(title ? { title } : {})}
+      >
+        {value}
+      </span>
+    </div>
   )
+}
+
+function versionCell(reading: WallCardReadings['version']): {
+  value: string
+  unknown?: boolean
+  title?: string
+} {
+  if (reading.kind === 'loading') {
+    return { value: '读取中…', unknown: true }
+  }
+  if (reading.kind === 'undecided') {
+    return {
+      value: '版本未定',
+      unknown: true,
+      title: '没人在计划屏为它选过版（不推断、不猜）；读不到计划材料时同样如实显示版本未定'
+    }
+  }
+  return { value: reading.version }
+}
+
+function progressCell(reading: Exclude<WallCardReadings['progress'], { kind: 'hidden' }>): {
+  value: string
+  unknown?: boolean
+  title?: string
+} {
+  if (reading.kind === 'loading') {
+    return { value: '读取中…', unknown: true }
+  }
+  if (reading.kind === 'unknown') {
+    return { value: '—', unknown: true, title: reading.reason }
+  }
+  return {
+    value: `完成 ${reading.completed} · 开放 ${reading.open}`,
+    title: '该版本 data.json 登记的承诺任务 × Issue 原生状态现算；关闭即计完成，关闭原因不参与计数'
+  }
+}
+
+function sessionsCell(reading: WallCardReadings['sessions']): {
+  value: string
+  unknown?: boolean
+  title?: string
+} {
+  if (reading.kind === 'unknown') {
+    return {
+      value: '—',
+      unknown: true,
+      title: '来源主机离线或连接未知：离线 ≠ 0，不装计数；恢复在线并刷新后给真实数'
+    }
+  }
+  return {
+    value: String(reading.count),
+    title: 'Orca live 会话口径（与侧栏同源）：fresh 且未结束的会话数'
+  }
+}
+
+function prsCell(reading: WallCardReadings['prs']): {
+  value: string
+  unknown?: boolean
+  title?: string
+} {
+  if (reading.kind === 'loading') {
+    return { value: '读取中…', unknown: true }
+  }
+  if (reading.kind === 'unknown') {
+    return { value: '—', unknown: true, title: reading.reason }
+  }
+  return { value: String(reading.count), title: '该项目全部代码仓的开放 PR/MR 总数' }
 }
 
 function SourceTag({ tag }: { tag: CardHostTag }): React.JSX.Element {
@@ -111,6 +175,8 @@ export function ProjectWallCard({
 }): React.JSX.Element {
   const { project } = card
   const hasRemoteHosts = card.hostTags.some((tag) => !tag.isLocal)
+  const benchmark = card.charter?.benchmark?.trim() || ''
+  const opportunity = card.charter?.opportunity?.trim() || ''
   return (
     <div
       className={`pcard${card.isActive ? ' is-active' : ''}`}
@@ -124,27 +190,24 @@ export function ProjectWallCard({
               <SourceTag key={tag.hostId} tag={tag} />
             ))}
           </span>
-          <span className="wb-tag wb-tag-outline wb-mono">{card.version.trim() || '版本未定'}</span>
-          <span className="wb-tag wb-tag-neutral">{card.week}</span>
           {card.isActive ? <span className="wb-tag wb-tag-accent">当前</span> : null}
-          <span className="spacer" style={{ flex: 1 }} />
-          <Dot signal={card.signal} withLabel />
         </div>
         <div className="pcard-name">{card.displayName}</div>
         <div className="pcard-oneliner">{card.brief.trim() || '(还没填「想做什么」)'}</div>
         <div className="pcard-meta">
-          <span>{card.goal}</span>
-          <span>
-            {card.lastDelivery.startsWith('上次') || card.lastDelivery.startsWith('仓')
-              ? card.lastDelivery
-              : `上次交付 ${card.lastDelivery}`}
-          </span>
+          {benchmark ? <span>对标 {benchmark}</span> : null}
+          {opportunity ? <span>目标方向 {opportunity}</span> : null}
           <span>
             {project.slots.length} 个代码仓 · {card.worktreeCount} 个工作树
           </span>
         </div>
-        <div className="pcard-bar" aria-hidden>
-          <div className="pcard-bar-fill" style={{ width: `${card.pct}%` }} />
+        <div className="pcard-readings" aria-label="读数">
+          <ReadingCell label="版本" {...versionCell(card.readings.version)} />
+          {card.readings.progress.kind !== 'hidden' ? (
+            <ReadingCell label="承诺进展" {...progressCell(card.readings.progress)} />
+          ) : null}
+          <ReadingCell label="在跑会话" {...sessionsCell(card.readings.sessions)} />
+          <ReadingCell label="PR 待审" {...prsCell(card.readings.prs)} />
         </div>
       </button>
 

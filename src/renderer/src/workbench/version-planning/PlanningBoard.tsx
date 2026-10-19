@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { CycleTaskRead } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
+import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { setCycleView } from '../cycle-view-state'
 import { CycleArchive } from '../version-cycle/CycleArchive'
 import { CycleStartCard } from '../version-cycle/CycleStartCard'
@@ -13,7 +15,6 @@ import { derivePlanMinutes } from './plan-summary'
 import { usePlanMetrics } from './use-plan-metrics'
 import { usePlanVersionSelection } from './use-plan-version-selection'
 import { PlanningGoals } from './PlanningGoals'
-import { PlanningTasks } from './PlanningTasks'
 import { PlanningMinutes } from './PlanningMinutes'
 import { PlanningPersistenceNotice } from './PlanningPersistenceNotice'
 import { PlanningHeader, PlanningJourneyNav } from './PlanningSections'
@@ -39,22 +40,19 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const material = usePlanningMaterial(materialPort, scopeKey, { canSave })
   const plan = material.draft?.document
   const prStatus = useArchivePrStatus(context, plan?.workflow?.archivePr)
-  const [minutesRefresh, setMinutesRefresh] = useState(0)
   const progressMinutes = useProgressMinutes(
     scope,
     worktreeId,
     plan?.summary.progressSource,
-    (context.materialRefresh ?? 0) + minutesRefresh
+    context.materialRefresh ?? 0
   )
   const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
   const [minutesOpen, setMinutesOpen] = useState(false)
-  const [tasksOpen, setTasksOpen] = useState(false)
-  const [view, setView] = useState({ key: '', goalFilter: '', notice: '' })
+  const [view, setView] = useState({ key: '', notice: '' })
   const content = useRef<HTMLDivElement>(null)
   const preparation = useRef<HTMLElement>(null)
   const goals = useRef<HTMLElement>(null)
-  const tasksSection = useRef<HTMLElement>(null)
   const archiveSection = useRef<HTMLElement>(null)
   const metricScope = useMemo(
     () => (scope && worktreeId ? { repoId: scope.repoId, hostId: scope.hostId, worktreeId } : null),
@@ -63,28 +61,18 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const metrics = usePlanMetrics(metricScope, scope?.runtimeOwnerEnvironmentId, plan)
   const minutes = plan ? derivePlanMinutes(plan) : ''
   const selectionKey = JSON.stringify([scopeKey, plan?.version, plan?.cycleId])
-  const goalFilter = view.key === selectionKey ? view.goalFilter : ''
   const notice = view.key === selectionKey ? view.notice : ''
   const updateView = useCallback(
     (patch: Partial<typeof view>) => {
       setView((current) => ({
-        ...(current.key === selectionKey ? current : { goalFilter: '', notice: '' }),
+        ...(current.key === selectionKey ? current : { notice: '' }),
         ...patch,
         key: selectionKey
       }))
     },
     [selectionKey]
   )
-  const restoreGoalFilter = useCallback(
-    (value: string) => updateView({ goalFilter: value }),
-    [updateView]
-  )
-  const viewMemory = usePlanningViewMemory(
-    plan ? selectionKey : null,
-    goalFilter,
-    restoreGoalFilter,
-    content
-  )
+  const viewMemory = usePlanningViewMemory(plan ? selectionKey : null, content)
   const currentSelection = useRef(selectionKey)
   currentSelection.current = selectionKey
   useEffect(
@@ -137,10 +125,22 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       version: plan.version,
       cycleId: plan.cycleId,
       sessionId: session?.sessionId,
-      goalId: goalFilter || undefined,
+      goalId: task.reference.goalId,
       scrollTop: content.current?.scrollTop ?? 0,
       draftKey: planningDraftKey(scopeKey, plan.version)
     })
+  }
+  const prepareIssues = async (goal: NonNullable<typeof plan>['goals'][number]) => {
+    if (!plan) {
+      return
+    }
+    const references = plan.tasks.filter((task) => task.goalId === goal.goalId)
+    const referenceText = references.length
+      ? references.map((task) => `${task.provider}:${task.repository}#${task.number}`).join('、')
+      : '当前暂无关联 Issue，请先从目标结果出发确认需要拆解的任务'
+    await entry.start(
+      `请在当前版本计划会话中，围绕目标「${goal.title || goal.goalId}」逐条读取并拆解任务。当前关联 Issue：${referenceText}。根据真实 Issue 内容与项目约定，为每条任务补充 Bug 或 Feature 标签和必要的拆解信息；不要凭空改变 Issue 状态或替人确认完成。`
+    )
   }
   const state = !plan
     ? ''
@@ -157,16 +157,15 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       <PlanningHeader
         currentVersion={plan?.version ?? ''}
         versions={material.versions}
-        disabled={!materialPort || selecting}
+        disabled={!materialPort || selecting || Boolean(context.syncing)}
         state={state}
         branch={cycleBranch(entry)}
         onSelect={(version) => void selection.select(version)}
         onConfigure={() => void entry.configure()}
         onRefresh={() =>
           void act(async () => {
-            setMinutesRefresh((value) => value + 1)
+            toast.message(trunkUpdateNotice(await context.updateCode()))
             await material.refresh()
-            await material.list()
             await prStatus.refresh()
           })
         }
@@ -182,7 +181,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
           stage={plan?.workflow?.stage}
           preparationRef={preparation}
           goalsRef={goals}
-          tasksRef={tasksSection}
+          tasksRef={goals}
           archiveRef={archiveSection}
         />
         <div className="vp-content" ref={content} onScroll={viewMemory.onScroll}>
@@ -261,17 +260,10 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             sectionRef={goals}
             prepare={() => void act(prepareMetrics)}
             onMinutes={() => setMinutesOpen(true)}
-          />
-          <PlanningTasks
             scope={scope}
-            plan={plan}
             taskPort={taskPort}
-            sectionRef={tasksSection}
-            open={tasksOpen}
-            onOpen={setTasksOpen}
-            goalFilter={goalFilter}
-            onFilter={(value) => updateView({ goalFilter: value })}
             onTask={(task) => act(() => openTask(task))}
+            onPrepareIssues={(goal) => act(() => prepareIssues(goal))}
           />
           <CycleArchive
             archivePr={plan?.workflow?.archivePr}

@@ -50,7 +50,12 @@ const EXTERNAL = [
   'better-sqlite3',
   'keytar',
   'fsevents',
-  'cpu-features'
+  'cpu-features',
+  // Same rule as the electron-vite main build: every package.json dependency is
+  // an external runtime require. playwright-core additionally has an optional
+  // require('chromium-bidi') in its BiDi module that is never installed —
+  // bundling it cannot resolve, and the runtime only drives CDP anyway.
+  'playwright-core'
 ]
 
 /**

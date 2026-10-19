@@ -65,8 +65,22 @@ describe('native version material service', () => {
     host = {
       listRepos: () => [{ id: 'repo', path: repo, kind: 'git' }],
       listWorktrees: async () => [
-        { id: 'plan', repoId: 'repo', path: planning, hostId: 'local', isArchived: false },
-        { id: 'acceptance', repoId: 'repo', path: acceptance, hostId: 'local', isArchived: false }
+        {
+          id: 'plan',
+          repoId: 'repo',
+          path: planning,
+          hostId: 'local',
+          isArchived: false,
+          isMainWorktree: false
+        },
+        {
+          id: 'acceptance',
+          repoId: 'repo',
+          path: acceptance,
+          hostId: 'local',
+          isArchived: false,
+          isMainWorktree: false
+        }
       ]
     }
   })

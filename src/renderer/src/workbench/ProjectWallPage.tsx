@@ -13,13 +13,17 @@ import { buildWallHostFact } from './wall-host-facts'
 import { useWallAdoptions } from './use-wall-adoptions'
 import { ensureWallProjectGroup, removeRepoFromWallProject } from './wall-project-repo-actions'
 import { ImportBuilderHostsDialog } from './ImportBuilderHostsDialog'
-import {
-  ProjectWallCard,
-  type CardHostTag,
-  type Health,
-  type WallCardView
-} from './ProjectWallCard'
+import { ProjectWallCard, type CardHostTag, type WallCardView } from './ProjectWallCard'
+import { useWallReadings } from './use-wall-readings'
+import type { WallCardReadings } from './wall-card-readings'
 import './workbench-wall.css'
+
+const READINGS_LOADING: WallCardReadings = {
+  version: { kind: 'loading' },
+  progress: { kind: 'loading' },
+  sessions: { kind: 'unknown' },
+  prs: { kind: 'loading' }
+}
 
 async function startAddRepoSlot(project: WallProject): Promise<void> {
   const groupId = await ensureWallProjectGroup(project)
@@ -74,6 +78,12 @@ export function ProjectWallPage(): React.JSX.Element {
   )
   // 上墙判据:能读到 .bw/project.toml(或本机有名片 PR 证据)的项目才上墙。
   const { adoptionByKey, loadCount } = useWallAdoptions(wallProjects, adoptionToken)
+  // 墙卡读数:只给已上墙的项目读(gh/RPC 调用不便宜),与名片同一刷新 token。
+  const adoptedProjects = useMemo(
+    () => wallProjects.filter((project) => adoptionByKey[project.key]?.adopted),
+    [wallProjects, adoptionByKey]
+  )
+  const readingsByKey = useWallReadings(adoptedProjects, adoptionToken)
 
   useEffect(() => {
     if (loadCount > 0) {
@@ -85,6 +95,11 @@ export function ProjectWallPage(): React.JSX.Element {
     setRefreshing(true)
     try {
       // 刷新 = 重读本机与已配对主机的仓库目录、工作树与名片数据,作用整面墙。
+      // 成本清单(H 配对主机/R 仓行/P 上墙项目/S 仓槽):H×4 RPC + R×1 工作树 RPC +
+      // 每项目名片逐行读到即止(全读不到的本机行再 1 次 PR 状态 RPC)+ 每项目 4 个
+      // 材料 RPC + 每 GitHub 任务仓 1 次 gh GraphQL 批量 + 每 CodeHub 任务 1 次
+      // codehub-cli viewTask(只读 Issue)+ 每槽 PR 计数逐页;
+      // 会话计数 0 外部调用(store 现算)。查询键不变不重发是防风暴闸。
       await fetchReposForAllHosts()
       await fetchAllWorktrees()
       setAdoptionToken((n) => n + 1)
@@ -120,12 +135,7 @@ export function ProjectWallPage(): React.JSX.Element {
         project,
         displayName: adoption.charter?.name?.trim() || project.name,
         brief: adoption.charter?.brief?.trim() || '',
-        version: '版本未定',
-        week: '本周',
-        goal: '版本目标:还没定',
-        lastDelivery: '仓里还没有发版记录',
-        pct: 0,
-        signal: 'unknown' as Health,
+        readings: readingsByKey[project.key] ?? READINGS_LOADING,
         isActive: project.repoIds.includes(activeRepoId ?? ''),
         charter: adoption.charter,
         status: adoption.status,
@@ -141,6 +151,7 @@ export function ProjectWallPage(): React.JSX.Element {
   }, [
     wallProjects,
     adoptionByKey,
+    readingsByKey,
     activeRepoId,
     repos,
     worktreesByRepo,
@@ -149,10 +160,6 @@ export function ProjectWallPage(): React.JSX.Element {
     sshTargetLabels
   ])
 
-  const counts = useMemo(() => {
-    const n = (signal: Health): number => cards.filter((card) => card.signal === signal).length
-    return { green: n('green'), amber: n('amber'), red: n('red'), unknown: n('unknown') }
-  }, [cards])
   const totalWorktrees = useMemo(
     () => cards.reduce((total, card) => total + card.worktreeCount, 0),
     [cards]
@@ -202,7 +209,7 @@ export function ProjectWallPage(): React.JSX.Element {
               type="button"
               className="wb-btn wb-btn-secondary"
               disabled={refreshing}
-              title="重新读取本机与已配对 Builder 主机的仓库目录和名片数据，刷新整面项目墙"
+              title="重新读取本机与已配对 Builder 主机的仓库目录、名片数据与四项读数，刷新整面项目墙"
               data-workbench-refresh
               onClick={() => {
                 void refreshWall()
@@ -235,30 +242,9 @@ export function ProjectWallPage(): React.JSX.Element {
           </div>
         </header>
 
-        <div className="healthbar">
-          <span className="bar-label">健康概览</span>
-          <span className="health-group">
-            <span className="dot dot-green" title="平稳" />
-            平稳 {counts.green}
-          </span>
-          <span className="health-group">
-            <span className="dot dot-amber" title="需要关注" />
-            需要关注 {counts.amber}
-          </span>
-          <span className="health-group">
-            <span className="dot dot-red" title="异常" />
-            异常 {counts.red}
-          </span>
-          <span className="health-group">
-            <span className="dot" title="无数据" />
-            无数据 {counts.unknown}
-          </span>
-          <span className="ml-auto hint">共 {cards.length} 个项目</span>
-        </div>
-
         <div className="wallbar" aria-label="项目墙概况">
           <span className="wallbar-item">
-            共 <strong>{totalWorktrees}</strong> 个工作树
+            共 <strong>{cards.length}</strong> 个项目 · <strong>{totalWorktrees}</strong> 个工作树
           </span>
           <span className="wallbar-sep" aria-hidden />
           <span

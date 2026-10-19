@@ -1,0 +1,113 @@
+name: BW Package Windows
+
+# Why this file exists: the Workbench acceptance screen's 出包 block drives a
+# "package pipeline" per hosting variant. On GitHub that pipeline is a workflow
+# whose file name starts with `bw-package` — that prefix IS the recognition
+# rule, so the dropdown only ever lists workflows that actually produce an
+# installable package. CloudDragon's inherited build workflows (adhoc-mac-build
+# and friends) publish to stablyai/* dev-channel repos through App secrets this
+# mirror does not have, so they cannot serve as this repo's package pipeline.
+#
+# What it does: build the Workbench Windows x64 installer for the dispatched
+# ref and publish it to a prerelease in THIS repo — no secrets beyond the
+# workflow's own GITHUB_TOKEN. The acceptance screen reads the newest release
+# for 最新包 and downloads the installer body for 下载.
+#
+#   gh workflow run bw-package.yml --ref <branch>
+#
+# Version scheme mirrors local trial builds (createLocalBuildVersion):
+# <packageVersion>-local.<unix-seconds>.<commit12>, tagged v<version>, so every
+# dispatch produces a fresh tag and the releases list stays newest-first.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-win:
+    # Why windows-2022 and not windows-latest: the 2025/VS2026 image breaks
+    # node-gyp native installs (same pin as the upstream Windows build legs).
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - name: Checkout the dispatched ref
+        uses: actions/checkout@v6
+        with:
+          # The release step writes through gh with the workflow token; the
+          # checkout itself never pushes (zizmor: artipacked).
+          persist-credentials: false
+
+      # pnpm must be on PATH before setup-node so setup-node can locate the store.
+      - name: Setup pnpm
+        uses: pnpm/setup@v2
+        with:
+          install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: pnpm
+
+      - name: Cache electron-builder downloads
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: electron-builder-win-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            electron-builder-win-
+
+      # Why retried: pnpm install pulls the Electron binary from GitHub release
+      # assets and that CDN returns transient 504s often enough to lose a build.
+      - name: Install dependencies
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: pnpm install --frozen-lockfile
+
+      - name: Resolve build identity
+        id: identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="$(node -p "require('./package.json').version")"
+          commit="$(echo "$GITHUB_SHA" | cut -c1-12)"
+          version="${base}-local.$(date +%s).${commit}"
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+          echo "tag=v$version" >>"$GITHUB_OUTPUT"
+          echo "Building $version from ${GITHUB_REF_NAME} ($commit)"
+
+      - name: Build Workbench Windows installer
+        shell: bash
+        run: pnpm run build:win:workbench
+        env:
+          # Why the adhoc channel flag: without it electron-builder stamps
+          # publisherName 'SignPath Foundation' onto this unsigned build, and a
+          # declared publisher that fails signature verification makes the
+          # in-app updater reject the package. The flag also switches version
+          # injection to ORCA_ADHOC_BUILD_VERSION — ORCA_LOCAL_BUILD_VERSION is
+          # ignored while any Windows dev channel is active.
+          ORCA_WIN_ADHOC: '1'
+          ORCA_ADHOC_BUILD_VERSION: ${{ steps.identity.outputs.version }}
+
+      - name: Publish installer as a prerelease
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.identity.outputs.version }}
+          TAG: ${{ steps.identity.outputs.tag }}
+        run: |
+          set -euo pipefail
+          ls -la dist/
+          gh release create "$TAG" dist/orca-windows-setup.exe \
+            --title "Workbench $VERSION" \
+            --notes "Workbench Windows x64 installer built from ${GITHUB_REF_NAME} @ $GITHUB_SHA." \
+            --prerelease
