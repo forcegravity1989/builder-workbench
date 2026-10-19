@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "url": "https://intranet.example:64012/",
+  "secondPort": "https://intranet.example:64013/",
+  "firstCounts": {
+    "documents": 3,
+    "assets": 3,
+    "sockets": 3
+  },
+  "secondCounts": {
+    "documents": 0,
+    "assets": 0,
+    "sockets": 0
+  },
+  "checks": [
+    "warning before request",
+    "explicit click loads document asset websocket",
+    "reload retains scoped approval",
+    "sibling tab denied",
+    "different port denied",
+    "close and reopen denied",
+    "same-profile app restart denied"
+  ]
+}
