@@ -1,8 +1,40 @@
 import { createHash } from 'node:crypto'
 import {
   AcceptanceMaterialSchema,
-  PlanningMaterialSchema
+  PlanningMaterialSchema,
+  type AcceptanceMaterial,
+  type PlanningMaterial
 } from '../../shared/workbench/version-material'
+import type { VersionHistorySource } from '../../shared/workbench/version-history'
+import { acceptanceRoundState } from '../../shared/workbench/acceptance-rounds'
+
+/** Round labels describe the selected Git bytes; ambiguous or absent metadata stays unknown. */
+export function acceptanceRoundMetadata(
+  document: PlanningMaterial | AcceptanceMaterial
+): Pick<VersionHistorySource, 'roundId' | 'week' | 'roundKind'> {
+  if (!('results' in document)) {
+    return {}
+  }
+  const state = acceptanceRoundState(document)
+  if (state.kind === 'conflict') {
+    return {}
+  }
+  if (state.current) {
+    return { roundId: state.current.id, week: state.current.week, roundKind: state.current.kind }
+  }
+  const latestClosedAt = state.rounds.reduce(
+    (latest, round) => Math.max(latest, round.closedAt ? Date.parse(round.closedAt) : 0),
+    0
+  )
+  const candidates = state.rounds.filter(
+    (round) => round.closedAt && Date.parse(round.closedAt) === latestClosedAt
+  )
+  if (candidates.length !== 1) {
+    return {}
+  }
+  const round = candidates[0]
+  return { roundId: round.id, week: round.week, roundKind: round.kind }
+}
 
 export class HistorySourceError extends Error {
   constructor(

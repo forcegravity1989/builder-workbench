@@ -76,7 +76,7 @@ function PlanningContent({
           <div className="planning-brief-head">
             <label htmlFor="planning-progress">版本进展</label>
             <button className="btn btn-secondary" disabled={disabled} onClick={openSource}>
-              上版验收
+              查看验收依据
               <ChevronRight />
             </button>
           </div>
@@ -394,7 +394,7 @@ function usePlanningDemo({ setModal, setNotice }) {
   const openSource = () =>
     setModal({
       type: 'planning-source',
-      title: '上版验收',
+      title: '查看验收依据',
       source,
       onSource: (selected) => {
         setSource(selected)

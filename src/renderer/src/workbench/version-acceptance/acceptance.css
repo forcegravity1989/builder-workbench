@@ -224,17 +224,6 @@ shared visual language with the plan board. */
 .va-round-block details {
   flex-basis: 100%;
 }
-.va-round-history {
-  display: block;
-  margin-top: var(--space-1);
-  color: var(--color-neutral-600);
-}
-.va-round-snapshot {
-  display: grid;
-  gap: var(--space-1);
-  padding: var(--space-1) 0 var(--space-1) var(--space-2);
-  color: var(--color-neutral-600);
-}
 .va-directives {
   display: grid;
   align-items: stretch;

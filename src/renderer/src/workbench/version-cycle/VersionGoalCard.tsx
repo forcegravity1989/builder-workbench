@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { VersionGoalCardProps } from './ports'
+import { readGoalCardExpanded, writeGoalCardExpanded } from '../cycle-view-state'
 import './version-cycle.css'
 
 export function VersionGoalCard({
@@ -16,21 +17,29 @@ export function VersionGoalCard({
   expandedSignal,
   summary,
   extra,
-  hideReadOnlyStory = false
+  hideReadOnlyStory = false,
+  viewStateKey
 }: VersionGoalCardProps) {
   const editable = !readOnly && Boolean(onChange)
-  const [open, setOpen] = useState(expanded ?? defaultOpen)
+  const [open, setOpen] = useState(() =>
+    readGoalCardExpanded(viewStateKey, expanded ?? defaultOpen)
+  )
+  const previousStateKey = useRef(viewStateKey)
   const previousExpanded = useRef(expanded)
   const previousExpandedSignal = useRef(expandedSignal)
   useEffect(() => {
     const signalChanged = expandedSignal !== previousExpandedSignal.current
     const valueChanged = expanded !== previousExpanded.current
-    if (expanded !== undefined && (signalChanged || valueChanged)) {
+    if (viewStateKey !== previousStateKey.current) {
+      setOpen(readGoalCardExpanded(viewStateKey, expanded ?? defaultOpen))
+    } else if (expanded !== undefined && (signalChanged || valueChanged)) {
       setOpen(expanded)
+      writeGoalCardExpanded(viewStateKey, expanded)
     }
+    previousStateKey.current = viewStateKey
     previousExpanded.current = expanded
     previousExpandedSignal.current = expandedSignal
-  }, [expanded, expandedSignal])
+  }, [expanded, expandedSignal, viewStateKey, defaultOpen])
   return (
     <article className={`vc-goal${open ? ' is-open' : ' is-collapsed'}`} data-goal-id={goal.goalId}>
       <div className="vc-goal-content">
@@ -39,7 +48,11 @@ export function VersionGoalCard({
             type="button"
             className="vc-goal-toggle"
             aria-expanded={open}
-            onClick={() => setOpen((value) => !value)}
+            onClick={() => {
+              const next = !open
+              setOpen(next)
+              writeGoalCardExpanded(viewStateKey, next)
+            }}
           >
             {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <span className="vc-goal-number">G{index + 1}</span>

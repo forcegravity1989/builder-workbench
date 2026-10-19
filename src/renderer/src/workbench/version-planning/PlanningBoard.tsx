@@ -7,6 +7,7 @@ import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { setCycleView } from '../cycle-view-state'
+import { openAcceptanceSource } from '../version-cycle/open-acceptance-source'
 import { CycleArchive } from '../version-cycle/CycleArchive'
 import { CycleStartCard } from '../version-cycle/CycleStartCard'
 import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-workspace'
@@ -49,6 +50,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
   const [minutesOpen, setMinutesOpen] = useState(false)
+  const [openingSource, setOpeningSource] = useState(false)
   const [view, setView] = useState({ key: '', notice: '' })
   const content = useRef<HTMLDivElement>(null)
   const preparation = useRef<HTMLElement>(null)
@@ -196,31 +198,55 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
               <button
                 className="wb-btn wb-btn-sm"
                 title="到验收屏查看完整验收记录"
-                onClick={() => {
-                  setCycleView('acceptance')
-                  useAppStore.getState().openArtifactsPage()
-                }}
+                disabled={openingSource || selecting || Boolean(context.syncing)}
+                onClick={() =>
+                  void act(async () => {
+                    if (openingSource) {
+                      return
+                    }
+                    setOpeningSource(true)
+                    try {
+                      if (material.draft?.dirty && !(await material.flush())) {
+                        throw new Error('当前计划修改尚未保存，请处理保存提示后再查看验收依据。')
+                      }
+                      if (currentSelection.current !== selectionKey) {
+                        return
+                      }
+                      if (progressSource) {
+                        if (!scope || !worktreeId) {
+                          throw new Error('计划工作区尚未就绪。')
+                        }
+                        await openAcceptanceSource(scope, worktreeId, progressSource)
+                      } else {
+                        setCycleView('acceptance')
+                        useAppStore.getState().openArtifactsPage()
+                      }
+                    } finally {
+                      setOpeningSource(false)
+                    }
+                  })
+                }
               >
-                上版验收
+                查看验收依据
               </button>
             </div>
             {progressSource && progressMinutes.kind !== 'error' ? (
               progressMinutes.kind === 'ready' ? (
                 <>
                   <p className="vp-muted">
-                    上版验收 {progressSource.version} 纪要 · 完整记录与来源在验收屏
+                    验收纪要 {progressSource.version} · 完整记录与来源在验收屏
                   </p>
                   <pre className="vp-progress-minutes">{progressMinutes.markdown}</pre>
                 </>
               ) : (
                 <p className="vp-muted" role="status">
-                  正在读取上版验收纪要…
+                  正在读取验收纪要…
                 </p>
               )
             ) : (
               <>
                 {progressMinutes.kind === 'error' && (
-                  <p role="alert">上版验收纪要读取失败：{progressMinutes.reason}</p>
+                  <p role="alert">验收纪要读取失败：{progressMinutes.reason}</p>
                 )}
                 <textarea
                   id="planning-progress"
@@ -228,7 +254,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
                   rows={2}
                   disabled={disabled}
                   value={plan?.summary.progress ?? ''}
-                  placeholder="上版验收结果与本版起点"
+                  placeholder="验收结果与本周计划起点"
                   onChange={(event) => {
                     if (plan) {
                       edit({ ...plan, summary: { ...plan.summary, progress: event.target.value } })

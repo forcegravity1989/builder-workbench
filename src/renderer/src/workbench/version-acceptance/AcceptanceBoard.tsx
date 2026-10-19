@@ -15,12 +15,15 @@ import { AcceptanceGoalCards } from './AcceptanceGoalCards'
 import { AcceptancePackage } from './AcceptancePackage'
 import { AcceptanceSources } from './AcceptanceSources'
 import { AcceptanceNotices } from './AcceptanceNotices'
-import { useAcceptanceMetricWindow } from './AcceptanceMetricWindow'
 import { CycleArchive } from '../version-cycle/CycleArchive'
 import { AcceptanceJourney } from './AcceptanceJourney'
 import { AcceptanceReportDialog } from './AcceptanceReportDialog'
 import { useArchivePrStatus } from '../version-cycle/use-archive-pr-status'
 import { useAcceptanceBoard } from './use-acceptance-board'
+import { useAcceptanceHistory } from './use-acceptance-history'
+import { useAcceptanceReport } from './use-acceptance-output'
+import { AcceptanceRoundPicker } from './AcceptanceRoundPicker'
+import { HistoricalRoundCards } from './HistoricalRoundCards'
 import './acceptance.css'
 
 export type AcceptanceBoardProps = {
@@ -84,28 +87,35 @@ function ReadyAcceptanceBoard({
     error,
     setError,
     busy,
-    report,
     saveTaskSnapshot,
     scroll,
-    document,
-    plan,
-    readOnly,
+    document: currentDocument,
+    plan: currentPlan,
+    readOnly: currentReadOnly,
     loadVersion,
     editGoal,
     editReadings,
-    buildReport,
     refreshData,
     saving,
     retrySave,
     useRemoteDeletion,
     initializationSuppressed
   } = useAcceptanceBoard({ context, history, recoveryKey })
+  const rounds = useAcceptanceHistory({
+    history,
+    scope: metricScope,
+    document: currentDocument,
+    plan: currentPlan,
+    selectedVersion: context.version,
+    runtimeOwnerEnvironmentId: scope.runtimeOwnerEnvironmentId,
+    refreshToken: context.materialRefresh
+  })
+  const { document, plan } = rounds
+  const readOnly = currentReadOnly || rounds.historical || rounds.locked
+  const currentView = useRef(!rounds.historical)
+  currentView.current = !rounds.historical && !rounds.locked
+  const { report, buildReport } = useAcceptanceReport(document, plan?.document, setError)
   const prStatus = useArchivePrStatus(context, document?.workflow?.archivePr)
-  const hasMetrics = Boolean(
-    plan?.document.goals.some((goal) => goal.metricTargets.length > 0) ||
-    document?.results.some((result) => result.readings.length > 0)
-  )
-  const metricWindow = useAcceptanceMetricWindow(metrics, metricScope, hasMetrics)
   const [reportOpen, setReportOpen] = useState(false)
   const startCard = useRef<HTMLElement>(null)
   const results = useRef<HTMLElement>(null)
@@ -119,7 +129,7 @@ function ReadyAcceptanceBoard({
   )
   const handleSnapshot = useCallback(
     (reads: CycleTaskRead[]) => {
-      if (document) {
+      if (document && currentView.current) {
         saveTaskSnapshot(document, reads)
       }
     },
@@ -177,8 +187,8 @@ function ReadyAcceptanceBoard({
           onClick={() => {
             void (async () => {
               toast.message(trunkUpdateNotice(await context.updateCode()))
-              metricWindow.refresh()
               await refreshData()
+              rounds.refresh()
               await prStatus.refresh()
             })()
           }}
@@ -199,7 +209,11 @@ function ReadyAcceptanceBoard({
           stage={document?.workflow?.stage}
           startRef={startCard}
           packageRef={packageSection}
-          packageReady={packageReady}
+          packageReady={
+            rounds.historical || rounds.locked
+              ? Boolean(document?.preparedArtifacts.some((item) => item.kind === 'package'))
+              : packageReady
+          }
           resultsRef={results}
           archiveRef={archiveSection}
         />
@@ -217,48 +231,73 @@ function ReadyAcceptanceBoard({
             }
           }}
         >
-          <CycleStartCard
-            entry={entry}
-            problems={materialProblems}
-            version={context.version}
-            sectionRef={startCard}
-          />
-          {entry.notice && (
+          {!rounds.historical && (
+            <CycleStartCard
+              entry={entry}
+              problems={materialProblems}
+              version={context.version}
+              sectionRef={startCard}
+            />
+          )}
+          {!rounds.historical && entry.notice && (
             <p className="va-notice" role="status">
               {entry.notice}
             </p>
           )}
-          <AcceptanceNotices
-            error={error ?? metricWindow.error}
-            recoveryError={recoveryError}
-            recoveryText={recoveryText}
-            draft={draft}
-            controller={controller}
-            busy={busy}
-            setError={setError}
-            onRetrySave={() => void retrySave()}
-            onRemoteDeleted={useRemoteDeletion}
-          />
+          {rounds.historical ? (
+            rounds.error && (
+              <p className="va-error" role="alert">
+                {rounds.error}
+              </p>
+            )
+          ) : (
+            <AcceptanceNotices
+              error={rounds.error ?? error}
+              recoveryError={recoveryError}
+              recoveryText={recoveryText}
+              draft={draft}
+              controller={controller}
+              busy={busy}
+              setError={setError}
+              onRetrySave={() => void retrySave()}
+              onRemoteDeleted={useRemoteDeletion}
+            />
+          )}
+          {(currentDocument || rounds.historical) && (
+            <AcceptanceRoundPicker
+              value={rounds.key}
+              currentWeek={rounds.currentWeek}
+              choices={rounds.choices}
+              onChange={rounds.select}
+            />
+          )}
+          {rounds.catalogError && (
+            <p className="va-muted" role="status">
+              历史目录读取不完整：{rounds.catalogError}
+            </p>
+          )}
           {document ? (
             <>
               <AcceptanceSources document={document} />
-              <AcceptancePackage
-                port={packages}
-                scope={metricScope}
-                sectionRef={packageSection}
-                onLatestChange={handlePackageLatest}
-              />
+              {!rounds.historical && !rounds.locked && (
+                <AcceptancePackage
+                  port={packages}
+                  scope={metricScope}
+                  sectionRef={packageSection}
+                  onLatestChange={handlePackageLatest}
+                />
+              )}
               {plan && (
                 <>
                   <div className="va-section-heading">
                     <h2>本版目标验收</h2>
                   </div>
                   <AcceptanceGoalCards
+                    key={rounds.key}
                     plan={plan.document}
                     document={document}
                     metrics={metrics}
                     metricScope={metricScope}
-                    metricWindow={metricWindow.window}
                     readOnly={readOnly}
                     sectionRef={results}
                     scope={scope}
@@ -266,14 +305,28 @@ function ReadyAcceptanceBoard({
                     onSnapshot={handleSnapshot}
                     onOpenTask={openTask}
                     onReadings={(goalId, ref, readings) =>
-                      editReadings(document, goalId, ref, readings)
+                      currentView.current && editReadings(document, goalId, ref, readings)
                     }
-                    onGoalChange={(value, goalId) => editGoal(value, goalId)}
+                    onGoalChange={(value, goalId) => {
+                      if (currentView.current) {
+                        editGoal(value, goalId)
+                      }
+                    }}
                     onReport={openReport}
                   />
                 </>
               )}
             </>
+          ) : rounds.historical ? (
+            rounds.legacyRound && currentDocument ? (
+              <HistoricalRoundCards document={currentDocument} roundId={rounds.legacyRound.id} />
+            ) : (
+              <p role="status">
+                {rounds.loading
+                  ? '正在读取该周材料…'
+                  : '该周材料暂不可读；当前材料未替代历史内容。'}
+              </p>
+            )
           ) : (
             <>
               <AcceptancePackage

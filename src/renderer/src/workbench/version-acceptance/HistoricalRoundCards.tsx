@@ -1,15 +1,10 @@
-import type {
-  AcceptanceMaterial,
-  PlanningMaterial
-} from '../../../../shared/workbench/version-material'
+import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
 import { VersionGoalCard } from '../version-cycle/VersionGoalCard'
 
 export function HistoricalRoundCards({
-  plan,
   document,
   roundId
 }: {
-  plan: PlanningMaterial
   document: AcceptanceMaterial
   roundId: string
 }) {
@@ -41,10 +36,10 @@ export function HistoricalRoundCards({
   return (
     <section className="va-historical-goals" aria-label="历史轮次目标卡">
       <p className="va-muted">
-        历史轮次只读；以下内容来自该轮材料快照，不重新读取当前 Issue 或指标。
+        此轮只保存了结论、进展和 Issue
+        备注/标记。目标正文、材料、指标与会议指导未记录；以下仅展示已有快照。
       </p>
-      {plan.goals.map((goal, index) => {
-        const snapshot = snapshots.get(goal.goalId)
+      {[...snapshots].map(([goalId, snapshot], index) => {
         const tone =
           snapshot?.decision === 'met'
             ? 'met'
@@ -53,8 +48,8 @@ export function HistoricalRoundCards({
               : 'pending'
         return (
           <VersionGoalCard
-            key={goal.goalId}
-            goal={goal}
+            key={goalId}
+            goal={{ goalId, title: `目标 ${goalId}（历史标题未记录）`, metricTargets: [] }}
             index={index}
             readOnly
             defaultOpen={false}
@@ -62,7 +57,6 @@ export function HistoricalRoundCards({
               <span className={`va-goal-summary va-status-${snapshot ? tone : 'unknown'}`}>
                 <span aria-label={`历史状态：${snapshot?.decision || 'Unknown'}`}>●</span>
                 <span>{snapshot?.decision || 'Unknown'}</span>
-                <span>负责人 {goal.owner || '未指派'}</span>
               </span>
             }
             result={

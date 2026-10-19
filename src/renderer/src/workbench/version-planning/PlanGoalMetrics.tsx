@@ -16,15 +16,15 @@ export function PlanGoalMetrics({
   prepare(): void
 }) {
   const definitions = metrics.catalog?.definitions ?? []
-  const selected = new Set(goal.metricTargets.map((item) => metricRefKey(item.ref)))
-  const available = definitions.filter((item) => !selected.has(metricRefKey(item.ref)))
+  const selected = new Set(goal.metricTargets.map((item) => item.ref.name))
+  const available = definitions.filter((item) => !selected.has(item.name))
 
   const changeMetric = (index: number, key: string) => {
     if (!key) {
       onChange({ ...goal, metricTargets: goal.metricTargets.filter((_, i) => i !== index) })
       return
     }
-    const definition = definitions.find((item) => metricRefKey(item.ref) === key)
+    const definition = available.find((item) => metricRefKey(item.ref) === key)
     if (definition) {
       onChange({
         ...goal,
@@ -40,6 +40,8 @@ export function PlanGoalMetrics({
       {goal.metricTargets.map((target, index) => {
         const key = metricRefKey(target.ref)
         const definition = definitions.find((item) => metricRefKey(item.ref) === key)
+        const definitionUpdated =
+          !definition && definitions.some((item) => item.name === target.ref.name)
         const value = metrics.values[key]
         const reading =
           value?.status === 'ready' && value.readings.length === 1 ? value.readings[0] : null
@@ -56,7 +58,11 @@ export function PlanGoalMetrics({
                   <option value="">移除指标承诺</option>
                   <option value={key}>
                     {target.ref.name}
-                    {!definition ? '（目录中暂无）' : ''}
+                    {definitionUpdated
+                      ? '（定义已更新，保留原承诺）'
+                      : !definition
+                        ? '（目录中暂无）'
+                        : ''}
                   </option>
                   {available.map((item) => (
                     <option value={metricRefKey(item.ref)} key={metricRefKey(item.ref)}>

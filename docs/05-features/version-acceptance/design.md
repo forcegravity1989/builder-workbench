@@ -2,7 +2,7 @@
 
 > 给实现与技术评审者动代码前读；本文管对象、数据边界、组件复用和异常语义。用户行为以 [spec](spec.md) 为准，共享壳层与计划边界见 [计划设计](../version-planning/design.md#共享边界)。落地后同步 06-module。本文只描述当前有效方案，不保留被替代的形态或过程记录。
 >
-> 状态：v9.5 形态已由用户于 2026-10-18 确认，本文是生产实施输入。批次 A 先落 schema 与守卫，之后再落两屏组件；材料增量字段全部可选，旧材料不迁移、不改写。
+> 状态：v9.5 形态及跨周承接、会议指导回流已由用户确认。材料增量字段全部可选，旧材料不迁移、不改写；实现证据与未验边界见 STATUS。
 
 ## 设计边界
 
@@ -12,10 +12,10 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 ## 材料对象与兼容读回
 
-Acceptance 材料继续使用 `schema_version=3`、`identity`、`planRef`、`candidateRef`、`preparedArtifacts`、`results`、`taskSnapshot` 和 `workflow`。本轮只增加可选字段：
+Acceptance 材料使用 `schema_version=3`、`version`、`cycleId`、`planRef`、`candidateRef`、`preparedArtifacts`、`results`、`taskSnapshot` 和 `workflow`。可选字段包括：
 
 - `results[].materials?: Array<{ label: string; url: string }>` 是目标级材料入口；已有 `deliveries` 继续按旧语义读回。
-- `results[].rounds?: Array<{ id: string; week: string; kind: 'progress' | 'final'; closedAt?: string; snapshot: { goals: Array<{ goalId: string; decision: string; progress: string; next?: string }>; issueMarks: Record<string, { carry?: boolean; risk?: boolean }>; issueNotes: Record<string, string> } }>` 固化每轮人工输入。
+- `results[].rounds` 保存轮次 `id/week/kind`、可选 `closedAt` 与人工字段摘要 `snapshot`。封存轮可选的 `sourceCommit/sourceRevision` 必须成对出现，指向 Git 中的整份验收材料。摘要只承载目标结论、进展、下一步、Issue 备注/标记，不冒充完整历史材料。
 - `results[].meetingDirectives?: Array<{ id: string; text: string; tag: 'resolved-this-acceptance' | 'next-week-plan' | 'record-remaining'; goalId?: string; status: 'pending' | 'confirmed'; source: 'transcript-summary' | 'manual'; sourceRef?: string; confirmedAt?: string }>` 保存会后指导与遗留。
 - `results[].issueNotes?: Record<string, string>` 和 `results[].issueMarks?: Record<string, { carry?: boolean; risk?: boolean }>` 保存当前轮 Issue 级备注与标记。
 - `taskSnapshot[].labels?: string[]` 保存 provider 返回的分类标签；有 `Bug/缺陷` 标签归 Bug，其余有标签默认归 Feature，无标签才归未分类。
@@ -25,18 +25,20 @@ Acceptance 材料继续使用 `schema_version=3`、`identity`、`planRef`、`can
 
 ## 轮次与重启
 
-当前材料代表可编辑轮次；每次周五进展刷新或展示验收结束，模型在会话中把当前人工输入复制到 `rounds`，写入 `week`、`kind`、`closedAt` 和完整 snapshot，再创建下一次当前轮。模型新增的历史 snapshot 只能逐字段复制当前材料，不能制造新的结论、Issue 备注或标记；每个结果只写一个与该结果 `goalId` 相同的 `snapshot.goals` 条目，`decision` 缺省为 `pending`、`progress` 缺省为空字符串，`next` 为空时省略，`issueMarks`/`issueNotes` 逐字复制当前结果。新轮需要沿用时仍保持待核，不能把旧结论变成新轮确认。轮次不由自然周自动推断，`week` 是模型在确定轮次时写入的协议值。
+当前材料代表本轮工作起点。新周或归档后的补证开始时，会话先将当前完整材料提交到 Git，再在一次保存中封存旧轮并建立统一的新轮。封存的 `sourceCommit/sourceRevision` 必须能读回与保存前材料一致的内容；固定计划必须使用可读的 committed 引用，不要求已合入。各目标共享同一个当前轮身份，目标数组顺序不影响轮次；身份冲突时只读并提示会话核对。同周补充目标时，新目标加入同一当前轮，从空人工摘要起步。只有已封存轮次的旧材料，先提交当前完整材料并核对本树 HEAD 后，仅追加新轮，保留旧轮不可修改。
 
-界面按周列出轮次：当前轮可编辑，历史轮只读。历史材料从固定验收树的 Git 读回，页面以材料中的轮次和 commit 身份呈现，不把最新 Issue 或指标状态覆盖旧快照。重启后只从材料和 Git 重建当前轮、历史轮、备注、标记与待确认指导；内存状态、缓存和页面顺序不作为正本。
+封存摘要逐字段复制最新已保存的人填内容。新轮保留进展、交付、读数、备注、标记与指导作为起点，将目标结论恢复为待确认并清除上轮阶段/归档 PR；准备完成后再记录本轮阶段。关闭 Issue 的旧标记不参与当前计数。指标每次刷新采集项目时区的当前周最新读数，写入当前轮；历史不刷新。轮次由会话确认后写入 `week/kind`，页面没有日期配置或开轮按钮。
+
+`useAcceptanceHistory` 从固定验收树 HEAD 的历史读取当前版本所有修订，按轮次呈现；总览原有主干目录读取不变。所选历史材料与它的固定计划一起驱动整页目标、指导、来源和纪要，禁止当前材料写入、Issue/指标刷新与启动新出包。无完整引用的旧摘要只显示确实保存的字段，其余明确未记录；无周次的 Git 修订标提交时间，不猜周次。重启从材料与 Git 重建，缓存和页面顺序不是正本。
 
 ## 共用 GoalCard
 
-计划和验收使用同一 `version-cycle/GoalCard` 骨架，目标卡是页面的主要信息单元：
+计划和验收使用同一 `version-cycle/VersionGoalCard` 骨架，目标卡是页面的主要信息单元。开合偏好按项目、仓库、宿主、版本、屏与验收轮次存入本地视图状态；单卡和批量操作共用，不写入材料或改变业务结论：
 
 1. **结论行（收起态）**：数据推导的结论灯、G 编号与目标、负责人、Issue 计数、遗留/风险标记和结论选择。无数据的灯、计数和标记显示 Unknown/空，不以组件默认值补绿。
 2. **故事行（展开态）**：横排三格「约定交付｜进展｜材料」。计划侧显示既有 deliverable/acceptance、deadline/owner 和唯一的目标级 progress 输入；验收侧 progress 与材料依据来自当前轮结果；存量 `deliveries` 只读回显并通过材料位置打开。旧 `reason` 只作为兼容读回，生产编辑入口统一为 progress。
 3. **指标行**：计划卡允许从项目目录添加/移除承诺、编辑本版目标并展开定义与采集依据；验收卡只读呈现承诺、读数和来源状态。刷新读数/目录及会话配置沿用现有指标能力。没有承诺或读数时保持 Unknown，不把缺数据点绿。
-4. **Issue 子块**：按 provider labels 分为 Bug 类、Feature 类、未分类三组；有标签但没有 Bug/缺陷标签的 Issue 默认归 Feature，无标签才归未分类。每行呈现原生状态、标题、assignee、内联备注和 carry/risk 标记。开放/遗留以黄色、风险以红色显示，颜色只来自真实状态和人工标记。Issue 详情仍由原生 TaskPort 打开；不保存 Issue 正文快照。
+4. **Issue 子块**：按 provider labels 分为 Bug 类、Feature 类、未分类三组；有标签但没有 Bug/缺陷标签的 Issue 默认归 Feature，无标签才归未分类。每行呈现原生状态、标题、assignee、内联备注和 carry/risk 标记。开放/遗留以黄色、风险以红色显示，颜色只来自真实状态和人工标记。已关闭 Issue 不着色、不计遗留/风险数，已存备注继续只读展示，不再编辑备注或标记。Issue 详情仍由原生 TaskPort 打开；不保存 Issue 正文快照。
 5. **未达下一步与会后指导**：未达目标显示 next；会后指导位于页面底部独立块，不在卡内另造“遗留汇总”或注入按钮。
 
 计划卡的 deadline/owner 从既有计划字段读取；计划拆解入口放在目标卡 Issue 子块中，要求新 Issue 使用 Bug/Feature provider 分类标签。验收卡 owner 只读，Issue assignee 只读 provider 值。两屏不提供板内搜索、页顶摘要计数行、全量 Issue 快照区、双面切换或独立周报/导出屏。
@@ -56,30 +58,19 @@ Acceptance 材料继续使用 `schema_version=3`、`identity`、`planRef`、`can
 
 会后 `version-acceptance` Skill 负责把会议 ID、转写稿定位、目标和 Issue 上下文交给已有会议转写来源，再要求独立 subagent 总结「会议指导与遗留」。总结结果必须明示 AI 来源、`sourceRef` 和 pending 状态；主会话不代替 subagent 总结，不把模型文字当人的决定。用户逐条确认、删除或人工补记后，才把 `status=confirmed`、`confirmedAt` 和可选 `goalId` 写入材料。tag 只有三种：本次验收已解决、纳入下周计划、记录遗留。
 
-当前仓内没有可直接调用的 eMeeting 音频转写脚本；`wsl-transcript-*` 只处理会话文件系统通道。SOP 因此只消费 issue #374 或项目会话实际提供的转写稿，拿不到稿件就呈现 Unknown/待补来源，不声称应用内已完成语音转写。转写获取、总结、逐条确认和材料保存是四个不同证据边界。
+`orca bw meeting transcript` 继承 [Issue #374](https://github.com/forcegravity1989/builder-workbench/issues/374) 已验证的录制选择、语音转文字标签与分片读取机制，通过既有原生浏览器 RPC 使用企业登录态，输出到当前工作树所属宿主。Skill 默认读取全部录制，按本项目议题交独立 subagent 提炼，并显式列出同音错字、指代或数字等不确定项。获取失败时 Builder 在会话补充关键信息，不要求导入文件。该内网脚本的本次验证边界为协议、构建与静态链路，未在本机验证企业网络取稿。
+
+周一计划 Skill 读取上轮已确认且标为 `next-week-plan` 的指导作为候选，列明来源与关联目标，经人决定才纳入本版 Top 3；待确认指导、单纯记录遗留和本轮已解决事项不自动变成承诺。
 
 ## 人工字段守卫
 
-`material-human-guard` 在 `clientKind === undefined` 的模型保存通道上保护人工字段。保护清单包括 `results[].decision`、`results[].deliveries`、`results[].progress`、兼容旧字段 `results[].note`、`results[].nextStep`、`results[].issueNotes`、`results[].issueMarks`、`results[].meetingDirectives[].text` 以及已确认指导的 `status/confirmedAt`。模型可以新增只复制当前人工字段的轮次结构，以及带非空 `sourceRef` 的 `source=transcript-summary`、`status=pending` 指导，但不得修改或确认人的结论、备注、标记和已确认条目。人工 UI/明确的人工客户端保存才允许这些字段变化；校验失败整次保存拒绝并保留现有材料。
+`material-human-guard` 保护人的结论、交付、进展、说明、下一步、Issue 备注/标记和已确认指导。模型只能新增带来源的 pending 指导：转写来源使用 transcript-summary；人已在会话提供的素材使用 manual 与真实 conversation: 来源，界面标为“人工提供 · AI 整理”，不要求人重复抄写。唯一允许清除旧目标结论的模型操作是严格校验的跨周原子承接：旧轮完整材料已由 Git 读回核对、摘要等于最新持久字段、全目标建立同一新轮、清除上轮 workflow，其余内容不变。封存历史对所有保存通道不可修改。校验失败整次保存拒绝并保留现有材料。
 
 ## 材料打开、指标和异常
 
-目标材料链接优先交给当前工作区的 Orca 浏览器能力；没有可用工作区浏览器时按现有 `shell.openUrl` 或 `openFilePath` 处理，失败显示具体恢复提示，不新增浏览器核心。指标仍经 `MetricsPort.list/read/refresh` 读真实来源，卡面只读；刷新失败显示 Unknown/失败原因，不回退旧读数冒充当前值。
+目标材料、旧 `deliveries` 和候选来源行统一走 `openAcceptanceMaterial`。HTTP(S) 链接经 `openHttpLink` 打开选定工作区的原生浏览器；`.bw` 相对路径以该工作树为根，经 `activateMarkdownLink` 在所属本地、SSH 或 runtime 宿主的原生编辑器打开。入口先校验当前工作树身份，拒绝含凭据的 URL、不支持的协议和远端树外路径；不会把远端文件交给客户端本地文件 API。发起打开后展开 BW 会话栏显示原生标签；收折后的 fit 在布局更新后触发，不改 Orca 核心。失败显示具体恢复提示。指标仍经 `MetricsPort.list/read/refresh` 读真实来源，卡面只读；刷新失败显示 Unknown/失败原因，不回退旧读数冒充当前值。
 
-计划、验收和历史读取都保留材料事务的 expectedRevision、原子替换、跨进程互斥和工作树身份校验。保存冲突保留用户输入；候选、计划修订或 Issue 快照改变只使受影响结论待核，不自动清空或确认。归档 PR 状态遵循 `ArchivePrPort`：GitHub 走既有 gh 读回，CodeHub 走 `codehub-cli mr view`，远端身份不一致、状态异常、权限/网络失败均为 Unknown；不以 PR 合入替代人的完成确认。
-
-## 调研结论与实现落点
-
-- **R1 守卫**：模型保存在材料 RPC 进入 `material-human-guard`，当前只保护结论/风险；本轮扩展到上述人工字段，保存服务和 CLI 继续复用同一入口。
-- **R2 材料**：目标已有 `deliveries`，没有显式目标材料数组；新增 `materials` 为可选字段，URL 打开沿用既有 DeliveryDetails 能力，不做迁移。
-- **R3 Orca 浏览器**：原生 store 已有工作区浏览器 tab 能力，`shell.openUrl` 是系统回退；生产只做 BW 侧路由，不改 Orca 核心。
-- **R4 RPC**：读写统一走 `workbench.materials.*`、版本材料服务和原子事务；schema 扩展不另造通道。
-- **R5 指标**：现有 `useAcceptanceMetricWindow` 是指标端口 hook，不是独立页面；保留 list/read/refresh 数据协议，移除卡面编辑器并把状态压成一行。
-- **R6 CodeHub**：`codehub-cli` 已有 project/host 参数和 `viewCodeHubTask` 接缝；归档状态按 MR 读取，身份不符或读失败 Unknown，重复刷新使用短缓存/并发合并。
-- **R7 收折**：`usePlanColumnResize` 已控制 BW 右板列宽并派发 fit 事件；在同一壳层增加持久化 collapsed/narrow rail，终端保持挂载，不改 Orca 内部 pane。
-- **R8 转写**：仓内没有 eMeeting 获取脚本，既有 WSL transcript 是会话文件通道；SOP 只接 issue #374/项目提供的转写稿，缺稿不编造。
-- **R9 分类**：原型与生产按 `Bug/缺陷` 标签归 Bug，其余有标签归 Feature，无标签归未分类；生产 task snapshot 以可选 `labels` 补齐，旧快照无标签仍归未分类。
-- **R10 全量任务**：独立任务区已移除；TaskPort 仍负责单项详情读回与打开，计划/验收只在目标卡 Issue 子块内呈现关联任务，快照只作为卡内状态来源。
+计划、验收和历史读取都保留材料事务的 expectedRevision、原子替换、跨进程互斥和工作树身份校验。保存冲突保留用户输入；结论指纹排除轮次导航元数据；旧指纹仅接受完整旧投影精确匹配，不猜测或迁移人的结论。候选、计划修订或 Issue 快照改变只使受影响结论待核，不自动清空或确认。归档 PR 状态遵循 `ArchivePrPort`：GitHub 走既有 gh 读回，CodeHub 走 `codehub-cli mr view`，远端身份不一致、状态异常、权限/网络失败均为 Unknown；不以 PR 合入替代人的完成确认。
 
 ## 验证边界
 
