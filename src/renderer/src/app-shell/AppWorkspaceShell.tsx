@@ -311,7 +311,17 @@ function AppWorkspaceContent(props: {
                           }`}
                         >
                           {layout.workspaceChromeActive ? (
-                            <div className="vc-board-titlebar" aria-hidden="true">
+                            <div className="vc-board-titlebar">
+                              <button
+                                type="button"
+                                className="vc-session-toggle"
+                                aria-label={resize.chatCollapsed ? '展开会话栏' : '收折会话栏'}
+                                title={resize.chatCollapsed ? '展开会话栏' : '收折会话栏'}
+                                onClick={resize.toggleChatCollapsed}
+                                style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                              >
+                                {resize.chatCollapsed ? '展开会话' : '收折会话'}
+                              </button>
                               {/* Why: the closed-sidebar reopen toggle and window controls float above this drag band as z-index siblings; Electron drag hit-test respects no-drag only on DOM descendants, so this carve-out keeps them clickable. Mirrors the TabGroupPanel spacer. */}
                               {!layout.rightSidebarOpen ? (
                                 <div className="vc-board-titlebar-controls-space" />

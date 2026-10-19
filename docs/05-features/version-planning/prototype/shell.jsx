@@ -1,5 +1,7 @@
 import { React, useEffect, useRef, useState } from 'react'
 import {
+  ArrowLeft,
+  ArrowRight,
   BookOpen,
   CalendarClock,
   CalendarRange,
@@ -68,17 +70,46 @@ function PrototypeSidebar({ go, setModal, setSelectedIssue, view }) {
     </aside>
   )
 }
-function PrototypeSession({ composer, draft, sessionState, width }) {
+function PrototypeSession({ collapsed, composer, draft, onToggleCollapse, sessionState, width }) {
+  if (collapsed) {
+    return (
+      <section className="session-pane collapsed" aria-label="Orca 原生会话工作区（已收起）">
+        <button
+          className="session-rail-toggle"
+          onClick={onToggleCollapse}
+          aria-expanded={false}
+          title="展开会话栏"
+          aria-label="展开会话栏"
+        >
+          <ArrowRight />
+          <span className="session-rail-label">
+            <MessageSquare />
+            会话
+          </span>
+        </button>
+      </section>
+    )
+  }
   return (
     <section className="session-pane" style={{ width }} aria-label="Orca 原生会话工作区">
+      <div className="session-collapse-bar">
+        <span role="status">{sessionState === 'empty' ? '尚未打开会话' : '会话已打开'}</span>
+        <button
+          className="btn btn-ghost session-collapse-btn"
+          onClick={onToggleCollapse}
+          aria-expanded={true}
+          title="收起会话栏，板面占满整幅；随时展开恢复"
+        >
+          <ArrowLeft />
+          收起会话
+        </button>
+      </div>
       <div className="native-workspace-placeholder">
         <MessageSquare />
         <h2>
           Orca 原生会话<sup>1</sup>
         </h2>
-        <p className="prototype-session-state" role="status">
-          {sessionState === 'empty' ? '尚未打开会话' : '会话已打开'}
-        </p>
+        <p className="prototype-session-state">完整复用原生会话工作区：标签、历史与工具</p>
       </div>
       {draft && (
         <details className="prototype-request" open ref={composer}>

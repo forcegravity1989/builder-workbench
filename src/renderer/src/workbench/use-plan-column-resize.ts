@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useSidebarResize } from '@/hooks/useSidebarResize'
 import { SYNC_FIT_PANES_EVENT } from '@/constants/terminal'
 import {
@@ -6,7 +6,11 @@ import {
   PLAN_RIGHT_MIN_PX,
   planChatRatioFromWidth,
   planChatWidthFromRatio,
+  PLAN_CHAT_COLLAPSED_RAIL_PX,
+  PLAN_CHAT_REVEAL_EVENT,
+  readPlanChatCollapsed,
   readPlanChatRatio,
+  writePlanChatCollapsed,
   writePlanChatRatio
 } from './plan-column-resize'
 
@@ -14,12 +18,17 @@ export function usePlanColumnResize(enabled = true): {
   bodyRef: React.RefObject<HTMLDivElement | null>
   chatColRef: React.RefObject<HTMLDivElement | null>
   isResizing: boolean
+  chatCollapsed: boolean
+  toggleChatCollapsed: () => void
   onResizeStart: (event: React.MouseEvent) => void
 } {
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const [ratio, setRatio] = useState(readPlanChatRatio)
+  const [chatCollapsed, setChatCollapsed] = useState(readPlanChatCollapsed)
   const [containerWidth, setContainerWidth] = useState(0)
-  const chatWidth = planChatWidthFromRatio(ratio, containerWidth)
+  const chatWidth = chatCollapsed
+    ? PLAN_CHAT_COLLAPSED_RAIL_PX
+    : planChatWidthFromRatio(ratio, containerWidth)
   const maxWidth = Math.max(PLAN_CHAT_MIN_PX, containerWidth - PLAN_RIGHT_MIN_PX)
 
   const setWidth = useCallback(
@@ -48,6 +57,31 @@ export function usePlanColumnResize(enabled = true): {
     setWidth
   })
 
+  const toggleChatCollapsed = useCallback(() => {
+    const next = !chatCollapsed
+    setChatCollapsed(next)
+    writePlanChatCollapsed(next)
+  }, [chatCollapsed])
+
+  useEffect(() => {
+    const reveal = () => setChatCollapsed(false)
+    window.addEventListener(PLAN_CHAT_REVEAL_EVENT, reveal)
+    return () => window.removeEventListener(PLAN_CHAT_REVEAL_EVENT, reveal)
+  }, [])
+
+  useLayoutEffect(() => {
+    window.dispatchEvent(new Event(SYNC_FIT_PANES_EVENT))
+  }, [chatCollapsed])
+
+  const handleResizeStart = useCallback(
+    (event: React.MouseEvent) => {
+      if (!chatCollapsed) {
+        onResizeStart(event)
+      }
+    },
+    [chatCollapsed, onResizeStart]
+  )
+
   useLayoutEffect(() => {
     const body = bodyRef.current
     if (!body) {
@@ -62,5 +96,12 @@ export function usePlanColumnResize(enabled = true): {
     return () => observer.disconnect()
   }, [])
 
-  return { bodyRef, chatColRef, isResizing, onResizeStart }
+  return {
+    bodyRef,
+    chatColRef,
+    isResizing,
+    chatCollapsed,
+    toggleChatCollapsed,
+    onResizeStart: handleResizeStart
+  }
 }

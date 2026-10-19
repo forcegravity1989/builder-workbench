@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
-import {
-  MetricWindowSchema,
-  type MetricReading,
-  type MetricRef,
-  type MetricsPort,
-  type MetricScope,
-  type MetricWindow
+import type {
+  MetricReading,
+  MetricRef,
+  MetricsPort,
+  MetricScope
 } from '../../../../shared/workbench/metrics'
+import { currentMetricWeek } from '../../../../shared/workbench/metric-windows'
 import type {
   MetricReadingEvidence,
   VersionGoal
@@ -20,7 +19,6 @@ export function AcceptanceMetrics({
   readings,
   port,
   scope,
-  window,
   disabled,
   onReadings
 }: {
@@ -29,7 +27,6 @@ export function AcceptanceMetrics({
   readings: MetricReadingEvidence[]
   port: MetricsPort
   scope: MetricScope
-  window: MetricWindow | null
   disabled: boolean
   onReadings(ref: MetricRef, readings: MetricReadingEvidence[]): void
 }) {
@@ -40,7 +37,7 @@ export function AcceptanceMetrics({
     ])
   ])
   const names = useMemo(() => JSON.parse(namesKey) as string[], [namesKey])
-  const identity = JSON.stringify([materialKey, scope, goal.goalId, window, namesKey])
+  const identity = JSON.stringify([materialKey, scope, goal.goalId, namesKey, disabled])
   const latest = useRef(identity)
   latest.current = identity
   const requests = useRef(new Map<string, number>())
@@ -68,7 +65,7 @@ export function AcceptanceMetrics({
       const value = await port.refresh({
         scope,
         ref: definition.ref,
-        window: MetricWindowSchema.parse(window)
+        window: currentMetricWeek(catalog.timezone)
       })
       if (!current()) {
         return
@@ -99,7 +96,8 @@ export function AcceptanceMetrics({
   return (
     <div className="vp-metrics">
       {names.map((name) => {
-        const target = goal.metricTargets.find((item) => item.ref.name === name)
+        const targets = goal.metricTargets.filter((item) => item.ref.name === name)
+        const target = targets.length === 1 ? targets[0] : undefined
         const saved = readings.filter((reading) => reading.ref.name === name)
         const value = values[name]
         const actual = value && value.status !== 'ready' ? [] : saved
@@ -115,13 +113,26 @@ export function AcceptanceMetrics({
               </div>
               <button
                 className="wb-btn wb-btn-sm"
-                disabled={disabled || busy !== null || !window}
+                disabled={disabled || busy !== null}
                 onClick={() => void refresh(name)}
               >
                 <RefreshCw size={14} />
                 {busy === name ? '读取中…' : '刷新指标'}
               </button>
             </div>
+            {targets.length > 1 && (
+              <div className="va-warning">
+                <p>同名指标有 {targets.length} 份承诺，无法唯一比较。请在计划会话核对。</p>
+                <ul>
+                  {targets.map((item, index) => (
+                    <li key={index}>
+                      目标 {index + 1}：{item.target || '待明确'}
+                      {item.baseline && ` · 计划基线：${item.baseline.value}${item.baseline.unit}`}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {busy !== name && value && value.status !== 'ready' && (
               <p className="va-warning">{value.reason.message}</p>
             )}

@@ -1,7 +1,5 @@
-import { useAppStore } from '@/store'
-import { codehubApi } from '@/lib/codehub-api'
-import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import type { AppState } from '@/store/types'
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import type { CodeHubTaskDetail, CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
@@ -9,7 +7,6 @@ import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import type { Repo } from '../../../shared/repo-types'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
-import type { AppState } from '@/store/types'
 import type {
   CycleScope,
   CycleTaskRead,
@@ -180,6 +177,8 @@ async function readReference(
       title: item.title,
       state: item.state,
       url: item.url,
+      labels: item.labels,
+      assignee: item.assignees?.[0]?.login,
       readAt: deps.now()
     }
   }
@@ -197,6 +196,8 @@ async function readReference(
       title: detail.title,
       state: detail.state,
       url,
+      labels: detail.labels,
+      assignee: detail.assignees?.[0],
       readAt: deps.now()
     }
   }
@@ -314,14 +315,4 @@ export function createTaskPort(deps: TaskPortDeps): TaskPort {
     refresh: readAll,
     openDetail: (task, origin) => openDetail(deps, task, origin)
   }
-}
-
-export function nativeTaskPort(): TaskPort {
-  return createTaskPort({
-    repos: () => useAppStore.getState().repos,
-    lookupGitHubWorkItem: (args) => lookupGitHubWorkItemForSource(args),
-    viewCodeHubTask: (args) => codehubApi.viewTask(args),
-    openTaskPage: (data, options) => useAppStore.getState().openTaskPage(data, options),
-    now: () => new Date().toISOString()
-  })
 }

@@ -16,7 +16,7 @@
 |---|---|---|
 | 打开或接入项目 | 项目墙、接入覆盖层与 Orca 仓库列表 | 名片保真合并只补空字段、坏文件不覆盖；经固定分支 `bw/project` PR 合入被管仓、克隆前远端预探测与同远端去重已实现（真实远端未验）。G3 跨主机：项目墙只上能读到 `.bw/project.toml` 的项目并按项目/主机稳定身份归并（同一项目多主机一张卡、重复添加不重复计数），「导入 Builder 主机」批量壳只调用 Orca 原生配对，Orca Projects 侧栏保持原生全量、不接受 BW 过滤（原叠层收窄过滤已回退）；行为判据见 [project-intake spec](05-features/project-intake/spec.md)「§5 跨主机与项目墙」；旧 Rust 的项目约定常驻 worktree + Issue 运作完整旅程不在范围 |
 | 核对结果、拟目标、拆版本工作 | 计划屏：原生 terminal 固定工作区 + 右侧材料单页 | 经材料 RPC 读写 `.bw/planning/<版本>/`；开工注入渲染后 SYSTEM 与 week-planning Skill 指针，来源和覆盖边界见 §2 ③ |
-| 核对交付、出包、逐目标验收、归档 | 验收屏：与计划共用容器，独立固定树 bw/week-acceptance；出包区块按项目远端自动对接出包流水线（CodeHub→CloudDragon 会话，GitHub→gh CLI），界面不区分宿主 | 旅程灯只读模型写入材料的 workflow.stage（「出包」灯例外，随出包区块读到的真实制品包点亮）；归档 PR 合入状态按 archivePr 薄读取，CodeHub 等读不到状态一律保持未知，正文编辑延期 |
+| 核对交付、出包、逐目标验收、归档 | 验收屏：与计划共用容器，独立固定树 bw/week-acceptance；出包区块按项目远端自动对接出包流水线（CodeHub 执行面→cloudbuild CLI、制品面→CloudDragon 会话，GitHub→gh CLI），界面不区分宿主 | 旅程灯只读模型写入材料的 workflow.stage（「出包」灯例外，随出包区块读到的真实制品包点亮）；归档 PR 合入状态按 archivePr 薄读取，CodeHub 等读不到状态一律保持未知，正文编辑延期 |
 | 执行工作与管理任务 | Orca 终端、Tasks、worktree | 复用执行核；不能据规划会话可打开就认定所有 Issue 开工都已接 BW 纪律 |
 | 设置定时工作 | Orca Automations | 调度能力在执行核；「配置自动化」入口（右板页头）打开原生编辑器：已登记条目直接编辑，未登记预填创建；BW 提示词随进屏覆盖同步为当前版本、用户设置保留，启用与时间由人确认；真实到点触发与旧自动配置迁移须逐项验证 |
 | 查看项目概况 | 总览与项目墙 | 总览已接北极星、业务/项目指标两区与各版本当前材料，正式内容统一读主检出（主干本地镜像）并标注来源；页头「更新代码」是唯一同步入口（快进主检出后重读快照）。项目墙卡片给四项只读事实读数（版本/承诺进展/在跑会话/PR 待审，现算三态、无健康灯），任务明细归总览。业务按特性及引领/滞后关系展示，项目读取提交及合入 PR/MR 趋势，开放 Issue 只显示当前快照。缺数据保持 Unknown；真实数据与 Electron 旅程待验，见[总览指标 STATUS](05-features/overview-metrics/STATUS.md) |
@@ -64,7 +64,7 @@ BW 的业务契约在 `src/shared/workbench/`，材料事务、指标与历史 r
 
 ### 版本材料与选版
 
-计划/验收两屏经 `workbench.materials.*` RPC 与 `ORCA bw materials` CLI 读写固定工作树的 `.bw/planning/<版本>/` 材料，共用同一材料事务核心（version-document-store：expectedRevision、跨进程互斥、原子替换）；会话内的模型经 CLI 操作同一份材料，旧 planning.py 写入器已退役删除。流程选版是原生 worktree 偏好 `workbenchSelectedVersion`（main/workbench/version-selection.ts），context 只读、select 只写偏好，CLI 与 UI 共享；不按会话标题、日期或上次打开项推断版本。旅程灯只读材料的 `workflow.stage`（模型每完成一阶段写入，灰/绿两态；验收屏「出包」灯例外，随出包区块读到的真实制品包点亮）；归档 PR 合入状态按材料记录的 `workflow.archivePr` 薄读取，两屏共用自动保存、任务区和归档状态行，归档后可继续编辑原材料；这不是另一份 Issue 状态正本。完成、合入与发布仍需人决定。
+计划/验收两屏经 `workbench.materials.*` RPC 与 `ORCA bw materials` CLI 读写固定工作树的 `.bw/planning/<版本>/` 材料，共用同一材料事务核心（version-document-store：expectedRevision、跨进程互斥、原子替换）；会话内的模型经 CLI 操作同一份材料，旧 planning.py 写入器已退役删除。流程选版是原生 worktree 偏好 `workbenchSelectedVersion`（main/workbench/version-selection.ts），context 只读、select 只写偏好，CLI 与 UI 共享；不按会话标题、日期或上次打开项推断版本。旅程灯只读材料的 `workflow.stage`（模型每完成一阶段写入，灰/绿两态；验收屏「出包」灯例外，随出包区块读到的真实制品包点亮）；归档 PR 合入状态按材料记录的 `workflow.archivePr` 薄读取。两屏共用自动保存、目标卡骨架、TaskPort 单项 Issue 读回和归档状态行；页面不再维护独立全量任务区，归档后可继续编辑原材料；这不是另一份 Issue 状态正本。完成、合入与发布仍需人决定。
 
 ### 知识库材料
 

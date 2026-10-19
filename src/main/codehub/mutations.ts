@@ -236,7 +236,7 @@ export async function viewCodeHubTask(args: {
     title: String(record.title ?? ''),
     description:
       plainText(record, ['description', 'body', 'content', 'desc', 'markdown', 'note']) ?? '',
-    state: String(record.state ?? 'opened'),
+    state: typeof record.state === 'string' && record.state.trim() ? record.state : 'unknown',
     url: typeof url === 'string' ? url : null,
     author: loginOfDetail(record.author),
     assignees: namesOf(record.assignees ?? record.assignee),

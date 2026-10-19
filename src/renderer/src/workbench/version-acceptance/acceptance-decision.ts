@@ -19,18 +19,31 @@ function stableValue(value: unknown): unknown {
   return value
 }
 
-/** The revision describes what was judged, excluding the judgment itself. */
+/** Round navigation metadata and the judgment itself are not business evidence. */
 export function goalEvidenceText(
   document: AcceptanceMaterial,
   plan: PlanningMaterial,
   goalId: string
 ): string {
+  return evidenceText(document, plan, goalId, false)
+}
+
+function evidenceText(
+  document: AcceptanceMaterial,
+  plan: PlanningMaterial,
+  goalId: string,
+  includeRounds: boolean
+): string {
   const goal = plan.goals.find((item) => item.goalId === goalId)
   if (!goal) {
     throw new Error('该目标不属于固定计划')
   }
-  const { decision: _decision, ...result } =
-    document.results.find((item) => item.goalId === goalId) ?? emptyGoalResult(goalId)
+  const {
+    decision: _decision,
+    rounds,
+    ...evidence
+  } = document.results.find((item) => item.goalId === goalId) ?? emptyGoalResult(goalId)
+  const result = includeRounds ? { ...evidence, rounds } : evidence
   const locations = new Set(result.deliveries.map((item) => item.location).filter(Boolean))
   const candidatePackages = document.preparedArtifacts
     .filter((item) => item.kind === 'package')
@@ -86,7 +99,12 @@ export async function decisionFreshness(
   if (!decision) {
     return 'unrecorded'
   }
-  return decision.materialRevision === (await goalEvidenceRevision(document, plan, goalId))
+  if (decision.materialRevision === (await goalEvidenceRevision(document, plan, goalId))) {
+    return 'current'
+  }
+  // Existing decisions used the complete projection including rounds; accept only an exact match.
+  return decision.materialRevision ===
+    (await evidenceRevision(evidenceText(document, plan, goalId, true)))
     ? 'current'
     : 'changed'
 }
@@ -105,7 +123,7 @@ export async function recordHumanDecision(input: {
   }
   const result =
     input.document.results.find((item) => item.goalId === input.goalId) ??
-    emptyGoalResult(input.goalId)
+    emptyGoalResult(input.goalId, input.document)
   const next = {
     ...result,
     decision: {
@@ -118,6 +136,8 @@ export async function recordHumanDecision(input: {
   }
   return {
     ...input.document,
-    results: [...input.document.results.filter((item) => item.goalId !== input.goalId), next]
+    results: input.document.results.some((item) => item.goalId === input.goalId)
+      ? input.document.results.map((item) => (item.goalId === input.goalId ? next : item))
+      : [...input.document.results, next]
   }
 }
