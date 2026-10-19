@@ -1,6 +1,7 @@
 import type { RefObject } from 'react'
 import { ArrowUpRight, GitPullRequest, PackageCheck, Presentation } from 'lucide-react'
 import {
+  ACCEPTANCE_STAGE_LABELS,
   ACCEPTANCE_WORKFLOW_STAGES,
   workflowStageIndex,
   type AcceptanceWorkflowStage
@@ -28,12 +29,11 @@ export function AcceptanceJourney({
   archiveRef: RefObject<HTMLElement | null>
 }) {
   const reached = workflowStageIndex(ACCEPTANCE_WORKFLOW_STAGES, stage)
-  const recorded = (index: number) =>
-    index <= reached ? '模型已记录完成' : '尚未记录完成'
+  const recorded = (index: number) => (index <= reached ? '模型已记录完成' : '尚未记录完成')
   const steps = [
     {
       id: 'preparation',
-      title: '准备交付',
+      title: ACCEPTANCE_STAGE_LABELS.preparation,
       Icon: PackageCheck,
       ref: startRef,
       done: reached >= 0,
@@ -49,7 +49,7 @@ export function AcceptanceJourney({
     },
     {
       id: 'results',
-      title: '展示验收',
+      title: ACCEPTANCE_STAGE_LABELS.showcase,
       Icon: Presentation,
       ref: resultsRef,
       done: reached >= 1,
@@ -57,7 +57,7 @@ export function AcceptanceJourney({
     },
     {
       id: 'archive',
-      title: '归档',
+      title: ACCEPTANCE_STAGE_LABELS.archive,
       Icon: GitPullRequest,
       ref: archiveRef,
       done: reached >= 2,

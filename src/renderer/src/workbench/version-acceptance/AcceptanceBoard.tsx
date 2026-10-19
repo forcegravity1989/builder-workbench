@@ -135,6 +135,8 @@ function ReadyAcceptanceBoard({
   // 高效四原则仪表的本版事实：全部现算自分屏已加载的 plan/document，
   // 没有材料就 Unknown 灰，不猜不装绿（铁律二）。
   const fourDxFacts: FourDxAcceptanceFacts = {
+    versionSelected: Boolean(version),
+    sourcesLoaded,
     hasPlan: Boolean(plan),
     goalsTotal: plan?.document.goals.length ?? 0,
     goalsWithMetric:
