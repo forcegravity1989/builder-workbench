@@ -12,11 +12,14 @@ export type GiteaStatus = 'checking' | 'configured' | 'not-configured' | 'not-au
 // Why (BW #323): codehub-cli now reports auth like gh, so its status carries
 // the same installed-but-unauth middle state instead of a bare "available".
 export type CodeHubCliStatus = 'checking' | 'connected' | 'not-installed' | 'not-authenticated'
+// Why (BW #366): cloudbuild's cb mirrors the gh failure modes.
+export type CloudbuildStatus = GhStatus
 export type PreflightRefreshProvider =
   | 'gh'
   | 'glab'
   | 'codehub'
   | 'welink'
+  | 'cloudbuild'
   | 'bitbucket'
   | 'azureDevOps'
   | 'gitea'
@@ -34,6 +37,7 @@ export type PreflightIntegrationStatuses = {
   giteaBaseUrl: string | null
   codehubStatus: CodeHubCliStatus
   welinkStatus: WelinkStatus
+  cloudbuildStatus: CloudbuildStatus
 }
 
 type TokenApiPreflightStatus = {
@@ -101,6 +105,14 @@ function welinkStatusFromPreflight(status: PreflightStatus['welink']): WelinkSta
   return status.authenticated ? 'connected' : 'not-authenticated'
 }
 
+// Why (BW #366): mirrors welinkStatusFromPreflight for cloudbuild's cb.
+function cloudbuildStatusFromPreflight(status: PreflightStatus['cloudbuild']): CloudbuildStatus {
+  if (!status?.installed) {
+    return 'not-installed'
+  }
+  return status.authenticated ? 'connected' : 'not-authenticated'
+}
+
 function glabStatusFromPreflight(status: PreflightStatus['glab']): GlabStatus {
   if (!status?.installed) {
     return 'not-installed'
@@ -140,7 +152,8 @@ export function getPreflightIntegrationStatuses(
       giteaAccount: null,
       giteaBaseUrl: null,
       codehubStatus: 'checking',
-      welinkStatus: 'checking'
+      welinkStatus: 'checking',
+      cloudbuildStatus: 'checking'
     }
   }
 
@@ -179,6 +192,11 @@ export function getPreflightIntegrationStatuses(
       'welink',
       refreshingProviders,
       welinkStatusFromPreflight(preflightStatus.welink)
+    ),
+    cloudbuildStatus: maybeChecking(
+      'cloudbuild',
+      refreshingProviders,
+      cloudbuildStatusFromPreflight(preflightStatus.cloudbuild)
     )
   }
 }

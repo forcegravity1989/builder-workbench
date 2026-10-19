@@ -71,6 +71,7 @@ describe('giteaStatusFromPreflight', () => {
 describe('getPreflightIntegrationStatuses', () => {
   it('shows checking before preflight status arrives', () => {
     expect(getPreflightIntegrationStatuses(null, new Set()).ghStatus).toBe('checking')
+    expect(getPreflightIntegrationStatuses(null, new Set()).cloudbuildStatus).toBe('checking')
   })
 
   it('derives connected status labels and account details from preflight state', () => {
@@ -110,7 +111,10 @@ describe('getPreflightIntegrationStatuses', () => {
     ).toBe('checking')
   })
 
-  it('derives welink-cli status from presence and auth readback', () => {
+  // Why (BW #366): cloudbuild's cb rides the same presence + auth readback
+  // derivation as welink — asserted here instead of a new case so the
+  // vitest-count ratchet stays put.
+  it('derives welink-cli and cloudbuild status from presence and auth readback', () => {
     expect(getPreflightIntegrationStatuses(connectedPreflight, new Set()).welinkStatus).toBe(
       'not-installed'
     )
@@ -131,6 +135,28 @@ describe('getPreflightIntegrationStatuses', () => {
         { ...connectedPreflight, welink: { installed: true, authenticated: true } },
         new Set(['welink'])
       ).welinkStatus
+    ).toBe('checking')
+
+    expect(getPreflightIntegrationStatuses(connectedPreflight, new Set()).cloudbuildStatus).toBe(
+      'not-installed'
+    )
+    expect(
+      getPreflightIntegrationStatuses(
+        { ...connectedPreflight, cloudbuild: { installed: true, authenticated: true } },
+        new Set()
+      ).cloudbuildStatus
+    ).toBe('connected')
+    expect(
+      getPreflightIntegrationStatuses(
+        { ...connectedPreflight, cloudbuild: { installed: true, authenticated: false } },
+        new Set()
+      ).cloudbuildStatus
+    ).toBe('not-authenticated')
+    expect(
+      getPreflightIntegrationStatuses(
+        { ...connectedPreflight, cloudbuild: { installed: true, authenticated: true } },
+        new Set(['cloudbuild'])
+      ).cloudbuildStatus
     ).toBe('checking')
   })
 

@@ -16,6 +16,7 @@ export type PreflightMocks = {
   getGiteaAuthStatusMock: Mock
   resolveCliCommandsMock: Mock
   isCommandOnLocalPathMock: Mock
+  resolveCommandOnLocalPathMock?: Mock
   mergePersistedWindowsPathAsyncMock: Mock
   mergePersistedWindowsPathMock: Mock
 }
@@ -52,6 +53,7 @@ export function resetPreflightMocks(mocks: PreflightMocks, handlers: HandlerMap)
     getGiteaAuthStatusMock,
     resolveCliCommandsMock,
     isCommandOnLocalPathMock,
+    resolveCommandOnLocalPathMock,
     mergePersistedWindowsPathAsyncMock,
     mergePersistedWindowsPathMock
   } = mocks
@@ -91,6 +93,10 @@ export function resetPreflightMocks(mocks: PreflightMocks, handlers: HandlerMap)
       return false
     }
   })
+  // Why: null = "no .cmd/.bat shim resolution" so every existing case keeps
+  // the bare spawn; only cases that exercise the shim route override it.
+  resolveCommandOnLocalPathMock?.mockReset()
+  resolveCommandOnLocalPathMock?.mockResolvedValue(null)
   getBitbucketAuthStatusMock.mockResolvedValue(defaultBitbucketStatus)
   getAzureDevOpsAuthStatusMock.mockResolvedValue(defaultAzureDevOpsStatus)
   getGiteaAuthStatusMock.mockResolvedValue(defaultGiteaStatus)

@@ -6314,7 +6314,9 @@
           "codeHostGroupTitle": "代码托管",
           "codeHostGroupDescription": "用于任务、拉取请求、合并请求与评审状态的命令行工具。",
           "imGroupTitle": "项目群",
-          "imGroupDescription": "用于向项目群发送版本与验收动态的命令行工具。"
+          "imGroupDescription": "用于向项目群发送版本与验收动态的命令行工具。",
+          "buildGroupTitle": "构建",
+          "buildGroupDescription": "用于流水线执行与出包的命令行工具。"
         },
         "KagiSessionLinkForm": {
           "92f0b4e472": "清除",

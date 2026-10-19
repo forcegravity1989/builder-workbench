@@ -335,7 +335,14 @@ export function OnboardingInlineCommandTerminal({
               worktreeId={worktreeId}
               cwd={cwd}
               isActive
-              isVisible
+              // Why: the pane mounts while the grid row is still 0fr; a
+              // hardcoded-true isVisible makes the WebGL renderer parse PTY
+              // output with no box, then the reveal model-diff skips the
+              // pre-reveal cells and the canvas stays blank until new output.
+              // Riding `entered` suspends rendering until the expand animation
+              // finishes, so the same reveal-repaint chain used for tab
+              // switches repaints the buffer once the pane has a real box.
+              isVisible={entered}
               showSplitButton={false}
               onPtyExit={() => {
                 onTerminalExit?.()

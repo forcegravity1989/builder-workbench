@@ -1559,8 +1559,12 @@
             "control": {
               "integration": {
                 "cards": {
-                  "codehubInstallCommand": "npm install -g @codehub/codehub-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false",
-                  "welinkInstallCommand": "npm install -g @welink/welink-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false"
+                  "cloudbuildInstallFailed": "CloudBuild CLI install failed.",
+                  "cloudbuildInstallSucceeded": "CloudBuild CLI installed. Re-checking its status…",
+                  "codehubInstallFailed": "CodeHub CLI install failed.",
+                  "codehubInstallSucceeded": "CodeHub CLI installed. Re-checking its status…",
+                  "welinkInstallFailed": "WeLink CLI install failed.",
+                  "welinkInstallSucceeded": "WeLink CLI installed. Re-checking its status…"
                 }
               }
             }

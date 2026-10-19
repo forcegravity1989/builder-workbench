@@ -11,10 +11,8 @@ import { getProviderAccountScope } from './provider-account-scope'
 import { ProviderHostScopeControl } from './ProviderHostScopeControl'
 import { usePreflightCardStatuses } from './source-control-preflight-card-status'
 import { translate } from '@/i18n/i18n'
-import {
-  injectCliCommandIntoTerminal,
-  useCanInjectCliCommand
-} from './cli-command-injection'
+import { OnboardingInlineCommandTerminal } from '../onboarding/OnboardingInlineCommandTerminal'
+import { useIsLocalCliScope } from './use-local-cli-scope'
 
 export function integrationStatusLabel(
   status: 'connected' | 'unavailable' | 'not-installed' | 'not-authenticated' | 'checking'
@@ -56,6 +54,9 @@ export function ProviderAccountScopeDetails({
 
   return (
     <IntegrationCardDetails>
+      {/* Why (BW #323): the Open Remote Servers shortcut is dropped from the
+          source-control integration cards per the user decision (2026-10-16);
+          the scope label stays to say whose status the card reports. */}
       <ProviderHostScopeControl
         labelPrefix={translate(
           'auto.components.settings.cli.source.control.integration.cards.account_scope_prefix',
@@ -63,6 +64,7 @@ export function ProviderAccountScopeDetails({
         )}
         scope={accountScope}
         className={subordinateRowClass}
+        showChangeHostAction={false}
       />
       {children}
     </IntegrationCardDetails>
@@ -74,8 +76,16 @@ export function GitHubIntegrationCard(): React.JSX.Element {
   const status = unavailable ? 'unavailable' : statuses.ghStatus
   const connected = status === 'connected'
   const commandRowClass = useIntegrationCommandRowClass()
-  const canInject = useCanInjectCliCommand()
-  const [injected, setInjected] = useState(false)
+  const isLocalScope = useIsLocalCliScope()
+  // Why (BW #323): login runs in the card-embedded inline terminal (user
+  // decision 2026-10-19 — reverses the floating-terminal injection; the
+  // upstream OnboardingInlineCommandTerminal pastes the command and the
+  // human presses Enter, per the issue's original form).
+  const [loginTerminalOpen, setLoginTerminalOpen] = useState(false)
+  // Why (BW #323): remount key so clicking Log in again starts a fresh
+  // session (new tab + fresh injection) instead of no-oping while the
+  // terminal is already open.
+  const [loginAttempt, setLoginAttempt] = useState(0)
 
   return (
     <IntegrationCardShell
@@ -163,22 +173,14 @@ export function GitHubIntegrationCard(): React.JSX.Element {
                   'gh auth login'
                 )}
               </div>
-              {injected ? (
-                <p className="text-xs text-muted-foreground">
-                  {translate(
-                    'auto.components.settings.cli.source.control.integration.cards.commandInjectedNote',
-                    'The command is running in a new terminal tab. Re-check here when it finishes.'
-                  )}
-                </p>
-              ) : null}
               <div className="flex items-center gap-2">
-                {canInject ? (
+                {isLocalScope ? (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      injectCliCommandIntoTerminal('gh auth login')
-                      setInjected(true)
+                      setLoginTerminalOpen(true)
+                      setLoginAttempt((n) => n + 1)
                     }}
                   >
                     {translate(
@@ -209,6 +211,48 @@ export function GitHubIntegrationCard(): React.JSX.Element {
               </div>
             </>
           )
+        ) : connected ? (
+          // Why (BW #323): spec — connected cards keep only Re-check (I10
+          // re-verification); the upstream pattern rendered no action at all.
+          <Button variant="ghost" size="sm" onClick={refresh}>
+            {translate(
+              'auto.components.settings.cli.source.control.integration.cards.d5b3be8ecd',
+              'Re-check'
+            )}
+          </Button>
+        ) : null}
+        {/* Why (BW #323): the login terminal lives outside the status ternary
+            so a re-check's brief `checking` flip cannot unmount it — a failed
+            login must leave its error on screen (user decision 2026-10-19),
+            and the auto re-check after the command ends would otherwise close
+            and reopen the terminal with a fresh injection, flashing the error
+            away. It unmounts only when the login succeeds (connected) or the
+            shell exits. */}
+        {loginTerminalOpen && !connected ? (
+          <OnboardingInlineCommandTerminal
+            key={loginAttempt}
+            command="gh auth login"
+            title={translate(
+              'auto.components.settings.cli.source.control.integration.cards.ghLoginTitle',
+              'GitHub login'
+            )}
+            description={translate(
+              'auto.components.settings.cli.source.control.integration.cards.pressEnterDescription',
+              'Press Enter to run the command.'
+            )}
+            ariaLabel={translate(
+              'auto.components.settings.cli.source.control.integration.cards.ghLoginTerminalAriaLabel',
+              'GitHub login terminal'
+            )}
+            worktreeId="connectors-gh-login"
+            terminalTopMarginPx={8}
+            onTerminalExit={() => {
+              setLoginTerminalOpen(false)
+            }}
+            onCommandFinished={() => {
+              refresh()
+            }}
+          />
         ) : null}
       </ProviderAccountScopeDetails>
     </IntegrationCardShell>

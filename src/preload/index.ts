@@ -43,6 +43,7 @@ import { cliApi } from './api/cli-bridge'
 import { codexConfigSyncApi } from './api/codex-config-sync-bridge'
 import { agentTrustApi } from './api/agent-trust-bridge'
 import { preflightApi } from './api/preflight-bridge'
+import { cliInstallApi } from './api/cli-install-bridge'
 import { notificationsApi } from './api/notifications-bridge'
 import { onboardingApi } from './api/onboarding-bridge'
 import { dashboardApi } from './api/dashboard-bridge'
@@ -142,6 +143,7 @@ const api = {
   codexConfigSync: codexConfigSyncApi,
   agentTrust: agentTrustApi,
   preflight: preflightApi,
+  cliInstall: cliInstallApi,
   notifications: notificationsApi,
   onboarding: onboardingApi,
   dashboard: dashboardApi,

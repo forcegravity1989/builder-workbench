@@ -35,8 +35,27 @@ const mocks = vi.hoisted(() => ({
     },
     unavailable: false,
     refresh: vi.fn()
+  },
+  cliInstall: {
+    start: vi.fn(),
+    isRunning: vi.fn(),
+    onFinished: vi.fn()
   }
 }))
+
+// Why (BW #323): install is an app-run background command — the cards call
+// window.api.cliInstall, and happy-dom has no preload, so stub the surface
+// once for every case in this file.
+;(window as { api?: unknown }).api = {
+  cliInstall: {
+    start: mocks.cliInstall.start,
+    isRunning: mocks.cliInstall.isRunning,
+    onFinished: mocks.cliInstall.onFinished
+  }
+}
+mocks.cliInstall.start.mockResolvedValue({ started: true })
+mocks.cliInstall.isRunning.mockResolvedValue(false)
+mocks.cliInstall.onFinished.mockReturnValue(() => {})
 
 vi.mock('@/store', () => ({
   useAppStore: (selector: (state: StoreState) => unknown) => {
@@ -49,6 +68,15 @@ vi.mock('@/store', () => ({
 
 vi.mock('./source-control-preflight-card-status', () => ({
   usePreflightCardStatuses: () => mocks.preflight
+}))
+
+// Why (BW #323): login renders the upstream inline terminal inside the card
+// (user decision 2026-10-19); stub it like AgentSkillSetupPanel.test does so
+// the card cases do not drag the TerminalPane/xterm chain into happy-dom.
+vi.mock('../onboarding/OnboardingInlineCommandTerminal', () => ({
+  OnboardingInlineCommandTerminal: (props: { command: string }) => (
+    <div data-testid="inline-login-terminal" data-command={props.command} />
+  )
 }))
 
 let root: Root | null = null
@@ -81,6 +109,9 @@ describe('CLI source-control integration card account scope', () => {
     mocks.preflight.statuses.welinkStatus = 'connected'
     mocks.preflight.unavailable = false
     mocks.preflight.refresh.mockClear()
+    mocks.cliInstall.start.mockClear()
+    mocks.cliInstall.isRunning.mockClear()
+    mocks.cliInstall.onFinished.mockClear()
   })
 
   it('shows local-client ownership for connected GitHub CLI credentials', async () => {
@@ -100,18 +131,9 @@ describe('CLI source-control integration card account scope', () => {
     expect(rendered.textContent).toContain(
       'Credentials and account checks for this provider are owned by this desktop client. Use Settings > Remote Orca Servers > Advanced to edit server-owned credentials.'
     )
-    await act(async () => {
-      Array.from(rendered.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Open Remote Servers')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    expect(openSettingsPage).toHaveBeenCalledTimes(1)
-    expect(openSettingsTarget).toHaveBeenCalledWith({
-      pane: 'servers',
-      repoId: null,
-      sectionId: 'default-runtime'
-    })
+    // Why (BW #323): the Open Remote Servers shortcut was dropped from the
+    // integration cards (user decision 2026-10-16); the scope label stays.
+    expect(rendered.textContent).not.toContain('Open Remote Servers')
   })
 
   it('shows remote-server ownership for GitLab CLI credential checks', async () => {
@@ -169,6 +191,17 @@ describe('CLI source-control integration card account scope', () => {
     expect(rendered.textContent).toContain('Install CodeHub CLI')
     expect(rendered.textContent).not.toContain('pending internal confirmation')
     expect(rendered.textContent).not.toContain('Log in')
+    // Why (BW #323): install runs as an app-owned background command (user
+    // decision 2026-10-16) — clicking starts the runner and flips the card to
+    // "Installing…" instead of opening a terminal session.
+    await act(async () => {
+      Array.from(rendered.querySelectorAll('button'))
+        .find((button) => button.textContent === 'Install CodeHub CLI')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(mocks.cliInstall.start).toHaveBeenCalledWith({ cli: 'codehub' })
+    expect(rendered.textContent).toContain('Installing…')
+    expect(rendered.textContent).toContain('Installing in the background')
     await act(async () => {
       Array.from(rendered.querySelectorAll('button'))
         .find((button) => button.textContent === 'Re-check')

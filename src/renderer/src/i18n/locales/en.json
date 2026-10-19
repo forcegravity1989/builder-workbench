@@ -7430,7 +7430,9 @@
           "codeHostGroupTitle": "Code hosting",
           "codeHostGroupDescription": "CLIs for tasks, pull requests, merge requests, and review status.",
           "imGroupTitle": "Project group",
-          "imGroupDescription": "CLIs for posting version and acceptance updates to the project group."
+          "imGroupDescription": "CLIs for posting version and acceptance updates to the project group.",
+          "buildGroupTitle": "Build",
+          "buildGroupDescription": "CLIs for pipeline execution and package builds."
         },
         "KagiSessionLinkForm": {
           "92f0b4e472": "Clear",
@@ -9765,7 +9767,11 @@
             "welinkTitle": "WeLink Integration",
             "welinkDescription": "welink-cli presence and login for project group notifications.",
             "welinkKeyword": "welink",
-            "welinkCliKeyword": "welink-cli"
+            "welinkCliKeyword": "welink-cli",
+            "cloudbuildTitle": "CloudBuild Integration",
+            "cloudbuildDescription": "cb presence and login for pipelines and package builds.",
+            "cloudbuildKeyword": "cloudbuild",
+            "cloudbuildCbKeyword": "cb"
           }
         },
         "jira": {
@@ -10581,19 +10587,39 @@
                   "codehubDescription": "Issues and merge requests via the",
                   "codehubUnavailable": "codehub-cli status is not available in this runtime yet.",
                   "codehubMissing": "codehub-cli is not on PATH.",
-                  "codehubInstallCommand": "npm install -g @codehub/codehub-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false",
                   "codehubInstallButton": "Install CodeHub CLI",
                   "codehubNotAuthenticated": "codehub-cli is installed but not authenticated.",
-                  "codehubAuthLoginCommand": "codehub-cli auth login",
+                  "codehubAuthLoginCommand": "codehub-cli auth login --all",
                   "welinkDescription": "Project group notifications via the",
                   "welinkUnavailable": "welink-cli status is not available in this runtime yet.",
                   "welinkMissing": "Install welink-cli to enable project group notifications.",
-                  "welinkInstallCommand": "npm install -g @welink/welink-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false",
                   "welinkNotAuthenticated": "welink-cli is installed but not authenticated.",
                   "welinkInstallButton": "Install WeLink CLI",
                   "welinkAuthLoginCommand": "welink-cli auth login",
+                  "cloudbuildDescription": "Pipelines and package builds via the",
+                  "cloudbuildUnavailable": "cb status is not available in this runtime yet.",
+                  "cloudbuildMissing": "cb is not on PATH.",
+                  "cloudbuildInstallButton": "Install CloudBuild CLI",
+                  "cloudbuildNotAuthenticated": "cb is installed but not authenticated.",
+                  "cloudbuildAuthLoginCommand": "cb login",
                   "loginButton": "Log in",
-                  "commandInjectedNote": "The command is running in a new terminal tab. Re-check here when it finishes."
+                  "pressEnterDescription": "Press Enter to run the command.",
+                  "installInProgressNote": "Installing in the background. You will be notified here when it finishes.",
+                  "installingButton": "Installing…",
+                  "codehubInstallSucceeded": "CodeHub CLI installed. Re-checking its status…",
+                  "codehubInstallFailed": "CodeHub CLI install failed.",
+                  "welinkInstallSucceeded": "WeLink CLI installed. Re-checking its status…",
+                  "welinkInstallFailed": "WeLink CLI install failed.",
+                  "cloudbuildInstallSucceeded": "CloudBuild CLI installed. Re-checking its status…",
+                  "cloudbuildInstallFailed": "CloudBuild CLI install failed.",
+                  "ghLoginTitle": "GitHub login",
+                  "ghLoginTerminalAriaLabel": "GitHub login terminal",
+                  "codehubLoginTitle": "CodeHub login",
+                  "codehubLoginTerminalAriaLabel": "CodeHub login terminal",
+                  "welinkLoginTitle": "WeLink login",
+                  "welinkLoginTerminalAriaLabel": "WeLink login terminal",
+                  "cloudbuildLoginTitle": "CloudBuild login",
+                  "cloudbuildLoginTerminalAriaLabel": "CloudBuild login terminal"
                 }
               }
             }

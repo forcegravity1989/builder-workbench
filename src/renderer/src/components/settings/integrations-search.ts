@@ -74,5 +74,28 @@ export const getIntegrationsPaneSearchEntries = createLocalizedCatalog(() => [
         'integration'
       )
     ]
+  },
+  // Why (BW #366): cloudbuild's cb joins the pane for pipeline execution and
+  // package builds.
+  {
+    title: translate(
+      'auto.components.settings.integrations.search.cloudbuildTitle',
+      'CloudBuild Integration'
+    ),
+    description: translate(
+      'auto.components.settings.integrations.search.cloudbuildDescription',
+      'cb presence and login for pipelines and package builds.'
+    ),
+    keywords: [
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.cloudbuildKeyword',
+        'cloudbuild'
+      ),
+      ...translateSearchKeyword('auto.components.settings.integrations.search.cloudbuildCbKeyword', 'cb'),
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.c450244ad7',
+        'integration'
+      )
+    ]
   }
 ])

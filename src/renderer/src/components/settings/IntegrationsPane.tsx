@@ -1,4 +1,5 @@
 import {
+  CloudBuildIntegrationCard,
   CodeHubIntegrationCard,
   GitHubIntegrationCard,
   WeLinkIntegrationCard
@@ -7,9 +8,11 @@ import { useIntegrationProviderStatusRefresh } from './use-integration-provider-
 import { translate } from '@/i18n/i18n'
 export { getIntegrationsPaneSearchEntries } from './integrations-search'
 
-// Why (BW #323): the pane collapses to the three CLIs the BW workflow depends
-// on. The six hidden cards' components stay in the codebase pending 待决 1
-// (six-card code keep-or-drop); only this render list changes.
+// Why (BW #323): the pane collapses to the CLIs the BW workflow depends on.
+// The six hidden cards' components stay in the codebase per intent 待决 1
+// (kept — human decision 2026-10-16); only this render list changes.
+// CloudBuild (BW #366) joins as its own build group — it is neither source
+// control nor project-group messaging.
 export function IntegrationsPane(): React.JSX.Element {
   useIntegrationProviderStatusRefresh()
 
@@ -50,6 +53,23 @@ export function IntegrationsPane(): React.JSX.Element {
         </div>
         <div className="space-y-3">
           <WeLinkIntegrationCard />
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-foreground">
+            {translate('auto.components.settings.IntegrationsPane.buildGroupTitle', 'Build')}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {translate(
+              'auto.components.settings.IntegrationsPane.buildGroupDescription',
+              'CLIs for pipeline execution and package builds.'
+            )}
+          </p>
+        </div>
+        <div className="space-y-3">
+          <CloudBuildIntegrationCard />
         </div>
       </section>
     </div>
