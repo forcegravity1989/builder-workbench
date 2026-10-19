@@ -1,13 +1,23 @@
-import type {
-  AcceptanceMaterial,
-  PlanningMaterial,
-  VersionMaterial
+import { isDeepStrictEqual } from 'node:util'
+import {
+  AcceptanceMaterialSchema,
+  PlanningMaterialSchema,
+  type AcceptanceMaterial,
+  type PlanningMaterial,
+  type VersionMaterial
 } from '../../shared/workbench/version-material'
 import type {
   VersionMaterialRead,
   VersionMaterialSave
 } from '../../shared/workbench/version-material-request'
 import { WorkspaceScopeError } from './workspace-scope-error'
+import type { VersionHistoryPort } from '../../shared/workbench/version-history'
+import { analyzeAcceptanceRounds } from './material-round-guard'
+
+/** An omitted commit is resolved to the cycle worktree HEAD on the owning runtime. */
+export type AcceptanceRoundSourceReader = (
+  input: Omit<Parameters<VersionHistoryPort['read']>[0], 'sourceCommit'> & { sourceCommit?: string }
+) => ReturnType<VersionHistoryPort['read']>
 
 /** Caller identity as seen by the RPC dispatcher; never taken from the request payload. */
 export type MaterialSaveCaller = {
@@ -63,70 +73,6 @@ function compareHumanField(
     return
   }
   changes.push(path)
-}
-
-function roundChanges(
-  changes: string[],
-  goalId: string,
-  currentResult: AcceptanceMaterial['results'][number] | undefined,
-  current: AcceptanceMaterial['results'][number]['rounds'],
-  incoming: AcceptanceMaterial['results'][number]['rounds']
-): void {
-  const openIncoming = (incoming ?? []).filter((round) => !round.closedAt)
-  if (openIncoming.length > 1) {
-    changes.push(`results[${goalId}].rounds`)
-  }
-  const currentById = new Map((current ?? []).map((round) => [round.id, round]))
-  const incomingById = new Map((incoming ?? []).map((round) => [round.id, round]))
-  for (const [roundId, currentRound] of currentById) {
-    const incomingRound = incomingById.get(roundId)
-    const closingOnly =
-      incomingRound &&
-      !currentRound.closedAt &&
-      incomingRound.closedAt &&
-      json(currentRound.snapshot) === json(incomingRound.snapshot) &&
-      currentRound.week === incomingRound.week &&
-      currentRound.kind === incomingRound.kind
-    if (!incomingRound || (json(currentRound) !== json(incomingRound) && !closingOnly)) {
-      changes.push(`results[${goalId}].rounds[${roundId}]`)
-    }
-  }
-  const openRoundsClosed = (current ?? [])
-    .filter((round) => !round.closedAt)
-    .every((round) => incomingById.get(round.id)?.closedAt !== undefined)
-  for (const [roundId, incomingRound] of incomingById) {
-    if (currentById.has(roundId)) {
-      continue
-    }
-    if (
-      incomingRound.closedAt === undefined &&
-      (current ?? []).some((round) => !round.closedAt) &&
-      !openRoundsClosed
-    ) {
-      changes.push(`results[${goalId}].rounds[${roundId}]`)
-      continue
-    }
-    // A model may open a new round only by snapshotting the already stored
-    // human fields; it cannot manufacture a conclusion, note or mark in it.
-    const expectedGoals = currentResult
-      ? [
-          {
-            goalId: currentResult.goalId,
-            decision: currentResult.decision?.outcome ?? 'pending',
-            progress: currentResult.progress?.trim() ? currentResult.progress : '',
-            ...(currentResult.nextStep?.trim() ? { next: currentResult.nextStep } : {})
-          }
-        ]
-      : []
-    const expectedSnapshot = {
-      goals: expectedGoals,
-      issueMarks: currentResult?.issueMarks ?? {},
-      issueNotes: currentResult?.issueNotes ?? {}
-    }
-    if (json(incomingRound.snapshot) !== json(expectedSnapshot)) {
-      changes.push(`results[${goalId}].rounds[${roundId}]`)
-    }
-  }
 }
 
 function directiveChanges(
@@ -186,8 +132,12 @@ function directiveChanges(
     if (
       incomingDirective.status !== 'pending' ||
       incomingDirective.confirmedAt !== undefined ||
-      incomingDirective.source !== 'transcript-summary' ||
-      !incomingDirective.sourceRef?.trim()
+      !incomingDirective.sourceRef?.trim() ||
+      (incomingDirective.source !== 'transcript-summary' &&
+        !(
+          incomingDirective.source === 'manual' &&
+          /^conversation:\S/.test(incomingDirective.sourceRef)
+        ))
     ) {
       changes.push(`results[${goalId}].meetingDirectives[${directiveId}].status`)
     }
@@ -199,7 +149,8 @@ export function humanFieldChanges(
   current: AcceptanceMaterial | null,
   incoming: AcceptanceMaterial
 ): string[] {
-  const changes: string[] = []
+  const rounds = analyzeAcceptanceRounds(current, incoming)
+  const changes: string[] = [...rounds.changes]
   compareHumanField(
     changes,
     'preparationReview',
@@ -213,7 +164,9 @@ export function humanFieldChanges(
     const incomingResult = incomingByGoal.get(goalId)
     const currentDecision = currentResult?.decision
     const incomingDecision = incomingResult?.decision
-    compareHumanField(changes, `results[${goalId}].decision`, currentDecision, incomingDecision)
+    if (!(rounds.rollover && incomingDecision === undefined)) {
+      compareHumanField(changes, `results[${goalId}].decision`, currentDecision, incomingDecision)
+    }
     compareHumanField(
       changes,
       `results[${goalId}].actualDelivery`,
@@ -245,7 +198,6 @@ export function humanFieldChanges(
       currentResult?.issueMarks,
       incomingResult?.issueMarks
     )
-    roundChanges(changes, goalId, currentResult, currentResult?.rounds, incomingResult?.rounds)
     directiveChanges(
       changes,
       goalId,
@@ -277,19 +229,18 @@ export function planHumanFieldChanges(
 export async function assertHumanFieldsUntouched(
   read: (input: VersionMaterialRead) => Promise<{ document: VersionMaterial } | null>,
   params: VersionMaterialSave,
-  caller: MaterialSaveCaller
+  caller: MaterialSaveCaller,
+  readRoundSource?: AcceptanceRoundSourceReader
 ): Promise<void> {
-  if (!isModelSaveChannel(caller)) {
+  if (!isModelSaveChannel(caller) && params.workflow !== 'acceptance') {
     return
   }
-  // The workflow store decodes with the matching material schema, so the stored
-  // document for this scope carries that workflow's shape. The save params carry
-  // expectedRevision/document on top of the read scope; the store's read path validates
-  // with the strict VersionMaterialReadSchema, so strip the save-only keys first.
+  // The read schema is strict; save-only fields cannot enter the read scope.
   const { expectedRevision: _expectedRevision, document: _document, ...readInput } = params
+  const stored = (await read(readInput))?.document
   if (params.workflow === 'plan') {
-    const current = ((await read(readInput))?.document ?? null) as PlanningMaterial | null
-    const changes = planHumanFieldChanges(current, params.document as PlanningMaterial)
+    const current = stored ? PlanningMaterialSchema.parse(stored) : null
+    const changes = planHumanFieldChanges(current, PlanningMaterialSchema.parse(params.document))
     if (changes.length > 0) {
       throw new WorkspaceScopeError(
         'forbidden',
@@ -301,12 +252,50 @@ export async function assertHumanFieldsUntouched(
   if (params.workflow !== 'acceptance') {
     return
   }
-  const current = ((await read(readInput))?.document ?? null) as AcceptanceMaterial | null
-  const changes = humanFieldChanges(current, params.document as AcceptanceMaterial)
+  const current = stored ? AcceptanceMaterialSchema.parse(stored) : null
+  const incoming = AcceptanceMaterialSchema.parse(params.document)
+  const rounds = analyzeAcceptanceRounds(current, incoming)
+  const changes = isModelSaveChannel(caller) ? humanFieldChanges(current, incoming) : rounds.changes
   if (changes.length > 0) {
     throw new WorkspaceScopeError(
       'forbidden',
-      `人工字段不能经 CLI 通道写入或修改（${changes.join('、')}）；请在验收界面由人记录，其余字段可照常保存`
+      `验收人工字段或轮次记录不符合保存规则（${changes.join('、')}）；人的输入请在界面记录，封存与新周在会话核对后处理`
     )
+  }
+  const sources: { sourceCommit?: string; sourceRevision?: string }[] = rounds.requiresHeadSource
+    ? [{}]
+    : rounds.sources
+  for (const source of sources) {
+    if (!current || !readRoundSource) {
+      throw new WorkspaceScopeError(
+        'forbidden',
+        '封存验收轮次必须先提交当前完整材料并核对 Git 来源'
+      )
+    }
+    if (current.planRef.kind !== 'committed') {
+      throw new WorkspaceScopeError(
+        'forbidden',
+        '封存前须提交并固定计划修订，草稿计划不能作为历史整页来源'
+      )
+    }
+    const frozen = await readRoundSource({
+      scope: { repoId: params.repoId, worktreeId: params.worktreeId, hostId: params.hostId },
+      source: 'cycle',
+      sourceCommit: source.sourceCommit,
+      expectedRevision: source.sourceRevision,
+      version: current.version,
+      cycleId: current.cycleId,
+      workflow: 'acceptance'
+    })
+    if (
+      (source.sourceCommit !== undefined && frozen.sourceCommit !== source.sourceCommit) ||
+      (source.sourceRevision !== undefined && frozen.revision !== source.sourceRevision) ||
+      !isDeepStrictEqual(frozen.document, current)
+    ) {
+      throw new WorkspaceScopeError(
+        'forbidden',
+        '轮次 Git 来源与当前已保存材料不一致，请保存并提交最新材料后重试'
+      )
+    }
   }
 }

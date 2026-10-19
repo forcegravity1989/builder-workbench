@@ -14,6 +14,8 @@ describe('CodeHub archive PR status protocol', () => {
     expect(mapCodeHubArchiveState({ state: 'opened' })).toBe('open')
     expect(mapCodeHubArchiveState({ state: 'closed' })).toBe('closed')
     expect(mapCodeHubArchiveState({ state: 'locked' })).toBeNull()
+    expect(mapCodeHubArchiveState({ state: 'unknown' })).toBeNull()
+    expect(mapCodeHubArchiveState({ state: '' })).toBeNull()
     expect(codeHubRepositoryMatches('team/workbench', remote)).toBe(true)
     expect(codeHubRepositoryMatches('codehub.example.com/team/workbench.git', remote)).toBe(true)
     expect(codeHubRepositoryMatches('https://codehub.example.com/team/workbench', remote)).toBe(

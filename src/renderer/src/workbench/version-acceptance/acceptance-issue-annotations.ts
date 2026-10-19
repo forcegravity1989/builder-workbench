@@ -11,6 +11,10 @@ type GoalResultAnnotations = Pick<
 
 export type IssueReference = PlanningMaterial['tasks'][number]
 
+export function isClosedIssueState(state: string | undefined): boolean {
+  return ['closed', 'merged'].includes(state?.trim().toLowerCase() ?? '')
+}
+
 export function issueKey(reference: IssueReference): string {
   return `${reference.provider}:${reference.repository}:${reference.number}`
 }

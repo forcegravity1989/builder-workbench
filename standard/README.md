@@ -51,6 +51,7 @@
 | `references/metrics.md` | 脚本指标协议 | 指标配置及两个版本流程按需读取 |
 | `references/week-plan-comment.md` | 旧计划 Issue 评论三标题 | 仅供历史评论核对、修复和导入 |
 | `references/version-records.md` | 版本计划 / 验收材料及修订契约 | 两个版本流程与资产盘点写入明确版本进展时按需读取 |
+| `references/meeting-transcript.md` | eMeeting 取稿命令、来源与失败处理 | 两个版本流程需要整理会议指导时按需读取 |
 | `references/build.md` | 改仓:分支 / MR / 合并是人 / 0 提交不装前进 | 构建类 + 资产盘点 Issue |
 | `references/bw-assets.md` | `.bw` 现行格式 + 样例 | 资产盘点 Issue |
 | `references/review.md` | 独立评审 | 尚未派发 |

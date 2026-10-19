@@ -6,7 +6,7 @@ import type {
 } from '../../../../shared/workbench/version-material'
 import { createAcceptanceMaterial } from './acceptance-model'
 import { goalEvidenceRevision } from './acceptance-decision'
-import { deriveAcceptanceReport } from './acceptance-report'
+import { buildAcceptanceReport, deriveAcceptanceReport } from './acceptance-report'
 
 const plan: PlanningMaterial = {
   schema_version: 3,
@@ -96,7 +96,7 @@ describe('acceptance task evidence and report', () => {
     expect(report.markdown).toContain('读取失败（宿主离线）')
     expect(report.markdown).toContain('结论：待核')
   })
-  it('renders the stored provider source and state without changing the evidence', () => {
+  it('renders the stored provider source and state without changing the evidence', async () => {
     const document = material()
     document.taskSnapshot = tasks()
     document.results[0] = {
@@ -124,7 +124,20 @@ describe('acceptance task evidence and report', () => {
     expect(report.markdown).toContain('验收截图')
     expect(report.markdown).toContain('备注：补齐证据')
     expect(report.markdown).toContain('标记：遗留、风险')
-    expect(report.markdown).toContain('会议指导：下周复核边界（待确认；AI 总结）')
+    expect(report.markdown).toContain('会议指导：下周复核边界（待确认；纳入下周计划；AI 总结）')
+    expect(report.markdown).toContain('来源：issue-374\\#summary')
     expect(JSON.stringify(document)).toBe(before)
+    document.results[0].decision = {
+      outcome: 'met',
+      source: '用户',
+      reason: '已展示',
+      recordedAt: '2026-10-19T12:00:00Z',
+      materialRevision: await goalEvidenceRevision(document, plan, 'g1')
+    }
+    expect((await buildAcceptanceReport(document, plan)).markdown).not.toContain('证据已变化')
+    document.results[0].progress = '会后补充了新的证据'
+    expect((await buildAcceptanceReport(document, plan)).markdown).toContain(
+      '证据已变化，请重新核对'
+    )
   })
 })

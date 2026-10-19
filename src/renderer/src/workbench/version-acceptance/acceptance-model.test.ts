@@ -3,7 +3,9 @@ import type { PlanningMaterial } from '../../../../shared/workbench/version-mate
 import {
   artifactCandidateCheck,
   assertFixedPlan,
-  createAcceptanceMaterial
+  createAcceptanceMaterial,
+  emptyGoalResult,
+  sameAcceptanceSource
 } from './acceptance-model'
 import { decisionFreshness, goalEvidenceRevision, recordHumanDecision } from './acceptance-decision'
 
@@ -53,6 +55,33 @@ describe('version acceptance evidence', () => {
     expect(document.cycleId).not.toBe(plan.cycleId)
     expect(document.planRef.cycleId).toBe(plan.cycleId)
     expect(document.results.every((result) => !result.decision)).toBe(true)
+    const nextWeek = structuredClone(document)
+    nextWeek.results.forEach((result) => {
+      result.rounds = [
+        {
+          id: 'week-2',
+          week: '2026-W43',
+          kind: 'progress',
+          snapshot: {
+            goals: [{ goalId: result.goalId, decision: 'pending', progress: '' }],
+            issueNotes: {},
+            issueMarks: {}
+          }
+        }
+      ]
+    })
+    expect(sameAcceptanceSource(document, nextWeek)).toBe(false)
+    expect(
+      sameAcceptanceSource(nextWeek, { ...nextWeek, results: nextWeek.results.toReversed() })
+    ).toBe(true)
+    const newGoal = emptyGoalResult('g3', nextWeek)
+    expect(newGoal.rounds?.[0].id).toBe('week-2')
+    expect(newGoal.rounds?.[0].snapshot.goals).toEqual([
+      { goalId: 'g3', decision: 'pending', progress: '' }
+    ])
+    expect(
+      sameAcceptanceSource(nextWeek, { ...nextWeek, results: [...nextWeek.results, newGoal] })
+    ).toBe(true)
     expect(() =>
       assertFixedPlan(document.planRef, { ...planSnapshot, revision: `sha256:${'b'.repeat(64)}` })
     ).toThrow('来源已改变')
@@ -60,7 +89,26 @@ describe('version acceptance evidence', () => {
 
   it('keeps goal one current when only goal two receives evidence', async () => {
     const document = await decide()
+    expect(document.results.map((result) => result.goalId)).toEqual(['g1', 'g2'])
     document.results.find((result) => result.goalId === 'g2')!.note = '补充验收报告'
+    expect(await decisionFreshness(document, plan, 'g1')).toBe('current')
+    const first = document.results[0]
+    first.rounds = [
+      {
+        id: 'week-1',
+        week: '2026-W42',
+        kind: 'progress',
+        snapshot: {
+          goals: [{ goalId: 'g1', decision: 'pending', progress: '' }],
+          issueNotes: {},
+          issueMarks: {}
+        }
+      }
+    ]
+    expect(await decisionFreshness(document, plan, 'g1')).toBe('current')
+    // Persisted by the prior evidence projection for this exact fixture.
+    first.decision!.materialRevision =
+      'sha256:9b9521bc84bcff0935686936c29c5f8a4e0c1c69ac7a637ae224579006b04857'
     expect(await decisionFreshness(document, plan, 'g1')).toBe('current')
     document.results
       .find((result) => result.goalId === 'g1')!

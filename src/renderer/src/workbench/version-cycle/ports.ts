@@ -93,4 +93,5 @@ export type VersionGoalCardProps = {
   summary?: ReactNode
   extra?: ReactNode
   hideReadOnlyStory?: boolean
+  viewStateKey?: string
 }

@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useSidebarResize } from '@/hooks/useSidebarResize'
 import { SYNC_FIT_PANES_EVENT } from '@/constants/terminal'
 import {
@@ -7,6 +7,7 @@ import {
   planChatRatioFromWidth,
   planChatWidthFromRatio,
   PLAN_CHAT_COLLAPSED_RAIL_PX,
+  PLAN_CHAT_REVEAL_EVENT,
   readPlanChatCollapsed,
   readPlanChatRatio,
   writePlanChatCollapsed,
@@ -57,13 +58,20 @@ export function usePlanColumnResize(enabled = true): {
   })
 
   const toggleChatCollapsed = useCallback(() => {
-    setChatCollapsed((value) => {
-      const next = !value
-      writePlanChatCollapsed(next)
-      window.dispatchEvent(new Event(SYNC_FIT_PANES_EVENT))
-      return next
-    })
+    const next = !chatCollapsed
+    setChatCollapsed(next)
+    writePlanChatCollapsed(next)
+  }, [chatCollapsed])
+
+  useEffect(() => {
+    const reveal = () => setChatCollapsed(false)
+    window.addEventListener(PLAN_CHAT_REVEAL_EVENT, reveal)
+    return () => window.removeEventListener(PLAN_CHAT_REVEAL_EVENT, reveal)
   }, [])
+
+  useLayoutEffect(() => {
+    window.dispatchEvent(new Event(SYNC_FIT_PANES_EVENT))
+  }, [chatCollapsed])
 
   const handleResizeStart = useCallback(
     (event: React.MouseEvent) => {

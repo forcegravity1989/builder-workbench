@@ -12,7 +12,10 @@ import {
 import { emptyGoalResult, type GoalResult } from './acceptance-model'
 import { AcceptanceDeliveryDetails } from './AcceptanceDeliveryDetails'
 import type { CycleTaskSnapshot } from '../version-cycle/ports'
+import { useCycleWorkspace } from '../version-cycle/cycle-workspace-context'
+import { openAcceptanceMaterial } from './open-acceptance-material'
 import {
+  isClosedIssueState,
   issueKey,
   issueMarkFor,
   issueNoteFor,
@@ -26,15 +29,6 @@ const ISSUE_GROUPS = [
   { key: 'unclassified', label: '未分类' }
 ] as const
 
-function safeMaterialHref(value: string): string | null {
-  try {
-    const url = new URL(value, window.location.origin)
-    return url.protocol === 'http:' || url.protocol === 'https:' ? value : null
-  } catch {
-    return null
-  }
-}
-
 function readableTaskState(state: string): string {
   switch (state.trim().toLowerCase()) {
     case 'open':
@@ -46,6 +40,8 @@ function readableTaskState(state: string): string {
     case 'closed':
     case 'merged':
       return '已关闭'
+    case 'unknown':
+      return 'Unknown'
     default:
       return state.trim() || 'Unknown'
   }
@@ -81,8 +77,16 @@ export function AcceptanceGoalResult({
   onOpenTask(task: CycleTaskSnapshot): Promise<void>
   metrics?: ReactNode
 }) {
+  const workspace = useCycleWorkspace()
+  const openMaterial = async (location: string) => {
+    if (!workspace) {
+      throw new Error('验收工作区尚未就绪。')
+    }
+    await openAcceptanceMaterial(location, workspace.context)
+  }
   const result =
-    document.results.find((item) => item.goalId === goal.goalId) ?? emptyGoalResult(goal.goalId)
+    document.results.find((item) => item.goalId === goal.goalId) ??
+    emptyGoalResult(goal.goalId, document)
   const relatedIssues = plan.tasks.filter((task) => task.goalId === goal.goalId)
   const snapshotMatchesPlan =
     document.taskSnapshot !== undefined &&
@@ -181,29 +185,28 @@ export function AcceptanceGoalResult({
           <span>进展</span>
           <textarea
             rows={2}
-            value={(result as GoalResult & { progress?: string }).progress ?? ''}
+            value={result.progress ?? ''}
             placeholder="本轮实际进展；没有读数时保持事实描述"
-            onChange={(event) => edit({ progress: event.target.value } as Partial<GoalResult>)}
+            onChange={(event) => edit({ progress: event.target.value })}
           />
         </label>
         <div className="va-story-cell va-material-cell">
           <span className="va-label">材料</span>
-          {(result.materials ?? []).map((material) =>
-            safeMaterialHref(material.url) ? (
-              <a
-                key={`${material.label}:${material.url}`}
-                href={safeMaterialHref(material.url) ?? undefined}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {material.label || material.url}
-              </a>
-            ) : (
-              <span key={`${material.label}:${material.url}`} className="va-muted">
-                {material.label || material.url}（链接不可打开）
-              </span>
-            )
-          )}
+          {(result.materials ?? []).map((material) => (
+            <a
+              key={`${material.label}:${material.url}`}
+              href={material.url}
+              title={material.url}
+              onClick={(event) => {
+                event.preventDefault()
+                void openMaterial(material.url).catch((reason) =>
+                  setError(reason instanceof Error ? reason.message : String(reason))
+                )
+              }}
+            >
+              {material.label || material.url}
+            </a>
+          ))}
           {!result.materials?.length && !result.deliveries.length && (
             <span className="va-muted">暂无材料链接</span>
           )}
@@ -230,7 +233,9 @@ export function AcceptanceGoalResult({
         {gap ? '未达项' : '验收依据'}
         <span className="va-readonly-note">{result.note || 'Unknown；请在进展中补充事实依据'}</span>
       </label>
-      {result.deliveries.length > 0 && <AcceptanceDeliveryDetails result={result} />}
+      {result.deliveries.length > 0 && (
+        <AcceptanceDeliveryDetails result={result} onOpenMaterial={openMaterial} />
+      )}
       {result.decision && (
         <p className={freshness === 'changed' ? 'va-warning' : 'va-muted'}>
           {freshness === 'changed'
@@ -284,13 +289,14 @@ export function AcceptanceGoalResult({
                 const unavailableReason = snapshot?.kind === 'unavailable' ? snapshot.error : null
                 const mark = issueMarkFor(result, reference, plan.tasks)
                 const note = issueNoteFor(result, reference, plan.tasks)
-                const normalizedState = task?.state.trim().toLowerCase()
-                const issueTone = mark?.risk
-                  ? ' is-risk'
-                  : mark?.carry ||
-                      (task !== undefined && !['closed', 'merged'].includes(normalizedState ?? ''))
-                    ? ' is-carry'
-                    : ''
+                const closed = isClosedIssueState(task?.state)
+                const issueTone = closed
+                  ? ''
+                  : mark?.risk
+                    ? ' is-risk'
+                    : mark?.carry || task !== undefined
+                      ? ' is-carry'
+                      : ''
                 return (
                   <div className={`va-issue-row${issueTone}`} key={key}>
                     <div className="va-issue-head">
@@ -317,35 +323,41 @@ export function AcceptanceGoalResult({
                         {task?.assignee ? ` · ${task.assignee}` : ''}
                       </span>
                     </div>
-                    <input
-                      aria-label={`Issue ${reference.number} 备注`}
-                      value={note ?? ''}
-                      placeholder="本轮进展/备注"
-                      onChange={(event) => editIssueNote(reference, event.target.value)}
-                    />
-                    <div className="va-issue-marks">
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={Boolean(mark?.carry)}
-                          onChange={(event) =>
-                            editIssueMark(reference, 'carry', event.target.checked)
-                          }
-                        />
-                        遗留
-                      </label>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={Boolean(mark?.risk)}
-                          disabled={disabled || !mark?.carry}
-                          onChange={(event) =>
-                            editIssueMark(reference, 'risk', event.target.checked)
-                          }
-                        />
-                        风险
-                      </label>
-                    </div>
+                    {closed ? (
+                      <span className="va-muted">{note || '无备注'}</span>
+                    ) : (
+                      <input
+                        aria-label={`Issue ${reference.number} 备注`}
+                        value={note ?? ''}
+                        placeholder="本轮进展/备注"
+                        onChange={(event) => editIssueNote(reference, event.target.value)}
+                      />
+                    )}
+                    {!closed && (
+                      <div className="va-issue-marks">
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={Boolean(mark?.carry)}
+                            onChange={(event) =>
+                              editIssueMark(reference, 'carry', event.target.checked)
+                            }
+                          />
+                          遗留
+                        </label>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={Boolean(mark?.risk)}
+                            disabled={disabled || !mark?.carry}
+                            onChange={(event) =>
+                              editIssueMark(reference, 'risk', event.target.checked)
+                            }
+                          />
+                          风险
+                        </label>
+                      </div>
+                    )}
                   </div>
                 )
               })}

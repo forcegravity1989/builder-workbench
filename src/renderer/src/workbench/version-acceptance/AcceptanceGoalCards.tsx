@@ -5,19 +5,15 @@ import type {
   MetricReadingEvidence,
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
-import type {
-  MetricRef,
-  MetricScope,
-  MetricsPort,
-  MetricWindow
-} from '../../../../shared/workbench/metrics'
+import type { MetricRef, MetricScope, MetricsPort } from '../../../../shared/workbench/metrics'
 import { VersionGoalCard } from '../version-cycle/VersionGoalCard'
+import { goalCardViewKey } from '../cycle-view-state'
+import { acceptanceRoundState } from '../../../../shared/workbench/acceptance-rounds'
 import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
 import { AcceptanceMetrics } from './AcceptanceMetrics'
 import { AcceptanceGoalResult } from './AcceptanceGoalResult'
-import { AcceptanceDirectives, AcceptanceRounds } from './AcceptanceRounds'
-import { HistoricalRoundCards } from './HistoricalRoundCards'
-import { issueMarkFor } from './acceptance-issue-annotations'
+import { AcceptanceDirectives } from './AcceptanceDirectives'
+import { isClosedIssueState, issueKey, issueMarkFor } from './acceptance-issue-annotations'
 import {
   decisionFreshness,
   recordHumanDecision,
@@ -102,7 +98,6 @@ export function AcceptanceGoalCards({
   document,
   metrics,
   metricScope,
-  metricWindow,
   readOnly,
   sectionRef,
   scope,
@@ -117,7 +112,6 @@ export function AcceptanceGoalCards({
   document: AcceptanceMaterial
   metrics: MetricsPort
   metricScope: MetricScope
-  metricWindow: MetricWindow | null
   readOnly: boolean
   sectionRef: Ref<HTMLElement>
   scope: CycleScope | null
@@ -129,6 +123,7 @@ export function AcceptanceGoalCards({
   onReport(): void
 }) {
   const referenceKey = JSON.stringify(plan.tasks)
+  const roundId = acceptanceRoundState(document).current?.id
   const snapshotRequested = useRef<string | null>(null)
   const snapshotMatchesPlan =
     document.taskSnapshot !== undefined &&
@@ -150,18 +145,7 @@ export function AcceptanceGoalCards({
   const [refreshing, setRefreshing] = useState(false)
   const [snapshotError, setSnapshotError] = useState<string | null>(null)
   const [freshnessByGoal, setFreshnessByGoal] = useState<Record<string, DecisionFreshness>>({})
-  const roundEntries = document.results.flatMap((result) =>
-    (result.rounds ?? []).map((round) => ({ round }))
-  )
-  const currentRound = roundEntries.toReversed().find(({ round }) => !round.closedAt)
-  const defaultRoundId = currentRound?.round.id ?? roundEntries[0]?.round.id ?? ''
-  const [selectedRoundId, setSelectedRoundId] = useState(defaultRoundId)
-  useEffect(() => setSelectedRoundId(defaultRoundId), [defaultRoundId])
-  const historicalRoundSelected =
-    roundEntries.length > 0 && !currentRound
-      ? selectedRoundId !== ''
-      : Boolean(currentRound && selectedRoundId !== currentRound.round.id)
-  const viewReadOnly = readOnly || historicalRoundSelected
+  const viewReadOnly = readOnly
   useEffect(() => {
     let active = true
     void Promise.all(
@@ -285,107 +269,104 @@ export function AcceptanceGoalCards({
           </span>
         )}
       </div>
-      <AcceptanceRounds
-        document={document}
-        selectedId={selectedRoundId}
-        onSelect={setSelectedRoundId}
-      />
-      {historicalRoundSelected ? (
-        <HistoricalRoundCards plan={plan} document={document} roundId={selectedRoundId} />
-      ) : (
-        plan.goals.map((goal, index) => {
-          const result = document.results.find((item) => item.goalId === goal.goalId)
-          const relatedIssues = plan.tasks.filter((task) => task.goalId === goal.goalId).length
-          const marks = plan.tasks
-            .filter((task) => task.goalId === goal.goalId)
-            .map((task) => (result ? issueMarkFor(result, task, plan.tasks) : undefined))
-            .filter((mark): mark is NonNullable<typeof mark> => Boolean(mark))
-          const carryCount = marks.filter((mark) => mark.carry).length
-          const riskCount = marks.filter((mark) => mark.risk).length
-          const outcome = result?.decision?.outcome
-          const freshness = freshnessByGoal[goal.goalId]
-          const outcomeLabel =
-            freshnessByGoal[goal.goalId] === 'changed'
-              ? '待核（证据已变化）'
-              : outcome === 'met'
-                ? '已达成'
-                : outcome === 'not-met'
-                  ? '未达成'
-                  : outcome === 'pending'
-                    ? '待核'
-                    : 'Unknown'
-          const issueCountLabel = !snapshotMatchesPlan ? 'Unknown' : relatedIssues
-          return (
-            <VersionGoalCard
-              key={goal.goalId}
-              goal={goal}
-              index={index}
-              readOnly
-              defaultOpen={false}
-              expanded={expanded}
-              expandedSignal={expandedSignal}
-              hideReadOnlyStory
-              summary={
-                <span
-                  className={`va-goal-summary va-status-${freshness === 'changed' ? 'pending' : (outcome ?? 'unknown')}`}
-                >
-                  <span aria-label={`状态：${outcomeLabel}`}>●</span>
-                  {freshness === 'changed' && (
-                    <span className="va-warning">证据已变化，请重新核对</span>
-                  )}
-                  <AcceptanceDecisionSelect
-                    document={document}
-                    plan={plan}
-                    goalId={goal.goalId}
-                    disabled={viewReadOnly}
-                    onChange={(next) => onGoalChange(next, goal.goalId)}
-                  />
-                  <span>负责人 {goal.owner || '未指派'}</span>
-                  {relatedIssues > 0 && <span>Issue {issueCountLabel}</span>}
-                  {carryCount > 0 && <span>遗留 {carryCount}</span>}
-                  {riskCount > 0 && <span>风险 {riskCount}</span>}
-                </span>
-              }
-              result={
-                <AcceptanceGoalResult
-                  decisionSource="验收界面人工确认"
+      {plan.goals.map((goal, index) => {
+        const result = document.results.find((item) => item.goalId === goal.goalId)
+        const relatedIssues = plan.tasks.filter((task) => task.goalId === goal.goalId).length
+        const marks = plan.tasks
+          .filter((task) => task.goalId === goal.goalId)
+          .filter((task) => {
+            const snapshot = snapshotMatchesPlan
+              ? document.taskSnapshot?.find((item) => issueKey(item.reference) === issueKey(task))
+              : undefined
+            return snapshot?.kind !== 'ready' || !isClosedIssueState(snapshot.state)
+          })
+          .map((task) => (result ? issueMarkFor(result, task, plan.tasks) : undefined))
+          .filter((mark): mark is NonNullable<typeof mark> => Boolean(mark))
+        const carryCount = marks.filter((mark) => mark.carry).length
+        const riskCount = marks.filter((mark) => mark.risk).length
+        const outcome = result?.decision?.outcome
+        const freshness = freshnessByGoal[goal.goalId]
+        const outcomeLabel =
+          freshnessByGoal[goal.goalId] === 'changed'
+            ? '待核（证据已变化）'
+            : outcome === 'met'
+              ? '已达成'
+              : outcome === 'not-met'
+                ? '未达成'
+                : outcome === 'pending'
+                  ? '待核'
+                  : 'Unknown'
+        const issueCountLabel = !snapshotMatchesPlan ? 'Unknown' : relatedIssues
+        return (
+          <VersionGoalCard
+            key={goal.goalId}
+            viewStateKey={goalCardViewKey(scope, document.version, goal.goalId, roundId)}
+            goal={goal}
+            index={index}
+            readOnly
+            defaultOpen={false}
+            expanded={expanded}
+            expandedSignal={expandedSignal}
+            hideReadOnlyStory
+            summary={
+              <span
+                className={`va-goal-summary va-status-${freshness === 'changed' ? 'pending' : (outcome ?? 'unknown')}`}
+              >
+                <span aria-label={`状态：${outcomeLabel}`}>●</span>
+                {freshness === 'changed' && (
+                  <span className="va-warning">证据已变化，请重新核对</span>
+                )}
+                <AcceptanceDecisionSelect
                   document={document}
                   plan={plan}
-                  goal={goal}
+                  goalId={goal.goalId}
                   disabled={viewReadOnly}
-                  onChange={(value) => onGoalChange(value, goal.goalId)}
-                  onOpenTask={onOpenTask}
-                  metrics={
-                    goal.metricTargets.length > 0 ||
-                    document.results.some(
-                      (item) => item.goalId === goal.goalId && item.readings.length > 0
-                    ) ? (
-                      <AcceptanceMetrics
-                        goal={goal}
-                        materialKey={JSON.stringify([
-                          document.version,
-                          document.cycleId,
-                          document.planRef,
-                          document.candidateRef
-                        ])}
-                        readings={
-                          document.results.find((item) => item.goalId === goal.goalId)?.readings ??
-                          []
-                        }
-                        port={metrics}
-                        scope={metricScope}
-                        window={metricWindow}
-                        disabled={viewReadOnly}
-                        onReadings={(ref, readings) => onReadings(goal.goalId, ref, readings)}
-                      />
-                    ) : undefined
-                  }
+                  onChange={(next) => onGoalChange(next, goal.goalId)}
                 />
-              }
-            />
-          )
-        })
-      )}
+                <span>负责人 {goal.owner || '未指派'}</span>
+                {relatedIssues > 0 && <span>Issue {issueCountLabel}</span>}
+                {carryCount > 0 && <span>遗留 {carryCount}</span>}
+                {riskCount > 0 && <span>风险 {riskCount}</span>}
+              </span>
+            }
+            result={
+              <AcceptanceGoalResult
+                decisionSource="验收界面人工确认"
+                document={document}
+                plan={plan}
+                goal={goal}
+                disabled={viewReadOnly}
+                onChange={(value) => onGoalChange(value, goal.goalId)}
+                onOpenTask={onOpenTask}
+                metrics={
+                  goal.metricTargets.length > 0 ||
+                  document.results.some(
+                    (item) => item.goalId === goal.goalId && item.readings.length > 0
+                  ) ? (
+                    <AcceptanceMetrics
+                      goal={goal}
+                      materialKey={JSON.stringify([
+                        document.version,
+                        document.cycleId,
+                        document.planRef,
+                        document.candidateRef,
+                        roundId
+                      ])}
+                      readings={
+                        document.results.find((item) => item.goalId === goal.goalId)?.readings ?? []
+                      }
+                      port={metrics}
+                      scope={metricScope}
+                      disabled={viewReadOnly}
+                      onReadings={(ref, readings) => onReadings(goal.goalId, ref, readings)}
+                    />
+                  ) : undefined
+                }
+              />
+            }
+          />
+        )
+      })}
       <AcceptanceDirectives
         document={document}
         plan={plan}

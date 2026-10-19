@@ -213,13 +213,30 @@ const AcceptanceRoundSnapshotSchema = z.strictObject({
   issueNotes: z.record(z.string(), z.string())
 })
 
-export const AcceptanceRoundSchema = z.strictObject({
-  id: Id,
-  week: Id,
-  kind: z.enum(['progress', 'final']),
-  closedAt: z.iso.datetime({ offset: true }).optional(),
-  snapshot: AcceptanceRoundSnapshotSchema
-})
+export const AcceptanceRoundSchema = z
+  .strictObject({
+    id: Id,
+    week: Id,
+    kind: z.enum(['progress', 'final']),
+    closedAt: z.iso.datetime({ offset: true }).optional(),
+    sourceCommit: SourceCommit.optional(),
+    sourceRevision: MaterialRevision.optional(),
+    snapshot: AcceptanceRoundSnapshotSchema
+  })
+  .superRefine((round, context) => {
+    if (Boolean(round.sourceCommit) !== Boolean(round.sourceRevision)) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Round source commit and revision must be paired'
+      })
+    }
+    if (round.sourceCommit && !round.closedAt) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Only a closed round can reference frozen material'
+      })
+    }
+  })
 
 export const AcceptanceMeetingDirectiveSchema = z.strictObject({
   id: Id,

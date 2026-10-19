@@ -2953,7 +2953,6 @@ input::placeholder {
 }
 .planning-pane .btn,
 .acceptance-goals-heading .btn,
-.acceptance-metric-evidence .btn,
 .cycle-start-card .btn {
   height: calc(var(--space-6) + var(--space-1));
   padding: 0 var(--space-2);
@@ -2968,7 +2967,6 @@ input::placeholder {
 }
 .planning-pane .btn svg,
 .acceptance-goals-heading .btn svg,
-.acceptance-metric-evidence .btn svg,
 .cycle-start-card .btn svg {
   width: var(--space-4);
   height: var(--space-4);
@@ -2981,48 +2979,6 @@ input::placeholder {
 }
 .planning-pane .planning-configure-metrics + .btn {
   margin-left: 0;
-}
-.acceptance-metric-plan {
-  margin-top: var(--space-2);
-  color: var(--color-neutral-600);
-  font-size: 0.9em;
-}
-.acceptance-metric-evidence .metric-row {
-  margin-left: 0;
-}
-.acceptance-metric-source {
-  margin: var(--space-1) 0 var(--space-2);
-  color: var(--color-neutral-600);
-  font-size: 0.85em;
-  line-height: 1.7;
-}
-.acceptance-metric-source summary {
-  cursor: pointer;
-}
-.acceptance-metric-source p {
-  margin-top: var(--space-2);
-}
-.acceptance-metric-window {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-.acceptance-metric-window label {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-.acceptance-metric-window .input {
-  width: auto;
-  min-width: 0;
-  height: var(--space-8);
-  padding: var(--space-1) var(--space-2);
-  font-size: inherit;
-}
-.acceptance-metric-source .metric-window-error {
-  color: var(--color-danger-deep);
 }
 .planning-pane .planning-archive p {
   flex: 1;
@@ -3366,12 +3322,6 @@ input::placeholder {
   font-size: 0.86em;
   background: transparent;
   color: var(--color-text);
-}
-.story-metric .acceptance-metric-evidence {
-  font-size: 0.92em;
-}
-.story-metric .metric-row select {
-  max-width: 100%;
 }
 .issue-subblock {
   border-top: 1px dashed var(--color-divider);

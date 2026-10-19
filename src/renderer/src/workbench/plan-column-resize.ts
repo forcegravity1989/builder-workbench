@@ -4,6 +4,12 @@ export const PLAN_CHAT_DEFAULT_RATIO = 0.3
 export const PLAN_COLUMN_RATIO_STORAGE_KEY = 'workbench.plan.chatRatio'
 export const PLAN_CHAT_COLLAPSED_STORAGE_KEY = 'workbench.plan.chatCollapsed'
 export const PLAN_CHAT_COLLAPSED_RAIL_PX = 36
+export const PLAN_CHAT_REVEAL_EVENT = 'workbench:reveal-plan-chat'
+
+export function revealPlanChat(): void {
+  writePlanChatCollapsed(false)
+  window.dispatchEvent(new Event(PLAN_CHAT_REVEAL_EVENT))
+}
 
 export function clampPlanChatWidth(width: number, containerWidth: number): number {
   if (!Number.isFinite(width) || !Number.isFinite(containerWidth) || containerWidth <= 0) {

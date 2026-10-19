@@ -4,99 +4,7 @@ import type {
   AcceptanceMaterial,
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
-
-export function AcceptanceRounds({
-  document,
-  selectedId,
-  onSelect
-}: {
-  document: AcceptanceMaterial
-  selectedId: string
-  onSelect(id: string): void
-}) {
-  const entries = document.results.flatMap((result) =>
-    (result.rounds ?? []).map((round) => ({ goalId: result.goalId, round }))
-  )
-  const current = entries.toReversed().find(({ round }) => !round.closedAt)
-  const history = [
-    ...new Map(
-      entries
-        .filter(({ round }) => round.id !== current?.round.id)
-        .map(({ round }) => [round.id, round] as const)
-    ).values()
-  ]
-  const historyEntries = history.map((round) => ({
-    round,
-    entries: entries.filter((entry) => entry.round.id === round.id)
-  }))
-  const selectedHistory = historyEntries.find(({ round }) => round.id === selectedId)
-  return (
-    <section className="va-round-block" aria-label="验收轮次">
-      <div className="va-round-picker">
-        <strong>验收轮次</strong>
-        {entries.length > 0 ? (
-          <select
-            aria-label="验收周次"
-            value={selectedId}
-            onChange={(event) => onSelect(event.target.value)}
-          >
-            {current && (
-              <option value={current.round.id}>
-                当前 · {current.round.week || 'Unknown 周次'} ·{' '}
-                {current.round.kind === 'final' ? '验收' : '进展'}
-              </option>
-            )}
-            {historyEntries.map(({ round }) => (
-              <option value={round.id} key={round.id}>
-                历史 · {round.week || 'Unknown 周次'} · {round.kind === 'final' ? '验收' : '进展'}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <span>当前材料</span>
-        )}
-        <span className="va-muted">
-          {entries.length === 0
-            ? '当前轮可编辑'
-            : selectedHistory || !current
-              ? '历史轮只读'
-              : '当前轮可编辑'}
-        </span>
-      </div>
-      {selectedHistory && (
-        <div
-          className="va-round-snapshot"
-          aria-label={`${selectedHistory.round.week || '历史'}轮次快照`}
-        >
-          {selectedHistory.entries.map(({ goalId, round: entryRound }) => (
-            <div key={`${selectedHistory.round.id}:${goalId}`}>
-              <strong>目标 {goalId}</strong>
-              {entryRound.snapshot.goals.map((goal) => (
-                <div key={`${selectedHistory.round.id}:${goalId}:${goal.goalId}`}>
-                  结论 {goal.decision || 'Unknown'} · 进展 {goal.progress || 'Unknown'}
-                  {goal.next ? ` · 下一步：${goal.next}` : ''}
-                </div>
-              ))}
-              {Object.entries(entryRound.snapshot.issueNotes).map(([key, note]) => (
-                <div key={`${selectedHistory.round.id}:${goalId}:note:${key}`}>
-                  Issue {key} · 备注：{note || 'Unknown'}
-                </div>
-              ))}
-              {Object.entries(entryRound.snapshot.issueMarks).map(([key, mark]) => (
-                <div key={`${selectedHistory.round.id}:${goalId}:mark:${key}`}>
-                  Issue {key} ·{' '}
-                  {[mark.carry ? '遗留' : null, mark.risk ? '风险' : null]
-                    .filter(Boolean)
-                    .join('、') || '无标记'}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  )
-}
+import { emptyGoalResult } from './acceptance-model'
 
 export function AcceptanceDirectives({
   document,
@@ -113,30 +21,32 @@ export function AcceptanceDirectives({
   const entries = document.results.flatMap((result) =>
     (result.meetingDirectives ?? []).map((directive) => ({ goalId: result.goalId, directive }))
   )
-  const update = (goalId: string, directives: AcceptanceMeetingDirective[]) =>
+  const update = (goalId: string, directives: AcceptanceMeetingDirective[]) => {
+    const results = document.results.some((result) => result.goalId === goalId)
+      ? document.results
+      : [...document.results, emptyGoalResult(goalId, document)]
     onChange(
       {
         ...document,
-        results: document.results.map((result) =>
+        results: results.map((result) =>
           result.goalId === goalId ? { ...result, meetingDirectives: directives } : result
         )
       },
       goalId
     )
+  }
   const add = () => {
-    const target = document.results.find((result) => result.goalId === targetGoalId) ?? null
-    if (!target) {
+    if (!plan.goals.some((goal) => goal.goalId === targetGoalId)) {
       return
     }
-    const current = document.results.find((result) => result.goalId === target.goalId)
-    if (!current) {
-      return
-    }
+    const current =
+      document.results.find((result) => result.goalId === targetGoalId) ??
+      emptyGoalResult(targetGoalId, document)
     let sequence = (current.meetingDirectives ?? []).length + 1
     while ((current.meetingDirectives ?? []).some((item) => item.id === `manual-${sequence}`)) {
       sequence += 1
     }
-    update(target.goalId, [
+    update(targetGoalId, [
       ...(current.meetingDirectives ?? []),
       {
         id: `manual-${sequence}`,
@@ -156,7 +66,7 @@ export function AcceptanceDirectives({
         <button
           type="button"
           className="wb-btn wb-btn-ghost wb-btn-sm"
-          disabled={disabled || document.results.length === 0}
+          disabled={disabled || plan.goals.length === 0}
           onClick={add}
         >
           人工补记
@@ -166,7 +76,7 @@ export function AcceptanceDirectives({
           <select
             aria-label="人工补记关联目标"
             value={targetGoalId}
-            disabled={disabled || document.results.length === 0}
+            disabled={disabled || plan.goals.length === 0}
             onChange={(event) => setTargetGoalId(event.target.value)}
           >
             {plan.goals.map((goal) => (
@@ -185,7 +95,11 @@ export function AcceptanceDirectives({
           <div className="va-directive-row" key={`${goalId}:${directive.id}`}>
             <span className="va-muted">
               {plan.goals.find((goal) => goal.goalId === goalId)?.title ?? '未关联目标'} ·{' '}
-              {directive.source === 'transcript-summary' ? 'AI 总结' : '人工补记'}
+              {directive.source === 'transcript-summary'
+                ? 'AI 总结'
+                : directive.sourceRef?.startsWith('conversation:')
+                  ? '人工提供 · AI 整理'
+                  : '人工补记'}
               {directive.sourceRef ? ` · ${directive.sourceRef}` : ''}
             </span>
             <input
@@ -205,15 +119,21 @@ export function AcceptanceDirectives({
               aria-label="会议指导标签"
               value={directive.tag}
               disabled={disabled || directive.status === 'confirmed'}
-              onChange={(event) =>
+              onChange={(event) => {
+                const tag = event.target.value
+                if (
+                  tag !== 'resolved-this-acceptance' &&
+                  tag !== 'next-week-plan' &&
+                  tag !== 'record-remaining'
+                ) {
+                  return
+                }
                 replace(
                   currentDirectives.map((item) =>
-                    item.id === directive.id
-                      ? { ...item, tag: event.target.value as AcceptanceMeetingDirective['tag'] }
-                      : item
+                    item.id === directive.id ? { ...item, tag } : item
                   )
                 )
-              }
+              }}
             >
               <option value="resolved-this-acceptance">本次验收已解决</option>
               <option value="next-week-plan">纳入下周计划</option>

@@ -251,6 +251,12 @@ async function readWorkbenchReferences(repoRoot, name) {
     name: reference,
     source: `standard/system-prompt/references/${reference}.md`
   }))
+  if (name === 'week-planning' || name === 'version-acceptance') {
+    sources.push({
+      name: 'meeting-transcript',
+      source: 'standard/system-prompt/references/meeting-transcript.md'
+    })
+  }
   const ownDirectory = `standard/skills/${name}`
   for (const directory of ['references', 'assets']) {
     const root = path.join(repoRoot, ownDirectory, directory)

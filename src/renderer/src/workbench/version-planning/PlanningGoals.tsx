@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
 import { VersionGoalCard } from '../version-cycle/VersionGoalCard'
+import { goalCardViewKey } from '../cycle-view-state'
 import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
 import { PlanGoalMetrics } from './PlanGoalMetrics'
 import type { usePlanMetrics } from './use-plan-metrics'
@@ -46,6 +47,8 @@ function readableTaskState(state: string): string {
     case 'closed':
     case 'merged':
       return '已关闭'
+    case 'unknown':
+      return 'Unknown'
     default:
       return state.trim() || 'Unknown'
   }
@@ -295,6 +298,7 @@ export function PlanningGoals({
           return (
             <VersionGoalCard
               key={goal.goalId}
+              viewStateKey={goalCardViewKey(scope, plan.version, goal.goalId)}
               goal={goal}
               index={index}
               onChange={changeGoal}
