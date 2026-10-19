@@ -6988,7 +6988,8 @@
           "localLinkHelp": "此链接仅在运行于此计算机上的浏览器或 Orca 客户端中有效。",
           "noExternalAddress": "未找到其他设备的地址。将此计算机连接到 LAN 或 Tailscale，刷新，或选择“自定义地址”。",
           "staleAddress": "连接地址已更改。为 {{address}} 生成新链接。",
-          "customInvalid": "请输入有效的主机、主机:端口、IPv6 地址或 ws(s):// URL。"
+          "customInvalid": "请输入有效的主机、主机:端口、IPv6 地址或 ws(s):// URL。",
+          "savedLinkNotice": "已保存的共享链接，当前连接状态未验证。若无法连接，请先检查共享服务和网络地址，再决定是否重新生成链接。"
         },
         "Settings": {
           "3bf149e873": "项目设置 > {{value0}}",
