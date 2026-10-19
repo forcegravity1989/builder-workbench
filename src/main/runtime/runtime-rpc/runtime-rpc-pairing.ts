@@ -8,6 +8,10 @@ import type {
 } from '../relay/relay-revoke-outbox'
 import type { PushUnregisterOutbox } from '../push/push-unregister-outbox'
 import { encodePairingOffer, PAIRING_OFFER_VERSION } from '../../../shared/pairing'
+import {
+  RuntimePairingLinkReferenceSchema,
+  type RuntimePairingLink
+} from '../../../shared/runtime-access-grants'
 import type { RuntimePairingReach } from '../../../shared/runtime-pairing-reach'
 import { resolveAdvertisedPairingEndpoint } from '../pairing-endpoint'
 import { RuntimeRpcNetworkExposure } from './runtime-rpc-network-exposure'
@@ -120,6 +124,44 @@ export class RuntimeRpcPairing extends RuntimeRpcNetworkExposure {
   getWebSocketEndpoint(): string | null {
     const ws = this.transports.find((t) => t.kind === 'websocket')
     return ws?.endpoint ?? null
+  }
+
+  restoreRuntimePairingUrl(reference: unknown): RuntimePairingLink | null {
+    const parsed = RuntimePairingLinkReferenceSchema.safeParse(reference)
+    if (!parsed.success) {
+      return null
+    }
+    if (!this.deviceRegistry || !this.e2eeKeypair) {
+      throw new Error('Runtime pairing identity is not ready.')
+    }
+    const saved = parsed.data
+    const device = this.deviceRegistry?.getDevice(saved.deviceId)
+    const publicKeyB64 = this.getE2EEPublicKey()
+    if (device?.scope !== 'runtime' || publicKeyB64 !== saved.publicKeyB64) {
+      return null
+    }
+    const resolved = resolveAdvertisedPairingEndpoint('ws://127.0.0.1', saved.endpoint)
+    if (!resolved.ok || resolved.endpoint !== saved.endpoint) {
+      return null
+    }
+    // Restore the issued endpoint verbatim; recall must not mint a grant or claim connectivity.
+    const pairingUrl = encodePairingOffer({
+      v: PAIRING_OFFER_VERSION,
+      endpoint: saved.endpoint,
+      deviceToken: device.token,
+      publicKeyB64,
+      pairedDeviceId: device.deviceId,
+      scope: 'runtime'
+    })
+    return {
+      pairingUrl,
+      endpoint: saved.endpoint,
+      deviceId: device.deviceId,
+      webClientUrl:
+        this.webClientRoot && saved.webClientAvailable
+          ? createWebClientUrl(saved.endpoint, pairingUrl)
+          : null
+    }
   }
 
   createPairingOffer(args: {

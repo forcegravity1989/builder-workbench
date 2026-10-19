@@ -202,6 +202,10 @@ export function registerMobileHandlers(
     }
   )
 
+  ipcMain.handle('mobile:restoreRuntimePairingUrl', (_event, reference: unknown) =>
+    rpcServer.restoreRuntimePairingUrl(reference)
+  )
+
   ipcMain.handle('mobile:listDevices', () => {
     const registry = rpcServer.getDeviceRegistry()
     if (!registry) {
