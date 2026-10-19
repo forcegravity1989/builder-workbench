@@ -18,6 +18,13 @@ export const ACCEPTANCE_WORKFLOW_STAGES = ['preparation', 'showcase', 'archive']
 export type PlanWorkflowStage = (typeof PLAN_WORKFLOW_STAGES)[number]
 export type AcceptanceWorkflowStage = (typeof ACCEPTANCE_WORKFLOW_STAGES)[number]
 
+/** Human-facing labels for the acceptance SOP stages; single source for the journey rail and the 4DX instrument. */
+export const ACCEPTANCE_STAGE_LABELS: Record<AcceptanceWorkflowStage, string> = {
+  preparation: '准备交付',
+  showcase: '展示验收',
+  archive: '归档'
+}
+
 /** PR/MR reference recorded by the model when the archive stage opens a review. */
 export const WorkflowArchivePrSchema = z.strictObject({
   provider: z.string().min(1),
@@ -43,10 +50,7 @@ export type AcceptanceWorkflowState = z.infer<typeof AcceptanceWorkflowStateSche
  * Index of the last completed stage; -1 when absent or unrecognized. A lamp at
  * position i is green iff i <= index — one comparison, gray/green only.
  */
-export function workflowStageIndex(
-  stages: readonly string[],
-  stage: string | undefined
-): number {
+export function workflowStageIndex(stages: readonly string[], stage: string | undefined): number {
   if (stage === undefined) {
     return -1
   }

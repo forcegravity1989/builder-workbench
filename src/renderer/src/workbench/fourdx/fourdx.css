@@ -1,0 +1,88 @@
+/* 高效四原则（4DX）铭文条与仪表样式。
+   视觉 token 全部取自设计系统现有变量，不引入新颜色。 */
+
+/* ─── 铭文条 ─── */
+.fourdx-motto {
+  margin: 0 0 12px;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+.fourdx-motto-head {
+  margin: 0;
+  padding: 6px var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-accent) 4%, var(--color-card));
+  text-align: center;
+}
+
+/* ─── 仪表 ─── */
+.fourdx-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  color: var(--color-accent);
+  font-size: 10px;
+  font-weight: 700;
+}
+.fourdx-instrument {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+}
+.fourdx-instrument-title {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+  padding-right: 6px;
+  border-right: 1px solid var(--color-divider);
+  margin-right: 2px;
+}
+.fourdx-lamp {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  font-size: 11px;
+}
+.fourdx-lamp-name {
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.fourdx-lamp-value {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  text-align: right;
+}
+.fourdx-lamp.is-lit .fourdx-lamp-value {
+  color: var(--color-text);
+}
+.fourdx-lamp.is-lit .fourdx-badge {
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+/* Unknown 是事实不是错误：灰字、无色、不装绿（铁律二）。 */
+.fourdx-lamp.is-unknown .fourdx-lamp-value {
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+.fourdx-lamp.is-unknown .fourdx-badge {
+  background: color-mix(in srgb, var(--color-text) 8%, transparent);
+  color: var(--muted-foreground);
+}

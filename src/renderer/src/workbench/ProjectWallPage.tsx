@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
+import { useNow } from '@/hooks/use-now'
 import { getRepoExecutionHostId, LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import { closeProjectPage, openCharterEdit, openProjectOnboard } from './project-page-state'
 import { switchActiveProject } from './switch-active-project'
@@ -16,6 +17,8 @@ import { ImportBuilderHostsDialog } from './ImportBuilderHostsDialog'
 import { ProjectWallCard, type CardHostTag, type WallCardView } from './ProjectWallCard'
 import { useWallReadings } from './use-wall-readings'
 import type { WallCardReadings } from './wall-card-readings'
+import { FourDxMotto } from './fourdx/FourDxMotto'
+import { buildWallLamps, FourDxInstrument } from './fourdx/FourDxInstrument'
 import './workbench-wall.css'
 
 const READINGS_LOADING: WallCardReadings = {
@@ -66,6 +69,8 @@ export function ProjectWallPage(): React.JSX.Element {
   const [updatingRepoId, setUpdatingRepoId] = useState<string | null>(null)
   const [switchingKey, setSwitchingKey] = useState<string | null>(null)
   const [busyRepoId, setBusyRepoId] = useState<string | null>(null)
+  // 四原则仪表的账龄文案按共享 useNow 走表，时钟入参传给推导函数（不在 render 内取 Date.now()）。
+  const now = useNow(60_000)
 
   // 墙的主机目录 = 当前配对集合:已删主机的残留注册行不上墙(可重算,铁律一)。
   const hostCatalog = useMemo(
@@ -241,6 +246,11 @@ export function ProjectWallPage(): React.JSX.Element {
             </button>
           </div>
         </header>
+
+        {/* 高效四原则（4DX）：铭文是产品格言；仪表灯全部从下方墙卡读数现算，
+            推导不出如实 Unknown（铁律二）。 */}
+        <FourDxMotto />
+        <FourDxInstrument lamps={buildWallLamps(cards, lastRefreshedAt, now)} />
 
         <div className="wallbar" aria-label="项目墙概况">
           <span className="wallbar-item">
