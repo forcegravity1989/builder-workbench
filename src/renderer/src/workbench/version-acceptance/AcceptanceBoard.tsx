@@ -21,6 +21,12 @@ import { AcceptanceJourney } from './AcceptanceJourney'
 import { AcceptanceReportDialog } from './AcceptanceReportDialog'
 import { useArchivePrStatus } from '../version-cycle/use-archive-pr-status'
 import { useAcceptanceBoard } from './use-acceptance-board'
+import { FourDxMotto } from '../fourdx/FourDxMotto'
+import {
+  buildAcceptanceLamps,
+  FourDxInstrument,
+  type FourDxAcceptanceFacts
+} from '../fourdx/FourDxInstrument'
 import './acceptance.css'
 
 export type AcceptanceBoardProps = {
@@ -126,6 +132,18 @@ function ReadyAcceptanceBoard({
     [document, saveTaskSnapshot]
   )
   const branch = cycleBranch(entry)
+  // 高效四原则仪表的本版事实：全部现算自分屏已加载的 plan/document，
+  // 没有材料就 Unknown 灰，不猜不装绿（铁律二）。
+  const fourDxFacts: FourDxAcceptanceFacts = {
+    hasPlan: Boolean(plan),
+    goalsTotal: plan?.document.goals.length ?? 0,
+    goalsWithMetric:
+      plan?.document.goals.filter((goal) => goal.metricTargets.length > 0).length ?? 0,
+    hasDocument: Boolean(document),
+    readingsTotal:
+      document?.results.reduce((total, result) => total + result.readings.length, 0) ?? 0,
+    stage: document?.workflow?.stage
+  }
   const openTask = (task: CycleTaskSnapshot) =>
     context.taskPort.openDetail(task, {
       ...scope,
@@ -194,6 +212,9 @@ function ReadyAcceptanceBoard({
         </span>
         <AutomationConfigureButton onConfigure={() => void entry.configure()} />
       </header>
+      {/* 高效四原则（4DX）：铭文条 + 本版口径仪表（灯只从 plan/document 现算）。 */}
+      <FourDxMotto head />
+      <FourDxInstrument lamps={buildAcceptanceLamps(fourDxFacts)} />
       <div className="va-content">
         <AcceptanceJourney
           stage={document?.workflow?.stage}

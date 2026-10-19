@@ -16,6 +16,8 @@ import { ImportBuilderHostsDialog } from './ImportBuilderHostsDialog'
 import { ProjectWallCard, type CardHostTag, type WallCardView } from './ProjectWallCard'
 import { useWallReadings } from './use-wall-readings'
 import type { WallCardReadings } from './wall-card-readings'
+import { FourDxMotto } from './fourdx/FourDxMotto'
+import { buildWallLamps, FourDxInstrument } from './fourdx/FourDxInstrument'
 import './workbench-wall.css'
 
 const READINGS_LOADING: WallCardReadings = {
@@ -241,6 +243,11 @@ export function ProjectWallPage(): React.JSX.Element {
             </button>
           </div>
         </header>
+
+        {/* 高效四原则（4DX）：铭文是产品格言；仪表灯全部从下方墙卡读数现算，
+            推导不出如实 Unknown（铁律二）。 */}
+        <FourDxMotto />
+        <FourDxInstrument lamps={buildWallLamps(cards, lastRefreshedAt)} />
 
         <div className="wallbar" aria-label="项目墙概况">
           <span className="wallbar-item">
