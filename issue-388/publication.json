@@ -1,0 +1,102 @@
+{
+  "fixture": {
+    "worktreeId": "6464fabe-4c05-4c99-b9e6-c3deadc11d0c::E:/zhuyu/code/builder-workbench/.scratch/codex-issue-388/.scratch/temp/workbench-e2e-repo-aU9Kyx",
+    "localTabId": "610f5515-0f3f-498e-a235-fb9d48e1f1aa",
+    "localFileId": "E:/zhuyu/code/builder-workbench/.scratch/codex-issue-388/.scratch/temp/workbench-e2e-repo-aU9Kyx/README.md"
+  },
+  "snapshot": {
+    "worktree": "6464fabe-4c05-4c99-b9e6-c3deadc11d0c::E:/zhuyu/code/builder-workbench/.scratch/codex-issue-388/.scratch/temp/workbench-e2e-repo-aU9Kyx",
+    "publicationEpoch": "renderer:689c2ab7-1de7-4056-bcca-d4e685c5865c",
+    "snapshotVersion": 4,
+    "activeGroupId": "98556229-bec5-41b5-b039-b01488edf864",
+    "activeTabId": "610f5515-0f3f-498e-a235-fb9d48e1f1aa",
+    "activeTabType": "markdown",
+    "tabGroups": [
+      {
+        "id": "98556229-bec5-41b5-b039-b01488edf864",
+        "activeTabId": "610f5515-0f3f-498e-a235-fb9d48e1f1aa",
+        "tabOrder": [
+          "8c01da8d-d005-4352-a9d2-15d306fbfc27",
+          "610f5515-0f3f-498e-a235-fb9d48e1f1aa"
+        ],
+        "recentTabIds": [
+          "8c01da8d-d005-4352-a9d2-15d306fbfc27",
+          "610f5515-0f3f-498e-a235-fb9d48e1f1aa"
+        ]
+      }
+    ],
+    "tabGroupLayout": {
+      "type": "leaf",
+      "groupId": "98556229-bec5-41b5-b039-b01488edf864"
+    },
+    "tabs": [
+      {
+        "type": "terminal",
+        "id": "8c01da8d-d005-4352-a9d2-15d306fbfc27::0cb60e64-807a-489d-adf9-11109d141b9c",
+        "parentTabId": "8c01da8d-d005-4352-a9d2-15d306fbfc27",
+        "leafId": "0cb60e64-807a-489d-adf9-11109d141b9c",
+        "title": "Terminal 1",
+        "ptyId": "6464fabe-4c05-4c99-b9e6-c3deadc11d0c::E:/zhuyu/code/builder-workbench/.scratch/codex-issue-388/.scratch/temp/workbench-e2e-repo-aU9Kyx@@c01247d1",
+        "terminalTheme": {
+          "mode": "light",
+          "theme": {
+            "background": "#ffffff",
+            "foreground": "#2e3434",
+            "cursor": "#2e3434",
+            "cursorAccent": "#ffffff",
+            "selectionBackground": "#accef7",
+            "selectionForeground": "#2e3434",
+            "black": "#2e3436",
+            "red": "#cc0000",
+            "green": "#4e9a06",
+            "yellow": "#8e7700",
+            "blue": "#3465a4",
+            "magenta": "#75507b",
+            "cyan": "#05727e",
+            "white": "#6a6a6a",
+            "brightBlack": "#555753",
+            "brightRed": "#ef2929",
+            "brightGreen": "#1b7a1b",
+            "brightYellow": "#6d5a00",
+            "brightBlue": "#204a87",
+            "brightMagenta": "#ad7fa8",
+            "brightCyan": "#034b50",
+            "brightWhite": "#3d3d3d"
+          }
+        },
+        "parentLayout": {
+          "root": {
+            "type": "leaf",
+            "leafId": "0cb60e64-807a-489d-adf9-11109d141b9c"
+          },
+          "activeLeafId": "0cb60e64-807a-489d-adf9-11109d141b9c",
+          "expandedLeafId": null,
+          "ptyIdsByLeafId": {
+            "0cb60e64-807a-489d-adf9-11109d141b9c": "6464fabe-4c05-4c99-b9e6-c3deadc11d0c::E:/zhuyu/code/builder-workbench/.scratch/codex-issue-388/.scratch/temp/workbench-e2e-repo-aU9Kyx@@c01247d1"
+          }
+        },
+        "isActive": false,
+        "status": "ready",
+        "terminal": "term_44d80e11-9209-4dc3-9c97-2e800416cd62"
+      },
+      {
+        "type": "markdown",
+        "id": "610f5515-0f3f-498e-a235-fb9d48e1f1aa",
+        "title": "README.md",
+        "filePath": "E:/zhuyu/code/builder-workbench/.scratch/codex-issue-388/.scratch/temp/workbench-e2e-repo-aU9Kyx/README.md",
+        "relativePath": "README.md",
+        "language": "markdown",
+        "mode": "edit",
+        "isDirty": false,
+        "isActive": true,
+        "sourceFileId": "E:/zhuyu/code/builder-workbench/.scratch/codex-issue-388/.scratch/temp/workbench-e2e-repo-aU9Kyx/README.md",
+        "sourceFilePath": "E:/zhuyu/code/builder-workbench/.scratch/codex-issue-388/.scratch/temp/workbench-e2e-repo-aU9Kyx/README.md",
+        "sourceRelativePath": "README.md",
+        "documentVersion": "file:E:/zhuyu/code/builder-workbench/.scratch/codex-issue-388/.scratch/temp/workbench-e2e-repo-aU9Kyx/README.md",
+        "color": null,
+        "isPinned": false
+      }
+    ],
+    "clientHostedPagesUnreconciled": true
+  }
+}
