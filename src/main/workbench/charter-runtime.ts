@@ -1,11 +1,9 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { getRepoExecutionHostId } from '../../shared/execution-host'
+import { getRepoExecutionHostId, parseExecutionHostId } from '../../shared/execution-host'
 import type { Repo } from '../../shared/repo-types'
-import { isCodeHubGitRemote, parseCodeHubRemote } from '../../shared/codehub'
 import {
   execMessage,
-  oneLine,
   probeRemoteCharter,
   readTextFileGuarded,
   trimmedIntent
@@ -27,25 +25,21 @@ import type {
   CharterSubmitOutcome,
   CharterSubmitRequest
 } from '../../shared/workbench/charter'
-import { createGitHubPullRequest } from '../github/client/create/create-github-pull-request'
 import { gitExecFileAsync } from '../git/runner'
 import { readGitBlobAtOidPath } from '../git/source-control/git-blob-read'
 import { probeGitRemoteIdentity } from '../repo-git-remote-identity'
-import { createCodeHubMr } from '../codehub/mr-creation'
 import { lookupOpenCharterPr, readCharterStatus } from './charter-pr-status'
 import { resolveWorkbenchGitExecOptions } from './project-git-routing'
-import { runTrunkBaseline } from './trunk-baseline'
 import {
   createWorkbenchWorkspaceResolver,
   nativeWorkbenchWorkspaceHost,
   type WorkbenchWorkspaceRepo
 } from './workspace-resolver'
 import { WorkspaceScopeError } from './workspace-scope-error'
+import { editProjectToml } from '../../shared/workbench/project-charter-edit'
 
-/** main v0.4 正本的 PR 正文;接入首建与编辑分别对应 create_project / edit_project_card。 */
-const FIRST_CHARTER_BODY =
-  '第一次接入写下的项目名片。合入之后这个仓就被管过了。\n\n这些件全是 Workbench 自己写的,没有起 agent。开工工具跟人走本机,不进仓。'
-const EDIT_CHARTER_BODY = '项目信息改动,等人评审合入。'
+import { createCharterReview } from './charter-create-review'
+import { serializeCharterSubmission } from './charter-submit-queue'
 
 export type CharterRuntimeHost = {
   listRepos: Parameters<typeof nativeWorkbenchWorkspaceHost>[0]['listRepos']
@@ -71,9 +65,52 @@ function createCharterService(runtime: CharterRuntimeHost) {
     const git = (args: string[], timeout = 60_000) =>
       gitExecFileAsync(args, { ...execOptions, cwd: treePath, timeout })
     const executionHostId = getRepoExecutionHostId(repo as Repo)
+    if (params.edit && parseExecutionHostId(executionHostId)?.kind === 'ssh') {
+      return {
+        mode: 'failed',
+        stage: 'validate',
+        error: 'SSH 来源暂不支持在此编辑，原文件未改动',
+        filled: []
+      }
+    }
+
+    const intent = trimmedIntent(params.intent)
+    let reviewed: { content: string; changed: string[] } | null = null
+    if (params.edit) {
+      try {
+        const current = await readTextFileGuarded(join(repo.path, PROJECT_TOML_REL))
+        if (current.error) {
+          throw new Error(current.error)
+        }
+        reviewed = editProjectToml(current.raw, params.edit.expectedRaw, intent)
+      } catch (error) {
+        return { mode: 'failed', stage: 'validate', error: execMessage(error), filled: [] }
+      }
+    }
 
     const identityProbe = await probeGitRemoteIdentity(repo.path, executionHostId)
     if (identityProbe.status !== 'resolved') {
+      if (reviewed) {
+        if (identityProbe.status !== 'no-remote') {
+          return {
+            mode: 'failed',
+            stage: 'read',
+            error: '读不到远端身份，草稿保留；恢复连接后重试',
+            filled: []
+          }
+        }
+        try {
+          const current = await readTextFileGuarded(join(repo.path, PROJECT_TOML_REL))
+          if (current.error || current.raw !== params.edit!.expectedRaw) {
+            throw new Error(current.error || '项目信息已变化，请重新读取并核对')
+          }
+          await mkdir(join(repo.path, '.bw'), { recursive: true })
+          await writeFile(join(repo.path, PROJECT_TOML_REL), reviewed.content, 'utf8')
+          return { mode: 'local-only', saved: true, reason: '已保存到本机，尚未共享' }
+        } catch (error) {
+          return { mode: 'failed', stage: 'write', error: execMessage(error), filled: [] }
+        }
+      }
       return {
         mode: 'local-only',
         reason:
@@ -83,6 +120,23 @@ function createCharterService(runtime: CharterRuntimeHost) {
       }
     }
     const identity = identityProbe.identity
+    if (reviewed) {
+      const existing = await readCharterStatus(repo, execOptions)
+      if (
+        existing.queryFailed ||
+        existing.pr?.state === 'open' ||
+        (existing.pr?.state === 'merged' && existing.headMatchesProposal !== true)
+      ) {
+        return {
+          mode: 'failed',
+          stage: 'validate',
+          error: existing.queryFailed
+            ? '未读到名片 PR 状态，请重试'
+            : '已有名片 PR 待处理，请先查看并更新代码',
+          filled: []
+        }
+      }
+    }
 
     // 合并基 = HEAD 跟踪态(spec 规则 2;main b778da6ac 教训:树工作区的
     // 脏残留不算已接管,重试时也不能拿脏文件当基吞掉本次新值)。
@@ -104,10 +158,30 @@ function createCharterService(runtime: CharterRuntimeHost) {
       }
       baseRaw = prior.raw
     }
-    const intent = trimmedIntent(params.intent)
     let content: string
     let filled: string[]
-    if (baseRaw !== null) {
+    if (reviewed) {
+      content = reviewed.content
+      filled = reviewed.changed
+      const working = await readTextFileGuarded(tomlPath)
+      if (working.error || (working.raw !== baseRaw && working.raw !== content)) {
+        return {
+          mode: 'failed',
+          stage: 'read',
+          error: '配置工作树有未提交的名片修改，请先核对；草稿已保留',
+          filled: []
+        }
+      }
+      const current = await readTextFileGuarded(join(repo.path, PROJECT_TOML_REL))
+      if (current.error || current.raw !== params.edit!.expectedRaw) {
+        return {
+          mode: 'failed',
+          stage: 'validate',
+          error: '项目信息已变化，请重新读取并核对',
+          filled: []
+        }
+      }
+    } else if (baseRaw !== null) {
       const merged = fillBlankCharterInToml(baseRaw, intent)
       content = merged.content
       filled = merged.filled
@@ -138,7 +212,7 @@ function createCharterService(runtime: CharterRuntimeHost) {
       const status = await git(['status', '--porcelain', '--', PROJECT_TOML_REL, BW_GITIGNORE_REL])
       if (status.stdout.trim()) {
         const commitTitle = params.firstTime ? '项目约定' : '项目信息改动'
-        await git(['commit', '-m', commitTitle])
+        await git(['commit', '-m', commitTitle, '--only', '--', PROJECT_TOML_REL, BW_GITIGNORE_REL])
         madeCommit = true
       }
     } catch (e) {
@@ -165,7 +239,7 @@ function createCharterService(runtime: CharterRuntimeHost) {
       } catch (e) {
         return { mode: 'failed', stage: 'push', error: `推分支没成：${execMessage(e)}`, filled }
       }
-    } else {
+    } else if (!reviewed) {
       // 无新内容且远端已同步:有开放 PR 就复用,没有才 noop;文案按真实态区分。
       const openPr = await lookupOpenCharterPr(repo.path, executionHostId, identity, execOptions)
       if (openPr) {
@@ -192,94 +266,15 @@ function createCharterService(runtime: CharterRuntimeHost) {
       }
     }
 
-    const body = params.firstTime ? FIRST_CHARTER_BODY : EDIT_CHARTER_BODY
-    const title = params.firstTime ? '项目约定' : '项目信息改动'
-    // PR/MR 目标分支统一走主干基线解析：钉值或主检出当前分支；解析不出如实
-    // 失败，不猜名、不设兜底分支。
-    let targetBranch = ''
-    try {
-      const baseline = await runTrunkBaseline(repo.path, repo.worktreeBaseRef ?? null, execOptions)
-      if (!baseline.sync) {
-        throw new Error(`基线 ${baseline.ref} 不是一条可推送的分支`)
-      }
-      targetBranch = baseline.sync.branchName
-    } catch (e) {
-      return {
-        mode: 'failed',
-        stage: 'pr',
-        error: `定不下 PR 目标分支：${execMessage(e)} —— 分支已推到 ${CHARTER_BRANCH},可手动开`,
-        filled
-      }
-    }
-    if (isCodeHubGitRemote(identity)) {
-      const remote = parseCodeHubRemote(identity.remoteUrl)
-      if (!remote) {
-        return {
-          mode: 'failed',
-          stage: 'pr',
-          error: `认不出 CodeHub 远端(${identity.remoteUrl}),分支已推到 ${CHARTER_BRANCH},可手动开 MR`,
-          filled
-        }
-      }
-      try {
-        const created = await createCodeHubMr({
-          remote,
-          execOptions,
-          sourceBranch: CHARTER_BRANCH,
-          targetBranch,
-          title,
-          description: body
-        })
-        return {
-          mode: 'pr',
-          pr: {
-            provider: 'codehub',
-            number: created.iid,
-            url: created.url,
-            adopted: created.adopted
-          },
-          filled
-        }
-      } catch (e) {
-        return {
-          mode: 'failed',
-          stage: 'pr',
-          error: `开 MR 没成：${execMessage(e)} —— 分支已推到 ${CHARTER_BRANCH},可手动开`,
-          filled
-        }
-      }
-    }
-    const result = await createGitHubPullRequest(
-      treePath,
-      { provider: 'github', base: targetBranch, head: CHARTER_BRANCH, title, body, draft: false },
+    return createCharterReview({
+      repo,
       executionHostId,
-      { localGitExecOptions: execOptions }
-    )
-    if (result.ok) {
-      return {
-        mode: 'pr',
-        pr: { provider: 'github', number: result.number, url: result.url, adopted: false },
-        filled
-      }
-    }
-    if (result.existingReview && typeof result.existingReview.number === 'number') {
-      return {
-        mode: 'pr',
-        pr: {
-          provider: 'github',
-          number: result.existingReview.number,
-          url: result.existingReview.url,
-          adopted: true
-        },
-        filled
-      }
-    }
-    return {
-      mode: 'failed',
-      stage: 'pr',
-      error: `开 PR 没成：${oneLine(result.error)} —— 分支已推到 ${CHARTER_BRANCH},可手动开`,
+      identity,
+      execOptions,
+      firstTime: params.firstTime,
+      treePath,
       filled
-    }
+    })
   }
 
   async function status(params: CharterStatusRequest): Promise<CharterStatus> {
@@ -297,17 +292,20 @@ function createCharterService(runtime: CharterRuntimeHost) {
     const repo = repoById(params.repoId)
     const { raw, error } = await readTextFileGuarded(join(repo.path, PROJECT_TOML_REL))
     if (error) {
-      return { charter: null, existed: true, error }
+      return { charter: null, raw: null, existed: true, error }
     }
     if (raw === null) {
-      return { charter: null, existed: false, error: null }
+      return { charter: null, raw: null, existed: false, error: null }
     }
-    return { charter: parseProjectToml(raw), existed: true, error: null }
+    return { charter: parseProjectToml(raw), raw, existed: true, error: null }
   }
 
   return {
     probeRemote: probeRemoteCharter,
-    submit,
+    submit: (params: CharterSubmitRequest) =>
+      serializeCharterSubmission(JSON.stringify([params.scope.hostId, params.scope.repoId]), () =>
+        submit(params)
+      ),
     status,
     read
   }

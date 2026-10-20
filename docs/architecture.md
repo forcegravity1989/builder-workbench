@@ -14,7 +14,7 @@
 
 | 用户要做的事 | 当前承载 | 当前边界 |
 |---|---|---|
-| 打开或接入项目 | 项目墙、接入覆盖层与 Orca 仓库列表 | 名片保真合并只补空字段、坏文件不覆盖；经固定分支 `bw/project` PR 合入被管仓、克隆前远端预探测与同远端去重已实现（真实远端未验）。G3 跨主机：项目墙只上能读到 `.bw/project.toml` 的项目并按项目/主机稳定身份归并（同一项目多主机一张卡、重复添加不重复计数），「导入 Builder 主机」批量壳只调用 Orca 原生配对，Orca Projects 侧栏保持原生全量、不接受 BW 过滤（原叠层收窄过滤已回退）；行为判据见 [project-intake spec](05-features/project-intake/spec.md)「§5 跨主机与项目墙」；旧 Rust 的项目约定常驻 worktree + Issue 运作完整旅程不在范围 |
+| 打开或接入项目 | 项目墙、接入覆盖层与 Orca 仓库列表 | 接入名片保真合并只补空字段、坏文件不覆盖；墙卡图标打开右侧配置，日常编辑经原文冲突校验、字段对比与所属主机固定树 PR；SSH 配置只读，真实编辑远端与重启读回待验；经固定分支 `bw/project` PR 合入被管仓、克隆前远端预探测与同远端去重已实现（真实远端未验）。G3 跨主机：项目墙只上能读到 `.bw/project.toml` 的项目并按项目/主机稳定身份归并（同一项目多主机一张卡、重复添加不重复计数），「导入 Builder 主机」批量壳只调用 Orca 原生配对，Orca Projects 侧栏保持原生全量、不接受 BW 过滤（原叠层收窄过滤已回退）；行为判据见 [project-intake spec](05-features/project-intake/spec.md)「§5 跨主机与项目墙」；旧 Rust 的项目约定常驻 worktree + Issue 运作完整旅程不在范围 |
 | 核对结果、拟目标、拆版本工作 | 计划屏：原生 terminal 固定工作区 + 右侧材料单页 | 经材料 RPC 读写 `.bw/planning/<版本>/`；开工注入渲染后 SYSTEM 与 week-planning Skill 指针，来源和覆盖边界见 §2 ③ |
 | 核对交付、出包、逐目标验收、归档 | 验收屏：与计划共用容器，独立固定树 bw/week-acceptance；出包区块按项目远端自动对接出包流水线（CodeHub 执行面→cloudbuild CLI、制品面→CloudDragon 会话，GitHub→gh CLI），界面不区分宿主 | 旅程灯只读模型写入材料的 workflow.stage（「出包」灯例外，随出包区块读到的真实制品包点亮）；归档 PR 合入状态按 archivePr 薄读取，CodeHub 等读不到状态一律保持未知，正文编辑延期 |
 | 执行工作与管理任务 | Orca 终端、Tasks、worktree | 复用执行核；不能据规划会话可打开就认定所有 Issue 开工都已接 BW 纪律 |

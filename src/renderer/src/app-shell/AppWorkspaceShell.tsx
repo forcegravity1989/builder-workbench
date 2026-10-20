@@ -44,9 +44,6 @@ const ProjectWallPage = lazy(() =>
 const OnboardProjectPage = lazy(() =>
   import('../workbench/OnboardProjectPage').then((m) => ({ default: m.OnboardProjectPage }))
 )
-const EditCharterPage = lazy(() =>
-  import('../workbench/EditCharterPage').then((m) => ({ default: m.EditCharterPage }))
-)
 
 type WorktreeSidebarScrollRefs = {
   scrollOffsetRef: React.MutableRefObject<number>
@@ -91,13 +88,10 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
   const projectPage = useProjectPage()
   if (isWorkbenchShell() && activeView === 'activity') {
     if (projectPage?.kind === 'wall') {
-      return <ProjectWallPage />
+      return <ProjectWallPage configureRepoId={projectPage.configureRepoId} />
     }
     if (projectPage?.kind === 'onboard') {
       return <OnboardProjectPage options={projectPage.options} />
-    }
-    if (projectPage?.kind === 'charter') {
-      return <EditCharterPage options={projectPage.options} />
     }
   }
   return (
