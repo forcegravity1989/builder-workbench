@@ -247,26 +247,20 @@ export function GoalRow({
     </article>
   )
 }
-export function ReviewItem({ item, update, locate }) {
+export function ReviewItem({ item, update, locate, goals }) {
   const [editing, setEditing] = useState(false)
   return (
     <article className="g3-review-item">
       <div className="g3-review-top">
         <span className="g3-id">{item.id}</span>
         <strong>{item.title}</strong>
-        <span className="g3-status">{item.status}</span>
+        <IconButton
+          name={editing ? 'check' : 'edit'}
+          label={editing ? '结束编辑回应' : '编辑回应与修改位置'}
+          onClick={() => setEditing(!editing)}
+        />
       </div>
       <p>{item.requirement}</p>
-      <div className="g3-review-meta">
-        <a
-          href="https://github.com/forcegravity1989/builder-workbench/issues/385"
-          target="_blank"
-          rel="noreferrer"
-        >
-          {item.source}
-        </a>
-        <IconButton name="arrow" label={`查看目标 ${item.goal}`} onClick={locate} />
-      </div>
       {editing ? (
         <div className="g3-response-editor">
           <Field
@@ -276,34 +270,39 @@ export function ReviewItem({ item, update, locate }) {
             placeholder="写清决定、修改位置；暂不采纳时说明原因"
           />
           <label>
-            握手进展
+            关联目标
             <select
-              aria-label="握手进展"
-              value={item.status}
-              onChange={(e) => update({ status: e.target.value })}
+              aria-label="关联目标"
+              value={item.goal}
+              onChange={(e) => update({ goal: e.target.value })}
             >
-              <option>待讨论</option>
-              <option>待 Leader 确认</option>
-              <option>已与 Leader 确认</option>
+              {goals.map((goal) => (
+                <option key={goal.goalId} value={goal.goalId}>
+                  {goal.goalId}
+                  {goal.title ? ` · ${goal.title}` : ''}
+                </option>
+              ))}
             </select>
           </label>
-          <IconButton name="check" label="结束编辑回应" onClick={() => setEditing(false)} />
         </div>
       ) : (
-        <>
-          {item.response && (
-            <div className="g3-response">
-              <strong>Builder 回应</strong>
-              <p>{item.response}</p>
-            </div>
-          )}
-          <IconButton
-            name="edit"
-            label={item.response ? '编辑回应' : '记录回应'}
-            onClick={() => setEditing(true)}
-          />
-        </>
+        <div className="g3-response">
+          <strong>回应与修改位置</strong>
+          {item.response ? <p>{item.response}</p> : <p className="g3-muted">未记录</p>}
+        </div>
       )}
+      <div className="g3-review-meta">
+        <a
+          href="https://github.com/forcegravity1989/builder-workbench/issues/385"
+          target="_blank"
+          rel="noreferrer"
+        >
+          {item.source}
+        </a>
+        <button className="g3-goal-link" onClick={locate}>
+          目标 {item.goal} <Icon name="arrow" size={13} />
+        </button>
+      </div>
     </article>
   )
 }

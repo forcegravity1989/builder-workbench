@@ -347,8 +347,8 @@ textarea {
 }
 .g3-carryover {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px 32px;
+  flex-direction: column;
+  gap: 8px;
   padding: 14px 0;
   font-size: 12px;
 }
@@ -574,20 +574,13 @@ textarea {
 }
 .g3-review-top {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
 }
 .g3-review-top > strong {
   flex: 1;
   font-weight: 600;
   font-size: 14px;
-}
-.g3-status {
-  font-size: 12px;
-  border: 1px solid var(--border);
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
-  white-space: nowrap;
 }
 .g3-review-item > p {
   font-size: 14px;
@@ -599,17 +592,50 @@ textarea {
   gap: 16px;
   color: var(--muted-foreground);
   font-size: 12px;
-  margin-bottom: 8px;
+  margin-top: 12px;
+}
+.g3-goal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.g3-goal-link:hover {
+  color: var(--foreground);
+  text-decoration: underline;
 }
 .g3-response {
   border-top: 1px solid var(--border);
-  margin: 16px 0 12px;
-  padding-top: 16px;
+  margin-top: 4px;
+  padding-top: 12px;
   font-size: 13px;
+}
+.g3-response > strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
 }
 .g3-response p {
   margin: 4px 0;
   white-space: pre-wrap;
+}
+.g3-annotation::before {
+  content: '原型注释';
+  display: inline-block;
+  font-size: 11px;
+  line-height: 18px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 6px;
+  margin-right: 8px;
+  color: var(--muted-foreground);
+  vertical-align: 1px;
 }
 .g3-response-editor {
   max-width: 680px;

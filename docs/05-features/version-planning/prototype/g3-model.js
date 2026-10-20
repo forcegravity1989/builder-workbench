@@ -22,8 +22,7 @@ export const initialReview = [
     title: '计划屏的开工入口与工作区归属，如何分工？',
     requirement: 'G3 保留目标下的开工入口；目录、已有工作区查找和原生创建由 G2 负责。',
     source: '#385 · 边界讨论示例',
-    response: '',
-    status: '待讨论'
+    response: ''
   }
 ]
 export function taskRows() {

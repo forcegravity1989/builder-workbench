@@ -385,14 +385,15 @@ function App() {
                 </h2>
                 <IconButton name="agent" label="向计划助手提供会议 ID" onClick={assistant} />
               </div>
-              <p className="g3-review-guidance">
-                一般意见直接修改目标，重要取舍在这里与 Leader 确认。向计划助手提供会议
-                ID，可一起整理。
+              <p className="g3-review-guidance g3-annotation">
+                一般意见直接修改目标；只有确需 Leader 单独握手的事项留在这里，认可随归档 PR
+                评审表达。向计划助手提供会议 ID，可一起整理。
               </p>
               {review.map((item) => (
                 <ReviewItem
                   key={item.id}
                   item={item}
+                  goals={goals}
                   locate={() => locate(item.goal)}
                   update={(patch) =>
                     setReview((current) =>
@@ -411,9 +412,12 @@ function App() {
                 <p>Leader 在代码仓再次审核计划，合入后归档。</p>
               </div>
               <IconButton name="arrow" label="打开归档 PR #386" href={snapshot.archive.url} />
-              <span className="g3-archive-status">原始材料：已合入</span>
+              <span className="g3-archive-status">
+                {{ MERGED: '已合入', OPEN: '待合入', CLOSED: '已关闭' }[snapshot.archive.state] ||
+                  '状态未知'}
+              </span>
             </section>
-            <p className="g3-demo-footnote">
+            <p className="g3-demo-footnote g3-annotation">
               PR 状态来自固定读取；本页演示编辑不会更新远端 PR。创建或更新归档 PR
               在计划助手的原生会话中完成。
             </p>
