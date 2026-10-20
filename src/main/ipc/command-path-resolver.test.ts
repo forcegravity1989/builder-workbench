@@ -2,7 +2,7 @@ import { chmod, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { isCommandOnLocalPath } from './command-path-resolver'
+import { isCommandOnLocalPath, resolveCommandOnLocalPath } from './command-path-resolver'
 
 describe('isCommandOnLocalPath', () => {
   it('returns false for an empty command', async () => {
@@ -110,6 +110,28 @@ describe('isCommandOnLocalPath', () => {
           env: { Path: dir, PATHEXT: '.EXE' }
         })
       ).resolves.toBe(true)
+    })
+
+    // Why (BW #323): the preflight exec route needs the resolved path (not
+    // just found/not-found) to send .cmd shims through cmd.exe. The resolver
+    // joins with forward slashes by design (see its own comment), so the
+    // resolved path is the posix-joined candidate.
+    it('resolves a bare command to its absolute path via PATHEXT', async () => {
+      await expect(
+        resolveCommandOnLocalPath('tool', {
+          platform: 'win32',
+          env: { Path: dir, PATHEXT: '.COM;.EXE;.CMD;.BAT' }
+        })
+      ).resolves.toBe(`${dir}/tool.CMD`)
+    })
+
+    it('resolves to null when nothing on PATH matches', async () => {
+      await expect(
+        resolveCommandOnLocalPath('missing', {
+          platform: 'win32',
+          env: { Path: dir, PATHEXT: '.COM;.EXE;.CMD;.BAT' }
+        })
+      ).resolves.toBeNull()
     })
   })
 })

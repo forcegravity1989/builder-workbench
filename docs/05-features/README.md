@@ -25,6 +25,7 @@
 | 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ● | ● | 待建(P-01–P14 已定义，P-13 部分真壳验，注册暂缓) | 待建(主旅程/跨主机/扫墙三候选已定义) |
 | 6 | CodeHub 适配 | [codehub/](codehub/)³ | 在用·补链中 | ◐ | ◐ | ◐ | ◐ | ○(C01–C08 已定义) | ○(CJ01 已定义) |
 | 7 | Windows 出包与发布 | [workbench-release/](workbench-release/)³ | 开发方法资产·补链中 | ◐ | ◐ | ◐ | ◐ | ○(R01–R06 已定义) | ○(RJ01 已定义) |
+| 8 | 集成页四卡收敛 | [connectors/](connectors/) · [原型](connectors/prototype.html)⁵ | 在用·补链中 | ● | ● | ● | ● | 待建(I01–I12 已定义) | 待建(IJ01 已定义) |
 
 ¹ 第 4 行：GitHub CI 路径 2026-08/09 在旧 main 侧交付并实测闭环（PR #132 及后续召唤）；2026-09-29 用户拍板迁入产品分支——workflow 与回执脚本（`.github/scripts/check-pr-review.mjs`）已落，实现设计 ●。2026-09-30 扶正后本定义即默认分支 main 的定义，`/code-review` 召唤直接执行它，不再经旧 main 定义中转。验收点 ◐：迁移 PR 自身修改 workflow 文件，按 #132 先例（时为 pull_request 触发下的防篡改跳过）保守不自召——该校验在现行 issue_comment 触发模型下是否适用未复核；主干首场真实召唤待下一条合格 PR 实测，未实测不判过。TDD ◐：回执脚本无单测，以召唤实测为准。台内「请评审」按钮路径规范件在仓但未接线，defer。明细见其 [STATUS](reviewer-agent/STATUS.md) 迁移节。
 
@@ -33,6 +34,8 @@
 ³ 第 6–7 行从已落地提交回写（2026-09-30），intent/spec 为草案，待人 gate。第 6 行接上原先「任务 CodeHub 支持」的占位，目录就是 [codehub/](codehub/)，范围含任务来源与计划/验收读写；spec 缺可点原型。第 7 行是 BW 开发者的 Windows 出包与 GitHub Release，无界面，操作契约在技能；#332 增补发布脚本 `release-win-workbench.mjs`、版本描述规范与验收报告规范（含骨架模板），`version-report` 技能退役并入本特性，TDD 由 ○→◐（发布脚本 18 例单测），验收点扩到 R01–R06（R05 版本描述合规范、R06 验收报告合规范），均定义未跑。明细见各自 STATUS。
 
 ⁴ 第 1–2 行形态整改（v9.5 原型，2026-10-18 用户确认，生产未实施）：计划/验收统一目标卡骨架（整卡收缩、Issue 分组子块带 Issue 级进展备注、计划完成/负责人从计划材料既有字段取、拆解打 bug/feature 分类标签）；验收单页承载会前/会中/会后三阶段，页底「会议指导与遗留」由会后 SOP 从会议转写总结（issue #374 链路、经 subagent、逐条人确认）随轮次入材料；跨周版本按轮次记录、界面按周呈现；周报信息由验收屏承载，不设独立周报屏与导出件——weekly-report 试点（PR #321 未合入 main、保持挂起）整体废止，处置待用户确认。明细见[验收 STATUS](version-acceptance/STATUS.md) 与[计划 STATUS](version-planning/STATUS.md) 批次记录。
+
+⁵ 第 8 行随 #323 设计 PR 首次登记（2026-10-14），2026-10-15 按人反馈两轮修订后 gate（简化为拼装现有能力；人不手敲命令），实现随同 PR 交付：集成页收敛为 GitHub / CodeHub / WeLink / CloudBuild 四卡（代码托管 / 项目群 / 构建三组；CloudBuild 随 #366 增补，2026-10-19），preflight 补 `welink-cli` / `cb` 探测与 codehub / welink / cb `auth status` 读回，安装由应用后台执行（gh 保持外链），登录在卡内展开上游内嵌终端粘贴命令、人按回车（远端运行时无按钮，WSL 工作树保留）。待决 1–4 与真壳拍板 5–8 均已由人拍板（2026-10-16 / 10-19）：六卡代码留仓、自包含安装命令（cloudbuild 为两步）、welink EXPIRED 判未登录、分组标题补中文、安装后台化、登录卡内嵌终端。真壳验收证据（I01–I12 / IJ01）未采。明细见其 [STATUS](connectors/STATUS.md)。
 
 ## 裁决与明细指引
 

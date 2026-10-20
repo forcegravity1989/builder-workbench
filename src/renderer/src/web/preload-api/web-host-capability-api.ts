@@ -20,7 +20,8 @@ export function createPreflightApi(): NonNullable<Partial<PreloadApi>['preflight
     git: { installed: false },
     gh: { installed: false, authenticated: false },
     glab: { installed: false, authenticated: false },
-    codehub: { installed: false },
+    codehub: { installed: false, authenticated: false },
+    welink: { installed: false, authenticated: false },
     bitbucket: { configured: false, authenticated: false, account: null },
     azureDevOps: {
       configured: false,

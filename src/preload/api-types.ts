@@ -46,6 +46,7 @@ import type {
 } from './api/os-permission-api'
 import type { PetApi } from './api/pet-api'
 import type { PluginsApi } from './api/plugin-host-api'
+import type { CliInstallApi } from './api/bw-cli-install-api'
 import type { PreflightApi } from './api/preflight-api'
 import type { PtyApi } from './api/pty-api'
 import type { ProjectGroupsApi, ProjectsApi, RepositoryApi } from './api/repository-api'
@@ -107,6 +108,7 @@ export type PreloadApi = {
   codexConfigSync: CodexConfigSyncApi
   agentTrust: AgentTrustApi
   preflight: PreflightApi
+  cliInstall: CliInstallApi
   notifications: NotificationsApi
   onboarding: OnboardingApi
   dashboard: DashboardApi
