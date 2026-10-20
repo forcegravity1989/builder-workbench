@@ -75,6 +75,17 @@ codehub-cli mr merge 8 -p Org/Group/repo -H green
 codehub-cli mr close 8 -p Org/Group/repo -H green
 ```
 
+MR 评论走 `mr review`。`mr review list` 返回 discussion 数组，评论嵌在各 discussion 的 `notes` 里；系统流水（如 changed this line）不是评论：
+
+```bash
+codehub-cli mr review list 8 -p Org/Group/repo -H green
+codehub-cli mr review create 8 --body "评论内容" -p Org/Group/repo -H green
+codehub-cli mr review delete 8 --note-id <note-id> -p Org/Group/repo -H green
+codehub-cli mr review delete 8 --discussion-id <discussion-id> --note-id <note-id> -p Org/Group/repo -H green
+```
+
+删除独立 note 只用 `--note-id`；discussion 内的 note 要加 `--discussion-id`。issue 评论没有 discussion 语义。
+
 CodeHub 这边不使用草稿，也不使用 Mark ready。新建 MR 不要加草稿参数。
 
 ## 输出

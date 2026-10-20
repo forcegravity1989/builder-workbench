@@ -29,7 +29,7 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 
 每仓先取 30 条，用 `--limit` 再取，并多取一条判断后面还有没有。还有未加载内容时，空的已加载范围要说成「当前加载范围里没有」，不能说成项目没有 Issue。
 
-详情读取 view 和评论的列出、新建、删除。Issue 可改标题。关闭顺序是先写评论再 `issue close`；评论失败则不关闭。三条评论正文是 `关闭原因: completed`、`关闭原因: not planned`、`关闭原因: duplicate of #<iid>`。重新打开不写评论。MR 可关闭。不提供草稿、Mark ready、表情、已读、修改评论正文。
+详情读取 view 和评论的列出、新建、删除；系统流水笔记（如 changed this line）不显示为评论。Issue 可改标题。关闭顺序是先写评论再 `issue close`；评论失败则不关闭。三条评论正文是 `关闭原因: completed`、`关闭原因: not planned`、`关闭原因: duplicate of #<iid>`。重新打开不写评论。MR 可关闭。不提供草稿、Mark ready、表情、已读、修改评论正文。
 
 ### 计划与验收中的任务
 
