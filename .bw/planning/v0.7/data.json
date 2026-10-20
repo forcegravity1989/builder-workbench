@@ -110,6 +110,11 @@
   ],
   "workflow": {
     "stage": "archive",
-    "updatedAt": "2026-10-20T10:30:00+08:00"
+    "updatedAt": "2026-10-20T10:30:00+08:00",
+    "archivePr": {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 386
+    }
   }
 }
