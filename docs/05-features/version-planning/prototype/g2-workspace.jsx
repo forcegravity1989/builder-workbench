@@ -1,11 +1,13 @@
 import snapshot from './g2-plan-snapshot.json'
 import snapshotV06 from './g2-plan-v06-snapshot.json'
 import issueSnapshot from './g2-issue-snapshot.json'
-import { ScopedTasks, SharedIssueDetail } from './g2-tasks.jsx'
 import { VersionOverview } from './g2-version-overview.jsx'
-import { ExistingProjectOverview } from './g2-existing-overview.jsx'
+import { IconAction as Button } from './g2-icon-action.jsx'
+import { DesignReferences } from './g2-design-references.jsx'
 
 const {
+  // React is used by the shared JSX build factory.
+  // eslint-disable-next-line no-unused-vars
   React,
   useState,
   useRef,
@@ -23,57 +25,60 @@ const {
   ChevronRight,
   Target,
   ListTodo,
-  GitPullRequest,
   ArrowRight,
   X,
   Info,
-  Check,
-  ExternalLink,
-  PackageCheck
+  PackageCheck,
+  ClipboardList,
+  RefreshCw
 } = window.BWPrototypeDependencies
-
-const issues = issueSnapshot.items
-const emptyPlan = { goals: [], tasks: [], summary: {} }
 const plans = { 'v0.7': snapshot, 'v0.6': snapshotV06 }
-const versionOrder = ['v0.8', 'v0.7', 'v0.6']
-const repoUrl = 'https://github.com/forcegravity1989/builder-workbench'
+const emptyPlan = { goals: [], tasks: [], summary: {} }
 const labels = {
   overview: '版本总览',
   plan: '计划',
   tasks: '任务',
   acceptance: '验收',
-  work: '工作区',
-  taskDetail: '任务详情'
+  work: '工作区'
 }
-const blankVersion = () => ({ trees: [], sessions: [], selected: null })
+const blankVersion = () => ({
+  trees: [
+    { id: 'plan', role: 'plan' },
+    { id: 'acceptance', role: 'acceptance' }
+  ],
+  sessions: [],
+  selected: null
+})
 const initialVersions = () => ({
+  'v0.8': blankVersion(),
   'v0.7': {
-    trees: ['plan'],
-    sessions: [{ id: 'p07', label: 'v0.7 · 计划讨论', role: 'plan' }],
+    trees: [
+      { id: 'plan', role: 'plan' },
+      { id: 'acceptance', role: 'acceptance' },
+      { id: 'goal-G2', role: 'goal', goal: 'G2' },
+      { id: 'issue-383', role: 'issue', goal: 'G2', issue: 383, parent: 'goal-G2' }
+    ],
+    sessions: [
+      { id: 'p07', tree: 'plan', label: '计划讨论' },
+      { id: 'g07', tree: 'goal-G2', label: 'G2 · 目标协作' },
+      { id: 'i383', tree: 'issue-383', label: '#383 · 侧边栏与版本运作' }
+    ],
     selected: 'p07'
   },
-  'v0.8': blankVersion(),
   'v0.6': {
-    trees: ['plan', 'acceptance'],
+    trees: [
+      { id: 'plan', role: 'plan' },
+      { id: 'acceptance', role: 'acceptance' }
+    ],
     sessions: [
-      { id: 'p06', label: 'v0.6 · 计划讨论示例', role: 'plan' },
-      { id: 'a06', label: 'v0.6 · 验收讨论示例', role: 'acceptance' }
+      { id: 'p06', tree: 'plan', label: '计划讨论' },
+      { id: 'a06', tree: 'acceptance', label: '验收讨论' }
     ],
     selected: 'p06'
   }
 })
-const branchFor = (v, session) =>
-  `bw/${v}/${session?.issue ? `issue-${session.issue}` : session?.role === 'goal' ? `goal-${session.goal}` : session?.role || 'plan'}`
 const Icon = ({ icon: Component, ...props }) => <Component size={15} strokeWidth={1.7} {...props} />
-function Button({ children, icon, primary, className = '', ...props }) {
-  return (
-    <button className={`action ${primary ? 'primary ' : ''}${className}`} {...props}>
-      {icon && <Icon icon={icon} />}
-      {children}
-    </button>
-  )
-}
-function Nav({ children, icon, active, onClick, className = '', title }) {
+function Nav({ children, icon, active, onClick, title, className = '' }) {
   return (
     <button
       title={title}
@@ -86,238 +91,434 @@ function Nav({ children, icon, active, onClick, className = '', title }) {
     </button>
   )
 }
-function Modal({ title, children, close, wide }) {
-  const ref = useRef(null)
-  const closeRef = useRef(close)
+function Modal({ title, children, close }) {
+  const ref = useRef(null),
+    closeRef = useRef(close)
   useEffect(() => {
     closeRef.current = close
   }, [close])
   useEffect(() => {
-    const old = document.activeElement
-    const first = ref.current?.querySelector('button,input,select,textarea,a[href]')
+    const previous = document.activeElement
+    const first = ref.current?.querySelector('input') || ref.current?.querySelector('button')
     first?.focus()
     const key = (event) => {
       if (event.key === 'Escape') {
         closeRef.current()
       }
       if (event.key === 'Tab') {
-        const nodes = [
-          ...ref.current.querySelectorAll('button,input,select,textarea,a[href]')
-        ].filter((n) => !n.disabled)
-        const first = nodes[0],
-          last = nodes.at(-1)
-        if (event.shiftKey && document.activeElement === first) {
+        const nodes = [...ref.current.querySelectorAll('button,input,a[href]')].filter(
+          (n) => !n.disabled
+        )
+        if (event.shiftKey && document.activeElement === nodes[0]) {
           event.preventDefault()
-          last?.focus()
-        }
-        if (!event.shiftKey && document.activeElement === last) {
+          nodes.at(-1)?.focus()
+        } else if (!event.shiftKey && document.activeElement === nodes.at(-1)) {
           event.preventDefault()
-          first?.focus()
+          nodes[0]?.focus()
         }
       }
     }
     document.addEventListener('keydown', key)
     return () => {
       document.removeEventListener('keydown', key)
-      if (old?.isConnected) {
-        old.focus()
+      if (previous?.isConnected) {
+        previous.focus()
       }
     }
   }, [])
   return (
-    <div className="overlay" onClick={(event) => event.target === event.currentTarget && close()}>
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        ref={ref}
-        className={`modal ${wide ? 'wide' : ''}`}
-      >
+    <div className="overlay" onClick={(e) => e.target === e.currentTarget && close()}>
+      <section className="modal" role="dialog" aria-modal="true" aria-label={title} ref={ref}>
         <header>
           <h2>{title}</h2>
-          <button className="icon-button" aria-label="关闭对话框" onClick={close}>
-            <Icon icon={X} />
-          </button>
+          <Button icon={X} label="关闭对话框" onClick={close} />
         </header>
-        <div className="modal-body">{children}</div>
+        <div className="modal-body scrollbar-sleek">{children}</div>
       </section>
     </div>
   )
 }
-function App() {
-  const [version, setVersion] = useState('v0.7')
-  const [screen, setScreen] = useState('plan')
-  const [versions, setVersions] = useState(initialVersions)
-  const [openVersions, setOpenVersions] = useState(['v0.7'])
-  const [openGoals, setOpenGoals] = useState(['G2'])
-  const [modal, setModal] = useState(null)
-  const [sessionVisible, setSessionVisible] = useState(true)
-  const [messages, setMessages] = useState({})
-  const [drafts, setDrafts] = useState({})
-  const [toast, setToast] = useState('')
-  const [dark, setDark] = useState(false)
-  const [fullHierarchy, setFullHierarchy] = useState(false)
-  const [count, setCount] = useState(1)
-  const [privateSession, setPrivateSession] = useState(false)
-  const [goalFilters, setGoalFilters] = useState({})
-  const [taskSearches, setTaskSearches] = useState({})
-  const [detail, setDetail] = useState(null)
-  const [detailOrigin, setDetailOrigin] = useState('tasks')
-  const state = versions[version]
-  const plan = plans[version] || emptyPlan
-  const currentSession = state.sessions.find((s) => s.id === state.selected)
-  const isVersionScreen = [
-    'overview',
-    'plan',
-    'tasks',
-    'taskDetail',
-    'acceptance',
-    'work'
-  ].includes(screen)
-  const isSplit = ['plan', 'acceptance'].includes(screen) && sessionVisible && currentSession
-  const planStage = ['preparation', 'goals', 'review', 'breakdown', 'archive'].indexOf(
-    plan.workflow?.stage
+function ReuseSurface({ title, scope, description, children }) {
+  return (
+    <div className="reuse-page">
+      <div className="reuse-marker">沿用已有界面</div>
+      <h1>{title}</h1>
+      <p className="reuse-scope">{scope}</p>
+      <p className="reuse-description">{description}</p>
+      <div className="reuse-outline">
+        <MessageSquare size={24} strokeWidth={1.2} />
+        <span>此处挂载已有页面与交互</span>
+        <small>本原型只展示入口和上下文，不另画一份界面</small>
+      </div>
+      {children && (
+        <div className="prototype-action">
+          <small>原型操作 · 查看动作后的侧栏归属</small>
+          {children}
+        </div>
+      )}
+    </div>
   )
-  const goals = plan.goals
-  const tasks = plan.tasks
-  const goalFilter = goalFilters[version] || 'all'
-  const notify = (text) => setToast(text)
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(''), 4500)
-      return () => clearTimeout(timer)
-    }
-  }, [toast])
+}
+function App() {
+  const [version, setVersion] = useState('v0.7'),
+    [screen, setScreen] = useState('plan')
+  const [versions, setVersions] = useState(initialVersions),
+    [versionOrder, setVersionOrder] = useState(['v0.8', 'v0.7', 'v0.6'])
+  const [openVersions, setOpenVersions] = useState(['v0.7']),
+    [openGoals, setOpenGoals] = useState(['v0.7/G2'])
+  const [closedTrees, setClosedTrees] = useState([]),
+    [goalFilters, setGoalFilters] = useState({})
+  const [modal, setModal] = useState(null),
+    [versionName, setVersionName] = useState(''),
+    [versionError, setVersionError] = useState('')
+  const [dark, setDark] = useState(false),
+    [toast, setToast] = useState('')
+  const plan = plans[version] || emptyPlan,
+    state = versions[version],
+    filter = goalFilters[version] || 'all'
+  const currentSession = state.sessions.find((s) => s.id === state.selected)
+  const currentTree = state.trees.find((t) => t.id === currentSession?.tree)
+  const scopedRefs = plan.tasks.filter((t) => filter === 'all' || t.goalId === filter)
+  const isVersionScreen = Object.hasOwn(labels, screen)
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light'
   }, [dark])
-  function go(v, next) {
-    setVersion(v)
-    setScreen(next)
-    if (!openVersions.includes(v)) {
-      setOpenVersions([...openVersions, v])
+  useEffect(() => {
+    if (toast) {
+      const id = setTimeout(() => setToast(''), 4000)
+      return () => clearTimeout(id)
     }
-    if (next === 'plan' || next === 'acceptance') {
-      setVersions((prev) => ({
-        ...prev,
-        [v]: { ...prev[v], selected: prev[v].sessions.find((s) => s.role === next)?.id || null }
-      }))
-    }
-  }
-  function showTasks(goal = 'all') {
-    setGoalFilters({ ...goalFilters, [version]: goal })
-    go(version, 'tasks')
-  }
-  function openDetail(item, origin = 'tasks') {
-    setDetail(item)
-    setDetailOrigin(origin)
-    setScreen('taskDetail')
-  }
-  function start(role, issue) {
-    const goal = issue ? plan.tasks.find((t) => t.number === issue)?.goalId : undefined
-    const id = issue ? `${version}/issue/${issue}` : `${version}/${role}/${count}`
-    setCount(count + 1)
-    const label = issue
-      ? `#${issue} · ${issues.find((i) => i.number === issue).title.replace(/^【[^】]+】/, '')}`
-      : version + (role === 'plan' ? ' · 计划讨论' : ' · 验收讨论')
-    setVersions((prev) => {
-      const old = prev[version],
-        existing = issue && old.sessions.find((s) => s.issue === issue)
-      return {
-        ...prev,
-        [version]: {
-          trees: [
-            ...new Set([
-              ...old.trees,
-              'plan',
-              ...(issue
-                ? [`goal-${goal}`, `issue-${issue}`]
-                : role === 'acceptance'
-                  ? ['acceptance']
-                  : [])
-            ])
-          ],
-          selected: existing?.id || id,
-          sessions: existing
-            ? old.sessions
-            : [...old.sessions, { id, label, role: issue ? 'issue' : role, issue, goal }]
-        }
-      }
-    })
-    setScreen(issue ? 'work' : role)
-    setSessionVisible(true)
-    setModal(null)
-    notify(issue ? '打开演示工作区；未创建真实分支或会话' : '已新建演示会话，仅在本页生效')
-  }
-  function openGoal(v, goal) {
-    const id = `${v}/goal/${goal}`
-    setVersions((prev) => ({
-      ...prev,
-      [v]: {
-        trees: [...new Set([...prev[v].trees, 'plan', `goal-${goal}`])],
-        sessions: prev[v].sessions.some((s) => s.id === id)
-          ? prev[v].sessions
-          : [...prev[v].sessions, { id, label: `${goal} · 目标讨论`, role: 'goal', goal }],
-        selected: id
-      }
-    }))
-    go(v, 'work')
-    setSessionVisible(true)
-  }
-  function selectSession(v, session) {
-    go(v, session.role === 'issue' || session.role === 'goal' ? 'work' : session.role)
-    setVersions((prev) => ({ ...prev, [v]: { ...prev[v], selected: session.id } }))
-    setSessionVisible(true)
-  }
+  }, [toast])
   function toggle(list, value, setter) {
     setter(list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
   }
-  function worktreeCard(v, role, sessions, goal, issue) {
-    const data = versions[v]
-    const branch = branchFor(v, { role, goal, issue })
-    const activate = () =>
-      sessions.length
-        ? selectSession(v, sessions[0])
-        : role === 'goal'
-          ? openGoal(v, goal)
-          : go(v, role)
-    return (
-      <div className="native-worktree-card" data-worktree-branch={branch}>
-        <button className="native-worktree-heading" onClick={activate}>
-          <Icon icon={GitBranch} />
-          <span>{branch}</span>
-          <small>本地</small>
-        </button>
-        {sessions.map((s) => (
-          <Nav
-            key={s.id}
-            className="session-row native-agent-row"
-            icon={MessageSquare}
-            active={
-              version === v && data.selected === s.id && (screen === s.role || screen === 'work')
+  function go(v, next, goal) {
+    setVersion(v)
+    setScreen(next)
+    setOpenVersions((prev) => (prev.includes(v) ? prev : [...prev, v]))
+    if (goal) {
+      setGoalFilters((prev) => ({ ...prev, [v]: goal }))
+    }
+  }
+  function openVersionDialog() {
+    setVersionName('')
+    setVersionError('')
+    setModal({ type: 'version' })
+  }
+  function createVersion(event) {
+    event.preventDefault()
+    const name = versionName.trim()
+    if (
+      !name ||
+      name.startsWith('.') ||
+      name.endsWith('.') ||
+      /[<>:"/\\|?*]/.test(name) ||
+      Array.from(name).some((c) => c.charCodeAt(0) < 32) ||
+      /^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(name) ||
+      name.toLowerCase() === 'template'
+    ) {
+      setVersionError('请填写有效版本名，例如 v0.9；不能包含路径或特殊文件名。')
+      return
+    }
+    const existing = versionOrder.find((v) => v.toLowerCase() === name.toLowerCase())
+    if (existing) {
+      setVersionError(`该版本已存在：${existing}`)
+      return
+    }
+    setVersions((prev) => ({
+      ...prev,
+      [name]: blankVersion()
+    }))
+    setVersionOrder((prev) => [name, ...prev])
+    go(name, 'plan')
+    setModal(null)
+    setToast('演示：计划与验收工作区已准备，进入计划；未启动 agent 或操作真实仓库')
+  }
+  function startWorkflow(role) {
+    const id = `${version}/${role}/${Date.now()}`
+    setVersions((prev) => {
+      const old = prev[version],
+        trees = old.trees.some((t) => t.id === role)
+          ? old.trees
+          : [...old.trees, { id: role, role }]
+      return {
+        ...prev,
+        [version]: {
+          ...old,
+          trees,
+          sessions: [
+            ...old.sessions,
+            { id, tree: role, label: role === 'plan' ? '计划讨论' : '验收讨论' }
+          ],
+          selected: id
+        }
+      }
+    })
+    setToast(`演示：原有入口新建会话，归入当前版本的${role === 'plan' ? '计划' : '验收'}树`)
+  }
+  function activateTree(v, tree, session) {
+    if (session) {
+      setVersions((prev) => ({ ...prev, [v]: { ...prev[v], selected: session.id } }))
+    } else {
+      setVersions((prev) => ({
+        ...prev,
+        [v]: { ...prev[v], selected: prev[v].sessions.find((s) => s.tree === tree.id)?.id || null }
+      }))
+    }
+    go(v, tree.role === 'plan' || tree.role === 'acceptance' ? tree.role : 'work')
+  }
+  function createGoalTree(v, goal) {
+    const id = `goal-${goal}`,
+      sessionId = `${v}/${id}`
+    setVersions((prev) => {
+      const old = prev[v]
+      if (old.trees.some((t) => t.id === id)) {
+        return prev
+      }
+      return {
+        ...prev,
+        [v]: {
+          ...old,
+          trees: [...old.trees, { id, role: 'goal', goal }],
+          sessions: [...old.sessions, { id: sessionId, tree: id, label: `${goal} · 目标协作` }],
+          selected: sessionId
+        }
+      }
+    })
+    setOpenGoals((prev) => [...new Set([...prev, `${v}/${goal}`])])
+    go(v, 'work', goal)
+    setModal(null)
+    setToast('演示：从原生创建器建立目标工作区；未为目标内每个 Issue 建树')
+  }
+  function completeIssueStart(reference, parentId) {
+    if (!reference) {
+      return
+    }
+    const id = `issue-${reference.number}`,
+      sessionId = `${version}/${id}`
+    setVersions((prev) => {
+      const old = prev[version],
+        existing = old.trees.find((t) => t.id === id),
+        goalParent = old.trees.find((t) => t.id === parentId)
+      if (existing) {
+        return {
+          ...prev,
+          [version]: { ...old, selected: old.sessions.find((s) => s.tree === id)?.id || null }
+        }
+      }
+      return {
+        ...prev,
+        [version]: {
+          ...old,
+          trees: [
+            ...old.trees,
+            {
+              id,
+              role: 'issue',
+              goal: reference.goalId,
+              issue: reference.number,
+              parent: goalParent?.id
             }
-            onClick={() => selectSession(v, s)}
+          ],
+          sessions: [
+            ...old.sessions,
+            { id: sessionId, tree: id, label: `#${reference.number} · 执行讨论` }
+          ],
+          selected: sessionId
+        }
+      }
+    })
+    setOpenGoals((prev) => [...new Set([...prev, `${version}/${reference.goalId}`])])
+    go(version, 'work', reference.goalId)
+    setToast('演示：打开本版任务工作区；不会为了任务自动创建目标父树')
+  }
+  function startIssue(reference) {
+    if (!reference) {
+      return
+    }
+    const existing = state.trees.find((t) => t.issue === reference.number)
+    if (existing) {
+      activateTree(version, existing)
+      return
+    }
+    const parent = state.trees.find((t) => t.role === 'goal' && t.goal === reference.goalId)
+    setModal({
+      type: 'composer',
+      kind: 'issue',
+      version,
+      goal: reference.goalId,
+      reference,
+      parentId: parent?.id || null
+    })
+  }
+  function nativeTree(v, tree) {
+    const data = versions[v],
+      key = `${v}/${tree.id}`,
+      expanded = !closedTrees.includes(key)
+    const sessions = data.sessions.filter((s) => s.tree === tree.id),
+      children = data.trees.filter((t) => t.parent === tree.id)
+    return (
+      <div className="native-worktree-card" data-branch={`bw/${v}/${tree.id}`} key={tree.id}>
+        <div className="native-tree-row">
+          <button
+            className="tree-chevron"
+            aria-label={`bw/${v}/${tree.id} 展开或收起`}
+            aria-expanded={expanded}
+            onClick={() => toggle(closedTrees, key, setClosedTrees)}
           >
-            <span className="agent-tool">Codex</span>
-            {s.role === 'issue'
-              ? `#${s.issue} · ${s.label.split(' · ').slice(1).join(' · ')}`
-              : s.label}
-          </Nav>
-        ))}
+            <Icon icon={expanded ? ChevronDown : ChevronRight} />
+          </button>
+          <button
+            className="native-worktree-heading"
+            title={`bw/${v}/${tree.id}`}
+            onClick={() => activateTree(v, tree)}
+          >
+            <Icon icon={GitBranch} />
+            <span>{`bw/${v}/${tree.id}`}</span>
+          </button>
+        </div>
+        {expanded && (
+          <div className="native-tree-contents">
+            {sessions.map((session) => (
+              <Nav
+                key={session.id}
+                className="native-agent-row"
+                icon={MessageSquare}
+                active={
+                  version === v &&
+                  data.selected === session.id &&
+                  ['work', 'plan', 'acceptance'].includes(screen)
+                }
+                onClick={() => activateTree(v, tree, session)}
+                title={session.label}
+              >
+                <span className="agent-tool">Codex</span>
+                {session.label}
+              </Nav>
+            ))}
+            {!sessions.length && <div className="tree-empty">暂无会话</div>}
+            {children.map((child) => (
+              <div className="native-child-tree" key={child.id}>
+                {nativeTree(v, child)}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+  function goalDirectory(v, goal) {
+    const data = versions[v],
+      key = `${v}/${goal.goalId}`,
+      expanded = openGoals.includes(key)
+    const roots = data.trees.filter((t) => t.goal === goal.goalId && !t.parent)
+    return (
+      <div className="goal-directory" key={goal.goalId}>
+        <div className="goal-directory-row">
+          <button
+            className="tree-chevron"
+            aria-label={`${v} ${goal.goalId} 目标目录展开或收起`}
+            aria-expanded={expanded}
+            onClick={() => toggle(openGoals, key, setOpenGoals)}
+          >
+            <Icon icon={expanded ? ChevronDown : ChevronRight} />
+          </button>
+          <button
+            className={`goal-directory-link ${
+              version === v && screen === 'tasks' && filter === goal.goalId ? 'selected' : ''
+            }`}
+            title={goal.title}
+            onClick={() => go(v, 'tasks', goal.goalId)}
+          >
+            <Icon icon={Target} />
+            <strong>{goal.goalId}</strong>
+            <span>{goal.title}</span>
+          </button>
+          <button
+            className="icon-button goal-menu"
+            title={`${v} ${goal.goalId} 目标目录操作`}
+            aria-label={`${v} ${goal.goalId} 目标目录操作`}
+            onClick={() => setModal({ type: 'goal', version: v, goal: goal.goalId })}
+          >
+            ···
+          </button>
+        </div>
+        {expanded && (
+          <div className="goal-directory-body">
+            {roots.length ? (
+              roots.map((tree) => nativeTree(v, tree))
+            ) : (
+              <div className="tree-empty">尚无工作树</div>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+  function workflowNav(v, role) {
+    const data = versions[v],
+      tree = data.trees.find((t) => t.role === role),
+      key = `${v}/${role}`
+    const expanded = !closedTrees.includes(key)
+    const sessions = data.sessions.filter((s) => s.tree === role)
+    return (
+      <div className="workflow-tree" data-workflow={`${v}/${role}`}>
+        <div className={`workflow-row ${version === v && screen === role ? 'selected' : ''}`}>
+          <button
+            className="tree-chevron"
+            aria-label={`${v} ${labels[role]}会话展开或收起`}
+            aria-expanded={expanded}
+            onClick={() => toggle(closedTrees, key, setClosedTrees)}
+          >
+            <Icon icon={expanded ? ChevronDown : ChevronRight} />
+          </button>
+          <button
+            className="workflow-link"
+            title={`bw/${v}/${role} · 本版固定工作区`}
+            onClick={() => (tree ? activateTree(v, tree) : go(v, role))}
+          >
+            <Icon icon={role === 'plan' ? CalendarRange : ClipboardCheck} />
+            <span>{labels[role]}</span>
+          </button>
+          <button
+            className="icon-button goal-menu"
+            title={`${v} ${labels[role]}工作区菜单`}
+            aria-label={`${v} ${labels[role]}工作区菜单`}
+            onClick={() => setModal({ type: 'workflow', version: v, role })}
+          >
+            ···
+          </button>
+        </div>
+        {expanded && (
+          <div className="workflow-agents">
+            {sessions.map((session) => (
+              <Nav
+                key={session.id}
+                className="native-agent-row"
+                icon={MessageSquare}
+                active={version === v && screen === role && data.selected === session.id}
+                onClick={() => activateTree(v, tree, session)}
+              >
+                <span className="agent-tool">Codex</span>
+                {session.label}
+              </Nav>
+            ))}
+            {!sessions.length && <div className="tree-empty">尚无会话</div>}
+          </div>
+        )}
       </div>
     )
   }
   function versionNav(v) {
-    const data = versions[v],
-      expanded = openVersions.includes(v)
-    const materializedGoals = data.trees.filter((t) => t.startsWith('goal-')).map((t) => t.slice(5))
+    const expanded = openVersions.includes(v),
+      goals = (plans[v] || emptyPlan).goals
     return (
       <div className="version-group" key={v}>
         <button
           className="nav-row version-toggle"
-          onClick={() => toggle(openVersions, v, setOpenVersions)}
-          aria-expanded={expanded}
           aria-label={`${v} 展开或收起`}
+          aria-expanded={expanded}
+          onClick={() => toggle(openVersions, v, setOpenVersions)}
         >
           <Icon icon={expanded ? ChevronDown : ChevronRight} />
           <Icon icon={PackageCheck} />
@@ -333,470 +534,216 @@ function App() {
             >
               总览
             </Nav>
-            <Nav
-              icon={CalendarRange}
-              active={version === v && screen === 'plan'}
-              onClick={() => go(v, 'plan')}
-            >
-              计划
-            </Nav>
-            {data.trees.includes('plan') &&
-              worktreeCard(
-                v,
-                'plan',
-                data.sessions.filter((s) => s.role === 'plan')
-              )}
+            {workflowNav(v, 'plan')}
             <Nav
               icon={ListTodo}
-              active={version === v && ['tasks', 'taskDetail'].includes(screen)}
-              onClick={() => go(v, 'tasks')}
+              active={version === v && screen === 'tasks' && filter === 'all'}
+              onClick={() => go(v, 'tasks', 'all')}
             >
               任务
             </Nav>
-            {materializedGoals.map((g) => (
-              <div className="worktree-children" key={g}>
-                {worktreeCard(
-                  v,
-                  'goal',
-                  data.sessions.filter((s) => s.role === 'goal' && s.goal === g),
-                  g
-                )}
-                {data.sessions
-                  .filter((s) => s.role === 'issue' && s.goal === g)
-                  .map((s) => (
-                    <div key={s.id} className="issue-tree">
-                      {worktreeCard(v, 'issue', [s], g, s.issue)}
-                    </div>
-                  ))}
-              </div>
-            ))}
-            <Nav
-              icon={ClipboardCheck}
-              active={version === v && screen === 'acceptance'}
-              onClick={() => go(v, 'acceptance')}
-            >
-              验收
-            </Nav>
-            {data.trees.includes('acceptance') &&
-              worktreeCard(
-                v,
-                'acceptance',
-                data.sessions.filter((s) => s.role === 'acceptance')
-              )}
+            <div className="goal-directories">
+              {goals.map((g) => goalDirectory(v, g))}
+              {!goals.length && <div className="tree-empty">目标来自本版计划</div>}
+            </div>
+            {workflowNav(v, 'acceptance')}
           </div>
         )}
       </div>
     )
   }
-  function sessionPanel() {
-    const id = currentSession.id
-    return (
-      <section className="session-panel" aria-label="原生会话工作区示意">
-        <div className="native-tabs">
-          <span>
-            <Icon icon={MessageSquare} />
-            {currentSession.issue
-              ? `#${currentSession.issue}`
-              : currentSession.role === 'plan'
-                ? '计划讨论'
-                : currentSession.role === 'goal'
-                  ? '目标讨论'
-                  : '验收讨论'}
-          </span>
-          <button
-            className="icon-button"
-            aria-label="收起会话"
-            onClick={() =>
-              screen === 'work' ? showTasks(currentSession.goal || 'all') : setSessionVisible(false)
-            }
-          >
-            <Icon icon={X} />
-          </button>
-        </div>
-        <div className="session-content">
-          <div className="session-caption">{currentSession.label}</div>
-          <div className="chat-user">
-            {currentSession.issue
-              ? `围绕 #${currentSession.issue} 开展工作，先核对 ${currentSession.goal} 的目标与验收标准。`
-              : currentSession.role === 'goal'
-                ? `核对 ${currentSession.goal} 的交付目标、子任务与验收证据。`
-                : currentSession.role === 'plan'
-                  ? '梳理这个版本要交付的目标，以及从计划、任务到验收的旅程。'
-                  : '核对本版本计划、交付件与证据，列出待确认的结果。'}
-          </div>
-          <div className="chat-answer">
-            <div className="assistant-label">
-              <span className="avatar">C</span>Codex <small>演示回复</small>
-            </div>
-            <p>
-              {currentSession.issue
-                ? `任务已关联到 ${version} / ${currentSession.goal}。工作区沿用原生会话界面。`
-                : `本会话属于 ${version}。切换到其他版本后，可以从侧边栏回到这里继续。`}
-            </p>
-            <div className="context-card">
-              <Icon icon={GitBranch} />
-              <div>
-                <strong>{branchFor(version, currentSession)}</strong>
-                <small>候选工作树分支 · 会话随工作树保留</small>
-              </div>
-            </div>
-            <p className="muted">此处演示原生会话区的布局与导航；没有调用模型或创建真实工作树。</p>
-          </div>
-          {(messages[id] || []).map((m) => (
-            <div key={m.id} className="chat-user">
-              {m.text}
-            </div>
-          ))}
-        </div>
-        <form
-          className="composer"
-          onSubmit={(event) => {
-            event.preventDefault()
-            if (!drafts[id]?.trim()) {
-              return
-            }
-            setMessages({
-              ...messages,
-              [id]: [
-                ...(messages[id] || []),
-                { id: `${id}/message/${count}`, text: drafts[id].trim() }
-              ]
-            })
-            setCount(count + 1)
-            setDrafts({ ...drafts, [id]: '' })
-            notify('演示输入已保留在当前会话，未发送给模型')
-          }}
-        >
-          <textarea
-            aria-label="演示会话输入"
-            placeholder="继续讨论当前目标…"
-            value={drafts[id] || ''}
-            onChange={(event) => setDrafts({ ...drafts, [id]: event.target.value })}
-          />
-          <div>
-            <span>
-              Codex <ChevronDown size={12} />
-            </span>
-            <button className="send" aria-label="添加演示消息" type="submit">
-              <ArrowRight size={15} />
-            </button>
-          </div>
-        </form>
-        <div className="branch-footer">
-          <Icon icon={GitBranch} />
-          {branchFor(version, currentSession)}
-        </div>
-      </section>
-    )
-  }
-
-  function goalCard(goal) {
-    const expanded = openGoals.includes(goal.goalId)
-    const linked = tasks.filter((t) => t.goalId === goal.goalId)
-    return (
-      <article className="goal-card" key={goal.goalId}>
-        <button
-          className="goal-heading"
-          aria-expanded={expanded}
-          onClick={() => toggle(openGoals, goal.goalId, setOpenGoals)}
-        >
-          <Icon icon={expanded ? ChevronDown : ChevronRight} />
-          <span className="goal-id">{goal.goalId}</span>
-          <strong>{goal.title}</strong>
-          <span className="count">{linked.length}</span>
-        </button>
-        {expanded && (
-          <div className="goal-body">
-            <div className="goal-meta">
-              <span>
-                负责人 <strong>{goal.owner || '未填写'}</strong>
-              </span>
-              <span>
-                计划完成 <span className="muted">未填写</span>
-              </span>
-            </div>
-            <label>交付件</label>
-            <p className="preline">{goal.deliverable}</p>
-            <label>验收标准</label>
-            <p className="preline">{goal.acceptance}</p>
-            <div className="tasks-label">
-              关联 Issue <small>{linked.length}</small>
-              <button className="text-link" onClick={() => showTasks(goal.goalId)}>
-                查看目标任务 <ArrowRight size={12} />
-              </button>
-            </div>
-            {linked.map((t) => {
-              const issue = issues.find((i) => i.number === t.number)
-              return (
-                <div className="task-row" key={t.number}>
-                  <span
-                    className="issue-circle"
-                    aria-label={issue ? '快照状态：打开' : '状态未加载'}
-                  />
-                  {issue ? (
-                    <button className="task-name" onClick={() => openDetail(issue, 'plan')}>
-                      <span>#{t.number}</span>
-                      {issue.title}
-                    </button>
-                  ) : (
-                    <a
-                      className="task-name"
-                      href={`${repoUrl}/issues/${t.number}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      #{t.number} · 查看 Issue
-                      <Icon icon={ExternalLink} />
-                    </a>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </article>
-    )
-  }
-
-  function board() {
+  function body() {
     if (screen === 'overview') {
       return (
         <VersionOverview
           version={version}
           plan={plan}
-          issues={issues}
+          issues={issueSnapshot.items}
           readAt={issueSnapshot.readAt}
           onPlan={() => go(version, 'plan')}
-          onTasks={showTasks}
+          onTasks={(goal) => go(version, 'tasks', goal)}
           onAcceptance={() => go(version, 'acceptance')}
         />
       )
     }
+    if (screen === 'plan' || screen === 'acceptance') {
+      const active = state.sessions.find((s) => s.id === state.selected && s.tree === screen)
+      return (
+        <div className="workflow-reuse-layout">
+          <section className="native-session-placeholder">
+            <div className="reuse-marker">沿用 Orca 完整会话区</div>
+            <h2>{active ? active.label : '尚未打开会话'}</h2>
+            <div className="reuse-outline">
+              <MessageSquare size={24} />
+              <span>{active ? '原生会话、标签、分屏、工具' : '从右侧原有按钮开始协作'}</span>
+              <small>这里标明原生挂载位置，不复制聊天 UI</small>
+            </div>
+            <p className="muted">
+              bw/{version}/{screen}
+            </p>
+            <small>新会话属于当前树；已有会话从侧栏 agent 行打开。</small>
+          </section>
+          <section className="business-reuse-placeholder">
+            <div className="reuse-marker">沿用现有版本{labels[screen]}屏</div>
+            <div className="page-title">
+              <div>
+                <h1>版本{labels[screen]}</h1>
+                <p>{version} · Builder Workbench</p>
+              </div>
+              <Button icon={MessageSquare} onClick={() => startWorkflow(screen)}>
+                新建{labels[screen]}
+              </Button>
+            </div>
+            <div className="reuse-outline">
+              <span>此处直接挂载现有{labels[screen]}板</span>
+              <small>
+                {screen === 'plan'
+                  ? plan.goals.length
+                    ? `回显本版已有计划：${plan.goals.length} 个目标、${
+                        plan.tasks.length
+                      } 个任务引用`
+                    : '新版本回显现有计划屏空态'
+                  : '回显本版验收材料；缺少依据时沿用原有准备流程'}
+              </small>
+            </div>
+            <p className="muted">
+              版本由侧栏带入，屏内不再选版。上方“新建{labels[screen]}
+              ”沿用现有入口，本原型点击只演示会话归属。
+            </p>
+            {screen === 'plan' && (
+              <div className="candidate-note">
+                <strong>目标目录与定稿状态</strong>
+                <p>
+                  目录随已保存计划呈现；正式承诺以人工评审与已合入材料核对。不新增周冻结或生成目录操作；原型未核验快照是否等于当前正式修订。
+                </p>
+                <Button icon={ListTodo} onClick={() => go(version, 'tasks', 'all')}>
+                  查看目标与任务入口
+                </Button>
+              </div>
+            )}
+          </section>
+        </div>
+      )
+    }
     if (screen === 'tasks') {
       return (
-        <ScopedTasks
-          key={version}
-          version={version}
-          plan={plan}
-          issues={issues}
-          goal={goalFilter}
-          search={taskSearches[version] || ''}
-          setSearch={(search) => setTaskSearches({ ...taskSearches, [version]: search })}
-          setGoal={(goal) => setGoalFilters({ ...goalFilters, [version]: goal })}
-          onDetail={openDetail}
-          onAction={(item) => start('issue', item.number)}
-          hasWorkspace={(number) => state.trees.includes(`issue-${number}`)}
-        />
-      )
-    }
-    if (screen === 'taskDetail' && detail) {
-      return (
-        <SharedIssueDetail
-          item={detail}
-          goal={plan.goals.find(
-            (g) => g.goalId === plan.tasks.find((t) => t.number === detail.number)?.goalId
+        <ReuseSurface
+          title="沿用 Orca 任务屏"
+          scope={`Builder Workbench / ${version} / ${filter === 'all' ? '全部目标' : filter}`}
+          description={`沿用任务列表、详情、开工和打开工作区。当前范围来自本版计划${filter === 'all' ? '' : `中的 ${filter}`}，共有 ${scopedRefs.length} 个 Issue 引用。目标内容仍在计划中维护。`}
+        >
+          {filter !== 'all' && (
+            <>
+              <Button icon={ListTodo} onClick={() => go(version, 'tasks', 'all')}>
+                查看本版全部目标
+              </Button>
+              <Button
+                icon={GitBranch}
+                onClick={() => setModal({ type: 'goal', version, goal: filter })}
+              >
+                目标操作
+              </Button>
+            </>
           )}
-          origin={detailOrigin}
-          onBack={() => go(version, detailOrigin)}
-          onAction={(item) => start('issue', item.number)}
-          hasWorkspace={state.trees.includes(`issue-${detail.number}`)}
-        />
-      )
-    }
-    if (screen === 'plan') {
-      return (
-        <div className="page-content">
-          <div className="page-title">
-            <div>
-              <h1>版本计划</h1>
-              <p>{version} · Builder Workbench</p>
-            </div>
-            <Button icon={MessageSquare} onClick={() => start('plan')}>
-              新建计划
+          <p className="candidate-note">
+            目标开工在侧栏 G1/G2 的“···”菜单；此处仅加目标范围与同一操作入口，任务列表和 Issue
+            开工仍用 Orca。一个目标工作区可处理多个相关
+            Issue；原创建器由用户选择执行方式，不表示目标内全部任务已开工。
+          </p>
+          {scopedRefs[0] && (
+            <Button icon={ArrowRight} onClick={() => startIssue(scopedRefs[0])}>
+              演示原生 Issue #{scopedRefs[0].number}{' '}
+              {state.trees.some((t) => t.issue === scopedRefs[0].number) ? '打开工作区' : '开工'}
             </Button>
-          </div>
-          <div className="journey" aria-label="计划旅程">
-            {['准备', '目标', '评审', '拆解', '归档'].map((s, i) => (
-              <React.Fragment key={s}>
-                {i > 0 && <span className="journey-line" />}
-                <span className={i === planStage ? 'current' : ''}>
-                  <span>{i <= planStage ? <Check size={11} /> : i + 1}</span>
-                  {s}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
-          <div className="progress-card">
-            <div>
-              <label>版本进展</label>
-              <p className="muted">
-                {version === 'v0.7'
-                  ? '计划引用了 v0.6 验收；原型未加载该材料，不代填进展。'
-                  : plan.summary?.progress || '暂无前序验收引用。'}
-              </p>
-            </div>
-            <div>
-              <label>风险与约束</label>
-              <p className="muted">{plan.summary?.risks || '尚未填写'}</p>
-            </div>
-          </div>
-          <div className="section-title">
-            <h2>
-              本版目标 <small>{goals.length}</small>
-            </h2>
-            <span className="muted">负责人 · 交付件 · 验收标准</span>
-          </div>
-          {goals.length ? (
-            goals.map(goalCard)
-          ) : (
-            <div className="empty">
-              <Icon icon={Target} />
-              <h3>还没有版本目标</h3>
-              <p>新建计划会话后，与模型一起明确本版要交付什么。</p>
-            </div>
           )}
-          <div className="archive-status">
-            <Icon icon={GitPullRequest} />
-            {plan.workflow?.archivePr ? (
-              <>
-                <a
-                  href={`${repoUrl}/pull/${plan.workflow.archivePr.number}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  计划材料 PR #{plan.workflow.archivePr.number}
-                </a>
-                <span>{version === 'v0.7' ? '已合入 · 状态快照' : '状态未读取'}</span>
-              </>
-            ) : (
-              <span>计划材料尚未归档</span>
-            )}
-          </div>
-        </div>
+        </ReuseSurface>
       )
     }
-
-    return (
-      <div className="page-content">
-        <div className="page-title">
-          <div>
-            <h1>版本验收</h1>
-            <p>{version} · 按原计划核对交付</p>
-          </div>
-          <Button icon={MessageSquare} onClick={() => start('acceptance')}>
-            新建验收
-          </Button>
-        </div>
-        <div className="notice">尚未载入该版本验收材料；以下仅显示计划承诺，结果待人确认。</div>
-        <div className="journey">
-          {['准备', '展示与核对', '归档'].map((s, i) => (
-            <React.Fragment key={s}>
-              {i > 0 && <span className="journey-line" />}
-              <span>
-                <span>{i + 1}</span>
-                {s}
-              </span>
-            </React.Fragment>
-          ))}
-        </div>
-        {goals.length ? (
-          goals.map((g) => (
-            <article className="card" key={g.goalId}>
-              <div className="accept-title">
-                <span className="goal-id">{g.goalId}</span>
-                <h3>{g.title}</h3>
-                <span className="badge">待确认</span>
-              </div>
-              <p className="preline">{g.deliverable}</p>
-              <div className="evidence-empty">验收证据尚未载入</div>
-            </article>
-          ))
-        ) : (
-          <div className="empty">
-            <Icon icon={ClipboardCheck} />
-            <h3>尚未制定计划</h3>
-            <p>先明确目标与验收标准。</p>
-            <Button onClick={() => go(version, 'plan')}>进入计划</Button>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  function otherScreen() {
-    if (screen === 'project') {
-      return <ExistingProjectOverview dark={dark} />
-    }
-    if (screen === 'wall') {
+    if (screen === 'work') {
       return (
-        <div className="page-content full-page">
-          <h1>项目墙</h1>
-          <p className="muted">选择项目，进入它的版本与工作。</p>
-          <button className="project-card" onClick={() => setScreen('project')}>
-            <span className="project-avatar">B</span>
-            <div>
-              <h2>Builder Workbench</h2>
-              <p>forcegravity1989 / builder-workbench</p>
-            </div>
-            <Icon icon={ArrowRight} />
-          </button>
-          <p className="muted wall-note">当前项目聚焦在侧边栏上方；下方保留其他原生项目入口。</p>
-        </div>
+        <ReuseSurface
+          title="沿用 Orca 完整工作区"
+          scope={`Builder Workbench / ${version}${currentTree ? ` / bw/${version}/${currentTree.id}` : ''}`}
+          description={`原生会话、标签、分屏、工具和历史保持原交互。${currentSession ? `当前演示会话：${currentSession.label}。${currentTree?.parent ? `原生父树：bw/${version}/${currentTree.parent}。` : ''}` : '请选择侧栏的分支或会话。'}`}
+        />
+      )
+    }
+    if (screen === 'project-workspaces') {
+      return (
+        <ReuseSurface
+          title="沿用 Orca 项目工作区"
+          scope="Builder Workbench / 原生工作树"
+          description="保留该项目的原生工作树与会话入口，包括尚未归版的 bw/week-plan、bw/week-acceptance 和项目共用树。旧会话不整树迁移、不按标题猜版本；共享访问沿原宿主与权限。"
+        />
+      )
+    }
+    if (screen === 'project') {
+      return (
+        <ReuseSurface
+          title="沿用现有项目总览屏"
+          scope="Builder Workbench"
+          description="本轮仅调整侧栏入口。总览内容、指标和后续里程碑由总览特性维护，此处不嵌入或复刻另一份高保真。"
+        />
+      )
+    }
+    if (screen === 'automations' || screen === 'knowledge') {
+      return (
+        <ReuseSurface
+          title={screen === 'automations' ? '沿用现有自动化屏' : '沿用现有知识库屏'}
+          scope="Builder Workbench"
+          description="保持当前项目能力和既有交互，此处只确定入口位置。"
+        />
       )
     }
     if (screen === 'private') {
       return (
-        <div className="private-workspace">
-          <div className="native-tabs">
-            personal-notes <span className="badge">私人项目示例</span>
-          </div>
-          <div className="empty">
-            <Icon icon={MessageSquare} />
-            <h1>{privateSession ? '整理个人笔记' : '开始新会话'}</h1>
-            <p>同一套原生工作树与会话界面。</p>
-            {privateSession ? (
-              <div className="card">personal-notes / main · 演示会话</div>
-            ) : (
-              <Button primary icon={Plus} onClick={() => setPrivateSession(true)}>
-                新建演示会话
-              </Button>
-            )}
-          </div>
-        </div>
+        <ReuseSurface
+          title="沿用 Orca 项目工作区"
+          scope="personal-notes · 私人项目示例"
+          description="下方其他项目与上方当前项目使用同一套工作树和会话能力；上方只聚焦项目墙选定的项目。"
+        />
       )
     }
     return (
-      <div className="page-content full-page">
-        <h1>{screen === 'automations' ? '项目自动化' : '项目知识库'}</h1>
-        <p className="muted">Builder Workbench · 沿用当前项目公共能力</p>
-        <div className="card">
-          <p>
-            {screen === 'automations'
-              ? '这里只确定入口位置。每个版本的执行工作树与现有自动化如何绑定，需沿原生运行路径验证。'
-              : '知识库仍由项目共用，本轮不改造其页面与编辑能力。'}
-          </p>
-          <Button onClick={() => setModal({ type: 'research' })}>查看复用边界</Button>
-        </div>
+      <div className="page-content">
+        <h1>项目墙</h1>
+        <p className="muted">选择项目，进入它的版本与工作。</p>
+        <button className="project-card" onClick={() => setScreen('project')}>
+          <span className="project-avatar">B</span>
+          <div>
+            <h2>Builder Workbench</h2>
+            <p>forcegravity1989 / builder-workbench</p>
+          </div>
+          <ArrowRight size={16} />
+        </button>
       </div>
     )
   }
   return (
     <div className="prototype">
       <div className="review-bar">
-        <strong>G2 交互原型 · 修订 2</strong>
-        <span>
-          {screen === 'project'
-            ? '项目总览沿用既有原型预览（历史 v0.5 快照）；本轮不改造'
-            : '原生组件复用示意 · 尚未挂接 Electron · 会话均为演示'}
-        </span>
-        <div className="review-actions">
-          <button onClick={() => setModal({ type: 'research' })}>预研与方案</button>
-          <button onClick={() => setDark(!dark)}>{dark ? '浅色' : '深色'}</button>
-          <button onClick={() => location.reload()}>重置演示</button>
+        <strong>G2 交互原型 · 修订 5</strong>
+        <span>设计候选 · 图标操作 · 原生复用 · 业界参考见右侧书本</span>
+        <div className="review-actions" aria-label="原型评审工具">
+          <Button
+            icon={BookOpen}
+            label="设计依据：业界 UI 与操作参考"
+            onClick={() => setModal({ type: 'references' })}
+          />
+          <Button
+            icon={ClipboardList}
+            label="旅程与数据说明"
+            href="version-workspace-journey.html"
+          />
+          <Button
+            icon={Info}
+            label="范围、目录与演示设置"
+            onClick={() => setModal({ type: 'scope' })}
+          />
         </div>
       </div>
       <div className="shell">
-        <aside className="sidebar">
+        <aside className="sidebar scrollbar-sleek-parent">
           <div className="app-header">
             <span className="brand-mark">B</span>
             <strong>Workbench</strong>
@@ -805,14 +752,14 @@ function App() {
           <Nav icon={LayoutDashboard} active={screen === 'wall'} onClick={() => setScreen('wall')}>
             项目墙
           </Nav>
-          <div className="sidebar-scroll">
-            <div className={`bw-section ${screen === 'private' ? 'inactive-project' : ''}`}>
+          <div className="sidebar-scroll scrollbar-sleek worktree-sidebar-scrollbar">
+            <div className="bw-section">
               <button className="project-heading" onClick={() => setScreen('project')}>
                 <span className="project-avatar">B</span>
                 <span>
                   Builder Workbench<small>当前项目</small>
                 </span>
-                <Icon icon={ChevronDown} />
+                <ChevronDown size={14} />
               </button>
               <Nav
                 icon={LayoutDashboard}
@@ -835,7 +782,17 @@ function App() {
               >
                 知识库
               </Nav>
-              <div className="section-label">版本</div>
+              <Nav
+                icon={GitBranch}
+                active={screen === 'project-workspaces'}
+                onClick={() => setScreen('project-workspaces')}
+              >
+                项目工作区
+              </Nav>
+              <div className="section-label">
+                <span>版本</span>
+                <Button icon={Plus} label="新建版本" onClick={openVersionDialog} />
+              </div>
               {versionOrder.map(versionNav)}
             </div>
           </div>
@@ -848,15 +805,6 @@ function App() {
             >
               personal-notes <small>示例</small>
             </Nav>
-            {screen === 'private' && (
-              <Nav
-                className="session-row"
-                icon={MessageSquare}
-                onClick={() => setPrivateSession(true)}
-              >
-                main · 个人笔记
-              </Nav>
-            )}
           </div>
           <div className="sidebar-footer">
             <span className="user-avatar">Y</span>yuzhup<span>本地</span>
@@ -865,55 +813,26 @@ function App() {
         <main className="workspace">
           <div className="workspace-header">
             <div className="breadcrumb">
-              {screen === 'private' ? (
+              <button onClick={() => setScreen(screen === 'private' ? 'private' : 'project')}>
+                {screen === 'private' ? 'personal-notes' : 'Builder Workbench'}
+              </button>
+              {isVersionScreen && (
                 <>
-                  <span>personal-notes</span>
                   <ChevronRight size={12} />
-                  <span>main</span>
-                </>
-              ) : (
-                <>
-                  <button onClick={() => setScreen('project')}>Builder Workbench</button>
-                  {isVersionScreen && (
+                  <button onClick={() => go(version, 'overview')}>{version}</button>
+                  <ChevronRight size={12} />
+                  <strong>{labels[screen]}</strong>
+                  {screen === 'tasks' && filter !== 'all' && (
                     <>
                       <ChevronRight size={12} />
-                      <button onClick={() => go(version, 'overview')}>{version}</button>
-                      <ChevronRight size={12} />
-                      <strong>{labels[screen]}</strong>
+                      <span>{filter}</span>
                     </>
                   )}
                 </>
               )}
             </div>
-            <div className="header-actions">
-              {['plan', 'acceptance'].includes(screen) && currentSession && (
-                <button
-                  className="icon-button"
-                  aria-label={sessionVisible ? '收起会话' : '展开会话'}
-                  onClick={() => setSessionVisible(!sessionVisible)}
-                >
-                  <Icon icon={MessageSquare} />
-                </button>
-              )}
-              <button
-                className="icon-button"
-                aria-label="原型说明"
-                onClick={() => setModal({ type: 'research' })}
-              >
-                <Icon icon={Info} />
-              </button>
-            </div>
           </div>
-          {screen === 'work' ? (
-            <div className="native-workspace-full">{sessionPanel()}</div>
-          ) : isVersionScreen ? (
-            <div className={`workspace-body ${isSplit ? 'split' : ''}`}>
-              {isSplit && sessionPanel()}
-              <section className="business-panel">{board()}</section>
-            </div>
-          ) : (
-            <div className="workspace-body single">{otherScreen()}</div>
-          )}
+          <div className="workspace-body scrollbar-sleek">{body()}</div>
         </main>
       </div>
       {toast && (
@@ -921,129 +840,229 @@ function App() {
           {toast}
         </div>
       )}
-      {modal?.type === 'research' && (
-        <Modal title="G2 · 原生复用与版本运作" close={() => setModal(null)} wide>
-          <div className="research-intro">
-            本轮只新增版本运作导航、业务绑定与版本总览。项目总览保持原样；工作树卡片、父子树、agent
-            行、完整会话区、任务列表/详情/执行动作，以及现有计划和验收 UI，均以复用为目标。HTML
-            中是交互示意，尚未挂接生产组件。
+      {modal?.type === 'version' && (
+        <Modal title="新建版本" close={() => setModal(null)}>
+          <p className="muted">Builder Workbench</p>
+          <form onSubmit={createVersion}>
+            <label htmlFor="version-name">版本名</label>
+            <input
+              id="version-name"
+              autoComplete="off"
+              placeholder="例如 v0.9"
+              value={versionName}
+              onChange={(e) => {
+                setVersionName(e.target.value)
+                setVersionError('')
+              }}
+            />
+            {versionError && (
+              <p className="form-error" role="alert">
+                {versionError}
+              </p>
+            )}
+            <p className="form-help">
+              创建后准备本版计划、验收两棵固定工作树，并进入现有计划屏。不预建目标和任务树，不启动
+              agent；验收材料在明确依据后准备。
+            </p>
+            <div className="dialog-actions">
+              <Button icon={Plus} primary type="submit">
+                创建并进入计划
+              </Button>
+            </div>
+            <small className="demo-note">
+              原型仅模拟目录变化，不创建真实版本材料或 Git 工作树。
+            </small>
+          </form>
+        </Modal>
+      )}
+      {modal?.type === 'goal' && (
+        <Modal title={`${modal.version} / ${modal.goal} · 目标目录`} close={() => setModal(null)}>
+          <p>
+            目标来自版本计划。可在一个目标工作区协作处理若干简单
+            Issue；需独立开发时，再从原生任务屏对某个 Issue 开工。
+          </p>
+          <div className="goal-action-list">
+            <button
+              className="goal-action-item"
+              onClick={() => {
+                go(modal.version, 'tasks', modal.goal)
+                setModal(null)
+              }}
+            >
+              <ListTodo size={16} /> 查看目标任务
+            </button>
+            {versions[modal.version].trees.some((t) => t.id === `goal-${modal.goal}`) ? (
+              <button
+                className="goal-action-item"
+                onClick={() => {
+                  activateTree(
+                    modal.version,
+                    versions[modal.version].trees.find((t) => t.id === `goal-${modal.goal}`)
+                  )
+                  setModal(null)
+                }}
+              >
+                <ArrowRight size={16} /> 打开目标工作区
+              </button>
+            ) : (
+              <button
+                className="goal-action-item"
+                onClick={() => setModal({ ...modal, type: 'composer', kind: 'goal' })}
+              >
+                <GitBranch size={16} /> 目标开工
+              </button>
+            )}
           </div>
-          <h3>按版本并列，先不做专门归档</h3>
-          <p>
-            v0.8、v0.7、v0.6
-            并列，随时展开进入当时的总览、计划、任务和验收。不设“历史会话”入口或“已归档”分区；版本目录的收起只减少视觉占用。
+          <p className="muted">
+            实际创建沿用 Orca 原生创建器和父级选择。需要独立做目标协作时才创建；目标和 Issue
+            都复用原生创建器，BW
+            带入可修改的名称、上下文和合适父级建议。用户决定实际执行方式；已有树不自动改挂，版本目录不是实体父树。
           </p>
-          <p>
-            删除沿用 Orca 原生工作树菜单与校验，本原型不模拟删除。Git
-            中的计划/验收材料、工作树文件、Orca
-            会话记录是不同对象，不能把删除工作树解释为删除版本，也不能承诺仅靠 Git 恢复全部 agent
-            历史。旧共享树的会话归属仍需核对，不能按分支名自动归类。
-          </p>
-          <h3>每个版本自己的计划与验收树</h3>
-          <div className="tree-diagram">
-            <div>
-              v0.7 / plan <small>候选：版本根兼计划</small>
-            </div>
-            <div>
-              ├ goal-G2 <small>原生父工作树</small>
-            </div>
-            <div>
-              │ └ issue-383 <small>原生子工作树与 agent</small>
-            </div>
-            <div>
-              └ acceptance <small>v0.7 独立验收工作树</small>
-            </div>
+        </Modal>
+      )}
+      {modal?.type === 'composer' && (
+        <Modal title="沿用 Orca 原生开工弹窗" close={() => setModal(null)}>
+          <div className="reuse-marker">既有创建器挂载位置 · 不新增 BW 开工流程</div>
+          <h3>
+            {modal.version} / {modal.goal}
+            {modal.reference ? ` / #${modal.reference.number}` : ' · 目标开工'}
+          </h3>
+          <div className="candidate-note">
+            <strong>BW 带入的上下文</strong>
+            <p>
+              项目与宿主、版本 {modal.version}、目标 {modal.goal}
+              {modal.reference ? `、Issue #${modal.reference.number}` : '的交付约定与关联任务引用'}
+              。
+            </p>
+            <p>
+              名称建议：{modal.version}-
+              {modal.reference ? `issue-${modal.reference.number}` : modal.goal}
+              。实际名称、代码起点、模型及执行选项由原生弹窗选择。
+            </p>
           </div>
-          <p>
-            不同版本不共用同一计划/验收树；同一版本内稳定复用，首次需要时创建。每版是否额外创建一个纯版本父树仍待决定。父子关系不决定
-            Git 分支基线、未提交内容继承或合入方向。
+          <div className="reuse-outline">
+            <GitBranch size={22} />
+            <span>现有名称、分支、Agent 与高级选项</span>
+            <small>沿用 Orca 的原生控件与已有偏好；父级只影响嵌套，不改代码起点</small>
+          </div>
+          {modal.kind === 'issue' &&
+            versions[modal.version].trees.some((t) => t.id === `goal-${modal.goal}`) && (
+              <label className="composer-demo-parent">
+                <input
+                  type="checkbox"
+                  checked={!!modal.parentId}
+                  onChange={(e) =>
+                    setModal({ ...modal, parentId: e.target.checked ? `goal-${modal.goal}` : null })
+                  }
+                />
+                演示原生父级选择结果：挂到已有 {modal.goal} 工作区下（可取消）
+              </label>
+            )}
+          <p className="muted">
+            原型只演示原创建器提交后的归属，不复刻全部选项。目标工作区可在会话中处理多个相关
+            Issue；已有工作区可从其原生 agent 入口继续，不另造“统一复用策略”设置。
           </p>
-          <div className="cost-box">
-            <label className="check-label">
+          <Button
+            primary
+            onClick={() => {
+              if (modal.kind === 'goal') {
+                createGoalTree(modal.version, modal.goal)
+              } else {
+                completeIssueStart(modal.reference, modal.parentId)
+                setModal(null)
+              }
+            }}
+          >
+            演示原生提交后的结果
+          </Button>
+        </Modal>
+      )}
+      {modal?.type === 'workflow' && (
+        <Modal
+          title={`${modal.version} / ${labels[modal.role]}工作区`}
+          close={() => setModal(null)}
+        >
+          <p>
+            bw/{modal.version}/{modal.role}
+          </p>
+          <p>这一行同时是现有业务屏入口与本版固定工作树。下方 agent 仍归 Orca 管理。</p>
+          <Button
+            onClick={() => {
+              go(modal.version, modal.role)
+              setModal(null)
+            }}
+          >
+            打开{labels[modal.role]}屏
+          </Button>
+          <p className="muted">实际产品沿用原生工作树菜单；原型不模拟删除等真实磁盘操作。</p>
+        </Modal>
+      )}
+      {modal?.type === 'references' && (
+        <Modal title="设计依据 · 业界 UI 与操作参考" close={() => setModal(null)}>
+          <DesignReferences />
+        </Modal>
+      )}
+      {modal?.type === 'scope' && (
+        <Modal title="本轮对齐范围" close={() => setModal(null)}>
+          <div className="demo-settings">
+            <label>
               <input
                 type="checkbox"
-                checked={fullHierarchy}
-                onChange={(e) => setFullHierarchy(e.target.checked)}
-              />
-              版本根与计划工作树分开
+                checked={dark}
+                onChange={(event) => setDark(event.target.checked)}
+              />{' '}
+              深色外观
             </label>
-            <div className="cost-numbers">
-              <strong>
-                {fullHierarchy ? 17 : 16}
-                <small>棵 / v0.7 全部预建对比</small>
-              </strong>
-              <strong>
-                {fullHierarchy ? '3.05' : '2.87'}
-                <small>GiB / 文件内容体积示意</small>
-              </strong>
-            </div>
-            <small>
-              4 个目标 + 10 个 Issue + 计划/验收。按 main 2be8d77 的受控 blob 内容 183.7 MiB /
-              树乘算，不含依赖、构建结果、LFS 与文件系统开销，不是磁盘实测。实际候选按需创建；Git
-              对象共享，稀疏检出需先验证运行依赖。
-            </small>
+            <Button icon={RefreshCw} label="重置演示" onClick={() => location.reload()} />
           </div>
-          <h3>任务屏是一套 UI，范围由 BW 提供</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>入口</th>
-                <th>范围和行为</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>版本 → 任务</td>
-                <td>
-                  本版计划的全部 Issue 引用；按目标缩小范围。复用原生表格、状态、详情与开工/打开。
-                </td>
-              </tr>
-              <tr>
-                <td>计划里的 Issue</td>
-                <td>
-                  只保留关联信息与共用详情入口；本版暂不放独立“开工/继续”。如保留快捷动作，应调用相同原生动作；与
-                  #385 的直接开工诉求待对齐。
-                </td>
-              </tr>
-              <tr>
-                <td>工作树 / agent</td>
-                <td>选择后进入完整原生工作区，不把任务列表和新造的业务卡硬塞在会话旁。</td>
-              </tr>
-            </tbody>
-          </table>
+          <h3>新画什么</h3>
           <p>
-            现有 TaskPage 依赖全局模型、来源、缓存与分页，不能只过滤当前页。原生按 repoId + Issue
-            号寻找关联树，尚无版本/目标条件；跨版引用同一 Issue
-            时必须明确工作树归属，不能打开任意一棵旧树。
+            项目与版本导航、新建版本、目标目录，以及新增版本总览。既有项目总览、计划、任务、验收、自动化、知识库和会话区只标明沿用位置，不再做平行高保真。
           </p>
-          <h3>版本总览自然成为版本总结</h3>
+          <h3>目标目录与工作树分开</h3>
           <p>
-            同一页汇总计划承诺、任务事实、验收结果、交付物/发布、遗留安排。进行中持续补齐；发布后引用当时确认的材料与发布证据，保持可回读，不重新填写另一份报告。Issue
-            关闭不自动等于目标达成，缺少结论和证据时仍保留未知。发布时固定哪些材料修订，留到落地契约中明确。
+            目标目录来自计划，G1/G2
+            始终可见。目录不占一份仓库，未开工时可以是空的。需要目标级独立工作时，再用原生创建器建立目标父树；Issue
+            树与 agent 仍由 Orca 管理。
           </p>
-          <h3>当前源码证据</h3>
+          <div className="tree-explanation">
+            <div>任务</div>
+            <div>
+              └ G2 · 目标目录 <small>BW 业务分组</small>
+            </div>
+            <div>
+              　 ├ issue-328 → agent <small>可直接属于目标目录</small>
+            </div>
+            <div>
+              　 └ goal-G2 <small>按需创建的原生父树</small>
+            </div>
+            <div>
+              　 　 └ issue-383 → agent <small>真实父子关系</small>
+            </div>
+          </div>
           <p>
-            WorktreeCard / WorktreeCardAgents / 原生 lineage 行构建；AppWorkspaceShell →
-            Terminal；CycleWorkspaceShell → PlanningBoard / AcceptancePage；TaskPageGitHubRows /
-            useTaskPageWorkspaceActions / nativeTaskPort；OverviewPage。这些生产文件均未在本轮改动。
+            两种缩进含义分别是“业务归属”和“原生父级”。不能把目录分组等同 Git
+            父子关系，也不因创建目标父树自动重挂已有任务。
+          </p>
+          <h3>新建版本候选旅程</h3>
+          <p>
+            版本旁 ＋ → 输入名称 →
+            创建并进入计划。准备该版计划、验收两棵树和空白计划材料，不记录目标达成、不启动会话；目标从之后的计划中产生。重名留在输入处提示，不新建重复目录。
+          </p>
+          <h3>复用边界</h3>
+          <p>
+            任务列表按项目、版本和目标限定完整引用范围；会话按原生工作区绑定。页面样式与交互沿用原组件，这些生产接线尚未实现。侧栏滚动样式来自当前
+            Orca main.css 的 scrollbar-sleek / worktree-sidebar-scrollbar。
           </p>
           <p>
-            已有父级选择器和稀疏创建入口可以在当前客户端试验树上体验。仓库源码已核对，尚未实际操作你的安装版。HTML
-            只在页面内存模拟；刷新清空，不证明 Electron、Git 创建、provider 写回或会话恢复。
+            各版本并列，不新增专门历史或归档区。删除沿用原生规则；版本材料和 agent
+            记录不能视为同一恢复对象。现有共享树会话归属、自动化运行绑定及跨版 Issue
+            复用仍待后续方案。
           </p>
-          <p>
-            计划：v0.7 来自 PR #386 / 331c04f，v0.6 来自 main / 2be8d77。Issue 标题与状态是读取于{' '}
-            {issueSnapshot.readAt.slice(0, 10)} 的快照。v0.8
-            与全部会话为演示。项目总览嵌入既有历史原型，仅代表复用位置，不能当作当前生产数据。
-          </p>
-          <p>
-            <a href="https://git-scm.com/docs/git-worktree" target="_blank" rel="noreferrer">
-              Git worktree
-            </a>{' '}
-            ·{' '}
-            <a href="https://git-scm.com/docs/git-sparse-checkout" target="_blank" rel="noreferrer">
-              Git sparse-checkout
-            </a>
+          <p className="muted">
+            v0.7/v0.6 计划为仓库快照，工作树与会话全部是演示；没有
+            Electron、文件写回或持久化恢复证据。当前供内部评审对齐 intent.md、spec.md
+            与高保真，尚未实施产品接线。
           </p>
         </Modal>
       )}

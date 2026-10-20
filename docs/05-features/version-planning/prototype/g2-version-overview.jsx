@@ -1,7 +1,7 @@
+import { IconAction } from './g2-icon-action.jsx'
 // React is required by the shared bundle JSX factory.
 // eslint-disable-next-line no-unused-vars
-const { React, GitPullRequest, ArrowRight, ClipboardCheck, PackageCheck } =
-  window.BWPrototypeDependencies
+const { React, GitPullRequest, ClipboardCheck, PackageCheck } = window.BWPrototypeDependencies
 export function VersionOverview({ version, plan, issues, readAt, onPlan, onTasks, onAcceptance }) {
   const goals = plan.goals
   const refs = plan.tasks
@@ -21,9 +21,7 @@ export function VersionOverview({ version, plan, issues, readAt, onPlan, onTasks
         <div>
           <small>计划承诺</small>
           <strong>{goals.length} 个目标</strong>
-          <button onClick={onPlan}>
-            查看计划 <ArrowRight size={12} />
-          </button>
+          <IconAction label="查看计划" onClick={onPlan} />
         </div>
         <div>
           <small>关联任务</small>
@@ -34,16 +32,12 @@ export function VersionOverview({ version, plan, issues, readAt, onPlan, onTasks
                 ? '任务状态未载入'
                 : '暂无任务'}
           </strong>
-          <button onClick={() => onTasks('all')}>
-            查看任务 <ArrowRight size={12} />
-          </button>
+          <IconAction label="查看本版任务" onClick={() => onTasks('all')} />
         </div>
         <div>
           <small>目标验收</small>
           <strong>未载入结论</strong>
-          <button onClick={onAcceptance}>
-            查看验收 <ArrowRight size={12} />
-          </button>
+          <IconAction label="查看验收" onClick={onAcceptance} />
         </div>
       </div>
       <div className="report-source-line">
@@ -97,16 +91,15 @@ export function VersionOverview({ version, plan, issues, readAt, onPlan, onTasks
                   {loaded.filter((i) => i.state === 'CLOSED').length} 已关闭 ·{' '}
                   {loaded.filter((i) => i.state === 'OPEN').length} 打开
                 </p>
-                <button className="text-link" onClick={() => onTasks(goal.goalId)}>
-                  查看目标任务 <ArrowRight size={12} />
-                </button>
+                <IconAction
+                  label={`${goal.goalId} 查看目标任务`}
+                  onClick={() => onTasks(goal.goalId)}
+                />
               </div>
               <div>
                 <label>验收结果</label>
                 <p className="muted">尚未载入本目标的实际交付、证据与人工结论。</p>
-                <button className="text-link" onClick={onAcceptance}>
-                  查看验收 <ArrowRight size={12} />
-                </button>
+                <IconAction label={`${goal.goalId} 查看验收`} onClick={onAcceptance} />
               </div>
             </div>
           </article>
@@ -116,10 +109,8 @@ export function VersionOverview({ version, plan, issues, readAt, onPlan, onTasks
         <div className="empty">
           <PackageCheck size={24} />
           <h3>尚未制定本版目标</h3>
-          <p>这是并行版本空白示例。</p>
-          <button className="action" onClick={onPlan}>
-            进入计划
-          </button>
+          <p>先进入计划，明确本版目标与交付承诺。</p>
+          <IconAction label="进入计划" onClick={onPlan} />
         </div>
       )}
       <div className="report-bottom">
