@@ -92,6 +92,7 @@ git merge orca-upstream/main
 - 工作树版本偏好、Git history 的窗口/固定 revision/`committedAt`、GitHub/CodeHub 的真实 `mergedAt` 字段透传。
 - Terminal→TabGroupSplitLayout 链的 `reserveClosedExplorerToggleSpace` 宿主参数（默认 true=Orca 原行为；BW 计划/验收双栏传 false，避免右上角预留位吃掉侧栏收起后的宽度）；上游合并时保留传参与默认值。
 - WSL/SSH/配对沿用原生宿主身份和执行路由；BW 不新增本机专属连接层。
+- 配对会话的 editor 标签发布与终端一样阻止镜像回声（#388）：`isMobilePublishableOpenFile` 排除 `mirroredFromRuntimeSession === true` 的文件，覆盖普通文件、Markdown 与预览的分组及 fallback 发布入口。上游同步时保留该过滤；不能按 `runtimeEnvironmentId` 是否存在排除文件，用户主动打开的远端文件仍沿原有语义发布。
 - 原生 provider 标签和身份抽取保持单一实现；不要把已经去重的实现合回来。
 - 原生内置浏览器对普通 HTTPS 域名的 `ERR_CERT_AUTHORITY_INVALID` 也提供现有“仍然继续”入口（`browser-certificate-trust-controller.ts`），不恢复 localhost／回环地址限制。默认仍拒绝；沿用原生 renderer 按钮与 agent RPC `browser.certificate.proceed` 两条显式继续入口（RPC 不另设人工确认），按原生标签页、端点与证书身份临时放行。其他证书错误、子帧与非 HTTPS 首次请求不扩大授权。上游同步时保留这项入口范围与原有信任隔离。
 - BW Skill 分发登记保持一致：`resources/skills/current-manifest.json` 与 `snapshot-registry.json` 必须继续登记 `bw-knowledge-docs`、`metrics-refresh`、`version-acceptance`、`week-planning`。manifest/registry 由 `config/scripts/generate-skill-bundle-manifest.mjs` 从根级 `skills/` 生成；三个产品流程的正文正源仍是 `standard/skills/`，运行时指南由 `config/scripts/generate-bundled-skill-guides.mjs` 生成，不手改生成物。
