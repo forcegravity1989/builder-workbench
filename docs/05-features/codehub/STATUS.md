@@ -29,8 +29,8 @@
 | C08 基线版本目录可选 | ◐ | `version-history-service.ts` 的 `treePlans` | `version-history-service.test.ts` 有「无 provider 合入也列出 data.json」；真壳未选过版本 |
 | CJ01 关闭后重启仍为关闭 | ○ | 任务页 + CLI | 未执行 |
 
-相关单测还有 `src/main/codehub/mutations.test.ts`、`work-items.test.ts`、`comments.test.ts`（评论展平与删除命令形状）、`src/main/github/issue-update.codehub.test.ts`（GitHub 更新不因旁边有 CodeHub 远程而改道）。
+相关单测还有 `src/main/codehub/mutations.test.ts`、`work-items.test.ts`、`comments.test.ts`（评论展平、线程回复与删除命令形状）、`src/main/github/issue-update.codehub.test.ts`（GitHub 更新不因旁边有 CodeHub 远程而改道）。
 
 实机证据（2026-10-10，project-intake 名片链复用同一 CodeHub 能力）：克隆前名片预读读侧（repo-reads）对两个内源 host 实机验证可读（修复 --jq 引号假 absent 后）；createCodeHubMr 打包实跑在真实 CodeHub 仓验证可开 MR（应用内曾出现一次瞬时失败，错误信息未留存，排除法定位；查重/创建命令现均实测通过）。
 
-评论读回（2026-10-20，评论显示 / 删除修复）：`mr review list` 展平 discussion 内嵌 notes 后，对真实 MR 实读 3 条评论、issue 路径 1 条，系统流水被过滤；删除命令形状由单测与本机 CLI `--help` 锁定，未对真实 MR 执行删除。
+评论读回（2026-10-20，评论显示 / 删除修复）：`mr review list` 展平 discussion 内嵌 notes 后，对真实 MR 实读 3 条评论、issue 路径 1 条，系统流水被过滤；删除与线程回复命令形状由单测与本机 CLI `--help` 锁定，未对真实 MR 执行删除或实发回复。
