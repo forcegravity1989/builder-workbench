@@ -1,0 +1,213 @@
+{
+  "issues": [
+    {
+      "assignees": [],
+      "number": 387,
+      "state": "OPEN",
+      "title": "【v0.7|G4】CodeHub 支持问题集中修复：PR 渲染、项目维度筛选、来源路由与引导",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/387"
+    },
+    {
+      "assignees": [],
+      "number": 385,
+      "state": "OPEN",
+      "title": "【v0.7|G3】计划屏目标下 Issue 直接「开工」：侧边栏固定目录建 worktree，不跳任务屏",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/385"
+    },
+    {
+      "assignees": [],
+      "number": 384,
+      "state": "OPEN",
+      "title": "【v0.7|G3】计划屏易用性问题：版本进展不可读、目标卡标题重复渲染（同步检查验收屏是否有相似问题）",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/384"
+    },
+    {
+      "assignees": [],
+      "number": 383,
+      "state": "OPEN",
+      "title": "【v0.7|G2】Orca 侧边栏调整：项目墙 → 项目 → 版本运作树，会话随目标与版本归档",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/383"
+    },
+    {
+      "assignees": [],
+      "number": 374,
+      "state": "OPEN",
+      "title": "【v0.7|G3】计划屏/验收屏 skill 增加「获取会议纪要」步骤：按会议 ID 抓转写稿 + 子代理按议题提炼，继承进计划与验收产物",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/374"
+    },
+    {
+      "assignees": [],
+      "number": 372,
+      "state": "OPEN",
+      "title": "【v0.7|G2】未重装时共享连接反复失效，重新生成链接后团队成员需重新配对",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/372"
+    },
+    {
+      "assignees": [],
+      "number": 341,
+      "state": "OPEN",
+      "title": "【v0.7|G1】帮 builders 梳理特性与核心指标：统一一版并录入真实数据",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/341"
+    },
+    {
+      "assignees": [],
+      "number": 334,
+      "state": "OPEN",
+      "title": "【v0.7|G2】版本总览屏（周报样式）：聚合该版本计划与验收数据",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/334"
+    },
+    {
+      "assignees": [],
+      "number": 328,
+      "state": "OPEN",
+      "title": "【v0.7|G2】计划屏/验收屏适配侧边栏版本运作树（去掉屏内版本筛选等）",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/328"
+    },
+    {
+      "assignees": [],
+      "number": 323,
+      "state": "OPEN",
+      "title": "【v0.7|G4】设置→集成只留 GitHub，新增 CodeHub / WeLink 卡片，三张卡都能原地安装与登录",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/323"
+    },
+    {
+      "assignees": [],
+      "number": 317,
+      "state": "OPEN",
+      "title": "【v0.7|G4】首次启动弹出 Orca 的向导、功能提示和功能墙，反馈入口仍指向 Orca",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/317"
+    }
+  ],
+  "capturedAt": "2026-10-20T06:49:03.5765139Z",
+  "archive": {
+    "mergeCommit": {
+      "oid": "f5ac309b226a456b157b57ceee65204f101a4a09"
+    },
+    "mergedAt": "2026-10-20T02:35:23Z",
+    "number": 386,
+    "state": "MERGED",
+    "title": "归档 v0.7 版本计划",
+    "url": "https://github.com/forcegravity1989/builder-workbench/pull/386"
+  },
+  "plan": {
+    "schema_version": 3,
+    "version": "v0.7",
+    "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286",
+    "summary": {
+      "progress": "",
+      "risks": "",
+      "progressSource": {
+        "version": "v0.6",
+        "cycleId": "d373993a-4a8b-4254-a903-13de5e0551d2",
+        "sourceCommit": "e43528cae57424bb0973c99c6e3c03af075c1198",
+        "revision": "sha256:4289442ecaeec0edca03ee83d97bbebed575f25a7d247e1ae1bb130a3d7fe248"
+      }
+    },
+    "goals": [
+      {
+        "goalId": "G1",
+        "title": "组内4个核心项目特性与指标梳理完毕，并在BW呈现。",
+        "deliverable": "1. 特性与核心指标梳理方法 + Skill。\n2. 四个项目各自的特性树与核心指标，归档各自 .bw/，录入真实数据。",
+        "acceptance": "1、每个项目3~4个特性，每个特性各引领和滞后性指标。\n2、忠实采集脚本不强求本周开发完毕。",
+        "owner": "cfdcfd",
+        "metricTargets": []
+      },
+      {
+        "goalId": "G2",
+        "title": "Orca 侧边栏调整：项目墙 → 项目 → 版本运作树，会话随目标与版本归档",
+        "deliverable": "1、高保真归档；\n2、代码效果参见验收标准；\n",
+        "acceptance": "1. 项目墙->项目->版本侧边栏层次化展示。\n2. 会话随目标与版本归档，可独立读回。\n3. 与 G3「Issue 开工在固定目录建 worktree」衔接，一周会话自然收束归档。",
+        "owner": "yuzhup",
+        "metricTargets": []
+      },
+      {
+        "goalId": "G3",
+        "title": "计划屏 / 验收屏易用性：进展可读、任务顺手、旅程可见",
+        "deliverable": "1、高保真归档；\n2、代码效果参见验收标准；",
+        "acceptance": "计划屏（会上明细）：\n1. 版本进展按目标分行可读（三行格式或沿用三卡片，拍板后按拍板结果验）。\n2. 目标卡标题不再重复渲染。\n3. 目标下 Issue 可直接开工：在侧边栏固定目录建 worktree，不跳任务屏筛选。\n4. 评审与纪要遗留的跟踪在屏内可见，不藏在 skill 里。\n验收屏：\n各项真壳走通留证（截图四件套）；「拆解先于评审」待拍板，拍板后纳入验收。",
+        "owner": "yuzhup(计划);kanadead(验收)",
+        "metricTargets": []
+      },
+      {
+        "goalId": "G4",
+        "title": "Orca 内部工具集成与原生能力 + issue / 未合 PR 清理（围绕 Orca 调整）",
+        "deliverable": "1、Orca和Bw边界md。\n2、代码效果参见验收标准；",
+        "acceptance": "1. 六个强 Orca 改造 PR（#358、#324、#322、#325、#308、#336）每个都有处置结果：合入，或写明原因后关闭。\n2. #323、#317 随对应 PR 合入核验关闭。\n3. Orca 与 BW 边界 md 归档，可读回。",
+        "owner": "kanadead",
+        "metricTargets": []
+      }
+    ],
+    "tasks": [
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 341,
+        "goalId": "G1"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 328,
+        "goalId": "G2"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 334,
+        "goalId": "G2"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 372,
+        "goalId": "G2"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 383,
+        "goalId": "G2"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 374,
+        "goalId": "G3"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 384,
+        "goalId": "G3"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 385,
+        "goalId": "G3"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 317,
+        "goalId": "G4"
+      },
+      {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 323,
+        "goalId": "G4"
+      }
+    ],
+    "workflow": {
+      "stage": "archive",
+      "updatedAt": "2026-10-19T22:30:00-04:00",
+      "archivePr": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 386
+      }
+    }
+  },
+  "sourceCommit": "f5ac309b226a456b157b57ceee65204f101a4a09"
+}
