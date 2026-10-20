@@ -19,7 +19,10 @@ const result = esbuild.buildSync({
   }
 }).outputFiles[0].text
 if (process.argv.includes('--check')) {
-  if (!fs.existsSync(output) || fs.readFileSync(output, 'utf8') !== result) {
+  if (
+    !fs.existsSync(output) ||
+    fs.readFileSync(output, 'utf8').replace(/\r\n/g, '\n') !== result.replace(/\r\n/g, '\n')
+  ) {
     throw new Error('G2 prototype bundle is stale. Run node prototype/build-g2.cjs.')
   }
   console.log('G2 prototype bundle matches source.')
