@@ -8,6 +8,10 @@ function mapComment(value: unknown): CodeHubComment | null {
     return null
   }
   const record = value as Record<string, unknown>
+  if (record.system === true) {
+    // Activity records such as "changed this line" are not user comments.
+    return null
+  }
   const id = record.id ?? record.note_id ?? record.noteId
   if (id === undefined || id === null) {
     return null
@@ -52,8 +56,17 @@ export async function listCodeHubComments(args: {
         ]
   const parsed = parseJson(await runCodeHubCli(command, args.execOptions))
   const rows = Array.isArray(parsed) ? parsed : []
-  return rows.flatMap((row) => {
-    const comment = mapComment(row)
+  // `mr review list` returns discussions whose comments are nested in
+  // `notes`; `issue comment list` returns flat comments.
+  const entries = rows.flatMap((row) => {
+    if (!row || typeof row !== 'object') {
+      return []
+    }
+    const record = row as Record<string, unknown>
+    return Array.isArray(record.notes) ? (record.notes as unknown[]) : [row]
+  })
+  return entries.flatMap((entry) => {
+    const comment = mapComment(entry)
     return comment ? [comment] : []
   })
 }
