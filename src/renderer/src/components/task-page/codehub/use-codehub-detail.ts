@@ -140,6 +140,36 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
       })
       .finally(() => setPosting(false))
   }
+  const postReply = (discussionId: string, body: string): Promise<boolean> => {
+    if (!item.repoPath || !body) {
+      return Promise.resolve(false)
+    }
+    return codehubApi
+      .createComment({
+        repoPath: item.repoPath,
+        repoId: item.repoId,
+        kind: item.type,
+        iid: item.iid,
+        body,
+        discussionId
+      })
+      .then(() =>
+        codehubApi.listComments({
+          repoPath: item.repoPath!,
+          repoId: item.repoId,
+          kind: item.type,
+          iid: item.iid
+        })
+      )
+      .then((rows) => {
+        setComments(rows)
+        return true
+      })
+      .catch((reason: unknown) => {
+        toast.error(reason instanceof Error ? reason.message : String(reason))
+        return false
+      })
+  }
   const saveTitle = (): void => {
     const nextTitle = titleDraft.trim()
     if (!item.repoPath || !nextTitle || savingTitle || nextTitle === title) {
@@ -225,6 +255,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     backLabel,
     projectLabel,
     postComment,
+    postReply,
     saveTitle,
     setIssueState,
     setCodehubDetailItem,

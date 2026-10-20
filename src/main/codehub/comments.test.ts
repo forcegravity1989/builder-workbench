@@ -8,7 +8,7 @@ vi.mock('./cli', () => ({
   runCodeHubCli: runCodeHubCliMock
 }))
 
-import { deleteCodeHubComment, listCodeHubComments } from './comments'
+import { createCodeHubComment, deleteCodeHubComment, listCodeHubComments } from './comments'
 
 const remote = { host: 'codehub-g.huawei.com', project: 'Org/Group/repo' }
 
@@ -160,6 +160,53 @@ describe('codehub comments', () => {
         isReply: false
       }
     ])
+  })
+
+  it('replies within an mr discussion via mr review reply', async () => {
+    runCodeHubCliMock.mockResolvedValue('')
+    await createCodeHubComment({
+      remote,
+      kind: 'mr',
+      iid: 4092,
+      body: '收到，下个版本处理',
+      discussionId: 'e54b6674d010ca64839e1be0ae7720ed05d1414a'
+    })
+    expect(runCodeHubCliMock).toHaveBeenCalledWith(
+      [
+        'mr',
+        'review',
+        'reply',
+        '4092',
+        'e54b6674d010ca64839e1be0ae7720ed05d1414a',
+        '--body',
+        '收到，下个版本处理',
+        '-p',
+        'Org/Group/repo',
+        '-H',
+        'codehub-g.huawei.com'
+      ],
+      undefined
+    )
+  })
+
+  it('creates a top-level mr note without discussion flags', async () => {
+    runCodeHubCliMock.mockResolvedValue('')
+    await createCodeHubComment({ remote, kind: 'mr', iid: 4092, body: '整体看没问题' })
+    expect(runCodeHubCliMock).toHaveBeenCalledWith(
+      [
+        'mr',
+        'review',
+        'create',
+        '4092',
+        '--body',
+        '整体看没问题',
+        '-p',
+        'Org/Group/repo',
+        '-H',
+        'codehub-g.huawei.com'
+      ],
+      undefined
+    )
   })
 
   it('deletes an mr note within a discussion with --discussion-id', async () => {

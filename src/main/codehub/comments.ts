@@ -88,6 +88,7 @@ export async function createCodeHubComment(args: {
   kind: 'issue' | 'mr'
   iid: number
   body: string
+  discussionId?: string | null
 }): Promise<void> {
   const command =
     args.kind === 'issue'
@@ -100,15 +101,28 @@ export async function createCodeHubComment(args: {
           args.body,
           ...projectArgs(args.remote)
         ]
-      : [
-          'mr',
-          'review',
-          'create',
-          String(args.iid),
-          '--body',
-          args.body,
-          ...projectArgs(args.remote)
-        ]
+      : args.discussionId
+        ? [
+            'mr',
+            'review',
+            // codehub-cli replies within a discussion via the `reply`
+            // subcommand; the discussion id is its second positional arg.
+            'reply',
+            String(args.iid),
+            args.discussionId,
+            '--body',
+            args.body,
+            ...projectArgs(args.remote)
+          ]
+        : [
+            'mr',
+            'review',
+            'create',
+            String(args.iid),
+            '--body',
+            args.body,
+            ...projectArgs(args.remote)
+          ]
   await runCodeHubCli(command, args.execOptions)
 }
 

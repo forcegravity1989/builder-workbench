@@ -1,4 +1,5 @@
 import { codehubApi } from '@/lib/codehub-api'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,61 @@ import type { CodeHubDetailState } from './use-codehub-detail'
 import { CodeHubPrSidebar } from './PrSidebar'
 
 const NO_REPLIES: CodeHubComment[] = []
+
+function ReplyBox({ discussionId, state }: { discussionId: string; state: CodeHubDetailState }) {
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [posting, setPosting] = useState(false)
+  if (!open) {
+    return (
+      <div className="border-t border-border/40 px-3 py-2">
+        <button
+          type="button"
+          className="w-full rounded-md border border-border/40 bg-background/40 px-3 py-1.5 text-left text-[12px] text-muted-foreground hover:border-border/60 hover:text-foreground"
+          onClick={() => setOpen(true)}
+        >
+          {translate('auto.components.TaskPage.codehubReply', 'Reply...')}
+        </button>
+      </div>
+    )
+  }
+  return (
+    <div className="flex flex-col gap-2 border-t border-border/40 px-3 py-2">
+      <textarea
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        placeholder={translate('auto.components.TaskPage.codehubReply', 'Reply...')}
+        className="min-h-16 rounded-md border border-border/60 bg-background px-3 py-2 text-sm"
+      />
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
+          {translate('auto.components.TaskPage.codehubReplyCancel', 'Cancel')}
+        </Button>
+        <Button
+          size="sm"
+          disabled={posting || draft.trim().length === 0}
+          onClick={() => {
+            const body = draft.trim()
+            if (!body || posting) {
+              return
+            }
+            setPosting(true)
+            void state.postReply(discussionId, body).then((posted) => {
+              setPosting(false)
+              if (posted) {
+                setDraft('')
+                setOpen(false)
+              }
+            })
+          }}
+        >
+          {posting ? <LoaderCircle className="size-4 animate-spin" /> : null}
+          {translate('auto.components.TaskPage.codehubReplySubmit', 'Reply')}
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 function CommentCard({
   comment,
@@ -79,6 +135,9 @@ function CommentCard({
             <CommentCard key={reply.id} comment={reply} state={state} threadReply />
           ))}
         </div>
+      ) : null}
+      {!threadReply && comment.discussionId ? (
+        <ReplyBox discussionId={comment.discussionId} state={state} />
       ) : null}
     </div>
   )
