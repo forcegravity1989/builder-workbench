@@ -50,7 +50,6 @@ const blankVersion = () => ({
   selected: null
 })
 const initialVersions = () => ({
-  'v0.8': blankVersion(),
   'v0.7': {
     trees: [
       { id: 'plan', role: 'plan' },
@@ -163,7 +162,7 @@ function App() {
   const [version, setVersion] = useState('v0.7'),
     [screen, setScreen] = useState('plan')
   const [versions, setVersions] = useState(initialVersions),
-    [versionOrder, setVersionOrder] = useState(['v0.8', 'v0.7', 'v0.6'])
+    [versionOrder, setVersionOrder] = useState(['v0.7', 'v0.6'])
   const [openVersions, setOpenVersions] = useState(['v0.7']),
     [openGoals, setOpenGoals] = useState(['v0.7/G2'])
   const [closedTrees, setClosedTrees] = useState([]),
@@ -235,9 +234,9 @@ function App() {
     setToast('演示：计划与验收工作区已准备，进入计划；未启动 agent 或操作真实仓库')
   }
   function startWorkflow(role) {
-    const id = `${version}/${role}/${Date.now()}`
     setVersions((prev) => {
       const old = prev[version],
+        id = `${version}/${role}/${old.sessions.length + 1}`,
         trees = old.trees.some((t) => t.id === role)
           ? old.trees
           : [...old.trees, { id: role, role }]
@@ -427,7 +426,7 @@ function App() {
             className={`goal-directory-link ${
               version === v && screen === 'tasks' && filter === goal.goalId ? 'selected' : ''
             }`}
-            title={goal.title}
+            title={`${goal.title} · 在同一任务屏筛选 ${goal.goalId}`}
             onClick={() => go(v, 'tasks', goal.goalId)}
           >
             <Icon icon={Target} />
@@ -523,7 +522,6 @@ function App() {
           <Icon icon={expanded ? ChevronDown : ChevronRight} />
           <Icon icon={PackageCheck} />
           <strong>{v}</strong>
-          {v === 'v0.8' && <small>并行示例</small>}
         </button>
         {expanded && (
           <div className="version-children">
@@ -569,60 +567,16 @@ function App() {
     if (screen === 'plan' || screen === 'acceptance') {
       const active = state.sessions.find((s) => s.id === state.selected && s.tree === screen)
       return (
-        <div className="workflow-reuse-layout">
-          <section className="native-session-placeholder">
-            <div className="reuse-marker">沿用 Orca 完整会话区</div>
-            <h2>{active ? active.label : '尚未打开会话'}</h2>
-            <div className="reuse-outline">
-              <MessageSquare size={24} />
-              <span>{active ? '原生会话、标签、分屏、工具' : '从右侧原有按钮开始协作'}</span>
-              <small>这里标明原生挂载位置，不复制聊天 UI</small>
-            </div>
-            <p className="muted">
-              bw/{version}/{screen}
-            </p>
-            <small>新会话属于当前树；已有会话从侧栏 agent 行打开。</small>
-          </section>
-          <section className="business-reuse-placeholder">
-            <div className="reuse-marker">沿用现有版本{labels[screen]}屏</div>
-            <div className="page-title">
-              <div>
-                <h1>版本{labels[screen]}</h1>
-                <p>{version} · Builder Workbench</p>
-              </div>
-              <Button icon={MessageSquare} onClick={() => startWorkflow(screen)}>
-                新建{labels[screen]}
-              </Button>
-            </div>
-            <div className="reuse-outline">
-              <span>此处直接挂载现有{labels[screen]}板</span>
-              <small>
-                {screen === 'plan'
-                  ? plan.goals.length
-                    ? `回显本版已有计划：${plan.goals.length} 个目标、${
-                        plan.tasks.length
-                      } 个任务引用`
-                    : '新版本回显现有计划屏空态'
-                  : '回显本版验收材料；缺少依据时沿用原有准备流程'}
-              </small>
-            </div>
-            <p className="muted">
-              版本由侧栏带入，屏内不再选版。上方“新建{labels[screen]}
-              ”沿用现有入口，本原型点击只演示会话归属。
-            </p>
-            {screen === 'plan' && (
-              <div className="candidate-note">
-                <strong>目标目录与定稿状态</strong>
-                <p>
-                  目录随已保存计划呈现；正式承诺以人工评审与已合入材料核对。不新增周冻结或生成目录操作；原型未核验快照是否等于当前正式修订。
-                </p>
-                <Button icon={ListTodo} onClick={() => go(version, 'tasks', 'all')}>
-                  查看目标与任务入口
-                </Button>
-              </div>
-            )}
-          </section>
-        </div>
+        <ReuseSurface
+          title={`沿用现有${labels[screen]}屏（含会话区）`}
+          scope={`Builder Workbench / ${version}`}
+          description={`侧栏这一行就是本版${labels[screen]}工作树入口，打开原有整屏：Orca 会话区与右侧${labels[screen]}板一起沿用。版本由侧栏带入，屏内不再选版；新会话仍从原板的“新建${labels[screen]}”发起。`}
+        >
+          <Button icon={MessageSquare} onClick={() => startWorkflow(screen)}>
+            新建{labels[screen]}
+          </Button>
+          <span className="muted">{active ? `当前会话：${active.label}` : '尚无会话'}</span>
+        </ReuseSurface>
       )
     }
     if (screen === 'tasks') {
@@ -630,7 +584,7 @@ function App() {
         <ReuseSurface
           title="沿用 Orca 任务屏"
           scope={`Builder Workbench / ${version} / ${filter === 'all' ? '全部目标' : filter}`}
-          description={`沿用任务列表、详情、开工和打开工作区。当前范围来自本版计划${filter === 'all' ? '' : `中的 ${filter}`}，共有 ${scopedRefs.length} 个 Issue 引用。目标内容仍在计划中维护。`}
+          description={`这是同一个 Orca 任务屏。点“任务”查看本版全部任务，点 G1/G2 只改变目标筛选，不新增目标专属屏。当前范围共有 ${scopedRefs.length} 个 Issue 引用；列表、详情、开工和打开工作区沿用原有交互。`}
         >
           {filter !== 'all' && (
             <>
@@ -700,7 +654,7 @@ function App() {
         <ReuseSurface
           title="沿用 Orca 项目工作区"
           scope="personal-notes · 私人项目示例"
-          description="下方其他项目与上方当前项目使用同一套工作树和会话能力；上方只聚焦项目墙选定的项目。"
+          description="下方原生项目区保留当前项目和私人项目的 Orca 工作区入口；上方只聚焦项目墙选定项目的版本交付。"
         />
       )
     }
@@ -722,7 +676,7 @@ function App() {
   return (
     <div className="prototype">
       <div className="review-bar">
-        <strong>G2 交互原型 · 修订 5</strong>
+        <strong>G2 交互原型 · 修订 6</strong>
         <span>设计候选 · 图标操作 · 原生复用 · 业界参考见右侧书本</span>
         <div className="review-actions" aria-label="原型评审工具">
           <Button
@@ -754,13 +708,12 @@ function App() {
           </Nav>
           <div className="sidebar-scroll scrollbar-sleek worktree-sidebar-scrollbar">
             <div className="bw-section">
-              <button className="project-heading" onClick={() => setScreen('project')}>
+              <div className="project-heading">
                 <span className="project-avatar">B</span>
                 <span>
                   Builder Workbench<small>当前项目</small>
                 </span>
-                <ChevronDown size={14} />
-              </button>
+              </div>
               <Nav
                 icon={LayoutDashboard}
                 active={screen === 'project'}
@@ -782,13 +735,7 @@ function App() {
               >
                 知识库
               </Nav>
-              <Nav
-                icon={GitBranch}
-                active={screen === 'project-workspaces'}
-                onClick={() => setScreen('project-workspaces')}
-              >
-                项目工作区
-              </Nav>
+              <div className="sidebar-divider" role="separator" />
               <div className="section-label">
                 <span>版本</span>
                 <Button icon={Plus} label="新建版本" onClick={openVersionDialog} />
@@ -797,7 +744,14 @@ function App() {
             </div>
           </div>
           <div className="native-projects">
-            <div className="section-label">其他项目</div>
+            <div className="section-label">Orca 项目工作区</div>
+            <Nav
+              icon={GitBranch}
+              active={screen === 'project-workspaces'}
+              onClick={() => setScreen('project-workspaces')}
+            >
+              Builder Workbench
+            </Nav>
             <Nav
               icon={GitBranch}
               active={screen === 'private'}

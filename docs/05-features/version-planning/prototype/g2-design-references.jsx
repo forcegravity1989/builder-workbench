@@ -24,7 +24,7 @@ const references = [
     '选中项目，统一主区域与侧栏上下文',
     'Linear · Team pages',
     'https://linear.app/docs/default-team-pages',
-    '从项目墙进入后围绕该项目工作，版本集中展示。下方保留其他 Orca 项目是 BW 的兼容安排，不照搬 Linear 的团队或周期模型。'
+    '从项目墙进入后围绕该项目工作，版本集中展示。版本下方统一保留当前项目及其他 Orca 项目的原生入口是 BW 的兼容安排，不照搬 Linear 的团队或周期模型。'
   ],
   [
     '保留描述性目录，复用已有页面',

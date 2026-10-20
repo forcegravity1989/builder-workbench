@@ -195,7 +195,6 @@ strong {
 }
 .nav-row:hover,
 .icon-button:hover,
-.project-heading:hover,
 .native-worktree-heading:hover,
 .goal-directory-link:hover {
   background: var(--worktree-sidebar-accent, var(--accent));
@@ -349,6 +348,10 @@ strong {
   font-size: 10px;
   color: var(--muted-foreground);
   padding: 6px 5px 8px;
+}
+.sidebar-divider {
+  border-top: 1px solid var(--border);
+  margin: 16px 4px 0;
 }
 .native-projects {
   border-top: 1px solid var(--border);
@@ -850,7 +853,7 @@ strong {
   background-color: color-mix(in srgb, var(--foreground, #171717) 36%, transparent);
 }
 
-/* Revision 4: reuse slots show the two existing panes without reproducing them. */
+/* Workflow rows also identify the fixed native worktree. */
 .workflow-row {
   display: flex;
   align-items: center;
@@ -872,32 +875,6 @@ strong {
 .workflow-agents {
   margin-left: 18px;
 }
-.workflow-reuse-layout {
-  display: grid;
-  grid-template-columns: minmax(225px, 0.78fr) minmax(335px, 1.4fr);
-  min-height: 100%;
-}
-.native-session-placeholder {
-  padding: 25px 18px;
-  border-right: 1px solid var(--border);
-}
-.native-session-placeholder .reuse-outline {
-  margin-top: 25px;
-  min-height: 240px;
-}
-.business-reuse-placeholder {
-  padding: 25px;
-}
-.business-reuse-placeholder .page-title {
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.business-reuse-placeholder .page-title p {
-  margin: 8px 0 0;
-}
-.business-reuse-placeholder .reuse-outline {
-  min-height: 240px;
-}
 .candidate-note {
   padding: 14px;
   margin-top: 18px;
@@ -907,18 +884,6 @@ strong {
 }
 .candidate-note p {
   margin: 8px 0 12px;
-}
-@media (max-width: 900px) {
-  .workflow-reuse-layout {
-    grid-template-columns: 1fr;
-  }
-  .native-session-placeholder {
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .native-session-placeholder .reuse-outline {
-    min-height: 100px;
-  }
 }
 
 .composer-demo-parent {
