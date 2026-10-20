@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "flat versions; removed archive/history; plan has no separate execution action",
+    "common Issue detail returns to plan",
+    "full version task set; goal scope; search; workspace start and reuse",
+    "native parent goal workspace owns a separate draft",
+    "parallel version plan and acceptance keep independent contexts",
+    "v0.6 same navigation with real plan and labelled session examples",
+    "version overview reports facts with unconfirmed results; goal link scopes tasks",
+    "project overview uses existing artifact without second sidebar",
+    "private project and version return; research modal keyboard",
+    "830px narrow and 1280px dark stay contained"
+  ],
+  "errors": [],
+  "failed": []
+}
