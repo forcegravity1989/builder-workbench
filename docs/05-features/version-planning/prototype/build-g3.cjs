@@ -21,7 +21,9 @@ esbuild
   .then(({ outputFiles }) => {
     const content = outputFiles[0].text
     if (process.argv.includes('--check')) {
-      if (fs.readFileSync(out, 'utf8') !== content) throw new Error('G3 prototype bundle is stale')
+      if (fs.readFileSync(out, 'utf8').replace(/\r\n/g, '\n') !== content) {
+        throw new Error('G3 prototype bundle is stale')
+      }
       console.log('G3 prototype bundle matches sources')
     } else {
       fs.writeFileSync(out, content)
