@@ -1,6 +1,6 @@
 const { React, createRoot, useState, useRef } = window.BWPrototypeDependencies
 import { snapshot, stages, initialReview, prior, taskRows, g2Url } from './g3-model.js'
-import { Icon, IconButton, Field, GoalRow, ReviewItem } from './g3-components.jsx'
+import { Icon, IconButton, GoalRow, ReviewItem } from './g3-components.jsx'
 
 function App() {
   const [goals, setGoals] = useState(() => structuredClone(snapshot.plan.goals))
@@ -9,9 +9,6 @@ function App() {
   const [editingGoal, setEditingGoal] = useState(null)
   const [active, setActive] = useState('context')
   const [session, setSession] = useState(false)
-  const [message, setMessage] = useState('')
-  const [risk, setRisk] = useState('')
-  const [riskEditing, setRiskEditing] = useState(false)
   const [notice, setNotice] = useState('')
   const [handoff, setHandoff] = useState(null)
   const [dark, setDark] = useState(false)
@@ -19,23 +16,27 @@ function App() {
   const [notes, setNotes] = useState(false)
   const [sourceError, setSourceError] = useState(false)
   const scroll = useRef(null)
-  const composer = useRef(null)
+  const navigation = useRef(null)
   const tasks = taskRows()
   const move = (id) => {
+    navigation.current = id
     setActive(id)
     document.getElementById(id)?.scrollIntoView({ block: 'start' })
   }
   const locate = (id) => {
+    navigation.current = 'goals'
     setExpanded((current) => [...new Set([...current, id])])
     setActive('goals')
     requestAnimationFrame(() =>
       document.getElementById(`goal-${id}`)?.scrollIntoView({ block: 'start' })
     )
   }
-  const assistant = () => {
-    setSession(true)
-    requestAnimationFrame(() => composer.current?.focus())
+  const toggleSession = (open) => {
+    navigation.current = active
+    setSession(open)
+    requestAnimationFrame(() => document.getElementById(active)?.scrollIntoView({ block: 'start' }))
   }
+  const assistant = () => toggleSession(true)
   const update = (id, field, value) => {
     setGoals((current) => current.map((g) => (g.goalId === id ? { ...g, [field]: value } : g)))
     setNotice('本页演示修改 · 刷新后恢复原始材料')
@@ -64,13 +65,13 @@ function App() {
       {notes && (
         <div className="g3-design-notes">
           <p>
-            <strong>界面边界</strong>：左侧导航属于 G2；计划助手复用原生会话，只打开 /
-            聚焦，不注入或自动发送提示。这里只演示布局，未接模型。
+            <strong>界面边界</strong>：左侧导航属于 G2；计划助手在左侧完整复用 Orca 原生会话，只打开
+            / 聚焦，不注入或自动发送提示。这里只演示布局，未接模型。
           </p>
           <p>
-            <strong>数据来源</strong>：v0.7 计划及 Issue 为固定读取；上版三行是 v0.6
-            验收说明与下一步的人工摘要，人工结论来自同一来源，并非“实际交付”原字段。该历史来源没有单独的风险标记，遗留
-            / 风险列只摘录验收中的后续事项，不推导风险等级。
+            <strong>数据来源</strong>：上版只回显固定验收中的进展与实际交付，不加工成摘要。 v0.6
+            未填写独立进展字段；遗留 Issue 引用来自人工验收记录中明确的遗留项， 不按 open
+            状态自动推断。会议遗留未单独记录。目标短名仅用于导航。
             <a
               href="https://github.com/forcegravity1989/builder-workbench/blob/e43528cae57424bb0973c99c6e3c03af075c1198/.bw/planning/v0.6/acceptance.json"
               target="_blank"
@@ -127,13 +128,6 @@ function App() {
       )}
       <div className={`g3-workspace ${session ? 'with-session' : ''}`}>
         <aside className="g3-sidebar">
-          <div className="g3-scope">
-            <strong>G2 外框示意</strong>
-            <span>导航 / 工作区不在本轮设计范围</span>
-            <a href={`${g2Url}#storage`} target="_blank" rel="noreferrer">
-              查看 G2 设计 <Icon name="arrow" size={13} />
-            </a>
-          </div>
           <div className="g3-brand">
             <span>B</span>
             <strong>Workbench</strong>
@@ -155,6 +149,35 @@ function App() {
           </div>
           <div className="g3-nav-muted nested">验收</div>
           <div className="g3-nav-muted">› v0.6</div>
+          <div className="g3-scope">
+            <strong>G2 外框示意</strong>
+            <span>导航与工作区由 G2 设计</span>
+            <a href={`${g2Url}#storage`} target="_blank" rel="noreferrer">
+              查看 G2 设计 <Icon name="arrow" size={13} />
+            </a>
+          </div>
+        </aside>
+        <aside
+          className={`g3-session ${session ? 'expanded' : 'rail'}`}
+          aria-label="左侧 Orca 原生计划会话"
+        >
+          <div className="g3-session-toggle">
+            <IconButton
+              name={session ? 'close' : 'agent'}
+              label={session ? '收起原生计划会话' : '展开原生计划会话'}
+              aria-expanded={session}
+              onClick={() => toggleSession(!session)}
+            />
+            <span>计划助手</span>
+          </div>
+          {session && (
+            <div className="g3-native-workspace">
+              <Icon name="agent" size={28} />
+              <h2>Orca 原生会话</h2>
+              <p>完整复用标签、历史、输入与工具</p>
+              <small>这里只示意会话位置，不另设计聊天界面</small>
+            </div>
+          )}
         </aside>
         <main className="g3-main">
           <header className="g3-header">
@@ -172,21 +195,49 @@ function App() {
             />
           </header>
           <nav className="g3-journey" aria-label="计划旅程">
-            {stages.map(([id, title], i) => (
+            {stages.map(([id, title, detail], i) => (
               <button
                 key={id}
                 onClick={() => move(id)}
                 aria-current={active === id ? 'location' : undefined}
               >
-                <span>{String(i + 1).padStart(2, '0')}</span>
-                {title}
+                <span className="g3-stage-number">{i + 1}</span>
+                <span className="g3-stage-copy">
+                  <strong>{title}</strong>
+                  <small>{detail}</small>
+                </span>
               </button>
             ))}
           </nav>
           <div
             className="g3-scroll"
             ref={scroll}
+            onFocusCapture={() => {
+              navigation.current = null
+            }}
+            onWheel={() => {
+              navigation.current = null
+            }}
+            onPointerDown={() => {
+              navigation.current = null
+            }}
+            onTouchStart={() => {
+              navigation.current = null
+            }}
+            onKeyDown={(event) => {
+              if (
+                ['PageDown', 'PageUp', 'ArrowDown', 'ArrowUp', 'Home', 'End', ' '].includes(
+                  event.key
+                )
+              ) {
+                navigation.current = null
+              }
+            }}
             onScroll={() => {
+              // A short final section may hit the scroll limit before reaching the top.
+              if (navigation.current) {
+                return
+              }
               const pane = scroll.current
               if (pane.scrollHeight - pane.scrollTop - pane.clientHeight < 2) {
                 setActive('archive')
@@ -218,42 +269,52 @@ function App() {
                   <button onClick={() => setSourceError(false)}>重试（演示）</button>
                 </div>
               ) : (
-                <div className="g3-prior-table">
+                <div className="g3-prior-card">
                   <div className="g3-prior-labels">
-                    <span>上版目标 / 人工结论</span>
-                    <span>验收摘要</span>
-                    <span>遗留 / 风险摘要</span>
+                    <span>上版目标</span>
+                    <span>进展 / 实际交付</span>
                   </div>
                   {prior.map((item) => (
-                    <div className="g3-prior-row" key={item.id}>
-                      <div>
-                        <span className="g3-id">{item.id}</span>
+                    <div className="g3-prior-row" key={item.goalId}>
+                      <div className="g3-prior-goal">
+                        <span className="g3-id">{item.goalId}</span>
                         <strong>{item.title}</strong>
-                        <small>{item.outcome}</small>
+                        <small>{item.conclusion}</small>
                       </div>
-                      <p>{item.result}</p>
-                      <p>{item.next}</p>
+                      <div className="g3-prior-delivery">
+                        {item.progress && <p>{item.progress}</p>}
+                        {item.deliveries.map((delivery) => (
+                          <p key={delivery.location}>{delivery.title}</p>
+                        ))}
+                        {!item.progress && !item.deliveries.length && (
+                          <span className="g3-muted">未填写进展 / 实际交付</span>
+                        )}
+                      </div>
                     </div>
                   ))}
+                  <div className="g3-carryover">
+                    <div>
+                      <span>遗留 Issue</span>
+                      <div className="g3-carryover-links">
+                        {snapshot.priorAcceptance.leftoverIssues.map((issue) => (
+                          <a
+                            key={issue.number}
+                            href={issue.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={issue.title}
+                          >
+                            #{issue.number}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <span>会议遗留事项</span>
+                      <span className="g3-muted">上版未单独记录</span>
+                    </div>
+                  </div>
                 </div>
-              )}
-              <div className="g3-risk-row">
-                <strong>本版风险 / 约束</strong>
-                {!riskEditing && <span>{risk || '尚未补充'}</span>}
-                <IconButton
-                  name={riskEditing ? 'check' : 'edit'}
-                  label={riskEditing ? '结束编辑风险' : '编辑本版风险 / 约束'}
-                  onClick={() => setRiskEditing(!riskEditing)}
-                />
-              </div>
-              {riskEditing && (
-                <Field
-                  label="本版风险 / 约束"
-                  value={risk}
-                  onChange={setRisk}
-                  rows={1}
-                  placeholder="补充本版依赖、投入与范围约束"
-                />
               )}
             </section>
             <section id="goals">
@@ -314,7 +375,7 @@ function App() {
                     )
                   }}
                 />
-                <span>与计划助手讨论目标、拆解 Issue；会议后在同一会话提供会议 ID。</span>
+                <span>与计划助手一起明确目标、拆解 Issue。</span>
               </div>
             </section>
             <section id="review">
@@ -325,7 +386,8 @@ function App() {
                 <IconButton name="agent" label="向计划助手提供会议 ID" onClick={assistant} />
               </div>
               <p className="g3-review-guidance">
-                一般意见直接修改目标；范围取舍、承诺变化等重要事项在这里回应，与 Leader 单独确认。
+                一般意见直接修改目标，重要取舍在这里与 Leader 确认。向计划助手提供会议
+                ID，可一起整理。
               </p>
               {review.map((item) => (
                 <ReviewItem
@@ -372,62 +434,6 @@ function App() {
             )}
           </footer>
         </main>
-        <aside className={`g3-session ${session ? 'expanded' : 'rail'}`}>
-          <div className="g3-session-toggle">
-            <IconButton
-              name={session ? 'close' : 'agent'}
-              label={session ? '收起计划助手' : '打开计划助手侧栏'}
-              aria-expanded={session}
-              onClick={() => setSession(!session)}
-            />
-            {!session && <span>计划助手</span>}
-          </div>
-          {session && (
-            <>
-              <div className="g3-session-head">
-                <div className="g3-agent-avatar">
-                  <Icon name="agent" size={22} />
-                </div>
-                <div>
-                  <h2>计划助手</h2>
-                  <span>Builder Workbench · v0.7</span>
-                </div>
-              </div>
-              <div className="g3-native-label">原生计划会话 · 位置示意</div>
-              <div className="g3-session-body">
-                <h3>一起把这一版想清楚</h3>
-                <div className="g3-assistant-topic">
-                  <strong>目标要带来什么变化</strong>
-                  <p>说出你想改善的问题，一起明确交付内容和能检查的验收标准。</p>
-                </div>
-                <div className="g3-assistant-topic">
-                  <strong>哪些 Issue 支撑交付</strong>
-                  <p>先查仓库已有 Issue，再按项目规范拆解、关联，避免重复建单。</p>
-                </div>
-                <div className="g3-assistant-topic">
-                  <strong>评审后，什么需要再确认</strong>
-                  <p>提供会议 ID，整理遗留建议。普通意见直接改目标，重要取舍由你确认后记录。</p>
-                </div>
-              </div>
-              <div className="g3-composer">
-                <textarea
-                  ref={composer}
-                  aria-label="给计划助手的消息"
-                  rows={3}
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="讨论 G1、拆解 Issue，或粘贴会议 ID…"
-                />
-                <div>
-                  <span>原型未接模型</span>
-                  <button className="g3-icon-button" aria-label="发送（原型未接模型）" disabled>
-                    <Icon name="send" />
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-        </aside>
       </div>
     </div>
   )

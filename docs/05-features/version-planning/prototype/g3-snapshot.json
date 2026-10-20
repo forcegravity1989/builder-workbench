@@ -209,5 +209,63 @@
       }
     }
   },
-  "sourceCommit": "f5ac309b226a456b157b57ceee65204f101a4a09"
+  "sourceCommit": "f5ac309b226a456b157b57ceee65204f101a4a09",
+  "priorAcceptance": {
+    "sourceCommit": "e43528cae57424bb0973c99c6e3c03af075c1198",
+    "version": "v0.6",
+    "results": [
+      {
+        "goalId": "G1",
+        "progress": null,
+        "deliveries": [
+          {
+            "title": "真实发布 tag v1.4.197-local.1792119790.9c8e3d31714b（含 orca-windows-setup.exe）",
+            "location": "https://github.com/forcegravity1989/builder-workbench/releases/tag/v1.4.197-local.1792119790.9c8e3d31714b"
+          }
+        ],
+        "outcome": "not-met"
+      },
+      {
+        "goalId": "G2",
+        "progress": null,
+        "deliveries": [],
+        "outcome": "not-met"
+      },
+      {
+        "goalId": "G3",
+        "progress": null,
+        "deliveries": [
+          {
+            "title": "项目墙 leader 一屏（真壳截图）",
+            "location": ".bw/planning/v0.6/shots/g3-leader-project-wall.jpg"
+          }
+        ],
+        "outcome": "met"
+      }
+    ],
+    "leftoverIssues": [
+      {
+        "number": 331,
+        "title": "【v0.6|G1】BW 自身 E2E 用户旅程用例缺失",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/331",
+        "sourceGoal": "G1",
+        "sourceText": "任务：G1 八项中 253/314/329/330/332 完成、340 重复关闭；#331、#339 遗留 open。"
+      },
+      {
+        "number": 339,
+        "title": "【v0.6|G1】工程能力在 BW 落地：使能项目/builders 工程化能力（intent/spec/原型/开发）",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/339",
+        "sourceGoal": "G1",
+        "sourceText": "任务：G1 八项中 253/314/329/330/332 完成、340 重复关闭；#331、#339 遗留 open。"
+      },
+      {
+        "number": 341,
+        "title": "【v0.6|G2】帮 builders 梳理特性与核心指标：统一一版并录入真实数据",
+        "url": "https://github.com/forcegravity1989/builder-workbench/issues/341",
+        "sourceGoal": "G2",
+        "sourceText": "任务：G2 三项中 #301、#333 完成；#341 遗留 open。"
+      }
+    ],
+    "meetingDirectives": null
+  }
 }

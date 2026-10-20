@@ -3,35 +3,18 @@ export { snapshot }
 export const g2Url =
   'http://127.0.0.1:53519/docs/05-features/version-planning/version-workspace-journey.html'
 export const stages = [
-  ['context', '上版回顾'],
-  ['goals', '本版目标'],
-  ['review', '重要评审'],
-  ['archive', '归档 PR']
+  ['context', '上版回顾', '带着交付与遗留开始'],
+  ['goals', '本版目标', '明确结果与交付'],
+  ['review', '重要评审', '回应关键取舍'],
+  ['archive', '归档 PR', '交由 Leader 再审']
 ]
-// Editorial excerpts of the fixed acceptance source; never presented as raw fields or live results.
-export const prior = [
-  {
-    id: 'G1',
-    title: '工程能力与交付链',
-    result: '真实 PR、出包与发布链部分走通；特性旅程 E2E、验收报告仍缺。',
-    next: '先完善验收流程，工程化屏可暂缓。',
-    outcome: '未达成'
-  },
-  {
-    id: 'G2',
-    title: '特性与核心指标',
-    result: '3 个项目已有指标资产；#341 的统一梳理与真实数据仍待补齐。',
-    next: '#341 延续至本版 G1，补齐第 4 个项目。',
-    outcome: '未达成'
-  },
-  {
-    id: 'G3',
-    title: '跨项目查看',
-    result: '项目墙已交付；团队共享边界仍待决定，暂不宣称可用。',
-    next: '#342 留待专项决定；专项补验收旅程。',
-    outcome: '已达成'
-  }
-]
+// Short labels aid navigation; progress and deliveries remain source fields.
+const priorTitles = { G1: '工程能力与交付链', G2: '特性与核心指标', G3: '跨项目查看' }
+export const prior = snapshot.priorAcceptance.results.map((result) => ({
+  ...result,
+  title: priorTitles[result.goalId],
+  conclusion: { met: '已达成', 'not-met': '未达成' }[result.outcome] || '未确认'
+}))
 export const initialReview = [
   {
     id: 'R1',
