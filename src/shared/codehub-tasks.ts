@@ -37,6 +37,10 @@ export type CodeHubComment = {
   body: string
   author: string | null
   createdAt: string
+  // codehub-cli requires --discussion-id to delete a reply within a
+  // discussion; standalone notes delete by note id alone.
+  discussionId: string | null
+  isReply: boolean
 }
 
 export type CodeHubPipeline = {

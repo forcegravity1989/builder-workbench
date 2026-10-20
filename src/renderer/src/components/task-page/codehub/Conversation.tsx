@@ -79,7 +79,8 @@ export function CodeHubConversation({ state }: { state: CodeHubDetailState }) {
                       repoId: item.repoId,
                       kind: item.type,
                       iid: item.iid,
-                      commentId: comment.id
+                      commentId: comment.id,
+                      discussionId: comment.discussionId
                     })
                     .then(() => setComments((rows) => rows.filter((row) => row.id !== comment.id)))
                     .catch((reason: unknown) => {

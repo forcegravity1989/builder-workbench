@@ -44,7 +44,8 @@ export const CodeHubCreateComment = Repo.extend({ kind: Kind, iid: Iid, body: z.
 export const CodeHubDeleteComment = Repo.extend({
   kind: Kind,
   iid: Iid,
-  commentId: z.string().min(1)
+  commentId: z.string().min(1),
+  discussionId: z.string().min(1).nullish()
 })
 
 export const CODEHUB_REQUEST_SCHEMAS = {

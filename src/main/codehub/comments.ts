@@ -3,7 +3,7 @@ import type { CodeHubComment } from '../../shared/codehub-tasks'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 import { projectArgs, parseJson, loginOfDetail } from './mutations'
 
-function mapComment(value: unknown): CodeHubComment | null {
+function mapComment(value: unknown, discussionId: string | null): CodeHubComment | null {
   if (!value || typeof value !== 'object') {
     return null
   }
@@ -20,7 +20,9 @@ function mapComment(value: unknown): CodeHubComment | null {
     id: String(id),
     body: String(record.body ?? record.note ?? record.description ?? ''),
     author: loginOfDetail(record.author ?? record.user),
-    createdAt: String(record.created_at ?? record.createdAt ?? '')
+    createdAt: String(record.created_at ?? record.createdAt ?? ''),
+    discussionId,
+    isReply: record.is_reply === true
   }
 }
 
@@ -57,16 +59,25 @@ export async function listCodeHubComments(args: {
   const parsed = parseJson(await runCodeHubCli(command, args.execOptions))
   const rows = Array.isArray(parsed) ? parsed : []
   // `mr review list` returns discussions whose comments are nested in
-  // `notes`; `issue comment list` returns flat comments.
+  // `notes`; `issue comment list` returns flat comments. Notes inside a real
+  // discussion need the discussion id to be deletable; standalone notes
+  // (individual_note) delete by note id alone.
   const entries = rows.flatMap((row) => {
     if (!row || typeof row !== 'object') {
       return []
     }
     const record = row as Record<string, unknown>
-    return Array.isArray(record.notes) ? (record.notes as unknown[]) : [row]
+    if (!Array.isArray(record.notes)) {
+      return [{ note: row, discussionId: null }]
+    }
+    const discussionId =
+      record.individual_note === true || record.id === undefined || record.id === null
+        ? null
+        : String(record.id)
+    return (record.notes as unknown[]).map((note) => ({ note, discussionId }))
   })
-  return entries.flatMap((entry) => {
-    const comment = mapComment(entry)
+  return entries.flatMap(({ note, discussionId }) => {
+    const comment = mapComment(note, discussionId)
     return comment ? [comment] : []
   })
 }
@@ -107,6 +118,7 @@ export async function deleteCodeHubComment(args: {
   kind: 'issue' | 'mr'
   iid: number
   commentId: string
+  discussionId?: string | null
 }): Promise<void> {
   const command =
     args.kind === 'issue'
@@ -124,6 +136,9 @@ export async function deleteCodeHubComment(args: {
           'review',
           'delete',
           String(args.iid),
+          // codehub-cli deletes a note within a discussion via
+          // `--discussion-id`; standalone notes take `--note-id` alone.
+          ...(args.discussionId ? ['--discussion-id', args.discussionId] : []),
           '--note-id',
           args.commentId,
           ...projectArgs(args.remote),
