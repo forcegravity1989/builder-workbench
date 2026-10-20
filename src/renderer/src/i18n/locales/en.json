@@ -2293,6 +2293,8 @@
         "codehubReply": "Reply...",
         "codehubReplySubmit": "Reply",
         "codehubReplyCancel": "Cancel",
+        "codehubReplyToComment": "Reply to comment",
+        "codehubOpenComment": "Open comment on CodeHub",
         "codehubCreateIssue": "Create issue",
         "codehubIssueCreated": "Issue created",
         "codehubIssueTitle": "New issue title",

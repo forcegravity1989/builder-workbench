@@ -99,6 +99,7 @@ describe('codehub comments', () => {
         author: 'm30077918',
         createdAt: '2026-03-12T18:13:08.989+08:00',
         discussionId: 'e54b6674d010ca64839e1be0ae7720ed05d1414a',
+        individual: false,
         isReply: false
       },
       {
@@ -107,6 +108,7 @@ describe('codehub comments', () => {
         author: 'm30077918',
         createdAt: '2026-03-12T18:14:25.771+08:00',
         discussionId: '0a5c6957da27c2f46c58c57c511879a973291126',
+        individual: false,
         isReply: false
       },
       {
@@ -114,7 +116,11 @@ describe('codehub comments', () => {
         body: '单独的一条评论',
         author: 'm30077918',
         createdAt: '2026-03-12T18:15:13.662+08:00',
-        discussionId: null,
+        // Standalone notes keep their own single-note discussion id so
+        // `mr review reply` can address them; `individual` marks that
+        // deletion must not send `--discussion-id`.
+        discussionId: '11a5c957da27c2f46c58c57c511879a973291126',
+        individual: true,
         isReply: false
       }
     ])
@@ -157,6 +163,7 @@ describe('codehub comments', () => {
         author: 'a30030291',
         createdAt: '2026-09-11T18:34:34.348+08:00',
         discussionId: null,
+        individual: false,
         isReply: false
       }
     ])

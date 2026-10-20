@@ -37,9 +37,13 @@ export type CodeHubComment = {
   body: string
   author: string | null
   createdAt: string
-  // codehub-cli requires --discussion-id to delete a reply within a
-  // discussion; standalone notes delete by note id alone.
+  // Discussion the note belongs to; `mr review reply` addresses replies by
+  // it. Standalone notes carry their own single-note discussion id; issue
+  // comments have none.
   discussionId: string | null
+  // Standalone notes delete by note id alone (`--note-id` without
+  // `--discussion-id`); notes inside a multi-note discussion need both.
+  individual: boolean
   isReply: boolean
 }
 

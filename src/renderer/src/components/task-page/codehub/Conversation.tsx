@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
-import { LoaderCircle, Trash2 } from 'lucide-react'
+import { ExternalLink, LoaderCircle, MessageSquarePlus, Trash2 } from 'lucide-react'
 import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
 import { formatRelativeTime } from '../../task-page-source-context'
 import type { CodeHubComment } from '../../../../../shared/codehub-tasks'
@@ -12,25 +12,27 @@ import { CodeHubPrSidebar } from './PrSidebar'
 
 const NO_REPLIES: CodeHubComment[] = []
 
-function ReplyBox({ discussionId, state }: { discussionId: string; state: CodeHubDetailState }) {
-  const [open, setOpen] = useState(false)
+function ReplyBox({
+  discussionId,
+  state,
+  compact = false,
+  onClose
+}: {
+  discussionId: string
+  state: CodeHubDetailState
+  compact?: boolean
+  onClose: () => void
+}) {
   const [draft, setDraft] = useState('')
   const [posting, setPosting] = useState(false)
-  if (!open) {
-    return (
-      <div className="border-t border-border/40 px-3 py-2">
-        <button
-          type="button"
-          className="w-full rounded-md border border-border/40 bg-background/40 px-3 py-1.5 text-left text-[12px] text-muted-foreground hover:border-border/60 hover:text-foreground"
-          onClick={() => setOpen(true)}
-        >
-          {translate('auto.components.TaskPage.codehubReply', 'Reply...')}
-        </button>
-      </div>
-    )
-  }
   return (
-    <div className="flex flex-col gap-2 border-t border-border/40 px-3 py-2">
+    <div
+      className={
+        compact
+          ? 'flex flex-col gap-2 pt-1'
+          : 'flex flex-col gap-2 border-t border-border/40 px-3 py-2'
+      }
+    >
       <textarea
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
@@ -38,7 +40,7 @@ function ReplyBox({ discussionId, state }: { discussionId: string; state: CodeHu
         className="min-h-16 rounded-md border border-border/60 bg-background px-3 py-2 text-sm"
       />
       <div className="flex justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
+        <Button variant="ghost" size="sm" onClick={onClose}>
           {translate('auto.components.TaskPage.codehubReplyCancel', 'Cancel')}
         </Button>
         <Button
@@ -54,7 +56,7 @@ function ReplyBox({ discussionId, state }: { discussionId: string; state: CodeHu
               setPosting(false)
               if (posted) {
                 setDraft('')
-                setOpen(false)
+                onClose()
               }
             })
           }}
@@ -79,6 +81,10 @@ function CommentCard({
   threadReply?: boolean
 }) {
   const { item, setComments } = state
+  const [replyOpen, setReplyOpen] = useState(false)
+  // GitLab-style note anchor: the task page URL plus #note_<id> jumps to
+  // this comment on the CodeHub website.
+  const commentUrl = state.detail?.url ? `${state.detail.url}#note_${comment.id}` : null
   return (
     <div
       className={
@@ -96,31 +102,66 @@ function CommentCard({
       >
         <span className="font-medium text-foreground">{comment.author ?? ''}</span>
         <span>{comment.createdAt ? formatRelativeTime(comment.createdAt) : ''}</span>
-        <button
-          type="button"
-          className="ml-auto text-muted-foreground hover:text-foreground"
-          aria-label={translate('auto.components.TaskPage.codehubDeleteComment', 'Delete comment')}
-          onClick={() => {
-            if (!item.repoPath) {
-              return
-            }
-            void codehubApi
-              .deleteComment({
-                repoPath: item.repoPath,
-                repoId: item.repoId,
-                kind: item.type,
-                iid: item.iid,
-                commentId: comment.id,
-                discussionId: comment.discussionId
-              })
-              .then(() => setComments((rows) => rows.filter((row) => row.id !== comment.id)))
-              .catch((reason: unknown) => {
-                toast.error(reason instanceof Error ? reason.message : String(reason))
-              })
-          }}
-        >
-          <Trash2 className="size-3.5" />
-        </button>
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          {comment.discussionId ? (
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground"
+              aria-label={translate(
+                'auto.components.TaskPage.codehubReplyToComment',
+                'Reply to comment'
+              )}
+              onClick={() => setReplyOpen((open) => !open)}
+            >
+              <MessageSquarePlus className="size-3.5" />
+            </button>
+          ) : null}
+          {commentUrl ? (
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground"
+              aria-label={translate(
+                'auto.components.TaskPage.codehubOpenComment',
+                'Open comment on CodeHub'
+              )}
+              onClick={() => {
+                window.api.shell.openUrl(commentUrl)
+              }}
+            >
+              <ExternalLink className="size-3.5" />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="text-muted-foreground hover:text-foreground"
+            aria-label={translate(
+              'auto.components.TaskPage.codehubDeleteComment',
+              'Delete comment'
+            )}
+            onClick={() => {
+              if (!item.repoPath) {
+                return
+              }
+              void codehubApi
+                .deleteComment({
+                  repoPath: item.repoPath,
+                  repoId: item.repoId,
+                  kind: item.type,
+                  iid: item.iid,
+                  commentId: comment.id,
+                  // Standalone notes delete by note id alone; only notes in a
+                  // multi-note discussion need the discussion id.
+                  discussionId: comment.individual ? null : comment.discussionId
+                })
+                .then(() => setComments((rows) => rows.filter((row) => row.id !== comment.id)))
+                .catch((reason: unknown) => {
+                  toast.error(reason instanceof Error ? reason.message : String(reason))
+                })
+            }}
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+        </div>
       </div>
       <div
         className={
@@ -129,15 +170,20 @@ function CommentCard({
       >
         {comment.body}
       </div>
+      {comment.discussionId && replyOpen ? (
+        <ReplyBox
+          discussionId={comment.discussionId}
+          state={state}
+          compact={threadReply}
+          onClose={() => setReplyOpen(false)}
+        />
+      ) : null}
       {!threadReply && replies.length > 0 ? (
         <div className="mx-3 mb-3 mt-1 flex flex-col gap-2 border-l-2 border-border/60 pl-3">
           {replies.map((reply) => (
             <CommentCard key={reply.id} comment={reply} state={state} threadReply />
           ))}
         </div>
-      ) : null}
-      {!threadReply && comment.discussionId ? (
-        <ReplyBox discussionId={comment.discussionId} state={state} />
       ) : null}
     </div>
   )

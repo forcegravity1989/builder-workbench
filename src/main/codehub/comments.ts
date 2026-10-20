@@ -3,7 +3,11 @@ import type { CodeHubComment } from '../../shared/codehub-tasks'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 import { projectArgs, parseJson, loginOfDetail } from './mutations'
 
-function mapComment(value: unknown, discussionId: string | null): CodeHubComment | null {
+function mapComment(
+  value: unknown,
+  discussionId: string | null,
+  individual: boolean
+): CodeHubComment | null {
   if (!value || typeof value !== 'object') {
     return null
   }
@@ -22,6 +26,7 @@ function mapComment(value: unknown, discussionId: string | null): CodeHubComment
     author: loginOfDetail(record.author ?? record.user),
     createdAt: String(record.created_at ?? record.createdAt ?? ''),
     discussionId,
+    individual,
     isReply: record.is_reply === true
   }
 }
@@ -59,25 +64,25 @@ export async function listCodeHubComments(args: {
   const parsed = parseJson(await runCodeHubCli(command, args.execOptions))
   const rows = Array.isArray(parsed) ? parsed : []
   // `mr review list` returns discussions whose comments are nested in
-  // `notes`; `issue comment list` returns flat comments. Notes inside a real
-  // discussion need the discussion id to be deletable; standalone notes
-  // (individual_note) delete by note id alone.
+  // `notes`; `issue comment list` returns flat comments. Every MR note keeps
+  // its discussion id so `mr review reply` can address it — standalone notes
+  // (individual_note) carry their own single-note discussion. Deletion still
+  // distinguishes them via `individual`: standalone notes delete by note id
+  // alone, notes inside a multi-note discussion need the discussion id too.
   const entries = rows.flatMap((row) => {
     if (!row || typeof row !== 'object') {
       return []
     }
     const record = row as Record<string, unknown>
     if (!Array.isArray(record.notes)) {
-      return [{ note: row, discussionId: null }]
+      return [{ note: row, discussionId: null, individual: false }]
     }
-    const discussionId =
-      record.individual_note === true || record.id === undefined || record.id === null
-        ? null
-        : String(record.id)
-    return (record.notes as unknown[]).map((note) => ({ note, discussionId }))
+    const discussionId = record.id === undefined || record.id === null ? null : String(record.id)
+    const individual = record.individual_note === true
+    return (record.notes as unknown[]).map((note) => ({ note, discussionId, individual }))
   })
-  return entries.flatMap(({ note, discussionId }) => {
-    const comment = mapComment(note, discussionId)
+  return entries.flatMap(({ note, discussionId, individual }) => {
+    const comment = mapComment(note, discussionId, individual)
     return comment ? [comment] : []
   })
 }
