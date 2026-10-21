@@ -94,17 +94,32 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
   const planTrees = useMemo(() => {
     const trees: VersionCatalogPlanTree[] = []
     const legacyBranch = cycleBranch({ workflow: 'plan' })
+    const ownerOf = (tree: Worktree) => {
+      // 配对宿主树按自身 owner 路由读取；解析失败的行退回主树范围（读取失败
+      // 会如实进 problem 通道，不装绿）。
+      try {
+        const treeScope = nativeWorkspaceScope(tree)
+        return {
+          hostId: treeScope.hostId,
+          ...(treeScope.runtimeOwnerEnvironmentId
+            ? { runtimeOwnerEnvironmentId: treeScope.runtimeOwnerEnvironmentId }
+            : {})
+        }
+      } catch {
+        return {}
+      }
+    }
     for (const tree of worktrees) {
       if (tree.isArchived) {
         continue
       }
       const binding = normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding)
       if (binding?.workflow === 'plan') {
-        trees.push({ worktreeId: tree.id, version: binding.version })
+        trees.push({ worktreeId: tree.id, version: binding.version, ...ownerOf(tree) })
         continue
       }
       if (!binding && tree.branch.replace(/^refs\/heads\//, '') === legacyBranch) {
-        trees.push({ worktreeId: tree.id, version: null })
+        trees.push({ worktreeId: tree.id, version: null, ...ownerOf(tree) })
       }
     }
     return trees
@@ -130,7 +145,14 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
     [worktrees]
   )
   const homeId = home?.id ?? null
-  const scopeKey = scope ? JSON.stringify([scope.projectId, scope.repoId, scope.hostId, scope.runtimeOwnerEnvironmentId ?? '']) : null
+  const scopeKey = scope
+    ? JSON.stringify([
+        scope.projectId,
+        scope.repoId,
+        scope.hostId,
+        scope.runtimeOwnerEnvironmentId ?? ''
+      ])
+    : null
   useEffect(() => {
     if (!scope || !homeId) {
       setCatalog(null)

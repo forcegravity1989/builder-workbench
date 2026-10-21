@@ -45,6 +45,9 @@ export type VersionCatalogPlanTree = {
   worktreeId: string
   /** 绑定限定的版本（已绑定计划树）；null=旧固定树（无绑定限定，列全部可读版本）。 */
   version: string | null
+  /** 树自身的执行宿主与归属 runtime（配对宿主树按 owner 路由，不假定与主树同宿主）。 */
+  hostId?: string | null
+  runtimeOwnerEnvironmentId?: string | null
 }
 
 export type VersionCatalogProblem = { code: string; message: string }
@@ -91,10 +94,10 @@ export async function loadVersionCatalog(args: {
       {
         repoId: scope.repoId,
         worktreeId: planTree.worktreeId,
-        hostId: scope.hostId,
+        hostId: planTree.hostId ?? scope.hostId,
         workflow: 'plan'
       },
-      scope.runtimeOwnerEnvironmentId
+      planTree.runtimeOwnerEnvironmentId ?? scope.runtimeOwnerEnvironmentId
     )
     // 单个计划树读取失败不拖垮整个目录：其余来源照实返回，失败进 problem 通道。
     try {

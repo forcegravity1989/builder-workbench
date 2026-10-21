@@ -1,4 +1,7 @@
-import { PlanningMaterialSchema, type PlanningMaterial } from '../../../shared/workbench/version-material'
+import {
+  PlanningMaterialSchema,
+  type PlanningMaterial
+} from '../../../shared/workbench/version-material'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeVersionMaterialPort } from './version-material-port'
@@ -41,10 +44,10 @@ export async function loadVersionPlanDocument(args: {
         {
           repoId: scope.repoId,
           worktreeId: planTree.worktreeId,
-          hostId: scope.hostId,
+          hostId: planTree.hostId ?? scope.hostId,
           workflow: 'plan'
         },
-        scope.runtimeOwnerEnvironmentId
+        planTree.runtimeOwnerEnvironmentId ?? scope.runtimeOwnerEnvironmentId
       )
       const snapshot = await materialPort.read(version)
       if (!snapshot) {
@@ -90,6 +93,7 @@ export async function loadVersionPlanDocument(args: {
   return {
     document: null,
     source: 'none',
-    problem: draftProblems.length > 0 ? draftProblems.join('；') : `版本 ${version} 没有可读的计划材料`
+    problem:
+      draftProblems.length > 0 ? draftProblems.join('；') : `版本 ${version} 没有可读的计划材料`
   }
 }
