@@ -80,6 +80,12 @@ export function useBoardAnnotations() {
     setPopover(null)
   }, [])
 
+  /** Board identity changed (version/scope/restart): memory records no longer point at visible objects. */
+  const clearAll = useCallback(() => {
+    setAnnotations([])
+    setPopover(null)
+  }, [])
+
   const toggleMode = useCallback(() => {
     const next = !annotating
     setAnnotating(next)
@@ -122,6 +128,7 @@ export function useBoardAnnotations() {
     closePopover,
     openPanel,
     closePanel,
+    clearAll,
     toggleMode
   }
 }

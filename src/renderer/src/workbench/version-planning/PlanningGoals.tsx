@@ -201,6 +201,8 @@ export function PlanningGoals({
         </div>
       ) : (
         <fieldset disabled={disabled} className="g3-goal-fieldset">
+          {/* Material problems of other versions stay visible while a plan is open — the retired always-on start card used to carry them. */}
+          <PlanningMaterialProblems problems={problems} />
           <div className="g3-goal-list">
             {plan.goals.map((goal, index) => (
               <PlanningGoalCard

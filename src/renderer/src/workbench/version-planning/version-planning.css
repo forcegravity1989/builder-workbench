@@ -34,6 +34,7 @@
 /* ===== 板面骨架(G3:页头 / 顶部导航 / 滚动区) ===== */
 
 .vp-board {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -132,7 +133,11 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
   flex-shrink: 0;
+}
+.vp-header > div:first-child {
+  min-width: 0;
 }
 .g3-breadcrumb {
   color: var(--muted-foreground);
@@ -512,6 +517,9 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
 .g3-empty-board .vc-start-problem {
   border-top: 0;
   padding-top: 0;
+}
+.g3-goal-fieldset > .vc-start-problem {
+  margin-bottom: var(--space-3);
 }
 .g3-goal-fieldset {
   display: block;
@@ -1024,8 +1032,9 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
 
 /* ===== 板面批注面板与小窗(fixed 浮层) ===== */
 
+/* 面板锚在板面列内(非视口),避免遮盖 Orca 右侧栏;小窗按被点元素视口坐标 fixed 锚定。 */
 .g3-annot-panel {
-  position: fixed;
+  position: absolute;
   top: 96px;
   right: 16px;
   z-index: 40;

@@ -81,6 +81,11 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   )
   const metrics = usePlanMetrics(metricScope, scope?.runtimeOwnerEnvironmentId, plan)
   const selectionKey = JSON.stringify([scopeKey, plan?.version, plan?.cycleId])
+  const { clearAll } = annotations
+  useEffect(() => {
+    // Memory annotations point at the previous board's objects after a switch.
+    clearAll()
+  }, [selectionKey, clearAll])
   const notice = view.key === selectionKey ? view.notice : ''
   const updateView = useCallback(
     (patch: Partial<typeof view>) => {

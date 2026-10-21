@@ -142,8 +142,10 @@ export function usePriorCarryovers(
   useEffect(() => {
     const [scopePart, treeId, sourcePart] = identity
     if (!scopePart || !treeId || !sourcePart) {
+      // No fixed source: idle is a settled state, publish it under the new key
+      // and invalidate any in-flight read.
       request.current++
-      setState((current) => (current.key === key ? { key, value: { kind: 'idle' } } : current))
+      setState({ key, value: { kind: 'idle' } })
       return
     }
     const token = ++request.current
