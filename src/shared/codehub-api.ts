@@ -40,11 +40,17 @@ export const CodeHubSetReviewers = Repo.extend({ iid: Iid, reviewers: z.array(z.
 export const CodeHubListPipelines = Repo.extend({ iid: Iid })
 export const CodeHubViewTask = Repo.extend({ kind: Kind, iid: Iid })
 export const CodeHubListComments = Repo.extend({ kind: Kind, iid: Iid })
-export const CodeHubCreateComment = Repo.extend({ kind: Kind, iid: Iid, body: z.string() })
+export const CodeHubCreateComment = Repo.extend({
+  kind: Kind,
+  iid: Iid,
+  body: z.string(),
+  discussionId: z.string().min(1).nullish()
+})
 export const CodeHubDeleteComment = Repo.extend({
   kind: Kind,
   iid: Iid,
-  commentId: z.string().min(1)
+  commentId: z.string().min(1),
+  discussionId: z.string().min(1).nullish()
 })
 
 export const CODEHUB_REQUEST_SCHEMAS = {
