@@ -45,5 +45,3 @@
 | PJ02 同版跨周→验收指导候选→本周计划 | ◐ | 固定来源与 Skill 已接续；同版上周和上一版均须明确来源、人选 Top 3，真实会议旅程待验 |
 
 历史认可与交付证据从 [设计 PR #264](https://github.com/forcegravity1989/builder-workbench/pull/264)、[PR #369](https://github.com/forcegravity1989/builder-workbench/pull/369)、[PR #377](https://github.com/forcegravity1989/builder-workbench/pull/377) 及 Git 追溯，不以历史测试数量代替当前证据。轮次、会议指导和收折的共同边界见[验收状态](../version-acceptance/STATUS.md)。
-
-版本工作区（G2）的认可与证据见 [version-workspace STATUS](../version-workspace/STATUS.md)。
