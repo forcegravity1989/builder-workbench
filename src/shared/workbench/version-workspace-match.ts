@@ -116,3 +116,53 @@ export function findVersionFlowWorktrees<T extends MatchableWorktree>(
   })
   return matches.sort((a, b) => a.id.localeCompare(b.id))
 }
+
+export type GoalParentSuggestionWorktree = Pick<
+  Worktree,
+  | 'id'
+  | 'isArchived'
+  | 'linkedWorkItem'
+  | 'workbenchVersionBinding'
+  | 'repoId'
+  | 'projectId'
+  | 'hostId'
+  | 'runtimeOwnerEnvironmentId'
+>
+
+/**
+ * 父级建议（G2 P4③）：唯一合法的同项目同宿主目标树才建议在原生父级选择器
+ * 预选；不唯一、跨项目/宿主或证明不足一律不建议、不预建。建议可改可取消，
+ * 原生选择器与创建期校验仍是权威。
+ */
+export function findGoalParentSuggestion<T extends GoalParentSuggestionWorktree>(args: {
+  version: string
+  goalId: string
+  worktrees: readonly T[]
+  home: {
+    repoId?: string | null
+    projectId?: string | null
+    hostId?: string | null
+    runtimeOwnerEnvironmentId?: string | null
+  }
+}): string | null {
+  const candidates = findVersionGoalWorktrees(args.worktrees, {
+    version: args.version,
+    goalId: args.goalId
+  }).filter((tree) => {
+    if (args.home.repoId && tree.repoId !== args.home.repoId) {
+      return false
+    }
+    if (args.home.projectId && tree.projectId && tree.projectId !== args.home.projectId) {
+      return false
+    }
+    if (args.home.hostId && tree.hostId && tree.hostId !== args.home.hostId) {
+      return false
+    }
+    return !(
+      tree.runtimeOwnerEnvironmentId &&
+      args.home.runtimeOwnerEnvironmentId &&
+      tree.runtimeOwnerEnvironmentId !== args.home.runtimeOwnerEnvironmentId
+    )
+  })
+  return candidates.length === 1 ? (candidates[0]?.id ?? null) : null
+}

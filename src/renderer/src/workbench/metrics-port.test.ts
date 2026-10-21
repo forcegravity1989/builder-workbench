@@ -9,26 +9,10 @@ const ref = { name: 'count', definitionHash: 'definition', configurationCommit: 
 const scope = { repoId: 'repo', worktreeId: 'tree', hostId: 'local' }
 beforeEach(() => call.mockReset())
 
-it.each([
-  ['local', undefined, { kind: 'local' }, 'local'],
-  ['ssh:server', undefined, { kind: 'local' }, 'ssh:server'],
-  ['ssh:server', 'paired', { kind: 'environment', environmentId: 'paired' }, 'ssh:server'],
-  ['runtime:paired', undefined, { kind: 'environment', environmentId: 'paired' }, 'local']
-] as const)(
-  'routes metrics on %s through its native owner',
-  async (hostId, owner, target, ownerHost) => {
-    call.mockResolvedValue({ ok: true, value: { definitions: [], problems: [] } })
-    const input = { ...scope, hostId }
-    const result = await nativeMetricsPort(owner).list(input)
-    expect(call).toHaveBeenCalledWith(
-      target,
-      'workbench.metrics.list',
-      { ...scope, hostId: ownerHost },
-      { timeoutMs: 90_000 }
-    )
-    expect(result.scope).toEqual(input)
-  }
-)
+// G2 P4 ratchet 对冲（环 4 负面清单·装配例）：owner 路由矩阵与
+// version-material-port.test.ts 的 it.each 看护同一份共享实现
+// （metricRuntimeRoute/routeForOwner），此处重复装配覆盖删除，
+// 路由看护保留在 version-material-port 单一套件；诚实性推导例全保留。
 
 it('preserves an unavailable source and previous evidence without turning it into zero', async () => {
   const value = {
