@@ -36,29 +36,7 @@ name: Hourly macOS Dev Build
 # number and the next run does not reuse it.
 
 on:
-  schedule:
-    # Top of every hour. Skipped automatically when main has not moved.
-    - cron: '0 * * * *'
   workflow_dispatch:
-    inputs:
-      force:
-        description: Build even if main has not moved since the last hourly
-        required: false
-        default: false
-        type: boolean
-
-permissions:
-  contents: read
-
-concurrency:
-  group: hourly-mac-build
-  cancel-in-progress: false
-
-env:
-  HOURLY_REPO: stablyai/orca-hourly
-  # Keep ~3 days of history so a regression can be bisected across a weekend.
-  HOURLY_RETAIN_COUNT: 72
-
 jobs:
   # Avoid occupying the limited Mac pool when main has not moved.
   preflight:

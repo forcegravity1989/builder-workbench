@@ -3,8 +3,8 @@ import type { ExecutionHostId } from '../../../../shared/execution-host'
 import type { TaskSourceContext } from '../../../../shared/task-source-context'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
-import type { ArchiveReference, ArchiveStatus } from '../../../../shared/workbench/version-archive'
-export type { ArchiveReference, ArchiveStatus } from '../../../../shared/workbench/version-archive'
+import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
+import type { WorkflowArchivePr } from '../../../../shared/workbench/version-workflow'
 
 /** Native identity, not a path-derived project or a title-derived run. */
 export type CycleScope = {
@@ -23,10 +23,6 @@ export type CycleSession = CycleScope & {
   kind: 'terminal' | 'structured'
   title: string
   runId?: string
-}
-
-export type CycleSessionPort = {
-  prepareRequest(session: CycleSession, text: string): Promise<void>
 }
 
 export type TaskOrigin = CycleScope & {
@@ -48,6 +44,8 @@ export type CycleTaskSnapshot = {
   title: string
   state: string
   url: string
+  labels?: string[]
+  assignee?: string
   readAt: string
 }
 export type CycleTaskRead =
@@ -69,16 +67,15 @@ export type TaskPort = {
   openDetail(task: CycleTaskSnapshot, origin: TaskOrigin): Promise<void>
 }
 
-export type ArchiveInput = CycleScope & {
+export type ArchivePrScope = {
+  repoId: string
   worktreeId: string
-  version: string
-  cycleId: string
-  revision: string
-  reference?: ArchiveReference
+  hostId: ExecutionHostId
+  runtimeOwnerEnvironmentId?: string
 }
-export type ArchivePort = {
-  readStatus(input: ArchiveInput): Promise<ArchiveStatus>
-  prepareRequest(input: ArchiveInput, session: CycleSession): Promise<void>
+export type ArchivePrPort = {
+  /** Status of the one recorded archive PR, read on the worktree's owning runtime. */
+  readStatus(scope: ArchivePrScope, pr: WorkflowArchivePr): Promise<ArchivePrStatusResult>
 }
 
 export type VersionGoalCardProps = {
@@ -89,4 +86,12 @@ export type VersionGoalCardProps = {
   metrics?: ReactNode
   result?: ReactNode
   actions?: ReactNode
+  defaultOpen?: boolean
+  expanded?: boolean
+  /** Increment this when a toolbar command should reapply the current value. */
+  expandedSignal?: number
+  summary?: ReactNode
+  extra?: ReactNode
+  hideReadOnlyStory?: boolean
+  viewStateKey?: string
 }

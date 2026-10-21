@@ -44,8 +44,7 @@ export function TaskPageCodeHubFilters({
     getTaskPickerRepoHostLabel
   } = model
   const [createOpen, setCreateOpen] = useState(false)
-  const codehubRepos = selectedRepos.filter((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))
-  const codehubRepo = codehubRepos[0]
+  const codehubRepo = selectedRepos.find((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))
   const [searchDraft, setSearchDraft] = useState(codehubQuery)
   useEffect(() => {
     setSearchDraft(codehubQuery)

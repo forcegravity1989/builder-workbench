@@ -13,17 +13,16 @@ import { useCycleWorkspaceWorkflow } from './cycle-workspace-view'
 import { useCycleWorkspaceTarget } from './use-cycle-workspace-target'
 import { CycleWorkspaceContext } from './cycle-workspace-context'
 import { nativeVersionMaterialPort } from '../version-material-port'
-import { nativeTaskPort } from '../task-port'
-import { nativeArchivePort } from '../archive-port'
+import { nativeTaskPort } from '../native-task-port'
+import { nativeArchivePrPort } from '../archive-pr-port'
 import './version-cycle.css'
-import { useCycleRequest } from './use-cycle-request'
 
 /** BW supplies workflow assets to the existing Orca workspace, never a second session host. */
 export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const workflow = useCycleWorkspaceWorkflow()
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const { worktree, scope, error, syncing, materialRefresh } = useCycleWorkspaceTarget(
+  const { worktree, scope, error, syncing, materialRefresh, updateCode } = useCycleWorkspaceTarget(
     workflow,
     setNotice
   )
@@ -48,13 +47,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   )
   const version = useWorkflowVersion(materialPort)
   const taskPort = useMemo(() => nativeTaskPort(), [])
-  const request = useCycleRequest(JSON.stringify([scope, fixedId]))
-  const prepareRequest = request.prepareRequest
-  const archivePort = useMemo(
-    () => nativeArchivePort(owner, prepareRequest),
-    [owner, prepareRequest]
-  )
-  const sessionPort = useMemo(() => ({ prepareRequest }), [prepareRequest])
+  const archivePort = useMemo(() => nativeArchivePrPort(owner), [owner])
   const automation = useEnsureCycleAutomation({
     cycleScope: scope,
     fixedId,
@@ -118,12 +111,12 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
               version: version.version,
               selectVersion: version.selectVersion,
               materialPort,
-              sessionPort,
               taskPort,
               archivePort,
               error: error ?? version.error,
               syncing,
-              materialRefresh
+              materialRefresh,
+              updateCode
             }
           }
         : null,
@@ -141,18 +134,13 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       version.selectVersion,
       version.error,
       materialPort,
-      sessionPort,
       taskPort,
       archivePort,
       error,
       syncing,
-      materialRefresh
+      materialRefresh,
+      updateCode
     ]
   )
-  return (
-    <CycleWorkspaceContext.Provider value={value}>
-      {children}
-      {request.progress}
-    </CycleWorkspaceContext.Provider>
-  )
+  return <CycleWorkspaceContext.Provider value={value}>{children}</CycleWorkspaceContext.Provider>
 }

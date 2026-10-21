@@ -58,7 +58,7 @@ function beforeRequest(args: {
   beforeRequestListener?.(
     {
       id: 1,
-      url: args.url ?? 'https://localhost:3443/app',
+      url: args.url ?? 'https://intranet.example:3443/app',
       method: 'GET',
       webContentsId: args.webContentsId,
       resourceType: args.resourceType ?? 'mainFrame',
@@ -84,7 +84,7 @@ function certificateEvent(args: {
   args.controller.handleCertificateError({
     event: { preventDefault },
     webContents: args.guest,
-    url: args.url ?? 'https://localhost:3443/app',
+    url: args.url ?? 'https://intranet.example:3443/app',
     error: args.error ?? 'net::ERR_CERT_AUTHORITY_INVALID',
     certificate: args.certificate ?? FIRST_CERTIFICATE,
     callback,
@@ -191,20 +191,20 @@ describe('BrowserCertificateTrustController', () => {
     expect(controller.getFailure('page-1')).toMatchObject({
       challengeId: 'challenge-1',
       browserPageId: 'page-1',
-      origin: 'https://localhost:3443',
-      displayHost: 'localhost:3443',
+      origin: 'https://intranet.example:3443',
+      displayHost: 'intranet.example:3443',
       errorCode: -202,
       canProceed: true
     })
 
     expect(controller.proceed('page-1', 'challenge-1')).toEqual({ ok: true })
-    expect(guest.loadURL).toHaveBeenCalledWith('https://localhost:3443/app')
+    expect(guest.loadURL).toHaveBeenCalledWith('https://intranet.example:3443/app')
     expect(onFailureChanged).toHaveBeenLastCalledWith(guest.id, null)
 
     const sameEndpoint = certificateEvent({
       controller,
       guest,
-      url: 'wss://localhost:3443/socket'
+      url: 'wss://intranet.example:3443/socket'
     })
     expect(sameEndpoint.preventDefault).toHaveBeenCalledOnce()
     expect(sameEndpoint.callback).toHaveBeenCalledOnce()
@@ -217,7 +217,7 @@ describe('BrowserCertificateTrustController', () => {
     const otherPort = certificateEvent({
       controller,
       guest,
-      url: 'https://localhost:3444/'
+      url: 'https://intranet.example:3444/'
     })
     expect(otherPort.callback).toHaveBeenCalledWith(false)
     expect(otherPort.preventDefault).not.toHaveBeenCalled()
@@ -241,7 +241,7 @@ describe('BrowserCertificateTrustController', () => {
     expect(controller.getFailure('page-2')).toMatchObject({
       challengeId: 'challenge-2',
       browserPageId: 'page-2',
-      origin: 'https://localhost:3443',
+      origin: 'https://intranet.example:3443',
       canProceed: true
     })
 
@@ -250,7 +250,7 @@ describe('BrowserCertificateTrustController', () => {
     ).toHaveBeenCalledWith({ cancel: true })
     expect(beforeRequest({ resourceType: 'webSocket' })).toHaveBeenCalledWith({ cancel: true })
     expect(
-      beforeRequest({ url: 'https://localhost:3444/app', webContentsId: otherGuest.id })
+      beforeRequest({ url: 'https://intranet.example:3444/app', webContentsId: otherGuest.id })
     ).toHaveBeenCalledWith({})
     expect(beforeRequest({ webContentsId: guest.id })).toHaveBeenCalledWith({})
 
@@ -288,9 +288,11 @@ describe('BrowserCertificateTrustController', () => {
     expect(otherGuest.loadURL).not.toHaveBeenCalled()
   })
 
-  it('never offers approval for public hosts, non-authority failures, or subframes', () => {
+  it('never offers approval for non-authority failures, non-HTTPS URLs, or subframes', () => {
     for (const event of [
-      certificateEvent({ controller, guest, url: 'https://example.com/' }),
+      certificateEvent({ controller, guest, error: 'ERR_CERT_COMMON_NAME_INVALID' }),
+      certificateEvent({ controller, guest, url: 'http://intranet.example/' }),
+      certificateEvent({ controller, guest, url: 'wss://intranet.example/' }),
       certificateEvent({ controller, guest, error: 'ERR_CERT_DATE_INVALID' }),
       certificateEvent({ controller, guest, isMainFrame: false })
     ]) {
@@ -302,9 +304,9 @@ describe('BrowserCertificateTrustController', () => {
     expect(onFailureChanged).not.toHaveBeenCalled()
   })
 
-  it('queues an early challenge until the guest receives its browser page identity', () => {
+  it('still queues a localhost challenge until the guest receives its browser page identity', () => {
     pageByGuestId.set(guest.id, null)
-    certificateEvent({ controller, guest })
+    certificateEvent({ controller, guest, url: 'https://localhost:3443/app' })
 
     expect(onFailureChanged).not.toHaveBeenCalled()
     expect(controller.getFailure('page-1')).toBeNull()

@@ -53,5 +53,9 @@
       "number": 218,
       "goalId": "g2-monday-archive"
     }
-  ]
+  ],
+  "workflow": {
+    "stage": "archive",
+    "updatedAt": "2026-10-13T22:25:00-04:00"
+  }
 }

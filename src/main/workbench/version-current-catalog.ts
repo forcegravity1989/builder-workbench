@@ -26,10 +26,10 @@ export async function withVersionTreeAlignment(
   }
 }
 
-/** A version menu reflects files in the adopted tree, never deleted or superseded Git snapshots. */
+/** A version menu reflects files in the trunk baseline tree, never deleted or superseded Git snapshots. */
 export async function readCurrentVersionCatalog(
   scope: MetricScope,
-  commit: string,
+  baseline: { ref: string; commit: string },
   git: (scope: MetricScope, args: string[]) => Promise<Buffer>,
   read: (
     scope: MetricScope,
@@ -38,6 +38,7 @@ export async function readCurrentVersionCatalog(
     workflow: 'plan' | 'acceptance'
   ) => Promise<Pick<Awaited<ReturnType<VersionHistoryPort['read']>>, 'document' | 'revision'>>
 ): Promise<VersionHistoryCatalog> {
+  const commit = baseline.commit
   const files = await git(scope, [
     'ls-tree',
     '-r',
@@ -78,5 +79,5 @@ export async function readCurrentVersionCatalog(
       })
     }
   }
-  return { records, problems, baselineCommit: commit }
+  return { records, problems, baselineCommit: commit, baselineRef: baseline.ref }
 }

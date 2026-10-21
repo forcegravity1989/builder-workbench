@@ -158,6 +158,7 @@ describe('codehub mutations', () => {
     expect(detail.labels).toEqual(['bug'])
     expect(detail.sourceBranch).toBe('feat/task-style')
     expect(detail.targetBranch).toBe('main')
+    expect(detail.state).toBe('unknown')
   })
 
   it('lists merge request pipelines', async () => {

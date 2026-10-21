@@ -18,6 +18,13 @@ html[data-skin='ds'] .pane-title-bar {
   padding: 0 10px;
 }
 
+/* Why: upstream keeps untitled (chromeless) pane title bars transparent so the
+   terminal's first row shows through; the card background above would paint a
+   28px strip over it (real-shell verified: covered 24px of the first row). */
+html[data-skin='ds'] .pane-title-bar[data-chromeless] {
+  background: transparent !important;
+}
+
 html[data-skin='ds'] .pane-title-input {
   font-family: inherit;
   font-size: 12px;

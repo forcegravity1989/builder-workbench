@@ -10,33 +10,7 @@ name: Windows Update-Survival E2E (branch build)
 # place to install/update — see the relocation post-mortem.
 
 on:
-  push:
-    branches:
-      - Jinwoo-H/windows-update-survival
-    paths:
-      - 'src/main/daemon/**'
-      - 'src/main/pty/**'
-      - 'tests/tools/win-update-e2e/**'
-      - 'config/electron-builder.config.cjs'
-      - '.github/workflows/win-update-survival-e2e.yml'
   workflow_dispatch:
-    inputs:
-      expect:
-        description: Expected outcome profile
-        required: true
-        type: choice
-        default: survival
-        options:
-          - survival
-          - cold-restore
-
-permissions:
-  contents: read
-
-concurrency:
-  group: win-update-survival-e2e-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   survival:
     name: survival (branch build over itself)

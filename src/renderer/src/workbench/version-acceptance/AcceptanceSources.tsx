@@ -1,21 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
-import type {
-  AcceptanceCandidatePort,
-  ArtifactCheck,
-  CandidateCheck
-} from './acceptance-candidate-port'
-import { artifactCandidateCheck, preparationKey, type EvidenceCheck } from './acceptance-model'
+import { artifactCandidateCheck, type EvidenceCheck } from './acceptance-model'
+import { useCycleWorkspace } from '../version-cycle/cycle-workspace-context'
+import { openAcceptanceMaterial } from './open-acceptance-material'
 
-function Check({ check }: { check?: EvidenceCheck }) {
+function Declared({ check }: { check: EvidenceCheck }) {
+  if (check.kind === 'verified') {
+    return <span className="va-muted">已核对 · {check.checkedAt}</span>
+  }
   return (
-    <span
-      className={
-        check?.kind === 'mismatch' || check?.kind === 'unavailable' ? 'va-warning' : 'va-muted'
-      }
-    >
-      {!check ? '待核对' : check.kind === 'verified' ? `已核对 · ${check.checkedAt}` : check.reason}
-    </span>
+    <span className={check.kind === 'mismatch' ? 'va-warning' : 'va-muted'}>{check.reason}</span>
   )
 }
 
@@ -27,85 +21,29 @@ const ARTIFACT_KINDS: Record<string, string> = {
 }
 
 /**
- * Compact source-of-truth row: fixed plan reference, candidate/material evidence and the
- * shared metric window. It replaces the retired preparation card — data sources, open
- * paths and honesty about unknown checks stay, the placeholder checklist journey does not.
+ * Compact source-of-truth row: fixed candidate and recorded artifacts, compared
+ * only against each other (pure declarations). Live file/execution probing and
+ * the journey-lamp derivation are retired — lamps follow workflow.stage.
  */
-export function AcceptanceSources({
-  document,
-  candidatePort,
-  onChecks
-}: {
-  document: AcceptanceMaterial
-  candidatePort: AcceptanceCandidatePort
-  onChecks(source: AcceptanceMaterial, check: CandidateCheck, artifacts: ArtifactCheck[]): void
-}) {
-  const [verification, setVerification] = useState<{
-    key: string
-    candidate: CandidateCheck
-    artifacts: ArtifactCheck[]
-  } | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const sourceKey = preparationKey(document)
-  const verified = verification?.key === sourceKey ? verification : null
-  const latestKey = useRef(sourceKey)
-  latestKey.current = sourceKey
-  const request = useRef({ sequence: 0 }).current
-  useEffect(() => {
-    setBusy(false)
-    setError(null)
-    return () => {
-      request.sequence++
-    }
-  }, [sourceKey, candidatePort, request])
-  async function inspect() {
-    if (!document.candidateRef) {
-      return
-    }
-    const token = ++request.sequence
-    const current = () => request.sequence === token && latestKey.current === sourceKey
-    setBusy(true)
+export function AcceptanceSources({ document }: { document: AcceptanceMaterial }) {
+  const workspace = useCycleWorkspace()
+  const [openError, setOpenError] = useState<string | null>(null)
+  const openMaterial = async (location: string) => {
     try {
-      const checked: CandidateCheck =
-        document.candidateRef.version !== document.version
-          ? {
-              candidate: document.candidateRef,
-              kind: 'mismatch',
-              reason: '源码候选与验收版本不一致'
-            }
-          : await candidatePort.check(document.candidateRef)
-      const artifacts = await Promise.all(
-        document.preparedArtifacts.map((artifact) =>
-          candidatePort.inspect(artifact, document.candidateRef!)
-        )
-      )
-      if (!current()) {
-        return
+      if (!workspace) {
+        throw new Error('验收工作区尚未就绪。')
       }
-      setVerification({ key: sourceKey, candidate: checked, artifacts })
-      onChecks(document, checked, artifacts)
-      setError(null)
+      await openAcceptanceMaterial(location, workspace.context)
+      setOpenError(null)
     } catch (reason) {
-      if (current()) {
-        setError(String(reason))
-        const candidate: CandidateCheck = {
-          candidate: document.candidateRef,
-          kind: 'unavailable',
-          reason: String(reason)
-        }
-        setVerification({ key: sourceKey, candidate, artifacts: [] })
-        onChecks(document, candidate, [])
-      }
-    } finally {
-      if (current()) {
-        setBusy(false)
-      }
+      setOpenError(reason instanceof Error ? reason.message : String(reason))
     }
   }
   if (!document.candidateRef && !document.preparedArtifacts.length) {
     return null
   }
+  const versionMismatch =
+    document.candidateRef && document.candidateRef.version !== document.version
   return (
     <div className="va-context-row">
       <details className="va-source">
@@ -117,24 +55,26 @@ export function AcceptanceSources({
         <p className="va-candidate">
           <span>候选提交</span>
           <code>{document.candidateRef?.commit ?? '待固定'}</code>
-          <Check check={verified?.candidate} />
+          {versionMismatch && <span className="va-warning">源码候选与验收版本不一致</span>}
         </p>
         {document.preparedArtifacts.map((artifact) => {
-          const check = verified?.artifacts.find((item) => item.artifactId === artifact.artifactId)
           const declared = artifactCandidateCheck(artifact, document.candidateRef)
           return (
             <div key={artifact.artifactId} className="va-artifact">
               <p>
-                {ARTIFACT_KINDS[artifact.kind] ?? artifact.kind} · <code>{artifact.location}</code>
+                {ARTIFACT_KINDS[artifact.kind] ?? artifact.kind} ·{' '}
+                <a
+                  href={artifact.location}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    void openMaterial(artifact.location)
+                  }}
+                >
+                  {artifact.location}
+                </a>
               </p>
               <p>
-                候选：<code>{artifact.candidateRef.commit}</code>{' '}
-                <Check check={declared.kind === 'mismatch' ? declared : check?.candidate} />
-              </p>
-              <p>
-                文件：
-                <Check check={check?.availability} /> · 执行来源：
-                <Check check={check?.execution} />
+                候选：<code>{artifact.candidateRef.commit}</code> <Declared check={declared} />
               </p>
               {artifact.command && (
                 <p>
@@ -150,36 +90,12 @@ export function AcceptanceSources({
                 生成时间：{artifact.generatedAt}
                 {artifact.checksum && ` · 校验值：${artifact.checksum}`}
               </p>
-              {check?.file && (
-                <button
-                  className="wb-btn wb-btn-ghost wb-btn-sm"
-                  onClick={() =>
-                    void candidatePort
-                      .openFile(check.file!)
-                      .catch((reason) => setError(String(reason)))
-                  }
-                >
-                  打开材料
-                </button>
-              )}
-              {check?.externalUrl && (
-                <a href={check.externalUrl} target="_blank" rel="noreferrer">
-                  打开外部材料
-                </a>
-              )}
             </div>
           )
         })}
-        <button
-          className="wb-btn wb-btn-ghost wb-btn-sm"
-          disabled={!document.candidateRef || busy}
-          onClick={() => void inspect()}
-        >
-          {busy ? '检查中…' : '检查文件与候选'}
-        </button>
-        {error && (
+        {openError && (
           <p className="va-error" role="alert">
-            {error}
+            {openError}
           </p>
         )}
       </details>

@@ -62,7 +62,7 @@ export function CycleStartCard({
           <span>
             {[...new Set(problems.map((item) => item.version))].join('、')} 的版本材料格式
             {problems.every((item) => item.state === 'migration-required') ? '较旧' : '有问题'}
-            ，暂无法读取；新建{label}时将一并带入会话。
+            ，暂无法读取；点「新建{label}」会把具体文件和迁移请求带入会话，由模型说明方案、经你确认后转换，不留旧文件副本。
           </span>
         </p>
       )}

@@ -1,12 +1,6 @@
 name: Pi extension provider verification
 on:
-  pull_request:
-    paths:
-      - 'src/shared/commit-message-agent-specs-primary.ts'
-      - 'tests/tools/pi-provider-runtime-smoke.mjs'
-      - '.github/workflows/pi-provider-runtime.yml'
-permissions:
-  contents: read
+  workflow_dispatch:
 jobs:
   runtime:
     strategy:

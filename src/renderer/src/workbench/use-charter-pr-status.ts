@@ -7,7 +7,7 @@ import { readProjectCharter, type ProjectCharter } from './project-charter'
 
 /**
  * 总览的名片 PR 状态:主检出没有名片才查(省 gh/codehub 调用);
- * 「更新主目录」= 主检出快进(spec 规则 2,main pull_ff 对等)。
+ * 「更新代码」= 主检出快进(spec 规则 2,main pull_ff 对等)。
  */
 export function useCharterPrStatus(
   activeRepo: Repo | undefined,
@@ -18,6 +18,8 @@ export function useCharterPrStatus(
   charterStatus: CharterStatus | null
   updatingMain: boolean
   updateMainCheckout: () => Promise<void>
+  /** Drops the cached PR status so the next effect pass re-queries the provider. */
+  refreshCharterStatus: () => void
 } {
   const [charterStatusState, setCharterStatusState] = useState<{
     key: string
@@ -25,6 +27,7 @@ export function useCharterPrStatus(
   } | null>(null)
   const charterStatus = charterStatusState?.key === scopeKey ? charterStatusState.value : null
   const [updatingMain, setUpdatingMain] = useState(false)
+  const [statusRetry, setStatusRetry] = useState(0)
 
   useEffect(() => {
     if (!activeRepo || hasCharter) {
@@ -40,7 +43,7 @@ export function useCharterPrStatus(
     return () => {
       cancelled = true
     }
-  }, [activeRepo, hasCharter, scopeKey])
+  }, [activeRepo, hasCharter, scopeKey, statusRetry])
 
   const updateMainCheckout = async (): Promise<void> => {
     if (!activeRepo || updatingMain) {
@@ -63,5 +66,10 @@ export function useCharterPrStatus(
     }
   }
 
-  return { charterStatus, updatingMain, updateMainCheckout }
+  const refreshCharterStatus = () => {
+    setCharterStatusState(null)
+    setStatusRetry((value) => value + 1)
+  }
+
+  return { charterStatus, updatingMain, updateMainCheckout, refreshCharterStatus }
 }

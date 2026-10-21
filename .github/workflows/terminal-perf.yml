@@ -2,52 +2,6 @@ name: Terminal Perf
 
 on:
   workflow_dispatch:
-    inputs:
-      ref:
-        description: Ref to check out (defaults to the workflow ref)
-        required: false
-        type: string
-      grep:
-        description: Optional Playwright grep for a targeted terminal perf run
-        required: false
-        type: string
-      report_path:
-        description: Path for the generated terminal perf JSON report
-        required: false
-        type: string
-      frame_count:
-        description: Number of prompt redraw frames per typing measurement
-        required: false
-        type: string
-      frame_interval_ms:
-        description: Milliseconds between synthetic OpenCode redraw frames
-        required: false
-        type: string
-      pressure_output_chars:
-        description: Bytes/chars each ACK-backpressured real PTY should emit
-        required: false
-        type: string
-      scale_panes:
-        description: Comma-separated same-workspace pane counts
-        required: false
-        type: string
-      scale_cross_workspace_panes:
-        description: Comma-separated hidden cross-workspace pane counts
-        required: false
-        type: string
-      scale_pressure_panes:
-        description: Comma-separated active real-PTY pressure pane counts
-        required: false
-        type: string
-      scale_hidden_pressure_panes:
-        description: Comma-separated hidden real-PTY pressure pane counts
-        required: false
-        type: string
-  schedule:
-    # Why: keep the expensive scale run off PRs, but exercise it daily so
-    # terminal throughput regressions are caught before users report typing lag.
-    - cron: '30 8 * * *'
-
 jobs:
   terminal-perf:
     name: terminal scale perf

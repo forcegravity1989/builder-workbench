@@ -58,18 +58,19 @@ async function isExecutableFile(candidate: string, isWin: boolean): Promise<bool
 }
 
 /**
- * Resolve whether `command` is an executable on PATH using only `node:fs`
- * — zero `where`/`which` subprocess spawns. Mirrors the canonical
- * which(1)/where.exe lookup, including the current preflight quirk that only
- * counts matches which resolve to an ABSOLUTE path (so relative PATH entries
- * and relative command paths stay not-found, exactly as before).
+ * Resolve `command` to the absolute path of the first executable match on
+ * PATH using only `node:fs` — zero `where`/`which` subprocess spawns. Mirrors
+ * the canonical which(1)/where.exe lookup, including the current preflight
+ * quirk that only counts matches which resolve to an ABSOLUTE path (so
+ * relative PATH entries and relative command paths stay not-found, exactly
+ * as before). Returns null when nothing resolves.
  */
-export async function isCommandOnLocalPath(
+export async function resolveCommandOnLocalPath(
   command: string,
   options: ResolveCommandOptions = {}
-): Promise<boolean> {
+): Promise<string | null> {
   if (!command) {
-    return false
+    return null
   }
   const platform = options.platform ?? process.platform
   const env = options.env ?? process.env
@@ -98,9 +99,20 @@ export async function isCommandOnLocalPath(
         continue
       }
       if (await isExecutableFile(candidate, isWin)) {
-        return true
+        return candidate
       }
     }
   }
-  return false
+  return null
+}
+
+/**
+ * Boolean view over `resolveCommandOnLocalPath` for callers that only need
+ * found/not-found. Same lookup rules, same options.
+ */
+export async function isCommandOnLocalPath(
+  command: string,
+  options: ResolveCommandOptions = {}
+): Promise<boolean> {
+  return (await resolveCommandOnLocalPath(command, options)) !== null
 }

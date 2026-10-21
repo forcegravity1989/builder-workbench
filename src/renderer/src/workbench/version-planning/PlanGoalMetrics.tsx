@@ -1,8 +1,9 @@
-import { ChartNoAxesCombined, RefreshCw, MessageSquarePlus } from 'lucide-react'
+import { ChartNoAxesCombined, MessageSquarePlus, RefreshCw } from 'lucide-react'
 import { metricRefKey } from '../../../../shared/workbench/metrics'
 import type { VersionGoal } from '../../../../shared/workbench/version-material'
-import type { usePlanMetrics } from './use-plan-metrics'
 import { MetricEvidenceView } from '../metrics/MetricEvidenceView'
+import type { usePlanMetrics } from './use-plan-metrics'
+
 export function PlanGoalMetrics({
   goal,
   onChange,
@@ -17,14 +18,14 @@ export function PlanGoalMetrics({
   const definitions = metrics.catalog?.definitions ?? []
   const selected = new Set(goal.metricTargets.map((item) => item.ref.name))
   const available = definitions.filter((item) => !selected.has(item.name))
+
   const changeMetric = (index: number, key: string) => {
     if (!key) {
       onChange({ ...goal, metricTargets: goal.metricTargets.filter((_, i) => i !== index) })
       return
     }
-    const definition = definitions.find((item) => metricRefKey(item.ref) === key)
+    const definition = available.find((item) => metricRefKey(item.ref) === key)
     if (definition) {
-      // A different definition must not inherit the old target or adopted baseline.
       onChange({
         ...goal,
         metricTargets: goal.metricTargets.map((item, i) =>
@@ -33,11 +34,14 @@ export function PlanGoalMetrics({
       })
     }
   }
+
   return (
     <div className="vp-metrics">
       {goal.metricTargets.map((target, index) => {
         const key = metricRefKey(target.ref)
-        const definition = definitions.find((item) => item.name === target.ref.name)
+        const definition = definitions.find((item) => metricRefKey(item.ref) === key)
+        const definitionUpdated =
+          !definition && definitions.some((item) => item.name === target.ref.name)
         const value = metrics.values[key]
         const reading =
           value?.status === 'ready' && value.readings.length === 1 ? value.readings[0] : null
@@ -45,7 +49,7 @@ export function PlanGoalMetrics({
           <div className="vp-metric" key={key}>
             <div className="vp-metric-row">
               <label className="vp-metric-name">
-                <ChartNoAxesCombined size={14} />
+                <ChartNoAxesCombined size={14} aria-hidden="true" />
                 <select
                   aria-label={`${goal.title || '目标'} 指标 ${index + 1}`}
                   value={key}
@@ -54,7 +58,11 @@ export function PlanGoalMetrics({
                   <option value="">移除指标承诺</option>
                   <option value={key}>
                     {target.ref.name}
-                    {!definition ? '（目录中暂无）' : ''}
+                    {definitionUpdated
+                      ? '（定义已更新，保留原承诺）'
+                      : !definition
+                        ? '（目录中暂无）'
+                        : ''}
                   </option>
                   {available.map((item) => (
                     <option value={metricRefKey(item.ref)} key={metricRefKey(item.ref)}>
@@ -66,7 +74,7 @@ export function PlanGoalMetrics({
               <div className="vp-metric-value">
                 <span>当前</span>
                 <strong title={reading ? reading.collectedAt : '此来源和窗口尚无可信读数'}>
-                  {reading ? `${reading.value}${reading.unit}` : '—'}
+                  {reading ? `${reading.value}${reading.unit}` : 'Unknown'}
                 </strong>
               </div>
               <label className="vp-metric-target">
@@ -84,9 +92,14 @@ export function PlanGoalMetrics({
                   }
                 />
               </label>
-              <button className="wb-btn wb-btn-sm" onClick={() => void metrics.refresh(target.ref)}>
-                <RefreshCw size={14} />
-                刷新指标
+              <button
+                type="button"
+                className="wb-btn wb-btn-ghost wb-btn-sm vp-icon-btn"
+                title="刷新指标"
+                aria-label={`刷新指标：${target.ref.name}`}
+                onClick={() => void metrics.refresh(target.ref)}
+              >
+                <RefreshCw size={14} aria-hidden="true" />
               </button>
             </div>
             <details className="vp-metric-evidence">
@@ -105,6 +118,7 @@ export function PlanGoalMetrics({
               )}
               {reading && (
                 <button
+                  type="button"
                   className="wb-btn wb-btn-sm"
                   onClick={() =>
                     onChange({
@@ -144,14 +158,16 @@ export function PlanGoalMetrics({
         ))}
       </select>
       <button
-        className="wb-btn wb-btn-secondary wb-btn-sm"
+        type="button"
+        className="wb-btn wb-btn-secondary wb-btn-sm vp-icon-btn"
         title="刷新指标目录"
         aria-label="刷新指标目录"
         onClick={() => void metrics.reloadCatalog()}
       >
-        <RefreshCw size={14} />
+        <RefreshCw size={14} aria-hidden="true" />
       </button>
       <button
+        type="button"
         className="wb-btn wb-btn-secondary wb-btn-sm"
         title="新建会话，配置指标"
         onClick={prepare}

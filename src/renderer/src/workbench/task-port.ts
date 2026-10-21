@@ -1,7 +1,5 @@
-import { useAppStore } from '@/store'
-import { codehubApi } from '@/lib/codehub-api'
-import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import type { AppState } from '@/store/types'
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import type { CodeHubTaskDetail, CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
@@ -9,7 +7,6 @@ import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import type { Repo } from '../../../shared/repo-types'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
-import type { AppState } from '@/store/types'
 import type {
   CycleScope,
   CycleTaskRead,
@@ -63,13 +60,19 @@ function codeHubIdentityMatches(repo: Repo, repository: string): boolean {
   if (!remote) {
     return false
   }
-  const wanted = repository.trim().replace(/\.git$/i, '').replace(/^\/+/, '')
+  const wanted = repository
+    .trim()
+    .replace(/\.git$/i, '')
+    .replace(/^\/+/, '')
   return wanted === remote.project || wanted === `${remote.host}/${remote.project}`
 }
 
 function repoMatchesReference(repo: Repo, reference: CycleTaskReference): boolean {
   if (reference.provider === 'codehub') {
-    return codeHubIdentityMatches(repo, reference.repository) || exactIdentityMatch(repo, reference.repository)
+    return (
+      codeHubIdentityMatches(repo, reference.repository) ||
+      exactIdentityMatch(repo, reference.repository)
+    )
   }
   if (reference.provider === 'github') {
     if (
@@ -90,7 +93,9 @@ export function resolveReferenceRepo(
   reference: CycleTaskReference
 ): Repo | null {
   const wanted = normalizeGitRemoteUrl(reference.repository) ?? reference.repository
-  const matches = deps.repos().filter((repo) => repo.path && repoMatchesReference(repo, { ...reference, repository: wanted }))
+  const matches = deps
+    .repos()
+    .filter((repo) => repo.path && repoMatchesReference(repo, { ...reference, repository: wanted }))
   if (matches.length === 0) {
     return null
   }
@@ -172,6 +177,8 @@ async function readReference(
       title: item.title,
       state: item.state,
       url: item.url,
+      labels: item.labels,
+      assignee: item.assignees?.[0]?.login,
       readAt: deps.now()
     }
   }
@@ -189,13 +196,16 @@ async function readReference(
       title: detail.title,
       state: detail.state,
       url,
+      labels: detail.labels,
+      assignee: detail.assignees?.[0],
       readAt: deps.now()
     }
   }
   throw new Error(`provider ${reference.provider} 尚未接入 Workbench 任务读取`)
 }
 
-function codehubStateOf(state: string): CodeHubTaskItem['state'] {
+/** 墙卡承诺进展复用同一状态归一（closed/merged 均为关闭态），不另造映射。 */
+export function codehubStateOf(state: string): CodeHubTaskItem['state'] {
   const raw = state.toLowerCase()
   return raw === 'merged' ? 'merged' : raw === 'closed' ? 'closed' : 'opened'
 }
@@ -305,14 +315,4 @@ export function createTaskPort(deps: TaskPortDeps): TaskPort {
     refresh: readAll,
     openDetail: (task, origin) => openDetail(deps, task, origin)
   }
-}
-
-export function nativeTaskPort(): TaskPort {
-  return createTaskPort({
-    repos: () => useAppStore.getState().repos,
-    lookupGitHubWorkItem: (args) => lookupGitHubWorkItemForSource(args),
-    viewCodeHubTask: (args) => codehubApi.viewTask(args),
-    openTaskPage: (data, options) => useAppStore.getState().openTaskPage(data, options),
-    now: () => new Date().toISOString()
-  })
 }

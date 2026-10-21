@@ -3,11 +3,11 @@ import type { PlanningMaterial } from '../../../../shared/workbench/version-mate
 import {
   artifactCandidateCheck,
   assertFixedPlan,
-  createAcceptanceMaterial
+  createAcceptanceMaterial,
+  emptyGoalResult,
+  sameAcceptanceSource
 } from './acceptance-model'
 import { decisionFreshness, goalEvidenceRevision, recordHumanDecision } from './acceptance-decision'
-import { archiveSignal, decisionSignal, preparationSignal } from './acceptance-journey'
-import type { ArchiveStatus } from '../../../../shared/workbench/version-archive'
 
 const plan: PlanningMaterial = {
   schema_version: 3,
@@ -50,112 +50,38 @@ async function decide() {
 }
 
 describe('version acceptance evidence', () => {
-  it('keeps a failed human outcome red when its report is archived, and unproven merges stay pending', async () => {
-    const document = await recordHumanDecision({
-      document: draft(),
-      plan,
-      goalId: 'g1',
-      outcome: 'not-met',
-      source: '验收界面',
-      reason: '交付缺口',
-      recordedAt: '2026-09-25T01:00:00Z'
-    })
-    const material = {
-      workflow: 'acceptance' as const,
-      version: document.version,
-      cycleId: document.cycleId,
-      revision: planSnapshot.revision
-    }
-    const reference = {
-      provider: 'github',
-      repository: 'github.com/acme/project',
-      number: 1,
-      materialRevision: material.revision
-    }
-    const status: ArchiveStatus = {
-      kind: 'merged',
-      reference,
-      url: 'https://github.com/acme/project/pull/1',
-      checkedAt: '2026-09-25T01:00:00Z',
-      checks: 'passed',
-      review: 'approved',
-      mergeCommit: '4'.repeat(40),
-      proof: {
-        kind: 'verified',
-        value: {
-          reference,
-          mergeCommit: '4'.repeat(40),
-          material,
-          checkedAt: '2026-09-25T01:00:00Z'
-        }
-      }
-    }
-    expect(decisionSignal(document, plan, { g1: 'current', g2: 'unrecorded' }).kind).toBe('failed')
-    expect(archiveSignal(status, material).kind).toBe('complete')
-    expect(decisionSignal(document, plan, { g1: 'changed', g2: 'unrecorded' }).kind).toBe('pending')
-    expect(document.results.find((item) => item.goalId === 'g1')?.decision?.outcome).toBe('not-met')
-    expect(
-      archiveSignal({ ...status, proof: { kind: 'unknown', reason: '合入文件未读回' } }, material)
-        .kind
-    ).toBe('pending')
-  })
-
-  it('derives preparation from recorded evidence while keeping machine mismatches visible', () => {
-    const document = draft()
-    const verified = { kind: 'verified' as const, checkedAt: '2026-09-25T01:00:00Z' }
-    const candidate = { ...verified, candidate: document.candidateRef! }
-    expect(preparationSignal(undefined, verified, null).kind).toBe('unknown')
-    // A fixed candidate alone is not delivery evidence.
-    expect(preparationSignal(document, verified, { candidate, artifacts: [] }).kind).toBe('unknown')
-    document.preparedArtifacts = [
-      {
-        artifactId: 'demo',
-        kind: 'showcase',
-        location: 'demo.html',
-        candidateRef: document.candidateRef!,
-        generatedAt: verified.checkedAt
-      }
-    ]
-    const artifact = {
-      artifactId: 'demo',
-      candidate: verified,
-      availability: verified,
-      execution: { kind: 'unknown' as const, reason: '未核对执行记录' }
-    }
-    // Recorded material without per-goal deliveries stays pending — no checkbox shortcut.
-    expect(preparationSignal(document, verified, { candidate, artifacts: [artifact] }).kind).toBe(
-      'pending'
-    )
-    for (const result of document.results) {
-      result.deliveries.push({ title: '实际交付', location: 'out/app' })
-    }
-    // Complete requires the fixed plan's goals to be covered, not just the present results.
-    expect(preparationSignal(document, verified, { candidate, artifacts: [artifact] }).kind).toBe(
-      'pending'
-    )
-    expect(
-      preparationSignal(document, verified, { candidate, artifacts: [artifact] }, plan.goals).kind
-    ).toBe('complete')
-    // A schema-valid round missing one planned goal's result never turns green.
-    const partial = { ...document, results: document.results.slice(0, 1) }
-    expect(
-      preparationSignal(partial, verified, { candidate, artifacts: [artifact] }, plan.goals).kind
-    ).toBe('pending')
-    // Repacking the same source invalidates the declared material match.
-    document.candidateRef = { ...document.candidateRef!, commit: '5'.repeat(40) }
-    expect(preparationSignal(document, verified, null, plan.goals).kind).toBe('failed')
-    // A candidate from another version fails even without machine checks.
-    document.candidateRef = { ...document.candidateRef!, version: 'v0.4' }
-    expect(preparationSignal(document, verified, null, plan.goals)).toMatchObject({
-      kind: 'failed',
-      label: '候选不匹配'
-    })
-  })
   it('starts a separate cycle while retaining fixed plan identity and promises', () => {
     const document = draft()
     expect(document.cycleId).not.toBe(plan.cycleId)
     expect(document.planRef.cycleId).toBe(plan.cycleId)
     expect(document.results.every((result) => !result.decision)).toBe(true)
+    const nextWeek = structuredClone(document)
+    nextWeek.results.forEach((result) => {
+      result.rounds = [
+        {
+          id: 'week-2',
+          week: '2026-W43',
+          kind: 'progress',
+          snapshot: {
+            goals: [{ goalId: result.goalId, decision: 'pending', progress: '' }],
+            issueNotes: {},
+            issueMarks: {}
+          }
+        }
+      ]
+    })
+    expect(sameAcceptanceSource(document, nextWeek)).toBe(false)
+    expect(
+      sameAcceptanceSource(nextWeek, { ...nextWeek, results: nextWeek.results.toReversed() })
+    ).toBe(true)
+    const newGoal = emptyGoalResult('g3', nextWeek)
+    expect(newGoal.rounds?.[0].id).toBe('week-2')
+    expect(newGoal.rounds?.[0].snapshot.goals).toEqual([
+      { goalId: 'g3', decision: 'pending', progress: '' }
+    ])
+    expect(
+      sameAcceptanceSource(nextWeek, { ...nextWeek, results: [...nextWeek.results, newGoal] })
+    ).toBe(true)
     expect(() =>
       assertFixedPlan(document.planRef, { ...planSnapshot, revision: `sha256:${'b'.repeat(64)}` })
     ).toThrow('来源已改变')
@@ -163,7 +89,26 @@ describe('version acceptance evidence', () => {
 
   it('keeps goal one current when only goal two receives evidence', async () => {
     const document = await decide()
+    expect(document.results.map((result) => result.goalId)).toEqual(['g1', 'g2'])
     document.results.find((result) => result.goalId === 'g2')!.note = '补充验收报告'
+    expect(await decisionFreshness(document, plan, 'g1')).toBe('current')
+    const first = document.results[0]
+    first.rounds = [
+      {
+        id: 'week-1',
+        week: '2026-W42',
+        kind: 'progress',
+        snapshot: {
+          goals: [{ goalId: 'g1', decision: 'pending', progress: '' }],
+          issueNotes: {},
+          issueMarks: {}
+        }
+      }
+    ]
+    expect(await decisionFreshness(document, plan, 'g1')).toBe('current')
+    // Persisted by the prior evidence projection for this exact fixture.
+    first.decision!.materialRevision =
+      'sha256:9b9521bc84bcff0935686936c29c5f8a4e0c1c69ac7a637ae224579006b04857'
     expect(await decisionFreshness(document, plan, 'g1')).toBe('current')
     document.results
       .find((result) => result.goalId === 'g1')!

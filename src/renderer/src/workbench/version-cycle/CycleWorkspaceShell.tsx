@@ -1,8 +1,10 @@
 import { useCycleWorkspace } from './cycle-workspace-context'
 import { PlanningBoard } from '../version-planning/PlanningBoard'
 import { AcceptancePage } from '../version-acceptance/AcceptancePage'
+import { usePackagePipelineWarmup } from '../version-acceptance/use-package-pipeline-warmup'
 export function CycleWorkspaceShell() {
   const workspace = useCycleWorkspace()
+  usePackagePipelineWarmup(workspace?.context)
   if (!workspace) {
     return null
   }
@@ -19,7 +21,7 @@ export function CycleWorkspaceShell() {
           正在同步主干，现有材料暂时只读…
         </p>
       )}
-      <div inert={context.syncing} style={{ display: 'contents' }}>
+      <div className="vc-board-content" inert={context.syncing}>
         {!context.worktreeId ? (
           <>
             {(notice || context.error) && (

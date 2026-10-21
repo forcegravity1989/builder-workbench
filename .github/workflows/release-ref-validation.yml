@@ -1,13 +1,10 @@
 name: Release ref validation
 
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/adhoc-mac-build.yml'
-      - '.github/workflows/dev-channel-win-build.yml'
-      - '.github/workflows/release-ref-validation.yml'
-      - 'config/scripts/workflow-ref-reachability.test.mjs'
-      - 'config/scripts/workflow-ref-mirror-case-safety.test.mjs'
+  # Why dispatch-only: part of the Orca CI/E2E isolation (ref/upstream.md). Its
+  # contract tests (config/scripts/workflow-ref-*.test.mjs) validate the old
+  # release-chain workflows and are no longer discoverable through the trimmed
+  # Workbench Vitest include, so an automatic PR trigger could only go red.
   workflow_dispatch:
 
 permissions:

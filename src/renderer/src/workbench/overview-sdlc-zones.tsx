@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { Repo } from '../../../shared/repo-types'
 import type { MetricRange } from '../../../shared/workbench/metrics'
 import { addCalendarDays, dayInTimezone } from '../../../shared/workbench/metric-windows'
@@ -7,7 +7,7 @@ import { MetricLineChart } from './overview-metric-chart'
 import { bucketCommitCounts, type SdlcCommits, type SdlcSeries } from './overview-sdlc'
 import { useOverviewSdlc } from './use-overview-sdlc'
 import { zoneBucketLabels, zoneChartRange } from './overview-zone-series'
-import { OverviewGrain, OverviewRefresh } from './overview-controls'
+import { OverviewGrain } from './overview-controls'
 import { useOverviewViewState } from './overview-view-state'
 
 function evidence<T>(state: SdlcSeries<T> | null): T | undefined {
@@ -81,7 +81,8 @@ export function OverviewSdlcZones({
   baseWorktreeId,
   baseWorktreePath,
   timezone,
-  ready
+  ready,
+  refreshToken
 }: {
   identity: string
   repo: Repo | null
@@ -90,6 +91,7 @@ export function OverviewSdlcZones({
   baseWorktreePath: string | null
   timezone?: string
   ready: boolean
+  refreshToken: number
 }) {
   const [view, setView] = useOverviewViewState(identity)
   const tz = timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -101,6 +103,15 @@ export function OverviewSdlcZones({
     timezone: tz,
     ready
   })
+  // 「更新代码」bump refreshToken → 就地强制重读（保留旧值显示与 retain 回退），
+  // 不换缓存键、不清空图表。
+  const refreshRef = useRef(state.refresh)
+  refreshRef.current = state.refresh
+  useEffect(() => {
+    if (refreshToken > 0) {
+      refreshRef.current()
+    }
+  }, [refreshToken])
   const range = useMemo(
     () => zoneChartRange(view.repoGranularity, tz, state.anchor),
     [view.repoGranularity, tz, state.anchor]
@@ -157,7 +168,6 @@ export function OverviewSdlcZones({
               setView({ repoGranularity: value })
             }}
           />
-          <OverviewRefresh label="刷新项目指标" busy={state.busy} onClick={state.refresh} />
         </div>
       </header>
       <div className="wb-sdlc-grid">

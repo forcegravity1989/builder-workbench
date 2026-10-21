@@ -1,7 +1,5 @@
-# 外部代码评审（按需召唤）。谈定见 docs/05-features/reviewer-agent/；codehub 仓走 Workbench 内建「请评审」。
-# bw-orca 产品分支正本（2026-09-29 自 main 迁入，行为一致；main 计划被本分支覆盖，机制不随覆盖丢失）：
-# 默认分支仍是 main 期间，issue_comment 召唤执行 main 上的定义——它检出 PR head 后运行本分支的
-# .github/scripts/check-pr-review.mjs，bw-orca head 的回执链即生效；bw-orca 成为默认分支后由本定义接管触发。
+# Workbench 外部代码评审（按需召唤）。codehub 仓走 Workbench 内建「请评审」。
+# 只在 PR 评论或手动 dispatch 中运行，避免每次 PR 更新自动消耗 Claude 额度。
 # 触发模型（2026-09-20 拍板修订，此前为 PR 事件全自动）：仓库成员在 PR 评论单独一行发 /code-review
 # 才评审当前 head SHA；draft 不触发；fork PR 无 secrets 跳过。命令判定是行首匹配、整行独占，
 # 不解析 markdown——代码块或引用里单独成行的示范同样会触发（已知边界，后果只是多审一次当前提交）。

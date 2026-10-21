@@ -188,6 +188,23 @@ describe('TabGroupSplitLayout', () => {
     )
   })
 
+  it('can omit top-right header space when the terminal is embedded beside a BW board', () => {
+    const element = TabGroupSplitLayout({
+      layout: { type: 'leaf', groupId: 'group-1' },
+      worktreeId: 'wt-1',
+      focusedGroupId: 'group-1',
+      isWorktreeActive: true,
+      reserveClosedExplorerToggleSpace: false
+    })
+
+    expect(asElement(getSplitNodeElement(element)).props).toEqual(
+      expect.objectContaining({
+        reserveClosedExplorerToggleSpace: false,
+        reserveCollapsedSidebarHeaderSpace: true
+      })
+    )
+  })
+
   it('records pane resizing at the start of the gesture', () => {
     const element = TabGroupSplitLayout({
       layout: {

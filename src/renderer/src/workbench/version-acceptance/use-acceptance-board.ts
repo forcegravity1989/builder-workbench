@@ -7,12 +7,12 @@ import {
 import type { VersionDocumentPort } from '../../../../shared/workbench/version-document'
 import type { MetricRef } from '../../../../shared/workbench/metrics'
 import { useAcceptanceDraft } from './use-acceptance-draft'
-import { emptyGoalResult, sameAcceptanceSource } from './acceptance-model'
-import { createAcceptanceMaterial } from './acceptance-model'
+import { createAcceptanceMaterial, emptyGoalResult, sameAcceptanceSource } from './acceptance-model'
 import { useMaterialAutosave } from '../version-cycle/use-material-autosave'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
 import { useAcceptanceSources, useFixedAcceptancePlan } from './use-acceptance-plan'
 import { useAcceptanceOutput } from './use-acceptance-output'
+import { readAcceptanceHistorySelection } from '../cycle-view-state'
 
 export function useAcceptanceBoard({
   context,
@@ -20,13 +20,14 @@ export function useAcceptanceBoard({
   recoveryKey
 }: Pick<AcceptanceBoardProps, 'context' | 'history'> & { recoveryKey: string }) {
   const scope = context.scope!
-  const session = context.session
   const worktreeId = context.worktreeId!
   const materialPort = context.materialPort!
   const metricScope = useMemo(
     () => ({ repoId: scope.repoId, worktreeId, hostId: scope.hostId }),
     [scope.repoId, scope.hostId, worktreeId]
   )
+  const owner = scope.runtimeOwnerEnvironmentId
+  const historySelection = readAcceptanceHistorySelection(metricScope, context.version, owner)
   const port = useMemo<VersionDocumentPort<AcceptanceMaterial>>(
     () => ({
       async read(version) {
@@ -53,7 +54,6 @@ export function useAcceptanceBoard({
     loadedRefresh
   } = useAcceptanceDraft(recoveryKey, port, context.version ?? undefined, context.materialRefresh)
   const catalog = useAcceptanceSources(history, materialPort, metricScope, context.materialRefresh)
-  const { versions, sources } = catalog
   const [version, setVersion] = useState(context.version ?? '')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -61,10 +61,9 @@ export function useAcceptanceBoard({
   const generation = useRef(0)
   const document = draft?.document
   const fixed = useFixedAcceptancePlan(history, metricScope, document?.planRef)
-  const plan = fixed.plan
-  const output = useAcceptanceOutput(context, controller, draft, plan, fixed.verification, setError)
+  const output = useAcceptanceOutput(context, controller)
   const associated = Boolean(document && document.version === context.version)
-  const readOnly = busy || Boolean(context.syncing) || !associated || !plan
+  const readOnly = busy || Boolean(context.syncing) || !associated || !fixed.plan
   const lifetime = useRef({ active: true })
   useEffect(() => {
     const state = lifetime.current
@@ -84,10 +83,11 @@ export function useAcceptanceBoard({
     selection,
     onSaved: catalog.refresh
   })
-  const source = sources.find((item) => item.version === context.version)
+  const source = catalog.sources.find((item) => item.version === context.version)
   useEffect(() => {
     if (
       context.syncing ||
+      historySelection !== 'current' ||
       initializationSuppressed ||
       !source ||
       draft ||
@@ -132,6 +132,7 @@ export function useAcceptanceBoard({
     }
   }, [
     context.syncing,
+    historySelection,
     initializationSuppressed,
     source,
     draft,
@@ -207,18 +208,6 @@ export function useAcceptanceBoard({
       fixed.refresh()
       await refreshDraft()
       await catalog.refresh()
-      await output.archiveStatus()
-    } catch (reason) {
-      setError(String(reason))
-    }
-  }
-  async function prepare(text: string) {
-    try {
-      if (!session) {
-        throw new Error('请先选择或开启左侧会话。')
-      }
-      await context.sessionPort.prepareRequest(session, text)
-      setError(null)
     } catch (reason) {
       setError(String(reason))
     }
@@ -238,7 +227,9 @@ export function useAcceptanceBoard({
     }
     controller.edit({
       ...current,
-      results: [...current.results.filter((item) => item.goalId !== goalId), result]
+      results: current.results.some((item) => item.goalId === goalId)
+        ? current.results.map((item) => (item.goalId === goalId ? result : item))
+        : [...current.results, result]
     })
   }
   function editReadings(
@@ -251,30 +242,39 @@ export function useAcceptanceBoard({
     if (!current) {
       return
     }
-    const result = current.results.find((item) => item.goalId === goalId) ?? emptyGoalResult(goalId)
+    const result =
+      current.results.find((item) => item.goalId === goalId) ?? emptyGoalResult(goalId, current)
+    const results = source.results.some((item) => item.goalId === goalId)
+      ? source.results
+      : [...source.results, result]
     editGoal(
       {
         ...source,
-        results: [
-          {
-            ...result,
-            readings: [...result.readings.filter((item) => item.ref.name !== ref.name), ...readings]
-          }
-        ]
+        results: results.map((item) =>
+          item.goalId === goalId
+            ? {
+                ...result,
+                readings: [
+                  ...result.readings.filter((item) => item.ref.name !== ref.name),
+                  ...readings
+                ]
+              }
+            : item
+        )
       },
       goalId
     )
   }
   return {
     scope,
-    session,
+    session: context.session,
     worktreeId,
     metricScope,
     draft,
     controller,
     recoveryError,
     recoveryText,
-    versions,
+    versions: catalog.versions,
     hasPlanSource: Boolean(source),
     sourcesLoaded: catalog.loadedRefresh === (context.materialRefresh ?? 0),
     materialProblems: catalog.materialProblems,
@@ -285,16 +285,14 @@ export function useAcceptanceBoard({
     ...output,
     scroll,
     document,
-    plan,
+    plan: fixed.plan,
     readOnly,
     loadVersion,
     refreshData,
-    flush: autosave.flush,
     saving: autosave.saving,
     retrySave: autosave.save,
     useRemoteDeletion,
     initializationSuppressed,
-    prepare,
     editGoal,
     editReadings
   }

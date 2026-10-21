@@ -55,7 +55,12 @@ export type CharterSubmitOutcome =
   | { mode: 'noop'; filled: string[]; note?: string }
   /** 没有可识别远端/读不到远端身份:调用方就地写主检出并如实说明。 */
   | { mode: 'local-only'; reason: string }
-  | { mode: 'failed'; stage: 'read' | 'validate' | 'write' | 'commit' | 'push' | 'pr'; error: string; filled: string[] }
+  | {
+      mode: 'failed'
+      stage: 'read' | 'validate' | 'write' | 'commit' | 'push' | 'pr'
+      error: string
+      filled: string[]
+    }
 
 export const CharterStatusRequestSchema = z.strictObject({
   repoId: z.string().min(1),
@@ -63,10 +68,37 @@ export const CharterStatusRequestSchema = z.strictObject({
 })
 export type CharterStatusRequest = z.infer<typeof CharterStatusRequestSchema>
 
+/**
+ * 墙判据读取请求(G3):与 status 同形但独立定义——生成的 rpc-params 目录按
+ * schema 标识方法参数,共用别名会把 status 的参数也标成 read 的 schema。
+ * repoId 在 owner runtime 的注册表里解析,hostId 供 owner 侧校验路由,
+ * 不由调用方指路径。
+ */
+export const CharterReadRequestSchema = z.strictObject({
+  repoId: z.string().min(1),
+  hostId: z.string().min(1)
+})
+export type CharterReadRequest = z.infer<typeof CharterReadRequestSchema>
+
+/**
+ * 主检出 `.bw/project.toml` 读取结果:existed=false 是确证不存在;
+ * error 非空是「没读成」(不可读/二进制/IO),两者都不冒充对方(铁律二同源语义)。
+ */
+export type CharterReadResult = {
+  charter: ProjectCharter | null
+  existed: boolean
+  error: string | null
+}
+
 export type CharterStatus = {
   /** bw/project 分支上的名片 PR/MR;查询失败按 null 呈现,不装有事。 */
-  pr: { provider: 'github' | 'codehub'; number: number; url: string | null; state: 'open' | 'merged' | 'closed' } | null
-  /** 主检出 HEAD 是否已含名片(合入且已更新主目录后为 true)。 */
+  pr: {
+    provider: 'github' | 'codehub'
+    number: number
+    url: string | null
+    state: 'open' | 'merged' | 'closed'
+  } | null
+  /** 主检出 HEAD 是否已含名片(合入且已「更新代码」后为 true)。 */
   headHasCharter: boolean
   /** renderer 侧查询失败(区别于「查了没有」):呈现为没读到,不冒充无 PR。 */
   queryFailed?: boolean

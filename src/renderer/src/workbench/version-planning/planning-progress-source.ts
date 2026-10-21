@@ -6,8 +6,13 @@ import {
   PlanningProgressSourceSchema,
   type PlanningProgressSource
 } from '../../../../shared/workbench/version-material'
-import { deriveAcceptanceReport } from '../version-acceptance/acceptance-report'
+import { buildAcceptanceReport } from '../version-acceptance/acceptance-report'
 
+/**
+ * Reads the referenced acceptance record at its fixed commit and derives the
+ * human-readable minutes for the progress card. Identity mismatches throw —
+ * never fall back to another record or to the latest material.
+ */
 export async function readPlanningProgressSource(
   history: VersionHistoryPort,
   scope: MetricScope,
@@ -39,9 +44,5 @@ export async function readPlanningProgressSource(
   ) {
     throw new Error('无法核对该验收采用的固定计划，未改读最新计划。')
   }
-  return {
-    source,
-    markdown: deriveAcceptanceReport({ document, plan, revision: snapshot.revision }).markdown,
-    original: JSON.stringify(document, null, 2)
-  }
+  return buildAcceptanceReport(document, plan)
 }

@@ -35,6 +35,7 @@ import type {
   GitHubOwnerRepo,
   IssueInfo
 } from '../../shared/github/pull-request-types'
+import type { IssueStatesBatchResult } from '../../shared/github/issue-state-types'
 import type {
   GitHubWorkItem,
   GitHubWorkItemDetails,
@@ -94,6 +95,12 @@ export type GithubWorkItemApi = {
     assignees?: string[]
   }) => Promise<GitHubCreateIssueResult>
   countWorkItems: (args: { repoPath: string; repoId?: string; query?: string }) => Promise<number>
+  issueStates: (args: {
+    owner: string
+    repo: string
+    host?: string | null
+    numbers: number[]
+  }) => Promise<IssueStatesBatchResult>
   listWorkItems: (args: {
     repoPath: string
     repoId?: string

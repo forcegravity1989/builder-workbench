@@ -19,10 +19,9 @@ let unknownCommit: string
 let firstRevision: string
 let ffMultiMaterialCommit: string
 let ffMultiHeadCommit: string
-const adopted = new Set<string>()
-const drafts = new Set<string>()
-/** Provider-reported merge commit per material commit; FF/rebase PRs merge at a later commit. */
-const mergeOf = new Map<string, string>()
+let acceptanceFirstCommit: string
+let acceptanceLatestCommit: string
+let unrelatedCommit: string
 const plan: PlanningMaterial = {
   schema_version: 3,
   version: 'v1',
@@ -33,8 +32,8 @@ const plan: PlanningMaterial = {
 }
 const digest = (raw: Buffer) => `sha256:${createHash('sha256').update(raw).digest('hex')}`
 const git = (args: string[]) => execFileSync('git', args, { cwd: root, stdio: 'pipe' })
-const commit = (message: string) => {
-  git(['add', '.bw/planning/v1/data.json'])
+const commit = (message: string, path = '.bw/planning/v1/data.json') => {
+  git(['add', path])
   git(['commit', '-m', message])
   return git(['rev-parse', 'HEAD']).toString().trim()
 }
@@ -49,12 +48,11 @@ beforeAll(() => {
   writeFileSync(join(root, '.bw/planning/v1/data.json'), raw)
   firstRevision = digest(raw)
   firstCommit = commit('first cycle')
-  adopted.add(firstCommit)
   writeFileSync(
     join(root, '.bw/planning/v1/data.json'),
     JSON.stringify({ ...plan, cycleId: 'second-cycle' })
   )
-  adopted.add(commit('second cycle'))
+  commit('second cycle')
   mkdirSync(join(root, '.bw/planning/legacy'), { recursive: true })
   writeFileSync(join(root, '.bw/planning/legacy/data.json'), '{"schema_version":2}')
   mkdirSync(join(root, '.bw/planning/template'), { recursive: true })
@@ -80,39 +78,38 @@ beforeAll(() => {
   )
   unmergedCommit = commit('unmerged draft')
   git(['switch', 'adopted'])
+  // Intermediate commits of one round share its cycleId, like real autosaves.
   git(['switch', '-c', 'maintenance'])
   writeFileSync(
     join(root, '.bw/planning/v1/data.json'),
-    JSON.stringify({ ...plan, cycleId: 'intermediate-draft' })
+    JSON.stringify({ ...plan, cycleId: 'third-cycle', summary: { progress: '中间稿', risks: '' } })
   )
-  drafts.add(commit('draft before review'))
+  commit('draft before review')
   writeFileSync(
     join(root, '.bw/planning/v1/data.json'),
     JSON.stringify({ ...plan, cycleId: 'third-cycle' })
   )
-  drafts.add(commit('reviewed cycle'))
+  commit('reviewed cycle')
   git(['switch', 'adopted'])
   git(['merge', '--no-ff', 'maintenance', '-m', 'adopt third cycle'])
   mergeCommit = git(['rev-parse', 'HEAD']).toString().trim()
-  adopted.add(mergeCommit)
   git(['switch', '-c', 'fast-forward'])
   writeFileSync(
     join(root, '.bw/planning/v1/data.json'),
-    JSON.stringify({ ...plan, cycleId: 'ff-draft' })
+    JSON.stringify({ ...plan, cycleId: 'fourth-cycle', summary: { progress: '中间稿', risks: '' } })
   )
-  drafts.add(commit('ff intermediate draft'))
+  commit('ff intermediate draft')
   writeFileSync(
     join(root, '.bw/planning/v1/data.json'),
     JSON.stringify({ ...plan, cycleId: 'fourth-cycle' })
   )
   ffCommit = commit('ff adopted cycle')
-  adopted.add(ffCommit)
   git(['switch', 'adopted'])
   git(['merge', '--ff-only', 'fast-forward'])
   git(['switch', '-c', 'rebased'])
   writeFileSync(
     join(root, '.bw/planning/v1/data.json'),
-    JSON.stringify({ ...plan, cycleId: 'rebase-draft' })
+    JSON.stringify({ ...plan, cycleId: 'fifth-cycle', summary: { progress: '中间稿', risks: '' } })
   )
   commit('rebase intermediate draft')
   writeFileSync(
@@ -124,9 +121,7 @@ beforeAll(() => {
   git(['commit', '--allow-empty', '-m', 'advance adopted baseline'])
   git(['switch', 'rebased'])
   git(['rebase', 'adopted'])
-  drafts.add(git(['rev-parse', 'HEAD^']).toString().trim())
   rebaseCommit = git(['rev-parse', 'HEAD']).toString().trim()
-  adopted.add(rebaseCommit)
   git(['switch', 'adopted'])
   git(['merge', '--ff-only', 'rebased'])
   adoptedCommit = rebaseCommit
@@ -136,16 +131,61 @@ beforeAll(() => {
     JSON.stringify({ ...plan, cycleId: 'sixth-cycle' })
   )
   ffMultiMaterialCommit = commit('ff-multi material')
-  adopted.add(ffMultiMaterialCommit)
   writeFileSync(join(root, 'README.md'), 'ff-multi head touches no material')
   git(['add', 'README.md'])
   git(['commit', '-m', 'ff-multi head'])
   ffMultiHeadCommit = git(['rev-parse', 'HEAD']).toString().trim()
-  adopted.add(ffMultiHeadCommit)
-  mergeOf.set(ffMultiMaterialCommit, ffMultiHeadCommit)
   git(['switch', 'adopted'])
   git(['merge', '--ff-only', 'ff-multi'])
   adoptedCommit = ffMultiHeadCommit
+  git(['switch', '-c', 'acceptance-history', unmergedCommit])
+  const acceptance = {
+    schema_version: 3,
+    version: 'v1',
+    cycleId: 'spanning-weeks',
+    planRef: {
+      kind: 'committed',
+      version: 'v1',
+      cycleId: plan.cycleId,
+      revision: firstRevision,
+      sourceCommit: firstCommit
+    },
+    preparedArtifacts: [],
+    results: [{ goalId: 'g1', deliveries: [], readings: [], note: '', nextStep: '' }]
+  }
+  const acceptancePath = '.bw/planning/v1/acceptance.json'
+  writeFileSync(join(root, acceptancePath), JSON.stringify(acceptance))
+  acceptanceFirstCommit = commit('first acceptance week without round metadata', acceptancePath)
+  writeFileSync(
+    join(root, acceptancePath),
+    JSON.stringify({
+      ...acceptance,
+      results: acceptance.results.map((result) => ({
+        ...result,
+        progress: '本周继续交付',
+        rounds: [
+          {
+            id: 'r2',
+            week: '2026-W43',
+            kind: 'progress',
+            snapshot: {
+              goals: [{ goalId: 'g1', decision: 'pending', progress: '' }],
+              issueNotes: {},
+              issueMarks: {}
+            }
+          }
+        ]
+      }))
+    })
+  )
+  acceptanceLatestCommit = commit('next acceptance week with the same cycle id', acceptancePath)
+  git(['switch', '-c', 'unrelated-history', adoptedCommit])
+  writeFileSync(
+    join(root, '.bw/planning/v1/data.json'),
+    JSON.stringify({ ...plan, cycleId: 'unrelated' })
+  )
+  unrelatedCommit = commit('unrelated branch material')
+  git(['switch', 'adopted'])
 }, 20_000)
 afterAll(() => {
   if (root) {
@@ -157,11 +197,7 @@ afterAll(() => {
   }
 })
 
-function service(proofMergeCommit?: (candidate: { sourceCommit: string }) => string) {
-  const mergeCommitFor =
-    proofMergeCommit ??
-    ((candidate: { sourceCommit: string }) =>
-      mergeOf.get(candidate.sourceCommit) ?? candidate.sourceCommit)
+function service(cycleHead?: string) {
   return createVersionHistoryService({
     async git(_scope, args) {
       return git(args)
@@ -170,40 +206,13 @@ function service(proofMergeCommit?: (candidate: { sourceCommit: string }) => str
       return { ref: 'adopted', commit: adoptedCommit }
     },
     async worktreeHead() {
-      return git(['rev-parse', 'HEAD']).toString().trim()
+      return cycleHead ?? git(['rev-parse', 'HEAD']).toString().trim()
     },
     async listPlanningDirs(_scope, commit) {
       return git(['ls-tree', '-z', '--name-only', `${commit}:.bw/planning`])
         .toString()
         .split('\0')
         .filter(Boolean)
-    },
-    async archiveState(_scope, candidate) {
-      if (adopted.has(candidate.sourceCommit)) {
-        return {
-          kind: 'adopted',
-          proof: {
-            reference: {
-              provider: 'github',
-              repository: 'test/project',
-              number: 1,
-              materialRevision: candidate.revision
-            },
-            mergeCommit: mergeCommitFor(candidate),
-            material: {
-              workflow: candidate.workflow,
-              version: candidate.version,
-              cycleId: candidate.cycleId,
-              revision: candidate.revision
-            },
-            checkedAt: '2026-09-25T00:00:00Z'
-          }
-        }
-      }
-      if (drafts.has(candidate.sourceCommit)) {
-        return { kind: 'draft' }
-      }
-      return { kind: 'unknown', message: '未取得该修订的真实归档依据' }
     },
     async readDraft(draftScope, version) {
       expect(draftScope).toEqual({ ...scope, worktreeId: 'plan-tree' })
@@ -214,7 +223,7 @@ function service(proofMergeCommit?: (candidate: { sourceCommit: string }) => str
   })
 }
 
-it('uses explicit archive evidence across no-ff, ff and rebase history while preserving invalid candidates', async () => {
+it('lists one record per cycle round across no-ff, ff and rebase history while preserving invalid candidates', async () => {
   const port = service()
   const planRef = {
     kind: 'committed' as const,
@@ -233,12 +242,13 @@ it('uses explicit archive evidence across no-ff, ff and rebase history while pre
     baselineCommit: adoptedCommit
   })
   const catalog = await port.list({ scope })
+  // One record per round: the newest commit of a cycleId supersedes its
+  // intermediates; no provider merge-proof filtering is involved.
   expect(catalog.records.map((record) => record.cycleId)).toEqual([
     'sixth-cycle',
     'fifth-cycle',
     'fourth-cycle',
     'third-cycle',
-    // 归档状态是信号不是可见性门：证明缺失的记录仍列出，由问题与灯如实呈现。
     'first-cycle',
     'second-cycle',
     'first-cycle'
@@ -256,15 +266,18 @@ it('uses explicit archive evidence across no-ff, ff and rebase history while pre
         version: 'template',
         code: 'invalid-version',
         message: expect.stringContaining('.bw/planning/template/data.json')
-      }),
-      expect.objectContaining({
-        version: 'unverified',
-        code: 'archive-unverified',
-        sourceCommit: unknownCommit
       })
     ])
   )
-  expect(catalog.problems).toHaveLength(3)
+  expect(catalog.problems).toHaveLength(2)
+  const revisions = await port.list({ scope, version: 'v1', workflow: 'plan', allRevisions: true })
+  expect(
+    revisions.records.every((record) => record.version === 'v1' && record.workflow === 'plan')
+  ).toBe(true)
+  expect(
+    revisions.records.filter((record) => record.cycleId === 'third-cycle').length
+  ).toBeGreaterThan(1)
+  expect(revisions.problems).toEqual([])
   const unverifiedRead = await port.read({
     scope,
     sourceCommit: unknownCommit,
@@ -284,26 +297,7 @@ it('uses explicit archive evidence across no-ff, ff and rebase history while pre
   ).rejects.toMatchObject({ code: 'history-identity-mismatch' })
 })
 
-it('flags a well-formed archive proof for a different fixed commit while keeping the record listed', async () => {
-  const catalog = await service(() => '0'.repeat(40)).list({ scope })
-  expect(
-    catalog.problems.find(
-      (item) => item.sourceCommit === firstCommit && item.code === 'archive-unverified'
-    )
-  ).toBeDefined()
-  expect(catalog.records.some((record) => record.sourceCommit === firstCommit)).toBe(true)
-})
-
-it('flags a real merge commit whose tree does not carry the candidate revision', async () => {
-  const catalog = await service(() => adoptedCommit).list({ scope })
-  expect(
-    catalog.problems.find(
-      (item) => item.sourceCommit === firstCommit && item.code === 'archive-unverified'
-    )
-  ).toBeDefined()
-})
-
-it('reads a fast-forwarded material commit through its later PR merge commit', async () => {
+it('reads reachable trunk and cycle revisions without losing same-cycle weeks or accepting unrelated branches', async () => {
   const result = await service().read({
     scope,
     sourceCommit: ffMultiMaterialCommit,
@@ -313,6 +307,90 @@ it('reads a fast-forwarded material commit through its later PR merge commit', a
   })
   expect(result.document.cycleId).toBe('sixth-cycle')
   expect(result.sourceCommit).toBe(ffMultiMaterialCommit)
+  const port = service(acceptanceLatestCommit)
+  const catalog = await port.list({
+    scope,
+    source: 'cycle',
+    version: 'v1',
+    workflow: 'acceptance',
+    allRevisions: true
+  })
+  expect(catalog.records.map((record) => record.sourceCommit)).toEqual([
+    acceptanceLatestCommit,
+    acceptanceFirstCommit
+  ])
+  expect(catalog.records.map((record) => record.cycleId)).toEqual([
+    'spanning-weeks',
+    'spanning-weeks'
+  ])
+  expect(catalog.records[0]).toMatchObject({
+    roundId: 'r2',
+    week: '2026-W43',
+    roundKind: 'progress'
+  })
+  expect(catalog.records[1]).not.toHaveProperty('roundId')
+  expect(catalog.records[1]).not.toHaveProperty('week')
+  const collapsed = await port.list({
+    scope,
+    source: 'cycle',
+    version: 'v1',
+    workflow: 'acceptance'
+  })
+  expect(collapsed.records).toHaveLength(1)
+  const request = {
+    scope,
+    source: 'cycle' as const,
+    sourceCommit: acceptanceFirstCommit,
+    version: 'v1',
+    cycleId: 'spanning-weeks',
+    workflow: 'acceptance' as const,
+    expectedRevision: catalog.records[1].revision
+  }
+  expect((await port.read(request)).document).toMatchObject({ cycleId: 'spanning-weeks' })
+  await expect(port.read({ ...request, source: 'trunk' })).rejects.toMatchObject({
+    code: 'unverified-source'
+  })
+  await expect(port.read({ ...request, expectedRevision: firstRevision })).rejects.toMatchObject({
+    code: 'history-identity-mismatch'
+  })
+  await expect(port.read({ ...request, cycleId: 'different-cycle' })).rejects.toMatchObject({
+    code: 'history-identity-mismatch'
+  })
+  await expect(
+    port.read({
+      scope,
+      source: 'cycle',
+      sourceCommit: unrelatedCommit,
+      version: 'v1',
+      cycleId: 'unrelated',
+      workflow: 'plan'
+    })
+  ).rejects.toMatchObject({ code: 'unverified-source' })
+  expect(
+    (
+      await port.read({
+        scope,
+        source: 'cycle',
+        sourceCommit: ffMultiMaterialCommit,
+        version: 'v1',
+        cycleId: 'sixth-cycle',
+        workflow: 'plan'
+      })
+    ).document.cycleId
+  ).toBe('sixth-cycle')
+  expect((await port.list({ scope, workflow: 'acceptance', allRevisions: true })).records).toEqual(
+    []
+  )
+  const current = await port.list({
+    scope,
+    source: 'cycle',
+    currentOnly: true,
+    version: 'v1',
+    workflow: 'acceptance'
+  })
+  expect(current.records).toHaveLength(1)
+  expect(current.records[0].sourceCommit).toBe(acceptanceLatestCommit)
+  expect(current.problems).toEqual([])
 })
 
 it('lists version folders from data.json committed on the cycle branch itself', async () => {
@@ -332,9 +410,6 @@ it('lists version folders from data.json committed on the cycle branch itself', 
         .split('\0')
         .filter(Boolean)
     },
-    async archiveState() {
-      return { kind: 'unknown', message: 'no provider merge proof' }
-    },
     async readDraft() {
       return null
     }
@@ -349,7 +424,7 @@ it('lists version folders from data.json committed on the cycle branch itself', 
     workflow: 'plan'
   })
   expect(catalog.plans.some((item) => item.version === 'template')).toBe(false)
-  // 合规目录即候选（unverified 也列出，归档状态与此无关）；不合规目录不静默消失。
+  // 合规目录即候选；不合规目录不静默消失。
   expect(catalog.plans.map((item) => item.version)).toEqual(
     expect.arrayContaining(['v1', 'unverified'])
   )
@@ -392,9 +467,6 @@ it('preserves raw Git paths containing quotes, backslashes and newlines as probl
     },
     async readDraft() {
       return null
-    },
-    async archiveState() {
-      throw new Error('Invalid paths must not become archive candidates')
     }
   })
   const catalog = await port.list({ scope })

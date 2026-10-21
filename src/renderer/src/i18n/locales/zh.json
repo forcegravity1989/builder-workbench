@@ -1916,6 +1916,9 @@
         "75a38d7df8": "GitHub 数据暂时不可用，其 API 可能已宕机、被限流或无法访问。请稍后重试。",
         "noGithubSourceDetected": "未检测到 GitHub 来源：",
         "noGithubSourceDetectedHint": "它可能没有 GitHub 远程仓库，或来源无法解析。",
+        "codehubSourceUnavailable": "CodeHub 来源不可用：",
+        "codehubSourceUnavailableHint": "该仓库是 CodeHub 项目。请在设置 → 任务中显示 CodeHub，或从来源选择器切换到 CodeHub。",
+        "openTaskSettings": "打开设置",
         "jiraLinkSourceUnavailable": "无法关联此 Jira 议题。请重新连接 Jira 或选择匹配的站点，然后重试。",
         "loadPageUnreachable": "第 {{value0}} 页超出了 GitHub 搜索可返回的范围。",
         "loadPageFailed": "无法从 GitHub 加载第 {{value0}} 页。",
@@ -6308,10 +6311,12 @@
           "a565377c38": "未安装",
           "15cf990798": "未经过验证",
           "f7eb5f0b24": "未安装",
-          "3ba07f933b": "连接 Orca 可用于浏览任务并启动带链接上下文工作区的议题追踪器。",
-          "70e885705b": "任务提供商",
-          "1683acbac4": "连接 Orca 可用于 pull request、merge request、检查和评审状态的源代码主机。",
-          "298c65ecac": "评审提供商"
+          "codeHostGroupTitle": "代码托管",
+          "codeHostGroupDescription": "用于任务、拉取请求、合并请求与评审状态的命令行工具。",
+          "imGroupTitle": "项目群",
+          "imGroupDescription": "用于向项目群发送版本与验收动态的命令行工具。",
+          "buildGroupTitle": "构建",
+          "buildGroupDescription": "用于流水线执行与出包的命令行工具。"
         },
         "KagiSessionLinkForm": {
           "92f0b4e472": "清除",
@@ -6985,7 +6990,8 @@
           "localLinkHelp": "此链接仅在运行于此计算机上的浏览器或 Orca 客户端中有效。",
           "noExternalAddress": "未找到其他设备的地址。将此计算机连接到 LAN 或 Tailscale，刷新，或选择“自定义地址”。",
           "staleAddress": "连接地址已更改。为 {{address}} 生成新链接。",
-          "customInvalid": "请输入有效的主机、主机:端口、IPv6 地址或 ws(s):// URL。"
+          "customInvalid": "请输入有效的主机、主机:端口、IPv6 地址或 ws(s):// URL。",
+          "savedLinkNotice": "已保存的共享链接，当前连接状态未验证。若无法连接，请先检查共享服务和网络地址，再决定是否重新生成链接。"
         },
         "Settings": {
           "3bf149e873": "项目设置 > {{value0}}",

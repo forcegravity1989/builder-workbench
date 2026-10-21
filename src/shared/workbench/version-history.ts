@@ -4,14 +4,21 @@ import {
   PlanReferenceSchema,
   SourceCommit,
   MaterialVersion,
+  MaterialRevision,
   type PlanningMaterial,
   type AcceptanceMaterial
 } from './version-material'
 
 export const VersionHistoryListSchema = z.strictObject({
   scope: MetricScopeSchema,
-  /** Overview reads one current file per version; explicit progress history keeps all revisions. */
-  currentOnly: z.boolean().optional()
+  /** Omitted keeps overview/catalog reads on the trunk baseline. */
+  source: z.enum(['trunk', 'cycle']).optional(),
+  version: MaterialVersion.optional(),
+  workflow: z.enum(['plan', 'acceptance']).optional(),
+  /** Overview reads one current file per version rather than the commit history. */
+  currentOnly: z.boolean().optional(),
+  /** Retain each material revision, including multiple weeks with the same cycleId. */
+  allRevisions: z.boolean().optional()
 })
 export const VersionTreePlansSchema = z.strictObject({
   scope: MetricScopeSchema,
@@ -23,7 +30,9 @@ export const VersionHistoryReadPlanSchema = z.strictObject({
 })
 export const VersionHistoryReadSchema = z.strictObject({
   scope: MetricScopeSchema,
+  source: z.enum(['trunk', 'cycle']).optional(),
   sourceCommit: SourceCommit,
+  expectedRevision: MaterialRevision.optional(),
   version: MaterialVersion,
   cycleId: z.string().min(1),
   workflow: z.enum(['plan', 'acceptance'])
@@ -35,6 +44,10 @@ export type VersionHistorySource = {
   revision: string
   workflow: 'plan' | 'acceptance'
   committedAt: string
+  /** Present only when this exact acceptance revision identifies one coherent round. */
+  roundId?: string
+  week?: string
+  roundKind?: 'progress' | 'final'
 }
 export type VersionHistoryProblem = Pick<
   VersionHistorySource,
@@ -42,13 +55,15 @@ export type VersionHistoryProblem = Pick<
 > & { code: string; message: string }
 export type VersionHistoryCatalog = {
   baselineCommit?: string
+  /** Display ref of the trunk baseline the catalog was read at (branch or pinned short form). */
+  baselineRef?: string
   records: VersionHistorySource[]
   /** Unreadable entries remain visible without hiding the valid records. */
   problems: VersionHistoryProblem[]
 }
 /**
  * A plan committed on the cycle branch itself (its HEAD tree), not on the
- * adopted baseline: the acceptance board reads the same branch its session
+ * trunk baseline: the acceptance board reads the same branch its session
  * works in. No commit timestamp — tree entries carry none, and consumers
  * must not invent one.
  */
@@ -65,7 +80,7 @@ export type VersionHistoryPlan = {
   document: PlanningMaterial
   revision: string
   planRef: z.infer<typeof PlanReferenceSchema>
-  /** A committed plan is the data.json bytes on the adopted baseline, not a provider merge record. */
+  /** A committed plan is the data.json bytes on the trunk baseline, not a provider merge record. */
   source:
     | { kind: 'committed'; sourceCommit: string; baselineCommit: string; baselineRef: string }
     | { kind: 'draft'; sourceHostId: string; sourceWorktreeId: string }

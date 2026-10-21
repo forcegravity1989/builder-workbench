@@ -45,7 +45,8 @@ const dependencies = {
     'CircleHelp',
     'RefreshCw',
     'Check',
-    'Copy'
+    'Copy',
+    'Download'
   ]
 }
 

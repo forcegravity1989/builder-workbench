@@ -4,16 +4,14 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getExecutionHostLabel } from '../../../../shared/execution-host'
-import {
-  CodeHubIntegrationCard,
-  GitHubIntegrationCard,
-  GitLabIntegrationCard
-} from './cli-source-control-integration-cards'
+import { GitHubIntegrationCard, GitLabIntegrationCard } from './cli-source-control-integration-cards'
+import { CodeHubIntegrationCard } from './bw-cli-integration-cards'
 
 const LOCAL_HOST_LABEL = getExecutionHostLabel('local')
 
 type StoreState = {
   settings: { activeRuntimeEnvironmentId: string | null }
+  activeWorktreeId?: string | null
   openSettingsPage: () => void
   openSettingsTarget: (target: { pane: string; repoId: string | null }) => void
 }
@@ -25,17 +23,39 @@ const mocks = vi.hoisted(() => ({
       ghStatus: 'connected',
       glabStatus: 'connected',
       bitbucketStatus: 'not-configured',
-      azureDevOpsStatus: 'not-configured',
-      giteaStatus: 'not-configured',
-      codehubStatus: 'available',
       bitbucketAccount: null,
+      azureDevOpsStatus: 'not-configured',
       azureDevOpsAccount: null,
-      giteaAccount: null
+      azureDevOpsBaseUrl: null,
+      giteaStatus: 'not-configured',
+      giteaAccount: null,
+      giteaBaseUrl: null,
+      codehubStatus: 'connected',
+      welinkStatus: 'connected'
     },
     unavailable: false,
     refresh: vi.fn()
+  },
+  cliInstall: {
+    start: vi.fn(),
+    isRunning: vi.fn(),
+    onFinished: vi.fn()
   }
 }))
+
+// Why (BW #323): install is an app-run background command — the cards call
+// window.api.cliInstall, and happy-dom has no preload, so stub the surface
+// once for every case in this file.
+;(window as { api?: unknown }).api = {
+  cliInstall: {
+    start: mocks.cliInstall.start,
+    isRunning: mocks.cliInstall.isRunning,
+    onFinished: mocks.cliInstall.onFinished
+  }
+}
+mocks.cliInstall.start.mockResolvedValue({ started: true })
+mocks.cliInstall.isRunning.mockResolvedValue(false)
+mocks.cliInstall.onFinished.mockReturnValue(() => {})
 
 vi.mock('@/store', () => ({
   useAppStore: (selector: (state: StoreState) => unknown) => {
@@ -48,6 +68,15 @@ vi.mock('@/store', () => ({
 
 vi.mock('./source-control-preflight-card-status', () => ({
   usePreflightCardStatuses: () => mocks.preflight
+}))
+
+// Why (BW #323): login renders the upstream inline terminal inside the card
+// (user decision 2026-10-19); stub it like AgentSkillSetupPanel.test does so
+// the card cases do not drag the TerminalPane/xterm chain into happy-dom.
+vi.mock('../onboarding/OnboardingInlineCommandTerminal', () => ({
+  OnboardingInlineCommandTerminal: (props: { command: string }) => (
+    <div data-testid="inline-login-terminal" data-command={props.command} />
+  )
 }))
 
 let root: Root | null = null
@@ -76,9 +105,13 @@ describe('CLI source-control integration card account scope', () => {
     mocks.store.current = null
     mocks.preflight.statuses.ghStatus = 'connected'
     mocks.preflight.statuses.glabStatus = 'connected'
-    mocks.preflight.statuses.codehubStatus = 'available'
+    mocks.preflight.statuses.codehubStatus = 'connected'
+    mocks.preflight.statuses.welinkStatus = 'connected'
     mocks.preflight.unavailable = false
     mocks.preflight.refresh.mockClear()
+    mocks.cliInstall.start.mockClear()
+    mocks.cliInstall.isRunning.mockClear()
+    mocks.cliInstall.onFinished.mockClear()
   })
 
   it('shows local-client ownership for connected GitHub CLI credentials', async () => {
@@ -98,18 +131,9 @@ describe('CLI source-control integration card account scope', () => {
     expect(rendered.textContent).toContain(
       'Credentials and account checks for this provider are owned by this desktop client. Use Settings > Remote Orca Servers > Advanced to edit server-owned credentials.'
     )
-    await act(async () => {
-      Array.from(rendered.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Open Remote Servers')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    expect(openSettingsPage).toHaveBeenCalledTimes(1)
-    expect(openSettingsTarget).toHaveBeenCalledWith({
-      pane: 'servers',
-      repoId: null,
-      sectionId: 'default-runtime'
-    })
+    // Why (BW #323): the Open Remote Servers shortcut was dropped from the
+    // integration cards (user decision 2026-10-16); the scope label stays.
+    expect(rendered.textContent).not.toContain('Open Remote Servers')
   })
 
   it('shows remote-server ownership for GitLab CLI credential checks', async () => {
@@ -130,7 +154,7 @@ describe('CLI source-control integration card account scope', () => {
     expect(rendered.textContent).toContain('glab auth login')
   })
 
-  it('shows codehub-cli as available without an auth action', async () => {
+  it('shows codehub-cli as connected without an auth action', async () => {
     mocks.store.current = {
       settings: { activeRuntimeEnvironmentId: null },
       openSettingsPage: vi.fn(),
@@ -140,15 +164,16 @@ describe('CLI source-control integration card account scope', () => {
     const rendered = await renderCard(<CodeHubIntegrationCard />)
 
     expect(rendered.textContent).toContain('CodeHub')
-    expect(rendered.textContent).toContain('Available')
+    expect(rendered.textContent).toContain('Connected')
     expect(rendered.textContent).toContain('codehub-cli')
+    expect(rendered.textContent).toContain(`Account scope: ${LOCAL_HOST_LABEL}`)
     expect(rendered.textContent).not.toContain('auth login')
-    expect(rendered.textContent).not.toContain('Account scope')
   })
 
   it('shows codehub-cli as missing from PATH and re-checks on demand', async () => {
     mocks.store.current = {
       settings: { activeRuntimeEnvironmentId: null },
+      activeWorktreeId: 'worktree-1',
       openSettingsPage: vi.fn(),
       openSettingsTarget: vi.fn()
     }
@@ -158,6 +183,25 @@ describe('CLI source-control integration card account scope', () => {
 
     expect(rendered.textContent).toContain('Not installed')
     expect(rendered.textContent).toContain('codehub-cli is not on PATH.')
+    // Why (BW #323): the install command is user-confirmed (2026-10-16); the
+    // card shows the exact self-contained command the button injects.
+    expect(rendered.textContent).toContain(
+      'npm install -g @codehub/codehub-cli --registry=https://cmc.centralrepo.rnd.huawei.com/artifactory/api/npm/product_npm/ --strict-ssl=false'
+    )
+    expect(rendered.textContent).toContain('Install CodeHub CLI')
+    expect(rendered.textContent).not.toContain('pending internal confirmation')
+    expect(rendered.textContent).not.toContain('Log in')
+    // Why (BW #323): install runs as an app-owned background command (user
+    // decision 2026-10-16) — clicking starts the runner and flips the card to
+    // "Installing…" instead of opening a terminal session.
+    await act(async () => {
+      Array.from(rendered.querySelectorAll('button'))
+        .find((button) => button.textContent === 'Install CodeHub CLI')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(mocks.cliInstall.start).toHaveBeenCalledWith({ cli: 'codehub' })
+    expect(rendered.textContent).toContain('Installing…')
+    expect(rendered.textContent).toContain('Installing in the background')
     await act(async () => {
       Array.from(rendered.querySelectorAll('button'))
         .find((button) => button.textContent === 'Re-check')

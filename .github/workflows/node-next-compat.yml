@@ -1,18 +1,7 @@
 name: Node next compatibility
 
 on:
-  schedule:
-    # Full future-runtime coverage is useful, but not worth doubling every PR matrix.
-    - cron: '0 10 * * *'
   workflow_dispatch:
-
-concurrency:
-  group: node-next-compat
-  cancel-in-progress: true
-
-permissions:
-  contents: read
-
 jobs:
   # A cold cache would otherwise make all eight Node 26 shards compile the same native addons.
   test_native_cache:

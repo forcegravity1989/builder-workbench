@@ -43,10 +43,10 @@ Avoid vague names like `test`, `misc`, or `changes`.
 Run the same checks that CI runs:
 
 ```bash
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
+pnpm run lint
+pnpm run typecheck
+pnpm exec vitest run --config config/vitest.config.ts src/main/workbench src/main/ipc/repos src/preload/api/platform-bridge.test.ts src/renderer/src/workbench src/relay/workbench src/shared/workbench
+pnpm run build:desktop
 ```
 
 Add high-quality tests for behavior changes and bug fixes. Prefer tests that would actually catch a regression, not shallow coverage that only exercises the happy path.
@@ -106,8 +106,6 @@ All stable kinds (`patch`, `minor`, `major`) are computed off the latest _stable
 - **"A bad commit just landed on main, release the commit before it":** `kind=patch`, `ref=<good-sha>`. `main` is left alone; the tag points at the good SHA. Fix forward on `main` afterward.
 - **One-off RC for a feature branch:** `kind=rc`, `ref=<branch-or-sha>`. Produces an RC tag that does not touch `main`.
 - **Minor or major bump:** `kind=minor` or `kind=major`.
-
-The scheduled 2x/day RC cron in [`release-rc.yml`](../../actions/workflows/release-rc.yml) is independent and continues to run automatically from `main`.
 
 ## Release Channels
 

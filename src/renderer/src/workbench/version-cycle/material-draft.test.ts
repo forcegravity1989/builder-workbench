@@ -59,6 +59,19 @@ describe('material draft concurrency', () => {
     finish({ document: { ...base, cycleId: 'two' }, revision: 'wrong-cycle' })
     await refresh
     expect(controller.value).toBe(cached)
+    // A later poll reading back the same revision as a new object must keep
+    // the cached identity — identity churn would close preview dialogs and
+    // re-run evidence freshness on every poll.
+    const unchanged = controller.refresh()
+    finish({ document: { ...cached.document }, revision: 'old' })
+    await unchanged
+    expect(controller.value).toBe(cached)
+    // A real revision change still republishes the remote document.
+    const changed = controller.refresh()
+    const next = { ...cached.document, title: 'from model' }
+    finish({ document: next, revision: 'new' })
+    await changed
+    expect(controller.value).toMatchObject({ document: next, expectedRevision: 'new' })
   })
   it('holds the save lock until conflict readback finishes', async () => {
     let finish!: (value: { document: typeof base; revision: string }) => void

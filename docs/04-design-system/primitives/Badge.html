@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Workbench — Badge</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="primitives.css">
+</head>
+<body>
+<div class="pv-col">
+  <div class="pv-row">
+    <span data-slot="badge" data-variant="default">Default</span>
+    <span data-slot="badge" data-variant="secondary">Secondary</span>
+    <span data-slot="badge" data-variant="outline">Outline</span>
+    <span data-slot="badge" data-variant="destructive"><svg class="lucide lucide-circle-alert" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>3 errors</span>
+    <span data-slot="badge" data-variant="link">Link</span>
+  </div>
+  <div class="pv-row">
+    <span data-slot="badge" data-variant="dot"><span class="badge-pip" style="background:var(--workspace-status-progress)"></span>In progress</span>
+    <span data-slot="badge" data-variant="dot"><span class="badge-pip" style="background:var(--workspace-status-review)"></span>In review</span>
+    <span data-slot="badge" data-variant="dot"><span class="badge-pip" style="background:var(--workspace-status-done)"></span>Merged</span>
+    <span data-slot="badge" data-variant="dot"><span class="badge-pip" style="background:var(--agent-question)"></span>Needs input</span>
+  </div>
+</div>
+</body>
+</html>

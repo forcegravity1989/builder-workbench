@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-import { assertReadOnlyHistoryGitArgs, resolveAdoptedBaseline } from './history-git-core'
+import { describe, expect, it } from 'vitest'
+import { assertReadOnlyHistoryGitArgs } from './history-git-core'
 
 const sha = 'a'.repeat(40)
 const logTemplate = [
@@ -48,47 +48,5 @@ describe('read-only history git allowlist', () => {
     expect(() => assertReadOnlyHistoryGitArgs(args)).toThrowError(
       expect.objectContaining({ code: 'invalid-git-request' })
     )
-  })
-})
-
-describe('adopted baseline resolution', () => {
-  it('pins the registered adopted ref and refuses to swap it when it dies', async () => {
-    const exec = vi.fn(async (argv: string[]) => {
-      if (argv[0] === 'rev-parse' && argv[2] === 'refs/heads/release^{commit}') {
-        throw new Error('unknown revision')
-      }
-      return { stdout: `${sha}\n` }
-    })
-    await expect(resolveAdoptedBaseline(exec, 'refs/heads/release')).rejects.toMatchObject({
-      code: 'baseline-invalid'
-    })
-    // The failed registered ref must not fall back to default-branch probes.
-    expect(exec).toHaveBeenCalledTimes(1)
-  })
-
-  it('resolves and pins the native default branch when no ref is registered', async () => {
-    const exec = vi.fn(async (argv: string[]) => {
-      if (argv[0] === 'symbolic-ref') {
-        return { stdout: 'refs/remotes/origin/main\n' }
-      }
-      if (argv.join(' ') === `rev-parse --verify refs/remotes/origin/main`) {
-        return { stdout: '' }
-      }
-      if (argv[0] === 'rev-parse' && argv[2] === 'origin/main^{commit}') {
-        return { stdout: `${sha}\n` }
-      }
-      return { stdout: '' }
-    })
-    const baseline = await resolveAdoptedBaseline(exec, null)
-    expect(baseline).toEqual({ ref: 'origin/main', commit: sha })
-  })
-
-  it('reports an unresolved source instead of inventing a branch', async () => {
-    const exec = vi.fn(async () => {
-      throw new Error('no such ref')
-    })
-    await expect(resolveAdoptedBaseline(exec, null)).rejects.toMatchObject({
-      code: 'baseline-unresolved'
-    })
   })
 })
