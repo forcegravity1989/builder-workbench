@@ -42,6 +42,7 @@ export type WorkbenchWorkspaceHost = {
       | 'runtimeOwnerEnvironmentId'
       | 'isArchived'
       | 'isMainWorktree'
+      | 'workbenchVersionBinding'
     >[]
   >
 }
@@ -80,6 +81,7 @@ export function createWorkbenchWorkspaceResolver(host: WorkbenchWorkspaceHost) {
   async function authorize(scope: WorkbenchWorkspaceScope): Promise<{
     target: WorkbenchWorkspaceTarget
     repo: WorkbenchWorkspaceRepo
+    worktree: Awaited<ReturnType<WorkbenchWorkspaceHost['listWorktrees']>>[number]
   }> {
     const { repo, hostId } = repoResolver.resolveRepo({
       repoId: scope.repoId,
@@ -103,7 +105,8 @@ export function createWorkbenchWorkspaceResolver(host: WorkbenchWorkspaceHost) {
         worktreePath: trees[0].path,
         isMainWorktree: trees[0].isMainWorktree
       },
-      repo
+      repo,
+      worktree: trees[0]
     }
   }
   return {
@@ -119,6 +122,7 @@ export function createWorkbenchWorkspaceResolver(host: WorkbenchWorkspaceHost) {
       return {
         target,
         repo,
+        worktree: resolved.worktree,
         async reauthorize() {
           const current = await authorize(capturedScope)
           if (

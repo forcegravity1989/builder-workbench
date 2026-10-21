@@ -28,14 +28,46 @@ import { resolveWorktreeHostPath } from '../../shared/git-metadata-path'
 import { createVersionDocumentStore } from './version-document-store'
 import { isMissingFile, resolveVersionPlanningRoot } from './version-document-path'
 import { createVersionMaterialMigration } from './version-material-migration'
+import type { WorkbenchVersionBinding } from '../../shared/workbench/version-binding'
+import { versionFlowBranch } from '../../shared/workbench/version-workspace-prepare'
 
 /** Runs on the filesystem owner; paths come from the authenticated native inventory adapter. */
 export type VersionMaterialWorkspace = { repoPath: string; worktreePath: string }
 
 export function createVersionMaterialWorkspace(
   target: VersionMaterialWorkspace,
-  reauthorize?: () => Promise<void>
+  reauthorize?: () => Promise<void>,
+  binding?: WorkbenchVersionBinding | null
 ) {
+  const flowBinding =
+    binding && (binding.workflow === 'plan' || binding.workflow === 'acceptance') ? binding : null
+  /**
+   * G2 (P3a)：绑定树的期望分支由绑定决定（版本归属由登记绑定承担，分支名不是
+   * 身份）；无绑定树沿旧固定分支语义（旧上下文显式保留）。用途不符（目标/
+   * Issue 树、计划树收验收范围等）一律拒绝——计划与验收用途不混。
+   */
+  function expectedBranchFor(scope: VersionMaterialScope): string {
+    if (!binding) {
+      return scope.workflow === 'plan' ? 'bw/week-plan' : 'bw/week-acceptance'
+    }
+    if (!flowBinding || flowBinding.workflow !== scope.workflow) {
+      throw new WorkspaceScopeError('invalid-scope', '该工作树不是此用途的流程树，材料读写被拒绝')
+    }
+    const branch = versionFlowBranch(flowBinding.version, scope.workflow)
+    if (!branch) {
+      throw new WorkspaceScopeError('invalid-scope', '绑定版本无法组成合法流程分支，请核对登记')
+    }
+    return branch
+  }
+  /** 跨版围栏：本版树只能读写它绑定的材料版本（拒绝把 v0.7 的树用于 v0.8）。 */
+  function assertBindingVersion(scope: VersionMaterialScope, version: string): void {
+    if (flowBinding && flowBinding.workflow === scope.workflow && version !== flowBinding.version) {
+      throw new WorkspaceScopeError(
+        'cross-version',
+        `该工作树绑定版本 ${flowBinding.version}，拒绝读写 ${version} 的材料`
+      )
+    }
+  }
   async function authorize(scope: VersionMaterialScope): Promise<string> {
     await reauthorize?.()
     const root = await realpath(resolveWorktreeHostPath(target.worktreePath) ?? target.worktreePath)
@@ -48,7 +80,7 @@ export function createVersionMaterialWorkspace(
     if (repoCommon !== treeCommon) {
       throw new WorkspaceScopeError('invalid-scope', '工作树不属于所选 Git 项目')
     }
-    const branch = scope.workflow === 'plan' ? 'bw/week-plan' : 'bw/week-acceptance'
+    const branch = expectedBranchFor(scope)
     if (head.trim() !== `ref: refs/heads/${branch}`) {
       throw new WorkspaceScopeError('wrong-branch', `请使用 ${branch} 工作树`)
     }
@@ -172,6 +204,15 @@ export function createVersionMaterialWorkspace(
         } catch {
           continue
         }
+        // 绑定树只呈现自己绑定的版本（检出目录含全部历史版本材料，跨版读取
+        // 由断言拒绝；列表先收窄，客户端不靠列表冒充跨版可见性）。
+        if (
+          flowBinding &&
+          flowBinding.workflow === scope.workflow &&
+          entry.name !== flowBinding.version
+        ) {
+          continue
+        }
         try {
           if (await store.read(entry.name)) {
             candidates.push({ version: entry.name, state: 'ready' })
@@ -191,10 +232,12 @@ export function createVersionMaterialWorkspace(
     },
     async read(input: VersionMaterialRead) {
       const request = VersionMaterialReadSchema.parse(input)
+      assertBindingVersion(request, request.version)
       return (await storeFor(request)).read(request.version)
     },
     async save(input: VersionMaterialSave) {
       const request = VersionMaterialSaveSchema.parse(input)
+      assertBindingVersion(request, request.version)
       return (await storeFor(request)).save(request)
     }
   }
