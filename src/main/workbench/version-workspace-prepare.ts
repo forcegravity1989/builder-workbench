@@ -9,6 +9,7 @@ import type {
 } from '../../shared/runtime-worktree-contracts'
 import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/runtime-managed-worktree-create-types'
 import { REPO_SEARCH_REFS_MAX_LIMIT } from '../../shared/repo-search-limits'
+import { matchReusableBranchRef } from '../../shared/workbench/reusable-branch-ref'
 import { normalizeStoredWorkbenchVersionBinding } from '../../shared/workbench/version-binding'
 import {
   VERSION_FLOW_WORKFLOWS,
@@ -132,32 +133,23 @@ export function createVersionWorkspacePrepareService(
         : { state: 'existing', revision: outcome.revision }
     }
 
-    /** 分支已有 ref 但无树占用时，把匹配 ref 交给原生创建复用同名分支（findNamedBaseRef 同口径）。 */
+    /** 分支已有 ref 但无树占用时，把匹配 ref 交给原生创建复用同名分支（findNamedBaseRef 同口径，共享单实现）。 */
     async function findReusableBranchRef(branch: string): Promise<string | undefined> {
       const result = await runtime.searchRepoRefs(repoSelector, branch, REPO_SEARCH_REFS_MAX_LIMIT)
-      if (result.truncated || (result.refs.length > 0 && !result.refDetails)) {
+      const match = matchReusableBranchRef(result, branch)
+      if (match.kind === 'unverifiable') {
         throw new WorkspaceScopeError(
           'branch-unverifiable',
           `无法完整确认分支 ${branch} 的来源，请在项目中核对分支后重试`
         )
       }
-      const details = result.refDetails ?? []
-      const local = details.find(
-        (ref) =>
-          ref.localBranchName === ref.refName &&
-          [branch, `heads/${branch}`, `refs/heads/${branch}`].includes(ref.refName)
-      )
-      if (local) {
-        return local.refName
-      }
-      const matching = details.filter((ref) => ref.localBranchName === branch)
-      if (matching.length > 1) {
+      if (match.kind === 'ambiguous') {
         throw new WorkspaceScopeError(
           'branch-ambiguous',
           `多个远端存在分支 ${branch}，请先在项目中检出要使用的分支后重试`
         )
       }
-      return matching[0]?.refName
+      return match.kind === 'ref' ? match.refName : undefined
     }
 
     async function prepareFlowTree(
