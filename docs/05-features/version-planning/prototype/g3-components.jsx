@@ -555,10 +555,78 @@ export function MinutesCard({ minutes, update, sendRequest }) {
     </article>
   )
 }
+// 面板批注卡片：编号 + 对象 + 内容，卡级管理入口——笔形编辑（卡片内行内编辑）
+// 与 × 删除。编辑 / 删除只在这里，对象小窗只负责新增，避免 × 语义混淆。
+function AnnotationCard({ item, onUpdate, onRemove }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(item.text)
+  return (
+    <div className="g3-annot-card">
+      <span className="g3-annot-num">{item.number}</span>
+      <div>
+        <strong>{item.object}</strong>
+        {editing ? (
+          <div className="g3-annot-edit">
+            <textarea
+              rows={2}
+              aria-label={`编辑批注 ${item.number}`}
+              value={draft}
+              autoFocus
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <span className="g3-annot-edit-actions">
+              <button
+                onClick={() => {
+                  setDraft(item.text)
+                  setEditing(false)
+                }}
+              >
+                取消
+              </button>
+              <button
+                className="primary"
+                disabled={!draft.trim()}
+                onClick={() => {
+                  onUpdate(item.id, draft.trim())
+                  setEditing(false)
+                }}
+              >
+                保存
+              </button>
+            </span>
+          </div>
+        ) : (
+          <p>{item.text}</p>
+        )}
+      </div>
+      <IconButton
+        name="edit"
+        label={`编辑批注 ${item.number}（${item.object}）`}
+        onClick={() => {
+          setDraft(item.text)
+          setEditing(true)
+        }}
+      />
+      <IconButton
+        name="close"
+        label={`删除批注 ${item.number}（${item.object}）`}
+        onClick={() => onRemove(item.id)}
+      />
+    </div>
+  )
+}
 // 板面批注窗：右侧紧凑记录面板，布局对齐 Orca 原生批注参考（编号卡片列表、
 // 提示行、板面级批注、底部 复制 / 发送）。记录动作在对象就近小窗完成，
-// 面板只做记录列表，高度随内容自适应，不再整栏覆盖板面。
-export function AnnotationPanel({ open, annotations, onClose, onRemove, onBoardLevel, onSend }) {
+// 面板做记录列表与卡片级编辑 / 删除；列表限高内滚动，面板不随批注无限涨。
+export function AnnotationPanel({
+  open,
+  annotations,
+  onClose,
+  onUpdate,
+  onRemove,
+  onBoardLevel,
+  onSend
+}) {
   const copy = async () => {
     const text = annotations.map((item) => `- [${item.object}] ${item.text}`).join('\n')
     await navigator.clipboard?.writeText(text)
@@ -576,18 +644,7 @@ export function AnnotationPanel({ open, annotations, onClose, onRemove, onBoardL
       <div className="g3-annot-list">
         {annotations.length ? (
           annotations.map((item) => (
-            <div className="g3-annot-card" key={item.id}>
-              <span className="g3-annot-num">{item.number}</span>
-              <div>
-                <strong>{item.object}</strong>
-                <p>{item.text}</p>
-              </div>
-              <IconButton
-                name="close"
-                label={`删除批注 ${item.number}（${item.object}）`}
-                onClick={() => onRemove(item.id)}
-              />
-            </div>
+            <AnnotationCard key={item.id} item={item} onUpdate={onUpdate} onRemove={onRemove} />
           ))
         ) : (
           <p className="g3-muted g3-annot-empty">暂无批注</p>
@@ -609,9 +666,10 @@ export function AnnotationPanel({ open, annotations, onClose, onRemove, onBoardL
   )
 }
 // 对象批注小窗：贴着被批注元素弹出，交互对齐 Orca 元素批注弹窗
-// （对象名标题、textarea、取消 / 添加，已有批注带删除入口）。BW 差异：
-// 小窗只记录评审速记，不带意图分段与发送行——发送统一走面板底部经原生发送弹窗。
-export function AnnotationPopover({ target, rect, existing, onSave, onCancel, onDelete }) {
+// （对象名标题、textarea、取消 / 添加）。小窗只负责新增：右上角 × 仅关闭小窗、
+// 不动已记录批注（第七轮修正 × 误删）；已有批注的编辑 / 删除在面板卡片上。
+// BW 差异：小窗不带意图分段与发送行——发送统一走面板底部经原生发送弹窗。
+export function AnnotationPopover({ target, rect, onSave, onCancel }) {
   const [draft, setDraft] = useState('')
   const POP_W = 320
   const POP_H = 200
@@ -621,7 +679,6 @@ export function AnnotationPopover({ target, rect, existing, onSave, onCancel, on
     below + POP_H > window.innerHeight - 16
       ? Math.max(16, Math.min(rect.top - POP_H - 8, window.innerHeight - POP_H - 16))
       : below
-  const last = existing[existing.length - 1]
   const save = () => {
     if (draft.trim()) {
       onSave(draft.trim())
@@ -637,13 +694,7 @@ export function AnnotationPopover({ target, rect, existing, onSave, onCancel, on
       <header>
         <Icon name="annotate-mode" size={13} />
         <strong>{target}</strong>
-        {last && (
-          <IconButton
-            name="close"
-            label={`删除批注 ${last.number}（${target}）`}
-            onClick={() => onDelete(last.id)}
-          />
-        )}
+        <IconButton name="close" label="关闭批注小窗" onClick={onCancel} />
       </header>
       <textarea
         rows={3}

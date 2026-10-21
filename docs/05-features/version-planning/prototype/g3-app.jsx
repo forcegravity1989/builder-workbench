@@ -237,11 +237,13 @@ function App() {
             遗留（逐条闭环状态，闭环 = 版本计划已按该条修改，由人标记）。批注交互对齐 Orca
             原生元素批注：页头「批注模式」（气泡 + 加号图标，vendor 冻结、由两枚图标组合）进入 →
             点击板面元素（目标句、验收标准、指标承诺、Issue 行或整卡），元素旁弹出「对象批注」
-            小窗（对象名标题、textarea、取消 / 添加，已有批注带删除入口，Ctrl+Enter 快捷添加）→
-            右侧「板面批注（N）」面板只做紧凑记录列表（高度随内容、列表内滚动，不覆盖板面），
-            「添加板面级批注」复用同一个小窗；复制或经原生发送弹窗发给计划助手。与 Orca
-            弹窗的差异：BW 小窗不带意图分段与发送行——批注是评审会速记、整批作为纪要输入，
-            发送统一走面板底部经原生发送弹窗。板面编号角标与面板卡片同号。纪要区不参与批注。BW
+            小窗（对象名标题、textarea、取消 / 添加，Ctrl+Enter 快捷添加；右上角 ×
+            只关闭小窗、不动已记录批注）→ 右侧「板面批注（N）」面板承担记录列表与卡片级管理
+            （每卡带笔形编辑 / × 删除入口，编辑为卡片内行内编辑；高度随内容、列表限高内滚动，
+            不覆盖板面），「添加板面级批注」复用同一个小窗；复制或经原生发送弹窗发给计划助手。
+            与 Orca 弹窗的差异：BW 小窗不带意图分段与发送行——批注是评审会速记、
+            整批作为纪要输入，发送统一走面板底部经原生发送弹窗。板面编号角标与面板卡片同号。
+            纪要区不参与批注。BW
             板面元素的捕获层（元素映射为业务对象引用）留实现设计。会议 ID 现阶段由 Builder
             提供，不提供时仅凭在线批注也可生成；群组 / WeLink 自动获取待用户组旅程设计。
           </p>
@@ -723,6 +725,11 @@ function App() {
           setPanelOpen(false)
           setPopover(null)
         }}
+        onUpdate={(id, text) =>
+          setAnnotations((current) =>
+            current.map((item) => (item.id === id ? { ...item, text } : item))
+          )
+        }
         onRemove={(id) =>
           setAnnotations((current) => current.filter((item) => item.id !== id))
         }
@@ -739,7 +746,6 @@ function App() {
           key={popover.id}
           target={popover.target}
           rect={popover.rect}
-          existing={numbered.filter((item) => item.object === popover.target)}
           onSave={(text) => {
             setAnnotations((current) => [
               ...current,
@@ -748,10 +754,6 @@ function App() {
             setPopover(null)
           }}
           onCancel={() => setPopover(null)}
-          onDelete={(id) => {
-            setAnnotations((current) => current.filter((item) => item.id !== id))
-            setPopover(null)
-          }}
         />
       )}
     </div>

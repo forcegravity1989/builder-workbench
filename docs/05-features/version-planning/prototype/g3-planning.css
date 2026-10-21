@@ -1000,6 +1000,46 @@ textarea {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+/* 面板卡片行内编辑：改文案不换浮层，保存 / 取消就地完成。 */
+.g3-annot-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.g3-annot-edit textarea {
+  width: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  padding: 6px 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+.g3-annot-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.g3-annot-edit-actions button {
+  border: 1px solid var(--input);
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: var(--radius-md);
+  padding: 2px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.g3-annot-edit-actions button.primary {
+  border-color: var(--foreground);
+  font-weight: 500;
+}
+.g3-annot-edit-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .g3-annot-num {
   width: 18px;
   height: 18px;
