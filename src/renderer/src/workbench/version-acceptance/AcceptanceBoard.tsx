@@ -1,31 +1,36 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { ClipboardCheck, GitBranch } from 'lucide-react'
 import type { MetricsPort } from '../../../../shared/workbench/metrics'
+import type { PackagePipelinePort } from '../../../../shared/workbench/package-pipeline'
 import type { VersionHistoryPort } from '../../../../shared/workbench/version-history'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
+import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
 import { cycleBranch } from '../version-cycle/native-cycle-workspace'
+import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import { CycleStartCard } from '../version-cycle/CycleStartCard'
 import { AcceptanceGoalCards } from './AcceptanceGoalCards'
+import { AcceptancePackage } from './AcceptancePackage'
 import { AcceptanceSources } from './AcceptanceSources'
-import { AcceptanceSummary } from './AcceptanceSummary'
 import { AcceptanceNotices } from './AcceptanceNotices'
-import { useAcceptanceMetricWindow } from './AcceptanceMetricWindow'
-import { taskSnapshotSummary } from './AcceptanceTasks'
-import { CycleTasks } from '../version-cycle/CycleTasks'
 import { CycleArchive } from '../version-cycle/CycleArchive'
 import { AcceptanceJourney } from './AcceptanceJourney'
 import { AcceptanceReportDialog } from './AcceptanceReportDialog'
-import type { AcceptanceCandidatePort } from './acceptance-candidate-port'
+import { useArchivePrStatus } from '../version-cycle/use-archive-pr-status'
 import { useAcceptanceBoard } from './use-acceptance-board'
+import { useAcceptanceHistory } from './use-acceptance-history'
+import { useAcceptanceReport } from './use-acceptance-output'
+import { AcceptanceRoundPicker } from './AcceptanceRoundPicker'
+import { HistoricalRoundCards } from './HistoricalRoundCards'
 import './acceptance.css'
 
 export type AcceptanceBoardProps = {
   context: VersionCycleContext
   history: VersionHistoryPort
   metrics: MetricsPort
-  candidate: AcceptanceCandidatePort
+  packages: PackagePipelinePort
   entry: CycleEntry
 }
 
@@ -61,7 +66,7 @@ function ReadyAcceptanceBoard({
   context,
   history,
   metrics,
-  candidate,
+  packages,
   entry,
   recoveryKey
 }: AcceptanceBoardProps & { recoveryKey: string }) {
@@ -82,91 +87,72 @@ function ReadyAcceptanceBoard({
     error,
     setError,
     busy,
-    report,
-    archive,
-    journey,
-    decisionSummary,
-    onChecks,
     saveTaskSnapshot,
     scroll,
-    document,
-    plan,
-    archived,
-    readOnly,
+    document: currentDocument,
+    plan: currentPlan,
+    readOnly: currentReadOnly,
     loadVersion,
-    prepare,
     editGoal,
     editReadings,
-    buildReport,
     refreshData,
-    flush,
     saving,
     retrySave,
     useRemoteDeletion,
     initializationSuppressed
   } = useAcceptanceBoard({ context, history, recoveryKey })
-  const hasMetrics = Boolean(
-    plan?.document.goals.some((goal) => goal.metricTargets.length > 0) ||
-    document?.results.some((result) => result.readings.length > 0)
-  )
-  const metricWindow = useAcceptanceMetricWindow(metrics, metricScope, hasMetrics)
+  const rounds = useAcceptanceHistory({
+    history,
+    scope: metricScope,
+    document: currentDocument,
+    plan: currentPlan,
+    selectedVersion: context.version,
+    runtimeOwnerEnvironmentId: scope.runtimeOwnerEnvironmentId,
+    refreshToken: context.materialRefresh
+  })
+  const { document, plan } = rounds
+  const readOnly = currentReadOnly || rounds.historical || rounds.locked
+  const currentView = useRef(!rounds.historical)
+  currentView.current = !rounds.historical && !rounds.locked
+  const { report, buildReport } = useAcceptanceReport(document, plan?.document, setError)
+  const prStatus = useArchivePrStatus(context, document?.workflow?.archivePr)
   const [reportOpen, setReportOpen] = useState(false)
-  const [actionNotice, setActionNotice] = useState<string | null>(null)
-  const [taskGoalFilter, setTaskGoalFilter] = useState<{ goalId: string; title: string } | null>(
-    null
-  )
   const startCard = useRef<HTMLElement>(null)
   const results = useRef<HTMLElement>(null)
   const archiveSection = useRef<HTMLElement>(null)
-  const tasks = useRef<HTMLElement>(null)
-  const [tasksOpen, setTasksOpen] = useState(false)
+  const packageSection = useRef<HTMLElement>(null)
+  const [packageReady, setPackageReady] = useState(false)
+  // Stable identity keeps AcceptancePackage's load effects from re-firing.
+  const handlePackageLatest = useCallback(
+    (latest: { version: string } | null) => setPackageReady(latest !== null),
+    []
+  )
+  const handleSnapshot = useCallback(
+    (reads: CycleTaskRead[]) => {
+      if (document && currentView.current) {
+        saveTaskSnapshot(document, reads)
+      }
+    },
+    [document, saveTaskSnapshot]
+  )
   const branch = cycleBranch(entry)
-  // Render-time validity: a round or plan change under the same identity drops a
-  // filter whose goal no longer exists in the fixed plan — no stale empty list.
-  const activeGoalFilter =
-    taskGoalFilter && plan?.document.goals.some((goal) => goal.goalId === taskGoalFilter.goalId)
-      ? taskGoalFilter
-      : null
-  /** Locate the snapshot section expanded, optionally narrowed to one goal's references. */
-  const openTasks = (goal?: { goalId: string; title: string } | null) => {
-    setTaskGoalFilter(goal ?? null)
-    setTasksOpen(true)
-    tasks.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-  }
+  const openTask = (task: CycleTaskSnapshot) =>
+    context.taskPort.openDetail(task, {
+      ...scope,
+      page: 'acceptance',
+      version: document?.version ?? context.version ?? '',
+      cycleId: document?.cycleId ?? '',
+      worktreeId,
+      sessionId: session?.sessionId,
+      scrollTop: scroll.current?.scrollTop ?? 0,
+      draftKey: recoveryKey,
+      goalId: task.reference.goalId
+    })
   useEffect(() => {
     if (!report) {
       setReportOpen(false)
     }
   }, [report])
-  const prepareArchive = async () => {
-    setActionNotice(null)
-    try {
-      if (!session) {
-        throw new Error('请先在左侧新建或打开会话。')
-      }
-      if (readOnly) {
-        throw new Error('材料正在读取，请稍后重试。')
-      }
-      const saved = await flush()
-      if (!saved) {
-        throw new Error('修改尚未保存，请先处理保存提示。')
-      }
-      await context.archivePort.prepareRequest(
-        {
-          ...scope,
-          worktreeId,
-          version: saved.document.version,
-          cycleId: saved.document.cycleId,
-          revision: saved.revision
-        },
-        session
-      )
-      setError(null)
-      setActionNotice('归档请求已贴进左侧当前终端，请核对后发送。')
-    } catch (reason) {
-      setError(String(reason))
-    }
-  }
   const openReport = () => {
     // Only open on a real derivation; a failure surfaces in the board's error
     // area instead of trapping the user behind a modal "generating…" spinner.
@@ -197,13 +183,17 @@ function ReadyAcceptanceBoard({
         </select>
         <button
           className="wb-btn wb-btn-ghost wb-btn-sm"
-          disabled={busy || saving}
+          disabled={busy || saving || Boolean(context.syncing)}
           onClick={() => {
-            metricWindow.refresh()
-            void refreshData()
+            void (async () => {
+              toast.message(trunkUpdateNotice(await context.updateCode()))
+              await refreshData()
+              rounds.refresh()
+              await prStatus.refresh()
+            })()
           }}
         >
-          刷新数据
+          更新代码
         </button>
         {(saving || draft?.dirty) && (
           <span role="status">{saving ? '正在保存…' : '有改动待保存'}</span>
@@ -216,10 +206,14 @@ function ReadyAcceptanceBoard({
       </header>
       <div className="va-content">
         <AcceptanceJourney
-          preparation={journey.preparation}
-          decisions={journey.decisions}
-          archive={journey.archive}
+          stage={document?.workflow?.stage}
           startRef={startCard}
+          packageRef={packageSection}
+          packageReady={
+            rounds.historical || rounds.locked
+              ? Boolean(document?.preparedArtifacts.some((item) => item.kind === 'package'))
+              : packageReady
+          }
           resultsRef={results}
           archiveRef={archiveSection}
         />
@@ -237,114 +231,115 @@ function ReadyAcceptanceBoard({
             }
           }}
         >
-          <CycleStartCard
-            entry={entry}
-            problems={materialProblems}
-            version={context.version}
-            sectionRef={startCard}
-          />
-          {(actionNotice || entry.notice) && (
+          {!rounds.historical && (
+            <CycleStartCard
+              entry={entry}
+              problems={materialProblems}
+              version={context.version}
+              sectionRef={startCard}
+            />
+          )}
+          {!rounds.historical && entry.notice && (
             <p className="va-notice" role="status">
-              {actionNotice ?? entry.notice}
+              {entry.notice}
             </p>
           )}
-          <AcceptanceNotices
-            error={error ?? metricWindow.error}
-            recoveryError={recoveryError}
-            recoveryText={recoveryText}
-            draft={draft}
-            controller={controller}
-            busy={busy}
-            setError={setError}
-            onRetrySave={() => void retrySave()}
-            onRemoteDeleted={useRemoteDeletion}
-          />
+          {rounds.historical ? (
+            rounds.error && (
+              <p className="va-error" role="alert">
+                {rounds.error}
+              </p>
+            )
+          ) : (
+            <AcceptanceNotices
+              error={rounds.error ?? error}
+              recoveryError={recoveryError}
+              recoveryText={recoveryText}
+              draft={draft}
+              controller={controller}
+              busy={busy}
+              setError={setError}
+              onRetrySave={() => void retrySave()}
+              onRemoteDeleted={useRemoteDeletion}
+            />
+          )}
+          {(currentDocument || rounds.historical) && (
+            <AcceptanceRoundPicker
+              value={rounds.key}
+              currentWeek={rounds.currentWeek}
+              choices={rounds.choices}
+              onChange={rounds.select}
+            />
+          )}
+          {rounds.notice && (
+            <p className="va-notice" role="status">
+              {rounds.notice}
+            </p>
+          )}
+          {rounds.catalogError && (
+            <p className="va-muted" role="status">
+              历史目录读取不完整：{rounds.catalogError}
+            </p>
+          )}
           {document ? (
             <>
-              {plan && (
-                <AcceptanceSummary
-                  goals={decisionSummary.goals}
-                  pending={decisionSummary.pending}
-                  notMet={decisionSummary.notMet}
-                  issueSummary={
-                    plan.document.tasks.length > 0
-                      ? taskSnapshotSummary(document.taskSnapshot ?? [], plan.document.tasks.length)
-                      : null
-                  }
-                  onIssues={() => openTasks()}
+              <AcceptanceSources document={document} />
+              {!rounds.historical && !rounds.locked && (
+                <AcceptancePackage
+                  port={packages}
+                  scope={metricScope}
+                  sectionRef={packageSection}
+                  onLatestChange={handlePackageLatest}
                 />
               )}
-              <AcceptanceSources
-                document={document}
-                candidatePort={candidate}
-                onChecks={onChecks}
-              />
               {plan && (
                 <>
                   <div className="va-section-heading">
                     <h2>本版目标验收</h2>
-                    <button className="wb-btn wb-btn-secondary wb-btn-sm" onClick={openReport}>
-                      <ClipboardCheck size={14} aria-hidden="true" />
-                      预览纪要
-                    </button>
                   </div>
                   <AcceptanceGoalCards
+                    key={rounds.key}
                     plan={plan.document}
                     document={document}
                     metrics={metrics}
                     metricScope={metricScope}
-                    metricWindow={metricWindow.window}
                     readOnly={readOnly}
                     sectionRef={results}
-                    onOpenIssues={(goalId, title) => openTasks({ goalId, title })}
-                    onReadings={(goalId, ref, readings) =>
-                      editReadings(document, goalId, ref, readings)
-                    }
-                    onGoalChange={(value, goalId) => editGoal(value, goalId)}
-                    onFollowUp={(text) => void prepare(text)}
-                  />
-                  <CycleTasks
-                    sectionRef={tasks}
-                    plan={plan.document}
                     scope={scope}
                     taskPort={context.taskPort}
-                    disabled={readOnly}
-                    open={tasksOpen}
-                    onOpen={setTasksOpen}
-                    goalFilter={activeGoalFilter?.goalId ?? ''}
-                    onFilter={(goalId) =>
-                      setTaskGoalFilter(
-                        goalId
-                          ? {
-                              goalId,
-                              title:
-                                plan.document.goals.find((goal) => goal.goalId === goalId)?.title ??
-                                ''
-                            }
-                          : null
-                      )
+                    onSnapshot={handleSnapshot}
+                    onOpenTask={openTask}
+                    onReadings={(goalId, ref, readings) =>
+                      currentView.current && editReadings(document, goalId, ref, readings)
                     }
-                    onTask={(task) =>
-                      context.taskPort.openDetail(task, {
-                        ...scope,
-                        page: 'acceptance',
-                        version: document.version,
-                        cycleId: document.cycleId,
-                        worktreeId,
-                        sessionId: session?.sessionId,
-                        scrollTop: scroll.current?.scrollTop ?? 0,
-                        draftKey: recoveryKey,
-                        goalId: task.reference.goalId
-                      })
-                    }
-                    snapshot={document.taskSnapshot}
-                    onSnapshot={(reads) => saveTaskSnapshot(document, reads)}
+                    onGoalChange={(value, goalId) => {
+                      if (currentView.current) {
+                        editGoal(value, goalId)
+                      }
+                    }}
+                    onReport={openReport}
                   />
                 </>
               )}
             </>
+          ) : rounds.historical ? (
+            rounds.legacyRound && currentDocument ? (
+              <HistoricalRoundCards document={currentDocument} roundId={rounds.legacyRound.id} />
+            ) : (
+              <p role="status">
+                {rounds.loading
+                  ? '正在读取该周材料…'
+                  : '该周材料暂不可读；当前材料未替代历史内容。'}
+              </p>
+            )
           ) : (
             <>
+              <AcceptancePackage
+                port={packages}
+                scope={metricScope}
+                sectionRef={packageSection}
+                onLatestChange={handlePackageLatest}
+              />
               <div className="va-section-heading">
                 <h2>本版目标验收</h2>
                 <button className="wb-btn wb-btn-secondary wb-btn-sm" disabled>
@@ -373,13 +368,13 @@ function ReadyAcceptanceBoard({
         </div>
       </div>
       <CycleArchive
-        status={archive}
-        archived={archived}
-        disabled={!document || readOnly || saving}
+        archivePr={document?.workflow?.archivePr}
+        reachedArchive={document?.workflow?.stage === 'archive'}
+        status={prStatus.status}
+        loading={prStatus.loading}
         sectionRef={archiveSection}
-        onArchive={() => void prepareArchive()}
       />
-      {reportOpen && (
+      {reportOpen && report && (
         <AcceptanceReportDialog
           report={report}
           onClose={() => setReportOpen(false)}

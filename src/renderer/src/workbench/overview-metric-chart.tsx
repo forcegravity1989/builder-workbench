@@ -119,7 +119,8 @@ export function metricChartOption(
       itemStyle: { color: color(item.color) },
       emphasis: { focus: 'series' },
       tooltip: {
-        valueFormatter: (value) => (value == null || value === '-' ? '—' : `${value}${item.unit}`)
+        valueFormatter: (value) =>
+          value == null || value === '-' ? '—' : `${String(value)}${item.unit}`
       },
       markLine:
         item.target == null

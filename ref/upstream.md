@@ -1,21 +1,56 @@
-# Upstream Orca — 同步说明
+# Upstream Orca — 当前快照与同步记录
 
 > **本篇维护约定**
-> - **读者与时机**：在主干 `main`（原 `bw-orca`，2026-09-30 扶正）上合并 / rebase upstream Orca、排查二次开发冲突时读取。仓外会话从 [AGENTS.md](../AGENTS.md) 的任务表进到这里。
-> - **职责与边界**：只记 upstream 仓身份、本分支相对 upstream 的删/藏/迁、从 Workbench 旧 `main`（现 `archive/main-pre-orca`）合入了什么、以及明确的遗留；不写 Workbench 产品正本（那在仓根与 `docs/`）。
-> - **更新触发**：换 upstream 基线、增删叠层钩子、再删/迁文档或源码、或遗留项落地时更新。
+> - **读者与时机**：处理 Orca/BW 边界、核对上游版本、或实际合并/rebase Orca 时读取；仓外会话从 [AGENTS.md](../AGENTS.md) 的任务表进入。
+> - **职责与边界**：只记录与 BW 边界有关的 Orca 当前快照、稳定差异、旧 main 迁移来源和同步取舍；不承载 BW 产品设计、日常开发规则、完整 Orca release notes、完整源码树或未解决事项清单。
+> - **记录方式**：当前快照覆盖同一组字段，不追加月报。每次核对更新版本/日期/范围；历史由 Git 追溯。无法核对的字段写 `Unknown`，不能用旧基线冒充当前版本。
+> - **更新触发**：上游基线或公开版本变化、BW 增删影响同步的钩子、稳定目录边界变化、或同步取舍改变时更新；普通 BW 功能开发不更新本篇。
+>
+> 本篇的“当前”只表示最近一次有来源的核对，不代表仓库已经跟随该版本。BW 当前产品行为读 [architecture](../docs/architecture.md)，叠层运行入口读 [SYNC](../src/renderer/src/workbench/SYNC.md)。
 
-## Upstream 仓
+## 0. 30 秒快照
+
+### 0.1 上游版本锚点
+
+| 项 | 本次核对结果 |
+|---|---|
+| Orca 仓库 | [stablyai/orca](https://github.com/stablyai/orca) |
+| 最近公开版本 | [v1.4.222](https://github.com/stablyai/orca/releases/tag/v1.4.222) |
+| 发布时间 | 2026-10-07 |
+| 发布锚点 | `4bb6f20`（release 页面短 SHA） |
+| 本次核对日期 | 2026-10-11 |
+| BW fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`，2026-09-15 |
+| 本次核对范围 | 公开 release、仓库顶层目录、与 BW 边界直接相关的能力摘要 |
+
+公开版本不是本仓当前同步基线；本仓的 fork baseline 仍是单独的历史锚点。没有完成一次实际代码比较时，不把“最新 release”写成“已同步”。
+
+### 0.2 与 BW 边界直接相关的能力
+
+当前公开版本的变化重点涉及 agent/orchestration workers、workspaces/worktrees、terminal 与远程运行、native chat（实验能力）、编辑器/Markdown/search、provider/account 与 Windows/WSL。BW 只复用其中与自身旅程有关的 Orca 执行核；具体 BW 产品行为不在这里重复。
+
+BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、provider 与 `src/main` runtime。BW 不为这些能力另建平行实现。
+
+### 0.3 上游目录定位
+
+下面只列同步时需要定位的稳定目录层级，不是完整源码清单：
+
+| 层级 | 上游目录 | 用途 |
+|---|---|---|
+| 产品与执行 | `src/`、`native/`、`cloud/`、`mobile/` | 桌面/原生/远程/移动产品与执行代码；合并时按实际文件和调用链判断 |
+| 资源与 Skill | `resources/`、`skills/`、`skill-guides/`、`skill-stubs/` | 原生资源与能力分发；Workbench 自有 Skill 以本仓 `standard/` 为正源 |
+| 工程与验证 | `config/`、`tests/`、`docs/`、`.github/`、`.husky/`、`Casks/`、`examples/plugins/` | 构建、测试、参考和发布辅助；不因此把上游工程文档变成 BW 产品正本 |
+
+## 1. 上游身份与 fork 基线
 
 | 项 | 值 |
 |---|---|
-| GitHub | https://github.com/stablyai/orca |
-| BW 仓远程 | `origin` = `https://github.com/forcegravity1989/builder-workbench.git`；`origin/main` 是产品主干（原 `bw-orca`），旧 Rust 路线归档在 `archive/main-pre-orca` |
-| Orca 远程建议名 | `orca-upstream`；需先核对 URL，不能把 `origin` 当作上游 Orca |
-| 本分支基线 commit | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`（`fix(automations): stop tick latency counting against the missed-run grace (#20819)`，2026-09-15） |
-| 本仓分支 | `main`（原 `bw-orca`，由本地 `workbench` 二次开发叠层落成；2026-09-30 替换旧 Rust main 扶正，旧 main 归档为 `archive/main-pre-orca`） |
+| Orca GitHub | `https://github.com/stablyai/orca` |
+| BW 仓远程 | `origin` = `https://github.com/forcegravity1989/builder-workbench.git` |
+| BW `origin/main` | 产品主干（原 `bw-orca`）；旧 Rust 路线归档为 `archive/main-pre-orca` |
+| Orca 本地远程 | 建议名 `orca-upstream`；使用前必须核对 URL，不能把 `origin` 当 Orca 上游 |
+| fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`（2026-09-15） |
 
-同步 Orca 前先检查 `git remote -v`；若 `orca-upstream` 尚未配置，添加为上表 Orca GitHub URL，已有同名远程则先核对身份。同步在从最新 `main` 创建的独立分支上完成并评审：
+执行实际 Orca 同步前，先在独立分支核对远程身份和当前主干：
 
 ```bash
 git fetch origin main
@@ -24,151 +59,85 @@ git fetch orca-upstream main
 git merge orca-upstream/main
 ```
 
-这些是明确开展 Orca 升级时的步骤；BW 的 `origin/main` 不能代替 `orca-upstream/main`。从旧 Rust main（`archive/main-pre-orca`）带入特性或方法时做定向迁移和重新决策，不整支合并。
+这些命令只适用于明确开展 Orca 升级；日常 BW 任务不因本篇而检查上游。旧 Rust main 只做定向迁移和重新决策，不整支合并。
 
-冲突取舍见下文「同步注意事项」。
+## 2. BW 相对 Orca 的稳定边界记录
 
-## 本分支相对 upstream 删 / 迁了什么
+### 2.1 已删除或迁移的上游内容
 
-### 源码：Orca Mobile 产品（已从本分支删除）
+- **Orca Mobile 产品已删除**：`mobile/` Expo 客户端、桌面 Mobile 产品页、Mobile 导航和对应 CI 不应在同步时恢复。
+- **配对协议能力仍保留**：`src/shared/mobile-relay-*`、`mobile-e2ee-*`、`DeviceScope`、session 镜像、emulator、relay/pairing 等活体协议不等同于 Mobile 产品，不因删除产品页一起删除。
+- **产品文档正本已替换**：仓根 `AGENTS.md`、`README.md`、`CONTEXT.md`、`CLAUDE.md` 与 `docs/` 是 BW 正本；上游工程参考进入 `ref/`，不覆盖 BW 产品文档。
+- **上游对外文档站不作为 BW 产品站**：`docs/site/`、README 多语言/营销素材和专项工程笔记不自动恢复；需要时从 Git 历史追溯来源。
 
-相对基线仍保留桌面执行核；**手机 App 与桌面「Orca Mobile」产品页已从 git 删掉**，不是隐藏：
+### 2.2 目录和挂载边界
 
-| 处置 | 路径 | 说明 |
+| 层级 | BW 落点 | 同步取舍 |
 |---|---|---|
-| **删除** | `mobile/` | Expo / iOS / Android 客户端整树 |
-| **删除** | `src/renderer/src/components/mobile/` | 桌面 Mobile 页（配对 Hero / QR / 安装）。模拟器设置不再引用这里的品牌图标，否则设置页整页加载失败 |
-| **删除** | `MobileSettingsPane`、侧栏「Orca Mobile」入口、mobile CI workflows | 设置里的手机安装页、导航、发版流水线 |
-| **未删（协议残留）** | `src/shared/mobile-relay-*`、`mobile-e2ee-*`、`DeviceScope`、session 镜像、emulator | 桌面远端配对 / 驱动 overlay / 模拟器仍走这些线；不是手机 App |
+| Orca 原生执行核 | TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、`src/main` runtime | 原生优先；不大段改写，不复制会话、任务、工作树、连接或调度内核 |
+| BW UI 叠层 | `src/renderer/src/workbench/` | 保留 BW 导航和业务板；与原生界面冲突时人工处理 |
+| BW 业务契约与事务 | `src/shared/workbench/`、`src/main/workbench/` | 业务落在 BW 自有模块，不塞进 Orca 工作树、连接和调度类 |
+| 宿主适配与 relay 组合 | `src/relay/workbench/`、原生 RPC/CLI 注册入口 | 复用原生身份、路由和窄执行器，只登记 BW 入口 |
+| 产品分发规范 | `standard/` | 是给被管项目的规范正源，不与 `.claude/skills/` 或 Orca 根级 Skill 目录合并 |
 
-合并 upstream 时：不要把 `mobile/` 或 Mobile 页重新合回来。协议文件若 upstream 改了，优先取 upstream，除非叠层已摘钩子。
+实现位置和运行入口的细节见 [SYNC](../src/renderer/src/workbench/SYNC.md)；当前产品能力见 [architecture](../docs/architecture.md)。
 
-### 文档（本轮原 `bw-orca` 落仓）
+### 2.3 需要在同步时保留的稳定扩点
 
-产品文档已换成 **Workbench 旧 `main`**（导入时 tip：`25f38bc80211f9656e229ef31b0e5a10ae28226a`；该路线现归档为 `archive/main-pre-orca`），正本在仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` / `CLAUDE.md` 与 `docs/`。
+只记录会影响 Orca 合并取舍的契约，不展开全部文件清单：
 
-从 upstream Orca 文档树中：
+- `automation.runNow` 的可选 `oneShotPrompt`、capability 门控和 renderer/headless 两条派发语义；一次性上下文不写回保存的自动化提示。
+- 自动化编辑器的显式 `target/draft` 请求契约；BW 预填入口依赖该原生能力。
+- 任务详情的 source context、return-to-previous-view 和 worktree history replay；BW 不另建任务详情和历史系统。`openTaskPage({ preselectedRepoId })` 的预选优先级（显式预选 > 持久化 defaultRepoSelection > 全部项目）同为稳定契约：BW 侧栏任务入口靠它在 BW 壳内默认收窄到当前项目，页内筛选仍可改。
+- 工作树版本偏好、Git history 的窗口/固定 revision/`committedAt`、GitHub/CodeHub 的真实 `mergedAt` 字段透传。
+- Terminal→TabGroupSplitLayout 链的 `reserveClosedExplorerToggleSpace` 宿主参数（默认 true=Orca 原行为；BW 计划/验收双栏传 false，避免右上角预留位吃掉侧栏收起后的宽度）；上游合并时保留传参与默认值。
+- WSL/SSH/配对沿用原生宿主身份和执行路由；BW 不新增本机专属连接层。
+- 配对会话的 editor 标签发布与终端一样阻止镜像回声（#388）：`isMobilePublishableOpenFile` 排除 `mirroredFromRuntimeSession === true` 的文件，覆盖普通文件、Markdown 与预览的分组及 fallback 发布入口。上游同步时保留该过滤；不能按 `runtimeEnvironmentId` 是否存在排除文件，用户主动打开的远端文件仍沿原有语义发布。
+- 原生 provider 标签和身份抽取保持单一实现；不要把已经去重的实现合回来。
+- 原生内置浏览器对普通 HTTPS 域名的 `ERR_CERT_AUTHORITY_INVALID` 也提供现有“仍然继续”入口（`browser-certificate-trust-controller.ts`），不恢复 localhost／回环地址限制。默认仍拒绝；沿用原生 renderer 按钮与 agent RPC `browser.certificate.proceed` 两条显式继续入口（RPC 不另设人工确认），按原生标签页、端点与证书身份临时放行。其他证书错误、子帧与非 HTTPS 首次请求不扩大授权。上游同步时保留这项入口范围与原有信任隔离。
+- BW Skill 分发登记保持一致：`resources/skills/current-manifest.json` 与 `snapshot-registry.json` 必须继续登记 `bw-knowledge-docs`、`metrics-refresh`、`version-acceptance`、`week-planning`。manifest/registry 由 `config/scripts/generate-skill-bundle-manifest.mjs` 从根级 `skills/` 生成；三个产品流程的正文正源仍是 `standard/skills/`，运行时指南由 `config/scripts/generate-bundled-skill-guides.mjs` 生成，不手改生成物。
+- 跨主机项目墙（G3）依赖原生 runtime 配对链：BW「导入 Builder 主机」批量壳只调用 `runtimeEnvironments.verifyAndAddFromPairingCode`（与原生 AddRemoteHostDialog 同一 IPC）与环境列表/状态快照，不建平行配对存储；主机名唯一（大小写敏感）是重复导入幂等的判据。上游合并需保留该链的 renderer API。
+- 共享链接回显沿原生 `DeviceRegistry` 和 E2EE 身份：renderer 仅持久化公开引用，`mobile:restoreRuntimePairingUrl` 只读恢复同一链接，不创建/轮换授权，不改变监听范围；撤销或身份不匹配不恢复。同步时保留这条回显链，不能用生成接口替代读取。
+- runtime 配对 env id 每次配对随机新发（`addEnvironmentFromPairingCode` randomUUID）、runtime 主机仓不落本地盘、注册行身份为 (repoId, executionHostId)：**删除主机会留下残留注册行**（Orca 原生列表按项目身份分组故不受影响）。BW 项目墙以「只认当前配对目录内的行 + 稳定身份归并」构造性过滤；上游合并不得假定 env id 稳定或把残留行改成持久身份语义。
+- 设置→集成页按 BW #323 收敛为 GitHub / CodeHub / WeLink / CloudBuild 四卡（代码托管 / 项目群 / 构建三组；CloudBuild 为 #366 增补，2026-10-19）：六张隐藏卡的组件、状态推导与词条保留在仓（人拍板 2026-10-16），但 `IntegrationsPane` 渲染名单与 `integrations-search` 目录是 BW 口径；preflight 增加 `welink-cli` / `cb` 探测与 codehub / welink / cb 的 `auth status` 读回（`PreflightStatus.welink` / `cloudbuild`、`codehub.authenticated`），welink 读回把 EXPIRED 判未登录（人拍板 2026-10-16，BW 口径），cb 存活探测用 `version` 子命令（`--version` 是未知旗标）、登录判定按输出标记（`Token Expires` 行且不带 `(expired)` 后缀，退出码恒 0 不可信，BW 口径照 welink EXPIRED 拍板），探测经 `command-path-resolver.ts` 的 `resolveCommandOnLocalPath` 解析真实文件、`.cmd` / `.bat` 经 `cmd.exe` 执行（`preflight-command-exec.ts`，修 npm 全局 CLI 装完仍报未安装的 Windows 盲区，BW 口径）。各卡登录按钮在卡内展开上游 `OnboardingInlineCommandTerminal` 内嵌终端（粘贴命令不回车、人按回车，OSC 133;D 感知命令结束自动复查；2026-10-19 人拍板，远端范围不给按钮）；该上游组件内 `TerminalPane` 改传 `isVisible={entered}`（BW 口径，2026-10-19 真壳白屏修复：组件在 0fr 展开动画容器内挂载终端，恒真 isVisible 使 WebGL 渲染器在无盒状态下解析 PTY 输出、展开时模型 diff 跳过预展开单元格导致画布空白；改随 `entered` 挂起渲染、动画完成翻可见走 TerminalPane 既有的 reveal-repaint 链从缓冲重绘，上游合并保留该传参）；codehub / welink 安装由应用后台执行各自自包含 npm 命令（含内网 registry 与 `--strict-ssl=false`，人确认 2026-10-16，不动机器 npm 配置，不占会话栏），cloudbuild 为**两步**（`npm config set @hw-cloudbuild:registry <内网源>` → `npm install -g @hw-cloudbuild/cloudbuild-cli`，人指定 2026-10-19，会写机器 npm 配置、不带 `--strict-ssl=false`，runner 按序执行、任一步失败即中止）；gh 安装保持外链。CodeHub / WeLink / CloudBuild 卡片共用一个 `BwCliIntegrationCard` 骨架（每卡为文案 / 探测字段 / 登录命令的薄配置），与本机范围判定因上游文件 max-lines 预算拆入 BW 自有新文件（`bw-cli-integration-cards.tsx`、`use-local-cli-scope.ts`，经 barrel 导出），codehub / welink / cloudbuild auth 读回与 BW 三 CLI 探测编排（`probeBwClis` / `readBwCliAuths`，回调注入探测函数避免循环依赖）在 `bw-cli-auth-status.ts`、安装链路（`bw-cli-install-commands.ts`、`bw-cli-install.ts`、preload `bw-cli-install-api.ts` / `cli-install-bridge.ts`、渲染端 `cli-install-action.ts`）同为 BW 自有文件（主进程模块由 agent-detection / register-core-handlers 直接引入，不经 renderer barrel）。上游合并保留该渲染名单、探测字段与 shim 路由、登录内嵌终端分支与 welink EXPIRED / cb 过期标记语义，不恢复六卡渲染，也不把 BW 卡合回上游卡模块。
 
-| 处置 | 路径 | 说明 |
-|---|---|---|
-| **保留 → `ref/`** | 原 `docs/reference/**`（约 40 篇） | upstream 工程参考，便于对照协议与平台边界 |
-| **保留 → `ref/STYLEGUIDE.md`** | 原 `docs/STYLEGUIDE.md` | UI 叠层仍可能要对照 Orca 设计约束；勿与 Workbench `docs/04-design-system/` 混为正本 |
-| **删除（不进本分支）** | `docs/site/**`（~123） | Orca 对外文档站 |
-| | `docs/assets/**`、`docs/readme/**` | README 多语言与营销素材 |
-| | `docs/relay-region-correction/**`、`docs/review-evidence/**` | 专项工程笔记 / PR 证据 |
-| | `docs/agent-skill-sharing-implementation-checklist.md`、`docs/workbench-transformation-plans.html` | 清单与历史改造页 |
-| | 根目录原 Orca `AGENTS.md` / `README.md` | 已由 Workbench 同名正本替换 |
+相关行为正本分别在 `docs/05-features/`、`docs/architecture.md` 和源码契约中；本篇只保留同步时必须知道的取舍。
 
-`.gitignore` 中旧的 `docs/**` 白名单已去掉，改为跟踪整棵 Workbench `docs/` 与 `ref/`。v0.5 准备阶段清空旧 ADR、指南及 metrics.md，特性只留 reviewer-agent 与 version-planning；历史从 Git 查，不在后续同步时自动恢复。设计系统与 hifi 由对应同事维护。
+### 2.4 CodeHub 边界
 
-### 产品面（Workbench 壳二次开发，非删源文件）
+CodeHub 是独立的 `TaskProvider`，不塞回 GitHub 的 `listWorkItems`，也不通过 `gh`/`glab` 降级处理。CodeHub service、`codehub:*` RPC、任务来源和 GitHub 更新路径保持分离；详细行为见 [CodeHub 特性](../docs/05-features/codehub/STATUS.md) 与 [CodeHub 指南](../docs/03-guide/codehub-cli.md)。
 
-代码仍在仓内；壳开启时（`WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1`）通过 `isWorkbenchShell()` **隐藏或绕过**，不是从 git 删除 upstream 目录：
+### 2.5 从旧 Rust main 吸收的内容
 
-| 取舍 | 落点 |
-|---|---|
-| 独立「会话 / 配置」导航不建 | `src/renderer/src/workbench/` 多屏导航（总览 / 计划 / 任务 / 验收 / 自动化 / 知识库） |
-| Feature wall 营销向导尽量跳过 | 壳路由 / bootstrap |
-| 左栏 Artifacts / Skills 并列入口收起 | `WorkbenchSidebarNav` 等 |
-| 项目导航不再重复设置 / 帮助 | `WorkbenchSidebarNav`。壳里只留侧栏底栏那一对；Orca 底栏菜单不改 |
-| 知识库文档清单各大类默认可收起 | `KnowledgeDocsGuide`。项目约定在最上，其次 Agent 入口；每个大类默认折叠，点标题展开。分类与地图顺序不改 |
-| Orca Mobile 产品页 / Expo App | **已删除**，见上文「源码」；不是隐藏 |
-| 崩溃「发送诊断报告」弹窗关闭 | `RecoverableRenderErrorBoundary` + `AppRootSurfaces` |
-| 叠层 UI / 皮肤 / 计划·总览·知识库·项目墙 | `src/renderer/src/workbench/**` |
-| 任务页工具条收成一行 | `task-page/ListChrome.tsx`、`github/ModeControls.tsx`、`github/Filters.tsx`、`ProviderFilters.tsx`、`Content.tsx`、`SidebarTaskNavButton.tsx`。壳开启时不渲染来源条和侧栏「任务」上的来源小图标，去掉 Projects。Issues / PRs、范围预设、Filters 仍在同一行，中间用分隔线隔开。Orca 原任务页不改 |
-| CodeHub 评审 | 见下文「CodeHub」。不把 CodeHub 当成 GitHub Enterprise 或 GitLab |
-| 壳内不加星弹窗 | `AppRootSurfaces`。`isWorkbenchShell()` 时不挂 `StarNagCard` / `StarNagToastHost` / `StarNagAgentValueMomentObserver`。设置里的 Star 与 GitHub API Budget 不动 |
-| 品牌 / 独立 profile / 打包 | `workbench-product.ts`、`dev:workbench`、`build:mac:workbench` |
+- `standard/` 的系统提示词、references、skills 和模板已作为内容目录合入；旧 Rust `crates/bw` 的集中注入器和旧周一屏脚本不复刻。
+- reviewer-agent 召唤制 CI 已迁入默认主干；其现行状态见 [reviewer-agent STATUS](../docs/05-features/reviewer-agent/STATUS.md)。
+- 旧 Rust 旅程、ADR、release/出包入口和历史绿灯不作为当前 Electron 行为证据。
 
-细节清单见 `src/renderer/src/workbench/INVENTORY.md`、`SYNC.md`。
+### 2.6 CI / E2E 边界（2026-10-13 隔离）
 
-BW 业务契约与材料服务分别位于 `src/shared/workbench/`、`src/main/workbench/`，宿主侧事务复用入口位于 `src/relay/workbench/`，RPC 方法注册在 `src/main/runtime/rpc/methods/workbench-{materials,metrics,history,archive}.ts`。叠层外以 RPC/CLI 注册和 relay 组合等薄挂载为主，例外是 `workbench/` 目录之外的 BW 业务文件：`src/cli/handlers/workbench-materials.ts` 与 `src/cli/specs/workbench-materials.ts` 是业务 handler（承载材料读写与校验，非纯注册），`src/cli/bundled-skill-guides.ts` 内嵌 BW 技能指南（由 `config/scripts/generate-bundled-skill-guides.mjs` 从 `standard/skills/` 正源生成，勿手改）。复用的原生执行与读取模块：runProcess / runWslProcess（进程与 WSL 执行）、prepareWorktreeCreateCheckout / readGitBlobAtOidPath（隔离检出与固定修订 blob 读取）、worktreeBasePath（工作树基址）、hostedReview.forBranch / repo.show（归档评审与仓库身份）、githubHostExecOptions / parseWslPath（GitHub 宿主执行选项与 WSL 路径解析）；落点为 `src/main/workbench/metrics/metrics-execution-core.ts`、`src/main/workbench/archive-evidence-runtime.ts`、`src/renderer/src/workbench/archive-port.ts`。复用原生身份、配对路由与 SSH 通道，具体业务不进入 Orca 工作树类。
+- 旧 Orca CI/E2E 源保留在仓内不删：旧 workflow、`tests/e2e/` 用例与 helper、`config/scripts/` runner 与契约测试、`tests/tools/` 下 Windows 更新/崩溃 E2E 工具，便于对照 upstream 和后续按需迁移；它们不属于 Workbench 当前流水线的测试集合，冻结为归档源，不随本仓 pr.yml 演进更新（旧契约测试断言的是旧 workflow 结构，属历史身份）。
+- 29 个旧 workflow（含 `release-ref-validation.yml`、`track-community-prs.yaml`、`issue-os-labeler.yaml`；`skill-update-roundtrip.yml` 为 2026-10-14 补充降级，见下条）摘除 `pull_request` / `push` / `schedule` / `workflow_call` / `pull_request_target` / `issues` 自动触发，只留 `workflow_dispatch`。注意：`workflow_dispatch.inputs`、`env`、`permissions`、`concurrency` 已随自动触发一并精简，**手动入口不保证可运行**——它们是归档占位，不是维护好的手动链；恢复任何一条旧链必须单独评审其触发器、额度和对 Workbench 的实际价值。
+- 隔离后仍会自动触发的 legacy workflow 只剩本 fork 命不中或空转的：paths 门控的 `cloud-verify.yml`（`cloud/**`）、`docs.yml`（`docs/site/**`）；job 级门控空转的 `readme-downloads-badge` / `cloud-monitor-relay-clock-skew` / `cloud-power-relay-staging`（schedule，job 被 `github.repository == 'stablyai/orca'` 或 `vars.ORCA_CLOUD_OPERATIONS_ENABLED` 门控）、`cloud-recover-relay-staging-c4-image` / `cloud-requeue-relay-staging-c4-recovery`（`workflow_run`，同一 vars 门控）、`release-policy.yml`（release 事件，`stablyai/orca` 门控）。**补充（2026-10-14，PR #353）**：`skill-update-roundtrip.yml` 原列本条（假设 paths 命不中），但触及 `resources/skills/**` 的 PR 即触发且**结构性必红**——`verify-skill-update-roundtrip.mjs` 的 historicalRelease/seedPlacement 需物化 release-mapping 命名的 Orca v1.4.x release tag，本 fork 只有 `v0.4.0` 与三个 `v0.5.0-rc.*`（#352、#353 与 main push 09076a6e 各 13 检查全红实证）。经人拍板降级为 dispatch-only（第 29 个），矩阵收窄为 windows-latest（BW 只发 Windows 安装包，macOS/ubuntu 场景不需要），守护契约测试 `skill-update-roundtrip-workflow.test.mjs` 同步改写为钉住隔离状态与 Windows-only 矩阵。
+- Workbench 自动检查只有 `.github/workflows/pr.yml`（verify：lint / typecheck / 定向 vitest / build:desktop；e2e：`test:e2e:workbench` 单条 Electron 冒烟）；外部代码评审仍由 `.github/workflows/claude-code-review.yml` 召唤制承担。pr.yml 不用 `paths` 过滤——触发级过滤会让被排除的 PR 完全没有检查上报（旧 `code_paths` 探测器规避的正是这个坑）。
+- `tests/playwright.config.ts` 只发现 `tests/e2e/workbench-cycle-smoke.spec.ts`；`config/vitest.config.ts` 只 include `src/**/*.test.ts(x)`。`package.json` 不保留旧 E2E 专项入口；Workbench 壳是构建期烘焙（`isWorkbenchShell()` 读 `import.meta.env.VITE_WORKBENCH_SHELL`），所以 `tests/e2e/global-setup.ts` 在 `electron-vite build --mode e2e` 的子进程 env 里固定注入 `WORKBENCH_SHELL=1 VITE_WORKBENCH_SHELL=1 ORCA_PRODUCT_NAME=Workbench`——单一来源，Windows cmd、POSIX shell 与 CI 一致（不用 `dev:workbench` 那种 POSIX env 前缀写法，那种写法在 Windows cmd 下不成立）。
+- `config/reliability-gates.jsonc` 只登记仍属当前 Workbench 检查范围的 gate（121→63）；`release-cut.yml` 不保留旧 E2E 发布证据 job。lint 与 reliability-gates 链暂保留在 verify 内，待 Workbench 专属质量门禁定义后再替换，避免在没有等价门禁时静默削弱检查。
+- 新链 helper 与保留源的配对关系（副本，不是共享；改保留源不会传导过来，需自觉防漂移）：`tests/e2e/helpers/workbench-app.ts` ↔ `orca-app.ts`；`tests/e2e/helpers/workbench-test-repo.ts` ↔ `seeded-test-repo.ts`。种子仓的持久化文件名与产品无关（`orca-data.json`，见 `src/main/persistence/loading-store/user-data-path.ts`）。
+- 本次隔离不表示 Orca runtime 源码已删除；保留的历史源文件也不表示它们仍属于当前交付门禁。
 
-**未删的 upstream 执行核**（合并时优先保 upstream，除非叠层钩子）：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、`src/main` runtime。
+## 3. 同步取舍
 
-### v0.5 版本周期特性对 Orca 原生文件的扩点
+1. **产品文档冲突**：`docs/`、`AGENTS.md`、`CONTEXT.md`、`README.md`、`CLAUDE.md` 以 BW 正本为准；上游工程说明只进入 `ref/`。
+2. **上游参考文档**：`ref/` 可以按实际需要吸收 upstream `docs/reference/**` 或 `STYLEGUIDE.md`；不得把 `ref/` 再拷回 `docs/`。
+3. **叠层外源码冲突**：BW 自有 `workbench/` 模块以外，默认优先保留 Orca；只有本篇登记的稳定契约、RPC/CLI 注册、relay 组合和已确认的去重边界需要人工合并。
+4. **叠层内冲突**：`workbench/**` 与挂载钩子按 BW 现行实现人工合并，不能用上游整段覆盖。
+5. **生成物与本机状态**：`.omc/**`、本机 profile、`dist/`、`out/` 不进入产品提交；生成的 Skill/指南按各自正源更新。
+6. **CodeHub**：保留独立 provider 和 service；GitHub.com 继续走 Orca 原生 GitHub 路径，不把 CodeHub 收成 GitHub Enterprise 或 GitLab。
 
-以下改动均为薄挂载 / 扩展点性质，BW 业务不进 Orca 内核；合并 upstream 时保留这些扩点：
+合并后按 [SYNC](../src/renderer/src/workbench/SYNC.md) 的 Electron 入口做受影响冒烟；源码存在不等于真实 Electron、远端或模型旅程已验证。
 
-| 类别 | 落点 | 说明 |
-|---|---|---|
-| 壳槽位 | AppWorkspaceShell / sidebar/index | BW 下 artifacts 仅准备固定树，terminal 原生工作区旁挂 CycleWorkspaceShell 右板；原生项目列表保留（计划/验收同样显示，2026-09-29 CodeHub 适配批恢复）。原生 Terminal 保持唯一挂载，RightSidebar 全部复用。tab-bar-surface 的 BW 启动按钮薄挂载已撤除（2026-09-29 验收可用性批）：新建计划/验收入口在右板首行协作卡片，TabBar 恢复纯原生 |
-| 原生历史面板 | AiVaultPanel / Header / VirtualList、ai-vault-session-row-actions | BW 专用 workspaceHost/onOpenSession 嵌入 props 已移除，直接复用原生侧栏；行级复制/打开/删除 handler 抽取仍由原生列表使用 |
-| 打开自动化运行 | `components/automations/automation-run-workspace-action.ts` | 抽取 `openAutomationRunTerminal`，原生运行页与 BW 手动启动共用；按运行的真实 pane/PTY 聚焦，不创建替代会话。调用时保留工作树宿主身份，定时调度不调用此入口 |
-| 自动化一次性运行上下文 | `shared/rpc-contract/automation-params.ts`（AutomationRunNow）、`shared/automations-types.ts`（AutomationDispatchRequest.oneShotPrompt）、`shared/protocol-version.ts`（automation.run-now-one-shot-prompt.v1）、`shared/automation-run-prompt.ts`、`main/runtime/rpc/methods/automations.ts` / `automation-schemas.ts`、`main/runtime/orca-runtime-automation-operations.ts`、`main/runtime/runtime-automation-controller.ts`、`main/automations/{service,refused-manual-run,headless-dispatch,headless-dispatch-runner}.ts`、`main/startup/main-process-automations.ts`、`renderer/hooks/automation-dispatch-handler.ts`、`components/automations/{automation-scoped-list-client,automation-capability-probe}.ts` | `automation.runNow` 增加可选 `oneShotPrompt`：只随本次运行在派发端与已保存提示合并为单次递交，不写回自动化记录；旧宿主会静默剥离该字段，客户端按 capability 门控并诚实报错。BW 用它把数据文件问题带入手动运行。合并 upstream 时保留该可选参数、capability 常量与两条派发路径（renderer / headless）的合并语义 |
-| 开工链 | `launch-agent-in-new-tab` / `launch-ai-vault-session` / `launch-agent-web-host-tab` | `activate:false` 后台启动不抢页面、selectWorktree、hostTabId 透出 |
-| 会话/终端类型 | `web-runtime-session-types`、`web-runtime-terminal-create-operation`、`activate-ai-vault-structured-session` 导出 | 结构化会话激活与终端创建操作扩点 |
-| 自动化编辑器预填 | `AutomationEditorDialog`、`automation-editor-request`、`use-automation-editor-request`、`use-automation-create-destination` / `use-automation-draft-effects` / `use-automation-editor-actions`、`ui-slice-contract-core` / `ui-slice-view-actions`（openAutomationEditor）等 14+ 原生文件 | 特性批之前的提交 0e25e81b7（feat(automations): open the native editor with an explicit target，2026-09-25）落定 openAutomationEditor 显式 target/draft 契约；本分支 `version-cycle/use-cycle-automation-draft.ts`（「配置自动化」预填）依赖该契约。合并 upstream 时保留显式 target/draft 扩点与请求形状 |
-| 任务详情与返回 | `task-page-source-context`、`use-task-page-detail-routing`、`use-task-page-provider-state`、codehub detail hook、`worktree-nav-view-history-replay`、`ui-slice-contract-core`（TaskPageData / openTaskPage options）、`ui-slice-task-actions`（tasks 哨兵跳过 / returnToPreviousView）、`worktree-nav-history`（codehub 变体） | 详情按来源返回走 openTaskPage 的 returnToPreviousView（跳过 tasks 哨兵回 BW 来源视图）；屏内上下文由 cycle-view-state 与 view-memory（sessionStorage）恢复。CodeHub 外部详情入口 / source context / history replay 接通 |
-| 工作树元数据 | `runtime-managed-worktree-metadata`、`worktree-metadata-merge`、`src/shared/worktree/types.ts` / `meta-types.ts` | 承载 `workbenchSelectedVersion` 流程选版偏好；字段定义在 shared/worktree 的 types.ts 与 meta-types.ts |
-| Git 历史窗口与分页 | `src/shared/git-history*`、`src/shared/rpc-contract/git-params.ts`、`src/main/runtime/rpc/methods/git.ts`、`src/main/ipc/filesystem/filesystem-git-status-handlers.ts`、`src/relay/git-handler-read-operations.ts` | git.history 增加可选 since / skip / revision，支持固定提交上的窗口分页；新增 committedAt（%ct），原 timestamp 保留作者时间。原有每页上限与未传新参数时的调用语义保留；合并 upstream 时保留解析及 IPC/RPC/relay 透传 |
-| PR/MR 合入时间 | `src/shared/github/work-item-types.ts`、`src/main/github/client/map/work-item.ts` / `work-item-field-coercion.ts`、`src/shared/codehub-tasks.ts`、`src/main/codehub/work-items.ts` | GitHub CLI/REST 与 CodeHub MR 列表/详情透传可选 mergedAt；原缺失字段保持缺失，不用 updatedAt 代替。合并 upstream 时保留真实合入时间字段及映射，总览据此统计趋势 |
-| WSL | `wsl-runner` | outputTruncated 透传 |
-| Mobile 残留清理 | settings 死簇 20 文件删除、`settings-navigation-types` / `capability-sections` 移除 'mobile' key、i18n 单 key 修正；**2026-09-27 第二批（用户决策「不遗留」）**：showMobileButton 全链（`global-settings-types` / `default-global-settings` / app menu / IPC settings 白名单 / Appearance 项与搜索目录 / SidebarNav 谓词）、TopLevelView `'mobile'` 成员全链（`top-level-view` lookup、`client-ui-params` zod enum、right-sidebar-visibility、openMobilePage/closeMobilePage/previousViewBeforeMobile、hydration）、`mobile-page.css`、feature-interaction `'mobile-pairing'` 死 id、死 catalog 键剪枝（「362 键」为键名并集口径，各语言实删数不等：en≈365 / fr≈354 / es≈323，ja/ko/zh 与 es 接近）、死 locale 规则实测 ≈40+ 条（原记 29 条不准） | 活体保留：mobileClientTabSelectionsByDeviceId（client-session-tab-selection 活链）、MobileEmulator/emulator-pane、relay/pairing、`driver.kind==='mobile'`、设置页指活配对功能的 Relay 文案。合并 upstream 时 `'mobile'` 视图成员与 showMobileButton 以本分支删除为准 |
-| 原生清理/去重 | `task-provider-identity-label.ts`（自 task-source-context-summary 抽出）、`automation-source-display.ts` / `automation-target-availability.ts`（getProviderLabel 收敛单一实现）、`task-providers.ts`（索引检查改 lint 合规写法） | 基线门禁债清理（824ae01be）中的行为不变重构；合并 upstream 时保留 provider 标签单一实现与身份标签抽取，不把重复实现合回来 |
-| 配置 | `tsconfig.cli` include、`oxlint-dead-classes.json` 对 workbench 子树关闭 Tailwind 类审计（BW 自有 CSS 设计系统，与既有 feature-wall-* allow 同机制）、`reliability-gates.jsonc` 清 671 行死登记（4 条纯 mobile gate 删除、3 条混合 gate 修剪）、ci-shard-timings | 门禁登记与实际文件面对齐 |
-| 门禁脚本 | `config/scripts/check-readme-local-links.mjs`、`config/scripts/audit-localization-coverage.mjs` | 前者把 `docs/readme/` 缺失视为「无翻译 README」而非 ENOENT 崩溃；后者新增目录级豁免机制（`config/localization-coverage-exclusions.json`，entry 必须带 pathPrefix+reason），合并 upstream 时保留 |
+## 4. 关联正本
 
-**遗留项裁决（2026-09-26 用户决策）**：`verify:localization-coverage` 对 BW 中文叠层的 457 个候选走目录级豁免（`config/localization-coverage-exclusions.json`，workbench 子树，条目必须带 reason；原生组件里的专名 `codehub-cli` 与 BW 壳侧栏「任务」标签走 allowlist 复核条目 2 条）；`check-readme-local-links` 已容错 `docs/readme/` 缺失（见「待迁移的工程边界」）；showMobileButton 死开关链、store `'mobile'` activeView 残留、MobilePane 死簇与 i18n 孤儿键按用户决策「不遗留」在本批删除（见上表 Mobile 残留清理行）。**仍登记的后续任务**：relay collect 信任面重推导（wire 只传 name+definitionHash，远端从 configurationCommit 重解 run；需 SSH 实机验证配套，见 `src/relay/workbench/metrics-handler.ts` 注释）。
-
-### CodeHub（`codehub-cli`，任务来源与 GitHub / GitLab 并列）
-
-CodeHub 是独立的 `TaskProvider`（`'codehub'`），和 GitHub、GitLab 同级。任务列表走 `codehub:listTasks`，调用 `codehub-cli issue list` / `mr list`。不挂在 `listWorkItems` 后面，也不等 GitHub 来源解析失败再降级。选中的仓库远程全是 CodeHub，且 `codehub-cli` 已装好时，任务页自动切到 CodeHub。壳里没有来源条，所以这一步必须发生在进 GitHub 列表之前。
-
-CodeHub 不是 `HostedReviewProvider`，也不走 `gh` / `glab`。调用 PATH 上的 `codehub-cli`，不写死安装路径。缺命令时错误是 `codehub-cli is not installed or not on PATH`。主机按 `codehub`、`codehub.*`、`codehub-*`、`*.codehub.*` 识别（例如 `codehub-g.huawei.com`），不用裸的 `includes('codehub')`。GitHub.com 行为不改。
-
-| 处置 | 路径 | 说明 |
-|---|---|---|
-| **新增** | `src/shared/codehub.ts` | `isCodeHubHost` / `isCodeHubUrl` / `isCodeHubGitRemote` / `parseCodeHubRemote`。嵌套项目路径保留，去掉 `.git`，拒绝 github |
-| **新增** | `src/main/codehub/cli.ts`、`service.ts`、`issue-state.ts` | 使用 Orca 已登记的 `gitRemoteIdentity`，通过原生命令执行器调用 `codehub-cli`。与 gh/glab 一样，SSH 仓库的托管平台 API 在所属 runtime 调用，不使用远端路径作本机 cwd；WSL 沿用项目运行环境。关闭先评论原因再 close，评论失败不关闭；重开不写评论。不写 `bw:status:*` |
-| **原生边界** | `src/main/github/issue-update.ts`、`project-view/mutations.ts` | 保持 upstream 的 GitHub 更新路径，不因另一个 remote 是 CodeHub 而切换平台。CodeHub 写入由自己的 service 承接 |
-| **新增** | `src/shared/codehub-api.ts`、`src/main/ipc/codehub.ts`、`src/main/runtime/rpc/methods/codehub.ts`、`src/preload/codehub.ts`、renderer `lib/codehub-api.ts` | IPC 与 `codehub.*` RPC 使用同一参数校验和 service。桌面、Web/配对按原生 repo owner 路由，不进 `gh:*`；未知仓库、路径不符或非 CodeHub 身份在执行前拒绝 |
-| **改调用** | `task-providers.ts`、任务页 `Content` / `ProviderFilters`、`use-task-page-codehub-loading.ts`、`use-task-page-provider-state.ts`、设置加载 | 来源 `'codehub'`。列表是 Issues / MRs。选中仓库全是 CodeHub 时自动切来源。旧配置的可见来源没有 `codehub` 时补一次，之后用户关掉就不再加回。手动改来源后不再盖回去。`en-runtime-required.json` 经官方工具再生成（824ae01be）：删 codehubNoLoadedMatches / codehubLoadedScope / codehubLoadMore 3 个 CodeHub 列表加载文案键，新增 `codehubDuplicateOf`（Detail 重复关闭占位） |
-| **改调用** | `viewed-sync.ts` | CodeHub 的 PR 已读在发请求、toast、乐观更新之前直接返回 |
-| **改调用** | `checks-panel/active-content.tsx` | CodeHub 不传 `onEditComment`、`onSetReaction`。评论仍可 list / create / delete |
-| **改调用** | `HostedReviewActions.tsx`、`HostedReviewStateActions.tsx`、`CreateHostedReviewComposer.tsx`、创建评审的两处 hook、`empty-content*`、`commit-surface.tsx` | CodeHub 不提供草稿和 Mark ready。创建时草稿强制为 false。已是草稿的远端 MR 没有合并按钮；新建 MR 不会是草稿。关闭仍在 |
-| **改调用** | `AppRootSurfaces.tsx` | 壳开启时不挂加星弹窗。崩溃「发送诊断报告」那一处原有的壳判断不动 |
-| **改调用** | `preflight-api.ts`、`agent-detection.ts`、设置「集成 / 评审供应商」 | `PreflightStatus.codehub` 只有 `{ installed }`。探测顺序是 `git --version`、`gh --version`、`glab --version`、`codehub-cli --version`，然后才是 `gh` / `glab` 的 `auth status`。不探测 CodeHub 登录。卡片状态是 checking / available / not-installed，有 Re-check。功能墙的连接列表不加这张卡 |
-| **新增** | `docs/03-guide/codehub-cli.md` | `codehub-cli` 用法短文。命令形状以本机 `--help` 为准 |
-
-定向测试覆盖 GitHub 混合 remote 更新隔离、CodeHub 注册仓库与执行环境、RPC/客户端路由、列表加载范围；平台请求使用模拟边界，不能代替内部 CodeHub 实机验收。
-
-任务页 CodeHub 的工具条跟 GitHub 同一行：Issues / MRs、项目、开放 / 我的（议题是分配给我，MR 还有待评审）、筛选条件、搜索、加号、刷新。开放对应 `--state opened`；我的对应 `issue list --scope assigned_to_me` 或 `mr list --scope created_by_me`；待评审对应 `mr list --scope need_my_review`。MR 搜索走 `--search`。列表按每仓 30 条开始，用已有 `--limit` 逐次加载更多，并多取一条判断截断；有未加载内容时明确标出搜索范围，不把已加载范围的空结果说成项目没有 Issue。点一行打开 CodeHub 详情，读取 view 与评论 list/create/delete。Issue 可改标题、按完成 / 不计划 / 重复关闭或重新打开；MR 可关闭。已读、表情、草稿和改正文仍未接入。
-
-合并时保留独立 CodeHub provider 与薄挂载，GitHub 更新路径沿用 upstream。改预检探测顺序时，同步 `preflight-host-cli-status.test.ts` 的命令 mock 次序。
-
-## 从 Workbench 旧 `main`（现 `archive/main-pre-orca`）增加了什么
-
-| 类别 | 落点 | 状态 |
-|---|---|---|
-| 产品文档正本 | 仓根 `AGENTS.md` / `CONTEXT.md` / `README.md` 与 `docs/` | 已换入 |
-| 壳叠层（Orca 上新写，非 Rust 直译） | `src/renderer/src/workbench/` | 已在本分支 |
-| **`standard/`（系统提示词 / skill / templates）** | 仓根 `standard/` | 已从旧 `main` 合入。计划/验收屏与「配置指标」开工注入渲染后 SYSTEM.md.tmpl 与对应 Skill 发现 Stub（week-planning / version-acceptance / metrics-refresh，投影在根级 `skills/`）；planning.py 等旧周一屏脚本已退役删除。旧 main 上 `crates/bw` 的 `ensure_*` / `agent_system_prompt` 全量注入不复刻。BW 四技能（bw-knowledge-docs / metrics-refresh / version-acceptance / week-planning）已登记进原生 `resources/skills/current-manifest.json` 与 `snapshot-registry.json`（b41b4ca78），合并 upstream 时保留该登记 |
-| reviewer-agent 召唤制 CI | `.github/workflows/claude-code-review.yml`、`.github/scripts/check-pr-review.mjs` | 2026-09-29 用户拍板迁入（旧 main 将被产品分支覆盖，独立评审机制不随覆盖丢失）。脚本原文照迁；2026-09-30 扶正落地：`main` 已被产品分支内容替换，本定义即默认分支上的定义，`/code-review` 召唤直接执行它，不再经旧 main 定义中转。改 workflow 的 PR 被防篡改校验跳过，首场真实召唤待下一条合格 PR。明细见 [reviewer-agent STATUS](../docs/05-features/reviewer-agent/STATUS.md) |
-
-BW 自有模块留在 renderer/main/shared/relay 各自的 `workbench/` 目录，不另开 npm / workspace 包；例外是 CLI 业务 handler 与内嵌指南生成（`src/cli/handlers|specs/workbench-materials.ts`、`src/cli/bundled-skill-guides.ts`、`config/scripts/generate-bundled-skill-guides.mjs`），位于原生 CLI 与 config 树内，见上文「产品面」。`standard/` 合入后仍是内容目录（提示词与技能），不是运行时包。
-
-## 同步注意事项
-
-**先读仓根 [AGENTS.md](../AGENTS.md)**（Workbench 开发约定：任务读取路径、四铁律、文档维护、门禁与交付）。本文件不重复那些规矩；这里只补 **Orca upstream ↔ 本分支** 的合并纪律：
-
-1. **文档冲突**：`docs/`、`AGENTS.md`、`CONTEXT.md`、`README.md`、`CLAUDE.md` → 以 Workbench 产品正本为准，不要用 upstream Orca 文档盖回来。upstream 工程说明只进 `ref/`。
-2. **`ref/`**：可随 upstream `docs/reference/**` / `STYLEGUIDE.md` 增量更新；新增篇目放 `ref/`，并在本文件补一行。不要把 `ref/` 拷回 `docs/`。
-3. **叠层外源码冲突**：BW 自有 `workbench/` 模块以外 → 优先取 upstream；本分支只保留界面条件分支、RPC/CLI 注册及 relay 组合等薄挂载。上文扩点表所列条目（含自动化编辑器预填契约、CLI 业务 handler、原生清理/去重）为例外，合并保留要求以表内各行为准。
-4. **叠层内冲突**：`workbench/**` 与挂载钩子 → 取本分支 / 手合。
-5. **不要**把 `.omc/**`、本机 profile、`dist/` / `out/` 打进产品提交。
-6. 日常热加载：`REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench`（见 `SYNC.md`）。Agent 自动化再加 `ORCA_BACKGROUND_LAUNCH=1`。
-7. **CodeHub**：任务来源、`codehub:*` IPC、预检和设置集成卡片冲突时，保留上文「CodeHub」里的分支。不要把列表塞回 `listWorkItems`。GitHub.com 仍按 upstream。不要把 CodeHub 收成 GitHub Enterprise 或 GitLab。
-
-合并后建议：
-
-```bash
-pnpm run dev:workbench
-# 冒烟：总览 / 计划 / 任务 / 验收 / 知识库 / 项目墙；计划、验收屏固定树会话仍按各自身份恢复
-```
-
-## 待迁移的工程边界
-
-- `.github/workflows/docs.yml` 仍指向已删的 `docs/site`，交由 CI/CD 迁移处理，不能作为 BW 文档链已就绪的证据。（`config/scripts/check-readme-local-links.mjs` 已容错 `docs/readme/` 缺失，在本分支通过。）
-- BW 的 CI/CD、独立评审与正式出包链需按 Electron 验证；源码中保留旧入口不代表已经可交付。Workbench 安装版暂用安装包手动更新，更新服务按产品身份阻断 Orca 的自动检查、版本选择、下载和安装；打包更新元数据指向 BW 仓。独立自动更新链仍随交付自动化遗留项处理。
-- `standard/` 的路径解析只覆盖部分入口，知识库分类、保存与工作树来源仍需在对应特性迁移时重新决策；当前行为边界见 [architecture](../docs/architecture.md)。
+- [AGENTS.md](../AGENTS.md)：本仓开发规范、任务读取路径和验证/交付规则。
+- [docs/architecture.md](../docs/architecture.md)：BW 当前产品旅程、能力归属和 Electron 数据流。
+- [SYNC.md](../src/renderer/src/workbench/SYNC.md)：叠层代码边界、运行入口和调试方式。
+- [docs/05-features/](../docs/05-features/README.md)：特性定义、状态和验证证据。

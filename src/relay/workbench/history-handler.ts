@@ -1,12 +1,15 @@
 import { z } from 'zod'
 import type { RelayDispatcher } from '../dispatcher'
-import { runAdoptedBaseline, runReadOnlyHistoryGit } from '../../main/workbench/history-git-core'
+import { runReadOnlyHistoryGit } from '../../main/workbench/history-git-core'
+import { runTrunkBaseline } from '../../main/workbench/trunk-baseline'
 import { HistorySourceError } from '../../main/workbench/version-history-snapshot'
 
 const Command = z.strictObject({
   target: z.strictObject({ repoPath: z.string().min(1) }),
   operation: z.enum(['git', 'baseline']),
   args: z.array(z.string().min(1)).optional(),
+  // Wire name predates the trunk-baseline unification; carries the pinned
+  // worktreeBaseRef and stays so older peers keep parsing the request.
   adoptedRef: z.string().min(1).nullish()
 })
 
@@ -30,7 +33,7 @@ export function registerVersionHistoryRelay(dispatcher: Pick<RelayDispatcher, 'o
         }
         return { ok: true, value: { stdout: outcome.stdout.toString('base64') } }
       }
-      const baseline = await runAdoptedBaseline(target.repoPath, adoptedRef ?? null)
+      const baseline = await runTrunkBaseline(target.repoPath, adoptedRef ?? null)
       return { ok: true, value: baseline }
     } catch (error) {
       if (error instanceof HistorySourceError) {

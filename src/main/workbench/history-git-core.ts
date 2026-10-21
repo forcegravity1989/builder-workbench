@@ -1,47 +1,8 @@
-import { resolveDefaultBaseRefViaExec, type GitExec } from '../git/repo-default-base-ref'
-import { gitExecFileAsync, gitExecFileAsyncBuffer } from '../git/runner'
-import {
-  gitOptionsForWorktree,
-  gitReadOptionsForWorktree,
-  type GitRuntimeOptions
-} from '../git/git-runtime-options'
+import { gitExecFileAsyncBuffer } from '../git/runner'
+import { gitReadOptionsForWorktree, type GitRuntimeOptions } from '../git/git-runtime-options'
 import { DEFAULT_GIT_MAX_BUFFER } from '../git/command-runner/git-exec-options'
 import { extractExecError } from '../git/exec-error'
-import { SourceCommit } from '../../shared/workbench/version-material'
 import { HistorySourceError } from './version-history-snapshot'
-
-/**
- * Resolves the project's adopted history source: the explicitly registered base
- * ref first, otherwise the native default-branch probes. The result is pinned to
- * a full commit SHA. A registered ref that no longer resolves is an error — the
- * adopted source never silently switches to another branch.
- */
-export async function resolveAdoptedBaseline(
-  exec: GitExec,
-  adoptedRef: string | null
-): Promise<{ ref: string; commit: string }> {
-  let ref = adoptedRef?.trim() || null
-  if (!ref) {
-    ref = await resolveDefaultBaseRefViaExec(exec)
-  }
-  if (!ref) {
-    throw new HistorySourceError(
-      'baseline-unresolved',
-      '无法解析项目采用分支，请先在项目设置明确基线'
-    )
-  }
-  let commit: string
-  try {
-    commit = (await exec(['rev-parse', '--verify', `${ref}^{commit}`])).stdout.trim()
-  } catch {
-    throw new HistorySourceError(
-      'baseline-invalid',
-      `项目采用来源 ${ref} 已失效；不改用其他分支读取历史`
-    )
-  }
-  SourceCommit.parse(commit)
-  return { ref, commit }
-}
 
 const SHA = '(?:[a-f0-9]{40}|[a-f0-9]{64})'
 const MATERIAL_PATH = String.raw`\.bw\/planning\/(?!\.+$)[^/\0]+\/(?:data|acceptance)\.json`
@@ -51,8 +12,8 @@ const MATERIAL_PATH = String.raw`\.bw\/planning\/(?!\.+$)[^/\0]+\/(?:data|accept
  * nothing else: provider.exec lacks show/worktree/reset and stays that way, so
  * this narrow executor is the only remote Git surface and re-derives the whole
  * allowlist from the request instead of trusting the caller. Baseline resolution
- * runs as its own relay operation through resolveAdoptedBaseline, not via this
- * allowlist.
+ * runs as its own relay operation through runTrunkBaseline (trunk-baseline.ts),
+ * not via this allowlist.
  */
 export function assertReadOnlyHistoryGitArgs(args: readonly string[]): void {
   const invalid = () => {
@@ -187,18 +148,4 @@ export async function runReadOnlyHistoryGit(
   } catch (error) {
     return { ok: false, ...historyGitFailure(error) }
   }
-}
-
-/** Resolves the adopted baseline where the repository filesystem actually lives. */
-export function runAdoptedBaseline(
-  repoPath: string,
-  adoptedRef: string | null,
-  options: GitRuntimeOptions = {}
-): Promise<{ ref: string; commit: string }> {
-  const exec: GitExec = (argv) =>
-    gitExecFileAsync(argv, {
-      ...gitOptionsForWorktree(repoPath, options),
-      timeout: 30_000
-    })
-  return resolveAdoptedBaseline(exec, adoptedRef)
 }

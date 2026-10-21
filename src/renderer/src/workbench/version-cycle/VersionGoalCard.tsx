@@ -1,4 +1,7 @@
+import { ChevronDown, ChevronRight } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import type { VersionGoalCardProps } from './ports'
+import { readGoalCardExpanded, writeGoalCardExpanded } from '../cycle-view-state'
 import './version-cycle.css'
 
 export function VersionGoalCard({
@@ -8,15 +11,58 @@ export function VersionGoalCard({
   onChange,
   metrics,
   result,
-  actions
+  actions,
+  defaultOpen = !readOnly,
+  expanded,
+  expandedSignal,
+  summary,
+  extra,
+  hideReadOnlyStory = false,
+  viewStateKey
 }: VersionGoalCardProps) {
   const editable = !readOnly && Boolean(onChange)
+  const [open, setOpen] = useState(() =>
+    readGoalCardExpanded(viewStateKey, expanded ?? defaultOpen)
+  )
+  const previousStateKey = useRef(viewStateKey)
+  const previousExpanded = useRef(expanded)
+  const previousExpandedSignal = useRef(expandedSignal)
+  useEffect(() => {
+    const signalChanged = expandedSignal !== previousExpandedSignal.current
+    const valueChanged = expanded !== previousExpanded.current
+    if (viewStateKey !== previousStateKey.current) {
+      setOpen(readGoalCardExpanded(viewStateKey, expanded ?? defaultOpen))
+    } else if (expanded !== undefined && (signalChanged || valueChanged)) {
+      setOpen(expanded)
+      writeGoalCardExpanded(viewStateKey, expanded)
+    }
+    previousStateKey.current = viewStateKey
+    previousExpanded.current = expanded
+    previousExpandedSignal.current = expandedSignal
+  }, [expanded, expandedSignal, viewStateKey, defaultOpen])
   return (
-    <article className="vc-goal" data-goal-id={goal.goalId}>
-      <span className="vc-goal-number">G{index + 1}</span>
+    <article className={`vc-goal${open ? ' is-open' : ' is-collapsed'}`} data-goal-id={goal.goalId}>
       <div className="vc-goal-content">
-        {editable ? (
-          <>
+        <div className="vc-goal-heading">
+          <button
+            type="button"
+            className="vc-goal-toggle"
+            aria-expanded={open}
+            onClick={() => {
+              const next = !open
+              setOpen(next)
+              writeGoalCardExpanded(viewStateKey, next)
+            }}
+          >
+            {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            <span className="vc-goal-number">G{index + 1}</span>
+            <strong>{goal.title || '待明确目标'}</strong>
+          </button>
+          {summary}
+          {actions}
+        </div>
+        {open && editable ? (
+          <div className="vc-goal-story">
             <label className="vc-goal-title">
               <span>目标</span>
               <textarea
@@ -27,7 +73,7 @@ export function VersionGoalCard({
                 onChange={(event) => onChange?.({ ...goal, title: event.target.value })}
               />
             </label>
-            <label>
+            <label className="vc-goal-detail">
               <span>交付件</span>
               <textarea
                 rows={1}
@@ -37,7 +83,7 @@ export function VersionGoalCard({
                 onChange={(event) => onChange?.({ ...goal, deliverable: event.target.value })}
               />
             </label>
-            <label>
+            <label className="vc-goal-detail">
               <span>验收标准</span>
               <textarea
                 aria-label={`G${index + 1} 验收标准`}
@@ -47,29 +93,52 @@ export function VersionGoalCard({
                 onChange={(event) => onChange?.({ ...goal, acceptance: event.target.value })}
               />
             </label>
-          </>
-        ) : (
-          <>
-            <div className="vc-goal-heading">
-              <h3>{goal.title || '待明确目标'}</h3>
-              {actions}
+            <div className="vc-goal-meta">
+              <label>
+                <span>计划完成</span>
+                <input
+                  aria-label={`G${index + 1} 计划完成`}
+                  placeholder="可选日期或版本"
+                  value={goal.deadline ?? ''}
+                  onChange={(event) => onChange?.({ ...goal, deadline: event.target.value })}
+                />
+              </label>
+              <label>
+                <span>负责人</span>
+                <input
+                  aria-label={`G${index + 1} 负责人`}
+                  placeholder="可选"
+                  value={goal.owner ?? ''}
+                  onChange={(event) => onChange?.({ ...goal, owner: event.target.value })}
+                />
+              </label>
             </div>
+          </div>
+        ) : open && !hideReadOnlyStory ? (
+          <div className="vc-goal-story">
             {goal.deliverable?.trim() && (
-              <p>
+              <div className="vc-story-cell">
                 <span className="vc-label">约定交付</span>
-                {goal.deliverable}
-              </p>
+                <p>{goal.deliverable}</p>
+              </div>
             )}
             {goal.acceptance && (
-              <p>
+              <div className="vc-story-cell">
                 <span className="vc-label">验收标准</span>
-                {goal.acceptance}
-              </p>
+                <p>{goal.acceptance}</p>
+              </div>
             )}
-          </>
-        )}
-        {metrics && <div className="vc-goal-metrics">{metrics}</div>}
-        {result && <div className="vc-goal-result">{result}</div>}
+            {(goal.deadline || goal.owner) && (
+              <div className="vc-story-cell">
+                <span className="vc-label">计划</span>
+                <p>{[goal.deadline, goal.owner].filter(Boolean).join(' · ')}</p>
+              </div>
+            )}
+          </div>
+        ) : null}
+        {open && metrics && <div className="vc-goal-metrics">{metrics}</div>}
+        {open && extra}
+        {open && result && <div className="vc-goal-result">{result}</div>}
       </div>
     </article>
   )

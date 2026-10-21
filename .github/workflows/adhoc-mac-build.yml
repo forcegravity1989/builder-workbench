@@ -42,44 +42,6 @@ name: Adhoc macOS + Windows Dev Build
 
 on:
   workflow_dispatch:
-    inputs:
-      ref:
-        # Why optional: the Actions UI already shows its own "Use workflow from"
-        # branch picker directly above this field, and picking a branch there is
-        # what most people will read as "build this". Defaulting to that branch
-        # makes the obvious action correct. Fill this in only to build a ref other
-        # than the one the workflow file itself is read from — normally leave the
-        # picker on main and name your branch here, so a stale copy of this
-        # workflow on an old branch is not what runs.
-        description: 'Branch, tag, or SHA to build — must live in stablyai/orca; PR refs are refused (default: the branch selected above)'
-        required: false
-        default: ''
-        type: string
-      label:
-        description: 'Short name shown in the release title (default: the ref)'
-        required: false
-        default: ''
-        type: string
-
-permissions:
-  contents: read
-
-concurrency:
-  # Why keyed on the ref rather than global: two people cutting builds from two
-  # different branches at the same time is the ordinary case here, and serialising
-  # them would make each wait out the other's notary queue. Re-dispatching the
-  # *same* branch still queues, so a push mid-build cannot race itself.
-  group: adhoc-mac-build-${{ inputs.ref || github.ref_name }}
-  cancel-in-progress: false
-
-env:
-  ADHOC_REPO: stablyai/orca-adhoc
-  # Why age and not a count like hourly: this channel is low-volume and bursty, so
-  # a count would either hold one week's experiments forever or evict a build
-  # someone is still running after a busy afternoon. A month is well past the "few
-  # days" these exist for, and by then the branch has landed or been abandoned.
-  ADHOC_RETAIN_DAYS: 30
-
 jobs:
   build-adhoc-mac:
     if: github.repository == 'stablyai/orca'

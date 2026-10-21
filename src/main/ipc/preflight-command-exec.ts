@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { buildPosixCommandPathLookupScript } from '../../shared/posix-command-path-lookup'
-import { isCommandOnLocalPath } from './command-path-resolver'
+import { isCommandOnLocalPath, resolveCommandOnLocalPath } from './command-path-resolver'
 import { buildLocalPreflightEnv } from './preflight-local-env'
 import { runPreflightCommandInWsl } from './preflight-wsl-command'
 import type { WslPreflightTarget } from './preflight-wsl-agent-detection'
@@ -50,14 +50,34 @@ export async function execLocalPreflightCommandOrThrow(
   args: string[]
 ): Promise<PreflightCommandResult> {
   const env = buildLocalPreflightEnv()
-  const commandPromise = execFileAsync(command, args, {
-    encoding: 'utf-8',
-    timeout: PREFLIGHT_COMMAND_TIMEOUT_MS,
-    // Preflight probes console-subsystem binaries (git, gh, node); without this
-    // each one flashes a console and steals foreground on Windows (#10488).
-    windowsHide: true,
-    ...(env ? { env } : {})
-  }) as Promise<PreflightCommandResult>
+  // Why (BW #323): Windows CreateProcess only launches real executables, so a
+  // bare execFile cannot see npm-installed CLIs whose global shims are .cmd
+  // scripts — a freshly installed welink-cli / codehub-cli would keep reading
+  // "not installed". Resolve against the same registry-merged PATH and route
+  // .cmd/.bat shims through cmd.exe; every other resolution (real .exe, or
+  // nothing found) keeps the bare spawn so existing probe semantics stay
+  // byte-identical. normalize() turns the resolver's forward-slash joins into
+  // the backslash form cmd.exe expects.
+  const resolved =
+    process.platform === 'win32' ? await resolveCommandOnLocalPath(command, { env }) : null
+  const shimPath = resolved ? path.normalize(resolved) : null
+  const commandPromise = (
+    shimPath && /\.(cmd|bat)$/i.test(shimPath)
+      ? execFileAsync('cmd.exe', ['/d', '/c', shimPath, ...args], {
+          encoding: 'utf-8',
+          timeout: PREFLIGHT_COMMAND_TIMEOUT_MS,
+          windowsHide: true,
+          ...(env ? { env } : {})
+        })
+      : execFileAsync(command, args, {
+          encoding: 'utf-8',
+          timeout: PREFLIGHT_COMMAND_TIMEOUT_MS,
+          // Preflight probes console-subsystem binaries (git, gh, node); without this
+          // each one flashes a console and steals foreground on Windows (#10488).
+          windowsHide: true,
+          ...(env ? { env } : {})
+        })
+  ) as Promise<PreflightCommandResult>
 
   return withPreflightTimeout(command, commandPromise)
 }
@@ -78,12 +98,16 @@ export async function execCommandInWslOrThrow(
 
 export async function isCommandAvailable(
   command: string,
-  wslTarget?: WslPreflightTarget
+  wslTarget?: WslPreflightTarget,
+  // Why (BW #366): cloudbuild's cb rejects `--version` (cobra: unknown flag);
+  // its `version` subcommand is the equivalent liveness probe. Callers pass
+  // the args the CLI actually supports.
+  versionArgs: string[] = ['--version']
 ): Promise<boolean> {
   try {
     await (wslTarget
-      ? execCommandInWslOrThrow(wslTarget, `${shellQuote(command)} --version`)
-      : execLocalPreflightCommandOrThrow(command, ['--version']))
+      ? execCommandInWslOrThrow(wslTarget, `${shellQuote(command)} ${versionArgs.join(' ')}`)
+      : execLocalPreflightCommandOrThrow(command, versionArgs))
     return true
   } catch {
     return false

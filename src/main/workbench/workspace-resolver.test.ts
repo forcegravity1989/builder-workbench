@@ -11,8 +11,22 @@ function fixture() {
     { id: 'repo', path: '/remote/project', kind: 'git', executionHostId: 'ssh:builder' }
   ]
   const trees: Awaited<ReturnType<WorkbenchWorkspaceHost['listWorktrees']>> = [
-    { id: 'tree', repoId: 'repo', path: '/local/tree', hostId: 'local', isArchived: false },
-    { id: 'tree', repoId: 'repo', path: '/remote/tree', hostId: 'ssh:builder', isArchived: false }
+    {
+      id: 'tree',
+      repoId: 'repo',
+      path: '/local/tree',
+      hostId: 'local',
+      isArchived: false,
+      isMainWorktree: false
+    },
+    {
+      id: 'tree',
+      repoId: 'repo',
+      path: '/remote/tree',
+      hostId: 'ssh:builder',
+      isArchived: false,
+      isMainWorktree: false
+    }
   ]
   const listWorktrees = vi.fn(async () => trees)
   const host: WorkbenchWorkspaceHost = { listRepos: () => repos, listWorktrees }
@@ -27,7 +41,8 @@ describe('registered workbench workspace identity', () => {
     expect(resolved.target).toEqual({
       hostId: 'ssh:builder',
       repoPath: '/remote/project',
-      worktreePath: '/remote/tree'
+      worktreePath: '/remote/tree',
+      isMainWorktree: false
     })
     scope.hostId = 'local'
     await resolved.reauthorize()

@@ -120,6 +120,15 @@ describe('task page cache selectors', () => {
       { id: 'issues-ok', path: '/repos/issues-ok', displayName: 'issues-repo' },
       { id: 'prs-ok', path: '/repos/prs-ok', displayName: 'prs-repo' },
       { id: 'no-name', path: '/repos/no-name' },
+      {
+        id: 'codehub-remote',
+        path: '/repos/codehub-remote',
+        displayName: 'codehub-repo',
+        gitRemoteIdentity: {
+          remoteUrl: 'git@codehub.example.com:team/project.git',
+          canonicalKey: 'codehub.example.com/team/project'
+        }
+      },
       { id: 'not-fetched', path: '/repos/not-fetched', displayName: 'pending-repo' }
     ]
     const entries = [
@@ -127,14 +136,28 @@ describe('task page cache selectors', () => {
       sourcesEntry({ issues: { owner: 'acme', repo: 'issues-ok' }, prs: null }),
       sourcesEntry({ issues: null, prs: { owner: 'acme', repo: 'prs-ok' } }),
       sourcesEntry({ issues: null, prs: null }),
+      sourcesEntry({ issues: null, prs: null }),
       sourcesEntry(null)
     ]
     const sourceState = buildTaskPageRepoSourceState(repos, entries)
 
-    // Only both-null fetched repos are flagged; label falls back to path when displayName is absent.
+    // Only both-null fetched repos are flagged; label falls back to path when displayName
+    // is absent. A CodeHub-remote repo is flagged with codehub=true so the banner can
+    // explain the missing GitHub source instead of offering a pointless GitHub retry.
     expect(selectTaskPageUnresolvedSourceRepos(repos, sourceState)).toEqual([
-      { repoId: 'unresolved', sourceKey: 'unresolved::local', label: 'unresolved-repo' },
-      { repoId: 'no-name', sourceKey: 'no-name::local', label: '/repos/no-name' }
+      {
+        repoId: 'unresolved',
+        sourceKey: 'unresolved::local',
+        label: 'unresolved-repo',
+        codehub: false
+      },
+      { repoId: 'no-name', sourceKey: 'no-name::local', label: '/repos/no-name', codehub: false },
+      {
+        repoId: 'codehub-remote',
+        sourceKey: 'codehub-remote::local',
+        label: 'codehub-repo',
+        codehub: true
+      }
     ])
   })
 

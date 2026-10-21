@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="zh" data-theme="claude">
+<html lang="zh">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BW · 总览高保真</title>
 <!--
   总览目标态稿（独立可点原型，不改壳、不改 index.html）。
-  数据截止日期 2026-09-03 / ISO 2026-W36。视觉对齐 docs/04-design-system/ Claude 板。
+  数据截止日期 2026-09-03 / ISO 2026-W36。视觉取 docs/04-design-system/。
 
   一张图 = 一条滞后 + 0..n 条引领。同一页签多条滞后 → 图横向排。
   leads 空 = 挂到该页签第一条滞后。图上系列行纵向往下排。
@@ -40,7 +40,7 @@ body {
   background: var(--color-bg);
   border: 1px solid var(--color-divider);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-dialog);
   overflow: hidden;
   flex: none;
 }
@@ -89,7 +89,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-heading);
+  font-family: var(--font-sans);
   font-weight: 700;
   font-size: 15px;
   margin-bottom: var(--space-2);
@@ -128,8 +128,8 @@ body {
   margin-bottom: var(--space-2);
 }
 .pr-name {
-  font-family: var(--font-heading);
-  font-weight: var(--font-heading-weight);
+  font-family: var(--font-sans);
+  font-weight: 600;
   font-size: 14px;
 }
 .pr-meta {
@@ -358,7 +358,7 @@ h6 { margin: 0; }
   color: var(--color-neutral-100);
   font-size: 12px;
   line-height: 1.45;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-dialog);
   transform: translate(-50%, calc(-100% - var(--space-2)));
 }
 .chart-tip .wk { font-family: var(--font-mono); font-weight: 600; }

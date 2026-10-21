@@ -1,8 +1,8 @@
 ---
 name: version-acceptance
-description: Use when 在 BW 验收屏准备候选交付与验收材料、组织 showcase 和归档版本结果，或对应 Orca 周期运行启动。
+description: Use when 在 BW 验收屏准备候选交付与验收材料、组织 showcase、整理会后会议指导与遗留并归档版本结果，或对应 Orca 周期运行启动。
 metadata:
-  version: 0.3.1
+  version: 0.6.1
 ---
 
 # 版本验收

@@ -1,158 +1,24 @@
-/* Builder — design-system tokens and component classes. Two color systems ship in this one file: Apple (default, on :root) and Claude (on [data-theme="claude"]). Set <html data-theme="claude"> to switch; see spec.md. */
+/* Workbench — HTML class vocabulary for prototypes and docs pages (no React, no build).
+   Values come from tokens.json via tokens.css (Orca's palette; light on :root, dark on
+   [data-theme="dark"] or .dark). Product code uses the React primitives instead — see
+   README.md. The class names are Builder's; the values they read are Orca's. */
+
+@import url('tokens.css');
 
 :root {
-  /* ── Apple palette (default) ─────────────────────────────────────────── */
-  --color-bg: #ffffff;
-  --color-surface: #f5f5f7;
-  --color-card: #ffffff;
-  --color-text: #1d1d1f;
-  --color-accent: #0071e3;
-  --color-accent-2: #5856d6;
-
-  /* Tonal ramps — generated in OKLCH on one shared lightness scale, so the
-     same step of any role (in either theme) has the same visual weight. */
-  --color-neutral-100: #f2f3f5;
-  --color-neutral-200: #e6e8ea;
-  --color-neutral-300: #d1d3d5;
-  --color-neutral-400: #b2b4b7;
-  --color-neutral-500: #909295;
-  --color-neutral-600: #6f7274;
-  --color-neutral-700: #535558;
-  --color-neutral-800: #393b3d;
-  --color-neutral-900: #232426;
-
-  --color-accent-100: #edf4fe;
-  --color-accent-200: #dae9fe;
-  --color-accent-300: #b7d5fe;
-  --color-accent-400: #82b7ff;
-  --color-accent-500: #3b91fe;
-  --color-accent-600: #006ddc;
-  --color-accent-700: #0152a8;
-  --color-accent-800: #003877;
-  --color-accent-900: #00224e;
-
-  --color-accent-2-100: #f1f3ff;
-  --color-accent-2-200: #e2e6fe;
-  --color-accent-2-300: #c8cffe;
-  --color-accent-2-400: #a3acff;
-  --color-accent-2-500: #7d83f7;
-  --color-accent-2-600: #5e5eda;
-  --color-accent-2-700: #4544ab;
-  --color-accent-2-800: #2f2d7c;
-  --color-accent-2-900: #1c1c4e;
-
-  /* Semantic status — base fill, soft tint, deep (text on the tint). */
-  --color-success: #34c759;
-  --color-success-soft: #d9f8dc;
-  --color-success-deep: #1d622c;
-  --color-warning: #ff9500;
-  --color-warning-soft: #ffead9;
-  --color-warning-deep: #7c4602;
-  --color-danger: #ff3b30;
-  --color-danger-soft: #fee7e3;
-  --color-danger-deep: #97261e;
-
-  /* The select caret. A data URI can't read a CSS var, so the stroke is
-     spelled out once per palette — it is neutral-600 in both. */
-  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f7274' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-
-  /* ── Shared (both themes) ────────────────────────────────────────────── */
-  --color-divider: color-mix(in srgb, var(--color-text) 12%, transparent);
-
-  /* Han is deliberately unnamed: no listed family covers it, so every
-     platform falls to its per-script system default — PingFang SC on
-     macOS/iOS, Microsoft YaHei on Windows, Noto Sans CJK SC on Android and
-     Linux. Naming those system faces would register them as uploadable web
-     fonts; the unnamed fallback renders the same glyphs. */
-  --font-body:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', Arial, sans-serif;
-  --font-heading: var(--font-body);
-  --font-heading-weight: 600;
-  --font-mono:
-    ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
-
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
-
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-
-  /* Elevation — three levels only: hairline border (default), subtle lift
-     (sm), menu (md), floating (lg). Never invent a fourth. */
-  --shadow-sm:
-    0 1px 2px color-mix(in srgb, var(--color-neutral-900) 4%, transparent),
-    0 1px 1px color-mix(in srgb, var(--color-neutral-900) 3%, transparent);
-  --shadow-md:
-    0 8px 24px color-mix(in srgb, var(--color-neutral-900) 8%, transparent),
-    0 2px 6px color-mix(in srgb, var(--color-neutral-900) 5%, transparent);
-  --shadow-lg:
-    0 16px 40px color-mix(in srgb, var(--color-neutral-900) 14%, transparent),
-    0 3px 10px color-mix(in srgb, var(--color-neutral-900) 8%, transparent);
+  /* A data URI can't read a CSS var, so the caret stroke is spelled out per theme
+     (muted-foreground). */
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
-
-/* ── Claude palette ──────────────────────────────────────────────────────
-   Warm ivory ground, terracotta accent, slate second voice. Apply
-   data-theme="claude" on <html>, <body> or any subtree. */
-[data-theme='claude'] {
-  --color-bg: #faf9f5;
-  --color-surface: #f0eee6;
-  --color-card: #fefdfa;
-  --color-text: #1f1e1d;
-  --color-accent: #d97757;
-  --color-accent-2: #4c73a5;
-
-  --color-neutral-100: #f6f3ef;
-  --color-neutral-200: #ebe7e1;
-  --color-neutral-300: #d7d2ca;
-  --color-neutral-400: #b8b3ac;
-  --color-neutral-500: #96918a;
-  --color-neutral-600: #75716a;
-  --color-neutral-700: #58554f;
-  --color-neutral-800: #3d3a36;
-  --color-neutral-900: #262421;
-
-  --color-accent-100: #fef0eb;
-  --color-accent-200: #ffe0d7;
-  --color-accent-300: #fec3af;
-  --color-accent-400: #f19b80;
-  --color-accent-500: #d47354;
-  --color-accent-600: #af5233;
-  --color-accent-700: #893a1f;
-  --color-accent-800: #602613;
-  --color-accent-900: #3c180c;
-
-  --color-accent-2-100: #edf4fe;
-  --color-accent-2-200: #dbe9fc;
-  --color-accent-2-300: #bdd5f4;
-  --color-accent-2-400: #96b7e1;
-  --color-accent-2-500: #6c95c9;
-  --color-accent-2-600: #4c73a5;
-  --color-accent-2-700: #355781;
-  --color-accent-2-800: #243c59;
-  --color-accent-2-900: #142539;
-
-  --color-success: #579766;
-  --color-success-soft: #dcf7e1;
-  --color-success-deep: #286037;
-  --color-warning: #ce9042;
-  --color-warning-soft: #feecce;
-  --color-warning-deep: #774a03;
-  --color-danger: #c15f4d;
-  --color-danger-soft: #ffe4df;
-  --color-danger-deep: #883324;
-
-  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2375716a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+[data-theme='dark'],
+.dark {
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1a1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
    Base + components — plain CSS on plain HTML: no JavaScript, no build step.
-   Each class is documented in spec.md and demonstrated in foundations/
-   and components/.
+   Each class is listed in guidelines.md ("HTML 原型与文档页") and demonstrated in
+   foundations/ and components/.
    ══════════════════════════════════════════════════════════════════════ */
 
 *,
@@ -164,7 +30,7 @@ body {
   margin: 0;
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: var(--font-body);
+  font-family: var(--font-sans);
   font-size: 13px;
   line-height: 1.5;
   font-weight: 400;
@@ -177,8 +43,8 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-heading);
-  font-weight: var(--font-heading-weight);
+  font-family: var(--font-sans);
+  font-weight: 600;
   line-height: 1.25;
   letter-spacing: -0.014em;
   margin: 0 0 var(--space-2);
@@ -263,7 +129,7 @@ code {
   gap: 6px;
   cursor: pointer;
   text-decoration: none;
-  font-family: var(--font-body);
+  font-family: var(--font-sans);
   font-weight: 500;
   font-size: 13px;
   line-height: 1;
@@ -284,15 +150,15 @@ code {
 .btn-primary {
   background: var(--color-accent);
   border-color: var(--color-accent);
-  color: #fff;
+  color: var(--primary-foreground);
 }
 .btn-primary:hover {
-  background: var(--color-accent-600);
-  border-color: var(--color-accent-600);
+  background: color-mix(in oklab, var(--primary) 90%, transparent);
+  border-color: color-mix(in oklab, var(--primary) 90%, transparent);
 }
 .btn-primary:active {
-  background: var(--color-accent-700);
-  border-color: var(--color-accent-700);
+  background: color-mix(in oklab, var(--primary) 80%, transparent);
+  border-color: color-mix(in oklab, var(--primary) 80%, transparent);
 }
 .btn-secondary {
   background: var(--color-card);
@@ -320,10 +186,10 @@ code {
   color: #fff;
 }
 .btn-danger:hover {
-  background: color-mix(in srgb, var(--color-danger) 84%, var(--color-neutral-900));
+  background: color-mix(in srgb, var(--color-danger) 84%, #000);
 }
 .btn-danger:active {
-  background: color-mix(in srgb, var(--color-danger) 70%, var(--color-neutral-900));
+  background: color-mix(in srgb, var(--color-danger) 70%, #000);
 }
 .btn-icon {
   width: 28px;
@@ -350,8 +216,8 @@ code {
   color: var(--color-accent-700);
 }
 .tag-accent-2 {
-  background: var(--color-accent-2-100);
-  color: var(--color-accent-2-700);
+  background: color-mix(in srgb, var(--color-accent-2) 12%, transparent);
+  color: var(--color-accent-2);
 }
 .tag-neutral {
   background: var(--color-neutral-100);
@@ -534,8 +400,8 @@ select.input:disabled {
   color: var(--color-accent);
 }
 .card-title {
-  font-family: var(--font-heading);
-  font-weight: var(--font-heading-weight);
+  font-family: var(--font-sans);
+  font-weight: 600;
   font-size: 14px;
   line-height: 1.3;
   letter-spacing: -0.01em;
@@ -557,10 +423,10 @@ select.input:disabled {
   box-shadow: var(--shadow-sm);
 }
 .elev-md {
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-menu);
 }
 .elev-lg {
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-dialog);
 }
 
 /* — status — */
@@ -583,13 +449,13 @@ select.input:disabled {
   --status-c: var(--color-neutral-400);
 }
 .status-progress {
-  --status-c: var(--color-warning);
+  --status-c: var(--workspace-status-progress);
 }
 .status-review {
-  --status-c: var(--color-accent-2);
+  --status-c: var(--workspace-status-review);
 }
 .status-done {
-  --status-c: var(--color-success);
+  --status-c: var(--workspace-status-done);
 }
 .status-blocked {
   --status-c: var(--color-danger);
@@ -654,8 +520,8 @@ select.input:disabled {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-heading);
-  font-weight: var(--font-heading-weight);
+  font-family: var(--font-sans);
+  font-weight: 600;
   font-size: 13px;
   margin-right: auto;
 }
@@ -861,7 +727,9 @@ select.input:disabled {
   display: grid;
   place-items: center;
   padding: var(--space-4);
-  background: color-mix(in srgb, var(--color-neutral-900) 40%, transparent);
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
 }
 .dialog {
   width: min(420px, 100%);
@@ -872,11 +740,11 @@ select.input:disabled {
   border-radius: var(--radius-lg);
   background: var(--color-card);
   border: 1px solid var(--color-divider);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-dialog);
 }
 .dialog-title {
-  font-family: var(--font-heading);
-  font-weight: var(--font-heading-weight);
+  font-family: var(--font-sans);
+  font-weight: 600;
   font-size: 15px;
   letter-spacing: -0.01em;
 }
@@ -899,7 +767,7 @@ select.input:disabled {
   border-radius: var(--radius-lg);
   background: var(--color-card);
   border: 1px solid var(--color-divider);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-dialog);
   overflow: hidden;
 }
 .cmdk-input {
@@ -973,7 +841,7 @@ select.input:disabled {
   color: var(--color-neutral-100);
   font-size: 12.5px;
   line-height: 1.45;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-dialog);
 }
 .toast svg {
   flex: none;
@@ -991,7 +859,7 @@ select.input:disabled {
   align-self: center;
   font: inherit;
   font-weight: 600;
-  color: var(--color-accent-400);
+  color: inherit;
   background: none;
   border: 0;
   padding: 0;

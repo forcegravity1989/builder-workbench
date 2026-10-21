@@ -1,54 +1,21 @@
-## ELI5
+关联 #
 
-<!-- Simple high-level explanation -->
+<!-- 先有 Issue 再开 PR：按 standard/system-prompt/references/issue-state.md 先查同类单，没有就建。写「关联」，不写 Fixes / Closes：合入不等于完成，Issue 关闭由人决定。 -->
 
-## What Changed
+## 改了什么
 
-<!-- Describe the change clearly and keep scope tight. -->
+## 为什么
 
-## Why
+<!-- 原因、取舍与偏差。 -->
 
-<!-- What problem does this solve, and why is this approach right? -->
+## 知识去向
 
-## Linked Issue
+<!-- 写回了哪些正本。文档改动写明头部边界变化（及人的授权）和内容保留 / 迁移 / 删除去向；无则写「无」。 -->
 
-<!-- Link the issue this PR addresses, there should ALWAYS be one -->
+## 验证
 
-Fixes #
+<!-- 门禁、受影响用例、真壳 E2E 的命令与结果。界面 / 行为改动另发 review 验证报告：判据内嵌截图，图片地址钉 SHA。纯文档写文档检查。 -->
 
-## Visual Proof
+## 未验证
 
-<!-- REQUIRED for UI / behavior changes. Please attach a BEFORE and AFTER that can easily tabbed/switched. Use videos for when appropriate over screenshots -->
-<!-- If there is truly no visual or interaction change, write exactly: `N/A` and briefly say why. -->
-<!-- For attachments NEVER add directly to the PR files (do not commit to files), use `gh image` extension or drag + drop (works for any attachment) -->
-
-## Testing
-
-<!-- How did you verify this? Steps a reviewer can follow. Which platforms did you actually test (macOS / Linux / Windows / SSH)? -->
-
-- [ ] I manually tested these changes locally
-- [ ] Automated tests added/updated, or explained why not below
-
-## AI Disclosure
-
-<!-- DO NOT FILL IN IF YOU ARE STABLYAI TEAM MEMBER (INTERNAL CONTRIBUTOR), IGNORE SECTION: -->
-<!-- Which AI model if anyone was used, please state the details -->
-
-## Review
-
-## Agent skill upstream boundary
-
-- [ ] Not applicable, or this change follows `docs/reference/agent-skill-sharing-upstream-boundary.md` and copies or mechanically translates no upstream skill-installer source, tests, fixtures, registry entries, path tables, comments, or documentation.
-
-## Notes
-
-Ensure no issues in: Security, Cross-platoform support (Linux, Windows, Mac), Remote SSH, Mobile, general backwards compatibility, performance
-
-## Checklist
-
-- [ ] This PR is small and focused
-- [ ] I explained what changed and why (including ELI5)
-- [ ] Before/after screenshots or videos attached for UI changes, or `N/A` with reason
-- [ ] Self-reviewed for correctness, security, and performance
-- [ ] Cross-platform, SSH/remote, and path/shortcut impact considered (or N/A)
-- [ ] `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` pass (or CI will cover; local preferred)
+<!-- 没跑、跑不了、存量失败，如实写。 -->

@@ -30,9 +30,21 @@ export function useOverviewMetricCollection(args: {
   const key = JSON.stringify([identity, baseWorktreeId])
   const entry = useMemo(() => cache(key), [key])
   const snapshot = useOverviewSnapshot(entry)
+  /**
+   * initial: first read, short-circuits once loaded.
+   * reload: in-place re-read after「更新代码」— persisted readings are re-read
+   *   under the new trunk HEAD and only real gaps get collected; old values
+   *   stay visible while busy.
+   * recollect: the「刷新业务指标」button — forces a real collection run.
+   */
   const load = useCallback(
-    (force = false) => {
-      if (!baseScope || !baseWorktreeId || entry.pending || (!force && entry.read().loaded)) {
+    (mode: 'initial' | 'reload' | 'recollect' = 'initial') => {
+      if (
+        !baseScope ||
+        !baseWorktreeId ||
+        entry.pending ||
+        (mode === 'initial' && entry.read().loaded)
+      ) {
         return
       }
       const scope = {
@@ -42,7 +54,7 @@ export function useOverviewMetricCollection(args: {
       }
       const owner = baseScope.runtimeOwnerEnvironmentId
       const now = new Date().toISOString()
-      entry.publish({ ...entry.read(), busy: true, refreshing: force })
+      entry.publish({ ...entry.read(), busy: true, refreshing: mode === 'recollect' })
       entry.pending = (async () => {
         try {
           const catalog = await nativeMetricsPort(owner).list(scope)
@@ -52,8 +64,9 @@ export function useOverviewMetricCollection(args: {
           const order: ZoneGranularity[] = [granularity, granularity === 'day' ? 'week' : 'day']
           for (const grain of order) {
             const request = { scope, owner, catalog, granularity: grain, now }
-            const previous = force ? oldReadings[grain] : await readAllMetricReadings(request)
-            if (!force) {
+            const previous =
+              mode === 'recollect' ? oldReadings[grain] : await readAllMetricReadings(request)
+            if (mode !== 'recollect') {
               readings[grain] = previous
               entry.publish({
                 ...entry.read(),
@@ -66,7 +79,7 @@ export function useOverviewMetricCollection(args: {
             readings[grain] = await refreshMetricReadings({
               ...request,
               previous,
-              onlyMissing: !force,
+              onlyMissing: mode !== 'recollect',
               sharedNorth: grain === order[1] ? readings[order[0]]?.north : undefined
             })
             entry.publish({
@@ -97,6 +110,7 @@ export function useOverviewMetricCollection(args: {
       reading?.north ?? snapshot.readings.day?.north ?? snapshot.readings.week?.north ?? null,
     zoneReadings: reading?.map ?? {},
     problems: [...snapshot.problems, ...(reading?.problems ?? [])],
-    refreshReadings: () => load(true)
+    reloadCatalog: () => load('reload'),
+    refreshReadings: () => load('recollect')
   }
 }

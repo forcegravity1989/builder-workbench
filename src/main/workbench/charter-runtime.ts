@@ -15,23 +15,26 @@ import {
   CHARTER_BRANCH,
   PROJECT_TOML_REL,
   fillBlankCharterInToml,
+  parseProjectToml,
   renderProjectToml,
   type ProjectCharter
 } from '../../shared/workbench/project-charter'
 import type {
+  CharterReadRequest,
+  CharterReadResult,
   CharterStatus,
   CharterStatusRequest,
   CharterSubmitOutcome,
   CharterSubmitRequest
 } from '../../shared/workbench/charter'
 import { createGitHubPullRequest } from '../github/client/create/create-github-pull-request'
-import { getRepoDefaultBranchName } from '../source-control/repo-default-branch'
 import { gitExecFileAsync } from '../git/runner'
 import { readGitBlobAtOidPath } from '../git/source-control/git-blob-read'
 import { probeGitRemoteIdentity } from '../repo-git-remote-identity'
 import { createCodeHubMr } from '../codehub/mr-creation'
 import { lookupOpenCharterPr, readCharterStatus } from './charter-pr-status'
 import { resolveWorkbenchGitExecOptions } from './project-git-routing'
+import { runTrunkBaseline } from './trunk-baseline'
 import {
   createWorkbenchWorkspaceResolver,
   nativeWorkbenchWorkspaceHost,
@@ -146,7 +149,11 @@ function createCharterService(runtime: CharterRuntimeHost) {
     if (!needPush) {
       try {
         await git(['rev-parse', '--verify', '--quiet', `origin/${CHARTER_BRANCH}`])
-        const ahead = await git(['rev-list', '--count', `origin/${CHARTER_BRANCH}..${CHARTER_BRANCH}`])
+        const ahead = await git([
+          'rev-list',
+          '--count',
+          `origin/${CHARTER_BRANCH}..${CHARTER_BRANCH}`
+        ])
         needPush = Number(ahead.stdout.trim()) > 0
       } catch {
         needPush = true
@@ -166,7 +173,12 @@ function createCharterService(runtime: CharterRuntimeHost) {
       }
       let merged = false
       try {
-        const mainBlob = await readGitBlobAtOidPath(repo.path, 'HEAD', PROJECT_TOML_REL, execOptions)
+        const mainBlob = await readGitBlobAtOidPath(
+          repo.path,
+          'HEAD',
+          PROJECT_TOML_REL,
+          execOptions
+        )
         merged = mainBlob.exists && !mainBlob.failed
       } catch {
         merged = false
@@ -182,6 +194,23 @@ function createCharterService(runtime: CharterRuntimeHost) {
 
     const body = params.firstTime ? FIRST_CHARTER_BODY : EDIT_CHARTER_BODY
     const title = params.firstTime ? '项目约定' : '项目信息改动'
+    // PR/MR 目标分支统一走主干基线解析：钉值或主检出当前分支；解析不出如实
+    // 失败，不猜名、不设兜底分支。
+    let targetBranch = ''
+    try {
+      const baseline = await runTrunkBaseline(repo.path, repo.worktreeBaseRef ?? null, execOptions)
+      if (!baseline.sync) {
+        throw new Error(`基线 ${baseline.ref} 不是一条可推送的分支`)
+      }
+      targetBranch = baseline.sync.branchName
+    } catch (e) {
+      return {
+        mode: 'failed',
+        stage: 'pr',
+        error: `定不下 PR 目标分支：${execMessage(e)} —— 分支已推到 ${CHARTER_BRANCH},可手动开`,
+        filled
+      }
+    }
     if (isCodeHubGitRemote(identity)) {
       const remote = parseCodeHubRemote(identity.remoteUrl)
       if (!remote) {
@@ -191,16 +220,6 @@ function createCharterService(runtime: CharterRuntimeHost) {
           error: `认不出 CodeHub 远端(${identity.remoteUrl}),分支已推到 ${CHARTER_BRANCH},可手动开 MR`,
           filled
         }
-      }
-      let targetBranch = ''
-      try {
-        const symbolic = await git(['symbolic-ref', 'refs/remotes/origin/HEAD'])
-        targetBranch = symbolic.stdout.trim().replace(/^refs\/remotes\/origin\//, '')
-      } catch {
-        // origin/HEAD 没设过:退回默认分支探测,最后按 main 的内网惯例兜底 master。
-      }
-      if (!targetBranch) {
-        targetBranch = (await getRepoDefaultBranchName(repo.path, null, execOptions)) || 'master'
       }
       try {
         const created = await createCodeHubMr({
@@ -213,7 +232,12 @@ function createCharterService(runtime: CharterRuntimeHost) {
         })
         return {
           mode: 'pr',
-          pr: { provider: 'codehub', number: created.iid, url: created.url, adopted: created.adopted },
+          pr: {
+            provider: 'codehub',
+            number: created.iid,
+            url: created.url,
+            adopted: created.adopted
+          },
           filled
         }
       } catch (e) {
@@ -225,10 +249,9 @@ function createCharterService(runtime: CharterRuntimeHost) {
         }
       }
     }
-    const base = (await getRepoDefaultBranchName(treePath, null, execOptions)) || 'main'
     const result = await createGitHubPullRequest(
       treePath,
-      { provider: 'github', base, head: CHARTER_BRANCH, title, body, draft: false },
+      { provider: 'github', base: targetBranch, head: CHARTER_BRANCH, title, body, draft: false },
       executionHostId,
       { localGitExecOptions: execOptions }
     )
@@ -265,10 +288,28 @@ function createCharterService(runtime: CharterRuntimeHost) {
     return readCharterStatus(repo, execOptions)
   }
 
+  /**
+   * 墙判据(G3):读注册仓主检出的 `.bw/project.toml`。在 owner runtime 本机
+   * 用 node fs 读(与 renderer 本地 readProjectCharter 同语义);「不存在」与
+   * 「没读成」分开回答,不互相冒充。
+   */
+  async function read(params: CharterReadRequest): Promise<CharterReadResult> {
+    const repo = repoById(params.repoId)
+    const { raw, error } = await readTextFileGuarded(join(repo.path, PROJECT_TOML_REL))
+    if (error) {
+      return { charter: null, existed: true, error }
+    }
+    if (raw === null) {
+      return { charter: null, existed: false, error: null }
+    }
+    return { charter: parseProjectToml(raw), existed: true, error: null }
+  }
+
   return {
     probeRemote: probeRemoteCharter,
     submit,
-    status
+    status,
+    read
   }
 }
 

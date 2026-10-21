@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Repo } from '../../../shared/repo-types'
 import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
-import type { CycleTaskReference, TaskOrigin } from './version-cycle/ports'
+import type { CycleTaskReference } from './version-cycle/ports'
 import type { TaskPortDeps } from './task-port'
 
 const mocks = vi.hoisted(() => ({
@@ -54,15 +54,6 @@ const chReference: CycleTaskReference = {
   provider: 'codehub',
   repository: 'https://codehub.example.com/team/project.git',
   number: 7
-}
-const origin: TaskOrigin = {
-  ...scope,
-  page: 'plan',
-  version: 'v0.5',
-  cycleId: 'c1',
-  worktreeId: 'wt-1',
-  scrollTop: 120,
-  draftKey: 'bw:plan:draft:x'
 }
 const ghItem = {
   id: 'i95',
@@ -122,6 +113,8 @@ describe('createTaskPort reads', () => {
       title: '真实标题',
       state: 'open',
       url: 'https://github.com/acme/repo/issues/95',
+      labels: [],
+      assignee: undefined,
       readAt: '2026-09-26T00:00:00.000Z'
     })
     expect(mocks.lookupGitHub).toHaveBeenCalledWith(
@@ -216,78 +209,5 @@ describe('createTaskPort reads', () => {
       error: 'provider gitlab 尚未接入 Workbench 任务读取',
       readAt: '2026-09-26T00:00:00.000Z'
     })
-  })
-})
-
-describe('createTaskPort openDetail', () => {
-  it('opens github detail through the native page with the BW return origin', async () => {
-    mocks.lookupGitHub.mockResolvedValue(ghItem)
-    const task = {
-      reference: ghReference,
-      source: { kind: 'task-source', provider: 'github', projectId: 'p', hostId: 'local' },
-      iid: 95,
-      title: '真实标题',
-      state: 'open',
-      url: 'https://github.com/acme/repo/issues/95',
-      readAt: '2026-09-26T00:00:00.000Z'
-    } as const
-    await createTaskPort(makeDeps()).openDetail(task, origin)
-    expect(mocks.storeState.openTaskPage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        taskSource: 'github',
-        preselectedRepoId: 'repo-gh',
-        openGitHubWorkItem: expect.objectContaining({ number: 95, repoId: 'repo-gh' })
-      }),
-      {
-        recordTasksInteraction: false,
-        returnToPreviousView: true
-      }
-    )
-  })
-
-  it('opens codehub detail with repo identity for the native detail actions', async () => {
-    mocks.viewTask.mockResolvedValue(chDetail)
-    const task = {
-      reference: chReference,
-      source: { kind: 'task-source', provider: 'codehub', projectId: 'p', hostId: 'local' },
-      iid: 7,
-      title: 'CodeHub 任务',
-      state: 'opened',
-      url: 'https://codehub.example.com/team/project/-/issues/7',
-      readAt: '2026-09-26T00:00:00.000Z'
-    } as const
-    await createTaskPort(makeDeps()).openDetail(task, { ...origin, page: 'acceptance' })
-    expect(mocks.storeState.openTaskPage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        taskSource: 'codehub',
-        openCodeHubTask: expect.objectContaining({
-          type: 'issue',
-          iid: 7,
-          url: task.url,
-          repoId: 'repo-ch',
-          repoPath: '/repos/ch',
-          host: 'codehub.example.com',
-          project: 'team/project'
-        })
-      }),
-      expect.objectContaining({ returnToPreviousView: true })
-    )
-  })
-
-  it('fails with a readable error when the detail re-read finds nothing', async () => {
-    mocks.lookupGitHub.mockResolvedValue(null)
-    const task = {
-      reference: ghReference,
-      source: { kind: 'task-source', provider: 'github', projectId: 'p', hostId: 'local' },
-      iid: 95,
-      title: 't',
-      state: 'open',
-      url: 'u',
-      readAt: '2026-09-26T00:00:00.000Z'
-    } as const
-    await expect(createTaskPort(makeDeps()).openDetail(task, origin)).rejects.toThrow(
-      '无法打开详情'
-    )
-    expect(mocks.storeState.openTaskPage).not.toHaveBeenCalled()
   })
 })

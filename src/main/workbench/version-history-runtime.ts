@@ -1,30 +1,18 @@
 import { parseExecutionHostId } from '../../shared/execution-host'
 import type { VersionMaterialResult } from '../../shared/workbench/version-material-request'
 import { PlanningMaterialSchema } from '../../shared/workbench/version-material'
-import { githubRepoIdentityKey } from '../../shared/github/repository-identity-key'
-import type {
-  ArchiveProofRequest,
-  ArchiveProofResult
-} from '../../shared/workbench/version-archive'
 import type { MetricScope } from '../../shared/workbench/metrics'
 import type { VersionHistoryPort } from '../../shared/workbench/version-history'
 import { getActiveMultiplexer } from '../ssh/ssh-target-registry'
-import {
-  runAdoptedBaseline,
-  runReadOnlyHistoryGit,
-  type HistoryGitOutcome
-} from './history-git-core'
+import { runReadOnlyHistoryGit, type HistoryGitOutcome } from './history-git-core'
+import { runTrunkBaseline } from './trunk-baseline'
 import { resolveWorkbenchGitExecOptions } from './project-git-routing'
 import { createVersionHistoryService, type VersionHistoryHost } from './version-history-service'
 import { HistorySourceError } from './version-history-snapshot'
-import { readCurrentMaterialArchive } from './archive-current-material'
-import { createNativeArchiveEvidence } from './archive-evidence-runtime'
-import { registeredCodeHubArchiveReason } from './archive-source-gap'
 import { nativeVersionMaterialService } from './version-material-runtime'
 import {
   createWorkbenchWorkspaceResolver,
   nativeWorkbenchWorkspaceHost,
-  type WorkbenchWorkspaceRepo,
   type WorkbenchWorkspaceTarget
 } from './workspace-resolver'
 import { WorkspaceScopeError } from './workspace-scope-error'
@@ -146,21 +134,23 @@ export function nativeVersionHistoryHost(runtime: HistoryRuntime): VersionHistor
     },
     async baseline(scope) {
       const { target, repo } = await workspaceFor(scope)
-      const adoptedRef = repo.worktreeBaseRef?.trim() || null
+      const pinnedRef = repo.worktreeBaseRef?.trim() || null
       const host = parseExecutionHostId(target.hostId)
       if (host?.kind === 'local') {
-        return runAdoptedBaseline(
+        return runTrunkBaseline(
           target.repoPath,
-          adoptedRef,
+          pinnedRef,
           resolveWorkbenchGitExecOptions(runtime, repo)
         )
       }
       if (host?.kind !== 'ssh') {
         throw new WorkspaceScopeError('invalid-scope', '请通过工作树所属的 Orca runtime 读取历史')
       }
+      // Wire field keeps its historical name so an older remote build still
+      // parses the request; it carries the pinned worktreeBaseRef.
       return requestRemote<{ ref: string; commit: string }>(host, target, {
         operation: 'baseline',
-        adoptedRef
+        adoptedRef: pinnedRef
       })
     },
     async worktreeHead(scope) {
@@ -205,105 +195,8 @@ export function nativeVersionHistoryHost(runtime: HistoryRuntime): VersionHistor
         document: PlanningMaterialSchema.parse(snapshot.document),
         revision: snapshot.revision
       }
-    },
-    async archiveState(scope, candidate) {
-      const { target, repo } = await workspaceFor(scope)
-      const opened = await openArchiveEvidence(
-        repo,
-        target,
-        resolveWorkbenchGitExecOptions(runtime, repo)
-      )
-      if (!opened.evidence) {
-        return { kind: 'unknown' as const, message: opened.gap }
-      }
-      return opened.evidence.reader.archiveStateForCandidate(candidate)
     }
   }
-}
-
-const GITHUB_ARCHIVE_SOURCE_UNRESOLVED = '未解析项目的 GitHub 归档来源，无法核对真实合入'
-
-async function openArchiveEvidence(
-  repo: WorkbenchWorkspaceRepo,
-  target: WorkbenchWorkspaceTarget,
-  execOptions: { wslDistro?: string }
-): Promise<
-  | {
-      evidence: NonNullable<Awaited<ReturnType<typeof createNativeArchiveEvidence>>>
-      gap: null
-    }
-  | { evidence: null; gap: string }
-> {
-  const codeHub = registeredCodeHubArchiveReason(repo.gitRemoteIdentity)
-  if (codeHub) {
-    return { evidence: null, gap: codeHub }
-  }
-  const evidence = await createNativeArchiveEvidence(repo, materialReaderFor(target, execOptions))
-  if (!evidence) {
-    return { evidence: null, gap: GITHUB_ARCHIVE_SOURCE_UNRESOLVED }
-  }
-  return { evidence, gap: null }
-}
-
-function materialReaderFor(target: WorkbenchWorkspaceTarget, execOptions: { wslDistro?: string }) {
-  return async (commit: string, path: string): Promise<Buffer | null> => {
-    const outcome = await runHistoryGit(target, execOptions, ['show', `${commit}:${path}`])
-    if (outcome.ok) {
-      return outcome.stdout
-    }
-    // Git exit 128 proves the path is absent from that tree; anything else is
-    // a read failure and must not masquerade as a revision mismatch.
-    if (outcome.exitCode === 128) {
-      return null
-    }
-    throw new HistorySourceError(outcome.code, outcome.message)
-  }
-}
-
-/**
- * Proof for one provider review the renderer already located: verifies the
- * reference against the repo's real GitHub identity, then the merged commit's
- * material bytes against the exact requested revision.
- */
-export async function readArchiveProof(
-  runtime: Parameters<typeof nativeVersionHistoryHost>[0],
-  params: ArchiveProofRequest
-): Promise<ArchiveProofResult> {
-  if (params.number === undefined) {
-    return readCurrentMaterialArchive(nativeVersionHistoryHost(runtime), params)
-  }
-  const resolver = createWorkbenchWorkspaceResolver(nativeWorkbenchWorkspaceHost(runtime))
-  const { target, repo } = await resolver.resolve({
-    repoId: params.repoId,
-    worktreeId: params.worktreeId,
-    hostId: params.hostId
-  })
-  const unavailable = (reason: string): ArchiveProofResult => ({
-    mergeCommit: null,
-    proof: { kind: 'unknown', reason }
-  })
-  const opened = await openArchiveEvidence(
-    repo,
-    target,
-    resolveWorkbenchGitExecOptions(runtime, repo)
-  )
-  if (!opened.evidence) {
-    return unavailable(opened.gap)
-  }
-  const evidence = opened.evidence
-  if (
-    params.provider !== 'github' ||
-    params.repository !== githubRepoIdentityKey(evidence.ownerRepo)
-  ) {
-    return unavailable('归档引用与项目真实 provider 来源不一致')
-  }
-  const outcome = await evidence.reader.archiveProofForReview(params.number, {
-    workflow: params.workflow,
-    version: params.version,
-    cycleId: params.cycleId,
-    revision: params.revision
-  })
-  return { mergeCommit: outcome.mergeCommit, proof: outcome.proof }
 }
 
 export function nativeVersionHistoryService(

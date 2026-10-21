@@ -2,22 +2,18 @@
 
 > **维护约定**：本篇记录本特性六环链现状与证据，格式按 [02 §6.2](../../01-principles/02-working-backwards.md)「STATUS 格式」；更新触发：任一环状态或证据变化，随引发它的 PR 同批提交，不记流水。
 
-**现状（2026-09-30）**：intent 已 gate；spec 已确认（PR 简化形态、CodeHub 经 codehub-cli 开 MR、同远端去重做、原型豁免、单批交付）；名片 PR 化、远端预探测、去重、编辑名片入口已实现（PR #285），**真壳与真实远端端到端未验**。**2026-10-09 批量接入扩展**：intent/spec 批量段与原型 [prototype.html](prototype.html) 为草案，待人 gate；**未实现**。
+**现状（2026-10-16，#363 承诺进展口径统一批）**：承诺进展口径按负责人决策改为「**关闭即完成**」——关闭原因不参与计数，GitHub 侧 otherClosed 三分类移除、`issue-state-batch` 同步删 stateReason 死字段（查询只取 state）；CodeHub 任务接入计数（resolveReferenceRepo 身份匹配复用任务屏；状态只读 Issue、不做 MR 兜底——防同号 MR 误计，每任务 1 次 CLI）；gitlab/linear/jira 等未接入 provider 与任一读不到仍全有或全无整行「—」。AGENTS.md 铁律三同批最小修改（人确认目标达成与自动化不得自行关闭保留）；spec 取舍 9 记录决策与已接受代价（#340 类 duplicate/决定不做关闭计入完成）。2026-10-15 墙卡读数批（四项读数、健康灯与假占位移除、main `github/issue-state-batch`）已全部合入（#365/#367）。#345/#349 交付承诺候选不受影响、原地不动。
 
-| 环 | 状态 | 证据或已知债 |
+共享链接回显：设置保存上次成功生成链接的公开引用，重启后仅读取原生授权恢复同一链接；失败生成与启动暂不可读保留引用，撤销后不恢复。#372 的实际跨机器断连原因仍未复现，永久身份/凭据丢失恢复不在本次范围。
+
+**批量接入草案（#305，2026-10-09）**：intent/spec 批量段（旅程 ①-多 / ②′ / ③′、规则 7、P-15–P-19）与五屏原型 [prototype.html](prototype.html) 为草案待人 gate，**未实现**；2026-10-14 #315 关闭拍板保留为非核心候选（不纳入 v0.6），场景收窄为本机批量 clone 开发——「看组内全部项目」诉求由 G3 主机批量导入承接（spec 规则 5）。实现待 gate 后按 spec 规则 7 复用 Orca `scanNestedRepos` / `pickFolders` / `importNestedRepos`，BW 只加名片列与接入清单；远端列仓多选等列仓 API（CodeHub 特性「分区列仓」）落地后再议。
+
+| 环 | 状态 | 证据或缺口 |
 |---|---|---|
-| 1 intent | ● | [intent.md](intent.md) 已 gate（2026-09-29 遗留决定收口）；带入来源 = 2026-09-29 用户拍板补登记 |
-| 2 spec | ● | [spec.md](spec.md) 已确认（2026-09-30 用户 gate；原型豁免——在用补链特性以真壳与 PR 截图为对照）；批量接入段（旅程 ①-多 / ②′ / ③′、规则 6、P-08–P-12）与原型为 2026-10-09 草案待 gate |
-| 3 实现设计 | ◐ | architecture「打开或接入项目 / 查看项目概况」与 06-module/关键信息维护 有散落记录；工程实现全部复用既有件（ensureNamedWorktree 固定树管线、workspace-resolver、createGitHubPullRequest、codehub cli 执行器、hostedReview.forBranch、git.fastForward、normalizeGitRemoteUrl），无特性级 design 文档 |
-| 4 TDD | ◐ | 合规存量：project-charter 7 例（shared，解析回写/保真补空含 [chat] 与尾换行保留/north_star 别名/无空可补不动/归一化）、workbench-wall-projects（组聚合；展示类用例已随 2026-09-30 环 4 盘点删除）；charter RPC 协议与 CodeHub 原语**无单测**（2026-09-30 用户冻结新增 vitest、总量 ratchet 门禁已立，待清理后回补）；「坏文件不覆盖」守卫以验收点 P-02 为据 |
-| 5 验收点E2E | 待建 | 点位已定（spec P-01–P-07；批量 P-08–P-12 草案）；用例注册按 2026-09-29 用户拍板暂缓，稳定后专项回补 |
-| 6 旅程E2E | 待建 | 候选主旅程已定义：「接入项目 → 墙上见名片 → 切换进总览 → 重启读回一致」；同上暂缓 |
+| 1 intent | ● | 2026-10-15 gate 改写正文：价值=leader 按周节奏扫墙读事实、判断与催办归人（周一计划/周二喊定版/周四催承诺）；卡片模型=名片区+读数区，不做健康灯 |
+| 2 spec | ● | 「墙卡读数」节：四行口径（版本=原生选版偏好+主干材料校验与总览同机制；承诺进展=tasks × 原生状态、关闭即完成只显「完成 x · 开放 y」（取舍 9，2026-10-16）；会话=Orca live 口径、离线 ≠ 0；PR 待审=全仓 open PR 计数）+ 三态 + 已移除元素 + 墙头不聚合；验收点 P-13/P-14；扫墙旅程候选；G3 规则折入主题节；批量接入段（规则 7、P-15–P-19）与原型为 2026-10-09 草案待 gate（#305，非核心候选） |
+| 3 实现设计 | ● | `wall-card-readings`（纯函数：仓坐标解析/进展分解全有或全无/会话计数/离线规则；2026-10-16 起进展分解平台中立、只问开/关）、`use-wall-readings`（双链编排：版本链含工作树登记指纹与远端身份键、晚到自愈重读，PR 链只随槽集合与刷新 token 作废）、`wall-readings-load`（版本链=history 目录+计划树对齐+选版偏好+活跃仓同源，与总览一致；GitHub gh GraphQL 批量、CodeHub 复用 task-port 身份匹配逐条只读 Issue；PR 计数沿分页、来源漂移守卫与取消检查）、main `issue-state-batch`（白名单防注入、别名批量、缺号整行 Unknown）、web shim 如实报读不到；architecture 用例表同批更新两行（「打开或接入项目」指针改指 spec §5、「查看项目概况」补墙卡四项读数） |
+| 4 TDD | ● | 2026-10-15 批新增 9 例（环内 5：wall-card-readings 纯函数；环外 4：issue-state-batch 查询构造/注入拒绝/超限报因/回执解析），对冲删除 5 例展示/装配类；检视轮恢复 zone-series numericTarget 唯一测试；2026-10-16 口径批：derive 用例翻转为「关闭即完成」与「provider 中立计数」，环内例数不变；ratchet 226 恰在基线 |
+| 5 验收点E2E | 待建 | P-08 回显增量已用临时真实 Electron 脚本验证：完整进程重启后链接及复制一致、授权/密钥文件不变、撤销后再重启无链接；正式用例未注册，证据在本次 PR 验证 Review。 P-01–P-14 点位已定（批量 P-15–P-19 草案，gate 后随实现注册；P-13 读数真实与可复算、P-14 离线 ≠ 0 为本批新增）；注册暂缓不变；P-13 真壳部分验证（证据见 #365/#367 验证报告；#373 口径批真壳出数未验，负责人豁免、内部环境出包时验证）；GHES 主机名片预探测的 host 限定未实测；无 origin 远端、主检出长期 detached 的内源仓未实机复核 |
+| 6 旅程E2E | 待建 | 基线、跨主机、扫墙三条候选并存未注册 |
 
-**已知债**：
-1. **名片 PR 全链真实远端未验**——实现已落（bw/project 固定树提交 + push + gh/codehub-cli 开 PR + 待合入提示 + 更新主目录 + 编辑名片补录），但 gh/codehub-cli 登录态、GHES、WSL 仓、配对宿主、CodeHub 实机均未端到端跑过；未验前不宣称团队共享已可用。本机真壳受环境限制（node-pty 重建失败）未拉起。
-2. **CodeHub 侧「已合入未更新」无检测、chip 无跳转**——status 只查开放 MR（codehub-cli mr list opened）；GitHub 有 merged 态可提示「更新主目录」，CodeHub 合入后要等主检出读到名片才消失提示缺口，且 MR 无 web 链接可推时 chip 只显示号码、无「查看」入口。
-3. **CodeHub MR 目标分支兜底 master**——沿 main 隐含假设（origin/HEAD 符号引用缺失时），已加 getRepoDefaultBranchName 兜底；内源默认分支为 master 的假设需实机复核。
-4. 墙卡版本/周目标/健康为占位 Unknown（用户拍板暂不细设计）；「本机环境」探测条已删除，真实探测清单（claude/cursor-agent/gh/codehub-cli，三态，不探不会起的东西）随墙健康灯重新决策——main 正本证据：环境条 6 格与三态语义（`crates/app-shell/src/screens/wall/mod.rs` env_bar、`bridge/vm_build.rs probe_env`）、假红修复 07e076ff4（Windows PATHEXT）、假绿修复 e23e3e4ce（探的名字必须等于真起的进程）。
-5. 克隆中断残留暂不处理（用户拍板，看实际反馈）。
-6. 远端预探测对 GHES 主机走 githubHostExecOptions 的 host 限定，未实测。
-7. **批量接入未实现**——2026-10-09 草案与原型已落；实现待 gate 后按 spec 规则 6 复用 Orca `scanNestedRepos` / `pickFolders` / `importNestedRepos`，BW 只加名片列与接入清单；远端列仓多选等列仓 API（CodeHub 特性「分区列仓」）落地后再议。

@@ -2,9 +2,10 @@ import { STATUS_METHODS } from './status'
 import { WORKBENCH_MATERIAL_METHODS } from './workbench-materials'
 import { WORKBENCH_HISTORY_METHODS } from './workbench-history'
 import { WORKBENCH_METRICS_METHODS } from './workbench-metrics'
+import { WORKBENCH_PACKAGE_METHODS } from './workbench-package'
 import { WORKBENCH_ARCHIVE_METHODS } from './workbench-archive'
 import { WORKBENCH_CHARTER_METHODS } from './workbench-charter'
-import { WORKBENCH_CYCLE_METHODS } from './workbench-cycle'
+import { WORKBENCH_TRUNK_METHODS } from './workbench-trunk'
 import { AI_VAULT_METHODS } from './ai-vault'
 import { AUTOMATION_METHODS } from './automations'
 import { REPO_METHODS } from './repo'
@@ -60,9 +61,10 @@ export const ALL_RPC_METHODS = [
   ...WORKBENCH_MATERIAL_METHODS,
   ...WORKBENCH_HISTORY_METHODS,
   ...WORKBENCH_METRICS_METHODS,
+  ...WORKBENCH_PACKAGE_METHODS,
   ...WORKBENCH_ARCHIVE_METHODS,
   ...WORKBENCH_CHARTER_METHODS,
-  ...WORKBENCH_CYCLE_METHODS,
+  ...WORKBENCH_TRUNK_METHODS,
   ...STATUS_METHODS,
   ...AGENT_HOOK_METHODS,
   ...AI_VAULT_METHODS,

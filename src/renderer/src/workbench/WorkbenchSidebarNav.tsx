@@ -71,7 +71,9 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
   // Subscribes so the plan/acceptance highlight follows the shared artifacts slot.
   useCycleView()
   const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]
-  const projectName = activeRepo?.displayName ?? 'Workbench'
+  // G3 原型侧栏入口两行:主线当前项目名、副题「项目墙」;无项目可解析时主线直接叫「项目墙」,入口不再退化成产品名。
+  const projectName = activeRepo?.displayName?.trim() || null
+  const entryName = projectName ?? '项目墙'
 
   if (!isWorkbenchShell()) {
     return null
@@ -101,14 +103,21 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
         type="button"
         className="wb-proj flex w-full items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-worktree-sidebar-foreground/8"
         onClick={() => openProjectWall()}
-        title="项目墙"
+        title="打开项目墙"
         data-workbench-project-wall
       >
         <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--color-accent)] text-xs font-semibold text-white">
-          {projectName.slice(0, 1).toUpperCase()}
+          {entryName.slice(0, 1).toUpperCase()}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold tracking-tight text-worktree-sidebar-foreground">
-          {projectName}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-semibold tracking-tight text-worktree-sidebar-foreground">
+            {entryName}
+          </span>
+          {projectName ? (
+            <span className="block truncate text-[10px] tracking-tight text-worktree-sidebar-foreground/55">
+              项目墙
+            </span>
+          ) : null}
         </span>
       </button>
 

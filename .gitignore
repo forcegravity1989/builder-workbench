@@ -121,6 +121,8 @@ playwright-report/
 !/.claude/skills/version-report/**
 !/.claude/skills/workbench-release/
 !/.claude/skills/workbench-release/**
+!/.claude/skills/feature-metrics-inventory/
+!/.claude/skills/feature-metrics-inventory/**
 /.agents/skills/
 /skills-lock.json
 

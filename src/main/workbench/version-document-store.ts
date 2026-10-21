@@ -48,7 +48,7 @@ export function createVersionDocumentStore<T extends VersionDocumentIdentity>(
       if (value?.schema_version === 2) {
         throw new VersionDocumentError(
           'migration-required',
-          'Schema 2 requires explicit migration before editing'
+          '此版本材料是旧格式（schema2），需显式迁移后才能编辑；点「新建计划／验收」会把迁移请求带入会话，由模型按迁移约定转换（改动前经你确认）'
         )
       }
       if (
@@ -58,7 +58,7 @@ export function createVersionDocumentStore<T extends VersionDocumentIdentity>(
         typeof value.cycleId !== 'string' ||
         !value.cycleId.trim()
       ) {
-        throw new Error('Invalid schema, version or cycle identity')
+        throw new Error('材料文件的结构、版本或周期标识无法识别，未做任何修改')
       }
       const decoded = options.decode(value)
       if (
@@ -75,7 +75,7 @@ export function createVersionDocumentStore<T extends VersionDocumentIdentity>(
       }
       throw new VersionDocumentError(
         'invalid-document',
-        error instanceof Error ? error.message : 'Invalid version document'
+        error instanceof Error ? error.message : '材料文件无法读取'
       )
     }
   }

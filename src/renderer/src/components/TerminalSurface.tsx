@@ -7,9 +7,11 @@ import { TerminalWorkspaceDialogs } from './TerminalWorkspaceDialogs'
 import type { TerminalController } from './use-terminal-controller'
 
 export function TerminalSurface({
-  controller
+  controller,
+  reserveClosedExplorerToggleSpace = true
 }: {
   controller: TerminalController
+  reserveClosedExplorerToggleSpace?: boolean
 }): React.JSX.Element {
   const { renderedActiveWorktreeId } = controller
   const retainBrowserGuestPaint = useAnyBrowserGuestNeedsPaint(!renderedActiveWorktreeId)
@@ -28,7 +30,10 @@ export function TerminalSurface({
     >
       <EditorAutosaveController />
       <TerminalTitlebarTabs controller={controller} />
-      <TerminalSplitWorkspaceSurfaces controller={controller} />
+      <TerminalSplitWorkspaceSurfaces
+        controller={controller}
+        reserveClosedExplorerToggleSpace={reserveClosedExplorerToggleSpace}
+      />
       <TerminalLegacyWorkspaceSurface controller={controller} />
       <TerminalWorkspaceDialogs controller={controller} />
     </div>

@@ -1,6 +1,5 @@
-name: Bug report
-description: Report a problem with Orca
-title: '[Bug]: '
+name: 报告问题
+description: 报告 Workbench 当前使用中的问题
 type: Bug
 labels:
   - bug
@@ -8,47 +7,32 @@ body:
   - type: markdown
     attributes:
       value: |
-        Use this form for Orca bugs. Include enough detail for someone else to reproduce the issue.
-
-        Please write your issue in English.
-
-  - type: dropdown
-    id: os
+        先查已有 Issue，复用相同问题。写当前版本与真实现象；缺少的信息可以标待确认，不编造复现或验收证据。
+  - type: textarea
+    id: problem
     attributes:
-      label: Operating system
-      options:
-        - macOS
-        - Windows
-        - Linux
-        - Other
+      label: 问题描述
+      description: 谁在哪个场景遇到了什么问题？
     validations:
       required: true
-
-  - type: input
-    id: orca_version
+  - type: textarea
+    id: reproduction
     attributes:
-      label: Orca version
-      description: Include the exact Orca version if you can. You can find it in `Orca > About Orca`.
-      placeholder: v0.14.2
+      label: 复现步骤
+      description: 写明 Workbench 版本、系统、仓库/入口与操作步骤；偶发或尚未复现时如实说明。
     validations:
       required: false
-
   - type: textarea
-    id: details
+    id: behavior
     attributes:
-      label: Details
-      description: Describe the bug in your own words. Include a short summary, reproduction steps, and anything else that seems relevant.
-      placeholder: |
-        Short summary:
-        Orca crashes when ...
-
-        What happened?
-
-        How can we reproduce it?
-        1. ...
-        2. ...
-        3. ...
-
-        Anything else that might help:
+      label: 预期与实际
+      description: 分别说明应该发生什么、实际发生什么，可附错误和截图。
     validations:
-      required: true
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收条件
+      description: 怎样核对问题已解决？还未明确的判据写待确认。
+    validations:
+      required: false

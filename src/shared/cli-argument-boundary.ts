@@ -23,6 +23,7 @@ export const CLI_BOOLEAN_FLAGS = new Set([
   'include-visual-layouts',
   'interrupt',
   'json',
+  'list',
   'local',
   'messages',
   'me',

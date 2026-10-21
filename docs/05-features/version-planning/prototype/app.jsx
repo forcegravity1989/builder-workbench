@@ -4,8 +4,9 @@ import { createRoot } from 'react-dom/client'
 import { initial } from './shared.jsx'
 import { original, remote } from './snapshot.js'
 import { buildMinutes, buildReport } from './summaries.js'
-import { PrototypeTaskList, PrototypeVersionTasks } from './tasks.jsx'
+import { PrototypeTaskList } from './tasks.jsx'
 import { PrototypeLayout } from './layout.jsx'
+import { LATEST_PACKAGE } from '../../version-acceptance/prototype/package-panel.jsx'
 
 function App() {
   useEffect(() => {
@@ -54,8 +55,6 @@ function App() {
     [configId, setConfigId] = useState(0),
     [notice, setNotice] = useState('')
   const [issues, setIssues] = useState(remote.issues),
-    [expanded, setExpanded] = useState(false),
-    [taskFilter, setTaskFilter] = useState(''),
     [selectedIssue, setSelectedIssue] = useState(null),
     [issueDraft, setIssueDraft] = useState(''),
     [editingIssue, setEditingIssue] = useState(false),
@@ -71,8 +70,7 @@ function App() {
       repoGrain: 'week',
       hidden: []
     })
-  const taskSection = useRef(null),
-    composer = useRef(null),
+  const composer = useRef(null),
     savedScroll = useRef(0)
   const weekly = view === 'monday' || view === 'friday',
     chatVisible = weekly,
@@ -93,8 +91,7 @@ function App() {
       goal: t.goal.split('/').at(-1)
     }))
   const tasks = taskRows(version),
-    goalIssues = (g) => tasks.filter((t) => t.goal === g.label),
-    shownTasks = taskFilter ? tasks.filter((t) => t.goal === taskFilter) : tasks
+    goalIssues = (g) => tasks.filter((t) => t.goal === g.label)
   const issue = issues.find((t) => t.number === selectedIssue),
     hasGap = (g) => g.decision === '未达'
   const update = (id, key, value) =>
@@ -137,7 +134,7 @@ function App() {
   }
   function promptConversation(text) {
     setDraft(text)
-    setNotice('已放入会话输入框，尚未发送')
+    setNotice('已放入会话草稿，尚未发送；会话栏收起时展开可见')
     setModal(null)
     requestAnimationFrame(() => composer.current?.querySelector('textarea')?.focus())
   }
@@ -193,16 +190,6 @@ function App() {
     }))
     go('metricsetup')
   }
-  function openIssues(g = null) {
-    setTaskFilter(g?.label || '')
-    setExpanded(true)
-    requestAnimationFrame(() =>
-      taskSection.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest'
-      })
-    )
-  }
   function openIssue(t) {
     savedScroll.current = document.querySelector('.content-scroll')?.scrollTop || 0
     setReturnTo(view)
@@ -231,6 +218,14 @@ function App() {
     )
   }
   const archiveState = 'unknown'
+  function triggerPackage() {
+    setNotice('原型未接入 CloudDragon；正式界面经 Playwright 同步点击该流水线行的出包按钮。')
+  }
+  function downloadPackage() {
+    setNotice('原型未接入下载；正式界面先选择目录，再经 Playwright 点击该版本的下载按钮保存。')
+  }
+  const packageTone = LATEST_PACKAGE ? 'green' : 'gray'
+  const packageHint = LATEST_PACKAGE ? '已有最新包' : '尚未出包'
   const steps = journeySteps({
     goals,
     current,
@@ -239,7 +234,9 @@ function App() {
     view,
     progress,
     tasks,
-    goalIssues
+    goalIssues,
+    packageTone,
+    packageHint
   })
 
   function stageGo(i) {
@@ -261,20 +258,25 @@ function App() {
       archive()
       return
     }
-    if (view === 'monday' && i === 3) {
-      openIssues()
-      return
-    }
-    document
-      .querySelector(
-        view === 'monday' ? (i === 0 ? '.planning-brief' : '.goal-sheet') : '.acceptance-sheet'
-      )
-      ?.scrollIntoView({
+    if (view === 'friday' && i === 1) {
+      document.querySelector('.package-block')?.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest'
       })
-    if (view === 'friday' && i === 1) {
-      document.querySelector('.decision select')?.focus()
+      return
+    }
+    if (view === 'friday' && i === 2) {
+      document.querySelector('.acceptance-goals-heading')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+      return
+    }
+    if (view === 'monday') {
+      document.querySelector('.goal-cards')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      })
     }
   }
   function taskList(items) {
@@ -283,27 +285,6 @@ function App() {
         {...{
           items,
           openIssue
-        }}
-      />
-    )
-  }
-  function versionTasks(prepareRequest = promptConversation, disabled = false) {
-    return (
-      <PrototypeVersionTasks
-        {...{
-          expanded,
-          promptConversation: prepareRequest,
-          setExpanded,
-          setNotice,
-          setTaskFilter,
-          shownTasks: disabled ? [] : shownTasks,
-          taskFilter,
-          taskList,
-          taskSection,
-          tasks: disabled ? [] : tasks,
-          disabled,
-          version,
-          view
         }}
       />
     )
@@ -334,9 +315,10 @@ function App() {
         minutes,
         modal,
         notice,
-        openIssues,
+        openIssue,
         overviewSelection,
         overviewUI,
+        latestPackage: LATEST_PACKAGE,
         progress,
         promptConversation,
         refreshMetrics,
@@ -347,7 +329,6 @@ function App() {
         session,
         setDraft,
         setEditingIssue,
-        setExpanded,
         setIssueDraft,
         setIssues,
         setModal,
@@ -358,17 +339,17 @@ function App() {
         setRisk,
         setSelectedIssue,
         setSessions,
-        setTaskFilter,
         setVersion,
         stageGo,
         steps,
         taskList,
         taskRows,
         tasks,
+        triggerPackage,
+        downloadPackage,
         update,
         updateResult,
         version,
-        versionTasks,
         view,
         weekly
       }}

@@ -93,5 +93,14 @@
       "number": 255,
       "goalId": "G3"
     }
-  ]
+  ],
+  "workflow": {
+    "stage": "archive",
+    "updatedAt": "2026-10-13T22:25:00-04:00",
+    "archivePr": {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 294
+    }
+  }
 }

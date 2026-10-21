@@ -43,10 +43,10 @@ Avoid vague names like `test`, `misc`, or `changes`.
 Run the same checks that CI runs:
 
 ```bash
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
+pnpm run lint
+pnpm run typecheck
+pnpm exec vitest run --config config/vitest.config.ts src/main/workbench src/main/ipc/repos src/preload/api/platform-bridge.test.ts src/renderer/src/workbench src/relay/workbench src/shared/workbench
+pnpm run build:desktop
 ```
 
 Add high-quality tests for behavior changes and bug fixes. Prefer tests that would actually catch a regression, not shallow coverage that only exercises the happy path.
@@ -61,15 +61,7 @@ CI enforces this for `src/preload/` and `src/shared/`.
 
 ## Pull Requests
 
-Each pull request should follow [`.github/pull_request_template.md`](./pull_request_template.md). In particular:
-
-- open with an ELI5 of the change (plain language paragraph; the PR title is the one-liner)
-- explain what changed and why, and stay focused on a single topic when possible
-- for any UI or interaction change, attach **before and after** screenshots (or short videos); if there is no visual change, say `No visual change` and why
-- include high-quality tests when behavior changes or bug fixes warrant them
-- include a brief code review summary from your AI coding agent that explicitly checks cross-platform compatibility, SSH/remote/local compatibility, supported agent and integration compatibility, performance risk, UI quality when applicable, and basic security risk
-- mention any platform-specific, remote/SSH-specific, agent-specific, integration-specific, or git-provider-specific behavior and testing notes
-- **Include your X (Twitter) handle** in the PR template Author section — we shout out contributors when we merge features on [@orca_build](https://x.com/orca_build).
+Each pull request starts from an Issue and follows [`.github/pull_request_template.md`](./pull_request_template.md). The rules for Issues, PR bodies and verification reports live in [AGENTS.md](../AGENTS.md) under「commit 与 PR」.
 
 ## Release Process
 
@@ -114,8 +106,6 @@ All stable kinds (`patch`, `minor`, `major`) are computed off the latest _stable
 - **"A bad commit just landed on main, release the commit before it":** `kind=patch`, `ref=<good-sha>`. `main` is left alone; the tag points at the good SHA. Fix forward on `main` afterward.
 - **One-off RC for a feature branch:** `kind=rc`, `ref=<branch-or-sha>`. Produces an RC tag that does not touch `main`.
 - **Minor or major bump:** `kind=minor` or `kind=major`.
-
-The scheduled 2x/day RC cron in [`release-rc.yml`](../../actions/workflows/release-rc.yml) is independent and continues to run automatically from `main`.
 
 ## Release Channels
 

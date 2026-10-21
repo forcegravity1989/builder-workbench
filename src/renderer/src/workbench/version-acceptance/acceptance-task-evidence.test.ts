@@ -6,7 +6,7 @@ import type {
 } from '../../../../shared/workbench/version-material'
 import { createAcceptanceMaterial } from './acceptance-model'
 import { goalEvidenceRevision } from './acceptance-decision'
-import { deriveAcceptanceReport } from './acceptance-report'
+import { buildAcceptanceReport, deriveAcceptanceReport } from './acceptance-report'
 
 const plan: PlanningMaterial = {
   schema_version: 3,
@@ -80,14 +80,10 @@ describe('acceptance task evidence and report', () => {
   it('keeps missing, empty and failed snapshots distinct without generating an acceptance conclusion', async () => {
     const document = material()
     const absent = await goalEvidenceRevision(document, plan, 'g1')
-    expect(deriveAcceptanceReport({ document, plan, revision: 'draft' }).markdown).toContain(
-      '尚未记录 Issue 快照'
-    )
+    expect(deriveAcceptanceReport({ document, plan }).markdown).toContain('尚未记录 Issue 快照')
     document.taskSnapshot = []
     expect(await goalEvidenceRevision(document, plan, 'g1')).not.toBe(absent)
-    expect(deriveAcceptanceReport({ document, plan, revision: 'draft' }).markdown).toContain(
-      '固定计划仍引用 2 项任务'
-    )
+    expect(deriveAcceptanceReport({ document, plan }).markdown).toContain('固定计划仍引用 2 项任务')
     document.taskSnapshot = [
       {
         kind: 'unavailable',
@@ -96,19 +92,52 @@ describe('acceptance task evidence and report', () => {
         error: '宿主离线'
       }
     ]
-    const report = deriveAcceptanceReport({ document, plan, revision: 'draft' })
-    expect(report.markdown).toContain('读取失败：宿主离线')
-    expect(report.markdown).toContain('2026-09-25T02:00:00Z')
-    expect(report.markdown).toContain('记录结论：待核')
+    const report = deriveAcceptanceReport({ document, plan })
+    expect(report.markdown).toContain('读取失败（宿主离线）')
+    expect(report.markdown).toContain('结论：待核')
   })
-  it('renders the stored provider source and state without changing the evidence', () => {
+  it('renders the stored provider source and state without changing the evidence', async () => {
     const document = material()
     document.taskSnapshot = tasks()
+    document.results[0] = {
+      ...document.results[0],
+      progress: '本轮完成联调',
+      materials: [{ label: '验收截图', url: 'https://example.test/evidence' }],
+      issueNotes: { 'codehub:codehub.example/team/app:1': '补齐证据' },
+      issueMarks: { 'codehub:codehub.example/team/app:1': { carry: true, risk: true } },
+      meetingDirectives: [
+        {
+          id: 'directive-1',
+          text: '下周复核边界',
+          tag: 'next-week-plan',
+          status: 'pending',
+          source: 'transcript-summary',
+          sourceRef: 'issue-374#summary'
+        }
+      ]
+    }
     const before = JSON.stringify(document)
-    const report = deriveAcceptanceReport({ document, plan, revision: 'sha256:recorded' })
-    expect(report.markdown).toContain('状态 opened')
-    expect(report.markdown).toContain('ssh:build')
+    const report = deriveAcceptanceReport({ document, plan })
+    expect(report.markdown).toContain('：opened')
     expect(report.markdown).toContain('codehub.example/team/app')
+    expect(report.markdown).toContain('本轮进展：本轮完成联调')
+    expect(report.markdown).toContain('验收截图')
+    expect(report.markdown).toContain('备注：补齐证据')
+    expect(report.markdown).toContain('标记：遗留、风险')
+    expect(report.markdown).toContain('会议指导：下周复核边界（待确认；纳入下周计划；AI 总结）')
+    expect(report.markdown).toContain('来源：issue-374\\#summary')
     expect(JSON.stringify(document)).toBe(before)
+    document.results[0].decision = {
+      outcome: 'met',
+      source: '用户',
+      reason: '已展示',
+      recordedAt: '2026-10-19T12:00:00Z',
+      materialRevision: await goalEvidenceRevision(document, plan, 'g1')
+    }
+    expect((await buildAcceptanceReport(document, plan)).markdown).not.toContain('证据已变化')
+    document.results[0].progress = '会后补充了新的证据'
+    expect((await buildAcceptanceReport(document, plan)).markdown).toContain(
+      '证据已变化，请重新核对'
+    )
   })
 })
