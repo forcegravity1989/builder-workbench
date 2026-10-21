@@ -123,8 +123,11 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     'utf8'
   )
   // The board polls the host; the seeded goal card proves the re-read happened
-  // before we edit (autosave must carry the fresh revision).
-  await expect(workbenchPage.getByText('验证计划材料保存')).toBeVisible({ timeout: 60_000 })
+  // before we edit (autosave must carry the fresh revision). The title appears
+  // in both the card header and its inline editor — assert the header button.
+  await expect(workbenchPage.getByRole('button', { name: 'G1 验证计划材料保存' })).toBeVisible({
+    timeout: 60_000
+  })
 
   const progress = workbenchPage.locator('.vp-preparation textarea').first()
   await expect(progress).toBeEnabled({ timeout: 60_000 })
