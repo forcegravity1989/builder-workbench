@@ -12,6 +12,7 @@ import type { TaskSourceContext } from '../../../../shared/task-source-context'
 import type { WorkspaceStatus } from '../../../../shared/worktree/types'
 import type { WorkspaceSource as WorkspaceCreateTelemetrySource } from '../../../../shared/workspace-source'
 import type { LinkedWorkItemSummary } from '@/lib/new-workspace'
+import type { WorkbenchCreationContext } from '../../../../shared/workbench/creation-context'
 import type { ComposerDecisions } from './composer-decisions'
 
 export type ComposerStateInput = {
@@ -20,11 +21,18 @@ export type ComposerStateInput = {
   initialProjectGroupId?: string
   initialName?: string
   initialPrompt?: string
+  initialNote?: string
   initialLinkedWorkItem?: LinkedWorkItemSummary | null
   initialGitHubWorkItem?: GitHubWorkItem | null
   initialTaskSourceContext?: TaskSourceContext | null
   initialWorkspaceStatus?: WorkspaceStatus
   initialBaseBranch?: string
+  /** G2 (BW): preselected parent suggestion — the picker stays authoritative and
+   *  the user can change or clear it; a repo switch drops it. */
+  initialParentWorktreeId?: string | null
+  /** G2 (BW): version/goal/task-source creation context, resolved to a binding
+   *  at submit time against the final repo + task source; never a wizard. */
+  workbenchCreation?: WorkbenchCreationContext | null
   persistDraft: boolean
   onCreated?: () => void
   isSubmissionCancelled?: () => boolean
@@ -43,11 +51,14 @@ export function useComposerTargetStore(options: ComposerStateInput, decisions: C
     initialEphemeralVmRecipeId,
     initialName = '',
     initialPrompt = '',
+    initialNote = '',
     initialLinkedWorkItem = null,
     initialGitHubWorkItem = null,
     initialTaskSourceContext = null,
     initialWorkspaceStatus,
     initialBaseBranch,
+    initialParentWorktreeId = null,
+    workbenchCreation = null,
     persistDraft,
     onCreated,
     isSubmissionCancelled = NEVER_CANCEL_COMPOSER_SUBMIT,
@@ -166,11 +177,14 @@ export function useComposerTargetStore(options: ComposerStateInput, decisions: C
     initialEphemeralVmRecipeId,
     initialName,
     initialPrompt,
+    initialNote,
     initialLinkedWorkItem,
     initialGitHubWorkItem,
     initialTaskSourceContext,
     initialWorkspaceStatus,
     initialBaseBranch,
+    initialParentWorktreeId,
+    workbenchCreation,
     persistDraft,
     onCreated,
     isSubmissionCancelled,

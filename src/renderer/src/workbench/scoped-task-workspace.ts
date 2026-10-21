@@ -5,9 +5,15 @@ import {
   type TaskSourceContext
 } from '../../../shared/task-source-context'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { activateAndRevealWorktree } from '@/lib/worktree-activation'
+import { toast } from 'sonner'
 import type { WorkbenchTaskScope } from '../../../shared/workbench/task-scope'
-import { findVersionTaskWorktrees } from '../../../shared/workbench/version-workspace-match'
+import {
+  findVersionGoalWorktrees,
+  findVersionTaskWorktrees
+} from '../../../shared/workbench/version-workspace-match'
 import { findGithubWorkItemWorkspaceAttachment } from '@/lib/github-work-item-workspace-attachment'
+import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
 
 /**
  * G2 统一 Start/Open 解析的渲染端入口（P4）：仅 BW 范围路径把「首个未归档树」
@@ -105,4 +111,77 @@ export function resolveTaskRowWorkspace<T extends Worktree>(args: {
     item.number
   ) as T | null
   return { attached, hasWorkspace: attached !== null }
+}
+
+/**
+ * 父级建议（G2 P4③）：唯一合法的同项目同宿主目标树才建议在原生父级选择器
+ * 预选；不唯一、跨项目/宿主或证明不足一律不建议、不预建。建议可改可取消，
+ * 原生选择器与创建期校验仍是权威；repo 变更由创建器清除旧建议。
+ */
+export function findGoalParentSuggestion(args: {
+  version: string
+  goalId: string
+  worktrees: readonly Worktree[]
+  home: {
+    repoId?: string | null
+    projectId?: string | null
+    hostId?: string | null
+    runtimeOwnerEnvironmentId?: string | null
+  }
+}): string | null {
+  const candidates = findVersionGoalWorktrees(args.worktrees, {
+    version: args.version,
+    goalId: args.goalId
+  }).filter((tree) => {
+    if (args.home.repoId && tree.repoId !== args.home.repoId) {
+      return false
+    }
+    if (args.home.projectId && tree.projectId && tree.projectId !== args.home.projectId) {
+      return false
+    }
+    if (args.home.hostId && tree.hostId && tree.hostId !== args.home.hostId) {
+      return false
+    }
+    return !(
+      tree.runtimeOwnerEnvironmentId &&
+      args.home.runtimeOwnerEnvironmentId &&
+      tree.runtimeOwnerEnvironmentId !== args.home.runtimeOwnerEnvironmentId
+    )
+  })
+  return candidates.length === 1 ? (candidates[0]?.id ?? null) : null
+}
+
+/**
+ * 打开目标工作区（侧栏目标菜单「打开工作区」）：唯一 → 直开；多候选 → 选择器；
+ * 无 → false（调用方转「目标开工」）。不取数组第一棵。
+ */
+export function openGoalWorkspace(args: {
+  version: string
+  goalId: string
+  /** 选择器标题用的展示名（如「G2 · 目标句」）；业务身份只认 goalId。 */
+  label?: string
+  worktrees: readonly Worktree[]
+}): boolean {
+  const candidates = findVersionGoalWorktrees(args.worktrees, {
+    version: args.version,
+    goalId: args.goalId
+  })
+  if (candidates.length === 0) {
+    return false
+  }
+  if (candidates.length === 1) {
+    const only = candidates[0]
+    if (!only) {
+      return false
+    }
+    if (activateAndRevealWorktree(only.id) === false) {
+      toast.error('无法打开目标工作区，请在原生项目工作区中核对。')
+    }
+    return true
+  }
+  openWorkbenchWorkspaceChoice({
+    title: `目标 ${args.label ?? args.goalId}`,
+    candidates: [...candidates]
+  })
+  return true
 }

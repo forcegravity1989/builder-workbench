@@ -15,13 +15,58 @@ import {
 } from './task-page-source-context'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import { getLinkedWorkItemSuggestedName } from '../../../shared/workspace-name'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import type { WorkbenchCreationContext } from '../../../shared/workbench/creation-context'
 import {
   matchScopedTaskWorkspaces,
-  codeHubTaskSourceContext
+  codeHubTaskSourceContext,
+  findGoalParentSuggestion
 } from '@/workbench/scoped-task-workspace'
 import { openWorkbenchWorkspaceChoice } from '@/workbench/version-workspace-choice-state'
 export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   const { repoMap, openModal } = model
+  // G2 (BW)：范围视图的 Issue 开工把版本归属上下文与目标树父级建议带进同一
+  // 原生创建器；无范围时返回空对象，原生预填逐字不变。
+  const scopedComposerAdditions = useCallback(
+    (item: {
+      repoId?: string | null
+      type: string
+      number: number
+      provider: 'github' | 'codehub'
+    }): {
+      workbenchCreation?: WorkbenchCreationContext
+      initialParentWorktreeId?: string
+    } => {
+      const scope = model.workbenchScope
+      if (!scope || item.type !== 'issue' || !item.repoId) {
+        return {}
+      }
+      const reference = scope.references.find(
+        (candidate) => candidate.provider === item.provider && candidate.number === item.number
+      )
+      const goalId = reference?.goalId ?? scope.goalId ?? undefined
+      const workbenchCreation: WorkbenchCreationContext = {
+        version: scope.version,
+        workflow: 'issue',
+        ...(goalId ? { goalId } : {}),
+        repoId: item.repoId
+      }
+      if (!goalId) {
+        return { workbenchCreation }
+      }
+      const repo = repoMap.get(item.repoId)
+      const suggested = findGoalParentSuggestion({
+        version: scope.version,
+        goalId,
+        worktrees: useAppStore.getState().allWorktrees(),
+        home: { repoId: item.repoId, hostId: repo ? getRepoExecutionHostId(repo) : null }
+      })
+      return suggested
+        ? { workbenchCreation, initialParentWorktreeId: suggested }
+        : { workbenchCreation }
+    },
+    [model.workbenchScope, repoMap]
+  )
   const openComposerForItem = useCallback(
     (item: GitHubWorkItem): void => {
       const linkedWorkItem: LinkedWorkItemSummary = {
@@ -43,10 +88,16 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
         prefilledName: getGitHubWorkItemWorkspaceSeed(item),
         initialRepoId: item.repoId,
         enableIssueAutomation: item.type === 'issue',
-        telemetrySource: 'sidebar'
+        telemetrySource: 'sidebar',
+        ...scopedComposerAdditions({
+          repoId: item.repoId,
+          type: item.type,
+          number: item.number,
+          provider: 'github'
+        })
       })
     },
-    [openModal, repoMap]
+    [openModal, repoMap, scopedComposerAdditions]
   )
   const handleUseWorkItem = useCallback(
     (item: GitHubWorkItem): void => {
@@ -178,10 +229,16 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
         prefilledName: getLinkedWorkItemSuggestedName({ title: item.title }),
         initialRepoId: item.repoId,
         enableIssueAutomation: item.type === 'issue',
-        telemetrySource: 'sidebar'
+        telemetrySource: 'sidebar',
+        ...scopedComposerAdditions({
+          repoId: item.repoId,
+          type: item.type === 'mr' ? 'pr' : 'issue',
+          number: item.iid,
+          provider: 'codehub'
+        })
       })
     },
-    [codeHubSourceContextFor, openModal]
+    [codeHubSourceContextFor, openModal, scopedComposerAdditions]
   )
   const handleUseCodeHubItem = useCallback(
     (item: CodeHubTaskItem): void => {

@@ -22,6 +22,7 @@ type TargetChangeActionsInput = Pick<
   | 'setLinkedPR'
   | 'setLinkedTaskSourceContext'
   | 'setLinkedWorkItem'
+  | 'setParentWorktreeId'
   | 'setProjectError'
   | 'setPushTarget'
   | 'setRepoId'
@@ -70,6 +71,7 @@ export function useTargetChangeActions(input: TargetChangeActionsInput) {
     setLinkedPR,
     setLinkedTaskSourceContext,
     setLinkedWorkItem,
+    setParentWorktreeId,
     setProjectError,
     setPushTarget,
     setRepoId,
@@ -114,6 +116,9 @@ export function useTargetChangeActions(input: TargetChangeActionsInput) {
         ? getLinearLinkedWorkItemBranchName(linkedWorkItem)
         : undefined
       setRepoId(value)
+      // G2 (BW): a parent suggestion is repo-scoped — a repo switch clears the
+      // stale pick instead of carrying it into create-time validation.
+      setParentWorktreeId(null)
       if (!options.preserveStartFrom) {
         setSelectedProjectHostSetupOverrideId(null)
       }
@@ -182,6 +187,7 @@ export function useTargetChangeActions(input: TargetChangeActionsInput) {
       setLinkedPR,
       setLinkedTaskSourceContext,
       setLinkedWorkItem,
+      setParentWorktreeId,
       setProjectError,
       setPushTarget,
       setReuseEligibleBranch,
