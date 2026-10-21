@@ -467,9 +467,11 @@ function App() {
             不进本屏。计划制定中或计划归档 PR 未合入时,验收屏只有一块空板:点「与验收助手新建
             验收」触发检测——检测通过才拉取计划、展开四步板面(目标与验收标准此时才同步上板);
             未合入弹报错、保持空板(硬门禁,不做草案预验收)。选版与项目上下文归左侧栏(G2
-            外框);页头与计划屏同构:会话收折、更新代码(唯一同步入口)、配置自动化、批注模式、
-            验收助手;会话栏为 Orca 原生会话占位,「验收助手」是该产品称呼。界面无灯:状态一律
-            文字与真实读回。
+            外框);页头与计划屏同构:会话收折、更新代码(唯一同步入口)、配置自动化、批注
+            模式——<strong>不设全局助手按钮</strong>:「唤起验收助手」的入口按对象就近放置
+            (纪要区「整理纪要」、归档区「发起归档」),部署/发布/出包按钮本身兼任请求注入;
+            Showcase 无模型填写事务,不设助手入口。会话栏为 Orca 原生会话占位,「验收助手」
+            是该产品称呼。界面无灯:状态一律文字与真实读回。
           </p>
           <p>
             <strong>验收准备</strong>:「出包」是板面固定逻辑(按项目远端直连流水线,主分支
@@ -604,12 +606,6 @@ function App() {
                 aria-pressed={annotating}
                 className={annotating ? 'g3-mode-on' : ''}
                 onClick={toggleAnnotating}
-              />
-              <IconButton
-                name="agent"
-                label="打开验收助手"
-                className="g3-agent-button"
-                onClick={() => toggleSession(true)}
               />
             </div>
           </header>
@@ -894,6 +890,18 @@ function App() {
                     <h2>
                       会议纪要 <small>常驻可编辑 · 人工确认后生效</small>
                     </h2>
+                    <span className="g3-title-actions">
+                      <IconButton
+                        name="agent"
+                        label="让验收助手整理纪要(可提供会议 ID)"
+                        onClick={() =>
+                          sendRequest(
+                            '把板面批注与会议转写稿整理为会议纪要,按共识 / 遗留两块输出',
+                            '整理纪要请求'
+                          )
+                        }
+                      />
+                    </span>
                   </div>
                   <MinutesCard
                     minutes={minutes || EMPTY_MINUTES}
@@ -924,6 +932,16 @@ function App() {
                         </p>
                       </div>
                       <IconButton
+                        name="agent"
+                        label="让验收助手核对材料并发起归档"
+                        onClick={() =>
+                          sendRequest(
+                            '核对验收材料与结论状态后,在 bw/week-acceptance 固定树提交归档并创建到主分支的 PR',
+                            '归档请求'
+                          )
+                        }
+                      />
+                      <IconButton
                         name="arrow"
                         label="打开原生 PR 页(衔接示意)"
                         onClick={() => {
@@ -938,8 +956,18 @@ function App() {
                       <Icon name="pr" size={20} />
                       <div>
                         <h2>验收归档 PR</h2>
-                        <p>未创建 · 由验收助手在原生会话中发起,Leader 在 Orca 原生 PR 页再审。</p>
+                        <p>未创建 · 归档由验收助手在会话中执行,Leader 在 Orca 原生 PR 页再审。</p>
                       </div>
+                      <IconButton
+                        name="agent"
+                        label="让验收助手核对材料并发起归档"
+                        onClick={() =>
+                          sendRequest(
+                            '核对验收材料与结论状态后,在 bw/week-acceptance 固定树提交归档并创建到主分支的 PR',
+                            '归档请求'
+                          )
+                        }
+                      />
                     </div>
                   )}
                   <div className="acc-release">
