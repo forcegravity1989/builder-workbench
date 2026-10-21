@@ -503,6 +503,28 @@ textarea {
   color: var(--muted-foreground);
   padding-top: 3px;
 }
+/* 删除目标的就近二次确认：不弹窗，单色反相表达破坏性动作。 */
+.g3-goal-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.g3-goal-confirm button {
+  border: 1px solid var(--input);
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: var(--radius-md);
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.g3-goal-confirm button.danger {
+  border-color: var(--foreground);
+  background: var(--foreground);
+  color: var(--background);
+  font-weight: 500;
+}
 .g3-goal-head:has(.g3-title-input) .g3-goal-toggle {
   flex: 0 0 46px;
 }
@@ -920,13 +942,13 @@ textarea {
   font-size: 11px;
   padding: 2px 6px;
 }
-/* 板面批注窗：右侧竖排面板，布局对齐 Orca 原生批注参考。 */
+/* 板面批注窗：右侧紧凑记录面板，高度随内容自适应，不整栏覆盖板面。 */
 .g3-annot-panel {
   position: fixed;
   top: 96px;
   right: 16px;
-  bottom: 16px;
   z-index: 40;
+  max-height: calc(100vh - 128px);
   width: min(320px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
@@ -949,8 +971,9 @@ textarea {
   flex: 1;
 }
 .g3-annot-list {
-  flex: 1;
-  min-height: 40px;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 40vh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -1000,22 +1023,33 @@ textarea {
   margin: 0;
   flex-shrink: 0;
 }
-.g3-annot-composer {
+/* 对象批注小窗：贴着被批注元素弹出，交互对齐 Orca 元素批注弹窗。 */
+.g3-annot-pop {
+  position: fixed;
+  z-index: 46;
+  width: min(320px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  border-top: 1px solid var(--border);
-  padding-top: 10px;
-  flex-shrink: 0;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.18);
+  padding: 12px;
 }
-.g3-annot-target {
-  display: inline-flex;
+.g3-annot-pop header {
+  display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--muted-foreground);
+  gap: 6px;
+  font-size: 12px;
 }
-.g3-annot-composer textarea {
+.g3-annot-pop header strong {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.g3-annot-pop textarea {
   width: 100%;
   background: var(--background);
   color: var(--foreground);
@@ -1026,9 +1060,17 @@ textarea {
   line-height: 1.6;
   resize: vertical;
 }
-.g3-annot-composer button {
-  align-self: flex-end;
-  border: 1px solid var(--foreground);
+.g3-annot-pop footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.g3-annot-pop footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--input);
   background: var(--background);
   color: var(--foreground);
   border-radius: var(--radius-md);
@@ -1036,7 +1078,11 @@ textarea {
   font-size: 12px;
   cursor: pointer;
 }
-.g3-annot-composer button:disabled {
+.g3-annot-pop footer button.primary {
+  border-color: var(--foreground);
+  font-weight: 500;
+}
+.g3-annot-pop footer button:disabled {
   opacity: 0.5;
   cursor: default;
 }

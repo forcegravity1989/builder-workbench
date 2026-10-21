@@ -9,7 +9,14 @@ import {
   taskRows,
   g2Url
 } from './g3-model.js'
-import { Icon, IconButton, GoalRow, MinutesCard, AnnotationPanel } from './g3-components.jsx'
+import {
+  Icon,
+  IconButton,
+  GoalRow,
+  MinutesCard,
+  AnnotationPanel,
+  AnnotationPopover
+} from './g3-components.jsx'
 
 function App() {
   const [goals, setGoals] = useState(() => structuredClone(snapshot.plan.goals))
@@ -19,7 +26,8 @@ function App() {
   const [annotations, setAnnotations] = useState([])
   const [annotating, setAnnotating] = useState(false)
   const [panelOpen, setPanelOpen] = useState(false)
-  const [annotateTarget, setAnnotateTarget] = useState(null)
+  // 对象批注小窗：{ id, target, rect }，贴着被点元素弹出；记录不再进面板。
+  const [popover, setPopover] = useState(null)
   const [expanded, setExpanded] = useState([])
   const [editingGoal, setEditingGoal] = useState(null)
   const [active, setActive] = useState('context')
@@ -35,6 +43,8 @@ function App() {
   const scroll = useRef(null)
   const navigation = useRef(null)
   const tasks = taskRows(scene)
+  // 删除目标后其 Issue 引用一并移出计划，侧栏计数现算，不留旧数。
+  const visibleTaskCount = tasks.filter((t) => goals.some((g) => g.goalId === t.goalId)).length
   // 批注编号对齐 Orca：按记录顺序全局编号，板面角标与面板卡片同号。
   const numbered = annotations.map((item, i) => ({ ...item, number: i + 1 }))
   const annotationNumbers = numbered.reduce((map, item) => {
@@ -62,18 +72,22 @@ function App() {
     toggleSession(true)
     setNotice('新建计划调用已登记自动化的手动运行，打开新会话并携带 BW 提示 · 演示示意')
   }
-  const openComposer = (target) => {
-    setAnnotateTarget(target)
+  const openPopover = (target, rect) => {
+    setPopover({
+      id: `${target}-${Date.now()}`,
+      target,
+      rect: { left: rect.left, top: rect.top, bottom: rect.bottom }
+    })
     setPanelOpen(true)
     setNotice('')
   }
   const toggleAnnotating = () => {
     const next = !annotating
     setAnnotating(next)
-    setAnnotateTarget(null)
+    setPopover(null)
     setPanelOpen(next)
     setNotice(
-      next ? '批注模式：点击目标卡、验收标准或 Issue 行记录评审意见 · Esc 退出' : ''
+      next ? '批注模式：点击板面元素，在对象旁的小窗记录评审意见 · Esc 退出' : ''
     )
   }
   useEffect(() => {
@@ -81,16 +95,21 @@ function App() {
       return
     }
     const onKey = (event) => {
-      if (event.key === 'Escape') {
-        setAnnotating(false)
-        setPanelOpen(false)
-        setAnnotateTarget(null)
-        setNotice('')
+      if (event.key !== 'Escape') {
+        return
       }
+      // Esc 先关就近小窗，再退出批注模式并关闭面板。
+      if (popover) {
+        setPopover(null)
+        return
+      }
+      setAnnotating(false)
+      setPanelOpen(false)
+      setNotice('')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [annotating])
+  }, [annotating, popover])
   const onScrollClickCapture = (event) => {
     if (!annotating) {
       return
@@ -102,8 +121,29 @@ function App() {
     }
     const element = event.target.closest('[data-annotate]')
     if (element) {
-      openComposer(element.dataset.annotate)
+      openPopover(element.dataset.annotate, element.getBoundingClientRect())
+    } else {
+      setPopover(null)
     }
+  }
+  const removeGoal = (goalId) => {
+    const removedTasks = tasks.filter((t) => t.goalId === goalId).length
+    setGoals((current) => current.filter((g) => g.goalId !== goalId))
+    setExpanded((current) => current.filter((id) => id !== goalId))
+    setEditingGoal((current) => (current === goalId ? null : current))
+    setMetricCommits((current) => {
+      const next = { ...current }
+      delete next[goalId]
+      return next
+    })
+    // 批注对象随目标一并移除，编号重排由 numbered 现算。
+    setAnnotations((current) => current.filter((item) => !item.object.startsWith(`${goalId} `)))
+    if (popover && popover.target.startsWith(`${goalId} `)) {
+      setPopover(null)
+    }
+    setNotice(
+      `已删除目标 ${goalId} · 其 ${removedTasks} 条关联 Issue 引用与相关批注一并移出本版计划（演示仅内存，「重置」可恢复）`
+    )
   }
   const update = (id, field, value) => {
     setGoals((current) => current.map((g) => (g.goalId === id ? { ...g, [field]: value } : g)))
@@ -119,7 +159,7 @@ function App() {
     setPrHandoff(false)
     setHandoff(null)
     setSentRequest(null)
-    setAnnotateTarget(null)
+    setPopover(null)
     setAnnotating(false)
     setPanelOpen(false)
   }
@@ -171,6 +211,9 @@ function App() {
             原生发送弹窗——与浏览器批注「发送给 Agent」同一条链路，用户在弹窗中确认目标会话后发送，
             不恢复已退役的贴草稿通道；动作同时自动展开会话栏。分支名弱化展示，
             「配置自动化」打开原生自动化编辑器，自动化绑定固定工作树，与版本选择解耦。
+            目标卡展开后可整卡删除：卡片头 × 图标触发就近二次确认（确认删除 /
+            取消，不弹窗），删除即把该目标的 Issue 引用与相关批注一并移出板面；
+            生产语义为计划文档编辑，经材料读写服务保存。
           </p>
           <p>
             <strong>数据来源</strong>：上版回顾只回显延期遗留 Issue（编号 +
@@ -191,11 +234,14 @@ function App() {
           </p>
           <p>
             <strong>纪要与批注</strong>：纪要示例源自 #385 边界讨论，仅演示；固定两块——共识、
-            遗留（逐条闭环状态，闭环 = 版本计划已按该条修改，由人标记）。批注窗布局对齐 Orca
-            原生批注参考：页头「批注模式」（气泡 + 加号图标，vendor 冻结、由两枚图标组合）进入 →
-            右侧打开「板面批注（N）」面板 → 点击板面元素（目标句、验收标准、指标承诺、Issue
-            行或整卡）写入输入框，或「添加板面级批注」→ 复制或经原生发送弹窗发给计划助手；
-            板面编号角标与面板卡片同号。纪要区不参与批注。BW
+            遗留（逐条闭环状态，闭环 = 版本计划已按该条修改，由人标记）。批注交互对齐 Orca
+            原生元素批注：页头「批注模式」（气泡 + 加号图标，vendor 冻结、由两枚图标组合）进入 →
+            点击板面元素（目标句、验收标准、指标承诺、Issue 行或整卡），元素旁弹出「对象批注」
+            小窗（对象名标题、textarea、取消 / 添加，已有批注带删除入口，Ctrl+Enter 快捷添加）→
+            右侧「板面批注（N）」面板只做紧凑记录列表（高度随内容、列表内滚动，不覆盖板面），
+            「添加板面级批注」复用同一个小窗；复制或经原生发送弹窗发给计划助手。与 Orca
+            弹窗的差异：BW 小窗不带意图分段与发送行——批注是评审会速记、整批作为纪要输入，
+            发送统一走面板底部经原生发送弹窗。板面编号角标与面板卡片同号。纪要区不参与批注。BW
             板面元素的捕获层（元素映射为业务对象引用）留实现设计。会议 ID 现阶段由 Builder
             提供，不提供时仅凭在线批注也可生成；群组 / WeLink 自动获取待用户组旅程设计。
           </p>
@@ -263,7 +309,7 @@ function App() {
             计划
           </div>
           <div className="g3-nav-muted nested">
-            任务 <span>{tasks.length}</span>
+            任务 <span>{visibleTaskCount}</span>
           </div>
           <div className="g3-nav-muted nested">验收</div>
           <div className="g3-nav-muted">› v0.6</div>
@@ -348,8 +394,8 @@ function App() {
           </nav>
           {annotating && (
             <div className="g3-annotate-banner" role="status">
-              批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见 · Esc
-              或再次点击「批注模式」退出
+              批注模式：点击目标句、验收标准、指标承诺或 Issue 行，在对象旁的小窗记录评审意见 ·
+              Esc 先关小窗，再按一次退出批注模式
             </div>
           )}
           <div
@@ -516,6 +562,7 @@ function App() {
                           setPanelOpen(true)
                           setNotice('')
                         }}
+                        onDelete={removeGoal}
                         startTask={(task) => {
                           setHandoff(task)
                           setNotice('')
@@ -671,28 +718,42 @@ function App() {
       </div>
       <AnnotationPanel
         open={panelOpen}
-        target={annotateTarget}
         annotations={numbered}
         onClose={() => {
           setPanelOpen(false)
-          setAnnotateTarget(null)
-        }}
-        onRecord={(text) => {
-          setAnnotations((current) => [
-            ...current,
-            { id: `${Date.now()}-${current.length}`, object: annotateTarget, text }
-          ])
-          setAnnotateTarget(null)
+          setPopover(null)
         }}
         onRemove={(id) =>
           setAnnotations((current) => current.filter((item) => item.id !== id))
         }
-        onBoardLevel={() => setAnnotateTarget('板面级')}
+        onBoardLevel={(event) =>
+          openPopover('板面级', event.currentTarget.getBoundingClientRect())
+        }
         onSend={() => {
-          setAnnotateTarget(null)
+          setPopover(null)
           sendRequest('以下是评审会在线批注，作为会议纪要输入整理', '批注')
         }}
       />
+      {popover && (
+        <AnnotationPopover
+          key={popover.id}
+          target={popover.target}
+          rect={popover.rect}
+          existing={numbered.filter((item) => item.object === popover.target)}
+          onSave={(text) => {
+            setAnnotations((current) => [
+              ...current,
+              { id: `${Date.now()}-${current.length}`, object: popover.target, text }
+            ])
+            setPopover(null)
+          }}
+          onCancel={() => setPopover(null)}
+          onDelete={(id) => {
+            setAnnotations((current) => current.filter((item) => item.id !== id))
+            setPopover(null)
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 const {
   React,
   useState,
+  useEffect,
   ChevronDown,
   ChevronRight,
   ArrowUpRight,
@@ -207,11 +208,18 @@ export function GoalRow({
   startTask,
   annotationNumbers,
   onOpenPanel,
+  onDelete,
   editing,
   setEditing
 }) {
   const goalTarget = `${goal.goalId} 目标`
   const headTarget = `${goal.goalId} · 目标句`
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  useEffect(() => {
+    if (!expanded) {
+      setConfirmingDelete(false)
+    }
+  }, [expanded])
   return (
     <article
       className={`g3-goal ${expanded ? 'open' : ''}`}
@@ -247,12 +255,27 @@ export function GoalRow({
           onOpenPanel={onOpenPanel}
         />
         <span className="g3-goal-count">{tasks.length} Issue</span>
-        {expanded && (
-          <IconButton
-            name={editing ? 'check' : 'edit'}
-            label={editing ? '结束编辑目标' : '编辑目标'}
-            onClick={() => setEditing(!editing)}
-          />
+        {expanded && !confirmingDelete && (
+          <>
+            <IconButton
+              name={editing ? 'check' : 'edit'}
+              label={editing ? '结束编辑目标' : '编辑目标'}
+              onClick={() => setEditing(!editing)}
+            />
+            <IconButton
+              name="close"
+              label={`删除目标 ${goal.goalId}`}
+              onClick={() => setConfirmingDelete(true)}
+            />
+          </>
+        )}
+        {expanded && confirmingDelete && (
+          <span className="g3-goal-confirm">
+            <button className="danger" onClick={() => onDelete(goal.goalId)}>
+              确认删除
+            </button>
+            <button onClick={() => setConfirmingDelete(false)}>取消</button>
+          </span>
         )}
       </div>
       {!expanded && (
@@ -532,19 +555,10 @@ export function MinutesCard({ minutes, update, sendRequest }) {
     </article>
   )
 }
-// 板面批注窗：布局对齐 Orca 原生批注参考（右侧竖排面板、编号卡片列表、
-// 提示行、板面级批注、底部 复制 / 发送）。BW 的差异只在批注对象是业务板面元素。
-export function AnnotationPanel({
-  open,
-  target,
-  annotations,
-  onClose,
-  onRecord,
-  onRemove,
-  onBoardLevel,
-  onSend
-}) {
-  const [draft, setDraft] = useState('')
+// 板面批注窗：右侧紧凑记录面板，布局对齐 Orca 原生批注参考（编号卡片列表、
+// 提示行、板面级批注、底部 复制 / 发送）。记录动作在对象就近小窗完成，
+// 面板只做记录列表，高度随内容自适应，不再整栏覆盖板面。
+export function AnnotationPanel({ open, annotations, onClose, onRemove, onBoardLevel, onSend }) {
   const copy = async () => {
     const text = annotations.map((item) => `- [${item.object}] ${item.text}`).join('\n')
     await navigator.clipboard?.writeText(text)
@@ -580,29 +594,6 @@ export function AnnotationPanel({
         )}
       </div>
       <p className="g3-annot-hint">批注模式中，点击板面元素即可添加批注</p>
-      {target && (
-        <div className="g3-annot-composer">
-          <span className="g3-annot-target">
-            <Icon name="annotate" size={12} /> {target}
-          </span>
-          <textarea
-            rows={2}
-            aria-label="批注内容"
-            placeholder={`记录对 ${target} 的评审意见`}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-          />
-          <button
-            disabled={!draft.trim()}
-            onClick={() => {
-              onRecord(draft.trim())
-              setDraft('')
-            }}
-          >
-            记录
-          </button>
-        </div>
-      )}
       <button className="g3-annot-board" onClick={onBoardLevel}>
         <Icon name="plus" size={13} /> 添加板面级批注
       </button>
@@ -615,5 +606,64 @@ export function AnnotationPanel({
         </button>
       </footer>
     </aside>
+  )
+}
+// 对象批注小窗：贴着被批注元素弹出，交互对齐 Orca 元素批注弹窗
+// （对象名标题、textarea、取消 / 添加，已有批注带删除入口）。BW 差异：
+// 小窗只记录评审速记，不带意图分段与发送行——发送统一走面板底部经原生发送弹窗。
+export function AnnotationPopover({ target, rect, existing, onSave, onCancel, onDelete }) {
+  const [draft, setDraft] = useState('')
+  const POP_W = 320
+  const POP_H = 200
+  const left = Math.max(16, Math.min(rect.left, window.innerWidth - POP_W - 16))
+  const below = rect.bottom + 8
+  const top =
+    below + POP_H > window.innerHeight - 16
+      ? Math.max(16, Math.min(rect.top - POP_H - 8, window.innerHeight - POP_H - 16))
+      : below
+  const last = existing[existing.length - 1]
+  const save = () => {
+    if (draft.trim()) {
+      onSave(draft.trim())
+    }
+  }
+  return (
+    <div
+      className="g3-annot-pop"
+      role="dialog"
+      aria-label={`对象批注（${target}）`}
+      style={{ left, top }}
+    >
+      <header>
+        <Icon name="annotate-mode" size={13} />
+        <strong>{target}</strong>
+        {last && (
+          <IconButton
+            name="close"
+            label={`删除批注 ${last.number}（${target}）`}
+            onClick={() => onDelete(last.id)}
+          />
+        )}
+      </header>
+      <textarea
+        rows={3}
+        aria-label="批注内容"
+        placeholder="在此添加批注..."
+        value={draft}
+        autoFocus
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            save()
+          }
+        }}
+      />
+      <footer>
+        <button onClick={onCancel}>取消</button>
+        <button className="primary" disabled={!draft.trim()} onClick={save}>
+          <Icon name="plus" size={13} /> 添加
+        </button>
+      </footer>
+    </div>
   )
 }
