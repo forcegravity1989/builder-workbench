@@ -18,7 +18,7 @@
 
 | # | 特性 | 目录 | 分诊 | intent | spec | 实现设计 | TDD | 验收点E2E | 旅程E2E |
 |---|---|---|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) · [G2 原型](version-planning/version-workspace-prototype.html) · [旅程](version-planning/version-workspace-journey.html) | 在用·目标卡统一已确认待实施⁴；G2 版本运作设计定稿⁶ | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
+| 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) | 在用·目标卡统一已确认待实施⁴ | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
 | 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 在用·形态整改已确认待实施⁴ | ● | ● | ◐(待按轮次协议重写) | ◐ | ◐(A01–A11 未逐项；A12–A14 已定义未实施) | ○(AJ01/AJ02 已定义) |
 | 3 | 总览指标 | [overview-metrics/](overview-metrics/) · [原型](overview-metrics/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项) | ○(MJ01/MJ02 已定义) |
 | 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·在用（正本随扶正在 main）¹ | ● | ● | ● | ◐¹ | ◐¹ | ○(台内路径 defer) |
@@ -26,6 +26,7 @@
 | 6 | CodeHub 适配 | [codehub/](codehub/)³ | 在用·补链中 | ◐ | ◐ | ◐ | ◐ | ○(C01–C08 已定义) | ○(CJ01 已定义) |
 | 7 | Windows 出包与发布 | [workbench-release/](workbench-release/)³ | 开发方法资产·补链中 | ◐ | ◐ | ◐ | ◐ | ○(R01–R06 已定义) | ○(RJ01 已定义) |
 | 8 | 集成页四卡收敛 | [connectors/](connectors/) · [原型](connectors/prototype.html)⁵ | 在用·补链中 | ● | ● | ● | ● | 待建(I01–I12 已定义) | 待建(IJ01 已定义) |
+| 9 | 版本工作区（侧边栏版本运作树） | [version-workspace/](version-workspace/) · [原型](version-workspace/version-workspace-prototype.html) · [旅程](version-workspace/version-workspace-journey.html) | 设计定稿·待实施⁶ | ● | ● | ● | ○ | ○(协议用例随 P1 登记) | ○(J1–J9 已定义) |
 
 ¹ 第 4 行：GitHub CI 路径 2026-08/09 在旧 main 侧交付并实测闭环（PR #132 及后续召唤）；2026-09-29 用户拍板迁入产品分支——workflow 与回执脚本（`.github/scripts/check-pr-review.mjs`）已落，实现设计 ●。2026-09-30 扶正后本定义即默认分支 main 的定义，`/code-review` 召唤直接执行它，不再经旧 main 定义中转。验收点 ◐：迁移 PR 自身修改 workflow 文件，按 #132 先例（时为 pull_request 触发下的防篡改跳过）保守不自召——该校验在现行 issue_comment 触发模型下是否适用未复核；主干首场真实召唤待下一条合格 PR 实测，未实测不判过。TDD ◐：回执脚本无单测，以召唤实测为准。台内「请评审」按钮路径规范件在仓但未接线，defer。明细见其 [STATUS](reviewer-agent/STATUS.md) 迁移节。
 
@@ -36,7 +37,7 @@
 ⁴ 第 1–2 行形态整改（v9.5 原型，2026-10-18 用户确认，生产未实施）：计划/验收统一目标卡骨架（整卡收缩、Issue 分组子块带 Issue 级进展备注、计划完成/负责人从计划材料既有字段取、拆解打 bug/feature 分类标签）；验收单页承载会前/会中/会后三阶段，页底「会议指导与遗留」由会后 SOP 从会议转写总结（issue #374 链路、经 subagent、逐条人确认）随轮次入材料；跨周版本按轮次记录、界面按周呈现；周报信息由验收屏承载，不设独立周报屏与导出件——weekly-report 试点（PR #321 未合入 main、保持挂起）整体废止，处置待用户确认。明细见[验收 STATUS](version-acceptance/STATUS.md) 与[计划 STATUS](version-planning/STATUS.md) 批次记录。
 
 ⁵ 第 8 行随 #323 设计 PR 首次登记（2026-10-14），2026-10-15 按人反馈两轮修订后 gate（简化为拼装现有能力；人不手敲命令），实现随同 PR 交付：集成页收敛为 GitHub / CodeHub / WeLink / CloudBuild 四卡（代码托管 / 项目群 / 构建三组；CloudBuild 随 #366 增补，2026-10-19），preflight 补 `welink-cli` / `cb` 探测与 codehub / welink / cb `auth status` 读回，安装由应用后台执行（gh 保持外链），登录在卡内展开上游内嵌终端粘贴命令、人按回车（远端运行时无按钮，WSL 工作树保留）。待决 1–4 与真壳拍板 5–8 均已由人拍板（2026-10-16 / 10-19）：六卡代码留仓、自包含安装命令（cloudbuild 为两步）、welink EXPIRED 判未登录、分组标题补中文、安装后台化、登录卡内嵌终端。真壳验收证据（I01–I12 / IJ01）未采。明细见其 [STATUS](connectors/STATUS.md)。
-⁶ 第 1 行 G2（[#383](https://github.com/forcegravity1989/builder-workbench/issues/383)）2026-10-20 评审定稿（Draft PR #389、修订 8）：版本平铺导航、目标目录投影（含跨宿主实例汇总）、目标树按需、同一原生创建器开工、版本总览聚合视图，以及版本级清理（版本行删除图标＋与 Orca 同口径确认对话框，复用原生删除链与预检，默认只删本机 owned 工作树；不级联删版本、材料与目录保留）。生产接线未实施，证据缺口见[计划 STATUS](version-planning/STATUS.md)；实施计划为仓外草案，开工前经人确认。
+⁶ 第 9 行（[#383](https://github.com/forcegravity1989/builder-workbench/issues/383)/#328/#334）2026-10-20 评审定稿（Draft PR #389、修订 8）：版本平铺导航、目标目录投影（含跨宿主实例汇总）、目标树按需、同一原生创建器开工、版本总览聚合视图，以及版本级清理（版本行删除图标＋与 Orca 同口径确认对话框，复用原生删除链与预检，默认只删本机 owned 工作树；不级联删版本、材料与目录保留）。生产接线未实施，证据缺口见 [version-workspace STATUS](version-workspace/STATUS.md)；实施计划为仓外草案，开工前经人确认。
 
 ## 裁决与明细指引
 

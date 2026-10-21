@@ -46,10 +46,4 @@
 
 历史认可与交付证据从 [设计 PR #264](https://github.com/forcegravity1989/builder-workbench/pull/264)、[PR #369](https://github.com/forcegravity1989/builder-workbench/pull/369)、[PR #377](https://github.com/forcegravity1989/builder-workbench/pull/377) 及 Git 追溯，不以历史测试数量代替当前证据。轮次、会议指导和收折的共同边界见[验收状态](../version-acceptance/STATUS.md)。
 
-## G2 定稿设计的证据边界
-
-[高保真修订 8](version-workspace-prototype.html?rev=8) 与 [旅程报告](version-workspace-journey.html) 于 2026-10-20 评审定稿：多版本并行、版本平铺回看、逻辑目标目录、目标工作树按需创建、原生创建器与工作区复用、不新增冻结操作、版本下方统一保留当前项目与私人项目的原生工作区入口；版本收尾为版本级清理：版本行删除图标＋与 Orca 同口径确认对话框，复用原生删除链与预检，默认只删本机 owned 树，材料与版本目录保留。新建版本准备计划/验收两树，侧栏入口合并流程树；原型按整屏标注计划/验收复用，目标仅筛选同一任务屏。初始 v0.7 在制、v0.6 演示已归档回看；新增版本由用户创建。
-
-本轮修改设计资料与原型，未改 Electron 生产代码、真实工作树、自动化或会话记录。项目总览及其他既有屏幕仅标复用位置。所有新建、父树选择、清理与会话均为内存演示，刷新清空。图标操作与业界依据见 spec，不把参考当实现证据。
-
-修订 7 的浏览器检查及提交前门禁结果留在 PR 验证记录。未验证 Electron 真壳、共享宿主、实际工作树创建/删除/跨宿主确认单、provider 写回、原生会话历史和旧共享树迁移；前版浏览器结果不能证明本版生产接线。
+版本工作区（G2）的认可与证据见 [version-workspace STATUS](../version-workspace/STATUS.md)。
