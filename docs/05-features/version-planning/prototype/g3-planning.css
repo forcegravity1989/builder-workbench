@@ -203,6 +203,74 @@ textarea {
   margin: 0;
   line-height: 1.4;
 }
+.g3-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.g3-text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: none;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.g3-text-button:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.g3-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.g3-icon-button.g3-mode-on {
+  border: 1px solid var(--foreground);
+  background: var(--accent);
+  color: var(--foreground);
+}
+.g3-annotate-banner {
+  flex-shrink: 0;
+  padding: 6px 32px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.g3-app.annotating .g3-scroll [data-annotate] {
+  cursor: crosshair;
+}
+.g3-app.annotating .g3-scroll [data-annotate]:hover {
+  outline: 1px dashed var(--foreground);
+  outline-offset: 2px;
+}
+.g3-annot-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 6px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  background: none;
+}
+.g3-annot-count:hover {
+  color: var(--foreground);
+  border-color: var(--foreground);
+}
 .g3-journey {
   display: flex;
   padding: 0 32px;
@@ -297,46 +365,42 @@ textarea {
 .g3-prior-card {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 4px 20px 0;
+  padding: 4px 20px;
   overflow: hidden;
 }
-.g3-prior-labels,
-.g3-prior-row {
+.g3-carryover-row {
   display: grid;
-  grid-template-columns: minmax(190px, 0.8fr) minmax(0, 1.8fr);
-  gap: 24px;
-  align-items: start;
-}
-.g3-prior-labels {
-  color: var(--muted-foreground);
-  font-size: 12px;
-  padding: 12px 0 8px;
-  border-bottom: 1px solid var(--border);
-}
-.g3-prior-row {
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 16px;
+  align-items: baseline;
   padding: 14px 0;
-  border-bottom: 1px solid var(--border);
   font-size: 13px;
   line-height: 1.7;
 }
-.g3-prior-goal {
-  display: grid;
-  grid-template-columns: 24px 1fr;
-  column-gap: 4px;
-  align-items: baseline;
+.g3-carryover-row + .g3-carryover-row {
+  border-top: 1px solid var(--border);
 }
-.g3-prior-goal strong {
-  font-size: 13px;
+.g3-carryover-row > span:first-child {
+  font-size: 12px;
   font-weight: 500;
 }
-.g3-prior-goal small {
-  grid-column: 2;
-  color: var(--muted-foreground);
-  font-size: 12px;
+.g3-carryover-issues {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-.g3-prior-delivery p {
-  margin: 0;
+.g3-carryover-issues a,
+.g3-carryover-issues > div {
+  display: flex;
+  gap: 10px;
+  text-decoration: none;
   overflow-wrap: anywhere;
+}
+.g3-carryover-issues a:hover {
+  text-decoration: underline;
+}
+.g3-carryover-issues .g3-id {
+  flex: 0 0 40px;
 }
 .g3-id {
   font-size: 12px;
@@ -344,25 +408,6 @@ textarea {
 }
 .g3-muted {
   color: var(--muted-foreground);
-}
-.g3-carryover {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px 0;
-  font-size: 12px;
-}
-.g3-carryover > div {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-}
-.g3-carryover > div > span:first-child {
-  font-weight: 500;
-}
-.g3-carryover-links {
-  display: flex;
-  gap: 12px;
 }
 .g3-goal-list {
   display: flex;
@@ -497,6 +542,72 @@ textarea {
 .g3-commitment .g3-field {
   margin: 0;
 }
+.g3-commitment .g3-metric-block {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.g3-metric-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+}
+.g3-metric-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.g3-metric-row select,
+.g3-metric-add {
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 13px;
+  padding: 4px 8px;
+  max-width: 320px;
+}
+.g3-metric-current {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.g3-metric-current strong {
+  color: var(--foreground);
+}
+.g3-metric-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.g3-metric-target input {
+  width: 110px;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 13px;
+  padding: 4px 8px;
+}
+.g3-metric-collect {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--input);
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: var(--radius-md);
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
 .g3-goal-meta input {
   width: 150px;
   padding: 4px 8px;
@@ -603,14 +714,85 @@ textarea {
   font-size: 12px;
   font-weight: 500;
   color: var(--muted-foreground);
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
-.g3-minutes-section p {
+.g3-minutes-section > strong small {
+  font-weight: 400;
+  margin-left: 8px;
+}
+.g3-points {
+  list-style: none;
   margin: 0;
-  white-space: pre-wrap;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.7;
 }
-.g3-minutes .g3-field {
-  margin: 12px 0 0;
+.g3-points li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.g3-followup-status {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  padding: 1px 8px;
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.g3-followup-status.closed {
+  color: var(--foreground);
+  border-color: var(--foreground);
+}
+.g3-point-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.g3-point-edit-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.g3-point-edit-row textarea {
+  flex: 1;
+  min-width: 0;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.g3-point-edit-row .g3-followup-status {
+  margin-top: 6px;
+}
+.g3-add-point {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  border: 1px dashed var(--border);
+  background: none;
+  color: var(--muted-foreground);
+  border-radius: var(--radius-md);
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.g3-add-point:hover {
+  color: var(--foreground);
+  border-color: var(--foreground);
 }
 .g3-minutes-foot {
   display: flex;
@@ -729,6 +911,12 @@ textarea {
   padding: 8px 10px;
   font-size: 12px;
 }
+.g3-annot-li-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 .g3-annotation-tray li p {
   margin: 4px 0 0;
   white-space: pre-wrap;
@@ -826,33 +1014,34 @@ textarea {
 }
 .g3-session.rail {
   width: 42px;
+  display: flex;
 }
-.g3-session-toggle {
+.g3-session-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  padding: 12px 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
   font-size: 12px;
+  flex-shrink: 0;
 }
-.g3-session.rail .g3-session-toggle {
-  flex-direction: column;
-  width: 100%;
+.g3-session-native {
+  font-size: 11px;
 }
-.g3-session.rail .g3-session-toggle > span:last-child {
+.g3-session-rail-text {
   writing-mode: vertical-rl;
   letter-spacing: 3px;
   color: var(--muted-foreground);
+  font-size: 12px;
+  padding: 12px 0;
+  width: 100%;
+  text-align: center;
 }
 .g3-session.expanded {
   width: 300px;
   display: flex;
   flex-direction: column;
-}
-.g3-session.expanded .g3-session-toggle {
-  flex-direction: row-reverse;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-  padding: 10px 16px;
 }
 .g3-native-workspace {
   display: flex;
@@ -909,8 +1098,7 @@ textarea {
   width: 36px;
   height: 36px;
 }
-.g3-agent-button svg,
-.g3-session.rail svg {
+.g3-agent-button svg {
   color: var(--ai-action-accent);
 }
 .g3-tooltip {
@@ -949,13 +1137,15 @@ textarea {
     padding-inline: 24px;
     gap: 20px;
   }
+  .g3-annotate-banner {
+    padding-inline: 24px;
+  }
   .g3-stage-copy small {
     display: none;
   }
-  .g3-prior-labels,
-  .g3-prior-row {
-    grid-template-columns: 168px minmax(0, 1fr);
-    gap: 20px;
+  .g3-carryover-row {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 12px;
   }
 }
 @container (max-width: 580px) {
@@ -977,10 +1167,8 @@ textarea {
     height: 20px;
     font-size: 11px;
   }
-  .g3-prior-labels,
-  .g3-prior-row {
-    grid-template-columns: 144px minmax(0, 1fr);
-    gap: 16px;
+  .g3-annotate-banner {
+    padding-inline: 20px;
   }
   .g3-prior-card {
     padding-inline: 16px;
@@ -1021,19 +1209,9 @@ textarea {
   .g3-stage-copy strong {
     font-size: 12px;
   }
-  .g3-prior-labels {
-    display: none;
-  }
-  .g3-prior-row {
+  .g3-carryover-row {
     grid-template-columns: 1fr;
-    gap: 8px;
-  }
-  .g3-prior-goal {
-    display: flex;
-    gap: 8px;
-  }
-  .g3-prior-goal small {
-    margin-left: auto;
+    gap: 6px;
   }
   .g3-goal-count {
     display: none;

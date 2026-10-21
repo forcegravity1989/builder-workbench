@@ -1,12 +1,11 @@
-const { React, createRoot, useState, useRef } = window.BWPrototypeDependencies
+const { React, createRoot, useState, useRef, useEffect } = window.BWPrototypeDependencies
 import {
   snapshot,
   stages,
   scenes,
   initialMinutes,
-  minutesSections,
-  prior,
-  postponed,
+  leftoverIssues,
+  meetingDirectives,
   taskRows,
   g2Url
 } from './g3-model.js'
@@ -16,7 +15,9 @@ function App() {
   const [goals, setGoals] = useState(() => structuredClone(snapshot.plan.goals))
   const [scene, setScene] = useState('full')
   const [minutes, setMinutes] = useState(() => structuredClone(initialMinutes))
+  const [metricCommits, setMetricCommits] = useState({})
   const [annotations, setAnnotations] = useState([])
+  const [annotating, setAnnotating] = useState(false)
   const [annotateTarget, setAnnotateTarget] = useState(null)
   const [expanded, setExpanded] = useState([])
   const [editingGoal, setEditingGoal] = useState(null)
@@ -24,6 +25,7 @@ function App() {
   const [session, setSession] = useState(false)
   const [notice, setNotice] = useState('')
   const [handoff, setHandoff] = useState(null)
+  const [sentRequest, setSentRequest] = useState(null)
   const [prHandoff, setPrHandoff] = useState(false)
   const [dark, setDark] = useState(false)
   const [compact, setCompact] = useState(false)
@@ -32,18 +34,14 @@ function App() {
   const scroll = useRef(null)
   const navigation = useRef(null)
   const tasks = taskRows(scene)
+  const annotationCounts = annotations.reduce((counts, item) => {
+    counts[item.object] = (counts[item.object] || 0) + 1
+    return counts
+  }, {})
   const move = (id) => {
     navigation.current = id
     setActive(id)
     document.getElementById(id)?.scrollIntoView({ block: 'start' })
-  }
-  const locate = (id) => {
-    navigation.current = 'goals'
-    setExpanded((current) => [...new Set([...current, id])])
-    setActive('goals')
-    requestAnimationFrame(() =>
-      document.getElementById(`goal-${id}`)?.scrollIntoView({ block: 'start' })
-    )
   }
   const toggleSession = (open) => {
     navigation.current = active
@@ -51,8 +49,62 @@ function App() {
     requestAnimationFrame(() => document.getElementById(active)?.scrollIntoView({ block: 'start' }))
   }
   const assistant = () => toggleSession(true)
+  // 对象级动作复用 Orca 原生发送弹窗（与浏览器批注同一链路）：
+  // 携带一句话指令 + 对象上下文，由用户在原生弹窗确认目标会话后发送。
+  const sendRequest = (text, kind) => {
+    toggleSession(true)
+    setSentRequest({ kind, text })
+    setNotice('')
+  }
+  const newPlan = () => {
+    toggleSession(true)
+    setNotice('新建计划调用已登记自动化的手动运行，打开新会话并携带 BW 提示 · 演示示意')
+  }
+  const openTray = (target) => {
+    setAnnotateTarget(target)
+    setNotice('')
+  }
+  const toggleAnnotating = () => {
+    const next = !annotating
+    setAnnotating(next)
+    setAnnotateTarget(null)
+    setNotice(
+      next ? '批注模式：点击目标卡或 Issue 行记录评审意见 · Esc 退出' : ''
+    )
+  }
+  useEffect(() => {
+    if (!annotating) {
+      return
+    }
+    const onKey = (event) => {
+      if (event.key === 'Escape') {
+        setAnnotating(false)
+        setNotice('')
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [annotating])
+  const onScrollClickCapture = (event) => {
+    if (!annotating) {
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    if (event.target.closest('#minutes')) {
+      return
+    }
+    const element = event.target.closest('[data-annotate]')
+    if (element) {
+      openTray(element.dataset.annotate)
+    }
+  }
   const update = (id, field, value) => {
     setGoals((current) => current.map((g) => (g.goalId === id ? { ...g, [field]: value } : g)))
+    setNotice('本页演示修改 · 刷新后恢复原始材料')
+  }
+  const updateCommit = (id, next) => {
+    setMetricCommits((current) => ({ ...current, [id]: next }))
     setNotice('本页演示修改 · 刷新后恢复原始材料')
   }
   const switchScene = (value) => {
@@ -60,13 +112,15 @@ function App() {
     setNotice('')
     setPrHandoff(false)
     setHandoff(null)
+    setSentRequest(null)
+    setAnnotateTarget(null)
   }
   const archiveStatus =
     { MERGED: '已合入', OPEN: '待合入', CLOSED: '已关闭' }[snapshot.archive.state] || '状态未知'
   const reset = () => window.location.reload()
 
   return (
-    <div className={`g3-app ${compact ? 'constrained' : ''}`}>
+    <div className={`g3-app ${compact ? 'constrained' : ''} ${annotating ? 'annotating' : ''}`}>
       <div className="g3-demo-bar">
         <strong>G3 设计候选</strong>
         <span>本轮只设计计划屏 · BW v0.7 真实材料 · 编辑仅在本页演示</span>
@@ -101,13 +155,20 @@ function App() {
       {notes && (
         <div className="g3-design-notes">
           <p>
-            <strong>界面边界</strong>：左侧导航属于 G2；计划助手在左侧完整复用 Orca 原生会话，只打开
-            / 聚焦，不注入或自动发送提示。这里只演示布局，未接模型。
+            <strong>界面边界</strong>：左侧导航属于 G2；计划助手在左侧完整复用 Orca
+            原生会话。会话收折沿用已落地壳行为：BW 板面页头文字按钮「收起会话 /
+            展开会话」，原生会话本身不带关闭 ×。页头助手图标只打开 /
+            聚焦会话，不注入；对象级动作（拆解、整理纪要、基于纪要调整）复用 Orca
+            原生发送弹窗——与浏览器批注「发送给 Agent」同一条链路，用户在弹窗中确认目标会话后发送，
+            不恢复已退役的贴草稿通道。分支名弱化展示，「配置自动化」打开原生自动化编辑器，
+            自动化绑定固定工作树，与版本选择解耦。
           </p>
           <p>
-            <strong>数据来源</strong>：上版只回显固定验收中的进展与实际交付，不加工成摘要。 v0.6
-            未填写独立进展字段；延期引用来自人工验收记录中明确的遗留项， 不按 open
-            状态自动推断。会议遗留未单独记录。目标短名仅用于导航。
+            <strong>数据来源</strong>：上版回顾只回显延期遗留 Issue（编号 +
+            标题，点击跳转）与会议遗留事项；v0.6 会议遗留未单独记录，完整进展 /
+            交付材料留在验收屏，延期引用来自人工验收记录中明确的遗留项，不按 open 状态自动推断。
+            指标目录为 v0.5 快照样例数据；v0.7 快照 metricTargets 全为空，各卡从
+            「添加指标承诺（可选）」开始，当前读数为 — 时目标值标草案。
             <a
               href="https://github.com/forcegravity1989/builder-workbench/blob/e43528cae57424bb0973c99c6e3c03af075c1198/.bw/planning/v0.6/acceptance.json"
               target="_blank"
@@ -117,10 +178,12 @@ function App() {
             </a>
           </p>
           <p>
-            <strong>纪要与批注</strong>：纪要示例源自 #385 边界讨论，仅演示；固定三节格式。
-            批注托盘交互参照 Orca 浏览器批注（选中元素 → 右下角托盘 → 发送给会话）， BW
-            板面元素的捕获层适配留实现设计。会议 ID 现阶段由 Builder 提供， 不提供时仅凭在线批注也可生成；群组
-            / WeLink 自动获取待用户组旅程设计。
+            <strong>纪要与批注</strong>：纪要示例源自 #385 边界讨论，仅演示；固定两块——共识、
+            遗留（逐条闭环状态，闭环 = 版本计划已按该条修改，由人标记）。批注模式参照 Orca
+            浏览器批注：页头「批注模式」进入 → 点击板面元素 → 右下角托盘记录 →
+            复制或经原生发送弹窗发给计划助手；纪要区不参与批注。BW
+            板面元素的捕获层（元素映射为业务对象引用）留实现设计。会议 ID 现阶段由 Builder
+            提供，不提供时仅凭在线批注也可生成；群组 / WeLink 自动获取待用户组旅程设计。
           </p>
           <p>
             <strong>衔接留白</strong>：验收按钮直接打开现有验收屏原型（仍是 v0.5
@@ -202,21 +265,22 @@ function App() {
           className={`g3-session ${session ? 'expanded' : 'rail'}`}
           aria-label="左侧 Orca 原生计划会话"
         >
-          <div className="g3-session-toggle">
-            <IconButton
-              name={session ? 'close' : 'agent'}
-              label={session ? '收起原生计划会话' : '展开原生计划会话'}
-              aria-expanded={session}
-              onClick={() => toggleSession(!session)}
-            />
-            <span>计划助手</span>
-          </div>
-          {session && (
-            <div className="g3-native-workspace">
-              <Icon name="agent" size={28} />
-              <h2>Orca 原生会话</h2>
-              <p>完整复用标签、历史、输入与工具</p>
-              <small>这里只示意会话位置，不另设计聊天界面</small>
+          {session ? (
+            <>
+              <div className="g3-session-head">
+                <span>计划助手</span>
+                <span className="g3-muted g3-session-native">Orca 原生会话</span>
+              </div>
+              <div className="g3-native-workspace">
+                <Icon name="agent" size={28} />
+                <h2>Orca 原生会话</h2>
+                <p>完整复用标签、历史、输入与工具</p>
+                <small>这里只示意会话位置，不另设计聊天界面</small>
+              </div>
+            </>
+          ) : (
+            <div className="g3-session-rail-text" aria-hidden="true">
+              计划会话已收折
             </div>
           )}
         </aside>
@@ -228,12 +292,42 @@ function App() {
               </div>
               <h1>版本计划</h1>
             </div>
-            <IconButton
-              name="agent"
-              label="打开计划助手"
-              className="g3-agent-button"
-              onClick={assistant}
-            />
+            <div className="g3-header-actions">
+              <button
+                className="g3-text-button"
+                aria-expanded={session}
+                aria-label={session ? '收折会话栏' : '展开会话栏'}
+                title={session ? '收折会话栏' : '展开会话栏'}
+                onClick={() => toggleSession(!session)}
+              >
+                {session ? '收起会话' : '展开会话'}
+              </button>
+              <span className="g3-branch" title="固定工作树分支">
+                <Icon name="branch" size={13} /> bw/week-plan
+              </span>
+              <button
+                className="g3-text-button"
+                title="打开原生自动化编辑器"
+                onClick={() =>
+                  setNotice('配置自动化打开 Orca 原生自动化编辑器 · 一次性配置（演示示意）')
+                }
+              >
+                <Icon name="automation" size={13} /> 配置自动化
+              </button>
+              <IconButton
+                name="annotate"
+                label="批注模式：点击板面元素记录评审意见"
+                aria-pressed={annotating}
+                className={annotating ? 'g3-mode-on' : ''}
+                onClick={toggleAnnotating}
+              />
+              <IconButton
+                name="agent"
+                label="打开计划助手"
+                className="g3-agent-button"
+                onClick={assistant}
+              />
+            </div>
           </header>
           <nav className="g3-journey" aria-label="计划旅程">
             {stages.map(([id, title, detail], i) => (
@@ -250,9 +344,15 @@ function App() {
               </button>
             ))}
           </nav>
+          {annotating && (
+            <div className="g3-annotate-banner" role="status">
+              批注模式：点击目标卡或 Issue 行记录评审意见 · Esc 或再次点击「批注模式」退出
+            </div>
+          )}
           <div
             className="g3-scroll"
             ref={scroll}
+            onClickCapture={onScrollClickCapture}
             onFocusCapture={() => {
               navigation.current = null
             }}
@@ -311,57 +411,34 @@ function App() {
                 </div>
               ) : (
                 <div className="g3-prior-card">
-                  <div className="g3-prior-labels">
-                    <span>上版目标</span>
-                    <span>进展 / 实际交付</span>
-                  </div>
-                  {prior.map((item) => (
-                    <div className="g3-prior-row" key={item.goalId}>
-                      <div className="g3-prior-goal">
-                        <span className="g3-id">{item.goalId}</span>
-                        <strong>{item.title}</strong>
-                        <small>{item.conclusion}</small>
-                      </div>
-                      <div className="g3-prior-delivery">
-                        {item.progress && <p>{item.progress}</p>}
-                        {item.deliveries.map((delivery) => (
-                          <p key={delivery.location}>{delivery.title}</p>
-                        ))}
-                        {!item.progress && !item.deliveries.length && (
-                          <span className="g3-muted">未填写进展 / 实际交付</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  <div className="g3-carryover">
-                    <div>
-                      <span>延期</span>
-                      <div className="g3-carryover-links">
-                        {postponed.map((item) => (
-                          <span
-                            className="g3-carryover-goal"
-                            key={item.goalId}
-                            title={`${item.title} · ${item.conclusion}，延期带入本版`}
-                          >
-                            {item.goalId} {item.title}
-                          </span>
-                        ))}
-                        {snapshot.priorAcceptance.leftoverIssues.map((issue) => (
-                          <a
-                            key={issue.number}
-                            href={issue.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            title={issue.title}
-                          >
-                            #{issue.number}
+                  <div className="g3-carryover-row">
+                    <span>延期遗留</span>
+                    <div className="g3-carryover-issues">
+                      {leftoverIssues.length ? (
+                        leftoverIssues.map((issue) => (
+                          <a key={issue.number} href={issue.url} target="_blank" rel="noreferrer">
+                            <span className="g3-id">#{issue.number}</span>
+                            {issue.title}
                           </a>
-                        ))}
-                      </div>
+                        ))
+                      ) : (
+                        <span className="g3-muted">上版无延期 Issue</span>
+                      )}
                     </div>
-                    <div>
-                      <span>遗留</span>
-                      <span className="g3-muted">上版会议未单独记录</span>
+                  </div>
+                  <div className="g3-carryover-row">
+                    <span>会议遗留</span>
+                    <div className="g3-carryover-issues">
+                      {meetingDirectives.length ? (
+                        meetingDirectives.map((item, i) => (
+                          <div key={i}>
+                            <span className="g3-id">M{i + 1}</span>
+                            {item.text || item}
+                          </div>
+                        ))
+                      ) : (
+                        <span className="g3-muted">上版会议未单独记录</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -373,23 +450,36 @@ function App() {
                   v0.7 <span>本版目标</span>
                   <small>{scene === 'none' ? '未建' : `${goals.length} 个目标`}</small>
                 </h2>
-                {scene !== 'none' && (
-                  <IconButton
-                    name={expanded.length === goals.length ? 'down' : 'right'}
-                    label={expanded.length === goals.length ? '全部收起' : '全部展开'}
-                    onClick={() => {
-                      setEditingGoal(null)
-                      setExpanded(
-                        expanded.length === goals.length ? [] : goals.map((g) => g.goalId)
-                      )
-                    }}
-                  />
-                )}
+                <span className="g3-title-actions">
+                  {scene !== 'none' && (
+                    <button
+                      className="g3-text-button"
+                      title="新建会话，配置指标"
+                      onClick={() =>
+                        setNotice('配置指标在固定指标工作区新建原生会话 · 演示示意')
+                      }
+                    >
+                      <Icon name="annotate" size={13} /> 配置指标
+                    </button>
+                  )}
+                  {scene !== 'none' && (
+                    <IconButton
+                      name={expanded.length === goals.length ? 'down' : 'right'}
+                      label={expanded.length === goals.length ? '全部收起' : '全部展开'}
+                      onClick={() => {
+                        setEditingGoal(null)
+                        setExpanded(
+                          expanded.length === goals.length ? [] : goals.map((g) => g.goalId)
+                        )
+                      }}
+                    />
+                  )}
+                </span>
               </div>
               {scene === 'none' ? (
                 <div className="g3-empty-board">
                   <p>v0.7 计划尚未建立。</p>
-                  <button onClick={assistant}>与计划助手新建计划</button>
+                  <button onClick={newPlan}>与计划助手新建计划</button>
                   <span className="g3-muted">也可在版本下拉查看已有版本（示意）</span>
                 </div>
               ) : (
@@ -412,11 +502,14 @@ function App() {
                           )
                         }}
                         update={(field, value) => update(goal.goalId, field, value)}
-                        assistant={assistant}
-                        annotate={(target) => {
-                          setAnnotateTarget(target)
-                          setNotice('')
-                        }}
+                        commit={metricCommits[goal.goalId] || null}
+                        onCommit={(next) => updateCommit(goal.goalId, next)}
+                        onCollect={() =>
+                          setNotice('指标采集沿用总览同一能力，读取主干基线 · 演示不真实采集')
+                        }
+                        sendRequest={sendRequest}
+                        annotationCounts={annotationCounts}
+                        onOpenTray={openTray}
                         startTask={(task) => {
                           setHandoff(task)
                           setNotice('')
@@ -460,30 +553,25 @@ function App() {
                 </h2>
                 <span className="g3-title-actions">
                   <IconButton
-                    name="annotate"
-                    label="在线批注（会议速记来源）"
-                    onClick={() => {
-                      setAnnotateTarget('板面自由批注')
-                      setNotice('')
-                    }}
-                  />
-                  <IconButton
                     name="agent"
-                    label="打开计划助手整理纪要（可提供会议 ID）"
-                    onClick={assistant}
+                    label="让计划助手整理纪要（可提供会议 ID）"
+                    onClick={() =>
+                      sendRequest(
+                        '把在线批注与会议转写稿整理为会议纪要，按共识 / 遗留两块输出',
+                        '整理纪要请求'
+                      )
+                    }
                   />
                 </span>
               </div>
               <p className="g3-minutes-guidance g3-annotation">
-                纪要由计划助手从在线批注与可选的会议转写稿总结，固定三节格式，经人工确认后生效；
-                随后与助手基于纪要调整上方目标。会议 ID 现阶段由 Builder
+                纪要由计划助手从在线批注与可选的会议转写稿总结，固定两块：共识、遗留（逐条闭环状态，
+                闭环 = 版本计划已按该条修改，由人标记），经人工确认后生效；随后与助手基于纪要调整上方目标。
+                批注从页头「批注模式」进入；会议 ID 现阶段由 Builder
                 提供，不提供时仅凭批注也可生成；群组 / WeLink 自动获取是后续演进。
               </p>
               {scene === 'full' ? (
-                <MinutesCard
-                  minutes={minutes}
-                  sections={minutesSections}
-                  assistant={assistant}
+                <MinutesCard minutes={minutes} sendRequest={sendRequest}
                   update={(patch) => {
                     setMinutes({ ...minutes, ...patch })
                     setNotice('本页演示修改 · 刷新后恢复原始材料')
@@ -491,8 +579,8 @@ function App() {
                 />
               ) : (
                 <p className="g3-empty">
-                  会后由计划助手基于在线批注与可选转写稿生成；批注可从上方「在线批注」入口或目标 /
-                  Issue 行的批注按钮开始。
+                  会后由计划助手基于在线批注与可选转写稿生成；批注从页头「批注模式」进入，
+                  点击目标卡或 Issue 行记录。
                 </p>
               )}
             </section>
@@ -547,6 +635,18 @@ function App() {
                   onClick={() => setPrHandoff(false)}
                 />
               </div>
+            ) : sentRequest ? (
+              <div className="g3-footer-handoff">
+                <span>
+                  {sentRequest.kind}已通过 Orca 原生发送弹窗递交计划助手：「{sentRequest.text}
+                  」· 用户在弹窗确认目标会话后发送，演示不真正发送。
+                </span>
+                <IconButton
+                  name="close"
+                  label="收起发送说明"
+                  onClick={() => setSentRequest(null)}
+                />
+              </div>
             ) : handoff ? (
               <div className="g3-footer-handoff">
                 <span>#{handoff.number} 开工衔接示意 · 由 G2 原生创建器承接，保留用户选择。</span>
@@ -574,11 +674,13 @@ function App() {
               { id: `${Date.now()}-${current.length}`, object: annotateTarget, text }
             ])
           }
+          onRemove={(id) =>
+            setAnnotations((current) => current.filter((item) => item.id !== id))
+          }
           onSend={() => {
             setAnnotations([])
             setAnnotateTarget(null)
-            assistant()
-            setNotice('批注已发送给计划助手 · 演示不真正注入会话')
+            sendRequest('以下是评审会在线批注，作为会议纪要输入整理', '批注')
           }}
         />
       )}

@@ -13,8 +13,13 @@ const {
   Check,
   ArrowUp,
   MessageSquare,
-  Copy
+  Copy,
+  ChartNoAxesCombined,
+  RefreshCw,
+  GitBranch,
+  CalendarClock
 } = window.BWPrototypeDependencies
+import { metricCatalog } from './g3-model.js'
 export { React }
 export function Icon({ name, size = 16 }) {
   const Component =
@@ -31,7 +36,11 @@ export function Icon({ name, size = 16 }) {
       check: Check,
       send: ArrowUp,
       annotate: MessageSquare,
-      copy: Copy
+      copy: Copy,
+      metric: ChartNoAxesCombined,
+      refresh: RefreshCw,
+      branch: GitBranch,
+      automation: CalendarClock
     }[name] || Target
   return <Component size={size} aria-hidden="true" />
 }
@@ -97,20 +106,103 @@ function Lines({ text, empty = '待明确' }) {
     </div>
   )
 }
+function AnnotationCount({ count, target, onOpenTray }) {
+  if (!count) {
+    return null
+  }
+  return (
+    <button
+      className="g3-annot-count"
+      title={`在线批注 ${count} 条 · 打开批注窗`}
+      aria-label={`${target} 的在线批注 ${count} 条`}
+      onClick={() => onOpenTray(target)}
+    >
+      <Icon name="annotate" size={12} />
+      {count}
+    </button>
+  )
+}
+function MetricCommitment({ goal, commit, onCommit, onCollect }) {
+  const metric = commit ? metricCatalog.find((m) => m.id === commit.id) : null
+  return (
+    <div className="g3-metric-block">
+      <h3>指标承诺</h3>
+      {metric ? (
+        <div className="g3-metric-row">
+          <label className="g3-metric-select">
+            <Icon name="metric" size={14} />
+            <select
+              aria-label={`${goal.goalId} 指标承诺`}
+              value={commit.id}
+              onChange={(e) =>
+                onCommit(e.target.value ? { id: e.target.value, target: '' } : null)
+              }
+            >
+              <option value="">移除指标承诺</option>
+              {metricCatalog.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span className="g3-metric-current">
+            当前 <strong title="本期尚未采集">{metric.current ?? '—'}</strong>
+          </span>
+          <label className="g3-metric-target">
+            {metric.current == null ? '目标草案' : '目标'}
+            <input
+              aria-label={`${goal.goalId} 指标目标值`}
+              value={commit.target}
+              placeholder="本版目标值"
+              onChange={(e) => onCommit({ ...commit, target: e.target.value })}
+            />
+          </label>
+          <button className="g3-metric-collect" onClick={onCollect}>
+            <Icon name="refresh" size={13} /> 采集
+          </button>
+        </div>
+      ) : (
+        <select
+          className="g3-metric-add"
+          aria-label={`${goal.goalId} 添加指标承诺（可选）`}
+          value=""
+          onChange={(e) => e.target.value && onCommit({ id: e.target.value, target: '' })}
+        >
+          <option value="">添加指标承诺（可选）</option>
+          {metricCatalog.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
+      )}
+    </div>
+  )
+}
 export function GoalRow({
   goal,
   tasks,
   expanded,
   toggle,
   update,
-  assistant,
+  commit,
+  onCommit,
+  onCollect,
+  sendRequest,
   startTask,
-  annotate,
+  annotationCounts,
+  onOpenTray,
   editing,
   setEditing
 }) {
+  const goalTarget = `${goal.goalId} 目标`
   return (
-    <article className={`g3-goal ${expanded ? 'open' : ''}`} id={`goal-${goal.goalId}`}>
+    <article
+      className={`g3-goal ${expanded ? 'open' : ''}`}
+      id={`goal-${goal.goalId}`}
+      data-annotate={goalTarget}
+    >
       <div className="g3-goal-head">
         <button
           className="g3-goal-toggle"
@@ -131,20 +223,18 @@ export function GoalRow({
             onChange={(e) => update('title', e.target.value)}
           />
         )}
+        <AnnotationCount
+          count={annotationCounts[goalTarget] || 0}
+          target={goalTarget}
+          onOpenTray={onOpenTray}
+        />
         <span className="g3-goal-count">{tasks.length} Issue</span>
         {expanded && (
-          <>
-            <IconButton
-              name="annotate"
-              label={`批注 ${goal.goalId}（会上意见记入速记）`}
-              onClick={() => annotate(`${goal.goalId} 目标`)}
-            />
-            <IconButton
-              name={editing ? 'check' : 'edit'}
-              label={editing ? '结束编辑目标' : '编辑目标'}
-              onClick={() => setEditing(!editing)}
-            />
-          </>
+          <IconButton
+            name={editing ? 'check' : 'edit'}
+            label={editing ? '结束编辑目标' : '编辑目标'}
+            onClick={() => setEditing(!editing)}
+          />
         )}
       </div>
       {!expanded && (
@@ -200,47 +290,60 @@ export function GoalRow({
                 </>
               )}
             </div>
+            <MetricCommitment goal={goal} commit={commit} onCommit={onCommit} onCollect={onCollect} />
           </div>
           <div className="g3-task-head">
             <h3>
               关联 Issue <span>{tasks.length}</span>
             </h3>
-            <IconButton name="agent" label="让计划助手拆解 / 关联 Issue" onClick={assistant} />
+            <IconButton
+              name="agent"
+              label="让计划助手拆解 / 关联 Issue"
+              onClick={() =>
+                sendRequest(
+                  `按 ${goal.goalId} 验收标准核对已有 Issue，给出拆解 / 关联建议，标题与标签按 issue-state 规范`,
+                  '拆解请求'
+                )
+              }
+            />
           </div>
           <div className="g3-tasks">
             {tasks.length ? (
-              tasks.map((task) => (
-                <div className="g3-task" key={task.number}>
-                  <a
-                    href={
-                      task.url ||
-                      `https://github.com/forcegravity1989/builder-workbench/issues/${task.number}`
-                    }
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <span className="g3-id">#{task.number}</span>
-                    {task.title?.replace(/^【.*?】/, '') || '标题未读到'}
-                  </a>
-                  <span className="g3-task-state">
-                    {task.state === 'CLOSED'
-                      ? '已关闭'
-                      : task.state === 'OPEN'
-                        ? '开放'
-                        : '状态未知'}
-                  </span>
-                  <IconButton
-                    name="annotate"
-                    label={`批注 #${task.number}（拆解评审意见记入速记）`}
-                    onClick={() => annotate(`${goal.goalId} · #${task.number}`)}
-                  />
-                  <IconButton
-                    name="arrow"
-                    label={`开工 #${task.number}（G2 衔接）`}
-                    onClick={() => startTask(task)}
-                  />
-                </div>
-              ))
+              tasks.map((task) => {
+                const taskTarget = `${goal.goalId} · #${task.number}`
+                return (
+                  <div className="g3-task" key={task.number} data-annotate={taskTarget}>
+                    <a
+                      href={
+                        task.url ||
+                        `https://github.com/forcegravity1989/builder-workbench/issues/${task.number}`
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <span className="g3-id">#{task.number}</span>
+                      {task.title?.replace(/^【.*?】/, '') || '标题未读到'}
+                    </a>
+                    <span className="g3-task-state">
+                      {task.state === 'CLOSED'
+                        ? '已关闭'
+                        : task.state === 'OPEN'
+                          ? '开放'
+                          : '状态未知'}
+                    </span>
+                    <AnnotationCount
+                      count={annotationCounts[taskTarget] || 0}
+                      target={taskTarget}
+                      onOpenTray={onOpenTray}
+                    />
+                    <IconButton
+                      name="arrow"
+                      label={`开工 #${task.number}（G2 衔接）`}
+                      onClick={() => startTask(task)}
+                    />
+                  </div>
+                )
+              })
             ) : (
               <p className="g3-empty">与计划助手核对已有 Issue，再按验收标准拆解。</p>
             )}
@@ -250,8 +353,26 @@ export function GoalRow({
     </article>
   )
 }
-export function MinutesCard({ minutes, sections, update, assistant }) {
+export function MinutesCard({ minutes, update, sendRequest }) {
   const [editing, setEditing] = useState(false)
+  const setPoint = (key, index, text) =>
+    update({
+      [key]: minutes[key].map((point, i) =>
+        i === index ? (key === 'consensus' ? text : { ...point, text }) : point
+      )
+    })
+  const removePoint = (key, index) =>
+    update({ [key]: minutes[key].filter((_, i) => i !== index) })
+  const addPoint = (key) =>
+    update({
+      [key]: [...minutes[key], key === 'consensus' ? '' : { text: '', closed: false }]
+    })
+  const toggleClosed = (index) =>
+    update({
+      followups: minutes.followups.map((point, i) =>
+        i === index ? { ...point, closed: !point.closed } : point
+      )
+    })
   return (
     <article className="g3-minutes">
       <div className="g3-minutes-head">
@@ -265,31 +386,99 @@ export function MinutesCard({ minutes, sections, update, assistant }) {
             label={editing ? '结束编辑纪要' : '编辑纪要'}
             onClick={() => setEditing(!editing)}
           />
-          <IconButton name="agent" label="与计划助手基于纪要调整目标" onClick={assistant} />
+          <IconButton
+            name="agent"
+            label="与计划助手基于纪要调整目标"
+            onClick={() => sendRequest('基于已确认的会议纪要，与我逐条调整本版目标与计划', '调整请求')}
+          />
         </span>
       </div>
-      {editing
-        ? sections.map(([key, label]) => (
-            <Field
-              key={key}
-              label={label}
-              rows={2}
-              value={minutes.sections[key]}
-              onChange={(value) =>
-                update({ sections: { ...minutes.sections, [key]: value } })
-              }
-            />
-          ))
-        : sections.map(([key, label]) => (
-            <div className="g3-minutes-section" key={key}>
-              <strong>{label}</strong>
-              {minutes.sections[key] ? (
-                <p>{minutes.sections[key]}</p>
-              ) : (
-                <p className="g3-muted">无</p>
-              )}
-            </div>
-          ))}
+      <div className="g3-minutes-section">
+        <strong>共识</strong>
+        {editing ? (
+          <div className="g3-point-editor">
+            {minutes.consensus.map((point, i) => (
+              <div className="g3-point-edit-row" key={i}>
+                <textarea
+                  rows={2}
+                  aria-label={`共识第 ${i + 1} 点`}
+                  value={point}
+                  onChange={(e) => setPoint('consensus', i, e.target.value)}
+                />
+                <IconButton
+                  name="close"
+                  label={`删除共识第 ${i + 1} 点`}
+                  onClick={() => removePoint('consensus', i)}
+                />
+              </div>
+            ))}
+            <button className="g3-add-point" onClick={() => addPoint('consensus')}>
+              <Icon name="plus" size={13} /> 添加一点
+            </button>
+          </div>
+        ) : (
+          <ul className="g3-points">
+            {minutes.consensus.length ? (
+              minutes.consensus.map((point, i) => <li key={i}>{point || '待填写'}</li>)
+            ) : (
+              <li className="g3-muted">无</li>
+            )}
+          </ul>
+        )}
+      </div>
+      <div className="g3-minutes-section">
+        <strong>
+          遗留 <small>闭环 = 版本计划已按该条修改，由人标记</small>
+        </strong>
+        {editing ? (
+          <div className="g3-point-editor">
+            {minutes.followups.map((point, i) => (
+              <div className="g3-point-edit-row" key={i}>
+                <textarea
+                  rows={2}
+                  aria-label={`遗留第 ${i + 1} 点`}
+                  value={point.text}
+                  onChange={(e) => setPoint('followups', i, e.target.value)}
+                />
+                <button
+                  className={`g3-followup-status ${point.closed ? 'closed' : ''}`}
+                  title="闭环 = 版本计划已按该条修改；由人标记"
+                  onClick={() => toggleClosed(i)}
+                >
+                  {point.closed ? '已闭环' : '未闭环'}
+                </button>
+                <IconButton
+                  name="close"
+                  label={`删除遗留第 ${i + 1} 点`}
+                  onClick={() => removePoint('followups', i)}
+                />
+              </div>
+            ))}
+            <button className="g3-add-point" onClick={() => addPoint('followups')}>
+              <Icon name="plus" size={13} /> 添加一点
+            </button>
+          </div>
+        ) : (
+          <ul className="g3-points">
+            {minutes.followups.length ? (
+              minutes.followups.map((point, i) => (
+                <li key={i}>
+                  <button
+                    className={`g3-followup-status ${point.closed ? 'closed' : ''}`}
+                    title="闭环 = 版本计划已按该条修改；由人标记"
+                    onClick={() => toggleClosed(i)}
+                  >
+                    {point.closed ? '已闭环' : '未闭环'}
+                  </button>
+                  <span>{point.text || '待填写'}</span>
+                </li>
+              ))
+            ) : (
+              <li className="g3-muted">无</li>
+            )}
+          </ul>
+        )}
+      </div>
       <div className="g3-minutes-foot">
         <button onClick={() => update({ confirmed: !minutes.confirmed })}>
           {minutes.confirmed ? '已人工确认 · 撤销' : '标记人工确认'}
@@ -299,7 +488,7 @@ export function MinutesCard({ minutes, sections, update, assistant }) {
     </article>
   )
 }
-export function AnnotationTray({ target, annotations, onClose, onRecord, onSend }) {
+export function AnnotationTray({ target, annotations, onClose, onRecord, onRemove, onSend }) {
   const [draft, setDraft] = useState('')
   const copy = async () => {
     const text = annotations.map((item) => `- [${item.object}] ${item.text}`).join('\n')
@@ -317,7 +506,14 @@ export function AnnotationTray({ target, annotations, onClose, onRecord, onSend 
         <ul>
           {annotations.map((item) => (
             <li key={item.id}>
-              <span className="g3-id">{item.object}</span>
+              <div className="g3-annot-li-head">
+                <span className="g3-id">{item.object}</span>
+                <IconButton
+                  name="close"
+                  label={`删除这条批注（${item.object}）`}
+                  onClick={() => onRemove(item.id)}
+                />
+              </div>
               <p>{item.text}</p>
             </li>
           ))}
