@@ -54,12 +54,12 @@ function Verdict({ value, onSet }) {
         达成
       </button>
       <button
-        className={`acc-verdict-btn miss${value === '未达' ? ' on' : ''}`}
-        aria-pressed={value === '未达'}
-        title="人对着实物核对后标记:未达(原因写进展,安排写下一步)"
-        onClick={() => onSet(value === '未达' ? null : '未达')}
+        className={`acc-verdict-btn miss${value === '不达成' ? ' on' : ''}`}
+        aria-pressed={value === '不达成'}
+        title="人对着实物核对后标记:不达成(原因写进展,安排写下一步)"
+        onClick={() => onSet(value === '不达成' ? null : '不达成')}
       >
-        未达
+        不达成
       </button>
     </span>
   )
@@ -81,7 +81,8 @@ function AcceptanceRow({
   onOpenPanel,
   nextStep,
   onNext,
-  onOpenReport
+  onOpenReport,
+  reportReady
 }) {
   const goalTarget = `${goal.goalId} 目标`
   return (
@@ -133,7 +134,12 @@ function AcceptanceRow({
             </h3>
             <button
               className="acc-report-link"
-              title="在内置 Orca 浏览器打开验收证据报告对应章节"
+              disabled={!reportReady}
+              title={
+                reportReady
+                  ? '在内置 Orca 浏览器打开验收证据报告对应章节'
+                  : '报告未生成;先在会话中让验收助手生成'
+              }
               onClick={onOpenReport}
             >
               证据报告 §{goal.goalId}
@@ -191,6 +197,11 @@ function AcceptanceRow({
                         </button>
                       </>
                     )}
+                    {task.state === 'CLOSED' && notes[task.number] && (
+                      <span className="acc-note-readonly" title="已关闭 Issue:已存备注只读展示,不再编辑">
+                        {notes[task.number]}
+                      </span>
+                    )}
                   </div>
                 )
               })
@@ -198,7 +209,7 @@ function AcceptanceRow({
               <p className="g3-empty">该目标暂无关联 Issue。</p>
             )}
           </div>
-          {verdict === '未达' && (
+          {verdict === '不达成' && (
             <div className="acc-nextstep">
               <Field
                 label={`${goal.goalId} 下一步`}
@@ -235,14 +246,14 @@ function ReleaseModal({ verdictSummary, onClose, onConfirm }) {
           <li>
             发布提交与最后一轮验收的包一致:<code>{releaseInfo.commit}</code>
           </li>
-          <li>目标状态:{verdictSummary} —— 未达与未标不阻断发布,由你知情决定</li>
+          <li>目标状态:{verdictSummary} —— 不达成与未标不阻断发布,由你知情决定</li>
           <li>版本说明:已按规范备好,只写用户拿到的变化,不列未完成事项</li>
         </ul>
         <p className="g3-muted">
           发布在会话中执行、经你明确授权;界面只发起请求并读回结果(tag、时间、资产)。
         </p>
         <footer>
-          <button className="acc-btn primary" onClick={onConfirm}>
+          <button className="acc-btn primary" autoFocus onClick={onConfirm}>
             发起发布请求
           </button>
           <button className="acc-btn" onClick={onClose}>
@@ -278,6 +289,8 @@ function App() {
   const [compact, setCompact] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
   const [deployed, setDeployed] = useState(true)
+  // 出包区块可收缩,默认收起为一行最新包摘要(会中不占视野)。
+  const [pkgOpen, setPkgOpen] = useState(false)
   // 批注机制与计划屏同源(同一组件族与交互):模式开关、对象小窗、板面批注窗。
   const [annotations, setAnnotations] = useState([])
   const [annotating, setAnnotating] = useState(false)
@@ -290,8 +303,8 @@ function App() {
   const latest = sceneLatest[scene] ?? null
   const report = scene === 'meeting' || scene === 'wrap' ? REPORT : null
   const judged = goals.filter((g) => verdicts[g.goalId]).length
-  const verdictSummary = `达成 ${goals.filter((g) => verdicts[g.goalId] === '达成').length} · 未达 ${
-    goals.filter((g) => verdicts[g.goalId] === '未达').length
+  const verdictSummary = `达成 ${goals.filter((g) => verdicts[g.goalId] === '达成').length} · 不达成 ${
+    goals.filter((g) => verdicts[g.goalId] === '不达成').length
   } · 未标 ${goals.length - judged}`
   const archiveStatus = archive
     ? { MERGED: '已合入', OPEN: '待合入', CLOSED: '已关闭' }[archive.state] || '状态未知'
@@ -353,6 +366,20 @@ function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [annotating, popover])
+  // 弹窗 Esc 关闭(与批注小窗同惯例:浮层可键盘退出)。
+  useEffect(() => {
+    if (!releaseModal && !errorModal) {
+      return
+    }
+    const onKey = (event) => {
+      if (event.key === 'Escape') {
+        setReleaseModal(false)
+        setErrorModal(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [releaseModal, errorModal])
   const onScrollClickCapture = (event) => {
     if (!annotating) {
       return
@@ -397,11 +424,7 @@ function App() {
   }
   const openService = () => {
     toggleSession(true)
-    setNotice(
-      deployed
-        ? '已在内置 Orca 浏览器打开 http://127.0.0.1:4173 · 衔接示意'
-        : '服务未部署;先「部署」下载最新包并本地启动。'
-    )
+    setNotice('已在内置 Orca 浏览器打开 http://127.0.0.1:4173 · 衔接示意')
   }
   return (
     <div className={`g3-app ${compact ? 'constrained' : ''} ${annotating ? 'annotating' : ''}`}>
@@ -443,22 +466,28 @@ function App() {
             Showcase → 会议纪要 → 归档 PR 及发版本。个人对需求的逐项自验在周中会话与开发流程,
             不进本屏。计划制定中或计划归档 PR 未合入时,验收屏只有一块空板:点「与验收助手新建
             验收」触发检测——检测通过才拉取计划、展开四步板面(目标与验收标准此时才同步上板);
-            未合入弹报错、保持空板。选版与项目上下文归左侧栏(G2 外框);页头与计划屏同构:
-            会话收折、配置自动化、批注模式、验收助手。界面无灯:状态一律文字与真实读回。
+            未合入弹报错、保持空板(硬门禁,不做草案预验收)。选版与项目上下文归左侧栏(G2
+            外框);页头与计划屏同构:会话收折、更新代码(唯一同步入口)、配置自动化、批注模式、
+            验收助手;会话栏为 Orca 原生会话占位,「验收助手」是该产品称呼。界面无灯:状态一律
+            文字与真实读回。
           </p>
           <p>
-            <strong>验收准备</strong>:人点「出包」(主分支构建)与「部署」(自动下载、本地部署
-            启动、内置 Orca 浏览器打开服务前端=真机演示环境);模型写 candidateRef、登记包
-            (kind=package+checksum),对着运行中的服务按目标验收标准采集证据并演示分诊——易
+            <strong>验收准备</strong>:「出包」是板面固定逻辑(按项目远端直连流水线,主分支
+            构建);「部署」向验收助手会话注入请求——模型下载最新包、按项目自有部署入口部署
+            启动(各服务逻辑不同,无固定脚本;桌面应用类=安装并启动,web 服务类=部署并起前
+            端,演示为 web 服务型),完成后把环境 URL(或启动状态)写回材料,「演示环境」行读
+            回、点击经内置 Orca 浏览器打开=真机演示环境。模型写 candidateRef、登记包
+            (kind=package+checksum),对着运行环境按目标验收标准采集证据并演示分诊——易
             现场演示的标「现场演示+操作路径」,不易演示/需等待的落进
-            <strong>一份</strong>验收证据报告(全目标合并:目标→验收点→说明+证据罗列),登记进
-            材料。包重出不刷新板面已填内容,模型在会话提醒是否重核。缺工具请人安装,不降级。
+            <strong>一份</strong>验收证据报告(全目标合并:目标→验收点→说明+证据罗列+目标值
+            vs 读数),登记进材料。包重出不刷新板面已填内容,模型在会话提醒是否重核。缺工具
+            请人安装,不降级。
           </p>
           <p>
             <strong>Showcase 勾勾表</strong>:目标行复用计划屏形态(只读);行尾「达成/不达成」
             是人判结论(互斥、再点取消、未标空白),不是演示进度;会中逐条现场实操或打开报告
             对应验收点。指标证据只在报告,板面不回显指标区。Issue 只有「遗留」标记(风险已
-            去掉)+备注;已关闭 Issue 不计遗留。未达目标出现「下一步」。
+            去掉)+备注;已关闭 Issue 不计遗留、已存备注只读。不达成目标出现「下一步」。
           </p>
           <p>
             <strong>批注与助手</strong>:批注模式、对象小窗与板面批注窗与计划屏同一组件族和
@@ -475,7 +504,7 @@ function App() {
           <p>
             <strong>归档与发布</strong>:归档在会话发起,屏内只有 PR 引用+状态+打开 Orca 原生
             PR 页入口,无归档按钮。「发布」弹预检(版本号/发布提交与验收包一致/目标状态——
-            未达与未标不阻断,人知情决定)→ 发起请求 → 会话中经人明确授权执行 →
+            不达成与未标不阻断,人知情决定)→ 发起请求 → 会话中经人明确授权执行 →
             读回行显示 tag/时间/资产;PR 未合入发布记录随同 PR 补注,已合入按归档后补证。
           </p>
           <p>
@@ -511,7 +540,7 @@ function App() {
           <div className="g3-scope">
             <strong>G2 外框示意</strong>
             <span>导航与工作区由 G2 设计;选版在侧栏</span>
-            <a href={`${g2Url}#storage`} target="_blank" rel="noreferrer">
+            <a href={g2Url} target="_blank" rel="noreferrer">
               查看 G2 设计 <Icon name="arrow" size={13} />
             </a>
           </div>
@@ -521,18 +550,12 @@ function App() {
           aria-label="左侧 Orca 原生验收会话"
         >
           {session ? (
-            <>
-              <div className="g3-session-head">
-                <span>验收助手</span>
-                <span className="g3-muted g3-session-native">Orca 原生会话</span>
-              </div>
-              <div className="g3-native-workspace">
-                <Icon name="agent" size={28} />
-                <h2>Orca 原生会话</h2>
-                <p>完整复用标签、历史、输入与工具</p>
-                <small>这里只示意会话位置,不另设计聊天界面</small>
-              </div>
-            </>
+            <div className="g3-native-workspace">
+              <Icon name="agent" size={28} />
+              <h2>Orca 原生会话工作区</h2>
+              <p>顶部标签栏、会话标题与全部控件均为 Orca 原生</p>
+              <small>这里只示意会话位置,不另设计聊天界面;「验收助手」是这个原生会话的产品称呼</small>
+            </div>
           ) : (
             <div className="g3-session-rail-text" aria-hidden="true">
               验收会话已收折
@@ -556,6 +579,15 @@ function App() {
                 onClick={() => toggleSession(!session)}
               >
                 <Icon name="chat" size={13} /> {session ? '收起会话' : '展开会话'}
+              </button>
+              <button
+                className="g3-text-button"
+                title="把验收固定树快进到主干最新并重读材料与候选(唯一同步入口)"
+                onClick={() =>
+                  setNotice('已更新代码:验收树快进到主干最新,材料与候选已重读 · 演示示意')
+                }
+              >
+                <Icon name="refresh" size={13} /> 更新代码
               </button>
               <button
                 className="g3-text-button"
@@ -672,69 +704,96 @@ function App() {
                     </h2>
                   </div>
                   <div className="acc-prep-card">
-                    <div className="acc-pkg-toolbar">
-                      <label className="acc-pkg-label" htmlFor="acc-pipeline">
-                        流水线
-                      </label>
-                      <select id="acc-pipeline" className="acc-select" aria-label="流水线名称">
-                        {PIPELINES.map((name) => (
-                          <option key={name}>{name}</option>
-                        ))}
-                      </select>
-                      <button
-                        className="acc-btn primary"
-                        onClick={() =>
-                          setNotice('流水线已启动,运行约需几分钟;最新包信息每分钟自动刷新。')
-                        }
-                      >
-                        出包
-                      </button>
-                      <button
-                        className="acc-btn"
-                        disabled={!latest}
-                        title={
-                          latest
-                            ? '自动下载最新安装包并在本地部署启动;部署后模型对着运行中的服务采集验收证据'
-                            : '尚无制品包;先出包'
-                        }
-                        onClick={() => {
-                          setDeployed(true)
-                          setNotice('正在下载并部署最新安装包;完成后服务前端在内置浏览器打开。')
-                        }}
-                      >
-                        部署
-                      </button>
-                    </div>
-                    {latest ? (
-                      <dl className="acc-pkg-grid">
-                        <dt>项目名称</dt>
-                        <dt>版本号</dt>
-                        <dt>创建时间</dt>
-                        <dt>包文件</dt>
-                        <dd>{latest.project}</dd>
-                        <dd className="acc-mono" title={latest.version}>
-                          {latest.version}
-                        </dd>
-                        <dd>{latest.created}</dd>
-                        <dd className="acc-mono">{latest.files.join('、')}</dd>
-                      </dl>
-                    ) : (
-                      <p className="g3-empty">
-                        该服务暂无制品包。人点「出包」启动流水线,受理后最新包信息每分钟自动刷新。
-                      </p>
+                    <button
+                      className="acc-pkg-toggle"
+                      aria-expanded={pkgOpen}
+                      onClick={() => setPkgOpen(!pkgOpen)}
+                    >
+                      <Icon name={pkgOpen ? 'down' : 'right'} size={14} />
+                      <strong>出包</strong>
+                      {latest ? (
+                        <span className="g3-muted">
+                          最新包 {latest.version.slice(0, 28)}… · {latest.created}
+                        </span>
+                      ) : (
+                        <span className="g3-muted">暂无制品包</span>
+                      )}
+                    </button>
+                    {pkgOpen && (
+                      <>
+                        <div className="acc-pkg-toolbar">
+                          <label className="acc-pkg-label" htmlFor="acc-pipeline">
+                            流水线
+                          </label>
+                          <select id="acc-pipeline" className="acc-select" aria-label="流水线名称">
+                            {PIPELINES.map((name) => (
+                              <option key={name}>{name}</option>
+                            ))}
+                          </select>
+                          <button
+                            className="acc-btn primary"
+                            onClick={() =>
+                              setNotice('流水线已启动,运行约需几分钟;最新包信息每分钟自动刷新。')
+                            }
+                          >
+                            出包
+                          </button>
+                          <button
+                            className="acc-btn"
+                            disabled={!latest}
+                            title={
+                              latest
+                                ? '向验收助手会话注入部署请求:下载最新包、按项目自有部署入口部署启动,完成后把环境 URL 写回材料'
+                                : '尚无制品包;先出包'
+                            }
+                            onClick={() => {
+                              toggleSession(true)
+                              setDeployed(true)
+                              setSentRequest({
+                                kind: '部署请求',
+                                text: '下载最新安装包并按项目自有部署入口部署启动;完成后把环境 URL(桌面应用则启动状态)写回材料'
+                              })
+                            }}
+                          >
+                            部署
+                          </button>
+                        </div>
+                        {latest ? (
+                          <dl className="acc-pkg-grid">
+                            <dt>项目名称</dt>
+                            <dt>版本号</dt>
+                            <dt>创建时间</dt>
+                            <dt>包文件</dt>
+                            <dd>{latest.project}</dd>
+                            <dd className="acc-mono" title={latest.version}>
+                              {latest.version}
+                            </dd>
+                            <dd>{latest.created}</dd>
+                            <dd className="acc-mono">{latest.files.join('、')}</dd>
+                          </dl>
+                        ) : (
+                          <p className="g3-empty">
+                            该服务暂无制品包。人点「出包」启动流水线,受理后最新包信息每分钟自动刷新。
+                          </p>
+                        )}
+                      </>
                     )}
                     <div className="acc-row-line">
                       <span className="acc-line-label">演示环境</span>
                       {deployed ? (
-                        <span className="acc-line-value">已部署 · 服务运行中(127.0.0.1:4173)</span>
+                        <button
+                          className="acc-report-link"
+                          title="环境 URL 由验收助手部署后写回材料;点击经内置 Orca 浏览器打开"
+                          onClick={openService}
+                        >
+                          http://127.0.0.1:4173
+                          <Icon name="arrow" size={12} />
+                        </button>
                       ) : (
-                        <span className="g3-muted">未部署 · 点「部署」自动下载并本地启动</span>
+                        <span className="g3-muted">
+                          未部署 · 点「部署」注入请求,验收助手按项目入口部署并写回 URL
+                        </span>
                       )}
-                      <IconButton
-                        name="arrow"
-                        label="在内置 Orca 浏览器打开服务(衔接示意)"
-                        onClick={openService}
-                      />
                     </div>
                     <div className="acc-row-line">
                       <span className="acc-line-label">验收证据报告</span>
@@ -816,6 +875,7 @@ function App() {
                         onNext={(value) =>
                           setNexts((current) => ({ ...current, [goal.goalId]: value }))
                         }
+                        reportReady={Boolean(report)}
                         onOpenReport={() =>
                           report
                             ? setNotice(`已在内置 Orca 浏览器打开报告 ${goal.goalId} 章 · 衔接示意`)
@@ -995,7 +1055,7 @@ function App() {
               验收屏保持空板;待计划合入后再点「与验收助手新建验收」。
             </p>
             <footer>
-              <button className="acc-btn" onClick={() => setErrorModal(false)}>
+              <button className="acc-btn" autoFocus onClick={() => setErrorModal(false)}>
                 知道了
               </button>
             </footer>

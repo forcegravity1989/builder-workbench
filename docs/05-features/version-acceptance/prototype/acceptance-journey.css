@@ -197,6 +197,46 @@
   font-weight: 600;
 }
 
+/* 出包区块收起行 */
+.acc-pkg-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  color: inherit;
+  min-width: 0;
+}
+.acc-pkg-toggle strong {
+  font-size: 13px;
+  flex: none;
+}
+.acc-pkg-toggle .g3-muted {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+/* 已关闭 Issue 的已存备注只读展示 */
+.acc-note-readonly {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--color-text-muted, #767676);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acc-report-link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
 /* 报告链接:点击唤起 Orca 内置浏览器 */
 .acc-report-link {
   display: inline-flex;
