@@ -8,8 +8,8 @@
 |---|---|---|
 | intent | 已确认 | 2026-10-20 评审定稿（含版本级清理与跨宿主汇总决定） |
 | spec | 已确认 | 同上；高保真修订 8 为形态依据 |
-| 实现设计 | 已定稿，P1 已实施 | P1a 绑定契约/P1b 目录合并已按 design 接线要求落地；P2–P7 待实施，生产验证缺口见下 |
-| 核心算法/数据协议 | ◐部分 | P1 用例已登记：叠层 7 例（绑定契约校验/读回规范化 2、目录合并/悬空治理/缓存分隔 3、owner 与实例校验+读回确认 2）+ Orca 核心侧扩展 3 例（merge 投影、worktree.set 白名单、能力门控）；ratchet 同交付对冲删 7 例（use-version-minutes 装配 6、overview-zone-series 展示形态 1）。P2 创建恢复、P4 任务关联、P5 自动化键用例随实施登记 |
+| 实现设计 | 已定稿，P1/P2 已实施 | P1a 绑定契约、P1b 目录合并、P2 版本准备（两棵流程树）已按 design 接线要求落地；P3–P7 待实施，生产验证缺口见下 |
+| 核心算法/数据协议 | ◐部分 | P1 用例已登记：叠层 7 例（绑定契约校验/读回规范化 2、目录合并/悬空治理/缓存分隔 3、owner 与实例校验+读回确认 2）+ Orca 核心侧扩展 3 例（merge 投影、worktree.set 白名单、能力门控）；对冲删 7 例（use-version-minutes 装配 6、overview-zone-series 展示形态 1）。P2 新增 2 例（宿主端去重/预检重发现、失败保留与创建结果核对），对冲删 2 例 zone-series 展示形态（均经人确认方案 A）；ratchet 226 恰在基线。P4 任务关联、P5 自动化键用例随实施登记 |
 | 验收点 E2E | 待实施 | 协议用例随实施登记；J 系列判据待真壳 |
 | 用户旅程 E2E | 待验证 | J1–J9 真壳旅程待人验证 |
 
@@ -18,6 +18,12 @@
 P1a/P1b 已实施并通过单测与 typecheck：绑定契约 `src/shared/workbench/version-binding.ts`（schema 1，workflow 与 goalId/taskSource 一致性 refine，读回规范化脏数据一律未绑定）；原生挂载：`WorktreeMeta.workbenchVersionBinding`（undefined 保留/null 清除）、`worktree.set` 白名单、`mergeWorktree` 投影规范化、runtime capability `workbench.version-binding.v1`（无能力对端不下发、双方向门控）；BW 薄 helper `workbench.versionBinding.read/set`（原生身份定位、owner 验证、identity 选择器写入、读回确认才返回，不接受客户端路径）；目录合并 `src/shared/workbench/version-catalog.ts` + 装载器（已提交材料 ∪ 存活绑定，去重保留材料来源，已清理版本条目保留、状态 retired 收起回看，绑定从登记现算故删树无悬空，草稿与目标从已保存计划派生、缓存按 owner/项目/仓库/版本/修订分隔）。
 
 单测级读回证明：绑定经真实持久化链 round-trip（写合并→序列化压缩→载入补默认→投影）后一致；权限撤销/登记消失时 resolver 拒绝且零写入；写入被丢弃时读回不一致报未确认、不虚报成功。**未验证**：真实 Electron 重启、共享宿主配对读写（共享端读 owner 绑定、不在访问者机建树的真实链路）、权限撤销真机行为、v0.7/v0.8 双版本真壳导航——归 J6/J9 与真壳验证，由人在专门会话执行；P1 未接任何 UI 消费方（侧栏版本树为 P3）。
+
+## P2 实施证据与边界（2026-10-21）
+
+新建版本准备已实施并通过单测与 typecheck：BW 薄服务 `workbench.versionWorkspace.prepare`（`src/main/workbench/version-workspace-prepare.ts`）在归属 runtime 上编排——宿主端预检（登记清单+Git detected 扫描+分支 ref 核对，不只信 renderer 列表）→ 原生 `dedupeWorktreeCreate`（确定性 clientMutationId，双击/多窗口/共享端 in-flight 收敛）→ 原生创建（`bw/<version>/plan|acceptance`，基线沿项目 worktree base 配置）→ 创建结果核对（uniquify 分支不绑定不标成功，误建树沿原生删除链默认口径 best-effort 清理、不附豁免）→ instanceId 围栏写绑定 → 空计划 create-only 初始化（同一材料事务核心，已有材料不覆盖；SSH 宿主经 relay `initializeEmptyPlan` 窄操作）。步骤链非原子：失败保留已成功结果、逐步回报，重试即重入按真实登记补齐。分支命名与 J2 判据定稿见 design「P2 落地」节。不启动 agent、不激活视图、不启用自动化、不 commit/push 材料。
+
+协议单测证明（fake runtime 忠实映射原生 dedupe/创建/删除语义）：并发双击恰每用途一次创建、两调用方同树同绑定、材料只初始化一次；重入全 existing 零创建不覆盖；验收步失败保留计划步全链、重试补齐恰两棵；分支不符零绑定；外部占用与非法版本名如实拒绝。**未验证**：真实 Electron 创建/删除、真实 Git 分支占用与 setup 行为、双窗口并发、共享宿主创建（J2 真壳归人）；P2 无 UI 入口（「＋ 新建版本」按钮与进屏导航为 P3），prepare 暂无生产调用方。提醒项处置：instanceId 已在创建链收紧为事实必填（缺实例身份报错不写）；numericTarget 覆盖留白待 P6 总览接线时按环 4 复审。
 
 ## 定稿设计的证据边界
 

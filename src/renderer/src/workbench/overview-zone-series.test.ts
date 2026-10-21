@@ -113,14 +113,6 @@ describe('groupZonePlots', () => {
     expect(plots[2].lagging).toBeNull()
     expect(plots[2].leads.map((item) => item.name)).toEqual(['lead-empty', 'lead-unknown'])
   })
-
-  it('只有引领的页签保持可见，不伪造滞后锚点；无定义则无图', () => {
-    const leadsOnly = groupZonePlots([def({ name: 'lead', role: 'leading' })])
-    expect(leadsOnly).toHaveLength(1)
-    expect(leadsOnly[0].lagging).toBeNull()
-    expect(leadsOnly[0].leads.map((item) => item.name)).toEqual(['lead'])
-    expect(groupZonePlots([])).toEqual([])
-  })
 })
 
 describe('zonePointState', () => {
@@ -166,19 +158,4 @@ describe('zonePointState', () => {
     expect(state.values).toEqual([null, 2, null, null, 5])
     expect(state.latest).toMatchObject({ value: 5 })
   })
-
-  it('字符串读数不做数值曲线，只作为当前值文本', () => {
-    const state = zonePointState(
-      windowReading([{ day: '2026-09-21', value: '达标' }]),
-      labels,
-      range,
-      TZ
-    )
-    if (state.kind !== 'ready') {
-      throw new Error('expected ready')
-    }
-    expect(state.values).toEqual([null, null, null, null, null])
-    expect(state.latest?.value).toBe('达标')
-  })
 })
-
