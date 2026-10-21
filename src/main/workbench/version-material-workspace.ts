@@ -128,12 +128,25 @@ export function createVersionMaterialWorkspace(
         goals: [],
         tasks: []
       }
-      const saved = await store.save({
-        version: request.version,
-        expectedRevision: null,
-        document
-      })
-      return { created: true, revision: saved.revision }
+      try {
+        const saved = await store.save({
+          version: request.version,
+          expectedRevision: null,
+          document
+        })
+        return { created: true, revision: saved.revision }
+      } catch (error) {
+        // 并发首建：两 prepare 都读到空、都 create-only save，文件锁内后到者得
+        // revision-conflict。材料恰被先到者创建一次（CAS 保证），对本调用是幂等
+        // 「已存在」而非失败——重读回报真实修订，不让双击场景透出误导性冲突。
+        if (error instanceof VersionDocumentError && error.code === 'revision-conflict') {
+          const raced = await store.read(request.version)
+          if (raced) {
+            return { created: false, revision: raced.revision }
+          }
+        }
+        throw error
+      }
     },
     async list(input: VersionMaterialScope): Promise<VersionMaterialCandidate[]> {
       const scope = VersionMaterialScopeSchema.parse(input)

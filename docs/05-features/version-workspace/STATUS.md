@@ -23,7 +23,7 @@ P1a/P1b 已实施并通过单测与 typecheck：绑定契约 `src/shared/workben
 
 新建版本准备已实施并通过单测与 typecheck：BW 薄服务 `workbench.versionWorkspace.prepare`（`src/main/workbench/version-workspace-prepare.ts`）在归属 runtime 上编排——宿主端预检（登记清单+Git detected 扫描+分支 ref 核对，不只信 renderer 列表）→ 原生 `dedupeWorktreeCreate`（确定性 clientMutationId，双击/多窗口/共享端 in-flight 收敛）→ 原生创建（`bw/<version>/plan|acceptance`，基线沿项目 worktree base 配置）→ 创建结果核对（uniquify 分支不绑定不标成功，误建树沿原生删除链默认口径 best-effort 清理、不附豁免）→ instanceId 围栏写绑定 → 空计划 create-only 初始化（同一材料事务核心，已有材料不覆盖；SSH 宿主经 relay `initializeEmptyPlan` 窄操作）。步骤链非原子：失败保留已成功结果、逐步回报，重试即重入按真实登记补齐。分支命名与 J2 判据定稿见 design「P2 落地」节。不启动 agent、不激活视图、不启用自动化、不 commit/push 材料。
 
-协议单测证明（fake runtime 忠实映射原生 dedupe/创建/删除语义）：并发双击恰每用途一次创建、两调用方同树同绑定、材料只初始化一次；重入全 existing 零创建不覆盖；验收步失败保留计划步全链、重试补齐恰两棵；分支不符零绑定；外部占用与非法版本名如实拒绝。**未验证**：真实 Electron 创建/删除、真实 Git 分支占用与 setup 行为、双窗口并发、共享宿主创建（J2 真壳归人）；P2 无 UI 入口（「＋ 新建版本」按钮与进屏导航为 P3），prepare 暂无生产调用方。提醒项处置：instanceId 已在创建链收紧为事实必填（缺实例身份报错不写）；numericTarget 覆盖留白待 P6 总览接线时按环 4 复审。
+协议单测证明（fake runtime 忠实映射原生 dedupe/创建/删除语义）：并发双击恰每用途一次创建、两调用方同树同绑定、材料只初始化一次；重入全 existing 零创建不覆盖；验收步失败保留计划步全链、重试补齐恰两棵；分支不符零绑定；外部占用与非法版本名如实拒绝。**未验证**：真实 Electron 创建/删除、真实 Git 分支占用与 setup 行为、双窗口并发、共享宿主创建（J2 真壳归人）；P2 无 UI 入口（「＋ 新建版本」按钮与进屏导航为 P3），prepare 暂无生产调用方。推前检视处置：并发空计划初始化的 CAS 竞态已修（后到者 revision-conflict 幂等收敛为 existing，不透出误导冲突），但该修复与清理失败、winner-adoption 分支尚无直接单测（协议测试 fake 为原子 create-only），随 P3 接入口或 J2 真壳按环 4 补看护；「创建成功但绑定未写入」窗口不在自动补齐范围（重入按占用如实拒绝），design P2 节已写明边界。提醒项处置：instanceId 已在创建链收紧为事实必填（缺实例身份报错不写）；numericTarget 覆盖留白待 P6 总览接线时按环 4 复审。
 
 ## 定稿设计的证据边界
 

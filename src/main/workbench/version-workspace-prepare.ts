@@ -280,7 +280,7 @@ export function createVersionWorkspacePrepareService(
       if (created.instanceId === undefined) {
         throw new WorkspaceScopeError(
           'workspace-unavailable',
-          `新建工作树 ${created.id} 缺实例身份，无法写入绑定；请刷新后重试（树已保留，不重复创建）`
+          `新建工作树 ${created.id} 缺实例身份，绑定未写入；树已保留、不会重复创建，也未归属本版。请在原生项目核对该树登记——直接重跑准备会因其占用分支如实拒绝，恢复归属需人工补绑定或清理该树`
         )
       }
       await bindingService.set({
