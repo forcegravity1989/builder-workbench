@@ -46,7 +46,11 @@
 | Issue | 一件工作，状态、计划、类别由远端及标签承载；“卡片”只是界面形态。author 是提出人，assignee 是负责人 | [Issue 协议][issue] |
 | 周期工作 | 更新指标与版本计划、资产盘点等按周期进行的工作，仍由 Issue 承载；不再称“运作活①／②” | [整体架构][arch] |
 | 周一屏 / Monday screen | 版本计划特性的通行名：计划屏单页核对上版结果与规划本版本，归档在项目仓 `.bw/planning/<版本>/`；有归档件不等于已开会评审 | [版本计划规格][plan-spec] |
-| 流程选版 | 计划/验收流程本次明确选择的版本；偏好存于原生工作树元数据 `workbenchSelectedVersion`，UI 与 CLI 共享同一偏好，不按会话标题、日期或上次打开项推断，切换历史会话不自动切换材料 | [版本计划规格][plan-spec] |
+| 流程选版 | 计划/验收流程本次明确选择的版本；旧固定树的偏好存于原生工作树元数据 `workbenchSelectedVersion`，UI 与 CLI 共享同一偏好，不按会话标题、日期或上次打开项推断，切换历史会话不自动切换材料；G2 绑定流程树的版本由绑定决定（选版即绑定版，跨版读写拒绝），不写第二份偏好 | [版本计划规格][plan-spec]、[版本工作区规格][g2-spec] |
+| 版本工作区 / 版本绑定 | G2 按「版本 → 计划承诺 → 目标与执行 → 验收」组织工作区；绑定是挂在原生工作树登记上的附属 metadata（版本+用途+目标/任务来源），随登记删除消失，不进 Git 材料、不建 BW 业务数据库；目录出现不等于已开工或已完成 | [版本工作区规格][g2-spec] |
+| 流程树 | 一个版本的两棵固定工作树（`bw/<版本>/plan`、`bw/<版本>/acceptance`），由「新建版本/准备流程工作区」准备；旧 `bw/week-plan`/`bw/week-acceptance` 是无版本绑定的旧流程树（旧上下文显式保留）；分支名只是 Git 起点与入口提示，归属只认绑定 | [版本工作区规格][g2-spec] |
+| 目标目录 | 版本计划按稳定 goalId 投影的逻辑分组（G1/G2 是显示序号，改名/排序不变）；不是实体树、不是 Git 父子关系；目标树与 Issue 树按需创建、按绑定归入目录 | [版本工作区规格][g2-spec] |
+| 任务范围（版本/目标） | 计划材料的完整任务引用集带入同一个原生任务屏的范围；只限定范围，不新建任务屏或第二任务正本；缺数据任务保留位置、数量与原因，不静默丢弃 | [版本工作区规格][g2-spec] |
 | 计划版本 / 里程碑 | 计划版本是计划交付范围，Issue 可纳入多个版本；里程碑是平台对象，可补日期；均不等于已发布 | [Issue 协议][issue] |
 | 在研版本 | 当前正在推进的计划版本，不由里程碑日期单独决定；选择规则只在架构及实现维护 | [整体架构][arch] |
 | 版本目标 / 每周进展 | 版本希望达成的结果，与某周实际进展分开；都不是指标的每周数值目标 | [版本评论格式][week] |
@@ -123,6 +127,7 @@
 [metrics]: standard/system-prompt/references/metrics.md
 [week]: standard/system-prompt/references/week-plan-comment.md
 [plan-spec]: docs/05-features/version-planning/spec.md
+[g2-spec]: docs/05-features/version-workspace/spec.md
 [metrics-spec]: docs/05-features/overview-metrics/spec.md
 [skill-spec]: standard/skills/SKILL-MD-SPEC.md
 [fm-inv]: .claude/skills/feature-metrics-inventory/SKILL.md
