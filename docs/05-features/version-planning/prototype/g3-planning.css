@@ -1,0 +1,1446 @@
+/* G3 candidate; shared typography, colors and radii come from the BW design system. */
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  overflow: hidden;
+}
+button,
+a,
+input,
+textarea,
+select {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  color: inherit;
+}
+a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+button:focus-visible,
+a:focus-visible,
+textarea:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+button svg,
+a svg {
+  flex-shrink: 0;
+}
+textarea {
+  resize: vertical;
+  field-sizing: content;
+}
+.g3-app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  color: var(--foreground);
+  background: var(--background);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.g3-app.constrained {
+  width: min(100%, 824px);
+  max-height: 668px;
+  margin: auto;
+  border-inline: 1px solid var(--border);
+}
+.g3-demo-bar {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+.g3-demo-bar > span {
+  margin-right: auto;
+  color: var(--muted-foreground);
+}
+.g3-demo-bar button,
+.g3-design-notes button {
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.g3-design-notes {
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  max-height: 220px;
+  overflow: auto;
+}
+.g3-design-notes p {
+  margin: 4px 0;
+}
+.g3-workspace {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.g3-sidebar {
+  flex: 0 0 184px;
+  padding: 20px 12px 12px;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.g3-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  padding: 0 8px 20px;
+}
+.g3-brand > span {
+  background: var(--foreground);
+  color: var(--background);
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+}
+.g3-project {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  padding: 0 8px 16px;
+}
+.g3-nav-muted,
+.g3-version,
+.g3-nav-selected {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  font-size: 13px;
+  min-height: 36px;
+  flex-shrink: 0;
+}
+.g3-nav-muted {
+  color: var(--muted-foreground);
+}
+.g3-nav-muted span {
+  margin-left: auto;
+}
+.g3-version {
+  margin-top: 12px;
+}
+.g3-nav-muted.nested,
+.g3-nav-selected {
+  padding-left: 28px;
+}
+.g3-nav-selected {
+  background: var(--accent);
+  color: var(--foreground);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+.g3-scope {
+  border: 1px solid var(--border);
+  background: var(--background);
+  padding: 12px;
+  margin-top: auto;
+  border-radius: var(--radius-md);
+}
+.g3-scope strong {
+  display: block;
+  font-size: 12px;
+}
+.g3-scope span {
+  display: block;
+  font-size: 11px;
+  margin: 4px 0 8px;
+  color: var(--muted-foreground);
+}
+.g3-scope a {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.g3-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  container-type: inline-size;
+}
+.g3-header {
+  padding: 24px 32px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.g3-breadcrumb {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+.g3-breadcrumb span {
+  margin: 0 8px;
+}
+.g3-header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.4;
+}
+.g3-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.g3-text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: none;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.g3-text-button:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.g3-session-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: none;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.g3-session-chip:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--foreground);
+}
+.g3-annotate-glyph {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.g3-annotate-glyph svg:last-child {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  transform: translate(-50%, -50%);
+}
+.g3-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.g3-icon-button.g3-mode-on {
+  border: 1px solid var(--foreground);
+  background: var(--accent);
+  color: var(--foreground);
+}
+.g3-annotate-banner {
+  flex-shrink: 0;
+  padding: 6px 32px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.g3-app.annotating .g3-scroll [data-annotate] {
+  cursor: crosshair;
+}
+.g3-app.annotating .g3-scroll [data-annotate]:hover {
+  outline: 1px dashed var(--foreground);
+  outline-offset: 2px;
+}
+.g3-annot-markers {
+  display: inline-flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.g3-commitment h3 .g3-annot-markers {
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.g3-annot-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--foreground);
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 10px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+.g3-annot-marker:hover {
+  background: var(--background);
+  color: var(--foreground);
+}
+.g3-journey {
+  display: flex;
+  padding: 0 32px;
+  gap: 24px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.g3-journey button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  padding: 0 0 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted-foreground);
+}
+.g3-stage-number {
+  flex: 0 0 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  font-size: 12px;
+}
+.g3-stage-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.g3-stage-copy strong {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.g3-stage-copy small {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.g3-journey button[aria-current] {
+  color: var(--foreground);
+  border-bottom-color: var(--foreground);
+}
+.g3-journey button[aria-current] .g3-stage-number {
+  color: var(--background);
+  background: var(--foreground);
+  border-color: var(--foreground);
+}
+.g3-journey button[aria-current] strong {
+  font-weight: 600;
+}
+.g3-scroll {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 28px 32px 32px;
+  scrollbar-width: thin;
+}
+.g3-scroll section {
+  scroll-margin-top: 24px;
+  margin-bottom: 36px;
+}
+.g3-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  min-height: 28px;
+}
+.g3-section-title h2,
+.g3-archive h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.g3-section-title h2 > span {
+  font-weight: 500;
+}
+.g3-section-title h2 > small {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: 4px;
+}
+.g3-prior-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 4px 20px;
+  overflow: hidden;
+}
+.g3-carryover-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 16px;
+  align-items: baseline;
+  padding: 14px 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.g3-carryover-row + .g3-carryover-row {
+  border-top: 1px solid var(--border);
+}
+.g3-carryover-row > span:first-child {
+  font-size: 12px;
+  font-weight: 500;
+}
+.g3-carryover-issues {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.g3-carryover-issues a,
+.g3-carryover-issues > div {
+  display: flex;
+  gap: 10px;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.g3-carryover-issues a:hover {
+  text-decoration: underline;
+}
+.g3-carryover-issues .g3-id {
+  flex: 0 0 40px;
+}
+.g3-id {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.g3-muted {
+  color: var(--muted-foreground);
+}
+.g3-goal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.g3-goal {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  scroll-margin-top: 24px;
+  background: var(--card);
+}
+.g3-goal-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px 0;
+}
+.g3-goal-toggle {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  text-align: left;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  line-height: 1.65;
+}
+.g3-goal-toggle > svg {
+  align-self: flex-start;
+  margin-top: 5px;
+}
+.g3-goal-toggle strong {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.g3-goal-toggle:hover strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.g3-goal-id {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  flex: 0 0 20px;
+}
+.g3-goal-count {
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+  padding-top: 3px;
+}
+/* 删除目标的就近二次确认：不弹窗，单色反相表达破坏性动作。 */
+.g3-goal-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.g3-goal-confirm button {
+  border: 1px solid var(--input);
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: var(--radius-md);
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.g3-goal-confirm button.danger {
+  border-color: var(--foreground);
+  background: var(--foreground);
+  color: var(--background);
+  font-weight: 500;
+}
+.g3-goal-head:has(.g3-title-input) .g3-goal-toggle {
+  flex: 0 0 46px;
+}
+.g3-title-input {
+  min-width: 0;
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-sm);
+  background: var(--background);
+  color: var(--foreground);
+  font-weight: 600;
+}
+.g3-goal-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  padding: 6px 20px 18px 78px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.g3-goal-meta span + span::before {
+  content: '·';
+  margin-right: 16px;
+}
+.g3-goal-body {
+  padding: 0 24px 24px 78px;
+}
+.g3-goal-body > .g3-goal-meta {
+  padding: 6px 0 20px;
+}
+.g3-commitment {
+  padding: 20px 0 24px;
+  border-top: 1px solid var(--border);
+  max-width: 860px;
+}
+.g3-commitment h3,
+.g3-task-head h3 {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  font-weight: 500;
+  margin: 0 0 10px;
+}
+.g3-lines {
+  font-size: 14px;
+  line-height: 1.8;
+}
+.g3-lines p {
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+.g3-lines p:last-child {
+  margin-bottom: 0;
+}
+.g3-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  margin: 12px 0;
+}
+.g3-field > span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.g3-field textarea,
+.g3-goal-meta input {
+  width: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  line-height: 1.8;
+  min-width: 0;
+}
+.g3-commitment .g3-field {
+  margin: 0;
+}
+.g3-commitment .g3-metric-block {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.g3-metric-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+}
+.g3-metric-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.g3-metric-row select,
+.g3-metric-add {
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 13px;
+  padding: 4px 8px;
+  max-width: 320px;
+}
+.g3-metric-current {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.g3-metric-current strong {
+  color: var(--foreground);
+}
+.g3-metric-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.g3-metric-target input {
+  width: 110px;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 13px;
+  padding: 4px 8px;
+}
+.g3-metric-collect {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--input);
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: var(--radius-md);
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.g3-goal-meta input {
+  width: 150px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+.g3-task-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding: 16px 0 8px;
+}
+.g3-task-head h3 {
+  margin: 0;
+}
+.g3-task-head h3 > span {
+  margin-left: 4px;
+}
+.g3-task {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13px;
+  padding: 8px 0;
+}
+.g3-task > a {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.g3-task > a:hover {
+  text-decoration: underline;
+}
+.g3-task > a .g3-id {
+  flex: 0 0 32px;
+}
+.g3-task-state {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.g3-task-kind {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 6px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.g3-task-kind.bug {
+  border-color: var(--foreground);
+  color: var(--foreground);
+  font-weight: 500;
+}
+.g3-goals-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-top: 12px;
+}
+.g3-goals-bottom > span {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.g3-minutes-guidance {
+  font-size: 13px;
+  color: var(--muted-foreground);
+  margin: -4px 0 20px;
+  max-width: 780px;
+}
+.g3-title-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.g3-minutes {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.g3-minutes-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+.g3-minutes-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.g3-status {
+  font-size: 12px;
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  color: var(--muted-foreground);
+}
+.g3-status.confirmed {
+  color: var(--foreground);
+}
+.g3-minutes-section {
+  border-top: 1px solid var(--border);
+  padding: 12px 0;
+  font-size: 13px;
+}
+.g3-minutes-section > strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  margin-bottom: 8px;
+}
+.g3-minutes-section > strong small {
+  font-weight: 400;
+  margin-left: 8px;
+}
+.g3-points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.g3-points li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.g3-followup-status {
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  padding: 1px 8px;
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.g3-followup-status.closed {
+  color: var(--foreground);
+  border-color: var(--foreground);
+}
+.g3-point-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.g3-point-edit-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.g3-point-edit-row textarea {
+  flex: 1;
+  min-width: 0;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.g3-point-edit-row .g3-followup-status {
+  margin-top: 6px;
+}
+.g3-add-point {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  border: 1px dashed var(--border);
+  background: none;
+  color: var(--muted-foreground);
+  border-radius: var(--radius-md);
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.g3-add-point:hover {
+  color: var(--foreground);
+  border-color: var(--foreground);
+}
+.g3-minutes-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  font-size: 12px;
+}
+.g3-minutes-foot button {
+  border: 1px solid var(--input);
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.g3-annotation::before {
+  content: '原型注释';
+  display: inline-block;
+  font-size: 11px;
+  line-height: 18px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 6px;
+  margin-right: 8px;
+  color: var(--muted-foreground);
+  vertical-align: 1px;
+}
+.g3-empty-board {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.g3-empty-board p {
+  margin: 0;
+  font-size: 14px;
+}
+.g3-empty-board button {
+  border: 1px solid var(--input);
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: var(--radius-md);
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.g3-carryover-goal {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 8px;
+  color: var(--muted-foreground);
+}
+.g3-scene {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted-foreground);
+}
+.g3-scene select {
+  border: 1px solid var(--input);
+  border-radius: var(--radius-sm);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 11px;
+  padding: 2px 6px;
+}
+/* 板面批注窗：右侧紧凑记录面板，高度随内容自适应，不整栏覆盖板面。 */
+.g3-annot-panel {
+  position: fixed;
+  top: 96px;
+  right: 16px;
+  z-index: 40;
+  max-height: calc(100vh - 128px);
+  width: min(320px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.12);
+  padding: 14px;
+}
+.g3-annot-panel header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.g3-annot-panel header strong {
+  font-size: 13px;
+  flex: 1;
+}
+.g3-annot-list {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 40vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.g3-annot-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.g3-annot-card > div {
+  flex: 1;
+  min-width: 0;
+}
+.g3-annot-card strong {
+  display: block;
+}
+.g3-annot-card p {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* 面板卡片行内编辑：改文案不换浮层，保存 / 取消就地完成。 */
+.g3-annot-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+.g3-annot-edit textarea {
+  width: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  padding: 6px 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+.g3-annot-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.g3-annot-edit-actions button {
+  border: 1px solid var(--input);
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: var(--radius-md);
+  padding: 2px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.g3-annot-edit-actions button.primary {
+  border-color: var(--foreground);
+  font-weight: 500;
+}
+.g3-annot-edit-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.g3-annot-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 10px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.g3-annot-empty {
+  font-size: 12px;
+  margin: 0;
+}
+.g3-annot-hint {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin: 0;
+  flex-shrink: 0;
+}
+/* 对象批注小窗：贴着被批注元素弹出，交互对齐 Orca 元素批注弹窗。 */
+.g3-annot-pop {
+  position: fixed;
+  z-index: 46;
+  width: min(320px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.18);
+  padding: 12px;
+}
+.g3-annot-pop header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.g3-annot-pop header strong {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.g3-annot-pop textarea {
+  width: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+.g3-annot-pop footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.g3-annot-pop footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--input);
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: var(--radius-md);
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.g3-annot-pop footer button.primary {
+  border-color: var(--foreground);
+  font-weight: 500;
+}
+.g3-annot-pop footer button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.g3-annot-board {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.g3-annot-board:hover {
+  color: var(--foreground);
+  border-color: var(--foreground);
+}
+.g3-annot-panel footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  flex-shrink: 0;
+}
+.g3-annot-panel footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--input);
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.g3-annot-panel footer button.primary {
+  margin-left: auto;
+  border-color: var(--foreground);
+}
+.g3-annot-panel footer button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.g3-archive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 12px !important;
+}
+.g3-archive > div {
+  flex: 1;
+  min-width: 200px;
+}
+.g3-archive p {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+.g3-archive-status {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.g3-demo-footnote {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin: 8px 0;
+}
+.g3-footer {
+  flex-shrink: 0;
+  min-height: 28px;
+  padding: 4px 32px;
+  font-size: 11px;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+}
+.g3-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--muted);
+  padding: 16px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--destructive);
+}
+.g3-session {
+  position: relative;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--background);
+}
+.g3-session.rail {
+  width: 42px;
+  display: flex;
+}
+.g3-session-rail-text {
+  writing-mode: vertical-rl;
+  letter-spacing: 3px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  padding: 12px 0;
+  width: 100%;
+  text-align: center;
+}
+.g3-session.expanded {
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+}
+.g3-native-workspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted-foreground);
+}
+.g3-native-workspace h2 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 16px 0 8px;
+}
+.g3-native-workspace p {
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+.g3-native-workspace small {
+  font-size: 11px;
+  max-width: 200px;
+}
+.g3-empty {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+.g3-icon-wrap {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+.g3-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.g3-icon-button:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.g3-tooltip {
+  position: fixed;
+  z-index: 20;
+  max-width: 224px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: var(--shadow-xs);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: left;
+}
+.g3-footer-handoff {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.g3-footer-handoff > span {
+  flex: 1;
+}
+@container (max-width: 780px) {
+  .g3-header {
+    padding-inline: 24px;
+  }
+  .g3-scroll {
+    padding-inline: 24px;
+  }
+  .g3-footer {
+    padding-inline: 24px;
+  }
+  .g3-journey {
+    padding-inline: 24px;
+    gap: 20px;
+  }
+  .g3-annotate-banner {
+    padding-inline: 24px;
+  }
+  .g3-stage-copy small {
+    display: none;
+  }
+  .g3-carryover-row {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+@container (max-width: 580px) {
+  .g3-header {
+    padding-inline: 20px;
+  }
+  .g3-scroll {
+    padding-inline: 20px;
+  }
+  .g3-journey {
+    padding-inline: 20px;
+    gap: 12px;
+  }
+  .g3-journey button {
+    gap: 6px;
+  }
+  .g3-stage-number {
+    flex-basis: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+  .g3-annotate-banner {
+    padding-inline: 20px;
+  }
+  .g3-prior-card {
+    padding-inline: 16px;
+  }
+  .g3-goal-head {
+    gap: 8px;
+    padding-inline: 16px;
+  }
+  .g3-goal-toggle {
+    gap: 8px;
+  }
+  .g3-goal-body {
+    padding: 0 20px 20px;
+  }
+  .g3-goal-meta {
+    padding-left: 66px;
+  }
+  .g3-goal-body > .g3-goal-meta {
+    padding-left: 46px;
+  }
+  .g3-section-title h2 {
+    flex-wrap: wrap;
+  }
+  .g3-minutes-head {
+    flex-wrap: wrap;
+  }
+  .g3-goals-bottom {
+    flex-wrap: wrap;
+  }
+}
+@container (max-width: 420px) {
+  .g3-journey {
+    gap: 8px;
+  }
+  .g3-stage-number {
+    display: none;
+  }
+  .g3-stage-copy strong {
+    font-size: 12px;
+  }
+  .g3-carryover-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .g3-goal-count {
+    display: none;
+  }
+}
+@media (max-width: 1000px) {
+  .with-session .g3-sidebar {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .g3-sidebar {
+    display: none;
+  }
+  .g3-demo-bar {
+    gap: 12px;
+  }
+  .g3-demo-bar > span {
+    display: none;
+  }
+  .g3-session.expanded {
+    width: 260px;
+  }
+}
+.g3-app.constrained .g3-demo-bar > span {
+  display: none;
+}
+.g3-app.constrained .with-session .g3-sidebar {
+  display: none;
+}
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+}
