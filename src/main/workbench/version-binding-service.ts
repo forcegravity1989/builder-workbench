@@ -26,7 +26,8 @@ export type VersionBindingRuntime = {
 }
 
 /**
- * BW 薄 helper：版本绑定的验证读写（plan §4.3）。
+ * BW 薄 helper：版本绑定的验证读写（接线要求见
+ * docs/05-features/version-workspace/design.md，#383）。
  *
  * 用原生身份（project/repo/host/runtimeOwner/instanceId）在 owner runtime 上定位
  * 实例；owner 验证沿 workspace resolver，写入走 identity 选择器（实例更换即失败），

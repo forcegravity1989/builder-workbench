@@ -10,7 +10,7 @@ import { mergeWorktreeMetaForWrite } from '../persistence/loading-store/worktree
 import { mergeWorktree } from '../ipc/worktree-metadata-merge'
 import { nativeVersionBindingService, type VersionBindingRuntime } from './version-binding-service'
 
-/** 环 4 数据协议看护：绑定的 owner/实例校验与读回确认（G2 P1a，验证计划 §11.1-1）。 */
+/** 环 4 数据协议看护：绑定的 owner/实例校验与读回确认（G2 P1a，#383）。 */
 
 const repo = {
   id: 'repo-1',

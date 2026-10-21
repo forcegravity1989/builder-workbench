@@ -77,7 +77,8 @@ export async function loadVersionCatalog(args: {
       scope.runtimeOwnerEnvironmentId
     )
     // 草稿来源读取失败不拖垮整个目录：已提交材料与绑定汇总仍如实返回，
-    // 草稿/目标列缺席即为 Unknown，由调用方呈现原因。
+    // 草稿/目标列缺席即为 Unknown。P1 无消费方，失败原因暂不上抛；
+    // P3 接入界面时须为草稿读取失败接 problem 通道，如实呈现原因。
     try {
       const candidates = await materialPort.list()
       for (const candidate of candidates) {
