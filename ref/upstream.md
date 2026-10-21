@@ -89,7 +89,7 @@ git merge orca-upstream/main
 - `automation.runNow` 的可选 `oneShotPrompt`、capability 门控和 renderer/headless 两条派发语义；一次性上下文不写回保存的自动化提示。
 - 自动化编辑器的显式 `target/draft` 请求契约；BW 预填入口依赖该原生能力。
 - 任务详情的 source context、return-to-previous-view 和 worktree history replay；BW 不另建任务详情和历史系统。`openTaskPage({ preselectedRepoId })` 的预选优先级（显式预选 > 持久化 defaultRepoSelection > 全部项目）同为稳定契约：BW 侧栏任务入口靠它在 BW 壳内默认收窄到当前项目，页内筛选仍可改。
-- TaskPage 的 BW 范围字段 `workbenchTaskScope`（G2 #383 P4）：`TaskPageData` 可选携带版本/目标任务引用集；范围阶段（`use-task-page-workbench-scope.ts` + `workbench/task-scope-load.ts`）经原生 provider 逐条读取并物化本地分页，缺数据任务保留位置/数量/原因。有范围时跳过无范围的 landing/quiet 刷新、CodeHub 全量拉取、resume 缓存与列表位置写入、搜索查询持久化，投影改成员+客户端文本过滤（totalPages=本地页数）；范围不进 provider 缓存键或搜索查询。github/codehub 详情往返须把范围带回列表。无范围时原生任务页行为逐字不变；上游合并保留这些门控点与字段透传。
+- TaskPage 的 BW 范围字段 `workbenchTaskScope`（G2 #383 P4）：`TaskPageData` 可选携带版本/目标任务引用集；范围阶段（`use-task-page-workbench-scope.ts` + `workbench/task-scope-load.ts`）经原生 provider 逐条读取并物化本地分页，缺数据任务保留位置/数量/原因。有范围时跳过无范围的 landing/quiet 刷新、CodeHub 全量拉取、resume 缓存与列表位置写入、搜索查询持久化，投影改成员+客户端文本过滤（totalPages=本地页数）；范围不进 provider 缓存键或搜索查询。范围视图的 Issue Start/Open（列表行、详情弹窗）经 `workbench/scoped-task-workspace.ts` 按版本绑定精确解析：唯一→直开、多候选→BW 选择器（`version-workspace-choice-state`）、无→原生创建器；PR 行与无范围路径保持 `findGithubWorkItemWorkspaceAttachment` 首个未归档树语义逐字不变。github/codehub 详情往返须把范围带回列表。上游合并保留这些门控点、字段透传与解析分叉。
 - 工作树版本偏好、Git history 的窗口/固定 revision/`committedAt`、GitHub/CodeHub 的真实 `mergedAt` 字段透传。
 - Terminal→TabGroupSplitLayout 链的 `reserveClosedExplorerToggleSpace` 宿主参数（默认 true=Orca 原行为；BW 计划/验收双栏传 false，避免右上角预留位吃掉侧栏收起后的宽度）；上游合并时保留传参与默认值。
 - WSL/SSH/配对沿用原生宿主身份和执行路由；BW 不新增本机专属连接层。

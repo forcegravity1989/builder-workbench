@@ -5,6 +5,11 @@ import { useAppStore } from '@/store'
 import { findGithubIssueWorkspaceAttachment } from '@/lib/github-work-item-workspace-attachment'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
+import {
+  matchScopedTaskWorkspaces,
+  resolveTaskRowWorkspace
+} from '@/workbench/scoped-task-workspace'
+import { openWorkbenchWorkspaceChoice } from '@/workbench/version-workspace-choice-state'
 import { translate } from '@/i18n/i18n'
 import type { GitHubWorkItem } from '../../../../../shared/github/work-item-types'
 import type { GitHubItemDialogProps } from '../load-item-details/github-item-dialog-types'
@@ -35,21 +40,62 @@ export default function GitHubItemDialog({
   const workItemLabels = workItem?.labels
   const effectiveRepoId = repoId ?? workItem?.repoId ?? null
   const allWorktrees = useAllWorktrees()
-  const issueAttachedWorkspace = useMemo(
-    () =>
-      workItem?.type === 'issue'
-        ? findGithubIssueWorkspaceAttachment(allWorktrees, effectiveRepoId, workItem.number)
-        : null,
-    [allWorktrees, effectiveRepoId, workItem]
-  )
+  // G2 (BW)：范围详情沿 TaskPageData 读取范围（详情往返已带范围），Issue 的
+  // 归属工作区按明确绑定解析；无范围时原生「首个未归档树」语义逐字不变。
+  const workbenchTaskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
+  const issueAttachedWorkspace = useMemo(() => {
+    if (workItem?.type !== 'issue') {
+      return null
+    }
+    return resolveTaskRowWorkspace({
+      scope: workbenchTaskScope,
+      worktrees: allWorktrees,
+      provider: 'github',
+      item: { repoId: effectiveRepoId, type: 'issue', number: workItem.number },
+      sourceContext: sourceContext ?? null
+    }).attached
+  }, [allWorktrees, effectiveRepoId, workItem, workbenchTaskScope, sourceContext])
   const issueAttachedWorkspaceLabel = issueAttachedWorkspace
     ? getWorktreeAttachmentLabel(issueAttachedWorkspace)
     : null
 
   const handleOpenOrUseIssueWorkspace = useCallback(
     (item: GitHubWorkItem): void => {
+      const worktrees = useAppStore.getState().allWorktrees()
+      if (workbenchTaskScope) {
+        const scoped = matchScopedTaskWorkspaces({
+          scope: workbenchTaskScope,
+          worktrees,
+          provider: 'github',
+          number: item.number,
+          sourceContext: sourceContext ?? null
+        })
+        if (scoped) {
+          if (scoped.kind === 'unique') {
+            const opened = activateAndRevealWorktree(scoped.candidates[0].id)
+            if (opened === false) {
+              toast.error(
+                translate(
+                  'auto.components.GitHubItemDialog.2ef631437e',
+                  'Unable to open the workspace attached to this issue.'
+                )
+              )
+            }
+            return
+          }
+          if (scoped.kind === 'choice') {
+            openWorkbenchWorkspaceChoice({
+              title: `#${item.number} ${item.title}`,
+              candidates: [...scoped.candidates]
+            })
+            return
+          }
+          onUse(item)
+          return
+        }
+      }
       const currentAttached = findGithubIssueWorkspaceAttachment(
-        useAppStore.getState().allWorktrees(),
+        worktrees,
         effectiveRepoId,
         item.number
       )
@@ -68,7 +114,7 @@ export default function GitHubItemDialog({
         )
       }
     },
-    [effectiveRepoId, onUse]
+    [effectiveRepoId, onUse, sourceContext, workbenchTaskScope]
   )
 
   const {

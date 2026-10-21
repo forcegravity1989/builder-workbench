@@ -7,6 +7,7 @@ import { TaskPageJiraIssueDialog } from './jira/IssueDialog'
 import { TaskPageGitLabDialog } from './gitlab/Dialog'
 import { TaskPageLinearConnectDialog } from './linear/ConnectDialog'
 import { TaskPageJiraConnectDialog } from './jira/ConnectDialog'
+import { WorkbenchWorkspaceChoiceDialog } from '@/workbench/WorkbenchWorkspaceChoiceDialog'
 export function TaskPageSurface({
   model
 }: {
@@ -29,6 +30,8 @@ export function TaskPageSurface({
       <TaskPageLinearConnectDialog model={model} />
 
       <TaskPageJiraConnectDialog model={model} />
+
+      <WorkbenchWorkspaceChoiceDialog />
     </div>
   )
 }
