@@ -9,7 +9,7 @@ import {
   taskRows,
   g2Url
 } from './g3-model.js'
-import { Icon, IconButton, GoalRow, MinutesCard, AnnotationTray } from './g3-components.jsx'
+import { Icon, IconButton, GoalRow, MinutesCard, AnnotationPanel } from './g3-components.jsx'
 
 function App() {
   const [goals, setGoals] = useState(() => structuredClone(snapshot.plan.goals))
@@ -18,6 +18,7 @@ function App() {
   const [metricCommits, setMetricCommits] = useState({})
   const [annotations, setAnnotations] = useState([])
   const [annotating, setAnnotating] = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false)
   const [annotateTarget, setAnnotateTarget] = useState(null)
   const [expanded, setExpanded] = useState([])
   const [editingGoal, setEditingGoal] = useState(null)
@@ -34,9 +35,11 @@ function App() {
   const scroll = useRef(null)
   const navigation = useRef(null)
   const tasks = taskRows(scene)
-  const annotationCounts = annotations.reduce((counts, item) => {
-    counts[item.object] = (counts[item.object] || 0) + 1
-    return counts
+  // 批注编号对齐 Orca：按记录顺序全局编号，板面角标与面板卡片同号。
+  const numbered = annotations.map((item, i) => ({ ...item, number: i + 1 }))
+  const annotationNumbers = numbered.reduce((map, item) => {
+    map[item.object] = [...(map[item.object] || []), item.number]
+    return map
   }, {})
   const move = (id) => {
     navigation.current = id
@@ -48,7 +51,6 @@ function App() {
     setSession(open)
     requestAnimationFrame(() => document.getElementById(active)?.scrollIntoView({ block: 'start' }))
   }
-  const assistant = () => toggleSession(true)
   // 对象级动作复用 Orca 原生发送弹窗（与浏览器批注同一链路）：
   // 携带一句话指令 + 对象上下文，由用户在原生弹窗确认目标会话后发送。
   const sendRequest = (text, kind) => {
@@ -60,16 +62,18 @@ function App() {
     toggleSession(true)
     setNotice('新建计划调用已登记自动化的手动运行，打开新会话并携带 BW 提示 · 演示示意')
   }
-  const openTray = (target) => {
+  const openComposer = (target) => {
     setAnnotateTarget(target)
+    setPanelOpen(true)
     setNotice('')
   }
   const toggleAnnotating = () => {
     const next = !annotating
     setAnnotating(next)
     setAnnotateTarget(null)
+    setPanelOpen(next)
     setNotice(
-      next ? '批注模式：点击目标卡或 Issue 行记录评审意见 · Esc 退出' : ''
+      next ? '批注模式：点击目标卡、验收标准或 Issue 行记录评审意见 · Esc 退出' : ''
     )
   }
   useEffect(() => {
@@ -79,6 +83,8 @@ function App() {
     const onKey = (event) => {
       if (event.key === 'Escape') {
         setAnnotating(false)
+        setPanelOpen(false)
+        setAnnotateTarget(null)
         setNotice('')
       }
     }
@@ -96,7 +102,7 @@ function App() {
     }
     const element = event.target.closest('[data-annotate]')
     if (element) {
-      openTray(element.dataset.annotate)
+      openComposer(element.dataset.annotate)
     }
   }
   const update = (id, field, value) => {
@@ -114,6 +120,8 @@ function App() {
     setHandoff(null)
     setSentRequest(null)
     setAnnotateTarget(null)
+    setAnnotating(false)
+    setPanelOpen(false)
   }
   const archiveStatus =
     { MERGED: '已合入', OPEN: '待合入', CLOSED: '已关闭' }[snapshot.archive.state] || '状态未知'
@@ -156,19 +164,23 @@ function App() {
         <div className="g3-design-notes">
           <p>
             <strong>界面边界</strong>：左侧导航属于 G2；计划助手在左侧完整复用 Orca
-            原生会话。会话收折沿用已落地壳行为：BW 板面页头文字按钮「收起会话 /
-            展开会话」，原生会话本身不带关闭 ×。页头助手图标只打开 /
-            聚焦会话，不注入；对象级动作（拆解、整理纪要、基于纪要调整）复用 Orca
+            原生会话——整栏（含顶部标签栏与会话标题）都是原生，候选不绘制 BW
+            会话头，「计划助手」是这个原生会话的产品称呼。会话收折沿用已落地壳行为：BW
+            板面页头带图标的「收起会话 / 展开会话」按钮，页头不再另设助手图标入口，
+            原生会话本身不带关闭 ×。对象级动作（拆解、整理纪要、基于纪要调整）复用 Orca
             原生发送弹窗——与浏览器批注「发送给 Agent」同一条链路，用户在弹窗中确认目标会话后发送，
-            不恢复已退役的贴草稿通道。分支名弱化展示，「配置自动化」打开原生自动化编辑器，
-            自动化绑定固定工作树，与版本选择解耦。
+            不恢复已退役的贴草稿通道；动作同时自动展开会话栏。分支名弱化展示，
+            「配置自动化」打开原生自动化编辑器，自动化绑定固定工作树，与版本选择解耦。
           </p>
           <p>
             <strong>数据来源</strong>：上版回顾只回显延期遗留 Issue（编号 +
             标题，点击跳转）与会议遗留事项；v0.6 会议遗留未单独记录，完整进展 /
             交付材料留在验收屏，延期引用来自人工验收记录中明确的遗留项，不按 open 状态自动推断。
-            指标目录为 v0.5 快照样例数据；v0.7 快照 metricTargets 全为空，各卡从
-            「添加指标承诺（可选）」开始，当前读数为 — 时目标值标草案。
+            Issue 行显示 Bug / Feature 分类，按 2026-10-21
+            补采进快照的真实标签推导（#387 / #384 / #372 为 bug）；无 Bug /
+            缺陷标签默认按 Feature 显示。指标目录为 v0.5 快照样例数据；v0.7 快照
+            metricTargets 全为空，各卡从「添加指标承诺（可选）」开始，当前读数为 —
+            时目标值标草案。
             <a
               href="https://github.com/forcegravity1989/builder-workbench/blob/e43528cae57424bb0973c99c6e3c03af075c1198/.bw/planning/v0.6/acceptance.json"
               target="_blank"
@@ -179,9 +191,11 @@ function App() {
           </p>
           <p>
             <strong>纪要与批注</strong>：纪要示例源自 #385 边界讨论，仅演示；固定两块——共识、
-            遗留（逐条闭环状态，闭环 = 版本计划已按该条修改，由人标记）。批注模式参照 Orca
-            浏览器批注：页头「批注模式」进入 → 点击板面元素 → 右下角托盘记录 →
-            复制或经原生发送弹窗发给计划助手；纪要区不参与批注。BW
+            遗留（逐条闭环状态，闭环 = 版本计划已按该条修改，由人标记）。批注窗布局对齐 Orca
+            原生批注参考：页头「批注模式」（气泡 + 加号图标，vendor 冻结、由两枚图标组合）进入 →
+            右侧打开「板面批注（N）」面板 → 点击板面元素（目标句、验收标准、指标承诺、Issue
+            行或整卡）写入输入框，或「添加板面级批注」→ 复制或经原生发送弹窗发给计划助手；
+            板面编号角标与面板卡片同号。纪要区不参与批注。BW
             板面元素的捕获层（元素映射为业务对象引用）留实现设计。会议 ID 现阶段由 Builder
             提供，不提供时仅凭在线批注也可生成；群组 / WeLink 自动获取待用户组旅程设计。
           </p>
@@ -266,18 +280,12 @@ function App() {
           aria-label="左侧 Orca 原生计划会话"
         >
           {session ? (
-            <>
-              <div className="g3-session-head">
-                <span>计划助手</span>
-                <span className="g3-muted g3-session-native">Orca 原生会话</span>
-              </div>
-              <div className="g3-native-workspace">
-                <Icon name="agent" size={28} />
-                <h2>Orca 原生会话</h2>
-                <p>完整复用标签、历史、输入与工具</p>
-                <small>这里只示意会话位置，不另设计聊天界面</small>
-              </div>
-            </>
+            <div className="g3-native-workspace">
+              <Icon name="agent" size={28} />
+              <h2>Orca 原生会话工作区</h2>
+              <p>顶部标签栏、会话标题与全部控件均为 Orca 原生</p>
+              <small>这里只示意会话位置，不另设计聊天界面；「计划助手」是这个原生会话的产品称呼</small>
+            </div>
           ) : (
             <div className="g3-session-rail-text" aria-hidden="true">
               计划会话已收折
@@ -294,13 +302,13 @@ function App() {
             </div>
             <div className="g3-header-actions">
               <button
-                className="g3-text-button"
+                className="g3-session-chip"
                 aria-expanded={session}
                 aria-label={session ? '收折会话栏' : '展开会话栏'}
                 title={session ? '收折会话栏' : '展开会话栏'}
                 onClick={() => toggleSession(!session)}
               >
-                {session ? '收起会话' : '展开会话'}
+                <Icon name="chat" size={13} /> {session ? '收起会话' : '展开会话'}
               </button>
               <span className="g3-branch" title="固定工作树分支">
                 <Icon name="branch" size={13} /> bw/week-plan
@@ -315,17 +323,11 @@ function App() {
                 <Icon name="automation" size={13} /> 配置自动化
               </button>
               <IconButton
-                name="annotate"
+                name="annotate-mode"
                 label="批注模式：点击板面元素记录评审意见"
                 aria-pressed={annotating}
                 className={annotating ? 'g3-mode-on' : ''}
                 onClick={toggleAnnotating}
-              />
-              <IconButton
-                name="agent"
-                label="打开计划助手"
-                className="g3-agent-button"
-                onClick={assistant}
               />
             </div>
           </header>
@@ -346,7 +348,8 @@ function App() {
           </nav>
           {annotating && (
             <div className="g3-annotate-banner" role="status">
-              批注模式：点击目标卡或 Issue 行记录评审意见 · Esc 或再次点击「批注模式」退出
+              批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见 · Esc
+              或再次点击「批注模式」退出
             </div>
           )}
           <div
@@ -459,7 +462,7 @@ function App() {
                         setNotice('配置指标在固定指标工作区新建原生会话 · 演示示意')
                       }
                     >
-                      <Icon name="annotate" size={13} /> 配置指标
+                      <Icon name="annotate-mode" size={13} /> 配置指标
                     </button>
                   )}
                   {scene !== 'none' && (
@@ -508,8 +511,11 @@ function App() {
                           setNotice('指标采集沿用总览同一能力，读取主干基线 · 演示不真实采集')
                         }
                         sendRequest={sendRequest}
-                        annotationCounts={annotationCounts}
-                        onOpenTray={openTray}
+                        annotationNumbers={annotationNumbers}
+                        onOpenPanel={() => {
+                          setPanelOpen(true)
+                          setNotice('')
+                        }}
                         startTask={(task) => {
                           setHandoff(task)
                           setNotice('')
@@ -580,7 +586,7 @@ function App() {
               ) : (
                 <p className="g3-empty">
                   会后由计划助手基于在线批注与可选转写稿生成；批注从页头「批注模式」进入，
-                  点击目标卡或 Issue 行记录。
+                  点击目标句、验收标准或 Issue 行等板面元素记录。
                 </p>
               )}
             </section>
@@ -663,27 +669,30 @@ function App() {
           </footer>
         </main>
       </div>
-      {annotateTarget && (
-        <AnnotationTray
-          target={annotateTarget}
-          annotations={annotations}
-          onClose={() => setAnnotateTarget(null)}
-          onRecord={(text) =>
-            setAnnotations((current) => [
-              ...current,
-              { id: `${Date.now()}-${current.length}`, object: annotateTarget, text }
-            ])
-          }
-          onRemove={(id) =>
-            setAnnotations((current) => current.filter((item) => item.id !== id))
-          }
-          onSend={() => {
-            setAnnotations([])
-            setAnnotateTarget(null)
-            sendRequest('以下是评审会在线批注，作为会议纪要输入整理', '批注')
-          }}
-        />
-      )}
+      <AnnotationPanel
+        open={panelOpen}
+        target={annotateTarget}
+        annotations={numbered}
+        onClose={() => {
+          setPanelOpen(false)
+          setAnnotateTarget(null)
+        }}
+        onRecord={(text) => {
+          setAnnotations((current) => [
+            ...current,
+            { id: `${Date.now()}-${current.length}`, object: annotateTarget, text }
+          ])
+          setAnnotateTarget(null)
+        }}
+        onRemove={(id) =>
+          setAnnotations((current) => current.filter((item) => item.id !== id))
+        }
+        onBoardLevel={() => setAnnotateTarget('板面级')}
+        onSend={() => {
+          setAnnotateTarget(null)
+          sendRequest('以下是评审会在线批注，作为会议纪要输入整理', '批注')
+        }}
+      />
     </div>
   )
 }

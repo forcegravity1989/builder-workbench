@@ -19,9 +19,18 @@ const {
   GitBranch,
   CalendarClock
 } = window.BWPrototypeDependencies
-import { metricCatalog } from './g3-model.js'
+import { metricCatalog, taskKind } from './g3-model.js'
 export { React }
 export function Icon({ name, size = 16 }) {
+  if (name === 'annotate-mode') {
+    // vendor 冻结、无 MessageSquarePlus：气泡 + 加号用两枚图标组合。
+    return (
+      <span className="g3-annotate-glyph" aria-hidden="true">
+        <MessageSquare size={size} />
+        <Plus size={Math.round(size * 0.58)} />
+      </span>
+    )
+  }
   const Component =
     {
       down: ChevronDown,
@@ -36,6 +45,7 @@ export function Icon({ name, size = 16 }) {
       check: Check,
       send: ArrowUp,
       annotate: MessageSquare,
+      chat: MessageSquare,
       copy: Copy,
       metric: ChartNoAxesCombined,
       refresh: RefreshCw,
@@ -106,27 +116,31 @@ function Lines({ text, empty = '待明确' }) {
     </div>
   )
 }
-function AnnotationCount({ count, target, onOpenTray }) {
-  if (!count) {
+function AnnotationMarkers({ numbers, object, onOpenPanel }) {
+  if (!numbers.length) {
     return null
   }
   return (
-    <button
-      className="g3-annot-count"
-      title={`在线批注 ${count} 条 · 打开批注窗`}
-      aria-label={`${target} 的在线批注 ${count} 条`}
-      onClick={() => onOpenTray(target)}
-    >
-      <Icon name="annotate" size={12} />
-      {count}
-    </button>
+    <span className="g3-annot-markers">
+      {numbers.map((n) => (
+        <button
+          key={n}
+          className="g3-annot-marker"
+          title={`批注 ${n} · 打开板面批注窗`}
+          aria-label={`板面批注 ${n}（${object}）`}
+          onClick={() => onOpenPanel()}
+        >
+          {n}
+        </button>
+      ))}
+    </span>
   )
 }
-function MetricCommitment({ goal, commit, onCommit, onCollect }) {
+function MetricCommitment({ goal, commit, onCommit, onCollect, markers }) {
   const metric = commit ? metricCatalog.find((m) => m.id === commit.id) : null
   return (
-    <div className="g3-metric-block">
-      <h3>指标承诺</h3>
+    <div className="g3-metric-block" data-annotate={`${goal.goalId} · 指标承诺`}>
+      <h3>指标承诺{markers}</h3>
       {metric ? (
         <div className="g3-metric-row">
           <label className="g3-metric-select">
@@ -191,19 +205,20 @@ export function GoalRow({
   onCollect,
   sendRequest,
   startTask,
-  annotationCounts,
-  onOpenTray,
+  annotationNumbers,
+  onOpenPanel,
   editing,
   setEditing
 }) {
   const goalTarget = `${goal.goalId} 目标`
+  const headTarget = `${goal.goalId} · 目标句`
   return (
     <article
       className={`g3-goal ${expanded ? 'open' : ''}`}
       id={`goal-${goal.goalId}`}
       data-annotate={goalTarget}
     >
-      <div className="g3-goal-head">
+      <div className="g3-goal-head" data-annotate={headTarget}>
         <button
           className="g3-goal-toggle"
           onClick={toggle}
@@ -223,10 +238,13 @@ export function GoalRow({
             onChange={(e) => update('title', e.target.value)}
           />
         )}
-        <AnnotationCount
-          count={annotationCounts[goalTarget] || 0}
-          target={goalTarget}
-          onOpenTray={onOpenTray}
+        <AnnotationMarkers
+          numbers={[
+            ...(annotationNumbers[headTarget] || []),
+            ...(annotationNumbers[goalTarget] || [])
+          ]}
+          object={goalTarget}
+          onOpenPanel={onOpenPanel}
         />
         <span className="g3-goal-count">{tasks.length} Issue</span>
         {expanded && (
@@ -274,7 +292,7 @@ export function GoalRow({
             )}
           </div>
           <div className="g3-commitment">
-            <div className="g3-acceptance">
+            <div className="g3-acceptance" data-annotate={`${goal.goalId} · 验收标准`}>
               {editing ? (
                 <Field
                   label="验收标准"
@@ -285,12 +303,31 @@ export function GoalRow({
                 />
               ) : (
                 <>
-                  <h3>验收标准</h3>
+                  <h3>
+                    验收标准
+                    <AnnotationMarkers
+                      numbers={annotationNumbers[`${goal.goalId} · 验收标准`] || []}
+                      object={`${goal.goalId} · 验收标准`}
+                      onOpenPanel={onOpenPanel}
+                    />
+                  </h3>
                   <Lines text={goal.acceptance} />
                 </>
               )}
             </div>
-            <MetricCommitment goal={goal} commit={commit} onCommit={onCommit} onCollect={onCollect} />
+            <MetricCommitment
+              goal={goal}
+              commit={commit}
+              onCommit={onCommit}
+              onCollect={onCollect}
+              markers={
+                <AnnotationMarkers
+                  numbers={annotationNumbers[`${goal.goalId} · 指标承诺`] || []}
+                  object={`${goal.goalId} · 指标承诺`}
+                  onOpenPanel={onOpenPanel}
+                />
+              }
+            />
           </div>
           <div className="g3-task-head">
             <h3>
@@ -311,6 +348,7 @@ export function GoalRow({
             {tasks.length ? (
               tasks.map((task) => {
                 const taskTarget = `${goal.goalId} · #${task.number}`
+                const kind = taskKind(task.labels)
                 return (
                   <div className="g3-task" key={task.number} data-annotate={taskTarget}>
                     <a
@@ -324,6 +362,12 @@ export function GoalRow({
                       <span className="g3-id">#{task.number}</span>
                       {task.title?.replace(/^【.*?】/, '') || '标题未读到'}
                     </a>
+                    <span
+                      className={`g3-task-kind ${kind === 'Bug' ? 'bug' : ''}`}
+                      title="按 issue-state 规范标签推导；无 Bug/缺陷 标签默认按 Feature 显示"
+                    >
+                      {kind}
+                    </span>
                     <span className="g3-task-state">
                       {task.state === 'CLOSED'
                         ? '已关闭'
@@ -331,10 +375,10 @@ export function GoalRow({
                           ? '开放'
                           : '状态未知'}
                     </span>
-                    <AnnotationCount
-                      count={annotationCounts[taskTarget] || 0}
-                      target={taskTarget}
-                      onOpenTray={onOpenTray}
+                    <AnnotationMarkers
+                      numbers={annotationNumbers[taskTarget] || []}
+                      object={taskTarget}
+                      onOpenPanel={onOpenPanel}
                     />
                     <IconButton
                       name="arrow"
@@ -488,54 +532,81 @@ export function MinutesCard({ minutes, update, sendRequest }) {
     </article>
   )
 }
-export function AnnotationTray({ target, annotations, onClose, onRecord, onRemove, onSend }) {
+// 板面批注窗：布局对齐 Orca 原生批注参考（右侧竖排面板、编号卡片列表、
+// 提示行、板面级批注、底部 复制 / 发送）。BW 的差异只在批注对象是业务板面元素。
+export function AnnotationPanel({
+  open,
+  target,
+  annotations,
+  onClose,
+  onRecord,
+  onRemove,
+  onBoardLevel,
+  onSend
+}) {
   const [draft, setDraft] = useState('')
   const copy = async () => {
     const text = annotations.map((item) => `- [${item.object}] ${item.text}`).join('\n')
     await navigator.clipboard?.writeText(text)
   }
+  if (!open) {
+    return null
+  }
   return (
-    <aside className="g3-annotation-tray" aria-label="在线批注速记窗">
+    <aside className="g3-annot-panel" aria-label="板面批注窗">
       <header>
-        <Icon name="annotate" size={14} />
-        <strong>在线批注</strong>
-        <span className="g3-muted">{target}</span>
-        <IconButton name="close" label="收起批注窗" onClick={onClose} />
+        <Icon name="annotate-mode" size={14} />
+        <strong>板面批注（{annotations.length}）</strong>
+        <IconButton name="close" label="关闭板面批注窗" onClick={onClose} />
       </header>
-      {annotations.length > 0 && (
-        <ul>
-          {annotations.map((item) => (
-            <li key={item.id}>
-              <div className="g3-annot-li-head">
-                <span className="g3-id">{item.object}</span>
-                <IconButton
-                  name="close"
-                  label={`删除这条批注（${item.object}）`}
-                  onClick={() => onRemove(item.id)}
-                />
+      <div className="g3-annot-list">
+        {annotations.length ? (
+          annotations.map((item) => (
+            <div className="g3-annot-card" key={item.id}>
+              <span className="g3-annot-num">{item.number}</span>
+              <div>
+                <strong>{item.object}</strong>
+                <p>{item.text}</p>
               </div>
-              <p>{item.text}</p>
-            </li>
-          ))}
-        </ul>
+              <IconButton
+                name="close"
+                label={`删除批注 ${item.number}（${item.object}）`}
+                onClick={() => onRemove(item.id)}
+              />
+            </div>
+          ))
+        ) : (
+          <p className="g3-muted g3-annot-empty">暂无批注</p>
+        )}
+      </div>
+      <p className="g3-annot-hint">批注模式中，点击板面元素即可添加批注</p>
+      {target && (
+        <div className="g3-annot-composer">
+          <span className="g3-annot-target">
+            <Icon name="annotate" size={12} /> {target}
+          </span>
+          <textarea
+            rows={2}
+            aria-label="批注内容"
+            placeholder={`记录对 ${target} 的评审意见`}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+          <button
+            disabled={!draft.trim()}
+            onClick={() => {
+              onRecord(draft.trim())
+              setDraft('')
+            }}
+          >
+            记录
+          </button>
+        </div>
       )}
-      <textarea
-        rows={2}
-        aria-label="批注内容"
-        placeholder={`记录对 ${target} 的评审意见`}
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-      />
+      <button className="g3-annot-board" onClick={onBoardLevel}>
+        <Icon name="plus" size={13} /> 添加板面级批注
+      </button>
       <footer>
-        <button
-          disabled={!draft.trim()}
-          onClick={() => {
-            onRecord(draft.trim())
-            setDraft('')
-          }}
-        >
-          记录
-        </button>
         <button disabled={!annotations.length} onClick={copy}>
           <Icon name="copy" size={13} /> 复制
         </button>

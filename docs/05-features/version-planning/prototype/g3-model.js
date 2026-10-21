@@ -49,3 +49,11 @@ export function taskRows(scene) {
     ...snapshot.issues.find((item) => item.number === ref.number)
   }))
 }
+// Issue 行显示 Bug/Feature 分类：issue-state 规范要求的标签里含 bug/缺陷 → Bug；
+// 没有分类标签一律默认按 Feature 显示（2026-10-21 用户确认）。
+// 快照 labels 为 2026-10-21 经 GitHub API 补采的真实标签。
+export function taskKind(labels) {
+  return (labels || []).some((label) => /^(bug|缺陷)$/i.test(String(label).trim()))
+    ? 'Bug'
+    : 'Feature'
+}
