@@ -4,7 +4,7 @@ import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import { workbenchTaskScopeKey } from '../../../shared/workbench/task-scope'
 import {
   loadWorkbenchTaskScope,
-  versionTaskScopeHome,
+  requireVersionTaskScopeHome,
   type TaskScopeLoadResult,
   type TaskScopeMissingRow
 } from '@/workbench/task-scope-load'
@@ -72,10 +72,7 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     setCodehubError(null)
     void (async () => {
       try {
-        const home = versionTaskScopeHome()
-        if (!home) {
-          throw new Error('无法解析当前项目的任务范围宿主')
-        }
+        const home = requireVersionTaskScopeHome()
         const result = await loadWorkbenchTaskScope(scope, home)
         if (cancelled) {
           return
@@ -114,7 +111,13 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     }
     // Why: scopeKey fences generations; nonces reuse the native refresh affordances.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scopeKey, taskResumeApplied, taskRefreshNonce, codehubRefreshNonce, workItemsInvalidationNonce])
+  }, [
+    scopeKey,
+    taskResumeApplied,
+    taskRefreshNonce,
+    codehubRefreshNonce,
+    workItemsInvalidationNonce
+  ])
 
   // 物化分页：整份范围一次读回，按原生页大小切页；翻页只是本地换页，不再打 provider。
   const result = scopeLoad && scopeKey && scopeLoad.key === scopeKey ? scopeLoad.result : null
@@ -135,7 +138,15 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     setCurrentPage(0)
     setCountedTotalPages(pages.length)
     setCodehubItems(result.codehubItems)
-  }, [scope, result, githubPageSize, setPages, setCurrentPage, setCountedTotalPages, setCodehubItems])
+  }, [
+    scope,
+    result,
+    githubPageSize,
+    setPages,
+    setCurrentPage,
+    setCountedTotalPages,
+    setCodehubItems
+  ])
 
   // 范围成员键：投影层的成员过滤依据（原生缓存预涂行不得混入范围列表）。
   const scopeItemKeys = useMemo(() => {

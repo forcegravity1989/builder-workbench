@@ -186,3 +186,15 @@ export function versionTaskScopeHome(): { repoId: string; hostId: ExecutionHostI
   }
   return { repoId: repo.id, hostId: getRepoExecutionHostId(repo) }
 }
+
+/** 宿主解析必须成功才可装载范围；失败文案住 BW 模块（原生文件不引新词条）。 */
+export function requireVersionTaskScopeHome(): {
+  repoId: string
+  hostId: ExecutionHostId
+} {
+  const home = versionTaskScopeHome()
+  if (!home) {
+    throw new Error('无法解析当前项目的任务范围宿主')
+  }
+  return home
+}

@@ -20,7 +20,8 @@ import type { WorkbenchCreationContext } from '../../../shared/workbench/creatio
 import {
   matchScopedTaskWorkspaces,
   codeHubTaskSourceContext,
-  findGoalParentSuggestion
+  findGoalParentSuggestion,
+  notifyScopedWorkspaceUnavailable
 } from '@/workbench/scoped-task-workspace'
 import { openWorkbenchWorkspaceChoice } from '@/workbench/version-workspace-choice-state'
 export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
@@ -124,7 +125,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
           if (scoped.kind === 'unique') {
             const opened = activateAndRevealWorktree(scoped.candidates[0].id)
             if (opened === false) {
-              toast.error('无法打开本版绑定的工作区，请在原生项目工作区中核对。')
+              notifyScopedWorkspaceUnavailable()
               return
             }
             useAppStore.getState().recordFeatureInteraction('github-tasks')
@@ -255,7 +256,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
         if (scoped && scoped.kind === 'unique') {
           const opened = activateAndRevealWorktree(scoped.candidates[0].id)
           if (opened === false) {
-            toast.error('无法打开本版绑定的工作区，请在原生项目工作区中核对。')
+            notifyScopedWorkspaceUnavailable()
           }
           return
         }

@@ -116,6 +116,11 @@ export function resolveTaskRowWorkspace<T extends Worktree>(args: {
 // 父级建议核在共享解析模块（协议单测看护）；此处转发保持 BW 单一导入面。
 export { findGoalParentSuggestion } from '../../../shared/workbench/version-workspace-match'
 
+/** 范围解析出的工作区激活失败时的如实提示（文案住 BW 模块，原生文件不引新词条）。 */
+export function notifyScopedWorkspaceUnavailable(): void {
+  toast.error('无法打开本版绑定的工作区，请在原生项目工作区中核对。')
+}
+
 /**
  * 打开目标工作区（侧栏目标菜单「打开工作区」）：唯一 → 直开；多候选 → 选择器；
  * 无 → false（调用方转「目标开工」）。不取数组第一棵。
