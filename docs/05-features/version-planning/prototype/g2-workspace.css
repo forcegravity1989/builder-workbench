@@ -236,6 +236,25 @@ strong {
 .version-toggle small {
   margin-left: auto;
 }
+.version-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.version-row .version-toggle {
+  flex: 1;
+  min-width: 0;
+}
+.version-toggle .version-badge {
+  margin-left: auto;
+}
+.version-group.is-archived .version-toggle strong,
+.version-group.is-archived .version-toggle .version-badge {
+  color: var(--muted-foreground);
+}
+.version-group.is-archived .version-children .nav-row span {
+  color: var(--muted-foreground);
+}
 .version-children {
   margin-left: 13px;
   border-left: 1px solid var(--border);

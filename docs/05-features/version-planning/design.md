@@ -2,7 +2,7 @@
 
 > 给实现与技术评审者在动代码、拆并行边界前读取；本文管本次设计与共享契约，不写执行步骤。行为见 [spec](spec.md)，当前实现以源码及 [architecture](../../architecture.md) 为准。实现取舍变化时更新，落地后把稳定模块心智回写 06-module。
 >
-> 状态：已授权实施；详细设计未逐项细审，未决项须人工确认。已实现范围及证据见 STATUS，正文按当前接线回写；未标注落点的接口仍为设计。架构定位：§1 项目版本，§2 ①事实、②执行、③规范、⑤壳，§3 Orca 执行核与 BW 叠层。
+> 状态：上文已授权实施，详细设计未逐项细审，未决项须人工确认；已实现范围及证据见 STATUS，正文按当前接线回写，未标注落点的接口仍为设计。G2 版本运作（含版本归档）设计于 2026-10-20 评审定稿，其接线要求的生产验证缺口见 STATUS。架构定位：§1 项目版本，§2 ①事实、②执行、③规范、⑤壳，§3 Orca 执行核与 BW 叠层。
 
 ## 现状与复用
 
@@ -94,7 +94,7 @@ TaskOrigin 携带项目、页面、版本、目标筛选、滚动和草稿引用
 
 ## G2 版本运作树预研（候选）
 
-此节服务 [G2 高保真候选](version-workspace-prototype.html) 的落地判断；上文描述当前接线，本节不是已批准的新协议。源码核对基线为 main 的 2be8d77649797cb0ac740edaa7defa49deb3ffd5；评审期间 PR #386 已合入 main f5ac309b226a456b157b57ceee65204f101a4a09，计划快照来源仍可追溯至其 head 331c04f。已确认方向和仍待体验的取舍见 [spec](spec.md#g2-版本运作树候选待原型体验确认)。
+此节服务 [G2 高保真修订 7](version-workspace-prototype.html?rev=7) 的落地，设计于 2026-10-20 评审定稿；上文描述当前接线。源码核对基线为 main 的 2be8d77649797cb0ac740edaa7defa49deb3ffd5，其后 PR #386 合入 main f5ac309b226a456b157b57ceee65204f101a4a09，计划快照来源仍可追溯至其 head 331c04f。行为判据见 [spec](spec.md#g2-版本运作设计定稿)。
 
 | 当前源码证据 | 可复用部分与必要适配 |
 |---|---|
@@ -104,6 +104,7 @@ TaskOrigin 携带项目、页面、版本、目标筛选、滚动和草稿引用
 | [稀疏创建](../../../src/main/git/worktree-sparse-add.ts)、[高级创建选项](../../../src/renderer/src/components/new-workspace/NewWorkspaceComposerAdvancedSection.tsx) | 已有 no-checkout + cone sparse-checkout 及目录预设。计划/验收可考虑只检出必要资产，但需验证配置、Skill、材料、采集脚本及其依赖可读，不能默认所有仓库适用。 |
 | [AiVaultPanel](../../../src/renderer/src/components/right-sidebar/AiVaultPanel.tsx)、[会话记录](../../../src/shared/agent-session-record.ts)、[BW 会话身份](../../../src/renderer/src/workbench/version-cycle/native-session.ts) | 复用原生历史与继续行为。持久会话位置、宿主、原生会话标识保持原协议；终端 pane 与 provider 历史标识不能假定同一。按版本跨工作树聚合仍需适配与重启验证。 |
 | [versionSelection](../../../src/main/workbench/version-selection.ts)、[CycleWorkspaceProvider](../../../src/renderer/src/workbench/version-cycle/CycleWorkspaceProvider.tsx)、[自动化启动](../../../src/renderer/src/workbench/version-cycle/start-cycle-automation.ts) | 当前按固定分支定位，选版保存在工作树 metadata，自动化要求 existing workspace 匹配。只改侧栏筛选不足以实现两个版本独立运行；必须把运行归属与正在浏览的版本拆开。 |
+| [WorktreeMeta.isArchived](../../../src/shared/worktree/meta-types.ts)、[worktree.set](../../../src/main/runtime/rpc/methods/worktree.ts)、[侧栏过滤](../../../src/renderer/src/components/sidebar/visible-worktrees.ts)、[清理 facet](../../../src/renderer/src/components/workspace-cleanup/workspace-cleanup-facets.ts) | 原生工作树归档：isArchived 持久化并经 mergeWorktree 投影，原生列表隐藏、父级与任务匹配排除、清理浏览按 Archived 回看、可取消归档恢复。版本归档以此作每宿主运行投影，跨机器正本为版本材料可选归档记录（归档时间与确认人，CAS 同规则写入）；不另建归档存储或归档分区。 |
 
 复用必须覆盖 UI 和调用链：
 
@@ -121,10 +122,10 @@ TaskOrigin 携带项目、页面、版本、目标筛选、滚动和草稿引用
 
 - 分支/材料：计划、验收、目标与 Issue 的起点、同步与合入规则；计划和验收材料的读写位置及 CAS 修订；分支命名不是稳定身份，不能靠字符串解析建立版本归属。
 - 自动化：定时运行如何选择已明确版本、首次登记如何避免跨版本重用、如何保留人的模型/时间/复用设置。不能拿 UI 上次查看版本当执行参数。
-- 会话回看：各版本并列，不做专门历史会话入口或归档分区。旧共享树不整体改父级；保留原生入口，人核对后再建立业务关联。历史读回须覆盖已退出会话、不同工具/provider 与重启。
-- 删除与跨版引用：本轮撤下版本归档功能。删除沿用原生子树预检和动作，不把删除工作树等同删除版本，也不以 Git 材料可读承诺会话可恢复。一个 Issue 可被多版引用，一个原生子树只有一个父级；引用不复制完成记录，跨版工作区绑定仍需明确。
+- 会话回看：各版本并列，不做专门历史会话入口或归档分区；已归档版本留在原位置带标识回看。旧共享树不整体改父级；保留原生入口，人核对后再建立业务关联。历史读回须覆盖已退出会话、不同工具/provider 与重启。
+- 删除、归档与跨版引用：版本归档＝版本材料归档记录＋原生工作树 isArchived 投影（判据见 spec「版本归档」），是收尾动作不是删除动作；其他宿主的原生投影在下次访问该版本时对账，只处理树、不动会话与自动化。删除沿用原生子树预检和动作，不把删除工作树等同删除版本，也不以 Git 材料可读承诺会话可恢复。一个 Issue 可被多版引用，一个原生子树只有一个父级；引用不复制完成记录，跨版工作区绑定由绑定契约明确。
 - 发布总结：版本总览按计划与验收派生，不新增手填报告正本；沿现有材料的固定提交/修订与发布证据回看，不新增冻结操作或报告副本，不能用当前 Issue 状态冒充当时验收。
 
-原型构建：node docs/05-features/version-planning/prototype/build-g2.cjs；加 --check 校验源码与生成物一致。独立 JSX/CSS 与真实计划快照在该特性的 prototype/ 下；复用现有 vendor.js 与设计系统资源，不修改已确认的旧原型。后续认可并落地时，应把有效规则归并到现行主题，移除被替代候选；不能长期维护两套生产方案。
+原型构建：node docs/05-features/version-planning/prototype/build-g2.cjs；加 --check 校验源码与生成物一致。独立 JSX/CSS 与真实计划快照在该特性的 prototype/ 下；复用现有 vendor.js 与设计系统资源，不修改已确认的旧原型。
 
-本轮定向预研补充：材料读写层 version-material-workspace 和选版层 version-selection 都校验旧固定分支；必须一起适配，不能只改侧栏。原生 worktree.set RPC 当前不含 BW 版本绑定字段，且旧宿主可能丢弃未知字段，新增绑定必须经授权的宿主契约与能力检测读回验证。TaskPage 的范围要覆盖完整引用与分页，自动化 creationKey 也需含已明确版本，不能以最后浏览版本改变执行对象。历史只读入口必须避开现有进屏自动准备工作树的 hook。以上属于接线要求，尚未有生产验证。
+接线要求：材料读写层 version-material-workspace 和选版层 version-selection 都校验旧固定分支；必须一起适配，不能只改侧栏。原生 worktree.set RPC 当前不含 BW 版本绑定字段，且旧宿主可能丢弃未知字段，新增绑定与归档记录必须经授权的宿主契约与能力检测读回验证。TaskPage 的范围要覆盖完整引用与分页，自动化 creationKey 也需含已明确版本，不能以最后浏览版本改变执行对象。历史只读入口必须避开现有进屏自动准备工作树的 hook；已归档版本的回看同样走只读来源，不触发准备树。以上接线要求的生产验证缺口见 STATUS。

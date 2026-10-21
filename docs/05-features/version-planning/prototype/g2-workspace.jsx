@@ -47,7 +47,8 @@ const blankVersion = () => ({
     { id: 'acceptance', role: 'acceptance' }
   ],
   sessions: [],
-  selected: null
+  selected: null,
+  archived: false
 })
 const initialVersions = () => ({
   'v0.7': {
@@ -62,7 +63,8 @@ const initialVersions = () => ({
       { id: 'g07', tree: 'goal-G2', label: 'G2 · 目标协作' },
       { id: 'i383', tree: 'issue-383', label: '#383 · 侧边栏与版本运作' }
     ],
-    selected: 'p07'
+    selected: 'p07',
+    archived: false
   },
   'v0.6': {
     trees: [
@@ -73,7 +75,8 @@ const initialVersions = () => ({
       { id: 'p06', tree: 'plan', label: '计划讨论' },
       { id: 'a06', tree: 'acceptance', label: '验收讨论' }
     ],
-    selected: 'p06'
+    selected: 'p06',
+    archived: true
   }
 })
 const Icon = ({ icon: Component, ...props }) => <Component size={15} strokeWidth={1.7} {...props} />
@@ -254,6 +257,17 @@ function App() {
       }
     })
     setToast(`演示：原有入口新建会话，归入当前版本的${role === 'plan' ? '计划' : '验收'}树`)
+  }
+  function archiveVersion(v) {
+    setVersions((prev) => ({ ...prev, [v]: { ...prev[v], archived: true } }))
+    setOpenVersions((prev) => prev.filter((name) => name !== v))
+    setModal(null)
+    setToast('演示：版本已归档；流程树按原生 isArchived 收起，可在原生工作区清理中回看或恢复')
+  }
+  function unarchiveVersion(v) {
+    setVersions((prev) => ({ ...prev, [v]: { ...prev[v], archived: false } }))
+    setModal(null)
+    setToast('演示：已取消归档；本版流程树恢复原生可见列表，会话与定时不自动恢复')
   }
   function activateTree(v, tree, session) {
     if (session) {
@@ -510,19 +524,31 @@ function App() {
   }
   function versionNav(v) {
     const expanded = openVersions.includes(v),
-      goals = (plans[v] || emptyPlan).goals
+      goals = (plans[v] || emptyPlan).goals,
+      archived = versions[v].archived === true
     return (
-      <div className="version-group" key={v}>
-        <button
-          className="nav-row version-toggle"
-          aria-label={`${v} 展开或收起`}
-          aria-expanded={expanded}
-          onClick={() => toggle(openVersions, v, setOpenVersions)}
-        >
-          <Icon icon={expanded ? ChevronDown : ChevronRight} />
-          <Icon icon={PackageCheck} />
-          <strong>{v}</strong>
-        </button>
+      <div className={`version-group ${archived ? 'is-archived' : ''}`} key={v}>
+        <div className="version-row">
+          <button
+            className="nav-row version-toggle"
+            aria-label={`${v} 展开或收起`}
+            aria-expanded={expanded}
+            onClick={() => toggle(openVersions, v, setOpenVersions)}
+          >
+            <Icon icon={expanded ? ChevronDown : ChevronRight} />
+            <Icon icon={PackageCheck} />
+            <strong>{v}</strong>
+            {archived && <span className="badge version-badge">已归档</span>}
+          </button>
+          <button
+            className="icon-button goal-menu"
+            title={`${v} 版本操作`}
+            aria-label={`${v} 版本操作`}
+            onClick={() => setModal({ type: 'version-menu', version: v })}
+          >
+            ···
+          </button>
+        </div>
         {expanded && (
           <div className="version-children">
             <Nav
@@ -576,6 +602,12 @@ function App() {
             新建{labels[screen]}
           </Button>
           <span className="muted">{active ? `当前会话：${active.label}` : '尚无会话'}</span>
+          {state.archived === true && (
+            <p className="candidate-note">
+              已归档版本回看：材料从 Git
+              归档来源读取，会话与工作树按原生状态如实呈现。编辑需先取消归档并核对或准备本版工作区。
+            </p>
+          )}
         </ReuseSurface>
       )
     }
@@ -619,7 +651,13 @@ function App() {
           title="沿用 Orca 完整工作区"
           scope={`Builder Workbench / ${version}${currentTree ? ` / bw/${version}/${currentTree.id}` : ''}`}
           description={`原生会话、标签、分屏、工具和历史保持原交互。${currentSession ? `当前演示会话：${currentSession.label}。${currentTree?.parent ? `原生父树：bw/${version}/${currentTree.parent}。` : ''}` : '请选择侧栏的分支或会话。'}`}
-        />
+        >
+          {state.archived === true && (
+            <p className="candidate-note">
+              已归档版本：本版原生工作区已归档隐藏，打开与恢复沿原生入口；原型只演示归属。
+            </p>
+          )}
+        </ReuseSurface>
       )
     }
     if (screen === 'project-workspaces') {
@@ -676,8 +714,8 @@ function App() {
   return (
     <div className="prototype">
       <div className="review-bar">
-        <strong>G2 交互原型 · 修订 6</strong>
-        <span>设计候选 · 图标操作 · 原生复用 · 业界参考见右侧书本</span>
+        <strong>G2 交互原型 · 修订 7</strong>
+        <span>设计定稿 · 图标操作 · 原生复用（含版本归档） · 业界参考见右侧书本</span>
         <div className="review-actions" aria-label="原型评审工具">
           <Button
             icon={BookOpen}
@@ -951,13 +989,39 @@ function App() {
           <p className="muted">实际产品沿用原生工作树菜单；原型不模拟删除等真实磁盘操作。</p>
         </Modal>
       )}
+      {modal?.type === 'version-menu' && (
+        <Modal title={`${modal.version} · 版本操作`} close={() => setModal(null)}>
+          <p>
+            bw/{modal.version}/plan · bw/{modal.version}/acceptance
+          </p>
+          {versions[modal.version].archived === true ? (
+            <>
+              <Button onClick={() => unarchiveVersion(modal.version)}>取消归档</Button>
+              <p className="muted">
+                取消归档清除版本材料中的归档记录，并恢复本版流程树的原生可见列表；已有会话与定时任务不自动恢复。
+              </p>
+            </>
+          ) : (
+            <>
+              <Button onClick={() => archiveVersion(modal.version)}>归档版本</Button>
+              <p className="muted">
+                归档前如实提示本版在跑会话、未合入材料草案和仍启用的定时任务，经人确认后执行。归档把归档记录写入版本材料，并把本版计划/验收流程树送入
+                Orca 原生归档（isArchived）：原生列表隐藏，可在原生工作区清理中回看或恢复。
+              </p>
+              <p className="muted">
+                版本留在原列表位置、带“已归档”标识、默认收起，可展开回看；不删除任何树、会话或材料，不级联归档目标/任务树，不改写定时任务设置。
+              </p>
+            </>
+          )}
+        </Modal>
+      )}
       {modal?.type === 'references' && (
         <Modal title="设计依据 · 业界 UI 与操作参考" close={() => setModal(null)}>
           <DesignReferences />
         </Modal>
       )}
       {modal?.type === 'scope' && (
-        <Modal title="本轮对齐范围" close={() => setModal(null)}>
+        <Modal title="范围与演示设置" close={() => setModal(null)}>
           <div className="demo-settings">
             <label>
               <input
@@ -971,7 +1035,7 @@ function App() {
           </div>
           <h3>新画什么</h3>
           <p>
-            项目与版本导航、新建版本、目标目录，以及新增版本总览。既有项目总览、计划、任务、验收、自动化、知识库和会话区只标明沿用位置，不再做平行高保真。
+            项目与版本导航、新建版本、版本归档、目标目录，以及新增版本总览。既有项目总览、计划、任务、验收、自动化、知识库和会话区只标明沿用位置，不再做平行高保真。
           </p>
           <h3>目标目录与工作树分开</h3>
           <p>
@@ -1009,14 +1073,14 @@ function App() {
             Orca main.css 的 scrollbar-sleek / worktree-sidebar-scrollbar。
           </p>
           <p>
-            各版本并列，不新增专门历史或归档区。删除沿用原生规则；版本材料和 agent
-            记录不能视为同一恢复对象。现有共享树会话归属、自动化运行绑定及跨版 Issue
-            复用仍待后续方案。
+            各版本并列，不设专门归档分区。版本归档是人的显式动作：归档记录写入版本材料，本版计划/验收流程树进入
+            Orca
+            原生归档（isArchived），从原生列表隐藏、可在原生工作区清理中回看与恢复；已归档版本留在原位置、带标识、默认收起，可展开回看。删除仍沿用原生规则；版本材料和
+            agent 记录不能视为同一恢复对象。
           </p>
           <p className="muted">
-            v0.7/v0.6 计划为仓库快照，工作树与会话全部是演示；没有
-            Electron、文件写回或持久化恢复证据。当前供内部评审对齐 intent.md、spec.md
-            与高保真，尚未实施产品接线。
+            v0.7/v0.6 计划为仓库快照，其中 v0.6 演示已归档状态；工作树与会话全部是演示，没有
+            Electron、文件写回或持久化恢复证据。生产接线与真壳证据见 STATUS。
           </p>
         </Modal>
       )}
