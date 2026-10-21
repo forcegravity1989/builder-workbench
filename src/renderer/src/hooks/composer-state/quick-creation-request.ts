@@ -7,6 +7,7 @@ import type { TuiAgent } from '../../../../shared/tui-agent'
 import type { GitPushTarget } from '../../../../shared/worktree/types'
 import type { SetupDecision } from '../../../../shared/worktree/create-types'
 import { toFolderWorkspaceLinkedTask } from '@/components/sidebar/folder-workspace-composer-helpers'
+import type { WorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
 
 export type QuickCreationRequestInput = {
   repoId: string
@@ -50,6 +51,7 @@ export type QuickCreationRequestInput = {
   promptDelivery: 'draft' | 'auto-submit'
   quickTelemetry: AgentStartedTelemetry | null
   suppressTerminalFocusOnCompletion: boolean
+  workbenchVersionBinding?: WorkbenchVersionBinding | null
 }
 
 export function buildQuickCreationRequest(
@@ -111,6 +113,9 @@ export function buildQuickCreationRequest(
     ...(input.launchDraftPrompt ? { launchDraftPrompt: input.launchDraftPrompt } : {}),
     promptDelivery: input.promptDelivery,
     quickTelemetry: input.quickTelemetry,
-    ...(input.suppressTerminalFocusOnCompletion ? { suppressTerminalFocusOnCompletion: true } : {})
+    ...(input.suppressTerminalFocusOnCompletion ? { suppressTerminalFocusOnCompletion: true } : {}),
+    ...(input.workbenchVersionBinding
+      ? { workbenchVersionBinding: input.workbenchVersionBinding }
+      : {})
   }
 }

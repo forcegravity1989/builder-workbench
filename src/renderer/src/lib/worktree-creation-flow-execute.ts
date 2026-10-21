@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import { writeWorkbenchCreationBinding } from '@/workbench/post-create-version-binding'
 import { useAppStore } from '@/store'
 import { preflightAgentTrust } from '@/lib/agent-trust-preflight'
 import { activateAndRevealWorktree, type ActivateAndRevealResult } from '@/lib/worktree-activation'
@@ -127,6 +128,13 @@ export async function executeWorktreeCreation(
   }
 
   const worktree = result.worktree
+  // G2 (BW): version attribution is recorded at the true creation result —
+  // before any cancellation/activation branch, so a created tree keeps its
+  // binding even when this run's UI handoff is abandoned. Failures surface
+  // honestly (tree kept, binding-retry offered) and never block the native flow.
+  if (preparedRequest.workbenchVersionBinding) {
+    void writeWorkbenchCreationBinding(preparedRequest.workbenchVersionBinding, worktree)
+  }
   const structuredLaunch = preparedRequest.agentLaunchRoute === 'structured-native-chat'
   // Why: cancellation can race a successful backend adoption; clean up again after it settles so an adopted workspace cannot outlive its destroyed VM.
   if (!useAppStore.getState().pendingWorktreeCreations[creationId]) {
