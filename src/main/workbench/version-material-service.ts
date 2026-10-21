@@ -4,7 +4,8 @@ import {
   VersionMaterialScopeSchema,
   type VersionMaterialScope,
   type VersionMaterialRead,
-  type VersionMaterialSave
+  type VersionMaterialSave,
+  type VersionMaterialInitialize
 } from '../../shared/workbench/version-material-request'
 import {
   createWorkbenchWorkspaceResolver,
@@ -57,6 +58,11 @@ export function createVersionMaterialService(
     async save(input: VersionMaterialSave) {
       const request = VersionMaterialSaveSchema.parse(input)
       return (await workspace(request)).save(request)
+    },
+    /** G2 P2：新建流程树上的空计划初始化；create-only，已有材料不覆盖。 */
+    async initializeEmptyPlan(scope: VersionMaterialScope, initialize: VersionMaterialInitialize) {
+      const request = VersionMaterialScopeSchema.parse(scope)
+      return (await workspace(request)).initializeEmptyPlan(initialize)
     }
   }
 }

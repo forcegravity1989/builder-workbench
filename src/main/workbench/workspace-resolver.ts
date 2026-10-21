@@ -46,17 +46,18 @@ export type WorkbenchWorkspaceHost = {
   >
 }
 
-/** Resolve registered identity on its owner runtime; executors retain Git and workflow checks. */
-export function createWorkbenchWorkspaceResolver(host: WorkbenchWorkspaceHost) {
-  async function authorize(scope: WorkbenchWorkspaceScope): Promise<{
-    target: WorkbenchWorkspaceTarget
+/** Repo-level owner authorization shared by workspace resolution and version
+ *  provisioning (which runs before any worktree of the version exists). */
+export function createWorkbenchRepoResolver(host: Pick<WorkbenchWorkspaceHost, 'listRepos'>) {
+  function resolveRepo(input: { repoId: string; hostId: string }): {
     repo: WorkbenchWorkspaceRepo
-  }> {
-    const hostId = parseExecutionHostId(scope.hostId)
+    hostId: ExecutionHostId
+  } {
+    const hostId = parseExecutionHostId(input.hostId)
     if (!hostId || hostId.kind === 'runtime') {
       throw new WorkspaceScopeError('invalid-scope', '请通过工作树所属的 Orca runtime 访问')
     }
-    const candidates = host.listRepos().filter((repo) => repo.id === scope.repoId)
+    const candidates = host.listRepos().filter((repo) => repo.id === input.repoId)
     const evidence = candidates.map(resolveRepoOwnershipEvidence)
     if (evidence.some((owner) => owner.status !== 'owned')) {
       throw new WorkspaceScopeError('invalid-scope', '项目宿主登记无效或冲突')
@@ -68,13 +69,28 @@ export function createWorkbenchWorkspaceResolver(host: WorkbenchWorkspaceHost) {
     if (repos.length !== 1 || repos[0].kind === 'folder') {
       throw new WorkspaceScopeError('invalid-scope', 'Git 项目身份不存在或不唯一')
     }
-    const repo = repos[0]
+    return { repo: repos[0], hostId: hostId.id }
+  }
+  return { resolveRepo }
+}
+
+/** Resolve registered identity on its owner runtime; executors retain Git and workflow checks. */
+export function createWorkbenchWorkspaceResolver(host: WorkbenchWorkspaceHost) {
+  const repoResolver = createWorkbenchRepoResolver(host)
+  async function authorize(scope: WorkbenchWorkspaceScope): Promise<{
+    target: WorkbenchWorkspaceTarget
+    repo: WorkbenchWorkspaceRepo
+  }> {
+    const { repo, hostId } = repoResolver.resolveRepo({
+      repoId: scope.repoId,
+      hostId: scope.hostId
+    })
     const trees = (await host.listWorktrees(scope)).filter(
       (tree) =>
         tree.id === scope.worktreeId &&
         tree.repoId === repo.id &&
         (tree.hostId == null || parseExecutionHostId(tree.hostId) !== null) &&
-        getWorktreeExecutionHostId(tree, repo) === hostId.id &&
+        getWorktreeExecutionHostId(tree, repo) === hostId &&
         !tree.runtimeOwnerEnvironmentId
     )
     if (trees.length !== 1 || trees[0].isArchived) {
@@ -82,7 +98,7 @@ export function createWorkbenchWorkspaceResolver(host: WorkbenchWorkspaceHost) {
     }
     return {
       target: {
-        hostId: hostId.id,
+        hostId,
         repoPath: repo.path,
         worktreePath: trees[0].path,
         isMainWorktree: trees[0].isMainWorktree

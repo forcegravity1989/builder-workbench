@@ -586,6 +586,7 @@ import {
   VersionMaterialSaveSchema,
   VersionMaterialScopeSchema
 } from '../workbench/version-material-request'
+import { VersionWorkspacePrepareSchema } from '../workbench/version-workspace-prepare'
 
 // Why: the host parses params with these schemas, so a client that matches this map
 // matches the dispatcher. Clients must import it for types only — parsing a params
@@ -1223,6 +1224,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.trunk.update': TrunkUpdateSchema,
   'workbench.versionBinding.read': VersionBindingScopeSchema,
   'workbench.versionBinding.set': VersionBindingSetSchema,
+  'workbench.versionWorkspace.prepare': VersionWorkspacePrepareSchema,
   'workspacePorts.kill': WorkspacePortKillParams,
   'workspacePorts.scan': WorkspacePortScanParams,
   'worktree.activate': WorktreeActivate,

@@ -5,7 +5,8 @@ import { materialResult } from '../../main/workbench/version-material-error'
 import {
   VersionMaterialReadSchema,
   VersionMaterialSaveSchema,
-  VersionMaterialScopeSchema
+  VersionMaterialScopeSchema,
+  VersionMaterialInitializeSchema
 } from '../../shared/workbench/version-material-request'
 
 import {
@@ -15,7 +16,7 @@ import {
 
 const Command = z.strictObject({
   target: z.strictObject({ repoPath: z.string().min(1), worktreePath: z.string().min(1) }),
-  operation: z.enum(['list', 'read', 'save', 'previewMigration', 'migrate']),
+  operation: z.enum(['list', 'read', 'save', 'previewMigration', 'migrate', 'initializeEmptyPlan']),
   request: z.unknown()
 })
 
@@ -37,6 +38,10 @@ export function registerVersionMaterialRelay(dispatcher: Pick<RelayDispatcher, '
         return materialResult(() => workspace.read(VersionMaterialReadSchema.parse(request)))
       case 'save':
         return materialResult(() => workspace.save(VersionMaterialSaveSchema.parse(request)))
+      case 'initializeEmptyPlan':
+        return materialResult(() =>
+          workspace.initializeEmptyPlan(VersionMaterialInitializeSchema.parse(request))
+        )
     }
   })
 }

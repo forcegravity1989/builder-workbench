@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import {
+  Id,
   MaterialRevision,
   MaterialVersion,
   AcceptanceMaterialSchema,
@@ -15,6 +16,16 @@ export const VersionMaterialScopeSchema = z.strictObject({
 export const VersionMaterialReadSchema = VersionMaterialScopeSchema.extend({
   version: MaterialVersion
 })
+/**
+ * 创建期空计划初始化（G2 P2）：只走 create-only 语义，已有材料一律不覆盖。
+ * expectedBranch 是创建结果核对——树 HEAD 必须是约定流程分支，防写错树。
+ */
+export const VersionMaterialInitializeSchema = z.strictObject({
+  version: MaterialVersion,
+  cycleId: Id,
+  expectedBranch: z.string().min(1)
+})
+export type VersionMaterialInitialize = z.infer<typeof VersionMaterialInitializeSchema>
 export const VersionMaterialSaveSchema = z.discriminatedUnion('workflow', [
   VersionMaterialReadSchema.extend({
     workflow: z.literal('plan'),

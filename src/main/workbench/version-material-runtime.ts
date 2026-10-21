@@ -48,7 +48,8 @@ export const executeVersionMaterial: VersionMaterialExecutor = (target, reauthor
     migrate: (request) => call('migrate', request),
     list: (request) => call('list', request),
     read: (request) => call('read', request),
-    save: (request) => call('save', request)
+    save: (request) => call('save', request),
+    initializeEmptyPlan: (request) => call('initializeEmptyPlan', request)
   }
 }
 
