@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store'
+import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
 import { startCycleAutomation } from './start-cycle-automation'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
 import { prepareMetricsSession, useMetricsSetupAgent } from './metrics-setup'
@@ -18,6 +19,9 @@ import { nativeArchivePrPort } from '../archive-pr-port'
 import './version-cycle.css'
 
 /** BW supplies workflow assets to the existing Orca workspace, never a second session host. */
+const VERSIONED_AUTOMATION_NOTICE =
+  '版本化自动化身份待接入（P5）：本版绑定树的定时/手动运行入口会复用旧版自动化条目、落错执行树，已拒绝启动。请暂在本树会话区直接新建会话。'
+
 export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const workflow = useCycleWorkspaceWorkflow()
   const [notice, setNotice] = useState<string | null>(null)
@@ -30,6 +34,14 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const agent = useMetricsSetupAgent(fixedId)
   const session = useAppStore(useShallow((state) => getActiveCycleSession(state, scope, fixedId)))
   const owner = scope?.runtimeOwnerEnvironmentId
+  // G2 (P3a)：绑定树=版本化工作区；自动化身份版本化属 P5，此前如实拒绝
+  // 启动/配置（防 creationKey 无版本维度导致运行落到旧版树），不假报就绪。
+  const versionBound = useMemo(() => {
+    const binding = worktree
+      ? normalizeStoredWorkbenchVersionBinding(worktree.workbenchVersionBinding)
+      : null
+    return !!binding && (binding.workflow === 'plan' || binding.workflow === 'acceptance')
+  }, [worktree])
   const materialPort = useMemo(
     () =>
       scope && fixedId
@@ -53,7 +65,8 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     fixedId,
     workflow: workflow ?? 'plan',
     agent,
-    onNotice: setNotice
+    onNotice: setNotice,
+    skip: versionBound ? 'version-bound' : null
   })
   const configure = useCycleAutomationDraft({
     cycleScope: scope,
@@ -63,8 +76,19 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     creationKey: automation.creationKey,
     onError: setNotice
   })
+  const configureGuarded = useCallback(async () => {
+    if (versionBound) {
+      setNotice(VERSIONED_AUTOMATION_NOTICE)
+      return
+    }
+    await configure()
+  }, [configure, versionBound])
   const start = useCallback(
     async (oneShot?: string) => {
+      if (versionBound) {
+        setNotice(VERSIONED_AUTOMATION_NOTICE)
+        return
+      }
       setBusy(true)
       try {
         if (!scope || !fixedId || !automation.automationId) {
@@ -86,7 +110,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
         setBusy(false)
       }
     },
-    [scope, fixedId, automation.automationId]
+    [scope, fixedId, automation.automationId, versionBound]
   )
   const prepareMetrics = useCallback(async () => {
     if (!scope || !agent) {
@@ -102,7 +126,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
             busy,
             notice,
             start,
-            configure,
+            configure: configureGuarded,
             prepareMetrics,
             context: {
               scope,
@@ -125,7 +149,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       busy,
       notice,
       start,
-      configure,
+      configureGuarded,
       prepareMetrics,
       scope,
       fixedId,

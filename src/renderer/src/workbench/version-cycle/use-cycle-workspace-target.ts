@@ -1,11 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
+import type { Worktree } from '../../../../shared/worktree/types'
+import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
+import { findVersionFlowWorktrees } from '../../../../shared/workbench/version-workspace-match'
 import { useAutoWorktreeBase } from './use-auto-worktree-base'
-import { nativeWorkspaceScope } from './native-workspace'
-import { cycleScopeKey, cycleScopeForWorktree, ensureCycleWorktree } from './native-cycle-workspace'
+import { nativeWorkspaceScope, nativeWorkspaceScopeKey } from './native-workspace'
+import {
+  cycleScopeKey,
+  cycleScopeForWorktree,
+  ensureCycleWorktree,
+  findCycleWorktree
+} from './native-cycle-workspace'
 import { updateTrunkCode } from './trunk-update-port'
 import { cycleWorkflowForWorktree } from '../workbench-nav'
+import { useBrowsedVersion } from '../version-context-state'
+import { nativeVersionMaterialPort } from '../version-material-port'
 import type { TrunkUpdateResult } from '../../../../shared/workbench/trunk-update'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import type { CycleScope } from './ports'
@@ -72,6 +82,10 @@ export function useCycleWorkspaceTarget(
   // Screen entry is read-only: it prepares and activates the fixed worktree and
   // stops there. No fetch, no pull, no sync notices — the「更新代码」button is
   // the only action that touches Git, and only when the user clicks it.
+  // G2 (P3a)：侧栏带入的浏览版本优先按绑定树定位（绝不从分支名反推）；无绑定
+  // 树时仅在旧固定树已存在才走旧路径（旧上下文显式保留）；两者皆无如实报错，
+  // 不为浏览悄悄建树。无浏览版本时保持原有 ensure 语义逐字不变。
+  const browsedVersion = useBrowsedVersion(repoId)
   useEffect(() => {
     setError(null)
     if (!preparing || !baseScope || !baseSettled || !workflow) {
@@ -80,21 +94,55 @@ export function useCycleWorkspaceTarget(
     let current = true
     void (async () => {
       try {
-        const fixed = await ensureCycleWorktree({ ...baseScope, workflow })
+        let chosen: Worktree | null = null
+        if (browsedVersion) {
+          const bound = findVersionFlowWorktrees(useAppStore.getState().allWorktrees(), {
+            version: browsedVersion,
+            workflow
+          })
+          const inScope = bound.filter((tree) => {
+            try {
+              return (
+                nativeWorkspaceScopeKey(nativeWorkspaceScope(tree)) ===
+                nativeWorkspaceScopeKey(baseScope)
+              )
+            } catch {
+              return false
+            }
+          })
+          if (inScope.length > 1) {
+            throw new Error(
+              `版本 ${browsedVersion} 在本宿主有多个绑定的流程树，请在侧栏选择具体工作区。`
+            )
+          }
+          chosen = inScope[0] ?? (bound.length === 1 ? bound[0] : null)
+          if (bound.length > 1 && !chosen) {
+            throw new Error(`版本 ${browsedVersion} 有多个绑定流程树实例，请在侧栏选择具体工作区。`)
+          }
+          if (!chosen && !findCycleWorktree({ ...baseScope, workflow })) {
+            throw new Error(
+              `版本 ${browsedVersion} 没有可用的${
+                workflow === 'plan' ? '计划' : '验收'
+              }工作区（无绑定树，也无旧固定树）。可在版本行菜单「准备流程工作区」；材料回看不建树。`
+            )
+          }
+        }
+        const fixed = chosen ?? (await ensureCycleWorktree({ ...baseScope, workflow }))
         if (!current) {
           return
         }
-        if (baseScope.runtimeOwnerEnvironmentId) {
+        const fixedScope = cycleScopeForWorktree(fixed, workflow)
+        if (fixedScope.runtimeOwnerEnvironmentId) {
           await activateWebRuntimeSessionWorktree({
             worktreeId: fixed.id,
-            environmentId: baseScope.runtimeOwnerEnvironmentId
+            environmentId: fixedScope.runtimeOwnerEnvironmentId
           })
         }
         if (!current) {
           return
         }
         const sequence = ++syncSequence.current
-        const key = JSON.stringify([cycleScopeKey(baseScope), fixed.id])
+        const key = JSON.stringify([cycleScopeKey(fixedScope), fixed.id])
         setSyncStates((previous) => ({
           ...previous,
           [key]: {
@@ -104,7 +152,7 @@ export function useCycleWorkspaceTarget(
           }
         }))
         const state = useAppStore.getState()
-        state.setActiveWorktree(fixed.id, baseScope.hostId)
+        state.setActiveWorktree(fixed.id, fixedScope.hostId)
         state.setActiveView('terminal')
         setSyncStates((previous) =>
           previous[key]?.sequence === sequence
@@ -120,7 +168,7 @@ export function useCycleWorkspaceTarget(
     return () => {
       current = false
     }
-  }, [preparing, baseScope, baseSettled, workflow])
+  }, [preparing, baseScope, baseSettled, workflow, browsedVersion])
   const worktree =
     !preparing && workflow && cycleWorkflowForWorktree(selected) === workflow ? selected : null
   const resolved = useMemo(() => {
@@ -136,6 +184,50 @@ export function useCycleWorkspaceTarget(
   const scope = useStableCycleScope(resolved.scope)
   const key = scope && worktree ? JSON.stringify([cycleScopeKey(scope), worktree.id]) : null
   const sync = key ? syncStates[key] : null
+  // G2 (P3a)：侧栏浏览版本同步到旧固定树的选版偏好（每个 树×版本 只应用一次，
+  // 屏内选版仍可改——旧上下文显式保留）；绑定树不写选版（版本由绑定决定）。
+  const selectAppliedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!scope || !worktree || !browsedVersion) {
+      return
+    }
+    if (normalizeStoredWorkbenchVersionBinding(worktree.workbenchVersionBinding)) {
+      return
+    }
+    const appliedKey = `${worktree.id}:${browsedVersion}`
+    if (selectAppliedRef.current === appliedKey) {
+      return
+    }
+    selectAppliedRef.current = appliedKey
+    let cancelled = false
+    void (async () => {
+      try {
+        const port = nativeVersionMaterialPort(
+          {
+            repoId: scope.repoId,
+            worktreeId: worktree.id,
+            hostId: scope.hostId,
+            workflow: scope.workflow
+          },
+          scope.runtimeOwnerEnvironmentId
+        )
+        const context = await port.context()
+        if (cancelled) {
+          return
+        }
+        if (context.version !== browsedVersion) {
+          await port.select(browsedVersion)
+        }
+      } catch (reason) {
+        if (!cancelled) {
+          onNotice(`同步侧栏选版失败：${reason instanceof Error ? reason.message : String(reason)}`)
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [scope, worktree, browsedVersion, onNotice])
   const updateCode = useCallback(async (): Promise<TrunkUpdateResult> => {
     if (!scope || !worktree) {
       return { updated: false, pulled: 0, reason: '工作区尚未就绪，请稍后再试' }

@@ -227,18 +227,25 @@ export function useEnsureCycleAutomation({
   fixedId,
   workflow,
   agent,
-  onNotice
+  onNotice,
+  skip = null
 }: {
   cycleScope: CycleScope | null
   fixedId: string | null
   workflow: VersionWorkflow
   agent: TuiAgent | null
   onNotice(message: string): void
+  /**
+   * G2 (P3a)：版本绑定树跳过旧身份自动化注册——creationKey 尚无版本维度
+   * （P5 接入），复用旧 key 会把条目错挂到旧版树；跳过时如实不注册、
+   * 由调用方给出诚实提示，不假报就绪。
+   */
+  skip?: string | null
 }): { automationId: string | null; creationKey: string | null } {
   const [registered, setRegistered] = useState<{ key: string; id: string } | null>(null)
   const scopeKey = cycleScope && fixedId ? `${cycleScopeKey(cycleScope)}:${fixedId}` : null
   useEffect(() => {
-    if (!cycleScope || !fixedId || !scopeKey) {
+    if (skip || !cycleScope || !fixedId || !scopeKey) {
       return
     }
     if (!agent) {
@@ -279,9 +286,9 @@ export function useEnsureCycleAutomation({
     return () => {
       active = false
     }
-  }, [scopeKey, cycleScope, fixedId, workflow, agent, onNotice])
+  }, [scopeKey, cycleScope, fixedId, workflow, agent, onNotice, skip])
   return {
     automationId: registered?.key === scopeKey ? registered.id : null,
-    creationKey: cycleScope ? cycleAutomationCreationKey(cycleScope) : null
+    creationKey: cycleScope && !skip ? cycleAutomationCreationKey(cycleScope) : null
   }
 }
