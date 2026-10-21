@@ -8,10 +8,16 @@
 |---|---|---|
 | intent | 已确认 | 2026-10-20 评审定稿（含版本级清理与跨宿主汇总决定） |
 | spec | 已确认 | 同上；高保真修订 8 为形态依据 |
-| 实现设计 | 已定稿待实施 | design 接线要求未经生产验证 |
-| 核心算法/数据协议 | 待实施 | 绑定契约、目录合并、悬空引用治理用例随 P1 登记（ratchet 对冲） |
-| 验收点 E2E | 待实施 | 协议用例随实施登记 |
+| 实现设计 | 已定稿，P1 已实施 | P1a 绑定契约/P1b 目录合并已按 design 接线要求落地；P2–P7 待实施，生产验证缺口见下 |
+| 核心算法/数据协议 | ◐部分 | P1 用例已登记：叠层 7 例（绑定契约校验/读回规范化 2、目录合并/悬空治理/缓存分隔 3、owner 与实例校验+读回确认 2）+ Orca 核心侧扩展 3 例（merge 投影、worktree.set 白名单、能力门控）；ratchet 同交付对冲删 7 例（use-version-minutes 装配 6、overview-zone-series 展示形态 1）。P2 创建恢复、P4 任务关联、P5 自动化键用例随实施登记 |
+| 验收点 E2E | 待实施 | 协议用例随实施登记；J 系列判据待真壳 |
 | 用户旅程 E2E | 待验证 | J1–J9 真壳旅程待人验证 |
+
+## P1 实施证据与边界（2026-10-21）
+
+P1a/P1b 已实施并通过单测与 typecheck：绑定契约 `src/shared/workbench/version-binding.ts`（schema 1，workflow 与 goalId/taskSource 一致性 refine，读回规范化脏数据一律未绑定）；原生挂载：`WorktreeMeta.workbenchVersionBinding`（undefined 保留/null 清除）、`worktree.set` 白名单、`mergeWorktree` 投影规范化、runtime capability `workbench.version-binding.v1`（无能力对端不下发、双方向门控）；BW 薄 helper `workbench.versionBinding.read/set`（原生身份定位、owner 验证、identity 选择器写入、读回确认才返回，不接受客户端路径）；目录合并 `src/shared/workbench/version-catalog.ts` + 装载器（已提交材料 ∪ 存活绑定，去重保留材料来源，已清理版本 retained/retired 收起，绑定从登记现算故删树无悬空，草稿与目标从已保存计划派生、缓存按 owner/项目/仓库/版本/修订分隔）。
+
+单测级读回证明：绑定经真实持久化链 round-trip（写合并→序列化压缩→载入补默认→投影）后一致；权限撤销/登记消失时 resolver 拒绝且零写入；写入被丢弃时读回不一致报未确认、不虚报成功。**未验证**：真实 Electron 重启、共享宿主配对读写（共享端读 owner 绑定、不在访问者机建树的真实链路）、权限撤销真机行为、v0.7/v0.8 双版本真壳导航——归 J6/J9 与真壳验证，由人在专门会话执行；P1 未接任何 UI 消费方（侧栏版本树为 P3）。
 
 ## 定稿设计的证据边界
 
