@@ -36,7 +36,7 @@
 ⁴ 第 1–2 行形态整改（v9.5 原型，2026-10-18 用户确认，生产未实施）：计划/验收统一目标卡骨架（整卡收缩、Issue 分组子块带 Issue 级进展备注、计划完成/负责人从计划材料既有字段取、拆解打 bug/feature 分类标签）；验收单页承载会前/会中/会后三阶段，页底「会议指导与遗留」由会后 SOP 从会议转写总结（issue #374 链路、经 subagent、逐条人确认）随轮次入材料；跨周版本按轮次记录、界面按周呈现；周报信息由验收屏承载，不设独立周报屏与导出件——weekly-report 试点（PR #321 未合入 main、保持挂起）整体废止，处置待用户确认。明细见[验收 STATUS](version-acceptance/STATUS.md) 与[计划 STATUS](version-planning/STATUS.md) 批次记录。
 
 ⁵ 第 8 行随 #323 设计 PR 首次登记（2026-10-14），2026-10-15 按人反馈两轮修订后 gate（简化为拼装现有能力；人不手敲命令），实现随同 PR 交付：集成页收敛为 GitHub / CodeHub / WeLink / CloudBuild 四卡（代码托管 / 项目群 / 构建三组；CloudBuild 随 #366 增补，2026-10-19），preflight 补 `welink-cli` / `cb` 探测与 codehub / welink / cb `auth status` 读回，安装由应用后台执行（gh 保持外链），登录在卡内展开上游内嵌终端粘贴命令、人按回车（远端运行时无按钮，WSL 工作树保留）。待决 1–4 与真壳拍板 5–8 均已由人拍板（2026-10-16 / 10-19）：六卡代码留仓、自包含安装命令（cloudbuild 为两步）、welink EXPIRED 判未登录、分组标题补中文、安装后台化、登录卡内嵌终端。真壳验收证据（I01–I12 / IJ01）未采。明细见其 [STATUS](connectors/STATUS.md)。
-⁶ 第 1 行 G2（[#383](https://github.com/forcegravity1989/builder-workbench/issues/383)）2026-10-20 评审定稿（Draft PR #389、修订 7）：版本平铺导航、目标目录投影、目标树按需、同一原生创建器开工、版本总览聚合视图，以及版本归档（人的显式动作；归档记录入版本计划材料，流程树复用 Orca 原生工作树归档 isArchived；不设归档分区、不级联、归档≠删除）。生产接线未实施，证据缺口见[计划 STATUS](version-planning/STATUS.md)；实施计划为仓外草案，开工前经人确认。
+⁶ 第 1 行 G2（[#383](https://github.com/forcegravity1989/builder-workbench/issues/383)）2026-10-20 评审定稿（Draft PR #389、修订 8）：版本平铺导航、目标目录投影（含跨宿主实例汇总）、目标树按需、同一原生创建器开工、版本总览聚合视图，以及版本级清理（版本行删除图标＋与 Orca 同口径确认对话框，复用原生删除链与预检，默认只删本机 owned 工作树；不级联删版本、材料与目录保留）。生产接线未实施，证据缺口见[计划 STATUS](version-planning/STATUS.md)；实施计划为仓外草案，开工前经人确认。
 
 ## 裁决与明细指引
 

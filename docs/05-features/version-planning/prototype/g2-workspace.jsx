@@ -47,8 +47,7 @@ const blankVersion = () => ({
     { id: 'acceptance', role: 'acceptance' }
   ],
   sessions: [],
-  selected: null,
-  archived: false
+  selected: null
 })
 const initialVersions = () => ({
   'v0.7': {
@@ -56,15 +55,16 @@ const initialVersions = () => ({
       { id: 'plan', role: 'plan' },
       { id: 'acceptance', role: 'acceptance' },
       { id: 'goal-G2', role: 'goal', goal: 'G2' },
-      { id: 'issue-383', role: 'issue', goal: 'G2', issue: 383, parent: 'goal-G2' }
+      { id: 'issue-383', role: 'issue', goal: 'G2', issue: 383, parent: 'goal-G2' },
+      { id: 'goal-G1-remote', role: 'goal', goal: 'G1', owner: 'remote' }
     ],
     sessions: [
       { id: 'p07', tree: 'plan', label: '计划讨论' },
       { id: 'g07', tree: 'goal-G2', label: 'G2 · 目标协作' },
-      { id: 'i383', tree: 'issue-383', label: '#383 · 侧边栏与版本运作' }
+      { id: 'i383', tree: 'issue-383', label: '#383 · 侧边栏与版本运作' },
+      { id: 'g01r', tree: 'goal-G1-remote', label: 'G1 · 配对机目标协作' }
     ],
-    selected: 'p07',
-    archived: false
+    selected: 'p07'
   },
   'v0.6': {
     trees: [
@@ -75,8 +75,7 @@ const initialVersions = () => ({
       { id: 'p06', tree: 'plan', label: '计划讨论' },
       { id: 'a06', tree: 'acceptance', label: '验收讨论' }
     ],
-    selected: 'p06',
-    archived: true
+    selected: 'p06'
   }
 })
 const Icon = ({ icon: Component, ...props }) => <Component size={15} strokeWidth={1.7} {...props} />
@@ -258,16 +257,31 @@ function App() {
     })
     setToast(`演示：原有入口新建会话，归入当前版本的${role === 'plan' ? '计划' : '验收'}树`)
   }
-  function archiveVersion(v) {
-    setVersions((prev) => ({ ...prev, [v]: { ...prev[v], archived: true } }))
-    setOpenVersions((prev) => prev.filter((name) => name !== v))
+  const cleanupListRef = useRef(null)
+  function confirmCleanup(v) {
+    const nodes = [...(cleanupListRef.current?.querySelectorAll('input[data-tree]:checked') || [])]
+    const localIds = nodes
+      .map((n) => n.dataset.tree)
+      .filter((id) => versions[v].trees.some((t) => t.id === id))
+    const remoteCount = nodes.length - localIds.length
+    setVersions((prev) => {
+      const old = prev[v],
+        removed = new Set(localIds),
+        sessions = old.sessions.filter((s) => !removed.has(s.tree))
+      return {
+        ...prev,
+        [v]: {
+          ...old,
+          trees: old.trees.filter((t) => !removed.has(t.id)),
+          sessions,
+          selected: sessions.some((s) => s.id === old.selected) ? old.selected : null
+        }
+      }
+    })
     setModal(null)
-    setToast('演示：版本已归档；流程树按原生 isArchived 收起，可在原生工作区清理中回看或恢复')
-  }
-  function unarchiveVersion(v) {
-    setVersions((prev) => ({ ...prev, [v]: { ...prev[v], archived: false } }))
-    setModal(null)
-    setToast('演示：已取消归档；本版流程树恢复原生可见列表，会话与定时不自动恢复')
+    setToast(
+      `演示：本机 ${localIds.length} 棵工作树经原生删除链（含预检）${remoteCount ? `，配对机 ${remoteCount} 棵在归属宿主删除` : ''}；材料与版本目录保留`
+    )
   }
   function activateTree(v, tree, session) {
     if (session) {
@@ -524,10 +538,9 @@ function App() {
   }
   function versionNav(v) {
     const expanded = openVersions.includes(v),
-      goals = (plans[v] || emptyPlan).goals,
-      archived = versions[v].archived === true
+      goals = (plans[v] || emptyPlan).goals
     return (
-      <div className={`version-group ${archived ? 'is-archived' : ''}`} key={v}>
+      <div className="version-group" key={v}>
         <div className="version-row">
           <button
             className="nav-row version-toggle"
@@ -538,16 +551,12 @@ function App() {
             <Icon icon={expanded ? ChevronDown : ChevronRight} />
             <Icon icon={PackageCheck} />
             <strong>{v}</strong>
-            {archived && <span className="badge version-badge">已归档</span>}
           </button>
-          <button
-            className="icon-button goal-menu"
-            title={`${v} 版本操作`}
-            aria-label={`${v} 版本操作`}
-            onClick={() => setModal({ type: 'version-menu', version: v })}
-          >
-            ···
-          </button>
+          <Button
+            icon={X}
+            label={`清理 ${v} 工作树`}
+            onClick={() => setModal({ type: 'cleanup', version: v })}
+          />
         </div>
         {expanded && (
           <div className="version-children">
@@ -602,12 +611,6 @@ function App() {
             新建{labels[screen]}
           </Button>
           <span className="muted">{active ? `当前会话：${active.label}` : '尚无会话'}</span>
-          {state.archived === true && (
-            <p className="candidate-note">
-              已归档版本回看：材料从 Git
-              归档来源读取，会话与工作树按原生状态如实呈现。编辑需先取消归档并核对或准备本版工作区。
-            </p>
-          )}
         </ReuseSurface>
       )
     }
@@ -651,13 +654,7 @@ function App() {
           title="沿用 Orca 完整工作区"
           scope={`Builder Workbench / ${version}${currentTree ? ` / bw/${version}/${currentTree.id}` : ''}`}
           description={`原生会话、标签、分屏、工具和历史保持原交互。${currentSession ? `当前演示会话：${currentSession.label}。${currentTree?.parent ? `原生父树：bw/${version}/${currentTree.parent}。` : ''}` : '请选择侧栏的分支或会话。'}`}
-        >
-          {state.archived === true && (
-            <p className="candidate-note">
-              已归档版本：本版原生工作区已归档隐藏，打开与恢复沿原生入口；原型只演示归属。
-            </p>
-          )}
-        </ReuseSurface>
+        />
       )
     }
     if (screen === 'project-workspaces') {
@@ -714,8 +711,8 @@ function App() {
   return (
     <div className="prototype">
       <div className="review-bar">
-        <strong>G2 交互原型 · 修订 7</strong>
-        <span>设计定稿 · 图标操作 · 原生复用（含版本归档） · 业界参考见右侧书本</span>
+        <strong>G2 交互原型 · 修订 8</strong>
+        <span>设计定稿 · 图标操作 · 原生复用（含版本级清理） · 业界参考见右侧书本</span>
         <div className="review-actions" aria-label="原型评审工具">
           <Button
             icon={BookOpen}
@@ -989,30 +986,35 @@ function App() {
           <p className="muted">实际产品沿用原生工作树菜单；原型不模拟删除等真实磁盘操作。</p>
         </Modal>
       )}
-      {modal?.type === 'version-menu' && (
-        <Modal title={`${modal.version} · 版本操作`} close={() => setModal(null)}>
-          <p>
-            bw/{modal.version}/plan · bw/{modal.version}/acceptance
+      {modal?.type === 'cleanup' && (
+        <Modal title={`清理 ${modal.version} 工作树`} close={() => setModal(null)}>
+          <p className="muted">
+            与右击单树删除、Orca 工作区清理同一条删除链：未提交修改、子树与归档 hook
+            预检不豁免；删除的是磁盘检出与原生登记（含 BW 绑定），Git
+            材料与版本目录保留，版本仍在侧栏收起回看。
           </p>
-          {versions[modal.version].archived === true ? (
-            <>
-              <Button onClick={() => unarchiveVersion(modal.version)}>取消归档</Button>
-              <p className="muted">
-                取消归档清除版本材料中的归档记录，并恢复本版流程树的原生可见列表；已有会话与定时任务不自动恢复。
-              </p>
-            </>
-          ) : (
-            <>
-              <Button onClick={() => archiveVersion(modal.version)}>归档版本</Button>
-              <p className="muted">
-                归档前如实提示本版在跑会话、未合入材料草案和仍启用的定时任务，经人确认后执行。归档把归档记录写入版本材料，并把本版计划/验收流程树送入
-                Orca 原生归档（isArchived）：原生列表隐藏，可在原生工作区清理中回看或恢复。
-              </p>
-              <p className="muted">
-                版本留在原列表位置、带“已归档”标识、默认收起，可展开回看；不删除任何树、会话或材料，不级联归档目标/任务树，不改写定时任务设置。
-              </p>
-            </>
-          )}
+          <div className="goal-action-list" ref={cleanupListRef}>
+            {versions[modal.version].trees.map((tree) => (
+              <label className="composer-demo-parent" key={tree.id}>
+                <input
+                  type="checkbox"
+                  defaultChecked={tree.owner !== 'remote'}
+                  data-tree={tree.id}
+                />
+                bw/{modal.version}/{tree.id}
+                <small>
+                  {tree.owner === 'remote' ? ' · 配对机 B owned（默认不勾）' : ' · 本机 owned'}
+                </small>
+              </label>
+            ))}
+          </div>
+          <p className="muted">
+            本版自动化仍启用时在此如实提示，是否停用由人在原生编辑器决定；agent 会话记录归各
+            provider，删树后如实显示不可用。
+          </p>
+          <Button primary onClick={() => confirmCleanup(modal.version)}>
+            确认删除勾选的工作树
+          </Button>
         </Modal>
       )}
       {modal?.type === 'references' && (
@@ -1035,7 +1037,7 @@ function App() {
           </div>
           <h3>新画什么</h3>
           <p>
-            项目与版本导航、新建版本、版本归档、目标目录，以及新增版本总览。既有项目总览、计划、任务、验收、自动化、知识库和会话区只标明沿用位置，不再做平行高保真。
+            项目与版本导航、新建版本、版本级清理、目标目录，以及新增版本总览。既有项目总览、计划、任务、验收、自动化、知识库和会话区只标明沿用位置，不再做平行高保真。
           </p>
           <h3>目标目录与工作树分开</h3>
           <p>
@@ -1079,7 +1081,8 @@ function App() {
             agent 记录不能视为同一恢复对象。
           </p>
           <p className="muted">
-            v0.7/v0.6 计划为仓库快照，其中 v0.6 演示已归档状态；工作树与会话全部是演示，没有
+            v0.7/v0.6 计划为仓库快照，其中 v0.7 含配对机 owned
+            实例演示跨宿主汇总；工作树、会话与清理全部是演示，没有
             Electron、文件写回或持久化恢复证据。生产接线与真壳证据见 STATUS。
           </p>
         </Modal>
