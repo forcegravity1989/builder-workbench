@@ -49,6 +49,43 @@ export function buildGoalStartNote(args: {
   ].join('\n')
 }
 
+/**
+ * 目标开工（普通函数形态，事件驱动入口用）：同一原生创建器 + BW 预填。
+ * home 缺失（项目工作区未就绪）时如实不动作。
+ */
+export function openGoalStartComposer(args: {
+  version: string
+  goal: GoalStartTarget
+  references: readonly CycleTaskReference[]
+  home: GoalStartHome | null
+}): void {
+  const { version, goal, references, home } = args
+  if (!home) {
+    return
+  }
+  const workbenchCreation: WorkbenchCreationContext = {
+    version,
+    workflow: 'goal',
+    goalId: goal.goalId,
+    repoId: home.repoId
+  }
+  const initialParentWorktreeId = findGoalParentSuggestion({
+    version,
+    goalId: goal.goalId,
+    worktrees: useAppStore.getState().allWorktrees(),
+    home
+  })
+  useAppStore.getState().openModal('new-workspace-composer', {
+    prefilledName: `${version}-${goal.label}`,
+    initialRepoId: home.repoId,
+    initialNote: buildGoalStartNote({ version, goal, references }),
+    ...(initialParentWorktreeId ? { initialParentWorktreeId } : {}),
+    workbenchCreation,
+    enableIssueAutomation: false,
+    telemetrySource: 'sidebar'
+  })
+}
+
 export function useGoalStartAction(args: {
   version: string
   goal: GoalStartTarget | null
@@ -58,30 +95,10 @@ export function useGoalStartAction(args: {
 }): { startGoalWorkspace: () => void } {
   const { version, goal, references, home } = args
   const startGoalWorkspace = useCallback(() => {
-    if (!goal || !home) {
+    if (!goal) {
       return
     }
-    const workbenchCreation: WorkbenchCreationContext = {
-      version,
-      workflow: 'goal',
-      goalId: goal.goalId,
-      repoId: home.repoId
-    }
-    const initialParentWorktreeId = findGoalParentSuggestion({
-      version,
-      goalId: goal.goalId,
-      worktrees: useAppStore.getState().allWorktrees(),
-      home
-    })
-    useAppStore.getState().openModal('new-workspace-composer', {
-      prefilledName: `${version}-${goal.label}`,
-      initialRepoId: home.repoId,
-      initialNote: buildGoalStartNote({ version, goal, references }),
-      ...(initialParentWorktreeId ? { initialParentWorktreeId } : {}),
-      workbenchCreation,
-      enableIssueAutomation: false,
-      telemetrySource: 'sidebar'
-    })
+    openGoalStartComposer({ version, goal, references, home })
   }, [goal, home, references, version])
   return { startGoalWorkspace }
 }

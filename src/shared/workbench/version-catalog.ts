@@ -58,15 +58,22 @@ export type VersionCatalogEntry = {
 /**
  * 从原生登记集合提取存活绑定实例。输入是调用方已经聚合好的登记快照
  * （renderer store 含配对宿主同步行）；归档树不算存活工作区。
+ * 项目过滤前提（P1 延后项收口）：给出 projectId 时，登记行带 projectId 且
+ * 不同项目的一律排除；行上没有 projectId 时无法证伪、保留（绑定读写仍由
+ * owner runtime 的 project 核对围栏）。
  */
 export function collectVersionCatalogWorkspaces(
   worktrees: readonly Worktree[],
-  repoIds: readonly string[]
+  repoIds: readonly string[],
+  projectId?: string | null
 ): VersionCatalogWorkspace[] {
   const wanted = new Set(repoIds)
   const collected: VersionCatalogWorkspace[] = []
   for (const worktree of worktrees) {
     if (!wanted.has(worktree.repoId) || worktree.isArchived) {
+      continue
+    }
+    if (projectId && worktree.projectId && worktree.projectId !== projectId) {
       continue
     }
     const binding = normalizeStoredWorkbenchVersionBinding(worktree.workbenchVersionBinding)
@@ -82,6 +89,33 @@ export function collectVersionCatalogWorkspaces(
     })
   }
   return collected
+}
+
+/**
+ * 版本感知排序（P2 延后项①收口）：点分段逐段比较，纯数字段按数值
+ * （v0.9 < v0.10），其余按字典序；同输入同输出，不做语义猜测。
+ */
+export function compareMaterialVersions(a: string, b: string): number {
+  const partsA = a.split('.')
+  const partsB = b.split('.')
+  const length = Math.max(partsA.length, partsB.length)
+  for (let index = 0; index < length; index += 1) {
+    const x = partsA[index] ?? ''
+    const y = partsB[index] ?? ''
+    const xn = /^\d+$/.test(x) ? Number(x) : null
+    const yn = /^\d+$/.test(y) ? Number(y) : null
+    if (xn !== null && yn !== null) {
+      if (xn !== yn) {
+        return xn - yn
+      }
+      continue
+    }
+    const compared = x.localeCompare(y)
+    if (compared !== 0) {
+      return compared
+    }
+  }
+  return 0
 }
 
 /**
@@ -147,7 +181,7 @@ export function mergeVersionCatalog(args: {
   for (const entry of entries.values()) {
     entry.state = entry.workspaces.length > 0 ? 'working' : 'retired'
   }
-  return [...entries.values()].sort((a, b) => a.version.localeCompare(b.version))
+  return [...entries.values()].sort((a, b) => compareMaterialVersions(a.version, b.version))
 }
 
 /**

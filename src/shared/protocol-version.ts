@@ -132,6 +132,10 @@ export const WORKTREE_ARCHIVE_FAILURE_BLOCKING_RUNTIME_CAPABILITY =
 // local fallback) when the owner runtime lacks it. Advertised unconditionally:
 // every build carrying this constant persists and projects the binding.
 export const WORKBENCH_VERSION_BINDING_RUNTIME_CAPABILITY = 'workbench.version-binding.v1' as const
+// G2 新版本准备（workbench.versionWorkspace.prepare）与绑定同代际；单列能力
+// 让「能写绑定」与「能备两树」分别可探测（P3a 新建版本入口在归属宿主断言）。
+export const WORKBENCH_VERSION_WORKSPACE_RUNTIME_CAPABILITY =
+  'workbench.version-workspace.v1' as const
 export const CODEX_RESET_CREDIT_RUNTIME_CAPABILITY = 'accounts.codex-reset-credit.v1' as const
 export const ACCOUNT_IMPORT_RUNTIME_CAPABILITY = 'accounts.import-host-credentials.v1' as const
 // Why: older hosts cannot reconcile terminal.create's mutation after losing the reply, so clients may only retry unknown outcomes when advertised.
@@ -308,6 +312,7 @@ export const RUNTIME_CAPABILITIES = [
   WORKTREE_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,
   WORKTREE_ARCHIVE_FAILURE_BLOCKING_RUNTIME_CAPABILITY,
   WORKBENCH_VERSION_BINDING_RUNTIME_CAPABILITY,
+  WORKBENCH_VERSION_WORKSPACE_RUNTIME_CAPABILITY,
   TERMINAL_CREATE_IDEMPOTENCY_RUNTIME_CAPABILITY,
   SESSION_TAB_CLOSE_INTENT_RUNTIME_CAPABILITY,
   SESSION_TABS_AUTHORITATIVE_INVENTORY_RUNTIME_CAPABILITY,
