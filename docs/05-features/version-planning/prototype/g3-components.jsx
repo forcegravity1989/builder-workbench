@@ -11,7 +11,9 @@ const {
   BrainCircuit,
   Pencil,
   Check,
-  ArrowUp
+  ArrowUp,
+  MessageSquare,
+  Copy
 } = window.BWPrototypeDependencies
 export { React }
 export function Icon({ name, size = 16 }) {
@@ -27,7 +29,9 @@ export function Icon({ name, size = 16 }) {
       agent: BrainCircuit,
       edit: Pencil,
       check: Check,
-      send: ArrowUp
+      send: ArrowUp,
+      annotate: MessageSquare,
+      copy: Copy
     }[name] || Target
   return <Component size={size} aria-hidden="true" />
 }
@@ -101,6 +105,7 @@ export function GoalRow({
   update,
   assistant,
   startTask,
+  annotate,
   editing,
   setEditing
 }) {
@@ -128,11 +133,18 @@ export function GoalRow({
         )}
         <span className="g3-goal-count">{tasks.length} Issue</span>
         {expanded && (
-          <IconButton
-            name={editing ? 'check' : 'edit'}
-            label={editing ? '结束编辑目标' : '编辑目标'}
-            onClick={() => setEditing(!editing)}
-          />
+          <>
+            <IconButton
+              name="annotate"
+              label={`批注 ${goal.goalId}（会上意见记入速记）`}
+              onClick={() => annotate(`${goal.goalId} 目标`)}
+            />
+            <IconButton
+              name={editing ? 'check' : 'edit'}
+              label={editing ? '结束编辑目标' : '编辑目标'}
+              onClick={() => setEditing(!editing)}
+            />
+          </>
         )}
       </div>
       {!expanded && (
@@ -172,27 +184,13 @@ export function GoalRow({
             )}
           </div>
           <div className="g3-commitment">
-            <div className="g3-delivery">
-              {editing ? (
-                <Field
-                  label="交付内容"
-                  value={goal.deliverable}
-                  onChange={(v) => update('deliverable', v)}
-                  placeholder="交出什么可使用或可检查的成果"
-                />
-              ) : (
-                <>
-                  <h3>交付内容</h3>
-                  <Lines text={goal.deliverable} />
-                </>
-              )}
-            </div>
             <div className="g3-acceptance">
               {editing ? (
                 <Field
                   label="验收标准"
                   value={goal.acceptance}
                   onChange={(v) => update('acceptance', v)}
+                  rows={3}
                   placeholder="谁做什么操作、看到什么结果；涉及数值时写口径和目标值"
                 />
               ) : (
@@ -232,6 +230,11 @@ export function GoalRow({
                         : '状态未知'}
                   </span>
                   <IconButton
+                    name="annotate"
+                    label={`批注 #${task.number}（拆解评审意见记入速记）`}
+                    onClick={() => annotate(`${goal.goalId} · #${task.number}`)}
+                  />
+                  <IconButton
                     name="arrow"
                     label={`开工 #${task.number}（G2 衔接）`}
                     onClick={() => startTask(task)}
@@ -239,7 +242,7 @@ export function GoalRow({
                 </div>
               ))
             ) : (
-              <p className="g3-empty">与计划助手核对已有 Issue，再按交付内容拆解。</p>
+              <p className="g3-empty">与计划助手核对已有 Issue，再按验收标准拆解。</p>
             )}
           </div>
         </div>
@@ -247,62 +250,103 @@ export function GoalRow({
     </article>
   )
 }
-export function ReviewItem({ item, update, locate, goals }) {
+export function MinutesCard({ minutes, sections, update, assistant }) {
   const [editing, setEditing] = useState(false)
   return (
-    <article className="g3-review-item">
-      <div className="g3-review-top">
-        <span className="g3-id">{item.id}</span>
-        <strong>{item.title}</strong>
-        <IconButton
-          name={editing ? 'check' : 'edit'}
-          label={editing ? '结束编辑回应' : '编辑回应与修改位置'}
-          onClick={() => setEditing(!editing)}
-        />
-      </div>
-      <p>{item.requirement}</p>
-      {editing ? (
-        <div className="g3-response-editor">
-          <Field
-            label="回应与修改位置"
-            value={item.response}
-            onChange={(response) => update({ response })}
-            placeholder="写清决定、修改位置；暂不采纳时说明原因"
+    <article className="g3-minutes">
+      <div className="g3-minutes-head">
+        <span className={`g3-status ${minutes.confirmed ? 'confirmed' : ''}`}>
+          {minutes.confirmed ? '已人工确认' : '待人工确认'}
+        </span>
+        <span className="g3-muted">{minutes.sources}</span>
+        <span className="g3-minutes-actions">
+          <IconButton
+            name={editing ? 'check' : 'edit'}
+            label={editing ? '结束编辑纪要' : '编辑纪要'}
+            onClick={() => setEditing(!editing)}
           />
-          <label>
-            关联目标
-            <select
-              aria-label="关联目标"
-              value={item.goal}
-              onChange={(e) => update({ goal: e.target.value })}
-            >
-              {goals.map((goal) => (
-                <option key={goal.goalId} value={goal.goalId}>
-                  {goal.goalId}
-                  {goal.title ? ` · ${goal.title}` : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      ) : (
-        <div className="g3-response">
-          <strong>回应与修改位置</strong>
-          {item.response ? <p>{item.response}</p> : <p className="g3-muted">未记录</p>}
-        </div>
-      )}
-      <div className="g3-review-meta">
-        <a
-          href="https://github.com/forcegravity1989/builder-workbench/issues/385"
-          target="_blank"
-          rel="noreferrer"
-        >
-          {item.source}
-        </a>
-        <button className="g3-goal-link" onClick={locate}>
-          目标 {item.goal} <Icon name="arrow" size={13} />
+          <IconButton name="agent" label="与计划助手基于纪要调整目标" onClick={assistant} />
+        </span>
+      </div>
+      {editing
+        ? sections.map(([key, label]) => (
+            <Field
+              key={key}
+              label={label}
+              rows={2}
+              value={minutes.sections[key]}
+              onChange={(value) =>
+                update({ sections: { ...minutes.sections, [key]: value } })
+              }
+            />
+          ))
+        : sections.map(([key, label]) => (
+            <div className="g3-minutes-section" key={key}>
+              <strong>{label}</strong>
+              {minutes.sections[key] ? (
+                <p>{minutes.sections[key]}</p>
+              ) : (
+                <p className="g3-muted">无</p>
+              )}
+            </div>
+          ))}
+      <div className="g3-minutes-foot">
+        <button onClick={() => update({ confirmed: !minutes.confirmed })}>
+          {minutes.confirmed ? '已人工确认 · 撤销' : '标记人工确认'}
         </button>
+        <span className="g3-muted">纪要独立保存，认可随归档 PR 评审表达。</span>
       </div>
     </article>
+  )
+}
+export function AnnotationTray({ target, annotations, onClose, onRecord, onSend }) {
+  const [draft, setDraft] = useState('')
+  const copy = async () => {
+    const text = annotations.map((item) => `- [${item.object}] ${item.text}`).join('\n')
+    await navigator.clipboard?.writeText(text)
+  }
+  return (
+    <aside className="g3-annotation-tray" aria-label="在线批注速记窗">
+      <header>
+        <Icon name="annotate" size={14} />
+        <strong>在线批注</strong>
+        <span className="g3-muted">{target}</span>
+        <IconButton name="close" label="收起批注窗" onClick={onClose} />
+      </header>
+      {annotations.length > 0 && (
+        <ul>
+          {annotations.map((item) => (
+            <li key={item.id}>
+              <span className="g3-id">{item.object}</span>
+              <p>{item.text}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+      <textarea
+        rows={2}
+        aria-label="批注内容"
+        placeholder={`记录对 ${target} 的评审意见`}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+      />
+      <footer>
+        <button
+          disabled={!draft.trim()}
+          onClick={() => {
+            onRecord(draft.trim())
+            setDraft('')
+          }}
+        >
+          记录
+        </button>
+        <button disabled={!annotations.length} onClick={copy}>
+          <Icon name="copy" size={13} /> 复制
+        </button>
+        <button className="primary" disabled={!annotations.length} onClick={onSend}>
+          <Icon name="send" size={13} /> 发送给计划助手
+        </button>
+      </footer>
+    </aside>
   )
 }
