@@ -52,6 +52,11 @@ export function runTaskPageGitHubQuietRefresh(model: TaskPageGitHubQuietRefreshP
   if (quietRefreshNonce === 0) {
     return
   }
+  // Why: scoped (BW) lists re-materialize through the scope effect on mutation
+  // invalidation; quiet revalidation would reconcile against unscoped queries.
+  if (model.pageData.workbenchTaskScope) {
+    return
+  }
   if (taskSource !== 'github' || githubMode !== 'items' || selectedRepos.length === 0) {
     return
   }

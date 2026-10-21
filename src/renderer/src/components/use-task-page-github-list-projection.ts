@@ -1,6 +1,7 @@
-import type { TaskPageJiraCreationMetadataModel } from './use-task-page-jira-creation-metadata'
+import type { TaskPageWorkbenchScopeModel } from './use-task-page-workbench-scope'
 import { useCallback, useMemo, useEffect } from 'react'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import { parseTaskQuery } from '../../../shared/task-query'
 import { taskPageGitHubItemKey } from '@/components/task-page-github-work-item-mutation-registry'
 import { deriveTaskPagePRCheckSummary } from '@/components/task-page-pr-check-summary'
 import { deriveAdvertisedTotalPages } from '@/components/task-page-work-item-pagination'
@@ -11,7 +12,7 @@ import {
   getTaskPageRepoSourceContext
 } from './task-page-source-context'
 import { sameOptionalGitHubOwnerRepo } from './task-page-github-review-model'
-export function useTaskPageGitHubListProjection(model: TaskPageJiraCreationMetadataModel) {
+export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeModel) {
   const {
     repoMap,
     fetchPRChecks,
@@ -27,7 +28,10 @@ export function useTaskPageGitHubListProjection(model: TaskPageJiraCreationMetad
     patchTaskPageWorkItemRows,
     perRepoSourceState,
     activeGithubTaskKind,
-    githubWorkItemMutation
+    githubWorkItemMutation,
+    appliedTaskSearch,
+    workbenchScopeActive,
+    workbenchScopeItemKeys
   } = model
   // Why: defense-in-depth — keep stale cache rows from leaking across the issue/PR split tabs.
   const applyTypeFilter = useCallback(
@@ -39,10 +43,35 @@ export function useTaskPageGitHubListProjection(model: TaskPageJiraCreationMetad
     [activeGithubTaskKind]
   )
   const currentPageItems = useMemo(() => pages[currentPage] ?? [], [pages, currentPage])
-  const typeFilteredCurrentPageItems = useMemo(
-    () => applyTypeFilter(currentPageItems),
-    [applyTypeFilter, currentPageItems]
+  // Why: a BW workbench scope is reference-driven — membership fences out any
+  // unscoped cache pre-paint, and the search box filters client-side over the
+  // materialized set (the issue/PR tab split and server qualifiers don't apply).
+  const workbenchScopeFilterText = useMemo(
+    () =>
+      workbenchScopeActive ? parseTaskQuery(appliedTaskSearch).freeText.trim().toLowerCase() : '',
+    [appliedTaskSearch, workbenchScopeActive]
   )
+  const typeFilteredCurrentPageItems = useMemo(() => {
+    if (!workbenchScopeActive) {
+      return applyTypeFilter(currentPageItems)
+    }
+    return currentPageItems.filter((item) => {
+      if (!workbenchScopeItemKeys.has(`${item.repoId}:${item.number}`)) {
+        return false
+      }
+      return (
+        !workbenchScopeFilterText ||
+        item.title.toLowerCase().includes(workbenchScopeFilterText) ||
+        String(item.number).includes(workbenchScopeFilterText)
+      )
+    })
+  }, [
+    applyTypeFilter,
+    currentPageItems,
+    workbenchScopeActive,
+    workbenchScopeFilterText,
+    workbenchScopeItemKeys
+  ])
   // Why: soft-hide keeps membership-exit rows in pages for rollback/cursors but
   // removes them from the visible table (sticky ∪ pending membership).
   const filteredWorkItems = useMemo(
@@ -156,12 +185,16 @@ export function useTaskPageGitHubListProjection(model: TaskPageJiraCreationMetad
   const fallbackTotalPages = lastLoadedPageFull
     ? Math.max(pages.length, lastLoadedPageIndex + 2)
     : Math.max(1, pages.length)
-  const totalPages = deriveAdvertisedTotalPages({
-    loadedPages: pages.length,
-    countedTotalPages,
-    fallbackTotalPages,
-    provenPageLimit
-  })
+  // Why: scoped (BW) lists materialize every page up front — the advertised
+  // count is the local page count, never an unscoped provider count query.
+  const totalPages = workbenchScopeActive
+    ? Math.max(1, pages.length)
+    : deriveAdvertisedTotalPages({
+        loadedPages: pages.length,
+        countedTotalPages,
+        fallbackTotalPages,
+        provenPageLimit
+      })
 
   // Why: load only the clicked page so a high-page jump doesn't exhaust GitHub's Search API rate bucket.
   const nextModel = model as typeof model & {

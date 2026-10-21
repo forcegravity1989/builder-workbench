@@ -38,6 +38,7 @@ import {
   GITHUB_TASK_STICKY_TITLE_CELL_CLASS,
   GITHUB_TASK_STICKY_TITLE_HEADER_CLASS
 } from '../../task-page-source-context'
+import { TaskPageScopeFooter, TaskPageScopeHeader } from '@/workbench/TaskScopePanel'
 
 function githubStateOf(item: CodeHubTaskItem): GitHubWorkItemStatusItem {
   return {
@@ -161,6 +162,7 @@ export function TaskPageCodeHubItemList({
           <span>{translate('auto.components.TaskPage.f362667d55', 'Updated')}</span>
           <span />
         </div>
+        <TaskPageScopeHeader model={model} />
         {codehubError ? (
           <div className="border-b border-border px-4 py-4 text-sm text-destructive">
             {codehubError}
@@ -180,14 +182,14 @@ export function TaskPageCodeHubItemList({
             ))}
           </div>
         ) : null}
-        {!codehubLoading && visibleItems.length === 0 && !codehubError ? (
+        {!codehubLoading &&
+        visibleItems.length === 0 &&
+        !codehubError &&
+        !model.workbenchScopeActive ? (
           <div className="px-4 py-12 text-center">
             <p className="text-base font-medium text-foreground">
               {mrView
-                ? translate(
-                    'auto.components.TaskPage.codehubEmptyMrs',
-                    'No CodeHub merge requests'
-                  )
+                ? translate('auto.components.TaskPage.codehubEmptyMrs', 'No CodeHub merge requests')
                 : translate('auto.components.TaskPage.codehubEmptyIssues', 'No CodeHub issues')}
             </p>
           </div>
@@ -369,6 +371,11 @@ export function TaskPageCodeHubItemList({
             </div>
           )
         })}
+        <TaskPageScopeFooter
+          model={model}
+          extraLoading={codehubLoading}
+          filteredCount={visibleItems.length}
+        />
       </div>
     </div>
   )

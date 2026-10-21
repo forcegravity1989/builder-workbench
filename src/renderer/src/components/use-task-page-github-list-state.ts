@@ -116,11 +116,27 @@ export function useTaskPageGitHubListState(model: TaskPageProviderStateModel) {
   const countWorkItemsAcrossRepos = useAppStore((s) => s.countWorkItemsAcrossRepos)
   useEffect(() => {
     const page = pages[currentPage]
-    if (!taskResumeApplied || taskSource !== 'github' || githubMode !== 'items' || !page) {
+    // Why: scoped (BW) pages are reference-driven; writing them into the
+    // query-keyed resume cache would leak scope rows into unscoped visits.
+    if (
+      !taskResumeApplied ||
+      taskSource !== 'github' ||
+      githubMode !== 'items' ||
+      pageData.workbenchTaskScope ||
+      !page
+    ) {
       return
     }
     taskPageGitHubResumeCache.write(githubResumeContextKey, currentPage, page)
-  }, [currentPage, githubMode, githubResumeContextKey, pages, taskResumeApplied, taskSource])
+  }, [
+    currentPage,
+    githubMode,
+    githubResumeContextKey,
+    pageData.workbenchTaskScope,
+    pages,
+    taskResumeApplied,
+    taskSource
+  ])
   const taskListPositionRef = useRef<{
     contextKey: string
     page: number
@@ -131,6 +147,9 @@ export function useTaskPageGitHubListState(model: TaskPageProviderStateModel) {
       taskSource !== 'github' ||
       githubMode !== 'items' ||
       pageData.openGitHubWorkItem ||
+      // Why: the saved position key carries no scope; a scoped visit must not
+      // store a page number an unscoped visit would later restore.
+      pageData.workbenchTaskScope ||
       pendingGithubScrollRestoreRef.current !== null
     ) {
       return
@@ -140,7 +159,14 @@ export function useTaskPageGitHubListState(model: TaskPageProviderStateModel) {
       page: currentPage,
       scrollTop: githubListScrollTopRef.current
     }
-  }, [currentPage, githubMode, githubResumeContextKey, pageData.openGitHubWorkItem, taskSource])
+  }, [
+    currentPage,
+    githubMode,
+    githubResumeContextKey,
+    pageData.openGitHubWorkItem,
+    pageData.workbenchTaskScope,
+    taskSource
+  ])
   useEffect(
     () => () => {
       const position = taskListPositionRef.current

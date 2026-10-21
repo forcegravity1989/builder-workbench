@@ -16,6 +16,7 @@ it('fetches one bounded list and keeps issue search on the client', async () => 
     hasMore: limit < 35
   }))
   const model = {
+    pageData: {},
     selectedRepos: [
       {
         id: 'r1',

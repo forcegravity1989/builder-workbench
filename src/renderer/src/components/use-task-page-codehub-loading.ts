@@ -21,11 +21,17 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     setCodehubLoading,
     setCodehubError
   } = model
+  const workbenchTaskScope = model.pageData.workbenchTaskScope
   const serverQuery = codehubView === 'mrs' ? codehubQuery : ''
   const serverAuthor = codehubView === 'mrs' ? codehubAuthor : ''
   const serverAssignee = codehubView === 'mrs' ? codehubAssignee : ''
   useEffect(() => {
     if (taskSource !== 'codehub') {
+      return
+    }
+    // Why: a BW workbench scope materializes its own reference-driven CodeHub
+    // rows; the unscoped full-list fetch must not overwrite them.
+    if (workbenchTaskScope) {
       return
     }
     const repos = selectedRepos.filter((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))
@@ -108,7 +114,8 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     setCodehubError,
     setCodehubItems,
     setCodehubLoading,
-    taskSource
+    taskSource,
+    workbenchTaskScope
   ])
   return model
 }
