@@ -1,7 +1,6 @@
 import type { TaskPageWorkbenchScopeModel } from './use-task-page-workbench-scope'
 import { useCallback, useMemo, useEffect } from 'react'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
-import { parseTaskQuery } from '../../../shared/task-query'
 import { taskPageGitHubItemKey } from '@/components/task-page-github-work-item-mutation-registry'
 import { deriveTaskPagePRCheckSummary } from '@/components/task-page-pr-check-summary'
 import { deriveAdvertisedTotalPages } from '@/components/task-page-work-item-pagination'
@@ -29,7 +28,6 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
     perRepoSourceState,
     activeGithubTaskKind,
     githubWorkItemMutation,
-    appliedTaskSearch,
     workbenchScopeActive,
     workbenchScopeItemKeys
   } = model
@@ -43,35 +41,17 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
     [activeGithubTaskKind]
   )
   const currentPageItems = useMemo(() => pages[currentPage] ?? [], [pages, currentPage])
-  // Why: a BW workbench scope is reference-driven — membership fences out any
-  // unscoped cache pre-paint, and the search box filters client-side over the
-  // materialized set (the issue/PR tab split and server qualifiers don't apply).
-  const workbenchScopeFilterText = useMemo(
-    () =>
-      workbenchScopeActive ? parseTaskQuery(appliedTaskSearch).freeText.trim().toLowerCase() : '',
-    [appliedTaskSearch, workbenchScopeActive]
-  )
+  // Why: a BW workbench scope is reference-driven — the scope stage materializes
+  // pages from the (search-filtered) reference set; membership here only fences
+  // out any unscoped cache pre-paint. The issue/PR tab split doesn't apply.
   const typeFilteredCurrentPageItems = useMemo(() => {
     if (!workbenchScopeActive) {
       return applyTypeFilter(currentPageItems)
     }
-    return currentPageItems.filter((item) => {
-      if (!workbenchScopeItemKeys.has(`${item.repoId}:${item.number}`)) {
-        return false
-      }
-      return (
-        !workbenchScopeFilterText ||
-        item.title.toLowerCase().includes(workbenchScopeFilterText) ||
-        String(item.number).includes(workbenchScopeFilterText)
-      )
-    })
-  }, [
-    applyTypeFilter,
-    currentPageItems,
-    workbenchScopeActive,
-    workbenchScopeFilterText,
-    workbenchScopeItemKeys
-  ])
+    return currentPageItems.filter((item) =>
+      workbenchScopeItemKeys.has(`${item.repoId}:${item.number}`)
+    )
+  }, [applyTypeFilter, currentPageItems, workbenchScopeActive, workbenchScopeItemKeys])
   // Why: soft-hide keeps membership-exit rows in pages for rollback/cursors but
   // removes them from the visible table (sticky ∪ pending membership).
   const filteredWorkItems = useMemo(

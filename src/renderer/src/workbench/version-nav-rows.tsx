@@ -72,7 +72,7 @@ function ChevronSpacer(): React.JSX.Element {
 }
 
 /** 绑定树行（目标目录体）：名称点击激活（原生链），箭头展开原生 agent 行，···沿原生菜单。 */
-export function BoundTreeRow({ tree }: { tree: Worktree }): React.JSX.Element {
+function BoundTreeRow({ tree }: { tree: Worktree }): React.JSX.Element {
   const [agentsOpen, setAgentsOpen] = useState(true)
   const branch = tree.branch.replace(/^refs\/heads\//, '')
   const label = tree.displayName.trim() || branch

@@ -1,4 +1,3 @@
-import { useCallback } from 'react'
 import { useAppStore } from '@/store'
 import type { ExecutionHostId } from '../../../shared/execution-host'
 import type { WorkbenchCreationContext } from '../../../shared/workbench/creation-context'
@@ -6,10 +5,11 @@ import type { CycleTaskReference } from './version-cycle/ports'
 import { findGoalParentSuggestion } from './scoped-task-workspace'
 
 /**
- * 目标开工动作（G2 P4③，供侧栏目标「···」菜单接线）：复用同一原生创建器，
- * 预填目标名称与业务上下文（备注可见可改），不伪造目标 Issue、不绕过弹窗
- * 直接创建树、不新增 BW 多步骤向导。唯一合法的同项目同宿主目标树在原生
- * 父级选择器预选，可改可取消；repo/host 变更由创建器清除旧建议。
+ * 目标开工动作（G2 P4③，P3a 侧栏目标「···」菜单以事件驱动接线）：复用同一
+ * 原生创建器，预填目标名称与业务上下文（备注可见可改），不伪造目标 Issue、
+ * 不绕过弹窗直接创建树、不新增 BW 多步骤向导。唯一合法的同项目同宿主目标树
+ * 在原生父级选择器预选，可改可取消；repo/host 变更由创建器清除旧建议。
+ * （评审 B-3：无消费方的 hook 包装已删，事件入口 openGoalStartComposer 为单实现。）
  */
 
 export type GoalStartTarget = {
@@ -84,21 +84,4 @@ export function openGoalStartComposer(args: {
     enableIssueAutomation: false,
     telemetrySource: 'sidebar'
   })
-}
-
-export function useGoalStartAction(args: {
-  version: string
-  goal: GoalStartTarget | null
-  /** 本版计划的全部任务引用（预填块按 goalId 过滤本目标相关引用）。 */
-  references: readonly CycleTaskReference[]
-  home: GoalStartHome | null
-}): { startGoalWorkspace: () => void } {
-  const { version, goal, references, home } = args
-  const startGoalWorkspace = useCallback(() => {
-    if (!goal) {
-      return
-    }
-    openGoalStartComposer({ version, goal, references, home })
-  }, [goal, home, references, version])
-  return { startGoalWorkspace }
 }

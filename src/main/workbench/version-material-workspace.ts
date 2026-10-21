@@ -29,6 +29,10 @@ import { createVersionDocumentStore } from './version-document-store'
 import { isMissingFile, resolveVersionPlanningRoot } from './version-document-path'
 import { createVersionMaterialMigration } from './version-material-migration'
 import type { WorkbenchVersionBinding } from '../../shared/workbench/version-binding'
+import type {
+  VersionMigrationApply,
+  VersionMigrationRead
+} from '../../shared/workbench/version-material-migration'
 import { versionFlowBranch } from '../../shared/workbench/version-workspace-prepare'
 
 /** Runs on the filesystem owner; paths come from the authenticated native inventory adapter. */
@@ -126,8 +130,18 @@ export function createVersionMaterialWorkspace(
     return root
   }
 
+  const migration = createVersionMaterialMigration(storeFor)
   return {
-    ...createVersionMaterialMigration(storeFor),
+    // 双围栏的执行器侧：迁移与初始化同样过绑定版本断言（服务层已断言，
+    // 此处覆盖 relay 直达执行器的路径，纵深一致）。
+    previewMigration: async (input: VersionMigrationRead) => {
+      assertBindingVersion(input, input.version)
+      return migration.previewMigration(input)
+    },
+    migrate: async (input: VersionMigrationApply) => {
+      assertBindingVersion(input, input.version)
+      return migration.migrate(input)
+    },
     /**
      * G2 P2 空计划初始化：create-only（expectedRevision null），已有材料一律
      * 不覆盖并如实回报修订；已存在但读不懂的材料（migration-required/损坏）
@@ -137,6 +151,20 @@ export function createVersionMaterialWorkspace(
       input: VersionMaterialInitialize
     ): Promise<{ created: boolean; revision: string }> {
       const request = VersionMaterialInitializeSchema.parse(input)
+      // 绑定树围栏：初始化是计划用途操作，绑定必须正是该版计划流程。
+      if (binding && (!flowBinding || flowBinding.workflow !== 'plan')) {
+        throw new WorkspaceScopeError('invalid-scope', '该工作树不是计划流程树，初始化被拒绝')
+      }
+      if (
+        flowBinding &&
+        flowBinding.workflow === 'plan' &&
+        request.version !== flowBinding.version
+      ) {
+        throw new WorkspaceScopeError(
+          'cross-version',
+          `该工作树绑定版本 ${flowBinding.version}，拒绝初始化 ${request.version} 的计划材料`
+        )
+      }
       const root = await authorizeCreatedTree(request.expectedBranch)
       const store = createVersionDocumentStore<PlanningMaterial>({
         trustedWorkspacePath: root,

@@ -92,6 +92,16 @@ it('同号不同来源与同 Issue 两版各按绑定证明命中，无绑定旧
       (tree) => tree.id
     )
   ).toEqual(['tree-c'])
+  // 来源上下文缺失时按仓库维度围栏：跨仓同号不误候选。
+  expect(
+    findVersionTaskWorktrees(trees, {
+      version: 'v0.7',
+      number: 5,
+      source: null,
+      provider: 'github',
+      repoId: 'repo-b'
+    }).map((tree) => tree.id)
+  ).toEqual(['tree-b'])
 })
 
 it('跨宿主实例同绑定时多候选全部返回且稳定排序，归档与脏绑定不入候选', () => {

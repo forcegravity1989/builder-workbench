@@ -35,10 +35,9 @@ export async function loadVersionPlanDocument(args: {
   const bound = planTrees.find((tree) => tree.version === version)
   const legacy = planTrees.find((tree) => tree.version === null)
   const draftProblems: string[] = []
-  for (const planTree of [bound, legacy]) {
-    if (!planTree) {
-      continue
-    }
+  // 绑定树优先且独占：其读取失败不静默回落旧固定树草稿（同一版本可能存在
+  // 两份工作副本，互相冒充即装绿）；仅在无绑定树时才用旧固定树（旧上下文）。
+  for (const planTree of bound ? [bound] : legacy ? [legacy] : []) {
     try {
       const materialPort = nativeVersionMaterialPort(
         {
@@ -81,7 +80,13 @@ export async function loadVersionPlanDocument(args: {
       })
       const parsed = PlanningMaterialSchema.safeParse(plan.document)
       if (parsed.success) {
-        return { document: parsed.data, source: 'committed' }
+        return {
+          document: parsed.data,
+          source: 'committed',
+          ...(draftProblems.length > 0
+            ? { problem: `${draftProblems.join('；')}；已回落已提交材料（可能不含未提交修改）` }
+            : {})
+        }
       }
       draftProblems.push(`已提交计划材料无法解析（${version}）`)
     } catch (reason) {

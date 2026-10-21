@@ -20,7 +20,7 @@ import type { VersionCatalogState } from './use-version-catalog'
  * 建目录，准备是显式动作（spec「进入需要编辑的旧版时，再核对或准备」）。
  */
 
-export function workflowLabel(workflow: VersionWorkflow): string {
+function workflowLabel(workflow: VersionWorkflow): string {
   return workflow === 'plan' ? '计划' : '验收'
 }
 
@@ -85,6 +85,10 @@ export async function openVersionTasks(args: {
   if (!read.document) {
     toast.error(read.problem ?? `版本 ${version} 没有可读的计划材料`)
     return
+  }
+  if (read.problem) {
+    // 草稿来源失败、已回落已提交材料：如实标注，不把旧真相冒充当前稿。
+    toast.info(read.problem)
   }
   const references = goal
     ? read.document.tasks.filter((task) => task.goalId === goal.goalId)

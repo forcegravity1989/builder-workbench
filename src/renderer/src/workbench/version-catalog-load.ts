@@ -195,7 +195,8 @@ export async function loadVersionCatalog(args: {
         title: goal.title
       }))
       committedGoalsCache.set(key, goals)
-      entry.goals = goals
+      // 拷贝入 entry：缓存数组与目录条目不共享引用（防下游突变污染缓存）。
+      entry.goals = [...goals]
     } catch (reason) {
       problems.push({
         code: 'committed-goals-unavailable',

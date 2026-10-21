@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Plus, LoaderCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
@@ -67,8 +67,11 @@ export function NewVersionDialog({
   const [report, setReport] = useState<VersionWorkspacePrepareResult | null>(null)
   const locked = request.mode === 'prepare'
 
+  // StrictMode dev 双挂载不双发准备（宿主端 dedupe/重入虽可兜底，仍加 ref 消噪）。
+  const autoRunRef = useRef(false)
   useEffect(() => {
-    if (request.mode === 'prepare') {
+    if (request.mode === 'prepare' && !autoRunRef.current) {
+      autoRunRef.current = true
       void runPrepare(request.version)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

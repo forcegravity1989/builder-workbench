@@ -93,6 +93,7 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
 
   const planTrees = useMemo(() => {
     const trees: VersionCatalogPlanTree[] = []
+    const legacyTrees: VersionCatalogPlanTree[] = []
     const legacyBranch = cycleBranch({ workflow: 'plan' })
     const ownerOf = (tree: Worktree) => {
       // 配对宿主树按自身 owner 路由读取；解析失败的行退回主树范围（读取失败
@@ -122,7 +123,8 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
         trees.push({ worktreeId: tree.id, version: null, ...ownerOf(tree) })
       }
     }
-    return trees
+    // 绑定树排前：目录 goals 派生按先到先得，绑定副本优先于旧固定树副本（C-2）。
+    return [...trees, ...legacyTrees]
   }, [worktrees])
 
   const [catalog, setCatalog] = useState<VersionCatalogLoad | null>(null)

@@ -11,7 +11,7 @@ import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions
 import { VersionCleanupPlaceholderDialog } from './version-nav-rows'
 import { VersionNavGroup } from './version-nav-group'
 import { NewVersionDialog, type NewVersionDialogRequest } from './NewVersionDialog'
-import { openGoalStartComposer } from './use-goal-start-action'
+import { openGoalStartComposer } from './goal-start-action'
 import { openGoalWorkspace } from './scoped-task-workspace'
 import { loadVersionPlanDocument } from './version-task-entries'
 import { useCycleView } from './cycle-view-state'

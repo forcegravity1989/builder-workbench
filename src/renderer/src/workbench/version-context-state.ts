@@ -17,7 +17,7 @@ function emit(): void {
   }
 }
 
-export function readBrowsedVersion(projectKey: string | null): string | null {
+function readBrowsedVersion(projectKey: string | null): string | null {
   if (!projectKey) {
     return null
   }

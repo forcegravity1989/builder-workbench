@@ -6,7 +6,10 @@ import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/ex
 import { sortWorkItemsByNumber } from '../../../shared/work-items'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
-import type { WorkbenchTaskScope } from '../../../shared/workbench/task-scope'
+import {
+  WorkbenchTaskScopeSchema,
+  type WorkbenchTaskScope
+} from '../../../shared/workbench/task-scope'
 import type { CycleTaskReference } from './version-cycle/ports'
 import { codeHubTaskItemFromDetail } from './codehub-task-item'
 import { resolveReferenceRepo, viewCodeHubTaskByIid } from './task-port'
@@ -39,14 +42,16 @@ function errorMessage(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason)
 }
 
-async function mapPool<T>(
+async function mapPool<T, R>(
   items: readonly T[],
   limit: number,
-  run: (item: T) => Promise<void>
-): Promise<void> {
+  run: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = []
   for (let start = 0; start < items.length; start += limit) {
-    await Promise.all(items.slice(start, start + limit).map(run))
+    results.push(...(await Promise.all(items.slice(start, start + limit).map(run))))
   }
+  return results
 }
 
 export async function loadWorkbenchTaskScope(
@@ -55,11 +60,20 @@ export async function loadWorkbenchTaskScope(
 ): Promise<TaskScopeLoadResult> {
   const deps = { repos: () => useAppStore.getState().repos }
   const missing: TaskScopeMissingRow[] = []
-  const githubItems: GitHubWorkItem[] = []
-  const codehubItems: CodeHubTaskItem[] = []
-  const githubRefs = scope.references.filter((reference) => reference.provider === 'github')
-  const codehubRefs = scope.references.filter((reference) => reference.provider === 'codehub')
-  for (const reference of scope.references) {
+  // 计划材料可能对同一任务重复引用：按 provider+仓库+编号去重，防重复读取、
+  // 重复行与计数虚增。
+  const seen = new Set<string>()
+  const references = scope.references.filter((reference) => {
+    const key = `${reference.provider}:${reference.repository}:${reference.number}`
+    if (seen.has(key)) {
+      return false
+    }
+    seen.add(key)
+    return true
+  })
+  const githubRefs = references.filter((reference) => reference.provider === 'github')
+  const codehubRefs = references.filter((reference) => reference.provider === 'codehub')
+  for (const reference of references) {
     if (reference.provider !== 'github' && reference.provider !== 'codehub') {
       missing.push({
         provider: reference.provider,
@@ -81,25 +95,25 @@ export async function loadWorkbenchTaskScope(
     })
   }
   const viewRefs = viewProvider === 'github' ? githubRefs : codehubRefs
-  await mapPool(viewRefs, SCOPE_READ_CONCURRENCY, async (reference) => {
-    const miss = (reason: string) => {
-      missing.push({
+  type RefOutcome = { item: GitHubWorkItem | CodeHubTaskItem | null; miss?: TaskScopeMissingRow }
+  const outcomes = await mapPool(viewRefs, SCOPE_READ_CONCURRENCY, async (reference) => {
+    const miss = (reason: string): RefOutcome => ({
+      item: null,
+      miss: {
         provider: reference.provider,
         repository: reference.repository,
         number: reference.number,
         reason
-      })
-    }
+      }
+    })
     const repo = resolveReferenceRepo(deps, home, reference)
     if (!repo) {
-      miss(`未在已登记项目中找到引用仓库 ${reference.repository}`)
-      return
+      return miss(`未在已登记项目中找到引用仓库 ${reference.repository}`)
     }
     if (viewProvider === 'github') {
       const sourceContext = getTaskPageRepoSourceContext(repo, 'github')
       if (!sourceContext) {
-        miss('无法解析 GitHub 任务来源上下文')
-        return
+        return miss('无法解析 GitHub 任务来源上下文')
       }
       try {
         const item = await lookupGitHubWorkItemForSource({
@@ -109,14 +123,12 @@ export async function loadWorkbenchTaskScope(
           number: reference.number
         })
         if (!item) {
-          miss(`GitHub 未返回编号 ${reference.number} 的工作项`)
-          return
+          return miss(`GitHub 未返回编号 ${reference.number} 的工作项`)
         }
-        githubItems.push(item)
+        return { item }
       } catch (reason) {
-        miss(`读取失败：${errorMessage(reason)}`)
+        return miss(`读取失败：${errorMessage(reason)}`)
       }
-      return
     }
     try {
       const { kind, detail } = await viewCodeHubTaskByIid(
@@ -126,14 +138,28 @@ export async function loadWorkbenchTaskScope(
       )
       const item = codeHubTaskItemFromDetail({ detail, kind, repo })
       if (!item.url) {
-        miss('CodeHub 未返回该任务的链接')
-        return
+        return miss('CodeHub 未返回该任务的链接')
       }
-      codehubItems.push(item)
+      return { item }
     } catch (reason) {
-      miss(`读取失败：${errorMessage(reason)}`)
+      return miss(`读取失败：${errorMessage(reason)}`)
     }
   })
+  // 按引用序装配（计划材料的任务顺序），GitHub 行再按原生列表惯例排序；
+  // 完成序不进渲染，刷新不抖序。
+  const githubItems: GitHubWorkItem[] = []
+  const codehubItems: CodeHubTaskItem[] = []
+  for (const outcome of outcomes) {
+    if (outcome.miss) {
+      missing.push(outcome.miss)
+      continue
+    }
+    if (outcome.item && 'number' in outcome.item) {
+      githubItems.push(outcome.item)
+    } else if (outcome.item) {
+      codehubItems.push(outcome.item)
+    }
+  }
   missing.sort((a, b) => a.number - b.number || a.repository.localeCompare(b.repository))
   return {
     viewProvider,
@@ -172,12 +198,13 @@ export function openVersionTasksPage(args: {
   useAppStore.getState().openTaskPage({
     taskSource: provider,
     ...(args.homeRepoId ? { preselectedRepoId: args.homeRepoId } : {}),
-    workbenchTaskScope: scope
+    // 入口自证契约：范围对象过共享 schema 后才进 store（防拼装回归）。
+    workbenchTaskScope: WorkbenchTaskScopeSchema.parse(scope)
   })
 }
 
 /** 范围行的原生宿主解析入口（与 use-cycle-workspace-target 同口径取主仓与宿主）。 */
-export function versionTaskScopeHome(): { repoId: string; hostId: ExecutionHostId } | null {
+function versionTaskScopeHome(): { repoId: string; hostId: ExecutionHostId } | null {
   const state = useAppStore.getState()
   const repoId = state.activeRepoId ?? state.repos[0]?.id ?? null
   const repo = state.repos.find((item) => item.id === repoId)

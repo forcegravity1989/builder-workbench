@@ -119,7 +119,8 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
           worktrees,
           provider: 'github',
           number: item.number,
-          sourceContext: getTaskPageRepoSourceContext(repoMap.get(item.repoId), 'github')
+          sourceContext: getTaskPageRepoSourceContext(repoMap.get(item.repoId), 'github'),
+          repoId: item.repoId
         })
         if (scoped) {
           if (scoped.kind === 'unique') {
@@ -251,7 +252,8 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
           worktrees: useAppStore.getState().allWorktrees(),
           provider: 'codehub',
           number: item.iid,
-          sourceContext: codeHubSourceContextFor(item)
+          sourceContext: codeHubSourceContextFor(item),
+          repoId: item.repoId
         })
         if (scoped && scoped.kind === 'unique') {
           const opened = activateAndRevealWorktree(scoped.candidates[0].id)

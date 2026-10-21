@@ -31,10 +31,11 @@ export function matchScopedTaskWorkspaces<T extends Worktree>(args: {
   worktrees: readonly T[]
   provider: 'github' | 'codehub'
   number: number
-  /** 完整任务来源身份；缺失时按 provider+编号匹配，多命中即多候选，不猜。 */
+  /** 完整任务来源身份；缺失时按 provider+编号+仓库匹配，多命中即多候选，不猜。 */
   sourceContext: TaskSourceContext | null
+  repoId?: string | null
 }): ScopedTaskWorkspaceMatch<T> | null {
-  const { scope, worktrees, provider, number, sourceContext } = args
+  const { scope, worktrees, provider, number, sourceContext, repoId } = args
   if (!scope) {
     return null
   }
@@ -42,7 +43,8 @@ export function matchScopedTaskWorkspaces<T extends Worktree>(args: {
     version: scope.version,
     number,
     source: sourceContext,
-    provider
+    provider,
+    ...(repoId ? { repoId } : {})
   })
   if (candidates.length === 0) {
     return { kind: 'none', candidates }
@@ -91,7 +93,8 @@ export function resolveTaskRowWorkspace<T extends Worktree>(args: {
       worktrees,
       provider,
       number: item.number,
-      sourceContext
+      sourceContext,
+      repoId: item.repoId
     })
     if (match) {
       return {

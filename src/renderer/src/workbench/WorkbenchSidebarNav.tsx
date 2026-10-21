@@ -8,6 +8,7 @@ import { closeProjectPage, openProjectWall, useProjectPage } from './project-pag
 import { useCycleView } from './cycle-view-state'
 import { resolveWorkbenchNav, type WorkbenchNavId } from './workbench-nav'
 import { WorkbenchVersionNav } from './WorkbenchVersionNav'
+import { WorkbenchWorkspaceChoiceDialog } from './WorkbenchWorkspaceChoiceDialog'
 
 // G2（P3a，高保真修订 8）：项目级入口（总览/任务/自动化/知识库）＋分隔＋版本区。
 // 计划/验收不再设扁平入口——由版本行承载（业务入口与本树入口合一）；
@@ -122,6 +123,9 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
         ))}
         <WorkbenchVersionNav />
       </nav>
+      {/* G2 多候选工作区选择器挂在侧栏层：任务屏、侧栏目标菜单与流程行在任意
+          视图触发选择时都可见（Radix portal，不受侧栏布局裁剪）。 */}
+      <WorkbenchWorkspaceChoiceDialog />
     </div>
   )
 }

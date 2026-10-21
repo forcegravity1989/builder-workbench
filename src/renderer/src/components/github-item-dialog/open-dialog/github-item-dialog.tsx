@@ -68,7 +68,8 @@ export default function GitHubItemDialog({
           worktrees,
           provider: 'github',
           number: item.number,
-          sourceContext: sourceContext ?? null
+          sourceContext: sourceContext ?? null,
+          repoId: effectiveRepoId
         })
         if (scoped) {
           if (scoped.kind === 'unique') {

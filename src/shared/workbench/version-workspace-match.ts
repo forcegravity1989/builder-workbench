@@ -17,9 +17,11 @@ export type VersionTaskMatchQuery = {
   version: string
   /** 任务编号沿原生 linked 字段（绑定契约不重复存编号）。 */
   number: number
-  /** 完整任务来源身份；缺失时按 provider+编号匹配，多来源命中即多候选，不猜。 */
+  /** 完整任务来源身份；缺失时按 provider+编号+仓库匹配，多来源命中即多候选，不猜。 */
   source?: TaskSourceContext | null
   provider?: string | null
+  /** 仓库维度围栏：来源上下文缺失时防跨仓同号误候选（给出即必须相等）。 */
+  repoId?: string | null
 }
 
 export type VersionGoalMatchQuery = {
@@ -29,7 +31,7 @@ export type VersionGoalMatchQuery = {
 
 type MatchableWorktree = Pick<
   Worktree,
-  'id' | 'isArchived' | 'linkedWorkItem' | 'workbenchVersionBinding'
+  'id' | 'repoId' | 'isArchived' | 'linkedWorkItem' | 'workbenchVersionBinding'
 >
 
 function taskNumberMatches(tree: MatchableWorktree, query: VersionTaskMatchQuery): boolean {
@@ -68,6 +70,9 @@ export function findVersionTaskWorktrees<T extends MatchableWorktree>(
 ): T[] {
   const matches = worktrees.filter((tree) => {
     if (tree.isArchived) {
+      return false
+    }
+    if (query.repoId && tree.repoId !== query.repoId) {
       return false
     }
     const binding = normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding)

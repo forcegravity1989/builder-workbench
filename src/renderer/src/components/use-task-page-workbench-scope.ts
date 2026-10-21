@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { TaskPageJiraCreationMetadataModel } from './use-task-page-jira-creation-metadata'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import { parseTaskQuery } from '../../../shared/task-query'
 import { workbenchTaskScopeKey } from '../../../shared/workbench/task-scope'
 import {
   loadWorkbenchTaskScope,
@@ -121,11 +122,24 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
 
   // 物化分页：整份范围一次读回，按原生页大小切页；翻页只是本地换页，不再打 provider。
   const result = scopeLoad && scopeKey && scopeLoad.key === scopeKey ? scopeLoad.result : null
+  // 范围搜索=物化全集上的客户端过滤（先过滤再切页，跨页命中不产假阴性）。
+  const scopeFilterText = useMemo(() => {
+    if (!scope) {
+      return ''
+    }
+    return parseTaskQuery(model.appliedTaskSearch).freeText.trim().toLowerCase()
+  }, [model.appliedTaskSearch, scope])
   useEffect(() => {
     if (!scope || !result) {
       return
     }
-    const items = result.githubItems
+    const items = scopeFilterText
+      ? result.githubItems.filter(
+          (item) =>
+            item.title.toLowerCase().includes(scopeFilterText) ||
+            String(item.number).includes(scopeFilterText)
+        )
+      : result.githubItems
     const pageSize = Math.max(1, githubPageSize)
     const pages: (GitHubWorkItem[] | null)[] = []
     for (let start = 0; start < items.length; start += pageSize) {
@@ -141,6 +155,7 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
   }, [
     scope,
     result,
+    scopeFilterText,
     githubPageSize,
     setPages,
     setCurrentPage,
