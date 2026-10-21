@@ -12,7 +12,10 @@ import { notifyWorktreesChanged } from '../../worktree-remote'
 import { parseWorktreeId } from '../../worktree-logic'
 import { planWorktreeSortOrderUpdates } from '../../../../shared/worktree/sort-order-update'
 import { readBranchRenameFailureOutputForDisplay } from '../../../agent-hooks/branch-rename-failure-output'
-import { normalizeLinkedWorkItemFields } from '../ipc-context-schemas'
+import {
+  normalizeLinkedWorkItemFields,
+  normalizeWorkbenchVersionBindingField
+} from '../ipc-context-schemas'
 import { listDesktopLineageForHost } from './host-lineage-listing'
 import type { WorktreeIpcContext } from '../worktree-ipc-context'
 
@@ -35,7 +38,9 @@ export function registerWorktreeMetadataHandlers(context: WorktreeIpcContext): v
       if (args.executionHostId !== undefined && !executionHostId) {
         throw new Error('Invalid execution host identity.')
       }
-      const validatedUpdates = normalizeLinkedWorkItemFields(args.updates)
+      const validatedUpdates = normalizeWorkbenchVersionBindingField(
+        normalizeLinkedWorkItemFields(args.updates)
+      )
       const updates =
         validatedUpdates.displayName !== undefined
           ? {

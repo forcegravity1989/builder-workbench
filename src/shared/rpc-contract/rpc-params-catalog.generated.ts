@@ -570,6 +570,7 @@ import {
   PackagePipelineListSchema
 } from '../workbench/package-pipeline'
 import { TrunkUpdateSchema } from '../workbench/trunk-update'
+import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../workbench/version-binding'
 import {
   VersionHistoryListSchema,
   VersionHistoryReadPlanSchema,
@@ -1220,6 +1221,8 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.package.launch': PackageLaunchSchema,
   'workbench.package.list': PackagePipelineListSchema,
   'workbench.trunk.update': TrunkUpdateSchema,
+  'workbench.versionBinding.read': VersionBindingScopeSchema,
+  'workbench.versionBinding.set': VersionBindingSetSchema,
   'workspacePorts.kill': WorkspacePortKillParams,
   'workspacePorts.scan': WorkspacePortScanParams,
   'worktree.activate': WorktreeActivate,
