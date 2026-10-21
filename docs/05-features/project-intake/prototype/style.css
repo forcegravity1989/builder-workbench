@@ -10,7 +10,7 @@ body {
 }
 body {
   font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "PingFang SC", "Microsoft YaHei",
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'PingFang SC', 'Microsoft YaHei',
     sans-serif;
   font-size: 13px;
   line-height: 1.5;
@@ -170,14 +170,14 @@ a {
 .wb-onboard .ob-table tr.is-muted td {
   opacity: 0.55;
 }
-.wb-onboard .ob-table input[type="checkbox"] {
+.wb-onboard .ob-table input[type='checkbox'] {
   width: 14px;
   height: 14px;
   margin: 0;
   accent-color: var(--color-accent);
   cursor: pointer;
 }
-.wb-onboard .ob-table input[type="checkbox"]:disabled {
+.wb-onboard .ob-table input[type='checkbox']:disabled {
   cursor: not-allowed;
 }
 .wb-onboard .ob-table .wb-ob-input {
