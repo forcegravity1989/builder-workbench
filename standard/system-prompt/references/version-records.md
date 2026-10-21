@@ -44,7 +44,7 @@ candidateRef 仅保存 repository/version/commit，commit 是完整 SHA。prepar
 
 计划材料可选 `minutes` 节承载会议纪要：`consensus` 为共识若干点（字符串数组），`followups` 为遗留若干点（条目含稳定 id、text、closed），`confirmed`/`confirmedAt` 记录人工确认，`sources`/`updatedAt` 为可选的输入来源描述与正文更新时间。正文由计划助手基于在线批注与可选会议转写稿总结撰写，仅在未确认（confirmed=false 或整节缺省）时可由模型通道写入或改写；人在计划屏确认后整节对模型冻结，要改正文须先由人在屏上撤销确认。`followups[].closed`（闭环 = 版本计划已按该条遗留修改）只能由人标记：模型对既有条目按 id 原样往返，新增条目必须 closed=false，不得删除已闭环条目。确认与闭环都不是目标达成或 Issue 认可，认可随归档 PR 评审表达；生成或填写纪要不自动等于确认。旧「按目标派生三节模板的预览纪要」出口已整体退役，总览直接读取本节呈现，无存储纪要的历史版本如实显示纪要未记录，不再由目标派生冒充。
 
-workflow 是模型写入材料的 SOP 进度节：`stage` 记录最近完成的阶段（计划 preparation/goals/review/breakdown/archive；验收 preparation/showcase/archive），`updatedAt` 记录写入时间，`archivePr`（provider/repository/number）在归档 PR 开出后补上。两屏旅程灯只做序号比较：灯位不超过 stage 即绿，否则灰，没有其他推导。stage 是进度信号不是完成权威：不代表目标达成、不代替人工结论、不代表 PR 已合入；PR 合入状态由界面按 archivePr 向 provider 薄读取显示，读不到保持未知。会话恢复时先把 stage 校准到实际进度；内容实质调整使后续阶段失效时回退。界面不提供修改 stage 的入口，它只经材料保存写入。归档提交固定落在该流程的固定分支（计划 bw/week-plan、验收 bw/week-acceptance）上，PR/MR 由固定分支开向主分支，不从其他分支或新建工作树归档。
+workflow 是模型写入材料的 SOP 进度节：`stage` 记录最近完成的阶段（计划 preparation/goals/review/breakdown/archive；验收 preparation/showcase/archive），`updatedAt` 记录写入时间，`archivePr`（provider/repository/number）在归档 PR 开出后补上。验收屏旅程灯只做序号比较：灯位不超过 stage 即绿，否则灰，没有其他推导；计划屏自 G3 起不渲染旅程灯，stage 仍供会话校准与验收屏灯使用。stage 是进度信号不是完成权威：不代表目标达成、不代替人工结论、不代表 PR 已合入；PR 合入状态由界面按 archivePr 向 provider 薄读取显示，读不到保持未知。会话恢复时先把 stage 校准到实际进度；内容实质调整使后续阶段失效时回退。界面不提供修改 stage 的入口，它只经材料保存写入。归档提交固定落在该流程的固定分支（计划 bw/week-plan、验收 bw/week-acceptance）上，PR/MR 由固定分支开向主分支，不从其他分支或新建工作树归档。
 
 preparationReview 是历史保留的人工材料备齐核对记录，包含 source、recordedAt、materialRevision。验收屏已移除“材料备齐”勾选，旅程灯只读 workflow.stage，不再由证据完备性或该字段推导。字段仍受人工守卫保护（模型/CLI 不得代人写入或篡改），旧材料读回时保留原值，不因日历跨周作废，也不证明命令执行或目标达成。
 

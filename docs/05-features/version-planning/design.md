@@ -12,7 +12,7 @@
 | 屏面 | 落点 |
 |---|---|
 | 页头(面包屑版本下拉 / 保存状态 / 会话收折 chip / 分支名 / 更新代码 / 配置自动化 / 批注模式) | `version-planning/PlanningSections.tsx` 的 PlanningHeader;chip 经 `plan-column-resize.ts` 的 `togglePlanChat()`+`PLAN_CHAT_TOGGLE_EVENT` window 事件桥与壳 `use-plan-column-resize` 同步(不能用 storage 事件:同窗口写入不触发),收折态订阅在 `use-plan-chat-collapsed.ts`;壳 `AppWorkspaceShell` 的 titlebar `vc-session-toggle` 改为仅验收屏渲染,计划屏 titlebar 保留拖拽带 |
-| 顶部 4 分区导航(无灯) | PlanningSections 的 PlanningJourneyNav;滚动 spy 与导航抑制照原型逻辑放在 PlanningBoard(触底→archive,否则 findLast(top ≤ 容器 top+60);焦点/滚轮/指针/翻页键清除抑制)。`workflow.stage` 契约不变(模型仍写、会话校准、验收屏灯),计划屏不再消费;旧竖排灯条与 `workflowStageIndex` 的计划侧消费已删 |
+| 顶部 4 分区导航(无灯) | PlanningSections 的 PlanningJourneyNav;滚动 spy 与导航抑制照原型逻辑放在 `use-journey-spy.ts`(触底→archive,否则 findLast(top ≤ 容器 top+60);焦点/滚轮/指针/翻页键清除抑制)。`workflow.stage` 契约不变(模型仍写、会话校准、验收屏灯),计划屏不再消费;旧竖排灯条与 `workflowStageIndex` 的计划侧消费已删 |
 | 上版回顾两行 | `PlanningPriorReview.tsx` + `use-prior-carryovers.ts`;`planning-progress-source.ts` 改为返回固定来源的验收文档与其采用计划(身份核验原样,不再产 buildAcceptanceReport 加工文本)。纯映射 `derivePriorCarryovers`:延期遗留 = `results[].issueMarks` carry 标记按 `acceptance-issue-annotations` 的身份/legacy 裸编号兼容 join 文档顶层 `taskSnapshot`(join 到才给标题与原生详情入口,join 不到只显示编号);会议遗留 = confirmed 且 `tag=next-week-plan` 的 `meetingDirectives`,材料顺序编号 M1…。缺字段→空态,不解析 note、不按 open 推断 |
 | 目标卡(G3 形态) | `PlanningGoalCard.tsx`(计划专用;`VersionGoalCard` 收敛为验收只读骨架,编辑分支/交付件 textarea/readOnly/onChange 已删)。行内编辑态(铅笔切换,单卡编辑)、就近删除二次确认、整卡删除级联(goals 过滤 + tasks 引用整条移出 + 批注按结构化引用级联,经现有 autosave CAS 保存);开合记忆沿 `cycle-view-state` 的 goalCardViewKey,默认收起(照原型);Issue 行平铺 + `taskKind` 角标(精确 `/^(bug|缺陷)$/i` → Bug,否则 Feature;未 ready 行无角标、状态未知,Unknown 铁律)+「开工」箭头(临时语义 = `taskPort.openDetail` 开原生详情,可访问名「打开 #N 原生任务详情」;真开工归 G2/#385,永久 hookup 时调 G2 统一 Start/Open resolver,不另写继续逻辑);标题去 `【…】` 前缀渲染 |
 | 指标承诺 | `PlanGoalMetrics.tsx` 换装 `g3-metric-*` 形态,行为链沿用(目录选取、按名去重、定义已更新提示、当前读数/目标草案、采集=总览同一能力、证据 details 与基线采用);「配置指标」上移到目标区标题旁;文案按 spec 生产文案清单(「当前 —」「目标草案/目标」「采集」) |
@@ -24,6 +24,27 @@
 | 样式 | `version-planning.css` 整体换装 g3-planning.css 移植(作用域 .vp-board,fixed 浮层除外;窄板容器查询阈值 780/580/420 照原型);`--radius-lg: 10px` 补进 workbench-tokens.css(设计系统同值);planning-dialogs.css 并入后删除;`.vp-archive-card` 移入 version-cycle.css(CycleArchive 自import);planning-fields.css 只剩验收 AcceptanceMetrics 沿用的 vp-metric* 规则;原型手写 tooltip 不移植(生产用 Orca Radix Tooltip) |
 
 G3 向 G2 / Orca 提供完整任务引用与返回位置;侧栏、原生创建器、工作区查找及会话执行由 G2 / Orca 承接。「开工」箭头本轮为临时语义(开原生任务详情),永久 hookup 调 G2 统一 Start/Open resolver(G2 P4 交付,2026-10-21 知会)。归档沿已有原生会话流程。剩余开放项:会议 ID 自动获取(Leader 群组 / WeLink)依赖的用户组旅程、G2 交接契约与验收屏批注接入(移交项)。批注为屏内内存态、纪要存材料,无业务数据库、快照存储或第二套批准状态。
+
+### 与高保真的有意偏差登记
+
+| # | 偏差 | 理由 |
+|---|---|---|
+| D1 | 页头保留版本下拉(融入面包屑) | G2(#383/#328/#389)才移除屏内版本选择;本轮必须有选版入口;选版相关 spec 条款原样保留(G2 P3b 范围) |
+| D2 | 页头保留「更新代码」text-button | 已认可的唯一同步入口(spec 范围与入口段仍有效);高保真未画 |
+| D3 | h1 旁保留保存状态 | 已认可行为「正常状态只在标题旁简短呈现」;高保真为演示脚注替代 |
+| D4 | 无 progressSource 时上版回顾空态文案「未选定上版验收来源 · 在计划会话中明确后写入」 | 生产文案清单未覆盖此态,按「缺项如实显示」原则新拟,PR 中请人过目 |
+| D5 | 目标区标题保留「刷新 Issue」IconButton | 任务状态读回刷新为生产必需(taskPort 缓存有读取时间);高保真未画 |
+| D6 | 开工箭头可访问名「打开 #N 原生任务详情」 | 高保真「开工 #N(G2 衔接)」含内部代号且真开工归 G2/#385;临时语义如实命名 |
+| D7 | 批注模式与面板头图标用 `MessageSquarePlus` 单图标 | 高保真两图标组合是原型 vendor 冻结变通;生产 lucide 有原生同形图标,视觉一致 |
+| D8 | Issue 行不显示 assignee、标题去 `【…】` 前缀渲染 | 对齐高保真行内元素(编号/标题/角标/状态/批注/开工) |
+| D9 | 任务未 ready 行不渲染分类角标 | Unknown 铁律:无 labels 数据不冒充 Feature;高保真 fixture 全部有 labels 未覆盖此态 |
+| D10 | 总览历史版本纪要列对无存储纪要的版本显示「纪要未记录」 | 三节派生模板退役(移交项)的总览侧后果;如实不冒充 |
+| D11 | 空板卡内保留「材料问题紧凑提示行」;计划存在时问题行移到目标区顶部 | 生产必需的已认可行为(异常文件经启动入口带入会话);高保真空板未画;常驻可见性等价旧 CycleStartCard |
+| D12 | 批注横幅用清单认可短文案,不用原型长引导语 | spec 原型注释清单(引导语不进界面)与行为段(进入后有横幅提示)冲突,经人拍板 2026-10-21:横幅保留、文案用已认可短句 |
+| D13 | 面板提示行仅批注模式显示 | 原型面板提示常驻;退模式后经角标重开面板时该句为陈旧提示,按诚实呈现收敛 |
+| D14 | 批注面板 absolute 锚板面列(原型 fixed 视口右上) | 生产板面右侧还有 Orca 资源管理器列,fixed 会遮盖;锚板面列保持「不遮板面」意图;小窗仍 fixed 贴被点元素 |
+| D15 | 「配置指标」用 ChartNoAxesCombined 图标 | 原型用 annotate-mode 组合glyph 是 vendor 冻结变通;指标语义图标与旧生产一致且更准确 |
+| D16 | 未选版空板文案「尚未选定版本,可在页头选择已有版本。」 | 生产文案清单未覆盖(清单仅「{版本} 计划尚未建立。」);性质同 D4,PR 中请人过目 |
 
 ## 现状与复用
 

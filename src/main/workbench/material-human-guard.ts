@@ -12,6 +12,7 @@ import type {
 import { WorkspaceScopeError } from './workspace-scope-error'
 import type { VersionHistoryPort } from '../../shared/workbench/version-history'
 import { analyzeAcceptanceRounds } from './material-round-guard'
+import { planHumanFieldChanges } from './plan-human-guard'
 
 /** An omitted commit is resolved to the cycle worktree HEAD on the owning runtime. */
 export type AcceptanceRoundSourceReader = (
@@ -207,8 +208,6 @@ export function humanFieldChanges(
   }
   return changes
 }
-
-import { planHumanFieldChanges } from './plan-human-guard'
 
 /**
  * Save-channel guard: model-channel saves must not touch human conclusions, but must
