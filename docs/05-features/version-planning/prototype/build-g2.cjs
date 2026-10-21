@@ -1,4 +1,4 @@
-// Candidate entry shares the feature's frozen React/Lucide bundle.
+// Finalized-design entry shares the feature's frozen React/Lucide bundle.
 const fs = require('node:fs')
 const path = require('node:path')
 const esbuild = require('esbuild')

@@ -1,4 +1,4 @@
-/* G2 navigation candidate. Existing product screens are reuse markers, not replicas. */
+/* G2 navigation, finalized design. Existing product screens are reuse markers, not replicas. */
 html,
 body,
 #root {
@@ -449,25 +449,6 @@ strong {
 .page-title p {
   color: var(--muted-foreground);
 }
-.action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 7px 12px;
-  font-size: 12px;
-  background: var(--background);
-}
-.action:hover {
-  background: var(--muted);
-}
-.action.primary {
-  color: var(--primary-foreground);
-  background: var(--primary);
-  border-color: var(--primary);
-}
 .reuse-page {
   max-width: 820px;
   margin: 0 auto;
@@ -558,13 +539,6 @@ strong {
   text-align: center;
   color: var(--muted-foreground);
 }
-.text-link {
-  display: inline-flex;
-  gap: 5px;
-  align-items: center;
-  text-decoration: underline;
-  font-size: 12px;
-}
 .version-report-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -630,9 +604,6 @@ strong {
 }
 .report-goal-columns label {
   color: var(--muted-foreground);
-  font-size: 11px;
-}
-.report-goal-columns .text-link {
   font-size: 11px;
 }
 .report-bottom {
@@ -711,10 +682,6 @@ strong {
   justify-content: flex-end;
   gap: 9px;
   margin-top: 22px;
-}
-.dialog-actions.vertical {
-  flex-direction: column;
-  align-items: stretch;
 }
 .demo-note {
   display: block;
@@ -802,21 +769,6 @@ strong {
   border-radius: 0;
   background-clip: padding-box;
   min-height: 28px;
-}
-
-/* Thicker variant for dense data tables where the default 6px-thumb is hard to grab. */
-.scrollbar-sleek-lg {
-  scrollbar-width: auto;
-}
-
-.scrollbar-sleek-lg::-webkit-scrollbar {
-  width: 16px;
-  height: 16px;
-}
-
-.scrollbar-sleek-lg::-webkit-scrollbar-thumb {
-  border-width: 3px;
-  min-height: 36px;
 }
 
 .scrollbar-sleek::-webkit-scrollbar-thumb:hover {
