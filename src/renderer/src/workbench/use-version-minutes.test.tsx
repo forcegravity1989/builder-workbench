@@ -183,7 +183,7 @@ it('keeps the current plan when the saved acceptance references an older revisio
   expect(latest?.acceptanceError).toContain('较早计划')
   expect(readPlan).not.toHaveBeenCalled()
   expect(latest?.planDocument).toEqual(newerPlan)
-  expect(latest?.plan?.text).toContain('后来调整的目标')
+  expect(latest?.planDocument?.goals[0]?.title).toBe('后来调整的目标')
 })
 
 it('reports no acceptance column when the live material is invalid', async () => {

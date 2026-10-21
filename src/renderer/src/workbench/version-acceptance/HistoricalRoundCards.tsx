@@ -51,7 +51,6 @@ export function HistoricalRoundCards({
             key={goalId}
             goal={{ goalId, title: `目标 ${goalId}（历史标题未记录）`, metricTargets: [] }}
             index={index}
-            readOnly
             defaultOpen={false}
             summary={
               <span className={`va-goal-summary va-status-${snapshot ? tone : 'unknown'}`}>

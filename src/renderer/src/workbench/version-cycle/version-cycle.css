@@ -49,11 +49,8 @@
   white-space: normal;
   line-height: 1.45;
 }
-.vc-goal-heading > :is(.vp-goal-summary, .va-goal-summary) {
+.vc-goal-heading > .va-goal-summary {
   min-width: 0;
-}
-.vc-goal-heading > .vc-goal-delete {
-  justify-self: end;
 }
 .vc-goal-toggle svg {
   flex: none;
@@ -67,22 +64,6 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
   margin-top: var(--space-3);
-}
-.vc-goal-story > .vc-goal-title {
-  grid-column: 1 / -1;
-}
-.vc-goal-story > .vc-goal-detail {
-  min-width: 0;
-}
-.vc-goal-story > .vc-goal-meta {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--space-3);
-}
-.vc-goal-meta label {
-  min-width: 0;
-  margin-bottom: 0;
 }
 .vc-story-cell {
   min-width: 0;
@@ -109,9 +90,6 @@
   margin-bottom: var(--space-2);
   color: var(--color-neutral-600);
 }
-.vc-goal-story > label {
-  min-width: 0;
-}
 .vc-goal input,
 .vc-goal textarea {
   width: 100%;
@@ -121,21 +99,6 @@
   background: var(--color-bg);
   color: var(--color-text);
   font: inherit;
-}
-.vc-goal-title textarea {
-  min-height: 2.5rem;
-  field-sizing: content;
-}
-.vc-goal-detail textarea {
-  min-height: 3.4rem;
-  field-sizing: content;
-}
-.vc-goal-meta input {
-  min-height: 2rem;
-  padding-block: var(--space-1);
-}
-.vc-goal-delete {
-  color: var(--color-danger-deep);
 }
 .vc-goal-metrics,
 .vc-goal-result {
@@ -147,18 +110,11 @@
   .vc-goal-story {
     grid-template-columns: 1fr;
   }
-  .vc-goal-story > .vc-goal-meta {
-    grid-template-columns: 1fr;
-  }
   .vc-goal-heading {
     grid-template-columns: minmax(0, 1fr) auto;
   }
   .vc-goal-heading > .vc-goal-toggle {
     grid-column: 1 / -1;
-  }
-  .vc-goal-heading > .vc-goal-delete {
-    grid-column: 2;
-    grid-row: 2;
   }
 }
 
@@ -302,4 +258,25 @@
 .vc-start-problem > svg {
   margin-top: 3px;
   flex: none;
+}
+/* 归档状态行(两屏共用 CycleArchive;计划屏 G3 形态另见 version-planning.css 的 .g3-archive)。 */
+.vp-archive-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  padding: var(--space-3) var(--space-4);
+}
+.vp-archive-card > p {
+  flex: 1;
+  margin: 0;
+  font-size: 12px;
+  min-width: 180px;
+}
+.vp-archive-card > svg {
+  color: var(--color-neutral-600);
+  flex-shrink: 0;
 }

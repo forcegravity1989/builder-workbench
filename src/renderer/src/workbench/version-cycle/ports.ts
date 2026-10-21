@@ -81,8 +81,6 @@ export type ArchivePrPort = {
 export type VersionGoalCardProps = {
   goal: VersionGoal
   index: number
-  readOnly?: boolean
-  onChange?: (goal: VersionGoal) => void
   metrics?: ReactNode
   result?: ReactNode
   actions?: ReactNode
