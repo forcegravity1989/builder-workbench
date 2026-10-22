@@ -99,13 +99,16 @@
   border-color: var(--foreground);
   font-weight: 500;
 }
+/* 面板卡片序号:显式强调色底 + 白字(2026-10-22 真机反馈轮修复黑底黑字不可见)。
+   不用 foreground/background 变量对——真壳该组合解析失败会回落继承文字色。 */
 .g3-annot-num {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--foreground);
-  color: var(--background);
+  background: var(--color-accent, #d97757);
+  color: #fff;
   font-size: 10px;
+  font-weight: 600;
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -226,14 +229,17 @@
   gap: 4px;
   flex-shrink: 0;
 }
+/* 编号角标:显式强调色底 + 白字(2026-10-22 真机反馈轮修复黑底黑字不可见)。
+   不用 foreground/background 变量对——真壳该组合解析失败会回落继承文字色。 */
 .g3-annot-marker {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 1px solid var(--foreground);
-  background: var(--foreground);
-  color: var(--background);
+  border: 1px solid var(--color-accent, #d97757);
+  background: var(--color-accent, #d97757);
+  color: #fff;
   font-size: 10px;
+  font-weight: 600;
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -242,5 +248,5 @@
 }
 .g3-annot-marker:hover {
   background: var(--background);
-  color: var(--foreground);
+  color: var(--color-accent, #d97757);
 }

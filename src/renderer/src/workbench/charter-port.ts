@@ -37,14 +37,15 @@ export async function submitProjectCharter(
   scope: CharterScope,
   runtimeOwnerEnvironmentId: string | undefined,
   intent: CharterIntent,
-  firstTime: boolean
+  firstTime: boolean,
+  edit?: { expectedRaw: string | null }
 ): Promise<CharterSubmitOutcome> {
   return callMetricRuntime<CharterSubmitOutcome>(
     // wire 契约是 strictObject:只上送三键,调用方 spread 进来的 projectId 等会被 zod 拒。
     { repoId: scope.repoId, worktreeId: scope.worktreeId, hostId: scope.hostId },
     runtimeOwnerEnvironmentId,
     'workbench.charter.submit',
-    (ownerScope) => ({ scope: ownerScope, intent, firstTime }),
+    (ownerScope) => ({ scope: ownerScope, intent, firstTime, ...(edit ? { edit } : {}) }),
     300_000
   )
 }
@@ -62,7 +63,7 @@ export async function readRepoCharter(
   const parsedHost = parseExecutionHostId(hostId)
   if (parsedHost?.kind !== 'runtime') {
     const local = await readProjectCharter(repo.path, getRepoSshConnectionId(repo))
-    return { charter: local.charter, existed: local.existed, error: local.error }
+    return { charter: local.charter, raw: local.raw, existed: local.existed, error: local.error }
   }
   const route = routeForOwner({ hostId, runtimeOwnerEnvironmentId })
   if (!route?.runtimeEnvironmentId) {

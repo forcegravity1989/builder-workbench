@@ -2,6 +2,7 @@
  * 项目名片 `.bw/project.toml` 纯函数核心：解析/渲染/保真补空/URL 归一化。
  * renderer（预填探测）与 main（bw/project 固定树写入与 PR 流）共用同一份实现。
  */
+import { parse } from 'smol-toml'
 
 export const PROJECT_TOML_REL = '.bw/project.toml'
 export const BW_GITIGNORE_REL = '.bw/.gitignore'
@@ -34,37 +35,22 @@ function unquote(raw: string): string {
 }
 
 function quote(value: string): string {
-  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+  return JSON.stringify(value)
 }
 
 /** Minimal TOML top-level string fields (ignores [chat] tables). */
 export function parseProjectToml(raw: string): ProjectCharter {
   const out: ProjectCharter = { ...EMPTY_CHARTER }
-  for (const line of raw.split('\n')) {
-    const t = line.trim()
-    if (!t || t.startsWith('#') || t.startsWith('[')) {
-      if (t.startsWith('[')) {
-        break
-      }
+  const source = parse(raw)
+  for (const field of Object.keys(out) as (keyof ProjectCharter)[]) {
+    const value = source[field] ?? (field === 'opportunity' ? source.north_star : undefined)
+    if (value === undefined) {
       continue
     }
-    const eq = t.indexOf('=')
-    if (eq <= 0) {
-      continue
+    if (typeof value !== 'string') {
+      throw new Error(`名片字段 ${field} 不是文字`)
     }
-    const key = t.slice(0, eq).trim()
-    const val = unquote(t.slice(eq + 1))
-    if (key === 'name') {
-      out.name = val
-    } else if (key === 'kind') {
-      out.kind = val
-    } else if (key === 'brief') {
-      out.brief = val
-    } else if (key === 'benchmark') {
-      out.benchmark = val
-    } else if (key === 'opportunity' || key === 'north_star') {
-      out.opportunity = val
-    }
+    out[field] = value
   }
   return out
 }

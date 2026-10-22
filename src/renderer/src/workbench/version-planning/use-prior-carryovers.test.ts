@@ -47,7 +47,14 @@ function acceptance(overrides: Partial<AcceptanceMaterial> = {}): AcceptanceMate
 
 it('maps carry marks and confirmed minutes followups to the two prior-review rows', () => {
   // Absent optional fields read as empty rows — no inference, no free-text parsing.
-  expect(derivePriorCarryovers(acceptance(), plan())).toEqual({ issues: [], directives: [] })
+  // issueMarksRecorded=false is the Unknown signal: the acceptance never marked,
+  // so the prior row must not assert "no carryover" (iron rule).
+  expect(derivePriorCarryovers(acceptance(), plan())).toEqual({
+    issues: [],
+    directives: [],
+    issueMarksRecorded: false,
+    openReadbackReferences: []
+  })
 
   const document = acceptance({
     taskSnapshot: [
@@ -119,6 +126,10 @@ it('maps carry marks and confirmed minutes followups to the two prior-review row
     { label: 'M1', text: '纳入下版的事项' },
     { label: 'M2', text: '第二条纳入下版' }
   ])
+  // Positive branch of the Unknown gate: marks present → recorded; the frozen
+  // snapshot references ride along for the live readback row.
+  expect(carryovers.issueMarksRecorded).toBe(true)
+  expect(carryovers.openReadbackReferences.map((ref) => ref.number)).toEqual([331])
 })
 
 it('reads no meeting carryover from an unconfirmed minutes draft', () => {

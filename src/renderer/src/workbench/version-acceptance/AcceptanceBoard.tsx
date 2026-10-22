@@ -15,10 +15,7 @@ import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
 import { BoardIconButton } from '../board-ui'
 import { AnnotationPanel } from '../annotations/AnnotationPanel'
 import { AnnotationPopover } from '../annotations/AnnotationPopover'
-import {
-  boardAnnotationsSendPrompt,
-  formatBoardAnnotationsAsMarkdown
-} from '../annotations/annotation-markdown'
+import { formatBoardAnnotationsAsMarkdown } from '../annotations/annotation-markdown'
 import { annotationRefFromElement } from '../annotations/types'
 import { useBoardAnnotations } from '../annotations/use-board-annotations'
 import { AcceptanceNotices } from './AcceptanceNotices'
@@ -377,24 +374,23 @@ function ReadyAcceptanceBoard({
           <AnnotationPanel
             annotations={annotations.numbered}
             annotating={annotations.annotating}
+            worktreeId={worktreeId}
+            assistant="验收助手"
             onClose={annotations.closePanel}
             onUpdate={annotations.update}
             onRemove={annotations.remove}
             onBoardLevel={(rect) =>
               annotations.openPopover({ kind: 'board', label: '板面级' }, rect)
             }
+            // navigator.clipboard 在真壳里静默失效,改走 Orca IPC 剪贴板(同计划屏);
+            // 「已复制」瞬态由面板自己给,失败经 onCopyError 如实上屏。
             onCopy={() =>
-              void act(async () => {
-                await navigator.clipboard.writeText(
-                  formatBoardAnnotationsAsMarkdown(annotations.annotations)
-                )
-                setNotice('已复制板面批注。')
-              })
+              window.api.ui.writeClipboardText(
+                formatBoardAnnotationsAsMarkdown(annotations.annotations)
+              )
             }
-            onSend={() => {
-              annotations.closePopover()
-              sendAction(boardAnnotationsSendPrompt(annotations.annotations), '板面批注')
-            }}
+            onCopyError={(message) => board.setError(`复制板面批注失败：${message}`)}
+            onSent={() => setNotice('板面批注已发送给验收助手 · 在会话栏查看进展')}
           />
         )}
       </div>

@@ -20,7 +20,7 @@
 
 侧栏顶部项目名进入**项目墙**：每项目一张卡，多仓项目聚合为一张卡（组内增删仓自动建组/收组），同一项目跨多主机仍一张卡、卡内以主机标签标来源（本机 / Builder 主机名）。卡片分两区：
 
-- **名片区**：名称、简述、对标、目标方向；名片待合入提示（PR #n）；代码仓注册行；动作（打开项目总览 / 编辑名片 / ＋代码仓；删除只对本机注册提供）。
+- **名片区**：项目名、愿景与来源名称；右上角总览／配置图标。名片待合入、完整信息与代码仓注册操作归右侧配置栏；删除只对本机注册提供。
 - **读数区**：当前版本（未选版即「版本未定」）、版本承诺进展（完成 x · 开放 y）、在跑会话数、PR 待审数。全部现算，读不到显示 Unknown、不装绿不装零；只显数字不跳转，任务明细归总览。不做健康灯，墙上唯一的状态事实是主机连接（在线/离线/未知）。
 
 「+ 接入项目」两步——①选本地仓或克隆远端（`owner/repo` 简写归一化为 GitHub 地址；远端在填表前经平台 API 预读已有名片回填，「没查成」不冒充「没接管过」）；②填项目名片。提交即完成一串：写 `.bw/project.toml` **并经 PR 落入被管项目仓、由其 builders 合入**（合入后其他成员接入同一项目时直接读到已有名片、只补空字段，不重复建名片重复起 PR；主检出不留脏文件）；设单仓工作树基址 `.bw/worktrees`、可选挂入项目分组、激活项目落到总览。点卡切项目；总览项目卡展示名片的对标/目标方向。
@@ -33,7 +33,7 @@
 - **价值与依据**：2026-10-20 用户明确希望把 Claude Code 会话详情栏的卡片组织方式引入项目卡片配置。目标是保留项目墙上下文，通过「摘要 → 展开 → 操作」完成日常配置；尚无真实使用效率数据。
 - **目标体验**：顶部刷新、文件导入、接入、关闭只用图标，并保持同一行；墙卡展示项目名、愿景、「状态点 + Builder 名称」，总览／配置两个图标固定在右上角，不重复仓库名、技术计数和当前项目标签。点配置，右侧显示项目信息、成员与负责人、代码仓、项目所在电脑；设备详情不代替 Builder 身份。折叠后仍可看配置摘要，修改名片后先看逐字段对比，再提交 PR；合入并更新代码后读回新名片。现有四项真实读数保留。成员与负责人目前仅为独立设计示例，数据来源尚待落实；生产先沿现有 Builder 主机命名呈现连接来源，不将配对名推断为人员或负责人。
 - **范围**：调整现有项目名片与配置入口，复用仓库、主机的原生设置；不引入会话上下文、连接器、后台任务等与项目配置无关的会话信息。墙卡删除冗余占位，本提案不新增健康算法。
-- **实现增量**：现行名片提交只补空字段；本提案允许人明确修改已有值和清空选填字段，仍保留未知键、注释和别名。用户已授权按本设计实施；保真编辑与并发保护仍需实现和验证。具体规则和原型见 [spec](spec.md#项目卡片配置增量已确认设计)。
+- **实现增量**：接入名片继续只补空；配置栏允许人明确修改已有值和清空选填字段，保留未知键、注释和别名，以原文校验防止静默覆盖。实现与验证边界见 [STATUS](STATUS.md)，规则和原型见 [spec](spec.md#项目卡片配置增量已确认设计)。
 
 ## 范围与边界
 
@@ -57,4 +57,4 @@
 
 ## 实现落点（现状取证）
 
-`src/renderer/src/workbench/`：`ProjectWallPage` / `OnboardProjectPage` / `OnboardCharterStep` / `EditCharterPage`（名片补录）/ `run-project-onboard` / `charter-port` / `charter-pr-notice` + `use-charter-pr-status`（待合入 chip）/ `project-charter`（renderer fs 包装）/ `workbench-wall-projects`（聚合）/ `switch-active-project` / `wall-project-repo-actions`（组升级/连带删组）/ `use-wall-readings` + `wall-readings-load` + `wall-readings-codehub` + `wall-card-readings`（墙卡读数编排/读取管线/CodeHub 任务状态读回/纯函数推导）；`src/shared/workbench/project-charter.ts`（纯函数核心：解析/渲染/保真补空 `fillBlankCharterInToml`，兼容 north_star）与 `charter.ts`（RPC 契约）；`src/main/workbench/charter-runtime.ts` + `charter-remote-probe.ts` + `charter-pr-status.ts`（bw/project 树提交与 PR、克隆前预探测、状态查询）；`src/main/github/issue-state-batch.ts` + `gh:issueStates` IPC/preload/web 登记（GitHub Issue 状态批量读回；承诺进展口径为关闭即完成、只消费状态，CodeHub 任务复用 task-port 的 resolveReferenceRepo 身份匹配与 codehubStateOf 归一，状态只读 Issue（不做 MR 兜底）逐条读回）；`src/main/codehub/mr-creation.ts` + `repo-reads.ts`（CodeHub MR 与远端 raw 读）。散落文档：architecture 用例表与 §3、06-module/桌面壳与关键信息维护。存量合规单测：project-charter（shared：解析/回写/保真补空/归一化）、workbench-wall-projects（组聚合）、wall-card-readings（读数推导纯函数）。
+`src/renderer/src/workbench/`：`ProjectWallPage` / `OnboardProjectPage` / `OnboardCharterStep` / `ProjectSettingsRail` + `ProjectSettingsReview` + `use-project-settings`（右栏配置与变更对比）/ `run-project-onboard` / `charter-port` / `charter-pr-notice` + `use-charter-pr-status`（待合入 chip）/ `project-charter`（renderer fs 包装）/ `workbench-wall-projects`（聚合）/ `switch-active-project` / `wall-project-repo-actions`（组升级/连带删组）/ `use-wall-readings` + `wall-readings-load` + `wall-readings-codehub` + `wall-card-readings`（墙卡读数编排/读取管线/CodeHub 任务状态读回/纯函数推导）；`src/shared/workbench/project-charter.ts`（纯函数核心：解析/渲染/保真补空 `fillBlankCharterInToml`，兼容 north_star）+ `project-charter-edit.ts`（保真编辑与原文冲突校验）与 `charter.ts`（RPC 契约）；`src/main/workbench/charter-runtime.ts` + `charter-remote-probe.ts` + `charter-pr-status.ts`（bw/project 树提交与 PR、克隆前预探测、状态查询）；`src/main/github/issue-state-batch.ts` + `gh:issueStates` IPC/preload/web 登记（GitHub Issue 状态批量读回；承诺进展口径为关闭即完成、只消费状态，CodeHub 任务复用 task-port 的 resolveReferenceRepo 身份匹配与 codehubStateOf 归一，状态只读 Issue（不做 MR 兜底）逐条读回）；`src/main/codehub/mr-creation.ts` + `repo-reads.ts`（CodeHub MR 与远端 raw 读）。散落文档：architecture 用例表与 §3、06-module/桌面壳与关键信息维护。存量合规单测：project-charter（shared：解析/回写/保真补空/归一化）、workbench-wall-projects（组聚合）、wall-card-readings（读数推导纯函数）。

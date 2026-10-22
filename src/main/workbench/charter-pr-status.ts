@@ -24,7 +24,11 @@ export async function lookupOpenCharterPr(
       if (!remote) {
         return null
       }
-      const iid = await openCodeHubMrForBranch({ remote, execOptions, sourceBranch: CHARTER_BRANCH })
+      const iid = await openCodeHubMrForBranch({
+        remote,
+        execOptions,
+        sourceBranch: CHARTER_BRANCH
+      })
       return iid === null ? null : { provider: 'codehub', number: iid, url: null }
     }
     const review = await getHostedReviewForBranch({
@@ -52,22 +56,26 @@ export async function readCharterStatus(
 ): Promise<CharterStatus> {
   const executionHostId = getRepoExecutionHostId(repo as Repo)
   let headHasCharter = false
+  let headContent: string | null = null
   try {
     const blob = await readGitBlobAtOidPath(repo.path, 'HEAD', PROJECT_TOML_REL, execOptions)
     headHasCharter = blob.exists && !blob.failed
+    headContent = headHasCharter ? blob.content : null
   } catch {
     headHasCharter = false
   }
   const identityProbe = await probeGitRemoteIdentity(repo.path, executionHostId)
+  const remoteAvailable =
+    identityProbe.status === 'resolved' ? true : identityProbe.status === 'no-remote' ? false : null
   if (identityProbe.status !== 'resolved') {
-    return { pr: null, headHasCharter }
+    return { pr: null, headHasCharter, remoteAvailable }
   }
   const identity = identityProbe.identity
   try {
     if (isCodeHubGitRemote(identity)) {
       const remote = parseCodeHubRemote(identity.remoteUrl)
       if (!remote) {
-        return { pr: null, headHasCharter }
+        return { pr: null, headHasCharter, remoteAvailable }
       }
       const iid = await openCodeHubMrForBranch({
         remote,
@@ -76,7 +84,8 @@ export async function readCharterStatus(
       })
       return {
         pr: iid === null ? null : { provider: 'codehub', number: iid, url: null, state: 'open' },
-        headHasCharter
+        headHasCharter,
+        remoteAvailable
       }
     }
     const review = await getHostedReviewForBranch({
@@ -86,14 +95,32 @@ export async function readCharterStatus(
       localGitExecOptions: execOptions
     })
     if (!review) {
-      return { pr: null, headHasCharter }
+      return { pr: null, headHasCharter, remoteAvailable }
     }
-    const state = review.state === 'merged' ? 'merged' : review.state === 'closed' ? 'closed' : 'open'
+    const state =
+      review.state === 'merged' ? 'merged' : review.state === 'closed' ? 'closed' : 'open'
+    let headMatchesProposal: boolean | undefined
+    if (state === 'merged') {
+      try {
+        const proposed = await readGitBlobAtOidPath(
+          repo.path,
+          CHARTER_BRANCH,
+          PROJECT_TOML_REL,
+          execOptions
+        )
+        headMatchesProposal =
+          proposed.exists && !proposed.failed && proposed.content === headContent
+      } catch {
+        headMatchesProposal = undefined
+      }
+    }
     return {
       pr: { provider: 'github', number: review.number, url: review.url || null, state },
-      headHasCharter
+      headHasCharter,
+      headMatchesProposal,
+      remoteAvailable
     }
   } catch {
-    return { pr: null, headHasCharter, queryFailed: true }
+    return { pr: null, headHasCharter, remoteAvailable, queryFailed: true }
   }
 }

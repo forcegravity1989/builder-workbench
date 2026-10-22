@@ -273,22 +273,28 @@
 }
 /* 验收侧角标:一个合并入口(编号逗号相连),不是计划屏的逐号圆点——会中一行
    多条批注时,圆点会把行尾的达成/不达成按钮挤走。 */
+/* 角标配色与共用 .g3-annot-marker 同一契约:显式强调色底 + 白字。
+   不用 foreground/background 变量对——真壳该组合解析失败会回落继承文字色,
+   2026-10-22 计划屏真机已踩到黑底黑字不可见。形态仍是验收屏自己的合并入口。 */
 .acc-annot-badge {
   display: inline-flex;
   align-items: center;
   gap: 3px;
   flex-shrink: 0;
-  border: 1px solid var(--foreground);
+  border: 1px solid var(--color-accent, #d97757);
   border-radius: 999px;
-  background: none;
+  background: var(--color-accent, #d97757);
+  color: #fff;
   padding: 0 7px;
   height: 18px;
   font-size: 10px;
+  font-weight: 600;
   line-height: 1;
+  cursor: pointer;
 }
 .acc-annot-badge:hover {
-  background: var(--foreground);
-  color: var(--background);
+  background: var(--accent);
+  color: var(--color-accent, #d97757);
 }
 
 /* ===== 分区标题 ===== */

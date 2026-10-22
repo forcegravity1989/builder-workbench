@@ -917,8 +917,6 @@ function App() {
                   </div>
                   <MinutesCard
                     minutes={minutes || EMPTY_MINUTES}
-                    sendRequest={sendRequest}
-                    showAgent={false}
                     showFollowupStatus={false}
                     footNote="纪要经人工确认生效;遗留条目原样流入下版计划屏「会议遗留」。需要模型整理时直接在会话里说,或批注后发送。"
                     update={(patch) => {

@@ -3,7 +3,8 @@
   min-width: 0;
   min-height: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  position: relative;
   background: var(--color-bg, #faf9f5);
   color: var(--color-text, #1f1e1d);
 }
@@ -29,12 +30,13 @@
 }
 .wb-wall .page-actions {
   display: flex;
-  gap: 8px;
+  gap: 4px;
+  flex: none;
   align-items: center;
 }
 .wb-wall .wall-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr));
   gap: 16px;
 }
 .wb-wall .pcard {
@@ -53,6 +55,48 @@
   border-color: var(--color-accent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 35%, transparent);
 }
+.wb-wall .pcard.is-configured {
+  border-color: var(--foreground);
+  box-shadow: none;
+}
+.wb-wall .pcard-top {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.wb-wall .pcard-sources {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.wb-wall .pcard-actions {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+.pcard-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.pcard-source-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+}
+.pcard-source-dot.is-online {
+  background: var(--status-success);
+}
+.pcard-source-dot.is-offline {
+  background: transparent;
+  border: 1px solid var(--muted-foreground);
+}
 .wb-wall .pcard-main {
   cursor: pointer;
   gap: 8px;
@@ -65,6 +109,7 @@
   color: inherit;
   text-align: left;
   font: inherit;
+  width: 100%;
 }
 .wb-wall .pcard-main:disabled {
   opacity: 0.7;
@@ -110,7 +155,7 @@
   background: var(--color-bg);
 }
 .wb-wall .pcard-reading-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: color-mix(in srgb, var(--color-text) 50%, transparent);
@@ -126,89 +171,6 @@
 .wb-wall .pcard-reading-value.is-unknown {
   color: color-mix(in srgb, var(--color-text) 45%, transparent);
 }
-.wb-wall .pcard-repos {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 4px 4px;
-  border-top: 1px solid var(--color-divider);
-}
-.wb-wall .pcard-repos-head {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--color-text) 50%, transparent);
-}
-.wb-wall .pcard-charter-note {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
-  border: 1px solid color-mix(in srgb, var(--color-accent) 25%, transparent);
-}
-.wb-wall .pcard-repo-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.wb-wall .pcard-repo-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.wb-wall .pcard-repo-link {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 4px 6px;
-  margin: 0;
-  border: 0;
-  border-radius: var(--radius-sm, 4px);
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  font: inherit;
-  cursor: pointer;
-}
-.wb-wall .pcard-repo-link:hover {
-  background: color-mix(in srgb, var(--color-text) 6%, transparent);
-}
-.wb-wall .pcard-repo-name {
-  font-size: 12.5px;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.wb-wall .pcard-repo-url {
-  font-size: 11px;
-  color: var(--color-accent);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.wb-wall .pcard-repo-remove {
-  flex: none;
-  font-size: 11px;
-  padding: 2px 6px;
-  min-height: 0;
-}
-.wb-wall .pcard-add-repo {
-  align-self: flex-start;
-  font-size: 12px;
-  padding: 4px 8px;
-  min-height: 0;
-}
 .wb-wall .empty-center {
   text-align: center;
   padding: 48px 24px;
@@ -220,71 +182,11 @@
   }
 }
 
-/* ─── G3：整墙概况条（工作树总数 / 主机连接事实 / 上次刷新） ─── */
 .wb-wall .wallbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 14px;
-  margin-bottom: 12px;
-  padding: 8px 12px;
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-md);
-  background: var(--color-card);
   color: var(--muted-foreground);
-  font-size: 11.5px;
-}
-.wb-wall .wallbar-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-.wb-wall .wallbar-item strong {
-  color: var(--color-text);
-  font-weight: 600;
-}
-.wb-wall .wallbar-sep {
-  width: 1px;
-  height: 14px;
-  background: var(--color-divider);
-}
-
-/* ─── G3：墙卡来源主机标签与代码仓注脚 ─── */
-.wb-wall .pcard-sources,
-.wb-wall .pcard-repo-hosts {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
-}
-.wb-wall .pcard-repo-hosts {
-  flex: none;
-}
-.wb-wall .pcard-repo-noRemove {
-  flex: none;
-  font-size: 10.5px;
-  color: var(--muted-foreground);
-  padding: 2px 6px;
-  white-space: nowrap;
-}
-.wb-wall .pcard-repo-note {
-  margin: 2px 4px 0;
-  font-size: 10.5px;
-  line-height: 1.6;
-  color: var(--muted-foreground);
-}
-.wb-wall .pcard-repo-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-top: 8px;
-}
-.wb-wall .pcard-repo-actions .wb-btn {
   font-size: 12px;
-  padding: 4px 10px;
-  min-height: 0;
+  margin: 16px 0;
 }
-
 /* ─── G3：导入 Builder 主机对话框 ─── */
 .wb-dialog-backdrop {
   position: fixed;
