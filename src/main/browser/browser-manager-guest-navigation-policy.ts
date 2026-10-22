@@ -115,12 +115,11 @@ export abstract class BrowserManagerGuestNavigationPolicy extends BrowserManager
       this.notifyBrowserGuestStateChanged(guest.id)
     }
 
-    const didNavigateHandler = (_event: Electron.Event, url: string): void => {
+    const didNavigateHandler = (_event: Electron.Event, _url: string): void => {
       // Why: once committed, getURL() reports this url, so the pending target is redundant.
       this.pendingNavigationByGuestId.delete(guest.id)
       // Why: a committed nav makes the did-start-navigation stash obsolete; drop it so a later ERR_ABORTED can't restore an error over it.
       this.clearedLoadErrorsByGuestId.delete(guest.id)
-      this.certificateTrustController?.onMainFrameNavigationCommitted(guest.id, url)
     }
 
     guest.on('will-navigate', navigationGuard)

@@ -181,7 +181,7 @@ describe('BrowserCertificateTrustController', () => {
     ).toHaveBeenCalledWith({ cancel: true })
   })
 
-  it('rejects first, then trusts only the approved guest, endpoint, certificate, and error', () => {
+  it('rejects first, then trusts the approved endpoint, certificate, and error session-wide', () => {
     controller.onMainFrameNavigationStarted(guest.id)
     const first = certificateEvent({ controller, guest })
 
@@ -210,9 +210,12 @@ describe('BrowserCertificateTrustController', () => {
     expect(sameEndpoint.callback).toHaveBeenCalledOnce()
     expect(sameEndpoint.callback).toHaveBeenCalledWith(true)
 
+    // Why: approval is a session-scoped exception — a sibling guest reaching the same
+    // endpoint + leaf is trusted without a fresh prompt, exactly like Chrome's SSL exceptions.
     const otherTab = certificateEvent({ controller, guest: otherGuest })
-    expect(otherTab.callback).toHaveBeenCalledWith(false)
-    expect(otherTab.preventDefault).not.toHaveBeenCalled()
+    expect(otherTab.preventDefault).toHaveBeenCalledOnce()
+    expect(otherTab.callback).toHaveBeenCalledOnce()
+    expect(otherTab.callback).toHaveBeenCalledWith(true)
 
     const otherPort = certificateEvent({
       controller,
@@ -229,33 +232,6 @@ describe('BrowserCertificateTrustController', () => {
     })
     expect(otherCertificate.callback).toHaveBeenCalledWith(false)
     expect(otherCertificate.preventDefault).not.toHaveBeenCalled()
-  })
-
-  it('blocks a session-cached certificate for sibling requests until that guest approves it', () => {
-    certificateEvent({ controller, guest })
-    expect(controller.proceed('page-1', 'challenge-1')).toEqual({ ok: true })
-    expect(certificateEvent({ controller, guest }).callback).toHaveBeenCalledWith(true)
-
-    const siblingMainFrame = beforeRequest({ webContentsId: otherGuest.id })
-    expect(siblingMainFrame).toHaveBeenCalledWith({ cancel: true })
-    expect(controller.getFailure('page-2')).toMatchObject({
-      challengeId: 'challenge-2',
-      browserPageId: 'page-2',
-      origin: 'https://intranet.example:3443',
-      canProceed: true
-    })
-
-    expect(
-      beforeRequest({ webContentsId: otherGuest.id, resourceType: 'webSocket' })
-    ).toHaveBeenCalledWith({ cancel: true })
-    expect(beforeRequest({ resourceType: 'webSocket' })).toHaveBeenCalledWith({ cancel: true })
-    expect(
-      beforeRequest({ url: 'https://intranet.example:3444/app', webContentsId: otherGuest.id })
-    ).toHaveBeenCalledWith({})
-    expect(beforeRequest({ webContentsId: guest.id })).toHaveBeenCalledWith({})
-
-    expect(controller.proceed('page-2', 'challenge-2')).toEqual({ ok: true })
-    expect(beforeRequest({ webContentsId: otherGuest.id })).toHaveBeenCalledWith({})
   })
 
   it('fails closed when an accepted endpoint presents a replacement bad certificate', () => {
@@ -343,7 +319,7 @@ describe('BrowserCertificateTrustController', () => {
     expect(guest.loadURL).not.toHaveBeenCalled()
   })
 
-  it('clears pending approval and grants when navigation or guest ownership changes', () => {
+  it('clears pending approval when a navigation starts or the guest retires', () => {
     certificateEvent({ controller, guest })
     controller.onMainFrameNavigationStarted(guest.id)
     expect(controller.getFailure('page-1')).toBeNull()
@@ -354,9 +330,12 @@ describe('BrowserCertificateTrustController', () => {
 
     certificateEvent({ controller, guest })
     expect(controller.proceed('page-1', 'challenge-2')).toEqual({ ok: true })
-    controller.onMainFrameNavigationCommitted(guest.id, 'https://example.com/')
-    const afterCommit = certificateEvent({ controller, guest })
-    expect(afterCommit.callback).toHaveBeenCalledWith(false)
+    // Why: SSO round-trips commit through other hosts; the session grant must survive
+    // them so returning to the approved endpoint loads instead of blanking out.
+    controller.onMainFrameNavigationStarted(guest.id)
+    const afterReturnNavigation = certificateEvent({ controller, guest })
+    expect(afterReturnNavigation.preventDefault).toHaveBeenCalledOnce()
+    expect(afterReturnNavigation.callback).toHaveBeenCalledWith(true)
 
     controller.onGuestRetired(guest.id)
     expect(controller.getFailure('page-1')).toBeNull()
