@@ -79,10 +79,11 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect
     .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
     .toBe('terminal')
+  // G3 板面：唯一会话发起入口=目标区空板卡（仅无计划时显示）；prepare 不启动
+  // 任何会话/agent，空板卡在场即其反证。
   await expect(
-    workbenchPage.getByRole('button', { name: '新建计划', exact: true }).first()
+    workbenchPage.getByRole('button', { name: '与计划助手新建计划', exact: true })
   ).toBeVisible()
-  await expect(workbenchPage.locator('.vc-chat')).toHaveCount(0)
   await expect
     .poll(
       () =>
@@ -123,15 +124,15 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     'utf8'
   )
   // The board polls the host; the seeded goal card proves the re-read happened
-  // before we edit (autosave must carry the fresh revision). The title appears
-  // in both the card header and its inline editor — assert the header button.
-  await expect(workbenchPage.getByRole('button', { name: 'G1 验证计划材料保存' })).toBeVisible({
+  // before we edit (autosave must carry the fresh revision). G3 目标卡：标题在
+  // 卡头 strong 回显，行内编辑经「编辑目标」进入、无保存按钮（自动保存）。
+  await expect(workbenchPage.locator('.g3-goal-toggle strong')).toHaveText('验证计划材料保存', {
     timeout: 60_000
   })
-
-  const progress = workbenchPage.locator('.vp-preparation textarea').first()
-  await expect(progress).toBeEnabled({ timeout: 60_000 })
-  await progress.fill('烟测进展：主链接通')
+  await workbenchPage.getByRole('button', { name: '展开 G1' }).click()
+  await workbenchPage.getByRole('button', { name: '编辑目标', exact: true }).click()
+  await workbenchPage.getByLabel('G1 目标').fill('验证计划材料保存·烟测')
+  await workbenchPage.getByRole('button', { name: '结束编辑目标', exact: true }).click()
   await expect(workbenchPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
 
   // Iron-law read-back: the material exists on the bound worktree's own disk path.
@@ -144,13 +145,13 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
         }
         const parsed = JSON.parse(readFileSync(file, 'utf8')) as {
           version: string
-          summary: { progress: string }
+          goals: { title: string }[]
         }
-        return `${parsed.version}:${parsed.summary.progress}`
+        return `${parsed.version}:${parsed.goals[0]?.title ?? ''}`
       },
       { timeout: 30_000, message: 'plan material never landed on disk' }
     )
-    .toBe('v9.9:烟测进展：主链接通')
+    .toBe('v9.9:验证计划材料保存·烟测')
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-plan-saved.png') })
 
   // ---- 重载读回：绑定即版本正本，侧栏版本行重新进屏，材料从宿主恢复 ----
@@ -170,8 +171,8 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
       { timeout: 120_000, message: 'bound version did not survive reload' }
     )
     .toBe('v9.9')
-  await expect(workbenchPage.locator('.vp-preparation textarea').first()).toHaveValue(
-    '烟测进展：主链接通',
+  await expect(workbenchPage.locator('.g3-goal-toggle strong')).toHaveText(
+    '验证计划材料保存·烟测',
     { timeout: 60_000 }
   )
 
