@@ -1,169 +1,229 @@
 <!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>小项目组聚合修复 · 设计原型</title>
-    <link rel="stylesheet" href="../../04-design-system/tokens.css" />
-    <style>
-      * { box-sizing: border-box; }
-      body { margin: 0; background: var(--background); color: var(--foreground); font: 14px/1.6 system-ui, sans-serif; }
-      main { max-width: 1120px; margin: auto; padding: 24px; }
-      h1 { font-size: 22px; margin: 0 0 6px; font-weight: 500; }
-      h2 { margin: 0; font-size: 16px; font-weight: 500; }
-      p { margin: 8px 0; }
-      .muted { color: var(--muted-foreground); }
-      .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 20px 0; }
-      button, select { font: inherit; color: inherit; background: var(--background); border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; cursor: pointer; }
-      button:hover { background: var(--accent); }
-      button:focus-visible, select:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
-      button:disabled { opacity: .6; cursor: default; }
-      select { max-width: 100%; }
-      .surface { display: grid; grid-template-columns: minmax(220px, 310px) minmax(0, 1fr); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-      aside { background: var(--sidebar); padding: 18px; border-right: 1px solid var(--border); min-width: 0; }
-      .content { padding: 20px; min-width: 0; }
-      .section-label { margin: 0 0 14px; color: var(--muted-foreground); }
-      .project { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--border); border-radius: 9px; margin-bottom: 14px; }
-      .project > button { justify-self: start; }
-      .project-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-      .sidebar-group { margin-bottom: 18px; }
-      .sidebar-group strong { display: block; margin-bottom: 8px; font-weight: 500; }
-      .workspace { width: 100%; margin: 4px 0; text-align: left; display: grid; gap: 2px; }
-      .workspace span:last-child { color: var(--muted-foreground); font-size: 12px; overflow-wrap: anywhere; }
-      .source { display: inline-block; margin-right: 12px; }
-      .source::before { content: '○'; margin-right: 5px; }
-      .source.online::before { content: '●'; color: var(--status-success); }
-      .route { padding: 14px 0; border-top: 1px solid var(--border); overflow-wrap: anywhere; }
-      .route dl { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 6px 12px; margin: 12px 0; }
-      .route dt { color: var(--muted-foreground); }
-      .route dd { margin: 0; }
-      details { margin-top: 20px; }
-      pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 14px; background: var(--muted); border-radius: 7px; }
-      @media (max-width: 620px) { main { padding: 16px; } .surface { grid-template-columns: 1fr; } aside { border-right: 0; border-bottom: 1px solid var(--border); } .toolbar { align-items: stretch; } .toolbar label { width: 100%; } select { width: 100%; } }
-    </style>
-  </head>
-  <body>
-    <main>
-      <h1>一个项目入口，保留各自工作空间</h1>
-      <p class="muted">规格草案的交互样例；全部数据与操作结果均为模拟，不连接主机，不写仓库。</p>
-      <div class="toolbar">
-        <label for="scenario">演示场景
-          <select id="scenario">
-            <option value="same">同仓，异名异目录</option>
-            <option value="pending">B 的仓库资料晚到</option>
-            <option value="offline">B 离线，A 的名片可读</option>
-            <option value="all-offline">全部来源离线，名片不可读</option>
-            <option value="leader">Leader 已配对两个项目</option>
-          </select>
-        </label>
-        <button id="refresh" type="button">刷新（模拟）</button>
-        <button id="theme" type="button">切换深浅色</button>
-      </div>
-      <p id="explanation" class="muted" aria-live="polite"></p>
-      <div class="surface">
-        <aside aria-label="BW 壳内原生项目列表">
-          <p class="section-label">项目与工作空间 · 保留全部原生条目</p>
-          <div id="sidebar"></div>
-        </aside>
-        <section class="content" aria-label="项目墙与会话路由">
-          <p class="section-label">项目墙 · 沿现有名片判据</p>
-          <div id="wall"></div>
-          <div id="route" class="route" aria-live="polite">从项目下选择工作空间，查看它将使用的执行位置。</div>
-        </section>
-      </div>
-      <details>
-        <summary>查看示例数据与原型边界</summary>
-        <pre>A：显示名 订单API；目录 C:/dev/order
-B：显示名 pay-work；目录 /home/li/pay
-共同远端身份 git.example.com/team/order
-
-演示的“会话路由”仅回显固定样例，不调用原生 API。
-Leader 场景只改变已配对主机样例集合，不代表产品存在角色切换。
-在线圆点只表示模拟连接事实，不表示成员在线或项目健康。
-原型省略与本次分组无关的卡片配置和读数，不修改其现有规格。</pre>
-      </details>
-      <p class="muted"><a href="spec.md">规格</a> · <a href="plan.md">实现计划</a> · 实际双机、Electron 会话与完整重启尚未验证。</p>
-    </main>
-    <script>
-      (() => {
-        const scenario = document.getElementById('scenario');
-        const sidebar = document.getElementById('sidebar');
-        const wall = document.getElementById('wall');
-        const route = document.getElementById('route');
-        const explanation = document.getElementById('explanation');
-        let recovered = false;
-        const samples = {
-          a: { host: 'Builder-A', directory: 'C:/dev/order', session: '修复支付回调', name: '订单API' },
-          b: { host: 'Builder-B', directory: '/home/li/pay', session: '评审支付回调', name: 'pay-work' },
-          c: { host: 'Builder-C', directory: '/srv/ops', session: '整理运维脚本', name: '运营工具' }
-        };
-        function node(tag, text, className) {
-          const el = document.createElement(tag);
-          if (text) el.textContent = text;
-          if (className) el.className = className;
-          return el;
-        }
-        function openWorkspace(key, disabled) {
-          const sample = samples[key];
-          if (disabled) return;
-          route.replaceChildren(node('h2', '会话路由回显 · 模拟'));
-          const list = node('dl');
-          [['会话', sample.session], ['主机', sample.host], ['目录', sample.directory], ['本地名称', sample.name]].forEach(([term, value]) => list.append(node('dt', term), node('dd', value)));
-          route.append(list, node('p', '执行仍留在原主机与原目录；这里只演示选择结果。', 'muted'));
-        }
-        function addGroup(name, keys, unavailable) {
-          const group = node('div', '', 'sidebar-group');
-          group.append(node('strong', name));
-          keys.forEach(key => {
-            const sample = samples[key];
-            const button = node('button', '', 'workspace');
-            button.type = 'button';
-            button.dataset.workspace = key;
-            button.disabled = unavailable.includes(key);
-            button.append(node('span', `${sample.host} · ${sample.session}${button.disabled ? ' · 不可达' : ''}`), node('span', sample.directory));
-            button.addEventListener('click', () => openWorkspace(key, button.disabled));
-            group.append(button);
-          });
-          sidebar.append(group);
-        }
-        function addCard(name, keys, unavailable) {
-          const card = node('article', '', 'project');
-          card.dataset.project = name;
-          card.append(node('h2', name));
-          const sources = node('div');
-          keys.forEach(key => sources.append(node('span', `${samples[key].host}${unavailable.includes(key) ? ' · 离线' : ''}`, `source${unavailable.includes(key) ? '' : ' online'}`)));
-          card.append(sources, node('span', `在跑会话：${unavailable.length ? '—' : keys.length}${unavailable.length ? '（有来源不可达）' : ''}`, 'muted'));
-          wall.append(card);
-        }
-        function render() {
-          sidebar.replaceChildren(); wall.replaceChildren();
-          route.textContent = '从项目下选择工作空间，查看它将使用的执行位置。';
-          const value = scenario.value;
-          if (value === 'all-offline') {
-            explanation.textContent = '原生目录仍有资料时保留已知工作空间；没有可读名片，墙不保留提示卡。';
-            addGroup('订单服务', ['a', 'b'], ['a', 'b']);
-            wall.append(node('p', '当前没有满足纳入判据的可读项目；请在原生连接处恢复来源后刷新。', 'muted'));
-          } else if (value === 'pending' && !recovered) {
-            explanation.textContent = 'B 的来源已知，仓库资料尚未到达。点击刷新模拟资料恢复，随后自动归入订单服务。';
-            addGroup('订单服务', ['a'], []);
-            addGroup('正在识别项目 · Builder-B', ['b'], []);
-            addCard('订单服务', ['a'], []);
-          } else {
-            const unavailable = value === 'offline' ? ['b'] : [];
-            explanation.textContent = value === 'leader' ? 'Leader 场景：已配对主机覆盖两个项目，仍沿用整机授权，没有新增角色。' : value === 'offline' ? 'A 的名片满足纳入判据，墙仍显示该项目；B 的工作空间不可达，读数不装成零。' : recovered ? '模拟刷新完成：B 的身份已读回，两个工作空间归入同一项目。' : 'A、B 的本地名称和目录不同；共同远端身份将它们归为同一项目。';
-            addGroup('订单服务', ['a', 'b'], unavailable);
-            addCard('订单服务', ['a', 'b'], unavailable);
-            if (value === 'leader') {
-              addGroup('运营工具', ['c'], []);
-              addCard('运营工具', ['c'], []);
-            }
-          }
-        }
-        scenario.addEventListener('change', () => { recovered = false; render(); });
-        document.getElementById('refresh').addEventListener('click', () => { recovered = scenario.value === 'pending'; render(); });
-        document.getElementById('theme').addEventListener('click', () => { document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; });
-        render();
-      })();
-    </script>
-  </body>
-</html>
+<html lang="zh-CN" style="color-scheme:light dark">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>小项目组协作 · 用户旅程原型</title></head>
+<body style="margin:0">
+<style>
+  #bw-journey-prototype { --bw-bg:light-dark(#fff,#0a0a0a); --bw-fg:light-dark(#171717,#fafafa); --bw-sub:light-dark(#737373,#a3a3a3); --bw-rail:light-dark(#fafafa,#171717); --bw-hover:light-dark(#f5f5f5,#262626); --bw-line:light-dark(#e5e5e5,#353535); --bw-green:light-dark(#15803d,#86efac); --bw-red:light-dark(#b91c1c,#fca5a5); color-scheme:inherit; color:var(--bw-fg); font:14px/1.6 system-ui,sans-serif; }
+  #bw-journey-prototype * { box-sizing:border-box; }
+  #bw-journey-prototype button, #bw-journey-prototype input, #bw-journey-prototype select { font:inherit; color:inherit; }
+  #bw-journey-prototype button { padding:7px 12px; border:1px solid var(--bw-line); border-radius:6px; background:var(--bw-bg); }
+  #bw-journey-prototype button:hover { background:var(--bw-hover); }
+  #bw-journey-prototype button:disabled { opacity:.55; cursor:default; }
+  #bw-journey-prototype button[data-active="true"], #bw-journey-prototype .bw-primary { background:var(--bw-fg); color:var(--bw-bg); border-color:var(--bw-fg); }
+  #bw-journey-prototype input, #bw-journey-prototype select { width:100%; min-width:0; background:var(--bw-bg); border:1px solid var(--bw-line); border-radius:6px; padding:9px 10px; }
+  #bw-journey-prototype h1, #bw-journey-prototype h2, #bw-journey-prototype h3, #bw-journey-prototype strong { font-weight:500; }
+  #bw-journey-prototype h1 { font-size:20px; margin:0; }
+  #bw-journey-prototype h2 { font-size:18px; margin:0; }
+  #bw-journey-prototype h3 { font-size:14px; margin:0 0 10px; }
+  #bw-journey-prototype p { margin:8px 0; }
+  #bw-journey-prototype .bw-demo { padding:16px 0 12px; }
+  #bw-journey-prototype .bw-demo-top { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding-right:92px; }
+  #bw-journey-prototype .bw-caption { color:var(--bw-sub); font-size:12px; }
+  #bw-journey-prototype .bw-paths { display:flex; flex-wrap:wrap; gap:6px; margin:12px 0; }
+  #bw-journey-prototype .bw-steps { display:flex; flex-wrap:wrap; list-style:none; padding:0; margin:8px 0; gap:6px 20px; color:var(--bw-sub); font-size:12px; }
+  #bw-journey-prototype .bw-steps li[aria-current="step"] { color:var(--bw-fg); font-weight:500; }
+  #bw-journey-prototype .bw-steps li::before { content:'○ '; }
+  #bw-journey-prototype .bw-steps li.bw-done::before { content:'✓ '; }
+  #bw-journey-prototype .bw-steps li[aria-current="step"]::before { content:'● '; }
+  #bw-journey-prototype .bw-app { background:var(--bw-bg); border:1px solid var(--bw-line); border-radius:10px; overflow:hidden; }
+  #bw-journey-prototype .bw-chrome { padding:10px 16px; background:var(--bw-rail); border-bottom:1px solid var(--bw-line); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  #bw-journey-prototype .bw-body { display:grid; grid-template-columns:230px minmax(0,1fr); min-height:470px; }
+  #bw-journey-prototype aside { background:var(--bw-rail); border-right:1px solid var(--bw-line); padding:12px; min-width:0; }
+  #bw-journey-prototype .bw-side-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  #bw-journey-prototype .bw-side-group { margin:16px 0; }
+  #bw-journey-prototype .bw-side-group > strong { display:block; padding:0 7px; margin-bottom:7px; }
+  #bw-journey-prototype .bw-space { display:grid; width:100%; text-align:left; margin:4px 0; border-color:transparent; gap:2px; }
+  #bw-journey-prototype .bw-space small { font-size:12px; color:var(--bw-sub); overflow-wrap:anywhere; }
+  #bw-journey-prototype .bw-main { min-width:0; padding:20px; }
+  #bw-journey-prototype .bw-topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px; }
+  #bw-journey-prototype .bw-actions { display:flex; flex-wrap:wrap; gap:6px; }
+  #bw-journey-prototype .bw-icon { padding:5px 9px; min-width:32px; }
+  #bw-journey-prototype .bw-empty { padding:54px 12px; text-align:center; }
+  #bw-journey-prototype .bw-projects { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:14px; }
+  #bw-journey-prototype .bw-project { padding:16px; border:1px solid var(--bw-line); border-radius:8px; min-width:0; }
+  #bw-journey-prototype .bw-project-head { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  #bw-journey-prototype .bw-hosts { display:flex; flex-wrap:wrap; gap:6px 14px; margin:10px 0; }
+  #bw-journey-prototype .bw-hosts span::before { content:'●'; color:var(--bw-green); margin-right:5px; }
+  #bw-journey-prototype .bw-hosts span.bw-unavailable::before { content:'○'; color:var(--bw-sub); }
+  #bw-journey-prototype .bw-readings { display:grid; gap:5px; margin-top:16px; color:var(--bw-sub); font-size:12px; }
+  #bw-journey-prototype .bw-dialog { max-width:520px; margin:0 auto; padding:20px; border:1px solid var(--bw-line); border-radius:8px; }
+  #bw-journey-prototype .bw-dialog header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; }
+  #bw-journey-prototype .bw-field { display:grid; gap:5px; margin:14px 0; }
+  #bw-journey-prototype .bw-field small { color:var(--bw-sub); font-size:12px; }
+  #bw-journey-prototype .bw-footer { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:20px; }
+  #bw-journey-prototype .bw-facts { margin:12px 0; display:grid; grid-template-columns:80px minmax(0,1fr); gap:8px 12px; overflow-wrap:anywhere; }
+  #bw-journey-prototype .bw-facts dt { color:var(--bw-sub); }
+  #bw-journey-prototype .bw-facts dd { margin:0; }
+  #bw-journey-prototype .bw-connection { border-top:1px solid var(--bw-line); padding:12px 0; }
+  #bw-journey-prototype .bw-row { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; align-items:center; }
+  #bw-journey-prototype .bw-notice { padding:10px 16px; border-top:1px solid var(--bw-line); font-size:12px; overflow-wrap:anywhere; }
+  #bw-journey-prototype .bw-chat { padding:14px; background:var(--bw-rail); border-radius:7px; margin:12px 0; }
+  #bw-journey-prototype .bw-tabs { display:flex; flex-wrap:wrap; gap:8px; border-bottom:1px solid var(--bw-line); padding-bottom:10px; margin-bottom:16px; }
+  #bw-journey-prototype pre { padding:14px; background:var(--bw-rail); white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.7 ui-monospace,monospace; }
+  #bw-journey-prototype [role="alert"] { color:var(--bw-red); }
+  #bw-journey-prototype .bw-environment { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:8px 0; }
+  #bw-journey-prototype .bw-environment select { width:auto; max-width:100%; }
+  @media(max-width:680px) { #bw-journey-prototype .bw-body { grid-template-columns:1fr; } #bw-journey-prototype aside { border-right:0; border-bottom:1px solid var(--bw-line); } #bw-journey-prototype .bw-main { padding:14px; } #bw-journey-prototype .bw-empty { padding:24px 0; } #bw-journey-prototype .bw-dialog { padding:14px; } #bw-journey-prototype .bw-demo-top { padding-right:0; } }
+  @media(pointer:coarse) { #bw-journey-prototype button { min-height:44px; } #bw-journey-prototype input, #bw-journey-prototype select { font-size:16px; } }
+</style>
+<div id="bw-journey-prototype">
+  <section class="bw-demo" aria-label="旅程演示控制，不属于产品界面">
+    <div class="bw-demo-top"><h1>小项目组协作</h1><span class="bw-caption">可交互草案 · 全部为模拟数据</span></div>
+    <nav class="bw-paths" aria-label="选择用户旅程">
+      <button type="button" data-journey="first" class="cursor-interaction">首次协作接入</button>
+      <button type="button" data-journey="duplicates" class="cursor-interaction">已有重复空间</button>
+      <button type="button" data-journey="unknown" class="cursor-interaction">来源异常恢复</button>
+      <button type="button" data-journey="leader" class="cursor-interaction">Leader 跨项目</button>
+    </nav>
+    <div id="bw-environment"></div>
+    <ol id="bw-steps" class="bw-steps" aria-label="当前旅程进度"></ol>
+    <div id="bw-perspective" class="bw-caption"></div>
+  </section>
+  <section class="bw-app" aria-label="Workbench 交互原型">
+    <header class="bw-chrome"><strong>Builders' Workbench</strong><span id="bw-current-host" class="bw-caption"></span></header>
+    <div class="bw-body"><aside aria-label="项目与工作空间"><div class="bw-side-head"><strong>项目</strong><button type="button" class="bw-icon cursor-interaction" data-action="wall" aria-label="打开项目墙">▦</button></div><div id="bw-sidebar"></div><button type="button" data-action="connections" class="cursor-interaction">主机连接</button></aside><main id="bw-main" class="bw-main"></main></div>
+    <div id="bw-notice" class="bw-notice" role="status" aria-live="polite"></div>
+  </section>
+  <p class="bw-caption">演示配对、名片读取、文件与会话均不调用真实接口；不新增成员或 Leader 权限。连接范围仍沿原生整机授权。</p>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('bw-journey-prototype');
+  const $ = selector => root.querySelector(selector);
+  const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const sample = {
+    a:{host:'Builder-A',path:'C:/dev/order',local:'订单API',session:'修复支付回调',project:'订单服务'},
+    b:{host:'Builder-B',path:'/home/li/pay',local:'pay-work',session:'评审支付回调',project:'订单服务'},
+    c:{host:'Builder-C',path:'/srv/ops',local:'ops',session:'整理运维脚本',project:'运营工具'}
+  };
+  const journeys = {
+    first:['接入本机项目','导入协作主机','自动归到同一项目','打开各自会话'],
+    duplicates:['重复入口（修复前）','刷新重新识别','一个项目保留两处工作空间','回到原会话'],
+    unknown:['发现来源异常','查看或恢复来源','刷新后归位','回到原会话'],
+    leader:['已有订单项目','导入运营主机','跨项目查看','打开文件和会话']
+  };
+  let state;
+  function initial(journey='first', condition='pending') {
+    return {journey,condition,connected:journey==='first'?[]:['a','b'],reconnected:[],registered:false,merged:journey!=='duplicates',recovered:false,view:'wall',panel:null,selected:'b',tab:'session',step:0,notice:journey==='first'?'从「接入项目」开始。样例本地仓库已包含主干跟踪的项目名片。':journey==='duplicates'?'这是修复前的重复入口快照。点击墙右上角刷新，查看修复后的分组。':journey==='unknown'?'来源异常保留可确认的信息；在连接处恢复或刷新重试。':'演示视角：Leader 已连接订单项目，继续导入运营项目主机。',bName:'pay-work',bPath:'/home/li/pay'};
+  }
+  function restore(saved) {
+    const value = saved?.privateContent?.journeyState;
+    if (!value || !Object.hasOwn(journeys,value.journey)) return initial();
+    const safe = initial(value.journey, ['pending','offline','all-offline'].includes(value.condition)?value.condition:'pending');
+    for (const key of ['registered','merged','recovered']) if(typeof value[key]==='boolean') safe[key]=value[key];
+    for (const key of ['connected','reconnected']) if(Array.isArray(value[key])) safe[key]=[...new Set(value[key].filter(item=>['a','b','c'].includes(item)))];
+    safe.step=Number.isInteger(value.step)?Math.max(0,Math.min(3,value.step)):0;
+    safe.selected=['a','b','c'].includes(value.selected)?value.selected:'b';
+    safe.view=value.view==='detail'?'detail':'wall'; safe.tab=value.tab==='files'?'files':'session';
+    for(const key of ['bName','bPath']) if(typeof value[key]==='string') safe[key]=value[key].slice(0,200);
+    safe.notice='已恢复上次演示位置。'; return safe;
+  }
+  state=restore(window.openai?.widgetState);
+  function save() {
+    if(window.openai?.setWidgetState) window.openai.setWidgetState({modelContent:{journey:state.journey,step:journeys[state.journey][state.step],sourceCondition:state.condition},privateContent:{journeyState:state}}).catch(()=>{});
+  }
+  window.addEventListener('openai:set_globals',event=>{if(event.detail?.globals?.widgetState){state=restore(event.detail.globals.widgetState);render();}});
+  function info(key) { return key==='b'?{...sample.b,local:state.bName,path:state.bPath}:sample[key]; }
+  function offline(key) {return state.journey==='unknown'&&!state.recovered&&!state.reconnected.includes(key)&&(state.condition==='all-offline'||(state.condition==='offline'&&key==='a'));}
+  function pending(key) {return state.journey==='unknown'&&!state.recovered&&state.condition==='pending'&&key==='a';}
+  function groups() {
+    if(state.journey==='duplicates'&&!state.merged) return state.connected.map(key=>({name:info(key).local,keys:[key],project:key==='c'?'ops':'order'}));
+    const result=[];
+    const order=state.connected.filter(key=>key!=='c'&&!pending(key));
+    if(order.length) result.push({name:'订单服务',keys:order,project:'order'});
+    if(state.connected.includes('c')) result.push({name:'运营工具',keys:['c'],project:'ops'});
+    if(state.connected.includes('a')&&pending('a')) result.push({name:'正在识别项目 · Builder-A',keys:['a'],project:null});
+    return result;
+  }
+  function button(action,label,extra='') {
+    const classes=extra.match(/class="([^"]*)"/);
+    return `<button type="button" class="cursor-interaction ${classes?classes[1]:''}" data-action="${action}" ${extra.replace(/class="[^"]*"/,'')}>${label}</button>`;
+  }
+  function renderSidebar() {
+    $('#bw-sidebar').innerHTML=groups().map(group=>`<section class="bw-side-group" data-sidebar-project="${esc(group.name)}"><strong>${esc(group.name)}</strong>${group.keys.map(key=>`<button type="button" class="bw-space cursor-interaction" data-open="${key}" ${offline(key)?'disabled':''}><span>${esc(info(key).session)}</span><small>${esc(info(key).host)}${offline(key)?' · 不可达':''}</small></button>`).join('')}</section>`).join('')||'<p class="bw-caption">还没有接入项目</p>';
+  }
+  function renderWall() {
+    const cards=groups().filter(group=>group.project&&group.keys.some(key=>!offline(key)));
+    return `<div class="bw-topbar"><h2>项目墙</h2><div class="bw-actions">${button('refresh','↻','class="bw-icon" aria-label="刷新项目" title="刷新项目"')}${button('import','↓','class="bw-icon" aria-label="导入 Builder 主机" title="导入 Builder 主机"')}${button('intake','+','class="bw-icon" aria-label="接入项目" title="接入项目"')}</div></div>${cards.length?`<div class="bw-projects">${cards.map(group=>`<article class="bw-project" data-wall-project="${esc(group.name)}"><div class="bw-project-head"><strong>${esc(group.name)}</strong><div class="bw-actions">${button('overview','→',`class="bw-icon" data-key="${group.keys.find(key=>!offline(key))}" aria-label="打开${esc(group.name)}"`)}${button('settings','⋯',`class="bw-icon" data-key="${group.keys[0]}" aria-label="配置${esc(group.name)}"`)}</div></div><div class="bw-hosts">${group.keys.map(key=>`<span class="${offline(key)?'bw-unavailable':''}">${esc(info(key).host)}${offline(key)?' · 离线':''}</span>`).join('')}</div><p class="bw-caption">${group.project==='ops'?'让项目运维可复用、可追踪':'让订单支付回调稳定、可追踪'}</p><div class="bw-readings"><span>版本：${group.project==='ops'?'版本未定':'v0.3'}</span>${group.project==='ops'?'':'<span>承诺进展：完成 2 · 开放 1</span>'}<span>在跑会话：${group.keys.some(offline)?'—（有来源不可达）':group.keys.length}</span><span>待审 PR：${group.project==='ops'?'0':'1'}</span></div></article>`).join('')}</div>`:`<div class="bw-empty"><h3>${state.connected.length?'暂无满足纳入判据的可读项目':'先接入你正在做的项目'}</h3><p class="bw-caption">${state.connected.length?'所有来源的名片当前不可读；恢复连接后再刷新。':'接入已有本地仓库，然后导入协作主机。'}</p>${state.connected.length?button('connections','查看主机连接'):button('intake','接入项目','class="bw-primary"')}</div>`}`;
+  }
+  function renderPanel() {
+    let title='',body='';
+    if(state.panel==='intake') {
+      title='接入项目'; body=`<p class="bw-caption">已有本地仓库 · Builder-B</p><label class="bw-field" for="bw-path">本机目录<input id="bw-path" value="${esc(state.bPath)}" maxlength="200" required></label><label class="bw-field" for="bw-name">本地显示名<input id="bw-name" value="${esc(state.bName)}" maxlength="200" required></label><div class="bw-field"><span>仓库识别结果（自动读取 · 示例）</span><strong>git.example.com/team/order</strong><small>已存在主干名片：订单服务。改变本地名称或目录不会改变远端身份。</small></div><p id="bw-form-error" role="alert"></p><div class="bw-footer">${button('cancel','取消')}${button('register','接入','class="bw-primary"')}</div>`;
+    } else if(state.panel==='import') {
+      const key=state.journey==='leader'?'c':'a';
+      title='导入 Builder 主机'; body=`<label class="bw-field" for="bw-share">共享连接（演示输入）<input id="bw-share" value="${info(key).host} 的共享连接样例" readonly><small>代表已由对端生成、经原生授权校验的连接；本原型不展示或保存凭据。</small></label><dl class="bw-facts"><dt>目标主机</dt><dd>${info(key).host}</dd><dt>授权范围</dt><dd>沿原生整机授权；可读项目由对端权限决定。</dd></dl><p class="bw-caption">主机可能包含其他可读项目；此操作不会分配成员或 Leader 角色。</p><div class="bw-footer">${button('cancel','取消')}${button('connect',`导入 ${info(key).host}`,'class="bw-primary"')}</div>`;
+    } else if(state.panel==='connections') {
+      title='主机连接'; body=state.connected.map(key=>`<div class="bw-connection"><div class="bw-row"><strong>${info(key).host}</strong><span class="bw-caption">${offline(key)?'离线':pending(key)?'已连接 · 项目资料待读取':'已连接'}</span></div>${offline(key)?`<div class="bw-footer">${button('reconnect','重新连接',`data-key="${key}"`)}</div>`:pending(key)?`<div class="bw-footer">${button('refresh','刷新目录')}</div>`:''}</div>`).join('')||'<p>尚未导入协作主机。</p>';
+    } else {
+      const keys=state.selected==='c'?['c']:state.connected.filter(key=>key!=='c'&&!pending(key));
+      title='项目配置'; body=`<h3>项目信息</h3><p>${info(state.selected).project}</p><h3>代码仓</h3><p class="bw-caption">共同仓库：git.example.com/team/${state.selected==='c'?'ops':'order'}</p>${keys.map(key=>`<dl class="bw-facts"><dt>Builder 主机</dt><dd>${info(key).host}${offline(key)?' · 离线':''}</dd><dt>本地名称</dt><dd>${esc(info(key).local)}</dd><dt>原目录</dt><dd>${esc(info(key).path)}</dd></dl>`).join('')}`;
+    }
+    return `<section class="bw-dialog" role="dialog" aria-modal="false" aria-labelledby="bw-dialog-title"><header><h2 id="bw-dialog-title">${title}</h2>${button('cancel','×','class="bw-icon" aria-label="关闭对话框"')}</header>${body}</section>`;
+  }
+  function renderDetail() {
+    const data=info(state.selected);
+    return `<div class="bw-topbar"><h2>${pending(state.selected)?'正在识别项目':data.project}</h2>${button('wall','返回项目墙')}</div><div class="bw-tabs">${button('session','会话',`aria-pressed="${state.tab==='session'}"`)}${button('files','文件',`aria-pressed="${state.tab==='files'}"`)}${pending(state.selected)?'':button('settings','配置',`data-key="${state.selected}"`)}</div><p class="bw-caption">执行位置 · ${data.host} · ${esc(data.path)}</p>${state.tab==='session'?`<h3>${data.session}</h3><div class="bw-chat">${state.selected==='c'?'请整理运维脚本，并补充使用说明。':state.selected==='a'?'请修复订单支付回调重复处理的问题。':'请评审支付回调的幂等保护。'}</div><div class="bw-chat">${state.selected==='c'?'已读取当前工作空间的 scripts/ 和 README.md。':'已在当前工作空间检查支付回调入口与测试。'}</div><p class="bw-caption">会话内容为样例；切换工作空间后使用其原主机与原目录。</p>`:`<h3>README.md</h3><pre># ${pending(state.selected)?'工作空间文件':data.project}\n\n${state.selected==='c'?'运维脚本说明\nscripts/backup.sh — 备份入口':'订单支付回调\nsrc/payments/ — 支付处理入口'}\n\n读取来源：${data.host}\n${esc(data.path)}/README.md</pre>`}`;
+  }
+  function render() {
+    root.querySelectorAll('[data-journey]').forEach(el=>{el.dataset.active=String(el.dataset.journey===state.journey);el.setAttribute('aria-pressed',el.dataset.active);});
+    $('#bw-steps').innerHTML=journeys[state.journey].map((label,index)=>`<li ${index===state.step?'aria-current="step"':''} class="${index<state.step?'bw-done':''}">${label}</li>`).join('');
+    $('#bw-perspective').textContent=state.journey==='leader'?'演示视角：Leader 的 Workbench · 已连接订单项目 A/B':state.journey==='unknown'?'演示视角：观察端 Workbench · 已配对 A/B，两处来源独立于本机':'演示视角：成员 B 的 Workbench · 本机 Builder-B';
+    $('#bw-current-host').textContent=state.journey==='leader'?'Leader-PC · 本机':state.journey==='unknown'?'Observer-PC · 本机':'Builder-B · 本机';
+    $('#bw-environment').innerHTML=state.journey==='unknown'?`<label class="bw-environment" for="bw-condition">演示来源状态<select id="bw-condition"><option value="pending">A 的仓库资料晚到</option><option value="offline">A 离线，B 可读</option><option value="all-offline">全部来源离线</option></select></label>`:'';
+    if($('#bw-condition')) $('#bw-condition').value=state.condition;
+    renderSidebar(); $('#bw-main').innerHTML=state.panel?renderPanel():state.view==='detail'?renderDetail():renderWall();
+    const intake=$('#bw-main [data-action="intake"]');
+    if(intake&&state.journey!=='first'){intake.disabled=true;intake.dataset.tooltip='本旅程只演示已有项目';}
+    const importer=$('#bw-main [data-action="import"]');
+    if(importer&&state.journey==='first'&&!state.registered){importer.disabled=true;importer.dataset.tooltip='先演示接入本机项目';}
+    if(pending('a')){const source=document.createElement('small');source.textContent=info('a').path;$('#bw-sidebar [data-open="a"]')?.append(source);}
+    $('#bw-notice').textContent=state.notice;
+  }
+  function refresh() {
+    if(state.journey==='duplicates') {state.merged=true;state.step=2;state.notice='已识别为同一仓库：一个项目入口，保留两个工作空间；未移动目录或会话。';}
+    else if(state.journey==='unknown') {
+      if(state.recovered) state.notice='来源已恢复，项目与原工作空间已按共同仓库身份刷新。';
+      else if(state.condition==='pending') {state.recovered=true;state.step=2;state.notice='Builder-A 的仓库资料已读回，原工作空间已归入订单服务。';}
+      else state.notice='来源仍不可达；刷新不能代替恢复连接，请在「主机连接」重试。';
+    } else state.notice='已按当前可读来源刷新项目。';
+    state.panel=null;state.view='wall';
+  }
+  root.addEventListener('change',event=>{if(event.target.id==='bw-condition'){state=initial('unknown',event.target.value);render();save();}});
+  root.addEventListener('click',event=>{
+    const el=event.target.closest('button'); if(!el||el.disabled) return;
+    if(el.dataset.journey){state=initial(el.dataset.journey);render();save();return;}
+    if(el.dataset.open){state.selected=el.dataset.open;state.view='detail';state.panel=null;state.tab='session';if(state.step>=2)state.step=3;state.notice=`已打开原会话 · ${info(state.selected).host} · ${info(state.selected).path}`;render();save();return;}
+    const action=el.dataset.action;
+    if(action==='intake'&&state.journey==='first')state.panel='intake';
+    if(action==='cancel')state.panel=null;
+    if(action==='import')state.panel=state.journey==='unknown'||state.journey==='duplicates'||state.connected.includes(state.journey==='leader'?'c':'a')?'connections':'import';
+    if(action==='register'){
+      const name=$('#bw-name').value.trim(),path=$('#bw-path').value.trim();
+      if(!name||!path){$('#bw-form-error').textContent='请填写本机目录和本地显示名。';return;}
+      state.bName=name;state.bPath=path;state.registered=true;if(!state.connected.includes('b'))state.connected.push('b');state.panel=null;state.view='wall';state.step=state.connected.includes('a')?2:1;state.notice=state.connected.includes('a')?'本机仓库与已导入来源属于同一仓库，已保留各自工作空间。':'已接入本机仓库。下一步可导入 Builder-A 的共享连接。';
+    }
+    if(action==='connect'){
+      const key=state.journey==='leader'?'c':'a';if(!state.connected.includes(key))state.connected.push(key);
+      state.merged=true;state.panel=null;state.view='wall';state.step=2;state.notice=key==='c'?'已导入 Builder-C，订单服务与运营工具分别可见。':'已导入 Builder-A；共同仓库身份已确认，归到同一项目。';
+    }
+    if(action==='refresh')refresh();
+    if(action==='connections'){state.panel='connections';if(state.journey==='unknown'&&state.step<2)state.step=1;}
+    if(action==='reconnect'){
+      const key=el.dataset.key;if(!state.reconnected.includes(key))state.reconnected.push(key);
+      const remaining=state.connected.some(offline);
+      if(!remaining){state.recovered=true;state.step=2;}
+      state.notice=remaining?`${info(key).host} 已恢复，其他来源仍不可达；项目按可证名片重新显示。`:`${info(key).host} 已恢复；原工作空间已归位，会话和目录保持原位置。`;
+      state.panel=null;state.view='wall';
+    }
+    if(action==='wall'){state.panel=null;state.view='wall';}
+    if(action==='overview'){state.selected=el.dataset.key;state.view='detail';state.tab='session';state.panel=null;if(state.step>=2)state.step=3;state.notice='已打开项目的原工作空间；可切换文件或侧栏会话。';}
+    if(action==='settings'){state.selected=el.dataset.key||state.selected;state.panel='settings';}
+    if(action==='session'||action==='files'){state.tab=action;if(state.step>=2)state.step=3;state.notice=action==='files'?'正在查看所选工作空间的示例文件；内容来自其所属主机。':'正在查看所选工作空间的原会话样例。';}
+    render();save();
+    if(['intake','import','connections','settings','cancel'].includes(action)) $('#bw-main input, #bw-main button')?.focus({preventScroll:true});
+  });
+  render();
+})();
+</script>
+</body></html>
