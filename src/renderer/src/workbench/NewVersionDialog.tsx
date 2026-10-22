@@ -212,7 +212,7 @@ export function NewVersionDialog({
               <p>{stepText(report, 'acceptance')}</p>
               {report.problems.map((problem) => (
                 <p key={`${problem.workflow}:${problem.code}`} className="text-destructive">
-                  {STEP_LABELS[problem.workflow]}问题（{problem.code}）：{problem.message}
+                  {WORKFLOW_TREE_LABELS[problem.workflow]}问题（{problem.code}）：{problem.message}
                 </p>
               ))}
               {reportFailed ? (
