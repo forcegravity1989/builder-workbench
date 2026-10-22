@@ -79,11 +79,12 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect
     .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
     .toBe('terminal')
-  // G3 板面：唯一会话发起入口=目标区空板卡（仅无计划时显示）；prepare 不启动
-  // 任何会话/agent，空板卡在场即其反证。
-  await expect(
-    workbenchPage.getByRole('button', { name: '与计划助手新建计划', exact: true })
-  ).toBeVisible()
+  // prepare 已 create-only 初始化空计划（goals=[]）：G3 空板卡「与计划助手新建
+  // 计划」仅在无材料时渲染，故锚定材料加载完成后的稳定态「添加目标」；prepare
+  // 不启动任何会话/agent（activate:false，无 agent 启动路径）。
+  await expect(workbenchPage.getByRole('button', { name: '添加目标' })).toBeVisible({
+    timeout: 60_000
+  })
   await expect
     .poll(
       () =>
