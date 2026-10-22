@@ -1,5 +1,7 @@
 import { useCodeHubDetail } from './use-codehub-detail'
+import { CodeHubChecksTab } from './ChecksTab'
 import { CodeHubConversation } from './Conversation'
+import { CodeHubFilesTab } from './FilesTab'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
@@ -14,6 +16,7 @@ import {
   CircleDot,
   Copy,
   ExternalLink,
+  FileText,
   GitPullRequest,
   ListChecks,
   LoaderCircle,
@@ -365,13 +368,32 @@ export function TaskPageCodeHubDetail({
               <TabsTrigger value="checks" className="px-2">
                 <ListChecks className="size-3.5" />
                 {translate('auto.components.GitHubItemDialog.4bd1f5b055', 'Checks')}
+                {detailState.checks && detailState.checks.length > 0 && (
+                  <span className="ml-1 rounded-full bg-muted px-1.5 text-[10px] text-muted-foreground">
+                    {detailState.checks.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="files" className="px-2">
+                <FileText className="size-3.5" />
+                {translate('auto.components.PullRequestPage.4d18310d55', 'Files changed')}
+                {detailState.files && detailState.files.length > 0 && (
+                  <span className="ml-1 rounded-full bg-muted px-1.5 text-[10px] text-muted-foreground">
+                    {detailState.files.length}
+                  </span>
+                )}
               </TabsTrigger>
             </TabsList>
             <div className="min-h-0 flex-1 overflow-y-auto scrollbar-sleek">
               <TabsContent value="conversation" className="mt-0">
                 {conversation}
               </TabsContent>
-              <TabsContent value="checks" className="mt-0" />
+              <TabsContent value="checks" className="mt-0">
+                <CodeHubChecksTab state={detailState} />
+              </TabsContent>
+              <TabsContent value="files" className="mt-0 h-full min-h-0 overflow-hidden">
+                <CodeHubFilesTab state={detailState} />
+              </TabsContent>
             </div>
           </Tabs>
         </>

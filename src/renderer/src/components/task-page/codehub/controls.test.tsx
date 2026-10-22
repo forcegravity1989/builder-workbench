@@ -11,13 +11,22 @@ const { api } = vi.hoisted(() => ({
       .fn()
       .mockResolvedValue({ title: 'Issue 12', state: 'opened', description: 'Body' }),
     listComments: vi.fn().mockResolvedValue([{ id: 'c1', author: 'Ada', body: 'Review comment' }]),
-    deleteComment: vi.fn().mockResolvedValue(undefined)
+    deleteComment: vi.fn().mockResolvedValue(undefined),
+    mrChecks: vi.fn().mockResolvedValue([]),
+    mrChanges: vi.fn().mockResolvedValue([])
   }
 }))
 vi.mock('@/lib/codehub-api', () => ({ codehubApi: api }))
-vi.mock('@/i18n/i18n', () => ({ translate: (_key: string, fallback: string) => fallback }))
+// i18n 实例被详情页签的深层依赖(localized-catalog)读取,补最小 stub。
+vi.mock('@/i18n/i18n', () => ({
+  translate: (_key: string, fallback: string) => fallback,
+  i18n: { language: 'en' }
+}))
 vi.mock('@/workbench/is-workbench-shell', () => ({ isWorkbenchShell: () => true }))
 vi.mock('@/components/task-project-source-combobox', () => ({ default: () => null }))
+// Why: Files 页签会真挂 Monaco diff,本测试只看工具条与复制控件,照
+// pr-files-combined-diff-section-index.test.tsx 的先例把 diff 体 mock 掉。
+vi.mock('./FilesTab', () => ({ CodeHubFilesTab: () => null }))
 import { TaskPageCodeHubFilters } from './Filters'
 import { TaskPageCodeHubDetail } from './Detail'
 
