@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Workbench · 项目卡片配置设计</title>
+    <link rel="stylesheet" href="../../04-design-system/styles.css" />
+    <link rel="stylesheet" href="prototype/project-settings.css" />
+    <script src="prototype/project-settings.js" defer></script>
+  </head>
+  <body>
+    <!-- Design proposal: fixture data and simulated submissions; no product APIs or persistence. -->
+    <header class="design-bar">
+      <span class="tag tag-neutral">设计草案</span><strong>项目卡片配置</strong>
+      <span class="design-note">示例数据 · 操作仅演示</span>
+      <span class="grow"></span>
+      <label for="scenario">场景</label>
+      <select id="scenario" class="input">
+        <option value="normal">信息齐全</option>
+        <option value="incomplete">信息待补充</option>
+        <option value="offline">主机离线</option>
+        <option value="pending">名片待合入</option>
+        <option value="merged">已合入待更新</option>
+        <option value="unreadable">名片读取失败</option>
+        <option value="failure">提交失败</option>
+      </select>
+      <button id="theme" class="btn btn-secondary" type="button">深色</button>
+      <button id="reset" class="btn btn-ghost" type="button">重置演示</button>
+    </header>
+    <div class="app-window">
+      <header class="app-title"><span class="brand">W</span><strong>Workbench</strong><span class="grow"></span><span class="muted">项目墙</span></header>
+      <div class="workspace">
+        <aside class="app-nav" aria-label="工作台导航">
+          <div class="nav-heading">工作台</div>
+          <button class="nav-entry current" type="button" data-action="wall">项目墙 <span>02</span></button>
+          <div class="nav-heading nav-gap">当前项目</div>
+          <div class="nav-project">Builders’ Workbench</div>
+          <button class="nav-entry" type="button" data-handoff="总览">总览</button>
+          <button class="nav-entry" type="button" data-handoff="计划">计划</button>
+          <button class="nav-entry" type="button" data-handoff="任务">任务</button>
+          <button class="nav-entry" type="button" data-handoff="验收">验收</button>
+          <button class="nav-entry" type="button" data-handoff="自动化">自动化</button>
+          <button class="nav-entry" type="button" data-handoff="知识库">知识库</button>
+          <div class="grow"></div><div class="nav-bottom">本机工作区</div>
+        </aside>
+        <main class="wall">
+          <header class="wall-heading"><h1>项目墙</h1><div class="wall-actions" role="group" aria-label="项目墙操作">
+            <button class="btn btn-ghost btn-icon icon-action" type="button" data-action="refresh-wall" aria-label="刷新项目墙"><span data-icon="refresh"></span><span class="action-tooltip" role="tooltip">刷新</span></button>
+            <button class="btn btn-ghost btn-icon icon-action" type="button" data-handoff="导入 Builder 主机" aria-label="导入 Builder 主机"><span data-icon="file-import"></span><span class="action-tooltip" role="tooltip">导入 Builder 主机</span></button>
+            <button class="btn btn-ghost btn-icon icon-action" type="button" data-handoff="接入项目" aria-label="接入项目"><span data-icon="plus"></span><span class="action-tooltip" role="tooltip">接入项目</span></button>
+            <button class="btn btn-ghost btn-icon icon-action" type="button" data-handoff="关闭项目墙" aria-label="关闭项目墙"><span data-icon="x"></span><span class="action-tooltip" role="tooltip">关闭项目墙</span></button>
+          </div></header>
+          <div class="wall-tools"><span>2 个项目</span></div>
+          <div id="project-cards" class="project-grid"></div>
+        </main>
+        <aside id="rail" class="config-rail" aria-label="项目配置" tabindex="-1">
+          <header class="rail-heading"><div><div class="eyebrow">项目配置</div><h2 id="rail-name"></h2></div><button id="close-rail" class="btn btn-ghost btn-icon icon-action" type="button" aria-label="关闭项目配置"><span data-icon="x"></span><span class="action-tooltip" role="tooltip">关闭项目配置</span></button></header>
+          <div id="rail-state" class="rail-state" aria-live="polite" hidden></div>
+          <div class="rail-scroll">
+            <section class="config-section">
+              <button class="section-toggle" type="button" aria-expanded="true" aria-controls="information-body" data-section="information"><span data-icon="id"></span><span class="section-name">项目信息</span><span id="information-summary" class="section-summary"></span><span class="chevron" data-icon="chevron"></span></button>
+              <div id="information-body" class="section-body"><div id="information-content"></div></div>
+            </section>
+            <section class="config-section">
+              <button class="section-toggle" type="button" aria-expanded="false" aria-controls="members-body" data-section="members"><span data-icon="users"></span><span class="section-name">成员与负责人</span><span id="members-summary" class="section-summary"></span><span class="chevron" data-icon="chevron"></span></button>
+              <div id="members-body" class="section-body" hidden><div id="member-list"></div><button class="btn btn-ghost" type="button" data-handoff="管理成员">管理成员 <span data-icon="external"></span></button></div>
+            </section>
+            <section class="config-section">
+              <button class="section-toggle" type="button" aria-expanded="true" aria-controls="repositories-body" data-section="repositories"><span data-icon="git"></span><span class="section-name">代码仓</span><span class="section-summary">1 个仓库</span><span class="chevron" data-icon="chevron"></span></button>
+              <div id="repositories-body" class="section-body">
+                <div class="repo-name"><span data-icon="folder"></span><strong id="repo-name"></strong><span class="tag tag-neutral">主仓</span></div>
+                <div id="repo-remote" class="mono muted wrap"></div>
+                <dl class="compact-facts"><div><dt>主干基线</dt><dd class="mono">main</dd></div><div><dt>本机目录</dt><dd id="repo-path" class="mono wrap"></dd></div></dl>
+                <div class="section-actions"><button class="btn btn-secondary" type="button" data-handoff="添加代码仓">＋ 添加代码仓</button><button class="btn btn-ghost" type="button" data-handoff="仓库设置">仓库设置 <span data-icon="external"></span></button></div>
+              </div>
+            </section>
+            <section class="config-section">
+              <button class="section-toggle" type="button" aria-expanded="false" aria-controls="hosts-body" data-section="hosts"><span data-icon="monitor"></span><span class="section-name">项目所在电脑</span><span id="hosts-summary" class="section-summary"></span><span class="chevron" data-icon="chevron"></span></button>
+              <div id="hosts-body" class="section-body" hidden><div id="host-list"></div><button class="btn btn-ghost" type="button" data-handoff="主机配对设置">管理远程连接 <span data-icon="external"></span></button></div>
+            </section>
+          </div>
+          <footer class="rail-footer"><div id="draft-status" class="draft-status" aria-live="polite"></div><button id="review" class="btn btn-primary btn-block" type="button" disabled>查看变更</button><div id="footer-note" class="footer-note">项目信息通过 PR 共享</div></footer>
+        </aside>
+      </div>
+    </div>
+    <dialog id="review-dialog" aria-labelledby="review-title"><form method="dialog"><header class="modal-heading"><h2 id="review-title">确认项目信息变更</h2><button class="btn btn-ghost btn-icon icon-action" value="cancel" aria-label="关闭变更对比"><span data-icon="x"></span><span class="action-tooltip" role="tooltip">关闭变更对比</span></button></header><p class="muted">提交后等待评审；合入并更新代码后，项目卡片才显示新信息。</p><div id="changes-list"></div><div id="submit-error" class="error-message" role="alert" hidden></div><footer class="modal-actions"><button class="btn btn-ghost" value="cancel">继续编辑</button><button id="submit" class="btn btn-primary" type="button">提交 PR</button></footer></form></dialog>
+    <dialog id="leave-dialog" aria-labelledby="leave-title"><h2 id="leave-title">还有未提交的变更</h2><p class="muted">离开后将丢弃这个项目的草稿。</p><div class="modal-actions"><button id="stay" class="btn btn-secondary" type="button">继续编辑</button><button id="discard" class="btn btn-ghost" type="button">丢弃并离开</button></div></dialog>
+    <dialog id="handoff-dialog" aria-labelledby="handoff-title"><form method="dialog"><h2 id="handoff-title"></h2><p id="handoff-copy" class="muted"></p><button class="btn btn-secondary" value="close">返回配置</button></form></dialog>
+    <div id="toast" class="prototype-toast" role="status" hidden></div>
+  </body>
+</html>
