@@ -196,6 +196,8 @@ export function useFullCreationExecution(input: FullCreationExecutionInput) {
 
       // G2 (BW): mirror of the quick/background path — attribution is written at
       // the true creation result (instanceId-fenced), never at modal close.
+      // 现状：full 链当前无 UI 调用方（submitQuick 是唯一入口），本镜像保持休眠；
+      // full 链恢复使用时归属语义即与 quick 链一致，无需再实现。
       const workbenchVersionBinding = resolveWorkbenchCreationBinding(workbenchCreation, {
         repoId,
         taskSourceContext

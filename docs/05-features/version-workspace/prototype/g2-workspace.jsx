@@ -711,8 +711,8 @@ function App() {
   return (
     <div className="prototype">
       <div className="review-bar">
-        <strong>G2 交互原型 · 修订 8</strong>
-        <span>设计定稿 · 图标操作 · 原生复用（含版本级清理） · 业界参考见右侧书本</span>
+        <strong>G2 交互原型 · 修订 9</strong>
+        <span>设计定稿 · 版本总览=表格周报风格（2026-10-22 人确认） · 图标操作 · 原生复用（含版本级清理） · 业界参考见右侧书本</span>
         <div className="review-actions" aria-label="原型评审工具">
           <Button
             icon={BookOpen}

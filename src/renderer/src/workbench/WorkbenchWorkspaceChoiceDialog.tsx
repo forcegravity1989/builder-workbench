@@ -18,7 +18,8 @@ import {
 
 /**
  * G2 多候选工作区选择器（P4）：行形态复用原生标签推导，激活走原生
- * activateAndRevealWorktree 链；挂在 TaskPage Surface 层，列表行与详情弹窗共用。
+ * activateAndRevealWorktree 链；挂载于侧栏层（WorkbenchSidebarNav），任务屏
+ * 列表行、详情弹窗与侧栏/板面入口在任意视图共用同一模块态。
  */
 
 function hostLabel(worktree: Worktree): string {
@@ -31,7 +32,7 @@ function hostLabel(worktree: Worktree): string {
 
 export function WorkbenchWorkspaceChoiceDialog(): React.JSX.Element | null {
   const choice = useWorkbenchWorkspaceChoice()
-  // 任务屏卸载（导航离开）时清掉模块态，防止下次进入凭空弹出。
+  // 宿主（侧栏层）卸载时清掉模块态，防止下次挂载凭空弹出。
   useEffect(() => closeWorkbenchWorkspaceChoice, [])
   if (!choice) {
     return null

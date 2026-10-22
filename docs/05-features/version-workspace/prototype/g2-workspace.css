@@ -531,7 +531,7 @@ strong {
 }
 .version-report-summary {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   border: 1px solid var(--border);
   border-radius: 8px;
   margin: 24px 0 12px;
@@ -554,47 +554,37 @@ strong {
   color: var(--muted-foreground);
   padding: 0;
 }
-.report-source-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--muted-foreground);
-  flex-wrap: wrap;
-  margin-bottom: 25px;
-}
-.report-source-line > span {
-  margin-left: auto;
-}
-.report-goal {
+/* 修订 9：目标周报表（表格周报风格，替代逐目标卡片；旧 .report-source-line/.report-goal 已退役删除）。 */
+.version-report-table {
+  width: 100%;
+  border-collapse: collapse;
   border: 1px solid var(--border);
   border-radius: 8px;
-  margin: 12px 0 17px;
-}
-.report-goal-title {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  padding: 15px 17px;
-  border-bottom: 1px solid var(--border);
-}
-.report-goal-title h3 {
-  margin: 0;
-  flex: 1;
-}
-.report-goal-title .badge {
-  flex-shrink: 0;
-}
-.report-goal-columns {
-  display: grid;
-  grid-template-columns: 1.25fr 1fr 1fr;
-  gap: 20px;
-  padding: 17px;
   font-size: 12px;
+  margin: 10px 0 6px;
+  text-align: left;
 }
-.report-goal-columns label {
-  color: var(--muted-foreground);
+.version-report-table th {
   font-size: 11px;
+  color: var(--muted-foreground);
+  font-weight: 600;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--muted);
+}
+.version-report-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.version-report-table tr:last-child td {
+  border-bottom: 0;
+}
+.version-report-table td small {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 10.5px;
+  margin-top: 3px;
 }
 .report-bottom {
   display: grid;
@@ -706,9 +696,6 @@ strong {
   .sidebar {
     width: 260px;
     min-width: 260px;
-  }
-  .report-goal-columns {
-    grid-template-columns: 1fr;
   }
   .report-bottom {
     grid-template-columns: 1fr;

@@ -2,12 +2,12 @@
 
 > 给设计、实现与验收者读取；本文管目标行为与判据，工程边界见 [design](design.md)，价值见 [intent](intent.md)，执行证据见 [STATUS](STATUS.md)。行为变化时改对应主题，不记录开发流水。
 >
-> 状态：设计于 2026-10-20 评审定稿，[高保真修订 8](version-workspace-prototype.html?rev=8) 为形态依据；生产接线与真壳证据见 STATUS。计划/验收整屏复用边界见 [版本计划 spec](../version-planning/spec.md)。
+> 状态：设计于 2026-10-20 评审定稿（修订 9 仅版本总览改表格周报风格，2026-10-22 人确认），[高保真修订 9](version-workspace-prototype.html?rev=9) 为形态依据；生产接线与真壳证据见 STATUS。计划/验收整屏复用边界见 [版本计划 spec](../version-planning/spec.md)。
 
 原型入口为 [version-workspace-prototype.html](version-workspace-prototype.html) 与 [旅程报告](version-workspace-journey.html)；可编辑源码在本特性 `prototype/` 下，共用 [version-planning 的冻结 vendor 包](../version-planning/prototype/vendor.js) 与设计系统资源。修改 JSX 后运行 `node docs/05-features/version-workspace/prototype/build-g2.cjs` 更新生成物；`--check` 核对生成物一致性与模拟 DOM 启动，不替代浏览器视觉验看。
 
 
-关联 [#383](https://github.com/forcegravity1989/builder-workbench/issues/383)、[#328](https://github.com/forcegravity1989/builder-workbench/issues/328)、[#334](https://github.com/forcegravity1989/builder-workbench/issues/334)。本节与 [高保真修订 8](version-workspace-prototype.html?rev=8)、[旅程及数据说明报告](version-workspace-journey.html) 定义 G2 行为；上文保留当前已实现的计划屏规格。已定稿决定：多版本并行、版本平铺回看、逻辑目标目录、目标工作树按需创建、目标与 Issue 开工复用同一原生创建器、不新增周冻结或目录生成操作；版本收尾提供版本级清理（复用 Orca 原生删除链），不另做归档隐藏层。生产接线与真壳证据见 STATUS。
+关联 [#383](https://github.com/forcegravity1989/builder-workbench/issues/383)、[#328](https://github.com/forcegravity1989/builder-workbench/issues/328)、[#334](https://github.com/forcegravity1989/builder-workbench/issues/334)。本节与 [高保真修订 9](version-workspace-prototype.html?rev=9)、[旅程及数据说明报告](version-workspace-journey.html) 定义 G2 行为；上文保留当前已实现的计划屏规格。已定稿决定：多版本并行、版本平铺回看、逻辑目标目录、目标工作树按需创建、目标与 Issue 开工复用同一原生创建器、不新增周冻结或目录生成操作；版本收尾提供版本级清理（复用 Orca 原生删除链），不另做归档隐藏层。生产接线与真壳证据见 STATUS。
 
 ### 价值与复用范围
 
@@ -85,7 +85,7 @@ BW 必须补齐正确的项目/宿主、版本/目标归属和任务来源；名
 
 版本总览持续汇总承诺、任务事实、人工验收、发布与遗留，发布后成为同一版总结，不再手填报告。历史总结优先使用已归档 Git 材料与现有引用，不增加独立冻结操作或报告副本；后来的 Issue 变化不得悄悄改写当时验收。材料归档、PR 合入、发布、目标达成与工作树可用性分别呈现。不做一键级联删除版本或专门归档分区；版本级清理是人确认的删除动作，只删工作树不删材料；原生删树须沿已有预检与父子语义，Git 材料可读不代表 agent 可恢复。
 
-高保真重点路径：新建版本 → 两棵流程树就绪且无 agent → 右侧原计划按钮发起会话 → 侧栏点目标查看任务 → 目标菜单打开同一原生创建器 → 预填目标上下文 → Issue 原生创建器可采用或取消目标父级 → 提交后回显真实层级 → 切版后找回正确会话 → 旧版本材料及项目共用树仍可达 → 版本行删除图标打开确认对话框，演示本机树默认勾选与他宿主实例列而不勾。初始显示 v0.7（在制，含配对机实例汇总）与 v0.6（收起回看）仓库材料快照，不预置空白 v0.8；用户可从“＋”创建 v0.9 体验新版本入口。全部树、会话、归档与创建过程为内存演示，计划编辑仍由既有计划屏负责；页面不伪造正式定稿状态。
+高保真重点路径：新建版本 → 两棵流程树就绪且无 agent → 右侧原计划按钮发起会话 → 侧栏点目标查看任务 → 目标菜单打开同一原生创建器 → 预填目标上下文 → Issue 原生创建器可采用或取消目标父级 → 提交后回显真实层级 → 切版后找回正确会话 → 旧版本材料及项目共用树仍可达 → 版本行删除图标打开确认对话框，演示本机树默认勾选与他宿主实例列而不勾。初始显示 v0.7（在制，含配对机实例汇总）与 v0.6（收起回看）仓库材料快照，不预置空白 v0.8；用户可从“＋”创建 v0.9 体验新版本入口。修订 9（2026-10-22，人确认「最简、表格周报风格」）：版本总览改为表格周报风格——事实区（工作区/归档 PR/发布证据/纪要）＋目标周报表（目标｜计划承诺｜关联 Issue｜人工验收｜遗留/下一步），替代修订 8 的逐目标卡片；生产实现同口径（`version-overview-page.tsx`），发布证据检索未接入前如实标注未探测。全部树、会话、归档与创建过程为内存演示，计划编辑仍由既有计划屏负责；页面不伪造正式定稿状态。
 
 实施验收至少覆盖正常重启读回、两个版本并行、同 Issue 跨版、目标改名/移除不丢树、旧共享树在跑会话、未合入草稿保留、配对宿主读写及权限拒绝、项目墙/总览版本与读数、版本级清理确认单与预检阻塞/豁免、删树后无悬空绑定、他宿主实例列而不勾。浏览器原型不能替代这些证据；生产接线与真壳证据见 STATUS。
 
