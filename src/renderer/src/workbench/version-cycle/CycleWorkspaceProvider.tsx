@@ -36,12 +36,15 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const owner = scope?.runtimeOwnerEnvironmentId
   // G2 (P3a)：绑定树=版本化工作区；自动化身份版本化属 P5，此前如实拒绝
   // 启动/配置（防 creationKey 无版本维度导致运行落到旧版树），不假报就绪。
-  const versionBound = useMemo(() => {
+  const flowBinding = useMemo(() => {
     const binding = worktree
       ? normalizeStoredWorkbenchVersionBinding(worktree.workbenchVersionBinding)
       : null
-    return !!binding && (binding.workflow === 'plan' || binding.workflow === 'acceptance')
+    return binding && (binding.workflow === 'plan' || binding.workflow === 'acceptance')
+      ? binding
+      : null
   }, [worktree])
+  const versionBound = flowBinding !== null
   const materialPort = useMemo(
     () =>
       scope && fixedId
@@ -133,6 +136,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
               worktreeId: fixedId,
               session,
               version: version.version,
+              boundVersion: flowBinding?.version ?? null,
               selectVersion: version.selectVersion,
               materialPort,
               taskPort,
@@ -155,6 +159,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       fixedId,
       session,
       version.version,
+      flowBinding,
       version.selectVersion,
       version.error,
       materialPort,

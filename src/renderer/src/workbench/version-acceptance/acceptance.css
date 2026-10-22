@@ -31,6 +31,11 @@
   color: var(--color-neutral-600);
   font-size: 0.8rem;
 }
+/* G2（#383）：绑定验收树的只读回显——版本由绑定决定，屏内不切换。 */
+.va-head > span.va-version-bound {
+  color: var(--color-text);
+  font-weight: 600;
+}
 .va-content {
   display: flex;
   flex: 1;

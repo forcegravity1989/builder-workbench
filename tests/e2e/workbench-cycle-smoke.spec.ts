@@ -97,8 +97,8 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
       }
     )
     .not.toBeNull()
-  // prepare 的空计划是 create-only 初始化；绑定树的选版即绑定版本（无第二份偏好）。
-  await expect(workbenchPage.getByLabel('计划版本')).toHaveValue('v9.9', { timeout: 60_000 })
+  // prepare 的空计划是 create-only 初始化；绑定树无屏内选版，页头只读回显绑定版本。
+  await expect(workbenchPage.locator('.g3-version-bound')).toHaveText('v9.9', { timeout: 60_000 })
 
   // The conversation/CLI creates materials in product use. Seed only this test
   // version on the bound tree's real path; listing and editing remain UI work.
@@ -161,16 +161,9 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
     timeout: 60_000
   })
-  await expect
-    .poll(
-      () =>
-        workbenchPage
-          .getByLabel('计划版本')
-          .inputValue()
-          .catch(() => ''),
-      { timeout: 120_000, message: 'bound version did not survive reload' }
-    )
-    .toBe('v9.9')
+  await expect(workbenchPage.locator('.g3-version-bound')).toHaveText('v9.9', {
+    timeout: 120_000
+  })
   await expect(workbenchPage.locator('.g3-goal-toggle strong')).toHaveText(
     '验证计划材料保存·烟测',
     { timeout: 60_000 }

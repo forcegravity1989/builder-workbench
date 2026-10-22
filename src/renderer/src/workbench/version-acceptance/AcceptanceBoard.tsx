@@ -166,21 +166,29 @@ function ReadyAcceptanceBoard({
     <main className="va-board" lang="zh">
       <header className="va-head">
         <h1>版本验收</h1>
-        <select
-          aria-label="验收版本"
-          value={version}
-          disabled={busy}
-          onChange={(event) => {
-            if (event.target.value) {
-              void loadVersion(event.target.value)
-            }
-          }}
-        >
-          <option value="">待选择版本</option>
-          {[...new Set([...versions, ...(version ? [version] : [])])].map((item) => (
-            <option key={item}>{item}</option>
-          ))}
-        </select>
+        {context.boundVersion ? (
+          /* G2（#383）：绑定验收树版本由绑定决定，屏内不再选版（v10 方向一致）；
+             旧无绑定固定树保留下拉。 */
+          <span className="va-version-bound" title="版本由流程树绑定决定，屏内不切换">
+            {context.boundVersion}
+          </span>
+        ) : (
+          <select
+            aria-label="验收版本"
+            value={version}
+            disabled={busy}
+            onChange={(event) => {
+              if (event.target.value) {
+                void loadVersion(event.target.value)
+              }
+            }}
+          >
+            <option value="">待选择版本</option>
+            {[...new Set([...versions, ...(version ? [version] : [])])].map((item) => (
+              <option key={item}>{item}</option>
+            ))}
+          </select>
+        )}
         <button
           className="wb-btn wb-btn-ghost wb-btn-sm"
           disabled={busy || saving || Boolean(context.syncing)}

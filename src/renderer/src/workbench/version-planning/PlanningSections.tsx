@@ -15,6 +15,7 @@ export const PLANNING_SECTIONS: [PlanningSectionId, string, string][] = [
 
 export function PlanningHeader({
   currentVersion,
+  boundVersion,
   versions,
   disabled,
   state,
@@ -27,6 +28,8 @@ export function PlanningHeader({
   extraActions
 }: {
   currentVersion: string
+  /** G2（#383）：绑定树的绑定版本；非 null 时面包屑只读回显，不提供屏内选版。 */
+  boundVersion: string | null
   versions: VersionMaterialCandidate[]
   disabled: boolean
   state: string
@@ -44,28 +47,35 @@ export function PlanningHeader({
       <div>
         <div className="g3-breadcrumb">
           Builder Workbench <span>/</span>
-          <select
-            className="g3-version-select"
-            aria-label="计划版本"
-            value={currentVersion}
-            disabled={disabled}
-            onChange={(event) => {
-              if (event.target.value) {
-                onSelect(event.target.value)
-              }
-            }}
-          >
-            <option value="">待选择版本</option>
-            {versions.map((item) => (
-              <option key={item.version} value={item.version} disabled={item.state !== 'ready'}>
-                {item.version}
-                {item.state !== 'ready' ? ' · 暂无法读取' : ''}
-              </option>
-            ))}
-            {currentVersion && !versions.some((item) => item.version === currentVersion) && (
-              <option value={currentVersion}>{currentVersion}</option>
-            )}
-          </select>
+          {boundVersion ? (
+            /* G2（#383）：绑定树版本由绑定决定，屏内不再选版；旧无绑定固定树保留下拉。 */
+            <span className="g3-version-bound" title="版本由流程树绑定决定，屏内不切换">
+              {boundVersion}
+            </span>
+          ) : (
+            <select
+              className="g3-version-select"
+              aria-label="计划版本"
+              value={currentVersion}
+              disabled={disabled}
+              onChange={(event) => {
+                if (event.target.value) {
+                  onSelect(event.target.value)
+                }
+              }}
+            >
+              <option value="">待选择版本</option>
+              {versions.map((item) => (
+                <option key={item.version} value={item.version} disabled={item.state !== 'ready'}>
+                  {item.version}
+                  {item.state !== 'ready' ? ' · 暂无法读取' : ''}
+                </option>
+              ))}
+              {currentVersion && !versions.some((item) => item.version === currentVersion) && (
+                <option value={currentVersion}>{currentVersion}</option>
+              )}
+            </select>
+          )}
         </div>
         <div className="vp-title-row">
           <h1>版本计划</h1>
