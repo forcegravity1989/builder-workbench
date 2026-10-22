@@ -9,6 +9,8 @@
 
 不新增 `project_id`、名片字段、账号/团队记录、权限、别名映射表、跨主机归并/撤销协议、迁移文件或业务数据库；不改名片 PR/纳入判据、现有极简卡片和右栏配置。原生仓库注册、配对、会话镜像、认证和执行能力继续复用。真正必须改核心授权或新增协议时停在方案层，不作为小修悄悄带入。
 
+原型由现有 React 页面及 CSS 构建，不手工仿画 BW 界面；构建入口为 `node docs/05-features/project-intake/prototype/aggregation-preview/build.cjs <依赖 node_modules 绝对路径>`。依赖沿本仓 React、React DOM、Radix、Lucide、esbuild、Tailwind 及其 Node 编译器、buffer、sonner、zod、smol-toml；页面入口与隔离端口位于同目录。生成 HTML 内列出关键生产组件/样式的 SHA-256，不手改生成文件。演示宿主只控制外部说明和滚动容器；产品区域不覆盖原组件样式，接入完成后原总览交接与未覆盖页面如实标明。配对仅接受演示清单，不连接真实主机；文件/Git/平台写入不开放。
+
 ## 现有调用链与修复落点
 
 | 层 | 现有文件 | 仅在确认受影响时修改 |
