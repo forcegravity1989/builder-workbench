@@ -340,6 +340,7 @@ describe('Workbench update identity', () => {
     vi.resetModules()
     const mod = await import('./release-channel.js')
     expect(mod.MAIN_RELEASE_REPO).toBe(mod.WORKBENCH_RELEASE_REPO)
+    expect(mod.UPDATE_PRODUCT_NAME).toBe('Workbench')
     expect(mod.WORKBENCH_RELEASE_REPO).toBe('forcegravity1989/builder-workbench')
     for (const channel of mod.RELEASE_CHANNELS) {
       expect(mod.getReleaseRepoForChannel(channel)).toBe('forcegravity1989/builder-workbench')
