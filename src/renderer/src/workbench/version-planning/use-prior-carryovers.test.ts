@@ -47,7 +47,14 @@ function acceptance(overrides: Partial<AcceptanceMaterial> = {}): AcceptanceMate
 
 it('maps carry marks and confirmed next-week directives to the two prior-review rows', () => {
   // Absent optional fields read as empty rows — no inference, no free-text parsing.
-  expect(derivePriorCarryovers(acceptance(), plan())).toEqual({ issues: [], directives: [] })
+  // issueMarksRecorded=false is the Unknown signal: the acceptance never marked,
+  // so the prior row must not assert "no carryover" (iron rule).
+  expect(derivePriorCarryovers(acceptance(), plan())).toEqual({
+    issues: [],
+    directives: [],
+    issueMarksRecorded: false,
+    openReadbackReferences: []
+  })
 
   const document = acceptance({
     taskSnapshot: [

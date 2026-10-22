@@ -1,6 +1,8 @@
-import { ArrowUp, Copy, MessageSquarePlus, Pencil, Plus, X } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowUp, Check, Copy, MessageSquarePlus, Pencil, Plus, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { BoardIconButton } from '../board-ui'
+import { PlanSendMenu } from '../plan-send-menu'
+import { boardAnnotationsSendPrompt } from './annotation-markdown'
 import type { BoardAnnotation } from './types'
 
 /** Panel card: number + object + text, with card-level inline edit and delete. */
@@ -85,22 +87,33 @@ function AnnotationCard({
 export function AnnotationPanel({
   annotations,
   annotating,
+  worktreeId,
   onClose,
   onUpdate,
   onRemove,
   onBoardLevel,
   onCopy,
-  onSend
+  onSent
 }: {
   annotations: (BoardAnnotation & { number: number })[]
   annotating: boolean
+  worktreeId: string | null
   onClose(): void
   onUpdate(id: string, text: string): void
   onRemove(id: string): void
   onBoardLevel(anchor: DOMRect): void
-  onCopy(): void
-  onSend(): void
+  /** Writes via the Orca IPC clipboard channel; resolves once written. */
+  onCopy(): Promise<void>
+  onSent?(): void
 }) {
+  const [copied, setCopied] = useState(false)
+  useEffect(() => {
+    if (!copied) {
+      return
+    }
+    const timer = setTimeout(() => setCopied(false), 1400)
+    return () => clearTimeout(timer)
+  }, [copied])
   return (
     <aside className="g3-annot-panel" aria-label="板面批注窗">
       <header>
@@ -128,12 +141,26 @@ export function AnnotationPanel({
         <Plus size={13} aria-hidden="true" /> 添加板面级批注
       </button>
       <footer>
-        <button type="button" disabled={!annotations.length} onClick={onCopy}>
-          <Copy size={13} aria-hidden="true" /> 复制
+        <button
+          type="button"
+          disabled={!annotations.length}
+          onClick={() => {
+            void onCopy().then(() => setCopied(true))
+          }}
+        >
+          {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}{' '}
+          {copied ? '已复制' : '复制'}
         </button>
-        <button type="button" className="primary" disabled={!annotations.length} onClick={onSend}>
-          <ArrowUp size={13} aria-hidden="true" /> 发送给计划助手
-        </button>
+        <PlanSendMenu
+          worktreeId={worktreeId}
+          prompt={boardAnnotationsSendPrompt(annotations)}
+          label="板面批注"
+          onSent={onSent}
+        >
+          <button type="button" className="primary" disabled={!annotations.length}>
+            <ArrowUp size={13} aria-hidden="true" /> 发送给计划助手
+          </button>
+        </PlanSendMenu>
       </footer>
     </aside>
   )
