@@ -2,7 +2,7 @@
 
 > **维护约定**：记录本特性六环现状。格式按 [02 §6.2](../../01-principles/02-working-backwards.md)。环状态变化时随引发它的提交更新，不记流水。
 
-**现状（2026-10-22）**：任务来源、任务页和计划 / 验收读写已在本分支。intent / spec 从提交回写，**待人 gate**。没有可点原型。2026-10-22 MR 详情补检查项（`mr gate`）与文件变更（`mr changes`）页签，样式复用 GitHub PR 页组件，单测与门禁随提交重跑；真壳未看。其余环节数据未重跑。
+**现状（2026-10-22）**：任务来源、任务页和计划 / 验收读写已在本分支。intent / spec 从提交回写，**待人 gate**。没有可点原型。2026-10-22 MR 详情补检查项（`mr gate`）与文件变更（`mr changes`）页签，样式复用 GitHub PR 页组件，单测与门禁随提交重跑；真壳人工核对通过（2026-10-22，用户在 Workbench 壳内确认检查项与文件变更显示正常）。其余环节数据未重跑。
 
 | 环 | 状态 | 证据或缺口 |
 |---|---|---|
@@ -15,7 +15,7 @@
 
 ## 验收点与旅程矩阵
 
-口径：◐ = 主路径有实现和单测文件，没有真实 CodeHub 或真壳证据；○ = 未执行。
+口径：◐ = 主路径有实现和单测文件，没有真实 CodeHub 或真壳证据；◑ = 在 ◐ 之上真壳人工核对通过；○ = 未执行。
 
 | 验收点 | 状态 | 实现落点 | 证据 / 缺口 |
 |---|---|---|---|
@@ -27,9 +27,9 @@
 | C06 周期里按项目路径打开 | ◐ | `src/renderer/src/workbench/task-port.ts` | `task-port.test.ts`；未从计划屏点进真实详情 |
 | C07 归档保持未知 | ◐ | `src/main/workbench/archive-pr-status.ts`（CodeHub/非 GitHub 一律 unknown；2026-10-13 起原 archive-source-gap/archive-port 接缝已随合入证明链退役删除） | 未在 CodeHub 仓库上看见未知原因 |
 | C08 基线版本目录可选 | ◐ | `version-history-service.ts` 的 `treePlans` | `version-history-service.test.ts` 有「无 provider 合入也列出 data.json」；真壳未选过版本 |
-| C09 MR 检查项显示 | ◐ | `src/main/codehub/mr-reads.ts`、`task-page/codehub/ChecksTab.tsx` | `codehub-mr-detail.test.ts` 锁定状态映射、`mr-reads.test.ts` 锁定命令形状；真壳未看 |
-| C10 MR 文件变更显示 | ◐ | `task-page/codehub/FilesTab.tsx`（patch 重建两侧，复用 `PRFilesCombinedDiffBody`） | `codehub-mr-detail.test.ts` 锁定 patch 解析；真壳未看 |
-| C11 无流水线 MR 空态 | ◐ | `mr-reads.ts` 的 `--jq '.checks'` 空输出映射为空列表 | `mr-reads.test.ts` 有 null 投影用例；真壳未看 |
+| C09 MR 检查项显示 | ◑ | `src/main/codehub/mr-reads.ts`、`task-page/codehub/ChecksTab.tsx` | `codehub-mr-detail.test.ts` 锁定状态映射、`mr-reads.test.ts` 锁定命令形状；真壳人工核对通过（2026-10-22） |
+| C10 MR 文件变更显示 | ◑ | `task-page/codehub/FilesTab.tsx`（patch 重建两侧，复用 `PRFilesCombinedDiffBody`） | `codehub-mr-detail.test.ts` 锁定 patch 解析；真壳人工核对通过（2026-10-22） |
+| C11 无流水线 MR 空态 | ◐ | `mr-reads.ts` 的 `--jq '.checks'` 空输出映射为空列表 | `mr-reads.test.ts` 有 null 投影用例；真壳未专门构造无流水线 MR 覆盖 |
 | CJ01 关闭后重启仍为关闭 | ○ | 任务页 + CLI | 未执行 |
 
 相关单测还有 `src/main/codehub/mutations.test.ts`、`work-items.test.ts`、`comments.test.ts`（评论展平、线程回复与删除命令形状）、`src/shared/codehub-mr-detail.test.ts`（gate 状态映射、changes 字段映射、patch 解析）、`src/main/codehub/mr-reads.test.ts`（mr gate / mr changes 命令形状与 jq 投影）、`src/main/github/issue-update.codehub.test.ts`（GitHub 更新不因旁边有 CodeHub 远程而改道）。
