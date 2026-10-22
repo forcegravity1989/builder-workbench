@@ -2,7 +2,7 @@
 
 > **维护约定**：记录本特性六环现状。格式按 [02 §6.2](../../01-principles/02-working-backwards.md)。环状态变化时随引发它的提交更新，不记流水。
 
-**现状（2026-10-20）**：任务来源、任务页和计划 / 验收读写已在本分支。intent / spec 从提交回写，**待人 gate**。没有可点原型。2026-10-20 评论显示 / 删除修复随提交重跑 codehub 单测并实连真实 CodeHub 读回（见文末实机证据）；其余环节数据未重跑。
+**现状（2026-10-22）**：任务来源、任务页和计划 / 验收读写已在本分支。intent / spec 从提交回写，**待人 gate**。没有可点原型。2026-10-22 MR 详情补检查项（`mr gate`）与文件变更（`mr changes`）页签，样式复用 GitHub PR 页组件，单测与门禁随提交重跑；真壳未看。其余环节数据未重跑。
 
 | 环 | 状态 | 证据或缺口 |
 |---|---|---|
@@ -10,7 +10,7 @@
 | 2 spec | ◐ | 草案 [spec.md](spec.md)。缺可点原型，规格 gate 未过 |
 | 3 实现设计 | ◐ | 行为散落在 [ref/upstream.md](../../../ref/upstream.md) CodeHub 节、[codehub-cli 指南](../../03-guide/codehub-cli.md)、验收规格里的版本目录规则。无特性级 design |
 | 4 TDD | ◐ | 存量单测文件在，本次未重跑。见下表 |
-| 5 验收点 E2E | ○ | C01–C08 已定义。上游写明平台请求用模拟边界，不能代替内部 CodeHub 实机 |
+| 5 验收点 E2E | ○ | C01–C11 已定义。上游写明平台请求用模拟边界，不能代替内部 CodeHub 实机 |
 | 6 用户旅程 E2E | ○ | CJ01 已定义，未执行 |
 
 ## 验收点与旅程矩阵
@@ -27,9 +27,12 @@
 | C06 周期里按项目路径打开 | ◐ | `src/renderer/src/workbench/task-port.ts` | `task-port.test.ts`；未从计划屏点进真实详情 |
 | C07 归档保持未知 | ◐ | `src/main/workbench/archive-pr-status.ts`（CodeHub/非 GitHub 一律 unknown；2026-10-13 起原 archive-source-gap/archive-port 接缝已随合入证明链退役删除） | 未在 CodeHub 仓库上看见未知原因 |
 | C08 基线版本目录可选 | ◐ | `version-history-service.ts` 的 `treePlans` | `version-history-service.test.ts` 有「无 provider 合入也列出 data.json」；真壳未选过版本 |
+| C09 MR 检查项显示 | ◐ | `src/main/codehub/mr-reads.ts`、`task-page/codehub/ChecksTab.tsx` | `codehub-mr-detail.test.ts` 锁定状态映射、`mr-reads.test.ts` 锁定命令形状；真壳未看 |
+| C10 MR 文件变更显示 | ◐ | `task-page/codehub/FilesTab.tsx`（patch 重建两侧，复用 `PRFilesCombinedDiffBody`） | `codehub-mr-detail.test.ts` 锁定 patch 解析；真壳未看 |
+| C11 无流水线 MR 空态 | ◐ | `mr-reads.ts` 的 `--jq '.checks'` 空输出映射为空列表 | `mr-reads.test.ts` 有 null 投影用例；真壳未看 |
 | CJ01 关闭后重启仍为关闭 | ○ | 任务页 + CLI | 未执行 |
 
-相关单测还有 `src/main/codehub/mutations.test.ts`、`work-items.test.ts`、`comments.test.ts`（评论展平、线程回复与删除命令形状）、`src/main/github/issue-update.codehub.test.ts`（GitHub 更新不因旁边有 CodeHub 远程而改道）。
+相关单测还有 `src/main/codehub/mutations.test.ts`、`work-items.test.ts`、`comments.test.ts`（评论展平、线程回复与删除命令形状）、`src/shared/codehub-mr-detail.test.ts`（gate 状态映射、changes 字段映射、patch 解析）、`src/main/codehub/mr-reads.test.ts`（mr gate / mr changes 命令形状与 jq 投影）、`src/main/github/issue-update.codehub.test.ts`（GitHub 更新不因旁边有 CodeHub 远程而改道）。
 
 实机证据（2026-10-10，project-intake 名片链复用同一 CodeHub 能力）：克隆前名片预读读侧（repo-reads）对两个内源 host 实机验证可读（修复 --jq 引号假 absent 后）；createCodeHubMr 打包实跑在真实 CodeHub 仓验证可开 MR（应用内曾出现一次瞬时失败，错误信息未留存，排除法定位；查重/创建命令现均实测通过）。
 
