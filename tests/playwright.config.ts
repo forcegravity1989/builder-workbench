@@ -42,7 +42,7 @@ export default defineConfig({
   projects: [
     {
       name: 'electron-headless',
-      // The Workbench lane intentionally owns one smoke journey. Legacy Orca
+      // The Workbench lane owns the cycle and project configuration journeys. Legacy Orca
       // specs remain in the tree for source compatibility, but are not part of
       // the current CI entrypoint.
       testMatch: 'workbench-cycle-smoke.spec.ts',

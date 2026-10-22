@@ -131,10 +131,7 @@ test('BW cycle main chain: fixed trees, version material save and independent re
 
   const goal = workbenchPage.locator('[data-goal-id="smoke-goal"]')
   await expect(goal).toBeVisible({ timeout: 60_000 })
-  const expand = goal.getByRole('button', { name: '展开 G1', exact: true })
-  if (await expand.count()) {
-    await expand.click()
-  }
+  await workbenchPage.getByRole('button', { name: '全部展开', exact: true }).click()
   await goal.getByRole('button', { name: '编辑目标', exact: true }).click()
   await goal.getByRole('textbox', { name: 'G1 目标', exact: true }).fill('烟测目标：主链接通')
   await expect(workbenchPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
@@ -156,7 +153,7 @@ test('BW cycle main chain: fixed trees, version material save and independent re
       { timeout: 30_000, message: 'plan material never landed on disk' }
     )
     .toBe('v9.9:烟测目标：主链接通')
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-plan-saved.png') })
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-plan-saved.jpg') })
 
   // ---- 重载读回：流程选版偏好与材料都从宿主恢复 ----
   await workbenchPage.reload()
@@ -192,7 +189,7 @@ test('BW cycle main chain: fixed trees, version material save and independent re
   await expect(
     workbenchPage.getByRole('button', { name: '新建验收', exact: true }).first()
   ).toBeVisible()
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.png') })
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.jpg') })
 
   // ---- 总览：真实数据，未配置保持 Unknown，无演示值 ----
   await workbenchPage.getByRole('button', { name: '总览', exact: true }).click()
@@ -202,5 +199,5 @@ test('BW cycle main chain: fixed trees, version material save and independent re
   await expect(workbenchPage.getByText('未配置北极星指标')).toBeVisible({
     timeout: 60_000
   })
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-overview-real.png') })
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-overview-real.jpg') })
 })
