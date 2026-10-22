@@ -125,8 +125,12 @@ export function PlanningPriorReview({
                               </button>
                             ))}
                           </>
+                        ) : live.readCount === 0 ? (
+                          <span className="g3-muted">上版快照无 Issue 引用可读回</span>
                         ) : (
-                          <span className="g3-muted">上版快照 Issue 当前均已关闭</span>
+                          <span className="g3-muted">
+                            读回的 {live.readCount} 个 Issue 当前均已关闭
+                          </span>
                         )}
                         {live.failedCount > 0 && (
                           <span className="g3-muted">· {live.failedCount} 条读回失败</span>

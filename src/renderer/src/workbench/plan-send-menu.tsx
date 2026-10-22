@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactElement } from 'react'
+import { useCallback, useEffect, useId, useState, type ReactElement } from 'react'
 import { useAppStore } from '@/store'
 import {
   DropdownMenu,
@@ -56,8 +56,22 @@ export function PlanSendMenu({
 }) {
   const open = useAppStore((state) => state.openAgentSendPopoverTargetMode)
   const close = useAppStore((state) => state.closeAgentSendPopoverTargetMode)
+  // Why: several trigger buttons share the same label (every goal card's
+  //「拆解 Issue」); a label-only target-mode id would let one menu's unmount
+  // close another menu's sidebar target mode, and the store de-dupes opens by
+  // id. useId keeps one identity per trigger instance.
+  const instance = useId()
+  const id = `bw-plan-send:${instance}:${label}:${worktreeId ?? 'none'}`
   const [menuOpen, setMenuOpen] = useState(false)
-  const id = `bw-plan-send:${label}:${worktreeId ?? 'none'}`
+  // Why: mirror NotesSendMenu — when the store's target mode leaves this id
+  // (sent from the sidebar, or taken over by another source), the local menu
+  // must collapse too instead of lingering.
+  const targetModeMine = useAppStore((state) => state.agentSendPopoverTargetMode?.id === id)
+  useEffect(() => {
+    if (!targetModeMine && menuOpen) {
+      setMenuOpen(false)
+    }
+  }, [targetModeMine, menuOpen])
   useEffect(() => {
     return () => close(id)
   }, [id, close])

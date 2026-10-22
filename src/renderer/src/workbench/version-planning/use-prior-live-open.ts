@@ -6,7 +6,13 @@ import { isClosedIssueState } from '../version-acceptance/acceptance-issue-annot
 export type PriorLiveOpenState =
   | { kind: 'idle' }
   | { kind: 'loading' }
-  | { kind: 'ready'; open: CycleTaskSnapshot[]; failedCount: number }
+  | {
+      kind: 'ready'
+      open: CycleTaskSnapshot[]
+      failedCount: number
+      /** How many references were actually read back; 0 means empty snapshot. */
+      readCount: number
+    }
   | { kind: 'error'; reason: string }
 
 /**
@@ -50,6 +56,10 @@ export function usePriorLiveOpen(
     [key]
   )
   const request = useRef(0)
+  // Why: the serialized identity key drops goalId; the refresh call must use
+  // the original reference objects so native detail origins stay complete.
+  const referencesRef = useRef(references)
+  referencesRef.current = references
   const [retryToken, setRetryToken] = useState(0)
   const [state, setState] = useState<{ key: string; value: PriorLiveOpenState }>({
     key,
@@ -64,16 +74,12 @@ export function usePriorLiveOpen(
     }
     if (refsPart.length === 0) {
       request.current++
-      setState({ key, value: { kind: 'ready', open: [], failedCount: 0 } })
+      setState({ key, value: { kind: 'ready', open: [], failedCount: 0, readCount: 0 } })
       return
     }
     const token = ++request.current
     setState({ key, value: { kind: 'loading' } })
-    const refs: CycleTaskReference[] = refsPart.map(([provider, repository, number]) => ({
-      provider: provider as CycleTaskReference['provider'],
-      repository,
-      number
-    }))
+    const refs = referencesRef.current ?? []
     void taskPort.refresh(scope, refs).then(
       (reads) => {
         if (request.current !== token) {
@@ -99,7 +105,8 @@ export function usePriorLiveOpen(
               .filter((read) => read.kind === 'ready' && !isClosedIssueState(read.task.state))
               .map((read) => (read.kind === 'ready' ? read.task : null))
               .filter((task): task is CycleTaskSnapshot => task !== null),
-            failedCount: failed
+            failedCount: failed,
+            readCount: reads.length
           }
         })
       },

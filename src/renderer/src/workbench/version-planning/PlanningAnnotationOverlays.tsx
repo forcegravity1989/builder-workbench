@@ -36,6 +36,7 @@ export function PlanningAnnotationOverlays({
               formatBoardAnnotationsAsMarkdown(annotations.annotations)
             )
           }}
+          onCopyError={(message) => onSentNotice(`复制板面批注失败：${message}`)}
           onSent={() => onSentNotice('板面批注已发送给计划助手 · 在会话栏查看进展')}
         />
       )}

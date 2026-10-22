@@ -93,6 +93,7 @@ export function AnnotationPanel({
   onRemove,
   onBoardLevel,
   onCopy,
+  onCopyError,
   onSent
 }: {
   annotations: (BoardAnnotation & { number: number })[]
@@ -104,6 +105,8 @@ export function AnnotationPanel({
   onBoardLevel(anchor: DOMRect): void
   /** Writes via the Orca IPC clipboard channel; resolves once written. */
   onCopy(): Promise<void>
+  /** Surfaces a failed copy honestly instead of swallowing it. */
+  onCopyError?(message: string): void
   onSent?(): void
 }) {
   const [copied, setCopied] = useState(false)
@@ -145,7 +148,11 @@ export function AnnotationPanel({
           type="button"
           disabled={!annotations.length}
           onClick={() => {
-            void onCopy().then(() => setCopied(true))
+            void onCopy().then(
+              () => setCopied(true),
+              (reason: unknown) =>
+                onCopyError?.(reason instanceof Error ? reason.message : String(reason))
+            )
           }}
         >
           {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}{' '}

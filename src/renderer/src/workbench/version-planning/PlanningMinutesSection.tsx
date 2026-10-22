@@ -33,7 +33,7 @@ export function PlanningMinutesSection({
 }) {
   const minutes = plan?.minutes
   const organizeButton = (
-    <BoardActionButton>
+    <BoardActionButton disabled={!plan}>
       <BrainCircuit size={14} aria-hidden="true" /> 整理纪要
     </BoardActionButton>
   )
