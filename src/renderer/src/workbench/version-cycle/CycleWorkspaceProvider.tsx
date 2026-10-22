@@ -26,10 +26,8 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const workflow = useCycleWorkspaceWorkflow()
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const { worktree, scope, error, syncing, materialRefresh, updateCode } = useCycleWorkspaceTarget(
-    workflow,
-    setNotice
-  )
+  const { worktree, scope, error, syncing, materialRefresh, updateCode, readonlyBrowse } =
+    useCycleWorkspaceTarget(workflow, setNotice)
   const fixedId = worktree?.id ?? null
   const agent = useMetricsSetupAgent(fixedId)
   const session = useAppStore(useShallow((state) => getActiveCycleSession(state, scope, fixedId)))
@@ -128,6 +126,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
             workflow,
             busy,
             notice,
+            readonlyBrowse,
             start,
             configure: configureGuarded,
             prepareMetrics,
@@ -152,6 +151,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       workflow,
       busy,
       notice,
+      readonlyBrowse,
       start,
       configureGuarded,
       prepareMetrics,

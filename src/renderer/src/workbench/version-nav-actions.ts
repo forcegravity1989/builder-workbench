@@ -59,9 +59,10 @@ export function navigateVersionWorkflow(args: {
     useAppStore.getState().openArtifactsPage()
     return
   }
-  toast.info(
-    `版本 ${version} 尚无${workflowLabel(workflow)}工作区。可在版本行菜单「准备流程工作区」；材料回看走任务/目标入口，浏览不建树。`
-  )
+  // G2（P3b）：无绑定树也无旧固定树 → 只读回看（主干已提交材料）；浏览不建树，
+  // 缺材料/读取失败由只读视图如实呈现，准备是版本行菜单的显式动作。
+  setCycleView(workflow)
+  useAppStore.getState().openArtifactsPage()
 }
 
 export async function openVersionTasks(args: {

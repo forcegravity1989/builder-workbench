@@ -45,6 +45,9 @@ export function useCycleWorkspaceTarget(
     state.activeWorktreeId ? state.getKnownWorktreeById(state.activeWorktreeId) : null
   )
   const [error, setError] = useState<string | null>(null)
+  // G2（P3b）：无绑定树且无旧固定树的浏览版本进入只读回看（主干已提交材料），
+  // 浏览不建树、不激活工作区、不假报就绪。
+  const [readonlyBrowse, setReadonlyBrowse] = useState<{ version: string } | null>(null)
   const syncSequence = useRef(0)
   const [syncStates, setSyncStates] = useState<
     Record<
@@ -89,9 +92,11 @@ export function useCycleWorkspaceTarget(
   useEffect(() => {
     setError(null)
     if (!preparing || !baseScope || !baseSettled || !workflow) {
+      setReadonlyBrowse(null)
       return
     }
     let current = true
+    setReadonlyBrowse(null)
     void (async () => {
       try {
         let chosen: Worktree | null = null
@@ -120,11 +125,12 @@ export function useCycleWorkspaceTarget(
             throw new Error(`版本 ${browsedVersion} 有多个绑定流程树实例，请在侧栏选择具体工作区。`)
           }
           if (!chosen && !findCycleWorktree({ ...baseScope, workflow })) {
-            throw new Error(
-              `版本 ${browsedVersion} 没有可用的${
-                workflow === 'plan' ? '计划' : '验收'
-              }工作区（无绑定树，也无旧固定树）。可在版本行菜单「准备流程工作区」；材料回看不建树。`
-            )
+            // G2（P3b）：只读回看分支——已清理/未准备版本不报错、不建树，
+            // 由壳挂载只读材料视图（来源=主干已提交材料，缺材料如实显示）。
+            if (current) {
+              setReadonlyBrowse({ version: browsedVersion })
+            }
+            return
           }
         }
         const fixed = chosen ?? (await ensureCycleWorktree({ ...baseScope, workflow }))
@@ -277,6 +283,7 @@ export function useCycleWorkspaceTarget(
     syncing: sync?.busy ?? false,
     materialRefresh: sync?.revision ?? 0,
     updateCode,
+    readonlyBrowse,
     error: error ?? resolved.error ?? (preparing ? base.error : null)
   }
 }
