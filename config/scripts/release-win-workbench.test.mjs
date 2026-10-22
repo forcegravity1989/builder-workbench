@@ -9,6 +9,7 @@ import {
   deriveReleaseTag,
   isPrereleaseTag,
   parseReleaseArgs,
+  readManifestVersion,
   resolveReleaseVersion,
   runWorkbenchRelease,
   selectReleaseAssets
@@ -68,17 +69,10 @@ describe('parseReleaseArgs', () => {
 })
 
 describe('version and tag', () => {
-  it('prefers explicit version, falls back to package version', () => {
-    expect(resolveReleaseVersion({ explicitVersion: ' 1.2.3 ', packageVersion: '9.9.9' })).toBe(
-      '1.2.3'
-    )
-    expect(resolveReleaseVersion({ explicitVersion: null, packageVersion: '0.6.0' })).toBe('0.6.0')
-  })
-
-  it('throws when no version is available', () => {
-    expect(() => resolveReleaseVersion({ explicitVersion: '', packageVersion: '' })).toThrow(
-      /No version/
-    )
+  it('requires an explicit version — package.json keeps the upstream Orca base', () => {
+    expect(resolveReleaseVersion({ explicitVersion: ' 1.2.3 ' })).toBe('1.2.3')
+    expect(() => resolveReleaseVersion({ explicitVersion: null })).toThrow(/No version/)
+    expect(() => resolveReleaseVersion({})).toThrow(/No version/)
   })
 
   it('derives a valid tag and rejects malformed versions', () => {
@@ -107,6 +101,26 @@ describe('selectReleaseAssets', () => {
     }
     const { missing } = selectReleaseAssets(dir)
     expect(missing).toEqual([])
+  })
+})
+
+describe('readManifestVersion', () => {
+  it('reads the ledger version from latest.yml', () => {
+    const dir = makeTempDir()
+    writeFileSync(
+      join(dir, 'latest.yml'),
+      'version: 0.7.0\nfiles:\n  - url: orca-windows-setup.exe\n'
+    )
+    expect(readManifestVersion(dir)).toBe('0.7.0')
+    writeFileSync(join(dir, 'latest.yml'), "version: '0.7.0-rc.20261101.1'\n")
+    expect(readManifestVersion(dir)).toBe('0.7.0-rc.20261101.1')
+  })
+
+  it('returns null when the manifest is missing or unparseable', () => {
+    expect(readManifestVersion(makeTempDir())).toBe(null)
+    const dir = makeTempDir()
+    writeFileSync(join(dir, 'latest.yml'), 'not-a-manifest\n')
+    expect(readManifestVersion(dir)).toBe(null)
   })
 })
 
@@ -183,13 +197,15 @@ describe('runWorkbenchRelease guards (prepare mode)', () => {
     }
   }
 
-  function makeProject(withAssets) {
+  function makeProject(withAssets, manifestVersion = '0.6.0') {
     const dir = makeTempDir()
-    writeFileSync(join(dir, 'package.json'), JSON.stringify({ version: '0.6.0' }))
     if (withAssets) {
       mkdirSync(join(dir, 'dist'))
       for (const name of WORKBENCH_RELEASE_ASSETS) {
-        writeFileSync(join(dir, 'dist', name), 'x')
+        writeFileSync(
+          join(dir, 'dist', name),
+          name === 'latest.yml' ? `version: ${manifestVersion}\n` : 'x'
+        )
       }
     }
     return dir
@@ -204,7 +220,7 @@ describe('runWorkbenchRelease guards (prepare mode)', () => {
 
   it('flags missing assets and HEAD-not-on-remote, stays in prepare (never publishes)', async () => {
     const result = await runWorkbenchRelease({
-      argv: [],
+      argv: ['--version', '0.6.0'],
       cwd: makeProject(false),
       log: () => {},
       exec: fakeExec({ ...baseExec, 'branch -r --contains': '\n' })
@@ -218,7 +234,7 @@ describe('runWorkbenchRelease guards (prepare mode)', () => {
 
   it('reports no blockers when assets exist and HEAD is on a remote branch', async () => {
     const result = await runWorkbenchRelease({
-      argv: [],
+      argv: ['--version', '0.6.0'],
       cwd: makeProject(true),
       log: () => {},
       exec: fakeExec({ ...baseExec, 'branch -r --contains': '  origin/main\n' })
@@ -228,9 +244,19 @@ describe('runWorkbenchRelease guards (prepare mode)', () => {
     expect(result.wouldRun).toContain('orca-windows-setup.exe')
   })
 
+  it('blocks when latest.yml carries a different version than the release tag', async () => {
+    const result = await runWorkbenchRelease({
+      argv: ['--version', '0.6.0'],
+      cwd: makeProject(true, '1.4.197-local.1792147652.ece1d72698d6'),
+      log: () => {},
+      exec: fakeExec({ ...baseExec, 'branch -r --contains': '  origin/main\n' })
+    })
+    expect(result.blockers.some((b) => b.includes('账本不一致'))).toBe(true)
+  })
+
   it('blocks when the tag already has a published release', async () => {
     const result = await runWorkbenchRelease({
-      argv: [],
+      argv: ['--version', '0.6.0'],
       cwd: makeProject(true),
       log: () => {},
       exec: fakeExec({

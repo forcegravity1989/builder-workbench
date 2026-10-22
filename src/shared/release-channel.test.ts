@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   findInstallerAssetName,
   formatAdhocVersion,
@@ -323,5 +323,30 @@ describe('release channel', () => {
       '1.4.160-adhoc.20260728140502',
       '1.4.160-adhoc.20260728090000'
     ])
+  })
+})
+
+// Why: Workbench publishes every channel into its one public repo and has no dev
+// repos; the source constants must follow the product identity, or the restored
+// update chain serves Orca's packages to Workbench users (issue #338/#343).
+describe('Workbench update identity', () => {
+  afterEach(() => {
+    delete process.env.WORKBENCH_SHELL
+    vi.resetModules()
+  })
+
+  it('resolves every channel repo and release-notes link to the Workbench repo', async () => {
+    process.env.WORKBENCH_SHELL = '1'
+    vi.resetModules()
+    const mod = await import('./release-channel.js')
+    expect(mod.MAIN_RELEASE_REPO).toBe(mod.WORKBENCH_RELEASE_REPO)
+    expect(mod.WORKBENCH_RELEASE_REPO).toBe('forcegravity1989/builder-workbench')
+    for (const channel of mod.RELEASE_CHANNELS) {
+      expect(mod.getReleaseRepoForChannel(channel)).toBe('forcegravity1989/builder-workbench')
+    }
+    expect(mod.getReleaseNotesUrlForVersion('0.7.0')).toBe(
+      'https://github.com/forcegravity1989/builder-workbench/releases/tag/v0.7.0'
+    )
+    expect(mod.getVersionChannel('0.7.0')).toBe('stable')
   })
 })
