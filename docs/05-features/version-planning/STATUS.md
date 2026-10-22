@@ -21,6 +21,19 @@
 
 高保真 Playwright 真渲染 33 断言全绿零 console 错误（含入口落点、角标随清空消失、禁用态 reason、prompt 正本断言）；build-g3 --check 与 oxfmt/oxlint 通过。生产计划屏首次真机反馈四项（#407）验证见下节 P11 矩阵继续覆盖；本轮生产接线与 Skill 专项改由专家 agent 接手。
 
+### 2026-10-23 第九轮：专家接手生产接线 + Skill 专项 + prompt 瘦身（Issue #405，PR #410 扩 scope）
+
+第八轮登记的「待专家 agent 接手」清单本轮落地：生产接线、Skill 四件套审计修复、取稿归因（项 E）并入本 PR；用户当轮另拍板四事——分隔条折叠时隐藏、旅程拆解先于评审、项 E 并入本 PR、不新开 PR 就在 #410 分支交付。
+
+- **prompt 瘦身（用户反馈）**：按钮 prompt 只承载触发意图——整理纪要一句「把会话中已发送的板面批注汇总为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。」、批注发送一句「全量清单、以最新一次为准、现在不要整理」；落点确认 / 人工确认 / 闭环由人 / 无批注不编造等 SOP 规则归 week-planning Skill 与系统提示词。g3-model.js 正本与生产同名常量同步瘦身。
+- **分隔条（项 A）**：会话栏折叠时不渲染 `.vc-split`（AppWorkspaceShell），展开仍走页头 chip；spec 第 3 条登记。
+- **生产接线**：读回文案四处与删脚注（PlanningPriorReview）；批注入口移入「本版目标」区块头（PlanningGoals `annotateEntry`，文字标签 + 未发送角标，计划未建不渲染，页头图标按钮删除）；发送成功门控清空已递交批注 + 回执明说条数（PlanningAnnotationOverlays onSent）；骨架卡减注释 + !plan 禁用原因（PlanningMinutesSection + css，`.g3-skeleton-line.short` 随删）；两份 prompt 常量落生产同名位置。
+- **切屏保留未发送批注**：`use-board-annotations` 状态改模块级会话 store（屏路由之上、内存态）——切屏保留、重启随渲染进程重置按正本丢弃；board identity 变化仍 clearAll。
+- **Skill 四件套**：旅程翻序「准备→目标→拆解→评审→归档」全链（stub/正源两处手写句、阶段表与步骤序、`PLAN_WORKFLOW_STAGES`、version-records 灯位语义、spec 旅程表）；SOP 补齐 ask-once 会议 ID、全量清单、无批注兜底、转写读取显式范围、risks 措辞（屏无入口、模型禁写）、整理前保留人工编辑；重生成根级投影与 bundled 指南。
+- **取稿归因（项 E）**：transcript-tab 缺失与页面未就绪不再折叠成一个 `meeting-page-unavailable`，错误信息给可读原因；reference 承诺与 bundled 文本对齐。
+
+验证边界（用户指定）：不跑本地 CI、不做真机验证，门禁为 oxfmt/oxlint + typecheck + 受影响 vitest + build-g3 --check + bundled 生成器守旧单测；**真壳验证留人**（计划屏四区、批注全流程、分隔条折叠、纪要整理、取稿两会议 ID 复验）。
+
 ### 2026-10-22 真机反馈轮（#399 合入后验证，Issue #405 / PR #407）
 
 #399 真机验证四问题经用户当轮决定修复：①延期遗留「未标记」误显示「上版无延期 Issue」→ 三态语义（有标记无 carry=无延期；未标记=Unknown 文案 + 经 TaskPort 同源实时读回上版快照 Issue 当前 open 状态参考行，只陈述事实）；②批注角标真机黑底黑字 → 显式赭色底白字；③面板复制 navigator.clipboard 真壳失效 → Orca IPC 剪贴板 + 已复制瞬态（失败如实提示）；④对象级动作点击只框侧边栏（#399 漏掉原生发送弹窗本体）→ `plan-send-menu.tsx` 三段式弹窗（指令预览 + 原生 ReviewNotesSendMenuContent 会话列表/快捷启动），旧 `use-object-action-send.ts` 删除。另按用户决定：纪要空态显示同结构骨架卡；「与计划助手基于纪要调整目标」按钮退役（整理纪要后 Skill SOP 自然引导）。高保真同轮更新（四态演示切换、弹窗、骨架、角标、复制瞬态），spec 条款 1/3/4 与文案清单、design 落点表与 D18、upstream 接缝②同步。证据：typecheck / lint-staged / ratchet 持平 / 受影响 vitest / build-g3 --check 全绿，原型 Playwright 真渲染十图零 console 错误；**真壳 E2E 未执行，留真机验证（见矩阵 P11）**。
