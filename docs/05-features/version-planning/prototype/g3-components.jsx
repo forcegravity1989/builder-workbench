@@ -20,7 +20,13 @@ const {
   GitBranch,
   CalendarClock
 } = window.BWPrototypeDependencies
-import { metricCatalog, taskKind, sendTargets, quickLaunchAgents } from './g3-model.js'
+import {
+  metricCatalog,
+  taskKind,
+  sendTargets,
+  quickLaunchAgents,
+  minutesRequestPrompt
+} from './g3-model.js'
 export { React }
 export function Icon({ name, size = 16 }) {
   if (name === 'annotate-mode') {
@@ -498,19 +504,27 @@ export function GoalRow({
     </article>
   )
 }
-// 纪要空态骨架卡（2026-10-22 真机反馈轮）：没有纪要或助手尚未整理时也显示
-// 固定结构——「共识 / 遗留」两块占位 + 「未生成」徽章 + 整理动作在卡上，
-// 界面结构稳定可预见，人能看到纪要生成后的样子。
-export function MinutesSkeleton({ sendRequest }) {
+// 纪要空态骨架卡（2026-10-22 真机反馈轮定结构；第八轮减注释密度）：没有纪要或
+// 助手尚未整理时也显示固定结构——「共识 / 遗留」两块占位 + 「未生成」徽章 +
+// 整理动作在卡上，界面结构稳定可预见，人能看到纪要生成后的样子。
+// 第八轮修正：原空态塞了 4 段说明文字 + 1 个区块小注，「闭环 = …由人标记」在
+// 骨架卡 / 纪要卡 / tooltip 出现三次；占位灰条带边框配虚线卡，看着像加载坏了而不是空态。
+// 现只保留脚部一句，占位条改细去边框；「批注模式入口 / 会议 ID 可提供」这类操作指引
+// 移到「整理纪要」的发送弹窗指令预览——那里才是人要动手的地方，不该常驻板面。
+// disabledReason：计划未建时生产会禁用「整理纪要」，原型的禁用按钮必须给出原因，
+// 否则卡上最显眼的动作是个按不动又不说明的死按钮。
+export function MinutesSkeleton({ sendRequest, disabled = false, disabledReason = '' }) {
   return (
     <article className="g3-minutes skeleton" aria-label="会议纪要（未生成）">
       <div className="g3-minutes-head">
         <span className="g3-status">未生成</span>
         <span className="g3-minutes-actions">
           <ActionButton
+            disabled={disabled}
+            title={disabled ? disabledReason : undefined}
             onClick={(e) =>
               sendRequest(
-                '把在线批注与会议转写稿整理为会议纪要，按共识 / 遗留两块输出',
+                minutesRequestPrompt,
                 '整理纪要请求',
                 e.currentTarget.getBoundingClientRect()
               )
@@ -523,26 +537,29 @@ export function MinutesSkeleton({ sendRequest }) {
       <div className="g3-minutes-section">
         <strong>共识</strong>
         <p className="g3-skeleton-line" aria-hidden="true" />
-        <p className="g3-skeleton-line short" aria-hidden="true" />
-        <span className="g3-muted">待计划助手从在线批注与可选转写稿生成</span>
       </div>
       <div className="g3-minutes-section">
-        <strong>
-          遗留 <small>闭环 = 版本计划已按该条修改，由人标记</small>
-        </strong>
+        <strong>遗留</strong>
         <p className="g3-skeleton-line" aria-hidden="true" />
-        <span className="g3-muted">生成后逐条跟进，闭环由人标记</span>
       </div>
       <div className="g3-minutes-foot">
         <span className="g3-muted">
-          批注从页头「批注模式」进入；会议 ID 可由 Builder 提供，不提供时仅凭批注也可生成。
-          纪要经人工确认后生效。
+          {disabled ? disabledReason : '由计划助手汇总评审会批注生成，经人工确认后生效。'}
         </span>
       </div>
     </article>
   )
 }
-export function MinutesCard({ minutes, update }) {
+export function MinutesCard({
+  minutes,
+  update,
+  // 可选定制（验收屏复用）：默认值保持计划屏行为不变。
+  // 「与计划助手基于纪要调整目标」按钮已退役（2026-10-22 真机反馈轮，人决定：
+  // 整理纪要后 Skill SOP 自然引导），故不再接收 sendRequest / showAgent。
+  showFollowupStatus = true,
+  followupHint = '闭环 = 版本计划已按该条修改，由人标记',
+  footNote = '纪要独立保存，认可随归档 PR 评审表达。'
+}) {
   const [editing, setEditing] = useState(false)
   const setPoint = (key, index, text) =>
     update({
@@ -551,9 +568,13 @@ export function MinutesCard({ minutes, update }) {
       )
     })
   const removePoint = (key, index) => update({ [key]: minutes[key].filter((_, i) => i !== index) })
-  const addPoint = (key) =>
+  // withStatus=false 供验收屏复用：验收遗留不设闭环状态，条目只有 text。
+  const addPoint = (key, withStatus = true) =>
     update({
-      [key]: [...minutes[key], key === 'consensus' ? '' : { text: '', closed: false }]
+      [key]: [
+        ...minutes[key],
+        key === 'consensus' ? '' : { text: '', ...(withStatus ? { closed: false } : {}) }
+      ]
     })
   const toggleClosed = (index) =>
     update({
@@ -610,9 +631,7 @@ export function MinutesCard({ minutes, update }) {
         )}
       </div>
       <div className="g3-minutes-section">
-        <strong>
-          遗留 <small>闭环 = 版本计划已按该条修改，由人标记</small>
-        </strong>
+        <strong>遗留 {showFollowupStatus && <small>{followupHint}</small>}</strong>
         {editing ? (
           <div className="g3-point-editor">
             {minutes.followups.map((point, i) => (
@@ -623,13 +642,15 @@ export function MinutesCard({ minutes, update }) {
                   value={point.text}
                   onChange={(e) => setPoint('followups', i, e.target.value)}
                 />
-                <button
-                  className={`g3-followup-status ${point.closed ? 'closed' : ''}`}
-                  title="闭环 = 版本计划已按该条修改；由人标记"
-                  onClick={() => toggleClosed(i)}
-                >
-                  {point.closed ? '已闭环' : '未闭环'}
-                </button>
+                {showFollowupStatus && (
+                  <button
+                    className={`g3-followup-status ${point.closed ? 'closed' : ''}`}
+                    title={followupHint}
+                    onClick={() => toggleClosed(i)}
+                  >
+                    {point.closed ? '已闭环' : '未闭环'}
+                  </button>
+                )}
                 <IconButton
                   name="close"
                   label={`删除遗留第 ${i + 1} 点`}
@@ -637,7 +658,10 @@ export function MinutesCard({ minutes, update }) {
                 />
               </div>
             ))}
-            <button className="g3-add-point" onClick={() => addPoint('followups')}>
+            <button
+              className="g3-add-point"
+              onClick={() => addPoint('followups', showFollowupStatus)}
+            >
               <Icon name="plus" size={13} /> 添加一点
             </button>
           </div>
@@ -646,13 +670,15 @@ export function MinutesCard({ minutes, update }) {
             {minutes.followups.length ? (
               minutes.followups.map((point, i) => (
                 <li key={i}>
-                  <button
-                    className={`g3-followup-status ${point.closed ? 'closed' : ''}`}
-                    title="闭环 = 版本计划已按该条修改；由人标记"
-                    onClick={() => toggleClosed(i)}
-                  >
-                    {point.closed ? '已闭环' : '未闭环'}
-                  </button>
+                  {showFollowupStatus && (
+                    <button
+                      className={`g3-followup-status ${point.closed ? 'closed' : ''}`}
+                      title={followupHint}
+                      onClick={() => toggleClosed(i)}
+                    >
+                      {point.closed ? '已闭环' : '未闭环'}
+                    </button>
+                  )}
                   <span>{point.text || '待填写'}</span>
                 </li>
               ))
@@ -666,7 +692,7 @@ export function MinutesCard({ minutes, update }) {
         <button onClick={() => update({ confirmed: !minutes.confirmed })}>
           {minutes.confirmed ? '已人工确认 · 撤销' : '标记人工确认'}
         </button>
-        <span className="g3-muted">纪要独立保存，认可随归档 PR 评审表达。</span>
+        <span className="g3-muted">{footNote}</span>
       </div>
     </article>
   )
@@ -741,7 +767,8 @@ export function AnnotationPanel({
   onUpdate,
   onRemove,
   onBoardLevel,
-  onSend
+  onSend,
+  sendLabel = '发送给计划助手' // 验收屏复用时的可选定制
 }) {
   const [copied, setCopied] = useState(false)
   useEffect(() => {
@@ -794,7 +821,7 @@ export function AnnotationPanel({
           disabled={!annotations.length}
           onClick={(e) => onSend(e.currentTarget.getBoundingClientRect())}
         >
-          <Icon name="send" size={13} /> 发送给计划助手
+          <Icon name="send" size={13} /> {sendLabel}
         </button>
       </footer>
     </aside>

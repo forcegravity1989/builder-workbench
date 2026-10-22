@@ -8,14 +8,25 @@ import {
 import { ReviewNotesSendMenuContent } from '@/components/editor/ReviewNotesSendMenuContent'
 import { preventAgentSendTargetOutsideDismiss } from '@/components/browser-pane/annotate/prevent-agent-send-target-outside-dismiss'
 import { revealPlanChat } from './plan-column-resize'
+// Owns .g3-send-preview; imported here so the preview is styled on every board
+// that uses this menu, not only where board-ui happens to be loaded first.
+import './board-ui.css'
 
 /** Object-level action prop: wraps the caller's trigger button in the send menu. */
 export type SendActionWrap = (prompt: string, label: string, button: ReactElement) => ReactElement
 
-/** Board-level factory: every object-level action reports delivery as a notice. */
+/** Plan board is the original consumer; the acceptance board passes its own. */
+const DEFAULT_ASSISTANT = '计划助手'
+
+/**
+ * Board-level factory: every object-level action reports delivery as a notice.
+ * `assistant` names the receiving AI role in user-visible text; both cycle boards
+ * share this wrapper but each talks to its own assistant (计划助手 / 验收助手).
+ */
 export function usePlanSendAction(
   worktreeId: string | null,
-  onSentNotice: (message: string) => void
+  onSentNotice: (message: string) => void,
+  assistant = DEFAULT_ASSISTANT
 ): SendActionWrap {
   return useCallback(
     (prompt, label, button) => (
@@ -23,34 +34,39 @@ export function usePlanSendAction(
         worktreeId={worktreeId}
         prompt={prompt}
         label={label}
-        onSent={() => onSentNotice(`${label}已发送给计划助手 · 在会话栏查看进展`)}
+        assistant={assistant}
+        onSent={() => onSentNotice(`${label}已发送给${assistant} · 在会话栏查看进展`)}
       >
         {button}
       </PlanSendMenu>
     ),
-    [worktreeId, onSentNotice]
+    [worktreeId, onSentNotice, assistant]
   )
 }
 
 /**
- * Object-level plan actions (break down Issues, organize minutes, send board
- * annotations) reuse the Orca native agent-send chain — the same one browser
- * annotations use — but complete it: #399 only triggered the sidebar target-mode
- * highlight and never rendered the picker, so clicks dead-ended. This wraps the
- * action button in the native dropdown: instruction preview (BW wrapper layer;
- * the native menu shows no pending text), then the native「发送至」running-session
- * list and「新建智能体」quick launch. Opening also reveals the chat column.
+ * Object-level board actions (break down Issues, organize minutes, start
+ * archiving, release, send board annotations) reuse the Orca native agent-send
+ * chain — the same one browser annotations use — but complete it: #399 only
+ * triggered the sidebar target-mode highlight and never rendered the picker, so
+ * clicks dead-ended. This wraps the action button in the native dropdown:
+ * instruction preview (BW wrapper layer; the native menu shows no pending text),
+ * then the native「发送至」running-session list and「新建智能体」quick launch.
+ * Opening also reveals the chat column. Shared by both cycle boards; `assistant`
+ * only names the receiving AI role in the preview line.
  */
 export function PlanSendMenu({
   worktreeId,
   prompt,
   label,
+  assistant = DEFAULT_ASSISTANT,
   onSent,
   children
 }: {
   worktreeId: string | null
   prompt: string
   label: string
+  assistant?: string
   onSent?(): void
   children: ReactElement
 }) {
@@ -109,7 +125,9 @@ export function PlanSendMenu({
         onPointerDownOutside={preventAgentSendTargetOutsideDismiss}
       >
         <div className="g3-send-preview">
-          <small>发送指令给计划助手 · {label}</small>
+          <small>
+            发送指令给{assistant} · {label}
+          </small>
           <p>{prompt}</p>
         </div>
         <ReviewNotesSendMenuContent

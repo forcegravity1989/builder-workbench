@@ -2,8 +2,9 @@ import { isDeepStrictEqual } from 'node:util'
 import type { PlanMeetingMinutes, PlanningMaterial } from '../../shared/workbench/version-material'
 
 /**
- * Plan-side human fields: the risk report is typed by the user in the planning
- * UI, and the meeting minutes carry human-only marks. The model channel may
+ * Plan-side human fields: the risk report field is retained although the
+ * planning UI no longer offers a risk entry (2026-10-23), and the meeting
+ * minutes carry human-only marks. The model channel may
  * create a plan with empty risks and must round-trip existing risks unchanged.
  * For minutes it may draft the body only while unconfirmed; confirmation
  * (confirmed/confirmedAt) and followup closure marks (closed) round-trip by id,

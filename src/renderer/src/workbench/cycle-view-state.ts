@@ -1,59 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { CycleScope } from './version-cycle/ports'
-import type { MetricScope } from '../../../shared/workbench/metrics'
 
-const historySelections = new Map<string, string>()
-export function acceptanceHistorySelectionKey(
-  scope: MetricScope,
-  version: string,
-  runtimeOwnerEnvironmentId?: string
-) {
-  return `bw:acceptance:history:${JSON.stringify([
-    scope.repoId,
-    scope.worktreeId,
-    scope.hostId,
-    runtimeOwnerEnvironmentId ?? '',
-    version
-  ])}`
-}
-
-export function readAcceptanceHistorySelection(
-  scope: MetricScope,
-  version: string | null | undefined,
-  runtimeOwnerEnvironmentId?: string
-): string {
-  if (!version) {
-    return 'current'
-  }
-  const key = acceptanceHistorySelectionKey(scope, version, runtimeOwnerEnvironmentId)
-  try {
-    return historySelections.get(key) ?? window.sessionStorage.getItem(key) ?? 'current'
-  } catch {
-    return historySelections.get(key) ?? 'current'
-  }
-}
-
-export function writeAcceptanceHistorySelection(
-  scope: MetricScope,
-  version: string,
-  value: string,
-  runtimeOwnerEnvironmentId?: string
-): void {
-  const key = acceptanceHistorySelectionKey(scope, version, runtimeOwnerEnvironmentId)
-  historySelections.set(key, value)
-  try {
-    window.sessionStorage.setItem(key, value)
-  } catch {
-    // Navigation retains the exact selection in memory when browser storage is unavailable.
-  }
-}
-
-export function goalCardViewKey(
-  scope: CycleScope | null,
-  version: string,
-  goalId: string,
-  roundId?: string
-) {
+export function goalCardViewKey(scope: CycleScope | null, version: string, goalId: string) {
   return scope
     ? `workbench.goal-card:${JSON.stringify([
         scope.projectId,
@@ -62,8 +10,7 @@ export function goalCardViewKey(
         scope.runtimeOwnerEnvironmentId ?? '',
         scope.workflow,
         version,
-        goalId,
-        roundId ?? ''
+        goalId
       ])}`
     : undefined
 }

@@ -51,6 +51,7 @@ describe('fetchChangelog', () => {
 
     expect(result).not.toBeNull()
     expect(result!.release.title).toBe('Release 1.1.21')
+    expect('version' in result!.release).toBe(false)
     expect(result!.release.releaseNotesUrl).toBe('https://onorca.dev/changelog/1.1.21')
     expect(result!.releasesBehind).toBe(2)
   })
@@ -249,16 +250,13 @@ describe('fetchChangelog', () => {
     expect(result!.release.releaseNotesUrl).toBe('https://onorca.dev/changelog/1.1.21')
   })
 
-  it('strips version from the returned release object', async () => {
-    const entries = makeEntries([
-      { version: '1.1.17', description: 'Feature', mediaUrl: 'https://onorca.dev/media/demo.gif' },
-      { version: '1.1.15' }
-    ])
-    fetchMock.mockResolvedValue(jsonResponse(entries))
-
-    const result = await fetchChangelog('1.1.21', '1.1.15')
-
-    expect(result).not.toBeNull()
-    expect('version' in result!.release).toBe(false)
+  it('does not request Orca showcase content for Workbench', async () => {
+    vi.stubEnv('WORKBENCH_SHELL', '1')
+    try {
+      await expect(fetchChangelog('0.7.0', '0.6.0')).resolves.toBeNull()
+      expect(fetchMock).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })

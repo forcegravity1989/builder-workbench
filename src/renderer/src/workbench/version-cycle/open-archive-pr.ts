@@ -5,17 +5,21 @@ import { useAppStore } from '@/store'
 import { parseCodeHubRemote } from '../../../../shared/codehub'
 import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
 import type { WorkflowArchivePr } from '../../../../shared/workbench/version-workflow'
-import type { CycleScope } from '../version-cycle/ports'
 import { codehubStateOf, codehubWebUrl } from '../codehub-task-item'
 import { resolveReferenceRepo } from '../task-port'
+import type { CycleScope } from './ports'
 
 /**
- * Opens the recorded archive PR/MR on the Orca native PR page (never an
- * external browser), reusing the task-port chain: resolve the registered repo
- * for the material reference, look the work item up as type 'pr' (CodeHub:
- * 'mr' detail), then openTaskPage with returnToPreviousView so the plan stays
- * the Back target. Resolution failures throw — the board surfaces them as an
- * honest notice, with no external-link fallback.
+ * Opens the recorded archive PR/MR on the Orca native PR page (never an external
+ * browser), reusing the task-port chain: resolve the registered repo for the
+ * material reference, look the work item up as type 'pr' (CodeHub: 'mr' detail),
+ * then openTaskPage with returnToPreviousView so the cycle screen stays the Back
+ * target. Resolution failures throw — the board surfaces them as an honest
+ * notice, with no external-link fallback.
+ *
+ * Screen-agnostic provider plumbing shared by the plan and acceptance archive
+ * rows; it carries no board logic, so it lives in the cycle layer rather than
+ * being duplicated per screen.
  */
 export async function openArchivePrPage(
   scope: CycleScope,

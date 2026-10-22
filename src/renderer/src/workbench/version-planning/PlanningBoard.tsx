@@ -19,7 +19,7 @@ import { openAcceptanceSource } from '../version-cycle/open-acceptance-source'
 import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { togglePlanChat } from '../plan-column-resize'
 import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
-import { BoardIconButton } from '../board-ui'
+import { BoardActionButton } from '../board-ui'
 import { PlanningAnnotationOverlays } from './PlanningAnnotationOverlays'
 import { useBoardAnnotations } from '../annotations/use-board-annotations'
 import { annotationRefFromElement } from '../annotations/types'
@@ -30,7 +30,7 @@ import { PlanningGoals } from './PlanningGoals'
 import { PlanningMinutesSection } from './PlanningMinutesSection'
 import { PlanningPriorReview } from './PlanningPriorReview'
 import { PlanningArchiveCard } from './PlanningArchiveCard'
-import { openArchivePrPage } from './open-archive-pr'
+import { openArchivePrPage } from '../version-cycle/open-archive-pr'
 import { PlanningPersistenceNotice } from './PlanningPersistenceNotice'
 import { PlanningHeader, PlanningJourneyNav } from './PlanningSections'
 import { useJourneySpy } from './use-journey-spy'
@@ -307,16 +307,6 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             await prStatus.refresh()
           })
         }
-        extraActions={
-          <BoardIconButton
-            label="批注模式：点击板面元素记录评审意见"
-            aria-pressed={annotations.annotating}
-            className={annotations.annotating ? 'g3-mode-on' : ''}
-            onClick={annotations.toggleMode}
-          >
-            <MessageSquarePlus size={16} aria-hidden="true" />
-          </BoardIconButton>
-        }
       />
       {(material.error || notice || selection.error || context.error || entry.notice) && (
         <p className="vp-notice" role="status">
@@ -367,6 +357,23 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             onSendAction={wrapSend}
             numbersFor={annotations.numbersFor}
             onOpenAnnotationPanel={annotations.openPanel}
+            annotateEntry={
+              <BoardActionButton
+                className={`g3-annotate-entry${annotations.annotating ? ' g3-mode-on' : ''}`}
+                aria-pressed={annotations.annotating}
+                title={
+                  annotations.annotating
+                    ? '退出批注模式（Esc 同样退出）'
+                    : '批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见'
+                }
+                onClick={annotations.toggleMode}
+              >
+                <MessageSquarePlus size={13} aria-hidden="true" /> 批注模式
+                {annotations.annotations.length > 0 && (
+                  <span className="g3-annotate-count">{annotations.annotations.length}</span>
+                )}
+              </BoardActionButton>
+            }
             entry={entry}
             problems={material.versions.filter((item) => item.state !== 'ready')}
             version={context.version}

@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowUpRight, Download } from 'lucide-react'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
-import type { PackageLatest, PackagePipelinePort } from '../../../../shared/workbench/package-pipeline'
+import type {
+  PackageLatest,
+  PackagePipelinePort
+} from '../../../../shared/workbench/package-pipeline'
 
 type BusyKind = 'list' | 'latest' | 'launch' | 'download'
 
@@ -27,17 +30,17 @@ function errorText(error: unknown): string {
 /**
  * 出包区块：流水线选择与启动、最新制品包读取与下载。所有操作直连
  * CloudDragon；最新包每分钟静默刷新一次，启动受理后由下一次刷新带出
- * 新包。旅程轴的「出包」灯色跟随 onLatestChange 上报的真实包数据。
+ * 新包。onLatestChange 上报真实包数据供「验收准备」区回显与部署按钮门控；
+ * 界面不渲染灯（v10 起出包灯随旅程灯一并退役）。
+ * 本区块嵌在 prepare 区内，自身不是四区导航的定位目标，故不接 sectionRef。
  */
 export function AcceptancePackage({
   port,
   scope,
-  sectionRef,
   onLatestChange
 }: {
   port: PackagePipelinePort
   scope: MetricScope
-  sectionRef?: RefObject<HTMLElement | null>
   onLatestChange?: (latest: PackageLatest | null) => void
 }) {
   const [pipelines, setPipelines] = useState<string[]>([])
@@ -59,7 +62,9 @@ export function AcceptancePackage({
       pendingRef.current.delete(kind)
     }
     const next = pendingRef.current.size > 0
-    setBusy(next ? (PENDING_ORDER.find((pending) => pendingRef.current.has(pending)) ?? null) : null)
+    setBusy(
+      next ? (PENDING_ORDER.find((pending) => pendingRef.current.has(pending)) ?? null) : null
+    )
   }, [])
 
   useEffect(() => {
@@ -74,9 +79,7 @@ export function AcceptancePackage({
         }
         setPipelines(catalog.pipelines)
         setPipeline((current) =>
-          current && catalog.pipelines.includes(current)
-            ? current
-            : (catalog.pipelines[0] ?? '')
+          current && catalog.pipelines.includes(current) ? current : (catalog.pipelines[0] ?? '')
         )
       })
       .catch((reason: unknown) => {
@@ -184,7 +187,7 @@ export function AcceptancePackage({
     })
 
   return (
-    <section id="acceptance-package" ref={sectionRef} aria-label="出包" className="va-pkg">
+    <section aria-label="出包" className="va-pkg">
       <div className="va-pkg-toolbar">
         <label className="va-pkg-pipeline-label" htmlFor="va-pkg-pipeline">
           流水线

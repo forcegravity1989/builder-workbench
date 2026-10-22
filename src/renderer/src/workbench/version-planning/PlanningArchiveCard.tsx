@@ -7,8 +7,8 @@ import { BoardIconButton } from '../board-ui'
 /**
  * G3 archive row for the plan screen: the recorded archive PR reference, its
  * provider-reported merge state, and one entry into the Orca native PR page —
- * no comment copying, no diff stats, no external link. The shared
- * CycleArchive row stays untouched for the acceptance screen.
+ * no comment copying, no diff stats, no external link. The acceptance screen has
+ * its own AcceptanceArchiveCard; the two evolve independently by decision.
  */
 export function PlanningArchiveCard({
   archivePr,

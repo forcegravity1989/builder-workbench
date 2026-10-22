@@ -188,9 +188,15 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect
     .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
     .toBe('terminal')
+  // v10 退役了草案预验收通道，「新建验收」按钮已不存在（模型通道也不得再用
+  // kind=draft 的 planRef 建验收材料）。空板改为常驻门禁状态行，入口按钮文案是
+  // 「与验收助手新建验收」。这里锁「板面挂载 + 入口存在」，不锁具体门禁结论——
+  // 夹具里没有已合入的计划归档 PR，落到 blocked 还是 idle 取决于读回结果。
+  // 按钮在门禁核对中显示「正在核对计划归档状态…」，故给足超时等它落定。
+  await expect(workbenchPage.locator('.acc-empty-board')).toBeVisible({ timeout: 60_000 })
   await expect(
-    workbenchPage.getByRole('button', { name: '新建验收', exact: true }).first()
-  ).toBeVisible()
+    workbenchPage.getByRole('button', { name: '与验收助手新建验收', exact: true }).first()
+  ).toBeVisible({ timeout: 60_000 })
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.jpg') })
 
   // ---- 总览：真实数据，未配置保持 Unknown，无演示值 ----

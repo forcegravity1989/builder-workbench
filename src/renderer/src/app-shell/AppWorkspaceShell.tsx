@@ -286,16 +286,21 @@ function AppWorkspaceContent(props: {
                   </div>
                   {cycle && (
                     <>
-                      <div
-                        className="vc-split"
-                        role="separator"
-                        aria-orientation="vertical"
-                        aria-label={translate(
-                          'auto.app.shell.AppWorkspaceShell.e82b94df8a',
-                          '调整左右栏宽度'
-                        )}
-                        onMouseDown={resize.onResizeStart}
-                      />
+                      {/* Why: the divider only resizes an expanded session column. While the column is collapsed
+                          there is nothing to resize, and a dead col-resize strip reads as broken drag affordance
+                          (round-9 decision 2026-10-22: hide it; expanding stays on the board header chip). */}
+                      {!resize.chatCollapsed && (
+                        <div
+                          className="vc-split"
+                          role="separator"
+                          aria-orientation="vertical"
+                          aria-label={translate(
+                            'auto.app.shell.AppWorkspaceShell.e82b94df8a',
+                            '调整左右栏宽度'
+                          )}
+                          onMouseDown={resize.onResizeStart}
+                        />
+                      )}
                       <Suspense fallback={null}>
                         <div
                           className={`vc-board-slot${

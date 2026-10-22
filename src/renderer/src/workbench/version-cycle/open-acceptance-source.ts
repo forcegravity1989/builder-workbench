@@ -8,7 +8,7 @@ import type { CycleScope } from './ports'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
 import { cycleScopeForWorktree, findCycleWorktree } from './native-cycle-workspace'
 import { nativeVersionMaterialPort } from '../version-material-port'
-import { setCycleView, writeAcceptanceHistorySelection } from '../cycle-view-state'
+import { setCycleView } from '../cycle-view-state'
 
 /** A planning source opens the same fixed acceptance bytes on their own registered workflow tree. */
 export async function openAcceptanceSource(
@@ -40,12 +40,10 @@ export async function openAcceptanceSource(
     })
     assertCurrentCycleWorkspace(scope, originWorktreeId)
   }
-  writeAcceptanceHistorySelection(
-    targetScope,
-    fixedSource.version,
-    `fixed:${JSON.stringify(fixedSource)}`,
-    target.runtimeOwnerEnvironmentId
-  )
+  // NOTE: this lands on the acceptance board's *current* material for the version,
+  // not pinned to `fixedSource.sourceCommit`. A read-only history view addressed by
+  // the fixed source is still an open product question (acceptance spec 待决 #1);
+  // until it is decided, nothing records a selection nobody would read.
   setCycleView('acceptance')
   const state = useAppStore.getState()
   state.setActiveWorktree(worktree.id, target.hostId)

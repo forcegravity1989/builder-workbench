@@ -4,6 +4,7 @@ import { BoardIconButton } from '../board-ui'
 import { PlanSendMenu } from '../plan-send-menu'
 import { boardAnnotationsSendPrompt } from './annotation-markdown'
 import type { BoardAnnotation } from './types'
+import './annotations.css'
 
 /** Panel card: number + object + text, with card-level inline edit and delete. */
 function AnnotationCard({
@@ -88,6 +89,7 @@ export function AnnotationPanel({
   annotations,
   annotating,
   worktreeId,
+  assistant = '计划助手',
   onClose,
   onUpdate,
   onRemove,
@@ -99,6 +101,8 @@ export function AnnotationPanel({
   annotations: (BoardAnnotation & { number: number })[]
   annotating: boolean
   worktreeId: string | null
+  /** Receiving AI role named in the send button; each cycle board has its own. */
+  assistant?: string
   onClose(): void
   onUpdate(id: string, text: string): void
   onRemove(id: string): void
@@ -162,10 +166,11 @@ export function AnnotationPanel({
           worktreeId={worktreeId}
           prompt={boardAnnotationsSendPrompt(annotations)}
           label="板面批注"
+          assistant={assistant}
           onSent={onSent}
         >
           <button type="button" className="primary" disabled={!annotations.length}>
-            <ArrowUp size={13} aria-hidden="true" /> 发送给计划助手
+            <ArrowUp size={13} aria-hidden="true" /> 发送给{assistant}
           </button>
         </PlanSendMenu>
       </footer>

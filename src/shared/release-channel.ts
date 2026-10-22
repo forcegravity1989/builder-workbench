@@ -39,6 +39,7 @@ function isWorkbenchUpdateIdentity(): boolean {
 }
 
 const workbenchUpdateIdentity = isWorkbenchUpdateIdentity()
+export const UPDATE_PRODUCT_NAME = workbenchUpdateIdentity ? 'Workbench' : 'Orca'
 
 /** Dev builds live in their own repos so their tags never enter the main
  *  releases atom feed, which only exposes the 10 newest entries — 24 hourly

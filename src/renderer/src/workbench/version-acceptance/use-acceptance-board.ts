@@ -1,19 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AcceptanceMaterialSchema,
-  type MetricReadingEvidence,
   type AcceptanceMaterial
 } from '../../../../shared/workbench/version-material'
 import type { VersionDocumentPort } from '../../../../shared/workbench/version-document'
-import type { MetricRef } from '../../../../shared/workbench/metrics'
 import { useAcceptanceDraft } from './use-acceptance-draft'
-import { createAcceptanceMaterial, emptyGoalResult, sameAcceptanceSource } from './acceptance-model'
+import {
+  createAcceptanceMaterial,
+  sameAcceptanceSource,
+  upsertGoalResult
+} from './acceptance-model'
 import { useMaterialAutosave } from '../version-cycle/use-material-autosave'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
 import { useAcceptanceSources, useFixedAcceptancePlan } from './use-acceptance-plan'
 import { useAcceptanceOutput } from './use-acceptance-output'
-import { readAcceptanceHistorySelection } from '../cycle-view-state'
+import { useAcceptanceGate } from './use-acceptance-gate'
 
+/**
+ * Acceptance board data wiring: version catalog, draft material with autosave
+ * and recovery, the fixed plan the material cites, and the edit entry points.
+ *
+ * Rounds are retired with the cross-week scenario, so there is no history
+ * selection here — the board always shows the current material. Initialization is
+ * gated: `canInitialize` carries the merged-plan check, and an unmerged plan
+ * leaves the board empty instead of creating a draft pre-acceptance.
+ */
 export function useAcceptanceBoard({
   context,
   history,
@@ -26,8 +37,6 @@ export function useAcceptanceBoard({
     () => ({ repoId: scope.repoId, worktreeId, hostId: scope.hostId }),
     [scope.repoId, scope.hostId, worktreeId]
   )
-  const owner = scope.runtimeOwnerEnvironmentId
-  const historySelection = readAcceptanceHistorySelection(metricScope, context.version, owner)
   const port = useMemo<VersionDocumentPort<AcceptanceMaterial>>(
     () => ({
       async read(version) {
@@ -84,10 +93,37 @@ export function useAcceptanceBoard({
     onSaved: catalog.refresh
   })
   const source = catalog.sources.find((item) => item.version === context.version)
+  // Memoized: an inline object here would give the gate a fresh identity every
+  // render and spin its effect forever.
+  const archiveScope = useMemo(
+    () => ({
+      repoId: scope.repoId,
+      hostId: scope.hostId,
+      worktreeId,
+      ...(scope.runtimeOwnerEnvironmentId
+        ? { runtimeOwnerEnvironmentId: scope.runtimeOwnerEnvironmentId }
+        : {})
+    }),
+    [scope.repoId, scope.hostId, scope.runtimeOwnerEnvironmentId, worktreeId]
+  )
+  const catalogLoaded = catalog.loadedRefresh === (context.materialRefresh ?? 0)
+  const gate = useAcceptanceGate({
+    history,
+    scope: metricScope,
+    archiveScope,
+    archivePort: context.archivePort,
+    source,
+    versionSelected: Boolean(context.version),
+    catalogLoaded,
+    materialRefresh: context.materialRefresh
+  })
+  // Hard gate: an unmerged plan archive PR leaves the board empty rather than
+  // creating a draft pre-acceptance.
+  const canInitialize = gate.state.kind === 'merged'
   useEffect(() => {
     if (
       context.syncing ||
-      historySelection !== 'current' ||
+      !canInitialize ||
       initializationSuppressed ||
       !source ||
       draft ||
@@ -132,7 +168,7 @@ export function useAcceptanceBoard({
     }
   }, [
     context.syncing,
-    historySelection,
+    canInitialize,
     initializationSuppressed,
     source,
     draft,
@@ -208,62 +244,43 @@ export function useAcceptanceBoard({
       fixed.refresh()
       await refreshDraft()
       await catalog.refresh()
+      // The gate reads the plan's archive PR state; a trunk sync may have merged
+      // it, so re-check instead of leaving a stale block on screen.
+      await gate.recheck()
     } catch (reason) {
       setError(String(reason))
     }
   }
-  function editGoal(next: AcceptanceMaterial, goalId: string) {
+  /** Whole-document edit for sections that are not one goal result (minutes). */
+  function editDocument(next: AcceptanceMaterial) {
     const current = controller.value?.document
-    const result = next.results.find((item) => item.goalId === goalId)
-    if (
-      !current ||
-      !result ||
-      readOnly ||
-      current.version !== context.version ||
-      !sameAcceptanceSource(current, next)
-    ) {
+    if (!current || readOnly || current.version !== context.version) {
       setError('验收来源已变化，输入未覆盖新材料，请重新核对。')
       return
     }
-    controller.edit({
-      ...current,
-      results: current.results.some((item) => item.goalId === goalId)
-        ? current.results.map((item) => (item.goalId === goalId ? result : item))
-        : [...current.results, result]
-    })
-  }
-  function editReadings(
-    source: AcceptanceMaterial,
-    goalId: string,
-    ref: MetricRef,
-    readings: MetricReadingEvidence[]
-  ) {
-    const current = controller.value?.document
-    if (!current) {
+    if (!sameAcceptanceSource(current, next)) {
+      setError('验收来源已变化，输入未覆盖新材料，请重新核对。')
       return
     }
-    const result =
-      current.results.find((item) => item.goalId === goalId) ?? emptyGoalResult(goalId, current)
-    const results = source.results.some((item) => item.goalId === goalId)
-      ? source.results
-      : [...source.results, result]
-    editGoal(
-      {
-        ...source,
-        results: results.map((item) =>
-          item.goalId === goalId
-            ? {
-                ...result,
-                readings: [
-                  ...result.readings.filter((item) => item.ref.name !== ref.name),
-                  ...readings
-                ]
-              }
-            : item
-        )
-      },
-      goalId
-    )
+    controller.edit(next)
+  }
+  function editGoal(next: AcceptanceMaterial, goalId: string) {
+    const current = controller.value?.document
+    const result = next.results.find((item) => item.goalId === goalId)
+    if (!current || !result) {
+      setError('验收来源已变化，输入未覆盖新材料，请重新核对。')
+      return
+    }
+    if (readOnly || current.version !== context.version || !sameAcceptanceSource(current, next)) {
+      setError('验收来源已变化，输入未覆盖新材料，请重新核对。')
+      return
+    }
+    // 基准是 current.results 而非 next.results：这条是 CAS 写入路径，必须以刚重读的
+    // 控制器值为准，否则会把并发写入盖掉。
+    controller.edit({
+      ...current,
+      results: upsertGoalResult(current.results, result)
+    })
   }
   return {
     scope,
@@ -275,8 +292,7 @@ export function useAcceptanceBoard({
     recoveryError,
     recoveryText,
     versions: catalog.versions,
-    hasPlanSource: Boolean(source),
-    sourcesLoaded: catalog.loadedRefresh === (context.materialRefresh ?? 0),
+    gate,
     materialProblems: catalog.materialProblems,
     version,
     error: error ?? fixed.error ?? catalog.error,
@@ -292,8 +308,7 @@ export function useAcceptanceBoard({
     saving: autosave.saving,
     retrySave: autosave.save,
     useRemoteDeletion,
-    initializationSuppressed,
-    editGoal,
-    editReadings
+    editDocument,
+    editGoal
   }
 }

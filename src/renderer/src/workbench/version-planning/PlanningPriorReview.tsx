@@ -9,8 +9,11 @@ import type { PriorLiveOpenState } from './use-prior-live-open'
 /**
  * Prior-version review: exactly two rows echoed from the fixed acceptance
  * source in the same style as the acceptance screen — carryover Issues
- * (number + full title, click opens the native detail) and confirmed
- * next-week meeting directives. The carryover row distinguishes three data
+ * (number + full title, click opens the native detail) and meeting
+ * carryovers, which come from the human-confirmed acceptance minutes'
+ * followups; material written before v10 has no minutes section and falls
+ * back to its confirmed 「纳入下周计划」 directives (see use-prior-carryovers).
+ * The carryover row distinguishes three data
  * states (2026-10-22 真机反馈轮): marks recorded without carry → "no
  * carryover"; no marks recorded at all → Unknown wording plus a live
  * open-state readback reference row (facts only, never a confirmed
@@ -90,18 +93,18 @@ export function PlanningPriorReview({
                 )
               ) : unrecorded ? (
                 <>
-                  <span className="g3-muted">上版验收未记录 Issue 延期标记</span>
+                  <span className="g3-muted">上版验收未记录延期标记</span>
                   <div className="g3-carryover-live">
                     <span className="g3-live-tag">
                       <RefreshCw size={11} aria-hidden="true" /> 实时读回
                     </span>
                     {live.kind === 'loading' ? (
                       <span className="g3-muted" role="status">
-                        正在读回上版 Issue 当前状态…
+                        正在读回上版 Issue 状态…
                       </span>
                     ) : live.kind === 'error' ? (
                       <>
-                        <span className="g3-muted">读回失败，当前状态未知</span>
+                        <span className="g3-muted">读回失败，状态未知</span>
                         <button type="button" onClick={onRetryLive}>
                           重试
                         </button>
@@ -111,7 +114,7 @@ export function PlanningPriorReview({
                         {live.open.length ? (
                           <>
                             <span>
-                              上版 <strong>{live.open.length}</strong> 个 Issue 仍 open
+                              上版 <strong>{live.open.length}</strong> 个 Issue 未关闭
                             </span>
                             {live.open.map((task) => (
                               <button
@@ -135,7 +138,6 @@ export function PlanningPriorReview({
                         {live.failedCount > 0 && (
                           <span className="g3-muted">· {live.failedCount} 条读回失败</span>
                         )}
-                        <small>读回为 Issue 当前状态，未经人确认延期；确认请在验收屏标记</small>
                       </>
                     ) : null}
                   </div>

@@ -199,11 +199,17 @@ export function importLegacyAcceptanceResults(
     if (matches.length !== 1) {
       throw new Error(`旧结果 ${result.title} 与已读计划不一致，请先人工核对目标对应`)
     }
+    // Per-goal deliveries are retired; the legacy deliverables are preserved as
+    // note text rather than dropped, and stay marked as unverified provenance.
+    const legacyDeliveries = result.deliveries.length
+      ? `\n旧交付物（待核）：${result.deliveries
+          .map((item) => `${item.title} ${item.location}`)
+          .join('；')}`
+      : ''
     return {
       goalId: matches[0].goalId,
-      deliveries: result.deliveries,
       readings: [],
-      note: `${result.note}\n迁移来源：${preview.backupName} · ${preview.sourceRevision}；原状态及确认未导入。`,
+      note: `${result.note}${legacyDeliveries}\n迁移来源：${preview.backupName} · ${preview.sourceRevision}；原状态及确认未导入。`,
       nextStep: ''
     }
   })

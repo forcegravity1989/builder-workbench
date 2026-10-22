@@ -83,6 +83,9 @@ jobs:
 
       - name: Ensure Chinese text is readable in screenshots
         run: |
+          # packages.microsoft.com 在托管 runner 上间歇 403，会令 apt-get update 整体失败（exit 100）；
+          # 该源与 CJK 字体无关，更新前先移除，其余源的失败仍会阻断本步骤。
+          sudo rm -f /etc/apt/sources.list.d/microsoft*
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends fonts-noto-cjk
 
