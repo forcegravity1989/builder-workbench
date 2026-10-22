@@ -30,17 +30,7 @@ export class BrowserCertificateTrustController {
   private readonly requestGuard: BrowserCertificateRequestGuard
 
   constructor(private readonly dependencies: BrowserCertificateTrustControllerDependencies) {
-    this.requestGuard = new BrowserCertificateRequestGuard({
-      onBlockedMainFrame: (blocked) => {
-        const context = this.dependencies.resolveManagedGuestContext(blocked.webContentsId)
-        if (context) {
-          this.recordPendingChallenge({
-            ...blocked,
-            browserPageId: context.browserPageId
-          })
-        }
-      }
-    })
+    this.requestGuard = new BrowserCertificateRequestGuard()
   }
 
   installSessionRequestGuard(session: Electron.Session): void {
@@ -77,13 +67,7 @@ export class BrowserCertificateTrustController {
         return
       }
       const identity = { secureEndpoint: endpoint, leafCertificateSha256: digest, error }
-      if (
-        this.requestGuard.shouldTrustCertificate(
-          args.webContents.session,
-          args.webContents.id,
-          identity
-        )
-      ) {
+      if (this.requestGuard.shouldTrustCertificate(args.webContents.session, identity)) {
         args.event.preventDefault()
         answer(true)
         return
@@ -126,7 +110,6 @@ export class BrowserCertificateTrustController {
 
   onGuestRetired(webContentsId: number): void {
     this.clearPending(webContentsId, true)
-    this.requestGuard.revokeGuest(webContentsId)
     this.navigationSequenceByGuestId.delete(webContentsId)
   }
 
@@ -136,10 +119,6 @@ export class BrowserCertificateTrustController {
       (this.navigationSequenceByGuestId.get(webContentsId) ?? 0) + 1
     )
     this.clearPending(webContentsId, true)
-  }
-
-  onMainFrameNavigationCommitted(webContentsId: number, url: string): void {
-    this.requestGuard.revokeForCommittedNavigation(webContentsId, url)
   }
 
   getFailure(browserPageId: string): BrowserCertificateFailure | null {
@@ -180,7 +159,6 @@ export class BrowserCertificateTrustController {
       return { ok: false, reason: 'missing' }
     }
     const granted = this.requestGuard.grant(guest.session, {
-      guestWebContentsId: webContentsId,
       secureEndpoint: pending.secureEndpoint,
       leafCertificateSha256: pending.leafCertificateSha256,
       error: pending.error

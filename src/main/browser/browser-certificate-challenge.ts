@@ -3,7 +3,6 @@ import { SUPPORTED_CERTIFICATE_ERROR_CODE } from './browser-certificate-identity
 
 export const CERTIFICATE_CHALLENGE_TTL_MS = 5 * 60_000
 export const MAX_PENDING_CERTIFICATE_CHALLENGES = 32
-export const MAX_CERTIFICATE_GRANTS = 32
 
 export type ManagedBrowserGuestContext = {
   browserPageId: string | null
@@ -41,9 +40,11 @@ export type PendingCertificateChallenge = {
   expiresAt: number
 }
 
+// Why: a grant is a session-scoped exception, not a per-tab one; it carries only the
+// pinned endpoint + leaf identity that every guest in the session may rely on.
 export type CertificateTrustGrant = Pick<
   PendingCertificateChallenge,
-  'guestWebContentsId' | 'secureEndpoint' | 'leafCertificateSha256' | 'error'
+  'secureEndpoint' | 'leafCertificateSha256' | 'error'
 >
 
 export function certificateChallengeIdentityMatches(

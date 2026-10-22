@@ -20,14 +20,9 @@ import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-worksp
 import { togglePlanChat } from '../plan-column-resize'
 import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
 import { BoardIconButton } from '../board-ui'
-import { AnnotationPanel } from '../annotations/AnnotationPanel'
-import { AnnotationPopover } from '../annotations/AnnotationPopover'
-import {
-  boardAnnotationsSendPrompt,
-  formatBoardAnnotationsAsMarkdown
-} from '../annotations/annotation-markdown'
-import { annotationRefFromElement } from '../annotations/types'
+import { PlanningAnnotationOverlays } from './PlanningAnnotationOverlays'
 import { useBoardAnnotations } from '../annotations/use-board-annotations'
+import { annotationRefFromElement } from '../annotations/types'
 import { usePlanningMaterial, planningDraftKey } from './use-planning-material'
 import { usePlanMetrics } from './use-plan-metrics'
 import { usePlanVersionSelection } from './use-plan-version-selection'
@@ -41,7 +36,8 @@ import { PlanningHeader, PlanningJourneyNav } from './PlanningSections'
 import { useJourneySpy } from './use-journey-spy'
 import { usePlanningViewMemory } from './use-planning-view-memory'
 import { usePriorCarryovers } from './use-prior-carryovers'
-import { useObjectActionSend } from './use-object-action-send'
+import { usePriorLiveOpen } from './use-prior-live-open'
+import { usePlanSendAction } from '../plan-send-menu'
 import { useArchivePrStatus } from '../version-cycle/use-archive-pr-status'
 import './version-planning.css'
 
@@ -64,6 +60,23 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const prStatus = useArchivePrStatus(context, plan?.workflow?.archivePr)
   const progressSource = plan?.summary.progressSource
   const prior = usePriorCarryovers(scope, worktreeId, progressSource, context.materialRefresh)
+  // Live open-state readback only when the frozen acceptance recorded no Issue
+  // marks at all — the prior row then reads Unknown, and this row states the
+  // current open facts of the frozen snapshot (never a carryover conclusion).
+  const liveRefs =
+    prior.state.kind === 'ready' ? prior.state.carryovers.openReadbackReferences : null
+  const liveEnabled =
+    prior.state.kind === 'ready' &&
+    !prior.state.carryovers.issueMarksRecorded &&
+    Boolean(progressSource)
+  const priorLive = usePriorLiveOpen(
+    scope,
+    worktreeId,
+    context.taskPort,
+    liveRefs,
+    liveEnabled,
+    context.materialRefresh
+  )
   const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
   const [openingSource, setOpeningSource] = useState(false)
@@ -73,7 +86,6 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const spy = useJourneySpy()
   const sectionRefs = spy.sectionRefs
   const annotations = useBoardAnnotations()
-  const sendAction = useObjectActionSend(worktreeId)
   const chatCollapsed = usePlanChatCollapsed()
   const metricScope = useMemo(
     () => (scope && worktreeId ? { repoId: scope.repoId, hostId: scope.hostId, worktreeId } : null),
@@ -119,6 +131,10 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     },
     [selectionKey]
   )
+  const sendNotice = useCallback((message: string) => updateView({ notice: message }), [updateView])
+  // Object-level actions wrap their trigger button in the native send menu
+  // (instruction preview + session picker); see plan-send-menu.tsx.
+  const wrapSend = usePlanSendAction(worktreeId, sendNotice)
   const viewMemory = usePlanningViewMemory(plan ? selectionKey : null, content)
   const currentSelection = useRef(selectionKey)
   currentSelection.current = selectionKey
@@ -262,7 +278,6 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       annotations.closePopover()
     }
   }
-  const popover = annotations.popover
   const state = !plan
     ? ''
     : material.draft?.error
@@ -330,10 +345,12 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
           <PlanningPriorReview
             source={progressSource}
             state={prior.state}
+            live={priorLive.state}
             openingSource={openingSource}
             onOpenAcceptance={openAcceptance}
             onOpenTask={(task) => act(() => openTask(task))}
             onRetry={prior.retry}
+            onRetryLive={priorLive.retry}
             sectionRef={sectionRefs.context}
           />
           <PlanningGoals
@@ -347,7 +364,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             taskPort={taskPort}
             onTask={(task) => act(() => openTask(task))}
             onRemoveGoal={removeGoal}
-            onSendAction={sendAction}
+            onSendAction={wrapSend}
             numbersFor={annotations.numbersFor}
             onOpenAnnotationPanel={annotations.openPanel}
             entry={entry}
@@ -358,7 +375,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             plan={plan}
             disabled={disabled}
             edit={edit}
-            onSendAction={sendAction}
+            onSendAction={wrapSend}
             sectionRef={sectionRefs.minutes}
           />
           <PlanningArchiveCard
@@ -371,42 +388,12 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             sectionRef={sectionRefs.archive}
           />
         </div>
-        {annotations.panelOpen && (
-          <AnnotationPanel
-            annotations={annotations.numbered}
-            annotating={annotations.annotating}
-            onClose={annotations.closePanel}
-            onUpdate={annotations.update}
-            onRemove={annotations.remove}
-            onBoardLevel={(rect) =>
-              annotations.openPopover({ kind: 'board', label: '板面级' }, rect)
-            }
-            onCopy={() =>
-              void act(async () => {
-                await navigator.clipboard.writeText(
-                  formatBoardAnnotationsAsMarkdown(annotations.annotations)
-                )
-                updateView({ notice: '已复制板面批注。' })
-              })
-            }
-            onSend={() => {
-              annotations.closePopover()
-              sendAction(boardAnnotationsSendPrompt(annotations.annotations), '板面批注')
-            }}
-          />
-        )}
-      </div>
-      {popover && (
-        <AnnotationPopover
-          key={popover.id}
-          target={popover}
-          onSave={(text) => {
-            annotations.add(popover.ref, text)
-            annotations.closePopover()
-          }}
-          onCancel={annotations.closePopover}
+        <PlanningAnnotationOverlays
+          annotations={annotations}
+          worktreeId={worktreeId}
+          onSentNotice={sendNotice}
         />
-      )}
+      </div>
     </div>
   )
 }

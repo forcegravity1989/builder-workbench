@@ -81,15 +81,17 @@ jobs:
           native-runtime: node
           cache-electron-package: 'true'
 
+      - name: Ensure Chinese text is readable in screenshots
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+
       - name: Run Workbench smoke
         run: xvfb-run --auto-servernum pnpm run test:e2e:workbench
 
-      # Why: Playwright writes screenshots / error-context / trace under
-      # test-results/ and the runner discards them after the job; without this
-      # every smoke diagnosis restarts from log text alone (the spec:150
-      # actionability stall in #353 could not be inspected any other way).
-      - name: Upload smoke failure evidence
-        if: ${{ failure() }}
+      # Preserve successful journey screenshots as well as failure diagnostics.
+      - name: Upload Workbench smoke evidence
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: workbench-smoke-test-results

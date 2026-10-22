@@ -37,7 +37,8 @@ export const CharterSubmitRequestSchema = z.strictObject({
   scope: CharterScopeSchema,
   intent: CharterIntentSchema,
   /** true=接入首建(PR 标题「项目约定」);false=编辑名片(「项目信息改动」)。 */
-  firstTime: z.boolean()
+  firstTime: z.boolean(),
+  edit: z.optional(z.strictObject({ expectedRaw: z.string().nullable() }))
 })
 export type CharterSubmitRequest = z.infer<typeof CharterSubmitRequestSchema>
 
@@ -54,7 +55,7 @@ export type CharterSubmitOutcome =
   /** 树内名片与意图一致且远端已同步、无开放 PR。note 说明真实态(已合入/PR 被关)。 */
   | { mode: 'noop'; filled: string[]; note?: string }
   /** 没有可识别远端/读不到远端身份:调用方就地写主检出并如实说明。 */
-  | { mode: 'local-only'; reason: string }
+  | { mode: 'local-only'; reason: string; saved?: boolean }
   | {
       mode: 'failed'
       stage: 'read' | 'validate' | 'write' | 'commit' | 'push' | 'pr'
@@ -86,6 +87,8 @@ export type CharterReadRequest = z.infer<typeof CharterReadRequestSchema>
  */
 export type CharterReadResult = {
   charter: ProjectCharter | null
+  /** Exact read revision for optimistic edits; older runtimes cannot enable editing. */
+  raw?: string | null
   existed: boolean
   error: string | null
 }
@@ -100,6 +103,10 @@ export type CharterStatus = {
   } | null
   /** 主检出 HEAD 是否已含名片(合入且已「更新代码」后为 true)。 */
   headHasCharter: boolean
+  /** Current checkout contains the proposed charter text, rather than merely some charter. */
+  headMatchesProposal?: boolean
+  /** false = confirmed no remote; null = remote identity could not be read. */
+  remoteAvailable?: boolean | null
   /** renderer 侧查询失败(区别于「查了没有」):呈现为没读到,不冒充无 PR。 */
   queryFailed?: boolean
 }

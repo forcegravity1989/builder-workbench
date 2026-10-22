@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { editProjectToml } from './project-charter-edit'
 import {
   EMPTY_CHARTER,
   fillBlankCharterInToml,
@@ -24,6 +25,8 @@ opportunity = "纳入更多项目"
     expect(parsed.opportunity).toBe('纳入更多项目')
     const again = parseProjectToml(renderProjectToml(parsed))
     expect(again).toEqual(parsed)
+    expect(normalizeCloneUrl('stablyai/orca')).toBe('https://github.com/stablyai/orca.git')
+    expect(repoNameFromRemote('https://github.com/stablyai/orca.git')).toBe('orca')
   })
 
   it('fills only blank fields in place, keeping existing values', () => {
@@ -46,6 +49,16 @@ opportunity = ""
     expect(parsed.brief).toBe('want')
     expect(parsed.benchmark).toBe('x')
     expect(parsed.opportunity).toBe('star')
+    {
+      const raw = `name = "a"\r\nbrief = "b"\r\n`
+      const { content, filled } = fillBlankCharterInToml(raw, {
+        ...EMPTY_CHARTER,
+        name: 'other',
+        brief: 'other'
+      })
+      expect(filled).toEqual([])
+      expect(content).toBe(raw)
+    }
   })
 
   it('keeps comments and [chat] verbatim and inserts missing keys before tables', () => {
@@ -70,7 +83,7 @@ group = "12345"
     expect(content.indexOf('name = "ignored"')).toBe(-1)
   })
 
-  it('fills the legacy north_star key in place instead of inserting opportunity', () => {
+  it('preserves legacy keys and final newlines when filling blanks', () => {
     const raw = `name = "a"
 north_star = ""
 `
@@ -82,32 +95,54 @@ north_star = ""
     expect(filled).toEqual(['opportunity'])
     expect(content).toContain('north_star = "star"')
     expect(content).not.toContain('opportunity =')
+    {
+      const raw = `name = "a"\n`
+      const { content, filled } = fillBlankCharterInToml(raw, {
+        ...EMPTY_CHARTER,
+        name: 'a',
+        brief: 'b'
+      })
+      expect(filled).toEqual(['brief'])
+      expect(content).toBe(`name = "a"\nbrief = "b"\n`)
+    }
   })
 
-  it('inserts missing keys before the trailing newline when there is no table', () => {
-    const raw = `name = "a"\n`
-    const { content, filled } = fillBlankCharterInToml(raw, {
-      ...EMPTY_CHARTER,
-      name: 'a',
-      brief: 'b'
+  it('edits only reviewed values while preserving aliases, comments, multiline data and CRLF', () => {
+    const raw = [
+      '# keep',
+      'name = "  a  " # identity',
+      'brief = "old" # summary',
+      "north_star = '''old",
+      '[literal]',
+      "vision''' # direction",
+      'custom = 12',
+      '',
+      '[chat]',
+      'group = "untouched"',
+      ''
+    ].join('\r\n')
+    const before = parseProjectToml(raw)
+    const { content, changed } = editProjectToml(raw, raw, {
+      ...before,
+      brief: 'new\nline',
+      opportunity: ''
     })
-    expect(filled).toEqual(['brief'])
-    expect(content).toBe(`name = "a"\nbrief = "b"\n`)
+    expect(changed).toEqual(['brief', 'opportunity'])
+    expect(content).toContain('name = "  a  " # identity')
+    expect(content).toContain('brief = "new\\nline" # summary')
+    expect(content).toContain('north_star = "" # direction')
+    expect(content).toContain('custom = 12\r\n\r\n[chat]\r\ngroup = "untouched"\r\n')
+    expect(parseProjectToml(content)).toEqual({ ...before, brief: 'new\nline', opportunity: '' })
   })
 
-  it('returns content untouched when nothing is blank to fill', () => {
-    const raw = `name = "a"\r\nbrief = "b"\r\n`
-    const { content, filled } = fillBlankCharterInToml(raw, {
-      ...EMPTY_CHARTER,
-      name: 'other',
-      brief: 'other'
-    })
-    expect(filled).toEqual([])
-    expect(content).toBe(raw)
-  })
-
-  it('normalizes github shorthand and repo name', () => {
-    expect(normalizeCloneUrl('stablyai/orca')).toBe('https://github.com/stablyai/orca.git')
-    expect(repoNameFromRemote('https://github.com/stablyai/orca.git')).toBe('orca')
+  it('rejects stale, invalid and nameless edits before producing a write', () => {
+    const raw = 'name = "a"\n'
+    const intent = { ...EMPTY_CHARTER, name: 'b' }
+    expect(() => editProjectToml(raw, null, intent)).toThrow('已变化')
+    expect(() => editProjectToml(raw, raw, { ...intent, name: '' })).toThrow('不能为空')
+    expect(() => editProjectToml('name = [', 'name = [', intent)).toThrow()
+    expect(() => parseProjectToml('name = 3')).toThrow('不是文字')
+    const created = editProjectToml(null, null, intent)
+    expect(parseProjectToml(created.content).name).toBe('b')
   })
 })

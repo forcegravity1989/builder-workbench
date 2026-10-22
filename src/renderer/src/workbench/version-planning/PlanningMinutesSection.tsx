@@ -1,17 +1,22 @@
 import { BrainCircuit, Check, Pencil, Plus, X } from 'lucide-react'
-import { useState, type Ref } from 'react'
+import { useState, type Ref, type ReactElement } from 'react'
 import type {
   PlanMeetingMinutes,
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
-import { BoardIconButton } from '../board-ui'
+import { BoardActionButton, BoardIconButton } from '../board-ui'
+import type { SendActionWrap } from '../plan-send-menu'
 
 /**
  * Meeting minutes section: the assistant summarizes online annotations and the
  * optional transcript into two fixed blocks (共识 / 遗留 with per-point closure
  * marks), a human confirms on the card, and confirmation never rides on
  * generation or editing. Closure = the plan was revised per that point — a
- * human-only mark, per the completion iron rule.
+ * human-only mark, per the completion iron rule. With no minutes yet the area
+ * shows the same-structure skeleton card (2026-10-22 真机反馈轮): stable,
+ * predictable layout with the organize action on the card. No standalone
+ *「adjust goals」action — after minutes the assistant's Skill SOP guides goal
+ * adjustment with human confirmation (user decision 2026-10-22).
  */
 export function PlanningMinutesSection({
   plan,
@@ -23,10 +28,15 @@ export function PlanningMinutesSection({
   plan?: PlanningMaterial
   disabled: boolean
   edit(next: PlanningMaterial): void
-  onSendAction(prompt: string, label: string): void
+  onSendAction: SendActionWrap
   sectionRef: Ref<HTMLElement>
 }) {
   const minutes = plan?.minutes
+  const organizeButton = (
+    <BoardActionButton disabled={!plan}>
+      <BrainCircuit size={14} aria-hidden="true" /> 整理纪要
+    </BoardActionButton>
+  )
   return (
     <section id="minutes" ref={sectionRef} aria-label="会议纪要">
       <div className="g3-section-title">
@@ -34,36 +44,59 @@ export function PlanningMinutesSection({
           会议纪要
           <small>{minutes ? (minutes.confirmed ? '已人工确认' : '待人工确认') : '未生成'}</small>
         </h2>
-        <span className="g3-title-actions">
-          <BoardIconButton
-            label="让计划助手整理纪要（可提供会议 ID）"
-            disabled={!plan}
-            onClick={() =>
-              onSendAction(
-                '把在线批注与会议转写稿整理为会议纪要，按共识 / 遗留两块输出',
-                '整理纪要请求'
-              )
-            }
-          >
-            <BrainCircuit size={16} aria-hidden="true" />
-          </BoardIconButton>
-        </span>
+        {plan && minutes ? (
+          <span className="g3-title-actions">
+            {onSendAction(
+              '把在线批注与会议转写稿整理为会议纪要，按共识 / 遗留两块输出',
+              '整理纪要请求',
+              organizeButton
+            )}
+          </span>
+        ) : null}
       </div>
       {plan && minutes ? (
-        <MinutesCard
-          plan={plan}
-          minutes={minutes}
-          disabled={disabled}
-          edit={edit}
-          onSendAction={onSendAction}
-        />
+        <MinutesCard plan={plan} minutes={minutes} disabled={disabled} edit={edit} />
       ) : (
-        <p className="g3-empty">
-          会后由计划助手基于在线批注与可选转写稿生成；批注从页头「批注模式」进入，
-          点击目标句、验收标准或 Issue 行等板面元素记录。
-        </p>
+        <MinutesSkeleton
+          action={onSendAction(
+            '把在线批注与会议转写稿整理为会议纪要，按共识 / 遗留两块输出',
+            '整理纪要请求',
+            organizeButton
+          )}
+        />
       )}
     </section>
+  )
+}
+
+/** Empty-state skeleton: same two blocks as the generated card, dashed border. */
+function MinutesSkeleton({ action }: { action: ReactElement }) {
+  return (
+    <article className="g3-minutes skeleton" aria-label="会议纪要（未生成）">
+      <div className="g3-minutes-head">
+        <span className="g3-status">未生成</span>
+        <span className="g3-minutes-actions">{action}</span>
+      </div>
+      <div className="g3-minutes-section">
+        <strong>共识</strong>
+        <p className="g3-skeleton-line" aria-hidden="true" />
+        <p className="g3-skeleton-line short" aria-hidden="true" />
+        <span className="g3-muted">待计划助手从在线批注与可选转写稿生成</span>
+      </div>
+      <div className="g3-minutes-section">
+        <strong>
+          遗留 <small>闭环 = 版本计划已按该条修改，由人标记</small>
+        </strong>
+        <p className="g3-skeleton-line" aria-hidden="true" />
+        <span className="g3-muted">生成后逐条跟进，闭环由人标记</span>
+      </div>
+      <div className="g3-minutes-foot">
+        <span className="g3-muted">
+          批注从页头「批注模式」进入；会议 ID 可由 Builder 提供，不提供时仅凭批注也可生成。
+          纪要经人工确认后生效。
+        </span>
+      </div>
+    </article>
   )
 }
 
@@ -71,14 +104,12 @@ function MinutesCard({
   plan,
   minutes,
   disabled,
-  edit,
-  onSendAction
+  edit
 }: {
   plan: PlanningMaterial
   minutes: PlanMeetingMinutes
   disabled: boolean
   edit(next: PlanningMaterial): void
-  onSendAction(prompt: string, label: string): void
 }) {
   const [editing, setEditing] = useState(false)
   const patchMinutes = (next: PlanMeetingMinutes) => edit({ ...plan, minutes: next })
@@ -121,14 +152,6 @@ function MinutesCard({
               ) : (
                 <Pencil size={15} aria-hidden="true" />
               )}
-            </BoardIconButton>
-            <BoardIconButton
-              label="与计划助手基于纪要调整目标"
-              onClick={() =>
-                onSendAction('基于已确认的会议纪要，与我逐条调整本版目标与计划', '调整请求')
-              }
-            >
-              <BrainCircuit size={16} aria-hidden="true" />
             </BoardIconButton>
           </span>
         </div>

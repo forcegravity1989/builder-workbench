@@ -2,6 +2,7 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { test, expect } from './helpers/workbench-app'
 import type { Page } from '@playwright/test'
+import { projectSettingsTest, verifyProjectSettings } from './helpers/workbench-project-settings'
 
 /**
  * BW main-chain smoke (G2 journey): the version workspace entry must prepare the
@@ -22,6 +23,14 @@ test.use({
     ORCA_PRODUCT_NAME: 'Workbench'
   }
 })
+
+projectSettingsTest(
+  'BW project settings: reviewed edits, conflict protection and filesystem read-back',
+  async ({ workbenchPage, seededRepoPath }, testInfo) => {
+    test.setTimeout(300_000)
+    await verifyProjectSettings(workbenchPage, seededRepoPath, testInfo)
+  }
+)
 
 async function waitForFixedWorktree(page: Page, branch: string): Promise<string> {
   await expect
@@ -182,7 +191,7 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(
     workbenchPage.getByRole('button', { name: '新建验收', exact: true }).first()
   ).toBeVisible()
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.png') })
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.jpg') })
 
   // ---- 总览：真实数据，未配置保持 Unknown，无演示值 ----
   await workbenchPage.getByRole('button', { name: '项目总览', exact: true }).click()

@@ -126,6 +126,12 @@ export function useBoardAnnotations() {
       if (event.key !== 'Escape') {
         return
       }
+      // Why: Radix dismissable layers close their popover on Esc with
+      // preventDefault but no stopPropagation; without this guard one Esc
+      // would both close the send menu and tear down the annotation session.
+      if (event.defaultPrevented) {
+        return
+      }
       // Esc closes the nearest popover first, then exits the mode and panel.
       if (popover) {
         setPopover(null)

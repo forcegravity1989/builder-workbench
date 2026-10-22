@@ -5,7 +5,7 @@ import type {
   PlanningProgressSource as ProgressSource,
   VersionTaskSnapshot
 } from '../../../../shared/workbench/version-material'
-import type { CycleScope, CycleTaskSnapshot } from '../version-cycle/ports'
+import type { CycleScope, CycleTaskReference, CycleTaskSnapshot } from '../version-cycle/ports'
 import { issueKey, issueMarkFor } from '../version-acceptance/acceptance-issue-annotations'
 import { nativeVersionHistoryPort } from '../version-history-port'
 import { readPlanningProgressSource } from './planning-progress-source'
@@ -29,6 +29,15 @@ type PriorCarryoverDirective = {
 type PriorCarryovers = {
   issues: PriorCarryoverIssue[]
   directives: PriorCarryoverDirective[]
+  /**
+   * Whether the frozen acceptance recorded any Issue marks at all. False means
+   * the acceptance journey never marked carry/risk — the prior row must read as
+   * Unknown ("not recorded"), never as the green assertion "no carryover"
+   * (iron rule: no data is Unknown, not green).
+   */
+  issueMarksRecorded: boolean
+  /** References of the frozen snapshot, for the live open-state readback row. */
+  openReadbackReferences: CycleTaskReference[]
 }
 
 type ReadySnapshot = Extract<VersionTaskSnapshot, { kind: 'ready' }>
@@ -61,14 +70,20 @@ export function derivePriorCarryovers(
   plan: PlanningMaterial
 ): PriorCarryovers {
   const readyByKey = new Map<string, ReadySnapshot>()
+  const openReadbackReferences: CycleTaskReference[] = []
   for (const entry of acceptance.taskSnapshot ?? []) {
     if (entry.kind === 'ready') {
       readyByKey.set(issueKey(entry.reference), entry)
+      openReadbackReferences.push(entry.reference)
     }
   }
   const issues: PriorCarryoverIssue[] = []
   const directives: PriorCarryoverDirective[] = []
+  let issueMarksRecorded = false
   for (const result of acceptance.results) {
+    if (result.issueMarks && Object.keys(result.issueMarks).length > 0) {
+      issueMarksRecorded = true
+    }
     const related = plan.tasks.filter((task) => task.goalId === result.goalId)
     for (const reference of related) {
       if (!issueMarkFor(result, reference, related)?.carry) {
@@ -97,7 +112,7 @@ export function derivePriorCarryovers(
       }
     }
   }
-  return { issues, directives }
+  return { issues, directives, issueMarksRecorded, openReadbackReferences }
 }
 
 export type PriorReviewState =

@@ -19,9 +19,8 @@ export type VersionOverviewOptions = {
 }
 
 type ProjectPage =
-  | { kind: 'wall' }
+  | { kind: 'wall'; configureRepoId?: string }
   | { kind: 'onboard'; options: ProjectOnboardOptions }
-  | { kind: 'charter'; options: CharterEditOptions }
   | { kind: 'version-overview'; options: VersionOverviewOptions }
   | null
 
@@ -48,7 +47,7 @@ export function openProjectOnboard(options: ProjectOnboardOptions = {}): void {
 /** 名片补录/编辑入口(spec 规则 2):复用 bw/project 固定树与 PR 流。 */
 export function openCharterEdit(options: CharterEditOptions): void {
   useAppStore.getState().openActivityPage()
-  setProjectPage({ kind: 'charter', options: { ...options } })
+  setProjectPage({ kind: 'wall', configureRepoId: options.repoId })
 }
 
 /** G2（P6）：版本总览（表格周报风格，只读派生自 Git 材料与登记）。 */

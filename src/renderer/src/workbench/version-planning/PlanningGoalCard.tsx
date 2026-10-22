@@ -7,7 +7,8 @@ import type {
 import { readGoalCardExpanded, writeGoalCardExpanded } from '../cycle-view-state'
 import { annotationAttributes, type AnnotationMatch } from '../annotations/types'
 import { AnnotationMarkers } from '../annotations/annotation-markers'
-import { BoardIconButton, BoardLines } from '../board-ui'
+import { BoardIconButton, BoardLines, BoardActionButton } from '../board-ui'
+import type { SendActionWrap } from '../plan-send-menu'
 import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
 import { PlanGoalMetrics } from './PlanGoalMetrics'
 import { PlanningGoalTasks } from './PlanningGoalTasks'
@@ -70,7 +71,7 @@ export function PlanningGoalCard({
   /** Whole-card delete: the parent drops the goal, its task references and annotations. */
   onRemove(goalId: string): void
   onTask(task: CycleTaskSnapshot): Promise<void>
-  onSendAction(prompt: string, label: string): void
+  onSendAction: SendActionWrap
   metrics: ReturnType<typeof usePlanMetrics>
   expanded: boolean
   expandedSignal: number
@@ -269,17 +270,13 @@ export function PlanningGoalCard({
             <h3>
               关联 Issue <span>{relatedTasks.length}</span>
             </h3>
-            <BoardIconButton
-              label="让计划助手拆解 / 关联 Issue"
-              onClick={() =>
-                onSendAction(
-                  `按 ${goalNumber} 验收标准核对已有 Issue，给出拆解 / 关联建议，标题与标签按 issue-state 规范`,
-                  '拆解请求'
-                )
-              }
-            >
-              <BrainCircuit size={16} aria-hidden="true" />
-            </BoardIconButton>
+            {onSendAction(
+              `按 ${goalNumber} 验收标准核对已有 Issue，给出拆解 / 关联建议，标题与标签按 issue-state 规范`,
+              '拆解请求',
+              <BoardActionButton>
+                <BrainCircuit size={14} aria-hidden="true" /> 拆解 Issue
+              </BoardActionButton>
+            )}
           </div>
           <PlanningGoalTasks
             goal={goal}
