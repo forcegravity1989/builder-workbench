@@ -32,14 +32,14 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
 
 ### B. 发版本（触发 bw-release.yml）
 
-1. **必须获得用户对正式发布和标签的明确授权——触发 workflow 即正式发布**。未指定版本时以 `package.json` 版本形成 `v<version>`，先展示确认。
+1. **必须获得用户对正式发布和标签的明确授权——触发 workflow 即正式发布**。产品版本号必须由人指定（`package.json` 里是上游 Orca 基线版本，不作为 Workbench 发布版本）；先展示确认。
 2. 授权后触发（正文传绝对路径）：
 
    ```bash
    gh workflow run bw-release.yml --ref main -f version=<version> -F notes=@<release-notes.md 绝对路径>
    ```
 
-   workflow 在 GitHub runner 上出包并创建 Release：tag `v<version>` 指向主干 HEAD、标题 `Workbench <version>`、上传 `orca-windows-setup.exe` / `.exe.blockmap` / `latest.yml` 三资产；版本号含 `-rc` 时自动标记 prerelease。
+   workflow 在 GitHub runner 上出包并创建 Release：tag `v<version>` 指向主干 HEAD、标题 `Workbench <version>`、上传 `orca-windows-setup.exe` / `.exe.blockmap` / `latest.yml` 三资产；版本号含 `-rc` 时自动标记 prerelease。**包内与 `latest.yml` 的版本就是输入的 `<version>`——tag / 清单 / 包内自报三处必须一致，应用内更新链靠这一个字符串比新旧（#338）**；版本格式非法或清单账本不一致时 workflow 拒绝发布。
 3. 监控运行（约 6-10 分钟）：
 
    ```bash
@@ -51,8 +51,8 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
 
 ### C. 兜底：本地出包与外携发布（仅当 GitHub Actions 不可用）
 
-1. 本地出包：`node config/scripts/build-win-workbench.mjs`，核对三产物（`dist/orca-windows-setup.exe`、`.exe.blockmap`、`dist/latest.yml`），汇报产物路径、大小、HEAD 和未验证项。**不创建标签或 Release**。
-2. 预演：`node config/scripts/release-win-workbench.mjs --version <version>`；授权后 `--publish --version <version> --notes-file release-notes.md`（rc 版自动 `--prerelease`）。
+1. 本地出包：`node config/scripts/build-win-workbench.mjs --version <version>`（注入产品版本号，与 workflow 同口径），核对三产物（`dist/orca-windows-setup.exe`、`.exe.blockmap`、`dist/latest.yml`），汇报产物路径、大小、HEAD 和未验证项。**不创建标签或 Release**。
+2. 预演：`node config/scripts/release-win-workbench.mjs --version <version>`；授权后 `--publish --version <version> --notes-file release-notes.md`（rc 版自动 `--prerelease`）。脚本自带账本门禁：`latest.yml` 版本与发布版本不一致即阻断。
 3. 本机网络传不了大资产（公司代理限制上传体积）时，把三产物 + `release-notes.md` + 发布命令打成套件 zip，交不受限网络执行，发布后读回核对。
 
 ### D. 验收报告（版本收尾）
@@ -77,6 +77,7 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
 |---|---|
 | 出包脚本失败 | 保留首个真实错误，定位构建或依赖问题；不发布旧产物 |
 | 任一发布资产缺失 | 停止发布，重新出包并核对 `dist/` |
+| `latest.yml` 版本与发布版本不一致 | 账本门禁阻断（workflow 与本地脚本同口径）；用注入版本重新出包，不改 tag 迁就脏包，不手改清单 |
 | 标签或 Release 已存在 | 停止并报告现状，不覆盖、不删除 |
 | workflow 运行失败 | `gh run view <run-id> --log-failed` 定位首错；远端可能有半成品 Release，如实报告，不覆盖、不删除 |
 | `gh workflow run` 找不到 bw-release.yml | 该 workflow 须先合入目标分支，才能在该 ref 上触发 |

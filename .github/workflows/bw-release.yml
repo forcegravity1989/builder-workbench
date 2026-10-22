@@ -13,11 +13,14 @@ name: BW Release Windows
 #   gh workflow run bw-release.yml --ref main \
 #     -f version=0.6.0 -F notes=@release-notes.md
 #
-# Version scheme for the built artifacts mirrors bw-package.yml
-# (<packageVersion>-local.<unix-seconds>.<commit12>); the release tag is the
-# stable v<version> input. A version containing "-rc" is published with
-# --prerelease. The file name intentionally does NOT start with `bw-package`
-# — the acceptance screen's package-pipeline dropdown must not list it.
+# The artifacts are stamped with the release version input verbatim, so the
+# tag v<version>, latest.yml's version, and the installed app's self-reported
+# version all agree — the in-app updater (#338) decides "newer" by comparing
+# that one string, and a -local build id here would strand every installer of
+# this release at "already up to date" forever (v0.6.0's split ledger). A
+# version containing "-rc" is published with --prerelease. The file name
+# intentionally does NOT start with `bw-package` — the acceptance screen's
+# package-pipeline dropdown must not list it.
 
 on:
   workflow_dispatch:
@@ -81,6 +84,12 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
+          # Same shape as release-win-workbench.mjs's WORKBENCH_RELEASE_TAG_PATTERN:
+          # the package is stamped with this string, so anything else splits the ledger.
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc\.[0-9]+\.[0-9]+)?$ ]]; then
+            echo "::error::version '$VERSION' is not X.Y.Z or X.Y.Z-rc.YYYYMMDD.N"
+            exit 1
+          fi
           if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "::error::Release v$VERSION already exists — refusing to overwrite"
             exit 1
@@ -100,13 +109,13 @@ jobs:
       - name: Resolve build identity
         id: identity
         shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          base="$(node -p "require('./package.json').version")"
           commit="$(echo "$GITHUB_SHA" | cut -c1-12)"
-          version="${base}-local.$(date +%s).${commit}"
-          echo "version=$version" >>"$GITHUB_OUTPUT"
-          echo "Building $version from ${GITHUB_REF_NAME} ($commit)"
+          echo "version=$VERSION" >>"$GITHUB_OUTPUT"
+          echo "Building Workbench $VERSION from ${GITHUB_REF_NAME} ($commit)"
 
       - name: Build Workbench Windows installer
         shell: bash
@@ -117,18 +126,31 @@ jobs:
           # declared publisher that fails signature verification makes the
           # in-app updater reject the package. The flag also switches version
           # injection to ORCA_ADHOC_BUILD_VERSION — ORCA_LOCAL_BUILD_VERSION is
-          # ignored while any Windows dev channel is active.
+          # ignored while any Windows dev channel is active. The injected value
+          # is the release version verbatim, NOT a -local build id: the flag is
+          # only the unsigned-build channel; the package must self-report the
+          # version its tag promises (#338).
           ORCA_WIN_ADHOC: '1'
           ORCA_ADHOC_BUILD_VERSION: ${{ steps.identity.outputs.version }}
 
-      - name: Verify the three updater assets
+      - name: Verify the three updater assets and the version ledger
         shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           ls -la dist/
           test -f dist/orca-windows-setup.exe
           test -f dist/orca-windows-setup.exe.blockmap
           test -f dist/latest.yml
+          # Ledger gate: latest.yml's version is what the in-app updater compares
+          # against; if it differs from the release version, every installed copy
+          # of this release strands on a version no future release can exceed.
+          manifest_version="$(sed -n 's/^version:[[:space:]]*//p' dist/latest.yml | head -1 | tr -d "\"'")"
+          if [ "$manifest_version" != "$VERSION" ]; then
+            echo "::error::latest.yml version '$manifest_version' != release version '$VERSION' — refusing to publish a split ledger"
+            exit 1
+          fi
 
       - name: Publish the release
         shell: bash
