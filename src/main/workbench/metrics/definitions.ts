@@ -1,7 +1,11 @@
 import { createHash } from 'node:crypto'
 import { parse } from 'smol-toml'
 import { z } from 'zod'
-import type { MetricDefinition, MetricProblem } from '../../../shared/workbench/metrics'
+import type {
+  MetricDefinition,
+  MetricFeature,
+  MetricProblem
+} from '../../../shared/workbench/metrics'
 import { SourceCommit } from '../../../shared/workbench/version-material'
 
 const Definition = z.object({
@@ -17,12 +21,39 @@ const Definition = z.object({
     retro: z.boolean().default(false)
   })
 })
+const Feature = z.object({
+  name: z.string().trim().min(1),
+  value: z.string().trim().default('')
+})
 const File = z.object({
   schema_version: z.literal(2),
+  feature: z.array(z.unknown()).default([]),
   north_star: z.unknown().optional(),
   lagging: z.array(z.unknown()).default([]),
   leading: z.array(z.unknown()).default([])
 })
+
+/** Feature declarations order the tabs and carry the value text; they never imply a metric. */
+function decodeFeatures(entries: unknown[], problems: MetricProblem[]): MetricFeature[] {
+  const features: MetricFeature[] = []
+  for (const entry of entries) {
+    const parsed = Feature.safeParse(entry)
+    if (!parsed.success) {
+      problems.push({ code: 'invalid-feature', message: '特性声明需要非空 name，value 须为文本' })
+      continue
+    }
+    if (features.some((item) => item.name === parsed.data.name)) {
+      problems.push({
+        code: 'ambiguous-feature',
+        name: parsed.data.name,
+        message: '特性名称重复，只采用第一条'
+      })
+      continue
+    }
+    features.push(parsed.data)
+  }
+  return features
+}
 
 /** Long-term targets are intentions; changing a target cannot change measured facts. */
 export function metricDefinitionHash(definition: Omit<MetricDefinition, 'ref' | 'target'>): string {
@@ -44,19 +75,25 @@ export function decodeMetricDefinitions(
   raw: string | null,
   configurationCommit: string
 ): {
+  features: MetricFeature[]
   definitions: MetricDefinition[]
   problems: MetricProblem[]
 } {
   SourceCommit.parse(configurationCommit)
   const problems: MetricProblem[] = []
   if (raw === null) {
-    return { definitions: [], problems: [{ code: 'not-configured', message: '尚未配置指标' }] }
+    return {
+      features: [],
+      definitions: [],
+      problems: [{ code: 'not-configured', message: '尚未配置指标' }]
+    }
   }
   let file: z.infer<typeof File>
   try {
     file = File.parse(parse(raw))
   } catch (error) {
     return {
+      features: [],
       definitions: [],
       problems: [
         {
@@ -66,6 +103,7 @@ export function decodeMetricDefinitions(
       ]
     }
   }
+  const features = decodeFeatures(file.feature, problems)
   const entries: { role: MetricDefinition['role']; value: unknown }[] = [
     ...(file.north_star === undefined
       ? []
@@ -147,5 +185,5 @@ export function decodeMetricDefinitions(
       }
     })
   }
-  return { definitions, problems }
+  return { features, definitions, problems }
 }

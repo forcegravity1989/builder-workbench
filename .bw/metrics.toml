@@ -8,6 +8,23 @@ schema_version = 2
 # manual 与 retro=false 现行协议不支持(见 references/metrics.md),不写回目录。
 # 脚本 stdout 吐 {"points":[{"week":"YYYY-Www","value":…}]}(day 粒度吐 day)。
 # 窗口由 Workbench 传。失败不写 0。协议见 references/metrics.md。
+# [[feature]] 声明记分牌场景:name 对应指标的 feature,value 写该场景交付什么;顺序即页签顺序。
+
+[[feature]]
+name = "需求对齐"
+value = "版本开始时，把 Top3 承诺写成 Leader 不翻聊天记录也能评审的样子，确认后落成真实任务。"
+
+[[feature]]
+name = "任务执行"
+value = "每件事一棵独立工作树、一个会话，可以并行推进。AI 跑完能跑的部分，人只审结果。"
+
+[[feature]]
+name = "需求验收"
+value = "版本结束时，逐个目标下结论，未达的写清下一步。证据在干活时备齐，不另写周报。"
+
+[[feature]]
+name = "项目上下文"
+value = "项目身份、口径、承诺、交付事实只写一次。模型拿它干活，Leader 拿它核对。"
 
 [[lagging]]
 name = "纳入 workbench 管理的项目数"
