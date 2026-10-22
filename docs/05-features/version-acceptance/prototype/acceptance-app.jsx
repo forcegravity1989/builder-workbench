@@ -4,7 +4,6 @@ import {
   stages,
   scenes,
   PIPELINES,
-  LATEST_PACKAGE,
   CANDIDATE,
   REPORT,
   sceneVerdicts,
@@ -44,7 +43,7 @@ function Lines({ text, empty = '待明确' }) {
 // 行尾人判:达成/不达成互斥,再点取消回未标;演示进度不进材料。
 function Verdict({ value, onSet }) {
   return (
-    <span className="acc-verdict" onClick={(e) => e.stopPropagation()}>
+    <span className="acc-verdict">
       <button
         className={`acc-verdict-btn met${value === '达成' ? ' on' : ''}`}
         aria-pressed={value === '达成'}
@@ -100,7 +99,7 @@ function AcceptanceRow({
         </button>
         {goalNumbers.length > 0 && (
           <button
-            className="g3-annot-count"
+            className="acc-annot-count"
             aria-label={`${goalTarget} 的批注 ${goalNumbers.length} 条`}
             title="打开板面批注窗"
             onClick={onOpenPanel}
@@ -169,7 +168,7 @@ function AcceptanceRow({
                     </span>
                     {numbers.length > 0 && (
                       <button
-                        className="g3-annot-count"
+                        className="acc-annot-count"
                         aria-label={`${taskTarget} 的批注 ${numbers.length} 条`}
                         title="打开板面批注窗"
                         onClick={onOpenPanel}
@@ -414,6 +413,10 @@ function App() {
     setPopover(null)
     setAnnotating(false)
     setPanelOpen(false)
+    setAnnotations([])
+    if (value === 'planned') {
+      setSession(false)
+    }
     setNotice('')
   }
   // 空板唯一动作:检测计划归档 PR 合入 → 通过则拉取计划、展开四步板面;未合入报错、保持空板。
@@ -494,7 +497,8 @@ function App() {
           <p>
             <strong>批注与助手</strong>:批注模式、对象小窗与板面批注窗与计划屏同一组件族和
             交互(点击目标句或 Issue 行记录意见,Esc 先关小窗再退模式);发送走 Orca
-            原生发送弹窗递交验收助手,作为会议纪要输入。页头验收助手图标只打开/聚焦左侧持久
+            原生发送弹窗递交验收助手,作为会议纪要输入。页头不设全局助手按钮;助手入口按对象
+            就近放置(纪要区「整理纪要」、归档区「发起归档」),都只把请求递交左侧持久验收
             会话,不新建、不注入。纪要区不参与批注。
           </p>
           <p>
@@ -504,8 +508,9 @@ function App() {
             草稿,不代确认。
           </p>
           <p>
-            <strong>归档与发布</strong>:归档在会话发起,屏内只有 PR 引用+状态+打开 Orca 原生
-            PR 页入口,无归档按钮。「发布」弹预检(版本号/发布提交与验收包一致/目标状态——
+            <strong>归档与发布</strong>:归档由会话执行,屏内放 PR 引用+状态+打开 Orca 原生
+            PR 页入口+注入式「让验收助手发起归档」入口,无直接执行归档的按钮。「发布」弹预检
+            (版本号/发布提交与验收包一致/目标状态——
             不达成与未标不阻断,人知情决定)→ 发起请求 → 会话中经人明确授权执行 →
             读回行显示 tag/时间/资产;PR 未合入发布记录随同 PR 补注,已合入按归档后补证。
           </p>
@@ -609,21 +614,23 @@ function App() {
               />
             </div>
           </header>
-          <nav className="g3-journey" aria-label="验收旅程" hidden={scene === 'planned'}>
-            {stages.map(([id, title, detail], i) => (
-              <button
-                key={id}
-                onClick={() => move(id)}
-                aria-current={active === id ? 'location' : undefined}
-              >
-                <span className="g3-stage-number">{i + 1}</span>
-                <span className="g3-stage-copy">
-                  <strong>{title}</strong>
-                  <small>{detail}</small>
-                </span>
-              </button>
-            ))}
-          </nav>
+          {scene !== 'planned' && (
+            <nav className="g3-journey" aria-label="验收旅程">
+              {stages.map(([id, title, detail], i) => (
+                <button
+                  key={id}
+                  onClick={() => move(id)}
+                  aria-current={active === id ? 'location' : undefined}
+                >
+                  <span className="g3-stage-number">{i + 1}</span>
+                  <span className="g3-stage-copy">
+                    <strong>{title}</strong>
+                    <small>{detail}</small>
+                  </span>
+                </button>
+              ))}
+            </nav>
+          )}
           {annotating && (
             <div className="g3-annotate-banner" role="status">
               批注模式:点击目标句或 Issue 行,在对象旁的小窗记录意见 · Esc 先关小窗,再按一次退出
@@ -799,9 +806,10 @@ function App() {
                           <IconButton
                             name="arrow"
                             label="打开验收证据报告(Orca 内置浏览器)"
-                            onClick={() =>
+                            onClick={() => {
+                              toggleSession(true)
                               setNotice(`已在内置 Orca 浏览器打开 ${report.file} · 衔接示意`)
-                            }
+                            }}
                           />
                         </>
                       ) : (
@@ -866,17 +874,21 @@ function App() {
                         taskNumbers={annotationNumbers}
                         onOpenPanel={() => {
                           setPanelOpen(true)
+                          setNotice('')
                         }}
                         nextStep={nexts[goal.goalId] || ''}
                         onNext={(value) =>
                           setNexts((current) => ({ ...current, [goal.goalId]: value }))
                         }
                         reportReady={Boolean(report)}
-                        onOpenReport={() =>
-                          report
-                            ? setNotice(`已在内置 Orca 浏览器打开报告 ${goal.goalId} 章 · 衔接示意`)
-                            : setNotice('报告未生成;先在会话中让验收助手生成。')
-                        }
+                        onOpenReport={() => {
+                          if (report) {
+                            toggleSession(true)
+                            setNotice(`已在内置 Orca 浏览器打开报告 ${goal.goalId} 章 · 衔接示意`)
+                          } else {
+                            setNotice('报告未生成;先在会话中让验收助手生成。')
+                          }
+                        }}
                       />
                     ))}
                   </div>
@@ -974,7 +986,8 @@ function App() {
                     {released ? (
                       <span className="acc-release-status on" role="status">
                         <Icon name="check" size={14} />
-                        已发布 {releaseInfo.version} · {releaseInfo.at} · 3 资产读回一致
+                        已发布 {releaseInfo.version} · {releaseInfo.at} ·{' '}
+                        {releaseInfo.assets.split(' · ').length} 资产读回一致
                       </span>
                     ) : (
                       <>

@@ -445,7 +445,7 @@ export function MinutesCard({
     update({
       [key]: [
         ...minutes[key],
-        key === 'consensus' ? '' : { text: '', closed: withStatus ? false : undefined }
+        key === 'consensus' ? '' : { text: '', ...(withStatus ? { closed: false } : {}) }
       ]
     })
   const toggleClosed = (index) =>

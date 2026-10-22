@@ -33,16 +33,12 @@ export const LATEST_PACKAGE = {
   files: ['orca-windows-setup.exe']
 }
 export const CANDIDATE = {
-  commit: 'f5ac309b226a456b157b57ceee65204f101a4a09',
   short: 'f5ac309b'
 }
 // 验收证据报告:一份/版本、全目标合并;验收点=说明+证据罗列,演示项标操作路径。
 export const REPORT = {
   file: '.bw/planning/v0.7/acceptance-evidence.html',
-  generatedAt: '2026-10-21 16:05',
-  basedOn: 'f5ac309b',
-  points: 9,
-  live: 4
+  generatedAt: '2026-10-21 16:05'
 }
 // 各时期的人判/备注/遗留演示预置¹(生产由人在界面点,模型不代勾)。
 export const sceneVerdicts = {
@@ -81,7 +77,7 @@ export const nextSteps = {
   G3: '进展可读与旅程可见两项演示通过;任务顺手一项随转写链路(#374)带入下版,不自动承诺。'
 }
 // 纪要(与计划屏同款两块结构;验收侧遗留条目无闭环位,原样供下版计划屏「会议遗留」)。
-export const initialMinutes = {
+const initialMinutes = {
   confirmed: false,
   sources: '会议转写稿(周五验收会)· 人工编辑 3 处',
   consensus: [

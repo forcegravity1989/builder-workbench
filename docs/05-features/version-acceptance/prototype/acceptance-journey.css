@@ -122,22 +122,24 @@
   font-weight: 600;
 }
 
-/* 计划侧批注只读回显 */
-.acc-annot-panel {
-  margin: 4px 0 0 34px;
-  padding: 8px 10px;
-  border: 1px dashed var(--color-hairline, rgba(128, 128, 128, 0.35));
-  border-radius: 8px;
-  font-size: 12px;
+/* 批注计数角标(与计划屏角标同设计语言;g3-planning.css 已不含该类,验收侧自持) */
+.acc-annot-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--color-hairline, rgba(128, 128, 128, 0.35));
+  background: transparent;
   color: var(--color-text-muted, #767676);
+  cursor: pointer;
 }
-.acc-annot-panel strong {
-  display: block;
-  margin-bottom: 4px;
-  color: inherit;
-}
-.acc-annot-panel p {
-  margin: 2px 0;
+.acc-annot-count svg {
+  flex: none;
 }
 
 /* Issue 备注与遗留标记 */
