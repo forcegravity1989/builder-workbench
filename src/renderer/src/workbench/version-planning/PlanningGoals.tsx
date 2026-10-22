@@ -1,134 +1,18 @@
-import { useEffect, useState, type Ref } from 'react'
-import {
-  ChevronsDownUp,
-  ChevronsUpDown,
-  MessageSquarePlus,
-  Plus,
-  Presentation,
-  RefreshCw,
-  Trash2
-} from 'lucide-react'
+import { ChartNoAxesCombined, ChevronDown, ChevronRight, Info, Plus, RefreshCw } from 'lucide-react'
+import { useEffect, useRef, useState, type Ref } from 'react'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
-import { VersionGoalCard } from '../version-cycle/VersionGoalCard'
-import { goalCardViewKey } from '../cycle-view-state'
+import { goalCardViewKey, writeGoalCardExpanded } from '../cycle-view-state'
+import type { AnnotationMatch } from '../annotations/types'
+import { BoardIconButton } from '../board-ui'
+import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
+import {
+  materialProblemFile,
+  materialProblemRequest,
+  type CycleMaterialProblem
+} from '../version-cycle/cycle-start-request'
 import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
-import { PlanGoalMetrics } from './PlanGoalMetrics'
+import { PlanningGoalCard } from './PlanningGoalCard'
 import type { usePlanMetrics } from './use-plan-metrics'
-
-const ISSUE_GROUPS = [
-  { key: 'bug', label: 'Bug 类' },
-  { key: 'feature', label: 'Feature 类' },
-  { key: 'unclassified', label: '未分类' }
-] as const
-
-function issueClass(labels: string[] | undefined): (typeof ISSUE_GROUPS)[number]['key'] {
-  const normalized = labels?.map((label) => label.trim()).filter(Boolean) ?? []
-  if (normalized.some((label) => /^(bug|缺陷)/i.test(label))) {
-    return 'bug'
-  }
-  if (normalized.length) {
-    return 'feature'
-  }
-  return 'unclassified'
-}
-
-function issueKey(reference: PlanningMaterial['tasks'][number]) {
-  return `${reference.provider}:${reference.repository}:${reference.number}`
-}
-
-function readableTaskState(state: string): string {
-  switch (state.trim().toLowerCase()) {
-    case 'open':
-    case 'opened':
-      return '开放'
-    case 'in_progress':
-    case 'in-progress':
-      return '进行中'
-    case 'closed':
-    case 'merged':
-      return '已关闭'
-    case 'unknown':
-      return 'Unknown'
-    default:
-      return state.trim() || 'Unknown'
-  }
-}
-
-function PlanIssueGroups({
-  goal,
-  plan,
-  reads,
-  onTask,
-  onPrepare
-}: {
-  goal: VersionGoal
-  plan: PlanningMaterial
-  reads: CycleTaskRead[] | null
-  onTask(task: CycleTaskSnapshot): Promise<void>
-  onPrepare(): Promise<void>
-}) {
-  const related = plan.tasks.filter((task) => task.goalId === goal.goalId)
-  const byReference = new Map((reads ?? []).map((item) => [issueKey(item.reference), item]))
-  return (
-    <details className="vp-issue-blocks" aria-label={`${goal.title} 关联 Issue`}>
-      <summary className="vp-issue-blocks-summary">关联 Issue · {related.length}</summary>
-      <div className="vp-issue-blocks-head">
-        <span className="vp-label">关联 Issue</span>
-        <button
-          type="button"
-          className="wb-btn wb-btn-ghost wb-btn-sm"
-          title="在当前计划会话中逐条拆解关联 Issue"
-          onClick={() => void onPrepare()}
-        >
-          <MessageSquarePlus size={14} aria-hidden="true" />
-          在会话中拆解
-        </button>
-      </div>
-      {!related.length && <p className="vp-muted">该目标暂无关联 Issue；在会话中拆解并关联。</p>}
-      {ISSUE_GROUPS.map((group) => {
-        const items = related.filter((reference) => {
-          const read = byReference.get(issueKey(reference))
-          return read?.kind === 'ready'
-            ? issueClass(read.task.labels) === group.key
-            : group.key === 'unclassified'
-        })
-        if (!items.length) {
-          return null
-        }
-        return (
-          <details className="vp-issue-group" key={group.key}>
-            <summary>
-              {group.label} · {items.length}
-            </summary>
-            {items.map((reference) => {
-              const read = byReference.get(issueKey(reference))
-              return (
-                <div className="vp-issue-row" key={issueKey(reference)}>
-                  {read?.kind === 'ready' ? (
-                    <button
-                      type="button"
-                      className="vp-issue-link"
-                      onClick={() => void onTask(read.task)}
-                    >
-                      #{read.task.iid} {read.task.title}
-                    </button>
-                  ) : (
-                    <span>#{reference.number} · 状态未知</span>
-                  )}
-                  <span className="vp-muted">
-                    {read?.kind === 'ready'
-                      ? `${readableTaskState(read.task.state)}${read.task.assignee ? ` · ${read.task.assignee}` : ''}`
-                      : (read?.error ?? '未读取')}
-                  </span>
-                </div>
-              )
-            })}
-          </details>
-        )
-      })}
-    </details>
-  )
-}
 
 export function PlanningGoals({
   plan,
@@ -137,11 +21,16 @@ export function PlanningGoals({
   metrics,
   prepare,
   sectionRef,
-  onMinutes,
   scope,
   taskPort,
   onTask,
-  onPrepareIssues
+  onRemoveGoal,
+  onSendAction,
+  numbersFor,
+  onOpenAnnotationPanel,
+  entry,
+  problems,
+  version
 }: {
   plan?: PlanningMaterial
   disabled: boolean
@@ -149,18 +38,27 @@ export function PlanningGoals({
   metrics: ReturnType<typeof usePlanMetrics>
   prepare(): void
   sectionRef: Ref<HTMLElement>
-  onMinutes(): void
   scope: CycleScope | null
   taskPort: TaskPort
   onTask(task: CycleTaskSnapshot): Promise<void>
-  onPrepareIssues(goal: VersionGoal): Promise<void>
+  /** Board-level cascade: goal + its task references + its annotations leave the plan. */
+  onRemoveGoal(goalId: string): void
+  onSendAction(prompt: string, label: string): void
+  numbersFor(match: AnnotationMatch): number[]
+  onOpenAnnotationPanel(): void
+  entry: CycleEntry
+  problems: CycleMaterialProblem[]
+  version: string | null
 }) {
   const [reads, setReads] = useState<CycleTaskRead[] | null>(null)
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(false)
   const [expandedSignal, setExpandedSignal] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const [readError, setReadError] = useState<string | null>(null)
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
   const referenceKey = JSON.stringify(plan?.tasks ?? [])
+  const referenceKeyRef = useRef(referenceKey)
+  referenceKeyRef.current = referenceKey
   useEffect(() => {
     if (!scope || !plan?.tasks.length) {
       setReads(plan?.tasks.length ? null : [])
@@ -199,14 +97,24 @@ export function PlanningGoals({
     if (!scope || !plan?.tasks.length || refreshing) {
       return
     }
+    const requestedKey = referenceKey
     setRefreshing(true)
     setReadError(null)
     try {
-      setReads(await taskPort.refresh(scope, plan.tasks))
+      const items = await taskPort.refresh(scope, plan.tasks)
+      // A version switch while the provider round-trip was in flight must not
+      // let the stale read overwrite the new version's list.
+      if (requestedKey === referenceKeyRef.current) {
+        setReads(items)
+      }
     } catch (reason) {
-      setReadError(reason instanceof Error ? reason.message : String(reason))
+      if (requestedKey === referenceKeyRef.current) {
+        setReadError(reason instanceof Error ? reason.message : String(reason))
+      }
     } finally {
-      setRefreshing(false)
+      if (requestedKey === referenceKeyRef.current) {
+        setRefreshing(false)
+      }
     }
   }
 
@@ -218,150 +126,186 @@ export function PlanningGoals({
       })
     }
   }
-  const removeGoal = (goalId: string) => {
+
+  const addGoal = () => {
     if (!plan) {
       return
     }
+    const goalId = crypto.randomUUID()
     edit({
       ...plan,
-      goals: plan.goals.filter((goal) => goal.goalId !== goalId),
-      tasks: plan.tasks.map((task) =>
-        task.goalId === goalId ? { ...task, goalId: undefined } : task
-      )
+      goals: [...plan.goals, { goalId, title: '', metricTargets: [] }]
     })
+    writeGoalCardExpanded(goalCardViewKey(scope, plan.version, goalId), true)
+    setEditingGoalId(goalId)
+    requestAnimationFrame(() =>
+      document.getElementById(`goal-${goalId}`)?.scrollIntoView({ block: 'nearest' })
+    )
   }
+
+  const readsByReference = reads
+    ? new Map(
+        reads.map((item) => [
+          `${item.reference.provider}:${item.reference.repository}:${item.reference.number}`,
+          item
+        ])
+      )
+    : null
+
   return (
-    <section ref={sectionRef}>
-      <div className="vp-section-heading">
-        <h2>当前版本 Top 3 目标</h2>
-        {readError && (
-          <span className="vp-muted" role="status">
-            Issue 状态未知：{readError}
+    <section id="goals" ref={sectionRef} aria-label="本版目标">
+      <div className="g3-section-title">
+        <h2>
+          {plan ? `${plan.version} ` : ''}
+          <span>本版目标</span>
+          <small>{plan ? `${plan.goals.length} 个目标` : '未建'}</small>
+        </h2>
+        {plan && (
+          <span className="g3-title-actions">
+            {readError && (
+              <span className="g3-muted" role="status">
+                Issue 状态未知：{readError}
+              </span>
+            )}
+            <button
+              type="button"
+              className="g3-text-button"
+              title="新建会话，配置指标"
+              onClick={prepare}
+            >
+              <ChartNoAxesCombined size={13} aria-hidden="true" /> 配置指标
+            </button>
+            <BoardIconButton
+              label={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
+              disabled={disabled || !scope || !plan.tasks.length || refreshing}
+              onClick={() => void refreshIssues()}
+            >
+              <RefreshCw
+                size={15}
+                aria-hidden="true"
+                className={refreshing ? 'is-spinning' : undefined}
+              />
+            </BoardIconButton>
+            {plan.goals.length > 0 && (
+              <BoardIconButton
+                label={expanded ? '全部收起' : '全部展开'}
+                onClick={() => {
+                  setEditingGoalId(null)
+                  setExpanded(!expanded)
+                  setExpandedSignal((value) => value + 1)
+                }}
+              >
+                {expanded ? (
+                  <ChevronDown size={16} aria-hidden="true" />
+                ) : (
+                  <ChevronRight size={16} aria-hidden="true" />
+                )}
+              </BoardIconButton>
+            )}
           </span>
         )}
-        <div className="vp-section-actions" aria-label="目标操作">
-          <button
-            type="button"
-            className="wb-btn wb-btn-ghost wb-btn-sm vp-icon-btn"
-            title="全部展开"
-            aria-label="全部展开"
-            onClick={() => {
-              setExpanded(true)
-              setExpandedSignal((value) => value + 1)
-            }}
-          >
-            <ChevronsDownUp size={15} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className="wb-btn wb-btn-ghost wb-btn-sm vp-icon-btn"
-            title="全部收起"
-            aria-label="全部收起"
-            onClick={() => {
-              setExpanded(false)
-              setExpandedSignal((value) => value + 1)
-            }}
-          >
-            <ChevronsUpDown size={15} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className="wb-btn wb-btn-ghost wb-btn-sm vp-icon-btn"
-            title={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
-            aria-label={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
-            disabled={disabled || !scope || !plan?.tasks.length || refreshing}
-            onClick={() => void refreshIssues()}
-          >
-            <RefreshCw
-              size={15}
-              aria-hidden="true"
-              className={refreshing ? 'is-spinning' : undefined}
-            />
-          </button>
-          <button className="wb-btn wb-btn-sm" disabled={!plan} onClick={onMinutes}>
-            <Presentation size={14} />
-            预览纪要
-          </button>
-        </div>
       </div>
-      <fieldset disabled={disabled} className="vp-goals">
-        {(plan?.goals.length ?? 0) === 0 && (
-          <p className="vp-empty-goals vp-muted">
-            {plan
-              ? '从一条清楚的结果目标开始。'
-              : '选择已有版本，或在左侧“新建计划”中明确本版目标。'}
-          </p>
-        )}
-        {plan?.goals.map((goal, index) => {
-          const issueCount = plan.tasks.filter((task) => task.goalId === goal.goalId).length
-          const issueCountLabel = reads === null ? 'Unknown' : issueCount
-          return (
-            <VersionGoalCard
-              key={goal.goalId}
-              viewStateKey={goalCardViewKey(scope, plan.version, goal.goalId)}
-              goal={goal}
-              index={index}
-              onChange={changeGoal}
-              expanded={expanded}
-              expandedSignal={expandedSignal}
-              summary={
-                <span className="vp-goal-summary">
-                  {goal.deadline && <span>计划 {goal.deadline}</span>}
-                  <span>负责人 {goal.owner || '未指派'}</span>
-                  {issueCount > 0 && <span>Issue {issueCountLabel}</span>}
-                </span>
-              }
-              extra={
-                <PlanIssueGroups
-                  goal={goal}
-                  plan={plan}
-                  reads={reads}
-                  onTask={onTask}
-                  onPrepare={() => onPrepareIssues(goal)}
-                />
-              }
-              metrics={
-                <PlanGoalMetrics
-                  goal={goal}
-                  onChange={changeGoal}
-                  metrics={metrics}
-                  prepare={prepare}
-                />
-              }
-              actions={
-                <button
-                  type="button"
-                  className="wb-btn wb-btn-ghost wb-btn-sm vc-goal-delete vp-icon-btn"
-                  title="删除目标"
-                  aria-label={`删除目标 ${index + 1}`}
-                  onClick={() => removeGoal(goal.goalId)}
-                >
-                  <Trash2 size={14} aria-hidden="true" />
-                </button>
-              }
-            />
-          )
-        })}
-        {plan && (
-          <div className="vp-add-goal">
-            <button
-              className="wb-btn wb-btn-sm"
-              onClick={() =>
-                edit({
-                  ...plan,
-                  goals: [
-                    ...plan.goals,
-                    { goalId: crypto.randomUUID(), title: '', metricTargets: [] }
-                  ]
-                })
-              }
-            >
-              <Plus size={14} />
-              添加目标
-            </button>
+      {!plan ? (
+        <div className="g3-empty-board">
+          <p>{version ? `${version} 计划尚未建立。` : '尚未选定版本，可在页头选择已有版本。'}</p>
+          <PlanningStartButton entry={entry} problems={problems} version={version} />
+          <PlanningMaterialProblems problems={problems} />
+        </div>
+      ) : (
+        <fieldset disabled={disabled} className="g3-goal-fieldset">
+          {/* Material problems of other versions stay visible while a plan is open — the retired always-on start card used to carry them. */}
+          <PlanningMaterialProblems problems={problems} />
+          <div className="g3-goal-list">
+            {plan.goals.map((goal, index) => (
+              <PlanningGoalCard
+                key={goal.goalId}
+                goal={goal}
+                index={index}
+                relatedTasks={plan.tasks.filter((task) => task.goalId === goal.goalId)}
+                reads={readsByReference}
+                onChange={changeGoal}
+                onRemove={(goalId) => {
+                  setEditingGoalId(null)
+                  onRemoveGoal(goalId)
+                }}
+                onTask={onTask}
+                onSendAction={onSendAction}
+                metrics={metrics}
+                expanded={expanded}
+                expandedSignal={expandedSignal}
+                viewStateKey={goalCardViewKey(scope, plan.version, goal.goalId)}
+                editing={editingGoalId === goal.goalId}
+                onEditingChange={(next) => setEditingGoalId(next ? goal.goalId : null)}
+                numbersFor={numbersFor}
+                onOpenAnnotationPanel={onOpenAnnotationPanel}
+              />
+            ))}
           </div>
-        )}
-      </fieldset>
+          <div className="g3-goals-bottom">
+            <BoardIconButton label="添加目标" onClick={addGoal}>
+              <Plus size={16} aria-hidden="true" />
+            </BoardIconButton>
+            <span>与计划助手一起明确目标、拆解 Issue。</span>
+          </div>
+        </fieldset>
+      )}
     </section>
+  )
+}
+
+/**
+ * The single plan-creation launch entry (G2 seam: sessions start from the
+ * board button, versions ride in from the sidebar later). Runs the registered
+ * automation manually through the existing ensure chain; material problems ride
+ * along as one-shot context. No second version-picker lives here.
+ */
+function PlanningStartButton({
+  entry,
+  problems,
+  version
+}: {
+  entry: CycleEntry
+  problems: CycleMaterialProblem[]
+  version: string | null
+}) {
+  return (
+    <button
+      type="button"
+      disabled={entry.busy}
+      onClick={() =>
+        void entry.start(
+          [
+            version ? `本次计划版本：${version}。请读取该版本的当前材料并继续协作。` : '',
+            problems.length ? materialProblemRequest(problems, 'plan', version) : ''
+          ]
+            .filter(Boolean)
+            .join('\n') || undefined
+        )
+      }
+    >
+      {entry.busy ? '正在打开会话…' : '与计划助手新建计划'}
+    </button>
+  )
+}
+
+function PlanningMaterialProblems({ problems }: { problems: CycleMaterialProblem[] }) {
+  if (!problems.length) {
+    return null
+  }
+  return (
+    <p
+      className="vc-start-problem"
+      role="alert"
+      title={problems
+        .map((item) => `${materialProblemFile(item, 'plan')}：${item.error ?? item.state}`)
+        .join('\n')}
+    >
+      <Info size={14} aria-hidden="true" />
+      <span>
+        {[...new Set(problems.map((item) => item.version))].join('、')} 的版本材料格式
+        {problems.every((item) => item.state === 'migration-required') ? '较旧' : '有问题'}
+        ，暂无法读取；点「与计划助手新建计划」会把具体文件和迁移请求带入会话，由模型说明方案、经你确认后转换，不留旧文件副本。
+      </span>
+    </p>
   )
 }

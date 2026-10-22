@@ -1,19 +1,31 @@
-import { ChartNoAxesCombined, MessageSquarePlus, RefreshCw } from 'lucide-react'
+import { ChartNoAxesCombined, RefreshCw } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { metricRefKey } from '../../../../shared/workbench/metrics'
 import type { VersionGoal } from '../../../../shared/workbench/version-material'
 import { MetricEvidenceView } from '../metrics/MetricEvidenceView'
+import { BoardIconButton } from '../board-ui'
 import type { usePlanMetrics } from './use-plan-metrics'
 
+/**
+ * G3「指标承诺」block: catalog-selected commitments, one row each, current
+ * reading (— until collected, never an old reading as this period's value),
+ * target marked 目标草案 until a reading exists, and 采集 through the same
+ * capability the overview uses. Behavior chain unchanged from the previous
+ * PlanGoalMetrics; copy and layout follow the approved production list. The
+ * 配置指标 entry moved to the section title.
+ */
 export function PlanGoalMetrics({
   goal,
   onChange,
   metrics,
-  prepare
+  blockProps,
+  headingExtra
 }: {
   goal: VersionGoal
   onChange(goal: VersionGoal): void
   metrics: ReturnType<typeof usePlanMetrics>
-  prepare(): void
+  blockProps: Record<string, string>
+  headingExtra?: ReactNode
 }) {
   const definitions = metrics.catalog?.definitions ?? []
   const selected = new Set(goal.metricTargets.map((item) => item.ref.name))
@@ -36,7 +48,8 @@ export function PlanGoalMetrics({
   }
 
   return (
-    <div className="vp-metrics">
+    <div className="g3-metric-block" {...blockProps}>
+      <h3>指标承诺{headingExtra}</h3>
       {goal.metricTargets.map((target, index) => {
         const key = metricRefKey(target.ref)
         const definition = definitions.find((item) => metricRefKey(item.ref) === key)
@@ -46,9 +59,9 @@ export function PlanGoalMetrics({
         const reading =
           value?.status === 'ready' && value.readings.length === 1 ? value.readings[0] : null
         return (
-          <div className="vp-metric" key={key}>
-            <div className="vp-metric-row">
-              <label className="vp-metric-name">
+          <div className="g3-metric-entry" key={key}>
+            <div className="g3-metric-row">
+              <label className="g3-metric-select">
                 <ChartNoAxesCombined size={14} aria-hidden="true" />
                 <select
                   aria-label={`${goal.title || '目标'} 指标 ${index + 1}`}
@@ -71,17 +84,18 @@ export function PlanGoalMetrics({
                   ))}
                 </select>
               </label>
-              <div className="vp-metric-value">
-                <span>当前</span>
-                <strong title={reading ? reading.collectedAt : '此来源和窗口尚无可信读数'}>
-                  {reading ? `${reading.value}${reading.unit}` : 'Unknown'}
+              <span className="g3-metric-current">
+                当前{' '}
+                <strong title={reading ? reading.collectedAt : '本期尚未采集'}>
+                  {reading ? `${reading.value}${reading.unit}` : '—'}
                 </strong>
-              </div>
-              <label className="vp-metric-target">
-                <span>{reading ? '目标' : '目标草案'}</span>
+              </span>
+              <label className="g3-metric-target">
+                {reading ? '目标' : '目标草案'}
                 <input
-                  aria-label={`${target.ref.name} 本版目标`}
+                  aria-label={`${target.ref.name} 本版目标值`}
                   value={target.target}
+                  placeholder="本版目标值"
                   onChange={(event) =>
                     onChange({
                       ...goal,
@@ -94,12 +108,12 @@ export function PlanGoalMetrics({
               </label>
               <button
                 type="button"
-                className="wb-btn wb-btn-ghost wb-btn-sm vp-icon-btn"
-                title="刷新指标"
-                aria-label={`刷新指标：${target.ref.name}`}
+                className="g3-metric-collect"
+                title="读取主干基线的当前读数（与总览同一采集能力）"
+                aria-label={`采集 ${target.ref.name} 当前读数`}
                 onClick={() => void metrics.refresh(target.ref)}
               >
-                <RefreshCw size={14} aria-hidden="true" />
+                <RefreshCw size={13} aria-hidden="true" /> 采集
               </button>
             </div>
             <details className="vp-metric-evidence">
@@ -136,46 +150,35 @@ export function PlanGoalMetrics({
           </div>
         )
       })}
-      <select
-        className="vp-metric-add"
-        aria-label={`${goal.title || '目标'} 添加指标承诺（可选）`}
-        value=""
-        onChange={(event) => {
-          const definition = available.find((item) => metricRefKey(item.ref) === event.target.value)
-          if (definition) {
-            onChange({
-              ...goal,
-              metricTargets: [...goal.metricTargets, { ref: definition.ref, target: '' }]
-            })
-          }
-        }}
-      >
-        <option value="">添加指标承诺（可选）</option>
-        {available.map((item) => (
-          <option value={metricRefKey(item.ref)} key={metricRefKey(item.ref)}>
-            {item.name}
-          </option>
-        ))}
-      </select>
-      <button
-        type="button"
-        className="wb-btn wb-btn-secondary wb-btn-sm vp-icon-btn"
-        title="刷新指标目录"
-        aria-label="刷新指标目录"
-        onClick={() => void metrics.reloadCatalog()}
-      >
-        <RefreshCw size={14} aria-hidden="true" />
-      </button>
-      <button
-        type="button"
-        className="wb-btn wb-btn-secondary wb-btn-sm"
-        title="新建会话，配置指标"
-        onClick={prepare}
-      >
-        <MessageSquarePlus size={14} aria-hidden="true" />
-        配置指标
-      </button>
-      {metrics.error && <p className="vp-muted">指标未知：{metrics.error}</p>}
+      <div className="g3-metric-add-row">
+        <select
+          className="g3-metric-add"
+          aria-label={`${goal.title || '目标'} 添加指标承诺（可选）`}
+          value=""
+          onChange={(event) => {
+            const definition = available.find(
+              (item) => metricRefKey(item.ref) === event.target.value
+            )
+            if (definition) {
+              onChange({
+                ...goal,
+                metricTargets: [...goal.metricTargets, { ref: definition.ref, target: '' }]
+              })
+            }
+          }}
+        >
+          <option value="">添加指标承诺（可选）</option>
+          {available.map((item) => (
+            <option value={metricRefKey(item.ref)} key={metricRefKey(item.ref)}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+        <BoardIconButton label="刷新指标目录" onClick={() => void metrics.reloadCatalog()}>
+          <RefreshCw size={14} aria-hidden="true" />
+        </BoardIconButton>
+      </div>
+      {metrics.error && <p className="g3-muted">指标未知：{metrics.error}</p>}
     </div>
   )
 }

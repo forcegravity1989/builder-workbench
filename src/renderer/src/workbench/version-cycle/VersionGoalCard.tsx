@@ -4,15 +4,18 @@ import type { VersionGoalCardProps } from './ports'
 import { readGoalCardExpanded, writeGoalCardExpanded } from '../cycle-view-state'
 import './version-cycle.css'
 
+/**
+ * Read-only goal card skeleton for the acceptance screen (the plan screen uses
+ * the G3 PlanningGoalCard). Plan editing branches and the deliverable textarea
+ * retired with the G3 rebuild; acceptance keeps its own result/summary slots.
+ */
 export function VersionGoalCard({
   goal,
   index,
-  readOnly = false,
-  onChange,
   metrics,
   result,
   actions,
-  defaultOpen = !readOnly,
+  defaultOpen = false,
   expanded,
   expandedSignal,
   summary,
@@ -20,7 +23,6 @@ export function VersionGoalCard({
   hideReadOnlyStory = false,
   viewStateKey
 }: VersionGoalCardProps) {
-  const editable = !readOnly && Boolean(onChange)
   const [open, setOpen] = useState(() =>
     readGoalCardExpanded(viewStateKey, expanded ?? defaultOpen)
   )
@@ -61,60 +63,7 @@ export function VersionGoalCard({
           {summary}
           {actions}
         </div>
-        {open && editable ? (
-          <div className="vc-goal-story">
-            <label className="vc-goal-title">
-              <span>目标</span>
-              <textarea
-                aria-label={`目标 ${index + 1}`}
-                value={goal.title}
-                rows={1}
-                placeholder="明确本版要达成的结果"
-                onChange={(event) => onChange?.({ ...goal, title: event.target.value })}
-              />
-            </label>
-            <label className="vc-goal-detail">
-              <span>交付件</span>
-              <textarea
-                rows={1}
-                aria-label={`G${index + 1} 交付件`}
-                placeholder="交付什么"
-                value={goal.deliverable ?? ''}
-                onChange={(event) => onChange?.({ ...goal, deliverable: event.target.value })}
-              />
-            </label>
-            <label className="vc-goal-detail">
-              <span>验收标准</span>
-              <textarea
-                aria-label={`G${index + 1} 验收标准`}
-                placeholder="可选，补充如何验收交付件"
-                value={goal.acceptance ?? ''}
-                rows={1}
-                onChange={(event) => onChange?.({ ...goal, acceptance: event.target.value })}
-              />
-            </label>
-            <div className="vc-goal-meta">
-              <label>
-                <span>计划完成</span>
-                <input
-                  aria-label={`G${index + 1} 计划完成`}
-                  placeholder="可选日期或版本"
-                  value={goal.deadline ?? ''}
-                  onChange={(event) => onChange?.({ ...goal, deadline: event.target.value })}
-                />
-              </label>
-              <label>
-                <span>负责人</span>
-                <input
-                  aria-label={`G${index + 1} 负责人`}
-                  placeholder="可选"
-                  value={goal.owner ?? ''}
-                  onChange={(event) => onChange?.({ ...goal, owner: event.target.value })}
-                />
-              </label>
-            </div>
-          </div>
-        ) : open && !hideReadOnlyStory ? (
+        {open && !hideReadOnlyStory ? (
           <div className="vc-goal-story">
             {goal.deliverable?.trim() && (
               <div className="vc-story-cell">

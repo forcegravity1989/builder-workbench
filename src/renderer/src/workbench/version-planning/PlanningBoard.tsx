@@ -1,26 +1,47 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent
+} from 'react'
 import { toast } from 'sonner'
+import { MessageSquarePlus } from 'lucide-react'
 import { useAppStore } from '@/store'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
-import type { CycleTaskRead } from '../version-cycle/ports'
+import type { CycleTaskSnapshot } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { setCycleView } from '../cycle-view-state'
 import { openAcceptanceSource } from '../version-cycle/open-acceptance-source'
-import { CycleArchive } from '../version-cycle/CycleArchive'
-import { CycleStartCard } from '../version-cycle/CycleStartCard'
 import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-workspace'
+import { togglePlanChat } from '../plan-column-resize'
+import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
+import { BoardIconButton } from '../board-ui'
+import { AnnotationPanel } from '../annotations/AnnotationPanel'
+import { AnnotationPopover } from '../annotations/AnnotationPopover'
+import {
+  boardAnnotationsSendPrompt,
+  formatBoardAnnotationsAsMarkdown
+} from '../annotations/annotation-markdown'
+import { annotationRefFromElement } from '../annotations/types'
+import { useBoardAnnotations } from '../annotations/use-board-annotations'
 import { usePlanningMaterial, planningDraftKey } from './use-planning-material'
-import { derivePlanMinutes } from './plan-summary'
 import { usePlanMetrics } from './use-plan-metrics'
 import { usePlanVersionSelection } from './use-plan-version-selection'
 import { PlanningGoals } from './PlanningGoals'
-import { PlanningMinutes } from './PlanningMinutes'
+import { PlanningMinutesSection } from './PlanningMinutesSection'
+import { PlanningPriorReview } from './PlanningPriorReview'
+import { PlanningArchiveCard } from './PlanningArchiveCard'
+import { openArchivePrPage } from './open-archive-pr'
 import { PlanningPersistenceNotice } from './PlanningPersistenceNotice'
 import { PlanningHeader, PlanningJourneyNav } from './PlanningSections'
+import { useJourneySpy } from './use-journey-spy'
 import { usePlanningViewMemory } from './use-planning-view-memory'
-import { useProgressMinutes } from './use-progress-minutes'
+import { usePriorCarryovers } from './use-prior-carryovers'
+import { useObjectActionSend } from './use-object-action-send'
 import { useArchivePrStatus } from '../version-cycle/use-archive-pr-status'
 import './version-planning.css'
 
@@ -41,28 +62,52 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const material = usePlanningMaterial(materialPort, scopeKey, { canSave })
   const plan = material.draft?.document
   const prStatus = useArchivePrStatus(context, plan?.workflow?.archivePr)
-  const progressMinutes = useProgressMinutes(
-    scope,
-    worktreeId,
-    plan?.summary.progressSource,
-    context.materialRefresh ?? 0
-  )
+  const progressSource = plan?.summary.progressSource
+  const prior = usePriorCarryovers(scope, worktreeId, progressSource, context.materialRefresh)
   const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
-  const [minutesOpen, setMinutesOpen] = useState(false)
   const [openingSource, setOpeningSource] = useState(false)
+  const [openingPr, setOpeningPr] = useState(false)
   const [view, setView] = useState({ key: '', notice: '' })
   const content = useRef<HTMLDivElement>(null)
-  const preparation = useRef<HTMLElement>(null)
-  const goals = useRef<HTMLElement>(null)
-  const archiveSection = useRef<HTMLElement>(null)
+  const spy = useJourneySpy()
+  const sectionRefs = spy.sectionRefs
+  const annotations = useBoardAnnotations()
+  const sendAction = useObjectActionSend(worktreeId)
+  const chatCollapsed = usePlanChatCollapsed()
   const metricScope = useMemo(
     () => (scope && worktreeId ? { repoId: scope.repoId, hostId: scope.hostId, worktreeId } : null),
     [scope, worktreeId]
   )
   const metrics = usePlanMetrics(metricScope, scope?.runtimeOwnerEnvironmentId, plan)
-  const minutes = plan ? derivePlanMinutes(plan) : ''
   const selectionKey = JSON.stringify([scopeKey, plan?.version, plan?.cycleId])
+  const { clearAll, pruneMissing } = annotations
+  // Stable board identity for annotation lifetime: context.version is the native
+  // selection and does not flicker through re-select transients (draft null),
+  // unlike selectionKey — clearing on the latter would wipe meeting annotations
+  // on every「更新代码」or poll-driven reselect of the same version.
+  const boardIdentity = JSON.stringify([scopeKey, context.version])
+  useEffect(() => {
+    // Memory annotations point at the previous board's objects after a switch.
+    clearAll()
+  }, [boardIdentity, clearAll])
+  // Model-side edits (poll) may drop goals/task references: prune annotations
+  // whose object no longer exists on the board instead of keeping orphans.
+  const goalsKey = JSON.stringify(plan?.goals.map((goal) => goal.goalId) ?? [])
+  const tasksKey = JSON.stringify(plan?.tasks.map((task) => [task.goalId, task.number]) ?? [])
+  useEffect(() => {
+    if (!plan) {
+      return
+    }
+    const goalIds = new Set(plan.goals.map((goal) => goal.goalId))
+    const issueKeys = new Set(
+      plan.tasks.filter((task) => task.goalId).map((task) => `${task.goalId}:${task.number}`)
+    )
+    pruneMissing(
+      (goalId) => goalIds.has(goalId),
+      (goalId, number) => issueKeys.has(`${goalId}:${number}`)
+    )
+  }, [goalsKey, tasksKey, plan, pruneMissing])
   const notice = view.key === selectionKey ? view.notice : ''
   const updateView = useCallback(
     (patch: Partial<typeof view>) => {
@@ -116,7 +161,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       material.edit(next)
     }
   }
-  const openTask = async (task: Extract<CycleTaskRead, { kind: 'ready' }>['task']) => {
+  const openTask = async (task: CycleTaskSnapshot) => {
     if (!scope || !plan || !worktreeId) {
       return
     }
@@ -132,18 +177,92 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       draftKey: planningDraftKey(scopeKey, plan.version)
     })
   }
-  const prepareIssues = async (goal: NonNullable<typeof plan>['goals'][number]) => {
+  /** Whole-card delete: goal, its task references and its annotations all leave the plan. */
+  const removeGoal = (goalId: string) => {
     if (!plan) {
       return
     }
-    const references = plan.tasks.filter((task) => task.goalId === goal.goalId)
-    const referenceText = references.length
-      ? references.map((task) => `${task.provider}:${task.repository}#${task.number}`).join('、')
-      : '当前暂无关联 Issue，请先从目标结果出发确认需要拆解的任务'
-    await entry.start(
-      `请在当前版本计划会话中，围绕目标「${goal.title || goal.goalId}」逐条读取并拆解任务。当前关联 Issue：${referenceText}。根据真实 Issue 内容与项目约定，为每条任务补充 Bug 或 Feature 标签和必要的拆解信息；不要凭空改变 Issue 状态或替人确认完成。`
-    )
+    edit({
+      ...plan,
+      goals: plan.goals.filter((goal) => goal.goalId !== goalId),
+      tasks: plan.tasks.filter((task) => task.goalId !== goalId)
+    })
+    annotations.removeForGoal(goalId)
   }
+  const openAcceptance = () =>
+    void act(async () => {
+      if (openingSource) {
+        return
+      }
+      setOpeningSource(true)
+      try {
+        if (material.draft?.dirty && !(await material.flush())) {
+          throw new Error('当前计划修改尚未保存，请处理保存提示后再查看验收依据。')
+        }
+        if (currentSelection.current !== selectionKey) {
+          return
+        }
+        if (progressSource) {
+          if (!scope || !worktreeId) {
+            throw new Error('计划工作区尚未就绪。')
+          }
+          await openAcceptanceSource(scope, worktreeId, progressSource)
+        } else {
+          setCycleView('acceptance')
+          useAppStore.getState().openArtifactsPage()
+        }
+      } finally {
+        setOpeningSource(false)
+      }
+    })
+  const openPr = () =>
+    void act(async () => {
+      const archivePr = plan?.workflow?.archivePr
+      if (!scope || !archivePr || openingPr) {
+        return
+      }
+      setOpeningPr(true)
+      try {
+        await openArchivePrPage(scope, archivePr)
+      } finally {
+        setOpeningPr(false)
+      }
+    })
+  const onSessionToggle = () => {
+    // Re-anchor the active section: toggling the chat column reflows the board.
+    spy.reanchor(spy.activeSection)
+    togglePlanChat()
+  }
+  const onContentScroll = () => {
+    viewMemory.onScroll()
+    spy.onPaneScroll(content.current)
+  }
+  const onContentClickCapture = (event: ReactMouseEvent) => {
+    if (!annotations.annotating) {
+      return
+    }
+    const target = event.target as Element | null
+    // The minutes section takes no annotations and stays fully interactive —
+    // human confirmation is an iron-rule action that must work mid-meeting.
+    // Markers keep their own click (reopen the panel) instead of spawning a popover.
+    if (target?.closest('#minutes')) {
+      annotations.closePopover()
+      return
+    }
+    if (target?.closest('.g3-annot-marker')) {
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    const element = target?.closest('[data-annotate-kind]')
+    const ref = element ? annotationRefFromElement(element) : null
+    if (element && ref) {
+      annotations.openPopover(ref, element.getBoundingClientRect())
+    } else {
+      annotations.closePopover()
+    }
+  }
+  const popover = annotations.popover
   const state = !plan
     ? ''
     : material.draft?.error
@@ -153,15 +272,16 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
         : material.draft?.dirty
           ? '正在保存修改…'
           : '已保存'
-  const progressSource = plan?.summary.progressSource
   return (
-    <div className="vp-board">
+    <div className={`vp-board${annotations.annotating ? ' annotating' : ''}`}>
       <PlanningHeader
         currentVersion={plan?.version ?? ''}
         versions={material.versions}
         disabled={!materialPort || selecting || Boolean(context.syncing)}
         state={state}
         branch={cycleBranch(entry)}
+        sessionCollapsed={chatCollapsed}
+        onSessionToggle={onSessionToggle}
         onSelect={(version) => void selection.select(version)}
         onConfigure={() => void entry.configure()}
         onRefresh={() =>
@@ -171,6 +291,16 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             await prStatus.refresh()
           })
         }
+        extraActions={
+          <BoardIconButton
+            label="批注模式：点击板面元素记录评审意见"
+            aria-pressed={annotations.annotating}
+            className={annotations.annotating ? 'g3-mode-on' : ''}
+            onClick={annotations.toggleMode}
+          >
+            <MessageSquarePlus size={16} aria-hidden="true" />
+          </BoardIconButton>
+        }
       />
       {(material.error || notice || selection.error || context.error || entry.notice) && (
         <p className="vp-notice" role="status">
@@ -179,137 +309,101 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       )}
       <PlanningPersistenceNotice material={material} onAct={act} />
       <div className="vp-body" inert={selecting} aria-busy={selecting}>
-        <PlanningJourneyNav
-          stage={plan?.workflow?.stage}
-          preparationRef={preparation}
-          goalsRef={goals}
-          tasksRef={goals}
-          archiveRef={archiveSection}
-        />
-        <div className="vp-content" ref={content} onScroll={viewMemory.onScroll}>
-          <CycleStartCard
-            entry={entry}
-            problems={material.versions.filter((item) => item.state !== 'ready')}
-            version={context.version}
+        <PlanningJourneyNav active={spy.activeSection} onNavigate={spy.navigate} />
+        {annotations.annotating && (
+          <div className="g3-annotate-banner" role="status">
+            批注模式中，点击板面元素即可添加批注 · Esc 退出
+          </div>
+        )}
+        <div
+          className="vp-content"
+          ref={content}
+          onScroll={onContentScroll}
+          onClickCapture={onContentClickCapture}
+          onFocusCapture={spy.clearNavigation}
+          onWheel={spy.clearNavigation}
+          onPointerDown={spy.clearNavigation}
+          onTouchStart={spy.clearNavigation}
+          onKeyDown={spy.onKeyDown}
+        >
+          <PlanningPriorReview
+            source={progressSource}
+            state={prior.state}
+            openingSource={openingSource}
+            onOpenAcceptance={openAcceptance}
+            onOpenTask={(task) => act(() => openTask(task))}
+            onRetry={prior.retry}
+            sectionRef={sectionRefs.context}
           />
-          <section className="vp-preparation" ref={preparation}>
-            <div className="vp-brief-head">
-              <label htmlFor="planning-progress">版本进展</label>
-              <button
-                className="wb-btn wb-btn-sm"
-                title="到验收屏查看完整验收记录"
-                disabled={openingSource || selecting || Boolean(context.syncing)}
-                onClick={() =>
-                  void act(async () => {
-                    if (openingSource) {
-                      return
-                    }
-                    setOpeningSource(true)
-                    try {
-                      if (material.draft?.dirty && !(await material.flush())) {
-                        throw new Error('当前计划修改尚未保存，请处理保存提示后再查看验收依据。')
-                      }
-                      if (currentSelection.current !== selectionKey) {
-                        return
-                      }
-                      if (progressSource) {
-                        if (!scope || !worktreeId) {
-                          throw new Error('计划工作区尚未就绪。')
-                        }
-                        await openAcceptanceSource(scope, worktreeId, progressSource)
-                      } else {
-                        setCycleView('acceptance')
-                        useAppStore.getState().openArtifactsPage()
-                      }
-                    } finally {
-                      setOpeningSource(false)
-                    }
-                  })
-                }
-              >
-                查看验收依据
-              </button>
-            </div>
-            {progressSource && progressMinutes.kind !== 'error' ? (
-              progressMinutes.kind === 'ready' ? (
-                <>
-                  <p className="vp-muted">
-                    验收纪要 {progressSource.version} · 完整记录与来源在验收屏
-                  </p>
-                  <pre className="vp-progress-minutes">{progressMinutes.markdown}</pre>
-                </>
-              ) : (
-                <p className="vp-muted" role="status">
-                  正在读取验收纪要…
-                </p>
-              )
-            ) : (
-              <>
-                {progressMinutes.kind === 'error' && (
-                  <p role="alert">验收纪要读取失败：{progressMinutes.reason}</p>
-                )}
-                <textarea
-                  id="planning-progress"
-                  aria-label="版本进展"
-                  rows={2}
-                  disabled={disabled}
-                  value={plan?.summary.progress ?? ''}
-                  placeholder="验收结果与本周计划起点"
-                  onChange={(event) => {
-                    if (plan) {
-                      edit({ ...plan, summary: { ...plan.summary, progress: event.target.value } })
-                    }
-                  }}
-                />
-              </>
-            )}
-            <label htmlFor="planning-risks">风险上报</label>
-            <textarea
-              id="planning-risks"
-              aria-label="风险上报"
-              rows={2}
-              disabled={disabled}
-              value={plan?.summary.risks ?? ''}
-              placeholder="有风险时填写；仅由你填写，模型不代填"
-              onChange={(event) => {
-                if (plan) {
-                  edit({ ...plan, summary: { ...plan.summary, risks: event.target.value } })
-                }
-              }}
-            />
-          </section>
           <PlanningGoals
             plan={plan}
             disabled={disabled}
             edit={edit}
             metrics={metrics}
-            sectionRef={goals}
             prepare={() => void act(prepareMetrics)}
-            onMinutes={() => setMinutesOpen(true)}
+            sectionRef={sectionRefs.goals}
             scope={scope}
             taskPort={taskPort}
             onTask={(task) => act(() => openTask(task))}
-            onPrepareIssues={(goal) => act(() => prepareIssues(goal))}
+            onRemoveGoal={removeGoal}
+            onSendAction={sendAction}
+            numbersFor={annotations.numbersFor}
+            onOpenAnnotationPanel={annotations.openPanel}
+            entry={entry}
+            problems={material.versions.filter((item) => item.state !== 'ready')}
+            version={context.version}
           />
-          <CycleArchive
+          <PlanningMinutesSection
+            plan={plan}
+            disabled={disabled}
+            edit={edit}
+            onSendAction={sendAction}
+            sectionRef={sectionRefs.minutes}
+          />
+          <PlanningArchiveCard
             archivePr={plan?.workflow?.archivePr}
             reachedArchive={plan?.workflow?.stage === 'archive'}
             status={prStatus.status}
             loading={prStatus.loading}
-            sectionRef={archiveSection}
+            opening={openingPr}
+            onOpenPr={openPr}
+            sectionRef={sectionRefs.archive}
           />
         </div>
+        {annotations.panelOpen && (
+          <AnnotationPanel
+            annotations={annotations.numbered}
+            annotating={annotations.annotating}
+            onClose={annotations.closePanel}
+            onUpdate={annotations.update}
+            onRemove={annotations.remove}
+            onBoardLevel={(rect) =>
+              annotations.openPopover({ kind: 'board', label: '板面级' }, rect)
+            }
+            onCopy={() =>
+              void act(async () => {
+                await navigator.clipboard.writeText(
+                  formatBoardAnnotationsAsMarkdown(annotations.annotations)
+                )
+                updateView({ notice: '已复制板面批注。' })
+              })
+            }
+            onSend={() => {
+              annotations.closePopover()
+              sendAction(boardAnnotationsSendPrompt(annotations.annotations), '板面批注')
+            }}
+          />
+        )}
       </div>
-      {minutesOpen && (
-        <PlanningMinutes
-          minutes={minutes}
-          onClose={() => setMinutesOpen(false)}
-          onCopy={() =>
-            act(async () => {
-              await navigator.clipboard.writeText(minutes)
-              updateView({ notice: '已复制当前目标派生的纪要。' })
-            })
-          }
+      {popover && (
+        <AnnotationPopover
+          key={popover.id}
+          target={popover}
+          onSave={(text) => {
+            annotations.add(popover.ref, text)
+            annotations.closePopover()
+          }}
+          onCancel={annotations.closePopover}
         />
       )}
     </div>

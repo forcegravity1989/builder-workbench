@@ -90,12 +90,26 @@ export function parseReleaseArgs(argv) {
   return args
 }
 
-export function resolveReleaseVersion({ explicitVersion, packageVersion }) {
-  const version = (explicitVersion ?? packageVersion ?? '').trim()
+export function resolveReleaseVersion({ explicitVersion }) {
+  const version = (explicitVersion ?? '').trim()
   if (!version) {
-    throw new Error('No version: pass --version or set package.json version')
+    throw new Error(
+      'No version: pass --version <X.Y.Z | X.Y.Z-rc.YYYYMMDD.N>. package.json 保留的是上游 Orca 基线版本，永远不作为 Workbench 发布版本。'
+    )
   }
   return version
+}
+
+// 更新器账本要求 tag、latest.yml、包内自报版本三处一致（issue #338：v0.6.0 的
+// latest.yml 是 -local 构建号，装它的用户会被永远判「已是最新」）。
+// latest.yml 由 electron-builder 生成，格式固定，只读 version 字段，不做完整 YAML 解析。
+export function readManifestVersion(distDir) {
+  const manifestPath = join(distDir, 'latest.yml')
+  if (!existsSync(manifestPath)) {
+    return null
+  }
+  const match = /^version:\s*(.+)$/m.exec(readFileSync(manifestPath, 'utf8'))
+  return match ? match[1].trim().replace(/^['"]|['"]$/g, '') : null
 }
 
 export function deriveReleaseTag(version) {
@@ -227,11 +241,7 @@ export async function runWorkbenchRelease({
   cwd = resolve('.')
 }) {
   const args = parseReleaseArgs(argv)
-  const pkg = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8'))
-  const version = resolveReleaseVersion({
-    explicitVersion: args.version,
-    packageVersion: pkg.version
-  })
+  const version = resolveReleaseVersion({ explicitVersion: args.version })
   const tag = deriveReleaseTag(version)
   const title = `Workbench ${version}`
   const distDir = resolve(cwd, args.distDir)
@@ -239,11 +249,14 @@ export async function runWorkbenchRelease({
 
   assertPublishAuthorized({ publish: args.publish, notesFile })
 
-  // 需要出包时复用唯一出包入口，不在此重造构建步骤。
+  // 需要出包时复用唯一出包入口，不在此重造构建步骤；产品版本号随包注入，保证账本三处一致。
   if (args.build) {
     log(`Building Workbench installer via build-win-workbench.mjs …`)
     // process.execPath 而非字面 'node'：本机 node 不保证在 PATH（与 build-win-workbench 同口径）。
-    exec(process.execPath, ['config/scripts/build-win-workbench.mjs'], { cwd, stdio: 'inherit' })
+    exec(process.execPath, ['config/scripts/build-win-workbench.mjs', '--version', version], {
+      cwd,
+      stdio: 'inherit'
+    })
   }
 
   const { assets, missing } = selectReleaseAssets(distDir)
@@ -267,6 +280,16 @@ export async function runWorkbenchRelease({
   const blockers = []
   if (missing.length > 0) {
     blockers.push(`缺资产：${missing.join(', ')}（先出包或 --build）`)
+  }
+  if (!missing.includes('latest.yml')) {
+    // 账本门禁：清单版本必须等于发布版本，否则装机用户自报版本与 tag 脱节，
+    // 更新链从此判不动新旧（issue #338）。
+    const manifestVersion = readManifestVersion(distDir)
+    if (manifestVersion !== version) {
+      blockers.push(
+        `账本不一致：latest.yml 版本为 ${manifestVersion ?? '无法解析'}，应为 ${version}（tag/清单/包内版本三处必须一致；用 --build 重新出包并注入版本）`
+      )
+    }
   }
   if (remoteBranches.length === 0) {
     blockers.push(`HEAD ${head.slice(0, 12)} 不在任何远端分支上（先 push）`)
