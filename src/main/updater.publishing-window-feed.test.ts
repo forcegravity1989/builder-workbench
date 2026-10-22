@@ -7,6 +7,7 @@ const {
   fetchNudgeMock,
   shouldApplyNudgeMock,
   fetchNewerReleaseTagsMock,
+  resolveVerifiedLatestStableReleaseMock,
   moduleFactories,
   resetUpdaterMocks
 } = await vi.hoisted(async () => (await import('./updater-test-harness')).createUpdaterMocks())
@@ -106,6 +107,122 @@ describe('updater', () => {
       provider: 'generic',
       url: 'https://github.com/stablyai/orca/releases/latest/download'
     })
+  })
+
+  // Why: the repo's latest release can carry a manifest published from a dirty tree
+  // (the v0.6.0 phantom update). Its version is semver-greater than any product 0.x,
+  // so only the ledger check can reject it — a version comparison cannot.
+  it('settles a user check as not-available when the verified latest release has a ledger mismatch', async () => {
+    appMock.getVersion.mockReturnValue('0.7.0')
+    fetchNewerReleaseTagsMock.mockResolvedValue([])
+    resolveVerifiedLatestStableReleaseMock.mockResolvedValue({
+      state: 'not-available',
+      reason: 'ledger-mismatch',
+      tag: 'v0.6.0',
+      manifestVersion: '1.4.197-local.1792147652.ece1d72698d6'
+    })
+    const sendMock = vi.fn()
+    const mainWindow = { webContents: { send: sendMock } }
+
+    const { setupAutoUpdater, checkForUpdatesFromMenu } = await loadUpdaterModule()
+
+    setupAutoUpdater(mainWindow as never, { getLastUpdateCheckAt: () => Date.now() })
+    const feedCallsBeforeCheck = autoUpdaterMock.setFeedURL.mock.calls.length
+    checkForUpdatesFromMenu()
+
+    await vi.waitFor(() => {
+      const statuses = sendMock.mock.calls
+        .filter(([channel]) => channel === 'updater:status')
+        .map(([, status]) => status)
+      expect(statuses).toContainEqual({ state: 'not-available', userInitiated: true })
+    })
+    expect(resolveVerifiedLatestStableReleaseMock).toHaveBeenCalledWith('0.7.0')
+    expect(autoUpdaterMock.checkForUpdates).not.toHaveBeenCalled()
+    // Why: pinning the blind redirect would hand electron-updater the dirty manifest again.
+    expect(autoUpdaterMock.setFeedURL.mock.calls.slice(feedCallsBeforeCheck)).not.toContainEqual([
+      {
+        provider: 'generic',
+        url: 'https://github.com/stablyai/orca/releases/latest/download'
+      }
+    ])
+  })
+
+  it('pins the fallback feed at the ledger-verified latest release and links its release page', async () => {
+    appMock.getVersion.mockReturnValue('1.4.0')
+    fetchNewerReleaseTagsMock.mockResolvedValue([])
+    resolveVerifiedLatestStableReleaseMock.mockResolvedValue({
+      state: 'ready',
+      tag: 'v1.4.2',
+      feedUrl: 'https://github.com/stablyai/orca/releases/download/v1.4.2',
+      releaseUrl: 'https://github.com/stablyai/orca/releases/tag/v1.4.2'
+    })
+    autoUpdaterMock.checkForUpdates.mockImplementation(() => {
+      autoUpdaterMock.emit('checking-for-update')
+      queueMicrotask(() => {
+        autoUpdaterMock.emit('update-available', { version: '1.4.2' })
+      })
+      return Promise.resolve(undefined)
+    })
+    const sendMock = vi.fn()
+    const mainWindow = { webContents: { send: sendMock } }
+
+    const { setupAutoUpdater, checkForUpdatesFromMenu } = await loadUpdaterModule()
+
+    setupAutoUpdater(mainWindow as never, { getLastUpdateCheckAt: () => Date.now() })
+    checkForUpdatesFromMenu()
+
+    await vi.waitFor(() => {
+      expect(sendMock).toHaveBeenCalledWith('updater:status', {
+        state: 'available',
+        version: '1.4.2',
+        releaseUrl: 'https://github.com/stablyai/orca/releases/tag/v1.4.2',
+        changelog: null
+      })
+    })
+    expect(autoUpdaterMock.setFeedURL).toHaveBeenLastCalledWith({
+      provider: 'generic',
+      url: 'https://github.com/stablyai/orca/releases/download/v1.4.2'
+    })
+  })
+
+  // Why: a background check must never surface the phantom offer, and the
+  // ledger-mismatch settle still has to keep the 24h cadence alive.
+  it('silently settles a background check whose verified latest release has a ledger mismatch', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-22T12:00:00Z'))
+    appMock.getVersion.mockReturnValue('0.7.0')
+    fetchNewerReleaseTagsMock.mockResolvedValue([])
+    resolveVerifiedLatestStableReleaseMock.mockResolvedValue({
+      state: 'not-available',
+      reason: 'ledger-mismatch',
+      tag: 'v0.6.0',
+      manifestVersion: '1.4.197-local.1792147652.ece1d72698d6'
+    })
+    const setLastUpdateCheckAt = vi.fn()
+    const sendMock = vi.fn()
+    const mainWindow = { webContents: { send: sendMock } }
+
+    const { setupAutoUpdater } = await loadUpdaterModule()
+    setupAutoUpdater(mainWindow as never, {
+      getLastUpdateCheckAt: () => null,
+      setLastUpdateCheckAt
+    })
+
+    await vi.waitFor(() => {
+      expect(resolveVerifiedLatestStableReleaseMock).toHaveBeenCalledTimes(1)
+    })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(autoUpdaterMock.checkForUpdates).not.toHaveBeenCalled()
+    expect(setLastUpdateCheckAt).toHaveBeenCalled()
+    expect(sendMock).not.toHaveBeenCalledWith(
+      'updater:status',
+      expect.objectContaining({ state: 'not-available' })
+    )
+
+    await vi.advanceTimersByTimeAsync(24 * 60 * 60 * 1000)
+    expect(resolveVerifiedLatestStableReleaseMock).toHaveBeenCalledTimes(2)
+    expect(autoUpdaterMock.checkForUpdates).not.toHaveBeenCalled()
   })
 
   it('keeps unavailable release probes on generic copy without launching a moving feed', async () => {
@@ -248,6 +365,7 @@ describe('updater', () => {
       expect(sendMock).toHaveBeenCalledWith('updater:status', {
         state: 'available',
         version: '1.4.26',
+        releaseUrl: 'https://github.com/stablyai/orca/releases/tag/v1.4.26',
         changelog: null
       })
     })
@@ -479,6 +597,7 @@ describe('updater', () => {
       expect(sendMock).toHaveBeenCalledWith('updater:status', {
         state: 'available',
         version: '1.4.27',
+        releaseUrl: 'https://github.com/stablyai/orca/releases/tag/v1.4.27',
         changelog: null,
         activeNudgeId: 'campaign-1'
       })
@@ -597,6 +716,7 @@ describe('updater', () => {
       expect(sendMock).toHaveBeenCalledWith('updater:status', {
         state: 'available',
         version: '1.4.26',
+        releaseUrl: 'https://github.com/stablyai/orca/releases/tag/v1.4.26',
         changelog: null
       })
     })
@@ -626,6 +746,7 @@ describe('updater', () => {
     expect(sendMock).toHaveBeenCalledWith('updater:status', {
       state: 'available',
       version: '1.4.27',
+      releaseUrl: 'https://github.com/stablyai/orca/releases/tag/v1.4.27',
       changelog: null,
       activeNudgeId: 'campaign-1'
     })

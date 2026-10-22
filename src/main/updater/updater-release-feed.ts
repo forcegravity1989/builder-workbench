@@ -1,8 +1,9 @@
 import { app } from 'electron'
 import {
   fetchNewerReleaseTagsWithReadiness,
-  getReleaseDownloadUrl
+  resolveVerifiedLatestStableRelease
 } from '../updater-prerelease-feed'
+import { getReleaseDownloadUrl, getReleaseTagPageUrl } from '../updater-release-manifest'
 import { isMissingUpdateManifestFailure, isPrereleaseVersion } from '../updater-fallback'
 import { MAIN_RELEASE_REPO } from '../../shared/release-channel'
 import type { CheckFailureSource } from './updater-state'
@@ -153,6 +154,7 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
       console.info(
         `[updater] release feed pinned: current=${currentVersion} includePrerelease=${includePrerelease} → ${url}`
       )
+      this.pinnedReleaseNotesUrl = getReleaseTagPageUrl(newerTag)
       autoUpdater.setFeedURL({ provider: 'generic', url })
       return 'ready'
     }
@@ -165,6 +167,7 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
           `[updater] release feed pinned to last-good: current=${currentVersion} includePrerelease=${includePrerelease} → ${url}`
         )
         this.publishingWindowLastGoodCheck = { lastGoodTag: releaseTagsResult.lastGoodTag }
+        this.pinnedReleaseNotesUrl = getReleaseTagPageUrl(releaseTagsResult.lastGoodTag)
         autoUpdater.setFeedURL({ provider: 'generic', url })
         return 'ready'
       }
@@ -204,10 +207,33 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
     }
     this.clearPrereleaseFallbackContext()
     this.clearPublishingWindowLastGoodCheck()
+    // Why verify before pinning the redirect: latest/download serves whatever
+    // release GitHub marks latest, manifest unexamined. A release whose
+    // manifest version contradicts its tag (v0.6.0 shipped latest.yml claiming
+    // 1.4.197-local.*) becomes a phantom offer that semver-outranks every real
+    // product version and derives release notes to a 404.
+    const verifiedLatest = await resolveVerifiedLatestStableRelease(currentVersion)
+    if (verifiedLatest?.state === 'not-available') {
+      console.info(
+        `[updater] latest release ${verifiedLatest.tag} not offerable (${verifiedLatest.reason}, manifest=${verifiedLatest.manifestVersion}); current=${currentVersion}`
+      )
+      return 'not-available'
+    }
+    if (verifiedLatest) {
+      console.info(
+        `[updater] release feed pinned to verified latest: current=${currentVersion} includePrerelease=${includePrerelease} → ${verifiedLatest.feedUrl}`
+      )
+      this.pinnedReleaseNotesUrl = verifiedLatest.releaseUrl
+      autoUpdater.setFeedURL({ provider: 'generic', url: verifiedLatest.feedUrl })
+      return 'ready'
+    }
+    // Fail-open only when the release or its manifest could not be fetched at
+    // all: a degraded GitHub API must not end update checks entirely.
     const url = `https://github.com/${MAIN_RELEASE_REPO}/releases/latest/download`
     console.info(
       `[updater] release feed fallback: current=${currentVersion} includePrerelease=${includePrerelease} → ${url}`
     )
+    this.pinnedReleaseNotesUrl = null
     autoUpdater.setFeedURL({ provider: 'generic', url })
     return 'ready'
   }
@@ -244,6 +270,7 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
       `[updater] prerelease manifest missing for ${primaryTag}; retrying once against ${url}`
     )
     const autoUpdater = this.getAutoUpdater()
+    this.pinnedReleaseNotesUrl = getReleaseTagPageUrl(fallbackTag)
     autoUpdater.setFeedURL({ provider: 'generic', url })
     this.userInitiatedCheck = Boolean(userInitiated)
     this.backgroundCheckLaunchPending = !userInitiated

@@ -22,8 +22,11 @@ function buildAtomFeed(tags: string[]): string {
   return `<?xml version="1.0" encoding="UTF-8"?><feed>${entries}</feed>`
 }
 
-function buildManifest(tag: string): string {
-  const version = tag.replace(/^v/i, '')
+// Why: a release published from a dirty working tree ships a manifest whose
+// version is the local build number, not the tag (the v0.6.0 phantom-update bug).
+const DIRTY_MANIFEST_VERSION = '1.4.197-local.1792147652.ece1d72698d6'
+
+function buildManifest(tag: string, version = tag.replace(/^v/i, '')): string {
   return [
     `version: ${version}`,
     'files:',
@@ -37,11 +40,13 @@ function respondWithAtom(
   tags: string[],
   missingManifestTags: string[] = [],
   missingAssetTags: string[] = [],
-  unavailableManifestTags: string[] = []
+  unavailableManifestTags: string[] = [],
+  mismatchedManifestTags: string[] = []
 ): void {
   const missingManifests = new Set(missingManifestTags)
   const missingAssets = new Set(missingAssetTags)
   const unavailableManifests = new Set(unavailableManifestTags)
+  const mismatchedManifests = new Set(mismatchedManifestTags)
   netFetchMock.mockImplementation((url: string, init?: { method?: string }) => {
     if (url === 'https://github.com/stablyai/orca/releases.atom') {
       return Promise.resolve({
@@ -63,7 +68,12 @@ function respondWithAtom(
       return Promise.resolve({
         ok: !missingManifests.has(tag),
         status: missingManifests.has(tag) ? 404 : 200,
-        text: () => Promise.resolve(buildManifest(tag))
+        text: () =>
+          Promise.resolve(
+            mismatchedManifests.has(tag)
+              ? buildManifest(tag, DIRTY_MANIFEST_VERSION)
+              : buildManifest(tag)
+          )
       })
     }
 
@@ -85,6 +95,45 @@ function respondWithAtom(
 
 function setPlatformForTest(platform: NodeJS.Platform): void {
   Object.defineProperty(process, 'platform', { value: platform })
+}
+
+/** Serves the GitHub latest-release API plus the tag's manifest for `resolveVerifiedLatestStableRelease`.
+ *  `tag: null` fails the API call; `manifestVersion: null` fails the manifest fetch. */
+function respondWithLatestRelease(
+  tag: string | null,
+  options: { htmlUrl?: string; manifestVersion?: string | null } = {}
+): void {
+  netFetchMock.mockImplementation((url: string) => {
+    if (url === 'https://api.github.com/repos/stablyai/orca/releases/latest') {
+      if (tag === null) {
+        return Promise.resolve({ ok: false, status: 403, text: () => Promise.resolve('') })
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            tag_name: tag,
+            html_url:
+              options.htmlUrl ?? `https://github.com/stablyai/orca/releases/tag/${tag}`
+          }),
+        text: () => Promise.resolve('')
+      })
+    }
+    const manifestMatch = url.match(/\/releases\/download\/([^/]+)\/latest(?:-[a-z]+)?\.yml$/)
+    if (manifestMatch && options.manifestVersion !== null) {
+      return Promise.resolve({
+        ok: true,
+        text: () =>
+          Promise.resolve(
+            buildManifest(
+              decodeURIComponent(manifestMatch[1]),
+              options.manifestVersion ?? undefined
+            )
+          )
+      })
+    }
+    return Promise.resolve({ ok: false, status: 404, text: () => Promise.resolve('') })
+  })
 }
 
 describe('fetchNewerReleaseTag', () => {
@@ -332,6 +381,32 @@ describe('fetchNewerReleaseTag', () => {
     })
   })
 
+  // Why: a release cut from a dirty tree ships a manifest whose version is a local
+  // build number; offering it produces a phantom update whose release notes 404.
+  it('skips a ledger-mismatched tag and offers the next clean tag as primary', async () => {
+    respondWithAtom(['v1.4.2', 'v1.4.1'], [], [], [], ['v1.4.2'])
+
+    const { fetchNewerReleaseTagsWithReadiness } = await import('./updater-prerelease-feed')
+
+    await expect(fetchNewerReleaseTagsWithReadiness('1.4.0', 2)).resolves.toEqual({
+      tags: ['v1.4.1'],
+      state: 'ready'
+    })
+  })
+
+  // Why: a dirty ledger never settles on its own, so it must not hold the scan in a
+  // not-ready retry loop or block a clean older tag from being offered later.
+  it('reports no-newer when every probed manifest disagrees with its tag', async () => {
+    respondWithAtom(['v1.4.2'], [], [], [], ['v1.4.2'])
+
+    const { fetchNewerReleaseTagsWithReadiness } = await import('./updater-prerelease-feed')
+
+    await expect(fetchNewerReleaseTagsWithReadiness('1.4.0', 1)).resolves.toEqual({
+      tags: [],
+      state: 'no-newer'
+    })
+  })
+
   it('returns null when the only newer tag has a manifest but its asset still 404s', async () => {
     respondWithAtom(['v1.4.27'], [], ['v1.4.27'])
 
@@ -394,5 +469,63 @@ describe('fetchNewerReleaseTag', () => {
 
     await expect(result).resolves.toEqual([])
     expect(netFetchMock).toHaveBeenCalledTimes(7)
+  })
+})
+
+describe('resolveVerifiedLatestStableRelease', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    netFetchMock.mockReset()
+    netRequestMock.mockReset()
+    installNetRequestFetchAdapter(netRequestMock, netFetchMock)
+  })
+
+  it('resolves a ledger-consistent latest release to a pinnable feed and release page', async () => {
+    respondWithLatestRelease('v1.4.2')
+    const { resolveVerifiedLatestStableRelease } = await import('./updater-prerelease-feed')
+
+    await expect(resolveVerifiedLatestStableRelease('1.4.0')).resolves.toEqual({
+      state: 'ready',
+      tag: 'v1.4.2',
+      feedUrl: 'https://github.com/stablyai/orca/releases/download/v1.4.2',
+      releaseUrl: 'https://github.com/stablyai/orca/releases/tag/v1.4.2'
+    })
+  })
+
+  // Why: this is the phantom-update bug — v0.6.0's manifest claimed a dirty local
+  // build number, and the blind fallback fed that version to electron-updater.
+  it('rejects a latest release whose manifest version does not match its tag', async () => {
+    respondWithLatestRelease('v0.6.0', { manifestVersion: DIRTY_MANIFEST_VERSION })
+    const { resolveVerifiedLatestStableRelease } = await import('./updater-prerelease-feed')
+
+    await expect(resolveVerifiedLatestStableRelease('0.7.0')).resolves.toEqual({
+      state: 'not-available',
+      reason: 'ledger-mismatch',
+      tag: 'v0.6.0',
+      manifestVersion: DIRTY_MANIFEST_VERSION
+    })
+  })
+
+  it('reports not-newer when the verified latest release is at or below the current version', async () => {
+    respondWithLatestRelease('v1.4.0')
+    const { resolveVerifiedLatestStableRelease } = await import('./updater-prerelease-feed')
+
+    await expect(resolveVerifiedLatestStableRelease('1.4.0')).resolves.toEqual({
+      state: 'not-available',
+      reason: 'not-newer',
+      tag: 'v1.4.0',
+      manifestVersion: '1.4.0'
+    })
+  })
+
+  // Why: fail-open keeps the historical blind fallback alive while GitHub is
+  // unreachable, so a network blip degrades to the old behavior instead of blocking updates.
+  it('returns null when the API or the manifest cannot be read', async () => {
+    respondWithLatestRelease(null)
+    const { resolveVerifiedLatestStableRelease } = await import('./updater-prerelease-feed')
+    await expect(resolveVerifiedLatestStableRelease('1.4.0')).resolves.toBeNull()
+
+    respondWithLatestRelease('v1.4.2', { manifestVersion: null })
+    await expect(resolveVerifiedLatestStableRelease('1.4.0')).resolves.toBeNull()
   })
 })

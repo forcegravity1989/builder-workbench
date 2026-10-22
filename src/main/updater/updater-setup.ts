@@ -179,6 +179,7 @@ export class UpdaterSetup extends UpdaterDownloadInstall {
       getCurrentStatus: () => this.currentStatus,
       getActiveUpdateCheckEventAttemptId: () => this.getActiveUpdateCheckEventAttemptId(),
       getKnownReleaseUrl: () => this.getKnownReleaseUrl(),
+      getPinnedReleaseNotesUrl: () => this.pinnedReleaseNotesUrl,
       getPendingInstallVersion: () => this.getPendingInstallVersion(),
       getUserInitiatedCheck: () => this.userInitiatedCheck,
       handleQuitAndInstallFailure: (error) => this.handleQuitAndInstallFailure(error),

@@ -75,7 +75,20 @@ export abstract class UpdaterScheduling extends UpdaterCheckFailure {
       this.markUpdateCheckLaunched(attemptId)
       return autoUpdater.checkForUpdates()
     }
-    const run = this.pinDefaultReleaseFeed().then(launch)
+    const run = this.pinDefaultReleaseFeed().then((preflightResult) => {
+      // Why: 'not-available' means preflight verified nothing offerable exists
+      // (e.g. the latest release's ledger is dirty). Launching anyway would
+      // check the stale feed pinned at setup — the unverified latest/download
+      // redirect — and resurrect the phantom offer preflight just rejected.
+      if (preflightResult === 'not-available') {
+        if (!this.isActiveUpdateCheckAttempt(attemptId)) {
+          return false
+        }
+        this.settleSilentUpdateCheck(attemptId, this.getSettledCheckUserInitiated())
+        return false
+      }
+      return launch()
+    })
     void Promise.resolve(run)
       .then(() => this.handleSettledUpdateCheckPromise(attemptId))
       .catch((err) => {

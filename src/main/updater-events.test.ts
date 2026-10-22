@@ -75,6 +75,7 @@ function createContext(overrides?: Partial<HandlerContext>): HandlerContext {
     ),
     getActiveUpdateCheckEventAttemptId: vi.fn(() => 1),
     getKnownReleaseUrl: vi.fn(() => undefined),
+    getPinnedReleaseNotesUrl: vi.fn(() => null),
     getPendingInstallVersion: vi.fn(() => '1.0.61'),
     getUserInitiatedCheck: vi.fn(() => false),
     handleQuitAndInstallFailure: vi.fn(() => false),

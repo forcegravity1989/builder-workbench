@@ -47,6 +47,13 @@ export abstract class UpdaterState {
   protected includePrereleaseActive = false
   protected availableVersion: string | null = null
   protected availableReleaseUrl: string | null = null
+  // Why pin-scoped instead of reusing availableReleaseUrl: 'checking-for-update'
+  // clears the offer-scoped fields on every check start, but the pinned feed's
+  // release page must survive until the offer lands so the card's release-notes
+  // link points at the tag the feed was verified against, not at whatever
+  // version string the manifest claims. Null when the feed is the unverified
+  // latest/download redirect or a local build.
+  protected pinnedReleaseNotesUrl: string | null = null
   protected pendingCheckFailureKey: string | null = null
   protected pendingCheckFailurePromise: Promise<void> | null = null
   protected autoUpdateCheckTimer: ReturnType<typeof setTimeout> | null = null

@@ -59,7 +59,7 @@ type UpdaterModuleFactories = {
   }
   updaterPrereleaseFeed: () => {
     fetchNewerReleaseTagsWithReadiness: (...args: unknown[]) => Promise<unknown>
-    getReleaseDownloadUrl: (tag: string) => string
+    resolveVerifiedLatestStableRelease: (...args: unknown[]) => unknown
   }
   localBuildSwitch: () => { chooseLocalBuild: UpdaterSpy }
   localBuildFeedServer: () => { startLocalBuildFeed: UpdaterSpy }
@@ -83,6 +83,7 @@ export type UpdaterMocks = {
   armExitWatchdogMock: UpdaterSpy
   disarmExitWatchdogMock: UpdaterSpy
   fetchNewerReleaseTagsMock: UpdaterSpy
+  resolveVerifiedLatestStableReleaseMock: UpdaterSpy
   chooseLocalBuildMock: UpdaterSpy
   startLocalBuildFeedMock: UpdaterSpy
   closeLocalBuildFeedMock: UpdaterSpy
@@ -204,9 +205,7 @@ export function createUpdaterMocks(): UpdaterMocks {
     emit: appEmit,
     quit: vi.fn()
   }
-  const browserWindowMock = {
-    getAllWindows: vi.fn(() => [])
-  }
+  const browserWindowMock = { getAllWindows: vi.fn(() => []) }
   const nativeUpdaterMock = {
     on: vi.fn()
   }
@@ -225,6 +224,7 @@ export function createUpdaterMocks(): UpdaterMocks {
   const armExitWatchdogMock = vi.fn()
   const disarmExitWatchdogMock = vi.fn()
   const fetchNewerReleaseTagsMock = vi.fn()
+  const resolveVerifiedLatestStableReleaseMock = vi.fn()
   const chooseLocalBuildMock = vi.fn()
   const startLocalBuildFeedMock = vi.fn()
   const closeLocalBuildFeedMock = vi.fn()
@@ -263,8 +263,7 @@ export function createUpdaterMocks(): UpdaterMocks {
           ? { tags: result, state: result.length > 0 ? 'ready' : 'no-newer' }
           : result
       },
-      getReleaseDownloadUrl: (tag: string) =>
-        `https://github.com/stablyai/orca/releases/download/${tag}`
+      resolveVerifiedLatestStableRelease: resolveVerifiedLatestStableReleaseMock
     }),
     localBuildSwitch: () => ({ chooseLocalBuild: chooseLocalBuildMock }),
     localBuildFeedServer: () => ({ startLocalBuildFeed: startLocalBuildFeedMock })
@@ -280,10 +279,8 @@ export function createUpdaterMocks(): UpdaterMocks {
     vi.resetModules()
     autoUpdaterMock.reset()
     nativeUpdaterMock.on.mockReset()
-    browserWindowMock.getAllWindows.mockReset()
-    browserWindowMock.getAllWindows.mockReturnValue([])
-    appMock.getVersion.mockReset()
-    appMock.getVersion.mockReturnValue('1.0.51')
+    browserWindowMock.getAllWindows.mockReset().mockReturnValue([])
+    appMock.getVersion.mockReset().mockReturnValue('1.0.51')
     appMock.quit.mockReset()
     appMock.isPackaged = true
     isMock.dev = false
@@ -301,6 +298,10 @@ export function createUpdaterMocks(): UpdaterMocks {
     shouldApplyNudgeMock.mockReset().mockReturnValue(false)
     fetchChangelogMock.mockReset().mockResolvedValue(null)
     fetchNewerReleaseTagsMock.mockReset().mockResolvedValue([])
+    // Why default null: mirrors the production fail-open when GitHub's API is
+    // unreachable, so suites that don't exercise the ledger guard keep landing
+    // on the blind latest/download fallback exactly as before.
+    resolveVerifiedLatestStableReleaseMock.mockReset().mockResolvedValue(null)
     chooseLocalBuildMock.mockReset()
     closeLocalBuildFeedMock.mockReset()
     startLocalBuildFeedMock.mockReset().mockResolvedValue({
@@ -336,6 +337,7 @@ export function createUpdaterMocks(): UpdaterMocks {
     armExitWatchdogMock,
     disarmExitWatchdogMock,
     fetchNewerReleaseTagsMock,
+    resolveVerifiedLatestStableReleaseMock,
     chooseLocalBuildMock,
     startLocalBuildFeedMock,
     closeLocalBuildFeedMock,

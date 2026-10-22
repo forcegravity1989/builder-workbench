@@ -159,6 +159,11 @@ export abstract class UpdaterCheckState extends UpdaterStatus {
   protected beginUpdateCheckAttempt(): number {
     this.finishActiveUpdateCheckAttempt()
     this.updateAvailableEventPendingAttemptId = null
+    // Why cleared here and not in clearAvailableUpdateContext: this is the one
+    // choke point every check path (release, local, pinned) passes through
+    // before its feed is chosen, so a stale pin URL can never leak into a
+    // later check's offer.
+    this.pinnedReleaseNotesUrl = null
     this.updateCheckAttemptSequence += 1
     this.activeUpdateCheckAttemptId = this.updateCheckAttemptSequence
     this.armUpdateCheckStallTimer(this.activeUpdateCheckAttemptId)

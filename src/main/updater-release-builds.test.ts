@@ -226,7 +226,9 @@ describe('resolveTargetBuild', () => {
       tag: 'v1.4.160-hourly.202607281400',
       version: '1.4.160-hourly.202607281400',
       feedUrl:
-        'https://github.com/stablyai/orca-hourly/releases/download/v1.4.160-hourly.202607281400'
+        'https://github.com/stablyai/orca-hourly/releases/download/v1.4.160-hourly.202607281400',
+      releasePageUrl:
+        'https://github.com/stablyai/orca-hourly/releases/tag/v1.4.160-hourly.202607281400'
     })
   })
 
@@ -235,7 +237,9 @@ describe('resolveTargetBuild', () => {
       tag: 'v1.4.160-daily.202607281300',
       version: '1.4.160-daily.202607281300',
       feedUrl:
-        'https://github.com/stablyai/orca-daily/releases/download/v1.4.160-daily.202607281300'
+        'https://github.com/stablyai/orca-daily/releases/download/v1.4.160-daily.202607281300',
+      releasePageUrl:
+        'https://github.com/stablyai/orca-daily/releases/tag/v1.4.160-daily.202607281300'
     })
   })
 

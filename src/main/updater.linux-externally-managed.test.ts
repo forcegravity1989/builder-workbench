@@ -73,6 +73,7 @@ describe('updater externally managed Linux installs', () => {
     expect(lastStatus(send)).toEqual({
       state: 'available',
       version: '1.0.61',
+      releaseUrl: 'https://github.com/stablyai/orca/releases/tag/v1.0.61',
       changelog: null,
       externallyManaged: true
     })
@@ -84,7 +85,12 @@ describe('updater externally managed Linux installs', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     const status = lastStatus(send)
-    expect(status).toEqual({ state: 'available', version: '1.0.61', changelog: null })
+    expect(status).toEqual({
+      state: 'available',
+      version: '1.0.61',
+      releaseUrl: 'https://github.com/stablyai/orca/releases/tag/v1.0.61',
+      changelog: null
+    })
     expect(status && 'externallyManaged' in status).toBe(false)
   })
 

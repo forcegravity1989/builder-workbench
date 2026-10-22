@@ -30,6 +30,7 @@ type UpdaterHandlerContext = {
   getCurrentStatus: () => UpdateStatus
   getActiveUpdateCheckEventAttemptId: () => number | null
   getKnownReleaseUrl: () => string | undefined
+  getPinnedReleaseNotesUrl: () => string | null
   getPendingInstallVersion: () => string
   getUserInitiatedCheck: () => boolean
   handleQuitAndInstallFailure: (error?: unknown) => boolean
@@ -73,6 +74,7 @@ export function registerAutoUpdaterHandlers({
   getCurrentStatus,
   getActiveUpdateCheckEventAttemptId,
   getKnownReleaseUrl,
+  getPinnedReleaseNotesUrl,
   getPendingInstallVersion,
   getUserInitiatedCheck,
   handleQuitAndInstallFailure,
@@ -183,7 +185,12 @@ export function registerAutoUpdaterHandlers({
 
         // Why: side effects must run after the guard so a concurrent 'error' during the fetch can't leave orphaned state.
         setAvailableVersion(info.version)
-        setAvailableReleaseUrl(null)
+        // Why copy the pin-scoped URL at offer time: 'checking-for-update' has
+        // already cleared the offer-scoped fields, and this snapshot is what
+        // the available/downloaded statuses report as the release-notes link —
+        // the tag page the feed was verified against, not a URL derived from
+        // whatever version the manifest claims.
+        setAvailableReleaseUrl(getPinnedReleaseNotesUrl())
         // Why: a pinned dev jump is not a release check. Letting it call
         // recordCompletedUpdateCheck() would persist lastUpdateCheckAt and
         // suppress the next real background check for a full day.
@@ -203,6 +210,7 @@ export function registerAutoUpdaterHandlers({
           getRetainedLinuxPackageManualInstallStatus() ?? {
             state: 'available',
             version: info.version,
+            releaseUrl: getKnownReleaseUrl(),
             changelog,
             // Why: the offer is real, but this host can never apply it — say so before a download is offered.
             ...(isExternallyManagedLinuxInstall() ? { externallyManaged: true } : {})

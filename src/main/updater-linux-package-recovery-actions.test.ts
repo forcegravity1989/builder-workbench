@@ -70,7 +70,7 @@ vi.mock('./updater-nudge', () => ({
 }))
 vi.mock('./updater-prerelease-feed', () => ({
   fetchNewerReleaseTagsWithReadiness: vi.fn().mockResolvedValue({ tags: [], state: 'no-newer' }),
-  getReleaseDownloadUrl: vi.fn(() => 'https://example.invalid/download')
+  resolveVerifiedLatestStableRelease: vi.fn().mockResolvedValue(null)
 }))
 vi.mock('./update-install-exit-watchdog', () => ({
   armUpdateInstallExitWatchdog: vi.fn(),

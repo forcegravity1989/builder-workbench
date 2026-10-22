@@ -616,6 +616,7 @@ describe('updater', () => {
       expect(statuses).toContainEqual({
         state: 'available',
         version: '1.3.51-rc.6',
+        releaseUrl: 'https://github.com/stablyai/orca/releases/tag/v1.3.51-rc.6',
         changelog: null
       })
     })

@@ -1,14 +1,20 @@
 import { net } from 'electron'
-import { parse } from 'yaml'
-import { MAIN_RELEASE_REPO } from '../shared/release-channel'
+import { MAIN_RELEASE_REPO, normalizeTagToVersion } from '../shared/release-channel'
 import { compareVersions, isPrereleaseVersion, isValidVersion } from './updater-fallback'
+import {
+  ESCAPED_RELEASE_REPO,
+  FETCH_TIMEOUT_MS,
+  getManifestVersion,
+  getPlatformManifestReadiness,
+  getReleaseDownloadUrl,
+  getReleaseManifestUrl,
+  getReleaseTagPageUrl,
+  parseReleaseManifest
+} from './updater-release-manifest'
 
 const ATOM_FEED_URL = `https://github.com/${MAIN_RELEASE_REPO}/releases.atom`
-const RELEASES_DOWNLOAD_BASE = `https://github.com/${MAIN_RELEASE_REPO}/releases/download`
-const FETCH_TIMEOUT_MS = 5000
+const RELEASES_LATEST_API_URL = `https://api.github.com/repos/${MAIN_RELEASE_REPO}/releases/latest`
 const MAX_MANIFEST_PROBE_CANDIDATES = 6
-
-const ESCAPED_RELEASE_REPO = MAIN_RELEASE_REPO.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 // Why: GitHub's atom feed lists every release (prerelease or stable) in a
 // single flat list. Each entry has a /releases/tag/<tag> URL we can mine
@@ -17,38 +23,6 @@ const TAG_HREF_RE = new RegExp(
   `href="https://github\\.com/${ESCAPED_RELEASE_REPO}/releases/tag/([^"]+)"`,
   'g'
 )
-
-// Absolute asset URLs in a manifest point back at the same repo's download route.
-const GITHUB_RELEASE_DOWNLOAD_RE = new RegExp(
-  `^https://github\\.com/${ESCAPED_RELEASE_REPO}/releases/download/`,
-  'i'
-)
-
-export function getReleaseDownloadUrl(tag: string): string {
-  return `${RELEASES_DOWNLOAD_BASE}/${encodeURIComponent(tag)}`
-}
-
-function getPlatformManifestName(): string {
-  if (process.platform === 'darwin') {
-    return 'latest-mac.yml'
-  }
-  if (process.platform === 'linux') {
-    return 'latest-linux.yml'
-  }
-  return 'latest.yml'
-}
-
-function getReleaseManifestUrl(tag: string): string {
-  return `${getReleaseDownloadUrl(tag)}/${getPlatformManifestName()}`
-}
-
-function getReleaseAssetUrl(tag: string, assetName: string): string {
-  return `${getReleaseDownloadUrl(tag)}/${encodeURIComponent(assetName)}`
-}
-
-export function normalizeTagToVersion(tag: string): string {
-  return tag.replace(/^v/i, '')
-}
 
 type ReleaseFeedTag = {
   tag: string
@@ -88,136 +62,6 @@ async function fetchReleaseFeedTags(): Promise<ReleaseFeedTag[] | null> {
     return tags
   } catch {
     return null
-  }
-}
-
-type ManifestAssetEntry = {
-  url?: unknown
-  path?: unknown
-}
-
-function getManifestAssetNames(manifestText: string): string[] {
-  const parsed = parse(manifestText) as {
-    files?: ManifestAssetEntry[]
-    path?: unknown
-  } | null
-
-  const names = new Set<string>()
-  for (const file of Array.isArray(parsed?.files) ? parsed.files : []) {
-    const value = typeof file.url === 'string' ? file.url : file.path
-    if (typeof value === 'string' && value.trim()) {
-      names.add(value.trim())
-    }
-  }
-  if (typeof parsed?.path === 'string' && parsed.path.trim()) {
-    names.add(parsed.path.trim())
-  }
-  return [...names]
-}
-
-type ReleaseReadiness = 'ready' | 'not-ready' | 'unavailable'
-
-function getGitHubReleaseAssetReadiness(assetUrl: string): Promise<ReleaseReadiness> {
-  return new Promise((resolve) => {
-    const request = net.request({ method: 'HEAD', url: assetUrl, redirect: 'manual' })
-    let settled = false
-    const settle = (readiness: ReleaseReadiness): void => {
-      if (settled) {
-        return
-      }
-      settled = true
-      clearTimeout(timeout)
-      resolve(readiness)
-    }
-    const timeout = setTimeout(() => {
-      try {
-        request.abort()
-      } catch {
-        // The request may already have been cancelled by Electron.
-      }
-      settle('unavailable')
-    }, FETCH_TIMEOUT_MS)
-
-    request.on('redirect', (statusCode) => {
-      // Why: GitHub's 302 proves the asset exists without probing its signed storage URL.
-      settle(statusCode >= 300 && statusCode < 400 ? 'ready' : 'unavailable')
-    })
-    request.on('response', (response) => {
-      settle(
-        response.statusCode === 404
-          ? 'not-ready'
-          : response.statusCode >= 200 && response.statusCode < 300
-            ? 'ready'
-            : 'unavailable'
-      )
-    })
-    request.on('error', () => settle('unavailable'))
-    try {
-      request.end()
-    } catch {
-      settle('unavailable')
-    }
-  })
-}
-
-async function getReleaseAssetReadiness(tag: string, assetName: string): Promise<ReleaseReadiness> {
-  const isRelativeAsset = !/^https?:\/\//i.test(assetName)
-  const isGitHubReleaseAsset =
-    process.platform === 'win32' && (isRelativeAsset || GITHUB_RELEASE_DOWNLOAD_RE.test(assetName))
-  const assetUrl = isRelativeAsset
-    ? getReleaseAssetUrl(tag, assetName.split('/').findLast(Boolean) ?? assetName)
-    : assetName
-  if (isGitHubReleaseAsset) {
-    return getGitHubReleaseAssetReadiness(assetUrl)
-  }
-
-  try {
-    const res = await net.fetch(assetUrl, {
-      method: 'HEAD',
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
-    })
-    if (res.status === 404) {
-      return 'not-ready'
-    }
-    return res.ok ? 'ready' : 'unavailable'
-  } catch {
-    return 'unavailable'
-  }
-}
-
-async function getPlatformManifestReadiness(tag: string): Promise<ReleaseReadiness> {
-  try {
-    // Why: cancelled/draft releases can appear in GitHub's atom feed before
-    // they have updater manifests or the ZIP/exe/AppImage assets referenced by
-    // those manifests. Pinning to those tags makes download clicks 404.
-    const manifestUrl = getReleaseManifestUrl(tag)
-    const res = await net.fetch(manifestUrl, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
-    if (res.status === 404) {
-      return 'not-ready'
-    }
-    if (!res.ok) {
-      return 'unavailable'
-    }
-    const manifestText = await res.text()
-    let assetNames: string[]
-    try {
-      assetNames = getManifestAssetNames(manifestText)
-    } catch {
-      return 'not-ready'
-    }
-    if (assetNames.length === 0) {
-      return 'not-ready'
-    }
-    const assetResults = await Promise.all(
-      assetNames.map((assetName) => getReleaseAssetReadiness(tag, assetName))
-    )
-    return assetResults.includes('not-ready')
-      ? 'not-ready'
-      : assetResults.includes('unavailable')
-        ? 'unavailable'
-        : 'ready'
-  } catch {
-    return 'unavailable'
   }
 }
 
@@ -295,13 +139,22 @@ export async function fetchNewerReleaseTagsWithReadiness(
     newestNewerIndex,
     newestNewerIndex + MAX_MANIFEST_PROBE_CANDIDATES
   )
-  const manifestResults = await Promise.all(
+  const probeResults = await Promise.all(
     probeCandidates.map(async ({ tag, version }) => ({
       tag,
       version,
       readiness: await getPlatformManifestReadiness(tag)
     }))
   )
+  // Why drop mismatches entirely instead of ranking them not-ready: a dirty
+  // ledger never settles, so it must not hold the scan in a retry loop or
+  // block a clean older tag from being offered as the primary.
+  const manifestResults = probeResults.filter(({ readiness }) => readiness !== 'ledger-mismatch')
+  if (manifestResults.length === 0) {
+    // Every newer candidate in the probe window is ledger-dirty; the feed has
+    // nothing offerable, which the caller resolves like "nothing newer".
+    return { tags: [], state: 'no-newer' }
+  }
 
   const primaryIndex = manifestResults.findIndex(
     ({ readiness, version }) =>
@@ -331,5 +184,82 @@ export async function fetchNewerReleaseTagsWithReadiness(
       .slice(0, maxTags)
       .map(({ tag }) => tag),
     state: 'ready'
+  }
+}
+
+export type VerifiedLatestStableRelease =
+  | { state: 'ready'; tag: string; feedUrl: string; releaseUrl: string }
+  | {
+      state: 'not-available'
+      reason: 'ledger-mismatch' | 'not-newer'
+      tag: string
+      manifestVersion: string
+    }
+
+/**
+ * Resolves what GitHub's releases/latest redirect would actually serve and
+ * ledger-verifies it before any feed is pinned at it.
+ *
+ * Why: the atom-feed scan resolves tags, but a release whose manifest version
+ * contradicts its tag (v0.6.0 shipped latest.yml claiming 1.4.197-local.*)
+ * turns the unverified redirect into a phantom update — electron-updater
+ * offers the manifest's version, which semver-ranks above every real product
+ * version and derives release notes to a tag page that 404s.
+ *
+ * Returns null when the release or its manifest cannot be fetched or parsed,
+ * so callers keep their existing fail-open behavior on network degradation.
+ */
+export async function resolveVerifiedLatestStableRelease(
+  currentVersion: string
+): Promise<VerifiedLatestStableRelease | null> {
+  let tag: string
+  let htmlUrl: string | null
+  try {
+    const res = await net.fetch(RELEASES_LATEST_API_URL, {
+      headers: { accept: 'application/vnd.github+json' },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+    })
+    if (!res.ok) {
+      return null
+    }
+    const entry = (await res.json()) as { tag_name?: unknown; html_url?: unknown } | null
+    const tagName = entry?.tag_name
+    if (typeof tagName !== 'string' || !isValidVersion(normalizeTagToVersion(tagName))) {
+      return null
+    }
+    tag = tagName
+    htmlUrl = typeof entry?.html_url === 'string' ? entry.html_url : null
+  } catch {
+    return null
+  }
+
+  let manifestVersion: string | null = null
+  try {
+    const res = await net.fetch(getReleaseManifestUrl(tag), {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+    })
+    if (res.ok) {
+      manifestVersion = getManifestVersion(parseReleaseManifest(await res.text()))
+    }
+  } catch {
+    // Leave null; an unverifiable manifest falls through to the caller's fail-open path.
+  }
+  if (manifestVersion === null) {
+    return null
+  }
+  if (manifestVersion !== normalizeTagToVersion(tag)) {
+    console.info(
+      `[updater] latest release ${tag} rejected: manifest version ${manifestVersion} does not match its tag (ledger mismatch)`
+    )
+    return { state: 'not-available', reason: 'ledger-mismatch', tag, manifestVersion }
+  }
+  if (compareVersions(manifestVersion, currentVersion) <= 0) {
+    return { state: 'not-available', reason: 'not-newer', tag, manifestVersion }
+  }
+  return {
+    state: 'ready',
+    tag,
+    feedUrl: getReleaseDownloadUrl(tag),
+    releaseUrl: htmlUrl ?? getReleaseTagPageUrl(tag)
   }
 }

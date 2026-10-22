@@ -126,6 +126,7 @@ export type ResolvedTargetBuild = {
   tag: string
   version: string
   feedUrl: string
+  releasePageUrl: string
 }
 
 /** Resolves a tag the user picked into a pinned generic feed URL. */
@@ -135,5 +136,10 @@ export function resolveTargetBuild(channel: ReleaseChannel, tag: string): Resolv
     throw new Error(`"${tag}" is not a valid release tag.`)
   }
   const repo = getReleaseRepoForChannel(channel)
-  return { tag, version, feedUrl: getReleaseDownloadUrlForRepo(repo, tag) }
+  return {
+    tag,
+    version,
+    feedUrl: getReleaseDownloadUrlForRepo(repo, tag),
+    releasePageUrl: `https://github.com/${repo}/releases/tag/${encodeURIComponent(tag)}`
+  }
 }

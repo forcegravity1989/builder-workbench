@@ -131,9 +131,12 @@ export abstract class UpdaterBuildSelection extends UpdaterMenuChecks {
       updater.allowPrerelease = true
       console.info(`[updater] pinned to ${channel} build ${target.tag} → ${target.feedUrl}`)
       updater.setFeedURL({ provider: 'generic', url: target.feedUrl })
-      this.availableReleaseUrl = target.feedUrl
       const attemptId = this.beginUpdateCheckAttempt()
       this.markUpdateCheckLaunched(attemptId)
+      // Why after beginUpdateCheckAttempt: that is where the pin-scoped URL is
+      // reset per attempt; assigning earlier would be wiped. The old
+      // availableReleaseUrl write here never survived 'checking-for-update'.
+      this.pinnedReleaseNotesUrl = target.releasePageUrl
       await updater.checkForUpdates()
       this.handleSettledUpdateCheckPromise(attemptId)
     } catch (error) {
