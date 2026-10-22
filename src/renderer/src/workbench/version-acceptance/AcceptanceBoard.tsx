@@ -12,7 +12,7 @@ import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { useArchivePrStatus } from '../version-cycle/use-archive-pr-status'
 import { togglePlanChat } from '../plan-column-resize'
 import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
-import { BoardIconButton } from '../board-ui'
+import { BoardActionButton } from '../board-ui'
 import { AnnotationPanel } from '../annotations/AnnotationPanel'
 import { AnnotationPopover } from '../annotations/AnnotationPopover'
 import { formatBoardAnnotationsAsMarkdown } from '../annotations/annotation-markdown'
@@ -79,7 +79,14 @@ function ReadyAcceptanceBoard({
   // Non-null: the outer component already refused to render without a workspace.
   const { scope, worktreeId } = board
   const { document, plan, gate } = board
-  const annotations = useBoardAnnotations()
+  const scopeKey = scope ? cycleScopeKey(scope) : ''
+  // Stable board identity for annotation lifetime: context.version is the native
+  // selection and does not flicker through re-select transients (draft null).
+  // The annotation store is keyed by it — a version switch reads a different,
+  // naturally empty session, and the plan board's unsent notes survive a glance
+  // at this screen (a single global session + identity clearAll wiped them).
+  const boardIdentity = JSON.stringify([scopeKey, context.version])
+  const annotations = useBoardAnnotations(boardIdentity)
   const [notice, setNotice] = useState('')
   // 注入动作走共用发送弹窗(与计划屏同一件);assistant 只改用户可见文案里的 AI 角色名。
   // 取代原 use-acceptance-action-send:那个钩子只开侧边栏 target mode、从不渲染选择器,
@@ -89,16 +96,7 @@ function ReadyAcceptanceBoard({
   const spy = useAcceptanceJourneySpy()
   const prStatus = useArchivePrStatus(context, document?.workflow?.archivePr)
   const [openingPr, setOpeningPr] = useState(false)
-  const { clearAll, pruneMissing } = annotations
-
-  const scopeKey = scope ? cycleScopeKey(scope) : ''
-  // Stable board identity for annotation lifetime: context.version is the native
-  // selection and does not flicker through re-select transients (draft null).
-  const boardIdentity = JSON.stringify([scopeKey, context.version])
-  useEffect(() => {
-    // Memory annotations point at the previous board's objects after a switch.
-    clearAll()
-  }, [boardIdentity, clearAll])
+  const { pruneMissing } = annotations
 
   const goalsKey = JSON.stringify(plan?.document.goals.map((goal) => goal.goalId) ?? [])
   const tasksKey = JSON.stringify(
@@ -270,16 +268,6 @@ function ReadyAcceptanceBoard({
             await prStatus.refresh()
           })
         }
-        extraActions={
-          <BoardIconButton
-            label="批注模式：点击板面元素记录评审意见"
-            aria-pressed={annotations.annotating}
-            className={annotations.annotating ? 'g3-mode-on' : ''}
-            onClick={annotations.toggleMode}
-          >
-            <MessageSquarePlus size={16} aria-hidden="true" />
-          </BoardIconButton>
-        }
       />
       {notice && (
         <p className="acc-notice" role="status">
@@ -336,6 +324,23 @@ function ReadyAcceptanceBoard({
               onSnapshot={handleSnapshot}
               numbersFor={annotations.numbersFor}
               onOpenAnnotationPanel={annotations.openPanel}
+              annotateEntry={
+                <BoardActionButton
+                  className={`acc-annotate-entry${annotations.annotating ? ' acc-mode-on' : ''}`}
+                  aria-pressed={annotations.annotating}
+                  title={
+                    annotations.annotating
+                      ? '退出批注模式（Esc 同样退出）'
+                      : '批注模式：点击目标行或 Issue 行记录验收意见'
+                  }
+                  onClick={annotations.toggleMode}
+                >
+                  <MessageSquarePlus size={13} aria-hidden="true" /> 批注模式
+                  {annotations.annotations.length > 0 && (
+                    <span className="acc-annotate-count">{annotations.annotations.length}</span>
+                  )}
+                </BoardActionButton>
+              }
               hasReport={Boolean(report)}
               onOpenReport={() => {
                 if (report) {
@@ -394,7 +399,17 @@ function ReadyAcceptanceBoard({
               )
             }
             onCopyError={(message) => board.setError(`复制板面批注失败：${message}`)}
-            onSent={() => setNotice('板面批注已发送给验收助手 · 在会话栏查看进展')}
+            onSent={() => {
+              // onPromptDelivered only fires on a delivered send, so clearing here
+              // never drops notes on failure/Esc (same option-A decision as the
+              // plan screen). The receipt states the cleared count, or the empty
+              // panel reads as lost input.
+              const count = annotations.annotations.length
+              annotations.clearAll()
+              setNotice(
+                `板面批注已发送给验收助手 · 在会话栏查看进展。已递交的 ${count} 条批注已从板面清空，可继续批注。`
+              )
+            }}
           />
         )}
       </div>

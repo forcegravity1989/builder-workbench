@@ -1,4 +1,4 @@
-import { ArrowUpRight, GitPullRequest, Rocket } from 'lucide-react'
+import { Archive, ArrowUpRight, GitPullRequest, Rocket } from 'lucide-react'
 import type { Ref } from 'react'
 import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
 import type { WorkflowArchivePr } from '../../../../shared/workbench/version-workflow'
@@ -84,12 +84,15 @@ export function AcceptanceArchiveCard({
         </div>
         <span className="acc-archive-actions">
           {/* 触发件用纯 button，理由同 AcceptanceMinutesSection：不与 Tooltip 的
-              Radix 触发件嵌套。「打开原生 PR 页」不是发送动作，保持图标按钮。 */}
+              Radix 触发件嵌套。「打开原生 PR 页」不是发送动作，保持图标按钮。
+              prompt 只承载触发意图（对齐计划屏第九轮瘦身）：固定树、目标分支等
+              SOP 细节归 version-acceptance Skill，不复述进按钮。图标用 Archive，
+              与发布（Rocket）区分——同卡两个注入动作不共用图标。 */}
           {onSendAction(
-            '核对验收材料与结论状态后，在 bw/week-acceptance 固定树提交归档并创建到主分支的 PR',
+            `归档 ${version || '本版'}：核对验收材料与结论状态后发起归档，在会话中给出归档 PR`,
             '归档请求',
             <BoardActionButton title="让验收助手核对材料并发起归档">
-              <Rocket size={14} aria-hidden="true" /> 发起归档
+              <Archive size={14} aria-hidden="true" /> 发起归档
             </BoardActionButton>
           )}
           {archivePr && (
@@ -111,12 +114,12 @@ export function AcceptanceArchiveCard({
         <div>
           <h3>发版本</h3>
           <p>
-            预检、发布提交与验收包一致性核对、知情授权、按项目自有发布入口执行与独立读回都在会话中完成；
-            不达成不阻断发布，由你知情决定。未经你明确授权不创建 Release、不打标签。
+            发布请求送入验收助手会话，预检、授权、执行与读回都在会话中完成；未经你明确授权不创建
+            Release、不打标签。
           </p>
         </div>
         {onSendAction(
-          `发布 ${version || '本版'}：先呈现版本号、发布提交与验收包一致性、各目标达成状况与版本说明就绪状态，经我明确授权后按项目自有发布入口执行，发布后独立读回 tag、时间、资产与校验值`,
+          `发布 ${version || '本版'}：先在会话中完成预检并报告，经我明确授权后再执行`,
           '发布请求',
           <button type="button" className="acc-text-button">
             <Rocket size={13} aria-hidden="true" /> 发布

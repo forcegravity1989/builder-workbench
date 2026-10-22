@@ -1,4 +1,4 @@
-import { Info, MessageSquarePlus } from 'lucide-react'
+import { Info } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
@@ -7,7 +7,6 @@ import {
   materialProblemRequest,
   type CycleMaterialProblem
 } from '../version-cycle/cycle-start-request'
-import { BoardIconButton } from '../board-ui'
 import { AcceptanceHeader } from './AcceptanceSections'
 import { AcceptanceNotices } from './AcceptanceNotices'
 import type { AcceptanceGateState } from './use-acceptance-gate'
@@ -54,11 +53,6 @@ export function AcceptanceEmptyBoard({
         onSelect={(version) => void board.loadVersion(version)}
         onConfigure={() => void entry.configure()}
         onRefresh={onRefresh}
-        extraActions={
-          <BoardIconButton label="批注模式：点击板面元素记录评审意见" disabled aria-pressed={false}>
-            <MessageSquarePlus size={16} aria-hidden="true" />
-          </BoardIconButton>
-        }
       />
       <div className="acc-empty-board">
         <p>

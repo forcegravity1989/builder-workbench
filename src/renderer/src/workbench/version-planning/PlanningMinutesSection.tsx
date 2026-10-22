@@ -212,7 +212,7 @@ function MinutesCard({
                   <button
                     type="button"
                     className={`g3-followup-status${point.closed ? ' closed' : ''}`}
-                    title="闭环 = 版本计划已按该条修改；由人标记"
+                    title="闭环 = 版本计划已按该条修改，由人标记"
                     onClick={() => toggleFollowupClosed(point.id)}
                   >
                     {point.closed ? '已闭环' : '未闭环'}
@@ -248,7 +248,7 @@ function MinutesCard({
                     <button
                       type="button"
                       className={`g3-followup-status${point.closed ? ' closed' : ''}`}
-                      title="闭环 = 版本计划已按该条修改；由人标记"
+                      title="闭环 = 版本计划已按该条修改，由人标记"
                       onClick={() => toggleFollowupClosed(point.id)}
                     >
                       {point.closed ? '已闭环' : '未闭环'}

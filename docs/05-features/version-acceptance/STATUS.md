@@ -2,13 +2,13 @@
 
 > 给接手开发、评审和验收的人读取。只记录认可、实现和证据缺口；有真实认可或运行结果时更新。价值见 [intent](intent.md)，行为见 [spec](spec.md)，工程设计见 [design](design.md)。
 
-目标平台是主干 main 的 Electron/Orca 叠层。**v10（周五验收会议四步屏）的规格与意图已由负责人于 2026-10-22 逐项确认**，形态正本为 [acceptance-journey-prototype.html](acceptance-journey-prototype.html)。**生产实现已落地在本分支**（#394，尚未合入 main），四步屏、协议宽容读回、发布改纯注入、空板硬门禁均已接线；main 上运行的仍是 v9.5。
+目标平台是主干 main 的 Electron/Orca 叠层。**v10（周五验收会议四步屏）的规格与意图已由负责人于 2026-10-22 逐项确认**，形态正本为 [acceptance-journey-prototype.html](acceptance-journey-prototype.html)。**生产实现已随 [#394](https://github.com/forcegravity1989/builder-workbench/pull/394) 合入 main**（`5f7816a5f`）：四步屏、协议宽容读回、发布改纯注入、空板硬门禁均已接线。2026-10-23 追加**验收对齐轮**（见下节），把计划屏第八/九轮反馈在两屏对齐。
 
 v9.5（#369/#377）的六环证据与 A01–A14 矩阵随 v10 规格生效而**整体失效**，历史证据从 [PR #369](https://github.com/forcegravity1989/builder-workbench/pull/369)、[PR #377](https://github.com/forcegravity1989/builder-workbench/pull/377) 与 Git 追溯。v9.5 旧稿 [prototype.html](prototype.html) 保留基线身份，不代表现行规格。
 
 ## 当前实现与证据边界
 
-本分支已交付的 v10 生产实现，按提交顺序：
+v10 生产实现（#394 分支交付、已合入 main），按提交顺序：
 
 | 提交 | 内容 |
 |---|---|
@@ -35,6 +35,21 @@ v10 复用的共用件随计划屏 G3（[#399](https://github.com/forcegravity19
 | 核心算法/数据协议 | 已接入 | 协议已改（minutes、demoEnv、stage 三值无 release 字段、退役字段留作只读可选）；人工字段守卫三件（material / plan / acceptance）覆盖纪要与结论改写；协议测试随改维护，ratchet 持平基线 |
 | 验收点 E2E | 部分 | `workbench-cycle-smoke` 的验收段已跟上 v10（断言空板挂载与入口存在，不锁具体门禁结论）；A01–A13 其余各点未注册专项用例，按 02 环 4 控量，稳定后专项回补 |
 | 用户旅程 E2E | 缺口 | AJ01 未运行。需真实服务、真实报告、真实发布读回与杀进程重启核对；模拟不计通过 |
+
+## 2026-10-23 验收对齐轮（两屏一致性）
+
+计划屏第九轮反馈（[#410](https://github.com/forcegravity1989/builder-workbench/pull/410)）合入后，负责人要求排查验收屏是否存在同类问题并核对两屏匹配性，经 AskUser 拍板四项：
+
+1. **批注 store 按板面身份键控**。#410 的模块级全局会话被验收屏挂载即清空——两屏 scopeKey 必不同，切到验收屏的瞬间计划屏未发送批注被 `clearAll` 清掉（反向击穿第九轮「切屏保留」），且两屏 goalId 相同会串角标与发送清单。`use-board-annotations.ts` 改为 `Map<boardId, session>`（boardId = scope+版本），两屏的命令式 identity-clearAll effect 同批删除；切版=换 key 天然空会话，切屏各读各的，重启仍按正本丢弃。
+2. **批注发送成功即清空**。验收 spec 原「发送后不清空」与计划屏 A 案相反，统一为清空（负责人补充理由：发送后记录已在会话侧，板面无需保留）。spec「在线批注」条款已改。
+3. **批注入口挪进 Showcase 区块标题行**。对齐计划屏第八轮就近入口形态（文字标签 + 未发送条数角标 `acc-annotate-count`）；页头 `extraActions` 槽位与空板态常禁用占位钮删除，spec 页头同构句已改。
+4. **version-acceptance SKILL 四件套完整同步**。VA SKILL 补回指 week-planning 的路由句、整理纪要 SOP 对齐计划屏第九轮（问一次会议 ID、转写显式范围、全量清单语义、无批注兜底、保留人工编辑/重写前 diff）、「需要时读取」补会议转写条目；`meeting-transcript.md` 写入落点从已退役的「验收指导」（meetingDirectives）改为纪要节；week-planning SKILL 会议遗留来源补 v10 主源（已人工确认纪要 `minutes.followups`，legacy directives 降为回退）并把执行流程段落物理顺序摆正（1,2,3,4,5）；投影、bundled 指南与 skill-bundle manifest 全部再生——**顺带修复 #410 漏跑的 manifest 陈旧**（week-planning 条目停在 0.6.0 旧 hash，`verify:skill-bundle-manifest` 在 main 上必红）。
+
+同批修复（subagent 盘点实证）：发布/归档/部署三个注入 prompt 瘦身（预检清单、固定树路径、写回协议等 SOP 细节归 Skill，按钮只留触发意图）；三处「原型注释升格成生产 UI」的解释脚注删除（勾勾表、准备区、发布卡），纪要卡小注减密度并去掉被否决的「常驻可编辑」旧稿措辞；出包/下载禁用按钮补原因 title；「发起归档」改 Archive 图标（与发布 Rocket 同卡撞车解除）、打开报告统一 FileText；纪要区死分支删除（`document` 收必填——空板在 AcceptanceBoard 早退，无材料分支不可达）；空态指引提到页头批注的过期文案随分支删除。计划屏侧连带微修：闭环句两处 title 标点归 spec 正源（分号→逗号）、`version-workflow.ts` 注释改准（stage 的唯一 UI 消费是归档卡「已进入归档阶段」状态行）、planning design.md 三处陈旧句修正（stage 消费表述、上版回顾会议遗留来源、CycleArchive 已删）。
+
+高保真：`acceptance-app.jsx` 同步（Showcase 入口 + 角标、页头入口移除、四个注入 prompt 瘦身、批注发送全量清单句 + 成功清空回执、报告目标级锚点退役改整份打开、「原因写进展」→「原因写纪要」、遗留待评审清单去轮次、设计说明三段更新），`minutesRequestPrompt` 正源落 `acceptance-model.js`；bundle 重建且 `--check` 通过——**该 bundle 自 #394 后即 stale**（#410 重排源文件未重建），本轮修复。
+
+**验证边界（负责人明确授权）**：本轮不跑本地 CI 门禁、不新增单测、不做真机验证，真壳验证留人。已跑检查：验收原型 bundle `--check`、`verify:bundled-skill-guides`、`verify:skill-bundle-manifest` 通过；其余为静态审查与 subagent 双检视（四维 + 静态 BUG）。真壳欠账沿用下表并新增：两屏互切批注保留/互不清空、Showcase 批注入口与角标、发送成功清空回执、纪要/发布/归档/部署四个瘦身后 prompt 的弹窗预览文案。
 
 ## 验收点与旅程矩阵
 
@@ -71,4 +86,4 @@ spec「退役清单」与 design 列出的连带改动，本分支已同批处�
 
 ## 验证纪律
 
-界面与行为改动的交付须附验证报告，本次改动新增或修改的判据内嵌真壳截图四件套（用例名、执行路径、期望结果、截图），截图推永不合入的 `shots/<分支名>` 并钉 SHA。v10 不沿用 v9.5 那轮「不运行 CI 和真壳」的豁免口径——计划屏 G3 生产实现（#399）已按真壳 + 钉 SHA 截图交付，验收屏按同口径执行。**本分支目前欠这份真壳证据**，合入前后需补 A03 演示环境两形态、A05/A10 重启读回、A06 纪要冻结与注入通道四组。叠层单测受执行例数 ratchet 约束，新增须同一交付内对冲删除退役用例。
+界面与行为改动的交付须附验证报告，本次改动新增或修改的判据内嵌真壳截图四件套（用例名、执行路径、期望结果、截图），截图推永不合入的 `shots/<分支名>` 并钉 SHA。v10 不沿用 v9.5 那轮「不运行 CI 和真壳」的豁免口径——计划屏 G3 生产实现（#399）已按真壳 + 钉 SHA 截图交付，验收屏按同口径执行。**本分支目前欠这份真壳证据**，合入前后需补 A03 演示环境两形态、A05/A10 重启读回、A06 纪要冻结与注入通道四组。叠层单测受执行例数 ratchet 约束，新增须同一交付内对冲删除退役用例。2026-10-23 对齐轮为 bug 修复轮，负责人另行明确授权免本地门禁与真机验证（见「验收对齐轮」节），真壳欠账不因此销账。
