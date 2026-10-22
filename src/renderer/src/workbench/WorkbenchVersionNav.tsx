@@ -8,7 +8,8 @@ import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbenc
 import { useVersionCatalogForRepo } from './use-version-catalog'
 import { useBrowsedVersion } from './version-context-state'
 import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
-import { VersionCleanupPlaceholderDialog } from './version-nav-rows'
+import { VersionCleanupDialog } from './version-cleanup-dialog'
+import { VersionTreeBindDialog } from './version-tree-bind-dialog'
 import { VersionNavGroup } from './version-nav-group'
 import { NewVersionDialog, type NewVersionDialogRequest } from './NewVersionDialog'
 import { openGoalStartComposer } from './goal-start-action'
@@ -23,7 +24,11 @@ import { useCycleView } from './cycle-view-state'
  * 需求不变，确认单与原生删除链后续交付）。目录永远现算，读取失败如实呈现。
  */
 
-type DialogState = NewVersionDialogRequest | { mode: 'cleanup'; version: string } | null
+type DialogState =
+  | NewVersionDialogRequest
+  | { mode: 'cleanup'; version: string }
+  | { mode: 'bind'; version: string }
+  | null
 
 function readExpandedStore(key: string | null): Set<string> | null {
   if (!key) {
@@ -256,6 +261,7 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
               }
               onToggle={() => toggleVersion(entry.version)}
               onCleanup={() => setDialog({ mode: 'cleanup', version: entry.version })}
+              onBindTree={() => setDialog({ mode: 'bind', version: entry.version })}
               onNavigateWorkflow={(workflow) =>
                 navigateVersionWorkflow({
                   catalog,
@@ -293,9 +299,22 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
       </div>
 
       {dialog?.mode === 'cleanup' ? (
-        <VersionCleanupPlaceholderDialog version={dialog.version} onClose={() => setDialog(null)} />
+        <VersionCleanupDialog
+          version={dialog.version}
+          entry={entries.find((item) => item.version === dialog.version) ?? null}
+          worktrees={catalog.worktrees}
+          onClose={() => setDialog(null)}
+        />
       ) : null}
-      {dialog && dialog.mode !== 'cleanup' ? (
+      {dialog?.mode === 'bind' ? (
+        <VersionTreeBindDialog
+          version={dialog.version}
+          entry={entries.find((item) => item.version === dialog.version) ?? null}
+          worktrees={catalog.worktrees}
+          onClose={() => setDialog(null)}
+        />
+      ) : null}
+      {dialog && dialog.mode !== 'cleanup' && dialog.mode !== 'bind' ? (
         <NewVersionDialog
           request={dialog}
           catalog={catalog}

@@ -7,24 +7,15 @@ import {
   EllipsisVertical,
   GitBranch,
   ListTodo,
-  Target,
-  X
+  Target
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
 import WorktreeCardAgents from '@/components/sidebar/WorktreeCardAgents'
 import WorktreeContextMenu from '@/components/sidebar/WorktreeContextMenu'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
@@ -364,51 +355,5 @@ export function TasksRow({
         <span>任务</span>
       </button>
     </div>
-  )
-}
-
-/**
- * 版本级清理占位（P3a 按 prompt 接占位调用；生产删除 UI 需求不变）：如实说明
- * 确认单与原生删除链尚未接入，指引原生单树删除；不做假树列表、不执行删除。
- */
-export function VersionCleanupPlaceholderDialog({
-  version,
-  onClose
-}: {
-  version: string
-  onClose: () => void
-}): React.JSX.Element {
-  return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) {
-          onClose()
-        }
-      }}
-    >
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>
-            <span className="flex items-center gap-2">
-              <X className="size-4" aria-hidden="true" />
-              清理 {version} 工作树
-            </span>
-          </DialogTitle>
-          <DialogDescription>版本级清理尚未接入生产</DialogDescription>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          确认单（本机 owned
-          默认勾选、他宿主实例列而不勾、逐棵原生预检）与原生删除链的执行将在后续交付提供。当前删除单棵树请在
-          Orca 项目工作区使用该树的原生菜单。绑定随登记删树消失；Git
-          材料与版本目录保留，删后仍可回看。
-        </p>
-        <div className="flex justify-end">
-          <Button size="sm" onClick={onClose}>
-            知道了
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
   )
 }

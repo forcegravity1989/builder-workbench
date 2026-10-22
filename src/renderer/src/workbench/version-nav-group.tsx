@@ -1,5 +1,5 @@
 import React from 'react'
-import { ChevronDown, ChevronRight, PackageCheck, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, Link2, PackageCheck, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import type { Worktree } from '../../../shared/worktree/types'
@@ -25,6 +25,7 @@ export type VersionNavGroupProps = {
   activeGoalId: string | null
   onToggle: () => void
   onCleanup: () => void
+  onBindTree: () => void
   onNavigateWorkflow: (workflow: VersionWorkflow) => void
   onPrepare: () => void
   onOpenTasks: (goal?: { goalId: string; label: string }) => void
@@ -43,6 +44,7 @@ export function VersionNavGroup({
   activeGoalId,
   onToggle,
   onCleanup,
+  onBindTree,
   onNavigateWorkflow,
   onPrepare,
   onOpenTasks,
@@ -92,8 +94,19 @@ export function VersionNavGroup({
           type="button"
           variant="ghost"
           size="icon-xs"
-          aria-label={`清理 ${entry.version} 工作树（尚未接入）`}
-          title={`清理 ${entry.version} 工作树（确认单后续交付）`}
+          aria-label={`绑定已有工作树到 ${entry.version}（补绑定）`}
+          title={`绑定已有工作树到 ${entry.version}（补绑定，人显式断言归属）`}
+          onClick={onBindTree}
+          className="size-6 shrink-0 text-worktree-sidebar-foreground/40 hover:text-worktree-sidebar-foreground"
+        >
+          <Link2 className="size-3.5" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          aria-label={`清理 ${entry.version} 工作树`}
+          title={`清理 ${entry.version} 工作树（勾选后进入 Orca 删除确认）`}
           onClick={onCleanup}
           className="size-6 shrink-0 text-worktree-sidebar-foreground/40 hover:text-worktree-sidebar-foreground"
         >

@@ -192,4 +192,14 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     timeout: 60_000
   })
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-overview-real.png') })
+
+  // ---- 版本级清理确认单：本机实例默认勾选；删除执行沿 Orca 原生确认单，
+  // 破坏性步骤不进 CI（J9 归人验证），此处只核对清单结构与取消路径。----
+  await workbenchPage.getByRole('button', { name: '清理 v9.9 工作树' }).click()
+  const cleanup = workbenchPage.getByRole('dialog').filter({ hasText: '清理 v9.9 工作树' })
+  await expect(cleanup.getByRole('checkbox')).toHaveCount(2, { timeout: 60_000 })
+  await expect(cleanup.getByRole('checkbox').first()).toBeChecked()
+  await expect(cleanup.getByRole('button', { name: /删除所勾选（2）/ })).toBeEnabled()
+  await cleanup.getByRole('button', { name: '取消' }).click()
+  await expect(cleanup).toHaveCount(0)
 })
