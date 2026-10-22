@@ -50,8 +50,11 @@ export function RuntimePairingGeneratorForm({
     value: networkInterface.address,
     label: `${networkInterface.name} (${networkInterface.address})`
   }))
-  const generatedIsCurrent = generatedAddress === selectedAddress
-  const staleGeneratedLink = generatedAddress !== null && !generatedIsCurrent
+  const addressMatches = generatedAddress === selectedAddress
+  const generatedIsCurrent =
+    addressMatches &&
+    (intent !== 'another' || networkInterfaces.some(({ address }) => address === generatedAddress))
+  const staleGeneratedLink = generatedAddress !== null && !addressMatches
   const customAddressResult =
     intent === 'custom' ? parseServerShareAddress(selectedAddress) : { ok: true as const }
   const customAddressInvalid = selectedAddress !== '' && !customAddressResult.ok
@@ -321,6 +324,15 @@ export function RuntimePairingGeneratorForm({
           </Button>
         </div>
       </div>
+
+      {generatedIsCurrent && runtimePairingUrl ? (
+        <p role="status" className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs">
+          {translate(
+            'auto.components.settings.RuntimePairingUrlGenerator.savedLinkNotice',
+            'Saved access link. Current connectivity has not been verified. If it does not connect, check the sharing service and network address before generating another link.'
+          )}
+        </p>
+      ) : null}
 
       {generatedIsCurrent && webClientUrl ? (
         <GeneratedUrlRow

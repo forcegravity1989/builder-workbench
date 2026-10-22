@@ -45,6 +45,9 @@ import {
   resolveDetectedTuiAgentIds
 } from '../ipc/tui-agent-detection-commands'
 import { invalidateWslGuestEnvironment } from '../wsl/wsl-guest-environment'
+// Why (BW #323 / #366): the BW-only CLI probes and auth readbacks live in the
+// BW sibling module to keep this upstream file within its line budget.
+import { probeBwClis, readBwCliAuths } from './bw-cli-auth-status'
 
 export type PreflightStatus = {
   git: { installed: boolean }
@@ -54,8 +57,14 @@ export type PreflightStatus = {
   // affordances (the GitLab tab in the source picker, MR list, etc.)
   // gate on `glab?.authenticated`.
   glab?: { installed: boolean; authenticated: boolean }
-  // Why: settings only needs to know the CLI is on PATH. Auth stays out of this probe.
-  codehub?: { installed: boolean }
+  // Why: optional like glab — older payloads predate the auth readback. Auth is
+  // read from `codehub-cli auth status` (BW #323); pre-readback payloads only
+  // carried presence.
+  codehub?: { installed: boolean; authenticated: boolean }
+  // Why: BW #323 — welink-cli presence + auth read from `welink-cli auth status`.
+  welink?: { installed: boolean; authenticated: boolean }
+  // Why: BW #366 — cloudbuild's cb presence + auth read from `cb auth status`.
+  cloudbuild?: { installed: boolean; authenticated: boolean }
   bitbucket?: { configured: boolean; authenticated: boolean; account: string | null }
   azureDevOps?: {
     configured: boolean
@@ -128,15 +137,18 @@ function uniqueAgentIds(ids: Iterable<string>): string[] {
 
 async function detectCommandRuntime(
   command: string,
-  context?: PreflightRuntimeContext
+  context?: PreflightRuntimeContext,
+  // Why (BW #366): cb rejects `--version`; callers pass the liveness args the
+  // CLI actually supports (default unchanged for git/gh/glab/codehub/welink).
+  versionArgs: string[] = ['--version']
 ): Promise<{ installed: boolean; wslTarget?: WslPreflightTarget }> {
   const wslTarget = getPreflightWslTarget(context)
   if (wslTarget) {
-    return (await isCommandAvailable(command, wslTarget))
+    return (await isCommandAvailable(command, wslTarget, versionArgs))
       ? { installed: true, wslTarget }
       : { installed: false }
   }
-  if (await isCommandAvailable(command)) {
+  if (await isCommandAvailable(command, undefined, versionArgs)) {
     return { installed: true }
   }
   return { installed: false }
@@ -361,26 +373,30 @@ async function executePreflightCheck(
     _resetKnownHostsCache()
   }
 
-  const [gitProbe, ghProbe, glabProbe, codehubProbe] = await Promise.all([
+  const [gitProbe, ghProbe, glabProbe, bwProbes] = await Promise.all([
     detectCommandRuntime('git', context),
     detectCommandRuntime('gh', context),
     detectCommandRuntime('glab', context),
-    detectCommandRuntime('codehub-cli', context)
+    probeBwClis((command, versionArgs) => detectCommandRuntime(command, context, versionArgs))
   ])
 
-  const [ghAuthenticated, glabAuthenticated, bitbucket, azureDevOps, gitea] = await Promise.all([
-    ghProbe.installed ? isGhAuthenticated(ghProbe.wslTarget) : Promise.resolve(false),
-    glabProbe.installed ? isGlabAuthenticated(glabProbe.wslTarget) : Promise.resolve(false),
-    getBitbucketAuthStatus(),
-    getAzureDevOpsAuthStatus(),
-    getGiteaAuthStatus()
-  ])
+  const [ghAuthenticated, glabAuthenticated, bwAuths, bitbucket, azureDevOps, gitea] =
+    await Promise.all([
+      ghProbe.installed ? isGhAuthenticated(ghProbe.wslTarget) : Promise.resolve(false),
+      glabProbe.installed ? isGlabAuthenticated(glabProbe.wslTarget) : Promise.resolve(false),
+      readBwCliAuths(bwProbes),
+      getBitbucketAuthStatus(),
+      getAzureDevOpsAuthStatus(),
+      getGiteaAuthStatus()
+    ])
 
   const result = {
     git: { installed: gitProbe.installed },
     gh: { installed: ghProbe.installed, authenticated: ghAuthenticated },
     glab: { installed: glabProbe.installed, authenticated: glabAuthenticated },
-    codehub: { installed: codehubProbe.installed },
+    codehub: { installed: bwProbes.codehub.installed, authenticated: bwAuths.codehub },
+    welink: { installed: bwProbes.welink.installed, authenticated: bwAuths.welink },
+    cloudbuild: { installed: bwProbes.cloudbuild.installed, authenticated: bwAuths.cloudbuild },
     bitbucket,
     azureDevOps,
     gitea

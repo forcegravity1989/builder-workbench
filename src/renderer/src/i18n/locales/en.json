@@ -2290,6 +2290,11 @@
         "codehubDeleteComment": "Delete comment",
         "codehubComment": "Write a comment",
         "codehubCommentSubmit": "Comment",
+        "codehubReply": "Reply...",
+        "codehubReplySubmit": "Reply",
+        "codehubReplyCancel": "Cancel",
+        "codehubReplyToComment": "Reply to comment",
+        "codehubOpenComment": "Open comment on CodeHub",
         "codehubCreateIssue": "Create issue",
         "codehubIssueCreated": "Issue created",
         "codehubIssueTitle": "New issue title",
@@ -7427,10 +7432,12 @@
           "a565377c38": "not-installed",
           "15cf990798": "Not authenticated",
           "f7eb5f0b24": "Not installed",
-          "3ba07f933b": "Connect issue trackers Orca can use to browse tasks and start workspaces with linked context.",
-          "70e885705b": "Task providers",
-          "1683acbac4": "Connect the source hosts Orca can use for pull requests, merge requests, checks, and review status.",
-          "298c65ecac": "Review providers"
+          "codeHostGroupTitle": "Code hosting",
+          "codeHostGroupDescription": "CLIs for tasks, pull requests, merge requests, and review status.",
+          "imGroupTitle": "Project group",
+          "imGroupDescription": "CLIs for posting version and acceptance updates to the project group.",
+          "buildGroupTitle": "Build",
+          "buildGroupDescription": "CLIs for pipeline execution and package builds."
         },
         "KagiSessionLinkForm": {
           "92f0b4e472": "Clear",
@@ -8130,7 +8137,8 @@
           "localLinkHelp": "This link only works in a browser or Orca client running on this computer.",
           "noExternalAddress": "No address for another device was found. Connect this computer to a LAN or Tailscale, refresh, or choose Custom address.",
           "staleAddress": "The connection address changed. Generate a new link for {{address}}.",
-          "customInvalid": "Enter a valid host, host:port, IPv6 address, or ws(s):// URL."
+          "customInvalid": "Enter a valid host, host:port, IPv6 address, or ws(s):// URL.",
+          "savedLinkNotice": "Saved access link. Current connectivity has not been verified. If it does not connect, check the sharing service and network address before generating another link."
         },
         "Settings": {
           "3bf149e873": "Project Settings > {{value0}}",
@@ -9759,9 +9767,17 @@
             "760e2446e0": "Bitbucket Cloud authentication with a saved API token or environment variables.",
             "af5ae87847": "access token",
             "codehubTitle": "CodeHub Integration",
-            "codehubDescription": "Detect whether codehub-cli is on PATH.",
+            "codehubDescription": "codehub-cli presence and login for issues and merge requests.",
             "codehubKeyword": "codehub",
-            "codehubCliKeyword": "codehub-cli"
+            "codehubCliKeyword": "codehub-cli",
+            "welinkTitle": "WeLink Integration",
+            "welinkDescription": "welink-cli presence and login for project group notifications.",
+            "welinkKeyword": "welink",
+            "welinkCliKeyword": "welink-cli",
+            "cloudbuildTitle": "CloudBuild Integration",
+            "cloudbuildDescription": "cb presence and login for pipelines and package builds.",
+            "cloudbuildKeyword": "cloudbuild",
+            "cloudbuildCbKeyword": "cb"
           }
         },
         "jira": {
@@ -10575,9 +10591,41 @@
                   "statusNotInstalled": "Not installed",
                   "statusNotAuthenticated": "Not authenticated",
                   "codehubDescription": "Issues and merge requests via the",
-                  "codehubAvailable": "Available",
                   "codehubUnavailable": "codehub-cli status is not available in this runtime yet.",
-                  "codehubMissing": "codehub-cli is not on PATH."
+                  "codehubMissing": "codehub-cli is not on PATH.",
+                  "codehubInstallButton": "Install CodeHub CLI",
+                  "codehubNotAuthenticated": "codehub-cli is installed but not authenticated.",
+                  "codehubAuthLoginCommand": "codehub-cli auth login --all",
+                  "welinkDescription": "Project group notifications via the",
+                  "welinkUnavailable": "welink-cli status is not available in this runtime yet.",
+                  "welinkMissing": "Install welink-cli to enable project group notifications.",
+                  "welinkNotAuthenticated": "welink-cli is installed but not authenticated.",
+                  "welinkInstallButton": "Install WeLink CLI",
+                  "welinkAuthLoginCommand": "welink-cli auth login",
+                  "cloudbuildDescription": "Pipelines and package builds via the",
+                  "cloudbuildUnavailable": "cb status is not available in this runtime yet.",
+                  "cloudbuildMissing": "cb is not on PATH.",
+                  "cloudbuildInstallButton": "Install CloudBuild CLI",
+                  "cloudbuildNotAuthenticated": "cb is installed but not authenticated.",
+                  "cloudbuildAuthLoginCommand": "cb login",
+                  "loginButton": "Log in",
+                  "pressEnterDescription": "Press Enter to run the command.",
+                  "installInProgressNote": "Installing in the background. You will be notified here when it finishes.",
+                  "installingButton": "Installing…",
+                  "codehubInstallSucceeded": "CodeHub CLI installed. Re-checking its status…",
+                  "codehubInstallFailed": "CodeHub CLI install failed.",
+                  "welinkInstallSucceeded": "WeLink CLI installed. Re-checking its status…",
+                  "welinkInstallFailed": "WeLink CLI install failed.",
+                  "cloudbuildInstallSucceeded": "CloudBuild CLI installed. Re-checking its status…",
+                  "cloudbuildInstallFailed": "CloudBuild CLI install failed.",
+                  "ghLoginTitle": "GitHub login",
+                  "ghLoginTerminalAriaLabel": "GitHub login terminal",
+                  "codehubLoginTitle": "CodeHub login",
+                  "codehubLoginTerminalAriaLabel": "CodeHub login terminal",
+                  "welinkLoginTitle": "WeLink login",
+                  "welinkLoginTerminalAriaLabel": "WeLink login terminal",
+                  "cloudbuildLoginTitle": "CloudBuild login",
+                  "cloudbuildLoginTerminalAriaLabel": "CloudBuild login terminal"
                 }
               }
             }
@@ -16643,7 +16691,11 @@
     "app": {
       "shell": {
         "AppWorkspaceShell": {
-          "e82b94df8a": "调整左右栏宽度"
+          "e82b94df8a": "调整左右栏宽度",
+          "38f5d8318c": "展开会话栏",
+          "4bf79d6d8c": "收折会话栏",
+          "722fd4ab69": "展开会话",
+          "5c18da0a65": "收折会话"
         }
       }
     }

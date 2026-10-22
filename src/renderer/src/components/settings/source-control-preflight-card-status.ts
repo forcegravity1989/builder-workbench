@@ -73,10 +73,14 @@ export function usePreflightCardStatuses(
     preflightStatusChecked &&
     preflightCurrent &&
     preflightStatusError !== null
+  // Why (BW #323): a re-check must only flip the clicked card to checking
+  // (user decision 2026-10-19). The last complete preflightStatus stays the
+  // input while a refresh is in flight so sibling cards keep their displayed
+  // status; the clicked card's `refreshingProviders` is what turns its own
+  // status into 'checking'. Nulling the input on loading would flip every
+  // card at once.
   const statusInput =
-    !preflightStatusLoading && preflightStatusChecked && preflightCurrent && !unavailable
-      ? preflightStatus
-      : null
+    preflightStatusChecked && preflightCurrent && !unavailable ? preflightStatus : null
 
   const refresh = (): void => {
     setRefreshing(true)

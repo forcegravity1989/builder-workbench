@@ -97,8 +97,9 @@ export function ProjectWallPage(): React.JSX.Element {
       // 刷新 = 重读本机与已配对主机的仓库目录、工作树与名片数据,作用整面墙。
       // 成本清单(H 配对主机/R 仓行/P 上墙项目/S 仓槽):H×4 RPC + R×1 工作树 RPC +
       // 每项目名片逐行读到即止(全读不到的本机行再 1 次 PR 状态 RPC)+ 每项目 4 个
-      // 材料 RPC + 每任务仓 1 次 gh GraphQL 批量 + 每槽 PR 计数逐页;会话计数 0 外部
-      // 调用(store 现算)。查询键不变不重发是防风暴闸。
+      // 材料 RPC + 每 GitHub 任务仓 1 次 gh GraphQL 批量 + 每 CodeHub 任务 1 次
+      // codehub-cli viewTask(只读 Issue)+ 每槽 PR 计数逐页;
+      // 会话计数 0 外部调用(store 现算)。查询键不变不重发是防风暴闸。
       await fetchReposForAllHosts()
       await fetchAllWorktrees()
       setAdoptionToken((n) => n + 1)

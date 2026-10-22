@@ -6311,10 +6311,12 @@
           "a565377c38": "未安装",
           "15cf990798": "未经过验证",
           "f7eb5f0b24": "未安装",
-          "3ba07f933b": "连接 Orca 可用于浏览任务并启动带链接上下文工作区的议题追踪器。",
-          "70e885705b": "任务提供商",
-          "1683acbac4": "连接 Orca 可用于 pull request、merge request、检查和评审状态的源代码主机。",
-          "298c65ecac": "评审提供商"
+          "codeHostGroupTitle": "代码托管",
+          "codeHostGroupDescription": "用于任务、拉取请求、合并请求与评审状态的命令行工具。",
+          "imGroupTitle": "项目群",
+          "imGroupDescription": "用于向项目群发送版本与验收动态的命令行工具。",
+          "buildGroupTitle": "构建",
+          "buildGroupDescription": "用于流水线执行与出包的命令行工具。"
         },
         "KagiSessionLinkForm": {
           "92f0b4e472": "清除",
@@ -6988,7 +6990,8 @@
           "localLinkHelp": "此链接仅在运行于此计算机上的浏览器或 Orca 客户端中有效。",
           "noExternalAddress": "未找到其他设备的地址。将此计算机连接到 LAN 或 Tailscale，刷新，或选择“自定义地址”。",
           "staleAddress": "连接地址已更改。为 {{address}} 生成新链接。",
-          "customInvalid": "请输入有效的主机、主机:端口、IPv6 地址或 ws(s):// URL。"
+          "customInvalid": "请输入有效的主机、主机:端口、IPv6 地址或 ws(s):// URL。",
+          "savedLinkNotice": "已保存的共享链接，当前连接状态未验证。若无法连接，请先检查共享服务和网络地址，再决定是否重新生成链接。"
         },
         "Settings": {
           "3bf149e873": "项目设置 > {{value0}}",

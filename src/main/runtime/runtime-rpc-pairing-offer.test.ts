@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -24,6 +24,93 @@ vi.mock('../git/worktree', () => {
 })
 
 describe('OrcaRuntimeRpcServer', () => {
+  it('recalls the exact issued link after restart without changing persisted credentials', async () => {
+    const userDataPath = mkdtempSync(join(tmpdir(), 'orca-pairing-recall-'))
+    const makeServer = () =>
+      new OrcaRuntimeRpcServer({
+        runtime: new OrcaRuntimeService(),
+        userDataPath,
+        enableWebSocket: true,
+        wsPort: 0,
+        webClientRoot: userDataPath
+      })
+    const first = makeServer()
+    await first.start()
+    const offer = first.createPairingOffer({
+      address: 'wss://builder.example.com/orca',
+      rotate: true
+    })
+    if (!offer.available) {
+      throw new Error('Pairing unavailable')
+    }
+    first.getDeviceRegistry()!.updateLastSeen(offer.deviceId)
+    const parsed = parsePairingCode(offer.pairingUrl)!
+    const reference = {
+      version: 1,
+      deviceId: offer.deviceId,
+      endpoint: offer.endpoint,
+      publicKeyB64: parsed.publicKeyB64,
+      address: 'wss://builder.example.com/orca',
+      intent: 'custom',
+      webClientAvailable: true
+    }
+    await first.stop()
+    const files = [DEVICE_REGISTRY_FILENAME, E2EE_KEYPAIR_FILENAME]
+    const before = files.map((file) => readFileSync(join(userDataPath, file), 'utf8'))
+    const restarted = makeServer()
+    try {
+      expect(() => restarted.restoreRuntimePairingUrl(reference)).toThrow('not ready')
+      await restarted.start()
+      expect(restarted.restoreRuntimePairingUrl(reference)).toEqual({
+        pairingUrl: offer.pairingUrl,
+        webClientUrl: offer.webClientUrl,
+        deviceId: offer.deviceId,
+        endpoint: offer.endpoint
+      })
+      expect(files.map((file) => readFileSync(join(userDataPath, file), 'utf8'))).toEqual(before)
+    } finally {
+      await restarted.stop()
+    }
+  })
+
+  it('does not recreate revoked, unknown, mismatched-identity, or malformed links', async () => {
+    const server = new OrcaRuntimeRpcServer({
+      runtime: new OrcaRuntimeService(),
+      userDataPath: mkdtempSync(join(tmpdir(), 'orca-pairing-recall-invalid-')),
+      enableWebSocket: true,
+      wsPort: 0
+    })
+    try {
+      await server.start()
+      const offer = server.createPairingOffer({ address: '127.0.0.1' })
+      if (!offer.available) {
+        throw new Error('Pairing unavailable')
+      }
+      const reference = {
+        version: 1,
+        deviceId: offer.deviceId,
+        endpoint: offer.endpoint,
+        publicKeyB64: parsePairingCode(offer.pairingUrl)!.publicKeyB64,
+        address: '127.0.0.1',
+        intent: 'local',
+        webClientAvailable: false
+      }
+      const before = server.getDeviceRegistry()!.listDevices()
+      expect(server.restoreRuntimePairingUrl({ ...reference, publicKeyB64: 'changed' })).toBeNull()
+      expect(server.restoreRuntimePairingUrl({ ...reference, deviceId: 'missing' })).toBeNull()
+      expect(
+        server.restoreRuntimePairingUrl({ ...reference, endpoint: 'ws://0.0.0.0:1234' })
+      ).toBeNull()
+      expect(server.restoreRuntimePairingUrl({ version: 2 })).toBeNull()
+      expect(server.getDeviceRegistry()!.listDevices()).toEqual(before)
+      expect(server.revokeRuntimeAccess(offer.deviceId)).toBe(true)
+      expect(server.restoreRuntimePairingUrl(reference)).toBeNull()
+      expect(server.getDeviceRegistry()!.listDevices()).toHaveLength(0)
+    } finally {
+      await server.stop()
+    }
+  })
+
   it('creates a pairing offer for the active WebSocket transport', async () => {
     const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-rpc-'))
     const runtime = new OrcaRuntimeService()

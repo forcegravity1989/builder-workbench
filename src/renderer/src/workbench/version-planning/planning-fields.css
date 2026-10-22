@@ -15,24 +15,24 @@
   font-size: 11px;
   padding-top: var(--space-2);
 }
-.vp-goals .vc-goal-content > label {
+.vp-goals .vc-goal-story > label {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   gap: var(--space-2);
   margin: 0;
 }
-.vp-goals .vc-goal-content > label > span {
+.vp-goals .vc-goal-story > label > span {
   flex: 0 0 52px;
   font-size: 11px;
   color: var(--color-neutral-600);
 }
-.vp-goals .vc-goal-content > .vc-goal-title > span {
+.vp-goals .vc-goal-title > span {
   display: none;
 }
 .vp-goals .vc-goal-title textarea {
   font-weight: 600;
 }
-.vp-goals .vc-goal-content > label > :is(input, textarea) {
+.vp-goals .vc-goal-story > label > :is(input, textarea) {
   background: transparent;
   border-color: transparent;
   padding: var(--space-1);
@@ -42,12 +42,30 @@
   field-sizing: content;
   min-height: 28px;
 }
-.vp-goals .vc-goal-content > label > :is(input, textarea):hover {
+.vp-goals .vc-goal-story > label > :is(input, textarea):hover {
   background: var(--color-neutral-100);
 }
-.vp-goals .vc-goal-content > label > :is(input, textarea):focus {
+.vp-goals .vc-goal-story > label > :is(input, textarea):focus {
   background: var(--color-card);
   border-color: var(--color-divider);
+}
+.vp-goals .vc-goal-meta label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+.vp-goals .vc-goal-meta label > span {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--color-neutral-600);
+}
+.vp-goals .vc-goal-meta label > input {
+  min-width: 0;
+  background: transparent;
+  border-color: transparent;
+  padding: var(--space-1);
+  width: 100%;
 }
 .vp-empty-goals {
   padding: var(--space-4);

@@ -303,7 +303,45 @@ function AppWorkspaceContent(props: {
                           }`}
                         >
                           {layout.workspaceChromeActive ? (
-                            <div className="vc-board-titlebar" aria-hidden="true">
+                            <div className="vc-board-titlebar">
+                              <button
+                                type="button"
+                                className="vc-session-toggle"
+                                aria-label={
+                                  resize.chatCollapsed
+                                    ? translate(
+                                        'auto.app.shell.AppWorkspaceShell.38f5d8318c',
+                                        '展开会话栏'
+                                      )
+                                    : translate(
+                                        'auto.app.shell.AppWorkspaceShell.4bf79d6d8c',
+                                        '收折会话栏'
+                                      )
+                                }
+                                title={
+                                  resize.chatCollapsed
+                                    ? translate(
+                                        'auto.app.shell.AppWorkspaceShell.38f5d8318c',
+                                        '展开会话栏'
+                                      )
+                                    : translate(
+                                        'auto.app.shell.AppWorkspaceShell.4bf79d6d8c',
+                                        '收折会话栏'
+                                      )
+                                }
+                                onClick={resize.toggleChatCollapsed}
+                                style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                              >
+                                {resize.chatCollapsed
+                                  ? translate(
+                                      'auto.app.shell.AppWorkspaceShell.722fd4ab69',
+                                      '展开会话'
+                                    )
+                                  : translate(
+                                      'auto.app.shell.AppWorkspaceShell.5c18da0a65',
+                                      '收折会话'
+                                    )}
+                              </button>
                               {/* Why: the closed-sidebar reopen toggle and window controls float above this drag band as z-index siblings; Electron drag hit-test respects no-drag only on DOM descendants, so this carve-out keeps them clickable. Mirrors the TabGroupPanel spacer. */}
                               {!layout.rightSidebarOpen ? (
                                 <div className="vc-board-titlebar-controls-space" />

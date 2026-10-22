@@ -7,21 +7,26 @@ import {
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import type { Repo } from '../../../shared/repo-types'
 import type { GitHubWorkItem, ListWorkItemsResult } from '../../../shared/github/work-item-types'
-import type { IssueStateEntry } from '../../../shared/github/issue-state-types'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionMaterialScope } from '../../../shared/workbench/version-material-request'
-import { PlanningMaterialSchema } from '../../../shared/workbench/version-material'
+import {
+  PlanningMaterialSchema,
+  type PlanningMaterial
+} from '../../../shared/workbench/version-material'
 import { nativeWorkspaceScope, type NativeWorkspaceScope } from './version-cycle/native-workspace'
 import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
+import type { CycleScope } from './version-cycle/ports'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeVersionMaterialPort } from './version-material-port'
 import { sdlcProviderOf } from './overview-sdlc'
+import { readCodeHubTaskStates } from './wall-readings-codehub'
 import {
   deriveCommitmentProgress,
   issueStateKey,
   parseTaskRepository,
   type WallCountReading,
   type WallProgressReading,
+  type WallTaskState,
   type WallVersionReading
 } from './wall-card-readings'
 import type { WallProject } from './workbench-wall-projects'
@@ -75,7 +80,10 @@ export function resolvePlanContext(
   return null
 }
 
-export async function readVersionAndProgress(context: PlanContext): Promise<{
+export async function readVersionAndProgress(
+  context: PlanContext,
+  project: WallProject
+): Promise<{
   version: WallVersionReading
   progress: WallProgressReading
 }> {
@@ -126,7 +134,7 @@ export async function readVersionAndProgress(context: PlanContext): Promise<{
         progress: { kind: 'unknown', reason: '计划材料读不到' }
       }
     }
-    let tasks: { provider: string; repository: string; number: number }[]
+    let tasks: PlanningMaterial['tasks']
     try {
       // 与计划屏同一窄化：材料文档过 schema 校验后才取 tasks，坏文件如实报读不到。
       tasks = PlanningMaterialSchema.parse(snapshot.document).tasks
@@ -136,24 +144,34 @@ export async function readVersionAndProgress(context: PlanContext): Promise<{
         progress: { kind: 'unknown', reason: '计划材料格式读不到' }
       }
     }
-    const numbersByRepository = new Map<string, number[]>()
+    // provider 准入在发起任何请求前判定（全有或全无）：GitHub 走每仓一次
+    // GraphQL 批量，CodeHub 复用任务屏同一解析与读取语义逐条读回；
+    // 其余 provider 未接入墙卡计数，如实整行「—」。
+    const githubNumbersByRepository = new Map<string, number[]>()
+    const codehubTasks: PlanningMaterial['tasks'] = []
     for (const task of tasks) {
-      if (task.provider !== 'github' || parseTaskRepository(task.repository).kind !== 'github') {
-        return {
-          version: { kind: 'value', version },
-          progress: { kind: 'unknown', reason: '任务仓库的关闭原因不可读（非 GitHub）' }
+      if (task.provider === 'github' && parseTaskRepository(task.repository).kind === 'github') {
+        const bucket = githubNumbersByRepository.get(task.repository)
+        if (bucket) {
+          bucket.push(task.number)
+        } else {
+          githubNumbersByRepository.set(task.repository, [task.number])
         }
+        continue
       }
-      const bucket = numbersByRepository.get(task.repository)
-      if (bucket) {
-        bucket.push(task.number)
-      } else {
-        numbersByRepository.set(task.repository, [task.number])
+      if (task.provider === 'codehub') {
+        codehubTasks.push(task)
+        continue
       }
+      const reason =
+        task.provider === 'github'
+          ? `任务仓库坐标不可解析：${task.repository}`
+          : `任务状态读不到：provider ${task.provider} 未接入墙卡计数`
+      return { version: { kind: 'value', version }, progress: { kind: 'unknown', reason } }
     }
-    const states = new Map<string, IssueStateEntry | undefined>()
+    const states = new Map<string, WallTaskState>()
     const results = await Promise.all(
-      [...numbersByRepository.entries()].map(async ([repository, numbers]) => {
+      [...githubNumbersByRepository.entries()].map(async ([repository, numbers]) => {
         const ref = parseTaskRepository(repository)
         if (ref.kind !== 'github') {
           return { repository, result: { items: [], error: '仓库坐标不可解析' } }
@@ -175,7 +193,24 @@ export async function readVersionAndProgress(context: PlanContext): Promise<{
         }
       }
       for (const entry of result.items) {
-        states.set(issueStateKey(repository, entry.number), entry)
+        states.set(issueStateKey(repository, entry.number), { state: entry.state })
+      }
+    }
+    // CodeHub：身份匹配注册行（解析同任务屏）、只读 Issue 不做 MR 兜底
+    // （防同号 MR 误计，语义与成本见 wall-readings-codehub）。
+    const cycleScope: CycleScope = { ...scope, workflow: 'plan' }
+    try {
+      const codehubStates = await readCodeHubTaskStates(codehubTasks, project.rows, cycleScope)
+      for (const [key, state] of codehubStates) {
+        states.set(key, state)
+      }
+    } catch (error) {
+      return {
+        version: { kind: 'value', version },
+        progress: {
+          kind: 'unknown',
+          reason: `CodeHub 任务状态读不到：${error instanceof Error ? error.message : String(error)}`
+        }
       }
     }
     const progress = deriveCommitmentProgress(tasks, states)

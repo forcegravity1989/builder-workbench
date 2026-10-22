@@ -18,6 +18,7 @@ import {
 import type { VersionDocumentSnapshot } from '../../shared/workbench/version-document'
 import type { PlanningMaterial } from '../../shared/workbench/version-material'
 import {
+  acceptanceRoundMetadata,
   decodeHistorySnapshot,
   planningMaterialGitPath,
   HistorySourceError
@@ -39,27 +40,13 @@ export type VersionHistoryHost = {
 }
 
 export function createVersionHistoryService(host: VersionHistoryHost): VersionHistoryPort {
-  async function verifySource(scope: MetricScope, sourceCommit: string) {
+  async function verifySource(scope: MetricScope, sourceCommit: string, includeCycle = false) {
     const baseline = await host.baseline(scope)
     SourceCommit.parse(baseline.commit)
-    try {
-      await host.git(scope, ['merge-base', '--is-ancestor', sourceCommit, baseline.commit])
-    } catch {
-      throw new HistorySourceError(
-        'unverified-source',
-        '无法证明材料提交已合入项目主干基线；没有改读最新材料'
-      )
-    }
-    return baseline
-  }
-
-  /** A fixed plan must be reachable from its own branch or the trunk baseline; archive is a signal. */
-  async function verifyPlanSource(scope: MetricScope, sourceCommit: string) {
-    const baseline = await host.baseline(scope)
-    SourceCommit.parse(baseline.commit)
-    const head = await host.worktreeHead(scope)
-    SourceCommit.parse(head)
-    for (const tip of [head, baseline.commit]) {
+    const tips = includeCycle
+      ? [SourceCommit.parse(await host.worktreeHead(scope)), baseline.commit]
+      : [baseline.commit]
+    for (const tip of tips) {
       try {
         await host.git(scope, ['merge-base', '--is-ancestor', sourceCommit, tip])
         return baseline
@@ -69,7 +56,9 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     }
     throw new HistorySourceError(
       'unverified-source',
-      '材料提交不在本分支或主干基线历史上；没有改读最新材料'
+      includeCycle
+        ? '材料提交不在本分支或主干基线历史上；没有改读最新材料'
+        : '无法证明材料提交已合入项目主干基线；没有改读最新材料'
     )
   }
 
@@ -131,11 +120,29 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
 
   return {
     async list(input) {
-      const { scope, currentOnly = false } = VersionHistoryListSchema.parse(input)
-      const baseline = await host.baseline(scope)
+      const {
+        scope,
+        source = 'trunk',
+        version,
+        workflow: requestedWorkflow,
+        currentOnly = false,
+        allRevisions = false
+      } = VersionHistoryListSchema.parse(input)
+      const baseline =
+        source === 'cycle'
+          ? { ref: 'HEAD', commit: await host.worktreeHead(scope) }
+          : await host.baseline(scope)
       SourceCommit.parse(baseline.commit)
+      const matches = (entry: { version: string; workflow: 'plan' | 'acceptance' }) =>
+        (version === undefined || entry.version === version) &&
+        (requestedWorkflow === undefined || entry.workflow === requestedWorkflow)
       if (currentOnly) {
-        return readCurrentVersionCatalog(scope, baseline, host.git, readSnapshot)
+        const catalog = await readCurrentVersionCatalog(scope, baseline, host.git, readSnapshot)
+        return {
+          ...catalog,
+          records: catalog.records.filter(matches),
+          problems: catalog.problems.filter(matches)
+        }
       }
       const log = await host.git(scope, [
         'log',
@@ -170,6 +177,9 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           continue
         }
         const workflow = path[2] === 'data' ? 'plan' : 'acceptance'
+        if (!matches({ version: path[1], workflow })) {
+          continue
+        }
         if (!MaterialVersion.safeParse(path[1]).success) {
           problems.push({
             version: path[1],
@@ -198,11 +208,14 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           })
           continue
         }
-        // Records are the baseline history itself: every listed commit is on the
-        // trunk baseline. One record per version/workflow/cycle round — the newest
-        // commit of a round supersedes its intermediates; older revisions stay
-        // traceable through Git. Readers verify identity again at read time.
-        const key = JSON.stringify([path[1], workflow, snapshot.document.cycleId])
+        // The default catalog collapses one cycle's intermediate saves. A week
+        // history explicitly keeps each commit, because cycleId spans weeks.
+        // Every record is reachable from the selected, pinned source tip.
+        const key = JSON.stringify([
+          path[1],
+          workflow,
+          allRevisions ? sourceCommit : snapshot.document.cycleId
+        ])
         if (seen.has(key)) {
           continue
         }
@@ -213,7 +226,8 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           sourceCommit,
           revision: snapshot.revision,
           workflow,
-          committedAt
+          committedAt,
+          ...acceptanceRoundMetadata(snapshot.document)
         })
       }
       return { records, problems }
@@ -224,7 +238,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     },
     async read(input) {
       const request = VersionHistoryReadSchema.parse(input)
-      await verifySource(request.scope, request.sourceCommit)
+      await verifySource(request.scope, request.sourceCommit, request.source === 'cycle')
       const snapshot = await readSnapshot(
         request.scope,
         request.sourceCommit,
@@ -234,12 +248,18 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
       if (snapshot.document.cycleId !== request.cycleId) {
         throw new HistorySourceError('history-identity-mismatch', '固定提交中的周期与所选记录不同')
       }
+      if (request.expectedRevision && snapshot.revision !== request.expectedRevision) {
+        throw new HistorySourceError(
+          'history-identity-mismatch',
+          '固定提交中的材料修订与所选记录不同'
+        )
+      }
       return { ...snapshot, sourceCommit: request.sourceCommit }
     },
     async readPlan(input) {
       const { scope, planRef } = VersionHistoryReadPlanSchema.parse(input)
       const baseline =
-        planRef.kind === 'committed' ? await verifyPlanSource(scope, planRef.sourceCommit) : null
+        planRef.kind === 'committed' ? await verifySource(scope, planRef.sourceCommit, true) : null
       const snapshot =
         planRef.kind === 'committed'
           ? await readSnapshot(scope, planRef.sourceCommit, planRef.version, 'plan')

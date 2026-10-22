@@ -71,7 +71,8 @@ function versionKeyOf(
   return JSON.stringify([
     token,
     activeInProject,
-    project.rows.map((row) => `${row.id}|${row.path}`),
+    // 远端身份键入指纹：CodeHub 任务解析依赖注册行 gitRemoteIdentity，身份晚到自愈重读。
+    project.rows.map((row) => `${row.id}|${row.path}|${row.gitRemoteIdentity?.canonicalKey ?? ''}`),
     worktreeFingerprint(project, worktreesByRepo)
   ])
 }
@@ -136,7 +137,7 @@ export function useWallReadings(
           if (!context) {
             return [project.key, UNDECIDED]
           }
-          return [project.key, await readVersionAndProgress(context)]
+          return [project.key, await readVersionAndProgress(context, project)]
         })
       )
       if (cancelled) {

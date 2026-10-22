@@ -2,9 +2,9 @@
 
 > **维护约定**：记录本特性六环现状。格式按 [02 §6.2](../../01-principles/02-working-backwards.md)。环状态变化时随引发它的提交更新，不记流水。
 
-**现状（2026-09-30）**：任务来源、任务页和计划 / 验收读写已在本分支。intent / spec 从提交回写，**待人 gate**。没有可点原型。本次写文档时没有重跑单测，也没有连真实 CodeHub。
+**现状（2026-10-20）**：任务来源、任务页和计划 / 验收读写已在本分支。intent / spec 从提交回写，**待人 gate**。没有可点原型。2026-10-20 评论显示 / 删除修复随提交重跑 codehub 单测并实连真实 CodeHub 读回（见文末实机证据）；其余环节数据未重跑。
 
-| 环 | 状态 | 证据或已知债 |
+| 环 | 状态 | 证据或缺口 |
 |---|---|---|
 | 1 intent | ◐ | 草案 [intent.md](intent.md)。来源 `05dfa7455`、`b0005c098`、`7ca46d402` |
 | 2 spec | ◐ | 草案 [spec.md](spec.md)。缺可点原型，规格 gate 未过 |
@@ -29,6 +29,8 @@
 | C08 基线版本目录可选 | ◐ | `version-history-service.ts` 的 `treePlans` | `version-history-service.test.ts` 有「无 provider 合入也列出 data.json」；真壳未选过版本 |
 | CJ01 关闭后重启仍为关闭 | ○ | 任务页 + CLI | 未执行 |
 
-相关单测还有 `src/main/codehub/mutations.test.ts`、`work-items.test.ts`、`src/main/github/issue-update.codehub.test.ts`（GitHub 更新不因旁边有 CodeHub 远程而改道）。
+相关单测还有 `src/main/codehub/mutations.test.ts`、`work-items.test.ts`、`comments.test.ts`（评论展平、线程回复与删除命令形状）、`src/main/github/issue-update.codehub.test.ts`（GitHub 更新不因旁边有 CodeHub 远程而改道）。
 
-**已知债**：真实 CodeHub 上的列表、关单评论、归档未知文案、从验收打开任务，都没有人看过。CodeHub 的 PR/MR 状态读回通道未建，C07 会一直是未知，直到 gate 改决定并有可读回的实现（2026-10-13 起归档状态按 archivePr 薄读取，CodeHub 分支诚实返回 unknown）。同一提交里的侧栏项目列表和「配置指标进入会话」归版本计划、版本验收和总览指标，不记成本特性已验收。
+实机证据（2026-10-10，project-intake 名片链复用同一 CodeHub 能力）：克隆前名片预读读侧（repo-reads）对两个内源 host 实机验证可读（修复 --jq 引号假 absent 后）；createCodeHubMr 打包实跑在真实 CodeHub 仓验证可开 MR（应用内曾出现一次瞬时失败，错误信息未留存，排除法定位；查重/创建命令现均实测通过）。
+
+评论读回（2026-10-20，评论显示 / 删除修复）：`mr review list` 展平 discussion 内嵌 notes 后，对真实 MR 实读 3 条评论、issue 路径 1 条，系统流水被过滤；删除与线程回复命令形状由单测与本机 CLI `--help` 锁定，未对真实 MR 执行删除或实发回复。独立评论的回复寻址（单评 discussion id）与 `#note_<id>` 网页锚点未在真实 CodeHub 验证。

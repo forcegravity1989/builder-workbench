@@ -1,16 +1,6 @@
 import { React } from 'react'
-import {
-  ArrowLeft,
-  BrainCircuit,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  ExternalLink,
-  ListTodo,
-  Pencil,
-  RefreshCw
-} from 'lucide-react'
-import { Field, done, titleForTask } from './shared.jsx'
+import { ArrowLeft, Check, ChevronRight, ExternalLink, Pencil } from 'lucide-react'
+import { Field, titleForTask } from './shared.jsx'
 import { ReactMarkdown } from 'react-markdown'
 import { remarkGfm } from 'remark-gfm'
 
@@ -163,90 +153,4 @@ function PrototypeTaskList({ items, openIssue }) {
     </div>
   )
 }
-function PrototypeVersionTasks({
-  disabled = false,
-  expanded,
-  promptConversation,
-  setExpanded,
-  setNotice,
-  setTaskFilter,
-  shownTasks,
-  taskFilter,
-  taskList,
-  taskSection,
-  tasks,
-  version,
-  view
-}) {
-  const summary = (
-    <button
-      className="issue-summary"
-      aria-expanded={expanded}
-      onClick={() => {
-        setTaskFilter('')
-        setExpanded(!expanded)
-      }}
-    >
-      <ListTodo />
-      <strong>{view === 'friday' ? 'Issue 状态核对' : '版本任务'}</strong>
-      <span>{disabled ? '待选择版本' : `${tasks.length} 项 Issue`}</span>
-      {!disabled && (
-        <span className="issue-progress">
-          完成 {done(tasks)} / {tasks.length}
-        </span>
-      )}
-      {expanded ? <ChevronDown /> : <ChevronRight />}
-    </button>
-  )
-  return (
-    <section className="version-tasks" ref={taskSection}>
-      {view === 'monday' ? (
-        <div className="planning-task-header" data-expanded={expanded}>
-          {summary}
-          <button
-            className="btn btn-secondary"
-            disabled={disabled}
-            onClick={() =>
-              promptConversation(
-                `请根据 ${version} 当前目标核对任务拆解，与我确认后创建或更新 Issue，并关联版本及目标。`
-              )
-            }
-          >
-            <BrainCircuit />
-            在会话中拆解
-          </button>
-        </div>
-      ) : (
-        summary
-      )}
-      {expanded && (
-        <div className="embedded-tasks">
-          {(view !== 'monday' || taskFilter) && (
-            <div className="tasks-toolbar">
-              <span>{taskFilter ? `${taskFilter} 关联任务` : '当前版本关联任务'}</span>
-              {taskFilter && (
-                <button
-                  className={`btn ${view === 'monday' ? 'btn-secondary' : 'btn-ghost'}`}
-                  onClick={() => setTaskFilter('')}
-                >
-                  显示全部
-                </button>
-              )}
-              {view !== 'monday' && (
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => setNotice('原型未连接远端；保留上次读取的 Issue 状态。')}
-                >
-                  <RefreshCw />
-                  刷新状态
-                </button>
-              )}
-            </div>
-          )}
-          {taskList(shownTasks)}
-        </div>
-      )}
-    </section>
-  )
-}
-export { PrototypeTasks, PrototypeTaskList, PrototypeVersionTasks }
+export { PrototypeTasks, PrototypeTaskList }

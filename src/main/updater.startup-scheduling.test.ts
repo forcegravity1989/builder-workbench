@@ -34,26 +34,30 @@ describe('updater', () => {
     vi.useFakeTimers()
   })
 
-  it('keeps Workbench manual updates isolated from every Orca update entry', async () => {
+  // Why: Workbench builds once disabled every updater entry ("manual update"
+  // guard); #338 restores the native chain and only repoints the feed to the
+  // Workbench release repo. This pins both halves of that contract.
+  it('configures the Workbench build against the Workbench release repo', async () => {
     vi.stubEnv('WORKBENCH_SHELL', '1')
     try {
+      const mainWindow = { webContents: { send: vi.fn() } }
       const updater = await loadUpdaterModule()
-      updater.setupAutoUpdater({ webContents: { send: vi.fn() } } as never)
-      updater.checkForUpdates()
+      updater.setupAutoUpdater(mainWindow as never, {
+        getLastUpdateCheckAt: () => Date.now() - 25 * 60 * 60 * 1000
+      })
+      expect(autoUpdaterMock.setFeedURL).toHaveBeenCalledWith({
+        provider: 'generic',
+        url: 'https://github.com/forcegravity1989/builder-workbench/releases/latest/download'
+      })
+      await vi.waitFor(() => {
+        expect(autoUpdaterMock.checkForUpdates).toHaveBeenCalledTimes(1)
+      })
+      // The removed guard turned all three entries into a synchronous「手动更新」
+      // error status; the restored native chain must never surface it again.
       updater.checkForUpdatesFromMenu()
       updater.downloadUpdate()
       updater.quitAndInstall()
-      expect(await updater.listAvailableReleaseBuilds('stable')).toEqual([])
-      expect(updater.getRemoteServerUpdateSupport().automatic).toBe(false)
-      expect(() => updater.checkForRemoteServerUpdate('runtime')).toThrow()
-      expect(updater.getUpdateStatus()).toMatchObject({ state: 'error', userInitiated: true })
-      expect(autoUpdaterMock.setFeedURL).not.toHaveBeenCalled()
-      expect(autoUpdaterMock.checkForUpdates).not.toHaveBeenCalled()
-      expect(autoUpdaterMock.downloadUpdate).not.toHaveBeenCalled()
-      expect(autoUpdaterMock.quitAndInstall).not.toHaveBeenCalled()
-      expect(fetchNudgeMock).not.toHaveBeenCalled()
-      expect(powerMonitorOnMock).not.toHaveBeenCalled()
-      expect(vi.getTimerCount()).toBe(0)
+      expect(JSON.stringify(updater.getUpdateStatus())).not.toContain('手动更新')
     } finally {
       vi.unstubAllEnvs()
     }

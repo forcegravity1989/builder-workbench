@@ -204,7 +204,7 @@
                   <button class="btn btn-primary" type="button" data-coming-soon="true">打开项目总览</button>
                   <button class="btn btn-secondary" type="button" data-coming-soon="true">编辑名片</button>
                   <button class="btn btn-secondary" type="button" data-coming-soon="true">＋ 代码仓</button>
-                  <span class="hint">读数只显数字不跳转；明细与承诺完整分解（含决定不做/重复关闭）在总览看</span>
+                  <span class="hint">读数只显数字不跳转；承诺任务明细在总览看</span>
                 </div>
               </article>
 
@@ -275,7 +275,7 @@
             <div class="legend" aria-label="读数口径图例">
               <strong>读数三态</strong>：有数据给真值 · 读不到给「—」（Unknown 灰字，不装绿、不装零） · 没选过版给「版本未定」。<br>
               <strong>无健康灯</strong>：卡上没有绿/黄/红圆点，墙头没有健康概览条——灯是机器下的结论，判断归人；墙上唯一的状态事实是主机连接（在线/离线/未知）。<br>
-              <strong>口径</strong>：版本 = 原生选版偏好 + 主干材料校验（与总览同机制）；承诺进展 = 该版本 data.json tasks × Issue 原生状态与关闭原因现算，决定不做/重复不上卡；在跑会话 = Orca live 口径（fresh 且非 done，与侧栏同源），跨主机经 session tabs 清单链路，离线 ≠ 0；PR 待审 = 该仓全部 open PR 计数。全部杀进程重开可复算一致。
+              <strong>口径</strong>：版本 = 原生选版偏好 + 主干材料校验（与总览同机制）；承诺进展 = 该版本 data.json tasks × Issue 原生状态现算，关闭即计完成、关闭原因不参与计数（GitHub 每仓批量读回，CodeHub 复用任务屏语义逐条读回）；在跑会话 = Orca live 口径（fresh 且非 done，与侧栏同源），跨主机经 session tabs 清单链路，离线 ≠ 0；PR 待审 = 该仓全部 open PR 计数。全部杀进程重开可复算一致。
             </div>
           </div>
         </section>

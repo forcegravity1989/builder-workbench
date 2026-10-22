@@ -13,7 +13,7 @@ import { useCycleWorkspaceWorkflow } from './cycle-workspace-view'
 import { useCycleWorkspaceTarget } from './use-cycle-workspace-target'
 import { CycleWorkspaceContext } from './cycle-workspace-context'
 import { nativeVersionMaterialPort } from '../version-material-port'
-import { nativeTaskPort } from '../task-port'
+import { nativeTaskPort } from '../native-task-port'
 import { nativeArchivePrPort } from '../archive-pr-port'
 import './version-cycle.css'
 

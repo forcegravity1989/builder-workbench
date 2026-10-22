@@ -4,6 +4,10 @@ import {
   type AcceptanceMaterial,
   type PlanningMaterial
 } from '../../../../shared/workbench/version-material'
+import {
+  acceptanceGoalSnapshot,
+  acceptanceRoundState
+} from '../../../../shared/workbench/acceptance-rounds'
 
 export type PlanReference = AcceptanceMaterial['planRef']
 export type CandidateReference = NonNullable<AcceptanceMaterial['candidateRef']>
@@ -14,7 +18,13 @@ export type EvidenceCheck =
   | { kind: 'unknown' | 'mismatch' | 'unavailable'; reason: string }
 
 export function sameAcceptanceSource(left: AcceptanceMaterial, right: AcceptanceMaterial): boolean {
+  const leftRounds = acceptanceRoundState(left)
+  const rightRounds = acceptanceRoundState(right)
   return (
+    leftRounds.kind !== 'conflict' &&
+    rightRounds.kind !== 'conflict' &&
+    JSON.stringify(leftRounds.rounds.toSorted((a, b) => a.id.localeCompare(b.id))) ===
+      JSON.stringify(rightRounds.rounds.toSorted((a, b) => a.id.localeCompare(b.id))) &&
     left.version === right.version &&
     left.cycleId === right.cycleId &&
     JSON.stringify(left.planRef) === JSON.stringify(right.planRef) &&
@@ -62,8 +72,12 @@ export function createAcceptanceMaterial(input: {
   })
 }
 
-export function emptyGoalResult(goalId: string): GoalResult {
-  return { goalId, deliveries: [], readings: [], note: '', nextStep: '' }
+export function emptyGoalResult(goalId: string, document?: AcceptanceMaterial): GoalResult {
+  const result: GoalResult = { goalId, deliveries: [], readings: [], note: '', nextStep: '' }
+  const current = document && acceptanceRoundState(document).current
+  return current
+    ? { ...result, rounds: [{ ...current, snapshot: acceptanceGoalSnapshot(result) }] }
+    : result
 }
 
 export function artifactCandidateCheck(
