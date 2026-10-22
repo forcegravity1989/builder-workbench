@@ -1,4 +1,5 @@
 import { useCodeHubDetail } from './use-codehub-detail'
+import { CodeHubChecksTab } from './ChecksTab'
 import { CodeHubConversation } from './Conversation'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import { translate } from '@/i18n/i18n'
@@ -365,13 +366,20 @@ export function TaskPageCodeHubDetail({
               <TabsTrigger value="checks" className="px-2">
                 <ListChecks className="size-3.5" />
                 {translate('auto.components.GitHubItemDialog.4bd1f5b055', 'Checks')}
+                {detailState.checks && detailState.checks.length > 0 && (
+                  <span className="ml-1 rounded-full bg-muted px-1.5 text-[10px] text-muted-foreground">
+                    {detailState.checks.length}
+                  </span>
+                )}
               </TabsTrigger>
             </TabsList>
             <div className="min-h-0 flex-1 overflow-y-auto scrollbar-sleek">
               <TabsContent value="conversation" className="mt-0">
                 {conversation}
               </TabsContent>
-              <TabsContent value="checks" className="mt-0" />
+              <TabsContent value="checks" className="mt-0">
+                <CodeHubChecksTab state={detailState} />
+              </TabsContent>
             </div>
           </Tabs>
         </>
