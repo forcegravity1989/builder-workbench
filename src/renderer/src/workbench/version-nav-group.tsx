@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
-import { GoalDirectoryRow, TasksRow, WorkflowRow, goalDirectoryTrees } from './version-nav-rows'
+import {
+  GoalDirectoryRow,
+  OverviewRow,
+  TasksRow,
+  WorkflowRow,
+  goalDirectoryTrees
+} from './version-nav-rows'
 
 /**
  * G2 侧栏单个版本组（P3a）：版本行（展开/收起＋退休标识＋清理占位入口）与
@@ -22,10 +28,12 @@ export type VersionNavGroupProps = {
   /** 当前点亮的流程（'plan'|'acceptance'），null=无。 */
   activeWorkflow: VersionWorkflow | null
   activeTasks: boolean
+  activeOverview: boolean
   activeGoalId: string | null
   onToggle: () => void
   onCleanup: () => void
   onBindTree: () => void
+  onOverview: () => void
   onNavigateWorkflow: (workflow: VersionWorkflow) => void
   onPrepare: () => void
   onOpenTasks: (goal?: { goalId: string; label: string }) => void
@@ -41,10 +49,12 @@ export function VersionNavGroup({
   worktrees,
   activeWorkflow,
   activeTasks,
+  activeOverview,
   activeGoalId,
   onToggle,
   onCleanup,
   onBindTree,
+  onOverview,
   onNavigateWorkflow,
   onPrepare,
   onOpenTasks,
@@ -115,6 +125,7 @@ export function VersionNavGroup({
       </div>
       {expanded ? (
         <div className="ml-[13px] flex flex-col gap-0.5 border-l border-worktree-sidebar-foreground/10 pl-1.5">
+          <OverviewRow active={activeOverview} onOpenOverview={onOverview} />
           <WorkflowRow
             version={entry.version}
             workflow="plan"

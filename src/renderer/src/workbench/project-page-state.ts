@@ -12,10 +12,17 @@ export type CharterEditOptions = {
   seedName?: string
 }
 
+/** G2（P6）：版本总览页选项——按项目注册行与版本打开，只读派生，无第二份存储。 */
+export type VersionOverviewOptions = {
+  repoId: string
+  version: string
+}
+
 type ProjectPage =
   | { kind: 'wall' }
   | { kind: 'onboard'; options: ProjectOnboardOptions }
   | { kind: 'charter'; options: CharterEditOptions }
+  | { kind: 'version-overview'; options: VersionOverviewOptions }
   | null
 
 let projectPage: ProjectPage = null
@@ -42,6 +49,12 @@ export function openProjectOnboard(options: ProjectOnboardOptions = {}): void {
 export function openCharterEdit(options: CharterEditOptions): void {
   useAppStore.getState().openActivityPage()
   setProjectPage({ kind: 'charter', options: { ...options } })
+}
+
+/** G2（P6）：版本总览（表格周报风格，只读派生自 Git 材料与登记）。 */
+export function openVersionOverview(options: VersionOverviewOptions): void {
+  useAppStore.getState().openActivityPage()
+  setProjectPage({ kind: 'version-overview', options: { ...options } })
 }
 
 export function closeProjectPage(): void {

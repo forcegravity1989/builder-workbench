@@ -7,6 +7,7 @@ import {
   EllipsisVertical,
   GitBranch,
   ListTodo,
+  Newspaper,
   Target
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -353,6 +354,32 @@ export function TasksRow({
           className={cn('size-3.5 shrink-0', active ? '' : 'text-worktree-sidebar-foreground/35')}
         />
         <span>任务</span>
+      </button>
+    </div>
+  )
+}
+
+/** G2（P6）：每版「总览」行——版本总览页（表格周报风格，只读派生）。 */
+export function OverviewRow({
+  active,
+  onOpenOverview
+}: {
+  active: boolean
+  onOpenOverview: () => void
+}): React.JSX.Element {
+  return (
+    <div className={cn(ROW_CLASS, active ? ROW_ACTIVE : ROW_IDLE)}>
+      <ChevronSpacer />
+      <button
+        type="button"
+        onClick={onOpenOverview}
+        aria-current={active ? 'page' : undefined}
+        className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-0.5 text-left"
+      >
+        <Newspaper
+          className={cn('size-3.5 shrink-0', active ? '' : 'text-worktree-sidebar-foreground/35')}
+        />
+        <span>总览</span>
       </button>
     </div>
   )

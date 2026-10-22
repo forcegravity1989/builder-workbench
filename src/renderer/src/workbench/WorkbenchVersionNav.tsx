@@ -14,6 +14,7 @@ import { VersionNavGroup } from './version-nav-group'
 import { NewVersionDialog, type NewVersionDialogRequest } from './NewVersionDialog'
 import { openGoalStartComposer } from './goal-start-action'
 import { openGoalWorkspace } from './scoped-task-workspace'
+import { openVersionOverview, useProjectPage } from './project-page-state'
 import { loadVersionPlanDocument } from './version-task-entries'
 import { useCycleView } from './cycle-view-state'
 
@@ -60,6 +61,11 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
   )
   const taskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
   const cycleView = useCycleView()
+  const projectPage = useProjectPage()
+  const overviewVersion =
+    activeView === 'activity' && projectPage?.kind === 'version-overview'
+      ? projectPage.options.version
+      : null
   const catalog = useVersionCatalogForRepo(repoId)
   const browsedVersion = useBrowsedVersion(repoId)
   const [dialog, setDialog] = useState<DialogState>(null)
@@ -254,6 +260,8 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
               activeTasks={
                 activeView === 'tasks' && taskScope?.version === entry.version && !taskScope?.goalId
               }
+              activeOverview={overviewVersion === entry.version}
+              onOverview={() => openVersionOverview({ repoId, version: entry.version })}
               activeGoalId={
                 activeView === 'tasks' && taskScope?.version === entry.version
                   ? (taskScope?.goalId ?? null)

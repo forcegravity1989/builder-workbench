@@ -202,4 +202,17 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(cleanup.getByRole('button', { name: /删除所勾选（2）/ })).toBeEnabled()
   await cleanup.getByRole('button', { name: '取消' }).click()
   await expect(cleanup).toHaveCount(0)
+
+  // ---- 版本总览（P6）：每版「总览」行挂载表格页；未提交材料如实缺失，不装绿 ----
+  const v99Group = workbenchPage.locator('.wb-version-group', {
+    has: workbenchPage.getByRole('button', { name: 'v9.9 展开或收起' })
+  })
+  await v99Group.getByRole('button', { name: '总览', exact: true }).click()
+  await expect(workbenchPage.getByRole('heading', { name: 'v9.9 版本总览' })).toBeVisible({
+    timeout: 60_000
+  })
+  await expect(workbenchPage.getByText('主干没有 v9.9 的已提交计划材料。')).toBeVisible({
+    timeout: 60_000
+  })
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-version-overview.png') })
 })
