@@ -158,5 +158,3 @@ export function useBoardAnnotations() {
     toggleMode
   }
 }
-
-export type BoardAnnotations = ReturnType<typeof useBoardAnnotations>

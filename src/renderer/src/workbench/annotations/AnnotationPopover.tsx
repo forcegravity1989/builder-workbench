@@ -1,4 +1,5 @@
 import { MessageSquarePlus, Plus, X } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import { useState } from 'react'
 import { BoardIconButton } from '../board-ui'
 import type { AnnotationRef } from './types'
@@ -33,7 +34,10 @@ export function AnnotationPopover({
       onSave(draft.trim())
     }
   }
-  return (
+  // Portaled to body: left/top are viewport coordinates from the clicked
+  // element's rect, so the popover must not inherit any board-local containing
+  // block (container-type/contain ancestry) — same approach as Radix overlays.
+  return createPortal(
     <div
       className="g3-annot-pop"
       role="dialog"
@@ -68,6 +72,7 @@ export function AnnotationPopover({
           <Plus size={13} aria-hidden="true" /> 添加
         </button>
       </footer>
-    </div>
+    </div>,
+    document.body
   )
 }

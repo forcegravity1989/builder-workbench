@@ -75,7 +75,6 @@ export function PlanningPriorReview({
                   ) : (
                     <div key={issue.key}>
                       <span className="g3-id">#{issue.number}</span>
-                      <span className="g3-muted">标题未读到</span>
                     </div>
                   )
                 )

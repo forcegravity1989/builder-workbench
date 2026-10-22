@@ -224,7 +224,10 @@ export function PlanningGoals({
                 relatedTasks={plan.tasks.filter((task) => task.goalId === goal.goalId)}
                 reads={readsByReference}
                 onChange={changeGoal}
-                onRemove={onRemoveGoal}
+                onRemove={(goalId) => {
+                  setEditingGoalId(null)
+                  onRemoveGoal(goalId)
+                }}
                 onTask={onTask}
                 onSendAction={onSendAction}
                 metrics={metrics}

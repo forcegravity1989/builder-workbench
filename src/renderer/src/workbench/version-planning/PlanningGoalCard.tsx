@@ -138,7 +138,6 @@ export function PlanningGoalCard({
             rows={1}
             aria-label={`${goalNumber} 目标`}
             value={goal.title}
-            placeholder="明确本版要达成的结果"
             onChange={(event) => onChange({ ...goal, title: event.target.value })}
           />
         )}

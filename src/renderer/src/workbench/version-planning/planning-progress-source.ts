@@ -10,7 +10,7 @@ import {
 } from '../../../../shared/workbench/version-material'
 
 /** The fixed acceptance record plus the plan it adopted, both identity-verified. */
-export type PlanningProgressSourceDocuments = {
+type PlanningProgressSourceDocuments = {
   acceptance: AcceptanceMaterial
   plan: PlanningMaterial
 }

@@ -10,24 +10,23 @@ import { issueKey, issueMarkFor } from '../version-acceptance/acceptance-issue-a
 import { nativeVersionHistoryPort } from '../version-history-port'
 import { readPlanningProgressSource } from './planning-progress-source'
 
-export type PriorCarryoverIssue = {
+type PriorCarryoverIssue = {
   /** Full task identity — unique React key across repositories. */
   key: string
   number: number
   /** Null when the frozen material has no snapshot entry to join — shown as number only, never guessed. */
   title: string | null
-  url: string | null
   /** Full snapshot for the native-detail round trip; null when unavailable. */
   task: CycleTaskSnapshot | null
 }
 
-export type PriorCarryoverDirective = {
+type PriorCarryoverDirective = {
   /** M1… in material order. */
   label: string
   text: string
 }
 
-export type PriorCarryovers = {
+type PriorCarryovers = {
   issues: PriorCarryoverIssue[]
   directives: PriorCarryoverDirective[]
 }
@@ -82,14 +81,12 @@ export function derivePriorCarryovers(
               key: issueKey(reference),
               number: ready.iid,
               title: ready.title,
-              url: ready.url,
               task: readySnapshotToTask(ready)
             }
           : {
               key: issueKey(reference),
               number: reference.number,
               title: null,
-              url: null,
               task: null
             }
       )

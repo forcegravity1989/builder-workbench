@@ -15,13 +15,13 @@ import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
  * "no label = unclassified" grouping). Rows without a ready task read show no
  * badge at all — unknown labels never impersonate Feature.
  */
-export function taskKind(labels: string[] | undefined): 'Bug' | 'Feature' {
+function taskKind(labels: string[] | undefined): 'Bug' | 'Feature' {
   return (labels ?? []).some((label) => /^(bug|缺陷)$/i.test(String(label).trim()))
     ? 'Bug'
     : 'Feature'
 }
 
-export function readableTaskState(state: string): string {
+function readableTaskState(state: string): string {
   switch (state.trim().toLowerCase()) {
     case 'open':
     case 'opened':
@@ -92,7 +92,6 @@ export function PlanningGoalTasks({
             <div className="g3-task" key={key} {...attributes}>
               <span className="g3-task-static">
                 <span className="g3-id">#{reference.number}</span>
-                <span className="g3-muted">标题未读到</span>
               </span>
               <span
                 className="g3-task-state"
