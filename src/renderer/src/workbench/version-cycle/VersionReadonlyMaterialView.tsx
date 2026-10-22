@@ -52,6 +52,8 @@ export function VersionReadonlyMaterialView({
 
   const ref = workflow === 'plan' ? entry?.material.plan : entry?.material.acceptance
   const refKey = ref ? `${ref.sourceCommit}:${ref.revision}` : null
+  const catalogReady = catalog.catalog !== null
+  const catalogError = catalog.error
   useEffect(() => {
     let cancelled = false
     setState({ kind: 'loading' })
@@ -60,12 +62,17 @@ export function VersionReadonlyMaterialView({
       return
     }
     if (!ref || !refKey) {
+      if (!catalogReady && !catalogError) {
+        // 目录装载中不落判「无材料」（未成立的否定断言）；就绪后本 effect 重跑再判。
+        return
+      }
       setState({
         kind: 'missing',
-        message:
-          workflow === 'plan'
-            ? `主干没有 ${version} 的已提交计划材料（版本可能从未归档，或目录读取失败）。`
-            : `主干没有 ${version} 的已提交验收材料（验收可能从未归档，或目录读取失败）。`
+        message: catalogError
+          ? `版本目录读取失败：${catalogError}`
+          : workflow === 'plan'
+            ? `主干没有 ${version} 的已提交计划材料（版本可能从未归档）。`
+            : `主干没有 ${version} 的已提交验收材料（验收可能从未归档）。`
       })
       return
     }
@@ -123,9 +130,10 @@ export function VersionReadonlyMaterialView({
     return () => {
       cancelled = true
     }
-    // refKey 固定来源变化才重读；entry 对象每轮目录刷新都是新引用，不进依赖。
+    // refKey 固定来源变化才重读；entry 对象每轮目录刷新都是新引用，不进依赖，
+    // 目录就绪/失败以稳定布尔与文本进依赖（装载中→就绪的重判靠它们触发）。
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repoId, home, workflow, version, refKey])
+  }, [repoId, home, workflow, version, refKey, catalogReady, catalogError])
 
   const workflowLabel = workflow === 'plan' ? '计划' : '验收'
   const liveWorkspaces = entry?.workspaces.length ?? 0

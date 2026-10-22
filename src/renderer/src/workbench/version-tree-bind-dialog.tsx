@@ -43,6 +43,11 @@ const WORKFLOW_LABELS: Record<BindWorkflow, string> = {
   goal: '目标协作树'
 }
 
+/** 行键=宿主限定身份（STA-4343：同一 repoId::path 的 id 可跨宿主重复）。 */
+function treeKey(tree: Pick<Worktree, 'id' | 'hostId'>): string {
+  return `${tree.hostId ?? LOCAL_EXECUTION_HOST_ID}::${tree.id}`
+}
+
 export function VersionTreeBindDialog({
   version,
   entry,
@@ -65,13 +70,13 @@ export function VersionTreeBindDialog({
       ),
     [worktrees]
   )
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedKey, setSelectedKey] = useState<string | null>(null)
   const [workflow, setWorkflow] = useState<BindWorkflow>('plan')
   const [goalId, setGoalId] = useState<string>('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const selected = candidates.find((tree) => tree.id === selectedId) ?? null
+  const selected = candidates.find((tree) => treeKey(tree) === selectedKey) ?? null
   const selectionSuggestion = selected ? suggestedWorkflow(selected, version) : null
   const effectiveWorkflow = selectionSuggestion ?? workflow
   const goalMissing = effectiveWorkflow === 'goal' && !goalId
@@ -135,12 +140,12 @@ export function VersionTreeBindDialog({
               工作树
               <select
                 className="border-input rounded-md border bg-transparent px-2 py-1"
-                value={selectedId ?? ''}
-                onChange={(event) => setSelectedId(event.target.value || null)}
+                value={selectedKey ?? ''}
+                onChange={(event) => setSelectedKey(event.target.value || null)}
               >
                 <option value="">待选择工作树</option>
                 {candidates.map((tree) => (
-                  <option key={`${tree.hostId ?? 'local'}::${tree.id}`} value={tree.id}>
+                  <option key={treeKey(tree)} value={treeKey(tree)}>
                     {tree.displayName?.trim() ||
                       tree.branch?.replace(/^refs\/heads\//, '') ||
                       tree.id}

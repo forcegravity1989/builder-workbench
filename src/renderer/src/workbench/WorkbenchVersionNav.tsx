@@ -19,10 +19,11 @@ import { loadVersionPlanDocument } from './version-task-entries'
 import { useCycleView } from './cycle-view-state'
 
 /**
- * G2 侧栏版本区（P3a，高保真修订 8）：版本平铺（旧版本默认收起即退休形态，
- * 可展开回看）；每版含计划/任务/目标目录/验收行；「＋ 新建版本」轻表单接
- * workbench.versionWorkspace.prepare；版本行删除图标接清理占位（生产删除 UI
- * 需求不变，确认单与原生删除链后续交付）。目录永远现算，读取失败如实呈现。
+ * G2 侧栏版本区（P3a/P3b/P6，高保真修订 8/9）：版本平铺（旧版本默认收起即退休
+ * 形态，可展开回看）；每版含总览/计划/任务/目标目录/验收行；「＋ 新建版本」轻
+ * 表单接 workbench.versionWorkspace.prepare；版本行另接「绑定已有工作树」（补
+ * 绑定，人主导）与「清理」确认单（执行复用原生批量删除漏斗）。目录永远现算，
+ * 读取失败如实呈现。
  */
 
 type DialogState =

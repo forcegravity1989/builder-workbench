@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import type { Repo } from '../../../shared/repo-types'
@@ -11,6 +11,10 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
+import {
+  getAutomationAuthorityTarget,
+  listAutomationsForTarget
+} from '@/components/automations/automation-host-client'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { Worktree } from '../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
@@ -135,6 +139,42 @@ export function VersionCleanupDialog({
   const [checked, setChecked] = useState<ReadonlySet<string>>(
     () => new Set(rows.filter((row) => row.local && row.tree !== null).map((row) => row.key))
   )
+  // spec「版本级清理」：本版自动化仍启用时在对话框如实提示（是否停用由人在原生
+  // 编辑器决定）。探测覆盖本机可见的自动化登记（creationKey 版本维度后缀匹配，
+  // P5 版本化身份）；他宿主 runtime 的条目不跨机探测，属如实留白。
+  const [automationNotice, setAutomationNotice] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    setAutomationNotice(null)
+    void (async () => {
+      try {
+        const automations = await listAutomationsForTarget(
+          getAutomationAuthorityTarget({ kind: 'desktop' })
+        )
+        const enabled = automations.filter(
+          (item) =>
+            item.enabled &&
+            typeof item.creationKey === 'string' &&
+            item.creationKey.startsWith('bw-cycle:') &&
+            item.creationKey.endsWith(`:${version}`)
+        )
+        if (!cancelled && enabled.length > 0) {
+          setAutomationNotice(
+            `本版仍有 ${enabled.length} 条已启用的周期自动化（${enabled
+              .map((item) => item.name)
+              .join(
+                '、'
+              )}）：清理不改写它们；树删除后到点触发按登记缺失如实呈现。是否停用由你在原生自动化编辑器决定。`
+          )
+        }
+      } catch {
+        // 探测失败不阻塞清理：静态语义行仍如实说明「不改写自动化条目」。
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [version])
   const toggle = (key: string, next: boolean) => {
     setChecked((previous) => {
       const updated = new Set(previous)
@@ -234,6 +274,11 @@ export function VersionCleanupDialog({
             )
           })}
         </div>
+        {automationNotice ? (
+          <p role="note" className="text-[11.5px] text-muted-foreground">
+            {automationNotice}
+          </p>
+        ) : null}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>
             取消

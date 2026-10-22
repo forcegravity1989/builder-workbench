@@ -1,16 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { useAppStore } from '@/store'
-import type {
-  AcceptanceMaterial,
-  PlanningMaterial
-} from '../../../shared/workbench/version-material'
+import React, { useMemo } from 'react'
 import type { ArchivePrStatusResult } from '../../../shared/workbench/archive-pr-status'
-import { nativeVersionHistoryPort } from './version-history-port'
-import { nativeArchivePrPort } from './archive-pr-port'
 import { useVersionCatalogForRepo } from './use-version-catalog'
-import { nativeWorkspaceScope } from './version-cycle/native-workspace'
+import { useVersionOverviewMaterials } from './version-overview-materials'
 import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
 import type { VersionOverviewOptions } from './project-page-state'
+import type { PlanningMaterial } from '../../../shared/workbench/version-material'
 
 /**
  * G2 版本总览（P6，高保真修订 9：最简表格周报风格）：一版一页，从主干已提交
@@ -18,12 +12,8 @@ import type { VersionOverviewOptions } from './project-page-state'
  * 计划承诺 / 任务事实 / 人工验收 / 归档与发布 / 遗留分区呈现，互不冒充：
  * 归档 PR 合入状态是按记录引用的薄读取，读不到保持未知；发布证据检索未接入
  * 前如实标注，不猜。在制版本的未合入草稿以计划屏为准，本页只读已提交材料。
+ * 数据装载在 version-overview-materials.ts。
  */
-
-type DocLoad<T> =
-  | { kind: 'loading' }
-  | { kind: 'ready'; document: T; sourceCommit: string; committedAt: string }
-  | { kind: 'missing'; message: string }
 
 const DECISION_LABELS = { met: '达成', 'not-met': '未达', pending: '待核' } as const
 
@@ -70,141 +60,21 @@ export function VersionOverviewPage({
   options: VersionOverviewOptions
 }): React.JSX.Element {
   const { repoId, version } = options
-  const trees = useAppStore((s) => s.worktreesByRepo[repoId])
-  const home = useMemo(
-    () => trees?.find((tree) => tree.isMainWorktree) ?? trees?.[0] ?? null,
-    [trees]
-  )
   const catalog = useVersionCatalogForRepo(repoId)
   const entry = useMemo(
     () => catalog.catalog?.entries.find((item) => item.version === version) ?? null,
     [catalog.catalog, version]
   )
-  const planRefKey = entry?.material.plan
-    ? `${entry.material.plan.sourceCommit}:${entry.material.plan.revision}`
-    : null
-  const acceptanceRefKey = entry?.material.acceptance
-    ? `${entry.material.acceptance.sourceCommit}:${entry.material.acceptance.revision}`
-    : null
-  const homeId = home?.id ?? null
-  const [plan, setPlan] = useState<DocLoad<PlanningMaterial>>({ kind: 'loading' })
-  const [acceptance, setAcceptance] = useState<DocLoad<AcceptanceMaterial>>({ kind: 'loading' })
-  const [prStatuses, setPrStatuses] = useState<{
-    plan: ArchivePrStatusResult | null
-    acceptance: ArchivePrStatusResult | null
-  }>({ plan: null, acceptance: null })
-
-  useEffect(() => {
-    let cancelled = false
-    setPlan({ kind: 'loading' })
-    setAcceptance({ kind: 'loading' })
-    setPrStatuses({ plan: null, acceptance: null })
-    if (!home || !homeId) {
-      const message = '项目工作区尚未就绪，无法读取主干材料。'
-      setPlan({ kind: 'missing', message })
-      setAcceptance({ kind: 'missing', message })
-      return
-    }
-    const scope = nativeWorkspaceScope(home)
-    const historyPort = nativeVersionHistoryPort(home.runtimeOwnerEnvironmentId)
-    const archivePort = nativeArchivePrPort(home.runtimeOwnerEnvironmentId)
-    const metricScope = { repoId: scope.repoId, worktreeId: home.id, hostId: scope.hostId }
-    const planRef = entry?.material.plan
-    const acceptanceRef = entry?.material.acceptance
-    void (async () => {
-      if (planRef) {
-        try {
-          const result = await historyPort.readPlan({
-            scope: metricScope,
-            planRef: {
-              kind: 'committed',
-              version,
-              cycleId: planRef.cycleId,
-              revision: planRef.revision,
-              sourceCommit: planRef.sourceCommit
-            }
-          })
-          if (!cancelled) {
-            setPlan({
-              kind: 'ready',
-              document: result.document,
-              sourceCommit: planRef.sourceCommit,
-              committedAt: planRef.committedAt
-            })
-            const pr = result.document.workflow?.archivePr
-            if (pr) {
-              try {
-                const status = await archivePort.readStatus(metricScope, pr)
-                if (!cancelled) {
-                  setPrStatuses((previous) => ({ ...previous, plan: status }))
-                }
-              } catch {
-                // 薄读取失败保持未知，不阻塞页面。
-              }
-            }
-          }
-        } catch (reason) {
-          if (!cancelled) {
-            setPlan({
-              kind: 'missing',
-              message: `计划材料读取失败：${reason instanceof Error ? reason.message : String(reason)}`
-            })
-          }
-        }
-      } else if (!cancelled) {
-        setPlan({ kind: 'missing', message: `主干没有 ${version} 的已提交计划材料。` })
-      }
-      if (acceptanceRef) {
-        try {
-          const result = await historyPort.read({
-            scope: metricScope,
-            source: 'trunk',
-            sourceCommit: acceptanceRef.sourceCommit,
-            version,
-            cycleId: acceptanceRef.cycleId,
-            workflow: 'acceptance'
-          })
-          if (!cancelled) {
-            const document = result.document as AcceptanceMaterial
-            setAcceptance({
-              kind: 'ready',
-              document,
-              sourceCommit: acceptanceRef.sourceCommit,
-              committedAt: acceptanceRef.committedAt
-            })
-            const pr = document.workflow?.archivePr
-            if (pr) {
-              try {
-                const status = await archivePort.readStatus(metricScope, pr)
-                if (!cancelled) {
-                  setPrStatuses((previous) => ({ ...previous, acceptance: status }))
-                }
-              } catch {
-                // 同上：保持未知。
-              }
-            }
-          }
-        } catch (reason) {
-          if (!cancelled) {
-            setAcceptance({
-              kind: 'missing',
-              message: `验收材料读取失败：${reason instanceof Error ? reason.message : String(reason)}`
-            })
-          }
-        }
-      } else if (!cancelled) {
-        setAcceptance({ kind: 'missing', message: `主干没有 ${version} 的已提交验收材料。` })
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-    // 固定来源（ref key）变化才重读；entry/home 对象每轮都是新引用，不进依赖。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [homeId, version, planRefKey, acceptanceRefKey])
-
-  const planDocument = plan.kind === 'ready' ? plan.document : null
+  const { plan, acceptance, prStatuses } = useVersionOverviewMaterials({
+    repoId,
+    version,
+    entry,
+    catalogReady: catalog.catalog !== null,
+    catalogError: catalog.error
+  })
+  const planDocument: PlanningMaterial | null = plan.kind === 'ready' ? plan.document : null
   const acceptanceDocument = acceptance.kind === 'ready' ? acceptance.document : null
+  const catalogReady = catalog.catalog !== null
   const workspaceLabels = (entry?.workspaces ?? []).map((workspace) =>
     workspace.binding.workflow === 'plan'
       ? '计划树'
@@ -278,9 +148,11 @@ export function VersionOverviewPage({
 
       <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4">
         <FactCell label="工作区（登记现算）">
-          {workspaceLabels.length > 0
-            ? `${workspaceLabels.length} 棵存活：${[...new Set(workspaceLabels)].join('、')}`
-            : '已清理或未准备（登记缺失）'}
+          {!catalogReady && !catalog.error
+            ? '目录读取中…'
+            : workspaceLabels.length > 0
+              ? `${workspaceLabels.length} 棵存活：${[...new Set(workspaceLabels)].join('、')}`
+              : '已清理或未准备（登记缺失）'}
         </FactCell>
         <FactCell label="计划归档 PR">
           {planDocument?.workflow?.archivePr
@@ -330,9 +202,7 @@ export function VersionOverviewPage({
             ) : null}
             {planDocument?.goals.map((goal, index) => {
               const label = `G${index + 1}`
-              const references = (planDocument.tasks ?? []).filter(
-                (task) => task.goalId === goal.goalId
-              )
+              const references = planDocument.tasks.filter((task) => task.goalId === goal.goalId)
               const result = acceptanceDocument?.results.find((item) => item.goalId === goal.goalId)
               const openFollowups = (result?.meetingDirectives ?? []).filter(
                 (directive) => directive.status !== 'confirmed'
