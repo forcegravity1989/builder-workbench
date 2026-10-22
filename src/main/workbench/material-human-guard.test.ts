@@ -128,11 +128,7 @@ it('names every human-only acceptance field the incoming document would change',
       ...annotated,
       results: [{ ...annotated.results[0], nextStep: '', issueNotes: {}, issueMarks: {} }]
     })
-  ).toEqual([
-    'results[g1].nextStep',
-    'results[g1].issueNotes',
-    'results[g1].issueMarks'
-  ])
+  ).toEqual(['results[g1].nextStep', 'results[g1].issueNotes', 'results[g1].issueMarks'])
   // Pre-v10 fields are read-only history: the model channel may round-trip them
   // unchanged but may not rewrite them — and "cleaning them up" is refused too,
   // because converting a stored file is a session migration with human consent.
@@ -218,9 +214,7 @@ it('refuses model-channel saves that write an acceptance verdict', async () => {
       sourceHostId: 'local'
     }
   })
-  expect(acceptanceHumanFieldChanges(null, draftBased)).toEqual([
-    'planRef.kind(须为已提交计划)'
-  ])
+  expect(acceptanceHumanFieldChanges(null, draftBased)).toEqual(['planRef.kind(须为已提交计划)'])
   await expect(
     assertHumanFieldsUntouched(async () => null, acceptanceSave(draftBased), {})
   ).rejects.toMatchObject({ code: 'forbidden' })

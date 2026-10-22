@@ -50,11 +50,11 @@ export function decodeHistorySnapshot(
     const document =
       workflow === 'plan'
         ? PlanningMaterialSchema.parse(value)
-        // Acceptance material written before the v10 retirement still carries
-        // rounds, directives, risk marks and per-goal deliveries. Those keys stay
-        // in the schema as read-only legacy fields, so history parses as-is and
-        // nothing human-written is dropped on the way through.
-        : AcceptanceMaterialSchema.parse(value)
+        : // Acceptance material written before the v10 retirement still carries
+          // rounds, directives, risk marks and per-goal deliveries. Those keys stay
+          // in the schema as read-only legacy fields, so history parses as-is and
+          // nothing human-written is dropped on the way through.
+          AcceptanceMaterialSchema.parse(value)
     if (document.version !== version) {
       throw new Error('Material version differs from its path')
     }

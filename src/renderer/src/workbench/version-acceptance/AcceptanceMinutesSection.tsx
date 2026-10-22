@@ -1,6 +1,9 @@
 import { BrainCircuit, Check, Pencil, Plus, X } from 'lucide-react'
 import { useState, type Ref } from 'react'
-import type { AcceptanceMeetingMinutes, AcceptanceMaterial } from '../../../../shared/workbench/version-material'
+import type {
+  AcceptanceMeetingMinutes,
+  AcceptanceMaterial
+} from '../../../../shared/workbench/version-material'
 import { BoardActionButton, BoardIconButton } from '../board-ui'
 import type { SendActionWrap } from '../plan-send-menu'
 
@@ -233,7 +236,9 @@ function MinutesCard({
           >
             {minutes.confirmed ? '已人工确认 · 撤销' : '标记人工确认'}
           </button>
-          <span className="acc-muted">纪要经人工确认生效，生成或填写不自动等于确认；模型不代确认。</span>
+          <span className="acc-muted">
+            纪要经人工确认生效，生成或填写不自动等于确认；模型不代确认。
+          </span>
         </div>
       </article>
     </fieldset>

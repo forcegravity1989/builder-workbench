@@ -125,7 +125,9 @@ export function PlanSendMenu({
         onPointerDownOutside={preventAgentSendTargetOutsideDismiss}
       >
         <div className="g3-send-preview">
-          <small>发送指令给{assistant} · {label}</small>
+          <small>
+            发送指令给{assistant} · {label}
+          </small>
           <p>{prompt}</p>
         </div>
         <ReviewNotesSendMenuContent

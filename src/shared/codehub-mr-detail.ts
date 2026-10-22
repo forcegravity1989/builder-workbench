@@ -74,7 +74,9 @@ export function mapCodeHubMrChanges(rows: unknown): CodeHubMrFileChange[] {
       return []
     }
     const oldPath =
-      typeof record.old_path === 'string' && record.old_path.trim() ? record.old_path.trim() : undefined
+      typeof record.old_path === 'string' && record.old_path.trim()
+        ? record.old_path.trim()
+        : undefined
     return [
       {
         path,

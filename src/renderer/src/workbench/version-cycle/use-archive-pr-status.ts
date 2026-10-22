@@ -50,10 +50,7 @@ export function useArchivePrStatus(
     const token = ++sequence.current
     lastRead.current = Date.now()
     try {
-      const status = await archivePort.readStatus(
-        { ...scopePart, worktreeId: treeId },
-        pr
-      )
+      const status = await archivePort.readStatus({ ...scopePart, worktreeId: treeId }, pr)
       if (token === sequence.current && latest.current === key) {
         setResult({ key, status })
       }

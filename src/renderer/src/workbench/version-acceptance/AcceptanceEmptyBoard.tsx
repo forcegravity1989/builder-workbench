@@ -42,88 +42,84 @@ export function AcceptanceEmptyBoard({
 }) {
   const [gateBlocked, setGateBlocked] = useState<string | null>(null)
   return (
-      <main className="acc-board" lang="zh">
-        <AcceptanceHeader
-          currentVersion={board.version}
-          versions={[...new Set([...board.versions, ...(board.version ? [board.version] : [])])]}
-          unreadable={unreadable}
-          disabled={!context.materialPort || Boolean(context.syncing) || board.busy}
-          state={state}
-          sessionCollapsed={chatCollapsed}
-          onSessionToggle={onSessionToggle}
-          onSelect={(version) => void board.loadVersion(version)}
-          onConfigure={() => void entry.configure()}
-          onRefresh={onRefresh}
-          extraActions={
-            <BoardIconButton
-              label="批注模式：点击板面元素记录评审意见"
-              disabled
-              aria-pressed={false}
-            >
-              <MessageSquarePlus size={16} aria-hidden="true" />
-            </BoardIconButton>
-          }
+    <main className="acc-board" lang="zh">
+      <AcceptanceHeader
+        currentVersion={board.version}
+        versions={[...new Set([...board.versions, ...(board.version ? [board.version] : [])])]}
+        unreadable={unreadable}
+        disabled={!context.materialPort || Boolean(context.syncing) || board.busy}
+        state={state}
+        sessionCollapsed={chatCollapsed}
+        onSessionToggle={onSessionToggle}
+        onSelect={(version) => void board.loadVersion(version)}
+        onConfigure={() => void entry.configure()}
+        onRefresh={onRefresh}
+        extraActions={
+          <BoardIconButton label="批注模式：点击板面元素记录评审意见" disabled aria-pressed={false}>
+            <MessageSquarePlus size={16} aria-hidden="true" />
+          </BoardIconButton>
+        }
+      />
+      <div className="acc-empty-board">
+        <p>
+          {board.version
+            ? `${board.version} 验收尚未开始。`
+            : '尚未选定版本，可在页头选择已有版本。'}
+        </p>
+        <AcceptanceStartButton
+          entry={entry}
+          problems={board.materialProblems}
+          version={board.version}
+          gate={gate.state}
+          onBlocked={setGateBlocked}
         />
-        <div className="acc-empty-board">
-          <p>
-            {board.version
-              ? `${board.version} 验收尚未开始。`
-              : '尚未选定版本，可在页头选择已有版本。'}
-          </p>
-          <AcceptanceStartButton
-            entry={entry}
-            problems={board.materialProblems}
-            version={board.version}
-            gate={gate.state}
-            onBlocked={setGateBlocked}
-          />
-          {/* The gate is a script check on the plan's recorded archive PR, not a
+        {/* The gate is a script check on the plan's recorded archive PR, not a
               model judgment — say which state it is in so an empty board is never
               unexplained. */}
-          {gate.state.kind === 'checking' && (
-            <p className="acc-muted" role="status">
-              正在核对本版计划的归档 PR 状态…
-            </p>
-          )}
-          {gate.state.kind === 'merged' && (
-            <p className="acc-muted" role="status">
-              计划归档 PR 已合入，点上面的按钮开始验收。
-            </p>
-          )}
-          {gate.state.kind === 'blocked' && (
-            <p className="acc-error" role="alert">
-              {gate.state.reason}
-            </p>
-          )}
-          {gate.state.kind === 'idle' && board.version && (
-            <p className="acc-muted" role="status">
-              未在验收分支上找到本版已提交的计划，无法核对归档状态。
-            </p>
-          )}
-          <AcceptanceMaterialProblems problems={board.materialProblems} />
-        </div>
-        <AcceptanceNotices
-          error={board.error}
-          recoveryError={board.recoveryError}
-          recoveryText={board.recoveryText}
-          draft={board.draft}
-          controller={board.controller}
-          busy={board.busy}
-          setError={board.setError}
-          onRetrySave={() => void board.retrySave()}
-          onRemoteDeleted={board.useRemoteDeletion}
-        />
-        {gateBlocked && (
-          <GateDialog
-            reason={gateBlocked}
-            onClose={() => setGateBlocked(null)}
-            onRetry={() => {
-              setGateBlocked(null)
-              void gate.recheck()
-            }}
-          />
+        {gate.state.kind === 'checking' && (
+          <p className="acc-muted" role="status">
+            正在核对本版计划的归档 PR 状态…
+          </p>
         )}
-      </main>
+        {gate.state.kind === 'merged' && (
+          <p className="acc-muted" role="status">
+            计划归档 PR 已合入，点上面的按钮开始验收。
+          </p>
+        )}
+        {gate.state.kind === 'blocked' && (
+          <p className="acc-error" role="alert">
+            {gate.state.reason}
+          </p>
+        )}
+        {gate.state.kind === 'idle' && board.version && (
+          <p className="acc-muted" role="status">
+            未在验收分支上找到本版已提交的计划，无法核对归档状态。
+          </p>
+        )}
+        <AcceptanceMaterialProblems problems={board.materialProblems} />
+      </div>
+      <AcceptanceNotices
+        error={board.error}
+        recoveryError={board.recoveryError}
+        recoveryText={board.recoveryText}
+        draft={board.draft}
+        controller={board.controller}
+        busy={board.busy}
+        setError={board.setError}
+        onRetrySave={() => void board.retrySave()}
+        onRemoteDeleted={board.useRemoteDeletion}
+      />
+      {gateBlocked && (
+        <GateDialog
+          reason={gateBlocked}
+          onClose={() => setGateBlocked(null)}
+          onRetry={() => {
+            setGateBlocked(null)
+            void gate.recheck()
+          }}
+        />
+      )}
+    </main>
   )
 }
 

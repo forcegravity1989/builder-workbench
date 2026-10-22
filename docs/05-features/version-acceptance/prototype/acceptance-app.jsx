@@ -165,7 +165,11 @@ function AcceptanceRow({
                       {task.title?.replace(/^【.*?】/, '') || '标题未读到'}
                     </a>
                     <span className="g3-task-state">
-                      {task.state === 'CLOSED' ? '已关闭' : task.state === 'OPEN' ? '开放' : '状态未知'}
+                      {task.state === 'CLOSED'
+                        ? '已关闭'
+                        : task.state === 'OPEN'
+                          ? '开放'
+                          : '状态未知'}
                     </span>
                     {numbers.length > 0 && (
                       <button
@@ -198,7 +202,10 @@ function AcceptanceRow({
                       </>
                     )}
                     {task.state === 'CLOSED' && notes[task.number] && (
-                      <span className="acc-note-readonly" title="已关闭 Issue:已存备注只读展示,不再编辑">
+                      <span
+                        className="acc-note-readonly"
+                        title="已关闭 Issue:已存备注只读展示,不再编辑"
+                      >
                         {notes[task.number]}
                       </span>
                     )}
@@ -420,27 +427,27 @@ function App() {
       {showNotes && (
         <div className="g3-design-notes">
           <p>
-            <strong>定位与边界</strong>:验收屏为周五验收会议服务,四步——验收准备 →
-            Showcase → 会议纪要 → 归档 PR 及发版本。个人对需求的逐项自验在周中会话与开发流程,
+            <strong>定位与边界</strong>:验收屏为周五验收会议服务,四步——验收准备 → Showcase →
+            会议纪要 → 归档 PR 及发版本。个人对需求的逐项自验在周中会话与开发流程,
             不进本屏。计划制定中或计划归档 PR 未合入时,验收屏只有一块空板:点「与验收助手新建
             验收」触发检测——检测通过才拉取计划、展开四步板面(目标与验收标准此时才同步上板);
             未合入弹报错、保持空板(硬门禁,不做草案预验收)。选版与项目上下文归左侧栏(G2
-            外框);页头与计划屏同构:会话收折、更新代码(唯一同步入口)、配置自动化、批注
-            模式——<strong>不设全局助手按钮</strong>:「唤起验收助手」的入口按对象就近放置
-            (纪要区「整理纪要」、归档区「发起归档」),部署/发布/出包按钮本身兼任请求注入;
-            Showcase 无模型填写事务,不设助手入口。会话栏为 Orca 原生会话占位,「验收助手」
+            外框);页头与计划屏同构:会话收折、更新代码(唯一同步入口)、配置自动化、批注 模式——
+            <strong>不设全局助手按钮</strong>:「唤起验收助手」的入口按对象就近放置
+            (纪要区「整理纪要」、归档区「发起归档」),部署/发布/出包按钮本身兼任请求注入; Showcase
+            无模型填写事务,不设助手入口。会话栏为 Orca 原生会话占位,「验收助手」
             是该产品称呼。界面无灯:状态一律文字与真实读回。
           </p>
           <p>
             <strong>验收准备</strong>:「出包」是板面固定逻辑(按项目远端直连流水线,主分支
             构建);「部署」向验收助手会话注入请求——模型下载最新包、按项目自有部署入口部署
-            启动(各服务逻辑不同,无固定脚本;桌面应用类=安装并启动,web 服务类=部署并起前
-            端,演示为 web 服务型),完成后把环境 URL(或启动状态)写回材料,「演示环境」行读
-            回、点击经内置 Orca 浏览器打开=真机演示环境。模型写 candidateRef、登记包
+            启动(各服务逻辑不同,无固定脚本;桌面应用类=安装并启动,web 服务类=部署并起前 端,演示为 web
+            服务型),完成后把环境 URL(或启动状态)写回材料,「演示环境」行读 回、点击经内置 Orca
+            浏览器打开=真机演示环境。模型写 candidateRef、登记包
             (kind=package+checksum),对着运行环境按目标验收标准采集证据并演示分诊——易
             现场演示的标「现场演示+操作路径」,不易演示/需等待的落进
-            <strong>一份</strong>验收证据报告(全目标合并:目标→验收点→说明+证据罗列+目标值
-            vs 读数),登记进材料。包重出不刷新板面已填内容,模型在会话提醒是否重核。缺工具
+            <strong>一份</strong>验收证据报告(全目标合并:目标→验收点→说明+证据罗列+目标值 vs
+            读数),登记进材料。包重出不刷新板面已填内容,模型在会话提醒是否重核。缺工具
             请人安装,不降级。
           </p>
           <p>
@@ -463,12 +470,12 @@ function App() {
             草稿,不代确认。
           </p>
           <p>
-            <strong>归档与发布</strong>:归档由会话执行,屏内放 PR 引用+状态+打开 Orca 原生
-            PR 页入口+注入式「让验收助手发起归档」入口,无直接执行归档的按钮。发布区只有
+            <strong>归档与发布</strong>:归档由会话执行,屏内放 PR 引用+状态+打开 Orca 原生 PR
+            页入口+注入式「让验收助手发起归档」入口,无直接执行归档的按钮。发布区只有
             一个「发布」按钮,点击即把请求注入验收会话——预检、发布提交与验收包一致性核对、
             知情授权、按项目自有发布入口执行与发布后独立读回全在会话中完成并在会话中报告。
-            <strong>板面不设预检弹窗、不设发布状态读回行,材料不存发布记录</strong>:发布读数的
-            正本在 Git 标签与 provider Release 页,抄一份进板面即造第二正本;总览也不显示「已发布」。
+            <strong>板面不设预检弹窗、不设发布状态读回行,材料不存发布记录</strong>:发布读数的 正本在
+            Git 标签与 provider Release 页,抄一份进板面即造第二正本;总览也不显示「已发布」。
             不达成与未标不阻断发布,由人知情决定;未经明确授权不建 Release、不打标签。
           </p>
           <p>
@@ -518,7 +525,9 @@ function App() {
               <Icon name="agent" size={28} />
               <h2>Orca 原生会话工作区</h2>
               <p>顶部标签栏、会话标题与全部控件均为 Orca 原生</p>
-              <small>这里只示意会话位置,不另设计聊天界面;「验收助手」是这个原生会话的产品称呼</small>
+              <small>
+                这里只示意会话位置,不另设计聊天界面;「验收助手」是这个原生会话的产品称呼
+              </small>
             </div>
           ) : (
             <div className="g3-session-rail-text" aria-hidden="true">
@@ -778,7 +787,10 @@ function App() {
                 <section id="showcase">
                   <div className="g3-section-title">
                     <h2>
-                      Showcase <small>勾勾表 · 人判 {judged}/{goals.length}</small>
+                      Showcase{' '}
+                      <small>
+                        勾勾表 · 人判 {judged}/{goals.length}
+                      </small>
                     </h2>
                     <span className="g3-title-actions">
                       <IconButton
@@ -898,8 +910,8 @@ function App() {
                           </a>
                         </h2>
                         <p>
-                          Leader 在 Orca 原生 PR 页再审验收记录,合入后归档;随 PR
-                          带验收 JSON、证据报告与截图。
+                          Leader 在 Orca 原生 PR 页再审验收记录,合入后归档;随 PR 带验收
+                          JSON、证据报告与截图。
                         </p>
                       </div>
                       <ActionButton
@@ -982,8 +994,10 @@ function App() {
             ) : releaseHandoff ? (
               <div className="g3-footer-handoff">
                 <span>
-                  发布请求已送入验收助手会话 · 预检与知情授权在会话中完成,经你明确授权后按项目发布入口执行,
-                  发布后独立读回 tag/时间/资产/校验值并在会话中报告。板面不显示发布状态(正本在 Git 标签与 Release 页)。
+                  发布请求已送入验收助手会话 ·
+                  预检与知情授权在会话中完成,经你明确授权后按项目发布入口执行, 发布后独立读回
+                  tag/时间/资产/校验值并在会话中报告。板面不显示发布状态(正本在 Git 标签与 Release
+                  页)。
                 </span>
                 <IconButton
                   name="close"
@@ -1018,7 +1032,9 @@ function App() {
           setPopover(null)
         }}
         onUpdate={(id, text) =>
-          setAnnotations((current) => current.map((item) => (item.id === id ? { ...item, text } : item)))
+          setAnnotations((current) =>
+            current.map((item) => (item.id === id ? { ...item, text } : item))
+          )
         }
         onRemove={(id) => setAnnotations((current) => current.filter((item) => item.id !== id))}
         onBoardLevel={(event) => openPopover('板面级', event.currentTarget.getBoundingClientRect())}

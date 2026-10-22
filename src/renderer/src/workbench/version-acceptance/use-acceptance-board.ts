@@ -5,7 +5,11 @@ import {
 } from '../../../../shared/workbench/version-material'
 import type { VersionDocumentPort } from '../../../../shared/workbench/version-document'
 import { useAcceptanceDraft } from './use-acceptance-draft'
-import { createAcceptanceMaterial, sameAcceptanceSource, upsertGoalResult } from './acceptance-model'
+import {
+  createAcceptanceMaterial,
+  sameAcceptanceSource,
+  upsertGoalResult
+} from './acceptance-model'
 import { useMaterialAutosave } from '../version-cycle/use-material-autosave'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
 import { useAcceptanceSources, useFixedAcceptancePlan } from './use-acceptance-plan'

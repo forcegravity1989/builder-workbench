@@ -51,7 +51,7 @@ candidateRef 仅保存 repository/version/commit，commit 是完整 SHA。prepar
 
 总览从项目主干基线（主检出）的版本目录读取材料，一个版本只显示一份当前计划及验收，不扫描旧提交重新铺出旧记录。版本材料索引按 version/workflow/cycleId 各取最新一条。读取固定来源时核对版本、cycleId 与修订；未合入草稿在其工作区读取，损坏的当前文件如实提示。选中验收版本后，**只有计划归档 PR 已合入时**页面才初始化并保存缺失的空白验收，已有材料直接继续。新材料与归档后补证均自动保存。总览不显示发布状态。
 
-workflow 是模型写入材料的 SOP 进度节：`stage` 记录最近完成的阶段（计划 preparation/goals/review/breakdown/archive；验收 preparation/showcase/archive），`updatedAt` 记录写入时间，`archivePr`（provider/repository/number）在归档 PR 开出后补上。**两屏都不渲染旅程灯**：验收屏板面的四步（验收准备/Showcase/会议纪要/归档 PR 及发版本）是同页定位导航，与 stage 不同名也不映射；stage 只供会话恢复校准与自动化读取。stage 是进度信号不是完成权威：不代表目标达成、不代替人工结论、不代表 PR 已合入；PR 合入状态由界面按 archivePr 向 provider 薄读取显示，读不到保持未知。纪要的人工确认是材料字段事实，不占 stage。会话恢复时先把 stage 校准到实际进度；内容实质调整使后续阶段失效时回退。界面不提供修改 stage 的入口，它只经材料保存写入。**材料里没有发布记录字段**：发布读数的正本在 Git 标签与 provider Release 页，模型发布后在会话中如实报告读回结果，不写入材料。归档提交固定落在该流程的固定分支（计划 bw/week-plan、验收 bw/week-acceptance）上，PR/MR 由固定分支开向主分支，不从其他分支或新建工作树归档。
+workflow 是模型写入材料的 SOP 进度节：`stage` 记录最近完成的阶段（计划 preparation/goals/breakdown/review/archive；验收 preparation/showcase/archive），`updatedAt` 记录写入时间，`archivePr`（provider/repository/number）在归档 PR 开出后补上。**两屏都不渲染旅程灯**：验收屏板面的四步（验收准备/Showcase/会议纪要/归档 PR 及发版本）是同页定位导航，与 stage 不同名也不映射；stage 只供会话恢复校准与自动化读取。stage 是进度信号不是完成权威：不代表目标达成、不代替人工结论、不代表 PR 已合入；PR 合入状态由界面按 archivePr 向 provider 薄读取显示，读不到保持未知。纪要的人工确认是材料字段事实，不占 stage。会话恢复时先把 stage 校准到实际进度；内容实质调整使后续阶段失效时回退。界面不提供修改 stage 的入口，它只经材料保存写入。**材料里没有发布记录字段**：发布读数的正本在 Git 标签与 provider Release 页，模型发布后在会话中如实报告读回结果，不写入材料。归档提交固定落在该流程的固定分支（计划 bw/week-plan、验收 bw/week-acceptance）上，PR/MR 由固定分支开向主分支，不从其他分支或新建工作树归档。
 
 preparationReview 是历史保留的人工材料备齐核对记录，包含 source、recordedAt、materialRevision。验收屏已移除「材料备齐」勾选，该字段不再驱动任何界面信号。字段仍受人工守卫保护（模型/CLI 不得代人写入或篡改），旧材料读回时保留原值，也不证明命令执行或目标达成。
 

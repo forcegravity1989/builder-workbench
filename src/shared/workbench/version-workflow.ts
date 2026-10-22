@@ -10,8 +10,8 @@ import { z } from 'zod'
 export const PLAN_WORKFLOW_STAGES = [
   'preparation',
   'goals',
-  'review',
   'breakdown',
+  'review',
   'archive'
 ] as const
 export const ACCEPTANCE_WORKFLOW_STAGES = ['preparation', 'showcase', 'archive'] as const

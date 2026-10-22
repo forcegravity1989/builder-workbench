@@ -110,7 +110,9 @@ function ReadyAcceptanceBoard({
     }
     const goalIds = new Set(plan.document.goals.map((goal) => goal.goalId))
     const issueKeys = new Set(
-      plan.document.tasks.filter((task) => task.goalId).map((task) => `${task.goalId}:${task.number}`)
+      plan.document.tasks
+        .filter((task) => task.goalId)
+        .map((task) => `${task.goalId}:${task.number}`)
     )
     pruneMissing(
       (goalId) => goalIds.has(goalId),
@@ -248,7 +250,6 @@ function ReadyAcceptanceBoard({
       />
     )
   }
-
 
   return (
     <main className={`acc-board${annotations.annotating ? ' annotating' : ''}`} lang="zh">
@@ -411,4 +412,3 @@ function ReadyAcceptanceBoard({
     </main>
   )
 }
-

@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { VersionHistoryPort, VersionTreePlan } from '../../../../shared/workbench/version-history'
+import type {
+  VersionHistoryPort,
+  VersionTreePlan
+} from '../../../../shared/workbench/version-history'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
 import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
 import type { ArchivePrPort, ArchivePrScope } from '../version-cycle/ports'
 
 export type AcceptanceGateState =
   /** No version selected yet — nothing to check, the board asks for one. */
-  | { kind: 'idle' }
-  | { kind: 'checking' }
-  | { kind: 'merged' }
-  | { kind: 'blocked'; reason: string }
+  { kind: 'idle' } | { kind: 'checking' } | { kind: 'merged' } | { kind: 'blocked'; reason: string }
 
 function sameState(a: AcceptanceGateState, b: AcceptanceGateState): boolean {
   if (a.kind !== b.kind) {
@@ -61,10 +61,7 @@ export function useAcceptanceGate({
   const archiveKey = JSON.stringify(archiveScope)
   const sourceKey = source ? JSON.stringify(source) : ''
   const parsedScope = useMemo(() => JSON.parse(scopeKey) as MetricScope, [scopeKey])
-  const parsedArchive = useMemo(
-    () => JSON.parse(archiveKey) as ArchivePrScope,
-    [archiveKey]
-  )
+  const parsedArchive = useMemo(() => JSON.parse(archiveKey) as ArchivePrScope, [archiveKey])
   const parsedSource = useMemo(
     () => (sourceKey ? (JSON.parse(sourceKey) as VersionTreePlan) : undefined),
     [sourceKey]
@@ -134,7 +131,10 @@ export function useAcceptanceGate({
       })
     } catch (reason) {
       if (token === sequence.current) {
-        publish({ kind: 'blocked', reason: reason instanceof Error ? reason.message : String(reason) })
+        publish({
+          kind: 'blocked',
+          reason: reason instanceof Error ? reason.message : String(reason)
+        })
       }
     }
   }, [

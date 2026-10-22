@@ -114,7 +114,15 @@ export function projectLegacyAcceptance(
     ) {
       continue
     }
-    goals.push({ goalId: result.goalId, progress, deliveries, materials, directives, rounds, riskIssues })
+    goals.push({
+      goalId: result.goalId,
+      progress,
+      deliveries,
+      materials,
+      directives,
+      rounds,
+      riskIssues
+    })
   }
   if (!goals.length) {
     return null

@@ -1,7 +1,10 @@
 import { ArrowUpRight, ChevronDown, ChevronRight, FileText, MonitorSmartphone } from 'lucide-react'
 import { useState, type Ref } from 'react'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
-import type { PackageLatest, PackagePipelinePort } from '../../../../shared/workbench/package-pipeline'
+import type {
+  PackageLatest,
+  PackagePipelinePort
+} from '../../../../shared/workbench/package-pipeline'
 import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
 import { BoardIconButton } from '../board-ui'
 import type { SendActionWrap } from '../plan-send-menu'
@@ -137,11 +140,7 @@ export function AcceptancePrepareSection({
             <span className="acc-muted">未生成 · 在会话中让验收助手按目标采集证据并生成</span>
           )}
           <BoardIconButton
-            label={
-              report
-                ? '打开验收证据报告'
-                : '报告未生成；先在会话中让验收助手生成'
-            }
+            label={report ? '打开验收证据报告' : '报告未生成；先在会话中让验收助手生成'}
             disabled={!report}
             onClick={() => {
               if (report) {

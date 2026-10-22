@@ -85,8 +85,7 @@ export function latestVerificationArtifact(
   return document.preparedArtifacts
     .filter((item) => item.kind === 'verification')
     .reduce<PreparedArtifact | undefined>(
-      (newest, item) =>
-        !newest || item.generatedAt > newest.generatedAt ? item : newest,
+      (newest, item) => (!newest || item.generatedAt > newest.generatedAt ? item : newest),
       undefined
     )
 }

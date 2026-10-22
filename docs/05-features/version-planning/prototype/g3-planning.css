@@ -260,6 +260,19 @@ textarea {
   color: var(--g3-accent);
   flex-shrink: 0;
 }
+/* 禁用态必须看得出按不动：计划未建时「整理纪要」禁用，原因走 title 与脚部一句。 */
+.g3-action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.g3-action-button:disabled:hover {
+  border-color: var(--border);
+  color: var(--foreground);
+  background: none;
+}
+.g3-action-button:disabled svg {
+  color: var(--muted-foreground);
+}
 .g3-session-chip {
   display: inline-flex;
   align-items: center;
@@ -347,6 +360,39 @@ textarea {
 }
 .g3-annot-marker:hover {
   background: var(--background);
+  color: var(--g3-accent);
+}
+/* 批注模式入口（2026-10-22 第八轮：从页头右上角移进「本版目标」区块头）。
+   带文字标签而非纯图标——评审会中要一眼找到入口；开启态用强调色描边 + 文字，
+   与页头图标按钮的 g3-mode-on 区分开，避免整块底色盖住区块头。 */
+.g3-annotate-entry {
+  border: 1px solid transparent;
+}
+.g3-annotate-entry.g3-mode-on {
+  border-color: var(--g3-accent);
+  color: var(--g3-accent);
+  background: none;
+}
+.g3-annotate-entry.g3-mode-on:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+/* 未发送条数角标：与板面编号角标同配色（显式强调色底 + 白字，
+   不用 foreground/background 变量对，防真壳回落成黑底黑字）。 */
+.g3-annotate-count {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--g3-accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+}
+.g3-annotate-entry.g3-mode-on .g3-annotate-count {
+  background: #fff;
   color: var(--g3-accent);
 }
 .g3-journey {
@@ -507,11 +553,6 @@ textarea {
 }
 .g3-carryover-live a:hover {
   text-decoration: underline;
-}
-.g3-carryover-live small {
-  width: 100%;
-  font-size: 11px;
-  color: var(--muted-foreground);
 }
 .g3-carryover-live button {
   border: 0;
@@ -843,15 +884,14 @@ textarea {
 .g3-minutes.skeleton {
   border-style: dashed;
 }
+/* 占位条只示意「这里会有一行正文」，不是加载态：去边框、压细、降到 45% 宽，
+   避免配虚线卡看起来像渲染坏了（第八轮评审反馈）。 */
 .g3-skeleton-line {
-  height: 10px;
-  margin: 8px 0;
+  height: 6px;
+  width: 45%;
+  margin: 10px 0 2px;
   border-radius: var(--radius-sm);
-  background: var(--muted);
-  border: 1px solid var(--border);
-}
-.g3-skeleton-line.short {
-  width: 55%;
+  background: var(--border);
 }
 .g3-minutes-head {
   display: flex;
