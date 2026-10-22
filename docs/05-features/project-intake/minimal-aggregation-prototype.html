@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>小项目组聚合修复 · 设计原型</title>
+    <link rel="stylesheet" href="../../04-design-system/tokens.css" />
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--background); color: var(--foreground); font: 14px/1.6 system-ui, sans-serif; }
+      main { max-width: 1120px; margin: auto; padding: 24px; }
+      h1 { font-size: 22px; margin: 0 0 6px; font-weight: 500; }
+      h2 { margin: 0; font-size: 16px; font-weight: 500; }
+      p { margin: 8px 0; }
+      .muted { color: var(--muted-foreground); }
+      .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 20px 0; }
+      button, select { font: inherit; color: inherit; background: var(--background); border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; cursor: pointer; }
+      button:hover { background: var(--accent); }
+      button:focus-visible, select:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+      button:disabled { opacity: .6; cursor: default; }
+      select { max-width: 100%; }
+      .surface { display: grid; grid-template-columns: minmax(220px, 310px) minmax(0, 1fr); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+      aside { background: var(--sidebar); padding: 18px; border-right: 1px solid var(--border); min-width: 0; }
+      .content { padding: 20px; min-width: 0; }
+      .section-label { margin: 0 0 14px; color: var(--muted-foreground); }
+      .project { display: grid; gap: 10px; padding: 16px; border: 1px solid var(--border); border-radius: 9px; margin-bottom: 14px; }
+      .project > button { justify-self: start; }
+      .project-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+      .sidebar-group { margin-bottom: 18px; }
+      .sidebar-group strong { display: block; margin-bottom: 8px; font-weight: 500; }
+      .workspace { width: 100%; margin: 4px 0; text-align: left; display: grid; gap: 2px; }
+      .workspace span:last-child { color: var(--muted-foreground); font-size: 12px; overflow-wrap: anywhere; }
+      .source { display: inline-block; margin-right: 12px; }
+      .source::before { content: '○'; margin-right: 5px; }
+      .source.online::before { content: '●'; color: var(--status-success); }
+      .route { padding: 14px 0; border-top: 1px solid var(--border); overflow-wrap: anywhere; }
+      .route dl { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 6px 12px; margin: 12px 0; }
+      .route dt { color: var(--muted-foreground); }
+      .route dd { margin: 0; }
+      details { margin-top: 20px; }
+      pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 14px; background: var(--muted); border-radius: 7px; }
+      @media (max-width: 620px) { main { padding: 16px; } .surface { grid-template-columns: 1fr; } aside { border-right: 0; border-bottom: 1px solid var(--border); } .toolbar { align-items: stretch; } .toolbar label { width: 100%; } select { width: 100%; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>一个项目入口，保留各自工作空间</h1>
+      <p class="muted">规格草案的交互样例；全部数据与操作结果均为模拟，不连接主机，不写仓库。</p>
+      <div class="toolbar">
+        <label for="scenario">演示场景
+          <select id="scenario">
+            <option value="same">同仓，异名异目录</option>
+            <option value="pending">B 的仓库资料晚到</option>
+            <option value="offline">B 离线，A 的名片可读</option>
+            <option value="all-offline">全部来源离线，名片不可读</option>
+            <option value="leader">Leader 已配对两个项目</option>
+          </select>
+        </label>
+        <button id="refresh" type="button">刷新（模拟）</button>
+        <button id="theme" type="button">切换深浅色</button>
+      </div>
+      <p id="explanation" class="muted" aria-live="polite"></p>
+      <div class="surface">
+        <aside aria-label="BW 壳内原生项目列表">
+          <p class="section-label">项目与工作空间 · 保留全部原生条目</p>
+          <div id="sidebar"></div>
+        </aside>
+        <section class="content" aria-label="项目墙与会话路由">
+          <p class="section-label">项目墙 · 沿现有名片判据</p>
+          <div id="wall"></div>
+          <div id="route" class="route" aria-live="polite">从项目下选择工作空间，查看它将使用的执行位置。</div>
+        </section>
+      </div>
+      <details>
+        <summary>查看示例数据与原型边界</summary>
+        <pre>A：显示名 订单API；目录 C:/dev/order
+B：显示名 pay-work；目录 /home/li/pay
+共同远端身份 git.example.com/team/order
+
+演示的“会话路由”仅回显固定样例，不调用原生 API。
+Leader 场景只改变已配对主机样例集合，不代表产品存在角色切换。
+在线圆点只表示模拟连接事实，不表示成员在线或项目健康。
+原型省略与本次分组无关的卡片配置和读数，不修改其现有规格。</pre>
+      </details>
+      <p class="muted"><a href="spec.md">规格</a> · <a href="plan.md">实现计划</a> · 实际双机、Electron 会话与完整重启尚未验证。</p>
+    </main>
+    <script>
+      (() => {
+        const scenario = document.getElementById('scenario');
+        const sidebar = document.getElementById('sidebar');
+        const wall = document.getElementById('wall');
+        const route = document.getElementById('route');
+        const explanation = document.getElementById('explanation');
+        let recovered = false;
+        const samples = {
+          a: { host: 'Builder-A', directory: 'C:/dev/order', session: '修复支付回调', name: '订单API' },
+          b: { host: 'Builder-B', directory: '/home/li/pay', session: '评审支付回调', name: 'pay-work' },
+          c: { host: 'Builder-C', directory: '/srv/ops', session: '整理运维脚本', name: '运营工具' }
+        };
+        function node(tag, text, className) {
+          const el = document.createElement(tag);
+          if (text) el.textContent = text;
+          if (className) el.className = className;
+          return el;
+        }
+        function openWorkspace(key, disabled) {
+          const sample = samples[key];
+          if (disabled) return;
+          route.replaceChildren(node('h2', '会话路由回显 · 模拟'));
+          const list = node('dl');
+          [['会话', sample.session], ['主机', sample.host], ['目录', sample.directory], ['本地名称', sample.name]].forEach(([term, value]) => list.append(node('dt', term), node('dd', value)));
+          route.append(list, node('p', '执行仍留在原主机与原目录；这里只演示选择结果。', 'muted'));
+        }
+        function addGroup(name, keys, unavailable) {
+          const group = node('div', '', 'sidebar-group');
+          group.append(node('strong', name));
+          keys.forEach(key => {
+            const sample = samples[key];
+            const button = node('button', '', 'workspace');
+            button.type = 'button';
+            button.dataset.workspace = key;
+            button.disabled = unavailable.includes(key);
+            button.append(node('span', `${sample.host} · ${sample.session}${button.disabled ? ' · 不可达' : ''}`), node('span', sample.directory));
+            button.addEventListener('click', () => openWorkspace(key, button.disabled));
+            group.append(button);
+          });
+          sidebar.append(group);
+        }
+        function addCard(name, keys, unavailable) {
+          const card = node('article', '', 'project');
+          card.dataset.project = name;
+          card.append(node('h2', name));
+          const sources = node('div');
+          keys.forEach(key => sources.append(node('span', `${samples[key].host}${unavailable.includes(key) ? ' · 离线' : ''}`, `source${unavailable.includes(key) ? '' : ' online'}`)));
+          card.append(sources, node('span', `在跑会话：${unavailable.length ? '—' : keys.length}${unavailable.length ? '（有来源不可达）' : ''}`, 'muted'));
+          wall.append(card);
+        }
+        function render() {
+          sidebar.replaceChildren(); wall.replaceChildren();
+          route.textContent = '从项目下选择工作空间，查看它将使用的执行位置。';
+          const value = scenario.value;
+          if (value === 'all-offline') {
+            explanation.textContent = '原生目录仍有资料时保留已知工作空间；没有可读名片，墙不保留提示卡。';
+            addGroup('订单服务', ['a', 'b'], ['a', 'b']);
+            wall.append(node('p', '当前没有满足纳入判据的可读项目；请在原生连接处恢复来源后刷新。', 'muted'));
+          } else if (value === 'pending' && !recovered) {
+            explanation.textContent = 'B 的来源已知，仓库资料尚未到达。点击刷新模拟资料恢复，随后自动归入订单服务。';
+            addGroup('订单服务', ['a'], []);
+            addGroup('正在识别项目 · Builder-B', ['b'], []);
+            addCard('订单服务', ['a'], []);
+          } else {
+            const unavailable = value === 'offline' ? ['b'] : [];
+            explanation.textContent = value === 'leader' ? 'Leader 场景：已配对主机覆盖两个项目，仍沿用整机授权，没有新增角色。' : value === 'offline' ? 'A 的名片满足纳入判据，墙仍显示该项目；B 的工作空间不可达，读数不装成零。' : recovered ? '模拟刷新完成：B 的身份已读回，两个工作空间归入同一项目。' : 'A、B 的本地名称和目录不同；共同远端身份将它们归为同一项目。';
+            addGroup('订单服务', ['a', 'b'], unavailable);
+            addCard('订单服务', ['a', 'b'], unavailable);
+            if (value === 'leader') {
+              addGroup('运营工具', ['c'], []);
+              addCard('运营工具', ['c'], []);
+            }
+          }
+        }
+        scenario.addEventListener('change', () => { recovered = false; render(); });
+        document.getElementById('refresh').addEventListener('click', () => { recovered = scenario.value === 'pending'; render(); });
+        document.getElementById('theme').addEventListener('click', () => { document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; });
+        render();
+      })();
+    </script>
+  </body>
+</html>

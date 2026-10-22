@@ -22,7 +22,7 @@
 | 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 在用·形态整改已确认待实施⁴ | ● | ● | ◐(待按轮次协议重写) | ◐ | ◐(A01–A11 未逐项；A12–A14 已定义未实施) | ○(AJ01/AJ02 已定义) |
 | 3 | 总览指标 | [overview-metrics/](overview-metrics/) · [原型](overview-metrics/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项) | ○(MJ01/MJ02 已定义) |
 | 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·在用（正本随扶正在 main）¹ | ● | ● | ● | ◐¹ | ◐¹ | ○(台内路径 defer) |
-| 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ● | ● | ◐(配置验收已登记，结果见 STATUS；P-01–P14 注册暂缓) | ◐(配置子旅程已登记，结果见 STATUS；主旅程/跨主机/扫墙候选待建) |
+| 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·聚合修复草案待确认 | ● | ●(既有基线；聚合增量见 STATUS) | ● | ● | ◐(配置验收已登记，结果见 STATUS；P-01–P14 注册暂缓) | ◐(配置子旅程已登记，结果见 STATUS；主旅程/跨主机/扫墙候选待建) |
 | 6 | CodeHub 适配 | [codehub/](codehub/)³ | 在用·补链中 | ◐ | ◐ | ◐ | ◐ | ○(C01–C08 已定义) | ○(CJ01 已定义) |
 | 7 | Windows 出包与发布 | [workbench-release/](workbench-release/)³ | 开发方法资产·补链中 | ◐ | ◐ | ◐ | ◐ | ◐(R01/R02/R03/R05 v0.6.0 实走) | ◐(RJ01 走至读回) |
 | 8 | 集成页四卡收敛 | [connectors/](connectors/) · [原型](connectors/prototype.html)⁵ | 在用·补链中 | ● | ● | ● | ● | 待建(I01–I12 已定义) | 待建(IJ01 已定义) |
