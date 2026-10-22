@@ -1,5 +1,6 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import './board-ui.css'
 
 /**
  * G3 board icon button: icon-only control with an accurate accessible name and

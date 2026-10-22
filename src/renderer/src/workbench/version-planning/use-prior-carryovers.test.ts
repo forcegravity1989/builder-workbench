@@ -40,12 +40,12 @@ function acceptance(overrides: Partial<AcceptanceMaterial> = {}): AcceptanceMate
       sourceCommit: 'b'.repeat(40)
     },
     preparedArtifacts: [],
-    results: [{ goalId: 'g1', deliveries: [], readings: [], note: '', nextStep: '' }],
+    results: [{ goalId: 'g1', readings: [], note: '', nextStep: '' }],
     ...overrides
   }
 }
 
-it('maps carry marks and confirmed next-week directives to the two prior-review rows', () => {
+it('maps carry marks and confirmed minutes followups to the two prior-review rows', () => {
   // Absent optional fields read as empty rows — no inference, no free-text parsing.
   expect(derivePriorCarryovers(acceptance(), plan())).toEqual({ issues: [], directives: [] })
 
@@ -72,7 +72,6 @@ it('maps carry marks and confirmed next-week directives to the two prior-review 
     results: [
       {
         goalId: 'g1',
-        deliveries: [],
         readings: [],
         note: '#331、#339 遗留 open',
         nextStep: '',
@@ -82,56 +81,25 @@ it('maps carry marks and confirmed next-week directives to the two prior-review 
           'github:github.com/acme/app:331': { carry: true },
           '339': { carry: true },
           'github:github.com/acme/app:999': { carry: true }
-        },
-        meetingDirectives: [
-          {
-            id: 'd1',
-            text: '纳入下版的事项',
-            tag: 'next-week-plan',
-            status: 'confirmed',
-            source: 'manual',
-            sourceRef: 'conversation:x',
-            confirmedAt: '2026-10-19T00:00:00Z'
-          },
-          {
-            id: 'd2',
-            text: '未确认的不显示',
-            tag: 'next-week-plan',
-            status: 'pending',
-            source: 'manual',
-            sourceRef: 'conversation:y'
-          },
-          {
-            id: 'd3',
-            text: '其他标签不显示',
-            tag: 'record-remaining',
-            status: 'confirmed',
-            source: 'manual',
-            sourceRef: 'conversation:z',
-            confirmedAt: '2026-10-19T00:00:00Z'
-          }
-        ]
+        }
       },
       {
         goalId: 'g2',
-        deliveries: [],
         readings: [],
         note: '',
         nextStep: '',
-        issueMarks: { 'github:github.com/acme/app:341': { carry: true, risk: true } },
-        meetingDirectives: [
-          {
-            id: 'd4',
-            text: '第二条纳入下版',
-            tag: 'next-week-plan',
-            status: 'confirmed',
-            source: 'transcript-summary',
-            sourceRef: 'meeting-1',
-            confirmedAt: '2026-10-19T01:00:00Z'
-          }
-        ]
+        issueMarks: { 'github:github.com/acme/app:341': { carry: true } }
       }
-    ]
+    ],
+    minutes: {
+      consensus: ['共识：G1 演示通过'],
+      followups: [
+        { id: 'f1', text: '纳入下版的事项' },
+        { id: 'f2', text: '第二条纳入下版' }
+      ],
+      confirmed: true,
+      confirmedAt: '2026-10-19T00:00:00Z'
+    }
   })
   const carryovers = derivePriorCarryovers(document, plan())
   expect(carryovers.issues.map((item) => [item.number, item.title])).toEqual([
@@ -150,5 +118,34 @@ it('maps carry marks and confirmed next-week directives to the two prior-review 
   expect(carryovers.directives).toEqual([
     { label: 'M1', text: '纳入下版的事项' },
     { label: 'M2', text: '第二条纳入下版' }
+  ])
+})
+
+it('reads no meeting carryover from an unconfirmed minutes draft', () => {
+  const followups = [{ id: 'f1', text: '未确认的草稿不流入下版' }]
+  // An unconfirmed section is not a meeting outcome: a draft the assistant wrote
+  // must not become the next plan's 会议遗留 before a human confirms it.
+  expect(
+    derivePriorCarryovers(
+      acceptance({ minutes: { consensus: [], followups, confirmed: false } }),
+      plan()
+    ).directives
+  ).toEqual([])
+  // Confirming is what releases them, in stored order with positional labels.
+  expect(
+    derivePriorCarryovers(
+      acceptance({
+        minutes: {
+          consensus: [],
+          followups: [...followups, { id: 'f2', text: '第二条' }],
+          confirmed: true,
+          confirmedAt: '2026-10-19T00:00:00Z'
+        }
+      }),
+      plan()
+    ).directives
+  ).toEqual([
+    { label: 'M1', text: '未确认的草稿不流入下版' },
+    { label: 'M2', text: '第二条' }
   ])
 })

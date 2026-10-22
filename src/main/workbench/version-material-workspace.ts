@@ -7,6 +7,7 @@ import {
 import {
   AcceptanceMaterialSchema,
   PlanningMaterialSchema,
+  stripRetiredAcceptanceFields,
   type VersionMaterial
 } from '../../shared/workbench/version-material'
 import {
@@ -60,7 +61,10 @@ export function createVersionMaterialWorkspace(
       decode: (value) =>
         scope.workflow === 'plan'
           ? PlanningMaterialSchema.parse(value)
-          : AcceptanceMaterialSchema.parse(value),
+          // Stored acceptance material predating the v10 retirement still carries
+          // rounds, directives, risk marks and per-goal deliveries; the schema is
+          // strict, so reads drop those keys instead of failing the whole document.
+          : AcceptanceMaterialSchema.parse(stripRetiredAcceptanceFields(value)),
       beforeCommit: async () => {
         if ((await authorize(scope)) !== root) {
           throw new WorkspaceScopeError('invalid-scope', '工作树位置已改变，请重新打开')

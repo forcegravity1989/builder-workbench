@@ -54,11 +54,11 @@ export function issueNoteFor(
   )
 }
 
-export function updateIssueMark(
+/** The carry mark is the only Issue-level mark left; risk marking is retired. */
+export function updateIssueCarry(
   result: GoalResultAnnotations,
   reference: IssueReference,
   relatedIssues: readonly IssueReference[],
-  mark: 'carry' | 'risk',
   value: boolean
 ): Record<string, AcceptanceIssueMarks> {
   const key = issueKey(reference)
@@ -66,8 +66,7 @@ export function updateIssueMark(
     ...result.issueMarks,
     [key]: {
       ...issueMarkFor(result, reference, relatedIssues),
-      [mark]: value,
-      ...(mark === 'carry' && !value ? { risk: false } : {})
+      carry: value
     }
   }
   if (canUseLegacyIssueKey(reference, relatedIssues)) {

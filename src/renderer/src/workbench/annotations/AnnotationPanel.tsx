@@ -2,6 +2,7 @@ import { ArrowUp, Copy, MessageSquarePlus, Pencil, Plus, X } from 'lucide-react'
 import { useState } from 'react'
 import { BoardIconButton } from '../board-ui'
 import type { BoardAnnotation } from './types'
+import './annotations.css'
 
 /** Panel card: number + object + text, with card-level inline edit and delete. */
 function AnnotationCard({

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useState } from 'react'
 import { BoardIconButton } from '../board-ui'
 import type { AnnotationRef } from './types'
+import './annotations.css'
 
 const POP_W = 320
 const POP_H = 200

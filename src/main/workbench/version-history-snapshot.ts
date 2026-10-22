@@ -2,39 +2,8 @@ import { createHash } from 'node:crypto'
 import {
   AcceptanceMaterialSchema,
   PlanningMaterialSchema,
-  type AcceptanceMaterial,
-  type PlanningMaterial
+  stripRetiredAcceptanceFields
 } from '../../shared/workbench/version-material'
-import type { VersionHistorySource } from '../../shared/workbench/version-history'
-import { acceptanceRoundState } from '../../shared/workbench/acceptance-rounds'
-
-/** Round labels describe the selected Git bytes; ambiguous or absent metadata stays unknown. */
-export function acceptanceRoundMetadata(
-  document: PlanningMaterial | AcceptanceMaterial
-): Pick<VersionHistorySource, 'roundId' | 'week' | 'roundKind'> {
-  if (!('results' in document)) {
-    return {}
-  }
-  const state = acceptanceRoundState(document)
-  if (state.kind === 'conflict') {
-    return {}
-  }
-  if (state.current) {
-    return { roundId: state.current.id, week: state.current.week, roundKind: state.current.kind }
-  }
-  const latestClosedAt = state.rounds.reduce(
-    (latest, round) => Math.max(latest, round.closedAt ? Date.parse(round.closedAt) : 0),
-    0
-  )
-  const candidates = state.rounds.filter(
-    (round) => round.closedAt && Date.parse(round.closedAt) === latestClosedAt
-  )
-  if (candidates.length !== 1) {
-    return {}
-  }
-  const round = candidates[0]
-  return { roundId: round.id, week: round.week, roundKind: round.kind }
-}
 
 export class HistorySourceError extends Error {
   constructor(
@@ -82,7 +51,10 @@ export function decodeHistorySnapshot(
     const document =
       workflow === 'plan'
         ? PlanningMaterialSchema.parse(value)
-        : AcceptanceMaterialSchema.parse(value)
+        // History holds material written before the v10 retirement; strip the
+        // retired keys so a fixed-commit read still parses. The bytes on disk and
+        // their revision are untouched — this is a read-side projection.
+        : AcceptanceMaterialSchema.parse(stripRetiredAcceptanceFields(value))
     if (document.version !== version) {
       throw new Error('Material version differs from its path')
     }

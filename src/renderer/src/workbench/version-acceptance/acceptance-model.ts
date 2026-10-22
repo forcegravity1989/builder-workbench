@@ -4,10 +4,6 @@ import {
   type AcceptanceMaterial,
   type PlanningMaterial
 } from '../../../../shared/workbench/version-material'
-import {
-  acceptanceGoalSnapshot,
-  acceptanceRoundState
-} from '../../../../shared/workbench/acceptance-rounds'
 
 export type PlanReference = AcceptanceMaterial['planRef']
 export type CandidateReference = NonNullable<AcceptanceMaterial['candidateRef']>
@@ -17,14 +13,13 @@ export type EvidenceCheck =
   | { kind: 'verified'; checkedAt: string }
   | { kind: 'unknown' | 'mismatch' | 'unavailable'; reason: string }
 
+/**
+ * Identity of the acceptance a human verdict binds to. Rounds are retired with
+ * the cross-week scenario, so the source is the version, cycle, fixed plan
+ * revision and candidate — nothing else.
+ */
 export function sameAcceptanceSource(left: AcceptanceMaterial, right: AcceptanceMaterial): boolean {
-  const leftRounds = acceptanceRoundState(left)
-  const rightRounds = acceptanceRoundState(right)
   return (
-    leftRounds.kind !== 'conflict' &&
-    rightRounds.kind !== 'conflict' &&
-    JSON.stringify(leftRounds.rounds.toSorted((a, b) => a.id.localeCompare(b.id))) ===
-      JSON.stringify(rightRounds.rounds.toSorted((a, b) => a.id.localeCompare(b.id))) &&
     left.version === right.version &&
     left.cycleId === right.cycleId &&
     JSON.stringify(left.planRef) === JSON.stringify(right.planRef) &&
@@ -55,7 +50,7 @@ export function assertFixedPlan(
   return plan
 }
 
-/** A material round can span multiple native sessions while keeping its fixed promise. */
+/** One version, one acceptance: the material spans the meeting without weekly rounds. */
 export function createAcceptanceMaterial(input: {
   planRef: PlanReference
   plan: { document: PlanningMaterial; revision: string }
@@ -72,12 +67,8 @@ export function createAcceptanceMaterial(input: {
   })
 }
 
-export function emptyGoalResult(goalId: string, document?: AcceptanceMaterial): GoalResult {
-  const result: GoalResult = { goalId, deliveries: [], readings: [], note: '', nextStep: '' }
-  const current = document && acceptanceRoundState(document).current
-  return current
-    ? { ...result, rounds: [{ ...current, snapshot: acceptanceGoalSnapshot(result) }] }
-    : result
+export function emptyGoalResult(goalId: string): GoalResult {
+  return { goalId, readings: [], note: '', nextStep: '' }
 }
 
 export function artifactCandidateCheck(

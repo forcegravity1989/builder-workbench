@@ -1,0 +1,49 @@
+/*
+ * Styles for the shared board primitives (BoardIconButton, BoardLines). They live
+ * beside the components rather than in either screen's stylesheet so both cycle
+ * boards render them identically without duplicating the rules.
+ */
+
+.g3-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  flex-shrink: 0;
+}
+.g3-icon-button:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+/* Annotation-mode pressed state, shared by both boards' header buttons. */
+.g3-icon-button.g3-mode-on {
+  border-color: var(--foreground);
+  background: var(--accent);
+  color: var(--foreground);
+}
+/* Renders stored multi-line text one line per paragraph. */
+.g3-lines {
+  font-size: 14px;
+  line-height: 1.8;
+}
+.g3-lines p {
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+.g3-lines p:last-child {
+  margin-bottom: 0;
+}
+.is-spinning {
+  animation: bw-spin 0.9s linear infinite;
+}
+@keyframes bw-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

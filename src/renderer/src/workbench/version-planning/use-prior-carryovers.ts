@@ -52,9 +52,9 @@ function readySnapshotToTask(entry: ReadySnapshot): CycleTaskSnapshot {
  * to the two prior-review rows: carryover Issues are `results[].issueMarks`
  * carry marks joined with the document-level taskSnapshot by task identity
  * (legacy bare-number keys included, per the acceptance annotations helpers);
- * meeting carryovers are confirmed `next-week-plan` directives in material
- * order. Absent fields read as empty — no free-text parsing, no inference
- * from open state.
+ * meeting carryovers are the followup points of the human-confirmed acceptance
+ * minutes, in material order. Absent fields read as empty — no free-text
+ * parsing, no inference from open state.
  */
 export function derivePriorCarryovers(
   acceptance: AcceptanceMaterial,
@@ -68,8 +68,7 @@ export function derivePriorCarryovers(
   }
   const issues: PriorCarryoverIssue[] = []
   const directives: PriorCarryoverDirective[] = []
-  for (const result of acceptance.results) {
-    const related = plan.tasks.filter((task) => task.goalId === result.goalId)
+  for (const result of acceptance.results) {    const related = plan.tasks.filter((task) => task.goalId === result.goalId)
     for (const reference of related) {
       if (!issueMarkFor(result, reference, related)?.carry) {
         continue
@@ -91,10 +90,15 @@ export function derivePriorCarryovers(
             }
       )
     }
-    for (const directive of result.meetingDirectives ?? []) {
-      if (directive.status === 'confirmed' && directive.tag === 'next-week-plan') {
-        directives.push({ label: `M${directives.length + 1}`, text: directive.text })
-      }
+  }
+  // Meeting carryovers come from the acceptance meeting minutes, which replaced
+  // the retired per-goal directive list. Only a human-confirmed section feeds the
+  // next plan — an unconfirmed draft is not a meeting outcome. Points are labeled
+  // by position while their identity stays the stored stable id.
+  const minutes = acceptance.minutes
+  if (minutes?.confirmed) {
+    for (const followup of minutes.followups) {
+      directives.push({ label: `M${directives.length + 1}`, text: followup.text })
     }
   }
   return { issues, directives }
