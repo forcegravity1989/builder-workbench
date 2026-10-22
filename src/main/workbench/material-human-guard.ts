@@ -3,7 +3,6 @@ import {
   AcceptanceMaterialSchema,
   PlanningMaterialSchema,
   type AcceptanceMaterial,
-  type PlanningMaterial,
   type VersionMaterial
 } from '../../shared/workbench/version-material'
 import type {
@@ -13,6 +12,7 @@ import type {
 import { WorkspaceScopeError } from './workspace-scope-error'
 import type { VersionHistoryPort } from '../../shared/workbench/version-history'
 import { analyzeAcceptanceRounds } from './material-round-guard'
+import { planHumanFieldChanges } from './plan-human-guard'
 
 /** An omitted commit is resolved to the cycle worktree HEAD on the owning runtime. */
 export type AcceptanceRoundSourceReader = (
@@ -27,8 +27,9 @@ export type MaterialSaveCaller = {
 /**
  * Channel boundary for human-only material fields: acceptance conclusions and
  * current-round inputs (decision, delivery, progress, next step, Issue notes/
- * marks and confirmed guidance), plus preparationReview and the planning risk
- * report (summary.risks).
+ * marks and confirmed guidance), plus preparationReview, the planning risk
+ * report (summary.risks) and the planning meeting-minutes confirmation and
+ * followup closure marks (minutes.confirmed/confirmedAt, followups[].closed).
  * Desktop IPC and paired device sockets arrive with an authenticated clientKind;
  * the local Unix-socket CLI — the channel in-session models execute — arrives
  * without one. A human typing `bw materials save` by hand is refused too:
@@ -209,19 +210,6 @@ export function humanFieldChanges(
 }
 
 /**
- * Plan-side human field: the risk report is typed by the user in the planning
- * UI. The model channel may create a plan with empty risks and must round-trip
- * existing risks unchanged.
- */
-export function planHumanFieldChanges(
-  current: PlanningMaterial | null,
-  incoming: PlanningMaterial
-): string[] {
-  const previous = current?.summary.risks ?? ''
-  return previous === incoming.summary.risks ? [] : ['summary.risks']
-}
-
-/**
  * Save-channel guard: model-channel saves must not touch human conclusions, but must
  * stay able to round-trip them unchanged. The authoritative check runs here on the
  * owning runtime; the CLI client cannot be trusted to enforce it.
@@ -244,7 +232,7 @@ export async function assertHumanFieldsUntouched(
     if (changes.length > 0) {
       throw new WorkspaceScopeError(
         'forbidden',
-        `风险上报由用户在计划界面填写，模型通道不能写入或修改（${changes.join('、')}）；其余字段可照常保存`
+        `计划人工字段不符合保存规则（${changes.join('、')}）：风险上报由用户在计划界面填写；会议纪要的人工确认与遗留闭环由人标记，确认后整节冻结，模型通道只能在未确认时撰写纪要正文或原样往返`
       )
     }
     return

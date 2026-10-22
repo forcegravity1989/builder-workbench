@@ -12,7 +12,33 @@ import {
   type AcceptanceMaterial,
   type PlanningMaterial
 } from '../../../shared/workbench/version-material'
-import { derivePlanMinutes } from './version-planning/plan-summary'
+
+/**
+ * Plan column of the overview: the stored minutes section rendered as its two
+ * fixed blocks. Versions without stored minutes read「纪要未记录」— the retired
+ * three-section goal-derived template is never reconstructed.
+ */
+function planMinutesText(plan: PlanningMaterial): string {
+  const minutes = plan.minutes
+  if (!minutes) {
+    return '纪要未记录'
+  }
+  const consensus = minutes.consensus.length
+    ? minutes.consensus.map((point) => `- ${point || '待填写'}`).join('\n')
+    : '- 无'
+  const followups = minutes.followups.length
+    ? minutes.followups
+        .map((point) => `- ${point.closed ? '［已闭环］' : '［未闭环］'} ${point.text || '待填写'}`)
+        .join('\n')
+    : '- 无'
+  return [
+    '### 共识',
+    consensus,
+    '### 遗留',
+    followups,
+    minutes.confirmed ? '_已人工确认_' : '_待人工确认_'
+  ].join('\n\n')
+}
 
 export type VersionMinutes = {
   version: string
@@ -156,7 +182,7 @@ export async function readVersionMinutes(input: MinutesInput): Promise<VersionMi
       result.planDocument = PlanningMaterialSchema.parse(snapshot.document)
       revision = snapshot.revision
       result.plan = {
-        text: derivePlanMinutes(result.planDocument),
+        text: planMinutesText(result.planDocument),
         draft: snapshot.draft,
         source: snapshot.draft
           ? '当前材料（未归档）'
@@ -190,7 +216,7 @@ export async function readVersionMinutes(input: MinutesInput): Promise<VersionMi
         result.planDocument = plan
         result.planError = null
         result.plan = {
-          text: derivePlanMinutes(plan),
+          text: planMinutesText(plan),
           draft: adopted.source.kind === 'draft',
           source:
             adopted.source.kind === 'committed'

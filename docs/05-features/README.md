@@ -18,7 +18,7 @@
 
 | # | 特性 | 目录 | 分诊 | intent | spec | 实现设计 | TDD | 验收点E2E | 旅程E2E |
 |---|---|---|---|:--:|:--:|:--:|:--:|:--:|:--:|
-| 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) · [G3 旅程候选](version-planning/planning-journey-prototype.html) | 在用·G3 计划旅程候选待评审；当前实现见 STATUS⁴ | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
+| 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) · [G3 旅程高保真](version-planning/planning-journey-prototype.html) | 在用·G3 计划旅程已落地（2026-10-21）；证据与未验见 STATUS⁴ | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
 | 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [原型](version-acceptance/prototype.html) | 在用·形态整改已确认待实施⁴ | ● | ● | ◐(待按轮次协议重写) | ◐ | ◐(A01–A11 未逐项；A12–A14 已定义未实施) | ○(AJ01/AJ02 已定义) |
 | 3 | 总览指标 | [overview-metrics/](overview-metrics/) · [原型](overview-metrics/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项) | ○(MJ01/MJ02 已定义) |
 | 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·在用（正本随扶正在 main）¹ | ● | ● | ● | ◐¹ | ◐¹ | ○(台内路径 defer) |

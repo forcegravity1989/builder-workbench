@@ -4,20 +4,27 @@ import {
   AcceptanceMaterialSchema,
   PlanningMaterialSchema,
   PlanningProgressSourceSchema,
+  type AcceptanceMaterial,
+  type PlanningMaterial,
   type PlanningProgressSource
 } from '../../../../shared/workbench/version-material'
-import { buildAcceptanceReport } from '../version-acceptance/acceptance-report'
+
+/** The fixed acceptance record plus the plan it adopted, both identity-verified. */
+type PlanningProgressSourceDocuments = {
+  acceptance: AcceptanceMaterial
+  plan: PlanningMaterial
+}
 
 /**
- * Reads the referenced acceptance record at its fixed commit and derives the
- * human-readable minutes for the progress card. Identity mismatches throw —
+ * Reads the referenced acceptance record at its fixed commit together with the
+ * plan it adopted, for the prior-review rows. Identity mismatches throw —
  * never fall back to another record or to the latest material.
  */
 export async function readPlanningProgressSource(
   history: VersionHistoryPort,
   scope: MetricScope,
   input: PlanningProgressSource
-) {
+): Promise<PlanningProgressSourceDocuments> {
   const source = PlanningProgressSourceSchema.parse(input)
   const snapshot = await history.read({
     scope,
@@ -44,5 +51,5 @@ export async function readPlanningProgressSource(
   ) {
     throw new Error('无法核对该验收采用的固定计划，未改读最新计划。')
   }
-  return buildAcceptanceReport(document, plan)
+  return { acceptance: document, plan }
 }

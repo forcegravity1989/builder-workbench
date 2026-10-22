@@ -8,6 +8,7 @@ import {
   planChatWidthFromRatio,
   PLAN_CHAT_COLLAPSED_RAIL_PX,
   PLAN_CHAT_REVEAL_EVENT,
+  PLAN_CHAT_TOGGLE_EVENT,
   readPlanChatCollapsed,
   readPlanChatRatio,
   writePlanChatCollapsed,
@@ -61,12 +62,18 @@ export function usePlanColumnResize(enabled = true): {
     const next = !chatCollapsed
     setChatCollapsed(next)
     writePlanChatCollapsed(next)
+    window.dispatchEvent(new Event(PLAN_CHAT_TOGGLE_EVENT))
   }, [chatCollapsed])
 
   useEffect(() => {
     const reveal = () => setChatCollapsed(false)
+    const sync = () => setChatCollapsed(readPlanChatCollapsed())
     window.addEventListener(PLAN_CHAT_REVEAL_EVENT, reveal)
-    return () => window.removeEventListener(PLAN_CHAT_REVEAL_EVENT, reveal)
+    window.addEventListener(PLAN_CHAT_TOGGLE_EVENT, sync)
+    return () => {
+      window.removeEventListener(PLAN_CHAT_REVEAL_EVENT, reveal)
+      window.removeEventListener(PLAN_CHAT_TOGGLE_EVENT, sync)
+    }
   }, [])
 
   useLayoutEffect(() => {
