@@ -116,8 +116,11 @@ export function resolveTaskRowWorkspace<T extends Worktree>(args: {
   return { attached, hasWorkspace: attached !== null }
 }
 
-// 父级建议核在共享解析模块（协议单测看护）；此处转发保持 BW 单一导入面。
-export { findGoalParentSuggestion } from '../../../shared/workbench/version-workspace-match'
+// 解析核在共享模块（协议单测看护）；此处转发保持 BW 单一导入面。
+export {
+  findGoalParentSuggestion,
+  findVersionTaskWorktrees
+} from '../../../shared/workbench/version-workspace-match'
 
 /** 范围解析出的工作区激活失败时的如实提示（文案住 BW 模块，原生文件不引新词条）。 */
 export function notifyScopedWorkspaceUnavailable(): void {

@@ -45,6 +45,7 @@ export function PlanningGoalCard({
   index,
   relatedTasks,
   reads,
+  version,
   onChange,
   onRemove,
   onTask,
@@ -63,6 +64,8 @@ export function PlanningGoalCard({
   relatedTasks: VersionTaskReference[]
   /** null while the provider read is in flight. */
   reads: Map<string, CycleTaskRead> | null
+  /** 本版版本（Issue 行开工箭头的解析前提）。 */
+  version: string
   onChange(goal: VersionGoal): void
   /** Whole-card delete: the parent drops the goal, its task references and annotations. */
   onRemove(goalId: string): void
@@ -283,6 +286,7 @@ export function PlanningGoalCard({
             goalNumber={goalNumber}
             relatedTasks={relatedTasks}
             reads={reads}
+            version={version}
             onTask={onTask}
             numbersFor={numbersFor}
             onOpenAnnotationPanel={onOpenAnnotationPanel}
