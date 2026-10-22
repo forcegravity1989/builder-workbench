@@ -1,0 +1,321 @@
+.wb-icon-button,
+html[data-skin='ds'] .wb-btn.wb-icon-button {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  flex: none;
+  color: var(--muted-foreground);
+  border: 0;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+.wb-icon-button:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+.wb-icon-button:focus-visible,
+.wb-project-settings :is(button, input, textarea):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.wb-icon-button[aria-pressed='true'] {
+  color: var(--foreground);
+  background: var(--accent);
+}
+.wb-icon-button svg {
+  width: 16px;
+  height: 16px;
+}
+.wb-icon-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.wb-project-settings {
+  width: 400px;
+  max-width: 100%;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+}
+.wb-config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 24px 24px 16px;
+}
+.wb-config-eyebrow {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.wb-config-header h2 {
+  margin: 6px 0 0;
+  font-size: 18px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.wb-config-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 16px 20px;
+  scrollbar-width: thin;
+}
+.wb-config-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 12px;
+}
+.wb-config-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  padding: 14px 12px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+.wb-config-toggle:hover {
+  background: var(--accent);
+}
+.wb-config-toggle > svg {
+  flex: none;
+  color: var(--muted-foreground);
+}
+.wb-config-toggle > svg:last-child {
+  transition: transform 0.15s;
+}
+.wb-config-toggle[data-state='open'] > svg:last-child {
+  transform: rotate(180deg);
+}
+.wb-config-summary {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  text-align: right;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.wb-config-body {
+  padding: 0 16px 16px;
+  font-size: 12px;
+}
+.wb-config-facts {
+  margin: 0;
+}
+.wb-config-facts > div {
+  padding-top: 14px;
+}
+.wb-config-facts dt,
+.wb-config-fields label > span {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.wb-config-facts dd {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.wb-config-fields {
+  display: grid;
+  gap: 14px;
+  padding-top: 10px;
+}
+.wb-config-fields label {
+  display: grid;
+  gap: 6px;
+}
+.wb-config-fields :is(input, textarea) {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-sm);
+  background: var(--background);
+  color: inherit;
+  font: inherit;
+}
+.wb-config-fields textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+.wb-config-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+.wb-config-facts + .wb-config-actions,
+.wb-config-fields + .wb-config-actions {
+  margin-top: 12px;
+}
+.wb-config-repos,
+.wb-config-hosts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.wb-config-repos li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.wb-config-repo-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.wb-config-repo-heading strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.wb-config-path {
+  color: var(--muted-foreground);
+  font: 11px var(--font-mono);
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.wb-config-sources {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+}
+.wb-config-hosts li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.wb-config-hosts li > span:last-child {
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.wb-config-pr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-bottom: 10px;
+}
+.wb-config-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+.wb-config-footer p {
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+}
+.wb-config-draft {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+  margin-bottom: 10px;
+  color: var(--muted-foreground);
+}
+.wb-config-submit {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.wb-config-error {
+  color: var(--destructive);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.wb-config-review {
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+}
+.wb-config-review header,
+.wb-config-review footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.wb-config-review footer {
+  justify-content: flex-end;
+}
+.wb-config-diff section {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.wb-config-diff h3 {
+  font-size: 12px;
+  margin: 0 0 10px;
+}
+.wb-config-diff dl {
+  margin: 0;
+  font-size: 13px;
+}
+.wb-config-diff dl > div {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+.wb-config-diff dt {
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.wb-config-diff dd {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.wb-icon-spin {
+  animation: wb-icon-spin 1s linear infinite;
+}
+@keyframes wb-icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 1100px) {
+  .wb-project-settings {
+    width: 368px;
+  }
+}
+@media (max-width: 680px) {
+  .wb-project-settings {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    border: 0;
+    z-index: 10;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wb-icon-spin {
+    animation: none;
+  }
+  .wb-config-toggle > svg:last-child {
+    transition: none;
+  }
+}

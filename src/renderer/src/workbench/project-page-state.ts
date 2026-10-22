@@ -13,9 +13,8 @@ export type CharterEditOptions = {
 }
 
 type ProjectPage =
-  | { kind: 'wall' }
+  | { kind: 'wall'; configureRepoId?: string }
   | { kind: 'onboard'; options: ProjectOnboardOptions }
-  | { kind: 'charter'; options: CharterEditOptions }
   | null
 
 let projectPage: ProjectPage = null
@@ -41,7 +40,7 @@ export function openProjectOnboard(options: ProjectOnboardOptions = {}): void {
 /** 名片补录/编辑入口(spec 规则 2):复用 bw/project 固定树与 PR 流。 */
 export function openCharterEdit(options: CharterEditOptions): void {
   useAppStore.getState().openActivityPage()
-  setProjectPage({ kind: 'charter', options: { ...options } })
+  setProjectPage({ kind: 'wall', configureRepoId: options.repoId })
 }
 
 export function closeProjectPage(): void {

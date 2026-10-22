@@ -2,6 +2,7 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { test, expect } from './helpers/workbench-app'
 import type { Page } from '@playwright/test'
+import { projectSettingsTest, verifyProjectSettings } from './helpers/workbench-project-settings'
 
 /**
  * BW main-chain smoke: the workbench shell must formally select the fixed
@@ -20,6 +21,14 @@ test.use({
     ORCA_PRODUCT_NAME: 'Workbench'
   }
 })
+
+projectSettingsTest(
+  'BW project settings: reviewed edits, conflict protection and filesystem read-back',
+  async ({ workbenchPage, seededRepoPath }, testInfo) => {
+    test.setTimeout(300_000)
+    await verifyProjectSettings(workbenchPage, seededRepoPath, testInfo)
+  }
+)
 
 async function waitForFixedWorktree(page: Page, branch: string): Promise<string> {
   await expect
@@ -76,7 +85,7 @@ test('BW cycle main chain: fixed trees, version material save and independent re
     .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
     .toBe('terminal')
   await expect(
-    workbenchPage.getByRole('button', { name: '新建计划', exact: true }).first()
+    workbenchPage.getByRole('button', { name: '与计划助手新建计划', exact: true }).first()
   ).toBeVisible()
   await expect(workbenchPage.locator('.vc-chat')).toHaveCount(0)
   await expect
@@ -120,9 +129,11 @@ test('BW cycle main chain: fixed trees, version material save and independent re
   await expect(versionSelect.locator('option[value="v9.9"]')).toBeAttached({ timeout: 30_000 })
   await versionSelect.selectOption('v9.9')
 
-  const progress = workbenchPage.locator('.vp-preparation textarea').first()
-  await expect(progress).toBeEnabled({ timeout: 60_000 })
-  await progress.fill('烟测进展：主链接通')
+  const goal = workbenchPage.locator('[data-goal-id="smoke-goal"]')
+  await expect(goal).toBeVisible({ timeout: 60_000 })
+  await workbenchPage.getByRole('button', { name: '全部展开', exact: true }).click()
+  await goal.getByRole('button', { name: '编辑目标', exact: true }).click()
+  await goal.getByRole('textbox', { name: 'G1 目标', exact: true }).fill('烟测目标：主链接通')
   await expect(workbenchPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
 
   // Iron-law read-back: the material exists on the fixed worktree's own disk path.
@@ -135,14 +146,14 @@ test('BW cycle main chain: fixed trees, version material save and independent re
         }
         const parsed = JSON.parse(readFileSync(file, 'utf8')) as {
           version: string
-          summary: { progress: string }
+          goals: { title: string }[]
         }
-        return `${parsed.version}:${parsed.summary.progress}`
+        return `${parsed.version}:${parsed.goals[0].title}`
       },
       { timeout: 30_000, message: 'plan material never landed on disk' }
     )
-    .toBe('v9.9:烟测进展：主链接通')
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-plan-saved.png') })
+    .toBe('v9.9:烟测目标：主链接通')
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-plan-saved.jpg') })
 
   // ---- 重载读回：流程选版偏好与材料都从宿主恢复 ----
   await workbenchPage.reload()
@@ -161,8 +172,8 @@ test('BW cycle main chain: fixed trees, version material save and independent re
       { timeout: 120_000, message: 'version preference did not survive reload' }
     )
     .toBe('v9.9')
-  await expect(workbenchPage.locator('.vp-preparation textarea').first()).toHaveValue(
-    '烟测进展：主链接通',
+  await expect(workbenchPage.locator('[data-goal-id="smoke-goal"]')).toContainText(
+    '烟测目标：主链接通',
     { timeout: 60_000 }
   )
 
@@ -178,7 +189,7 @@ test('BW cycle main chain: fixed trees, version material save and independent re
   await expect(
     workbenchPage.getByRole('button', { name: '新建验收', exact: true }).first()
   ).toBeVisible()
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.png') })
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.jpg') })
 
   // ---- 总览：真实数据，未配置保持 Unknown，无演示值 ----
   await workbenchPage.getByRole('button', { name: '总览', exact: true }).click()
@@ -188,5 +199,5 @@ test('BW cycle main chain: fixed trees, version material save and independent re
   await expect(workbenchPage.getByText('未配置北极星指标')).toBeVisible({
     timeout: 60_000
   })
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-overview-real.png') })
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-overview-real.jpg') })
 })

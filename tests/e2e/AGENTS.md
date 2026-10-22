@@ -2,6 +2,8 @@
 
 The directory contains the Workbench Electron smoke test and the small fixture closure it needs, plus the historical Orca E2E specs, fixtures and helpers retained as frozen source after the Orca CI/E2E isolation (see `ref/upstream.md`). `tests/playwright.config.ts` discovers only `workbench-cycle-smoke.spec.ts`, so the legacy files never run in the Workbench lane — do not "clean them up" and do not assume they execute. Keep new coverage focused on Workbench journeys and update this file when the smoke harness changes.
 
+The discovered spec covers the cycle main chain and project configuration. The configuration journey uses real charter RPC and filesystem writes in a disposable repository, checks conflict protection and reload read-back, and emits screenshots on success as well as failure. It does not create a remote PR.
+
 ## Build the App With `--mode e2e` Before Running the Smoke Test
 
 E2E tests read Zustand state via `window.__store`. That global is only assigned when the preload bundle is built in `e2e` mode, which is applied when you pass `--mode e2e` to `electron-vite build`. A plain `pnpm build` or `pnpm build:electron-vite` produces an `out/` tree **without** the store exposed, so reusing it with `SKIP_BUILD=1` makes every spec hang on `waitForFunction(() => Boolean(window.__store))` and time out at 30s.
