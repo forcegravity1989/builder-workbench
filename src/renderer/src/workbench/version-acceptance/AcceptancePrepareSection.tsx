@@ -4,6 +4,7 @@ import type { MetricScope } from '../../../../shared/workbench/metrics'
 import type { PackageLatest, PackagePipelinePort } from '../../../../shared/workbench/package-pipeline'
 import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
 import { BoardIconButton } from '../board-ui'
+import type { SendActionWrap } from '../plan-send-menu'
 import { latestVerificationArtifact } from './acceptance-model'
 import { AcceptancePackage } from './AcceptancePackage'
 
@@ -32,7 +33,7 @@ export function AcceptancePrepareSection({
   packages: PackagePipelinePort
   scope: MetricScope
   disabled: boolean
-  onSendAction(prompt: string, label: string): void
+  onSendAction: SendActionWrap
   onOpenMaterial(location: string): void
   sectionRef: Ref<HTMLElement>
 }) {
@@ -103,24 +104,20 @@ export function AcceptancePrepareSection({
               未部署 · 点「部署」注入请求，验收助手按项目自有入口部署并写回环境
             </span>
           )}
-          <button
-            type="button"
-            className="acc-text-button"
-            disabled={disabled || !latest}
-            title={
-              latest
-                ? '向验收助手会话注入部署请求；与在会话中直说等价'
-                : '尚无制品包；先出包'
-            }
-            onClick={() =>
-              onSendAction(
-                '下载最新安装包并按项目自有部署入口部署启动；完成后把演示环境 URL（桌面应用则写启动状态）写回材料',
-                '部署请求'
-              )
-            }
-          >
-            部署
-          </button>
+          {onSendAction(
+            '下载最新安装包并按项目自有部署入口部署启动；完成后把演示环境 URL（桌面应用则写启动状态）写回材料',
+            '部署请求',
+            <button
+              type="button"
+              className="acc-text-button"
+              disabled={disabled || !latest}
+              title={
+                latest ? '向验收助手会话注入部署请求；与在会话中直说等价' : '尚无制品包；先出包'
+              }
+            >
+              部署
+            </button>
+          )}
         </div>
 
         <div className="acc-prepare-row">

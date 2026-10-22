@@ -1,7 +1,8 @@
 import { BrainCircuit, Check, Pencil, Plus, X } from 'lucide-react'
 import { useState, type Ref } from 'react'
 import type { AcceptanceMeetingMinutes, AcceptanceMaterial } from '../../../../shared/workbench/version-material'
-import { BoardIconButton } from '../board-ui'
+import { BoardActionButton, BoardIconButton } from '../board-ui'
+import type { SendActionWrap } from '../plan-send-menu'
 
 /**
  * Acceptance meeting minutes: the assistant summarizes board annotations and the
@@ -33,7 +34,7 @@ export function AcceptanceMinutesSection({
   document?: AcceptanceMaterial
   disabled: boolean
   edit(next: AcceptanceMaterial): void
-  onSendAction(prompt: string, label: string): void
+  onSendAction: SendActionWrap
   sectionRef: Ref<HTMLElement>
 }) {
   const minutes = document?.minutes
@@ -47,18 +48,16 @@ export function AcceptanceMinutesSection({
           </small>
         </h2>
         <span className="acc-title-actions">
-          <BoardIconButton
-            label="让验收助手整理纪要（可提供会议 ID）"
-            disabled={!document}
-            onClick={() =>
-              onSendAction(
-                '把板面批注与会议转写稿整理为会议纪要，按共识 / 遗留两块输出',
-                '整理纪要请求'
-              )
-            }
-          >
-            <BrainCircuit size={16} aria-hidden="true" />
-          </BoardIconButton>
+          {/* 发送弹窗的触发件用纯 button（BoardActionButton），不用 BoardIconButton：
+              后者内部已是 Radix TooltipTrigger，再套 DropdownMenuTrigger asChild 会让
+              tooltip 与 dropdown 的 data-state / aria 属性互相覆盖。与计划屏同一做法。 */}
+          {onSendAction(
+            '把板面批注与会议转写稿整理为会议纪要，按共识 / 遗留两块输出',
+            '整理纪要请求',
+            <BoardActionButton disabled={!document} title="让验收助手整理纪要（可提供会议 ID）">
+              <BrainCircuit size={14} aria-hidden="true" /> 整理纪要
+            </BoardActionButton>
+          )}
         </span>
       </div>
       {document ? (

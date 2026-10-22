@@ -2,7 +2,8 @@ import { ArrowUpRight, GitPullRequest, Rocket } from 'lucide-react'
 import type { Ref } from 'react'
 import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
 import type { WorkflowArchivePr } from '../../../../shared/workbench/version-workflow'
-import { BoardIconButton } from '../board-ui'
+import { BoardActionButton, BoardIconButton } from '../board-ui'
+import type { SendActionWrap } from '../plan-send-menu'
 
 /**
  * Fourth zone: archive reference plus the release entry.
@@ -35,7 +36,7 @@ export function AcceptanceArchiveCard({
   loading: boolean
   opening: boolean
   onOpenPr(): void
-  onSendAction(prompt: string, label: string): void
+  onSendAction: SendActionWrap
   version: string
   sectionRef: Ref<HTMLElement>
 }) {
@@ -82,17 +83,15 @@ export function AcceptanceArchiveCard({
           </p>
         </div>
         <span className="acc-archive-actions">
-          <BoardIconButton
-            label="让验收助手核对材料并发起归档"
-            onClick={() =>
-              onSendAction(
-                '核对验收材料与结论状态后，在 bw/week-acceptance 固定树提交归档并创建到主分支的 PR',
-                '归档请求'
-              )
-            }
-          >
-            <Rocket size={16} aria-hidden="true" />
-          </BoardIconButton>
+          {/* 触发件用纯 button，理由同 AcceptanceMinutesSection：不与 Tooltip 的
+              Radix 触发件嵌套。「打开原生 PR 页」不是发送动作，保持图标按钮。 */}
+          {onSendAction(
+            '核对验收材料与结论状态后，在 bw/week-acceptance 固定树提交归档并创建到主分支的 PR',
+            '归档请求',
+            <BoardActionButton title="让验收助手核对材料并发起归档">
+              <Rocket size={14} aria-hidden="true" /> 发起归档
+            </BoardActionButton>
+          )}
           {archivePr && (
             <BoardIconButton label="打开原生 PR 页" disabled={opening} onClick={onOpenPr}>
               <ArrowUpRight size={16} aria-hidden="true" />
@@ -116,18 +115,13 @@ export function AcceptanceArchiveCard({
             不达成不阻断发布，由你知情决定。未经你明确授权不创建 Release、不打标签。
           </p>
         </div>
-        <button
-          type="button"
-          className="acc-text-button"
-          onClick={() =>
-            onSendAction(
-              `发布 ${version || '本版'}：先呈现版本号、发布提交与验收包一致性、各目标达成状况与版本说明就绪状态，经我明确授权后按项目自有发布入口执行，发布后独立读回 tag、时间、资产与校验值`,
-              '发布请求'
-            )
-          }
-        >
-          <Rocket size={13} aria-hidden="true" /> 发布
-        </button>
+        {onSendAction(
+          `发布 ${version || '本版'}：先呈现版本号、发布提交与验收包一致性、各目标达成状况与版本说明就绪状态，经我明确授权后按项目自有发布入口执行，发布后独立读回 tag、时间、资产与校验值`,
+          '发布请求',
+          <button type="button" className="acc-text-button">
+            <Rocket size={13} aria-hidden="true" /> 发布
+          </button>
+        )}
       </div>
     </section>
   )

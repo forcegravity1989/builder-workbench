@@ -28,7 +28,7 @@ import { AcceptanceMinutesSection } from './AcceptanceMinutesSection'
 import { AcceptancePrepareSection } from './AcceptancePrepareSection'
 import { latestVerificationArtifact } from './acceptance-model'
 import { openAcceptanceMaterial } from './open-acceptance-material'
-import { useAcceptanceActionSend } from './use-acceptance-action-send'
+import { usePlanSendAction } from '../plan-send-menu'
 import { useAcceptanceBoard } from './use-acceptance-board'
 import { useAcceptanceJourneySpy } from './use-acceptance-journey-spy'
 import './acceptance.css'
@@ -80,12 +80,15 @@ function ReadyAcceptanceBoard({
   const { scope, worktreeId } = board
   const { document, plan, gate } = board
   const annotations = useBoardAnnotations()
-  const sendAction = useAcceptanceActionSend(worktreeId)
+  const [notice, setNotice] = useState('')
+  // 注入动作走共用发送弹窗(与计划屏同一件);assistant 只改用户可见文案里的 AI 角色名。
+  // 取代原 use-acceptance-action-send:那个钩子只开侧边栏 target mode、从不渲染选择器,
+  // 点击处什么都不弹——该 worktree 无可发会话时连高亮都不触发,是纯静默 no-op。
+  const sendAction = usePlanSendAction(worktreeId, setNotice, '验收助手')
   const chatCollapsed = usePlanChatCollapsed()
   const spy = useAcceptanceJourneySpy()
   const prStatus = useArchivePrStatus(context, document?.workflow?.archivePr)
   const [openingPr, setOpeningPr] = useState(false)
-  const [notice, setNotice] = useState('')
   const { clearAll, pruneMissing } = annotations
 
   const scopeKey = scope ? cycleScopeKey(scope) : ''
