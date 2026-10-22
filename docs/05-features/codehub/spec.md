@@ -37,7 +37,7 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 
 ### 归档
 
-注册为 CodeHub 远程的仓库，归档 PR 状态保持未知，原因固定为「此来源的 PR 状态暂无法读回」。旅程灯只读模型写入材料的 workflow.stage，与 provider 无关；归档状态行按材料记录的 archivePr 薄读取，读不回就不显示合入状态，也不编造。GitHub 仓库按 archivePr 显示已合入／待合入／已关闭；尚未记录 PR 引用时显示尚未进入归档或 PR 链接待写入，各原因不要混用。
+注册为 CodeHub 远程的仓库，归档 PR 状态保持未知，原因固定为「此来源的 PR 状态暂无法读回」。归档状态行按材料记录的 archivePr 薄读取，读不回就不显示合入状态，也不编造。`workflow.stage` 是模型写入材料的内部进度、与 provider 无关，两屏界面都不渲染灯（计划屏自 G3、验收屏自 v10 起），所以 CodeHub 读不回 PR 状态不影响任何阶段呈现。GitHub 仓库按 archivePr 显示已合入／待合入／已关闭；尚未记录 PR 引用时显示尚未进入归档或 PR 链接待写入，各原因不要混用。
 
 ### 验收可选版本
 
@@ -63,7 +63,7 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 | C04 | MR 详情与新建 | 没有草稿开关，没有 Mark ready；可以关闭 |
 | C05 | CLI 不在 PATH | 可见未安装说明；集成卡片不是「已登录」 |
 | C06 | 计划或验收打开 CodeHub 任务 | 详情来自该项目路径上的 Issue 或 MR |
-| C07 | 仓库远程是 CodeHub | 归档 PR 状态为未知，原因是此来源的 PR 状态暂无法读回；旅程灯仍按 workflow.stage 显示 |
+| C07 | 仓库远程是 CodeHub | 归档 PR 状态为未知，原因是此来源的 PR 状态暂无法读回；界面不出现任何合入状态断言（灯已退役，无绿/灰可看），也不因读不回而阻断读取材料或继续验收 |
 | C08 | 主干基线上某版本目录有 `data.json` | 验收可以选择该版本的当前计划；坏目录不出现 |
 
 旅程 CJ01：从 CodeHub 仓库打开任务，关闭一条 Issue，重启后再次列出该 Issue 仍为关闭。需要内部 CodeHub 与已登录的 CLI，本次未跑。
