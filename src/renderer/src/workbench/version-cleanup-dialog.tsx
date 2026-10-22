@@ -50,7 +50,7 @@ function workflowLabel(entry: VersionCatalogEntry, workspace: VersionCatalogWork
       const index = entry.goals.findIndex((goal) => goal.goalId === workspace.binding.goalId)
       return index !== -1 ? `目标树 G${index + 1}` : '目标树'
     }
-    default:
+    case 'issue':
       return 'Issue 执行树'
   }
 }

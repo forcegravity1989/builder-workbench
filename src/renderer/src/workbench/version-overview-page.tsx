@@ -35,7 +35,7 @@ function prStatusText(status: ArchivePrStatusResult | null, recorded: boolean): 
       return '开放'
     case 'closed':
       return '已关闭（未合入）'
-    default:
+    case 'unknown':
       return `未知（${status.reason}）`
   }
 }
