@@ -39,6 +39,7 @@ html[data-skin='ds'][data-theme='claude'] {
   --space-6: 24px;
   --radius-sm: 6px;
   --radius-md: 8px;
+  --radius-lg: 10px; /* 设计系统 tokens.css 同值;G3 卡片圆角 */
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Bridge into Orca chrome vars for sidebar / surfaces */

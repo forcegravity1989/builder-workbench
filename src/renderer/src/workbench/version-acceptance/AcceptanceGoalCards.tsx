@@ -303,7 +303,6 @@ export function AcceptanceGoalCards({
             viewStateKey={goalCardViewKey(scope, document.version, goal.goalId, roundId)}
             goal={goal}
             index={index}
-            readOnly
             defaultOpen={false}
             expanded={expanded}
             expandedSignal={expandedSignal}

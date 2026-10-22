@@ -135,7 +135,7 @@ async function viewCodeHubTaskByIid(
 }
 
 /** Same web-URL shape main/codehub/work-items.ts itemUrl falls back to; only used when the CLI omits the link. */
-function codehubWebUrl(repo: Repo, kind: 'issue' | 'mr', iid: number): string | null {
+export function codehubWebUrl(repo: Repo, kind: 'issue' | 'mr', iid: number): string | null {
   const remote =
     parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ??
     parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey)

@@ -2,6 +2,7 @@ import type { Ref } from 'react'
 import { GitPullRequest } from 'lucide-react'
 import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
 import type { WorkflowArchivePr } from '../../../../shared/workbench/version-workflow'
+import './version-cycle.css'
 
 /**
  * One archive status row shared by both cycle screens: the recorded archive PR

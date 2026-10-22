@@ -311,7 +311,11 @@ export const electronViteConfig: UserConfig = {
       }
     },
     define: {
-      'import.meta.env.VITE_WORKBENCH_SHELL': VITE_WORKBENCH_SHELL_LITERAL
+      'import.meta.env.VITE_WORKBENCH_SHELL': VITE_WORKBENCH_SHELL_LITERAL,
+      // Why: shared/release-channel resolves the update-source repo at import time
+      // and is bundled into the renderer too (update card / settings link into it),
+      // so the renderer needs the same compile-time product flag as main.
+      WORKBENCH_SHELL: VITE_WORKBENCH_SHELL_LITERAL
     },
     plugins: [react(), tailwindcss()],
     worker: {

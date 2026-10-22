@@ -18,13 +18,43 @@ export const RELEASE_CHANNEL_LABELS: Readonly<Record<ReleaseChannel, string>> = 
   adhoc: 'Adhoc'
 }
 
+/** Compile-time flag from electron.vite `define` (main and renderer bundles). */
+declare const WORKBENCH_SHELL: string | undefined
+
+export const WORKBENCH_RELEASE_REPO = 'forcegravity1989/builder-workbench'
+
+/** Same identity sources as main/startup/workbench-product.ts, duplicated here
+ *  because shared code cannot import from main and this module is evaluated in
+ *  the renderer bundle too (update card / settings link straight into it). */
+function isWorkbenchUpdateIdentity(): boolean {
+  if (
+    typeof process !== 'undefined' &&
+    (process.env?.ORCA_PRODUCT_NAME === 'Workbench' || process.env?.WORKBENCH_SHELL === '1')
+  ) {
+    return true
+  }
+  // The build constant is absent in plain Node entry points and source-level tests.
+  // oxlint-disable-next-line unicorn/no-typeof-undefined
+  return typeof WORKBENCH_SHELL !== 'undefined' && WORKBENCH_SHELL === '1'
+}
+
+const workbenchUpdateIdentity = isWorkbenchUpdateIdentity()
+
 /** Dev builds live in their own repos so their tags never enter the main
  *  releases atom feed, which only exposes the 10 newest entries — 24 hourly
- *  tags a day would evict every stable/RC entry and strand real users. */
-export const HOURLY_RELEASE_REPO = 'stablyai/orca-hourly'
-export const DAILY_RELEASE_REPO = 'stablyai/orca-daily'
-export const ADHOC_RELEASE_REPO = 'stablyai/orca-adhoc'
-export const MAIN_RELEASE_REPO = 'stablyai/orca'
+ *  tags a day would evict every stable/RC entry and strand real users.
+ *  Workbench cuts no dev-channel builds and has no dev repos, so every channel
+ *  resolves to its one public release repo; dev-channel listings come back empty. */
+export const HOURLY_RELEASE_REPO = workbenchUpdateIdentity
+  ? WORKBENCH_RELEASE_REPO
+  : 'stablyai/orca-hourly'
+export const DAILY_RELEASE_REPO = workbenchUpdateIdentity
+  ? WORKBENCH_RELEASE_REPO
+  : 'stablyai/orca-daily'
+export const ADHOC_RELEASE_REPO = workbenchUpdateIdentity
+  ? WORKBENCH_RELEASE_REPO
+  : 'stablyai/orca-adhoc'
+export const MAIN_RELEASE_REPO = workbenchUpdateIdentity ? WORKBENCH_RELEASE_REPO : 'stablyai/orca'
 
 export const HOURLY_PRERELEASE_IDENTIFIER = 'hourly'
 export const DAILY_PRERELEASE_IDENTIFIER = 'daily'
