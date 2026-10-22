@@ -83,11 +83,17 @@ async function collectMeeting(ctx: HandlerContext): Promise<void> {
     }
     return value
   }
-  const poll = async (action: string, predicate: (value: z.infer<typeof PageReply>) => boolean) => {
+  const poll = async (
+    action: string,
+    predicate: (value: z.infer<typeof PageReply>) => boolean,
+    onValue?: (value: z.infer<typeof PageReply>) => void,
+    attempts = 40
+  ) => {
     let lastError: unknown
-    for (let attempt = 0; attempt < 40; attempt++) {
+    for (let attempt = 0; attempt < attempts; attempt++) {
       try {
         const value = await readPage(action)
+        onValue?.(value)
         if (predicate(value)) {
           return value
         }
@@ -104,14 +110,17 @@ async function collectMeeting(ctx: HandlerContext): Promise<void> {
     }
     throw new RuntimeClientError(
       'meeting-page-unavailable',
-      '会议页未就绪、无可用转写或页面结构已变化。请在保留的原生页检查登录和会议状态。',
+      '会议页未就绪或页面结构已变化（未出现可识别的会议正文）。请在保留的原生页检查登录和会议状态。',
       { browserPageId: page, url }
     )
   }
   try {
     // An explicitly supplied page is validated by the existing worktree/page resolver.
     await ctx.client.call<BrowserTabShowResult>('browser.tabShow', { worktree, page })
-    await poll('ready', (value) => value.ready === true)
+    // Why: a freshly created tab cold-loads the meeting page; the generic 20s window
+    // was suspected too short here (round-9 feedback, meeting 5DAB2173…), so the first
+    // ready poll gets ~30s while later stages keep the normal window.
+    await poll('ready', (value) => value.ready === true, undefined, 60)
     const open = await readPage('inventory-open')
     const hasSelector = open.selector === true
     const inventory = hasSelector
@@ -161,7 +170,35 @@ async function collectMeeting(ctx: HandlerContext): Promise<void> {
         )
         await delay(2_500)
       }
-      await poll('transcript-tab', (value) => value.clicked === true)
+      // Attribution (round-9, 项 E): a missing transcript tab on an already rendered
+      // page means this recording has no voice transcript — report that instead of
+      // folding it into the generic not-ready/structure-changed code, per the
+      // meeting-transcript reference promise to return a concrete reason.
+      let tabMissingOnRenderedPage = false
+      try {
+        await poll(
+          'transcript-tab',
+          (value) => value.clicked === true,
+          (value) => {
+            if (value.clicked === false && value.pageRendered === true) {
+              tabMissingOnRenderedPage = true
+            }
+          }
+        )
+      } catch (reason) {
+        if (
+          tabMissingOnRenderedPage &&
+          reason instanceof RuntimeClientError &&
+          reason.code === 'meeting-page-unavailable'
+        ) {
+          throw new RuntimeClientError(
+            'meeting-transcript-unavailable',
+            '该录制未生成语音转写：页面已渲染但「语音转文字」标签在等待窗口内未出现。',
+            { browserPageId: page, url }
+          )
+        }
+        throw reason
+      }
       await delay(2_500)
       const captured = Meta.parse(await readPage('capture'))
       const chunks: string[] = []
