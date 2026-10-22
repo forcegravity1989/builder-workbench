@@ -187,17 +187,7 @@
   border: 1px solid var(--color-hairline, rgba(128, 128, 128, 0.25));
   border-radius: 10px;
 }
-.acc-release-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--color-text-muted, #767676);
-}
-.acc-release-status.on {
-  color: var(--color-ok, #2f9e44);
-  font-weight: 600;
-}
+/* 发布读回行的 .acc-release-status 已随「板面不设发布状态读回行」的裁定删除。 */
 
 /* 出包区块收起行 */
 .acc-pkg-toggle {

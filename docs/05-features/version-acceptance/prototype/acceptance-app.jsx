@@ -21,6 +21,7 @@ import {
 import {
   Icon,
   IconButton,
+  ActionButton,
   Field,
   MinutesCard,
   AnnotationPanel,
@@ -225,45 +226,6 @@ function AcceptanceRow({
   )
 }
 
-function ReleaseModal({ verdictSummary, onClose, onConfirm }) {
-  return (
-    <div className="acc-modal-backdrop" onClick={onClose}>
-      <section
-        className="acc-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label={`发布 ${releaseInfo.version}`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header>
-          <h2>发布 {releaseInfo.version}</h2>
-          <IconButton name="close" label="关闭" onClick={onClose} />
-        </header>
-        <p className="acc-modal-lead">发布预检:</p>
-        <ul className="acc-modal-list">
-          <li>版本号:{releaseInfo.version}(发布前展示,由你确认)</li>
-          <li>
-            发布提交与最后一轮验收的包一致:<code>{releaseInfo.commit}</code>
-          </li>
-          <li>目标状态:{verdictSummary} —— 不达成与未标不阻断发布,由你知情决定</li>
-          <li>版本说明:已按规范备好,只写用户拿到的变化,不列未完成事项</li>
-        </ul>
-        <p className="g3-muted">
-          发布在会话中执行、经你明确授权;界面只发起请求并读回结果(tag、时间、资产)。
-        </p>
-        <footer>
-          <button className="acc-btn primary" autoFocus onClick={onConfirm}>
-            发起发布请求
-          </button>
-          <button className="acc-btn" onClick={onClose}>
-            取消
-          </button>
-        </footer>
-      </section>
-    </div>
-  )
-}
-
 function App() {
   const [scene, setScene] = useState('wrap')
   const [verdicts, setVerdicts] = useState({ ...sceneVerdicts.wrap })
@@ -274,8 +236,6 @@ function App() {
     sceneMinutes.wrap ? structuredClone(sceneMinutes.wrap) : null
   )
   const [archive, setArchive] = useState(sceneArchive.wrap)
-  const [released, setReleased] = useState(false)
-  const [releaseModal, setReleaseModal] = useState(false)
   const [errorModal, setErrorModal] = useState(false)
   const [expanded, setExpanded] = useState([])
   const [active, setActive] = useState('prepare')
@@ -302,9 +262,6 @@ function App() {
   const latest = sceneLatest[scene] ?? null
   const report = scene === 'meeting' || scene === 'wrap' ? REPORT : null
   const judged = goals.filter((g) => verdicts[g.goalId]).length
-  const verdictSummary = `达成 ${goals.filter((g) => verdicts[g.goalId] === '达成').length} · 不达成 ${
-    goals.filter((g) => verdicts[g.goalId] === '不达成').length
-  } · 未标 ${goals.length - judged}`
   const archiveStatus = archive
     ? { MERGED: '已合入', OPEN: '待合入', CLOSED: '已关闭' }[archive.state] || '状态未知'
     : null
@@ -365,20 +322,20 @@ function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [annotating, popover])
-  // 弹窗 Esc 关闭(与批注小窗同惯例:浮层可键盘退出)。
+  // 弹窗 Esc 关闭(与批注小窗同惯例:浮层可键盘退出)。发布预检弹窗已随规格退役,
+  // 现在只剩门禁阻断弹窗一个浮层。
   useEffect(() => {
-    if (!releaseModal && !errorModal) {
+    if (!errorModal) {
       return
     }
     const onKey = (event) => {
       if (event.key === 'Escape') {
-        setReleaseModal(false)
         setErrorModal(false)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [releaseModal, errorModal])
+  }, [errorModal])
   const onScrollClickCapture = (event) => {
     if (!annotating) {
       return
@@ -403,8 +360,6 @@ function App() {
     setNexts(value === 'wrap' ? { G3: nextSteps.G3 } : {})
     setMinutes(sceneMinutes[value] ? structuredClone(sceneMinutes[value]) : null)
     setArchive(sceneArchive[value])
-    setReleased(false)
-    setReleaseModal(false)
     setReleaseHandoff(false)
     setDeployed(value === 'meeting' || value === 'wrap')
     setPrHandoff(false)
@@ -509,10 +464,12 @@ function App() {
           </p>
           <p>
             <strong>归档与发布</strong>:归档由会话执行,屏内放 PR 引用+状态+打开 Orca 原生
-            PR 页入口+注入式「让验收助手发起归档」入口,无直接执行归档的按钮。「发布」弹预检
-            (版本号/发布提交与验收包一致/目标状态——
-            不达成与未标不阻断,人知情决定)→ 发起请求 → 会话中经人明确授权执行 →
-            读回行显示 tag/时间/资产;PR 未合入发布记录随同 PR 补注,已合入按归档后补证。
+            PR 页入口+注入式「让验收助手发起归档」入口,无直接执行归档的按钮。发布区只有
+            一个「发布」按钮,点击即把请求注入验收会话——预检、发布提交与验收包一致性核对、
+            知情授权、按项目自有发布入口执行与发布后独立读回全在会话中完成并在会话中报告。
+            <strong>板面不设预检弹窗、不设发布状态读回行,材料不存发布记录</strong>:发布读数的
+            正本在 Git 标签与 provider Release 页,抄一份进板面即造第二正本;总览也不显示「已发布」。
+            不达成与未标不阻断发布,由人知情决定;未经明确授权不建 Release、不打标签。
           </p>
           <p>
             <strong>依赖与遗留</strong>:组件与设计语言复用已合入 main 的 G3 计划屏
@@ -903,16 +860,20 @@ function App() {
                       会议纪要 <small>常驻可编辑 · 人工确认后生效</small>
                     </h2>
                     <span className="g3-title-actions">
-                      <IconButton
-                        name="agent"
-                        label="让验收助手整理纪要(可提供会议 ID)"
+                      {/* 图标 + 短动词,与生产一致:纯小图标动作点真机验证过于隐蔽
+                          (2026-10-22 计划屏真机反馈轮结论),且发送弹窗的触发件不用
+                          带 Tooltip 的图标按钮。 */}
+                      <ActionButton
+                        title="让验收助手整理纪要(可提供会议 ID)"
                         onClick={() =>
                           sendRequest(
                             '把板面批注与会议转写稿整理为会议纪要,按共识 / 遗留两块输出',
                             '整理纪要请求'
                           )
                         }
-                      />
+                      >
+                        整理纪要
+                      </ActionButton>
                     </span>
                   </div>
                   <MinutesCard
@@ -941,16 +902,17 @@ function App() {
                           带验收 JSON、证据报告与截图。
                         </p>
                       </div>
-                      <IconButton
-                        name="agent"
-                        label="让验收助手核对材料并发起归档"
+                      <ActionButton
+                        title="让验收助手核对材料并发起归档"
                         onClick={() =>
                           sendRequest(
                             '核对验收材料与结论状态后,在 bw/week-acceptance 固定树提交归档并创建到主分支的 PR',
                             '归档请求'
                           )
                         }
-                      />
+                      >
+                        发起归档
+                      </ActionButton>
                       <IconButton
                         name="arrow"
                         label="打开原生 PR 页(衔接示意)"
@@ -968,37 +930,40 @@ function App() {
                         <h2>验收归档 PR</h2>
                         <p>未创建 · 归档由验收助手在会话中执行,Leader 在 Orca 原生 PR 页再审。</p>
                       </div>
-                      <IconButton
-                        name="agent"
-                        label="让验收助手核对材料并发起归档"
+                      <ActionButton
+                        title="让验收助手核对材料并发起归档"
                         onClick={() =>
                           sendRequest(
                             '核对验收材料与结论状态后,在 bw/week-acceptance 固定树提交归档并创建到主分支的 PR',
                             '归档请求'
                           )
                         }
-                      />
+                      >
+                        发起归档
+                      </ActionButton>
                     </div>
                   )}
                   <div className="acc-release">
-                    {released ? (
-                      <span className="acc-release-status on" role="status">
-                        <Icon name="check" size={14} />
-                        已发布 {releaseInfo.version} · {releaseInfo.at} ·{' '}
-                        {releaseInfo.assets.split(' · ').length} 资产读回一致
-                      </span>
-                    ) : (
-                      <>
-                        <span className="acc-release-status">未发布</span>
-                        <button className="acc-btn primary" onClick={() => setReleaseModal(true)}>
-                          发布
-                        </button>
-                      </>
-                    )}
+                    {/* 规格:板面只有这一个发布入口,点击即注入请求。不设预检弹窗、
+                        不设发布状态读回行、材料不存发布记录——发布读数的正本在 Git
+                        标签与 provider Release 页,抄一份进板面即造第二正本。 */}
+                    <button
+                      className="acc-btn primary"
+                      onClick={() => {
+                        sendRequest(
+                          `发布 ${releaseInfo.version}:先呈现版本号、发布提交与验收包一致性、各目标达成状况与版本说明就绪状态,经我明确授权后按项目自有发布入口执行,发布后独立读回 tag、时间、资产与校验值`,
+                          '发布请求'
+                        )
+                        setReleaseHandoff(true)
+                      }}
+                    >
+                      <Icon name="send" size={13} /> 发布
+                    </button>
                   </div>
                   <p className="g3-demo-footnote g3-annotation">
-                    发布经预检与知情授权:未达与未标不阻断。发布记录在 PR 未合入时随同一 PR
-                    补注,已合入按归档后补证处理;未经明确授权不建 Release、不打标签。
+                    预检、发布提交与验收包一致性核对、知情授权、按项目自有发布入口执行与发布后独立读回,
+                    全部在会话中完成并在会话中报告。不达成不阻断发布,由你知情决定;未经明确授权不建
+                    Release、不打标签。板面不呈现发布状态,需要时看 Git 标签或 provider Release 页。
                   </p>
                 </section>
               </>
@@ -1017,7 +982,8 @@ function App() {
             ) : releaseHandoff ? (
               <div className="g3-footer-handoff">
                 <span>
-                  发布请求已送入验收助手会话 · 经你明确授权后按项目发布入口执行,结果读回到发布行(演示)。
+                  发布请求已送入验收助手会话 · 预检与知情授权在会话中完成,经你明确授权后按项目发布入口执行,
+                  发布后独立读回 tag/时间/资产/校验值并在会话中报告。板面不显示发布状态(正本在 Git 标签与 Release 页)。
                 </span>
                 <IconButton
                   name="close"
@@ -1100,17 +1066,6 @@ function App() {
             </footer>
           </section>
         </div>
-      )}
-      {releaseModal && (
-        <ReleaseModal
-          verdictSummary={verdictSummary}
-          onClose={() => setReleaseModal(false)}
-          onConfirm={() => {
-            setReleaseModal(false)
-            setReleased(true)
-            setReleaseHandoff(true)
-          }}
-        />
       )}
     </div>
   )

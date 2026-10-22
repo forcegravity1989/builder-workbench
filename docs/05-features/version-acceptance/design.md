@@ -8,7 +8,9 @@
 
 AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、会话、任务详情、文件打开、Automations 与指标执行能力。BW 只保存版本材料与人工输入，不复制 Issue、PR、指标或会议转写的正本。验收固定在 `bw/week-acceptance`，计划固定在 `bw/week-plan`；运行身份由 projectId、repoId、hostId、workflow、runId 和 cycleId 组成，版本由人明确选择，页内不按标题、日期或上次打开项推断。
 
-不修改 Orca 核心：对象级动作经 `useAppStore.openAgentSendPopoverTargetMode` 打开原生发送弹窗，`source` 沿用 `'browser-annotations'`、`launchSource` 沿用 `'notes_send'`，不扩 Orca 的 source union（扩它属于改原生协议，登记为上游接缝候选，不在本特性内做）。
+不修改 Orca 核心：对象级动作经共用包装件 `workbench/plan-send-menu.tsx` 递交——它把动作按钮包进 Radix DropdownMenu，内容是**原生** `ReviewNotesSendMenuContent`（「发送至」运行中会话列表 +「新建智能体」快捷启动），同时开 `useAppStore.openAgentSendPopoverTargetMode` 让侧边栏 agent 行成为第二个发送面。`source` 沿用 `'browser-annotations'`、`launchSource` 沿用 `'notes_send'`，不扩 Orca 的 source union（扩它属于改原生协议，登记为上游接缝候选，不在本特性内做）。
+
+**只开 target mode 不渲染弹窗本体等于点击无后续**：store 里没有任何组件会因 target mode 自己挂浮层，它只把侧边栏已在渲染的 agent 行改造成点击目标；该工作树无可发会话时连高亮都不触发，是纯静默 no-op。验收屏早期那份 `use-acceptance-action-send.ts` 就栽在这里（与计划屏被 #407 删掉的 `use-object-action-send.ts` 逐字同构），已删除并改接共用包装件。
 
 ## 模块归属：验收屏自带一套，不与计划屏共用文件
 
@@ -21,17 +23,19 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 | `version-planning/use-journey-spy.ts` | `version-acceptance/use-acceptance-journey-spy.ts` | 区段 id 改 `prepare/showcase/minutes/archive`，贴底判定指向 `archive` |
 | `version-planning/PlanningSections.tsx`（Header + JourneyNav） | `version-acceptance/AcceptanceSections.tsx` | 标题改「版本验收」、`aria-label` 改「验收旅程」、四区文案按 spec、选版 `aria-label` 改「验收版本」 |
 | `version-planning/PlanningMinutesSection.tsx`（含内部 MinutesCard） | `version-acceptance/AcceptanceMinutesSection.tsx` | 删遗留条目的闭环位与「基于纪要调整目标」动作（验收目标只读、无闭环消费方）；助手文案改「让验收助手整理纪要（可提供会议 ID）」；脚注改验收口径 |
-| `version-planning/PlanningArchiveCard.tsx` + `open-archive-pr.ts` | `version-acceptance/AcceptanceArchiveCard.tsx` + `open-acceptance-archive-pr.ts` | 文案改验收归档；发布按钮并入本区（见「发布」节） |
-| `version-planning/use-object-action-send.ts` | `version-acceptance/use-acceptance-action-send.ts` | store id 改 `bw-acceptance-actions:<worktreeId>`，避免与计划屏同工作树时互相顶掉弹窗 |
-| `version-planning/version-planning.css` 中验收需要的 `g3-*` 板面壳/分区/纪要/批注样式 | `version-acceptance/acceptance.css` | 只拷验收实际用到的选择器，类名前缀改 `acc-`，不整表复制；计划屏特有样式（上版回顾、目标卡编辑态、指标承诺）不拷 |
+| `version-planning/PlanningArchiveCard.tsx` | `version-acceptance/AcceptanceArchiveCard.tsx` | 文案改验收归档；发布按钮并入本区（见「发布」节）。打开原生 PR 页不拷贝——两屏都 import 共用 `version-cycle/open-archive-pr.ts`（已从计划屏目录移到共用层） |
+| `version-planning/version-planning.css` 中验收需要的板面壳/分区/纪要样式 | `version-acceptance/acceptance.css` | 只拷验收实际用到的选择器，类名前缀改 `acc-`，不整表复制；计划屏特有样式（上版回顾、目标卡编辑态、指标承诺）不拷。**批注与板面基础件的样式不在这里**——它们随共用组件走 `annotations/annotations.css` 与 `board-ui.css`，由组件自己 import，两屏自动同源 |
 | `version-planning/PlanningGoals.tsx` 中目标行只读裁剪形态 | `version-acceptance/AcceptanceGoalRows.tsx` | 只读回显目标句/负责人/验收标准，删行内编辑、整卡删除、指标承诺区；行尾加达成/不达成，Issue 行加备注与遗留标记 |
 
 **直接 import，不拷贝**（这些不在计划屏目录下，是 #399 建在共用层、注释明写供两屏使用的模块，或 v9.5 起就是两屏共用的壳层）：
 
-- `workbench/annotations/`：`types.ts`（`AnnotationKind`/`AnnotationRef`/`annotationAttributes`/`annotationRefFromElement`）、`use-board-annotations.ts`、`AnnotationPanel.tsx`、`AnnotationPopover.tsx`、`annotation-markdown.ts`、`annotation-markers.tsx`
-- `workbench/board-ui.tsx`：`BoardIconButton`、`BoardLines`
+- `workbench/annotations/`：`types.ts`（`AnnotationKind`/`AnnotationRef`/`annotationAttributes`/`annotationRefFromElement`）、`use-board-annotations.ts`、`AnnotationPanel.tsx`、`AnnotationPopover.tsx`、`annotation-markdown.ts`、`annotation-markers.tsx`、`annotations.css`
+- `workbench/board-ui.tsx`（+ `board-ui.css`）：`BoardIconButton`、`BoardActionButton`、`BoardLines`
+- `workbench/plan-send-menu.tsx`：`PlanSendMenu`、`usePlanSendAction`、`SendActionWrap`——对象级动作与批注发送的原生发送弹窗包装件，#407 建在共用层。两屏共用同一件，`assistant` 参数只改用户可见文案里的 AI 角色名（验收屏传「验收助手」）
 - `workbench/plan-column-resize.ts`、`workbench/use-plan-chat-collapsed.ts`：会话栏收折壳（名字带 plan 但已是两屏共用壳，v9.5 起验收屏就在用）
-- `workbench/version-cycle/`：`ports.ts`、`cycle-context.ts`、`CycleWorkspaceProvider`、`use-material-autosave.ts`、`use-archive-pr-status.ts`、`AutomationConfigureButton.tsx`、`open-acceptance-source.ts`、`trunk-update-port.ts`
+- `workbench/version-cycle/`：`ports.ts`、`cycle-context.ts`、`CycleWorkspaceProvider`、`use-material-autosave.ts`、`use-archive-pr-status.ts`、`AutomationConfigureButton.tsx`、`open-acceptance-source.ts`、`open-archive-pr.ts`、`trunk-update-port.ts`
+
+发送弹窗的触发件用纯 button（`BoardActionButton` 或屏内文字按钮），**不用 `BoardIconButton`**：后者内部已是 Radix `TooltipTrigger`，再套 `DropdownMenuTrigger asChild` 会让 tooltip 与 dropdown 的 `data-state` 与 aria 属性互相覆盖。计划屏同一做法。
 
 批注可标注对象按 spec 只用 `goal`、`issue`、`board` 三种 kind；`AnnotationKind` 里的 `acceptance` 与 `metrics` 在验收屏不挂 `data-annotate-*`，因此不可批注——这是屏级取舍，不改共用类型。
 
@@ -84,15 +88,21 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 `minutes` 的规则与计划侧同构、少一条闭环往返：模型通道只能在 `confirmed` 为假时起草与改写正文（`consensus`/`followups` 文本、`sources`）；`confirmed`/`confirmedAt` 是人工标记，模型通道拒写；`confirmed` 为真时整节冻结，模型通道任何改写都拒绝。**确认可以撤销**，撤销是人在界面上的动作、走人工通道，撤销后 `confirmed` 置假且 `confirmedAt` 清除，模型可重新整理。验收侧 followups 无 `closed`，因此不需要计划侧那段按 id 往返闭环的校验。
 
-## 计划屏连带（同一交付内处理）
+**`acceptanceMinutesChanges` 与 `planMinutesChanges` 的重复是有意保留的，不要抽共用骨架。** 两者同在 `src/main/workbench/`，不属「板面拷贝」那条授权的字面范围，所以在这里明写理由：可抽的公共部分约 20 行（深比较早退、已确认节拒写、confirmed/confirmedAt 归属判定），但计划侧另有一整块验收侧没有的 followup 闭环守卫（按 id 建 Map、新增条目不得预闭环、被删条目若已闭环要报），根因在类型层——`AcceptanceMeetingMinutes.followups` 是 `{id,text}` 无 `closed`，`PlanMeetingMinutes.followups` 带 `closed`。抽骨架要把这段差异做成回调或后置步骤注入，两个调用方各只剩 3–5 行，净收益接近零，代价是把一条**安全守卫**拆成跨文件的两半、读一处看不出拒写边界。同理 `material-human-guard.ts` 里 plan / acceptance 两个分支同形（差异只有 schema 常量、diff 函数与中文错误文案），也保持就地可读不做表驱动。
 
-`version-planning/use-prior-carryovers.ts` 的 `derivePriorCarryovers` 现在从 `results[].meetingDirectives` 取 `status==='confirmed' && tag==='next-week-plan'` 的条目作为「会议遗留」。v10 退役会议指导后，这处必须改读 `acceptance.minutes?.followups`，否则计划屏上版回顾的「会议遗留」行会静默变空。
+## 计划屏连带
 
-改法：延期遗留仍取 `issueMarks.carry` 并 join `taskSnapshot`（不变）；会议遗留优先取**已人工确认**纪要的 `followups`，按数组序标 M1…Mn、描述取 `text`，未确认的草稿不流入下版。**旧格式回退**：材料没有纪要节时（v10 之前写下），继续取已确认且 `tag==='next-week-plan'` 的 `meetingDirectives`，使旧版本的两行回显不因退役而变空；两者都没有才如实显示「上版会议未单独记录」，不从 `nextStep` 或自由文本推断。这是验收侧协议变更的连带义务，随验收屏第一批协议改动同批提交，不留给后续。
+验收侧退役会议指导后，计划屏上版回顾的「会议遗留」行改由纪要承载。`version-planning/use-prior-carryovers.ts` 的 `derivePriorCarryovers` 现行读法：
+
+- **延期遗留**取 `issueMarks.carry` 并 join `taskSnapshot`。
+- **会议遗留**优先取**已人工确认**纪要的 `followups`，按数组序标 M1…Mn、描述取 `text`；未确认的草稿不流入下版。
+- **旧格式回退**：材料没有纪要节时（v10 之前写下），继续取已确认且 `tag==='next-week-plan'` 的 `meetingDirectives`，使旧版本的两行回显不因退役而变空。
+
+延期遗留的呈现另受 #407 的三态口径约束（有标记无 carry = 上版无延期 Issue；完全未记录 = Unknown，另起一行经 TaskPort 同源读回上版快照 Issue 的当前 open 状态作事实参考，并声明这不构成人工延期结论）。两件事叠在同一行区域，改任一侧都要一起看。
 
 ## 总览连带
 
-`overview-version-minutes.tsx` 的 `acceptanceText()` 逐字读取 `results[].decision/deliveries/readings/note/nextStep` 与 `preparedArtifacts`。退役目标级交付件后必须去掉 `deliveries` 那段，`preparedArtifacts` 的 `verification` 渲染已存在（「验证报告」）无需新增；`readings` 保留（报告需要读数，板面不渲染不等于材料不存）。纪要改为读 `minutes` 的共识与遗留两块，替代已退役的派生预览纪要。总览不新增发布状态呈现。
+`overview-version-minutes.tsx` 的 `acceptanceText()` 已不再读目标级交付件（`results[].deliveries` 退役）；版本级交付件与演示环境由 `demoEnv` 与制品登记承载，`preparedArtifacts` 的 `verification` 渲染沿用既有「验证报告」。`readings` 保留（报告需要读数，板面不渲染不等于材料不存）。纪要读 `minutes` 的共识与遗留两块，替代已退役的派生预览纪要。总览不呈现发布状态。
 
 ## 板面结构与异常
 
@@ -108,7 +118,9 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 ## 发布
 
-板面发布区只有一个「发布」按钮，点击经 `use-acceptance-action-send` 注入一句话请求到验收会话（与人在会话里直说等价）。预检呈现、发布提交与验收包一致性核对、知情授权、按项目自有发布入口执行、发布后独立读回，全部在会话中由模型按技能 SOP 完成，结果在会话中报告。板面不设预检弹窗、不设发布状态读回行，材料不存发布记录。未经人明确授权不创建 Release、不打标签。
+板面发布区只有一个「发布」按钮。点击弹出共用发送弹窗（`plan-send-menu.tsx`）：只读指令预览 +「发送至」运行中会话列表 +「新建智能体」快捷启动，由人选定会话后把一句话发布请求递交到验收会话（与人在会话里直说等价）。预检呈现、发布提交与验收包一致性核对、知情授权、按项目自有发布入口执行、发布后独立读回，全部在会话中由模型按技能 SOP 完成，结果在会话中报告。板面不设预检弹窗、不设发布状态读回行，材料不存发布记录。未经人明确授权不创建 Release、不打标签。
+
+同一通道承载本屏全部注入动作：部署、整理纪要、发起归档、发布、板面批注发送。递交成功后板面给一条 notice（`onPromptDelivered` 回调），失败与无可发会话由原生菜单自己如实呈现，板面不另造状态。
 
 ## 验证边界与测试取舍
 
