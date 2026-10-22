@@ -6,7 +6,10 @@ import {
   findGoalParentSuggestion,
   notifyScopedWorkspaceUnavailable
 } from './scoped-task-workspace'
-import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
+import {
+  openWorkbenchWorkspaceChoice,
+  worktreeActivationHostOpts
+} from './version-workspace-choice-state'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import type { CycleTaskSnapshot } from './version-cycle/ports'
 
@@ -41,12 +44,7 @@ export function openIssueWorkspaceOrStart(args: {
   })
   if (candidates.length === 1) {
     const only = candidates[0]
-    if (
-      !only ||
-      activateAndRevealWorktree(only.id, {
-        ...(only.hostId ? { executionHostId: only.hostId } : {})
-      }) === false
-    ) {
+    if (!only || activateAndRevealWorktree(only.id, worktreeActivationHostOpts(only)) === false) {
       notifyScopedWorkspaceUnavailable()
     }
     return true

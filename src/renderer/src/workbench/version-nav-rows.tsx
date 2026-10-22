@@ -27,6 +27,7 @@ import type { VersionWorkflow } from '../../../shared/workbench/version-document
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import { WORKFLOW_SCREEN_LABELS } from './version-labels'
+import { worktreeActivationHostOpts } from './version-workspace-choice-state'
 
 /**
  * G2 侧栏版本树的行组件（P3a，高保真修订 8）：流程行=业务入口＋本树入口合一
@@ -82,11 +83,7 @@ function BoundTreeRow({ tree }: { tree: Worktree }): React.JSX.Element {
         <button
           type="button"
           title={branch}
-          onClick={() =>
-            activateAndRevealWorktree(tree.id, {
-              ...(tree.hostId ? { executionHostId: tree.hostId } : {})
-            })
-          }
+          onClick={() => activateAndRevealWorktree(tree.id, worktreeActivationHostOpts(tree))}
           className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-worktree-sidebar-foreground/8"
         >
           <GitBranch className="size-3.5 shrink-0 text-worktree-sidebar-foreground/40" />
@@ -199,9 +196,7 @@ export function WorkflowRow({
                     <DropdownMenuItem
                       key={getWorktreeHostIdentity(tree)}
                       onSelect={() =>
-                        activateAndRevealWorktree(tree.id, {
-                          ...(tree.hostId ? { executionHostId: tree.hostId } : {})
-                        })
+                        activateAndRevealWorktree(tree.id, worktreeActivationHostOpts(tree))
                       }
                     >
                       <GitBranch className="size-4" />

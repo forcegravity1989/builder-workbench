@@ -7,7 +7,10 @@ import type { VersionCatalogEntry } from '../../../shared/workbench/version-cata
 import { setCycleView } from './cycle-view-state'
 import { setBrowsedVersion } from './version-context-state'
 import { WORKFLOW_SCREEN_LABELS } from './version-labels'
-import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
+import {
+  openWorkbenchWorkspaceChoice,
+  worktreeActivationHostOpts
+} from './version-workspace-choice-state'
 import { openVersionTasksPage } from './task-scope-load'
 import { loadVersionPlanDocument } from './version-task-entries'
 import type { VersionCatalogState } from './use-version-catalog'
@@ -30,11 +33,7 @@ export function navigateVersionWorkflow(args: {
   const bound = findVersionFlowWorktrees(catalog.worktrees, { version, workflow })
   if (bound.length === 1 && bound[0]) {
     const only = bound[0]
-    if (
-      activateAndRevealWorktree(only.id, {
-        ...(only.hostId ? { executionHostId: only.hostId } : {})
-      }) === false
-    ) {
+    if (activateAndRevealWorktree(only.id, worktreeActivationHostOpts(only)) === false) {
       toast.error('无法打开本版流程工作区，请在原生项目工作区中核对。')
     }
     return

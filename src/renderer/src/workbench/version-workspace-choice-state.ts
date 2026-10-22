@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import type { Worktree } from '../../../shared/worktree/types'
+import type { ExecutionHostId } from '../../../shared/execution-host'
 
 /**
  * G2 多候选工作区选择器状态（P4）：同一任务在本版有多个明确绑定的工作区时，
@@ -35,13 +36,21 @@ export function closeWorkbenchWorkspaceChoice(): void {
   }
 }
 
+/**
+ * 宿主限定激活选项（STA-4343：同 repoId::path 的 id 可跨宿主重复，激活须带
+ * 登记归属宿主）；本机/未限定行返回 undefined，沿原生默认解析。统一
+ * Start/Open 各直开点共用，不在调用端各写条件展开。
+ */
+export function worktreeActivationHostOpts(
+  worktree: Pick<Worktree, 'hostId'>
+): { executionHostId: ExecutionHostId } | undefined {
+  return worktree.hostId ? { executionHostId: worktree.hostId } : undefined
+}
+
 export function chooseWorkbenchWorkspace(worktree: Worktree): void {
   choice = null
   emit()
-  // 跨宿主同 id 实例按登记归属宿主解析（STA-4343）；本机未限定行沿原生默认解析。
-  const result = activateAndRevealWorktree(worktree.id, {
-    ...(worktree.hostId ? { executionHostId: worktree.hostId } : {})
-  })
+  const result = activateAndRevealWorktree(worktree.id, worktreeActivationHostOpts(worktree))
   if (result === false) {
     toast.error('无法打开所选工作区，请在原生项目工作区中核对。')
   }

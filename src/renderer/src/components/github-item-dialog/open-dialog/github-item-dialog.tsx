@@ -9,7 +9,10 @@ import {
   matchScopedTaskWorkspaces,
   resolveTaskRowWorkspace
 } from '@/workbench/scoped-task-workspace'
-import { openWorkbenchWorkspaceChoice } from '@/workbench/version-workspace-choice-state'
+import {
+  openWorkbenchWorkspaceChoice,
+  worktreeActivationHostOpts
+} from '@/workbench/version-workspace-choice-state'
 import { translate } from '@/i18n/i18n'
 import type { GitHubWorkItem } from '../../../../../shared/github/work-item-types'
 import type { GitHubItemDialogProps } from '../load-item-details/github-item-dialog-types'
@@ -73,7 +76,8 @@ export default function GitHubItemDialog({
         })
         if (scoped) {
           if (scoped.kind === 'unique') {
-            const opened = activateAndRevealWorktree(scoped.candidates[0].id)
+            const only = scoped.candidates[0]
+            const opened = activateAndRevealWorktree(only.id, worktreeActivationHostOpts(only))
             if (opened === false) {
               toast.error(
                 translate(

@@ -6,14 +6,21 @@ import {
 } from '../../../shared/task-source-context'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
+import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import type { WorkbenchTaskScope } from '../../../shared/workbench/task-scope'
+import type { WorkbenchCreationContext } from '../../../shared/workbench/creation-context'
 import {
+  findGoalParentSuggestion,
   findVersionGoalWorktrees,
   findVersionTaskWorktrees
 } from '../../../shared/workbench/version-workspace-match'
 import { findGithubWorkItemWorkspaceAttachment } from '@/lib/github-work-item-workspace-attachment'
-import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
+import {
+  openWorkbenchWorkspaceChoice,
+  worktreeActivationHostOpts
+} from './version-workspace-choice-state'
+import { resolveReferenceRepo } from './task-port'
 
 /**
  * G2 统一 Start/Open 解析的渲染端入口（P4）：仅 BW 范围路径把「首个未归档树」
@@ -150,11 +157,7 @@ export function openGoalWorkspace(args: {
     if (!only) {
       return false
     }
-    if (
-      activateAndRevealWorktree(only.id, {
-        ...(only.hostId ? { executionHostId: only.hostId } : {})
-      }) === false
-    ) {
+    if (activateAndRevealWorktree(only.id, worktreeActivationHostOpts(only)) === false) {
       toast.error('无法打开目标工作区，请在原生项目工作区中核对。')
     }
     return true
@@ -164,4 +167,58 @@ export function openGoalWorkspace(args: {
     candidates: [...candidates]
   })
   return true
+}
+
+/**
+ * 范围 Issue 开工的目标归属上下文（G2 P4④；检视第二轮自原生任务屏 hook 提出，
+ * 原生文件保持薄挂载并在行数上限内）：把版本归属上下文与目标树父级建议带进
+ * 同一原生创建器；无范围或非 Issue 返回空对象，原生预填逐字不变。
+ */
+export function resolveScopedComposerAdditions(args: {
+  scope: WorkbenchTaskScope | null
+  repoMap: ReadonlyMap<string, Repo>
+  item: { repoId?: string | null; type: string; number: number; provider: 'github' | 'codehub' }
+}): { workbenchCreation?: WorkbenchCreationContext; initialParentWorktreeId?: string } {
+  const { scope, repoMap, item } = args
+  if (!scope || item.type !== 'issue' || !item.repoId) {
+    return {}
+  }
+  const itemRepoId = item.repoId
+  const repo = repoMap.get(itemRepoId)
+  const reference = scope.references.find((candidate) => {
+    if (candidate.provider !== item.provider || candidate.number !== item.number) {
+      return false
+    }
+    if (!repo) {
+      // 仓库行缺失时无法构造仓库围栏，沿旧判据（provider+编号）。
+      return true
+    }
+    // 仓库维度围栏：同范围携带两仓同号引用时目标归属不串仓；引用仓库解析
+    // 不出则不按该引用预填（回落 scope.goalId）——归属只认可证明的匹配。
+    const resolved = resolveReferenceRepo(
+      { repos: () => [...repoMap.values()] },
+      { repoId: repo.id, hostId: getRepoExecutionHostId(repo) },
+      candidate
+    )
+    return resolved !== null && resolved.id === itemRepoId
+  })
+  const goalId = reference?.goalId ?? scope.goalId ?? undefined
+  const workbenchCreation: WorkbenchCreationContext = {
+    version: scope.version,
+    workflow: 'issue',
+    ...(goalId ? { goalId } : {}),
+    repoId: itemRepoId
+  }
+  if (!goalId) {
+    return { workbenchCreation }
+  }
+  const suggested = findGoalParentSuggestion({
+    version: scope.version,
+    goalId,
+    worktrees: useAppStore.getState().allWorktrees(),
+    home: { repoId: itemRepoId, hostId: repo ? getRepoExecutionHostId(repo) : null }
+  })
+  return suggested
+    ? { workbenchCreation, initialParentWorktreeId: suggested }
+    : { workbenchCreation }
 }
