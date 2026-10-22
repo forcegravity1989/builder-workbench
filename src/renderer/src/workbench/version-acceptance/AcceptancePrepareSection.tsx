@@ -4,6 +4,7 @@ import type { MetricScope } from '../../../../shared/workbench/metrics'
 import type { PackageLatest, PackagePipelinePort } from '../../../../shared/workbench/package-pipeline'
 import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
 import { BoardIconButton } from '../board-ui'
+import { latestVerificationArtifact } from './acceptance-model'
 import { AcceptancePackage } from './AcceptancePackage'
 
 /**
@@ -38,7 +39,7 @@ export function AcceptancePrepareSection({
   const [packageOpen, setPackageOpen] = useState(false)
   const [latest, setLatest] = useState<PackageLatest | null>(null)
   const candidate = document?.candidateRef
-  const report = document?.preparedArtifacts.find((item) => item.kind === 'verification')
+  const report = document ? latestVerificationArtifact(document) : undefined
   const demoEnv = document?.demoEnv
   return (
     <section id="prepare" ref={sectionRef} aria-label="验收准备">

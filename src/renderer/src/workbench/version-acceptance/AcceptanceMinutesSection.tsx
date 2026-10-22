@@ -12,6 +12,17 @@ import { BoardIconButton } from '../board-ui'
  * carries no always-false field. Confirmation is revocable in the UI; while
  * confirmed the whole section is frozen against the model channel.
  */
+/**
+ * The always-present empty card. A human must be able to start the minutes
+ * without the model writing a section first — otherwise the confirm action only
+ * exists once the model channel has run, which inverts 完成由人确认.
+ */
+const EMPTY_MINUTES: AcceptanceMeetingMinutes = {
+  consensus: [],
+  followups: [],
+  confirmed: false
+}
+
 export function AcceptanceMinutesSection({
   document,
   disabled,
@@ -50,17 +61,17 @@ export function AcceptanceMinutesSection({
           </BoardIconButton>
         </span>
       </div>
-      {document && minutes ? (
+      {document ? (
         <MinutesCard
           document={document}
-          minutes={minutes}
+          minutes={minutes ?? EMPTY_MINUTES}
+          initialized={Boolean(minutes)}
           disabled={disabled}
           edit={edit}
         />
       ) : (
         <p className="acc-empty">
-          尚未整理 · 可直接编辑或粘贴会议结论。批注从页头「批注模式」进入，点击目标或 Issue
-          行记录；需要模型整理时用标题行的助手入口，或在会话中直说。
+          尚未开始验收。批注从页头「批注模式」进入；需要模型整理时用标题行的助手入口，或在会话中直说。
         </p>
       )}
     </section>
@@ -70,11 +81,14 @@ export function AcceptanceMinutesSection({
 function MinutesCard({
   document,
   minutes,
+  initialized,
   disabled,
   edit
 }: {
   document: AcceptanceMaterial
   minutes: AcceptanceMeetingMinutes
+  /** False while the section only exists as the empty placeholder. */
+  initialized: boolean
   disabled: boolean
   edit(next: AcceptanceMaterial): void
 }) {
@@ -101,7 +115,12 @@ function MinutesCard({
           <span className={`acc-status${minutes.confirmed ? ' confirmed' : ''}`}>
             {minutes.confirmed ? '已人工确认' : '待人工确认'}
           </span>
-          {minutes.sources && <span className="acc-muted">{minutes.sources}</span>}
+          {minutes.sources ? (
+            <span className="acc-muted">{minutes.sources}</span>
+          ) : !initialized ? (
+            // A UI hint, not material: it is never written into `sources`.
+            <span className="acc-muted">尚未整理 · 可直接编辑或粘贴会议结论</span>
+          ) : null}
           <span className="acc-minutes-actions">
             <BoardIconButton
               label={editing ? '结束编辑纪要' : '编辑纪要'}

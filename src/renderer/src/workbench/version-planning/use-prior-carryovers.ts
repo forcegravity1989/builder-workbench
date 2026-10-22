@@ -68,7 +68,8 @@ export function derivePriorCarryovers(
   }
   const issues: PriorCarryoverIssue[] = []
   const directives: PriorCarryoverDirective[] = []
-  for (const result of acceptance.results) {    const related = plan.tasks.filter((task) => task.goalId === result.goalId)
+  for (const result of acceptance.results) {
+    const related = plan.tasks.filter((task) => task.goalId === result.goalId)
     for (const reference of related) {
       if (!issueMarkFor(result, reference, related)?.carry) {
         continue

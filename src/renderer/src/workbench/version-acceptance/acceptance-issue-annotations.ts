@@ -62,12 +62,16 @@ export function updateIssueCarry(
   value: boolean
 ): Record<string, AcceptanceIssueMarks> {
   const key = issueKey(reference)
-  const nextMarks = {
-    ...result.issueMarks,
-    [key]: {
-      ...issueMarkFor(result, reference, relatedIssues),
-      carry: value
-    }
+  const nextMarks = { ...result.issueMarks }
+  // Unmarking removes the key rather than storing `carry: false`: the two are
+  // equivalent on every read path, and leaving an explicit false behind makes the
+  // human-field guard demand the model round-trip a value that means "nothing".
+  const existing = issueMarkFor(result, reference, relatedIssues)
+  const nextMark = { ...existing, carry: value }
+  if (nextMark.carry || nextMark.risk) {
+    nextMarks[key] = nextMark
+  } else {
+    delete nextMarks[key]
   }
   if (canUseLegacyIssueKey(reference, relatedIssues)) {
     delete nextMarks[String(reference.number)]
@@ -82,7 +86,13 @@ export function updateIssueNote(
   note: string
 ): Record<string, string> {
   const key = issueKey(reference)
-  const nextNotes = { ...result.issueNotes, [key]: note }
+  const nextNotes = { ...result.issueNotes }
+  // Same reasoning as the carry mark: an emptied note is no note.
+  if (note) {
+    nextNotes[key] = note
+  } else {
+    delete nextNotes[key]
+  }
   if (canUseLegacyIssueKey(reference, relatedIssues)) {
     delete nextNotes[String(reference.number)]
   }

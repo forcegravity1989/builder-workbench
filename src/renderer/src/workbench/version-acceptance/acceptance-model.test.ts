@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import {
-  artifactCandidateCheck,
   assertFixedPlan,
   createAcceptanceMaterial,
   emptyGoalResult,
+  latestVerificationArtifact,
   sameAcceptanceSource
 } from './acceptance-model'
 import { goalEvidenceRevision, recordHumanDecision } from './acceptance-decision'
@@ -122,18 +122,35 @@ describe('version acceptance evidence', () => {
     expect(await goalEvidenceRevision(document, plan, 'g1')).not.toBe(withDemo)
   })
 
-  it('never treats matching artifact declarations as verified execution', () => {
+  it('opens the most recently generated evidence report, not the first registered', () => {
     const document = draft()
-    const artifact = {
-      artifactId: 'a',
-      kind: 'package' as const,
-      candidateRef: document.candidateRef!,
-      location: 'build.zip',
-      generatedAt: '2026-09-25T10:00:00Z'
-    }
-    expect(artifactCandidateCheck(artifact, document.candidateRef).kind).toBe('unknown')
-    expect(
-      artifactCandidateCheck(artifact, { ...document.candidateRef!, commit: '3'.repeat(40) }).kind
-    ).toBe('mismatch')
+    expect(latestVerificationArtifact(document)).toBeUndefined()
+    const candidate = document.candidateRef!
+    document.preparedArtifacts = [
+      {
+        artifactId: 'old',
+        kind: 'verification',
+        candidateRef: candidate,
+        location: 'old.html',
+        generatedAt: '2026-09-25T10:00:00Z'
+      },
+      {
+        artifactId: 'pkg',
+        kind: 'package',
+        candidateRef: candidate,
+        location: 'build.zip',
+        generatedAt: '2026-09-25T12:00:00Z'
+      },
+      {
+        artifactId: 'new',
+        kind: 'verification',
+        candidateRef: candidate,
+        location: 'new.html',
+        generatedAt: '2026-09-25T11:00:00Z'
+      }
+    ]
+    // One report per version is the rule, but a regeneration can leave two
+    // registered; the board must not silently open the superseded one.
+    expect(latestVerificationArtifact(document)?.location).toBe('new.html')
   })
 })

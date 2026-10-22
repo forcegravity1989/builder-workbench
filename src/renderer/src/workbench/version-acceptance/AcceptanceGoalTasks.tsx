@@ -1,10 +1,10 @@
 import { ArrowUpRight } from 'lucide-react'
 import type { VersionGoal, VersionTaskReference } from '../../../../shared/workbench/version-material'
 import { annotationAttributes, type AnnotationMatch } from '../annotations/types'
-import { AnnotationMarkers } from '../annotations/annotation-markers'
 import { BoardIconButton } from '../board-ui'
 import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
 import { isClosedIssueState } from './acceptance-issue-annotations'
+import { AcceptanceAnnotationBadge } from './AcceptanceAnnotationBadge'
 
 /**
  * Bug/Feature badge per the issue-state spec labels: an exact bug/缺陷 label marks
@@ -84,7 +84,7 @@ export function AcceptanceGoalTasks({
         const key = `${reference.provider}:${reference.repository}:${reference.number}`
         const label = `${goalNumber} · #${reference.number}`
         const markers = (
-          <AnnotationMarkers
+          <AcceptanceAnnotationBadge
             numbers={numbersFor({
               kinds: ['issue'],
               goalId: goal.goalId,
@@ -104,7 +104,9 @@ export function AcceptanceGoalTasks({
         const read = reads?.get(key)
         if (read?.kind !== 'ready') {
           // Unknown iron rule: no labels read → no badge, no fake state, no detail
-          // entry point — just the honest reference number.
+          // entry point — just the honest reference number. A stored note or carry
+          // mark still shows read-only: it keeps flowing into the next plan's
+          // 延期遗留, so hiding it would leave a mark nobody can see or revoke.
           return (
             <div className="acc-task" key={key} {...attributes}>
               <span className="acc-task-static">
@@ -117,6 +119,19 @@ export function AcceptanceGoalTasks({
                 状态未知
               </span>
               {markers}
+              {row?.note && (
+                <span
+                  className="acc-task-note readonly"
+                  title="Issue 状态读不到，已存备注只读展示"
+                >
+                  {row.note}
+                </span>
+              )}
+              {row?.carry && (
+                <span className="acc-carry on" title="已标记遗留；Issue 状态读不到，标记仍生效">
+                  遗留
+                </span>
+              )}
             </div>
           )
         }

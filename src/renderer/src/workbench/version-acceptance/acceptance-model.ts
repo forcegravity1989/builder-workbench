@@ -9,9 +9,6 @@ export type PlanReference = AcceptanceMaterial['planRef']
 export type CandidateReference = NonNullable<AcceptanceMaterial['candidateRef']>
 export type PreparedArtifact = AcceptanceMaterial['preparedArtifacts'][number]
 export type GoalResult = AcceptanceMaterial['results'][number]
-export type EvidenceCheck =
-  | { kind: 'verified'; checkedAt: string }
-  | { kind: 'unknown' | 'mismatch' | 'unavailable'; reason: string }
 
 /**
  * Identity of the acceptance a human verdict binds to. Rounds are retired with
@@ -24,14 +21,6 @@ export function sameAcceptanceSource(left: AcceptanceMaterial, right: Acceptance
     left.cycleId === right.cycleId &&
     JSON.stringify(left.planRef) === JSON.stringify(right.planRef) &&
     JSON.stringify(left.candidateRef) === JSON.stringify(right.candidateRef)
-  )
-}
-
-export function sameCandidate(left: CandidateReference, right: CandidateReference): boolean {
-  return (
-    left.repository === right.repository &&
-    left.version === right.version &&
-    left.commit === right.commit
   )
 }
 
@@ -71,16 +60,19 @@ export function emptyGoalResult(goalId: string): GoalResult {
   return { goalId, readings: [], note: '', nextStep: '' }
 }
 
-export function artifactCandidateCheck(
-  artifact: PreparedArtifact,
-  candidate: CandidateReference | undefined
-): EvidenceCheck {
-  if (!candidate) {
-    return { kind: 'unknown', reason: '尚未固定源码候选' }
-  }
-  if (!sameCandidate(artifact.candidateRef, candidate)) {
-    return { kind: 'mismatch', reason: '材料属于另一候选，请重新准备或核对适用范围' }
-  }
-  // Matching declarations do not prove the command ran or the artifact is available.
-  return { kind: 'unknown', reason: '候选标识一致，材料来源与可用性待核对' }
+/**
+ * The evidence report the board opens. One per version is the rule, but a
+ * regenerated report can leave more than one registered; take the most recently
+ * generated so the board never opens a superseded file without saying so.
+ */
+export function latestVerificationArtifact(
+  document: AcceptanceMaterial
+): PreparedArtifact | undefined {
+  return document.preparedArtifacts
+    .filter((item) => item.kind === 'verification')
+    .reduce<PreparedArtifact | undefined>(
+      (newest, item) =>
+        !newest || item.generatedAt > newest.generatedAt ? item : newest,
+      undefined
+    )
 }

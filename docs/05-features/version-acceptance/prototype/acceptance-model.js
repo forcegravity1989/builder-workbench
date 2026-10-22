@@ -122,6 +122,6 @@ export function taskRows() {
   return snapshot.plan.tasks.map((ref) => ({
     ...ref,
     ...snapshot.issues.find((item) => item.number === ref.number),
-    ...(issueOverrides[ref.number] || {})
+    ...issueOverrides[ref.number]
   }))
 }

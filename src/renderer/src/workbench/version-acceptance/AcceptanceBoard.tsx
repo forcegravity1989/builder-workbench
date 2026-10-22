@@ -1,4 +1,4 @@
-import { Info, MessageSquarePlus } from 'lucide-react'
+import { MessageSquarePlus } from 'lucide-react'
 import { useCallback, useEffect, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import { toast } from 'sonner'
 import type { PackagePipelinePort } from '../../../../shared/workbench/package-pipeline'
@@ -6,11 +6,6 @@ import type { VersionHistoryPort } from '../../../../shared/workbench/version-hi
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
-import {
-  materialProblemFile,
-  materialProblemRequest,
-  type CycleMaterialProblem
-} from '../version-cycle/cycle-start-request'
 import { cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { openArchivePrPage } from '../version-cycle/open-archive-pr'
 import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
@@ -28,11 +23,13 @@ import { annotationRefFromElement } from '../annotations/types'
 import { useBoardAnnotations } from '../annotations/use-board-annotations'
 import { AcceptanceNotices } from './AcceptanceNotices'
 import { AcceptanceArchiveCard } from './AcceptanceArchiveCard'
+import { AcceptanceEmptyBoard } from './AcceptanceEmptyBoard'
 import { AcceptanceGoalRows } from './AcceptanceGoalRows'
 import { AcceptanceHeader, AcceptanceJourneyNav } from './AcceptanceSections'
 import { AcceptanceLegacyRecords } from './AcceptanceLegacyRecords'
 import { AcceptanceMinutesSection } from './AcceptanceMinutesSection'
 import { AcceptancePrepareSection } from './AcceptancePrepareSection'
+import { latestVerificationArtifact } from './acceptance-model'
 import { openAcceptanceMaterial } from './open-acceptance-material'
 import { useAcceptanceActionSend } from './use-acceptance-action-send'
 import { useAcceptanceBoard } from './use-acceptance-board'
@@ -91,7 +88,6 @@ function ReadyAcceptanceBoard({
   const spy = useAcceptanceJourneySpy()
   const prStatus = useArchivePrStatus(context, document?.workflow?.archivePr)
   const [openingPr, setOpeningPr] = useState(false)
-  const [gateBlocked, setGateBlocked] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
   const { clearAll, pruneMissing } = annotations
 
@@ -172,7 +168,7 @@ function ReadyAcceptanceBoard({
       annotations.closePopover()
       return
     }
-    if (target?.closest('.g3-annot-marker')) {
+    if (target?.closest('.g3-annot-marker, .acc-annot-badge')) {
       return
     }
     event.preventDefault()
@@ -211,7 +207,13 @@ function ReadyAcceptanceBoard({
       draftKey: recoveryKey,
       goalId: task.reference.goalId
     })
-  const report = document?.preparedArtifacts.find((item) => item.kind === 'verification')
+  const report = document ? latestVerificationArtifact(document) : undefined
+  // Only acceptance-side problems make a version unreadable *here*. The catalog
+  // also carries plan-side problems, and blaming those on the acceptance dropdown
+  // is what made a perfectly readable version look broken.
+  const unreadable = board.materialProblems
+    .filter((item) => item.workflow === 'acceptance')
+    .map((item) => item.version)
   const state = !document
     ? ''
     : board.draft?.error
@@ -224,93 +226,29 @@ function ReadyAcceptanceBoard({
             : '正在保存修改…'
           : '已保存'
   const popover = annotations.popover
-  const unreadable = board.materialProblems.map((item) => item.version)
 
   if (!document) {
     return (
-      <main className="acc-board" lang="zh">
-        <AcceptanceHeader
-          currentVersion={board.version}
-          versions={[...new Set([...board.versions, ...(board.version ? [board.version] : [])])]}
-          unreadable={unreadable}
-          disabled={!context.materialPort || Boolean(context.syncing) || board.busy}
-          state={state}
-          sessionCollapsed={chatCollapsed}
-          onSessionToggle={onSessionToggle}
-          onSelect={(version) => void board.loadVersion(version)}
-          onConfigure={() => void entry.configure()}
-          onRefresh={() =>
-            void act(async () => {
-              toast.message(trunkUpdateNotice(await context.updateCode()))
-              await board.refreshData()
-              await prStatus.refresh()
-            })
-          }
-          extraActions={
-            <BoardIconButton
-              label="批注模式：点击板面元素记录评审意见"
-              disabled
-              aria-pressed={false}
-            >
-              <MessageSquarePlus size={16} aria-hidden="true" />
-            </BoardIconButton>
-          }
-        />
-        <div className="acc-empty-board">
-          <p>
-            {board.version
-              ? `${board.version} 验收尚未开始。`
-              : '尚未选定版本，可在页头选择已有版本。'}
-          </p>
-          <AcceptanceStartButton
-            entry={entry}
-            problems={board.materialProblems}
-            version={board.version}
-            gate={gate.state}
-            onBlocked={setGateBlocked}
-          />
-          {/* The gate is a script check on the plan's recorded archive PR, not a
-              model judgment — say which state it is in so an empty board is never
-              unexplained. */}
-          {gate.state.kind === 'checking' && (
-            <p className="acc-muted" role="status">
-              正在核对本版计划的归档 PR 状态…
-            </p>
-          )}
-          {gate.state.kind === 'merged' && (
-            <p className="acc-muted" role="status">
-              计划归档 PR 已合入，点上面的按钮开始验收。
-            </p>
-          )}
-          {gate.state.kind === 'blocked' && (
-            <p className="acc-error" role="alert">
-              {gate.state.reason}
-            </p>
-          )}
-          {gate.state.kind === 'idle' && board.version && (
-            <p className="acc-muted" role="status">
-              未在验收分支上找到本版已提交的计划，无法核对归档状态。
-            </p>
-          )}
-          <AcceptanceMaterialProblems problems={board.materialProblems} />
-        </div>
-        <AcceptanceNotices
-          error={board.error}
-          recoveryError={board.recoveryError}
-          recoveryText={board.recoveryText}
-          draft={board.draft}
-          controller={board.controller}
-          busy={board.busy}
-          setError={board.setError}
-          onRetrySave={() => void board.retrySave()}
-          onRemoteDeleted={board.useRemoteDeletion}
-        />
-        {gateBlocked && (
-          <GateDialog reason={gateBlocked} onClose={() => setGateBlocked(null)} />
-        )}
-      </main>
+      <AcceptanceEmptyBoard
+        board={board}
+        gate={gate}
+        context={context}
+        entry={entry}
+        unreadable={unreadable}
+        state={state}
+        chatCollapsed={chatCollapsed}
+        onSessionToggle={onSessionToggle}
+        onRefresh={() =>
+          void act(async () => {
+            toast.message(trunkUpdateNotice(await context.updateCode()))
+            await board.refreshData()
+            await prStatus.refresh()
+          })
+        }
+      />
     )
   }
+
 
   return (
     <main className={`acc-board${annotations.annotating ? ' annotating' : ''}`} lang="zh">
@@ -429,8 +367,8 @@ function ReadyAcceptanceBoard({
             goalLabel={(goalId) => {
               const goals = plan?.document.goals ?? []
               const index = goals.findIndex((goal) => goal.goalId === goalId)
-              const title = index >= 0 ? goals[index].title : ''
-              return `${index >= 0 ? `G${index + 1} · ` : ''}${title || goalId}`
+              const title = index !== -1 ? goals[index].title : ''
+              return `${index !== -1 ? `G${index + 1} · ` : ''}${title || goalId}`
             }}
             onOpenMaterial={openMaterial}
           />
@@ -475,102 +413,3 @@ function ReadyAcceptanceBoard({
   )
 }
 
-/**
- * The single acceptance-start entry, shown only on an empty board. A blocked gate
- * reports why instead of starting a session — the draft pre-acceptance channel is
- * retired, so an unmerged plan archive PR cannot open the board.
- */
-function AcceptanceStartButton({
-  entry,
-  problems,
-  version,
-  gate,
-  onBlocked
-}: {
-  entry: CycleEntry
-  problems: CycleMaterialProblem[]
-  version: string | null
-  gate: { kind: string; reason?: string }
-  onBlocked(reason: string): void
-}) {
-  return (
-    <button
-      type="button"
-      disabled={entry.busy || gate.kind === 'checking'}
-      onClick={() => {
-        if (gate.kind === 'blocked') {
-          onBlocked(gate.reason ?? '无法开始验收。')
-          return
-        }
-        void entry.start(
-          [
-            version ? `本次验收版本：${version}。请读取该版本的当前材料并继续协作。` : '',
-            problems.length ? materialProblemRequest(problems, 'acceptance', version) : ''
-          ]
-            .filter(Boolean)
-            .join('\n') || undefined
-        )
-      }}
-    >
-      {gate.kind === 'checking'
-        ? '正在核对计划归档状态…'
-        : entry.busy
-          ? '正在打开会话…'
-          : '与验收助手新建验收'}
-    </button>
-  )
-}
-
-function AcceptanceMaterialProblems({ problems }: { problems: CycleMaterialProblem[] }) {
-  if (!problems.length) {
-    return null
-  }
-  return (
-    <p
-      className="acc-problem"
-      role="alert"
-      title={problems
-        .map((item) => `${materialProblemFile(item, 'acceptance')}：${item.error ?? item.state}`)
-        .join('\n')}
-    >
-      <Info size={14} aria-hidden="true" />
-      <span>
-        {[...new Set(problems.map((item) => item.version))].join('、')} 的版本材料格式
-        {problems.every((item) => item.state === 'migration-required') ? '较旧' : '有问题'}
-        ，暂无法读取；点「与验收助手新建验收」会把具体文件和迁移请求带入会话，由模型说明方案、经你确认后转换，不留旧文件副本。
-      </span>
-    </p>
-  )
-}
-
-/** Honest block report for the retired draft pre-acceptance channel. */
-function GateDialog({ reason, onClose }: { reason: string; onClose(): void }) {
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-  return (
-    <div className="acc-modal-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="acc-modal"
-        role="alertdialog"
-        aria-label="无法开始验收"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h2>无法开始验收</h2>
-        <p>{reason}</p>
-        <p className="acc-muted">
-          验收屏保持空板；待计划归档 PR 合入后再点「与验收助手新建验收」。
-        </p>
-        <button type="button" autoFocus onClick={onClose}>
-          知道了
-        </button>
-      </div>
-    </div>
-  )
-}

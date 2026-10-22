@@ -7,6 +7,21 @@ import { sameAcceptanceSource } from './acceptance-model'
 import { captureTaskSnapshot } from './acceptance-task-evidence'
 
 /**
+ * Snapshot identity without `readAt`: every provider read stamps a fresh time, so
+ * comparing it would make each board open rewrite the material, dirty the draft
+ * and re-trigger the read that produced it — a write loop. The timestamp is not
+ * part of the evidence projection either, so dropping it here loses nothing.
+ */
+function snapshotFingerprint(snapshot: AcceptanceMaterial['taskSnapshot']): string {
+  return JSON.stringify(
+    (snapshot ?? []).map((item) => {
+      const { readAt: _readAt, ...rest } = item
+      return rest
+    })
+  )
+}
+
+/**
  * The Issue snapshot a human verdict's ledger revision cites. The derived
  * preview-minutes report is retired: meeting conclusions live in the minutes
  * section the human confirms, and the evidence report is a model-written file
@@ -26,10 +41,13 @@ export function useAcceptanceOutput(
       ) {
         throw new Error('验收来源已变化，任务快照未覆盖新材料。')
       }
-      controller.edit({
-        ...current,
-        taskSnapshot: captureTaskSnapshot(reads)
-      })
+      const next = captureTaskSnapshot(reads)
+      // Unchanged facts are not an edit: writing them would dirty the draft and
+      // start an autosave round for nothing.
+      if (snapshotFingerprint(current.taskSnapshot) === snapshotFingerprint(next)) {
+        return
+      }
+      controller.edit({ ...current, taskSnapshot: next })
     },
     [context.version, controller]
   )

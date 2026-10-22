@@ -57,7 +57,17 @@ export type AcceptanceMeetingMinutes = z.infer<typeof AcceptanceMeetingMinutesSc
 export const AcceptanceDemoEnvironmentSchema = z.discriminatedUnion('kind', [
   z.strictObject({
     kind: z.literal('url'),
-    url: z.string().trim().min(1).refine(safeMaterialUrl, 'Demo environment must use http(s)')
+    // Absolute http(s) only. `safeMaterialUrl` resolves against a base, so it
+    // would also accept a protocol-relative `//host/path`, which the material
+    // opener would then read as a worktree-relative path.
+    url: z
+      .string()
+      .trim()
+      .min(1)
+      .refine(
+        (value) => /^https?:\/\//i.test(value) && safeMaterialUrl(value),
+        'Demo environment must be an absolute http(s) URL'
+      )
   }),
   z.strictObject({ kind: z.literal('launched'), detail: z.string().trim().min(1) })
 ])

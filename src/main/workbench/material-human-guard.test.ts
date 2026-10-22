@@ -28,12 +28,11 @@ function material(overrides: Partial<AcceptanceMaterial> = {}): AcceptanceMateri
     version: 'v1',
     cycleId: 'cycle',
     planRef: {
-      kind: 'draft',
+      kind: 'committed',
       version: 'v1',
       cycleId: 'cycle',
       revision,
-      sourceWorktreeId: 'tree',
-      sourceHostId: 'local'
+      sourceCommit: 'b'.repeat(40)
     },
     preparedArtifacts: [],
     results: [{ goalId: 'g1', readings: [], note: '', nextStep: '' }],
@@ -206,6 +205,25 @@ it('refuses model-channel saves that write an acceptance verdict', async () => {
       { clientKind: 'runtime' }
     )
   ).resolves.toBeUndefined()
+  // The draft pre-acceptance channel is retired: the model may not create or
+  // repoint acceptance material at an uncommitted plan, which would walk around
+  // the empty-board hard gate from the CLI side.
+  const draftBased = material({
+    planRef: {
+      kind: 'draft',
+      version: 'v1',
+      cycleId: 'cycle',
+      revision,
+      sourceWorktreeId: 'tree',
+      sourceHostId: 'local'
+    }
+  })
+  expect(acceptanceHumanFieldChanges(null, draftBased)).toEqual([
+    'planRef.kind(须为已提交计划)'
+  ])
+  await expect(
+    assertHumanFieldsUntouched(async () => null, acceptanceSave(draftBased), {})
+  ).rejects.toMatchObject({ code: 'forbidden' })
 })
 
 function acceptanceMinutes(

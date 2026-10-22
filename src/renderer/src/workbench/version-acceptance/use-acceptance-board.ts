@@ -89,19 +89,28 @@ export function useAcceptanceBoard({
     onSaved: catalog.refresh
   })
   const source = catalog.sources.find((item) => item.version === context.version)
-  const gate = useAcceptanceGate({
-    history,
-    scope: metricScope,
-    archiveScope: {
+  // Memoized: an inline object here would give the gate a fresh identity every
+  // render and spin its effect forever.
+  const archiveScope = useMemo(
+    () => ({
       repoId: scope.repoId,
       hostId: scope.hostId,
       worktreeId,
       ...(scope.runtimeOwnerEnvironmentId
         ? { runtimeOwnerEnvironmentId: scope.runtimeOwnerEnvironmentId }
         : {})
-    },
+    }),
+    [scope.repoId, scope.hostId, scope.runtimeOwnerEnvironmentId, worktreeId]
+  )
+  const catalogLoaded = catalog.loadedRefresh === (context.materialRefresh ?? 0)
+  const gate = useAcceptanceGate({
+    history,
+    scope: metricScope,
+    archiveScope,
     archivePort: context.archivePort,
     source,
+    versionSelected: Boolean(context.version),
+    catalogLoaded,
     materialRefresh: context.materialRefresh
   })
   // Hard gate: an unmerged plan archive PR leaves the board empty rather than
@@ -231,6 +240,9 @@ export function useAcceptanceBoard({
       fixed.refresh()
       await refreshDraft()
       await catalog.refresh()
+      // The gate reads the plan's archive PR state; a trunk sync may have merged
+      // it, so re-check instead of leaving a stale block on screen.
+      await gate.recheck()
     } catch (reason) {
       setError(String(reason))
     }
@@ -276,10 +288,7 @@ export function useAcceptanceBoard({
     recoveryError,
     recoveryText,
     versions: catalog.versions,
-    catalogSource: source,
     gate,
-    hasPlanSource: Boolean(source),
-    sourcesLoaded: catalog.loadedRefresh === (context.materialRefresh ?? 0),
     materialProblems: catalog.materialProblems,
     version,
     error: error ?? fixed.error ?? catalog.error,
@@ -295,7 +304,6 @@ export function useAcceptanceBoard({
     saving: autosave.saving,
     retrySave: autosave.save,
     useRemoteDeletion,
-    initializationSuppressed,
     editDocument,
     editGoal
   }

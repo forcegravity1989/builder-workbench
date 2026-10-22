@@ -17,6 +17,12 @@ export function acceptanceHumanFieldChanges(
   incoming: AcceptanceMaterial
 ): string[] {
   const changes: string[] = []
+  // The draft pre-acceptance channel is retired: a model-channel save may not
+  // create or repoint acceptance material at an uncommitted plan. Without this the
+  // empty-board hard gate could be walked around from the CLI side.
+  if (incoming.planRef.kind !== 'committed') {
+    changes.push('planRef.kind(须为已提交计划)')
+  }
   if (
     JSON.stringify(current?.preparationReview ?? null) !==
     JSON.stringify(incoming.preparationReview ?? null)

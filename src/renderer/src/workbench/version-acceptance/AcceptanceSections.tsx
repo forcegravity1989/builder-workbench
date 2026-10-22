@@ -1,5 +1,5 @@
 import { MessageSquare, RefreshCw } from 'lucide-react'
-import type { ReactNode, Ref } from 'react'
+import type { ReactNode } from 'react'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import { ACCEPTANCE_SECTIONS, type AcceptanceSectionId } from './acceptance-sections'
 
@@ -26,7 +26,7 @@ export function AcceptanceHeader({
 }: {
   currentVersion: string
   versions: string[]
-  /** Versions whose material cannot be read; listed but not selectable. */
+  /** Versions whose *acceptance* material cannot be read; still selectable. */
   unreadable: string[]
   disabled: boolean
   state: string
@@ -56,13 +56,11 @@ export function AcceptanceHeader({
           >
             <option value="">待选择版本</option>
             {versions.map((version) => (
-              <option
-                key={version}
-                value={version}
-                disabled={unreadable.includes(version) && version !== currentVersion}
-              >
+              // Never disabled: an unreadable version must still be selectable so
+              // the board can show the real reason instead of hiding it.
+              <option key={version} value={version}>
                 {version}
-                {unreadable.includes(version) ? ' · 暂无法读取' : ''}
+                {unreadable.includes(version) ? ' · 验收材料暂无法读取' : ''}
               </option>
             ))}
           </select>
@@ -128,34 +126,3 @@ export function AcceptanceJourneyNav({
   )
 }
 
-/** Section shell: numbered locator target with a title row and a trailing action slot. */
-export function AcceptanceSection({
-  id,
-  label,
-  title,
-  detail,
-  actions,
-  sectionRef,
-  children
-}: {
-  id: AcceptanceSectionId
-  label: string
-  title: string
-  detail?: string
-  actions?: ReactNode
-  sectionRef: Ref<HTMLElement>
-  children: ReactNode
-}) {
-  return (
-    <section id={id} ref={sectionRef} aria-label={label}>
-      <div className="acc-section-title">
-        <h2>
-          {title}
-          {detail && <small>{detail}</small>}
-        </h2>
-        {actions && <span className="acc-title-actions">{actions}</span>}
-      </div>
-      {children}
-    </section>
-  )
-}

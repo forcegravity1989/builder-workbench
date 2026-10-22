@@ -56,13 +56,15 @@
 
 /* ===== 页头 ===== */
 
+/* 页头三行:面包屑 / 标题+保存状态 / 动作行。计划屏靠 flex-wrap 在窄宽度下
+   折出第三行(它的动作区多一个分支名),验收屏没有分支名、动作区更窄,同样的
+   两列布局会让按钮垂直居中夹在两行文字之间。所以这里显式列布局,不靠折行。 */
 .acc-header {
   padding: 24px 32px 20px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
   flex-shrink: 0;
 }
 .acc-header > div:first-child {
@@ -107,10 +109,10 @@
 .acc-header-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   flex-wrap: wrap;
   gap: 10px;
-  flex-shrink: 0;
+  width: 100%;
 }
 .acc-text-button {
   display: inline-flex;
@@ -268,6 +270,25 @@
 .acc-board.annotating .acc-content [data-annotate-kind]:hover {
   outline: 1px dashed var(--foreground);
   outline-offset: 2px;
+}
+/* 验收侧角标:一个合并入口(编号逗号相连),不是计划屏的逐号圆点——会中一行
+   多条批注时,圆点会把行尾的达成/不达成按钮挤走。 */
+.acc-annot-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  border: 1px solid var(--foreground);
+  border-radius: 999px;
+  background: none;
+  padding: 0 7px;
+  height: 18px;
+  font-size: 10px;
+  line-height: 1;
+}
+.acc-annot-badge:hover {
+  background: var(--foreground);
+  color: var(--background);
 }
 
 /* ===== 分区标题 ===== */
@@ -938,6 +959,21 @@
   padding: 4px 14px;
   font-size: 12px;
 }
+.acc-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.acc-modal-actions button {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: none;
+  padding: 4px 14px;
+  font-size: 12px;
+}
+.acc-modal-actions button:last-child {
+  border-color: var(--foreground);
+}
 
 /* ===== 保存冲突与错误(自动保存就地核对) ===== */
 
@@ -1021,6 +1057,14 @@
   margin: var(--space-2) 0 0;
   color: var(--color-neutral-600);
   font-size: 0.8rem;
+}
+/* 出包区块的就地提示(流水线已启动 / 下载已保存),由 AcceptancePackage 渲染。 */
+.va-notice {
+  margin: var(--space-2) 0 0;
+  color: var(--color-neutral-700);
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* ===== 窄板降级(容器查询,阈值同计划屏) ===== */

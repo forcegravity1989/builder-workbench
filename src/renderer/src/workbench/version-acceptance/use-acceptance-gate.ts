@@ -5,21 +5,33 @@ import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive
 import type { ArchivePrPort, ArchivePrScope } from '../version-cycle/ports'
 
 export type AcceptanceGateState =
+  /** No version selected yet — nothing to check, the board asks for one. */
   | { kind: 'idle' }
   | { kind: 'checking' }
   | { kind: 'merged' }
   | { kind: 'blocked'; reason: string }
 
+function sameState(a: AcceptanceGateState, b: AcceptanceGateState): boolean {
+  if (a.kind !== b.kind) {
+    return false
+  }
+  return a.kind === 'blocked' && b.kind === 'blocked' ? a.reason === b.reason : true
+}
+
 /**
  * Empty-board hard gate: acceptance cannot start until this version's plan
  * archive PR is merged. The draft pre-acceptance channel is retired, so an
- * unmerged (or unrecorded, or unreadable) plan leaves the board empty with an
- * honest reason instead of opening a partial acceptance.
+ * unmerged plan leaves the board empty with an honest reason.
  *
- * Unreadable stays unknown and therefore blocked — a missing status never
- * impersonates a merged plan. The gate governs *starting*: once acceptance
- * material exists the board renders it, and re-checking stays a notice rather
- * than a lockout.
+ * Unknown never passes: an unrecorded archive PR, an unreadable status and a
+ * missing plan source all block. "Not found yet" is only treated as missing once
+ * the catalog has actually finished loading, so a slow first read does not flash
+ * a block. The gate governs *starting* — once acceptance material exists the
+ * board renders it.
+ *
+ * Every input is reduced to a stable string key before entering a dependency
+ * array: an inline scope object would give `check` a fresh identity each render
+ * and spin this effect forever, leaving the gate stuck on `checking`.
  */
 export function useAcceptanceGate({
   history,
@@ -27,6 +39,8 @@ export function useAcceptanceGate({
   archiveScope,
   archivePort,
   source,
+  versionSelected,
+  catalogLoaded,
   materialRefresh
 }: {
   history: VersionHistoryPort
@@ -36,27 +50,52 @@ export function useAcceptanceGate({
   archiveScope: ArchivePrScope
   archivePort: ArchivePrPort
   source: VersionTreePlan | undefined
+  versionSelected: boolean
+  catalogLoaded: boolean
   materialRefresh: number | undefined
 }) {
   const [state, setState] = useState<AcceptanceGateState>({ kind: 'idle' })
   const [retryToken, setRetryToken] = useState(0)
   const sequence = useRef(0)
-  const planKey = source ? JSON.stringify(source) : ''
-  const parsedSource = useMemo(
-    () => (planKey ? (JSON.parse(planKey) as VersionTreePlan) : undefined),
-    [planKey]
+  const scopeKey = JSON.stringify(scope)
+  const archiveKey = JSON.stringify(archiveScope)
+  const sourceKey = source ? JSON.stringify(source) : ''
+  const parsedScope = useMemo(() => JSON.parse(scopeKey) as MetricScope, [scopeKey])
+  const parsedArchive = useMemo(
+    () => JSON.parse(archiveKey) as ArchivePrScope,
+    [archiveKey]
   )
+  const parsedSource = useMemo(
+    () => (sourceKey ? (JSON.parse(sourceKey) as VersionTreePlan) : undefined),
+    [sourceKey]
+  )
+  /** Publish only on a real change — an equal object would re-render and re-run. */
+  const publish = useCallback((next: AcceptanceGateState) => {
+    setState((current) => (sameState(current, next) ? current : next))
+  }, [])
 
   const check = useCallback(async () => {
     const token = ++sequence.current
-    if (!parsedSource) {
-      setState({ kind: 'idle' })
-      return null
+    if (!versionSelected) {
+      publish({ kind: 'idle' })
+      return
     }
-    setState({ kind: 'checking' })
+    if (!parsedSource) {
+      // Still loading is not "missing"; only a settled catalog can block.
+      publish(
+        catalogLoaded
+          ? {
+              kind: 'blocked',
+              reason: '未在验收分支上找到本版已提交的计划，无法核对归档状态。'
+            }
+          : { kind: 'checking' }
+      )
+      return
+    }
+    publish({ kind: 'checking' })
     try {
       const plan = await history.readPlan({
-        scope,
+        scope: parsedScope,
         planRef: {
           kind: 'committed',
           version: parsedSource.version,
@@ -67,24 +106,24 @@ export function useAcceptanceGate({
       })
       const archivePr = plan.document.workflow?.archivePr
       if (token !== sequence.current) {
-        return null
+        return
       }
       if (!archivePr) {
-        setState({
+        publish({
           kind: 'blocked',
           reason: `未检测到 ${parsedSource.version} 计划的归档 PR 记录，无法开始验收。`
         })
-        return null
+        return
       }
-      const status: ArchivePrStatusResult = await archivePort.readStatus(archiveScope, archivePr)
+      const status: ArchivePrStatusResult = await archivePort.readStatus(parsedArchive, archivePr)
       if (token !== sequence.current) {
-        return null
+        return
       }
       if (status.state === 'merged') {
-        setState({ kind: 'merged' })
-        return { archivePr, status }
+        publish({ kind: 'merged' })
+        return
       }
-      setState({
+      publish({
         kind: 'blocked',
         reason:
           status.state === 'unknown'
@@ -93,17 +132,21 @@ export function useAcceptanceGate({
                 status.state === 'open' ? '待合入' : '已关闭'
               }）。`
       })
-      return null
     } catch (reason) {
       if (token === sequence.current) {
-        setState({
-          kind: 'blocked',
-          reason: reason instanceof Error ? reason.message : String(reason)
-        })
+        publish({ kind: 'blocked', reason: reason instanceof Error ? reason.message : String(reason) })
       }
-      return null
     }
-  }, [parsedSource, history, scope, archiveScope, archivePort])
+  }, [
+    versionSelected,
+    parsedSource,
+    catalogLoaded,
+    history,
+    parsedScope,
+    parsedArchive,
+    archivePort,
+    publish
+  ])
 
   useEffect(() => {
     void check()
