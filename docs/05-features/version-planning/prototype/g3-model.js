@@ -8,10 +8,34 @@ export const stages = [
   ['minutes', '会议纪要', '批注与转写稿生成'],
   ['archive', '归档 PR', 'Leader 在原生 PR 页再审']
 ]
-// 上版回顾只回显两类：延期遗留 Issue（编号 + 标题，可跳转）与会议遗留事项；
-// 完整进展 / 交付材料留在验收屏。v0.6 的 meetingDirectives 为空 → 显示未记录。
+// 上版回顾回显两类人工记录：延期遗留 Issue（验收屏人工 carry 标记，编号 + 标题，
+// 可跳转）与会议遗留事项；完整进展 / 交付材料留在验收屏。
 export const leftoverIssues = snapshot.priorAcceptance.leftoverIssues
 export const meetingDirectives = snapshot.priorAcceptance.meetingDirectives || []
+// 2026-10-22 真机反馈轮：v0.6 验收实际没有 carry 标记（issueMarks 全空），
+// 「未标记」不能显示成「上版无延期 Issue」的绿灯断言（四铁律：没数据 = Unknown）。
+// 实时参考行独立读回上版快照 Issue 的当前状态（gh / git，异步、可重试），
+// 只陈述 open 事实，不冒充人工确认的延期结论。演示数据为 v0.6 快照真实 4 条。
+export const priorLiveOpen = [
+  { number: 331, title: '【v0.6|G1】BW 自身 E2E 用户旅程用例缺失' },
+  { number: 332, title: '【v0.6|G1】release skill 未落地步骤脚本化 + 版本描述规范 + 验收报告' },
+  {
+    number: 339,
+    title: '【v0.6|G1】工程能力在 BW 落地：使能项目/builders 工程化能力（intent/spec/原型/开发）'
+  },
+  { number: 341, title: '【v0.6|G2】帮 builders 梳理特性与核心指标：统一一版并录入真实数据' }
+]
+// 发送弹窗演示数据：对齐 Orca 原生发送菜单（ReviewNotesSendMenuContent）——
+// 「发送至」运行中会话列表（状态点 + 名称，不可用行显示原因）+「新建智能体」
+// 快捷启动（会话就绪后自动递交指令）。指令预览区是 BW 包装层在原生菜单上加的。
+export const sendTargets = [
+  { id: 'plan', name: '计划会话 · Claude', state: '运行中', stateKind: 'ok', eligible: true },
+  { id: 'codex', name: 'Codex 后台会话', state: '需要授权', stateKind: 'warn', eligible: false }
+]
+export const quickLaunchAgents = [
+  { id: 'claude', name: 'Claude', note: '新建会话并递交指令' },
+  { id: 'codex', name: 'Codex', note: '新建会话并递交指令' }
+]
 // 指标目录演示数据：复用 v0.5 快照的三个脚本指标样例；v0.7 快照 metricTargets
 // 全为空，因此每张目标卡都从「添加指标承诺（可选）」开始。current 为 null
 // 表示本期尚未采集，目标值标草案，不拿旧读数冒充本期值。

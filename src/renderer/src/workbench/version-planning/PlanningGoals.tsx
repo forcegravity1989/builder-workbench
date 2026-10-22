@@ -4,6 +4,7 @@ import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench
 import { goalCardViewKey, writeGoalCardExpanded } from '../cycle-view-state'
 import type { AnnotationMatch } from '../annotations/types'
 import { BoardIconButton } from '../board-ui'
+import type { SendActionWrap } from '../plan-send-menu'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import {
   materialProblemFile,
@@ -43,7 +44,7 @@ export function PlanningGoals({
   onTask(task: CycleTaskSnapshot): Promise<void>
   /** Board-level cascade: goal + its task references + its annotations leave the plan. */
   onRemoveGoal(goalId: string): void
-  onSendAction(prompt: string, label: string): void
+  onSendAction: SendActionWrap
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
   entry: CycleEntry
