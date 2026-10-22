@@ -61,6 +61,20 @@ export function emptyGoalResult(goalId: string): GoalResult {
 }
 
 /**
+ * Replace the matching goal's result, or append it when absent. One goal one
+ * result is the material contract; every writer (row verdict, note/next-step
+ * edit, decision record) goes through this so the append-vs-replace rule cannot
+ * drift between call sites. Callers pass the base array they intend to patch —
+ * the autosave path deliberately passes the freshly re-read controller value,
+ * not the stale document it started from, to keep CAS semantics.
+ */
+export function upsertGoalResult(results: GoalResult[], result: GoalResult): GoalResult[] {
+  return results.some((item) => item.goalId === result.goalId)
+    ? results.map((item) => (item.goalId === result.goalId ? result : item))
+    : [...results, result]
+}
+
+/**
  * The evidence report the board opens. One per version is the rule, but a
  * regenerated report can leave more than one registered; take the most recently
  * generated so the board never opens a superseded file without saying so.

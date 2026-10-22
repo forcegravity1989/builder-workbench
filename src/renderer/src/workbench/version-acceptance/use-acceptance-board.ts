@@ -5,7 +5,7 @@ import {
 } from '../../../../shared/workbench/version-material'
 import type { VersionDocumentPort } from '../../../../shared/workbench/version-document'
 import { useAcceptanceDraft } from './use-acceptance-draft'
-import { createAcceptanceMaterial, sameAcceptanceSource } from './acceptance-model'
+import { createAcceptanceMaterial, sameAcceptanceSource, upsertGoalResult } from './acceptance-model'
 import { useMaterialAutosave } from '../version-cycle/use-material-autosave'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
 import { useAcceptanceSources, useFixedAcceptancePlan } from './use-acceptance-plan'
@@ -271,11 +271,11 @@ export function useAcceptanceBoard({
       setError('验收来源已变化，输入未覆盖新材料，请重新核对。')
       return
     }
+    // 基准是 current.results 而非 next.results：这条是 CAS 写入路径，必须以刚重读的
+    // 控制器值为准，否则会把并发写入盖掉。
     controller.edit({
       ...current,
-      results: current.results.some((item) => item.goalId === goalId)
-        ? current.results.map((item) => (item.goalId === goalId ? result : item))
-        : [...current.results, result]
+      results: upsertGoalResult(current.results, result)
     })
   }
   return {

@@ -1,5 +1,3 @@
-@import './planning-fields.css';
-
 /* ===== 保存提示(自动保存冲突就地核对) ===== */
 
 .vp-save-error {
@@ -746,6 +744,20 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
 }
 .g3-metric-add {
   color: var(--muted-foreground);
+}
+/* 指标读数依据折叠区（PlanGoalMetrics 唯一消费方）。原落在 planning-fields.css，
+   那份文件的其余 vp-metric* 规则随验收 AcceptanceMetrics 删除而失去消费方，
+   整文件已退役并回本表——它本就只服务计划屏。 */
+.vp-metric-evidence {
+  color: var(--color-neutral-600);
+  font-size: 11px;
+  margin: var(--space-1) 0;
+}
+.vp-metric-evidence summary {
+  cursor: pointer;
+}
+.vp-metric-evidence p {
+  margin: var(--space-2) 0;
 }
 
 /* ===== 关联 Issue 行 ===== */

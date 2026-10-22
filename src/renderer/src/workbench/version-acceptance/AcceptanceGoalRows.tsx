@@ -45,7 +45,7 @@ export function AcceptanceGoalRows({
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
   hasReport: boolean
-  onOpenReport(goalNumber: string): void
+  onOpenReport(): void
   sectionRef: Ref<HTMLElement>
 }) {
   const [reads, setReads] = useState<CycleTaskRead[] | null>(null)

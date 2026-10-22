@@ -11,7 +11,7 @@ import { BoardIconButton, BoardLines } from '../board-ui'
 import { readGoalCardExpanded, writeGoalCardExpanded } from '../cycle-view-state'
 import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
 import { recordHumanDecision } from './acceptance-decision'
-import { emptyGoalResult, type GoalResult } from './acceptance-model'
+import { emptyGoalResult, upsertGoalResult, type GoalResult } from './acceptance-model'
 import {
   isClosedIssueState,
   issueKey,
@@ -56,7 +56,7 @@ export function AcceptanceGoalRow({
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
   hasReport: boolean
-  onOpenReport(goalNumber: string): void
+  onOpenReport(): void
   expanded: boolean
   expandedSignal: number
   viewStateKey: string | undefined
@@ -101,7 +101,8 @@ export function AcceptanceGoalRow({
     })
   }
 
-  const patchResult = (next: GoalResult) => onGoalChange({ ...document, results: upsert(document, next) }, goalId)
+  const patchResult = (next: GoalResult) =>
+    onGoalChange({ ...document, results: upsertGoalResult(document.results, next) }, goalId)
 
   async function decide(next: 'met' | 'not-met') {
     if (deciding) {
@@ -219,14 +220,16 @@ export function AcceptanceGoalRow({
             <h3>
               关联 Issue <span>{relatedTasks.length}</span>
             </h3>
+            {/* 报告是一份/版本、全目标合并的整份文件，没有目标级锚点可跳；
+                可访问名如实说打开整份报告，不承诺定位到本目标的验收点。 */}
             <BoardIconButton
               label={
                 hasReport
-                  ? `在验收证据报告中打开 ${goalNumber} 对应验收点`
+                  ? '打开本版验收证据报告（一份/版本，全目标合并）'
                   : '报告未生成；先在会话中让验收助手生成'
               }
               disabled={!hasReport}
-              onClick={() => onOpenReport(goalNumber)}
+              onClick={onOpenReport}
             >
               <FileText size={15} aria-hidden="true" />
             </BoardIconButton>
@@ -276,10 +279,4 @@ export function AcceptanceGoalRow({
       )}
     </article>
   )
-}
-
-function upsert(document: AcceptanceMaterial, result: GoalResult): GoalResult[] {
-  return document.results.some((item) => item.goalId === result.goalId)
-    ? document.results.map((item) => (item.goalId === result.goalId ? result : item))
-    : [...document.results, result]
 }

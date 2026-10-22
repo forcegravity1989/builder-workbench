@@ -4,8 +4,9 @@ import { WorkflowArchivePrSchema } from './version-workflow'
 /**
  * Thin PR/MR status read for the archive row, keyed by the model-recorded
  * reference — no byte proof, no branch-name probing, no revision matching.
- * The journey lamp comes from workflow.stage alone; this read only marks
- * whether the recorded archive PR is merged. Unreadable stays unknown.
+ * This read only marks whether the recorded archive PR is merged; the boards
+ * render it as text and derive no lamp from it (journey lamps are retired).
+ * Unreadable stays unknown.
  */
 export const ArchivePrStatusRequestSchema = z.strictObject({
   repoId: z.string().min(1),

@@ -9,7 +9,7 @@ type GoalResultAnnotations = Pick<
   'issueMarks' | 'issueNotes'
 >
 
-export type IssueReference = PlanningMaterial['tasks'][number]
+type IssueReference = PlanningMaterial['tasks'][number]
 
 export function isClosedIssueState(state: string | undefined): boolean {
   return ['closed', 'merged'].includes(state?.trim().toLowerCase() ?? '')
@@ -19,7 +19,7 @@ export function issueKey(reference: IssueReference): string {
   return `${reference.provider}:${reference.repository}:${reference.number}`
 }
 
-export function canUseLegacyIssueKey(
+function canUseLegacyIssueKey(
   reference: IssueReference,
   relatedIssues: readonly IssueReference[]
 ): boolean {

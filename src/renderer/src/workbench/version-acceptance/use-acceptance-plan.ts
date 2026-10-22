@@ -33,7 +33,7 @@ export function acceptanceVersionChoices(input: {
   ].sort()
 }
 
-export type TreePlanProblem = { version: string; code: string; message: string }
+type TreePlanProblem = { version: string; code: string; message: string }
 
 export function useAcceptanceSources(
   history: VersionHistoryPort,

@@ -2,7 +2,7 @@ import type {
   AcceptanceMaterial,
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
-import { emptyGoalResult, type GoalResult } from './acceptance-model'
+import { emptyGoalResult, upsertGoalResult, type GoalResult } from './acceptance-model'
 import { goalTaskEvidence } from './acceptance-task-evidence'
 
 function stableValue(value: unknown): unknown {
@@ -25,7 +25,7 @@ function stableValue(value: unknown): unknown {
  * evidence. The board renders no staleness state from this: the revision is a
  * ledger field, and whether evidence moved is for the model to raise in session.
  */
-export function goalEvidenceText(
+function goalEvidenceText(
   document: AcceptanceMaterial,
   plan: PlanningMaterial,
   goalId: string
@@ -110,8 +110,6 @@ export async function recordHumanDecision(input: {
   }
   return {
     ...input.document,
-    results: input.document.results.some((item) => item.goalId === input.goalId)
-      ? input.document.results.map((item) => (item.goalId === input.goalId ? next : item))
-      : [...input.document.results, next]
+    results: upsertGoalResult(input.document.results, next)
   }
 }
