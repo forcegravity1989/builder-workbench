@@ -4441,7 +4441,7 @@
           "selectedProjectsCount": "{{value0}} proyectos"
         },
         "SidebarSettingsHelpMenu": {
-          "ad3d3ed7f1": "Reiniciar Orca",
+          "ad3d3ed7f1": "Reiniciar aplicación",
           "29c56f30ee": "Buscar actualizaciones",
           "eb9884e55b": "Discord",
           "5687ab246a": "GitHub",
@@ -4451,8 +4451,8 @@
           "4cf5b868d7": "Enviar comentarios",
           "a428c25998": "Ajustes",
           "2991a0106c": "Ayuda",
-          "4e8f5710d3": "No se pudo reiniciar Orca.",
-          "5161eef55d": "Reiniciando Orca...",
+          "4e8f5710d3": "No se pudo reiniciar la aplicación.",
+          "5161eef55d": "Reiniciando la aplicación…",
           "d396773ef0": "comprobando",
           "f8a2c91d4e": "Milestones",
           "b7e4d2a19c": "Onboarding",

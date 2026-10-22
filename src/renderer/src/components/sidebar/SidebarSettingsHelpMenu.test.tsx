@@ -21,7 +21,13 @@ const mocks = vi.hoisted(() => ({
     coreDoneCount: 2,
     coreTotal: 5,
     stepDone: {}
-  }
+  },
+  /** Toggles the Workbench-shell gate for the shell-mode describe block. */
+  workbenchShell: false
+}))
+
+vi.mock('@/workbench/is-workbench-shell', () => ({
+  isWorkbenchShell: () => mocks.workbenchShell
 }))
 
 let updateStatus = { state: 'idle' } as const
@@ -241,9 +247,9 @@ describe('SidebarSettingsHelpMenu', () => {
     expect(html).toContain('Onboarding')
   })
 
-  it('renders Restart Orca by default', () => {
+  it('renders Restart App by default', () => {
     const html = renderToStaticMarkup(<SidebarSettingsHelpMenu />)
-    expect(html).toContain('Restart Orca')
+    expect(html).toContain('Restart App')
   })
 
   it('renders Docs link', () => {
@@ -345,5 +351,45 @@ describe('SidebarSettingsHelpMenu', () => {
     const html = renderToStaticMarkup(<SidebarSettingsHelpMenu />)
     expect(html).toContain('⌘')
     expect(html).toContain('>,</span>')
+  })
+})
+
+describe('SidebarSettingsHelpMenu (Workbench shell)', () => {
+  beforeEach(() => {
+    globalThis.IS_REACT_ACT_ENVIRONMENT = true
+    vi.clearAllMocks()
+    installWindowApi()
+    mocks.useShortcutKeyDetails.mockReturnValue({ keys: ['⌘', ','], doubleTap: false })
+    updateStatus = { state: 'idle' }
+    mocks.setupProgress = {
+      ready: true,
+      coreDoneCount: 2,
+      coreTotal: 5,
+      stepDone: {}
+    }
+    mocks.workbenchShell = true
+  })
+
+  afterEach(() => {
+    mocks.workbenchShell = false
+  })
+
+  it('keeps only shortcuts, update check and restart in the shell', () => {
+    const html = renderToStaticMarkup(<SidebarSettingsHelpMenu />)
+    expect(html).toContain('Keyboard Shortcuts')
+    expect(html).toContain('Check for Updates')
+    expect(html).toContain('Restart App')
+  })
+
+  it('omits feedback, checklist, onboarding and Orca external links in the shell', () => {
+    const html = renderToStaticMarkup(<SidebarSettingsHelpMenu />)
+    expect(html).not.toContain('Send Feedback')
+    expect(html).not.toContain('Milestones')
+    expect(html).not.toContain('Onboarding')
+    expect(html).not.toContain('Docs')
+    expect(html).not.toContain('Changelog')
+    expect(html).not.toContain('GitHub')
+    expect(html).not.toContain('Discord')
+    expect(html).not.toContain('X')
   })
 })

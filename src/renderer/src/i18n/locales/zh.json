@@ -4475,7 +4475,7 @@
           "selectedProjectsCount": "{{value0}} 个项目"
         },
         "SidebarSettingsHelpMenu": {
-          "ad3d3ed7f1": "重启 Orca",
+          "ad3d3ed7f1": "重启应用",
           "29c56f30ee": "检查更新",
           "eb9884e55b": "Discord",
           "5687ab246a": "GitHub",
@@ -4485,8 +4485,8 @@
           "4cf5b868d7": "发送反馈",
           "a428c25998": "设置",
           "2991a0106c": "帮助",
-          "4e8f5710d3": "无法重新启动 Orca。",
-          "5161eef55d": "正在重启 Orca…",
+          "4e8f5710d3": "重启应用失败。",
+          "5161eef55d": "正在重启应用…",
           "d396773ef0": "检查中",
           "f8a2c91d4e": "里程碑",
           "b7e4d2a19c": "入门引导",
