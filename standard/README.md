@@ -39,7 +39,7 @@
 | `issue-policy.toml.tmpl` | 旧开工约定样例 | **仅供旧文件清理检查**。产品不读、不铺;盘点整份删 `.bw/issue-policy.toml` |
 | `design/` | 设计稿落点说明 | 不复制 |
 
-旧 SDLC 过程指标采集脚本模板(`scripts/*.py`)与过程指标目录(`process-catalog.md`)已退役删除:采集分发通道从未打通(bundle 只打包 .md、不铺进项目),且过程统计已由总览原生 SDLC 区与「内建研发统计不重复定义为业务指标」协议承接。历史从 Git 找(PR #125),指针见 [playbook 提炼](../docs/10-reference/ai-native-sdlc-playbook.md)。
+旧 SDLC 过程指标采集脚本模板(`scripts/*.py`)与过程指标目录(`process-catalog.md`)已退役删除:采集分发通道从未打通(bundle 只打包 .md、不铺进项目),过程统计如需上总览记分牌，按指标协议配置为历史脚本指标。历史从 Git 找(PR #125),指针见 [playbook 提炼](../docs/10-reference/ai-native-sdlc-playbook.md)。
 
 ## system-prompt/
 

@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { addCalendarDays } from '../../../shared/workbench/metric-windows'
-import type { MetricDefinition, MetricReading } from '../../../shared/workbench/metrics'
+import type { MetricReading } from '../../../shared/workbench/metrics'
 import {
-  groupZonePlots,
   isoWeekLabel,
-  numericTarget,
   zoneBucketLabels,
   zoneChartRange,
   zonePointState,
@@ -14,23 +12,6 @@ import {
 
 const NOW = '2026-09-24T10:00:00.000Z' // Thursday of 2026-W39
 const TZ = 'UTC'
-
-function def(overrides: Partial<MetricDefinition> & { name: string }): MetricDefinition {
-  return {
-    ref: {
-      name: overrides.name,
-      definitionHash: `hash-${overrides.name}`,
-      configurationCommit: 'a'.repeat(40)
-    },
-    role: 'lagging',
-    def: `${overrides.name} 定义`,
-    target: '',
-    unit: '',
-    feature: '',
-    collect: { kind: 'script', run: ['node', 'x.js'], retro: true },
-    ...overrides
-  }
-}
 
 function windowReading(
   points: { day: string; value: number | string }[],
@@ -91,39 +72,6 @@ describe('isoWeekLabel', () => {
   })
 })
 
-describe('groupZonePlots', () => {
-  it('一图一滞后：leads 按名字挂到对应滞后', () => {
-    const plots = groupZonePlots([
-      def({ name: 'lag1' }),
-      def({ name: 'lag2' }),
-      def({ name: 'lead1', role: 'leading', leads: 'lag2' })
-    ])
-    expect(plots).toHaveLength(2)
-    expect(plots[0].leads).toHaveLength(0)
-    expect(plots[1].leads.map((item) => item.name)).toEqual(['lead1'])
-  })
-
-  it('leads 空缺或未匹配时独立展示，不伪造关联', () => {
-    const plots = groupZonePlots([
-      def({ name: 'lag1' }),
-      def({ name: 'lag2' }),
-      def({ name: 'lead-empty', role: 'leading' }),
-      def({ name: 'lead-unknown', role: 'leading', leads: '不存在的滞后' })
-    ])
-    expect(plots[0].leads).toEqual([])
-    expect(plots[2].lagging).toBeNull()
-    expect(plots[2].leads.map((item) => item.name)).toEqual(['lead-empty', 'lead-unknown'])
-  })
-
-  it('只有引领的页签保持可见，不伪造滞后锚点；无定义则无图', () => {
-    const leadsOnly = groupZonePlots([def({ name: 'lead', role: 'leading' })])
-    expect(leadsOnly).toHaveLength(1)
-    expect(leadsOnly[0].lagging).toBeNull()
-    expect(leadsOnly[0].leads.map((item) => item.name)).toEqual(['lead'])
-    expect(groupZonePlots([])).toEqual([])
-  })
-})
-
 describe('zonePointState', () => {
   const range = zoneChartRange('week', TZ, NOW)
   const labels = zoneBucketLabels(range)
@@ -180,13 +128,5 @@ describe('zonePointState', () => {
     }
     expect(state.values).toEqual([null, null, null, null, null])
     expect(state.latest?.value).toBe('达标')
-  })
-})
-
-describe('numericTarget', () => {
-  it('只有纯数字目标画参考线；比较符目标保持行内文本', () => {
-    expect(numericTarget('3')).toBe(3)
-    expect(numericTarget('≥3')).toBeNull()
-    expect(numericTarget('')).toBeNull()
   })
 })

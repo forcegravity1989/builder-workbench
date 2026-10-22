@@ -146,7 +146,7 @@ export function nativeMetricsHost(runtime: {
         operation: 'configuration',
         request: { adoptedRef: repo.worktreeBaseRef?.trim() || null }
       })) as MetricConfigurationSnapshot
-      const { definitions, problems } = decodeMetricDefinitions(
+      const { features, definitions, problems } = decodeMetricDefinitions(
         snapshot.toml,
         snapshot.configurationCommit
       )
@@ -155,6 +155,7 @@ export function nativeMetricsHost(runtime: {
         configurationCommit: snapshot.configurationCommit,
         configurationRef: snapshot.configurationRef,
         timezone: snapshot.timezone,
+        features,
         definitions,
         problems
       }

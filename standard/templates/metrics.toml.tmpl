@@ -2,6 +2,7 @@ schema_version = 2
 
 # 指标定义与脚本协议见 system-prompt/references/metrics.md。
 # 北极星可缺席；未明确用途与可用脚本前，不添加占位指标。
+# [[feature]] 可选，name 对应指标的 feature，value 写该场景交付什么；顺序即记分牌页签顺序。
 # [[lagging]] / [[leading]] 使用 name / def / target / collect。
 # feature 空归“主要”，有值归对应特性；leads 关联明确滞后指标。
 # collect 只支持 script + retro=true；run 为非空 argv。实际读数不可手填。
