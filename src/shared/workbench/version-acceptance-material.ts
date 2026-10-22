@@ -2,11 +2,14 @@ import { z } from 'zod'
 import { AcceptanceWorkflowStateSchema } from './version-workflow'
 import {
   AcceptanceIssueMarksSchema,
+  AcceptanceMaterialLinkSchema,
   Artifact,
   CandidateReferenceSchema,
   HumanDecision,
   Identity,
   Id,
+  LegacyAcceptanceDirectiveSchema,
+  LegacyAcceptanceRoundSchema,
   MaterialRevision,
   MetricReadingEvidenceSchema,
   PlanReferenceSchema,
@@ -61,78 +64,6 @@ export const AcceptanceDemoEnvironmentSchema = z.discriminatedUnion('kind', [
 
 export type AcceptanceDemoEnvironment = z.infer<typeof AcceptanceDemoEnvironmentSchema>
 
-/**
- * Fields retired by v10 (four-step meeting screen). The material schema is
- * strict, so an unknown key fails the whole parse — stored documents written
- * before the retirement would become unreadable. Reads strip these first and the
- * board says so honestly; nothing is rewritten on disk and no migration runs.
- */
-const RETIRED_DOCUMENT_FIELDS = ['rounds'] as const
-const RETIRED_RESULT_FIELDS = [
-  'rounds',
-  'meetingDirectives',
-  'deliveries',
-  'materials',
-  'progress'
-] as const
-
-/** True when a stored document still carries retired fields, for the honest notice. */
-export function hasRetiredAcceptanceFields(value: unknown): boolean {
-  if (!value || typeof value !== 'object') {
-    return false
-  }
-  const document = value as Record<string, unknown>
-  if (RETIRED_DOCUMENT_FIELDS.some((field) => document[field] !== undefined)) {
-    return true
-  }
-  const results = Array.isArray(document.results) ? document.results : []
-  return results.some(
-    (result) =>
-      result !== null &&
-      typeof result === 'object' &&
-      RETIRED_RESULT_FIELDS.some(
-        (field) => (result as Record<string, unknown>)[field] !== undefined
-      )
-  )
-}
-
-/** Drops retired keys before the strict parse; leaves everything else untouched. */
-export function stripRetiredAcceptanceFields(value: unknown): unknown {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return value
-  }
-  const document = { ...(value as Record<string, unknown>) }
-  for (const field of RETIRED_DOCUMENT_FIELDS) {
-    delete document[field]
-  }
-  if (Array.isArray(document.results)) {
-    document.results = document.results.map((result) => {
-      if (!result || typeof result !== 'object' || Array.isArray(result)) {
-        return result
-      }
-      const next = { ...(result as Record<string, unknown>) }
-      for (const field of RETIRED_RESULT_FIELDS) {
-        delete next[field]
-      }
-      // Risk marking is retired on both cycle screens; carry stays a human field.
-      const marks = next.issueMarks
-      if (marks && typeof marks === 'object' && !Array.isArray(marks)) {
-        next.issueMarks = Object.fromEntries(
-          Object.entries(marks as Record<string, unknown>).map(([key, mark]) => {
-            if (!mark || typeof mark !== 'object' || Array.isArray(mark)) {
-              return [key, mark]
-            }
-            const { risk: _risk, ...rest } = mark as Record<string, unknown>
-            return [key, rest]
-          })
-        )
-      }
-      return next
-    })
-  }
-  return document
-}
-
 export const AcceptanceMaterialSchema = z
   .strictObject({
     ...Identity,
@@ -159,7 +90,17 @@ export const AcceptanceMaterialSchema = z
         note: z.string(),
         nextStep: z.string(),
         issueNotes: z.record(z.string(), z.string()).optional(),
-        issueMarks: z.record(z.string(), AcceptanceIssueMarksSchema).optional()
+        issueMarks: z.record(z.string(), AcceptanceIssueMarksSchema).optional(),
+        // Pre-v10 human input, read-only: no v10 surface writes these, the board
+        // shows them in one labelled legacy block, and a file on disk is only
+        // converted through the session migration path with human confirmation.
+        deliveries: z
+          .array(z.strictObject({ title: z.string(), location: z.string() }))
+          .optional(),
+        materials: z.array(AcceptanceMaterialLinkSchema).optional(),
+        progress: z.string().optional(),
+        rounds: z.array(LegacyAcceptanceRoundSchema).optional(),
+        meetingDirectives: z.array(LegacyAcceptanceDirectiveSchema).optional()
       })
     ),
     // Meeting conclusions; the durable record the board annotations feed into.

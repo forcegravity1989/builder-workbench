@@ -4,9 +4,7 @@ export type { PlanningMaterial, PlanMeetingMinutes } from './version-planning-ma
 export {
   AcceptanceMaterialSchema,
   AcceptanceMeetingMinutesSchema,
-  AcceptanceDemoEnvironmentSchema,
-  stripRetiredAcceptanceFields,
-  hasRetiredAcceptanceFields
+  AcceptanceDemoEnvironmentSchema
 } from './version-acceptance-material'
 export type {
   AcceptanceMaterial,

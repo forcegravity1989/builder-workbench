@@ -148,4 +148,64 @@ it('reads no meeting carryover from an unconfirmed minutes draft', () => {
     { label: 'M1', text: '未确认的草稿不流入下版' },
     { label: 'M2', text: '第二条' }
   ])
+
+  // Pre-v10 material has no minutes section: its human-confirmed
+  // 「纳入下周计划」 directives are the same meeting outcome, so an older version
+  // keeps feeding the row instead of reading empty after the retirement.
+  const legacy = acceptance({
+    results: [
+      {
+        goalId: 'g1',
+        readings: [],
+        note: '',
+        nextStep: '',
+        meetingDirectives: [
+          {
+            id: 'd1',
+            text: '旧格式里已确认纳入下版',
+            tag: 'next-week-plan',
+            status: 'confirmed',
+            source: 'transcript-summary',
+            sourceRef: 'meeting-1',
+            confirmedAt: '2026-10-02T01:00:00Z'
+          },
+          {
+            id: 'd2',
+            text: '未确认的不显示',
+            tag: 'next-week-plan',
+            status: 'pending',
+            source: 'manual',
+            sourceRef: 'conversation:x'
+          },
+          {
+            id: 'd3',
+            text: '其他标签不显示',
+            tag: 'record-remaining',
+            status: 'confirmed',
+            source: 'manual',
+            sourceRef: 'conversation:y',
+            confirmedAt: '2026-10-02T01:00:00Z'
+          }
+        ]
+      }
+    ]
+  })
+  expect(derivePriorCarryovers(legacy, plan()).directives).toEqual([
+    { label: 'M1', text: '旧格式里已确认纳入下版' }
+  ])
+  // Once the version has confirmed minutes, the minutes win over the legacy list.
+  expect(
+    derivePriorCarryovers(
+      {
+        ...legacy,
+        minutes: {
+          consensus: [],
+          followups: [{ id: 'f1', text: '纪要里的遗留' }],
+          confirmed: true,
+          confirmedAt: '2026-10-19T00:00:00Z'
+        }
+      },
+      plan()
+    ).directives
+  ).toEqual([{ label: 'M1', text: '纪要里的遗留' }])
 })

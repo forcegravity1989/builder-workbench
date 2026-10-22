@@ -183,11 +183,13 @@ export const HumanDecision = z.strictObject({
 
 /**
  * The Issue-level carry mark is a human field: it is the 延期遗留 the next plan
- * screen echoes. Risk marking is retired on both cycle screens, and stored
- * documents that still carry it are stripped on read rather than migrated.
+ * screen echoes. `risk` is retired on both cycle screens — no v10 surface writes
+ * or renders it — but it stays optional so material recorded before the retirement
+ * still parses and can be shown read-only. Nothing may set it again.
  */
 export const AcceptanceIssueMarksSchema = z.strictObject({
-  carry: z.boolean().optional()
+  carry: z.boolean().optional(),
+  risk: z.boolean().optional()
 })
 
 /** Shared http(s)-only guard for material links and the demo environment URL. */
@@ -199,9 +201,78 @@ export const safeMaterialUrl = (value: string): boolean => {
   }
 }
 
+/*
+ * ===== Legacy acceptance shapes (pre-v10, read-only) =====
+ *
+ * v10 retired per-goal deliveries and material links, the human progress field,
+ * weekly rounds and meeting directives. The material schema is strict, so simply
+ * dropping these would make every stored document written before the retirement
+ * fail to parse — real human input would become unreadable rather than retired.
+ * They stay optional and read-only instead: no v10 surface writes them, the board
+ * shows them in one labelled legacy block, and converting a file on disk still
+ * goes through the session migration path with human confirmation.
+ */
+
+export const AcceptanceMaterialLinkSchema = z.strictObject({
+  label: z.string(),
+  url: z.string().trim().min(1).refine(safeMaterialUrl, 'Material links must use http(s)')
+})
+
+const LegacyRoundGoalSnapshotSchema = z.strictObject({
+  goalId: Id,
+  decision: z.string(),
+  progress: z.string(),
+  next: z.string().optional()
+})
+
+const LegacyRoundSnapshotSchema = z.strictObject({
+  goals: z.array(LegacyRoundGoalSnapshotSchema),
+  issueMarks: z.record(z.string(), AcceptanceIssueMarksSchema),
+  issueNotes: z.record(z.string(), z.string())
+})
+
+export const LegacyAcceptanceRoundSchema = z
+  .strictObject({
+    id: Id,
+    week: Id,
+    kind: z.enum(['progress', 'final']),
+    closedAt: z.iso.datetime({ offset: true }).optional(),
+    sourceCommit: SourceCommit.optional(),
+    sourceRevision: MaterialRevision.optional(),
+    snapshot: LegacyRoundSnapshotSchema
+  })
+  .superRefine((round, context) => {
+    if (Boolean(round.sourceCommit) !== Boolean(round.sourceRevision)) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Round source commit and revision must be paired'
+      })
+    }
+    if (round.sourceCommit && !round.closedAt) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Only a closed round can reference frozen material'
+      })
+    }
+  })
+
+export const LegacyAcceptanceDirectiveSchema = z.strictObject({
+  id: Id,
+  text: z.string(),
+  tag: z.enum(['resolved-this-acceptance', 'next-week-plan', 'record-remaining']),
+  goalId: Id.optional(),
+  status: z.enum(['pending', 'confirmed']),
+  source: z.enum(['transcript-summary', 'manual']),
+  sourceRef: z.string().optional(),
+  confirmedAt: z.iso.datetime({ offset: true }).optional()
+})
+
 export type VersionGoal = z.infer<typeof VersionGoalSchema>
 export type MetricReference = z.infer<typeof MetricReferenceSchema>
 export type MetricReadingEvidence = z.infer<typeof MetricReadingEvidenceSchema>
 export type AcceptanceIssueMarks = z.infer<typeof AcceptanceIssueMarksSchema>
+export type AcceptanceMaterialLink = z.infer<typeof AcceptanceMaterialLinkSchema>
+export type LegacyAcceptanceRound = z.infer<typeof LegacyAcceptanceRoundSchema>
+export type LegacyAcceptanceDirective = z.infer<typeof LegacyAcceptanceDirectiveSchema>
 export type VersionTaskReference = z.infer<typeof VersionTaskReferenceSchema>
 export type VersionTaskSnapshot = z.infer<typeof VersionTaskSnapshotSchema>

@@ -30,6 +30,7 @@ import { AcceptanceNotices } from './AcceptanceNotices'
 import { AcceptanceArchiveCard } from './AcceptanceArchiveCard'
 import { AcceptanceGoalRows } from './AcceptanceGoalRows'
 import { AcceptanceHeader, AcceptanceJourneyNav } from './AcceptanceSections'
+import { AcceptanceLegacyRecords } from './AcceptanceLegacyRecords'
 import { AcceptanceMinutesSection } from './AcceptanceMinutesSection'
 import { AcceptancePrepareSection } from './AcceptancePrepareSection'
 import { openAcceptanceMaterial } from './open-acceptance-material'
@@ -268,12 +269,30 @@ function ReadyAcceptanceBoard({
             gate={gate.state}
             onBlocked={setGateBlocked}
           />
-          <AcceptanceMaterialProblems problems={board.materialProblems} />
-          {gate.state.kind === 'blocked' && (
+          {/* The gate is a script check on the plan's recorded archive PR, not a
+              model judgment — say which state it is in so an empty board is never
+              unexplained. */}
+          {gate.state.kind === 'checking' && (
             <p className="acc-muted" role="status">
+              正在核对本版计划的归档 PR 状态…
+            </p>
+          )}
+          {gate.state.kind === 'merged' && (
+            <p className="acc-muted" role="status">
+              计划归档 PR 已合入，点上面的按钮开始验收。
+            </p>
+          )}
+          {gate.state.kind === 'blocked' && (
+            <p className="acc-error" role="alert">
               {gate.state.reason}
             </p>
           )}
+          {gate.state.kind === 'idle' && board.version && (
+            <p className="acc-muted" role="status">
+              未在验收分支上找到本版已提交的计划，无法核对归档状态。
+            </p>
+          )}
+          <AcceptanceMaterialProblems problems={board.materialProblems} />
         </div>
         <AcceptanceNotices
           error={board.error}
@@ -404,6 +423,16 @@ function ReadyAcceptanceBoard({
             onSendAction={sendAction}
             version={document.version}
             sectionRef={spy.sectionRefs.archive}
+          />
+          <AcceptanceLegacyRecords
+            document={document}
+            goalLabel={(goalId) => {
+              const goals = plan?.document.goals ?? []
+              const index = goals.findIndex((goal) => goal.goalId === goalId)
+              const title = index >= 0 ? goals[index].title : ''
+              return `${index >= 0 ? `G${index + 1} · ` : ''}${title || goalId}`
+            }}
+            onOpenMaterial={openMaterial}
           />
         </div>
         {annotations.panelOpen && (

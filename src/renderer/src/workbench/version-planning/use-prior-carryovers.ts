@@ -100,6 +100,17 @@ export function derivePriorCarryovers(
     for (const followup of minutes.followups) {
       directives.push({ label: `M${directives.length + 1}`, text: followup.text })
     }
+  } else if (!minutes) {
+    // Material recorded before v10 has no minutes section. Its human-confirmed
+    // 「纳入下周计划」 directives are the same meeting outcome, so an older version
+    // keeps feeding this row instead of showing「上版会议未单独记录」.
+    for (const result of acceptance.results) {
+      for (const directive of result.meetingDirectives ?? []) {
+        if (directive.status === 'confirmed' && directive.tag === 'next-week-plan') {
+          directives.push({ label: `M${directives.length + 1}`, text: directive.text })
+        }
+      }
+    }
   }
   return { issues, directives }
 }

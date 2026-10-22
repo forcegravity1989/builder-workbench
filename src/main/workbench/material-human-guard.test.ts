@@ -134,6 +134,44 @@ it('names every human-only acceptance field the incoming document would change',
     'results[g1].issueNotes',
     'results[g1].issueMarks'
   ])
+  // Pre-v10 fields are read-only history: the model channel may round-trip them
+  // unchanged but may not rewrite them — and "cleaning them up" is refused too,
+  // because converting a stored file is a session migration with human consent.
+  const legacyDoc = material({
+    results: [
+      {
+        ...base.results[0],
+        progress: '旧进展',
+        deliveries: [{ title: '旧交付件', location: 'demo.html' }],
+        meetingDirectives: [
+          {
+            id: 'd1',
+            text: '旧指导',
+            tag: 'next-week-plan',
+            status: 'confirmed',
+            source: 'manual',
+            sourceRef: 'conversation:x',
+            confirmedAt: '2026-10-01T00:00:00Z'
+          }
+        ],
+        issueMarks: { issue1: { carry: true, risk: true } }
+      }
+    ]
+  })
+  expect(acceptanceHumanFieldChanges(legacyDoc, legacyDoc)).toEqual([])
+  expect(
+    acceptanceHumanFieldChanges(legacyDoc, {
+      ...legacyDoc,
+      results: [{ goalId: 'g1', readings: [], note: '', nextStep: '' }]
+    })
+  ).toEqual(
+    expect.arrayContaining([
+      'results[g1].progress(旧格式只读)',
+      'results[g1].deliveries(旧格式只读)',
+      'results[g1].meetingDirectives(旧格式只读)',
+      'results[g1].issueMarks.risk(旧格式只读)'
+    ])
+  )
 })
 
 it('refuses model-channel saves that write an acceptance verdict', async () => {

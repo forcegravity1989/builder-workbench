@@ -39,7 +39,53 @@ export function acceptanceHumanFieldChanges(
     }
   }
   acceptanceMinutesChanges(changes, current?.minutes, incoming.minutes)
+  legacyFieldChanges(changes, current, incoming)
   return changes
+}
+
+/**
+ * Pre-v10 fields are read-only history: rounds, meeting directives, per-goal
+ * deliveries and material links, the human progress text and risk marks. No v10
+ * surface writes them, so any model-channel change is a rewrite of recorded
+ * history and is refused — including "cleaning them up", which is a migration and
+ * belongs to the session path with human confirmation.
+ */
+function legacyFieldChanges(
+  changes: string[],
+  current: AcceptanceMaterial | null,
+  incoming: AcceptanceMaterial
+): void {
+  const currentByGoal = new Map((current?.results ?? []).map((item) => [item.goalId, item]))
+  const incomingByGoal = new Map(incoming.results.map((item) => [item.goalId, item]))
+  for (const goalId of new Set([...currentByGoal.keys(), ...incomingByGoal.keys()])) {
+    const before = currentByGoal.get(goalId)
+    const after = incomingByGoal.get(goalId)
+    for (const field of [
+      'rounds',
+      'meetingDirectives',
+      'deliveries',
+      'materials',
+      'progress'
+    ] as const) {
+      if (JSON.stringify(before?.[field] ?? null) !== JSON.stringify(after?.[field] ?? null)) {
+        changes.push(`results[${goalId}].${field}(旧格式只读)`)
+      }
+    }
+    const riskBefore = riskKeys(before?.issueMarks)
+    const riskAfter = riskKeys(after?.issueMarks)
+    if (riskBefore !== riskAfter) {
+      changes.push(`results[${goalId}].issueMarks.risk(旧格式只读)`)
+    }
+  }
+}
+
+function riskKeys(marks: AcceptanceMaterial['results'][number]['issueMarks']): string {
+  return JSON.stringify(
+    Object.entries(marks ?? {})
+      .filter(([, mark]) => mark.risk)
+      .map(([key]) => key)
+      .sort()
+  )
 }
 
 function hasHumanValue(value: unknown): boolean {

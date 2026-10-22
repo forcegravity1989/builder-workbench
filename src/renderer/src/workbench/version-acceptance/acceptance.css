@@ -68,72 +68,82 @@
 .acc-header > div:first-child {
   min-width: 0;
 }
+/* 页头各件的度量与计划屏逐条一致(值取自 version-planning.css 的页头段),
+   只换前缀;两屏样式表各自独立,不互相 import。 */
 .acc-breadcrumb {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--muted-foreground);
-  margin-bottom: 6px;
 }
-.acc-breadcrumb span {
-  opacity: 0.6;
+.acc-breadcrumb > span {
+  margin: 0 8px;
 }
 .acc-version-select {
-  border: 1px solid transparent;
-  background: none;
+  background: transparent;
+  border: 0;
   color: inherit;
   font-size: 12px;
   padding: 0 2px;
-  max-width: 12rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
 }
 .acc-version-select:hover:not(:disabled) {
-  border-color: var(--border);
-  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  background: var(--accent);
 }
 .acc-title-row {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  min-width: 0;
 }
-.acc-title-row h1 {
-  font-size: 20px;
+.acc-header h1 {
+  font-size: 22px;
   font-weight: 600;
   margin: 0;
-  white-space: nowrap;
+  line-height: 1.4;
 }
 .acc-header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
   flex-wrap: wrap;
-}
-.acc-session-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: none;
-  padding: 3px 11px;
-  font-size: 12px;
-  white-space: nowrap;
+  gap: 10px;
+  flex-shrink: 0;
 }
 .acc-text-button {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border: 0;
   background: none;
-  padding: 4px 9px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--muted-foreground);
   font-size: 12px;
   white-space: nowrap;
 }
 .acc-text-button:hover:not(:disabled) {
-  border-color: var(--border);
   background: var(--accent);
+  color: var(--accent-foreground);
+}
+.acc-session-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: none;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.acc-session-chip:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  border-color: var(--foreground);
 }
 .acc-muted {
   color: var(--muted-foreground);
@@ -765,9 +775,96 @@
   background: none;
   padding: 5px 14px;
   font-size: 13px;
+  color: var(--color-text);
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+/* ===== 旧格式记录(v10 前,只读) =====
+   虚线外框与「旧」标签一起表明这不是当前工作区,里面的字段不参与任何结论。 */
+
+.acc-legacy {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  margin-top: 24px;
+}
+.acc-legacy-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 10px 14px;
+  font-size: 13px;
+  text-align: left;
+}
+.acc-legacy-toggle strong {
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.acc-legacy-body {
+  border-top: 1px solid var(--border);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.acc-legacy-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+}
+.acc-legacy-goal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.acc-legacy-goal:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+.acc-legacy-goal h3 {
+  font-size: 13px;
+  font-weight: 500;
+  margin: 0;
+}
+.acc-legacy-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  margin: 0;
+  font-size: 12px;
+}
+.acc-legacy-row > span:first-child {
+  color: var(--muted-foreground);
+}
+.acc-legacy-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.acc-legacy-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+.acc-legacy-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.acc-legacy-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 /* ===== 空板与硬门禁 ===== */

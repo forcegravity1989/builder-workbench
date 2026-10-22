@@ -53,17 +53,30 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 **`HumanDecision.reason` 必填的处理**：行尾两个动作不采集原因文本，沿用现生产映射 `reason: result.note`（`note` 为必填字符串，可为空）。不达成的原因与安排的正本是纪要、`nextStep` 与 Issue 备注，结论字段不重复承载；不改 schema、不为两按钮新增输入框。
 
-## 退役字段与剥离读回
+## 退役字段与旧格式宽容读回
 
-材料是 `strictObject`，多一个不认识的字段整份解析失败。因此退役字段不能直接从 schema 删掉了事——含轮次记录的存量材料会变成「材料损坏」。
+材料是 `strictObject`，多一个不认识的字段整份解析失败。所以退役字段**不能直接从 schema 删掉**——含轮次记录的存量材料会变成「材料损坏」，那是把真实的人工记录丢掉，不是退役。
 
-**做法**：读取通道在 `AcceptanceMaterialSchema.parse` 之前剥离已退役的顶层与 `results[]` 内字段，再解析；剥离发生时在板面如实提示「本材料含已退役记录（轮次/会议指导/风险标记/目标级交付件），完整内容见提交历史」，不静默丢弃、不改写存量文件、不自动迁移保存。
+**做法：字段留在 schema 里作为旧格式可选字段，读回宽容、界面只读。** v10 的任何界面与模型通道都不写它们；`AcceptanceMaterialSchema.parse` 对旧材料原样通过，主进程两个读取点（live 材料 decode、Git 历史 decode）都不需要预处理。板面末尾一个标注「旧格式记录（v10 前）」的只读折叠区呈现这些内容，由 `acceptance-legacy.ts` 的纯投影函数驱动，组件是 `AcceptanceLegacyRecords.tsx`：
 
-**退役清单**：`results[].rounds`、`results[].meetingDirectives`、`results[].issueMarks.risk`、`results[].deliveries`、`results[].progress`、`results[].materials`（v10 板面均无消费方）。`issueMarks` 保留 `carry`（延期遗留仍是人工字段）。
+| 旧字段 | 只读呈现 |
+|---|---|
+| `results[].progress` | 进展原文 |
+| `results[].deliveries[]` | 目标级交付件，标题可点，经 `openAcceptanceMaterial` 打开 |
+| `results[].materials[]` | 目标级材料链接，同上 |
+| `results[].meetingDirectives[]` | 正文 + 处置标签 + 确认状态 + 来源（含 sourceRef），中文化呈现 |
+| `results[].rounds[]` | 周次 + 轮次类型 + 封存时间 |
+| `issueMarks[].risk` | 只列出被标记的 Issue 键，注明风险能力已整体去掉 |
 
-**随退役删除的生产代码**：`AcceptanceRoundPicker.tsx`、`AcceptanceDirectives.tsx`、`AcceptanceMetrics.tsx`、`HistoricalRoundCards.tsx`、`acceptance-rounds.ts`、`acceptance-decision.ts` 的待重核投影、`AcceptanceGoalResult.tsx` 的三态下拉与轮次分支、`acceptance.css` 中对应的灯条/三格/风险样式。同一交付内删净，不留兼容层、回退或双路径。
+区块内明写「不参与任何结论、纪要与遗留回显」。投影为空时整块不渲染。**把文件真正转换到当前格式属于迁移，走会话路径**：模型说明方案、经人确认、不留旧文件副本，与 schema2→3 的既有先例一致；读回永不改写存量文件。
 
-**保留**：`use-acceptance-history.ts` 按固定提交读回历史材料的能力——轮次 UI 退役，但计划屏「上版回顾」经 `openAcceptanceSource` + 固定来源寻址（version/cycleId/sourceCommit/revision，身份不符即抛错不改读）依赖这条链路，不得随轮次一并删除。
+**人工守卫**：`acceptance-human-guard.ts` 把这六个旧字段列为只读历史——模型通道任何改动（包括「顺手清理」）一律拒绝，因为清理属于迁移、归会话路径。
+
+**退役清单（无 v10 消费方）**：`results[].rounds`、`meetingDirectives`、`issueMarks.risk`、`deliveries`、`materials`、`progress`。`issueMarks` 保留 `carry`（延期遗留仍是人工字段）。
+
+**随退役删除的生产代码**：`AcceptanceRoundPicker.tsx`、`AcceptanceDirectives.tsx`、`AcceptanceMetrics.tsx`、`HistoricalRoundCards.tsx`、`AcceptanceGoalCards.tsx`、`AcceptanceGoalResult.tsx`、`AcceptanceDeliveryDetails.tsx`、`AcceptanceJourney.tsx`（灯）、`AcceptanceReportDialog.tsx`、`AcceptanceSources.tsx`、`acceptance-report.ts`（派生预览纪要）、`use-acceptance-history.ts`（按轮次呈现的历史 hook）、`shared/workbench/acceptance-rounds.ts`、`main/workbench/material-round-guard.ts`、`acceptance-decision.ts` 的 `decisionFreshness`（自动重核无消费方）。同一交付内删净，不留兼容层、回退或双路径。
+
+**保留的能力**：按固定提交读回历史材料的链路本身——`version-history-port` 的 read/readPlan 与 `version-cycle/open-acceptance-source.ts`。轮次 UI 与 `use-acceptance-history.ts` 退役，但计划屏「上版回顾」经固定来源寻址（version/cycleId/sourceCommit/revision，身份不符即抛错不改读）依赖这条链路，不得一并删除。
 
 ## 人工字段守卫
 
@@ -75,7 +88,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 `version-planning/use-prior-carryovers.ts` 的 `derivePriorCarryovers` 现在从 `results[].meetingDirectives` 取 `status==='confirmed' && tag==='next-week-plan'` 的条目作为「会议遗留」。v10 退役会议指导后，这处必须改读 `acceptance.minutes?.followups`，否则计划屏上版回顾的「会议遗留」行会静默变空。
 
-改法：延期遗留仍取 `issueMarks.carry` 并 join `taskSnapshot`（不变）；会议遗留取已确认纪要的 `followups`，按数组序标 M1…Mn、描述取 `text`。纪要未确认或不存在时如实显示「上版会议未单独记录」，不从 `nextStep` 或自由文本推断。这是验收侧协议变更的连带义务，随验收屏第一批协议改动同批提交，不留给后续。
+改法：延期遗留仍取 `issueMarks.carry` 并 join `taskSnapshot`（不变）；会议遗留优先取**已人工确认**纪要的 `followups`，按数组序标 M1…Mn、描述取 `text`，未确认的草稿不流入下版。**旧格式回退**：材料没有纪要节时（v10 之前写下），继续取已确认且 `tag==='next-week-plan'` 的 `meetingDirectives`，使旧版本的两行回显不因退役而变空；两者都没有才如实显示「上版会议未单独记录」，不从 `nextStep` 或自由文本推断。这是验收侧协议变更的连带义务，随验收屏第一批协议改动同批提交，不留给后续。
 
 ## 总览连带
 

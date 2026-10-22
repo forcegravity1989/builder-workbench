@@ -1,8 +1,7 @@
 import { createHash } from 'node:crypto'
 import {
   AcceptanceMaterialSchema,
-  PlanningMaterialSchema,
-  stripRetiredAcceptanceFields
+  PlanningMaterialSchema
 } from '../../shared/workbench/version-material'
 
 export class HistorySourceError extends Error {
@@ -51,10 +50,11 @@ export function decodeHistorySnapshot(
     const document =
       workflow === 'plan'
         ? PlanningMaterialSchema.parse(value)
-        // History holds material written before the v10 retirement; strip the
-        // retired keys so a fixed-commit read still parses. The bytes on disk and
-        // their revision are untouched — this is a read-side projection.
-        : AcceptanceMaterialSchema.parse(stripRetiredAcceptanceFields(value))
+        // Acceptance material written before the v10 retirement still carries
+        // rounds, directives, risk marks and per-goal deliveries. Those keys stay
+        // in the schema as read-only legacy fields, so history parses as-is and
+        // nothing human-written is dropped on the way through.
+        : AcceptanceMaterialSchema.parse(value)
     if (document.version !== version) {
       throw new Error('Material version differs from its path')
     }
