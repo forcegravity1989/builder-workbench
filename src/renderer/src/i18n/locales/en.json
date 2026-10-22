@@ -2316,7 +2316,8 @@
         "codehubIssueReopened": "Issue reopened",
         "codehubIssueClosed": "Issue closed",
         "codehubSource": "CodeHub",
-        "codehubOpenCheck": "Open in CodeHub"
+        "codehubOpenCheck": "Open in CodeHub",
+        "codehubOpenMrChanges": "Open changes in CodeHub"
       },
       "Terminal": {
         "73768427cf": "Close",
