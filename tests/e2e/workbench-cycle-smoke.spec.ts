@@ -2,6 +2,7 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { test, expect } from './helpers/workbench-app'
 import type { Page } from '@playwright/test'
+import { projectSettingsTest, verifyProjectSettings } from './helpers/workbench-project-settings'
 
 /**
  * BW main-chain smoke: the workbench shell must formally select the fixed
@@ -20,6 +21,14 @@ test.use({
     ORCA_PRODUCT_NAME: 'Workbench'
   }
 })
+
+projectSettingsTest(
+  'BW project settings: reviewed edits, conflict protection and filesystem read-back',
+  async ({ workbenchPage, seededRepoPath }, testInfo) => {
+    test.setTimeout(300_000)
+    await verifyProjectSettings(workbenchPage, seededRepoPath, testInfo)
+  }
+)
 
 async function waitForFixedWorktree(page: Page, branch: string): Promise<string> {
   await expect

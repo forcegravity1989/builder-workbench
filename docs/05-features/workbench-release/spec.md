@@ -1,12 +1,12 @@
 # spec — Windows 出包与发布 · 版本描述 · 验收报告
 
-> **状态：草案，待人 gate（#332 增量）。** 价值见 [intent.md](intent.md)，证据见 [STATUS.md](STATUS.md)。
+> **状态：草案，待人 gate（#332 增量 + v0.6.0 后续：发布固定动作改走 bw-release.yml workflow、版本描述单节化）。** 价值见 [intent.md](intent.md)，证据见 [STATUS.md](STATUS.md)。
 >
 > **维护约定**：给执行出包 / 发布、写 Release 版本描述、出版收报告的人，以及验收这条入口的人读。本篇写操作契约和可观察结果。无界面；按 [01 §4.2](../../01-principles/01-document-organization.md) 用脚本协议代替可点原型，正本是 [workbench-release 技能](../../../.claude/skills/workbench-release/SKILL.md)。命令、产物名、版本描述规范或验收报告规范变化时同步本篇与技能，只在一处写细步骤。
 
 ## 范围与入口
 
-在 Builder Workbench 仓根执行。出包入口 `pnpm run build:win:workbench`（脚本 `config/scripts/build-win-workbench.mjs`）；发布入口 `pnpm run release:win:workbench`（脚本 `config/scripts/release-win-workbench.mjs`，机械全流程：版本→tag→上传三资产→建 Release→读回）。技能在用户说「出包」「发版本」「写版本描述」「出验收报告」时使用；普通提交、PR 和 Orca 官方 release-cut 不走这里。
+在 Builder Workbench 仓根执行。出包与发布的固定动作由 workflow `.github/workflows/bw-release.yml` 在 GitHub runner 上承接（机械全流程：版本→tag→出包→上传三资产→建 Release→读回；触发 `gh workflow run bw-release.yml --ref main -f version=<version> -F notes=@release-notes.md`）；本地脚本 `config/scripts/build-win-workbench.mjs` / `release-win-workbench.mjs` 为 GitHub Actions 不可用时的兜底。技能在用户说「出包」「发版本」「写版本描述」「出验收报告」时使用；普通提交、PR 和 Orca 官方 release-cut 不走这里。
 
 出包脚本设置 `WORKBENCH_SHELL`、`VITE_WORKBENCH_SHELL`、`ORCA_PRODUCT_NAME=Workbench`，再依次构建 relay、CLI、electron-vite、内置技能校验、web 资源、Electron 运行时，最后用 `electron-builder` 打 Windows NSIS 包，`--publish never`。pnpm 的调用方式由 `config/scripts/pnpm-cli-invocation.mjs` 解析。发布脚本不重造构建，需要出包时带 `--build` 复用出包脚本。
 
@@ -25,17 +25,16 @@
 
 ### 版本描述（Release 正文）
 
-按 [版本描述规范](../../../.claude/skills/workbench-release/references/release-notes-spec.md) 与 [骨架模板](../../../.claude/skills/workbench-release/assets/release-notes-template.md) 写 `release-notes.md`：读者是升级试用的人与领导，**说人话**，六节节名固定（标题定位 / 下载与安装 / 这版有什么变化 / 升级后你可以这样用 / 验证到哪还没验到哪 / 来源），按**用户认得出的功能**讲变化、按**用户能走的流程**讲体验。特性树（`docs/05-features/README.md`）与注册旅程只作**取材与查漏依据**，正文不得出现旅程编号（PJ/AJ/MJ/RJ/CJ）、文件名、逐条 issue 号、六环 `●◐○` 矩阵；不得是 `--generate-notes` 的 PR 罗列，也不得是已合 issue / 目标 / 验收屏内容的堆叠。追溯只留末尾一行源码号（出包后补资产校验值）。
+按 [版本描述规范](../../../.claude/skills/workbench-release/references/release-notes-spec.md) 与 [骨架模板](../../../.claude/skills/workbench-release/assets/release-notes-template.md) 写 `release-notes.md`：读者是升级试用的人与领导，**说人话**，正文只有【这版有什么变化】一节（节名固定，不加节、不拆节），按**用户认得出的功能**讲这版有什么变化。特性树（`docs/05-features/README.md`）与注册旅程只作**取材与查漏依据**，正文不得出现旅程编号（PJ/AJ/MJ/RJ/CJ）、文件名、逐条 issue 号、六环 `●◐○` 矩阵；不得是 `--generate-notes` 的 PR 罗列，也不得是已合 issue / 目标 / 验收屏内容的堆叠。没做到的变化写清原因与下一步，缺数如实写。
 
 ### 发版本
 
-前提是用户明确授权这次正式发布和标签。未指定版本时，用 `package.json` 的 `version` 形成 `v<version>`，先展示再写远端。
+前提是用户明确授权这次正式发布和标签——**触发 workflow 即正式发布**。未指定版本时，用 `package.json` 的 `version` 形成 `v<version>`，先展示再写远端。
 
-1. **预演**（只读）：`node config/scripts/release-win-workbench.mjs --version <version>`。脚本核对三资产存在、HEAD 在远端、工作区干净、`gh` 已登录、标签空闲，打印将执行的 `gh release create` 与资产 size/sha256，列出阻断项；不写远端。
-2. **发布**（授权后）：`node config/scripts/release-win-workbench.mjs --publish --version <version> --notes-file release-notes.md`。脚本建 tag、上传三资产、以 `--notes-file` 建 Release（rc 版自动 `--prerelease`），再 `gh release view <tag> --json url,tagName,isDraft,isPrerelease,assets` 读回。
-3. 汇报读回的 url、tag、target、三资产。
+1. **触发**（授权后）：`gh workflow run bw-release.yml --ref main -f version=<version> -F notes=@release-notes.md`。workflow 在 GitHub runner 上出包、建 tag、上传三资产、以 `notes` 输入建 Release（版本含 `-rc` 自动 `--prerelease`），再 `gh release view <tag> --json url,tagName,isPrerelease,assets` 读回。
+2. 汇报读回的 url、tag、target、三资产。
 
-`--publish` 缺 `--notes-file` 时脚本拒绝执行，不回退自动生成正文。
+GitHub Actions 不可用时的兜底：`node config/scripts/release-win-workbench.mjs --version <version>` 只读预演，授权后 `--publish --version <version> --notes-file release-notes.md` 发布；本机网络传不了大资产（公司代理限制）时，把三产物与发布命令打成套件 zip 外携执行。`--publish` 缺 `--notes-file` 时脚本拒绝执行，不回退自动生成正文。
 
 ### 验收报告（版本收尾）
 
@@ -50,7 +49,7 @@
 | 标签或 Release 已存在 | 停住并报告现状；不覆盖、不删除 |
 | HEAD 不在远端 / `gh` 未登录 / 工作区脏 | 不创建 Release；说明需要的 push、登录或清理 |
 | `--publish` 未带 `--notes-file` | 拒绝发布；不回退 `--generate-notes` |
-| 版本描述缺节 / 是 PR 罗列 / 混入旅程编号·文件名·issue 号·六环矩阵 / 末尾无源码号 | 不合规范（非人话或不可溯），退回重写，不发布 |
+| 版本描述不是【这版有什么变化】单节 / 是 PR 罗列 / 混入旅程编号·文件名·issue 号·六环矩阵 | 不合规范（非人话），退回重写，不发布 |
 | 验收报告事实无来源 | 留空标注 Unknown；不编造读数 / 编号 / 哈希；不预填达成 |
 | 用户只说了出包 | 只出包 |
 
@@ -64,10 +63,10 @@
 | R02 | 已有三个产物，人未授权发布 | 停在出包汇报或预演 | 远端 Release 不变 | 因「包已经打好」自动发布 |
 | R03 | 人授权标签，HEAD 已在远端，标签空闲，三个资产属于该 HEAD | 按技能发布并 `gh release view` | 读回的 url、tag、target、三个资产与这次 HEAD 一致 | 资产来自另一次构建 |
 | R04 | 标签已存在，或资产缺失，或 HEAD 不在远端，或 `gh` 未登录 | 尝试发布 | 停住并说明原因；原 Release 仍在 | 覆盖或删除已有 Release |
-| R05 | 已写 `release-notes.md` | 对照版本描述规范核验正文 | 六节齐全、节名固定；说人话、按用户认得出的功能与能走的流程组织；末尾有源码号；已验/未验同段、缺数 Unknown | 用 `--generate-notes` 或粘 PR 标题清单；把 issue/目标/用例扁平罗列当正文；正文混入旅程编号·文件名·issue 号·六环矩阵等黑话 |
+| R05 | 已写 `release-notes.md` | 对照版本描述规范核验正文 | 只有【这版有什么变化】一节、节名固定；说人话、按用户认得出的功能组织；没做到的写原因与下一步、缺数如实写 | 用 `--generate-notes` 或粘 PR 标题清单；把 issue/目标/用例扁平罗列当正文；正文混入旅程编号·文件名·issue 号·六环矩阵等黑话；加回下载安装/验证/来源等节 |
 | R06 | 版本收尾材料齐 | 对照验收报告规范产出并归档 | 六节齐全；说人话（给领导看）；按功能与目标组织、达成 / 未达写清原因与下一步；登记进 `acceptance.json` `preparedArtifacts`（kind=showcase） | 正文混入旅程编号·文件名·issue 号·六环矩阵；裸列 Issue 号；编造读数；报告代替人工确认达成 |
 
-旅程 RJ01：从一次已知 HEAD 出包 → 按规范写版本描述 → 授权发布 → `gh release view` 独立读回 → 版本收尾出验收报告并归档登记。真机出包与发布尚未执行，成绩写在 STATUS，不在本表预填通过。
+旅程 RJ01：从一次已知 HEAD 出包 → 按规范写版本描述 → 授权发布 → `gh release view` 独立读回 → 版本收尾出验收报告并归档登记。v0.6.0 已实走至读回（资产上传经套件外携，见 STATUS），收尾报告段未走；成绩写在 STATUS，不在本表预填通过。
 
 ## 取舍与待决问题
 
