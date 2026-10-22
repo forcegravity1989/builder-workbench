@@ -61,9 +61,9 @@ function readySnapshotToTask(entry: ReadySnapshot): CycleTaskSnapshot {
  * to the two prior-review rows: carryover Issues are `results[].issueMarks`
  * carry marks joined with the document-level taskSnapshot by task identity
  * (legacy bare-number keys included, per the acceptance annotations helpers);
- * meeting carryovers are confirmed `next-week-plan` directives in material
- * order. Absent fields read as empty — no free-text parsing, no inference
- * from open state.
+ * meeting carryovers are the followup points of the human-confirmed acceptance
+ * minutes, in material order. Absent fields read as empty — no free-text
+ * parsing, no inference from open state.
  */
 export function derivePriorCarryovers(
   acceptance: AcceptanceMaterial,
@@ -106,9 +106,25 @@ export function derivePriorCarryovers(
             }
       )
     }
-    for (const directive of result.meetingDirectives ?? []) {
-      if (directive.status === 'confirmed' && directive.tag === 'next-week-plan') {
-        directives.push({ label: `M${directives.length + 1}`, text: directive.text })
+  }
+  // Meeting carryovers come from the acceptance meeting minutes, which replaced
+  // the retired per-goal directive list. Only a human-confirmed section feeds the
+  // next plan — an unconfirmed draft is not a meeting outcome. Points are labeled
+  // by position while their identity stays the stored stable id.
+  const minutes = acceptance.minutes
+  if (minutes?.confirmed) {
+    for (const followup of minutes.followups) {
+      directives.push({ label: `M${directives.length + 1}`, text: followup.text })
+    }
+  } else if (!minutes) {
+    // Material recorded before v10 has no minutes section. Its human-confirmed
+    // 「纳入下周计划」 directives are the same meeting outcome, so an older version
+    // keeps feeding this row instead of showing「上版会议未单独记录」.
+    for (const result of acceptance.results) {
+      for (const directive of result.meetingDirectives ?? []) {
+        if (directive.status === 'confirmed' && directive.tag === 'next-week-plan') {
+          directives.push({ label: `M${directives.length + 1}`, text: directive.text })
+        }
       }
     }
   }

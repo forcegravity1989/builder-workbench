@@ -33,11 +33,13 @@ export function AcceptanceNotices({
       {recoveryText && (
         <details className="va-conflict">
           <summary>保留的本机恢复原文</summary>
+          {/* 走 Orca IPC 剪贴板:navigator.clipboard 在真壳里会静默失效,
+              那时 .catch 不触发,人会以为已复制。2026-10-22 计划屏真机已踩到。 */}
           <button
             className="wb-btn wb-btn-sm"
             onClick={() =>
-              void navigator.clipboard
-                .writeText(recoveryText)
+              void window.api.ui
+                .writeClipboardText(recoveryText)
                 .catch((reason) => setError(String(reason)))
             }
           >
@@ -58,8 +60,12 @@ export function AcceptanceNotices({
             className="wb-btn wb-btn-sm"
             onClick={() => {
               if (draft.remote !== undefined) {
-                navigator.clipboard
-                  .writeText(JSON.stringify(draft.document, null, 2))
+                // 必须复制成功才采用远端:这条链的语义是「本地输入已存进剪贴板,
+                // 可以安全丢掉草稿」。IPC 通道带写入校验,写不成功就 reject,
+                // 于是停在 catch 里保住草稿;换成会静默失效的 navigator.clipboard
+                // 则可能复制为空却照样采用远端,把人的输入丢掉。
+                void window.api.ui
+                  .writeClipboardText(JSON.stringify(draft.document, null, 2))
                   .then(() => {
                     if (controller.value !== draft) {
                       throw new Error('复制期间草稿已变化，保留当前输入；请重新复制后采用远端。')

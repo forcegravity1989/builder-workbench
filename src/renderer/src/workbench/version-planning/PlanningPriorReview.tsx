@@ -9,8 +9,11 @@ import type { PriorLiveOpenState } from './use-prior-live-open'
 /**
  * Prior-version review: exactly two rows echoed from the fixed acceptance
  * source in the same style as the acceptance screen — carryover Issues
- * (number + full title, click opens the native detail) and confirmed
- * next-week meeting directives. The carryover row distinguishes three data
+ * (number + full title, click opens the native detail) and meeting
+ * carryovers, which come from the human-confirmed acceptance minutes'
+ * followups; material written before v10 has no minutes section and falls
+ * back to its confirmed 「纳入下周计划」 directives (see use-prior-carryovers).
+ * The carryover row distinguishes three data
  * states (2026-10-22 真机反馈轮): marks recorded without carry → "no
  * carryover"; no marks recorded at all → Unknown wording plus a live
  * open-state readback reference row (facts only, never a confirmed

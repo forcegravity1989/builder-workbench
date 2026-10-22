@@ -1,22 +1,5 @@
 import { expect, it } from 'vitest'
-import {
-  ACCEPTANCE_WORKFLOW_STAGES,
-  PLAN_WORKFLOW_STAGES,
-  workflowStageIndex
-} from './version-workflow'
 import { AcceptanceMaterialSchema, PlanningMaterialSchema } from './version-material'
-
-it('lights every lamp at or before the recorded stage and none beyond', () => {
-  // Absent or unrecognized stages leave all lamps gray — never a guessed green.
-  expect(workflowStageIndex(PLAN_WORKFLOW_STAGES, undefined)).toBe(-1)
-  expect(workflowStageIndex(PLAN_WORKFLOW_STAGES, 'bogus')).toBe(-1)
-  expect(workflowStageIndex(PLAN_WORKFLOW_STAGES, 'preparation')).toBe(0)
-  expect(workflowStageIndex(PLAN_WORKFLOW_STAGES, 'breakdown')).toBe(2)
-  expect(workflowStageIndex(PLAN_WORKFLOW_STAGES, 'review')).toBe(3)
-  expect(workflowStageIndex(PLAN_WORKFLOW_STAGES, 'archive')).toBe(4)
-  expect(workflowStageIndex(ACCEPTANCE_WORKFLOW_STAGES, 'showcase')).toBe(1)
-  expect(workflowStageIndex(ACCEPTANCE_WORKFLOW_STAGES, 'archive')).toBe(2)
-})
 
 it('keeps the workflow section optional and rejects stages outside the workflow', () => {
   const plan = {

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import type { CodeHubComment, CodeHubTaskDetail } from '../../../../../shared/codehub-tasks'
+import { useCodeHubMrExtras } from './use-codehub-mr-extras'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 
 export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
@@ -21,6 +22,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   const [titleDraft, setTitleDraft] = useState('')
   const [savingTitle, setSavingTitle] = useState(false)
   const [stateBusy, setStateBusy] = useState(false)
+  const { checks, files, mrExtrasLoading, reloadMrExtras } = useCodeHubMrExtras(item)
   const reloadDetail = (): void => {
     if (!item?.repoPath) {
       return
@@ -46,6 +48,9 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
         setCommentError(reason instanceof Error ? reason.message : String(reason))
       })
     setCodehubRefreshNonce((nonce) => nonce + 1)
+    if (item.type === 'mr') {
+      reloadMrExtras()
+    }
   }
   useEffect(() => {
     if (!item?.repoPath) {
@@ -249,6 +254,10 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     savingTitle,
     stateBusy,
     reloadDetail,
+    checks,
+    files,
+    mrExtrasLoading,
+    reloadMrExtras,
     title,
     closed,
     actionItem,

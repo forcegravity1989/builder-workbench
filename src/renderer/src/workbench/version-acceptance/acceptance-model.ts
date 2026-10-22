@@ -4,39 +4,23 @@ import {
   type AcceptanceMaterial,
   type PlanningMaterial
 } from '../../../../shared/workbench/version-material'
-import {
-  acceptanceGoalSnapshot,
-  acceptanceRoundState
-} from '../../../../shared/workbench/acceptance-rounds'
 
 export type PlanReference = AcceptanceMaterial['planRef']
 export type CandidateReference = NonNullable<AcceptanceMaterial['candidateRef']>
 export type PreparedArtifact = AcceptanceMaterial['preparedArtifacts'][number]
 export type GoalResult = AcceptanceMaterial['results'][number]
-export type EvidenceCheck =
-  | { kind: 'verified'; checkedAt: string }
-  | { kind: 'unknown' | 'mismatch' | 'unavailable'; reason: string }
 
+/**
+ * Identity of the acceptance a human verdict binds to. Rounds are retired with
+ * the cross-week scenario, so the source is the version, cycle, fixed plan
+ * revision and candidate — nothing else.
+ */
 export function sameAcceptanceSource(left: AcceptanceMaterial, right: AcceptanceMaterial): boolean {
-  const leftRounds = acceptanceRoundState(left)
-  const rightRounds = acceptanceRoundState(right)
   return (
-    leftRounds.kind !== 'conflict' &&
-    rightRounds.kind !== 'conflict' &&
-    JSON.stringify(leftRounds.rounds.toSorted((a, b) => a.id.localeCompare(b.id))) ===
-      JSON.stringify(rightRounds.rounds.toSorted((a, b) => a.id.localeCompare(b.id))) &&
     left.version === right.version &&
     left.cycleId === right.cycleId &&
     JSON.stringify(left.planRef) === JSON.stringify(right.planRef) &&
     JSON.stringify(left.candidateRef) === JSON.stringify(right.candidateRef)
-  )
-}
-
-export function sameCandidate(left: CandidateReference, right: CandidateReference): boolean {
-  return (
-    left.repository === right.repository &&
-    left.version === right.version &&
-    left.commit === right.commit
   )
 }
 
@@ -55,7 +39,7 @@ export function assertFixedPlan(
   return plan
 }
 
-/** A material round can span multiple native sessions while keeping its fixed promise. */
+/** One version, one acceptance: the material spans the meeting without weekly rounds. */
 export function createAcceptanceMaterial(input: {
   planRef: PlanReference
   plan: { document: PlanningMaterial; revision: string }
@@ -72,24 +56,36 @@ export function createAcceptanceMaterial(input: {
   })
 }
 
-export function emptyGoalResult(goalId: string, document?: AcceptanceMaterial): GoalResult {
-  const result: GoalResult = { goalId, deliveries: [], readings: [], note: '', nextStep: '' }
-  const current = document && acceptanceRoundState(document).current
-  return current
-    ? { ...result, rounds: [{ ...current, snapshot: acceptanceGoalSnapshot(result) }] }
-    : result
+export function emptyGoalResult(goalId: string): GoalResult {
+  return { goalId, readings: [], note: '', nextStep: '' }
 }
 
-export function artifactCandidateCheck(
-  artifact: PreparedArtifact,
-  candidate: CandidateReference | undefined
-): EvidenceCheck {
-  if (!candidate) {
-    return { kind: 'unknown', reason: '尚未固定源码候选' }
-  }
-  if (!sameCandidate(artifact.candidateRef, candidate)) {
-    return { kind: 'mismatch', reason: '材料属于另一候选，请重新准备或核对适用范围' }
-  }
-  // Matching declarations do not prove the command ran or the artifact is available.
-  return { kind: 'unknown', reason: '候选标识一致，材料来源与可用性待核对' }
+/**
+ * Replace the matching goal's result, or append it when absent. One goal one
+ * result is the material contract; every writer (row verdict, note/next-step
+ * edit, decision record) goes through this so the append-vs-replace rule cannot
+ * drift between call sites. Callers pass the base array they intend to patch —
+ * the autosave path deliberately passes the freshly re-read controller value,
+ * not the stale document it started from, to keep CAS semantics.
+ */
+export function upsertGoalResult(results: GoalResult[], result: GoalResult): GoalResult[] {
+  return results.some((item) => item.goalId === result.goalId)
+    ? results.map((item) => (item.goalId === result.goalId ? result : item))
+    : [...results, result]
+}
+
+/**
+ * The evidence report the board opens. One per version is the rule, but a
+ * regenerated report can leave more than one registered; take the most recently
+ * generated so the board never opens a superseded file without saying so.
+ */
+export function latestVerificationArtifact(
+  document: AcceptanceMaterial
+): PreparedArtifact | undefined {
+  return document.preparedArtifacts
+    .filter((item) => item.kind === 'verification')
+    .reduce<PreparedArtifact | undefined>(
+      (newest, item) => (!newest || item.generatedAt > newest.generatedAt ? item : newest),
+      undefined
+    )
 }

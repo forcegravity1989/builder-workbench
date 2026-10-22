@@ -16,8 +16,8 @@ type Identity = [
 /**
  * Status of the recorded archive PR, shared by both cycle screens. Reads fire on
  * reference identity change, trunk-sync refresh, window focus (throttled) and the
- * header's manual refresh; unreadable stays unknown. The journey lamp does not
- * come from here — it follows workflow.stage in the material.
+ * header's manual refresh; unreadable stays unknown. Rendered as text — neither
+ * board derives a lamp from it (journey lamps are retired).
  */
 export function useArchivePrStatus(
   context: VersionCycleContext,
@@ -50,10 +50,7 @@ export function useArchivePrStatus(
     const token = ++sequence.current
     lastRead.current = Date.now()
     try {
-      const status = await archivePort.readStatus(
-        { ...scopePart, worktreeId: treeId },
-        pr
-      )
+      const status = await archivePort.readStatus({ ...scopePart, worktreeId: treeId }, pr)
       if (token === sequence.current && latest.current === key) {
         setResult({ key, status })
       }

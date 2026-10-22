@@ -31,13 +31,15 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 
 详情读取 view 和评论的列出、新建、删除；MR 的评论按 discussion 分组显示，每条评论可在卡片右上角回复（回复挂在所属线程下缩进显示）与跳转 CodeHub 网页对应位置；系统流水笔记（如 changed this line）不显示为评论。Issue 可改标题。关闭顺序是先写评论再 `issue close`；评论失败则不关闭。三条评论正文是 `关闭原因: completed`、`关闭原因: not planned`、`关闭原因: duplicate of #<iid>`。重新打开不写评论。MR 可关闭。不提供草稿、Mark ready、表情、已读、修改评论正文。
 
+MR 详情有三个页签：对话、检查项、文件变更。检查项来自 `mr gate` 的 `checks`，按 GitHub 检查项的图标与分组样式显示名称、状态和外链；没有流水线的 MR 显示「暂无检查项」，不显示成通过。文件变更来自 `mr changes`，按 GitHub Files changed 的文件树与行级 diff 样式显示；diff 由补丁文本重建两侧，行号从补丁上下文起算，不保证与 CodeHub 网页行号一致；二进制文件只列路径与统计，不渲染内容。两页签可手动刷新，随详情打开一并读取。
+
 ### 计划与验收中的任务
 
 关联引用的 `provider` 为 `codehub` 时，用 CodeHub 项目路径匹配仓库，不用 GitHub 的 `owner/repo` 去对。读取时先按 Issue 查看，失败再按 MR 查看。打开详情走任务页的 CodeHub 入口。CLI 没有返回链接且远程地址也拼不出网页链接时，读回失败并说明未返回链接。
 
 ### 归档
 
-注册为 CodeHub 远程的仓库，归档 PR 状态保持未知，原因固定为「此来源的 PR 状态暂无法读回」。旅程灯只读模型写入材料的 workflow.stage，与 provider 无关；归档状态行按材料记录的 archivePr 薄读取，读不回就不显示合入状态，也不编造。GitHub 仓库按 archivePr 显示已合入／待合入／已关闭；尚未记录 PR 引用时显示尚未进入归档或 PR 链接待写入，各原因不要混用。
+注册为 CodeHub 远程的仓库，归档 PR 状态保持未知，原因固定为「此来源的 PR 状态暂无法读回」。归档状态行按材料记录的 archivePr 薄读取，读不回就不显示合入状态，也不编造。`workflow.stage` 是模型写入材料的内部进度、与 provider 无关，两屏界面都不渲染灯（计划屏自 G3、验收屏自 v10 起），所以 CodeHub 读不回 PR 状态不影响任何阶段呈现。GitHub 仓库按 archivePr 显示已合入／待合入／已关闭；尚未记录 PR 引用时显示尚未进入归档或 PR 链接待写入，各原因不要混用。
 
 ### 验收可选版本
 
@@ -52,6 +54,7 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 | 关闭评论失败 | Issue 保持原状态 |
 | 归档 PR 状态读不回 | 未知，带上述固定原因 |
 | 版本目录没有可读的 `data.json` | 不作为验收可选版本 |
+| 检查项或文件变更读回失败 | 显示空态与重试，不显示成通过或无变更 |
 
 ## 验收
 
@@ -63,8 +66,11 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 | C04 | MR 详情与新建 | 没有草稿开关，没有 Mark ready；可以关闭 |
 | C05 | CLI 不在 PATH | 可见未安装说明；集成卡片不是「已登录」 |
 | C06 | 计划或验收打开 CodeHub 任务 | 详情来自该项目路径上的 Issue 或 MR |
-| C07 | 仓库远程是 CodeHub | 归档 PR 状态为未知，原因是此来源的 PR 状态暂无法读回；旅程灯仍按 workflow.stage 显示 |
+| C07 | 仓库远程是 CodeHub | 归档 PR 状态为未知，原因是此来源的 PR 状态暂无法读回；界面不出现任何合入状态断言（灯已退役，无绿/灰可看），也不因读不回而阻断读取材料或继续验收 |
 | C08 | 主干基线上某版本目录有 `data.json` | 验收可以选择该版本的当前计划；坏目录不出现 |
+| C09 | MR 有流水线检查项 | 检查项页签列出名称、状态与外链，样式同 GitHub 检查项 |
+| C10 | MR 有文件变更 | 文件变更页签按 GitHub Files changed 样式显示文件树与行级 diff |
+| C11 | MR 无流水线 | 检查项页签显示暂无检查项，不显示成通过 |
 
 旅程 CJ01：从 CodeHub 仓库打开任务，关闭一条 Issue，重启后再次列出该 Issue 仍为关闭。需要内部 CodeHub 与已登录的 CLI，本次未跑。
 

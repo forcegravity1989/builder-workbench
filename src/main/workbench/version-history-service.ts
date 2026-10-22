@@ -18,7 +18,6 @@ import {
 import type { VersionDocumentSnapshot } from '../../shared/workbench/version-document'
 import type { PlanningMaterial } from '../../shared/workbench/version-material'
 import {
-  acceptanceRoundMetadata,
   decodeHistorySnapshot,
   planningMaterialGitPath,
   HistorySourceError
@@ -226,8 +225,7 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           sourceCommit,
           revision: snapshot.revision,
           workflow,
-          committedAt,
-          ...acceptanceRoundMetadata(snapshot.document)
+          committedAt
         })
       }
       return { records, problems }
