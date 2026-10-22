@@ -64,7 +64,7 @@ export function PlanningPriorReview({
                 carryovers.issues.map((issue) =>
                   issue.task ? (
                     <button
-                      key={issue.number}
+                      key={issue.key}
                       type="button"
                       className="g3-carryover-link"
                       onClick={() => void onOpenTask(issue.task!)}
@@ -73,7 +73,7 @@ export function PlanningPriorReview({
                       {issue.title}
                     </button>
                   ) : (
-                    <div key={issue.number}>
+                    <div key={issue.key}>
                       <span className="g3-id">#{issue.number}</span>
                       <span className="g3-muted">标题未读到</span>
                     </div>

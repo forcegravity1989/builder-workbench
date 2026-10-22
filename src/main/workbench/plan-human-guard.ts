@@ -38,12 +38,21 @@ function planMinutesChanges(
     // Dropping the section rewrites the body away; only allowed while it carries
     // no human marks (confirmation timestamp or closed followups).
     if (current && (current.confirmedAt !== undefined || current.followups.some((f) => f.closed))) {
-      changes.push('minutes.followups')
+      if (current.confirmedAt !== undefined) {
+        changes.push('minutes.confirmedAt')
+      }
+      if (current.followups.some((f) => f.closed)) {
+        changes.push('minutes.followups')
+      }
     }
     return
   }
   if (incoming.confirmed || incoming.confirmedAt !== undefined) {
     changes.push('minutes.confirmed')
+  } else if (current?.confirmedAt !== undefined) {
+    // A stored confirmation timestamp is a human mark even in odd legacy data;
+    // the model channel must round-trip it, not silently drop it.
+    changes.push('minutes.confirmedAt')
   }
   const currentById = new Map((current?.followups ?? []).map((followup) => [followup.id, followup]))
   for (const followup of incoming.followups) {

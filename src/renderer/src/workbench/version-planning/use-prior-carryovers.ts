@@ -11,6 +11,8 @@ import { nativeVersionHistoryPort } from '../version-history-port'
 import { readPlanningProgressSource } from './planning-progress-source'
 
 export type PriorCarryoverIssue = {
+  /** Full task identity — unique React key across repositories. */
+  key: string
   number: number
   /** Null when the frozen material has no snapshot entry to join — shown as number only, never guessed. */
   title: string | null
@@ -77,12 +79,19 @@ export function derivePriorCarryovers(
       issues.push(
         ready
           ? {
+              key: issueKey(reference),
               number: ready.iid,
               title: ready.title,
               url: ready.url,
               task: readySnapshotToTask(ready)
             }
-          : { number: reference.number, title: null, url: null, task: null }
+          : {
+              key: issueKey(reference),
+              number: reference.number,
+              title: null,
+              url: null,
+              task: null
+            }
       )
     }
     for (const directive of result.meetingDirectives ?? []) {

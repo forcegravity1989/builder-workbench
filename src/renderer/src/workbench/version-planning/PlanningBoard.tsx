@@ -81,11 +81,33 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   )
   const metrics = usePlanMetrics(metricScope, scope?.runtimeOwnerEnvironmentId, plan)
   const selectionKey = JSON.stringify([scopeKey, plan?.version, plan?.cycleId])
-  const { clearAll } = annotations
+  const { clearAll, pruneMissing } = annotations
+  // Stable board identity for annotation lifetime: context.version is the native
+  // selection and does not flicker through re-select transients (draft null),
+  // unlike selectionKey — clearing on the latter would wipe meeting annotations
+  // on every「更新代码」or poll-driven reselect of the same version.
+  const boardIdentity = JSON.stringify([scopeKey, context.version])
   useEffect(() => {
     // Memory annotations point at the previous board's objects after a switch.
     clearAll()
-  }, [selectionKey, clearAll])
+  }, [boardIdentity, clearAll])
+  // Model-side edits (poll) may drop goals/task references: prune annotations
+  // whose object no longer exists on the board instead of keeping orphans.
+  const goalsKey = JSON.stringify(plan?.goals.map((goal) => goal.goalId) ?? [])
+  const tasksKey = JSON.stringify(plan?.tasks.map((task) => [task.goalId, task.number]) ?? [])
+  useEffect(() => {
+    if (!plan) {
+      return
+    }
+    const goalIds = new Set(plan.goals.map((goal) => goal.goalId))
+    const issueKeys = new Set(
+      plan.tasks.filter((task) => task.goalId).map((task) => `${task.goalId}:${task.number}`)
+    )
+    pruneMissing(
+      (goalId) => goalIds.has(goalId),
+      (goalId, number) => issueKeys.has(`${goalId}:${number}`)
+    )
+  }, [goalsKey, tasksKey, plan, pruneMissing])
   const notice = view.key === selectionKey ? view.notice : ''
   const updateView = useCallback(
     (patch: Partial<typeof view>) => {
@@ -219,13 +241,19 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     if (!annotations.annotating) {
       return
     }
-    event.preventDefault()
-    event.stopPropagation()
     const target = event.target as Element | null
-    // The minutes section takes no annotations — meeting notes are an output.
+    // The minutes section takes no annotations and stays fully interactive —
+    // human confirmation is an iron-rule action that must work mid-meeting.
+    // Markers keep their own click (reopen the panel) instead of spawning a popover.
     if (target?.closest('#minutes')) {
+      annotations.closePopover()
       return
     }
+    if (target?.closest('.g3-annot-marker')) {
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
     const element = target?.closest('[data-annotate-kind]')
     const ref = element ? annotationRefFromElement(element) : null
     if (element && ref) {
@@ -342,29 +370,31 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             sectionRef={sectionRefs.archive}
           />
         </div>
+        {annotations.panelOpen && (
+          <AnnotationPanel
+            annotations={annotations.numbered}
+            annotating={annotations.annotating}
+            onClose={annotations.closePanel}
+            onUpdate={annotations.update}
+            onRemove={annotations.remove}
+            onBoardLevel={(rect) =>
+              annotations.openPopover({ kind: 'board', label: '板面级' }, rect)
+            }
+            onCopy={() =>
+              void act(async () => {
+                await navigator.clipboard.writeText(
+                  formatBoardAnnotationsAsMarkdown(annotations.annotations)
+                )
+                updateView({ notice: '已复制板面批注。' })
+              })
+            }
+            onSend={() => {
+              annotations.closePopover()
+              sendAction(boardAnnotationsSendPrompt(annotations.annotations), '板面批注')
+            }}
+          />
+        )}
       </div>
-      {annotations.panelOpen && (
-        <AnnotationPanel
-          annotations={annotations.numbered}
-          annotating={annotations.annotating}
-          onClose={annotations.closePanel}
-          onUpdate={annotations.update}
-          onRemove={annotations.remove}
-          onBoardLevel={(rect) => annotations.openPopover({ kind: 'board', label: '板面级' }, rect)}
-          onCopy={() =>
-            void act(async () => {
-              await navigator.clipboard.writeText(
-                formatBoardAnnotationsAsMarkdown(annotations.annotations)
-              )
-              updateView({ notice: '已复制板面批注。' })
-            })
-          }
-          onSend={() => {
-            annotations.closePopover()
-            sendAction(boardAnnotationsSendPrompt(annotations.annotations), '板面批注')
-          }}
-        />
-      )}
       {popover && (
         <AnnotationPopover
           key={popover.id}

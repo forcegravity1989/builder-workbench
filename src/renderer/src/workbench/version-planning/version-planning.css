@@ -256,6 +256,7 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
 /* ===== 顶部阶段导航(无灯,只做同页定位) ===== */
 
 .vp-body {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1032,10 +1033,10 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
 
 /* 板面批注面板锚板面列(absolute,见偏差 D14);对象小窗按被点元素视口坐标 fixed 锚定。 */
 
-/* 面板锚在板面列内(非视口),避免遮盖 Orca 右侧栏;小窗按被点元素视口坐标 fixed 锚定。 */
+/* 面板锚在导航条所在板面体内(absolute,见偏差 D14),不遮页头动作行与 Orca 右侧栏;小窗按被点元素视口坐标 fixed 锚定。 */
 .g3-annot-panel {
   position: absolute;
-  top: 96px;
+  top: 16px;
   right: 16px;
   z-index: 40;
   max-height: calc(100vh - 128px);

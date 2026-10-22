@@ -140,6 +140,11 @@ it('maps carry marks and confirmed next-week directives to the two prior-review 
     // A mark with no plan-side reference for the goal is not associated and stays out.
     [341, null]
   ])
+  expect(carryovers.issues.map((item) => item.key)).toEqual([
+    'github:github.com/acme/app:331',
+    'github:github.com/acme/app:339',
+    'github:github.com/acme/app:341'
+  ])
   expect(carryovers.issues[0]?.task?.title).toBe('遗留任务标题')
   expect(carryovers.issues[1]?.task).toBeNull()
   expect(carryovers.directives).toEqual([

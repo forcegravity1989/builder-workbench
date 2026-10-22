@@ -86,6 +86,31 @@ export function useBoardAnnotations() {
     setPopover(null)
   }, [])
 
+  /** Model-side material edits may remove annotated objects: drop orphan records. */
+  const pruneMissing = useCallback(
+    (
+      hasGoal: (goalId: string) => boolean,
+      hasIssue: (goalId: string, number: number) => boolean
+    ) => {
+      const survives = (ref: AnnotationRef): boolean => {
+        if (ref.kind === 'board') {
+          return true
+        }
+        if (!ref.goalId || !hasGoal(ref.goalId)) {
+          return false
+        }
+        return (
+          ref.kind !== 'issue' ||
+          ref.issueNumber === undefined ||
+          hasIssue(ref.goalId, ref.issueNumber)
+        )
+      }
+      setAnnotations((current) => current.filter((item) => survives(item.ref)))
+      setPopover((current) => (current && !survives(current.ref) ? null : current))
+    },
+    []
+  )
+
   const toggleMode = useCallback(() => {
     const next = !annotating
     setAnnotating(next)
@@ -129,6 +154,7 @@ export function useBoardAnnotations() {
     openPanel,
     closePanel,
     clearAll,
+    pruneMissing,
     toggleMode
   }
 }

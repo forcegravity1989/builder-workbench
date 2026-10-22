@@ -1,5 +1,5 @@
 import { ChartNoAxesCombined, ChevronDown, ChevronRight, Info, Plus, RefreshCw } from 'lucide-react'
-import { useEffect, useState, type Ref } from 'react'
+import { useEffect, useRef, useState, type Ref } from 'react'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
 import { goalCardViewKey, writeGoalCardExpanded } from '../cycle-view-state'
 import type { AnnotationMatch } from '../annotations/types'
@@ -57,6 +57,8 @@ export function PlanningGoals({
   const [readError, setReadError] = useState<string | null>(null)
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
   const referenceKey = JSON.stringify(plan?.tasks ?? [])
+  const referenceKeyRef = useRef(referenceKey)
+  referenceKeyRef.current = referenceKey
   useEffect(() => {
     if (!scope || !plan?.tasks.length) {
       setReads(plan?.tasks.length ? null : [])
@@ -95,14 +97,24 @@ export function PlanningGoals({
     if (!scope || !plan?.tasks.length || refreshing) {
       return
     }
+    const requestedKey = referenceKey
     setRefreshing(true)
     setReadError(null)
     try {
-      setReads(await taskPort.refresh(scope, plan.tasks))
+      const items = await taskPort.refresh(scope, plan.tasks)
+      // A version switch while the provider round-trip was in flight must not
+      // let the stale read overwrite the new version's list.
+      if (requestedKey === referenceKeyRef.current) {
+        setReads(items)
+      }
     } catch (reason) {
-      setReadError(reason instanceof Error ? reason.message : String(reason))
+      if (requestedKey === referenceKeyRef.current) {
+        setReadError(reason instanceof Error ? reason.message : String(reason))
+      }
     } finally {
-      setRefreshing(false)
+      if (requestedKey === referenceKeyRef.current) {
+        setRefreshing(false)
+      }
     }
   }
 

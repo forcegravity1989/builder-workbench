@@ -724,6 +724,16 @@ it('guards the plan risk report and meeting minutes on the model channel', async
   await expect(
     assertHumanFieldsUntouched(async () => ({ document: openStored }), planSaveDoc(drafted), {})
   ).resolves.toBeUndefined()
+  // Odd legacy shape (unconfirmed but carrying a timestamp): dropping the
+  // human confirmation timestamp is refused like any human mark.
+  const stamped = planDocWithMinutes(
+    planMinutes({ confirmed: false, confirmedAt: '2026-10-20T09:00:00+08:00' })
+  )
+  const stampDropped = planDocWithMinutes(planMinutes({ confirmed: false }))
+  expect(planHumanFieldChanges(stamped, stampDropped)).toEqual(['minutes.confirmedAt'])
+  await expect(
+    assertHumanFieldsUntouched(async () => ({ document: stamped }), planSaveDoc(stampDropped), {})
+  ).rejects.toMatchObject({ code: 'forbidden' })
 })
 
 it('feeds the guard read a payload the strict ReadSchema accepts', async () => {
