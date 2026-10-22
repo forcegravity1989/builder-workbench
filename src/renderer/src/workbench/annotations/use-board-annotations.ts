@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react'
 import {
   annotationMatches,
   type AnnotationMatch,
@@ -12,6 +12,39 @@ export type AnnotationPopoverTarget = {
   rect: { left: number; top: number; bottom: number }
 }
 
+type AnnotationSession = {
+  annotations: BoardAnnotation[]
+  annotating: boolean
+  panelOpen: boolean
+  popover: AnnotationPopoverTarget | null
+}
+
+/**
+ * Module-level session store (2026-10-23 第九轮): annotations are meeting shorthand
+ * and must survive plan-board unmounts — glancing at the acceptance or tasks screen
+ * mid-review is normal, and component state evaporated the notes on every route
+ * switch, wider than decision D ("restart loss is by design"). Memory-only on
+ * purpose: screen switches keep the session, a renderer restart resets the module
+ * and drops it per the decision, with no storage cleanup to forget.
+ */
+let session: AnnotationSession = {
+  annotations: [],
+  annotating: false,
+  panelOpen: false,
+  popover: null
+}
+const listeners = new Set<() => void>()
+const patchSession = (patch: Partial<AnnotationSession>) => {
+  session = { ...session, ...patch }
+  listeners.forEach((listener) => listener())
+}
+const subscribeSession = (listener: () => void) => {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
 /**
  * Memory-only annotation state for one board (decision D): ordered records,
  * order-based global numbering shared by board markers and panel cards, mode
@@ -19,10 +52,10 @@ export type AnnotationPopoverTarget = {
  * Cascading goal removal filters by structured ref, not label prefixes.
  */
 export function useBoardAnnotations() {
-  const [annotations, setAnnotations] = useState<BoardAnnotation[]>([])
-  const [annotating, setAnnotating] = useState(false)
-  const [panelOpen, setPanelOpen] = useState(false)
-  const [popover, setPopover] = useState<AnnotationPopoverTarget | null>(null)
+  const { annotations, annotating, panelOpen, popover } = useSyncExternalStore(
+    subscribeSession,
+    () => session
+  )
 
   const numbered = useMemo(
     () => annotations.map((item, index) => ({ ...item, number: index + 1 })),
@@ -34,26 +67,32 @@ export function useBoardAnnotations() {
     if (!trimmed) {
       return
     }
-    setAnnotations((current) => [
-      ...current,
-      { id: `${Date.now()}-${current.length}`, ref, text: trimmed }
-    ])
+    patchSession({
+      annotations: [
+        ...session.annotations,
+        { id: `${Date.now()}-${session.annotations.length}`, ref, text: trimmed }
+      ]
+    })
   }, [])
 
   const update = useCallback((id: string, text: string) => {
-    setAnnotations((current) =>
-      current.map((item) => (item.id === id ? { ...item, text: text.trim() } : item))
-    )
+    patchSession({
+      annotations: session.annotations.map((item) =>
+        item.id === id ? { ...item, text: text.trim() } : item
+      )
+    })
   }, [])
 
   const remove = useCallback((id: string) => {
-    setAnnotations((current) => current.filter((item) => item.id !== id))
+    patchSession({ annotations: session.annotations.filter((item) => item.id !== id) })
   }, [])
 
   /** Goal deletion cascade: every annotation referencing the goal (board-level records have no goalId and stay). */
   const removeForGoal = useCallback((goalId: string) => {
-    setAnnotations((current) => current.filter((item) => item.ref.goalId !== goalId))
-    setPopover((current) => (current && current.ref.goalId === goalId ? null : current))
+    patchSession({
+      annotations: session.annotations.filter((item) => item.ref.goalId !== goalId),
+      popover: session.popover && session.popover.ref.goalId === goalId ? null : session.popover
+    })
   }, [])
 
   const numbersFor = useCallback(
@@ -63,27 +102,31 @@ export function useBoardAnnotations() {
   )
 
   const openPopover = useCallback((ref: AnnotationRef, rect: DOMRect) => {
-    setPopover({
-      id: `${ref.kind}-${Date.now()}`,
-      ref,
-      rect: { left: rect.left, top: rect.top, bottom: rect.bottom }
+    patchSession({
+      popover: {
+        id: `${ref.kind}-${Date.now()}`,
+        ref,
+        rect: { left: rect.left, top: rect.top, bottom: rect.bottom }
+      },
+      panelOpen: true
     })
-    setPanelOpen(true)
   }, [])
 
-  const closePopover = useCallback(() => setPopover(null), [])
+  const closePopover = useCallback(() => {
+    patchSession({ popover: null })
+  }, [])
 
-  const openPanel = useCallback(() => setPanelOpen(true), [])
+  const openPanel = useCallback(() => {
+    patchSession({ panelOpen: true })
+  }, [])
 
   const closePanel = useCallback(() => {
-    setPanelOpen(false)
-    setPopover(null)
+    patchSession({ panelOpen: false, popover: null })
   }, [])
 
   /** Board identity changed (version/scope/restart): memory records no longer point at visible objects. */
   const clearAll = useCallback(() => {
-    setAnnotations([])
-    setPopover(null)
+    patchSession({ annotations: [], popover: null })
   }, [])
 
   /** Model-side material edits may remove annotated objects: drop orphan records. */
@@ -105,18 +148,22 @@ export function useBoardAnnotations() {
           hasIssue(ref.goalId, ref.issueNumber)
         )
       }
-      setAnnotations((current) => current.filter((item) => survives(item.ref)))
-      setPopover((current) => (current && !survives(current.ref) ? null : current))
+      patchSession({
+        annotations: session.annotations.filter((item) => survives(item.ref)),
+        popover: session.popover && !survives(session.popover.ref) ? null : session.popover
+      })
     },
     []
   )
 
   const toggleMode = useCallback(() => {
-    const next = !annotating
-    setAnnotating(next)
-    setPopover(null)
-    setPanelOpen(next)
-  }, [annotating])
+    const next = !session.annotating
+    patchSession({ annotating: next, popover: null, panelOpen: next })
+  }, [])
+
+  // The popover anchors to a board element rect: after a screen switch the rect is
+  // stale, so drop only the popover on unmount while notes/mode/panel survive.
+  useEffect(() => () => patchSession({ popover: null }), [])
 
   useEffect(() => {
     if (!annotating) {
@@ -133,16 +180,15 @@ export function useBoardAnnotations() {
         return
       }
       // Esc closes the nearest popover first, then exits the mode and panel.
-      if (popover) {
-        setPopover(null)
+      if (session.popover) {
+        patchSession({ popover: null })
         return
       }
-      setAnnotating(false)
-      setPanelOpen(false)
+      patchSession({ annotating: false, panelOpen: false })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [annotating, popover])
+  }, [annotating])
 
   return {
     annotations,
