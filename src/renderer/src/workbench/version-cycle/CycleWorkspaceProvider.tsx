@@ -19,8 +19,8 @@ import { nativeArchivePrPort } from '../archive-pr-port'
 import './version-cycle.css'
 
 /** BW supplies workflow assets to the existing Orca workspace, never a second session host. */
-const VERSIONED_AUTOMATION_NOTICE =
-  '版本化自动化身份待接入（P5）：本版绑定树的定时/手动运行入口会复用旧版自动化条目、落错执行树，已拒绝启动。请暂在本树会话区直接新建会话。'
+const ACCEPTANCE_SKILL_SYNC_NOTICE =
+  '验收流程树的版本化提示同步待验收 Skill 正本更新（#394）合入后放开：为防止会话按旧固定分支文案归档到错误分支，本版验收树的定时/手动运行入口暂未开放。请在本树会话区直接新建会话。'
 
 export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const workflow = useCycleWorkspaceWorkflow()
@@ -67,7 +67,11 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     workflow: workflow ?? 'plan',
     agent,
     onNotice: setNotice,
-    skip: versionBound ? 'version-bound' : null
+    version: flowBinding?.version ?? null,
+    // G2（P5）：计划绑定树已版本化（creationKey/条目名/提示词钉真实分支与绑定
+    // 版本）；验收绑定树在验收 Skill 正本同步（#394 合入后）前如实跳过，防止
+    // 提示词与旧归档分支文案矛盾。旧无绑定树 skip=null 沿原语义。
+    skip: versionBound && workflow === 'acceptance' ? 'acceptance-skill-sync' : null
   })
   const configure = useCycleAutomationDraft({
     cycleScope: scope,
@@ -78,16 +82,16 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     onError: setNotice
   })
   const configureGuarded = useCallback(async () => {
-    if (versionBound) {
-      setNotice(VERSIONED_AUTOMATION_NOTICE)
+    if (versionBound && workflow === 'acceptance') {
+      setNotice(ACCEPTANCE_SKILL_SYNC_NOTICE)
       return
     }
     await configure()
-  }, [configure, versionBound])
+  }, [configure, versionBound, workflow])
   const start = useCallback(
     async (oneShot?: string) => {
-      if (versionBound) {
-        setNotice(VERSIONED_AUTOMATION_NOTICE)
+      if (versionBound && workflow === 'acceptance') {
+        setNotice(ACCEPTANCE_SKILL_SYNC_NOTICE)
         return
       }
       setBusy(true)
@@ -111,7 +115,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
         setBusy(false)
       }
     },
-    [scope, fixedId, automation.automationId, versionBound]
+    [scope, fixedId, automation.automationId, versionBound, workflow]
   )
   const prepareMetrics = useCallback(async () => {
     if (!scope || !agent) {

@@ -16,7 +16,8 @@ import {
   type WallSessionReading,
   type WallVersionReading
 } from './wall-card-readings'
-import { readProjectPrs, readVersionAndProgress, resolvePlanContext } from './wall-readings-load'
+import { readProjectPrs, readVersionAndProgress } from './wall-readings-load'
+import { resolvePlanContext } from './wall-plan-context'
 import type { WallProject } from './workbench-wall-projects'
 
 /**
