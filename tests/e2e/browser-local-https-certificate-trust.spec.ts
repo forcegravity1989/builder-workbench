@@ -9,6 +9,16 @@ import {
 } from './helpers/store'
 import { startLocalHttpProbeServer, startLocalHttpsServer } from './helpers/local-https-test-server'
 
+// Why: the shell renders in the OS locale, so every control this spec drives must be
+// matched in both English and Chinese (this suite is not in the CI testMatch lane and
+// runs on local Chinese-Windows shells).
+const TRY_HTTPS = /Try HTTPS|尝试 HTTPS/
+const NOT_SECURE_HEADING = /Connection isn't secure|连接不安全/
+const PROCEED_UNSAFE = /Proceed Anyway|仍然继续/
+const RETRY = /Retry|重试/
+const COPY_ADDRESS = /Copy Address|复制地址/
+const TRUSTED_CERT_HINT = /trusted local certificate|受信任的本地证书/
+
 type CreatedBrowserTab = {
   id: string
   pageId: string
@@ -67,7 +77,7 @@ function browserSlot(page: Page, pageId: string) {
 // Why: the toolbar reload button is also named "Retry" once a load fails, so match the
 // overlay's button by its visible label — the toolbar one is icon-only.
 function failureOverlayRetryButton(slot: Locator): Locator {
-  return slot.getByRole('button', { name: 'Retry' }).filter({ hasText: 'Retry' })
+  return slot.getByRole('button', { name: RETRY }).filter({ hasText: RETRY })
 }
 
 async function readBrowserHeading(page: Page, browserTabId: string): Promise<string | null> {
@@ -131,7 +141,7 @@ test.describe('local HTTPS certificate trust', () => {
     await ensureTerminalVisible(orcaPage)
   })
 
-  test('approves one exact local certificate endpoint without trusting sibling tabs or ports', async ({
+  test('approves one exact local certificate endpoint session-wide without trusting other ports', async ({
     orcaPage
   }) => {
     const firstServer = await startLocalHttpsServer()
@@ -142,18 +152,16 @@ test.describe('local HTTPS certificate trust', () => {
       const firstTab = await createBrowserTab(orcaPage, worktreeId, firstServer.schemeLessUrl)
       const firstSlot = browserSlot(orcaPage, firstTab.id)
 
-      await expect(firstSlot.getByRole('button', { name: 'Try HTTPS' })).toBeVisible()
-      await firstSlot.getByRole('button', { name: 'Try HTTPS' }).click()
-      await expect(
-        firstSlot.getByRole('heading', { name: "Connection isn't secure" })
-      ).toBeVisible()
+      await expect(firstSlot.getByRole('button', { name: TRY_HTTPS })).toBeVisible()
+      await firstSlot.getByRole('button', { name: TRY_HTTPS }).click()
+      await expect(firstSlot.getByRole('heading', { name: NOT_SECURE_HEADING })).toBeVisible()
       // The certificate-failure branch keeps its safe recovery actions and the
       // certificate-specific hint, but never the local-server connectivity hint.
-      await expect(firstSlot.getByRole('button', { name: 'Copy Address' })).toBeVisible()
+      await expect(firstSlot.getByRole('button', { name: COPY_ADDRESS })).toBeVisible()
       await expect(failureOverlayRetryButton(firstSlot)).toBeVisible()
-      await expect(firstSlot.getByText(/use a trusted local certificate/i)).toBeVisible()
+      await expect(firstSlot.getByText(TRUSTED_CERT_HINT)).toBeVisible()
       await expect(firstSlot.getByText(/make sure the server is running/i)).toHaveCount(0)
-      await firstSlot.getByRole('button', { name: 'Proceed Anyway (Unsafe)' }).click()
+      await firstSlot.getByRole('button', { name: PROCEED_UNSAFE }).click()
       await expect
         .poll(() => readBrowserHeading(orcaPage, firstTab.id), { timeout: 10_000 })
         .toBe('Local HTTPS request 1')
@@ -163,40 +171,44 @@ test.describe('local HTTPS certificate trust', () => {
       expect(firstServer.assetRequestCount()).toBe(1)
       expect(firstServer.webSocketConnectionCount()).toBe(1)
 
+      // Why: approval is a session-scoped exception (Chrome's SSL exception model), so a
+      // fresh guest on the same endpoint and leaf certificate loads without a new prompt —
+      // this is the SSO round-trip / new-tab case that used to blank back to about:blank.
       const secondTab = await createBrowserTab(orcaPage, worktreeId, firstServer.secureUrl)
       const secondSlot = browserSlot(orcaPage, secondTab.id)
-      await expect(
-        secondSlot.getByRole('heading', { name: "Connection isn't secure" })
-      ).toBeVisible()
-      // Why: approval is scoped to the first guest WebContents, not its shared
-      // profile partition, so this sibling still requires an explicit decision.
-      await expect(
-        secondSlot.getByRole('button', { name: 'Proceed Anyway (Unsafe)' })
-      ).toBeVisible()
+      await expect
+        .poll(() => readBrowserHeading(orcaPage, secondTab.id), { timeout: 10_000 })
+        .toBe('Local HTTPS request 2')
+      await expect(secondSlot.getByRole('heading', { name: NOT_SECURE_HEADING })).toHaveCount(0)
+      await expect
+        .poll(() => readBrowserState(orcaPage, secondTab.id, '__localTlsState'))
+        .toEqual({ asset: true, webSocket: true })
+      expect(firstServer.assetRequestCount()).toBe(2)
+      expect(firstServer.webSocketConnectionCount()).toBe(2)
 
+      // Why: subresources from a sibling HTTP page reach the trusted endpoint too; they are
+      // no longer cancelled at the request layer.
       const probeTab = await createBrowserTab(orcaPage, worktreeId, siblingProbeServer.url)
       await expect
         .poll(() => readBrowserState(orcaPage, probeTab.id, '__siblingTlsProbe'))
-        .toEqual({ asset: 'blocked', webSocket: 'blocked' })
-      expect(firstServer.assetRequestCount()).toBe(1)
-      expect(firstServer.webSocketConnectionCount()).toBe(1)
+        .toEqual({ asset: 'allowed', webSocket: 'allowed' })
+      expect(firstServer.assetRequestCount()).toBe(3)
+      expect(firstServer.webSocketConnectionCount()).toBe(3)
 
       await switchToBrowserTab(orcaPage, worktreeId, firstTab.id)
       await reloadBrowserGuest(orcaPage, firstTab.id)
-      await expect.poll(firstServer.documentRequestCount, { timeout: 10_000 }).toBe(2)
+      await expect.poll(firstServer.documentRequestCount, { timeout: 10_000 }).toBe(3)
       await expect
         .poll(() => readBrowserHeading(orcaPage, firstTab.id), { timeout: 10_000 })
-        .toBe('Local HTTPS request 2')
-      await expect.poll(firstServer.assetRequestCount).toBe(2)
-      await expect.poll(firstServer.webSocketConnectionCount).toBe(2)
+        .toBe('Local HTTPS request 3')
+      await expect.poll(firstServer.assetRequestCount).toBe(4)
+      await expect.poll(firstServer.webSocketConnectionCount).toBe(4)
 
       const firstAddressBar = firstSlot.locator('[data-orca-browser-address-bar="true"]')
       await firstAddressBar.fill(secondPortServer.secureUrl)
       await firstAddressBar.press('Enter')
-      await expect(
-        firstSlot.getByRole('heading', { name: "Connection isn't secure" })
-      ).toBeVisible()
-      await expect(firstSlot.getByRole('button', { name: 'Proceed Anyway (Unsafe)' })).toBeVisible()
+      await expect(firstSlot.getByRole('heading', { name: NOT_SECURE_HEADING })).toBeVisible()
+      await expect(firstSlot.getByRole('button', { name: PROCEED_UNSAFE })).toBeVisible()
       await expect.poll(secondPortServer.documentRequestCount).toBe(0)
     } finally {
       await Promise.all([firstServer.close(), secondPortServer.close(), siblingProbeServer.close()])
