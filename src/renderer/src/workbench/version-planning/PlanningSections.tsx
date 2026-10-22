@@ -1,5 +1,4 @@
 import { GitBranch, MessageSquare, RefreshCw } from 'lucide-react'
-import type { ReactNode } from 'react'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 
@@ -23,8 +22,7 @@ export function PlanningHeader({
   onSessionToggle,
   onSelect,
   onConfigure,
-  onRefresh,
-  extraActions
+  onRefresh
 }: {
   currentVersion: string
   versions: VersionMaterialCandidate[]
@@ -36,8 +34,6 @@ export function PlanningHeader({
   onSelect(version: string): void
   onConfigure(): void
   onRefresh(): void
-  /** Trailing action slot (annotation-mode button). */
-  extraActions?: ReactNode
 }) {
   return (
     <header className="vp-header">
@@ -94,7 +90,6 @@ export function PlanningHeader({
           <RefreshCw size={13} aria-hidden="true" /> 更新代码
         </button>
         <AutomationConfigureButton className="g3-text-button" onConfigure={onConfigure} />
-        {extraActions}
       </div>
     </header>
   )

@@ -47,7 +47,7 @@ v10 复用的共用件随计划屏 G3（[#399](https://github.com/forcegravity19
 
 同批修复（subagent 盘点实证）：发布/归档/部署三个注入 prompt 瘦身（预检清单、固定树路径、写回协议等 SOP 细节归 Skill，按钮只留触发意图）；三处「原型注释升格成生产 UI」的解释脚注删除（勾勾表、准备区、发布卡），纪要卡小注减密度并去掉被否决的「常驻可编辑」旧稿措辞；出包/下载禁用按钮补原因 title；「发起归档」改 Archive 图标（与发布 Rocket 同卡撞车解除）、打开报告统一 FileText；纪要区死分支删除（`document` 收必填——空板在 AcceptanceBoard 早退，无材料分支不可达）；空态指引提到页头批注的过期文案随分支删除。计划屏侧连带微修：闭环句两处 title 标点归 spec 正源（分号→逗号）、`version-workflow.ts` 注释改准（stage 的唯一 UI 消费是归档卡「已进入归档阶段」状态行）、planning design.md 三处陈旧句修正（stage 消费表述、上版回顾会议遗留来源、CycleArchive 已删）。
 
-高保真：`acceptance-app.jsx` 同步（Showcase 入口 + 角标、页头入口移除、四个注入 prompt 瘦身、批注发送全量清单句 + 成功清空回执、报告目标级锚点退役改整份打开、「原因写进展」→「原因写纪要」、遗留待评审清单去轮次、设计说明三段更新），`minutesRequestPrompt` 正源落 `acceptance-model.js`；bundle 重建且 `--check` 通过——**该 bundle 自 #394 后即 stale**（#410 重排源文件未重建），本轮修复。
+高保真：`acceptance-app.jsx` 同步（Showcase 入口 + 角标、页头入口移除、四个注入 prompt 瘦身、批注发送全量清单句 + 成功清空回执、报告目标级锚点退役改整份打开、「原因写进展」→「原因写纪要」、遗留待评审清单去轮次、设计说明三段更新），`minutesRequestPrompt` 正源落 `acceptance-model.js`；bundle 重建且 `--check` 通过——**该 bundle 自 #394 后即 stale**（#410 重排源文件未重建），本轮修复。原型既有欠账（本轮未动，留高保真专项）：生产已有而原型缺的 Bug/Feature 徽标、「进行中」状态映射、出包区「下载」按钮、Unknown「状态未知」行、旧格式记录只读折叠区、门禁「重新核对」重试与页头版本选择器（原型按 G2 侧栏选版假设绘制），以及部署按钮位置差异（生产在「演示环境」行、原型在出包工具栏）。
 
 **验证边界（负责人明确授权）**：本轮不跑本地 CI 门禁、不新增单测、不做真机验证，真壳验证留人。已跑检查：验收原型 bundle `--check`、`verify:bundled-skill-guides`、`verify:skill-bundle-manifest` 通过；其余为静态审查与 subagent 双检视（四维 + 静态 BUG）。真壳欠账沿用下表并新增：两屏互切批注保留/互不清空、Showcase 批注入口与角标、发送成功清空回执、纪要/发布/归档/部署四个瘦身后 prompt 的弹窗预览文案。
 
