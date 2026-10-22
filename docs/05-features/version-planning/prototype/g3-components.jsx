@@ -20,7 +20,7 @@ const {
   GitBranch,
   CalendarClock
 } = window.BWPrototypeDependencies
-import { metricCatalog, taskKind } from './g3-model.js'
+import { metricCatalog, taskKind, sendTargets, quickLaunchAgents } from './g3-model.js'
 export { React }
 export function Icon({ name, size = 16 }) {
   if (name === 'annotate-mode') {
@@ -105,6 +105,85 @@ export function Field({ label, value, onChange, placeholder, rows = 2 }) {
     </label>
   )
 }
+// 对象级动作按钮：图标 + 短动词文字（业界通行「动词 + 宾语」，AI 角色由图标与
+// 弹窗标题承载，不写进按钮）。2026-10-22 真机反馈轮替换纯小图标，解决动作点隐蔽。
+export function ActionButton({ icon = 'agent', children, className = '', ...props }) {
+  return (
+    <button type="button" className={`g3-action-button ${className}`} {...props}>
+      <Icon name={icon} size={14} /> {children}
+    </button>
+  )
+}
+// 发送指令弹窗：对齐 Orca 原生发送菜单（「发送至」运行中会话 + 不可用原因 +
+// 「新建智能体」快捷启动），顶部指令预览是 BW 包装层加的——原生菜单不显示
+// 待发送文本，人确认「发什么、发给谁」后再发送。演示不真正发送。
+export function SendPopover({ request, rect, onPick, onClose }) {
+  useEffect(() => {
+    const onKey = (event) => {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  const POP_W = 340
+  const POP_H = 320
+  const left = Math.max(16, Math.min(rect.left, window.innerWidth - POP_W - 16))
+  const below = rect.bottom + 8
+  const top =
+    below + POP_H > window.innerHeight - 16
+      ? Math.max(16, Math.min(rect.top - POP_H - 8, window.innerHeight - POP_H - 16))
+      : below
+  return (
+    <div
+      className="g3-send-pop"
+      role="dialog"
+      aria-label={`发送指令给计划助手（${request.kind}）`}
+      style={{ left, top }}
+    >
+      <header>
+        <Icon name="send" size={13} />
+        <strong>发送指令给计划助手</strong>
+        <IconButton name="close" label="关闭发送弹窗" onClick={onClose} />
+      </header>
+      <div className="g3-send-preview" aria-label="待发送指令预览">
+        <small>{request.kind}</small>
+        <p>{request.text}</p>
+      </div>
+      <p className="g3-send-label">发送至</p>
+      <div className="g3-send-targets">
+        {sendTargets.map((target) => (
+          <button
+            key={target.id}
+            type="button"
+            disabled={!target.eligible}
+            title={target.eligible ? `发送到「${target.name}」` : target.state}
+            onClick={() => target.eligible && onPick(target)}
+          >
+            <span className={`g3-dot ${target.stateKind}`} aria-hidden="true" />
+            <span className="g3-send-name">{target.name}</span>
+            <small>{target.state}</small>
+          </button>
+        ))}
+      </div>
+      <p className="g3-send-label">新建智能体</p>
+      <div className="g3-send-targets">
+        {quickLaunchAgents.map((agent) => (
+          <button key={agent.id} type="button" onClick={() => onPick({ ...agent, launched: true })}>
+            <Icon name="agent" size={14} />
+            <span className="g3-send-name">{agent.name}</span>
+            <small>{agent.note}</small>
+          </button>
+        ))}
+      </div>
+      <footer className="g3-annotation">
+        对齐 Orca 原生发送菜单（会话列表 + 快捷启动复用原生组件）；指令预览为 BW
+        包装层新增。演示不真正发送。
+      </footer>
+    </div>
+  )
+}
 function Lines({ text, empty = '待明确' }) {
   return (
     <div className="g3-lines">
@@ -149,9 +228,7 @@ function MetricCommitment({ goal, commit, onCommit, onCollect, markers }) {
             <select
               aria-label={`${goal.goalId} 指标承诺`}
               value={commit.id}
-              onChange={(e) =>
-                onCommit(e.target.value ? { id: e.target.value, target: '' } : null)
-              }
+              onChange={(e) => onCommit(e.target.value ? { id: e.target.value, target: '' } : null)}
             >
               <option value="">移除指标承诺</option>
               {metricCatalog.map((m) => (
@@ -356,16 +433,17 @@ export function GoalRow({
             <h3>
               关联 Issue <span>{tasks.length}</span>
             </h3>
-            <IconButton
-              name="agent"
-              label="让计划助手拆解 / 关联 Issue"
-              onClick={() =>
+            <ActionButton
+              onClick={(e) =>
                 sendRequest(
                   `按 ${goal.goalId} 验收标准核对已有 Issue，给出拆解 / 关联建议，标题与标签按 issue-state 规范`,
-                  '拆解请求'
+                  '拆解请求',
+                  e.currentTarget.getBoundingClientRect()
                 )
               }
-            />
+            >
+              拆解 Issue
+            </ActionButton>
           </div>
           <div className="g3-tasks">
             {tasks.length ? (
@@ -420,7 +498,51 @@ export function GoalRow({
     </article>
   )
 }
-export function MinutesCard({ minutes, update, sendRequest }) {
+// 纪要空态骨架卡（2026-10-22 真机反馈轮）：没有纪要或助手尚未整理时也显示
+// 固定结构——「共识 / 遗留」两块占位 + 「未生成」徽章 + 整理动作在卡上，
+// 界面结构稳定可预见，人能看到纪要生成后的样子。
+export function MinutesSkeleton({ sendRequest }) {
+  return (
+    <article className="g3-minutes skeleton" aria-label="会议纪要（未生成）">
+      <div className="g3-minutes-head">
+        <span className="g3-status">未生成</span>
+        <span className="g3-minutes-actions">
+          <ActionButton
+            onClick={(e) =>
+              sendRequest(
+                '把在线批注与会议转写稿整理为会议纪要，按共识 / 遗留两块输出',
+                '整理纪要请求',
+                e.currentTarget.getBoundingClientRect()
+              )
+            }
+          >
+            整理纪要
+          </ActionButton>
+        </span>
+      </div>
+      <div className="g3-minutes-section">
+        <strong>共识</strong>
+        <p className="g3-skeleton-line" aria-hidden="true" />
+        <p className="g3-skeleton-line short" aria-hidden="true" />
+        <span className="g3-muted">待计划助手从在线批注与可选转写稿生成</span>
+      </div>
+      <div className="g3-minutes-section">
+        <strong>
+          遗留 <small>闭环 = 版本计划已按该条修改，由人标记</small>
+        </strong>
+        <p className="g3-skeleton-line" aria-hidden="true" />
+        <span className="g3-muted">生成后逐条跟进，闭环由人标记</span>
+      </div>
+      <div className="g3-minutes-foot">
+        <span className="g3-muted">
+          批注从页头「批注模式」进入；会议 ID 可由 Builder 提供，不提供时仅凭批注也可生成。
+          纪要经人工确认后生效。
+        </span>
+      </div>
+    </article>
+  )
+}
+export function MinutesCard({ minutes, update }) {
   const [editing, setEditing] = useState(false)
   const setPoint = (key, index, text) =>
     update({
@@ -428,8 +550,7 @@ export function MinutesCard({ minutes, update, sendRequest }) {
         i === index ? (key === 'consensus' ? text : { ...point, text }) : point
       )
     })
-  const removePoint = (key, index) =>
-    update({ [key]: minutes[key].filter((_, i) => i !== index) })
+  const removePoint = (key, index) => update({ [key]: minutes[key].filter((_, i) => i !== index) })
   const addPoint = (key) =>
     update({
       [key]: [...minutes[key], key === 'consensus' ? '' : { text: '', closed: false }]
@@ -452,11 +573,6 @@ export function MinutesCard({ minutes, update, sendRequest }) {
             name={editing ? 'check' : 'edit'}
             label={editing ? '结束编辑纪要' : '编辑纪要'}
             onClick={() => setEditing(!editing)}
-          />
-          <IconButton
-            name="agent"
-            label="与计划助手基于纪要调整目标"
-            onClick={() => sendRequest('基于已确认的会议纪要，与我逐条调整本版目标与计划', '调整请求')}
           />
         </span>
       </div>
@@ -627,9 +743,24 @@ export function AnnotationPanel({
   onBoardLevel,
   onSend
 }) {
+  const [copied, setCopied] = useState(false)
+  useEffect(() => {
+    if (!copied) {
+      return
+    }
+    const timer = setTimeout(() => setCopied(false), 1400)
+    return () => clearTimeout(timer)
+  }, [copied])
+  // 复制走系统剪贴板写入（生产为 Orca 原生 IPC 通道），按钮给「已复制」瞬态反馈，
+  // 对齐原生浏览器批注 Copy All 行为；2026-10-22 真机反馈轮修复无反馈问题。
   const copy = async () => {
     const text = annotations.map((item) => `- [${item.object}] ${item.text}`).join('\n')
-    await navigator.clipboard?.writeText(text)
+    try {
+      await navigator.clipboard?.writeText(text)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
   }
   if (!open) {
     return null
@@ -656,9 +787,13 @@ export function AnnotationPanel({
       </button>
       <footer>
         <button disabled={!annotations.length} onClick={copy}>
-          <Icon name="copy" size={13} /> 复制
+          <Icon name={copied ? 'check' : 'copy'} size={13} /> {copied ? '已复制' : '复制'}
         </button>
-        <button className="primary" disabled={!annotations.length} onClick={onSend}>
+        <button
+          className="primary"
+          disabled={!annotations.length}
+          onClick={(e) => onSend(e.currentTarget.getBoundingClientRect())}
+        >
           <Icon name="send" size={13} /> 发送给计划助手
         </button>
       </footer>

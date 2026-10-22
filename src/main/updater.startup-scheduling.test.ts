@@ -52,6 +52,9 @@ describe('updater', () => {
       await vi.waitFor(() => {
         expect(autoUpdaterMock.checkForUpdates).toHaveBeenCalledTimes(1)
       })
+      expect(fetchNudgeMock).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(30 * 60 * 1000)
+      expect(fetchNudgeMock).not.toHaveBeenCalled()
       // The removed guard turned all three entries into a synchronous「手动更新」
       // error status; the restored native chain must never surface it again.
       updater.checkForUpdatesFromMenu()

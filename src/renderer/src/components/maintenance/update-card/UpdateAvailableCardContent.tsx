@@ -2,6 +2,7 @@ import { X } from 'lucide-react'
 import type { ChangelogData } from '../../../../../shared/update-status-types'
 import { Button } from '../../ui/button'
 import { translate } from '@/i18n/i18n'
+import { UPDATE_PRODUCT_NAME } from '../../../../../shared/release-channel'
 
 function isAnimatedGif(url: string | undefined): boolean {
   return typeof url === 'string' && url.toLowerCase().endsWith('.gif')
@@ -13,7 +14,8 @@ function ExternallyManagedNote(): React.JSX.Element {
     <p className="text-xs leading-relaxed text-muted-foreground">
       {translate(
         'auto.components.UpdateCard.7f1a4c9e02',
-        'Your system package manager installed Orca, so update it from there — Orca cannot install this release itself.'
+        'Your system package manager installed {{productName}}, so update it from there — {{productName}} cannot install this release itself.',
+        { productName: UPDATE_PRODUCT_NAME }
       )}
     </p>
   )
@@ -142,9 +144,14 @@ export function UpdateAvailableSimpleContent({
         </Button>
       </div>
       <p className="text-sm text-muted-foreground">
-        {translate('auto.components.UpdateCard.05ad78a6d1', 'Orca v{{value0}} is ready.', {
-          value0: version
-        })}
+        {translate(
+          'auto.components.UpdateCard.05ad78a6d1',
+          '{{productName}} v{{value0}} is ready.',
+          {
+            value0: version,
+            productName: UPDATE_PRODUCT_NAME
+          }
+        )}
       </p>
       {externallyManaged ? (
         <ExternallyManagedNote />

@@ -1,4 +1,13 @@
-/* G3 candidate; shared typography, colors and radii come from the BW design system. */
+/* G3 candidate; shared typography, colors and radii come from the BW design system.
+   原型本地强调色 = BW claude 皮肤主色（设计系统 tokens 的 --color-accent 映射 Orca
+   中性 primary，不是 BW 赭色），角标 / 动作按钮 / 实时读回统一用它，深浅两主题给对比值。 */
+:root {
+  --g3-accent: #d97757;
+}
+[data-theme='dark'],
+.dark {
+  --g3-accent: #e08a6d;
+}
 html,
 body,
 #root {
@@ -227,6 +236,30 @@ textarea {
   background: var(--accent);
   color: var(--accent-foreground);
 }
+/* 对象级动作按钮：图标 + 短动词文字（2026-10-22 真机反馈轮替换纯小图标）。
+   比页头文字按钮多一圈描边，在卡内动作区可被看见；悬停转强调色。 */
+.g3-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  background: none;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.g3-action-button:hover {
+  border-color: var(--g3-accent);
+  color: var(--g3-accent);
+  background: var(--accent);
+}
+.g3-action-button svg {
+  color: var(--g3-accent);
+  flex-shrink: 0;
+}
 .g3-session-chip {
   display: inline-flex;
   align-items: center;
@@ -293,14 +326,18 @@ textarea {
   margin-left: 8px;
   vertical-align: middle;
 }
+/* 编号角标：显式强调色底 + 白字（2026-10-22 真机反馈轮）。
+   不用 foreground/background 变量对——真壳里该组合解析失败会回落成
+   继承文字色，出现黑底黑字不可见。 */
 .g3-annot-marker {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 1px solid var(--foreground);
-  background: var(--foreground);
-  color: var(--background);
+  border: 1px solid var(--g3-accent);
+  background: var(--g3-accent);
+  color: #fff;
   font-size: 10px;
+  font-weight: 600;
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -310,7 +347,7 @@ textarea {
 }
 .g3-annot-marker:hover {
   background: var(--background);
-  color: var(--foreground);
+  color: var(--g3-accent);
 }
 .g3-journey {
   display: flex;
@@ -442,6 +479,49 @@ textarea {
 }
 .g3-carryover-issues .g3-id {
   flex: 0 0 40px;
+}
+/* 实时读回参考行（2026-10-22 真机反馈轮）：验收未标 carry 时给 Issue 当前
+   open 状态的事实行，虚线分隔与人工标记区分，脚注声明不构成延期结论。 */
+.g3-carryover-live {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px dashed var(--border);
+  padding-top: 8px;
+  font-size: 12px;
+}
+.g3-live-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+.g3-carryover-live a {
+  text-decoration: none;
+}
+.g3-carryover-live a:hover {
+  text-decoration: underline;
+}
+.g3-carryover-live small {
+  width: 100%;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.g3-carryover-live button {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--g3-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 .g3-id {
   font-size: 12px;
@@ -758,6 +838,21 @@ textarea {
   padding: 20px;
   margin-bottom: 16px;
 }
+/* 纪要空态骨架卡（2026-10-22 真机反馈轮）：与生成后同结构，虚线边框表未生成，
+   两块占位条 + 说明，「整理纪要」动作在卡上。 */
+.g3-minutes.skeleton {
+  border-style: dashed;
+}
+.g3-skeleton-line {
+  height: 10px;
+  margin: 8px 0;
+  border-radius: var(--radius-sm);
+  background: var(--muted);
+  border: 1px solid var(--border);
+}
+.g3-skeleton-line.short {
+  width: 55%;
+}
 .g3-minutes-head {
   display: flex;
   align-items: center;
@@ -1044,9 +1139,10 @@ textarea {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--foreground);
-  color: var(--background);
+  background: var(--g3-accent);
+  color: #fff;
   font-size: 10px;
+  font-weight: 600;
   line-height: 1;
   display: inline-flex;
   align-items: center;
@@ -1076,6 +1172,112 @@ textarea {
   background: var(--background);
   box-shadow: 0 16px 40px rgb(0 0 0 / 0.18);
   padding: 12px;
+}
+/* 发送指令弹窗（2026-10-22 真机反馈轮）：三段式——指令预览（BW 包装层新增）、
+   「发送至」运行中会话、「新建智能体」快捷启动；后两段对应 Orca 原生发送菜单。 */
+.g3-send-pop {
+  position: fixed;
+  z-index: 47;
+  width: min(340px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--background);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.18);
+  padding: 12px;
+}
+.g3-send-pop header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.g3-send-pop header strong {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+}
+.g3-send-preview {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--muted);
+  padding: 8px 10px;
+}
+.g3-send-preview small {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.g3-send-preview p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 88px;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.g3-send-label {
+  margin: 6px 0 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.g3-send-targets {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.g3-send-targets button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid transparent;
+  background: none;
+  border-radius: var(--radius-md);
+  padding: 6px 8px;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.g3-send-targets button:hover:not(:disabled) {
+  background: var(--accent);
+  border-color: var(--border);
+}
+.g3-send-targets button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.g3-send-targets .g3-send-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.g3-send-targets small {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+.g3-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.g3-dot.ok {
+  background: var(--color-success, #579766);
+}
+.g3-dot.warn {
+  background: var(--color-warning, #ce9042);
+}
+.g3-send-pop footer {
+  border-top: 1px dashed var(--border);
+  margin-top: 4px;
+  padding-top: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
 }
 .g3-annot-pop header {
   display: flex;

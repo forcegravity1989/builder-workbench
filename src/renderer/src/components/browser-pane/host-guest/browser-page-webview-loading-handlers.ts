@@ -124,9 +124,16 @@ export function createBrowserPageWebviewLoadingHandlers({
         normalizeBrowserNavigationUrl(activeLoadFailure.validatedUrl) ??
         activeLoadFailure.validatedUrl
       const normalizedCurrentUrl = normalizeBrowserNavigationUrl(browserModelUrl) ?? browserModelUrl
-      if (normalizedAttemptedUrl === normalizedCurrentUrl) {
+      if (
+        normalizedAttemptedUrl === normalizedCurrentUrl ||
+        normalizedCurrentUrl === ORCA_BROWSER_BLANK_URL
+      ) {
         trackNextLoadingEventRef.current = false
         // Why: some failures still emit did-stop-loading on the original URL; keep loadError so the known-failed load isn't cleared to a blank surface.
+        // Why blank also keeps: a failed navigation never commits, so the guest is often still
+        // sitting on its initial blank document (address-bar loads don't touch webview.src).
+        // Adopting that URL here would wipe the attempted URL and the certificate-challenge
+        // overlay from the store — the failure must survive until the next real navigation.
         onUpdatePageStateRef.current(browserTabId, {
           loading: false,
           title: getBrowserDisplayTitle(webview.getTitle(), browserModelUrl),

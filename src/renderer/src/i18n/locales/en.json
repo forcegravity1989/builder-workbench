@@ -2349,8 +2349,8 @@
       },
       "UpdateCard": {
         "68b235d264": "Restart to Update",
-        "6714206e5a": "Orca v{{value0}} is downloaded. Restart when you're ready.",
-        "93794ea932": "Orca v{{value0}} is downloading.",
+        "6714206e5a": "{{productName}} v{{value0}} is downloaded. Restart when you're ready.",
+        "93794ea932": "{{productName}} v{{value0}} is downloading.",
         "8acbdd3961": "Minimize to status bar",
         "17412483da": "Ready to Install",
         "47126bcf57": "Download Manually",
@@ -2362,7 +2362,7 @@
         "ec8fe71cfc": "Update",
         "44324ef542": "Release notes",
         "fdd4a364fa": "Sessions won't be interrupted.",
-        "05ad78a6d1": "Orca v{{value0}} is ready.",
+        "05ad78a6d1": "{{productName}} v{{value0}} is ready.",
         "318d3b4bc7": "Dismiss update",
         "9abc59f814": "Update Available",
         "aad383aecc": "Read the full release notes",
@@ -2384,7 +2384,7 @@
         "522df222b9": "spinner",
         "e944c2de43": "Update Verification Blocked",
         "5b309b19f3": "Update Wasn't Installed",
-        "092f09fc14": "The installer's publisher doesn't match Orca, so we stopped the update. Don't install this download; check official releases for a corrected version.",
+        "092f09fc14": "The installer's publisher doesn't match {{productName}}, so we stopped the update. Don't install this download; check official releases for a corrected version.",
         "c9ff9b9ec2": "Check official releases",
         "a05992a26b": "The signature check couldn't run — usually because antivirus software blocked it. Retry the download, or get the installer from our official releases.",
         "5194358929": "Hide details",
@@ -2394,7 +2394,7 @@
         "b1e390250d": "Could not complete the local build switch.",
         "d29740d175": "The selected build could not be used.",
         "37d45c9ec1": "Choose Another Build",
-        "7f1a4c9e02": "Your system package manager installed Orca, so update it from there — Orca cannot install this release itself."
+        "7f1a4c9e02": "Your system package manager installed {{productName}}, so update it from there — {{productName}} cannot install this release itself."
       },
       "WorktreeJumpPalette": {
         "ac037cfac2": "Move",

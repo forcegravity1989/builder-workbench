@@ -6,14 +6,18 @@ import {
   initialMinutes,
   leftoverIssues,
   meetingDirectives,
+  priorLiveOpen,
   taskRows,
   g2Url
 } from './g3-model.js'
 import {
   Icon,
   IconButton,
+  ActionButton,
   GoalRow,
   MinutesCard,
+  MinutesSkeleton,
+  SendPopover,
   AnnotationPanel,
   AnnotationPopover
 } from './g3-components.jsx'
@@ -34,12 +38,18 @@ function App() {
   const [session, setSession] = useState(false)
   const [notice, setNotice] = useState('')
   const [handoff, setHandoff] = useState(null)
+  // 发送弹窗：{ kind, text, rect }；对象级动作先弹「指令预览 + 选择会话」，
+  // 人选定目标后才算发送（对齐 Orca 原生发送菜单链路）。
+  const [sendPop, setSendPop] = useState(null)
   const [sentRequest, setSentRequest] = useState(null)
   const [prHandoff, setPrHandoff] = useState(false)
   const [dark, setDark] = useState(false)
   const [compact, setCompact] = useState(false)
   const [notes, setNotes] = useState(false)
   const [sourceError, setSourceError] = useState(false)
+  // 上版回顾「延期遗留」演示态：marked = 验收已标 carry；unmarked = 未标记 +
+  // 实时读回（v0.6 真实状态）；loading / error = 实时读回进行中 / 失败。
+  const [carryDemo, setCarryDemo] = useState('unmarked')
   const scroll = useRef(null)
   const navigation = useRef(null)
   const tasks = taskRows(scene)
@@ -61,12 +71,22 @@ function App() {
     setSession(open)
     requestAnimationFrame(() => document.getElementById(active)?.scrollIntoView({ block: 'start' }))
   }
-  // 对象级动作复用 Orca 原生发送弹窗（与浏览器批注同一链路）：
-  // 携带一句话指令 + 对象上下文，由用户在原生弹窗确认目标会话后发送。
-  const sendRequest = (text, kind) => {
-    toggleSession(true)
-    setSentRequest({ kind, text })
+  // 对象级动作复用 Orca 原生发送弹窗（与浏览器批注同一链路）：点击动作先弹出
+  // 「指令预览 + 发送至 + 新建智能体」弹窗，由人确认目标会话后发送；
+  // 发送成功给板面瞬态反馈，动作同时自动展开会话栏。
+  const sendRequest = (text, kind, rect) => {
+    setSendPop({ text, kind, rect })
+    setSentRequest(null)
     setNotice('')
+  }
+  const confirmSend = (target) => {
+    const kind = sendPop?.kind || '指令'
+    setSendPop(null)
+    toggleSession(true)
+    setSentRequest({
+      kind,
+      target: target.launched ? `新建 ${target.name} 会话` : target.name
+    })
   }
   const newPlan = () => {
     toggleSession(true)
@@ -86,9 +106,7 @@ function App() {
     setAnnotating(next)
     setPopover(null)
     setPanelOpen(next)
-    setNotice(
-      next ? '批注模式：点击板面元素，在对象旁的小窗记录评审意见 · Esc 退出' : ''
-    )
+    setNotice(next ? '批注模式：点击板面元素，在对象旁的小窗记录评审意见 · Esc 退出' : '')
   }
   useEffect(() => {
     if (!annotating) {
@@ -158,6 +176,7 @@ function App() {
     setNotice('')
     setPrHandoff(false)
     setHandoff(null)
+    setSendPop(null)
     setSentRequest(null)
     setPopover(null)
     setAnnotating(false)
@@ -207,23 +226,32 @@ function App() {
             原生会话——整栏（含顶部标签栏与会话标题）都是原生，候选不绘制 BW
             会话头，「计划助手」是这个原生会话的产品称呼。会话收折沿用已落地壳行为：BW
             板面页头带图标的「收起会话 / 展开会话」按钮，页头不再另设助手图标入口，
-            原生会话本身不带关闭 ×。对象级动作（拆解、整理纪要、基于纪要调整）复用 Orca
-            原生发送弹窗——与浏览器批注「发送给 Agent」同一条链路，用户在弹窗中确认目标会话后发送，
-            不恢复已退役的贴草稿通道；动作同时自动展开会话栏。分支名弱化展示，
+            原生会话本身不带关闭 ×。对象级动作（拆解 Issue、整理纪要、批注发送）是 图标 +
+            短动词文字按钮（2026-10-22 真机反馈轮：纯小图标隐蔽），点击弹出发送弹窗——
+            与浏览器批注「发送给 Agent」同一条 Orca 原生链路：顶部指令预览（BW
+            包装层新增，原生菜单不显示待发送文本）、「发送至」运行中会话列表（不可用行显示原因）、
+            「新建智能体」快捷启动（会话就绪后自动递交指令），人确认目标后发送；发送成功板面底栏给
+            「已发送至 ××× · 在会话栏查看进展」瞬态反馈，动作同时自动展开会话栏。
+            不恢复已退役的贴草稿通道。分支名弱化展示，
             「配置自动化」打开原生自动化编辑器，自动化绑定固定工作树，与版本选择解耦。
             目标卡展开后可整卡删除：卡片头 × 图标触发就近二次确认（确认删除 /
             取消，不弹窗），删除即把该目标的 Issue 引用与相关批注一并移出板面；
             生产语义为计划文档编辑，经材料读写服务保存。
           </p>
           <p>
-            <strong>数据来源</strong>：上版回顾只回显延期遗留 Issue（编号 +
-            标题，点击跳转）与会议遗留事项；v0.6 会议遗留未单独记录，完整进展 /
-            交付材料留在验收屏，延期引用来自人工验收记录中明确的遗留项，不按 open 状态自动推断。
-            Issue 行显示 Bug / Feature 分类，按 2026-10-21
-            补采进快照的真实标签推导（#387 / #384 / #372 为 bug）；无 Bug /
-            缺陷标签默认按 Feature 显示。指标目录为 v0.5 快照样例数据；v0.7 快照
-            metricTargets 全为空，各卡从「添加指标承诺（可选）」开始，当前读数为 —
-            时目标值标草案。
+            <strong>数据来源</strong>：上版回顾回显延期遗留 Issue（编号 +
+            标题，点击跳转）与会议遗留事项；完整进展 / 交付材料留在验收屏。延期遗留只认验收屏人工
+            carry 标记，不从 open 状态推断、不解析自由文本；
+            <strong>
+              验收未记录标记时显示 「上版验收未记录 Issue
+              延期标记」（Unknown，不断言「无延期」——四铁律：没数据不是绿灯）
+            </strong>
+            ， 并给一行实时读回参考：独立读回上版快照 Issue 的当前 open 状态（异步、可重试，
+            失败显示未知），只陈述事实、不冒充人工确认的延期结论。v0.6 验收实际未标 carry（快照中 4
+            个 Issue 仍 open），即「未标记 + 实时读回」态。 Issue 行显示 Bug / Feature 分类，按
+            2026-10-21 补采进快照的真实标签推导（#387 / #384 / #372 为 bug）；无 Bug /
+            缺陷标签默认按 Feature 显示。指标目录为 v0.5 快照样例数据；v0.7 快照 metricTargets
+            全为空，各卡从「添加指标承诺（可选）」开始，当前读数为 — 时目标值标草案。
             <a
               href="https://github.com/forcegravity1989/builder-workbench/blob/e43528cae57424bb0973c99c6e3c03af075c1198/.bw/planning/v0.6/acceptance.json"
               target="_blank"
@@ -234,18 +262,22 @@ function App() {
           </p>
           <p>
             <strong>纪要与批注</strong>：纪要示例源自 #385 边界讨论，仅演示；固定两块——共识、
-            遗留（逐条闭环状态，闭环 = 版本计划已按该条修改，由人标记）。批注交互对齐 Orca
-            原生元素批注：页头「批注模式」（气泡 + 加号图标，vendor 冻结、由两枚图标组合）进入 →
+            遗留（逐条闭环状态，闭环 = 版本计划已按该条修改，由人标记）。
+            <strong>纪要未生成时显示同结构 骨架卡</strong>（2026-10-22 真机反馈轮）：「未生成」徽章
+            + 两块占位 + 「整理纪要」动作在卡上， 界面结构稳定可预见。板面批注编号角标用强调色底 +
+            白字（显式高对比配色，不依赖 foreground / background
+            变量对——修复真机黑底黑字不可见）。批注交互对齐 Orca 原生元素批注：页头「批注模式」（气泡
+            + 加号图标，vendor 冻结、由两枚图标组合）进入 →
             点击板面元素（目标句、验收标准、指标承诺、Issue 行或整卡），元素旁弹出「对象批注」
             小窗（对象名标题、textarea、取消 / 添加，Ctrl+Enter 快捷添加；右上角 ×
             只关闭小窗、不动已记录批注）→ 右侧「板面批注（N）」面板承担记录列表与卡片级管理
             （每卡带笔形编辑 / × 删除入口，编辑为卡片内行内编辑；高度随内容、列表限高内滚动，
-            不覆盖板面），「添加板面级批注」复用同一个小窗；复制或经原生发送弹窗发给计划助手。
-            与 Orca 弹窗的差异：BW 小窗不带意图分段与发送行——批注是评审会速记、
+            不覆盖板面），「添加板面级批注」复用同一个小窗；复制或经原生发送弹窗发给计划助手。 与
+            Orca 弹窗的差异：BW 小窗不带意图分段与发送行——批注是评审会速记、
             整批作为纪要输入，发送统一走面板底部经原生发送弹窗。板面编号角标与面板卡片同号。
-            纪要区不参与批注。BW
-            板面元素的捕获层（元素映射为业务对象引用）留实现设计。会议 ID 现阶段由 Builder
-            提供，不提供时仅凭在线批注也可生成；群组 / WeLink 自动获取待用户组旅程设计。
+            纪要区不参与批注。BW 板面元素的捕获层（元素映射为业务对象引用）留实现设计。会议 ID
+            现阶段由 Builder 提供，不提供时仅凭在线批注也可生成；群组 / WeLink
+            自动获取待用户组旅程设计。
           </p>
           <p>
             <strong>衔接留白</strong>：验收按钮直接打开现有验收屏原型（仍是 v0.5
@@ -290,6 +322,13 @@ function App() {
               {sourceError ? '恢复来源演示' : '演示来源读取失败'}
             </button>
           </p>
+          <p>
+            <strong>延期遗留演示态</strong>（2026-10-22 真机反馈轮）：
+            <button onClick={() => setCarryDemo('marked')}>验收已标 carry</button>
+            <button onClick={() => setCarryDemo('unmarked')}>未标记 + 实时读回（v0.6 真实）</button>
+            <button onClick={() => setCarryDemo('loading')}>读回加载中</button>
+            <button onClick={() => setCarryDemo('error')}>读回失败</button>
+          </p>
         </div>
       )}
       <div className={`g3-workspace ${session ? 'with-session' : ''}`}>
@@ -332,7 +371,9 @@ function App() {
               <Icon name="agent" size={28} />
               <h2>Orca 原生会话工作区</h2>
               <p>顶部标签栏、会话标题与全部控件均为 Orca 原生</p>
-              <small>这里只示意会话位置，不另设计聊天界面；「计划助手」是这个原生会话的产品称呼</small>
+              <small>
+                这里只示意会话位置，不另设计聊天界面；「计划助手」是这个原生会话的产品称呼
+              </small>
             </div>
           ) : (
             <div className="g3-session-rail-text" aria-hidden="true">
@@ -396,8 +437,8 @@ function App() {
           </nav>
           {annotating && (
             <div className="g3-annotate-banner" role="status">
-              批注模式：点击目标句、验收标准、指标承诺或 Issue 行，在对象旁的小窗记录评审意见 ·
-              Esc 先关小窗，再按一次退出批注模式
+              批注模式：点击目标句、验收标准、指标承诺或 Issue 行，在对象旁的小窗记录评审意见 · Esc
+              先关小窗，再按一次退出批注模式
             </div>
           )}
           <div
@@ -465,15 +506,60 @@ function App() {
                   <div className="g3-carryover-row">
                     <span>延期遗留</span>
                     <div className="g3-carryover-issues">
-                      {leftoverIssues.length ? (
+                      {carryDemo === 'marked' ? (
                         leftoverIssues.map((issue) => (
                           <a key={issue.number} href={issue.url} target="_blank" rel="noreferrer">
                             <span className="g3-id">#{issue.number}</span>
                             {issue.title}
                           </a>
                         ))
+                      ) : carryDemo === 'unmarked' ? (
+                        <>
+                          <span className="g3-muted">上版验收未记录 Issue 延期标记</span>
+                          <div className="g3-carryover-live">
+                            <span className="g3-live-tag">
+                              <Icon name="refresh" size={11} /> 实时读回
+                            </span>
+                            <span>
+                              上版 <strong>{priorLiveOpen.length}</strong> 个 Issue 仍 open
+                            </span>
+                            {priorLiveOpen.map((issue) => (
+                              <a
+                                key={issue.number}
+                                href={`https://github.com/forcegravity1989/builder-workbench/issues/${issue.number}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                title={issue.title}
+                              >
+                                <span className="g3-id">#{issue.number}</span>
+                              </a>
+                            ))}
+                            <small>读回为 Issue 当前状态，未经人确认延期；确认请在验收屏标记</small>
+                          </div>
+                        </>
+                      ) : carryDemo === 'loading' ? (
+                        <>
+                          <span className="g3-muted">上版验收未记录 Issue 延期标记</span>
+                          <div className="g3-carryover-live">
+                            <span className="g3-live-tag">
+                              <Icon name="refresh" size={11} /> 实时读回
+                            </span>
+                            <span className="g3-muted" role="status">
+                              正在读回上版 Issue 当前状态…
+                            </span>
+                          </div>
+                        </>
                       ) : (
-                        <span className="g3-muted">上版无延期 Issue</span>
+                        <>
+                          <span className="g3-muted">上版验收未记录 Issue 延期标记</span>
+                          <div className="g3-carryover-live">
+                            <span className="g3-live-tag">
+                              <Icon name="refresh" size={11} /> 实时读回
+                            </span>
+                            <span className="g3-muted">读回失败，当前状态未知</span>
+                            <button onClick={() => setCarryDemo('unmarked')}>重试</button>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -506,9 +592,7 @@ function App() {
                     <button
                       className="g3-text-button"
                       title="新建会话，配置指标"
-                      onClick={() =>
-                        setNotice('配置指标在固定指标工作区新建原生会话 · 演示示意')
-                      }
+                      onClick={() => setNotice('配置指标在固定指标工作区新建原生会话 · 演示示意')}
                     >
                       <Icon name="annotate-mode" size={13} /> 配置指标
                     </button>
@@ -585,7 +669,9 @@ function App() {
                         setExpanded((current) => [...current, id])
                         setEditingGoal(id)
                         requestAnimationFrame(() =>
-                          document.getElementById(`goal-${id}`)?.scrollIntoView({ block: 'nearest' })
+                          document
+                            .getElementById(`goal-${id}`)
+                            ?.scrollIntoView({ block: 'nearest' })
                         )
                       }}
                     />
@@ -606,37 +692,41 @@ function App() {
                       : '未生成'}
                   </small>
                 </h2>
-                <span className="g3-title-actions">
-                  <IconButton
-                    name="agent"
-                    label="让计划助手整理纪要（可提供会议 ID）"
-                    onClick={() =>
-                      sendRequest(
-                        '把在线批注与会议转写稿整理为会议纪要，按共识 / 遗留两块输出',
-                        '整理纪要请求'
-                      )
-                    }
-                  />
-                </span>
+                {scene === 'full' && (
+                  <span className="g3-title-actions">
+                    <ActionButton
+                      onClick={(e) =>
+                        sendRequest(
+                          '把在线批注与会议转写稿整理为会议纪要，按共识 / 遗留两块输出',
+                          '整理纪要请求',
+                          e.currentTarget.getBoundingClientRect()
+                        )
+                      }
+                    >
+                      整理纪要
+                    </ActionButton>
+                  </span>
+                )}
               </div>
-              <p className="g3-minutes-guidance g3-annotation">
-                纪要由计划助手从在线批注与可选的会议转写稿总结，固定两块：共识、遗留（逐条闭环状态，
-                闭环 = 版本计划已按该条修改，由人标记），经人工确认后生效；随后与助手基于纪要调整上方目标。
-                批注从页头「批注模式」进入；会议 ID 现阶段由 Builder
-                提供，不提供时仅凭批注也可生成；群组 / WeLink 自动获取是后续演进。
-              </p>
+              {scene === 'full' && (
+                <p className="g3-minutes-guidance g3-annotation">
+                  纪要由计划助手从在线批注与可选的会议转写稿总结，固定两块：共识、遗留（逐条闭环状态，
+                  闭环 = 版本计划已按该条修改，由人标记），经人工确认后生效；纪要确认后由计划助手的
+                  Skill SOP 自然引导人跟着调整目标并确认，屏上不设独立「调整目标」入口（2026-10-22
+                  用户决定）。 批注从页头「批注模式」进入；会议 ID 现阶段由 Builder
+                  提供，不提供时仅凭批注也可生成；群组 / WeLink 自动获取是后续演进。
+                </p>
+              )}
               {scene === 'full' ? (
-                <MinutesCard minutes={minutes} sendRequest={sendRequest}
+                <MinutesCard
+                  minutes={minutes}
                   update={(patch) => {
                     setMinutes({ ...minutes, ...patch })
                     setNotice('本页演示修改 · 刷新后恢复原始材料')
                   }}
                 />
               ) : (
-                <p className="g3-empty">
-                  会后由计划助手基于在线批注与可选转写稿生成；批注从页头「批注模式」进入，
-                  点击目标句、验收标准或 Issue 行等板面元素记录。
-                </p>
+                <MinutesSkeleton sendRequest={sendRequest} />
               )}
             </section>
             {scene === 'full' ? (
@@ -693,8 +783,8 @@ function App() {
             ) : sentRequest ? (
               <div className="g3-footer-handoff">
                 <span>
-                  {sentRequest.kind}已通过 Orca 原生发送弹窗递交计划助手：「{sentRequest.text}
-                  」· 用户在弹窗确认目标会话后发送，演示不真正发送。
+                  {sentRequest.kind}已发送至「{sentRequest.target}」·
+                  在会话栏查看进展（演示不真正发送）。
                 </span>
                 <IconButton
                   name="close"
@@ -730,17 +820,21 @@ function App() {
             current.map((item) => (item.id === id ? { ...item, text } : item))
           )
         }
-        onRemove={(id) =>
-          setAnnotations((current) => current.filter((item) => item.id !== id))
-        }
-        onBoardLevel={(event) =>
-          openPopover('板面级', event.currentTarget.getBoundingClientRect())
-        }
-        onSend={() => {
+        onRemove={(id) => setAnnotations((current) => current.filter((item) => item.id !== id))}
+        onBoardLevel={(event) => openPopover('板面级', event.currentTarget.getBoundingClientRect())}
+        onSend={(rect) => {
           setPopover(null)
-          sendRequest('以下是评审会在线批注，作为会议纪要输入整理', '批注')
+          sendRequest('以下是评审会在线批注，作为会议纪要输入整理', '批注', rect)
         }}
       />
+      {sendPop && (
+        <SendPopover
+          request={sendPop}
+          rect={sendPop.rect}
+          onPick={confirmSend}
+          onClose={() => setSendPop(null)}
+        />
+      )}
       {popover && (
         <AnnotationPopover
           key={popover.id}
