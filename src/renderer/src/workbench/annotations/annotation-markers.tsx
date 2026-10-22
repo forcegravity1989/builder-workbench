@@ -1,3 +1,5 @@
+import './annotations.css'
+
 /**
  * Numbered board markers shown in place on annotated objects; numbers match
  * the panel cards (both derived from record order). Clicking a marker reopens

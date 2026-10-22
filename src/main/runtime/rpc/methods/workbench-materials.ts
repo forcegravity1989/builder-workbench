@@ -11,10 +11,6 @@ import {
 import { materialResult } from '../../../workbench/version-material-error'
 import { assertHumanFieldsUntouched } from '../../../workbench/material-human-guard'
 import { nativeVersionMaterialService } from '../../../workbench/version-material-runtime'
-import {
-  nativeVersionHistoryHost,
-  nativeVersionHistoryService
-} from '../../../workbench/version-history-runtime'
 import { versionSelection } from '../../../workbench/version-selection'
 
 export const WORKBENCH_MATERIAL_METHODS = [
@@ -62,22 +58,7 @@ export const WORKBENCH_MATERIAL_METHODS = [
         // Human-only conclusions enter through UI channels only; the CLI channel
         // (no clientKind) must round-trip them unchanged. Guard runs on the owning
         // runtime because the CLI client itself cannot be trusted.
-        await assertHumanFieldsUntouched(
-          (input) => service.read(input),
-          params,
-          ctx,
-          async (input) => {
-            const history = nativeVersionHistoryService(ctx.runtime)
-            const sourceCommit =
-              input.sourceCommit ??
-              (await nativeVersionHistoryHost(ctx.runtime).worktreeHead(input.scope))
-            const frozen = await history.read({ ...input, sourceCommit })
-            if ('planRef' in frozen.document) {
-              await history.readPlan({ scope: input.scope, planRef: frozen.document.planRef })
-            }
-            return frozen
-          }
-        )
+        await assertHumanFieldsUntouched((input) => service.read(input), params, ctx)
         return service.save(params)
       })
   })

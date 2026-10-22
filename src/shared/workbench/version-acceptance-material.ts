@@ -2,19 +2,77 @@ import { z } from 'zod'
 import { AcceptanceWorkflowStateSchema } from './version-workflow'
 import {
   AcceptanceIssueMarksSchema,
-  AcceptanceMeetingDirectiveSchema,
   AcceptanceMaterialLinkSchema,
-  AcceptanceRoundSchema,
   Artifact,
   CandidateReferenceSchema,
   HumanDecision,
   Identity,
   Id,
+  LegacyAcceptanceDirectiveSchema,
+  LegacyAcceptanceRoundSchema,
   MaterialRevision,
   MetricReadingEvidenceSchema,
   PlanReferenceSchema,
+  safeMaterialUrl,
   VersionTaskSnapshotSchema
 } from './version-material-common'
+
+/**
+ * Meeting minutes stored on the acceptance material (optional schema3 section).
+ * Same shape as the plan side minus the followup closure mark: acceptance has no
+ * closure consumer, its followups flow verbatim into the next plan's 会议遗留
+ * row. The model channel drafts the body only while `confirmed` is false;
+ * confirmation is human-only, revocable in the UI, and freezes the whole section
+ * while set. Followup ids are stable so human edits do not renumber the points
+ * the next plan screen cites.
+ */
+export const AcceptanceMeetingMinutesSchema = z
+  .strictObject({
+    consensus: z.array(z.string()),
+    followups: z.array(z.strictObject({ id: Id, text: z.string() })),
+    confirmed: z.boolean(),
+    confirmedAt: z.iso.datetime({ offset: true }).optional(),
+    sources: z.string().optional(),
+    updatedAt: z.iso.datetime({ offset: true }).optional()
+  })
+  .superRefine((minutes, context) => {
+    const ids = new Set(minutes.followups.map((followup) => followup.id))
+    if (ids.size !== minutes.followups.length) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Minutes followup ids must be unique',
+        path: ['followups']
+      })
+    }
+  })
+
+export type AcceptanceMeetingMinutes = z.infer<typeof AcceptanceMeetingMinutesSchema>
+
+/**
+ * The version's demo environment, written back by the model after deploying per
+ * the project's own entry point. A web service carries the URL the board opens in
+ * the built-in Orca browser; a desktop application has no URL, so it records the
+ * launched state instead of faking a link. Absent means not deployed yet.
+ */
+export const AcceptanceDemoEnvironmentSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('url'),
+    // Absolute http(s) only. `safeMaterialUrl` resolves against a base, so it
+    // would also accept a protocol-relative `//host/path`, which the material
+    // opener would then read as a worktree-relative path.
+    url: z
+      .string()
+      .trim()
+      .min(1)
+      .refine(
+        (value) => /^https?:\/\//i.test(value) && safeMaterialUrl(value),
+        'Demo environment must be an absolute http(s) URL'
+      )
+  }),
+  z.strictObject({ kind: z.literal('launched'), detail: z.string().trim().min(1) })
+])
+
+export type AcceptanceDemoEnvironment = z.infer<typeof AcceptanceDemoEnvironmentSchema>
 
 export const AcceptanceMaterialSchema = z
   .strictObject({
@@ -22,6 +80,9 @@ export const AcceptanceMaterialSchema = z
     planRef: PlanReferenceSchema,
     candidateRef: CandidateReferenceSchema.optional(),
     preparedArtifacts: z.array(Artifact),
+    // Version-level demo environment written back after deployment; absent means
+    // not deployed. Replaces the retired per-goal deliveries.
+    demoEnv: AcceptanceDemoEnvironmentSchema.optional(),
     preparationReview: z
       .strictObject({
         source: Id,
@@ -34,20 +95,28 @@ export const AcceptanceMaterialSchema = z
     results: z.array(
       z.strictObject({
         goalId: Id,
-        deliveries: z.array(z.strictObject({ title: z.string(), location: z.string() })),
-        materials: z.array(AcceptanceMaterialLinkSchema).optional(),
         readings: z.array(MetricReadingEvidenceSchema),
         decision: HumanDecision.optional(),
         note: z.string(),
-        progress: z.string().optional(),
         nextStep: z.string(),
-        rounds: z.array(AcceptanceRoundSchema).optional(),
-        meetingDirectives: z.array(AcceptanceMeetingDirectiveSchema).optional(),
         issueNotes: z.record(z.string(), z.string()).optional(),
-        issueMarks: z.record(z.string(), AcceptanceIssueMarksSchema).optional()
+        issueMarks: z.record(z.string(), AcceptanceIssueMarksSchema).optional(),
+        // Pre-v10 human input, read-only: no v10 surface writes these, the board
+        // shows them in one labelled legacy block, and a file on disk is only
+        // converted through the session migration path with human confirmation.
+        deliveries: z
+          .array(z.strictObject({ title: z.string(), location: z.string() }))
+          .optional(),
+        materials: z.array(AcceptanceMaterialLinkSchema).optional(),
+        progress: z.string().optional(),
+        rounds: z.array(LegacyAcceptanceRoundSchema).optional(),
+        meetingDirectives: z.array(LegacyAcceptanceDirectiveSchema).optional()
       })
     ),
-    // Session-model-written SOP progress; absent means not started.
+    // Meeting conclusions; the durable record the board annotations feed into.
+    minutes: AcceptanceMeetingMinutesSchema.optional(),
+    // Session-model-written SOP progress; absent means not started. The board
+    // renders no lamps: the four on-screen stages are locators, not this enum.
     workflow: AcceptanceWorkflowStateSchema.optional()
   })
   .superRefine((document, context) => {
@@ -65,29 +134,6 @@ export const AcceptanceMaterialSchema = z
         path: ['results']
       })
     }
-    document.results.forEach((result, resultIndex) => {
-      if (result.rounds) {
-        if (new Set(result.rounds.map((round) => round.id)).size !== result.rounds.length) {
-          context.addIssue({
-            code: 'custom',
-            message: 'Round ids must be unique within a goal result',
-            path: ['results', resultIndex, 'rounds']
-          })
-        }
-      }
-      if (result.meetingDirectives) {
-        if (
-          new Set(result.meetingDirectives.map((directive) => directive.id)).size !==
-          result.meetingDirectives.length
-        ) {
-          context.addIssue({
-            code: 'custom',
-            message: 'Meeting directive ids must be unique within a goal result',
-            path: ['results', resultIndex, 'meetingDirectives']
-          })
-        }
-      }
-    })
   })
 
 export type AcceptanceMaterial = z.infer<typeof AcceptanceMaterialSchema>

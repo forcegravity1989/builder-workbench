@@ -1,0 +1,99 @@
+/*
+ * Styles for the shared board primitives (BoardIconButton, BoardActionButton,
+ * BoardLines) and the shared send menu's instruction preview. They live beside
+ * the components rather than in either screen's stylesheet so both cycle boards
+ * render them identically without duplicating the rules.
+ */
+
+.g3-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  flex-shrink: 0;
+}
+.g3-icon-button:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+/* Annotation-mode pressed state, shared by both boards' header buttons. */
+.g3-icon-button.g3-mode-on {
+  border-color: var(--foreground);
+  background: var(--accent);
+  color: var(--foreground);
+}
+/* 对象级动作按钮(2026-10-22 真机反馈轮):图标 + 短动词文字,替换纯小图标——
+   真机验证纯图标动作点过于隐蔽。描边使其在卡内动作区可被看见。 */
+.g3-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  background: none;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.g3-action-button:hover:not(:disabled) {
+  border-color: var(--color-accent, #d97757);
+  color: var(--color-accent, #d97757);
+  background: var(--accent);
+}
+.g3-action-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.g3-action-button svg {
+  color: var(--color-accent, #d97757);
+  flex-shrink: 0;
+}
+/* 发送弹窗指令预览(BW 包装层在原生发送菜单上加的只读区)。 */
+.g3-send-preview {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--muted);
+  padding: 8px 10px;
+  margin: 4px 4px 6px;
+}
+.g3-send-preview small {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.g3-send-preview p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 88px;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  color: var(--foreground);
+}
+/* Renders stored multi-line text one line per paragraph. */
+.g3-lines {
+  font-size: 14px;
+  line-height: 1.8;
+}
+.g3-lines p {
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+.g3-lines p:last-child {
+  margin-bottom: 0;
+}
+.is-spinning {
+  animation: bw-spin 0.9s linear infinite;
+}
+@keyframes bw-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

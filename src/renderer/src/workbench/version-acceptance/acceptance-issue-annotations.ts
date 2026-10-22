@@ -9,7 +9,7 @@ type GoalResultAnnotations = Pick<
   'issueMarks' | 'issueNotes'
 >
 
-export type IssueReference = PlanningMaterial['tasks'][number]
+type IssueReference = PlanningMaterial['tasks'][number]
 
 export function isClosedIssueState(state: string | undefined): boolean {
   return ['closed', 'merged'].includes(state?.trim().toLowerCase() ?? '')
@@ -19,7 +19,7 @@ export function issueKey(reference: IssueReference): string {
   return `${reference.provider}:${reference.repository}:${reference.number}`
 }
 
-export function canUseLegacyIssueKey(
+function canUseLegacyIssueKey(
   reference: IssueReference,
   relatedIssues: readonly IssueReference[]
 ): boolean {
@@ -54,21 +54,24 @@ export function issueNoteFor(
   )
 }
 
-export function updateIssueMark(
+/** The carry mark is the only Issue-level mark left; risk marking is retired. */
+export function updateIssueCarry(
   result: GoalResultAnnotations,
   reference: IssueReference,
   relatedIssues: readonly IssueReference[],
-  mark: 'carry' | 'risk',
   value: boolean
 ): Record<string, AcceptanceIssueMarks> {
   const key = issueKey(reference)
-  const nextMarks = {
-    ...result.issueMarks,
-    [key]: {
-      ...issueMarkFor(result, reference, relatedIssues),
-      [mark]: value,
-      ...(mark === 'carry' && !value ? { risk: false } : {})
-    }
+  const nextMarks = { ...result.issueMarks }
+  // Unmarking removes the key rather than storing `carry: false`: the two are
+  // equivalent on every read path, and leaving an explicit false behind makes the
+  // human-field guard demand the model round-trip a value that means "nothing".
+  const existing = issueMarkFor(result, reference, relatedIssues)
+  const nextMark = { ...existing, carry: value }
+  if (nextMark.carry || nextMark.risk) {
+    nextMarks[key] = nextMark
+  } else {
+    delete nextMarks[key]
   }
   if (canUseLegacyIssueKey(reference, relatedIssues)) {
     delete nextMarks[String(reference.number)]
@@ -83,7 +86,13 @@ export function updateIssueNote(
   note: string
 ): Record<string, string> {
   const key = issueKey(reference)
-  const nextNotes = { ...result.issueNotes, [key]: note }
+  const nextNotes = { ...result.issueNotes }
+  // Same reasoning as the carry mark: an emptied note is no note.
+  if (note) {
+    nextNotes[key] = note
+  } else {
+    delete nextNotes[key]
+  }
   if (canUseLegacyIssueKey(reference, relatedIssues)) {
     delete nextNotes[String(reference.number)]
   }

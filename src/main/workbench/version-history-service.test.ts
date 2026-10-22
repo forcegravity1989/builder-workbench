@@ -323,13 +323,9 @@ it('reads reachable trunk and cycle revisions without losing same-cycle weeks or
     'spanning-weeks',
     'spanning-weeks'
   ])
-  expect(catalog.records[0]).toMatchObject({
-    roundId: 'r2',
-    week: '2026-W43',
-    roundKind: 'progress'
-  })
-  expect(catalog.records[1]).not.toHaveProperty('roundId')
-  expect(catalog.records[1]).not.toHaveProperty('week')
+  // Rounds are retired with the cross-week scenario: VersionHistorySource no
+  // longer declares round metadata, and stored material that still has rounds
+  // reads through the strip-on-read projection instead of failing strict parse.
   const collapsed = await port.list({
     scope,
     source: 'cycle',

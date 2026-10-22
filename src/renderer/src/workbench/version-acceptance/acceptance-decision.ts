@@ -2,7 +2,7 @@ import type {
   AcceptanceMaterial,
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
-import { emptyGoalResult, type GoalResult } from './acceptance-model'
+import { emptyGoalResult, upsertGoalResult, type GoalResult } from './acceptance-model'
 import { goalTaskEvidence } from './acceptance-task-evidence'
 
 function stableValue(value: unknown): unknown {
@@ -19,37 +19,28 @@ function stableValue(value: unknown): unknown {
   return value
 }
 
-/** Round navigation metadata and the judgment itself are not business evidence. */
-export function goalEvidenceText(
+/**
+ * The projection a human verdict cites. The verdict itself is excluded, and so is
+ * round navigation metadata — rounds are retired, and neither was ever business
+ * evidence. The board renders no staleness state from this: the revision is a
+ * ledger field, and whether evidence moved is for the model to raise in session.
+ */
+function goalEvidenceText(
   document: AcceptanceMaterial,
   plan: PlanningMaterial,
   goalId: string
-): string {
-  return evidenceText(document, plan, goalId, false)
-}
-
-function evidenceText(
-  document: AcceptanceMaterial,
-  plan: PlanningMaterial,
-  goalId: string,
-  includeRounds: boolean
 ): string {
   const goal = plan.goals.find((item) => item.goalId === goalId)
   if (!goal) {
     throw new Error('该目标不属于固定计划')
   }
-  const {
-    decision: _decision,
-    rounds,
-    ...evidence
-  } = document.results.find((item) => item.goalId === goalId) ?? emptyGoalResult(goalId)
-  const result = includeRounds ? { ...evidence, rounds } : evidence
-  const locations = new Set(result.deliveries.map((item) => item.location).filter(Boolean))
+  const { decision: _decision, ...evidence } =
+    document.results.find((item) => item.goalId === goalId) ?? emptyGoalResult(goalId)
   const candidatePackages = document.preparedArtifacts
     .filter((item) => item.kind === 'package')
     .sort((a, b) => (a.artifactId < b.artifactId ? -1 : a.artifactId > b.artifactId ? 1 : 0))
   const artifacts = document.preparedArtifacts
-    .filter((item) => item.kind !== 'package' && locations.has(item.location))
+    .filter((item) => item.kind !== 'package')
     .sort((a, b) => (a.artifactId < b.artifactId ? -1 : a.artifactId > b.artifactId ? 1 : 0))
   const tasks = goalTaskEvidence(document, plan, goalId).map((item) => ({
     ...item,
@@ -65,9 +56,10 @@ function evidenceText(
       cycleId: document.cycleId,
       planRef: document.planRef,
       candidateRef: document.candidateRef ?? null,
+      demoEnv: document.demoEnv ?? null,
       candidatePackages,
       goal,
-      result,
+      result: evidence,
       artifacts,
       tasks
     })
@@ -79,36 +71,18 @@ export async function goalEvidenceRevision(
   plan: PlanningMaterial,
   goalId: string
 ): Promise<string> {
-  return evidenceRevision(goalEvidenceText(document, plan, goalId))
-}
-
-async function evidenceRevision(text: string): Promise<string> {
-  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  const hash = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(goalEvidenceText(document, plan, goalId))
+  )
   return `sha256:${Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, '0')).join('')}`
 }
 
-export type DecisionFreshness = 'unrecorded' | 'current' | 'changed'
-
-/** Freshness is independent from whether the cited human source has been verified. */
-export async function decisionFreshness(
-  document: AcceptanceMaterial,
-  plan: PlanningMaterial,
-  goalId: string
-): Promise<DecisionFreshness> {
-  const decision = document.results.find((item) => item.goalId === goalId)?.decision
-  if (!decision) {
-    return 'unrecorded'
-  }
-  if (decision.materialRevision === (await goalEvidenceRevision(document, plan, goalId))) {
-    return 'current'
-  }
-  // Existing decisions used the complete projection including rounds; accept only an exact match.
-  return decision.materialRevision ===
-    (await evidenceRevision(evidenceText(document, plan, goalId, true)))
-    ? 'current'
-    : 'changed'
-}
-
+/**
+ * Records a human verdict. The row-end pair collects no reason text: the note is
+ * the goal's free-text field and the durable account of an unmet goal lives in
+ * the minutes, its next step and the Issue notes.
+ */
 export async function recordHumanDecision(input: {
   document: AcceptanceMaterial
   plan: PlanningMaterial
@@ -123,7 +97,7 @@ export async function recordHumanDecision(input: {
   }
   const result =
     input.document.results.find((item) => item.goalId === input.goalId) ??
-    emptyGoalResult(input.goalId, input.document)
+    emptyGoalResult(input.goalId)
   const next = {
     ...result,
     decision: {
@@ -136,8 +110,6 @@ export async function recordHumanDecision(input: {
   }
   return {
     ...input.document,
-    results: input.document.results.some((item) => item.goalId === input.goalId)
-      ? input.document.results.map((item) => (item.goalId === input.goalId ? next : item))
-      : [...input.document.results, next]
+    results: upsertGoalResult(input.document.results, next)
   }
 }

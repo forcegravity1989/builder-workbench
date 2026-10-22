@@ -163,9 +163,9 @@ async function readCodeHubArchiveStatus(args: {
 /**
  * Thin archive PR status: one `pulls/{n}` read keyed by the model-recorded
  * reference — no byte proof, no branch-name discovery, no revision matching.
- * The journey lamp comes from workflow.stage alone; this only marks whether the
- * recorded PR is merged. Unreadable providers, identities or responses stay
- * unknown instead of a guessed state.
+ * This only marks whether the recorded PR is merged; the boards render it as
+ * text and derive no lamp from it (journey lamps are retired). Unreadable
+ * providers, identities or responses stay unknown instead of a guessed state.
  */
 export async function readArchivePrStatus(
   runtime: Parameters<typeof nativeWorkbenchWorkspaceHost>[0],

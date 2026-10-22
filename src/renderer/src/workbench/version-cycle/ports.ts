@@ -1,8 +1,7 @@
-import type { ReactNode } from 'react'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
 import type { TaskSourceContext } from '../../../../shared/task-source-context'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
-import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
+import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
 import type { WorkflowArchivePr } from '../../../../shared/workbench/version-workflow'
 
@@ -76,20 +75,4 @@ export type ArchivePrScope = {
 export type ArchivePrPort = {
   /** Status of the one recorded archive PR, read on the worktree's owning runtime. */
   readStatus(scope: ArchivePrScope, pr: WorkflowArchivePr): Promise<ArchivePrStatusResult>
-}
-
-export type VersionGoalCardProps = {
-  goal: VersionGoal
-  index: number
-  metrics?: ReactNode
-  result?: ReactNode
-  actions?: ReactNode
-  defaultOpen?: boolean
-  expanded?: boolean
-  /** Increment this when a toolbar command should reapply the current value. */
-  expandedSignal?: number
-  summary?: ReactNode
-  extra?: ReactNode
-  hideReadOnlyStory?: boolean
-  viewStateKey?: string
 }

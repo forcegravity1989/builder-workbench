@@ -22,12 +22,23 @@ function acceptanceText(minutes: VersionMinutes): string {
           result.decision
             ? `${outcomes[result.decision.outcome]} · ${result.decision.recordedAt.slice(0, 10)}${result.decision.reason ? `\n\n${result.decision.reason}` : ''}`
             : '未结论',
-          ...result.deliveries.map((item) => `- ${item.title}：${item.location}`),
           ...result.readings.map((item) => `- ${item.ref.name}：${item.value}${item.unit}`),
           result.note,
           result.nextStep ? `下一步：${result.nextStep}` : ''
         ]
       }),
+      // Per-goal deliveries are retired: the version-level demo environment and
+      // the evidence report are registered artifacts, listed below.
+      ...(document.minutes
+        ? [
+            '## 会议纪要',
+            ...document.minutes.consensus.map((point) => `- 共识：${point}`),
+            ...document.minutes.followups.map(
+              (point, index) => `- 遗留 M${index + 1}：${point.text}`
+            ),
+            document.minutes.confirmed ? '已人工确认' : '待人工确认'
+          ]
+        : ['纪要未记录']),
       ...document.preparedArtifacts.map(
         (item) => `- ${artifactKinds[item.kind] ?? item.kind}：${item.location}`
       ),

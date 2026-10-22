@@ -542,7 +542,16 @@ export function MinutesSkeleton({ sendRequest }) {
     </article>
   )
 }
-export function MinutesCard({ minutes, update }) {
+export function MinutesCard({
+  minutes,
+  update,
+  // 可选定制（验收屏复用）：默认值保持计划屏行为不变。
+  // 「与计划助手基于纪要调整目标」按钮已退役（2026-10-22 真机反馈轮，人决定：
+  // 整理纪要后 Skill SOP 自然引导），故不再接收 sendRequest / showAgent。
+  showFollowupStatus = true,
+  followupHint = '闭环 = 版本计划已按该条修改，由人标记',
+  footNote = '纪要独立保存，认可随归档 PR 评审表达。'
+}) {
   const [editing, setEditing] = useState(false)
   const setPoint = (key, index, text) =>
     update({
@@ -551,9 +560,13 @@ export function MinutesCard({ minutes, update }) {
       )
     })
   const removePoint = (key, index) => update({ [key]: minutes[key].filter((_, i) => i !== index) })
-  const addPoint = (key) =>
+  // withStatus=false 供验收屏复用：验收遗留不设闭环状态，条目只有 text。
+  const addPoint = (key, withStatus = true) =>
     update({
-      [key]: [...minutes[key], key === 'consensus' ? '' : { text: '', closed: false }]
+      [key]: [
+        ...minutes[key],
+        key === 'consensus' ? '' : { text: '', ...(withStatus ? { closed: false } : {}) }
+      ]
     })
   const toggleClosed = (index) =>
     update({
@@ -611,7 +624,7 @@ export function MinutesCard({ minutes, update }) {
       </div>
       <div className="g3-minutes-section">
         <strong>
-          遗留 <small>闭环 = 版本计划已按该条修改，由人标记</small>
+          遗留 {showFollowupStatus && <small>{followupHint}</small>}
         </strong>
         {editing ? (
           <div className="g3-point-editor">
@@ -623,13 +636,15 @@ export function MinutesCard({ minutes, update }) {
                   value={point.text}
                   onChange={(e) => setPoint('followups', i, e.target.value)}
                 />
-                <button
-                  className={`g3-followup-status ${point.closed ? 'closed' : ''}`}
-                  title="闭环 = 版本计划已按该条修改；由人标记"
-                  onClick={() => toggleClosed(i)}
-                >
-                  {point.closed ? '已闭环' : '未闭环'}
-                </button>
+                {showFollowupStatus && (
+                  <button
+                    className={`g3-followup-status ${point.closed ? 'closed' : ''}`}
+                    title={followupHint}
+                    onClick={() => toggleClosed(i)}
+                  >
+                    {point.closed ? '已闭环' : '未闭环'}
+                  </button>
+                )}
                 <IconButton
                   name="close"
                   label={`删除遗留第 ${i + 1} 点`}
@@ -637,7 +652,10 @@ export function MinutesCard({ minutes, update }) {
                 />
               </div>
             ))}
-            <button className="g3-add-point" onClick={() => addPoint('followups')}>
+            <button
+              className="g3-add-point"
+              onClick={() => addPoint('followups', showFollowupStatus)}
+            >
               <Icon name="plus" size={13} /> 添加一点
             </button>
           </div>
@@ -646,13 +664,15 @@ export function MinutesCard({ minutes, update }) {
             {minutes.followups.length ? (
               minutes.followups.map((point, i) => (
                 <li key={i}>
-                  <button
-                    className={`g3-followup-status ${point.closed ? 'closed' : ''}`}
-                    title="闭环 = 版本计划已按该条修改；由人标记"
-                    onClick={() => toggleClosed(i)}
-                  >
-                    {point.closed ? '已闭环' : '未闭环'}
-                  </button>
+                  {showFollowupStatus && (
+                    <button
+                      className={`g3-followup-status ${point.closed ? 'closed' : ''}`}
+                      title={followupHint}
+                      onClick={() => toggleClosed(i)}
+                    >
+                      {point.closed ? '已闭环' : '未闭环'}
+                    </button>
+                  )}
                   <span>{point.text || '待填写'}</span>
                 </li>
               ))
@@ -666,7 +686,7 @@ export function MinutesCard({ minutes, update }) {
         <button onClick={() => update({ confirmed: !minutes.confirmed })}>
           {minutes.confirmed ? '已人工确认 · 撤销' : '标记人工确认'}
         </button>
-        <span className="g3-muted">纪要独立保存，认可随归档 PR 评审表达。</span>
+        <span className="g3-muted">{footNote}</span>
       </div>
     </article>
   )
@@ -741,7 +761,8 @@ export function AnnotationPanel({
   onUpdate,
   onRemove,
   onBoardLevel,
-  onSend
+  onSend,
+  sendLabel = '发送给计划助手' // 验收屏复用时的可选定制
 }) {
   const [copied, setCopied] = useState(false)
   useEffect(() => {
@@ -794,7 +815,7 @@ export function AnnotationPanel({
           disabled={!annotations.length}
           onClick={(e) => onSend(e.currentTarget.getBoundingClientRect())}
         >
-          <Icon name="send" size={13} /> 发送给计划助手
+          <Icon name="send" size={13} /> {sendLabel}
         </button>
       </footer>
     </aside>
