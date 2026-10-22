@@ -120,8 +120,19 @@ export function useCycleWorkspaceTarget(
               `版本 ${browsedVersion} 在本宿主有多个绑定的流程树，请在侧栏选择具体工作区。`
             )
           }
-          chosen = inScope[0] ?? (bound.length === 1 ? bound[0] : null)
-          if (bound.length > 1 && !chosen) {
+          // 项目围栏：回退只认本项目登记（repo 必等、project 不冲突）——版本号跨
+          // 项目必撞名，他项目的唯一绑定树绝不是本项目的合法回退；配对宿主实例
+          // （同 repo 不同 host）仍在围栏内（上面的 scope-key 比对只按宿主维度失配）。
+          const sameProject = bound.filter((tree) => {
+            if (tree.repoId !== baseScope.repoId) {
+              return false
+            }
+            return !(
+              baseScope.projectId && tree.projectId && tree.projectId !== baseScope.projectId
+            )
+          })
+          chosen = inScope[0] ?? (sameProject.length === 1 ? sameProject[0] : null)
+          if (sameProject.length > 1 && !chosen) {
             throw new Error(`版本 ${browsedVersion} 有多个绑定流程树实例，请在侧栏选择具体工作区。`)
           }
           if (!chosen && !findCycleWorktree({ ...baseScope, workflow })) {

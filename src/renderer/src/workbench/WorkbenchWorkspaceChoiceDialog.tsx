@@ -10,6 +10,9 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
+import { branchName } from '@/lib/git-utils'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
+import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import {
   chooseWorkbenchWorkspace,
   closeWorkbenchWorkspaceChoice,
@@ -26,8 +29,8 @@ function hostLabel(worktree: Worktree): string {
   if (worktree.runtimeOwnerEnvironmentId) {
     return `配对宿主 ${worktree.runtimeOwnerEnvironmentId}`
   }
-  const hostId = worktree.hostId ?? 'local'
-  return hostId === 'local' ? '本机' : hostId
+  const hostId = worktree.hostId ?? LOCAL_EXECUTION_HOST_ID
+  return hostId === LOCAL_EXECUTION_HOST_ID ? '本机' : hostId
 }
 
 export function WorkbenchWorkspaceChoiceDialog(): React.JSX.Element | null {
@@ -56,11 +59,11 @@ export function WorkbenchWorkspaceChoiceDialog(): React.JSX.Element | null {
         <div className="flex flex-col gap-1">
           {choice.candidates.map((worktree) => (
             <Button
-              key={worktree.id}
+              key={getWorktreeHostIdentity(worktree)}
               type="button"
               variant="outline"
               className="h-auto justify-start whitespace-normal px-3 py-2"
-              onClick={() => chooseWorkbenchWorkspace(worktree.id)}
+              onClick={() => chooseWorkbenchWorkspace(worktree)}
             >
               <span className="flex min-w-0 flex-col items-start gap-0.5">
                 <span className="truncate text-sm font-medium">
@@ -68,7 +71,7 @@ export function WorkbenchWorkspaceChoiceDialog(): React.JSX.Element | null {
                 </span>
                 <span className="flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
                   <GitBranch className="size-3 shrink-0" aria-hidden="true" />
-                  <span className="truncate">{worktree.branch.replace(/^refs\/heads\//, '')}</span>
+                  <span className="truncate">{branchName(worktree.branch)}</span>
                   <span className="shrink-0">· {hostLabel(worktree)}</span>
                 </span>
               </span>

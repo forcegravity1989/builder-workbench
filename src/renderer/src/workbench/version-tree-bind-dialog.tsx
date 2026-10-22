@@ -11,10 +11,18 @@ import {
 } from '@/components/ui/dialog'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { Worktree } from '../../../shared/worktree/types'
+import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import { versionFlowBranch } from '../../../shared/workbench/version-workspace-prepare'
+import { branchName } from '@/lib/git-utils'
 import { nativeVersionBindingPort } from './version-binding-port'
+import {
+  GOAL_PURPOSE_LABEL,
+  ISSUE_TREE_LABEL,
+  WORKFLOW_TREE_LABELS,
+  goalOrdinal
+} from './version-labels'
 
 /**
  * G2 常驻补绑定入口（P3b）：创建结果处绑定写入失败会保留树并给本会话 toast
@@ -27,7 +35,7 @@ import { nativeVersionBindingPort } from './version-binding-port'
 type BindWorkflow = 'plan' | 'acceptance' | 'goal'
 
 function suggestedWorkflow(tree: Worktree, version: string): BindWorkflow | null {
-  const branch = tree.branch?.replace(/^refs\/heads\//, '')
+  const branch = tree.branch ? branchName(tree.branch) : null
   if (branch && branch === versionFlowBranch(version, 'plan')) {
     return 'plan'
   }
@@ -38,14 +46,8 @@ function suggestedWorkflow(tree: Worktree, version: string): BindWorkflow | null
 }
 
 const WORKFLOW_LABELS: Record<BindWorkflow, string> = {
-  plan: '计划树',
-  acceptance: '验收树',
-  goal: '目标协作树'
-}
-
-/** 行键=宿主限定身份（STA-4343：同一 repoId::path 的 id 可跨宿主重复）。 */
-function treeKey(tree: Pick<Worktree, 'id' | 'hostId'>): string {
-  return `${tree.hostId ?? LOCAL_EXECUTION_HOST_ID}::${tree.id}`
+  ...WORKFLOW_TREE_LABELS,
+  goal: GOAL_PURPOSE_LABEL
 }
 
 export function VersionTreeBindDialog({
@@ -76,7 +78,7 @@ export function VersionTreeBindDialog({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const selected = candidates.find((tree) => treeKey(tree) === selectedKey) ?? null
+  const selected = candidates.find((tree) => getWorktreeHostIdentity(tree) === selectedKey) ?? null
   const selectionSuggestion = selected ? suggestedWorkflow(selected, version) : null
   const effectiveWorkflow = selectionSuggestion ?? workflow
   const goalMissing = effectiveWorkflow === 'goal' && !goalId
@@ -145,9 +147,12 @@ export function VersionTreeBindDialog({
               >
                 <option value="">待选择工作树</option>
                 {candidates.map((tree) => (
-                  <option key={treeKey(tree)} value={treeKey(tree)}>
+                  <option
+                    key={getWorktreeHostIdentity(tree)}
+                    value={getWorktreeHostIdentity(tree)}
+                  >
                     {tree.displayName?.trim() ||
-                      tree.branch?.replace(/^refs\/heads\//, '') ||
+                      (tree.branch ? branchName(tree.branch) : '') ||
                       tree.id}
                     {tree.hostId && tree.hostId !== LOCAL_EXECUTION_HOST_ID
                       ? `（宿主 ${tree.hostId}）`
@@ -164,11 +169,11 @@ export function VersionTreeBindDialog({
                 disabled={selectionSuggestion !== null}
                 onChange={(event) => setWorkflow(event.target.value as BindWorkflow)}
               >
-                <option value="plan">计划树</option>
-                <option value="acceptance">验收树</option>
-                <option value="goal">目标协作树</option>
+                <option value="plan">{WORKFLOW_LABELS.plan}</option>
+                <option value="acceptance">{WORKFLOW_LABELS.acceptance}</option>
+                <option value="goal">{WORKFLOW_LABELS.goal}</option>
                 <option value="issue" disabled>
-                  Issue 执行树（须从任务屏开工：来源身份需精确一致）
+                  {ISSUE_TREE_LABEL}（须从任务屏开工：来源身份需精确一致）
                 </option>
               </select>
               {selectionSuggestion ? (
@@ -188,7 +193,7 @@ export function VersionTreeBindDialog({
                   <option value="">待选择目标</option>
                   {(entry?.goals ?? []).map((goal, index) => (
                     <option key={goal.goalId} value={goal.goalId}>
-                      G{index + 1} · {goal.title}
+                      {goalOrdinal(index)} · {goal.title}
                     </option>
                   ))}
                 </select>

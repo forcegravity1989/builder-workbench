@@ -32,8 +32,9 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const agent = useMetricsSetupAgent(fixedId)
   const session = useAppStore(useShallow((state) => getActiveCycleSession(state, scope, fixedId)))
   const owner = scope?.runtimeOwnerEnvironmentId
-  // G2 (P3a)：绑定树=版本化工作区；自动化身份版本化属 P5，此前如实拒绝
-  // 启动/配置（防 creationKey 无版本维度导致运行落到旧版树），不假报就绪。
+  // G2：绑定流程树=版本化工作区。计划侧自动化身份已随 P5 版本化放开；验收
+  // 绑定树在验收 Skill 正本同步（#394 合入）前如实受限——见下方
+  // useEnsureCycleAutomation 的 skip 与 start/configure 守卫。
   const flowBinding = useMemo(() => {
     const binding = worktree
       ? normalizeStoredWorkbenchVersionBinding(worktree.workbenchVersionBinding)

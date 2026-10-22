@@ -36,6 +36,14 @@ export type TaskScopeLoadResult = {
   missing: TaskScopeMissingRow[]
 }
 
+/** 「github 优先」判定单实现：范围装载与进任务屏的 openTaskPage 共用。 */
+function viewProviderFor(references: readonly { provider: string }[]): 'github' | 'codehub' {
+  return references.some((reference) => reference.provider === 'github') ||
+    !references.some((reference) => reference.provider === 'codehub')
+    ? 'github'
+    : 'codehub'
+}
+
 const SCOPE_READ_CONCURRENCY = 6
 
 function errorMessage(reason: unknown): string {
@@ -83,8 +91,7 @@ export async function loadWorkbenchTaskScope(
       })
     }
   }
-  const viewProvider: 'github' | 'codehub' =
-    githubRefs.length > 0 || codehubRefs.length === 0 ? 'github' : 'codehub'
+  const viewProvider = viewProviderFor(references)
   // 另一来源的引用如实计数、不展开：任务屏一次呈现一个来源，不静默丢弃。
   for (const reference of viewProvider === 'github' ? codehubRefs : githubRefs) {
     missing.push({
@@ -190,11 +197,7 @@ export function openVersionTasksPage(args: {
       ...(reference.goalId ? { goalId: reference.goalId } : {})
     }))
   }
-  const provider = scope.references.some((reference) => reference.provider === 'codehub')
-    ? scope.references.some((reference) => reference.provider === 'github')
-      ? 'github'
-      : 'codehub'
-    : 'github'
+  const provider = viewProviderFor(scope.references)
   useAppStore.getState().openTaskPage({
     taskSource: provider,
     ...(args.homeRepoId ? { preselectedRepoId: args.homeRepoId } : {}),

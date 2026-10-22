@@ -7,7 +7,7 @@
 原型入口为 [version-workspace-prototype.html](version-workspace-prototype.html) 与 [旅程报告](version-workspace-journey.html)；可编辑源码在本特性 `prototype/` 下，共用 [version-planning 的冻结 vendor 包](../version-planning/prototype/vendor.js) 与设计系统资源。修改 JSX 后运行 `node docs/05-features/version-workspace/prototype/build-g2.cjs` 更新生成物；`--check` 核对生成物一致性与模拟 DOM 启动，不替代浏览器视觉验看。
 
 
-关联 [#383](https://github.com/forcegravity1989/builder-workbench/issues/383)、[#328](https://github.com/forcegravity1989/builder-workbench/issues/328)、[#334](https://github.com/forcegravity1989/builder-workbench/issues/334)。本节与 [高保真修订 9](version-workspace-prototype.html?rev=9)、[旅程及数据说明报告](version-workspace-journey.html) 定义 G2 行为；上文保留当前已实现的计划屏规格。已定稿决定：多版本并行、版本平铺回看、逻辑目标目录、目标工作树按需创建、目标与 Issue 开工复用同一原生创建器、不新增周冻结或目录生成操作；版本收尾提供版本级清理（复用 Orca 原生删除链），不另做归档隐藏层。生产接线与真壳证据见 STATUS。
+关联 [#383](https://github.com/forcegravity1989/builder-workbench/issues/383)、[#328](https://github.com/forcegravity1989/builder-workbench/issues/328)、[#334](https://github.com/forcegravity1989/builder-workbench/issues/334)。本文与 [高保真修订 9](version-workspace-prototype.html?rev=9)、[旅程及数据说明报告](version-workspace-journey.html) 定义 G2 行为；计划屏（G3）规格见 [版本计划 spec](../version-planning/spec.md)。已定稿决定：多版本并行、版本平铺回看、逻辑目标目录、目标工作树按需创建、目标与 Issue 开工复用同一原生创建器、不新增周冻结或目录生成操作；版本收尾提供版本级清理（复用 Orca 原生删除链），不另做归档隐藏层。生产接线与真壳证据见 STATUS。
 
 ### 价值与复用范围
 

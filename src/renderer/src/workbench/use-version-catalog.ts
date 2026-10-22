@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
+import { branchName } from '@/lib/git-utils'
 import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import type { Worktree } from '../../../shared/worktree/types'
@@ -119,8 +120,8 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
         trees.push({ worktreeId: tree.id, version: binding.version, ...ownerOf(tree) })
         continue
       }
-      if (!binding && tree.branch.replace(/^refs\/heads\//, '') === legacyBranch) {
-        trees.push({ worktreeId: tree.id, version: null, ...ownerOf(tree) })
+      if (!binding && branchName(tree.branch) === legacyBranch) {
+        legacyTrees.push({ worktreeId: tree.id, version: null, ...ownerOf(tree) })
       }
     }
     // 绑定树排前：目录 goals 派生按先到先得，绑定副本优先于旧固定树副本（C-2）。
@@ -158,6 +159,10 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
   useEffect(() => {
     if (!scope || !homeId) {
       setCatalog(null)
+      // scope 失效也要复位上一轮的装载/错误态：在飞轮次被 cleanup 取消后其
+      // finally 不再落地，否则「读取中」或旧错误横幅永久残留到 scope 恢复。
+      setLoading(false)
+      setError(null)
       return
     }
     let cancelled = false

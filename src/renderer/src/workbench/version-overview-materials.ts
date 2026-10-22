@@ -9,7 +9,7 @@ import type { ArchivePrStatusResult } from '../../../shared/workbench/archive-pr
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeArchivePrPort } from './archive-pr-port'
-import { nativeWorkspaceScope } from './version-cycle/native-workspace'
+import { nativeWorkspaceScope, type NativeWorkspaceScope } from './version-cycle/native-workspace'
 
 /**
  * G2 版本总览的数据装载（P6，从 version-overview-page 拆出以满足文件行数上限）：
@@ -65,7 +65,16 @@ export function useVersionOverviewMaterials(args: {
       setAcceptance({ kind: 'missing', message })
       return
     }
-    const scope = nativeWorkspaceScope(home)
+    let scope: NativeWorkspaceScope
+    try {
+      scope = nativeWorkspaceScope(home)
+    } catch (reason) {
+      // home 行宿主/路由不明确时如实报读取失败，不让异常穿出 effect 打掉整页。
+      const message = `项目工作区解析失败：${reason instanceof Error ? reason.message : String(reason)}`
+      setPlan({ kind: 'missing', message })
+      setAcceptance({ kind: 'missing', message })
+      return
+    }
     const historyPort = nativeVersionHistoryPort(home.runtimeOwnerEnvironmentId)
     const archivePort = nativeArchivePrPort(home.runtimeOwnerEnvironmentId)
     const metricScope = { repoId: scope.repoId, worktreeId: home.id, hostId: scope.hostId }

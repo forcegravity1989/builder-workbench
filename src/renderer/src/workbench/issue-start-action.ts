@@ -16,7 +16,7 @@ import type { CycleTaskSnapshot } from './version-cycle/ports'
  * taskSource) ＋原生 linked 双重证明；唯一 → 直开、多候选 → BW 选择器（绝不
  * 取第一棵）、无 → 同一原生创建器（BW 预填可见可改，绑定在真实创建结果处写入）。
  * 版本未知或 provider 不在开工面（读回仅 github/codehub 就绪）时返回 false，
- * 调用方回落原生任务详情（临时语义），不猜版本、不另造创建路径。
+ * 调用方回落原生任务详情，不猜版本、不另造创建路径。
  */
 export function openIssueWorkspaceOrStart(args: {
   task: CycleTaskSnapshot
@@ -41,7 +41,12 @@ export function openIssueWorkspaceOrStart(args: {
   })
   if (candidates.length === 1) {
     const only = candidates[0]
-    if (!only || activateAndRevealWorktree(only.id) === false) {
+    if (
+      !only ||
+      activateAndRevealWorktree(only.id, {
+        ...(only.hostId ? { executionHostId: only.hostId } : {})
+      }) === false
+    ) {
       notifyScopedWorkspaceUnavailable()
     }
     return true

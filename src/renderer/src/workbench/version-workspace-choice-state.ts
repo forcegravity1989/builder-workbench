@@ -35,10 +35,13 @@ export function closeWorkbenchWorkspaceChoice(): void {
   }
 }
 
-export function chooseWorkbenchWorkspace(worktreeId: string): void {
+export function chooseWorkbenchWorkspace(worktree: Worktree): void {
   choice = null
   emit()
-  const result = activateAndRevealWorktree(worktreeId)
+  // 跨宿主同 id 实例按登记归属宿主解析（STA-4343）；本机未限定行沿原生默认解析。
+  const result = activateAndRevealWorktree(worktree.id, {
+    ...(worktree.hostId ? { executionHostId: worktree.hostId } : {})
+  })
   if (result === false) {
     toast.error('无法打开所选工作区，请在原生项目工作区中核对。')
   }

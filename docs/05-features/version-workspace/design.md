@@ -5,7 +5,7 @@
 > 状态：设计于 2026-10-20 评审定稿；接线要求的生产验证缺口见 STATUS。架构定位：§2 ①事实、执行、③规范、⑤壳，§3 Orca 执行核与 BW 叠层。
 
 
-此节服务 [G2 高保真修订 9](version-workspace-prototype.html?rev=9) 的落地，设计于 2026-10-20 评审定稿；上文描述当前接线。源码核对基线为 main 的 2be8d77649797cb0ac740edaa7defa49deb3ffd5，其后 PR #386 合入 main f5ac309b226a456b157b57ceee65204f101a4a09，计划快照来源仍可追溯至其 head 331c04f。行为判据见 [spec](spec.md#g2-版本运作设计定稿)。
+此节服务 [G2 高保真修订 9](version-workspace-prototype.html?rev=9) 的落地，设计于 2026-10-20 评审定稿。源码核对基线为 main 的 2be8d77649797cb0ac740edaa7defa49deb3ffd5，其后 PR #386 合入 main f5ac309b226a456b157b57ceee65204f101a4a09，计划快照来源仍可追溯至其 head 331c04f。行为判据见 [spec](spec.md)。
 
 | 当前源码证据 | 可复用部分与必要适配 |
 |---|---|
@@ -62,7 +62,7 @@
 
 - **屏内选版移除（P3b①）**：绑定树在计划面包屑与验收页头只读回显绑定版本（`.g3-version-bound`/`.va-version-bound`），无屏内切换；旧无绑定固定树保留下拉与 `workbenchSelectedVersion` 偏好（J1 口径不变）。`VersionCycleContext.boundVersion` 由 Provider 从流程树绑定派生；main 侧跨版拒绝仍是唯一围栏权威，UI 移除只消灭死入口。验收侧为 v10「选版移侧栏」方向的最小防死 UI 处理，v10 板面适配归其实施 PR。version-planning spec 选版条款已回写（其 design D1 标注落地）。
 - **Issue 开工箭头永久 hookup（P3b②）**：板面 Issue 行箭头接 `issue-start-action.ts`——与任务屏范围行同一解析核（绑定+linked 双重证明；唯一直开/多候选选择器/无则原生创建器预填＋创建结果绑定）。版本未知或 provider 不在开工面（读回仅 github/codehub 就绪）回落原生详情；标题链接进原生详情语义不变，不另造继续逻辑。
-- **常驻补绑定（P3b③）**：版本行「绑定已有工作树」——只列本仓无绑定活树，人显式断言归属；分支与本版流程分支一致时用途锁定为该流程（分支一致是强证据，锁定防误用；实际用途不符时先在原生项目核对该树）；issue 用途因 taskSource 须与解析查询精确相等、无法从登记完整推导而如实不提供（指引任务屏开工或清理该树）；instanceId 必填围栏，写入走 P1 绑定服务 RPC（归属宿主路由＋读回确认）。行键=宿主限定身份（STA-4343 同口径）。
+- **常驻补绑定（P3b③）**：版本行「绑定已有工作树」——只列本仓无绑定活树，人显式断言归属；分支与本版流程分支一致时用途锁定为该流程（分支一致是强证据，锁定防误用；实际用途不符时先在原生项目核对该树）；issue 用途因 taskSource 须与解析查询精确相等、无法从登记完整推导而如实不提供（指引任务屏开工或清理该树）；instanceId 必填围栏，写入走 P1 绑定服务 RPC（归属宿主路由＋读回确认）。行键=宿主限定身份（STA-4343 同口径）。已知交互边界：分支不一致时人仍可断言 plan/acceptance 用途并写入成功——写入后该树受材料围栏期望分支约束（HEAD 非 bw/<版本>/<用途> 时读写一律如实拒绝），形成「可写不可用」的死绑定（无数据损坏；恢复=清理或改绑正确树）；对话框是否就地预警该后果归人决定。
 - **版本级清理（P3b④）**：确认单=版本语义清单层（本版全部存活绑定实例；本机 owned 默认勾选、他宿主列而不勾＋owner/预检/在跑会话标注；显式勾选=经共享通道在归属宿主删除）；预检状态与原生确认单同一 hydration 来源；执行交原生 `runWorktreeBatchDelete` 漏斗（Orca 确认单/预检/force/宿主路由全原生，批量必确认）。删除只改执行面，目录现算无悬空绑定；不改写自动化条目——本版已启用的版本化自动化按本机登记探测（creationKey 版本后缀）在确认单如实提示，他宿主 runtime 条目不跨机探测（留白）。P3a 占位对话框同交付删除。
 - **只读回看（P3b⑤）**：无绑定树且无旧固定树的版本，计划/验收屏挂 `VersionReadonlyMaterialView`——history RPC 按目录固定 sourceCommit/revision 读主干已提交材料，human-guard 字段只呈现状态不提供入口；工作树/会话不可用由登记缺失推导；缺材料/读取失败如实报，浏览不建树。
 - **P5 自动化身份版本化**：creationKey=`bw-cycle:<scope>:<workflow>[:<version>]`（绑定树加版本维度，每版独立登记）；条目名版本在前；提示词钉绑定树真实分支＋绑定版本（context.version=绑定版，「绑定即定、不切版不推断」文案）。计划侧 start/configure 护栏撤除；验收侧护栏保留至验收 Skill 正本同步（#394）合入——防提示词与旧归档分支文案矛盾，notice 如实改写。standard/ 计划侧同步：week-planning SKILL 归档步（0.6.1）＋version-records 命名四处＋asset-audit 读取处；bundle/manifest/registry/stub 重生成 verify 双检通过。R9 墙读数：`resolvePlanContext`（拆出 `wall-plan-context.ts`）绑定优先——跨注册行恰一个绑定版本为正本；多在制版本如实「版本未定」，不猜不回落旧偏好。

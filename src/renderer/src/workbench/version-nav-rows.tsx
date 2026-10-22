@@ -20,10 +20,13 @@ import {
 import WorktreeCardAgents from '@/components/sidebar/WorktreeCardAgents'
 import WorktreeContextMenu from '@/components/sidebar/WorktreeContextMenu'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
+import { branchName } from '@/lib/git-utils'
 import type { Worktree } from '../../../shared/worktree/types'
+import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
+import { WORKFLOW_SCREEN_LABELS } from './version-labels'
 
 /**
  * G2 侧栏版本树的行组件（P3a，高保真修订 8）：流程行=业务入口＋本树入口合一
@@ -66,7 +69,7 @@ function ChevronSpacer(): React.JSX.Element {
 /** 绑定树行（目标目录体）：名称点击激活（原生链），箭头展开原生 agent 行，···沿原生菜单。 */
 function BoundTreeRow({ tree }: { tree: Worktree }): React.JSX.Element {
   const [agentsOpen, setAgentsOpen] = useState(true)
-  const branch = tree.branch.replace(/^refs\/heads\//, '')
+  const branch = branchName(tree.branch)
   const label = tree.displayName.trim() || branch
   return (
     <div className="min-w-0">
@@ -79,7 +82,11 @@ function BoundTreeRow({ tree }: { tree: Worktree }): React.JSX.Element {
         <button
           type="button"
           title={branch}
-          onClick={() => activateAndRevealWorktree(tree.id)}
+          onClick={() =>
+            activateAndRevealWorktree(tree.id, {
+              ...(tree.hostId ? { executionHostId: tree.hostId } : {})
+            })
+          }
           className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-worktree-sidebar-foreground/8"
         >
           <GitBranch className="size-3.5 shrink-0 text-worktree-sidebar-foreground/40" />
@@ -128,13 +135,13 @@ export function WorkflowRow({
   const [agentsOpen, setAgentsOpen] = useState(true)
   const trees = findVersionFlowWorktrees(worktrees, { version, workflow })
   const Icon = workflow === 'plan' ? CalendarRange : ClipboardCheck
-  const label = workflow === 'plan' ? '计划' : '验收'
-  const branchTitle =
-    trees.length === 1
-      ? `${trees[0]?.branch.replace(/^refs\/heads\//, '')} · 本版固定工作区`
-      : trees.length > 1
-        ? `${trees.length} 个绑定实例 · 点击选择`
-        : `未准备 · 点击${label}入口查看可用路径`
+  const label = WORKFLOW_SCREEN_LABELS[workflow]
+  const onlyTree = trees.length === 1 ? trees[0] : null
+  const branchTitle = onlyTree
+    ? `${branchName(onlyTree.branch)} · 本版固定工作区`
+    : trees.length > 1
+      ? `${trees.length} 个绑定实例 · 点击选择`
+      : `未准备 · 点击${label}入口查看可用路径`
   return (
     <div className="min-w-0">
       <div className={cn(ROW_CLASS, active ? ROW_ACTIVE : ROW_IDLE)}>
@@ -190,11 +197,15 @@ export function WorkflowRow({
               {trees.length > 1
                 ? trees.map((tree) => (
                     <DropdownMenuItem
-                      key={tree.id}
-                      onSelect={() => activateAndRevealWorktree(tree.id)}
+                      key={getWorktreeHostIdentity(tree)}
+                      onSelect={() =>
+                        activateAndRevealWorktree(tree.id, {
+                          ...(tree.hostId ? { executionHostId: tree.hostId } : {})
+                        })
+                      }
                     >
                       <GitBranch className="size-4" />
-                      {tree.branch.replace(/^refs\/heads\//, '')}
+                      {branchName(tree.branch)}
                     </DropdownMenuItem>
                   ))
                 : null}
@@ -209,7 +220,7 @@ export function WorkflowRow({
       {agentsOpen && trees.length > 0 ? (
         <div className="pl-6">
           {trees.map((tree) => (
-            <WorktreeCardAgents key={tree.id} worktreeId={tree.id} />
+            <WorktreeCardAgents key={getWorktreeHostIdentity(tree)} worktreeId={tree.id} />
           ))}
         </div>
       ) : null}
@@ -299,7 +310,7 @@ export function GoalDirectoryRow({
       </div>
       {expanded
         ? goalTrees.map((tree) => (
-            <div key={tree.id} className="pl-5">
+            <div key={getWorktreeHostIdentity(tree)} className="pl-5">
               <BoundTreeRow tree={tree} />
             </div>
           ))

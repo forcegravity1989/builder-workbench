@@ -24,6 +24,7 @@ import {
   notifyScopedWorkspaceUnavailable
 } from '@/workbench/scoped-task-workspace'
 import { openWorkbenchWorkspaceChoice } from '@/workbench/version-workspace-choice-state'
+import { resolveReferenceRepo } from '@/workbench/task-port'
 export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   const { repoMap, openModal } = model
   // G2 (BW)：范围视图的 Issue 开工把版本归属上下文与目标树父级建议带进同一
@@ -42,25 +43,40 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
       if (!scope || item.type !== 'issue' || !item.repoId) {
         return {}
       }
-      const reference = scope.references.find(
-        (candidate) => candidate.provider === item.provider && candidate.number === item.number
-      )
+      const itemRepoId = item.repoId
+      const repo = repoMap.get(itemRepoId)
+      const reference = scope.references.find((candidate) => {
+        if (candidate.provider !== item.provider || candidate.number !== item.number) {
+          return false
+        }
+        if (!repo) {
+          // 仓库行缺失时无法构造仓库围栏，沿旧判据（provider+编号）。
+          return true
+        }
+        // 仓库维度围栏：同范围携带两仓同号引用时目标归属不串仓；引用仓库解析
+        // 不出则不按该引用预填（回落 scope.goalId）——归属只认可证明的匹配。
+        const resolved = resolveReferenceRepo(
+          { repos: () => [...repoMap.values()] },
+          { repoId: repo.id, hostId: getRepoExecutionHostId(repo) },
+          candidate
+        )
+        return resolved !== null && resolved.id === itemRepoId
+      })
       const goalId = reference?.goalId ?? scope.goalId ?? undefined
       const workbenchCreation: WorkbenchCreationContext = {
         version: scope.version,
         workflow: 'issue',
         ...(goalId ? { goalId } : {}),
-        repoId: item.repoId
+        repoId: itemRepoId
       }
       if (!goalId) {
         return { workbenchCreation }
       }
-      const repo = repoMap.get(item.repoId)
       const suggested = findGoalParentSuggestion({
         version: scope.version,
         goalId,
         worktrees: useAppStore.getState().allWorktrees(),
-        home: { repoId: item.repoId, hostId: repo ? getRepoExecutionHostId(repo) : null }
+        home: { repoId: itemRepoId, hostId: repo ? getRepoExecutionHostId(repo) : null }
       })
       return suggested
         ? { workbenchCreation, initialParentWorktreeId: suggested }
@@ -124,7 +140,10 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
         })
         if (scoped) {
           if (scoped.kind === 'unique') {
-            const opened = activateAndRevealWorktree(scoped.candidates[0].id)
+            const only = scoped.candidates[0]
+            const opened = activateAndRevealWorktree(only.id, {
+              ...(only.hostId ? { executionHostId: only.hostId } : {})
+            })
             if (opened === false) {
               notifyScopedWorkspaceUnavailable()
               return
@@ -256,7 +275,10 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
           repoId: item.repoId
         })
         if (scoped && scoped.kind === 'unique') {
-          const opened = activateAndRevealWorktree(scoped.candidates[0].id)
+          const only = scoped.candidates[0]
+          const opened = activateAndRevealWorktree(only.id, {
+            ...(only.hostId ? { executionHostId: only.hostId } : {})
+          })
           if (opened === false) {
             notifyScopedWorkspaceUnavailable()
           }

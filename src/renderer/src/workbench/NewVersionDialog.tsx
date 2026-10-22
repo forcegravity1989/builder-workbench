@@ -18,6 +18,7 @@ import {
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { nativeVersionWorkspacePort } from './version-workspace-port'
 import { setBrowsedVersion } from './version-context-state'
+import { WORKFLOW_TREE_LABELS } from './version-labels'
 import type { VersionCatalogState } from './use-version-catalog'
 
 /**
@@ -30,12 +31,10 @@ import type { VersionCatalogState } from './use-version-catalog'
 
 export type NewVersionDialogRequest = { mode: 'create' } | { mode: 'prepare'; version: string }
 
-const STEP_LABELS = { plan: '计划树', acceptance: '验收树' } as const
-
 function stepText(result: VersionWorkspacePrepareResult, workflow: 'plan' | 'acceptance'): string {
   const step = result.steps.find((item) => item.workflow === workflow)
   if (!step) {
-    return `${STEP_LABELS[workflow]}：未执行`
+    return `${WORKFLOW_TREE_LABELS[workflow]}：未执行`
   }
   const state =
     step.state === 'created' ? '已创建' : step.state === 'existing' ? '已就绪（复用登记）' : '失败'
@@ -45,7 +44,15 @@ function stepText(result: VersionWorkspacePrepareResult, workflow: 'plan' | 'acc
       : step.material.state === 'initialized'
         ? ' · 空计划已初始化'
         : ' · 计划材料已存在（未覆盖）'
-  return `${STEP_LABELS[workflow]}：${state}（${step.branch}）${material}`
+  return `${WORKFLOW_TREE_LABELS[workflow]}：${state}（${step.branch}）${material}`
+}
+
+/** 步骤链非原子回报：任一 problem 或失败步骤都算未全就绪（重试=重入补齐）。 */
+function prepareFailed(result: VersionWorkspacePrepareResult | null): boolean {
+  return (
+    result !== null &&
+    (result.problems.length > 0 || result.steps.some((step) => step.state === 'failed'))
+  )
 }
 
 export function NewVersionDialog({
@@ -117,8 +124,7 @@ export function NewVersionDialog({
       const state = useAppStore.getState()
       await Promise.all(catalog.repoIds.map((repoId) => state.fetchWorktrees(repoId)))
       catalog.reload()
-      const failed =
-        result.problems.length > 0 || result.steps.some((step) => step.state === 'failed')
+      const failed = prepareFailed(result)
       if (!failed) {
         const planStep = result.steps.find((step) => step.workflow === 'plan')
         setBrowsedVersion(projectKey, version)
@@ -141,18 +147,20 @@ export function NewVersionDialog({
     if (busy) {
       return
     }
-    const failure = validate(name)
-    if (failure) {
-      setFormError(failure)
-      return
+    // prepare 模式的版本名锁定为已存在版本，重名校验恰是其反向前提：重试必须
+    // 跳过 validate，否则「重试补齐」永远被「该版本已存在」挡死（不成立的承诺）。
+    if (!locked) {
+      const failure = validate(name)
+      if (failure) {
+        setFormError(failure)
+        return
+      }
     }
     setReport(null)
     void runPrepare(name.trim())
   }
 
-  const reportFailed =
-    report !== null &&
-    (report.problems.length > 0 || report.steps.some((step) => step.state === 'failed'))
+  const reportFailed = prepareFailed(report)
 
   return (
     <Dialog

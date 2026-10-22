@@ -3,6 +3,7 @@ import planningStub from '../../../../../skills/week-planning/SKILL.md?raw'
 import acceptanceStub from '../../../../../skills/version-acceptance/SKILL.md?raw'
 import metricsStub from '../../../../../skills/metrics-refresh/SKILL.md?raw'
 import { useAppStore } from '@/store'
+import { branchName } from '@/lib/git-utils'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
 import { nativeMetricsPort } from '../metrics-port'
 import { cycleBranch } from './native-cycle-workspace'
@@ -56,13 +57,17 @@ async function metricsCatalogContext(scope: WorkbenchPromptScope): Promise<strin
 /** Bundled raw template is compiled into the product; ordinary projects supply no standard/. */
 export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) {
   const state = useAppStore.getState()
-  const worktree = state
-    .allWorktrees()
-    .find(
-      (item) =>
-        item.id === scope.worktreeId &&
-        nativeWorkspaceScopeKey(nativeWorkspaceScope(item)) === nativeWorkspaceScopeKey(scope)
-    )
+  const worktree = state.allWorktrees().find((item) => {
+    if (item.id !== scope.worktreeId) {
+      return false
+    }
+    try {
+      return nativeWorkspaceScopeKey(nativeWorkspaceScope(item)) === nativeWorkspaceScopeKey(scope)
+    } catch {
+      // 同 id 的登记行宿主/路由坏掉解析不出：跳过该行，不让单条坏行抛穿整个解析。
+      return false
+    }
+  })
   if (!worktree) {
     throw new Error('原生工作树不可用，无法准备任务提示')
   }
@@ -80,8 +85,10 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
   const branch =
     topic === 'metrics-refresh'
       ? null
-      : (boundVersion && worktree.branch?.replace(/^refs\/heads\//, '')) ||
-        cycleBranch({ workflow })
+      : boundVersion
+        ? // 绑定树只钉真实分支；读不到真实分支就不钉，绝不冒充旧固定分支名（防误归档）。
+          (worktree.branch ? branchName(worktree.branch) || null : null)
+        : cycleBranch({ workflow })
   const references = ['version-records', 'metrics']
     .map((name) => `- ${name}：ORCA skills get ${topic} --reference ${name}`)
     .join('\n')

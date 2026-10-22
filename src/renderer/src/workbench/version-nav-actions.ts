@@ -2,12 +2,11 @@ import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
-import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
 import { setCycleView } from './cycle-view-state'
 import { setBrowsedVersion } from './version-context-state'
-import { cycleBranch } from './version-cycle/native-cycle-workspace'
+import { WORKFLOW_SCREEN_LABELS } from './version-labels'
 import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
 import { openVersionTasksPage } from './task-scope-load'
 import { loadVersionPlanDocument } from './version-task-entries'
@@ -20,10 +19,6 @@ import type { VersionCatalogState } from './use-version-catalog'
  * 建目录，准备是显式动作（spec「进入需要编辑的旧版时，再核对或准备」）。
  */
 
-function workflowLabel(workflow: VersionWorkflow): string {
-  return workflow === 'plan' ? '计划' : '验收'
-}
-
 export function navigateVersionWorkflow(args: {
   catalog: VersionCatalogState
   version: string
@@ -34,33 +29,26 @@ export function navigateVersionWorkflow(args: {
   setBrowsedVersion(projectKey, version)
   const bound = findVersionFlowWorktrees(catalog.worktrees, { version, workflow })
   if (bound.length === 1 && bound[0]) {
-    if (activateAndRevealWorktree(bound[0].id) === false) {
+    const only = bound[0]
+    if (
+      activateAndRevealWorktree(only.id, {
+        ...(only.hostId ? { executionHostId: only.hostId } : {})
+      }) === false
+    ) {
       toast.error('无法打开本版流程工作区，请在原生项目工作区中核对。')
     }
     return
   }
   if (bound.length > 1) {
     openWorkbenchWorkspaceChoice({
-      title: `${version} ${workflowLabel(workflow)}工作区`,
+      title: `${version} ${WORKFLOW_SCREEN_LABELS[workflow]}工作区`,
       candidates: [...bound]
     })
     return
   }
-  const legacyBranch = cycleBranch({ workflow })
-  const legacy = catalog.worktrees.find(
-    (tree) =>
-      !tree.isArchived &&
-      !normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding) &&
-      tree.branch.replace(/^refs\/heads\//, '') === legacyBranch
-  )
-  if (legacy) {
-    // 旧固定树路径：artifacts 槽沿现有 ensure/选版语义（旧上下文显式保留）。
-    setCycleView(workflow)
-    useAppStore.getState().openArtifactsPage()
-    return
-  }
-  // G2（P3b）：无绑定树也无旧固定树 → 只读回看（主干已提交材料）；浏览不建树，
-  // 缺材料/读取失败由只读视图如实呈现，准备是版本行菜单的显式动作。
+  // 无绑定树：无论旧固定树是否存在都进同一屏内入口——浏览目标 effect 按登记
+  // 决定 ensure 旧固定树（旧上下文显式保留）还是只读回看；浏览不建树，准备是
+  // 版本行菜单的显式动作。
   setCycleView(workflow)
   useAppStore.getState().openArtifactsPage()
 }

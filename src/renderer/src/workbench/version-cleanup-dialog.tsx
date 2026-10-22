@@ -28,6 +28,10 @@ import { useSidebarHostScopeOptions } from '@/components/sidebar/use-sidebar-hos
 import { useDeleteWorktreeStatusHydration } from '@/components/sidebar/use-delete-worktree-status-hydration'
 import { getDeleteWorktreeDirtyChangeCounts } from '@/components/sidebar/delete-worktree-dirty-change-counts'
 import { useWorktreeAgentRows } from '@/components/sidebar/useWorktreeAgentRows'
+import { branchName } from '@/lib/git-utils'
+import { nativeWorkspaceScope } from './version-cycle/native-workspace'
+import { cycleAutomationCreationKey } from './version-cycle/ensure-cycle-automation'
+import { ISSUE_TREE_LABEL, WORKFLOW_TREE_LABELS, goalTreeLabel } from './version-labels'
 
 /**
  * G2 版本级清理确认单（P3b，spec「版本级清理（复用 Orca 原生删除）」）：
@@ -41,20 +45,19 @@ import { useWorktreeAgentRows } from '@/components/sidebar/useWorktreeAgentRows'
  */
 
 function workflowLabel(entry: VersionCatalogEntry, workspace: VersionCatalogWorkspace): string {
-  switch (workspace.binding.workflow) {
-    case 'plan':
-      return '计划树'
-    case 'acceptance':
-      return '验收树'
-    case 'goal': {
-      const index = entry.goals.findIndex((goal) => goal.goalId === workspace.binding.goalId)
-      return index !== -1 ? `目标树 G${index + 1}` : '目标树'
-    }
-    case 'issue':
-      return 'Issue 执行树'
+  const workflow = workspace.binding.workflow
+  if (workflow === 'goal') {
+    const index = entry.goals.findIndex((goal) => goal.goalId === workspace.binding.goalId)
+    return goalTreeLabel(index === -1 ? null : index)
   }
+  return workflow === 'issue' ? ISSUE_TREE_LABEL : WORKFLOW_TREE_LABELS[workflow]
 }
 
+/**
+ * 登记归属判定的折叠语义：hostId null≡本机。与正牌宿主限定身份（未限定行独立
+ * 成桶、不折进任何宿主）刻意不同——本机默认勾选与目录树匹配都以 null 为本机；
+ * 行键在此判定下仍单射。
+ */
 function hostKey(hostId: string | null | undefined): string {
   return hostId ?? LOCAL_EXECUTION_HOST_ID
 }
@@ -140,23 +143,30 @@ export function VersionCleanupDialog({
     () => new Set(rows.filter((row) => row.local && row.tree !== null).map((row) => row.key))
   )
   // spec「版本级清理」：本版自动化仍启用时在对话框如实提示（是否停用由人在原生
-  // 编辑器决定）。探测覆盖本机可见的自动化登记（creationKey 版本维度后缀匹配，
-  // P5 版本化身份）；他宿主 runtime 的条目不跨机探测，属如实留白。
+  // 编辑器决定）。身份精确匹配：creationKey 全键相等（scope+用途+版本全维度，P5
+  // 版本化身份）——曾按版本后缀匹配，会把其他项目同版本号条目计入本版；他宿主
+  // runtime 的条目不跨机探测，属如实留白。
   const [automationNotice, setAutomationNotice] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
     setAutomationNotice(null)
     void (async () => {
       try {
+        const home = worktrees.find((tree) => tree.isMainWorktree) ?? worktrees[0]
+        if (!home) {
+          return
+        }
+        const scope = nativeWorkspaceScope(home)
+        const keys = new Set([
+          cycleAutomationCreationKey({ ...scope, workflow: 'plan' }, version),
+          cycleAutomationCreationKey({ ...scope, workflow: 'acceptance' }, version)
+        ])
         const automations = await listAutomationsForTarget(
           getAutomationAuthorityTarget({ kind: 'desktop' })
         )
         const enabled = automations.filter(
           (item) =>
-            item.enabled &&
-            typeof item.creationKey === 'string' &&
-            item.creationKey.startsWith('bw-cycle:') &&
-            item.creationKey.endsWith(`:${version}`)
+            item.enabled && typeof item.creationKey === 'string' && keys.has(item.creationKey)
         )
         if (!cancelled && enabled.length > 0) {
           setAutomationNotice(
@@ -174,7 +184,7 @@ export function VersionCleanupDialog({
     return () => {
       cancelled = true
     }
-  }, [version])
+  }, [version, worktrees])
   const toggle = (key: string, next: boolean) => {
     setChecked((previous) => {
       const updated = new Set(previous)
@@ -231,7 +241,7 @@ export function VersionCleanupDialog({
           {rows.map((row) => {
             const label = row.tree
               ? row.tree.displayName?.trim() ||
-                row.tree.branch?.replace(/^refs\/heads\//, '') ||
+                (row.tree.branch ? branchName(row.tree.branch) : '') ||
                 row.tree.id
               : row.workspace.worktreeId
             const ownerLabel = row.local

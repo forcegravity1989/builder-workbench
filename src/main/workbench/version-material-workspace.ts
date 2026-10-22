@@ -35,6 +35,9 @@ import type {
 } from '../../shared/workbench/version-material-migration'
 import { versionFlowBranch } from '../../shared/workbench/version-workspace-prepare'
 
+/** 无绑定树的旧固定计划分支（旧上下文逐字保留；材料读写与空计划初始化围栏共用）。 */
+const LEGACY_PLAN_BRANCH = 'bw/week-plan'
+
 /** Runs on the filesystem owner; paths come from the authenticated native inventory adapter. */
 export type VersionMaterialWorkspace = { repoPath: string; worktreePath: string }
 
@@ -52,7 +55,7 @@ export function createVersionMaterialWorkspace(
    */
   function expectedBranchFor(scope: VersionMaterialScope): string {
     if (!binding) {
-      return scope.workflow === 'plan' ? 'bw/week-plan' : 'bw/week-acceptance'
+      return scope.workflow === 'plan' ? LEGACY_PLAN_BRANCH : 'bw/week-acceptance'
     }
     if (!flowBinding || flowBinding.workflow !== scope.workflow) {
       throw new WorkspaceScopeError('invalid-scope', '该工作树不是此用途的流程树，材料读写被拒绝')
@@ -164,6 +167,12 @@ export function createVersionMaterialWorkspace(
           'cross-version',
           `该工作树绑定版本 ${flowBinding.version}，拒绝初始化 ${request.version} 的计划材料`
         )
+      }
+      if (!binding && request.expectedBranch !== LEGACY_PLAN_BRANCH) {
+        // 无绑定树沿与读/写相同的旧语义：只认旧固定计划分支。expectedBranch 由
+        // 请求方给出，缺此围栏时 relay 面可在任意已解析树初始化材料（纵深一致；
+        // 现唯一调用方 prepare 恒先绑定后初始化，不会命中）。
+        throw new WorkspaceScopeError('invalid-scope', '无绑定树仅支持在旧固定计划分支初始化材料')
       }
       const root = await authorizeCreatedTree(request.expectedBranch)
       const store = createVersionDocumentStore<PlanningMaterial>({

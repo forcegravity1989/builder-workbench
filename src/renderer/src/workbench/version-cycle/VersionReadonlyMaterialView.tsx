@@ -9,6 +9,7 @@ import { nativeVersionHistoryPort } from '../version-history-port'
 import { useVersionCatalogForRepo } from '../use-version-catalog'
 import { nativeWorkspaceScope } from './native-workspace'
 import { BoardLines } from '../board-ui'
+import { DECISION_LABELS, WORKFLOW_SCREEN_LABELS, shortCommit } from '../version-labels'
 
 /**
  * G2 只读回看（P3b，spec「版本级清理」/「版本总览、回看」）：已清理或未准备
@@ -23,12 +24,6 @@ type ViewState =
   | { kind: 'missing'; message: string }
   | { kind: 'plan'; document: PlanningMaterial; sourceCommit: string; committedAt: string }
   | { kind: 'acceptance'; document: AcceptanceMaterial; sourceCommit: string; committedAt: string }
-
-const DECISION_LABELS = { met: '达成', 'not-met': '未达', pending: '待核' } as const
-
-function shortCommit(commit: string): string {
-  return commit.slice(0, 9)
-}
 
 export function VersionReadonlyMaterialView({
   workflow,
@@ -135,7 +130,7 @@ export function VersionReadonlyMaterialView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repoId, home, workflow, version, refKey, catalogReady, catalogError])
 
-  const workflowLabel = workflow === 'plan' ? '计划' : '验收'
+  const workflowLabel = WORKFLOW_SCREEN_LABELS[workflow]
   const liveWorkspaces = entry?.workspaces.length ?? 0
   return (
     <div className="vc-readonly">

@@ -150,7 +150,11 @@ export function openGoalWorkspace(args: {
     if (!only) {
       return false
     }
-    if (activateAndRevealWorktree(only.id) === false) {
+    if (
+      activateAndRevealWorktree(only.id, {
+        ...(only.hostId ? { executionHostId: only.hostId } : {})
+      }) === false
+    ) {
       toast.error('无法打开目标工作区，请在原生项目工作区中核对。')
     }
     return true

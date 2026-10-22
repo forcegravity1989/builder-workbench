@@ -1,6 +1,7 @@
 import { toast } from 'sonner'
 import type { Worktree } from '../../../shared/worktree/types'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
+import { branchName } from '@/lib/git-utils'
 import type { WorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import { nativeVersionBindingPort } from './version-binding-port'
 
@@ -25,7 +26,9 @@ export async function writeWorkbenchCreationBinding(
   >
 ): Promise<void> {
   const label =
-    worktree.displayName?.trim() || worktree.branch?.replace(/^refs\/heads\//, '') || worktree.id
+    worktree.displayName?.trim() ||
+    (worktree.branch ? branchName(worktree.branch) : '') ||
+    worktree.id
   const hostId = worktree.hostId ?? LOCAL_EXECUTION_HOST_ID
   async function attempt(retry: boolean): Promise<void> {
     if (!worktree.instanceId) {

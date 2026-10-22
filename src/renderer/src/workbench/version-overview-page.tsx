@@ -5,6 +5,14 @@ import { useVersionOverviewMaterials } from './version-overview-materials'
 import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
 import type { VersionOverviewOptions } from './project-page-state'
 import type { PlanningMaterial } from '../../../shared/workbench/version-material'
+import {
+  DECISION_LABELS,
+  ISSUE_TREE_LABEL,
+  WORKFLOW_TREE_LABELS,
+  goalOrdinal,
+  goalTreeLabel,
+  shortCommit
+} from './version-labels'
 
 /**
  * G2 版本总览（P6，高保真修订 9：最简表格周报风格）：一版一页，从主干已提交
@@ -14,12 +22,6 @@ import type { PlanningMaterial } from '../../../shared/workbench/version-materia
  * 前如实标注，不猜。在制版本的未合入草稿以计划屏为准，本页只读已提交材料。
  * 数据装载在 version-overview-materials.ts。
  */
-
-const DECISION_LABELS = { met: '达成', 'not-met': '未达', pending: '待核' } as const
-
-function shortCommit(commit: string): string {
-  return commit.slice(0, 9)
-}
 
 function prStatusText(status: ArchivePrStatusResult | null, recorded: boolean): string {
   if (!recorded) {
@@ -76,13 +78,11 @@ export function VersionOverviewPage({
   const acceptanceDocument = acceptance.kind === 'ready' ? acceptance.document : null
   const catalogReady = catalog.catalog !== null
   const workspaceLabels = (entry?.workspaces ?? []).map((workspace) =>
-    workspace.binding.workflow === 'plan'
-      ? '计划树'
-      : workspace.binding.workflow === 'acceptance'
-        ? '验收树'
-        : workspace.binding.workflow === 'goal'
-          ? '目标树'
-          : 'Issue 树'
+    workspace.binding.workflow === 'goal'
+      ? goalTreeLabel(null)
+      : workspace.binding.workflow === 'issue'
+        ? ISSUE_TREE_LABEL
+        : WORKFLOW_TREE_LABELS[workspace.binding.workflow]
   )
   const minutes = planDocument?.minutes
   const followupsClosed = minutes?.followups.filter((item) => item.closed).length ?? 0
@@ -99,7 +99,13 @@ export function VersionOverviewPage({
       <header className="flex flex-wrap items-baseline gap-2">
         <h1 className="text-[17px] font-semibold">{version} 版本总览</h1>
         <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
-          {entry?.state === 'working' ? '在制' : '历史'}
+          {!catalogReady && !catalog.error
+            ? '状态读取中…'
+            : entry?.state === 'working'
+              ? '在制'
+              : entry
+                ? '历史'
+                : '状态未知'}
         </span>
         <span className="text-[11.5px] text-muted-foreground">
           只读派生自主干已提交材料与原生登记
@@ -148,11 +154,13 @@ export function VersionOverviewPage({
 
       <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4">
         <FactCell label="工作区（登记现算）">
-          {!catalogReady && !catalog.error
-            ? '目录读取中…'
-            : workspaceLabels.length > 0
-              ? `${workspaceLabels.length} 棵存活：${[...new Set(workspaceLabels)].join('、')}`
-              : '已清理或未准备（登记缺失）'}
+          {catalog.error
+            ? `目录读取失败：${catalog.error}`
+            : !catalogReady
+              ? '目录读取中…'
+              : workspaceLabels.length > 0
+                ? `${workspaceLabels.length} 棵存活：${[...new Set(workspaceLabels)].join('、')}`
+                : '已清理或未准备（登记缺失）'}
         </FactCell>
         <FactCell label="计划归档 PR">
           {planDocument?.workflow?.archivePr
@@ -201,7 +209,7 @@ export function VersionOverviewPage({
               </tr>
             ) : null}
             {planDocument?.goals.map((goal, index) => {
-              const label = `G${index + 1}`
+              const label = goalOrdinal(index)
               const references = planDocument.tasks.filter((task) => task.goalId === goal.goalId)
               const result = acceptanceDocument?.results.find((item) => item.goalId === goal.goalId)
               const openFollowups = (result?.meetingDirectives ?? []).filter(

@@ -157,24 +157,31 @@ export function createVersionWorkspacePrepareService(
       branch: string,
       problems: VersionWorkspacePrepareResult['problems']
     ): Promise<VersionWorkspacePrepareStep> {
-      // 1) 已绑定的活树 → 复用（重入补齐语义），计划材料仍尝试 create-only 初始化。
-      const bound = findBound(await listRegistered(), workflow)
-      if (bound) {
+      /** 复用已登记树：报 existing＋计划材料仍尝试 create-only 初始化（失败进 problems，不断步骤链）。 */
+      async function existingStep(
+        tree: Pick<Worktree, 'id' | 'instanceId'>
+      ): Promise<VersionWorkspacePrepareStep> {
         const step: VersionWorkspacePrepareStep = {
           workflow,
           branch,
           state: 'existing',
-          worktreeId: bound.id,
-          ...(bound.instanceId !== undefined ? { instanceId: bound.instanceId } : {})
+          worktreeId: tree.id,
+          ...(tree.instanceId !== undefined ? { instanceId: tree.instanceId } : {})
         }
         if (workflow === 'plan') {
           try {
-            step.material = await initializePlanMaterial(bound.id, branch)
+            step.material = await initializePlanMaterial(tree.id, branch)
           } catch (error) {
             problems.push({ workflow, code: errorCode(error), message: errorMessage(error) })
           }
         }
         return step
+      }
+
+      // 1) 已绑定的活树 → 复用（重入补齐语义），计划材料仍尝试 create-only 初始化。
+      const bound = findBound(await listRegistered(), workflow)
+      if (bound) {
+        return existingStep(bound)
       }
 
       // 2) Git 级占用（含未登记/外部树）：归属不能证明为本版流程树 → 拒绝，不劫持不清理。
@@ -194,21 +201,7 @@ export function createVersionWorkspacePrepareService(
             `分支 ${branch} 已被工作树 ${holder.path} 占用，归属无法证明为本版流程树；请在原生项目中核对后重试`
           )
         }
-        const step: VersionWorkspacePrepareStep = {
-          workflow,
-          branch,
-          state: 'existing',
-          worktreeId: holder.id,
-          ...(holder.instanceId !== undefined ? { instanceId: holder.instanceId } : {})
-        }
-        if (workflow === 'plan') {
-          try {
-            step.material = await initializePlanMaterial(holder.id, branch)
-          } catch (error) {
-            problems.push({ workflow, code: errorCode(error), message: errorMessage(error) })
-          }
-        }
-        return step
+        return existingStep(holder)
       }
 
       // 3) 创建：宿主端去重——双击/多窗口/共享端 in-flight 收敛为一次创建，
@@ -244,21 +237,7 @@ export function createVersionWorkspacePrepareService(
         // 并行对手可能已建好正确树 → 重新发现并采用，不为看不见的竞态报错。
         const winner = findBound(await listRegistered(), workflow)
         if (winner) {
-          const step: VersionWorkspacePrepareStep = {
-            workflow,
-            branch,
-            state: 'existing',
-            worktreeId: winner.id,
-            ...(winner.instanceId !== undefined ? { instanceId: winner.instanceId } : {})
-          }
-          if (workflow === 'plan') {
-            try {
-              step.material = await initializePlanMaterial(winner.id, branch)
-            } catch (error) {
-              problems.push({ workflow, code: errorCode(error), message: errorMessage(error) })
-            }
-          }
-          return step
+          return existingStep(winner)
         }
         throw new WorkspaceScopeError(
           'create-branch-mismatch',
