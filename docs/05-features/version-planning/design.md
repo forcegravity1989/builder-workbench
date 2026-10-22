@@ -5,21 +5,53 @@
 > 状态：已授权实施；详细设计未逐项细审，未决项须人工确认。已实现范围及证据见 STATUS，正文按当前接线回写；未标注落点的接口仍为设计。架构定位：§1 项目版本，§2 ①事实、②执行、③规范、⑤壳，§3 Orca 执行核与 BW 叠层。
 
 
-## G3 高保真候选的实现边界
+## G3 计划屏实现边界(2026-10-21 落地)
 
-[计划旅程候选](planning-journey-prototype.html) 使用独立 `g3-*` 源码与生成物，复用已有 vendor、设计系统；只操作浏览器内存。当前材料 schema、生产页面、共用验收/总览原型未修改。行为及参考案例见 [spec G3 候选段](spec.md)。
+[计划旅程高保真](planning-journey-prototype.html)(`prototype/g3-*` 源码与生成物)是设计依据,保持 PR #391 状态不改;生产计划屏已按其形态落地,落点如下。原型只操作浏览器内存,不是交付证据;行为条款见 [spec](spec.md),证据见 STATUS。
 
-候选使用独立可收缩目标卡、正常阅读间距、按需行内编辑和持续可见的计划助手。顶部导航负责分区定位，各区自然滚动，不要求一屏容纳全部目标。原生会话在左侧，标签、历史、输入与工具完整复用；候选只有边界占位，不再绘制另一套聊天面板。页头不再另设助手图标（与收折入口重复，2026-10-21 退役）；会话入口是页头带图标的「收起会话 / 展开会话」按钮，只打开 / 聚焦同一原生会话位置，不更改消息草稿，不注入或自动发送；会话栏整栏（含顶部标签栏与会话标题）均为原生，候选不绘制 BW 会话头；此角色不新增执行核或 Agent 注册协议。对象级动作（拆解 / 关联、整理纪要、基于纪要调整目标）复用 Orca 原生发送弹窗链路——`openAgentSendPopoverTargetMode`（`use-browser-page-annotation-send` 同一出口），携带一句话指令与对象上下文，由用户在原生弹窗确认目标会话；已退役的 `CycleSessionPort.prepareRequest` 贴草稿通道不恢复。会话栏收折沿用 `use-plan-column-resize` 与壳 `vc-session-toggle` 的按钮行为（候选加图标；原生会话无 ×）；页头保留分支名与 `AutomationConfigureButton`（自动化绑定固定工作树，与版本选择解耦）。Issue 行 Bug / Feature 角标由 labels 推导（`taskKind` 纯函数：含 bug / 缺陷 → Bug，否则默认 Feature；与现行「无标签归未分类」条款不同，候选认可后替换），快照 labels 为 2026-10-21 经 GitHub API 补采的真实标签。目标卡支持整卡删除：卡片头 × 图标 + 就近二次确认（不弹窗），删除即把该目标的 Issue 引用与相关批注一并移出，计数现算；生产语义为计划文档编辑，经材料 CAS 保存，不另设确认弹窗或撤销栈。目标与纪要的编辑只保留最终内存状态，不存编辑序号或归档快照。会议纪要按固定两块呈现——共识（若干点，可编辑）与遗留（若干点，逐条闭环状态，闭环 = 版本计划已按该条修改、只能由人标记）——独立保存，经人工确认生效；不设逐条握手状态，Leader 认可随归档 PR 评审表达。目标卡内恢复指标承诺区块，交互形态沿用现行 `PlanGoalMetrics`（目录选取、当前读数、未采集标目标草案），候选仅内存演示；目标卡不设交付内容字段，交付件归验收版本级呈现（字段退役见 spec 移交项）。
+| 屏面 | 落点 |
+|---|---|
+| 页头(面包屑版本下拉 / 保存状态 / 会话收折 chip / 分支名 / 更新代码 / 配置自动化 / 批注模式) | `version-planning/PlanningSections.tsx` 的 PlanningHeader;chip 经 `plan-column-resize.ts` 的 `togglePlanChat()`+`PLAN_CHAT_TOGGLE_EVENT` window 事件桥与壳 `use-plan-column-resize` 同步(不能用 storage 事件:同窗口写入不触发),收折态订阅在 `use-plan-chat-collapsed.ts`;壳 `AppWorkspaceShell` 的 titlebar `vc-session-toggle` 改为仅验收屏渲染,计划屏 titlebar 保留拖拽带 |
+| 顶部 4 分区导航(无灯) | PlanningSections 的 PlanningJourneyNav;滚动 spy 与导航抑制照原型逻辑放在 `use-journey-spy.ts`(触底→archive,否则 findLast(top ≤ 容器 top+60);焦点/滚轮/指针/翻页键清除抑制)。`workflow.stage` 契约不变(模型仍写、会话校准、验收屏灯),计划屏不再消费;旧竖排灯条与 `workflowStageIndex` 的计划侧消费已删 |
+| 上版回顾两行 | `PlanningPriorReview.tsx` + `use-prior-carryovers.ts`;`planning-progress-source.ts` 改为返回固定来源的验收文档与其采用计划(身份核验原样,不再产 buildAcceptanceReport 加工文本)。纯映射 `derivePriorCarryovers`:延期遗留 = `results[].issueMarks` carry 标记按 `acceptance-issue-annotations` 的身份/legacy 裸编号兼容 join 文档顶层 `taskSnapshot`(join 到才给标题与原生详情入口,join 不到只显示编号);会议遗留 = confirmed 且 `tag=next-week-plan` 的 `meetingDirectives`,材料顺序编号 M1…。缺字段→空态,不解析 note、不按 open 推断 |
+| 目标卡(G3 形态) | `PlanningGoalCard.tsx`(计划专用;`VersionGoalCard` 收敛为验收只读骨架,编辑分支/交付件 textarea/readOnly/onChange 已删)。行内编辑态(铅笔切换,单卡编辑)、就近删除二次确认、整卡删除级联(goals 过滤 + tasks 引用整条移出 + 批注按结构化引用级联,经现有 autosave CAS 保存);开合记忆沿 `cycle-view-state` 的 goalCardViewKey,默认收起(照原型);Issue 行平铺 + `taskKind` 角标(精确 `/^(bug|缺陷)$/i` → Bug,否则 Feature;未 ready 行无角标、状态未知,Unknown 铁律)+「开工」箭头(临时语义 = `taskPort.openDetail` 开原生详情,可访问名「打开 #N 原生任务详情」;真开工归 G2/#385,永久 hookup 时调 G2 统一 Start/Open resolver,不另写继续逻辑);标题去 `【…】` 前缀渲染 |
+| 指标承诺 | `PlanGoalMetrics.tsx` 换装 `g3-metric-*` 形态,行为链沿用(目录选取、按名去重、定义已更新提示、当前读数/目标草案、采集=总览同一能力、证据 details 与基线采用);「配置指标」上移到目标区标题旁;文案按 spec 生产文案清单(「当前 —」「目标草案/目标」「采集」) |
+| 会议纪要 | `PlanningMinutesSection.tsx`;存储协议 = 计划材料可选 `minutes` 节(`PlanMeetingMinutesSchema`,followups 条目含稳定 id),人工守卫在 `main/workbench/plan-human-guard.ts`(confirmed/confirmedAt/closed 模型通道按 id 原样往返,confirmed=true 整节冻结,未确认时模型可写正文,新条目 closed=false),契约登记 version-records.md。旧三节派生(plan-summary.ts/derivePlanMinutes)、预览纪要弹窗(PlanningMinutes.tsx)、内联进展纪要回显(use-progress-minutes.ts)与 minutes-template.md 整体退役删除;总览 `use-version-minutes.ts` 计划列改读存储 minutes 渲染两块,无存储纪要显示「纪要未记录」 |
+| 在线批注 | 共享模块 `workbench/annotations/`(types / use-board-annotations / AnnotationPopover / AnnotationPanel / annotation-markers / annotation-markdown),BW 业务屏共用机制,本轮只接计划屏,内存态(重启丢失为设计内)。对象引用结构化 `{kind, goalId?, issueNumber?, label}`,DOM 挂载 `data-annotate-kind/-goal/-issue/-label`;捕获 = 滚动容器 onClickCapture + `closest('[data-annotate-kind]')`,纪要区排除;编号按记录顺序现算,角标与面板同号;Esc 先关小窗再退模式关面板;横幅用清单认可短文案(spec 两条款冲突经人拍板 2026-10-21) |
+| 与 Orca annotate 组件族的关系 | **不复用**原生浏览器捕获链(useGrabMode/viewport-bridge/pending-card 绑 webContents 注入与页面坐标,React 板面用不上);**复用**发送弹窗链路 `openAgentSendPopoverTargetMode`(source 沿用 `'browser-annotations'`,不扩 Orca union;埋点归因混入浏览器批注,要区分走 ref/upstream 接缝候选交人)与 Radix Tooltip(Esc 原生)。面板/小窗按 G3 形态自建:无意图分段与发送行,小窗只新增(× 只关窗),编辑/删除在面板卡片;Markdown 输出 `- [对象] 文本` 自建纯函数 |
+| 对象级动作 | `use-object-action-send.ts`:拆解/关联、整理纪要、基于纪要调整、批注发送四个入口统一走原生发送弹窗(一句话指令+对象上下文,用户确认目标会话后发送),动作同时 `revealPlanChat()` 展开会话栏;卸载时 close。贴草稿通道不恢复;`entry.start`(自动化手动运行)仅保留给空板「与计划助手新建计划」——这是计划屏唯一会话发起入口(G2 接缝:入口内部走现有 ensure 链,不固化第二套选版 UI) |
+| 归档 PR | `PlanningArchiveCard.tsx`(计划屏专用;共用 `CycleArchive` 不动,验收屏沿用)+ `open-archive-pr.ts`:resolveReferenceRepo → GitHub `lookupGitHubWorkItemForSource(type:'pr')` / CodeHub `viewTask(kind:'mr')` → `openTaskPage(returnToPreviousView)` 落原生 PullRequestPage/MR 详情,不跳外部浏览器;解析失败经 notice 如实提示,不外链兜底。状态读取链(use-archive-pr-status)不变;计划侧「查看评审」外链已删 |
+| 样式 | `version-planning.css` 整体换装 g3-planning.css 移植(作用域 .vp-board,fixed 浮层除外;窄板容器查询阈值 780/580/420 照原型);`--radius-lg: 10px` 补进 workbench-tokens.css(设计系统同值);planning-dialogs.css 并入后删除;`.vp-archive-card` 移入 version-cycle.css(CycleArchive 自import);planning-fields.css 只剩验收 AcceptanceMetrics 沿用的 vp-metric* 规则;原型手写 tooltip 不移植(生产用 Orca Radix Tooltip) |
 
-上版依计划 progressSource 指向固定 v0.6 验收，只回显两类：`leftoverIssues`（延期遗留——Issue 编号 + 标题，可点击跳转原生详情）与 `meetingDirectives`（会议遗留——事项编号 + 描述，v0.6 为空则显示未记录）；上版目标、进展与实际交付不回显，不编辑本版风险。历史延期引用取自人工 note 明确写下的 #331 / #339 / #341，fixture 保存原句，不由 open 状态推断；没有会议字段则不拿 nextStep 替代。原型输入 fixture 是单份固定材料，不为评审前后另存数据。验收直接跳已有原型（仍为 v0.5 示例），真实固定历史定位未接线；不得将原型导航证据说成 v0.6 读回成功。
+G3 向 G2 / Orca 提供完整任务引用与返回位置;侧栏、原生创建器、工作区查找及会话执行由 G2 / Orca 承接。「开工」箭头本轮为临时语义(开原生任务详情),永久 hookup 调 G2 统一 Start/Open resolver(G2 P4 交付,2026-10-21 知会)。归档沿已有原生会话流程。剩余开放项:会议 ID 自动获取(Leader 群组 / WeLink)依赖的用户组旅程、G2 交接契约与验收屏批注接入(移交项)。批注为屏内内存态、纪要存材料,无业务数据库、快照存储或第二套批准状态。
 
-G3 向 G2 / Orca 提供完整任务引用与返回位置；侧栏、原生创建器、工作区查找及会话执行由 G2 / Orca 承接。本原型开工只示意交接。归档沿已有原生会话流程，屏内入口打开 Orca 原生 PR 页（复用 `components/pull-request-page`，不跳外部浏览器），不做另一份 PR 面板。在线批注复用 `components/browser-pane/annotate` 的托盘与发送链路（`BrowserPageAnnotationTray`、意图选项、Markdown 输出、发送给会话）；入口为页头「批注模式」按钮——vendor 冻结、无 `MessageSquarePlus`，图标由 MessageSquare + Plus 组合；进入后右侧打开「板面批注（N）」紧凑记录面板（编号卡片列表、提示行、板面级批注、复制 / 发送；列表 40vh 限高内滚动、整窗限高，不随批注数无限增长、不整栏覆盖板面），拦截板面点击并把 `data-annotate` 元素映射为业务对象引用，记录在被点元素就近的「对象批注」小窗完成（对齐 Orca 元素批注弹窗：对象名标题、textarea、取消 / 添加 + Ctrl+Enter；小窗只负责新增、× 仅关窗不删批注——第七轮修正 × 误删，已有批注的编辑 / 删除放在面板卡片：笔形行内编辑 + × 删除；板面级批注复用同一个小窗，锚在面板按钮旁）。批注粒度细到目标句、验收标准、指标承诺、Issue 行、整卡与板面级，板面编号角标与面板卡片按记录顺序同号。BW 小窗不带 Orca 的意图分段与发送行——批注是评审会速记、整批作为纪要输入经面板底部走原生发送弹窗。BW 板面是 React DOM，元素选取比 HTML 批注简单，捕获层在实现设计适配，不另造第二套批注；纪要区排除在捕获范围外，Esc 先关小窗、再退出并关闭面板。右上「时期」场景切换是原型工具，不进生产。后续只需确定纪要存储协议（含共识 / 遗留与逐条闭环状态字段）、批注捕获层设计、会议 ID 自动获取依赖的用户组旅程及 G2 交接契约，不增加业务数据库、快照存储或第二套批准状态。
+### 与高保真的有意偏差登记
+
+| # | 偏差 | 理由 |
+|---|---|---|
+| D1 | 页头保留版本下拉(融入面包屑) | G2(#383/#328/#389)才移除屏内版本选择;本轮必须有选版入口;选版相关 spec 条款原样保留(G2 P3b 范围) |
+| D2 | 页头保留「更新代码」text-button | 已认可的唯一同步入口(spec 范围与入口段仍有效);高保真未画 |
+| D3 | h1 旁保留保存状态 | 已认可行为「正常状态只在标题旁简短呈现」;高保真为演示脚注替代 |
+| D4 | 无 progressSource 时上版回顾空态文案「未选定上版验收来源 · 在计划会话中明确后写入」 | 生产文案清单未覆盖此态,按「缺项如实显示」原则新拟,PR 中请人过目 |
+| D5 | 目标区标题保留「刷新 Issue」IconButton | 任务状态读回刷新为生产必需(taskPort 缓存有读取时间);高保真未画 |
+| D6 | 开工箭头可访问名「打开 #N 原生任务详情」 | 高保真「开工 #N(G2 衔接)」含内部代号且真开工归 G2/#385;临时语义如实命名 |
+| D7 | 批注模式与面板头图标用 `MessageSquarePlus` 单图标 | 高保真两图标组合是原型 vendor 冻结变通;生产 lucide 有原生同形图标,视觉一致 |
+| D8 | Issue 行不显示 assignee、标题去 `【…】` 前缀渲染 | 对齐高保真行内元素(编号/标题/角标/状态/批注/开工) |
+| D9 | 任务未 ready 行不渲染分类角标 | Unknown 铁律:无 labels 数据不冒充 Feature;高保真 fixture 全部有 labels 未覆盖此态 |
+| D10 | 总览历史版本纪要列对无存储纪要的版本显示「纪要未记录」 | 三节派生模板退役(移交项)的总览侧后果;如实不冒充 |
+| D11 | 空板卡内保留「材料问题紧凑提示行」;计划存在时问题行移到目标区顶部 | 生产必需的已认可行为(异常文件经启动入口带入会话);高保真空板未画;常驻可见性等价旧 CycleStartCard |
+| D12 | 批注横幅用清单认可短文案,不用原型长引导语 | spec 原型注释清单(引导语不进界面)与行为段(进入后有横幅提示)冲突,经人拍板 2026-10-21:横幅保留、文案用已认可短句 |
+| D13 | 面板提示行仅批注模式显示 | 原型面板提示常驻;退模式后经角标重开面板时该句为陈旧提示,按诚实呈现收敛 |
+| D14 | 批注面板 absolute 锚板面体(top:16,页头以下),开启时与顶部导航右段重叠(原型 fixed 视口 top:96 的遮挡效应相同);对象小窗经 createPortal 挂 document.body、fixed 贴被点元素 | 生产板面右侧还有 Orca 资源管理器列、页头为两行高于原型:fixed 视口坐标会遮右栏、板面 top:96 会压页头动作行(均真壳实测);portal 消除任何引擎下 container-type 包含块捕获小窗的风险;导航右段重叠为原型同有的瞬态遮挡,关面板即恢复 |
+| D15 | 「配置指标」用 ChartNoAxesCombined 图标 | 原型用 annotate-mode 组合glyph 是 vendor 冻结变通;指标语义图标与旧生产一致且更准确 |
+| D16 | 未选版空板文案「尚未选定版本,可在页头选择已有版本。」 | 生产文案清单未覆盖(清单仅「{版本} 计划尚未建立。」);性质同 D4,PR 中请人过目 |
+| D17 | 清单未覆盖的生产必需状态串四则:上版回顾「正在读取…」、复制 notice「已复制板面批注。」、目标区「Issue 状态未知:{原因}」、指标块「指标未知:{原因}」;未 ready 的 Issue 行与上版回顾 join 失败行仅显示 `#编号`(+状态未知),不另加「标题未读到」(按决策 A 只显示编号) | 运行态如实提示为生产必需,清单只覆盖静态文案;性质同 D4/D16,PR 中请人过目 |
 
 ## 现状与复用
 
 本轮已完成入口切换：旧三屏链条（PlanJourneyShell / PlanWeekBoard / PlanWeekPlanChat / plan-week-* / workbench-plan.css）已退役删除，以下为当前接线。
 
-本轮已完成入口迁移：启动按钮由原生 TabBar 移至 BW 右板首行协作卡片（CycleStartCard），“配置自动化”在页头；分支信息留在右板页头，原生会话控件不含 BW 按钮（tab-bar-surface 的薄挂载已撤除）。异常文件与当前选版经同一启动入口带入会话：手动运行已登记自动化时作为一次性上下文（automation.runNow 的 oneShotPrompt，capability 门控）随保存提示在派发端合并单次递交，保留用户保存的提示、工具、模型与会话复用配置，不另建会话、不覆盖自动化记录；独立的 startMaterialRequest 通道已退役删除。
+本轮已完成入口迁移：验收屏启动按钮在右板首行协作卡片（CycleStartCard），计划屏启动入口在目标区空板卡「与计划助手新建计划」（G3 落地后 CycleStartCard 计划侧引用移除，组件保留给验收），“配置自动化”在两屏页头；分支信息留在右板页头，原生会话控件不含 BW 按钮（tab-bar-surface 的薄挂载已撤除）。异常文件与当前选版经同一启动入口带入会话：手动运行已登记自动化时作为一次性上下文（automation.runNow 的 oneShotPrompt，capability 门控）随保存提示在派发端合并单次递交，保留用户保存的提示、工具、模型与会话复用配置，不另建会话、不覆盖自动化记录；独立的 startMaterialRequest 通道已退役删除。
 
 | 落点 | 采用方式 |
 |---|---|
@@ -36,8 +68,8 @@ BW 业务放在 renderer/workbench 下的 version-cycle、version-planning、ver
 
 | 所有者 | 责任 | 不拥有 |
 |---|---|---|
-| BW version-cycle 共享层 | 项目/版本上下文、版本材料读写与自动保存、目标卡骨架、共用任务/归档状态行 UI | 调度器、聊天日志、Issue 正文和状态正本 |
-| 计划 | 版本目标、总结、任务引用、派生纪要 | 验收结论、指标采集实现 |
+| BW version-cycle 共享层 | 项目/版本上下文、版本材料读写与自动保存、验收目标卡骨架（VersionGoalCard）、任务端口与会话收折桥 | 调度器、聊天日志、Issue 正文和状态正本 |
+| 计划 | 版本目标、会议纪要（材料 minutes 节）、任务引用 | 验收结论、指标采集实现 |
 | 验收 | 固定计划引用、实际交付、人的结论和后续 | 改写原承诺、自动完成 Issue |
 | 指标 | 定义、窗口、采集和读数；详见 [指标设计](../overview-metrics/design.md) | 版本目标值和验收结论 |
 | Orca | Tasks、工作树、会话、Automations、项目/宿主身份、通用文件与命令权限 | BW 的业务规则 |
@@ -46,13 +78,13 @@ BW 业务放在 renderer/workbench 下的 version-cycle、version-planning、ver
 
 ## 版本材料与写入
 
-PlanningBoard 保留未选版本与已选版本的同一骨架：顶部明确选版，正文依次为进展/风险、目标卡（含关联 Issue 子块）和一行归档状态。PlanningJourneyNav 只滚动定位正文并显示 workflow.stage 灯，不发起请求、不以点击标记评审完成。VersionGoalCard 的计划分支直接编辑目标、交付件和可选验收说明；验收只读分支不变。单卡与批量开合按项目、仓库、宿主、版本及屏保存视图偏好，验收另按轮次隔离；该偏好不写入业务材料。PlanGoalMetrics 展示可选指标承诺与当前读数，指标定义和采集依据按会话 SOP 配置。可添加项按指标名称排重，已绑定承诺继续保留原 ref 与基线；同名目录定义变化提示更新，不作为第二份承诺。存量重复承诺由人核对，验收端显式列出全部目标及基线并提示无法唯一比较。预览纪要在目标标题旁；进展区在 summary.progressSource 存在时内联回显派生只读纪要（use-progress-minutes），无引用或读取失败时显示文本输入；风险输入仅由用户填写（模型通道被人工守卫拒绝）。取消目标补充弹窗和常规保存栏。计划样式在 version-planning.css、planning-fields.css 和 planning-dialogs.css 内限定，不改变总览。
+PlanningBoard 为 G3 四区结构(页头 / 顶部导航 / 上版回顾 / 本版目标 / 会议纪要 / 归档 PR,见上节落点表),保留未选版本与已选版本的同一骨架:顶部面包屑明确选版,未建计划时目标区显示空板卡(唯一「与计划助手新建计划」入口 + 材料问题紧凑提示)。计划侧目标卡为 PlanningGoalCard(行内编辑、就近删除确认、Issue 平铺角标);VersionGoalCard 收敛为验收只读骨架,计划编辑分支已删。单卡与批量开合按项目、仓库、宿主、版本及屏保存视图偏好,验收另按轮次隔离;该偏好不写入业务材料。PlanGoalMetrics 展示可选指标承诺与当前读数,指标定义和采集依据按会话 SOP 配置。可添加项按指标名称排重,已绑定承诺继续保留原 ref 与基线;同名目录定义变化提示更新,不作为第二份承诺。存量重复承诺由人核对,验收端显式列出全部目标及基线并提示无法唯一比较。进展/风险编辑区已从计划屏移除(summary.progress/risks 字段保留在 schema,risks 人工守卫不变);预览纪要弹窗退役。计划样式在 version-planning.css(含并入的保存冲突提示规则)与 planning-fields.css(仅验收沿用的 vp-metric* 规则)内限定,不改变总览。
 
-usePlanningMaterial 继续复用 MaterialDraftController 的本地草稿、远端修订与 CAS，不新增材料副本。usePlanningAutosave 对连续编辑去抖并串行写入；写入期间的新编辑继续保留，在显式 flush 时排空到最新修订后才返回。版本切换先 flush，写入前复核当前范围与材料身份。冲突、远端删除或错误暂停自动写入，由 PlanningPersistenceNotice 提供保留双方内容、重读或明确重试；不以自动重试覆盖模型编辑。轮询只发现材料变化，旅程灯随轮询到的 workflow.stage 更新。组件/控制器检查不替代真壳输入、重启及真实模型并发验证。
+usePlanningMaterial 继续复用 MaterialDraftController 的本地草稿、远端修订与 CAS，不新增材料副本。usePlanningAutosave 对连续编辑去抖并串行写入；写入期间的新编辑继续保留，在显式 flush 时排空到最新修订后才返回。版本切换先 flush，写入前复核当前范围与材料身份。冲突、远端删除或错误暂停自动写入，由 PlanningPersistenceNotice 提供保留双方内容、重读或明确重试；不以自动重试覆盖模型编辑。轮询只发现材料变化(含 minutes 节);计划屏不渲染旅程灯,验收屏灯随轮询到的 workflow.stage 更新。组件/控制器检查不替代真壳输入、重启及真实模型并发验证。
 
-保留 .bw/planning/<version>/data.json，目标 schema_version=3；原结构里的 plan.goals 演进为稳定 goalId 对应的结果承诺、可选交付说明/验收说明、可选 metricRef 与版本目标。可选 workflow 节记录模型写入的 SOP 阶段（stage/updatedAt/archivePr，契约在 shared/version-workflow 与 version-records），旅程灯只对它做序号比较。风险和进展保持 summary 语义；版本进展以人选定的验收纪要为依据，支持同版上周和已完成版本；标明来源，不把历史结果冒称当前成绩。可选 summary.progressSource 保存明确选定验收的 version/cycleId/sourceCommit/revision，不推断版本顺序。use-progress-minutes 懒读 VersionHistoryPort.read/readPlan，经固定修订核对后用 buildAcceptanceReport 核对证据并生成内联只读纪要（人话正文，不含技术标识）；「查看验收依据」先保存当前计划，再定位同项目、宿主及 runtime owner 的已登记验收工作树，经该树材料端口选定引用版本；历史选择保存固定 sourceCommit/revision，按与内联纪要相同的主干来源校验读回，不受周目录去重影响。返回 Issue 详情仍恢复该固定来源；无来源时普通进入验收，工作树或固定来源不可读时显示错误，不改读当前轮、不初始化替代材料。来源失败不回退，异步结果受工作区及材料身份约束。选择引用不覆盖 summary.progress，内容由会话按授权整理，经同一 CAS 保存；既有 schema3 无引用仍可读，未真实验证模型带入行为。版本周期不由自然周推断。计划入口初态为待选择版本，列举候选不写盘；用户在 UI 或会话明确选择后才加载可编辑材料，明确新建后才创建。禁用 mtime 推断当前版本与自动 init default；加载失败不能新建替代物。
+保留 .bw/planning/<version>/data.json，目标 schema_version=3；原结构里的 plan.goals 演进为稳定 goalId 对应的结果承诺、可选交付说明/验收说明、可选 metricRef 与版本目标。可选 workflow 节记录模型写入的 SOP 阶段（stage/updatedAt/archivePr，契约在 shared/version-workflow 与 version-records）；计划屏不渲染灯，验收屏灯只对它做序号比较。可选 minutes 节承载会议纪要（schema 在 shared/version-planning-material，守卫在 main/workbench/plan-human-guard）。风险和进展字段保持 summary 语义但计划屏不再编辑；上版回顾以人选定的固定验收来源为依据，支持同版上周和已完成版本；标明来源，不把历史结果冒称当前成绩。可选 summary.progressSource 保存明确选定验收的 version/cycleId/sourceCommit/revision，不推断版本顺序。use-prior-carryovers 经 planning-progress-source 懒读 VersionHistoryPort.read/readPlan，固定修订身份核验后映射延期遗留/会议遗留两行；「打开验收屏」先保存当前计划，再定位同项目、宿主及 runtime owner 的已登记验收工作树，经该树材料端口选定引用版本；历史选择保存固定 sourceCommit/revision，按与两行回显相同的主干来源校验读回，不受周目录去重影响。返回 Issue 详情仍恢复该固定来源；无来源时普通进入验收，工作树或固定来源不可读时显示错误，不改读当前轮、不初始化替代材料。来源失败不回退，异步结果受工作区及材料身份约束。选择引用不覆盖 summary.progress，内容由会话按授权整理，经同一 CAS 保存；既有 schema3 无引用仍可读，未真实验证模型带入行为。版本周期不由自然周推断。计划入口初态为待选择版本，列举候选不写盘；用户在 UI 或会话明确选择后才加载可编辑材料，明确新建后才创建。禁用 mtime 推断当前版本与自动 init default；加载失败不能新建替代物。
 
-任务只保存 provider/repo/number 与 goalId 的引用，展示状态从 Orca provider 读回；缓存有读取时间，离线不是空任务。三段纪要从目标纯函数生成，不再存 live_notes、transcript、独立可编辑 minutes。协议细节的唯一模型参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
+任务只保存 provider/repo/number 与 goalId 的引用，展示状态从 Orca provider 读回；缓存有读取时间，离线不是空任务。会议纪要存材料可选 minutes 节（共识/遗留/人工确认，模型只写未确认正文），不再存 live_notes、transcript，也不由目标派生三节模板。协议细节的唯一模型参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
 
 UI 与模型共用在文件所属宿主执行的版本材料写入核心；模型入口是宿主下发的 `ORCA bw materials` CLI 薄入口。写入含受信任项目根、版本路径校验、expectedRevision、跨进程互斥和原子替换；重读修订后再提交，锁范围只含本文件事务，不锁住模型对话。CLI 与 UI 不各自实现一次校验。planning.py、version-plan.html 模板与 data-template.json 已在消费方切换的同一交付内退役删除，旧 confirm / submit-confirmed 不再控制任何流程；check-week-comment.py 与 week-plan-comment.md 保留作历史评论修复协议。
 
@@ -84,17 +116,17 @@ schema2 通过一次显式迁移转为新计划；原文件/提交保留来源�
 
 TaskOrigin 携带项目、页面、版本、目标筛选、滚动和草稿引用。利用原导航历史返回，正文保存仍走原生权限与 mutation/cache；状态刷新不触发完成。项目切换和任务里进一步跳转后仍按有效来源恢复，来源已失效时给明确返回入口，不悄悄落回错误版本。
 
-## 阶段状态、归档与灯色
+## 阶段状态、归档与纪要确认
 
-会议纪要为评审后填写纪要时使用的纯派生输出；PL 与 Builder 在评审会上直接修改目标原件。预览和复制不设置任务拆解或 PR 合入前置，不确认计划，打开弹窗不写批准。人的评审决定在会话中明确表达后由模型记录 `workflow.stage=review`；页面不设评审控件，不从打开纪要推定。
+会议纪要由计划助手基于在线批注与可选转写稿写入材料 minutes 节（仅未确认时），人在屏上确认后生效；确认与遗留闭环都是人的标记（守卫拦截模型通道），生成或填写不自动等于确认，打开或编辑纪要不写批准。人的评审决定在会话中明确表达后由模型记录 `workflow.stage=review`；页面不设评审控件，不从纪要状态推定。
 
-旅程灯唯一数据源是材料里的 `workflow.stage`（模型经 CLI 每完成一阶段写入）：灯位不超过 stage 为绿，否则灰，推导是 shared/version-workflow 的位置比较纯函数，没有内容启发式、计数判断或 provider 探测。stage 是进度信号不是完成权威；材料改动不使灯变色，内容实质调整由模型在会话中回退 stage。
+计划屏不渲染旅程灯：`workflow.stage` 仍是模型经 CLI 写入的进度信号，供会话校准与验收屏灯使用；计划屏顶部导航只做同页定位，点击、浏览与批注不标记任何阶段。验收屏灯唯一数据源仍是材料里的 `workflow.stage`：灯位不超过 stage 为绿，否则灰，推导是 shared/version-workflow 的位置比较纯函数。stage 是进度信号不是完成权威；材料改动不使验收灯变色，内容实质调整由模型在会话中回退 stage。
 
-归档在会话中发起：模型写 `stage=archive` → 按项目门禁提 PR → 把 provider/repository/number 写入 `workflow.archivePr`。归档卡片是只读状态行：按 archivePr 经 `workbench.archive.prStatus` 薄读取合入状态（merged/open/closed，一次 `pulls/{n}` 读取；非 GitHub 或读不到保持 unknown），进屏、材料刷新、手动刷新与窗口聚焦（节流）触发重读。原字节级合入证明、按分支名探测 PR、changed/unknown 状态机与贴草稿按钮通道（归档/拆解/未达跟进及等待框）已整体删除，不留双路径。
+归档在会话中发起：模型写 `stage=archive` → 按项目门禁提 PR → 把 provider/repository/number 写入 `workflow.archivePr`。计划屏归档卡（PlanningArchiveCard）显示 PR 引用与真实合入状态，「打开原生 PR 页」经 open-archive-pr.ts 复用 resolveReferenceRepo → lookupGitHubWorkItemForSource(type:'pr') / CodeHub viewTask(kind:'mr') → openTaskPage(returnToPreviousView) 链；验收屏沿用 CycleArchive 只读状态行。状态按 archivePr 经 `workbench.archive.prStatus` 薄读取（merged/open/closed，一次 `pulls/{n}` 读取；非 GitHub 或读不到保持 unknown），进屏、材料刷新、手动刷新与窗口聚焦（节流）触发重读。原字节级合入证明、按分支名探测 PR、changed/unknown 状态机与贴草稿按钮通道（归档/拆解/未达跟进及等待框）已整体删除，不留双路径。
 
 ## 总览中的版本记录
 
-计划和验收各提供材料到纪要及摘要的纯派生函数，不能分别维护总结副本；共享 VersionHistoryPort 按 version-records 的 cycleId/提交身份读取多周、同周修订及草稿。集成层在 OverviewPage 沿 main 保留版本页签与双栏内容区（use-version-minutes.ts：归档 history.read 优先、当前选版回落 live 材料）：切换版本即回填计划摘要和验收摘要；同版本多周在原处选择，全文页内展开，可打开只读来源或返回相应屏，不再用历史弹窗。缺记录保持空，旧进展/提交不代替验收，旧材料不推造日期和认可。v0.5 不新增里程碑模型或扩改总览其余区域。源码候选、材料归档提交和运行周期是不同身份。
+计划和验收各提供材料到纪要及摘要的读取，不能分别维护总结副本；共享 VersionHistoryPort 按 version-records 的 cycleId/提交身份读取多周、同周修订及草稿。集成层在 OverviewPage 沿 main 保留版本页签与双栏内容区（use-version-minutes.ts：归档 history.read 优先、当前选版回落 live 材料）：切换版本即回填计划摘要和验收摘要；计划列直接渲染材料存储的 minutes 两块（共识/遗留含闭环标记与确认态），无存储纪要的历史版本如实显示「纪要未记录」，不再由目标派生模板冒充；验收列仍由固定材料派生（buildAcceptanceReport 链不动）。同版本多周在原处选择，全文页内展开，可打开只读来源或返回相应屏，不再用历史弹窗。缺记录保持空，旧进展/提交不代替验收，旧材料不推造日期和认可。v0.5 不新增里程碑模型或扩改总览其余区域。源码候选、材料归档提交和运行周期是不同身份。
 
 ## 验证与实现代价
 

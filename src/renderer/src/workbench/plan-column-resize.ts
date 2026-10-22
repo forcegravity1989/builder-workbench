@@ -5,10 +5,21 @@ export const PLAN_COLUMN_RATIO_STORAGE_KEY = 'workbench.plan.chatRatio'
 export const PLAN_CHAT_COLLAPSED_STORAGE_KEY = 'workbench.plan.chatCollapsed'
 export const PLAN_CHAT_COLLAPSED_RAIL_PX = 36
 export const PLAN_CHAT_REVEAL_EVENT = 'workbench:reveal-plan-chat'
+export const PLAN_CHAT_TOGGLE_EVENT = 'workbench:toggle-plan-chat'
 
 export function revealPlanChat(): void {
   writePlanChatCollapsed(false)
   window.dispatchEvent(new Event(PLAN_CHAT_REVEAL_EVENT))
+}
+
+/**
+ * Board-header chip entry: flips the persisted collapse state and lets the
+ * shell column apply it. Window custom events (not storage events) because
+ * same-window localStorage writes do not notify.
+ */
+export function togglePlanChat(): void {
+  writePlanChatCollapsed(!readPlanChatCollapsed())
+  window.dispatchEvent(new Event(PLAN_CHAT_TOGGLE_EVENT))
 }
 
 export function clampPlanChatWidth(width: number, containerWidth: number): number {

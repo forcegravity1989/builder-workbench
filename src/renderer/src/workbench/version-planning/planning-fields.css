@@ -1,84 +1,5 @@
-.vp-goals {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-md);
-  background: var(--color-card);
-  overflow: hidden;
-}
-.vp-goals .vc-goal {
-  padding: var(--space-3) var(--space-4);
-  gap: var(--space-2);
-}
-.vp-goals .vc-goal-number {
-  font-size: 11px;
-  padding-top: var(--space-2);
-}
-.vp-goals .vc-goal-story > label {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  margin: 0;
-}
-.vp-goals .vc-goal-story > label > span {
-  flex: 0 0 52px;
-  font-size: 11px;
-  color: var(--color-neutral-600);
-}
-.vp-goals .vc-goal-title > span {
-  display: none;
-}
-.vp-goals .vc-goal-title textarea {
-  font-weight: 600;
-}
-.vp-goals .vc-goal-story > label > :is(input, textarea) {
-  background: transparent;
-  border-color: transparent;
-  padding: var(--space-1);
-  width: 100%;
-  line-height: 1.7;
-  resize: vertical;
-  field-sizing: content;
-  min-height: 28px;
-}
-.vp-goals .vc-goal-story > label > :is(input, textarea):hover {
-  background: var(--color-neutral-100);
-}
-.vp-goals .vc-goal-story > label > :is(input, textarea):focus {
-  background: var(--color-card);
-  border-color: var(--color-divider);
-}
-.vp-goals .vc-goal-meta label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin: 0;
-}
-.vp-goals .vc-goal-meta label > span {
-  flex: 0 0 auto;
-  font-size: 11px;
-  color: var(--color-neutral-600);
-}
-.vp-goals .vc-goal-meta label > input {
-  min-width: 0;
-  background: transparent;
-  border-color: transparent;
-  padding: var(--space-1);
-  width: 100%;
-}
-.vp-empty-goals {
-  padding: var(--space-4);
-  margin: 0;
-}
-.vp-add-goal {
-  padding: var(--space-2) var(--space-4);
-}
-.vp-goals .vc-goal-metrics {
-  border: 0;
-  padding: 0;
-  margin-top: var(--space-2);
-}
+/* 指标读回样式:验收屏 AcceptanceMetrics 沿用(历史落点在本文件);
+   计划屏指标承诺已改用 version-planning.css 的 g3-metric-* 形态。 */
 .vp-metric {
   margin-bottom: var(--space-2);
 }
@@ -88,24 +9,9 @@
   flex-wrap: wrap;
   gap: var(--space-2);
 }
-.vp-goals .vp-metric-row label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  margin: 0;
-}
 .vp-metric-name {
   flex: 1 1 150px;
   min-width: 0;
-}
-.vp-metric-name select {
-  max-width: 100%;
-  width: 100%;
-  font-size: 12px;
-}
-.vp-metric-name > svg {
-  flex-shrink: 0;
-  color: var(--color-neutral-500);
 }
 .vp-metric-value {
   display: flex;
@@ -117,22 +23,6 @@
   color: var(--color-text);
   font-family: var(--font-mono);
   font-size: 12px;
-}
-.vp-metric-target {
-  white-space: nowrap;
-  font-size: 11px;
-}
-.vp-goals .vp-metric-target input {
-  width: 76px;
-  padding: var(--space-1);
-  font-size: 12px;
-  border-radius: var(--radius-sm);
-}
-.vp-board .vp-metric-add {
-  font-size: 11px;
-  color: var(--color-neutral-600);
-  padding: var(--space-1) var(--space-2);
-  background: transparent;
 }
 .vp-metric-evidence {
   color: var(--color-neutral-600);

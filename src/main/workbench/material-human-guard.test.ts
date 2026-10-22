@@ -1,5 +1,9 @@
 import { expect, it } from 'vitest'
-import type { AcceptanceMaterial, PlanningMaterial } from '../../shared/workbench/version-material'
+import type {
+  AcceptanceMaterial,
+  PlanMeetingMinutes,
+  PlanningMaterial
+} from '../../shared/workbench/version-material'
 import { AcceptanceMaterialSchema } from '../../shared/workbench/version-material'
 import {
   acceptanceGoalSnapshot,
@@ -13,9 +17,9 @@ import { WorkspaceScopeError } from './workspace-scope-error'
 import {
   assertHumanFieldsUntouched,
   humanFieldChanges,
-  isModelSaveChannel,
-  planHumanFieldChanges
+  isModelSaveChannel
 } from './material-human-guard'
+import { planHumanFieldChanges } from './plan-human-guard'
 
 const revision = `sha256:${'a'.repeat(64)}`
 const frozenSource = { sourceCommit: 'b'.repeat(40), sourceRevision: revision }
@@ -581,7 +585,30 @@ it('allows human input while retaining round integrity on both workflows', async
   ).resolves.toBeUndefined()
 })
 
-it('guards the plan risk report on the model channel', async () => {
+function planMinutes(overrides: Partial<PlanMeetingMinutes> = {}): PlanMeetingMinutes {
+  return {
+    consensus: ['共识：G1 指标梳理周五前完成'],
+    followups: [{ id: 'f1', text: '补齐指标定义口径', closed: false }],
+    confirmed: false,
+    ...overrides
+  }
+}
+function planDocWithMinutes(minutes: PlanMeetingMinutes): PlanningMaterial {
+  return { ...planMaterial(), minutes }
+}
+function planSaveDoc(document: PlanningMaterial): VersionMaterialSave {
+  return {
+    repoId: 'repo',
+    worktreeId: 'tree',
+    hostId: 'local',
+    workflow: 'plan',
+    version: 'v1',
+    expectedRevision: null,
+    document
+  }
+}
+
+it('guards the plan risk report and meeting minutes on the model channel', async () => {
   // Creating a plan with empty risks is fine; pre-filling risks is not.
   await expect(
     assertHumanFieldsUntouched(async () => null, planSave(), {})
@@ -603,6 +630,110 @@ it('guards the plan risk report on the model channel', async () => {
   })
   expect(planHumanFieldChanges(null, planMaterial())).toEqual([])
   expect(planHumanFieldChanges(stored, planMaterial())).toEqual(['summary.risks'])
+
+  // Confirmed minutes freeze entirely; identical round-trips still pass.
+  const confirmedMinutes = planMinutes({
+    confirmed: true,
+    confirmedAt: '2026-10-21T10:00:00+08:00',
+    followups: [{ id: 'f1', text: '补齐指标定义口径', closed: true }]
+  })
+  const confirmedDoc = planDocWithMinutes(confirmedMinutes)
+  const readConfirmed = async () => ({ document: confirmedDoc })
+  await expect(
+    assertHumanFieldsUntouched(readConfirmed, planSaveDoc(confirmedDoc), {})
+  ).resolves.toBeUndefined()
+  const editedBody = planDocWithMinutes({ ...confirmedMinutes, consensus: ['模型改写的共识'] })
+  expect(planHumanFieldChanges(confirmedDoc, editedBody)).toEqual(['minutes.confirmed'])
+  await expect(
+    assertHumanFieldsUntouched(readConfirmed, planSaveDoc(editedBody), {})
+  ).rejects.toMatchObject({ code: 'forbidden' })
+  // Revoking the confirmation is itself a human decision.
+  const revoked = planDocWithMinutes({
+    ...confirmedMinutes,
+    confirmed: false,
+    confirmedAt: undefined
+  })
+  expect(planHumanFieldChanges(confirmedDoc, revoked)).toEqual(['minutes.confirmed'])
+
+  // Unconfirmed section: closed marks round-trip by id; flipping, adding
+  // pre-closed entries or dropping closed ones is refused.
+  const openStored = planDocWithMinutes(
+    planMinutes({
+      followups: [
+        { id: 'f1', text: '补齐指标定义口径', closed: true },
+        { id: 'f2', text: '核对遗留 Issue', closed: false }
+      ]
+    })
+  )
+  const flip = planDocWithMinutes(
+    planMinutes({
+      followups: [
+        { id: 'f1', text: '补齐指标定义口径', closed: false },
+        { id: 'f2', text: '核对遗留 Issue', closed: false }
+      ]
+    })
+  )
+  expect(planHumanFieldChanges(openStored, flip)).toEqual(['minutes.followups[f1].closed'])
+  const preClosedNew = planDocWithMinutes(
+    planMinutes({
+      followups: [
+        { id: 'f1', text: '补齐指标定义口径', closed: true },
+        { id: 'f2', text: '核对遗留 Issue', closed: false },
+        { id: 'f3', text: '新增即闭环', closed: true }
+      ]
+    })
+  )
+  expect(planHumanFieldChanges(openStored, preClosedNew)).toEqual(['minutes.followups[f3].closed'])
+  const dropClosed = planDocWithMinutes(
+    planMinutes({ followups: [{ id: 'f2', text: '核对遗留 Issue', closed: false }] })
+  )
+  expect(planHumanFieldChanges(openStored, dropClosed)).toEqual(['minutes.followups[f1].closed'])
+  await expect(
+    assertHumanFieldsUntouched(async () => ({ document: openStored }), planSaveDoc(flip), {})
+  ).rejects.toMatchObject({ code: 'forbidden' })
+
+  // Creating the section unconfirmed passes; creating it confirmed does not.
+  await expect(
+    assertHumanFieldsUntouched(async () => null, planSaveDoc(planDocWithMinutes(planMinutes())), {})
+  ).resolves.toBeUndefined()
+  await expect(
+    assertHumanFieldsUntouched(
+      async () => null,
+      planSaveDoc(
+        planDocWithMinutes(
+          planMinutes({ confirmed: true, confirmedAt: '2026-10-21T10:00:00+08:00' })
+        )
+      ),
+      {}
+    )
+  ).rejects.toMatchObject({ code: 'forbidden' })
+  // Body rewrite while unconfirmed: consensus replaced, open followup appended,
+  // sources/updatedAt set; a human closure mark rides along unchanged.
+  const drafted = planDocWithMinutes(
+    planMinutes({
+      consensus: ['模型整理后的共识'],
+      followups: [
+        { id: 'f1', text: '补齐指标定义口径', closed: true },
+        { id: 'f2', text: '新增遗留', closed: false }
+      ],
+      sources: '在线批注 2 条 · 会议转写稿(meeting-123)',
+      updatedAt: '2026-10-21T11:00:00+08:00'
+    })
+  )
+  expect(planHumanFieldChanges(openStored, drafted)).toEqual([])
+  await expect(
+    assertHumanFieldsUntouched(async () => ({ document: openStored }), planSaveDoc(drafted), {})
+  ).resolves.toBeUndefined()
+  // Odd legacy shape (unconfirmed but carrying a timestamp): dropping the
+  // human confirmation timestamp is refused like any human mark.
+  const stamped = planDocWithMinutes(
+    planMinutes({ confirmed: false, confirmedAt: '2026-10-20T09:00:00+08:00' })
+  )
+  const stampDropped = planDocWithMinutes(planMinutes({ confirmed: false }))
+  expect(planHumanFieldChanges(stamped, stampDropped)).toEqual(['minutes.confirmedAt'])
+  await expect(
+    assertHumanFieldsUntouched(async () => ({ document: stamped }), planSaveDoc(stampDropped), {})
+  ).rejects.toMatchObject({ code: 'forbidden' })
 })
 
 it('feeds the guard read a payload the strict ReadSchema accepts', async () => {
