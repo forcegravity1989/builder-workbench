@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import type { CodeHubRemote } from './codehub'
+import type { CodeHubMrFileChange } from './codehub-mr-detail'
+import type { PRCheckDetail } from './github/check-types'
 import type {
   CodeHubComment,
   CodeHubPipeline,
@@ -38,6 +40,8 @@ export const CodeHubAssignIssue = Repo.extend({ iid: Iid, assignee: z.string() }
 export const CodeHubMergeMr = Repo.extend({ iid: Iid, auto: z.boolean().optional() })
 export const CodeHubSetReviewers = Repo.extend({ iid: Iid, reviewers: z.array(z.string()) })
 export const CodeHubListPipelines = Repo.extend({ iid: Iid })
+export const CodeHubMrChecks = Repo.extend({ iid: Iid })
+export const CodeHubMrChanges = Repo.extend({ iid: Iid })
 export const CodeHubViewTask = Repo.extend({ kind: Kind, iid: Iid })
 export const CodeHubListComments = Repo.extend({ kind: Kind, iid: Iid })
 export const CodeHubCreateComment = Repo.extend({
@@ -63,6 +67,8 @@ export const CODEHUB_REQUEST_SCHEMAS = {
   mergeMr: CodeHubMergeMr,
   setReviewers: CodeHubSetReviewers,
   listPipelines: CodeHubListPipelines,
+  mrChecks: CodeHubMrChecks,
+  mrChanges: CodeHubMrChanges,
   viewTask: CodeHubViewTask,
   listComments: CodeHubListComments,
   createComment: CodeHubCreateComment,
@@ -83,6 +89,8 @@ export type CodeHubApi = {
   mergeMr: (args: z.infer<typeof CodeHubMergeMr>) => Promise<void>
   setReviewers: (args: z.infer<typeof CodeHubSetReviewers>) => Promise<void>
   listPipelines: (args: z.infer<typeof CodeHubListPipelines>) => Promise<CodeHubPipeline[]>
+  mrChecks: (args: z.infer<typeof CodeHubMrChecks>) => Promise<PRCheckDetail[]>
+  mrChanges: (args: z.infer<typeof CodeHubMrChanges>) => Promise<CodeHubMrFileChange[]>
   viewTask: (args: z.infer<typeof CodeHubViewTask>) => Promise<CodeHubTaskDetail>
   listComments: (args: z.infer<typeof CodeHubListComments>) => Promise<CodeHubComment[]>
   createComment: (args: z.infer<typeof CodeHubCreateComment>) => Promise<void>

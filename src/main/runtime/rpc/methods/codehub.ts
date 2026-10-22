@@ -9,6 +9,8 @@ import {
   CodeHubMergeMr,
   CodeHubSetReviewers,
   CodeHubListPipelines,
+  CodeHubMrChecks,
+  CodeHubMrChanges,
   CodeHubViewTask,
   CodeHubListComments,
   CodeHubCreateComment,
@@ -60,6 +62,16 @@ export const CODEHUB_METHODS = [
     name: 'codehub.listPipelines',
     params: CodeHubListPipelines,
     handler: (params, { runtime }) => runtime.codehub.listPipelines(params)
+  }),
+  defineMethod({
+    name: 'codehub.mrChecks',
+    params: CodeHubMrChecks,
+    handler: (params, { runtime }) => runtime.codehub.mrChecks(params)
+  }),
+  defineMethod({
+    name: 'codehub.mrChanges',
+    params: CodeHubMrChanges,
+    handler: (params, { runtime }) => runtime.codehub.mrChanges(params)
   }),
   defineMethod({
     name: 'codehub.viewTask',
