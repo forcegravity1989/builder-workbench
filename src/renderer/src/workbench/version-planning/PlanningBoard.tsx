@@ -85,7 +85,14 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const content = useRef<HTMLDivElement>(null)
   const spy = useJourneySpy()
   const sectionRefs = spy.sectionRefs
-  const annotations = useBoardAnnotations()
+  // Stable board identity for annotation lifetime: context.version is the native
+  // selection and does not flicker through re-select transients (draft null),
+  // unlike selectionKey. The annotation store is keyed by it — a version/scope
+  // switch reads a different, naturally empty session, and unsent notes survive
+  // screen round-trips; no imperative clearAll effect (it wiped the sibling
+  // board's notes when the store went module-level).
+  const boardIdentity = JSON.stringify([scopeKey, context.version])
+  const annotations = useBoardAnnotations(boardIdentity)
   const chatCollapsed = usePlanChatCollapsed()
   const metricScope = useMemo(
     () => (scope && worktreeId ? { repoId: scope.repoId, hostId: scope.hostId, worktreeId } : null),
@@ -93,16 +100,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   )
   const metrics = usePlanMetrics(metricScope, scope?.runtimeOwnerEnvironmentId, plan)
   const selectionKey = JSON.stringify([scopeKey, plan?.version, plan?.cycleId])
-  const { clearAll, pruneMissing } = annotations
-  // Stable board identity for annotation lifetime: context.version is the native
-  // selection and does not flicker through re-select transients (draft null),
-  // unlike selectionKey — clearing on the latter would wipe meeting annotations
-  // on every「更新代码」or poll-driven reselect of the same version.
-  const boardIdentity = JSON.stringify([scopeKey, context.version])
-  useEffect(() => {
-    // Memory annotations point at the previous board's objects after a switch.
-    clearAll()
-  }, [boardIdentity, clearAll])
+  const { pruneMissing } = annotations
   // Model-side edits (poll) may drop goals/task references: prune annotations
   // whose object no longer exists on the board instead of keeping orphans.
   const goalsKey = JSON.stringify(plan?.goals.map((goal) => goal.goalId) ?? [])

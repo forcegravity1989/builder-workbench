@@ -1,5 +1,4 @@
 import { MessageSquare, RefreshCw } from 'lucide-react'
-import type { ReactNode } from 'react'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import { ACCEPTANCE_SECTIONS, type AcceptanceSectionId } from './acceptance-sections'
 
@@ -7,8 +6,9 @@ import { ACCEPTANCE_SECTIONS, type AcceptanceSectionId } from './acceptance-sect
  * Acceptance board header, same shape as the plan screen's: breadcrumb version
  * picker (legacy unbound trees only — on a version-bound tree the binding is
  * the single authority and the breadcrumb echoes it read-only, G2 #383), title
- * with save state, session-collapse chip, trunk sync, automation config and
- * annotation mode. The branch name stays off the board — packaging builds from
+ * with save state, session-collapse chip, trunk sync and automation config.
+ * Annotation mode lives in the Showcase section header (就近入口，与计划屏同形
+ * 态), not here. The branch name stays off the board — packaging builds from
  * the trunk while the acceptance JSON lives on the acceptance branch, so
  * neither is the object the user acts on here.
  */
@@ -23,8 +23,7 @@ export function AcceptanceHeader({
   onSessionToggle,
   onSelect,
   onConfigure,
-  onRefresh,
-  extraActions
+  onRefresh
 }: {
   currentVersion: string
   versions: string[]
@@ -39,8 +38,6 @@ export function AcceptanceHeader({
   onSelect(version: string): void
   onConfigure(): void
   onRefresh(): void
-  /** Trailing action slot (annotation-mode button). */
-  extraActions?: ReactNode
 }) {
   return (
     <header className="acc-header">
@@ -98,7 +95,6 @@ export function AcceptanceHeader({
           <RefreshCw size={13} aria-hidden="true" /> 更新代码
         </button>
         <AutomationConfigureButton className="acc-text-button" onConfigure={onConfigure} />
-        {extraActions}
       </div>
     </header>
   )

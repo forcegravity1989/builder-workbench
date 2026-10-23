@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { useEffect, useRef, useState, type Ref } from 'react'
+import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import type {
   AcceptanceMaterial,
   PlanningMaterial
@@ -29,6 +29,7 @@ export function AcceptanceGoalRows({
   onSnapshot,
   numbersFor,
   onOpenAnnotationPanel,
+  annotateEntry,
   hasReport,
   onOpenReport,
   sectionRef
@@ -44,6 +45,8 @@ export function AcceptanceGoalRows({
   onSnapshot(reads: CycleTaskRead[]): void
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
+  /** 批注模式入口（区块头就近放置，与计划屏同形态；页头不再设全局入口）。 */
+  annotateEntry?: ReactNode
   hasReport: boolean
   onOpenReport(): void
   sectionRef: Ref<HTMLElement>
@@ -121,6 +124,7 @@ export function AcceptanceGoalRows({
           </small>
         </h2>
         <span className="acc-title-actions">
+          {annotateEntry}
           {readError && (
             <span className="acc-muted" role="status">
               Issue 状态未知：{readError}
@@ -168,10 +172,6 @@ export function AcceptanceGoalRows({
           ))}
         </div>
       </fieldset>
-      <p className="acc-footnote">
-        勾的含义只有「达成/不达成」，演示过与否不进材料；指标证据不回显板面，在验收证据报告里。
-        目标只读自计划，本屏不编辑目标。
-      </p>
     </section>
   )
 }

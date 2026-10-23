@@ -207,6 +207,7 @@ export function AcceptancePackage({
         <button
           className="wb-btn wb-btn-primary wb-btn-sm"
           disabled={busy !== null || !pipeline}
+          title={pipeline ? undefined : '暂无可出包的流水线；核对项目远端与权限'}
           onClick={onLaunch}
         >
           <ArrowUpRight size={14} aria-hidden="true" />
@@ -215,6 +216,7 @@ export function AcceptancePackage({
         <button
           className="wb-btn wb-btn-secondary wb-btn-sm"
           disabled={busy !== null || !latest}
+          title={latest ? undefined : '尚无制品包；先出包'}
           onClick={onDownload}
         >
           <Download size={14} aria-hidden="true" />
