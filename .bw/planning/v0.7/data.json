@@ -80,6 +80,12 @@
     {
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 400,
+      "goalId": "G2"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 374,
       "goalId": "G3"
     },
@@ -105,6 +111,18 @@
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 323,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 387,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 338,
       "goalId": "G4"
     }
   ],
