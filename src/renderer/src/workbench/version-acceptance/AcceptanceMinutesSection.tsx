@@ -1,6 +1,9 @@
 import { BrainCircuit, Check, Pencil, Plus, X } from 'lucide-react'
 import { useState, type Ref } from 'react'
-import type { AcceptanceMeetingMinutes, AcceptanceMaterial } from '../../../../shared/workbench/version-material'
+import type {
+  AcceptanceMeetingMinutes,
+  AcceptanceMaterial
+} from '../../../../shared/workbench/version-material'
 import { BoardActionButton, BoardIconButton } from '../board-ui'
 import type { SendActionWrap } from '../plan-send-menu'
 
@@ -13,6 +16,14 @@ import type { SendActionWrap } from '../plan-send-menu'
  * carries no always-false field. Confirmation is revocable in the UI; while
  * confirmed the whole section is frozen against the model channel.
  */
+/**
+ * 注入提示词设计正本（对齐计划屏第九轮瘦身）：按钮 prompt 只承载触发意图；
+ * 落点 minutes 节、人工确认、遗留无闭环位等 SOP 规则归 version-acceptance
+ * Skill 与系统提示词，按钮 prompt 不复述。
+ */
+const minutesRequestPrompt =
+  '整理本次验收会的会议纪要：把会话中已发送的板面批注汇总为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。'
+
 /**
  * The always-present empty card. A human must be able to start the minutes
  * without the model writing a section first — otherwise the confirm action only
@@ -31,48 +42,42 @@ export function AcceptanceMinutesSection({
   onSendAction,
   sectionRef
 }: {
-  document?: AcceptanceMaterial
+  // Required: the board renders its empty state (AcceptanceEmptyBoard) before
+  // any material exists, so this section never shows without a document.
+  document: AcceptanceMaterial
   disabled: boolean
   edit(next: AcceptanceMaterial): void
   onSendAction: SendActionWrap
   sectionRef: Ref<HTMLElement>
 }) {
-  const minutes = document?.minutes
+  const minutes = document.minutes
   return (
     <section id="minutes" ref={sectionRef} aria-label="会议纪要">
       <div className="acc-section-title">
         <h2>
           会议纪要
-          <small>
-            {minutes ? (minutes.confirmed ? '已人工确认' : '待人工确认') : '未生成'} · 常驻可编辑
-          </small>
+          <small>{minutes ? (minutes.confirmed ? '已人工确认' : '待人工确认') : '未生成'}</small>
         </h2>
         <span className="acc-title-actions">
           {/* 发送弹窗的触发件用纯 button（BoardActionButton），不用 BoardIconButton：
               后者内部已是 Radix TooltipTrigger，再套 DropdownMenuTrigger asChild 会让
               tooltip 与 dropdown 的 data-state / aria 属性互相覆盖。与计划屏同一做法。 */}
           {onSendAction(
-            '把板面批注与会议转写稿整理为会议纪要，按共识 / 遗留两块输出',
+            minutesRequestPrompt,
             '整理纪要请求',
-            <BoardActionButton disabled={!document} title="让验收助手整理纪要（可提供会议 ID）">
+            <BoardActionButton>
               <BrainCircuit size={14} aria-hidden="true" /> 整理纪要
             </BoardActionButton>
           )}
         </span>
       </div>
-      {document ? (
-        <MinutesCard
-          document={document}
-          minutes={minutes ?? EMPTY_MINUTES}
-          initialized={Boolean(minutes)}
-          disabled={disabled}
-          edit={edit}
-        />
-      ) : (
-        <p className="acc-empty">
-          尚未开始验收。批注从页头「批注模式」进入；需要模型整理时用标题行的助手入口，或在会话中直说。
-        </p>
-      )}
+      <MinutesCard
+        document={document}
+        minutes={minutes ?? EMPTY_MINUTES}
+        initialized={Boolean(minutes)}
+        disabled={disabled}
+        edit={edit}
+      />
     </section>
   )
 }
@@ -173,7 +178,7 @@ function MinutesCard({
         </div>
         <div className="acc-minutes-section">
           <strong>
-            遗留 <small>原样流入下版计划屏「会议遗留」，不设闭环状态</small>
+            遗留 <small>原样流入下版计划屏「会议遗留」</small>
           </strong>
           {editing ? (
             <div className="acc-point-editor">
@@ -233,7 +238,7 @@ function MinutesCard({
           >
             {minutes.confirmed ? '已人工确认 · 撤销' : '标记人工确认'}
           </button>
-          <span className="acc-muted">纪要经人工确认生效，生成或填写不自动等于确认；模型不代确认。</span>
+          <span className="acc-muted">纪要经人工确认生效，生成或填写不自动等于确认。</span>
         </div>
       </article>
     </fieldset>

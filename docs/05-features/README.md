@@ -19,7 +19,7 @@
 | # | 特性 | 目录 | 分诊 | intent | spec | 实现设计 | TDD | 验收点E2E | 旅程E2E |
 |---|---|---|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) · [G3 旅程高保真](version-planning/planning-journey-prototype.html) | 在用·G3 计划旅程已落地（2026-10-21）；证据与未验见 STATUS⁴ | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
-| 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [v9.5 旧稿](version-acceptance/prototype.html) · [v10 会议旅程高保真](version-acceptance/acceptance-journey-prototype.html) | 在用·v10 验收会议四步屏已落地（#394 分支，未合入 main）；证据与未验见 STATUS⁴ | ● | ● | ● | ◐ | ◐(A01–A13 代码已接入，真壳证据未取) | ○(AJ01 已定义未运行) |
+| 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [v9.5 旧稿](version-acceptance/prototype.html) · [v10 会议旅程高保真](version-acceptance/acceptance-journey-prototype.html) | 在用·v10 验收会议四步屏已合入 main（#394，2026-10-23 对齐轮随 #414 跟进）；证据与未验见 STATUS⁴ | ● | ● | ● | ◐ | ◐(A01–A13 代码已接入，真壳证据未取) | ○(AJ01 已定义未运行) |
 | 3 | 总览指标 | [overview-metrics/](overview-metrics/) · [原型](overview-metrics/prototype.html) | 在用·本轮交付（v0.5 收尾） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项) | ○(MJ01/MJ02 已定义) |
 | 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·在用（正本随扶正在 main）¹ | ● | ● | ● | ◐¹ | ◐¹ | ○(台内路径 defer) |
 | 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ● | ● | ◐(配置验收已登记，结果见 STATUS；P-01–P14 注册暂缓) | ◐(配置子旅程已登记，结果见 STATUS；主旅程/跨主机/扫墙候选待建) |

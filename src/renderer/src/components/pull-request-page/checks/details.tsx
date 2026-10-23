@@ -17,11 +17,13 @@ import { assignUniqueListKeys } from './details-list-keys'
 export function CheckDetailsPanel({
   check,
   state,
-  onRetry
+  onRetry,
+  openUrlLabel
 }: {
   check: PRCheckDetail
   state: CheckDetailsLoadState | undefined
   onRetry: (check: PRCheckDetail, key: string) => void
+  openUrlLabel?: string
 }): React.JSX.Element {
   const details = state?.details
   const openUrl = details?.detailsUrl ?? details?.url ?? check.url
@@ -231,7 +233,8 @@ export function CheckDetailsPanel({
                 className="h-7 gap-1 px-2 text-[11px]"
                 onClick={() => window.api.shell.openUrl(openUrl)}
               >
-                {translate('auto.components.PullRequestPage.1b14d0a69c', 'Open in GitHub')}
+                {openUrlLabel ??
+                  translate('auto.components.PullRequestPage.1b14d0a69c', 'Open in GitHub')}
                 <ExternalLink className="size-3" />
               </Button>
             </div>

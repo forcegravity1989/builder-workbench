@@ -58,6 +58,21 @@ export const initialMinutes = {
     { text: '忠实采集脚本不强求本周开发完毕，已写入 G1 验收标准。', closed: true }
   ]
 }
+// 计划助手注入提示词的设计正本（生产落点：PlanningMinutesSection.tsx 与
+// annotations/annotation-markdown.ts，各持一份同名常量，不重复散写）。
+// 2026-10-22 第八轮定四处语义：落点是计划材料 minutes 节不是聊天正文；会中发送批注是
+// 「累积输入」不是「现在整理」（原文以「整理」结尾会被误当整理请求）；全量清单以最新
+// 一次为准；转写稿由必有输入改为助手询问一次。
+// 第九轮瘦身（2026-10-22 用户反馈）：按钮 prompt 只承载触发意图与关键约束，builder
+// 一眼能懂；落点确认、闭环由人、无批注不编造等 SOP 级规则归 week-planning Skill 与
+// 系统提示词（随本轮 Skill 专项同步落地），按钮 prompt 不复述。
+export const minutesRequestPrompt =
+  '整理本次评审会的会议纪要：把会话中已发送的板面批注汇总为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。'
+
+export function annotationsSendPrompt(count) {
+  return `记录当前板面全部批注（${count} 条，全量清单，以最新一次为准），作为纪要输入；现在不要整理。`
+}
+
 // 时期为原型场景切换器（不进生产界面）：验证计划未建、未拆解时旅程是否流畅。
 export const scenes = [
   ['none', '计划未建'],

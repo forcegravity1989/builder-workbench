@@ -16,8 +16,10 @@ import {
   EMPTY_MINUTES,
   releaseInfo,
   taskRows,
+  minutesRequestPrompt,
   g2Url
 } from './acceptance-model.js'
+import { annotationsSendPrompt } from '../../version-planning/prototype/g3-model.js'
 import {
   Icon,
   IconButton,
@@ -56,7 +58,7 @@ function Verdict({ value, onSet }) {
       <button
         className={`acc-verdict-btn miss${value === '不达成' ? ' on' : ''}`}
         aria-pressed={value === '不达成'}
-        title="人对着实物核对后标记:不达成(原因写进展,安排写下一步)"
+        title="人对着实物核对后标记:不达成(原因写纪要,安排写下一步)"
         onClick={() => onSet(value === '不达成' ? null : '不达成')}
       >
         不达成
@@ -132,17 +134,19 @@ function AcceptanceRow({
             <h3>
               关联 Issue <span>{tasks.length}</span>
             </h3>
+            {/* 报告一份/版本、全目标合并,没有目标级锚点可跳(v10 已退役目标级深链);
+                可访问名如实说打开整份报告,翻到本目标的验收点由演示者自己做。 */}
             <button
               className="acc-report-link"
               disabled={!reportReady}
               title={
                 reportReady
-                  ? '在内置 Orca 浏览器打开验收证据报告对应章节'
+                  ? '打开本版验收证据报告(一份/版本,全目标合并)'
                   : '报告未生成;先在会话中让验收助手生成'
               }
               onClick={onOpenReport}
             >
-              证据报告 §{goal.goalId}
+              打开本版验收证据报告
               <Icon name="arrow" size={12} />
             </button>
           </div>
@@ -165,7 +169,11 @@ function AcceptanceRow({
                       {task.title?.replace(/^【.*?】/, '') || '标题未读到'}
                     </a>
                     <span className="g3-task-state">
-                      {task.state === 'CLOSED' ? '已关闭' : task.state === 'OPEN' ? '开放' : '状态未知'}
+                      {task.state === 'CLOSED'
+                        ? '已关闭'
+                        : task.state === 'OPEN'
+                          ? '开放'
+                          : '状态未知'}
                     </span>
                     {numbers.length > 0 && (
                       <button
@@ -198,7 +206,10 @@ function AcceptanceRow({
                       </>
                     )}
                     {task.state === 'CLOSED' && notes[task.number] && (
-                      <span className="acc-note-readonly" title="已关闭 Issue:已存备注只读展示,不再编辑">
+                      <span
+                        className="acc-note-readonly"
+                        title="已关闭 Issue:已存备注只读展示,不再编辑"
+                      >
                         {notes[task.number]}
                       </span>
                     )}
@@ -282,9 +293,9 @@ function App() {
     requestAnimationFrame(() => document.getElementById(active)?.scrollIntoView({ block: 'start' }))
   }
   // 对象级动作复用 Orca 原生发送弹窗(与计划屏同一链路)。
-  const sendRequest = (text, kind) => {
+  const sendRequest = (text, kind, detail) => {
     toggleSession(true)
-    setSentRequest({ kind, text })
+    setSentRequest({ kind, text, detail })
     setNotice('')
   }
   const openPopover = (target, rect) => {
@@ -301,7 +312,7 @@ function App() {
     setAnnotating(next)
     setPopover(null)
     setPanelOpen(next)
-    setNotice(next ? '批注模式:点击板面元素,在对象旁的小窗记录意见 · Esc 退出' : '')
+    setNotice(next ? '批注模式:点击目标行或 Issue 行,在对象旁的小窗记录意见 · Esc 退出' : '')
   }
   useEffect(() => {
     if (!annotating) {
@@ -420,27 +431,28 @@ function App() {
       {showNotes && (
         <div className="g3-design-notes">
           <p>
-            <strong>定位与边界</strong>:验收屏为周五验收会议服务,四步——验收准备 →
-            Showcase → 会议纪要 → 归档 PR 及发版本。个人对需求的逐项自验在周中会话与开发流程,
+            <strong>定位与边界</strong>:验收屏为周五验收会议服务,四步——验收准备 → Showcase →
+            会议纪要 → 归档 PR 及发版本。个人对需求的逐项自验在周中会话与开发流程,
             不进本屏。计划制定中或计划归档 PR 未合入时,验收屏只有一块空板:点「与验收助手新建
             验收」触发检测——检测通过才拉取计划、展开四步板面(目标与验收标准此时才同步上板);
             未合入弹报错、保持空板(硬门禁,不做草案预验收)。选版与项目上下文归左侧栏(G2
-            外框);页头与计划屏同构:会话收折、更新代码(唯一同步入口)、配置自动化、批注
-            模式——<strong>不设全局助手按钮</strong>:「唤起验收助手」的入口按对象就近放置
-            (纪要区「整理纪要」、归档区「发起归档」),部署/发布/出包按钮本身兼任请求注入;
-            Showcase 无模型填写事务,不设助手入口。会话栏为 Orca 原生会话占位,「验收助手」
+            外框);页头与计划屏同构:会话收折、更新代码(唯一同步入口)、配置自动化——批注模式入口 在
+            Showcase 区块头(与计划屏第九轮同形态,贴着可批注对象,带未发送条数角标);
+            <strong>不设全局助手按钮</strong>:「唤起验收助手」的入口按对象就近放置
+            (纪要区「整理纪要」、归档区「发起归档」),部署/发布/出包按钮本身兼任请求注入; Showcase
+            无模型填写事务,不设助手入口。会话栏为 Orca 原生会话占位,「验收助手」
             是该产品称呼。界面无灯:状态一律文字与真实读回。
           </p>
           <p>
             <strong>验收准备</strong>:「出包」是板面固定逻辑(按项目远端直连流水线,主分支
             构建);「部署」向验收助手会话注入请求——模型下载最新包、按项目自有部署入口部署
-            启动(各服务逻辑不同,无固定脚本;桌面应用类=安装并启动,web 服务类=部署并起前
-            端,演示为 web 服务型),完成后把环境 URL(或启动状态)写回材料,「演示环境」行读
-            回、点击经内置 Orca 浏览器打开=真机演示环境。模型写 candidateRef、登记包
+            启动(各服务逻辑不同,无固定脚本;桌面应用类=安装并启动,web 服务类=部署并起前 端,演示为 web
+            服务型),完成后把环境 URL(或启动状态)写回材料,「演示环境」行读 回、点击经内置 Orca
+            浏览器打开=真机演示环境。模型写 candidateRef、登记包
             (kind=package+checksum),对着运行环境按目标验收标准采集证据并演示分诊——易
             现场演示的标「现场演示+操作路径」,不易演示/需等待的落进
-            <strong>一份</strong>验收证据报告(全目标合并:目标→验收点→说明+证据罗列+目标值
-            vs 读数),登记进材料。包重出不刷新板面已填内容,模型在会话提醒是否重核。缺工具
+            <strong>一份</strong>验收证据报告(全目标合并:目标→验收点→说明+证据罗列+目标值 vs
+            读数),登记进材料。包重出不刷新板面已填内容,模型在会话提醒是否重核。缺工具
             请人安装,不降级。
           </p>
           <p>
@@ -451,10 +463,12 @@ function App() {
           </p>
           <p>
             <strong>批注与助手</strong>:批注模式、对象小窗与板面批注窗与计划屏同一组件族和
-            交互(点击目标句或 Issue 行记录意见,Esc 先关小窗再退模式);发送走 Orca
-            原生发送弹窗递交验收助手,作为会议纪要输入。页头不设全局助手按钮;助手入口按对象
-            就近放置(纪要区「整理纪要」、归档区「发起归档」),都只把请求递交左侧持久验收
-            会话,不新建、不注入。纪要区不参与批注。
+            交互(入口在 Showcase 区块头,带未发送条数角标;点击目标行或 Issue 行记录意见, Esc
+            先关小窗再退模式);发送走 Orca 原生发送弹窗递交验收助手,作为会议纪要输入,
+            <strong>发送成功即清空已递交批注</strong>(每次发送都是全量清单、以最新一次为准,
+            与计划屏同一决定);批注会话按板面身份分开存,切屏保留、切版清空。页头不设全局
+            助手按钮;助手入口按对象就近放置(纪要区「整理纪要」、归档区「发起归档」),
+            都只把请求递交左侧持久验收会话,不新建、不注入。纪要区不参与批注。
           </p>
           <p>
             <strong>会议纪要</strong>:纪要框常驻各时期、直接可编辑可粘贴,不依赖会话唤起;与
@@ -463,18 +477,19 @@ function App() {
             草稿,不代确认。
           </p>
           <p>
-            <strong>归档与发布</strong>:归档由会话执行,屏内放 PR 引用+状态+打开 Orca 原生
-            PR 页入口+注入式「让验收助手发起归档」入口,无直接执行归档的按钮。发布区只有
+            <strong>归档与发布</strong>:归档由会话执行,屏内放 PR 引用+状态+打开 Orca 原生 PR
+            页入口+注入式「让验收助手发起归档」入口,无直接执行归档的按钮。发布区只有
             一个「发布」按钮,点击即把请求注入验收会话——预检、发布提交与验收包一致性核对、
             知情授权、按项目自有发布入口执行与发布后独立读回全在会话中完成并在会话中报告。
-            <strong>板面不设预检弹窗、不设发布状态读回行,材料不存发布记录</strong>:发布读数的
-            正本在 Git 标签与 provider Release 页,抄一份进板面即造第二正本;总览也不显示「已发布」。
+            <strong>板面不设预检弹窗、不设发布状态读回行,材料不存发布记录</strong>:发布读数的 正本在
+            Git 标签与 provider Release 页,抄一份进板面即造第二正本;总览也不显示「已发布」。
             不达成与未标不阻断发布,由人知情决定;未经明确授权不建 Release、不打标签。
           </p>
           <p>
             <strong>依赖与遗留</strong>:组件与设计语言复用已合入 main 的 G3 计划屏
-            (#391);导航与工作区归 G2。遗留待评审:自动重核机制去留、轮次协议、验收件富
-            格式编辑、验收证据报告格式规范。演示数据¹:出包/部署/报告/人判/纪要/PR/发布状态
+            (#391);导航与工作区归 G2。遗留待评审:自动重核机制去留、验收件富
+            格式编辑、验收证据报告格式规范(轮次协议已随 v10
+            跨周场景退役删除)。演示数据¹:出包/部署/报告/人判/纪要/PR/发布状态
             均为预置,生产不预置人的结论。
           </p>
         </div>
@@ -518,7 +533,9 @@ function App() {
               <Icon name="agent" size={28} />
               <h2>Orca 原生会话工作区</h2>
               <p>顶部标签栏、会话标题与全部控件均为 Orca 原生</p>
-              <small>这里只示意会话位置,不另设计聊天界面;「验收助手」是这个原生会话的产品称呼</small>
+              <small>
+                这里只示意会话位置,不另设计聊天界面;「验收助手」是这个原生会话的产品称呼
+              </small>
             </div>
           ) : (
             <div className="g3-session-rail-text" aria-hidden="true">
@@ -562,13 +579,6 @@ function App() {
               >
                 <Icon name="automation" size={13} /> 配置自动化
               </button>
-              <IconButton
-                name="annotate-mode"
-                label="批注模式:点击板面元素记录评审意见"
-                aria-pressed={annotating}
-                className={annotating ? 'g3-mode-on' : ''}
-                onClick={toggleAnnotating}
-              />
             </div>
           </header>
           {scene !== 'planned' && (
@@ -703,7 +713,7 @@ function App() {
                             disabled={!latest}
                             title={
                               latest
-                                ? '向验收助手会话注入部署请求:下载最新包、按项目自有部署入口部署启动,完成后把环境 URL 写回材料'
+                                ? '向验收助手会话注入部署请求:下载最新包、按项目自有部署入口部署启动'
                                 : '尚无制品包;先出包'
                             }
                             onClick={() => {
@@ -711,7 +721,7 @@ function App() {
                               setDeployed(true)
                               setSentRequest({
                                 kind: '部署请求',
-                                text: '下载最新安装包并按项目自有部署入口部署启动;完成后把环境 URL(桌面应用则启动状态)写回材料'
+                                text: '下载最新安装包,按项目自有部署入口部署启动,完成后给出本次演示环境'
                               })
                             }}
                           >
@@ -778,9 +788,32 @@ function App() {
                 <section id="showcase">
                   <div className="g3-section-title">
                     <h2>
-                      Showcase <small>勾勾表 · 人判 {judged}/{goals.length}</small>
+                      Showcase{' '}
+                      <small>
+                        勾勾表 · 人判 {judged}/{goals.length}
+                      </small>
                     </h2>
                     <span className="g3-title-actions">
+                      {/* 批注入口落在 Showcase 区块头,不在页头右上角:可批注对象
+                          (目标行 / Issue 行)全部在本区块内,纪要区不参与批注,入口
+                          贴着对象才找得到。带未发送条数角标,面板关掉时也看得出还有
+                          批注没发出去。与计划屏第九轮同一形态。 */}
+                      <button
+                        type="button"
+                        className={`g3-text-button g3-annotate-entry${annotating ? ' g3-mode-on' : ''}`}
+                        aria-pressed={annotating}
+                        title={
+                          annotating
+                            ? '退出批注模式(Esc 同样退出)'
+                            : '批注模式:点击目标行或 Issue 行记录验收意见'
+                        }
+                        onClick={toggleAnnotating}
+                      >
+                        <Icon name="annotate-mode" size={13} /> 批注模式
+                        {annotations.length > 0 && (
+                          <span className="g3-annotate-count">{annotations.length}</span>
+                        )}
+                      </button>
                       <IconButton
                         name={expanded.length === goals.length ? 'down' : 'right'}
                         label={expanded.length === goals.length ? '全部收起' : '全部展开'}
@@ -857,7 +890,7 @@ function App() {
                 <section id="minutes">
                   <div className="g3-section-title">
                     <h2>
-                      会议纪要 <small>常驻可编辑 · 人工确认后生效</small>
+                      会议纪要 <small>人工确认后生效</small>
                     </h2>
                     <span className="g3-title-actions">
                       {/* 图标 + 短动词,与生产一致:纯小图标动作点真机验证过于隐蔽
@@ -865,12 +898,7 @@ function App() {
                           带 Tooltip 的图标按钮。 */}
                       <ActionButton
                         title="让验收助手整理纪要(可提供会议 ID)"
-                        onClick={() =>
-                          sendRequest(
-                            '把板面批注与会议转写稿整理为会议纪要,按共识 / 遗留两块输出',
-                            '整理纪要请求'
-                          )
-                        }
+                        onClick={() => sendRequest(minutesRequestPrompt, '整理纪要请求')}
                       >
                         整理纪要
                       </ActionButton>
@@ -879,7 +907,7 @@ function App() {
                   <MinutesCard
                     minutes={minutes || EMPTY_MINUTES}
                     showFollowupStatus={false}
-                    footNote="纪要经人工确认生效;遗留条目原样流入下版计划屏「会议遗留」。需要模型整理时直接在会话里说,或批注后发送。"
+                    footNote="纪要经人工确认生效,生成或填写不自动等于确认。遗留条目原样流入下版计划屏「会议遗留」。"
                     update={(patch) => {
                       setMinutes({ ...(minutes || EMPTY_MINUTES), ...patch })
                       setNotice('本页演示修改 · 刷新后恢复原始材料')
@@ -898,15 +926,15 @@ function App() {
                           </a>
                         </h2>
                         <p>
-                          Leader 在 Orca 原生 PR 页再审验收记录,合入后归档;随 PR
-                          带验收 JSON、证据报告与截图。
+                          Leader 在 Orca 原生 PR 页再审验收记录,合入后归档;随 PR 带验收
+                          JSON、证据报告与截图。
                         </p>
                       </div>
                       <ActionButton
                         title="让验收助手核对材料并发起归档"
                         onClick={() =>
                           sendRequest(
-                            '核对验收材料与结论状态后,在 bw/week-acceptance 固定树提交归档并创建到主分支的 PR',
+                            '归档 本版:核对验收材料与结论状态后发起归档,在会话中给出归档 PR',
                             '归档请求'
                           )
                         }
@@ -934,7 +962,7 @@ function App() {
                         title="让验收助手核对材料并发起归档"
                         onClick={() =>
                           sendRequest(
-                            '核对验收材料与结论状态后,在 bw/week-acceptance 固定树提交归档并创建到主分支的 PR',
+                            '归档 本版:核对验收材料与结论状态后发起归档,在会话中给出归档 PR',
                             '归档请求'
                           )
                         }
@@ -951,7 +979,7 @@ function App() {
                       className="acc-btn primary"
                       onClick={() => {
                         sendRequest(
-                          `发布 ${releaseInfo.version}:先呈现版本号、发布提交与验收包一致性、各目标达成状况与版本说明就绪状态,经我明确授权后按项目自有发布入口执行,发布后独立读回 tag、时间、资产与校验值`,
+                          `发布 ${releaseInfo.version}:先在会话中完成预检并报告,经我明确授权后再执行`,
                           '发布请求'
                         )
                         setReleaseHandoff(true)
@@ -982,8 +1010,8 @@ function App() {
             ) : releaseHandoff ? (
               <div className="g3-footer-handoff">
                 <span>
-                  发布请求已送入验收助手会话 · 预检与知情授权在会话中完成,经你明确授权后按项目发布入口执行,
-                  发布后独立读回 tag/时间/资产/校验值并在会话中报告。板面不显示发布状态(正本在 Git 标签与 Release 页)。
+                  发布请求已送入验收助手会话 ·
+                  预检、授权、执行与读回都在会话中完成;未经你明确授权不创建 Release、不打标签。
                 </span>
                 <IconButton
                   name="close"
@@ -995,7 +1023,7 @@ function App() {
               <div className="g3-footer-handoff">
                 <span>
                   {sentRequest.kind}已通过 Orca 原生发送弹窗递交验收助手:「{sentRequest.text}
-                  」· 用户在弹窗确认目标会话后发送,演示不真正发送。
+                  」· 用户在弹窗确认目标会话后发送,演示不真正发送。{sentRequest.detail}
                 </span>
                 <IconButton
                   name="close"
@@ -1018,13 +1046,25 @@ function App() {
           setPopover(null)
         }}
         onUpdate={(id, text) =>
-          setAnnotations((current) => current.map((item) => (item.id === id ? { ...item, text } : item)))
+          setAnnotations((current) =>
+            current.map((item) => (item.id === id ? { ...item, text } : item))
+          )
         }
         onRemove={(id) => setAnnotations((current) => current.filter((item) => item.id !== id))}
         onBoardLevel={(event) => openPopover('板面级', event.currentTarget.getBoundingClientRect())}
         onSend={() => {
           setPopover(null)
-          sendRequest('以下是验收会在线批注,作为会议纪要输入整理', '批注')
+          const count = annotations.length
+          // 发送成功即清掉已递交的批注(与计划屏第八轮 A 案同一决定):批注是
+          // 会议速记、每次发送都是全量清单,留着会让下一次发送把已递交条目重复
+          // 喂给助手、污染纪要。模式与面板保持开启,面板转「暂无批注」读作
+          // 「已全部递交」。
+          setAnnotations([])
+          sendRequest(
+            annotationsSendPrompt(count),
+            '批注',
+            `已递交的 ${count} 条批注已从板面清空,可继续批注。`
+          )
         }}
       />
       {popover && (

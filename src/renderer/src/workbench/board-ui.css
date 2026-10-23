@@ -22,12 +22,6 @@
   background: var(--accent);
   color: var(--accent-foreground);
 }
-/* Annotation-mode pressed state, shared by both boards' header buttons. */
-.g3-icon-button.g3-mode-on {
-  border-color: var(--foreground);
-  background: var(--accent);
-  color: var(--foreground);
-}
 /* 对象级动作按钮(2026-10-22 真机反馈轮):图标 + 短动词文字,替换纯小图标——
    真机验证纯图标动作点过于隐蔽。描边使其在卡内动作区可被看见。 */
 .g3-action-button {

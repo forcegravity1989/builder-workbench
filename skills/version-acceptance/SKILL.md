@@ -1,6 +1,6 @@
 ---
 name: version-acceptance
-description: Use when 在 BW 验收屏准备周五验收会议的材料(出包、部署、验收证据报告)、支持 Showcase 展示与会议纪要、归档验收结果并发布版本,或对应 Orca 周期运行启动。
+description: Use when 在 BW 验收屏准备周五验收会议的材料(出包、部署、验收证据报告)、支持 Showcase 展示与会议纪要、归档验收结果并发布版本,或对应 Orca 周期运行启动。制定新版本计划使用 week-planning。
 metadata:
   version: 0.7.0
 ---

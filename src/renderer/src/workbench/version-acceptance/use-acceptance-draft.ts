@@ -13,7 +13,6 @@ export function useAcceptanceDraft(
   selectedVersion?: string,
   materialRefresh = 0
 ) {
-  const [initializationSuppressed, setInitializationSuppressed] = useState(false)
   const [loadedRefresh, setLoadedRefresh] = useState(-1)
   const [loadedVersion, setLoadedVersion] = useState<string | null>(null)
   const [draft, setDraft] = useState<MaterialDraft<AcceptanceMaterial> | null>(null)
@@ -122,7 +121,6 @@ export function useAcceptanceDraft(
     draft,
     loadedVersion,
     loadedRefresh,
-    initializationSuppressed,
     controller,
     recoveryError,
     recoveryText,
@@ -154,7 +152,6 @@ export function useAcceptanceDraft(
     },
     clear() {
       recovery.request++
-      setInitializationSuppressed(true)
       controller.clear()
       recovery.present = false
       setRecoveryText(null)

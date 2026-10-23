@@ -19,7 +19,7 @@ import { openAcceptanceSource } from '../version-cycle/open-acceptance-source'
 import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { togglePlanChat } from '../plan-column-resize'
 import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
-import { BoardIconButton } from '../board-ui'
+import { BoardActionButton } from '../board-ui'
 import { PlanningAnnotationOverlays } from './PlanningAnnotationOverlays'
 import { useBoardAnnotations } from '../annotations/use-board-annotations'
 import { annotationRefFromElement } from '../annotations/types'
@@ -85,7 +85,14 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const content = useRef<HTMLDivElement>(null)
   const spy = useJourneySpy()
   const sectionRefs = spy.sectionRefs
-  const annotations = useBoardAnnotations()
+  // Stable board identity for annotation lifetime: context.version is the native
+  // selection and does not flicker through re-select transients (draft null),
+  // unlike selectionKey. The annotation store is keyed by it — a version/scope
+  // switch reads a different, naturally empty session, and unsent notes survive
+  // screen round-trips; no imperative clearAll effect (it wiped the sibling
+  // board's notes when the store went module-level).
+  const boardIdentity = JSON.stringify([scopeKey, context.version])
+  const annotations = useBoardAnnotations(boardIdentity)
   const chatCollapsed = usePlanChatCollapsed()
   const metricScope = useMemo(
     () => (scope && worktreeId ? { repoId: scope.repoId, hostId: scope.hostId, worktreeId } : null),
@@ -93,16 +100,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   )
   const metrics = usePlanMetrics(metricScope, scope?.runtimeOwnerEnvironmentId, plan)
   const selectionKey = JSON.stringify([scopeKey, plan?.version, plan?.cycleId])
-  const { clearAll, pruneMissing } = annotations
-  // Stable board identity for annotation lifetime: context.version is the native
-  // selection and does not flicker through re-select transients (draft null),
-  // unlike selectionKey — clearing on the latter would wipe meeting annotations
-  // on every「更新代码」or poll-driven reselect of the same version.
-  const boardIdentity = JSON.stringify([scopeKey, context.version])
-  useEffect(() => {
-    // Memory annotations point at the previous board's objects after a switch.
-    clearAll()
-  }, [boardIdentity, clearAll])
+  const { pruneMissing } = annotations
   // Model-side edits (poll) may drop goals/task references: prune annotations
   // whose object no longer exists on the board instead of keeping orphans.
   const goalsKey = JSON.stringify(plan?.goals.map((goal) => goal.goalId) ?? [])
@@ -306,16 +304,6 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             await prStatus.refresh()
           })
         }
-        extraActions={
-          <BoardIconButton
-            label="批注模式：点击板面元素记录评审意见"
-            aria-pressed={annotations.annotating}
-            className={annotations.annotating ? 'g3-mode-on' : ''}
-            onClick={annotations.toggleMode}
-          >
-            <MessageSquarePlus size={16} aria-hidden="true" />
-          </BoardIconButton>
-        }
       />
       {(material.error || notice || selection.error || context.error || entry.notice) && (
         <p className="vp-notice" role="status">
@@ -366,6 +354,23 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             onSendAction={wrapSend}
             numbersFor={annotations.numbersFor}
             onOpenAnnotationPanel={annotations.openPanel}
+            annotateEntry={
+              <BoardActionButton
+                className={`g3-annotate-entry${annotations.annotating ? ' g3-mode-on' : ''}`}
+                aria-pressed={annotations.annotating}
+                title={
+                  annotations.annotating
+                    ? '退出批注模式（Esc 同样退出）'
+                    : '批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见'
+                }
+                onClick={annotations.toggleMode}
+              >
+                <MessageSquarePlus size={13} aria-hidden="true" /> 批注模式
+                {annotations.annotations.length > 0 && (
+                  <span className="g3-annotate-count">{annotations.annotations.length}</span>
+                )}
+              </BoardActionButton>
+            }
             entry={entry}
             problems={material.versions.filter((item) => item.state !== 'ready')}
             version={context.version}

@@ -1,5 +1,8 @@
 import { ArrowUpRight } from 'lucide-react'
-import type { VersionGoal, VersionTaskReference } from '../../../../shared/workbench/version-material'
+import type {
+  VersionGoal,
+  VersionTaskReference
+} from '../../../../shared/workbench/version-material'
 import { annotationAttributes, type AnnotationMatch } from '../annotations/types'
 import { BoardIconButton } from '../board-ui'
 import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
@@ -120,10 +123,7 @@ export function AcceptanceGoalTasks({
               </span>
               {markers}
               {row?.note && (
-                <span
-                  className="acc-task-note readonly"
-                  title="Issue 状态读不到，已存备注只读展示"
-                >
+                <span className="acc-task-note readonly" title="Issue 状态读不到，已存备注只读展示">
                   {row.note}
                 </span>
               )}
@@ -146,7 +146,7 @@ export function AcceptanceGoalTasks({
             </button>
             <span
               className={`acc-task-kind${kind === 'Bug' ? ' bug' : ''}`}
-              title="按 issue-state 规范标签推导；无 Bug/缺陷 标签默认按 Feature 显示"
+              title="由 Issue 标签推导；无 Bug/缺陷 标签默认按 Feature 显示"
             >
               {kind}
             </span>

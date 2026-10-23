@@ -104,9 +104,7 @@ export const AcceptanceMaterialSchema = z
         // Pre-v10 human input, read-only: no v10 surface writes these, the board
         // shows them in one labelled legacy block, and a file on disk is only
         // converted through the session migration path with human confirmation.
-        deliveries: z
-          .array(z.strictObject({ title: z.string(), location: z.string() }))
-          .optional(),
+        deliveries: z.array(z.strictObject({ title: z.string(), location: z.string() })).optional(),
         materials: z.array(AcceptanceMaterialLinkSchema).optional(),
         progress: z.string().optional(),
         rounds: z.array(LegacyAcceptanceRoundSchema).optional(),

@@ -3,17 +3,14 @@ import { z } from 'zod'
 /**
  * SOP stage track for the plan/acceptance cycle screens. The session model
  * records the last completed stage in the material via the CLI; it calibrates
- * session recovery and automation. Neither board renders it — the journey lamps
- * are retired (plan since G3, acceptance since v10), so stage drives no UI
- * colour and no completion claim. Absent state means not started.
+ * session recovery and automation. Boards render no lamp and derive no
+ * completion from it (lamps are retired — plan since G3, acceptance since v10);
+ * the sole UI consumption is the archive cards' 「已进入归档阶段」 status line
+ * when stage==='archive' and no PR link is recorded. Absent state means not
+ * started. The plan-side review stage is retired with the v10 review step and
+ * absent from the track.
  */
-export const PLAN_WORKFLOW_STAGES = [
-  'preparation',
-  'goals',
-  'review',
-  'breakdown',
-  'archive'
-] as const
+export const PLAN_WORKFLOW_STAGES = ['preparation', 'goals', 'breakdown', 'archive'] as const
 export const ACCEPTANCE_WORKFLOW_STAGES = ['preparation', 'showcase', 'archive'] as const
 
 export type PlanWorkflowStage = (typeof PLAN_WORKFLOW_STAGES)[number]

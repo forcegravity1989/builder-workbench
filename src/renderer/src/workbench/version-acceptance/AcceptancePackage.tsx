@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowUpRight, Download } from 'lucide-react'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
-import type { PackageLatest, PackagePipelinePort } from '../../../../shared/workbench/package-pipeline'
+import type {
+  PackageLatest,
+  PackagePipelinePort
+} from '../../../../shared/workbench/package-pipeline'
 
 type BusyKind = 'list' | 'latest' | 'launch' | 'download'
 
@@ -59,7 +62,9 @@ export function AcceptancePackage({
       pendingRef.current.delete(kind)
     }
     const next = pendingRef.current.size > 0
-    setBusy(next ? (PENDING_ORDER.find((pending) => pendingRef.current.has(pending)) ?? null) : null)
+    setBusy(
+      next ? (PENDING_ORDER.find((pending) => pendingRef.current.has(pending)) ?? null) : null
+    )
   }, [])
 
   useEffect(() => {
@@ -74,9 +79,7 @@ export function AcceptancePackage({
         }
         setPipelines(catalog.pipelines)
         setPipeline((current) =>
-          current && catalog.pipelines.includes(current)
-            ? current
-            : (catalog.pipelines[0] ?? '')
+          current && catalog.pipelines.includes(current) ? current : (catalog.pipelines[0] ?? '')
         )
       })
       .catch((reason: unknown) => {
@@ -204,6 +207,7 @@ export function AcceptancePackage({
         <button
           className="wb-btn wb-btn-primary wb-btn-sm"
           disabled={busy !== null || !pipeline}
+          title={pipeline ? undefined : '暂无可出包的流水线；核对项目远端与权限'}
           onClick={onLaunch}
         >
           <ArrowUpRight size={14} aria-hidden="true" />
@@ -212,6 +216,7 @@ export function AcceptancePackage({
         <button
           className="wb-btn wb-btn-secondary wb-btn-sm"
           disabled={busy !== null || !latest}
+          title={latest ? undefined : '尚无制品包；先出包'}
           onClick={onDownload}
         >
           <Download size={14} aria-hidden="true" />

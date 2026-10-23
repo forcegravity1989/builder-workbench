@@ -8,6 +8,17 @@ import { BoardActionButton, BoardIconButton } from '../board-ui'
 import type { SendActionWrap } from '../plan-send-menu'
 
 /**
+ * 注入提示词设计正本（原型 g3-model.js minutesRequestPrompt，2026-10-22 第九轮瘦身）：
+ * 按钮 prompt 只承载触发意图；落点 minutes 节、人工确认、闭环由人等 SOP 规则归
+ * week-planning Skill 与系统提示词，按钮 prompt 不复述。
+ */
+const minutesRequestPrompt =
+  '整理本次评审会的会议纪要：把会话中已发送的板面批注汇总为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。'
+
+/** 计划未建时「整理纪要」的禁用原因：title 与骨架卡脚部同一句，不留死按钮。 */
+const PLAN_MISSING_REASON = '计划未建立 · 先在上方「与计划助手新建计划」'
+
+/**
  * Meeting minutes section: the assistant summarizes online annotations and the
  * optional transcript into two fixed blocks (共识 / 遗留 with per-point closure
  * marks), a human confirms on the card, and confirmation never rides on
@@ -33,7 +44,7 @@ export function PlanningMinutesSection({
 }) {
   const minutes = plan?.minutes
   const organizeButton = (
-    <BoardActionButton disabled={!plan}>
+    <BoardActionButton disabled={!plan} title={plan ? undefined : PLAN_MISSING_REASON}>
       <BrainCircuit size={14} aria-hidden="true" /> 整理纪要
     </BoardActionButton>
   )
@@ -46,11 +57,7 @@ export function PlanningMinutesSection({
         </h2>
         {plan && minutes ? (
           <span className="g3-title-actions">
-            {onSendAction(
-              '把在线批注与会议转写稿整理为会议纪要，按共识 / 遗留两块输出',
-              '整理纪要请求',
-              organizeButton
-            )}
+            {onSendAction(minutesRequestPrompt, '整理纪要请求', organizeButton)}
           </span>
         ) : null}
       </div>
@@ -58,19 +65,20 @@ export function PlanningMinutesSection({
         <MinutesCard plan={plan} minutes={minutes} disabled={disabled} edit={edit} />
       ) : (
         <MinutesSkeleton
-          action={onSendAction(
-            '把在线批注与会议转写稿整理为会议纪要，按共识 / 遗留两块输出',
-            '整理纪要请求',
-            organizeButton
-          )}
+          planMissing={!plan}
+          action={onSendAction(minutesRequestPrompt, '整理纪要请求', organizeButton)}
         />
       )}
     </section>
   )
 }
 
-/** Empty-state skeleton: same two blocks as the generated card, dashed border. */
-function MinutesSkeleton({ action }: { action: ReactElement }) {
+/**
+ * Empty-state skeleton: same two blocks as the generated card, dashed border.
+ * 2026-10-22 第九轮减注释密度：占位条压细去边框、每块一条，说明只留脚部一句；
+ * 计划未建时脚部与按钮 title 同为禁用原因。
+ */
+function MinutesSkeleton({ action, planMissing }: { action: ReactElement; planMissing: boolean }) {
   return (
     <article className="g3-minutes skeleton" aria-label="会议纪要（未生成）">
       <div className="g3-minutes-head">
@@ -80,20 +88,14 @@ function MinutesSkeleton({ action }: { action: ReactElement }) {
       <div className="g3-minutes-section">
         <strong>共识</strong>
         <p className="g3-skeleton-line" aria-hidden="true" />
-        <p className="g3-skeleton-line short" aria-hidden="true" />
-        <span className="g3-muted">待计划助手从在线批注与可选转写稿生成</span>
       </div>
       <div className="g3-minutes-section">
-        <strong>
-          遗留 <small>闭环 = 版本计划已按该条修改，由人标记</small>
-        </strong>
+        <strong>遗留</strong>
         <p className="g3-skeleton-line" aria-hidden="true" />
-        <span className="g3-muted">生成后逐条跟进，闭环由人标记</span>
       </div>
       <div className="g3-minutes-foot">
         <span className="g3-muted">
-          批注从页头「批注模式」进入；会议 ID 可由 Builder 提供，不提供时仅凭批注也可生成。
-          纪要经人工确认后生效。
+          {planMissing ? PLAN_MISSING_REASON : '由计划助手汇总评审会批注生成，经人工确认后生效。'}
         </span>
       </div>
     </article>
@@ -210,7 +212,7 @@ function MinutesCard({
                   <button
                     type="button"
                     className={`g3-followup-status${point.closed ? ' closed' : ''}`}
-                    title="闭环 = 版本计划已按该条修改；由人标记"
+                    title="闭环 = 版本计划已按该条修改，由人标记"
                     onClick={() => toggleFollowupClosed(point.id)}
                   >
                     {point.closed ? '已闭环' : '未闭环'}
@@ -246,7 +248,7 @@ function MinutesCard({
                     <button
                       type="button"
                       className={`g3-followup-status${point.closed ? ' closed' : ''}`}
-                      title="闭环 = 版本计划已按该条修改；由人标记"
+                      title="闭环 = 版本计划已按该条修改，由人标记"
                       onClick={() => toggleFollowupClosed(point.id)}
                     >
                       {point.closed ? '已闭环' : '未闭环'}

@@ -43,7 +43,9 @@ export function meetingPageExpression(
       return { picked: true };
     }
     if (input.action === 'transcript-tab') {
-      if (!transcriptTab) return { clicked: false, title };
+      // pageRendered: the meeting body (.m-ai-left title) is on screen, so a missing
+      // 「语音转文字」tab means this recording has no transcript — not a cold page.
+      if (!transcriptTab) return { clicked: false, title, pageRendered: !!title };
       transcriptTab.click();
       return { clicked: true, title };
     }

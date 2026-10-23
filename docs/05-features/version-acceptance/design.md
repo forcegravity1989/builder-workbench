@@ -22,14 +22,14 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 |---|---|---|
 | `version-planning/use-journey-spy.ts` | `version-acceptance/use-acceptance-journey-spy.ts` | 区段 id 改 `prepare/showcase/minutes/archive`，贴底判定指向 `archive` |
 | `version-planning/PlanningSections.tsx`（Header + JourneyNav） | `version-acceptance/AcceptanceSections.tsx` | 标题改「版本验收」、`aria-label` 改「验收旅程」、四区文案按 spec、选版 `aria-label` 改「验收版本」 |
-| `version-planning/PlanningMinutesSection.tsx`（含内部 MinutesCard） | `version-acceptance/AcceptanceMinutesSection.tsx` | 删遗留条目的闭环位与「基于纪要调整目标」动作（验收目标只读、无闭环消费方）；助手文案改「让验收助手整理纪要（可提供会议 ID）」；脚注改验收口径 |
+| `version-planning/PlanningMinutesSection.tsx`（含内部 MinutesCard） | `version-acceptance/AcceptanceMinutesSection.tsx` | 删遗留条目的闭环位与「基于纪要调整目标」动作（验收目标只读、无闭环消费方）；助手文案改「让验收助手整理纪要（可提供会议 ID）」；脚注改验收口径。注入 prompt 与计划屏同一瘦身原则（只承载触发意图，SOP 归 Skill），正源常量 `minutesRequestPrompt` 在组件内、验收口径（「整理本次验收会的会议纪要…」），设计正本 `prototype/acceptance-model.js` 同名导出；`document` 收必填——空板在 `AcceptanceBoard` 早退渲染 `AcceptanceEmptyBoard`，本组件的无材料分支是死代码已删 |
 | `version-planning/PlanningArchiveCard.tsx` | `version-acceptance/AcceptanceArchiveCard.tsx` | 文案改验收归档；发布按钮并入本区（见「发布」节）。打开原生 PR 页不拷贝——两屏都 import 共用 `version-cycle/open-archive-pr.ts`（已从计划屏目录移到共用层） |
 | `version-planning/version-planning.css` 中验收需要的板面壳/分区/纪要样式 | `version-acceptance/acceptance.css` | 只拷验收实际用到的选择器，类名前缀改 `acc-`，不整表复制；计划屏特有样式（上版回顾、目标卡编辑态、指标承诺）不拷。**批注与板面基础件的样式不在这里**——它们随共用组件走 `annotations/annotations.css` 与 `board-ui.css`，由组件自己 import，两屏自动同源 |
 | `version-planning/PlanningGoals.tsx` 中目标行只读裁剪形态 | `version-acceptance/AcceptanceGoalRows.tsx` | 只读回显目标句/负责人/验收标准，删行内编辑、整卡删除、指标承诺区；行尾加达成/不达成，Issue 行加备注与遗留标记 |
 
 **直接 import，不拷贝**（这些不在计划屏目录下，是 #399 建在共用层、注释明写供两屏使用的模块，或 v9.5 起就是两屏共用的壳层）：
 
-- `workbench/annotations/`：`types.ts`（`AnnotationKind`/`AnnotationRef`/`annotationAttributes`/`annotationRefFromElement`）、`use-board-annotations.ts`、`AnnotationPanel.tsx`、`AnnotationPopover.tsx`、`annotation-markdown.ts`、`annotation-markers.tsx`、`annotations.css`
+- `workbench/annotations/`：`types.ts`（`AnnotationKind`/`AnnotationRef`/`annotationAttributes`/`annotationRefFromElement`）、`use-board-annotations.ts`（模块级会话 store，按 boardId 键控，两屏各传自己的板面身份）、`AnnotationPanel.tsx`、`AnnotationPopover.tsx`、`annotation-markdown.ts`、`annotation-markers.tsx`、`annotations.css`
 - `workbench/board-ui.tsx`（+ `board-ui.css`）：`BoardIconButton`、`BoardActionButton`、`BoardLines`
 - `workbench/plan-send-menu.tsx`：`PlanSendMenu`、`usePlanSendAction`、`SendActionWrap`——对象级动作与批注发送的原生发送弹窗包装件，#407 建在共用层。两屏共用同一件，`assistant` 参数只改用户可见文案里的 AI 角色名（验收屏传「验收助手」）
 - `workbench/plan-column-resize.ts`、`workbench/use-plan-chat-collapsed.ts`：会话栏收折壳（名字带 plan 但已是两屏共用壳，v9.5 起验收屏就在用）
@@ -108,7 +108,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 四区单页 + 顶部定位导航（序号+标题+副题，滚动侦测高亮，点击 `scrollIntoView`）。滚动侦测：导航点击后抑制侦测直到用户活动（focus/wheel/pointerdown/touchstart/翻页与方向键）清除；贴底（距底 <2px）强制高亮 `archive`；否则取「区顶 ≤ 容器顶 +60px」的最后一个区。会话栏收折后 reanchor 当前区，不因回流跳高亮。空板态不渲染导航。
 
-批注捕获层：板面元素挂 `data-annotate-kind/goal/issue/label`，`onClickCapture` 在批注模式下拦截整板点击，最内层命中者弹出对象小窗；`#minutes` 区内点击直接放行（人工确认是会中必须能做的铁律动作）；已存在的角标保留自己的点击（重开面板）。Esc 分层由 `useBoardAnnotations` 内部处理：先关小窗、再退模式与面板。批注为内存态：板面身份（scope + 版本）变化即 `clearAll`，模型侧删对象经 `pruneMissing` 清孤儿。
+批注捕获层：板面元素挂 `data-annotate-kind/goal/issue/label`，`onClickCapture` 在批注模式下拦截整板点击，最内层命中者弹出对象小窗；`#minutes` 区内点击直接放行（人工确认是会中必须能做的铁律动作）；已存在的角标保留自己的点击（重开面板）。Esc 分层由 `useBoardAnnotations` 内部处理：先关小窗、再退模式与面板。批注为内存态：会话 store 按板面身份（scope + 版本）键控（`useBoardAnnotations(boardId)`，`Map<boardId, session>`，2026-10-23 对齐轮），切版=换 key 天然空会话，两屏不再有命令式 identity-`clearAll` effect（旧实现是单一全局会话+挂载即清，切屏瞬间互删未发送批注、同 goalId 串角标）；发送成功门控内 `clearAll` 清已递交批注（与计划屏同一 A 案），模型侧删对象经 `pruneMissing` 清孤儿。批注模式入口在 Showcase 区块标题行（`AcceptanceGoalRows` 的 `annotateEntry` prop，文字标签 + `.acc-annotate-count` 未发送角标），页头 `extraActions` 槽位与空板态禁用占位钮已删除。
 
 出包区块沿用既有 `AcceptancePackage` 与 `workbench.package.*` 协议（按远端身份分派 CodeHub cloudbuild CLI / CloudDragon 会话 / gh CLI，SSH 宿主拒绝出包），可收缩、默认收起为一行最新包摘要；受理后每分钟静默刷新、`launchInFlight` 互斥不重复启动；无流水线/无权限/远端认不出/非本机宿主如实报错。包重出不自动刷新板面已填内容，是否重核由模型在会话中提醒、人决定；板面不做主动失效或待重核呈现。
 

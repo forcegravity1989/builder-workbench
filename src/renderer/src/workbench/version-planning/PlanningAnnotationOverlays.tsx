@@ -37,7 +37,16 @@ export function PlanningAnnotationOverlays({
             )
           }}
           onCopyError={(message) => onSentNotice(`复制板面批注失败：${message}`)}
-          onSent={() => onSentNotice('板面批注已发送给计划助手 · 在会话栏查看进展')}
+          onSent={() => {
+            // Why: onPromptDelivered only fires on a delivered send, so clearing here
+            // never drops notes on failure/Esc (option A, 2026-10-22). The receipt must
+            // say how many were cleared or the empty panel reads as lost input.
+            const count = annotations.annotations.length
+            annotations.clearAll()
+            onSentNotice(
+              `板面批注已发送给计划助手 · 在会话栏查看进展。已递交的 ${count} 条批注已从板面清空，可继续批注。`
+            )
+          }}
         />
       )}
       {popover && (
