@@ -30,6 +30,8 @@ const catalog = {
     def({ name: '别的引领', role: 'leading', feature: '需求验收', leads: '另一结果' }),
     def({ name: '验收耗时', role: 'leading', feature: '需求验收', leads: '可核对率' }),
     def({ name: '另一结果', feature: '需求验收' }),
+    def({ name: '交付周期', feature: '项目上下文' }),
+    def({ name: '通过率', feature: '项目上下文' }),
     def({ name: '闭环数' })
   ]
 } as unknown as MetricCatalog
@@ -55,7 +57,9 @@ it('按声明顺序排场景，每签配一结果一引领，不借用关联其�
   expect(scenes[0]).toMatchObject({ value: '确认前写清承诺', focus: null })
   expect([scenes[1].lagging?.name, scenes[1].leading?.name]).toEqual(['可核对率', '验收耗时'])
   expect(scenes[1].others.map((item) => item.name)).toEqual(['别的引领', '另一结果'])
-  expect([scenes[2].lagging, scenes[2].leading]).toEqual([null, null])
+  expect([scenes[2].lagging?.name, scenes[2].leading?.name]).toEqual(['交付周期', '通过率'])
+  expect(scenes[2].leading?.role).toBe('lagging')
+  expect(scenes[2].others).toEqual([])
   expect(buildScoreboardScenes(null, null)).toEqual([])
 })
 

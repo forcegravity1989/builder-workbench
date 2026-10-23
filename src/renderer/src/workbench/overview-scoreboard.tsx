@@ -331,7 +331,7 @@ export function OverviewScoreboard({
                   labels={labels}
                 />
                 <Measure
-                  role="引领"
+                  role={active.leading?.role === 'lagging' ? '结果' : '引领'}
                   def={active.leading}
                   target={active.leading ? active.targets[active.leading.name] : undefined}
                   view={activeViews.leading}

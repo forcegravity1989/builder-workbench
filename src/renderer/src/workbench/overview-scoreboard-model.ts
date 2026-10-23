@@ -24,12 +24,15 @@ export type ScoreboardScene = {
 function pairOf(defs: MetricDefinition[], targets: Record<string, string>) {
   const pick = (list: MetricDefinition[]) =>
     list.find((def) => def.name in targets) ?? list[0] ?? null
-  const lagging = pick(defs.filter((def) => def.role === 'lagging'))
+  const laggings = defs.filter((def) => def.role === 'lagging')
+  const lagging = pick(laggings)
   const leadings = defs.filter((def) => def.role === 'leading')
-  const leading = lagging
-    ? (pick(leadings.filter((def) => def.leads === lagging.name)) ??
-      pick(leadings.filter((def) => !def.leads)))
-    : pick(leadings)
+  const linked = lagging ? leadings.filter((def) => def.leads === lagging.name) : []
+  const leading =
+    (linked.length > 0 ? pick(linked) : null) ??
+    pick(leadings.filter((def) => !def.leads)) ??
+    laggings.find((def) => def !== lagging) ??
+    null
   return { lagging, leading }
 }
 
