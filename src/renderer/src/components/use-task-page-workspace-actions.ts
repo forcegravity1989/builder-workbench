@@ -21,10 +21,7 @@ import {
   notifyScopedWorkspaceUnavailable,
   resolveScopedComposerAdditions
 } from '@/workbench/scoped-task-workspace'
-import {
-  openWorkbenchWorkspaceChoice,
-  worktreeActivationHostOpts
-} from '@/workbench/version-workspace-choice-state'
+import { dispatchScopedWorktrees } from '@/workbench/version-workspace-choice-state'
 export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   const { repoMap, openModal } = model
   // G2 (BW)：范围视图的 Issue 开工把版本归属上下文与目标树父级建议带进同一
@@ -94,21 +91,16 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
           repoId: item.repoId
         })
         if (scoped) {
-          if (scoped.kind === 'unique') {
-            const only = scoped.candidates[0]
-            const opened = activateAndRevealWorktree(only.id, worktreeActivationHostOpts(only))
-            if (opened === false) {
-              notifyScopedWorkspaceUnavailable()
-              return
-            }
+          const outcome = dispatchScopedWorktrees({
+            candidates: scoped.candidates,
+            choiceTitle: `#${item.number} ${item.title}`,
+            onUnavailable: notifyScopedWorkspaceUnavailable
+          })
+          if (outcome === 'opened') {
             useAppStore.getState().recordFeatureInteraction('github-tasks')
             return
           }
-          if (scoped.kind === 'choice') {
-            openWorkbenchWorkspaceChoice({
-              title: `#${item.number} ${item.title}`,
-              candidates: [...scoped.candidates]
-            })
+          if (outcome !== 'none') {
             return
           }
           handleUseWorkItem(item)
@@ -227,20 +219,15 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
           sourceContext: codeHubSourceContextFor(item),
           repoId: item.repoId
         })
-        if (scoped && scoped.kind === 'unique') {
-          const only = scoped.candidates[0]
-          const opened = activateAndRevealWorktree(only.id, worktreeActivationHostOpts(only))
-          if (opened === false) {
-            notifyScopedWorkspaceUnavailable()
-          }
-          return
-        }
-        if (scoped && scoped.kind === 'choice') {
-          openWorkbenchWorkspaceChoice({
-            title: `#${item.iid} ${item.title}`,
-            candidates: [...scoped.candidates]
+        if (scoped) {
+          const outcome = dispatchScopedWorktrees({
+            candidates: scoped.candidates,
+            choiceTitle: `#${item.iid} ${item.title}`,
+            onUnavailable: notifyScopedWorkspaceUnavailable
           })
-          return
+          if (outcome !== 'none') {
+            return
+          }
         }
       }
       openComposerForCodeHubItem(item)

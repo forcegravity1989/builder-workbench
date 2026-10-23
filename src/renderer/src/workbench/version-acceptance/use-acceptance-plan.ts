@@ -10,6 +10,7 @@ import { assertFixedPlan } from './acceptance-model'
 import type { nativeVersionMaterialPort } from '../version-material-port'
 import { MaterialVersion } from '../../../../shared/workbench/version-material'
 import type { CycleMaterialProblem } from '../version-cycle/cycle-start-request'
+import { compareMaterialVersions } from '../../../../shared/workbench/version-catalog'
 
 /**
  * Names for the acceptance version menu: local acceptance files, plus version
@@ -30,7 +31,7 @@ export function acceptanceVersionChoices(input: {
         .filter((item) => MaterialVersion.safeParse(item.version).success)
         .map((item) => item.version)
     ])
-  ].sort()
+  ].sort(compareMaterialVersions)
 }
 
 type TreePlanProblem = { version: string; code: string; message: string }

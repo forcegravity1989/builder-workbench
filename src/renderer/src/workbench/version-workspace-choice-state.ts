@@ -56,6 +56,35 @@ export function chooseWorkbenchWorkspace(worktree: Worktree): void {
   }
 }
 
+export type ScopedWorkspaceDispatch = 'opened' | 'choice-opened' | 'unavailable' | 'none'
+
+/**
+ * 统一 Start/Open 的公共分发壳（板面开工箭头、任务屏行、详情弹窗三处共用）：
+ * 唯一候选 → 宿主限定直开，激活失败走 onUnavailable；多候选 → BW 选择器
+ * （绝不取第一棵）；无候选 → 返回 'none' 由调用方回落原生语义。埋点与回落
+ * 文案各处不同（toast/notify/创建器），留在调用方，不在此强行统一。
+ */
+export function dispatchScopedWorktrees<T extends Worktree>(args: {
+  candidates: readonly T[]
+  choiceTitle: string
+  onUnavailable(): void
+}): ScopedWorkspaceDispatch {
+  const { candidates, choiceTitle, onUnavailable } = args
+  if (candidates.length === 1) {
+    const only = candidates[0]
+    if (!only || activateAndRevealWorktree(only.id, worktreeActivationHostOpts(only)) === false) {
+      onUnavailable()
+      return 'unavailable'
+    }
+    return 'opened'
+  }
+  if (candidates.length > 1) {
+    openWorkbenchWorkspaceChoice({ title: choiceTitle, candidates: [...candidates] })
+    return 'choice-opened'
+  }
+  return 'none'
+}
+
 export function useWorkbenchWorkspaceChoice(): WorkbenchWorkspaceChoice | null {
   return useSyncExternalStore(
     (listener) => {

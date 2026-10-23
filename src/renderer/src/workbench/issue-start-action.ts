@@ -6,11 +6,7 @@ import {
   findGoalParentSuggestion,
   notifyScopedWorkspaceUnavailable
 } from './scoped-task-workspace'
-import {
-  openWorkbenchWorkspaceChoice,
-  worktreeActivationHostOpts
-} from './version-workspace-choice-state'
-import { activateAndRevealWorktree } from '@/lib/worktree-activation'
+import { dispatchScopedWorktrees } from './version-workspace-choice-state'
 import type { CycleTaskSnapshot } from './version-cycle/ports'
 
 /**
@@ -42,18 +38,12 @@ export function openIssueWorkspaceOrStart(args: {
     provider,
     repoId
   })
-  if (candidates.length === 1) {
-    const only = candidates[0]
-    if (!only || activateAndRevealWorktree(only.id, worktreeActivationHostOpts(only)) === false) {
-      notifyScopedWorkspaceUnavailable()
-    }
-    return true
-  }
-  if (candidates.length > 1) {
-    openWorkbenchWorkspaceChoice({
-      title: `#${task.iid} ${task.title}`,
-      candidates
-    })
+  const outcome = dispatchScopedWorktrees({
+    candidates,
+    choiceTitle: `#${task.iid} ${task.title}`,
+    onUnavailable: notifyScopedWorkspaceUnavailable
+  })
+  if (outcome !== 'none') {
     return true
   }
   const goalId = task.reference.goalId

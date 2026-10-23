@@ -9,10 +9,7 @@ import {
   matchScopedTaskWorkspaces,
   resolveTaskRowWorkspace
 } from '@/workbench/scoped-task-workspace'
-import {
-  openWorkbenchWorkspaceChoice,
-  worktreeActivationHostOpts
-} from '@/workbench/version-workspace-choice-state'
+import { dispatchScopedWorktrees } from '@/workbench/version-workspace-choice-state'
 import { translate } from '@/i18n/i18n'
 import type { GitHubWorkItem } from '../../../../../shared/github/work-item-types'
 import type { GitHubItemDialogProps } from '../load-item-details/github-item-dialog-types'
@@ -75,24 +72,18 @@ export default function GitHubItemDialog({
           repoId: effectiveRepoId
         })
         if (scoped) {
-          if (scoped.kind === 'unique') {
-            const only = scoped.candidates[0]
-            const opened = activateAndRevealWorktree(only.id, worktreeActivationHostOpts(only))
-            if (opened === false) {
+          const outcome = dispatchScopedWorktrees({
+            candidates: scoped.candidates,
+            choiceTitle: `#${item.number} ${item.title}`,
+            onUnavailable: () =>
               toast.error(
                 translate(
                   'auto.components.GitHubItemDialog.2ef631437e',
                   'Unable to open the workspace attached to this issue.'
                 )
               )
-            }
-            return
-          }
-          if (scoped.kind === 'choice') {
-            openWorkbenchWorkspaceChoice({
-              title: `#${item.number} ${item.title}`,
-              candidates: [...scoped.candidates]
-            })
+          })
+          if (outcome !== 'none') {
             return
           }
           onUse(item)
