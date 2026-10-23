@@ -2,6 +2,10 @@
 
 > **维护约定**：本篇记录本特性六环链现状与证据，格式按 [02 §6.2](../../01-principles/02-working-backwards.md)「STATUS 格式」；更新触发：任一环状态或证据变化，随引发它的 PR 同批提交，不记流水。
 
+**小项目组聚合修复（2026-10-22，草案待确认）**：[spec](spec.md#小项目组聚合修复规格草案)、[plan](plan.md) 与[可点原型](minimal-aggregation-prototype.html)对应 [#342](https://github.com/forcegravity1989/builder-workbench/issues/342)。拟复用既有仓库身份，统一墙与 BW 侧栏的同仓分组，修复 Unknown 来源恢复；Leader 沿现有整机配对查看多个项目，不新增成员、角色或项目身份。本轮仅交设计文档和模拟原型，尚未修改产品代码、完成真实双机复现或验收，不提升下表既有六环状态。
+
+旅程预览直接导入现有项目墙、配置右栏、JSON 文件导入和两步接入的 React 组件与样式；演示只提供外部控制与隔离的数据端口，不新画配置、主机设置或会话页。未嵌入的原生侧栏、设置、总览、文件/会话页明列未覆盖。构建源码在 [prototype/aggregation-preview/](prototype/aggregation-preview/)；点验范围与结果以 [PR #408](https://github.com/forcegravity1989/builder-workbench/pull/408) 当前提交的报告为准，不将原型交互计为产品验收。
+
 **现状（2026-10-16，#363 承诺进展口径统一批）**：承诺进展口径按负责人决策改为「**关闭即完成**」——关闭原因不参与计数，GitHub 侧 otherClosed 三分类移除、`issue-state-batch` 同步删 stateReason 死字段（查询只取 state）；CodeHub 任务接入计数（resolveReferenceRepo 身份匹配复用任务屏；状态只读 Issue、不做 MR 兜底——防同号 MR 误计，每任务 1 次 CLI）；gitlab/linear/jira 等未接入 provider 与任一读不到仍全有或全无整行「—」。AGENTS.md 铁律三同批最小修改（人确认目标达成与自动化不得自行关闭保留）；spec 取舍 9 记录决策与已接受代价（#340 类 duplicate/决定不做关闭计入完成）。2026-10-15 墙卡读数批（四项读数、健康灯与假占位移除、main `github/issue-state-batch`）已全部合入（#365/#367）。#345/#349 交付承诺候选不受影响、原地不动。
 
 共享链接回显：设置保存上次成功生成链接的公开引用，重启后仅读取原生授权恢复同一链接；失败生成与启动暂不可读保留引用，撤销后不恢复。#372 的实际跨机器断连原因仍未复现，永久身份/凭据丢失恢复不在本次范围。

@@ -1,0 +1,132 @@
+// Rebuild from unmodified production components; dependencies/output can live outside the repo.
+const fs = require('node:fs')
+const path = require('node:path')
+const { createRequire } = require('node:module')
+const { createHash } = require('node:crypto')
+const root = path.resolve(__dirname, '../../../../..')
+const deps = process.argv[2]
+if (!deps) {
+  throw new Error('Usage: node build.cjs <dependency node_modules> [output.html]')
+}
+const depRequire = createRequire(path.resolve(deps, '__preview.cjs'))
+const esbuild = depRequire('esbuild')
+const { compile } = depRequire('@tailwindcss/node')
+const fixtures = path.join(__dirname, 'fixtures.ts')
+const src = path.join(root, 'src/renderer/src')
+const adapted = new Set([
+  'project-page-state',
+  'switch-active-project',
+  'wall-project-repo-actions',
+  'use-wall-adoptions',
+  'use-wall-readings',
+  'charter-port',
+  'run-project-onboard',
+  'native-workspace',
+  'trunk-update-port'
+])
+const escapedScript = (source) => source.replace(/<\/script/gi, '<\\/script')
+async function build() {
+  const result = await esbuild.build({
+    entryPoints: [path.join(__dirname, 'entry.tsx')],
+    bundle: true,
+    write: false,
+    minify: true,
+    outfile: 'preview.js',
+    jsx: 'automatic',
+    platform: 'browser',
+    format: 'iife',
+    supported: { 'template-literal': false },
+    nodePaths: [path.resolve(deps)],
+    define: { 'process.env.NODE_ENV': '"production"' },
+    plugins: [
+      {
+        name: 'preview-data-ports',
+        setup(builder) {
+          builder.onResolve({ filter: /.*/ }, (args) => {
+            if (
+              args.path === '@/store' ||
+              args.path === '@/i18n/i18n' ||
+              (args.importer.includes(`${path.sep}workbench${path.sep}`) &&
+                adapted.has(path.basename(args.path)))
+            ) {
+              return { path: fixtures }
+            }
+            if (args.path.startsWith('@/')) {
+              return {
+                path:
+                  path.join(src, args.path.slice(2)) +
+                  (fs.existsSync(path.join(src, args.path.slice(2)) + '.tsx') ? '.tsx' : '.ts')
+              }
+            }
+          })
+        }
+      }
+    ]
+  })
+  let css = fs.readFileSync(path.join(src, 'assets/main.css'), 'utf8').replace(/^@import.*$/gm, '')
+  css = css.replace(/@font-face\s*\{[^}]*Orca Nerd Font[^}]*\}/, '')
+  css = css.replace(
+    /url\('\.\/fonts\/Geist-Variable\.woff2'\)/,
+    `url('data:font/woff2;base64,${fs.readFileSync(path.join(src, 'assets/fonts/Geist-Variable.woff2')).toString('base64')}')`
+  )
+  const compiler = await compile(`@import 'tailwindcss';\n@import 'tw-animate-css';\n${css}`, {
+    base: path.dirname(path.resolve(deps)),
+    onDependency() {}
+  })
+  const inputs = []
+  for (const dir of ['workbench', 'components/ui']) {
+    for (const file of fs.readdirSync(path.join(src, dir))) {
+      if (file.endsWith('.tsx')) {
+        inputs.push(fs.readFileSync(path.join(src, dir, file), 'utf8'))
+      }
+    }
+  }
+  const candidates = [
+    ...new Set(
+      inputs
+        .join('\n')
+        .split(/[\s"'`]+/)
+        .filter(Boolean)
+    )
+  ]
+  css = compiler.build(candidates)
+  css += `\n${fs.readFileSync(path.join(src, 'workbench/workbench-tokens.css'), 'utf8')}`
+  css += `\n${result.outputFiles
+    .filter((file) => file.path.endsWith('.css'))
+    .map((file) => file.text)
+    .join('\n')}`
+  css +=
+    '\n.preview-host{height:100%;overflow:auto}.preview-controls{padding:16px 24px;border-bottom:1px solid var(--border);background:var(--background);font-size:13px}.preview-controls p{margin:8px 0}.preview-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.preview-note{color:var(--muted-foreground);font-size:12px}.preview-product{display:flex;min-height:620px;height:660px}.preview-notice{padding:12px 24px;margin:0;border-top:1px solid var(--border);font-size:12px;background:var(--background)}'
+  css = css.replace(/[\t ]+$/gm, '')
+  const tracked = [
+    'ProjectWallPage.tsx',
+    'ProjectSettingsRail.tsx',
+    'ImportBuilderHostsDialog.tsx',
+    'OnboardProjectPage.tsx',
+    'workbench-wall.css',
+    'project-settings.css',
+    'workbench-onboard.css',
+    'workbench-tokens.css'
+  ]
+  const hashes = tracked
+    .map(
+      (file) =>
+        `${file}:${createHash('sha256')
+          .update(fs.readFileSync(path.join(src, 'workbench', file)))
+          .digest('hex')}`
+    )
+    .join('\n')
+  const output =
+    process.argv[3] || path.resolve(__dirname, '../../minimal-aggregation-prototype.html')
+  fs.writeFileSync(
+    output,
+    `<!doctype html>\n<html lang="zh-CN" class="light" data-skin="ds" data-theme="claude"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>项目聚合 · BW 真实组件旅程预览</title><style>${css}</style></head><body><div id="root"></div><script>${escapedScript(result.outputFiles.find((file) => file.path.endsWith('.js')).text)}</script></body></html>\n<!-- Generated by prototype/aggregation-preview/build.cjs from source, do not hand-edit.\n${hashes}\n-->\n`
+  )
+  console.log(
+    JSON.stringify({ output, bytes: fs.statSync(output).size, sourceComponents: tracked })
+  )
+}
+build().catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})
