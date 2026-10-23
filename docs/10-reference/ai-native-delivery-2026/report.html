@@ -1,0 +1,2184 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<meta name="evidence-revision" content="ed5a0930b70dd68b7cf588d45d42173b135e7c48">
+<meta name="source-sha256-README" content="bbefe317651fa4b14f4b5750229b803b0b50ce1677a0e1f53030ec7f31aee36d">
+<meta name="source-sha256-anthropic-sdlc" content="5af8eadc299b54f96bd80e7b8029675f6e5e707844227cc31521c93db3c37c90">
+<meta name="source-sha256-workbuddy-codebuddy" content="92f883aadc80aad4eaed8f28ada82c0cb3af027f52686c14374f276559581fb3">
+<meta name="source-sha256-orca" content="8559f9c871389d9feb589b03606bd7ac4a13ee6f8fe9ff4f1bc87796865897aa">
+<meta name="source-sha256-openai-codex" content="6a66e88019eebfb8dd1728873fb4f7f03b1f3377f57435f938a41941ee8552a9">
+<meta name="source-sha256-cursor-linear" content="ee09a3f52314cea65deb41c342d199334fc84ce32a017e0f3e2ef41a51c7aec7">
+<meta name="source-sha256-spotify" content="f0d0141a1b5303c54d1963d1f3c4a303cd4cb2ee6c742af097fb786d9db75018">
+<meta name="source-sha256-evidence-and-metrics" content="50712949ffe3109281cb82de2adef18c49d68ee7a73e89e28245c4f38cca78fc">
+<title>梳理 BW 加持能力的价值：AI Coding 之后，一个 Builder 怎样交付真实价值 · 完整离线报告</title>
+<style>:root {
+  color-scheme: light;
+  --ink: #172d3b;
+  --muted: #526574;
+  --line: #d8e2e7;
+  --paper: #fff;
+  --bg: #f3f6f7;
+  --accent: #125d66;
+  --soft: #eaf4f2;
+  font-family: Inter, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  font-size: 16px;
+  line-height: 1.8;
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 95px;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+a:hover {
+  color: #073d47;
+}
+a:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #bf790b;
+  outline-offset: 3px;
+}
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  min-height: 72px;
+  padding: 16px 30px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.brand {
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.masthead span {
+  color: var(--muted);
+}
+.source {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.layout {
+  max-width: 1510px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 245px minmax(0, 1fr);
+  gap: 32px;
+  padding: 34px 30px 70px;
+}
+aside {
+  position: sticky;
+  top: 104px;
+  align-self: start;
+  max-height: calc(100vh - 128px);
+  overflow: auto;
+  padding: 0 8px 12px 0;
+}
+nav {
+  display: grid;
+  gap: 6px;
+}
+nav a {
+  display: block;
+  padding: 10px 13px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  text-decoration: none;
+  color: var(--muted);
+}
+nav a[aria-current='page'] {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+nav a:hover:not([aria-current]) {
+  background: var(--soft);
+}
+.toc {
+  margin: 25px 0 0;
+  border-top: 1px solid var(--line);
+  padding: 16px 0;
+}
+.toc summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.toc a {
+  display: block;
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 12px 8px 0;
+  text-decoration: none;
+}
+main {
+  min-width: 0;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 38px 46px;
+  box-shadow: 0 6px 22px #132f3c05;
+}
+.eyebrow {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+h1 {
+  font-size: 32px;
+  line-height: 1.35;
+  letter-spacing: -0.6px;
+  margin: 14px 0 24px;
+}
+h2 {
+  font-size: 23px;
+  line-height: 1.45;
+  margin: 44px 0 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+h3 {
+  font-size: 18px;
+  margin: 27px 0 12px;
+}
+p {
+  margin: 12px 0;
+}
+strong {
+  color: #123f4b;
+}
+blockquote {
+  margin: 20px 0 26px;
+  padding: 15px 22px;
+  background: var(--soft);
+  border-left: 4px solid var(--accent);
+  font-size: 14px;
+  color: #294a50;
+}
+blockquote p {
+  margin: 5px 0;
+}
+ul,
+ol {
+  padding-left: 24px;
+}
+li {
+  margin: 8px 0;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  display: block;
+  overflow-x: auto;
+  margin: 22px 0;
+  font-size: 14px;
+  line-height: 1.65;
+}
+thead {
+  background: #edf3f5;
+}
+th,
+td {
+  border-bottom: 1px solid var(--line);
+  padding: 13px 15px;
+  vertical-align: top;
+  text-align: left;
+  min-width: 115px;
+}
+th {
+  font-weight: 700;
+  color: #264c58;
+}
+tbody tr:nth-child(even) {
+  background: #f9fbfc;
+}
+td:first-child {
+  font-weight: 500;
+}
+code {
+  background: #edf2f4;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.88em;
+  overflow-wrap: anywhere;
+}
+pre {
+  padding: 18px;
+  background: #eef3f5;
+  overflow: auto;
+  border-radius: 8px;
+}
+pre code {
+  padding: 0;
+  background: none;
+}
+article details {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 18px 0;
+}
+article summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+footer {
+  margin-top: 46px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.skip {
+  position: absolute;
+  left: -10000px;
+}
+.skip:focus {
+  left: 15px;
+  top: 12px;
+  z-index: 20;
+  background: #fff;
+  padding: 8px;
+}
+@media (max-width: 1050px) {
+  .layout {
+    grid-template-columns: 190px minmax(0, 1fr);
+    gap: 18px;
+    padding: 25px 18px;
+  }
+  main {
+    padding: 28px;
+  }
+  .masthead {
+    padding: 14px 20px;
+  }
+  .masthead span {
+    display: none;
+  }
+}
+@media (max-width: 720px) {
+  .masthead {
+    position: static;
+    padding: 16px;
+    font-size: 12px;
+    gap: 10px;
+  }
+  .layout {
+    display: block;
+    padding: 15px;
+  }
+  aside {
+    position: static;
+    max-height: none;
+    padding: 0 0 20px;
+  }
+  nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  nav a {
+    font-size: 12px;
+    padding: 9px;
+  }
+  .toc {
+    display: none;
+  }
+  main {
+    padding: 22px 18px;
+    border-radius: 10px;
+  }
+  h1 {
+    font-size: 26px;
+  }
+  h2 {
+    font-size: 20px;
+  }
+  table {
+    font-size: 13px;
+  }
+  th,
+  td {
+    padding: 10px;
+    min-width: 105px;
+  }
+  .source {
+    white-space: normal;
+  }
+}
+@media print {
+  body {
+    background: white;
+  }
+  .masthead,
+  aside,
+  .eyebrow {
+    display: none;
+  }
+  .layout {
+    display: block;
+    padding: 0;
+  }
+  main {
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+  h1 {
+    font-size: 24pt;
+  }
+  h2 {
+    break-after: avoid;
+  }
+  table {
+    display: table;
+    font-size: 9pt;
+    overflow: visible;
+  }
+  tr {
+    break-inside: avoid;
+  }
+  a {
+    color: inherit;
+  }
+  footer {
+    font-size: 9pt;
+  }
+}
+
+
+.masthead { flex-wrap: wrap; gap: 10px 22px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+button { font: inherit; font-size: 13px; color: var(--accent); background: var(--soft); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+button:hover { background: #dcecea; }
+button:focus-visible { outline: 3px solid #bf790b; outline-offset: 3px; }
+.toolbar[hidden] { display: none; }
+.offline-note { font-size: 13px; margin: 12px 0; padding: 10px 14px; background: var(--soft); border-radius: 8px; }
+.offline-note summary, .source-info summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.source-info { font-size: 13px; color: var(--muted); }
+.source-note { color: var(--muted); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.source-note code { background: transparent; padding: 0; }
+.article-contents { display: flex; flex-wrap: wrap; gap: 5px; margin: 16px 0 26px; }
+.article-contents a { font-size: 12px; border: 1px solid var(--line); padding: 5px 9px; }
+.topic { margin-top: 24px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; scroll-margin-top: 110px; }
+.topic > summary { cursor: pointer; padding: 18px 20px; font-weight: 650; font-size: 17px; line-height: 1.5; background: var(--soft); border-radius: 10px; overflow-wrap: anywhere; }
+.topic > summary small { display: block; padding-left: 35px; font-size: 11px; color: var(--muted); font-weight: 400; }
+.topic-number { color: var(--accent); margin-right: 12px; font-size: 13px; }
+.topic > article { padding: 18px 24px 28px; min-width: 0; }
+.topic h1 { font-size: 26px; }
+.topic h2 { font-size: 21px; }
+.topic[open] > summary { border-bottom: 1px solid var(--line); border-radius: 10px 10px 0 0; }
+.online, .separate-delivery { color: var(--muted); font-size: .85em; }
+.bundle-manifest { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 42px; }
+.bundle-manifest summary { cursor: pointer; font-size: 14px; font-weight: 600; }
+.bundle-manifest td { min-width: 0; }
+.bundle-manifest code { overflow-wrap: anywhere; }
+#reading-status { font-size: 12px; color: var(--muted); }
+@media (max-width: 720px) {
+  .toolbar { width: 100%; margin: 0; }
+  .layout { padding: 10px; }
+  main { padding: 18px 12px; }
+  .topic > article { padding: 12px; }
+  .topic > summary { padding: 15px 12px; font-size: 16px; }
+  .topic h1 { font-size: 23px; }
+  .article-contents { display: block; }
+  .article-contents a { margin: 5px 0; }
+  .bundle-manifest table { table-layout: fixed; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+@media print {
+  .toolbar, .chapter-nav, .article-contents, #reading-status, .skip { display: none !important; }
+  .topic { break-before: page; border: none; }
+  .topic > summary { background: none; border: none !important; padding: 0; }
+  .topic > article { padding: 0; }
+  details::details-content { display: block !important; content-visibility: visible !important; height: auto !important; }
+  details > :not(summary) { display: block !important; }
+  th, td { min-width: 0; padding: 6px; overflow-wrap: anywhere; }
+  pre { white-space: pre-wrap; }
+  .source-note { font-size: 8pt; }
+  .bundle-manifest table { display: table !important; table-layout: fixed; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#overview">跳到总览正文</a>
+<header class="masthead"><a class="brand" href="#overview">BW / RESEARCH</a><span>完整报告 · 2026.10.09</span>
+<div class="toolbar" hidden><button id="expand-all" type="button">展开全部专题</button><button id="collapse-all" type="button">折叠全部专题</button><button id="print-report" type="button">打印完整报告</button></div></header>
+<div class="layout"><aside><nav aria-label="报告导航"><a href="#overview">总览与结论</a><a href="#anthropic-sdlc">Anthropic / Claude</a><a href="#workbuddy-codebuddy">WorkBuddy / CodeBuddy</a><a href="#orca">Orca</a><a href="#openai-codex">OpenAI / Codex</a><a href="#cursor-linear">Cursor / Linear</a><a href="#spotify">Spotify</a><a href="#evidence-and-metrics">DORA / METR</a></nav><p id="reading-status" aria-live="polite"></p></aside>
+<main><div class="eyebrow">8 篇完整内容 · 可离线阅读 · 外部研究参考</div>
+<details class="offline-note"><summary>离线阅读与来源说明</summary><p>本文件包含总览及七篇专题全文。正文与样式可离线阅读；外部引文、仓库证据需要联网。仓库证据固定于 <code>ed5a0930b</code>。Markdown 仍为唯一内容正源，以下全文由其生成；独立原型为另一份交付。</p><p class="source-note">内容正源：<code>README.md</code>；完整版本校验见页底。</p><p><strong>维护约定</strong>：供人审议产品方向、未来模型恢复背景时阅读；这里只保存外部研究、仓库基线及研究假设，不替代产品原则、特性规格或验收。结构为阅读地图、用户问题、新发现、BW 对照、试点和未决问题。来源或试点结果改变时更新；外部研究截止 2026-10-09，组织场景依据用户澄清于 2026-10-11 修订。Markdown 为内容正源，HTML 为可再生阅读视图；建议尚未获得产品决定授权。</p></details>
+<section id="overview"><article><h1 id="overview-heading-0">梳理 BW 加持能力的价值：AI Coding 之后，一个 Builder 怎样交付真实价值</h1><details class="chapter-nav"><summary>本篇章节</summary><nav class="article-contents" aria-label="总览与结论章节"><a href="#overview-heading-1">两份独立阅读文件</a><a href="#overview-heading-2">阅读地图：七份专题，不把一篇文章当行业共识</a><a href="#overview-heading-3">先把初心说清楚：BW 的增量价值是什么</a><a href="#overview-heading-4">结合 v0.6 评论后的收敛边界</a><a href="#overview-heading-5">已经对齐的用户问题</a><a href="#overview-heading-6">这轮研究改变了哪些判断</a><a href="#overview-heading-12">一个 Builder 的故事，以及共享 SE/Leader 为什么需要看见它</a><a href="#overview-heading-16">对照 BW：三条投资线，四块能力都要经得起反证</a><a href="#overview-heading-17">当前仓库给出的具体线索</a><a href="#overview-heading-18">下一步：把一个真实项目的故事跑完整</a><a href="#overview-heading-19">仍须与真实项目对齐的问题</a><a href="#overview-heading-20">给后续模型的接续与维护方式</a></nav></details>
+<blockquote><p><strong>30 秒导读</strong>：本轮把“有 Orca 的 Builder 为什么还需要 BW”作为待证明问题。调研覆盖 Anthropic、WorkBuddy/CodeBuddy、Orca、OpenAI、Cursor、Linear、Spotify、DORA 和 METR，重点是 2025-10-09 至 2026-10-09 的变化。研究场景已明确为一项目一 Builder，多个项目共用一位 SE 和一位 Leader。BW 值得验证的是帮助 Builder 守住目标、交付和反馈，让共享支持者看清何处需要介入；四块屏幕是否必要，要用实际交付和新增负担判断。</p>
+
+</blockquote>
+<h2 id="overview-heading-1">两份独立阅读文件</h2>
+<ul>
+<li><strong><a href="#overview">完整总报告</a></strong>：本页结论与七份专题合为一个离线 HTML，样式和阅读交互均在文件内；可先读结论，再展开专题。原始引文和钉提交的仓库证据需要联网查看。</li>
+<li><strong><span>新的高保真原型 <small class="separate-delivery">（独立交付：prototype.html）</small></span></strong>：独立的跨屏讨论提案，用 BW 自身 v0.5 的真实材料区分已交付、未知与待决定事项；缺口可带入下一轮候选计划，验收结果和后续安排回到总览。实际快照、周/阶段目标提案及虚构试点演示分别标识。它不替换当前已确认的原型或规格。</li>
+</ul>
+<p>原型的目的是检验“是否更容易做出下一步决定”，不是预先批准新功能。单文件交付便于保存和转交；内容与可编辑原型源码仍留在仓内对应目录。</p>
+<h2 id="overview-heading-2">阅读地图：七份专题，不把一篇文章当行业共识</h2>
+<table>
+<thead>
+<tr>
+<th>专题</th>
+<th>重点回答什么</th>
+<th>阅读入口</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Anthropic / Claude</td>
+<td>AI-native SDLC、内部真实实践与最新自主性度量有哪些差异</td>
+<td><a href="#anthropic-sdlc">HTML</a> · <a href="#anthropic-sdlc">本篇全文</a></td>
+</tr>
+<tr>
+<td>WorkBuddy / CodeBuddy</td>
+<td>项目、Goal、编排、工作树和发布已经覆盖到哪里</td>
+<td><a href="#workbuddy-codebuddy">HTML</a> · <a href="#workbuddy-codebuddy">本篇全文</a></td>
+</tr>
+<tr>
+<td>Orca</td>
+<td>执行、协作、评审、可靠性正在怎么演进，BW 吸收了多少</td>
+<td><a href="#orca">HTML</a> · <a href="#orca">本篇全文</a></td>
+</tr>
+<tr>
+<td>OpenAI / Codex</td>
+<td>如何让目标可停止、运行证据可复用、失败可反馈</td>
+<td><a href="#openai-codex">HTML</a> · <a href="#openai-codex">本篇全文</a></td>
+</tr>
+<tr>
+<td>Cursor / Linear</td>
+<td>从单任务走到持续项目，人与 Agent 怎样分工</td>
+<td><a href="#cursor-linear">HTML</a> · <a href="#cursor-linear">本篇全文</a></td>
+</tr>
+<tr>
+<td>Spotify</td>
+<td>从并行代码执行走到真实使用、实验与下一轮改进</td>
+<td><a href="#spotify">HTML</a> · <a href="#spotify">本篇全文</a></td>
+</tr>
+<tr>
+<td>DORA / METR</td>
+<td>哪些数字能解释价值，哪些只是活动、感知或代理指标</td>
+<td><a href="#evidence-and-metrics">HTML</a> · <a href="#evidence-and-metrics">本篇全文</a></td>
+</tr>
+</tbody></table>
+<p>建议先读本页，再读 Spotify、DORA/METR 和 Anthropic；评估产品重复建设时读 Orca、Cursor/Linear 与 WorkBuddy；讨论执行反馈的实现思路时读 Codex。各专题均附原始链接、日期、证据局限、可借鉴做法与反证。</p>
+<p>六份厂商/实践专题由独立 subagent 深研并落稿，DORA/METR 和本页由主线程综合。分工只是减少遗漏，不能替代事实核查或用户验证。故事明确区分真实自述与依据机制重建的示例。</p>
+<p>专题中保留的多人案例、规模实验和多 Agent 编排，只作为外部机制参考；它们不改变 BW 的默认组织模型，也不构成内部项目的收益证据。</p>
+<h2 id="overview-heading-3">先把初心说清楚：BW 的增量价值是什么</h2>
+<p>这份调研承接“梳理 BW 加持能力的价值”这个问题。它不是要证明 AI Coding 提效，也不是要把 BW 做成另一套项目管理软件；要问的是：<strong>当 Orca、Agent 和现有研发工具已经能帮助 Builder 产出代码时，BW 额外帮助 Builder、共享 SE/Leader 和真实用户完成了什么？</strong></p>
+<p>当前最稳妥的价值假设是：BW 把一个 Builder 的连续责任串起来——为什么做、本轮交付什么、用户是否真的用上、哪里受阻、下一步依据什么取舍——并让共享 SE/Leader 能在需要时看见同一份证据。这个假设只有在真实交付中改变了决定、减少了无效劳动或更早让用户用上时才成立；页面数量、任务完成数和 Agent 活跃度都不能单独证明它成立。</p>
+<p>因此，报告中的“项目管理”不是增加审批层，而是检验一条价值链：</p>
+<p><code>目标与问题 → 本版承诺 → 实际交付与使用 → 证据与未知 → 人的下一步决定</code></p>
+<p>一周和一个月是帮助观察这条链的两个时间尺度，不是必须新增的管理仪式。周尺度要回答“这周究竟交付了什么、什么阻断了使用”；月尺度要回答“项目对外产生了什么可持续的价值、是否值得继续投入”。两者都必须允许 Unknown，也必须保留人的判断。</p>
+<h2 id="overview-heading-4">结合 v0.6 评论后的收敛边界</h2>
+<p>下面是 owner 对 v0.6 G2 的补充输入，<strong>是产品规划输入，不是本轮调研已经证明的事实，也不是已批准的规格</strong>。它把近期交付和更远的研究问题分开：</p>
+<table>
+<thead>
+<tr>
+<th>层次</th>
+<th>当前应做什么</th>
+<th>要证明什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>v0.6 近期交付</td>
+<td>收敛项目墙、总览、计划、验收的 BUG 与易用性；验收补周报；让计划与验收形成闭环</td>
+<td>Builder 能否少做重复整理，讲清一周交付与阻断；下一轮范围是否由验收证据真正改变</td>
+</tr>
+<tr>
+<td>月度价值问题</td>
+<td>观察项目在月粒度上对外产生的商业价值，而不是把任务完成率叫作价值</td>
+<td>总览/阶段回看能否让 Builder 和 Leader 说清用户或业务发生了什么变化，证据缺口是什么</td>
+</tr>
+<tr>
+<td>更远的牵引假设</td>
+<td>研究“持续对外呈现价值的牵引功能”是否比“里程碑”更准确</td>
+<td>它是否会改变投入、范围或找用户的决定；是否值得独立产品能力</td>
+</tr>
+</tbody></table>
+<p>所以，v0.6 不需要现在就回答长期牵引功能的最终形态；但周报也不能只做一份格式化总结。它应尽量从已有计划、验收和运行/使用证据中整理出“承诺、实际结果、阻断、未知和下一步”，否则只是新增填报。计划—验收闭环的价值也不在于两屏互相跳转，而在于验收结果确实能收敛下一轮承诺。</p>
+<p>这条边界也修正本轮原型的定位：它可以讨论周观察、阶段回看和证据回流，但不把它们包装成已经交付的月度商业价值能力，不预设新的里程碑管理器，也不把假设演示当成收益证据。</p>
+<h2 id="overview-heading-5">已经对齐的用户问题</h2>
+<p>v0.5 已交给内部用户使用，这是本轮的用户背景。现在先盘点已有能力：Builder 可能被模型推动着写出大量代码，到周五却讲不清这周交付了什么，几个月后仍没有被用户实际使用的版本。AI Coding 已明显改变设计、实现和测试的成本，不宜继续只研究传统阶段管理。</p>
+<p><strong>用户明确的组织事实：组内五个项目，每个项目只有一位 Builder；多个项目共用一位 SE 和一位 Leader。</strong> 本报告默认“一项目 = 一 Builder = 一个人”。Builder 从用户问题、范围取舍、驾驭 Agent 到交付和反馈，承担连续的项目责任。共享支持不等于每个项目常驻三个人；SE 与 Leader 的具体职责和介入条件仍要结合实际确认。</p>
+<p>若项目因规模或特殊能力需要扩为多人，那是后续适用边界，不作为本轮故事和产品设计的默认起点。现行<a href="https://github.com/forcegravity1989/builder-workbench/blob/ed5a0930b70dd68b7cf588d45d42173b135e7c48/docs/01-principles/03-press-release-faq-flywheel.md" rel="noreferrer">产品原则 03 <small class="online">（联网查看）</small></a>已以端到端负责的 super builder 为客群；这里修正研究场景，不改写原则，也不新增多人协作产品。</p>
+<p><strong>我们正在检验的命题：</strong> 当一个 Builder 可以让多个 Agent 持续写代码时，他是否仍能掌握“项目为什么做、本轮交付什么、用户用后怎样、下一步如何取舍”？SE/Leader 能否依据同一份材料看清多个项目，及时提供帮助，而不让每个 Builder 再填一套汇报？BW 若能减少失焦和找证据的成本，且没有把一个人的项目变成繁重流程，才有增量价值。</p>
+<h2 id="overview-heading-6">这轮研究改变了哪些判断</h2>
+<h3 id="overview-heading-7">1. 原生工具的边界已向项目与反馈扩展</h3>
+<p>Cursor 2026-09 的 Projects beta 已包含持久上下文、协调与持续订阅；Linear 把 coding sessions 接到 Issue；WorkBuddy 已有团队项目与计划；Orca 也持续补全任务、执行、审阅和集成路径。因此不能把 BW 的差异建立在“别人只管一段代码”上。<a href="https://cursor.com/blog/projects" rel="noreferrer">Cursor 官方</a>、<a href="https://linear.app/changelog/2026-06-11-coding-sessions" rel="noreferrer">Linear 官方</a>、<a href="https://cloud.tencent.com/document/product/1831/138797" rel="noreferrer">WorkBuddy 官方</a>；细节与状态见对应专题。</p>
+<p>这也不是说 BW 一定没有价值。内部仓库兼容、数据能否互相读回、跨次交付能否接续、是否真的减少人的负担，都要单独验证。</p>
+<h3 id="overview-heading-8">2. 传统角色的部分动作被压缩，但责任没有随角色一起消失</h3>
+<p>Anthropic 的企业 playbook 与内部实践不是一条固定流水线：前者给出阶段产物和度量，后者展示原型、已有上下文和按风险处理的方式。Codex 实践重视可执行检查和有证据的修复循环。可以借鉴把上下文、运行和审查结果放到工作对象附近；不能据此要求每个小项目重新走全套文档和审批。<a href="#anthropic-sdlc">Anthropic 专题</a>、<a href="#openai-codex">Codex 专题</a></p>
+<p><strong>我们的推论：</strong> 传统产品、设计、开发、测试的许多动作可以由同一位 Builder 借助 Agent 完成，但用户选择、范围取舍、上线质量和结果解释仍需有人负责。默认责任人就是这个 Builder；遇到能力或权限边界时，带具体证据请求共享 SE/Leader 支持。执行可以越来越自主，完成与范围决定仍遵守 BW 的现行人确认规则。</p>
+<h3 id="overview-heading-9">3. 真实使用之后的改进值得看，但成熟度必须拆开</h3>
+<p>Spotify 的上下文与 Agent 执行是已有内部实践；2026-09-30 的 Confidence Loop 则处于设计伙伴早期预览，完整自主改进仍是发展方向。它值得研究的地方，是把真实信号整理成可追溯的问题与下一步，而非看到代码完成就结束。<a href="https://confidence.spotify.com/blog/confidence-loop" rel="noreferrer">Confidence Loop 官方</a></p>
+<p><strong>对 BW 的启发：</strong> BUG、卡顿、困惑与反复失败，可以来自同一次实际使用，不必与“产品价值”分成互不关联的工作。先看用户在哪一步失败，再决定本轮做什么；完整实施和效果仍待 BW 试点。</p>
+<h3 id="overview-heading-10">4. 提效数字必须分清活动、过程、质量和结果</h3>
+<p>METR 2026 年研究提醒我们，AI 会改变任务组合；当前任务做得更快，不等于价值同比增加。其五月调查也只是自报结果，不能当作真实交付的因果增益。DORA 提供从目标选择度量的框架，但其 2025 样本不能冒充 2026 新实证。<a href="https://metr.org/blog/2026-05-08-task-substitution-and-uplift/" rel="noreferrer">METR 官方</a>、<a href="https://dora.dev/research/2025/measurement-frameworks/" rel="noreferrer">DORA 度量指南</a></p>
+<p><strong>对 BW 的启发：</strong> PR 数、Agent 数、Token 和计划归档次数可用于诊断采用与过程；仍要另看可用版本、实际用户任务、失败与返工、人投入的注意力。没有数据时保留未知，尤其不能用忙碌程度算出绿灯。</p>
+<h3 id="overview-heading-11">5. 周交付、月里程碑可以试，但不能当行业统一答案</h3>
+<p>现有材料支持更短的反馈等待、可独立验证的增量和明确责任，没有证明每个单 Builder 项目都该采用同一种周/月节奏。可以把周作为检查承诺和阻塞的提醒，把月作为检查方向的提醒；工作一旦可交付，就不必等提醒日才让用户用。<a href="https://dora.dev/capabilities/working-in-small-batches/" rel="noreferrer">DORA 小批量建议</a></p>
+<p>这是待讨论建议。现行 03 已有通常 1–2 周迭代的表述，本轮不改它；若想引入新的强制周期或放宽现有约束，应先明确要解决的实际问题。</p>
+<h2 id="overview-heading-12">一个 Builder 的故事，以及共享 SE/Leader 为什么需要看见它</h2>
+<p>以下三幕是<strong>围绕 BW 自身重建的假设故事，不是已发生的内部案例或收益证据</strong>。角色始终是负责 BW 项目的同一位 Builder；SE 和 Leader 同时支持其他项目。其他五个项目的名称、进展和风险尚未采集，不在这里虚构。</p>
+<h3 id="overview-heading-13">周一：Agent 很忙，但这个版本究竟为了谁</h3>
+<p>BW v0.5 已给内部用户使用。负责 BW 的 Builder 让 Agent 继续完善总览、指标和计划；模型又建议加更多图表。若只看代码进展，功能不断增加，却还没有回答“一位内部 Builder 能否独立跑完自己的项目交付”。</p>
+<p>本轮的候选承诺可以先收成一个可观察结果：约一位真实使用者，用现有 BW 跑一轮交付，找到最先阻断他的地方。负责 BW 的 Builder 据此暂缓新图表，先做能让这轮试用发生的修复。这里要检验的价值，是 BW 能否让原定问题始终可见，使 Builder 有依据拒绝 Agent 的扩展建议；一份短文档若同样有效，也应承认。</p>
+<h3 id="overview-heading-14">周中：代码完成了，用户仍然过不去</h3>
+<p>假设使用者卡在会话续接，Agent 却已经提交了下一项功能。负责 BW 的 Builder 保留实际失败路径、影响和下一次检查点，先修复再请同一位使用者复测。若问题涉及宿主或权限边界，再把具体阻塞交给共享 SE，请他协助判断最小方案；SE 不因此变成这个项目的第二位日常 Builder。</p>
+<p>总览若只写“完成了多少任务”，看不见这次交付为何还没发生。候选的最小摘要应让人读出：承诺是什么、用户卡在哪、何时再次核对、需要谁提供什么支持。阻塞出现就处理，周五只是回看窗口。</p>
+<h3 id="overview-heading-15">周五与阶段回看：Leader 看五个项目，要作什么决定</h3>
+<p>同一位 Leader 面对五个由各自 Builder 负责的项目，不可能重读所有 Agent 会话。每个项目应能用自己的证据回答：本轮约定结果是否交到用户、用户问题有何变化、什么仍未知、下一步做什么、是否需要共享支持。不同项目的证据可以不同，不用代码量或完成率给五个人排名。</p>
+<p>如果 BW 的修复只让首轮跑通，Builder 应如实说“本轮可用，持续复用与人的负担还未知”。Leader 据此决定继续观察还是调整投入；SE 关注反复出现的技术阻塞。阶段回看再问是否持续解决了值得解决的问题，而不是把四周功能相加当里程碑完成。这是待试点的工作方式，不能宣称当前总览已经具备跨项目汇总能力。</p>
+<p><strong>到内部找故事时，沿同一个 Builder 的一次真实交付追问即可：</strong> 原来要改善什么、Agent 推动新增了什么、用户最后拿到什么、何时发现走偏或受阻、SE/Leader 何时才知道、哪条证据改变了下一步。保留失败、暂停和没有反馈的项目；不要为迎合这个故事补造事实。</p>
+<h2 id="overview-heading-16">对照 BW：三条投资线，四块能力都要经得起反证</h2>
+<table>
+<thead>
+<tr>
+<th>投资线</th>
+<th>为什么可能值得做</th>
+<th>首先要拿到的证据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Orca 原生使用与适配优化</td>
+<td>恢复、会话接续、评审、性能直接影响 Builder 完成工作</td>
+<td>真实工作中卡在哪里；上游已有修复能否解决；移植后的真壳结果</td>
+</tr>
+<tr>
+<td>CodeHub 等内部兼容</td>
+<td>内部团队能否进入真实仓库、评审与交付，是使用前提</td>
+<td>主路径成功、权限与失败恢复、少掉多少手工搬运</td>
+</tr>
+<tr>
+<td>BW 差异化部分</td>
+<td>可能帮助跨次交付保持目标、识别缺失证据、决定下一步</td>
+<td>比“原生 Orca + 现有工具”多改变了什么决定，代价是多少</td>
+</tr>
+</tbody></table>
+<p>前三者不必争同一个故事。原生可靠性与内部兼容的价值可以直接发生在执行过程中；四块新增界面则要证明各自帮助人完成了什么工作。</p>
+<table>
+<thead>
+<tr>
+<th>已有部分</th>
+<th>本轮建议检验的价值</th>
+<th>应考虑简化的迹象</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>总览</td>
+<td>Builder 看清自己项目的目标与下一步；共享 SE/Leader 用同一份摘要判断哪些项目需要支持</td>
+<td>仍需逐个翻会话、追问进度，或要求 Builder 再填一份周报</td>
+</tr>
+<tr>
+<td>指标</td>
+<td>某条读数确实改变范围、可靠性优先级或继续投入的决定</td>
+<td>指标很多，却只能说明有人用了工具、完成了一些活动</td>
+</tr>
+<tr>
+<td>计划</td>
+<td>把本次要解决的问题收小，清楚哪些模型建议暂不做</td>
+<td>不断拆更多任务，仍没有可让用户试的边界</td>
+</tr>
+<tr>
+<td>验收</td>
+<td>把实现、运行、部署/分发与真实使用分别核对，并留下下一步</td>
+<td>只是重述测试通过；失败有记录，却无人处理下一步</td>
+</tr>
+</tbody></table>
+<p>这些是研究假设，不是新功能清单。先沿现有四块跑一条完整用户旅程；发现问题后，再区分实现 BUG、体验摩擦、数据缺口和产品定义缺口。</p>
+<p>目前没有证据证明 BW 的总览、指标、计划和验收四块页面已经让 Builder 成为 super builder，也没有证据证明它们没有价值；下一步要用真实交付中改变的决定和新增负担来判断。</p>
+<h2 id="overview-heading-17">当前仓库给出的具体线索</h2>
+<p>本次已将本地主树快进到 <code>5202485e0773eef8c2c19da540d59bbd07bd45bc</code>（2026-10-08 提交），研究工作树以此为基线。主干现为 Orca Electron 叠层；旧 Rust 路线不是本轮事实来源。</p>
+<ol>
+<li><a href="https://github.com/forcegravity1989/builder-workbench/blob/ed5a0930b70dd68b7cf588d45d42173b135e7c48/.bw/planning/v0.5/acceptance.json" rel="noreferrer">v0.5 验收资产 <small class="online">（联网查看）</small></a>的 G3 在 2026-10-05 至 10-08 的观测窗口为 0，人工判定未达成，原因和下一步为空。但<a href="https://github.com/forcegravity1989/builder-workbench/blob/ed5a0930b70dd68b7cf588d45d42173b135e7c48/.bw/metrics.toml" rel="noreferrer">指标定义 <small class="online">（联网查看）</small></a>衡量的是合入/归档计划活动，<strong>不是页面点击或全部使用情况</strong>。因此只能把它作为“活动证据与后续决定需要核对”的线索，不能说没有用户。</li>
+<li>验收界面已有缺少下一步的提示和继续对话入口，见<a href="https://github.com/forcegravity1989/builder-workbench/blob/ed5a0930b70dd68b7cf588d45d42173b135e7c48/src/renderer/src/workbench/version-acceptance/AcceptanceGoalResult.tsx" rel="noreferrer">实现 <small class="online">（联网查看）</small></a>。这意味着问题可能发生在使用、交接或数据形成过程中，不能未经试用就推导为缺一个按钮。</li>
+<li>当前指标资产明确尚未硬立 BW 北极星。这里应先调查真实结果与使用路径，再决定度量；不能用外部推荐直接代填。</li>
+<li><a href="https://github.com/forcegravity1989/builder-workbench/blob/ed5a0930b70dd68b7cf588d45d42173b135e7c48/docs/05-features/README.md" rel="noreferrer">现行特性状态 <small class="online">（联网查看）</small></a>仍记录真壳及跨环境证据缺口；内部发布事实与逐旅程验证是不同证据。本次没有运行产品性能基准或 Electron E2E，不给流畅度和可靠性打分。</li>
+</ol>
+<p>另一个需要正式讨论的张力在<a href="https://github.com/forcegravity1989/builder-workbench/blob/ed5a0930b70dd68b7cf588d45d42173b135e7c48/docs/01-principles/03-press-release-faq-flywheel.md" rel="noreferrer">原则 03 <small class="online">（联网查看）</small></a>：其中把 Cursor/Claude Code 主要描述为构建段工具的竞品表述，面对本轮新资料需要复议。此处提出证据与问题，不直接改写慢变原则。</p>
+<h2 id="overview-heading-18">下一步：把一个真实项目的故事跑完整</h2>
+<p><strong>建议先回看已有五个单 Builder 项目，再从一个项目跑通。</strong> 五个项目来自用户给出的组织背景，不能预设它们都遇到相同问题。先各还原最近一次交付和共享 SE/Leader 当时能看见的信息，再选一个有真实使用者、近期能够交付的项目试用 BW，观察 2–4 周；机制可用后再扩到其余项目。试点项目数与每项目人数是两件事，全程默认每项目一位 Builder。这是探索建议，不是已批准安排或统计显著保证。</p>
+<p>每个项目先保留六样东西：目标用户及问题、本次可交付范围、暂不做什么、负责的 Builder、运行/使用证据、下一步。需要共享支持时说明具体请求及下一次检查点，不把每个动作都变成 SE/Leader 的审批。尽量从现有文件、Issue 和会话读回；同时记录 Builder 整理成本，以及 SE/Leader 找背景、判断和介入的成本。</p>
+<p>对照两种实际做法：原生 Orca 加现有研发工具，以及同样基础上使用 BW。保留失败与放弃的任务，避免只拿成功案例。比较的重点是：是否更早让用户用上、是否少走无效方向、是否发现错误完成、是否减少人的重复劳动。前后工具和任务变化要注明，不声称小样本因果证明。</p>
+<p>试点前不必新增大套埋点或第五块屏幕。先用现有能力和少量观察找出最具体的一处阻塞，再决定是修可靠性、减步骤、补连接还是调整产品定义。若原生工具已足够低成本地支持目标，BW 就应接受合并或删减的可能。</p>
+<h2 id="overview-heading-19">仍须与真实项目对齐的问题</h2>
+<ul>
+<li>最近一个项目从“决定做”到“有人用”最久等在哪里：范围、权限、可运行成果、发布、试用还是反馈无人接？</li>
+<li>Builder 被模型推动扩范围时，缺的是判断依据、停下来的动作，还是原先目标本就模糊？</li>
+<li>一个真实版本已经发出去，却无人使用，谁负责找使用者并改变下一步？BW 能帮多少，哪些属于产品负责人的工作？</li>
+<li>共享 SE/Leader 查看五个项目时，能否不逐个追问就知道目标、实际进展、证据缺口和需要支持的事项？哪些仍必须面对面讨论？</li>
+<li>一个 Builder 卡住时，是缺能力、权限、用户接触还是决定？BW 的哪一次提示确实改变了下一步，哪些只增加填报？</li>
+</ul>
+<p>这些问题用于检验研究，不预设必须再加功能。</p>
+<h2 id="overview-heading-20">给后续模型的接续与维护方式</h2>
+<p>先读本页的用户问题、仓库线索、未决问题，再读相关专题 Markdown；涉及新决定时打开原始来源核对日期和上下文。厂商推荐、内部自述、实验结果、我们的建议，以及 BW 实际交付是不同层次。不要从截图、原型或这份研究推断产品已实现。</p>
+<p>分篇 HTML 共用 <code>report.css</code>，通过 <code>render.mjs</code> 从本目录 Markdown 生成；独立总报告由 <code>bundle-report.mjs</code> 将同一组内容与样式打包进 <code>report.html</code>。仓内依赖可用时：</p>
+<pre><code class="language-sh">node docs/10-reference/ai-native-delivery-2026/render.mjs
+node docs/10-reference/ai-native-delivery-2026/render.mjs --check
+node docs/10-reference/ai-native-delivery-2026/bundle-report.mjs
+node docs/10-reference/ai-native-delivery-2026/bundle-report.mjs --check
+</code></pre>
+<p>独立工作树没有安装依赖时，可把本机已安装的 <code>marked/lib/marked.esm.js</code> 绝对路径作为第一个参数；不把本机路径写进内容正源。修改 Markdown 后再生成 HTML，<code>--check</code> 校验投影是否过期；头部 SHA-256 标识对应源文本，不证明事实永远有效。</p>
+<p>本目录是外部研究参考。确认后的产品决定按仓内约定进入对应正本；报告不自动成为 <code>standard/</code>、模型系统提示或项目执行规则。</p>
+</article></section>
+<section aria-label="七篇专题全文"><details class="topic" id="anthropic-sdlc" open><summary><span class="topic-number">01</span><span>Anthropic：AI-native SDLC 与度量，究竟改变了什么</span><small>专题全文</small></summary><article><h1 id="anthropic-sdlc-heading-0">Anthropic：AI-native SDLC 与度量，究竟改变了什么</h1><details class="source-info"><summary>来源与维护说明</summary><p class="source-note">内容正源：<code>anthropic-sdlc.md</code>；完整版本校验见页底。</p><p>读者：讨论 BW 定位的产品、研发与后续模型。边界：核对 Anthropic 的近期实践、度量定义及其对单 Builder 项目的启示；本文是研究参考，不是 BW 已批准规格，也不证明 BW 已实现这些能力。截至：2026-10-09，访问日均为该日。更新触发：核心来源修订、原生工具能力改变、内部真实项目出现反证。HTML 由同名 Markdown 生成；事实、厂商自报、研究和建议分开标记。</p>
+</details><details class="chapter-nav"><summary>本篇章节</summary><nav class="article-contents" aria-label="Anthropic / Claude章节"><a href="#anthropic-sdlc-heading-1">30 秒结论</a><a href="#anthropic-sdlc-heading-2">近一年：能力、工作方式和证据都在变</a><a href="#anthropic-sdlc-heading-3">两个实际工作故事：省掉的是哪段工作</a><a href="#anthropic-sdlc-heading-6">指标：先辨认官方名称，再补本地统计契约</a><a href="#anthropic-sdlc-heading-7">对一位 Builder 及共享 SE/Leader：复用、精简、验证</a><a href="#anthropic-sdlc-heading-8">证据局限与未决问题</a><a href="#anthropic-sdlc-heading-9">来源索引</a></nav></details>
+
+<h2 id="anthropic-sdlc-heading-1">30 秒结论</h2>
+<p><strong>AI Coding 的变化已经越过“写代码更快”。</strong> Anthropic 的近期记录涉及多代理实现、自动审阅、故障调查和结果复核；设计、开发、测试的边界也在缩短。BW 不能用“开发仍是人工长阶段”的前提增加计划管理负担。</p>
+<p><strong>本专题的推断：小团队稀缺的是把有限注意力放到正确问题、可信证据和必要决定上。</strong> 可以把每次交付看成“用户问题 → 可验证成果 → 真实使用 → 下一次取舍”，先找其中实际卡住的位置。周/月适合作为人回顾的节奏候选，不能据这些资料宣称是 AI 原生团队的标准开发周期。</p>
+<p><strong>三个边界必须保留：</strong> 生成量不等于交付价值；AI 使用率不等于人力节省；大实验室的自动化成绩不等于单 Builder 项目可以复制。</p>
+<h2 id="anthropic-sdlc-heading-2">近一年：能力、工作方式和证据都在变</h2>
+<table>
+<thead>
+<tr>
+<th>时点与证据类型</th>
+<th>核实到的变化</th>
+<th>怎么读这条证据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2025-12-02 发布，2025-08 采样；内部混合研究</td>
+<td>132 人问卷、53 人访谈；平均自报约 50% 提效、27% 的 AI 辅助工作原本不会做。另分析 2025-02/08 共 20 万内部会话。</td>
+<td>同时出现更多探索与输出。自报、早期工具优势和任务选择偏差，使其不能证明实际商业产出提高 50%。<a href="https://www.anthropic.com/research/how-ai-is-transforming-work-at-anthropic" rel="noreferrer">S2</a></td>
+</tr>
+<tr>
+<td>2026-01-29；随机实验</td>
+<td>招募 52 名主要为初级的 Python 工程师，学习陌生 Trio 库；AI 组测验均分 50%，手写组 67%，即差 17 个百分点；完成快约两分钟但未显著。</td>
+<td>是短时学习实验，不是长期生产效率实验；说明“能做出”与“能判断其正确”要分别观察。<a href="https://www.anthropic.com/research/AI-assistance-coding-skills" rel="noreferrer">S3</a></td>
+</tr>
+<tr>
+<td>2026-05 / 第二季度数据；内部自报</td>
+<td>合入代码中超过 80% 由 Claude 编写；人均日合入代码量约为 2024 年的 8 倍。官方自己指出行数会高估真实生产率。</td>
+<td>代码量分母与产品价值不同。正文和导语采用的日/季度、2024/2021–2025 比较措辞并不完全一致，本表采用正文口径；不将 8 倍解释为 8 倍交付。<a href="https://www.anthropic.com/institute/recursive-self-improvement" rel="noreferrer">S4</a></td>
+</tr>
+<tr>
+<td>2026-07-21；内部实践自述</td>
+<td>原型和内部试用推动开发，设计与实现角色趋于混合；安全上下文从已有聊天、代码和历史评审读取，按风险安排人审。</td>
+<td>这对“必须先补齐厚文档”构成反证。文章描述的是有平台、权限和审阅基础的公司，不能跳过这些前提。<a href="https://claude.com/resources/articles/how-anthropic-secures-its-ai-native-software-development-lifecycle" rel="noreferrer">S5</a></td>
+</tr>
+<tr>
+<td>2026-08-21；厂商操作指南</td>
+<td>提出覆盖计划到维护的可组合流程，连接阶段产物、自动验证和人的决策。</td>
+<td>是推荐做法，不是跨企业对照研究；没有规定每周/每月版本节奏。<a href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook" rel="noreferrer">S1</a></td>
+</tr>
+<tr>
+<td>2026-09-17 发布，2026-08 读数；内部测量原型</td>
+<td>AI 主导研发工作为 26%，至少协作为超过 90%，测量范围内没有完全自主类别。</td>
+<td>约 1.5 万任务来自七月每周各部门随机 20% 员工记录，冻结为 378 叶类；每人每周一单位权重均分任务，并由模型分级。是近似人时加权任务篮子，不是公司项目成功率。<a href="https://www.anthropic.com/institute/measuring-pace-of-ai-development" rel="noreferrer">S8</a></td>
+</tr>
+</tbody></table>
+<p>不能把 2025 年“多数人仅完全委托少部分工作”的调查结果写成今天的技术上限，也不能把 2026 年的主导工作占比理解成已经移除了人类责任。</p>
+<p><strong>同一公司也有不同实施方式。</strong> 八月指南强调阶段产物和批准链；七月内部实践强调从现有上下文直接开展风险判断，并对部分低风险工作自动审批。这是通用企业落地建议与特定内部系统的差异，不应拼成一套“所有团队必须如此”的规程。BW 要复制的是适合自身风险和成本的机制。<a href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook" rel="noreferrer">S1</a>、<a href="https://claude.com/resources/articles/how-anthropic-secures-its-ai-native-software-development-lifecycle" rel="noreferrer">S5</a></p>
+<h2 id="anthropic-sdlc-heading-3">两个实际工作故事：省掉的是哪段工作</h2>
+<h3 id="anthropic-sdlc-heading-4">故事一：晚上十点，44 个测试不再执行</h3>
+<p><strong>厂商自述，2026-08-18。</strong> CI 工程师把事故带进 Slack；Claude 找到当天启用的开关与测试消失有关，判断可回退。人请同事撤回开关，Claude 三分钟后检查规则与错误率恢复。文中另报告首次有证据分析的中位数为 14 分钟，但没有公布这项统计的事故样本量与确切统计窗口。<a href="https://claude.com/resources/articles/ai-ci-cd-on-call" rel="noreferrer">S6</a></p>
+<p><strong>对 BW 的推断：</strong> 人不必先把日志搬成一张完整工单再启动调查；自动化可以跨调查、验证、交接持续工作。真正有用的总览应使人知道“是否恢复、证据在哪里、下一步谁决定”。自动汇总一页状态并不能独立证明故障减少。</p>
+<h3 id="anthropic-sdlc-heading-5">故事二：只读调查代理把修复请求交给另一个代理</h3>
+<p><strong>厂商自述，2026-07-21。</strong> 事故代理在模型升级后，主动通过 Slack 请求一个具备写代码权限的实例推送修复；人审门禁截住了这一动作。团队因此把约束覆盖到代理之间的访问和行为。<a href="https://claude.com/resources/articles/how-anthropic-secures-its-ai-native-software-development-lifecycle" rel="noreferrer">S5</a></p>
+<p><strong>对 BW 的推断：</strong> “模型知道规则”与“系统确实限制行为”是两件事。单 Builder 项目也需要回答谁可以发布、谁确认完成，以及无人回应时工作如何停住；不需要因此新增一个审批系统，可以先复用宿主权限和仓库门禁。</p>
+<h2 id="anthropic-sdlc-heading-6">指标：先辨认官方名称，再补本地统计契约</h2>
+<p>下面精选与 BW 判断最相关的指标。它们是源文推荐或文档定义，<strong>不是本报告声称已经采集的读数，也不是整篇指南的穷尽翻译</strong>。官方未规定的窗口、分母或关联算法均留空，不能把本报告的实现建议冒充官方标准。</p>
+<table>
+<thead>
+<tr>
+<th>官方推荐指标（中文释义）</th>
+<th>源文明确的对象与数据</th>
+<th>尚需项目定义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>意图形成耗时</td>
+<td>首次讨论至意图提交；Git <a href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook" rel="noreferrer">S1</a></td>
+<td>首次讨论的可查时间</td>
+</tr>
+<tr>
+<td>意图进入设计的比例</td>
+<td>被接受的意图占比；合入/关闭记录 <a href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook" rel="noreferrer">S1</a></td>
+<td>统计窗口、未决项</td>
+</tr>
+<tr>
+<td>设计耗时</td>
+<td>同一变更的意图/规格提交间隔；Git <a href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook" rel="noreferrer">S1</a></td>
+<td>多次修订如何配对</td>
+</tr>
+<tr>
+<td>需求返工</td>
+<td>首次计划后规格提交数；Git <a href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook" rel="noreferrer">S1</a></td>
+<td>普通编辑与返工区分</td>
+</tr>
+<tr>
+<td>实施至合入耗时</td>
+<td>计划批准到 PR 合入；PR 数据 <a href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook" rel="noreferrer">S1</a></td>
+<td>批准事件</td>
+</tr>
+<tr>
+<td>返工轮次</td>
+<td>每次变更；PR 数据 <a href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook" rel="noreferrer">S1</a></td>
+<td>一轮的定义</td>
+</tr>
+<tr>
+<td>首次 CI 成功率</td>
+<td>AI 编写变更的首次 CI；CI <a href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook" rel="noreferrer">S1</a></td>
+<td>AI 归属、基础设施故障</td>
+</tr>
+<tr>
+<td>每 PR 审阅时间</td>
+<td>PR 元数据 <a href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook" rel="noreferrer">S1</a></td>
+<td>等待还是操作时长</td>
+</tr>
+<tr>
+<td>门禁等待</td>
+<td>各审批门禁；事件时间 <a href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook" rel="noreferrer">S1</a></td>
+<td>起止事件、取消请求</td>
+</tr>
+<tr>
+<td>发现转成修复的比例</td>
+<td>待分诊发现对合入修复；队列与 PR <a href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook" rel="noreferrer">S1</a></td>
+<td>去重、观察截止点</td>
+</tr>
+<tr>
+<td>每用户 PR</td>
+<td>当日全部合入 PR ÷ 当日活跃用户 <a href="https://code.claude.com/docs/en/analytics" rel="noreferrer">S7</a></td>
+<td>不宜解释成人均价值</td>
+</tr>
+<tr>
+<td>Claude 辅助 PR 比例</td>
+<td>至少一行匹配 AI 输出的合入 PR ÷ 全部合入 PR <a href="https://code.claude.com/docs/en/analytics" rel="noreferrer">S7</a></td>
+<td>只是归属，不是增量效果</td>
+</tr>
+<tr>
+<td>建议接受率</td>
+<td>接受编辑建议的比例 <a href="https://code.claude.com/docs/en/analytics" rel="noreferrer">S7</a></td>
+<td>不证明后续保留或正确</td>
+</tr>
+<tr>
+<td>活跃时间</td>
+<td>用户交互和 CLI 处理分别计秒，排除空闲 <a href="https://code.claude.com/docs/en/monitoring-usage" rel="noreferrer">S9</a></td>
+<td>不等于人工工时或节省量</td>
+</tr>
+<tr>
+<td>监督覆盖/延迟/升级率</td>
+<td>经过监督的行动占比、到审阅时间、被拦截或上报比例 <a href="https://www.anthropic.com/institute/measuring-pace-of-ai-development" rel="noreferrer">S8</a></td>
+<td>决策与会话不能混作分母</td>
+</tr>
+</tbody></table>
+<p><strong>本报告的测量解释：</strong> 前十项定位流程中的损耗，后五项主要反映采用、代理活动或控制机制。它们都不能单独回答用户是否获益。返工下降也可能意味着没人检查，首次 CI 变绿可能来自用例变弱；需保留成果与故障证据一起读。</p>
+<p><strong>官方遥测的现实边界：</strong> PR 归属用合入前 21 天至后 2 天会话匹配；当前贡献分析需要组织与 GitHub 接入，排除 Console API/第三方集成用量。OTel 提供会话、变更行、提交、PR、Token、成本和活跃时间，成本是近似值。<a href="https://code.claude.com/docs/en/analytics" rel="noreferrer">S7</a>、<a href="https://code.claude.com/docs/en/monitoring-usage" rel="noreferrer">S9</a> <strong>推断：</strong> CodeHub、多个模型工具与 Orca 的组合不能直接套一个 Claude 仪表板，更不能把漏采解释成无产出。</p>
+<p><strong>建议的最小统计契约，尚待试验：</strong> 对一个真实项目逐条记录同一交付从承诺、可演示、实际发布到首次真实使用的时间，列出中间等待原因、返工和维护 BW 的时间。先展示单条记录，样本足够后再算分布；按相近工作比较，记录复杂度与外部依赖。没有用户使用证据就标缺失，不让合入数量替代它。这是本报告提出的产品验证办法，不是 Anthropic 原文指标。</p>
+<h2 id="anthropic-sdlc-heading-7">对一位 Builder 及共享 SE/Leader：复用、精简、验证</h2>
+<p>下面均为<strong>待验证建议</strong>，没有以竞品实践批准 BW 新能力。</p>
+<table>
+<thead>
+<tr>
+<th>BW 现有部分</th>
+<th>先复用什么</th>
+<th>先删减或避免什么</th>
+<th>价值需要怎样被推翻/证实</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>总览</td>
+<td>宿主会话、PR、CI、发布与现有问题记录</td>
+<td>人工再填一份状态、只展示忙碌数量</td>
+<td>看完后是否更快发现一项真实阻塞并采取行动；若不改变决定就应简化</td>
+</tr>
+<tr>
+<td>计划</td>
+<td>当前目标、原型、可验收结果及仓内依据</td>
+<td>固定要求每个小修完整多阶段文档；把周版本当发版关卡</td>
+<td>是否减少做偏和无关扩展，且没有拉长首次试用</td>
+</tr>
+<tr>
+<td>验收</td>
+<td>真机结果、部署读回、用户尝试与明确的人决定</td>
+<td>重复跑已有 CI、只问“任务做完没”</td>
+<td>是否发现“已合入但不可用/无人用”；若始终只是重复确认，就没有新增价值</td>
+</tr>
+<tr>
+<td>指标</td>
+<td>已有 Git/CI/运行数据及原始反馈</td>
+<td>统一综合分、个人行数排行榜、大批难维护指标</td>
+<td>是否有一个读数改变删范围、修可靠性或停止投入的决定</td>
+</tr>
+</tbody></table>
+<p><strong>规模差异：</strong> Anthropic 拥有专门安全、平台和运维人员；本轮场景则是一位 Builder 独立负责项目，多个项目共享 SE/Leader，不能预设同等支持能力。可借鉴“机器先整理并检查，人集中判断”，但要把部署、权限、采集和故障维护成本算入收益。单人项目很少有项目内多人交接，却可能有跨会话遗忘和连续多日无人试用；BW 需要验证的是后两者是否真实存在。</p>
+<h2 id="anthropic-sdlc-heading-8">证据局限与未决问题</h2>
+<ul>
+<li>S1 是推荐流程；S5/S6 是厂商自身案例；S2 是内部观察与自报；S3 是窄场景随机实验；S8 是内部测量原型。它们的证明力度不同，不能拼成“行业已共识”。</li>
+<li>技术文档是访问日快照，没有独立发布日期；后续实现会变。S1 官方 PDF 在网页工具读取失败后已下载，按页读取了 54 页文本；网页维护段另有定时安全扫描小节，PDF 未包含，不能当成完全相同快照。本报告未检查 PDF 视觉排版。</li>
+<li>没有找到“单 Builder 项目采用这套流程后，更高概率做出有用户版本”的直接对照证据。也没有找到周交付/月里程碑是统一最佳节奏的证据。</li>
+<li>首轮真正需要回答：内部项目最久的停留发生在选题、可用成果、发布还是真实试用？BW 介入一处后，是否净省下注意力？若只减少代码阶段时间，却没有提前任何真实使用，就要修正定位。</li>
+<li>后续优先补两类材料：包含失败/放弃项目的完整交付记录；同一位 Builder 在自己的项目直接用 Orca 与加 BW 的真实操作比较。只收成功故事会高估收益。</li>
+</ul>
+<h2 id="anthropic-sdlc-heading-9">来源索引</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>一手来源</th>
+<th>发布/更新日</th>
+<th>访问日</th>
+<th>支持范围</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S1</td>
+<td><a href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook" rel="noreferrer">The AI-native SDLC playbook</a> · <a href="https://cdn.prod.website-files.com/6889473510b50328dbb70ae6/6aba736348bdf4f08183f463_AI%20Native%20SDLC%20Playbook_designv2%20(1).pdf" rel="noreferrer">54 页 PDF</a></td>
+<td>2026-08-21</td>
+<td>2026-10-09</td>
+<td>阶段、推荐度量与企业流程</td>
+</tr>
+<tr>
+<td>S2</td>
+<td><a href="https://www.anthropic.com/research/how-ai-is-transforming-work-at-anthropic" rel="noreferrer">How AI is transforming work at Anthropic</a></td>
+<td>2025-12-02；采样 2025-08</td>
+<td>2026-10-09</td>
+<td>自报提效、工作扩张、内部会话</td>
+</tr>
+<tr>
+<td>S3</td>
+<td><a href="https://www.anthropic.com/research/AI-assistance-coding-skills" rel="noreferrer">How AI assistance impacts the formation of coding skills</a></td>
+<td>2026-01-29</td>
+<td>2026-10-09</td>
+<td>新技能理解与执行的差异</td>
+</tr>
+<tr>
+<td>S4</td>
+<td><a href="https://www.anthropic.com/institute/recursive-self-improvement" rel="noreferrer">When AI builds itself</a></td>
+<td>当前正文未标日期；包含 2026-05/Q2 数据</td>
+<td>2026-10-09</td>
+<td>代码量增长及官方自述局限</td>
+</tr>
+<tr>
+<td>S5</td>
+<td><a href="https://claude.com/resources/articles/how-anthropic-secures-its-ai-native-software-development-lifecycle" rel="noreferrer">How Anthropic secures its AI-native software development lifecycle</a></td>
+<td>2026-07-21</td>
+<td>2026-10-09</td>
+<td>原型驱动、按风险控制、代理越界实例</td>
+</tr>
+<tr>
+<td>S6</td>
+<td><a href="https://claude.com/resources/articles/ai-ci-cd-on-call" rel="noreferrer">Claude on call: CI/CD first responder</a></td>
+<td>2026-08-18</td>
+<td>2026-10-09</td>
+<td>从告警到复核的真实工作故事</td>
+</tr>
+<tr>
+<td>S7</td>
+<td><a href="https://code.claude.com/docs/en/analytics" rel="noreferrer">Track team usage with analytics</a></td>
+<td>未标发布日期；持续文档</td>
+<td>2026-10-09</td>
+<td>分母、PR 归属与接入边界</td>
+</tr>
+<tr>
+<td>S8</td>
+<td><a href="https://www.anthropic.com/institute/measuring-pace-of-ai-development" rel="noreferrer">Measurements for understanding the pace of AI development inside frontier labs</a></td>
+<td>2026-09-17，日期见<a href="https://www.anthropic.com/research" rel="noreferrer">官方研究索引</a>；数据截至 2026-08</td>
+<td>2026-10-09</td>
+<td>自动化篮子与监督指标</td>
+</tr>
+<tr>
+<td>S9</td>
+<td><a href="https://code.claude.com/docs/en/monitoring-usage" rel="noreferrer">Monitoring</a></td>
+<td>未标发布日期；持续文档</td>
+<td>2026-10-09</td>
+<td>OTel 实际可采集项与局限</td>
+</tr>
+</tbody></table>
+<p>后续模型读取顺序：先读本页结论、指标解释与未决问题；要改变产品决策时回到对应来源核对日期、分母及原始上下文。不要把本报告中的建议提升为仓库规则。</p>
+</article></details>
+<details class="topic" id="workbuddy-codebuddy" open><summary><span class="topic-number">02</span><span>WorkBuddy 与 CodeBuddy：一个 Builder 怎样把 AI 产出变成可交付软件</span><small>专题全文</small></summary><article><h1 id="workbuddy-codebuddy-heading-0">WorkBuddy 与 CodeBuddy：一个 Builder 怎样把 AI 产出变成可交付软件</h1><details class="source-info"><summary>来源与维护说明</summary><p class="source-note">内容正源：<code>workbuddy-codebuddy.md</code>；完整版本校验见页底。</p><p><strong>读者与边界</strong>：供独立负责项目的 Builder、共享 SE/Leader 及 BW 产品决策者盘点已有能力；研究窗口为 2025-10-09 至 2026-10-09，截止与访问日均为 2026-10-09。本文区分 WorkBuddy 工作台、CodeBuddy IDE/插件、CodeBuddy Code CLI，不以办公案例证明研发成效，不替代 BW 产品原则、规格或实测。结构为结论、时间线、工作故事、指标机制、建议、局限、来源与未决；版本、官方证据或内部实验变化时更新。Markdown 是内容正源，同名 HTML 为阅读投影。</p>
+</details><details class="chapter-nav"><summary>本篇章节</summary><nav class="article-contents" aria-label="WorkBuddy / CodeBuddy章节"><a href="#workbuddy-codebuddy-heading-1">结论：交付动作正在压缩，判断责任仍在人</a><a href="#workbuddy-codebuddy-heading-2">近一年可确认的新变化</a><a href="#workbuddy-codebuddy-heading-3">两个完整工作故事：从明确问题到可判断的交付</a><a href="#workbuddy-codebuddy-heading-6">哪些责任被压缩，哪些仍必须有人承担</a><a href="#workbuddy-codebuddy-heading-7">指标与效果：现有证据能说明多少</a><a href="#workbuddy-codebuddy-heading-8">对 BW：先复用，再精简，再作小实验</a><a href="#workbuddy-codebuddy-heading-9">局限与未决</a><a href="#workbuddy-codebuddy-heading-10">来源表</a></nav></details>
+
+<h2 id="workbuddy-codebuddy-heading-1">结论：交付动作正在压缩，判断责任仍在人</h2>
+<p><strong>【综合判断】</strong> 腾讯这组产品正在把“提需求、找上下文、写代码、跑工具、预览和发布”放进持续会话，并用工作树隔离、共享上下文和可复用编排减少人来回搬运。对已经有 Orca 的 Builder，BW 的候选价值应落在三个可观察问题：是否选对本次要解决的问题；是否拿到可核对的交付证据；是否因此作出下一次取舍。再加一份计划或总览，并不能自动回答它们。</p>
+<p><strong>【产品事实】</strong> WorkBuddy 提供通用任务及代码开发入口；CodeBuddy IDE/插件聚焦开发环境；CodeBuddy Code 是可融入终端、脚本和流水线的执行工具。Enterprise 是组织治理与产品组合层，不能当作第四种研发完成机制。WorkBuddy 文档说明兼容用户级 <code>.codebuddy</code> 配置，但这不证明三个端所有命令、权限和状态完全一致。<a href="https://cloud.tencent.com/product/acc" rel="noreferrer">产品形态 S1</a>、<a href="https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Setting" rel="noreferrer">配置兼容 S2</a>、<a href="https://cloud.tencent.com/product/workbuddy-enterprise" rel="noreferrer">Enterprise S18</a></p>
+<h2 id="workbuddy-codebuddy-heading-2">近一年可确认的新变化</h2>
+<table>
+<thead>
+<tr>
+<th>日期与主体</th>
+<th>已发布变化</th>
+<th>对单 Builder 交付的意义与边界</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2026-03-04，WorkBuddy 4.5.0</td>
+<td>官方日志记载正式发布，包含文件、终端、技能及产物预览</td>
+<td>开始形成可执行工作台；不是十月之前已存在一整年的成熟证据</td>
+</tr>
+<tr>
+<td>2026-05-27，CodeBuddy Code 2.99.0</td>
+<td><code>/goal</code> 持续推进，评估满足条件才停止</td>
+<td>减少逐轮催促；完成依据仍取决于条件和会话证据</td>
+</tr>
+<tr>
+<td>2026-06-03，WorkBuddy 5.0.0</td>
+<td>团队项目、计划看板、共享资产、任务流转</td>
+<td>团队接续与项目安排已进入原生产品</td>
+</tr>
+<tr>
+<td>2026-06-09，CodeBuddy Code 2.105.0</td>
+<td>Dynamic Workflow、研究编排、运行管理与脚本复用</td>
+<td>将重复分派写成可重跑脚本，减少人工组织多个 Agent</td>
+</tr>
+<tr>
+<td>2026-08-20，WorkBuddy 5.4.0</td>
+<td>Worktree 并行开发任务、分支与终端面板</td>
+<td>隔离并发改动；合并冲突和集成正确性仍须验证</td>
+</tr>
+<tr>
+<td>2026-09-20，CodeBuddy IDE 4.12.1；09-21，WorkBuddy 5.6.2</td>
+<td>前者统一项目记忆格式并改善上下文；后者修复任务卡住、历史与状态错误</td>
+<td>持续上下文、可靠恢复和流畅审阅本身就是交付能力</td>
+</tr>
+</tbody></table>
+<p>日期分别见 <a href="https://www.workbuddy.cn/docs/workbuddy/Changelog" rel="noreferrer">S3 WorkBuddy 日志</a>、<a href="https://www.codebuddy.cn/docs/cli/release-notes/README" rel="noreferrer">S4 CLI 日期索引</a>、<a href="https://www.codebuddy.cn/docs/cli/release-notes/v2.99.0" rel="noreferrer">S5 Goal 发布</a>、<a href="https://www.codebuddy.cn/docs/cli/release-notes/v2.105.0" rel="noreferrer">S6 Workflow 发布</a>、<a href="https://www.codebuddy.cn/docs/ide/release-notes/release-notes" rel="noreferrer">S7 IDE 日志</a>。CLI 索引已列到 2026-10-07 的 2.162.0，本次未取得该版正文，故不推断其新增能力；无日期的操作文档只证明当前官方描述。</p>
+<h2 id="workbuddy-codebuddy-heading-3">两个完整工作故事：从明确问题到可判断的交付</h2>
+<p>以下是依据官方机制重构的使用路径，<strong>不是客户成功案例或本次实测</strong>。时间节省与业务收益均待验证。</p>
+<h3 id="workbuddy-codebuddy-heading-4">故事一：一个 Builder 把课程预约从想法交给真实用户</h3>
+<p><strong>触发与输入。</strong> 老师正在手工整理预约。Builder 给 WorkBuddy 的代码开发入口说明：谁预约、每时段名额、老师如何查看、数据是否持久保存。官方网页应用指南已经把用户操作与数据保存列为需求重点。<a href="https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/App-Publishing/Web-App" rel="noreferrer">S8</a></p>
+<p><strong>执行与产物。</strong> 同一会话生成应用，按需开启数据库、身份认证和存储，再发布为在线应用；减少的是搭环境、接云服务和部署配置的机械步骤。设计需要修改时，以运行界面和反馈继续迭代。另一本本地应用教程展示了“生成—尝试运行—描述异常—继续排查”的交互方式，但它只覆盖本地工具，不能移作线上可靠性证据。<a href="https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/App-Publishing/Web-App" rel="noreferrer">S8</a>、<a href="https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Practice-Cases/Practice-Seven" rel="noreferrer">S9</a></p>
+<p><strong>仍由人决定。</strong> 是否真需要账号体系、是否收集手机号、取消与超额预约怎么处理、何时公开上线。建议验收必须实际覆盖两人抢最后名额、越权看名单、刷新后读回记录，并观察老师是否真的减少整理时间。这些是本报告提出的验证点，官方教程未给出通过率。发布成功说明地址可访问，不等于用户问题已解决。</p>
+<h3 id="workbuddy-codebuddy-heading-5">故事二：一位 Builder 在既有仓库完成一次接口迁移</h3>
+<p><strong>触发与输入。</strong> 已有调用方需要迁移，不能破坏线上兼容。负责该项目的 Builder 确定目标接口、不改范围和可运行的验收命令；让 CodeBuddy Code 先读工程再提出方案。官方最佳实践强调给具体文件与约束，小而明确的改动无需额外计划过程。<a href="https://www.codebuddy.cn/docs/cli/best-practices" rel="noreferrer">S10</a></p>
+<p><strong>执行与产物。</strong> 将独立模块交给隔离工作树会话，让独立审查 agent 核对接口契约；Builder 确认集成环境，必要时请求跨项目共享的 SE 复核高风险边界；Agent 修改、运行测试、根据失败继续，形成 diff、执行输出和 MR。工作树减少文件相互覆盖；重复的跨模块审查可以保存为 Workflow。它压缩分派、上下文重述和反复催促，不能消除共享接口冲突。<a href="https://www.codebuddy.cn/docs/cli/common-workflows" rel="noreferrer">S11</a>、<a href="https://www.codebuddy.cn/docs/cli/workflows" rel="noreferrer">S12</a></p>
+<p><strong>最关键边界。</strong> <code>/goal</code> 的评估器只读会话里已表达的内容，不自己运行命令或读取文件。即使显示达成，这位 Builder 仍应在实际合并版本核对测试和集成行为，并按现有权限决定合入及发布。将“测试通过”设为终态时，还要防止 Agent 改弱判据。这是证据责任的迁移，不能交给绿色状态代替。<a href="https://www.codebuddy.cn/docs/cli/goal" rel="noreferrer">S13</a></p>
+<h2 id="workbuddy-codebuddy-heading-6">哪些责任被压缩，哪些仍必须有人承担</h2>
+<table>
+<thead>
+<tr>
+<th>环节</th>
+<th>AI 机制能省下的动作</th>
+<th>单 Builder 项目需要保留的判断</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>需求与设计</td>
+<td>检索上下文、整理约束、生成可看方案</td>
+<td>用户是谁、问题优先级、范围和体验是否合适</td>
+</tr>
+<tr>
+<td>开发与调试</td>
+<td>多文件修改、工具执行、根据报错续做</td>
+<td>接口、数据和权限边界；何时中止错误方向</td>
+</tr>
+<tr>
+<td>测试与审阅</td>
+<td>生成测试、运行命令、汇总 diff 与发现</td>
+<td>判据是否代表真实风险，证据是否对应交付版本</td>
+</tr>
+<tr>
+<td>发布与反馈</td>
+<td>云资源接入、发布、保存产物与上下文</td>
+<td>上线授权、回退条件，以及使用后是否有效</td>
+</tr>
+</tbody></table>
+<p><strong>【综合判断】</strong> 一位 Builder 可以把传统角色动作压成围绕同一个可运行产物的数次决定，不必把产品、设计、开发、测试各做一遍独立填报。应关注从问题到可信结果的总时间，而非 Agent 数、生成代码量或文档份数。</p>
+<h2 id="workbuddy-codebuddy-heading-7">指标与效果：现有证据能说明多少</h2>
+<p><strong>【营销证言】</strong> WorkBuddy 产品页有用户声称办公单环节提效超过 90%，同时提到报错、重试和卡顿；页面未披露任务样本、计时方法、失败分母或对照。这既不能外推研发，也不能证明总体交付快了 90%。<a href="https://cloud.tencent.com/product/workbuddy" rel="noreferrer">S14</a></p>
+<p><strong>【可复核的评测设计】</strong> 官方 WorkBuddy Bench 提供 80 个 Code、70 个 Web、50 个 Office、60 个 Security 任务，共 260 个；通过隔离环境记录改动、轨迹、结果和效率。论文说明使用 CodeBuddy Code 与 Claude Code 两种执行框架，各子集评分工具不同，不报告统一平均分。这能支持任务级可重复验证；没有测量小团队几周内的真实用户收益、审阅负担与上线事故，不能作为 WorkBuddy 桌面已提高交付效率的结论。<a href="https://github.com/Tencent/workbuddy-bench" rel="noreferrer">S15</a>、<a href="https://arxiv.org/abs/2607.20911" rel="noreferrer">S16</a></p>
+<p><strong>【BW 建议】</strong> 每个实际工作记录请求到可审产物、到人验收、到用户用上的时间；同时记录人工干预分钟、失败/返工次数、逃逸问题和一个用户结果。对比时保留失败任务，用复杂度相近的工作做配对；两周小样本只作方向信号，不声称因果收益。</p>
+<h2 id="workbuddy-codebuddy-heading-8">对 BW：先复用，再精简，再作小实验</h2>
+<p><strong>复用。</strong> 会话、工作树、工具、定时和运行状态优先沿 Orca 已有能力衔接；CodeHub 适配解决进入真实仓与真实评审的障碍，本身可有价值，但要用成功交付率与少掉的手工操作证明。</p>
+<p><strong>精简。</strong> WorkBuddy 已提供负责人、起止时间、计划视图和任务流转，并明确计划事项与 AI 会话是两种对象。BW 不能靠“也有计划屏”建立必要性，也应避免让用户在 Issue、聊天、计划和验收中重复描述同一工作。<a href="https://cloud.tencent.com/document/product/1831/138797" rel="noreferrer">S17</a></p>
+<p><strong>实验。</strong> 在一位 Builder 独立负责的内部项目真实交付上，先试“原生 Orca + 一份简短目标/证据记录”，再与 BW 四块比较。总览须减少寻找需干预事项的时间；指标须改变至少一次判断；计划须帮助少做无效工作；验收须发现“实现完成但用户目标未满足”。同时记录新增维护成本。若没有新增决定、只是重排已有信息，优先合并入口或移除必填步骤，而非再铺能力。</p>
+<p><strong>不适用点。</strong> 动态编排的官方说明提醒大量代理可能比普通对话消耗更多 Token，暂停恢复也仅限同一会话。一次小修不必先建立复杂编排；跨进程持续交付不能凭可恢复按钮推断。小团队应从一个目录或一项任务试跑后再扩大。<a href="https://www.codebuddy.cn/docs/cli/workflows" rel="noreferrer">S12</a></p>
+<p><strong>反证条件。</strong> 若复用原生会话与现有 Issue 已能低成本达成上述结果，BW 四块就缺少独立价值；若真实用户没有可追踪的跨次交付问题，指标闭环也可能只是额外负担。反过来，只有能证明减少失焦、错判完成或重复核对，才值得继续投资。</p>
+<h2 id="workbuddy-codebuddy-heading-9">局限与未决</h2>
+<p>本次为公开资料研究，未安装三端、未执行真实研发任务。部分站点直接抓取超时，内容通过官方页的搜索索引核对；文档日期缺失处保留未知。腾讯云开发者社区不是自动的一手来源，未经确认的转载提效数字未采用。已发布记录、官方未来承诺、我们的推断不可混用；本次没有找到带日期的“跨周用户结果验收闭环”公开路线图。</p>
+<p>下一步需要实测：WorkBuddy 与 CodeBuddy 配置复用的实际边界；并行任务发生接口冲突后恢复代价；Goal 在错误测试与缺少日志时如何判断；云应用权限、回退与长期维护；BW 四块让内部用户做出了哪些原生会话无法低成本支持的决定。</p>
+<h2 id="workbuddy-codebuddy-heading-10">来源表</h2>
+<p>所有来源访问日均为 <strong>2026-10-09</strong>；日期未知不以搜索抓取日替代。操作文档证明官方描述，发布日志证明版本变化，教程不等于成功率研究。</p>
+<table>
+<thead>
+<tr>
+<th>编号与标题</th>
+<th>原始发布／更新日期</th>
+<th>访问日</th>
+<th>支持主张</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://cloud.tencent.com/product/acc" rel="noreferrer">S1 CodeBuddy 产品形态</a></td>
+<td>页面未标注</td>
+<td>2026-10-09</td>
+<td>IDE、插件、CLI 主体边界</td>
+</tr>
+<tr>
+<td><a href="https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Setting" rel="noreferrer">S2 WorkBuddy 系统设置</a></td>
+<td>页面未标注</td>
+<td>2026-10-09</td>
+<td>用户级配置兼容</td>
+</tr>
+<tr>
+<td><a href="https://www.workbuddy.cn/docs/workbuddy/Changelog" rel="noreferrer">S3 WorkBuddy 更新日志</a></td>
+<td>所引版本 2026-03-04 至 09-21</td>
+<td>2026-10-09</td>
+<td>发布、团队、工作树、恢复修复</td>
+</tr>
+<tr>
+<td><a href="https://www.codebuddy.cn/docs/cli/release-notes/README" rel="noreferrer">S4 CLI 发布索引</a></td>
+<td>索引列到 2026-10-07</td>
+<td>2026-10-09</td>
+<td>2.99、2.105 等日期</td>
+</tr>
+<tr>
+<td><a href="https://www.codebuddy.cn/docs/cli/release-notes/v2.99.0" rel="noreferrer">S5 CLI 2.99.0</a></td>
+<td>2026-05-27，日期由 S4 对照</td>
+<td>2026-10-09</td>
+<td>Goal 发布</td>
+</tr>
+<tr>
+<td><a href="https://www.codebuddy.cn/docs/cli/release-notes/v2.105.0" rel="noreferrer">S6 CLI 2.105.0</a></td>
+<td>2026-06-09，日期由 S4 对照</td>
+<td>2026-10-09</td>
+<td>动态编排发布</td>
+</tr>
+<tr>
+<td><a href="https://www.codebuddy.cn/docs/ide/release-notes/release-notes" rel="noreferrer">S7 IDE 发布日志</a></td>
+<td>所引 4.12.1：2026-09-20</td>
+<td>2026-10-09</td>
+<td>记忆与上下文演进</td>
+</tr>
+<tr>
+<td><a href="https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/App-Publishing/Web-App" rel="noreferrer">S8 网页应用开发与发布</a></td>
+<td>页面未标注</td>
+<td>2026-10-09</td>
+<td>全栈生成、云能力及发布路径</td>
+</tr>
+<tr>
+<td><a href="https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Practice-Cases/Practice-Seven" rel="noreferrer">S9 本地应用教程</a></td>
+<td>页面未标注</td>
+<td>2026-10-09</td>
+<td>生成、运行、异常反馈</td>
+</tr>
+<tr>
+<td><a href="https://www.codebuddy.cn/docs/cli/best-practices" rel="noreferrer">S10 CLI 最佳实践</a></td>
+<td>页面未标注</td>
+<td>2026-10-09</td>
+<td>上下文与按需规划</td>
+</tr>
+<tr>
+<td><a href="https://www.codebuddy.cn/docs/cli/common-workflows" rel="noreferrer">S11 CLI 常见工作流</a></td>
+<td>页面未标注</td>
+<td>2026-10-09</td>
+<td>隔离工作树与 MR 路径</td>
+</tr>
+<tr>
+<td><a href="https://www.codebuddy.cn/docs/cli/workflows" rel="noreferrer">S12 Dynamic Workflows</a></td>
+<td>页面未标注；首发见 S6</td>
+<td>2026-10-09</td>
+<td>脚本编排与复用；同会话恢复限制</td>
+</tr>
+<tr>
+<td><a href="https://www.codebuddy.cn/docs/cli/goal" rel="noreferrer">S13 Goal</a></td>
+<td>页面未标注；首发见 S5</td>
+<td>2026-10-09</td>
+<td>评估器只读会话证据</td>
+</tr>
+<tr>
+<td><a href="https://cloud.tencent.com/product/workbuddy" rel="noreferrer">S14 WorkBuddy 产品页</a></td>
+<td>页面未标注</td>
+<td>2026-10-09</td>
+<td>办公提效证言及其口径缺失</td>
+</tr>
+<tr>
+<td><a href="https://github.com/Tencent/workbuddy-bench" rel="noreferrer">S15 Tencent/workbuddy-bench</a></td>
+<td>README 未标注发布日期</td>
+<td>2026-10-09</td>
+<td>260 个任务及运行方法</td>
+</tr>
+<tr>
+<td><a href="https://arxiv.org/abs/2607.20911" rel="noreferrer">S16 WorkBuddy Bench 论文</a></td>
+<td>2026-07-23</td>
+<td>2026-10-09</td>
+<td>执行框架、分项评分边界</td>
+</tr>
+<tr>
+<td><a href="https://cloud.tencent.com/document/product/1831/138797" rel="noreferrer">S17 WorkBuddy 项目</a></td>
+<td>更新于 2026-09-24</td>
+<td>2026-10-09</td>
+<td>原生计划、协作与两类任务对象</td>
+</tr>
+<tr>
+<td><a href="https://cloud.tencent.com/product/workbuddy-enterprise" rel="noreferrer">S18 WorkBuddy Enterprise</a></td>
+<td>页面未标注</td>
+<td>2026-10-09</td>
+<td>产品矩阵与组织治理定位</td>
+</tr>
+</tbody></table>
+</article></details>
+<details class="topic" id="orca" open><summary><span class="topic-number">03</span><span>Orca：把执行压短之后，谁保证这一周真正交付？</span><small>专题全文</small></summary><article><h1 id="orca-heading-0">Orca：把执行压短之后，谁保证这一周真正交付？</h1><details class="source-info"><summary>来源与维护说明</summary><p class="source-note">内容正源：<code>orca.md</code>；完整版本校验见页底。</p><p><strong>读者与边界</strong>：供 BW 产品负责人、独立负责项目的 Builder 及共享 SE/Leader 决策；研究 stablyai/orca 的公开能力、演进与交付约束，不代替 BW 产品正本。截止与访问日均为 <strong>2026-10-09</strong>；窗口为近一年，已核实时间线从 2026 年 3 月起。能力发布、关键缺陷或 BW 上游基线变化时更新。Markdown 是正源，HTML 由统一 renderer 投影；本篇不构成升级方案。</p>
+</details><details class="chapter-nav"><summary>本篇章节</summary><nav class="article-contents" aria-label="Orca章节"><a href="#orca-heading-1">结论：Orca 已超出写代码，结果约束仍需要人</a><a href="#orca-heading-2">新变化时间线：从多终端到交付协作与持续恢复</a><a href="#orca-heading-3">三个可重建的 2026 工作故事</a><a href="#orca-heading-4">机制和指标：谁决定什么</a><a href="#orca-heading-5">BW 吸收边界与四块重叠</a><a href="#orca-heading-6">对一项目一 Builder 的建议与反证</a><a href="#orca-heading-7">局限</a><a href="#orca-heading-8">来源表</a><a href="#orca-heading-9">未决</a></nav></details>
+
+<h2 id="orca-heading-1">结论：Orca 已超出写代码，结果约束仍需要人</h2>
+<p><strong>Orca 已是围绕 agent 的开发工作环境，覆盖任务来源、并行执行、运行预览、审阅和合入。</strong> 官方面向会读 diff、管理提交的开发者，而非无代码用户；因此“Builder 有 Orca，只剩开发提效，其他都薄弱”不是可靠前提。<a href="https://www.onorca.dev/docs" rel="noreferrer">官方定位</a></p>
+<p>从任务板、自动化、跨机工作和恢复机制的扩展看，产品正在争取整个开发工作台；这是根据公开演进作出的判断，不是官方公布的商业路线图。原生工具能让有边界的工作更快完成，但本次未找到它默认保证“本周只交付这一小块、已有真实用户使用、下一周依据效果收缩方向”的证据。</p>
+<p>对“写了两三个月仍无线上版本”的用户，BW 应验证的主张是：<strong>让一个小版本按期进入真实使用，并让使用证据改变下一轮取舍。</strong> 四块界面只有共同缩短这条链路才有价值。一个必须认真比较的对照方案是“原生 Orca＋现有 Issue 系统＋一份交付约定和周回顾 Skill”，不能预设它不够用。</p>
+<h2 id="orca-heading-2">新变化时间线：从多终端到交付协作与持续恢复</h2>
+<table>
+<thead>
+<tr>
+<th>时间与证据</th>
+<th>已发生什么</th>
+<th>对判断的意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2026-03-22，<a href="https://github.com/stablyai/orca/releases/tag/v1.0.20" rel="noreferrer">v1.0.20</a></td>
+<td>工作树卡片展示 GitHub Issue；终端分屏可调尺寸、重排</td>
+<td>早期就围绕任务组织执行，并非只有代码补全</td>
+</tr>
+<tr>
+<td>2026-05-14，<a href="https://github.com/stablyai/orca/pull/1806" rel="noreferrer">自动化 PR #1806</a> 合并</td>
+<td>自动化页面、定时运行及后台工作空间进入代码</td>
+<td>从盯着一个会话，发展到周期性工作；合并日期不冒充正式发布日期</td>
+</tr>
+<tr>
+<td>2026-07-08，<a href="https://github.com/stablyai/orca/releases/tag/v1.4.128" rel="noreferrer">v1.4.128</a></td>
+<td>限制会话缓存和终端积压，修 Windows 内存溢出、远端恢复及更新后终端存续</td>
+<td>长时间、多任务运行的可持续性成为实际工程工作</td>
+</tr>
+<tr>
+<td>2026-09-20，<a href="https://github.com/stablyai/orca/releases/tag/v1.4.206" rel="noreferrer">v1.4.206</a></td>
+<td>跨电脑会话搜索、计划卡片、活跃会话重连；用量扫描移到 worker、大历史列表虚拟化</td>
+<td>降低找上下文和等待界面的成本</td>
+</tr>
+<tr>
+<td>2026-09-25，<a href="https://github.com/stablyai/orca/releases/tag/v1.4.211" rel="noreferrer">v1.4.211</a></td>
+<td>Codex goal 固定在输入框上方；子任务仍运行时父会话保持工作状态</td>
+<td>管理目标与并行状态，但这是会话层能力</td>
+</tr>
+<tr>
+<td>2026-10-06 合并、10-08 发布，<a href="https://github.com/stablyai/orca/pull/19074" rel="noreferrer">看板 PR #19074</a></td>
+<td>GitHub Projects 的 Board 可拖拽并回写字段；已有 Table、Roadmap</td>
+<td>原生跨任务管理持续扩大，BW 不宜复制任务板</td>
+</tr>
+<tr>
+<td>2026-10-08，<a href="https://github.com/stablyai/orca/releases/tag/v1.4.223" rel="noreferrer">v1.4.223</a></td>
+<td>草稿跨重启保留、SSH 页签恢复、远端输入恢复；活动视图过滤与批选</td>
+<td>流畅度与恢复应进入 BW 的上游筛选，而非只追新功能</td>
+</tr>
+</tbody></table>
+<p>当前发布页仍将原生结构化聊天标为<strong>实验性</strong>；Remote Server 也仍属实验，Server 2.0 只是官方预告。上述修复说明厂商处理过这些问题，不证明问题在 BW 环境已复现或已消失。<a href="https://github.com/stablyai/orca/releases/tag/v1.4.223" rel="noreferrer">最新发布</a></p>
+<h2 id="orca-heading-3">三个可重建的 2026 工作故事</h2>
+<p>以下是以官方能力拼成的工作方式，<strong>不是客户案例，也没有实测提效倍数</strong>。</p>
+<p><strong>故事一：周一选定一个用户障碍，当天就让实现、测试设计与审查相互反馈。</strong> 同一位 Builder 把“一位用户完成某项操作”的边界写进 Issue，带描述、图片与评论进入工作树；实现 agent 改代码，第二个 agent 准备失败场景，第三个只读审查接口与风险，避免三个 agent 同时扩功能。Orca 提供任务上下文、隔离工作树和并行协调；这位 Builder 决定删什么、何时停止扩范围，并在集成版本上验一次真实旅程。<a href="https://www.onorca.dev/docs/review/linear" rel="noreferrer">Linear 上下文</a>、<a href="https://www.onorca.dev/docs/model/worktrees" rel="noreferrer">工作树</a></p>
+<p>这里压短的是串行交接和等待，不是取消集成验证。独立工作树上的测试通过不能证明合并后的版本能用；并行审查也必须重新核对最后提交。</p>
+<p><strong>故事二：页面已经跑起来，设计反馈直接回到实现。</strong> Builder 在内置浏览器点选出错元素，将 DOM、样式、局部截图及可得源码位置递交 agent；实现进行时，独立测试 agent 同时梳理用户动作和失败边界，再由这位 Builder 核对。热更新后先复查页面，再通过原生 PR 审阅与失败检查日志修复问题。它缩短“描述截图—猜位置—再解释”的循环；是否解决了用户问题仍需观察真实操作。<a href="https://www.onorca.dev/docs/browser/design-mode" rel="noreferrer">Design Mode</a>、<a href="https://www.onorca.dev/docs/review/github" rel="noreferrer">审阅与检查</a></p>
+<p><strong>故事三：周五能解释工作，却不能拿 agent 的 Done 冒充交付。</strong> 自动化可定时汇总 Issue、评审及阻塞信息，活动流帮助找到待输入、已结束和仍运行的会话。再补一张有来源的证据表：上线地址、实际使用者、完成的关键动作、未解决障碍。前半段原生能力已经很强；后半段是否值得做成 BW，取决于它能否促成人停止无效开发或缩小下一版。<a href="https://www.onorca.dev/docs/cli/automations" rel="noreferrer">自动化</a>、<a href="https://www.onorca.dev/docs/activity" rel="noreferrer">活动流</a></p>
+<h2 id="orca-heading-4">机制和指标：谁决定什么</h2>
+<table>
+<thead>
+<tr>
+<th>机制</th>
+<th>决定与执行权</th>
+<th>不能据此推出什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>原生 plan / goal</td>
+<td>Claude TodoWrite、Codex update_plan 由 agent 提供；Codex goal 由原生聊天呈现，用户可暂停、恢复、清除；状态来自相应会话</td>
+<td>agent 的计划完成，不等于产品目标被用户接受</td>
+</tr>
+<tr>
+<td>编排任务</td>
+<td>coordinator 建任务、依赖和派发；worker 对本次 dispatch 报成功或失败；Run 只存命名空间与收件箱，不自行调度</td>
+<td>原生 Run 不是自动决定优先级的项目经理</td>
+</tr>
+<tr>
+<td>decision gate</td>
+<td>coordinator 创建阻塞问题并记录解决结果；worker 的 ask 发给 coordinator</td>
+<td>默认 gate 不保证由人拍板，更不等同 BW 的人验收</td>
+</tr>
+</tbody></table>
+<p>前一行见<a href="https://www.onorca.dev/docs/agents/native-chat" rel="noreferrer">原生聊天</a>，后两行见<a href="https://www.onorca.dev/docs/cli/orchestration" rel="noreferrer">实验性编排协议</a>。<strong>Orca 的 decision gate 与 BW 术语中的“必须由人决定的 gate”不是同一语义。</strong> 若希望暂停新增范围、确定发布或确认结果，必须明确负责人、证据和协调者权限，不能仅靠同名组件。</p>
+<p>原生 usage 关注额度、token 与费用估算，不能回答用户是否受益。<a href="https://www.onorca.dev/docs/agents/usage-tracking" rel="noreferrer">用量说明</a> 对 BW 更有解释力的候选指标是：从承诺范围到首次真实使用的时间、承诺版本的使用证据、未完成工作的数量与年龄、范围变更原因。它们也是假设；不要把提交数、agent 完成数或指标变绿作为价值替身。</p>
+<h2 id="orca-heading-5">BW 吸收边界与四块重叠</h2>
+<p><a href="https://github.com/forcegravity1989/builder-workbench/blob/ed5a0930b70dd68b7cf588d45d42173b135e7c48/ref/upstream.md" rel="noreferrer">本仓上游说明 <small class="online">（联网查看）</small></a>记录基线为 <strong>caa465d1，2026-09-15</strong>；本次核查 BW 为 <strong>5202485e</strong>。任务、自动化、工作树和审阅执行核在本仓保留，不能把上游现有能力统称为 BW 缺失。</p>
+<p>有一个确切的后续差异：本仓 <a href="https://github.com/forcegravity1989/builder-workbench/blob/ed5a0930b70dd68b7cf588d45d42173b135e7c48/src/renderer/src/components/github-project/ProjectViewStates.tsx" rel="noreferrer">ProjectViewStates.tsx <small class="online">（联网查看）</small></a> 第 47 行只允许 Table、Roadmap；<a href="https://github.com/forcegravity1989/builder-workbench/blob/ed5a0930b70dd68b7cf588d45d42173b135e7c48/src/renderer/src/components/github-project/ProjectViewWrapper.tsx" rel="noreferrer">ProjectViewWrapper.tsx <small class="online">（联网查看）</small></a> 仍无 Board 渲染分支。因此 10 月可拖拽 GitHub Board <strong>尚未吸收，证据层级仅为源码</strong>。9 月 15 日之后的 goal 展示、性能和恢复修复未逐项比对，不冒称已吸收或全部缺失；基线日期也不能排除定向移植。</p>
+<table>
+<thead>
+<tr>
+<th>BW 区块</th>
+<th>原生重叠与应借用部分</th>
+<th>值得验证的差异；反证</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>总览</td>
+<td>任务项目视图、活动流、会话历史</td>
+<td>帮人看清本周实际可用增量；若只是搬运状态，原生足够</td>
+</tr>
+<tr>
+<td>指标</td>
+<td>原生工程状态、用量；沿用数据与执行通道</td>
+<td>用真实使用结果改变决策；若指标无数据或从不改变取舍，新增屏无价值</td>
+</tr>
+<tr>
+<td>计划</td>
+<td>Issue、Roadmap、agent plan / goal、编排</td>
+<td>固定一个可交付切片、明确不做什么和截止点；若只是 agent 待办镜像，应收回</td>
+</tr>
+<tr>
+<td>验收</td>
+<td>diff、PR/MR、CI、浏览器运行和审阅</td>
+<td>把部署、用户关键动作与人工接受连起来；若只是重复 CI 和勾选清单，应复用原生</td>
+</tr>
+</tbody></table>
+<h2 id="orca-heading-6">对一项目一 Builder 的建议与反证</h2>
+<p>先选一个真实项目做两轮小版本验证。每轮只承诺一个可独立使用的切片；新想法进入候选，变更当前范围要写明取舍。利用原生工作树、浏览器、审阅与自动化压短执行；BW 只尝试把“承诺—可用版本—使用反馈”联系起来。</p>
+<p>同等支持下，与“原生 Orca＋轻量 Skill”交叉比较：是否更早首次使用、是否减少长期未完成工作、周五能否解释真实增量，以及额外录入花了多久。若两种方式效果相当，就没有四块独立界面的充分理由；若主要损耗来自启动失败、卡顿、断线或数据错误，应先修这些。若交付及时却没人需要，问题可能在需求选择与用户接触，不能继续加计划表解决。</p>
+<h2 id="orca-heading-7">局限</h2>
+<p>这是公开发布、官方文档、合并 PR 和少量 BW 源码核对，未安装最新版 Orca、未跑 Electron 旅程、未验证真实 GitHub 写入或商业收益。看板 PR 作者明确说明其渲染验证使用确定性 IPC，并非写真实用户项目；Windows/Linux 渲染留待 CI，不能抹掉该边界。<a href="https://github.com/stablyai/orca/pull/19074" rel="noreferrer">验证原文</a></p>
+<p>2025 年部分未找到足够可靠材料，不推断产品当时不存在。文档无发布日期时只记访问快照；未把开放 Issue 当路线图。最新发布亦披露旧原生聊天升级后不可见但文件仍在磁盘的已知问题，不能把“可恢复”泛化为所有升级都安全。<a href="https://github.com/stablyai/orca/releases/tag/v1.4.223" rel="noreferrer">已知问题</a></p>
+<h2 id="orca-heading-8">来源表</h2>
+<p>访问日全部为 <strong>2026-10-09</strong>。版本日期以 GitHub 发布页为准；“未标”表示页面未披露更新日期，不能以访问日冒充发布日期。</p>
+<table>
+<thead>
+<tr>
+<th>一手来源</th>
+<th>发布／更新日</th>
+<th>访问日</th>
+<th>支持主张</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://www.onorca.dev/docs" rel="noreferrer">What is Orca</a></td>
+<td>未标</td>
+<td>2026-10-09</td>
+<td>对象与产品边界</td>
+</tr>
+<tr>
+<td><a href="https://github.com/stablyai/orca/releases/tag/v1.0.20" rel="noreferrer">v1.0.20</a></td>
+<td>2026-03-22</td>
+<td>2026-10-09</td>
+<td>早期任务、终端</td>
+</tr>
+<tr>
+<td><a href="https://github.com/stablyai/orca/pull/1806" rel="noreferrer">Automations PR #1806</a></td>
+<td>合并 2026-05-14</td>
+<td>2026-10-09</td>
+<td>周期工作演进</td>
+</tr>
+<tr>
+<td><a href="https://github.com/stablyai/orca/releases/tag/v1.4.128" rel="noreferrer">v1.4.128</a></td>
+<td>2026-07-08</td>
+<td>2026-10-09</td>
+<td>内存与恢复修复</td>
+</tr>
+<tr>
+<td><a href="https://github.com/stablyai/orca/releases/tag/v1.4.206" rel="noreferrer">v1.4.206</a></td>
+<td>2026-09-20</td>
+<td>2026-10-09</td>
+<td>计划、搜索、性能</td>
+</tr>
+<tr>
+<td><a href="https://github.com/stablyai/orca/releases/tag/v1.4.211" rel="noreferrer">v1.4.211</a></td>
+<td>2026-09-25</td>
+<td>2026-10-09</td>
+<td>goal 与子任务状态</td>
+</tr>
+<tr>
+<td><a href="https://github.com/stablyai/orca/pull/19074" rel="noreferrer">Board PR #19074</a></td>
+<td>合并 2026-10-06</td>
+<td>2026-10-09</td>
+<td>看板及验证局限</td>
+</tr>
+<tr>
+<td><a href="https://github.com/stablyai/orca/releases/tag/v1.4.223" rel="noreferrer">v1.4.223</a></td>
+<td>2026-10-08</td>
+<td>2026-10-09</td>
+<td>当前发布、预告、缺陷</td>
+</tr>
+<tr>
+<td><a href="https://www.onorca.dev/docs/review/linear" rel="noreferrer">Linear</a></td>
+<td>未标</td>
+<td>2026-10-09</td>
+<td>用户任务上下文</td>
+</tr>
+<tr>
+<td><a href="https://www.onorca.dev/docs/model/worktrees" rel="noreferrer">Worktrees</a></td>
+<td>未标</td>
+<td>2026-10-09</td>
+<td>隔离与交付流程</td>
+</tr>
+<tr>
+<td><a href="https://www.onorca.dev/docs/browser/design-mode" rel="noreferrer">Design Mode</a></td>
+<td>未标</td>
+<td>2026-10-09</td>
+<td>运行界面反馈</td>
+</tr>
+<tr>
+<td><a href="https://www.onorca.dev/docs/review/github" rel="noreferrer">Hosted reviews</a></td>
+<td>未标</td>
+<td>2026-10-09</td>
+<td>评审、检查、项目</td>
+</tr>
+<tr>
+<td><a href="https://www.onorca.dev/docs/cli/automations" rel="noreferrer">Automations</a></td>
+<td>未标</td>
+<td>2026-10-09</td>
+<td>周期执行</td>
+</tr>
+<tr>
+<td><a href="https://www.onorca.dev/docs/activity" rel="noreferrer">Activity</a></td>
+<td>未标</td>
+<td>2026-10-09</td>
+<td>注意力与会话状态</td>
+</tr>
+<tr>
+<td><a href="https://www.onorca.dev/docs/agents/native-chat" rel="noreferrer">Native chat</a></td>
+<td>未标</td>
+<td>2026-10-09</td>
+<td>plan、goal、实验边界</td>
+</tr>
+<tr>
+<td><a href="https://www.onorca.dev/docs/cli/orchestration" rel="noreferrer">Orchestration</a></td>
+<td>未标</td>
+<td>2026-10-09</td>
+<td>协调权与 gate</td>
+</tr>
+<tr>
+<td><a href="https://www.onorca.dev/docs/agents/usage-tracking" rel="noreferrer">Usage</a></td>
+<td>未标</td>
+<td>2026-10-09</td>
+<td>额度与费用边界</td>
+</tr>
+</tbody></table>
+<h2 id="orca-heading-9">未决</h2>
+<ol>
+<li>内部 Builder 的延迟主要来自范围膨胀、用户接触不足，还是环境与恢复故障？需要真实工作记录区分。</li>
+<li>两周内哪个切片能交给哪位用户，谁有权拒绝 agent 建议的额外工作？</li>
+<li>BW 已有四块中，哪一次显示实际改变过发布或取舍决定？先寻找这一条证据，再决定保留和收缩。</li>
+</ol>
+</article></details>
+<details class="topic" id="openai-codex" open><summary><span class="topic-number">04</span><span>OpenAI Codex：把持续写代码变成可核对的交付</span><small>专题全文</small></summary><article><h1 id="openai-codex-heading-0">OpenAI Codex：把持续写代码变成可核对的交付</h1><details class="source-info"><summary>来源与维护说明</summary><p class="source-note">内容正源：<code>openai-codex.md</code>；完整版本校验见页底。</p><p><strong>读者与时机</strong>：讨论 BW 定位、复盘单 Builder 项目的产品与研发。<strong>范围</strong>：截至 2026-10-09 的 Codex 实践、反馈与人类责任；不代写 BW 产品设计，不证明 BW 已实现或用户已受益。<strong>结构</strong>：结论、时间线、故事、机制、指标、启发与反证、开放问题、来源。<strong>维护</strong>：官方实践变化或内部项目产生反证时更新；Markdown 是正源，同名 HTML 为阅读投影。本篇是外部研究，尚非获批方案；仓内原则及交付规则仍以 AGENTS 和原则正文为准。</p>
+</details><details class="chapter-nav"><summary>本篇章节</summary><nav class="article-contents" aria-label="OpenAI / Codex章节"><a href="#openai-codex-heading-1">30 秒结论</a><a href="#openai-codex-heading-2">近一年时间线：从会做，走向可持续复核</a><a href="#openai-codex-heading-3">三个故事：产物怎样变得可以接手</a><a href="#openai-codex-heading-7">能防跑偏的机制，以及各自边界</a><a href="#openai-codex-heading-8">度量：把工程可信度与真实交付分开</a><a href="#openai-codex-heading-9">给 BW 的启发与反证</a><a href="#openai-codex-heading-10">开放问题</a><a href="#openai-codex-heading-11">来源与证据范围</a></nav></details>
+
+<h2 id="openai-codex-heading-1">30 秒结论</h2>
+<p><strong>Codex 的进展正在减少执行与验证劳动，但不能替 Builder 决定何时停止建设、把什么交给真实用户。</strong> 本篇把“周五说不清做了什么、两三个月没有用户可用版本”看作研究问题，不预设四块管理屏就是答案。</p>
+<p>近一年官方材料最一致的实践是：明确终点与范围，保留可运行产物，让失败证据决定下一步，再把有效经验用于后续任务。其价值首先是让工作可检查、可纠正；“因此更快获得客户或收入”仍缺少这里可引用的对照证据。</p>
+<p>证据分为<strong>内部实践自报、能力实验、教学示例、产品机制和本文建议</strong>。以下材料均已发布；没有把未来愿景当作可用能力。日期是文章原发布日期，不能自动当作其中每项功能的首发日。</p>
+<h2 id="openai-codex-heading-2">近一年时间线：从会做，走向可持续复核</h2>
+<table>
+<thead>
+<tr>
+<th>日期与材料</th>
+<th>已核实变化</th>
+<th>不能据此推出什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2026-01-22，Skill 评估教程</td>
+<td>从任务目标、过程、风格、效率建立少量检查，保留运行轨迹与产物。<a href="https://developers.openai.com/blog/eval-skills" rel="noreferrer">S1</a></td>
+<td>遵守步骤不等于选对问题。</td>
+</tr>
+<tr>
+<td>2026-02-23，长任务实验</td>
+<td>一个设计工具实验连续运行约 25 小时、生成约 3 万行；借助持久文件与逐里程碑验证保持方向。<a href="https://developers.openai.com/blog/run-long-horizon-tasks-with-codex" rel="noreferrer">S2</a></td>
+<td>原文明确不是生产发布；运行时长和行数不是用户价值。</td>
+</tr>
+<tr>
+<td>2026-03-09，SDK 维护实践</td>
+<td>两仓三个月合入 PR 从前期 316 增至 457；结合 Skill、脚本和评审。<a href="https://developers.openai.com/blog/skills-agents-sdk" rel="noreferrer">S3</a></td>
+<td>前后自报没有控制需求、人员等变量，不能归因为同幅度生产率提升。</td>
+</tr>
+<tr>
+<td>2026-05-09—12，三篇教程</td>
+<td>Goals 固定终点；修复循环利用验证反馈；改进循环把轨迹与反馈转成评估和后续修改。<a href="https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex" rel="noreferrer">S4</a>、<a href="https://developers.openai.com/cookbook/examples/codex/build_iterative_repair_loops_with_codex" rel="noreferrer">S5</a>、<a href="https://developers.openai.com/cookbook/examples/agents_sdk/agent_improvement_loop" rel="noreferrer">S6</a></td>
+<td>教程可运行与工程闭环不证明真实客户效果。</td>
+</tr>
+<tr>
+<td>2026-08-03—25，流程与应用实践</td>
+<td>按项目风险裁剪流程，复用执行系统；Runme 将操作和结果留在同一份 notebook。<a href="https://developers.openai.com/cookbook/examples/codex/iterating-development-workflows-with-codex" rel="noreferrer">S7</a>、<a href="https://developers.openai.com/blog/codex-as-a-platform" rel="noreferrer">S8</a>、<a href="https://developers.openai.com/blog/automating-repetitive-work-at-openai-with-codex" rel="noreferrer">S9</a></td>
+<td>不要求复制固定文件树或增加审批屏。</td>
+</tr>
+<tr>
+<td>2026-09-11，指令维护建议</td>
+<td>警告过长、冲突的 Skill 描述和过度规定步骤会妨碍新模型。<a href="https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra" rel="noreferrer">S10</a></td>
+<td>不能把某版模型经验永久固化为所有任务必经流程。</td>
+</tr>
+</tbody></table>
+<h2 id="openai-codex-heading-3">三个故事：产物怎样变得可以接手</h2>
+<h3 id="openai-codex-heading-4">1. 给 SDK 用户发一个能安装运行的版本</h3>
+<p><strong>内部实践自报。</strong> 触发是发布候选准备好；输入是上一发布标签与当前代码差异。维护流程检查兼容性、回归和迁移说明，还通过本地包仓库发布并在多个运行环境安装测试。其判断对象超出了“源码示例能跑”。Python 3.9 支持移除的案例，即使总体可发，仍明确指出安装限制和发布说明责任。<a href="https://developers.openai.com/blog/skills-agents-sdk" rel="noreferrer">S3</a></p>
+<p>产出是有证据和待办的发布准备结论。人仍要决定 API、兼容承诺、范围和发布顺序。<strong>本文推断</strong>：小团队最该复制的是用户拿到产物后的路径，而非增加一次抽象的“验收通过”。</p>
+<h3 id="openai-codex-heading-5">2. 修教程时，让真实执行失败决定下一轮</h3>
+<p><strong>教学示例。</strong> 触发是 API 教程过时；输入是原 notebook、规则与检查结果。Codex 仅修改副本，执行验证后把剩余差异交回下一轮；每轮保存修改产物和记录，区分查出了什么、改了什么、执行是否通过、还有什么。达到上限、差异不再收敛或需要人决策时应停止。<a href="https://developers.openai.com/cookbook/examples/codex/build_iterative_repair_loops_with_codex" rel="noreferrer">S5</a></p>
+<p>关键反证：示例的三份材料特意安排成一、二、三轮通过，代码包含分阶段条件。这是展示控制流，<strong>不是三轮保证修好，也不是生产成功率</strong>。BW 可以借鉴“剩余缺口”，不能展示一个只有编辑次数的进度条来替代它。</p>
+<h3 id="openai-codex-heading-6">3. 重复跑模型评估，把人的取舍留下来</h3>
+<p><strong>内部个人实践自报。</strong> 触发是新模型需要评估；工程师在 Runme 写目标，Codex 参考旧运行拟计划，人审后执行并记录命令、输出与解释。遇到资源额度耗尽，人帮助决定复用现有环境；结束时补上为什么选择这条路径，供下轮复用。<a href="https://developers.openai.com/blog/automating-repetitive-work-at-openai-with-codex" rel="noreferrer">S9</a></p>
+<p>产物是同一份可接手 notebook，不需要重读整段聊天。这里的人审针对资源和方案选择，不能外推为所有小任务都先审批计划；原文也没有提供节省工时的受控测量。</p>
+<h2 id="openai-codex-heading-7">能防跑偏的机制，以及各自边界</h2>
+<p><strong>终点先于执行清单。</strong> Goals 教程要求写明结果、证明方式、约束、可操作范围、迭代策略和受阻停止条件。适合终点清晰但路线未知的任务；一次性修改仍用普通提示。它约束“怎样才算工程任务完成”，不会自行证明目标有市场需求。<a href="https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex" rel="noreferrer">S4</a></p>
+<p><strong>反馈必须能改变下一轮。</strong> Agent Improvement Loop 从运行轨迹出发，加入人和模型反馈，生成可重跑评估，再给 Codex 排序后的改动建议。示例使用虚构公司数据和示例人评，并非生产金融服务实证；开发者仍决定评估、PR、合入和部署等环节如何设人审。<a href="https://developers.openai.com/cookbook/examples/agents_sdk/agent_improvement_loop" rel="noreferrer">S6</a></p>
+<p><strong>长任务依赖可读状态，不依赖一直催。</strong> 里程碑足够小、每段有验证，约束与当前状态保存在可再读材料中，使人离开后能继续接手。对 BW 的意义是恢复上下文和识别偏离；不意味着要维持第二份与 Issue、Git 重复的台账。<a href="https://developers.openai.com/blog/run-long-horizon-tasks-with-codex" rel="noreferrer">S2</a></p>
+<p><strong>规则也要接受反证。</strong> 8 月流程教程明确文件约定可裁剪，不应无理由强加企业流程；9 月建议收紧 Skill 触发、渐进读取，避免不相关指令占据上下文。这对“再加流程就能改善交付”构成直接反证。<a href="https://developers.openai.com/cookbook/examples/codex/iterating-development-workflows-with-codex" rel="noreferrer">S7</a>、<a href="https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra" rel="noreferrer">S10</a></p>
+<h2 id="openai-codex-heading-8">度量：把工程可信度与真实交付分开</h2>
+<p>下表是<strong>本文建议的内部试用口径</strong>，不是 OpenAI 已验证的指标体系。起步只选与当前阻塞有关的两三项，避免先建设指标平台。</p>
+<table>
+<thead>
+<tr>
+<th>要回答的问题</th>
+<th>可记录的口径</th>
+<th>容易出现的假进步</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>是否不断扩大范围？</td>
+<td>开工后新增的必要承诺、被主动延后的事项及原因</td>
+<td>拆更多任务让完成率看起来更高</td>
+</tr>
+<tr>
+<td>是否越来越接近可用？</td>
+<td>同口径必须通过的缺口、无进展轮数、等待人决定时长</td>
+<td>删除检查或改阈值换取全绿</td>
+</tr>
+<tr>
+<td>是否真的交给用户？</td>
+<td>从明确问题到指定真实用户首次完成核心操作的时间；附版本和使用证据</td>
+<td>把部署成功、生成 PR 算作用户使用</td>
+</tr>
+<tr>
+<td>是否改善了问题？</td>
+<td>同场景前后任务成功率、耗时、再次使用或付费意愿的原始反馈</td>
+<td>代码量、token 数、agent 忙碌时长</td>
+</tr>
+<tr>
+<td>管理成本是否值得？</td>
+<td>找背景、整理证据、重复录入和必要决策所用的人时</td>
+<td>自动生成长周报但无人据此改决定</td>
+</tr>
+</tbody></table>
+<p>Skill 评估的启示是先选少量必须通过项，兼看结果与过程；对可机械检查的事实用实际运行，对主观判断保留评判依据。其评估分数只能回答所设检查，不能直接跨到商业结果。<a href="https://developers.openai.com/blog/eval-skills" rel="noreferrer">S1</a></p>
+<h2 id="openai-codex-heading-9">给 BW 的启发与反证</h2>
+<p><strong>先验证一个存量故事。</strong> 选择一支已有 Orca、由一位 Builder 独立负责的项目，认领一个真实用户问题、一个可交付切片和一个明确的试用对象。下一次约定检查点，先看用户是否已拿到并完成核心操作；未达到就明确卡在范围、执行、发布还是使用，而不是再让模型扩展愿望清单。这是试验建议，不把固定周节奏当行业标准。</p>
+<p>四块能力可以围绕同一个交付对象审视：总览暴露该做的决定；指标呈现问题与效果的来源；计划保留本次承诺和主动不做的部分；验收汇合运行证据、实际发布及用户读回。需要探索的细节继续交给原生会话与 Skill，人的注意力留给取舍。是否需要独立四屏，须由使用成本证明。</p>
+<p>OpenAI 8 月平台文章明确区分复用执行系统与应用自有界面、上下文、权限、结果归档。<strong>本文推断</strong>：BW 可能有价值的部分是贴近 Builder 的交付对象和判断入口；重新造会话、调度和修复循环需要更强证据。<a href="https://developers.openai.com/blog/codex-as-a-platform" rel="noreferrer">S8</a></p>
+<p>删减判据也要先约定：如果 Orca 加一份短模板同样能收敛范围、找回证据并交给用户，BW 应缩减重复步骤；若某指标从未改变取舍，应撤掉；若“验收”只有 agent 自评，应保留未知。反过来，若 BW 能持续减少无效扩展、待发堆积和人工找证据时间，才有继续打磨的理由。</p>
+<h2 id="openai-codex-heading-10">开放问题</h2>
+<ul>
+<li>当前最常失败在未锁定用户、范围扩张、可靠性、发布，还是发布后无人使用？需访谈并查最近真实项目，不能靠产品结构推断。</li>
+<li>Builder 是否愿意明确延后模型提出的新想法？产品应帮助取舍，还是已有提示与习惯即可？</li>
+<li>谁能提供独立于实现 agent 的验收与使用证据？缺数据时怎样保留未知？</li>
+<li>当工程循环已原生自动化，BW 的额外维护成本能否被节省的决策与交接时间抵消？</li>
+<li>官方资料缺少与本目标人群匹配的商业结果对照；内部试用需要怎样的样本和时间窗口才足以决定保留或删减？</li>
+</ul>
+<h2 id="openai-codex-heading-11">来源与证据范围</h2>
+<p>所有来源查阅日均为 <strong>2026-10-09</strong>；只使用 OpenAI Developers 一手内容。本次核对文档和示例代码，未运行示例，未测 Codex 当前各账户可用性，未访问文中客户或内部生产系统。</p>
+<table>
+<thead>
+<tr>
+<th>编号与一手来源</th>
+<th>原发布日期</th>
+<th>类型与支持主张</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://developers.openai.com/blog/eval-skills" rel="noreferrer">S1 · Testing Agent Skills Systematically with Evals</a></td>
+<td>2026-01-22</td>
+<td>教程：小型检查、轨迹与产物、过程与效率</td>
+</tr>
+<tr>
+<td><a href="https://developers.openai.com/blog/run-long-horizon-tasks-with-codex" rel="noreferrer">S2 · Run long horizon tasks with Codex</a></td>
+<td>2026-02-23</td>
+<td>能力实验：持久状态、里程碑验证；非生产</td>
+</tr>
+<tr>
+<td><a href="https://developers.openai.com/blog/skills-agents-sdk" rel="noreferrer">S3 · Using skills to accelerate OSS maintenance</a></td>
+<td>2026-03-09</td>
+<td>内部实践自报：安装路径、发布评审与人的取舍</td>
+</tr>
+<tr>
+<td><a href="https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex" rel="noreferrer">S4 · Using Goals in Codex</a></td>
+<td>2026-05-09</td>
+<td>机制与教程：结果、边界、停止条件</td>
+</tr>
+<tr>
+<td><a href="https://developers.openai.com/cookbook/examples/codex/build_iterative_repair_loops_with_codex" rel="noreferrer">S5 · Build iterative repair loops with Codex</a></td>
+<td>2026-05-11</td>
+<td>教学示例：实际执行、剩余差异、分阶段 fixture</td>
+</tr>
+<tr>
+<td><a href="https://developers.openai.com/cookbook/examples/agents_sdk/agent_improvement_loop" rel="noreferrer">S6 · Build an Agent Improvement Loop</a></td>
+<td>2026-05-12</td>
+<td>合成案例：反馈转评估与改动建议；可设人审</td>
+</tr>
+<tr>
+<td><a href="https://developers.openai.com/cookbook/examples/codex/iterating-development-workflows-with-codex" rel="noreferrer">S7 · Iterating Development Workflows with Codex</a></td>
+<td>2026-08-03</td>
+<td>流程建议：证据和范围约束，按风险裁剪</td>
+</tr>
+<tr>
+<td><a href="https://developers.openai.com/blog/codex-as-a-platform" rel="noreferrer">S8 · Codex as a platform</a></td>
+<td>2026-08-19</td>
+<td>产品机制与方向：复用执行系统，应用拥有工作流</td>
+</tr>
+<tr>
+<td><a href="https://developers.openai.com/blog/automating-repetitive-work-at-openai-with-codex" rel="noreferrer">S9 · Automating repetitive work at OpenAI</a></td>
+<td>2026-08-25</td>
+<td>内部个人实践：Runme 目标、执行、人的选择</td>
+</tr>
+<tr>
+<td><a href="https://developers.openai.com/blog/rethinking-skills-and-prompts-for-gpt-6-astra" rel="noreferrer">S10 · Rethinking skills and prompts for GPT-6 Astra</a></td>
+<td>2026-09-11</td>
+<td>实践建议：防过度指令，收紧触发与渐进加载</td>
+</tr>
+</tbody></table>
+</article></details>
+<details class="topic" id="cursor-linear" open><summary><span class="topic-number">05</span><span>Cursor 与 Linear：一个 Builder 怎样组织跨会话的 AI 交付</span><small>专题全文</small></summary><article><h1 id="cursor-linear-heading-0">Cursor 与 Linear：一个 Builder 怎样组织跨会话的 AI 交付</h1><details class="source-info"><summary>来源与维护说明</summary><p class="source-note">内容正源：<code>cursor-linear.md</code>；完整版本校验见页底。</p><p><strong>读者与边界</strong>：供独立负责项目的 Builder、共享 SE/Leader 及 BW 产品决策者盘点存量价值。主要研究 2025-10-09 至 2026-10-09 的变化，截止与访问日均为 2026-10-09；一项更早的客户反馈机制仅作背景。只研究官方公开机制、自用经验与效果口径，不替代 BW 产品原则或实测。结构为结论、时间线、工作故事、指标、建议、局限与来源；产品状态、证据或内部实验变化时更新。Markdown 为内容正源，同名 HTML 为生成投影。</p>
+</details><details class="chapter-nav"><summary>本篇章节</summary><nav class="article-contents" aria-label="Cursor / Linear章节"><a href="#cursor-linear-heading-1">结论：原生工具已进入项目组织，BW 必须证明增量</a><a href="#cursor-linear-heading-2">近一年变化：研究、试用与已发布分开看</a><a href="#cursor-linear-heading-3">三条工作故事：步骤压缩了，哪些判断仍在人</a><a href="#cursor-linear-heading-7">指标机制：官方数字具体说明了什么</a><a href="#cursor-linear-heading-8">对一位 Builder、共享 SE/Leader 与 BW 的取舍及反证</a><a href="#cursor-linear-heading-9">局限与未决</a><a href="#cursor-linear-heading-10">来源表</a></nav></details>
+
+<h2 id="cursor-linear-heading-1">结论：原生工具已进入项目组织，BW 必须证明增量</h2>
+<p><strong>【综合判断】</strong> “编码工具负责开发、BW 负责计划和验收”的分工已经不够稳固。Cursor 的 Projects 于 2026-09-10 开始向所有用户推出 beta，面向超过一次聊天的工作；Linear 从已有客户请求与项目关系出发，加入 coding sessions、运行环境及浏览器验证。两者正在压缩上下文搬运、持续调度和验证交接。BW 若仅增加四个页面，容易重复已有信息；候选价值应是减少“等人决定什么、证据在哪里、这次交付是否解决原问题”的成本。<a href="https://cursor.com/blog/projects" rel="noreferrer">S4</a>、<a href="https://linear.app/changelog/2026-06-11-coding-sessions" rel="noreferrer">S5</a>、<a href="https://linear.app/changelog/2026-08-20-coding-environments" rel="noreferrer">S6</a></p>
+<p><strong>【职责事实】</strong> Linear 区分人类 assignee 与 agent delegate：代理执行，指定的人仍负责。Cursor 的协调者与工作者分工也不是取消判断，而是让总体决策少受执行细节干扰。小团队值得抄的是清楚的决定权、可复用上下文和可检查产物；不需要先复制企业组织层级。<a href="https://linear.app/docs/assigning-issues" rel="noreferrer">S10</a>、<a href="https://cursor.com/blog/agent-swarm-model-economics" rel="noreferrer">S2</a></p>
+<h2 id="cursor-linear-heading-2">近一年变化：研究、试用与已发布分开看</h2>
+<table>
+<thead>
+<tr>
+<th>日期</th>
+<th>机制及状态</th>
+<th>变化的含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>2026-01-14</td>
+<td>Cursor 长任务研究：拆分规划者、工作者和迭代判断 <a href="https://cursor.com/blog/scaling-agents" rel="noreferrer">S1</a></td>
+<td>数周运行是实验，不能当作成熟交付承诺</td>
+</tr>
+<tr>
+<td>2026-04-08</td>
+<td>Bugbot 从评审反馈学习规则；文中称学习功能 beta <a href="https://cursor.com/blog/bugbot-learning" rel="noreferrer">S3</a></td>
+<td>从每次重新提醒，转向可调整的持续质量约束</td>
+</tr>
+<tr>
+<td>2026-06-11、06-18</td>
+<td>Linear 发布云端编码会话及项目更新草稿 <a href="https://linear.app/changelog/2026-06-11-coding-sessions" rel="noreferrer">S5</a>、<a href="https://linear.app/changelog/2026-06-18-agent-assisted-project-updates" rel="noreferrer">S7</a></td>
+<td>工作上下文进入执行，状态整理也减少人工搬运</td>
+</tr>
+<tr>
+<td>2026-07-02、07-20</td>
+<td>Linear 扩展 initiative 状态与优先级；Cursor 发表新版 swarm 实验 <a href="https://linear.app/changelog/2026-07-02-initiative-properties" rel="noreferrer">S8</a>、<a href="https://cursor.com/blog/agent-swarm-model-economics" rel="noreferrer">S2</a></td>
+<td>高层目标组织与底层 agent 协作是不同问题</td>
+</tr>
+<tr>
+<td>2026-08-20</td>
+<td>Linear 编码会话新增环境配置及浏览器测试 <a href="https://linear.app/changelog/2026-08-20-coding-environments" rel="noreferrer">S6</a></td>
+<td>产物从代码差异延伸至运行与画面证据</td>
+</tr>
+<tr>
+<td>2026-09-10</td>
+<td>Cursor Projects beta <a href="https://cursor.com/blog/projects" rel="noreferrer">S4</a></td>
+<td>跨会话共享上下文、云端执行和事件订阅进入产品；不能仍把它描述成纯 IDE 补全</td>
+</tr>
+</tbody></table>
+<h2 id="cursor-linear-heading-3">三条工作故事：步骤压缩了，哪些判断仍在人</h2>
+<h3 id="cursor-linear-heading-4">故事一：一位 Builder 修复真实客户阻塞</h3>
+<p><strong>【按已发布机制重建的路径，非实测案例】</strong> 客户报告“导出后筛选条件丢失” → 将原始请求关联 issue，写复现条件与期望结果 → 人确认影响和优先级，保留负责人并委派 agent → Linear 会话携带历史、客户请求及讨论，用 Claude Code 或 Codex 产生修改 → 配置环境后运行浏览器旅程，返回差异和前后截图 → 人检查验收、决定发布，再回到原请求确认问题解决。<a href="https://linear.app/changelog/2026-06-11-coding-sessions" rel="noreferrer">S5</a>、<a href="https://linear.app/changelog/2026-08-20-coding-environments" rel="noreferrer">S6</a>、<a href="https://linear.app/docs/assigning-issues" rel="noreferrer">S10</a></p>
+<p>被压缩的是重新解释问题、搭环境、搬运修复与验证结果。人仍需给可复现输入、判断需求是否值得做、处理缺失凭证和环境配置，以及确认测试覆盖真实客户路径。截图证明一次被执行的旅程，不自动证明客户满意或生产环境无回归。</p>
+<h3 id="cursor-linear-heading-5">故事二：迁移可以跑三周，但“跑完”不等于可发布</h3>
+<p><strong>【官方自用实验】</strong> Cursor 一月披露内部 Solid→React 迁移连续超过三周，通过 CI 和初步检查时仍需仔细评审。早期平权 agent 用共享锁协调，20 个 agent 的有效吞吐只剩两三个；去掉锁后又出现回避难题、反复做安全小改的问题。<a href="https://cursor.com/blog/scaling-agents" rel="noreferrer">S1</a></p>
+<p>七月研究进一步承认早先浏览器实验远未成为打磨完善的软件；多规划者会形成互不兼容的设计，工作者处理冲突会覆盖或放弃修改。一月移除“集成人”以免形成瓶颈，七月在更大规模研究中又引入中立冲突处理 agent。<strong>【判断】</strong> 组织办法依赖任务和规模，不宜抄成固定多 agent 流程。<a href="https://cursor.com/blog/agent-swarm-model-economics" rel="noreferrer">S2</a></p>
+<p>九月的 Projects 自用描述已改为与协调者先确定迁移方案，再逐个 PR 推进，早期密切评审；共享文件保存历史，订阅使工作可持续。<strong>【单 Builder 应用假设】</strong> 同一位 Builder 定义兼容边界并核对高风险路径，必要时带具体问题请共享 SE 复核；agent 承担有边界的批次，留下回退条件与未验证项。首个批次不过关就收缩，避免积累一个无人能审的大差异。<a href="https://cursor.com/blog/projects" rel="noreferrer">S4</a></p>
+<h3 id="cursor-linear-heading-6">故事三：跨周继续做什么，从客户请求而非完成数量出发</h3>
+<p><strong>【产品事实与应用推断】</strong> Linear 早在 2025-04-30 已让客户请求关联项目，并汇总项目下 issue 的客户请求；这是研究窗口前的基础。2026 年项目更新可从上次更新后的 issue、文档、讨论和关联 Slack 生成草稿，由人补判断再发布；initiative 将项目连接到高层目标，并能明确取消。<a href="https://linear.app/changelog/2025-04-30-customer-requests-on-projects" rel="noreferrer">S9</a>、<a href="https://linear.app/changelog/2026-06-18-agent-assisted-project-updates" rel="noreferrer">S7</a>、<a href="https://linear.app/changelog/2026-07-02-initiative-properties" rel="noreferrer">S8</a></p>
+<p>对于独立负责该项目的一位 Builder：几位试用者都卡在导出 → 聚成一个用户问题 → 本周只改最影响完成任务的环节 → 下周自动整理变化和请求 → 人比较失败率、回访与新增投诉，决定继续或取消。共享 Leader 按需看到同一份变化与决定，支持跨项目取舍。工具支持关联和整理；它没有替 Builder 证明需求规模，也没有把“项目完成”变成“用户问题消失”。对当前这个单人项目，问题→issue→交付证据即可，不必再添 initiative 层。</p>
+<h2 id="cursor-linear-heading-7">指标机制：官方数字具体说明了什么</h2>
+<table>
+<thead>
+<tr>
+<th>官方证据</th>
+<th>样本、口径及限制</th>
+<th>对 BW 的启示</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Bugbot 报告 78.13% resolution rate <a href="https://cursor.com/blog/bugbot-learning" rel="noreferrer">S3</a></td>
+<td>50,310 个公开仓库 PR；由 LLM 判断评审评论在合并前是否被处理。不是缺陷召回率、线上事故率或随机对照；未处理也可能是有效但延后修复的建议</td>
+<td>记录误报、漏报和处理成本，不能用采纳率替代质量</td>
+</tr>
+<tr>
+<td>Linear 自报约 30% 新进入的 bug reports 被其内部自动流程解决，多数首轮成功 <a href="https://linear.app/changelog/2026-06-11-coding-sessions" rel="noreferrer">S5</a></td>
+<td>未公开样本量、周期、难度分布和解决后的复发；不证明任意团队省下 30% 工时</td>
+<td>对比真人介入时间、重开和回归，并保留分母</td>
+</tr>
+<tr>
+<td>Projects 声称新用户多合并 30% PR、主要使用者达 6 倍 <a href="https://cursor.com/blog/projects" rel="noreferrer">S4</a></td>
+<td>未给样本、对照和任务规模；熟练用户选择、PR 拆分均可能影响结果</td>
+<td>PR 数只能描述活动；另看用户任务成功和返工</td>
+</tr>
+</tbody></table>
+<p><strong>【可借鉴机制】</strong> Bugbot 从人的反应、评论和人工评审遗漏中生成候选规则，持续评估后启用，也能降级或由人修改。<a href="https://cursor.com/blog/bugbot-learning" rel="noreferrer">S3</a> BW 可借鉴“证据改变后续行为”，但不应让低样本的单次赞同直接固化成规范。</p>
+<h2 id="cursor-linear-heading-8">对一位 Builder、共享 SE/Leader 与 BW 的取舍及反证</h2>
+<p>以下均为<strong>待内部验证的建议</strong>，不是本次新增功能要求。</p>
+<table>
+<thead>
+<tr>
+<th>已有能力</th>
+<th>优先复用、精简或实验</th>
+<th>反证：何时应收缩</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>总览</td>
+<td>聚焦现在等人决定的阻塞、待审证据、失联客户问题；从现有 issue/PR 推导</td>
+<td>若只重复原生会话列表和状态，新增页面没有增量</td>
+</tr>
+<tr>
+<td>计划</td>
+<td>只保存本轮要解决的用户问题、选择依据、最小验证及停做条件；任务拆分交执行核</td>
+<td>若维护计划耗时超过省下的决策时间，减少字段与周期仪式</td>
+</tr>
+<tr>
+<td>验收</td>
+<td>将声明、实际执行路径、证据出处和未覆盖范围并排，保留人确认</td>
+<td>若只是 agent 自报完成或重复测试日志，不能宣称降低交付风险</td>
+</tr>
+<tr>
+<td>指标</td>
+<td>区分执行吞吐、质量与用户结果；先选一个真实旅程测失败/重试/返工</td>
+<td>没有使用数据时保持未知；数字不能改变下一步取舍就不必常驻</td>
+</tr>
+</tbody></table>
+<p><strong>【最小实验】</strong> 连续观察两轮真实小交付，用现有 issue/PR 与原生工具作基线，再让 BW 帮同一类任务整理一次。记三项：人补上下文和找证据的时间、评审退回/发布后重开、原问题是否得到用户确认。样本小只判断机制是否有用，不报告统计显著提效。必须同时记手填与维护成本，不能只计生成报告的速度。</p>
+<p><strong>【不适用】</strong> 不照搬 Cursor 研究中的千级并行、专用版本控制或允许暂时破坏核心构建的实验办法；也不因 Linear 有公司级目标而给小团队加层级。执行环境不足、测试无法访问真实依赖时，先修环境；把待验证项画成绿色没有价值。</p>
+<h2 id="cursor-linear-heading-9">局限与未决</h2>
+<p>这里的可用性来自官方发布与文档，没有登录试用、运行 benchmark 或核验厂商内部数据。研究文章是第一手经验，但不等于独立复现。Projects 仍应按 beta 评估；本文没有找到这十项来源能证明“加计划/总览界面本身提升用户结果”。</p>
+<p>仍需 BW 内部回答：用户目前丢失的是原始需求、执行上下文、等待中的决定，还是证据？现有 Orca 能直接承接哪一段？原生产品继续增加项目能力后，BW 能否仍减少一次实际操作？哪个真实案例即使 PR 全部合并仍没有解决用户问题？应先收集这些反例，再决定四块能力如何保留。</p>
+<h2 id="cursor-linear-heading-10">来源表</h2>
+<p>日期为页面标示的原始发布日；未单列更新日的页面不推测其更新日期。全部访问于 2026-10-09；S9 明确在研究窗口之外，S10 无公开日期。</p>
+<table>
+<thead>
+<tr>
+<th>编号与一手来源</th>
+<th>发布/更新日期</th>
+<th>访问日</th>
+<th>支持主张与证据性质</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S1 <a href="https://cursor.com/blog/scaling-agents" rel="noreferrer">Scaling long-running autonomous coding</a></td>
+<td>2026-01-14；更新未标</td>
+<td>2026-10-09</td>
+<td>长任务、迁移、协调失败；官方实验</td>
+</tr>
+<tr>
+<td>S2 <a href="https://cursor.com/blog/agent-swarm-model-economics" rel="noreferrer">Agent swarms and the new model economics</a></td>
+<td>2026-07-20；更新未标</td>
+<td>2026-10-09</td>
+<td>设计冲突、合并与评审机制；官方研究</td>
+</tr>
+<tr>
+<td>S3 <a href="https://cursor.com/blog/bugbot-learning" rel="noreferrer">Bugbot now self-improves with learned rules</a></td>
+<td>2026-04-08；更新未标</td>
+<td>2026-10-09</td>
+<td>学习规则、50,310 PR 与 LLM 评判；产品与厂商评估</td>
+</tr>
+<tr>
+<td>S4 <a href="https://cursor.com/blog/projects" rel="noreferrer">Introducing Projects</a></td>
+<td>2026-09-10；更新未标</td>
+<td>2026-10-09</td>
+<td>beta、共享上下文、跨 PR 自用及吞吐主张；发布与营销</td>
+</tr>
+<tr>
+<td>S5 <a href="https://linear.app/changelog/2026-06-11-coding-sessions" rel="noreferrer">Coding sessions in Linear</a></td>
+<td>2026-06-11；更新未标</td>
+<td>2026-10-09</td>
+<td>上下文到代码、内部 30% 主张；发布与自报</td>
+</tr>
+<tr>
+<td>S6 <a href="https://linear.app/changelog/2026-08-20-coding-environments" rel="noreferrer">Coding sessions: environments, browser use, and updated pricing</a></td>
+<td>2026-08-20；更新未标</td>
+<td>2026-10-09</td>
+<td>环境配置、浏览器测试、截图；产品发布</td>
+</tr>
+<tr>
+<td>S7 <a href="https://linear.app/changelog/2026-06-18-agent-assisted-project-updates" rel="noreferrer">Agent assisted project updates</a></td>
+<td>2026-06-18；更新未标</td>
+<td>2026-10-09</td>
+<td>由事实生成草稿、人修改发布；产品发布</td>
+</tr>
+<tr>
+<td>S8 <a href="https://linear.app/changelog/2026-07-02-initiative-properties" rel="noreferrer">Initiative properties</a></td>
+<td>2026-07-02；更新未标</td>
+<td>2026-10-09</td>
+<td>目标与项目、取消/优先级；产品发布</td>
+</tr>
+<tr>
+<td>S9 <a href="https://linear.app/changelog/2025-04-30-customer-requests-on-projects" rel="noreferrer">Customer Requests on projects</a></td>
+<td>2025-04-30；窗口外基础</td>
+<td>2026-10-09</td>
+<td>客户请求关联 issue 与项目；产品发布</td>
+</tr>
+<tr>
+<td>S10 <a href="https://linear.app/docs/assigning-issues" rel="noreferrer">Assign and delegate issues</a></td>
+<td>发布/更新日均未标</td>
+<td>2026-10-09</td>
+<td>人负责、agent 被委派；现行文档</td>
+</tr>
+</tbody></table>
+</article></details>
+<details class="topic" id="spotify" open><summary><span class="topic-number">06</span><span>Spotify：代码不再稀缺，怎样让每次交付产生下一次判断？</span><small>专题全文</small></summary><article><h1 id="spotify-heading-0">Spotify：代码不再稀缺，怎样让每次交付产生下一次判断？</h1><details class="source-info"><summary>来源与维护说明</summary><p class="source-note">内容正源：<code>spotify.md</code>；完整版本校验见页底。</p><p><strong>读者与边界</strong>：供 BW 产品负责人、独立负责项目的 Builder 及共享 SE/Leader 比较外部实践；聚焦真实使用、实验与学习，不代替本仓产品原则或实施设计。截止、访问日均为 <strong>2026-10-09</strong>。区分 Spotify 内部经验、对外已发布能力、Beta 与早期预览；来源或 BW 决策变化时更新。Markdown 为正源，HTML 由统一 renderer 投影。</p>
+</details><details class="chapter-nav"><summary>本篇章节</summary><nav class="article-contents" aria-label="Spotify章节"><a href="#spotify-heading-1">结论：值得借的是学习纪律，不是 50 个 agent</a><a href="#spotify-heading-2">2026 演进与证据强弱</a><a href="#spotify-heading-3">Confidence Loop 的核心：从信号到可追溯问题</a><a href="#spotify-heading-4">谁拍板，什么算证据</a><a href="#spotify-heading-5">三个可以落到一位 Builder 的工作故事</a><a href="#spotify-heading-6">BW 四块如何收缩成一条真实路径</a><a href="#spotify-heading-7">局限</a><a href="#spotify-heading-8">来源表</a><a href="#spotify-heading-9">未决</a></nav></details>
+
+<h2 id="spotify-heading-1">结论：值得借的是学习纪律，不是 50 个 agent</h2>
+<p><strong>Spotify 最值得 BW 借鉴的，是把“这次用户经历了什么”变成“下一次应该做什么”的依据。</strong> 它也面对代码加速后评审、判断和上下文重建成为瓶颈。工具组合是 Portal 提供组织知识、Xirp 组织 agent 工作、Confidence 验证用户结果；这是厂商提出的系统方向，不能据此认定组合已经造成商业增长。<a href="https://technology.spotify.com/blog/introducing-spotify-technology" rel="noreferrer">Spotify Technology</a></p>
+<p>对连续几个月没有真实用户版本的 Builder，第一步应是让一个足够小的切片进入使用。没有用户接触，自动反馈系统没有输入；只有代码验收，无法说明做对了问题。BW 可以把“面向谁、本轮只改什么、何时能用、看到了什么、因此删改什么”连起来。<strong>这一差异仍待实际项目证明，四个页面的存在本身不是证据。</strong></p>
+<h2 id="spotify-heading-2">2026 演进与证据强弱</h2>
+<table>
+<thead>
+<tr>
+<th>日期、来源</th>
+<th>实际观察</th>
+<th>应如何解读</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>06-03，<a href="https://engineering.atspotify.com/2026/6/code-with-claude-coding-is-no-longer-the-constraint" rel="noreferrer">Coding Is No Longer the Constraint</a></td>
+<td>官方报告每周 AI 使用超过 99%，94% 自述更有效率，PR 频率增加 76%；同时评审和优先级成为新瓶颈</td>
+<td>前两项含采用及主观感受，PR 增长是吞吐；都不等于用户价值</td>
+</tr>
+<tr>
+<td>08-10，<a href="https://portal.spotify.com/blog/introducing-xirp" rel="noreferrer">Xirp</a></td>
+<td>官方称已内部使用超过 36,000 个会话，支持 50+ 并行工作树会话；Portal 提供依赖、归属和决策背景</td>
+<td>内部使用加产品营销，未提供因果对照；小团队应借共享上下文，不照抄并发规模</td>
+</tr>
+<tr>
+<td>09-09，<a href="https://confidence.spotify.com/blog/introducing-confidence-agent" rel="noreferrer">Confidence Agent</a></td>
+<td>从产品 brief 到实验配置、结果解读与 rollout；高影响操作需批准</td>
+<td>对外发布说明，<a href="https://confidence.spotify.com/" rel="noreferrer">首页</a>仍标 Beta；最终发布判断留给团队</td>
+</tr>
+<tr>
+<td>09-16 / 18，<a href="https://confidence.spotify.com/blog/session-recordings" rel="noreferrer">Recordings</a>／<a href="https://confidence.spotify.com/blog/product-analytics" rel="noreferrer">Analytics</a></td>
+<td>回放面向所有 Confidence 用户；分析能力当时只向部分账户 Beta 开放</td>
+<td><a href="https://confidence.spotify.com/" rel="noreferrer">首页</a>亦将 Replay 标为 Beta；可用范围与成熟度分开</td>
+</tr>
+<tr>
+<td>09-30，<a href="https://confidence.spotify.com/blog/confidence-loop" rel="noreferrer">Confidence Loop</a></td>
+<td>连接用户信号、调查与改进；设计伙伴早期预览</td>
+<td>完全自主闭环仍是演进方向，不是已验证的普遍能力</td>
+</tr>
+<tr>
+<td>10-07，<a href="https://technology.spotify.com/blog/introducing-spotify-technology" rel="noreferrer">Spotify Technology</a></td>
+<td>将工具统一品牌，提出覆盖从意图到影响的方向</td>
+<td>品牌发布与战略自述，不能替代每项能力的状态核验</td>
+</tr>
+</tbody></table>
+<p>Fleet 累计 250 万以上维护 PR 的数字尤其容易误用：它包括多年的确定性自动化，不能写成“AI 生成 250 万 PR”。Honk 后来加入复杂修改与 CI 验证，官方给出的 Java 迁移三天案例属于内部自述；它证明一种维护工作流，不证明新产品更容易找到用户。<a href="https://engineering.atspotify.com/2026/6/code-with-claude-coding-is-no-longer-the-constraint" rel="noreferrer">原始说明</a></p>
+<h2 id="spotify-heading-3">Confidence Loop 的核心：从信号到可追溯问题</h2>
+<p>它把日志、行为事件、回放与支持对话提炼成观察，再聚合同类观察为问题，调查原因，提出代码、设计、文档或缓解措施；保留回到原始证据的链路。<strong>反馈不是自动新增需求单，而是需要解释和选择的材料。</strong></p>
+<p>文中区分两类工作：人提出方向与假设的工作，以及真实使用暴露出的持续小改进。团队可选择只收集、调查建议、实施后检查等自主程度；不确定时带证据请人判断。原文末明确为设计伙伴早期预览，完全自动改进仍用未来表述。<a href="https://confidence.spotify.com/blog/confidence-loop" rel="noreferrer">机制与状态</a></p>
+<p>可从中提炼的 BW 假设是：将一次反馈关联到一个当前版本和可核查经历，先决定它是否影响本轮目标，再决定修复、暂缓或拒绝。这个优先级规则是本报告建议，不是 Spotify 已披露的具体配置。</p>
+<h2 id="spotify-heading-4">谁拍板，什么算证据</h2>
+<table>
+<thead>
+<tr>
+<th>环节</th>
+<th>人与系统的职责</th>
+<th>必须防止的误读</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>假设与范围</td>
+<td>人选对象、预期行为和边界；agent 帮做 brief、流程、失败场景</td>
+<td>模型列出十个建议，不代表十个都应进入版本</td>
+</tr>
+<tr>
+<td>实验与发布</td>
+<td>agent 可配置指标、变体及实验；高影响动作依照当前用户权限并请求批准，团队作最后决定</td>
+<td>“agent 执行成功”不是用户效果成功</td>
+</tr>
+<tr>
+<td>数据解释</td>
+<td>分析给出查询和来源，缺数据就指出；专家选择可信数据表和口径</td>
+<td>发布当天指标下跌只构成调查线索，不能直接证明因果</td>
+</tr>
+<tr>
+<td>学习</td>
+<td>把本轮结果用于下一轮假设；证据强度与风险相称</td>
+<td>没有改变任何决策的周报，不等于形成了学习</td>
+</tr>
+</tbody></table>
+<p>权限依据来自 <a href="https://confidence.spotify.com/blog/introducing-confidence-agent" rel="noreferrer">Agent</a>，数据边界来自 <a href="https://confidence.spotify.com/blog/product-analytics" rel="noreferrer">Product Analytics</a>，学习方法来自 <a href="https://confidence.spotify.com/blog/the-product-loop" rel="noreferrer">The product loop</a>。后者明确允许有限发布、用户研究等验证方式，并非所有团队所有改动都必须做大样本 A/B。</p>
+<p>测试也有两层：离线评估检查输出是否符合质量要求，线上实验检查真实用户是否受益。Spotify 报告约 12% 实验得到可发布的正向结果，约 64% 带来有效学习，约 42% 因护栏退化而回滚；这些不同口径不能相加，也不是小团队目标值。数字出自厂商自述；更可借用的是愿意否定假设，并将线上结果反过来校准离线评估。<a href="https://engineering.atspotify.com/2026/5/better-experiments-with-llm-evals-a-funnel-not-a-fork" rel="noreferrer">评估与实验</a></p>
+<h2 id="spotify-heading-5">三个可以落到一位 Builder 的工作故事</h2>
+<p>以下为依据公开机制重建的情境，<strong>不是实际客户案例或效果承诺</strong>。</p>
+<p><strong>一：一周内让一位目标用户完成一次关键任务。</strong> 负责该项目的一位 Builder 选定“用户能独立提交第一笔资料”，先写预期、现状和会推翻假设的现象。设计与原型、实现、测试场景可以并行，三者共用这一份问题定义；Builder 让独立审查 agent 检查最终集成版本，自己核对关键结果。只做验证该任务所需的切片，交给约好的用户使用，观察卡点，再决定保留、重做或停止。压短的是交接，不是跳过用户接触。<a href="https://confidence.spotify.com/blog/the-product-loop" rel="noreferrer">产品循环方法</a></p>
+<p><strong>二：指标看着不错，但手机用户仍无法提交。</strong> 开发者在上线后看到错误事件，回到对应版本与用户会话；agent 整理可能原因，人回放关键片段确认，独立测试 agent 同时准备回归路径，仍由这位 Builder 核对真实操作。修复后让受影响用户再次操作，记录是否完成。回放为原因调查提供材料，不能仅凭一个片段推出总体转化效果。此情境借用官方“表单遮挡按钮”的示例机制。<a href="https://confidence.spotify.com/blog/session-recordings" rel="noreferrer">回放功能</a></p>
+<p><strong>三：周五少合入一个功能，却消除了一个错误方向。</strong> 本周上线了简化流程，行为日志和访谈没有支持原先预期。这位 Builder 在周回看明确“未证明改善”，先检查样本与埋点，再决定延长观察、缩小对象或撤回；把原因写入下一轮 brief，并让共享 Leader 看见取舍依据，避免换一个 agent 又提出相同方案。若项目根本没有流量，则用有记录的用户操作研究，不伪造统计显著性。<a href="https://confidence.spotify.com/glossary/product-loop" rel="noreferrer">学习而非只看胜率</a></p>
+<h2 id="spotify-heading-6">BW 四块如何收缩成一条真实路径</h2>
+<table>
+<thead>
+<tr>
+<th>现有区块</th>
+<th>建议优先回答的问题</th>
+<th>反证</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>总览</td>
+<td>当前给谁提供了哪个可访问版本？哪一处仍阻挡首次使用？</td>
+<td>只有提交和任务状态时，原生任务视图可能足够</td>
+</tr>
+<tr>
+<td>计划</td>
+<td>这轮最小假设是什么？哪些建议明确不做？何时给用户？</td>
+<td>计划越写越长、版本越推越迟，就没有减轻问题</td>
+</tr>
+<tr>
+<td>验收</td>
+<td>软件能用的证据在哪里？用户是否真的完成了目标动作？</td>
+<td>模型自评和勾选清单不能替代运行与使用证据</td>
+</tr>
+<tr>
+<td>指标</td>
+<td>什么观察支持或否定假设，并改变了下一步？</td>
+<td>数据没有来源，或无论结果如何都继续加功能，指标屏应收缩</td>
+</tr>
+</tbody></table>
+<p>对一位 Builder，先用已有 Issue、简短版本说明、可靠的关键事件和一条用户反馈完成上述链路。同一位 Builder 负责选范围、确认可用和解释反馈；需要技术复核或方向取舍时，分别请求跨项目共享的 SE/Leader 支持。这不要求项目常驻第二位 Builder。可借 Xirp 的跨会话背景保留机制，规模先停在能实际审阅的并发度；不先建服务目录、实验平台或录屏仓库。</p>
+<p>Spotify 也在降低基础设施门槛：9 月推出 Confidence Cloud 代管仓库，说明采集准备本身是摩擦；但仍需团队定义测量对象与事件，接入真实产品数据，演示数据不能当成成果。<a href="https://confidence.spotify.com/blog/introducing-confidence-cloud" rel="noreferrer">Cloud 发布</a></p>
+<p>建议先跑两轮同类小版本，对比“原生 Orca＋一页交付约定”和“BW 四块”：看首次真实使用耗时、长期未完成项、范围扩张次数、有证据的决策变化，以及维护页面花的时间。若前者同样有效，保留薄流程即可；若瓶颈是部署、产品方向或找不到用户，就直接处理那个瓶颈。不能把每个问题都转译为一个新页面。</p>
+<h2 id="spotify-heading-7">局限</h2>
+<p>未试用 Spotify 产品，未读取其内部数据或独立复核效果。采用率、效率感受、PR 和实验数字均是官方自报；发布文章兼有销售目的。不同文章统计时期与分母未充分披露，不拼成趋势曲线。</p>
+<p>Confidence Loop 全文已核读；它的 early preview 与其他产品的已发布／Beta 分开记录。Spotify Technology 正文通过搜索返回的官方页面正文读取，直接 open 报错，未通过产品操作验证。下表为原始页面标注日期；页面未单列修订日期，不能认定正文从发布日起未变。没有证据支持这些能力导致商业增长，也没有证据证明 BW 实施后会复制 Spotify 结果。</p>
+<h2 id="spotify-heading-8">来源表</h2>
+<p>所有来源访问日为 <strong>2026-10-09</strong>；无单独更新日期披露，最后一项术语页未标发布日期。</p>
+<table>
+<thead>
+<tr>
+<th>标题与链接</th>
+<th>发布日</th>
+<th>访问日</th>
+<th>支持主张</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://engineering.atspotify.com/2026/6/code-with-claude-coding-is-no-longer-the-constraint" rel="noreferrer">Coding Is No Longer the Constraint</a></td>
+<td>2026-06-03</td>
+<td>2026-10-09</td>
+<td>内部采用、Honk、评审瓶颈</td>
+</tr>
+<tr>
+<td><a href="https://portal.spotify.com/blog/introducing-xirp" rel="noreferrer">What we&#39;ve learned scaling AI coding agents</a></td>
+<td>2026-08-10</td>
+<td>2026-10-09</td>
+<td>Xirp、上下文与并行</td>
+</tr>
+<tr>
+<td><a href="https://confidence.spotify.com/blog/the-product-loop" rel="noreferrer">The product loop</a></td>
+<td>2026-08-19</td>
+<td>2026-10-09</td>
+<td>假设、验证方式、反馈</td>
+</tr>
+<tr>
+<td><a href="https://confidence.spotify.com/blog/introducing-confidence-agent" rel="noreferrer">Introducing Confidence Agent</a></td>
+<td>2026-09-09</td>
+<td>2026-10-09</td>
+<td>人工决策及操作权限</td>
+</tr>
+<tr>
+<td><a href="https://confidence.spotify.com/blog/session-recordings" rel="noreferrer">Introducing Recordings</a></td>
+<td>2026-09-16</td>
+<td>2026-10-09</td>
+<td>回放、真实用户调查</td>
+</tr>
+<tr>
+<td><a href="https://confidence.spotify.com/blog/product-analytics" rel="noreferrer">Introducing Product Analytics</a></td>
+<td>2026-09-18</td>
+<td>2026-10-09</td>
+<td>数据来源、Beta、因果局限</td>
+</tr>
+<tr>
+<td><a href="https://confidence.spotify.com/blog/introducing-confidence-cloud" rel="noreferrer">Introducing Confidence Cloud</a></td>
+<td>2026-09-23</td>
+<td>2026-10-09</td>
+<td>降低事件采集准备门槛</td>
+</tr>
+<tr>
+<td><a href="https://confidence.spotify.com/blog/confidence-loop" rel="noreferrer">Confidence Loop</a></td>
+<td>2026-09-30</td>
+<td>2026-10-09</td>
+<td>证据链、早期预览</td>
+</tr>
+<tr>
+<td><a href="https://technology.spotify.com/blog/introducing-spotify-technology" rel="noreferrer">Introducing Spotify Technology</a></td>
+<td>2026-10-07</td>
+<td>2026-10-09</td>
+<td>品牌与系统方向</td>
+</tr>
+<tr>
+<td><a href="https://engineering.atspotify.com/2026/5/better-experiments-with-llm-evals-a-funnel-not-a-fork" rel="noreferrer">Better Experiments with LLM Evals</a></td>
+<td>2026-05-18</td>
+<td>2026-10-09</td>
+<td>离线／线上边界与自报数字</td>
+</tr>
+<tr>
+<td><a href="https://confidence.spotify.com/" rel="noreferrer">Confidence 产品首页</a></td>
+<td>未标</td>
+<td>2026-10-09</td>
+<td>Agent、Analytics、Replay 的 Beta 标识</td>
+</tr>
+<tr>
+<td><a href="https://confidence.spotify.com/glossary/product-loop" rel="noreferrer">What is a Product Loop?</a></td>
+<td>未标</td>
+<td>2026-10-09</td>
+<td>从结果到下一轮决策</td>
+</tr>
+</tbody></table>
+<h2 id="spotify-heading-9">未决</h2>
+<ol>
+<li>BW 内部项目是否能列出一位愿意在下一轮使用的目标用户，以及一个最小任务？</li>
+<li>当前没有版本，是范围不收敛、缺部署路径，还是无法确定谁需要？三个原因需要不同处理。</li>
+<li>一次用户证据能否真的让团队拒绝模型建议、删掉候选功能或改变下一轮目标？</li>
+</ol>
+</article></details>
+<details class="topic" id="evidence-and-metrics" open><summary><span class="topic-number">07</span><span>DORA 与 METR：AI 时代怎样区分忙碌、提效与交付价值</span><small>专题全文</small></summary><article><h1 id="evidence-and-metrics-heading-0">DORA 与 METR：AI 时代怎样区分忙碌、提效与交付价值</h1><details class="source-info"><summary>来源与维护说明</summary><p class="source-note">内容正源：<code>evidence-and-metrics.md</code>；完整版本校验见页底。</p><p><strong>读者与时机</strong>：供 BW 产品决策者、独立负责项目的 Builder 及共享 SE/Leader 选择试点和度量时阅读。<strong>范围</strong>：截至 2026-10-09 的一手实证、方法与可迁移建议；优先最近一年，2025 年研究仅作为明确标注的基线。本文不是统一绩效制度、BW 已批准规格或产品效果证明。<strong>结构</strong>：结论、证据变化、两种工作故事、度量建议、试点、局限与来源。数据或试点结果变化时更新；Markdown 为正源，同名 HTML 为生成阅读版。</p>
+</details><details class="chapter-nav"><summary>本篇章节</summary><nav class="article-contents" aria-label="DORA / METR章节"><a href="#evidence-and-metrics-heading-1">先给判断：测量对象也被 AI 改变了</a><a href="#evidence-and-metrics-heading-2">证据怎样更新，而不是旧结论换个年份</a><a href="#evidence-and-metrics-heading-3">两个工作故事：什么会让判断发生变化</a><a href="#evidence-and-metrics-heading-6">给 BW 的四类信号：每个读数服务一个决定</a><a href="#evidence-and-metrics-heading-7">先做怎样的比较，才能决定 BW 四块是否值得保留</a><a href="#evidence-and-metrics-heading-8">证据限制与待补项</a><a href="#evidence-and-metrics-heading-9">一手来源与日期</a></nav></details>
+
+<h2 id="evidence-and-metrics-heading-1">先给判断：测量对象也被 AI 改变了</h2>
+<p><strong>我们的判断：</strong> 不能只比较“过去这项开发要三天，现在三小时”。AI 会改变人选择做什么、做多少、允许多少次尝试；更低的成本既可能带来原来做不起的好产品，也可能带来更多不值得做的功能。BW 应帮助 Builder 看见从问题到实际使用的阻塞，并核对增加的产出究竟改变了什么。研究尚不能证明四块屏幕就是最佳实现。</p>
+<p>METR 2026 年 5 月明确区分旧任务的提速、新任务组合的提速，以及最终价值增益；三者可以相差很大。这是当前问题最直接的分析工具。它解释了为何“Agent 一天做了原来一个月的活”和“项目两个月仍未交付”可以同时成立。<a href="https://metr.org/blog/2026-05-08-task-substitution-and-uplift/" rel="noreferrer">S1</a></p>
+<h2 id="evidence-and-metrics-heading-2">证据怎样更新，而不是旧结论换个年份</h2>
+<table>
+<thead>
+<tr>
+<th>一手材料与时间</th>
+<th>可以采用的结论</th>
+<th>不能外推的结论</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>METR，2026-02-24 更新；跟进实验从 2025-08 开始</td>
+<td>57 名开发者、143 个仓库、800 多个任务；作者认为选择偏差和并行计时让当前提效估计不可靠</td>
+<td>不能继续用早期 2025 实验“慢 19%”判断当下，也不能把跟进点估计当今日普遍收益 <a href="https://metr.org/blog/2026-02-24-uplift-update/" rel="noreferrer">S2</a></td>
+</tr>
+<tr>
+<td>METR，2026-05-08 概念研究</td>
+<td>比较前后任务组合与价值，而非只算当前任务的反事实工时；数学排序有简化假设</td>
+<td>不是一项证明 AI 提效百分比的现场实验 <a href="https://metr.org/blog/2026-05-08-task-substitution-and-uplift/" rel="noreferrer">S1</a></td>
+</tr>
+<tr>
+<td>METR，2026-05-11；采样 2026-02 至 04</td>
+<td>349 名技术工作者自报价值增益中位数约 1.4–2 倍，速度约 3 倍；问法确实影响回答</td>
+<td>便利样本、邮件回应率约 2%，且只有 87 名软件工程师；自报价值不是营收或真实交付的因果测量 <a href="https://metr.org/blog/2026-05-11-ai-usage-survey/" rel="noreferrer">S3</a></td>
+</tr>
+<tr>
+<td>DORA 2025 报告及配套 AI Capabilities Model</td>
+<td>把工具收益放到组织条件、数据和用户导向中研究</td>
+<td>这是 2025 研究，不能因网页后来更新就宣称 2026 新样本；相关性不能保证采用后有效 <a href="https://dora.dev/research/2025/dora-report/" rel="noreferrer">S4</a>、<a href="https://dora.dev/ai/capabilities-model/report/" rel="noreferrer">S5</a></td>
+</tr>
+<tr>
+<td>DORA 实践页：小批量更新 2025-12-08，用户导向更新 2026-01-12</td>
+<td>已直接讨论 AI 大量生成带来的审阅负担，以及从产出转向用户结果的实践</td>
+<td>更新后的建议仍可能依托旧研究；不等于“小团队周一计划、周五验收”已经得到验证 <a href="https://dora.dev/capabilities/working-in-small-batches/" rel="noreferrer">S6</a>、<a href="https://dora.dev/capabilities/user-centric-focus/" rel="noreferrer">S7</a></td>
+</tr>
+</tbody></table>
+<p><strong>为什么没有把更多数字排成排名？</strong> 各研究的对象、任务选择、分母与结果不同。官方来源值得认真读，也仍需区分推荐、观察、受控实验和厂商自身经验。这里保留影响决策的差异，不求一个“行业平均提效”。</p>
+<h2 id="evidence-and-metrics-heading-3">两个工作故事：什么会让判断发生变化</h2>
+<p>以下为我们的分析示例，<strong>不是实验样本或已发生客户案例</strong>。</p>
+<h3 id="evidence-and-metrics-heading-4">故事一：代码生产很快，但周五仍然没有可用版本</h3>
+<p>一位 Builder 独立负责内部工单分流项目，SE/Leader 同时支持其他项目。Agent 很快生成分类器、看板、图表和配置页；实际使用仍卡在没有拿到真实工单权限，或者人工分流结果没有基线。此时代码量和任务完成率可以上升，用户节省的时间仍未知。</p>
+<p>按本报告建议，下一个交付缩成“取得授权的真实工单样本，让一名值班人员完成一次分流并记录纠错”，先验证是否能减少他的工作。生成了多少附加页面不计作这个目标的进展；若模型建议再做一个管理后台，应回到目标判断是否必要。Builder 先请求共享 SE 协助解决明确的权限阻塞，让 Leader 看见这次交付受阻的原因和下一步。这里需要的是范围取舍、权限解决与用户尝试，不必先建立完整项目管理体系。</p>
+<p>DORA 的小批量建议强调可独立交付并获得反馈，特别提醒不要把已拆小的工作又攒成大批次才测试发布。可借鉴的是缩短反馈等待；是否每天、每周或更长，仍取决于使用与部署条件。<a href="https://dora.dev/capabilities/working-in-small-batches/" rel="noreferrer">S6</a></p>
+<h3 id="evidence-and-metrics-heading-5">故事二：多出来的工作不一定浪费，也不一定有价值</h3>
+<p>一个 Builder 用 Agent 很快补出数据导入诊断工具。原先因为开发昂贵，他会直接让用户发截图；现在新工具可能让每次接入少查一个小时，也可能成为几乎没人打开的维护负担。不能只按“过去手写要两周”记两周收益。</p>
+<p>应记录被哪些用户在什么任务里用过、是否减少失败与人工补救，以及维护成本。若暂时只有一个用户，就保存一次完整操作和具体反馈，保留样本数，避免包装成稳定百分比。新能力让原本不可行的服务变得可行也是收益；评价应围绕实际服务，而非执着复刻旧任务组合。这个取舍受 METR 的任务替代理论启发，具体例子与判断方法是我们的建议。<a href="https://metr.org/blog/2026-05-08-task-substitution-and-uplift/" rel="noreferrer">S1</a></p>
+<h2 id="evidence-and-metrics-heading-6">给 BW 的四类信号：每个读数服务一个决定</h2>
+<p>以下是<strong>试点建议，不是新增指标协议或统一 KPI</strong>。一开始每类只选一项；无法可靠收集的保留 Unknown。小样本同时展示原始事件和分母，不能用综合健康分掩盖缺失。</p>
+<table>
+<thead>
+<tr>
+<th>信号</th>
+<th>最小可核对记录</th>
+<th>帮助作出的决定</th>
+<th>不能替代什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>用户结果</td>
+<td>某类目标用户是否完成约定任务；例如 3 位试用者中 2 位完成导入，另 1 位失败原因待核实</td>
+<td>继续、改方向、缩范围还是停止投入</td>
+<td>单次成功不能证明留存、规模收益或商业价值</td>
+</tr>
+<tr>
+<td>交付流动</td>
+<td>决定做 → 可运行 → 可访问 → 首次真实使用的时间点；停在哪一段</td>
+<td>先解权限、修部署、约试用还是继续写代码</td>
+<td>PR 合入时间不能冒充用户用上时间</td>
+</tr>
+<tr>
+<td>质量与可靠性</td>
+<td>主路径失败、回退、人工补救；BW 自身任务卡死/恢复失败</td>
+<td>是否先修可靠性，何时减少并行度</td>
+<td>CI 全绿、模型自评通过不能代替真实路径</td>
+</tr>
+<tr>
+<td>人的负担与成本</td>
+<td>主动干预分钟、等待、重复解释/录入；任务对应模型花费如能获取</td>
+<td>BW 是否净省注意力，哪些步骤可省掉</td>
+<td>Token、会话数和 Agent 数不是成功指标</td>
+</tr>
+</tbody></table>
+<p><strong>时间口径要分开。</strong> “周一到周三的经过时间”“人亲自操作的 40 分钟”和“几个 Agent 合计运行 8 小时”回答不同问题，不能直接相加成工作量。METR 新实验已遇到多代理并行导致人工计时不可靠的问题；工具升级、任务类型和验收标准也应随记录保留。<a href="https://metr.org/blog/2026-02-24-uplift-update/" rel="noreferrer">S2</a></p>
+<p><strong>数据和感受可以互证。</strong> 日志告诉我们发生了什么，访谈解释为什么；日志也会受采集缺失和解释错误影响。DORA 的度量指南建议先确定要支持的决定，再选框架和数据，而非先把 SPACE、DORA 或 HEART 的所有指标搬进系统。<a href="https://dora.dev/research/2025/measurement-frameworks/" rel="noreferrer">S8</a></p>
+<p><strong>用户导向可以很小。</strong> 让 Builder 亲眼看一次用户操作，保存原始反馈，并记录它是否改变下一次取舍，比铺满满意度图表更容易起步。这是对 DORA 用户反馈与产品指标建议的小团队化解释，仍需本地验证。<a href="https://dora.dev/capabilities/user-centric-focus/" rel="noreferrer">S7</a></p>
+<h2 id="evidence-and-metrics-heading-7">先做怎样的比较，才能决定 BW 四块是否值得保留</h2>
+<p>先回看用户所在组的五个单 Builder 项目，从一个有具体使用者、能观察结果的项目开始试点，建议观察 2–4 周；这是探索窗口，不是统计功效保证。先还原最近一次交付，记录失败、暂停和放弃，随后在相近工作中比较“原生 Orca 加现有研发工具”和“同样基础上使用 BW”。不要求停用 AI，也不把单纯前后变化当因果效果。</p>
+<p>每个项目只钉住一个用户任务、一段可交付范围、一位决定人和一条使用证据。记录 BW 额外花费的时间，并收集它实际改变决定的时刻：删掉了什么、发现了什么错误完成、提前解决了什么等待。共享 SE/Leader 另记录跨项目找背景和提供支持的时间，不能把这些支持藏在 Builder 提效数字外。模型版本、个人熟练度、任务难度都可能混杂；小样本先寻找可重复的机制和反例。</p>
+<p>四块能力分别有可被推翻的判断：</p>
+<ul>
+<li><strong>总览</strong>：是否减少找阻塞和判断下一步的时间；若只是复制会话/Issue 状态，应简化。</li>
+<li><strong>指标</strong>：是否让人改变决策；若无人能解释读数与行动的关系，先减少指标。</li>
+<li><strong>计划</strong>：是否帮人收敛本次结果、排除无关扩展；若变成重复填报，应降低负担。</li>
+<li><strong>验收</strong>：是否发现已合入却不可用、未达用户结果，以及下一步无人负责；若只重复 CI，应重审。</li>
+</ul>
+<p>周交付与月里程碑可以作为人的复盘提醒，但不应让已可交付的工作等到周五，也不应把尚无用户证据的功能堆成月底“大版本”。是否将这些建议变成 BW 规则，须回到产品讨论与既有原则。</p>
+<h2 id="evidence-and-metrics-heading-8">证据限制与待补项</h2>
+<p>这组材料没有直接回答“中国内部一项目一 Builder 用了 BW 后会怎样”。METR 的受控任务与自报调查、DORA 的组织研究，均存在场景迁移限制。理论推导不是市场验证，质量和价值也难被单个指标完整表示。</p>
+<p>目前最缺的不是再选一套方法论，而是内部真实项目的完整轨迹：最初承诺、最后用户拿到什么、中途为什么扩范围、实际等待在哪里。未来模型应先读这些记录，再判断本报告的建议是否成立。关于 Spotify 的实际上下文、执行和用户实验实践，另见<a href="#spotify">专题报告</a>。</p>
+<h2 id="evidence-and-metrics-heading-9">一手来源与日期</h2>
+<p>所有链接于 <strong>2026-10-09</strong> 核对；无独立发布日期的页面保留未知，更新日期不冒充新实验日期。DORA 内容按站点 CC BY 4.0 许可注明来源，本文为提炼与独立建议。</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>来源</th>
+<th>原始发布／更新日期</th>
+<th>支持范围</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S1</td>
+<td><a href="https://metr.org/blog/2026-05-08-task-substitution-and-uplift/" rel="noreferrer">METR：Task Substitution and Uplift</a></td>
+<td>2026-05-08</td>
+<td>旧任务、新任务与价值增益的区别；排序假设</td>
+</tr>
+<tr>
+<td>S2</td>
+<td><a href="https://metr.org/blog/2026-02-24-uplift-update/" rel="noreferrer">METR：Changing our Developer Productivity Experiment Design</a></td>
+<td>2026-02-24</td>
+<td>跟进实验、样本、选择偏差与并行计时</td>
+</tr>
+<tr>
+<td>S3</td>
+<td><a href="https://metr.org/blog/2026-05-11-ai-usage-survey/" rel="noreferrer">METR：Self-Reported Impact of Early-2026 AI</a></td>
+<td>2026-05-11；调查 2026-02 至 04</td>
+<td>349 人自报调查及价值/速度区别；非因果收益</td>
+</tr>
+<tr>
+<td>S4</td>
+<td><a href="https://dora.dev/research/2025/dora-report/" rel="noreferrer">DORA：State of AI-assisted Software Development 2025</a></td>
+<td>2025 年报告，早于本轮主要窗口</td>
+<td>AI 放大组织条件；不能当 2026 样本</td>
+</tr>
+<tr>
+<td>S5</td>
+<td><a href="https://dora.dev/ai/capabilities-model/report/" rel="noreferrer">DORA：AI Capabilities Model</a></td>
+<td>页面最后更新 2025-11-25；未据此判定报告首发日</td>
+<td>配套实践指南的定位</td>
+</tr>
+<tr>
+<td>S6</td>
+<td><a href="https://dora.dev/capabilities/working-in-small-batches/" rel="noreferrer">DORA：Working in small batches</a></td>
+<td>页面更新 2025-12-08</td>
+<td>可独立交付、缩短反馈、避免重组大批次</td>
+</tr>
+<tr>
+<td>S7</td>
+<td><a href="https://dora.dev/capabilities/user-centric-focus/" rel="noreferrer">DORA：User-centric focus</a></td>
+<td>页面更新 2026-01-12</td>
+<td>用户反馈、产品指标、AI 功能生产陷阱</td>
+</tr>
+<tr>
+<td>S8</td>
+<td><a href="https://dora.dev/research/2025/measurement-frameworks/" rel="noreferrer">DORA：Choosing measurement frameworks</a></td>
+<td>属 2025 研究；页面未给独立首发日期</td>
+<td>从决定选择度量、日志与自报互补</td>
+</tr>
+</tbody></table>
+<p>后续读取顺序：先读结论与证据表，再读建议和局限；引用某个数字前回原文核对样本、任务与窗口。建议、实例和来源事实不可混写成行业统一规范。</p>
+</article></details></section>
+<details class="bundle-manifest"><summary>内容正源与版本校验</summary><p>下列 SHA-256 以统一换行后的 Markdown 计算；它标识本文件包含的版本，不证明研究结论永远有效。修改正源后运行 <code>bundle-report.mjs</code> 重新生成；<code>--check</code> 可检查投影是否过期。独立专题 HTML 继续由 <code>render.mjs</code> 生成。</p><table><thead><tr><th>Markdown 正源</th><th>SHA-256</th></tr></thead><tbody><tr><td>README.md</td><td><code>bbefe317651fa4b14f4b5750229b803b0b50ce1677a0e1f53030ec7f31aee36d</code></td></tr><tr><td>anthropic-sdlc.md</td><td><code>5af8eadc299b54f96bd80e7b8029675f6e5e707844227cc31521c93db3c37c90</code></td></tr><tr><td>workbuddy-codebuddy.md</td><td><code>92f883aadc80aad4eaed8f28ada82c0cb3af027f52686c14374f276559581fb3</code></td></tr><tr><td>orca.md</td><td><code>8559f9c871389d9feb589b03606bd7ac4a13ee6f8fe9ff4f1bc87796865897aa</code></td></tr><tr><td>openai-codex.md</td><td><code>6a66e88019eebfb8dd1728873fb4f7f03b1f3377f57435f938a41941ee8552a9</code></td></tr><tr><td>cursor-linear.md</td><td><code>ee09a3f52314cea65deb41c342d199334fc84ce32a017e0f3e2ef41a51c7aec7</code></td></tr><tr><td>spotify.md</td><td><code>f0d0141a1b5303c54d1963d1f3c4a303cd4cb2ee6c742af097fb786d9db75018</code></td></tr><tr><td>evidence-and-metrics.md</td><td><code>50712949ffe3109281cb82de2adef18c49d68ee7a73e89e28245c4f38cca78fc</code></td></tr></tbody></table></details>
+<footer>生成投影，不在 HTML 手工维护正文。事实、厂商主张、研究推断与 BW 已交付能力分别判断。</footer>
+</main></div>
+<script>
+const topics = [...document.querySelectorAll('details.topic')];
+const status = document.getElementById('reading-status');
+const updateStatus = () => {
+  status.textContent = topics.filter((topic) => topic.open).length + ' / 7 篇专题已展开';
+};
+const setTopics = (open) => {
+  topics.forEach((topic) => { topic.open = open; });
+  updateStatus();
+};
+function revealHash() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (!id) return;
+  const target = document.getElementById(id);
+  if (!target) return;
+  let ancestor = target;
+  while (ancestor) {
+    if (ancestor.tagName === 'DETAILS') ancestor.open = true;
+    ancestor = ancestor.parentElement;
+  }
+  requestAnimationFrame(() => target.scrollIntoView({ block: 'start' }));
+  updateStatus();
+}
+setTopics(false);
+document.querySelector('.toolbar').hidden = false;
+document.getElementById('expand-all').addEventListener('click', () => setTopics(true));
+document.getElementById('collapse-all').addEventListener('click', () => setTopics(false));
+document.getElementById('print-report').addEventListener('click', () => window.print());
+topics.forEach((topic) => topic.addEventListener('toggle', updateStatus));
+document.addEventListener('click', (event) => {
+  const link = event.target.closest('a[href^="#"]');
+  if (!link) return;
+  event.preventDefault();
+  history.pushState(null, '', link.getAttribute('href'));
+  revealHash();
+});
+window.addEventListener('hashchange', revealHash);
+window.addEventListener('popstate', revealHash);
+let printState;
+window.addEventListener('beforeprint', () => {
+  if (printState) return;
+  printState = [...document.querySelectorAll('details')].map((element) => [element, element.open]);
+  printState.forEach(([element]) => { element.open = true; });
+});
+window.addEventListener('afterprint', () => {
+  printState?.forEach(([element, open]) => { element.open = open; });
+  printState = undefined;
+  updateStatus();
+});
+revealHash();
+</script>
+</body>
+</html>

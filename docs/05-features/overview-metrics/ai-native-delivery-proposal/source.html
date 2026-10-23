@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Workbench · 总览与版本协作提案</title>
+    <link rel="stylesheet" href="../../../04-design-system/styles.css" />
+    <link rel="stylesheet" href="prototype.css" />
+  </head>
+  <body>
+    <div class="window-bar">
+      <span class="app-mark">W</span><span>Workbench</span
+      ><span class="window-context">Builders’ Workbench</span>
+      <div class="window-controls" aria-hidden="true">
+        <span>−</span><span>□</span><span>×</span>
+      </div>
+    </div>
+    <div class="desktop-shell">
+      <aside class="sidebar host-sidebar" aria-label="Workbench 侧栏">
+        <button class="project-identity" data-action="projects">
+          <span class="project-avatar">B</span><strong>Builders’ Workbench</strong
+          ><span data-icon="chevrons"></span>
+        </button>
+        <nav id="navigation" aria-label="项目内导航"></nav>
+        <div class="project-list-head">
+          <span>项目</span>
+          <div>
+            <button
+              class="btn btn-ghost btn-icon"
+              data-action="native-info"
+              data-name="项目活动"
+              aria-label="项目活动"
+            >
+              <span data-icon="bell"></span></button
+            ><button class="btn btn-ghost btn-icon" data-action="projects" aria-label="项目列表">
+              <span data-icon="plus"></span>
+            </button>
+          </div>
+        </div>
+        <div class="repo-list">
+          <div class="repo-name">
+            <span data-icon="chevron-down"></span><span data-icon="folder"></span
+            ><strong>builder-workbench</strong>
+          </div>
+          <button class="sidebar-item worktree" data-action="workspace" data-workspace="main">
+            <span data-icon="branch"></span><span>main</span>
+          </button>
+          <button class="sidebar-item worktree" data-action="plan">
+            <span data-icon="branch"></span><span>bw/week-plan</span><span class="count">1</span>
+          </button>
+          <button class="sidebar-item worktree" data-action="acceptance">
+            <span data-icon="branch"></span><span>bw/week-acceptance</span
+            ><span class="count">1</span>
+          </button>
+          <button
+            class="sidebar-item worktree"
+            data-action="workspace"
+            data-workspace="trial/delivery-loop"
+          >
+            <span data-icon="branch"></span><span>trial/delivery-loop</span
+            ><span class="worktree-dot"></span>
+          </button>
+        </div>
+        <div class="sidebar-bottom">
+          <button
+            class="btn btn-ghost btn-icon"
+            data-action="native-info"
+            data-name="设置"
+            aria-label="设置"
+          >
+            <span data-icon="settings"></span></button
+          ><span class="caption">本地</span><span class="spacer"></span
+          ><button class="btn btn-ghost btn-icon" data-action="projects" aria-label="工作区看板">
+            <span data-icon="columns"></span>
+          </button>
+        </div>
+      </aside>
+      <main id="main" tabindex="-1"></main>
+    </div>
+    <footer class="prototype-toolbar">
+      <button class="quiet-link" data-action="design">
+        交互提案 · 事实 / 演示分开 <span data-icon="info"></span></button
+      ><span class="spacer"></span><label for="scenario">场景</label
+      ><select id="scenario" class="input">
+        <option value="baseline">BW v0.5 · 真实材料</option>
+        <option value="blocked">下一周 · 受阻演示</option>
+        <option value="repaired">下一周 · 复测演示</option></select
+      ><button class="quiet-link" data-action="reset">重置</button
+      ><button class="quiet-link" data-action="theme">Apple / Claude</button>
+    </footer>
+    <dialog id="modal" aria-labelledby="modal-title"><div id="modal-content"></div></dialog>
+    <div id="toast" role="status" hidden></div>
+    <script src="prototype.js"></script>
+  </body>
+</html>
