@@ -30,6 +30,7 @@ type QuickCreationExecutionInput = Pick<
   | 'sparseEnabled'
   | 'taskSourceContext'
   | 'telemetrySource'
+  | 'workbenchCreation'
 >
 
 import { useCallback } from 'react'
@@ -43,6 +44,7 @@ import { getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import { runBackgroundWorktreeCreation } from '@/lib/worktree-creation-flow'
 import { translate } from '@/i18n/i18n'
 import { resolveQuickCreateLinkedWorkItemPrompt } from '@/lib/linked-work-item-context'
+import { resolveWorkbenchCreationBinding } from '../../../../shared/workbench/creation-context'
 import { buildQuickComposerStartup } from './quick-startup-plan'
 import { buildQuickCreationRequest } from './quick-creation-request'
 import type { PendingSmartGitHubSubmitResolution } from './source-selection-decisions'
@@ -77,7 +79,8 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
     settings,
     sparseEnabled,
     taskSourceContext,
-    telemetrySource
+    telemetrySource,
+    workbenchCreation
   } = input
 
   const executeQuickCreation = useCallback(
@@ -256,7 +259,13 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
         launchDraftPrompt: quickDraftPrompt,
         promptDelivery,
         quickTelemetry,
-        suppressTerminalFocusOnCompletion: createMultiple
+        suppressTerminalFocusOnCompletion: createMultiple,
+        // G2 (BW): resolved at submit time against the FINAL repo + task source;
+        // a repo switch drops the context (stale attribution is never bound).
+        workbenchVersionBinding: resolveWorkbenchCreationBinding(workbenchCreation, {
+          repoId,
+          taskSourceContext
+        })
       })
 
       if (isSubmissionCancelled()) {
@@ -303,7 +312,8 @@ export function useQuickCreationExecution(input: QuickCreationExecutionInput) {
       settings,
       sparseEnabled,
       taskSourceContext,
-      telemetrySource
+      telemetrySource,
+      workbenchCreation
     ]
   )
 

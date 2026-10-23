@@ -96,6 +96,15 @@
   color: var(--color-text);
   background: var(--accent);
 }
+/* G2（#383）：绑定验收树的只读回显——版本由绑定决定，屏内不切换；
+   度量与计划屏 g3-version-bound 一致。 */
+.acc-breadcrumb > span.acc-version-bound {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 2px;
+}
 .acc-title-row {
   display: flex;
   align-items: baseline;

@@ -38,6 +38,11 @@ import {
   GITHUB_TASK_STICKY_TITLE_CELL_CLASS,
   GITHUB_TASK_STICKY_TITLE_HEADER_CLASS
 } from '../../task-page-source-context'
+import { TaskPageScopeFooter, TaskPageScopeHeader } from '@/workbench/TaskScopePanel'
+import {
+  codeHubTaskSourceContext,
+  resolveTaskRowWorkspace
+} from '@/workbench/scoped-task-workspace'
 
 function githubStateOf(item: CodeHubTaskItem): GitHubWorkItemStatusItem {
   return {
@@ -105,7 +110,9 @@ export function TaskPageCodeHubItemList({
     selectedRepos,
     setCodehubDetailItem,
     handleUseCodeHubItem,
-    setCodehubRefreshNonce
+    setCodehubRefreshNonce,
+    repoMap,
+    allWorktrees
   } = model
   const mrView = codehubView === 'mrs'
   const gridClass = mrView ? GITHUB_PR_TASK_GRID_CLASS : GITHUB_TASK_GRID_CLASS
@@ -161,6 +168,7 @@ export function TaskPageCodeHubItemList({
           <span>{translate('auto.components.TaskPage.f362667d55', 'Updated')}</span>
           <span />
         </div>
+        <TaskPageScopeHeader model={model} />
         {codehubError ? (
           <div className="border-b border-border px-4 py-4 text-sm text-destructive">
             {codehubError}
@@ -180,14 +188,14 @@ export function TaskPageCodeHubItemList({
             ))}
           </div>
         ) : null}
-        {!codehubLoading && visibleItems.length === 0 && !codehubError ? (
+        {!codehubLoading &&
+        visibleItems.length === 0 &&
+        !codehubError &&
+        !model.workbenchScopeActive ? (
           <div className="px-4 py-12 text-center">
             <p className="text-base font-medium text-foreground">
               {mrView
-                ? translate(
-                    'auto.components.TaskPage.codehubEmptyMrs',
-                    'No CodeHub merge requests'
-                  )
+                ? translate('auto.components.TaskPage.codehubEmptyMrs', 'No CodeHub merge requests')
                 : translate('auto.components.TaskPage.codehubEmptyIssues', 'No CodeHub issues')}
             </p>
           </div>
@@ -195,6 +203,14 @@ export function TaskPageCodeHubItemList({
         {visibleItems.map((item) => {
           const key = `${item.repoId ?? ''}:${item.type}:${item.iid}`
           const repo = selectedRepos.find((candidate) => candidate.id === item.repoId)
+          // G2 (BW)：范围视图的 Issue 按明确绑定解析 Open/Start；无范围保持原 Start。
+          const rowWorkspace = resolveTaskRowWorkspace({
+            scope: model.workbenchScope,
+            worktrees: allWorktrees,
+            provider: 'codehub',
+            item: { repoId: item.repoId, type: item.type, number: item.iid },
+            sourceContext: codeHubTaskSourceContext(repoMap.get(item.repoId ?? ''), item)
+          })
           return (
             <div
               key={key}
@@ -328,16 +344,21 @@ export function TaskPageCodeHubItemList({
                   <>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant={rowWorkspace.hasWorkspace ? 'default' : 'outline'}
                       size="xs"
                       data-contextual-tour-target="tasks-start-workspace"
-                      className="min-w-[72px] gap-1 bg-background/80 font-semibold"
+                      className={cn(
+                        'min-w-[72px] gap-1 font-semibold',
+                        rowWorkspace.hasWorkspace ? 'shadow-xs' : 'bg-background/80'
+                      )}
                       onClick={(event) => {
                         event.stopPropagation()
                         handleUseCodeHubItem(item)
                       }}
                     >
-                      {translate('auto.components.TaskPage.7d08e8be0f', 'Start')}
+                      {rowWorkspace.hasWorkspace
+                        ? translate('auto.components.TaskPage.606a85c774', 'Open')
+                        : translate('auto.components.TaskPage.7d08e8be0f', 'Start')}
                       <ArrowRight className="size-3" />
                     </Button>
                     <DropdownMenu modal={false}>
@@ -369,6 +390,11 @@ export function TaskPageCodeHubItemList({
             </div>
           )
         })}
+        <TaskPageScopeFooter
+          model={model}
+          extraLoading={codehubLoading}
+          filteredCount={visibleItems.length}
+        />
       </div>
     </div>
   )

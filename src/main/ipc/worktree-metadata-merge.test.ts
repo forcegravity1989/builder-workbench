@@ -103,4 +103,44 @@ describe('mergeWorktree identity projection', () => {
 
     expect(worktree.suppressedGitHubPR).toBe(42)
   })
+
+  it('projects BW version bindings without losing legacy metadata', () => {
+    const legacyMeta = {
+      displayName: 'Feature',
+      comment: 'note',
+      linkedIssue: null,
+      linkedPR: null,
+      linkedLinearIssue: null,
+      isArchived: false,
+      isUnread: false,
+      isPinned: false,
+      sortOrder: 3,
+      lastActivityAt: 9
+    }
+    const binding = { schema: 1 as const, version: 'v0.7', workflow: 'plan' as const }
+
+    const withBinding = mergeWorktree('repo-1', git, {
+      ...legacyMeta,
+      workbenchVersionBinding: binding
+    })
+    expect(withBinding.workbenchVersionBinding).toEqual(binding)
+    // 旧 metadata 不丢：无关字段原样投影。
+    expect(withBinding.comment).toBe('note')
+    expect(withBinding.sortOrder).toBe(3)
+    expect(withBinding.lastActivityAt).toBe(9)
+
+    // null（显式清除）与缺失（旧数据）都不投影绑定。
+    expect(
+      mergeWorktree('repo-1', git, { ...legacyMeta, workbenchVersionBinding: null })
+        .workbenchVersionBinding
+    ).toBeUndefined()
+    expect(mergeWorktree('repo-1', git, legacyMeta).workbenchVersionBinding).toBeUndefined()
+    // 脏数据不部分采纳：plan 用途带 goalId 违反一致性规则，读回为未绑定。
+    expect(
+      mergeWorktree('repo-1', git, {
+        ...legacyMeta,
+        workbenchVersionBinding: { ...binding, goalId: 'G1' }
+      }).workbenchVersionBinding
+    ).toBeUndefined()
+  })
 })

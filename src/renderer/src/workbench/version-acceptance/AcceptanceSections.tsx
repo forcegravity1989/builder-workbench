@@ -4,17 +4,19 @@ import { ACCEPTANCE_SECTIONS, type AcceptanceSectionId } from './acceptance-sect
 
 /**
  * Acceptance board header, same shape as the plan screen's: breadcrumb version
- * picker (until G2 moves selection into the sidebar), title with save state,
- * session-collapse chip, trunk sync and automation config. Annotation mode lives
- * in the Showcase section header (就近入口，与计划屏同形态), not here. The
- * branch name stays off the board — packaging builds from the trunk while the
- * acceptance JSON lives on the acceptance branch, so neither is the object the
- * user acts on here.
+ * picker (legacy unbound trees only — on a version-bound tree the binding is
+ * the single authority and the breadcrumb echoes it read-only, G2 #383), title
+ * with save state, session-collapse chip, trunk sync and automation config.
+ * Annotation mode lives in the Showcase section header (就近入口，与计划屏同形
+ * 态), not here. The branch name stays off the board — packaging builds from
+ * the trunk while the acceptance JSON lives on the acceptance branch, so
+ * neither is the object the user acts on here.
  */
 export function AcceptanceHeader({
   currentVersion,
   versions,
   unreadable,
+  boundVersion = null,
   disabled,
   state,
   sessionCollapsed,
@@ -27,6 +29,8 @@ export function AcceptanceHeader({
   versions: string[]
   /** Versions whose *acceptance* material cannot be read; still selectable. */
   unreadable: string[]
+  /** G2（#383）：绑定验收树的版本——非空时只读回显，屏内不选版。 */
+  boundVersion?: string | null
   disabled: boolean
   state: string
   sessionCollapsed: boolean
@@ -40,27 +44,33 @@ export function AcceptanceHeader({
       <div>
         <div className="acc-breadcrumb">
           Builder Workbench <span>/</span>
-          <select
-            className="acc-version-select"
-            aria-label="验收版本"
-            value={currentVersion}
-            disabled={disabled}
-            onChange={(event) => {
-              if (event.target.value) {
-                onSelect(event.target.value)
-              }
-            }}
-          >
-            <option value="">待选择版本</option>
-            {versions.map((version) => (
-              // Never disabled: an unreadable version must still be selectable so
-              // the board can show the real reason instead of hiding it.
-              <option key={version} value={version}>
-                {version}
-                {unreadable.includes(version) ? ' · 验收材料暂无法读取' : ''}
-              </option>
-            ))}
-          </select>
+          {boundVersion ? (
+            <span className="acc-version-bound" title="版本由流程树绑定决定，屏内不切换">
+              {boundVersion}
+            </span>
+          ) : (
+            <select
+              className="acc-version-select"
+              aria-label="验收版本"
+              value={currentVersion}
+              disabled={disabled}
+              onChange={(event) => {
+                if (event.target.value) {
+                  onSelect(event.target.value)
+                }
+              }}
+            >
+              <option value="">待选择版本</option>
+              {versions.map((version) => (
+                // Never disabled: an unreadable version must still be selectable so
+                // the board can show the real reason instead of hiding it.
+                <option key={version} value={version}>
+                  {version}
+                  {unreadable.includes(version) ? ' · 验收材料暂无法读取' : ''}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
         <div className="acc-title-row">
           <h1>版本验收</h1>

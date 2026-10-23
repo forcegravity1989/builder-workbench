@@ -7,14 +7,12 @@ import {
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import type { Repo } from '../../../shared/repo-types'
 import type { GitHubWorkItem, ListWorkItemsResult } from '../../../shared/github/work-item-types'
-import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionMaterialScope } from '../../../shared/workbench/version-material-request'
 import {
   PlanningMaterialSchema,
   type PlanningMaterial
 } from '../../../shared/workbench/version-material'
-import { nativeWorkspaceScope, type NativeWorkspaceScope } from './version-cycle/native-workspace'
-import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
+import type { PlanContext } from './wall-plan-context'
 import type { CycleScope } from './version-cycle/ports'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeVersionMaterialPort } from './version-material-port'
@@ -36,49 +34,6 @@ import type { WallProject } from './workbench-wall-projects'
  * PR 待审走 gh/CodeHub 计数。每一步失败都返回 Unknown 语义的读数，
  * 不装绿、不装零（铁律二）；推导口径见 spec「墙卡读数」。
  */
-
-export type PlanContext = {
-  scope: NativeWorkspaceScope
-  home: Worktree
-  plan: Worktree
-}
-
-/**
- * 在项目各注册行里找计划固定树上下文：主工作树 + bw/week-plan。
- * 活跃仓行优先（与总览活跃上下文同源），再本机在前：同一项目两屏读同一注册行，
- * 版本不产生分叉。宿主路由不明确或同分支多工作树的行如实跳过；全部行都解析不出
- * → null（版本行显示「版本未定」——没选过版与判据不可证都不猜）。
- */
-export function resolvePlanContext(
-  project: WallProject,
-  worktreesByRepo: Record<string, readonly Worktree[]>,
-  activeRepoId: string | null
-): PlanContext | null {
-  const ordered =
-    activeRepoId && project.rows.some((row) => row.id === activeRepoId)
-      ? [
-          ...project.rows.filter((row) => row.id === activeRepoId),
-          ...project.rows.filter((row) => row.id !== activeRepoId)
-        ]
-      : project.rows
-  for (const row of ordered) {
-    const worktrees = worktreesByRepo[row.id] ?? []
-    const home = worktrees.find((item) => item.isMainWorktree) ?? worktrees[0]
-    if (!home) {
-      continue
-    }
-    try {
-      const scope = nativeWorkspaceScope(home)
-      const plan = findCycleWorktree({ ...scope, workflow: 'plan' })
-      if (plan) {
-        return { scope, home, plan }
-      }
-    } catch {
-      // 该行宿主/登记不明确：换下一行，不冒充。
-    }
-  }
-  return null
-}
 
 export async function readVersionAndProgress(
   context: PlanContext,

@@ -8,6 +8,11 @@ export type VersionCycleContext = {
   worktreeId: string | null
   session: CycleSession | null
   version: string | null
+  /**
+   * G2（#383）：绑定流程树的绑定版本（单一正本，跨版读写在 main 侧拒绝）；
+   * 旧无绑定固定树为 null，屏内选版沿旧偏好语义保留。
+   */
+  boundVersion: string | null
   taskPort: TaskPort
   archivePort: ArchivePrPort
   materialPort: ReturnType<typeof createVersionMaterialPort> | null

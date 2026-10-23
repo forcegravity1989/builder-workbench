@@ -32,6 +32,9 @@ const Terminal = lazy(() => import('../components/Terminal'))
 const OverviewPage = lazy(() =>
   import('../workbench/OverviewPage').then((m) => ({ default: m.OverviewPage }))
 )
+const VersionOverviewPage = lazy(() =>
+  import('../workbench/version-overview-page').then((m) => ({ default: m.VersionOverviewPage }))
+)
 const KnowledgePage = lazy(() =>
   import('../workbench/KnowledgePage').then((m) => ({ default: m.KnowledgePage }))
 )
@@ -89,6 +92,9 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
   if (isWorkbenchShell() && activeView === 'activity') {
     if (projectPage?.kind === 'wall') {
       return <ProjectWallPage configureRepoId={projectPage.configureRepoId} />
+    }
+    if (projectPage?.kind === 'version-overview') {
+      return <VersionOverviewPage options={projectPage.options} />
     }
     if (projectPage?.kind === 'onboard') {
       return <OnboardProjectPage options={projectPage.options} />

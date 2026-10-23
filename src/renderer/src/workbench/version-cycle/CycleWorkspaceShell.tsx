@@ -1,6 +1,7 @@
 import { useCycleWorkspace } from './cycle-workspace-context'
 import { PlanningBoard } from '../version-planning/PlanningBoard'
 import { AcceptancePage } from '../version-acceptance/AcceptancePage'
+import { VersionReadonlyMaterialView } from './VersionReadonlyMaterialView'
 import { usePackagePipelineWarmup } from '../version-acceptance/use-package-pipeline-warmup'
 export function CycleWorkspaceShell() {
   const workspace = useCycleWorkspace()
@@ -8,7 +9,8 @@ export function CycleWorkspaceShell() {
   if (!workspace) {
     return null
   }
-  const { workflow, context, prepareMetrics, busy, notice, start, configure } = workspace
+  const { workflow, context, prepareMetrics, busy, notice, start, configure, readonlyBrowse } =
+    workspace
   const entry = { workflow, busy, notice, start, configure }
   return (
     <section
@@ -23,16 +25,21 @@ export function CycleWorkspaceShell() {
       )}
       <div className="vc-board-content" inert={context.syncing}>
         {!context.worktreeId ? (
-          <>
-            {(notice || context.error) && (
-              <p role="status" className="vc-notice">
-                {context.error ?? notice}
+          readonlyBrowse ? (
+            /* G2（P3b）：已清理/未准备版本的只读回看——主干已提交材料，不建树。 */
+            <VersionReadonlyMaterialView workflow={workflow} version={readonlyBrowse.version} />
+          ) : (
+            <>
+              {(notice || context.error) && (
+                <p role="status" className="vc-notice">
+                  {context.error ?? notice}
+                </p>
+              )}
+              <p className="vc-notice">
+                {context.error ? '请核对上述问题后重新进入。' : '正在准备项目工作区…'}
               </p>
-            )}
-            <p className="vc-notice">
-              {context.error ? '请核对上述问题后重新进入。' : '正在准备项目工作区…'}
-            </p>
-          </>
+            </>
+          )
         ) : workflow === 'plan' ? (
           <PlanningBoard context={context} prepareMetrics={prepareMetrics} entry={entry} />
         ) : (

@@ -35,6 +35,11 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
   } = model
   const applyPRFilterChange = useCallback(
     (change: PRFilterChange): void => {
+      // G2 (BW)：范围视图是客户端过滤的物化列表——服务端 PR 限定词、resume
+      // 持久化与 nonce 重读都不适用（控件在范围态已隐藏，此处双保险）。
+      if (model.workbenchScopeActive) {
+        return
+      }
       let next = scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind)
       // Why: withQualifier round-trips through parseTaskQuery so each dropdown's patch preserves prior filters and free-text.
       if ('author' in change) {
@@ -82,6 +87,7 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
     },
     [
       activeGithubTaskKind,
+      model.workbenchScopeActive,
       setTaskResumeState,
       taskSearchInput,
       setActiveTaskPreset,
@@ -92,6 +98,13 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
     ]
   )
   const handleApplyTaskSearch = useCallback((): void => {
+    if (model.workbenchScopeActive) {
+      // 范围视图：Enter 只提交客户端过滤文本，不写持久化、不触发重读。
+      const trimmed = taskSearchInput.trim()
+      setTaskSearchInput(trimmed)
+      setAppliedTaskSearch(trimmed)
+      return
+    }
     const scoped = scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind)
     setTaskSearchInput(scoped)
     setAppliedTaskSearch(scoped)
@@ -104,6 +117,7 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
     setTaskRefreshNonce((current) => current + 1)
   }, [
     activeGithubTaskKind,
+    model.workbenchScopeActive,
     setTaskResumeState,
     taskSearchInput,
     setTasksFiltering,
@@ -135,6 +149,13 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
   )
   const handleSelectGithubTaskKind = useCallback(
     (kind: GitHubTaskKind): void => {
+      if (model.workbenchScopeActive) {
+        // 范围视图：Issues/PRs 页签不适用（引用集即范围）；清除按钮复用本入口
+        // 时只清客户端过滤文本，不写持久化、不触发重读。
+        setTaskSearchInput('')
+        setAppliedTaskSearch('')
+        return
+      }
       const preset = getDefaultPresetForGitHubTaskKind(kind)
       const query = getTaskPresetQuery(preset)
       setTaskSearchInput(query)
@@ -148,6 +169,7 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
       setTaskRefreshNonce((current) => current + 1)
     },
     [
+      model.workbenchScopeActive,
       setTaskResumeState,
       setActiveTaskPreset,
       setTasksFiltering,

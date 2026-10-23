@@ -130,7 +130,9 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
         visibleTaskProviders
       )
       const resolvedMode = state.taskResumeState?.githubMode ?? 'items'
-      if (resolvedSource === 'github' && resolvedMode === 'items') {
+      // Why: a BW workbench scope materializes its own reference-driven list; the
+      // unscoped query prefetch would warm a cache the scoped view never reads.
+      if (resolvedSource === 'github' && resolvedMode === 'items' && !data.workbenchTaskScope) {
         const eligibleRepos = state.repos.filter((repo) => isGitRepoKind(repo) && repo.path)
         const selectedRepos = (() => {
           const preferred = data.preselectedRepoId

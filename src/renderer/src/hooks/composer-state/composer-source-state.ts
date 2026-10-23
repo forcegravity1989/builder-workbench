@@ -82,6 +82,7 @@ export function useComposerSourceState(
     setLinkedPR: target.workspaceIdentityState.setLinkedPR,
     setLinkedTaskSourceContext: target.sourceContextState.setLinkedTaskSourceContext,
     setLinkedWorkItem: target.sourceContextState.setLinkedWorkItem,
+    setParentWorktreeId: target.workspaceIdentityState.setParentWorktreeId,
     setProjectError: target.initialTargetState.setProjectError,
     setPushTarget: target.workspaceIdentityState.setPushTarget,
     setRepoId: target.sourceContextState.setRepoId,

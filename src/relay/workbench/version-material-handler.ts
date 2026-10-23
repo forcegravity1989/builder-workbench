@@ -2,10 +2,12 @@ import { z } from 'zod'
 import type { RelayDispatcher } from '../dispatcher'
 import { createVersionMaterialWorkspace } from '../../main/workbench/version-material-workspace'
 import { materialResult } from '../../main/workbench/version-material-error'
+import { WorkbenchVersionBindingSchema } from '../../shared/workbench/version-binding'
 import {
   VersionMaterialReadSchema,
   VersionMaterialSaveSchema,
-  VersionMaterialScopeSchema
+  VersionMaterialScopeSchema,
+  VersionMaterialInitializeSchema
 } from '../../shared/workbench/version-material-request'
 
 import {
@@ -15,15 +17,17 @@ import {
 
 const Command = z.strictObject({
   target: z.strictObject({ repoPath: z.string().min(1), worktreePath: z.string().min(1) }),
-  operation: z.enum(['list', 'read', 'save', 'previewMigration', 'migrate']),
-  request: z.unknown()
+  operation: z.enum(['list', 'read', 'save', 'previewMigration', 'migrate', 'initializeEmptyPlan']),
+  request: z.unknown(),
+  /** G2 (P3a)：绑定围栏随请求下发；缺省=无绑定树（旧语义逐字不变）。 */
+  binding: WorkbenchVersionBindingSchema.nullable().optional()
 })
 
 /** Mounted on Orca's authenticated relay, after runtime inventory resolves the target paths. */
 export function registerVersionMaterialRelay(dispatcher: Pick<RelayDispatcher, 'onRequest'>) {
   dispatcher.onRequest('workbench.materials.execute', async (params) => {
-    const { target, operation, request } = Command.parse(params)
-    const workspace = createVersionMaterialWorkspace(target)
+    const { target, operation, request, binding } = Command.parse(params)
+    const workspace = createVersionMaterialWorkspace(target, undefined, binding ?? null)
     switch (operation) {
       case 'previewMigration':
         return materialResult(() =>
@@ -37,6 +41,10 @@ export function registerVersionMaterialRelay(dispatcher: Pick<RelayDispatcher, '
         return materialResult(() => workspace.read(VersionMaterialReadSchema.parse(request)))
       case 'save':
         return materialResult(() => workspace.save(VersionMaterialSaveSchema.parse(request)))
+      case 'initializeEmptyPlan':
+        return materialResult(() =>
+          workspace.initializeEmptyPlan(VersionMaterialInitializeSchema.parse(request))
+        )
     }
   })
 }

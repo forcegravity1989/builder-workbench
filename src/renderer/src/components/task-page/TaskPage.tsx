@@ -23,6 +23,7 @@ import { useTaskPageLinearCreationState } from '../use-task-page-linear-creation
 import { useTaskPageGitHubMutationState } from '../use-task-page-github-mutation-state'
 import { useTaskPageJiraCreationState } from '../use-task-page-jira-creation-state'
 import { useTaskPageJiraCreationMetadata } from '../use-task-page-jira-creation-metadata'
+import { useTaskPageWorkbenchScope } from '../use-task-page-workbench-scope'
 import { useTaskPageGitHubListProjection } from '../use-task-page-github-list-projection'
 import { useTaskPageGitHubSearchPagination } from '../use-task-page-github-search-pagination'
 import { useTaskPageGitHubLandingRefresh } from '../use-task-page-github-landing-refresh'
@@ -66,7 +67,8 @@ export default function TaskPage(): React.JSX.Element {
   const stage21 = useTaskPageGitHubMutationState(stage20)
   const stage22 = useTaskPageJiraCreationState(stage21)
   const stage23 = useTaskPageJiraCreationMetadata(stage22)
-  const stage24 = useTaskPageGitHubListProjection(stage23)
+  const stage23b = useTaskPageWorkbenchScope(stage23)
+  const stage24 = useTaskPageGitHubListProjection(stage23b)
   const stage25 = useTaskPageGitHubSearchPagination(stage24)
   const stage26 = useTaskPageGitHubLandingRefresh(stage25)
   const stage27 = useTaskPageGitHubQuietRefresh(stage26)

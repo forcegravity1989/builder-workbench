@@ -228,6 +228,7 @@ export function PlanningGoals({
                 index={index}
                 relatedTasks={plan.tasks.filter((task) => task.goalId === goal.goalId)}
                 reads={readsByReference}
+                version={plan.version}
                 onChange={changeGoal}
                 onRemove={(goalId) => {
                   setEditingGoalId(null)

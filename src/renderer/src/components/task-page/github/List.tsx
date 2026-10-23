@@ -14,6 +14,7 @@ import { LoaderCircle } from 'lucide-react'
 import { TaskPageGitHubRows } from './Rows'
 import { PaginationBar } from '../PaginationBar'
 import { supersedeGitHubListScrollRestore } from '../../task-page-github-list-scroll-restore'
+import { TaskPageScopeFooter, TaskPageScopeHeader } from '@/workbench/TaskScopePanel'
 export function TaskPageGitHubList({
   model
 }: {
@@ -65,7 +66,13 @@ export function TaskPageGitHubList({
         }}
         onScroll={(event) => {
           const state = useAppStore.getState()
-          if (state.activeView !== 'tasks' || state.taskPageData.openGitHubWorkItem) {
+          if (
+            state.activeView !== 'tasks' ||
+            state.taskPageData.openGitHubWorkItem ||
+            // Why: the saved position key carries no scope identity; a scoped
+            // visit must not store a page number an unscoped visit restores.
+            state.taskPageData.workbenchTaskScope
+          ) {
             return
           }
           const scrollTop = event.currentTarget.scrollTop
@@ -117,6 +124,8 @@ export function TaskPageGitHubList({
           <span>{translate('auto.components.TaskPage.f362667d55', 'Updated')}</span>
           <span />
         </div>
+
+        <TaskPageScopeHeader model={model} />
 
         {tasksError ? (
           <div className="border-b border-border px-4 py-4 text-sm text-destructive">
@@ -319,6 +328,7 @@ export function TaskPageGitHubList({
                     single page (totalPages <= 1) there's nothing else to show, so
                     surface the empty state instead of a blank panel. */}
         {!showGitHubTaskSkeletons &&
+        !model.workbenchScopeActive &&
         filteredWorkItems.length === 0 &&
         (softHiddenVisibleCount === 0 || totalPages <= 1) &&
         !tasksError &&
@@ -333,6 +343,12 @@ export function TaskPageGitHubList({
         ) : null}
 
         <TaskPageGitHubRows model={model} />
+
+        <TaskPageScopeFooter
+          model={model}
+          extraLoading={showGitHubTaskSkeletons}
+          filteredCount={filteredWorkItems.length}
+        />
       </div>
 
       {/* Why: pagination sits outside the scroll container so it

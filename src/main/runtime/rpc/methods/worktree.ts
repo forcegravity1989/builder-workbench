@@ -150,6 +150,7 @@ export const WORKTREE_METHODS = [
         linkedGiteaPR: params.linkedGiteaPR,
         linkedWorkItem: params.linkedWorkItem,
         linkedTaskSourceContext: params.linkedTaskSourceContext,
+        workbenchVersionBinding: params.workbenchVersionBinding,
         comment: params.comment,
         isArchived: params.isArchived,
         isUnread: params.isUnread,

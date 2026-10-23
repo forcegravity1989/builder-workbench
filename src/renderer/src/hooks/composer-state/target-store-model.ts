@@ -12,6 +12,7 @@ import type {
 } from '../../../../shared/worktree/types'
 import type { ExecutionHostRegistryEntry } from '../../../../shared/execution-host-registry'
 import type { LinkedWorkItemSummary } from '@/lib/new-workspace'
+import type { WorkbenchCreationContext } from '../../../../shared/workbench/creation-context'
 import type { ComposerDecisions } from './composer-decisions'
 import type { ComposerStoreActions } from './composer-store-actions'
 import type { SparsePreset } from '../../../../shared/worktree/create-types'
@@ -27,11 +28,14 @@ export type ComposerTargetStoreModel = {
   initialEphemeralVmRecipeId: string | undefined
   initialName: string
   initialPrompt: string
+  initialNote: string
   initialLinkedWorkItem: LinkedWorkItemSummary | null
   initialGitHubWorkItem: GitHubWorkItem | null
   initialTaskSourceContext: TaskSourceContext | null
   initialWorkspaceStatus: WorkspaceStatus | undefined
   initialBaseBranch: string | undefined
+  initialParentWorktreeId: string | null
+  workbenchCreation: WorkbenchCreationContext | null
   persistDraft: boolean
   onCreated: (() => void) | undefined
   isSubmissionCancelled: () => boolean

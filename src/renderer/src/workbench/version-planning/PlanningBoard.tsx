@@ -289,6 +289,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     <div className={`vp-board${annotations.annotating ? ' annotating' : ''}`}>
       <PlanningHeader
         currentVersion={plan?.version ?? ''}
+        boundVersion={context.boundVersion}
         versions={material.versions}
         disabled={!materialPort || selecting || Boolean(context.syncing)}
         state={state}

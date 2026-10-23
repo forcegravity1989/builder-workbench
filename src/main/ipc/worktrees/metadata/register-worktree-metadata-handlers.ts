@@ -12,7 +12,10 @@ import { notifyWorktreesChanged } from '../../worktree-remote'
 import { parseWorktreeId } from '../../worktree-logic'
 import { planWorktreeSortOrderUpdates } from '../../../../shared/worktree/sort-order-update'
 import { readBranchRenameFailureOutputForDisplay } from '../../../agent-hooks/branch-rename-failure-output'
-import { normalizeLinkedWorkItemFields } from '../ipc-context-schemas'
+import {
+  normalizeLinkedWorkItemFields,
+  normalizeWorkbenchVersionBindingField
+} from '../ipc-context-schemas'
 import { listDesktopLineageForHost } from './host-lineage-listing'
 import type { WorktreeIpcContext } from '../worktree-ipc-context'
 
@@ -35,17 +38,28 @@ export function registerWorktreeMetadataHandlers(context: WorktreeIpcContext): v
       if (args.executionHostId !== undefined && !executionHostId) {
         throw new Error('Invalid execution host identity.')
       }
-      const validatedUpdates = normalizeLinkedWorkItemFields(args.updates)
+      const validatedUpdates = normalizeWorkbenchVersionBindingField(
+        normalizeLinkedWorkItemFields(args.updates)
+      )
+      // G2 P3a 收口（P1 延后项）：本地 IPC 与 RPC 路径同一语义——显式 undefined
+      // 键=保留旧值（剥除后再合并），清除字段用 null。此前 undefined 键会经
+      // 合并覆盖旧值（与 worktree.set 白名单文档口径不一致的存量语义）。
+      const definedUpdates: Partial<WorktreeMeta> = {}
+      for (const [field, value] of Object.entries(validatedUpdates)) {
+        if (value !== undefined) {
+          ;(definedUpdates as Record<string, unknown>)[field] = value
+        }
+      }
       const updates =
-        validatedUpdates.displayName !== undefined
+        definedUpdates.displayName !== undefined
           ? {
-              ...validatedUpdates,
+              ...definedUpdates,
               // The host persists provenance; do not rely on renderer-authored metadata.
-              displayNameIsPinned: displayNameUpdatePinsLabel(validatedUpdates.displayName),
+              displayNameIsPinned: displayNameUpdatePinsLabel(definedUpdates.displayName),
               pendingFirstAgentMessageRename: false,
               firstAgentMessageRenameError: null
             }
-          : validatedUpdates
+          : definedUpdates
       const sanitizedUpdates = stripOrcaProvenanceMetaUpdates(updates)
       const meta = executionHostId
         ? store.setWorktreeMetaForHost(args.worktreeId, executionHostId, sanitizedUpdates)

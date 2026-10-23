@@ -1,0 +1,90 @@
+# 版本工作区 — 六环状态
+
+> 给接手开发、评审和验收的人读取。只记录认可、实现和证据缺口；有真实认可或运行结果时更新。价值见 [intent](intent.md)，行为见 [spec](spec.md)，工程设计见 [design](design.md)。
+
+目标平台为主干 main 的 Electron/Orca 叠层。[高保真修订 9](version-workspace-prototype.html?rev=9) 是形态依据，不是持久化或真实宿主执行证据。
+
+| 环 | 状态 | 证据或缺口 |
+|---|---|---|
+| intent | 已确认 | 2026-10-20 评审定稿（含版本级清理与跨宿主汇总决定） |
+| spec | 已确认 | 同上；高保真修订 9 为形态依据（修订 9 仅总览改表格周报风格，2026-10-22 人确认；事实区构成同夜对齐生产口径） |
+| 实现设计 | 已定稿，P1–P6 已实施，验收侧尾巴已落地 | P1a 绑定契约、P1b 目录合并、P2 版本准备、P4 任务范围与开工链、P3a 侧栏版本树与主侧版本化、P3b 屏内选版移除/开工箭头/补绑定/清理确认单/只读回看、P5 自动化身份版本化与墙读数绑定版、P6 版本总览已按 design 接线要求落地；验收 Skill 正本同步与验收侧护栏撤除已随 #394 合入完成；真壳验证（J1–J9）待人，生产验证缺口见下 |
+| 核心算法/数据协议 | ◐部分 | P1 用例已登记：叠层 7 例（绑定契约校验/读回规范化 2、目录合并/悬空治理/缓存分隔 3、owner 与实例校验+读回确认 2）+ Orca 核心侧扩展 3 例（merge 投影、worktree.set 白名单、能力门控）；对冲删 7 例（use-version-minutes 装配 6、overview-zone-series 展示形态 1）。P2 新增 2 例（宿主端去重/预检重发现、失败保留与创建结果核对），对冲删 2 例 zone-series 展示形态。P4 新增 4 例（同号不同来源/两版不串开、多候选与排除、目标/流程/父级建议、创建上下文解析），对冲删 4 例 metrics-port 路由装配矩阵；P3a 新增 1 例（绑定树跨版/用途围栏），对冲删 1 例 workbench-nav 槽位映射装配（均经连夜工作包预授权，负面清单口径，明细在 commit/PR）。ratchet 基线随 #394 由 226→225（main 侧测试对冲），G2 侧自首轮起零测试净增，例数恰在基线。P5 版本化 creationKey 为纯字符串拼接，按人的测试方针（低价值单测不立，重心在 e2e 冒烟与人的旅程）未另立单测，由 typecheck 与烟测兜底；自动化行为扩展时补看护 |
+| 验收点 E2E | ◐部分 | 协议用例随实施登记；`workbench-cycle-smoke` 已更新为 G2 绑定树旅程并在 CI headless Electron 通过（新建版本→prepare 两树→计划屏→绑定选版→材料保存与磁盘独立读回→重载→侧栏版本行重进屏→验收树→总览真实数据）；验收段自 #394 合入后锚 v10 板面（`.acc-empty-board`＋「与验收助手新建验收」）；交互式 J 系列判据仍待人真壳 |
+| 用户旅程 E2E | 待验证 | J1–J9 真壳旅程待人验证 |
+
+## P1 实施证据与边界（2026-10-21）
+
+机制正本（绑定契约 schema 1 与读回规范化、原生挂载点与能力门控、BW 薄 helper 读写链、版本目录合并与缓存分隔）见 [design](design.md)「P1 落地」。交付事实：已实施并通过单测与 typecheck；协议单测新增 7 例、对冲删 7 例（连夜工作包预授权，明细在 commit/PR）。
+
+单测级读回证明：绑定经真实持久化链 round-trip（写合并→序列化压缩→载入补默认→投影）后一致；权限撤销/登记消失时 resolver 拒绝且零写入；写入被丢弃时读回不一致报未确认、不虚报成功。**未验证**：真实 Electron 重启、共享宿主配对读写（共享端读 owner 绑定、不在访问者机建树的真实链路）、权限撤销真机行为、v0.7/v0.8 双版本真壳导航——归 J6/J9 与真壳验证，由人在专门会话执行；P1 未接任何 UI 消费方（侧栏版本树为 P3）。
+
+## P2 实施证据与边界（2026-10-21）
+
+机制正本（分支命名与 J2 判据、宿主端预检矩阵、dedupe 去重、步骤链非原子与重入补齐、创建结果核对、instanceId 围栏、空计划 create-only 初始化、禁止面）见 [design](design.md)「P2 落地」。交付事实：BW 薄服务 `workbench.versionWorkspace.prepare`（main 侧）已实施并通过单测与 typecheck；协议单测新增 2 例、对冲删 2 例。
+
+协议单测证明（fake runtime 忠实映射原生 dedupe/创建/删除语义）：并发双击恰每用途一次创建、两调用方同树同绑定、材料只初始化一次；重入全 existing 零创建不覆盖；验收步失败保留计划步全链、重试补齐恰两棵；分支不符零绑定；外部占用与非法版本名如实拒绝。**未验证**：真实 Electron 创建/删除、真实 Git 分支占用与 setup 行为、双窗口并发、共享宿主创建（J2 真壳归人）；P2 无 UI 入口（「＋ 新建版本」按钮与进屏导航为 P3），prepare 暂无生产调用方。推前检视处置：并发空计划初始化的 CAS 竞态已修（后到者 revision-conflict 幂等收敛为 existing，不透出误导冲突），但该修复与清理失败、winner-adoption 分支尚无直接单测（协议测试 fake 为原子 create-only），随 P3 接入口或 J2 真壳按环 4 补看护；「创建成功但绑定未写入」窗口不在自动补齐范围（重入按占用如实拒绝），design P2 节已写明边界。提醒项处置：instanceId 已在创建链收紧为事实必填（缺实例身份报错不写）；numericTarget 覆盖留白待 P6 总览接线时按环 4 复审。
+
+## P4 实施证据与边界（2026-10-21 连夜工作包）
+
+机制正本（任务屏范围契约、统一 Start/Open 解析、目标开工、创建结果绑定）见 [design](design.md)「P4/P3a 落地」。交付事实：任务范围与目标/Issue 开工已实施并通过单测与 typecheck；协议单测新增 4 例、对冲删 4 例（metrics-port 路由 it.each，与 version-material-port 路由矩阵重复看护同一共享实现）。
+
+协议单测（环 4 正清单）：同号不同来源与同 Issue 两版各按绑定证明命中（无绑定旧树不猜归属）；跨宿主多候选全部返回且稳定排序、归档/脏绑定不入候选；目标/流程树匹配、已清理版本空集如实、父级建议仅唯一时给出；创建上下文 goal/issue 各得其形、改仓库/缺证明不绑定、重试幂等；绑定树跨版读写与用途混用一律拒绝（main 侧，J1 前置）。**未验证（如实留白，归 J3/J4 真壳）**：真实 provider 读取的范围列表（分页/搜索/详情往返）、真实创建器全流程（父级预选可见性、备注预填、绑定写入与重试）、跨宿主实例的选择器与激活、CodeHub 范围路径、混合 provider 范围的「未展开」呈现（本仓自身为 GitHub，CodeHub 环境未验）。已知边界（含推前检视处置后余项）：范围视图隐藏 Issues/PRs 页签、预设 chips 与 PR 筛选（服务端查询机制不适用），搜索输入=物化全集上的客户端过滤（先过滤再分页，跨页命中不产假阴性），全部 resume 持久化写点已门控；范围引用装载前去重（防重复行/计数虚增），行序=引用序确定性输出（GitHub 再按原生惯例排序）；绑定写入的「重试写绑定」为本会话 toast 动作，错过后的常驻补绑定入口留 P3b；telemetrySource 沿 'sidebar'（原生词汇表封闭，不扩 Orca union）；CodeHub 范围视图 MR 页签下列头化妆性不匹配（引用通常为 Issue，登记 J4 观察）；冷挂载 hydration 竞态窗口极窄（taskResumeApplied 门控后装载，登记）；任务来源严格相等是解析器承重假设（多注册行同项目边缘如实呈现 Start，归 J3/J4 真壳观察）；relay binding 线上格式无用例级看护（归 J6 真壳）。
+
+## P3a 实施证据与边界（2026-10-21 连夜工作包）
+
+机制正本（侧栏版本区与流程行、目录装载、provider/进屏定位、main 侧版本化、P5 前自动化护栏、延后项收口）见 [design](design.md)「P4/P3a 落地」。交付事实：侧栏版本树与版本化定位已实施并通过单测与 typecheck；协议单测新增 1 例（绑定树跨版/用途围栏）、对冲删 1 例（workbench-nav 槽位映射装配）。
+
+已知边界（P3a 检视登记）：目录现算的触发=登记指纹变化/仓库集变化/手动刷新——计划材料保存或 PR 合入不即时刷新侧栏目标目录（会话内缓存时滞，下次登记事件或重载即新）；版本展开姿态一经用户接管（localStorage），其后新出现的 working 版本默认收起（可展开）；侧栏点击在导航校验前写入浏览版本（无树版本报错后浏览版本仍指向它——任务/目标行照常可用，属意内）；父级建议在 repo 行缺失时跳过宿主过滤（原生创建期校验兜底，不建议错树只可能建议出待校验项）；绑定树读取失败不回落旧固定树草稿（两份工作副本不互相冒充），已提交材料回落时如实透出草稿失败原因。
+
+**真实壳级证据（CI headless Electron，`90ab9bb89` 烟测通过）**：新建版本轻表单 → prepare 两棵绑定流程树（bw/v9.9/plan|acceptance）→ 计划屏挂载 → 绑定树选版=绑定版本（无第二份偏好）→ 磁盘种子材料板面回读 → 编辑自动保存落绑定树自身路径 → 磁盘独立读回（铁律）→ renderer 重载后侧栏版本行重进屏、绑定版本与材料从宿主恢复 → 验收绑定树挂载 → 「项目总览」真实数据 Unknown 口径。此为 Linux headless 单窗口旅程：不含双版本并行、共享宿主、真实 provider 范围列表与交互细节。
+
+**未验证（如实留白）**：J1 双版本真壳导航（v0.7 legacy＋新建 v0.9 绑定树并行、切版不串）、J2 真壳创建/失败恢复经新表单入口、J5 旧材料/旧会话回看、J9 清理（本轮仅占位）、共享宿主上的目录汇总与配对树读取、侧栏在真壳的视觉/滚动/明暗主题核对——全部归人真壳会话。已知边界与偏差：全局「任务」入口（SidebarTaskNavButton）保留（高保真未画，移除属收窄 Orca 能力，留人决定）；每版本「总览」行未渲染（版本总览属 P6，不做假入口）；绑定树板内「新建计划/验收」与配置自动化被护栏拒绝（自动化版本身份属 P5，屏内按钮改绑属 P3b）；屏内选版下拉仍在（G3 D1/P3b 移除），绑定树上 list 只回绑定版故下拉仅一版、跨版 select 被 main 拒绝；目标树/任务树在目录体内为业务分组平铺（原生 lineage 嵌套仍在原生侧栏呈现）；计划/验收板只读回看模式（retired 版本直接读已提交材料进板）未实现——板改造属计划屏窗口/P3b，本轮 retired 版本的材料回看经任务/目标入口与旧固定树路径如实可达。本段「总览行未渲染/护栏拒绝/选版下拉仍在/只读回看未实现/清理占位」等状态已被 P3b/P5/P6 与收尾合并节取代。
+
+## P3b/P5/P6 实施证据与边界（2026-10-22 收尾，计划屏 #399 合入后）
+
+**接缝处理（G2 为后合入方）**：merge main（含 #399/#392/#378/#398），五处冲突按 #389 登记解法处理（逐文件细节在 merge commit 与 PR 正文）；use-version-minutes.test.tsx 保留删除（人裁定：低价值单测删、重心在 e2e 冒烟与人的旅程）。烟测规格重锚 g3 板面：空计划锚点=材料加载完成后的稳定态「添加目标」按钮（G3 空板卡「与计划助手新建计划」仅在无材料时渲染，而 prepare 已 create-only 初始化空计划），未启动会话反证由 prepare activate:false 与无 agent 启动路径承担。合并后 typecheck 全绿、ratchet 226 恰在基线（g3 自增自减与 G2 删除互补，基线文件未动）。
+
+**交付与机制正本**：P3b（绑定树屏内选版移除与只读回显、板面 Issue 开工箭头永久 hookup、常驻补绑定、版本级清理确认单、只读回看、version-planning spec 选版条款回写）、P5（自动化身份版本化、计划侧护栏撤除、standard/ 计划侧同步、R9 墙读数绑定优先）、P6（版本总览页与侧栏总览行、烟测延伸断言）——机制正本见 [design](design.md)「P3b/P5/P6 落地」。证据：standard/ 再生成 bundle/manifest/registry/stub verify 双检通过；烟测延伸断言（重锚编辑链/清理单结构/总览挂载）随后续 CI 轮次复核。
+
+**遗留修正（前轮检视登记项①②）**：多候选选择器挂载层注释漂移改回侧栏层事实；full 创建链镜像绑定写入补「当前休眠（submitQuick 唯一 UI 调用方）」标注。
+
+**检视修正轮（push 前静态检视，无高严重度项）**：补绑定对话框行键改宿主限定复合键（STA-4343：同 repoId::path 的 id 可跨宿主重复，裸 id 可能把绑定写到另一宿主的树）；清理确认单补「本版已启用自动化」提示（spec 条款落地：本机登记按 creationKey 版本后缀探测派生，他宿主 runtime 不跨机探测=留白）；只读回看与版本总览在目录装载中不落判「无材料」（未成立的否定断言，目录就绪后重判，目录读取失败如实透出）；绑定版提示词尾句与「绑定即定」口径分叉（去选版残句）；两处过时注释（清理占位描述）与 STATUS 六环表两行、design 补绑定「可改」措辞（实现为锁定防误用）修正。
+
+**检视修正轮二（2026-10-22，CI 转绿后人指定启动，三维 SubAgent 静态检视＋逐项人工核证）**：BUG 维度——浏览版本定位的回退加项目围栏（跨项目同版本号不再打开他项目绑定树；配对宿主实例仍在围栏内）；prepare「重试补齐」不再被重名校验挡死；总览工作区格与状态角标在目录读取失败/装载中不落判「已清理/历史」；目录旧固定树改入 legacyTrees 后置（兑现 C-2 绑定树排前契约，原为死变量）；墙读数指纹补实例/归档/绑定维度（补绑定与归档后墙卡自愈重读，与目录指纹同构）；Start/Open 激活与选择器/导航行键全面宿主限定（STA-4343 同族收敛：正牌 getWorktreeHostIdentity＋activateAndRevealWorktree 原生 executionHostId 参数）；目录 scope 失效后 loading/error 复位；清理确认单自动化提示改 creationKey 全键精确匹配（不再误计他项目同版本号条目，上轮「版本后缀探测」口径由本轮取代）；总览材料 effect 与提示词解析对 nativeWorkspaceScope 加行级防护（单条坏登记行不抛穿整页/全部解析）；绑定树提示词读不到真实分支时不钉分支、不冒充旧固定分支名；范围开工目标归属匹配加仓库维度围栏（resolveReferenceRepo 同判据，解析不出不按该引用预填）；relay initializeEmptyPlan 对无绑定树补旧固定分支围栏（与读/写纵深一致，现唯一调用方 prepare 恒先绑定不受影响）。冗余维度——版本文案收敛 version-labels.ts 单实现（流程/目标/Issue 树标签、G 序号、决策标签、短提交，原 7 处散写；总览「Issue 树」统一为「Issue 执行树」，为本轮唯一 UI 文案变化）；nav-actions legacy 死分支删除（与兜底逐字相同）；补绑定对话框自造 treeKey 改正牌身份 helper；renderer 侧分支去前缀复用 branchName util（12 处）；prepare existing 三重块、NewVersionDialog 失败判定、task-scope-load viewProvider 双写法各提 helper；过程叙事注释三处修正。误报复核更正：github-item-dialog 曾按「误报」登记，实为检索路径错误的误判——详情弹窗（components/github-item-dialog/open-dialog/）确有 G2 范围分支，其直开点裸 id 激活已随 lint 修正轮补齐（worktreeActivationHostOpts）。plan/高保真维度：P1–P6 声称与代码逐条核对一致、烟测锚点均为内容级断言；文档失准五处修正（本文件烟测锚点描述、P3a 段预言句、intent 状态行停修订 8、intent/design/spec 死锚点与失指、INVENTORY codehubStateOf 归属）；design 补绑定节登记「分支不一致死绑定」交互边界。
+
+## 检视轮三（2026-10-23，合并态全链绿后，双 SubAgent：静态 BUG＋四维交付检视）
+
+**静态 BUG 维度**：十个优先区（分发壳等价性/护栏删净/回显接线/cycle-prompt 合并/排序/open-archive-pr 归属/烟测锚点渲染条件/schema 兼容/SKILL 与生成物逐字节/自动合并高危文件）逐项核证**零新发现**；两项发现均为 CI 已暴露并随修于 edc40162e 的接缝（`!skip` 残留、legacy `deliveries` 可选链），代理独立复核修复正确。
+
+**四维维度（无高严重度未决项），发现五项同交付修正**：①ref/upstream.md 补 G2 P1/P2 原生契约接缝登记（绑定字段/白名单/投影规范化/能力双向门控/prepare 编排/relay 窄操作——此前仅 P4/P6 接缝在册，行为层可被上游合并静默破坏无提示）；②architecture「均在已放开」语病修正；③version-planning 活正本四处「开工箭头临时语义」过时声称改为永久接线事实（spec:64/134、design 落点表/D6、STATUS——G2 P3b② 落地时漏回写对方正本，本轮补；开工箭头可访问名双轨事实同步 D6）；④main 侧第四处版本排序收敛（见裁定落地节补记）；⑤compareMaterialVersions 测试缺口登记恢复（收尾轮误随「已完成」移除）。**登记两项**：侧栏两处同形分发壳（navigateVersionWorkflow、openGoalWorkspace）不共用 dispatchScopedWorktrees 的一致性理由（M-6 登记范围始终为 Issue Start/Open 三壳，无误报；侧栏两处候选来源与 none 分支语义不同——进屏/转开工，保持独立）；version-planning 正本两处「验收屏沿用 VersionGoalCard 只读骨架」过时（#394 删该组件，main 侧未更新其特性 STATUS，本合并逐字保留不代改——与 #410 SKILL 物理顺序同立 Issue #418）。
+
+## 收尾合并与验收侧尾巴（2026-10-22 夜，#394/#409/#410 合入后）
+
+**合并**：merge main（#394 验收屏 v10、#409 CodeHub MR 详情、#410 计划屏八九轮）十二处冲突按两侧意图解决——生成物三件取合并后 standard/ 正本重跑生成器双 verify 过；week-planning SKILL 以 #410 全文为底＋G2 归档步绑定感知（0.7.1，stub 同步）；version-records 以 #394 v10 语义为底＋G2 五处绑定感知替换（无残留裸 bw/week- 引用）；v10 验收板面取 main 全文（G2 旧最小回显重接其页头，见下）；cycle-prompt 合 G2 boundVersion 分支结构＋#394 轮次退役尾句；open-archive-pr 随 #394 移入 version-cycle/、导入按 G2 归属修正（codehubStateOf/codehubWebUrl 在 codehub-task-item，函数体与 main 逐字一致）；docs 四处（architecture/upstream/INVENTORY/version-planning spec）以 main 文本为底＋G2 增量回插；烟测自动合并核对：v10 验收锚（`.acc-empty-board`＋「与验收助手新建验收」）×G2 绑定树旅程（bw/v9.9/acceptance）并存一致。schema 层核对：#394 退役轮次为 Legacy* 只读可选字段，HumanDecision 三态/workflow.archivePr/results 保留，G2 总览与墙读数消费方无悬空引用。
+
+**验收侧尾巴（#394 合入即触发的预留项闭环）**：验收 Skill 正本 v0.7.1 绑定感知（恢复步与归档步：绑定版本树 bw/<版本>/acceptance、旧无绑定树 bw/week-acceptance 逐字保留；根级 stub 同步，再生成 verify 双检通过）；验收侧护栏撤除（`ACCEPTANCE_SKILL_SYNC_NOTICE`、start/configure 拒绝判定、`skip:'acceptance-skill-sync'` 全撤，skip 参数同轮从 useEnsureCycleAutomation 删除不留兼容层；ensure-cycle-automation.test 12 例核对无护栏专用用例，零删测——ratchet 基线已随 #394 由 226→225（main 侧测试对冲），本轮 G2 侧零测试增删、例数恰在基线）；绑定版本回显重接 v10 `AcceptanceHeader`（boundVersion prop，满板与空板共用，`.acc-version-bound` 度量镜像计划屏 `.g3-version-bound`——v10 原注释「until G2 moves selection into the sidebar」预留的接缝）。
+
+**人裁定落地（2026-10-22 睡前授权：不跑本地 CI、不加测试用例、不真机验证）**：①版本排序统一——OverviewPage 的 Intl collator 与 use-acceptance-plan 裸 sort 改 `compareMaterialVersions` 单实现（v0.10<v0.9 字典序隐患修复；登记口径更正：use-wall-readings 的裸 sort 对象是工作树指纹串而非版本号，检视轮二「四套口径」登记过宽，renderer 实为三处；检视轮三再发现 main 侧第四处——version-material-workspace 材料 list RPC 版本候选裸字典序——同轮收敛，至此版本排序全仓 compareMaterialVersions 单实现）；②M-6 分发壳收敛——板面开工箭头/任务屏行/详情弹窗三处共用 `dispatchScopedWorktrees`（唯一直开/多候选选择器/无返 'none' 回落；埋点与回落文案留调用方，纯重构无行为变化）；③M-5B 调查结论（无代码改动）——分支 ref 匹配语义已由 F8 上提共享单实现 `reusable-branch-ref.ts`（main/renderer 双消费），剩余 main 侧内联为 `trunkDisplayRef`（remotes/heads/pinned 回退的展示语义，非纯去前缀，不宜收敛），`git-history-log-parser`/`base-ref` 的去前缀在 Orca 原生文件内（禁区不动）；④原型修订 9 事实区对齐生产（五格：工作区/计划归档 PR/验收归档 PR/发布证据/会议纪要＋页头状态角标与计划屏/验收屏/本版任务按钮；删底部两张解释卡与副标题行归档 PR/发布信息；spec/原型/生产三方口径一致，修订号不变，build --check 通过）；⑤总览遗留数据适配 v10 验收纪要（2026-10-23 晨裁定执行，见「本轮已知边界」段）。
+
+**遗留（人裁定不进本轮，已转原生 Issue #419）**：补绑定分支不一致「可写不可用死绑定」的对话框就地预警——不确定小修改不挤进收尾，整体侧边栏 PR 质量优先；design 登记的交互边界不变（写入后材料读写被期望分支围栏如实拒绝，恢复=清理或改绑）。
+
+**main 侧正本观察（不代改，已立原生 Issue #418）**：#410 week-planning SKILL 执行流程物理顺序为 1、2、4、3、5（评审块置于拆解块之前，与其第 1 步旅程声明「准备→目标→拆解→评审→归档」及 stage 表顺序矛盾）；本次合并按逐字保留处理，不代改他线正本。
+
+**合并 #414（验收屏对齐轮，2026-10-23）**：main 侧验收屏 bugfix（批注 store 按板面身份键控修跨屏互删、发送清空统一、批注入口挪 Showcase、prompt 瘦身与 SKILL/manifest 同步）合入本分支——六处冲突按两侧意图解决：week-planning SKILL 以 #414 第 2/4 步（会议遗留优先读已确认纪要 minutes.followups）为底＋G2 归档步绑定感知（版本 0.7.1，#414 内容变更未 bump，合并态由 0.7.1 覆盖）；version-acceptance SKILL 自动合并核对（#414 description 指针与纪要步 × G2 恢复/归档步绑定感知共存，stub 对齐）；AcceptanceSections 页头注释双侧合并（extraActions 槽随 #414 移除、boundVersion prop 保留）；version-planning spec 以 #414 批注 store 键控条款为底＋G2 P5 自动化括注重插；生成物三件重跑双 verify 过；自动合并区核对（两处 boundVersion prop 行、.acc-version-bound 规则、护栏撤除态完整）。
+
+**合并 #420（验收屏 UI 全量对齐，2026-10-23）**：main 侧 #417 验收屏样式轮（页头同行/Showcase 卡度量/按钮统一/分隔条全高可拖/冲突静默合并 acceptance-merge/demoEnv label 措辞）合入本分支——两处冲突：version-cycle.css（G2 只读回看 `.vc-readonly*` 块与 main 分隔条 Why 注释双保留）、bundled-skill-guides.ts（生成物不手合，重跑 generate:bundled-skill-guides＋generate:skill-bundle-manifest，双 verify 过）。自动合并区 G2 接缝逐项核对完好：boundVersion 回显三件（AcceptanceSections 页头 prop＋Board/EmptyBoard 两 call site）、`.acc-breadcrumb > span.acc-version-bound` 规则及其选择器上下文、version-acceptance SKILL v0.7.1 绑定感知（main demoEnv 新措辞并入 step2 共存）、version-records 绑定树命名五处、烟测锚 `.acc-empty-board`/「与验收助手新建验收」仍在；AppWorkspaceShell/acceptance.css 相对 main 仅存 G2 纯增量（+6/+9 行，零删除），material-draft 全取 main。
+
+**本节验证方式与 CI 结论**：本地 node_modules 缺失（主检出被外部清空未恢复），生成器/原型构建经仓外最小依赖（yaml/esbuild）跑通、verify 与 --check 全过；npx oxlint/oxfmt 做提交前预检；typecheck/vitest/烟测交远端 CI。首轮 run 39882662723（head 6a068cb49）红=G2×v10 接缝两处 typecheck（ensure 残留 `!skip` TS2304、只读回看 `deliveries` 可选链 TS18048），随修 `edc40162e`；合并 #414 后 head `2f5d90185` **全链绿（run 39885397115，verify＋smoke 双 job）**——合并态（#394 v10×G2×#414）的绑定树旅程烟测（含 v10 验收锚 `.acc-empty-board`/「与验收助手新建验收」）首次 CI 复核通过；STATUS 回写 `9500f3805` 绿（run 39886238388）、检视轮三修正 `67a9813cc` 绿（run 39887845754）、总览适配与 Issue 转交轮 `63a510433` 绿（run 39892090321，verify＋smoke 双 job）；纯文档回写 `88b1b2dab` 绿（run 39894765882）；合并 #420 后 head `b8ea74766` **全链绿（run 39906041235，verify＋smoke 双 job）**——合并态（#420 验收屏 UI 对齐×G2 绑定回显）烟测复核通过。
+
+## 本轮已知边界与未验证（如实留白）
+
+烟测延伸断言（重锚编辑链/清理单结构/总览挂载）已在 CI headless Electron 复核通过（run 39747900662，head 14f2ac399）；检视修正轮二＋merge main（#407）＋lint 与 typecheck 修正轮在 head 696c6d2ff 全链复核通过（run 39768520260）；merge main（#394/#409/#410/#414）＋验收侧尾巴＋裁定落地轮在 head 2f5d90185 全链复核通过（run 39885397115；期间 G2×v10 接缝 typecheck 两处随修于 edc40162e）。J1–J6、J9 清理执行链（Orca 确认单/force/他宿主实例共享通道删除与权限复核）、CodeHub 范围路径、侧栏/总览/只读回看视觉与明暗主题归人真壳；v10 验收板面×绑定回显、护栏撤除后绑定验收树的自动化登记（版本化 creationKey）与「与验收助手新建验收」注入链归人真壳（明早安装验证轮）；发布证据检索未接入（总览如实「未探测」）；总览任务完成数 live 读取未做（呈现引用数＋任务屏入口，墙卡读数仍承担 live 进展）；补绑定 issue 用途不提供（来源身份无法从登记完整推导）；补绑定死绑定就地预警=人裁定遗留、已转 Issue #419（见收尾合并节）；清理确认单勾选集为打开时快照（对话框打开后新出现的本机树不自动入列，重开即新）；只读回看停留期间树/绑定新出现不自动重定位（再次导航自愈）；history.read 返回的验收文档以类型断言收窄（main 侧已按 workflow 走 AcceptanceMaterialSchema.parse，实践安全）；WorktreeCardAgents 原生接口仅收裸 worktreeId（外层 key 已宿主限定；跨宿主同 id 时会话行本身可能挂错树，原生接口限制）；清理确认单 hostKey 折叠语义（null≡本机）与正牌身份 helper 的「未限定独立成桶」刻意不同（本机判定需要折叠，注释已说明）；compareMaterialVersions 无协议单测（裁定「不加测试用例」不加；四处消费方由 typecheck 与烟测兜底，缺口登记经检视轮三恢复）；侧栏两处同形分发壳（navigateVersionWorkflow、openGoalWorkspace）保持独立不共用 dispatchScopedWorktrees（候选来源与 none 分支语义不同：进屏/转开工，理由经检视轮三登记）；version-planning 正本两处「VersionGoalCard 只读骨架」声称为 main 侧陈旧（#394 已删该组件，已立 Issue #418）；总览遗留数据已适配 v10（2026-10-23 晨人裁定执行）：事实区纪要格增验收纪要行（文档级遗留计数＋确认状态如实，仅 v10 材料有该节）；周报表逐目标「待确认会议指导」计数保留给 v10 前 legacy 材料（v10 followups 为文档级、无 goalId，不做假归属）。已完成项移出本节：验收 SKILL 正本同步与护栏撤除、版本排序统一、分发壳收敛、main 侧去前缀调查、原型事实区对齐——见「收尾合并与验收侧尾巴」节；P3a「未验证」段的清理占位/屏内选版仍在/总览行未渲染/只读回看未实现四条已被 P3b/P5/P6 交付取代。
+
+## 定稿设计的证据边界
+
+[高保真（修订 8 定稿，文件现为修订 9）](version-workspace-prototype.html?rev=9) 与 [旅程报告](version-workspace-journey.html) 于 2026-10-20 评审定稿：多版本并行、版本平铺回看、逻辑目标目录、目标工作树按需创建、原生创建器与工作区复用、不新增冻结操作、版本下方统一保留当前项目与私人项目的原生工作区入口；版本收尾为版本级清理：版本行删除图标＋与 Orca 同口径确认对话框，复用原生删除链与预检，默认只删本机 owned 树，材料与版本目录保留。新建版本准备计划/验收两树，侧栏入口合并流程树；原型按整屏标注计划/验收复用，目标仅筛选同一任务屏。初始 v0.7 在制、v0.6 演示已归档回看；新增版本由用户创建。当前原型为修订 9（2026-10-22，人确认「最简、表格周报风格」）：仅版本总览改表格周报风格，其余形态沿修订 8；生产版本总览页与原型同口径落地。修订 9 的事实区构成已于 2026-10-22 夜经人授权对齐生产口径（五格＋页头角标与三屏按钮，删底部解释卡；修订号不变），spec、原型与生产三方一致。
+
+本轮修改设计资料与原型，未改 Electron 生产代码、真实工作树、自动化或会话记录。项目总览及其他既有屏幕仅标复用位置。所有新建、父树选择、清理与会话均为内存演示，刷新清空。图标操作与业界依据见 spec，不把参考当实现证据。
+
+修订 7 的浏览器检查及提交前门禁结果留在 PR 验证记录。未验证 Electron 真壳、共享宿主、实际工作树创建/删除/跨宿主确认单、provider 写回、原生会话历史和旧共享树迁移；前版浏览器结果不能证明本版生产接线。
