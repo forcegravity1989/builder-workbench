@@ -55,11 +55,9 @@ v10 复用的共用件随计划屏 G3（[#399](https://github.com/forcegravity19
 
 负责人真机装 v0.7.0 复核后反馈验收屏与计划屏的质量差距；AskUser 三项拍板：收折单一入口+收折栏可点展开、生产全量对齐计划屏/高保真、确认所装为 v0.7.0（五条抱怨均为最新代码真实欠账）。高保真审阅与真机反馈再拍板：目标行删报告入口（报告一份/版本，入口只留「验收准备」）、Issue 行补原生任务详情按钮（生产本有、高保真补齐）、Showcase 区块头补「刷新 Issue」（计划屏漏抄）、演示环境行显示系统名绑定链接（`demoEnv.kind='url'` 增可选 `label`）、CAS 冲突改按字段归属静默合并只留一行提示。
 
-**壳层（两屏同受益）**：`.vc-split` 改 6px 实体全高热区+居中 1px 线（上游 `tab-group-split-resize-handle` 同款）——旧 1px 线+外扩热区被两侧定位内容（xterm 视口、板面定位容器）盖住，只有顶部 titlebar 一段可拖（负责人真机观察证实）；titlebar 的验收专用老「收折会话」开关删除，收折/展开统一板面页头 chip 唯一入口；收折态 36px 栏加整栏点击展开覆盖层（title 提示），分隔条收折不渲染维持第九轮拍板。
+**壳层与验收屏对齐**：`.vc-split` 改 6px 实体全高热区（负责人真机证实旧版只有顶部 titlebar 一段可拖）、titlebar 删验收专用老「收折会话」开关（收折/展开统一板面页头 chip 唯一入口）、收折态 36px 栏加整栏点击展开覆盖层；页头同行，Showcase 卡 / Issue 行 / 纪要卡 / 归档发布卡 / 旅程导航抄计划屏度量，动作按钮统一 `BoardActionButton`，长 title 与说明文字清到计划屏密度；SKILL/version-records 同步 demoEnv label 写回规则（四件套再生）。实现明细见 [design.md](design.md)「UI 对齐轮」两段，本节不留重复副本。证据报告 HTML 改经 Orca 原生浏览器预览打开（spec A04「内置浏览器可打开」此前实为编辑器打开，真机反馈修正）。检视轮同批修正：两屏 `refreshIssues` 的 finally 守卫死锁同源缺陷（刷新在途切版本转圈永久卡死）、合并基线不推进（连环冲突钉死已采纳值）、宿主已删分支复制守卫缺失、1px 分隔线半像素定位发虚、base 缺失行默认空串盖远端人写值、远端已删空 result 行被复活。
 
-**验收屏对齐**：页头同行（标题左、动作右，度量抄 `vp-header`）、Showcase 卡抄 `g3-goal` 度量（卡片底色、标题 600+悬停下划线、meta 独立行 78px 缩进、body 缩进、task-head border-top）、Issue 行对齐 `g3-task`（baseline、gap 12、8px 节奏、悬停才下划线）、动作按钮统一 `BoardActionButton`（部署 BrainCircuit、发布 Rocket、出包 Plus、下载 Download）、`wb-btn` 与裸文字按钮退出板面动作、纪要卡抄 `g3-minutes`、归档/发布卡抄 `g3-archive`、旅程导航抄 `g3-journey` 等分、长 title 与说明文字清到计划屏密度。SKILL/version-records 同步 demoEnv label 写回规则，四件套再生。
-
-**冲突静默合并**：`acceptance-merge.ts` 纯函数 + `MaterialDraftController` 可选 merge 策略与干净基线追踪（计划屏不传、行为不变）；人字段（decision/note/nextStep/issueNotes/issueMarks/minutes）保留本地相对基线改动，模型字段取远端，本地独有 result 整条保留；`AcceptanceNotices` 退役裸 JSON 对照。**欠账：merge 纯函数无单测看护（新增用例受 ratchet 约束需对冲，留专项回补）；冲突合并与收折/拖拽新交互未在真壳验证。**
+**冲突静默合并**：CAS 冲突按字段归属自动合并（`acceptance-merge.ts` 纯函数 + `MaterialDraftController` 可选策略与干净基线追踪；计划屏不传、行为不变），人字段保本地改动、模型字段取远端、本地新建或人改过的 result 行保留，界面只留一行提示，`AcceptanceNotices` 退役裸 JSON 对照；仅基线缺失（脏草稿恢复后再冲突）退回两按钮人工处置。机制明细见 [design.md](design.md)。**欠账：merge 纯函数无单测看护（新增用例受 ratchet 约束需对冲，留专项回补）；冲突合并、分隔条全高拖拽与收折栏点击展开未在真壳验证。**
 
 **验证**：typecheck、check:dead-classes、受影响 vitest（验收套件 + material-draft + shared 材料链）、verify:bundled-skill-guides / verify:skill-bundle-manifest、build-acc --check 绿；app-startup-routing.test.ts 一例在 Windows worktree 因 CRLF 多行断言失败（期望 needle 以 CRLF 形态存在，非本轮引入，Linux CI 不受影响）。真壳留人：分隔条全高拖拽、收折栏点击展开、页头同行与新卡/按钮形态、演示环境系统名、冲突静默合并一行提示。
 

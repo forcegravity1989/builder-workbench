@@ -75,8 +75,13 @@ export class MaterialDraftController<T extends VersionDocumentIdentity> {
         if (this.merge && this.base && remote) {
           // 静默合并（验收屏 2026-10-23 拍板）：人与模型字段由 human-guard 保证
           // 不重叠，合并后保持 dirty 交给自动保存落盘，不再要求人工核对。
+          // 基线随合并推进到 remote：落盘前再次冲突时，该按「本地人改」参与 diff
+          // 的只有人输入。不推进会把首次合并采纳的远端值钉死成人改；推进成合并
+          // 输出则会把人改判为「未改」而被下一次远端回吞。
+          const merged = this.merge(this.base, this.value.document, remote.document)
+          this.base = remote.document
           this.update({
-            document: this.merge(this.base, this.value.document, remote.document),
+            document: merged,
             expectedRevision: remote.revision,
             dirty: true,
             notice: '远端材料已更新，你的输入已合并'

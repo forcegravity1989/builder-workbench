@@ -68,9 +68,11 @@
   position: absolute;
   top: 0;
   bottom: 0;
+  /* 整数像素定位:6px 盒上 left:50% 恰落 3px。带 translateX(-50%) 的半像素
+     在 DPR=1 与分数缩放下会抗锯齿发虚(上游同款用 3px 宽线规避,这里保持 1px
+     视觉与旧分隔线一致)。 */
   left: 50%;
   width: 1px;
-  transform: translateX(-50%);
   background: var(--color-divider);
   transition: background 100ms ease;
 }

@@ -22,6 +22,15 @@
       "ca6c6eece7": "skills",
       "d54e66004c": "terminal"
     },
+    "app": {
+      "shell": {
+        "AppWorkspaceShell": {
+          "4bf79d6d8c": "收折会话栏",
+          "5c18da0a65": "收折会话",
+          "722fd4ab69": "展开会话"
+        }
+      }
+    },
     "components": {
       "CodexRestartChip": {
         "9263e75f49": "Codex is using the previous account"

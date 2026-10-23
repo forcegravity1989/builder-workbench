@@ -523,6 +523,7 @@
   color: var(--muted-foreground);
   font-size: 12px;
 }
+/* 验收侧 meta 当前为单 span(负责人);规则与 g3 对齐保留,补计划完成等字段即生效。 */
 .acc-goal-meta span + span::before {
   content: '·';
   margin-right: 16px;
@@ -1095,17 +1096,6 @@
 .va-conflict {
   margin: 0 32px var(--space-2);
   font-size: 12px;
-}
-.va-conflict pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font: inherit;
-  font-size: 12px;
-  line-height: 1.7;
-  max-height: 220px;
-  overflow: auto;
-  background: var(--color-surface);
-  padding: var(--space-3);
 }
 
 /* ===== 出包区块(沿既有实现:工具行 + 两行式最新包列表) =====

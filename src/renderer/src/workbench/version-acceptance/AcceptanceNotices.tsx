@@ -98,9 +98,17 @@ export function AcceptanceNotices({
             <button
               className="wb-btn wb-btn-sm"
               onClick={() => {
+                const current = draft
                 void window.api.ui
-                  .writeClipboardText(JSON.stringify(draft.document, null, 2))
-                  .then(() => onRemoteDeleted())
+                  .writeClipboardText(JSON.stringify(current.document, null, 2))
+                  .then(() => {
+                    // 与采用远端分支同款守卫:复制期间草稿再变化时,不能把未入
+                    // 剪贴板的新输入随「删除重读」清掉。
+                    if (controller.value !== current) {
+                      throw new Error('复制期间草稿已变化，保留当前输入；请重新复制后继续。')
+                    }
+                    onRemoteDeleted()
+                  })
                   .catch((reason) => setError(String(reason)))
               }}
             >
