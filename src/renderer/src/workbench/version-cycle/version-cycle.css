@@ -34,17 +34,6 @@
   margin-left: auto;
   -webkit-app-region: no-drag;
 }
-.vc-session-toggle {
-  align-self: center;
-  margin-left: var(--space-2);
-  padding: 2px var(--space-2);
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-sm);
-  background: var(--color-card);
-  color: var(--color-text);
-  font-size: 11px;
-  cursor: pointer;
-}
 .vc-board-content {
   display: flex;
   flex: 1;
@@ -64,18 +53,30 @@
   font-size: 12px;
   color: var(--color-neutral-600);
 }
+/* Why: 6px solid hit zone with a centered 1px line — the upstream
+   tab-group-split-resize-handle pattern. A 1px line with a ±3px overhang lost
+   hit-testing to positioned content on both sides (xterm viewport, board
+   containers), leaving only the top titlebar strip draggable. */
 .vc-split {
   position: relative;
-  flex: 0 0 1px;
+  flex: 0 0 6px;
   cursor: col-resize;
-  background: var(--color-divider);
+  background: transparent;
 }
 .vc-split::after {
   content: '';
   position: absolute;
-  inset: 0 -3px;
+  top: 0;
+  bottom: 0;
+  /* 整数像素定位:6px 盒上 left:50% 恰落 3px。带 translateX(-50%) 的半像素
+     在 DPR=1 与分数缩放下会抗锯齿发虚(上游同款用 3px 宽线规避,这里保持 1px
+     视觉与旧分隔线一致)。 */
+  left: 50%;
+  width: 1px;
+  background: var(--color-divider);
+  transition: background 100ms ease;
 }
-.vc-split:hover {
+.vc-split:hover::after {
   background: var(--color-accent);
 }
 

@@ -33,7 +33,7 @@ taskSnapshot 保存验收当时逐项读取的 Issue 状态。每项 ready 含 r
 
 验收 `results[]` 的现行字段是 goalId、readings、note、nextStep，以及可选的 decision、issueNotes、issueMarks。`issueNotes` 与 `issueMarks` 以完整任务身份关联人工备注与 carry（遗留）标记；carry 就是下版计划屏「延期遗留」的来源。任务的原生状态仍从 provider 读取，标记不代替任务状态。**风险标记已整体退役**，`issueMarks` 只剩 carry。
 
-`demoEnv` 是版本级演示环境，由模型部署后写回，两种形态二选一：`{kind:'url', url}` 给 web 服务（必须是以 http:// 或 https:// 开头的绝对地址，不接受协议相对或相对路径），界面点击经内置浏览器打开；`{kind:'launched', detail}` 给桌面应用，如实记录启动状态，不伪造链接。缺省表示尚未部署。版本级一份完整交付件加一个演示环境取代了旧的目标级交付件。
+`demoEnv` 是版本级演示环境，由模型部署后写回，两种形态二选一：`{kind:'url', url, label?}` 给 web 服务（url 必须是以 http:// 或 https:// 开头的绝对地址，不接受协议相对或相对路径；label 是一句系统名，板面「演示环境」行显示系统名、缺省回退 URL，点击经内置浏览器打开）；`{kind:'launched', detail}` 给桌面应用，如实记录启动状态，不伪造链接。缺省表示尚未部署。版本级一份完整交付件加一个演示环境取代了旧的目标级交付件。
 
 验收材料可选 `minutes` 节，结构与计划侧同形但**没有闭环位**：`consensus` 为共识若干点（字符串数组），`followups` 为遗留若干点（条目含稳定 id 与 text），`confirmed`/`confirmedAt` 记录人工确认，`sources`/`updatedAt` 可选。正文由验收助手基于板面在线批注与可选会议转写稿总结撰写，仅在未确认时可由模型通道写入或改写；人在界面确认后整节对模型冻结，要改正文须先由人在屏上撤销确认。验收侧遗留条目**不设闭环状态**——会上已解决的写进共识或不写入遗留；遗留条目原样成为下版计划屏「会议遗留」的来源，且只有人工确认过的纪要才会被下版读取。`followups[].id` 用稳定身份，人工增删不让既有编号漂移，界面按数组序显示 M1…Mn。
 

@@ -123,7 +123,7 @@ function MinutesCard({
             <span className="acc-muted">{minutes.sources}</span>
           ) : !initialized ? (
             // A UI hint, not material: it is never written into `sources`.
-            <span className="acc-muted">尚未整理 · 可直接编辑或粘贴会议结论</span>
+            <span className="acc-muted">尚未整理 · 可直接编辑或粘贴</span>
           ) : null}
           <span className="acc-minutes-actions">
             <BoardIconButton

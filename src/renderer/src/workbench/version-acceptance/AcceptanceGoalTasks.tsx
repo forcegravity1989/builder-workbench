@@ -123,12 +123,12 @@ export function AcceptanceGoalTasks({
               </span>
               {markers}
               {row?.note && (
-                <span className="acc-task-note readonly" title="Issue 状态读不到，已存备注只读展示">
+                <span className="acc-task-note readonly" title="状态读不到 · 已存备注只读">
                   {row.note}
                 </span>
               )}
               {row?.carry && (
-                <span className="acc-carry on" title="已标记遗留；Issue 状态读不到，标记仍生效">
+                <span className="acc-carry on" title="状态读不到；遗留标记仍生效">
                   遗留
                 </span>
               )}
@@ -146,17 +146,14 @@ export function AcceptanceGoalTasks({
             </button>
             <span
               className={`acc-task-kind${kind === 'Bug' ? ' bug' : ''}`}
-              title="由 Issue 标签推导；无 Bug/缺陷 标签默认按 Feature 显示"
+              title="由 Issue 标签推导"
             >
               {kind}
             </span>
             <span className="acc-task-state">{readableTaskState(task.state)}</span>
             {markers}
             {closed && row?.note ? (
-              <span
-                className="acc-task-note readonly"
-                title="已关闭 Issue：已存备注只读展示，不再编辑"
-              >
+              <span className="acc-task-note readonly" title="已关闭 · 备注只读">
                 {row.note}
               </span>
             ) : (
@@ -177,7 +174,7 @@ export function AcceptanceGoalTasks({
                 className={`acc-carry${row?.carry ? ' on' : ''}`}
                 aria-pressed={Boolean(row?.carry)}
                 disabled={disabled}
-                title="人工判断：验收后是否遗留（下版计划屏「延期遗留」回显）"
+                title="验收后是否遗留；回显到下版计划屏「延期遗留」"
                 onClick={() => onCarry(reference, !row?.carry)}
               >
                 遗留

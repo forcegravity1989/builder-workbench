@@ -116,9 +116,9 @@ export function PlanningGoals({
         setReadError(reason instanceof Error ? reason.message : String(reason))
       }
     } finally {
-      if (requestedKey === referenceKeyRef.current) {
-        setRefreshing(false)
-      }
+      // 复位转圈不设 key 守卫：刷新在途时切版本会让守卫跳过复位，按钮永久禁用、
+      // 图标永久转圈（组件不卸载）。守卫只该保护读回结果的落点。
+      setRefreshing(false)
     }
   }
 
