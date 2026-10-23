@@ -1,0 +1,500 @@
+{
+  "schema_version": 3,
+  "version": "v0.7",
+  "cycleId": "e09136aa-7805-418e-966f-43d66935c643",
+  "planRef": {
+    "kind": "committed",
+    "version": "v0.7",
+    "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286",
+    "revision": "sha256:e596a743b3d8d197eb72ffdcc6800d0174281095b927376288eba114dd6d62dd",
+    "sourceCommit": "e6c619188d6c4eb542d2d99fb97d6e3ebf5f46ae"
+  },
+  "candidateRef": {
+    "repository": "github.com/forcegravity1989/builder-workbench",
+    "version": "0.7.0",
+    "commit": "bfabf9befd4efee4f8a98f4c5d181f43fed01620"
+  },
+  "preparedArtifacts": [
+    {
+      "artifactId": "pkg-v0.7.0-win-x64-setup",
+      "kind": "package",
+      "location": "https://github.com/forcegravity1989/builder-workbench/releases/download/v0.7.0/orca-windows-setup.exe",
+      "candidateRef": {
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "version": "0.7.0",
+        "commit": "bfabf9befd4efee4f8a98f4c5d181f43fed01620"
+      },
+      "generatedAt": "2026-10-23T01:22:52.255Z",
+      "command": "gh workflow run bw-release.yml --ref main -f version=0.7.0（GitHub Actions run 39883107898「BW Release Windows」，success）",
+      "executionRoot": "GitHub Actions windows-2022 runner，checkout@bfabf9befd4efee4f8a98f4c5d181f43fed01620",
+      "checksum": "sha512:8y3xDtu6mDyqSg+lGOL+wH1CvpXUFtegqqOGcHh2ciFUqh+EMJEqcZsUR6Rla+lkETrVgu/M4brENJUl8nGiVQ=="
+    },
+    {
+      "artifactId": "report-v0.7-acceptance-evidence",
+      "kind": "verification",
+      "location": ".bw/planning/v0.7/acceptance-evidence.html",
+      "candidateRef": {
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "version": "0.7.0",
+        "commit": "bfabf9befd4efee4f8a98f4c5d181f43fed01620"
+      },
+      "generatedAt": "2026-10-23T05:17:43.581Z",
+      "command": "验收会话按 version-acceptance 技能 evidence-report-template 生成（HTML 正本，模板首选格式）；证据采集：gh/git 平台读回 + 仓内文件核验 + 演示分诊（留证截图由人按报告文末清单补拍，落 shots/）",
+      "executionRoot": "bw/week-acceptance 固定工作树 D:/builders-workbench/workspaces/builder-workbench/.bw/worktrees/builder-workbench/week-acceptance",
+      "checksum": "sha256:cfeabfb55a979d87a59a5c429b5eb2ffe2361be2fd97f87714656020f5e6860b"
+    }
+  ],
+  "demoEnv": {
+    "kind": "launched",
+    "detail": "桌面应用已在本机安装并启动：Workbench（自报版本 0.7.0-rc.20261023.1，exe 产品版本 1.4.197，进程 pid 21024，runtime ready）。\n- 2026-10-23 经人确认：该运行实例即已下载的交付包、该版本无问题，直接作为演示环境使用。\n- 候选包：Workbench 0.7.0 orca-windows-setup.exe（Release v0.7.0，commit bfabf9befd4efee4f8a98f4c5d181f43fed01620，sha512 见 preparedArtifacts）。"
+  },
+  "taskSnapshot": [
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 341,
+        "goalId": "G1"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 341,
+      "title": "【v0.7|G1】帮 builders 梳理特性与核心指标：统一一版并录入真实数据",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/341",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.6",
+        "bw:plan:v0.7"
+      ],
+      "readAt": "2026-10-23T06:40:36.224Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 328,
+        "goalId": "G2"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 328,
+      "title": "【v0.7|G2】计划屏/验收屏适配侧边栏版本运作树（去掉屏内版本筛选等）",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/328",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.7"
+      ],
+      "readAt": "2026-10-23T06:40:36.132Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 334,
+        "goalId": "G2"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 334,
+      "title": "【v0.7|G2】版本总览屏（周报样式）：聚合该版本计划与验收数据",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/334",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.7"
+      ],
+      "readAt": "2026-10-23T06:40:36.354Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 372,
+        "goalId": "G2"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 372,
+      "title": "【v0.7|G2】未重装时共享连接反复失效，重新生成链接后团队成员需重新配对",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/372",
+      "labels": [
+        "bug",
+        "bw:plan:v0.7"
+      ],
+      "readAt": "2026-10-23T06:40:36.824Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 383,
+        "goalId": "G2"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 383,
+      "title": "【v0.7|G2】Orca 侧边栏调整：项目墙 → 项目 → 版本运作树，会话随目标与版本归档",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/383",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.7"
+      ],
+      "readAt": "2026-10-23T06:40:37.152Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 400,
+        "goalId": "G2"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 400,
+      "title": "【v0.7|G2】项目墙用极简图标与侧栏统一项目配置",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/400",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.7"
+      ],
+      "readAt": "2026-10-23T06:40:37.328Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 374,
+        "goalId": "G3"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 374,
+      "title": "【v0.7|G3】计划屏/验收屏 skill 增加「获取会议纪要」步骤：按会议 ID 抓转写稿 + 子代理按议题提炼，继承进计划与验收产物",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/374",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.7"
+      ],
+      "readAt": "2026-10-23T06:40:37.390Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 384,
+        "goalId": "G3"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 384,
+      "title": "【v0.7|G3】计划屏易用性问题：版本进展不可读、目标卡标题重复渲染（同步检查验收屏是否有相似问题）",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/384",
+      "labels": [
+        "bug",
+        "bw:plan:v0.7"
+      ],
+      "readAt": "2026-10-23T06:40:37.890Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 385,
+        "goalId": "G3"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 385,
+      "title": "【v0.7|G3】计划屏目标下 Issue 直接「开工」：侧边栏固定目录建 worktree，不跳任务屏",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/385",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.7"
+      ],
+      "readAt": "2026-10-23T06:40:38.194Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 317,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 317,
+      "title": "【v0.7|G4】首次启动弹出 Orca 的向导、功能提示和功能墙，反馈入口仍指向 Orca",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/317",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.7"
+      ],
+      "readAt": "2026-10-23T06:40:38.343Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 323,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 323,
+      "title": "【v0.7|G4】设置→集成只留 GitHub，新增 CodeHub / WeLink 卡片，三张卡都能原地安装与登录",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/323",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.7"
+      ],
+      "readAt": "2026-10-23T06:40:38.443Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 387,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 387,
+      "title": "【v0.7|G4】CodeHub 支持问题集中修复：PR 渲染、项目维度筛选、来源路由与引导",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/387",
+      "labels": [
+        "bug",
+        "bw:plan:v0.7"
+      ],
+      "readAt": "2026-10-23T06:40:38.892Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 338,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 338,
+      "title": "Workbench 能查最新版本，点「更新」后自动下载安装包并完成更新",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/338",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.7"
+      ],
+      "readAt": "2026-10-23T06:40:39.276Z"
+    }
+  ],
+  "results": [
+    {
+      "goalId": "G1",
+      "readings": [],
+      "note": "",
+      "nextStep": ""
+    },
+    {
+      "goalId": "G2",
+      "readings": [],
+      "note": "",
+      "nextStep": ""
+    },
+    {
+      "goalId": "G3",
+      "readings": [],
+      "note": "",
+      "nextStep": ""
+    },
+    {
+      "goalId": "G4",
+      "readings": [],
+      "note": "",
+      "nextStep": ""
+    }
+  ],
+  "workflow": {
+    "stage": "preparation",
+    "updatedAt": "2026-10-23T03:42:13.996Z"
+  }
+}
