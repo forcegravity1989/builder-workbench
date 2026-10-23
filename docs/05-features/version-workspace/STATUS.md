@@ -73,7 +73,7 @@
 
 **合并 #414（验收屏对齐轮，2026-10-23）**：main 侧验收屏 bugfix（批注 store 按板面身份键控修跨屏互删、发送清空统一、批注入口挪 Showcase、prompt 瘦身与 SKILL/manifest 同步）合入本分支——六处冲突按两侧意图解决：week-planning SKILL 以 #414 第 2/4 步（会议遗留优先读已确认纪要 minutes.followups）为底＋G2 归档步绑定感知（版本 0.7.1，#414 内容变更未 bump，合并态由 0.7.1 覆盖）；version-acceptance SKILL 自动合并核对（#414 description 指针与纪要步 × G2 恢复/归档步绑定感知共存，stub 对齐）；AcceptanceSections 页头注释双侧合并（extraActions 槽随 #414 移除、boundVersion prop 保留）；version-planning spec 以 #414 批注 store 键控条款为底＋G2 P5 自动化括注重插；生成物三件重跑双 verify 过；自动合并区核对（两处 boundVersion prop 行、.acc-version-bound 规则、护栏撤除态完整）。
 
-**本节验证方式与 CI 结论**：本地 node_modules 缺失（主检出被外部清空未恢复），生成器/原型构建经仓外最小依赖（yaml/esbuild）跑通、verify 与 --check 全过；npx oxlint/oxfmt 做提交前预检；typecheck/vitest/烟测交远端 CI。首轮 run 39882662723（head 6a068cb49）红=G2×v10 接缝两处 typecheck（ensure 残留 `!skip` TS2304、只读回看 `deliveries` 可选链 TS18048），随修 `edc40162e`；合并 #414 后 head `2f5d90185` **全链绿（run 39885397115，verify＋smoke 双 job）**——合并态（#394 v10×G2×#414）的绑定树旅程烟测（含 v10 验收锚 `.acc-empty-board`/「与验收助手新建验收」）首次 CI 复核通过；STATUS 回写 `9500f3805` 绿（run 39886238388）、检视轮三修正 `67a9813cc` 绿（run 39887845754）。
+**本节验证方式与 CI 结论**：本地 node_modules 缺失（主检出被外部清空未恢复），生成器/原型构建经仓外最小依赖（yaml/esbuild）跑通、verify 与 --check 全过；npx oxlint/oxfmt 做提交前预检；typecheck/vitest/烟测交远端 CI。首轮 run 39882662723（head 6a068cb49）红=G2×v10 接缝两处 typecheck（ensure 残留 `!skip` TS2304、只读回看 `deliveries` 可选链 TS18048），随修 `edc40162e`；合并 #414 后 head `2f5d90185` **全链绿（run 39885397115，verify＋smoke 双 job）**——合并态（#394 v10×G2×#414）的绑定树旅程烟测（含 v10 验收锚 `.acc-empty-board`/「与验收助手新建验收」）首次 CI 复核通过；STATUS 回写 `9500f3805` 绿（run 39886238388）、检视轮三修正 `67a9813cc` 绿（run 39887845754）、总览适配与 Issue 转交轮 `63a510433` 绿（run 39892090321，verify＋smoke 双 job）；本回写提交为纯文档增量，其 run 以 CI 页为准。
 
 ## 本轮已知边界与未验证（如实留白）
 
