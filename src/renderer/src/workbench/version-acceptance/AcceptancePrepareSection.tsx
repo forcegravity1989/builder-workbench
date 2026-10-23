@@ -1,4 +1,11 @@
-import { ArrowUpRight, ChevronDown, ChevronRight, FileText, MonitorSmartphone } from 'lucide-react'
+import {
+  ArrowUpRight,
+  BrainCircuit,
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  MonitorSmartphone
+} from 'lucide-react'
 import { useState, type Ref } from 'react'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
 import type {
@@ -6,7 +13,7 @@ import type {
   PackagePipelinePort
 } from '../../../../shared/workbench/package-pipeline'
 import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
-import { BoardIconButton } from '../board-ui'
+import { BoardActionButton, BoardIconButton } from '../board-ui'
 import type { SendActionWrap } from '../plan-send-menu'
 import { latestVerificationArtifact } from './acceptance-model'
 import { AcceptancePackage } from './AcceptancePackage'
@@ -92,32 +99,28 @@ export function AcceptancePrepareSection({
             <button
               type="button"
               className="acc-link"
-              title="环境 URL 由验收助手部署后写回材料；点击经内置 Orca 浏览器打开"
+              title={`经内置 Orca 浏览器打开 ${demoEnv.url}`}
               onClick={() => onOpenMaterial(demoEnv.url)}
             >
-              {demoEnv.url}
+              {demoEnv.label || demoEnv.url}
               <ArrowUpRight size={13} aria-hidden="true" />
             </button>
           ) : demoEnv?.kind === 'launched' ? (
-            <span className="acc-prepare-value" title="桌面应用类没有环境 URL，显示启动状态">
+            <span className="acc-prepare-value" title="桌面应用无环境 URL，显示启动状态">
               已启动 · {demoEnv.detail}
             </span>
           ) : (
-            <span className="acc-muted">
-              未部署 · 点「部署」注入请求，验收助手按项目自有入口部署并写回环境
-            </span>
+            <span className="acc-muted">未部署 · 点「部署」注入请求</span>
           )}
           {onSendAction(
             '下载最新安装包，按项目自有部署入口部署启动，完成后给出本次演示环境',
             '部署请求',
-            <button
-              type="button"
-              className="acc-text-button"
+            <BoardActionButton
               disabled={disabled || !latest}
               title={latest ? '向验收助手会话注入部署请求' : '尚无制品包；先出包'}
             >
-              部署
-            </button>
+              <BrainCircuit size={14} aria-hidden="true" /> 部署
+            </BoardActionButton>
           )}
         </div>
 
@@ -128,14 +131,14 @@ export function AcceptancePrepareSection({
             <button
               type="button"
               className="acc-link"
-              title="一个版本一份、全目标合并；点击按所属宿主打开"
+              title="一个版本一份，全目标合并"
               onClick={() => onOpenMaterial(report.location)}
             >
               已生成 {new Date(report.generatedAt).toLocaleString('zh-CN')}
               <ArrowUpRight size={13} aria-hidden="true" />
             </button>
           ) : (
-            <span className="acc-muted">未生成 · 在会话中让验收助手按目标采集证据并生成</span>
+            <span className="acc-muted">未生成 · 在会话中让验收助手生成</span>
           )}
           <BoardIconButton
             label={report ? '打开验收证据报告' : '报告未生成；先在会话中让验收助手生成'}

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import type {
   AcceptanceMaterial,
@@ -30,8 +30,6 @@ export function AcceptanceGoalRows({
   numbersFor,
   onOpenAnnotationPanel,
   annotateEntry,
-  hasReport,
-  onOpenReport,
   sectionRef
 }: {
   plan: PlanningMaterial
@@ -47,8 +45,6 @@ export function AcceptanceGoalRows({
   onOpenAnnotationPanel(): void
   /** 批注模式入口（区块头就近放置，与计划屏同形态；页头不再设全局入口）。 */
   annotateEntry?: ReactNode
-  hasReport: boolean
-  onOpenReport(): void
   sectionRef: Ref<HTMLElement>
 }) {
   const [reads, setReads] = useState<CycleTaskRead[] | null>(null)
@@ -56,6 +52,9 @@ export function AcceptanceGoalRows({
   const [expanded, setExpanded] = useState(false)
   const [expandedSignal, setExpandedSignal] = useState(0)
   const referenceKey = JSON.stringify(plan.tasks ?? [])
+  const [refreshing, setRefreshing] = useState(false)
+  const referenceKeyRef = useRef(referenceKey)
+  referenceKeyRef.current = referenceKey
   // Keyed on the serialized references, not the array identity: the fixed plan is
   // re-read after a save and hands back a fresh array each time.
   const tasksRef = useRef(plan.tasks)
@@ -110,6 +109,32 @@ export function AcceptanceGoalRows({
       )
     : null
 
+  /** 手动重读 Issue 状态（计划屏区块头同款，验收屏 2026-10-23 补齐）；在途时
+      切换版本不得让旧读回覆盖新列表。快照同步更新：新读数即新证据。 */
+  const refreshIssues = async () => {
+    if (!plan.tasks.length || refreshing) {
+      return
+    }
+    const requestedKey = referenceKey
+    setRefreshing(true)
+    setReadError(null)
+    try {
+      const items = await taskPort.refresh(scope, plan.tasks)
+      if (requestedKey === referenceKeyRef.current) {
+        setReads(items)
+        snapshot.current(items)
+      }
+    } catch (reason) {
+      if (requestedKey === referenceKeyRef.current) {
+        setReadError(reason instanceof Error ? reason.message : String(reason))
+      }
+    } finally {
+      if (requestedKey === referenceKeyRef.current) {
+        setRefreshing(false)
+      }
+    }
+  }
+
   const judged = plan.goals.filter(
     (goal) => document.results.find((item) => item.goalId === goal.goalId)?.decision
   ).length
@@ -125,6 +150,17 @@ export function AcceptanceGoalRows({
         </h2>
         <span className="acc-title-actions">
           {annotateEntry}
+          <BoardIconButton
+            label={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
+            disabled={disabled || !plan.tasks.length || refreshing}
+            onClick={() => void refreshIssues()}
+          >
+            <RefreshCw
+              size={15}
+              aria-hidden="true"
+              className={refreshing ? 'is-spinning' : undefined}
+            />
+          </BoardIconButton>
           {readError && (
             <span className="acc-muted" role="status">
               Issue 状态未知：{readError}
@@ -163,8 +199,6 @@ export function AcceptanceGoalRows({
               onGoalChange={onGoalChange}
               numbersFor={numbersFor}
               onOpenAnnotationPanel={onOpenAnnotationPanel}
-              hasReport={hasReport}
-              onOpenReport={onOpenReport}
               expanded={expanded}
               expandedSignal={expandedSignal}
               viewStateKey={goalCardViewKey(scope, plan.version, goal.goalId)}

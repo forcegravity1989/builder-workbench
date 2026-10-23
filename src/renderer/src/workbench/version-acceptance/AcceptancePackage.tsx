@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowUpRight, Download } from 'lucide-react'
+import { Download, Plus } from 'lucide-react'
 import type { MetricScope } from '../../../../shared/workbench/metrics'
 import type {
   PackageLatest,
   PackagePipelinePort
 } from '../../../../shared/workbench/package-pipeline'
+import { BoardActionButton } from '../board-ui'
 
 type BusyKind = 'list' | 'latest' | 'launch' | 'download'
 
@@ -204,24 +205,20 @@ export function AcceptancePackage({
             <option key={name}>{name}</option>
           ))}
         </select>
-        <button
-          className="wb-btn wb-btn-primary wb-btn-sm"
+        <BoardActionButton
           disabled={busy !== null || !pipeline}
           title={pipeline ? undefined : '暂无可出包的流水线；核对项目远端与权限'}
           onClick={onLaunch}
         >
-          <ArrowUpRight size={14} aria-hidden="true" />
-          出包
-        </button>
-        <button
-          className="wb-btn wb-btn-secondary wb-btn-sm"
+          <Plus size={14} aria-hidden="true" /> 出包
+        </BoardActionButton>
+        <BoardActionButton
           disabled={busy !== null || !latest}
           title={latest ? undefined : '尚无制品包；先出包'}
           onClick={onDownload}
         >
-          <Download size={14} aria-hidden="true" />
-          下载
-        </button>
+          <Download size={14} aria-hidden="true" /> 下载
+        </BoardActionButton>
       </div>
       {busy && (
         <p className="va-pkg-status" role="status">

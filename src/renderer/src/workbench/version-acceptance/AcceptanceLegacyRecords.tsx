@@ -56,8 +56,7 @@ export function AcceptanceLegacyRecords({
       {open && (
         <div className="acc-legacy-body">
           <p className="acc-legacy-note">
-            这些字段在 v10 已退役，此处只读呈现，不参与任何结论、纪要或遗留回显。
-            要把它转换到当前格式，请在会话中发起，由模型说明方案、经你确认后执行，不留旧文件副本。
+            v10 已退役字段，只读呈现，不参与结论、纪要或遗留回显；转换在会话中发起，经你确认后执行。
           </p>
           {legacy.goals.map((goal) => (
             <div className="acc-legacy-goal" key={goal.goalId}>

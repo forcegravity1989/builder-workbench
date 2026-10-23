@@ -76,10 +76,10 @@ export function AcceptanceArchiveCard({
           </h3>
           <p>
             {archivePr
-              ? 'Leader 在 Orca 原生 PR 页再审验收记录，合入后归档；随 PR 带验收材料、证据报告与截图。'
+              ? 'Leader 在 Orca 原生 PR 页再审，合入后归档。'
               : reachedArchive
                 ? '已进入归档阶段；PR 链接未记录。'
-                : '未创建 · 归档由验收助手在会话中执行，Leader 在 Orca 原生 PR 页再审。'}
+                : '未创建 · 归档由验收助手在会话中执行。'}
           </p>
         </div>
         <span className="acc-archive-actions">
@@ -113,17 +113,14 @@ export function AcceptanceArchiveCard({
       <div className="acc-release">
         <div>
           <h3>发版本</h3>
-          <p>
-            发布请求送入验收助手会话，预检、授权、执行与读回都在会话中完成；未经你明确授权不创建
-            Release、不打标签。
-          </p>
+          <p>预检、授权、执行与读回全在会话中完成；未经明确授权不创建 Release、不打标签。</p>
         </div>
         {onSendAction(
           `发布 ${version || '本版'}：先在会话中完成预检并报告，经我明确授权后再执行`,
           '发布请求',
-          <button type="button" className="acc-text-button">
-            <Rocket size={13} aria-hidden="true" /> 发布
-          </button>
+          <BoardActionButton>
+            <Rocket size={14} aria-hidden="true" /> 发布
+          </BoardActionButton>
         )}
       </div>
     </section>

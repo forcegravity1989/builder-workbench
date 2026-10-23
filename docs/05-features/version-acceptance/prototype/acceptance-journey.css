@@ -40,15 +40,6 @@
   color: inherit;
   cursor: pointer;
 }
-.acc-btn.primary {
-  border-color: var(--color-accent, #5269ff);
-  background: var(--color-accent, #5269ff);
-  color: #fff;
-}
-.acc-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 .acc-pkg-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -229,7 +220,7 @@
   text-decoration: none;
 }
 
-/* 报告链接:点击唤起 Orca 内置浏览器 */
+/* 材料链接(演示环境):显示系统名,点击唤起 Orca 内置浏览器打开绑定的 web 链接 */
 .acc-report-link {
   display: inline-flex;
   align-items: center;

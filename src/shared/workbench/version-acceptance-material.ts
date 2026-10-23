@@ -57,6 +57,9 @@ export type AcceptanceMeetingMinutes = z.infer<typeof AcceptanceMeetingMinutesSc
 export const AcceptanceDemoEnvironmentSchema = z.discriminatedUnion('kind', [
   z.strictObject({
     kind: z.literal('url'),
+    // Human-facing system name for the board link text (「XX 系统」); the board
+    // falls back to the raw URL when absent (2026-10-23 高保真反馈轮).
+    label: z.string().trim().min(1).optional(),
     // Absolute http(s) only. `safeMaterialUrl` resolves against a base, so it
     // would also accept a protocol-relative `//host/path`, which the material
     // opener would then read as a worktree-relative path.

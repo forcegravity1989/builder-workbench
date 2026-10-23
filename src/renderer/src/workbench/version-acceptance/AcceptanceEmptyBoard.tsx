@@ -196,7 +196,7 @@ function AcceptanceMaterialProblems({ problems }: { problems: CycleMaterialProbl
             <span>
               {[...new Set(items.map((item) => item.version))].join('、')} 的{label}格式
               {items.every((item) => item.state === 'migration-required') ? '较旧' : '有问题'}
-              ，暂无法读取；点「与验收助手新建验收」会把具体文件和迁移请求带入会话，由模型说明方案、经你确认后转换，不留旧文件副本。
+              ，暂无法读取；点「与验收助手新建验收」把文件和迁移请求带入会话，经你确认后转换。
             </span>
           </p>
         )

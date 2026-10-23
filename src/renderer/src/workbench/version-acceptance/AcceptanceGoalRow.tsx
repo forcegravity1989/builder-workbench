@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, FileText } from 'lucide-react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type {
   AcceptanceMaterial,
@@ -7,7 +7,7 @@ import type {
   VersionTaskReference
 } from '../../../../shared/workbench/version-material'
 import { annotationAttributes, type AnnotationMatch } from '../annotations/types'
-import { BoardIconButton, BoardLines } from '../board-ui'
+import { BoardLines } from '../board-ui'
 import { readGoalCardExpanded, writeGoalCardExpanded } from '../cycle-view-state'
 import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
 import { recordHumanDecision } from './acceptance-decision'
@@ -38,8 +38,6 @@ export function AcceptanceGoalRow({
   onGoalChange,
   numbersFor,
   onOpenAnnotationPanel,
-  hasReport,
-  onOpenReport,
   expanded,
   expandedSignal,
   viewStateKey
@@ -55,8 +53,6 @@ export function AcceptanceGoalRow({
   onGoalChange(next: AcceptanceMaterial, goalId: string): void
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
-  hasReport: boolean
-  onOpenReport(): void
   expanded: boolean
   expandedSignal: number
   viewStateKey: string | undefined
@@ -176,10 +172,7 @@ export function AcceptanceGoalRow({
           label={`${goalNumber} 目标`}
           onOpenPanel={onOpenAnnotationPanel}
         />
-        <span className="acc-goal-meta">
-          <span>{goal.owner || '负责人待明确'}</span>
-          <span>{relatedTasks.length} Issue</span>
-        </span>
+        <span className="acc-goal-count">{relatedTasks.length} Issue</span>
         <span className="acc-verdict">
           <button
             type="button"
@@ -208,31 +201,28 @@ export function AcceptanceGoalRow({
           {error}
         </p>
       )}
+      {!open && (
+        <div className="acc-goal-meta">
+          <span>{goal.owner || '负责人待明确'}</span>
+        </div>
+      )}
       {open && (
         <div className="acc-goal-body">
+          <div className="acc-goal-meta">
+            <span>{goal.owner || '负责人待明确'}</span>
+          </div>
           <div className="acc-acceptance">
             <h3>
               验收标准 <small>只读自计划</small>
             </h3>
             <BoardLines text={goal.acceptance} />
           </div>
+          {/* 报告入口只在「验收准备」的证据报告行（报告一份/版本）；目标行不再
+              重复设入口——2026-10-23 高保真反馈。 */}
           <div className="acc-task-head">
             <h3>
               关联 Issue <span>{relatedTasks.length}</span>
             </h3>
-            {/* 报告是一份/版本、全目标合并的整份文件，没有目标级锚点可跳；
-                可访问名如实说打开整份报告，不承诺定位到本目标的验收点。 */}
-            <BoardIconButton
-              label={
-                hasReport
-                  ? '打开本版验收证据报告（一份/版本，全目标合并）'
-                  : '报告未生成；先在会话中让验收助手生成'
-              }
-              disabled={!hasReport}
-              onClick={onOpenReport}
-            >
-              <FileText size={15} aria-hidden="true" />
-            </BoardIconButton>
           </div>
           <AcceptanceGoalTasks
             goal={goal}

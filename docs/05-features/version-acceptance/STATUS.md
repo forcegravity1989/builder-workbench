@@ -51,6 +51,18 @@ v10 复用的共用件随计划屏 G3（[#399](https://github.com/forcegravity19
 
 **验证边界（负责人明确授权）**：本轮不跑本地 CI 门禁、不新增单测、不做真机验证，真壳验证留人。已跑检查：验收原型 bundle `--check`、`verify:bundled-skill-guides`、`verify:skill-bundle-manifest` 通过；其余为静态审查与 subagent 双检视（四维 + 静态 BUG）。真壳欠账沿用下表并新增：两屏互切批注保留/互不清空、Showcase 批注入口与角标、发送成功清空回执、纪要/发布/归档/部署四个瘦身后 prompt 的弹窗预览文案。
 
+## 2026-10-23 UI 对齐轮（真机 v0.7.0 反馈后，#417）
+
+负责人真机装 v0.7.0 复核后反馈验收屏与计划屏的质量差距；AskUser 三项拍板：收折单一入口+收折栏可点展开、生产全量对齐计划屏/高保真、确认所装为 v0.7.0（五条抱怨均为最新代码真实欠账）。高保真审阅与真机反馈再拍板：目标行删报告入口（报告一份/版本，入口只留「验收准备」）、Issue 行补原生任务详情按钮（生产本有、高保真补齐）、Showcase 区块头补「刷新 Issue」（计划屏漏抄）、演示环境行显示系统名绑定链接（`demoEnv.kind='url'` 增可选 `label`）、CAS 冲突改按字段归属静默合并只留一行提示。
+
+**壳层（两屏同受益）**：`.vc-split` 改 6px 实体全高热区+居中 1px 线（上游 `tab-group-split-resize-handle` 同款）——旧 1px 线+外扩热区被两侧定位内容（xterm 视口、板面定位容器）盖住，只有顶部 titlebar 一段可拖（负责人真机观察证实）；titlebar 的验收专用老「收折会话」开关删除，收折/展开统一板面页头 chip 唯一入口；收折态 36px 栏加整栏点击展开覆盖层（title 提示），分隔条收折不渲染维持第九轮拍板。
+
+**验收屏对齐**：页头同行（标题左、动作右，度量抄 `vp-header`）、Showcase 卡抄 `g3-goal` 度量（卡片底色、标题 600+悬停下划线、meta 独立行 78px 缩进、body 缩进、task-head border-top）、Issue 行对齐 `g3-task`（baseline、gap 12、8px 节奏、悬停才下划线）、动作按钮统一 `BoardActionButton`（部署 BrainCircuit、发布 Rocket、出包 Plus、下载 Download）、`wb-btn` 与裸文字按钮退出板面动作、纪要卡抄 `g3-minutes`、归档/发布卡抄 `g3-archive`、旅程导航抄 `g3-journey` 等分、长 title 与说明文字清到计划屏密度。SKILL/version-records 同步 demoEnv label 写回规则，四件套再生。
+
+**冲突静默合并**：`acceptance-merge.ts` 纯函数 + `MaterialDraftController` 可选 merge 策略与干净基线追踪（计划屏不传、行为不变）；人字段（decision/note/nextStep/issueNotes/issueMarks/minutes）保留本地相对基线改动，模型字段取远端，本地独有 result 整条保留；`AcceptanceNotices` 退役裸 JSON 对照。**欠账：merge 纯函数无单测看护（新增用例受 ratchet 约束需对冲，留专项回补）；冲突合并与收折/拖拽新交互未在真壳验证。**
+
+**验证**：typecheck、check:dead-classes、受影响 vitest（验收套件 + material-draft + shared 材料链）、verify:bundled-skill-guides / verify:skill-bundle-manifest、build-acc --check 绿；app-startup-routing.test.ts 一例在 Windows worktree 因 CRLF 多行断言失败（期望 needle 以 CRLF 形态存在，非本轮引入，Linux CI 不受影响）。真壳留人：分隔条全高拖拽、收折栏点击展开、页头同行与新卡/按钮形态、演示环境系统名、冲突静默合并一行提示。
+
 ## 验收点与旅程矩阵
 
 > 口径：○ = 未实现；◐ = 代码已接入但真实用户旅程未完整；● = 齐。协议测试、静态检查与原型结果不等同真壳 E2E。本轮全部为 ◐ 的原因见上「证据边界」——不是代码没写，是真壳证据没取。
@@ -59,14 +71,14 @@ v10 复用的共用件随计划屏 G3（[#399](https://github.com/forcegravity19
 |---|---|---|
 | A01 独立树、原生会话、单页四区+定位导航（无灯） | ◐ | `AcceptanceSections.tsx` 页头三行 + 四区导航（滚动高亮、点击定位、空板态不渲染）；界面无灯，`workflow.stage` 不渲染。真壳未复验滚动高亮与空板态 |
 | A02 固定计划修订、目标只读、空板硬门禁 | ◐ | `use-acceptance-gate.ts` 硬门禁 + `AcceptanceEmptyBoard.tsx` 常驻门禁状态行（核对中/已合入/阻断原因/未找到计划）；草案预验收通道已退役，协议层拒绝 `kind=draft` 的 planRef。真壳未复验阻断态 |
-| A03 出包真实读数、部署注入、演示环境两形态读回 | ◐ | `AcceptancePackage.tsx` 出包读数沿用既有链；部署改经共用发送弹窗注入；`demoEnv` 两形态已接（web 给可点 URL、桌面应用显示「已启动 · detail」不伪造链接）。**两形态都未在真壳用真实项目验过**，注入通道修复后也未验 |
-| A04 验收证据报告一份/版本、登记、可打开 | ◐ | 模板正本在技能资产；报告经 `latestVerificationArtifact` 读回、登记复用 `verification` 制品类型；未生成时入口禁用。真壳未验内置浏览器打开 |
+| A03 出包真实读数、部署注入、演示环境两形态读回 | ◐ | `AcceptancePackage.tsx` 出包读数沿用既有链（按钮本轮统一 `BoardActionButton`）；部署改经共用发送弹窗注入；`demoEnv` 两形态已接（web 显示系统名 `label`、缺省回退 URL 可点打开，桌面应用显示「已启动 · detail」不伪造链接）。**两形态都未在真壳用真实项目验过**，注入通道修复后也未验 |
+| A04 验收证据报告一份/版本、登记、可打开 | ◐ | 模板正本在技能资产；报告经 `latestVerificationArtifact` 读回、登记复用 `verification` 制品类型；未生成时入口禁用；入口只在「验收准备」行（目标行报告入口 2026-10-23 UI 对齐轮删除）。真壳未验内置浏览器打开 |
 | A05 行尾达成/不达成、模型通道拒写、重启读回一致 | ◐ | `AcceptanceGoalRow.tsx` 行尾互斥两动作、再点取消回未标、未标空白；结论落 `results[].decision`，`acceptance-human-guard.ts` 拒模型改写。**重启读回一致性未在真壳核对（铁律一）** |
 | A06 纪要先编辑后改、人工确认可撤销、已确认冻结 | ◐ | `AcceptanceMinutesSection.tsx` 卡片常驻（无纪要节时用 `EMPTY_MINUTES` 兜底，人能直接起步不依赖模型）、点「编辑纪要」才进编辑态、确认可撤销、已确认整节冻结。真壳未验 |
 | A07 归档引用+状态+原生 PR 页+注入式发起归档 | ◐ | `AcceptanceArchiveCard.tsx` 引用 + provider 真实状态（读不到显示「状态未知」）+ 原生 PR 页入口 + 注入式「发起归档」；无直接执行归档按钮。真壳未验 |
 | A08 发布只有一个注入按钮、无预检弹窗、材料不存发布记录 | ◐ | 发布区仅一个「发布」按钮注入请求；板面无预检弹窗、无发布读回行；`version-workflow.ts` 无 release 字段。注入通道本轮才接通，真壳未验 |
 | A09 Issue 只核对不拆解、无风险标记、板面无指标区 | ◐ | `AcceptanceGoalTasks.tsx` 只核对；已关闭不计遗留、备注只读；风险标记与指标区已退役。真壳未验 |
-| A10 「更新代码」唯一同步入口、恢复不丢人工输入 | ◐ | 同步入口在页头；`use-acceptance-draft.ts` 草稿恢复 + `AcceptanceNotices.tsx` 冲突提示（复制本地草稿并采用远端，本轮改走带写入校验的 IPC 剪贴板以堵数据丢失）。**重启/切树/脏树三种恢复未在真壳验** |
+| A10 「更新代码」唯一同步入口、恢复不丢人工输入 | ◐ | 同步入口在页头；`use-acceptance-draft.ts` 草稿恢复；CAS 冲突本轮改字段归属静默合并（`acceptance-merge.ts`，人字段保本地/模型字段取远端，一行提示），裸 JSON 对照退役，仅基线缺失（脏草稿恢复后再冲突）退回两按钮人工处置。**重启/切树/脏树三种恢复与冲突合并未在真壳验；merge 纯函数欠单测看护** |
 | A11 无个人自验工作面、无验收件清单 UI | ◐ | 屏上无逐条验收件核对工作面，准备产物只以报告与登记形态存在 |
 | A12 自动化真实到点、不自动确认完成 | ◐ | 复用已登记自动化（`version-cycle/cycle-prompt.ts`）；**真实到点触发未在本轮运行** |
 | A13 旧格式材料宽容读回、固定提交历史链路仍可用 | ◐ | `acceptance-legacy.ts` + `AcceptanceLegacyRecords.tsx` 末尾只读折叠区；退役字段留作 schema 只读可选字段；模型通道改写被拒；按固定提交的历史链路保留（计划屏上版回顾依赖）。负责人上一轮报的「旧版本数据显示不出来」已修两处根因，**修复后未复验**；注意 sessionStorage 里可能还留着旧的失败草稿，复验时用冲突提示切回宿主材料 |
