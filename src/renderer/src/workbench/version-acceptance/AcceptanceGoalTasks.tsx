@@ -146,7 +146,7 @@ export function AcceptanceGoalTasks({
             </button>
             <span
               className={`acc-task-kind${kind === 'Bug' ? ' bug' : ''}`}
-              title="按 issue-state 规范标签推导；无 Bug/缺陷 标签默认按 Feature 显示"
+              title="由 Issue 标签推导；无 Bug/缺陷 标签默认按 Feature 显示"
             >
               {kind}
             </span>

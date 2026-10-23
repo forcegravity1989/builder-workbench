@@ -20,28 +20,47 @@ type AnnotationSession = {
 }
 
 /**
- * Module-level session store (2026-10-23 第九轮): annotations are meeting shorthand
- * and must survive plan-board unmounts — glancing at the acceptance or tasks screen
- * mid-review is normal, and component state evaporated the notes on every route
- * switch, wider than decision D ("restart loss is by design"). Memory-only on
- * purpose: screen switches keep the session, a renderer restart resets the module
- * and drops it per the decision, with no storage cleanup to forget.
+ * Module-level session store keyed by board identity. 第九轮 made the session
+ * module-level so notes survive board unmounts (glancing at the other screen
+ * mid-meeting is normal); 验收对齐轮 added the key: a single global session let
+ * the two boards fight — mounting acceptance cleared the plan board's unsent
+ * notes on its own identity change, and identical goalIds bled markers across
+ * screens. Each board now reads and writes its own session; switching version or
+ * scope is simply a different key (naturally empty), so no board runs an
+ * imperative clearAll on identity change. Memory-only on purpose: a renderer
+ * restart drops the module per decision D, with no storage cleanup to forget.
  */
-let session: AnnotationSession = {
+const EMPTY_SESSION: AnnotationSession = {
   annotations: [],
   annotating: false,
   panelOpen: false,
   popover: null
 }
-const listeners = new Set<() => void>()
-const patchSession = (patch: Partial<AnnotationSession>) => {
-  session = { ...session, ...patch }
-  listeners.forEach((listener) => listener())
+const sessions = new Map<string, AnnotationSession>()
+const listeners = new Map<string, Set<() => void>>()
+
+// Unkeyed boards must get a stable snapshot object, or useSyncExternalStore
+// re-renders forever. Entries are created only by patches.
+const getSession = (boardId: string): AnnotationSession => sessions.get(boardId) ?? EMPTY_SESSION
+
+const patchSession = (boardId: string, patch: Partial<AnnotationSession>) => {
+  sessions.set(boardId, { ...getSession(boardId), ...patch })
+  listeners.get(boardId)?.forEach((listener) => listener())
 }
-const subscribeSession = (listener: () => void) => {
-  listeners.add(listener)
+
+const subscribeBoard = (boardId: string, listener: () => void) => {
+  let boardListeners = listeners.get(boardId)
+  if (!boardListeners) {
+    boardListeners = new Set()
+    listeners.set(boardId, boardListeners)
+  }
+  const set = boardListeners
+  set.add(listener)
   return () => {
-    listeners.delete(listener)
+    set.delete(listener)
+    if (!set.size) {
+      listeners.delete(boardId)
+    }
   }
 }
 
@@ -50,11 +69,18 @@ const subscribeSession = (listener: () => void) => {
  * order-based global numbering shared by board markers and panel cards, mode
  * and popover lifecycle, and the Esc layering (popover first, then mode+panel).
  * Cascading goal removal filters by structured ref, not label prefixes.
+ * `boardId` is the board's identity string (scope + version); sessions persist
+ * across unmounts so screen switches keep each board's unsent notes.
  */
-export function useBoardAnnotations() {
+export function useBoardAnnotations(boardId: string) {
+  const subscribe = useCallback(
+    (listener: () => void) => subscribeBoard(boardId, listener),
+    [boardId]
+  )
+  const getSnapshot = useCallback(() => getSession(boardId), [boardId])
   const { annotations, annotating, panelOpen, popover } = useSyncExternalStore(
-    subscribeSession,
-    () => session
+    subscribe,
+    getSnapshot
   )
 
   const numbered = useMemo(
@@ -62,38 +88,54 @@ export function useBoardAnnotations() {
     [annotations]
   )
 
-  const add = useCallback((ref: AnnotationRef, text: string) => {
-    const trimmed = text.trim()
-    if (!trimmed) {
-      return
-    }
-    patchSession({
-      annotations: [
-        ...session.annotations,
-        { id: `${Date.now()}-${session.annotations.length}`, ref, text: trimmed }
-      ]
-    })
-  }, [])
+  const add = useCallback(
+    (ref: AnnotationRef, text: string) => {
+      const trimmed = text.trim()
+      if (!trimmed) {
+        return
+      }
+      const current = getSession(boardId)
+      patchSession(boardId, {
+        annotations: [
+          ...current.annotations,
+          { id: `${Date.now()}-${current.annotations.length}`, ref, text: trimmed }
+        ]
+      })
+    },
+    [boardId]
+  )
 
-  const update = useCallback((id: string, text: string) => {
-    patchSession({
-      annotations: session.annotations.map((item) =>
-        item.id === id ? { ...item, text: text.trim() } : item
-      )
-    })
-  }, [])
+  const update = useCallback(
+    (id: string, text: string) => {
+      const current = getSession(boardId)
+      patchSession(boardId, {
+        annotations: current.annotations.map((item) =>
+          item.id === id ? { ...item, text: text.trim() } : item
+        )
+      })
+    },
+    [boardId]
+  )
 
-  const remove = useCallback((id: string) => {
-    patchSession({ annotations: session.annotations.filter((item) => item.id !== id) })
-  }, [])
+  const remove = useCallback(
+    (id: string) => {
+      const current = getSession(boardId)
+      patchSession(boardId, { annotations: current.annotations.filter((item) => item.id !== id) })
+    },
+    [boardId]
+  )
 
   /** Goal deletion cascade: every annotation referencing the goal (board-level records have no goalId and stay). */
-  const removeForGoal = useCallback((goalId: string) => {
-    patchSession({
-      annotations: session.annotations.filter((item) => item.ref.goalId !== goalId),
-      popover: session.popover && session.popover.ref.goalId === goalId ? null : session.popover
-    })
-  }, [])
+  const removeForGoal = useCallback(
+    (goalId: string) => {
+      const current = getSession(boardId)
+      patchSession(boardId, {
+        annotations: current.annotations.filter((item) => item.ref.goalId !== goalId),
+        popover: current.popover && current.popover.ref.goalId === goalId ? null : current.popover
+      })
+    },
+    [boardId]
+  )
 
   const numbersFor = useCallback(
     (match: AnnotationMatch): number[] =>
@@ -101,33 +143,40 @@ export function useBoardAnnotations() {
     [numbered]
   )
 
-  const openPopover = useCallback((ref: AnnotationRef, rect: DOMRect) => {
-    patchSession({
-      popover: {
-        id: `${ref.kind}-${Date.now()}`,
-        ref,
-        rect: { left: rect.left, top: rect.top, bottom: rect.bottom }
-      },
-      panelOpen: true
-    })
-  }, [])
+  const openPopover = useCallback(
+    (ref: AnnotationRef, rect: DOMRect) => {
+      patchSession(boardId, {
+        popover: {
+          id: `${ref.kind}-${Date.now()}`,
+          ref,
+          rect: { left: rect.left, top: rect.top, bottom: rect.bottom }
+        },
+        panelOpen: true
+      })
+    },
+    [boardId]
+  )
 
   const closePopover = useCallback(() => {
-    patchSession({ popover: null })
-  }, [])
+    patchSession(boardId, { popover: null })
+  }, [boardId])
 
   const openPanel = useCallback(() => {
-    patchSession({ panelOpen: true })
-  }, [])
+    patchSession(boardId, { panelOpen: true })
+  }, [boardId])
 
   const closePanel = useCallback(() => {
-    patchSession({ panelOpen: false, popover: null })
-  }, [])
+    patchSession(boardId, { panelOpen: false, popover: null })
+  }, [boardId])
 
-  /** Board identity changed (version/scope/restart): memory records no longer point at visible objects. */
+  /**
+   * Sent notes leave the board (send-success receipt). Identity switches need no
+   * clearing — they are separate keys — so boards must not wire this to an
+   * identity effect; that coupling is what wiped the other screen's notes.
+   */
   const clearAll = useCallback(() => {
-    patchSession({ annotations: [], popover: null })
-  }, [])
+    patchSession(boardId, { annotations: [], popover: null })
+  }, [boardId])
 
   /** Model-side material edits may remove annotated objects: drop orphan records. */
   const pruneMissing = useCallback(
@@ -148,22 +197,31 @@ export function useBoardAnnotations() {
           hasIssue(ref.goalId, ref.issueNumber)
         )
       }
-      patchSession({
-        annotations: session.annotations.filter((item) => survives(item.ref)),
-        popover: session.popover && !survives(session.popover.ref) ? null : session.popover
+      const current = getSession(boardId)
+      patchSession(boardId, {
+        annotations: current.annotations.filter((item) => survives(item.ref)),
+        popover: current.popover && !survives(current.popover.ref) ? null : current.popover
       })
     },
-    []
+    [boardId]
   )
 
   const toggleMode = useCallback(() => {
-    const next = !session.annotating
-    patchSession({ annotating: next, popover: null, panelOpen: next })
-  }, [])
+    const current = getSession(boardId)
+    const next = !current.annotating
+    patchSession(boardId, { annotating: next, popover: null, panelOpen: next })
+  }, [boardId])
 
   // The popover anchors to a board element rect: after a screen switch the rect is
   // stale, so drop only the popover on unmount while notes/mode/panel survive.
-  useEffect(() => () => patchSession({ popover: null }), [])
+  useEffect(
+    () => () => {
+      if (sessions.has(boardId)) {
+        patchSession(boardId, { popover: null })
+      }
+    },
+    [boardId]
+  )
 
   useEffect(() => {
     if (!annotating) {
@@ -180,15 +238,15 @@ export function useBoardAnnotations() {
         return
       }
       // Esc closes the nearest popover first, then exits the mode and panel.
-      if (session.popover) {
-        patchSession({ popover: null })
+      if (getSession(boardId).popover) {
+        patchSession(boardId, { popover: null })
         return
       }
-      patchSession({ annotating: false, panelOpen: false })
+      patchSession(boardId, { annotating: false, panelOpen: false })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [annotating])
+  }, [annotating, boardId])
 
   return {
     annotations,

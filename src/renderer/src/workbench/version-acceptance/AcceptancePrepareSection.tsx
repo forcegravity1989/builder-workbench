@@ -99,7 +99,7 @@ export function AcceptancePrepareSection({
               <ArrowUpRight size={13} aria-hidden="true" />
             </button>
           ) : demoEnv?.kind === 'launched' ? (
-            <span className="acc-prepare-value" title="桌面应用类没有环境 URL，如实呈现启动状态">
+            <span className="acc-prepare-value" title="桌面应用类没有环境 URL，显示启动状态">
               已启动 · {demoEnv.detail}
             </span>
           ) : (
@@ -108,15 +108,13 @@ export function AcceptancePrepareSection({
             </span>
           )}
           {onSendAction(
-            '下载最新安装包并按项目自有部署入口部署启动；完成后把演示环境 URL（桌面应用则写启动状态）写回材料',
+            '下载最新安装包，按项目自有部署入口部署启动，完成后给出本次演示环境',
             '部署请求',
             <button
               type="button"
               className="acc-text-button"
               disabled={disabled || !latest}
-              title={
-                latest ? '向验收助手会话注入部署请求；与在会话中直说等价' : '尚无制品包；先出包'
-              }
+              title={latest ? '向验收助手会话注入部署请求' : '尚无制品包；先出包'}
             >
               部署
             </button>
@@ -148,14 +146,12 @@ export function AcceptancePrepareSection({
               }
             }}
           >
-            <ArrowUpRight size={15} aria-hidden="true" />
+            {/* 打开报告统一用 FileText（与目标卡「关联 Issue」头的报告入口同图标）；
+                ArrowUpRight 保留给环境/报告链接本体与原生 PR 页。 */}
+            <FileText size={15} aria-hidden="true" />
           </BoardIconButton>
         </div>
       </div>
-      <p className="acc-footnote">
-        出包与部署的事实只以真实读数与登记呈现；缺流水线、缺权限或远端认不出时如实报错，
-        改按项目自有出包与部署入口执行并核对，没有包要求就不造包要求。
-      </p>
     </section>
   )
 }
