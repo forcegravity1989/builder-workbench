@@ -633,7 +633,8 @@
       "blocked": {
         "notification": {
           "fallback": {
-            "de50bef680": "macOS está bloqueando las notificaciones de Orca"
+            "de50bef680": "macOS está bloqueando las notificaciones de Orca",
+            "8d4c07e6b5": "macOS está bloqueando las notificaciones de Workbench"
           }
         }
       },
@@ -11529,7 +11530,7 @@
           "10e495afa8": "Instalar la CLI de CodeHub",
           "98883abe0a": "Inicio de sesión en CodeHub",
           "96d7cf755a": "Comando de inicio de sesión en CodeHub",
-          "ed425b91ac": "Pulsa Intro para ejecutar la autenticación de la CLI de CodeHub. Vuelve a comprobar CodeHub cuando termine el proceso de inicio de sesión.",
+          "ed425b91ac": "Pulsa Intro para ejecutar la autenticación de la CLI de CodeHub. CodeHub se vuelve a comprobar automáticamente cuando termina el comando.",
           "110d12dbb6": "El estado de codehub-cli aún no está disponible en este entorno de ejecución."
         },
         "NotificationStep": {
@@ -11554,7 +11555,9 @@
           "4f6a1da718": "Abrir Configuración del sistema",
           "90b5d2e363": "macOS no está entregando las notificaciones de Orca",
           "2c47f5465f": "Activa Permitir notificaciones para Orca en Configuración del sistema. Este paso se actualizará automáticamente cuando estén activadas.",
-          "72256f6d85": "Elige la alerta que reproduce Workbench tras entregar una notificación de escritorio."
+          "72256f6d85": "Elige la alerta que reproduce Workbench tras entregar una notificación de escritorio.",
+          "3f8a21c6d0": "Permitir notificaciones de Workbench",
+          "b7e94d02a1": "macOS no está entregando las notificaciones de Workbench"
         },
         "OnboardingFlow": {
           "1130745139": "Configurar las fuentes de tareas",
@@ -11659,7 +11662,8 @@
               "card": {
                 "f696515944": "Haz clic en Permitir en el diálogo de macOS.",
                 "3d18cf71f9": "Se actualizará automáticamente.",
-                "721d2bedb6": "Activa Permitir notificaciones para Orca en Configuración del sistema."
+                "721d2bedb6": "Activa Permitir notificaciones para Orca en Configuración del sistema.",
+                "c25d81f9e3": "Activa Permitir notificaciones de Workbench en Ajustes del Sistema."
               }
             }
           }

@@ -743,7 +743,8 @@
       "blocked": {
         "notification": {
           "fallback": {
-            "de50bef680": "macOS bloque les notifications Orca"
+            "de50bef680": "macOS bloque les notifications Orca",
+            "8d4c07e6b5": "macOS bloque les notifications de Workbench"
           }
         }
       },
@@ -12734,7 +12735,7 @@
           "10e495afa8": "Installer la CLI CodeHub",
           "98883abe0a": "Connexion à CodeHub",
           "96d7cf755a": "Commande de connexion à CodeHub",
-          "ed425b91ac": "Appuyez sur Entrée pour lancer l'authentification de la CLI CodeHub. Revérifiez CodeHub une fois le flux de connexion terminé.",
+          "ed425b91ac": "Appuyez sur Entrée pour lancer l'authentification de la CLI CodeHub. CodeHub est revérifié automatiquement à la fin de la commande.",
           "110d12dbb6": "L'état de codehub-cli n'est pas encore disponible dans ce runtime."
         },
         "NotificationStep": {
@@ -12759,7 +12760,9 @@
           "4f6a1da718": "Ouvrir Réglages Système",
           "90b5d2e363": "macOS ne délivre pas les notifications d'Orca",
           "2c47f5465f": "Activez « Autoriser les notifications pour Orca » dans Réglages Système. Cette étape se met à jour automatiquement une fois l'option activée.",
-          "72256f6d85": "Choisissez l'alerte que Workbench joue après la remise d'une notification de bureau."
+          "72256f6d85": "Choisissez l'alerte que Workbench joue après la remise d'une notification de bureau.",
+          "3f8a21c6d0": "Autoriser les notifications pour Workbench",
+          "b7e94d02a1": "macOS ne remet pas les notifications de Workbench"
         },
         "OnboardingFlow": {
           "1130745139": "Configurer les sources de tâches",
@@ -12864,7 +12867,8 @@
               "card": {
                 "f696515944": "Cliquez sur Autoriser dans la boîte de dialogue macOS.",
                 "3d18cf71f9": "Se met à jour automatiquement.",
-                "721d2bedb6": "Activez « Autoriser les notifications pour Orca » dans Réglages Système."
+                "721d2bedb6": "Activez « Autoriser les notifications pour Orca » dans Réglages Système.",
+                "c25d81f9e3": "Activez Autoriser les notifications pour Workbench dans Réglages Système."
               }
             }
           }

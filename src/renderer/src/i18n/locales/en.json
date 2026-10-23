@@ -879,7 +879,8 @@
       "blocked": {
         "notification": {
           "fallback": {
-            "de50bef680": "macOS is blocking Orca notifications"
+            "de50bef680": "macOS is blocking Orca notifications",
+            "8d4c07e6b5": "macOS is blocking Workbench notifications"
           }
         }
       },
@@ -13392,7 +13393,7 @@
           "10e495afa8": "Install CodeHub CLI",
           "98883abe0a": "CodeHub login",
           "96d7cf755a": "CodeHub sign in command",
-          "ed425b91ac": "Press Enter to run CodeHub CLI auth. Re-check CodeHub after the login flow finishes.",
+          "ed425b91ac": "Press Enter to run CodeHub CLI auth. CodeHub re-checks automatically when the command finishes.",
           "110d12dbb6": "codehub-cli status is not available in this runtime yet."
         },
         "NotificationStep": {
@@ -13417,7 +13418,9 @@
           "4f6a1da718": "Open System Settings",
           "90b5d2e363": "macOS is not delivering Orca notifications",
           "2c47f5465f": "Turn on Allow notifications for Orca in System Settings. This step updates automatically once enabled.",
-          "72256f6d85": "Pick the alert Workbench plays after a desktop notification is delivered."
+          "72256f6d85": "Pick the alert Workbench plays after a desktop notification is delivered.",
+          "3f8a21c6d0": "Allow notifications for Workbench",
+          "b7e94d02a1": "macOS is not delivering Workbench notifications"
         },
         "OnboardingFlow": {
           "1130745139": "Set up task sources",
@@ -13522,7 +13525,8 @@
               "card": {
                 "f696515944": "Click Allow in the macOS dialog.",
                 "3d18cf71f9": "Updates automatically.",
-                "721d2bedb6": "Turn on Allow notifications for Orca in System Settings."
+                "721d2bedb6": "Turn on Allow notifications for Orca in System Settings.",
+                "c25d81f9e3": "Turn on Allow notifications for Workbench in System Settings."
               }
             }
           }

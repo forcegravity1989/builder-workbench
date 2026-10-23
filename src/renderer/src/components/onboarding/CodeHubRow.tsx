@@ -48,6 +48,9 @@ export function CodeHubRow(): React.JSX.Element {
 
   const state = getCodeHubSetupState(preflightStatus, preflightStatusLoading)
   const [codehubTerminalOpen, setCodehubTerminalOpen] = useState(false)
+  // Why: re-clicking Sign in starts a fresh login session instead of being
+  // disabled — same loginAttempt pattern as the Settings connectors cards.
+  const [loginAttempt, setLoginAttempt] = useState(0)
 
   return (
     <div className="rounded-xl border border-border bg-muted/20">
@@ -77,6 +80,13 @@ export function CodeHubRow(): React.JSX.Element {
                   {translate(
                     'auto.components.onboarding.IntegrationsStep.8405043962',
                     'Sign in needed'
+                  )}
+                </IntegrationStatusPill>
+              ) : state === 'unavailable' ? (
+                <IntegrationStatusPill tone="neutral">
+                  {translate(
+                    'auto.components.settings.cli.source.control.integration.cards.statusUnavailable',
+                    'Unavailable'
                   )}
                 </IntegrationStatusPill>
               ) : (
@@ -115,8 +125,10 @@ export function CodeHubRow(): React.JSX.Element {
             <Button
               variant="outline"
               size="sm"
-              disabled={codehubTerminalOpen}
-              onClick={() => setCodehubTerminalOpen(true)}
+              onClick={() => {
+                setCodehubTerminalOpen(true)
+                setLoginAttempt((n) => n + 1)
+              }}
             >
               <Terminal className="size-3.5" />
               {codehubTerminalOpen
@@ -146,9 +158,15 @@ export function CodeHubRow(): React.JSX.Element {
           ))}
         </div>
       ) : null}
-      {state === 'not-authenticated' && codehubTerminalOpen ? (
+      {/* Why: the login terminal lives outside the status ternary so a
+          re-check's brief `checking` flip cannot unmount it mid-login (same
+          user decision as the Settings cards, 2026-10-19); key makes a
+          re-click start a fresh session, and OSC 133;D auto re-checks when
+          the command ends. It unmounts once the login connects. */}
+      {codehubTerminalOpen && state !== 'connected' ? (
         <div className="px-5 pb-5">
           <OnboardingInlineCommandTerminal
+            key={loginAttempt}
             command="codehub-cli auth login --all"
             title={translate(
               'auto.components.onboarding.IntegrationsStep.98883abe0a',
@@ -160,8 +178,11 @@ export function CodeHubRow(): React.JSX.Element {
             )}
             description={translate(
               'auto.components.onboarding.IntegrationsStep.ed425b91ac',
-              'Press Enter to run CodeHub CLI auth. Re-check CodeHub after the login flow finishes.'
+              'Press Enter to run CodeHub CLI auth. CodeHub re-checks automatically when the command finishes.'
             )}
+            worktreeId="onboarding-codehub-login"
+            onTerminalExit={() => setCodehubTerminalOpen(false)}
+            onCommandFinished={() => void refreshPreflightStatus({ force: true })}
           />
         </div>
       ) : null}

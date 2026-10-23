@@ -1,5 +1,6 @@
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 // Why: agent completions can dispatch in bursts; one in-app pointer at the
 // broken OS setting per session teaches the fix without nagging.
@@ -16,15 +17,25 @@ export function showBlockedNotificationFallbackToast(): void {
   }
   shownThisSession = true
   toast.warning(
-    translate(
-      'auto.lib.blocked.notification.fallback.de50bef680',
-      'macOS is blocking Orca notifications'
-    ),
+    isWorkbenchShell()
+      ? translate(
+          'auto.lib.blocked.notification.fallback.8d4c07e6b5',
+          'macOS is blocking Workbench notifications'
+        )
+      : translate(
+          'auto.lib.blocked.notification.fallback.de50bef680',
+          'macOS is blocking Orca notifications'
+        ),
     {
-      description: translate(
-        'auto.components.onboarding.mac.notification.permission.card.721d2bedb6',
-        'Turn on Allow notifications for Orca in System Settings.'
-      ),
+      description: isWorkbenchShell()
+        ? translate(
+            'auto.components.onboarding.mac.notification.permission.card.c25d81f9e3',
+            'Turn on Allow notifications for Workbench in System Settings.'
+          )
+        : translate(
+            'auto.components.onboarding.mac.notification.permission.card.721d2bedb6',
+            'Turn on Allow notifications for Orca in System Settings.'
+          ),
       action: {
         label: translate(
           'auto.components.onboarding.NotificationStep.4f6a1da718',

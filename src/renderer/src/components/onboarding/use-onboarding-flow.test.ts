@@ -1,13 +1,21 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { toast } from 'sonner'
 import {
   prepareSkippedOnboardingPreferences,
-  remapOpenOnboardingLastCompletedStep
+  remapOpenOnboardingLastCompletedStep,
+  shouldSkipIntegrationsStep
 } from './onboarding-flow-state'
 import { getDefaultOnboardingState } from '../../../../shared/constants'
 
 vi.mock('sonner', () => ({
   toast: { error: vi.fn(), info: vi.fn(), success: vi.fn() }
+}))
+
+// Why: the skip rule branches on the shell; a mutable flag lets one file
+// cover both the Workbench and Orca branches of shouldSkipIntegrationsStep.
+const shellFlag = vi.hoisted(() => ({ workbench: false }))
+vi.mock('@/workbench/is-workbench-shell', () => ({
+  isWorkbenchShell: () => shellFlag.workbench
 }))
 
 describe('prepareSkippedOnboardingPreferences', () => {
@@ -115,5 +123,61 @@ describe('remapOpenOnboardingLastCompletedStep', () => {
         lastCompletedStep: 7
       })
     ).toBe(5)
+  })
+})
+
+describe('shouldSkipIntegrationsStep', () => {
+  afterEach(() => {
+    shellFlag.workbench = false
+  })
+
+  function preflight(
+    gh: { installed: boolean; authenticated: boolean },
+    codehub?: { installed: boolean; authenticated: boolean }
+  ): Parameters<typeof shouldSkipIntegrationsStep>[0] {
+    return { git: { installed: true }, gh, codehub }
+  }
+
+  it('skips for the Orca shell once gh is installed', () => {
+    expect(shouldSkipIntegrationsStep(preflight({ installed: true, authenticated: true }))).toBe(
+      true
+    )
+  })
+
+  it('keeps the page for the Orca shell when gh is missing', () => {
+    expect(shouldSkipIntegrationsStep(preflight({ installed: false, authenticated: false }))).toBe(
+      false
+    )
+  })
+
+  it('skips for the Workbench shell only once both CLIs are installed', () => {
+    shellFlag.workbench = true
+    expect(
+      shouldSkipIntegrationsStep(
+        preflight(
+          { installed: true, authenticated: true },
+          { installed: true, authenticated: true }
+        )
+      )
+    ).toBe(true)
+  })
+
+  it('keeps the page for the Workbench shell when codehub-cli is missing', () => {
+    shellFlag.workbench = true
+    expect(
+      shouldSkipIntegrationsStep(
+        preflight(
+          { installed: true, authenticated: true },
+          { installed: false, authenticated: false }
+        )
+      )
+    ).toBe(false)
+  })
+
+  it('keeps the page when the payload predates the codehub readback', () => {
+    shellFlag.workbench = true
+    expect(shouldSkipIntegrationsStep(preflight({ installed: true, authenticated: true }))).toBe(
+      false
+    )
   })
 })

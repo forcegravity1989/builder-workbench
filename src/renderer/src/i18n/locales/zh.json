@@ -636,7 +636,8 @@
       "blocked": {
         "notification": {
           "fallback": {
-            "de50bef680": "macOS 正在阻止 Orca 通知"
+            "de50bef680": "macOS 正在阻止 Orca 通知",
+            "8d4c07e6b5": "macOS 正在拦截 Workbench 通知"
           }
         }
       },
@@ -11619,7 +11620,7 @@
           "10e495afa8": "安装 CodeHub CLI",
           "98883abe0a": "CodeHub 登录",
           "96d7cf755a": "CodeHub 登录命令",
-          "ed425b91ac": "按回车执行 CodeHub CLI 登录。登录流程完成后重新检查 CodeHub。",
+          "ed425b91ac": "按回车执行 CodeHub CLI 登录。命令结束后自动复查 CodeHub。",
           "110d12dbb6": "当前运行时暂不支持读取 codehub-cli 状态。"
         },
         "NotificationStep": {
@@ -11644,7 +11645,9 @@
           "4f6a1da718": "打开系统设置",
           "90b5d2e363": "macOS 未送达 Orca 的通知",
           "2c47f5465f": "在系统设置中启用 Orca 的允许通知。启用后此步骤会自动更新。",
-          "72256f6d85": "选择桌面通知送达后 Workbench 播放的提示音。"
+          "72256f6d85": "选择桌面通知送达后 Workbench 播放的提示音。",
+          "3f8a21c6d0": "允许 Workbench 通知",
+          "b7e94d02a1": "macOS 未送达 Workbench 通知"
         },
         "OnboardingFlow": {
           "1130745139": "设置任务源",
@@ -11749,7 +11752,8 @@
               "card": {
                 "f696515944": "在 macOS 对话框中点按允许。",
                 "3d18cf71f9": "将自动更新。",
-                "721d2bedb6": "在系统设置中为 Orca 开启允许通知。"
+                "721d2bedb6": "在系统设置中为 Orca 开启允许通知。",
+                "c25d81f9e3": "在系统设置中打开「允许 Workbench 通知」。"
               }
             }
           }

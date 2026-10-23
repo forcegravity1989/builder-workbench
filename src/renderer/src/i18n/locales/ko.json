@@ -636,7 +636,8 @@
       "blocked": {
         "notification": {
           "fallback": {
-            "de50bef680": "macOS가 Orca 알림을 차단하고 있습니다"
+            "de50bef680": "macOS가 Orca 알림을 차단하고 있습니다",
+            "8d4c07e6b5": "macOS가 Workbench 알림을 차단하고 있습니다"
           }
         }
       },
@@ -11572,7 +11573,7 @@
           "10e495afa8": "CodeHub CLI 설치",
           "98883abe0a": "CodeHub 로그인",
           "96d7cf755a": "CodeHub 로그인 명령",
-          "ed425b91ac": "Enter 키를 눌러 CodeHub CLI 인증을 실행하세요. 로그인 흐름이 끝나면 CodeHub를 다시 확인하세요.",
+          "ed425b91ac": "Enter 키를 눌러 CodeHub CLI 인증을 실행하세요. 명령이 끝나면 CodeHub를 자동으로 다시 확인합니다.",
           "110d12dbb6": "이 런타임에서는 아직 codehub-cli 상태를 사용할 수 없습니다."
         },
         "NotificationStep": {
@@ -11597,7 +11598,9 @@
           "4f6a1da718": "시스템 설정 열기",
           "90b5d2e363": "macOS가 Orca 알림을 전달하지 않고 있습니다",
           "2c47f5465f": "시스템 설정에서 Orca에 대한 알림 허용을 켜세요. 활성화되면 이 단계가 자동으로 업데이트됩니다.",
-          "72256f6d85": "데스크톱 알림이 전달된 후 Workbench가 재생하는 알림음을 선택하세요."
+          "72256f6d85": "데스크톱 알림이 전달된 후 Workbench가 재생하는 알림음을 선택하세요.",
+          "3f8a21c6d0": "Workbench 알림 허용",
+          "b7e94d02a1": "macOS가 Workbench 알림을 전달하지 않습니다"
         },
         "OnboardingFlow": {
           "1130745139": "작업 소스 설정",
@@ -11702,7 +11705,8 @@
               "card": {
                 "f696515944": "macOS 대화 상자에서 허용을 클릭하세요.",
                 "3d18cf71f9": "자동으로 업데이트됩니다.",
-                "721d2bedb6": "시스템 설정에서 Orca에 대한 알림 허용을 켜세요."
+                "721d2bedb6": "시스템 설정에서 Orca에 대한 알림 허용을 켜세요.",
+                "c25d81f9e3": "시스템 설정에서 Workbench 알림 허용을 켜세요."
               }
             }
           }
