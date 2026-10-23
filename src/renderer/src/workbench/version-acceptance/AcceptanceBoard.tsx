@@ -26,7 +26,6 @@ import { AcceptanceHeader, AcceptanceJourneyNav } from './AcceptanceSections'
 import { AcceptanceLegacyRecords } from './AcceptanceLegacyRecords'
 import { AcceptanceMinutesSection } from './AcceptanceMinutesSection'
 import { AcceptancePrepareSection } from './AcceptancePrepareSection'
-import { latestVerificationArtifact } from './acceptance-model'
 import { openAcceptanceMaterial } from './open-acceptance-material'
 import { usePlanSendAction } from '../plan-send-menu'
 import { useAcceptanceBoard } from './use-acceptance-board'
@@ -207,7 +206,6 @@ function ReadyAcceptanceBoard({
       draftKey: recoveryKey,
       goalId: task.reference.goalId
     })
-  const report = document ? latestVerificationArtifact(document) : undefined
   // Only acceptance-side problems make a version unreadable *here*. The catalog
   // also carries plan-side problems, and blaming those on the acceptance dropdown
   // is what made a perfectly readable version look broken.
@@ -342,12 +340,6 @@ function ReadyAcceptanceBoard({
                   )}
                 </BoardActionButton>
               }
-              hasReport={Boolean(report)}
-              onOpenReport={() => {
-                if (report) {
-                  openMaterial(report.location)
-                }
-              }}
               sectionRef={spy.sectionRefs.showcase}
             />
           )}

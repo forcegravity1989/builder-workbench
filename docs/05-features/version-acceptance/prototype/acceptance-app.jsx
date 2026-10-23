@@ -83,8 +83,7 @@ function AcceptanceRow({
   onOpenPanel,
   nextStep,
   onNext,
-  onOpenReport,
-  reportReady
+  onOpenTask
 }) {
   const goalTarget = `${goal.goalId} 目标`
   return (
@@ -134,21 +133,8 @@ function AcceptanceRow({
             <h3>
               关联 Issue <span>{tasks.length}</span>
             </h3>
-            {/* 报告一份/版本、全目标合并,没有目标级锚点可跳(v10 已退役目标级深链);
-                可访问名如实说打开整份报告,翻到本目标的验收点由演示者自己做。 */}
-            <button
-              className="acc-report-link"
-              disabled={!reportReady}
-              title={
-                reportReady
-                  ? '打开本版验收证据报告(一份/版本,全目标合并)'
-                  : '报告未生成;先在会话中让验收助手生成'
-              }
-              onClick={onOpenReport}
-            >
-              打开本版验收证据报告
-              <Icon name="arrow" size={12} />
-            </button>
+            {/* 报告入口只在「验收准备」的证据报告行(报告一份/版本);目标行不再
+                重复设入口——2026-10-23 高保真反馈。 */}
           </div>
           <div className="g3-tasks">
             {tasks.length ? (
@@ -213,6 +199,11 @@ function AcceptanceRow({
                         {notes[task.number]}
                       </span>
                     )}
+                    <IconButton
+                      name="arrow"
+                      label={`打开 #${task.number} 原生任务详情(衔接示意)`}
+                      onClick={() => onOpenTask(task.number)}
+                    />
                   </div>
                 )
               })
@@ -439,15 +430,16 @@ function App() {
             外框);页头与计划屏同构:会话收折、更新代码(唯一同步入口)、配置自动化——批注模式入口 在
             Showcase 区块头(与计划屏第九轮同形态,贴着可批注对象,带未发送条数角标);
             <strong>不设全局助手按钮</strong>:「唤起验收助手」的入口按对象就近放置
-            (纪要区「整理纪要」、归档区「发起归档」),部署/发布/出包按钮本身兼任请求注入; Showcase
-            无模型填写事务,不设助手入口。会话栏为 Orca 原生会话占位,「验收助手」
-            是该产品称呼。界面无灯:状态一律文字与真实读回。
+            (纪要区「整理纪要」、归档区「发起归档」);部署/发布兼任请求注入,出包为直接动作
+            ——板面按钮一律图标+短动词统一格式;Showcase 无模型填写事务,不设助手入口。会话栏为 Orca
+            原生会话占位,「验收助手」 是该产品称呼。界面无灯:状态一律文字与真实读回。
           </p>
           <p>
             <strong>验收准备</strong>:「出包」是板面固定逻辑(按项目远端直连流水线,主分支
             构建);「部署」向验收助手会话注入请求——模型下载最新包、按项目自有部署入口部署
             启动(各服务逻辑不同,无固定脚本;桌面应用类=安装并启动,web 服务类=部署并起前 端,演示为 web
-            服务型),完成后把环境 URL(或启动状态)写回材料,「演示环境」行读 回、点击经内置 Orca
+            服务型),完成后把演示环境写回材料(web 服务:系统名+URL;桌面应用:启动状态),
+            「演示环境」行显示系统名(无系统名回退 URL),点击经内置 Orca
             浏览器打开=真机演示环境。模型写 candidateRef、登记包
             (kind=package+checksum),对着运行环境按目标验收标准采集证据并演示分诊——易
             现场演示的标「现场演示+操作路径」,不易演示/需等待的落进
@@ -471,7 +463,8 @@ function App() {
             都只把请求递交左侧持久验收会话,不新建、不注入。纪要区不参与批注。
           </p>
           <p>
-            <strong>会议纪要</strong>:纪要框常驻各时期、直接可编辑可粘贴,不依赖会话唤起;与
+            <strong>会议纪要</strong>
+            :纪要卡常驻各时期、点「编辑纪要」进入编辑态后增删改或粘贴,不依赖会话唤起;与
             计划屏同款两块结构(共识/遗留、人工确认生效);验收侧遗留条目<strong>无闭环位</strong>
             ——原样成为下版计划屏「会议遗留」;Issue「遗留」标记对应「延期遗留」。模型只整理
             草稿,不代确认。
@@ -651,9 +644,7 @@ function App() {
                 <p>v0.7 验收尚未开始。</p>
                 <button onClick={startAcceptance}>与验收助手新建验收</button>
                 <span className="g3-muted">
-                  计划制定中、或计划归档 PR 尚未合入时,本页保持此空板,不显示验收各区。
-                  点击「与验收助手新建验收」后检测计划合入状态:检测通过则拉取计划、展开验收
-                  四步板面;未合入则报错并保持本页。
+                  计划归档 PR 合入后才能开始验收;未合入时点「新建验收」会报错并保持此空板。
                 </span>
                 <button className="acc-demo-link" onClick={() => setErrorModal(true)}>
                   演示:计划 PR 未合入时的报错
@@ -700,22 +691,18 @@ function App() {
                               <option key={name}>{name}</option>
                             ))}
                           </select>
-                          <button
-                            className="acc-btn primary"
+                          <ActionButton
+                            icon="plus"
+                            title="直连项目远端流水线,启动主分支构建"
                             onClick={() =>
                               setNotice('流水线已启动,运行约需几分钟;最新包信息每分钟自动刷新。')
                             }
                           >
                             出包
-                          </button>
-                          <button
-                            className="acc-btn"
+                          </ActionButton>
+                          <ActionButton
                             disabled={!latest}
-                            title={
-                              latest
-                                ? '向验收助手会话注入部署请求:下载最新包、按项目自有部署入口部署启动'
-                                : '尚无制品包;先出包'
-                            }
+                            title={latest ? '向验收助手会话注入部署请求' : '尚无制品包;先出包'}
                             onClick={() => {
                               toggleSession(true)
                               setDeployed(true)
@@ -726,7 +713,7 @@ function App() {
                             }}
                           >
                             部署
-                          </button>
+                          </ActionButton>
                         </div>
                         {latest ? (
                           <dl className="acc-pkg-grid">
@@ -743,7 +730,7 @@ function App() {
                           </dl>
                         ) : (
                           <p className="g3-empty">
-                            该服务暂无制品包。人点「出包」启动流水线,受理后最新包信息每分钟自动刷新。
+                            暂无制品包 · 点「出包」启动流水线,最新包信息每分钟自动刷新。
                           </p>
                         )}
                       </>
@@ -753,16 +740,14 @@ function App() {
                       {deployed ? (
                         <button
                           className="acc-report-link"
-                          title="环境 URL 由验收助手部署后写回材料;点击经内置 Orca 浏览器打开"
+                          title="经内置 Orca 浏览器打开 http://127.0.0.1:4173"
                           onClick={openService}
                         >
-                          http://127.0.0.1:4173
+                          演示系统
                           <Icon name="arrow" size={12} />
                         </button>
                       ) : (
-                        <span className="g3-muted">
-                          未部署 · 点「部署」注入请求,验收助手按项目入口部署并写回 URL
-                        </span>
+                        <span className="g3-muted">未部署 · 点「部署」注入请求</span>
                       )}
                     </div>
                     <div className="acc-row-line">
@@ -814,6 +799,11 @@ function App() {
                           <span className="g3-annotate-count">{annotations.length}</span>
                         )}
                       </button>
+                      <IconButton
+                        name="refresh"
+                        label="刷新 Issue"
+                        onClick={() => setNotice('Issue 状态已重读 · 演示')}
+                      />
                       <IconButton
                         name={expanded.length === goals.length ? 'down' : 'right'}
                         label={expanded.length === goals.length ? '全部收起' : '全部展开'}
@@ -870,21 +860,14 @@ function App() {
                         onNext={(value) =>
                           setNexts((current) => ({ ...current, [goal.goalId]: value }))
                         }
-                        reportReady={Boolean(report)}
-                        onOpenReport={() => {
-                          if (report) {
-                            toggleSession(true)
-                            setNotice(`已在内置 Orca 浏览器打开报告 ${goal.goalId} 章 · 衔接示意`)
-                          } else {
-                            setNotice('报告未生成;先在会话中让验收助手生成。')
-                          }
-                        }}
+                        onOpenTask={(number) =>
+                          setNotice(`打开 #${number} 原生任务详情 · 衔接示意`)
+                        }
                       />
                     ))}
                   </div>
                   <p className="g3-demo-footnote g3-annotation">
-                    勾的含义只有「达成/不达成」,演示过与否不进材料;指标证据不回显板面,在验收
-                    证据报告里。目标只读自计划,本屏不编辑目标。
+                    勾只有「达成/不达成」;指标证据在验收证据报告里;目标只读自计划。
                   </p>
                 </section>
                 <section id="minutes">
@@ -907,7 +890,7 @@ function App() {
                   <MinutesCard
                     minutes={minutes || EMPTY_MINUTES}
                     showFollowupStatus={false}
-                    footNote="纪要经人工确认生效,生成或填写不自动等于确认。遗留条目原样流入下版计划屏「会议遗留」。"
+                    footNote="纪要经人工确认生效,生成或填写不自动等于确认。"
                     update={(patch) => {
                       setMinutes({ ...(minutes || EMPTY_MINUTES), ...patch })
                       setNotice('本页演示修改 · 刷新后恢复原始材料')
@@ -975,8 +958,10 @@ function App() {
                     {/* 规格:板面只有这一个发布入口,点击即注入请求。不设预检弹窗、
                         不设发布状态读回行、材料不存发布记录——发布读数的正本在 Git
                         标签与 provider Release 页,抄一份进板面即造第二正本。 */}
-                    <button
-                      className="acc-btn primary"
+                    {/* 生产发布用 Rocket 图标;vendor 冻结图标集无 rocket,原型以 send 近似。 */}
+                    <ActionButton
+                      icon="send"
+                      title="发布请求注入验收助手会话;预检与授权在会话中完成"
                       onClick={() => {
                         sendRequest(
                           `发布 ${releaseInfo.version}:先在会话中完成预检并报告,经我明确授权后再执行`,
@@ -985,13 +970,11 @@ function App() {
                         setReleaseHandoff(true)
                       }}
                     >
-                      <Icon name="send" size={13} /> 发布
-                    </button>
+                      发布
+                    </ActionButton>
                   </div>
                   <p className="g3-demo-footnote g3-annotation">
-                    预检、发布提交与验收包一致性核对、知情授权、按项目自有发布入口执行与发布后独立读回,
-                    全部在会话中完成并在会话中报告。不达成不阻断发布,由你知情决定;未经明确授权不建
-                    Release、不打标签。板面不呈现发布状态,需要时看 Git 标签或 provider Release 页。
+                    预检、授权、执行与读回全在会话中完成;未经明确授权不建 Release、不打标签。
                   </p>
                 </section>
               </>

@@ -35,7 +35,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 - `workbench/plan-column-resize.ts`、`workbench/use-plan-chat-collapsed.ts`：会话栏收折壳（名字带 plan 但已是两屏共用壳，v9.5 起验收屏就在用）
 - `workbench/version-cycle/`：`ports.ts`、`cycle-context.ts`、`CycleWorkspaceProvider`、`use-material-autosave.ts`、`use-archive-pr-status.ts`、`AutomationConfigureButton.tsx`、`open-acceptance-source.ts`、`open-archive-pr.ts`、`trunk-update-port.ts`
 
-发送弹窗的触发件用纯 button（`BoardActionButton` 或屏内文字按钮），**不用 `BoardIconButton`**：后者内部已是 Radix `TooltipTrigger`，再套 `DropdownMenuTrigger asChild` 会让 tooltip 与 dropdown 的 `data-state` 与 aria 属性互相覆盖。计划屏同一做法。
+发送弹窗的触发件用纯 button（`BoardActionButton`，2026-10-23 起发送触发件全部统一为图标+短动词格式），**不用 `BoardIconButton`**：后者内部已是 Radix `TooltipTrigger`，再套 `DropdownMenuTrigger asChild` 会让 tooltip 与 dropdown 的 `data-state` 与 aria 属性互相覆盖。计划屏同一做法。
 
 批注可标注对象按 spec 只用 `goal`、`issue`、`board` 三种 kind；`AnnotationKind` 里的 `acceptance` 与 `metrics` 在验收屏不挂 `data-annotate-*`，因此不可批注——这是屏级取舍，不改共用类型。
 
@@ -46,7 +46,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 **新增**：
 
 - `minutes?: AcceptanceMeetingMinutes` —— 与计划侧 `PlanMeetingMinutes` 同形但**不含闭环位**：`consensus: string[]`、`followups: Array<{ id: string; text: string }>`、`confirmed: boolean`、`confirmedAt?`、`sources?`、`updatedAt?`。followup 的 `id` 用 `crypto.randomUUID()` 稳定身份，人工增删不让既有编号漂移；板面按数组序显示 M1…Mn。不给验收材料留恒假的 `closed` 字段。
-- `demoEnv?: { kind: 'url'; url: string } | { kind: 'launched'; detail: string }` —— 演示环境两形态。web 服务类写 `kind:'url'`，板面渲染可点链接经内置 Orca 浏览器打开；桌面应用类写 `kind:'launched'`，板面渲染状态文字，不伪造链接。缺失即未部署，如实显示未部署与下一步。
+- `demoEnv?: { kind: 'url'; label?: string; url: string } | { kind: 'launched'; detail: string }` —— 演示环境两形态。web 服务类写 `kind:'url'`，可附一句系统名 `label`：板面「演示环境」行显示系统名、缺省回退 URL，点击经内置 Orca 浏览器打开；桌面应用类写 `kind:'launched'`，板面渲染状态文字，不伪造链接。缺失即未部署，如实显示未部署与下一步。
 - 版本级交付件不再按目标记录：`results[].deliveries` 退役，版本级交付件与演示环境由 `demoEnv` 与制品登记承载。
 
 **不新增** `workflow.release`：发布读数的正本在 Git 标签与 provider Release 页，抄进材料即造第二正本；板面不呈现发布状态，总览也不显示「已发布」。`AcceptanceWorkflowStateSchema` 维持 `stage/updatedAt/archivePr`，`stage` 枚举维持 `preparation/showcase/archive` 三值（界面四步与材料三阶段不同名、不映射，界面不渲染灯）。
@@ -109,6 +109,10 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 四区单页 + 顶部定位导航（序号+标题+副题，滚动侦测高亮，点击 `scrollIntoView`）。滚动侦测：导航点击后抑制侦测直到用户活动（focus/wheel/pointerdown/touchstart/翻页与方向键）清除；贴底（距底 <2px）强制高亮 `archive`；否则取「区顶 ≤ 容器顶 +60px」的最后一个区。会话栏收折后 reanchor 当前区，不因回流跳高亮。空板态不渲染导航。
 
 批注捕获层：板面元素挂 `data-annotate-kind/goal/issue/label`，`onClickCapture` 在批注模式下拦截整板点击，最内层命中者弹出对象小窗；`#minutes` 区内点击直接放行（人工确认是会中必须能做的铁律动作）；已存在的角标保留自己的点击（重开面板）。Esc 分层由 `useBoardAnnotations` 内部处理：先关小窗、再退模式与面板。批注为内存态：会话 store 按板面身份（scope + 版本）键控（`useBoardAnnotations(boardId)`，`Map<boardId, session>`，2026-10-23 对齐轮），切版=换 key 天然空会话，两屏不再有命令式 identity-`clearAll` effect（旧实现是单一全局会话+挂载即清，切屏瞬间互删未发送批注、同 goalId 串角标）；发送成功门控内 `clearAll` 清已递交批注（与计划屏同一 A 案），模型侧删对象经 `pruneMissing` 清孤儿。批注模式入口在 Showcase 区块标题行（`AcceptanceGoalRows` 的 `annotateEntry` prop，文字标签 + `.acc-annotate-count` 未发送角标），页头 `extraActions` 槽位与空板态禁用占位钮已删除。
+
+2026-10-23 UI 对齐轮（#417，高保真反馈轮 2 后全量对齐）：页头 `.acc-header` 从列布局改为与计划屏同行（标题左、动作右、`flex-wrap` 兜底，度量抄 `vp-header`/`g3-header-actions`）；Showcase 目标卡抄计划屏 `g3-goal` 度量——卡片底色 `var(--card)`、head 顶对齐、标题 600+悬停下划线、meta 独立行 78px 缩进、body 78px 缩进、`acc-task-head` 带 border-top 分隔；Issue 行对齐 `g3-task`（baseline、gap 12、8px 上下节奏、标题悬停才下划线），行尾「打开原生任务详情」按钮保留（高保真同轮补齐）；板面动作按钮统一 `BoardActionButton` 图标+短动词（部署 BrainCircuit、发布 Rocket、出包 Plus、下载 Download），`acc-text-button` 只剩页头文字按钮，`wb-btn` 退出板面动作按钮（冲突/恢复提示区仍沿用，与计划屏提示区同款）；报告入口只在「验收准备」证据报告行，目标行 `hasReport`/`onOpenReport` 链路删除；`demoEnv.kind='url'` 增可选 `label`（系统名），「演示环境」行显示系统名、缺省回退 URL；长 title 与说明文字清到计划屏密度。纪要卡抄 `g3-minutes` 度量（方片状态章、列表无默认符号、foot 按钮输入件皮肤），归档/发布卡抄 `g3-archive`（卡片底色、20px 内距、gap 16），旅程导航抄 `g3-journey`（等分满宽、当前项加粗）。壳层共用改动（两屏同受益）：`.vc-split` 从 1px+外扩热区改为 6px 实体全高热区+居中 1px 线（上游 `tab-group-split-resize-handle` 同款）——旧热区被两侧定位内容（xterm 视口、板面定位容器）盖住，只有顶部 titlebar 一段可拖；titlebar 的验收专用老「收折会话」开关删除，收折/展开统一板面页头 chip 唯一入口；收折态 36px 栏加整栏点击展开覆盖层（带 title 提示），分隔条收折不渲染维持第九轮拍板。
+
+同轮补齐：Showcase 区块头「刷新 Issue」图标按钮（`taskPort.refresh`，在途切版旧读回不覆盖新列表，计划屏同款漏抄）；CAS 冲突处置从「人工核对裸 JSON」改为字段归属静默合并——`acceptance-merge.ts` 纯函数（模型字段取远端；人字段 decision/note/nextStep/issueNotes/issueMarks/minutes 保留本地相对基线的改动；本地独有 result 整条保留），`MaterialDraftController` 增可选 merge 策略与干净基线 base 追踪（计划屏不传策略、行为不变），合并成功只留一行 `notice`（随下次编辑或保存消失），`AcceptanceNotices` 退役裸 JSON 对照区、仅基线缺失（脏草稿恢复后再冲突）时留两按钮人工处置；合并基线随每次合并推进到远端文档，防止连环冲突把已采纳的远端值钉死成「本地人改」（检视轮 B1 修正）。证据报告等 HTML 材料经 `openAcceptanceMaterial` 改走 Orca 原生工作区文件浏览器预览（`openFileInBrowserTab`：本地=内置浏览器页签、SSH/配对=doc-preview、不支持回落编辑器）——报告是渲染件，此前走编辑器只见源码，spec A04「内置浏览器可打开」由真机反馈补正兑现。
 
 出包区块沿用既有 `AcceptancePackage` 与 `workbench.package.*` 协议（按远端身份分派 CodeHub cloudbuild CLI / CloudDragon 会话 / gh CLI，SSH 宿主拒绝出包），可收缩、默认收起为一行最新包摘要；受理后每分钟静默刷新、`launchInFlight` 互斥不重复启动；无流水线/无权限/远端认不出/非本机宿主如实报错。包重出不自动刷新板面已填内容，是否重核由模型在会话中提醒、人决定；板面不做主动失效或待重核呈现。
 
