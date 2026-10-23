@@ -5,6 +5,7 @@ import { applyElectronProxySettings } from '../network/proxy-settings'
 import { installElectronProxyRequestGuard } from '../network/electron-proxy-request-guard'
 import { handleElectronProxyLogin } from '../network/electron-proxy-credentials'
 import { installMainThreadHangWatchdog } from '../hang-watchdog/main-thread-hang-watchdog'
+import { isWorkbenchProduct } from './workbench-product'
 import {
   consumeHangDetectionMarker,
   hangDetectionMarkerPath
@@ -259,7 +260,12 @@ export async function initializeReadyFoundation(): Promise<void> {
     )
   }
   applyAppIcon(store.getSettings().appIcon)
-  if (shouldSuppressDevEducation({ isDev: is.dev })) {
+  if (
+    shouldSuppressDevEducation({
+      isDev: is.dev,
+      isWorkbenchProduct: isWorkbenchProduct()
+    })
+  ) {
     suppressDevEducationForStore(store)
   }
   // Why: the partition installer reads the proxy through this resolver, so register it before sessions materialize.

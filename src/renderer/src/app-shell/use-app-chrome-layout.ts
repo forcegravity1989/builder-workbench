@@ -138,7 +138,9 @@ export function useAppChromeLayout() {
     showSidebar,
     // Full-page navigation surfaces own the whole content area, so suppress right-sidebar controls.
     showRightSidebarControls: !creationLayoutActive && canShowRightSidebarForView(activeView),
-    showTitlebarAppName: settings?.showTitlebarAppName !== false,
+    // Why: the hardcoded title-bar name is Orca's brand; the Workbench shell
+    // carries its own mark in the sidebar and never shows it.
+    showTitlebarAppName: !isWorkbenchShell() && settings?.showTitlebarAppName !== false,
     showTitlebarExpandButton: workspaceChromeActive && !hasTabBar && effectiveActiveTabExpanded,
     sidebarOpen,
     stackedSidebarOpen,

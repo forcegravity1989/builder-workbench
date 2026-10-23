@@ -7,6 +7,7 @@ import {
 } from '../../shared/keybindings'
 import type { UpdateCheckOptions } from '../../shared/update-status-types'
 import { translateMain } from '../i18n/main-i18n'
+import { isWorkbenchProduct } from '../startup/workbench-product'
 import { createAppMenuSelectionItem } from './app-menu-selection-item'
 
 export type AppearanceMenuState = {
@@ -308,17 +309,22 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
     submenu: [{ role: 'minimize' }, { role: 'zoom' }]
   }
 
+  const isWorkbench = isWorkbenchProduct()
+  // Why: crash report, feature tour and setup guide belong to Orca's first-run
+  // education chain; Workbench's Help keeps only About and update checks.
+  const helpEducationItems: Electron.MenuItemConstructorOptions[] = isWorkbench
+    ? []
+    : [crashReportItem, { type: 'separator' }, featureTourItem, setupGuideItem]
   const helpMenu: Electron.MenuItemConstructorOptions = {
     label: translateMain('menu.help', 'Help'),
     submenu: [
-      crashReportItem,
-      { type: 'separator' },
-      featureTourItem,
-      setupGuideItem,
+      ...helpEducationItems,
+      // Why: the separator only divides About/updates from the education block,
+      // so it drops together with that block; macOS keeps them in the app menu.
       ...(isMac
         ? []
         : ([
-            { type: 'separator' },
+            ...(helpEducationItems.length > 0 ? [{ type: 'separator' } as const] : []),
             { role: 'about' },
             checkForUpdatesItem
           ] satisfies Electron.MenuItemConstructorOptions[]))
@@ -331,7 +337,9 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
     editMenu,
     viewMenu,
     windowMenu,
-    helpMenu
+    // Why: on macOS About and Check for Updates live in the app menu, so the
+    // Workbench help submenu would be empty — omit the menu entirely there.
+    ...(isMac && isWorkbench ? [] : [helpMenu])
   ]
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))

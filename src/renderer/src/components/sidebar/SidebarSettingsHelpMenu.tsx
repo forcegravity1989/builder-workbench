@@ -35,6 +35,7 @@ import { lazyWithRetry } from '@/lib/lazy-with-retry'
 import type * as SidebarFeedbackDialogModule from './SidebarFeedbackDialog'
 import { translate } from '@/i18n/i18n'
 import { getUpdateCheckClickOptions, getUpdateCheckHint } from '@/lib/update-check-click-options'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 // Why lazy: the feedback form is only reachable from this menu's own item, so it does not
 // belong on the renderer boot graph. Shared with the menu-open warm below so both hit the
@@ -103,6 +104,10 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
   const openSettingsTarget = useAppStore((s) => s.openSettingsTarget)
   const updateStatus = useAppStore((s) => s.updateStatus)
   const setupProgress = useSetupGuideProgress(true, false, false)
+  // Why: feedback, the setup checklist, onboarding and Orca's external links belong
+  // to the upstream product; the Workbench Help menu keeps only shortcuts, update
+  // checks and restart. The entries stay in the repo for Orca builds.
+  const isShell = isWorkbenchShell()
 
   const settingsShortcut = useShortcutKeyDetails('app.settings')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -148,7 +153,7 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
     }
     setIsRestartingOrca(true)
     toast.info(
-      translate('auto.components.sidebar.SidebarSettingsHelpMenu.5161eef55d', 'Restarting Orca…')
+      translate('auto.components.sidebar.SidebarSettingsHelpMenu.5161eef55d', 'Restarting app…')
     )
     void window.api.app.restart().catch((error) => {
       if (mountedRef.current) {
@@ -156,7 +161,7 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
         toast.error(
           translate(
             'auto.components.sidebar.SidebarSettingsHelpMenu.4e8f5710d3',
-            "Couldn't restart Orca."
+            "Couldn't restart the app."
           ),
           {
             description: error instanceof Error ? error.message : undefined
@@ -252,80 +257,87 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
                 'Keyboard Shortcuts'
               )}
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={handleOpenFeedback}>
-              <MessageSquareText className="size-3.5" />
-              {translate(
-                'auto.components.sidebar.SidebarSettingsHelpMenu.4cf5b868d7',
-                'Send Feedback'
-              )}
-            </DropdownMenuItem>
-            {showMilestones ? (
-              <DropdownMenuItem onSelect={openMilestones}>
-                <img
-                  src={logo}
-                  alt=""
-                  aria-hidden="true"
-                  className="size-3.5 object-contain invert opacity-55 dark:invert-0"
+            {!isShell ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={handleOpenFeedback}>
+                  <MessageSquareText className="size-3.5" />
+                  {translate(
+                    'auto.components.sidebar.SidebarSettingsHelpMenu.4cf5b868d7',
+                    'Send Feedback'
+                  )}
+                </DropdownMenuItem>
+                {showMilestones ? (
+                  <DropdownMenuItem onSelect={openMilestones}>
+                    <img
+                      src={logo}
+                      alt=""
+                      aria-hidden="true"
+                      className="size-3.5 object-contain invert opacity-55 dark:invert-0"
+                    />
+                    {translate(
+                      'auto.components.sidebar.SidebarSettingsHelpMenu.f8a2c91d4e',
+                      'Milestones'
+                    )}
+                    <SetupGuideProgressRing
+                      done={setupProgress.coreDoneCount}
+                      total={setupProgress.coreTotal}
+                      sizeClassName="size-4"
+                      className="ml-auto"
+                    />
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuItem
+                  className="whitespace-nowrap"
+                  onClick={handleShowOnboarding}
+                  onSelect={handleShowOnboarding}
+                >
+                  <School className="size-3.5" />
+                  {translate(
+                    'auto.components.sidebar.SidebarSettingsHelpMenu.b7e4d2a19c',
+                    'Onboarding'
+                  )}
+                </DropdownMenuItem>
+                <ExternalMenuItem
+                  label={translate(
+                    'auto.components.sidebar.SidebarSettingsHelpMenu.cdc87f897e',
+                    'Docs'
+                  )}
+                  url={DOCS_URL}
+                  icon={<BookOpen className="size-3.5" />}
                 />
-                {translate(
-                  'auto.components.sidebar.SidebarSettingsHelpMenu.f8a2c91d4e',
-                  'Milestones'
-                )}
-                <SetupGuideProgressRing
-                  done={setupProgress.coreDoneCount}
-                  total={setupProgress.coreTotal}
-                  sizeClassName="size-4"
-                  className="ml-auto"
+                <ExternalMenuItem
+                  label={translate(
+                    'auto.components.sidebar.SidebarSettingsHelpMenu.5f83d86d92',
+                    'Changelog'
+                  )}
+                  url={CHANGELOG_URL}
+                  icon={<ScrollText className="size-3.5" />}
                 />
-              </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <ExternalMenuItem
+                  label={translate(
+                    'auto.components.sidebar.SidebarSettingsHelpMenu.5687ab246a',
+                    'GitHub'
+                  )}
+                  url={GITHUB_URL}
+                  icon={<Github className="size-3.5" />}
+                />
+                <DropdownMenuItem onSelect={() => openExternalUrl(DISCORD_URL)}>
+                  <DiscordIcon />
+                  {translate(
+                    'auto.components.sidebar.SidebarSettingsHelpMenu.eb9884e55b',
+                    'Discord'
+                  )}
+                  <ExternalLink className="ml-auto size-3 text-muted-foreground" />
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openExternalUrl(X_URL)}>
+                  <XIcon />
+                  {translate('auto.components.sidebar.SidebarSettingsHelpMenu.c4f8e1b72a', 'X')}
+                  <ExternalLink className="ml-auto size-3 text-muted-foreground" />
+                </DropdownMenuItem>
+              </>
             ) : null}
-            <DropdownMenuItem
-              className="whitespace-nowrap"
-              onClick={handleShowOnboarding}
-              onSelect={handleShowOnboarding}
-            >
-              <School className="size-3.5" />
-              {translate(
-                'auto.components.sidebar.SidebarSettingsHelpMenu.b7e4d2a19c',
-                'Onboarding'
-              )}
-            </DropdownMenuItem>
-            <ExternalMenuItem
-              label={translate(
-                'auto.components.sidebar.SidebarSettingsHelpMenu.cdc87f897e',
-                'Docs'
-              )}
-              url={DOCS_URL}
-              icon={<BookOpen className="size-3.5" />}
-            />
-            <ExternalMenuItem
-              label={translate(
-                'auto.components.sidebar.SidebarSettingsHelpMenu.5f83d86d92',
-                'Changelog'
-              )}
-              url={CHANGELOG_URL}
-              icon={<ScrollText className="size-3.5" />}
-            />
-            <DropdownMenuSeparator />
-            <ExternalMenuItem
-              label={translate(
-                'auto.components.sidebar.SidebarSettingsHelpMenu.5687ab246a',
-                'GitHub'
-              )}
-              url={GITHUB_URL}
-              icon={<Github className="size-3.5" />}
-            />
-            <DropdownMenuItem onSelect={() => openExternalUrl(DISCORD_URL)}>
-              <DiscordIcon />
-              {translate('auto.components.sidebar.SidebarSettingsHelpMenu.eb9884e55b', 'Discord')}
-              <ExternalLink className="ml-auto size-3 text-muted-foreground" />
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => openExternalUrl(X_URL)}>
-              <XIcon />
-              {translate('auto.components.sidebar.SidebarSettingsHelpMenu.c4f8e1b72a', 'X')}
-              <ExternalLink className="ml-auto size-3 text-muted-foreground" />
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               disabled={updateStatus.state === 'checking' || updateStatus.state === 'downloading'}
@@ -348,7 +360,7 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
               <RotateCw className="size-3.5" />
               {translate(
                 'auto.components.sidebar.SidebarSettingsHelpMenu.ad3d3ed7f1',
-                'Restart Orca'
+                'Restart App'
               )}
             </DropdownMenuItem>
           </DropdownMenuContent>

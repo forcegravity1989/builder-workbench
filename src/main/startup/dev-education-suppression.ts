@@ -14,11 +14,15 @@ type DevEducationStore = Pick<Store, 'getOnboarding' | 'updateOnboarding' | 'get
 
 export function shouldSuppressDevEducation(args: {
   isDev: boolean
+  isWorkbenchProduct?: boolean
   env?: NodeJS.ProcessEnv
 }): boolean {
   const env = args.env ?? process.env
+  // Why: Workbench's first surface is the project wall — Orca's first-run education
+  // chain stays in the repo for upstream parity but must never run for the Workbench
+  // product. The env escape hatch keeps the chain testable in both products.
   return (
-    args.isDev &&
+    (args.isDev || args.isWorkbenchProduct === true) &&
     env.ORCA_E2E_USER_DATA_DIR === undefined &&
     env[DEV_SHOW_FIRST_RUN_EDUCATION_ENV] !== '1'
   )
@@ -27,7 +31,7 @@ export function shouldSuppressDevEducation(args: {
 export function suppressDevEducationForStore(store: DevEducationStore, now = Date.now()): void {
   const onboarding = store.getOnboarding()
   if (onboarding.closedAt === null) {
-    // Why: default dev launches should behave like an already-productive
+    // Why: default dev and Workbench launches should behave like an already-productive
     // profile, while the env escape hatch keeps first-run surfaces testable.
     store.updateOnboarding({
       flowVersion: ONBOARDING_FLOW_VERSION,

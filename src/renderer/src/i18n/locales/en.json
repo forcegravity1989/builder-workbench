@@ -5391,7 +5391,7 @@
           "selectedProjectsCount": "{{value0}} projects"
         },
         "SidebarSettingsHelpMenu": {
-          "ad3d3ed7f1": "Restart Orca",
+          "ad3d3ed7f1": "Restart App",
           "29c56f30ee": "Check for Updates",
           "eb9884e55b": "Discord",
           "5687ab246a": "GitHub",
@@ -5401,8 +5401,8 @@
           "4cf5b868d7": "Send Feedback",
           "a428c25998": "Settings",
           "2991a0106c": "Help",
-          "4e8f5710d3": "Couldn't restart Orca.",
-          "5161eef55d": "Restarting Orca…",
+          "4e8f5710d3": "Couldn't restart the app.",
+          "5161eef55d": "Restarting app…",
           "d396773ef0": "checking",
           "f8a2c91d4e": "Milestones",
           "b7e4d2a19c": "Onboarding",

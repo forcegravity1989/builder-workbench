@@ -70,6 +70,28 @@ describe('shouldSuppressDevEducation', () => {
     expect(shouldSuppressDevEducation({ isDev: false, env: {} })).toBe(false)
   })
 
+  it('suppresses first-run education for the Workbench product', () => {
+    expect(shouldSuppressDevEducation({ isDev: false, isWorkbenchProduct: true, env: {} })).toBe(
+      true
+    )
+  })
+
+  it('does not suppress packaged Orca launches without the Workbench identity', () => {
+    expect(shouldSuppressDevEducation({ isDev: false, isWorkbenchProduct: false, env: {} })).toBe(
+      false
+    )
+  })
+
+  it('respects the first-run education env escape hatch for the Workbench product', () => {
+    expect(
+      shouldSuppressDevEducation({
+        isDev: false,
+        isWorkbenchProduct: true,
+        env: { [DEV_SHOW_FIRST_RUN_EDUCATION_ENV]: '1' }
+      })
+    ).toBe(false)
+  })
+
   it('respects the first-run education env escape hatch', () => {
     expect(
       shouldSuppressDevEducation({

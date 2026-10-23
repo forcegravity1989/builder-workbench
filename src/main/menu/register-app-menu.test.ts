@@ -464,6 +464,32 @@ describe('registerAppMenu', () => {
     expect(options.onOpenCrashReport).toHaveBeenCalledWith(targetWindow)
   })
 
+  it('omits Orca education entries from Help for the Workbench product', () => {
+    vi.stubEnv('WORKBENCH_SHELL', '1')
+    try {
+      registerAppMenu(buildMenuOptions())
+
+      const template = getTemplate()
+      const helpItems = getSubmenu(template, 'Help')
+      const helpLabels = helpItems.map((item) => item.label)
+      expect(helpLabels).not.toContain('Report Crash...')
+      expect(helpLabels).not.toContain('Explore Orca')
+      expect(helpLabels).not.toContain('Getting Started with Orca')
+      if (isMac) {
+        // Why: macOS About/updates live in the app menu, so Workbench omits the
+        // (otherwise empty) Help menu entirely.
+        expect(template.find((item) => item.label === 'Help')).toBeUndefined()
+      } else {
+        // Why: `role: 'about'` carries no label in the raw template (Electron fills
+        // it at build time), so assert the role and the update item's label.
+        expect(helpItems.map((item) => item.role)).toContain('about')
+        expect(helpLabels).toContain('Check for Updates...')
+      }
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('exposes an Appearance submenu under View with checkbox items reflecting state', () => {
     const options = buildMenuOptions()
     options.getAppearanceState.mockReturnValue({
