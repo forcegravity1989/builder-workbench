@@ -83,9 +83,10 @@ export function VersionOverview({
           <small>会议纪要</small>
           <strong className="report-cell-note">
             {minutes
-              ? `共识 ${minutes.consensus.length} · 遗留 ${followupsClosed}/${minutes.followups.length} 闭环${minutes.confirmed ? ' · 人已确认' : ' · 未确认'}`
-              : '纪要未记录'}
+              ? `计划：共识 ${minutes.consensus.length} · 遗留 ${followupsClosed}/${minutes.followups.length} 闭环${minutes.confirmed ? ' · 人已确认' : ' · 未确认'}`
+              : '计划纪要未记录'}
           </strong>
+          <strong className="report-cell-note">验收纪要未记录</strong>
         </div>
       </div>
       <h2>

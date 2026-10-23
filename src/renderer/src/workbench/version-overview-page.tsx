@@ -86,6 +86,9 @@ export function VersionOverviewPage({
   )
   const minutes = planDocument?.minutes
   const followupsClosed = minutes?.followups.filter((item) => item.closed).length ?? 0
+  // v10 验收纪要（#394）：文档级 minutes 节，followups 无闭环位；未确认如实标注。
+  // 旧材料的逐目标会议指导计数仍在周报表遗留列（meetingDirectives，legacy）。
+  const acceptanceMinutes = acceptanceDocument?.minutes
   const openTasks = (goal?: { goalId: string; label: string }) =>
     void openVersionTasks({
       catalog,
@@ -174,11 +177,25 @@ export function VersionOverviewPage({
         </FactCell>
         <FactCell label="发布证据">未探测（发布记录检索未接入，不猜）</FactCell>
         <FactCell label="会议纪要">
-          {minutes
-            ? `共识 ${minutes.consensus.length} · 遗留 ${followupsClosed}/${minutes.followups.length} 闭环${minutes.confirmed ? ' · 人已确认' : ' · 未确认'}`
-            : planDocument
-              ? '纪要未记录'
-              : '—'}
+          {minutes ? (
+            <span className="block">
+              计划：共识 {minutes.consensus.length} · 遗留 {followupsClosed}/
+              {minutes.followups.length} 闭环{minutes.confirmed ? ' · 人已确认' : ' · 未确认'}
+            </span>
+          ) : (
+            <span className="block">{planDocument ? '计划纪要未记录' : '—'}</span>
+          )}
+          {acceptanceDocument ? (
+            acceptanceMinutes ? (
+              <span className="block">
+                验收：共识 {acceptanceMinutes.consensus.length} · 遗留{' '}
+                {acceptanceMinutes.followups.length} 条
+                {acceptanceMinutes.confirmed ? ' · 人已确认' : ' · 未确认'}
+              </span>
+            ) : (
+              <span className="block">验收纪要未记录</span>
+            )
+          ) : null}
         </FactCell>
       </div>
 
