@@ -86,6 +86,9 @@ function AcceptanceRow({
   onOpenTask
 }) {
   const goalTarget = `${goal.goalId} 目标`
+  // 验收标准参与批注(#426 验收会决议,与计划屏对齐);「下一步」输入件仍不参与。
+  const criteriaTarget = `${goal.goalId} · 验收标准`
+  const criteriaNumbers = taskNumbers[criteriaTarget] || []
   return (
     <article className={`g3-goal ${expanded ? 'open' : ''}`} id={`acc-${goal.goalId}`}>
       <div className="g3-goal-head" data-annotate={goalTarget}>
@@ -123,9 +126,20 @@ function AcceptanceRow({
           <div className="g3-goal-meta">
             <span>{goal.owner || '负责人待明确'}</span>
           </div>
-          <div className="g3-acceptance">
+          <div className="g3-acceptance" data-annotate={criteriaTarget}>
             <h3>
               验收标准 <small className="g3-muted">只读自计划</small>
+              {criteriaNumbers.length > 0 && (
+                <button
+                  className="acc-annot-count"
+                  aria-label={`${criteriaTarget} 的批注 ${criteriaNumbers.length} 条`}
+                  title="打开板面批注窗"
+                  onClick={onOpenPanel}
+                >
+                  <Icon name="annotate" size={12} />
+                  {criteriaNumbers.join(',')}
+                </button>
+              )}
             </h3>
             <Lines text={goal.acceptance} />
           </div>
@@ -303,7 +317,9 @@ function App() {
     setAnnotating(next)
     setPopover(null)
     setPanelOpen(next)
-    setNotice(next ? '批注模式:点击目标行或 Issue 行,在对象旁的小窗记录意见 · Esc 退出' : '')
+    setNotice(
+      next ? '批注模式:点击目标行、验收标准或 Issue 行,在对象旁的小窗记录意见 · Esc 退出' : ''
+    )
   }
   useEffect(() => {
     if (!annotating) {
@@ -340,6 +356,10 @@ function App() {
   }, [errorModal])
   const onScrollClickCapture = (event) => {
     if (!annotating) {
+      return
+    }
+    // 已存在的合并角标保留自己的点击(重开面板)，不弹对象小窗——对齐生产捕获层豁免。
+    if (event.target.closest('.acc-annot-count')) {
       return
     }
     event.preventDefault()
@@ -427,8 +447,9 @@ function App() {
             不进本屏。计划制定中或计划归档 PR 未合入时,验收屏只有一块空板:点「与验收助手新建
             验收」触发检测——检测通过才拉取计划、展开四步板面(目标与验收标准此时才同步上板);
             未合入弹报错、保持空板(硬门禁,不做草案预验收)。选版与项目上下文归左侧栏(G2
-            外框);页头与计划屏同构:会话收折、更新代码(唯一同步入口)、配置自动化——批注模式入口 在
-            Showcase 区块头(与计划屏第九轮同形态,贴着可批注对象,带未发送条数角标);
+            外框);页头与计划屏同构:会话收折、批注模式、更新代码(唯一同步入口)、配置自动化——
+            批注模式入口在页头右上角(#426 验收会决议,两屏同:页头不随内容滚动,会中随时进出、
+            未发送条数角标常驻可见,取代第九轮「入口贴对象」形态);
             <strong>不设全局助手按钮</strong>:「唤起验收助手」的入口按对象就近放置
             (纪要区「整理纪要」、归档区「发起归档」);部署/发布兼任请求注入,出包为直接动作
             ——板面按钮一律图标+短动词统一格式;Showcase 无模型填写事务,不设助手入口。会话栏为 Orca
@@ -455,7 +476,7 @@ function App() {
           </p>
           <p>
             <strong>批注与助手</strong>:批注模式、对象小窗与板面批注窗与计划屏同一组件族和
-            交互(入口在 Showcase 区块头,带未发送条数角标;点击目标行或 Issue 行记录意见, Esc
+            交互(入口在页头右上角,带未发送条数角标;点击目标行、验收标准或 Issue 行记录意见, Esc
             先关小窗再退模式);发送走 Orca 原生发送弹窗递交验收助手,作为会议纪要输入,
             <strong>发送成功即清空已递交批注</strong>(每次发送都是全量清单、以最新一次为准,
             与计划屏同一决定);批注会话按板面身份分开存,切屏保留、切版清空。页头不设全局
@@ -554,6 +575,27 @@ function App() {
               >
                 <Icon name="chat" size={13} /> {session ? '收起会话' : '展开会话'}
               </button>
+              {/* 批注入口在页头右上角(#426 验收会决议,两屏同):页头不随内容滚动,
+                  会中随时进出批注模式、未发送条数角标常驻可见。空板(scene=planned)
+                  无批注对象,不渲染。 */}
+              {scene !== 'planned' && (
+                <button
+                  type="button"
+                  className={`g3-text-button g3-annotate-entry${annotating ? ' g3-mode-on' : ''}`}
+                  aria-pressed={annotating}
+                  title={
+                    annotating
+                      ? '退出批注模式(Esc 同样退出)'
+                      : '批注模式:点击目标行、验收标准或 Issue 行记录验收意见'
+                  }
+                  onClick={toggleAnnotating}
+                >
+                  <Icon name="annotate-mode" size={13} /> 批注模式
+                  {annotations.length > 0 && (
+                    <span className="g3-annotate-count">{annotations.length}</span>
+                  )}
+                </button>
+              )}
               <button
                 className="g3-text-button"
                 title="把验收固定树快进到主干最新并重读材料与候选(唯一同步入口)"
@@ -593,7 +635,8 @@ function App() {
           )}
           {annotating && (
             <div className="g3-annotate-banner" role="status">
-              批注模式:点击目标句或 Issue 行,在对象旁的小窗记录意见 · Esc 先关小窗,再按一次退出
+              批注模式:点击目标句、验收标准或 Issue 行,在对象旁的小窗记录意见 · Esc
+              先关小窗,再按一次退出
             </div>
           )}
           <div
@@ -779,26 +822,6 @@ function App() {
                       </small>
                     </h2>
                     <span className="g3-title-actions">
-                      {/* 批注入口落在 Showcase 区块头,不在页头右上角:可批注对象
-                          (目标行 / Issue 行)全部在本区块内,纪要区不参与批注,入口
-                          贴着对象才找得到。带未发送条数角标,面板关掉时也看得出还有
-                          批注没发出去。与计划屏第九轮同一形态。 */}
-                      <button
-                        type="button"
-                        className={`g3-text-button g3-annotate-entry${annotating ? ' g3-mode-on' : ''}`}
-                        aria-pressed={annotating}
-                        title={
-                          annotating
-                            ? '退出批注模式(Esc 同样退出)'
-                            : '批注模式:点击目标行或 Issue 行记录验收意见'
-                        }
-                        onClick={toggleAnnotating}
-                      >
-                        <Icon name="annotate-mode" size={13} /> 批注模式
-                        {annotations.length > 0 && (
-                          <span className="g3-annotate-count">{annotations.length}</span>
-                        )}
-                      </button>
                       <IconButton
                         name="refresh"
                         label="刷新 Issue"

@@ -304,6 +304,26 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             await prStatus.refresh()
           })
         }
+        annotateEntry={
+          // 计划未建时无目标可批注，不渲染入口（spec 会议纪要条款）。
+          plan ? (
+            <BoardActionButton
+              className={`g3-annotate-entry${annotations.annotating ? ' g3-mode-on' : ''}`}
+              aria-pressed={annotations.annotating}
+              title={
+                annotations.annotating
+                  ? '退出批注模式（Esc 同样退出）'
+                  : '批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见'
+              }
+              onClick={annotations.toggleMode}
+            >
+              <MessageSquarePlus size={13} aria-hidden="true" /> 批注模式
+              {annotations.annotations.length > 0 && (
+                <span className="g3-annotate-count">{annotations.annotations.length}</span>
+              )}
+            </BoardActionButton>
+          ) : undefined
+        }
       />
       {(material.error || notice || selection.error || context.error || entry.notice) && (
         <p className="vp-notice" role="status">
@@ -354,23 +374,6 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
             onSendAction={wrapSend}
             numbersFor={annotations.numbersFor}
             onOpenAnnotationPanel={annotations.openPanel}
-            annotateEntry={
-              <BoardActionButton
-                className={`g3-annotate-entry${annotations.annotating ? ' g3-mode-on' : ''}`}
-                aria-pressed={annotations.annotating}
-                title={
-                  annotations.annotating
-                    ? '退出批注模式（Esc 同样退出）'
-                    : '批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见'
-                }
-                onClick={annotations.toggleMode}
-              >
-                <MessageSquarePlus size={13} aria-hidden="true" /> 批注模式
-                {annotations.annotations.length > 0 && (
-                  <span className="g3-annotate-count">{annotations.annotations.length}</span>
-                )}
-              </BoardActionButton>
-            }
             entry={entry}
             problems={material.versions.filter((item) => item.state !== 'ready')}
             version={context.version}

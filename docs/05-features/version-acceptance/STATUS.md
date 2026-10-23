@@ -61,6 +61,10 @@ v10 复用的共用件随计划屏 G3（[#399](https://github.com/forcegravity19
 
 **验证**：typecheck、check:dead-classes、受影响 vitest（验收套件 + material-draft + shared 材料链）、verify:bundled-skill-guides / verify:skill-bundle-manifest、build-acc --check 绿；app-startup-routing.test.ts 一例在 Windows worktree 因 CRLF 多行断言失败（期望 needle 以 CRLF 形态存在，非本轮引入，Linux CI 不受影响）。真壳留人：分隔条全高拖拽、收折栏点击展开、页头同行与新卡/按钮形态、演示环境系统名、冲突静默合并一行提示。
 
+## 2026-10-23 易用性收口轮（v0.7 验收会后，#426）
+
+v0.7 验收完毕，验收会三条易用性决议：**①批注入口移回页头右上角**（两屏同轮。页头不随内容滚动，会中随时进出批注模式、未发送条数角标常驻可见；`AcceptanceHeader` 增可选 `annotateEntry`，`AcceptanceBoard` 仅在计划已读时传入，空板态维持无入口；Showcase 区块头槽位删除）；**②验收标准可批注**（`.acc-acceptance` 挂 `kind='acceptance'` 捕获属性 + h3 合并角标，与计划屏同款对象语义；spec「验收标准区块不参与批注」条款经会决议改写，「下一步」输入件维持排除；批注横幅与入口 title 文案随对象清单更新）；**③计划屏进度条第一步改名「计划准备」**（计划侧落地，与「验收准备」口径一致，见计划 STATUS 同轮节）。spec :15/:58、design 批注捕获层段与 kind 取舍句、高保真（入口位置、验收标准批注、横幅文案、设计说明）同步，bundle `--check` 绿。**真壳未验**：页头入口新位置、验收标准批注全流程（悬停描边、小窗、角标、发送清单含「验收标准」对象）。
+
 ## 验收点与旅程矩阵
 
 > 口径：○ = 未实现；◐ = 代码已接入但真实用户旅程未完整；● = 齐。协议测试、静态检查与原型结果不等同真壳 E2E。本轮全部为 ◐ 的原因见上「证据边界」——不是代码没写，是真壳证据没取。
