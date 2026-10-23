@@ -358,6 +358,10 @@ function App() {
     if (!annotating) {
       return
     }
+    // 已存在的合并角标保留自己的点击(重开面板)，不弹对象小窗——对齐生产捕获层豁免。
+    if (event.target.closest('.acc-annot-count')) {
+      return
+    }
     event.preventDefault()
     event.stopPropagation()
     if (event.target.closest('#minutes')) {
