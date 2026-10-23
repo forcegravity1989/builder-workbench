@@ -46,7 +46,7 @@
   ],
   "demoEnv": {
     "kind": "launched",
-    "detail": "桌面应用已在本机安装并启动：Workbench（自报版本 0.7.0-rc.20261023.1，exe 产品版本 1.4.197，进程 pid 21024，runtime ready）。\n- 2026-10-23 经人确认：该运行实例即已下载的交付包、该版本无问题，直接作为演示环境使用。\n- 候选包：Workbench 0.7.0 orca-windows-setup.exe（Release v0.7.0，commit bfabf9befd4efee4f8a98f4c5d181f43fed01620，sha512 见 preparedArtifacts）。"
+    "detail": "桌面应用已启动：Workbench 0.7.0（本次交付构建，2026-10-23 经人确认）。"
   },
   "taskSnapshot": [
     {
@@ -61,7 +61,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
         "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "providerIdentity": {
@@ -80,7 +80,7 @@
         "bw:plan:v0.6",
         "bw:plan:v0.7"
       ],
-      "readAt": "2026-10-23T06:40:36.224Z"
+      "readAt": "2026-10-23T09:36:54.259Z"
     },
     {
       "kind": "ready",
@@ -94,7 +94,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
         "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "providerIdentity": {
@@ -112,7 +112,7 @@
         "Feature",
         "bw:plan:v0.7"
       ],
-      "readAt": "2026-10-23T06:40:36.132Z"
+      "readAt": "2026-10-23T09:36:54.248Z"
     },
     {
       "kind": "ready",
@@ -126,7 +126,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
         "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "providerIdentity": {
@@ -144,7 +144,7 @@
         "Feature",
         "bw:plan:v0.7"
       ],
-      "readAt": "2026-10-23T06:40:36.354Z"
+      "readAt": "2026-10-23T09:36:55.271Z"
     },
     {
       "kind": "ready",
@@ -158,7 +158,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
         "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "providerIdentity": {
@@ -176,7 +176,7 @@
         "bug",
         "bw:plan:v0.7"
       ],
-      "readAt": "2026-10-23T06:40:36.824Z"
+      "readAt": "2026-10-23T09:36:55.334Z"
     },
     {
       "kind": "ready",
@@ -190,7 +190,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
         "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "providerIdentity": {
@@ -208,7 +208,7 @@
         "Feature",
         "bw:plan:v0.7"
       ],
-      "readAt": "2026-10-23T06:40:37.152Z"
+      "readAt": "2026-10-23T09:36:55.492Z"
     },
     {
       "kind": "ready",
@@ -222,7 +222,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
         "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "providerIdentity": {
@@ -240,7 +240,7 @@
         "Feature",
         "bw:plan:v0.7"
       ],
-      "readAt": "2026-10-23T06:40:37.328Z"
+      "readAt": "2026-10-23T09:36:55.701Z"
     },
     {
       "kind": "ready",
@@ -254,7 +254,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
         "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "providerIdentity": {
@@ -272,7 +272,7 @@
         "Feature",
         "bw:plan:v0.7"
       ],
-      "readAt": "2026-10-23T06:40:37.390Z"
+      "readAt": "2026-10-23T09:36:56.363Z"
     },
     {
       "kind": "ready",
@@ -286,7 +286,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
         "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "providerIdentity": {
@@ -304,7 +304,7 @@
         "bug",
         "bw:plan:v0.7"
       ],
-      "readAt": "2026-10-23T06:40:37.890Z"
+      "readAt": "2026-10-23T09:36:56.371Z"
     },
     {
       "kind": "ready",
@@ -318,7 +318,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
         "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "providerIdentity": {
@@ -336,7 +336,7 @@
         "Feature",
         "bw:plan:v0.7"
       ],
-      "readAt": "2026-10-23T06:40:38.194Z"
+      "readAt": "2026-10-23T09:36:56.481Z"
     },
     {
       "kind": "ready",
@@ -350,7 +350,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
         "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "providerIdentity": {
@@ -362,13 +362,13 @@
       },
       "iid": 317,
       "title": "【v0.7|G4】首次启动弹出 Orca 的向导、功能提示和功能墙，反馈入口仍指向 Orca",
-      "state": "open",
+      "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/317",
       "labels": [
         "Feature",
         "bw:plan:v0.7"
       ],
-      "readAt": "2026-10-23T06:40:38.343Z"
+      "readAt": "2026-10-23T09:36:56.762Z"
     },
     {
       "kind": "ready",
@@ -382,7 +382,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
         "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "providerIdentity": {
@@ -400,7 +400,7 @@
         "Feature",
         "bw:plan:v0.7"
       ],
-      "readAt": "2026-10-23T06:40:38.443Z"
+      "readAt": "2026-10-23T09:36:57.376Z"
     },
     {
       "kind": "ready",
@@ -414,7 +414,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
         "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "providerIdentity": {
@@ -426,13 +426,13 @@
       },
       "iid": 387,
       "title": "【v0.7|G4】CodeHub 支持问题集中修复：PR 渲染、项目维度筛选、来源路由与引导",
-      "state": "open",
+      "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/387",
       "labels": [
         "bug",
         "bw:plan:v0.7"
       ],
-      "readAt": "2026-10-23T06:40:38.892Z"
+      "readAt": "2026-10-23T09:36:57.375Z"
     },
     {
       "kind": "ready",
@@ -446,7 +446,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
         "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
         "providerIdentity": {
@@ -464,37 +464,98 @@
         "Feature",
         "bw:plan:v0.7"
       ],
-      "readAt": "2026-10-23T06:40:39.276Z"
+      "readAt": "2026-10-23T09:36:57.480Z"
     }
   ],
   "results": [
     {
       "goalId": "G1",
       "readings": [],
+      "decision": {
+        "outcome": "not-met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-10-23T06:49:59.354Z",
+        "materialRevision": "sha256:a2093a63f2132c0abaf82d8836807f278e73307ea63ca711834011798b1664eb",
+        "reason": ""
+      },
       "note": "",
-      "nextStep": ""
+      "nextStep": "下个版本继续做",
+      "issueNotes": {
+        "github:github.com/forcegravity1989/builder-workbench:341": "完成了三个项目的特性和指标梳理，当前还未达成统一建议"
+      },
+      "issueMarks": {
+        "github:github.com/forcegravity1989/builder-workbench:341": {
+          "carry": true
+        }
+      }
     },
     {
       "goalId": "G2",
       "readings": [],
+      "decision": {
+        "outcome": "not-met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-10-23T09:24:50.622Z",
+        "materialRevision": "sha256:482ba4be85c40b4491ca942353200d5965567726ac4cddf24ef1f7fa50071f2f",
+        "reason": ""
+      },
       "note": "",
-      "nextStep": ""
+      "nextStep": "",
+      "issueNotes": {}
     },
     {
       "goalId": "G3",
       "readings": [],
+      "decision": {
+        "outcome": "met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-10-23T09:36:56.959Z",
+        "materialRevision": "sha256:93aa41ebf10fad4a5136faac7db762005d173326faac95777ffd048b0f0b351d",
+        "reason": ""
+      },
       "note": "",
       "nextStep": ""
     },
     {
       "goalId": "G4",
       "readings": [],
+      "decision": {
+        "outcome": "met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-10-23T07:45:05.418Z",
+        "materialRevision": "sha256:57cbd121db8c8f947de07b18cb0352fb75c8e512bbc6f39e20c696b9f0695f15",
+        "reason": ""
+      },
       "note": "",
-      "nextStep": ""
+      "nextStep": "",
+      "issueMarks": {}
     }
   ],
+  "minutes": {
+    "consensus": [
+      "1、正常发V0.7.0版本，包含G3\\G4目标，G2目标补发v0.7.1版本携带。"
+    ],
+    "followups": [
+      {
+        "id": "M1",
+        "text": "G1目标遗留到下个版本，当前进展完成3个项目初步指标和特性，未达成统一意见。"
+      },
+      {
+        "id": "0b9479b7-334b-48cf-8ccd-2ee3ba80975c",
+        "text": "验收屏：报告模板待重新设计与评审（issue#422），流程需要增加部署上线流程（issue427），卡顿等BUG（issue426）。"
+      },
+      {
+        "id": "fa38f775-0046-413b-822d-6ae97ec90fed",
+        "text": "codehub：评论样式、集成面板支持绿区\\内源\\黄区、任务界面调整issue标签，归属#425issue。"
+      }
+    ],
+    "confirmed": true,
+    "confirmedAt": "2026-10-23T09:24:46.789Z",
+    "sources": "v0.7 验收会板面批注（2026-10-23 全量 6 条）+ 会上一致决定",
+    "updatedAt": "2026-10-23T09:24:15.609Z"
+  },
   "workflow": {
-    "stage": "preparation",
-    "updatedAt": "2026-10-23T03:42:13.996Z"
+    "stage": "archive",
+    "updatedAt": "2026-10-23T09:35:51.743Z"
   }
 }
