@@ -4,6 +4,7 @@ import {
   VersionDocumentError,
   validatePlanningVersion
 } from '../../shared/workbench/version-document'
+import { compareMaterialVersions } from '../../shared/workbench/version-catalog'
 import {
   AcceptanceMaterialSchema,
   PlanningMaterialSchema,
@@ -265,7 +266,7 @@ export function createVersionMaterialWorkspace(
           })
         }
       }
-      return candidates.sort((a, b) => a.version.localeCompare(b.version))
+      return candidates.sort((a, b) => compareMaterialVersions(a.version, b.version))
     },
     async read(input: VersionMaterialRead) {
       const request = VersionMaterialReadSchema.parse(input)
