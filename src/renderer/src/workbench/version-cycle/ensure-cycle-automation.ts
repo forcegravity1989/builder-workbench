@@ -303,6 +303,6 @@ export function useEnsureCycleAutomation({
   }, [scopeKey, cycleScope, fixedId, workflow, agent, onNotice, version])
   return {
     automationId: registered?.key === scopeKey ? registered.id : null,
-    creationKey: cycleScope && !skip ? cycleAutomationCreationKey(cycleScope, version) : null
+    creationKey: cycleScope ? cycleAutomationCreationKey(cycleScope, version) : null
   }
 }

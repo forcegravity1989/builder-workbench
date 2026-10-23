@@ -274,8 +274,8 @@ export function VersionReadonlyMaterialView({
                 <h5>下一步</h5>
                 <BoardLines text={result.nextStep} empty="未记录" />
                 <p className="vc-readonly-meta">
-                  交付件 {result.deliveries.length} · 轮次 {result.rounds?.length ?? 0} · 会议指导{' '}
-                  {result.meetingDirectives?.length ?? 0}
+                  交付件 {result.deliveries?.length ?? 0} · 轮次 {result.rounds?.length ?? 0} ·
+                  会议指导 {result.meetingDirectives?.length ?? 0}
                 </p>
               </article>
             ))}
