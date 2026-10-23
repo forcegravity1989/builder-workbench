@@ -3,7 +3,9 @@ export { snapshot }
 export const g2Url =
   'http://127.0.0.1:53519/docs/05-features/version-planning/version-workspace-journey.html'
 export const stages = [
-  ['context', '上版回顾', '从延期与遗留开始'],
+  // 第一步按 #426（v0.7 验收会决议）从「上版回顾」改名「计划准备」，与验收屏
+  // 「验收准备」口径一致；区块内容仍是上版两行遗留的回显。
+  ['context', '计划准备', '从延期与遗留开始'],
   ['goals', '本版目标', '明确结果与验收标准'],
   ['minutes', '会议纪要', '批注与转写稿生成'],
   ['archive', '归档 PR', 'Leader 在原生 PR 页再审']

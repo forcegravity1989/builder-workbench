@@ -145,9 +145,9 @@ export function AcceptanceGoalRow({
       id={`goal-${goalId}`}
       data-goal-id={goalId}
     >
-      {/* Only the head is annotatable. Putting the capture attribute on the whole
-          card would make the read-only acceptance criteria and the 下一步 textarea
-          annotation targets, which the spec excludes. */}
+      {/* 批注捕获挂在目标整头与验收标准块两处（验收标准自 #426 验收会决议参与
+          批注，与计划屏对齐）；整卡不挂——「下一步」textarea 是人工输入件，
+          不是评审对象，spec 维持排除。 */}
       <div
         className="acc-goal-head"
         {...annotationAttributes({ kind: 'goal', goalId, label: `${goalNumber} 目标` })}
@@ -211,9 +211,21 @@ export function AcceptanceGoalRow({
           <div className="acc-goal-meta">
             <span>{goal.owner || '负责人待明确'}</span>
           </div>
-          <div className="acc-acceptance">
+          <div
+            className="acc-acceptance"
+            {...annotationAttributes({
+              kind: 'acceptance',
+              goalId,
+              label: `${goalNumber} · 验收标准`
+            })}
+          >
             <h3>
               验收标准 <small>只读自计划</small>
+              <AcceptanceAnnotationBadge
+                numbers={numbersFor({ kinds: ['acceptance'], goalId })}
+                label={`${goalNumber} · 验收标准`}
+                onOpenPanel={onOpenAnnotationPanel}
+              />
             </h3>
             <BoardLines text={goal.acceptance} />
           </div>

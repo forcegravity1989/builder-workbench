@@ -1,12 +1,16 @@
 import { GitBranch, MessageSquare, RefreshCw } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 
 export type PlanningSectionId = 'context' | 'goals' | 'minutes' | 'archive'
 
-/** Top journey navigation copy, verbatim from the approved G3 production list. */
+/**
+ * Top journey navigation copy. 第一步按 #426（v0.7 验收会决议）从「上版回顾」改名
+ * 「计划准备」，与验收屏「验收准备」口径一致；区块内容仍是上版两行遗留的回显。
+ */
 export const PLANNING_SECTIONS: [PlanningSectionId, string, string][] = [
-  ['context', '上版回顾', '从延期与遗留开始'],
+  ['context', '计划准备', '从延期与遗留开始'],
   ['goals', '本版目标', '明确结果与验收标准'],
   ['minutes', '会议纪要', '批注与转写稿生成'],
   ['archive', '归档 PR', 'Leader 在原生 PR 页再审']
@@ -22,7 +26,8 @@ export function PlanningHeader({
   onSessionToggle,
   onSelect,
   onConfigure,
-  onRefresh
+  onRefresh,
+  annotateEntry
 }: {
   currentVersion: string
   versions: VersionMaterialCandidate[]
@@ -34,6 +39,8 @@ export function PlanningHeader({
   onSelect(version: string): void
   onConfigure(): void
   onRefresh(): void
+  /** 批注模式入口（#426 验收会决议：页头右上角常驻，不随内容滚动）。计划未建时不传。 */
+  annotateEntry?: ReactNode
 }) {
   return (
     <header className="vp-header">
@@ -86,6 +93,7 @@ export function PlanningHeader({
           <GitBranch size={13} aria-hidden="true" />
           <span>{branch}</span>
         </span>
+        {annotateEntry}
         <button type="button" className="g3-text-button" disabled={disabled} onClick={onRefresh}>
           <RefreshCw size={13} aria-hidden="true" /> 更新代码
         </button>

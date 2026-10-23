@@ -44,6 +44,10 @@
 
 验证边界（负责人授权，同第九轮口径）：不跑本地 CI、不新增单测、不做真机验证；已跑 `verify:bundled-skill-guides`、`verify:skill-bundle-manifest`、两原型 bundle `--check` 全过；真壳欠账新增「两屏互切批注保留/互不清空」。
 
+### 2026-10-23 易用性收口轮（v0.7 验收会后，#426）
+
+v0.7 验收完毕，会上三条易用性决议（#426）计划屏侧落地两条：**批注模式入口移回页头右上角**（`PlanningHeader` 可选 `annotateEntry`，`PlanningBoard` 计划已建才传入；`PlanningGoals` 区块头槽位与 prop 删除。依据：页头不随内容滚动，会中随时进出、未发送角标常驻可见；第八轮「入口贴对象」取舍经会决议废止，验收屏同位同轮落地）；**旅程导航第一步「上版回顾」改名「计划准备」**（与验收屏「验收准备」口径一致，区块内容与「验收回顾」标题不变）。spec 条款 1/4 与页头句、intent 目标体验、design 落点表两行、高保真（`g3-model.js` stages、入口位置、设计说明）同步。验证：typecheck 绿、g3 bundle `--check` 绿；真壳未验（页头入口新位置与改名回显）。验收屏侧见[验收 STATUS 同轮节](../version-acceptance/STATUS.md)；week-planning SKILL 的旅程口播句（「准备 → 目标 → 拆解 → 评审 → 归档」）与新导航名的对齐留提示词专项轮（#428 伴生审核发现）。
+
 ### 2026-10-22 真机反馈轮（#399 合入后验证，Issue #405 / PR #407）
 
 #399 真机验证四问题经用户当轮决定修复：①延期遗留「未标记」误显示「上版无延期 Issue」→ 三态语义（有标记无 carry=无延期；未标记=Unknown 文案 + 经 TaskPort 同源实时读回上版快照 Issue 当前 open 状态参考行，只陈述事实）；②批注角标真机黑底黑字 → 显式赭色底白字；③面板复制 navigator.clipboard 真壳失效 → Orca IPC 剪贴板 + 已复制瞬态（失败如实提示）；④对象级动作点击只框侧边栏（#399 漏掉原生发送弹窗本体）→ `plan-send-menu.tsx` 三段式弹窗（指令预览 + 原生 ReviewNotesSendMenuContent 会话列表/快捷启动），旧 `use-object-action-send.ts` 删除。另按用户决定：纪要空态显示同结构骨架卡；「与计划助手基于纪要调整目标」按钮退役（整理纪要后 Skill SOP 自然引导）。高保真同轮更新（四态演示切换、弹窗、骨架、角标、复制瞬态），spec 条款 1/3/4 与文案清单、design 落点表与 D18、upstream 接缝②同步。证据：typecheck / lint-staged / ratchet 持平 / 受影响 vitest / build-g3 --check 全绿，原型 Playwright 真渲染十图零 console 错误；**真壳 E2E 未执行，留真机验证（见矩阵 P11）**。
