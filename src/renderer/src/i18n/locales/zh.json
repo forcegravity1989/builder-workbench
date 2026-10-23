@@ -11578,7 +11578,8 @@
           "showMoreAgents": "显示另外 {{value0}} 个智能体→",
           "yoloPermissionsLabel": "Yolo / 危险地跳过权限检查",
           "yoloPermissionsInfo": "智能体权限信息",
-          "yoloPermissionsTooltip": "跳过智能体权限检查，减少打断"
+          "yoloPermissionsTooltip": "跳过智能体权限检查，减少打断",
+          "0e00a37e49": "还不在你的 PATH 上。Workbench 会把它设为默认，你可以随时再安装。"
         },
         "FeatureSetupInlineTerminal": {
           "789b59936e": "按 Enter 运行命令并在询问时确认 npx。您也可以稍后在“设置”中进行设置。",
@@ -11608,7 +11609,18 @@
           "a3bcf13694": "已连接",
           "d6e5dba05a": "登录",
           "0b4a7d23ab": "登录",
-          "a74c6d6b18": "未安装"
+          "a74c6d6b18": "未安装",
+          "c773943637": "从任意 CodeHub 议题或合并请求发起工作区，标题与上下文自动带齐",
+          "6d4596cdf7": "在任务视图里浏览 CodeHub 议题与合并请求，无需离开 Workbench",
+          "c1ee44aa7a": "GitHub 同样支持——通过 GitHub CLI 处理议题、拉取请求与 CI 检查",
+          "09df324e47": "阅读、评论并合并拉取请求或合并请求，无需离开 Workbench",
+          "172af1b2c8": "CodeHub",
+          "5b0e29617c": "议题与合并请求。",
+          "10e495afa8": "安装 CodeHub CLI",
+          "98883abe0a": "CodeHub 登录",
+          "96d7cf755a": "CodeHub 登录命令",
+          "ed425b91ac": "按回车执行 CodeHub CLI 登录。登录流程完成后重新检查 CodeHub。",
+          "110d12dbb6": "当前运行时暂不支持读取 codehub-cli 状态。"
         },
         "NotificationStep": {
           "3bede04483": "发送测试通知",
@@ -11631,9 +11643,11 @@
           "94562ba367": "macOS 正在请求权限。在对话框中点按允许，此步骤会自动更新。",
           "4f6a1da718": "打开系统设置",
           "90b5d2e363": "macOS 未送达 Orca 的通知",
-          "2c47f5465f": "在系统设置中启用 Orca 的允许通知。启用后此步骤会自动更新。"
+          "2c47f5465f": "在系统设置中启用 Orca 的允许通知。启用后此步骤会自动更新。",
+          "72256f6d85": "选择桌面通知送达后 Workbench 播放的提示音。"
         },
         "OnboardingFlow": {
+          "1130745139": "设置任务源",
           "1b5e182e9f": "欢迎使用 Orca",
           "4db04f2f57": "/",
           "adaa0aa627": "前往入门步骤 {{value0}}：{{value1}}",
@@ -11652,7 +11666,13 @@
           "984338477a": "主题",
           "c47e1bd149": "智能体",
           "windowsTerminalTitle": "设置 Windows 终端默认值",
-          "windowsTerminalSubtitle": "为新面板选择默认 Shell，以及终端中右键单击的行为。"
+          "windowsTerminalSubtitle": "为新面板选择默认 Shell，以及终端中右键单击的行为。",
+          "78d1d003d2": "Workbench",
+          "685d4ffbeb": "欢迎使用 Workbench",
+          "c64d33bfb8": "Workbench 新手引导",
+          "43b8463d5c": "Workbench 兼容所有 CLI 智能体。选一个你最常用的，随时可以更换。",
+          "54fbfde99e": "当智能体完成任务或需要帮助时，Workbench 会通知你。",
+          "9977a23fbe": "按需安装 CLI——CodeHub 管议题与合并请求，GitHub 管议题与拉取请求。两者都是可选的。"
         },
         "OnboardingFooter": {
           "ba58547306": "返回",
@@ -11720,7 +11740,8 @@
           "loadingDistros": "正在加载发行版",
           "windowsDefault": "Windows 默认值",
           "rightClickBehavior": "右键单击行为",
-          "rightClickBehaviorDescription": "选择符合你在 Windows 上使用习惯的终端鼠标行为。"
+          "rightClickBehaviorDescription": "选择符合你在 Windows 上使用习惯的终端鼠标行为。",
+          "184e11638a": "选择 Workbench 为新 Windows 终端面板打开的 shell。"
         },
         "mac": {
           "notification": {

@@ -634,9 +634,13 @@
       },
       "onboarding": {
         "IntegrationsStep": {
+          "09df324e47": "Read, comment on, and merge pull requests or merge requests without leaving Workbench",
+          "6d4596cdf7": "Browse CodeHub issues and merge requests in the Tasks view without leaving Workbench",
           "93f0c49ad1": "not-authenticated",
           "a3bcf13694": "connected",
-          "a74c6d6b18": "not-installed"
+          "a74c6d6b18": "not-installed",
+          "c1ee44aa7a": "GitHub works too — issues, pull requests, and CI checks via the GitHub CLI",
+          "c773943637": "Start a workspace from any CodeHub issue or merge request, prefilled with its title and context"
         },
         "NotificationStep": {
           "2c47f5465f": "Turn on Allow notifications for Orca in System Settings. This step updates automatically once enabled.",

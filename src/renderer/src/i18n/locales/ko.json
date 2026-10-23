@@ -11531,7 +11531,8 @@
           "showMoreAgents": "agents {{value0}}개 더 보기→",
           "yoloPermissionsLabel": "Yolo / 권한 확인 위험하게 건너뛰기",
           "yoloPermissionsInfo": "Agent 권한 정보",
-          "yoloPermissionsTooltip": "중단을 줄이기 위해 agents 권한 확인을 건너뜁니다."
+          "yoloPermissionsTooltip": "중단을 줄이기 위해 agents 권한 확인을 건너뜁니다.",
+          "0e00a37e49": "아직 PATH에 없습니다. Workbench가 기본값으로 설정합니다. 나중에 언제든 설치할 수 있습니다."
         },
         "FeatureSetupInlineTerminal": {
           "789b59936e": "Enter를 눌러 명령을 실행하고 요청 시 npx를 확인합니다. 나중에 설정에서 설정할 수도 있습니다.",
@@ -11561,7 +11562,18 @@
           "a3bcf13694": "연결됨",
           "d6e5dba05a": "로그인",
           "0b4a7d23ab": "로그인 중",
-          "a74c6d6b18": "설치되지 않은"
+          "a74c6d6b18": "설치되지 않은",
+          "c773943637": "CodeHub 이슈 또는 병합 요청에서 워크스페이스를 시작합니다. 제목과 컨텍스트가 미리 채워집니다",
+          "6d4596cdf7": "Workbench를 벗어나지 않고 작업 보기에서 CodeHub 이슈와 병합 요청을 탐색합니다",
+          "c1ee44aa7a": "GitHub도 지원됩니다 — GitHub CLI로 이슈, 풀 리퀘스트, CI 검사를 처리하세요",
+          "09df324e47": "Workbench를 벗어나지 않고 풀 리퀘스트 또는 병합 요청을 읽고, 댓글을 달고, 병합합니다",
+          "172af1b2c8": "CodeHub",
+          "5b0e29617c": "이슈 및 병합 요청.",
+          "10e495afa8": "CodeHub CLI 설치",
+          "98883abe0a": "CodeHub 로그인",
+          "96d7cf755a": "CodeHub 로그인 명령",
+          "ed425b91ac": "Enter 키를 눌러 CodeHub CLI 인증을 실행하세요. 로그인 흐름이 끝나면 CodeHub를 다시 확인하세요.",
+          "110d12dbb6": "이 런타임에서는 아직 codehub-cli 상태를 사용할 수 없습니다."
         },
         "NotificationStep": {
           "3bede04483": "테스트 알림 보내기",
@@ -11584,9 +11596,11 @@
           "94562ba367": "macOS가 권한을 요청하고 있습니다. 대화 상자에서 허용을 클릭하면 이 단계가 자동으로 업데이트됩니다.",
           "4f6a1da718": "시스템 설정 열기",
           "90b5d2e363": "macOS가 Orca 알림을 전달하지 않고 있습니다",
-          "2c47f5465f": "시스템 설정에서 Orca에 대한 알림 허용을 켜세요. 활성화되면 이 단계가 자동으로 업데이트됩니다."
+          "2c47f5465f": "시스템 설정에서 Orca에 대한 알림 허용을 켜세요. 활성화되면 이 단계가 자동으로 업데이트됩니다.",
+          "72256f6d85": "데스크톱 알림이 전달된 후 Workbench가 재생하는 알림음을 선택하세요."
         },
         "OnboardingFlow": {
+          "1130745139": "작업 소스 설정",
           "1b5e182e9f": "Orca에 오신 것을 환영합니다",
           "4db04f2f57": "/",
           "adaa0aa627": "온보딩 단계 {{value0}}: {{value1}}로 이동",
@@ -11605,7 +11619,13 @@
           "984338477a": "테마",
           "c47e1bd149": "agent",
           "windowsTerminalTitle": "Windows terminal 기본값 설정",
-          "windowsTerminalSubtitle": "새 창에서 사용할 기본 셸과 terminal에서 오른쪽 클릭이 동작하는 방식을 선택하세요."
+          "windowsTerminalSubtitle": "새 창에서 사용할 기본 셸과 terminal에서 오른쪽 클릭이 동작하는 방식을 선택하세요.",
+          "78d1d003d2": "Workbench",
+          "685d4ffbeb": "Workbench에 오신 것을 환영합니다",
+          "c64d33bfb8": "Workbench 온보딩",
+          "43b8463d5c": "Workbench는 모든 CLI 에이전트와 함께 작동합니다. 가장 자주 사용할 것을 선택하세요. 언제든지 변경할 수 있습니다.",
+          "54fbfde99e": "에이전트가 작업을 마치거나 도움이 필요할 때 Workbench가 알려드립니다.",
+          "9977a23fbe": "필요한 CLI를 설치하세요. CodeHub는 이슈와 병합 요청을, GitHub은 이슈와 풀 리퀘스트를 담당합니다. 둘 다 선택 사항입니다."
         },
         "OnboardingFooter": {
           "ba58547306": "뒤로",
@@ -11673,7 +11693,8 @@
           "loadingDistros": "배포판을 불러오는 중",
           "windowsDefault": "Windows 기본값",
           "rightClickBehavior": "오른쪽 클릭 동작",
-          "rightClickBehaviorDescription": "Windows에서 익숙한 terminal 마우스 동작을 선택하세요."
+          "rightClickBehaviorDescription": "Windows에서 익숙한 terminal 마우스 동작을 선택하세요.",
+          "184e11638a": "Workbench가 새 Windows 터미널 창에서 열 셸을 선택하세요."
         },
         "mac": {
           "notification": {
