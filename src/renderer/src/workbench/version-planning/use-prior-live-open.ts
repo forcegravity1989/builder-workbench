@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { CycleTaskReference, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
-import type { CycleScope } from '../version-cycle/ports'
+import type {
+  CycleScope,
+  CycleTaskReference,
+  CycleTaskSnapshot,
+  TaskPort
+} from '../version-cycle/ports'
 import { isClosedIssueState } from '../version-acceptance/acceptance-issue-annotations'
 
 export type PriorLiveOpenState =
