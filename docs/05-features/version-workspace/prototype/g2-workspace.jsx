@@ -590,7 +590,9 @@ function App() {
       return (
         <VersionOverview
           version={version}
+          status={version === 'v0.6' ? '历史' : '在制'}
           plan={plan}
+          trees={state.trees}
           issues={issueSnapshot.items}
           readAt={issueSnapshot.readAt}
           onPlan={() => go(version, 'plan')}

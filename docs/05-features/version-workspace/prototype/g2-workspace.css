@@ -531,7 +531,7 @@ strong {
 }
 .version-report-summary {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   border: 1px solid var(--border);
   border-radius: 8px;
   margin: 24px 0 12px;
@@ -586,14 +586,29 @@ strong {
   font-size: 10.5px;
   margin-top: 3px;
 }
-.report-bottom {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  margin-top: 22px;
+/* 修订 9 事实区对齐生产：页头导航钮与五格中的长文案格。 */
+.report-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
 }
-.report-bottom .card {
+.report-nav-btn {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 11.5px;
+  color: var(--foreground);
+  background: transparent;
+  cursor: pointer;
+}
+.report-nav-btn:hover {
+  background: var(--accent);
+}
+.version-report-summary strong.report-cell-note {
   font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
 }
 .overlay {
   position: fixed;

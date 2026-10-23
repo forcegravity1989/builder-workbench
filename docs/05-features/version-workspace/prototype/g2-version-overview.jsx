@@ -1,69 +1,91 @@
 import { IconAction } from './g2-icon-action.jsx'
 // React is required by the shared bundle JSX factory.
 // eslint-disable-next-line no-unused-vars
-const { React, GitPullRequest, ClipboardCheck, PackageCheck } = window.BWPrototypeDependencies
+const { React, GitPullRequest } = window.BWPrototypeDependencies
 /**
- * 高保真修订 9（2026-10-22，人确认方向「最简、表格周报风格」）：版本总览与生产
- * version-overview-page 同构——事实区（承诺/任务/纪要/验收入口）＋目标周报表
- * （目标｜计划承诺｜关联 Issue｜人工验收｜遗留/下一步）。演示数据为内存快照；
- * 未载入/未记录项如实标注，不装绿（生产同口径：信号只从数据推导）。
+ * 高保真修订 9（2026-10-22，人确认方向「最简、表格周报风格」；同夜按人授权把
+ * 事实区构成对齐生产）：版本总览与生产 version-overview-page 同构——页头
+ * （状态角标＋来源行＋计划屏/验收屏/本版任务按钮）＋事实区五格（工作区登记
+ * 现算／计划归档 PR／验收归档 PR／发布证据／会议纪要）＋目标周报表（目标｜
+ * 计划承诺｜关联 Issue｜人工验收｜遗留/下一步）。演示数据为内存快照：演示不
+ * 探测 provider 状态，未载入/未记录项如实标注，不装绿（生产同口径：信号只从
+ * 数据推导）。
  */
-export function VersionOverview({ version, plan, issues, readAt, onPlan, onTasks, onAcceptance }) {
+const TREE_LABELS = {
+  plan: '计划树',
+  acceptance: '验收树',
+  goal: '目标协作树',
+  issue: 'Issue 执行树'
+}
+export function VersionOverview({
+  version,
+  status,
+  plan,
+  trees,
+  issues,
+  readAt,
+  onPlan,
+  onTasks,
+  onAcceptance
+}) {
   const goals = plan.goals
   const refs = plan.tasks
   const read = refs.map((r) => issues.find((i) => i.number === r.number)).filter(Boolean)
-  const open = read.filter((i) => i.state === 'OPEN').length
-  const closed = read.filter((i) => i.state === 'CLOSED').length
   const archivePr = plan.workflow?.archivePr
   const minutes = plan.minutes
+  const followupsClosed = minutes ? minutes.followups.filter((f) => f.closed).length : 0
+  const workspaceLabels = [...new Set(trees.map((t) => TREE_LABELS[t.role] ?? t.role))]
   return (
     <div className="page-content version-report">
       <div className="page-title">
         <div>
           <h1>{version} 版本总览</h1>
           <p>
-            只读派生自主干已提交材料与原生登记 ·{' '}
-            {archivePr ? (
-              <span>
-                计划归档 PR #{archivePr.number}（合入状态薄读取，未读到保持未知）
-              </span>
-            ) : (
-              <span>计划归档 PR 未记录</span>
-            )}{' '}
-            · Issue 快照 {readAt.slice(0, 10)} · 已载入 {read.length}/{refs.length}
+            只读派生自主干已提交材料与原生登记 · Issue 快照 {readAt.slice(0, 10)} · 已载入{' '}
+            {read.length}/{refs.length}
           </p>
         </div>
-        <span className="badge">发布证据未探测（不猜）</span>
+        <span className="report-nav">
+          <span className="badge">{status}</span>
+          <button type="button" className="report-nav-btn" onClick={onPlan}>
+            计划屏
+          </button>
+          <button type="button" className="report-nav-btn" onClick={onAcceptance}>
+            验收屏
+          </button>
+          <button type="button" className="report-nav-btn" onClick={() => onTasks('all')}>
+            本版任务
+          </button>
+        </span>
       </div>
       <div className="version-report-summary">
         <div>
-          <small>计划承诺</small>
-          <strong>{goals.length} 个目标</strong>
-          <IconAction label="查看计划" onClick={onPlan} />
+          <small>工作区（登记现算）</small>
+          <strong>
+            {trees.length
+              ? `${trees.length} 棵存活：${workspaceLabels.join('、')}`
+              : '已清理或未准备（登记缺失）'}
+          </strong>
         </div>
         <div>
-          <small>关联任务</small>
-          <strong>
-            {read.length
-              ? `${closed} 已关闭 · ${open} 打开`
-              : refs.length
-                ? '任务状态未载入'
-                : '暂无任务'}
-          </strong>
-          <IconAction label="查看本版任务" onClick={() => onTasks('all')} />
+          <small>计划归档 PR</small>
+          <strong>{archivePr ? `#${archivePr.number} · 未知（演示不探测）` : '未记录'}</strong>
+        </div>
+        <div>
+          <small>验收归档 PR</small>
+          <strong>未记录</strong>
+        </div>
+        <div>
+          <small>发布证据</small>
+          <strong className="report-cell-note">未探测（发布记录检索未接入，不猜）</strong>
         </div>
         <div>
           <small>会议纪要</small>
-          <strong>
+          <strong className="report-cell-note">
             {minutes
-              ? `共识 ${minutes.consensus.length} · 遗留 ${minutes.followups.filter((f) => f.closed).length}/${minutes.followups.length} 闭环${minutes.confirmed ? ' · 人已确认' : ''}`
+              ? `共识 ${minutes.consensus.length} · 遗留 ${followupsClosed}/${minutes.followups.length} 闭环${minutes.confirmed ? ' · 人已确认' : ' · 未确认'}`
               : '纪要未记录'}
           </strong>
-        </div>
-        <div>
-          <small>目标验收</small>
-          <strong>逐条如实（见表）</strong>
-          <IconAction label="查看验收" onClick={onAcceptance} />
         </div>
       </div>
       <h2>
@@ -136,26 +158,6 @@ export function VersionOverview({ version, plan, issues, readAt, onPlan, onTasks
           )}
         </tbody>
       </table>
-      <div className="report-bottom">
-        <section className="card">
-          <h2>
-            <PackageCheck size={16} /> 交付物与发布
-          </h2>
-          <p className="muted">
-            归档 PR 合入状态按记录引用薄读取，读不到保持未知；发布证据待接入发布记录检索后
-            如实呈现，不猜、不以 PR 合入冒充发布。
-          </p>
-        </section>
-        <section className="card">
-          <h2>
-            <ClipboardCheck size={16} /> 遗留与后续
-          </h2>
-          <p className="muted">
-            会议遗留以纪要 closed 标记计数为准；验收遗留与下一步按人工确认条目汇总，
-            不与 Issue 状态混算。
-          </p>
-        </section>
-      </div>
     </div>
   )
 }
