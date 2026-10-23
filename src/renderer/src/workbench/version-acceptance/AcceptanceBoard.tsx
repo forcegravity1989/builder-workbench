@@ -257,6 +257,7 @@ function ReadyAcceptanceBoard({
         currentVersion={document.version}
         versions={[...new Set([...board.versions, document.version])]}
         unreadable={unreadable}
+        boundVersion={context.boundVersion}
         disabled={!context.materialPort || Boolean(context.syncing) || board.busy}
         state={state}
         sessionCollapsed={chatCollapsed}

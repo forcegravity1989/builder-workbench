@@ -87,7 +87,9 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
       ? null
       : boundVersion
         ? // 绑定树只钉真实分支；读不到真实分支就不钉，绝不冒充旧固定分支名（防误归档）。
-          (worktree.branch ? branchName(worktree.branch) || null : null)
+          worktree.branch
+          ? branchName(worktree.branch) || null
+          : null
         : cycleBranch({ workflow })
   const references = ['version-records', 'metrics']
     .map((name) => `- ${name}：ORCA skills get ${topic} --reference ${name}`)

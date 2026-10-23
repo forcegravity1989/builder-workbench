@@ -18,10 +18,6 @@ import { nativeTaskPort } from '../native-task-port'
 import { nativeArchivePrPort } from '../archive-pr-port'
 import './version-cycle.css'
 
-/** BW supplies workflow assets to the existing Orca workspace, never a second session host. */
-const ACCEPTANCE_SKILL_SYNC_NOTICE =
-  '验收流程树的版本化提示同步待验收 Skill 正本更新（#394）合入后放开：为防止会话按旧固定分支文案归档到错误分支，本版验收树的定时/手动运行入口暂未开放。请在本树会话区直接新建会话。'
-
 export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const workflow = useCycleWorkspaceWorkflow()
   const [notice, setNotice] = useState<string | null>(null)
@@ -32,9 +28,8 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const agent = useMetricsSetupAgent(fixedId)
   const session = useAppStore(useShallow((state) => getActiveCycleSession(state, scope, fixedId)))
   const owner = scope?.runtimeOwnerEnvironmentId
-  // G2：绑定流程树=版本化工作区。计划侧自动化身份已随 P5 版本化放开；验收
-  // 绑定树在验收 Skill 正本同步（#394 合入）前如实受限——见下方
-  // useEnsureCycleAutomation 的 skip 与 start/configure 守卫。
+  // G2：绑定流程树=版本化工作区。周期自动化身份已随 P5 版本化，计划、验收
+  // 两侧均放开（验收 Skill 正本 v0.7.1 已绑定感知同步，归档分支文案不再矛盾）。
   const flowBinding = useMemo(() => {
     const binding = worktree
       ? normalizeStoredWorkbenchVersionBinding(worktree.workbenchVersionBinding)
@@ -43,7 +38,6 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       ? binding
       : null
   }, [worktree])
-  const versionBound = flowBinding !== null
   const materialPort = useMemo(
     () =>
       scope && fixedId
@@ -68,11 +62,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     workflow: workflow ?? 'plan',
     agent,
     onNotice: setNotice,
-    version: flowBinding?.version ?? null,
-    // G2（P5）：计划绑定树已版本化（creationKey/条目名/提示词钉真实分支与绑定
-    // 版本）；验收绑定树在验收 Skill 正本同步（#394 合入后）前如实跳过，防止
-    // 提示词与旧归档分支文案矛盾。旧无绑定树 skip=null 沿原语义。
-    skip: versionBound && workflow === 'acceptance' ? 'acceptance-skill-sync' : null
+    version: flowBinding?.version ?? null
   })
   const configure = useCycleAutomationDraft({
     cycleScope: scope,
@@ -82,19 +72,8 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     creationKey: automation.creationKey,
     onError: setNotice
   })
-  const configureGuarded = useCallback(async () => {
-    if (versionBound && workflow === 'acceptance') {
-      setNotice(ACCEPTANCE_SKILL_SYNC_NOTICE)
-      return
-    }
-    await configure()
-  }, [configure, versionBound, workflow])
   const start = useCallback(
     async (oneShot?: string) => {
-      if (versionBound && workflow === 'acceptance') {
-        setNotice(ACCEPTANCE_SKILL_SYNC_NOTICE)
-        return
-      }
       setBusy(true)
       try {
         if (!scope || !fixedId || !automation.automationId) {
@@ -116,7 +95,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
         setBusy(false)
       }
     },
-    [scope, fixedId, automation.automationId, versionBound, workflow]
+    [scope, fixedId, automation.automationId]
   )
   const prepareMetrics = useCallback(async () => {
     if (!scope || !agent) {
@@ -133,7 +112,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
             notice,
             readonlyBrowse,
             start,
-            configure: configureGuarded,
+            configure,
             prepareMetrics,
             context: {
               scope,
@@ -158,7 +137,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       notice,
       readonlyBrowse,
       start,
-      configureGuarded,
+      configure,
       prepareMetrics,
       scope,
       fixedId,

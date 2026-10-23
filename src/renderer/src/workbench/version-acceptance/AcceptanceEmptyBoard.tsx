@@ -47,6 +47,7 @@ export function AcceptanceEmptyBoard({
         currentVersion={board.version}
         versions={[...new Set([...board.versions, ...(board.version ? [board.version] : [])])]}
         unreadable={unreadable}
+        boundVersion={context.boundVersion}
         disabled={!context.materialPort || Boolean(context.syncing) || board.busy}
         state={state}
         sessionCollapsed={chatCollapsed}

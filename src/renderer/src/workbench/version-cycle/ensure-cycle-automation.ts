@@ -242,8 +242,7 @@ export function useEnsureCycleAutomation({
   workflow,
   agent,
   onNotice,
-  version = null,
-  skip = null
+  version = null
 }: {
   cycleScope: CycleScope | null
   fixedId: string | null
@@ -255,17 +254,12 @@ export function useEnsureCycleAutomation({
    * resolveWorkbenchPromptAssets 按树绑定自检，此处只负责身份与命名）。
    */
   version?: string | null
-  /**
-   * 如实跳过注册（不假报就绪）：调用方给出原因。G2 验收流程树在验收 Skill
-   * 正本同步合入前保持跳过（防止提示词与旧归档分支文案互相矛盾）。
-   */
-  skip?: string | null
 }): { automationId: string | null; creationKey: string | null } {
   const [registered, setRegistered] = useState<{ key: string; id: string } | null>(null)
   const scopeKey =
     cycleScope && fixedId ? `${cycleScopeKey(cycleScope)}:${fixedId}:${version ?? ''}` : null
   useEffect(() => {
-    if (skip || !cycleScope || !fixedId || !scopeKey) {
+    if (!cycleScope || !fixedId || !scopeKey) {
       return
     }
     if (!agent) {
@@ -306,7 +300,7 @@ export function useEnsureCycleAutomation({
     return () => {
       active = false
     }
-  }, [scopeKey, cycleScope, fixedId, workflow, agent, onNotice, skip, version])
+  }, [scopeKey, cycleScope, fixedId, workflow, agent, onNotice, version])
   return {
     automationId: registered?.key === scopeKey ? registered.id : null,
     creationKey: cycleScope && !skip ? cycleAutomationCreationKey(cycleScope, version) : null
