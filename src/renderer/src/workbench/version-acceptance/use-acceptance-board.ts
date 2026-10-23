@@ -21,9 +21,10 @@ import { useAcceptanceGate } from './use-acceptance-gate'
  * and recovery, the fixed plan the material cites, and the edit entry points.
  *
  * Rounds are retired with the cross-week scenario, so there is no history
- * selection here — the board always shows the current material. Initialization is
- * gated: `canInitialize` carries the merged-plan check, and an unmerged plan
- * leaves the board empty instead of creating a draft pre-acceptance.
+ * selection here — the board always shows the current material. Initialization
+ * is first-click: the empty board's start entry chains the gate check, draft
+ * creation and the session launch, and entering the screen alone never
+ * initializes — once the material exists it persists across visits.
  */
 export function useAcceptanceBoard({
   context,
@@ -58,7 +59,6 @@ export function useAcceptanceBoard({
     loadedVersion,
     refresh: refreshDraft,
     clear: useRemoteDeletion,
-    initializationSuppressed,
     cancelAutomaticRead,
     loadedRefresh
   } = useAcceptanceDraft(recoveryKey, port, context.version ?? undefined, context.materialRefresh)
@@ -114,27 +114,35 @@ export function useAcceptanceBoard({
     archivePort: context.archivePort,
     source,
     versionSelected: Boolean(context.version),
-    catalogLoaded,
-    materialRefresh: context.materialRefresh
+    catalogLoaded
   })
-  // Hard gate: an unmerged plan archive PR leaves the board empty rather than
-  // creating a draft pre-acceptance.
-  const canInitialize = gate.state.kind === 'merged'
-  useEffect(() => {
+  /**
+   * First-click initialization from the empty board: build the acceptance draft
+   * from this version's committed plan. Only the start entry calls this, after
+   * the gate reports the plan archive PR merged — entering the screen or passing
+   * the gate alone never creates a draft. Throws instead of no-oping so the
+   * entry can report why nothing started.
+   */
+  async function initialize() {
+    if (draft) {
+      return
+    }
+    if (context.syncing) {
+      throw new Error('正在更新代码，请等同步完成后再开始验收。')
+    }
+    if (!source) {
+      throw new Error('未在验收分支上找到本版已提交的计划。')
+    }
+    if (recoveryError) {
+      throw new Error('本机恢复草稿待处理，请先按恢复提示处理后再开始验收。')
+    }
     if (
-      context.syncing ||
-      !canInitialize ||
-      initializationSuppressed ||
-      !source ||
-      draft ||
-      recoveryError ||
       loadedVersion !== context.version ||
       loadedRefresh !== (context.materialRefresh ?? 0) ||
       catalog.loadedRefresh !== (context.materialRefresh ?? 0)
     ) {
-      return
+      throw new Error('版本材料仍在读取，请稍后再点。')
     }
-    let current = true
     const original = controller.value
     const planRef = {
       kind: 'committed' as const,
@@ -143,45 +151,22 @@ export function useAcceptanceBoard({
       sourceCommit: source.sourceCommit,
       revision: source.revision
     }
-    void history
-      .readPlan({ scope: metricScope, planRef })
-      .then((selected) => {
-        if (current && controller.value === original) {
-          controller.restore({
-            document: createAcceptanceMaterial({
-              planRef,
-              plan: selected,
-              cycleId: crypto.randomUUID()
-            }),
-            expectedRevision: null,
-            dirty: true
-          })
-        }
-      })
-      .catch((reason) => {
-        if (current) {
-          setError(String(reason))
-        }
-      })
-    return () => {
-      current = false
+    const selected = await history.readPlan({ scope: metricScope, planRef })
+    // The disk read may restore an existing material mid-flight; keep it
+    // instead of overwriting real content with a fresh draft.
+    if (controller.value !== original) {
+      return
     }
-  }, [
-    context.syncing,
-    canInitialize,
-    initializationSuppressed,
-    source,
-    draft,
-    loadedVersion,
-    loadedRefresh,
-    catalog.loadedRefresh,
-    context.materialRefresh,
-    context.version,
-    recoveryError,
-    controller,
-    history,
-    metricScope
-  ])
+    controller.restore({
+      document: createAcceptanceMaterial({
+        planRef,
+        plan: selected,
+        cycleId: crypto.randomUUID()
+      }),
+      expectedRevision: null,
+      dirty: true
+    })
+  }
   useEffect(() => {
     const timer = setInterval(() => {
       if (!context.syncing) {
@@ -305,6 +290,7 @@ export function useAcceptanceBoard({
     readOnly,
     loadVersion,
     refreshData,
+    initialize,
     saving: autosave.saving,
     retrySave: autosave.save,
     useRemoteDeletion,
