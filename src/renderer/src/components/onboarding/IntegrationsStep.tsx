@@ -7,7 +7,9 @@ import { useAppStore } from '@/store'
 import { IntegrationStatusPill } from '@/components/integration-status-pill'
 import { cn } from '@/lib/utils'
 import { OnboardingInlineCommandTerminal } from './OnboardingInlineCommandTerminal'
+import { CodeHubRow } from './CodeHubRow'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 type GitHubSetupState = 'checking' | 'connected' | 'not-installed' | 'not-authenticated'
 
@@ -240,8 +242,33 @@ const CAPABILITIES = [
   }
 ] as const
 
+// Why (BW): the Workbench pitch leads with CodeHub and names both CLIs as
+// optional — the rows below never block Continue.
+const WORKBENCH_CAPABILITIES = [
+  {
+    key: 'auto.components.onboarding.IntegrationsStep.c773943637',
+    fallback:
+      'Start a workspace from any CodeHub issue or merge request, prefilled with its title and context'
+  },
+  {
+    key: 'auto.components.onboarding.IntegrationsStep.6d4596cdf7',
+    fallback: 'Browse CodeHub issues and merge requests in the Tasks view without leaving Workbench'
+  },
+  {
+    key: 'auto.components.onboarding.IntegrationsStep.c1ee44aa7a',
+    fallback: 'GitHub works too — issues, pull requests, and CI checks via the GitHub CLI'
+  },
+  {
+    key: 'auto.components.onboarding.IntegrationsStep.09df324e47',
+    fallback:
+      'Read, comment on, and merge pull requests or merge requests without leaving Workbench'
+  }
+] as const
+
 export function IntegrationsStep(): React.JSX.Element {
   const refreshPreflightStatus = useAppStore((s) => s.refreshPreflightStatus)
+  const isShell = isWorkbenchShell()
+  const capabilities = isShell ? WORKBENCH_CAPABILITIES : CAPABILITIES
 
   useEffect(() => {
     void refreshPreflightStatus()
@@ -250,7 +277,7 @@ export function IntegrationsStep(): React.JSX.Element {
   return (
     <div className="space-y-6">
       <ul className="-mt-6 space-y-1.5 text-[14px] leading-relaxed text-muted-foreground">
-        {CAPABILITIES.map(({ key, fallback }) => (
+        {capabilities.map(({ key, fallback }) => (
           <li key={key} className="flex gap-2.5">
             <span className="mt-2 size-1 shrink-0 rounded-full bg-muted-foreground" aria-hidden />
             <span>{translate(key, fallback)}</span>
@@ -259,6 +286,7 @@ export function IntegrationsStep(): React.JSX.Element {
       </ul>
 
       <div className="space-y-3">
+        {isShell ? <CodeHubRow /> : null}
         <GitHubRow />
         <div className="mt-4 rounded-xl border border-border bg-muted/10 px-5 py-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">

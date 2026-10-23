@@ -743,7 +743,8 @@
       "blocked": {
         "notification": {
           "fallback": {
-            "de50bef680": "macOS bloque les notifications Orca"
+            "de50bef680": "macOS bloque les notifications Orca",
+            "8d4c07e6b5": "macOS bloque les notifications de Workbench"
           }
         }
       },
@@ -12693,7 +12694,8 @@
           "showMoreAgents": "Afficher {{value0}} autres agents→",
           "yoloPermissionsLabel": "Yolo / Ignorer dangereusement les permissions",
           "yoloPermissionsInfo": "Informations sur les permissions des agents",
-          "yoloPermissionsTooltip": "Ignorer les vérifications de permissions des agents pour moins d'interruptions"
+          "yoloPermissionsTooltip": "Ignorer les vérifications de permissions des agents pour moins d'interruptions",
+          "0e00a37e49": "n'est pas encore dans votre PATH. Workbench le définira par défaut et vous pourrez l'installer à tout moment."
         },
         "FeatureSetupInlineTerminal": {
           "789b59936e": "Appuyez sur Entrée pour exécuter la commande et confirmez npx si demandé. Vous pouvez aussi configurer cela plus tard dans les paramètres.",
@@ -12723,7 +12725,18 @@
           "a3bcf13694": "connecté",
           "d6e5dba05a": "Se connecter",
           "0b4a7d23ab": "Connexion en cours",
-          "a74c6d6b18": "not-installed"
+          "a74c6d6b18": "not-installed",
+          "c773943637": "Démarrez un espace de travail depuis n'importe quel issue ou demande de fusion CodeHub, prérempli avec son titre et son contexte",
+          "6d4596cdf7": "Parcourez les issues et demandes de fusion CodeHub dans la vue Tâches sans quitter Workbench",
+          "c1ee44aa7a": "GitHub fonctionne aussi — issues, demandes de tirage et vérifications CI via la CLI GitHub",
+          "09df324e47": "Lisez, commentez et fusionnez les demandes de tirage ou de fusion sans quitter Workbench",
+          "172af1b2c8": "CodeHub",
+          "5b0e29617c": "Issues et demandes de fusion.",
+          "10e495afa8": "Installer la CLI CodeHub",
+          "98883abe0a": "Connexion à CodeHub",
+          "96d7cf755a": "Commande de connexion à CodeHub",
+          "ed425b91ac": "Appuyez sur Entrée pour lancer l'authentification de la CLI CodeHub. CodeHub est revérifié automatiquement à la fin de la commande.",
+          "110d12dbb6": "L'état de codehub-cli n'est pas encore disponible dans ce runtime."
         },
         "NotificationStep": {
           "3bede04483": "Envoyer une notification de test",
@@ -12746,9 +12759,13 @@
           "94562ba367": "macOS demande l'autorisation. Cliquez sur Autoriser dans la boîte de dialogue : cette étape se mettra à jour automatiquement.",
           "4f6a1da718": "Ouvrir Réglages Système",
           "90b5d2e363": "macOS ne délivre pas les notifications d'Orca",
-          "2c47f5465f": "Activez « Autoriser les notifications pour Orca » dans Réglages Système. Cette étape se met à jour automatiquement une fois l'option activée."
+          "2c47f5465f": "Activez « Autoriser les notifications pour Orca » dans Réglages Système. Cette étape se met à jour automatiquement une fois l'option activée.",
+          "72256f6d85": "Choisissez l'alerte que Workbench joue après la remise d'une notification de bureau.",
+          "3f8a21c6d0": "Autoriser les notifications pour Workbench",
+          "b7e94d02a1": "macOS ne remet pas les notifications de Workbench"
         },
         "OnboardingFlow": {
+          "1130745139": "Configurer les sources de tâches",
           "1b5e182e9f": "Bienvenue dans Orca",
           "4db04f2f57": "sur",
           "adaa0aa627": "Aller à l'étape {{value0}} de la prise en main : {{value1}}",
@@ -12767,7 +12784,13 @@
           "984338477a": "thème",
           "c47e1bd149": "agent",
           "windowsTerminalTitle": "Définir les valeurs par défaut du terminal Windows",
-          "windowsTerminalSubtitle": "Choisissez le shell PAR DÉFAUT des nouveaux volets et le comportement du clic droit dans le terminal."
+          "windowsTerminalSubtitle": "Choisissez le shell PAR DÉFAUT des nouveaux volets et le comportement du clic droit dans le terminal.",
+          "78d1d003d2": "Workbench",
+          "685d4ffbeb": "Bienvenue dans Workbench",
+          "c64d33bfb8": "Prise en main de Workbench",
+          "43b8463d5c": "Workbench fonctionne avec tous les agents CLI. Choisissez celui que vous utiliserez le plus. Vous pourrez le changer à tout moment.",
+          "54fbfde99e": "Workbench vous avertit lorsque les agents ont terminé ou ont besoin d'aide.",
+          "9977a23fbe": "Installez les CLI dont vous avez besoin — CodeHub pour les issues et demandes de fusion, GitHub pour les issues et demandes de tirage. Les deux sont facultatifs."
         },
         "OnboardingFooter": {
           "ba58547306": "Retour",
@@ -12835,7 +12858,8 @@
           "loadingDistros": "Chargement des distributions",
           "windowsDefault": "Défaut Windows",
           "rightClickBehavior": "Comportement du clic droit",
-          "rightClickBehaviorDescription": "Choisissez le comportement souris du terminal qui correspond à vos réflexes Windows."
+          "rightClickBehaviorDescription": "Choisissez le comportement souris du terminal qui correspond à vos réflexes Windows.",
+          "184e11638a": "Choisissez le shell que Workbench ouvre pour les nouveaux volets de terminal Windows."
         },
         "mac": {
           "notification": {
@@ -12843,7 +12867,8 @@
               "card": {
                 "f696515944": "Cliquez sur Autoriser dans la boîte de dialogue macOS.",
                 "3d18cf71f9": "Se met à jour automatiquement.",
-                "721d2bedb6": "Activez « Autoriser les notifications pour Orca » dans Réglages Système."
+                "721d2bedb6": "Activez « Autoriser les notifications pour Orca » dans Réglages Système.",
+                "c25d81f9e3": "Activez Autoriser les notifications pour Workbench dans Réglages Système."
               }
             }
           }
