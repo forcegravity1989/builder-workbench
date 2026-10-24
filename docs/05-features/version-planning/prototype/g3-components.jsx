@@ -442,7 +442,7 @@ export function GoalRow({
             <ActionButton
               onClick={(e) =>
                 sendRequest(
-                  `按 ${goal.goalId} 验收标准核对已有 Issue，给出拆解 / 关联建议，标题与标签按 issue-state 规范`,
+                  `按 ${goal.goalId} 验收标准核对已有 Issue，给出拆解与关联建议`,
                   '拆解请求',
                   e.currentTarget.getBoundingClientRect()
                 )

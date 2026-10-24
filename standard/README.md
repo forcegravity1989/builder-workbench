@@ -45,13 +45,15 @@
 
 | 文件 | 干什么 | 决策 |
 |---|---|---|
-| `SYSTEM.md.tmpl` | 主提示词:身份 + 读 `AGENTS.md` + 按任务加载 reference + 纪律（含计划页签不另开 HTML） | 计划/验收自动化首次登记、数据问题处理及指标配置时渲染；普通新建与历史恢复不注入。覆盖边界见模块说明 |
+| `SYSTEM.md.tmpl` | 主提示词:身份 + 读 `AGENTS.md` + 按任务加载 reference + 纪律（含计划页签不另开 HTML）+「对用户说话」表达口径 | 计划/验收自动化首次登记、数据问题处理及指标配置时渲染；普通新建与历史恢复不注入。覆盖边界见模块说明 |
 | `REVIEW.md.tmpl` | 评审会话主提示词 | 已收录,尚未派发 |
 | `references/issue-state.md` | Issue 提单格式、计划补充、材料任务关联与处理结果 | 所有 Issue |
 | `references/metrics.md` | 脚本指标协议 | 指标配置及两个版本流程按需读取 |
 | `references/week-plan-comment.md` | 旧计划 Issue 评论三标题 | 仅供历史评论核对、修复和导入 |
 | `references/version-records.md` | 版本计划 / 验收材料及修订契约 | 两个版本流程与资产盘点写入明确版本进展时按需读取 |
-| `references/meeting-transcript.md` | eMeeting 取稿命令、来源与失败处理 | 两个版本流程需要整理会议指导时按需读取 |
+| `references/meeting-transcript.md` | eMeeting 取稿命令、来源与失败处理 | 两个版本流程需要拉取会议转写稿时按需读取 |
+| `references/meeting-minutes.md` | 会议纪要内容质量标准（共识/遗留条目要素、提炼方法、正反例） | 两个版本流程整理或改写纪要前读取 |
+| `references/legacy-materials.md` | 旧格式材料字段语义、会议遗留回退与迁移边界 | 仅读回异常、字段对不上或迁移时查；默认不加载 |
 | `references/build.md` | 改仓:分支 / MR / 合并是人 / 0 提交不装前进 | 构建类 + 资产盘点 Issue |
 | `references/bw-assets.md` | `.bw` 现行格式 + 样例 | 资产盘点 Issue |
 | `references/review.md` | 独立评审 | 尚未派发 |

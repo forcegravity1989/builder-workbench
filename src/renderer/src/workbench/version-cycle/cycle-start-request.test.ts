@@ -14,7 +14,9 @@ describe('materialProblemRequest', () => {
     expect(text).toContain('.bw/planning/v0.3/data.json')
     expect(text).not.toContain('v0.5')
     expect(text).toContain('右侧当前未选择版本')
-    expect(text).toContain('ORCA skills get week-planning --reference data-and-runtime')
+    // #431：注入句是用户口吻文本，不带 CLI 命令；转换方法指针归 SKILL/SYSTEM 侧。
+    expect(text).not.toContain('ORCA skills get')
+    expect(text).toContain('完成后重新读取并同步当前选版')
   })
 
   it('carries the selected version and the real unreadable acceptance files into the request', () => {
