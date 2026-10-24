@@ -261,6 +261,11 @@ async function readWorkbenchReferences(repoRoot, name) {
       {
         name: 'meeting-minutes',
         source: 'standard/system-prompt/references/meeting-minutes.md'
+      },
+      // 旧格式材料查找：默认不加载，读回异常/迁移才查（#431，负责人拍板形态）。
+      {
+        name: 'legacy-materials',
+        source: 'standard/system-prompt/references/legacy-materials.md'
       }
     )
   }
