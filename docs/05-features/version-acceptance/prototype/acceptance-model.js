@@ -5,9 +5,10 @@ export const g2Url = 'https://github.com/forcegravity1989/builder-workbench/pull
 // 注入提示词设计正本(对齐计划屏第九轮瘦身):按钮 prompt 只承载触发意图;
 // 落点 minutes 节、人工确认、遗留无闭环位等 SOP 规则归 version-acceptance
 // Skill 与系统提示词,按钮 prompt 不复述。批注发送句与计划屏同源
-// (g3-model.js 的 annotationsSendPrompt,两屏共用全量清单语义)。
+// (g3-model.js 的 annotationsSendPrompt)。#431 规范轮:「汇总」改「提炼」,
+// 用户口吻句去协议词(全量清单语义两份 SKILL 各有兜底)。
 export const minutesRequestPrompt =
-  '整理本次验收会的会议纪要：把会话中已发送的板面批注汇总为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。'
+  '整理本次验收会的会议纪要：把会话中已发送的板面批注提炼为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。'
 // 四步旅程轴:只做同页定位,不是门禁;界面无灯,stage 是材料内部进度。
 export const stages = [
   ['prepare', '验收准备', '部署服务与证据报告'],

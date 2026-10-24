@@ -22,7 +22,7 @@ import type { SendActionWrap } from '../plan-send-menu'
  * Skill 与系统提示词，按钮 prompt 不复述。
  */
 const minutesRequestPrompt =
-  '整理本次验收会的会议纪要：把会话中已发送的板面批注汇总为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。'
+  '整理本次验收会的会议纪要：把会话中已发送的板面批注提炼为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。'
 
 /**
  * The always-present empty card. A human must be able to start the minutes
