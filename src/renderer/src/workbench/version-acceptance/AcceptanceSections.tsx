@@ -1,15 +1,17 @@
 import { MessageSquare, RefreshCw } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import { ACCEPTANCE_SECTIONS, type AcceptanceSectionId } from './acceptance-sections'
 
 /**
  * Acceptance board header, same shape as the plan screen's: breadcrumb version
  * picker (until G2 moves selection into the sidebar), title with save state,
- * session-collapse chip, trunk sync and automation config. Annotation mode lives
- * in the Showcase section header (就近入口，与计划屏同形态), not here. The
- * branch name stays off the board — packaging builds from the trunk while the
- * acceptance JSON lives on the acceptance branch, so neither is the object the
- * user acts on here.
+ * session-collapse chip, annotation-mode entry, trunk sync and automation
+ * config. Annotation mode lives here at the top-right (#426 v0.7 验收会决议,
+ * both boards) — the header never scrolls away, so the mode toggle and the
+ * unsent-count badge stay reachable mid-meeting. The branch name stays off the
+ * board — packaging builds from the trunk while the acceptance JSON lives on
+ * the acceptance branch, so neither is the object the user acts on here.
  */
 export function AcceptanceHeader({
   currentVersion,
@@ -21,7 +23,8 @@ export function AcceptanceHeader({
   onSessionToggle,
   onSelect,
   onConfigure,
-  onRefresh
+  onRefresh,
+  annotateEntry
 }: {
   currentVersion: string
   versions: string[]
@@ -34,6 +37,8 @@ export function AcceptanceHeader({
   onSelect(version: string): void
   onConfigure(): void
   onRefresh(): void
+  /** 批注模式入口（#426：页头右上角常驻）。空板态与无计划时不传，不渲染。 */
+  annotateEntry?: ReactNode
 }) {
   return (
     <header className="acc-header">
@@ -81,6 +86,7 @@ export function AcceptanceHeader({
           <MessageSquare size={13} aria-hidden="true" />
           {sessionCollapsed ? '展开会话' : '收起会话'}
         </button>
+        {annotateEntry}
         <button type="button" className="acc-text-button" disabled={disabled} onClick={onRefresh}>
           <RefreshCw size={13} aria-hidden="true" /> 更新代码
         </button>

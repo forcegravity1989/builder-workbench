@@ -285,7 +285,7 @@ function App() {
             加载坏了；现只留脚部一句，占位条压细去边框，「会议 ID」这类操作指引移到
             「整理纪要」的发送弹窗指令预览。计划未建时按钮禁用并给出原因，不留按不动又不说明的死按钮。板面批注编号角标用强调色底
             + 白字（显式高对比配色，不依赖 foreground / background
-            变量对——修复真机黑底黑字不可见）。批注交互对齐 Orca 原生元素批注：「本版目标」区块头
+            变量对——修复真机黑底黑字不可见）。批注交互对齐 Orca 原生元素批注：页头右上角
             「批注模式」（气泡 + 加号图标，vendor 冻结、由两枚图标组合）进入 →
             点击板面元素（目标句、验收标准、指标承诺、Issue 行或整卡），元素旁弹出「对象批注」
             小窗（对象名标题、textarea、取消 / 添加，Ctrl+Enter 快捷添加；右上角 ×
@@ -300,13 +300,12 @@ function App() {
             批注是速记、正本是生成后的纪要，且每次发送都是全量清单，留着会让下次发送重复计数、
             污染纪要。清空只在发送成功门控内发生，批注模式与面板保持开启，面板转「暂无批注」
             读作「已全部递交」，板面回执明说清了几条，不让人以为丢了数据。
-            <strong>第八轮补：批注入口从页头右上角移进「本版目标」区块头</strong>
-            （2026-10-22 用户反馈：右上角太不显眼）。依据是可批注对象——目标句、验收标准、
-            指标承诺、Issue 行——全部在本区块内，纪要区明确不参与批注，所以入口贴着对象放才找得到；
-            页头只剩跨区块动作（会话收折、分支、配置自动化）。入口改为带文字标签的按钮而非纯图标，
-            并挂未发送条数角标：面板关掉时也看得出还有批注没发出去。计划未建时无目标可批注，入口随
-            区块其余动作一起不渲染。同区块「配置指标」原误用批注图标（气泡 + 加号），与真入口同形，
-            已改回指标图标。
+            <strong>批注入口位置：第八轮移进「本版目标」区块头，#426 移回页头右上角</strong>
+            （第八轮 2026-10-22 用户反馈右上角太不显眼；#426 v0.7 验收会决议改回：页头不随
+            内容滚动，会中随时进出批注模式、未发送条数角标常驻可见，入口不再被滚动埋没，
+            与验收屏同位）。入口为带文字标签的按钮而非纯图标，并挂未发送条数角标：面板关掉时
+            也看得出还有批注没发出去。计划未建时无目标可批注，入口不渲染。同区块「配置指标」
+            原误用批注图标（气泡 + 加号），与真入口同形，已改回指标图标。
             <strong>未发送批注要在屏内导航中活下来</strong>（2026-10-22 用户反馈：离开计划屏再回来，
             没发出去的批注就没了）。正本只认「重启丢失为设计内」（spec 第 4 条 / design
             在线批注行），
@@ -446,6 +445,27 @@ function App() {
               <span className="g3-branch" title="固定工作树分支">
                 <Icon name="branch" size={13} /> bw/week-plan
               </span>
+              {/* 批注入口在页头右上角（#426 验收会决议，两屏同）：页头不随内容
+                  滚动，会中随时进出批注模式、未发送条数角标常驻可见。计划未建
+                  （scene=none）无目标可批注，不渲染。 */}
+              {scene !== 'none' && (
+                <button
+                  type="button"
+                  className={`g3-text-button g3-annotate-entry${annotating ? ' g3-mode-on' : ''}`}
+                  aria-pressed={annotating}
+                  title={
+                    annotating
+                      ? '退出批注模式（Esc 同样退出）'
+                      : '批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见'
+                  }
+                  onClick={toggleAnnotating}
+                >
+                  <Icon name="annotate-mode" size={13} /> 批注模式
+                  {annotations.length > 0 && (
+                    <span className="g3-annotate-count">{annotations.length}</span>
+                  )}
+                </button>
+              )}
               <button
                 className="g3-text-button"
                 title="打开原生自动化编辑器"
@@ -624,28 +644,6 @@ function App() {
                   <small>{scene === 'none' ? '未建' : `${goals.length} 个目标`}</small>
                 </h2>
                 <span className="g3-title-actions">
-                  {/* 批注入口落在「本版目标」区块头，不在页头右上角：可批注对象
-                      （目标句 / 验收标准 / 指标承诺 / Issue 行）全部在本区块内，
-                      纪要区不参与批注，入口贴着对象才找得到。带未发送条数角标，
-                      面板关掉时也看得出还有批注没发出去。 */}
-                  {scene !== 'none' && (
-                    <button
-                      type="button"
-                      className={`g3-text-button g3-annotate-entry${annotating ? ' g3-mode-on' : ''}`}
-                      aria-pressed={annotating}
-                      title={
-                        annotating
-                          ? '退出批注模式（Esc 同样退出）'
-                          : '批注模式：点击目标句、验收标准、指标承诺或 Issue 行记录评审意见'
-                      }
-                      onClick={toggleAnnotating}
-                    >
-                      <Icon name="annotate-mode" size={13} /> 批注模式
-                      {annotations.length > 0 && (
-                        <span className="g3-annotate-count">{annotations.length}</span>
-                      )}
-                    </button>
-                  )}
                   {scene !== 'none' && (
                     <button
                       className="g3-text-button"
