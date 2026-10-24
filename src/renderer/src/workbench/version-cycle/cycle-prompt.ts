@@ -123,7 +123,11 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
             JSON.stringify(context, null, 2)
           ].join('\n')
   }
-  const prompt = systemTemplate.replace(/\{\{([a-z_]+)\}\}/g, (_match, key: string) => {
+  // identity 为空时整行摘除，不留空行（与上方注释承诺一致）。
+  const template = values.identity
+    ? systemTemplate
+    : systemTemplate.replace(/^[ \t]*\{\{identity\}\}[ \t]*\r?\n/m, '')
+  const prompt = template.replace(/\{\{([a-z_]+)\}\}/g, (_match, key: string) => {
     if (!(key in values)) {
       throw new Error(`未解析的提示字段：${key}`)
     }
