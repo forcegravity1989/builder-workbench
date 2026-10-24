@@ -252,10 +252,22 @@ async function readWorkbenchReferences(repoRoot, name) {
     source: `standard/system-prompt/references/${reference}.md`
   }))
   if (name === 'week-planning' || name === 'version-acceptance') {
-    sources.push({
-      name: 'meeting-transcript',
-      source: 'standard/system-prompt/references/meeting-transcript.md'
-    })
+    sources.push(
+      {
+        name: 'meeting-transcript',
+        source: 'standard/system-prompt/references/meeting-transcript.md'
+      },
+      // 会议纪要规范：两屏纪要质量标准的单一正本（#428/#431）。
+      {
+        name: 'meeting-minutes',
+        source: 'standard/system-prompt/references/meeting-minutes.md'
+      },
+      // 旧格式材料查找：默认不加载，读回异常/迁移才查（#431，负责人拍板形态）。
+      {
+        name: 'legacy-materials',
+        source: 'standard/system-prompt/references/legacy-materials.md'
+      }
+    )
   }
   const ownDirectory = `standard/skills/${name}`
   for (const directory of ['references', 'assets']) {

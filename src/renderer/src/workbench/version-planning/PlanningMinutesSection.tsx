@@ -13,7 +13,7 @@ import type { SendActionWrap } from '../plan-send-menu'
  * week-planning Skill 与系统提示词，按钮 prompt 不复述。
  */
 const minutesRequestPrompt =
-  '整理本次评审会的会议纪要：把会话中已发送的板面批注汇总为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。'
+  '整理本次评审会的会议纪要：把会话中已发送的板面批注提炼为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。'
 
 /** 计划未建时「整理纪要」的禁用原因：title 与骨架卡脚部同一句，不留死按钮。 */
 const PLAN_MISSING_REASON = '计划未建立 · 先在上方「与计划助手新建计划」'

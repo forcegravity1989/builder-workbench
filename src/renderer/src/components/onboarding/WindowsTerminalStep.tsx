@@ -15,6 +15,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 type WindowsTerminalStepProps = {
   settings: GlobalSettings | null
@@ -185,10 +186,15 @@ export function WindowsTerminalStep({
             )}
           </h2>
           <p className="text-[13px] leading-relaxed text-muted-foreground">
-            {translate(
-              'auto.components.onboarding.WindowsTerminalStep.defaultShellDescription',
-              'Choose the shell Orca opens for new Windows terminal panes.'
-            )}
+            {isWorkbenchShell()
+              ? translate(
+                  'auto.components.onboarding.WindowsTerminalStep.184e11638a',
+                  'Choose the shell Workbench opens for new Windows terminal panes.'
+                )
+              : translate(
+                  'auto.components.onboarding.WindowsTerminalStep.defaultShellDescription',
+                  'Choose the shell Orca opens for new Windows terminal panes.'
+                )}
           </p>
         </div>
 

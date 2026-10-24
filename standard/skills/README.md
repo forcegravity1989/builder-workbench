@@ -2,7 +2,7 @@
 
 Workbench 产品技能源码。一个目录一份 `SKILL.md`，全部平级。本篇给维护技能目录的人读取，只列职责、适用任务与实际覆盖；目录或加载入口变化时更新。计划、验收、指标配置已接入随产品打包的 Stub 与原生指南分发，普通被管项目无需复制这些源码；入口与加载边界见 [系统提示词与渐进加载](../../docs/06-module/系统提示词与渐进加载.md)。
 
-写或改 `SKILL.md` 前读 [`SKILL-MD-SPEC.md`](SKILL-MD-SPEC.md)。SOP 在各份正文的执行流程，方法与协议按需引用，不写在本 README。分层听上一级 [`../README.md`](../README.md)。
+写或改 Skill 及配套模型面资产（references、assets、发现存根、注入句、SYSTEM 模板）前读 [`SKILL-MD-SPEC.md`](SKILL-MD-SPEC.md)。SOP 在各份正文的执行流程，方法与协议按需引用，不写在本 README。分层听上一级 [`../README.md`](../README.md)。
 
 ## Workbench 技能
 

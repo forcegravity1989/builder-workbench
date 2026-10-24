@@ -884,7 +884,8 @@
       "blocked": {
         "notification": {
           "fallback": {
-            "de50bef680": "macOS is blocking Orca notifications"
+            "de50bef680": "macOS is blocking Orca notifications",
+            "8d4c07e6b5": "macOS is blocking Workbench notifications"
           }
         }
       },
@@ -13358,7 +13359,8 @@
           "showMoreAgents": "Show {{value0}} more agents→",
           "yoloPermissionsLabel": "Yolo / Dangerously skip permissions",
           "yoloPermissionsInfo": "Agent permission info",
-          "yoloPermissionsTooltip": "Skip permission checks for agents for less interruptions"
+          "yoloPermissionsTooltip": "Skip permission checks for agents for less interruptions",
+          "0e00a37e49": "isn't on your PATH yet. Workbench will set it as your default and you can install it any time."
         },
         "FeatureSetupInlineTerminal": {
           "789b59936e": "Press Enter to run the command and confirm npx if asked. You can also set this up later in Settings.",
@@ -13388,7 +13390,18 @@
           "a3bcf13694": "connected",
           "d6e5dba05a": "Sign in",
           "0b4a7d23ab": "Signing in",
-          "a74c6d6b18": "not-installed"
+          "a74c6d6b18": "not-installed",
+          "c773943637": "Start a workspace from any CodeHub issue or merge request, prefilled with its title and context",
+          "6d4596cdf7": "Browse CodeHub issues and merge requests in the Tasks view without leaving Workbench",
+          "c1ee44aa7a": "GitHub works too — issues, pull requests, and CI checks via the GitHub CLI",
+          "09df324e47": "Read, comment on, and merge pull requests or merge requests without leaving Workbench",
+          "172af1b2c8": "CodeHub",
+          "5b0e29617c": "Issues and merge requests.",
+          "10e495afa8": "Install CodeHub CLI",
+          "98883abe0a": "CodeHub login",
+          "96d7cf755a": "CodeHub sign in command",
+          "ed425b91ac": "Press Enter to run CodeHub CLI auth. CodeHub re-checks automatically when the command finishes.",
+          "110d12dbb6": "codehub-cli status is not available in this runtime yet."
         },
         "NotificationStep": {
           "3bede04483": "Send Test Notification",
@@ -13411,9 +13424,13 @@
           "94562ba367": "macOS is asking for permission. Click Allow in the dialog and this step updates automatically.",
           "4f6a1da718": "Open System Settings",
           "90b5d2e363": "macOS is not delivering Orca notifications",
-          "2c47f5465f": "Turn on Allow notifications for Orca in System Settings. This step updates automatically once enabled."
+          "2c47f5465f": "Turn on Allow notifications for Orca in System Settings. This step updates automatically once enabled.",
+          "72256f6d85": "Pick the alert Workbench plays after a desktop notification is delivered.",
+          "3f8a21c6d0": "Allow notifications for Workbench",
+          "b7e94d02a1": "macOS is not delivering Workbench notifications"
         },
         "OnboardingFlow": {
+          "1130745139": "Set up task sources",
           "1b5e182e9f": "Welcome to Orca",
           "4db04f2f57": "of",
           "adaa0aa627": "Go to onboarding step {{value0}}: {{value1}}",
@@ -13432,7 +13449,13 @@
           "984338477a": "theme",
           "c47e1bd149": "agent",
           "windowsTerminalTitle": "Set Windows terminal defaults",
-          "windowsTerminalSubtitle": "Choose the DEFAULT Shell for new panes and how right-click behaves in the terminal."
+          "windowsTerminalSubtitle": "Choose the DEFAULT Shell for new panes and how right-click behaves in the terminal.",
+          "78d1d003d2": "Workbench",
+          "685d4ffbeb": "Welcome to Workbench",
+          "c64d33bfb8": "Workbench onboarding",
+          "43b8463d5c": "Workbench works with every CLI agent. Choose the one you'll reach for most. Switch any time.",
+          "54fbfde99e": "Workbench will notify you when agents are done or need help.",
+          "9977a23fbe": "Install the CLIs you need — CodeHub for issues and merge requests, GitHub for issues and pull requests. Both are optional."
         },
         "OnboardingFooter": {
           "ba58547306": "Back",
@@ -13500,7 +13523,8 @@
           "loadingDistros": "Loading distributions",
           "windowsDefault": "Windows default",
           "rightClickBehavior": "Right-click behavior",
-          "rightClickBehaviorDescription": "Pick the terminal mouse behavior that matches your Windows muscle memory."
+          "rightClickBehaviorDescription": "Pick the terminal mouse behavior that matches your Windows muscle memory.",
+          "184e11638a": "Choose the shell Workbench opens for new Windows terminal panes."
         },
         "mac": {
           "notification": {
@@ -13508,7 +13532,8 @@
               "card": {
                 "f696515944": "Click Allow in the macOS dialog.",
                 "3d18cf71f9": "Updates automatically.",
-                "721d2bedb6": "Turn on Allow notifications for Orca in System Settings."
+                "721d2bedb6": "Turn on Allow notifications for Orca in System Settings.",
+                "c25d81f9e3": "Turn on Allow notifications for Workbench in System Settings."
               }
             }
           }

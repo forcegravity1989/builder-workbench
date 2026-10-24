@@ -6,13 +6,15 @@ export function formatBoardAnnotationsAsMarkdown(annotations: BoardAnnotation[])
 }
 
 /**
- * Send-prompt design source (prototype g3-model.js annotationsSendPrompt, round-9
- * 瘦身): full-list semantics + 「现在不要整理」— an in-meeting send is cumulative
- * input, not an organize request (the old sentence ended in 「整理」 and read as
- * one). SOP-level rules live in the week-planning Skill, not here.
+ * Send-prompt design source (prototype g3-model.js annotationsSendPrompt). #431
+ * 规范轮定为中性抬头：两屏共享的注入句只标明「这是会议反馈批注」，不承载屏别意图
+ * ——双意图（计划屏按批注帮人调整目标、验收屏按对象回应或修订材料，均为纪要整理
+ * 输入之一）、全量清单以最新一次为准、会中发送是累积输入不是整理请求等语义，各屏
+ * SKILL（week-planning / version-acceptance）已分别承载，注入句不复述，避免计划
+ * 视角「调整目标」漏进只读的验收屏（SKILL-MD-SPEC §规则单点、§用户面表达）。
  */
 export function annotationsSendPrompt(count: number): string {
-  return `记录当前板面全部批注（${count} 条，全量清单，以最新一次为准），作为纪要输入；现在不要整理。`
+  return `会议反馈批注（${count} 条）内容如下：`
 }
 
 /** Panel「发送给计划助手」payload: the design-source sentence + the list. */

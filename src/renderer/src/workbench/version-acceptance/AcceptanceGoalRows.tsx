@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useEffect, useRef, useState, type Ref } from 'react'
 import type {
   AcceptanceMaterial,
   PlanningMaterial
@@ -29,7 +29,6 @@ export function AcceptanceGoalRows({
   onSnapshot,
   numbersFor,
   onOpenAnnotationPanel,
-  annotateEntry,
   sectionRef
 }: {
   plan: PlanningMaterial
@@ -43,8 +42,6 @@ export function AcceptanceGoalRows({
   onSnapshot(reads: CycleTaskRead[]): void
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
-  /** 批注模式入口（区块头就近放置，与计划屏同形态；页头不再设全局入口）。 */
-  annotateEntry?: ReactNode
   sectionRef: Ref<HTMLElement>
 }) {
   const [reads, setReads] = useState<CycleTaskRead[] | null>(null)
@@ -149,7 +146,6 @@ export function AcceptanceGoalRows({
           </small>
         </h2>
         <span className="acc-title-actions">
-          {annotateEntry}
           <BoardIconButton
             label={refreshing ? '正在刷新 Issue' : '刷新 Issue'}
             disabled={disabled || !plan.tasks.length || refreshing}

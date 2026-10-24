@@ -267,6 +267,27 @@ function ReadyAcceptanceBoard({
             await prStatus.refresh()
           })
         }
+        annotateEntry={
+          // 批注对象只在 Showcase 区（目标行/验收标准/Issue 行），无计划即无对象，
+          // 与空板态同口径不渲染入口。
+          plan ? (
+            <BoardActionButton
+              className={`acc-annotate-entry${annotations.annotating ? ' acc-mode-on' : ''}`}
+              aria-pressed={annotations.annotating}
+              title={
+                annotations.annotating
+                  ? '退出批注模式（Esc 同样退出）'
+                  : '批注模式：点击目标行、验收标准或 Issue 行记录验收意见'
+              }
+              onClick={annotations.toggleMode}
+            >
+              <MessageSquarePlus size={13} aria-hidden="true" /> 批注模式
+              {annotations.annotations.length > 0 && (
+                <span className="acc-annotate-count">{annotations.annotations.length}</span>
+              )}
+            </BoardActionButton>
+          ) : undefined
+        }
       />
       {notice && (
         <p className="acc-notice" role="status">
@@ -288,7 +309,8 @@ function ReadyAcceptanceBoard({
         <AcceptanceJourneyNav active={spy.activeSection} onNavigate={spy.navigate} />
         {annotations.annotating && (
           <div className="acc-annotate-banner" role="status">
-            批注模式：点击目标或 Issue 行，在对象旁的小窗记录意见 · Esc 先关小窗，再按一次退出
+            批注模式：点击目标、验收标准或 Issue 行，在对象旁的小窗记录意见 · Esc
+            先关小窗，再按一次退出
           </div>
         )}
         <div
@@ -323,23 +345,6 @@ function ReadyAcceptanceBoard({
               onSnapshot={handleSnapshot}
               numbersFor={annotations.numbersFor}
               onOpenAnnotationPanel={annotations.openPanel}
-              annotateEntry={
-                <BoardActionButton
-                  className={`acc-annotate-entry${annotations.annotating ? ' acc-mode-on' : ''}`}
-                  aria-pressed={annotations.annotating}
-                  title={
-                    annotations.annotating
-                      ? '退出批注模式（Esc 同样退出）'
-                      : '批注模式：点击目标行或 Issue 行记录验收意见'
-                  }
-                  onClick={annotations.toggleMode}
-                >
-                  <MessageSquarePlus size={13} aria-hidden="true" /> 批注模式
-                  {annotations.annotations.length > 0 && (
-                    <span className="acc-annotate-count">{annotations.annotations.length}</span>
-                  )}
-                </BoardActionButton>
-              }
               sectionRef={spy.sectionRefs.showcase}
             />
           )}

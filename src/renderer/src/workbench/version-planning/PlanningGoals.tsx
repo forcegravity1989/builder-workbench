@@ -1,5 +1,5 @@
 import { ChartNoAxesCombined, ChevronDown, ChevronRight, Info, Plus, RefreshCw } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useEffect, useRef, useState, type Ref } from 'react'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
 import { goalCardViewKey, writeGoalCardExpanded } from '../cycle-view-state'
 import type { AnnotationMatch } from '../annotations/types'
@@ -29,7 +29,6 @@ export function PlanningGoals({
   onSendAction,
   numbersFor,
   onOpenAnnotationPanel,
-  annotateEntry,
   entry,
   problems,
   version
@@ -48,8 +47,6 @@ export function PlanningGoals({
   onSendAction: SendActionWrap
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
-  /** 批注模式入口（2026-10-22 第九轮：从页头移入本区块头，贴可批注对象）。 */
-  annotateEntry: ReactNode
   entry: CycleEntry
   problems: CycleMaterialProblem[]
   version: string | null
@@ -166,7 +163,6 @@ export function PlanningGoals({
         </h2>
         {plan && (
           <span className="g3-title-actions">
-            {annotateEntry}
             {readError && (
               <span className="g3-muted" role="status">
                 Issue 状态未知：{readError}
