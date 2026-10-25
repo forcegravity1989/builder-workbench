@@ -41,14 +41,17 @@ export function registerWorktreeMetadataHandlers(context: WorktreeIpcContext): v
       const validatedUpdates = normalizeWorkbenchVersionBindingField(
         normalizeLinkedWorkItemFields(args.updates)
       )
-      // G2 P3a 收口（P1 延后项）：本地 IPC 与 RPC 路径同一语义——显式 undefined
-      // 键=保留旧值（剥除后再合并），清除字段用 null。此前 undefined 键会经
-      // 合并覆盖旧值（与 worktree.set 白名单文档口径不一致的存量语义）。
-      const definedUpdates: Partial<WorktreeMeta> = {}
-      for (const [field, value] of Object.entries(validatedUpdates)) {
-        if (value !== undefined) {
-          ;(definedUpdates as Record<string, unknown>)[field] = value
-        }
+      // G2 P3a 收口（P1 延后项，最终检视 H-1 收窄）：仅绑定字段按「显式 undefined=
+      // 保留旧值」剥除（其契约由 normalizeWorkbenchVersionBindingField 承担）；其余键
+      // 保持原生本地 IPC 线约——present-but-undefined 在 spread 中清除字段
+      // （baseRef/pushTarget 两条原生清除链依赖该信号，见 worktree-meta-update-application
+      // 头注；全局剥除会使清除静默失效、重开后旧值复活，违反重开前后一致铁律）。
+      const definedUpdates: Partial<WorktreeMeta> = { ...validatedUpdates }
+      if (
+        'workbenchVersionBinding' in definedUpdates &&
+        definedUpdates.workbenchVersionBinding === undefined
+      ) {
+        delete definedUpdates.workbenchVersionBinding
       }
       const updates =
         definedUpdates.displayName !== undefined

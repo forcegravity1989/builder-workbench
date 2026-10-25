@@ -1,3 +1,4 @@
+import { goalOrdinal } from '../version-labels'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
 import type {
@@ -157,7 +158,7 @@ export function VersionReadonlyMaterialView({
             {state.document.goals.map((goal, index) => (
               <article key={goal.goalId} className="vc-readonly-goal">
                 <h4>
-                  G{index + 1} · {goal.title || '待明确目标'}
+                  {goalOrdinal(index)} · {goal.title || '待明确目标'}
                 </h4>
                 <p className="vc-readonly-meta">
                   {goal.owner || '负责人待明确'}

@@ -1,3 +1,4 @@
+import { goalOrdinal } from './version-labels'
 import React from 'react'
 import { ChevronDown, ChevronRight, Link2, PackageCheck, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -137,7 +138,7 @@ export function VersionNavGroup({
           />
           <TasksRow busy={busy} active={activeTasks} onOpenTasks={() => onOpenTasks()} />
           {entry.goals.map((goal, index) => {
-            const label = `G${index + 1}`
+            const label = goalOrdinal(index)
             return (
               <GoalDirectoryRow
                 key={goal.goalId}

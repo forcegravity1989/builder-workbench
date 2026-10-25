@@ -4,6 +4,7 @@ import acceptanceStub from '../../../../../skills/version-acceptance/SKILL.md?ra
 import metricsStub from '../../../../../skills/metrics-refresh/SKILL.md?raw'
 import { useAppStore } from '@/store'
 import { branchName } from '@/lib/git-utils'
+import { isVersionFlowWorkflow } from '../../../../shared/workbench/version-workspace-prepare'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
 import { nativeMetricsPort } from '../metrics-port'
 import { cycleBranch } from './native-cycle-workspace'
@@ -77,9 +78,7 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
   // 旧无绑定固定树沿原语义钉 bw/week-plan|week-acceptance。metrics 自有树不钉。
   const binding = normalizeStoredWorkbenchVersionBinding(worktree.workbenchVersionBinding)
   const boundVersion =
-    topic !== 'metrics-refresh' &&
-    binding !== null &&
-    (binding.workflow === 'plan' || binding.workflow === 'acceptance')
+    topic !== 'metrics-refresh' && binding !== null && isVersionFlowWorkflow(binding.workflow)
       ? binding.version
       : null
   const branch =

@@ -10,7 +10,10 @@ import type {
 import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/runtime-managed-worktree-create-types'
 import { REPO_SEARCH_REFS_MAX_LIMIT } from '../../shared/repo-search-limits'
 import { matchReusableBranchRef } from '../../shared/workbench/reusable-branch-ref'
-import { normalizeStoredWorkbenchVersionBinding } from '../../shared/workbench/version-binding'
+import {
+  WORKBENCH_VERSION_BINDING_SCHEMA_VERSION,
+  normalizeStoredWorkbenchVersionBinding
+} from '../../shared/workbench/version-binding'
 import {
   VERSION_FLOW_WORKFLOWS,
   VersionWorkspacePrepareSchema,
@@ -260,7 +263,7 @@ export function createVersionWorkspacePrepareService(
       if (created.instanceId === undefined) {
         throw new WorkspaceScopeError(
           'workspace-unavailable',
-          `新建工作树 ${created.id} 缺实例身份，绑定未写入；树已保留、不会重复创建，也未归属本版。请在原生项目核对该树登记——直接重跑准备会因其占用分支如实拒绝，恢复归属需人工补绑定或清理该树`
+          `新建工作树 ${created.id} 缺实例身份，绑定未写入；树已保留、不会重复创建，也未归属本版。请在原生项目核对该树登记——直接重跑准备会因其占用分支如实拒绝，恢复归属需人工补绑定（入口=侧栏版本行「绑定已有工作树」；若该版本在侧栏无任何条目，先在原生项目工作区核对并清理孤儿树）或清理该树`
         )
       }
       await bindingService.set({
@@ -268,7 +271,11 @@ export function createVersionWorkspacePrepareService(
         worktreeId: created.id,
         hostId,
         instanceId: created.instanceId,
-        binding: { schema: 1, version: request.version, workflow }
+        binding: {
+          schema: WORKBENCH_VERSION_BINDING_SCHEMA_VERSION,
+          version: request.version,
+          workflow
+        }
       })
 
       // 5) 空计划（仅计划树）：create-only，已有材料不覆盖；失败保留树与绑定并如实回报。

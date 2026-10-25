@@ -13,7 +13,10 @@ import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { Worktree } from '../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
-import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
+import {
+  WORKBENCH_VERSION_BINDING_SCHEMA_VERSION,
+  normalizeStoredWorkbenchVersionBinding
+} from '../../../shared/workbench/version-binding'
 import { versionFlowBranch } from '../../../shared/workbench/version-workspace-prepare'
 import { branchName } from '@/lib/git-utils'
 import { nativeVersionBindingPort } from './version-binding-port'
@@ -106,7 +109,7 @@ export function VersionTreeBindDialog({
           instanceId: selected.instanceId
         },
         {
-          schema: 1,
+          schema: WORKBENCH_VERSION_BINDING_SCHEMA_VERSION,
           version,
           workflow: effectiveWorkflow,
           ...(effectiveWorkflow === 'goal' ? { goalId } : {})
@@ -147,10 +150,7 @@ export function VersionTreeBindDialog({
               >
                 <option value="">待选择工作树</option>
                 {candidates.map((tree) => (
-                  <option
-                    key={getWorktreeHostIdentity(tree)}
-                    value={getWorktreeHostIdentity(tree)}
-                  >
+                  <option key={getWorktreeHostIdentity(tree)} value={getWorktreeHostIdentity(tree)}>
                     {tree.displayName?.trim() ||
                       (tree.branch ? branchName(tree.branch) : '') ||
                       tree.id}

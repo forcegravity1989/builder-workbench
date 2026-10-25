@@ -1,5 +1,9 @@
 import type { TaskSourceContext } from '../task-source-context'
-import { WorkbenchVersionBindingSchema, type WorkbenchVersionBinding } from './version-binding'
+import {
+  WORKBENCH_VERSION_BINDING_SCHEMA_VERSION,
+  WorkbenchVersionBindingSchema,
+  type WorkbenchVersionBinding
+} from './version-binding'
 
 /**
  * G2 创建期 BW 业务上下文（P4）：目标/Issue 开工入口打开原生创建器时携带；
@@ -30,7 +34,7 @@ export function resolveWorkbenchCreationBinding(
     context.workflow === 'goal'
       ? context.goalId
         ? {
-            schema: 1 as const,
+            schema: WORKBENCH_VERSION_BINDING_SCHEMA_VERSION,
             version: context.version,
             workflow: 'goal' as const,
             goalId: context.goalId
@@ -38,7 +42,7 @@ export function resolveWorkbenchCreationBinding(
         : null
       : submit.taskSourceContext
         ? {
-            schema: 1 as const,
+            schema: WORKBENCH_VERSION_BINDING_SCHEMA_VERSION,
             version: context.version,
             workflow: 'issue' as const,
             ...(context.goalId ? { goalId: context.goalId } : {}),

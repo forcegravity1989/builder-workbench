@@ -21,9 +21,14 @@ import type {
 // Why: 归属宿主 resolver 只认 owner 侧拼写（local/ssh:X），访客侧 runtime:<env> 拼写
 // 会被拒；路由已由 routeForOwner 按 runtimeOwnerEnvironmentId 走对端，scope 里只需
 // owner 拼写——与 version-material-port 的 ownerScope 重写同一口径。
+/** owner 侧宿主拼写单实现（最终检视 L-5）：访客 runtime:<env> → owner local。 */
+export function ownerSpelledHostId(hostId: string): string {
+  return parseExecutionHostId(hostId)?.kind === 'runtime' ? LOCAL_EXECUTION_HOST_ID : hostId
+}
+
 function ownerSpelledScope<T extends { hostId: string }>(scope: T): T {
   return parseExecutionHostId(scope.hostId)?.kind === 'runtime'
-    ? { ...scope, hostId: LOCAL_EXECUTION_HOST_ID }
+    ? { ...scope, hostId: ownerSpelledHostId(scope.hostId) }
     : scope
 }
 

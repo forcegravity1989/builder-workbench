@@ -5,6 +5,7 @@ import {
   validatePlanningVersion
 } from '../../shared/workbench/version-document'
 import { compareMaterialVersions } from '../../shared/workbench/version-catalog'
+import { isVersionFlowWorkflow } from '../../shared/workbench/version-workspace-prepare'
 import {
   AcceptanceMaterialSchema,
   PlanningMaterialSchema,
@@ -47,8 +48,7 @@ export function createVersionMaterialWorkspace(
   reauthorize?: () => Promise<void>,
   binding?: WorkbenchVersionBinding | null
 ) {
-  const flowBinding =
-    binding && (binding.workflow === 'plan' || binding.workflow === 'acceptance') ? binding : null
+  const flowBinding = binding && isVersionFlowWorkflow(binding.workflow) ? binding : null
   /**
    * G2 (P3a)：绑定树的期望分支由绑定决定（版本归属由登记绑定承担，分支名不是
    * 身份）；无绑定树沿旧固定分支语义（旧上下文显式保留）。用途不符（目标/
@@ -76,7 +76,8 @@ export function createVersionMaterialWorkspace(
       )
     }
   }
-  async function authorize(scope: VersionMaterialScope): Promise<string> {
+  // Git 身份围栏单实现（最终检视 M-1）：读写授权与创建期核对共用，防安全围栏漂移。
+  async function assertTreeGitIdentity(expectedBranch: string): Promise<string> {
     await reauthorize?.()
     const root = await realpath(resolveWorktreeHostPath(target.worktreePath) ?? target.worktreePath)
     const gitDir = await resolveGitDir(root)
@@ -88,11 +89,14 @@ export function createVersionMaterialWorkspace(
     if (repoCommon !== treeCommon) {
       throw new WorkspaceScopeError('invalid-scope', '工作树不属于所选 Git 项目')
     }
-    const branch = expectedBranchFor(scope)
-    if (head.trim() !== `ref: refs/heads/${branch}`) {
-      throw new WorkspaceScopeError('wrong-branch', `请使用 ${branch} 工作树`)
+    if (head.trim() !== `ref: refs/heads/${expectedBranch}`) {
+      throw new WorkspaceScopeError('wrong-branch', `请使用 ${expectedBranch} 工作树`)
     }
     return root
+  }
+
+  async function authorize(scope: VersionMaterialScope): Promise<string> {
+    return assertTreeGitIdentity(expectedBranchFor(scope))
   }
 
   async function storeFor(scope: VersionMaterialScope) {
@@ -117,21 +121,7 @@ export function createVersionMaterialWorkspace(
    * 分支字符串在这里只做「写没写错树」的核对，版本归属由绑定登记承担。
    */
   async function authorizeCreatedTree(expectedBranch: string): Promise<string> {
-    await reauthorize?.()
-    const root = await realpath(resolveWorktreeHostPath(target.worktreePath) ?? target.worktreePath)
-    const gitDir = await resolveGitDir(root)
-    const [repoCommon, treeCommon, head] = await Promise.all([
-      resolveGitDir(target.repoPath).then(resolveGitCommonDir).then(realpath),
-      resolveGitCommonDir(gitDir).then(realpath),
-      readFile(join(gitDir, 'HEAD'), 'utf8')
-    ])
-    if (repoCommon !== treeCommon) {
-      throw new WorkspaceScopeError('invalid-scope', '工作树不属于所选 Git 项目')
-    }
-    if (head.trim() !== `ref: refs/heads/${expectedBranch}`) {
-      throw new WorkspaceScopeError('wrong-branch', `请使用 ${expectedBranch} 工作树`)
-    }
-    return root
+    return assertTreeGitIdentity(expectedBranch)
   }
 
   const migration = createVersionMaterialMigration(storeFor)

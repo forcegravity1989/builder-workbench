@@ -1,10 +1,7 @@
 import { assertRuntimeEnvironmentCapability, callRuntimeRpc } from '../runtime/runtime-rpc-client'
 import { routeForOwner } from '../lib/worktree-owner-route'
-import {
-  LOCAL_EXECUTION_HOST_ID,
-  parseExecutionHostId,
-  type ExecutionHostId
-} from '../../../shared/execution-host'
+import type { ExecutionHostId } from '../../../shared/execution-host'
+import { ownerSpelledHostId } from './version-binding-port'
 import { WORKBENCH_VERSION_WORKSPACE_RUNTIME_CAPABILITY } from '../../../shared/protocol-version'
 import { VersionMaterialPortError } from '../../../shared/workbench/version-material-client'
 import type { VersionMaterialResult } from '../../../shared/workbench/version-material-request'
@@ -40,10 +37,7 @@ export function nativeVersionWorkspacePort(owner: {
       }
       // Why: 同绑定端口——owner 侧 resolver 只认 owner 拼写，访客侧 runtime:<env> 必拒；
       // 路由经 runtimeOwnerEnvironmentId 已指向归属宿主。
-      const spelled =
-        parseExecutionHostId(request.hostId)?.kind === 'runtime'
-          ? { ...request, hostId: LOCAL_EXECUTION_HOST_ID }
-          : request
+      const spelled = { ...request, hostId: ownerSpelledHostId(request.hostId) }
       const result = await callRuntimeRpc<VersionMaterialResult<VersionWorkspacePrepareResult>>(
         target,
         'workbench.versionWorkspace.prepare',

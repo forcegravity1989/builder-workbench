@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store'
+import { isVersionFlowWorkflow } from '../../../../shared/workbench/version-workspace-prepare'
 import { branchName } from '@/lib/git-utils'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
 import { startCycleAutomation } from './start-cycle-automation'
@@ -35,9 +36,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     const binding = worktree
       ? normalizeStoredWorkbenchVersionBinding(worktree.workbenchVersionBinding)
       : null
-    return binding && (binding.workflow === 'plan' || binding.workflow === 'acceptance')
-      ? binding
-      : null
+    return binding && isVersionFlowWorkflow(binding.workflow) ? binding : null
   }, [worktree])
   const materialPort = useMemo(
     () =>

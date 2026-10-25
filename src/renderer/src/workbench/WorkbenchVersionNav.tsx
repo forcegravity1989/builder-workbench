@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
+import { isVersionFlowWorkflow } from '../../../shared/workbench/version-workspace-prepare'
 import { Button } from '@/components/ui/button'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
@@ -152,6 +153,12 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
             : { document: null, problem: '项目工作区尚未就绪' }
         const full = read.document?.goals.find((item) => item.goalId === goal.goalId)
         if (!read.document) {
+          // 最终检视 L-1：home 缺失时开工链静默返回，先承诺预填再 no-op 不诚实——
+          // 该情形如实报「无法开工」并止步，其余读失败仍走预填口径。
+          if (read.problem === '项目工作区尚未就绪') {
+            toast.info('项目工作区尚未就绪，无法开工目标；待原生登记就绪后重试。')
+            return
+          }
           toast.info(
             `计划材料不可读（${read.problem ?? '原因未知'}）：目标上下文按已知信息预填，约定项标「待明确」。`
           )
@@ -241,7 +248,7 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
         {entries.map((entry) => {
           const activeWorkflow: VersionWorkflow | null =
             activeBinding && activeBinding.version === entry.version
-              ? activeBinding.workflow === 'plan' || activeBinding.workflow === 'acceptance'
+              ? isVersionFlowWorkflow(activeBinding.workflow)
                 ? activeBinding.workflow
                 : null
               : activeView === 'artifacts' && browsedVersion === entry.version

@@ -10,6 +10,13 @@ import { Id, MaterialVersion } from './version-material-common'
 export const VERSION_FLOW_WORKFLOWS = ['plan', 'acceptance'] as const
 export type VersionFlowWorkflow = (typeof VERSION_FLOW_WORKFLOWS)[number]
 
+/** 「是流程绑定」单判定（最终检视 L-4）：四处内联谓词收敛。 */
+export function isVersionFlowWorkflow(
+  workflow: string | null | undefined
+): workflow is VersionFlowWorkflow {
+  return workflow === 'plan' || workflow === 'acceptance'
+}
+
 /**
  * 流程树分支：bw/<version>/<workflow>。MaterialVersion 已挡目录非法字符；
  * 这里补 Git ref 规则（空白、~ ^ : [ ]、连续点、@{、.lock 结尾、前导 -）。

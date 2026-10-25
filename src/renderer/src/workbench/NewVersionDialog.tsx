@@ -16,6 +16,7 @@ import {
   type VersionWorkspacePrepareResult
 } from '../../../shared/workbench/version-workspace-prepare'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
+import { worktreeActivationHostOpts } from './version-workspace-choice-state'
 import { nativeVersionWorkspacePort } from './version-workspace-port'
 import { setBrowsedVersion } from './version-context-state'
 import { WORKFLOW_TREE_LABELS } from './version-labels'
@@ -129,7 +130,21 @@ export function NewVersionDialog({
         const planStep = result.steps.find((step) => step.workflow === 'plan')
         setBrowsedVersion(projectKey, version)
         onClose()
-        if (planStep?.worktreeId && activateAndRevealWorktree(planStep.worktreeId) === false) {
+        // 最终检视 M-3：直开激活补宿主限定（STA-4343 同族收敛的漏网点）；fetchWorktrees
+        // 已在上方完成，按 id 取登记行派生 host opts。
+        const planTree = planStep?.worktreeId
+          ? (useAppStore
+              .getState()
+              .allWorktrees()
+              .find((item) => item.id === planStep.worktreeId) ?? null)
+          : null
+        if (
+          planStep?.worktreeId &&
+          activateAndRevealWorktree(
+            planStep.worktreeId,
+            planTree ? worktreeActivationHostOpts(planTree) : undefined
+          ) === false
+        ) {
           toast.error('工作区已就绪，但打开失败，请在原生项目工作区中核对。')
         } else {
           toast.success(`版本 ${version} 的计划与验收工作区已就绪；未启动 agent。`)
