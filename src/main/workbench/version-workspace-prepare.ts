@@ -230,7 +230,11 @@ export function createVersionWorkspacePrepareService(
             branchNameOverride: branch,
             ...(baseRef ? { baseBranch: baseRef } : {}),
             activate: false,
-            setupDecision: 'inherit'
+            // Why: #436 伴飞裁定（CF-5）——初始化工作区不跑 setup：inherit 会默认执行
+            // orca.yaml setup（弹 Setup 终端、装依赖，node-gyp 失败即报错），材料读写与
+            // CLI 注入不需要依赖；流程树上会话需要时由 agent 自装（automations headless
+            // 同口径，见 headless-workspace-create.ts）。
+            setupDecision: 'skip'
           })
       )
       const created = result.worktree

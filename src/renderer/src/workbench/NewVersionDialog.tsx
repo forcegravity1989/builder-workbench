@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useState } from 'react'
 import { Plus, LoaderCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
@@ -19,6 +19,7 @@ import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 import { nativeVersionWorkspacePort } from './version-workspace-port'
 import { setBrowsedVersion } from './version-context-state'
+import { prepareFailed, stepText } from './version-workspace-prepare-report'
 import { WORKFLOW_TREE_LABELS } from './version-labels'
 import type { VersionCatalogState } from './use-version-catalog'
 
@@ -27,63 +28,25 @@ import type { VersionCatalogState } from './use-version-catalog'
  * 必要输入；重名/非法名就地提示并保留输入；提交走归属宿主的
  * workbench.versionWorkspace.prepare——部分成功保留并逐步回报，重入即补齐；
  * 两树就绪不启动 agent、不启用自动化、不预建目标/任务树。
- * prepare 模式（已存在版本补准备）复用同一执行与回报面板。
+ * 已存在版本补准备不进本表单——版本行「初始化工作区」直接执行（#436 伴飞
+ * 裁定：创建类动作不设确认单）。
  */
 
-export type NewVersionDialogRequest = { mode: 'create' } | { mode: 'prepare'; version: string }
-
-function stepText(result: VersionWorkspacePrepareResult, workflow: 'plan' | 'acceptance'): string {
-  const step = result.steps.find((item) => item.workflow === workflow)
-  if (!step) {
-    return `${WORKFLOW_TREE_LABELS[workflow]}：未执行`
-  }
-  const state =
-    step.state === 'created' ? '已创建' : step.state === 'existing' ? '已就绪（复用登记）' : '失败'
-  const material =
-    step.material === undefined
-      ? ''
-      : step.material.state === 'initialized'
-        ? ' · 空计划已初始化'
-        : ' · 计划材料已存在（未覆盖）'
-  return `${WORKFLOW_TREE_LABELS[workflow]}：${state}（${step.branch}）${material}`
-}
-
-/** 步骤链非原子回报：任一 problem 或失败步骤都算未全就绪（重试=重入补齐）。 */
-function prepareFailed(result: VersionWorkspacePrepareResult | null): boolean {
-  return (
-    result !== null &&
-    (result.problems.length > 0 || result.steps.some((step) => step.state === 'failed'))
-  )
-}
-
 export function NewVersionDialog({
-  request,
   catalog,
   projectKey,
   projectName,
   onClose
 }: {
-  request: NewVersionDialogRequest
   catalog: VersionCatalogState
   projectKey: string | null
   projectName: string | null
   onClose: () => void
 }): React.JSX.Element {
-  const [name, setName] = useState(request.mode === 'prepare' ? request.version : '')
+  const [name, setName] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [report, setReport] = useState<VersionWorkspacePrepareResult | null>(null)
-  const locked = request.mode === 'prepare'
-
-  // StrictMode dev 双挂载不双发准备（宿主端 dedupe/重入虽可兜底，仍加 ref 消噪）。
-  const autoRunRef = useRef(false)
-  useEffect(() => {
-    if (request.mode === 'prepare' && !autoRunRef.current) {
-      autoRunRef.current = true
-      void runPrepare(request.version)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [request])
 
   function validate(input: string): string | null {
     const value = input.trim()
@@ -162,14 +125,10 @@ export function NewVersionDialog({
     if (busy) {
       return
     }
-    // prepare 模式的版本名锁定为已存在版本，重名校验恰是其反向前提：重试必须
-    // 跳过 validate，否则「重试补齐」永远被「该版本已存在」挡死（不成立的承诺）。
-    if (!locked) {
-      const failure = validate(name)
-      if (failure) {
-        setFormError(failure)
-        return
-      }
+    const failure = validate(name)
+    if (failure) {
+      setFormError(failure)
+      return
     }
     setReport(null)
     void runPrepare(name.trim())
@@ -188,7 +147,7 @@ export function NewVersionDialog({
     >
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{locked ? `准备 ${request.version} 流程工作区` : '新建版本'}</DialogTitle>
+          <DialogTitle>新建版本</DialogTitle>
           <DialogDescription>
             {projectName ? `${projectName} · ` : ''}
             准备本版计划、验收两棵固定工作树，并进入现有计划屏。不预建目标和任务树，不启动
@@ -196,23 +155,21 @@ export function NewVersionDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="flex flex-col gap-3">
-          {!locked ? (
-            <label className="flex flex-col gap-1.5 text-sm">
-              <span className="font-medium">版本名</span>
-              <input
-                autoFocus
-                autoComplete="off"
-                placeholder="例如 v0.9"
-                value={name}
-                disabled={busy}
-                onChange={(event) => {
-                  setName(event.target.value)
-                  setFormError(null)
-                }}
-                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-              />
-            </label>
-          ) : null}
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium">版本名</span>
+            <input
+              autoFocus
+              autoComplete="off"
+              placeholder="例如 v0.9"
+              value={name}
+              disabled={busy}
+              onChange={(event) => {
+                setName(event.target.value)
+                setFormError(null)
+              }}
+              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            />
+          </label>
           {formError ? (
             <p role="alert" className="text-sm text-destructive">
               {formError}

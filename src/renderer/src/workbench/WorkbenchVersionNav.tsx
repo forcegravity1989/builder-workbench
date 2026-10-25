@@ -9,11 +9,16 @@ import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbenc
 import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import { useVersionCatalogForRepo } from './use-version-catalog'
 import { useBrowsedVersion } from './version-context-state'
-import { navigateVersionWorkflow, openVersionTasks, startVersionGoal } from './version-nav-actions'
+import {
+  initializeVersionWorkspace,
+  navigateVersionWorkflow,
+  openVersionTasks,
+  startVersionGoal
+} from './version-nav-actions'
 import { VersionCleanupDialog } from './version-cleanup-dialog'
 import { VersionTreeBindDialog } from './version-tree-bind-dialog'
 import { VersionNavGroup } from './version-nav-group'
-import { NewVersionDialog, type NewVersionDialogRequest } from './NewVersionDialog'
+import { NewVersionDialog } from './NewVersionDialog'
 import { openGoalWorkspace } from './scoped-task-workspace'
 import { openVersionOverview, useProjectPage } from './project-page-state'
 import { useCycleView } from './cycle-view-state'
@@ -21,13 +26,14 @@ import { useCycleView } from './cycle-view-state'
 /**
  * G2 侧栏版本区（P3a/P3b/P6，高保真修订 8/9）：版本平铺（旧版本默认收起即退休
  * 形态，可展开回看）；每版含总览/计划/任务/目标目录/验收行；「＋ 新建版本」轻
- * 表单接 workbench.versionWorkspace.prepare；版本行另接「绑定已有工作树」（补
- * 绑定，人主导）与「清理」确认单（执行复用原生批量删除漏斗）。目录永远现算，
- * 读取失败如实呈现。
+ * 表单接 workbench.versionWorkspace.prepare；版本行另有「初始化工作区」（流程树
+ * 不齐时显示，点击直接执行，#436 伴飞裁定）、「绑定已有工作树」（补绑定，人主
+ * 导）与「清理」确认单（执行复用原生批量删除漏斗）。目录永远现算，读取失败如实
+ * 呈现。
  */
 
 type DialogState =
-  | NewVersionDialogRequest
+  | { mode: 'create' }
   | { mode: 'cleanup'; version: string }
   | { mode: 'bind'; version: string }
   | null
@@ -219,6 +225,7 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
               expanded={expandedVersions.has(entry.version)}
               browsed={browsedVersion === entry.version}
               busy={busyKey !== null}
+              initializing={busyKey === `${entry.version}:init`}
               worktrees={catalog.worktrees}
               activeWorkflow={
                 activeView === 'terminal' || activeView === 'artifacts' ? activeWorkflow : null
@@ -244,7 +251,11 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
                   projectKey: repoId
                 })
               }
-              onPrepare={() => setDialog({ mode: 'prepare', version: entry.version })}
+              onInitialize={() =>
+                void busy(`${entry.version}:init`, async () => {
+                  await initializeVersionWorkspace({ catalog, version: entry.version })
+                })
+              }
               onOpenTasks={(goal) =>
                 void busy(`${entry.version}:${goal?.goalId ?? 'all'}:tasks`, async () => {
                   await openVersionTasks({
@@ -299,9 +310,8 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
           onClose={() => setDialog(null)}
         />
       ) : null}
-      {dialog && dialog.mode !== 'cleanup' && dialog.mode !== 'bind' ? (
+      {dialog?.mode === 'create' ? (
         <NewVersionDialog
-          request={dialog}
           catalog={catalog}
           projectKey={repoId}
           projectName={projectName}

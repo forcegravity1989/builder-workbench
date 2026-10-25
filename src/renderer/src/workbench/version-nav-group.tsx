@@ -1,11 +1,20 @@
 import { goalOrdinal } from './version-labels'
 import React from 'react'
-import { ChevronDown, ChevronRight, Link2, PackageCheck, X } from 'lucide-react'
+import {
+  ChevronDown,
+  ChevronRight,
+  FolderPlus,
+  Link2,
+  LoaderCircle,
+  PackageCheck,
+  X
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
+import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import {
   GoalDirectoryRow,
   OverviewRow,
@@ -15,8 +24,8 @@ import {
 } from './version-nav-rows'
 
 /**
- * G2 侧栏单个版本组（P3a/P3b/P6）：版本行（展开/收起＋退休标识＋补绑定与清理
- * 入口）与子行（总览/计划/任务/目标目录/验收）。归属判定与动作编排在父组件，
+ * G2 侧栏单个版本组（P3a/P3b/P6）：版本行（展开/收起＋退休标识＋初始化/补绑定/
+ * 清理入口）与子行（总览/计划/任务/目标目录/验收）。归属判定与动作编排在父组件，
  * 本组件只做呈现与原生复用件组装。
  */
 
@@ -25,6 +34,8 @@ type VersionNavGroupProps = {
   expanded: boolean
   browsed: boolean
   busy: boolean
+  /** 本版「初始化工作区」正在执行（版本行图标转 spinner）。 */
+  initializing: boolean
   worktrees: readonly Worktree[]
   /** 当前点亮的流程（'plan'|'acceptance'），null=无。 */
   activeWorkflow: VersionWorkflow | null
@@ -32,11 +43,11 @@ type VersionNavGroupProps = {
   activeOverview: boolean
   activeGoalId: string | null
   onToggle: () => void
+  onInitialize: () => void
   onCleanup: () => void
   onBindTree: () => void
   onOverview: () => void
   onNavigateWorkflow: (workflow: VersionWorkflow) => void
-  onPrepare: () => void
   onOpenTasks: (goal?: { goalId: string; label: string }) => void
   onStartGoal: (goal: { goalId: string; label: string; title: string }) => void
   onOpenGoalWorkspace: (goal: { goalId: string; label: string; title: string }) => void
@@ -47,22 +58,30 @@ export function VersionNavGroup({
   expanded,
   browsed,
   busy,
+  initializing,
   worktrees,
   activeWorkflow,
   activeTasks,
   activeOverview,
   activeGoalId,
   onToggle,
+  onInitialize,
   onCleanup,
   onBindTree,
   onOverview,
   onNavigateWorkflow,
-  onPrepare,
   onOpenTasks,
   onStartGoal,
   onOpenGoalWorkspace
 }: VersionNavGroupProps): React.JSX.Element {
   const retired = entry.state === 'retired'
+  // #436 伴飞裁定（CF-5）：流程树不齐（计划/验收任一缺）才显示初始化入口；
+  // 两树齐→按钮消失，不出现「点不了」的怪状态。判定与 WorkflowRow 同源
+  // （findVersionFlowWorktrees，只认绑定不认分支字符串）。
+  const flowTreesComplete =
+    findVersionFlowWorktrees(worktrees, { version: entry.version, workflow: 'plan' }).length > 0 &&
+    findVersionFlowWorktrees(worktrees, { version: entry.version, workflow: 'acceptance' }).length >
+      0
   return (
     <div className="wb-version-group min-w-0">
       <div className="flex min-w-0 items-center gap-0.5 pr-0.5">
@@ -101,6 +120,24 @@ export function VersionNavGroup({
             </span>
           ) : null}
         </button>
+        {flowTreesComplete ? null : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label={`初始化 ${entry.version} 工作区`}
+            title="初始化工作区（创建本版计划与验收工作区）"
+            disabled={busy}
+            onClick={onInitialize}
+            className="size-6 shrink-0 text-worktree-sidebar-foreground/40 hover:text-worktree-sidebar-foreground"
+          >
+            {initializing ? (
+              <LoaderCircle className="size-3.5 animate-spin" />
+            ) : (
+              <FolderPlus className="size-3.5" />
+            )}
+          </Button>
+        )}
         <Button
           type="button"
           variant="ghost"
@@ -134,7 +171,6 @@ export function VersionNavGroup({
             busy={busy}
             active={activeWorkflow === 'plan'}
             onNavigate={() => onNavigateWorkflow('plan')}
-            onPrepare={onPrepare}
           />
           <TasksRow busy={busy} active={activeTasks} onOpenTasks={() => onOpenTasks()} />
           {entry.goals.map((goal, index) => {
@@ -170,7 +206,6 @@ export function VersionNavGroup({
             busy={busy}
             active={activeWorkflow === 'acceptance'}
             onNavigate={() => onNavigateWorkflow('acceptance')}
-            onPrepare={onPrepare}
           />
         </div>
       ) : null}

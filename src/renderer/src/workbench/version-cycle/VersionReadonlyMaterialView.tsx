@@ -146,7 +146,7 @@ export function VersionReadonlyMaterialView({
         {state.kind === 'plan' || state.kind === 'acceptance'
           ? `（来源 ${shortCommit(state.sourceCommit)}，提交于 ${state.committedAt}）`
           : ''}
-        。编辑或发起会话请先在版本行「准备流程工作区」。
+        。编辑或发起会话请先在版本行「初始化工作区」。
       </p>
       {state.kind === 'loading' ? <p className="vc-notice">材料读取中…</p> : null}
       {state.kind === 'missing' ? <p className="vc-notice">{state.message}</p> : null}
