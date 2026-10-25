@@ -1,4 +1,3 @@
-import { goalOrdinal } from '../version-labels'
 import React, { useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
 import type {
@@ -10,7 +9,12 @@ import { nativeVersionHistoryPort } from '../version-history-port'
 import { useVersionCatalogForRepo } from '../use-version-catalog'
 import { nativeWorkspaceScope } from './native-workspace'
 import { BoardLines } from '../board-ui'
-import { DECISION_LABELS, WORKFLOW_SCREEN_LABELS, shortCommit } from '../version-labels'
+import {
+  DECISION_LABELS,
+  WORKFLOW_SCREEN_LABELS,
+  goalOrdinal,
+  shortCommit
+} from '../version-labels'
 
 /**
  * G2 只读回看（P3b，spec「版本级清理」/「版本总览、回看」）：已清理或未准备

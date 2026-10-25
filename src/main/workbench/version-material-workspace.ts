@@ -5,7 +5,6 @@ import {
   validatePlanningVersion
 } from '../../shared/workbench/version-document'
 import { compareMaterialVersions } from '../../shared/workbench/version-catalog'
-import { isVersionFlowWorkflow } from '../../shared/workbench/version-workspace-prepare'
 import {
   AcceptanceMaterialSchema,
   PlanningMaterialSchema,
@@ -35,7 +34,10 @@ import type {
   VersionMigrationApply,
   VersionMigrationRead
 } from '../../shared/workbench/version-material-migration'
-import { versionFlowBranch } from '../../shared/workbench/version-workspace-prepare'
+import {
+  isVersionFlowWorkflow,
+  versionFlowBranch
+} from '../../shared/workbench/version-workspace-prepare'
 
 /** 无绑定树的旧固定计划分支（旧上下文逐字保留；材料读写与空计划初始化围栏共用）。 */
 const LEGACY_PLAN_BRANCH = 'bw/week-plan'
