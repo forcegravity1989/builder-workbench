@@ -2,6 +2,7 @@ import React from 'react'
 import { BookOpen, CalendarClock, LayoutDashboard } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
+import { SidebarTaskNavButton } from '@/components/sidebar/SidebarTaskNavButton'
 import { isWorkbenchShell } from './is-workbench-shell'
 import { closeProjectPage, openProjectWall, useProjectPage } from './project-page-state'
 import { useCycleView } from './cycle-view-state'
@@ -9,10 +10,9 @@ import { resolveWorkbenchNav, type WorkbenchNavId } from './workbench-nav'
 import { WorkbenchVersionNav } from './WorkbenchVersionNav'
 import { WorkbenchWorkspaceChoiceDialog } from './WorkbenchWorkspaceChoiceDialog'
 
-// G2（P3a，高保真修订 8）：项目级入口（总览/自动化/知识库）＋分隔＋版本区。
+// G2（P3a，高保真修订 8）：项目级入口（总览/任务/自动化/知识库）＋分隔＋版本区。
 // 计划/验收不再设扁平入口——由版本行承载（业务入口与本树入口合一）；
-// 全局「任务」入口经人裁定隐藏（#436：任务经版本区进入，全量任务屏仍由
-// 命令面板 view.tasks 可达；SidebarTaskNavButton 的 BW 分支随之休眠，留上游同步时清理）。
+// 「任务」保留原生全局入口（不收窄 Orca 能力；版本/目标范围经版本区进入）。
 const NAV_ITEMS: { id: WorkbenchNavId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'overview', label: '项目总览', icon: LayoutDashboard },
   { id: 'automations', label: '自动化', icon: CalendarClock },
@@ -114,7 +114,11 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
         aria-label="项目内导航"
         onClickCapture={closeProjectPage}
       >
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.slice(0, 1).map((item) => (
+          <WorkbenchNavItem key={item.id} item={item} active={activeNav === item.id} onGo={go} />
+        ))}
+        <SidebarTaskNavButton />
+        {NAV_ITEMS.slice(1).map((item) => (
           <WorkbenchNavItem key={item.id} item={item} active={activeNav === item.id} onGo={go} />
         ))}
         <WorkbenchVersionNav />
