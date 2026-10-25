@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store'
+import { LOCAL_EXECUTION_HOST_ID, parseExecutionHostId } from '../../../../shared/execution-host'
 import type { Automation, AutomationCreateInput } from '../../../../shared/automations-types'
 import type {
   AutomationAuthorityRef,
@@ -60,9 +61,20 @@ const SCHEDULES: Record<VersionWorkflow, { dayOfWeek: number; hour: number; minu
 
 export function cycleAutomationCreationKey(scope: CycleScope, version?: string | null): string {
   // G2（P5）：绑定树加版本维度，每版流程树独立登记；旧无绑定树沿旧 key（旧上下文保留）。
+  const ownerScope = ownerSpelledCycleScope(scope)
   return version
-    ? `bw-cycle:${cycleScopeKey(scope)}:${scope.workflow}:${version}`
-    : `bw-cycle:${cycleScopeKey(scope)}:${scope.workflow}`
+    ? `bw-cycle:${cycleScopeKey(ownerScope)}:${ownerScope.workflow}:${version}`
+    : `bw-cycle:${cycleScopeKey(ownerScope)}:${ownerScope.workflow}`
+}
+
+// Why: 同一逻辑条目的 creationKey 身份必须在 owner 与访客观察方之间一致——访客经
+// runtime:<env> 拼写观察 owner 的配对树时，键会按观察方拼写分叉，findExisting 的
+// byKey 永不互认，人工改名后走回退 create 在归属宿主产生第二条同树同版条目。键的
+// 宿主维度统一取 owner 侧拼写（local），路由仍由 authority 单独决定、不受影响。
+function ownerSpelledCycleScope(scope: CycleScope): CycleScope {
+  return parseExecutionHostId(scope.hostId)?.kind === 'runtime'
+    ? { ...scope, hostId: LOCAL_EXECUTION_HOST_ID, runtimeOwnerEnvironmentId: undefined }
+    : scope
 }
 
 export type EnsureCycleAutomationResult =

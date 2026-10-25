@@ -17,7 +17,6 @@ import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import { getLinkedWorkItemSuggestedName } from '../../../shared/workspace-name'
 import {
   matchScopedTaskWorkspaces,
-  codeHubTaskSourceContext,
   notifyScopedWorkspaceUnavailable,
   resolveScopedComposerAdditions
 } from '@/workbench/scoped-task-workspace'
@@ -173,7 +172,10 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   )
   const codeHubSourceContextFor = useCallback(
     (item: CodeHubTaskItem) =>
-      codeHubTaskSourceContext(item.repoId ? repoMap.get(item.repoId) : null, item),
+      getTaskPageRepoSourceContext(
+        item.repoId ? (repoMap.get(item.repoId) ?? null) : null,
+        'codehub'
+      ),
     [repoMap]
   )
   const openComposerForCodeHubItem = useCallback(

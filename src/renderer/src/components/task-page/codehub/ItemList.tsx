@@ -40,7 +40,7 @@ import {
 } from '../../task-page-source-context'
 import { TaskPageScopeFooter, TaskPageScopeHeader } from '@/workbench/TaskScopePanel'
 import {
-  codeHubTaskSourceContext,
+  getTaskPageRepoSourceContext,
   resolveTaskRowWorkspace
 } from '@/workbench/scoped-task-workspace'
 
@@ -209,7 +209,10 @@ export function TaskPageCodeHubItemList({
             worktrees: allWorktrees,
             provider: 'codehub',
             item: { repoId: item.repoId, type: item.type, number: item.iid },
-            sourceContext: codeHubTaskSourceContext(repoMap.get(item.repoId ?? ''), item)
+            sourceContext: getTaskPageRepoSourceContext(
+              repoMap.get(item.repoId ?? '') ?? null,
+              'codehub'
+            )
           })
           return (
             <div

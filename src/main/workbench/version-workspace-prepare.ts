@@ -196,9 +196,18 @@ export function createVersionWorkspacePrepareService(
           holderBinding?.version === request.version &&
           holderBinding.workflow === workflow
         if (!ours) {
+          // Why: 归档的自有绑定树仍占着 Git 分支（拒绝重建是对的），但「归属无法证明」
+          // 报因失实——绑定可证归属；如实报「已归档占用」并指向取消归档/清理的恢复路径。
+          const archivedOwn =
+            holder.isArchived &&
+            onHost(holder) &&
+            holderBinding?.version === request.version &&
+            holderBinding.workflow === workflow
           throw new WorkspaceScopeError(
             'branch-occupied',
-            `分支 ${branch} 已被工作树 ${holder.path} 占用，归属无法证明为本版流程树；请在原生项目中核对后重试`
+            archivedOwn
+              ? `分支 ${branch} 被已归档工作树 ${holder.path} 占用（绑定可证归属本版流程树）；归档树仍占分支、不能重建——如需继续请在原生项目取消归档或清理该树后重试`
+              : `分支 ${branch} 已被工作树 ${holder.path} 占用，归属无法证明为本版流程树；请在原生项目中核对后重试`
           )
         }
         return existingStep(holder)

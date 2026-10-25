@@ -72,7 +72,14 @@ export async function loadWorkbenchTaskScope(
   // 重复行与计数虚增。
   const seen = new Set<string>()
   const references = scope.references.filter((reference) => {
-    const key = `${reference.provider}:${reference.repository}:${reference.number}`
+    // Why: 同一仓库的两种写法（host/group/repo 与完整克隆 URL）都会解析到同一
+    // repo.id；按原始字符串去重会漏出重复行、重复 React key 与计数虚增。解析失败
+    // 回落原始字符串（missing 通道计数不受影响）。
+    const repo =
+      reference.provider === 'github' || reference.provider === 'codehub'
+        ? resolveReferenceRepo(deps, home, reference)
+        : null
+    const key = `${reference.provider}:${repo?.id ?? reference.repository}:${reference.number}`
     if (seen.has(key)) {
       return false
     }

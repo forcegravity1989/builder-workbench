@@ -36,7 +36,10 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     setActiveTaskPreset,
     setCodehubItems,
     setCodehubLoading,
-    setCodehubError
+    setCodehubError,
+    setCodehubQuery,
+    setCodehubAuthor,
+    setCodehubAssignee
   } = model
   const scope = pageData.workbenchTaskScope ?? null
   const scopeKey = useMemo(() => (scope ? workbenchTaskScopeKey(scope) : null), [scope])
@@ -58,6 +61,10 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     setActiveTaskPreset(null)
     setFailedCount(0)
     setGithubUnavailable(false)
+    // CodeHub 侧同口径：无范围会话残留的搜索/作者/经办人过滤不得预涂范围行（F6 检视修正）
+    setCodehubQuery('')
+    setCodehubAuthor('')
+    setCodehubAssignee('')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scopeKey])
 

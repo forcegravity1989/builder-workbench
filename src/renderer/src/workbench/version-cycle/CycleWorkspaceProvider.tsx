@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store'
+import { branchName } from '@/lib/git-utils'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
 import { startCycleAutomation } from './start-cycle-automation'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
@@ -120,6 +121,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
               session,
               version: version.version,
               boundVersion: flowBinding?.version ?? null,
+              branch: worktree?.branch ? branchName(worktree.branch) || null : null,
               selectVersion: version.selectVersion,
               materialPort,
               taskPort,
@@ -141,6 +143,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       prepareMetrics,
       scope,
       fixedId,
+      worktree?.branch,
       session,
       version.version,
       flowBinding,

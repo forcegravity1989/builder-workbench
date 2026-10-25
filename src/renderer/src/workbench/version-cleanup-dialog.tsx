@@ -152,7 +152,13 @@ export function VersionCleanupDialog({
     setAutomationNotice(null)
     void (async () => {
       try {
-        const home = worktrees.find((tree) => tree.isMainWorktree) ?? worktrees[0]
+        // Why: home 行只用于派生探测键的项目/宿主维度；焦点在其他注册行时首条主树
+        // 可能是别仓的行，探测键会落到错误项目——按本版行的 repoId 过滤后再回退。
+        const targetRepoId = rows.find((row) => row.tree !== null)?.tree?.repoId ?? null
+        const home =
+          worktrees.find((tree) => tree.isMainWorktree && tree.repoId === targetRepoId) ??
+          worktrees.find((tree) => tree.isMainWorktree) ??
+          worktrees[0]
         if (!home) {
           return
         }
@@ -184,7 +190,7 @@ export function VersionCleanupDialog({
     return () => {
       cancelled = true
     }
-  }, [version, worktrees])
+  }, [version, worktrees, rows])
   const toggle = (key: string, next: boolean) => {
     setChecked((previous) => {
       const updated = new Set(previous)
@@ -247,11 +253,11 @@ export function VersionCleanupDialog({
             const ownerLabel = row.local
               ? '本机'
               : (hostLabelById.get(hostKey(row.workspace.hostId)) ?? hostKey(row.workspace.hostId))
+            // Why: 缺键=预检未回读（他宿主离线/水合失败），与「已水合且干净」不可混同；
+            // 没数据就是 Unknown，不能呈现否定断言（四铁律信号口径，检视 F6 修正）。
             const dirty = row.tree
-              ? (dirtyCounts.get(
-                  row.tree.hostId ? getWorktreeHostIdentity(row.tree) : row.tree.id
-                ) ?? 0)
-              : 0
+              ? dirtyCounts.get(row.tree.hostId ? getWorktreeHostIdentity(row.tree) : row.tree.id)
+              : null
             return (
               <label
                 key={row.key}
@@ -274,9 +280,11 @@ export function VersionCleanupDialog({
                     {row.local ? '' : ' · 勾选=经共享通道在归属宿主删除（派发前复核配对权限）'}
                     {row.tree === null
                       ? ' · 登记缺失（目录即将刷新，不可勾选）'
-                      : dirty > 0
-                        ? ` · 未提交修改 ${dirty} 项（原生确认单内处理）`
-                        : ' · 预检未见未提交修改'}
+                      : dirty === undefined
+                        ? ' · 预检未回读（读取失败或对端离线，以原生确认单预检为准）'
+                        : dirty > 0
+                          ? ` · 未提交修改 ${dirty} 项（原生确认单内处理）`
+                          : ' · 预检未见未提交修改'}
                   </span>
                 </span>
                 {row.tree ? <SessionCount worktreeId={row.tree.id} /> : null}

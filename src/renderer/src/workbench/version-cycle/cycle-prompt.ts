@@ -145,7 +145,15 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
             '- 子命令参数以各自 --help 为准：ORCA bw materials context --help、ORCA bw materials select --help、ORCA bw materials list --help、ORCA bw materials read --help、ORCA bw materials save --help。',
             '',
             '## 固定工作树纪律',
-            `- 本会话固定在 ${branch} 工作树：材料只经 ORCA bw materials save 绑定该 worktreeId 写入，不直接编辑文件、不另建工作树或分支；归档提交落在 ${branch}，PR/MR 由 ${branch} 开向主分支。`,
+            // Why: 绑定树登记行读不到真实分支时 branch=null，原句无条件插值会钉出
+            // 「null/HEAD」假分支名；读不到就不钉，纪律句如实留白并要求会话内核对。
+            ...(branch
+              ? [
+                  `- 本会话固定在 ${branch} 工作树：材料只经 ORCA bw materials save 绑定该 worktreeId 写入，不直接编辑文件、不另建工作树或分支；归档提交落在 ${branch}，PR/MR 由 ${branch} 开向主分支。`
+                ]
+              : [
+                  '- 本会话的绑定工作树当前读不到真实分支：不钉分支名，绝不冒充旧固定分支名；材料只经 ORCA bw materials save 绑定该 worktreeId 写入，不直接编辑文件、不另建工作树或分支；归档前先在会话中与人核对树的实际分支。'
+                ]),
             '',
             '## 执行上下文',
             '内部 ID 仅用作命令参数，不出现在给用户的文本里：',

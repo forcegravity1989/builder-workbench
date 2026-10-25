@@ -293,7 +293,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
         versions={material.versions}
         disabled={!materialPort || selecting || Boolean(context.syncing)}
         state={state}
-        branch={cycleBranch(entry)}
+        branch={context.branch ?? cycleBranch(entry)}
         sessionCollapsed={chatCollapsed}
         onSessionToggle={onSessionToggle}
         onSelect={(version) => void selection.select(version)}

@@ -1,6 +1,10 @@
 import { assertRuntimeEnvironmentCapability, callRuntimeRpc } from '../runtime/runtime-rpc-client'
 import { routeForOwner } from '../lib/worktree-owner-route'
-import type { ExecutionHostId } from '../../../shared/execution-host'
+import {
+  LOCAL_EXECUTION_HOST_ID,
+  parseExecutionHostId,
+  type ExecutionHostId
+} from '../../../shared/execution-host'
 import { WORKBENCH_VERSION_BINDING_RUNTIME_CAPABILITY } from '../../../shared/protocol-version'
 import { VersionMaterialPortError } from '../../../shared/workbench/version-material-client'
 import type { VersionMaterialResult } from '../../../shared/workbench/version-material-request'
@@ -14,6 +18,15 @@ import type {
  * 原生登记，不在访问者机建树、不落本机副本）；对端不支持绑定契约或授权已撤销
  * 时如实抛错，不静默忽略字段、不回落本机路径。
  */
+// Why: 归属宿主 resolver 只认 owner 侧拼写（local/ssh:X），访客侧 runtime:<env> 拼写
+// 会被拒；路由已由 routeForOwner 按 runtimeOwnerEnvironmentId 走对端，scope 里只需
+// owner 拼写——与 version-material-port 的 ownerScope 重写同一口径。
+function ownerSpelledScope<T extends { hostId: string }>(scope: T): T {
+  return parseExecutionHostId(scope.hostId)?.kind === 'runtime'
+    ? { ...scope, hostId: LOCAL_EXECUTION_HOST_ID }
+    : scope
+}
+
 export function nativeVersionBindingPort(owner: {
   hostId: ExecutionHostId
   runtimeOwnerEnvironmentId?: string
@@ -50,8 +63,9 @@ export function nativeVersionBindingPort(owner: {
   }
 
   return {
-    read: (scope: VersionBindingScope) => invoke<WorkbenchVersionBinding | null>('read', scope),
+    read: (scope: VersionBindingScope) =>
+      invoke<WorkbenchVersionBinding | null>('read', ownerSpelledScope(scope)),
     set: (scope: VersionBindingScope, binding: WorkbenchVersionBinding | null) =>
-      invoke<WorkbenchVersionBinding | null>('set', { ...scope, binding })
+      invoke<WorkbenchVersionBinding | null>('set', { ...ownerSpelledScope(scope), binding })
   }
 }

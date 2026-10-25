@@ -13,6 +13,11 @@ export type VersionCycleContext = {
    * 旧无绑定固定树为 null，屏内选版沿旧偏好语义保留。
    */
   boundVersion: string | null
+  /**
+   * G2（#383）：挂载流程树的真实分支（绑定树为 bw/<版本>/<workflow>，旧固定树即旧固定
+   * 分支名）；页头分支 chip 与提示词钉分支同源，避免绑定树误显旧固定分支。无树为 null。
+   */
+  branch: string | null
   taskPort: TaskPort
   archivePort: ArchivePrPort
   materialPort: ReturnType<typeof createVersionMaterialPort> | null

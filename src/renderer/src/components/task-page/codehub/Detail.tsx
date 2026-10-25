@@ -1,4 +1,5 @@
 import { useCodeHubDetail } from './use-codehub-detail'
+import { attachedCodeHubDetailWorkspace } from '@/workbench/scoped-task-workspace'
 import { CodeHubChecksTab } from './ChecksTab'
 import { CodeHubConversation } from './Conversation'
 import { CodeHubFilesTab } from './FilesTab'
@@ -27,28 +28,9 @@ import { cn } from '@/lib/utils'
 import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
 import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page-github-work-item-status-badge'
 import { formatRelativeTime } from '../../task-page-source-context'
-import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import type { Worktree } from '../../../../../shared/worktree/types'
 
 const NO_WORKTREES: readonly Worktree[] = []
-
-function attachedCodeHubWorkspace(
-  worktrees: readonly Worktree[],
-  item: CodeHubTaskItem
-): Worktree | null {
-  const kind = item.type === 'mr' ? 'mr' : 'issue'
-  return (
-    worktrees.find(
-      (worktree) =>
-        !worktree.isArchived &&
-        worktree.repoId === item.repoId &&
-        worktree.linkedWorkItem?.provider === 'codehub' &&
-        worktree.linkedWorkItem.type === kind &&
-        worktree.linkedWorkItem.number === item.iid
-    ) ?? null
-  )
-}
-
 export function TaskPageCodeHubDetail({
   model
 }: {
@@ -58,6 +40,9 @@ export function TaskPageCodeHubDetail({
   const repoWorktrees = useAppStore((state) =>
     repoId ? (state.worktreesByRepo[repoId] ?? NO_WORKTREES) : NO_WORKTREES
   )
+  // G2（P4 详情往返携带范围）：范围态归属呈现与任务屏行/板面箭头同一解析核。
+  const workbenchTaskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
+  const repo = useAppStore((s) => (repoId ? (s.repos.find((r) => r.id === repoId) ?? null) : null))
   const detailState = useCodeHubDetail(model)
   if (!detailState) {
     return null
@@ -85,7 +70,12 @@ export function TaskPageCodeHubDetail({
     setCodehubDetailItem,
     handleUseCodeHubItem
   } = detailState
-  const attached = attachedCodeHubWorkspace(repoWorktrees, item)
+  const attached = attachedCodeHubDetailWorkspace({
+    scope: workbenchTaskScope,
+    worktrees: repoWorktrees,
+    repo,
+    item
+  })
   const workspaceLabel = attached ? getWorktreeAttachmentLabel(attached) : null
   const sourceBranch = detail?.sourceBranch ?? item.sourceBranch
   const targetBranch = detail?.targetBranch ?? item.targetBranch

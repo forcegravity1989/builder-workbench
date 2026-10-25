@@ -61,6 +61,10 @@ export function TaskPageCodeHubFilters({
           ['open', translate('auto.components.TaskPage.606a85c774', 'Open')],
           ['mine', translate('auto.components.TaskPage.94f0339621', 'Assigned to me')]
         ] as const)
+  // Why（G2 P4 范围契约，与 github/Filters 同口径）：范围视图的行集由计划引用物化，
+  // 服务端查询机制不适用——页签/仓库选择器/预设与筛选弹层在范围态或失效或写全局
+  // 偏好产生副作用，一律隐藏；搜索框保留（范围态客户端过滤语义）。
+  const scopeActive = model.workbenchScopeActive
   const applyPreset = (preset: 'open' | 'mine' | 'review'): void => {
     setCodehubPreset(preset)
     setCodehubState('opened')
@@ -78,93 +82,103 @@ export function TaskPageCodeHubFilters({
           workbench ? 'flex-row flex-wrap items-center gap-x-3 gap-y-2' : 'flex-col gap-2.5'
         )}
       >
-        <div className="flex shrink-0 items-center gap-1 text-xs">
-          {(['issues', 'mrs'] as const).map((view) => (
-            <button
-              key={view}
-              type="button"
-              onClick={() => {
-                setCodehubView(view)
-                if (view === 'issues' && codehubPreset === 'review') {
-                  setCodehubPreset('open')
-                }
-                if (view === 'issues' && codehubState === 'merged') {
-                  setCodehubState('opened')
-                }
+        {scopeActive ? null : (
+          <div className="flex shrink-0 items-center gap-1 text-xs">
+            {(['issues', 'mrs'] as const).map((view) => (
+              <button
+                key={view}
+                type="button"
+                onClick={() => {
+                  setCodehubView(view)
+                  if (view === 'issues' && codehubPreset === 'review') {
+                    setCodehubPreset('open')
+                  }
+                  if (view === 'issues' && codehubState === 'merged') {
+                    setCodehubState('opened')
+                  }
+                }}
+                className={cn(
+                  'rounded-md border px-2.5 py-1 text-xs font-medium transition',
+                  codehubView === view
+                    ? 'border-border/50 bg-foreground/90 text-background shadow-xs'
+                    : 'border-border/60 bg-muted/50 text-foreground shadow-xs hover:bg-muted/70'
+                )}
+              >
+                {view === 'issues'
+                  ? translate('auto.components.TaskPage.dfc0c79bd8', 'Issues')
+                  : translate('auto.components.TaskPage.137e2a8a01', 'PRs')}
+              </button>
+            ))}
+          </div>
+        )}
+        {scopeActive ? null : (
+          <div className="min-w-0 max-w-[220px] shrink-0">
+            <TaskProjectSourceCombobox
+              groups={taskPickerGroups}
+              selected={repoSelection}
+              getRepoHostLabel={getTaskPickerRepoHostLabel}
+              onChange={(next) => {
+                const normalized = normalizeTaskRepoSelection(eligibleRepos, next)
+                setRepoSelection(normalized)
+                void updateSettings({ defaultRepoSelection: [...normalized] }).catch(() => {
+                  toast.error(
+                    translate(
+                      'auto.components.TaskPage.dfd72673e7',
+                      'Failed to save project selection.'
+                    )
+                  )
+                })
               }}
-              className={cn(
-                'rounded-md border px-2.5 py-1 text-xs font-medium transition',
-                codehubView === view
-                  ? 'border-border/50 bg-foreground/90 text-background shadow-xs'
-                  : 'border-border/60 bg-muted/50 text-foreground shadow-xs hover:bg-muted/70'
-              )}
-            >
-              {view === 'issues'
-                ? translate('auto.components.TaskPage.dfc0c79bd8', 'Issues')
-                : translate('auto.components.TaskPage.137e2a8a01', 'PRs')}
-            </button>
-          ))}
-        </div>
-        <div className="min-w-0 max-w-[220px] shrink-0">
-          <TaskProjectSourceCombobox
-            groups={taskPickerGroups}
-            selected={repoSelection}
-            getRepoHostLabel={getTaskPickerRepoHostLabel}
-            onChange={(next) => {
-              const normalized = normalizeTaskRepoSelection(eligibleRepos, next)
-              setRepoSelection(normalized)
-              void updateSettings({ defaultRepoSelection: [...normalized] }).catch(() => {
-                toast.error(
-                  translate(
-                    'auto.components.TaskPage.dfd72673e7',
-                    'Failed to save project selection.'
+              onSelectAll={() => {
+                setRepoSelection(new Set(taskPickerRepos.map((repo) => repo.id)))
+                void updateSettings({ defaultRepoSelection: null }).catch(() => {
+                  toast.error(
+                    translate(
+                      'auto.components.TaskPage.dfd72673e7',
+                      'Failed to save project selection.'
+                    )
                   )
-                )
-              })
-            }}
-            onSelectAll={() => {
-              setRepoSelection(new Set(taskPickerRepos.map((repo) => repo.id)))
-              void updateSettings({ defaultRepoSelection: null }).catch(() => {
-                toast.error(
-                  translate(
-                    'auto.components.TaskPage.dfd72673e7',
-                    'Failed to save project selection.'
-                  )
-                )
-              })
-            }}
-            triggerClassName="h-8 w-auto max-w-[220px] rounded-md border border-border/50 bg-muted/50 px-2 text-xs font-medium shadow-sm transition hover:bg-muted/50 focus:ring-2 focus:ring-ring/20 focus:outline-none"
-          />
-        </div>
-        {workbench ? <span className="h-4 w-px shrink-0 bg-border/80" aria-hidden /> : null}
-        <div className="flex shrink-0 flex-wrap gap-1.5">
-          {presets.map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => applyPreset(id)}
-              className={cn(
-                'rounded-md border px-2.5 py-1 text-xs font-medium transition',
-                codehubPreset === id &&
-                  codehubState === 'opened' &&
-                  !codehubAuthor &&
-                  !codehubAssignee
-                  ? 'border-border/50 bg-foreground/90 text-background shadow-xs'
-                  : 'border-border/60 bg-background text-foreground shadow-xs hover:bg-muted/60'
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        {workbench ? <span className="h-4 w-px shrink-0 bg-border/80" aria-hidden /> : null}
+                })
+              }}
+              triggerClassName="h-8 w-auto max-w-[220px] rounded-md border border-border/50 bg-muted/50 px-2 text-xs font-medium shadow-sm transition hover:bg-muted/50 focus:ring-2 focus:ring-ring/20 focus:outline-none"
+            />
+          </div>
+        )}
+        {workbench && !scopeActive ? (
+          <span className="h-4 w-px shrink-0 bg-border/80" aria-hidden />
+        ) : null}
+        {scopeActive ? null : (
+          <div className="flex shrink-0 flex-wrap gap-1.5">
+            {presets.map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => applyPreset(id)}
+                className={cn(
+                  'rounded-md border px-2.5 py-1 text-xs font-medium transition',
+                  codehubPreset === id &&
+                    codehubState === 'opened' &&
+                    !codehubAuthor &&
+                    !codehubAssignee
+                    ? 'border-border/50 bg-foreground/90 text-background shadow-xs'
+                    : 'border-border/60 bg-background text-foreground shadow-xs hover:bg-muted/60'
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        {workbench && !scopeActive ? (
+          <span className="h-4 w-px shrink-0 bg-border/80" aria-hidden />
+        ) : null}
         <div
           className={cn(
             'flex min-w-0 flex-wrap items-center gap-2',
             workbench && 'min-w-48 flex-1'
           )}
         >
-          <CodeHubFilterPopover model={model} />
+          {scopeActive ? null : <CodeHubFilterPopover model={model} />}
           <div className="relative min-w-0 flex-1 basis-64">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input

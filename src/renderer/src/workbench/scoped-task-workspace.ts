@@ -1,10 +1,8 @@
 import type { Worktree } from '../../../shared/worktree/types'
 import type { Repo } from '../../../shared/repo-types'
-import {
-  normalizeTaskSourceContext,
-  type TaskSourceContext
-} from '../../../shared/task-source-context'
+import type { TaskSourceContext } from '../../../shared/task-source-context'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
+import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
@@ -62,22 +60,38 @@ export function matchScopedTaskWorkspaces<T extends Worktree>(args: {
   return { kind: 'choice', candidates }
 }
 
-/** CodeHub 行的任务来源身份（与原生创建器预填同一构造，不另造第二种）。 */
-export function codeHubTaskSourceContext(
-  repo: Repo | undefined | null,
-  item: { repoId?: string | null; host?: string | null; project?: string | null }
-): TaskSourceContext | null {
-  return normalizeTaskSourceContext({
-    provider: 'codehub',
-    projectId: repo?.id ?? item.repoId ?? '',
-    hostId: repo ? getRepoExecutionHostId(repo) : 'local',
-    repoId: item.repoId,
-    providerIdentity: {
+/**
+ * CodeHub 详情面归属呈现（G2 P4）：范围态沿任务屏行同一解析核（绑定＋linked 双重
+ * 证明），不按「首个未归档 linked 树」跨版误指；无范围时原生首树语义逐字不变；
+ * 多候选时 attached=null（Workspace 行不指认，点击走选择器）。
+ */
+export function attachedCodeHubDetailWorkspace(args: {
+  scope: WorkbenchTaskScope | null
+  worktrees: readonly Worktree[]
+  repo: Repo | null
+  item: { repoId?: string | null; type: string; iid: number }
+}): Worktree | null {
+  const { scope, worktrees, repo, item } = args
+  if (scope && item.type === 'issue') {
+    return resolveTaskRowWorkspace({
+      scope,
+      worktrees,
       provider: 'codehub',
-      host: item.host ?? null,
-      project: item.project ?? null
-    }
-  })
+      item: { repoId: item.repoId, type: 'issue', number: item.iid },
+      sourceContext: getTaskPageRepoSourceContext(repo, 'codehub')
+    }).attached
+  }
+  const kind = item.type === 'mr' ? 'mr' : 'issue'
+  return (
+    worktrees.find(
+      (worktree) =>
+        !worktree.isArchived &&
+        worktree.repoId === item.repoId &&
+        worktree.linkedWorkItem?.provider === 'codehub' &&
+        worktree.linkedWorkItem.type === kind &&
+        worktree.linkedWorkItem.number === item.iid
+    ) ?? null
+  )
 }
 
 /**

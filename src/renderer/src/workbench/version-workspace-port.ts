@@ -1,6 +1,10 @@
 import { assertRuntimeEnvironmentCapability, callRuntimeRpc } from '../runtime/runtime-rpc-client'
 import { routeForOwner } from '../lib/worktree-owner-route'
-import type { ExecutionHostId } from '../../../shared/execution-host'
+import {
+  LOCAL_EXECUTION_HOST_ID,
+  parseExecutionHostId,
+  type ExecutionHostId
+} from '../../../shared/execution-host'
 import { WORKBENCH_VERSION_WORKSPACE_RUNTIME_CAPABILITY } from '../../../shared/protocol-version'
 import { VersionMaterialPortError } from '../../../shared/workbench/version-material-client'
 import type { VersionMaterialResult } from '../../../shared/workbench/version-material-request'
@@ -34,10 +38,16 @@ export function nativeVersionWorkspacePort(owner: {
           '对端 Orca 尚不支持新版本准备，请更新归属宿主后再试'
         )
       }
+      // Why: 同绑定端口——owner 侧 resolver 只认 owner 拼写，访客侧 runtime:<env> 必拒；
+      // 路由经 runtimeOwnerEnvironmentId 已指向归属宿主。
+      const spelled =
+        parseExecutionHostId(request.hostId)?.kind === 'runtime'
+          ? { ...request, hostId: LOCAL_EXECUTION_HOST_ID }
+          : request
       const result = await callRuntimeRpc<VersionMaterialResult<VersionWorkspacePrepareResult>>(
         target,
         'workbench.versionWorkspace.prepare',
-        request,
+        spelled,
         // 建两棵树含 checkout/setup：与原生 worktree.create 同量级放宽超时。
         { timeoutMs: 600_000 }
       )
