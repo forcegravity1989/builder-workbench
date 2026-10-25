@@ -74,10 +74,16 @@ export async function initializeVersionWorkspace(args: {
     hostId: scope.hostId,
     runtimeOwnerEnvironmentId: scope.runtimeOwnerEnvironmentId
   }).prepare({ repoId: scope.repoId, hostId: scope.hostId, version })
-  // 登记刷新：让侧栏目录/绑定立即可见（不依赖轮询）。
-  const state = useAppStore.getState()
-  await Promise.all(catalog.repoIds.map((repoId) => state.fetchWorktrees(repoId)))
-  catalog.reload()
+  // 登记刷新：让侧栏目录/绑定立即可见（不依赖轮询）。刷新只是即时性对冲——
+  // 失败不得掩盖 prepare 真实结果（否则树已建成却只见刷新报错）；原生登记
+  // 推送与目录下次装载自然补齐。
+  try {
+    const state = useAppStore.getState()
+    await Promise.all(catalog.repoIds.map((repoId) => state.fetchWorktrees(repoId)))
+    catalog.reload()
+  } catch {
+    // 静默：prepare 结果按下方如实回报。
+  }
   if (prepareFailed(result)) {
     // 步骤链非原子：已成功步骤保留，重试即重入补齐（不重复建树）。
     toast.error(
