@@ -16,6 +16,7 @@ import { useAppStore } from '@/store'
 import { useRepoMap } from '@/store/selectors'
 import { translate } from '@/i18n/i18n'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { GLOBAL_TASKS_ENTRY_TITLE } from '@/workbench/version-labels'
 import { isGitRepoKind } from '../../../../shared/repo-kind'
 import { getTaskPresetQuery } from '../../../../shared/task-preset-query'
 import {
@@ -171,7 +172,8 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
       <button
         type="button"
         // BW 挂载面（#436 CF-1 配套）：与版本内「任务」行 tooltip 区分两个入口；原生壳语义不变。
-        {...(isWorkbenchShell() ? { title: '全部任务（含未入计划）' } : {})}
+        // 文案常量住 BW 豁免模块（version-labels），不在本地化审计面内联中文字面量。
+        {...(isWorkbenchShell() ? { title: GLOBAL_TASKS_ENTRY_TITLE } : {})}
         onClick={() => {
           if (workbenchProjectRepoId) {
             openTaskPage({ preselectedRepoId: workbenchProjectRepoId })

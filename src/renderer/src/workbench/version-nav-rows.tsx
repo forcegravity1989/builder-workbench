@@ -26,7 +26,7 @@ import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
-import { WORKFLOW_SCREEN_LABELS } from './version-labels'
+import { VERSION_TASKS_ENTRY_TITLE, WORKFLOW_SCREEN_LABELS } from './version-labels'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 
 /**
@@ -338,7 +338,7 @@ export function TasksRow({
         type="button"
         onClick={onOpenTasks}
         disabled={busy}
-        title="本版任务（计划材料引用）"
+        title={VERSION_TASKS_ENTRY_TITLE}
         aria-current={active ? 'page' : undefined}
         className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-0.5 text-left"
       >
