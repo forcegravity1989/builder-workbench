@@ -12,6 +12,7 @@ import {
 import { RUNTIME_NAVIGATION_TARGETS } from '../runtime-navigation'
 import { WorkspaceLinkedItemSchema } from '../workspace-linked-item-schema'
 import { TaskSourceContextSchema } from '../task-source-context-schema'
+import { WorkbenchVersionBindingSchema } from '../workbench/version-binding'
 import { isWorkspaceLinkedItemSourceContextMatch } from '../workspace-linked-item-source-context'
 
 export const OptionalExecutionHostId = z
@@ -130,6 +131,11 @@ export const WorktreeSet = WorktreeSelector.extend({
   linkedGiteaPR: TriStateLinkedIssue,
   linkedWorkItem: WorkspaceLinkedItemSchema.nullable().optional(),
   linkedTaskSourceContext: TaskSourceContextSchema.nullable().optional(),
+  // Why nullable+gated: BW G2 version binding rides the native metadata contract.
+  // The schema's own refine enforces workflow↔goalId/taskSource coherence; hosts
+  // without workbench.version-binding.v1 strip this key (zod strip mode), so BW
+  // clients must capability-gate before sending — see worktree-meta-persist.
+  workbenchVersionBinding: WorkbenchVersionBindingSchema.nullable().optional(),
   isArchived: OptionalBoolean,
   isUnread: OptionalBoolean,
   isPinned: OptionalBoolean,

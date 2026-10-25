@@ -1,12 +1,13 @@
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import type { AppState } from '@/store/types'
 import { parseCodeHubRemote } from '../../../shared/codehub'
-import type { CodeHubTaskDetail, CodeHubTaskItem } from '../../../shared/codehub-tasks'
+import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
 import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import type { Repo } from '../../../shared/repo-types'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
+import { codehubWebUrl, codeHubTaskItemFromDetail } from './codehub-task-item'
 import type {
   CycleScope,
   CycleTaskRead,
@@ -89,7 +90,7 @@ function repoMatchesReference(repo: Repo, reference: CycleTaskReference): boolea
 /** Resolve the registered repo a material reference points at; scope's own repo/host wins on ties. */
 export function resolveReferenceRepo(
   deps: Pick<TaskPortDeps, 'repos'>,
-  scope: CycleScope,
+  scope: Pick<CycleScope, 'repoId' | 'hostId'>,
   reference: CycleTaskReference
 ): Repo | null {
   const wanted = normalizeGitRemoteUrl(reference.repository) ?? reference.repository
@@ -115,7 +116,7 @@ function requireSourceContext(repo: Repo, provider: 'github' | 'codehub'): TaskS
 }
 
 /** CodeHub references carry no issue/MR kind; read as issue first, then MR. */
-async function viewCodeHubTaskByIid(
+export async function viewCodeHubTaskByIid(
   deps: Pick<TaskPortDeps, 'viewCodeHubTask'>,
   repo: Repo,
   iid: number
@@ -132,22 +133,6 @@ async function viewCodeHubTaskByIid(
       )
     }
   }
-}
-
-/** Same web-URL shape main/codehub/work-items.ts itemUrl falls back to; only used when the CLI omits the link. */
-export function codehubWebUrl(repo: Repo, kind: 'issue' | 'mr', iid: number): string | null {
-  const remote =
-    parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ??
-    parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey)
-  if (!remote) {
-    return null
-  }
-  const project = remote.project
-    .split('/')
-    .filter(Boolean)
-    .map((part) => encodeURIComponent(part))
-    .join('/')
-  return `https://${remote.host}/${project}/-/${kind === 'mr' ? 'merge_requests' : 'issues'}/${iid}`
 }
 
 async function readReference(
@@ -204,12 +189,6 @@ async function readReference(
   throw new Error(`provider ${reference.provider} 尚未接入 Workbench 任务读取`)
 }
 
-/** 墙卡承诺进展复用同一状态归一（closed/merged 均为关闭态），不另造映射。 */
-export function codehubStateOf(state: string): CodeHubTaskItem['state'] {
-  const raw = state.toLowerCase()
-  return raw === 'merged' ? 'merged' : raw === 'closed' ? 'closed' : 'opened'
-}
-
 async function openDetail(
   deps: TaskPortDeps,
   task: CycleTaskSnapshot,
@@ -249,27 +228,7 @@ async function openDetail(
   }
   if (task.reference.provider === 'codehub') {
     const { kind, detail } = await viewCodeHubTaskByIid(deps, repo, task.iid)
-    const remote =
-      parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ??
-      parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey)
-    const item: CodeHubTaskItem = {
-      type: kind,
-      iid: detail.iid,
-      title: detail.title,
-      state: codehubStateOf(detail.state),
-      url: detail.url ?? task.url,
-      author: detail.author,
-      assignees: detail.assignees,
-      reviewers: detail.reviewers,
-      labels: detail.labels,
-      sourceBranch: detail.sourceBranch,
-      targetBranch: detail.targetBranch,
-      // Why: viewTask carries no updated timestamp; leave empty rather than pass readAt off as one.
-      updatedAt: '',
-      repoId: repo.id,
-      repoPath: repo.path,
-      ...(remote ? { host: remote.host, project: remote.project } : {})
-    }
+    const item = codeHubTaskItemFromDetail({ detail, kind, repo, fallbackUrl: task.url })
     deps.openTaskPage(
       {
         taskSource: 'codehub',

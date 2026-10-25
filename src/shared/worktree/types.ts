@@ -5,6 +5,7 @@ import type { TuiAgent } from '../tui-agent'
 import type { DiffComment, MobileDiffReviewState } from '../diff-comment-types'
 import type { EphemeralVmCheckoutMode } from '../orca-yaml-hook-types'
 import type { BuiltInWorktreeVisibilitySourceId } from '../repo-types'
+import type { WorkbenchVersionBinding } from '../workbench/version-binding'
 import type { WorktreeIdentity } from './identity'
 
 export type WorkspaceLinkedItem = {
@@ -103,6 +104,9 @@ export type Worktree = {
   linkedWorkItem?: WorkspaceLinkedItem | null
   linkedTaskSourceContext?: TaskSourceContext | null
   workbenchSelectedVersion?: string
+  /** BW G2 version-workspace binding projected from persisted metadata; absent
+   *  when unbound or cleared. Optional so older persisted worktrees typecheck. */
+  workbenchVersionBinding?: WorkbenchVersionBinding | null
   isArchived: boolean
   isUnread: boolean
   isPinned: boolean

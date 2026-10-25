@@ -88,6 +88,7 @@ export function useComposerSubmitOrchestration(
     tuiAgent: target.workspaceIdentityState.tuiAgent
   })
   const fullCreationExecution = useFullCreationExecution({
+    workbenchCreation: target.composerTargetStore.workbenchCreation,
     applyWorktreeMeta: source.composerNavigationActions.applyWorktreeMeta,
     clearNewWorkspaceDraft: target.composerTargetStore.clearNewWorkspaceDraft,
     createWorktree: target.composerTargetStore.createWorktree,
@@ -189,6 +190,7 @@ export function useComposerSubmitOrchestration(
     smartNameMode: target.workspaceIdentityState.smartNameMode
   })
   const quickCreationExecution = useQuickCreationExecution({
+    workbenchCreation: target.composerTargetStore.workbenchCreation,
     clearNewWorkspaceDraft: target.composerTargetStore.clearNewWorkspaceDraft,
     createMultiple: target.asyncComposerState.createMultiple,
     effectivePresetId: target.derivedComposerState.effectivePresetId,

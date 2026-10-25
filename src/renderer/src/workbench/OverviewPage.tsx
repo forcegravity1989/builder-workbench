@@ -24,9 +24,9 @@ import { useMetricsSetup } from './version-cycle/metrics-setup'
 import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
 import { OverviewVersionMinutes } from './overview-version-minutes'
 import { useOverviewViewState } from './overview-view-state'
+import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import { RefreshCw } from 'lucide-react'
 import './workbench-overview.css'
-const versionCollator = new Intl.Collator(undefined, { numeric: true })
 
 export function OverviewPage(): React.JSX.Element {
   const repos = useAppStore((s) => s.repos)
@@ -187,7 +187,7 @@ export function OverviewPage(): React.JSX.Element {
     if (currentVersion) {
       found.add(currentVersion)
     }
-    return [...found].sort((a, b) => versionCollator.compare(b, a))
+    return [...found].sort((a, b) => compareMaterialVersions(b, a))
   }, [history, currentVersion])
   const version =
     view.version && versions.includes(view.version)

@@ -467,6 +467,11 @@
                     "pr": {
                       "suppression": "Update the remote runtime to unlink GitHub pull requests"
                     }
+                  },
+                  "workbench": {
+                    "version": {
+                      "binding": "Update the remote runtime to change this workspace’s version binding"
+                    }
                   }
                 }
               }

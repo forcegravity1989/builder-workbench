@@ -163,19 +163,26 @@ export function useTaskPageGitHubDetail(model: TaskPageGitHubListStateModel) {
   }, [pageData.openGitLabWorkItem, setGitlabDialogItem])
   const openGitHubDetailPage = useCallback(
     (item: GitHubWorkItem, initialTab: ItemDialogTab = 'conversation') => {
+      // Why: a BW workbench scope must survive the detail round-trip (close
+      // restores the scoped list), and the unscoped position key must not record
+      // a scoped page number.
+      const workbenchTaskScope = useAppStore.getState().taskPageData.workbenchTaskScope ?? null
       const scrollTop = getTaskPageScrollTop(githubListScrollRef, githubListScrollTopRef.current)
       githubListScrollTopRef.current = scrollTop
       pendingGithubScrollRestoreRef.current = scrollTop
-      taskListPositionRef.current = {
-        contextKey: githubResumeContextKey,
-        page: currentPageRef.current,
-        scrollTop
+      if (!workbenchTaskScope) {
+        taskListPositionRef.current = {
+          contextKey: githubResumeContextKey,
+          page: currentPageRef.current,
+          scrollTop
+        }
+        useAppStore.getState().setTaskListPosition(taskListPositionRef.current)
       }
-      useAppStore.getState().setTaskListPosition(taskListPositionRef.current)
       openTaskPage(
         {
           taskSource: 'github',
           preselectedRepoId: item.repoId,
+          ...(workbenchTaskScope ? { workbenchTaskScope } : {}),
           openGitHubWorkItem: item,
           openGitHubSourceContext: getTaskPageRepoSourceContext(repoMap.get(item.repoId), 'github'),
           openGitHubInitialTab: initialTab

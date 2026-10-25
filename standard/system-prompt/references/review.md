@@ -14,7 +14,7 @@
 ## 产物唯一落点:MR/PR 评论
 
 - 评审意见发到被评的那个 MR/PR 的评论上(`gh pr comment` /
-  `codehub-cli mr note`),发完把评论地址打屏。
+  `codehub-cli mr review create`/`mr review reply`),发完把评论地址打屏。
 - **只追加**:多轮评审多发一条,不编辑、不删旧评论。
 - 评论发不出去就如实说「意见没落上」,把意见原文打屏,不假装已评审。
 

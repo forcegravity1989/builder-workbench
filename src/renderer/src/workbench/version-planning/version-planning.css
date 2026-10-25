@@ -160,6 +160,13 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
   color: var(--color-text);
   background: var(--accent);
 }
+/* G2（#383）：绑定计划树的只读回显——版本由绑定决定，屏内不切换。 */
+.g3-version-bound {
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 2px;
+}
 .vp-title-row {
   display: flex;
   align-items: baseline;

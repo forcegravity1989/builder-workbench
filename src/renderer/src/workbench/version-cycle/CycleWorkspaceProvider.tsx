@@ -2,6 +2,9 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { useShallow } from 'zustand/react/shallow'
 import { useAppStore } from '@/store'
+import { isVersionFlowWorkflow } from '../../../../shared/workbench/version-workspace-prepare'
+import { branchName } from '@/lib/git-utils'
+import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
 import { startCycleAutomation } from './start-cycle-automation'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
 import { prepareMetricsSession, useMetricsSetupAgent } from './metrics-setup'
@@ -17,19 +20,24 @@ import { nativeTaskPort } from '../native-task-port'
 import { nativeArchivePrPort } from '../archive-pr-port'
 import './version-cycle.css'
 
-/** BW supplies workflow assets to the existing Orca workspace, never a second session host. */
 export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const workflow = useCycleWorkspaceWorkflow()
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const { worktree, scope, error, syncing, materialRefresh, updateCode } = useCycleWorkspaceTarget(
-    workflow,
-    setNotice
-  )
+  const { worktree, scope, error, syncing, materialRefresh, updateCode, readonlyBrowse } =
+    useCycleWorkspaceTarget(workflow, setNotice)
   const fixedId = worktree?.id ?? null
   const agent = useMetricsSetupAgent(fixedId)
   const session = useAppStore(useShallow((state) => getActiveCycleSession(state, scope, fixedId)))
   const owner = scope?.runtimeOwnerEnvironmentId
+  // G2：绑定流程树=版本化工作区。周期自动化身份已随 P5 版本化，计划、验收
+  // 两侧均放开（验收 Skill 正本 v0.7.1 已绑定感知同步，归档分支文案不再矛盾）。
+  const flowBinding = useMemo(() => {
+    const binding = worktree
+      ? normalizeStoredWorkbenchVersionBinding(worktree.workbenchVersionBinding)
+      : null
+    return binding && isVersionFlowWorkflow(binding.workflow) ? binding : null
+  }, [worktree])
   const materialPort = useMemo(
     () =>
       scope && fixedId
@@ -53,7 +61,8 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     fixedId,
     workflow: workflow ?? 'plan',
     agent,
-    onNotice: setNotice
+    onNotice: setNotice,
+    version: flowBinding?.version ?? null
   })
   const configure = useCycleAutomationDraft({
     cycleScope: scope,
@@ -101,6 +110,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
             workflow,
             busy,
             notice,
+            readonlyBrowse,
             start,
             configure,
             prepareMetrics,
@@ -109,6 +119,8 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
               worktreeId: fixedId,
               session,
               version: version.version,
+              boundVersion: flowBinding?.version ?? null,
+              branch: worktree?.branch ? branchName(worktree.branch) || null : null,
               selectVersion: version.selectVersion,
               materialPort,
               taskPort,
@@ -124,13 +136,16 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       workflow,
       busy,
       notice,
+      readonlyBrowse,
       start,
       configure,
       prepareMetrics,
       scope,
       fixedId,
+      worktree?.branch,
       session,
       version.version,
+      flowBinding,
       version.selectVersion,
       version.error,
       materialPort,

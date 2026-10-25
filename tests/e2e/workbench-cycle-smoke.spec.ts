@@ -5,11 +5,13 @@ import type { Page } from '@playwright/test'
 import { projectSettingsTest, verifyProjectSettings } from './helpers/workbench-project-settings'
 
 /**
- * BW main-chain smoke: the workbench shell must formally select the fixed
- * plan/acceptance worktrees, select a real file fixture and autosave edits through
- * host RPC, persist the workflow version preference, and read everything back
- * independently from disk after a renderer reload. Metrics stay honestly
- * Unknown without configuration — no demo values may appear.
+ * BW main-chain smoke (G2 journey): the version workspace entry must prepare the
+ * bound plan/acceptance flow trees through workbench.versionWorkspace.prepare,
+ * mount the plan board beside the native terminal, keep material edits on the
+ * bound tree's own disk path (binding-fenced authorization), survive a renderer
+ * reload from the sidebar version row (binding = version authority, no second
+ * preference store), and reach the acceptance board + real-data overview.
+ * Metrics stay honestly Unknown without configuration — no demo values.
  *
  * Requires a workbench build: VITE_WORKBENCH_SHELL=1 baked at `electron-vite
  * build` time (the E2E globalSetup build picks it up from the environment).
@@ -64,7 +66,7 @@ async function waitForFixedWorktree(page: Page, branch: string): Promise<string>
   }, branch)
 }
 
-test('BW cycle main chain: fixed trees, version material save and independent read-back', async ({
+test('BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back', async ({
   workbenchPage,
   testRepoPath
 }, testInfo) => {
@@ -75,19 +77,23 @@ test('BW cycle main chain: fixed trees, version material save and independent re
   // already seeded the project repo and its worktrees.
   await expect(workbenchPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
 
-  // ---- 计划屏：固定树正式选择 + 选择真实文件材料 + 自动保存 + 磁盘独立读回 ----
-  await workbenchPage.getByRole('button', { name: '计划', exact: true }).click()
+  // ---- 新建版本：轻表单 → prepare 两棵绑定流程树 → 进入计划屏 ----
+  await workbenchPage.getByRole('button', { name: '新建版本', exact: true }).click()
+  await workbenchPage.getByLabel('版本名').fill('v9.9')
+  await workbenchPage.getByRole('button', { name: '创建并进入计划', exact: true }).click()
   await expect(workbenchPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
-    timeout: 60_000
+    timeout: 180_000
   })
-  const planTreePath = await waitForFixedWorktree(workbenchPage, 'bw/week-plan')
+  const planTreePath = await waitForFixedWorktree(workbenchPage, 'bw/v9.9/plan')
   await expect
     .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
     .toBe('terminal')
-  await expect(
-    workbenchPage.getByRole('button', { name: '与计划助手新建计划', exact: true }).first()
-  ).toBeVisible()
-  await expect(workbenchPage.locator('.vc-chat')).toHaveCount(0)
+  // prepare 已 create-only 初始化空计划（goals=[]）：G3 空板卡「与计划助手新建
+  // 计划」仅在无材料时渲染，故锚定材料加载完成后的稳定态「添加目标」；prepare
+  // 不启动任何会话/agent（activate:false，无 agent 启动路径）。
+  await expect(workbenchPage.getByRole('button', { name: '添加目标' })).toBeVisible({
+    timeout: 60_000
+  })
   await expect
     .poll(
       () =>
@@ -97,13 +103,15 @@ test('BW cycle main chain: fixed trees, version material save and independent re
         }),
       {
         timeout: 60_000,
-        message: 'plan fixed tree was never formally selected'
+        message: 'bound plan tree was never formally selected'
       }
     )
     .not.toBeNull()
+  // prepare 的空计划是 create-only 初始化；绑定树无屏内选版，页头只读回显绑定版本。
+  await expect(workbenchPage.locator('.g3-version-bound')).toHaveText('v9.9', { timeout: 60_000 })
 
   // The conversation/CLI creates materials in product use. Seed only this test
-  // version on the real fixed tree; listing, selection and editing remain UI work.
+  // version on the bound tree's real path; listing and editing remain UI work.
   const materialDirectory = path.join(planTreePath, '.bw', 'planning', 'v9.9')
   mkdirSync(materialDirectory, { recursive: true })
   writeFileSync(
@@ -125,18 +133,19 @@ test('BW cycle main chain: fixed trees, version material save and independent re
     }),
     'utf8'
   )
-  const versionSelect = workbenchPage.getByLabel('计划版本')
-  await expect(versionSelect.locator('option[value="v9.9"]')).toBeAttached({ timeout: 30_000 })
-  await versionSelect.selectOption('v9.9')
-
-  const goal = workbenchPage.locator('[data-goal-id="smoke-goal"]')
-  await expect(goal).toBeVisible({ timeout: 60_000 })
-  await workbenchPage.getByRole('button', { name: '全部展开', exact: true }).click()
-  await goal.getByRole('button', { name: '编辑目标', exact: true }).click()
-  await goal.getByRole('textbox', { name: 'G1 目标', exact: true }).fill('烟测目标：主链接通')
+  // The board polls the host; the seeded goal card proves the re-read happened
+  // before we edit (autosave must carry the fresh revision). G3 目标卡：标题在
+  // 卡头 strong 回显，行内编辑经「编辑目标」进入、无保存按钮（自动保存）。
+  await expect(workbenchPage.locator('.g3-goal-toggle strong')).toHaveText('验证计划材料保存', {
+    timeout: 60_000
+  })
+  await workbenchPage.getByRole('button', { name: '展开 G1' }).click()
+  await workbenchPage.getByRole('button', { name: '编辑目标', exact: true }).click()
+  await workbenchPage.getByLabel('G1 目标').fill('验证计划材料保存·烟测')
+  await workbenchPage.getByRole('button', { name: '结束编辑目标', exact: true }).click()
   await expect(workbenchPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
 
-  // Iron-law read-back: the material exists on the fixed worktree's own disk path.
+  // Iron-law read-back: the material exists on the bound worktree's own disk path.
   await expect
     .poll(
       () => {
@@ -148,41 +157,34 @@ test('BW cycle main chain: fixed trees, version material save and independent re
           version: string
           goals: { title: string }[]
         }
-        return `${parsed.version}:${parsed.goals[0].title}`
+        return `${parsed.version}:${parsed.goals[0]?.title ?? ''}`
       },
       { timeout: 30_000, message: 'plan material never landed on disk' }
     )
-    .toBe('v9.9:烟测目标：主链接通')
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-plan-saved.jpg') })
+    .toBe('v9.9:验证计划材料保存·烟测')
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-plan-saved.png') })
 
-  // ---- 重载读回：流程选版偏好与材料都从宿主恢复 ----
+  // ---- 重载读回：绑定即版本正本，侧栏版本行重新进屏，材料从宿主恢复 ----
   await workbenchPage.reload()
   await expect(workbenchPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
   await workbenchPage.getByRole('button', { name: '计划', exact: true }).click()
   await expect(workbenchPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
     timeout: 60_000
   })
-  await expect
-    .poll(
-      () =>
-        workbenchPage
-          .getByLabel('计划版本')
-          .inputValue()
-          .catch(() => ''),
-      { timeout: 120_000, message: 'version preference did not survive reload' }
-    )
-    .toBe('v9.9')
-  await expect(workbenchPage.locator('[data-goal-id="smoke-goal"]')).toContainText(
-    '烟测目标：主链接通',
+  await expect(workbenchPage.locator('.g3-version-bound')).toHaveText('v9.9', {
+    timeout: 120_000
+  })
+  await expect(workbenchPage.locator('.g3-goal-toggle strong')).toHaveText(
+    '验证计划材料保存·烟测',
     { timeout: 60_000 }
   )
 
-  // ---- 验收屏：独立固定树挂载 ----
+  // ---- 验收屏：同一 prepare 交付的绑定验收树挂载 ----
   await workbenchPage.getByRole('button', { name: '验收', exact: true }).click()
   await expect(workbenchPage.getByRole('heading', { name: '版本验收' })).toBeVisible({
     timeout: 60_000
   })
-  await waitForFixedWorktree(workbenchPage, 'bw/week-acceptance')
+  await waitForFixedWorktree(workbenchPage, 'bw/v9.9/acceptance')
   await expect
     .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
     .toBe('terminal')
@@ -198,12 +200,35 @@ test('BW cycle main chain: fixed trees, version material save and independent re
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.jpg') })
 
   // ---- 总览：真实数据，未配置保持 Unknown，无演示值 ----
-  await workbenchPage.getByRole('button', { name: '总览', exact: true }).click()
+  await workbenchPage.getByRole('button', { name: '项目总览', exact: true }).click()
   await expect(workbenchPage.getByRole('heading', { name: '总览', exact: true })).toBeVisible({
     timeout: 60_000
   })
   await expect(workbenchPage.getByText('未配置北极星指标')).toBeVisible({
     timeout: 60_000
   })
-  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-overview-real.jpg') })
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-overview-real.png') })
+
+  // ---- 版本级清理确认单：本机实例默认勾选；删除执行沿 Orca 原生确认单，
+  // 破坏性步骤不进 CI（J9 归人验证），此处只核对清单结构与取消路径。----
+  await workbenchPage.getByRole('button', { name: '清理 v9.9 工作树' }).click()
+  const cleanup = workbenchPage.getByRole('dialog').filter({ hasText: '清理 v9.9 工作树' })
+  await expect(cleanup.getByRole('checkbox')).toHaveCount(2, { timeout: 60_000 })
+  await expect(cleanup.getByRole('checkbox').first()).toBeChecked()
+  await expect(cleanup.getByRole('button', { name: /删除所勾选（2）/ })).toBeEnabled()
+  await cleanup.getByRole('button', { name: '取消' }).click()
+  await expect(cleanup).toHaveCount(0)
+
+  // ---- 版本总览（P6）：每版「总览」行挂载表格页；未提交材料如实缺失，不装绿 ----
+  const v99Group = workbenchPage.locator('.wb-version-group', {
+    has: workbenchPage.getByRole('button', { name: 'v9.9 展开或收起' })
+  })
+  await v99Group.getByRole('button', { name: '总览', exact: true }).click()
+  await expect(workbenchPage.getByRole('heading', { name: 'v9.9 版本总览' })).toBeVisible({
+    timeout: 60_000
+  })
+  await expect(workbenchPage.getByText('主干没有 v9.9 的已提交计划材料。')).toBeVisible({
+    timeout: 60_000
+  })
+  await workbenchPage.screenshot({ path: testInfo.outputPath('bw-version-overview.png') })
 })

@@ -177,13 +177,28 @@ export function useTaskPageGitHubSearchPagination(model: TaskPageGitHubListProje
   )
   const commitTaskSearch = useCallback(
     (value: string): void => {
+      // Why: a BW workbench scope filters client-side over the materialized
+      // reference set — no server qualifier prefix and no fetch skeletons.
+      if (model.workbenchScopeActive) {
+        const trimmed = value.trim()
+        if (trimmed !== appliedTaskSearch) {
+          setAppliedTaskSearch(trimmed)
+        }
+        return
+      }
       const scoped = scopeGitHubTaskSearch(value, activeGithubTaskKind)
       if (scoped !== appliedTaskSearch) {
         setTasksFiltering(true)
       }
       setAppliedTaskSearch(scoped)
     },
-    [activeGithubTaskKind, appliedTaskSearch, setTasksFiltering, setAppliedTaskSearch]
+    [
+      activeGithubTaskKind,
+      appliedTaskSearch,
+      model.workbenchScopeActive,
+      setTasksFiltering,
+      setAppliedTaskSearch
+    ]
   )
   useGitHubTaskSearchCommit({
     enabled: taskResumeApplied,
@@ -192,6 +207,11 @@ export function useTaskPageGitHubSearchPagination(model: TaskPageGitHubListProje
   })
   useEffect(() => {
     if (!taskResumeApplied) {
+      return
+    }
+    // Why: scoped (BW) searches are view-local; persisting them would leak into
+    // the unscoped resume query the next plain Tasks visit mounts with.
+    if (model.workbenchScopeActive) {
       return
     }
     if (!githubSearchPersistReadyRef.current) {
@@ -206,6 +226,7 @@ export function useTaskPageGitHubSearchPagination(model: TaskPageGitHubListProje
   }, [
     activeTaskPreset,
     appliedTaskSearch,
+    model.workbenchScopeActive,
     setTaskResumeState,
     taskResumeApplied,
     githubSearchPersistReadyRef

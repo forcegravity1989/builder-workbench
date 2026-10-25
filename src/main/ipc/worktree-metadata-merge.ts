@@ -2,6 +2,7 @@ import { basename } from 'node:path'
 import type { WorktreeMeta } from '../../shared/worktree/meta-types'
 import type { GitWorktreeInfo, Worktree } from '../../shared/worktree/types'
 import { DEFAULT_WORKSPACE_STATUS_ID } from '../../shared/workspace-statuses'
+import { normalizeStoredWorkbenchVersionBinding } from '../../shared/workbench/version-binding'
 import { getLinkedWorkItemMetadata } from './worktree-linked-work-item-metadata'
 import { normalizeWorkspaceCreatorProvenance } from '../../shared/workspace-creator-provenance'
 import { createWorktreeIdentity } from '../../shared/worktree/identity'
@@ -17,6 +18,13 @@ export function mergeWorktree(
 ): Worktree {
   const branchShort = git.branch.replace(/^refs\/heads\//, '')
   const creatorProvenance = normalizeWorkspaceCreatorProvenance(meta?.creatorProvenance)
+  // Why normalize on projection: persisted rows may predate the contract or be
+  // externally edited; garbage must read back as Unknown (absent), never as a
+  // half-adopted binding. Write-side merge keeps undefined (old value) and null
+  // (cleared) distinct; both project to absence here.
+  const workbenchVersionBinding = normalizeStoredWorkbenchVersionBinding(
+    meta?.workbenchVersionBinding
+  )
   const worktreeId = `${repoId}::${git.path}`
   const automaticDisplayName = branchShort || defaultDisplayName || basename(git.path)
   // CLI-created labels predate displayNameIsPinned but are still explicit names.
@@ -106,6 +114,9 @@ export function mergeWorktree(
     // so the renderer store mirrors on-disk state.
     diffComments: meta?.diffComments,
     mobileDiffReview: meta?.mobileDiffReview,
-    ...(meta?.workbenchSelectedVersion ? { workbenchSelectedVersion: meta.workbenchSelectedVersion } : {})
+    ...(meta?.workbenchSelectedVersion
+      ? { workbenchSelectedVersion: meta.workbenchSelectedVersion }
+      : {}),
+    ...(workbenchVersionBinding ? { workbenchVersionBinding } : {})
   }
 }

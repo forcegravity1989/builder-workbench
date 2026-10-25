@@ -6,6 +6,7 @@ type ComposerSourceContextStateInput = Pick<
   | 'decisions'
   | 'initialLinkedWorkItem'
   | 'initialName'
+  | 'initialNote'
   | 'initialPrompt'
   | 'initialTaskSourceContext'
   | 'isProjectGroupTarget'
@@ -43,6 +44,7 @@ export function useComposerSourceContextState(input: ComposerSourceContextStateI
     decisions,
     initialLinkedWorkItem,
     initialName,
+    initialNote,
     initialPrompt,
     initialTaskSourceContext,
     isProjectGroupTarget,
@@ -79,7 +81,9 @@ export function useComposerSourceContextState(input: ComposerSourceContextStateI
     persistDraft ? (newWorkspaceDraft?.prompt ?? initialPrompt) : initialPrompt
   )
 
-  const [note, setNote] = useState<string>(persistDraft ? (newWorkspaceDraft?.note ?? '') : '')
+  const [note, setNote] = useState<string>(
+    persistDraft ? (newWorkspaceDraft?.note ?? initialNote) : initialNote
+  )
 
   const [attachmentPaths, setAttachmentPaths] = useState<string[]>(
     persistDraft ? (newWorkspaceDraft?.attachments ?? []) : []

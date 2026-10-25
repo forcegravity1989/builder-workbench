@@ -12,6 +12,7 @@ import type { LaunchSource } from '../../../../../shared/telemetry-events'
 import type { TaskSourceContext } from '../../../../../shared/task-source-context'
 import type { ExecutionHostId } from '../../../../../shared/execution-host'
 import type { TaskResumeState, TopLevelView } from '../../../../../shared/ui-chrome-types'
+import type { WorkbenchTaskScope } from '../../../../../shared/workbench/task-scope'
 
 export type PendingSidebarWorktreeReveal = {
   worktreeId: string
@@ -68,6 +69,9 @@ export type TaskPageData = {
   openLinearSourceContext?: TaskSourceContext | null
   openJiraIssue?: JiraIssue
   openJiraSourceContext?: TaskSourceContext | null
+  /** G2 (BW overlay) optional scope: version/goal task-reference set driving the
+   *  same native list; absent keeps the native Tasks page behavior unchanged. */
+  workbenchTaskScope?: WorkbenchTaskScope | null
 }
 
 export type NewWorkspaceDraft = {

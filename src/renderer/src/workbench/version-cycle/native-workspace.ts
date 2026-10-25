@@ -11,6 +11,7 @@ import {
 import type { RuntimeRepoSearchRefs } from '../../../../shared/runtime-types'
 import { REPO_SEARCH_REFS_MAX_LIMIT } from '../../../../shared/repo-search-limits'
 import type { CreateWorktreeResult } from '../../../../shared/worktree/create-types'
+import { matchReusableBranchRef } from '../../../../shared/workbench/reusable-branch-ref'
 import type {
   DetectedWorktree,
   DetectedWorktreeListResult,
@@ -137,23 +138,15 @@ async function findNamedBaseRef(
     { repo: `id:${scope.repoId}`, query: branch, limit: REPO_SEARCH_REFS_MAX_LIMIT },
     { timeoutMs: 15_000 }
   )
-  if (result.truncated || (result.refs.length > 0 && !result.refDetails)) {
+  // 与 main 侧版本准备同一匹配实现（G2 F8 提共享）：核对来源再采用。
+  const match = matchReusableBranchRef(result, branch)
+  if (match.kind === 'unverifiable') {
     throw new Error(`无法完整确认分支 ${branch} 的来源，请在项目中核对分支后重试`)
   }
-  const details = result.refDetails ?? []
-  const local = details.find(
-    (ref) =>
-      ref.localBranchName === ref.refName &&
-      [branch, `heads/${branch}`, `refs/heads/${branch}`].includes(ref.refName)
-  )
-  if (local) {
-    return local.refName
-  }
-  const matching = details.filter((ref) => ref.localBranchName === branch)
-  if (matching.length > 1) {
+  if (match.kind === 'ambiguous') {
     throw new Error(`多个远端存在分支 ${branch}，请先在项目中检出要使用的分支后重试`)
   }
-  return matching[0]?.refName
+  return match.kind === 'ref' ? match.refName : undefined
 }
 
 /** Register an externally-created tree through the native inbox import surface. */

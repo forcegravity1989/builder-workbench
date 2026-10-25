@@ -5,7 +5,8 @@ import { useAppStore } from '@/store'
 import { parseCodeHubRemote } from '../../../../shared/codehub'
 import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
 import type { WorkflowArchivePr } from '../../../../shared/workbench/version-workflow'
-import { codehubStateOf, codehubWebUrl, resolveReferenceRepo } from '../task-port'
+import { codehubStateOf, codehubWebUrl } from '../codehub-task-item'
+import { resolveReferenceRepo } from '../task-port'
 import type { CycleScope } from './ports'
 
 /**

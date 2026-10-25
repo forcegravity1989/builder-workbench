@@ -6,6 +6,7 @@ import type {
 import { annotationAttributes, type AnnotationMatch } from '../annotations/types'
 import { AnnotationMarkers } from '../annotations/annotation-markers'
 import { BoardIconButton } from '../board-ui'
+import { openIssueWorkspaceOrStart } from '../issue-start-action'
 import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
 
 /**
@@ -37,12 +38,13 @@ function readableTaskState(state: string): string {
   }
 }
 
-/** Flat Issue rows under one goal: title → native detail, kind badge, state, annotation markers, and the start arrow (interim: opens the native detail). */
+/** Flat Issue rows under one goal: title → native detail, kind badge, state, annotation markers, and the start arrow (G2 permanent hookup: unified Start/Open resolver, falling back to native detail when unresolvable). */
 export function PlanningGoalTasks({
   goal,
   goalNumber,
   relatedTasks,
   reads,
+  version,
   onTask,
   numbersFor,
   onOpenAnnotationPanel
@@ -51,6 +53,8 @@ export function PlanningGoalTasks({
   goalNumber: string
   relatedTasks: VersionTaskReference[]
   reads: Map<string, CycleTaskRead> | null
+  /** 本版版本（计划材料正本）；null 时开工箭头回落原生详情，不猜版本。 */
+  version: string | null
   onTask(task: CycleTaskSnapshot): Promise<void>
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
@@ -120,8 +124,18 @@ export function PlanningGoalTasks({
             <span className="g3-task-state">{readableTaskState(task.state)}</span>
             {markers}
             <BoardIconButton
-              label={`打开 #${task.iid} 原生任务详情`}
-              onClick={() => void onTask(task)}
+              label={
+                version && (reference.provider === 'github' || reference.provider === 'codehub')
+                  ? `开工 #${task.iid}：打开本版绑定工作区，没有则进入原生创建器`
+                  : `打开 #${task.iid} 原生任务详情`
+              }
+              onClick={() => {
+                // G2 永久 hookup：同一统一 Start/Open 解析（唯一直开/多候选选择器/
+                // 无则原生创建器预填）；解析面之外回落原生详情，不另造继续逻辑。
+                if (!openIssueWorkspaceOrStart({ task, version })) {
+                  void onTask(task)
+                }
+              }}
             >
               <ArrowUpRight size={15} aria-hidden="true" />
             </BoardIconButton>

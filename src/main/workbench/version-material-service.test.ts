@@ -305,6 +305,55 @@ describe('native version material service', () => {
       }
     }
   )
+  it('bound flow tree fences version and purpose: only its bound version reads/writes (G2 P3a)', async () => {
+    const boundDir = join(directory, 'plan-v09')
+    git(repo, 'worktree', 'add', '-b', 'bw/v0.9/plan', boundDir)
+    const boundHost: VersionMaterialHost = {
+      listRepos: () => [{ id: 'repo', path: repo, kind: 'git' }],
+      listWorktrees: async () => [
+        {
+          id: 'bound',
+          repoId: 'repo',
+          path: boundDir,
+          hostId: 'local',
+          isArchived: false,
+          isMainWorktree: false,
+          workbenchVersionBinding: { schema: 1, version: 'v0.9', workflow: 'plan' }
+        }
+      ]
+    }
+    const service = createVersionMaterialService(boundHost)
+    const boundScope = {
+      repoId: 'repo',
+      worktreeId: 'bound',
+      hostId: 'local',
+      workflow: 'plan' as const
+    }
+    // 跨版读写一律拒绝：v0.9 的树不能当 v0.5 用（客户端改版本也拒）。
+    await expect(service.read({ ...boundScope, version: 'v0.5' })).rejects.toMatchObject({
+      code: 'cross-version'
+    })
+    await expect(
+      service.save({ ...boundScope, version: 'v0.5', expectedRevision: null, document: plan })
+    ).rejects.toMatchObject({ code: 'cross-version' })
+    // 用途不混：绑定计划树不接受验收范围。
+    await expect(service.list({ ...boundScope, workflow: 'acceptance' })).rejects.toMatchObject({
+      code: 'invalid-scope'
+    })
+    // 绑定版本正常读写；list 只呈现绑定版本（检出含其他版本目录也不外溢）。
+    const document = { ...plan, version: 'v0.9' }
+    const saved = await service.save({
+      ...boundScope,
+      version: 'v0.9',
+      expectedRevision: null,
+      document
+    })
+    expect(saved.document).toEqual(document)
+    await mkdir(join(boundDir, '.bw/planning/v0.5'), { recursive: true })
+    await writeFile(join(boundDir, '.bw/planning/v0.5/data.json'), JSON.stringify(plan))
+    expect((await service.list(boundScope)).map((candidate) => candidate.version)).toEqual(['v0.9'])
+    expect((await service.read({ ...boundScope, version: 'v0.9' }))?.document).toEqual(document)
+  })
   it('uses the native SSH channel and the same host transaction, preserving conflicts and offline state', async () => {
     const handlers = new Map<string, MethodHandler>()
     registerVersionMaterialRelay({
