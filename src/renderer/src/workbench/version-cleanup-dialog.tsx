@@ -257,7 +257,7 @@ export function VersionCleanupDialog({
             // 没数据就是 Unknown，不能呈现否定断言（四铁律信号口径，检视 F6 修正）。
             const dirty = row.tree
               ? dirtyCounts.get(row.tree.hostId ? getWorktreeHostIdentity(row.tree) : row.tree.id)
-              : null
+              : undefined
             return (
               <label
                 key={row.key}
