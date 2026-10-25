@@ -1,10 +1,10 @@
 import type { Worktree } from '../../../../shared/worktree/types'
 import type { CycleScope } from './ports'
+import { legacyFlowBranch } from '../../../../shared/workbench/version-workspace-prepare'
 import { ensureNamedWorktree, findNamedWorktree, nativeWorkspaceScope } from './native-workspace'
 export { nativeWorkspaceRuntimeTarget as cycleRuntimeTarget } from './native-workspace'
 
-export const cycleBranch = (scope: Pick<CycleScope, 'workflow'>) =>
-  scope.workflow === 'plan' ? 'bw/week-plan' : 'bw/week-acceptance'
+export const cycleBranch = (scope: Pick<CycleScope, 'workflow'>) => legacyFlowBranch(scope.workflow)
 export const cycleScopeKey = (scope: CycleScope) =>
   JSON.stringify([
     scope.projectId,

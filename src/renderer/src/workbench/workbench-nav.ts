@@ -6,7 +6,12 @@
  * 任务 → tasks（完整 TaskPage）
  */
 import { getCycleView } from './cycle-view-state'
+import { branchName } from '@/lib/git-utils'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
+import {
+  LEGACY_ACCEPTANCE_BRANCH,
+  LEGACY_PLAN_BRANCH
+} from '../../../shared/workbench/version-workspace-prepare'
 import type { Worktree } from '../../../shared/worktree/types'
 
 export type WorkbenchNavId =
@@ -35,8 +40,12 @@ export function cycleWorkflowForWorktree(
         ? 'acceptance'
         : null
   }
-  const branch = worktree?.branch?.replace(/^refs\/heads\//, '')
-  return branch === 'bw/week-plan' ? 'plan' : branch === 'bw/week-acceptance' ? 'acceptance' : null
+  const branch = worktree?.branch ? branchName(worktree.branch) : undefined
+  return branch === LEGACY_PLAN_BRANCH
+    ? 'plan'
+    : branch === LEGACY_ACCEPTANCE_BRANCH
+      ? 'acceptance'
+      : null
 }
 
 export function resolveWorkbenchNav(
