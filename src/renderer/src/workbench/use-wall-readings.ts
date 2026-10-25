@@ -18,6 +18,7 @@ import {
 } from './wall-card-readings'
 import { readProjectPrs, readVersionAndProgress } from './wall-readings-load'
 import { resolvePlanContext } from './wall-plan-context'
+import { worktreeFingerprintTuple } from './worktree-fingerprint'
 import type { WallProject } from './workbench-wall-projects'
 
 /**
@@ -45,10 +46,12 @@ const UNDECIDED: VersionProgress = {
 }
 
 /**
- * 工作树登记指纹：行 id + 该行各树 (id, 实例, 归档态, 绑定) 元组；晚到/新增/
- * 删除/归档/绑定写入都会改变 → 触发版本链重读。R9 的正本判据是绑定与归档态
+ * 工作树登记指纹：行 id + 该行各树指纹元组（单树元组与 use-version-catalog
+ * 的目录指纹共用 worktreeFingerprintTuple 同一实现）；晚到/新增/删除/归档/
+ * 绑定写入都会改变 → 触发版本链重读。R9 的正本判据是绑定与归档态
  * （wall-plan-context），指纹缺这两维会让补绑定/归档后的墙卡版本读数陈旧到
- * 手动刷新为止；与 use-version-catalog 的目录指纹同构。
+ * 手动刷新为止。下面的裸 sort 排的是指纹串（非版本号，不走
+ * compareMaterialVersions），让键与登记排序无关。
  */
 function worktreeFingerprint(
   project: WallProject,
@@ -58,10 +61,7 @@ function worktreeFingerprint(
     .map(
       (row) =>
         `${row.id}:${(worktreesByRepo[row.id] ?? [])
-          .map(
-            (worktree) =>
-              `${worktree.id}|${worktree.instanceId ?? ''}|${worktree.isArchived ? 1 : 0}|${JSON.stringify(worktree.workbenchVersionBinding ?? null)}`
-          )
+          .map((worktree) => worktreeFingerprintTuple(worktree))
           .sort()
           .join(',')}`
     )
