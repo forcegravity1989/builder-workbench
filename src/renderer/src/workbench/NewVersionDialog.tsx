@@ -16,7 +16,7 @@ import {
   type VersionWorkspacePrepareResult
 } from '../../../shared/workbench/version-workspace-prepare'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
-import { worktreeActivationHostOpts } from './version-workspace-choice-state'
+import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 import { nativeVersionWorkspacePort } from './version-workspace-port'
 import { setBrowsedVersion } from './version-context-state'
 import { WORKFLOW_TREE_LABELS } from './version-labels'

@@ -27,7 +27,7 @@ import type { VersionWorkflow } from '../../../shared/workbench/version-document
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import { WORKFLOW_SCREEN_LABELS } from './version-labels'
-import { worktreeActivationHostOpts } from './version-workspace-choice-state'
+import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 
 /**
  * G2 侧栏版本树的行组件（P3a，高保真修订 8）：流程行=业务入口＋本树入口合一
