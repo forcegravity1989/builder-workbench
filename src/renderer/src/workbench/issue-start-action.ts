@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import { getLinkedWorkItemSuggestedName } from '../../../shared/workspace-name'
+import { getWorkspaceIntentName } from '../../../shared/workspace-name'
 import type { WorkbenchCreationContext } from '../../../shared/workbench/creation-context'
 import {
   findVersionTaskWorktrees,
@@ -17,6 +17,21 @@ import type { CycleTaskSnapshot } from './version-cycle/ports'
  * 版本未知或 provider 不在开工面（读回仅 github/codehub 就绪）时返回 false，
  * 调用方回落原生任务详情，不猜版本、不另造创建路径。
  */
+
+/**
+ * 预填名对齐原生直发链（#436 伴飞裁定 CF-6e）：getWorkspaceIntentName 的
+ * `Issue <号> <标题前词>` 形态（launch-work-item-direct 同款），中文标题剥尽
+ * 后仍含 Issue 号，不再产生「v0.7-g2」式残骸；预填与自动种子不同时按显式
+ * 输入存活到提交（getInitialAutoManagedWorkspaceName 语义），号不会被冲掉。
+ * 构造上 identity 恒在 → seedName 恒非空，`issue-<号>` 回落仅防御。
+ */
+function issuePrefilledName(provider: 'github' | 'codehub', number: number, title: string): string {
+  return (
+    getWorkspaceIntentName({ workItem: { type: 'issue', provider, number, title } })?.seedName ??
+    `issue-${number}`
+  )
+}
+
 export function openIssueWorkspaceOrStart(args: {
   task: CycleTaskSnapshot
   version: string | null
@@ -71,7 +86,7 @@ export function openIssueWorkspaceOrStart(args: {
       repoId
     },
     taskSourceContext: task.source,
-    prefilledName: getLinkedWorkItemSuggestedName({ title: task.title }),
+    prefilledName: issuePrefilledName(provider, task.iid, task.title),
     initialRepoId: repoId,
     enableIssueAutomation: true,
     telemetrySource: 'sidebar',
