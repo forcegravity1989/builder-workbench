@@ -216,6 +216,15 @@ export function PlanningGoals({
         <fieldset disabled={disabled} className="g3-goal-fieldset">
           {/* Material problems of other versions stay visible while a plan is open — the retired always-on start card used to carry them. */}
           <PlanningMaterialProblems problems={problems} />
+          {plan.goals.length === 0 ? (
+            // #436 伴飞裁定（CF-9）：prepare 已 create-only 初始化空计划（有材料、
+            // goals=[]）时也要有会话入口——照验收屏空板语义补「与计划助手新建计
+            // 划」，点击走同一条 entry.start 注入链（cycle-prompt 绑定分支）。
+            <div className="g3-empty-board">
+              <p>{plan.version} 计划已建立，还没有目标。</p>
+              <PlanningStartButton entry={entry} problems={problems} version={plan.version} />
+            </div>
+          ) : null}
           <div className="g3-goal-list">
             {plan.goals.map((goal, index) => (
               <PlanningGoalCard
