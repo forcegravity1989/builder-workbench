@@ -6,6 +6,7 @@ import { isVersionFlowWorkflow } from '../../../shared/workbench/version-workspa
 import { Button } from '@/components/ui/button'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
+import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import { useVersionCatalogForRepo } from './use-version-catalog'
 import { useBrowsedVersion } from './version-context-state'
 import { navigateVersionWorkflow, openVersionTasks, startVersionGoal } from './version-nav-actions'
@@ -78,7 +79,17 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
   }, [expandedKey])
 
   const loaded = catalog.catalog
-  const entries = useMemo(() => loaded?.entries ?? [], [loaded])
+  // 显示序（#436 人裁定）：在制优先（在做的版本置顶）、组内版本号降序（新在前）、
+  // 归档沉底；目录契约仍升序，仅显示层排序。
+  const entries = useMemo(() => {
+    const rows = loaded?.entries ?? []
+    return [...rows].sort((a, b) => {
+      if (a.state !== b.state) {
+        return a.state === 'working' ? -1 : 1
+      }
+      return compareMaterialVersions(b.version, a.version)
+    })
+  }, [loaded])
   const expandedVersions = useMemo(() => {
     if (expandedOverride) {
       return expandedOverride
