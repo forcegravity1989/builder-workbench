@@ -1,5 +1,6 @@
 import { useAppStore } from '@/store'
 import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
+import { getGitHubSourceRuntimeTarget } from '@/lib/github-source-runtime-context'
 import { codehubApi } from '@/lib/codehub-api'
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
 import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
@@ -12,13 +13,17 @@ import {
 } from '../../../shared/workbench/task-scope'
 import type { CycleTaskReference } from './version-cycle/ports'
 import { codeHubTaskItemFromDetail } from './codehub-task-item'
-import { resolveReferenceRepo, viewCodeHubTaskByIid } from './task-port'
+import { resolveReferenceRepo, viewCodeHubTaskByIid, type TaskPortDeps } from './task-port'
+import { parseTaskRepository } from './wall-card-readings'
 
 /**
  * G2 任务屏范围装载（P4）：以计划材料的完整任务引用集为范围，经原生 provider
- * 逐条读取（GitHub 单条查询 / CodeHub viewTask），产出可直接进原生列表的行与
- * 「无法读取/未展开」的缺数据行——缺数据保留位置、数量与原因，不静默丢弃。
- * 读取失败如实缺席，不装绿；本模块不建任何任务正本或第二缓存。
+ * 读取——GitHub 每仓一次 GraphQL 批量（#436 伴飞裁定 CF-6b，墙卡 gh:issueStates
+ * 同机制的全行字段版；批内 miss/整组失败回落既有单条读，环境宿主引用保持
+ * runtime 路由不跨机）；CodeHub 无批量命令面，维持逐条 viewTask（并行池）——
+ * 产出可直接进原生列表的行与「无法读取/未展开」的缺数据行。缺数据保留位置、
+ * 数量与原因，不静默丢弃。读取失败如实缺席，不装绿；本模块不建任何任务正本
+ * 或第二缓存。
  */
 
 export type TaskScopeMissingRow = {
@@ -60,6 +65,89 @@ async function mapPool<T, R>(
     results.push(...(await Promise.all(items.slice(start, start + limit).map(run))))
   }
   return results
+}
+
+type ScopeReference = WorkbenchTaskScope['references'][number]
+
+type ScopeRefOutcome = {
+  item: GitHubWorkItem | CodeHubTaskItem | null
+  miss?: TaskScopeMissingRow
+}
+
+/**
+ * GitHub 引用批量快路径（#436 伴飞裁定 CF-6b）：按材料坐标（host/owner/repo，
+ * 墙卡 parseTaskRepository 同口径）分组，每仓一次 gh:workItemsBatch（本机 gh
+ * 登录态、平台侧读取，墙卡 gh:issueStates 同机制的全行字段版）。不进批量的
+ * 一律回落单条读——登记/来源上下文解析不出、坐标不可解析、环境宿主归属
+ * （runtime 路由不跨机代打）、整组查询失败（含 web shim 如实未接入）、
+ * GraphQL 双别名未命中（转移/占号）；missing 语义与网络行为逐字不变。
+ * repoId 按解析到的登记仓回填（与单条链同一 stamp）。
+ */
+async function loadGitHubRefsBatched(args: {
+  refs: readonly ScopeReference[]
+  deps: Pick<TaskPortDeps, 'repos'>
+  home: { repoId: string; hostId: ExecutionHostId }
+  readSingle: (reference: ScopeReference) => Promise<ScopeRefOutcome>
+}): Promise<ScopeRefOutcome[]> {
+  const { refs, deps, home, readSingle } = args
+  type GroupEntry = { reference: ScopeReference; repoId: string }
+  const groups = new Map<
+    string,
+    { owner: string; repo: string; host: string; entries: GroupEntry[] }
+  >()
+  const fallback: ScopeReference[] = []
+  for (const reference of refs) {
+    const repo = resolveReferenceRepo(deps, home, reference)
+    const sourceContext = repo ? getTaskPageRepoSourceContext(repo, 'github') : null
+    const parsed = parseTaskRepository(reference.repository)
+    const remoteRouted =
+      sourceContext != null && getGitHubSourceRuntimeTarget(sourceContext).kind === 'environment'
+    if (!repo || !sourceContext || parsed.kind !== 'github' || remoteRouted) {
+      fallback.push(reference)
+      continue
+    }
+    const key = `${parsed.host}\u0000${parsed.owner}\u0000${parsed.repo}`
+    const group = groups.get(key)
+    if (group) {
+      group.entries.push({ reference, repoId: repo.id })
+    } else {
+      groups.set(key, {
+        owner: parsed.owner,
+        repo: parsed.repo,
+        host: parsed.host,
+        entries: [{ reference, repoId: repo.id }]
+      })
+    }
+  }
+  const outcomes: ScopeRefOutcome[] = []
+  const results = await Promise.all(
+    [...groups.values()].map(async (group) => ({
+      group,
+      result: await window.api.gh.workItemsBatch({
+        owner: group.owner,
+        repo: group.repo,
+        host: group.host === 'github.com' ? null : group.host,
+        numbers: [...new Set(group.entries.map((entry) => entry.reference.number))]
+      })
+    }))
+  )
+  for (const { group, result } of results) {
+    if (result.error) {
+      fallback.push(...group.entries.map((entry) => entry.reference))
+      continue
+    }
+    const byNumber = new Map(result.items.map((item) => [item.number, item]))
+    for (const entry of group.entries) {
+      const item = byNumber.get(entry.reference.number)
+      if (item) {
+        outcomes.push({ item: { ...item, repoId: entry.repoId } as GitHubWorkItem })
+      } else {
+        fallback.push(entry.reference)
+      }
+    }
+  }
+  outcomes.push(...(await mapPool(fallback, SCOPE_READ_CONCURRENCY, readSingle)))
+  return outcomes
 }
 
 export async function loadWorkbenchTaskScope(
@@ -109,9 +197,10 @@ export async function loadWorkbenchTaskScope(
     })
   }
   const viewRefs = viewProvider === 'github' ? githubRefs : codehubRefs
-  type RefOutcome = { item: GitHubWorkItem | CodeHubTaskItem | null; miss?: TaskScopeMissingRow }
-  const outcomes = await mapPool(viewRefs, SCOPE_READ_CONCURRENCY, async (reference) => {
-    const miss = (reason: string): RefOutcome => ({
+  // 单条读回=既有语义逐字保留（miss 文案、环境宿主 runtime 路由、CodeHub 逐条）；
+  // 批量只作 GitHub 本地 gh 引用的快路径，任何不确定都回落到这里。
+  const readSingle = async (reference: ScopeReference): Promise<ScopeRefOutcome> => {
+    const miss = (reason: string): ScopeRefOutcome => ({
       item: null,
       miss: {
         provider: reference.provider,
@@ -158,7 +247,11 @@ export async function loadWorkbenchTaskScope(
     } catch (reason) {
       return miss(`读取失败：${errorMessage(reason)}`)
     }
-  })
+  }
+  const outcomes: ScopeRefOutcome[] =
+    viewProvider === 'github'
+      ? await loadGitHubRefsBatched({ refs: viewRefs, deps, home, readSingle })
+      : await mapPool(viewRefs, SCOPE_READ_CONCURRENCY, readSingle)
   // 按引用序装配（计划材料的任务顺序），GitHub 行再按原生列表惯例排序；
   // 完成序不进渲染，刷新不抖序。
   const githubItems: GitHubWorkItem[] = []

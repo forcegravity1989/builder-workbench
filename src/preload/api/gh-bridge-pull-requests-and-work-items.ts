@@ -8,6 +8,7 @@ import type {
 import type { GitHubOwnerRepo } from '../../shared/github/pull-request-types'
 import type { GitHubWorkItem, ListWorkItemsResult } from '../../shared/github/work-item-types'
 import type { IssueStatesBatchResult } from '../../shared/github/issue-state-types'
+import type { WorkItemsBatchResult } from '../../shared/github/work-item-batch-types'
 import type { GitHubCreateIssueResult } from '../../shared/issue-mutation-types'
 import type { TaskSourceContext } from '../../shared/task-source-context'
 import type { PreloadApi } from '../api-types'
@@ -110,6 +111,12 @@ export const ghPullRequestsAndWorkItemsApi = {
     host?: string | null
     numbers: number[]
   }): Promise<IssueStatesBatchResult> => ipcRenderer.invoke('gh:issueStates', args),
+  workItemsBatch: (args: {
+    owner: string
+    repo: string
+    host?: string | null
+    numbers: number[]
+  }): Promise<WorkItemsBatchResult> => ipcRenderer.invoke('gh:workItemsBatch', args),
   listWorkItems: (args: {
     repoPath: string
     repoId?: string | null

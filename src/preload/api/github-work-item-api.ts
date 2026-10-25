@@ -36,6 +36,7 @@ import type {
   IssueInfo
 } from '../../shared/github/pull-request-types'
 import type { IssueStatesBatchResult } from '../../shared/github/issue-state-types'
+import type { WorkItemsBatchResult } from '../../shared/github/work-item-batch-types'
 import type {
   GitHubWorkItem,
   GitHubWorkItemDetails,
@@ -101,6 +102,12 @@ export type GithubWorkItemApi = {
     host?: string | null
     numbers: number[]
   }) => Promise<IssueStatesBatchResult>
+  workItemsBatch: (args: {
+    owner: string
+    repo: string
+    host?: string | null
+    numbers: number[]
+  }) => Promise<WorkItemsBatchResult>
   listWorkItems: (args: {
     repoPath: string
     repoId?: string

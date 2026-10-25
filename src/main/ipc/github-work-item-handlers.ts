@@ -13,6 +13,7 @@ import {
 } from '../github/client'
 import { getPRFileContents, getWorkItemDetails } from '../github/work-item-details'
 import { getIssueStatesBatch } from '../github/issue-state-batch'
+import { getWorkItemsBatch } from '../github/work-item-batch'
 import type { Store } from '../persistence'
 import { dispatchWorkItem, type WorkItemArgs } from './github-work-item-args'
 import {
@@ -123,6 +124,19 @@ export function registerGitHubWorkItemHandlers(store: Store): void {
     'gh:issueStates',
     (_event, args: { owner: string; repo: string; host?: string | null; numbers: number[] }) =>
       getIssueStatesBatch({
+        owner: String(args.owner ?? ''),
+        repo: String(args.repo ?? ''),
+        host: args.host == null ? null : String(args.host),
+        numbers: Array.isArray(args.numbers) ? args.numbers : []
+      })
+  )
+
+  // 平台侧批量读取（同 gh:issueStates 口径）：任务屏范围装载按仓一次读回整行
+  // 字段（#436 伴飞裁定 CF-6b），只认 owner/repo 与本机 gh 登录态。
+  ipcMain.handle(
+    'gh:workItemsBatch',
+    (_event, args: { owner: string; repo: string; host?: string | null; numbers: number[] }) =>
+      getWorkItemsBatch({
         owner: String(args.owner ?? ''),
         repo: String(args.repo ?? ''),
         host: args.host == null ? null : String(args.host),

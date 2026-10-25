@@ -4,6 +4,7 @@ import {
   GITHUB_MARK_PR_READY_UPDATE_REQUIRED_MESSAGE
 } from '../../../../shared/protocol-version'
 import { ISSUE_STATES_WEB_UNAVAILABLE } from '../../../../shared/github/issue-state-types'
+import { WORK_ITEMS_BATCH_WEB_UNAVAILABLE } from '../../../../shared/github/work-item-batch-types'
 import { translate } from '@/i18n/i18n'
 import { GITHUB_WEB_RPC_METHODS } from './web-github-routes'
 import type { WebGitHubRuntimeMethod } from './web-github-routes'
@@ -205,7 +206,10 @@ export function createGitHubApi(): WebGitHubApi {
       ),
     // BW 墙卡读数只在 Electron 壳内使用；web 端未接入 Issue 状态批量读取，
     // 如实返回读不到（读数端显示 Unknown，不装 0）。
-    issueStates: async () => ({ items: [], error: ISSUE_STATES_WEB_UNAVAILABLE })
+    issueStates: async () => ({ items: [], error: ISSUE_STATES_WEB_UNAVAILABLE }),
+    // 任务屏范围批量读回同理（#436 CF-6b）：web 端如实返回失败，范围装载按组
+    // 回落既有单条读（web RPC 路由），不装绿。
+    workItemsBatch: async () => ({ items: [], error: WORK_ITEMS_BATCH_WEB_UNAVAILABLE })
   } satisfies WebGitHubApi
 
   return githubApi
