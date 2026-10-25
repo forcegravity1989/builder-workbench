@@ -11,10 +11,6 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import {
-  getAutomationAuthorityTarget,
-  listAutomationsForTarget
-} from '@/components/automations/automation-host-client'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { Worktree } from '../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
@@ -29,8 +25,7 @@ import { useDeleteWorktreeStatusHydration } from '@/components/sidebar/use-delet
 import { getDeleteWorktreeDirtyChangeCounts } from '@/components/sidebar/delete-worktree-dirty-change-counts'
 import { useWorktreeAgentRows } from '@/components/sidebar/useWorktreeAgentRows'
 import { branchName } from '@/lib/git-utils'
-import { nativeWorkspaceScope } from './version-cycle/native-workspace'
-import { cycleAutomationCreationKey } from './version-cycle/ensure-cycle-automation'
+import { probeVersionAutomations } from './version-cleanup-automations'
 import { ISSUE_TREE_LABEL, WORKFLOW_TREE_LABELS, goalTreeLabel } from './version-labels'
 
 /**
@@ -143,48 +138,22 @@ export function VersionCleanupDialog({
     () => new Set(rows.filter((row) => row.local && row.tree !== null).map((row) => row.key))
   )
   // spec「版本级清理」：本版自动化仍启用时在对话框如实提示（是否停用由人在原生
-  // 编辑器决定）。身份精确匹配：creationKey 全键相等（scope+用途+版本全维度，P5
-  // 版本化身份）——曾按版本后缀匹配，会把其他项目同版本号条目计入本版；他宿主
-  // runtime 的条目不跨机探测，属如实留白。
+  // 编辑器决定）；提示只影响本提示条，不豁免原生预检。探测语义（creationKey 全键
+  // 精确匹配、失败/离线不阻塞、他宿主留白）住 probeVersionAutomations。
   const [automationNotice, setAutomationNotice] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
     setAutomationNotice(null)
     void (async () => {
-      try {
-        // Why: home 行只用于派生探测键的项目/宿主维度；焦点在其他注册行时首条主树
-        // 可能是别仓的行，探测键会落到错误项目——按本版行的 repoId 过滤后再回退。
-        const targetRepoId = rows.find((row) => row.tree !== null)?.tree?.repoId ?? null
-        const home =
-          worktrees.find((tree) => tree.isMainWorktree && tree.repoId === targetRepoId) ??
-          worktrees.find((tree) => tree.isMainWorktree) ??
-          worktrees[0]
-        if (!home) {
-          return
-        }
-        const scope = nativeWorkspaceScope(home)
-        const keys = new Set([
-          cycleAutomationCreationKey({ ...scope, workflow: 'plan' }, version),
-          cycleAutomationCreationKey({ ...scope, workflow: 'acceptance' }, version)
-        ])
-        const automations = await listAutomationsForTarget(
-          getAutomationAuthorityTarget({ kind: 'desktop' })
+      const enabled = await probeVersionAutomations({ version, worktrees, rows })
+      if (!cancelled && enabled.length > 0) {
+        setAutomationNotice(
+          `本版仍有 ${enabled.length} 条已启用的周期自动化（${enabled
+            .map((item) => item.name)
+            .join(
+              '、'
+            )}）：清理不改写它们；树删除后到点触发按登记缺失如实呈现。是否停用由你在原生自动化编辑器决定。`
         )
-        const enabled = automations.filter(
-          (item) =>
-            item.enabled && typeof item.creationKey === 'string' && keys.has(item.creationKey)
-        )
-        if (!cancelled && enabled.length > 0) {
-          setAutomationNotice(
-            `本版仍有 ${enabled.length} 条已启用的周期自动化（${enabled
-              .map((item) => item.name)
-              .join(
-                '、'
-              )}）：清理不改写它们；树删除后到点触发按登记缺失如实呈现。是否停用由你在原生自动化编辑器决定。`
-          )
-        }
-      } catch {
-        // 探测失败不阻塞清理：静态语义行仍如实说明「不改写自动化条目」。
       }
     })()
     return () => {
