@@ -170,6 +170,8 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
     <div className="group relative">
       <button
         type="button"
+        // BW 挂载面（#436 CF-1 配套）：与版本内「任务」行 tooltip 区分两个入口；原生壳语义不变。
+        {...(isWorkbenchShell() ? { title: '全部任务（含未入计划）' } : {})}
         onClick={() => {
           if (workbenchProjectRepoId) {
             openTaskPage({ preselectedRepoId: workbenchProjectRepoId })

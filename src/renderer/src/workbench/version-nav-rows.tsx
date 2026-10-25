@@ -338,6 +338,7 @@ export function TasksRow({
         type="button"
         onClick={onOpenTasks}
         disabled={busy}
+        title="本版任务（计划材料引用）"
         aria-current={active ? 'page' : undefined}
         className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-0.5 text-left"
       >
