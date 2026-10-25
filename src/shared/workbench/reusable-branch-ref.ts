@@ -1,4 +1,5 @@
 import type { RuntimeRepoSearchRefs } from '../runtime-worktree-contracts'
+import { branchFullRef } from './branch-ref'
 
 /**
  * 分支 ref 复用匹配（G2 F8 提共享）：main 的版本准备编排与 renderer 的固定树
@@ -23,7 +24,7 @@ export function matchReusableBranchRef(
   const local = details.find(
     (ref) =>
       ref.localBranchName === ref.refName &&
-      [branch, `heads/${branch}`, `refs/heads/${branch}`].includes(ref.refName)
+      [branch, `heads/${branch}`, branchFullRef(branch)].includes(ref.refName)
   )
   if (local) {
     return { kind: 'ref', refName: local.refName }

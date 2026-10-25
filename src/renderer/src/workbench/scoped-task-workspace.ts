@@ -14,10 +14,8 @@ import {
   findVersionTaskWorktrees
 } from '../../../shared/workbench/version-workspace-match'
 import { findGithubWorkItemWorkspaceAttachment } from '@/lib/github-work-item-workspace-attachment'
-import {
-  openWorkbenchWorkspaceChoice,
-  worktreeActivationHostOpts
-} from './version-workspace-choice-state'
+import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
+import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 import { resolveReferenceRepo } from './task-port'
 
 /**

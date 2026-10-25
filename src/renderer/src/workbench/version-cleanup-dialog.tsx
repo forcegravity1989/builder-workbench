@@ -8,13 +8,10 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import {
-  getAutomationAuthorityTarget,
-  listAutomationsForTarget
-} from '@/components/automations/automation-host-client'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { Worktree } from '../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
@@ -29,8 +26,7 @@ import { useDeleteWorktreeStatusHydration } from '@/components/sidebar/use-delet
 import { getDeleteWorktreeDirtyChangeCounts } from '@/components/sidebar/delete-worktree-dirty-change-counts'
 import { useWorktreeAgentRows } from '@/components/sidebar/useWorktreeAgentRows'
 import { branchName } from '@/lib/git-utils'
-import { nativeWorkspaceScope } from './version-cycle/native-workspace'
-import { cycleAutomationCreationKey } from './version-cycle/ensure-cycle-automation'
+import { probeVersionAutomations } from './version-cleanup-automations'
 import { ISSUE_TREE_LABEL, WORKFLOW_TREE_LABELS, goalTreeLabel } from './version-labels'
 
 /**
@@ -143,48 +139,20 @@ export function VersionCleanupDialog({
     () => new Set(rows.filter((row) => row.local && row.tree !== null).map((row) => row.key))
   )
   // spec「版本级清理」：本版自动化仍启用时在对话框如实提示（是否停用由人在原生
-  // 编辑器决定）。身份精确匹配：creationKey 全键相等（scope+用途+版本全维度，P5
-  // 版本化身份）——曾按版本后缀匹配，会把其他项目同版本号条目计入本版；他宿主
-  // runtime 的条目不跨机探测，属如实留白。
+  // 编辑器决定）；提示只影响本提示条，不豁免原生预检。探测语义（creationKey 全键
+  // 精确匹配、失败/离线不阻塞、他宿主留白）住 probeVersionAutomations。
   const [automationNotice, setAutomationNotice] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
     setAutomationNotice(null)
     void (async () => {
-      try {
-        // Why: home 行只用于派生探测键的项目/宿主维度；焦点在其他注册行时首条主树
-        // 可能是别仓的行，探测键会落到错误项目——按本版行的 repoId 过滤后再回退。
-        const targetRepoId = rows.find((row) => row.tree !== null)?.tree?.repoId ?? null
-        const home =
-          worktrees.find((tree) => tree.isMainWorktree && tree.repoId === targetRepoId) ??
-          worktrees.find((tree) => tree.isMainWorktree) ??
-          worktrees[0]
-        if (!home) {
-          return
-        }
-        const scope = nativeWorkspaceScope(home)
-        const keys = new Set([
-          cycleAutomationCreationKey({ ...scope, workflow: 'plan' }, version),
-          cycleAutomationCreationKey({ ...scope, workflow: 'acceptance' }, version)
-        ])
-        const automations = await listAutomationsForTarget(
-          getAutomationAuthorityTarget({ kind: 'desktop' })
+      const enabled = await probeVersionAutomations({ version, worktrees, rows })
+      if (!cancelled && enabled.length > 0) {
+        setAutomationNotice(
+          `本版仍有 ${enabled.length} 条启用中的周期自动化（${enabled
+            .map((item) => item.name)
+            .join('、')}）：清理不会停用它们，可在自动化编辑器处理。`
         )
-        const enabled = automations.filter(
-          (item) =>
-            item.enabled && typeof item.creationKey === 'string' && keys.has(item.creationKey)
-        )
-        if (!cancelled && enabled.length > 0) {
-          setAutomationNotice(
-            `本版仍有 ${enabled.length} 条已启用的周期自动化（${enabled
-              .map((item) => item.name)
-              .join(
-                '、'
-              )}）：清理不改写它们；树删除后到点触发按登记缺失如实呈现。是否停用由你在原生自动化编辑器决定。`
-          )
-        }
-      } catch {
-        // 探测失败不阻塞清理：静态语义行仍如实说明「不改写自动化条目」。
       }
     })()
     return () => {
@@ -229,20 +197,16 @@ export function VersionCleanupDialog({
   const checkedCount = rows.filter((row) => checked.has(row.key) && row.tree !== null).length
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>清理 {version} 工作树</DialogTitle>
           <DialogDescription>
-            删除所选工作树的磁盘检出与原生登记（含版本绑定）；Git 材料与版本目录条目保留，
-            删除后各屏只读回看。勾选后进入 Orca 删除确认，逐棵预检（未提交修改、子树、归档
-            hook）不豁免。清理不改写自动化条目；删树后自动化到点按登记缺失如实呈现。
+            删除勾选工作树的磁盘检出与登记；版本材料与目录保留。
           </DialogDescription>
         </DialogHeader>
         <div className="scrollbar-sleek flex max-h-64 flex-col gap-1.5 overflow-y-auto text-[12px]">
           {rows.length === 0 ? (
-            <p className="text-muted-foreground">
-              本版没有存活绑定工作区（已清理或未准备）；材料回看不受影响。
-            </p>
+            <p className="text-muted-foreground">本版没有可删除的工作树（已清理或未准备）。</p>
           ) : null}
           {rows.map((row) => {
             const label = row.tree
@@ -277,13 +241,13 @@ export function VersionCleanupDialog({
                   </span>
                   <span className="text-[11px] text-muted-foreground">
                     {ownerLabel}
-                    {row.local ? '' : ' · 勾选=经共享通道在归属宿主删除（派发前复核配对权限）'}
+                    {row.local ? '' : ' · 在其归属主机删除'}
                     {row.tree === null
-                      ? ' · 登记缺失（目录即将刷新，不可勾选）'
+                      ? ' · 登记缺失（不可勾选）'
                       : dirty === undefined
-                        ? ' · 预检未回读（读取失败或对端离线，以原生确认单预检为准）'
+                        ? ' · 预检未回读'
                         : dirty > 0
-                          ? ` · 未提交修改 ${dirty} 项（原生确认单内处理）`
+                          ? ` · 未提交修改 ${dirty} 项`
                           : ' · 预检未见未提交修改'}
                   </span>
                 </span>
@@ -297,20 +261,19 @@ export function VersionCleanupDialog({
             {automationNotice}
           </p>
         ) : null}
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
             取消
           </Button>
           <Button
             type="button"
-            size="sm"
             variant="destructive"
             disabled={checkedCount === 0}
             onClick={confirm}
           >
             删除所勾选（{checkedCount}）…
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

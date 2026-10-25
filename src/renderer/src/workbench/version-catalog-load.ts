@@ -1,12 +1,16 @@
 import type { Worktree } from '../../../shared/worktree/types'
-import { PlanningMaterialSchema } from '../../../shared/workbench/version-material'
+import {
+  PlanningMaterialSchema,
+  type PlanningMaterial
+} from '../../../shared/workbench/version-material'
 import {
   collectVersionCatalogWorkspaces,
   mergeVersionCatalog,
   versionCatalogCacheKey,
   type VersionCatalogDraftSource,
   type VersionCatalogEntry,
-  type VersionCatalogGoalRef
+  type VersionCatalogGoalRef,
+  type VersionCatalogTaskRef
 } from '../../../shared/workbench/version-catalog'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeVersionMaterialPort } from './version-material-port'
@@ -15,6 +19,26 @@ import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
 type DraftDerivation = {
   draft: VersionCatalogDraftSource
   goals: VersionCatalogGoalRef[]
+  tasks: VersionCatalogTaskRef[]
+}
+
+/** 已提交计划的目录投影：目标＋任务引用（补绑定 Issue 用途的人选引用来源）。 */
+type CommittedPlanProjection = {
+  goals: VersionCatalogGoalRef[]
+  tasks: VersionCatalogTaskRef[]
+}
+
+function projectPlanGoals(goals: PlanningMaterial['goals']): VersionCatalogGoalRef[] {
+  return goals.map((goal) => ({ goalId: goal.goalId, title: goal.title }))
+}
+
+function projectPlanTasks(tasks: PlanningMaterial['tasks']): VersionCatalogTaskRef[] {
+  return tasks.map((task) => ({
+    provider: task.provider,
+    repository: task.repository,
+    number: task.number,
+    ...(task.goalId ? { goalId: task.goalId } : {})
+  }))
 }
 
 /**
@@ -23,7 +47,7 @@ type DraftDerivation = {
  * 旧派生不会被新版本上下文命中。
  */
 const draftDerivations = new Map<string, DraftDerivation>()
-const committedGoalsCache = new Map<string, VersionCatalogGoalRef[]>()
+const committedPlansCache = new Map<string, CommittedPlanProjection>()
 
 function deriveFromSavedPlan(
   document: unknown,
@@ -37,7 +61,8 @@ function deriveFromSavedPlan(
   }
   return {
     draft: { version, cycleId: parsed.data.cycleId, revision },
-    goals: parsed.data.goals.map((goal) => ({ goalId: goal.goalId, title: goal.title }))
+    goals: projectPlanGoals(parsed.data.goals),
+    tasks: projectPlanTasks(parsed.data.tasks)
   }
 }
 
@@ -60,10 +85,10 @@ export type VersionCatalogLoad = {
 
 /**
  * 装载一个项目的版本目录（P1b，P3a 扩展）：主干已提交材料 ∪ 本机与共享可见
- * 宿主的存活绑定；草稿目录与目标从已保存计划派生（旧固定树与各版绑定计划树
- * 并列入口）；有已提交材料但没有草稿派生目标的版本，从已提交计划派生目标
- * （只读回看，不要求树存在）。已清理版本随材料仍入列（retired 收起）。
- * 读取失败如实进 problems（调用方显示未知与原因），不装绿。
+ * 宿主的存活绑定；草稿目录、目标与任务引用从已保存计划派生（旧固定树与各版
+ * 绑定计划树并列入口）；有已提交材料但没有草稿派生目标的版本，从已提交计划
+ * 派生目标与任务引用（只读回看，不要求树存在）。已清理版本随材料仍入列
+ * （retired 收起）。读取失败如实进 problems（调用方显示未知与原因），不装绿。
  */
 export async function loadVersionCatalog(args: {
   scope: NativeWorkspaceScope
@@ -89,6 +114,7 @@ export async function loadVersionCatalog(args: {
 
   const drafts: VersionCatalogDraftSource[] = []
   const goalsByVersion = new Map<string, VersionCatalogGoalRef[]>()
+  const tasksByVersion = new Map<string, VersionCatalogTaskRef[]>()
   for (const planTree of args.planTrees ?? []) {
     const materialPort = nativeVersionMaterialPort(
       {
@@ -140,6 +166,7 @@ export async function loadVersionCatalog(args: {
         const existing = goalsByVersion.get(candidate.version)
         if (!existing) {
           goalsByVersion.set(candidate.version, derivation.goals)
+          tasksByVersion.set(candidate.version, derivation.tasks)
         }
       }
     } catch (reason) {
@@ -156,11 +183,12 @@ export async function loadVersionCatalog(args: {
     committed,
     drafts,
     goalsByVersion,
+    tasksByVersion,
     workspaces: collectVersionCatalogWorkspaces(worktrees, repoIds, args.projectId)
   })
 
-  // 已提交目标回看：有已提交计划材料但没有草稿派生目标的版本（旧版本/已清理
-  // 版本，树不存在或不可读），从固定提交读回目标目录——只读回看不要求树。
+  // 已提交回看：有已提交计划材料但没有草稿派生目标的版本（旧版本/已清理
+  // 版本，树不存在或不可读），从固定提交读回目标与任务引用目录——只读回看不要求树。
   for (const entry of entries) {
     const planRef = entry.material.plan
     if (!planRef || entry.goals.length > 0) {
@@ -174,9 +202,10 @@ export async function loadVersionCatalog(args: {
       version: entry.version,
       revision: planRef.revision
     })
-    const cached = committedGoalsCache.get(key)
+    const cached = committedPlansCache.get(key)
     if (cached) {
-      entry.goals = [...cached]
+      entry.goals = [...cached.goals]
+      entry.tasks = [...cached.tasks]
       continue
     }
     try {
@@ -190,13 +219,14 @@ export async function loadVersionCatalog(args: {
           sourceCommit: planRef.sourceCommit
         }
       })
-      const goals = plan.document.goals.map((goal) => ({
-        goalId: goal.goalId,
-        title: goal.title
-      }))
-      committedGoalsCache.set(key, goals)
+      const projection: CommittedPlanProjection = {
+        goals: projectPlanGoals(plan.document.goals),
+        tasks: projectPlanTasks(plan.document.tasks)
+      }
+      committedPlansCache.set(key, projection)
       // 拷贝入 entry：缓存数组与目录条目不共享引用（防下游突变污染缓存）。
-      entry.goals = [...goals]
+      entry.goals = [...projection.goals]
+      entry.tasks = [...projection.tasks]
     } catch (reason) {
       problems.push({
         code: 'committed-goals-unavailable',

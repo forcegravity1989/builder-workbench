@@ -26,8 +26,8 @@ import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
-import { WORKFLOW_SCREEN_LABELS } from './version-labels'
-import { worktreeActivationHostOpts } from './version-workspace-choice-state'
+import { VERSION_TASKS_ENTRY_TITLE, WORKFLOW_SCREEN_LABELS } from './version-labels'
+import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 
 /**
  * G2 侧栏版本树的行组件（P3a，高保真修订 8）：流程行=业务入口＋本树入口合一
@@ -67,39 +67,35 @@ function ChevronSpacer(): React.JSX.Element {
   return <span className="size-5 shrink-0" aria-hidden="true" />
 }
 
-/** 绑定树行（目标目录体）：名称点击激活（原生链），箭头展开原生 agent 行，···沿原生菜单。 */
+/**
+ * 绑定树行（目标目录体）：名称点击激活（原生链），箭头展开原生 agent 行；
+ * 整行右击出原生工作树维护菜单（#436 伴飞裁定 CF-6f：对齐原生整卡右击形态，
+ * 不另设三点——原生 WorktreeContextMenu 本就只响应右击）。
+ */
 function BoundTreeRow({ tree }: { tree: Worktree }): React.JSX.Element {
   const [agentsOpen, setAgentsOpen] = useState(true)
   const branch = branchName(tree.branch)
   const label = tree.displayName.trim() || branch
   return (
     <div className="min-w-0">
-      <div className={cn(ROW_CLASS, ROW_IDLE)}>
-        <ChevronToggle
-          expanded={agentsOpen}
-          onToggle={() => setAgentsOpen((open) => !open)}
-          label={`${label} 会话展开或收起`}
-        />
-        <button
-          type="button"
-          title={branch}
-          onClick={() => activateAndRevealWorktree(tree.id, worktreeActivationHostOpts(tree))}
-          className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-worktree-sidebar-foreground/8"
-        >
-          <GitBranch className="size-3.5 shrink-0 text-worktree-sidebar-foreground/40" />
-          <span className="truncate">{label}</span>
-        </button>
-        <WorktreeContextMenu worktree={tree}>
-          <span
-            role="button"
-            tabIndex={0}
-            aria-label={`${label} 工作树菜单`}
-            className="flex size-6 shrink-0 items-center justify-center rounded text-worktree-sidebar-foreground/45 hover:text-worktree-sidebar-foreground"
+      <WorktreeContextMenu worktree={tree}>
+        <div className={cn(ROW_CLASS, ROW_IDLE)}>
+          <ChevronToggle
+            expanded={agentsOpen}
+            onToggle={() => setAgentsOpen((open) => !open)}
+            label={`${label} 会话展开或收起`}
+          />
+          <button
+            type="button"
+            title={`${branch} · 右击出工作区维护菜单`}
+            onClick={() => activateAndRevealWorktree(tree.id, worktreeActivationHostOpts(tree))}
+            className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-worktree-sidebar-foreground/8"
           >
-            <EllipsisVertical className="size-3.5" />
-          </span>
-        </WorktreeContextMenu>
-      </div>
+            <GitBranch className="size-3.5 shrink-0 text-worktree-sidebar-foreground/40" />
+            <span className="truncate">{label}</span>
+          </button>
+        </div>
+      </WorktreeContextMenu>
       {agentsOpen ? (
         <div className="pl-6">
           <WorktreeCardAgents worktreeId={tree.id} />
@@ -116,102 +112,91 @@ type WorkflowRowProps = {
   active: boolean
   busy: boolean
   onNavigate: () => void
-  onPrepare: () => void
 }
 
-/** 计划/验收流程行：入口与固定工作树合为一行；分支名在悬停中可见。 */
+/**
+ * 计划/验收流程行：入口与固定工作树合为一行；分支名在悬停中可见。
+ * 菜单形态（#436 伴飞裁定 CF-5/CF-6f）：0 棵=只有「未准备」徽标（行点击=只读
+ * 回看；初始化入口在版本行）；1 棵=整行右击出原生工作树维护菜单（无三点）；
+ * ≥2 棵=三点列出绑定实例供选择（多实例无单一右击对象）。
+ */
 export function WorkflowRow({
   version,
   workflow,
   worktrees,
   active,
   busy,
-  onNavigate,
-  onPrepare
+  onNavigate
 }: WorkflowRowProps): React.JSX.Element {
   const [agentsOpen, setAgentsOpen] = useState(true)
   const trees = findVersionFlowWorktrees(worktrees, { version, workflow })
   const Icon = workflow === 'plan' ? CalendarRange : ClipboardCheck
   const label = WORKFLOW_SCREEN_LABELS[workflow]
-  const onlyTree = trees.length === 1 ? trees[0] : null
+  const onlyTree = trees.length === 1 ? (trees[0] ?? null) : null
   const branchTitle = onlyTree
-    ? `${branchName(onlyTree.branch)} · 本版固定工作区`
+    ? `${branchName(onlyTree.branch)} · 本版固定工作区 · 右击出工作区维护菜单`
     : trees.length > 1
       ? `${trees.length} 个绑定实例 · 点击选择`
-      : `未准备 · 点击${label}入口查看可用路径`
-  return (
-    <div className="min-w-0">
-      <div className={cn(ROW_CLASS, active ? ROW_ACTIVE : ROW_IDLE)}>
-        {trees.length > 0 ? (
-          <ChevronToggle
-            expanded={agentsOpen}
-            onToggle={() => setAgentsOpen((open) => !open)}
-            label={`${version} ${label}会话展开或收起`}
-          />
-        ) : (
-          <ChevronSpacer />
-        )}
-        <button
-          type="button"
-          onClick={onNavigate}
-          disabled={busy}
-          title={branchTitle}
-          aria-current={active ? 'page' : undefined}
-          className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-0.5 text-left"
-        >
-          <Icon
-            className={cn('size-3.5 shrink-0', active ? '' : 'text-worktree-sidebar-foreground/35')}
-          />
-          <span className="truncate">{label}</span>
-          {trees.length === 0 ? (
-            <span className="shrink-0 text-[10px] text-worktree-sidebar-foreground/40">未准备</span>
-          ) : null}
-        </button>
-        {trees.length === 1 && trees[0] ? (
-          <WorktreeContextMenu worktree={trees[0]}>
+      : `未准备 · 点击只读回看${label}材料（初始化在版本行）`
+  const row = (
+    <div className={cn(ROW_CLASS, active ? ROW_ACTIVE : ROW_IDLE)}>
+      {trees.length > 0 ? (
+        <ChevronToggle
+          expanded={agentsOpen}
+          onToggle={() => setAgentsOpen((open) => !open)}
+          label={`${version} ${label}会话展开或收起`}
+        />
+      ) : (
+        <ChevronSpacer />
+      )}
+      <button
+        type="button"
+        onClick={onNavigate}
+        disabled={busy}
+        title={branchTitle}
+        aria-current={active ? 'page' : undefined}
+        className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-0.5 text-left"
+      >
+        <Icon
+          className={cn('size-3.5 shrink-0', active ? '' : 'text-worktree-sidebar-foreground/35')}
+        />
+        <span className="truncate">{label}</span>
+        {trees.length === 0 ? (
+          <span className="shrink-0 text-[10px] text-worktree-sidebar-foreground/40">未准备</span>
+        ) : null}
+      </button>
+      {trees.length > 1 ? (
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
             <span
               role="button"
               tabIndex={0}
-              aria-label={`${version} ${label}工作区菜单`}
+              aria-label={`${version} ${label}工作区选择`}
               className="flex size-6 shrink-0 items-center justify-center rounded text-worktree-sidebar-foreground/45 hover:text-worktree-sidebar-foreground"
             >
               <EllipsisVertical className="size-3.5" />
             </span>
-          </WorktreeContextMenu>
-        ) : (
-          <DropdownMenu modal={false}>
-            <DropdownMenuTrigger asChild>
-              <span
-                role="button"
-                tabIndex={0}
-                aria-label={`${version} ${label}工作区操作`}
-                className="flex size-6 shrink-0 items-center justify-center rounded text-worktree-sidebar-foreground/45 hover:text-worktree-sidebar-foreground"
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {trees.map((tree) => (
+              <DropdownMenuItem
+                key={getWorktreeHostIdentity(tree)}
+                onSelect={() =>
+                  activateAndRevealWorktree(tree.id, worktreeActivationHostOpts(tree))
+                }
               >
-                <EllipsisVertical className="size-3.5" />
-              </span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {trees.length > 1
-                ? trees.map((tree) => (
-                    <DropdownMenuItem
-                      key={getWorktreeHostIdentity(tree)}
-                      onSelect={() =>
-                        activateAndRevealWorktree(tree.id, worktreeActivationHostOpts(tree))
-                      }
-                    >
-                      <GitBranch className="size-4" />
-                      {branchName(tree.branch)}
-                    </DropdownMenuItem>
-                  ))
-                : null}
-              <DropdownMenuItem onSelect={onPrepare}>
-                <ListTodo className="size-4" />
-                准备流程工作区
+                <GitBranch className="size-4" />
+                {branchName(tree.branch)}
               </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
+    </div>
+  )
+  return (
+    <div className="min-w-0">
+      {onlyTree ? <WorktreeContextMenu worktree={onlyTree}>{row}</WorktreeContextMenu> : row}
       {agentsOpen && trees.length > 0 ? (
         <div className="pl-6">
           {trees.map((tree) => (
@@ -353,6 +338,7 @@ export function TasksRow({
         type="button"
         onClick={onOpenTasks}
         disabled={busy}
+        title={VERSION_TASKS_ENTRY_TITLE}
         aria-current={active ? 'page' : undefined}
         className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-0.5 text-left"
       >

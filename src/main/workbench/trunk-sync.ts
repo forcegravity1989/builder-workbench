@@ -9,6 +9,7 @@ import {
   withRepoRefMaintenancePaused
 } from '../git/local-repo-ref-maintenance'
 import type { TrunkSyncTarget } from './trunk-baseline'
+import { branchFullRef } from '../../shared/workbench/branch-ref'
 
 /** A user-clicked sync must fail honestly rather than hang the screen. */
 export const TRUNK_SYNC_TIMEOUT_MS = 60_000
@@ -40,7 +41,7 @@ export async function fetchTrunkBookmark(
         '--no-tags',
         '--',
         target.remoteName,
-        `+refs/heads/${target.branchName}:${bookmark}`
+        `+${branchFullRef(target.branchName)}:${bookmark}`
       ],
       { ...gitOptionsForWorktree(repoPath, options), timeout: TRUNK_SYNC_TIMEOUT_MS }
     )

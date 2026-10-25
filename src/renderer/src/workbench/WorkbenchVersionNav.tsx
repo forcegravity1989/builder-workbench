@@ -6,29 +6,34 @@ import { isVersionFlowWorkflow } from '../../../shared/workbench/version-workspa
 import { Button } from '@/components/ui/button'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
+import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import { useVersionCatalogForRepo } from './use-version-catalog'
 import { useBrowsedVersion } from './version-context-state'
-import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
+import {
+  initializeVersionWorkspace,
+  navigateVersionWorkflow,
+  openVersionTasks,
+  startVersionGoal
+} from './version-nav-actions'
 import { VersionCleanupDialog } from './version-cleanup-dialog'
 import { VersionTreeBindDialog } from './version-tree-bind-dialog'
 import { VersionNavGroup } from './version-nav-group'
-import { NewVersionDialog, type NewVersionDialogRequest } from './NewVersionDialog'
-import { openGoalStartComposer } from './goal-start-action'
+import { NewVersionDialog } from './NewVersionDialog'
 import { openGoalWorkspace } from './scoped-task-workspace'
 import { openVersionOverview, useProjectPage } from './project-page-state'
-import { loadVersionPlanDocument } from './version-task-entries'
 import { useCycleView } from './cycle-view-state'
 
 /**
  * G2 侧栏版本区（P3a/P3b/P6，高保真修订 8/9）：版本平铺（旧版本默认收起即退休
  * 形态，可展开回看）；每版含总览/计划/任务/目标目录/验收行；「＋ 新建版本」轻
- * 表单接 workbench.versionWorkspace.prepare；版本行另接「绑定已有工作树」（补
- * 绑定，人主导）与「清理」确认单（执行复用原生批量删除漏斗）。目录永远现算，
- * 读取失败如实呈现。
+ * 表单接 workbench.versionWorkspace.prepare；版本行另有「初始化工作区」（流程树
+ * 不齐时显示，点击直接执行，#436 伴飞裁定）、「绑定已有工作树」（补绑定，人主
+ * 导）与「清理」确认单（执行复用原生批量删除漏斗）。目录永远现算，读取失败如实
+ * 呈现。
  */
 
 type DialogState =
-  | NewVersionDialogRequest
+  | { mode: 'create' }
   | { mode: 'cleanup'; version: string }
   | { mode: 'bind'; version: string }
   | null
@@ -53,6 +58,7 @@ function readExpandedStore(key: string | null): Set<string> | null {
 
 export function WorkbenchVersionNav(): React.JSX.Element | null {
   const repoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const repos = useAppStore((s) => s.repos)
   const projectName = useAppStore((s) => {
     const active = s.activeRepoId ?? s.repos[0]?.id ?? null
     return s.repos.find((repo) => repo.id === active)?.displayName?.trim() || null
@@ -80,7 +86,17 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
   }, [expandedKey])
 
   const loaded = catalog.catalog
-  const entries = useMemo(() => loaded?.entries ?? [], [loaded])
+  // 显示序（#436 人裁定）：在制优先（在做的版本置顶）、组内版本号降序（新在前）、
+  // 归档沉底；目录契约仍升序，仅显示层排序。
+  const entries = useMemo(() => {
+    const rows = loaded?.entries ?? []
+    return [...rows].sort((a, b) => {
+      if (a.state !== b.state) {
+        return a.state === 'working' ? -1 : 1
+      }
+      return compareMaterialVersions(b.version, a.version)
+    })
+  }, [loaded])
   const expandedVersions = useMemo(() => {
     if (expandedOverride) {
       return expandedOverride
@@ -135,58 +151,6 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
       }
     },
     [busyKey]
-  )
-
-  const startGoal = useCallback(
-    (version: string, goal: { goalId: string; label: string; title: string }) =>
-      busy(`${version}:${goal.goalId}:start`, async () => {
-        const entry = entries.find((item) => item.version === version) ?? null
-        const read =
-          catalog.scope && catalog.home
-            ? await loadVersionPlanDocument({
-                scope: catalog.scope,
-                homeWorktreeId: catalog.home.id,
-                version,
-                entry,
-                planTrees: catalog.planTrees
-              })
-            : { document: null, problem: '项目工作区尚未就绪' }
-        const full = read.document?.goals.find((item) => item.goalId === goal.goalId)
-        if (!read.document) {
-          // 最终检视 L-1：home 缺失时开工链静默返回，先承诺预填再 no-op 不诚实——
-          // 该情形如实报「无法开工」并止步，其余读失败仍走预填口径。
-          if (read.problem === '项目工作区尚未就绪') {
-            toast.info('项目工作区尚未就绪，无法开工目标；待原生登记就绪后重试。')
-            return
-          }
-          toast.info(
-            `计划材料不可读（${read.problem ?? '原因未知'}）：目标上下文按已知信息预填，约定项标「待明确」。`
-          )
-        }
-        openGoalStartComposer({
-          version,
-          goal: {
-            goalId: goal.goalId,
-            label: goal.label,
-            title: full?.title ?? goal.title,
-            ...(full?.deliverable !== undefined ? { deliverable: full.deliverable } : {}),
-            ...(full?.acceptance !== undefined ? { acceptance: full.acceptance } : {})
-          },
-          references: read.document?.tasks ?? [],
-          home:
-            catalog.scope && catalog.home
-              ? {
-                  repoId: catalog.home.repoId,
-                  projectId: catalog.scope.projectId,
-                  hostId: catalog.scope.hostId,
-                  ...(catalog.scope.runtimeOwnerEnvironmentId
-                    ? { runtimeOwnerEnvironmentId: catalog.scope.runtimeOwnerEnvironmentId }
-                    : {})
-                }
-              : null
-        })
-      }),
-    [busy, catalog, entries]
   )
 
   if (!repoId) {
@@ -261,6 +225,7 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
               expanded={expandedVersions.has(entry.version)}
               browsed={browsedVersion === entry.version}
               busy={busyKey !== null}
+              initializing={busyKey === `${entry.version}:init`}
               worktrees={catalog.worktrees}
               activeWorkflow={
                 activeView === 'terminal' || activeView === 'artifacts' ? activeWorkflow : null
@@ -286,7 +251,11 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
                   projectKey: repoId
                 })
               }
-              onPrepare={() => setDialog({ mode: 'prepare', version: entry.version })}
+              onInitialize={() =>
+                void busy(`${entry.version}:init`, async () => {
+                  await initializeVersionWorkspace({ catalog, version: entry.version })
+                })
+              }
               onOpenTasks={(goal) =>
                 void busy(`${entry.version}:${goal?.goalId ?? 'all'}:tasks`, async () => {
                   await openVersionTasks({
@@ -297,7 +266,16 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
                   })
                 })
               }
-              onStartGoal={(goal) => void startGoal(entry.version, goal)}
+              onStartGoal={(goal) =>
+                void busy(`${entry.version}:${goal.goalId}:start`, async () => {
+                  await startVersionGoal({
+                    catalog,
+                    version: entry.version,
+                    goal,
+                    entry
+                  })
+                })
+              }
               onOpenGoalWorkspace={(goal) => {
                 const opened = openGoalWorkspace({
                   version: entry.version,
@@ -327,12 +305,13 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
           version={dialog.version}
           entry={entries.find((item) => item.version === dialog.version) ?? null}
           worktrees={catalog.worktrees}
+          repos={repos}
+          scope={catalog.scope}
           onClose={() => setDialog(null)}
         />
       ) : null}
-      {dialog && dialog.mode !== 'cleanup' && dialog.mode !== 'bind' ? (
+      {dialog?.mode === 'create' ? (
         <NewVersionDialog
-          request={dialog}
           catalog={catalog}
           projectKey={repoId}
           projectName={projectName}

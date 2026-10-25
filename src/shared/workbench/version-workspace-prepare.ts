@@ -34,6 +34,19 @@ export function versionFlowTreeName(version: string, workflow: VersionFlowWorkfl
   return workflow === 'plan' ? `plan-${version}` : `acceptance-${version}`
 }
 
+/**
+ * 旧固定流程分支（G2 绑定登记之前的 plan/acceptance 固定树名；无绑定树的旧
+ * 路径显式保留）。renderer 固定树 ensure/流程识别与 main 材料围栏、选版共用，
+ * 旧分支名只写这里。
+ */
+export const LEGACY_PLAN_BRANCH = 'bw/week-plan'
+export const LEGACY_ACCEPTANCE_BRANCH = 'bw/week-acceptance'
+
+/** 旧调用点判定逐字保留：非 plan 即按 acceptance（入参恒在 plan/acceptance 二分内）。 */
+export function legacyFlowBranch(workflow: VersionFlowWorkflow): string {
+  return workflow === 'plan' ? LEGACY_PLAN_BRANCH : LEGACY_ACCEPTANCE_BRANCH
+}
+
 export const VersionWorkspacePrepareSchema = z.strictObject({
   repoId: Id,
   hostId: Id,

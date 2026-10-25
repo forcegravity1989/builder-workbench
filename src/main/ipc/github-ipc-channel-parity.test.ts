@@ -28,6 +28,7 @@ const EXPECTED_GITHUB_IPC_CHANNELS = [
   'gh:listWorkItems',
   'gh:countWorkItems',
   'gh:issueStates',
+  'gh:workItemsBatch',
   'gh:workItem',
   'gh:workItemByOwnerRepo',
   'gh:workItemDetails',

@@ -11,6 +11,7 @@ import {
 } from './version-catalog-load'
 import { nativeWorkspaceScope, type NativeWorkspaceScope } from './version-cycle/native-workspace'
 import { cycleBranch } from './version-cycle/native-cycle-workspace'
+import { worktreeFingerprintTuple } from './worktree-fingerprint'
 
 /**
  * 侧栏版本树的目录装载（G2 P3a）：目录=现算（绑定从原生登记、材料从主干与
@@ -133,18 +134,10 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
   const [error, setError] = useState<string | null>(null)
 
   // 登记变化（绑定写入/删树/实例更换）用指纹触发重读；目录永远是现算。
+  // 单树元组与墙卡版本链共用 worktreeFingerprintTuple；此处按 worktrees 原序
+  // 连接、不排序（顺序变化也视为失效，与墙侧的排序无关键语义不同）。
   const fingerprint = useMemo(
-    () =>
-      worktrees
-        .map((tree) =>
-          [
-            tree.id,
-            tree.instanceId ?? '',
-            tree.isArchived ? '1' : '0',
-            JSON.stringify(tree.workbenchVersionBinding ?? null)
-          ].join('|')
-        )
-        .join(';'),
+    () => worktrees.map((tree) => worktreeFingerprintTuple(tree)).join(';'),
     [worktrees]
   )
   const homeId = home?.id ?? null

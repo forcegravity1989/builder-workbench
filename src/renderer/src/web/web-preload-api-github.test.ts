@@ -81,7 +81,8 @@ describe('web GitHub preload API', () => {
         'viewer',
         'workItem',
         'workItemByOwnerRepo',
-        'workItemDetails'
+        'workItemDetails',
+        'workItemsBatch'
       ].sort()
     )
   })

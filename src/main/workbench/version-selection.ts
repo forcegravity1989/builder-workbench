@@ -2,6 +2,7 @@ import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import type { VersionMaterialScope } from '../../shared/workbench/version-material-request'
 import { MaterialVersion } from '../../shared/workbench/version-material'
 import { normalizeStoredWorkbenchVersionBinding } from '../../shared/workbench/version-binding'
+import { legacyFlowBranch } from '../../shared/workbench/version-workspace-prepare'
 import {
   nativeWorkbenchWorkspaceHost,
   createWorkbenchWorkspaceResolver
@@ -40,7 +41,7 @@ export async function versionSelection(
     }
     return { version: binding.version }
   }
-  const branch = scope.workflow === 'plan' ? 'bw/week-plan' : 'bw/week-acceptance'
+  const branch = legacyFlowBranch(scope.workflow)
   if (!branchSelectorMatches(worktree.branch, branch)) {
     throw new WorkspaceScopeError('wrong-branch', `请使用 ${branch} 工作树`)
   }

@@ -5,7 +5,11 @@ import type { Worktree } from '../../../../shared/worktree/types'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
 import { findVersionFlowWorktrees } from '../../../../shared/workbench/version-workspace-match'
 import { useAutoWorktreeBase } from './use-auto-worktree-base'
-import { nativeWorkspaceScope, nativeWorkspaceScopeKey } from './native-workspace'
+import {
+  nativeWorkspaceScope,
+  nativeWorkspaceScopeKey,
+  type NativeWorkspaceScope
+} from './native-workspace'
 import {
   cycleScopeKey,
   cycleScopeForWorktree,
@@ -30,6 +34,43 @@ function useStableCycleScope(value: CycleScope | null) {
         : null,
     [projectId, repoId, hostId, runtimeOwnerEnvironmentId, workflow]
   )
+}
+
+/**
+ * 绑定流程树围栏（G2 P3a）：宿主 scope-key 命中者优先，其次唯一同项目登记
+ * 回退；仍不唯一则如实报错交侧栏选择，绝不猜。
+ * 项目围栏：回退只认本项目登记（repo 必等、project 不冲突）——版本号跨
+ * 项目必撞名，他项目的唯一绑定树绝不是本项目的合法回退；配对宿主实例
+ * （同 repo 不同 host）仍在围栏内（scope-key 比对只按宿主维度失配）。
+ */
+function resolveBoundFlowTree(
+  bound: readonly Worktree[],
+  baseScope: NativeWorkspaceScope,
+  version: string
+): Worktree | null {
+  const inScope = bound.filter((tree) => {
+    try {
+      return (
+        nativeWorkspaceScopeKey(nativeWorkspaceScope(tree)) === nativeWorkspaceScopeKey(baseScope)
+      )
+    } catch {
+      return false
+    }
+  })
+  if (inScope.length > 1) {
+    throw new Error(`版本 ${version} 在本宿主有多个绑定的流程树，请在侧栏选择具体工作区。`)
+  }
+  const sameProject = bound.filter((tree) => {
+    if (tree.repoId !== baseScope.repoId) {
+      return false
+    }
+    return !(baseScope.projectId && tree.projectId && tree.projectId !== baseScope.projectId)
+  })
+  const chosen = inScope[0] ?? (sameProject.length === 1 ? sameProject[0] : null)
+  if (sameProject.length > 1 && !chosen) {
+    throw new Error(`版本 ${version} 有多个绑定流程树实例，请在侧栏选择具体工作区。`)
+  }
+  return chosen
 }
 
 /** Navigation prepares a native workspace once; it never owns or reselects its sessions. */
@@ -105,36 +146,7 @@ export function useCycleWorkspaceTarget(
             version: browsedVersion,
             workflow
           })
-          const inScope = bound.filter((tree) => {
-            try {
-              return (
-                nativeWorkspaceScopeKey(nativeWorkspaceScope(tree)) ===
-                nativeWorkspaceScopeKey(baseScope)
-              )
-            } catch {
-              return false
-            }
-          })
-          if (inScope.length > 1) {
-            throw new Error(
-              `版本 ${browsedVersion} 在本宿主有多个绑定的流程树，请在侧栏选择具体工作区。`
-            )
-          }
-          // 项目围栏：回退只认本项目登记（repo 必等、project 不冲突）——版本号跨
-          // 项目必撞名，他项目的唯一绑定树绝不是本项目的合法回退；配对宿主实例
-          // （同 repo 不同 host）仍在围栏内（上面的 scope-key 比对只按宿主维度失配）。
-          const sameProject = bound.filter((tree) => {
-            if (tree.repoId !== baseScope.repoId) {
-              return false
-            }
-            return !(
-              baseScope.projectId && tree.projectId && tree.projectId !== baseScope.projectId
-            )
-          })
-          chosen = inScope[0] ?? (sameProject.length === 1 ? sameProject[0] : null)
-          if (sameProject.length > 1 && !chosen) {
-            throw new Error(`版本 ${browsedVersion} 有多个绑定流程树实例，请在侧栏选择具体工作区。`)
-          }
+          chosen = resolveBoundFlowTree(bound, baseScope, browsedVersion)
           if (!chosen && !findCycleWorktree({ ...baseScope, workflow })) {
             // G2（P3b）：只读回看分支——已清理/未准备版本不报错、不建树，
             // 由壳挂载只读材料视图（来源=主干已提交材料，缺材料如实显示）。

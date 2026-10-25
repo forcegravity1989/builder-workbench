@@ -8,6 +8,7 @@ import type {
   RuntimeWorktreeRecord
 } from '../../shared/runtime-worktree-contracts'
 import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/runtime-managed-worktree-create-types'
+import { normalizeLocalBranchName } from '../runtime/runtime-worktree-selection'
 import { REPO_SEARCH_REFS_MAX_LIMIT } from '../../shared/repo-search-limits'
 import { matchReusableBranchRef } from '../../shared/workbench/reusable-branch-ref'
 import {
@@ -189,7 +190,7 @@ export function createVersionWorkspacePrepareService(
 
       // 2) Git 级占用（含未登记/外部树）：归属不能证明为本版流程树 → 拒绝，不劫持不清理。
       const holder = (await runtime.listDetectedManagedWorktrees(repoSelector)).worktrees.find(
-        (tree) => tree.branch.replace(/^refs\/heads\//, '') === branch
+        (tree) => normalizeLocalBranchName(tree.branch) === branch
       )
       if (holder) {
         const holderBinding = normalizeStoredWorkbenchVersionBinding(holder.workbenchVersionBinding)
@@ -229,11 +230,15 @@ export function createVersionWorkspacePrepareService(
             branchNameOverride: branch,
             ...(baseRef ? { baseBranch: baseRef } : {}),
             activate: false,
-            setupDecision: 'inherit'
+            // Why: #436 伴飞裁定（CF-5）——初始化工作区不跑 setup：inherit 会默认执行
+            // orca.yaml setup（弹 Setup 终端、装依赖，node-gyp 失败即报错），材料读写与
+            // CLI 注入不需要依赖；流程树上会话需要时由 agent 自装（automations headless
+            // 同口径，见 headless-workspace-create.ts）。
+            setupDecision: 'skip'
           })
       )
       const created = result.worktree
-      const createdBranch = created.branch.replace(/^refs\/heads\//, '')
+      const createdBranch = normalizeLocalBranchName(created.branch)
       if (createdBranch !== branch) {
         // uniquified = 竞态抢占了分支：不绑定、不初始化、不标成功。误建树沿原生
         // 删除链默认口径 best-effort 清理（不附 force/豁免，不放宽删除安全规则）。

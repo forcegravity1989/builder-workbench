@@ -35,12 +35,12 @@ import type {
   VersionMigrationRead
 } from '../../shared/workbench/version-material-migration'
 import {
+  LEGACY_PLAN_BRANCH,
   isVersionFlowWorkflow,
+  legacyFlowBranch,
   versionFlowBranch
 } from '../../shared/workbench/version-workspace-prepare'
-
-/** 无绑定树的旧固定计划分支（旧上下文逐字保留；材料读写与空计划初始化围栏共用）。 */
-const LEGACY_PLAN_BRANCH = 'bw/week-plan'
+import { branchFullRef } from '../../shared/workbench/branch-ref'
 
 /** Runs on the filesystem owner; paths come from the authenticated native inventory adapter. */
 export type VersionMaterialWorkspace = { repoPath: string; worktreePath: string }
@@ -58,7 +58,7 @@ export function createVersionMaterialWorkspace(
    */
   function expectedBranchFor(scope: VersionMaterialScope): string {
     if (!binding) {
-      return scope.workflow === 'plan' ? LEGACY_PLAN_BRANCH : 'bw/week-acceptance'
+      return legacyFlowBranch(scope.workflow)
     }
     if (!flowBinding || flowBinding.workflow !== scope.workflow) {
       throw new WorkspaceScopeError('invalid-scope', '该工作树不是此用途的流程树，材料读写被拒绝')
@@ -91,7 +91,7 @@ export function createVersionMaterialWorkspace(
     if (repoCommon !== treeCommon) {
       throw new WorkspaceScopeError('invalid-scope', '工作树不属于所选 Git 项目')
     }
-    if (head.trim() !== `ref: refs/heads/${expectedBranch}`) {
+    if (head.trim() !== `ref: ${branchFullRef(expectedBranch)}`) {
       throw new WorkspaceScopeError('wrong-branch', `请使用 ${expectedBranch} 工作树`)
     }
     return root

@@ -3,6 +3,7 @@ import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { mergeExternalWorktreeInboxPaths } from '../../../../shared/external-worktree-inbox'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import { resolveExactWorktreeRoute, routeForOwner } from '@/lib/worktree-owner-route'
+import { branchName } from '@/lib/git-utils'
 import {
   getRepoExecutionHostId,
   parseExecutionHostId,
@@ -71,7 +72,7 @@ export function findNamedWorktree(scope: NativeWorkspaceScope, branch: string): 
     .filter(
       (worktree) =>
         worktree.repoId === scope.repoId &&
-        worktree.branch.replace(/^refs\/heads\//, '') === branch &&
+        branchName(worktree.branch) === branch &&
         nativeWorkspaceScopeKey(nativeWorkspaceScope(worktree)) === nativeWorkspaceScopeKey(scope)
     )
   if (found.length > 1) {
@@ -208,7 +209,7 @@ export async function ensureNamedWorktree(
     // in-flight). Adopting an existing holder — or failing before create — is what
     // stops native create from uniquifying name+branch into orphan trees.
     const holder = (await detectedTrees(scope, target)).find(
-      (item) => item.branch.replace(/^refs\/heads\//, '') === branch
+      (item) => branchName(item.branch) === branch
     )
     if (holder) {
       const imported = await importExternalTree(scope, holder.path)
@@ -248,7 +249,7 @@ export async function ensureNamedWorktree(
             },
             { timeoutMs: 600_000 }
           )
-    const createdBranch = result.worktree.branch.replace(/^refs\/heads\//, '')
+    const createdBranch = branchName(result.worktree.branch)
     if (createdBranch !== branch) {
       // Native create uniquifies name+branch when the requested branch is already
       // checked out elsewhere (e.g. a tree left by an older toolchain). Roll the stray
