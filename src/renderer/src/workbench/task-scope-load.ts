@@ -252,8 +252,8 @@ export async function loadWorkbenchTaskScope(
     viewProvider === 'github'
       ? await loadGitHubRefsBatched({ refs: viewRefs, deps, home, readSingle })
       : await mapPool(viewRefs, SCOPE_READ_CONCURRENCY, readSingle)
-  // 按引用序装配（计划材料的任务顺序），GitHub 行再按原生列表惯例排序；
-  // 完成序不进渲染，刷新不抖序。
+  // 装配序不影响输出：GitHub 行按原生列表惯例排序、缺行按编号/仓库排序；
+  // 完成序不进渲染，刷新不抖序（批量化后 outcomes=批量命中在前、回落在后）。
   const githubItems: GitHubWorkItem[] = []
   const codehubItems: CodeHubTaskItem[] = []
   for (const outcome of outcomes) {

@@ -38,7 +38,7 @@ const PR_FRAGMENT = `fragment BwPullRequestFields on PullRequest {
   labels(first: 20) { nodes { name } }
   author { login avatarUrl }
   assignees(first: 20) { nodes { login name avatarUrl } }
-  reviewRequests(first: 10) { nodes { requestedReviewer { ... on User { login name avatarUrl } } } }
+  reviewRequests(first: 10) { nodes { requestedReviewer { ... on User { login name avatarUrl } ... on Bot { login avatarUrl } } } }
   latestOpinionatedReviews(first: 10) { nodes { author { login avatarUrl } state } }
 }`
 
