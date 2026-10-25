@@ -7,6 +7,7 @@ import {
   notifyScopedWorkspaceUnavailable
 } from './scoped-task-workspace'
 import { dispatchScopedWorktrees } from './version-workspace-choice-state'
+import { prefetchWorkspaceCreateBase } from './workspace-create-prefetch'
 import type { CycleTaskSnapshot } from './version-cycle/ports'
 
 /**
@@ -76,6 +77,8 @@ export function openIssueWorkspaceOrStart(args: {
         home: { repoId, hostId: task.source.hostId }
       })
     : undefined
+  // CF-6c：进创建器前预热 base fetch 与 gh 用户名缓存（fire-and-forget）。
+  prefetchWorkspaceCreateBase(repoId)
   useAppStore.getState().openModal('new-workspace-composer', {
     linkedWorkItem: {
       provider,

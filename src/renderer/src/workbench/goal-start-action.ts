@@ -3,6 +3,7 @@ import type { ExecutionHostId } from '../../../shared/execution-host'
 import type { WorkbenchCreationContext } from '../../../shared/workbench/creation-context'
 import type { CycleTaskReference } from './version-cycle/ports'
 import { findGoalParentSuggestion } from './scoped-task-workspace'
+import { prefetchWorkspaceCreateBase } from './workspace-create-prefetch'
 
 /**
  * 目标开工动作（G2 P4③，P3a 侧栏目标「···」菜单以事件驱动接线）：复用同一
@@ -75,6 +76,8 @@ export function openGoalStartComposer(args: {
     worktrees: useAppStore.getState().allWorktrees(),
     home
   })
+  // CF-6c：进创建器前预热 base fetch 与 gh 用户名缓存（fire-and-forget）。
+  prefetchWorkspaceCreateBase(home.repoId)
   useAppStore.getState().openModal('new-workspace-composer', {
     prefilledName: `${version}-${goal.label}`,
     initialRepoId: home.repoId,
