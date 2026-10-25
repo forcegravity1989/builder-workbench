@@ -61,7 +61,7 @@
 - **统一 Start/Open 解析**：归属只认绑定+原生 linked 字段（shared/version-workspace-match.ts 纯函数核，协议单测看护）：Issue 树=绑定 (version, issue, taskSource) ∧ linked (type=issue, number, provider)；唯一→直开、多候选→BW 选择器（模块 store+Radix Dialog，挂载于侧栏层——任务屏、详情弹窗与侧栏入口在任意视图共用）、无→原生创建器；PR 行与无范围路径保持原生「首个未归档树」语义。三处分发壳（板面开工箭头 issue-start-action、任务屏行、详情弹窗）共用 `dispatchScopedWorktrees`（唯一直开/多候选选择器/无返 'none' 回落；埋点与回落文案留调用方）。目标树/流程树同一绑定口径；父级建议仅唯一同项目同宿主目标树时给出（不建议不预建，原生选择器与创建期校验仍是权威）。
 - **开工与创建结果绑定**：目标/Issue 开工复用同一原生创建器，BW 只加三个可选预填字段（initialNote 可见可改的业务上下文、initialParentWorktreeId 建议、workbenchCreation 上下文）；绑定在提交时按创建器**最终**仓库+最终任务来源解析（改仓库即失效），写入发生在**真实创建结果处**（result.worktree，早于取消/激活分支——树既建成归属即应记录），instanceId 必填围栏、读回确认、失败保留树+「重试写绑定」不重复建树；取消（未创建）零绑定。quick/background 链经 `WorktreeCreationRequest.workbenchVersionBinding`（纯可序列化，Retry 原样重放）；full 链镜像。
 - **main 侧版本化**：绑定即版本正本——材料授权（期望分支由绑定派生、跨版读写拒绝 cross-version、用途不混、list 只呈现绑定版）与选版（context 恒回绑定版、select 他版拒绝、不写第二份选版偏好）都在服务层+执行器双围栏；SSH 窄执行器命令带可选 binding（无绑定树不带字段，旧对端不受扰）；无绑定树全部沿旧固定分支语义（旧上下文显式保留）。common-dir/写前再授权/CAS 事务核不变。
-- **侧栏与进屏**：版本行=目录现算（材料∪绑定∪已提交目标回看），流程行=业务入口+本树入口合一（原生 agent 行/原生菜单/原生激活链复用）；进屏定位绑定树优先且**不进 ensure 路径**（多实例交选择器、无树如实拒绝，浏览不建树）；旧固定树仅在已存在时作为旧路径；「＋新建版本」与「准备流程工作区」共用 prepare 重入补齐语义。当前浏览版本是 UI 偏好（按项目隔离持久化），不是归属/执行正本。目录装载：多计划树入口（各版绑定树按自身 owner 路由＋旧固定树 legacyTrees 后置，绑定树排前）、草稿读取失败进 problem 通道、retired 版本目标从已提交计划派生（readPlan 固定来源，只读回看不要求树）、collect 按 projectId 过滤前提。延后项收口：分支 ref 匹配提共享单实现（`reusable-branch-ref.ts`，main/renderer 同口径）；本地 IPC updateMeta 仅绑定字段显式 undefined=保留剥除（其余键沿原生 present-but-undefined 清除线约，H-1 收窄）。
+- **侧栏与进屏**：版本行=目录现算（材料∪绑定∪已提交目标回看），流程行=业务入口+本树入口合一（原生 agent 行/原生菜单/原生激活链复用）；进屏定位绑定树优先且**不进 ensure 路径**（多实例交选择器、无树如实拒绝，浏览不建树）；旧固定树仅在已存在时作为旧路径；「＋新建版本」与版本行「初始化工作区」共用 prepare 重入补齐语义。当前浏览版本是 UI 偏好（按项目隔离持久化），不是归属/执行正本。目录装载：多计划树入口（各版绑定树按自身 owner 路由＋旧固定树 legacyTrees 后置，绑定树排前）、草稿读取失败进 problem 通道、retired 版本目标从已提交计划派生（readPlan 固定来源，只读回看不要求树）、collect 按 projectId 过滤前提。延后项收口：分支 ref 匹配提共享单实现（`reusable-branch-ref.ts`，main/renderer 同口径）；本地 IPC updateMeta 仅绑定字段显式 undefined=保留剥除（其余键沿原生 present-but-undefined 清除线约，H-1 收窄）。
 - **P5 前自动化护栏**：creationKey 尚无版本维度——绑定树跳过旧身份 ensure、start/configure 如实拒绝（防运行落错树、防条目错挂），legacy 树零变化；版本化自动化身份与提示词归 P5，屏内按钮改绑归 P3b。
 
 ### P3b/P5/P6 落地：收尾定稿（2026-10-22，计划屏 #399 合入后）
@@ -73,6 +73,19 @@
 - **只读回看（P3b⑤）**：无绑定树且无旧固定树的版本，计划/验收屏挂 `VersionReadonlyMaterialView`——history RPC 按目录固定 sourceCommit/revision 读主干已提交材料，human-guard 字段只呈现状态不提供入口；工作树/会话不可用由登记缺失推导；缺材料/读取失败如实报，浏览不建树。
 - **P5 自动化身份版本化**：creationKey=`bw-cycle:<scope>:<workflow>[:<version>]`（绑定树加版本维度，每版独立登记）；条目名版本在前；提示词钉绑定树真实分支＋绑定版本（context.version=绑定版，「绑定即定、不切版不推断」文案）。计划、验收两侧 start/configure 护栏均已撤除（验收侧随 #394 合入、验收 Skill 正本 v0.7.1 绑定感知同步后放开；`useEnsureCycleAutomation` 的临时 skip 参数同轮删除，不留兼容层）。standard/ 两侧同步：week-planning SKILL 归档步绑定感知（0.6.1，随 #410 合并为 0.7.1）＋version-acceptance SKILL v0.7.1（恢复/归档步：绑定版本树 bw/<版本>/acceptance、旧无绑定树 bw/week-acceptance 逐字保留）＋version-records 命名与 v10 语义合并＋asset-audit 读取处；bundle/manifest/registry/stub 重生成 verify 双检通过。R9 墙读数：`resolvePlanContext`（拆出 `wall-plan-context.ts`）绑定优先——跨注册行恰一个绑定版本为正本；多在制版本如实「版本未定」，不猜不回落旧偏好。
 - **P6 版本总览**：高保真修订 9（人确认「最简、表格周报风格」）；侧栏每版「总览」行启用；总览页=activity 槽 `project-page-state` 模块态挂载（与项目墙/名片同机制，activeView 切换即清），一版一页只读派生：事实区（工作区登记现算/归档 PR 记录＋薄读取合入状态/发布证据如实未探测/纪要共识与遗留闭环计数）＋目标周报表（承诺/Issue 引用数与任务屏入口/人工验收结论/遗留下一步）。主干已提交材料固定来源读取；未合入草稿如实标注以计划屏为准；在制与已清理版本同一读路径。
+
+### 伴飞裁定落地（2026-10-25 夜，#436 伴飞汇总 PR #437）
+
+人装机伴飞 v0.7/v0.8 旅程逐条 AskUser 拍板，实现取舍如下（UI 判据见 spec，本节只记设计面）：
+
+- **初始化入口重排（CF-5）**：流程行菜单的「准备流程工作区」删除——入口挪版本行图标按钮（FolderPlus，非三个点），流程树不齐（plan/acceptance 任一缺）才显示、两树齐即消失；点击**直接执行** prepare 无确认单（人裁定：创建类不设确认单，busy 态＋toast 如实回报），执行链住 `version-nav-actions.initializeVersionWorkspace`，prepare 结果判词抽 `version-workspace-prepare-report.ts` 与新建对话框共用；归档版本不加拦截提醒（归档版继续干活是合理旅程）。NewVersionDialog 只剩 create 模式（prepare 模式失去调用方同交付删除）。只读回看指路文案对齐。
+- **prepare 建树 setup skip（CF-5）**：创建参数 `setupDecision:'inherit'→'skip'`（原生既有开关，automations headless 同口径）——不开 Setup 终端、不装依赖、建树回秒级；流程树上会话 agent 需要依赖时自己装（材料读写与 CLI 注入不需要）。legacy 固定树 ensure（native-workspace.ts）显式不动。
+- **树行对齐原生右击（CF-6f）**：BoundTreeRow 与 WorkflowRow 单树态去掉三点按钮，WorktreeContextMenu 上移包整行（右击行任意处出原生维护菜单=原生整卡右击同形态，左击激活语义不变）；≥2 实例保留三点树列表选择器（多实例无单一右击对象）；目标目录行三点 DropdownMenu（BW 动作）保留。
+- **计划屏空计划态会话入口（CF-9）**：prepare 已 create-only 初始化空计划（有材料、goals=[]）时，此前无会话入口（G3 空板卡仅无材料渲染）——照验收屏空板同语义补「与计划助手新建计划」，复用同一 PlanningStartButton/entry.start 注入链（cycle-prompt 绑定分支），有目标后消失；「添加目标」手动路径与烟测锚点不变。
+- **任务屏范围读回批量化（CF-6b，人拍板方案 A）**：墙卡 `gh:issueStates` 批量机制扩展为全行字段版 `gh:workItemsBatch`——每仓一次 `gh api graphql`，issue+pullRequest 双别名（PR 引用直接命中，消灭「issue 空探→pr view→merge-metadata」三调用链），映射复用单条链同一 mapIssueWorkItem/mapPullRequestWorkItem（connection 拍平成 gh --json 同形，不写第二套 mapper）；statusCheckRollup/merge-metadata 不进批量（原生 PR 列表路径同样不带，checks 走行级预取、merge-metadata 单条链也是 best-effort）。renderer 按材料坐标分组批量，登记/上下文解析不出、坐标不可解析、**环境宿主归属（runtime 路由不跨机代打）**、整组失败、双别名 miss 一律回落既有单条读（missing 语义逐字）。CodeHub：封装面无按编号批量命令（listTasks 是分页列表非等价读回），维持逐条并行池；codehub-cli 批量命令面待人内网复核。
+- **Issue 开工预填名含号（CF-6e）**：issue-start-action 换原生直发链（launch-work-item-direct 同款）`getWorkspaceIntentName`——`Issue <号> <标题前词>`，中文标题收敛为 `issue-<号>` 不再产生残骸；预填≠自动种子按显式输入存活到提交。plan 原文所指 getLinkedWorkItemWorkspaceName 经源码核证对 GitHub issue 不含号（与旧构造产物相同），按人的验收判据取 intent 命名，登记偏差。
+- **开工预热（CF-6c）**：开工入口 openModal 前 fire-and-forget `prefetchWorktreeCreateBase`（命令面板同款）＋`repos.getGitUsername` 既有 IPC（触发 gh 用户名探测的进程级缓存，创建时分支前缀解析直接命中）；零新增原生 API、不改创建参数；超时重试窗口语义是原生的，不动。
+- 同 PR 早轮已落：版本排序显示层在制优先＋降序（CF-2，目录契约仍升序）、清理确认单文案精简（CF-7）、补绑定改「把工作区纳入版本」四步选择＋Issue 用途双标记（CF-4）、全局任务入口恢复显示（CF-1 再裁定）＋两入口 tooltip 区分。
 
 原型构建：node docs/05-features/version-workspace/prototype/build-g2.cjs；加 --check 校验源码与生成物一致。独立 JSX/CSS 与真实计划快照在该特性的 prototype/ 下；复用现有 vendor.js 与设计系统资源，不修改已确认的旧原型。
 
