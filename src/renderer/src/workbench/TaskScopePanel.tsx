@@ -9,7 +9,7 @@ import type { TaskScopeMissingRow } from './task-scope-load'
  * 以最小结构类型接收任务屏 model，避免 BW 组件反向依赖原生阶段类型。
  */
 
-export type TaskScopeChromeModel = {
+type TaskScopeChromeModel = {
   workbenchScopeActive: boolean
   workbenchScope: WorkbenchTaskScope | null
   workbenchScopeLoading: boolean

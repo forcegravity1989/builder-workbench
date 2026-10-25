@@ -26,7 +26,7 @@ import { resolveReferenceRepo } from './task-port'
  * 唯一 → 直开；多候选 → 交选择器（绝不取数组第一棵）；无 → Start。
  */
 
-export type ScopedTaskWorkspaceMatch<T extends Worktree = Worktree> =
+type ScopedTaskWorkspaceMatch<T extends Worktree = Worktree> =
   | { kind: 'none'; candidates: readonly T[] }
   | { kind: 'unique'; candidates: readonly [T] }
   | { kind: 'choice'; candidates: readonly T[] }

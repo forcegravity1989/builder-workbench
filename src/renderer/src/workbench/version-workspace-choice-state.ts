@@ -56,7 +56,7 @@ export function chooseWorkbenchWorkspace(worktree: Worktree): void {
   }
 }
 
-export type ScopedWorkspaceDispatch = 'opened' | 'choice-opened' | 'unavailable' | 'none'
+type ScopedWorkspaceDispatch = 'opened' | 'choice-opened' | 'unavailable' | 'none'
 
 /**
  * 统一 Start/Open 的公共分发壳（板面开工箭头、任务屏行、详情弹窗三处共用）：

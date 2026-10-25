@@ -15,9 +15,9 @@ import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
  * 不准备树）。读不到如实报 problem，不猜、不装绿。
  */
 
-export type VersionPlanDocumentSource = 'draft' | 'committed' | 'none'
+type VersionPlanDocumentSource = 'draft' | 'committed' | 'none'
 
-export type VersionPlanDocumentRead = {
+type VersionPlanDocumentRead = {
   document: PlanningMaterial | null
   source: VersionPlanDocumentSource
   problem?: string

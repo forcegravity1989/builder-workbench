@@ -12,7 +12,7 @@ import { findGoalParentSuggestion } from './scoped-task-workspace'
  * 事件入口 openGoalStartComposer 为单实现。
  */
 
-export type GoalStartTarget = {
+type GoalStartTarget = {
   goalId: string
   /** 展示序号（如「G2」）；名称建议与上下文块用展示名，业务身份只认 goalId。 */
   label: string
@@ -21,7 +21,7 @@ export type GoalStartTarget = {
   acceptance?: string
 }
 
-export type GoalStartHome = {
+type GoalStartHome = {
   repoId: string
   projectId?: string | null
   hostId: ExecutionHostId
@@ -29,7 +29,7 @@ export type GoalStartHome = {
 }
 
 /** 目标开工预填块：进原生创建器的备注字段（可见可改、随树存为工作区备注），不做隐藏提示。 */
-export function buildGoalStartNote(args: {
+function buildGoalStartNote(args: {
   version: string
   goal: GoalStartTarget
   references: readonly CycleTaskReference[]

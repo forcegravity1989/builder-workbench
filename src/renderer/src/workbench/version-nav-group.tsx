@@ -19,7 +19,7 @@ import {
  * 本组件只做呈现与原生复用件组装。
  */
 
-export type VersionNavGroupProps = {
+type VersionNavGroupProps = {
   entry: VersionCatalogEntry
   expanded: boolean
   browsed: boolean

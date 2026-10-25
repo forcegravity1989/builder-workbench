@@ -19,7 +19,7 @@ import { nativeWorkspaceScope, type NativeWorkspaceScope } from './version-cycle
  * 结果一致。
  */
 
-export type DocLoad<T> =
+type DocLoad<T> =
   | { kind: 'loading' }
   | { kind: 'ready'; document: T; sourceCommit: string; committedAt: string }
   | { kind: 'missing'; message: string }

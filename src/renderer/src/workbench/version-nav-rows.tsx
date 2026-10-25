@@ -109,7 +109,7 @@ function BoundTreeRow({ tree }: { tree: Worktree }): React.JSX.Element {
   )
 }
 
-export type WorkflowRowProps = {
+type WorkflowRowProps = {
   version: string
   workflow: VersionWorkflow
   worktrees: readonly Worktree[]
@@ -223,7 +223,7 @@ export function WorkflowRow({
   )
 }
 
-export type GoalRowProps = {
+type GoalRowProps = {
   version: string
   label: string
   title: string

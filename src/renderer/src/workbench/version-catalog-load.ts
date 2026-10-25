@@ -50,7 +50,7 @@ export type VersionCatalogPlanTree = {
   runtimeOwnerEnvironmentId?: string | null
 }
 
-export type VersionCatalogProblem = { code: string; message: string }
+type VersionCatalogProblem = { code: string; message: string }
 
 export type VersionCatalogLoad = {
   entries: VersionCatalogEntry[]
