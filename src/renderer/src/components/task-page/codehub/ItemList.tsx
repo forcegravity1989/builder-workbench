@@ -36,13 +36,11 @@ import {
   GITHUB_TASK_STICKY_ID_CELL_CLASS,
   GITHUB_TASK_STICKY_ID_HEADER_CLASS,
   GITHUB_TASK_STICKY_TITLE_CELL_CLASS,
-  GITHUB_TASK_STICKY_TITLE_HEADER_CLASS
+  GITHUB_TASK_STICKY_TITLE_HEADER_CLASS,
+  getTaskPageRepoSourceContext
 } from '../../task-page-source-context'
 import { TaskPageScopeFooter, TaskPageScopeHeader } from '@/workbench/TaskScopePanel'
-import {
-  getTaskPageRepoSourceContext,
-  resolveTaskRowWorkspace
-} from '@/workbench/scoped-task-workspace'
+import { resolveTaskRowWorkspace } from '@/workbench/scoped-task-workspace'
 
 function githubStateOf(item: CodeHubTaskItem): GitHubWorkItemStatusItem {
   return {
