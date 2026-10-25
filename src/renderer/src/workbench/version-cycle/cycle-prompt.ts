@@ -126,7 +126,9 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
       topic === 'metrics-refresh'
         ? `## 执行上下文\n这是独立指标配置任务，使用原生项目与工作区上下文。\n${JSON.stringify(context, null, 2)}\n${metricsContext}`
         : [
-            '## 版本选定（先于任何材料写入完成）',
+            ...(boundVersion
+              ? ['## 版本（由绑定决定，先于任何材料写入完成读回）']
+              : ['## 版本选定（先于任何材料写入完成）']),
             ...(boundVersion
               ? [
                   `- 本工作树已绑定版本 ${boundVersion}（宿主登记为单一正本）：只读写该版材料，不切换到其他版本、不新建版本目录。`,
@@ -142,7 +144,14 @@ export async function resolveWorkbenchPromptAssets(scope: WorkbenchPromptScope) 
             '',
             '## 材料工具',
             `- 材料契约：ORCA bw materials schema --workflow ${workflow}。`,
-            '- 子命令参数以各自 --help 为准：ORCA bw materials context --help、ORCA bw materials select --help、ORCA bw materials list --help、ORCA bw materials read --help、ORCA bw materials save --help。',
+            // Why: 绑定树屏内无选版控件，select 子命令对绑定会话是未定义行为面，不暴露。
+            ...(boundVersion
+              ? [
+                  '- 子命令参数以各自 --help 为准：ORCA bw materials context --help、ORCA bw materials list --help、ORCA bw materials read --help、ORCA bw materials save --help。'
+                ]
+              : [
+                  '- 子命令参数以各自 --help 为准：ORCA bw materials context --help、ORCA bw materials select --help、ORCA bw materials list --help、ORCA bw materials read --help、ORCA bw materials save --help。'
+                ]),
             '',
             '## 固定工作树纪律',
             // Why: 绑定树登记行读不到真实分支时 branch=null，原句无条件插值会钉出
