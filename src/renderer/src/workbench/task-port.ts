@@ -135,9 +135,10 @@ export async function viewCodeHubTaskByIid(
   }
 }
 
-async function readReference(
-  deps: TaskPortDeps,
-  scope: CycleScope,
+/** 单条任务引用点读（共享读链）：任务屏范围行与补绑定 Issue 用途同一构造与失败语义。 */
+export async function readReference(
+  deps: Pick<TaskPortDeps, 'repos' | 'lookupGitHubWorkItem' | 'viewCodeHubTask' | 'now'>,
+  scope: Pick<CycleScope, 'repoId' | 'hostId'>,
   reference: CycleTaskReference
 ): Promise<CycleTaskSnapshot> {
   const repo = resolveReferenceRepo(deps, scope, reference)

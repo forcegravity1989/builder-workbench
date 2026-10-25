@@ -19,11 +19,12 @@ export const WORKFLOW_TREE_LABELS: Record<VersionWorkflow, string> = {
   acceptance: '验收树'
 }
 
-/** Issue 执行树文案（开工须经任务屏；补绑定用途下拉另附原因后缀）。 */
+/** Issue 执行树文案（树行/清理清单与总览同源）。 */
 export const ISSUE_TREE_LABEL = 'Issue 执行树'
 
-/** 补绑定用途选项的目标树文案（用途语义，与树行的「目标树」区分）。 */
-export const GOAL_PURPOSE_LABEL = '目标协作树'
+/** 补绑定用途选项文案（用途语义，与树行的「目标树」「Issue 执行树」区分）。 */
+export const GOAL_PURPOSE_LABEL = '目标工作区'
+export const ISSUE_PURPOSE_LABEL = 'Issue 工作区'
 
 /** 目标展示序号（业务身份只认 goalId，序号仅呈现层，按计划投影顺序派生）。 */
 export function goalOrdinal(index: number): string {

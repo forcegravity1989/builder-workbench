@@ -52,6 +52,7 @@ function readExpandedStore(key: string | null): Set<string> | null {
 
 export function WorkbenchVersionNav(): React.JSX.Element | null {
   const repoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const repos = useAppStore((s) => s.repos)
   const projectName = useAppStore((s) => {
     const active = s.activeRepoId ?? s.repos[0]?.id ?? null
     return s.repos.find((repo) => repo.id === active)?.displayName?.trim() || null
@@ -293,6 +294,8 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
           version={dialog.version}
           entry={entries.find((item) => item.version === dialog.version) ?? null}
           worktrees={catalog.worktrees}
+          repos={repos}
+          scope={catalog.scope}
           onClose={() => setDialog(null)}
         />
       ) : null}

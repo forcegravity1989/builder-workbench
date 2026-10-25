@@ -24,6 +24,14 @@ export type VersionCatalogWorkspace = {
 /** 目标目录条目：从已保存计划投影（goalId 稳定，改名/排序不变）。 */
 export type VersionCatalogGoalRef = { goalId: string; title: string }
 
+/** 任务引用目录条目：从已保存计划材料投影；标题/状态由消费方实时读回，不入目录缓存。 */
+export type VersionCatalogTaskRef = {
+  provider: string
+  repository: string
+  number: number
+  goalId?: string
+}
+
 export type VersionCatalogMaterialRef = {
   cycleId: string
   revision: string
@@ -50,6 +58,7 @@ export type VersionCatalogEntry = {
   /** 已保存计划的未合入草稿；有 material.plan 时仅标注差异存在，不冒充定稿。 */
   draft?: { cycleId: string; revision: string }
   goals: VersionCatalogGoalRef[]
+  tasks: VersionCatalogTaskRef[]
   workspaces: VersionCatalogWorkspace[]
   /** working=在制（有存活绑定）；retired=已清理或未准备，条目保留、收起回看。 */
   state: 'working' | 'retired'
@@ -126,6 +135,7 @@ export function mergeVersionCatalog(args: {
   committed: VersionHistoryCatalog
   drafts?: readonly VersionCatalogDraftSource[] | null
   goalsByVersion?: ReadonlyMap<string, readonly VersionCatalogGoalRef[]> | null
+  tasksByVersion?: ReadonlyMap<string, readonly VersionCatalogTaskRef[]> | null
   workspaces?: readonly VersionCatalogWorkspace[] | null
 }): VersionCatalogEntry[] {
   const entries = new Map<string, VersionCatalogEntry>()
@@ -139,6 +149,7 @@ export function mergeVersionCatalog(args: {
       material: {},
       problems: [],
       goals: [],
+      tasks: [],
       workspaces: [],
       state: 'retired'
     }
@@ -174,6 +185,9 @@ export function mergeVersionCatalog(args: {
   }
   for (const [version, goals] of args.goalsByVersion ?? []) {
     entryFor(version).goals = [...goals]
+  }
+  for (const [version, tasks] of args.tasksByVersion ?? []) {
+    entryFor(version).tasks = [...tasks]
   }
   for (const workspace of args.workspaces ?? []) {
     entryFor(workspace.binding.version).workspaces.push(workspace)
