@@ -7,10 +7,9 @@ import type { VersionCatalogEntry } from '../../../shared/workbench/version-cata
 import { setCycleView } from './cycle-view-state'
 import { setBrowsedVersion } from './version-context-state'
 import { WORKFLOW_SCREEN_LABELS } from './version-labels'
-import {
-  openWorkbenchWorkspaceChoice,
-  worktreeActivationHostOpts
-} from './version-workspace-choice-state'
+import { openGoalStartComposer } from './goal-start-action'
+import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
+import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 import { openVersionTasksPage } from './task-scope-load'
 import { loadVersionPlanDocument } from './version-task-entries'
 import type { VersionCatalogState } from './use-version-catalog'
@@ -86,5 +85,63 @@ export async function openVersionTasks(args: {
     goal: goal ?? null,
     references,
     homeRepoId: catalog.home.repoId
+  })
+}
+
+/**
+ * 目标开工（侧栏目标目录「···」→ 目标开工，P4③）：读本版计划预填目标上下文后
+ * 进原生创建器。home 缺失如实止步、计划不可读按预填口径（原因见函数内 L-1
+ * 注释）；busy 键与并发门由调用组件持有（与 openVersionTasks 同形）。
+ */
+export async function startVersionGoal(args: {
+  catalog: VersionCatalogState
+  version: string
+  goal: { goalId: string; label: string; title: string }
+  entry: VersionCatalogEntry | null
+}): Promise<void> {
+  const { catalog, version, goal, entry } = args
+  const read =
+    catalog.scope && catalog.home
+      ? await loadVersionPlanDocument({
+          scope: catalog.scope,
+          homeWorktreeId: catalog.home.id,
+          version,
+          entry,
+          planTrees: catalog.planTrees
+        })
+      : { document: null, problem: '项目工作区尚未就绪' }
+  const full = read.document?.goals.find((item) => item.goalId === goal.goalId)
+  if (!read.document) {
+    // 最终检视 L-1：home 缺失时开工链静默返回，先承诺预填再 no-op 不诚实——
+    // 该情形如实报「无法开工」并止步，其余读失败仍走预填口径。
+    if (read.problem === '项目工作区尚未就绪') {
+      toast.info('项目工作区尚未就绪，无法开工目标；待原生登记就绪后重试。')
+      return
+    }
+    toast.info(
+      `计划材料不可读（${read.problem ?? '原因未知'}）：目标上下文按已知信息预填，约定项标「待明确」。`
+    )
+  }
+  openGoalStartComposer({
+    version,
+    goal: {
+      goalId: goal.goalId,
+      label: goal.label,
+      title: full?.title ?? goal.title,
+      ...(full?.deliverable !== undefined ? { deliverable: full.deliverable } : {}),
+      ...(full?.acceptance !== undefined ? { acceptance: full.acceptance } : {})
+    },
+    references: read.document?.tasks ?? [],
+    home:
+      catalog.scope && catalog.home
+        ? {
+            repoId: catalog.home.repoId,
+            projectId: catalog.scope.projectId,
+            hostId: catalog.scope.hostId,
+            ...(catalog.scope.runtimeOwnerEnvironmentId
+              ? { runtimeOwnerEnvironmentId: catalog.scope.runtimeOwnerEnvironmentId }
+              : {})
+          }
+        : null
   })
 }

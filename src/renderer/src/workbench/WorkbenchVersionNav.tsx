@@ -8,15 +8,13 @@ import type { VersionWorkflow } from '../../../shared/workbench/version-document
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import { useVersionCatalogForRepo } from './use-version-catalog'
 import { useBrowsedVersion } from './version-context-state'
-import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
+import { navigateVersionWorkflow, openVersionTasks, startVersionGoal } from './version-nav-actions'
 import { VersionCleanupDialog } from './version-cleanup-dialog'
 import { VersionTreeBindDialog } from './version-tree-bind-dialog'
 import { VersionNavGroup } from './version-nav-group'
 import { NewVersionDialog, type NewVersionDialogRequest } from './NewVersionDialog'
-import { openGoalStartComposer } from './goal-start-action'
 import { openGoalWorkspace } from './scoped-task-workspace'
 import { openVersionOverview, useProjectPage } from './project-page-state'
-import { loadVersionPlanDocument } from './version-task-entries'
 import { useCycleView } from './cycle-view-state'
 
 /**
@@ -137,58 +135,6 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
     [busyKey]
   )
 
-  const startGoal = useCallback(
-    (version: string, goal: { goalId: string; label: string; title: string }) =>
-      busy(`${version}:${goal.goalId}:start`, async () => {
-        const entry = entries.find((item) => item.version === version) ?? null
-        const read =
-          catalog.scope && catalog.home
-            ? await loadVersionPlanDocument({
-                scope: catalog.scope,
-                homeWorktreeId: catalog.home.id,
-                version,
-                entry,
-                planTrees: catalog.planTrees
-              })
-            : { document: null, problem: '项目工作区尚未就绪' }
-        const full = read.document?.goals.find((item) => item.goalId === goal.goalId)
-        if (!read.document) {
-          // 最终检视 L-1：home 缺失时开工链静默返回，先承诺预填再 no-op 不诚实——
-          // 该情形如实报「无法开工」并止步，其余读失败仍走预填口径。
-          if (read.problem === '项目工作区尚未就绪') {
-            toast.info('项目工作区尚未就绪，无法开工目标；待原生登记就绪后重试。')
-            return
-          }
-          toast.info(
-            `计划材料不可读（${read.problem ?? '原因未知'}）：目标上下文按已知信息预填，约定项标「待明确」。`
-          )
-        }
-        openGoalStartComposer({
-          version,
-          goal: {
-            goalId: goal.goalId,
-            label: goal.label,
-            title: full?.title ?? goal.title,
-            ...(full?.deliverable !== undefined ? { deliverable: full.deliverable } : {}),
-            ...(full?.acceptance !== undefined ? { acceptance: full.acceptance } : {})
-          },
-          references: read.document?.tasks ?? [],
-          home:
-            catalog.scope && catalog.home
-              ? {
-                  repoId: catalog.home.repoId,
-                  projectId: catalog.scope.projectId,
-                  hostId: catalog.scope.hostId,
-                  ...(catalog.scope.runtimeOwnerEnvironmentId
-                    ? { runtimeOwnerEnvironmentId: catalog.scope.runtimeOwnerEnvironmentId }
-                    : {})
-                }
-              : null
-        })
-      }),
-    [busy, catalog, entries]
-  )
-
   if (!repoId) {
     return null
   }
@@ -297,7 +243,16 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
                   })
                 })
               }
-              onStartGoal={(goal) => void startGoal(entry.version, goal)}
+              onStartGoal={(goal) =>
+                void busy(`${entry.version}:${goal.goalId}:start`, async () => {
+                  await startVersionGoal({
+                    catalog,
+                    version: entry.version,
+                    goal,
+                    entry
+                  })
+                })
+              }
               onOpenGoalWorkspace={(goal) => {
                 const opened = openGoalWorkspace({
                   version: entry.version,
