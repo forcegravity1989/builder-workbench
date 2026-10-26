@@ -1,5 +1,5 @@
 import { ChartNoAxesCombined, ChevronDown, ChevronRight, Info, Plus, RefreshCw } from 'lucide-react'
-import { useEffect, useRef, useState, type Ref } from 'react'
+import { useState, type Ref } from 'react'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
 import { goalCardViewKey, writeGoalCardExpanded } from '../cycle-view-state'
 import type { AnnotationMatch } from '../annotations/types'
@@ -11,7 +11,8 @@ import {
   materialProblemRequest,
   type CycleMaterialProblem
 } from '../version-cycle/cycle-start-request'
-import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
+import type { CycleScope, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
+import { useCycleTaskReads } from '../version-cycle/use-cycle-task-reads'
 import { PlanningGoalCard } from './PlanningGoalCard'
 import type { usePlanMetrics } from './use-plan-metrics'
 
@@ -51,73 +52,19 @@ export function PlanningGoals({
   problems: CycleMaterialProblem[]
   version: string | null
 }) {
-  const [reads, setReads] = useState<CycleTaskRead[] | null>(null)
   const [expanded, setExpanded] = useState(false)
   const [expandedSignal, setExpandedSignal] = useState(0)
-  const [refreshing, setRefreshing] = useState(false)
-  const [readError, setReadError] = useState<string | null>(null)
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
-  const referenceKey = JSON.stringify(plan?.tasks ?? [])
-  const referenceKeyRef = useRef(referenceKey)
-  referenceKeyRef.current = referenceKey
-  useEffect(() => {
-    if (!scope || !plan?.tasks.length) {
-      setReads(plan?.tasks.length ? null : [])
-      setReadError(null)
-      return
-    }
-    let active = true
-    setReads(null)
-    void taskPort.listVersion(scope, plan.tasks).then(
-      (items) => {
-        if (active) {
-          setReads(items)
-          setReadError(null)
-        }
-      },
-      (reason) => {
-        if (active) {
-          setReadError(reason instanceof Error ? reason.message : String(reason))
-          setReads(
-            plan.tasks.map((reference) => ({
-              reference,
-              kind: 'unavailable' as const,
-              error: '任务状态读取失败',
-              readAt: new Date().toISOString()
-            }))
-          )
-        }
-      }
-    )
-    return () => {
-      active = false
-    }
-  }, [plan?.tasks, referenceKey, scope, taskPort])
-
-  const refreshIssues = async () => {
-    if (!scope || !plan?.tasks.length || refreshing) {
-      return
-    }
-    const requestedKey = referenceKey
-    setRefreshing(true)
-    setReadError(null)
-    try {
-      const items = await taskPort.refresh(scope, plan.tasks)
-      // A version switch while the provider round-trip was in flight must not
-      // let the stale read overwrite the new version's list.
-      if (requestedKey === referenceKeyRef.current) {
-        setReads(items)
-      }
-    } catch (reason) {
-      if (requestedKey === referenceKeyRef.current) {
-        setReadError(reason instanceof Error ? reason.message : String(reason))
-      }
-    } finally {
-      // 复位转圈不设 key 守卫：刷新在途时切版本会让守卫跳过复位，按钮永久禁用、
-      // 图标永久转圈（组件不卸载）。守卫只该保护读回结果的落点。
-      setRefreshing(false)
-    }
-  }
+  // Issue 读数走两屏共享的渲染进程快照缓存（use-cycle-task-reads，#432）：
+  // 切屏/材料保存重挂载立即回显上次读数、后台静默重读，不再整列闪「状态未知」；
+  // 「刷新 Issue」强制重读，转圈即缓存条目 busy（按键控条目走，在途切版本不会
+  // 卡死按钮——旧组件级 refreshing 状态的复位守卫问题随机制结构化消失）。
+  const {
+    reads,
+    error: readError,
+    busy: refreshing,
+    refresh: refreshIssues
+  } = useCycleTaskReads({ scope, tasks: plan?.tasks, taskPort })
 
   const changeGoal = (goal: VersionGoal) => {
     if (plan) {

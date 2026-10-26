@@ -9,9 +9,9 @@ import {
 } from './overview-sdlc'
 import { readSdlcCommits, readSdlcRemote } from './overview-sdlc-readings'
 import { zoneChartRange } from './overview-zone-series'
-import { createOverviewSnapshotCache, useOverviewSnapshot } from './overview-snapshot-cache'
+import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'
 
-const cache = createOverviewSnapshotCache(() => ({
+const cache = createSnapshotCache(() => ({
   commits: null as SdlcSeries<SdlcCommits> | null,
   merges: null as SdlcSeries<SdlcCommits> | null,
   issues: null as SdlcSeries<SdlcSnapshot> | null,
@@ -47,7 +47,7 @@ export function useOverviewSdlc(args: {
     timezone
   ])
   const entry = useMemo(() => cache(key), [key])
-  const snapshot = useOverviewSnapshot(entry)
+  const snapshot = useSnapshotCache(entry)
   const load = useCallback(
     (force = false) => {
       if (

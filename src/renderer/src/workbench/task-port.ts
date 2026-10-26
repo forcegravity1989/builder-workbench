@@ -245,8 +245,12 @@ async function openDetail(
 }
 
 export function createTaskPort(deps: TaskPortDeps): TaskPort {
-  // Why: native providers own caching (Orca Tasks cache / codehub CLI); both BW
-  // entry points re-read through the same layer, so listVersion and refresh share one reader.
+  // Why: single-item native reads are uncached end to end (one-to-two gh spawns
+  // per GitHub reference — kindless lookup reads issue first, PR fallback on 404;
+  // one-to-two codehub CLI spawns per CodeHub reference; only Orca's work-item
+  // LIST search owns a cache). The renderer-lifetime snapshot cache for board
+  // reads lives in version-cycle/use-cycle-task-reads; listVersion and refresh
+  // stay the same reader here — force semantics are the caller's choice.
   async function readAll(
     scope: CycleScope,
     references: readonly CycleTaskReference[]

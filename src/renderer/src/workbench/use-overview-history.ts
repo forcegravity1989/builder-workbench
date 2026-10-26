@@ -3,9 +3,9 @@ import type { VersionHistoryCatalog } from '../../../shared/workbench/version-hi
 import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeVersionMaterialPort } from './version-material-port'
-import { createOverviewSnapshotCache, useOverviewSnapshot } from './overview-snapshot-cache'
+import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'
 
-const cache = createOverviewSnapshotCache(() => ({
+const cache = createSnapshotCache(() => ({
   history: null as VersionHistoryCatalog | null,
   loaded: false,
   busy: false,
@@ -22,7 +22,7 @@ export function useOverviewHistory(args: {
   const { baseScope, baseWorktreeId, planWorktreeId, acceptanceWorktreeId, identity } = args
   const key = JSON.stringify([identity, baseWorktreeId])
   const entry = useMemo(() => cache(key), [key])
-  const snapshot = useOverviewSnapshot(entry)
+  const snapshot = useSnapshotCache(entry)
   const [context, setContext] = useState<{
     key: string
     version: string | null

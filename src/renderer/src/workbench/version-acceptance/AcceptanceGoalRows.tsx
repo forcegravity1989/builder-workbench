@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
-import { useEffect, useRef, useState, type Ref } from 'react'
+import { useState, type Ref } from 'react'
 import type {
   AcceptanceMaterial,
   PlanningMaterial
@@ -8,6 +8,7 @@ import type { AnnotationMatch } from '../annotations/types'
 import { BoardIconButton } from '../board-ui'
 import { goalCardViewKey } from '../cycle-view-state'
 import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
+import { useCycleTaskReads } from '../version-cycle/use-cycle-task-reads'
 import { AcceptanceGoalRow } from './AcceptanceGoalRow'
 
 /**
@@ -44,58 +45,19 @@ export function AcceptanceGoalRows({
   onOpenAnnotationPanel(): void
   sectionRef: Ref<HTMLElement>
 }) {
-  const [reads, setReads] = useState<CycleTaskRead[] | null>(null)
-  const [readError, setReadError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
   const [expandedSignal, setExpandedSignal] = useState(0)
-  const referenceKey = JSON.stringify(plan.tasks ?? [])
-  const [refreshing, setRefreshing] = useState(false)
-  const referenceKeyRef = useRef(referenceKey)
-  referenceKeyRef.current = referenceKey
-  // Keyed on the serialized references, not the array identity: the fixed plan is
-  // re-read after a save and hands back a fresh array each time.
-  const tasksRef = useRef(plan.tasks)
-  tasksRef.current = plan.tasks
-  // Held in a ref and called from the fetch handler rather than an effect: a
-  // snapshot save changes the document, which must not retrigger the capture.
-  const snapshot = useRef(onSnapshot)
-  snapshot.current = onSnapshot
-
-  useEffect(() => {
-    const tasks = tasksRef.current
-    if (!tasks.length) {
-      setReads([])
-      setReadError(null)
-      return
-    }
-    let active = true
-    setReads(null)
-    void taskPort.listVersion(scope, tasks).then(
-      (items) => {
-        if (active) {
-          setReads(items)
-          setReadError(null)
-          snapshot.current(items)
-        }
-      },
-      (reason) => {
-        if (active) {
-          setReadError(reason instanceof Error ? reason.message : String(reason))
-          setReads(
-            tasks.map((reference) => ({
-              reference,
-              kind: 'unavailable' as const,
-              error: '任务状态读取失败',
-              readAt: new Date().toISOString()
-            }))
-          )
-        }
-      }
-    )
-    return () => {
-      active = false
-    }
-  }, [referenceKey, scope, taskPort])
+  // Issue 读数走两屏共享的渲染进程快照缓存（use-cycle-task-reads，#432）：切屏/
+  // 重挂载立即回显上次读数、后台静默重读，不再整列闪「状态未知」；「刷新 Issue」
+  // 强制重读，转圈即缓存条目 busy。快照仍随每次读取落地更新（新读数即新证据），
+  // 缓存回显不喂快照；保存快照改文档也不会重触发读取（effect 只认序列化 key，
+  // 旧 tasksRef/referenceKeyRef 守卫随机制结构化消失）。
+  const {
+    reads,
+    error: readError,
+    busy: refreshing,
+    refresh: refreshIssues
+  } = useCycleTaskReads({ scope, tasks: plan.tasks, taskPort, onFreshReads: onSnapshot })
 
   const readsByReference = reads
     ? new Map(
@@ -105,32 +67,6 @@ export function AcceptanceGoalRows({
         ])
       )
     : null
-
-  /** 手动重读 Issue 状态（计划屏区块头同款，验收屏 2026-10-23 补齐）；在途时
-      切换版本不得让旧读回覆盖新列表。快照同步更新：新读数即新证据。 */
-  const refreshIssues = async () => {
-    if (!plan.tasks.length || refreshing) {
-      return
-    }
-    const requestedKey = referenceKey
-    setRefreshing(true)
-    setReadError(null)
-    try {
-      const items = await taskPort.refresh(scope, plan.tasks)
-      if (requestedKey === referenceKeyRef.current) {
-        setReads(items)
-        snapshot.current(items)
-      }
-    } catch (reason) {
-      if (requestedKey === referenceKeyRef.current) {
-        setReadError(reason instanceof Error ? reason.message : String(reason))
-      }
-    } finally {
-      // 复位转圈不设 key 守卫：刷新在途时切版本会让守卫跳过复位，按钮永久禁用、
-      // 图标永久转圈（组件不卸载）。守卫只该保护读回结果与快照的落点。
-      setRefreshing(false)
-    }
-  }
 
   const judged = plan.goals.filter(
     (goal) => document.results.find((item) => item.goalId === goal.goalId)?.decision
