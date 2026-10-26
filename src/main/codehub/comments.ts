@@ -30,10 +30,6 @@ function mapComment(
     return null
   }
   const record = value as Record<string, unknown>
-  if (record.system === true) {
-    // Activity records such as "changed this line" are not user comments.
-    return null
-  }
   const id = record.id ?? record.note_id ?? record.noteId
   if (id === undefined || id === null) {
     return null

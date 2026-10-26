@@ -17,7 +17,7 @@ describe('codehub comments', () => {
     runCodeHubCliMock.mockReset()
   })
 
-  it('flattens mr review discussions into their nested notes and skips system notes', async () => {
+  it('flattens mr review discussions into their nested notes, keeping system activity notes', async () => {
     // `mr review list` yields discussions; the comments live in `notes`.
     // Shapes below mirror codehub-cli v1.3.4 JSON output.
     runCodeHubCliMock.mockResolvedValue(
@@ -45,6 +45,7 @@ describe('codehub comments', () => {
               body: 'changed this line on [77b9822e](https://codehub-g.huawei.com)',
               author: { username: 'l30047599' },
               created_at: '2026-03-13T10:17:39.799+08:00',
+              is_reply: true,
               system: true
             }
           ]
@@ -114,6 +115,23 @@ describe('codehub comments', () => {
         individual: false,
         isReply: false,
         authorAvatarUrl: 'https://codehub-g.huawei.com/avatar/m30077918.png',
+        isBot: false,
+        isResolved: false,
+        path: null,
+        line: null
+      },
+      {
+        id: '140425415',
+        body: 'changed this line on [77b9822e](https://codehub-g.huawei.com)',
+        author: 'l30047599',
+        createdAt: '2026-03-13T10:17:39.799+08:00',
+        discussionId: 'e54b6674d010ca64839e1be0ae7720ed05d1414a',
+        individual: false,
+        // System activity records ("changed this line on …") render like
+        // ordinary replies — real-data review preferred the website's
+        // full-fidelity thread over GitHub-style activity filtering.
+        isReply: true,
+        authorAvatarUrl: null,
         isBot: false,
         isResolved: false,
         path: null,
