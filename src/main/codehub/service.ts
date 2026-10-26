@@ -6,6 +6,7 @@ import type { Repo } from '../../shared/repo-types'
 import type { CodeHubExecOptions } from './cli'
 import { applyCodeHubIssueState } from './issue-state'
 import { readCodeHubMrChanges, readCodeHubMrChecks } from './mr-reads'
+import { listCodeHubProjectLabels } from './repo-reads'
 import { listCodeHubTasks } from './work-items'
 import {
   assignCodeHubIssue,
@@ -59,6 +60,9 @@ export function createCodeHubService(deps: {
     },
     async updateIssueLabels(args) {
       await updateCodeHubIssueLabels({ ...args, ...(await context(args)) })
+    },
+    async listLabels(args) {
+      return listCodeHubProjectLabels(await context(args))
     },
     async setIssueState(args) {
       const { remote, execOptions } = await context(args)

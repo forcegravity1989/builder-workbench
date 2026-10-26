@@ -425,7 +425,7 @@ describe('codehub comments', () => {
     )
   })
 
-  it('deletes an mr note within a discussion with --discussion-id', async () => {
+  it('deletes mr notes with --discussion-id inside threads and by note id alone when standalone', async () => {
     runCodeHubCliMock.mockResolvedValue('')
     await deleteCodeHubComment({
       remote,
@@ -434,7 +434,9 @@ describe('codehub comments', () => {
       commentId: '140416451',
       discussionId: 'e54b6674d010ca64839e1be0ae7720ed05d1414a'
     })
-    expect(runCodeHubCliMock).toHaveBeenCalledWith(
+    await deleteCodeHubComment({ remote, kind: 'mr', iid: 4092, commentId: '140416480' })
+    expect(runCodeHubCliMock).toHaveBeenNthCalledWith(
+      1,
       [
         'mr',
         'review',
@@ -452,12 +454,8 @@ describe('codehub comments', () => {
       ],
       undefined
     )
-  })
-
-  it('deletes a standalone mr note by note id alone', async () => {
-    runCodeHubCliMock.mockResolvedValue('')
-    await deleteCodeHubComment({ remote, kind: 'mr', iid: 4092, commentId: '140416480' })
-    expect(runCodeHubCliMock).toHaveBeenCalledWith(
+    expect(runCodeHubCliMock).toHaveBeenNthCalledWith(
+      2,
       [
         'mr',
         'review',

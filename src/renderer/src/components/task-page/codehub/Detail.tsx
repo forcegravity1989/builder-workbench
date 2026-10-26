@@ -261,6 +261,8 @@ export function TaskPageCodeHubDetail({
               setIssueState={setIssueState}
               assignees={detail?.assignees?.length ? detail.assignees : item.assignees}
               labels={detail?.labels?.length ? detail.labels : (item.labels ?? [])}
+              repoPath={item.repoPath ?? null}
+              repoId={item.repoId}
               editingLabels={editingLabels}
               setEditingLabels={setEditingLabels}
               labelDraft={labelDraft}

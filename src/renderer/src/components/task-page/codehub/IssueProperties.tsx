@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CodeHubIssueStatusMenu } from './IssueStatusMenu'
 import { translate } from '@/i18n/i18n'
-import { FolderKanban, LoaderCircle, Pencil, X } from 'lucide-react'
+import { Check, FolderKanban, LoaderCircle, Pencil, X } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
+import { codehubApi } from '@/lib/codehub-api'
+import { cn } from '@/lib/utils'
 
 export function CodeHubIssueProperties({
   closed,
@@ -11,6 +13,8 @@ export function CodeHubIssueProperties({
   setIssueState,
   assignees,
   labels,
+  repoPath,
+  repoId,
   editingLabels,
   setEditingLabels,
   labelDraft,
@@ -28,6 +32,8 @@ export function CodeHubIssueProperties({
   ) => void
   assignees: string[]
   labels: string[]
+  repoPath: string | null
+  repoId?: string
   editingLabels: boolean
   setEditingLabels: (editing: boolean) => void
   labelDraft: string[]
@@ -37,8 +43,42 @@ export function CodeHubIssueProperties({
   workspaceLabel: string | null
 }): React.JSX.Element {
   const [labelInput, setLabelInput] = useState('')
-  // The CLI takes labels as a CSV with no label-list command, so names are
-  // typed free-text; comma and Enter both finish an entry.
+  const [projectLabels, setProjectLabels] = useState<string[] | null>(null)
+  const [labelsLoading, setLabelsLoading] = useState(false)
+  const [labelsError, setLabelsError] = useState<string | null>(null)
+  // The picker list is fetched when the popover opens (and re-fetched on
+  // reopen), so a label created by a previous save shows up in the list.
+  useEffect(() => {
+    if (!editingLabels || !repoPath) {
+      return
+    }
+    let stale = false
+    setLabelsLoading(true)
+    setLabelsError(null)
+    codehubApi
+      .listLabels({ repoPath, repoId })
+      .then((names) => {
+        if (!stale) {
+          setProjectLabels(names)
+        }
+      })
+      .catch((reason: unknown) => {
+        if (!stale) {
+          setLabelsError(reason instanceof Error ? reason.message : String(reason))
+          setProjectLabels(null)
+        }
+      })
+      .finally(() => {
+        if (!stale) {
+          setLabelsLoading(false)
+        }
+      })
+    return () => {
+      stale = true
+    }
+  }, [editingLabels, repoPath, repoId])
+  // New label names are typed free-text (CodeHub auto-creates them on
+  // save); comma and Enter both finish an entry.
   const commitLabelInput = (): void => {
     const parts = labelInput
       .split(',')
@@ -49,6 +89,13 @@ export function CodeHubIssueProperties({
     }
     setLabelDraft([...new Set([...labelDraft, ...parts])])
     setLabelInput('')
+  }
+  const toggleDraftLabel = (label: string): void => {
+    setLabelDraft(
+      labelDraft.includes(label)
+        ? labelDraft.filter((name) => name !== label)
+        : [...labelDraft, label]
+    )
   }
   return (
     <aside className="grid grid-cols-2 gap-x-6 gap-y-5 border-b border-border/60 px-6 py-5 text-[13px] sm:grid-cols-4">
@@ -131,6 +178,47 @@ export function CodeHubIssueProperties({
                   placeholder={translate('auto.components.TaskPage.codehubAddLabel', 'Add label…')}
                   className="h-7 w-full rounded-md border border-border/60 bg-background px-2 text-[12px] outline-none focus-visible:border-primary"
                 />
+                <div className="max-h-40 overflow-y-auto scrollbar-sleek border-t border-border/40 pt-1.5">
+                  {labelsLoading ? (
+                    <div className="flex items-center gap-1.5 px-1 py-1 text-[11px] text-muted-foreground">
+                      <LoaderCircle className="size-3 animate-spin" />
+                      {translate(
+                        'auto.components.github.project.slug.dialog.LabelsEditor.34dd57d6c8',
+                        'Loading…'
+                      )}
+                    </div>
+                  ) : labelsError ? (
+                    <div className="px-1 py-1 text-[11px] text-destructive">{labelsError}</div>
+                  ) : (projectLabels ?? []).length === 0 ? (
+                    <div className="px-1 py-1 text-[11px] text-muted-foreground">
+                      {translate('auto.components.TaskPage.b36f4bf9de', 'No labels.')}
+                    </div>
+                  ) : (
+                    (projectLabels ?? []).map((label) => {
+                      const selected = labelDraft.includes(label)
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => toggleDraftLabel(label)}
+                          className="flex w-full items-center gap-2 rounded-sm px-1 py-1 text-left text-xs hover:bg-accent"
+                        >
+                          <span
+                            className={cn(
+                              'flex size-3.5 shrink-0 items-center justify-center rounded-sm border',
+                              selected
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-input'
+                            )}
+                          >
+                            {selected ? <Check className="size-2.5" /> : null}
+                          </span>
+                          <span className="min-w-0 truncate">{label}</span>
+                        </button>
+                      )
+                    })
+                  )}
+                </div>
                 <div className="flex justify-end gap-1.5">
                   <Button
                     type="button"
