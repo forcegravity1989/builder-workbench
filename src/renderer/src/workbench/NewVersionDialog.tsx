@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { validatePlanningVersion } from '../../../shared/workbench/version-document'
 import {
+  prepareFailed,
   versionFlowBranch,
   type VersionWorkspacePrepareResult
 } from '../../../shared/workbench/version-workspace-prepare'
@@ -19,7 +20,6 @@ import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 import { nativeVersionWorkspacePort } from './version-workspace-port'
 import { setBrowsedVersion } from './version-context-state'
-import { prepareFailed } from '../../../shared/workbench/version-workspace-prepare'
 import { WORKFLOW_TREE_LABELS } from './version-labels'
 import type { VersionCatalogState } from './use-version-catalog'
 import { closeProjectPage } from './project-page-state'
