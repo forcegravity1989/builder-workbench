@@ -114,7 +114,12 @@ describe('nativeVersionBindingService', () => {
     await service.set({ ...scope, binding: issueBinding, linkedWorkItem })
     expect(state.writes).toBe(beforeIssueBind + 1)
     expect(stored.linkedWorkItem).toEqual(linkedWorkItem)
-    expect(stored.linkedTaskSourceContext).toEqual(taskSource)
+    expect(stored.linkedTaskSourceContext).toEqual({
+      ...taskSource,
+      projectHostSetupId: null,
+      providerIdentity: null,
+      accountLabel: null
+    })
     const issueB = {
       ...linkedWorkItem,
       number: 440,
