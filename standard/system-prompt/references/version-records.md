@@ -23,7 +23,7 @@ cycleId 标识同一版本同一流程的材料身份，不是自然周、原生
 
 ## 来源与历史
 
-计划 `summary.progressSource` 是可选的已归档验收引用，只包含 version/cycleId/sourceCommit/revision，流程固定为 acceptance，项目与宿主来自当前原生上下文；没有该字段的材料仍有效。它表示明确选择的进展依据，不表示版本号之间有顺序关系。页面读取固定提交并核对材料修订及其 planRef；保存格式通过不能代替归档或内容核验。选择或更换引用不自动覆盖 summary.progress，来源不可用时保留原输入，不改读最新记录。
+计划 `summary.progressSource` 是可选的已归档验收引用，只需 version；cycleId/sourceCommit/revision 是存量兼容字段（v0.7.x 写入的四元组形态），新材料不再写入。流程固定为 acceptance，项目与宿主来自当前原生上下文；没有该字段的材料仍有效。它记录人明确选择的进展依据版本，不表示版本号之间有顺序关系。页面在基线分支上取该版本最新已合入的验收记录并沿其 planRef 核对当时的计划；四元组齐备的存量材料仍按固定提交读取并核对修订与身份。保存格式通过不能代替归档或内容核验。选择或更换版本不自动覆盖 summary.progress，来源不可用时保留原输入，不改读其他版本或最新记录。
 
 planRef 的共同字段为 kind/version/cycleId/revision。kind=committed 时另有 sourceCommit；kind=draft 时另有 sourceWorktreeId/sourceHostId。项目身份由请求的原生项目上下文约束，材料路径从 version 推导为 .bw/planning/<version>/data.json。修订（revision）是材料内容指纹：固定提交引用保持原始指纹，当前工作材料的指纹不分换行形态，归档核对不因换行差异误报。**验收只能建立在已提交且归档 PR 已合入的计划上**：计划归档 PR 未合入时验收屏保持空板并如实报错，模型也不得用 kind=draft 的 planRef 创建验收材料。
 

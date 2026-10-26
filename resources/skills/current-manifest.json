@@ -212,17 +212,17 @@
       "name": "week-planning",
       "sourcePath": "skills/week-planning",
       "releaseRevision": 1,
-      "packageDigest": "82a81b707da23c7947c02baf8cda3af16aa3347202585e99715972a81bc51713",
-      "gitTreeSha": "27e686dc9c3f3a2671676c4670d0e5b8d7584ed9",
+      "packageDigest": "87873db823ee0b57fef8077625e7e009e592dd8ca8abd9332cdf2092eb04ae8b",
+      "gitTreeSha": "d4e3cbc51d3c6828082b8d2a89b79fecdde03ddb",
       "files": [
         {
           "path": "SKILL.md",
           "size": 2360,
           "executable": false,
           "classification": "text",
-          "exactSha256": "d4977f6a9167c1cb8bb0bb8731cae20de10c0cd8b77a42aa0df75939b08aa5d6",
-          "textNormalizedSha256": "d4977f6a9167c1cb8bb0bb8731cae20de10c0cd8b77a42aa0df75939b08aa5d6",
-          "identitySha256": "d4977f6a9167c1cb8bb0bb8731cae20de10c0cd8b77a42aa0df75939b08aa5d6"
+          "exactSha256": "7cd2f38c59ccc9fc1fbd4743eb81ca21543179ef92c47281ff572b091297d344",
+          "textNormalizedSha256": "7cd2f38c59ccc9fc1fbd4743eb81ca21543179ef92c47281ff572b091297d344",
+          "identitySha256": "7cd2f38c59ccc9fc1fbd4743eb81ca21543179ef92c47281ff572b091297d344"
         }
       ]
     }
