@@ -128,13 +128,31 @@ export const Identity = {
   cycleId: Id
 }
 
-/** Fixed acceptance material explicitly chosen as the source of planning progress. */
-export const PlanningProgressSourceSchema = z.strictObject({
-  version: MaterialVersion,
-  cycleId: Id,
-  sourceCommit: SourceCommit,
-  revision: MaterialRevision
-})
+/**
+ * The acceptance record a plan reviews, addressed by version alone: the reader
+ * derives the newest merged record for that version from the adopted baseline.
+ * Legacy v0.7.x materials pin the exact record instead; the three optional
+ * fields must appear all-or-none, and `sourceCommit` presence is the read-path
+ * shape switch between the fixed read and the derivation.
+ */
+export const PlanningProgressSourceSchema = z
+  .strictObject({
+    version: MaterialVersion,
+    cycleId: Id.optional(),
+    sourceCommit: SourceCommit.optional(),
+    revision: MaterialRevision.optional()
+  })
+  .refine((source) => {
+    const pinned =
+      source.cycleId !== undefined &&
+      source.sourceCommit !== undefined &&
+      source.revision !== undefined
+    const bare =
+      source.cycleId === undefined &&
+      source.sourceCommit === undefined &&
+      source.revision === undefined
+    return pinned || bare
+  }, 'progressSource must be version-only or the full v0.7.x four-field pin')
 export type PlanningProgressSource = z.infer<typeof PlanningProgressSourceSchema>
 
 export const PlanReferenceSchema = z.discriminatedUnion('kind', [

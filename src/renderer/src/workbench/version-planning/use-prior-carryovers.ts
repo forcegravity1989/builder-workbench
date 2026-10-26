@@ -57,7 +57,7 @@ function readySnapshotToTask(entry: ReadySnapshot): CycleTaskSnapshot {
 }
 
 /**
- * Pure mapping from the fixed acceptance material (plus the plan it adopted)
+ * Pure mapping from the prior acceptance material (plus the plan it adopted)
  * to the two prior-review rows: carryover Issues are `results[].issueMarks`
  * carry marks joined with the document-level taskSnapshot by task identity
  * (legacy bare-number keys included, per the acceptance annotations helpers);
@@ -144,9 +144,10 @@ type Identity = [
 ]
 
 /**
- * Reads the explicitly chosen fixed acceptance source and maps it to the two
+ * Reads the explicitly chosen acceptance source and maps it to the two
  * carryover rows. A read failure stays honest — it never falls back to another
- * record or to the latest material; `retry` re-reads the same fixed source.
+ * record or to the latest material; `retry` re-reads the same source
+ * (version-only sources re-derive the newest merged record).
  */
 export function usePriorCarryovers(
   scope: CycleScope | null,

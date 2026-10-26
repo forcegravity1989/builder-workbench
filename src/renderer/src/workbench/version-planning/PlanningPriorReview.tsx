@@ -7,8 +7,9 @@ import type { PriorReviewState } from './use-prior-carryovers'
 import type { PriorLiveOpenState } from './use-prior-live-open'
 
 /**
- * Prior-version review: exactly two rows echoed from the fixed acceptance
- * source in the same style as the acceptance screen — carryover Issues
+ * Prior-version review: exactly two rows echoed from the prior acceptance
+ * record (derived from the adopted baseline for version-only sources, or the
+ * legacy fixed-commit pin) in the same style as the acceptance screen — carryover Issues
  * (number + full title, click opens the native detail) and meeting
  * carryovers, which come from the human-confirmed acceptance minutes'
  * followups; material written before v10 has no minutes section and falls
@@ -18,7 +19,8 @@ import type { PriorLiveOpenState } from './use-prior-live-open'
  * carryover"; no marks recorded at all → Unknown wording plus a live
  * open-state readback reference row (facts only, never a confirmed
  * carryover conclusion); missing source stays honestly empty. The full
- * material lives on the acceptance screen, opened through the fixed source.
+ * material lives on the acceptance screen, opened through the version's
+ * acceptance workspace.
  */
 export function PlanningPriorReview({
   source,
@@ -58,6 +60,9 @@ export function PlanningPriorReview({
       {state.kind === 'error' ? (
         <div className="g3-error" role="alert">
           验收来源读取失败，结果未知。
+          {/* The reason is the actionable part (e.g. 「尚未合入项目基线分支，请先更新代码」);
+              hiding it turned every failure into an undiagnosable generic error. */}
+          <span>{state.reason}</span>
           <button type="button" onClick={onRetry}>
             重试
           </button>

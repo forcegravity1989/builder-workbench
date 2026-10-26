@@ -10,7 +10,7 @@ import { cycleScopeForWorktree, findCycleWorktree } from './native-cycle-workspa
 import { nativeVersionMaterialPort } from '../version-material-port'
 import { setCycleView } from '../cycle-view-state'
 
-/** A planning source opens the same fixed acceptance bytes on their own registered workflow tree. */
+/** A planning source opens the version's registered acceptance workflow tree (its current material — see NOTE below). */
 export async function openAcceptanceSource(
   scope: CycleScope,
   originWorktreeId: string,
