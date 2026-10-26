@@ -29,11 +29,16 @@ describe('codehub comments', () => {
             {
               id: 140416451,
               body: '后续考虑调用大模型来识别设备选择方式',
-              author: { username: 'm30077918' },
+              author: {
+                username: 'm30077918',
+                avatar_url: 'https://codehub-g.huawei.com/avatar/m30077918.png'
+              },
               created_at: '2026-03-12T18:13:08.989+08:00',
               discussion_id: 'e54b6674d010ca64839e1be0ae7720ed05d1414a',
               is_reply: false,
-              system: false
+              system: false,
+              from_robot: false,
+              resolved: false
             },
             {
               id: 140425415,
@@ -51,11 +56,18 @@ describe('codehub comments', () => {
             {
               id: 140416464,
               body: '直接使用 ast.literal_eval 解析 LLM 输出',
-              author: { username: 'm30077918' },
+              author: {
+                username: 'codehub-bot',
+                avatar_url: 'https://codehub-g.huawei.com/avatar/bot.png'
+              },
               created_at: '2026-03-12T18:14:25.771+08:00',
               discussion_id: '0a5c6957da27c2f46c58c57c511879a973291126',
               is_reply: false,
-              system: false
+              system: false,
+              from_robot: true,
+              resolved: true,
+              file_path: 'src/main/bridge.py',
+              line: 42
             }
           ]
         },
@@ -100,16 +112,26 @@ describe('codehub comments', () => {
         createdAt: '2026-03-12T18:13:08.989+08:00',
         discussionId: 'e54b6674d010ca64839e1be0ae7720ed05d1414a',
         individual: false,
-        isReply: false
+        isReply: false,
+        authorAvatarUrl: 'https://codehub-g.huawei.com/avatar/m30077918.png',
+        isBot: false,
+        isResolved: false,
+        path: null,
+        line: null
       },
       {
         id: '140416464',
         body: '直接使用 ast.literal_eval 解析 LLM 输出',
-        author: 'm30077918',
+        author: 'codehub-bot',
         createdAt: '2026-03-12T18:14:25.771+08:00',
         discussionId: '0a5c6957da27c2f46c58c57c511879a973291126',
         individual: false,
-        isReply: false
+        isReply: false,
+        authorAvatarUrl: 'https://codehub-g.huawei.com/avatar/bot.png',
+        isBot: true,
+        isResolved: true,
+        path: 'src/main/bridge.py',
+        line: 42
       },
       {
         id: '140416480',
@@ -121,7 +143,12 @@ describe('codehub comments', () => {
         // deletion must not send `--discussion-id`.
         discussionId: '11a5c957da27c2f46c58c57c511879a973291126',
         individual: true,
-        isReply: false
+        isReply: false,
+        authorAvatarUrl: null,
+        isBot: false,
+        isResolved: false,
+        path: null,
+        line: null
       }
     ])
   })
@@ -164,7 +191,14 @@ describe('codehub comments', () => {
         createdAt: '2026-09-11T18:34:34.348+08:00',
         discussionId: null,
         individual: false,
-        isReply: false
+        isReply: false,
+        // Issue comment payloads carry no robot/resolution/file-position
+        // fields; the mapping must default them rather than drop the note.
+        authorAvatarUrl: null,
+        isBot: false,
+        isResolved: false,
+        path: null,
+        line: null
       }
     ])
   })

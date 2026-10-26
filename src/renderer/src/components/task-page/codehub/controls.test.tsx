@@ -4,18 +4,25 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 
-const { api } = vi.hoisted(() => ({
-  api: {
-    createIssue: vi.fn().mockResolvedValue({ iid: 42 }),
-    viewTask: vi
-      .fn()
-      .mockResolvedValue({ title: 'Issue 12', state: 'opened', description: 'Body' }),
-    listComments: vi.fn().mockResolvedValue([{ id: 'c1', author: 'Ada', body: 'Review comment' }]),
-    deleteComment: vi.fn().mockResolvedValue(undefined),
-    mrChecks: vi.fn().mockResolvedValue([]),
-    mrChanges: vi.fn().mockResolvedValue([])
+const { api } = vi.hoisted(() => {
+  // 详情页删除评论后会重读列表（不再本地过滤），mock 按同样语义维护状态。
+  let comments = [{ id: 'c1', author: 'Ada', body: 'Review comment' }]
+  return {
+    api: {
+      createIssue: vi.fn().mockResolvedValue({ iid: 42 }),
+      viewTask: vi
+        .fn()
+        .mockResolvedValue({ title: 'Issue 12', state: 'opened', description: 'Body' }),
+      listComments: vi.fn().mockImplementation(() => Promise.resolve(comments)),
+      deleteComment: vi.fn().mockImplementation(() => {
+        comments = []
+        return Promise.resolve(undefined)
+      }),
+      mrChecks: vi.fn().mockResolvedValue([]),
+      mrChanges: vi.fn().mockResolvedValue([])
+    }
   }
-}))
+})
 vi.mock('@/lib/codehub-api', () => ({ codehubApi: api }))
 // i18n 实例被详情页签的深层依赖(localized-catalog)读取,补最小 stub。
 vi.mock('@/i18n/i18n', () => ({
@@ -27,6 +34,12 @@ vi.mock('@/components/task-project-source-combobox', () => ({ default: () => nul
 // Why: Files 页签会真挂 Monaco diff,本测试只看工具条与复制控件,照
 // pr-files-combined-diff-section-index.test.tsx 的先例把 diff 体 mock 掉。
 vi.mock('./FilesTab', () => ({ CodeHubFilesTab: () => null }))
+// Why: 底部评论框现在挂 tiptap 富文本编辑器,其表格右键菜单依赖
+// window.api 预载 IPC;本测试只看筛选/删除/分支控件,照 FilesTab 先例
+// 把编辑器 mock 掉。
+vi.mock('@/components/github/GitHubMarkdownComposer', () => ({
+  GitHubMarkdownComposer: () => null
+}))
 import { TaskPageCodeHubFilters } from './Filters'
 import { TaskPageCodeHubDetail } from './Detail'
 

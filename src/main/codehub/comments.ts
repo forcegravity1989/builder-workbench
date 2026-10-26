@@ -3,6 +3,24 @@ import type { CodeHubComment } from '../../shared/codehub-tasks'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 import { projectArgs, parseJson, loginOfDetail } from './mutations'
 
+function avatarUrlOf(value: unknown): string | null {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+  const url = (value as Record<string, unknown>).avatar_url
+  return typeof url === 'string' && url.trim() ? url.trim() : null
+}
+
+function noteLineOf(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+  if (typeof value === 'string' && value.trim() && Number.isFinite(Number(value))) {
+    return Number(value)
+  }
+  return null
+}
+
 function mapComment(
   value: unknown,
   discussionId: string | null,
@@ -20,14 +38,21 @@ function mapComment(
   if (id === undefined || id === null) {
     return null
   }
+  const author = record.author ?? record.user
+  const path = record.file_path
   return {
     id: String(id),
     body: String(record.body ?? record.note ?? record.description ?? ''),
-    author: loginOfDetail(record.author ?? record.user),
+    author: loginOfDetail(author),
     createdAt: String(record.created_at ?? record.createdAt ?? ''),
     discussionId,
     individual,
-    isReply: record.is_reply === true
+    isReply: record.is_reply === true,
+    authorAvatarUrl: avatarUrlOf(author),
+    isBot: record.from_robot === true,
+    isResolved: record.resolved === true,
+    path: typeof path === 'string' && path.trim() ? path.trim() : null,
+    line: noteLineOf(record.line)
   }
 }
 
