@@ -949,22 +949,6 @@ textarea {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.g3-followup-status {
-  flex-shrink: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: none;
-  padding: 1px 8px;
-  font-size: 11px;
-  line-height: 18px;
-  color: var(--muted-foreground);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.g3-followup-status.closed {
-  color: var(--foreground);
-  border-color: var(--foreground);
-}
 .g3-point-editor {
   display: flex;
   flex-direction: column;
@@ -985,9 +969,6 @@ textarea {
   padding: 8px 10px;
   font-size: 13px;
   line-height: 1.7;
-}
-.g3-point-edit-row .g3-followup-status {
-  margin-top: 6px;
 }
 .g3-add-point {
   display: inline-flex;

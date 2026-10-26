@@ -129,10 +129,8 @@ strong {
   gap: 24px;
   padding: 12px 0;
 }
-.binding-demo-tree {
-  margin: 4px 0;
-}
-.binding-demo-tree .native-worktree-heading {
+.native-project-tree-list,
+.native-history-demo {
   width: 100%;
 }
 .prototype-board-link {

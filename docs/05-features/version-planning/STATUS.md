@@ -1,6 +1,6 @@
 # 版本计划 — 六环状态
 
-**#439 局部候选：待人评审。** 当前高保真只调整本次反馈涉及的局部，已确认的整体布局沿用；行为增量见 [spec](spec.md)，关联反馈见 [Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439)。本轮只改原型与文档，生产修复、性能和双主机 Electron 尚未验证；下文已有交付证据不覆盖本次候选。
+**#439 会议遗留处理设计已确认，生产尚未实施。** 两屏采用共识/遗留文本列表，计划侧取消逐项闭环开关，保留整份纪要人确认；归档前每条已落实到计划/结论或关联跟进 Issue，助手核对、PR 人审，Issue 未完成可归档，不加界面硬门禁。下版回顾只作来源参考，不自动生成任务或承诺。局部行为见 [spec](spec.md)，反馈见 [Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439)。本轮只改原型与文档，材料契约、Skill、人工守卫与生产接线仍需同步；性能及双主机 Electron 尚未验证，下文已有交付证据不覆盖此次设计增量。
 
 > 给接手开发、评审和验收的人读取。只记录认可、实现和证据缺口；有真实认可或运行结果时更新。价值见 [intent](intent.md)，行为见 [spec](spec.md)，工程设计见 [design](design.md)。
 

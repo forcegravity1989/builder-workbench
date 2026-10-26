@@ -7,7 +7,11 @@
 
 ## G3 计划屏实现边界(2026-10-21 落地)
 
-[计划旅程高保真](planning-journey-prototype.html)(`prototype/g3-*` 源码与生成物)沿用已认可的 G3 布局；当前叠加 #439 的初态与上版回顾局部候选，待人评审，范围见 [spec](spec.md) 与 [Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439)。下表仍描述当前生产接线，不把原型候选当成已实施。原型只操作浏览器内存，不是交付证据；证据见 STATUS。
+[计划旅程高保真](planning-journey-prototype.html)(`prototype/g3-*` 源码与生成物)沿用已认可的 G3 布局；当前叠加 #439 的初态、上版回顾与会议纪要局部设计，范围见 [spec](spec.md) 与 [Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439)。会议遗留处理已确认，生产尚未实施：两屏统一文本列表、计划侧取消逐项闭环开关，归档前由助手核对每条已落实或关联 Issue，再交 PR 人审；Issue 未完成可归档，不增界面硬门禁。下表仍描述当前生产接线，旧 `closed` 开关语义不再是本轮设计目标。原型只操作浏览器内存，不是交付证据；证据见 STATUS。
+
+生产同步范围为 `PlanningMinutesSection` / `AcceptanceMinutesSection` 的列表与人工确认、两屏 Skill、`meeting-minutes.md`、`version-records.md`、材料 schema 及人工守卫；沿既有 `minutes` 正本和原生 Issue 引用，不新设逐项处理状态协议。旧 `closed` 数据须兼容读回，不能以删开关为由丢弃历史人工记录；新的处理结果与去向写在正文，整份人工确认与冻结继续保留。`use-prior-carryovers` 的会议回顾维持固定来源参考，不自动将已落实项或 Issue 引用转为下版任务/承诺。以上均为实施时须同步的边界，本轮未修改这些生产代码或 `standard/`。
+
+兼容 v0.7.1 的实施约束：保留现有材料身份、固定来源引用与人工结论协议；排序只影响显示，不重排持久化任务。计划旧 `minutes.followups[].closed` 按原值读写，不直接从严格 schema 删除，也不自动改写成新正文；历史纪要不因新去向规则被强制迁移或重置确认。取消开关与清除字段是两件事，后续实现须验证打开、保存、重启读回及固定来源修订不因兼容处理改变。
 
 | 屏面 | 落点 |
 |---|---|

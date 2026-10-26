@@ -1,6 +1,6 @@
 # 版本工作区 — 六环状态
 
-**#439 局部候选：待人评审。** 当前高保真只调整本次反馈涉及的局部，已确认的整体布局沿用；行为增量见 [spec](spec.md)，关联反馈见 [Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439)。本轮只改原型与文档，生产修复、性能和双主机 Electron 尚未验证；下文已有交付证据不覆盖本次候选。
+**#439 断链与统一绑定入口设计已确认，生产尚未实施。** 断链树只保留 Orca 原生小图标，点击不叠加 BW 提示，侧栏及其他导航保持可用；所有树（含 `issue-383` 子树）都提供统一右击绑定/改绑/解绑入口，不能仅给两棵示例树接菜单。原型须展示具体归属变化与树/会话保留边界，行为见 [spec](spec.md)，反馈见 [Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439)。本轮仅原型与文档，真实绑定持久化、断链恢复和双主机 Electron 尚未验证，下文已有交付证据不覆盖此次设计增量。
 
 > 给接手开发、评审和验收的人读取。只记录认可、实现和证据缺口；有真实认可或运行结果时更新。价值见 [intent](intent.md)，行为见 [spec](spec.md)，工程设计见 [design](design.md)。
 

@@ -47,8 +47,7 @@ const blankVersion = () => ({
     { id: 'plan', role: 'plan' },
     { id: 'acceptance', role: 'acceptance' }
   ],
-  sessions: [],
-  selected: null
+  sessions: []
 })
 const initialVersions = () => ({
   'v0.7': {
@@ -64,8 +63,7 @@ const initialVersions = () => ({
       { id: 'g07', tree: 'goal-G2', label: 'G2 · 目标协作' },
       { id: 'i383', tree: 'issue-383', label: '#383 · 侧边栏与版本运作' },
       { id: 'g01r', tree: 'goal-G1-remote', label: 'G1 · 配对机目标协作' }
-    ],
-    selected: 'p07'
+    ]
   },
   'v0.6': {
     trees: [
@@ -75,10 +73,43 @@ const initialVersions = () => ({
     sessions: [
       { id: 'p06', tree: 'plan', label: '计划讨论' },
       { id: 'a06', tree: 'acceptance', label: '验收讨论' }
-    ],
-    selected: 'p06'
+    ]
   }
 })
+function versionTrees(version, seed = blankVersion()) {
+  return seed.trees.map((tree) => ({
+    ...tree,
+    id: `${version}/${tree.id}`,
+    version,
+    name: `bw/${version}/${tree.id}`,
+    branch: `bw/${version}/${tree.id}`,
+    parent: tree.parent ? `${version}/${tree.parent}` : undefined,
+    sessions: seed.sessions.filter((session) => session.tree === tree.id)
+  }))
+}
+function initialTrees() {
+  return [
+    ...Object.entries(initialVersions()).flatMap(([version, seed]) => versionTrees(version, seed)),
+    {
+      id: 'remote/v0.7/plan',
+      name: 'bw/v0.7/plan',
+      branch: 'bw/v0.7/plan',
+      owner: 'remote',
+      version: 'v0.7',
+      role: 'plan',
+      sessions: [],
+      history: [{ id: 'remote-plan-history', label: '计划讨论 · Claude' }]
+    },
+    {
+      id: 'local/feature/notes',
+      name: 'feature/notes',
+      branch: 'feature/notes',
+      version: null,
+      role: 'goal',
+      sessions: [{ id: 'notes-discussion', label: '功能讨论' }]
+    }
+  ]
+}
 const Icon = ({ icon: Component, ...props }) => <Component size={15} strokeWidth={1.7} {...props} />
 function Nav({ children, icon, active, onClick, title, className = '' }) {
   return (
@@ -164,8 +195,10 @@ function ReuseSurface({ title, scope, description, children }) {
 function App() {
   const [version, setVersion] = useState('v0.7'),
     [screen, setScreen] = useState('plan')
-  const [versions, setVersions] = useState(initialVersions),
-    [versionOrder, setVersionOrder] = useState(['v0.7', 'v0.6'])
+  const [versionOrder, setVersionOrder] = useState(['v0.7', 'v0.6'])
+  const [selectedTreeId, setSelectedTreeId] = useState('v0.7/plan')
+  const [selectedSessionId, setSelectedSessionId] = useState('p07')
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [openVersions, setOpenVersions] = useState(['v0.7']),
     [openGoals, setOpenGoals] = useState(['v0.7/G2'])
   const [closedTrees, setClosedTrees] = useState([]),
@@ -182,7 +215,8 @@ function App() {
     Modal,
     notify: setToast,
     disconnected: remoteDisconnected,
-    onOpen: () => setScreen('binding-demo'),
+    initialTrees,
+    onOpen: (tree) => activateTree(tree.version, tree),
     onBound: (v, role, goal) => {
       go(v, role === 'plan' || role === 'acceptance' ? role : 'tasks', goal)
       if (goal) {
@@ -191,10 +225,10 @@ function App() {
     }
   })
   const plan = plans[version] || emptyPlan,
-    state = versions[version],
     filter = goalFilters[version] || 'all'
-  const currentSession = state.sessions.find((s) => s.id === state.selected)
-  const currentTree = state.trees.find((t) => t.id === currentSession?.tree)
+  const currentTree = bindingDemo.trees.find((tree) => tree.id === selectedTreeId)
+  const currentSession = currentTree?.sessions.find((session) => session.id === selectedSessionId)
+  const boundTrees = bindingDemo.boundTrees(version)
   const scopedRefs = plan.tasks.filter((t) => filter === 'all' || t.goalId === filter)
   const isVersionScreen = Object.hasOwn(labels, screen)
   useEffect(() => {
@@ -242,43 +276,39 @@ function App() {
       setVersionError(`该版本已存在：${existing}`)
       return
     }
-    setVersions((prev) => ({
-      ...prev,
-      [name]: blankVersion()
-    }))
+    bindingDemo.setTrees((trees) => [...trees, ...versionTrees(name)])
     setVersionOrder((prev) => [name, ...prev])
     go(name, 'plan')
     setModal(null)
     setToast('已创建版本')
   }
   function startWorkflow(role) {
-    setVersions((prev) => {
-      const old = prev[version],
-        id = `${version}/${role}/${old.sessions.length + 1}`,
-        trees = old.trees.some((t) => t.id === role)
-          ? old.trees
-          : [...old.trees, { id: role, role }]
-      return {
-        ...prev,
-        [version]: {
-          ...old,
-          trees,
-          sessions: [
-            ...old.sessions,
-            { id, tree: role, label: role === 'plan' ? '计划讨论' : '验收讨论' }
-          ],
-          selected: id
-        }
-      }
-    })
-    setToast(`演示：原有入口新建会话，归入当前版本的${role === 'plan' ? '计划' : '验收'}树`)
+    const existing = bindingDemo
+      .boundTrees(version)
+      .find((tree) => tree.role === role && tree.owner !== 'remote')
+    const registered = bindingDemo.trees.find((tree) => tree.id === `${version}/${role}`)
+    if (!existing && registered) {
+      activateTree(registered.version, registered)
+      return
+    }
+    const tree = existing || versionTrees(version).find((item) => item.role === role)
+    const session = {
+      id: `${tree.id}/session/${tree.sessions.length + 1}`,
+      label: role === 'plan' ? '计划讨论' : '验收讨论'
+    }
+    const updated = { ...tree, sessions: [...tree.sessions, session] }
+    bindingDemo.setTrees((items) =>
+      existing ? items.map((item) => (item.id === tree.id ? updated : item)) : [...items, updated]
+    )
+    activateTree(version, tree, session)
+    setToast('演示：原有入口新建会话，归入当前工作树')
   }
   const cleanupListRef = useRef(null)
   function confirmCleanup(v) {
     const nodes = [...(cleanupListRef.current?.querySelectorAll('input[data-tree]:checked') || [])]
-    const allTrees = [...versions[v].trees, ...bindingDemo.boundTrees(v)]
+    const allTrees = bindingDemo.boundTrees(v)
     const selectedIds = nodes
-      .map((n) => n.dataset.tree)
+      .map((node) => node.dataset.tree)
       .filter((id) =>
         allTrees.some((tree) => tree.id === id && !(remoteDisconnected && tree.owner === 'remote'))
       )
@@ -286,61 +316,55 @@ function App() {
       (tree) => selectedIds.includes(tree.id) && tree.owner !== 'remote'
     ).length
     const remoteCount = selectedIds.length - localCount
-    setVersions((prev) => {
-      const old = prev[v],
-        removed = new Set(selectedIds),
-        sessions = old.sessions.filter((s) => !removed.has(s.tree))
-      return {
-        ...prev,
-        [v]: {
-          ...old,
-          trees: old.trees.filter((t) => !removed.has(t.id)),
-          sessions,
-          selected: sessions.some((s) => s.id === old.selected) ? old.selected : null
-        }
-      }
-    })
     bindingDemo.removeTrees(selectedIds)
     setModal(null)
     setToast(
-      `演示：本机 ${localCount} 棵工作树经原生删除链（含预检）${remoteCount ? `，配对机 ${remoteCount} 棵在归属宿主删除` : ''}；材料与版本目录保留`
+      `演示：本机 ${localCount} 棵工作树经原生删除链（含预检）${
+        remoteCount ? `，配对机 ${remoteCount} 棵在归属宿主删除` : ''
+      }；材料与版本目录保留`
     )
   }
   function activateTree(v, tree, session) {
-    if (tree?.owner === 'remote' && remoteDisconnected) {
-      go(v, 'remote-unavailable')
+    if (!tree || (tree.owner === 'remote' && remoteDisconnected)) {
       return
     }
-    if (session) {
-      setVersions((prev) => ({ ...prev, [v]: { ...prev[v], selected: session.id } }))
+    setSelectedTreeId(tree.id)
+    setSelectedSessionId(session?.id || tree.sessions[0]?.id || null)
+    setHistoryOpen(false)
+    if (v) {
+      go(v, tree.role === 'plan' || tree.role === 'acceptance' ? tree.role : 'work')
     } else {
-      setVersions((prev) => ({
-        ...prev,
-        [v]: { ...prev[v], selected: prev[v].sessions.find((s) => s.tree === tree.id)?.id || null }
-      }))
+      setScreen('work')
     }
-    go(v, tree.role === 'plan' || tree.role === 'acceptance' ? tree.role : 'work')
   }
   function createGoalTree(v, goal) {
-    const id = `goal-${goal}`,
-      sessionId = `${v}/${id}`
-    setVersions((prev) => {
-      const old = prev[v]
-      if (old.trees.some((t) => t.id === id)) {
-        return prev
-      }
-      return {
-        ...prev,
-        [v]: {
-          ...old,
-          trees: [...old.trees, { id, role: 'goal', goal }],
-          sessions: [...old.sessions, { id: sessionId, tree: id, label: `${goal} · 目标协作` }],
-          selected: sessionId
-        }
-      }
-    })
+    const existing = bindingDemo
+      .boundTrees(v)
+      .find((tree) => tree.role === 'goal' && tree.goal === goal)
+    if (existing) {
+      activateTree(v, existing)
+      setModal(null)
+      return
+    }
+    const id = `${v}/goal-${goal}`
+    const registered = bindingDemo.trees.find((tree) => tree.id === id)
+    if (registered) {
+      activateTree(registered.version, registered)
+      setModal(null)
+      return
+    }
+    const tree = {
+      id,
+      version: v,
+      name: `bw/${id}`,
+      branch: `bw/${id}`,
+      role: 'goal',
+      goal,
+      sessions: [{ id: `${id}/session`, label: `${goal} · 目标协作` }]
+    }
+    bindingDemo.setTrees((trees) => [...trees, tree])
     setOpenGoals((prev) => [...new Set([...prev, `${v}/${goal}`])])
-    go(v, 'work', goal)
+    activateTree(v, tree)
     setModal(null)
     setToast('演示：从原生创建器建立目标工作区；未为目标内每个 Issue 建树')
   }
@@ -348,54 +372,47 @@ function App() {
     if (!reference) {
       return
     }
-    const id = `issue-${reference.number}`,
-      sessionId = `${version}/${id}`
-    setVersions((prev) => {
-      const old = prev[version],
-        existing = old.trees.find((t) => t.id === id),
-        goalParent = old.trees.find((t) => t.id === parentId)
-      if (existing) {
-        return {
-          ...prev,
-          [version]: { ...old, selected: old.sessions.find((s) => s.tree === id)?.id || null }
-        }
-      }
-      return {
-        ...prev,
-        [version]: {
-          ...old,
-          trees: [
-            ...old.trees,
-            {
-              id,
-              role: 'issue',
-              goal: reference.goalId,
-              issue: reference.number,
-              parent: goalParent?.id
-            }
-          ],
-          sessions: [
-            ...old.sessions,
-            { id: sessionId, tree: id, label: `#${reference.number} · 执行讨论` }
-          ],
-          selected: sessionId
-        }
-      }
-    })
+    const existing = bindingDemo
+      .boundTrees(version)
+      .find((tree) => tree.role === 'issue' && tree.issue === reference.number)
+    if (existing) {
+      activateTree(version, existing)
+      return
+    }
+    const id = `${version}/issue-${reference.number}`
+    const registered = bindingDemo.trees.find((tree) => tree.id === id)
+    if (registered) {
+      activateTree(registered.version, registered)
+      return
+    }
+    const tree = {
+      id,
+      version,
+      name: `bw/${id}`,
+      branch: `bw/${id}`,
+      role: 'issue',
+      goal: reference.goalId,
+      issue: reference.number,
+      parent: parentId || undefined,
+      sessions: [{ id: `${id}/session`, label: `#${reference.number} · 执行讨论` }]
+    }
+    bindingDemo.setTrees((trees) => [...trees, tree])
     setOpenGoals((prev) => [...new Set([...prev, `${version}/${reference.goalId}`])])
-    go(version, 'work', reference.goalId)
+    activateTree(version, tree)
     setToast('演示：打开本版任务工作区；不会为了任务自动创建目标父树')
   }
   function startIssue(reference) {
     if (!reference) {
       return
     }
-    const existing = state.trees.find((t) => t.issue === reference.number)
+    const existing = boundTrees.find(
+      (tree) => tree.role === 'issue' && tree.issue === reference.number
+    )
     if (existing) {
       activateTree(version, existing)
       return
     }
-    const parent = state.trees.find((t) => t.role === 'goal' && t.goal === reference.goalId)
+    const parent = boundTrees.find((tree) => tree.role === 'goal' && tree.goal === reference.goalId)
     setModal({
       type: 'composer',
       kind: 'issue',
@@ -405,18 +422,17 @@ function App() {
       parentId: parent?.id || null
     })
   }
-  function nativeTree(v, tree) {
-    const data = versions[v],
-      key = `${v}/${tree.id}`,
+  function nativeTree(v, tree, pool = bindingDemo.boundTrees(v)) {
+    const key = tree.id,
       expanded = !closedTrees.includes(key)
-    const sessions = data.sessions.filter((s) => s.tree === tree.id),
-      children = data.trees.filter((t) => t.parent === tree.id)
+    const sessions = tree.sessions,
+      children = pool.filter((item) => item.parent === tree.id)
     return (
-      <div className="native-worktree-card" data-branch={`bw/${v}/${tree.id}`} key={tree.id}>
-        <div className="native-tree-row">
+      <div className="native-worktree-card" data-branch={tree.branch} key={tree.id}>
+        <div className="native-tree-row" {...bindingDemo.contextMenuProps(tree)}>
           <button
             className="tree-chevron"
-            aria-label={`bw/${v}/${tree.id} 展开或收起`}
+            aria-label={`${tree.name} 展开或收起`}
             aria-expanded={expanded}
             onClick={() => toggle(closedTrees, key, setClosedTrees)}
           >
@@ -424,11 +440,14 @@ function App() {
           </button>
           <button
             className="native-worktree-heading"
-            title={`bw/${v}/${tree.id}`}
-            onClick={() => activateTree(v, tree)}
+            title={`${tree.branch} · 右键管理版本绑定`}
+            onClick={() => activateTree(tree.version, tree)}
           >
             <Icon icon={GitBranch} />
-            <span>{`bw/${v}/${tree.id}`}</span>
+            <span>
+              {tree.name}
+              {tree.owner === 'remote' && <small> · 配对机</small>}
+            </span>
             {tree.owner === 'remote' && remoteDisconnected && (
               <span
                 className="disconnected-mark"
@@ -452,11 +471,11 @@ function App() {
                 className="native-agent-row"
                 icon={MessageSquare}
                 active={
-                  version === v &&
-                  data.selected === session.id &&
+                  selectedTreeId === tree.id &&
+                  selectedSessionId === session.id &&
                   ['work', 'plan', 'acceptance'].includes(screen)
                 }
-                onClick={() => activateTree(v, tree, session)}
+                onClick={() => activateTree(tree.version, tree, session)}
                 title={session.label}
               >
                 <span className="agent-tool">Codex</span>
@@ -466,7 +485,7 @@ function App() {
             {!sessions.length && <div className="tree-empty">暂无会话</div>}
             {children.map((child) => (
               <div className="native-child-tree" key={child.id}>
-                {nativeTree(v, child)}
+                {nativeTree(v, child, pool)}
               </div>
             ))}
           </div>
@@ -475,11 +494,12 @@ function App() {
     )
   }
   function goalDirectory(v, goal) {
-    const data = versions[v],
-      key = `${v}/${goal.goalId}`,
+    const key = `${v}/${goal.goalId}`,
       expanded = openGoals.includes(key)
-    const roots = data.trees.filter((t) => t.goal === goal.goalId && !t.parent)
-    const demoRows = bindingDemo.boundRows(v, 'goal', goal.goalId)
+    const group = bindingDemo
+      .boundTrees(v)
+      .filter((tree) => ['goal', 'issue'].includes(tree.role) && tree.goal === goal.goalId)
+    const roots = group.filter((tree) => !group.some((parent) => parent.id === tree.parent))
     return (
       <div className="goal-directory" key={goal.goalId}>
         <div className="goal-directory-row">
@@ -513,26 +533,27 @@ function App() {
         </div>
         {expanded && (
           <div className="goal-directory-body">
-            {demoRows}
             {roots.length ? (
-              roots.map((tree) => nativeTree(v, tree))
-            ) : !demoRows.length ? (
+              roots.map((tree) => nativeTree(v, tree, group))
+            ) : (
               <div className="tree-empty">尚无工作树</div>
-            ) : null}
+            )}
           </div>
         )}
       </div>
     )
   }
   function workflowNav(v, role) {
-    const data = versions[v],
-      tree = data.trees.find((t) => t.role === role),
-      key = `${v}/${role}`
+    const trees = bindingDemo.boundTrees(v).filter((tree) => tree.role === role)
+    const tree = trees.length === 1 ? trees[0] : null
+    const key = `${v}/${role}`
     const expanded = !closedTrees.includes(key)
-    const sessions = data.sessions.filter((s) => s.tree === role)
     return (
-      <div className="workflow-tree" data-workflow={`${v}/${role}`}>
-        <div className={`workflow-row ${version === v && screen === role ? 'selected' : ''}`}>
+      <div className="workflow-tree" data-workflow={key}>
+        <div
+          className={`workflow-row ${version === v && screen === role ? 'selected' : ''}`}
+          {...bindingDemo.contextMenuProps(tree)}
+        >
           <button
             className="tree-chevron"
             aria-label={`${v} ${labels[role]}会话展开或收起`}
@@ -543,37 +564,53 @@ function App() {
           </button>
           <button
             className="workflow-link"
-            title={`bw/${v}/${role} · 本版固定工作区`}
+            title={tree ? `${tree.branch} · 右键管理版本绑定` : labels[role]}
             onClick={() => (tree ? activateTree(v, tree) : go(v, role))}
           >
             <Icon icon={role === 'plan' ? CalendarRange : ClipboardCheck} />
             <span>{labels[role]}</span>
-          </button>
-          <button
-            className="icon-button goal-menu"
-            title={`${v} ${labels[role]}工作区菜单`}
-            aria-label={`${v} ${labels[role]}工作区菜单`}
-            onClick={() => setModal({ type: 'workflow', version: v, role })}
-          >
-            ···
+            {tree?.owner === 'remote' && remoteDisconnected && (
+              <span
+                className="disconnected-mark"
+                role="img"
+                aria-label="配对机已断开"
+                title="配对机已断开"
+              >
+                <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" />
+                  <path d="M4 12 12 4" stroke="currentColor" />
+                </svg>
+              </span>
+            )}
           </button>
         </div>
         {expanded && (
           <div className="workflow-agents">
-            {bindingDemo.boundRows(v, role)}
-            {sessions.map((session) => (
-              <Nav
-                key={session.id}
-                className="native-agent-row"
-                icon={MessageSquare}
-                active={version === v && screen === role && data.selected === session.id}
-                onClick={() => activateTree(v, tree, session)}
-              >
-                <span className="agent-tool">Codex</span>
-                {session.label}
-              </Nav>
-            ))}
-            {!sessions.length && <div className="tree-empty">尚无会话</div>}
+            {trees.length > 1 ? (
+              trees.map((item) => nativeTree(v, item, trees))
+            ) : tree ? (
+              <>
+                {tree.sessions.map((session) => (
+                  <Nav
+                    key={session.id}
+                    className="native-agent-row"
+                    icon={MessageSquare}
+                    active={
+                      selectedTreeId === tree.id &&
+                      selectedSessionId === session.id &&
+                      screen === role
+                    }
+                    onClick={() => activateTree(v, tree, session)}
+                  >
+                    <span className="agent-tool">Codex</span>
+                    {session.label}
+                  </Nav>
+                ))}
+                {!tree.sessions.length && <div className="tree-empty">暂无会话</div>}
+              </>
+            ) : (
+              <div className="tree-empty">尚无工作树</div>
+            )}
           </div>
         )}
       </div>
@@ -628,38 +665,60 @@ function App() {
       </div>
     )
   }
+  function nativeHistory() {
+    if (!currentTree?.history?.length) {
+      return null
+    }
+    const unavailable = currentTree.owner === 'remote' && remoteDisconnected
+    return (
+      <div className="native-history-demo">
+        <button
+          className="button"
+          disabled={unavailable}
+          aria-expanded={historyOpen}
+          onClick={() => setHistoryOpen(!historyOpen)}
+        >
+          历史会话
+        </button>
+        {historyOpen &&
+          currentTree.history.map((session) => (
+            <div className="binding-history" key={session.id}>
+              <span>{session.label}</span>
+              <button
+                className="button"
+                disabled={
+                  unavailable || currentTree.sessions.some((item) => item.id === session.id)
+                }
+                onClick={() => {
+                  bindingDemo.setTrees((trees) =>
+                    trees.map((tree) =>
+                      tree.id === currentTree.id &&
+                      !tree.sessions.some((item) => item.id === session.id)
+                        ? { ...tree, sessions: [...tree.sessions, session] }
+                        : tree
+                    )
+                  )
+                  setSelectedSessionId(session.id)
+                  setToast('演示：沿原生历史恢复会话')
+                }}
+              >
+                {currentTree.sessions.some((item) => item.id === session.id)
+                  ? '已恢复'
+                  : '恢复会话'}
+              </button>
+            </div>
+          ))}
+      </div>
+    )
+  }
   function body() {
-    if (screen === 'binding-demo') {
-      return bindingDemo.workspace
-    }
-    if (screen === 'remote-unavailable') {
-      return (
-        <div className="reuse-page">
-          <div className="reuse-marker">Orca 远端工作区 · 断链场景示意</div>
-          <h1>配对机已断开</h1>
-          <p className="muted">此工作树暂不可访问，连接恢复后重试。</p>
-          <button
-            className="button"
-            disabled={remoteDisconnected}
-            onClick={() =>
-              activateTree(
-                version,
-                state.trees.find((tree) => tree.owner === 'remote')
-              )
-            }
-          >
-            重新打开
-          </button>
-        </div>
-      )
-    }
     if (screen === 'overview') {
       return (
         <VersionOverview
           version={version}
           status={version === 'v0.6' ? '历史' : '在制'}
           plan={plan}
-          trees={[...state.trees, ...bindingDemo.boundTrees(version)]}
+          trees={boundTrees}
           issues={issueSnapshot.items}
           readAt={issueSnapshot.readAt}
           onPlan={() => go(version, 'plan')}
@@ -669,7 +728,8 @@ function App() {
       )
     }
     if (screen === 'plan' || screen === 'acceptance') {
-      const active = state.sessions.find((s) => s.id === state.selected && s.tree === screen)
+      const active =
+        currentTree?.version === version && currentTree.role === screen ? currentSession : null
       return (
         <ReuseSurface
           title={`沿用现有${labels[screen]}屏（含会话区）`}
@@ -680,6 +740,7 @@ function App() {
             新建{labels[screen]}
           </Button>
           <span className="muted">{active ? `当前会话：${active.label}` : '尚无会话'}</span>
+          {currentTree?.version === version && currentTree.role === screen && nativeHistory()}
           <a
             className="prototype-board-link"
             href={
@@ -721,7 +782,11 @@ function App() {
           {scopedRefs[0] && (
             <Button icon={ArrowRight} onClick={() => startIssue(scopedRefs[0])}>
               演示原生 Issue #{scopedRefs[0].number}{' '}
-              {state.trees.some((t) => t.issue === scopedRefs[0].number) ? '打开工作区' : '开工'}
+              {boundTrees.some(
+                (tree) => tree.role === 'issue' && tree.issue === scopedRefs[0].number
+              )
+                ? '打开工作区'
+                : '开工'}
             </Button>
           )}
         </ReuseSurface>
@@ -731,9 +796,11 @@ function App() {
       return (
         <ReuseSurface
           title="沿用 Orca 完整工作区"
-          scope={`Builder Workbench / ${version}${currentTree ? ` / bw/${version}/${currentTree.id}` : ''}`}
-          description={`原生会话、标签、分屏、工具和历史保持原交互。${currentSession ? `当前演示会话：${currentSession.label}。${currentTree?.parent ? `原生父树：bw/${version}/${currentTree.parent}。` : ''}` : '请选择侧栏的分支或会话。'}`}
-        />
+          scope={`Builder Workbench${currentTree ? ` / ${currentTree.name}` : ''}`}
+          description={`原生会话、标签、分屏、工具和历史保持原交互。${currentTree?.version ? `版本归属：${currentTree.version}。` : '未绑定版本。'}${currentSession ? `当前演示会话：${currentSession.label}。` : '暂无会话。'}${currentTree?.parent ? `原生父树：${bindingDemo.trees.find((tree) => tree.id === currentTree.parent)?.name || currentTree.parent}。` : ''}`}
+        >
+          {nativeHistory()}
+        </ReuseSurface>
       )
     }
     if (screen === 'project-workspaces') {
@@ -742,7 +809,13 @@ function App() {
           title="沿用 Orca 项目工作区"
           scope="Builder Workbench / 原生工作树"
           description="保留该项目的原生工作树与会话入口，包括尚未归版的 bw/week-plan、bw/week-acceptance 和项目共用树。旧会话不整树迁移、不按标题猜版本；共享访问沿原宿主与权限。"
-        />
+        >
+          <div className="native-project-tree-list">
+            {bindingDemo.trees
+              .filter((tree) => !bindingDemo.trees.some((parent) => parent.id === tree.parent))
+              .map((tree) => nativeTree(null, tree, bindingDemo.trees))}
+          </div>
+        </ReuseSurface>
       )
     }
     if (screen === 'project') {
@@ -791,7 +864,7 @@ function App() {
     <div className="prototype">
       <div className="review-bar">
         <strong>#439 局部候选 · 版本工作区</strong>
-        <span>右键配对机计划树或 feature/notes 体验绑定 · 操作仅在本页演示</span>
+        <span>右键任一工作树管理版本绑定 · 操作仅在本页演示</span>
         <div className="review-actions" aria-label="原型评审工具">
           <button
             onClick={() => {
@@ -875,7 +948,12 @@ function App() {
             >
               Builder Workbench
             </Nav>
-            {bindingDemo.unboundRows}
+            {bindingDemo.trees
+              .filter(
+                (tree) =>
+                  !tree.version && !bindingDemo.trees.some((parent) => parent.id === tree.parent)
+              )
+              .map((tree) => nativeTree(null, tree, bindingDemo.trees))}
             <Nav
               icon={GitBranch}
               active={screen === 'private'}
@@ -963,13 +1041,17 @@ function App() {
             >
               <ListTodo size={16} /> 查看目标任务
             </button>
-            {versions[modal.version].trees.some((t) => t.id === `goal-${modal.goal}`) ? (
+            {bindingDemo
+              .boundTrees(modal.version)
+              .some((tree) => tree.role === 'goal' && tree.goal === modal.goal) ? (
               <button
                 className="goal-action-item"
                 onClick={() => {
                   activateTree(
                     modal.version,
-                    versions[modal.version].trees.find((t) => t.id === `goal-${modal.goal}`)
+                    bindingDemo
+                      .boundTrees(modal.version)
+                      .find((tree) => tree.role === 'goal' && tree.goal === modal.goal)
                   )
                   setModal(null)
                 }}
@@ -1018,13 +1100,22 @@ function App() {
             <small>沿用 Orca 的原生控件与已有偏好；父级只影响嵌套，不改代码起点</small>
           </div>
           {modal.kind === 'issue' &&
-            versions[modal.version].trees.some((t) => t.id === `goal-${modal.goal}`) && (
+            bindingDemo
+              .boundTrees(modal.version)
+              .some((tree) => tree.role === 'goal' && tree.goal === modal.goal) && (
               <label className="composer-demo-parent">
                 <input
                   type="checkbox"
                   checked={!!modal.parentId}
                   onChange={(e) =>
-                    setModal({ ...modal, parentId: e.target.checked ? `goal-${modal.goal}` : null })
+                    setModal({
+                      ...modal,
+                      parentId: e.target.checked
+                        ? bindingDemo
+                            .boundTrees(modal.version)
+                            .find((tree) => tree.role === 'goal' && tree.goal === modal.goal)?.id
+                        : null
+                    })
                   }
                 />
                 演示原生父级选择结果：挂到已有 {modal.goal} 工作区下（可取消）
@@ -1049,26 +1140,6 @@ function App() {
           </Button>
         </Modal>
       )}
-      {modal?.type === 'workflow' && (
-        <Modal
-          title={`${modal.version} / ${labels[modal.role]}工作区`}
-          close={() => setModal(null)}
-        >
-          <p>
-            bw/{modal.version}/{modal.role}
-          </p>
-          <p>这一行同时是现有业务屏入口与本版固定工作树。下方 agent 仍归 Orca 管理。</p>
-          <Button
-            onClick={() => {
-              go(modal.version, modal.role)
-              setModal(null)
-            }}
-          >
-            打开{labels[modal.role]}屏
-          </Button>
-          <p className="muted">实际产品沿用原生工作树菜单；原型不模拟删除等真实磁盘操作。</p>
-        </Modal>
-      )}
       {modal?.type === 'cleanup' && (
         <Modal title={`清理 ${modal.version} 工作树`} close={() => setModal(null)}>
           <p className="muted">
@@ -1077,26 +1148,24 @@ function App() {
             材料与版本目录保留，版本仍在侧栏收起回看。
           </p>
           <div className="goal-action-list" ref={cleanupListRef}>
-            {[...versions[modal.version].trees, ...bindingDemo.boundTrees(modal.version)].map(
-              (tree) => (
-                <label className="composer-demo-parent" key={tree.id}>
-                  <input
-                    type="checkbox"
-                    defaultChecked={tree.owner !== 'remote'}
-                    disabled={remoteDisconnected && tree.owner === 'remote'}
-                    data-tree={tree.id}
-                  />
-                  {tree.name || `bw/${modal.version}/${tree.id}`}
-                  <small>
-                    {tree.owner === 'remote'
-                      ? remoteDisconnected
-                        ? ' · 配对机已断开'
-                        : ' · 配对机 B owned（默认不勾）'
-                      : ' · 本机 owned'}
-                  </small>
-                </label>
-              )
-            )}
+            {bindingDemo.boundTrees(modal.version).map((tree) => (
+              <label className="composer-demo-parent" key={tree.id}>
+                <input
+                  type="checkbox"
+                  defaultChecked={tree.owner !== 'remote'}
+                  disabled={remoteDisconnected && tree.owner === 'remote'}
+                  data-tree={tree.id}
+                />
+                {tree.name || `bw/${modal.version}/${tree.id}`}
+                <small>
+                  {tree.owner === 'remote'
+                    ? remoteDisconnected
+                      ? ' · 配对机已断开'
+                      : ' · 配对机 B owned（默认不勾）'
+                    : ' · 本机 owned'}
+                </small>
+              </label>
+            ))}
           </div>
           <p className="muted">
             本版自动化仍启用时在此如实提示，是否停用由人在原生编辑器决定；agent 会话记录归各

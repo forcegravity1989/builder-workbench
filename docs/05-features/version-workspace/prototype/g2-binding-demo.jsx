@@ -4,13 +4,11 @@ const {
   React,
   useState,
   useEffect,
-  useRef,
-  GitBranch,
-  MessageSquare
+  useRef
 } = window.BWPrototypeDependencies
 
-// Only the added binding group and the native history handoff are demonstrated here.
-// All state is in memory; the real product continues to use Orca's registered trees.
+// One in-memory registry drives every prototype tree and its binding menu.
+// The real product continues to use Orca's registered trees.
 export function useBindingDemo({
   versionOrder,
   plans,
@@ -18,33 +16,13 @@ export function useBindingDemo({
   onOpen,
   onBound,
   notify,
-  disconnected
+  disconnected,
+  initialTrees
 }) {
-  const [trees, setTrees] = useState([
-    {
-      id: 'shared',
-      name: 'bw/v0.7/plan',
-      branch: 'bw/v0.7/plan',
-      owner: 'remote',
-      version: 'v0.7',
-      role: 'plan',
-      sessions: []
-    },
-    {
-      id: 'existing',
-      name: 'feature/notes',
-      branch: 'feature/notes',
-      version: null,
-      role: 'goal',
-      sessions: ['功能讨论']
-    }
-  ])
-  const [selected, setSelected] = useState(null)
+  const [trees, setTrees] = useState(initialTrees)
   const [menu, setMenu] = useState(null)
   const [draft, setDraft] = useState(null)
-  const [history, setHistory] = useState(false)
   const menuRef = useRef(null)
-  const current = trees.find((tree) => tree.id === selected)
   useEffect(() => {
     if (!menu) {
       return
@@ -92,27 +70,30 @@ export function useBindingDemo({
     }
   }, [menu])
   const open = (tree) => {
-    setSelected(tree.id)
-    setHistory(false)
-    onOpen()
+    if (tree.owner === 'remote' && disconnected) {
+      return
+    }
+    onOpen(tree)
   }
-  const row = (tree) => (
-    <div className="native-worktree-card binding-demo-tree" key={tree.id}>
-      <button
-        className="native-worktree-heading"
-        onClick={() => open(tree)}
-        onContextMenu={(event) => {
-          event.preventDefault()
-          event.currentTarget.focus()
-          setMenu({
-            tree,
-            x: Math.min(event.clientX, window.innerWidth - 230),
-            y: Math.min(event.clientY, window.innerHeight - 150)
-          })
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+  const contextMenuProps = (tree) =>
+    tree
+      ? {
+          onContextMenu: (event) => {
             event.preventDefault()
+            event.stopPropagation()
+            event.currentTarget.querySelector('button')?.focus()
+            setMenu({
+              tree,
+              x: Math.min(event.clientX, window.innerWidth - 230),
+              y: Math.min(event.clientY, window.innerHeight - 150)
+            })
+          },
+          onKeyDown: (event) => {
+            if (event.key !== 'ContextMenu' && !(event.shiftKey && event.key === 'F10')) {
+              return
+            }
+            event.preventDefault()
+            event.stopPropagation()
             const rect = event.currentTarget.getBoundingClientRect()
             setMenu({
               tree,
@@ -120,39 +101,8 @@ export function useBindingDemo({
               y: Math.min(rect.bottom, window.innerHeight - 150)
             })
           }
-        }}
-        title={`${tree.name + (tree.owner === 'remote' ? ' · 配对机' : '')} · 右键管理版本绑定`}
-      >
-        <GitBranch size={14} />
-        <span>
-          {tree.name}
-          {tree.owner === 'remote' && <small> · 配对机</small>}
-        </span>
-        {tree.owner === 'remote' && disconnected && (
-          <span
-            className="disconnected-mark"
-            role="img"
-            aria-label="配对机已断开"
-            title="配对机已断开"
-          >
-            ⊘
-          </span>
-        )}
-      </button>
-      <div className="native-tree-contents">
-        {tree.sessions.length ? (
-          tree.sessions.map((session) => (
-            <button className="nav-row native-agent-row" key={session} onClick={() => open(tree)}>
-              <MessageSquare size={13} />
-              <span>{session}</span>
-            </button>
-          ))
-        ) : (
-          <div className="tree-empty">暂无会话</div>
-        )}
-      </div>
-    </div>
-  )
+        }
+      : {}
   const goalOptions = draft ? plans[draft.version]?.goals || [] : []
   const issues = draft
     ? (plans[draft.version]?.tasks || []).filter((task) => task.goalId === draft.goal)
@@ -166,84 +116,29 @@ export function useBindingDemo({
     if (workflowMismatch || (draft.owner === 'remote' && disconnected)) {
       return
     }
-    setTrees((items) => items.map((tree) => (tree.id === draft.id ? { ...tree, ...draft } : tree)))
+    setTrees((items) =>
+      items.map((tree) =>
+        tree.id === draft.id
+          ? {
+              ...tree,
+              version: draft.version,
+              role: draft.role,
+              goal: draft.goal,
+              issue: draft.issue ? Number(draft.issue) : undefined
+            }
+          : tree
+      )
+    )
     onBound(draft.version, draft.role, draft.goal)
     notify('已更新版本绑定')
     setDraft(null)
   }
   return {
+    trees,
+    setTrees,
+    contextMenuProps,
     boundTrees: (version) => trees.filter((tree) => tree.version === version),
     removeTrees: (ids) => setTrees((items) => items.filter((tree) => !ids.includes(tree.id))),
-    boundRows: (version, role, goal) =>
-      trees
-        .filter(
-          (tree) =>
-            tree.version === version &&
-            (role === 'goal'
-              ? ['goal', 'issue'].includes(tree.role) && tree.goal === goal
-              : tree.role === role)
-        )
-        .map(row),
-    unboundRows: trees.filter((tree) => !tree.version).map(row),
-    workspace: current && (
-      <div className="reuse-page">
-        <div className="reuse-marker">Orca 原生工作区 · 历史会话恢复示意</div>
-        <h1>{current.name}</h1>
-        <p className="muted">
-          {current.version
-            ? `${current.version} / ${
-                {
-                  plan: '计划',
-                  acceptance: '验收',
-                  goal: current.goal,
-                  issue: `#${current.issue}`
-                }[current.role]
-              }`
-            : '未绑定版本'}
-        </p>
-        <div className="reuse-outline">
-          <MessageSquare size={24} />
-          <span>
-            {current.owner === 'remote' && disconnected
-              ? '配对机已断开，此工作树暂不可访问。'
-              : current.sessions.length
-                ? current.sessions[0]
-                : '暂无会话'}
-          </span>
-        </div>
-        <div className="prototype-action">
-          <button
-            className="button"
-            disabled={current.owner === 'remote' && disconnected}
-            onClick={() => setHistory(!history)}
-            aria-expanded={history}
-          >
-            历史会话
-          </button>
-          {history && !(current.owner === 'remote' && disconnected) && (
-            <div className="binding-history">
-              <span>计划讨论 · Claude</span>
-              <button
-                className="button"
-                disabled={current.sessions.includes('计划讨论 · Claude')}
-                onClick={() => {
-                  setTrees((items) =>
-                    items.map((tree) =>
-                      tree.id === current.id
-                        ? { ...tree, sessions: [...tree.sessions, '计划讨论 · Claude'] }
-                        : tree
-                    )
-                  )
-                  notify('已恢复会话')
-                }}
-              >
-                {current.sessions.includes('计划讨论 · Claude') ? '已恢复' : '恢复会话'}
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    ),
     overlays: (
       <>
         {menu && (

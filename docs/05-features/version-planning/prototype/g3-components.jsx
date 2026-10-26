@@ -550,15 +550,27 @@ export function MinutesSkeleton({ sendRequest, disabled = false, disabledReason 
     </article>
   )
 }
+function MinutesIssueReferences({ text }) {
+  return (text || '待填写').split(/(#\d+)/g).map((part, index) =>
+    /^#\d+$/.test(part) ? (
+      <a
+        key={index}
+        href={`https://github.com/forcegravity1989/builder-workbench/issues/${part.slice(1)}`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        {part}
+      </a>
+    ) : (
+      part
+    )
+  )
+}
+
 export function MinutesCard({
   minutes,
   update,
-  // 可选定制（验收屏复用）：默认值保持计划屏行为不变。
-  // 「与计划助手基于纪要调整目标」按钮已退役（2026-10-22 真机反馈轮，人决定：
-  // 整理纪要后 Skill SOP 自然引导），故不再接收 sendRequest / showAgent。
-  showFollowupStatus = true,
-  followupHint = '闭环 = 版本计划已按该条修改，由人标记',
-  footNote = '纪要独立保存，认可随归档 PR 评审表达。'
+  footNote = '归档前逐条写明落实结果或跟进 Issue，由助手核对、人在 PR 中确认。'
 }) {
   const [editing, setEditing] = useState(false)
   const setPoint = (key, index, text) =>
@@ -568,19 +580,9 @@ export function MinutesCard({
       )
     })
   const removePoint = (key, index) => update({ [key]: minutes[key].filter((_, i) => i !== index) })
-  // withStatus=false 供验收屏复用：验收遗留不设闭环状态，条目只有 text。
-  const addPoint = (key, withStatus = true) =>
+  const addPoint = (key) =>
     update({
-      [key]: [
-        ...minutes[key],
-        key === 'consensus' ? '' : { text: '', ...(withStatus ? { closed: false } : {}) }
-      ]
-    })
-  const toggleClosed = (index) =>
-    update({
-      followups: minutes.followups.map((point, i) =>
-        i === index ? { ...point, closed: !point.closed } : point
-      )
+      [key]: [...minutes[key], key === 'consensus' ? '' : { text: '' }]
     })
   return (
     <article className="g3-minutes">
@@ -631,7 +633,7 @@ export function MinutesCard({
         )}
       </div>
       <div className="g3-minutes-section">
-        <strong>遗留 {showFollowupStatus && <small>{followupHint}</small>}</strong>
+        <strong>遗留</strong>
         {editing ? (
           <div className="g3-point-editor">
             {minutes.followups.map((point, i) => (
@@ -642,15 +644,6 @@ export function MinutesCard({
                   value={point.text}
                   onChange={(e) => setPoint('followups', i, e.target.value)}
                 />
-                {showFollowupStatus && (
-                  <button
-                    className={`g3-followup-status ${point.closed ? 'closed' : ''}`}
-                    title={followupHint}
-                    onClick={() => toggleClosed(i)}
-                  >
-                    {point.closed ? '已闭环' : '未闭环'}
-                  </button>
-                )}
                 <IconButton
                   name="close"
                   label={`删除遗留第 ${i + 1} 点`}
@@ -658,10 +651,7 @@ export function MinutesCard({
                 />
               </div>
             ))}
-            <button
-              className="g3-add-point"
-              onClick={() => addPoint('followups', showFollowupStatus)}
-            >
+            <button className="g3-add-point" onClick={() => addPoint('followups')}>
               <Icon name="plus" size={13} /> 添加一点
             </button>
           </div>
@@ -670,16 +660,9 @@ export function MinutesCard({
             {minutes.followups.length ? (
               minutes.followups.map((point, i) => (
                 <li key={i}>
-                  {showFollowupStatus && (
-                    <button
-                      className={`g3-followup-status ${point.closed ? 'closed' : ''}`}
-                      title={followupHint}
-                      onClick={() => toggleClosed(i)}
-                    >
-                      {point.closed ? '已闭环' : '未闭环'}
-                    </button>
-                  )}
-                  <span>{point.text || '待填写'}</span>
+                  <span>
+                    <MinutesIssueReferences text={point.text} />
+                  </span>
                 </li>
               ))
             ) : (

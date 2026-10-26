@@ -45,8 +45,7 @@ export const metricCatalog = [
   { id: 'metric-2', name: '使用周一屏的被管理项目数', current: null },
   { id: 'metric-3', name: '每周闭环的 issue 数', current: null }
 ]
-// 纪要固定两块：共识（若干点，可编辑）与遗留（若干点，逐条闭环状态）。
-// 闭环 = 版本计划已按该条修改，由人标记；统一格式提高 Leader 归档 PR 审核效率。
+// 纪要示例在正文交代落实结果或 Issue 去向，不另设逐项完成状态。
 export const initialMinutes = {
   confirmed: true,
   sources: '在线批注 2 条 · 会议转写稿（#385 边界讨论）',
@@ -55,8 +54,8 @@ export const initialMinutes = {
     'G3 目标句与关联 Issue 分工按边界结论修订，详见目标 G3。'
   ],
   followups: [
-    { text: 'G2 交接契约在 G2 设计轮明确，不阻塞本版计划合入。', closed: false },
-    { text: '忠实采集脚本不强求本周开发完毕，已写入 G1 验收标准。', closed: true }
+    { text: 'G2 交接契约由 #383 继续跟进；关联 Issue 不代表已完成。' },
+    { text: '已落实：忠实采集脚本不强求本周开发完毕，已写入 G1 验收标准。' }
   ]
 }
 // 计划助手注入提示词的设计正本（生产落点：PlanningMinutesSection.tsx 与
@@ -65,7 +64,7 @@ export const initialMinutes = {
 // 「累积输入」不是「现在整理」（原文以「整理」结尾会被误当整理请求）；全量清单以最新
 // 一次为准；转写稿由必有输入改为助手询问一次。
 // 第九轮瘦身（2026-10-22 用户反馈）：按钮 prompt 只承载触发意图与关键约束，builder
-// 一眼能懂；落点确认、闭环由人、无批注不编造等 SOP 级规则归 week-planning Skill 与
+// 一眼能懂；落点确认、归档前核对遗留去向、无批注不编造等 SOP 级规则归 week-planning Skill 与
 // 系统提示词（随本轮 Skill 专项同步落地），按钮 prompt 不复述。
 // #431 规范轮：整理纪要「汇总」改「提炼」——纪要是提炼的结论不是逐条汇总，质量
 // 标准归 Skill 侧纪要规范。批注发送句定为中性抬头「会议反馈批注（N 条）内容如下：」
