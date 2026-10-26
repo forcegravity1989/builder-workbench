@@ -1,0 +1,209 @@
+{
+  "schema_version": 3,
+  "version": "v0.8",
+  "cycleId": "228a67d9-49c0-4908-b595-e4475086288c",
+  "summary": {
+    "progress": "",
+    "risks": "",
+    "progressSource": {
+      "version": "v0.7",
+      "cycleId": "e09136aa-7805-418e-966f-43d66935c643",
+      "sourceCommit": "c09a0c7c76a1e5ec00c1bfb6a504ba112c903676",
+      "revision": "sha256:917c42934847a6d7f42d2b94c02995f3e71b96a97f0be7cb8b1201fc650d0a3f"
+    }
+  },
+  "goals": [
+    {
+      "goalId": "G1",
+      "title": "帮 builders 统一特性与核心指标口径，BW 呈现并录入真实数据",
+      "deliverable": "1. 在 v0.7 已完成的 3 个项目初步梳理之上，统一一版特性与核心指标口径。\n2. 各项目特性树与核心指标录入真实数据，归档各自 .bw/，在 BW 可见。",
+      "acceptance": "1. 4个项目统一口径经相关 builder 确认。\n2. 各项目特性树与核心指标在 BW 可读回，读数来自真实采集；没数据显示未知，不手设绿灯。\n3. 本版（本周）内必须解决，不再遗留。",
+      "owner": "cfdcfd",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G2",
+      "title": "项目总览增加里程碑规划，版本总览 UI 重设计",
+      "deliverable": "1. 项目总览里程碑规划：版本规划之外补上更长时间的里程碑规划，设计并落地，设计按特性资料归档。\n2. 版本总览 UI 重设计：替换现有样式，高保真归档。",
+      "acceptance": "1. Builder/Leader 在项目总览不只看到单个版本的规划，还能看到更长时间的里程碑与交付承诺——支撑「不只更快、还能更好」地做项目。\n2. 项目总览的里程碑参考会议分享图，泳道方式。\n3、版本总览要在原来基础上，对于大颗粒度需求的状态参考SDLC",
+      "owner": "yuzhup",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G3",
+      "title": "WeLink 内部系统对接：群消息与群助手支撑发起评审（群文档延后）",
+      "deliverable": "1. WeLink 群消息与群助手对接的用户旅程设计与高保真，并完成落地开发（关联 #199；群文档延后，与周中讨论计划流程关联设计）。",
+      "acceptance": "1. 交付集成welink用户旅程设计与高保真，并完成落地开发。 优先考量周中发起高保真\\mvp评审的交互旅程",
+      "owner": "kanadead",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G4",
+      "title": "日常小需求与 bug 固定处理通道",
+      "deliverable": "1. 关联的小需求与 bug Issue 逐条处理到完成（修复或关闭）。",
+      "acceptance": "Issue实际处理跟随PR关闭，关注Issue关闭即可。",
+      "owner": "kanadead; yuzhup",
+      "metricTargets": []
+    }
+  ],
+  "tasks": [
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 341,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 440,
+      "goalId": "G2"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 334,
+      "goalId": "G2"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 199,
+      "goalId": "G3"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 345,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 427,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 422,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 415,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 419,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 432,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 354,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 404,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 421,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 438,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 443,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 444,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 445,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 425,
+      "goalId": "G4"
+    }
+  ],
+  "minutes": {
+    "consensus": [
+      "G1 特性与核心指标梳理属 v0.7 遗留，本版内必须完成，不再遗留。",
+      "大颗粒度需求按价值交付拆解，一人主导一个大需求、完整交付一个价值点；日常小需求与 bug 不挂大需求目标，一律走 G4 固定处理通道（kanadead、yuzhup），按模块聚合、挂特性树。",
+      "大需求按两周一迭代推进：周初对齐意图，周中出高保真或原型评审，周四前定稿，末日执行生成，随后留 2-3 天修错提质（参考节奏 1 天需求、3 天高保真、2 天开发、1-3 天修 bug、1 天上线）；白天讨论批注，夜间模型夜跑。",
+      "项目总览增加里程碑：月尺度、滚动覆盖至少一个月，下挂若干小版本与各版核心功能，参考会议分享图按泳道呈现，排期对齐华为工作日历；版本号采两级制——大版本为月度里程碑节点（如 1.0 → 2.0），小版本两周刷新（如 x.010 → x.020），中间号留给修复与小迭代。",
+      "版本总览放弃周报样式，改为呈现大需求走到 SDLC 哪一步与小需求/bug 解决列表。",
+      "WeLink 对接本版聚焦发起评审：以群消息与群助手承载周中发起高保真/MVP 评审的场景，设计与周中讨论计划流程关联；群文档延后。",
+      "计划/验收两屏不再向用户展示注入提示词，收敛为一句话 SOP 且两屏一致，支持开始即补充信息输入（#443）。"
+    ],
+    "followups": [
+      {
+        "id": "M1",
+        "text": "WeLink 群文档对接后续版本规划时按 #199 的旅程设计拾起。",
+        "closed": false
+      },
+      {
+        "id": "M2",
+        "text": "BW 帮助模块本版不做，愿景描述保留在 #199，后续版本规划时再拾起。",
+        "closed": false
+      },
+      {
+        "id": "M3",
+        "text": "#158（按执行四原则重做总览与计划两屏的可视化）归属待定，确认后纳入对应目标通道。",
+        "closed": false
+      },
+      {
+        "id": "M4",
+        "text": "知识库、特性树与指标规划三线合一纳入工作平台，支撑小需求按模块归集与跟踪（会上提出，责任人待定）。",
+        "closed": false
+      },
+      {
+        "id": "M5",
+        "text": "梳理发起评审、关联群消息等 5-6 个关键步骤旅程，形成完整的版本迭代流转规范（发起评审旅程本版随 #199 落地，整体规范遗留，责任人待定）。",
+        "closed": false
+      },
+      {
+        "id": "M6",
+        "text": "设计远程批注协作能力：多人围绕原型/高保真批注讨论，会后模型自动更新版本（责任人待定）。",
+        "closed": false
+      }
+    ],
+    "confirmed": false,
+    "sources": "2026-10-26 神盾局版本计划会 builders-workbench 分段（14:56-15:56，eMeeting AI 纪要与转写全文已抓取核对）＋计划评审板面批注（10 条）与会话逐条回复；转写「大家还讨论了什么」板块服务端未生成，未纳入。",
+    "updatedAt": "2026-10-26T19:54:41+08:00"
+  },
+  "workflow": {
+    "stage": "archive",
+    "updatedAt": "2026-10-26T19:58:26+08:00"
+  }
+}
