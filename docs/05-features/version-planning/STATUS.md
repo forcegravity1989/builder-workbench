@@ -1,5 +1,7 @@
 # 版本计划 — 六环状态
 
+**#439 局部候选：待人评审。** 当前高保真只调整本次反馈涉及的局部，已确认的整体布局沿用；行为增量见 [spec](spec.md)，九项反馈及后续实施/验证见 [处理计划](../version-workspace/plan.md)。本轮只改原型与文档，生产修复、性能和双主机 Electron 尚未验证；下文已有交付证据不覆盖本次候选。
+
 > 给接手开发、评审和验收的人读取。只记录认可、实现和证据缺口；有真实认可或运行结果时更新。价值见 [intent](intent.md)，行为见 [spec](spec.md)，工程设计见 [design](design.md)。
 
 目标平台为主干 main 的 Electron/Orca 叠层。计划屏形态依据为 [计划旅程高保真](planning-journey-prototype.html)（G3，2026-10-21 落地）；验收屏沿用 VersionGoalCard 只读骨架与其既有形态依据；完整原生会话工作区与会话栏收折为两屏共用（收折入口按屏区分），已经用户确认。旧 [prototype.html](prototype.html) 保留为历史设计资产；原型不是持久化或真实宿主执行证据。

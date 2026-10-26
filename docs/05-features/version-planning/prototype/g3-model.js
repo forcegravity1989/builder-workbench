@@ -1,7 +1,6 @@
 import snapshot from './g3-snapshot.json'
 export { snapshot }
-export const g2Url =
-  'http://127.0.0.1:53519/docs/05-features/version-planning/version-workspace-journey.html'
+export const g2Url = '../version-workspace/version-workspace-prototype.html'
 export const stages = [
   // 第一步按 #426（v0.7 验收会决议）从「上版回顾」改名「计划准备」，与验收屏
   // 「验收准备」口径一致；区块内容仍是上版两行遗留的回显。
@@ -83,7 +82,8 @@ export function annotationsSendPrompt(count) {
 
 // 时期为原型场景切换器（不进生产界面）：验证计划未建、未拆解时旅程是否流畅。
 export const scenes = [
-  ['none', '计划未建'],
+  ['none', '计划尚未开始'],
+  ['preparing', '已开始 · 目标待讨论'],
   ['goals', '目标已定 · 未拆 Issue'],
   ['full', '已拆解 · 纪要与归档']
 ]

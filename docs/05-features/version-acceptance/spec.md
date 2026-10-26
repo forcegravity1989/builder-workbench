@@ -4,6 +4,15 @@
 >
 > 状态：**v10 现行规格（2026-10-22 负责人逐项拍板）**。验收屏收敛为「周五验收会议」四步屏——验收准备 → Showcase → 会议纪要 → 归档 PR 及发版本；个人自验移出本屏；界面全部灯退役。形态与交互对齐计划屏 G3 旅程（生产实现随 [PR #399](https://github.com/forcegravity1989/builder-workbench/pull/399) 合入 main，设计高保真为 [#391](https://github.com/forcegravity1989/builder-workbench/pull/391)）。形态正本：[acceptance-journey-prototype.html](acceptance-journey-prototype.html)；[prototype.html](prototype.html) 为 v9.5 基线旧稿，不代表本篇。v9.5（#369/#377）被本篇取代的机制集中在「退役清单」；发布环节的最终形态见「归档 PR 及发版本」——它不沿用 v10 候选稿的预检弹窗与板面发布读回。
 
+## #439 局部候选（待评审，尚未生产接线）
+
+[当前高保真](acceptance-journey-prototype.html) 保留已认可的四区布局，新增如下局部候选；调查依据与后续生产验证见 [处理计划](../version-workspace/plan.md)。
+
+- 未开始时与计划屏同为短启动卡，主动作“开始验收”；计划尚未合入时禁用动作并就地说明原因。开始后打开原生会话、进入既有四区，不放宽计划归档门槛。
+- Showcase 标题去掉“勾勾表 · 人判 N/N”。目标头显示“未关闭 N · 遗留 N · 已关闭 N”，未知状态另列。遗留仅计未关闭且人工标记的 Issue，是未关闭的子集；已关闭项不计遗留，不据此删除保存的人工记录。
+
+本轮仅原型内存演示，未调用真实启动、归档或宿主服务；不代表 #439 已修复。
+
 ## 范围与入口
 
 项目连接、宿主路由、文件与命令执行沿用 Orca 原生能力；BW 不按本机、Web/配对或 SSH/WSL 另设产品限制。操作在工作树所属宿主执行，连接或权限不可用时呈现原生失败，不切换到其他机器读写。

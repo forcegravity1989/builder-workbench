@@ -48,7 +48,7 @@ function App() {
   const [dark, setDark] = useState(false)
   const [compact, setCompact] = useState(false)
   const [notes, setNotes] = useState(false)
-  const [sourceError, setSourceError] = useState(false)
+  const [priorSource, setPriorSource] = useState('available')
   // 上版回顾「延期遗留」演示态：marked = 验收已标 carry；unmarked = 未标记 +
   // 实时读回（v0.6 真实状态）；loading / error = 实时读回进行中 / 失败。
   const [carryDemo, setCarryDemo] = useState('unmarked')
@@ -97,8 +97,9 @@ function App() {
     onSent?.()
   }
   const newPlan = () => {
+    switchScene('preparing')
     toggleSession(true)
-    setNotice('新建计划调用已登记自动化的手动运行，打开新会话并携带 BW 提示 · 演示示意')
+    setNotice('已打开计划会话')
   }
   const openPopover = (target, rect) => {
     setPopover({
@@ -181,6 +182,13 @@ function App() {
   }
   const switchScene = (value) => {
     setScene(value)
+    setGoals(value === 'none' || value === 'preparing' ? [] : structuredClone(snapshot.plan.goals))
+    setExpanded([])
+    setEditingGoal(null)
+    setActive('context')
+    if (value === 'none') {
+      setSession(false)
+    }
     setNotice('')
     setPrHandoff(false)
     setHandoff(null)
@@ -197,8 +205,8 @@ function App() {
   return (
     <div className={`g3-app ${compact ? 'constrained' : ''} ${annotating ? 'annotating' : ''}`}>
       <div className="g3-demo-bar">
-        <strong>G3 设计候选</strong>
-        <span>本轮只设计计划屏 · BW v0.7 真实材料 · 编辑仅在本页演示</span>
+        <strong>#439 局部候选 · 计划</strong>
+        <span>沿用既有四区 · 场景与编辑仅在本页演示</span>
         <label className="g3-scene">
           时期
           <select
@@ -211,6 +219,19 @@ function App() {
                 {label}
               </option>
             ))}
+          </select>
+        </label>
+        <label className="g3-scene">
+          上版来源
+          <select
+            aria-label="上版验收来源场景"
+            value={priorSource}
+            onChange={(e) => setPriorSource(e.target.value)}
+          >
+            <option value="available">v0.6 有验收</option>
+            <option value="missing">v0.6 未完成验收</option>
+            <option value="error">v0.6 读取失败</option>
+            <option value="first">首个版本</option>
           </select>
         </label>
         <button onClick={() => setCompact(!compact)}>{compact ? '恢复宽度' : '窄板'}</button>
@@ -283,7 +304,7 @@ function App() {
             <strong>第八轮保留结构、砍注释密度</strong>：原空态有 4 段说明文字 + 1 个区块小注，
             「闭环 = …由人标记」在骨架卡 / 纪要卡 / tooltip 出现三次，占位灰条带边框配虚线卡看着像
             加载坏了；现只留脚部一句，占位条压细去边框，「会议 ID」这类操作指引移到
-            「整理纪要」的发送弹窗指令预览。计划未建时按钮禁用并给出原因，不留按不动又不说明的死按钮。板面批注编号角标用强调色底
+            「整理纪要」的发送弹窗指令预览。计划尚未开始时仅显示启动卡，开始后再出现四区。板面批注编号角标用强调色底
             + 白字（显式高对比配色，不依赖 foreground / background
             变量对——修复真机黑底黑字不可见）。批注交互对齐 Orca 原生元素批注：页头右上角
             「批注模式」（气泡 + 加号图标，vendor 冻结、由两枚图标组合）进入 →
@@ -361,9 +382,7 @@ function App() {
           <p>
             <strong>时期场景</strong>：右上「时期」下拉是原型场景切换器（不进生产界面），
             用于逐阶段检查计划未建、目标未拆 Issue 时的空态与操作动线。
-            <button onClick={() => setSourceError(!sourceError)}>
-              {sourceError ? '恢复来源演示' : '演示来源读取失败'}
-            </button>
+            <span>上版来源场景在顶部切换；缺验收留空，读取失败可重试，不跳到更早版本。</span>
           </p>
           <p>
             <strong>延期遗留演示态</strong>（2026-10-22 真机反馈轮）：
@@ -477,21 +496,23 @@ function App() {
               </button>
             </div>
           </header>
-          <nav className="g3-journey" aria-label="计划旅程">
-            {stages.map(([id, title, detail], i) => (
-              <button
-                key={id}
-                onClick={() => move(id)}
-                aria-current={active === id ? 'location' : undefined}
-              >
-                <span className="g3-stage-number">{i + 1}</span>
-                <span className="g3-stage-copy">
-                  <strong>{title}</strong>
-                  <small>{detail}</small>
-                </span>
-              </button>
-            ))}
-          </nav>
+          {scene !== 'none' && (
+            <nav className="g3-journey" aria-label="计划旅程">
+              {stages.map(([id, title, detail], i) => (
+                <button
+                  key={id}
+                  onClick={() => move(id)}
+                  aria-current={active === id ? 'location' : undefined}
+                >
+                  <span className="g3-stage-number">{i + 1}</span>
+                  <span className="g3-stage-copy">
+                    <strong>{title}</strong>
+                    <small>{detail}</small>
+                  </span>
+                </button>
+              ))}
+            </nav>
+          )}
           {annotating && (
             <div className="g3-annotate-banner" role="status">
               批注模式：点击目标句、验收标准、指标承诺或 Issue 行，在对象旁的小窗记录评审意见 · Esc
@@ -525,7 +546,7 @@ function App() {
             }}
             onScroll={() => {
               // A short final section may hit the scroll limit before reaching the top.
-              if (navigation.current) {
+              if (navigation.current || scene === 'none') {
                 return
               }
               const pane = scroll.current
@@ -542,139 +563,169 @@ function App() {
               }
             }}
           >
-            <section id="context" className="g3-context">
-              <div className="g3-section-title">
-                <h2>
-                  v0.6 <span>验收回顾</span>
-                </h2>
-                <IconButton
-                  name="arrow"
-                  label="打开验收屏（现有原型）"
-                  href="../version-acceptance/prototype.html"
-                />
+            {scene === 'none' ? (
+              <div className="g3-empty-board">
+                <p>v0.7 计划尚未开始。</p>
+                <button onClick={newPlan}>开始计划</button>
               </div>
-              {sourceError ? (
-                <div className="g3-error" role="alert">
-                  验收来源读取失败，结果未知。
-                  <button onClick={() => setSourceError(false)}>重试（演示）</button>
-                </div>
-              ) : (
-                <div className="g3-prior-card">
-                  <div className="g3-carryover-row">
-                    <span>延期遗留</span>
-                    <div className="g3-carryover-issues">
-                      {carryDemo === 'marked' ? (
-                        leftoverIssues.map((issue) => (
-                          <a key={issue.number} href={issue.url} target="_blank" rel="noreferrer">
-                            <span className="g3-id">#{issue.number}</span>
-                            {issue.title}
-                          </a>
-                        ))
-                      ) : carryDemo === 'unmarked' ? (
-                        <>
-                          <span className="g3-muted">上版验收未记录延期标记</span>
-                          <div className="g3-carryover-live">
-                            <span className="g3-live-tag">
-                              <Icon name="refresh" size={11} /> 实时读回
-                            </span>
-                            <span>
-                              上版 <strong>{priorLiveOpen.length}</strong> 个 Issue 未关闭
-                            </span>
-                            {priorLiveOpen.map((issue) => (
+            ) : (
+              <>
+                <section id="context" className="g3-context">
+                  <div className="g3-section-title">
+                    <h2>
+                      {priorSource === 'first' ? '' : 'v0.6'} <span>验收回顾</span>
+                    </h2>
+                    {priorSource !== 'first' && (
+                      <IconButton
+                        name="arrow"
+                        label="查看验收屏设计（版式示意）"
+                        href="../version-acceptance/acceptance-journey-prototype.html"
+                      />
+                    )}
+                  </div>
+                  {priorSource === 'error' ? (
+                    <div className="g3-error" role="alert">
+                      v0.6 验收读取失败。
+                      <button onClick={() => setPriorSource('available')}>重试</button>
+                    </div>
+                  ) : priorSource === 'missing' || priorSource === 'first' ? (
+                    <>
+                      <p className="g3-muted" role="status">
+                        {priorSource === 'first'
+                          ? '暂无上版'
+                          : '上版 v0.6 尚未完成验收，回顾暂为空。'}
+                      </p>
+                      <div className="g3-prior-card">
+                        <div className="g3-carryover-row">
+                          <span>延期遗留</span>
+                          <span className="g3-muted">—</span>
+                        </div>
+                        <div className="g3-carryover-row">
+                          <span>会议遗留</span>
+                          <span className="g3-muted">—</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="g3-prior-card">
+                      <div className="g3-carryover-row">
+                        <span>延期遗留</span>
+                        <div className="g3-carryover-issues">
+                          {carryDemo === 'marked' ? (
+                            leftoverIssues.map((issue) => (
                               <a
                                 key={issue.number}
-                                href={`https://github.com/forcegravity1989/builder-workbench/issues/${issue.number}`}
+                                href={issue.url}
                                 target="_blank"
                                 rel="noreferrer"
-                                title={issue.title}
                               >
                                 <span className="g3-id">#{issue.number}</span>
+                                {issue.title}
                               </a>
-                            ))}
-                          </div>
-                        </>
-                      ) : carryDemo === 'loading' ? (
-                        <>
-                          <span className="g3-muted">上版验收未记录延期标记</span>
-                          <div className="g3-carryover-live">
-                            <span className="g3-live-tag">
-                              <Icon name="refresh" size={11} /> 实时读回
-                            </span>
-                            <span className="g3-muted" role="status">
-                              正在读回上版 Issue 状态…
-                            </span>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <span className="g3-muted">上版验收未记录延期标记</span>
-                          <div className="g3-carryover-live">
-                            <span className="g3-live-tag">
-                              <Icon name="refresh" size={11} /> 实时读回
-                            </span>
-                            <span className="g3-muted">读回失败，状态未知</span>
-                            <button onClick={() => setCarryDemo('unmarked')}>重试</button>
-                          </div>
-                        </>
-                      )}
+                            ))
+                          ) : carryDemo === 'unmarked' ? (
+                            <>
+                              <span className="g3-muted">上版验收未记录延期标记</span>
+                              <div className="g3-carryover-live">
+                                <span className="g3-live-tag">
+                                  <Icon name="refresh" size={11} /> 实时读回
+                                </span>
+                                <span>
+                                  上版 <strong>{priorLiveOpen.length}</strong> 个 Issue 未关闭
+                                </span>
+                                {priorLiveOpen.map((issue) => (
+                                  <a
+                                    key={issue.number}
+                                    href={`https://github.com/forcegravity1989/builder-workbench/issues/${issue.number}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    title={issue.title}
+                                  >
+                                    <span className="g3-id">#{issue.number}</span>
+                                  </a>
+                                ))}
+                              </div>
+                            </>
+                          ) : carryDemo === 'loading' ? (
+                            <>
+                              <span className="g3-muted">上版验收未记录延期标记</span>
+                              <div className="g3-carryover-live">
+                                <span className="g3-live-tag">
+                                  <Icon name="refresh" size={11} /> 实时读回
+                                </span>
+                                <span className="g3-muted" role="status">
+                                  正在读回上版 Issue 状态…
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <span className="g3-muted">上版验收未记录延期标记</span>
+                              <div className="g3-carryover-live">
+                                <span className="g3-live-tag">
+                                  <Icon name="refresh" size={11} /> 实时读回
+                                </span>
+                                <span className="g3-muted">读回失败，状态未知</span>
+                                <button onClick={() => setCarryDemo('unmarked')}>重试</button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="g3-carryover-row">
+                        <span>会议遗留</span>
+                        <div className="g3-carryover-issues">
+                          {meetingDirectives.length ? (
+                            meetingDirectives.map((item, i) => (
+                              <div key={i}>
+                                <span className="g3-id">M{i + 1}</span>
+                                {item.text || item}
+                              </div>
+                            ))
+                          ) : (
+                            <span className="g3-muted">上版会议未单独记录</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="g3-carryover-row">
-                    <span>会议遗留</span>
-                    <div className="g3-carryover-issues">
-                      {meetingDirectives.length ? (
-                        meetingDirectives.map((item, i) => (
-                          <div key={i}>
-                            <span className="g3-id">M{i + 1}</span>
-                            {item.text || item}
-                          </div>
-                        ))
-                      ) : (
-                        <span className="g3-muted">上版会议未单独记录</span>
+                  )}
+                </section>
+                <section id="goals">
+                  <div className="g3-section-title">
+                    <h2>
+                      v0.7 <span>本版目标</span>
+                      <small>{scene === 'none' ? '未建' : `${goals.length} 个目标`}</small>
+                    </h2>
+                    <span className="g3-title-actions">
+                      {scene !== 'none' && (
+                        <button
+                          className="g3-text-button"
+                          title="新建会话，配置指标"
+                          onClick={() =>
+                            setNotice('配置指标在固定指标工作区新建原生会话 · 演示示意')
+                          }
+                        >
+                          <Icon name="metric" size={13} /> 配置指标
+                        </button>
                       )}
-                    </div>
+                      {goals.length > 0 && (
+                        <IconButton
+                          name={expanded.length === goals.length ? 'down' : 'right'}
+                          label={expanded.length === goals.length ? '全部收起' : '全部展开'}
+                          onClick={() => {
+                            setEditingGoal(null)
+                            setExpanded(
+                              expanded.length === goals.length ? [] : goals.map((g) => g.goalId)
+                            )
+                          }}
+                        />
+                      )}
+                    </span>
                   </div>
-                </div>
-              )}
-            </section>
-            <section id="goals">
-              <div className="g3-section-title">
-                <h2>
-                  v0.7 <span>本版目标</span>
-                  <small>{scene === 'none' ? '未建' : `${goals.length} 个目标`}</small>
-                </h2>
-                <span className="g3-title-actions">
-                  {scene !== 'none' && (
-                    <button
-                      className="g3-text-button"
-                      title="新建会话，配置指标"
-                      onClick={() => setNotice('配置指标在固定指标工作区新建原生会话 · 演示示意')}
-                    >
-                      <Icon name="metric" size={13} /> 配置指标
-                    </button>
+
+                  {goals.length === 0 && (
+                    <p className="g3-empty">尚无目标 · 与计划助手讨论本版目标。</p>
                   )}
-                  {scene !== 'none' && (
-                    <IconButton
-                      name={expanded.length === goals.length ? 'down' : 'right'}
-                      label={expanded.length === goals.length ? '全部收起' : '全部展开'}
-                      onClick={() => {
-                        setEditingGoal(null)
-                        setExpanded(
-                          expanded.length === goals.length ? [] : goals.map((g) => g.goalId)
-                        )
-                      }}
-                    />
-                  )}
-                </span>
-              </div>
-              {scene === 'none' ? (
-                <div className="g3-empty-board">
-                  <p>v0.7 计划尚未建立。</p>
-                  <button onClick={newPlan}>与计划助手新建计划</button>
-                  <span className="g3-muted">也可在版本下拉查看已有版本（示意）</span>
-                </div>
-              ) : (
-                <>
                   <div className="g3-goal-list">
                     {goals.map((goal) => (
                       <GoalRow
@@ -733,96 +784,92 @@ function App() {
                     />
                     <span>与计划助手一起明确目标、拆解 Issue。</span>
                   </div>
-                </>
-              )}
-            </section>
-            <section id="minutes">
-              <div className="g3-section-title">
-                <h2>
-                  会议纪要
-                  <small>
-                    {scene === 'full'
-                      ? minutes.confirmed
-                        ? '已人工确认 · 示例'
-                        : '待人工确认 · 示例'
-                      : '未生成'}
-                  </small>
-                </h2>
-                {scene === 'full' && (
-                  <span className="g3-title-actions">
-                    <ActionButton
-                      onClick={(e) =>
-                        sendRequest(
-                          minutesRequestPrompt,
-                          '整理纪要请求',
-                          e.currentTarget.getBoundingClientRect()
-                        )
-                      }
-                    >
-                      整理纪要
-                    </ActionButton>
-                  </span>
+                </section>
+                <section id="minutes">
+                  <div className="g3-section-title">
+                    <h2>
+                      会议纪要
+                      <small>
+                        {scene === 'full'
+                          ? minutes.confirmed
+                            ? '已人工确认 · 示例'
+                            : '待人工确认 · 示例'
+                          : '未生成'}
+                      </small>
+                    </h2>
+                    {scene === 'full' && (
+                      <span className="g3-title-actions">
+                        <ActionButton
+                          onClick={(e) =>
+                            sendRequest(
+                              minutesRequestPrompt,
+                              '整理纪要请求',
+                              e.currentTarget.getBoundingClientRect()
+                            )
+                          }
+                        >
+                          整理纪要
+                        </ActionButton>
+                      </span>
+                    )}
+                  </div>
+                  {scene === 'full' && (
+                    <p className="g3-minutes-guidance g3-annotation">
+                      固定两块与闭环规则卡片自身已经写明，这里不再复述（第八轮减注释）。只留两条屏上看不出来的：
+                      纪要确认后由计划助手的 Skill SOP 引导人调整目标，屏上不设独立「调整目标」入口
+                      （2026-10-22 用户决定）；转写稿可选——整理时由助手 askuser 一次问是否需要按会议
+                      ID 拉取，不需要或没有就仅凭批注生成，群组 / WeLink 自动获取是后续演进。
+                    </p>
+                  )}
+                  {scene === 'full' ? (
+                    <MinutesCard
+                      minutes={minutes}
+                      update={(patch) => {
+                        setMinutes({ ...minutes, ...patch })
+                        setNotice('本页演示修改 · 刷新后恢复原始材料')
+                      }}
+                    />
+                  ) : (
+                    <MinutesSkeleton sendRequest={sendRequest} />
+                  )}
+                </section>
+                {scene === 'full' ? (
+                  <section id="archive" className="g3-archive">
+                    <Icon name="pr" size={20} />
+                    <div>
+                      <h2>
+                        计划归档 PR{' '}
+                        <a
+                          className="g3-id"
+                          href={snapshot.archive.url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          #386
+                        </a>
+                      </h2>
+                      <p>Leader 在 Orca 原生 PR 页再次审核计划，合入后归档。</p>
+                    </div>
+                    <IconButton
+                      name="arrow"
+                      label="打开原生 PR 页（衔接示意）"
+                      onClick={() => {
+                        setPrHandoff(true)
+                        setNotice('')
+                      }}
+                    />
+                    <span className="g3-archive-status">{archiveStatus}</span>
+                  </section>
+                ) : (
+                  <section id="archive" className="g3-archive">
+                    <Icon name="pr" size={20} />
+                    <div>
+                      <h2>计划归档 PR</h2>
+                      <p>未创建 · 由计划助手在原生会话中发起，Leader 在 Orca 原生 PR 页再审。</p>
+                    </div>
+                  </section>
                 )}
-              </div>
-              {scene === 'full' && (
-                <p className="g3-minutes-guidance g3-annotation">
-                  固定两块与闭环规则卡片自身已经写明，这里不再复述（第八轮减注释）。只留两条屏上看不出来的：
-                  纪要确认后由计划助手的 Skill SOP 引导人调整目标，屏上不设独立「调整目标」入口
-                  （2026-10-22 用户决定）；转写稿可选——整理时由助手 askuser 一次问是否需要按会议 ID
-                  拉取，不需要或没有就仅凭批注生成，群组 / WeLink 自动获取是后续演进。
-                </p>
-              )}
-              {scene === 'full' ? (
-                <MinutesCard
-                  minutes={minutes}
-                  update={(patch) => {
-                    setMinutes({ ...minutes, ...patch })
-                    setNotice('本页演示修改 · 刷新后恢复原始材料')
-                  }}
-                />
-              ) : (
-                <MinutesSkeleton
-                  sendRequest={sendRequest}
-                  disabled={scene === 'none'}
-                  disabledReason="计划未建立 · 先在上方「与计划助手新建计划」"
-                />
-              )}
-            </section>
-            {scene === 'full' ? (
-              <section id="archive" className="g3-archive">
-                <Icon name="pr" size={20} />
-                <div>
-                  <h2>
-                    计划归档 PR{' '}
-                    <a
-                      className="g3-id"
-                      href={snapshot.archive.url}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      #386
-                    </a>
-                  </h2>
-                  <p>Leader 在 Orca 原生 PR 页再次审核计划，合入后归档。</p>
-                </div>
-                <IconButton
-                  name="arrow"
-                  label="打开原生 PR 页（衔接示意）"
-                  onClick={() => {
-                    setPrHandoff(true)
-                    setNotice('')
-                  }}
-                />
-                <span className="g3-archive-status">{archiveStatus}</span>
-              </section>
-            ) : (
-              <section id="archive" className="g3-archive">
-                <Icon name="pr" size={20} />
-                <div>
-                  <h2>计划归档 PR</h2>
-                  <p>未创建 · 由计划助手在原生会话中发起，Leader 在 Orca 原生 PR 页再审。</p>
-                </div>
-              </section>
+              </>
             )}
             <p className="g3-demo-footnote g3-annotation">
               PR 状态来自固定读取；本页演示编辑不会更新远端 PR。创建或更新归档 PR

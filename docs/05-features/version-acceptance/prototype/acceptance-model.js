@@ -1,7 +1,7 @@
 // 验收旅程候选(v10)演示模型。计划材料复用 G3 的 v0.7 真实快照,验收侧状态为本稿演示数据¹。
 import snapshot from '../../version-planning/prototype/g3-snapshot.json'
 export { snapshot }
-export const g2Url = 'https://github.com/forcegravity1989/builder-workbench/pull/389'
+export const g2Url = '../version-workspace/version-workspace-prototype.html'
 // 注入提示词设计正本(对齐计划屏第九轮瘦身):按钮 prompt 只承载触发意图;
 // 落点 minutes 节、人工确认、遗留无闭环位等 SOP 规则归 version-acceptance
 // Skill 与系统提示词,按钮 prompt 不复述。批注发送句与计划屏同源
@@ -13,13 +13,14 @@ export const minutesRequestPrompt =
 // 四步旅程轴:只做同页定位,不是门禁;界面无灯,stage 是材料内部进度。
 export const stages = [
   ['prepare', '验收准备', '部署服务与证据报告'],
-  ['showcase', 'Showcase', '勾勾表逐目标 · 人判'],
+  ['showcase', 'Showcase', '逐目标核对交付结果'],
   ['minutes', '会议纪要', '共识与遗留 · 人工确认'],
   ['archive', '归档 PR 及发版本', '原生 PR 再审 · 授权发布']
 ]
 // 时期为原型场景切换器(不进生产界面):计划未合入空板 / 验收已开始 / 会前 / 会中 / 会后。
 export const scenes = [
-  ['planned', '计划未合入 · 空板'],
+  ['planned', '验收尚未开始'],
+  ['blocked', '计划未合入 · 暂不可验收'],
   ['started', '验收已开始 · 未出包'],
   ['prep', '会前 · 准备中'],
   ['meeting', '会中 · showcase'],

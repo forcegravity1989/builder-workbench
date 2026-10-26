@@ -4,6 +4,7 @@ import issueSnapshot from './g2-issue-snapshot.json'
 import { VersionOverview } from './g2-version-overview.jsx'
 import { IconAction as Button } from './g2-icon-action.jsx'
 import { DesignReferences } from './g2-design-references.jsx'
+import { useBindingDemo } from './g2-binding-demo.jsx'
 
 const {
   // React is used by the shared JSX build factory.
@@ -107,7 +108,7 @@ function Modal({ title, children, close }) {
         closeRef.current()
       }
       if (event.key === 'Tab') {
-        const nodes = [...ref.current.querySelectorAll('button,input,a[href]')].filter(
+        const nodes = [...ref.current.querySelectorAll('button,input,select,a[href]')].filter(
           (n) => !n.disabled
         )
         if (event.shiftKey && document.activeElement === nodes[0]) {
@@ -174,6 +175,21 @@ function App() {
     [versionError, setVersionError] = useState('')
   const [dark, setDark] = useState(false),
     [toast, setToast] = useState('')
+  const [remoteDisconnected, setRemoteDisconnected] = useState(false)
+  const bindingDemo = useBindingDemo({
+    versionOrder,
+    plans,
+    Modal,
+    notify: setToast,
+    disconnected: remoteDisconnected,
+    onOpen: () => setScreen('binding-demo'),
+    onBound: (v, role, goal) => {
+      go(v, role === 'plan' || role === 'acceptance' ? role : 'tasks', goal)
+      if (goal) {
+        setOpenGoals((items) => [...new Set([...items, `${v}/${goal}`])])
+      }
+    }
+  })
   const plan = plans[version] || emptyPlan,
     state = versions[version],
     filter = goalFilters[version] || 'all'
@@ -233,7 +249,7 @@ function App() {
     setVersionOrder((prev) => [name, ...prev])
     go(name, 'plan')
     setModal(null)
-    setToast('演示：计划与验收工作区已准备，进入计划；未启动 agent 或操作真实仓库')
+    setToast('已创建版本')
   }
   function startWorkflow(role) {
     setVersions((prev) => {
@@ -260,13 +276,19 @@ function App() {
   const cleanupListRef = useRef(null)
   function confirmCleanup(v) {
     const nodes = [...(cleanupListRef.current?.querySelectorAll('input[data-tree]:checked') || [])]
-    const localIds = nodes
+    const allTrees = [...versions[v].trees, ...bindingDemo.boundTrees(v)]
+    const selectedIds = nodes
       .map((n) => n.dataset.tree)
-      .filter((id) => versions[v].trees.some((t) => t.id === id))
-    const remoteCount = nodes.length - localIds.length
+      .filter((id) =>
+        allTrees.some((tree) => tree.id === id && !(remoteDisconnected && tree.owner === 'remote'))
+      )
+    const localCount = allTrees.filter(
+      (tree) => selectedIds.includes(tree.id) && tree.owner !== 'remote'
+    ).length
+    const remoteCount = selectedIds.length - localCount
     setVersions((prev) => {
       const old = prev[v],
-        removed = new Set(localIds),
+        removed = new Set(selectedIds),
         sessions = old.sessions.filter((s) => !removed.has(s.tree))
       return {
         ...prev,
@@ -278,12 +300,17 @@ function App() {
         }
       }
     })
+    bindingDemo.removeTrees(selectedIds)
     setModal(null)
     setToast(
-      `演示：本机 ${localIds.length} 棵工作树经原生删除链（含预检）${remoteCount ? `，配对机 ${remoteCount} 棵在归属宿主删除` : ''}；材料与版本目录保留`
+      `演示：本机 ${localCount} 棵工作树经原生删除链（含预检）${remoteCount ? `，配对机 ${remoteCount} 棵在归属宿主删除` : ''}；材料与版本目录保留`
     )
   }
   function activateTree(v, tree, session) {
+    if (tree?.owner === 'remote' && remoteDisconnected) {
+      go(v, 'remote-unavailable')
+      return
+    }
     if (session) {
       setVersions((prev) => ({ ...prev, [v]: { ...prev[v], selected: session.id } }))
     } else {
@@ -402,6 +429,19 @@ function App() {
           >
             <Icon icon={GitBranch} />
             <span>{`bw/${v}/${tree.id}`}</span>
+            {tree.owner === 'remote' && remoteDisconnected && (
+              <span
+                className="disconnected-mark"
+                role="img"
+                aria-label="配对机已断开"
+                title="配对机已断开"
+              >
+                <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" />
+                  <path d="M4 12 12 4" stroke="currentColor" />
+                </svg>
+              </span>
+            )}
           </button>
         </div>
         {expanded && (
@@ -439,6 +479,7 @@ function App() {
       key = `${v}/${goal.goalId}`,
       expanded = openGoals.includes(key)
     const roots = data.trees.filter((t) => t.goal === goal.goalId && !t.parent)
+    const demoRows = bindingDemo.boundRows(v, 'goal', goal.goalId)
     return (
       <div className="goal-directory" key={goal.goalId}>
         <div className="goal-directory-row">
@@ -472,11 +513,12 @@ function App() {
         </div>
         {expanded && (
           <div className="goal-directory-body">
+            {demoRows}
             {roots.length ? (
               roots.map((tree) => nativeTree(v, tree))
-            ) : (
+            ) : !demoRows.length ? (
               <div className="tree-empty">尚无工作树</div>
-            )}
+            ) : null}
           </div>
         )}
       </div>
@@ -518,6 +560,7 @@ function App() {
         </div>
         {expanded && (
           <div className="workflow-agents">
+            {bindingDemo.boundRows(v, role)}
             {sessions.map((session) => (
               <Nav
                 key={session.id}
@@ -586,13 +629,37 @@ function App() {
     )
   }
   function body() {
+    if (screen === 'binding-demo') {
+      return bindingDemo.workspace
+    }
+    if (screen === 'remote-unavailable') {
+      return (
+        <div className="reuse-page">
+          <div className="reuse-marker">Orca 远端工作区 · 断链场景示意</div>
+          <h1>配对机已断开</h1>
+          <p className="muted">此工作树暂不可访问，连接恢复后重试。</p>
+          <button
+            className="button"
+            disabled={remoteDisconnected}
+            onClick={() =>
+              activateTree(
+                version,
+                state.trees.find((tree) => tree.owner === 'remote')
+              )
+            }
+          >
+            重新打开
+          </button>
+        </div>
+      )
+    }
     if (screen === 'overview') {
       return (
         <VersionOverview
           version={version}
           status={version === 'v0.6' ? '历史' : '在制'}
           plan={plan}
-          trees={state.trees}
+          trees={[...state.trees, ...bindingDemo.boundTrees(version)]}
           issues={issueSnapshot.items}
           readAt={issueSnapshot.readAt}
           onPlan={() => go(version, 'plan')}
@@ -613,6 +680,16 @@ function App() {
             新建{labels[screen]}
           </Button>
           <span className="muted">{active ? `当前会话：${active.label}` : '尚无会话'}</span>
+          <a
+            className="prototype-board-link"
+            href={
+              screen === 'plan'
+                ? '../version-planning/planning-journey-prototype.html'
+                : '../version-acceptance/acceptance-journey-prototype.html'
+            }
+          >
+            查看本轮{labels[screen]}屏高保真 →
+          </a>
         </ReuseSurface>
       )
     }
@@ -713,9 +790,18 @@ function App() {
   return (
     <div className="prototype">
       <div className="review-bar">
-        <strong>G2 交互原型 · 修订 9</strong>
-        <span>设计定稿 · 版本总览=表格周报风格（2026-10-22 人确认） · 图标操作 · 原生复用（含版本级清理） · 业界参考见右侧书本</span>
+        <strong>#439 局部候选 · 版本工作区</strong>
+        <span>右键配对机计划树或 feature/notes 体验绑定 · 操作仅在本页演示</span>
         <div className="review-actions" aria-label="原型评审工具">
+          <button
+            onClick={() => {
+              setRemoteDisconnected(!remoteDisconnected)
+              setOpenGoals((items) => [...new Set([...items, 'v0.7/G1'])])
+              setOpenVersions((items) => [...new Set([...items, 'v0.7'])])
+            }}
+          >
+            {remoteDisconnected ? '恢复配对机连接' : '模拟配对机断开'}
+          </button>
           <Button
             icon={BookOpen}
             label="设计依据：业界 UI 与操作参考"
@@ -789,6 +875,7 @@ function App() {
             >
               Builder Workbench
             </Nav>
+            {bindingDemo.unboundRows}
             <Nav
               icon={GitBranch}
               active={screen === 'private'}
@@ -851,21 +938,15 @@ function App() {
                 {versionError}
               </p>
             )}
-            <p className="form-help">
-              创建后准备本版计划、验收两棵固定工作树，并进入现有计划屏。不预建目标和任务树，不启动
-              agent；验收材料在明确依据后准备。
-            </p>
             <div className="dialog-actions">
               <Button icon={Plus} primary type="submit">
-                创建并进入计划
+                创建版本
               </Button>
             </div>
-            <small className="demo-note">
-              原型仅模拟目录变化，不创建真实版本材料或 Git 工作树。
-            </small>
           </form>
         </Modal>
       )}
+      {bindingDemo.overlays}
       {modal?.type === 'goal' && (
         <Modal title={`${modal.version} / ${modal.goal} · 目标目录`} close={() => setModal(null)}>
           <p>
@@ -996,19 +1077,26 @@ function App() {
             材料与版本目录保留，版本仍在侧栏收起回看。
           </p>
           <div className="goal-action-list" ref={cleanupListRef}>
-            {versions[modal.version].trees.map((tree) => (
-              <label className="composer-demo-parent" key={tree.id}>
-                <input
-                  type="checkbox"
-                  defaultChecked={tree.owner !== 'remote'}
-                  data-tree={tree.id}
-                />
-                bw/{modal.version}/{tree.id}
-                <small>
-                  {tree.owner === 'remote' ? ' · 配对机 B owned（默认不勾）' : ' · 本机 owned'}
-                </small>
-              </label>
-            ))}
+            {[...versions[modal.version].trees, ...bindingDemo.boundTrees(modal.version)].map(
+              (tree) => (
+                <label className="composer-demo-parent" key={tree.id}>
+                  <input
+                    type="checkbox"
+                    defaultChecked={tree.owner !== 'remote'}
+                    disabled={remoteDisconnected && tree.owner === 'remote'}
+                    data-tree={tree.id}
+                  />
+                  {tree.name || `bw/${modal.version}/${tree.id}`}
+                  <small>
+                    {tree.owner === 'remote'
+                      ? remoteDisconnected
+                        ? ' · 配对机已断开'
+                        : ' · 配对机 B owned（默认不勾）'
+                      : ' · 本机 owned'}
+                  </small>
+                </label>
+              )
+            )}
           </div>
           <p className="muted">
             本版自动化仍启用时在此如实提示，是否停用由人在原生编辑器决定；agent 会话记录归各

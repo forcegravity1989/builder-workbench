@@ -89,6 +89,10 @@ function AcceptanceRow({
   // 验收标准参与批注(#426 验收会决议,与计划屏对齐);「下一步」输入件仍不参与。
   const criteriaTarget = `${goal.goalId} · 验收标准`
   const criteriaNumbers = taskNumbers[criteriaTarget] || []
+  const open = tasks.filter((task) => task.state === 'OPEN')
+  const closedCount = tasks.filter((task) => task.state === 'CLOSED').length
+  const carryCount = open.filter((task) => carry[task.number]).length
+  const unknownCount = tasks.length - open.length - closedCount
   return (
     <article className={`g3-goal ${expanded ? 'open' : ''}`} id={`acc-${goal.goalId}`}>
       <div className="g3-goal-head" data-annotate={goalTarget}>
@@ -113,7 +117,13 @@ function AcceptanceRow({
             {goalNumbers.join(',')}
           </button>
         )}
-        <span className="g3-goal-count">{tasks.length} Issue</span>
+        <span
+          className="g3-goal-count acc-issue-counts"
+          title="遗留是未关闭 Issue 中人工标记的部分"
+        >
+          未关闭 {open.length} · 遗留 {carryCount} · 已关闭 {closedCount}
+          {unknownCount > 0 && <> · 未知 {unknownCount}</>}
+        </span>
         <Verdict value={verdict} onSet={onVerdict} />
       </div>
       {!expanded && (
@@ -252,7 +262,6 @@ function App() {
     sceneMinutes.wrap ? structuredClone(sceneMinutes.wrap) : null
   )
   const [archive, setArchive] = useState(sceneArchive.wrap)
-  const [errorModal, setErrorModal] = useState(false)
   const [expanded, setExpanded] = useState([])
   const [active, setActive] = useState('prepare')
   const [session, setSession] = useState(true)
@@ -277,7 +286,7 @@ function App() {
   const tasks = taskRows()
   const latest = sceneLatest[scene] ?? null
   const report = scene === 'meeting' || scene === 'wrap' ? REPORT : null
-  const judged = goals.filter((g) => verdicts[g.goalId]).length
+  const notStarted = scene === 'planned' || scene === 'blocked'
   const archiveStatus = archive
     ? { MERGED: '已合入', OPEN: '待合入', CLOSED: '已关闭' }[archive.state] || '状态未知'
     : null
@@ -340,20 +349,6 @@ function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [annotating, popover])
-  // 弹窗 Esc 关闭(与批注小窗同惯例:浮层可键盘退出)。发布预检弹窗已随规格退役,
-  // 现在只剩门禁阻断弹窗一个浮层。
-  useEffect(() => {
-    if (!errorModal) {
-      return
-    }
-    const onKey = (event) => {
-      if (event.key === 'Escape') {
-        setErrorModal(false)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [errorModal])
   const onScrollClickCapture = (event) => {
     if (!annotating) {
       return
@@ -386,21 +381,23 @@ function App() {
     setDeployed(value === 'meeting' || value === 'wrap')
     setPrHandoff(false)
     setSentRequest(null)
-    setErrorModal(false)
     setPopover(null)
     setAnnotating(false)
     setPanelOpen(false)
     setAnnotations([])
-    if (value === 'planned') {
+    if (value === 'planned' || value === 'blocked') {
       setSession(false)
     }
     setNotice('')
   }
-  // 空板唯一动作:检测计划归档 PR 合入 → 通过则拉取计划、展开四步板面;未合入报错、保持空板。
+  // The real startup must verify the adopted plan before opening the acceptance workspace.
   const startAcceptance = () => {
+    if (scene === 'blocked') {
+      return
+    }
     switchScene('started')
     toggleSession(true)
-    setNotice('检测通过:计划归档 PR #386 已合入,已拉取 v0.7 计划并新建验收会话 · 演示示意')
+    setNotice('已打开验收会话')
   }
   const openService = () => {
     toggleSession(true)
@@ -409,8 +406,8 @@ function App() {
   return (
     <div className={`g3-app ${compact ? 'constrained' : ''} ${annotating ? 'annotating' : ''}`}>
       <div className="g3-demo-bar">
-        <strong>验收 v10 候选</strong>
-        <span>四步会议屏 · v0.7 真实计划材料 · 编辑仅在本页演示</span>
+        <strong>#439 局部候选 · 验收</strong>
+        <span>沿用既有四区 · 场景与编辑仅在本页演示</span>
         <label className="g3-scene">
           时期
           <select
@@ -444,9 +441,8 @@ function App() {
           <p>
             <strong>定位与边界</strong>:验收屏为周五验收会议服务,四步——验收准备 → Showcase →
             会议纪要 → 归档 PR 及发版本。个人对需求的逐项自验在周中会话与开发流程,
-            不进本屏。计划制定中或计划归档 PR 未合入时,验收屏只有一块空板:点「与验收助手新建
-            验收」触发检测——检测通过才拉取计划、展开四步板面(目标与验收标准此时才同步上板);
-            未合入弹报错、保持空板(硬门禁,不做草案预验收)。选版与项目上下文归左侧栏(G2
+            不进本屏。尚未开始时与计划屏同为短启动卡；计划归档尚未合入时禁用“开始验收”，
+            就地说明原因。计划可用后开始验收，打开原生会话并显示既有四区；不做草案预验收。选版与项目上下文归左侧栏(G2
             外框);页头与计划屏同构:会话收折、批注模式、更新代码(唯一同步入口)、配置自动化——
             批注模式入口在页头右上角(#426 验收会决议,两屏同:页头不随内容滚动,会中随时进出、
             未发送条数角标常驻可见,取代第九轮「入口贴对象」形态);
@@ -580,7 +576,7 @@ function App() {
               {/* 批注入口在页头右上角(#426 验收会决议,两屏同):页头不随内容滚动,
                   会中随时进出批注模式、未发送条数角标常驻可见。空板(scene=planned)
                   无批注对象,不渲染。 */}
-              {scene !== 'planned' && (
+              {!notStarted && (
                 <button
                   type="button"
                   className={`g3-text-button g3-annotate-entry${annotating ? ' g3-mode-on' : ''}`}
@@ -618,7 +614,7 @@ function App() {
               </button>
             </div>
           </header>
-          {scene !== 'planned' && (
+          {!notStarted && (
             <nav className="g3-journey" aria-label="验收旅程">
               {stages.map(([id, title, detail], i) => (
                 <button
@@ -667,7 +663,7 @@ function App() {
               }
             }}
             onScroll={() => {
-              if (navigation.current || scene === 'planned') {
+              if (navigation.current || notStarted) {
                 return
               }
               const pane = scroll.current
@@ -684,19 +680,20 @@ function App() {
               }
             }}
           >
-            {scene === 'planned' && (
+            {notStarted && (
               <div className="g3-empty-board">
                 <p>v0.7 验收尚未开始。</p>
-                <button onClick={startAcceptance}>与验收助手新建验收</button>
-                <span className="g3-muted">
-                  计划归档 PR 合入后才能开始验收;未合入时点「新建验收」会报错并保持此空板。
-                </span>
-                <button className="acc-demo-link" onClick={() => setErrorModal(true)}>
-                  演示:计划 PR 未合入时的报错
+                <button onClick={startAcceptance} disabled={scene === 'blocked'}>
+                  开始验收
                 </button>
+                {scene === 'blocked' && (
+                  <span className="g3-muted" role="status">
+                    计划尚未合入，请先完成计划归档。
+                  </span>
+                )}
               </div>
             )}
-            {scene !== 'planned' && (
+            {!notStarted && (
               <>
                 <section id="prepare">
                   <div className="g3-section-title">
@@ -817,12 +814,7 @@ function App() {
                 </section>
                 <section id="showcase">
                   <div className="g3-section-title">
-                    <h2>
-                      Showcase{' '}
-                      <small>
-                        勾勾表 · 人判 {judged}/{goals.length}
-                      </small>
-                    </h2>
+                    <h2>Showcase</h2>
                     <span className="g3-title-actions">
                       <IconButton
                         name="refresh"
@@ -1089,31 +1081,6 @@ function App() {
           }}
           onCancel={() => setPopover(null)}
         />
-      )}
-      {errorModal && (
-        <div className="acc-modal-backdrop" onClick={() => setErrorModal(false)}>
-          <section
-            className="acc-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="无法开始验收"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <header>
-              <h2>无法开始验收</h2>
-              <IconButton name="close" label="关闭" onClick={() => setErrorModal(false)} />
-            </header>
-            <p>
-              未检测到本版计划的归档 PR 已合入(当前读回:#386 待合入)。
-              验收屏保持空板;待计划合入后再点「与验收助手新建验收」。
-            </p>
-            <footer>
-              <button className="acc-btn" autoFocus onClick={() => setErrorModal(false)}>
-                知道了
-              </button>
-            </footer>
-          </section>
-        </div>
       )}
     </div>
   )

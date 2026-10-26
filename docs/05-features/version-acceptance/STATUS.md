@@ -1,5 +1,7 @@
 # 版本验收 — 六环状态
 
+**#439 局部候选：待人评审。** 当前高保真只调整本次反馈涉及的局部，已确认的整体布局沿用；行为增量见 [spec](spec.md)，九项反馈及后续实施/验证见 [处理计划](../version-workspace/plan.md)。本轮只改原型与文档，生产修复、性能和双主机 Electron 尚未验证；下文已有交付证据不覆盖本次候选。
+
 > 给接手开发、评审和验收的人读取。只记录认可、实现和证据缺口；有真实认可或运行结果时更新。价值见 [intent](intent.md)，行为见 [spec](spec.md)，工程设计见 [design](design.md)。
 
 目标平台是主干 main 的 Electron/Orca 叠层。**v10（周五验收会议四步屏）的规格与意图已由负责人于 2026-10-22 逐项确认**，形态正本为 [acceptance-journey-prototype.html](acceptance-journey-prototype.html)。**生产实现已随 [#394](https://github.com/forcegravity1989/builder-workbench/pull/394) 合入 main**（`5f7816a5f`）：四步屏、协议宽容读回、发布改纯注入、空板硬门禁均已接线。2026-10-23 追加**验收对齐轮**（见下节），把计划屏第八/九轮反馈在两屏对齐。

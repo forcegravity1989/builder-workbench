@@ -244,65 +244,9 @@
   flex: none;
 }
 
-/* 空板上的演示链接(原型专用,不进生产) */
-.acc-demo-link {
-  background: none;
-  border: none;
-  font: inherit;
-  font-size: 12px;
-  color: var(--color-text-muted, #767676);
-  text-decoration: underline dashed;
-  cursor: pointer;
-}
-
-/* 发布预检弹窗 */
-.acc-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 60;
-}
-.acc-modal {
-  width: min(520px, calc(100vw - 48px));
-  border-radius: 12px;
-  border: 1px solid var(--color-hairline, rgba(128, 128, 128, 0.3));
-  background: var(--color-bg, #fff);
-  padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.acc-modal header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.acc-modal header h2 {
-  margin: 0;
-  font-size: 15px;
-}
-.acc-modal-lead {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-}
-.acc-modal-list {
-  margin: 0;
-  padding-left: 18px;
-  font-size: 13px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.acc-modal-list code {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 12px;
-}
-.acc-modal footer {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
+/* Issue counts stay readable when the native session narrows the board. */
+.acc-issue-counts {
+  white-space: normal;
+  text-align: right;
+  line-height: 1.5;
 }
