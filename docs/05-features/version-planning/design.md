@@ -7,7 +7,7 @@
 
 ## G3 计划屏实现边界(2026-10-21 落地)
 
-[计划旅程高保真](planning-journey-prototype.html)(`prototype/g3-*` 源码与生成物)沿用已认可的 G3 布局；当前叠加 #439 的初态与上版回顾局部候选，待人评审，范围见 [spec](spec.md) 与 [处理计划](../version-workspace/plan.md)。下表仍描述当前生产接线，不把原型候选当成已实施。原型只操作浏览器内存，不是交付证据；证据见 STATUS。
+[计划旅程高保真](planning-journey-prototype.html)(`prototype/g3-*` 源码与生成物)沿用已认可的 G3 布局；当前叠加 #439 的初态与上版回顾局部候选，待人评审，范围见 [spec](spec.md) 与 [Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439)。下表仍描述当前生产接线，不把原型候选当成已实施。原型只操作浏览器内存，不是交付证据；证据见 STATUS。
 
 | 屏面 | 落点 |
 |---|---|

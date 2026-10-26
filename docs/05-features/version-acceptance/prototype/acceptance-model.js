@@ -17,10 +17,10 @@ export const stages = [
   ['minutes', '会议纪要', '共识与遗留 · 人工确认'],
   ['archive', '归档 PR 及发版本', '原生 PR 再审 · 授权发布']
 ]
-// 时期为原型场景切换器(不进生产界面):计划未合入空板 / 验收已开始 / 会前 / 会中 / 会后。
+// 时期切换只用于评审；未合入场景未取得可读固定计划，不借用其他场景的目标。
 export const scenes = [
   ['planned', '验收尚未开始'],
-  ['blocked', '计划未合入 · 暂不可验收'],
+  ['unmerged', '计划未合入 · 无固定计划'],
   ['started', '验收已开始 · 未出包'],
   ['prep', '会前 · 准备中'],
   ['meeting', '会中 · showcase'],
@@ -52,6 +52,7 @@ export const REPORT = {
 // 各时期的人判/备注/遗留演示预置¹(生产由人在界面点,模型不代勾)。
 export const sceneVerdicts = {
   planned: {},
+  unmerged: {},
   started: {},
   prep: {},
   meeting: { G1: '达成' },
@@ -59,6 +60,7 @@ export const sceneVerdicts = {
 }
 export const sceneIssueNotes = {
   planned: {},
+  unmerged: {},
   started: {},
   prep: {},
   meeting: {},
@@ -69,6 +71,7 @@ export const sceneIssueNotes = {
 }
 export const sceneCarry = {
   planned: {},
+  unmerged: {},
   started: {},
   prep: {},
   meeting: {},
@@ -77,6 +80,7 @@ export const sceneCarry = {
 // 未开始/未出包:尚无候选包,出包区块为空态。
 export const sceneLatest = {
   planned: null,
+  unmerged: null,
   started: null,
   prep: LATEST_PACKAGE,
   meeting: LATEST_PACKAGE,
@@ -100,6 +104,7 @@ const initialMinutes = {
 }
 export const sceneMinutes = {
   planned: null,
+  unmerged: EMPTY_MINUTES,
   started: EMPTY_MINUTES,
   prep: EMPTY_MINUTES,
   meeting: EMPTY_MINUTES,
@@ -107,6 +112,7 @@ export const sceneMinutes = {
 }
 export const sceneArchive = {
   planned: null,
+  unmerged: null,
   started: null,
   prep: null,
   meeting: null,
@@ -128,9 +134,14 @@ const issueOverrides = {
   384: { state: 'CLOSED' }
 }
 export function taskRows() {
-  return snapshot.plan.tasks.map((ref) => ({
-    ...ref,
-    ...snapshot.issues.find((item) => item.number === ref.number),
-    ...issueOverrides[ref.number]
-  }))
+  return snapshot.plan.tasks.map((ref) => {
+    const issue = snapshot.issues.find((item) => item.number === ref.number)
+    return { ...ref, ...issue, ...issueOverrides[ref.number], readable: Boolean(issue) }
+  })
+}
+
+// Stable grouping keeps the plan's order within each native state category.
+export function sortIssueRows(tasks) {
+  const rank = (task) => (task.state === 'OPEN' ? 0 : task.state === 'CLOSED' ? 2 : 1)
+  return [...tasks].sort((left, right) => rank(left) - rank(right))
 }

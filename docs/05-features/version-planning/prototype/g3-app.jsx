@@ -708,6 +708,12 @@ function App() {
                           <Icon name="metric" size={13} /> 配置指标
                         </button>
                       )}
+                      <IconButton
+                        name="refresh"
+                        label="刷新 Issue"
+                        disabled={visibleTaskCount === 0}
+                        onClick={() => setNotice('已刷新 Issue · 本页使用演示数据')}
+                      />
                       {goals.length > 0 && (
                         <IconButton
                           name={expanded.length === goals.length ? 'down' : 'right'}

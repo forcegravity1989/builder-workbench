@@ -82,35 +82,48 @@
   white-space: nowrap;
 }
 
-/* 勾勾表:行尾人判 */
+/* One decision control, using the current production neutral/warning treatment. */
 .acc-verdict {
   display: inline-flex;
   gap: 4px;
   margin-left: auto;
   flex: none;
 }
-.acc-verdict-btn {
+.acc-verdict-select {
   font: inherit;
   font-size: 12px;
   line-height: 1.4;
-  padding: 1px 10px;
+  padding: 3px 8px;
   border-radius: 999px;
   border: 1px solid var(--color-hairline, rgba(128, 128, 128, 0.35));
   background: transparent;
   color: var(--color-text-muted, #767676);
   cursor: pointer;
 }
-.acc-verdict-btn.met.on {
-  border-color: var(--color-ok, #2f9e44);
-  background: color-mix(in srgb, var(--color-ok, #2f9e44) 12%, transparent);
-  color: var(--color-ok, #2f9e44);
+.acc-verdict-select.met {
+  border-color: var(--foreground);
+  background: var(--foreground);
+  color: var(--background);
   font-weight: 600;
 }
-.acc-verdict-btn.miss.on {
-  border-color: var(--color-danger, #e5484d);
-  background: color-mix(in srgb, var(--color-danger, #e5484d) 12%, transparent);
-  color: var(--color-danger, #e5484d);
+.acc-verdict-select.unmet {
+  border-color: var(--color-warning-deep);
+  background: var(--color-warning-deep);
+  color: var(--color-bg);
   font-weight: 600;
+}
+.acc-verdict-select option {
+  color: var(--foreground);
+  background: var(--background);
+}
+.acc-row-line > .g3-action-button {
+  margin-left: auto;
+  flex: none;
+}
+.acc-session-handoff {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  line-height: 1.6;
 }
 
 /* 批注计数角标(与计划屏角标同设计语言;g3-planning.css 已不含该类,验收侧自持) */
