@@ -33,7 +33,7 @@ G3 向 G2 / Orca 提供完整任务引用与返回位置;侧栏、原生创建�
 | D2 | 页头保留「更新代码」text-button | 已认可的唯一同步入口(spec 范围与入口段仍有效);高保真未画 |
 | D3 | h1 旁保留保存状态 | 已认可行为「正常状态只在标题旁简短呈现」;高保真为演示脚注替代 |
 | D4 | 无 progressSource 时上版回顾空态文案「未选定上版验收来源 · 在计划会话中明确后写入」 | 生产文案清单未覆盖此态,按「缺项如实显示」原则新拟,PR 中请人过目 |
-| D5 | 目标区标题保留「刷新 Issue」IconButton | 任务状态读回刷新为生产必需(taskPort 缓存有读取时间);高保真未画 |
+| D5 | 目标区标题保留「刷新 Issue」IconButton | 任务状态读回刷新为生产必需(读数经 use-cycle-task-reads 快照缓存回显、带读取时间;#432 起进屏先回显上次读数再后台静默重读,按钮为强制重读,在途读取〔含进屏后台重读〕期间按钮显示进行中);高保真未画 |
 | D6 | 开工箭头可访问名按语义双轨:解析面「开工 #N：打开本版绑定工作区，没有则进入原生创建器」、回落面「打开 #N 原生任务详情」 | 高保真「开工 #N(G2 衔接)」含内部代号;G2 永久接线(#383 P3b②)后按真实动作命名,不用内部代号 |
 | D7 | 批注模式与面板头图标用 `MessageSquarePlus` 单图标 | 高保真两图标组合是原型 vendor 冻结变通;生产 lucide 有原生同形图标,视觉一致 |
 | D8 | Issue 行不显示 assignee、标题去 `【…】` 前缀渲染 | 对齐高保真行内元素(编号/标题/角标/状态/批注/开工) |
@@ -85,7 +85,7 @@ usePlanningMaterial 继续复用 MaterialDraftController 的本地草稿、远�
 
 保留 .bw/planning/<version>/data.json，目标 schema_version=3；原结构里的 plan.goals 演进为稳定 goalId 对应的结果承诺、可选交付说明/验收说明、可选 metricRef 与版本目标。可选 workflow 节记录模型写入的 SOP 阶段（stage/updatedAt/archivePr，契约在 shared/version-workflow 与 version-records）；两屏界面都不渲染灯，stage 只供会话校准与自动化（验收屏 v10 起也不做序号比较派生灯位）。可选 minutes 节承载会议纪要（schema 在 shared/version-planning-material，守卫在 main/workbench/plan-human-guard）。风险和进展字段保持 summary 语义但计划屏不再编辑；上版回顾以人选定的固定验收来源为依据，支持同版上周和已完成版本；标明来源，不把历史结果冒称当前成绩。可选 summary.progressSource 保存明确选定验收的 version/cycleId/sourceCommit/revision，不推断版本顺序。use-prior-carryovers 经 planning-progress-source 懒读 VersionHistoryPort.read/readPlan，固定修订身份核验后映射延期遗留/会议遗留两行；「打开验收屏」先保存当前计划，再定位同项目、宿主及 runtime owner 的已登记验收工作树，经该树材料端口选定引用版本；历史选择保存固定 sourceCommit/revision，按与两行回显相同的主干来源校验读回，不受周目录去重影响。返回 Issue 详情仍恢复该固定来源；无来源时普通进入验收，工作树或固定来源不可读时显示错误，不改读当前轮、不初始化替代材料。来源失败不回退，异步结果受工作区及材料身份约束。选择引用不覆盖 summary.progress，内容由会话按授权整理，经同一 CAS 保存；既有 schema3 无引用仍可读，未真实验证模型带入行为。版本周期不由自然周推断。计划入口初态为待选择版本，列举候选不写盘；用户在 UI 或会话明确选择后才加载可编辑材料，明确新建后才创建。禁用 mtime 推断当前版本与自动 init default；加载失败不能新建替代物。
 
-任务只保存 provider/repo/number 与 goalId 的引用，展示状态从 Orca provider 读回；缓存有读取时间，离线不是空任务。会议纪要存材料可选 minutes 节（共识/遗留/人工确认，模型只写未确认正文），不再存 live_notes、transcript，也不由目标派生三节模板。协议细节的唯一模型参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
+任务只保存 provider/repo/number 与 goalId 的引用，展示状态从 Orca provider 读回；板面读数经 `version-cycle/use-cycle-task-reads` 的渲染进程快照缓存（复用总览 `snapshot-cache` 原语，#432）：按 scope + 序列化引用集合键控、计划/验收两屏共享同一条目，进屏立即回显上次读数并后台静默重读，「刷新 Issue」强制重读，单条读取全链路本无缓存（GitHub 每条一至两次 spawn gh——引用不带 kind 时 issue 先读、404 回退 PR；CodeHub 每条 spawn CLI）；缓存随渲染进程消亡、重启现算，读数带读取时间，离线不是空任务。会议纪要存材料可选 minutes 节（共识/遗留/人工确认，模型只写未确认正文），不再存 live_notes、transcript，也不由目标派生三节模板。协议细节的唯一模型参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
 
 UI 与模型共用在文件所属宿主执行的版本材料写入核心；模型入口是宿主下发的 `ORCA bw materials` CLI 薄入口。写入含受信任项目根、版本路径校验、expectedRevision、跨进程互斥和原子替换；重读修订后再提交，锁范围只含本文件事务，不锁住模型对话。CLI 与 UI 不各自实现一次校验。planning.py、version-plan.html 模板与 data-template.json 已在消费方切换的同一交付内退役删除，旧 confirm / submit-confirmed 不再控制任何流程；check-week-comment.py 与 week-plan-comment.md 保留作历史评论修复协议。
 

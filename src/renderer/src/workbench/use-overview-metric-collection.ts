@@ -8,9 +8,9 @@ import {
 } from './overview-metric-readings'
 import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
 import type { ZoneGranularity } from './overview-zone-series'
-import { createOverviewSnapshotCache, useOverviewSnapshot } from './overview-snapshot-cache'
+import { createSnapshotCache, useSnapshotCache } from './snapshot-cache'
 
-const cache = createOverviewSnapshotCache(() => ({
+const cache = createSnapshotCache(() => ({
   catalog: null as MetricCatalog | null,
   readings: {} as Partial<Record<ZoneGranularity, OverviewReadResult>>,
   anchor: new Date().toISOString(),
@@ -29,7 +29,7 @@ export function useOverviewMetricCollection(args: {
   const { baseScope, baseWorktreeId, identity, granularity } = args
   const key = JSON.stringify([identity, baseWorktreeId])
   const entry = useMemo(() => cache(key), [key])
-  const snapshot = useOverviewSnapshot(entry)
+  const snapshot = useSnapshotCache(entry)
   /**
    * initial: first read, short-circuits once loaded.
    * reload: in-place re-read after「更新代码」— persisted readings are re-read
