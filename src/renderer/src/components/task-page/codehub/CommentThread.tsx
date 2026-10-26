@@ -2,12 +2,6 @@ import { useState } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from '@/components/ui/accordion'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ExternalLink, MessageSquarePlus, Trash2 } from 'lucide-react'
 import CommentMarkdown from '@/components/sidebar/CommentMarkdown'
@@ -265,7 +259,16 @@ function CodeHubCommentCard({
                   })
             }
             onCancel={() => setReplyOpen(false)}
-            onSubmit={(replyBody) => state.postReply(comment.discussionId!, replyBody)}
+            onSubmit={(replyBody) =>
+              state.postReply(comment.discussionId!, replyBody).then((ok) => {
+                // Close the form only on success; a failed reply keeps the
+                // draft on screen so the user can retry or edit it.
+                if (ok) {
+                  setReplyOpen(false)
+                }
+                return ok
+              })
+            }
           />
         ) : null}
       </div>
@@ -289,31 +292,9 @@ export function CodeHubCommentThread({
           ))
         ]
       : [<CodeHubCommentCard key={group.comment.id} comment={group.comment} state={state} />]
-  const root = group.kind === 'thread' ? group.root : group.comment
-  const count = group.kind === 'thread' ? group.replies.length + 1 : 1
-  if (root.isResolved !== true) {
-    return <div className="flex min-w-0 flex-col gap-3">{cards}</div>
-  }
-  return (
-    <Accordion type="single" collapsible>
-      <AccordionItem
-        value={codeHubCommentGroupId(group)}
-        className="rounded-lg border border-border/40 bg-card/40"
-      >
-        <AccordionTrigger className="px-3 py-2 text-[13px] text-muted-foreground hover:bg-accent/30">
-          <span className="min-w-0 truncate">
-            {translate('auto.components.GitHubItemDialog.228e2f59d3', 'Resolved')}{' '}
-            {count > 1
-              ? translate('auto.components.GitHubItemDialog.28d0d3374f', 'thread')
-              : translate('auto.components.GitHubItemDialog.e2bf3e41a9', 'comment')}{' '}
-            {translate('auto.components.GitHubItemDialog.0ae387d8ca', 'by')} {root.author}
-            {count > 1 ? ` (${count})` : ''}
-          </span>
-        </AccordionTrigger>
-        <AccordionContent className="flex min-w-0 flex-col gap-3 px-3 pb-3 pt-0">
-          {cards}
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
-  )
+  // Why: resolved threads render expanded like any other. The previous
+  // GitHub-style Accordion collapse hid pre-existing resolved replies behind a
+  // bar that read as "comments missing" — real-data verification rejected it.
+  // The resolved badge and dimmed card styling still mark the state.
+  return <div className="flex min-w-0 flex-col gap-3">{cards}</div>
 }
