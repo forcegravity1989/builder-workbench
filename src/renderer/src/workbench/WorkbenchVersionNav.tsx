@@ -16,7 +16,6 @@ import {
   startVersionGoal
 } from './version-nav-actions'
 import { VersionCleanupDialog } from './version-cleanup-dialog'
-import { VersionTreeBindDialog } from './version-tree-bind-dialog'
 import { VersionNavGroup } from './version-nav-group'
 import { NewVersionDialog } from './NewVersionDialog'
 import { openGoalWorkspace } from './scoped-task-workspace'
@@ -27,16 +26,10 @@ import { useCycleView } from './cycle-view-state'
  * G2 侧栏版本区（P3a/P3b/P6，高保真修订 8/9）：版本平铺（旧版本默认收起即退休
  * 形态，可展开回看）；每版含总览/计划/任务/目标目录/验收行；「＋ 新建版本」轻
  * 表单接 workbench.versionWorkspace.prepare；版本行另有「初始化工作区」（流程树
- * 不齐时显示，点击直接执行，#436 伴飞裁定）、「绑定已有工作树」（补绑定，人主
- * 导）与「清理」确认单（执行复用原生批量删除漏斗）。目录永远现算，读取失败如实
- * 呈现。
+ * 不齐时显示，点击直接执行）与「清理」确认单。绑定从工作树原生右键菜单进入。
  */
 
-type DialogState =
-  | { mode: 'create' }
-  | { mode: 'cleanup'; version: string }
-  | { mode: 'bind'; version: string }
-  | null
+type DialogState = { mode: 'create' } | { mode: 'cleanup'; version: string } | null
 
 function readExpandedStore(key: string | null): Set<string> | null {
   if (!key) {
@@ -58,7 +51,6 @@ function readExpandedStore(key: string | null): Set<string> | null {
 
 export function WorkbenchVersionNav(): React.JSX.Element | null {
   const repoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const repos = useAppStore((s) => s.repos)
   const projectName = useAppStore((s) => {
     const active = s.activeRepoId ?? s.repos[0]?.id ?? null
     return s.repos.find((repo) => repo.id === active)?.displayName?.trim() || null
@@ -160,7 +152,7 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
   const problems = loaded?.problems ?? []
 
   return (
-    <div className="wb-versions flex flex-col" data-workbench-versions>
+    <div className="wb-versions flex min-h-0 min-w-0 flex-col" data-workbench-versions>
       <div className="mt-2 flex items-center justify-between px-2 pb-1">
         <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-worktree-sidebar-foreground/45">
           版本
@@ -208,7 +200,7 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-0.5">
+      <div className="worktree-sidebar-scrollbar flex min-h-0 min-w-0 flex-col gap-0.5 overflow-x-hidden overflow-y-auto overscroll-contain">
         {entries.map((entry) => {
           const activeWorkflow: VersionWorkflow | null =
             activeBinding && activeBinding.version === entry.version
@@ -242,7 +234,6 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
               }
               onToggle={() => toggleVersion(entry.version)}
               onCleanup={() => setDialog({ mode: 'cleanup', version: entry.version })}
-              onBindTree={() => setDialog({ mode: 'bind', version: entry.version })}
               onNavigateWorkflow={(workflow) =>
                 navigateVersionWorkflow({
                   catalog,
@@ -297,16 +288,6 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
           version={dialog.version}
           entry={entries.find((item) => item.version === dialog.version) ?? null}
           worktrees={catalog.worktrees}
-          onClose={() => setDialog(null)}
-        />
-      ) : null}
-      {dialog?.mode === 'bind' ? (
-        <VersionTreeBindDialog
-          version={dialog.version}
-          entry={entries.find((item) => item.version === dialog.version) ?? null}
-          worktrees={catalog.worktrees}
-          repos={repos}
-          scope={catalog.scope}
           onClose={() => setDialog(null)}
         />
       ) : null}

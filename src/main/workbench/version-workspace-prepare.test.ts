@@ -3,6 +3,10 @@ import type { Worktree } from '../../shared/worktree/types'
 import type { CreateWorktreeResult } from '../../shared/worktree/create-types'
 import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/runtime-managed-worktree-create-types'
 import { normalizeStoredWorkbenchVersionBinding } from '../../shared/workbench/version-binding'
+import type { VersionHistoryCatalog } from '../../shared/workbench/version-history'
+import type { PlanningMaterial } from '../../shared/workbench/version-material'
+import type { VersionMaterialInitialize } from '../../shared/workbench/version-material-request'
+import { prepareFailed } from '../../renderer/src/workbench/version-workspace-prepare-report'
 import { nativeWorkbenchWorkspaceHost } from './workspace-resolver'
 import {
   createVersionWorkspacePrepareService,
@@ -40,6 +44,8 @@ function createFakeEnvironment(
     failAcceptanceCreate?: boolean
     uniquifyPlan?: boolean
     externalHolderBranch?: string
+    history?: VersionHistoryCatalog
+    historyError?: string
   } = {}
 ) {
   const registry = new Map<string, FakeTree>()
@@ -56,12 +62,13 @@ function createFakeEnvironment(
       binding: null
     })
   }
-  const materialDocs = new Map<string, string>()
+  const materialDocs = new Map<string, { revision: string; document: PlanningMaterial }>()
   const calls = {
     create: 0,
     remove: 0,
     removeOptions: [] as unknown[],
-    initializeCreated: 0
+    initializeCreated: 0,
+    historyReads: 0
   }
   let seq = 0
   const inFlight = new Map<string, Promise<unknown>>()
@@ -184,13 +191,28 @@ function createFakeEnvironment(
 
   const materialExecutor = ((_target: unknown, _reauthorize: unknown) =>
     ({
-      initializeEmptyPlan: async (input: { version: string; expectedBranch: string }) => {
+      read: async (input: { version: string }) => materialDocs.get(input.version) ?? null,
+      initializeEmptyPlan: async (input: VersionMaterialInitialize) => {
         const existing = materialDocs.get(input.version)
         if (existing) {
-          return { created: false, revision: existing }
+          return { created: false, revision: existing.revision }
         }
         const revision = `sha256:${'a'.repeat(64)}`
-        materialDocs.set(input.version, revision)
+        materialDocs.set(input.version, {
+          revision,
+          document: {
+            schema_version: 3,
+            version: input.version,
+            cycleId: input.cycleId,
+            summary: {
+              progress: '',
+              risks: '',
+              ...(input.progressSource ? { progressSource: input.progressSource } : {})
+            },
+            goals: [],
+            tasks: []
+          }
+        })
         calls.initializeCreated += 1
         return { created: true, revision }
       }
@@ -199,14 +221,38 @@ function createFakeEnvironment(
   const service = createVersionWorkspacePrepareService(
     nativeWorkbenchWorkspaceHost(runtime),
     runtime,
-    materialExecutor
+    materialExecutor,
+    {
+      list: async () => {
+        calls.historyReads++
+        if (options.historyError) {
+          throw new Error(options.historyError)
+        }
+        return options.history ?? { records: [], problems: [] }
+      }
+    }
   )
   return { service, registry, materialDocs, calls, runtime }
 }
 
 describe('versionWorkspace prepare', () => {
   it('converges concurrent double-clicks host-side and rediscovers existing bindings without creating', async () => {
-    const env = createFakeEnvironment()
+    const source = {
+      version: 'v0.7',
+      cycleId: 'cycle-07',
+      sourceCommit: 'b'.repeat(40),
+      revision: `sha256:${'b'.repeat(64)}`
+    }
+    const options = {
+      history: {
+        records: [
+          { ...source, workflow: 'acceptance' as const, committedAt: '2026-10-01T00:00:00Z' }
+        ],
+        problems: []
+      },
+      historyError: undefined as string | undefined
+    }
+    const env = createFakeEnvironment(options)
     // 双击/两窗口并发：同一 tick 发起两次 prepare，宿主端 dedupe 收敛为每用途一次创建。
     const [first, second] = await Promise.all([
       env.service.prepare({ ...scope, version: 'v0.8' }),
@@ -232,14 +278,19 @@ describe('versionWorkspace prepare', () => {
     const planTree = env.registry.get(planStep.worktreeId!)!
     expect(planTree.binding).toEqual({ schema: 1, version: 'v0.8', workflow: 'plan' })
     expect(planTree.instanceId).toBe(planStep.instanceId)
+    expect(env.materialDocs.get('v0.8')?.document.summary.progressSource).toEqual(source)
 
     // 重入（重启后补齐语义）：全部 existing，零创建，材料不覆盖。
     const revisionBefore = env.materialDocs.get('v0.8')
+    const historyReadsBefore = env.calls.historyReads
+    options.historyError = 'new history is unavailable'
     const reentry = await env.service.prepare({ ...scope, version: 'v0.8' })
     expect(env.calls.create).toBe(2)
     expect(reentry.steps.map((step) => step.state)).toEqual(['existing', 'existing'])
     expect(reentry.steps[0].material?.state).toBe('existing')
     expect(env.materialDocs.get('v0.8')).toBe(revisionBefore)
+    expect(env.calls.historyReads).toBe(historyReadsBefore)
+    expect(reentry.problems).toEqual([])
   })
 
   it('keeps succeeded steps on failure, completes on retry, and never binds a mismatched create', async () => {
@@ -254,6 +305,7 @@ describe('versionWorkspace prepare', () => {
     expect(failed.problems).toEqual([
       { workflow: 'acceptance', code: 'prepare-failed', message: 'acceptance create failed' }
     ])
+    expect(prepareFailed(failed)).toBe(true)
     expect(env.registry.size).toBe(1)
     const planRevision = env.materialDocs.get('v0.8')
     expect(planRevision).toBeTruthy()
@@ -299,5 +351,25 @@ describe('versionWorkspace prepare', () => {
     await expect(occupied.service.prepare({ ...scope, version: 'v0 9' })).rejects.toMatchObject({
       code: 'invalid-version'
     })
+
+    // 默认回顾读取失败仍初始化空计划；真实诊断保留，不借旧验收、不卡住会话准备。
+    const unreadable = createFakeEnvironment({ historyError: 'fixed history unreadable' })
+    const unreadableResult = await unreadable.service.prepare({ ...scope, version: 'v0.8' })
+    expect(unreadableResult.steps.map((step) => step.state)).toEqual(['created', 'created'])
+    expect(unreadableResult.steps[0].material?.state).toBe('initialized')
+    expect(unreadable.materialDocs.get('v0.8')?.document.summary.progressSource).toBeUndefined()
+    expect(unreadableResult.problems).toEqual([
+      { workflow: 'plan', code: 'prior-source-unavailable', message: 'fixed history unreadable' }
+    ])
+    expect(prepareFailed(unreadableResult)).toBe(false)
+    expect(
+      prepareFailed({
+        ...unreadableResult,
+        problems: [
+          ...unreadableResult.problems,
+          { workflow: 'plan', code: 'initialize-failed', message: 'cannot initialize plan' }
+        ]
+      })
+    ).toBe(true)
   })
 })

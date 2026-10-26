@@ -12,12 +12,8 @@ import { useCycleTaskReads } from '../version-cycle/use-cycle-task-reads'
 import { AcceptanceGoalRow } from './AcceptanceGoalRow'
 
 /**
- * Second zone: the showcase checklist. Goal rows reuse the plan screen's row form
- * in read-only trim — the goals come from the fixed plan and are never edited,
- * added or removed here. The only human verdict is the mutually exclusive
- * 达成/不达成 pair at the row end; clicking the active one again clears it back to
- * unmarked, and unmarked stays blank rather than being inferred. Whether
- * something was demonstrated never enters the material.
+ * Showcase goals come from the fixed plan. Each goal has one human decision;
+ * Issue counts remain provider facts and never infer goal attainment.
  */
 export function AcceptanceGoalRows({
   plan,
@@ -68,19 +64,10 @@ export function AcceptanceGoalRows({
       )
     : null
 
-  const judged = plan.goals.filter(
-    (goal) => document.results.find((item) => item.goalId === goal.goalId)?.decision
-  ).length
-
   return (
     <section id="showcase" ref={sectionRef} aria-label="Showcase">
       <div className="acc-section-title">
-        <h2>
-          Showcase
-          <small>
-            勾勾表 · 人判 {judged}/{plan.goals.length}
-          </small>
-        </h2>
+        <h2>Showcase</h2>
         <span className="acc-title-actions">
           <BoardIconButton
             label={refreshing ? '正在刷新 Issue' : '刷新 Issue'}

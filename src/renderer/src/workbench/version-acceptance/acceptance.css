@@ -483,6 +483,7 @@
 }
 .acc-goal-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: 12px;
   padding: 18px 20px 0;
@@ -492,7 +493,7 @@
   display: flex;
   align-items: baseline;
   gap: 12px;
-  flex: 1;
+  flex: 1 1 200px;
   min-width: 0;
   border: 0;
   background: none;
@@ -520,7 +521,7 @@
 }
 .acc-goal-count {
   font-size: 12px;
-  white-space: nowrap;
+  white-space: normal;
   color: var(--muted-foreground);
   padding-top: 3px;
 }
@@ -538,30 +539,36 @@
   content: '·';
   margin-right: 16px;
 }
-/* 行尾人判:互斥两动作,再点取消回未标;未标保持空白,不冒充。 */
 .acc-verdict {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
 }
-.acc-verdict button {
+.acc-verdict-select {
   border: 1px solid var(--border);
   border-radius: 999px;
   background: none;
-  padding: 3px 12px;
+  padding: 3px 8px;
+  font: inherit;
   font-size: 12px;
+  color: var(--muted-foreground);
   white-space: nowrap;
+  cursor: pointer;
 }
-.acc-verdict button.on {
+.acc-verdict-select.met {
   border-color: var(--foreground);
   background: var(--foreground);
   color: var(--background);
 }
-.acc-verdict button.on.unmet {
+.acc-verdict-select.unmet {
   background: var(--color-warning-deep);
   border-color: var(--color-warning-deep);
   color: var(--color-bg);
+}
+.acc-verdict-select option {
+  color: var(--foreground);
+  background: var(--background);
 }
 .acc-goal-body {
   padding: 0 24px 24px 78px;
@@ -1034,65 +1041,6 @@
   padding: 6px 16px;
   font-size: 13px;
 }
-.acc-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  background: color-mix(in srgb, var(--color-text) 35%, transparent);
-}
-.acc-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  translate: -50% -50%;
-  z-index: 61;
-  width: min(520px, 92vw);
-  max-height: 80vh;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 20px;
-  font-size: 13px;
-  background: var(--color-card);
-  color: var(--color-text);
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-md);
-  box-shadow: 0 var(--space-3) var(--space-6) color-mix(in srgb, var(--color-text) 20%, transparent);
-}
-.acc-modal h2 {
-  font-size: 15px;
-  margin: 0;
-}
-.acc-modal p {
-  margin: 0;
-  line-height: 1.7;
-  overflow-wrap: anywhere;
-}
-.acc-modal > button {
-  align-self: flex-end;
-  border: 1px solid var(--foreground);
-  border-radius: var(--radius-md);
-  background: none;
-  padding: 4px 14px;
-  font-size: 12px;
-}
-.acc-modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-.acc-modal-actions button {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: none;
-  padding: 4px 14px;
-  font-size: 12px;
-}
-.acc-modal-actions button:last-child {
-  border-color: var(--foreground);
-}
-
 /* ===== 保存冲突与错误(自动保存就地核对) ===== */
 
 .va-error {

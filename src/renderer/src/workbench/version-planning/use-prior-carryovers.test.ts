@@ -130,6 +130,19 @@ it('maps carry marks and confirmed minutes followups to the two prior-review row
   // snapshot references ride along for the live readback row.
   expect(carryovers.issueMarksRecorded).toBe(true)
   expect(carryovers.openReadbackReferences.map((ref) => ref.number)).toEqual([331])
+  const closedSnapshot = {
+    ...document,
+    taskSnapshot: document.taskSnapshot!.map((item) =>
+      item.kind === 'ready' ? { ...item, state: 'closed' } : item
+    )
+  }
+  // Frozen closed facts exclude a mark from carryover; missing facts do not erase human marks.
+  expect(derivePriorCarryovers(closedSnapshot, plan()).issues.map((item) => item.number)).toEqual([
+    339, 341
+  ])
+  expect(closedSnapshot.results[0]?.issueMarks?.['github:github.com/acme/app:331']?.carry).toBe(
+    true
+  )
 })
 
 it('reads no meeting carryover from an unconfirmed minutes draft', () => {

@@ -230,7 +230,6 @@ function App() {
           >
             <option value="available">v0.6 有验收</option>
             <option value="missing">v0.6 未完成验收</option>
-            <option value="error">v0.6 读取失败</option>
             <option value="first">首个版本</option>
           </select>
         </label>
@@ -383,7 +382,7 @@ function App() {
           <p>
             <strong>时期场景</strong>：右上「时期」下拉是原型场景切换器（不进生产界面），
             用于逐阶段检查计划未建、目标未拆 Issue 时的空态与操作动线。
-            <span>上版来源场景在顶部切换；缺验收留空，读取失败可重试，不跳到更早版本。</span>
+            <span>上版来源场景在顶部切换；缺验收留空，不跳到更早版本。</span>
           </p>
           <p>
             <strong>延期遗留演示态</strong>（2026-10-22 真机反馈轮）：
@@ -584,12 +583,7 @@ function App() {
                       />
                     )}
                   </div>
-                  {priorSource === 'error' ? (
-                    <div className="g3-error" role="alert">
-                      v0.6 验收读取失败。
-                      <button onClick={() => setPriorSource('available')}>重试</button>
-                    </div>
-                  ) : priorSource === 'missing' || priorSource === 'first' ? (
+                  {priorSource === 'missing' || priorSource === 'first' ? (
                     <>
                       <p className="g3-muted" role="status">
                         {priorSource === 'first'

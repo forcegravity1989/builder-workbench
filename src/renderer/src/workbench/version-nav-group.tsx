@@ -1,21 +1,16 @@
 import { goalOrdinal } from './version-labels'
 import React from 'react'
-import {
-  ChevronDown,
-  ChevronRight,
-  FolderPlus,
-  Link2,
-  LoaderCircle,
-  PackageCheck,
-  X
-} from 'lucide-react'
+import { ChevronDown, ChevronRight, FolderPlus, LoaderCircle, PackageCheck, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
+import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
+import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import {
+  BoundTreeRow,
   GoalDirectoryRow,
   OverviewRow,
   TasksRow,
@@ -24,7 +19,7 @@ import {
 } from './version-nav-rows'
 
 /**
- * G2 侧栏单个版本组（P3a/P3b/P6）：版本行（展开/收起＋退休标识＋初始化/补绑定/
+ * G2 侧栏单个版本组（P3a/P3b/P6）：版本行（展开/收起＋退休标识＋初始化/
  * 清理入口）与子行（总览/计划/任务/目标目录/验收）。归属判定与动作编排在父组件，
  * 本组件只做呈现与原生复用件组装。
  */
@@ -45,7 +40,6 @@ type VersionNavGroupProps = {
   onToggle: () => void
   onInitialize: () => void
   onCleanup: () => void
-  onBindTree: () => void
   onOverview: () => void
   onNavigateWorkflow: (workflow: VersionWorkflow) => void
   onOpenTasks: (goal?: { goalId: string; label: string }) => void
@@ -67,7 +61,6 @@ export function VersionNavGroup({
   onToggle,
   onInitialize,
   onCleanup,
-  onBindTree,
   onOverview,
   onNavigateWorkflow,
   onOpenTasks,
@@ -82,6 +75,17 @@ export function VersionNavGroup({
     findVersionFlowWorktrees(worktrees, { version: entry.version, workflow: 'plan' }).length > 0 &&
     findVersionFlowWorktrees(worktrees, { version: entry.version, workflow: 'acceptance' }).length >
       0
+  const goalIds = new Set(entry.goals.map((goal) => goal.goalId))
+  // 材料暂不可读或目标已移除时，登记中的绑定树仍有原生入口。
+  const ungroupedTrees = worktrees.filter((tree) => {
+    const binding = normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding)
+    return (
+      !tree.isArchived &&
+      binding?.version === entry.version &&
+      (binding.workflow === 'goal' || binding.workflow === 'issue') &&
+      (!binding.goalId || !goalIds.has(binding.goalId))
+    )
+  })
   return (
     <div className="wb-version-group min-w-0">
       <div className="flex min-w-0 items-center gap-0.5 pr-0.5">
@@ -142,17 +146,6 @@ export function VersionNavGroup({
           type="button"
           variant="ghost"
           size="icon-xs"
-          aria-label={`绑定已有工作树到 ${entry.version}（补绑定）`}
-          title={`绑定已有工作树到 ${entry.version}（补绑定，人显式断言归属）`}
-          onClick={onBindTree}
-          className="size-6 shrink-0 text-worktree-sidebar-foreground/40 hover:text-worktree-sidebar-foreground"
-        >
-          <Link2 className="size-3.5" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
           aria-label={`清理 ${entry.version} 工作树`}
           title={`清理 ${entry.version} 工作树（勾选后进入 Orca 删除确认）`}
           onClick={onCleanup}
@@ -194,7 +187,10 @@ export function VersionNavGroup({
               />
             )
           })}
-          {entry.goals.length === 0 ? (
+          {ungroupedTrees.map((tree) => (
+            <BoundTreeRow key={getWorktreeHostIdentity(tree)} tree={tree} />
+          ))}
+          {entry.goals.length === 0 && ungroupedTrees.length === 0 ? (
             <p className="px-1 py-0.5 text-[10.5px] text-worktree-sidebar-foreground/40">
               目标来自本版计划
             </p>

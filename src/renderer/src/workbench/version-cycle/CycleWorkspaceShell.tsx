@@ -26,8 +26,12 @@ export function CycleWorkspaceShell() {
       <div className="vc-board-content" inert={context.syncing}>
         {!context.worktreeId ? (
           readonlyBrowse ? (
-            /* G2（P3b）：已清理/未准备版本的只读回看——主干已提交材料，不建树。 */
-            <VersionReadonlyMaterialView workflow={workflow} version={readonlyBrowse.version} />
+            /* 历史版本或固定验收快照只读回看，不准备工作树。 */
+            <VersionReadonlyMaterialView
+              workflow={workflow}
+              version={readonlyBrowse.version}
+              fixedAcceptance={readonlyBrowse.fixedAcceptance}
+            />
           ) : (
             <>
               {(notice || context.error) && (

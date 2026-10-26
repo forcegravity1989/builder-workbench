@@ -63,6 +63,7 @@ export function VersionOverviewPage({
 }): React.JSX.Element {
   const { repoId, version } = options
   const catalog = useVersionCatalogForRepo(repoId)
+  const catalogError = catalog.materialError ?? catalog.error
   const entry = useMemo(
     () => catalog.catalog?.entries.find((item) => item.version === version) ?? null,
     [catalog.catalog, version]
@@ -71,12 +72,12 @@ export function VersionOverviewPage({
     repoId,
     version,
     entry,
-    catalogReady: catalog.catalog !== null,
-    catalogError: catalog.error
+    catalogReady: catalog.materialReady,
+    catalogError
   })
   const planDocument: PlanningMaterial | null = plan.kind === 'ready' ? plan.document : null
   const acceptanceDocument = acceptance.kind === 'ready' ? acceptance.document : null
-  const catalogReady = catalog.catalog !== null
+  const catalogReady = catalog.materialReady
   const workspaceLabels = (entry?.workspaces ?? []).map((workspace) =>
     workspace.binding.workflow === 'goal'
       ? goalTreeLabel(null)
@@ -102,7 +103,7 @@ export function VersionOverviewPage({
       <header className="flex flex-wrap items-baseline gap-2">
         <h1 className="text-[17px] font-semibold">{version} 版本总览</h1>
         <span className="rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
-          {!catalogReady && !catalog.error
+          {!catalogReady && !catalogError
             ? '状态读取中…'
             : entry?.state === 'working'
               ? '在制'
@@ -157,8 +158,8 @@ export function VersionOverviewPage({
 
       <div className="grid grid-cols-2 gap-1.5 md:grid-cols-4">
         <FactCell label="工作区（登记现算）">
-          {catalog.error
-            ? `目录读取失败：${catalog.error}`
+          {catalogError
+            ? `目录读取失败：${catalogError}`
             : !catalogReady
               ? '目录读取中…'
               : workspaceLabels.length > 0

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import type { ExecutionHostId } from '../../shared/execution-host'
 import { getWorktreeExecutionHostId } from '../../shared/execution-host'
 import type { DetectedWorktree, Worktree } from '../../shared/worktree/types'
@@ -11,6 +10,7 @@ import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/runtime-manage
 import { normalizeLocalBranchName } from '../runtime/runtime-worktree-selection'
 import { REPO_SEARCH_REFS_MAX_LIMIT } from '../../shared/repo-search-limits'
 import { matchReusableBranchRef } from '../../shared/workbench/reusable-branch-ref'
+import type { VersionHistoryPort } from '../../shared/workbench/version-history'
 import {
   WORKBENCH_VERSION_BINDING_SCHEMA_VERSION,
   normalizeStoredWorkbenchVersionBinding
@@ -36,7 +36,9 @@ import {
   type VersionMaterialExecutor
 } from './version-material-service'
 import { executeVersionMaterial } from './version-material-runtime'
+import { nativeVersionHistoryService } from './version-history-runtime'
 import { WorkspaceScopeError } from './workspace-scope-error'
+import { initializeVersionWorkspacePlan } from './version-workspace-plan-initialize'
 
 /** The native surfaces this thin service composes; creation never takes client paths. */
 export type VersionWorkspacePrepareRuntime = VersionBindingRuntime & {
@@ -82,7 +84,8 @@ function errorMessage(error: unknown): string {
 export function createVersionWorkspacePrepareService(
   host: WorkbenchWorkspaceHost,
   runtime: VersionWorkspacePrepareRuntime,
-  materialExecutor: VersionMaterialExecutor
+  materialExecutor: VersionMaterialExecutor,
+  history?: Pick<VersionHistoryPort, 'list'>
 ) {
   const repoResolver = createWorkbenchRepoResolver(host)
   const bindingService = createVersionBindingService(host, runtime)
@@ -124,19 +127,20 @@ export function createVersionWorkspacePrepareService(
       return (await runtime.listManagedWorktrees(repoSelector)).worktrees
     }
 
-    async function initializePlanMaterial(
+    const initializePlanMaterial = (
       treeId: string,
-      branch: string
-    ): Promise<NonNullable<VersionWorkspacePrepareStep['material']>> {
-      const outcome = await materialService.initializeEmptyPlan(
-        { repoId: repo.id, worktreeId: treeId, hostId, workflow: 'plan' },
-        { version: request.version, cycleId: randomUUID(), expectedBranch: branch }
-      )
-      return outcome.created
-        ? { state: 'initialized', revision: outcome.revision }
-        : { state: 'existing', revision: outcome.revision }
-    }
-
+      branch: string,
+      problems: VersionWorkspacePrepareResult['problems']
+    ) =>
+      initializeVersionWorkspacePlan({
+        scope: { repoId: repo.id, worktreeId: treeId, hostId, workflow: 'plan' },
+        version: request.version,
+        branch,
+        materialService,
+        history,
+        listRegistered,
+        problems
+      })
     /** 分支已有 ref 但无树占用时，把匹配 ref 交给原生创建复用同名分支（findNamedBaseRef 同口径，共享单实现）。 */
     async function findReusableBranchRef(branch: string): Promise<string | undefined> {
       const result = await runtime.searchRepoRefs(repoSelector, branch, REPO_SEARCH_REFS_MAX_LIMIT)
@@ -174,7 +178,7 @@ export function createVersionWorkspacePrepareService(
         }
         if (workflow === 'plan') {
           try {
-            step.material = await initializePlanMaterial(tree.id, branch)
+            step.material = await initializePlanMaterial(tree.id, branch, problems)
           } catch (error) {
             problems.push({ workflow, code: errorCode(error), message: errorMessage(error) })
           }
@@ -268,7 +272,7 @@ export function createVersionWorkspacePrepareService(
       if (created.instanceId === undefined) {
         throw new WorkspaceScopeError(
           'workspace-unavailable',
-          `新建工作树 ${created.id} 缺实例身份，绑定未写入；树已保留、不会重复创建，也未归属本版。请在原生项目核对该树登记——直接重跑准备会因其占用分支如实拒绝，恢复归属需人工补绑定（入口=侧栏版本行「绑定已有工作树」；若该版本在侧栏无任何条目，先在原生项目工作区核对并清理孤儿树）或清理该树`
+          `新建工作树 ${created.id} 缺实例身份，绑定未写入；树已保留、不会重复创建，也未归属本版。请在原生项目工作区核对并恢复该树的登记身份，再右击工作树绑定版本；或按原生规则清理后重试。身份恢复前无法写入绑定，直接重跑准备会因该树占用分支而拒绝`
         )
       }
       await bindingService.set({
@@ -293,7 +297,7 @@ export function createVersionWorkspacePrepareService(
       }
       if (workflow === 'plan') {
         try {
-          step.material = await initializePlanMaterial(created.id, branch)
+          step.material = await initializePlanMaterial(created.id, branch, problems)
         } catch (error) {
           problems.push({ workflow, code: errorCode(error), message: errorMessage(error) })
         }
@@ -320,10 +324,13 @@ export function createVersionWorkspacePrepareService(
 }
 
 /** A BW composition adapter over Orca's existing create/dedupe/removal and metadata APIs. */
-export function nativeVersionWorkspacePrepare(runtime: VersionWorkspacePrepareRuntime) {
+export function nativeVersionWorkspacePrepare(
+  runtime: VersionWorkspacePrepareRuntime & Parameters<typeof nativeVersionHistoryService>[0]
+) {
   return createVersionWorkspacePrepareService(
     nativeWorkbenchWorkspaceHost(runtime),
     runtime,
-    executeVersionMaterial
+    executeVersionMaterial,
+    nativeVersionHistoryService(runtime)
   )
 }

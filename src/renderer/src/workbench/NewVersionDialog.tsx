@@ -19,9 +19,10 @@ import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 import { nativeVersionWorkspacePort } from './version-workspace-port'
 import { setBrowsedVersion } from './version-context-state'
-import { prepareFailed, stepText } from './version-workspace-prepare-report'
+import { prepareFailed } from './version-workspace-prepare-report'
 import { WORKFLOW_TREE_LABELS } from './version-labels'
 import type { VersionCatalogState } from './use-version-catalog'
+import { closeProjectPage } from './project-page-state'
 
 /**
  * G2 「＋ 新建版本」轻表单（P3a，高保真修订 8 · Primer Create 口径）：只要一个
@@ -92,6 +93,7 @@ export function NewVersionDialog({
       if (!failed) {
         const planStep = result.steps.find((step) => step.workflow === 'plan')
         setBrowsedVersion(projectKey, version)
+        closeProjectPage()
         onClose()
         // 最终检视 M-3：直开激活补宿主限定（STA-4343 同族收敛的漏网点）；fetchWorktrees
         // 已在上方完成，按 id 取登记行派生 host opts。
@@ -110,7 +112,7 @@ export function NewVersionDialog({
         ) {
           toast.error('工作区已就绪，但打开失败，请在原生项目工作区中核对。')
         } else {
-          toast.success(`版本 ${version} 的计划与验收工作区已就绪；未启动 agent。`)
+          toast.success(`版本 ${version} 已创建。`)
         }
       }
     } catch (reason) {
@@ -148,11 +150,7 @@ export function NewVersionDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>新建版本</DialogTitle>
-          <DialogDescription>
-            {projectName ? `${projectName} · ` : ''}
-            准备本版计划、验收两棵固定工作树，并进入现有计划屏。不预建目标和任务树，不启动
-            agent；验收材料在明确依据后准备。
-          </DialogDescription>
+          <DialogDescription>{projectName ?? '当前项目'}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5 text-sm">
@@ -177,20 +175,24 @@ export function NewVersionDialog({
           ) : null}
           {report ? (
             <div className="flex flex-col gap-1 rounded-md border border-border/50 p-3 text-[12px]">
-              <p className="font-medium">
-                版本 {report.version} 准备结果（步骤链非原子，失败保留已成功结果）：
-              </p>
-              <p>{stepText(report, 'plan')}</p>
-              <p>{stepText(report, 'acceptance')}</p>
+              <p className="font-medium">版本 {report.version} 创建结果</p>
+              {report.steps.map((step) => (
+                <p key={step.workflow}>
+                  {WORKFLOW_TREE_LABELS[step.workflow]}：
+                  {step.state === 'created'
+                    ? '已创建'
+                    : step.state === 'existing'
+                      ? '已就绪'
+                      : '创建失败'}
+                </p>
+              ))}
               {report.problems.map((problem) => (
                 <p key={`${problem.workflow}:${problem.code}`} className="text-destructive">
-                  {WORKFLOW_TREE_LABELS[problem.workflow]}问题（{problem.code}）：{problem.message}
+                  {WORKFLOW_TREE_LABELS[problem.workflow]}：{problem.message}
                 </p>
               ))}
               {reportFailed ? (
-                <p className="text-muted-foreground">
-                  重试即重入同一准备流程，按宿主真实登记补齐缺失步骤；不会重复建树。
-                </p>
+                <p className="text-muted-foreground">已创建的工作区会保留，可以重试完成创建。</p>
               ) : null}
             </div>
           ) : null}
@@ -202,17 +204,17 @@ export function NewVersionDialog({
               {busy ? (
                 <>
                   <LoaderCircle className="size-3.5 animate-spin" />
-                  准备中…
+                  创建中…
                 </>
               ) : reportFailed ? (
                 <>
                   <Plus className="size-3.5" />
-                  重试补齐
+                  重试
                 </>
               ) : (
                 <>
                   <Plus className="size-3.5" />
-                  创建并进入计划
+                  创建版本
                 </>
               )}
             </Button>

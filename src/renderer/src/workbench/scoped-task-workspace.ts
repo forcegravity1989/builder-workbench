@@ -3,7 +3,6 @@ import type { Repo } from '../../../shared/repo-types'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
-import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import type { WorkbenchTaskScope } from '../../../shared/workbench/task-scope'
@@ -15,8 +14,8 @@ import {
 } from '../../../shared/workbench/version-workspace-match'
 import { findGithubWorkItemWorkspaceAttachment } from '@/lib/github-work-item-workspace-attachment'
 import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
-import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 import { resolveReferenceRepo } from './task-port'
+import { activateVersionWorktree } from './version-worktree-host'
 
 /**
  * G2 统一 Start/Open 解析的渲染端入口（P4）：仅 BW 范围路径把「首个未归档树」
@@ -169,9 +168,7 @@ export function openGoalWorkspace(args: {
     if (!only) {
       return false
     }
-    if (activateAndRevealWorktree(only.id, worktreeActivationHostOpts(only)) === false) {
-      toast.error('无法打开目标工作区，请在原生项目工作区中核对。')
-    }
+    activateVersionWorktree(only)
     return true
   }
   openWorkbenchWorkspaceChoice({

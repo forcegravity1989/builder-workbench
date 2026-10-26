@@ -5,7 +5,7 @@ import type {
   CycleTaskSnapshot,
   TaskPort
 } from '../version-cycle/ports'
-import { isClosedIssueState } from '../version-acceptance/acceptance-issue-annotations'
+import { issueReadState } from '../version-acceptance/acceptance-issue-annotations'
 
 export type PriorLiveOpenState =
   | { kind: 'idle' }
@@ -89,7 +89,7 @@ export function usePriorLiveOpen(
         if (request.current !== token) {
           return
         }
-        const failed = reads.filter((read) => read.kind === 'unavailable').length
+        const failed = reads.filter((read) => issueReadState(read) === 'unknown').length
         if (failed === reads.length) {
           const first = reads[0]
           setState({
@@ -106,7 +106,7 @@ export function usePriorLiveOpen(
           value: {
             kind: 'ready',
             open: reads
-              .filter((read) => read.kind === 'ready' && !isClosedIssueState(read.task.state))
+              .filter((read) => issueReadState(read) === 'open')
               .map((read) => (read.kind === 'ready' ? read.task : null))
               .filter((task): task is CycleTaskSnapshot => task !== null),
             failedCount: failed,

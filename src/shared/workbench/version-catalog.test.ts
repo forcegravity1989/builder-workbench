@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { Worktree } from '../worktree/types'
+import type { DetectedWorktree, Worktree } from '../worktree/types'
 import type { VersionHistoryCatalog } from './version-history'
 import type { WorkbenchVersionBinding } from './version-binding'
+import { selectPriorVersionSource } from './prior-version-source'
 import {
   collectVersionCatalogWorkspaces,
   mergeVersionCatalog,
@@ -13,7 +14,7 @@ import {
 
 const sha = (fill: string) => `sha256:${fill.repeat(64)}`
 
-function makeWorktree(overrides: Partial<Worktree> & { id: string }): Worktree {
+function makeWorktree(overrides: Partial<DetectedWorktree> & { id: string }): Worktree {
   return {
     repoId: 'repo-1',
     path: `/repo/trees/${overrides.id}`,
@@ -91,11 +92,14 @@ const committed: VersionHistoryCatalog = {
 describe('mergeVersionCatalog', () => {
   it('merges committed material with live bindings, keeping material provenance', () => {
     const worktrees = [
-      // 本机 owned 计划树 + 配对宿主上的目标树：同版汇总两机实例。
+      // 完整登记中的隐藏计划树 + 配对宿主目标树：visible/session 投影不决定绑定存在。
       makeWorktree({
         id: 'repo-1::/repo/trees/v07-plan',
         hostId: 'local',
         instanceId: 'inst-plan',
+        ownership: 'orca-managed',
+        selectedCheckout: false,
+        visible: false,
         workbenchVersionBinding: planBinding('v0.7')
       }),
       makeWorktree({
@@ -150,6 +154,30 @@ describe('mergeVersionCatalog', () => {
       { workflow: 'plan', code: 'history-unavailable', message: '无法读取固定提交中的材料' }
     ])
     expect(v05.state).toBe('retired')
+
+    // 前版先按目录排序确定，再找验收；v0.7 只有计划时不可借 v0.6 的验收。
+    expect(selectPriorVersionSource('v0.8', committed)).toEqual({
+      kind: 'missing',
+      version: 'v0.7'
+    })
+    expect(selectPriorVersionSource('v0.7', committed)).toEqual({
+      kind: 'source',
+      source: {
+        version: 'v0.6',
+        cycleId: 'cycle-06',
+        sourceCommit: 'a'.repeat(40),
+        revision: sha('7')
+      }
+    })
+    expect(selectPriorVersionSource('v0.5', committed)).toEqual({ kind: 'none' })
+    expect(() => selectPriorVersionSource('v0.6', committed)).toThrow('无法读取固定提交中的材料')
+    const damagedAcceptance: VersionHistoryCatalog = {
+      records: committed.records,
+      problems: [{ ...committed.problems[0], version: 'v0.7', workflow: 'acceptance' }]
+    }
+    expect(() => selectPriorVersionSource('v0.8', damagedAcceptance)).toThrow(
+      '无法读取固定提交中的材料'
+    )
   })
 
   it('keeps cleaned versions listed without dangling bindings after any removal path', () => {
@@ -184,6 +212,21 @@ describe('mergeVersionCatalog', () => {
       )
     })
     expect(dirty).toEqual([])
+    // 首版与只有绑定的在制前版都不推断验收；数字段和非数字名沿用同一目录排序。
+    expect(selectPriorVersionSource('v0.1', { records: [], problems: [] })).toEqual({
+      kind: 'none'
+    })
+    expect(selectPriorVersionSource('v0.10', committed, ['v0.9'])).toEqual({
+      kind: 'missing',
+      version: 'v0.9'
+    })
+    expect(
+      selectPriorVersionSource('release-c', { records: [], problems: [] }, [
+        'release-b',
+        'release-a',
+        'release-z'
+      ])
+    ).toEqual({ kind: 'missing', version: 'release-b' })
   })
 
   it('keeps v0.7/v0.8 controlled records apart and scopes cache keys', () => {

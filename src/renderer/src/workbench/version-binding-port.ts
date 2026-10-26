@@ -10,6 +10,7 @@ import { VersionMaterialPortError } from '../../../shared/workbench/version-mate
 import type { VersionMaterialResult } from '../../../shared/workbench/version-material-request'
 import type {
   VersionBindingScope,
+  VersionBindingSetRequest,
   WorkbenchVersionBinding
 } from '../../../shared/workbench/version-binding'
 
@@ -70,7 +71,15 @@ export function nativeVersionBindingPort(owner: {
   return {
     read: (scope: VersionBindingScope) =>
       invoke<WorkbenchVersionBinding | null>('read', ownerSpelledScope(scope)),
-    set: (scope: VersionBindingScope, binding: WorkbenchVersionBinding | null) =>
-      invoke<WorkbenchVersionBinding | null>('set', { ...ownerSpelledScope(scope), binding })
+    set: (
+      scope: VersionBindingScope,
+      binding: WorkbenchVersionBinding | null,
+      linkedWorkItem?: VersionBindingSetRequest['linkedWorkItem']
+    ) =>
+      invoke<WorkbenchVersionBinding | null>('set', {
+        ...ownerSpelledScope(scope),
+        binding,
+        ...(linkedWorkItem ? { linkedWorkItem } : {})
+      })
   }
 }

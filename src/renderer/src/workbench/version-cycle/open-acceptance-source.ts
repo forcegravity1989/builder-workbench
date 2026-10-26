@@ -1,51 +1,80 @@
 import { useAppStore } from '@/store'
-import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
 import {
   PlanningProgressSourceSchema,
   type PlanningProgressSource
 } from '../../../../shared/workbench/version-material'
 import type { CycleScope } from './ports'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
-import { cycleScopeForWorktree, findCycleWorktree } from './native-cycle-workspace'
-import { nativeVersionMaterialPort } from '../version-material-port'
-import { setCycleView } from '../cycle-view-state'
+import { cycleScopeForWorktree, cycleScopeKey } from './native-cycle-workspace'
+import { nativeVersionHistoryPort } from '../version-history-port'
+import { readPlanningProgressSource } from '../version-planning/planning-progress-source'
+import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
+import { cycleWorkflowForWorktree } from '../workbench-nav'
+import {
+  openFixedAcceptanceBrowse,
+  setCycleView,
+  type FixedAcceptanceBrowse
+} from '../cycle-view-state'
 
-/** A planning source opens the same fixed acceptance bytes on their own registered workflow tree. */
+/** Open the verified acceptance and adopted plan without selecting or writing workflow material. */
 export async function openAcceptanceSource(
   scope: CycleScope,
   originWorktreeId: string,
-  source: PlanningProgressSource
+  source: PlanningProgressSource,
+  originPlan: FixedAcceptanceBrowse['originPlan'],
+  isCurrent: () => boolean
 ): Promise<void> {
   const fixedSource = PlanningProgressSourceSchema.parse(source)
-  assertCurrentCycleWorkspace(scope, originWorktreeId)
-  const worktree = findCycleWorktree({ ...scope, workflow: 'acceptance' })
-  if (!worktree) {
-    throw new Error('尚未登记本项目的验收工作区，请先打开验收工作区，再查看验收依据。')
-  }
-  const target = cycleScopeForWorktree(worktree, 'acceptance')
-  const targetScope = { repoId: target.repoId, worktreeId: worktree.id, hostId: target.hostId }
-  const port = nativeVersionMaterialPort(
-    { ...targetScope, workflow: 'acceptance' },
-    target.runtimeOwnerEnvironmentId
-  )
-  const selected = await port.select(fixedSource.version)
-  assertCurrentCycleWorkspace(scope, originWorktreeId)
-  if (selected.version !== fixedSource.version) {
-    throw new Error('验收版本未选定，已保留当前计划，请重试。')
-  }
-  if (target.runtimeOwnerEnvironmentId) {
-    await activateWebRuntimeSessionWorktree({
-      worktreeId: worktree.id,
-      environmentId: target.runtimeOwnerEnvironmentId
-    })
+  const originWorktreeInstanceId =
+    useAppStore.getState().getKnownWorktreeById(originWorktreeId, scope.hostId)?.instanceId ?? null
+  const assertOrigin = () => {
     assertCurrentCycleWorkspace(scope, originWorktreeId)
+    const worktree = useAppStore.getState().getKnownWorktreeById(originWorktreeId, scope.hostId)
+    const binding = normalizeStoredWorkbenchVersionBinding(worktree?.workbenchVersionBinding)
+    if (
+      scope.workflow !== 'plan' ||
+      cycleWorkflowForWorktree(worktree) !== 'plan' ||
+      (worktree?.instanceId ?? null) !== originWorktreeInstanceId ||
+      (binding && binding.version !== originPlan.version) ||
+      !isCurrent()
+    ) {
+      throw new Error('计划版本已切换，请从当前计划重新打开验收依据。')
+    }
   }
-  // NOTE: this lands on the acceptance board's *current* material for the version,
-  // not pinned to `fixedSource.sourceCommit`. A read-only history view addressed by
-  // the fixed source is still an open product question (acceptance spec 待决 #1);
-  // until it is decided, nothing records a selection nobody would read.
-  setCycleView('acceptance')
+  assertOrigin()
+  const documents = await readPlanningProgressSource(
+    nativeVersionHistoryPort(scope.runtimeOwnerEnvironmentId),
+    { repoId: scope.repoId, worktreeId: originWorktreeId, hostId: scope.hostId },
+    fixedSource
+  )
+  assertOrigin()
+  openFixedAcceptanceBrowse({
+    scope,
+    originWorktreeId,
+    originWorktreeInstanceId,
+    originExecutionHostId: useAppStore.getState().activeWorkspaceExecutionHostId,
+    originPlan,
+    source: fixedSource,
+    ...documents
+  })
+  useAppStore.getState().openArtifactsPage()
+}
+
+export function returnFromAcceptanceSource(view: FixedAcceptanceBrowse): void {
   const state = useAppStore.getState()
-  state.setActiveWorktree(worktree.id, target.hostId)
+  const worktree = state.getKnownWorktreeById(view.originWorktreeId, view.scope.hostId)
+  const binding = normalizeStoredWorkbenchVersionBinding(worktree?.workbenchVersionBinding)
+  if (
+    !worktree ||
+    cycleWorkflowForWorktree(worktree) !== 'plan' ||
+    (worktree.instanceId ?? null) !== view.originWorktreeInstanceId ||
+    (binding && binding.version !== view.originPlan.version) ||
+    cycleScopeKey(cycleScopeForWorktree(worktree, view.scope.workflow)) !==
+      cycleScopeKey(view.scope)
+  ) {
+    throw new Error('原计划工作区的登记已改变，请从侧栏重新进入计划。')
+  }
+  setCycleView('plan')
+  state.setActiveWorktree(view.originWorktreeId, view.scope.hostId)
   state.setActiveView('terminal')
 }

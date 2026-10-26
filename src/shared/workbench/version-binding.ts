@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import { areTaskSourceContextsEqual, type TaskSourceContext } from '../task-source-context'
 import { TaskSourceContextSchema } from '../task-source-context-schema'
+import { WorkspaceLinkedItemSchema } from '../workspace-linked-item-schema'
+import { isWorkspaceLinkedItemSourceContextMatch } from '../workspace-linked-item-source-context'
 import { Id, MaterialVersion } from './version-material-common'
 
 /**
@@ -137,7 +139,25 @@ export const VersionBindingScopeSchema = z.strictObject({
 })
 export const VersionBindingSetSchema = VersionBindingScopeSchema.extend({
   /** null 清除绑定；对象必须通过 WorkbenchVersionBindingSchema。 */
-  binding: WorkbenchVersionBindingSchema.nullable()
+  binding: WorkbenchVersionBindingSchema.nullable(),
+  /** 单树改绑 Issue 时与版本绑定同次写入；省略保留原生关联。 */
+  linkedWorkItem: WorkspaceLinkedItemSchema.optional()
+}).superRefine((request, ctx) => {
+  if (
+    request.linkedWorkItem &&
+    (request.binding?.workflow !== 'issue' ||
+      request.linkedWorkItem.type !== 'issue' ||
+      !isWorkspaceLinkedItemSourceContextMatch(
+        request.linkedWorkItem,
+        request.binding.taskSource
+      ) ||
+      request.linkedWorkItem.repoId !== request.binding.taskSource?.repoId)
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Issue binding and linked work item identities must match'
+    })
+  }
 })
 export type VersionBindingScope = z.infer<typeof VersionBindingScopeSchema>
 export type VersionBindingSetRequest = z.infer<typeof VersionBindingSetSchema>
