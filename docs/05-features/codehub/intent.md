@@ -25,7 +25,7 @@
 ## 范围与边界
 
 - **做**：CodeHub 作为与 GitHub、GitLab 并列的任务来源；任务列表、详情和已实现的写操作；计划 / 验收对 CodeHub 任务的读回和打开；CodeHub 远端的归档状态保持未知；验收版本列表改为读取主干基线上的计划目录（这条规则对所有平台生效，行为正文在[验收规格](../version-acceptance/spec.md)，本特性负责 CodeHub 上为什么必须如此）。
-- **范围外**：把 CodeHub 收成 GitHub Enterprise 或 GitLab；探测 CodeHub 登录；草稿 MR 与 Mark ready；评论表情、已读、修改评论正文；发明一条 CodeHub 合入提交的读回通道。
+- **范围外**：把 CodeHub 收成 GitHub Enterprise 或 GitLab；草稿 MR 与 Mark ready；评论表情、已读、修改评论正文；发明一条 CodeHub 合入提交的读回通道。
 - **相邻**：版本计划、版本验收、总览指标各自的规格已写下侧栏项目列表和「配置指标进入会话」。那些句子属于原特性，这里不重写。
 
 ## 成功判据与待决问题
