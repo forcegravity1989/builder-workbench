@@ -29,6 +29,12 @@ export const CodeHubCreateIssue = Repo.extend({
   assignee: z.string().optional()
 })
 export const CodeHubUpdateIssueTitle = Repo.extend({ iid: Iid, title: z.string().trim().min(1) })
+// Labels are replace-semantics (`issue update --labels a,b,c`); the CLI has
+// no label-list command, so the UI edits names as free text, not a picker.
+export const CodeHubUpdateIssueLabels = Repo.extend({
+  iid: Iid,
+  labels: z.array(z.string().trim().min(1))
+})
 export const CodeHubSetIssueState = Repo.extend({
   iid: Iid,
   state: z.enum(['open', 'closed']),
@@ -66,6 +72,7 @@ export const CODEHUB_REQUEST_SCHEMAS = {
   listTasks: CodeHubListTasks,
   createIssue: CodeHubCreateIssue,
   updateIssueTitle: CodeHubUpdateIssueTitle,
+  updateIssueLabels: CodeHubUpdateIssueLabels,
   setIssueState: CodeHubSetIssueState,
   closeMr: CodeHubCloseMr,
   assignIssue: CodeHubAssignIssue,
@@ -88,6 +95,7 @@ export type CodeHubApi = {
     args: z.infer<typeof CodeHubCreateIssue>
   ) => Promise<{ iid: number | null; url: string | null; title: string }>
   updateIssueTitle: (args: z.infer<typeof CodeHubUpdateIssueTitle>) => Promise<void>
+  updateIssueLabels: (args: z.infer<typeof CodeHubUpdateIssueLabels>) => Promise<void>
   setIssueState: (args: z.infer<typeof CodeHubSetIssueState>) => Promise<void>
   closeMr: (args: z.infer<typeof CodeHubCloseMr>) => Promise<void>
   assignIssue: (args: z.infer<typeof CodeHubAssignIssue>) => Promise<void>

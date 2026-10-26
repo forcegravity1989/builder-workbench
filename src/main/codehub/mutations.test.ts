@@ -15,6 +15,7 @@ import {
   listCodeHubPipelines,
   mergeCodeHubMr,
   setCodeHubReviewers,
+  updateCodeHubIssueLabels,
   updateCodeHubIssueTitle,
   viewCodeHubTask
 } from './mutations'
@@ -67,6 +68,21 @@ describe('codehub mutations', () => {
       iid: 4,
       title: 'Login again'
     })
+    // Labels are replace-semantics; the draft set is trimmed and
+    // de-duplicated into one CSV. An empty set clears via a single space —
+    // the CLI treats `--labels ''` as flag-not-set and errors.
+    await updateCodeHubIssueLabels({
+      remote,
+      execOptions: { cwd: '/repo' },
+      iid: 4,
+      labels: [' weekly ', 'p1', 'p1', '']
+    })
+    await updateCodeHubIssueLabels({
+      remote,
+      execOptions: { cwd: '/repo' },
+      iid: 4,
+      labels: []
+    })
     await closeCodeHubMr({ remote, execOptions: { cwd: '/repo' }, iid: 8 })
     expect(runCodeHubCliMock.mock.calls[0][0]).toEqual([
       'issue',
@@ -80,6 +96,28 @@ describe('codehub mutations', () => {
       'codehub-g.huawei.com'
     ])
     expect(runCodeHubCliMock.mock.calls[1][0]).toEqual([
+      'issue',
+      'update',
+      '4',
+      '--labels',
+      'weekly,p1',
+      '-p',
+      'Org/Group/repo',
+      '-H',
+      'codehub-g.huawei.com'
+    ])
+    expect(runCodeHubCliMock.mock.calls[2][0]).toEqual([
+      'issue',
+      'update',
+      '4',
+      '--labels',
+      ' ',
+      '-p',
+      'Org/Group/repo',
+      '-H',
+      'codehub-g.huawei.com'
+    ])
+    expect(runCodeHubCliMock.mock.calls[3][0]).toEqual([
       'mr',
       'close',
       '8',

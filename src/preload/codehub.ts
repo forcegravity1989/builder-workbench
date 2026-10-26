@@ -11,6 +11,7 @@ export const codehubApi: CodeHubApi = {
   listTasks: (args) => ipcRenderer.invoke('codehub:listTasks', args),
   createIssue: (args) => ipcRenderer.invoke('codehub:createIssue', args),
   updateIssueTitle: (args) => ipcRenderer.invoke('codehub:updateIssueTitle', args),
+  updateIssueLabels: (args) => ipcRenderer.invoke('codehub:updateIssueLabels', args),
   setIssueState: (args) => ipcRenderer.invoke('codehub:setIssueState', args),
   closeMr: (args) => ipcRenderer.invoke('codehub:closeMr', args),
   assignIssue: (args) => ipcRenderer.invoke('codehub:assignIssue', args),

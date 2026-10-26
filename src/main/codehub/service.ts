@@ -14,6 +14,7 @@ import {
   listCodeHubPipelines,
   mergeCodeHubMr,
   setCodeHubReviewers,
+  updateCodeHubIssueLabels,
   updateCodeHubIssueTitle,
   viewCodeHubTask
 } from './mutations'
@@ -55,6 +56,9 @@ export function createCodeHubService(deps: {
     },
     async updateIssueTitle(args) {
       await updateCodeHubIssueTitle({ ...args, ...(await context(args)) })
+    },
+    async updateIssueLabels(args) {
+      await updateCodeHubIssueLabels({ ...args, ...(await context(args)) })
     },
     async setIssueState(args) {
       const { remote, execOptions } = await context(args)

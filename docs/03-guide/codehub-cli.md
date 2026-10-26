@@ -39,7 +39,10 @@ codehub-cli issue list -p Org/Group/repo -H green
 codehub-cli issue view 12 -p Org/Group/repo -H green
 codehub-cli issue create --title "标题" --description "正文" -p Org/Group/repo -H green
 codehub-cli issue update 12 --title "新标题" -p Org/Group/repo -H green
+codehub-cli issue update 12 --labels "bug,p1" -p Org/Group/repo -H green
 ```
+
+`--labels` 是整组替换语义：发出的逗号分隔列表就是该议题的全部标签。清空全部标签不能用空字符串——CLI 把 `--labels ""` 当作没传该参数并报「至少要一个更新字段」，要传一个空格 `--labels " "`，服务端修剪后落成空集（2026-10-26 对 szv-open 实测）。
 
 评论只有列表、新建、删除，没有修改正文：
 

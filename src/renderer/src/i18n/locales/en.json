@@ -2315,7 +2315,13 @@
         "codehubIssueClosed": "Issue closed",
         "codehubSource": "CodeHub",
         "codehubOpenCheck": "Open in CodeHub",
-        "codehubOpenMrChanges": "Open changes in CodeHub"
+        "codehubOpenMrChanges": "Open changes in CodeHub",
+        "codehubEditLabels": "Edit labels",
+        "codehubRemoveLabel": "Remove label",
+        "codehubAddLabel": "Add label…",
+        "codehubCancelLabels": "Cancel",
+        "codehubSaveLabels": "Save",
+        "codehubLabelsSaved": "Labels updated"
       },
       "Terminal": {
         "73768427cf": "Close",
