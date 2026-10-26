@@ -6,7 +6,7 @@ import { normalizeStoredWorkbenchVersionBinding } from '../../shared/workbench/v
 import type { VersionHistoryCatalog } from '../../shared/workbench/version-history'
 import type { PlanningMaterial } from '../../shared/workbench/version-material'
 import type { VersionMaterialInitialize } from '../../shared/workbench/version-material-request'
-import { prepareFailed } from '../../renderer/src/workbench/version-workspace-prepare-report'
+import { prepareFailed } from '../../shared/workbench/version-workspace-prepare'
 import { nativeWorkbenchWorkspaceHost } from './workspace-resolver'
 import {
   createVersionWorkspacePrepareService,

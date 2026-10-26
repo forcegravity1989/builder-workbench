@@ -77,7 +77,7 @@
 
 人装机伴飞 v0.7/v0.8 旅程逐条 AskUser 拍板，实现取舍如下（UI 判据见 spec，本节只记设计面）：
 
-- **初始化入口重排（CF-5）**：流程行菜单的「准备流程工作区」删除——入口挪版本行图标按钮（FolderPlus，非三个点），流程树不齐（plan/acceptance 任一缺）才显示、两树齐即消失；点击**直接执行** prepare 无确认单（人裁定：创建类不设确认单，busy 态＋toast 如实回报），执行链住 `version-nav-actions.initializeVersionWorkspace`，prepare 结果判词抽 `version-workspace-prepare-report.ts` 与新建对话框共用；归档版本不加拦截提醒（归档版继续干活是合理旅程）。NewVersionDialog 只剩 create 模式（prepare 模式失去调用方同交付删除）。只读回看指路文案对齐。
+- **初始化入口重排（CF-5）**：流程行菜单的「准备流程工作区」删除——入口挪版本行图标按钮（FolderPlus，非三个点），流程树不齐（plan/acceptance 任一缺）才显示、两树齐即消失；点击**直接执行** prepare 无确认单（人裁定：创建类不设确认单，busy 态＋toast 如实回报），执行链住 `version-nav-actions.initializeVersionWorkspace`，准备结果的 `prepareFailed` 判定在 `shared/workbench/version-workspace-prepare.ts`，由新建对话框、直接初始化与主进程协议测试共用；展示摘要由 renderer 的 `version-workspace-prepare-report.ts` 生成；归档版本不加拦截提醒（归档版继续干活是合理旅程）。NewVersionDialog 只剩 create 模式（prepare 模式失去调用方同交付删除）。只读回看指路文案对齐。
 - **prepare 建树 setup skip（CF-5）**：创建参数 `setupDecision:'inherit'→'skip'`（原生既有开关，automations headless 同口径）——不开 Setup 终端、不装依赖、建树回秒级；流程树上会话 agent 需要依赖时自己装（材料读写与 CLI 注入不需要）。legacy 固定树 ensure（native-workspace.ts）显式不动。
 - **树行与原生会话**：版本树由登记和绑定现算可见，不以有无已恢复会话为条件；会话行和历史继续复用 Orca 机制。各具体树整行右击复用同一原生菜单；流程多实例直接展示具体实例，不用三点菜单代替树本身。业务目录动作与单树维护分开，单树改绑不改父子或其他树归属。宿主断链只显示原生连接图标，不追加 BW 离线标签或 toast，点击保留当前内容；绑定/清理执行仍校验宿主可达性。侧栏复用原生滚动，不给数据目录引入第二套滚动。
 - **计划/验收初态**：prepare 的空计划不表示流程已开始。两屏未开始显示短卡，只有原生运行会话实际打开后才展开四区；无目标保持空列表。启动视图按流程/版本/scope/owner/工作树在渲染进程内保留，切屏不重现开始卡；已有有效材料独立恢复，不从普通 shell 推断。显式“初始化工作区”继续沿 prepare 补齐，不因浏览或断链激活自动建树。
