@@ -35,7 +35,15 @@ function mapComment(
     return null
   }
   const author = record.author ?? record.user
-  const path = record.file_path
+  // Line-anchored notes arrive in two shapes: some hosts fill the top-level
+  // file_path/line, others (szv-open) leave them null and tuck the anchor
+  // into the nested position object. Read the top-level first, then fall
+  // back to position, or inline cards never anchor on the latter hosts.
+  const position =
+    record.position && typeof record.position === 'object'
+      ? (record.position as Record<string, unknown>)
+      : null
+  const path = record.file_path ?? position?.new_path
   return {
     id: String(id),
     body: String(record.body ?? record.note ?? record.description ?? ''),
@@ -48,7 +56,8 @@ function mapComment(
     isBot: record.from_robot === true,
     isResolved: record.resolved === true,
     path: typeof path === 'string' && path.trim() ? path.trim() : null,
-    line: noteLineOf(record.line)
+    line: noteLineOf(record.line ?? position?.new_line),
+    isOutdated: record.is_outdated === true
   }
 }
 

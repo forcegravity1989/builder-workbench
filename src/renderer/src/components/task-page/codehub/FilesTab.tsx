@@ -197,17 +197,19 @@ function CodeHubFilesSections({
   const renderNoCheckbox = useCallback(() => null, [])
 
   // Line-anchored notes decorate the rebuilt diff; their real file line must be
-  // mapped back to the rebuilt position, and notes on lines the patch omits
-  // (hunk gaps) have no rebuilt line to sit on, so they stay in the
-  // conversation tab only. The worktree id must equal the body's
-  // `github-pr:<repoId>:<prNumber>` or the decorator filters the comment out.
+  // mapped back to the rebuilt position. Notes on lines the patch omits (hunk
+  // gaps) and notes whose anchor went stale (isOutdated — the file changed
+  // under them) have no rebuilt line to sit on, so they stay in the
+  // conversation tab only, matching GitHub's inline behavior. The worktree id
+  // must equal the body's `github-pr:<repoId>:<prNumber>` or the decorator
+  // filters the comment out.
   const inlineReviewComments = useMemo<DecoratedDiffComment[]>(() => {
     if (comments.length === 0) {
       return []
     }
     const worktreeId = `github-pr:${item.repoId ?? ''}:${item.iid}`
     return comments.flatMap((comment) => {
-      if (!comment.path || comment.line == null) {
+      if (!comment.path || comment.line == null || comment.isOutdated) {
         return []
       }
       const realLines = patchByPath.get(comment.path)?.modifiedRealLines

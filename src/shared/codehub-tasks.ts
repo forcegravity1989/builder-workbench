@@ -55,6 +55,11 @@ export type CodeHubComment = {
   // not (both null).
   path: string | null
   line: number | null
+  // A line note's anchor goes stale once the file changes under it; an
+  // outdated anchor no longer matches any rebuilt diff line, so the files
+  // tab keeps such notes out of the inline view (GitHub parity) — the
+  // conversation tab still shows them.
+  isOutdated: boolean
 }
 
 export type CodeHubPipeline = {

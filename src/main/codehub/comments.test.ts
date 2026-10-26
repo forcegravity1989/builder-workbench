@@ -84,6 +84,57 @@ describe('codehub comments', () => {
               system: false
             }
           ]
+        },
+        {
+          id: '5b1d0c57da27c2f46c58c57c511879a973291126',
+          individual_note: false,
+          notes: [
+            {
+              id: 140416501,
+              body: '这行的空值处理要补',
+              author: {
+                username: 'm30077918',
+                avatar_url: 'https://codehub-g.huawei.com/avatar/m30077918.png'
+              },
+              created_at: '2026-03-12T18:20:08.989+08:00',
+              discussion_id: '5b1d0c57da27c2f46c58c57c511879a973291126',
+              is_reply: false,
+              system: false,
+              from_robot: false,
+              resolved: false,
+              type: 'DiffNote',
+              is_outdated: false,
+              // szv-open shape: top-level anchor fields are null and the
+              // anchor lives in the nested position object.
+              file_path: null,
+              line: null,
+              position: {
+                position_type: 'text',
+                new_path: 'src/main/bridge.py',
+                new_line: 52,
+                old_path: 'src/main/bridge.py',
+                old_line: null
+              }
+            },
+            {
+              id: 140416502,
+              body: '旧补丁上的行评论',
+              author: { username: 'm30077918' },
+              created_at: '2026-03-12T18:21:33.001+08:00',
+              discussion_id: '5b1d0c57da27c2f46c58c57c511879a973291126',
+              is_reply: false,
+              system: false,
+              type: 'DiffNote',
+              is_outdated: true,
+              file_path: null,
+              line: null,
+              position: {
+                position_type: 'text',
+                new_path: 'src/main/bridge.py',
+                new_line: 12
+              }
+            }
+          ]
         }
       ])
     )
@@ -118,7 +169,8 @@ describe('codehub comments', () => {
         isBot: false,
         isResolved: false,
         path: null,
-        line: null
+        line: null,
+        isOutdated: false
       },
       {
         id: '140425415',
@@ -135,7 +187,8 @@ describe('codehub comments', () => {
         isBot: false,
         isResolved: false,
         path: null,
-        line: null
+        line: null,
+        isOutdated: false
       },
       {
         id: '140416464',
@@ -149,7 +202,8 @@ describe('codehub comments', () => {
         isBot: true,
         isResolved: true,
         path: 'src/main/bridge.py',
-        line: 42
+        line: 42,
+        isOutdated: false
       },
       {
         id: '140416480',
@@ -166,7 +220,41 @@ describe('codehub comments', () => {
         isBot: false,
         isResolved: false,
         path: null,
-        line: null
+        line: null,
+        isOutdated: false
+      },
+      {
+        id: '140416501',
+        body: '这行的空值处理要补',
+        author: 'm30077918',
+        createdAt: '2026-03-12T18:20:08.989+08:00',
+        discussionId: '5b1d0c57da27c2f46c58c57c511879a973291126',
+        individual: false,
+        isReply: false,
+        authorAvatarUrl: 'https://codehub-g.huawei.com/avatar/m30077918.png',
+        isBot: false,
+        isResolved: false,
+        // szv-open hosts null the top-level anchor; the position fallback
+        // recovers path/line so the files tab can still place the card.
+        path: 'src/main/bridge.py',
+        line: 52,
+        isOutdated: false
+      },
+      {
+        id: '140416502',
+        body: '旧补丁上的行评论',
+        author: 'm30077918',
+        createdAt: '2026-03-12T18:21:33.001+08:00',
+        discussionId: '5b1d0c57da27c2f46c58c57c511879a973291126',
+        individual: false,
+        isReply: false,
+        authorAvatarUrl: null,
+        isBot: false,
+        isResolved: false,
+        path: 'src/main/bridge.py',
+        line: 12,
+        // Stale anchors pass through so the files tab can skip them inline.
+        isOutdated: true
       }
     ])
   })
@@ -216,7 +304,8 @@ describe('codehub comments', () => {
         isBot: false,
         isResolved: false,
         path: null,
-        line: null
+        line: null,
+        isOutdated: false
       }
     ])
   })
