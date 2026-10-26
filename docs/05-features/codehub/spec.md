@@ -8,7 +8,7 @@
 
 任务页在选中仓库的远程全部是 CodeHub、且 `codehub-cli` 在 PATH 上时，自动使用来源 `codehub`。这一步发生在 GitHub 列表之前。旧配置的可见来源里没有 `codehub` 时补一次；用户关掉之后不再加回。用户手动改过的来源不再被盖掉。
 
-CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置里的集成卡片只区分检查中、已安装、未安装，不探测登录。
+CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置里的集成卡片区分检查中、已连接、未安装、未登录四态，登录态读 `codehub-cli auth status`（BW #323 起与 `gh` 同口径）。
 
 主机按 `codehub`、`codehub.*`、`codehub-*`、`*.codehub.*` 识别。GitHub.com 的列表和更新路径保持原样。
 
@@ -29,7 +29,7 @@ CLI 缺失时，错误是 `codehub-cli is not installed or not on PATH`。设置
 
 每仓先取 30 条，用 `--limit` 再取，并多取一条判断后面还有没有。还有未加载内容时，空的已加载范围要说成「当前加载范围里没有」，不能说成项目没有 Issue。
 
-详情读取 view 和评论的列出、新建、删除；MR 的评论按 discussion 分组显示，每条评论可在卡片右上角回复（回复挂在所属线程下缩进显示）与跳转 CodeHub 网页对应位置；系统流水笔记（如 changed this line）不显示为评论。Issue 可改标题。关闭顺序是先写评论再 `issue close`；评论失败则不关闭。三条评论正文是 `关闭原因: completed`、`关闭原因: not planned`、`关闭原因: duplicate of #<iid>`。重新打开不写评论。MR 可关闭。不提供草稿、Mark ready、表情、已读、修改评论正文。
+详情读取 view 和评论的列出、新建、删除；MR 的评论按 discussion 分组显示，卡片样式与 GitHub 弹窗一致：头像、作者、相对时间、文件行号锚点，正文按 Markdown 渲染。评论可按人／机器人筛选，机器人计数取 `from_robot` 真实值（issue 侧无此字段，照 GitHub 不给筛选栏）。每条评论可在卡片右上角回复（回复挂在所属线程下缩进显示，提交成功后收起输入框，失败保留草稿）与跳转 CodeHub 网页对应位置。系统流水笔记（如 changed this line）像普通回复一样在线程内展示。已解决线程不折叠、直接展开，带「已解决」徽标与置灰。Issue 可改标题。关闭顺序是先写评论再 `issue close`；评论失败则不关闭。三条评论正文是 `关闭原因: completed`、`关闭原因: not planned`、`关闭原因: duplicate of #<iid>`。重新打开不写评论。MR 可关闭。不提供草稿、Mark ready、表情、已读、修改评论正文。
 
 MR 详情有三个页签：对话、检查项、文件变更。检查项来自 `mr gate` 的 `checks`，按 GitHub 检查项的图标与分组样式显示名称、状态和外链；没有流水线的 MR 显示「暂无检查项」，不显示成通过。文件变更来自 `mr changes`，按 GitHub Files changed 的文件树与行级 diff 样式显示；diff 由补丁文本重建两侧，行号从补丁上下文起算，不保证与 CodeHub 网页行号一致；二进制文件只列路径与统计，不渲染内容。两页签可手动刷新，随详情打开一并读取。
 
