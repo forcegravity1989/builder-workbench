@@ -161,6 +161,12 @@ export async function createCodeHubComment(args: {
               ...(args.startLine && args.startLine !== args.line
                 ? ['--start-line', String(args.startLine)]
                 : []),
+              // Line-level notes hit CodeHub's review API, whose
+              // note_required_attributes.severity is on: an empty value is
+              // rejected with CH.00406030. "suggestion" is the mildest
+              // level; the GitHub-parity card exposes no severity picker.
+              '--severity',
+              'suggestion',
               ...projectArgs(args.remote)
             ]
           : [

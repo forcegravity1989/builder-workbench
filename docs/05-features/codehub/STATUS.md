@@ -30,7 +30,7 @@
 | C09 MR 检查项显示 | ◑ | `src/main/codehub/mr-reads.ts`、`task-page/codehub/ChecksTab.tsx` | `codehub-mr-detail.test.ts` 锁定状态映射、`mr-reads.test.ts` 锁定命令形状；真壳人工核对通过（2026-10-22） |
 | C10 MR 文件变更显示 | ◑ | `task-page/codehub/FilesTab.tsx`（patch 重建两侧，复用 `PRFilesCombinedDiffBody`） | `codehub-mr-detail.test.ts` 锁定 patch 解析与重建行号→真实行号映射；真壳人工核对通过（2026-10-22） |
 | C11 无流水线 MR 空态 | ◐ | `mr-reads.ts` 的 `--jq '.checks'` 空输出映射为空列表 | `mr-reads.test.ts` 有 null 投影用例；真壳未专门构造无流水线 MR 覆盖 |
-| C12 文件行评论 | ◐ | `FilesTab.tsx` 行号换算后提交，`comments.ts` 行级命令 | `comments.test.ts` 锁定 `--path/--line/--start-line` 命令形状；真壳未发过行评论 |
+| C12 文件行评论 | ◐ | `FilesTab.tsx` 行号换算后提交，`comments.ts` 行级命令 | `comments.test.ts` 锁定 `--path/--line/--start-line/--severity` 命令形状；本机 CLI 对真实 MR 实发行评论（severity 必填验证）并删除成功，BW 界面发评论待真壳核对 |
 | CJ01 关闭后重启仍为关闭 | ○ | 任务页 + CLI | 未执行 |
 
 相关单测还有 `src/main/codehub/mutations.test.ts`、`work-items.test.ts`、`comments.test.ts`（评论展平、线程回复与删除命令形状）、`src/shared/codehub-mr-detail.test.ts`（gate 状态映射、changes 字段映射、patch 解析）、`src/main/codehub/mr-reads.test.ts`（mr gate / mr changes 命令形状与 jq 投影）、`src/main/github/issue-update.codehub.test.ts`（GitHub 更新不因旁边有 CodeHub 远程而改道）。
@@ -39,4 +39,4 @@
 
 评论读回（2026-10-20，评论显示 / 删除修复）：`mr review list` 展平 discussion 内嵌 notes 后，对真实 MR 实读 3 条评论、issue 路径 1 条，系统流水被过滤（该过滤口径已于 2026-10-26 被用户裁定推翻，见下方评论样式对齐一行）；删除与线程回复命令形状由单测与本机 CLI `--help` 锁定，未对真实 MR 执行删除或实发回复。独立评论的回复寻址（单评 discussion id）与 `#note_<id>` 网页锚点未在真实 CodeHub 验证。
 
-评论样式对齐（2026-10-26，#425）：评论卡片对齐 GitHub 弹窗——头像、`from_robot` 真实机器人计数与人／机器人筛选、文件行号锚点、Markdown 正文；已解决线程按用户裁定不折叠、直接展开带「已解决」徽标；系统流水笔记（如 changed this line）随线程像普通回复展示（推翻 2026-10-20 的过滤口径，用户 2026-10-26 裁定）；回复提交成功后收起输入框。真壳人工核对通过（2026-10-26，用户在 welink-claude-bridge MR 29 确认系统流水两条可见，回复收起与已解决展开正常）。文件变更页行评论同日接线（此前加号点击提交无动作）：界面重建行号按补丁 hunk 头换算成新文件真实行号后走 `mr review create --path --line`，成功后评论进对话页签并以行内卡片显示；单测锁定换算与命令形状，真壳发评论待用户核对。已知边界：远端执行主机上的仓库评论由远端 BW 取数，远端版本未升级前数据不带新字段（头像／机器人／已解决），本机修复不影响其显示内容；行评论的锚点参数同理会被远端旧版剥离、降级为普通评论，直至远端升级。
+评论样式对齐（2026-10-26，#425）：评论卡片对齐 GitHub 弹窗——头像、`from_robot` 真实机器人计数与人／机器人筛选、文件行号锚点、Markdown 正文；已解决线程按用户裁定不折叠、直接展开带「已解决」徽标；系统流水笔记（如 changed this line）随线程像普通回复展示（推翻 2026-10-20 的过滤口径，用户 2026-10-26 裁定）；回复提交成功后收起输入框。真壳人工核对通过（2026-10-26，用户在 welink-claude-bridge MR 29 确认系统流水两条可见，回复收起与已解决展开正常）。文件变更页行评论同日接线（此前加号点击提交无动作）：界面重建行号按补丁 hunk 头换算成新文件真实行号后走 `mr review create --path --line`，行级评论走评审接口、服务器必填严重级别（空值报 CH.00406030），默认发最轻的 `suggestion`；成功后评论进对话页签并以行内卡片显示。单测锁定换算与命令形状；本机 CLI 对真实 MR（welink-claude-bridge iid 3）实发一条行评论并删除验证通过，BW 界面发评论待用户核对。已知边界：远端执行主机上的仓库评论由远端 BW 取数，远端版本未升级前数据不带新字段（头像／机器人／已解决），本机修复不影响其显示内容；行评论的锚点参数同理会被远端旧版剥离、降级为普通评论，直至远端升级。

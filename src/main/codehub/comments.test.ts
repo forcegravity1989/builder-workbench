@@ -285,13 +285,17 @@ describe('codehub comments', () => {
         '这里的边界条件漏了',
         // --path + --line make the note a DiffNote; --start-line only goes
         // out for a real multi-line range, and the CLI derives diff_refs
-        // itself, so no commit anchors ride along.
+        // itself, so no commit anchors ride along. --severity is required
+        // by the review API (CH.00406030 on empty); suggestion is the
+        // mildest level.
         '--path',
         'src/main/bridge.py',
         '--line',
         '42',
         '--start-line',
         '40',
+        '--severity',
+        'suggestion',
         '-p',
         'Org/Group/repo',
         '-H',
@@ -321,6 +325,8 @@ describe('codehub comments', () => {
         'README.md',
         '--line',
         '7',
+        '--severity',
+        'suggestion',
         '-p',
         'Org/Group/repo',
         '-H',
