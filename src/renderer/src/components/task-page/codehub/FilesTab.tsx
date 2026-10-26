@@ -2,9 +2,11 @@ import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from '
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { editor as monacoEditor } from 'monaco-editor'
 import { LoaderCircle, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
+import { codehubApi } from '@/lib/codehub-api'
 import { PRFilesCombinedDiffBody } from '@/components/github-item-dialog/inspect-pull-request/pr-files-combined-diff-body'
 import { getCombinedDiffBranchEntriesInTreeOrder } from '@/components/editor/combined-diff/browse-files/combined-diff-file-tree-filter'
 import { useCombinedDiffSectionIndexMap } from '@/components/editor/combined-diff/resolve-changes/use-combined-diff-section-index-map'
@@ -12,6 +14,8 @@ import { handleCombinedDiffFileTreeNavigation } from '@/components/editor/combin
 import { getDiffSectionRowEstimatedHeight } from '@/components/editor/diff-section-layout'
 import type { DiffSection } from '@/components/editor/diff-section-types'
 import type { CombinedDiffFileTreeEntry } from '@/components/editor/combined-diff/resolve-changes/combined-diff-section-identity'
+import type { DecoratedDiffComment } from '@/components/diff-comments/decorated-diff-comment'
+import { formatRelativeTime } from '@/components/github/work-item-state-presentation'
 import {
   PR_DIFF_OVERSCAN,
   getPRFileSectionKey,
@@ -73,7 +77,7 @@ function CodeHubFilesSections({
   state: CodeHubDetailState
   files: CodeHubMrFileChange[]
 }): React.JSX.Element {
-  const { item, detail } = state
+  const { item, detail, comments, setComments } = state
   const settings = useAppStore((s) => s.settings)
   const isDark =
     settings?.theme === 'dark' ||
@@ -87,16 +91,24 @@ function CodeHubFilesSections({
   const handleSectionSaveRef = useRef<(index: number) => Promise<void>>(async () => {})
 
   // Why: this subtree is keyed by the files signature, so its file set is fixed
-  // for the mount; sections are built once with patch-rebuilt inline content.
+  // for the mount; each patch is parsed once and shared between the section
+  // contents and the rebuilt→real line-number mapping.
   const [entries] = useState<GitBranchChangeEntry[]>(() =>
     getCombinedDiffBranchEntriesInTreeOrder('commit', files.map(gitHubPRFileToBranchEntry))
   )
-  const fileByPath = useMemo(() => new Map(files.map((file) => [file.path, file])), [files])
+  const [patchByPath] = useState(() => {
+    const map = new Map<
+      string,
+      { original: string; modified: string; modifiedRealLines: number[] } | null
+    >()
+    for (const file of files) {
+      map.set(file.path, file.isBinary ? null : parseCodeHubPatch(file.patch))
+    }
+    return map
+  })
   const [sections, setSections] = useState<DiffSection[]>(() =>
     entries.map((entry) => {
-      const file = fileByPath.get(entry.path)
-      const { original, modified } =
-        file && !file.isBinary ? parseCodeHubPatch(file.patch) : { original: '', modified: '' }
+      const parsed = patchByPath.get(entry.path)
       return {
         key: getPRFileSectionKey(entry.path),
         path: entry.path,
@@ -104,8 +116,8 @@ function CodeHubFilesSections({
         status: entry.status,
         added: entry.added,
         removed: entry.removed,
-        originalContent: original,
-        modifiedContent: modified,
+        originalContent: parsed?.original ?? '',
+        modifiedContent: parsed?.modified ?? '',
         collapsed: false,
         loading: false,
         error: undefined,
@@ -181,9 +193,101 @@ function CodeHubFilesSections({
   }, [detail?.url, item.url])
 
   const noOp = useCallback(() => {}, [])
-  const noComment = useCallback(async (): Promise<boolean> => false, [])
   const noCommentableLines = useCallback((): readonly number[] | undefined => undefined, [])
   const renderNoCheckbox = useCallback(() => null, [])
+
+  // Line-anchored notes decorate the rebuilt diff; their real file line must be
+  // mapped back to the rebuilt position, and notes on lines the patch omits
+  // (hunk gaps) have no rebuilt line to sit on, so they stay in the
+  // conversation tab only. The worktree id must equal the body's
+  // `github-pr:<repoId>:<prNumber>` or the decorator filters the comment out.
+  const inlineReviewComments = useMemo<DecoratedDiffComment[]>(() => {
+    if (comments.length === 0) {
+      return []
+    }
+    const worktreeId = `github-pr:${item.repoId ?? ''}:${item.iid}`
+    return comments.flatMap((comment) => {
+      if (!comment.path || comment.line == null) {
+        return []
+      }
+      const realLines = patchByPath.get(comment.path)?.modifiedRealLines
+      const rebuiltLine = realLines ? realLines.indexOf(comment.line) : -1
+      if (rebuiltLine < 0) {
+        return []
+      }
+      const createdAtMs = new Date(comment.createdAt).getTime()
+      return [
+        {
+          id: `codehub-mr-comment:${comment.id}`,
+          worktreeId,
+          filePath: comment.path,
+          source: 'diff',
+          lineNumber: rebuiltLine + 1,
+          body: comment.body,
+          createdAt: Number.isFinite(createdAtMs) ? createdAtMs : Date.now(),
+          side: 'modified',
+          author: comment.author ?? undefined,
+          authorAvatarUrl: comment.authorAvatarUrl ?? undefined,
+          createdAtLabel: formatRelativeTime(comment.createdAt),
+          canDelete: false,
+          canEdit: false
+        }
+      ]
+    })
+  }, [comments, item.iid, item.repoId, patchByPath])
+
+  const handleAddLineComment = useCallback(
+    async (
+      section: DiffSection,
+      { lineNumber, startLine, body }: { lineNumber: number; startLine?: number; body: string }
+    ): Promise<boolean> => {
+      const repoPath = item.repoPath
+      if (!repoPath) {
+        return false
+      }
+      // The rebuilt diff concatenates hunks, so the editor's line number is a
+      // rebuilt position; map it to the real new-file line before anchoring
+      // the DiffNote, or the note lands on the wrong line on CodeHub.
+      const realLines = patchByPath.get(section.path)?.modifiedRealLines
+      const realLine = realLines ? realLines[lineNumber - 1] : undefined
+      if (!realLine) {
+        toast.error(
+          translate('auto.components.GitHubItemDialog.b0b09778c8', 'Failed to add review comment.')
+        )
+        return false
+      }
+      const realStartLine = startLine != null ? realLines?.[startLine - 1] : undefined
+      return codehubApi
+        .createComment({
+          repoPath,
+          repoId: item.repoId,
+          kind: item.type,
+          iid: item.iid,
+          body,
+          path: section.path,
+          line: realLine,
+          startLine: realStartLine != null && realStartLine !== realLine ? realStartLine : null
+        })
+        .then(async () => {
+          const rows = await codehubApi.listComments({
+            repoPath,
+            repoId: item.repoId,
+            kind: item.type,
+            iid: item.iid
+          })
+          setComments(rows)
+          toast.success(
+            translate('auto.components.GitHubItemDialog.a341343303', 'Review comment added.')
+          )
+          return true
+        })
+        .catch((reason: unknown) => {
+          toast.error(reason instanceof Error ? reason.message : String(reason))
+          return false
+        })
+    },
+    [item, patchByPath, setComments]
+  )
 
   return (
     <PRFilesCombinedDiffBody
@@ -208,7 +312,7 @@ function CodeHubFilesSections({
       isDark={isDark}
       settings={settings}
       sectionHeights={sectionHeights}
-      inlineReviewComments={[]}
+      inlineReviewComments={inlineReviewComments}
       loadSection={noOp}
       retrySection={noOp}
       toggleSection={toggleSection}
@@ -218,7 +322,7 @@ function CodeHubFilesSections({
         'Open changes in CodeHub'
       )}
       renderViewedCheckbox={renderNoCheckbox}
-      handleAddLineComment={noComment}
+      handleAddLineComment={handleAddLineComment}
       getCommentableLineNumbers={noCommentableLines}
       setSectionHeights={setSectionHeights}
       setSections={setSections}

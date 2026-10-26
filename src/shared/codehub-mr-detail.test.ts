@@ -95,21 +95,33 @@ describe('mapCodeHubMrChanges', () => {
 })
 
 describe('parseCodeHubPatch', () => {
-  it('rebuilds both sides from hunks, keeping context lines on both', () => {
-    const { original, modified } = parseCodeHubPatch('@@ -1,2 +1,2 @@\n ctx\n-old\n+new\n tail')
+  it('rebuilds both sides from hunks and maps rebuilt lines to real lines', () => {
+    const { original, modified, modifiedRealLines } = parseCodeHubPatch(
+      '@@ -1,2 +1,2 @@\n ctx\n-old\n+new\n tail'
+    )
     expect(original).toBe('ctx\nold\ntail')
     expect(modified).toBe('ctx\nnew\ntail')
+    expect(modifiedRealLines).toEqual([1, 2, 3])
+    // Two hunks starting at new-file lines 12 and 52: the rebuilt side
+    // concatenates them (4 lines), but each rebuilt line must remember the
+    // real line it came from so line-anchored notes address the right line.
+    const gapped = parseCodeHubPatch(
+      '@@ -10,2 +12,2 @@\n ctx\n-old\n+new\n@@ -50,2 +52,2 @@\n ctx2\n-old2\n+new2'
+    )
+    expect(gapped.modified).toBe('ctx\nnew\nctx2\nnew2')
+    expect(gapped.modifiedRealLines).toEqual([12, 13, 52, 53])
   })
 
   it('yields an empty original for a brand-new file and skips no-newline markers', () => {
-    const { original, modified } = parseCodeHubPatch(
+    const { original, modified, modifiedRealLines } = parseCodeHubPatch(
       '@@ -0,0 +1 @@\n+hi\n\\ No newline at end of file'
     )
     expect(original).toBe('')
     expect(modified).toBe('hi')
+    expect(modifiedRealLines).toEqual([1])
   })
 
   it('returns empty contents for an empty patch', () => {
-    expect(parseCodeHubPatch('')).toEqual({ original: '', modified: '' })
+    expect(parseCodeHubPatch('')).toEqual({ original: '', modified: '', modifiedRealLines: [] })
   })
 })

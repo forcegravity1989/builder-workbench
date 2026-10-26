@@ -248,7 +248,7 @@ describe('codehub comments', () => {
     )
   })
 
-  it('creates a top-level mr note without discussion flags', async () => {
+  it('creates a top-level mr note, anchoring line-level notes with --path and --line', async () => {
     runCodeHubCliMock.mockResolvedValue('')
     await createCodeHubComment({ remote, kind: 'mr', iid: 4092, body: '整体看没问题' })
     expect(runCodeHubCliMock).toHaveBeenCalledWith(
@@ -259,6 +259,68 @@ describe('codehub comments', () => {
         '4092',
         '--body',
         '整体看没问题',
+        '-p',
+        'Org/Group/repo',
+        '-H',
+        'codehub-g.huawei.com'
+      ],
+      undefined
+    )
+    await createCodeHubComment({
+      remote,
+      kind: 'mr',
+      iid: 4092,
+      body: '这里的边界条件漏了',
+      path: 'src/main/bridge.py',
+      line: 42,
+      startLine: 40
+    })
+    expect(runCodeHubCliMock).toHaveBeenCalledWith(
+      [
+        'mr',
+        'review',
+        'create',
+        '4092',
+        '--body',
+        '这里的边界条件漏了',
+        // --path + --line make the note a DiffNote; --start-line only goes
+        // out for a real multi-line range, and the CLI derives diff_refs
+        // itself, so no commit anchors ride along.
+        '--path',
+        'src/main/bridge.py',
+        '--line',
+        '42',
+        '--start-line',
+        '40',
+        '-p',
+        'Org/Group/repo',
+        '-H',
+        'codehub-g.huawei.com'
+      ],
+      undefined
+    )
+    // A single-line click (startLine === line) must not send --start-line.
+    await createCodeHubComment({
+      remote,
+      kind: 'mr',
+      iid: 4092,
+      body: '拼写错误',
+      path: 'README.md',
+      line: 7,
+      startLine: 7
+    })
+    expect(runCodeHubCliMock).toHaveBeenLastCalledWith(
+      [
+        'mr',
+        'review',
+        'create',
+        '4092',
+        '--body',
+        '拼写错误',
+        '--path',
+        'README.md',
+        '--line',
+        '7',
         '-p',
         'Org/Group/repo',
         '-H',

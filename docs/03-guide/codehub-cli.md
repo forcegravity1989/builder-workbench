@@ -80,12 +80,14 @@ MR 评论走 `mr review`。`mr review list` 返回 discussion 数组，评论嵌
 ```bash
 codehub-cli mr review list 8 -p Org/Group/repo -H green
 codehub-cli mr review create 8 --body "评论内容" -p Org/Group/repo -H green
+codehub-cli mr review create 8 --body "这行有边界问题" --path src/main.py --line 42 -p Org/Group/repo -H green
+codehub-cli mr review create 8 --body "整段都要改" --path src/main.py --start-line 40 --line 45 -p Org/Group/repo -H green
 codehub-cli mr review reply 8 <discussion-id> --body "回复内容" -p Org/Group/repo -H green
 codehub-cli mr review delete 8 --note-id <note-id> -p Org/Group/repo -H green
 codehub-cli mr review delete 8 --discussion-id <discussion-id> --note-id <note-id> -p Org/Group/repo -H green
 ```
 
-线程内回复用 `mr review reply`，discussion id 是第二个位置参数（不是 flag）。删除独立 note 只用 `--note-id`；discussion 内的 note 要加 `--discussion-id`。issue 评论没有 discussion 语义。
+不带 `--path` 是普通评论；带 `--path` 和 `--line` 是行级 DiffNote，`--start-line` 指多行范围的起始行（行号是新文件侧的真实行号）。DiffNote 需要的 diff_refs 由 CLI 从 MR 详情自动获取，不用额外传提交锚点。线程内回复用 `mr review reply`，discussion id 是第二个位置参数（不是 flag）。删除独立 note 只用 `--note-id`；discussion 内的 note 要加 `--discussion-id`。issue 评论没有 discussion 语义。
 
 CodeHub 这边不使用草稿，也不使用 Mark ready。新建 MR 不要加草稿参数。
 

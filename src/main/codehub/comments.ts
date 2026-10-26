@@ -115,6 +115,9 @@ export async function createCodeHubComment(args: {
   iid: number
   body: string
   discussionId?: string | null
+  path?: string | null
+  line?: number | null
+  startLine?: number | null
 }): Promise<void> {
   const command =
     args.kind === 'issue'
@@ -140,15 +143,35 @@ export async function createCodeHubComment(args: {
             args.body,
             ...projectArgs(args.remote)
           ]
-        : [
-            'mr',
-            'review',
-            'create',
-            String(args.iid),
-            '--body',
-            args.body,
-            ...projectArgs(args.remote)
-          ]
+        : args.path && args.line
+          ? [
+              'mr',
+              'review',
+              'create',
+              String(args.iid),
+              '--body',
+              args.body,
+              // --path + --line make the note a line-anchored DiffNote;
+              // --start-line covers a multi-line range. The CLI fetches the
+              // MR's diff_refs by itself, so no commit anchors are passed.
+              '--path',
+              args.path,
+              '--line',
+              String(args.line),
+              ...(args.startLine && args.startLine !== args.line
+                ? ['--start-line', String(args.startLine)]
+                : []),
+              ...projectArgs(args.remote)
+            ]
+          : [
+              'mr',
+              'review',
+              'create',
+              String(args.iid),
+              '--body',
+              args.body,
+              ...projectArgs(args.remote)
+            ]
   await runCodeHubCli(command, args.execOptions)
 }
 

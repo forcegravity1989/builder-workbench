@@ -93,12 +93,33 @@ export function mapCodeHubMrChanges(rows: unknown): CodeHubMrFileChange[] {
 
 // Rebuild both file sides from unified-diff hunks. Hunks are concatenated; lines
 // between hunks that the patch omits are not reconstructed, so line numbers count
-// from the patch context, not the full file.
-export function parseCodeHubPatch(patch: string): { original: string; modified: string } {
+// from the patch context, not the full file. `modifiedRealLines` maps each rebuilt
+// modified line (index + 1) back to its real new-file line from the hunk headers,
+// so line-anchored review notes address the same line CodeHub shows on the web.
+export function parseCodeHubPatch(patch: string): {
+  original: string
+  modified: string
+  modifiedRealLines: number[]
+} {
   const originalLines: string[] = []
   const modifiedLines: string[] = []
+  const modifiedRealLines: number[] = []
+  let realNewLine: number | null = null
   for (const line of patch.split('\n')) {
-    if (line.startsWith('@@') || line.startsWith('--- ') || line.startsWith('+++ ')) {
+    // A bare empty line is a split artifact of a leading/trailing newline —
+    // real context lines always carry their ' ' prefix. Skip it or the
+    // rebuilt sides gain a phantom blank line (and a phantom real-line map).
+    if (line === '') {
+      continue
+    }
+    if (line.startsWith('@@')) {
+      // `@@ -oldStart[,count] +newStart[,count] @@`; the new start anchors the
+      // real line number of the hunk's first modified-side line.
+      const newStart = /^\s*@@\s*-\d+(?:,\d+)?\s*\+(\d+)(?:,\d+)?\s*@@/.exec(line)
+      realNewLine = newStart ? Number(newStart[1]) : null
+      continue
+    }
+    if (line.startsWith('--- ') || line.startsWith('+++ ')) {
       continue
     }
     if (line.startsWith('\\')) {
@@ -108,11 +129,24 @@ export function parseCodeHubPatch(patch: string): { original: string; modified: 
       originalLines.push(line.slice(1))
     } else if (line.startsWith('+')) {
       modifiedLines.push(line.slice(1))
+      // No hunk header (malformed patch): fall back to counting rebuilt lines.
+      modifiedRealLines.push(realNewLine ?? modifiedLines.length)
+      if (realNewLine !== null) {
+        realNewLine += 1
+      }
     } else {
       const context = line.startsWith(' ') ? line.slice(1) : line
       originalLines.push(context)
       modifiedLines.push(context)
+      modifiedRealLines.push(realNewLine ?? modifiedLines.length)
+      if (realNewLine !== null) {
+        realNewLine += 1
+      }
     }
   }
-  return { original: originalLines.join('\n'), modified: modifiedLines.join('\n') }
+  return {
+    original: originalLines.join('\n'),
+    modified: modifiedLines.join('\n'),
+    modifiedRealLines
+  }
 }

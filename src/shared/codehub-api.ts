@@ -48,7 +48,12 @@ export const CodeHubCreateComment = Repo.extend({
   kind: Kind,
   iid: Iid,
   body: z.string(),
-  discussionId: z.string().min(1).nullish()
+  discussionId: z.string().min(1).nullish(),
+  // MR only: with path + line the note becomes a line-anchored DiffNote
+  // (`mr review create --path --line`); startLine anchors a multi-line range.
+  path: z.string().min(1).nullish(),
+  line: z.number().int().positive().nullish(),
+  startLine: z.number().int().positive().nullish()
 })
 export const CodeHubDeleteComment = Repo.extend({
   kind: Kind,
