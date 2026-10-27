@@ -1,4 +1,5 @@
 import React from 'react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { VirtualItem } from '@tanstack/react-virtual'
 import { cn } from '@/lib/utils'
 import type {
@@ -93,7 +94,7 @@ function renderHostHeaderVirtualRow(
         row={row}
         onToggle={() => ctx.toggleGroupWithScrollAnchor(row.key)}
         onDragPointerDown={
-          ctx.orderedHostIds.length > 1
+          !row.partialPresentation && ctx.orderedHostIds.length > 1
             ? (e) => ctx.hostDrag.onHandlePointerDown(e, row.hostId)
             : undefined
         }
@@ -157,6 +158,29 @@ export function renderWorktreeVirtualRow(
   }
 
   if (row.type === 'header') {
+    if (row.displaySection) {
+      const Icon = row.displaySection.expanded ? ChevronDown : ChevronRight
+      return (
+        <div
+          key={vItem.key}
+          data-index={vItem.index}
+          ref={ctx.measureVirtualRowElement}
+          className="absolute left-0 right-0 top-0 border-t border-worktree-sidebar-foreground/10"
+          style={{ transform: getVirtualRowTransform(vItem.start) }}
+        >
+          <button
+            type="button"
+            aria-expanded={row.displaySection.expanded}
+            onClick={row.displaySection.onToggle}
+            className="flex h-7 w-full items-center gap-1.5 px-3 text-left text-[11px] text-worktree-sidebar-foreground/55 hover:text-worktree-sidebar-foreground"
+          >
+            <Icon className="size-3.5" />
+            <span>{row.label}</span>
+            {row.count > 0 ? <span className="ml-auto">{row.count}</span> : null}
+          </button>
+        </div>
+      )
+    }
     return renderWorktreeSectionHeaderRow({
       ctx: ctx.header,
       row,

@@ -14,7 +14,7 @@ import { LoaderCircle } from 'lucide-react'
 import { TaskPageGitHubRows } from './Rows'
 import { PaginationBar } from '../PaginationBar'
 import { supersedeGitHubListScrollRestore } from '../../task-page-github-list-scroll-restore'
-import { TaskPageScopeFooter, TaskPageScopeHeader } from '@/workbench/TaskScopePanel'
+import { TaskPageScopeFooter } from '@/workbench/TaskScopePanel'
 export function TaskPageGitHubList({
   model
 }: {
@@ -122,8 +122,6 @@ export function TaskPageGitHubList({
           <span>{translate('auto.components.TaskPage.f362667d55', 'Updated')}</span>
           <span />
         </div>
-
-        <TaskPageScopeHeader model={model} />
 
         {tasksError ? (
           <div className="border-b border-border px-4 py-4 text-sm text-destructive">
@@ -312,7 +310,9 @@ export function TaskPageGitHubList({
         <TaskPageScopeFooter
           model={model}
           extraLoading={showGitHubTaskSkeletons}
-          filteredCount={filteredWorkItems.length}
+          filteredCount={
+            softHiddenVisibleCount > 0 && totalPages > 1 ? null : filteredWorkItems.length
+          }
         />
       </div>
 

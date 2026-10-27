@@ -12,6 +12,11 @@ import {
 
 export const GITHUB_REPO_WORK_ITEM_METHODS = [
   defineMethod({
+    name: 'github.repoViewer',
+    params: RepoSelector,
+    handler: async (params, { runtime }) => runtime.getRepoViewer(params.repo)
+  }),
+  defineMethod({
     name: 'github.repoSlug',
     params: RepoSelector,
     handler: async (params, { runtime }) => runtime.getRepoSlug(params.repo)

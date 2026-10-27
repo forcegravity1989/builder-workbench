@@ -1,3 +1,5 @@
+import { WORKBENCH_GOAL_SEARCH_PLACEHOLDER } from '@/workbench/TaskScopePanel'
+import { seedWorkbenchTaskQuery } from '../../../../../shared/workbench/task-scope'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import { getGitHubTaskKindPresets } from '@/components/task-page-localized-options'
 import { cn } from '@/lib/utils'
@@ -68,69 +70,59 @@ export function TaskPageGitHubFilters({
           workbench ? 'flex-row flex-wrap items-center gap-x-3 gap-y-2' : 'flex-col gap-2.5'
         )}
       >
-        {/* G2 (BW)：范围视图隐藏 Issues/PRs 页签、预设 chips 与 PR 筛选——
-            范围列表是客户端过滤的物化引用集，服务端查询机制不适用。 */}
-        {workbench && !model.workbenchScopeActive ? (
-          <TaskPageGitHubModeControls model={model} embedded />
-        ) : null}
-        {workbench && !model.workbenchScopeActive ? (
-          <span className="h-4 w-px shrink-0 bg-border/80" aria-hidden />
-        ) : null}
-        {model.workbenchScopeActive ? null : (
-          <div className="flex shrink-0 flex-wrap gap-1.5">
-            {getGitHubTaskKindPresets(activeGithubTaskKind).map((option) => {
-              const active = activeTaskPreset === option.id
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => {
-                    const query = option.query
-                    setTaskSearchInput(query)
-                    setAppliedTaskSearch(query)
-                    setActiveTaskPreset(option.id)
-                    setTaskResumeState({
-                      githubItemsPreset: option.id,
-                      githubItemsQuery: query
-                    })
+        {workbench ? <TaskPageGitHubModeControls model={model} embedded /> : null}
+        {workbench ? <span className="h-4 w-px shrink-0 bg-border/80" aria-hidden /> : null}
+        <div className="flex shrink-0 flex-wrap gap-1.5">
+          {getGitHubTaskKindPresets(activeGithubTaskKind).map((option) => {
+            const active = activeTaskPreset === option.id
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => {
+                  const query = seedWorkbenchTaskQuery(option.query, model.workbenchScope)
+                  setTaskSearchInput(query)
+                  setAppliedTaskSearch(query)
+                  setActiveTaskPreset(option.id)
+                  setTaskResumeState({
+                    githubItemsPreset: option.id,
+                    githubItemsQuery: query
+                  })
+                  if (!model.workbenchScopeActive) {
                     setTaskRefreshNonce((current) => current + 1)
-                  }}
-                  onContextMenu={(event) => {
-                    event.preventDefault()
-                    handleSetDefaultTaskPreset(option.id)
-                  }}
-                  className={cn(
-                    'rounded-md border px-2.5 py-1 text-xs font-medium transition',
-                    active
-                      ? 'border-border/50 bg-foreground/90 text-background shadow-xs'
-                      : 'border-border/60 bg-background text-foreground shadow-xs hover:bg-muted/60'
-                  )}
-                >
-                  {option.label}
-                </button>
-              )
-            })}
-          </div>
-        )}
-        {workbench && !model.workbenchScopeActive ? (
-          <span className="h-4 w-px shrink-0 bg-border/80" aria-hidden />
-        ) : null}
+                  }
+                }}
+                onContextMenu={(event) => {
+                  event.preventDefault()
+                  handleSetDefaultTaskPreset(option.id)
+                }}
+                className={cn(
+                  'rounded-md border px-2.5 py-1 text-xs font-medium transition',
+                  active
+                    ? 'border-border/50 bg-foreground/90 text-background shadow-xs'
+                    : 'border-border/60 bg-background text-foreground shadow-xs hover:bg-muted/60'
+                )}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+        </div>
+        {workbench ? <span className="h-4 w-px shrink-0 bg-border/80" aria-hidden /> : null}
         <div
           className={cn(
             'flex min-w-0 flex-wrap items-center gap-2',
             workbench && 'min-w-48 flex-1'
           )}
         >
-          {model.workbenchScopeActive ? null : (
-            <PRFilterDropdowns
-              parsed={appliedTaskQuery}
-              kind={activeGithubTaskKind}
-              authorLogins={loadedGitHubAuthorLogins}
-              primarySlug={primaryGithubFilterSlug}
-              settings={settings}
-              onChange={(change) => applyPRFilterChange(change)}
-            />
-          )}
+          <PRFilterDropdowns
+            parsed={appliedTaskQuery}
+            kind={activeGithubTaskKind}
+            authorLogins={loadedGitHubAuthorLogins}
+            primarySlug={primaryGithubFilterSlug}
+            settings={settings}
+            onChange={(change) => applyPRFilterChange(change)}
+          />
           <div className="relative min-w-0 flex-1 basis-64">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -140,9 +132,11 @@ export function TaskPageGitHubFilters({
               onChange={handleTaskSearchChange}
               onKeyDown={handleTaskSearchKeyDown}
               placeholder={
-                activeGithubTaskKind === 'prs'
-                  ? translate('auto.components.TaskPage.eee4df4c66', 'Search GitHub PRs...')
-                  : translate('auto.components.TaskPage.b15ceb409d', 'Search GitHub issues...')
+                model.workbenchScopeActive && activeGithubTaskKind === 'issues'
+                  ? WORKBENCH_GOAL_SEARCH_PLACEHOLDER
+                  : activeGithubTaskKind === 'prs'
+                    ? translate('auto.components.TaskPage.eee4df4c66', 'Search GitHub PRs...')
+                    : translate('auto.components.TaskPage.b15ceb409d', 'Search GitHub issues...')
               }
               className="h-8 rounded-md border-border/60 bg-background pl-8 pr-8 text-xs text-foreground shadow-xs"
             />

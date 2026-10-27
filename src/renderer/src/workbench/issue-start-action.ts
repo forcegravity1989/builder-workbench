@@ -1,5 +1,5 @@
 import { useAppStore } from '@/store'
-import { getWorkspaceIntentName } from '../../../shared/workspace-name'
+import { getLinkedWorkItemWorkspaceName } from '../../../shared/workspace-name'
 import type { WorkbenchCreationContext } from '../../../shared/workbench/creation-context'
 import {
   findVersionTaskWorktrees,
@@ -20,15 +20,12 @@ import type { CycleTaskSnapshot } from './version-cycle/ports'
  */
 
 /**
- * 预填名对齐原生直发链（#436 伴飞裁定 CF-6e）：getWorkspaceIntentName 的
- * `Issue <号> <标题前词>` 形态（launch-work-item-direct 同款），中文标题剥尽
- * 后仍含 Issue 号，不再产生「v0.7-g2」式残骸；预填与自动种子不同时按显式
- * 输入存活到提交（getInitialAutoManagedWorkspaceName 语义），号不会被冲掉。
- * 构造上 identity 恒在 → seedName 恒非空，`issue-<号>` 回落仅防御。
+ * 与原生创建器使用同一个自动种子；中文标题仍保留 Issue 编号，用户修改后
+ * 才按显式名称处理。展示标题由原生关联信息提供，不使用分支 slug。
  */
 function issuePrefilledName(provider: 'github' | 'codehub', number: number, title: string): string {
   return (
-    getWorkspaceIntentName({ workItem: { type: 'issue', provider, number, title } })?.seedName ??
+    getLinkedWorkItemWorkspaceName({ type: 'issue', provider, number, title })?.seedName ??
     `issue-${number}`
   )
 }

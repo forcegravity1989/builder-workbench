@@ -1,12 +1,14 @@
 import { codehubApi } from '@/lib/codehub-api'
 import type { TaskPageGitLabLoadingModel } from './use-task-page-gitlab-loading'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
+import { workbenchVersionTaskLabel } from '../../../shared/workbench/task-scope'
 
 const CODEHUB_LIST_LIMIT = 250
 
 export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
+  const [codehubHasMore, setCodehubHasMore] = useState(false)
   const {
     selectedRepos,
     taskSource,
@@ -29,9 +31,10 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     if (taskSource !== 'codehub') {
       return
     }
+    setCodehubHasMore(false)
     // Why: a BW workbench scope materializes its own reference-driven CodeHub
     // rows; the unscoped full-list fetch must not overwrite them.
-    if (workbenchTaskScope) {
+    if (workbenchTaskScope?.goalId) {
       return
     }
     const repos = selectedRepos.filter((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))
@@ -62,18 +65,24 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
           kind,
           state,
           limit: CODEHUB_LIST_LIMIT,
+          labels: workbenchTaskScope
+            ? [workbenchVersionTaskLabel(workbenchTaskScope.version)]
+            : undefined,
           scope,
           search: serverQuery || undefined,
           author: serverAuthor || undefined,
           assignee: serverAssignee || undefined
         })
-        return listed.items.map((item) => ({
-          ...item,
-          repoId: repo.id,
-          repoPath: repo.path,
-          host: listed.remote.host,
-          project: listed.remote.project
-        }))
+        return {
+          hasMore: listed.hasMore,
+          items: listed.items.map((item) => ({
+            ...item,
+            repoId: repo.id,
+            repoPath: repo.path,
+            host: listed.remote.host,
+            project: listed.remote.project
+          }))
+        }
       })
     )
       .then((results) => {
@@ -82,6 +91,7 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
         }
         const items: CodeHubTaskItem[] = []
         const errors: string[] = []
+        let hasMore = false
         for (const result of results) {
           if (result.status !== 'fulfilled') {
             errors.push(
@@ -89,9 +99,11 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
             )
             continue
           }
-          items.push(...result.value)
+          items.push(...result.value.items)
+          hasMore ||= result.value.hasMore
         }
         setCodehubItems(items)
+        setCodehubHasMore(hasMore)
         setCodehubError(errors[0] ?? null)
       })
       .finally(() => {
@@ -117,7 +129,9 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     taskSource,
     workbenchTaskScope
   ])
-  return model
+  const nextModel = model as typeof model & { codehubHasMore: boolean }
+  nextModel.codehubHasMore = codehubHasMore
+  return nextModel
 }
 
 export type TaskPageCodeHubLoadingModel = ReturnType<typeof useTaskPageCodeHubLoading>

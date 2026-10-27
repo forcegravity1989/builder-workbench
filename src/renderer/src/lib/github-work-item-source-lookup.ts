@@ -1,5 +1,6 @@
 import type { GitHubWorkItem, GitHubWorkItemDetails } from '../../../shared/github/work-item-types'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
+import type { GitHubViewer } from '../../../shared/github/pull-request-types'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import {
   getGitHubRuntimeRepoId,
@@ -32,6 +33,23 @@ type GitHubWorkItemDetailsLookupArgs = {
 
 function runtimeRepoId(args: Pick<GitHubWorkItemLookupArgs, 'repoId' | 'sourceContext'>): string {
   return getGitHubRuntimeRepoId(args.sourceContext, args.repoId)
+}
+
+export function lookupGitHubViewerForSource(
+  args: Pick<GitHubWorkItemLookupArgs, 'repoPath' | 'repoId' | 'sourceContext'>
+): Promise<GitHubViewer | null> {
+  if (!args.sourceContext) {
+    return Promise.reject(new Error('GitHub repository source is unavailable'))
+  }
+  const target = getGitHubSourceRuntimeTarget(args.sourceContext)
+  return target.kind === 'environment'
+    ? callRuntimeRpc<GitHubViewer | null>(
+        target,
+        'github.repoViewer',
+        { repo: runtimeRepoId(args) },
+        { timeoutMs: 30_000 }
+      )
+    : window.api.gh.repoViewer(args)
 }
 
 export async function lookupGitHubWorkItemForSource(

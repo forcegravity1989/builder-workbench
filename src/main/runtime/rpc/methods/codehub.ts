@@ -1,6 +1,7 @@
 import { defineMethod } from '../core'
 import {
   CodeHubListTasks,
+  CodeHubViewer,
   CodeHubCreateIssue,
   CodeHubUpdateIssueTitle,
   CodeHubUpdateIssueLabels,
@@ -20,6 +21,11 @@ import {
 } from '../../../../shared/codehub-api'
 
 export const CODEHUB_METHODS = [
+  defineMethod({
+    name: 'codehub.viewer',
+    params: CodeHubViewer,
+    handler: (params, { runtime }) => runtime.codehub.viewer(params)
+  }),
   defineMethod({
     name: 'codehub.listTasks',
     params: CodeHubListTasks,

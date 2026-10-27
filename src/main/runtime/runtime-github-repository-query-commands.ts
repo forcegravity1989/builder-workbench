@@ -1,8 +1,10 @@
 import type { ListWorkItemsResult } from '../../shared/github/work-item-types'
 import type { Repo } from '../../shared/repo-types'
+import { getRepoSshConnectionId } from '../../shared/execution-host'
 import {
   countWorkItems,
   getWorkItem,
+  getRepoAuthenticatedViewer,
   getWorkItemByOwnerRepo,
   listAssignableUsers,
   listIssues,
@@ -22,6 +24,16 @@ type RuntimeGitHubRepositoryQueryCommandsDeps = {
 
 export class RuntimeGitHubRepositoryQueryCommands {
   constructor(private readonly deps: RuntimeGitHubRepositoryQueryCommandsDeps) {}
+
+  async getRepoViewer(repoSelector: string) {
+    const repo = await this.deps.resolveRepo(repoSelector)
+    return getRepoAuthenticatedViewer(
+      repo.path,
+      repo.issueSourcePreference,
+      getRepoSshConnectionId(repo),
+      ...this.deps.getLocalGitArgs(repo)
+    )
+  }
 
   async listRepoWorkItems(
     repoSelector: string,

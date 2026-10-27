@@ -1,9 +1,6 @@
 import type { RefObject } from 'react'
-import {
-  getLinkedWorkItemSuggestedName,
-  getLinkedWorkItemWorkspaceName,
-  type LinkedWorkItemSummary
-} from '@/lib/new-workspace'
+import type { LinkedWorkItemSummary } from '@/lib/new-workspace'
+import { isLinkedWorkItemWorkspaceNameSeed } from '../../../shared/workspace-name'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import type { TuiAgent } from '../../../shared/tui-agent'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
@@ -106,13 +103,6 @@ export function resolveSmartGitHubCreateNames({
   return { workspaceName: smartWorkspaceName, displayName: smartDisplayName }
 }
 
-function getLinkedWorkItemSeedName(item: LinkedWorkItemSummary | null | undefined): string {
-  if (!item) {
-    return ''
-  }
-  return getLinkedWorkItemWorkspaceName(item)?.seedName ?? getLinkedWorkItemSuggestedName(item)
-}
-
 export function getInitialAutoManagedWorkspaceName({
   draftName,
   draftLinkedWorkItem,
@@ -124,10 +114,12 @@ export function getInitialAutoManagedWorkspaceName({
   initialName: string
   initialLinkedWorkItem?: LinkedWorkItemSummary | null
 }): string {
-  // Why: a prefilled name counts as user input unless it exactly matches the linked-item seed Orca generated.
+  // Native and intent-based entry points must agree which prefilled names are automatic.
   const candidateName = draftName ?? initialName
-  const seedName = getLinkedWorkItemSeedName(draftLinkedWorkItem ?? initialLinkedWorkItem)
-  return candidateName && seedName && candidateName === seedName ? candidateName : ''
+  const item = draftLinkedWorkItem ?? initialLinkedWorkItem
+  return candidateName && item && isLinkedWorkItemWorkspaceNameSeed(candidateName, item)
+    ? candidateName
+    : ''
 }
 
 export type InitialWorkspaceRunSeedInput = {

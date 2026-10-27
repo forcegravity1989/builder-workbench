@@ -20,8 +20,11 @@ import { addHostSectionRows } from '../../host-section-rows'
 import { orderHostSectionOptions } from '../../host-section-order'
 import { buildSidebarHostOptions } from '../../sidebar-host-options'
 import { selectPendingWorktreeCreationKeys } from './pending-worktree-creation-keys'
+import { projectWorkbenchRows } from './workbench-project-rows'
+import { useWorkbenchProjectFold } from './use-workbench-project-fold'
 
 type SectionRowsArgs = {
+  workbenchProject?: { repoId: string; repoIds: readonly string[] }
   groupBy: WorktreeGroupBy
   projectOrderBy: ProjectOrderBy
   pinnedDisplayPolicy: PinnedWorktreeDisplayPolicy
@@ -84,17 +87,32 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
     [repos]
   )
   const allRepoIds = useMemo(() => repos.map((r) => r.id), [repos])
-  const placeholderRepoIds = useMemo(
-    () =>
+  const placeholderRepoIds = useMemo(() => {
+    const ids = new Set(
       getEmptyProjectPlaceholderRepoIds({
         groupBy: args.groupBy,
         repos: args.visibleReposForRows,
         worktreesByRepo,
         visibleWorktrees: worktrees,
         filterRepoIds: args.filterRepoIds
-      }),
-    [args.filterRepoIds, args.groupBy, args.visibleReposForRows, worktrees, worktreesByRepo]
-  )
+      })
+    )
+    if (args.workbenchProject) {
+      for (const repo of args.visibleReposForRows) {
+        if (args.workbenchProject.repoIds.includes(repo.id)) {
+          ids.add(repo.id)
+        }
+      }
+    }
+    return ids
+  }, [
+    args.filterRepoIds,
+    args.groupBy,
+    args.visibleReposForRows,
+    worktrees,
+    worktreesByRepo,
+    args.workbenchProject
+  ])
 
   // Why: subscribe on a flat key array (useShallow) so progress ticks don't rebuild the whole row model.
   const pendingCreationKeys = useAppStore(
@@ -215,7 +233,7 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
     },
     [orderedHostOptions, setWorkspaceHostOrder, workspaceHostOrder]
   )
-  const sectionRows = useMemo(
+  const nativeSectionRows = useMemo(
     () =>
       addHostSectionRows({
         rows,
@@ -238,9 +256,34 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
       rows
     ]
   )
+  const otherProjects = useWorkbenchProjectFold(args.workbenchProject, args.worktreeMap)
+  const sectionRows = useMemo(
+    () =>
+      args.workbenchProject
+        ? projectWorkbenchRows({
+            rows: nativeSectionRows,
+            repoId: args.workbenchProject.repoId,
+            currentRepoIds: args.workbenchProject.repoIds,
+            repos: args.visibleReposForRows,
+            projectGroups: args.visibleProjectGroupsForRows,
+            worktrees,
+            expanded: otherProjects.expanded,
+            onToggle: otherProjects.toggle
+          })
+        : nativeSectionRows,
+    [
+      nativeSectionRows,
+      args.workbenchProject,
+      args.visibleReposForRows,
+      args.visibleProjectGroupsForRows,
+      worktrees,
+      otherProjects.expanded,
+      otherProjects.toggle
+    ]
+  )
   const renderedSidebarRowKeys = useMemo(
-    () => collectRenderedSidebarRowKeys(sectionRows),
-    [sectionRows]
+    () => collectRenderedSidebarRowKeys(args.workbenchProject ? nativeSectionRows : sectionRows),
+    [args.workbenchProject, nativeSectionRows, sectionRows]
   )
 
   return {

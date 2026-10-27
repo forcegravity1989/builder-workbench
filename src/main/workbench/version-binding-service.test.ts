@@ -65,6 +65,10 @@ function createFakeRuntime(
       id: scope.worktreeId,
       repoId: 'repo-1',
       path: '/repo/trees/v07-plan',
+      branch: 'refs/heads/issue-439',
+      displayName:
+        stored.displayNameIsPinned === false ? 'issue-439' : (stored.displayName ?? 'issue-439'),
+      displayNameMode: stored.displayNameIsPinned === true ? 'fixed' : 'automatic',
       hostId: 'local',
       isArchived: options.archived ?? false,
       isMainWorktree: false,
@@ -88,6 +92,9 @@ function createFakeRuntime(
     updateManagedWorktreeMeta: async (selector: string, updates: Partial<WorktreeMeta>) => {
       state.writes += 1
       state.lastSelector = selector
+      if (updates.displayNameIsPinned !== undefined) {
+        stored.displayNameIsPinned = updates.displayNameIsPinned
+      }
       if (!options.dropBindingOnWrite) {
         stored.workbenchVersionBinding = updates.workbenchVersionBinding
       }
@@ -136,8 +143,12 @@ describe('nativeVersionBindingService', () => {
     ).rejects.toMatchObject({ code: 'stale-instance' })
     expect(stored.linkedWorkItem).toEqual(linkedWorkItem)
     expect(state.writes).toBe(beforeIssueBind + 1)
+    stored.displayName = linkedWorkItem.title
+    stored.displayNameIsPinned = true
     await service.set({ ...scope, binding: issueBinding, linkedWorkItem: issueB })
     expect(stored.linkedWorkItem).toEqual(issueB)
+    expect(stored.displayNameIsPinned).toBe(true)
+    expect(stored.displayName).toBe(linkedWorkItem.title)
     expect(state.writes).toBe(beforeIssueBind + 2)
     await service.set({ ...scope, binding: null })
     expect(stored.linkedWorkItem).toEqual(issueB)
@@ -147,6 +158,18 @@ describe('nativeVersionBindingService', () => {
     expect(state.writes).toBe(beforeIssueBind + 4)
     expect(state.lastSelector).toBe('identity:wt2:local:inst-1')
     expect(await service.read(scope)).toEqual(binding)
+
+    const custom = createFakeRuntime()
+    custom.stored.linkedWorkItem = linkedWorkItem
+    custom.stored.displayName = 'My custom workspace'
+    custom.stored.displayNameIsPinned = true
+    await nativeVersionBindingService(custom.runtime).set({
+      ...scope,
+      binding: issueBinding,
+      linkedWorkItem: issueB
+    })
+    expect(custom.stored.displayName).toBe('My custom workspace')
+    expect(custom.stored.displayNameIsPinned).toBe(true)
 
     // P1c 重启读回：走真实持久化链独立 round-trip（写合并 → 序列化压缩 →
     // 载入补默认 → 投影），绑定与「重启」前一致，不需要 BW 侧任何副本。

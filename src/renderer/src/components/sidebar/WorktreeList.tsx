@@ -1,6 +1,8 @@
 import React, { useCallback, useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { useVersionSidebarProjection } from '@/workbench/version-sidebar-state'
+import { getWorktreeHostIdentity } from '../../../../shared/worktree/host-qualified-identity'
 import { useShallow } from 'zustand/react/shallow'
 import {
   useAllWorktrees,
@@ -61,6 +63,19 @@ const WorktreeList = React.memo(function WorktreeList({
   const repoMap = useRepoMap()
   const worktreeMap = useWorktreeMap()
   const repos = useAppStore((s) => s.repos)
+  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const versionProjection = useVersionSidebarProjection()
+  const workbenchProject =
+    isWorkbenchShell() && versionProjection.repoId === activeRepoId && activeRepoId
+      ? versionProjection
+      : undefined
+  const workbenchScope = useMemo(
+    () =>
+      workbenchProject && activeRepoId
+        ? { repoId: activeRepoId, repoIds: workbenchProject.repoIds }
+        : undefined,
+    [workbenchProject, activeRepoId]
+  )
   const worktreeLineageById = useAppStore((s) => s.worktreeLineageById)
   const workspaceLineageByChildKey = useAppStore((s) => s.workspaceLineageByChildKey)
   const detectedWorktreesByRepo = useAppStore((s) => s.detectedWorktreesByRepo)
@@ -111,15 +126,41 @@ const WorktreeList = React.memo(function WorktreeList({
     () => buildWorktreeManualOrderCatalog({ worktrees: allWorktrees, folderWorkspaces }),
     [allWorktrees, folderWorkspaces]
   )
-  const { visibleWorktrees, pairedDeviceIdsByEnvironment } = useVisibleSidebarWorktrees({
-    filterState,
-    sortBy,
-    sortedIds,
-    repoMap,
-    worktreeLineageById,
-    defaultHostId,
-    agentSendTargetWorktreeId
-  })
+  const { visibleWorktrees: filteredWorktrees, pairedDeviceIdsByEnvironment } =
+    useVisibleSidebarWorktrees({
+      filterState,
+      sortBy,
+      sortedIds,
+      repoMap,
+      worktreeLineageById,
+      defaultHostId,
+      agentSendTargetWorktreeId
+    })
+  const visibleWorktrees = useMemo(
+    () =>
+      workbenchProject
+        ? filteredWorktrees.filter(
+            (tree) => !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
+          )
+        : filteredWorktrees,
+    [filteredWorktrees, workbenchProject]
+  )
+  const nativeDetectedWorktrees = useMemo(() => {
+    if (!workbenchProject) {
+      return detectedWorktreesByRepo
+    }
+    return Object.fromEntries(
+      Object.entries(detectedWorktreesByRepo).map(([id, detected]) => [
+        id,
+        {
+          ...detected,
+          worktrees: detected.worktrees.filter(
+            (tree) => !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
+          )
+        }
+      ])
+    )
+  }, [detectedWorktreesByRepo, workbenchProject])
   const effectiveCollapsedGroups = useEffectiveCollapsedGroups({
     collapsedGroups,
     agentSendTargetWorktreeId,
@@ -150,10 +191,11 @@ const WorktreeList = React.memo(function WorktreeList({
   const externalWorktreeCards = useSidebarExternalWorktreeCards({
     repos,
     visibleReposForRows,
-    detectedWorktreesByRepo,
+    detectedWorktreesByRepo: nativeDetectedWorktrees,
     filterRepoIds: filterState.filterRepoIds
   })
   const rowModel = useSidebarSectionRows({
+    workbenchProject: workbenchScope,
     groupBy,
     projectOrderBy,
     pinnedDisplayPolicy,

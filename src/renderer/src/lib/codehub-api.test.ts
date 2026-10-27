@@ -15,7 +15,9 @@ vi.mock('@/runtime/runtime-rpc-client', async () => ({
 }))
 import { codehubApi } from './codehub-api'
 beforeEach(() => {
-  vi.stubGlobal('window', { api: { codehub: { setIssueState: local, listTasks: local } } })
+  vi.stubGlobal('window', {
+    api: { codehub: { setIssueState: local, listTasks: local, viewer: local } }
+  })
   rpc.mockReset()
   local.mockReset()
   state.repos[0].executionHostId = 'runtime:owner'
@@ -30,6 +32,13 @@ it('uses the repo owner instead of the newly focused runtime for reads and write
     { timeoutMs: 60_000 }
   )
   expect(local).not.toHaveBeenCalled()
+  await codehubApi.viewer({ repoId: args.repoId, repoPath: args.repoPath })
+  expect(rpc).toHaveBeenLastCalledWith(
+    { kind: 'environment', environmentId: 'owner' },
+    'codehub.viewer',
+    { repoId: args.repoId, repoPath: args.repoPath },
+    { timeoutMs: 60_000 }
+  )
 })
 it('retains the local preload path for a local repo while another runtime has focus', async () => {
   state.repos[0].executionHostId = 'local'
@@ -42,4 +51,6 @@ it('retains the local preload path for a local repo while another runtime has fo
   await codehubApi.listTasks(args)
   expect(local).toHaveBeenCalledWith(args)
   expect(rpc).not.toHaveBeenCalled()
+  await codehubApi.viewer({ repoId: args.repoId, repoPath: args.repoPath })
+  expect(local).toHaveBeenLastCalledWith({ repoId: args.repoId, repoPath: args.repoPath })
 })

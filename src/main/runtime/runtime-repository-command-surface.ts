@@ -21,6 +21,7 @@ type HostedReviewCommandName =
   | 'createHostedReview'
   | 'createStackedHostedReview'
 type GitHubRepositoryQueryCommandName =
+  | 'getRepoViewer'
   | 'listRepoWorkItems'
   | 'listRepoIssues'
   | 'getRepoWorkItem'
@@ -155,6 +156,7 @@ export function installRuntimeRepositoryCommandSurface(
     countRepoWorkItems: queries.countRepoWorkItems.bind(queries),
     listRepoLabels: queries.listRepoLabels.bind(queries),
     listRepoAssignableUsers: queries.listRepoAssignableUsers.bind(queries),
+    getRepoViewer: queries.getRepoViewer.bind(queries),
     getGitHubRateLimit: queries.getGitHubRateLimit.bind(queries),
     getRepoHooks: hooks.getRepoHooks.bind(hooks),
     checkRepoHooks: hooks.checkRepoHooks.bind(hooks),

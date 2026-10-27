@@ -2,14 +2,19 @@ import type { TaskPageLinearCreationStateModel } from './use-task-page-linear-cr
 import { getGitHubTaskKind } from '@/components/task-page-github-task-kind'
 import { useMemo, useLayoutEffect, useEffect, useCallback, useRef } from 'react'
 import { parseTaskQuery } from '../../../shared/task-query'
+import { workbenchGoalMutationQuery } from '../../../shared/workbench/task-scope'
 import {
   setTaskPageGitHubMutationQueryKey,
   getOrCreateQuietRevalidateState,
+  taskPageGitHubItemKey,
   getTaskPageGitHubConfirmedAuthorityItemKeys
 } from '@/components/task-page-github-work-item-mutation-registry'
 import type { TaskPageGitHubPatchWorkItem } from '@/components/task-page-github-work-item-mutation-types'
 import { useAppStore } from '@/store'
-import { useTaskPageGitHubWorkItemMutation } from '@/hooks/useTaskPageGitHubWorkItemMutation'
+import {
+  shouldSkipLocalViewerQualifiers,
+  useTaskPageGitHubWorkItemMutation
+} from '@/hooks/useTaskPageGitHubWorkItemMutation'
 import { rebuildSoftHiddenKeysFromPendingAndSticky } from '@/components/task-page-github-work-item-mutations'
 import { buildGitHubRepoUrl } from '@/lib/github-links'
 import { getTaskPageRepoSourceContext } from './task-page-source-context'
@@ -29,6 +34,10 @@ export function useTaskPageGitHubMutationState(model: TaskPageLinearCreationStat
   } = model
   const activeGithubTaskKind = getGitHubTaskKind(activeTaskPreset, appliedTaskSearch)
   const appliedTaskQuery = useMemo(() => parseTaskQuery(appliedTaskSearch), [appliedTaskSearch])
+  const mutationQuery = useMemo(
+    () => workbenchGoalMutationQuery(appliedTaskQuery, !!model.pageData.workbenchTaskScope?.goalId),
+    [appliedTaskQuery, model.pageData.workbenchTaskScope?.goalId]
+  )
 
   // Why: multi-repo queryKey omits a singular sourceScope (scopes include repoId).
   const githubWorkItemMutationQueryKey = useMemo(() => {
@@ -41,8 +50,10 @@ export function useTaskPageGitHubMutationState(model: TaskPageLinearCreationStat
       )
     ].sort()
     const repoIds = selectedRepos.map((repo) => repo.id).sort()
-    return `${githubMode}::${hostOrSetupIds.join(',')}::${repoIds.join(',')}::${appliedTaskSearch}`
-  }, [appliedTaskSearch, githubMode, selectedRepos])
+    const goal = model.pageData.workbenchTaskScope
+    const scopeKey = goal?.goalId ? `::goal:${JSON.stringify([goal.version, goal.goalId])}` : ''
+    return `${githubMode}::${hostOrSetupIds.join(',')}::${repoIds.join(',')}::${appliedTaskSearch}${scopeKey}`
+  }, [appliedTaskSearch, githubMode, selectedRepos, model.pageData.workbenchTaskScope])
   useLayoutEffect(() => {
     setTaskPageGitHubMutationQueryKey(githubWorkItemMutationQueryKey)
   }, [githubWorkItemMutationQueryKey])
@@ -85,18 +96,30 @@ export function useTaskPageGitHubMutationState(model: TaskPageLinearCreationStat
   )
   const githubWorkItemMutation = useTaskPageGitHubWorkItemMutation({
     queryKey: githubWorkItemMutationQueryKey,
-    query: appliedTaskQuery,
+    query: mutationQuery,
     viewerLogin: githubViewerLogin,
     patchWorkItem: patchCoordinatedGitHubWorkItem
   })
   useLayoutEffect(() => {
+    const items = pages.flatMap((page) => page ?? [])
     rebuildSoftHiddenKeysFromPendingAndSticky({
-      query: appliedTaskQuery,
+      query: mutationQuery,
       queryKey: githubWorkItemMutationQueryKey,
       viewerLogin: githubViewerLogin,
-      items: pages.flatMap((page) => page ?? [])
+      items,
+      skipMeByItemKey: new Map(
+        items.map(
+          (item) =>
+            [
+              taskPageGitHubItemKey(item.repoId, item.id),
+              shouldSkipLocalViewerQualifiers(
+                getTaskPageRepoSourceContext(model.repoMap.get(item.repoId) ?? null, 'github')
+              )
+            ] as const
+        )
+      )
     })
-  }, [appliedTaskQuery, githubViewerLogin, githubWorkItemMutationQueryKey, pages])
+  }, [mutationQuery, githubViewerLogin, githubWorkItemMutationQueryKey, pages, model.repoMap])
   const observedQuietScopeRef = useRef({
     queryKey: '',
     dirtyGeneration: -1

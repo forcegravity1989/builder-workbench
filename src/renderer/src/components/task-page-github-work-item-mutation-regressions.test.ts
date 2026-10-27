@@ -19,6 +19,7 @@ import {
   reconcileTaskPagePagesAfterQuietRefresh,
   rebuildSoftHiddenFromItemsForTests
 } from './task-page-github-work-item-mutations'
+import { rebuildSoftHiddenKeysFromPendingAndSticky } from './task-page-github-work-item-mutation-composition'
 import {
   getLastConfirmedClientValue,
   getOrCreateQuietRevalidateState,
@@ -67,6 +68,37 @@ function item(overrides: Partial<GitHubWorkItem> = {}): GitHubWorkItem {
 afterEach(() => resetTaskPageGitHubMutationRegistryForTests())
 
 describe('TaskPage GitHub mutation regressions', () => {
+  it('does not reapply the local @me account after a remote mutation settles', () => {
+    const base = item({ state: 'closed', author: 'runtime-bob' })
+    const current = { ...query(), state: 'all' as const, author: '@me' }
+    const patchWorkItem = (): void => {}
+    setTaskPageGitHubMutationQueryKey('remote-mine')
+    const began = beginTaskPageGitHubWorkItemMutation({
+      item: base,
+      intent: { type: 'setState', state: 'open' },
+      query: current,
+      queryKey: 'remote-mine',
+      viewerLogin: 'local-alice',
+      skipMeQualifiers: true,
+      patchWorkItem
+    })
+    confirmTaskPageGitHubWorkItemMutation(began.key, began.generation, {
+      query: current,
+      queryKey: 'remote-mine',
+      viewerLogin: 'local-alice',
+      item: base,
+      patchWorkItem
+    })
+    const key = taskPageGitHubItemKey(base.repoId, base.id)
+    rebuildSoftHiddenKeysFromPendingAndSticky({
+      query: current,
+      queryKey: 'remote-mine',
+      viewerLogin: 'local-alice',
+      items: [base],
+      skipMeByItemKey: new Map([[key, true]])
+    })
+    expect(getTaskPageGitHubSoftHiddenItemKeys()).not.toContain(key)
+  })
   it('invalidates quiet responses after a query changes away and back', () => {
     const initial = { queryKey: 'q1', generation: 0 }
     const returned = advanceTaskPageQuietRevalidateScope(

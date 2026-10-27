@@ -18,6 +18,15 @@ export const CodeHubListTasks = Repo.extend({
   kind: Kind,
   state: z.enum(['opened', 'closed', 'merged', 'all']),
   limit: z.number().int().positive().optional(),
+  labels: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1)
+        .regex(/^[^,]+$/, 'CodeHub label names cannot contain commas')
+    )
+    .optional(),
   scope: z.enum(['created_by_me', 'assigned_to_me', 'need_my_review']).optional(),
   search: z.string().optional(),
   author: z.string().optional(),
@@ -37,6 +46,8 @@ export const CodeHubUpdateIssueLabels = Repo.extend({
 })
 // Project label names for the issue-detail picker (`project label list`).
 export const CodeHubListLabels = Repo
+export const CodeHubViewer = Repo
+export type CodeHubViewerIdentity = { id: number; username: string; name: string; state: string }
 export const CodeHubSetIssueState = Repo.extend({
   iid: Iid,
   state: z.enum(['open', 'closed']),
@@ -76,6 +87,7 @@ export const CODEHUB_REQUEST_SCHEMAS = {
   updateIssueTitle: CodeHubUpdateIssueTitle,
   updateIssueLabels: CodeHubUpdateIssueLabels,
   listLabels: CodeHubListLabels,
+  viewer: CodeHubViewer,
   setIssueState: CodeHubSetIssueState,
   closeMr: CodeHubCloseMr,
   assignIssue: CodeHubAssignIssue,
@@ -100,6 +112,7 @@ export type CodeHubApi = {
   updateIssueTitle: (args: z.infer<typeof CodeHubUpdateIssueTitle>) => Promise<void>
   updateIssueLabels: (args: z.infer<typeof CodeHubUpdateIssueLabels>) => Promise<void>
   listLabels: (args: z.infer<typeof CodeHubListLabels>) => Promise<string[]>
+  viewer: (args: z.infer<typeof CodeHubViewer>) => Promise<CodeHubViewerIdentity>
   setIssueState: (args: z.infer<typeof CodeHubSetIssueState>) => Promise<void>
   closeMr: (args: z.infer<typeof CodeHubCloseMr>) => Promise<void>
   assignIssue: (args: z.infer<typeof CodeHubAssignIssue>) => Promise<void>

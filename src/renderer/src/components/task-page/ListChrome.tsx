@@ -1,3 +1,4 @@
+import { TaskPageScopeHeader } from '@/workbench/TaskScopePanel'
 import { useEffect } from 'react'
 import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
 import { cn } from '@/lib/utils'
@@ -47,6 +48,7 @@ export function TaskPageListChrome({
           {workbench ? null : <TaskPageGitHubModeControls model={model} />}
 
           <TaskPageProviderFilters model={model} />
+          <TaskPageScopeHeader model={model} />
         </div>
       </section>
     </div>

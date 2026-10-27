@@ -80,7 +80,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
       // G2 (BW)：范围视图的 Issue 按明确版本绑定解析——唯一 → 直开；多候选 →
       // 选择器（绝不取数组第一棵）；无 → Start。PR 行与无范围视图保持原生
       // 「首个未归档树」语义逐字不变。
-      if (model.workbenchScopeActive && item.type === 'issue') {
+      if (model.workbenchScope && item.type === 'issue') {
         const scoped = matchScopedTaskWorkspaces({
           scope: model.workbenchScope,
           worktrees,
@@ -133,7 +133,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
       }
       useAppStore.getState().recordFeatureInteraction('github-tasks')
     },
-    [handleUseWorkItem, model.workbenchScope, model.workbenchScopeActive, repoMap]
+    [handleUseWorkItem, model.workbenchScope, repoMap]
   )
   const openComposerForGitLabItem = useCallback(
     (item: GitLabWorkItem): void => {
@@ -212,7 +212,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
     (item: CodeHubTaskItem): void => {
       // G2 (BW)：范围视图的 CodeHub Issue 同样按明确绑定解析；无范围或 MR 行
       // 保持原生语义（直接进创建器）逐字不变。
-      if (model.workbenchScopeActive && item.type === 'issue') {
+      if (model.workbenchScope && item.type === 'issue') {
         const scoped = matchScopedTaskWorkspaces({
           scope: model.workbenchScope,
           worktrees: useAppStore.getState().allWorktrees(),
@@ -234,12 +234,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
       }
       openComposerForCodeHubItem(item)
     },
-    [
-      codeHubSourceContextFor,
-      model.workbenchScope,
-      model.workbenchScopeActive,
-      openComposerForCodeHubItem
-    ]
+    [codeHubSourceContextFor, model.workbenchScope, openComposerForCodeHubItem]
   )
   const nextModel = model as typeof model & {
     openComposerForItem: typeof openComposerForItem

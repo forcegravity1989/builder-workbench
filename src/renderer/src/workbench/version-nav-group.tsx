@@ -8,9 +8,8 @@ import type { VersionWorkflow } from '../../../shared/workbench/version-document
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
-import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import {
-  BoundTreeRow,
+  BoundTreeRows,
   GoalDirectoryRow,
   OverviewRow,
   TasksRow,
@@ -187,9 +186,7 @@ export function VersionNavGroup({
               />
             )
           })}
-          {ungroupedTrees.map((tree) => (
-            <BoundTreeRow key={getWorktreeHostIdentity(tree)} tree={tree} />
-          ))}
+          <BoundTreeRows trees={ungroupedTrees} sectionKey={`version:${entry.version}:ungrouped`} />
           {entry.goals.length === 0 && ungroupedTrees.length === 0 ? (
             <p className="px-1 py-0.5 text-[10.5px] text-worktree-sidebar-foreground/40">
               目标来自本版计划
