@@ -16,6 +16,8 @@ import { useProjectPage } from '../workbench/project-page-state'
 import { CycleWorkspaceProvider } from '../workbench/version-cycle/CycleWorkspaceProvider'
 import { useCycleWorkspace } from '../workbench/version-cycle/cycle-workspace-context'
 import { usePlanColumnResize } from '../workbench/use-plan-column-resize'
+import { useMetricsWorkspaceOpen } from '../workbench/metrics-workspace-open'
+import { useMetricsBandResize } from '../workbench/use-metrics-band-resize'
 
 const Landing = lazy(() => import('../components/Landing'))
 const WorktreeCreationPanel = lazy(
@@ -40,6 +42,11 @@ const KnowledgePage = lazy(() =>
 )
 const CycleWorkspacePage = lazy(() =>
   import('../workbench/CycleWorkspacePage').then((m) => ({ default: m.CycleWorkspacePage }))
+)
+const MetricsWorkspaceBoard = lazy(() =>
+  import('../workbench/metrics-workspace-board').then((m) => ({
+    default: m.MetricsWorkspaceBoard
+  }))
 )
 const ProjectWallPage = lazy(() =>
   import('../workbench/ProjectWallPage').then((m) => ({ default: m.ProjectWallPage }))
@@ -153,6 +160,9 @@ function AppWorkspaceContent(props: {
 }): React.JSX.Element {
   const { layout, floatingWorkspace } = props
   const cycle = useCycleWorkspace()
+  const metricsBoard = useMetricsWorkspaceOpen()
+  const metricsOnly = metricsBoard && !cycle
+  const band = useMetricsBandResize()
   const resize = usePlanColumnResize(Boolean(cycle?.context.worktreeId))
   const titlebarLeftControls = <TitlebarLeftControls layout={layout} />
   const titlebarMainStrip = <TitlebarMainStrip layout={layout} />
@@ -236,16 +246,19 @@ function AppWorkspaceContent(props: {
                     {layout.showRightSidebarControls ? <RightSidebarToggle /> : null}
                   </div>
                 )}
-                <div className="flex flex-1 min-w-0 min-h-0" ref={resize.bodyRef}>
+                <div
+                  className={`flex flex-1 min-w-0 min-h-0${metricsOnly ? ' flex-col' : ''}`}
+                  ref={resize.bodyRef}
+                >
                   <div
                     className="relative flex min-w-0 min-h-0 flex-col"
-                    ref={resize.chatColRef}
+                    ref={metricsOnly ? undefined : resize.chatColRef}
                     style={
-                      !cycle
-                        ? { flex: 1, width: '100%' }
-                        : !cycle.context.worktreeId
-                          ? { display: 'none' }
-                          : undefined
+                      cycle
+                        ? cycle.context.worktreeId
+                          ? undefined
+                          : { display: 'none' }
+                        : { flex: 1, width: metricsOnly ? 'auto' : '100%', minWidth: 0 }
                     }
                   >
                     {/* Why: the collapsed 36px rail's own content is unusable, so the whole
@@ -282,7 +295,7 @@ function AppWorkspaceContent(props: {
                               'Terminal, browser, or editor rendering failed in this workspace. Retry to remount it.'
                             )}
                           >
-                            <Terminal reserveClosedExplorerToggleSpace={!cycle} />
+                            <Terminal reserveClosedExplorerToggleSpace={!cycle && !metricsBoard} />
                           </RecoverableRenderErrorBoundary>
                         </Suspense>
                       </TerminalWorkbenchContainer>
@@ -302,12 +315,12 @@ function AppWorkspaceContent(props: {
                       </RecoverableRenderErrorBoundary>
                     </Suspense>
                   </div>
-                  {cycle && (
+                  {(cycle || metricsBoard) && (
                     <>
                       {/* Why: the divider only resizes an expanded session column. While the column is collapsed
                           there is nothing to resize, and a dead col-resize strip reads as broken drag affordance
                           (round-9 decision 2026-10-22: hide it; expanding stays on the board header chip). */}
-                      {!resize.chatCollapsed && (
+                      {cycle && !resize.chatCollapsed && (
                         <div
                           className="vc-split"
                           role="separator"
@@ -319,13 +332,25 @@ function AppWorkspaceContent(props: {
                           onMouseDown={resize.onResizeStart}
                         />
                       )}
+                      {metricsOnly && (
+                        <div
+                          className="vc-split vc-split-row"
+                          role="separator"
+                          aria-orientation="horizontal"
+                          aria-label="调整上下栏高度"
+                          onMouseDown={band.onResizeStart}
+                        />
+                      )}
                       <Suspense fallback={null}>
                         <div
                           className={`vc-board-slot${
                             layout.workspaceChromeActive ? ' vc-board-slot-terminal' : ''
-                          }`}
+                          }${metricsOnly ? ' vc-metrics-preview' : ''}`}
+                          style={
+                            metricsOnly ? { height: `calc(${band.ratio * 100}% - 6px)` } : undefined
+                          }
                         >
-                          {layout.workspaceChromeActive ? (
+                          {layout.workspaceChromeActive && !metricsOnly ? (
                             <div className="vc-board-titlebar">
                               {/* Both boards keep collapse/expand in their page-header chips (G3); the titlebar is a plain drag band. */}
                               {/* Why: the closed-sidebar reopen toggle and window controls float above this drag band as z-index siblings; Electron drag hit-test respects no-drag only on DOM descendants, so this carve-out keeps them clickable. Mirrors the TabGroupPanel spacer. */}
@@ -334,7 +359,7 @@ function AppWorkspaceContent(props: {
                               ) : null}
                             </div>
                           ) : null}
-                          <CycleWorkspacePage />
+                          {cycle ? <CycleWorkspacePage /> : <MetricsWorkspaceBoard />}
                         </div>
                       </Suspense>
                     </>

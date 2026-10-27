@@ -25,8 +25,10 @@ export function useOverviewMetricCollection(args: {
   baseWorktreeId: string | null
   identity: string
   granularity: ZoneGranularity
+  /** Re-read the maintenance worktree file while this view stays open. */
+  watch?: boolean
 }) {
-  const { baseScope, baseWorktreeId, identity, granularity } = args
+  const { baseScope, baseWorktreeId, identity, granularity, watch = false } = args
   const key = JSON.stringify([identity, baseWorktreeId])
   const entry = useMemo(() => cache(key), [key])
   const snapshot = useSnapshotCache(entry)
@@ -42,8 +44,9 @@ export function useOverviewMetricCollection(args: {
       if (!baseScope || !baseWorktreeId || entry.pending) {
         return
       }
-      // Returning to the overview re-reads the committed catalog. Readings stay
-      // when that commit has not moved; an uncommitted edit never reaches here.
+      // Returning to the overview re-reads the catalog, including an unsaved
+      // file in the metrics maintenance worktree. A new commit reloads
+      // readings; a draft-only edit updates the board and leaves readings.
       if (mode === 'initial' && entry.read().loaded) {
         const scope = {
           repoId: baseScope.repoId,
@@ -60,6 +63,12 @@ export function useOverviewMetricCollection(args: {
               handedOff = true
               entry.pending = null
               load('reload')
+            } else if ((catalog.draft ?? null) !== (current?.draft ?? null)) {
+              entry.publish({
+                ...entry.read(),
+                catalog,
+                problems: catalog.problems.map(metricProblemText)
+              })
             }
           } catch (error) {
             entry.publish({ ...entry.read(), problems: [`指标读取失败：${String(error)}`] })
@@ -127,6 +136,43 @@ export function useOverviewMetricCollection(args: {
   useEffect(() => {
     load()
   }, [load])
+  useEffect(() => {
+    if (!watch || !baseScope || !baseWorktreeId) {
+      return
+    }
+    const scope = {
+      repoId: baseScope.repoId,
+      worktreeId: baseWorktreeId,
+      hostId: baseScope.hostId
+    }
+    const owner = baseScope.runtimeOwnerEnvironmentId
+    const tick = () => {
+      if (entry.pending || !entry.read().loaded) {
+        return
+      }
+      void nativeMetricsPort(owner)
+        .list(scope)
+        .then((catalog) => {
+          const current = entry.read().catalog
+          if (catalog.configurationCommit !== current?.configurationCommit) {
+            load('reload')
+            return
+          }
+          if ((catalog.draft ?? null) !== (current?.draft ?? null)) {
+            entry.publish({
+              ...entry.read(),
+              catalog,
+              problems: catalog.problems.map(metricProblemText)
+            })
+          }
+        })
+        .catch(() => {
+          // The board keeps the last catalog; the next tick tries again.
+        })
+    }
+    const timer = window.setInterval(tick, 2000)
+    return () => window.clearInterval(timer)
+  }, [watch, baseScope, baseWorktreeId, entry, load])
   const reading = snapshot.readings[granularity]
   return {
     ...snapshot,

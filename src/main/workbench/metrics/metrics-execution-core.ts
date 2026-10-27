@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import { posix, win32 } from 'node:path'
 import { gitExecFileAsync } from '../../git/runner'
 import { readGitBlobAtOidPath } from '../../git/source-control/git-blob-read'
@@ -58,6 +58,12 @@ export type MetricConfigurationSnapshot = {
   /** Trunk baseline head at read time — the real data target, never the checkout. */
   dataCommit: string
   toml: string | null
+  /**
+   * Hash of the maintenance worktree file when the scoreboard is showing that
+   * uncommitted text. Null when the catalog is exactly the resolved commit.
+   * Readings never use this text; collection keeps the commit.
+   */
+  draft: string | null
   /** IANA timezone of the host that executed the read. */
   timezone: string
 }
@@ -69,6 +75,18 @@ async function revParse(exec: ReturnType<typeof repoExec>, ref: string): Promise
   } catch {
     return null
   }
+}
+
+async function maintenanceWorktreePath(exec: ReturnType<typeof repoExec>): Promise<string | null> {
+  const { stdout } = await exec(['worktree', 'list', '--porcelain'])
+  for (const block of stdout.split('\n\n')) {
+    const path = /^worktree (.*)$/m.exec(block)?.[1]
+    const branch = /^branch (.*)$/m.exec(block)?.[1]
+    if (path && branch === `refs/heads/${METRICS_MAINTENANCE_BRANCH}`) {
+      return path
+    }
+  }
+  return null
 }
 
 async function isAncestor(
@@ -103,17 +121,9 @@ export async function catchUpMetricsMaintenance(input: {
   ) {
     return
   }
-  let worktreePath: string | null = null
+  let worktreePath: string | null
   try {
-    const { stdout } = await exec(['worktree', 'list', '--porcelain'])
-    const blocks = stdout.split('\n\n')
-    for (const block of blocks) {
-      const path = /^worktree (.*)$/m.exec(block)?.[1]
-      const branch = /^branch (.*)$/m.exec(block)?.[1]
-      if (path && branch === `refs/heads/${METRICS_MAINTENANCE_BRANCH}`) {
-        worktreePath = path
-      }
-    }
+    worktreePath = await maintenanceWorktreePath(exec)
   } catch {
     return
   }
@@ -135,13 +145,17 @@ export async function catchUpMetricsMaintenance(input: {
 /**
  * Reads .bw/metrics.toml from a fixed revision. No fetch. Without an explicit
  * configurationCommit, a maintenance commit that already contains the trunk
- * baseline supplies the catalog; otherwise the trunk head does. The working
- * tree is never the source, so an uncommitted edit cannot become a reading.
+ * baseline supplies the catalog; otherwise the trunk head does. Collection
+ * always passes that commit and ignores the worktree. The scoreboard preview
+ * additionally reads the maintenance worktree file, so an unsaved edit shows
+ * up there and is marked as a draft instead of becoming a reading.
  */
 export async function readMetricConfiguration(input: {
   repoPath: string
   pinnedRef: string | null
   configurationCommit?: string
+  /** Scoreboard only: show the maintenance worktree file when it differs. */
+  previewMaintenanceWorktree?: boolean
   execOptions?: MetricsExecOptions
 }): Promise<MetricConfigurationSnapshot> {
   const { repoPath, execOptions = {} } = input
@@ -169,13 +183,39 @@ export async function readMetricConfiguration(input: {
   if (blob.failed) {
     throw new MetricCollectorError('configuration-unreadable', '指标配置读取失败，来源未给出答案')
   }
+  // A binary metrics.toml is a broken configuration, not an absent one; the
+  // decoder reports it as unparseable instead of "not configured".
+  let toml = blob.exists ? (blob.isBinary ? '' : blob.content) : null
+  let draft: string | null = null
+  if (input.previewMaintenanceWorktree && !input.configurationCommit) {
+    let worktreePath: string | null = null
+    try {
+      worktreePath = await maintenanceWorktreePath(exec)
+    } catch {
+      worktreePath = null
+    }
+    if (worktreePath) {
+      try {
+        const file = await readFile(
+          pathOpsFor(repoPath).join(worktreePath, '.bw', 'metrics.toml'),
+          'utf8'
+        )
+        if (file !== (toml ?? '')) {
+          toml = file
+          draft = createHash('sha256').update(file).digest('hex')
+          configurationRef = METRICS_MAINTENANCE_BRANCH
+        }
+      } catch {
+        // No readable file in the worktree: keep the committed catalog.
+      }
+    }
+  }
   return {
     configurationRef,
     configurationCommit,
     dataCommit: baseline.commit,
-    // A binary metrics.toml is a broken configuration, not an absent one; the
-    // decoder reports it as unparseable instead of "not configured".
-    toml: blob.exists ? (blob.isBinary ? '' : blob.content) : null,
+    toml,
+    draft,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
   }
 }

@@ -300,6 +300,7 @@ export function OverviewPage(): React.JSX.Element {
           version={version}
           setupBusy={metricsSetup.busy || !baseScope}
           onSetup={() => void metricsSetup.prepareMetrics()}
+          worktreeId={baseWorktreeId}
         />
 
         <OverviewVersionMinutes

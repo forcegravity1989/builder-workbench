@@ -77,6 +77,8 @@ export type MetricCatalog = {
   scope: MetricScope
   configurationCommit: string
   configurationRef: string
+  /** Hash of the unsaved maintenance-worktree file the scoreboard is showing. */
+  draft: string | null
   timezone: string
   features: MetricFeature[]
   definitions: MetricDefinition[]

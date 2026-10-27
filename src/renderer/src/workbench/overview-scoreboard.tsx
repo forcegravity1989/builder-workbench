@@ -1,185 +1,32 @@
 import { MessageSquarePlus } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState, type MouseEvent } from 'react'
+import { AnnotationMarkers } from './annotations/annotation-markers'
+import { AnnotationPanel } from './annotations/AnnotationPanel'
+import { AnnotationPopover } from './annotations/AnnotationPopover'
+import {
+  boardAnnotationsSendPrompt,
+  formatBoardAnnotationsAsMarkdown
+} from './annotations/annotation-markdown'
+import { annotationAttributes, annotationRefFromElement } from './annotations/types'
+import { useBoardAnnotations } from './annotations/use-board-annotations'
+import { BoardActionButton } from './board-ui'
 import { OverviewRefresh } from './overview-controls'
 import { useOverviewViewState } from './overview-view-state'
-import type {
-  MetricCatalog,
-  MetricDefinition,
-  MetricReading
-} from '../../../shared/workbench/metrics'
+import type { MetricCatalog, MetricReading } from '../../../shared/workbench/metrics'
 import type { PlanningMaterial } from '../../../shared/workbench/version-planning-material'
+import { buildScoreboardScenes, type ScoreboardScene } from './overview-scoreboard-model'
+import { zoneBucketLabels, zoneChartRange } from './overview-zone-series'
 import {
-  buildScoreboardScenes,
-  targetVerdict,
-  type ScoreboardScene,
-  type TargetVerdict
-} from './overview-scoreboard-model'
-import { zoneBucketLabels, zoneChartRange, zonePointState } from './overview-zone-series'
+  Measure,
+  measureView,
+  metricNote,
+  scoreboardVerdict,
+  VERDICT_TEXT
+} from './scoreboard-measure'
+import { sendScoreboardNotes } from './send-scoreboard-notes'
 
 /** 记分牌走势固定为周窗口。 */
 export const SCOREBOARD_GRANULARITY = 'week' as const
-
-const VERDICT_TEXT: Record<'met' | 'unmet' | 'unknown', string> = {
-  met: '已达完成线',
-  unmet: '未达完成线',
-  unknown: '看不出输赢'
-}
-
-type MeasureView = {
-  valueText: string
-  unknown: boolean
-  statusText: string
-  values: (number | null)[]
-  latestNumber: number | null
-}
-
-function collectedText(iso: string, timezone: string): string {
-  const at = new Date(iso)
-  if (Number.isNaN(at.getTime())) {
-    return iso
-  }
-  return new Intl.DateTimeFormat('zh-CN', {
-    timeZone: timezone,
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  }).format(at)
-}
-
-function measureView(
-  def: MetricDefinition,
-  readings: Record<string, MetricReading | null>,
-  labels: string[],
-  range: ReturnType<typeof zoneChartRange>,
-  timezone: string,
-  busy: boolean
-): MeasureView {
-  const state = zonePointState(readings[def.ref.definitionHash] ?? null, labels, range, timezone)
-  if (state.kind === 'ready' && state.latest) {
-    const { value, collectedAt } = state.latest
-    return {
-      valueText: typeof value === 'number' ? `${value}${def.unit}` : value,
-      unknown: false,
-      statusText: `采集于 ${collectedText(collectedAt, timezone)}`,
-      values: state.values,
-      latestNumber: typeof value === 'number' ? value : null
-    }
-  }
-  return {
-    valueText: busy && state.kind !== 'ready' ? '读取中' : '未知',
-    unknown: true,
-    statusText:
-      busy && state.kind !== 'ready'
-        ? '正在读取…'
-        : state.kind === 'unknown'
-          ? state.stale
-            ? `${state.message} · 陈旧读数 ${state.stale.value}（采集于 ${collectedText(state.stale.collectedAt, timezone)}）`
-            : state.message
-          : state.kind === 'unread'
-            ? '未读取'
-            : '本窗口无读数',
-    values: state.kind === 'ready' ? state.values : labels.map(() => null),
-    latestNumber: null
-  }
-}
-
-function verdictOf(def: MetricDefinition, target: string, view: MeasureView): TargetVerdict {
-  return view.latestNumber === null ? null : targetVerdict(target, view.latestNumber, def.unit)
-}
-
-function shortLabel(label: string): string {
-  return label.replace(/^\d{4}-/, '')
-}
-
-function Trend({
-  name,
-  labels,
-  values
-}: {
-  name: string
-  labels: string[]
-  values: (number | null)[]
-}) {
-  const max = Math.max(...values.map((value) => Math.abs(value ?? 0)), 0)
-  return (
-    <div className="wb-sb-trend" aria-label={`${name} 走势`}>
-      {values.map((value, index) => (
-        <div
-          key={labels[index]}
-          className={[
-            'wb-sb-bar',
-            index === values.length - 1 && 'wb-sb-bar-now',
-            value === null && 'wb-sb-bar-none'
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          title={`${labels[index]}：${value ?? '无读数'}`}
-        >
-          <i
-            style={{
-              height: value === null || max === 0 ? 4 : Math.max(4, (Math.abs(value) / max) * 44)
-            }}
-          />
-          <span>{shortLabel(labels[index])}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function Measure({
-  role,
-  def,
-  target,
-  view,
-  labels
-}: {
-  role: '结果' | '引领'
-  def: MetricDefinition | null
-  target: string | undefined
-  view: MeasureView | null
-  labels: string[]
-}) {
-  if (!def || !view) {
-    return (
-      <div className="wb-sb-measure wb-sb-measure-empty">
-        <div className="wb-sb-role">{role}</div>
-        <div className="wb-sb-name wb-muted">还没有{role}指标</div>
-        <p className="wb-sb-def">
-          用「配置指标」新建会话，给这个场景配一条可按周采集的{role}指标。
-        </p>
-      </div>
-    )
-  }
-  const verdict = target ? verdictOf(def, target, view) : null
-  return (
-    <div className="wb-sb-measure">
-      <div className="wb-sb-main">
-        <div className="wb-sb-role">{role}</div>
-        <div className="wb-sb-name">{def.name}</div>
-        <div className={view.unknown ? 'wb-sb-num wb-sb-num-unknown' : 'wb-sb-num'}>
-          {view.valueText}
-        </div>
-        <div className="wb-sb-status">
-          {target ? (
-            <>
-              <i className={`wb-sb-dot wb-sb-dot-${verdict ?? 'unknown'}`} aria-hidden="true" />
-              <span>{VERDICT_TEXT[verdict ?? 'unknown']}</span>
-              <span className="wb-muted">· 完成线 {target}</span>
-            </>
-          ) : (
-            <span className="wb-muted">{view.statusText}</span>
-          )}
-        </div>
-        {target && <div className="wb-sb-status wb-muted">{view.statusText}</div>}
-      </div>
-      <Trend name={def.name} labels={labels} values={view.values} />
-      <p className="wb-sb-def">{def.def}</p>
-    </div>
-  )
-}
 
 function goalLine(scene: ScoreboardScene, plan: PlanningMaterial | null, version: string | null) {
   if (!scene.focus) {
@@ -204,7 +51,8 @@ export function OverviewScoreboard({
   plan,
   version,
   setupBusy,
-  onSetup
+  onSetup,
+  worktreeId
 }: {
   catalog: MetricCatalog | null
   readings: Record<string, MetricReading | null>
@@ -216,7 +64,10 @@ export function OverviewScoreboard({
   version: string | null
   setupBusy: boolean
   onSetup(): void
+  worktreeId: string | null
 }) {
+  const notes = useBoardAnnotations(`scoreboard:${identity}:${version ?? ''}`)
+  const [noteNotice, setNoteNotice] = useState<string | null>(null)
   const scenes = useMemo(() => buildScoreboardScenes(catalog, plan), [catalog, plan])
   const [view, setView] = useOverviewViewState(identity)
   const active = scenes.find((scene) => scene.name === view.feature) ?? scenes[0]
@@ -240,12 +91,35 @@ export function OverviewScoreboard({
       return null
     }
     const measured = measureView(def, readings, labels, range, timezone, busy)
-    return verdictOf(def, focus.target, measured) ?? 'unknown'
+    return scoreboardVerdict(def, focus.target, measured)
   }
   const focused = scenes.filter((scene) => scene.focus)
   const daily = scenes.filter((scene) => !scene.focus)
   const activeViews = active ? views(active) : null
   const line = active ? goalLine(active, plan, version) : null
+
+  const onNotesClick = (event: MouseEvent) => {
+    if (!notes.annotating) {
+      return
+    }
+    const target = event.target as Element | null
+    if (target?.closest('.g3-annot-marker')) {
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    const element = target?.closest('[data-annotate-kind]')
+    const ref = element ? annotationRefFromElement(element) : null
+    if (element && ref) {
+      notes.openPopover(ref, element.getBoundingClientRect())
+    } else {
+      notes.closePopover()
+    }
+  }
+  const goalNote = active
+    ? { kind: 'goal-title' as const, goalId: active.name, label: `${active.name} · 目标` }
+    : null
+  const popover = notes.popover
 
   const tab = (scene: ScoreboardScene) => {
     const verdict = tabVerdict(scene)
@@ -270,10 +144,29 @@ export function OverviewScoreboard({
   }
 
   return (
-    <section className="card wb-ov-section" id="scoreboard" aria-label="记分牌">
+    <section
+      className={`card wb-ov-section${notes.annotating ? ' annotating' : ''}`}
+      id="scoreboard"
+      aria-label="记分牌"
+    >
       <header className="wb-ov-section-head">
         <h2>记分牌</h2>
         <div className="wb-ov-tools">
+          <BoardActionButton
+            className={`wb-sb-annot-entry${notes.annotating ? ' wb-sb-annot-on' : ''}`}
+            aria-pressed={notes.annotating}
+            title={
+              notes.annotating
+                ? '退出批注模式（Esc 同样退出）'
+                : '批注模式：点击目标或指标，记下要改的口径'
+            }
+            onClick={notes.toggleMode}
+          >
+            <MessageSquarePlus size={14} aria-hidden="true" /> 批注
+            {notes.annotations.length > 0 && (
+              <span className="wb-sb-annot-count">{notes.annotations.length}</span>
+            )}
+          </BoardActionButton>
           <button
             type="button"
             className="wb-btn wb-btn-secondary wb-btn-sm"
@@ -286,6 +179,21 @@ export function OverviewScoreboard({
           <OverviewRefresh label="刷新记分牌读数" busy={busy} onClick={onRefresh} />
         </div>
       </header>
+      {noteNotice && (
+        <p className="wb-sb-annot-notice" role="status">
+          {noteNotice}
+        </p>
+      )}
+      {notes.annotating && (
+        <p className="wb-sb-annot-notice" role="status">
+          批注模式中，点击目标或指标即可记下讨论 · Esc 退出
+        </p>
+      )}
+      {catalog?.draft && (
+        <p className="wb-sb-annot-notice" role="status">
+          正在显示配置草稿。场景和口径已按配置工作区里的文件更新；读数仍是已提交目录的，提交后再刷新。
+        </p>
+      )}
       {scenes.length === 0 ? (
         <p className="wb-sb-empty wb-muted">
           {catalog ? '还没有场景和指标，点「配置指标」新建会话来配置。' : '指标目录未就绪'}
@@ -302,12 +210,19 @@ export function OverviewScoreboard({
             {daily.map(tab)}
           </nav>
           {active && activeViews && (
-            <div className="wb-sb-body">
-              <div className="wb-sb-goal">
+            <div className="wb-sb-body" onClickCapture={onNotesClick}>
+              <div className="wb-sb-goal" {...(goalNote ? annotationAttributes(goalNote) : {})}>
                 <span className="wb-sb-goal-k">目标</span>
                 <span className={line ? 'wb-sb-goal-t' : 'wb-sb-goal-t wb-muted'}>
                   {line ?? '日常盯防，不在本版聚焦'}
                 </span>
+                {goalNote && (
+                  <AnnotationMarkers
+                    numbers={notes.numbersFor({ kinds: ['goal-title'], goalId: goalNote.goalId })}
+                    label={goalNote.label}
+                    onOpenPanel={notes.openPanel}
+                  />
+                )}
               </div>
               <p className={active.value ? 'wb-sb-value' : 'wb-sb-value wb-muted'}>
                 {active.value || '价值说明未写'}
@@ -319,6 +234,16 @@ export function OverviewScoreboard({
                   target={active.lagging ? active.targets[active.lagging.name] : undefined}
                   view={activeViews.lagging}
                   labels={labels}
+                  note={active.lagging ? metricNote(active.name, active.lagging.name) : null}
+                  noteNumbers={
+                    active.lagging
+                      ? notes.numbersFor({
+                          kinds: ['metrics'],
+                          goalId: metricNote(active.name, active.lagging.name).goalId
+                        })
+                      : []
+                  }
+                  onOpenNotes={notes.openPanel}
                 />
                 <Measure
                   role={active.leading?.role === 'lagging' ? '结果' : '引领'}
@@ -326,6 +251,16 @@ export function OverviewScoreboard({
                   target={active.leading ? active.targets[active.leading.name] : undefined}
                   view={activeViews.leading}
                   labels={labels}
+                  note={active.leading ? metricNote(active.name, active.leading.name) : null}
+                  noteNumbers={
+                    active.leading
+                      ? notes.numbersFor({
+                          kinds: ['metrics'],
+                          goalId: metricNote(active.name, active.leading.name).goalId
+                        })
+                      : []
+                  }
+                  onOpenNotes={notes.openPanel}
                 />
               </div>
               {active.others.length > 0 && (
@@ -346,6 +281,48 @@ export function OverviewScoreboard({
             </span>
           </footer>
         </>
+      )}
+      {notes.panelOpen && (
+        <AnnotationPanel
+          annotations={notes.numbered}
+          annotating={notes.annotating}
+          worktreeId={worktreeId}
+          assistant="指标配置"
+          onClose={notes.closePanel}
+          onUpdate={notes.update}
+          onRemove={notes.remove}
+          onBoardLevel={(rect) => notes.openPopover({ kind: 'board', label: '记分牌' }, rect)}
+          onCopy={async () => {
+            await window.api.ui.writeClipboardText(
+              formatBoardAnnotationsAsMarkdown(notes.annotations)
+            )
+          }}
+          onCopyError={(message) => setNoteNotice(`复制批注失败：${message}`)}
+          onSendDirect={async () => {
+            const result = await sendScoreboardNotes(boardAnnotationsSendPrompt(notes.annotations))
+            if (!result.ok) {
+              setNoteNotice(result.message)
+              return false
+            }
+            return true
+          }}
+          onSent={() => {
+            const count = notes.annotations.length
+            notes.clearAll()
+            setNoteNotice(`批注已发送 · 已递交的 ${count} 条已从记分牌清空，可继续批注。`)
+          }}
+        />
+      )}
+      {popover && (
+        <AnnotationPopover
+          key={popover.id}
+          target={popover}
+          onSave={(text) => {
+            notes.add(popover.ref, text)
+            notes.closePopover()
+          }}
+          onCancel={notes.closePopover}
+        />
       )}
     </section>
   )

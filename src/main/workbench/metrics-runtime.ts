@@ -145,6 +145,7 @@ export function nativeMetricsHost(runtime: {
       const execOptions = resolveWorkbenchGitExecOptions(runtime, repo)
       const adoptedRef = repo.worktreeBaseRef?.trim() || null
       const host = parseExecutionHostId(target.hostId)
+      let snapshot: MetricConfigurationSnapshot
       if (host?.kind === 'local') {
         const probe = (await executeMetricsOperation(target, execOptions, {
           operation: 'configuration',
@@ -155,11 +156,18 @@ export function nativeMetricsHost(runtime: {
           baselineCommit: probe.dataCommit,
           execOptions
         })
+        snapshot = await readMetricConfiguration({
+          repoPath: target.repoPath,
+          execOptions,
+          pinnedRef: adoptedRef,
+          previewMaintenanceWorktree: true
+        })
+      } else {
+        snapshot = (await executeMetricsOperation(target, execOptions, {
+          operation: 'configuration',
+          request: { adoptedRef }
+        })) as MetricConfigurationSnapshot
       }
-      const snapshot = (await executeMetricsOperation(target, execOptions, {
-        operation: 'configuration',
-        request: { adoptedRef }
-      })) as MetricConfigurationSnapshot
       const { features, definitions, problems } = decodeMetricDefinitions(
         snapshot.toml,
         snapshot.configurationCommit
@@ -168,6 +176,7 @@ export function nativeMetricsHost(runtime: {
         scope,
         configurationCommit: snapshot.configurationCommit,
         configurationRef: snapshot.configurationRef,
+        draft: snapshot.draft ?? null,
         timezone: snapshot.timezone,
         features,
         definitions,
