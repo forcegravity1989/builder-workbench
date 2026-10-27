@@ -18,7 +18,7 @@
 
 1. 记录 `git status --short` 与 `git rev-parse HEAD`。
 2. 运行 `pnpm run build:win:workbench`。
-3. 核对三个产物：`dist/orca-windows-setup.exe`、`dist/orca-windows-setup.exe.blockmap`、`dist/latest.yml`。
+3. 核对三个产物：`dist/workbench-windows-setup.exe`、`dist/workbench-windows-setup.exe.blockmap`、`dist/latest.yml`。
 4. 汇报路径、大小、HEAD，以及尚未验证的项。
 
 出包结束时远端没有新标签，也没有新的 GitHub Release。

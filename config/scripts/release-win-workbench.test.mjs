@@ -109,7 +109,7 @@ describe('readManifestVersion', () => {
     const dir = makeTempDir()
     writeFileSync(
       join(dir, 'latest.yml'),
-      'version: 0.7.0\nfiles:\n  - url: orca-windows-setup.exe\n'
+      'version: 0.7.0\nfiles:\n  - url: workbench-windows-setup.exe\n'
     )
     expect(readManifestVersion(dir)).toBe('0.7.0')
     writeFileSync(join(dir, 'latest.yml'), "version: '0.7.0-rc.20261101.1'\n")
@@ -127,7 +127,7 @@ describe('readManifestVersion', () => {
 describe('buildGhReleaseCreateArgs', () => {
   const base = {
     tag: 'v0.6.0',
-    assetPaths: ['dist/orca-windows-setup.exe', 'dist/latest.yml'],
+    assetPaths: ['dist/workbench-windows-setup.exe', 'dist/latest.yml'],
     target: 'abc123',
     title: 'Workbench 0.6.0',
     notesFile: 'notes.md'
@@ -139,7 +139,7 @@ describe('buildGhReleaseCreateArgs', () => {
       'release',
       'create',
       'v0.6.0',
-      'dist/orca-windows-setup.exe',
+      'dist/workbench-windows-setup.exe',
       'dist/latest.yml',
       '--target',
       'abc123',
@@ -241,7 +241,7 @@ describe('runWorkbenchRelease guards (prepare mode)', () => {
     })
     expect(result.mode).toBe('prepare')
     expect(result.blockers).toEqual([])
-    expect(result.wouldRun).toContain('orca-windows-setup.exe')
+    expect(result.wouldRun).toContain('workbench-windows-setup.exe')
   })
 
   it('blocks when latest.yml carries a different version than the release tag', async () => {

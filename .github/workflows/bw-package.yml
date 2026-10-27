@@ -107,7 +107,7 @@ jobs:
         run: |
           set -euo pipefail
           ls -la dist/
-          gh release create "$TAG" dist/orca-windows-setup.exe \
+          gh release create "$TAG" dist/workbench-windows-setup.exe \
             --title "Workbench $VERSION" \
             --notes "Workbench Windows x64 installer built from ${GITHUB_REF_NAME} @ $GITHUB_SHA." \
             --prerelease

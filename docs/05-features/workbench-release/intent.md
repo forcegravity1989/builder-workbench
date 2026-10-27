@@ -18,7 +18,7 @@ BW 仓的开发者需要一份可安装的 Windows Workbench，并在人明确�
 
 ## 目标体验
 
-开发者在仓根说「出包」。技能运行 `pnpm run build:win:workbench`，成功后核对 `dist/orca-windows-setup.exe`、同名 `.blockmap` 和 `dist/latest.yml`，汇报路径、大小和当前 HEAD。这一步不打标签、不建 Release。
+开发者在仓根说「出包」。技能运行 `pnpm run build:win:workbench`，成功后核对 `dist/workbench-windows-setup.exe`、同名 `.blockmap` 和 `dist/latest.yml`，汇报路径、大小和当前 HEAD。这一步不打标签、不建 Release。
 
 开发者另行明确「发版本」并给出或确认标签后，技能确认目标提交已推到远端、标签尚未占用，再触发发布，然后用 `gh release view` 读回地址和三个资产。发布的机械步骤（版本→tag→出包→上传→建 Release→读回）由 `.github/workflows/bw-release.yml` 在 GitHub runner 上承接（本地脚本为兜底）：授权后触发，正文经 `notes` 输入原样带入，workflow 不自动拼正文。
 
