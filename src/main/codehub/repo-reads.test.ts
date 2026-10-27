@@ -8,7 +8,7 @@ vi.mock('./cli', () => ({
   runCodeHubCli: runCodeHubCliMock
 }))
 
-import { fetchCodeHubRepoFileRaw, viewCodeHubProject } from './repo-reads'
+import { fetchCodeHubRepoFileRaw, listCodeHubProjectLabels, viewCodeHubProject } from './repo-reads'
 
 const remote = { host: 'codehub-g.huawei.com', project: 'Org/Group/repo' }
 
@@ -108,5 +108,40 @@ describe('fetchCodeHubRepoFileRaw', () => {
       ref: '"master"'
     })
     expect(read).toEqual({ kind: 'ref-missing' })
+  })
+})
+
+describe('listCodeHubProjectLabels', () => {
+  beforeEach(() => {
+    runCodeHubCliMock.mockReset()
+  })
+
+  it('lists label names with an explicit pagination cap', async () => {
+    // CLI 的 --limit 默认 10 且不翻页;不给足上限,标签多的项目下拉缺项。
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify([
+        { name: 'Bug', color: '#CC0033' },
+        { name: '  weekly-2026w44  ' },
+        { notName: true }
+      ])
+    )
+    const names = await listCodeHubProjectLabels({ remote })
+    expect(runCodeHubCliMock).toHaveBeenCalledWith(
+      [
+        'project',
+        'label',
+        'list',
+        '-p',
+        'Org/Group/repo',
+        '-H',
+        'codehub-g.huawei.com',
+        '-f',
+        'json',
+        '--limit',
+        '100'
+      ],
+      undefined
+    )
+    expect(names).toEqual(['Bug', 'weekly-2026w44'])
   })
 })

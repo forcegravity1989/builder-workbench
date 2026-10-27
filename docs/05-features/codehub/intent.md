@@ -18,14 +18,14 @@
 
 ## 目标体验
 
-选中的仓库远程都是 CodeHub，且 `codehub-cli` 已安装时，打开任务页就落在 CodeHub。工具条与 GitHub 任务页同一行：Issues / MRs、项目、开放 / 我的、MR 另有待评审、筛选、搜索、新建、刷新。点一行看详情，可以评论；Issue 能改标题，按完成、不计划或重复关闭，也可以重新打开；MR 可以关闭。MR 详情能看检查项与文件变更，样式与 GitHub 项目一致；检查项读 `mr gate`，文件变更读 `mr changes`，不引入 cloudbuild-cli。
+选中的仓库远程都是 CodeHub，且 `codehub-cli` 已安装时，打开任务页就落在 CodeHub。工具条与 GitHub 任务页同一行：Issues / MRs、项目、开放 / 我的、MR 另有待评审、筛选、搜索、新建、刷新。点一行看详情，可以评论；Issue 能改标题，按完成、不计划或重复关闭，也可以重新打开；MR 可以关闭。MR 详情能看检查项与文件变更，样式与 GitHub 项目一致，文件变更页可对行评论；检查项读 `mr gate`，文件变更读 `mr changes`，不引入 cloudbuild-cli。
 
 计划或验收里关联的 CodeHub 任务，按 CodeHub 项目路径读回并打开详情。归档状态若无法从 CodeHub 读到合入提交，显示未知，原因是「CodeHub 合入证据暂无法读回，归档状态保持不可证明」。开始验收时，主干基线上 `.bw/planning/<版本>/data.json` 存在，就可以把该目录里的当前计划当作原承诺。
 
 ## 范围与边界
 
 - **做**：CodeHub 作为与 GitHub、GitLab 并列的任务来源；任务列表、详情和已实现的写操作；计划 / 验收对 CodeHub 任务的读回和打开；CodeHub 远端的归档状态保持未知；验收版本列表改为读取主干基线上的计划目录（这条规则对所有平台生效，行为正文在[验收规格](../version-acceptance/spec.md)，本特性负责 CodeHub 上为什么必须如此）。
-- **范围外**：把 CodeHub 收成 GitHub Enterprise 或 GitLab；探测 CodeHub 登录；草稿 MR 与 Mark ready；评论表情、已读、修改评论正文；发明一条 CodeHub 合入提交的读回通道。
+- **范围外**：把 CodeHub 收成 GitHub Enterprise 或 GitLab；草稿 MR 与 Mark ready；评论表情、已读、修改评论正文；发明一条 CodeHub 合入提交的读回通道。
 - **相邻**：版本计划、版本验收、总览指标各自的规格已写下侧栏项目列表和「配置指标进入会话」。那些句子属于原特性，这里不重写。
 
 ## 成功判据与待决问题

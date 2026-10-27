@@ -31,6 +31,33 @@ import { formatRelativeTime } from '../../task-page-source-context'
 import type { Worktree } from '../../../../../shared/worktree/types'
 
 const NO_WORKTREES: readonly Worktree[] = []
+
+function CopyLinkButton({
+  url,
+  copied,
+  setCopied
+}: {
+  url: string
+  copied: boolean
+  setCopied: (copied: boolean) => void
+}): React.JSX.Element {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label={translate('auto.components.GitHubItemDialog.c43fe79ee0', 'Copy GitHub link')}
+      onClick={() => {
+        void navigator.clipboard.writeText(url).then(() => {
+          setCopied(true)
+          window.setTimeout(() => setCopied(false), 1200)
+        })
+      }}
+    >
+      {copied ? <Check className="size-4 text-emerald-500" /> : <Copy className="size-4" />}
+    </Button>
+  )
+}
 export function TaskPageCodeHubDetail({
   model
 }: {
@@ -59,6 +86,12 @@ export function TaskPageCodeHubDetail({
     titleDraft,
     setTitleDraft,
     savingTitle,
+    editingLabels,
+    setEditingLabels,
+    labelDraft,
+    setLabelDraft,
+    savingLabels,
+    saveLabels,
     stateBusy,
     title,
     closed,
@@ -108,27 +141,11 @@ export function TaskPageCodeHubDetail({
               ) : null}
               <span className="font-mono text-muted-foreground">#{item.iid}</span>
               <div className="ml-auto flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={translate(
-                    'auto.components.GitHubItemDialog.c43fe79ee0',
-                    'Copy GitHub link'
-                  )}
-                  onClick={() => {
-                    void navigator.clipboard.writeText(detail?.url || item.url).then(() => {
-                      setCopied(true)
-                      window.setTimeout(() => setCopied(false), 1200)
-                    })
-                  }}
-                >
-                  {copied ? (
-                    <Check className="size-4 text-emerald-500" />
-                  ) : (
-                    <Copy className="size-4" />
-                  )}
-                </Button>
+                <CopyLinkButton
+                  url={detail?.url || item.url}
+                  copied={copied}
+                  setCopied={setCopied}
+                />
                 <Button
                   variant="ghost"
                   size="icon-sm"
@@ -244,6 +261,14 @@ export function TaskPageCodeHubDetail({
               setIssueState={setIssueState}
               assignees={detail?.assignees?.length ? detail.assignees : item.assignees}
               labels={detail?.labels?.length ? detail.labels : (item.labels ?? [])}
+              repoPath={item.repoPath ?? null}
+              repoId={item.repoId}
+              editingLabels={editingLabels}
+              setEditingLabels={setEditingLabels}
+              labelDraft={labelDraft}
+              setLabelDraft={setLabelDraft}
+              savingLabels={savingLabels}
+              saveLabels={saveLabels}
               workspaceLabel={workspaceLabel}
             />
             {conversation}
@@ -315,27 +340,7 @@ export function TaskPageCodeHubDetail({
                 )}
                 <ArrowRight className="size-3.5" />
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={translate(
-                  'auto.components.GitHubItemDialog.c43fe79ee0',
-                  'Copy GitHub link'
-                )}
-                onClick={() => {
-                  void navigator.clipboard.writeText(detail?.url || item.url).then(() => {
-                    setCopied(true)
-                    window.setTimeout(() => setCopied(false), 1200)
-                  })
-                }}
-              >
-                {copied ? (
-                  <Check className="size-4 text-emerald-500" />
-                ) : (
-                  <Copy className="size-4" />
-                )}
-              </Button>
+              <CopyLinkButton url={detail?.url || item.url} copied={copied} setCopied={setCopied} />
               <Button
                 variant="ghost"
                 size="icon-sm"

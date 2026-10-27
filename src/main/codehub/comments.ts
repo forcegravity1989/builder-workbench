@@ -3,6 +3,24 @@ import type { CodeHubComment } from '../../shared/codehub-tasks'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 import { projectArgs, parseJson, loginOfDetail } from './mutations'
 
+function avatarUrlOf(value: unknown): string | null {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+  const url = (value as Record<string, unknown>).avatar_url
+  return typeof url === 'string' && url.trim() ? url.trim() : null
+}
+
+function noteLineOf(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+  if (typeof value === 'string' && value.trim() && Number.isFinite(Number(value))) {
+    return Number(value)
+  }
+  return null
+}
+
 function mapComment(
   value: unknown,
   discussionId: string | null,
@@ -12,22 +30,34 @@ function mapComment(
     return null
   }
   const record = value as Record<string, unknown>
-  if (record.system === true) {
-    // Activity records such as "changed this line" are not user comments.
-    return null
-  }
   const id = record.id ?? record.note_id ?? record.noteId
   if (id === undefined || id === null) {
     return null
   }
+  const author = record.author ?? record.user
+  // Line-anchored notes arrive in two shapes: some hosts fill the top-level
+  // file_path/line, others (szv-open) leave them null and tuck the anchor
+  // into the nested position object. Read the top-level first, then fall
+  // back to position, or inline cards never anchor on the latter hosts.
+  const position =
+    record.position && typeof record.position === 'object'
+      ? (record.position as Record<string, unknown>)
+      : null
+  const path = record.file_path ?? position?.new_path
   return {
     id: String(id),
     body: String(record.body ?? record.note ?? record.description ?? ''),
-    author: loginOfDetail(record.author ?? record.user),
+    author: loginOfDetail(author),
     createdAt: String(record.created_at ?? record.createdAt ?? ''),
     discussionId,
     individual,
-    isReply: record.is_reply === true
+    isReply: record.is_reply === true,
+    authorAvatarUrl: avatarUrlOf(author),
+    isBot: record.from_robot === true,
+    isResolved: record.resolved === true,
+    path: typeof path === 'string' && path.trim() ? path.trim() : null,
+    line: noteLineOf(record.line ?? position?.new_line),
+    isOutdated: record.is_outdated === true
   }
 }
 
@@ -94,6 +124,9 @@ export async function createCodeHubComment(args: {
   iid: number
   body: string
   discussionId?: string | null
+  path?: string | null
+  line?: number | null
+  startLine?: number | null
 }): Promise<void> {
   const command =
     args.kind === 'issue'
@@ -119,15 +152,41 @@ export async function createCodeHubComment(args: {
             args.body,
             ...projectArgs(args.remote)
           ]
-        : [
-            'mr',
-            'review',
-            'create',
-            String(args.iid),
-            '--body',
-            args.body,
-            ...projectArgs(args.remote)
-          ]
+        : args.path && args.line
+          ? [
+              'mr',
+              'review',
+              'create',
+              String(args.iid),
+              '--body',
+              args.body,
+              // --path + --line make the note a line-anchored DiffNote;
+              // --start-line covers a multi-line range. The CLI fetches the
+              // MR's diff_refs by itself, so no commit anchors are passed.
+              '--path',
+              args.path,
+              '--line',
+              String(args.line),
+              ...(args.startLine && args.startLine !== args.line
+                ? ['--start-line', String(args.startLine)]
+                : []),
+              // Line-level notes hit CodeHub's review API, whose
+              // note_required_attributes.severity is on: an empty value is
+              // rejected with CH.00406030. "suggestion" is the mildest
+              // level; the GitHub-parity card exposes no severity picker.
+              '--severity',
+              'suggestion',
+              ...projectArgs(args.remote)
+            ]
+          : [
+              'mr',
+              'review',
+              'create',
+              String(args.iid),
+              '--body',
+              args.body,
+              ...projectArgs(args.remote)
+            ]
   await runCodeHubCli(command, args.execOptions)
 }
 

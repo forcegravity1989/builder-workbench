@@ -24,6 +24,7 @@ import {
   CodeHubCreateIssue,
   CodeHubDeleteComment,
   CodeHubListComments,
+  CodeHubListLabels,
   CodeHubListPipelines,
   CodeHubListTasks,
   CodeHubMergeMr,
@@ -31,6 +32,7 @@ import {
   CodeHubMrChecks,
   CodeHubSetIssueState,
   CodeHubSetReviewers,
+  CodeHubUpdateIssueLabels,
   CodeHubUpdateIssueTitle,
   CodeHubViewTask
 } from '../codehub-api'
@@ -749,6 +751,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'codehub.createIssue': CodeHubCreateIssue,
   'codehub.deleteComment': CodeHubDeleteComment,
   'codehub.listComments': CodeHubListComments,
+  'codehub.listLabels': CodeHubListLabels,
   'codehub.listPipelines': CodeHubListPipelines,
   'codehub.listTasks': CodeHubListTasks,
   'codehub.mergeMr': CodeHubMergeMr,
@@ -756,6 +759,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'codehub.mrChecks': CodeHubMrChecks,
   'codehub.setIssueState': CodeHubSetIssueState,
   'codehub.setReviewers': CodeHubSetReviewers,
+  'codehub.updateIssueLabels': CodeHubUpdateIssueLabels,
   'codehub.updateIssueTitle': CodeHubUpdateIssueTitle,
   'codehub.viewTask': CodeHubViewTask,
   'computer.capabilities': ComputerCapabilitiesParams,

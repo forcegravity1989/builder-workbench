@@ -92,8 +92,6 @@ export type TaskPageUnresolvedSourceRepo = {
   repoId: string
   sourceKey: string
   label: string
-  /** True when the repo's git remote identifies a CodeHub project, so the missing GitHub source is expected, not an error. */
-  codehub: boolean
 }
 
 /**
@@ -105,9 +103,11 @@ export type TaskPageUnresolvedSourceRepo = {
  * are told apart purely by `sources`: present-but-both-null = unresolved (this
  * function), a non-null side = resolved (genuine zero), `null` = not yet fetched.
  *
- * Why: a CodeHub-remote repo has no GitHub source by definition; it lands here only
- * because the task source stayed on GitHub (e.g. CodeHub was hidden or unavailable).
- * Flag it so the banner can explain the real cause instead of blaming GitHub.
+ * Why: a CodeHub-remote repo never has a GitHub source by definition, so an empty
+ * result there is the expected state — not an unresolved source. Flagging it used
+ * to render a "CodeHub source unavailable" banner that misfired whenever the task
+ * source stayed pinned to GitHub (sidebar entry, mixed multi-host selection) even
+ * though CodeHub itself was visible and working, so such repos are skipped.
  */
 export function selectTaskPageUnresolvedSourceRepos(
   repos: readonly {
@@ -123,11 +123,13 @@ export function selectTaskPageUnresolvedSourceRepos(
   for (const repo of repos) {
     const state = stateByRepoId.get(repo.id)
     if (state?.sources && !state.sources.issues && !state.sources.prs && !state.error) {
+      if (isCodeHubGitRemote(repo.gitRemoteIdentity)) {
+        continue
+      }
       unresolved.push({
         repoId: repo.id,
         sourceKey: state.sourceKey,
-        label: repo.displayName ?? repo.path,
-        codehub: isCodeHubGitRemote(repo.gitRemoteIdentity)
+        label: repo.displayName ?? repo.path
       })
     }
   }

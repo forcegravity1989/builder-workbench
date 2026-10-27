@@ -77,6 +77,25 @@ export async function updateCodeHubIssueTitle(args: {
   )
 }
 
+export async function updateCodeHubIssueLabels(args: {
+  remote: CodeHubRemote
+  execOptions?: CodeHubExecOptions
+  iid: number
+  labels: string[]
+}): Promise<void> {
+  // `--labels` is replace-semantics: the CSV sent replaces the issue's full
+  // label set. An empty string counts as "flag not set" to the CLI (it then
+  // errors asking for an update field), so clearing the set sends a single
+  // space — the server trims it to an empty set (verified on szv-open,
+  // 2026-10-26).
+  const labels = [...new Set(args.labels.map((label) => label.trim()).filter(Boolean))]
+  const value = labels.length > 0 ? labels.join(',') : ' '
+  await runCodeHubCli(
+    ['issue', 'update', String(args.iid), '--labels', value, ...projectArgs(args.remote)],
+    args.execOptions
+  )
+}
+
 export async function closeCodeHubMr(args: {
   remote: CodeHubRemote
   execOptions?: CodeHubExecOptions

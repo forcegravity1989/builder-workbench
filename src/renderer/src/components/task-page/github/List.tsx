@@ -20,8 +20,6 @@ export function TaskPageGitHubList({
 }: {
   model: TaskPageComposerActionsModel
 }): React.JSX.Element | null {
-  const openSettingsPage = useAppStore((s) => s.openSettingsPage)
-  const openSettingsTarget = useAppStore((s) => s.openSettingsTarget)
   const {
     selectedRepos,
     githubEmptyState,
@@ -194,78 +192,45 @@ export function TaskPageGitHubList({
             )
           })}
 
-        {unresolvedSourceRepos.map((r) =>
-          r.codehub ? (
-            // Why: a CodeHub-remote repo never resolves a GitHub source; the task source
-            // only stayed on GitHub because CodeHub is hidden in settings or the entry
-            // point pinned GitHub. A missing CLI no longer lands here — it surfaces as a
-            // codehubError after the automatic switch. Link to Settings → Tasks instead
-            // of a GitHub retry that cannot succeed.
-            <div
-              key={`source-unresolved-${r.repoId}`}
-              role="status"
-              aria-atomic="true"
-              className="flex items-center justify-between gap-3 border-b border-border/50 bg-muted/40 px-4 py-3 text-sm text-muted-foreground"
+        {unresolvedSourceRepos.map((r) => (
+          // Why: null-source repos (#9660) render empty like genuine zero — name the repo and offer Retry so a transient resolve blip is recoverable.
+          // CodeHub-remote repos never reach here: the selector skips them because
+          // their missing GitHub source is expected, and a banner claiming CodeHub
+          // is unavailable misfired while CodeHub was actually visible and working.
+          <div
+            key={`source-unresolved-${r.repoId}`}
+            role="status"
+            aria-atomic="true"
+            className="flex items-center justify-between gap-3 border-b border-border/50 bg-muted/40 px-4 py-3 text-sm text-muted-foreground"
+          >
+            <span>
+              {translate(
+                'auto.components.TaskPage.noGithubSourceDetected',
+                'No GitHub source detected for'
+              )}{' '}
+              <span className="font-mono">{r.label}</span> —{' '}
+              {translate(
+                'auto.components.TaskPage.noGithubSourceDetectedHint',
+                'it may have no GitHub remote, or the source could not be resolved.'
+              )}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleRetryIssuesFetch(r.sourceKey)}
+              disabled={tasksLoading || retryingSourceKeys.has(r.sourceKey)}
             >
-              <span>
-                {translate(
-                  'auto.components.TaskPage.codehubSourceUnavailable',
-                  'No CodeHub source available for'
-                )}{' '}
-                <span className="font-mono">{r.label}</span> —{' '}
-                {translate(
-                  'auto.components.TaskPage.codehubSourceUnavailableHint',
-                  'this repo is a CodeHub project. Show CodeHub in Settings → Tasks, or switch to the CodeHub source.'
-                )}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  openSettingsPage()
-                  openSettingsTarget({ pane: 'tasks', repoId: null })
-                }}
-              >
-                {translate('auto.components.TaskPage.openTaskSettings', 'Open Settings')}
-              </Button>
-            </div>
-          ) : (
-            // Why: null-source repos (#9660) render empty like genuine zero — name the repo and offer Retry so a transient resolve blip is recoverable.
-            <div
-              key={`source-unresolved-${r.repoId}`}
-              role="status"
-              aria-atomic="true"
-              className="flex items-center justify-between gap-3 border-b border-border/50 bg-muted/40 px-4 py-3 text-sm text-muted-foreground"
-            >
-              <span>
-                {translate(
-                  'auto.components.TaskPage.noGithubSourceDetected',
-                  'No GitHub source detected for'
-                )}{' '}
-                <span className="font-mono">{r.label}</span> —{' '}
-                {translate(
-                  'auto.components.TaskPage.noGithubSourceDetectedHint',
-                  'it may have no GitHub remote, or the source could not be resolved.'
-                )}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleRetryIssuesFetch(r.sourceKey)}
-                disabled={tasksLoading || retryingSourceKeys.has(r.sourceKey)}
-              >
-                {retryingSourceKeys.has(r.sourceKey) ? (
-                  <span className="flex items-center gap-1">
-                    <LoaderCircle className="h-3 w-3 animate-spin" />
-                    {translate('auto.components.TaskPage.5b6b2af943', 'Retrying…')}
-                  </span>
-                ) : (
-                  translate('auto.components.TaskPage.0bfbf62f75', 'Retry')
-                )}
-              </Button>
-            </div>
-          )
-        )}
+              {retryingSourceKeys.has(r.sourceKey) ? (
+                <span className="flex items-center gap-1">
+                  <LoaderCircle className="h-3 w-3 animate-spin" />
+                  {translate('auto.components.TaskPage.5b6b2af943', 'Retrying…')}
+                </span>
+              ) : (
+                translate('auto.components.TaskPage.0bfbf62f75', 'Retry')
+              )}
+            </Button>
+          </div>
+        ))}
 
         {showGitHubTaskSkeletons ? (
           // Why: render enough shimmer rows to fill a typical viewport
