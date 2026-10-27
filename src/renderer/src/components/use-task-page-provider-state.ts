@@ -27,6 +27,8 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
   const linearViewPersistReadyRef = useRef(false)
   const jiraSearchPersistReadyRef = useRef(false)
   const [taskResumeApplied, setTaskResumeApplied] = useState(false)
+  // Why: only implicit entries reselect their remote source after resume restores the saved default.
+  const implicitTaskSourceRestored = taskResumeApplied && !pageData.taskSource
   const selectionIsCodeHub =
     selectedRepos.length > 0 &&
     selectedRepos.every((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))
@@ -93,6 +95,7 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
     selectedRepos,
     selectionIsCodeHub,
     taskSource,
+    implicitTaskSourceRestored,
     visibleTaskProviders,
     setTaskSource,
     workbenchTaskScope
