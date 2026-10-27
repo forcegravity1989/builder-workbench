@@ -140,7 +140,9 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.getByRole('button', { name: '添加目标', exact: true })).toBeVisible()
   await workbenchPage.getByRole('button', { name: '展开 G1' }).click()
   await workbenchPage.getByRole('button', { name: '编辑目标', exact: true }).click()
-  await workbenchPage.getByLabel('G1 目标').fill('验证计划材料保存·烟测')
+  await workbenchPage
+    .getByRole('textbox', { name: 'G1 目标', exact: true })
+    .fill('验证计划材料保存·烟测')
   await workbenchPage.getByRole('button', { name: '结束编辑目标', exact: true }).click()
   await expect(workbenchPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
 
