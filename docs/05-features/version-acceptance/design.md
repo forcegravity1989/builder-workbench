@@ -80,7 +80,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 **随退役删除的生产代码**：`AcceptanceRoundPicker.tsx`、`AcceptanceDirectives.tsx`、`AcceptanceMetrics.tsx`、`HistoricalRoundCards.tsx`、`AcceptanceGoalCards.tsx`、`AcceptanceGoalResult.tsx`、`AcceptanceDeliveryDetails.tsx`、`AcceptanceJourney.tsx`（灯）、`AcceptanceReportDialog.tsx`、`AcceptanceSources.tsx`、`acceptance-report.ts`（派生预览纪要）、`use-acceptance-history.ts`（按轮次呈现的历史 hook）、`shared/workbench/acceptance-rounds.ts`、`main/workbench/material-round-guard.ts`、`acceptance-decision.ts` 的 `decisionFreshness`（自动重核无消费方）。同一交付内删净，不留兼容层、回退或双路径。
 
-**保留的能力**：读回历史材料的链路本身——`version-history-port` 的 list/read/readPlan 与 `version-cycle/open-acceptance-source.ts`。轮次 UI 与 `use-acceptance-history.ts` 退役，但计划屏「上版回顾」经 progressSource 寻址（仅 version 的来源在基线分支推导最新已合入记录，存量四元组按固定提交寻址；身份不符即抛错不改读）依赖这条链路，不得一并删除。
+**保留的能力**：读回历史材料的链路本身——`version-history-port` 的 list/read/readPlan 与 `version-cycle/open-acceptance-source.ts`。轮次 UI 与 `use-acceptance-history.ts` 退役，但计划屏「上版回顾」经 progressSource 寻址（仅 version 的来源在主分支推导最新已合入记录，存量四元组按固定提交寻址；身份不符即抛错不改读）依赖这条链路，不得一并删除。
 
 ## 人工字段守卫
 

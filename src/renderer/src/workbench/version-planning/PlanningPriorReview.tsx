@@ -60,7 +60,7 @@ export function PlanningPriorReview({
       {state.kind === 'error' ? (
         <div className="g3-error" role="alert">
           验收来源读取失败，结果未知。
-          {/* The reason is the actionable part (e.g. 「尚未合入项目基线分支，请先更新代码」);
+          {/* The reason is the actionable part (e.g. 「尚未合入项目主分支，请先更新代码」);
               hiding it turned every failure into an undiagnosable generic error. */}
           <span>{state.reason}</span>
           <button type="button" onClick={onRetry}>
