@@ -8,11 +8,13 @@
 
 拆分基线为固定提交 `f20f04ae57d510178c710c71216b9b734082c28e`：运行依赖与历史数据从固定 HTML 提取，界面源码与该版本核对后按职责拆开；源码、只读快照与生成物分别维护，不手改 `vendor.js`、`runtime.js` 或历史快照。4 处历史附件保持固定 GitHub 提交链接，需要联网及仓库访问权限；完整历史 JSON、报告和图片仍从[原始评审包](https://github.com/forcegravity1989/builder-workbench/archive/f20f04ae57d510178c710c71216b9b734082c28e.zip) 取得。原型仅在内存演示；会话区只标明原生复用边界，交付证据以 STATUS 为准。
 
-[Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439) 的局部调整已合并进下文现行条款：[当前高保真](planning-journey-prototype.html) 保留既有四区与卡片，生产代码已接线但本轮只有静态核对，真壳证据见 [STATUS](STATUS.md)。性能与缓存策略在另一任务处理，不在本轮范围。
+[Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439) 的局部调整已合并进下文现行条款：[当前高保真](planning-journey-prototype.html) 保留既有四区与卡片，非性能项已作生产接线并补验 CI，证据见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)。性能增量目前仅作静态检视，实际耗时仍待测；真壳旅程留白见 [STATUS](STATUS.md)。Issue 读取与刷新遵循[三屏共用策略](../version-workspace/spec.md#issue-范围列表的读取与刷新)。
 
 ## 计划旅程（G3 · 现行行为，2026-10-21 落地）
 
 本节是计划屏现行行为正本，源自 Builder 版本规划旅程的重新设计并经七轮人评审认可：定清目标与验收标准，拆解 Issue，生成并人工确认会议纪要，最后经 PR 由 Leader 在 Orca 原生 PR 页再审、合入归档。高保真 [planning-journey-prototype.html](planning-journey-prototype.html)（源码 `prototype/g3-app.jsx`、`g3-components.jsx`、`g3-model.js`、`g3-planning.css`，构建 `node docs/05-features/version-planning/prototype/build-g3.cjs`，加 `--check` 校验生成物）是形态依据；生产接线落点见 [design](design.md) 的 G3 落点表，本节条款与高保真的有意偏差在 design 登记。复用设计系统和已有 vendor；`prototype.html` 及验收/总览共用源码保持各自历史身份。
+
+固定上版验收回顾在首次读取并核验成功后复用；切屏和普通保存不重读，来源变化或手动刷新时重新核验。旁边的实时 Issue 参考仍按三屏共用策略后台更新，不替换固定回顾结论。
 
 ### Builder 主旅程
 

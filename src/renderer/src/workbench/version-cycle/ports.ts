@@ -58,6 +58,9 @@ export type CycleTaskRead =
     }
 
 export type TaskPort = {
+  cacheKey?(scope: CycleScope, references: readonly CycleTaskReference[]): string
+  /** Previous provider reads for this exact source; display only, never fresh evidence. */
+  cached?(scope: CycleScope, references: readonly CycleTaskReference[]): CycleTaskRead[] | null
   listVersion(
     scope: CycleScope,
     references: readonly CycleTaskReference[]

@@ -34,7 +34,8 @@ function errorMessage(reason: unknown): string {
  * 用 repoId/hostId 决胜），键入 workflow 会把两屏拆成两个条目、失去共享。 */
 function keyFor(
   scope: CycleScope | null,
-  tasks: readonly CycleTaskReference[] | undefined
+  tasks: readonly CycleTaskReference[] | undefined,
+  taskPort: TaskPort
 ): string | null {
   if (!scope || !tasks?.length) {
     return null
@@ -46,7 +47,8 @@ function keyFor(
     scope.runtimeOwnerEnvironmentId ?? null,
     // 序列化引用而非数组身份：材料保存后重读每次交回新数组，身份进 key 会闪读
     //（验收屏旧 tasksRef 模式的动机，这里对两屏一并结构化解决）。
-    JSON.stringify(tasks)
+    JSON.stringify(tasks),
+    taskPort.cacheKey?.(scope, tasks)
   ])
 }
 
@@ -60,8 +62,14 @@ export function useCycleTaskReads(args: {
   onFreshReads?: (reads: CycleTaskRead[]) => void
 }) {
   const { scope, tasks } = args
-  const key = keyFor(scope, tasks)
+  const key = keyFor(scope, tasks, args.taskPort)
   const entry = useMemo(() => (key ? cache(key) : noKeyEntry), [key])
+  const cachedReads = useMemo(
+    () => (scope && tasks ? args.taskPort.cached?.(scope, tasks) : null),
+    // Source identity and serialized references fully determine the display.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [key]
+  )
   const view = useSnapshotCache(entry)
   // 读取时值走 ref：effect 只认 key，scope/tasks/taskPort 的身份抖动不重跑。
   const latest = useRef(args)
@@ -109,6 +117,9 @@ export function useCycleTaskReads(args: {
       return
     }
     let active = true
+    if (cachedReads) {
+      entry.publish({ ...entry.read(), reads: cachedReads })
+    }
     void startRead(entry, false).then(() => {
       if (!active) {
         return
@@ -121,7 +132,7 @@ export function useCycleTaskReads(args: {
     return () => {
       active = false
     }
-  }, [key, entry, startRead])
+  }, [key, entry, startRead, cachedReads])
 
   const refresh = useCallback(async () => {
     if (!key) {
@@ -132,7 +143,7 @@ export function useCycleTaskReads(args: {
     // 在途切版本守卫：旧版本的强制读数不得喂给新版本的快照（同旧组件守卫，
     // 读数落点本身已按条目键控，这里只挡 onFreshReads）。
     const { scope: nowScope, tasks: nowTasks } = latest.current
-    if (keyFor(nowScope, nowTasks) !== requestedKey) {
+    if (keyFor(nowScope, nowTasks, latest.current.taskPort) !== requestedKey) {
       return
     }
     const state = entry.read()
@@ -151,5 +162,5 @@ export function useCycleTaskReads(args: {
       refresh
     }
   }
-  return { reads: view.reads, error: view.error, busy: view.busy, refresh }
+  return { reads: view.reads ?? cachedReads ?? null, error: view.error, busy: view.busy, refresh }
 }

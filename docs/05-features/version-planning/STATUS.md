@@ -1,6 +1,6 @@
 # 版本计划 — 六环状态
 
-**#439 已确认行为已作生产接线，完成静态检视并补验 CI。** 短开始卡在原生运行会话成功打开后展示四区；新建版本默认定位紧邻前版、缺验收留空不回退，已有计划保持固定来源，固定回顾不设独立错误/重试卡。纪要只保留文本与整份人工确认，归档前逐项已落实或真实 Issue 跟进，助手核对、PR 人审，旧 closed 兼容保留无控件。行为见 [spec](spec.md)，反馈见 [Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439)。本地与远端检查的实际结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)；手工真机与模型旅程仍未验证；性能另窗处理，不据此声称改善耗时。下面带日期与 PR 的结果均为历史证据，不覆盖此次增量。
+**#439 非性能项已作生产接线，完成静态检视并补验 CI。** 短开始卡在原生运行会话成功打开后展示四区；新建版本默认定位紧邻前版、缺验收留空不回退，已有计划保持固定来源，固定回顾不设独立错误/重试卡。纪要只保留文本与整份人工确认，归档前逐项已落实或真实 Issue 跟进，助手核对、PR 人审，旧 closed 兼容保留无控件。行为见 [spec](spec.md)，反馈见 [Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439)。本地与远端检查的实际结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)；手工真机与模型旅程仍未验证；已接入三屏 Issue 共用读取、固定回顾复用和建版等待收窄；性能增量目前仅作静态检视，实际耗时仍待测。下面带日期与 PR 的结果均为历史证据，不覆盖此次增量。
 
 固定验收依据已接 `open-acceptance-source` → BW 只读浏览上下文 → `VersionReadonlyMaterialView` / `ReadonlyMaterialSections`：预读并核验固定验收及其采用计划，在原生 artifacts 槽只读呈现准备资料、目标与冻结 Issue、纪要及归档；返回原计划，普通导航清理浏览上下文，不选择当前材料、不建树。该路径仅源码及独立静态复核，未作本轮真壳验证。
 

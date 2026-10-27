@@ -17,7 +17,6 @@ import {
   type VersionWorkspacePrepareResult
 } from '../../../shared/workbench/version-workspace-prepare'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
-import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 import { nativeVersionWorkspacePort } from './version-workspace-port'
 import { setBrowsedVersion } from './version-context-state'
 import { WORKFLOW_TREE_LABELS } from './version-labels'
@@ -85,9 +84,16 @@ export function NewVersionDialog({
         runtimeOwnerEnvironmentId: scope.runtimeOwnerEnvironmentId
       }).prepare({ repoId: scope.repoId, hostId: scope.hostId, version })
       setReport(result)
-      // 登记刷新：让侧栏目录/绑定立即可见（不依赖轮询）。
       const state = useAppStore.getState()
-      await Promise.all(catalog.repoIds.map((repoId) => state.fetchWorktrees(repoId)))
+      // Opening needs this host's registered trees; other hosts update independently.
+      const others = catalog.repoIds.filter((repoId) => repoId !== scope.repoId)
+      for (const repoId of others) {
+        void state
+          .fetchWorktrees(repoId)
+          .finally(catalog.reload)
+          .catch(() => {})
+      }
+      await state.fetchWorktrees(scope.repoId, { executionHostId: scope.hostId })
       catalog.reload()
       const failed = prepareFailed(result)
       if (!failed) {
@@ -95,20 +101,10 @@ export function NewVersionDialog({
         setBrowsedVersion(projectKey, version)
         closeProjectPage()
         onClose()
-        // 最终检视 M-3：直开激活补宿主限定（STA-4343 同族收敛的漏网点）；fetchWorktrees
-        // 已在上方完成，按 id 取登记行派生 host opts。
-        const planTree = planStep?.worktreeId
-          ? (useAppStore
-              .getState()
-              .allWorktrees()
-              .find((item) => item.id === planStep.worktreeId) ?? null)
-          : null
         if (
           planStep?.worktreeId &&
-          activateAndRevealWorktree(
-            planStep.worktreeId,
-            planTree ? worktreeActivationHostOpts(planTree) : undefined
-          ) === false
+          activateAndRevealWorktree(planStep.worktreeId, { executionHostId: scope.hostId }) ===
+            false
         ) {
           toast.error('工作区已就绪，但打开失败，请在原生项目工作区中核对。')
         } else {
