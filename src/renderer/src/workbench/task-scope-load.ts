@@ -12,6 +12,7 @@ import type { CycleTaskReference } from './version-cycle/ports'
 import { resolveReferenceRepo } from './task-reference-repo'
 import { nativeTaskReferenceReader } from './native-task-port'
 import type { TaskReferenceValue } from './task-reference-reader'
+import { isCodeHubGitRemote } from '../../../shared/codehub'
 
 export type TaskScopeMissingRow = {
   provider: string
@@ -128,7 +129,12 @@ export function openVersionTasksPage(args: {
       ...(reference.goalId ? { goalId: reference.goalId } : {})
     }))
   }
-  const provider = viewProviderFor(scope.references)
+  const homeRepo = useAppStore.getState().repos.find((repo) => repo.id === args.homeRepoId)
+  const provider = scope.references.length
+    ? viewProviderFor(scope.references)
+    : isCodeHubGitRemote(homeRepo?.gitRemoteIdentity)
+      ? 'codehub'
+      : 'github'
   useAppStore.getState().openTaskPage({
     taskSource: provider,
     ...(args.homeRepoId ? { preselectedRepoId: args.homeRepoId } : {}),

@@ -194,7 +194,19 @@ describe('worktree create display-name provenance', () => {
     ).toEqual({ displayName: 'My Label', displayNameIsPinned: true })
   })
 
-  it('keeps generated labels automatic only when they equal the branch', () => {
+  it('keeps generated branch labels automatic through name collision resolution', () => {
+    expect(
+      resolveWorktreeCreateDisplayNameMeta('issue-383', 'issue-383-2', 'generated', {
+        requestedName: 'issue-383',
+        sanitizedName: 'issue-383'
+      })
+    ).toEqual({ displayNameIsPinned: false })
+    expect(
+      resolveWorktreeCreateDisplayNameMeta('issue-383', 'issue-383-2', 'user', {
+        requestedName: 'issue-383',
+        sanitizedName: 'issue-383'
+      })
+    ).toEqual({ displayName: 'issue-383', displayNameIsPinned: true })
     expect(
       resolveWorktreeCreateDisplayNameMeta('Issue title', 'feature-2', 'generated', {
         requestedName: 'feature-2',

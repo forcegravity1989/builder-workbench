@@ -5,6 +5,7 @@ import { VersionOverview } from './g2-version-overview.jsx'
 import { IconAction as Button } from './g2-icon-action.jsx'
 import { DesignReferences } from './g2-design-references.jsx'
 import { useBindingDemo } from './g2-binding-demo.jsx'
+import { TaskPreview } from './g2-task-preview.jsx'
 
 const {
   // React is used by the shared JSX build factory.
@@ -111,6 +112,55 @@ function initialTrees() {
   ]
 }
 const Icon = ({ icon: Component, ...props }) => <Component size={15} strokeWidth={1.7} {...props} />
+function treeTitle(tree) {
+  if (tree.manualName || !tree.issue) {
+    return tree.name
+  }
+  const issue = issueSnapshot.items.find((item) => item.number === tree.issue)
+  return `#${tree.issue} ${issue?.title || tree.linkedTitle || 'Issue'}`
+}
+// Native Lucide paths, kept local so the shared frozen vendor remains unchanged.
+function NativeToolIcon({ kind, size = 16, strokeWidth = 1.7, ...props }) {
+  const paths = {
+    activity: [
+      'M10.268 21a2 2 0 0 0 3.464 0',
+      'M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326'
+    ],
+    options: [
+      'M10 5H3',
+      'M12 19H3',
+      'M14 3v4',
+      'M16 17v4',
+      'M21 12h-9',
+      'M21 19h-5',
+      'M21 5h-7',
+      'M8 10v4',
+      'M8 12H3'
+    ],
+    add: [
+      'M12 10v6',
+      'M9 13h6',
+      'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z'
+    ]
+  }
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      {paths[kind].map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </svg>
+  )
+}
 function Nav({ children, icon, active, onClick, title, className = '' }) {
   return (
     <button
@@ -139,9 +189,9 @@ function Modal({ title, children, close }) {
         closeRef.current()
       }
       if (event.key === 'Tab') {
-        const nodes = [...ref.current.querySelectorAll('button,input,select,a[href]')].filter(
-          (n) => !n.disabled
-        )
+        const nodes = [
+          ...ref.current.querySelectorAll('button,input,textarea,summary,select,a[href]')
+        ].filter((n) => !n.disabled)
         if (event.shiftKey && document.activeElement === nodes[0]) {
           event.preventDefault()
           nodes.at(-1)?.focus()
@@ -194,10 +244,10 @@ function ReuseSurface({ title, scope, description, children }) {
 }
 function App() {
   const [version, setVersion] = useState('v0.7'),
-    [screen, setScreen] = useState('plan')
+    [screen, setScreen] = useState('project')
   const [versionOrder, setVersionOrder] = useState(['v0.7', 'v0.6'])
-  const [selectedTreeId, setSelectedTreeId] = useState('v0.7/plan')
-  const [selectedSessionId, setSelectedSessionId] = useState('p07')
+  const [selectedTreeId, setSelectedTreeId] = useState(null)
+  const [selectedSessionId, setSelectedSessionId] = useState(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [openVersions, setOpenVersions] = useState(['v0.7']),
     [openGoals, setOpenGoals] = useState(['v0.7/G2'])
@@ -209,6 +259,12 @@ function App() {
   const [dark, setDark] = useState(false),
     [toast, setToast] = useState('')
   const [remoteDisconnected, setRemoteDisconnected] = useState(false)
+  const [taskVersion, setTaskVersion] = useState(null)
+  const [taskEntry, setTaskEntry] = useState(0)
+  const [otherProjectsOpen, setOtherProjectsOpen] = useState(false)
+  const [nativeProjectOpen, setNativeProjectOpen] = useState(false)
+  const [nativeOtherOpen, setNativeOtherOpen] = useState(false)
+  const versionRefs = useRef({})
   const bindingDemo = useBindingDemo({
     versionOrder,
     plans,
@@ -229,11 +285,16 @@ function App() {
   const currentTree = bindingDemo.trees.find((tree) => tree.id === selectedTreeId)
   const currentSession = currentTree?.sessions.find((session) => session.id === selectedSessionId)
   const boundTrees = bindingDemo.boundTrees(version)
-  const scopedRefs = plan.tasks.filter((t) => filter === 'all' || t.goalId === filter)
-  const isVersionScreen = Object.hasOwn(labels, screen)
+  const nativeProjectTrees = bindingDemo.trees.filter(
+    (tree) => !versionOrder.includes(tree.version)
+  )
+  const isVersionScreen = Object.hasOwn(labels, screen) && (screen !== 'tasks' || !!taskVersion)
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light'
   }, [dark])
+  useEffect(() => {
+    versionRefs.current['v0.7']?.querySelector('.version-row')?.scrollIntoView({ block: 'nearest' })
+  }, [])
   useEffect(() => {
     if (toast) {
       const id = setTimeout(() => setToast(''), 4000)
@@ -247,9 +308,32 @@ function App() {
     setVersion(v)
     setScreen(next)
     setOpenVersions((prev) => (prev.includes(v) ? prev : [...prev, v]))
-    if (goal) {
-      setGoalFilters((prev) => ({ ...prev, [v]: goal }))
+    if (next === 'tasks') {
+      setTaskVersion(v)
+      setTaskEntry((entry) => entry + 1)
+      setGoalFilters((prev) => ({ ...prev, [v]: goal || 'all' }))
     }
+  }
+  function enterProject() {
+    const latest = versionOrder[0]
+    setScreen('project')
+    setSelectedTreeId(null)
+    setSelectedSessionId(null)
+    if (latest) {
+      setVersion(latest)
+      setOpenVersions((prev) => [...new Set([...prev, latest])])
+      requestAnimationFrame(() =>
+        versionRefs.current[latest]
+          ?.querySelector('.version-row')
+          ?.scrollIntoView({ block: 'nearest' })
+      )
+    }
+  }
+  function openProjectTasks() {
+    setScreen('tasks')
+    setTaskVersion(null)
+    setGoalFilters((prev) => ({ ...prev, [version]: 'all' }))
+    setTaskEntry((entry) => entry + 1)
   }
   function openVersionDialog() {
     setVersionName('')
@@ -337,7 +421,7 @@ function App() {
       setScreen('work')
     }
   }
-  function createGoalTree(v, goal) {
+  function createGoalTree(v, goal, name, note) {
     const existing = bindingDemo
       .boundTrees(v)
       .find((tree) => tree.role === 'goal' && tree.goal === goal)
@@ -356,7 +440,9 @@ function App() {
     const tree = {
       id,
       version: v,
-      name: `bw/${id}`,
+      name: name || `bw/${id}`,
+      manualName: !!name,
+      comment: note || '',
       branch: `bw/${id}`,
       role: 'goal',
       goal,
@@ -368,7 +454,7 @@ function App() {
     setModal(null)
     setToast('演示：从原生创建器建立目标工作区；未为目标内每个 Issue 建树')
   }
-  function completeIssueStart(reference, parentId) {
+  function completeIssueStart(reference, parentId, name, note, linkedTitle) {
     if (!reference) {
       return
     }
@@ -388,9 +474,12 @@ function App() {
     const tree = {
       id,
       version,
-      name: `bw/${id}`,
+      name: name || `bw/${id}`,
+      manualName: !!name,
+      comment: note || '',
       branch: `bw/${id}`,
       role: 'issue',
+      linkedTitle,
       goal: reference.goalId,
       issue: reference.number,
       parent: parentId || undefined,
@@ -401,7 +490,7 @@ function App() {
     activateTree(version, tree)
     setToast('演示：打开本版任务工作区；不会为了任务自动创建目标父树')
   }
-  function startIssue(reference) {
+  function startIssue(reference, linkedTitle) {
     if (!reference) {
       return
     }
@@ -419,8 +508,19 @@ function App() {
       version,
       goal: reference.goalId,
       reference,
+      linkedTitle,
       parentId: parent?.id || null
     })
+  }
+  function taskIssueTree(reference) {
+    const planned =
+      taskVersion &&
+      plan.tasks.some(
+        (item) => item.number === reference.number && item.repository === reference.repository
+      )
+    return (planned ? boundTrees : bindingDemo.trees).find(
+      (tree) => tree.role === 'issue' && tree.issue === reference.number
+    )
   }
   function nativeTree(v, tree, pool = bindingDemo.boundTrees(v)) {
     const key = tree.id,
@@ -432,7 +532,7 @@ function App() {
         <div className="native-tree-row" {...bindingDemo.contextMenuProps(tree)}>
           <button
             className="tree-chevron"
-            aria-label={`${tree.name} 展开或收起`}
+            aria-label={`${treeTitle(tree)} 展开或收起`}
             aria-expanded={expanded}
             onClick={() => toggle(closedTrees, key, setClosedTrees)}
           >
@@ -440,14 +540,11 @@ function App() {
           </button>
           <button
             className="native-worktree-heading"
-            title={`${tree.branch} · 右键管理版本绑定`}
+            title={`${treeTitle(tree)}\n分支：${tree.branch} · 右键管理版本绑定`}
             onClick={() => activateTree(tree.version, tree)}
           >
             <Icon icon={GitBranch} />
-            <span>
-              {tree.name}
-              {tree.owner === 'remote' && <small> · 配对机</small>}
-            </span>
+            <span>{treeTitle(tree)}</span>
             {tree.owner === 'remote' && remoteDisconnected && (
               <span
                 className="disconnected-mark"
@@ -462,6 +559,9 @@ function App() {
               </span>
             )}
           </button>
+        </div>
+        <div className="native-host-meta">
+          <span>{tree.owner === 'remote' ? '配对机' : 'Local Windows'}</span>
         </div>
         {expanded && (
           <div className="native-tree-contents">
@@ -513,7 +613,7 @@ function App() {
           </button>
           <button
             className={`goal-directory-link ${
-              version === v && screen === 'tasks' && filter === goal.goalId ? 'selected' : ''
+              taskVersion === v && screen === 'tasks' && filter === goal.goalId ? 'selected' : ''
             }`}
             title={`${goal.title} · 在同一任务屏筛选 ${goal.goalId}`}
             onClick={() => go(v, 'tasks', goal.goalId)}
@@ -586,28 +686,8 @@ function App() {
         </div>
         {expanded && (
           <div className="workflow-agents">
-            {trees.length > 1 ? (
+            {trees.length ? (
               trees.map((item) => nativeTree(v, item, trees))
-            ) : tree ? (
-              <>
-                {tree.sessions.map((session) => (
-                  <Nav
-                    key={session.id}
-                    className="native-agent-row"
-                    icon={MessageSquare}
-                    active={
-                      selectedTreeId === tree.id &&
-                      selectedSessionId === session.id &&
-                      screen === role
-                    }
-                    onClick={() => activateTree(v, tree, session)}
-                  >
-                    <span className="agent-tool">Codex</span>
-                    {session.label}
-                  </Nav>
-                ))}
-                {!tree.sessions.length && <div className="tree-empty">暂无会话</div>}
-              </>
             ) : (
               <div className="tree-empty">尚无工作树</div>
             )}
@@ -620,7 +700,13 @@ function App() {
     const expanded = openVersions.includes(v),
       goals = (plans[v] || emptyPlan).goals
     return (
-      <div className="version-group" key={v}>
+      <div
+        className="version-group"
+        key={v}
+        ref={(element) => {
+          versionRefs.current[v] = element
+        }}
+      >
         <div className="version-row">
           <button
             className="nav-row version-toggle"
@@ -650,13 +736,21 @@ function App() {
             {workflowNav(v, 'plan')}
             <Nav
               icon={ListTodo}
-              active={version === v && screen === 'tasks' && filter === 'all'}
+              active={taskVersion === v && screen === 'tasks' && filter === 'all'}
               onClick={() => go(v, 'tasks', 'all')}
             >
               任务
             </Nav>
             <div className="goal-directories">
               {goals.map((g) => goalDirectory(v, g))}
+              {bindingDemo
+                .boundTrees(v)
+                .filter(
+                  (tree) =>
+                    ['goal', 'issue'].includes(tree.role) &&
+                    !goals.some((goal) => goal.goalId === tree.goal)
+                )
+                .map((tree) => nativeTree(v, tree))}
               {!goals.length && <div className="tree-empty">目标来自本版计划</div>}
             </div>
             {workflowNav(v, 'acceptance')}
@@ -756,47 +850,46 @@ function App() {
     }
     if (screen === 'tasks') {
       return (
-        <ReuseSurface
-          title="沿用 Orca 任务屏"
-          scope={`Builder Workbench / ${version} / ${filter === 'all' ? '全部目标' : filter}`}
-          description={`这是同一个 Orca 任务屏。点“任务”查看本版全部任务，点 G1/G2 只改变目标筛选，不新增目标专属屏。当前范围共有 ${scopedRefs.length} 个 Issue 引用；列表、详情、开工和打开工作区沿用原有交互。`}
-        >
-          {filter !== 'all' && (
-            <>
-              <Button icon={ListTodo} onClick={() => go(version, 'tasks', 'all')}>
-                查看本版全部目标
-              </Button>
-              <Button
-                icon={GitBranch}
-                onClick={() => setModal({ type: 'goal', version, goal: filter })}
-              >
-                目标操作
-              </Button>
-            </>
-          )}
-          <p className="candidate-note">
-            目标开工在侧栏 G1/G2 的“···”菜单；此处仅加目标范围与同一操作入口，任务列表和 Issue
-            开工仍用 Orca。一个目标工作区可处理多个相关
-            Issue；原创建器由用户选择执行方式，不表示目标内全部任务已开工。
-          </p>
-          {scopedRefs[0] && (
-            <Button icon={ArrowRight} onClick={() => startIssue(scopedRefs[0])}>
-              演示原生 Issue #{scopedRefs[0].number}{' '}
-              {boundTrees.some(
-                (tree) => tree.role === 'issue' && tree.issue === scopedRefs[0].number
+        <TaskPreview
+          key={taskEntry}
+          version={taskVersion}
+          goal={taskVersion && filter !== 'all' ? filter : null}
+          goals={plan.goals}
+          references={plan.tasks}
+          issues={issueSnapshot.items}
+          Modal={Modal}
+          getIssueActionLabel={(reference) => (taskIssueTree(reference) ? '打开' : '开工')}
+          onChangeScope={(nextVersion, nextGoal) => {
+            setTaskVersion(nextVersion)
+            setGoalFilters((prev) => ({ ...prev, [version]: nextGoal || 'all' }))
+          }}
+          onStartIssue={(reference, linkedTitle) => {
+            const planned =
+              taskVersion &&
+              plan.tasks.some(
+                (item) =>
+                  item.number === reference.number && item.repository === reference.repository
               )
-                ? '打开工作区'
-                : '开工'}
-            </Button>
-          )}
-        </ReuseSurface>
+            if (planned) {
+              startIssue(reference, linkedTitle)
+              return
+            }
+            const existing = taskIssueTree(reference)
+            if (existing) {
+              activateTree(existing.version, existing)
+              return
+            }
+            setModal({ type: 'composer', kind: 'native', reference, linkedTitle })
+          }}
+          onNotice={setToast}
+        />
       )
     }
     if (screen === 'work') {
       return (
         <ReuseSurface
           title="沿用 Orca 完整工作区"
-          scope={`Builder Workbench${currentTree ? ` / ${currentTree.name}` : ''}`}
+          scope={`Builder Workbench${currentTree ? ` / ${treeTitle(currentTree)}` : ''}`}
           description={`原生会话、标签、分屏、工具和历史保持原交互。${currentTree?.version ? `版本归属：${currentTree.version}。` : '未绑定版本。'}${currentSession ? `当前演示会话：${currentSession.label}。` : '暂无会话。'}${currentTree?.parent ? `原生父树：${bindingDemo.trees.find((tree) => tree.id === currentTree.parent)?.name || currentTree.parent}。` : ''}`}
         >
           {nativeHistory()}
@@ -808,12 +901,12 @@ function App() {
         <ReuseSurface
           title="沿用 Orca 项目工作区"
           scope="Builder Workbench / 原生工作树"
-          description="保留该项目的原生工作树与会话入口，包括尚未归版的 bw/week-plan、bw/week-acceptance 和项目共用树。旧会话不整树迁移、不按标题猜版本；共享访问沿原宿主与权限。"
+          description="这里保留未归版的工作树与会话，包括旧流程树和项目共用树。已归版的树从上方版本入口进入，解绑后回到这里；旧会话不按标题猜版本，共享访问沿原宿主与权限。"
         >
           <div className="native-project-tree-list">
-            {bindingDemo.trees
-              .filter((tree) => !bindingDemo.trees.some((parent) => parent.id === tree.parent))
-              .map((tree) => nativeTree(null, tree, bindingDemo.trees))}
+            {nativeProjectTrees
+              .filter((tree) => !nativeProjectTrees.some((parent) => parent.id === tree.parent))
+              .map((tree) => nativeTree(null, tree, nativeProjectTrees))}
           </div>
         </ReuseSurface>
       )
@@ -849,7 +942,7 @@ function App() {
       <div className="page-content">
         <h1>项目墙</h1>
         <p className="muted">选择项目，进入它的版本与工作。</p>
-        <button className="project-card" onClick={() => setScreen('project')}>
+        <button className="project-card" onClick={enterProject}>
           <span className="project-avatar">B</span>
           <div>
             <h2>Builder Workbench</h2>
@@ -863,9 +956,13 @@ function App() {
   return (
     <div className="prototype">
       <div className="review-bar">
-        <strong>#439 局部候选 · 版本工作区</strong>
-        <span>右键任一工作树管理版本绑定 · 操作仅在本页演示</span>
+        <strong>#439 既有能力修正 · 版本工作区</strong>
+        <span>既有能力纠偏 · 数据与操作仅在本页演示</span>
         <div className="review-actions" aria-label="原型评审工具">
+          <button onClick={() => setScreen('wall')}>从项目墙进入</button>
+          <button onClick={() => go('v0.7', 'tasks')}>版本任务</button>
+          <button onClick={() => go('v0.7', 'tasks', 'G2')}>目标任务</button>
+          <button onClick={() => setDark(!dark)}>{dark ? '浅色' : '深色'}</button>
           <button
             onClick={() => {
               setRemoteDisconnected(!remoteDisconnected)
@@ -918,6 +1015,13 @@ function App() {
                 项目总览
               </Nav>
               <Nav
+                icon={ListTodo}
+                active={screen === 'tasks' && !taskVersion}
+                onClick={openProjectTasks}
+              >
+                任务
+              </Nav>
+              <Nav
                 icon={CalendarClock}
                 active={screen === 'automations'}
                 onClick={() => setScreen('automations')}
@@ -939,28 +1043,123 @@ function App() {
               {versionOrder.map(versionNav)}
             </div>
           </div>
-          <div className="native-projects">
-            <div className="section-label">Orca 项目工作区</div>
-            <Nav
-              icon={GitBranch}
-              active={screen === 'project-workspaces'}
-              onClick={() => setScreen('project-workspaces')}
-            >
-              Builder Workbench
-            </Nav>
-            {bindingDemo.trees
-              .filter(
-                (tree) =>
-                  !tree.version && !bindingDemo.trees.some((parent) => parent.id === tree.parent)
-              )
-              .map((tree) => nativeTree(null, tree, bindingDemo.trees))}
-            <Nav
-              icon={GitBranch}
-              active={screen === 'private'}
-              onClick={() => setScreen('private')}
-            >
-              personal-notes <small>示例</small>
-            </Nav>
+          <div className="native-projects scrollbar-sleek worktree-sidebar-scrollbar">
+            <div className="section-label native-workspaces-heading">
+              <span>Orca 项目工作区</span>
+              <div className="native-workspaces-tools">
+                <Button
+                  icon={(props) => <NativeToolIcon kind="activity" {...props} />}
+                  label="活动"
+                  onClick={() => setModal({ type: 'native-tool', title: '活动' })}
+                />
+                <Button
+                  icon={(props) => <NativeToolIcon kind="options" {...props} />}
+                  label="工作区选项"
+                  onClick={() => setModal({ type: 'native-tool', title: '工作区选项' })}
+                />
+                <Button
+                  icon={(props) => <NativeToolIcon kind="add" {...props} />}
+                  label="添加项目"
+                  onClick={() => setModal({ type: 'native-tool', title: '添加项目' })}
+                />
+                <Button
+                  icon={Plus}
+                  label="新建工作区"
+                  onClick={() => setModal({ type: 'composer', kind: 'native' })}
+                />
+              </div>
+            </div>
+            <div className="native-project-row">
+              <button
+                className="tree-chevron"
+                aria-label="当前原生项目展开或收起"
+                aria-expanded={nativeProjectOpen}
+                onClick={() => setNativeProjectOpen(!nativeProjectOpen)}
+              >
+                <Icon icon={nativeProjectOpen ? ChevronDown : ChevronRight} />
+              </button>
+              <button
+                className="native-project-title"
+                title="Builder Workbench · 本机与配对机"
+                onClick={() => setScreen('project-workspaces')}
+              >
+                <Icon icon={GitBranch} />
+                <span>Builder Workbench</span>
+              </button>
+              <div className="native-project-actions">
+                <button
+                  className="icon-button"
+                  aria-label="Builder Workbench 项目菜单"
+                  onClick={() => setModal({ type: 'native-tool', title: '项目菜单' })}
+                >
+                  ···
+                </button>
+                <Button
+                  icon={Plus}
+                  label="在 Builder Workbench 新建工作区"
+                  onClick={() => setModal({ type: 'composer', kind: 'native' })}
+                />
+              </div>
+            </div>
+            {nativeProjectOpen && (
+              <div className="native-project-tree-list">
+                {nativeProjectTrees
+                  .filter((tree) => !nativeProjectTrees.some((parent) => parent.id === tree.parent))
+                  .map((tree) => nativeTree(tree.version, tree, nativeProjectTrees))}
+              </div>
+            )}
+            <div className="other-projects-section">
+              <button
+                className="other-projects-toggle"
+                aria-expanded={otherProjectsOpen}
+                onClick={() => setOtherProjectsOpen(!otherProjectsOpen)}
+              >
+                <Icon icon={otherProjectsOpen ? ChevronDown : ChevronRight} />
+                <span>其他项目</span>
+                <small>1</small>
+              </button>
+              {otherProjectsOpen && (
+                <>
+                  <div className="native-project-row">
+                    <button
+                      className="tree-chevron"
+                      aria-label="personal-notes 展开或收起"
+                      aria-expanded={nativeOtherOpen}
+                      onClick={() => setNativeOtherOpen(!nativeOtherOpen)}
+                    >
+                      <Icon icon={nativeOtherOpen ? ChevronDown : ChevronRight} />
+                    </button>
+                    <button className="native-project-title" onClick={() => setScreen('private')}>
+                      <Icon icon={GitBranch} />
+                      <span>personal-notes</span>
+                    </button>
+                    <div className="native-project-actions">
+                      <button
+                        className="icon-button"
+                        aria-label="personal-notes 项目菜单"
+                        onClick={() =>
+                          setModal({ type: 'native-tool', title: 'personal-notes 项目菜单' })
+                        }
+                      >
+                        ···
+                      </button>
+                      <Button
+                        icon={Plus}
+                        label="在 personal-notes 新建工作区"
+                        onClick={() =>
+                          setModal({ type: 'native-tool', title: 'personal-notes 新建工作区' })
+                        }
+                      />
+                    </div>
+                  </div>
+                  {nativeOtherOpen && (
+                    <Nav icon={MessageSquare} onClick={() => setScreen('private')}>
+                      个人笔记
+                    </Nav>
+                  )}
+                </>
+              )}
+            </div>
           </div>
           <div className="sidebar-footer">
             <span className="user-avatar">Y</span>yuzhup<span>本地</span>
@@ -986,6 +1185,12 @@ function App() {
                   )}
                 </>
               )}
+              {screen === 'tasks' && !taskVersion && (
+                <>
+                  <ChevronRight size={12} />
+                  <strong>任务</strong>
+                </>
+              )}
             </div>
           </div>
           <div className="workspace-body scrollbar-sleek">{body()}</div>
@@ -995,6 +1200,11 @@ function App() {
         <div className="toast" role="status">
           {toast}
         </div>
+      )}
+      {modal?.type === 'native-tool' && (
+        <Modal title={modal.title} close={() => setModal(null)}>
+          <p className="muted">此处打开 Orca 现有的{modal.title}，本轮沿用原生交互与已有设置。</p>
+        </Modal>
       )}
       {modal?.type === 'version' && (
         <Modal title="新建版本" close={() => setModal(null)}>
@@ -1070,73 +1280,130 @@ function App() {
           <p className="muted">
             实际创建沿用 Orca 原生创建器和父级选择。需要独立做目标协作时才创建；目标和 Issue
             都复用原生创建器，BW
-            带入可修改的名称、上下文和合适父级建议。用户决定实际执行方式；已有树不自动改挂，版本目录不是实体父树。
+            带入可修改的名称、已知版本与目标归属和合适父级建议。用户决定实际执行方式；已有树不自动改挂，版本目录不是实体父树。
           </p>
         </Modal>
       )}
       {modal?.type === 'composer' && (
-        <Modal title="沿用 Orca 原生开工弹窗" close={() => setModal(null)}>
-          <div className="reuse-marker">既有创建器挂载位置 · 不新增 BW 开工流程</div>
-          <h3>
-            {modal.version} / {modal.goal}
-            {modal.reference ? ` / #${modal.reference.number}` : ' · 目标开工'}
-          </h3>
-          <div className="candidate-note">
-            <strong>BW 带入的上下文</strong>
-            <p>
-              项目与宿主、版本 {modal.version}、目标 {modal.goal}
-              {modal.reference ? `、Issue #${modal.reference.number}` : '的交付约定与关联任务引用'}
-              。
-            </p>
-            <p>
-              名称建议：{modal.version}-
-              {modal.reference ? `issue-${modal.reference.number}` : modal.goal}
-              。实际名称、代码起点、模型及执行选项由原生弹窗选择。
-            </p>
-          </div>
-          <div className="reuse-outline">
-            <GitBranch size={22} />
-            <span>现有名称、分支、Agent 与高级选项</span>
-            <small>沿用 Orca 的原生控件与已有偏好；父级只影响嵌套，不改代码起点</small>
-          </div>
-          {modal.kind === 'issue' &&
-            bindingDemo
-              .boundTrees(modal.version)
-              .some((tree) => tree.role === 'goal' && tree.goal === modal.goal) && (
-              <label className="composer-demo-parent">
-                <input
-                  type="checkbox"
-                  checked={!!modal.parentId}
-                  onChange={(e) =>
-                    setModal({
-                      ...modal,
-                      parentId: e.target.checked
-                        ? bindingDemo
-                            .boundTrees(modal.version)
-                            .find((tree) => tree.role === 'goal' && tree.goal === modal.goal)?.id
-                        : null
-                    })
-                  }
-                />
-                演示原生父级选择结果：挂到已有 {modal.goal} 工作区下（可取消）
-              </label>
+        <Modal title="新建工作区" close={() => setModal(null)}>
+          <div className="native-composer-fields">
+            <label htmlFor="workspace-demo-name">名称</label>
+            <input
+              id="workspace-demo-name"
+              value={
+                modal.name ??
+                (modal.reference
+                  ? treeTitle({ issue: modal.reference.number, linkedTitle: modal.linkedTitle })
+                  : modal.kind === 'goal'
+                    ? `bw/${modal.version}/goal-${modal.goal}`
+                    : '')
+              }
+              placeholder="工作区名称"
+              onChange={(event) => setModal({ ...modal, name: event.target.value })}
+            />
+            {modal.reference && (
+              <a
+                className="native-composer-issue"
+                href={`https://github.com/forcegravity1989/builder-workbench/issues/${modal.reference.number}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <ListTodo size={15} />
+                {treeTitle({ issue: modal.reference.number, linkedTitle: modal.linkedTitle })}
+                <ArrowRight size={13} />
+              </a>
             )}
-          <p className="muted">
-            原型只演示原创建器提交后的归属，不复刻全部选项。目标工作区可在会话中处理多个相关
-            Issue；已有工作区可从其原生 agent 入口继续，不另造“统一复用策略”设置。
-          </p>
+            <div className="native-composer-options">
+              <label>
+                代码起点
+                <select defaultValue="main">
+                  <option value="main">main</option>
+                  <option value="current">当前分支</option>
+                </select>
+              </label>
+              <label>
+                Agent
+                <select defaultValue="Codex">
+                  <option>Codex</option>
+                  <option>Claude</option>
+                </select>
+              </label>
+            </div>
+            <details className="native-composer-advanced">
+              <summary>高级</summary>
+              <label htmlFor="workspace-demo-note">备注</label>
+              <textarea
+                id="workspace-demo-note"
+                value={modal.note || ''}
+                placeholder="备注（可选）"
+                onChange={(event) => setModal({ ...modal, note: event.target.value })}
+                rows={3}
+              />
+              {modal.kind === 'issue' &&
+                bindingDemo
+                  .boundTrees(modal.version)
+                  .some((tree) => tree.role === 'goal' && tree.goal === modal.goal) && (
+                  <label className="composer-demo-parent">
+                    <input
+                      type="checkbox"
+                      checked={!!modal.parentId}
+                      onChange={(e) =>
+                        setModal({
+                          ...modal,
+                          parentId: e.target.checked
+                            ? bindingDemo
+                                .boundTrees(modal.version)
+                                .find((tree) => tree.role === 'goal' && tree.goal === modal.goal)
+                                ?.id
+                            : null
+                        })
+                      }
+                    />
+                    父级：{modal.goal} 工作区
+                  </label>
+                )}
+            </details>
+          </div>
           <Button
             primary
             onClick={() => {
               if (modal.kind === 'goal') {
-                createGoalTree(modal.version, modal.goal)
+                createGoalTree(modal.version, modal.goal, modal.name, modal.note)
+              } else if (modal.kind === 'issue') {
+                completeIssueStart(
+                  modal.reference,
+                  modal.parentId,
+                  modal.name,
+                  modal.note,
+                  modal.linkedTitle
+                )
+                setModal(null)
               } else {
-                completeIssueStart(modal.reference, modal.parentId)
+                const id = `native/${Date.now()}`
+                const tree = {
+                  id,
+                  name:
+                    modal.name ||
+                    (modal.reference
+                      ? treeTitle({ issue: modal.reference.number, linkedTitle: modal.linkedTitle })
+                      : '新工作区'),
+                  manualName: !!modal.name,
+                  branch: `feature/work-${Date.now()}`,
+                  issue: modal.reference?.number,
+                  linkedTitle: modal.linkedTitle,
+                  version: null,
+                  role: 'issue',
+                  comment: modal.note || '',
+                  sessions: []
+                }
+                bindingDemo.setTrees((items) => [...items, tree])
+                setNativeProjectOpen(true)
+                activateTree(null, tree)
                 setModal(null)
               }
             }}
           >
-            演示原生提交后的结果
+            创建
           </Button>
         </Modal>
       )}
@@ -1194,9 +1461,13 @@ function App() {
             </label>
             <Button icon={RefreshCw} label="重置演示" onClick={() => location.reload()} />
           </div>
-          <h3>新画什么</h3>
+          <h3>本轮调整范围</h3>
           <p>
-            项目与版本导航、新建版本、版本级清理、目标目录，以及新增版本总览。既有项目总览、计划、任务、验收、自动化、知识库和会话区只标明沿用位置，不再做平行高保真。
+            只修正项目进入定位、原生项目区呈现、Issue
+            树标题、任务筛选与开工备注，不新增特性。任务控件和创建器受影响字段以可操作片段展示；既有版本总览、计划、验收和完整会话保持原有设计。
+          </p>
+          <p>
+            当前项目已归版的树只在版本下显示，原生区保留未归版和旧树；解绑后回到原生区。仅对展示去重，不改变实际父子关系或登记。
           </p>
           <h3>目标目录与工作树分开</h3>
           <p>
@@ -1230,13 +1501,13 @@ function App() {
           </p>
           <h3>复用边界</h3>
           <p>
-            任务列表按项目、版本和目标限定完整引用范围；会话按原生工作区绑定。页面样式与交互沿用原组件，这些生产接线尚未实现。侧栏滚动样式来自当前
-            Orca main.css 的 scrollbar-sleek / worktree-sidebar-scrollbar。
+            版本任务沿用完整原生任务页，进入时预选可移除的版本标签；目标入口增加可移除的目标条件。清目标看本版，清版本同时清目标看项目。Issue/PR
+            与原生筛选保留；现有目标引用只有 Issue，保留目标时 PR
+            为空，不推测关联。本轮局部纠偏的生产接线与验证见 STATUS。侧栏滚动样式来自当前 Orca
+            main.css 的 scrollbar-sleek / worktree-sidebar-scrollbar。
           </p>
           <p>
-            各版本并列，不设专门归档分区。版本归档是人的显式动作：归档记录写入版本材料，本版计划/验收流程树进入
-            Orca
-            原生归档（isArchived），从原生列表隐藏、可在原生工作区清理中回看与恢复；已归档版本留在原位置、带标识、默认收起，可展开回看。删除仍沿用原生规则；版本材料和
+            各版本并列，不设专门归档隐藏层。旧版本默认收起、仍可展开回看；版本级清理复用原生删除链，保留版本目录与已提交材料。版本材料和
             agent 记录不能视为同一恢复对象。
           </p>
           <p className="muted">

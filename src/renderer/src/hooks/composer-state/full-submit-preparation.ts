@@ -24,6 +24,7 @@ type FullSubmitPreparationInput = Pick<
 >
 
 import { useCallback } from 'react'
+import { isNumberedGitIssue } from '../../../../shared/workspace-name'
 import { settleComposerSubmit } from '@/lib/composer-submit-cancellation'
 import { ensureHooksConfirmed, confirmRuntimeIssueCommandRead } from '@/lib/ensure-hooks-confirmed'
 import { useAppStore } from '@/store'
@@ -163,11 +164,14 @@ export function useFullSubmitPreparation(input: FullSubmitPreparationInput) {
           smartGitHubResolution.kind === 'none' && smartNameMode === 'branches'
       })
 
+      // Match quick create: a linked Issue title must remain automatic after rebinding.
       const createDisplayName = !nameIsAutoManaged
         ? workspaceName
-        : smartGitHubResolution.kind === 'none'
-          ? submitTitleName?.displayName
-          : smartGitHubCreateNames.displayName
+        : isNumberedGitIssue(submitLinkedWorkItem)
+          ? effectiveBranchNameOverride || workspaceName
+          : smartGitHubResolution.kind === 'none'
+            ? submitTitleName?.displayName
+            : smartGitHubCreateNames.displayName
 
       // Why: the first-work hook only renames blank, auto-generated git workspaces that launch an agent; persist that pending state for the card.
       const pendingFirstAgentMessageRename =

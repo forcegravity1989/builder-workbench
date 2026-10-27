@@ -48,6 +48,7 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
       }
       const saved = resolveVisibleTaskProvider(pageData.taskSource, visibleTaskProviders)
       if (
+        !workbenchTaskScope?.goalId &&
         selectionIsCodeHub &&
         visibleTaskProviders.includes('codehub') &&
         !suppressCodeHubAutoRef.current &&
@@ -58,11 +59,17 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
       }
       setTaskSource(saved)
     }
-  }, [pageData.taskSource, selectionIsCodeHub, visibleTaskProviders, setTaskSource])
+  }, [
+    pageData.taskSource,
+    selectionIsCodeHub,
+    visibleTaskProviders,
+    setTaskSource,
+    workbenchTaskScope?.goalId
+  ])
   useEffect(() => {
     // Why: a BW workbench scope keeps the source its entry explicitly opened;
     // repo-remote auto-switching must not override the scoped view.
-    if (workbenchTaskScope) {
+    if (workbenchTaskScope?.goalId) {
       return
     }
     const selectionKey = selectedRepos

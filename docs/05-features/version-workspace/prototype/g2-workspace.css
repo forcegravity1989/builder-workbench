@@ -427,9 +427,150 @@ button:disabled {
 .native-projects {
   border-top: 1px solid var(--border);
   padding: 4px 0 10px;
+  max-height: 38%;
+  overflow: auto;
+  flex-shrink: 0;
 }
 .native-projects .section-label {
   margin-top: 6px;
+}
+.native-workspaces-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--worktree-sidebar, var(--sidebar));
+  margin: 0 3px 4px !important;
+  padding: 5px 0;
+  gap: 2px;
+}
+.native-workspaces-heading > span {
+  white-space: nowrap;
+}
+.native-workspaces-tools {
+  display: flex;
+  gap: 1px;
+}
+.native-workspaces-tools .icon-action {
+  width: 23px;
+  height: 23px;
+}
+.native-project-row {
+  display: flex;
+  align-items: center;
+  min-height: 31px;
+  border-radius: 5px;
+}
+.native-project-row:hover {
+  background: var(--worktree-sidebar-accent, var(--accent));
+}
+.native-project-title {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: 7px;
+  text-align: left;
+  padding: 5px 0;
+}
+.native-project-title > span {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.native-project-actions {
+  display: flex;
+  align-items: center;
+  opacity: 0;
+}
+.native-project-actions .icon-action,
+.native-project-actions .icon-button {
+  width: 22px;
+  height: 24px;
+}
+.native-project-row:hover .native-project-actions,
+.native-project-row:focus-within .native-project-actions {
+  opacity: 1;
+}
+.native-project-tree-list {
+  min-width: 0;
+}
+.other-projects-section {
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+  padding-top: 5px;
+}
+.other-projects-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 6px;
+  padding: 5px;
+  text-align: left;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.other-projects-toggle > span {
+  flex: 1;
+}
+.native-composer-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-bottom: 18px;
+}
+.native-composer-fields input,
+.native-composer-fields textarea,
+.native-composer-fields select {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: 6px;
+  padding: 8px;
+  font: inherit;
+}
+.native-composer-fields > label,
+.native-composer-advanced > label {
+  font-size: 12px;
+}
+.native-composer-issue {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted-foreground);
+  padding: 4px 0;
+  font-size: 12px;
+}
+.native-composer-issue svg {
+  flex-shrink: 0;
+}
+.native-composer-options {
+  display: flex;
+  gap: 12px;
+}
+.native-composer-options > label {
+  flex: 1;
+  font-size: 12px;
+}
+.native-composer-options select {
+  display: block;
+  margin-top: 5px;
+}
+.native-composer-advanced {
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.native-composer-advanced > summary {
+  cursor: pointer;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+.native-composer-advanced > textarea {
+  display: block;
+  margin-top: 6px;
+  resize: vertical;
 }
 .sidebar-footer {
   border-top: 1px solid var(--border);
@@ -1038,4 +1179,18 @@ button:disabled {
 .goal-menu {
   min-width: 24px;
   min-height: 24px;
+}
+
+.native-host-meta {
+  margin: 0 3px 4px 39px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.native-host-meta span {
+  display: inline-block;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 5px;
+  background: var(--accent);
+  line-height: 16px;
 }

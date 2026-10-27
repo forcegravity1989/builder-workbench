@@ -31,7 +31,13 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     }
     // Why: a BW workbench scope materializes its own reference-driven CodeHub
     // rows; the unscoped full-list fetch must not overwrite them.
+    if (workbenchTaskScope?.goalId) {
+      return
+    }
     if (workbenchTaskScope) {
+      setCodehubItems([])
+      setCodehubLoading(false)
+      setCodehubError('CodeHub 版本筛选暂不可用，移除版本筛选可查看项目任务。')
       return
     }
     const repos = selectedRepos.filter((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))

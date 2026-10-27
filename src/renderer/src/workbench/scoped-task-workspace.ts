@@ -194,13 +194,12 @@ export function resolveScopedComposerAdditions(args: {
   }
   const itemRepoId = item.repoId
   const repo = repoMap.get(itemRepoId)
+  if (!repo) {
+    return {}
+  }
   const reference = scope.references.find((candidate) => {
     if (candidate.provider !== item.provider || candidate.number !== item.number) {
       return false
-    }
-    if (!repo) {
-      // 仓库行缺失时无法构造仓库围栏，沿旧判据（provider+编号）。
-      return true
     }
     // 仓库维度围栏：同范围携带两仓同号引用时目标归属不串仓；引用仓库解析
     // 不出则不按该引用预填（回落 scope.goalId）——归属只认可证明的匹配。
@@ -211,6 +210,10 @@ export function resolveScopedComposerAdditions(args: {
     )
     return resolved !== null && resolved.id === itemRepoId
   })
+  // A retrieval label does not put an Issue into the official plan.
+  if (!reference) {
+    return {}
+  }
   const goalId = reference?.goalId ?? scope.goalId ?? undefined
   const workbenchCreation: WorkbenchCreationContext = {
     version: scope.version,

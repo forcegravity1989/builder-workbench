@@ -17,6 +17,9 @@ export function getPinnedWorktreeDisplayPolicy(
 export type GroupHeaderRow = {
   type: 'header'
   key: string
+  presentationKey?: string
+  partialPresentation?: boolean
+  displaySection?: { expanded: boolean; onToggle: () => void }
   label: string
   count: number
   tone: string

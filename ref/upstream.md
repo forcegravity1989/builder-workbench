@@ -1,6 +1,7 @@
 # Upstream Orca — 当前快照与同步记录
 
 > **本篇维护约定**
+>
 > - **读者与时机**：处理 Orca/BW 边界、核对上游版本、或实际合并/rebase Orca 时读取；仓外会话从 [AGENTS.md](../AGENTS.md) 的任务表进入。
 > - **职责与边界**：只记录与 BW 边界有关的 Orca 当前快照、稳定差异、旧 main 迁移来源和同步取舍；不承载 BW 产品设计、日常开发规则、完整 Orca release notes、完整源码树或未解决事项清单。
 > - **记录方式**：当前快照覆盖同一组字段，不追加月报。每次核对更新版本/日期/范围；历史由 Git 追溯。无法核对的字段写 `Unknown`，不能用旧基线冒充当前版本。
@@ -12,15 +13,15 @@
 
 ### 0.1 上游版本锚点
 
-| 项 | 本次核对结果 |
-|---|---|
-| Orca 仓库 | [stablyai/orca](https://github.com/stablyai/orca) |
-| 最近公开版本 | [v1.4.222](https://github.com/stablyai/orca/releases/tag/v1.4.222) |
-| 发布时间 | 2026-10-07 |
-| 发布锚点 | `4bb6f20`（release 页面短 SHA） |
-| 本次核对日期 | 2026-10-11 |
-| BW fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`，2026-09-15 |
-| 本次核对范围 | 公开 release、仓库顶层目录、与 BW 边界直接相关的能力摘要 |
+| 项               | 本次核对结果                                                       |
+| ---------------- | ------------------------------------------------------------------ |
+| Orca 仓库        | [stablyai/orca](https://github.com/stablyai/orca)                  |
+| 最近公开版本     | [v1.4.222](https://github.com/stablyai/orca/releases/tag/v1.4.222) |
+| 发布时间         | 2026-10-07                                                         |
+| 发布锚点         | `4bb6f20`（release 页面短 SHA）                                    |
+| 本次核对日期     | 2026-10-11                                                         |
+| BW fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`，2026-09-15             |
+| 本次核对范围     | 公开 release、仓库顶层目录、与 BW 边界直接相关的能力摘要           |
 
 公开版本不是本仓当前同步基线；本仓的 fork baseline 仍是单独的历史锚点。没有完成一次实际代码比较时，不把“最新 release”写成“已同步”。
 
@@ -34,21 +35,21 @@ BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY�
 
 下面只列同步时需要定位的稳定目录层级，不是完整源码清单：
 
-| 层级 | 上游目录 | 用途 |
-|---|---|---|
-| 产品与执行 | `src/`、`native/`、`cloud/`、`mobile/` | 桌面/原生/远程/移动产品与执行代码；合并时按实际文件和调用链判断 |
-| 资源与 Skill | `resources/`、`skills/`、`skill-guides/`、`skill-stubs/` | 原生资源与能力分发；Workbench 自有 Skill 以本仓 `standard/` 为正源 |
-| 工程与验证 | `config/`、`tests/`、`docs/`、`.github/`、`.husky/`、`Casks/`、`examples/plugins/` | 构建、测试、参考和发布辅助；不因此把上游工程文档变成 BW 产品正本 |
+| 层级         | 上游目录                                                                           | 用途                                                               |
+| ------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| 产品与执行   | `src/`、`native/`、`cloud/`、`mobile/`                                             | 桌面/原生/远程/移动产品与执行代码；合并时按实际文件和调用链判断    |
+| 资源与 Skill | `resources/`、`skills/`、`skill-guides/`、`skill-stubs/`                           | 原生资源与能力分发；Workbench 自有 Skill 以本仓 `standard/` 为正源 |
+| 工程与验证   | `config/`、`tests/`、`docs/`、`.github/`、`.husky/`、`Casks/`、`examples/plugins/` | 构建、测试、参考和发布辅助；不因此把上游工程文档变成 BW 产品正本   |
 
 ## 1. 上游身份与 fork 基线
 
-| 项 | 值 |
-|---|---|
-| Orca GitHub | `https://github.com/stablyai/orca` |
-| BW 仓远程 | `origin` = `https://github.com/forcegravity1989/builder-workbench.git` |
-| BW `origin/main` | 产品主干（原 `bw-orca`）；旧 Rust 路线归档为 `archive/main-pre-orca` |
-| Orca 本地远程 | 建议名 `orca-upstream`；使用前必须核对 URL，不能把 `origin` 当 Orca 上游 |
-| fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`（2026-09-15） |
+| 项               | 值                                                                       |
+| ---------------- | ------------------------------------------------------------------------ |
+| Orca GitHub      | `https://github.com/stablyai/orca`                                       |
+| BW 仓远程        | `origin` = `https://github.com/forcegravity1989/builder-workbench.git`   |
+| BW `origin/main` | 产品主干（原 `bw-orca`）；旧 Rust 路线归档为 `archive/main-pre-orca`     |
+| Orca 本地远程    | 建议名 `orca-upstream`；使用前必须核对 URL，不能把 `origin` 当 Orca 上游 |
+| fork baseline    | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`（2026-09-15）                 |
 
 执行实际 Orca 同步前，先在独立分支核对远程身份和当前主干：
 
@@ -72,13 +73,13 @@ git merge orca-upstream/main
 
 ### 2.2 目录和挂载边界
 
-| 层级 | BW 落点 | 同步取舍 |
-|---|---|---|
-| Orca 原生执行核 | TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、`src/main` runtime | 原生优先；不大段改写，不复制会话、任务、工作树、连接或调度内核 |
-| BW UI 叠层 | `src/renderer/src/workbench/` | 保留 BW 导航和业务板；与原生界面冲突时人工处理 |
-| BW 业务契约与事务 | `src/shared/workbench/`、`src/main/workbench/` | 业务落在 BW 自有模块，不塞进 Orca 工作树、连接和调度类 |
-| 宿主适配与 relay 组合 | `src/relay/workbench/`、原生 RPC/CLI 注册入口 | 复用原生身份、路由和窄执行器，只登记 BW 入口 |
-| 产品分发规范 | `standard/` | 是给被管项目的规范正源，不与 `.claude/skills/` 或 Orca 根级 Skill 目录合并 |
+| 层级                  | BW 落点                                                                             | 同步取舍                                                                   |
+| --------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| Orca 原生执行核       | TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、`src/main` runtime | 原生优先；不大段改写，不复制会话、任务、工作树、连接或调度内核             |
+| BW UI 叠层            | `src/renderer/src/workbench/`                                                       | 保留 BW 导航和业务板；与原生界面冲突时人工处理                             |
+| BW 业务契约与事务     | `src/shared/workbench/`、`src/main/workbench/`                                      | 业务落在 BW 自有模块，不塞进 Orca 工作树、连接和调度类                     |
+| 宿主适配与 relay 组合 | `src/relay/workbench/`、原生 RPC/CLI 注册入口                                       | 复用原生身份、路由和窄执行器，只登记 BW 入口                               |
+| 产品分发规范          | `standard/`                                                                         | 是给被管项目的规范正源，不与 `.claude/skills/` 或 Orca 根级 Skill 目录合并 |
 
 实现位置和运行入口的细节见 [SYNC](../src/renderer/src/workbench/SYNC.md)；当前产品能力见 [architecture](../docs/architecture.md)。
 
@@ -91,10 +92,10 @@ git merge orca-upstream/main
 - 任务详情的 source context、return-to-previous-view 和 worktree history replay；BW 不另建任务详情和历史系统。`openTaskPage({ preselectedRepoId })` 的预选优先级（显式预选 > 持久化 defaultRepoSelection > 全部项目）同为稳定契约：BW 侧栏任务入口靠它在 BW 壳内默认收窄到当前项目，页内筛选仍可改。
 - 计划屏 G3 与验收屏 v10 接线依赖的原生扩展点（2026-10-21 起，验收侧 2026-10-22 接入同一批）：① `lookupGitHubWorkItemForSource({ type: 'pr' })` + `openTaskPage({ openGitHubWorkItem })` → 原生 `task-page/Content` 按 `type==='pr'` 落 PullRequestPage，BW 归档卡打开原生 PR 页全靠此链（CodeHub 走 `viewTask(kind:'mr')` + `openCodeHubTask`），上游合并保留 type 参数与 PR 路由；② `openAgentSendPopoverTargetMode`（source union `'diff-notes'|'browser-annotations'`）是 BW 对象级动作与板面批注发送进入 target mode 的入口，BW 沿用 `'browser-annotations'` 不扩 union（埋点归因混入浏览器批注，要区分先交人决策）；**2026-10-22 起弹窗内会话行发送改走 `ReviewNotesSendMenuContent` 自身链（`sendNotesToActiveAgentSession` + QuickLaunch），BW `plan-send-menu.tsx` 合并该原生菜单组件与 target mode——上游合并需同时保 `openAgentSendPopoverTargetMode` 签名与 `ReviewNotesSendMenuContent`/QuickLaunch 的 props 稳定，菜单内部变化会静默破坏两屏的全部对象级注入动作——计划屏的拆解 Issue / 整理纪要 / 板面批注发送，以及验收屏 v10 起经同一包装件递交的部署 / 整理纪要 / 发起归档 / 发布 / 板面批注发送（`plan-send-menu.tsx` 名字带 plan 但已是两屏共用件，`assistant` 参数只改用户可见文案里的 AI 角色名）**；③ `AppWorkspaceShell` 的 `vc-board-titlebar` 内 `vc-session-toggle` 改为仅 `workflow === 'acceptance'` 渲染（计划屏收折 chip 迁入板面页头，经 `PLAN_CHAT_TOGGLE_EVENT` window 事件桥与壳 `use-plan-column-resize` 同步），上游合并保留该条件渲染与拖拽带结构。
 - BW 版本绑定与版本准备的原生契约接缝（G2 #383 P1/P2）：`WorktreeMeta.workbenchVersionBinding` 附属字段（undefined 保留 / null 清除）、`worktree.set` 白名单、`mergeWorktree` 投影规范化、runtime capability `workbench.version-binding.v1`（写入与清除双方向门控，无能力对端不下发）；BW 薄 helper `workbench.versionBinding.read/set`（原生身份定位、owner 验证、instanceId 围栏、读回确认才返回）；`workbench.versionWorkspace.prepare`（capability `workbench.version-workspace.v1`：宿主端预检 → 原生 `dedupeWorktreeCreate` → 创建结果核对 → 绑定写入 → 空计划 create-only 初始化）与 SSH relay `initializeEmptyPlan` 窄操作（无绑定树带旧固定分支围栏）。上游合并须保留白名单、投影规范化与能力双向门控——静默剥掉绑定字段会造成「写入被丢弃」假成功，由读回确认链兜底暴露。本地 IPC `worktrees.updateMeta` handler 语义（H-1 收窄后）：仅 `workbenchVersionBinding` 键显式 undefined=保留（剥除后合并）；其余键沿原生本地 IPC 线约 present-but-undefined=spread 清除（baseRef/pushTarget 两条原生清除链依赖），上游合并不得把该 handler 改回全局剥除或全局清除任一极端。
-- TaskPage 的 BW 范围字段 `workbenchTaskScope`（G2 #383 P4）：`TaskPageData` 可选携带版本/目标任务引用集；范围阶段（`use-task-page-workbench-scope.ts` + `workbench/task-scope-load.ts`）经原生 provider 逐条读取并物化本地分页，缺数据任务保留位置/数量/原因。有范围时跳过无范围的 landing/quiet 刷新、CodeHub 全量拉取、resume 缓存与列表位置写入、搜索查询持久化，投影改成员+客户端文本过滤（totalPages=本地页数）；范围不进 provider 缓存键或搜索查询。范围视图的 Issue Start/Open（列表行、详情弹窗）经 `workbench/scoped-task-workspace.ts` 按版本绑定精确解析：唯一→直开、多候选→BW 选择器（`version-workspace-choice-state`）、无→原生创建器；PR 行与无范围路径保持 `findGithubWorkItemWorkspaceAttachment` 首个未归档树语义逐字不变。github/codehub 详情往返须把范围带回列表。上游合并保留这些门控点、字段透传与解析分叉。
+- TaskPage 的 BW 入口上下文 `workbenchTaskScope`（#439）：版本入口在同一原生任务页预选可取消的版本标签，沿原生查询与分页；仅目标入口点读完整材料引用后按原生条件过滤分页，缺数据引用保留原因。Issue/PR、预设、仓库和筛选不再隐藏。入口条件不写全局 resume 查询，取消版本同时清目标；详情往返保留当前仍有效的上下文。Issue Start/Open 只有明确引用/绑定证明时带入 BW 创建归属，无证明沿原生。CodeHub 版本标签查询与目标 @me 身份依赖真实 CLI 契约，未接通时明确提示并允许取消条件，不把有上限的列表过滤冒充完整结果。上游合并保留这些薄挂载与 #451 的显式 taskSource 恢复。
 - `AppWorkspaceShell` activity 视图的 BW 页面挂载：按 `workbench/project-page-state` 模块态渲染项目墙/接入/名片补录/版本总览（G2 #383 P6 增 version-overview 分支）页面，activeView 切换即清模块态，不扩原生 TopLevelView union；上游合并保留该懒加载分支序列。
 - 工作树版本偏好、Git history 的窗口/固定 revision/`committedAt`、GitHub/CodeHub 的真实 `mergedAt` 字段透传。
-- 原生创建器的 BW 预填通道（G2 #383 P4）：`ComposerStateInput`/`ComposerModalData` 的可选 `initialNote`（备注种子，可见可改）、`initialParentWorktreeId`（父级建议种子；选择器与创建期 `resolveWorktreeCreateParent` 校验仍是权威，repo 切换清除旧建议）、`workbenchCreation`（`shared/workbench/creation-context.ts` 的版本/目标/任务来源上下文，提交时按最终仓库+最终任务来源解析为绑定，仓库变更即失效）。绑定写入发生在**真实创建结果处**：`WorktreeCreationRequest.workbenchVersionBinding`（quick/background 链，纯可序列化、Retry 原样重放）与 full 链的镜像写入均调 BW `workbench/post-create-version-binding.ts`（instanceId 必填围栏、读回确认、失败保留树并提供「重试写绑定」，不重复建树、不阻塞原生激活流）。上游合并保留这三个可选字段、请求字段与钻透链（composer-target-store → target-state → identity/source-context state → modal → quick/full execution → flow-execute）及 repo 变更清父级语义；无这些字段的原生调用方行为逐字不变。
+- 原生创建器的 BW 预填通道（G2 #383 P4）：`ComposerStateInput`/`ComposerModalData` 的可选 `initialNote`（原生备注种子，可见可改；BW 目标开工不再自动传入，也不为它预读计划）、`initialParentWorktreeId`（父级建议种子；选择器与创建期 `resolveWorktreeCreateParent` 校验仍是权威，repo 切换清除旧建议）、`workbenchCreation`（`shared/workbench/creation-context.ts` 的版本/目标/任务来源上下文，提交时按最终仓库+最终任务来源解析为绑定，仓库变更即失效）。绑定写入发生在**真实创建结果处**：`WorktreeCreationRequest.workbenchVersionBinding`（quick/background 链，纯可序列化、Retry 原样重放）与 full 链的镜像写入均调 BW `workbench/post-create-version-binding.ts`（instanceId 必填围栏、读回确认、失败保留树并提供「重试写绑定」，不重复建树、不阻塞原生激活流）。上游合并保留原生可选字段、请求字段与钻透链（composer-target-store → target-state → identity/source-context state → modal → quick/full execution → flow-execute）及 repo 变更清父级语义；无这些字段的原生调用方行为逐字不变。
 - Terminal→TabGroupSplitLayout 链的 `reserveClosedExplorerToggleSpace` 宿主参数（默认 true=Orca 原行为；BW 计划/验收双栏传 false，避免右上角预留位吃掉侧栏收起后的宽度）；上游合并时保留传参与默认值。
 - WSL/SSH/配对沿用原生宿主身份和执行路由；BW 不新增本机专属连接层。
 - 配对会话的 editor 标签发布与终端一样阻止镜像回声（#388）：`isMobilePublishableOpenFile` 排除 `mirroredFromRuntimeSession === true` 的文件，覆盖普通文件、Markdown 与预览的分组及 fallback 发布入口。上游同步时保留该过滤；不能按 `runtimeEnvironmentId` 是否存在排除文件，用户主动打开的远端文件仍沿原有语义发布。

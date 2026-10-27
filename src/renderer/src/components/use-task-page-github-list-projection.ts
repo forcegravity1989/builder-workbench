@@ -41,17 +41,24 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
     [activeGithubTaskKind]
   )
   const currentPageItems = useMemo(() => pages[currentPage] ?? [], [pages, currentPage])
-  // Why: a BW workbench scope is reference-driven — the scope stage materializes
-  // pages from the (search-filtered) reference set; membership here only fences
-  // out any unscoped cache pre-paint. The issue/PR tab split doesn't apply.
+  // Goal membership fences cache pre-paint; native Issue/PR filtering still applies.
   const typeFilteredCurrentPageItems = useMemo(() => {
     if (!workbenchScopeActive) {
       return applyTypeFilter(currentPageItems)
     }
-    return currentPageItems.filter((item) =>
+    if (activeGithubTaskKind === 'prs') {
+      return []
+    }
+    return applyTypeFilter(currentPageItems).filter((item) =>
       workbenchScopeItemKeys.has(`${item.repoId}:${item.number}`)
     )
-  }, [applyTypeFilter, currentPageItems, workbenchScopeActive, workbenchScopeItemKeys])
+  }, [
+    activeGithubTaskKind,
+    applyTypeFilter,
+    currentPageItems,
+    workbenchScopeActive,
+    workbenchScopeItemKeys
+  ])
   // Why: soft-hide keeps membership-exit rows in pages for rollback/cursors but
   // removes them from the visible table (sticky ∪ pending membership).
   const filteredWorkItems = useMemo(

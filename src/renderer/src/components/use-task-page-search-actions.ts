@@ -1,3 +1,4 @@
+import { seedWorkbenchTaskQuery } from '../../../shared/workbench/task-scope'
 import type { TaskPageGitHubQuietRefreshModel } from './use-task-page-github-quiet-refresh'
 import React, { useCallback, useEffect } from 'react'
 import type { PRFilterChange } from '@/components/github/PRFilterDropdowns'
@@ -5,7 +6,7 @@ import {
   scopeGitHubTaskSearch,
   getDefaultPresetForGitHubTaskKind
 } from '@/components/task-page-github-task-kind'
-import { withQualifier } from '../../../shared/task-query'
+import { parseTaskQuery, serializeTaskQuery, withQualifier } from '../../../shared/task-query'
 import type { TaskViewPresetId } from '../../../shared/ui-chrome-types'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
@@ -35,11 +36,6 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
   } = model
   const applyPRFilterChange = useCallback(
     (change: PRFilterChange): void => {
-      // G2 (BW)：范围视图是客户端过滤的物化列表——服务端 PR 限定词、resume
-      // 持久化与 nonce 重读都不适用（控件在范围态已隐藏，此处双保险）。
-      if (model.workbenchScopeActive) {
-        return
-      }
       let next = scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind)
       // Why: withQualifier round-trips through parseTaskQuery so each dropdown's patch preserves prior filters and free-text.
       if ('author' in change) {
@@ -83,11 +79,13 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
       })
       // Why: a filter change replaces every row's meaning; show the load skeleton so stale rows don't read as if the filter did nothing.
       setTasksFiltering(true)
-      setTaskRefreshNonce((current) => current + 1)
+      if (!model.workbenchScope?.goalId) {
+        setTaskRefreshNonce((current) => current + 1)
+      }
     },
     [
       activeGithubTaskKind,
-      model.workbenchScopeActive,
+      model.workbenchScope,
       setTaskResumeState,
       taskSearchInput,
       setActiveTaskPreset,
@@ -98,13 +96,6 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
     ]
   )
   const handleApplyTaskSearch = useCallback((): void => {
-    if (model.workbenchScopeActive) {
-      // 范围视图：Enter 只提交客户端过滤文本，不写持久化、不触发重读。
-      const trimmed = taskSearchInput.trim()
-      setTaskSearchInput(trimmed)
-      setAppliedTaskSearch(trimmed)
-      return
-    }
     const scoped = scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind)
     setTaskSearchInput(scoped)
     setAppliedTaskSearch(scoped)
@@ -114,10 +105,12 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
       githubItemsQuery: scoped
     })
     setTasksFiltering(true)
-    setTaskRefreshNonce((current) => current + 1)
+    if (!model.workbenchScope?.goalId) {
+      setTaskRefreshNonce((current) => current + 1)
+    }
   }, [
     activeGithubTaskKind,
-    model.workbenchScopeActive,
+    model.workbenchScope,
     setTaskResumeState,
     taskSearchInput,
     setTasksFiltering,
@@ -149,27 +142,36 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
   )
   const handleSelectGithubTaskKind = useCallback(
     (kind: GitHubTaskKind): void => {
-      if (model.workbenchScopeActive) {
-        // 范围视图：Issues/PRs 页签不适用（引用集即范围）；清除按钮复用本入口
-        // 时只清客户端过滤文本，不写持久化、不触发重读。
-        setTaskSearchInput('')
-        setAppliedTaskSearch('')
-        return
-      }
       const preset = getDefaultPresetForGitHubTaskKind(kind)
-      const query = getTaskPresetQuery(preset)
+      let query = getTaskPresetQuery(preset)
+      if (model.workbenchScope) {
+        const parsed = parseTaskQuery(taskSearchInput)
+        parsed.scope = kind === 'prs' ? 'pr' : 'issue'
+        if (kind === 'issues') {
+          parsed.draft = false
+          parsed.reviewRequested = null
+          parsed.reviewedBy = null
+          if (parsed.state === 'merged') {
+            parsed.state = 'open'
+          }
+        }
+        query = seedWorkbenchTaskQuery(serializeTaskQuery(parsed), model.workbenchScope)
+      }
       setTaskSearchInput(query)
       setAppliedTaskSearch(query)
-      setActiveTaskPreset(preset)
+      setActiveTaskPreset(model.workbenchScope ? null : preset)
       setTaskResumeState({
         githubItemsPreset: preset,
         githubItemsQuery: query
       })
       setTasksFiltering(true)
-      setTaskRefreshNonce((current) => current + 1)
+      if (!model.workbenchScope?.goalId) {
+        setTaskRefreshNonce((current) => current + 1)
+      }
     },
     [
-      model.workbenchScopeActive,
+      model.workbenchScope,
+      taskSearchInput,
       setTaskResumeState,
       setActiveTaskPreset,
       setTasksFiltering,
@@ -179,8 +181,25 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
     ]
   )
   const handleResetGithubTaskSearch = useCallback((): void => {
+    if (model.workbenchScope) {
+      const next = seedWorkbenchTaskQuery(
+        getTaskPresetQuery(getDefaultPresetForGitHubTaskKind(activeGithubTaskKind)),
+        model.workbenchScope
+      )
+      setTaskSearchInput(next)
+      setAppliedTaskSearch(next)
+      setActiveTaskPreset(getDefaultPresetForGitHubTaskKind(activeGithubTaskKind))
+      return
+    }
     handleSelectGithubTaskKind(activeGithubTaskKind)
-  }, [activeGithubTaskKind, handleSelectGithubTaskKind])
+  }, [
+    activeGithubTaskKind,
+    handleSelectGithubTaskKind,
+    model.workbenchScope,
+    setTaskSearchInput,
+    setAppliedTaskSearch,
+    setActiveTaskPreset
+  ])
   const handleTaskSearchKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>): void => {
       if (event.key === 'Enter') {

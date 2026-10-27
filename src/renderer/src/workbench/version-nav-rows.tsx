@@ -17,16 +17,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import WorktreeCardAgents from '@/components/sidebar/WorktreeCardAgents'
+import { VersionNativeTrees } from './VersionNativeTrees'
 import WorktreeContextMenu from '@/components/sidebar/WorktreeContextMenu'
 import { branchName } from '@/lib/git-utils'
 import type { Worktree } from '../../../shared/worktree/types'
-import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import { VERSION_TASKS_ENTRY_TITLE, WORKFLOW_SCREEN_LABELS } from './version-labels'
-import { activateVersionWorktree, VersionWorktreeHostGlyph } from './version-worktree-host'
+import { VersionWorktreeHostGlyph } from './version-worktree-host'
 
 /**
  * G2 侧栏版本树的行组件（P3a，高保真修订 8）：流程行=业务入口＋本树入口合一
@@ -66,44 +65,7 @@ function ChevronSpacer(): React.JSX.Element {
   return <span className="size-5 shrink-0" aria-hidden="true" />
 }
 
-/**
- * 绑定树行（目标目录体）：名称点击激活（原生链），箭头展开原生 agent 行；
- * 整行右击出原生工作树维护菜单（#436 伴飞裁定 CF-6f：对齐原生整卡右击形态，
- * 不另设三点——原生 WorktreeContextMenu 本就只响应右击）。
- */
-export function BoundTreeRow({ tree }: { tree: Worktree }): React.JSX.Element {
-  const [agentsOpen, setAgentsOpen] = useState(true)
-  const branch = branchName(tree.branch)
-  const label = tree.displayName.trim() || branch
-  return (
-    <div className="min-w-0">
-      <WorktreeContextMenu worktree={tree}>
-        <div className={cn(ROW_CLASS, ROW_IDLE)}>
-          <ChevronToggle
-            expanded={agentsOpen}
-            onToggle={() => setAgentsOpen((open) => !open)}
-            label={`${label} 会话展开或收起`}
-          />
-          <button
-            type="button"
-            title={`${branch} · 右击出工作区维护菜单`}
-            onClick={() => activateVersionWorktree(tree)}
-            className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-worktree-sidebar-foreground/8"
-          >
-            <GitBranch className="size-3.5 shrink-0 text-worktree-sidebar-foreground/40" />
-            <span className="truncate">{label}</span>
-            <VersionWorktreeHostGlyph tree={tree} />
-          </button>
-        </div>
-      </WorktreeContextMenu>
-      {agentsOpen ? (
-        <div className="pl-6">
-          <WorktreeCardAgents worktreeId={tree.id} />
-        </div>
-      ) : null}
-    </div>
-  )
-}
+export { VersionNativeTrees as BoundTreeRows } from './VersionNativeTrees'
 
 type WorkflowRowProps = {
   version: string
@@ -173,11 +135,7 @@ export function WorkflowRow({
       {onlyTree ? <WorktreeContextMenu worktree={onlyTree}>{row}</WorktreeContextMenu> : row}
       {agentsOpen && trees.length > 0 ? (
         <div className="pl-6">
-          {onlyTree ? (
-            <WorktreeCardAgents worktreeId={onlyTree.id} />
-          ) : (
-            trees.map((tree) => <BoundTreeRow key={getWorktreeHostIdentity(tree)} tree={tree} />)
-          )}
+          <VersionNativeTrees trees={trees} sectionKey={`version:${version}:${workflow}`} />
         </div>
       ) : null}
     </div>
@@ -264,13 +222,14 @@ export function GoalDirectoryRow({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {expanded
-        ? goalTrees.map((tree) => (
-            <div key={getWorktreeHostIdentity(tree)} className="pl-5">
-              <BoundTreeRow tree={tree} />
-            </div>
-          ))
-        : null}
+      {expanded ? (
+        <div className="pl-5">
+          <VersionNativeTrees
+            trees={goalTrees}
+            sectionKey={`version:${version}:goal:${normalizeStoredWorkbenchVersionBinding(goalTrees[0]?.workbenchVersionBinding)?.goalId ?? label}`}
+          />
+        </div>
+      ) : null}
     </div>
   )
 }

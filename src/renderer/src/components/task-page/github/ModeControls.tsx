@@ -85,31 +85,41 @@ export function TaskPageGitHubModeControls({
           getRepoHostLabel={getTaskPickerRepoHostLabel}
           onChange={(next) => {
             const normalized = normalizeTaskRepoSelection(eligibleRepos, next)
+            if (model.workbenchScope) {
+              model.clearWorkbenchProject()
+            }
             setRepoSelection(normalized)
-            void updateSettings({
-              defaultRepoSelection: [...normalized]
-            }).catch(() => {
-              toast.error(
-                translate(
-                  'auto.components.TaskPage.dfd72673e7',
-                  'Failed to save project selection.'
+            if (!model.workbenchScope) {
+              void updateSettings({
+                defaultRepoSelection: [...normalized]
+              }).catch(() => {
+                toast.error(
+                  translate(
+                    'auto.components.TaskPage.dfd72673e7',
+                    'Failed to save project selection.'
+                  )
                 )
-              )
-            })
+              })
+            }
           }}
           onSelectAll={() => {
+            if (model.workbenchScope) {
+              model.clearWorkbenchProject()
+            }
             const allIds = new Set(taskPickerRepos.map((r) => r.id))
             setRepoSelection(allIds)
-            void updateSettings({
-              defaultRepoSelection: null
-            }).catch(() => {
-              toast.error(
-                translate(
-                  'auto.components.TaskPage.dfd72673e7',
-                  'Failed to save project selection.'
+            if (!model.workbenchScope) {
+              void updateSettings({
+                defaultRepoSelection: null
+              }).catch(() => {
+                toast.error(
+                  translate(
+                    'auto.components.TaskPage.dfd72673e7',
+                    'Failed to save project selection.'
+                  )
                 )
-              )
-            })
+              })
+            }
           }}
           triggerClassName="h-8 w-auto max-w-[220px] rounded-md border border-border/50 bg-muted/50 px-2 text-xs font-medium shadow-sm transition hover:bg-muted/50 focus:ring-2 focus:ring-ring/20 focus:outline-none"
         />

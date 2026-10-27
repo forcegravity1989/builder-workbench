@@ -1,13 +1,17 @@
 import React from 'react'
 import type { WorkbenchTaskScope } from '../../../shared/workbench/task-scope'
 import type { TaskScopeMissingRow } from './task-scope-load'
+import { X } from 'lucide-react'
+import { workbenchVersionTaskLabel } from '../../../shared/workbench/task-scope'
 
 /**
- * G2 范围任务屏的 BW 呈现层（P4）：范围身份（版本/目标/引用计数）与缺数据行
- * （位置、数量、原因如实保留，不静默丢弃）。只挂载在原生列表的既有槽位里，
+ * Removable version/goal filters and unreadable goal-reference facts. Native
+ * controls and rows remain the only task page; no separate task authority.
  * 不另造列表、行形态或任务正本；无范围时组件自渲染 null，原生行为逐字不变。
  * 以最小结构类型接收任务屏 model，避免 BW 组件反向依赖原生阶段类型。
  */
+
+export const WORKBENCH_GOAL_SEARCH_PLACEHOLDER = '搜索目标标题或编号…'
 
 type TaskScopeChromeModel = {
   workbenchScopeActive: boolean
@@ -15,6 +19,9 @@ type TaskScopeChromeModel = {
   workbenchScopeLoading: boolean
   workbenchScopeMissing: TaskScopeMissingRow[]
   workbenchScopeReadyCount: number
+  workbenchScopeError?: string | null
+  clearWorkbenchVersion: () => void
+  clearWorkbenchGoal: () => void
 }
 
 export function TaskPageScopeHeader({
@@ -22,30 +29,39 @@ export function TaskPageScopeHeader({
 }: {
   model: TaskScopeChromeModel
 }): React.JSX.Element | null {
-  const { workbenchScopeActive, workbenchScope, workbenchScopeLoading, workbenchScopeReadyCount } =
-    model
-  if (!workbenchScopeActive || !workbenchScope) {
+  const { workbenchScope } = model
+  if (!workbenchScope) {
     return null
   }
   return (
     <div
       className="flex flex-wrap items-center gap-2 border-b border-border/50 px-3 py-1.5 text-[11px] text-muted-foreground"
-      role="status"
-      aria-label="任务范围"
+      aria-label="当前筛选条件"
     >
       <span className="rounded-full border border-border/40 bg-muted/30 px-2 py-0.5 font-medium text-foreground">
-        版本 {workbenchScope.version}
+        {workbenchVersionTaskLabel(workbenchScope.version)}
+        <button
+          type="button"
+          className="ml-1 align-middle"
+          aria-label="移除版本筛选"
+          onClick={model.clearWorkbenchVersion}
+        >
+          <X className="size-3" />
+        </button>
       </span>
       {workbenchScope.goalId ? (
         <span className="rounded-full border border-border/40 bg-muted/30 px-2 py-0.5">
           目标 {workbenchScope.goalLabel || workbenchScope.goalId}
+          <button
+            type="button"
+            className="ml-1 align-middle"
+            aria-label="移除目标筛选"
+            onClick={model.clearWorkbenchGoal}
+          >
+            <X className="size-3" />
+          </button>
         </span>
       ) : null}
-      <span>
-        {workbenchScopeLoading
-          ? '范围读取中…'
-          : `计划材料引用 ${workbenchScope.references.length} 个任务 · 本视图可读 ${workbenchScopeReadyCount} 个`}
-      </span>
     </div>
   )
 }
@@ -73,14 +89,24 @@ export function TaskPageScopeFooter({
   }
   const loading = workbenchScopeLoading || extraLoading
   const filteredZero =
-    !loading && filteredCount !== null && filteredCount === 0 && workbenchScopeReadyCount > 0
+    !loading &&
+    !model.workbenchScopeError &&
+    filteredCount !== null &&
+    filteredCount === 0 &&
+    workbenchScopeReadyCount > 0
   const empty =
     !loading &&
     !filteredZero &&
+    !model.workbenchScopeError &&
     workbenchScopeReadyCount === 0 &&
     workbenchScopeMissing.length === 0
   return (
     <>
+      {model.workbenchScopeError ? (
+        <p role="status" className="px-3 py-2 text-xs text-destructive">
+          {model.workbenchScopeError}
+        </p>
+      ) : null}
       {workbenchScopeMissing.length > 0 ? (
         <div className="border-t border-border/50 px-3 py-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">

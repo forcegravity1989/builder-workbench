@@ -3,14 +3,22 @@ import { useAppStore } from '@/store'
 import { useRepoMap, useAllWorktrees } from '@/store/selectors'
 import { localPreflightContextKey, getLocalPreflightContext } from '@/lib/local-preflight-context'
 import { getProviderRuntimeContextKey } from '@/lib/provider-runtime-context'
-import { useRef } from 'react'
+import { useCallback, useRef } from 'react'
 import { getScreenSubmitShortcutLabel } from '@/lib/screen-submit-shortcut'
 export function useTaskPageStoreBindings() {
   useTranslation()
   const settings = useAppStore((s) => s.settings)
   const persistedUIReady = useAppStore((s) => s.persistedUIReady)
   const taskResumeState = useAppStore((s) => s.taskResumeState)
-  const setTaskResumeState = useAppStore((s) => s.setTaskResumeState)
+  const persistTaskResumeState = useAppStore((s) => s.setTaskResumeState)
+  const setTaskResumeState = useCallback<typeof persistTaskResumeState>(
+    (update) => {
+      if (!useAppStore.getState().taskPageData.workbenchTaskScope) {
+        persistTaskResumeState(update)
+      }
+    },
+    [persistTaskResumeState]
+  )
   const pageData = useAppStore((s) => s.taskPageData)
   const openTaskPage = useAppStore((s) => s.openTaskPage)
   const closeTaskPage = useAppStore((s) => s.closeTaskPage)
