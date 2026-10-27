@@ -17,6 +17,7 @@ const sha512 = createHash('sha512').update(payload).digest('base64')
 const filename = 'workbench-windows-setup.exe'
 const requests: { path: string; range: string | null }[] = []
 let interrupted = false
+let retireFeed: (() => void) | undefined
 const server = createServer((request, response) => {
   const path = request.url ?? ''
   requests.push({ path, range: request.headers.range ?? null })
@@ -42,6 +43,7 @@ const server = createServer((request, response) => {
     if (!interrupted) {
       interrupted = true
       response.write(payload.subarray(0, 262_144))
+      setTimeout(() => retireFeed?.(), 50)
       setTimeout(() => response.destroy(), 100)
     } else {
       response.end(payload.subarray(offset))
@@ -66,6 +68,7 @@ async function verify(): Promise<void> {
     cacheDir: join(root, 'downloads'),
     fetch: (url, init) => net.fetch(url, init)
   })
+  retireFeed = feed.close
   try {
     class FixtureUpdater extends NsisUpdater {
       constructor() {
@@ -104,7 +107,11 @@ async function verify(): Promise<void> {
           passed: true,
           electron: process.versions.electron,
           nativeUpdater: 'electron-updater@6.8.9',
-          cases: ['mid-body-disconnect-range-resume', 'native-staging-sha512-and-progress'],
+          cases: [
+            'feed-retirement-preserves-inflight-transfer',
+            'mid-body-disconnect-range-resume',
+            'native-staging-sha512-and-progress'
+          ],
           requests,
           progress,
           bytes: payload.length,

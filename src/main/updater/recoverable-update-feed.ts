@@ -155,7 +155,7 @@ export async function startRecoverableUpdateFeed(
   return {
     url: `http://127.0.0.1:${address.port}${prefix}`,
     close: () => {
-      server.closeAllConnections()
+      // A new tag retires this listener; existing downloads must keep their connection.
       server.close()
     }
   }
