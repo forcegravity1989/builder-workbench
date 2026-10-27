@@ -83,8 +83,9 @@ esbuild
       if (
         !fs.existsSync(output) ||
         fs.readFileSync(output, 'utf8').replace(/\r\n/g, '\n') !== result.replace(/\r\n/g, '\n')
-      )
+      ) {
         throw new Error('Rebuild milestone prototype from its feature JSX sources.')
+      }
       console.log('Milestone prototype matches editable source.')
     } else {
       fs.writeFileSync(output, result)
