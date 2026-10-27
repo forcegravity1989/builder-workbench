@@ -4,6 +4,7 @@ import {
   getLinkedWorkItemSuggestedName,
   getLinkedWorkItemWorkspaceName,
   getWorkspaceIntentName,
+  isLinkedWorkItemWorkspaceNameSeed,
   resolveWorkspaceCreateName,
   slugifyForWorkspaceName
 } from './workspace-name'
@@ -54,6 +55,11 @@ describe('getLinkedWorkItemSuggestedName', () => {
 
 describe('getLinkedWorkItemWorkspaceName', () => {
   it('uses the resolved GitHub title instead of the source URL or provider number', () => {
+    const issue = { type: 'issue' as const, number: 383, title: '侧栏主机显示' }
+    const names = getLinkedWorkItemWorkspaceName(issue)
+    expect(names).toEqual({ displayName: '#383 侧栏主机显示', seedName: 'issue-383' })
+    expect(isLinkedWorkItemWorkspaceNameSeed('issue-383', issue)).toBe(true)
+    expect(isLinkedWorkItemWorkspaceNameSeed('my-custom-workspace', issue)).toBe(false)
     expect(
       getLinkedWorkItemWorkspaceName({
         type: 'pr',
@@ -67,6 +73,11 @@ describe('getLinkedWorkItemWorkspaceName', () => {
   })
 
   it('keeps external provider identifiers without duplicating title prefixes', () => {
+    const issue = { type: 'issue' as const, number: 383, title: 'Repair sidebar rendering' }
+    expect(isLinkedWorkItemWorkspaceNameSeed('repair-sidebar-rendering', issue)).toBe(true)
+    expect(isLinkedWorkItemWorkspaceNameSeed('issue-383-repair-sidebar-rendering', issue)).toBe(
+      true
+    )
     expect(
       getLinkedWorkItemWorkspaceName({
         type: 'issue',

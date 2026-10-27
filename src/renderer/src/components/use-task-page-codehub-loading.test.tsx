@@ -36,8 +36,20 @@ it('fetches one bounded list and keeps issue search on the client', async () => 
     setCodehubLoading: vi.fn(),
     setCodehubError: vi.fn()
   } as unknown as Parameters<typeof useTaskPageCodeHubLoading>[0]
-  renderHook(() => useTaskPageCodeHubLoading(model))
+  const { result, rerender } = renderHook(() => useTaskPageCodeHubLoading(model))
   await waitFor(() => expect(setItems).toHaveBeenCalled())
   expect(listTasks.mock.lastCall?.[0]).toMatchObject({ limit: 250, search: undefined })
   expect(setItems.mock.lastCall?.[0]).toHaveLength(35)
+  listTasks.mockResolvedValue({
+    remote: { host: 'codehub.example.com', project: 'team/project' },
+    items: [],
+    hasMore: true
+  })
+  model.pageData = { workbenchTaskScope: { version: 'v0.1', references: [] } }
+  rerender()
+  await waitFor(() => expect(result.current.codehubHasMore).toBe(true))
+  expect(listTasks.mock.lastCall?.[0]).toMatchObject({ labels: ['bw:plan:v0.1'], limit: 250 })
+  model.pageData = {}
+  rerender()
+  await waitFor(() => expect(listTasks.mock.lastCall?.[0]).toMatchObject({ labels: undefined }))
 })

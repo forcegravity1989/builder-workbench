@@ -8,6 +8,7 @@ import { Popover, PopoverAnchor, PopoverArrow, PopoverContent } from '@/componen
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Sparkles, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 type SidebarHeaderProps = {
   onWorkspaceBoardMenuOpenChange: (open: boolean) => void
@@ -36,8 +37,9 @@ const SidebarHeader = React.memo(function SidebarHeader({
   const acknowledgeIntro = React.useCallback(() => {
     void updateSettings?.({ agentsSidebarIntroShown: true })
   }, [updateSettings])
-  const sidebarTitle =
-    groupBy === 'repo'
+  const sidebarTitle = isWorkbenchShell()
+    ? 'Orca 项目工作区'
+    : groupBy === 'repo'
       ? translate('dashboard.sidebar.projects', 'Projects')
       : translate('dashboard.sidebar.workspaces', 'Workspaces')
   const activityLabel = translate(

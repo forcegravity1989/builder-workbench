@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
@@ -10,9 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { codehubApi } from '@/lib/codehub-api'
-import { toast } from 'sonner'
-import { CodeHubIssueStatusMenu } from './IssueStatusMenu'
+import { CodeHubIssueListStatus } from './IssueStatusMenu'
 import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page-github-work-item-status-badge'
 import {
   getTaskPageGitHubPRIconTone,
@@ -39,7 +36,7 @@ import {
   GITHUB_TASK_STICKY_TITLE_HEADER_CLASS,
   getTaskPageRepoSourceContext
 } from '../../task-page-source-context'
-import { TaskPageScopeFooter, TaskPageScopeHeader } from '@/workbench/TaskScopePanel'
+import { CodeHubListResultNotice, TaskPageScopeFooter } from '@/workbench/TaskScopePanel'
 import { resolveTaskRowWorkspace } from '@/workbench/scoped-task-workspace'
 
 function githubStateOf(item: CodeHubTaskItem): GitHubWorkItemStatusItem {
@@ -47,49 +44,6 @@ function githubStateOf(item: CodeHubTaskItem): GitHubWorkItemStatusItem {
     type: item.type === 'mr' ? 'pr' : 'issue',
     state: item.state === 'opened' ? 'open' : item.state
   }
-}
-
-function CodeHubIssueListStatus({
-  item,
-  onChanged
-}: {
-  item: CodeHubTaskItem
-  onChanged: () => void
-}): React.JSX.Element {
-  const [busy, setBusy] = useState(false)
-  return (
-    <CodeHubIssueStatusMenu
-      closed={item.state !== 'opened'}
-      busy={busy}
-      onSetState={(state, stateReason, duplicateOf) => {
-        if (!item.repoPath || busy) {
-          return
-        }
-        setBusy(true)
-        void codehubApi
-          .setIssueState({
-            repoPath: item.repoPath,
-            repoId: item.repoId,
-            iid: item.iid,
-            state,
-            stateReason,
-            duplicateOf: stateReason === 'duplicate' ? (duplicateOf ?? null) : null
-          })
-          .then(() => {
-            toast.success(
-              state === 'open'
-                ? translate('auto.components.TaskPage.codehubIssueReopened', 'Issue reopened')
-                : translate('auto.components.TaskPage.codehubIssueClosed', 'Issue closed')
-            )
-            onChanged()
-          })
-          .catch((reason: unknown) => {
-            toast.error(reason instanceof Error ? reason.message : String(reason))
-          })
-          .finally(() => setBusy(false))
-      }}
-    />
-  )
 }
 
 export function TaskPageCodeHubItemList({
@@ -115,9 +69,24 @@ export function TaskPageCodeHubItemList({
   const mrView = codehubView === 'mrs'
   const gridClass = mrView ? GITHUB_PR_TASK_GRID_CLASS : GITHUB_TASK_GRID_CLASS
   const query = codehubQuery.trim().toLowerCase()
-  const authorFilter = codehubView === 'issues' ? codehubAuthor.trim().toLowerCase() : ''
-  const assigneeFilter = codehubView === 'issues' ? codehubAssignee.trim().toLowerCase() : ''
+  const authorFilter =
+    codehubView === 'issues' && !model.workbenchScopeActive
+      ? codehubAuthor.trim().toLowerCase()
+      : ''
+  const assigneeFilter =
+    codehubView === 'issues' && !model.workbenchScopeActive
+      ? codehubAssignee.trim().toLowerCase()
+      : ''
   const visibleItems = codehubItems.filter((item) => {
+    if (item.type !== (mrView ? 'mr' : 'issue')) {
+      return false
+    }
+    if (
+      model.workbenchScopeActive &&
+      (mrView || !model.workbenchScopeCodeHubItemKeys.has(`${item.repoId}:${item.iid}`))
+    ) {
+      return false
+    }
     if (
       !mrView &&
       query &&
@@ -166,7 +135,6 @@ export function TaskPageCodeHubItemList({
           <span>{translate('auto.components.TaskPage.f362667d55', 'Updated')}</span>
           <span />
         </div>
-        <TaskPageScopeHeader model={model} />
         {codehubError ? (
           <div className="border-b border-border px-4 py-4 text-sm text-destructive">
             {codehubError}
@@ -188,6 +156,7 @@ export function TaskPageCodeHubItemList({
         ) : null}
         {!codehubLoading &&
         visibleItems.length === 0 &&
+        !model.codehubHasMore &&
         !codehubError &&
         !model.workbenchScopeActive ? (
           <div className="px-4 py-12 text-center">
@@ -395,6 +364,9 @@ export function TaskPageCodeHubItemList({
           model={model}
           extraLoading={codehubLoading}
           filteredCount={visibleItems.length}
+        />
+        <CodeHubListResultNotice
+          hasMore={!codehubLoading && !model.workbenchScopeActive && model.codehubHasMore}
         />
       </div>
     </div>

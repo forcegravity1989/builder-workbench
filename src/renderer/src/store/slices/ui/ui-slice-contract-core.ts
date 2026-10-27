@@ -69,8 +69,7 @@ export type TaskPageData = {
   openLinearSourceContext?: TaskSourceContext | null
   openJiraIssue?: JiraIssue
   openJiraSourceContext?: TaskSourceContext | null
-  /** G2 (BW overlay) optional scope: version/goal task-reference set driving the
-   *  same native list; absent keeps the native Tasks page behavior unchanged. */
+  /** Optional local entry filters: native version label and complete goal references. */
   workbenchTaskScope?: WorkbenchTaskScope | null
 }
 

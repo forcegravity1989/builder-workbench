@@ -135,6 +135,7 @@ export async function listCodeHubTasks(args: {
   kind: 'issue' | 'mr'
   state: 'opened' | 'closed' | 'merged' | 'all'
   limit?: number
+  labels?: string[]
   scope?: 'created_by_me' | 'assigned_to_me' | 'need_my_review'
   search?: string
   author?: string
@@ -159,6 +160,9 @@ export async function listCodeHubTasks(args: {
   ]
   if (args.state !== 'all') {
     flags.push('--state', args.state)
+  }
+  if (args.labels?.length) {
+    flags.push('--labels', args.labels.join(','))
   }
   if (args.scope && !(args.kind === 'issue' && args.scope === 'need_my_review')) {
     flags.push('--scope', args.scope)

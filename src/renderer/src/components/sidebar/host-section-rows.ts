@@ -18,6 +18,8 @@ import { getFolderWorkspaceHostId } from './folder-workspace-host-id'
 export type HostHeaderRow = {
   type: 'host-header'
   key: string
+  presentationKey?: string
+  partialPresentation?: boolean
   hostId: ExecutionHostId
   kind: ExecutionHostKind
   label: string

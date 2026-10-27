@@ -25,7 +25,11 @@ export function revealMountedSidebarRowElement(
   behavior: ScrollBehavior,
   onScrollIssued?: (targetTop: number) => void
 ): HTMLElement | null {
-  const element = document.getElementById(getWorktreeOptionId(rowKey))
+  const element =
+    document.getElementById(getWorktreeOptionId(rowKey)) ??
+    [...container.querySelectorAll<HTMLElement>('[data-sidebar-original-row-key]')].find(
+      (candidate) => candidate.dataset.sidebarOriginalRowKey === rowKey
+    )
   if (!element || !container.contains(element)) {
     return null
   }

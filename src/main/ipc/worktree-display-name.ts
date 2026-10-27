@@ -72,6 +72,14 @@ export function resolveWorktreeCreateDisplayNameMeta(
     if (kind !== 'user' && requestedDisplayName === branchName) {
       return {}
     }
+    // A generated branch seed stays automatic when creation adds a collision suffix.
+    if (
+      kind === 'generated' &&
+      (requestedDisplayName === fallback.requestedName ||
+        requestedDisplayName === fallback.sanitizedName)
+    ) {
+      return { displayNameIsPinned: false }
+    }
     return { displayName: requestedDisplayName, displayNameIsPinned: true }
   }
   // A user label that sanitizes away is an empty label, so keep the generated fallback automatic.

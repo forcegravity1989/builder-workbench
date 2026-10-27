@@ -7,15 +7,19 @@ import { MOBILE_RPC_METHOD_ALLOWLIST } from '../../runtime-rpc/runtime-rpc-mobil
 it('routes paired/web CodeHub reads and writes through the native dispatcher', async () => {
   const codehub = {
     listTasks: vi.fn().mockResolvedValue({ items: [], hasMore: false }),
+    viewer: vi
+      .fn()
+      .mockResolvedValue({ id: 42, username: 'owner', name: 'Owner', state: 'active' }),
     setIssueState: vi.fn().mockResolvedValue(undefined)
   }
   const runtime = { getRuntimeId: () => 'owner', codehub } as unknown as OrcaRuntimeService
   const dispatcher = new RpcDispatcher({ runtime, methods: CODEHUB_METHODS })
   const repo = { repoId: 'repo-1', repoPath: '/srv/project' }
-  const list = { ...repo, kind: 'issue', state: 'opened', limit: 60 }
+  const list = { ...repo, kind: 'issue', state: 'opened', limit: 60, labels: ['bw:plan:v0.1'] }
   const state = { ...repo, iid: 12, state: 'closed', stateReason: 'completed' }
   for (const [method, params] of [
     ['listTasks', list],
+    ['viewer', repo],
     ['setIssueState', state]
   ] as const) {
     const response = await dispatcher.dispatch({

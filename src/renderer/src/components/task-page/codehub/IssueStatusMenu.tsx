@@ -1,9 +1,63 @@
 import { useState } from 'react'
-import { Ban, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, CircleDot, Copy } from 'lucide-react'
+import {
+  Ban,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleDot,
+  Copy
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
+import { codehubApi } from '@/lib/codehub-api'
+import { toast } from 'sonner'
+import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
+
+export function CodeHubIssueListStatus({
+  item,
+  onChanged
+}: {
+  item: CodeHubTaskItem
+  onChanged: () => void
+}): React.JSX.Element {
+  const [busy, setBusy] = useState(false)
+  return (
+    <CodeHubIssueStatusMenu
+      closed={item.state !== 'opened'}
+      busy={busy}
+      onSetState={(state, stateReason, duplicateOf) => {
+        if (!item.repoPath || busy) {
+          return
+        }
+        setBusy(true)
+        void codehubApi
+          .setIssueState({
+            repoPath: item.repoPath,
+            repoId: item.repoId,
+            iid: item.iid,
+            state,
+            stateReason,
+            duplicateOf: stateReason === 'duplicate' ? (duplicateOf ?? null) : null
+          })
+          .then(() => {
+            toast.success(
+              state === 'open'
+                ? translate('auto.components.TaskPage.codehubIssueReopened', 'Issue reopened')
+                : translate('auto.components.TaskPage.codehubIssueClosed', 'Issue closed')
+            )
+            onChanged()
+          })
+          .catch((reason: unknown) => {
+            toast.error(reason instanceof Error ? reason.message : String(reason))
+          })
+          .finally(() => setBusy(false))
+      }}
+    />
+  )
+}
 
 export function CodeHubIssueStatusMenu({
   closed,
@@ -109,7 +163,12 @@ export function CodeHubIssueStatusMenu({
                 )}
                 className="h-8 w-20 rounded-md border border-border/60 bg-background px-2 text-xs"
               />
-              <Button size="sm" type="submit" variant="outline" disabled={busy || !duplicateOf.trim()}>
+              <Button
+                size="sm"
+                type="submit"
+                variant="outline"
+                disabled={busy || !duplicateOf.trim()}
+              >
                 {translate('auto.components.TaskPage.closeAsDuplicate', 'Close as duplicate')}
               </Button>
             </div>

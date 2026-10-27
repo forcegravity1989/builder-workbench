@@ -1,6 +1,7 @@
 import type { TaskPageWorkbenchScopeModel } from './use-task-page-workbench-scope'
 import { useCallback, useMemo, useEffect } from 'react'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import { matchesWorkbenchTaskQuery } from '../../../shared/workbench/task-scope'
 import { taskPageGitHubItemKey } from '@/components/task-page-github-work-item-mutation-registry'
 import { deriveTaskPagePRCheckSummary } from '@/components/task-page-pr-check-summary'
 import { deriveAdvertisedTotalPages } from '@/components/task-page-work-item-pagination'
@@ -41,28 +42,47 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
     [activeGithubTaskKind]
   )
   const currentPageItems = useMemo(() => pages[currentPage] ?? [], [pages, currentPage])
-  // Why: a BW workbench scope is reference-driven — the scope stage materializes
-  // pages from the (search-filtered) reference set; membership here only fences
-  // out any unscoped cache pre-paint. The issue/PR tab split doesn't apply.
+  // Goal membership fences cache pre-paint; native Issue/PR filtering still applies.
   const typeFilteredCurrentPageItems = useMemo(() => {
     if (!workbenchScopeActive) {
       return applyTypeFilter(currentPageItems)
     }
-    return currentPageItems.filter((item) =>
+    if (activeGithubTaskKind === 'prs') {
+      return []
+    }
+    return applyTypeFilter(currentPageItems).filter((item) =>
       workbenchScopeItemKeys.has(`${item.repoId}:${item.number}`)
     )
-  }, [applyTypeFilter, currentPageItems, workbenchScopeActive, workbenchScopeItemKeys])
+  }, [
+    activeGithubTaskKind,
+    applyTypeFilter,
+    currentPageItems,
+    workbenchScopeActive,
+    workbenchScopeItemKeys
+  ])
   // Why: soft-hide keeps membership-exit rows in pages for rollback/cursors but
   // removes them from the visible table (sticky ∪ pending membership).
   const filteredWorkItems = useMemo(
     () =>
       typeFilteredCurrentPageItems.filter(
         (workItem) =>
+          (!workbenchScopeActive ||
+            matchesWorkbenchTaskQuery(
+              { ...workItem, assignees: (workItem.assignees ?? []).map((user) => user.login) },
+              model.appliedTaskSearch,
+              model.workbenchScopeViewerLogins.get(workItem.repoId) ?? null
+            )) &&
           !githubWorkItemMutation.softHiddenItemKeys.has(
             taskPageGitHubItemKey(workItem.repoId, workItem.id)
           )
       ),
-    [githubWorkItemMutation.softHiddenItemKeys, typeFilteredCurrentPageItems]
+    [
+      githubWorkItemMutation.softHiddenItemKeys,
+      typeFilteredCurrentPageItems,
+      workbenchScopeActive,
+      model.appliedTaskSearch,
+      model.workbenchScopeViewerLogins
+    ]
   )
   const softHiddenVisibleCount = useMemo(
     () => typeFilteredCurrentPageItems.length - filteredWorkItems.length,

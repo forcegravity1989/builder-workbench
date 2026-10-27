@@ -78,11 +78,58 @@ describe('CodeHub native repository routing', () => {
         }))
       )
     })
-    const first = await service().listTasks({ ...args, kind: 'issue', state: 'opened', limit: 30 })
+    const first = await service().listTasks({
+      ...args,
+      kind: 'issue',
+      state: 'opened',
+      limit: 30,
+      labels: ['bw:plan:v0.1']
+    })
+    expect(run.mock.lastCall?.[0]).toEqual(expect.arrayContaining(['--labels', 'bw:plan:v0.1']))
     expect(first.items).toHaveLength(30)
     expect(first.hasMore).toBe(true)
     const next = await service().listTasks({ ...args, kind: 'issue', state: 'opened', limit: 60 })
     expect(next.items.at(-1)?.iid).toBe(35)
     expect(next.hasMore).toBe(false)
+  })
+
+  it('reads only the current registered host user through its native execution options', async () => {
+    run.mockResolvedValue(JSON.stringify({ id: 42, username: 'ada', name: 'Ada', state: 'active' }))
+    expect(await service().viewer(args)).toEqual({
+      id: 42,
+      username: 'ada',
+      name: 'Ada',
+      state: 'active'
+    })
+    expect(run).toHaveBeenLastCalledWith(
+      [
+        '--no-cache',
+        'user',
+        'view',
+        '-H',
+        'codehub-g.huawei.com',
+        '--json',
+        'id,username,name,state'
+      ],
+      { cwd: repo.path, wslDistro: 'Ubuntu' }
+    )
+    const paired: Repo = {
+      ...repo,
+      executionHostId: 'ssh:owner',
+      gitRemoteIdentity: {
+        ...repo.gitRemoteIdentity!,
+        remoteUrl: 'https://open.codehub.huawei.com/team/project.git',
+        canonicalKey: 'open.codehub.huawei.com/team/project'
+      }
+    }
+    await service(paired).viewer(args)
+    expect(run).toHaveBeenLastCalledWith(
+      expect.arrayContaining(['-H', 'open.codehub.huawei.com']),
+      {}
+    )
+    run.mockResolvedValue('{}')
+    await expect(service().viewer(args)).rejects.toThrow('current user is unavailable')
+    run.mockRejectedValue(new Error('credentials are not configured'))
+    await expect(service().viewer(args)).rejects.toThrow('credentials')
   })
 })

@@ -4,6 +4,7 @@ import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import type { IssueInfo } from '../../../../shared/github/pull-request-types'
 import type { LinearIssue } from '../../../../shared/linear/issue-types'
+import { isNumberedGitIssue } from '../../../../shared/workspace-name'
 import { getWorktreeCardJiraIssueDisplay } from './worktree-card-jira-issue-display'
 import type { WorktreeCardIssueDisplay } from './WorktreeCardMeta'
 import {
@@ -107,16 +108,27 @@ export function useWorktreeCardLinkedDetails({
         }
     : null
   const jiraIssueDisplay = getWorktreeCardJiraIssueDisplay(worktree)
+  const linkedIssue = isNumberedGitIssue(worktree.linkedWorkItem) ? worktree.linkedWorkItem : null
+  const issueTitle =
+    !linkedIssue ||
+    (linkedIssue.provider === 'github' &&
+      issueDisplay?.number === linkedIssue.number &&
+      (!linkedIssue.repoId || linkedIssue.repoId === worktree.repoId))
+      ? issueDisplay?.title
+      : undefined
   const cardTitleDisplay = getWorktreeCardTitleDisplay({
     storedDisplayName: worktree.displayName,
+    displayNameMode: worktree.displayNameMode,
+    linkedWorkItem: worktree.linkedWorkItem,
     branchName: branch,
     linearIssueTitle: linearIssueDisplay?.title,
     jiraIssueTitle: jiraIssueDisplay?.title,
-    issueTitle: issueDisplay?.title,
+    issueTitle,
     reviewTitle: prDisplay?.title
   })
   const legacyCardTitleDisplay = coerceWorktreeCardVisibleTitle(worktree.displayName)
-  const visibleCardTitle = newCardStyle ? cardTitleDisplay : legacyCardTitleDisplay
+  const hasGitIssue = isNumberedGitIssue(worktree.linkedWorkItem)
+  const visibleCardTitle = newCardStyle || hasGitIssue ? cardTitleDisplay : legacyCardTitleDisplay
   const isDeleting = deleteState?.isDeleting ?? false
   const isQueuedForDeletion = deleteState?.phase === 'queued'
   const deleteLabel = isQueuedForDeletion

@@ -20,6 +20,7 @@ import { resolveComposerBranchNameOverrideForCreate } from '../composer-branch-s
 import { resolveWorktreeCreateBaseBranch } from '@/runtime/worktree-create-base'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import type { PendingSmartGitHubSubmitResolution } from './source-selection-decisions'
+import { isNumberedGitIssue } from '../../../../shared/workspace-name'
 
 export function useQuickSubmitPreparation(input: QuickSubmitPreparationInput) {
   const {
@@ -234,11 +235,14 @@ export function useQuickSubmitPreparation(input: QuickSubmitPreparationInput) {
 
       const submitBaseBranch = baseBranchSettlement.value
 
+      // Automatic Issue labels come from the linked item, so keep the stored label branch-based.
       const createDisplayName = !nameIsAutoManaged
         ? workspaceName
-        : smartGitHubResolution.kind === 'none'
-          ? submitTitleName?.displayName
-          : smartGitHubCreateNames.displayName
+        : isNumberedGitIssue(submitLinkedWorkItem)
+          ? effectiveBranchNameOverride || workspaceName
+          : smartGitHubResolution.kind === 'none'
+            ? submitTitleName?.displayName
+            : smartGitHubCreateNames.displayName
 
       // Why: quick create shares the blank-name flow; the card needs an explicit marker, not a guess from the title.
       const pendingFirstAgentMessageRename =

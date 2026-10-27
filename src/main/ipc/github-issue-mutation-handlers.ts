@@ -2,7 +2,13 @@ import { ipcMain } from 'electron'
 import type { GitHubOwnerRepo } from '../../shared/github/pull-request-types'
 import type { GitHubIssueUpdate } from '../../shared/issue-mutation-types'
 import type { TaskSourceContext } from '../../shared/task-source-context'
-import { addIssueComment, listAssignableUsers, listLabels, updateIssue } from '../github/client'
+import {
+  addIssueComment,
+  getRepoAuthenticatedViewer,
+  listAssignableUsers,
+  listLabels,
+  updateIssue
+} from '../github/client'
 import type { Store } from '../persistence'
 import {
   assertRegisteredGitHubRepo,
@@ -13,6 +19,15 @@ import {
 import { broadcastGitHubWorkItemMutation } from './github-work-item-mutation-events'
 
 export function registerGitHubIssueMutationHandlers(store: Store): void {
+  ipcMain.handle('gh:repoViewer', (_event, args: GitHubRepoScopedArgs) => {
+    const repo = assertRegisteredGitHubRepo(args, store)
+    return getRepoAuthenticatedViewer(
+      repo.path,
+      repo.issueSourcePreference,
+      getGitHubRepoConnectionId(repo),
+      ...getGitHubLocalGitOptionArgs(store, repo)
+    )
+  })
   ipcMain.handle(
     'gh:updateIssue',
     async (event, args: GitHubRepoScopedArgs & { number: number; updates: GitHubIssueUpdate }) => {

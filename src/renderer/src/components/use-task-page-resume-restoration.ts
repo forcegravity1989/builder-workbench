@@ -1,3 +1,4 @@
+import { seedWorkbenchTaskQuery } from '../../../shared/workbench/task-scope'
 import type { TaskPageJiraListStateModel } from './use-task-page-jira-list-state'
 import { useEffect } from 'react'
 import { resolveVisibleTaskProvider } from '../../../shared/task-providers'
@@ -64,13 +65,19 @@ export function useTaskPageResumeRestoration(model: TaskPageJiraListStateModel) 
     setGithubMode(nextGithubMode)
     const preset = taskResumeState?.githubItemsPreset
     if (preset === null) {
-      const query = taskResumeState?.githubItemsQuery ?? ''
+      const query = seedWorkbenchTaskQuery(
+        taskResumeState?.githubItemsQuery ?? '',
+        pageData.workbenchTaskScope
+      )
       setTaskSearchInput(query)
       setAppliedTaskSearch(query)
       setActiveTaskPreset(null)
     } else {
       const presetId = normalizeGitHubTaskPreset(preset ?? settings.defaultTaskViewPreset)
-      const query = getTaskPresetQuery(presetId)
+      const query = seedWorkbenchTaskQuery(
+        getTaskPresetQuery(presetId),
+        pageData.workbenchTaskScope
+      )
       setTaskSearchInput(query)
       setAppliedTaskSearch(query)
       setActiveTaskPreset(presetId)
@@ -99,6 +106,7 @@ export function useTaskPageResumeRestoration(model: TaskPageJiraListStateModel) 
     persistedUIReady,
     settings,
     pageData.taskSource,
+    pageData.workbenchTaskScope,
     resolvedInitialSelection,
     taskResumeState,
     visibleTaskProviders,
