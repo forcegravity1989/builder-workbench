@@ -44,10 +44,6 @@ export type VersionHistorySource = {
   revision: string
   workflow: 'plan' | 'acceptance'
   committedAt: string
-  /** Present only when this exact acceptance revision identifies one coherent round. */
-  roundId?: string
-  week?: string
-  roundKind?: 'progress' | 'final'
 }
 export type VersionHistoryProblem = Pick<
   VersionHistorySource,

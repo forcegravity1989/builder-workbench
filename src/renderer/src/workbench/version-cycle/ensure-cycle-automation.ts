@@ -1,7 +1,10 @@
 /**
- * BW 周期自动化注册：每个 workflow 恰有一条 BW 标识的自动化，默认关闭。
+ * BW 周期自动化注册：每个 workflow（绑定树再按版本）恰有一条 BW 标识的自动化，
+ * 默认关闭。
  *
- * 身份是 creationKey（`bw-cycle:<scopeKey>:<workflow>`）。字段按归属分治：
+ * 身份是 creationKey（旧无绑定固定树 `bw-cycle:<scopeKey>:<workflow>`；G2 绑定
+ * 流程树加版本维度 `bw-cycle:<scopeKey>:<workflow>:<version>`——每版独立登记，
+ * 不复用旧版条目、不落错执行树）。字段按归属分治：
  * BW 所有的提示词每次进屏覆盖同步为当前 BW 版本（BW 持续演进，定时与手动
  * 跑的必须始终是新版提示）；人所有的字段（启用、时间、模型、会话复用）注册
  * 后永不触碰。四铁律：定时任务真实到点触发，且由人启用后才到点，BW 不代启。
@@ -9,6 +12,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store'
+import { LOCAL_EXECUTION_HOST_ID, parseExecutionHostId } from '../../../../shared/execution-host'
 import type { Automation, AutomationCreateInput } from '../../../../shared/automations-types'
 import type {
   AutomationAuthorityRef,
@@ -43,14 +47,34 @@ const AUTOMATION_NAMES: Record<VersionWorkflow, readonly string[]> = {
   acceptance: ['每周版本验收（BW）', '每周版本验收']
 }
 
+/** G2（P5）：绑定树的条目名版本在前（沿版本材料命名约定），旧条目名仅参与同树去重。 */
+function automationNames(workflow: VersionWorkflow, version: string | null): readonly string[] {
+  const base = AUTOMATION_NAMES[workflow]
+  return version ? [`${version} ${base[0]}`, ...base] : base
+}
+
 /** 本地周频节奏：计划周一 09:00、验收周五 16:00；改时间由人在原生编辑器确认。 */
 const SCHEDULES: Record<VersionWorkflow, { dayOfWeek: number; hour: number; minute: number }> = {
   plan: { dayOfWeek: 1, hour: 9, minute: 0 },
   acceptance: { dayOfWeek: 5, hour: 16, minute: 0 }
 }
 
-export function cycleAutomationCreationKey(scope: CycleScope): string {
-  return `bw-cycle:${cycleScopeKey(scope)}:${scope.workflow}`
+export function cycleAutomationCreationKey(scope: CycleScope, version?: string | null): string {
+  // G2（P5）：绑定树加版本维度，每版流程树独立登记；旧无绑定树沿旧 key（旧上下文保留）。
+  const ownerScope = ownerSpelledCycleScope(scope)
+  return version
+    ? `bw-cycle:${cycleScopeKey(ownerScope)}:${ownerScope.workflow}:${version}`
+    : `bw-cycle:${cycleScopeKey(ownerScope)}:${ownerScope.workflow}`
+}
+
+// Why: 同一逻辑条目的 creationKey 身份必须在 owner 与访客观察方之间一致——访客经
+// runtime:<env> 拼写观察 owner 的配对树时，键会按观察方拼写分叉，findExisting 的
+// byKey 永不互认，人工改名后走回退 create 在归属宿主产生第二条同树同版条目。键的
+// 宿主维度统一取 owner 侧拼写（local），路由仍由 authority 单独决定、不受影响。
+function ownerSpelledCycleScope(scope: CycleScope): CycleScope {
+  return parseExecutionHostId(scope.hostId)?.kind === 'runtime'
+    ? { ...scope, hostId: LOCAL_EXECUTION_HOST_ID, runtimeOwnerEnvironmentId: undefined }
+    : scope
 }
 
 export type EnsureCycleAutomationResult =
@@ -117,14 +141,15 @@ const creating = new Map<string, Promise<EnsureCycleAutomationResult>>()
 export async function ensureCycleAutomation(
   scope: CycleScope,
   fixedId: string,
-  agent: TuiAgent | null
+  agent: TuiAgent | null,
+  version?: string | null
 ): Promise<EnsureCycleAutomationResult> {
-  const creationKey = cycleAutomationCreationKey(scope)
+  const creationKey = cycleAutomationCreationKey(scope, version)
   const pending = creating.get(creationKey)
   if (pending) {
     return await pending
   }
-  const task = runEnsure(scope, fixedId, agent, creationKey)
+  const task = runEnsure(scope, fixedId, agent, creationKey, version ?? null)
   creating.set(creationKey, task)
   try {
     return await task
@@ -137,10 +162,11 @@ async function runEnsure(
   scope: CycleScope,
   fixedId: string,
   agent: TuiAgent | null,
-  creationKey: string
+  creationKey: string,
+  version: string | null
 ): Promise<EnsureCycleAutomationResult> {
   const host = cycleAutomationHost(scope)
-  const names = AUTOMATION_NAMES[scope.workflow]
+  const names = automationNames(scope.workflow, version)
   const authority = pinnedAuthority(host)
   if (!authority) {
     return {
@@ -227,16 +253,23 @@ export function useEnsureCycleAutomation({
   fixedId,
   workflow,
   agent,
-  onNotice
+  onNotice,
+  version = null
 }: {
   cycleScope: CycleScope | null
   fixedId: string | null
   workflow: VersionWorkflow
   agent: TuiAgent | null
   onNotice(message: string): void
+  /**
+   * G2（P5）：绑定树的版本——进 creationKey/条目名/提示词（提示词由
+   * resolveWorkbenchPromptAssets 按树绑定自检，此处只负责身份与命名）。
+   */
+  version?: string | null
 }): { automationId: string | null; creationKey: string | null } {
   const [registered, setRegistered] = useState<{ key: string; id: string } | null>(null)
-  const scopeKey = cycleScope && fixedId ? `${cycleScopeKey(cycleScope)}:${fixedId}` : null
+  const scopeKey =
+    cycleScope && fixedId ? `${cycleScopeKey(cycleScope)}:${fixedId}:${version ?? ''}` : null
   useEffect(() => {
     if (!cycleScope || !fixedId || !scopeKey) {
       return
@@ -248,7 +281,7 @@ export function useEnsureCycleAutomation({
     let active = true
     void (async () => {
       try {
-        const result = await ensureCycleAutomation(cycleScope, fixedId, agent)
+        const result = await ensureCycleAutomation(cycleScope, fixedId, agent, version)
         if (!active) {
           return
         }
@@ -260,8 +293,8 @@ export function useEnsureCycleAutomation({
         if (result.status === 'created') {
           onNotice(
             workflow === 'plan'
-              ? '已注册每周版本计划自动化（默认关闭）：在自动化页启用后，每周一 09:00 触发。'
-              : '已注册每周版本验收自动化（默认关闭）：在自动化页启用后，每周五 16:00 触发。'
+              ? `已注册${version ? ` ${version} ` : '每周版本'}计划自动化（默认关闭）：在自动化页启用后，每周一 09:00 触发。`
+              : `已注册${version ? ` ${version} ` : '每周版本'}验收自动化（默认关闭）：在自动化页启用后，每周五 16:00 触发。`
           )
         }
         if (result.status === 'exists' && result.syncError) {
@@ -279,9 +312,9 @@ export function useEnsureCycleAutomation({
     return () => {
       active = false
     }
-  }, [scopeKey, cycleScope, fixedId, workflow, agent, onNotice])
+  }, [scopeKey, cycleScope, fixedId, workflow, agent, onNotice, version])
   return {
     automationId: registered?.key === scopeKey ? registered.id : null,
-    creationKey: cycleScope ? cycleAutomationCreationKey(cycleScope) : null
+    creationKey: cycleScope ? cycleAutomationCreationKey(cycleScope, version) : null
   }
 }

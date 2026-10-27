@@ -72,46 +72,26 @@ describe('version task snapshots', () => {
       results: [
         {
           goalId: 'g1',
-          deliveries: [],
-          materials: [{ label: '验收材料', url: 'https://example.test/material' }],
           readings: [],
           note: '',
-          progress: '已完成接口联调',
           nextStep: '',
-          rounds: [
-            {
-              id: 'r1',
-              week: '2026-W42',
-              kind: 'progress',
-              snapshot: {
-                goals: [{ goalId: 'g1', decision: 'pending', progress: '进行中' }],
-                issueMarks: { 'issue-1': { carry: true } },
-                issueNotes: { 'issue-1': '下周继续核对' }
-              }
-            }
-          ],
-          meetingDirectives: [
-            {
-              id: 'd1',
-              text: '补齐材料链接',
-              tag: 'record-remaining',
-              status: 'pending',
-              source: 'transcript-summary'
-            }
-          ],
           issueNotes: { 'issue-1': '需要补充证据' },
-          issueMarks: { 'issue-1': { risk: true } }
+          issueMarks: { 'issue-1': { carry: true } }
         }
-      ]
+      ],
+      demoEnv: { kind: 'url', url: 'https://demo.example.test' },
+      minutes: {
+        consensus: ['共识：演示通过'],
+        followups: [{ id: 'f1', text: '补齐材料链接' }],
+        confirmed: false
+      }
     })
-    expect(enriched.results[0].materials).toEqual([
-      { label: '验收材料', url: 'https://example.test/material' }
-    ])
-    expect(enriched.results[0].progress).toBe('已完成接口联调')
-    expect(enriched.results[0].rounds?.[0].snapshot.issueMarks).toEqual({
-      'issue-1': { carry: true }
-    })
-    expect(enriched.results[0].meetingDirectives?.[0].status).toBe('pending')
+    expect(enriched.results[0].issueMarks).toEqual({ 'issue-1': { carry: true } })
+    expect(enriched.results[0].issueNotes).toEqual({ 'issue-1': '需要补充证据' })
+    // v10 optional sections parse without migrating anything.
+    expect(enriched.demoEnv).toEqual({ kind: 'url', url: 'https://demo.example.test' })
+    expect(enriched.minutes?.followups[0].text).toBe('补齐材料链接')
+    expect(enriched.minutes?.confirmed).toBe(false)
   })
   it('exports the input schema including required source host without losing CLI schema support', () => {
     const schema = z.toJSONSchema(AcceptanceMaterialSchema, { io: 'input' })

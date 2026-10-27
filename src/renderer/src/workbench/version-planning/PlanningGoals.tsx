@@ -1,17 +1,12 @@
-import { ChartNoAxesCombined, ChevronDown, ChevronRight, Info, Plus, RefreshCw } from 'lucide-react'
-import { useEffect, useRef, useState, type Ref } from 'react'
+import { ChartNoAxesCombined, ChevronDown, ChevronRight, Plus, RefreshCw } from 'lucide-react'
+import { useState, type Ref } from 'react'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
 import { goalCardViewKey, writeGoalCardExpanded } from '../cycle-view-state'
 import type { AnnotationMatch } from '../annotations/types'
 import { BoardIconButton } from '../board-ui'
 import type { SendActionWrap } from '../plan-send-menu'
-import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
-import {
-  materialProblemFile,
-  materialProblemRequest,
-  type CycleMaterialProblem
-} from '../version-cycle/cycle-start-request'
-import type { CycleScope, CycleTaskRead, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
+import type { CycleScope, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
+import { useCycleTaskReads } from '../version-cycle/use-cycle-task-reads'
 import { PlanningGoalCard } from './PlanningGoalCard'
 import type { usePlanMetrics } from './use-plan-metrics'
 
@@ -28,10 +23,7 @@ export function PlanningGoals({
   onRemoveGoal,
   onSendAction,
   numbersFor,
-  onOpenAnnotationPanel,
-  entry,
-  problems,
-  version
+  onOpenAnnotationPanel
 }: {
   plan?: PlanningMaterial
   disabled: boolean
@@ -47,77 +39,20 @@ export function PlanningGoals({
   onSendAction: SendActionWrap
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
-  entry: CycleEntry
-  problems: CycleMaterialProblem[]
-  version: string | null
 }) {
-  const [reads, setReads] = useState<CycleTaskRead[] | null>(null)
   const [expanded, setExpanded] = useState(false)
   const [expandedSignal, setExpandedSignal] = useState(0)
-  const [refreshing, setRefreshing] = useState(false)
-  const [readError, setReadError] = useState<string | null>(null)
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
-  const referenceKey = JSON.stringify(plan?.tasks ?? [])
-  const referenceKeyRef = useRef(referenceKey)
-  referenceKeyRef.current = referenceKey
-  useEffect(() => {
-    if (!scope || !plan?.tasks.length) {
-      setReads(plan?.tasks.length ? null : [])
-      setReadError(null)
-      return
-    }
-    let active = true
-    setReads(null)
-    void taskPort.listVersion(scope, plan.tasks).then(
-      (items) => {
-        if (active) {
-          setReads(items)
-          setReadError(null)
-        }
-      },
-      (reason) => {
-        if (active) {
-          setReadError(reason instanceof Error ? reason.message : String(reason))
-          setReads(
-            plan.tasks.map((reference) => ({
-              reference,
-              kind: 'unavailable' as const,
-              error: '任务状态读取失败',
-              readAt: new Date().toISOString()
-            }))
-          )
-        }
-      }
-    )
-    return () => {
-      active = false
-    }
-  }, [plan?.tasks, referenceKey, scope, taskPort])
-
-  const refreshIssues = async () => {
-    if (!scope || !plan?.tasks.length || refreshing) {
-      return
-    }
-    const requestedKey = referenceKey
-    setRefreshing(true)
-    setReadError(null)
-    try {
-      const items = await taskPort.refresh(scope, plan.tasks)
-      // A version switch while the provider round-trip was in flight must not
-      // let the stale read overwrite the new version's list.
-      if (requestedKey === referenceKeyRef.current) {
-        setReads(items)
-      }
-    } catch (reason) {
-      if (requestedKey === referenceKeyRef.current) {
-        setReadError(reason instanceof Error ? reason.message : String(reason))
-      }
-    } finally {
-      if (requestedKey === referenceKeyRef.current) {
-        setRefreshing(false)
-      }
-    }
-  }
+  // Issue 读数走两屏共享的渲染进程快照缓存（use-cycle-task-reads，#432）：
+  // 切屏/材料保存重挂载立即回显上次读数、后台静默重读，不再整列闪「状态未知」；
+  // 「刷新 Issue」强制重读，转圈即缓存条目 busy（按键控条目走，在途切版本不会
+  // 卡死按钮——旧组件级 refreshing 状态的复位守卫问题随机制结构化消失）。
+  const {
+    reads,
+    error: readError,
+    busy: refreshing,
+    refresh: refreshIssues
+  } = useCycleTaskReads({ scope, tasks: plan?.tasks, taskPort })
 
   const changeGoal = (goal: VersionGoal) => {
     if (plan) {
@@ -208,14 +143,15 @@ export function PlanningGoals({
       </div>
       {!plan ? (
         <div className="g3-empty-board">
-          <p>{version ? `${version} 计划尚未建立。` : '尚未选定版本，可在页头选择已有版本。'}</p>
-          <PlanningStartButton entry={entry} problems={problems} version={version} />
-          <PlanningMaterialProblems problems={problems} />
+          <p>尚无目标</p>
         </div>
       ) : (
         <fieldset disabled={disabled} className="g3-goal-fieldset">
-          {/* Material problems of other versions stay visible while a plan is open — the retired always-on start card used to carry them. */}
-          <PlanningMaterialProblems problems={problems} />
+          {plan.goals.length === 0 ? (
+            <div className="g3-empty-board">
+              <p>尚无目标</p>
+            </div>
+          ) : null}
           <div className="g3-goal-list">
             {plan.goals.map((goal, index) => (
               <PlanningGoalCard
@@ -224,6 +160,7 @@ export function PlanningGoals({
                 index={index}
                 relatedTasks={plan.tasks.filter((task) => task.goalId === goal.goalId)}
                 reads={readsByReference}
+                version={plan.version}
                 onChange={changeGoal}
                 onRemove={(goalId) => {
                   setEditingGoalId(null)
@@ -251,62 +188,5 @@ export function PlanningGoals({
         </fieldset>
       )}
     </section>
-  )
-}
-
-/**
- * The single plan-creation launch entry (G2 seam: sessions start from the
- * board button, versions ride in from the sidebar later). Runs the registered
- * automation manually through the existing ensure chain; material problems ride
- * along as one-shot context. No second version-picker lives here.
- */
-function PlanningStartButton({
-  entry,
-  problems,
-  version
-}: {
-  entry: CycleEntry
-  problems: CycleMaterialProblem[]
-  version: string | null
-}) {
-  return (
-    <button
-      type="button"
-      disabled={entry.busy}
-      onClick={() =>
-        void entry.start(
-          [
-            version ? `本次计划版本：${version}。请读取该版本的当前材料并继续协作。` : '',
-            problems.length ? materialProblemRequest(problems, 'plan', version) : ''
-          ]
-            .filter(Boolean)
-            .join('\n') || undefined
-        )
-      }
-    >
-      {entry.busy ? '正在打开会话…' : '与计划助手新建计划'}
-    </button>
-  )
-}
-
-function PlanningMaterialProblems({ problems }: { problems: CycleMaterialProblem[] }) {
-  if (!problems.length) {
-    return null
-  }
-  return (
-    <p
-      className="vc-start-problem"
-      role="alert"
-      title={problems
-        .map((item) => `${materialProblemFile(item, 'plan')}：${item.error ?? item.state}`)
-        .join('\n')}
-    >
-      <Info size={14} aria-hidden="true" />
-      <span>
-        {[...new Set(problems.map((item) => item.version))].join('、')} 的版本材料格式
-        {problems.every((item) => item.state === 'migration-required') ? '较旧' : '有问题'}
-        ，暂无法读取；点「与计划助手新建计划」会把具体文件和迁移请求带入会话，由模型说明方案、经你确认后转换，不留旧文件副本。
-      </span>
-    </p>
   )
 }

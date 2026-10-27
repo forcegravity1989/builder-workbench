@@ -3,6 +3,7 @@ import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { mergeExternalWorktreeInboxPaths } from '../../../../shared/external-worktree-inbox'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import { resolveExactWorktreeRoute, routeForOwner } from '@/lib/worktree-owner-route'
+import { branchName } from '@/lib/git-utils'
 import {
   getRepoExecutionHostId,
   parseExecutionHostId,
@@ -11,6 +12,7 @@ import {
 import type { RuntimeRepoSearchRefs } from '../../../../shared/runtime-types'
 import { REPO_SEARCH_REFS_MAX_LIMIT } from '../../../../shared/repo-search-limits'
 import type { CreateWorktreeResult } from '../../../../shared/worktree/create-types'
+import { matchReusableBranchRef } from '../../../../shared/workbench/reusable-branch-ref'
 import type {
   DetectedWorktree,
   DetectedWorktreeListResult,
@@ -70,7 +72,7 @@ export function findNamedWorktree(scope: NativeWorkspaceScope, branch: string): 
     .filter(
       (worktree) =>
         worktree.repoId === scope.repoId &&
-        worktree.branch.replace(/^refs\/heads\//, '') === branch &&
+        branchName(worktree.branch) === branch &&
         nativeWorkspaceScopeKey(nativeWorkspaceScope(worktree)) === nativeWorkspaceScopeKey(scope)
     )
   if (found.length > 1) {
@@ -137,23 +139,15 @@ async function findNamedBaseRef(
     { repo: `id:${scope.repoId}`, query: branch, limit: REPO_SEARCH_REFS_MAX_LIMIT },
     { timeoutMs: 15_000 }
   )
-  if (result.truncated || (result.refs.length > 0 && !result.refDetails)) {
+  // 与 main 侧版本准备同一匹配实现（G2 F8 提共享）：核对来源再采用。
+  const match = matchReusableBranchRef(result, branch)
+  if (match.kind === 'unverifiable') {
     throw new Error(`无法完整确认分支 ${branch} 的来源，请在项目中核对分支后重试`)
   }
-  const details = result.refDetails ?? []
-  const local = details.find(
-    (ref) =>
-      ref.localBranchName === ref.refName &&
-      [branch, `heads/${branch}`, `refs/heads/${branch}`].includes(ref.refName)
-  )
-  if (local) {
-    return local.refName
-  }
-  const matching = details.filter((ref) => ref.localBranchName === branch)
-  if (matching.length > 1) {
+  if (match.kind === 'ambiguous') {
     throw new Error(`多个远端存在分支 ${branch}，请先在项目中检出要使用的分支后重试`)
   }
-  return matching[0]?.refName
+  return match.kind === 'ref' ? match.refName : undefined
 }
 
 /** Register an externally-created tree through the native inbox import surface. */
@@ -215,7 +209,7 @@ export async function ensureNamedWorktree(
     // in-flight). Adopting an existing holder — or failing before create — is what
     // stops native create from uniquifying name+branch into orphan trees.
     const holder = (await detectedTrees(scope, target)).find(
-      (item) => item.branch.replace(/^refs\/heads\//, '') === branch
+      (item) => branchName(item.branch) === branch
     )
     if (holder) {
       const imported = await importExternalTree(scope, holder.path)
@@ -255,7 +249,7 @@ export async function ensureNamedWorktree(
             },
             { timeoutMs: 600_000 }
           )
-    const createdBranch = result.worktree.branch.replace(/^refs\/heads\//, '')
+    const createdBranch = branchName(result.worktree.branch)
     if (createdBranch !== branch) {
       // Native create uniquifies name+branch when the requested branch is already
       // checked out elsewhere (e.g. a tree left by an older toolchain). Roll the stray

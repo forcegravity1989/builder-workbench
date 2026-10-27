@@ -10,10 +10,10 @@ import { nativeWorkbenchWorkspaceHost } from './workspace-resolver'
 import { createVersionMaterialWorkspace } from './version-material-workspace'
 import { WorkspaceScopeError } from './workspace-scope-error'
 
-export const executeVersionMaterial: VersionMaterialExecutor = (target, reauthorize) => {
+export const executeVersionMaterial: VersionMaterialExecutor = (target, reauthorize, binding) => {
   const host = parseExecutionHostId(target.hostId)
   if (host?.kind === 'local') {
-    return createVersionMaterialWorkspace(target, reauthorize)
+    return createVersionMaterialWorkspace(target, reauthorize, binding ?? null)
   }
   // Paired runtimes are selected by Orca's caller; only their own SSH namespace is used here.
   if (host?.kind !== 'ssh') {
@@ -29,7 +29,10 @@ export const executeVersionMaterial: VersionMaterialExecutor = (target, reauthor
     const result = (await channel.request('workbench.materials.execute', {
       target: { repoPath: target.repoPath, worktreePath: target.worktreePath },
       operation,
-      request
+      request,
+      // 绑定围栏随请求下发（远端同一口径核对分支/版本）；无绑定树不带字段，
+      // 旧对端窄执行器行为不变（strict schema 只在携带新字段时才可能拒绝）。
+      ...(binding ? { binding } : {})
     })) as VersionMaterialResult<T>
     if (!result.ok) {
       if (result.error.code === 'revision-conflict') {
@@ -48,7 +51,8 @@ export const executeVersionMaterial: VersionMaterialExecutor = (target, reauthor
     migrate: (request) => call('migrate', request),
     list: (request) => call('list', request),
     read: (request) => call('read', request),
-    save: (request) => call('save', request)
+    save: (request) => call('save', request),
+    initializeEmptyPlan: (request) => call('initializeEmptyPlan', request)
   }
 }
 

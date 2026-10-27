@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import type { CodeHubRemote } from './codehub'
+import type { CodeHubMrFileChange } from './codehub-mr-detail'
+import type { PRCheckDetail } from './github/check-types'
 import type {
   CodeHubComment,
   CodeHubPipeline,
@@ -27,6 +29,14 @@ export const CodeHubCreateIssue = Repo.extend({
   assignee: z.string().optional()
 })
 export const CodeHubUpdateIssueTitle = Repo.extend({ iid: Iid, title: z.string().trim().min(1) })
+// Labels are replace-semantics (`issue update --labels a,b,c`); names not
+// yet in the project are auto-created by CodeHub on save.
+export const CodeHubUpdateIssueLabels = Repo.extend({
+  iid: Iid,
+  labels: z.array(z.string().trim().min(1))
+})
+// Project label names for the issue-detail picker (`project label list`).
+export const CodeHubListLabels = Repo
 export const CodeHubSetIssueState = Repo.extend({
   iid: Iid,
   state: z.enum(['open', 'closed']),
@@ -38,13 +48,20 @@ export const CodeHubAssignIssue = Repo.extend({ iid: Iid, assignee: z.string() }
 export const CodeHubMergeMr = Repo.extend({ iid: Iid, auto: z.boolean().optional() })
 export const CodeHubSetReviewers = Repo.extend({ iid: Iid, reviewers: z.array(z.string()) })
 export const CodeHubListPipelines = Repo.extend({ iid: Iid })
+export const CodeHubMrChecks = Repo.extend({ iid: Iid })
+export const CodeHubMrChanges = Repo.extend({ iid: Iid })
 export const CodeHubViewTask = Repo.extend({ kind: Kind, iid: Iid })
 export const CodeHubListComments = Repo.extend({ kind: Kind, iid: Iid })
 export const CodeHubCreateComment = Repo.extend({
   kind: Kind,
   iid: Iid,
   body: z.string(),
-  discussionId: z.string().min(1).nullish()
+  discussionId: z.string().min(1).nullish(),
+  // MR only: with path + line the note becomes a line-anchored DiffNote
+  // (`mr review create --path --line`); startLine anchors a multi-line range.
+  path: z.string().min(1).nullish(),
+  line: z.number().int().positive().nullish(),
+  startLine: z.number().int().positive().nullish()
 })
 export const CodeHubDeleteComment = Repo.extend({
   kind: Kind,
@@ -57,12 +74,16 @@ export const CODEHUB_REQUEST_SCHEMAS = {
   listTasks: CodeHubListTasks,
   createIssue: CodeHubCreateIssue,
   updateIssueTitle: CodeHubUpdateIssueTitle,
+  updateIssueLabels: CodeHubUpdateIssueLabels,
+  listLabels: CodeHubListLabels,
   setIssueState: CodeHubSetIssueState,
   closeMr: CodeHubCloseMr,
   assignIssue: CodeHubAssignIssue,
   mergeMr: CodeHubMergeMr,
   setReviewers: CodeHubSetReviewers,
   listPipelines: CodeHubListPipelines,
+  mrChecks: CodeHubMrChecks,
+  mrChanges: CodeHubMrChanges,
   viewTask: CodeHubViewTask,
   listComments: CodeHubListComments,
   createComment: CodeHubCreateComment,
@@ -77,12 +98,16 @@ export type CodeHubApi = {
     args: z.infer<typeof CodeHubCreateIssue>
   ) => Promise<{ iid: number | null; url: string | null; title: string }>
   updateIssueTitle: (args: z.infer<typeof CodeHubUpdateIssueTitle>) => Promise<void>
+  updateIssueLabels: (args: z.infer<typeof CodeHubUpdateIssueLabels>) => Promise<void>
+  listLabels: (args: z.infer<typeof CodeHubListLabels>) => Promise<string[]>
   setIssueState: (args: z.infer<typeof CodeHubSetIssueState>) => Promise<void>
   closeMr: (args: z.infer<typeof CodeHubCloseMr>) => Promise<void>
   assignIssue: (args: z.infer<typeof CodeHubAssignIssue>) => Promise<void>
   mergeMr: (args: z.infer<typeof CodeHubMergeMr>) => Promise<void>
   setReviewers: (args: z.infer<typeof CodeHubSetReviewers>) => Promise<void>
   listPipelines: (args: z.infer<typeof CodeHubListPipelines>) => Promise<CodeHubPipeline[]>
+  mrChecks: (args: z.infer<typeof CodeHubMrChecks>) => Promise<PRCheckDetail[]>
+  mrChanges: (args: z.infer<typeof CodeHubMrChanges>) => Promise<CodeHubMrFileChange[]>
   viewTask: (args: z.infer<typeof CodeHubViewTask>) => Promise<CodeHubTaskDetail>
   listComments: (args: z.infer<typeof CodeHubListComments>) => Promise<CodeHubComment[]>
   createComment: (args: z.infer<typeof CodeHubCreateComment>) => Promise<void>

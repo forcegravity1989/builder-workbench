@@ -11,10 +11,9 @@ import {
 /**
  * Meeting minutes stored on the plan material (optional schema3 section).
  * The model drafts and updates the body only while `confirmed` is false;
- * confirmation (confirmed/confirmedAt) and each followup's closure mark are
- * human-only and guarded on save. Closure means the plan was revised per that
- * point — never goal attainment or Issue approval, which stay separate human
- * decisions expressed through the archive PR review.
+ * confirmation (confirmed/confirmedAt) is human-only and guarded on save.
+ * Stored closure marks remain protected for existing materials; the current
+ * UI records a followup's resolution or tracking Issue in its text.
  */
 export const PlanMeetingMinutesSchema = z
   .strictObject({

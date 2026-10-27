@@ -1,13 +1,15 @@
 ---
 name: version-acceptance
-description: Use when 在 BW 验收屏准备候选交付与验收材料、组织 showcase、整理会后会议指导与遗留并归档版本结果，或对应 Orca 周期运行启动。
+description: Use when 在 BW 验收屏准备周五验收会议的材料(出包、部署、验收证据报告)、支持 Showcase 展示与会议纪要、归档验收结果并发布版本,或对应 Orca 周期运行启动。制定新版本计划使用 week-planning。
 metadata:
-  version: 0.6.1
+  version: 0.8.2
 ---
 
 # 版本验收
 
-This discovery stub loads the version-matched Workbench acceptance guide.
+先告诉用户本次验收要走的旅程，用右侧验收屏看得见的四个分区名：验收准备 → Showcase → 会议纪要 → 归档 PR 及发版本，并说明现在在哪一区。入口已给出版本就直接恢复该版材料，不再选第二次；计划归档 PR 未合入也可开始会话，首轮核对并提醒，不自动合入。没有可读且身份核验通过的已提交固定计划时保持目标为空，不伪造 planRef 或借用其他版本。每步完成打一行回执直接继续，不中断等确认。目标结论、Issue 备注与遗留标记、纪要人工确认都由人在界面落，你不代选、不代填这些人工字段、不代确认；纪要正文可按请求在未确认态整理。归档前每条遗留写明已落实结果或真实跟进 Issue，由助手核对、人在 PR 中确认。
+
+然后加载版本匹配的验收指南：
 
 ## Resolve the CLI for this session
 

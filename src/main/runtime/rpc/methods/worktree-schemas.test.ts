@@ -147,4 +147,44 @@ describe('worktree RPC schemas', () => {
       WorktreeSet.safeParse({ worktree: 'id:r1::/repos/wt', suppressedGitHubPR: 0 }).success
     ).toBe(false)
   })
+
+  it('parses BW version binding writes and clears, rejecting incoherent payloads', () => {
+    const parsed = WorktreeSet.parse({
+      worktree: 'id:r1::/repos/wt',
+      workbenchVersionBinding: {
+        schema: 1,
+        version: 'v0.7',
+        workflow: 'issue',
+        taskSource: { provider: 'github', projectId: 'p1' }
+      }
+    })
+    expect(parsed.workbenchVersionBinding?.workflow).toBe('issue')
+    // 任务来源沿既有上下文规范化补齐宿主。
+    expect(parsed.workbenchVersionBinding?.taskSource?.hostId).toBe('local')
+    // null 是清除契约：必须保留键，旧宿主剥键由 capability 门控在客户端拦下。
+    const cleared = WorktreeSet.parse({
+      worktree: 'id:r1::/repos/wt',
+      workbenchVersionBinding: null
+    })
+    expect(cleared.workbenchVersionBinding).toBeNull()
+    expect(Object.hasOwn(cleared, 'workbenchVersionBinding')).toBe(true)
+    // workflow 与 taskSource/goalId 混用、未知 schema 版本一律拒绝。
+    expect(
+      WorktreeSet.safeParse({
+        worktree: 'id:r1::/repos/wt',
+        workbenchVersionBinding: {
+          schema: 1,
+          version: 'v0.7',
+          workflow: 'plan',
+          taskSource: { provider: 'github', projectId: 'p1' }
+        }
+      }).success
+    ).toBe(false)
+    expect(
+      WorktreeSet.safeParse({
+        worktree: 'id:r1::/repos/wt',
+        workbenchVersionBinding: { schema: 2, version: 'v0.7', workflow: 'plan' }
+      }).success
+    ).toBe(false)
+  })
 })

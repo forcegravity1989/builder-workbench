@@ -9,6 +9,7 @@ import type { CheckFailureSource } from './updater-state'
 import type { UpdateCheckVariant } from './updater-types'
 import { ReleaseFeedPreflightError } from './updater-state'
 import { UpdaterInstallExecution } from './updater-install-execution'
+import { setRecoverableReleaseFeed } from './workbench-update-feed'
 
 /** Owns concrete release-feed pinning and the one-shot prerelease fallback. */
 export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
@@ -153,7 +154,7 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
       console.info(
         `[updater] release feed pinned: current=${currentVersion} includePrerelease=${includePrerelease} → ${url}`
       )
-      autoUpdater.setFeedURL({ provider: 'generic', url })
+      await setRecoverableReleaseFeed(autoUpdater, url)
       return 'ready'
     }
     if (releaseTagsResult.state === 'not-ready') {
@@ -165,7 +166,7 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
           `[updater] release feed pinned to last-good: current=${currentVersion} includePrerelease=${includePrerelease} → ${url}`
         )
         this.publishingWindowLastGoodCheck = { lastGoodTag: releaseTagsResult.lastGoodTag }
-        autoUpdater.setFeedURL({ provider: 'generic', url })
+        await setRecoverableReleaseFeed(autoUpdater, url)
         return 'ready'
       }
       this.clearPublishingWindowLastGoodCheck()
@@ -208,7 +209,7 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
     console.info(
       `[updater] release feed fallback: current=${currentVersion} includePrerelease=${includePrerelease} → ${url}`
     )
-    autoUpdater.setFeedURL({ provider: 'generic', url })
+    await setRecoverableReleaseFeed(autoUpdater, url)
     return 'ready'
   }
 
@@ -244,13 +245,14 @@ export abstract class UpdaterReleaseFeed extends UpdaterInstallExecution {
       `[updater] prerelease manifest missing for ${primaryTag}; retrying once against ${url}`
     )
     const autoUpdater = this.getAutoUpdater()
-    autoUpdater.setFeedURL({ provider: 'generic', url })
     this.userInitiatedCheck = Boolean(userInitiated)
     this.backgroundCheckLaunchPending = !userInitiated
     this.armUpdateCheckStallTimer(attemptId)
     this.markUpdateCheckLaunched(attemptId)
-    void autoUpdater
-      .checkForUpdates()
+    void setRecoverableReleaseFeed(autoUpdater, url)
+      .then(() =>
+        this.isActiveUpdateCheckAttempt(attemptId) ? autoUpdater.checkForUpdates() : null
+      )
       .then(() => this.handleSettledUpdateCheckPromise(attemptId))
       .catch((err) => {
         if (!this.isActiveUpdateCheckAttempt(attemptId)) {

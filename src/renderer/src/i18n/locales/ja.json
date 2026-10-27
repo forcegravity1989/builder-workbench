@@ -633,7 +633,8 @@
       "blocked": {
         "notification": {
           "fallback": {
-            "de50bef680": "macOS が Orca の通知をブロックしています"
+            "de50bef680": "macOS が Orca の通知をブロックしています",
+            "8d4c07e6b5": "macOS が Workbench の通知をブロックしています"
           }
         }
       },
@@ -1911,9 +1912,6 @@
         "75a38d7df8": "GitHub のデータを一時的に取得できません。API の停止、レート制限、または到達不能が考えられます。しばらくしてから、もう一度お試しください。",
         "noGithubSourceDetected": "GitHub のソースが見つかりませんでした:",
         "noGithubSourceDetectedHint": "GitHub のリモートが設定されていないか、ソースを解決できなかった可能性があります。",
-        "codehubSourceUnavailable": "CodeHub のソースが利用できません:",
-        "codehubSourceUnavailableHint": "このリポジトリは CodeHub プロジェクトです。設定 → タスクで CodeHub を表示するか、CodeHub ソースに切り替えてください。",
-        "openTaskSettings": "設定を開く",
         "jiraLinkSourceUnavailable": "この Jira Issue をリンクできませんでした。Jira に再接続するか該当するサイトを選択してから、もう一度お試しください。",
         "loadPageUnreachable": "ページ {{value0}} は GitHub 検索が返せる範囲を超えています。",
         "loadPageFailed": "GitHub からページ {{value0}} を読み込めませんでした。",
@@ -11488,7 +11486,8 @@
           "showMoreAgents": "{{value0}} 件の Agent をさらに表示→",
           "yoloPermissionsLabel": "Yolo / 危険: 権限チェックをスキップ",
           "yoloPermissionsInfo": "Agent 権限情報",
-          "yoloPermissionsTooltip": "Agent の権限チェックをスキップして割り込みを減らす"
+          "yoloPermissionsTooltip": "Agent の権限チェックをスキップして割り込みを減らす",
+          "0e00a37e49": "はまだ PATH にありません。Workbench がデフォルトに設定します。インストールはいつでもできます。"
         },
         "FeatureSetupInlineTerminal": {
           "789b59936e": "Enter キーを押してコマンドを実行し、要求されたら npx を確認します。これは、後で [設定] で設定することもできます。",
@@ -11518,7 +11517,18 @@
           "a3bcf13694": "接続されています",
           "d6e5dba05a": "サインイン",
           "0b4a7d23ab": "サインインする",
-          "a74c6d6b18": "未インストール"
+          "a74c6d6b18": "未インストール",
+          "c773943637": "CodeHub のイシューまたはマージリクエストからワークスペースを開始。タイトルとコンテキストが事前入力されます",
+          "6d4596cdf7": "Workbench を離れずにタスクビューで CodeHub のイシューとマージリクエストを閲覧",
+          "c1ee44aa7a": "GitHub もサポート — GitHub CLI でイシュー、プルリクエスト、CI チェックを処理",
+          "09df324e47": "Workbench を離れずにプルリクエストやマージリクエストを読み、コメントし、マージ",
+          "172af1b2c8": "CodeHub",
+          "5b0e29617c": "イシューとマージリクエスト。",
+          "10e495afa8": "CodeHub CLI をインストール",
+          "98883abe0a": "CodeHub ログイン",
+          "96d7cf755a": "CodeHub サインインコマンド",
+          "ed425b91ac": "Enter キーで CodeHub CLI の認証を実行します。コマンド終了後に CodeHub を自動で再確認します。",
+          "110d12dbb6": "このランタイムではまだ codehub-cli のステータスを利用できません。"
         },
         "NotificationStep": {
           "3bede04483": "テスト通知を送信する",
@@ -11541,9 +11551,13 @@
           "94562ba367": "macOS が権限を求めています。ダイアログで許可をクリックすると、このステップは自動的に更新されます。",
           "4f6a1da718": "システム設定を開く",
           "90b5d2e363": "macOS が Orca の通知を配信していません",
-          "2c47f5465f": "システム設定で Orca の通知を許可するをオンにします。有効になると、このステップは自動的に更新されます。"
+          "2c47f5465f": "システム設定で Orca の通知を許可するをオンにします。有効になると、このステップは自動的に更新されます。",
+          "72256f6d85": "デスクトップ通知が届いた後に Workbench が再生するアラートを選択してください。",
+          "3f8a21c6d0": "Workbench の通知を許可",
+          "b7e94d02a1": "macOS が Workbench の通知を配信していません"
         },
         "OnboardingFlow": {
+          "1130745139": "タスクソースを設定",
           "1b5e182e9f": "Orca へようこそ",
           "4db04f2f57": "の",
           "adaa0aa627": "オンボーディングステップ {{value0}}: {{value1}} に進みます。",
@@ -11562,7 +11576,13 @@
           "984338477a": "テーマ",
           "c47e1bd149": "Agent",
           "windowsTerminalTitle": "Windows ターミナルの既定値を設定",
-          "windowsTerminalSubtitle": "新規ペインで使う既定のシェルと、ターミナルでの右クリックの動作を選びます。"
+          "windowsTerminalSubtitle": "新規ペインで使う既定のシェルと、ターミナルでの右クリックの動作を選びます。",
+          "78d1d003d2": "Workbench",
+          "685d4ffbeb": "Workbench へようこそ",
+          "c64d33bfb8": "Workbench オンボーディング",
+          "43b8463d5c": "Workbench はすべての CLI Agent と連携します。最もよく使うものを選んでください。いつでも切り替えられます。",
+          "54fbfde99e": "Agent の完了やサポートが必要なときに Workbench が通知します。",
+          "9977a23fbe": "必要な CLI をインストールしましょう。CodeHub はイシューとマージリクエスト、GitHub はイシューとプルリクエストを扱います。どちらも任意です。"
         },
         "OnboardingFooter": {
           "ba58547306": "戻る",
@@ -11630,7 +11650,8 @@
           "loadingDistros": "ディストリビューションを読み込んでいます",
           "windowsDefault": "Windows のデフォルト",
           "rightClickBehavior": "右クリックの動作",
-          "rightClickBehaviorDescription": "Windows で慣れたターミナルのマウス操作に合うものを選びます。"
+          "rightClickBehaviorDescription": "Windows で慣れたターミナルのマウス操作に合うものを選びます。",
+          "184e11638a": "Workbench が新しい Windows ターミナルペインで開くシェルを選択してください。"
         },
         "mac": {
           "notification": {
@@ -11638,7 +11659,8 @@
               "card": {
                 "f696515944": "macOS のダイアログで許可をクリックします。",
                 "3d18cf71f9": "自動的に更新されます。",
-                "721d2bedb6": "システム設定で Orca の通知を許可するをオンにします。"
+                "721d2bedb6": "システム設定で Orca の通知を許可するをオンにします。",
+                "c25d81f9e3": "システム設定で Workbench の通知を許可してください。"
               }
             }
           }

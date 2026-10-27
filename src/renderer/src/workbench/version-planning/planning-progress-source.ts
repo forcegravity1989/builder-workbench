@@ -31,6 +31,7 @@ export async function readPlanningProgressSource(
     version: source.version,
     cycleId: source.cycleId,
     sourceCommit: source.sourceCommit,
+    expectedRevision: source.revision,
     workflow: 'acceptance'
   })
   const document = AcceptanceMaterialSchema.parse(snapshot.document)
@@ -40,7 +41,7 @@ export async function readPlanningProgressSource(
     document.version !== source.version ||
     document.cycleId !== source.cycleId
   ) {
-    throw new Error('验收来源的版本、轮次或修订不一致，未改读其他记录。')
+    throw new Error('验收来源的版本、周期身份、来源提交或修订不一致，未改读其他记录。')
   }
   const fixed = await history.readPlan({ scope, planRef: document.planRef })
   const plan = PlanningMaterialSchema.parse(fixed.document)

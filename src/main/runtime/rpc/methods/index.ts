@@ -1,6 +1,8 @@
 import { STATUS_METHODS } from './status'
 import { WORKBENCH_MATERIAL_METHODS } from './workbench-materials'
 import { WORKBENCH_HISTORY_METHODS } from './workbench-history'
+import { WORKBENCH_VERSION_BINDING_METHODS } from './workbench-version-binding'
+import { WORKBENCH_VERSION_WORKSPACE_METHODS } from './workbench-version-workspace'
 import { WORKBENCH_METRICS_METHODS } from './workbench-metrics'
 import { WORKBENCH_PACKAGE_METHODS } from './workbench-package'
 import { WORKBENCH_ARCHIVE_METHODS } from './workbench-archive'
@@ -60,6 +62,8 @@ import { AGENT_HOOK_METHODS } from './agent-hooks'
 export const ALL_RPC_METHODS = [
   ...WORKBENCH_MATERIAL_METHODS,
   ...WORKBENCH_HISTORY_METHODS,
+  ...WORKBENCH_VERSION_BINDING_METHODS,
+  ...WORKBENCH_VERSION_WORKSPACE_METHODS,
   ...WORKBENCH_METRICS_METHODS,
   ...WORKBENCH_PACKAGE_METHODS,
   ...WORKBENCH_ARCHIVE_METHODS,

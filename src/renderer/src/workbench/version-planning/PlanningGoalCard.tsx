@@ -46,6 +46,7 @@ export function PlanningGoalCard({
   index,
   relatedTasks,
   reads,
+  version,
   onChange,
   onRemove,
   onTask,
@@ -64,6 +65,8 @@ export function PlanningGoalCard({
   relatedTasks: VersionTaskReference[]
   /** null while the provider read is in flight. */
   reads: Map<string, CycleTaskRead> | null
+  /** 本版版本（Issue 行开工箭头的解析前提）。 */
+  version: string
   onChange(goal: VersionGoal): void
   /** Whole-card delete: the parent drops the goal, its task references and annotations. */
   onRemove(goalId: string): void
@@ -268,7 +271,7 @@ export function PlanningGoalCard({
               关联 Issue <span>{relatedTasks.length}</span>
             </h3>
             {onSendAction(
-              `按 ${goalNumber} 验收标准核对已有 Issue，给出拆解 / 关联建议，标题与标签按 issue-state 规范`,
+              `按 ${goalNumber} 验收标准核对已有 Issue，给出拆解与关联建议`,
               '拆解请求',
               <BoardActionButton>
                 <BrainCircuit size={14} aria-hidden="true" /> 拆解 Issue
@@ -280,6 +283,7 @@ export function PlanningGoalCard({
             goalNumber={goalNumber}
             relatedTasks={relatedTasks}
             reads={reads}
+            version={version}
             onTask={onTask}
             numbersFor={numbersFor}
             onOpenAnnotationPanel={onOpenAnnotationPanel}

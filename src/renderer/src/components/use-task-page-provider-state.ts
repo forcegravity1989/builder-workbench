@@ -20,12 +20,15 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
   } = model
   const taskSourceManuallyChangedRef = useRef(false)
   const lastPageTaskSourceRef = useRef(pageData.taskSource)
+  const workbenchTaskScope = pageData.workbenchTaskScope ?? null
   const taskResumeAppliedRef = useRef(false)
   const githubSearchPersistReadyRef = useRef(false)
   const linearSearchPersistReadyRef = useRef(false)
   const linearViewPersistReadyRef = useRef(false)
   const jiraSearchPersistReadyRef = useRef(false)
   const [taskResumeApplied, setTaskResumeApplied] = useState(false)
+  // Why: only implicit entries reselect their remote source after resume restores the saved default.
+  const implicitTaskSourceRestored = taskResumeApplied && !pageData.taskSource
   const selectionIsCodeHub =
     selectedRepos.length > 0 &&
     selectedRepos.every((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))
@@ -57,6 +60,11 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
     }
   }, [pageData.taskSource, selectionIsCodeHub, visibleTaskProviders, setTaskSource])
   useEffect(() => {
+    // Why: a BW workbench scope keeps the source its entry explicitly opened;
+    // repo-remote auto-switching must not override the scoped view.
+    if (workbenchTaskScope) {
+      return
+    }
     const selectionKey = selectedRepos
       .map((repo) => repo.id)
       .sort()
@@ -87,8 +95,10 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
     selectedRepos,
     selectionIsCodeHub,
     taskSource,
+    implicitTaskSourceRestored,
     visibleTaskProviders,
-    setTaskSource
+    setTaskSource,
+    workbenchTaskScope
   ])
   useEffect(() => {
     if (!visibleTaskProviders.includes(taskSource)) {

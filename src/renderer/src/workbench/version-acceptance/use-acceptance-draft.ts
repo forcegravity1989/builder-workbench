@@ -5,6 +5,7 @@ import {
   type AcceptanceMaterial
 } from '../../../../shared/workbench/version-material'
 import { MaterialDraftController, type MaterialDraft } from '../version-cycle/material-draft'
+import { mergeAcceptanceMaterial } from './acceptance-merge'
 
 /** Version-scoped UI recovery is disposable; authoritative writes use the host CAS transaction. */
 export function useAcceptanceDraft(
@@ -20,7 +21,11 @@ export function useAcceptanceDraft(
   const [recoveryError, setRecoveryError] = useState<string | null>(null)
   const [recoveryText, setRecoveryText] = useState<string | null>(null)
   const recovery = useRef({ present: false, writable: true, request: 0 }).current
-  const controller = useMemo(() => new MaterialDraftController(port, setDraft), [port])
+  // 第三参 = 冲突静默合并策略（字段归属见 acceptance-merge.ts）；计划屏不传，维持人工核对流。
+  const controller = useMemo(
+    () => new MaterialDraftController(port, setDraft, mergeAcceptanceMaterial),
+    [port]
+  )
   useEffect(() => {
     if (!materialRefresh) {
       return

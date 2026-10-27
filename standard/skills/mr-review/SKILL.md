@@ -30,7 +30,7 @@ category: 运作
    评论里谈定的结论),逐条对 diff:要的做了没有、没要的做没做(超范围
    如实点出)、边界与出错路径漏没漏。
 
-诊断要靠真实证据:diff 用 `gh pr diff <n>` / `codehub-cli mr diff` 真拉;
+诊断要靠真实证据:diff 用 `gh pr diff <n>` / `codehub-cli mr changes` 真拉;
 断言某处有问题要给**文件:行**;能跑的只读检查(编译、lint、门禁脚本)就
 真跑一遍,跑不了的写明没跑,不写「应该能过」。
 
@@ -53,7 +53,7 @@ category: 运作
 **大风险清单**(命中任何一条,顶部显著标出「升 gate」,不许只塞在正文里):
 破坏性迁移 / 权限或密钥面扩大 / 对外契约变更 / 不可逆发布 / 跨边界数据流出。
 
-写完用 `gh pr comment <n> --body-file …` / `codehub-cli mr note` 真发出去,
+写完用 `gh pr comment <n> --body-file …` / `codehub-cli mr review create` 真发出去,
 把评论地址打屏。**多轮评审就多发一条,不编辑不删旧评论**——记录只追加。
 
 ## 四、硬约束(白纸黑字)

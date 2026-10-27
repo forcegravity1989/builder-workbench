@@ -1,59 +1,50 @@
 import { useSyncExternalStore } from 'react'
+import type { VersionCycleContext } from './version-cycle/cycle-context'
 import type { CycleScope } from './version-cycle/ports'
-import type { MetricScope } from '../../../shared/workbench/metrics'
+import type {
+  AcceptanceMaterial,
+  PlanningMaterial,
+  PlanningProgressSource
+} from '../../../shared/workbench/version-material'
 
-const historySelections = new Map<string, string>()
-export function acceptanceHistorySelectionKey(
-  scope: MetricScope,
-  version: string,
-  runtimeOwnerEnvironmentId?: string
-) {
-  return `bw:acceptance:history:${JSON.stringify([
-    scope.repoId,
-    scope.worktreeId,
-    scope.hostId,
-    runtimeOwnerEnvironmentId ?? '',
-    version
-  ])}`
+// View memory only: successful native launches survive screen switches, never a
+// renderer restart. No material or session state is inferred from this record.
+const startedCycles = new Set<string>()
+
+export function cycleStartedViewKey({
+  scope,
+  worktreeId,
+  worktreeInstanceId,
+  version
+}: Pick<VersionCycleContext, 'scope' | 'worktreeId' | 'worktreeInstanceId' | 'version'>):
+  | string
+  | undefined {
+  return scope && worktreeId
+    ? JSON.stringify([
+        scope.projectId,
+        scope.repoId,
+        scope.hostId,
+        scope.runtimeOwnerEnvironmentId ?? '',
+        scope.workflow,
+        worktreeId,
+        worktreeInstanceId ?? '',
+        version
+      ])
+    : undefined
 }
 
-export function readAcceptanceHistorySelection(
-  scope: MetricScope,
-  version: string | null | undefined,
-  runtimeOwnerEnvironmentId?: string
-): string {
-  if (!version) {
-    return 'current'
-  }
-  const key = acceptanceHistorySelectionKey(scope, version, runtimeOwnerEnvironmentId)
-  try {
-    return historySelections.get(key) ?? window.sessionStorage.getItem(key) ?? 'current'
-  } catch {
-    return historySelections.get(key) ?? 'current'
-  }
+export function hasCycleStarted(key: string | undefined): boolean {
+  return key !== undefined && startedCycles.has(key)
 }
 
-export function writeAcceptanceHistorySelection(
-  scope: MetricScope,
-  version: string,
-  value: string,
-  runtimeOwnerEnvironmentId?: string
-): void {
-  const key = acceptanceHistorySelectionKey(scope, version, runtimeOwnerEnvironmentId)
-  historySelections.set(key, value)
-  try {
-    window.sessionStorage.setItem(key, value)
-  } catch {
-    // Navigation retains the exact selection in memory when browser storage is unavailable.
+/** Call only after start() confirms that the native run's session opened. */
+export function markCycleStarted(key: string | undefined): void {
+  if (key !== undefined) {
+    startedCycles.add(key)
   }
 }
 
-export function goalCardViewKey(
-  scope: CycleScope | null,
-  version: string,
-  goalId: string,
-  roundId?: string
-) {
+export function goalCardViewKey(scope: CycleScope | null, version: string, goalId: string) {
   return scope
     ? `workbench.goal-card:${JSON.stringify([
         scope.projectId,
@@ -62,8 +53,7 @@ export function goalCardViewKey(
         scope.runtimeOwnerEnvironmentId ?? '',
         scope.workflow,
         version,
-        goalId,
-        roundId ?? ''
+        goalId
       ])}`
     : undefined
 }
@@ -98,7 +88,20 @@ export function writeGoalCardExpanded(key: string | undefined, expanded: boolean
  */
 export type CycleView = 'plan' | 'acceptance'
 
+/** One navigation's verified bytes; never a material selection or a persistent cache. */
+export type FixedAcceptanceBrowse = {
+  scope: CycleScope
+  originWorktreeId: string
+  originWorktreeInstanceId: string | null
+  originExecutionHostId: string | null
+  originPlan: Pick<PlanningMaterial, 'version' | 'cycleId'>
+  source: PlanningProgressSource
+  acceptance: AcceptanceMaterial
+  plan: PlanningMaterial
+}
+
 let current: CycleView = 'plan'
+let fixedAcceptanceBrowse: FixedAcceptanceBrowse | null = null
 const listeners = new Set<() => void>()
 
 function subscribe(listener: () => void): () => void {
@@ -113,11 +116,34 @@ export function getCycleView(): CycleView {
 }
 
 export function setCycleView(view: CycleView): void {
-  if (current === view) {
+  if (current === view && fixedAcceptanceBrowse === null) {
     return
   }
   current = view
+  fixedAcceptanceBrowse = null
   listeners.forEach((listener) => listener())
+}
+
+export function openFixedAcceptanceBrowse(view: FixedAcceptanceBrowse): void {
+  current = 'acceptance'
+  fixedAcceptanceBrowse = view
+  listeners.forEach((listener) => listener())
+}
+
+export function clearFixedAcceptanceBrowse(): void {
+  if (fixedAcceptanceBrowse === null) {
+    return
+  }
+  fixedAcceptanceBrowse = null
+  listeners.forEach((listener) => listener())
+}
+
+export function useFixedAcceptanceBrowse(): FixedAcceptanceBrowse | null {
+  return useSyncExternalStore(
+    subscribe,
+    () => fixedAcceptanceBrowse,
+    () => null
+  )
 }
 
 export function useCycleView(): CycleView {

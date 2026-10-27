@@ -5,6 +5,7 @@ type WorkspaceIdentityStateInput = Pick<
   | 'initialBaseBranch'
   | 'initialLinearBranchName'
   | 'initialLinkedWorkItem'
+  | 'initialParentWorktreeId'
   | 'linkedWorkItem'
   | 'linkedWorkItemSeedIdentity'
   | 'name'
@@ -32,6 +33,7 @@ export function useWorkspaceIdentityState(input: WorkspaceIdentityStateInput) {
     initialBaseBranch,
     initialLinearBranchName,
     initialLinkedWorkItem,
+    initialParentWorktreeId,
     linkedWorkItem,
     linkedWorkItemSeedIdentity,
     name,
@@ -101,7 +103,11 @@ export function useWorkspaceIdentityState(input: WorkspaceIdentityStateInput) {
     initialLinearBranchName
   )
 
-  const [parentWorktreeId, setParentWorktreeId] = useState<string | null>(null)
+  // G2 (BW): seed an optional parent suggestion (e.g. the unique goal workspace
+  // for an issue start); the picker and create-time validation stay authoritative.
+  const [parentWorktreeId, setParentWorktreeId] = useState<string | null>(
+    initialParentWorktreeId ?? null
+  )
 
   const [branchNameOverridePreservesNameEdits, setBranchNameOverridePreservesNameEdits] = useState(
     Boolean(initialLinearBranchName)

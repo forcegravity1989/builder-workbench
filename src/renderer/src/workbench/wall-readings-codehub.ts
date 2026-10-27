@@ -1,7 +1,8 @@
 import { codehubApi } from '@/lib/codehub-api'
 import type { Repo } from '../../../shared/repo-types'
 import type { CycleScope, CycleTaskReference } from './version-cycle/ports'
-import { codehubStateOf, resolveReferenceRepo } from './task-port'
+import { codehubStateOf } from './codehub-task-item'
+import { resolveReferenceRepo } from './task-port'
 import { issueStateKey, type WallTaskState } from './wall-card-readings'
 
 /**

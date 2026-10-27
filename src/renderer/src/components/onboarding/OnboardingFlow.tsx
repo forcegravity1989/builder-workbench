@@ -15,7 +15,12 @@ import { OnboardingFooter } from './OnboardingFooter'
 import { shouldRequestOnboardingSkipConfirmation } from './onboarding-dismiss-target'
 import logo from '../../../../../resources/logo.svg'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
+// Why: the wizard keeps two product identities — Orca builds keep the upstream
+// copy verbatim; the Workbench shell swaps brand mentions and the integrations
+// pitch (CodeHub + gh, both optional). Both branches stay literal translate()
+// calls so the extractor sees every key.
 const stepCopy = {
   agent: {
     get title() {
@@ -25,10 +30,15 @@ const stepCopy = {
       )
     },
     get subtitle() {
-      return translate(
-        'auto.components.onboarding.OnboardingFlow.322fc50a18',
-        "Orca works with every CLI agent. Choose the one you'll reach for most. Switch any time."
-      )
+      return isWorkbenchShell()
+        ? translate(
+            'auto.components.onboarding.OnboardingFlow.43b8463d5c',
+            "Workbench works with every CLI agent. Choose the one you'll reach for most. Switch any time."
+          )
+        : translate(
+            'auto.components.onboarding.OnboardingFlow.322fc50a18',
+            "Orca works with every CLI agent. Choose the one you'll reach for most. Switch any time."
+          )
     }
   },
   theme: {
@@ -53,24 +63,33 @@ const stepCopy = {
       )
     },
     get subtitle() {
-      return translate(
-        'auto.components.onboarding.OnboardingFlow.ff92d15436',
-        'Orca will notify you when agents are done or need help.'
-      )
+      return isWorkbenchShell()
+        ? translate(
+            'auto.components.onboarding.OnboardingFlow.54fbfde99e',
+            'Workbench will notify you when agents are done or need help.'
+          )
+        : translate(
+            'auto.components.onboarding.OnboardingFlow.ff92d15436',
+            'Orca will notify you when agents are done or need help.'
+          )
     }
   },
   integrations: {
     get title() {
-      return translate(
-        'auto.components.onboarding.OnboardingFlow.ae3b00ca82',
-        'Set up GitHub tasks'
-      )
+      return isWorkbenchShell()
+        ? translate('auto.components.onboarding.OnboardingFlow.1130745139', 'Set up task sources')
+        : translate('auto.components.onboarding.OnboardingFlow.ae3b00ca82', 'Set up GitHub tasks')
     },
     get subtitle() {
-      return translate(
-        'auto.components.onboarding.OnboardingFlow.97c42cda00',
-        'Install the GitHub CLI to:'
-      )
+      return isWorkbenchShell()
+        ? translate(
+            'auto.components.onboarding.OnboardingFlow.9977a23fbe',
+            'Install the CLIs you need — CodeHub for issues and merge requests, GitHub for issues and pull requests. Both are optional.'
+          )
+        : translate(
+            'auto.components.onboarding.OnboardingFlow.97c42cda00',
+            'Install the GitHub CLI to:'
+          )
     }
   },
   windows_terminal: {
@@ -128,6 +147,9 @@ export default function OnboardingFlow({
 }: OnboardingFlowProps): React.JSX.Element {
   const flow = useOnboardingFlow(onboarding, onOnboardingChange)
   const continueShortcutModifierLabel = getScreenSubmitModifierLabel()
+  // Why: the Workbench shell has no logo asset — its identity is the text
+  // wordmark; Orca builds keep the upstream logo + wordmark pair.
+  const isShell = isWorkbenchShell()
   const { currentStep, stepIndex, busyLabel } = flow
   const copy = stepCopy[currentStep.id]
   const shouldShowSkipToProjectSetup = currentStep.id !== 'notifications'
@@ -213,10 +235,14 @@ export default function OnboardingFlow({
         <section
           ref={flow.setLifecycleRootRef}
           role="dialog"
-          aria-label={translate(
-            'auto.components.onboarding.OnboardingFlow.277ba45540',
-            'Orca onboarding'
-          )}
+          aria-label={
+            isShell
+              ? translate(
+                  'auto.components.onboarding.OnboardingFlow.c64d33bfb8',
+                  'Workbench onboarding'
+                )
+              : translate('auto.components.onboarding.OnboardingFlow.277ba45540', 'Orca onboarding')
+          }
           aria-modal="true"
           data-onboarding-modal
           className={cn(
@@ -226,14 +252,18 @@ export default function OnboardingFlow({
         >
           <div className="relative flex h-full min-h-0 flex-col px-6 pb-6 pt-8 sm:px-8 sm:pb-8 sm:pt-9">
             <div className="flex items-center gap-3 text-base font-semibold tracking-tight">
-              <img
-                src={logo}
-                alt=""
-                aria-hidden="true"
-                className="h-7 w-auto shrink-0 invert dark:invert-0"
-              />
+              {isShell ? null : (
+                <img
+                  src={logo}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-7 w-auto shrink-0 invert dark:invert-0"
+                />
+              )}
               <span>
-                {translate('auto.components.onboarding.OnboardingFlow.a249f81538', 'Orca')}
+                {isShell
+                  ? translate('auto.components.onboarding.OnboardingFlow.78d1d003d2', 'Workbench')
+                  : translate('auto.components.onboarding.OnboardingFlow.a249f81538', 'Orca')}
               </span>
             </div>
 
@@ -282,10 +312,15 @@ export default function OnboardingFlow({
             <div className="mt-8 shrink-0">
               {stepIndex === 0 && (
                 <div className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                  {translate(
-                    'auto.components.onboarding.OnboardingFlow.1b5e182e9f',
-                    'Welcome to Orca'
-                  )}
+                  {isShell
+                    ? translate(
+                        'auto.components.onboarding.OnboardingFlow.685d4ffbeb',
+                        'Welcome to Workbench'
+                      )
+                    : translate(
+                        'auto.components.onboarding.OnboardingFlow.1b5e182e9f',
+                        'Welcome to Orca'
+                      )}
                 </div>
               )}
               <h1 className="text-[34px] font-semibold leading-[1.15] tracking-tight text-foreground">

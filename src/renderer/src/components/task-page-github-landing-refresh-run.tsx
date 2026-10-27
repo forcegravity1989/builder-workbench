@@ -68,6 +68,12 @@ export function runTaskPageGitHubLandingRefresh(model: TaskPageGitHubSearchPagin
     setRetryingSourceKeys,
     githubWorkItemMutationQueryKey
   } = model
+  // Why: a BW workbench scope materializes its own reference-driven pages; the
+  // unscoped landing fetch, cache pre-paint and position restore must not run
+  // over it (the scoped list never reads the query-keyed provider cache).
+  if (model.pageData.workbenchTaskScope) {
+    return
+  }
   if (!taskResumeApplied) {
     return
   }

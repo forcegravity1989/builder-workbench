@@ -1,6 +1,6 @@
 import type { CodeHubRemote } from '../../shared/codehub'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
-import { projectArgs } from './mutations'
+import { projectArgs, parseJson } from './mutations'
 
 /**
  * 远端仓库只读探测：raw 读单文件与项目存在性。
@@ -137,4 +137,30 @@ export async function viewCodeHubProject(args: {
       return { kind: classifyProjectViewError(message), error: message }
     }
   }
+}
+
+/**
+ * 项目标签名单：议题详情标签编辑下拉的数据源。CLI 的 --limit 默认只有
+ * 10 且不翻页，必须显式给足上限，否则标签多的项目下拉缺项。
+ */
+export async function listCodeHubProjectLabels(args: {
+  remote: CodeHubRemote
+  execOptions?: CodeHubExecOptions
+}): Promise<string[]> {
+  const parsed = parseJson(
+    await runCodeHubCli(
+      ['project', 'label', 'list', ...projectArgs(args.remote), '-f', 'json', '--limit', '100'],
+      args.execOptions
+    )
+  )
+  if (!Array.isArray(parsed)) {
+    return []
+  }
+  return parsed.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') {
+      return []
+    }
+    const name = (entry as Record<string, unknown>).name
+    return typeof name === 'string' && name.trim() ? [name.trim()] : []
+  })
 }

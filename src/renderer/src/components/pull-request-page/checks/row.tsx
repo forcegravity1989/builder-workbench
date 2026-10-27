@@ -14,7 +14,8 @@ export function CheckRow({
   expanded,
   detailsState,
   onToggle,
-  onRetryDetails
+  onRetryDetails,
+  openUrlLabel
 }: {
   check: PRCheckDetail
   variant: 'compact' | 'page'
@@ -22,6 +23,7 @@ export function CheckRow({
   detailsState: CheckDetailsLoadState | undefined
   onToggle: (check: PRCheckDetail) => void
   onRetryDetails: (check: PRCheckDetail, key: string) => void
+  openUrlLabel?: string
 }): React.JSX.Element {
   const conclusion = getCheckConclusion(check)
   const Icon = CHECK_ICON[conclusion] ?? CircleDashed
@@ -52,7 +54,12 @@ export function CheckRow({
         <span className="shrink-0 text-[11px] text-muted-foreground">{statusLabel}</span>
       </button>
       {expanded && (
-        <CheckDetailsPanel check={check} state={detailsState} onRetry={onRetryDetails} />
+        <CheckDetailsPanel
+          check={check}
+          state={detailsState}
+          onRetry={onRetryDetails}
+          openUrlLabel={openUrlLabel}
+        />
       )}
     </div>
   )

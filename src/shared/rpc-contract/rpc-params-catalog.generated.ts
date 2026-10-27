@@ -24,11 +24,15 @@ import {
   CodeHubCreateIssue,
   CodeHubDeleteComment,
   CodeHubListComments,
+  CodeHubListLabels,
   CodeHubListPipelines,
   CodeHubListTasks,
   CodeHubMergeMr,
+  CodeHubMrChanges,
+  CodeHubMrChecks,
   CodeHubSetIssueState,
   CodeHubSetReviewers,
+  CodeHubUpdateIssueLabels,
   CodeHubUpdateIssueTitle,
   CodeHubViewTask
 } from '../codehub-api'
@@ -570,6 +574,7 @@ import {
   PackagePipelineListSchema
 } from '../workbench/package-pipeline'
 import { TrunkUpdateSchema } from '../workbench/trunk-update'
+import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../workbench/version-binding'
 import {
   VersionHistoryListSchema,
   VersionHistoryReadPlanSchema,
@@ -585,6 +590,7 @@ import {
   VersionMaterialSaveSchema,
   VersionMaterialScopeSchema
 } from '../workbench/version-material-request'
+import { VersionWorkspacePrepareSchema } from '../workbench/version-workspace-prepare'
 
 // Why: the host parses params with these schemas, so a client that matches this map
 // matches the dispatcher. Clients must import it for types only — parsing a params
@@ -745,11 +751,15 @@ export const RPC_PARAMS_BY_METHOD = {
   'codehub.createIssue': CodeHubCreateIssue,
   'codehub.deleteComment': CodeHubDeleteComment,
   'codehub.listComments': CodeHubListComments,
+  'codehub.listLabels': CodeHubListLabels,
   'codehub.listPipelines': CodeHubListPipelines,
   'codehub.listTasks': CodeHubListTasks,
   'codehub.mergeMr': CodeHubMergeMr,
+  'codehub.mrChanges': CodeHubMrChanges,
+  'codehub.mrChecks': CodeHubMrChecks,
   'codehub.setIssueState': CodeHubSetIssueState,
   'codehub.setReviewers': CodeHubSetReviewers,
+  'codehub.updateIssueLabels': CodeHubUpdateIssueLabels,
   'codehub.updateIssueTitle': CodeHubUpdateIssueTitle,
   'codehub.viewTask': CodeHubViewTask,
   'computer.capabilities': ComputerCapabilitiesParams,
@@ -1220,6 +1230,9 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.package.launch': PackageLaunchSchema,
   'workbench.package.list': PackagePipelineListSchema,
   'workbench.trunk.update': TrunkUpdateSchema,
+  'workbench.versionBinding.read': VersionBindingScopeSchema,
+  'workbench.versionBinding.set': VersionBindingSetSchema,
+  'workbench.versionWorkspace.prepare': VersionWorkspacePrepareSchema,
   'workspacePorts.kill': WorkspacePortKillParams,
   'workspacePorts.scan': WorkspacePortScanParams,
   'worktree.activate': WorktreeActivate,

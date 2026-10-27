@@ -1,14 +1,22 @@
 import { createContext, useContext } from 'react'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import type { VersionCycleContext } from './cycle-context'
+import type { FixedAcceptanceBrowse } from '../cycle-view-state'
+
+export type ReadonlyCycleBrowse = { version: string; fixedAcceptance?: FixedAcceptanceBrowse }
 
 export type CycleWorkspace = {
   workflow: VersionWorkflow
   context: VersionCycleContext
   busy: boolean
   notice: string | null
-  /** Runs the registered native automation; `oneShot` rides with the saved prompt, once. */
-  start(oneShot?: string): Promise<void>
+  /**
+   * 无流程树的历史版本或计划引用的固定验收来源，均用只读材料视图；
+   * 非 null 时 context.worktreeId 为 null，壳渲染只读材料视图，不建树。
+   */
+  readonlyBrowse: ReadonlyCycleBrowse | null
+  /** Returns true only after the run's native session opens; `oneShot` is sent once. */
+  start(oneShot?: string): Promise<boolean>
   configure(): Promise<void>
   prepareMetrics(): Promise<void>
 }

@@ -1,6 +1,7 @@
 import type { ExecutionHostId } from '../execution-host'
 import type { TaskSourceContext } from '../task-source-context'
 import type { EphemeralVmCheckoutMode } from '../orca-yaml-hook-types'
+import type { WorkbenchVersionBinding } from '../workbench/version-binding'
 import type {
   AutomationWorkspaceProvenance,
   CliWorkspaceProvenance,
@@ -17,6 +18,10 @@ import type { DiffComment, MobileDiffReviewState } from '../diff-comment-types'
 export type WorktreeMeta = {
   /** BW workflow selection only; native session history does not change the selected material. */
   workbenchSelectedVersion?: string
+  /** BW G2 version-workspace binding attached to the native registration.
+   *  undefined keeps the stored value, null clears it; the binding disappears
+   *  with the registration when the worktree is removed. */
+  workbenchVersionBinding?: WorkbenchVersionBinding | null
   /** Immutable per-workspace-instance ID used to reject stale lineage after path reuse. */
   instanceId?: string
   /** See Worktree.projectId. Persisted for project-first workspace ownership. */

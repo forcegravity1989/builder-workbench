@@ -33,7 +33,12 @@ export function meetingPageExpression(
     if (input.action === 'inventory') {
       return { recordings: Array.from(document.querySelectorAll('.m-ai-record-item')).map((el, index) => {
         const label = text(el);
-        return { index: index + 1, name: label.match(/录制-\\d+-\\d+/)?.[0] || label.split('\\n')[0], label };
+        // label 里录制名与日期无分隔，且日期格式随环境变化（真实 Chrome
+        // 「录制-1-12026-10-16 …」、Orca 内置浏览器「录制-1-12026/10/16 …」），
+        // 贪婪 \\d+ 会吞出「录制-1-12026」；前瞻「4 位年份+分隔符」才能截出与
+        // 标题区一致的「录制-N-M」，否则 title-match 永远失败
+        // （2026-10-23 实测，会议 5DAB2173）。
+        return { index: index + 1, name: label.match(/录制-\\d+-\\d+(?=\\d{4}[-/])/)?.[0] || label.match(/录制-\\d+-\\d+/)?.[0] || label.split('\\n')[0], label };
       }) };
     }
     if (input.action === 'pick') {
@@ -43,7 +48,9 @@ export function meetingPageExpression(
       return { picked: true };
     }
     if (input.action === 'transcript-tab') {
-      if (!transcriptTab) return { clicked: false, title };
+      // pageRendered: the meeting body (.m-ai-left title) is on screen, so a missing
+      // 「语音转文字」tab means this recording has no transcript — not a cold page.
+      if (!transcriptTab) return { clicked: false, title, pageRendered: !!title };
       transcriptTab.click();
       return { clicked: true, title };
     }

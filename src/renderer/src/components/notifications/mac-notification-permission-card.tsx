@@ -3,6 +3,7 @@ import { BellRing, Check, Settings, TriangleAlert } from 'lucide-react'
 import type { NotificationDeliveryProbeResult } from '../../../../shared/notification-settings-types'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 export type MacNotificationPermissionState =
   | 'checking'
@@ -155,10 +156,15 @@ export function MacNotificationPermissionCard({
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <BellRing className="size-4" />
-              {translate(
-                'auto.components.onboarding.NotificationStep.95d99b52fa',
-                'Allow notifications for Orca'
-              )}
+              {isWorkbenchShell()
+                ? translate(
+                    'auto.components.onboarding.NotificationStep.3f8a21c6d0',
+                    'Allow notifications for Workbench'
+                  )
+                : translate(
+                    'auto.components.onboarding.NotificationStep.95d99b52fa',
+                    'Allow notifications for Orca'
+                  )}
             </div>
             <p className="max-w-[58ch] text-[13px] leading-relaxed text-muted-foreground">
               {translate(
@@ -195,16 +201,26 @@ export function MacNotificationPermissionCard({
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
               <TriangleAlert className="size-4" />
-              {translate(
-                'auto.components.onboarding.NotificationStep.90b5d2e363',
-                'macOS is not delivering Orca notifications'
-              )}
+              {isWorkbenchShell()
+                ? translate(
+                    'auto.components.onboarding.NotificationStep.b7e94d02a1',
+                    'macOS is not delivering Workbench notifications'
+                  )
+                : translate(
+                    'auto.components.onboarding.NotificationStep.90b5d2e363',
+                    'macOS is not delivering Orca notifications'
+                  )}
             </div>
             <p className="max-w-[58ch] text-[13px] leading-relaxed text-amber-700/80 dark:text-amber-200/80">
-              {translate(
-                'auto.components.onboarding.mac.notification.permission.card.721d2bedb6',
-                'Turn on Allow notifications for Orca in System Settings.'
-              )}
+              {isWorkbenchShell()
+                ? translate(
+                    'auto.components.onboarding.mac.notification.permission.card.c25d81f9e3',
+                    'Turn on Allow notifications for Workbench in System Settings.'
+                  )
+                : translate(
+                    'auto.components.onboarding.mac.notification.permission.card.721d2bedb6',
+                    'Turn on Allow notifications for Orca in System Settings.'
+                  )}
             </p>
           </div>
           <Button

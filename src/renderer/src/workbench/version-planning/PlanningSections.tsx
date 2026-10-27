@@ -5,9 +5,12 @@ import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureB
 
 export type PlanningSectionId = 'context' | 'goals' | 'minutes' | 'archive'
 
-/** Top journey navigation copy, verbatim from the approved G3 production list. */
+/**
+ * Top journey navigation copy. 第一步按 #426（v0.7 验收会决议）从「上版回顾」改名
+ * 「计划准备」，与验收屏「验收准备」口径一致；区块内容仍是上版两行遗留的回显。
+ */
 export const PLANNING_SECTIONS: [PlanningSectionId, string, string][] = [
-  ['context', '上版回顾', '从延期与遗留开始'],
+  ['context', '计划准备', '从延期与遗留开始'],
   ['goals', '本版目标', '明确结果与验收标准'],
   ['minutes', '会议纪要', '批注与转写稿生成'],
   ['archive', '归档 PR', 'Leader 在原生 PR 页再审']
@@ -15,6 +18,7 @@ export const PLANNING_SECTIONS: [PlanningSectionId, string, string][] = [
 
 export function PlanningHeader({
   currentVersion,
+  boundVersion,
   versions,
   disabled,
   state,
@@ -24,9 +28,11 @@ export function PlanningHeader({
   onSelect,
   onConfigure,
   onRefresh,
-  extraActions
+  annotateEntry
 }: {
   currentVersion: string
+  /** G2（#383）：绑定树的绑定版本；非 null 时面包屑只读回显，不提供屏内选版。 */
+  boundVersion: string | null
   versions: VersionMaterialCandidate[]
   disabled: boolean
   state: string
@@ -36,36 +42,43 @@ export function PlanningHeader({
   onSelect(version: string): void
   onConfigure(): void
   onRefresh(): void
-  /** Trailing action slot (annotation-mode button). */
-  extraActions?: ReactNode
+  /** 批注模式入口（#426 验收会决议：页头右上角常驻，不随内容滚动）。计划未建时不传。 */
+  annotateEntry?: ReactNode
 }) {
   return (
     <header className="vp-header">
       <div>
         <div className="g3-breadcrumb">
           Builder Workbench <span>/</span>
-          <select
-            className="g3-version-select"
-            aria-label="计划版本"
-            value={currentVersion}
-            disabled={disabled}
-            onChange={(event) => {
-              if (event.target.value) {
-                onSelect(event.target.value)
-              }
-            }}
-          >
-            <option value="">待选择版本</option>
-            {versions.map((item) => (
-              <option key={item.version} value={item.version} disabled={item.state !== 'ready'}>
-                {item.version}
-                {item.state !== 'ready' ? ' · 暂无法读取' : ''}
-              </option>
-            ))}
-            {currentVersion && !versions.some((item) => item.version === currentVersion) && (
-              <option value={currentVersion}>{currentVersion}</option>
-            )}
-          </select>
+          {boundVersion ? (
+            /* G2（#383）：绑定树版本由绑定决定，屏内不再选版；旧无绑定固定树保留下拉。 */
+            <span className="g3-version-bound" title="版本由流程树绑定决定，屏内不切换">
+              {boundVersion}
+            </span>
+          ) : (
+            <select
+              className="g3-version-select"
+              aria-label="计划版本"
+              value={currentVersion}
+              disabled={disabled}
+              onChange={(event) => {
+                if (event.target.value) {
+                  onSelect(event.target.value)
+                }
+              }}
+            >
+              <option value="">待选择版本</option>
+              {versions.map((item) => (
+                <option key={item.version} value={item.version} disabled={item.state !== 'ready'}>
+                  {item.version}
+                  {item.state !== 'ready' ? ' · 暂无法读取' : ''}
+                </option>
+              ))}
+              {currentVersion && !versions.some((item) => item.version === currentVersion) && (
+                <option value={currentVersion}>{currentVersion}</option>
+              )}
+            </select>
+          )}
         </div>
         <div className="vp-title-row">
           <h1>版本计划</h1>
@@ -90,11 +103,11 @@ export function PlanningHeader({
           <GitBranch size={13} aria-hidden="true" />
           <span>{branch}</span>
         </span>
+        {annotateEntry}
         <button type="button" className="g3-text-button" disabled={disabled} onClick={onRefresh}>
           <RefreshCw size={13} aria-hidden="true" /> 更新代码
         </button>
         <AutomationConfigureButton className="g3-text-button" onConfigure={onConfigure} />
-        {extraActions}
       </div>
     </header>
   )

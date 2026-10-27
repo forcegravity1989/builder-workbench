@@ -1,5 +1,6 @@
 import { useAppStore } from '@/store'
 import { openHttpLink, type HttpLinkSourceOwner } from '@/lib/http-link-routing'
+import { openFileInBrowserTab } from '@/lib/file-preview'
 import { resolveMarkdownLinkTarget } from '@/components/editor/markdown-internal-links'
 import { parseExecutionHostId } from '../../../../shared/execution-host'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
@@ -47,6 +48,18 @@ export async function openAcceptanceMaterial(
     })
     revealPlanChat()
     return
+  }
+  // HTML 报告走 Orca 原生「工作区文件浏览器预览」（本地=内置浏览器页签，SSH/
+  // 配对=doc-preview）：报告是渲染件，编辑器打开只见源码，兑现 spec A04
+  // 「内置浏览器可打开」。不支持（如受管浏览器被禁用）时回落编辑器激活。
+  const absolutePath =
+    target.kind === 'file' || target.kind === 'markdown' ? target.absolutePath : undefined
+  if (absolutePath && /\.html?$/i.test(absolutePath)) {
+    const plan = openFileInBrowserTab({ filePath: absolutePath, worktreeId })
+    if (plan.status !== 'unsupported') {
+      revealPlanChat()
+      return
+    }
   }
   if (sourceOwner.kind !== 'local' && target.relativePath === undefined) {
     throw new Error('材料不在当前远端工作树内，请提供该工作树内的文件路径。')

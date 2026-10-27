@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import type { CodeHubComment, CodeHubTaskDetail } from '../../../../../shared/codehub-tasks'
+import { useCodeHubMrExtras } from './use-codehub-mr-extras'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 
 export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
@@ -20,32 +21,59 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState('')
   const [savingTitle, setSavingTitle] = useState(false)
+  const [editingLabels, setEditingLabels] = useState(false)
+  const [labelDraft, setLabelDraft] = useState<string[]>([])
+  const [savingLabels, setSavingLabels] = useState(false)
   const [stateBusy, setStateBusy] = useState(false)
-  const reloadDetail = (): void => {
-    if (!item?.repoPath) {
-      return
-    }
-    const args = { repoPath: item.repoPath, repoId: item.repoId, kind: item.type, iid: item.iid }
+  const { checks, files, mrExtrasLoading, reloadMrExtras } = useCodeHubMrExtras(item)
+  // reloadDetail and the mount effect fetch the same pair; only the mount
+  // race needs a stale guard, so it defaults to "never stale".
+  const fetchDetailAndComments = (
+    args: { repoPath: string; repoId?: string; kind: 'issue' | 'mr'; iid: number },
+    isStale: () => boolean = () => false
+  ): void => {
     void codehubApi
       .viewTask(args)
       .then((next) => {
-        setDetail(next)
-        setError(null)
+        if (!isStale()) {
+          setDetail(next)
+          setError(null)
+        }
       })
       .catch((reason: unknown) => {
-        setError(reason instanceof Error ? reason.message : String(reason))
+        if (!isStale()) {
+          setError(reason instanceof Error ? reason.message : String(reason))
+        }
       })
     void codehubApi
       .listComments(args)
       .then((rows) => {
-        setComments(rows)
-        setCommentError(null)
+        if (!isStale()) {
+          setComments(rows)
+          setCommentError(null)
+        }
       })
       .catch((reason: unknown) => {
-        setComments([])
-        setCommentError(reason instanceof Error ? reason.message : String(reason))
+        if (!isStale()) {
+          setComments([])
+          setCommentError(reason instanceof Error ? reason.message : String(reason))
+        }
       })
+  }
+  const reloadDetail = (): void => {
+    if (!item?.repoPath) {
+      return
+    }
+    fetchDetailAndComments({
+      repoPath: item.repoPath,
+      repoId: item.repoId,
+      kind: item.type,
+      iid: item.iid
+    })
     setCodehubRefreshNonce((nonce) => nonce + 1)
+    if (item.type === 'mr') {
+      reloadMrExtras()
+    }
   }
   useEffect(() => {
     if (!item?.repoPath) {
@@ -57,34 +85,12 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     setError(null)
     setCommentError(null)
     setEditingTitle(false)
+    setEditingLabels(false)
     setTab('conversation')
-    const args = { repoPath: item.repoPath, repoId: item.repoId, kind: item.type, iid: item.iid }
-    void codehubApi
-      .viewTask(args)
-      .then((next) => {
-        if (!stale) {
-          setDetail(next)
-        }
-      })
-      .catch((reason: unknown) => {
-        if (!stale) {
-          setError(reason instanceof Error ? reason.message : String(reason))
-        }
-      })
-    void codehubApi
-      .listComments(args)
-      .then((rows) => {
-        if (!stale) {
-          setComments(rows)
-          setCommentError(null)
-        }
-      })
-      .catch((reason: unknown) => {
-        if (!stale) {
-          setComments([])
-          setCommentError(reason instanceof Error ? reason.message : String(reason))
-        }
-      })
+    fetchDetailAndComments(
+      { repoPath: item.repoPath, repoId: item.repoId, kind: item.type, iid: item.iid },
+      () => stale
+    )
     return () => {
       stale = true
     }
@@ -95,53 +101,20 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   const title = detail?.title || item.title
   const visibleState = (detail?.state ?? item.state).toLowerCase()
   const closed = visibleState === 'closed' || visibleState === 'merged'
-  const actionItem = {
-    ...item,
-    title,
-    state: (visibleState === 'merged'
-      ? 'merged'
-      : visibleState === 'closed'
-        ? 'closed'
-        : 'opened') as 'opened' | 'closed' | 'merged'
-  }
+  const actionState = (
+    visibleState === 'merged' ? 'merged' : visibleState === 'closed' ? 'closed' : 'opened'
+  ) as 'opened' | 'closed' | 'merged'
+  const actionItem = { ...item, title, state: actionState }
   const backLabel =
     item.type === 'mr'
       ? translate('auto.components.TaskPage.137e2a8a01', 'PRs')
       : translate('auto.components.TaskPage.dfc0c79bd8', 'Issues')
   const projectLabel = item.project ?? ''
-  const postComment = (): void => {
-    const body = draft.trim()
-    if (!item.repoPath || !body || posting) {
-      return
-    }
-    setPosting(true)
-    void codehubApi
-      .createComment({
-        repoPath: item.repoPath,
-        repoId: item.repoId,
-        kind: item.type,
-        iid: item.iid,
-        body
-      })
-      .then(() =>
-        codehubApi.listComments({
-          repoPath: item.repoPath!,
-          repoId: item.repoId,
-          kind: item.type,
-          iid: item.iid
-        })
-      )
-      .then((rows) => {
-        setComments(rows)
-        setDraft('')
-      })
-      .catch((reason: unknown) => {
-        toast.error(reason instanceof Error ? reason.message : String(reason))
-      })
-      .finally(() => setPosting(false))
-  }
-  const postReply = (discussionId: string, body: string): Promise<boolean> => {
-    if (!item.repoPath || !body) {
+  // postComment and postReply share the create→reload chain; only what
+  // happens after a successful reload differs (clearing the draft vs the
+  // boolean result).
+  const submitComment = (extra: { body: string; discussionId?: string }): Promise<boolean> => {
+    if (!item.repoPath) {
       return Promise.resolve(false)
     }
     return codehubApi
@@ -150,8 +123,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
         repoId: item.repoId,
         kind: item.type,
         iid: item.iid,
-        body,
-        discussionId
+        ...extra
       })
       .then(() =>
         codehubApi.listComments({
@@ -170,6 +142,22 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
         return false
       })
   }
+  const postComment = (): void => {
+    const body = draft.trim()
+    if (!body || posting) {
+      return
+    }
+    setPosting(true)
+    void submitComment({ body })
+      .then((ok) => {
+        if (ok) {
+          setDraft('')
+        }
+      })
+      .finally(() => setPosting(false))
+  }
+  const postReply = (discussionId: string, body: string): Promise<boolean> =>
+    !body ? Promise.resolve(false) : submitComment({ body, discussionId })
   const saveTitle = (): void => {
     const nextTitle = titleDraft.trim()
     if (!item.repoPath || !nextTitle || savingTitle || nextTitle === title) {
@@ -193,6 +181,39 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
         toast.error(reason instanceof Error ? reason.message : String(reason))
       })
       .finally(() => setSavingTitle(false))
+  }
+  const saveLabels = (): void => {
+    if (!item.repoPath || savingLabels) {
+      return
+    }
+    const current = detail?.labels?.length ? detail.labels : (item.labels ?? [])
+    // `--labels` is replace-semantics, so the draft is the resulting full
+    // set; trimming and de-duplicating here keeps the sent CSV canonical.
+    const nextLabels = [...new Set(labelDraft.map((label) => label.trim()).filter(Boolean))]
+    if (
+      nextLabels.length === current.length &&
+      [...nextLabels].sort().join('\0') === [...current].sort().join('\0')
+    ) {
+      setEditingLabels(false)
+      return
+    }
+    setSavingLabels(true)
+    void codehubApi
+      .updateIssueLabels({
+        repoPath: item.repoPath,
+        repoId: item.repoId,
+        iid: item.iid,
+        labels: nextLabels
+      })
+      .then(() => {
+        setEditingLabels(false)
+        toast.success(translate('auto.components.TaskPage.codehubLabelsSaved', 'Labels updated'))
+        reloadDetail()
+      })
+      .catch((reason: unknown) => {
+        toast.error(reason instanceof Error ? reason.message : String(reason))
+      })
+      .finally(() => setSavingLabels(false))
   }
   const setIssueState = (
     state: 'open' | 'closed',
@@ -247,8 +268,18 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     titleDraft,
     setTitleDraft,
     savingTitle,
+    editingLabels,
+    setEditingLabels,
+    labelDraft,
+    setLabelDraft,
+    savingLabels,
+    saveLabels,
     stateBusy,
     reloadDetail,
+    checks,
+    files,
+    mrExtrasLoading,
+    reloadMrExtras,
     title,
     closed,
     actionItem,

@@ -9,6 +9,7 @@ import type { TuiAgent } from '../../../shared/tui-agent'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
 import type { WorkspaceSource as WorkspaceCreateTelemetrySource } from '../../../shared/workspace-source'
 import type { WorkspaceStatus } from '../../../shared/worktree/types'
+import type { WorkbenchCreationContext } from '../../../shared/workbench/creation-context'
 import { normalizeExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
 import { isWorkItemLookupText } from '@/lib/work-item-lookup-text'
 import { resolveGitHubWorkItemIdentity } from '@/lib/github-work-item-identity'
@@ -35,11 +36,14 @@ export type UseComposerStateOptions = {
   initialProjectGroupId?: string
   initialName?: string
   initialPrompt?: string
+  initialNote?: string
   initialLinkedWorkItem?: LinkedWorkItemSummary | null
   initialGitHubWorkItem?: GitHubWorkItem | null
   initialTaskSourceContext?: TaskSourceContext | null
   initialWorkspaceStatus?: WorkspaceStatus
   initialBaseBranch?: string
+  initialParentWorktreeId?: string | null
+  workbenchCreation?: WorkbenchCreationContext | null
   persistDraft: boolean
   onCreated?: () => void
   isSubmissionCancelled?: () => boolean

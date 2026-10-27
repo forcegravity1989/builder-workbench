@@ -1,5 +1,8 @@
 import { useCodeHubDetail } from './use-codehub-detail'
+import { attachedCodeHubDetailWorkspace } from '@/workbench/scoped-task-workspace'
+import { CodeHubChecksTab } from './ChecksTab'
 import { CodeHubConversation } from './Conversation'
+import { CodeHubFilesTab } from './FilesTab'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
@@ -14,6 +17,7 @@ import {
   CircleDot,
   Copy,
   ExternalLink,
+  FileText,
   GitPullRequest,
   ListChecks,
   LoaderCircle,
@@ -24,28 +28,36 @@ import { cn } from '@/lib/utils'
 import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
 import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page-github-work-item-status-badge'
 import { formatRelativeTime } from '../../task-page-source-context'
-import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import type { Worktree } from '../../../../../shared/worktree/types'
 
 const NO_WORKTREES: readonly Worktree[] = []
 
-function attachedCodeHubWorkspace(
-  worktrees: readonly Worktree[],
-  item: CodeHubTaskItem
-): Worktree | null {
-  const kind = item.type === 'mr' ? 'mr' : 'issue'
+function CopyLinkButton({
+  url,
+  copied,
+  setCopied
+}: {
+  url: string
+  copied: boolean
+  setCopied: (copied: boolean) => void
+}): React.JSX.Element {
   return (
-    worktrees.find(
-      (worktree) =>
-        !worktree.isArchived &&
-        worktree.repoId === item.repoId &&
-        worktree.linkedWorkItem?.provider === 'codehub' &&
-        worktree.linkedWorkItem.type === kind &&
-        worktree.linkedWorkItem.number === item.iid
-    ) ?? null
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      aria-label={translate('auto.components.GitHubItemDialog.c43fe79ee0', 'Copy GitHub link')}
+      onClick={() => {
+        void navigator.clipboard.writeText(url).then(() => {
+          setCopied(true)
+          window.setTimeout(() => setCopied(false), 1200)
+        })
+      }}
+    >
+      {copied ? <Check className="size-4 text-emerald-500" /> : <Copy className="size-4" />}
+    </Button>
   )
 }
-
 export function TaskPageCodeHubDetail({
   model
 }: {
@@ -55,6 +67,9 @@ export function TaskPageCodeHubDetail({
   const repoWorktrees = useAppStore((state) =>
     repoId ? (state.worktreesByRepo[repoId] ?? NO_WORKTREES) : NO_WORKTREES
   )
+  // G2（P4 详情往返携带范围）：范围态归属呈现与任务屏行/板面箭头同一解析核。
+  const workbenchTaskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
+  const repo = useAppStore((s) => (repoId ? (s.repos.find((r) => r.id === repoId) ?? null) : null))
   const detailState = useCodeHubDetail(model)
   if (!detailState) {
     return null
@@ -71,6 +86,12 @@ export function TaskPageCodeHubDetail({
     titleDraft,
     setTitleDraft,
     savingTitle,
+    editingLabels,
+    setEditingLabels,
+    labelDraft,
+    setLabelDraft,
+    savingLabels,
+    saveLabels,
     stateBusy,
     title,
     closed,
@@ -82,7 +103,12 @@ export function TaskPageCodeHubDetail({
     setCodehubDetailItem,
     handleUseCodeHubItem
   } = detailState
-  const attached = attachedCodeHubWorkspace(repoWorktrees, item)
+  const attached = attachedCodeHubDetailWorkspace({
+    scope: workbenchTaskScope,
+    worktrees: repoWorktrees,
+    repo,
+    item
+  })
   const workspaceLabel = attached ? getWorktreeAttachmentLabel(attached) : null
   const sourceBranch = detail?.sourceBranch ?? item.sourceBranch
   const targetBranch = detail?.targetBranch ?? item.targetBranch
@@ -115,27 +141,11 @@ export function TaskPageCodeHubDetail({
               ) : null}
               <span className="font-mono text-muted-foreground">#{item.iid}</span>
               <div className="ml-auto flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={translate(
-                    'auto.components.GitHubItemDialog.c43fe79ee0',
-                    'Copy GitHub link'
-                  )}
-                  onClick={() => {
-                    void navigator.clipboard.writeText(detail?.url || item.url).then(() => {
-                      setCopied(true)
-                      window.setTimeout(() => setCopied(false), 1200)
-                    })
-                  }}
-                >
-                  {copied ? (
-                    <Check className="size-4 text-emerald-500" />
-                  ) : (
-                    <Copy className="size-4" />
-                  )}
-                </Button>
+                <CopyLinkButton
+                  url={detail?.url || item.url}
+                  copied={copied}
+                  setCopied={setCopied}
+                />
                 <Button
                   variant="ghost"
                   size="icon-sm"
@@ -251,6 +261,14 @@ export function TaskPageCodeHubDetail({
               setIssueState={setIssueState}
               assignees={detail?.assignees?.length ? detail.assignees : item.assignees}
               labels={detail?.labels?.length ? detail.labels : (item.labels ?? [])}
+              repoPath={item.repoPath ?? null}
+              repoId={item.repoId}
+              editingLabels={editingLabels}
+              setEditingLabels={setEditingLabels}
+              labelDraft={labelDraft}
+              setLabelDraft={setLabelDraft}
+              savingLabels={savingLabels}
+              saveLabels={saveLabels}
               workspaceLabel={workspaceLabel}
             />
             {conversation}
@@ -322,27 +340,7 @@ export function TaskPageCodeHubDetail({
                 )}
                 <ArrowRight className="size-3.5" />
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={translate(
-                  'auto.components.GitHubItemDialog.c43fe79ee0',
-                  'Copy GitHub link'
-                )}
-                onClick={() => {
-                  void navigator.clipboard.writeText(detail?.url || item.url).then(() => {
-                    setCopied(true)
-                    window.setTimeout(() => setCopied(false), 1200)
-                  })
-                }}
-              >
-                {copied ? (
-                  <Check className="size-4 text-emerald-500" />
-                ) : (
-                  <Copy className="size-4" />
-                )}
-              </Button>
+              <CopyLinkButton url={detail?.url || item.url} copied={copied} setCopied={setCopied} />
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -365,13 +363,32 @@ export function TaskPageCodeHubDetail({
               <TabsTrigger value="checks" className="px-2">
                 <ListChecks className="size-3.5" />
                 {translate('auto.components.GitHubItemDialog.4bd1f5b055', 'Checks')}
+                {detailState.checks && detailState.checks.length > 0 && (
+                  <span className="ml-1 rounded-full bg-muted px-1.5 text-[10px] text-muted-foreground">
+                    {detailState.checks.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="files" className="px-2">
+                <FileText className="size-3.5" />
+                {translate('auto.components.PullRequestPage.4d18310d55', 'Files changed')}
+                {detailState.files && detailState.files.length > 0 && (
+                  <span className="ml-1 rounded-full bg-muted px-1.5 text-[10px] text-muted-foreground">
+                    {detailState.files.length}
+                  </span>
+                )}
               </TabsTrigger>
             </TabsList>
             <div className="min-h-0 flex-1 overflow-y-auto scrollbar-sleek">
               <TabsContent value="conversation" className="mt-0">
                 {conversation}
               </TabsContent>
-              <TabsContent value="checks" className="mt-0" />
+              <TabsContent value="checks" className="mt-0">
+                <CodeHubChecksTab state={detailState} />
+              </TabsContent>
+              <TabsContent value="files" className="mt-0 h-full min-h-0 overflow-hidden">
+                <CodeHubFilesTab state={detailState} />
+              </TabsContent>
             </div>
           </Tabs>
         </>

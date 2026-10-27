@@ -39,7 +39,29 @@ codehub-cli issue list -p Org/Group/repo -H green
 codehub-cli issue view 12 -p Org/Group/repo -H green
 codehub-cli issue create --title "标题" --description "正文" -p Org/Group/repo -H green
 codehub-cli issue update 12 --title "新标题" -p Org/Group/repo -H green
+codehub-cli issue update 12 --labels "bug,p1" -p Org/Group/repo -H green
 ```
+
+`--labels` 是整组替换语义：发出的逗号分隔列表就是该议题的全部标签。清空全部标签不能用空字符串——CLI 把 `--labels ""` 当作没传该参数并报「至少要一个更新字段」，要传一个空格 `--labels " "`，服务端修剪后落成空集（2026-10-26 对 szv-open 实测）。填入项目里尚不存在的名字不会报错：保存时 CodeHub 自动把它创建为项目标签（默认蓝色 `#428BCA`，2026-10-26 实测）。
+
+## 项目标签
+
+```bash
+codehub-cli project label list -p Org/Group/repo -H green
+codehub-cli project label create "bug" --color "#FF0000" -p Org/Group/repo -H green
+codehub-cli project label update "bug" --color "#00FF00" -p Org/Group/repo -H green
+codehub-cli project label delete "bug" -y -p Org/Group/repo -H green
+```
+
+`list` 的 `--limit` 默认只有 10 且不翻页，要拿全量名单必须显式给足（Workbench 取 100）；删除要 `-y` 跳过终端确认。
+
+标签分项目/组两级：`project label list` 只回项目自有标签，组级要用 `group label list` 取；项目标签接口的 `include_ancestor_groups` 参数服务端不认（2026-10-27 实测）。Workbench 标签下拉按用户裁定只取项目级名单，共享组池不进下拉；给议题打组级标签在输入框直接键入名字即可，与项目标签混用一次保存（2026-10-27 实测）。
+
+```bash
+codehub-cli group label list Org/Group -H green
+```
+
+`api` 子命令发原始请求时端点要自带 `/api/v4/` 前缀，不带会打到网页路由被登录页拦截（2026-10-27 实测）。
 
 评论只有列表、新建、删除，没有修改正文：
 
@@ -80,12 +102,14 @@ MR 评论走 `mr review`。`mr review list` 返回 discussion 数组，评论嵌
 ```bash
 codehub-cli mr review list 8 -p Org/Group/repo -H green
 codehub-cli mr review create 8 --body "评论内容" -p Org/Group/repo -H green
+codehub-cli mr review create 8 --body "这行有边界问题" --path src/main.py --line 42 -p Org/Group/repo -H green
+codehub-cli mr review create 8 --body "整段都要改" --path src/main.py --start-line 40 --line 45 -p Org/Group/repo -H green
 codehub-cli mr review reply 8 <discussion-id> --body "回复内容" -p Org/Group/repo -H green
 codehub-cli mr review delete 8 --note-id <note-id> -p Org/Group/repo -H green
 codehub-cli mr review delete 8 --discussion-id <discussion-id> --note-id <note-id> -p Org/Group/repo -H green
 ```
 
-线程内回复用 `mr review reply`，discussion id 是第二个位置参数（不是 flag）。删除独立 note 只用 `--note-id`；discussion 内的 note 要加 `--discussion-id`。issue 评论没有 discussion 语义。
+不带 `--path` 是普通评论；带 `--path` 和 `--line` 是行级 DiffNote，`--start-line` 指多行范围的起始行（行号是新文件侧的真实行号）。DiffNote 需要的 diff_refs 由 CLI 从 MR 详情自动获取，不用额外传提交锚点。行级 DiffNote 走评审接口，服务器要求必填严重级别（`setting review-config` 的 `note_required_attributes.severity`），空值报 CH.00406030；Workbench 默认发最轻的 `suggestion`，界面上不提供级别选择。线程内回复用 `mr review reply`，discussion id 是第二个位置参数（不是 flag）。删除独立 note 只用 `--note-id`；discussion 内的 note 要加 `--discussion-id`。issue 评论没有 discussion 语义。
 
 CodeHub 这边不使用草稿，也不使用 Mark ready。新建 MR 不要加草稿参数。
 

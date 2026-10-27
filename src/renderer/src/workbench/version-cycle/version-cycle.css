@@ -1,123 +1,3 @@
-.vc-goal {
-  display: block;
-  padding: var(--space-4);
-  border-bottom: 1px solid var(--color-divider);
-}
-.vc-goal:last-child {
-  border-bottom: 0;
-}
-.vc-goal-number {
-  font-family: var(--font-mono);
-  color: var(--color-neutral-600);
-  padding-top: var(--space-1);
-}
-.vc-goal-content {
-  flex: 1;
-  min-width: 0;
-}
-.vc-goal-heading {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: var(--space-2);
-  align-items: start;
-}
-.vc-goal-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--color-text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.vc-goal-toggle strong {
-  margin: 0;
-  font-size: inherit;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-.vc-goal-heading > .vc-goal-toggle {
-  overflow: visible;
-}
-.vc-goal-heading > .vc-goal-toggle strong {
-  display: block;
-  overflow-wrap: anywhere;
-  white-space: normal;
-  line-height: 1.45;
-}
-.vc-goal-heading > .va-goal-summary {
-  min-width: 0;
-}
-.vc-goal-toggle svg {
-  flex: none;
-  color: var(--color-neutral-500);
-}
-.vc-goal.is-collapsed {
-  padding-block: var(--space-3);
-}
-.vc-goal-story {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-  margin-top: var(--space-3);
-}
-.vc-story-cell {
-  min-width: 0;
-  padding: var(--space-3);
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-sm);
-  background: var(--color-card);
-}
-.vc-story-cell p {
-  margin: var(--space-2) 0 0;
-}
-.vc-goal p {
-  margin: var(--space-2) 0 0;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-}
-.vc-label {
-  color: var(--color-neutral-600);
-  margin-right: var(--space-4);
-}
-.vc-goal label {
-  display: grid;
-  gap: var(--space-1);
-  margin-bottom: var(--space-2);
-  color: var(--color-neutral-600);
-}
-.vc-goal input,
-.vc-goal textarea {
-  width: 100%;
-  padding: var(--space-2);
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-md);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font: inherit;
-}
-.vc-goal-metrics,
-.vc-goal-result {
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--color-divider);
-}
-@media (max-width: 760px) {
-  .vc-goal-story {
-    grid-template-columns: 1fr;
-  }
-  .vc-goal-heading {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-  .vc-goal-heading > .vc-goal-toggle {
-    grid-column: 1 / -1;
-  }
-}
-
 /* Only the material panel, its divider and the shell-mounted board slot/frame-row chrome belong to BW. */
 .vc-board-col {
   display: flex;
@@ -154,17 +34,6 @@
   margin-left: auto;
   -webkit-app-region: no-drag;
 }
-.vc-session-toggle {
-  align-self: center;
-  margin-left: var(--space-2);
-  padding: 2px var(--space-2);
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-sm);
-  background: var(--color-card);
-  color: var(--color-text);
-  font-size: 11px;
-  cursor: pointer;
-}
 .vc-board-content {
   display: flex;
   flex: 1;
@@ -173,8 +42,7 @@
   min-height: 0;
   overflow: hidden;
 }
-.vc-board-content > .vp-board,
-.vc-board-content > .va-board {
+.vc-board-content > .vp-board {
   flex: 1;
   min-height: 0;
   min-width: 0;
@@ -185,40 +53,108 @@
   font-size: 12px;
   color: var(--color-neutral-600);
 }
+/* G2（P3b）：已清理/未准备版本的只读回看视图。 */
+.vc-readonly {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px 24px;
+  overflow-y: auto;
+  max-height: 100%;
+}
+.vc-readonly-section {
+  border: 1px solid var(--color-divider, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.vc-readonly-section h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.vc-readonly-section h5 {
+  margin: 4px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-neutral-600);
+}
+.vc-readonly-section ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.vc-readonly-goal {
+  border-top: 1px dashed var(--color-divider, rgba(0, 0, 0, 0.08));
+  padding-top: 8px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.vc-readonly-goal:first-of-type {
+  border-top: 0;
+}
+.vc-readonly-goal h4 {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.vc-readonly-meta {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--color-neutral-600);
+}
+.vc-readonly-badge {
+  font-size: 10.5px;
+  font-weight: 500;
+  border: 1px solid var(--color-divider, rgba(0, 0, 0, 0.12));
+  border-radius: 999px;
+  padding: 1px 8px;
+  color: var(--color-neutral-600);
+  white-space: nowrap;
+}
+/* Why: 6px solid hit zone with a centered 1px line — the upstream
+   tab-group-split-resize-handle pattern. A 1px line with a ±3px overhang lost
+   hit-testing to positioned content on both sides (xterm viewport, board
+   containers), leaving only the top titlebar strip draggable. */
 .vc-split {
   position: relative;
-  flex: 0 0 1px;
+  flex: 0 0 6px;
   cursor: col-resize;
-  background: var(--color-divider);
+  background: transparent;
 }
 .vc-split::after {
   content: '';
   position: absolute;
-  inset: 0 -3px;
+  top: 0;
+  bottom: 0;
+  /* 整数像素定位:6px 盒上 left:50% 恰落 3px。带 translateX(-50%) 的半像素
+     在 DPR=1 与分数缩放下会抗锯齿发虚(上游同款用 3px 宽线规避,这里保持 1px
+     视觉与旧分隔线一致)。 */
+  left: 50%;
+  width: 1px;
+  background: var(--color-divider);
+  transition: background 100ms ease;
 }
-.vc-split:hover {
+.vc-split:hover::after {
   background: var(--color-accent);
 }
 
-/* Branch name, de-emphasized in the board header (never the native tab bar). */
-.vc-branch {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-width: 0;
-  max-width: 40%;
-  margin-left: auto;
-  color: var(--color-neutral-500);
-  font-family: var(--font-mono);
-  font-size: 11px;
-}
-.vc-branch > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* First-row collaboration card shared by the plan and acceptance boards. */
+/* Empty-board start card shared by the plan and acceptance boards (the only
+   session-launch entry; neither board keeps a first-row collaboration card). */
 .vc-start-card {
   display: flex;
   flex-direction: column;
@@ -258,25 +194,4 @@
 .vc-start-problem > svg {
   margin-top: 3px;
   flex: none;
-}
-/* 归档状态行(两屏共用 CycleArchive;计划屏 G3 形态另见 version-planning.css 的 .g3-archive)。 */
-.vp-archive-card {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-md);
-  background: var(--color-card);
-  padding: var(--space-3) var(--space-4);
-}
-.vp-archive-card > p {
-  flex: 1;
-  margin: 0;
-  font-size: 12px;
-  min-width: 180px;
-}
-.vp-archive-card > svg {
-  color: var(--color-neutral-600);
-  flex-shrink: 0;
 }

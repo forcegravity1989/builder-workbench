@@ -142,22 +142,16 @@ describe('task page cache selectors', () => {
     const sourceState = buildTaskPageRepoSourceState(repos, entries)
 
     // Only both-null fetched repos are flagged; label falls back to path when displayName
-    // is absent. A CodeHub-remote repo is flagged with codehub=true so the banner can
-    // explain the missing GitHub source instead of offering a pointless GitHub retry.
+    // is absent. A CodeHub-remote repo is skipped entirely — its missing GitHub source
+    // is the expected state, and flagging it rendered a false "CodeHub unavailable"
+    // banner whenever the task source stayed pinned to GitHub.
     expect(selectTaskPageUnresolvedSourceRepos(repos, sourceState)).toEqual([
       {
         repoId: 'unresolved',
         sourceKey: 'unresolved::local',
-        label: 'unresolved-repo',
-        codehub: false
+        label: 'unresolved-repo'
       },
-      { repoId: 'no-name', sourceKey: 'no-name::local', label: '/repos/no-name', codehub: false },
-      {
-        repoId: 'codehub-remote',
-        sourceKey: 'codehub-remote::local',
-        label: 'codehub-repo',
-        codehub: true
-      }
+      { repoId: 'no-name', sourceKey: 'no-name::local', label: '/repos/no-name' }
     ])
   })
 

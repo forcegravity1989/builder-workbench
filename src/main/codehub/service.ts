@@ -5,6 +5,8 @@ import type { CodeHubApi, CodeHubRepoArgs } from '../../shared/codehub-api'
 import type { Repo } from '../../shared/repo-types'
 import type { CodeHubExecOptions } from './cli'
 import { applyCodeHubIssueState } from './issue-state'
+import { readCodeHubMrChanges, readCodeHubMrChecks } from './mr-reads'
+import { listCodeHubProjectLabels } from './repo-reads'
 import { listCodeHubTasks } from './work-items'
 import {
   assignCodeHubIssue,
@@ -13,6 +15,7 @@ import {
   listCodeHubPipelines,
   mergeCodeHubMr,
   setCodeHubReviewers,
+  updateCodeHubIssueLabels,
   updateCodeHubIssueTitle,
   viewCodeHubTask
 } from './mutations'
@@ -55,6 +58,12 @@ export function createCodeHubService(deps: {
     async updateIssueTitle(args) {
       await updateCodeHubIssueTitle({ ...args, ...(await context(args)) })
     },
+    async updateIssueLabels(args) {
+      await updateCodeHubIssueLabels({ ...args, ...(await context(args)) })
+    },
+    async listLabels(args) {
+      return listCodeHubProjectLabels(await context(args))
+    },
     async setIssueState(args) {
       const { remote, execOptions } = await context(args)
       await applyCodeHubIssueState({
@@ -81,6 +90,12 @@ export function createCodeHubService(deps: {
     },
     async listPipelines(args) {
       return listCodeHubPipelines({ ...args, ...(await context(args)) })
+    },
+    async mrChecks(args) {
+      return readCodeHubMrChecks({ ...args, ...(await context(args)) })
+    },
+    async mrChanges(args) {
+      return readCodeHubMrChanges({ ...args, ...(await context(args)) })
     },
     async viewTask(args) {
       return viewCodeHubTask({ ...args, ...(await context(args)) })

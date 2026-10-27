@@ -32,6 +32,9 @@ const Terminal = lazy(() => import('../components/Terminal'))
 const OverviewPage = lazy(() =>
   import('../workbench/OverviewPage').then((m) => ({ default: m.OverviewPage }))
 )
+const VersionOverviewPage = lazy(() =>
+  import('../workbench/version-overview-page').then((m) => ({ default: m.VersionOverviewPage }))
+)
 const KnowledgePage = lazy(() =>
   import('../workbench/KnowledgePage').then((m) => ({ default: m.KnowledgePage }))
 )
@@ -89,6 +92,9 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
   if (isWorkbenchShell() && activeView === 'activity') {
     if (projectPage?.kind === 'wall') {
       return <ProjectWallPage configureRepoId={projectPage.configureRepoId} />
+    }
+    if (projectPage?.kind === 'version-overview') {
+      return <VersionOverviewPage options={projectPage.options} />
     }
     if (projectPage?.kind === 'onboard') {
       return <OnboardProjectPage options={projectPage.options} />
@@ -232,7 +238,7 @@ function AppWorkspaceContent(props: {
                 )}
                 <div className="flex flex-1 min-w-0 min-h-0" ref={resize.bodyRef}>
                   <div
-                    className="flex min-w-0 min-h-0 flex-col"
+                    className="relative flex min-w-0 min-h-0 flex-col"
                     ref={resize.chatColRef}
                     style={
                       !cycle
@@ -242,6 +248,24 @@ function AppWorkspaceContent(props: {
                           : undefined
                     }
                   >
+                    {/* Why: the collapsed 36px rail's own content is unusable, so the whole
+                        rail doubles as the expand affordance (click anywhere); the board
+                        page-header chip stays the other entry. */}
+                    {cycle && resize.chatCollapsed && (
+                      <button
+                        type="button"
+                        className="absolute inset-0 z-10 p-0 border-0 bg-transparent cursor-pointer"
+                        aria-label={translate(
+                          'auto.app.shell.AppWorkspaceShell.38f5d8318c',
+                          '展开会话栏'
+                        )}
+                        title={translate(
+                          'auto.app.shell.AppWorkspaceShell.38f5d8318c',
+                          '展开会话栏'
+                        )}
+                        onClick={resize.toggleChatCollapsed}
+                      />
+                    )}
                     {layout.shouldMountTerminalWorkbench ? (
                       <TerminalWorkbenchContainer isVisible={layout.terminalWorkbenchVisible}>
                         <Suspense fallback={null}>
@@ -280,16 +304,21 @@ function AppWorkspaceContent(props: {
                   </div>
                   {cycle && (
                     <>
-                      <div
-                        className="vc-split"
-                        role="separator"
-                        aria-orientation="vertical"
-                        aria-label={translate(
-                          'auto.app.shell.AppWorkspaceShell.e82b94df8a',
-                          '调整左右栏宽度'
-                        )}
-                        onMouseDown={resize.onResizeStart}
-                      />
+                      {/* Why: the divider only resizes an expanded session column. While the column is collapsed
+                          there is nothing to resize, and a dead col-resize strip reads as broken drag affordance
+                          (round-9 decision 2026-10-22: hide it; expanding stays on the board header chip). */}
+                      {!resize.chatCollapsed && (
+                        <div
+                          className="vc-split"
+                          role="separator"
+                          aria-orientation="vertical"
+                          aria-label={translate(
+                            'auto.app.shell.AppWorkspaceShell.e82b94df8a',
+                            '调整左右栏宽度'
+                          )}
+                          onMouseDown={resize.onResizeStart}
+                        />
+                      )}
                       <Suspense fallback={null}>
                         <div
                           className={`vc-board-slot${
@@ -298,47 +327,7 @@ function AppWorkspaceContent(props: {
                         >
                           {layout.workspaceChromeActive ? (
                             <div className="vc-board-titlebar">
-                              {/* Why: the plan board moved its chat-collapse chip into the board page header (G3); the titlebar toggle stays for the acceptance board only. The plan titlebar remains a plain drag band. */}
-                              {cycle.workflow === 'acceptance' ? (
-                                <button
-                                  type="button"
-                                  className="vc-session-toggle"
-                                  aria-label={
-                                    resize.chatCollapsed
-                                      ? translate(
-                                          'auto.app.shell.AppWorkspaceShell.38f5d8318c',
-                                          '展开会话栏'
-                                        )
-                                      : translate(
-                                          'auto.app.shell.AppWorkspaceShell.4bf79d6d8c',
-                                          '收折会话栏'
-                                        )
-                                  }
-                                  title={
-                                    resize.chatCollapsed
-                                      ? translate(
-                                          'auto.app.shell.AppWorkspaceShell.38f5d8318c',
-                                          '展开会话栏'
-                                        )
-                                      : translate(
-                                          'auto.app.shell.AppWorkspaceShell.4bf79d6d8c',
-                                          '收折会话栏'
-                                        )
-                                  }
-                                  onClick={resize.toggleChatCollapsed}
-                                  style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-                                >
-                                  {resize.chatCollapsed
-                                    ? translate(
-                                        'auto.app.shell.AppWorkspaceShell.722fd4ab69',
-                                        '展开会话'
-                                      )
-                                    : translate(
-                                        'auto.app.shell.AppWorkspaceShell.5c18da0a65',
-                                        '收折会话'
-                                      )}
-                                </button>
-                              ) : null}
+                              {/* Both boards keep collapse/expand in their page-header chips (G3); the titlebar is a plain drag band. */}
                               {/* Why: the closed-sidebar reopen toggle and window controls float above this drag band as z-index siblings; Electron drag hit-test respects no-drag only on DOM descendants, so this carve-out keeps them clickable. Mirrors the TabGroupPanel spacer. */}
                               {!layout.rightSidebarOpen ? (
                                 <div className="vc-board-titlebar-controls-space" />

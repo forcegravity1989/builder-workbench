@@ -7,13 +7,9 @@ afterEach(() => {
 })
 
 describe('resolveWorkbenchNav', () => {
-  it('maps Orca slots onto Workbench nav', () => {
-    expect(resolveWorkbenchNav('activity')).toBe('overview')
-    expect(resolveWorkbenchNav(WORKBENCH_PLAN_SLOT)).toBe('plan')
-    expect(resolveWorkbenchNav('tasks')).toBe('tasks')
-    expect(resolveWorkbenchNav('automations')).toBe('automations')
-    expect(resolveWorkbenchNav('space')).toBe('knowledge')
-  })
+  // G2 P3a ratchet 对冲（环 4 负面清单·装配例）：槽位→导航 id 的映射表断言删除
+  // （纯 switch 装配，无业务推导；侧栏高亮改由版本行 active 态承担，artifacts
+  // 子视图拆分与 terminal 分支解析两例保留看护）。
 
   it('splits the shared artifacts slot by the BW cycle sub-view', () => {
     setCycleView('acceptance')

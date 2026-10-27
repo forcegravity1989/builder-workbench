@@ -1,9 +1,10 @@
 import snapshot from './g3-snapshot.json'
 export { snapshot }
-export const g2Url =
-  'http://127.0.0.1:53519/docs/05-features/version-planning/version-workspace-journey.html'
+export const g2Url = '../version-workspace/version-workspace-prototype.html'
 export const stages = [
-  ['context', '上版回顾', '从延期与遗留开始'],
+  // 第一步按 #426（v0.7 验收会决议）从「上版回顾」改名「计划准备」，与验收屏
+  // 「验收准备」口径一致；区块内容仍是上版两行遗留的回显。
+  ['context', '计划准备', '从延期与遗留开始'],
   ['goals', '本版目标', '明确结果与验收标准'],
   ['minutes', '会议纪要', '批注与转写稿生成'],
   ['archive', '归档 PR', 'Leader 在原生 PR 页再审']
@@ -44,8 +45,7 @@ export const metricCatalog = [
   { id: 'metric-2', name: '使用周一屏的被管理项目数', current: null },
   { id: 'metric-3', name: '每周闭环的 issue 数', current: null }
 ]
-// 纪要固定两块：共识（若干点，可编辑）与遗留（若干点，逐条闭环状态）。
-// 闭环 = 版本计划已按该条修改，由人标记；统一格式提高 Leader 归档 PR 审核效率。
+// 纪要示例在正文交代落实结果或 Issue 去向，不另设逐项完成状态。
 export const initialMinutes = {
   confirmed: true,
   sources: '在线批注 2 条 · 会议转写稿（#385 边界讨论）',
@@ -54,13 +54,35 @@ export const initialMinutes = {
     'G3 目标句与关联 Issue 分工按边界结论修订，详见目标 G3。'
   ],
   followups: [
-    { text: 'G2 交接契约在 G2 设计轮明确，不阻塞本版计划合入。', closed: false },
-    { text: '忠实采集脚本不强求本周开发完毕，已写入 G1 验收标准。', closed: true }
+    { text: 'G2 交接契约由 #383 继续跟进；关联 Issue 不代表已完成。' },
+    { text: '已落实：忠实采集脚本不强求本周开发完毕，已写入 G1 验收标准。' }
   ]
 }
+// 计划助手注入提示词的设计正本（生产落点：PlanningMinutesSection.tsx 与
+// annotations/annotation-markdown.ts，各持一份同名常量，不重复散写）。
+// 2026-10-22 第八轮定四处语义：落点是计划材料 minutes 节不是聊天正文；会中发送批注是
+// 「累积输入」不是「现在整理」（原文以「整理」结尾会被误当整理请求）；全量清单以最新
+// 一次为准；转写稿由必有输入改为助手询问一次。
+// 第九轮瘦身（2026-10-22 用户反馈）：按钮 prompt 只承载触发意图与关键约束，builder
+// 一眼能懂；落点确认、归档前核对遗留去向、无批注不编造等 SOP 级规则归 week-planning Skill 与
+// 系统提示词（随本轮 Skill 专项同步落地），按钮 prompt 不复述。
+// #431 规范轮：整理纪要「汇总」改「提炼」——纪要是提炼的结论不是逐条汇总，质量
+// 标准归 Skill 侧纪要规范。批注发送句定为中性抬头「会议反馈批注（N 条）内容如下：」
+// ——两屏共享注入句只标明这是会议反馈批注、不承载屏别意图；双意图（计划屏帮人调整
+// 目标、验收屏回应或修订材料，均为纪要整理输入之一）、全量清单以最新一次为准、会中
+// 发送是累积输入不是整理请求等语义归各屏 SKILL，不把计划视角带进只读的验收屏
+// （SKILL-MD-SPEC 用户面表达、规则单点）。
+export const minutesRequestPrompt =
+  '整理本次评审会的会议纪要：把会话中已发送的板面批注提炼为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。'
+
+export function annotationsSendPrompt(count) {
+  return `会议反馈批注（${count} 条）内容如下：`
+}
+
 // 时期为原型场景切换器（不进生产界面）：验证计划未建、未拆解时旅程是否流畅。
 export const scenes = [
-  ['none', '计划未建'],
+  ['none', '计划尚未开始'],
+  ['preparing', '已开始 · 目标待讨论'],
   ['goals', '目标已定 · 未拆 Issue'],
   ['full', '已拆解 · 纪要与归档']
 ]

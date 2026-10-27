@@ -10,6 +10,7 @@ import { assertFixedPlan } from './acceptance-model'
 import type { nativeVersionMaterialPort } from '../version-material-port'
 import { MaterialVersion } from '../../../../shared/workbench/version-material'
 import type { CycleMaterialProblem } from '../version-cycle/cycle-start-request'
+import { compareMaterialVersions } from '../../../../shared/workbench/version-catalog'
 
 /**
  * Names for the acceptance version menu: local acceptance files, plus version
@@ -30,10 +31,10 @@ export function acceptanceVersionChoices(input: {
         .filter((item) => MaterialVersion.safeParse(item.version).success)
         .map((item) => item.version)
     ])
-  ].sort()
+  ].sort(compareMaterialVersions)
 }
 
-export type TreePlanProblem = { version: string; code: string; message: string }
+type TreePlanProblem = { version: string; code: string; message: string }
 
 export function useAcceptanceSources(
   history: VersionHistoryPort,
@@ -108,22 +109,28 @@ export function useFixedAcceptancePlan(
 ) {
   const [refresh, setRefresh] = useState(0)
   const key = reference ? JSON.stringify(reference) : ''
+  // Keyed on the serialized identity, not the object: a save round-trips the
+  // material through the schema and hands back a fresh planRef object, which
+  // would re-read the fixed plan on every autosave.
+  const referenceRef = useRef(reference)
+  referenceRef.current = reference
   const [result, setResult] = useState<
     | { key: string; kind: 'verified'; plan: VersionHistoryPlan; checkedAt: string }
     | { key: string; kind: 'mismatch' | 'unavailable'; reason: string }
     | null
   >(null)
   useEffect(() => {
-    if (!reference) {
+    const planRef = referenceRef.current
+    if (!planRef) {
       return
     }
     let current = true
     let sourceRead = false
     void history
-      .readPlan({ scope, planRef: reference })
+      .readPlan({ scope, planRef })
       .then((plan) => {
         sourceRead = true
-        assertFixedPlan(reference, plan)
+        assertFixedPlan(planRef, plan)
         if (current) {
           setResult({ key, kind: 'verified', plan, checkedAt: new Date().toISOString() })
         }
@@ -136,7 +143,7 @@ export function useFixedAcceptancePlan(
     return () => {
       current = false
     }
-  }, [history, scope, reference, key, refresh])
+  }, [history, scope, key, refresh])
   const current = result?.key === key ? result : null
   return {
     refresh: () => setRefresh((value) => value + 1),

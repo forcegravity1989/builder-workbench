@@ -7,7 +7,7 @@ import {
 } from '../../../../shared/workbench/version-material'
 import type { CycleTaskRead } from '../version-cycle/ports'
 
-export function taskReferenceKey(reference: VersionTaskReference): string {
+function taskReferenceKey(reference: VersionTaskReference): string {
   return JSON.stringify([reference.provider, reference.repository, reference.number])
 }
 

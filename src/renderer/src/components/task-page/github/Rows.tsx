@@ -1,6 +1,6 @@
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
-import { findGithubWorkItemWorkspaceAttachment } from '@/lib/github-work-item-workspace-attachment'
 import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
+import { resolveTaskRowWorkspace } from '@/workbench/scoped-task-workspace'
 import { formatPRDelta } from '@/components/task-page-pr-delta-summary'
 import {
   isTaskPageGitHubDraftPR,
@@ -66,12 +66,15 @@ export function TaskPageGitHubRows({
       {!showGitHubTaskSkeletons &&
         filteredWorkItems.map((item) => {
           const itemRepo = repoMap.get(item.repoId) ?? null
-          const attachedWorkspace = findGithubWorkItemWorkspaceAttachment(
-            allWorktrees,
-            item.repoId,
-            item.type,
-            item.number
-          )
+          // G2 (BW)：范围视图的 Issue 按明确绑定解析 Open/Start；PR 行与
+          // 无范围视图沿原生附件语义（helper 内回落），行为逐字不变。
+          const { attached: attachedWorkspace, hasWorkspace } = resolveTaskRowWorkspace({
+            scope: model.workbenchScope,
+            worktrees: allWorktrees,
+            provider: 'github',
+            item,
+            sourceContext: getTaskPageRepoSourceContext(itemRepo, 'github')
+          })
           const attachedWorkspaceLabel = attachedWorkspace
             ? getWorktreeAttachmentLabel(attachedWorkspace)
             : null
@@ -260,7 +263,7 @@ export function TaskPageGitHubRows({
                     <ButtonGroup>
                       <Button
                         type="button"
-                        variant={attachedWorkspace ? 'default' : 'outline'}
+                        variant={hasWorkspace ? 'default' : 'outline'}
                         size="xs"
                         data-contextual-tour-target="tasks-start-workspace"
                         onClick={(event) => {
@@ -269,10 +272,10 @@ export function TaskPageGitHubRows({
                         }}
                         className={cn(
                           'min-w-[72px] gap-1 font-semibold',
-                          attachedWorkspace ? 'shadow-xs' : 'bg-background/80'
+                          hasWorkspace ? 'shadow-xs' : 'bg-background/80'
                         )}
                         aria-label={
-                          attachedWorkspace
+                          hasWorkspace
                             ? translate(
                                 'auto.components.TaskPage.67d881244c',
                                 'Resume workspace attached to PR'
@@ -283,7 +286,7 @@ export function TaskPageGitHubRows({
                               )
                         }
                       >
-                        {attachedWorkspace
+                        {hasWorkspace
                           ? translate('auto.components.TaskPage.7753652524', 'Resume')
                           : translate('auto.components.TaskPage.7d08e8be0f', 'Start')}
                         <ArrowRight className="size-3" />
@@ -291,10 +294,10 @@ export function TaskPageGitHubRows({
                       <DropdownMenuTrigger asChild>
                         <Button
                           type="button"
-                          variant={attachedWorkspace ? 'default' : 'outline'}
+                          variant={hasWorkspace ? 'default' : 'outline'}
                           size="icon-xs"
                           onClick={(event) => event.stopPropagation()}
-                          className={cn(attachedWorkspace ? 'shadow-xs' : 'bg-background/80')}
+                          className={cn(hasWorkspace ? 'shadow-xs' : 'bg-background/80')}
                           aria-label={translate(
                             'auto.components.TaskPage.7deb9e59a5',
                             'More PR actions'
@@ -305,7 +308,7 @@ export function TaskPageGitHubRows({
                       </DropdownMenuTrigger>
                     </ButtonGroup>
                     <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
-                      {attachedWorkspace ? (
+                      {hasWorkspace ? (
                         <DropdownMenuItem onSelect={() => handleUseWorkItem(item)}>
                           <Plus className="size-4" />
                           {translate('auto.components.TaskPage.b6329379ca', 'Start new workspace')}
@@ -321,7 +324,7 @@ export function TaskPageGitHubRows({
                   <Button
                     type="button"
                     // Why: Open resumes an existing workspace — solid primary reads stronger than outline Start (new workspace).
-                    variant={attachedWorkspace ? 'default' : 'outline'}
+                    variant={hasWorkspace ? 'default' : 'outline'}
                     size="xs"
                     data-contextual-tour-target="tasks-start-workspace"
                     onClick={(event) => {
@@ -330,10 +333,10 @@ export function TaskPageGitHubRows({
                     }}
                     className={cn(
                       'min-w-[72px] gap-1 font-semibold',
-                      attachedWorkspace ? 'shadow-xs' : 'bg-background/80'
+                      hasWorkspace ? 'shadow-xs' : 'bg-background/80'
                     )}
                     aria-label={
-                      attachedWorkspace
+                      hasWorkspace
                         ? translate(
                             'auto.components.TaskPage.2193a99ec1',
                             'Open workspace attached to issue'
@@ -344,7 +347,7 @@ export function TaskPageGitHubRows({
                           )
                     }
                   >
-                    {attachedWorkspace
+                    {hasWorkspace
                       ? translate('auto.components.TaskPage.606a85c774', 'Open')
                       : translate('auto.components.TaskPage.7d08e8be0f', 'Start')}
                     <ArrowRight className="size-3" />
@@ -366,7 +369,7 @@ export function TaskPageGitHubRows({
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                      {attachedWorkspace ? (
+                      {hasWorkspace ? (
                         <DropdownMenuItem onSelect={() => handleUseWorkItem(item)}>
                           <Plus className="size-4" />
                           {translate('auto.components.TaskPage.b6329379ca', 'Start new workspace')}

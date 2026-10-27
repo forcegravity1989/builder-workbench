@@ -13,10 +13,10 @@ import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { truncateReleaseBody } from './create-draft-release.mjs'
 
-// electron-builder.config.cjs 的 win artifactName 为 'orca-windows-setup.${ext}'；latest.yml 是更新清单。
+// electron-builder.config.cjs 的 win artifactName 为 'workbench-windows-setup.${ext}'；latest.yml 是更新清单。
 export const WORKBENCH_RELEASE_ASSETS = [
-  'orca-windows-setup.exe',
-  'orca-windows-setup.exe.blockmap',
+  'workbench-windows-setup.exe',
+  'workbench-windows-setup.exe.blockmap',
   'latest.yml'
 ]
 

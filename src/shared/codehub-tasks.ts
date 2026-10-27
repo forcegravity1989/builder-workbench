@@ -45,6 +45,21 @@ export type CodeHubComment = {
   // `--discussion-id`); notes inside a multi-note discussion need both.
   individual: boolean
   isReply: boolean
+  // Author avatar from the note's author object; null when the CLI omits it.
+  authorAvatarUrl: string | null
+  // MR notes carry `from_robot`; issue comments do not (always false there).
+  isBot: boolean
+  // MR review threads can be resolved; issue comment data has no such field.
+  isResolved: boolean
+  // Line-level review comments carry the file position; MR-level notes do
+  // not (both null).
+  path: string | null
+  line: number | null
+  // A line note's anchor goes stale once the file changes under it; an
+  // outdated anchor no longer matches any rebuilt diff line, so the files
+  // tab keeps such notes out of the inline view (GitHub parity) — the
+  // conversation tab still shows them.
+  isOutdated: boolean
 }
 
 export type CodeHubPipeline = {
