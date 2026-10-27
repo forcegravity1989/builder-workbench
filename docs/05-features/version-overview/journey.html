@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>版本总览 · 意图与审阅旅程</title>
+    <link rel="stylesheet" href="../../04-design-system/styles.css" />
+    <link rel="stylesheet" href="prototype/overview-journey.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <span>BUILDER WORKBENCH / 版本总览 / #334</span><a href="prototype.html">打开高保真 ↗</a>
+      </header>
+      <p class="eyebrow">原型注释: 独立特性 · 意图与规格待审</p>
+      <h1>一版开始时有方向，推进时有成果，交付后有依据。</h1>
+      <p class="lead">
+        从 BW
+        原有侧边栏进入版本总览，继续沿计划、任务、工作树、会话与验收推进。总览回答这版承诺什么、现在交付了什么、下一步到哪里继续。
+      </p>
+      <nav>
+        <a href="intent.md">意图草案 ↗</a><a href="spec.md">规格草案 ↗</a
+        ><span>原型注释: 使用 Orca 原生浏览器批注</span>
+      </nav>
+      <section class="intent">
+        <h2>原型注释: 这一版怎样审</h2>
+        <p>
+          页面中的目标、负责人、Issue、PR 和历史结论使用 BW
+          自身的固定读数。右上角“数据来源”给出采集时间与修订；看不到的会话和试用记录保持未知。评审工具、未接线与复用说明都带“原型注释:”前缀。
+        </p>
+        <p>
+          侧边栏在宽窄窗口均保留。计划、验收和原生工作区的完整能力继续沿用，在原型中可定位到既有旅程，不另外画一套执行器。
+        </p>
+      </section>
+      <h2>三个版本生命周期</h2>
+      <ol>
+        <li>
+          <div class="number">01</div>
+          <article>
+            <h3>版本计划未制定</h3>
+            <p>
+              Builder
+              进入一个尚未制定计划的版本，看见明确空态与“开始制定版本计划”。从原有计划短卡进入原生会话和计划板，明确目标、范围、负责人、时间与任务，再由人确认并归档。
+            </p>
+            <p class="check">
+              原型注释: 使用未创建的 v0.9
+              展示空态，不伪造实际计划、执行任务或完成比例。已有版本材料仍从侧栏可达。
+            </p>
+            <a href="prototype.html?scene=unplanned">审阅未制定计划的总览 →</a>
+          </article>
+        </li>
+        <li>
+          <div class="number">02</div>
+          <article>
+            <h3>版本计划制定完，正在推进</h3>
+            <p>
+              打开 v0.8，先对照 G1–G4 承诺和当前成果。展开 #334 /
+              #440，分别看整体目标、本版承担、设计修订、待审项、PR
+              和检查来源；再从任务或工作树进入原生工作会话。
+            </p>
+            <p class="check">
+              原型注释: 这两项目前都有真实设计 Draft PR，不能为了演示不同阶段而宣称其中一项已提供
+              MVP。G4 使用真实 13 条任务；会话未读，不能从 Issue 开放推断正在执行或等待处理。
+            </p>
+            <a href="prototype.html?scene=during">审阅版本中的总览 →</a>
+          </article>
+        </li>
+        <li>
+          <div class="number">03</div>
+          <article>
+            <h3>版本交付后，回看当时的承诺与结论</h3>
+            <p>
+              打开 v0.7 的固定归档：当时计划、正式人工验收、候选包、验收报告和发布各有来源。G1、G2
+              未达成，G3、G4 达成；进入 v0.8 看后续承担，后来的补丁不改写旧版结论。
+            </p>
+            <p class="check">
+              原型注释: 这些是真实归档中的结论。计划严格读取验收的 planRef
+              修订；当前编辑不会改变历史。已交付归档并不表示所有目标已经达成。
+            </p>
+            <a href="prototype.html?scene=delivered">审阅版本交付后的总览 →</a>
+          </article>
+        </li>
+      </ol>
+      <section class="intent">
+        <h2>版本里面，大需求怎样持续推进</h2>
+        <p>月度选择 → 先行 B MVP → 部分用户试用 → 后续 B 修理完善 → 后续 Issue 持续改善。</p>
+        <p>
+          月度选择由 #440 项目总览承接；进入版本后，按意图、设计 / 高保真 /
+          spec、Plan、开发、测试、上线 / 试用组织成果。评审可以返回修改，大需求可以跨版。B
+          版本按周反馈、必要时跨周，每版仅一次正式人工验收。
+        </p>
+        <p>
+          原型注释: MVP 人群、包和使用反馈需要实际证据。当前 v0.8
+          尚未记录完整试用依据，因此呈现空态；后续收到真实反馈后再补到对应版本和
+          Issue，不用情景模拟冒充已经交付。
+        </p>
+      </section>
+      <footer>
+        <strong>原型注释: 审阅边界与落地</strong>
+        <p>
+          高保真目标是可用于最终实现的保真方案。当前只更新独立特性资料与浏览器原型，未修改生产代码、共享持久化协议或
+          BW 运行时。跨版身份、B 版本关系、公共资源与共享导航由统筹会话协调。
+        </p>
+        <p>
+          完整高保真和规格经人确认后，在同一分支 / PR 继续生产开发；真实 Electron
+          验证使用隔离实例。设计参考在高保真右上角小文档弹窗。
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

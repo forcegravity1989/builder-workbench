@@ -1,14 +1,16 @@
-import { IconAction } from './g2-icon-action.jsx'
-import { repository, baseline, stages } from './overview-data.js'
+import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
+import { repository, baseline, stages, snapshot, material } from './overview-data.js'
 // Official references are design inputs; they do not define BW's workflow or persistence.
 export function ReferencePanel() {
   return (
     <>
       <p>
-        本轮补充核对的业界参考 · 2026-10-27。以下是设计取舍的依据，不是产品已实现或用户研究的证明。
+        原型注释: 本轮补充核对的业界参考 ·
+        2026-10-27。以下是设计取舍的依据，不是产品已实现或用户研究的证明。
       </p>
       <h3>Linear · 按需求看阶段与里程碑</h3>
       <p>
+        原型注释:
         借鉴项目内分阶段组织工作，并从概览进入相关成果的方式。本稿让两个大需求分别呈现当前工作与本版范围；不用任务完成比例推导目标达成，也不把所有需求合成一个
         G2 状态。
       </p>
@@ -17,7 +19,7 @@ export function ReferencePanel() {
       </a>
       <h3>GitHub · 评审面向具体修订</h3>
       <p>
-        借鉴评论、认可、要求修改的区分。待审入口定位具体成果及修订，修改后可以重新评审；PR
+        原型注释: 借鉴评论、认可、要求修改的区分。待审入口定位具体成果及修订，修改后可以重新评审；PR
         合入、用户可用和人工验收分别保留事实。
       </p>
       <a
@@ -29,8 +31,8 @@ export function ReferencePanel() {
       </a>
       <h3>LaunchDarkly · 逐步向使用者开放</h3>
       <p>
-        借鉴逐步开放能力时明确使用者范围的思路。本稿呈现 MVP 试用人群、包或部署依据、已知问题和后续
-        Issue；不引入流量分配、功能开关服务或自动发布能力。
+        原型注释: 借鉴逐步开放能力时明确使用者范围的思路。本稿呈现 MVP
+        试用人群、包或部署依据、已知问题和后续 Issue；不引入流量分配、功能开关服务或自动发布能力。
       </p>
       <a
         href="https://launchdarkly.com/docs/home/releases/progressive-rollouts"
@@ -42,15 +44,16 @@ export function ReferencePanel() {
       <hr />
       <h3>BW 自己的依据</h3>
       <p>
-        沿用当前壳、导航与设计系统。月度选择、按周反馈、每个 B
+        原型注释: 沿用当前壳、导航与设计系统。月度选择、按周反馈、每个 B
         版本一次正式人工验收、缺证据保持未知，来自本仓原则和本轮交接；不将业界工具的规则移植成 BW
         协议。
       </p>
       <p>
-        <a href="spec.md#v08-overview-draft" target="_blank" rel="noreferrer">
+        原型注释:
+        <a href="spec.md" target="_blank" rel="noreferrer">
           本轮规格草案 ↗
         </a>{' '}
-        · <a href="version-overview-journey.html">审阅旅程 ↗</a>
+        · <a href="journey.html">审阅旅程 ↗</a>
       </p>
     </>
   )
@@ -99,7 +102,7 @@ export function SectionTitle({ id, title, extra }) {
   )
 }
 
-export function Feature({ feature, scenario, openArtifact, openSession }) {
+export function Feature({ feature, openArtifact, openSession }) {
   const [expanded, setExpanded] = window.BWPrototypeDependencies.useState(false)
   const [stage, setStage] = window.BWPrototypeDependencies.useState(null)
   const rows = stage ? feature.artifacts.filter((row) => row[0] === stage) : feature.artifacts
@@ -184,9 +187,6 @@ export function Feature({ feature, scenario, openArtifact, openSession }) {
               工作会话
             </button>
           </div>
-          {scenario === 'repair' && (
-            <p className="ov-note">本版设计可返回修改；先行 B 的承诺与人工验收仍保留在历史版本。</p>
-          )}
         </div>
       )}
     </article>
@@ -197,69 +197,43 @@ export function SourcePanel() {
   return (
     <>
       <p>
-        除下列正式计划快照与可打开的仓库文档外，本页进展、PR、会话、试用与历史结论均为演示。切换情景不会写入真实材料。
+        原型注释: 本稿使用 BW 自身的只读材料与 GitHub 快照，不是持续联网的数据接口。采集时间：
+        {snapshot.source.checkedAt}。
       </p>
-      <table className="ov-source-table">
-        <tbody>
-          <tr>
-            <th>正式承诺</th>
-            <td>
-              <a
-                href={`${repository}/blob/${baseline}/.bw/planning/v0.8/data.json`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                v0.8 计划 · {baseline.slice(0, 8)}
-              </a>
-              ；归档 PR #446。G2 原文保留，MVP 的具体边界仍是候选。
-            </td>
-          </tr>
-          <tr>
-            <th>共同输入</th>
-            <td>
-              <a
-                href={`${repository}/blob/d69058d15aad9362456dbe353b9318275fa2b9e4/docs/05-features/version-workspace/overview-design-inputs.md`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                PR #458 共享设计输入
-              </a>
-              ；读取时尚未合入，本分支仅引用。
-            </td>
-          </tr>
-          <tr>
-            <th>最新成果</th>
-            <td>
-              建议：从明确关联的 Issue/PR
-              与所属宿主工作树读取，记录文件、提交或草稿修订、读取时间。未合入成果不覆盖正式承诺；本原型尚未接入。
-            </td>
-          </tr>
-          <tr>
-            <th>历史验收</th>
-            <td>
-              建议：沿既有 committed planRef 与验收修订固定读回。当前 PR/Issue
-              动态另列，不能回写当时结论。
-            </td>
-          </tr>
-          <tr>
-            <th>缺证据</th>
-            <td>
-              区分未记录、读取失败、来源过期。没有正式计划时显示“承诺尚未确认”，保留草稿入口，不从
-              PR 或会话补造承诺。
-            </td>
-          </tr>
-          <tr>
-            <th>跨版身份</th>
-            <td>
-              首轮用完整仓库 Issue 引用 #334 / #440 演示关联，G2
-              只作本版目标归组。跨版大需求最终身份、导航和存储由主会话协调。
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <dl>
+        <dt>版本中</dt>
+        <dd>
+          <a href={material('v0.8')} target="_blank" rel="noreferrer">
+            v0.8 计划 · {baseline.slice(0, 8)}
+          </a>
+          ；Issue/PR 来自 GitHub 原生字段。
+        </dd>
+        <dt>交付后</dt>
+        <dd>
+          <a href={material('v0.7', 'acceptance')} target="_blank" rel="noreferrer">
+            v0.7 归档验收
+          </a>
+          ；计划严格读取其 planRef.sourceCommit：
+          {snapshot.acceptance.planRef.sourceCommit.slice(0, 8)}。
+        </dd>
+        <dt>未制定计划</dt>
+        <dd>原型注释: v0.9 是未创建版本的布局示例，不是实际计划或新编号协议。</dd>
+        <dt>工作会话</dt>
+        <dd>
+          原型注释: Git 分支已核对；未读取 BW 宿主登记、会话、连接状态，不用 Git 数据推断运行事实。
+        </dd>
+      </dl>
       <p>
-        <a href="spec.md#v08-overview-draft">阅读规格草案与待审选择</a> ·{' '}
-        <a href="intent.md">意图草案</a>
+        原型注释:
+        当前设计文档可编辑；任务分支的源文件与固定快照分别标识。临时编辑不改写来源，也不回写
+        GitHub。
+      </p>
+      <p>
+        <a
+          href={`${repository}/blob/d69058d15aad9362456dbe353b9318275fa2b9e4/docs/05-features/version-workspace/overview-design-inputs.md`}
+        >
+          共同设计输入 PR #458
+        </a>
       </p>
     </>
   )
