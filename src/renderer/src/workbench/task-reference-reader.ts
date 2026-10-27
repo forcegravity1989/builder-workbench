@@ -196,7 +196,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
             async (result) => {
               const byNumber = new Map(result.items.map((item) => [item.number, item]))
               await Promise.all(
-                chunk.map((job) => {
+                chunk.map(async (job) => {
                   const item = byNumber.get(job.reference.number)
                   if (item && job.repo && job.source) {
                     job.finish({
@@ -207,7 +207,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
                     })
                     return
                   }
-                  return single(job)
+                  await single(job)
                 })
               )
             },
@@ -225,7 +225,10 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
   ): Promise<TaskReferenceValue[]> {
     if (force) {
       // A click during a previous load requests another source check after it.
-      await Promise.all(references.map((reference) => locate(home, reference).entry.pending))
+      const pending = references
+        .map((reference) => locate(home, reference).entry.pending)
+        .filter((read) => read !== null)
+      await Promise.all(pending)
     }
     const jobs: Job[] = []
     const pending = references.map((reference) => {
