@@ -5,6 +5,7 @@ import {
   hasUnsupportedWorkbenchTaskSearch,
   removeWorkbenchVersionQuery,
   seedWorkbenchTaskQuery,
+  workbenchGoalMutationQuery,
   type WorkbenchTaskScope
 } from './task-scope'
 
@@ -25,6 +26,9 @@ describe('native task entry filters', () => {
     expect(parseTaskQuery(removeWorkbenchVersionQuery(seeded, scope))).toEqual(
       parseTaskQuery(original)
     )
+    const mine = parseTaskQuery('assignee:@me author:alice state:open label:bug')
+    expect(workbenchGoalMutationQuery(mine, true)).toEqual({ ...mine, assignee: null })
+    expect(workbenchGoalMutationQuery(mine, false)).toBe(mine)
   })
 
   it('filters the complete goal set using native Issue qualifiers and never infers PR membership', () => {
@@ -43,6 +47,10 @@ describe('native task entry filters', () => {
         .map((item) => item.number)
     ).toEqual([66])
     expect(items.filter((item) => matchesWorkbenchTaskQuery(item, query, null))).toEqual([])
+    expect(matchesWorkbenchTaskQuery(items[65], 'assignee:@me state:all', 'bob')).toBe(true)
+    expect(
+      matchesWorkbenchTaskQuery({ ...items[65], assignees: [] }, 'assignee:@me state:all', 'bob')
+    ).toBe(false)
     expect(
       items.filter((item) => matchesWorkbenchTaskQuery(item, 'is:pr state:all', 'alice'))
     ).toEqual([])

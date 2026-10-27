@@ -148,7 +148,8 @@ describe('github RPC methods', () => {
     const runtime = {
       getRuntimeId: () => 'test-runtime',
       listRepoLabels: vi.fn().mockResolvedValue(['bug']),
-      listRepoAssignableUsers: vi.fn().mockResolvedValue([{ login: 'octo' }])
+      listRepoAssignableUsers: vi.fn().mockResolvedValue([{ login: 'octo' }]),
+      getRepoViewer: vi.fn().mockResolvedValue({ login: 'runtime-user', email: null })
     } as unknown as OrcaRuntimeService
     const dispatcher = new RpcDispatcher({ runtime, methods: GITHUB_METHODS })
 
@@ -161,6 +162,9 @@ describe('github RPC methods', () => {
     expect(runtime.listRepoAssignableUsers).toHaveBeenCalledWith('repo-1')
     expect(labels).toMatchObject({ ok: true, result: ['bug'] })
     expect(users).toMatchObject({ ok: true, result: [{ login: 'octo' }] })
+    const viewer = await dispatcher.dispatch(makeRequest('github.repoViewer', { repo: 'repo-1' }))
+    expect(runtime.getRepoViewer).toHaveBeenCalledWith('repo-1')
+    expect(viewer).toMatchObject({ ok: true, result: { login: 'runtime-user', email: null } })
   })
 
   it('fetches PR checks on the runtime server', async () => {

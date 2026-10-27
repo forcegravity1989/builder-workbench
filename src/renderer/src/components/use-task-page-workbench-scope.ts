@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { TaskPageJiraCreationMetadataModel } from './use-task-page-jira-creation-metadata'
-import { parseTaskQuery, withQualifier } from '../../../shared/task-query'
+import { parseTaskQuery } from '../../../shared/task-query'
 import {
   workbenchTaskScopeKey,
   workbenchVersionTaskLabel,
@@ -16,11 +16,13 @@ import {
 import { nativeTaskReferenceReader } from '@/workbench/native-task-port'
 import {
   projectWorkbenchTaskScope,
+  buildCodeHubGoalQuery,
   resolveWorkbenchTaskScopeFilters,
   workbenchTaskScopeItemKeys,
   type WorkbenchTaskScopeModelFields
 } from '@/workbench/task-scope-projection'
 import { useAppStore } from '@/store'
+import { useTaskScopeViewers } from '@/workbench/use-task-scope-viewers'
 
 /** Only a selected goal materializes references; a version uses native queries. */
 export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataModel) {
@@ -196,21 +198,13 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
   ])
 
   const selectedRepoKey = [...model.repoSelection].sort().join('|')
-  const codehubGoalQuery = seedWorkbenchTaskQuery(
-    withQualifier('', 'state', model.codehubState === 'opened' ? 'open' : model.codehubState),
-    goalScope
-  )
-  const { githubViewerLogin: goalViewerLogin, filterProblem } = resolveWorkbenchTaskScopeFilters({
+  const codehubGoalQuery = buildCodeHubGoalQuery(model, goalScope)
+  const goalViewers = useTaskScopeViewers(model, result, !!goalScope && goalIssueView)
+  const { filterProblem } = resolveWorkbenchTaskScopeFilters({
     active: !!goalScope && goalIssueView,
-    result,
-    repoMap: model.repoMap,
-    homeHostId: home?.hostId,
     taskSource: model.taskSource,
     githubQuery: model.appliedTaskSearch,
-    githubViewerLogin: model.githubViewerLogin,
-    codehubPreset: model.codehubPreset,
-    codehubAuthor: model.codehubAuthor,
-    codehubAssignee: model.codehubAssignee
+    viewerError: goalViewers.error
   })
   useEffect(() => {
     if (!goalScope || !result) {
@@ -221,17 +215,20 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
       selectedRepoIds: model.repoSelection,
       githubIssueView: model.activeGithubTaskKind !== 'prs',
       githubQuery: model.appliedTaskSearch,
-      githubViewerLogin: goalViewerLogin,
+      viewerLogins: goalViewers.logins,
       githubPageSize,
       codehubIssueView: model.codehubView !== 'mrs',
       codehubQuery: codehubGoalQuery,
-      blocked: !!filterProblem
+      codehubPreset: model.codehubPreset,
+      blocked: !!filterProblem || goalViewers.loading
     })
     setPages(githubPages)
     setCurrentPage(0)
     setCountedTotalPages(githubPages.length)
     setCodehubItems(codehubItems)
     setTasksFiltering(false)
+    setTasksLoading(scopeLoading || goalViewers.loading)
+    setCodehubLoading(scopeLoading || goalViewers.loading)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     scopeKey,
@@ -239,9 +236,12 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     selectedRepoKey,
     model.activeGithubTaskKind,
     model.appliedTaskSearch,
-    goalViewerLogin,
+    goalViewers.logins,
+    goalViewers.loading,
+    scopeLoading,
     model.codehubView,
     codehubGoalQuery,
+    model.codehubPreset,
     filterProblem,
     githubPageSize
   ])
@@ -282,7 +282,7 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
   nextModel.workbenchScopeActive = goalScope !== null
   nextModel.workbenchScope = scope
   nextModel.workbenchScopeLoading =
-    scopeLoading || (!!goalScope && goalIssueView && !result && !scopeError)
+    scopeLoading || goalViewers.loading || (!!goalScope && goalIssueView && !result && !scopeError)
   nextModel.workbenchScopeError = goalScope && goalIssueView ? (filterProblem ?? scopeError) : null
   nextModel.workbenchScopeMissing = goalScope && goalIssueView ? (result?.missing ?? []) : []
   nextModel.workbenchScopeReadyCount =
@@ -290,6 +290,7 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
   nextModel.workbenchScopeViewProvider = result?.viewProvider ?? null
   nextModel.workbenchScopeItemKeys = itemKeys.github
   nextModel.workbenchScopeCodeHubItemKeys = itemKeys.codehub
+  nextModel.workbenchScopeViewerLogins = goalViewers.logins
   nextModel.clearWorkbenchProject = clearProject
   nextModel.clearWorkbenchVersion = clearVersion
   nextModel.clearWorkbenchGoal = clearGoal

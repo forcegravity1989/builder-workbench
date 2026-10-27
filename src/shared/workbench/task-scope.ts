@@ -1,11 +1,26 @@
 import { z } from 'zod'
 import { Id, MaterialVersion, VersionTaskReferenceSchema } from './version-material-common'
 import {
+  type ParsedTaskQuery,
   parseTaskQuery,
   tokenizeSearchQuery,
   tokenizeSearchQueryWithRaw,
   withQualifier
 } from '../task-query'
+
+/** Goal projection owns @me; native optimistic membership must not substitute the local viewer. */
+export function workbenchGoalMutationQuery(
+  query: ParsedTaskQuery,
+  goalScoped: boolean
+): ParsedTaskQuery {
+  return goalScoped
+    ? {
+        ...query,
+        author: query.author?.toLowerCase() === '@me' ? null : query.author,
+        assignee: query.assignee?.toLowerCase() === '@me' ? null : query.assignee
+      }
+    : query
+}
 
 /**
  * A removable entry context for the native Tasks page. The version is a native

@@ -1,6 +1,7 @@
 import type { TaskPageWorkbenchScopeModel } from './use-task-page-workbench-scope'
 import { useCallback, useMemo, useEffect } from 'react'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import { matchesWorkbenchTaskQuery } from '../../../shared/workbench/task-scope'
 import { taskPageGitHubItemKey } from '@/components/task-page-github-work-item-mutation-registry'
 import { deriveTaskPagePRCheckSummary } from '@/components/task-page-pr-check-summary'
 import { deriveAdvertisedTotalPages } from '@/components/task-page-work-item-pagination'
@@ -65,11 +66,23 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
     () =>
       typeFilteredCurrentPageItems.filter(
         (workItem) =>
+          (!workbenchScopeActive ||
+            matchesWorkbenchTaskQuery(
+              { ...workItem, assignees: (workItem.assignees ?? []).map((user) => user.login) },
+              model.appliedTaskSearch,
+              model.workbenchScopeViewerLogins.get(workItem.repoId) ?? null
+            )) &&
           !githubWorkItemMutation.softHiddenItemKeys.has(
             taskPageGitHubItemKey(workItem.repoId, workItem.id)
           )
       ),
-    [githubWorkItemMutation.softHiddenItemKeys, typeFilteredCurrentPageItems]
+    [
+      githubWorkItemMutation.softHiddenItemKeys,
+      typeFilteredCurrentPageItems,
+      workbenchScopeActive,
+      model.appliedTaskSearch,
+      model.workbenchScopeViewerLogins
+    ]
   )
   const softHiddenVisibleCount = useMemo(
     () => typeFilteredCurrentPageItems.length - filteredWorkItems.length,

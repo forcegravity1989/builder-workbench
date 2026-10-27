@@ -1,10 +1,9 @@
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
-import type { Repo } from '../../../shared/repo-types'
-import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
-import { parseTaskQuery } from '../../../shared/task-query'
+import { withQualifier } from '../../../shared/task-query'
 import {
   matchesWorkbenchTaskQuery,
   hasUnsupportedWorkbenchTaskSearch,
+  seedWorkbenchTaskQuery,
   type WorkbenchTaskScope
 } from '../../../shared/workbench/task-scope'
 import type { TaskScopeLoadResult, TaskScopeMissingRow } from './task-scope-load'
@@ -19,6 +18,7 @@ export type WorkbenchTaskScopeModelFields = {
   workbenchScopeViewProvider: 'github' | 'codehub' | null
   workbenchScopeItemKeys: Set<string>
   workbenchScopeCodeHubItemKeys: Set<string>
+  workbenchScopeViewerLogins: ReadonlyMap<string, string>
   clearWorkbenchVersion: () => void
   clearWorkbenchProject: () => void
   clearWorkbenchGoal: () => void
@@ -33,47 +33,36 @@ export function workbenchTaskScopeItemKeys(result: TaskScopeLoadResult | null) {
 
 export function resolveWorkbenchTaskScopeFilters({
   active,
-  result,
-  repoMap,
-  homeHostId,
   taskSource,
   githubQuery,
-  githubViewerLogin,
-  codehubPreset,
-  codehubAuthor,
-  codehubAssignee
+  viewerError
 }: {
   active: boolean
-  result: TaskScopeLoadResult | null
-  repoMap: ReadonlyMap<string, Repo>
-  homeHostId: ExecutionHostId | undefined
   taskSource: string
   githubQuery: string
-  githubViewerLogin: string | null
-  codehubPreset: string
-  codehubAuthor: string
-  codehubAssignee: string
+  viewerError: string | null
 }) {
-  const query = parseTaskQuery(githubQuery)
-  const needsViewer = [query.author, query.assignee].some((value) => value?.toLowerCase() === '@me')
-  const hostedGoal =
-    result?.githubItems.some((item) => {
-      const repo = repoMap.get(item.repoId)
-      return !repo || getRepoExecutionHostId(repo) !== 'local'
-    }) ?? homeHostId !== 'local'
-  const viewerLogin = hostedGoal ? null : githubViewerLogin
   const filterProblem =
     active && taskSource === 'github' && hasUnsupportedWorkbenchTaskSearch(githubQuery)
       ? '此高级搜索暂不能与目标筛选同时使用，请移除目标筛选后重试。'
-      : active &&
-          taskSource === 'codehub' &&
-          (codehubPreset === 'mine' ||
-            [codehubAuthor, codehubAssignee].some((value) => value.toLowerCase() === '@me'))
-        ? 'CodeHub 目标范围暂无法核对当前登录用户，请切换到开放后指定作者或经办人。'
-        : active && taskSource === 'github' && !viewerLogin && needsViewer
-          ? '暂无法核对当前宿主的 GitHub 用户，请指定用户或移除目标筛选。'
-          : null
-  return { githubViewerLogin: viewerLogin, filterProblem }
+      : active
+        ? viewerError
+        : null
+  return { filterProblem }
+}
+
+export function buildCodeHubGoalQuery(
+  model: { codehubState: string; codehubAuthor: string; codehubAssignee: string },
+  scope: WorkbenchTaskScope | null
+): string {
+  let query = withQualifier(
+    '',
+    'state',
+    model.codehubState === 'opened' ? 'open' : model.codehubState
+  )
+  query = withQualifier(query, 'author', model.codehubAuthor.trim() || null)
+  query = withQualifier(query, 'assignee', model.codehubAssignee.trim() || null)
+  return seedWorkbenchTaskQuery(query, scope)
 }
 
 /** Apply native criteria to the complete goal reference set before paging. */
@@ -82,20 +71,22 @@ export function projectWorkbenchTaskScope({
   selectedRepoIds,
   githubIssueView,
   githubQuery,
-  githubViewerLogin,
+  viewerLogins,
   githubPageSize,
   codehubIssueView,
   codehubQuery,
+  codehubPreset,
   blocked
 }: {
   result: TaskScopeLoadResult
   selectedRepoIds: ReadonlySet<string>
   githubIssueView: boolean
   githubQuery: string
-  githubViewerLogin: string | null
+  viewerLogins: ReadonlyMap<string, string>
   githubPageSize: number
   codehubIssueView: boolean
   codehubQuery: string
+  codehubPreset: string
   blocked: boolean
 }) {
   const githubItems =
@@ -107,7 +98,7 @@ export function projectWorkbenchTaskScope({
             matchesWorkbenchTaskQuery(
               { ...item, assignees: (item.assignees ?? []).map((user) => user.login) },
               githubQuery,
-              githubViewerLogin
+              viewerLogins.get(item.repoId) ?? null
             )
         )
   const githubPages: GitHubWorkItem[][] = []
@@ -118,22 +109,23 @@ export function projectWorkbenchTaskScope({
   const codehubItems =
     !codehubIssueView || blocked
       ? []
-      : result.codehubItems.filter(
-          (item) =>
-            !!item.repoId &&
-            selectedRepoIds.has(item.repoId) &&
-            matchesWorkbenchTaskQuery(
-              {
-                number: item.iid,
-                title: item.title,
-                state: item.state === 'opened' ? 'open' : item.state,
-                labels: item.labels ?? [],
-                author: item.author,
-                assignees: item.assignees
-              },
-              codehubQuery,
-              null
-            )
-        )
+      : result.codehubItems.filter((item) => {
+          if (!item.repoId || !selectedRepoIds.has(item.repoId)) {
+            return false
+          }
+          const login = viewerLogins.get(item.repoId) ?? null
+          const input = {
+            number: item.iid,
+            title: item.title,
+            state: item.state === 'opened' ? 'open' : item.state,
+            labels: item.labels ?? [],
+            author: item.author,
+            assignees: item.assignees
+          }
+          return (
+            matchesWorkbenchTaskQuery(input, codehubQuery, login) &&
+            (codehubPreset !== 'mine' || matchesWorkbenchTaskQuery(input, 'assignee:@me', login))
+          )
+        })
   return { githubPages: githubPages.length ? githubPages : [[]], codehubItems }
 }

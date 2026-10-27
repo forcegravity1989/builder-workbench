@@ -1,6 +1,7 @@
 import { createCodeHubComment, deleteCodeHubComment, listCodeHubComments } from './comments'
 import { resolve } from 'node:path'
 import { parseCodeHubRemote } from '../../shared/codehub'
+import { getRepoSshConnectionId } from '../../shared/execution-host'
 import type { CodeHubApi, CodeHubRepoArgs } from '../../shared/codehub-api'
 import type { Repo } from '../../shared/repo-types'
 import type { CodeHubExecOptions } from './cli'
@@ -8,6 +9,7 @@ import { applyCodeHubIssueState } from './issue-state'
 import { readCodeHubMrChanges, readCodeHubMrChecks } from './mr-reads'
 import { listCodeHubProjectLabels } from './repo-reads'
 import { listCodeHubTasks } from './work-items'
+import { getCodeHubViewer } from './viewer'
 import {
   assignCodeHubIssue,
   closeCodeHubMr,
@@ -39,13 +41,16 @@ export function createCodeHubService(deps: {
     }
     // Like gh/glab, hosted API calls run on the owning runtime. An SSH repo's
     // filesystem path is not a local cwd; WSL projects use the native runner.
-    const execOptions: CodeHubExecOptions = repo.connectionId
+    const execOptions: CodeHubExecOptions = getRepoSshConnectionId(repo)
       ? {}
       : { cwd: repo.path, ...deps.localGitOptions(repo) }
     return { remote, execOptions }
   }
 
   return {
+    async viewer(args) {
+      return getCodeHubViewer(await context(args))
+    },
     async listTasks(args) {
       const target = await context(args)
       const limit = args.limit ?? 30

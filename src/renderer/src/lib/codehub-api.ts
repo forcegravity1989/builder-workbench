@@ -25,6 +25,7 @@ function route<K extends keyof CodeHubApi>(
 }
 
 export const codehubApi: CodeHubApi = {
+  viewer: (args) => route('viewer', args),
   listTasks: (args) => route('listTasks', args),
   createIssue: (args) => route('createIssue', args),
   updateIssueTitle: (args) => route('updateIssueTitle', args),

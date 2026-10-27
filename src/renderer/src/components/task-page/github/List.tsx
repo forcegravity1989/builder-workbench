@@ -310,7 +310,9 @@ export function TaskPageGitHubList({
         <TaskPageScopeFooter
           model={model}
           extraLoading={showGitHubTaskSkeletons}
-          filteredCount={filteredWorkItems.length}
+          filteredCount={
+            softHiddenVisibleCount > 0 && totalPages > 1 ? null : filteredWorkItems.length
+          }
         />
       </div>
 

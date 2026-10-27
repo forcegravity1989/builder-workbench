@@ -13,6 +13,18 @@ import { workbenchVersionTaskLabel } from '../../../shared/workbench/task-scope'
 
 export const WORKBENCH_GOAL_SEARCH_PLACEHOLDER = '搜索目标标题或编号…'
 
+export function CodeHubListResultNotice({
+  hasMore
+}: {
+  hasMore: boolean
+}): React.JSX.Element | null {
+  return hasMore ? (
+    <p role="status" className="px-3 py-2 text-xs text-muted-foreground">
+      列表还有更多结果，请缩小筛选范围。
+    </p>
+  ) : null
+}
+
 type TaskScopeChromeModel = {
   workbenchScopeActive: boolean
   workbenchScope: WorkbenchTaskScope | null

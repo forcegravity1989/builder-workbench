@@ -36,7 +36,7 @@ import {
   GITHUB_TASK_STICKY_TITLE_HEADER_CLASS,
   getTaskPageRepoSourceContext
 } from '../../task-page-source-context'
-import { TaskPageScopeFooter } from '@/workbench/TaskScopePanel'
+import { CodeHubListResultNotice, TaskPageScopeFooter } from '@/workbench/TaskScopePanel'
 import { resolveTaskRowWorkspace } from '@/workbench/scoped-task-workspace'
 
 function githubStateOf(item: CodeHubTaskItem): GitHubWorkItemStatusItem {
@@ -69,8 +69,14 @@ export function TaskPageCodeHubItemList({
   const mrView = codehubView === 'mrs'
   const gridClass = mrView ? GITHUB_PR_TASK_GRID_CLASS : GITHUB_TASK_GRID_CLASS
   const query = codehubQuery.trim().toLowerCase()
-  const authorFilter = codehubView === 'issues' ? codehubAuthor.trim().toLowerCase() : ''
-  const assigneeFilter = codehubView === 'issues' ? codehubAssignee.trim().toLowerCase() : ''
+  const authorFilter =
+    codehubView === 'issues' && !model.workbenchScopeActive
+      ? codehubAuthor.trim().toLowerCase()
+      : ''
+  const assigneeFilter =
+    codehubView === 'issues' && !model.workbenchScopeActive
+      ? codehubAssignee.trim().toLowerCase()
+      : ''
   const visibleItems = codehubItems.filter((item) => {
     if (item.type !== (mrView ? 'mr' : 'issue')) {
       return false
@@ -150,6 +156,7 @@ export function TaskPageCodeHubItemList({
         ) : null}
         {!codehubLoading &&
         visibleItems.length === 0 &&
+        !model.codehubHasMore &&
         !codehubError &&
         !model.workbenchScopeActive ? (
           <div className="px-4 py-12 text-center">
@@ -357,6 +364,9 @@ export function TaskPageCodeHubItemList({
           model={model}
           extraLoading={codehubLoading}
           filteredCount={visibleItems.length}
+        />
+        <CodeHubListResultNotice
+          hasMore={!codehubLoading && !model.workbenchScopeActive && model.codehubHasMore}
         />
       </div>
     </div>
