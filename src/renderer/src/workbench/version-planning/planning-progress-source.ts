@@ -25,9 +25,9 @@ type PinnedProgressSource = {
 
 /**
  * Newest merged acceptance record for the version — the final copy on the
- * project's main branch, which is all the plan screen ever needs; the history
- * list has already collapsed each round's intermediate commits. A newer
- * unreadable round is a failure, never silently skipped for an older one.
+ * adopted baseline, which is all the plan screen ever needs; the history list
+ * has already collapsed each round's intermediate commits. A newer unreadable
+ * round is a failure, never silently skipped for an older one.
  */
 async function deriveNewestMergedAcceptance(
   history: VersionHistoryPort,
@@ -47,7 +47,7 @@ async function deriveNewestMergedAcceptance(
       )
     }
     throw new Error(
-      `上版 ${version} 的验收记录尚未合入项目主分支，请先更新代码再重试；未改读其他版本或最新材料。`
+      `上版 ${version} 的验收记录尚未合入项目基线分支，请先更新代码再重试；未改读其他版本或最新材料。`
     )
   }
   return history.read({
