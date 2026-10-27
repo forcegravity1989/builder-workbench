@@ -28,8 +28,10 @@ export function metricsSessionTarget(worktreeId: string): { tabId: string; leafI
   return { tabId: target.tabId, leafId: target.leafId }
 }
 
-export function scoreboardSendFailure(status: ActiveAgentNotesSendStatus): string {
+export function scoreboardSendFailure(status: Exclude<ActiveAgentNotesSendStatus, 'sent'>): string {
   switch (status) {
+    case 'empty':
+      return '没有可发送的批注。'
     case 'no-active-terminal':
     case 'no-agent':
       return '还没有可接收的指标配置会话。先点「配置指标」打开会话，再发送。'
@@ -37,8 +39,12 @@ export function scoreboardSendFailure(status: ActiveAgentNotesSendStatus): strin
       return '指标配置会话还不能接收，等它空闲后再发送。'
     case 'permission':
       return '指标配置会话正在等批准，批准后再发送。'
-    default:
-      return '批注没有发到指标配置会话。'
+    case 'status-unavailable':
+      return '读不到指标配置会话的状态，稍后再发送。'
+    case 'not-writable':
+      return '指标配置会话没有收下批注。'
+    case 'partial-submit-failed':
+      return '批注可能已经贴进指标配置会话，但没有提交成功。'
   }
 }
 
