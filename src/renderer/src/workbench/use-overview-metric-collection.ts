@@ -39,12 +39,36 @@ export function useOverviewMetricCollection(args: {
    */
   const load = useCallback(
     (mode: 'initial' | 'reload' | 'recollect' = 'initial') => {
-      if (
-        !baseScope ||
-        !baseWorktreeId ||
-        entry.pending ||
-        (mode === 'initial' && entry.read().loaded)
-      ) {
+      if (!baseScope || !baseWorktreeId || entry.pending) {
+        return
+      }
+      // Returning to the overview re-reads the committed catalog. Readings stay
+      // when that commit has not moved; an uncommitted edit never reaches here.
+      if (mode === 'initial' && entry.read().loaded) {
+        const scope = {
+          repoId: baseScope.repoId,
+          worktreeId: baseWorktreeId,
+          hostId: baseScope.hostId
+        }
+        const owner = baseScope.runtimeOwnerEnvironmentId
+        entry.pending = (async () => {
+          let handedOff = false
+          try {
+            const catalog = await nativeMetricsPort(owner).list(scope)
+            const current = entry.read().catalog
+            if (catalog.configurationCommit !== current?.configurationCommit) {
+              handedOff = true
+              entry.pending = null
+              load('reload')
+            }
+          } catch (error) {
+            entry.publish({ ...entry.read(), problems: [`指标读取失败：${String(error)}`] })
+          } finally {
+            if (!handedOff) {
+              entry.pending = null
+            }
+          }
+        })()
         return
       }
       const scope = {

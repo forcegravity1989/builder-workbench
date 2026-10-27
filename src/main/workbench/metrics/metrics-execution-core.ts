@@ -20,6 +20,8 @@ import { MetricCollectorError } from './collector-output'
 import { resolveTrunkBaseline } from '../trunk-baseline'
 
 export const METRICS_CONFIGURATION_PATH = '.bw/metrics.toml'
+/** Fixed branch the「配置指标」session edits. Must match the renderer maintenance branch. */
+export const METRICS_MAINTENANCE_BRANCH = 'bw/metrics-refresh'
 /** Protocol default for collector scripts; must stay below the renderer's 910s RPC budget. */
 export const METRICS_COLLECT_TIMEOUT_MS = 900_000
 
@@ -60,14 +62,81 @@ export type MetricConfigurationSnapshot = {
   timezone: string
 }
 
+async function revParse(exec: ReturnType<typeof repoExec>, ref: string): Promise<string | null> {
+  try {
+    const commit = (await exec(['rev-parse', '--verify', `${ref}^{commit}`])).stdout.trim()
+    return commit || null
+  } catch {
+    return null
+  }
+}
+
+async function isAncestor(
+  exec: ReturnType<typeof repoExec>,
+  ancestor: string,
+  descendant: string
+): Promise<boolean> {
+  try {
+    await exec(['merge-base', '--is-ancestor', ancestor, descendant])
+    return true
+  } catch {
+    return false
+  }
+}
+
 /**
- * Reads .bw/metrics.toml from a fixed revision of the trunk baseline: the main
- * checkout's HEAD, or the pinned base ref when the repo settings carry one. No
- * fetch and no branch-name probes — freshness is the「更新代码」button's job,
- * and this read never moves anything. Without an explicit configurationCommit
- * the trunk head pins the catalog; official readings only ever reference
- * commits the catalog issued from this same baseline, so a configuration draft
- * can never become an official reading source.
+ * A clean maintenance tree that is strictly behind the trunk baseline is
+ * fast-forwarded onto that baseline, so「配置指标」edits the catalog the
+ * scoreboard is showing. Dirty or diverged trees are left untouched.
+ */
+export async function catchUpMetricsMaintenance(input: {
+  repoPath: string
+  baselineCommit: string
+  execOptions?: MetricsExecOptions
+}): Promise<void> {
+  const exec = repoExec(input.repoPath, input.execOptions ?? {})
+  const head = await revParse(exec, `refs/heads/${METRICS_MAINTENANCE_BRANCH}`)
+  if (
+    !head ||
+    head === input.baselineCommit ||
+    !(await isAncestor(exec, head, input.baselineCommit))
+  ) {
+    return
+  }
+  let worktreePath: string | null = null
+  try {
+    const { stdout } = await exec(['worktree', 'list', '--porcelain'])
+    const blocks = stdout.split('\n\n')
+    for (const block of blocks) {
+      const path = /^worktree (.*)$/m.exec(block)?.[1]
+      const branch = /^branch (.*)$/m.exec(block)?.[1]
+      if (path && branch === `refs/heads/${METRICS_MAINTENANCE_BRANCH}`) {
+        worktreePath = path
+      }
+    }
+  } catch {
+    return
+  }
+  const git = (cwd: string, argv: string[]) =>
+    gitExecFileAsync(argv, { ...input.execOptions, cwd, timeout: 30_000 })
+  if (worktreePath) {
+    try {
+      await git(worktreePath, ['diff', '--quiet', 'HEAD'])
+      await git(worktreePath, ['diff', '--cached', '--quiet'])
+    } catch {
+      return
+    }
+    await git(worktreePath, ['merge', '--ff-only', input.baselineCommit])
+    return
+  }
+  await exec(['update-ref', `refs/heads/${METRICS_MAINTENANCE_BRANCH}`, input.baselineCommit])
+}
+
+/**
+ * Reads .bw/metrics.toml from a fixed revision. No fetch. Without an explicit
+ * configurationCommit, a maintenance commit that already contains the trunk
+ * baseline supplies the catalog; otherwise the trunk head does. The working
+ * tree is never the source, so an uncommitted edit cannot become a reading.
  */
 export async function readMetricConfiguration(input: {
   repoPath: string
@@ -78,7 +147,19 @@ export async function readMetricConfiguration(input: {
   const { repoPath, execOptions = {} } = input
   const exec = repoExec(repoPath, execOptions)
   const baseline = await resolveTrunkBaseline(exec, input.pinnedRef)
-  const configurationCommit = input.configurationCommit ?? baseline.commit
+  let configurationCommit = input.configurationCommit ?? baseline.commit
+  let configurationRef = baseline.ref
+  if (!input.configurationCommit) {
+    const maintenance = await revParse(exec, `refs/heads/${METRICS_MAINTENANCE_BRANCH}`)
+    if (
+      maintenance &&
+      maintenance !== baseline.commit &&
+      (await isAncestor(exec, baseline.commit, maintenance))
+    ) {
+      configurationCommit = maintenance
+      configurationRef = METRICS_MAINTENANCE_BRANCH
+    }
+  }
   const blob = await readGitBlobAtOidPath(
     repoPath,
     configurationCommit,
@@ -89,7 +170,7 @@ export async function readMetricConfiguration(input: {
     throw new MetricCollectorError('configuration-unreadable', '指标配置读取失败，来源未给出答案')
   }
   return {
-    configurationRef: baseline.ref,
+    configurationRef,
     configurationCommit,
     dataCommit: baseline.commit,
     // A binary metrics.toml is a broken configuration, not an absent one; the

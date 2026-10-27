@@ -20,6 +20,7 @@ import {
   computeMetricsCheckoutRoot,
   executeMetricCollection,
   fingerprintMetricCollector,
+  catchUpMetricsMaintenance,
   readMetricConfiguration,
   METRICS_COLLECT_TIMEOUT_MS,
   type MetricConfigurationSnapshot,
@@ -142,9 +143,22 @@ export function nativeMetricsHost(runtime: {
     async catalog(scope: MetricScope): Promise<MetricCatalog> {
       const { target, repo } = await resolver.resolve(scope)
       const execOptions = resolveWorkbenchGitExecOptions(runtime, repo)
+      const adoptedRef = repo.worktreeBaseRef?.trim() || null
+      const host = parseExecutionHostId(target.hostId)
+      if (host?.kind === 'local') {
+        const probe = (await executeMetricsOperation(target, execOptions, {
+          operation: 'configuration',
+          request: { adoptedRef }
+        })) as MetricConfigurationSnapshot
+        await catchUpMetricsMaintenance({
+          repoPath: target.repoPath,
+          baselineCommit: probe.dataCommit,
+          execOptions
+        })
+      }
       const snapshot = (await executeMetricsOperation(target, execOptions, {
         operation: 'configuration',
-        request: { adoptedRef: repo.worktreeBaseRef?.trim() || null }
+        request: { adoptedRef }
       })) as MetricConfigurationSnapshot
       const { features, definitions, problems } = decodeMetricDefinitions(
         snapshot.toml,
