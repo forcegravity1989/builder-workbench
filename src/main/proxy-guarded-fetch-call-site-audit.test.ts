@@ -13,6 +13,9 @@ import { describe, expect, it } from 'vitest'
 // Rule 2 entries map a file to its expected number of non-`net` `.fetch(` calls. A count change
 // means a call site was added, removed, or moved: re-audit the file and update the count.
 const AUDITED_NON_NET_FETCH_CALLS = new Map<string, number>([
+  // Injected transfer client; production resolves to net.fetch on the guarded defaultSession.
+  ['main/updater/resumable-update-download.ts', 1],
+  ['main/updater/recoverable-update-feed.ts', 1],
   // Isolated cookie-jar session, proxied by createOpenCodeRequestSession before any request.
   ['main/rate-limits/opencode-go-usage-fetcher.ts', 2],
   // Isolated cookie-jar session that does NOT apply the proxy — a pre-existing gap, not a

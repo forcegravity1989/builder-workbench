@@ -55,6 +55,8 @@ Issue 原生状态与关闭原因是处理结果正本，版本目标和任务�
 
 `src/renderer/src/workbench/` 承载 BW 导航、计划/验收两屏、总览、项目墙、接入与知识库；Orca 执行面在原组件中复用。主进程 / preload 提供文件、窗口和会话能力。详见 [桌面壳](06-module/桌面壳.md)，逐项源码清单见 [INVENTORY](../src/renderer/src/workbench/INVENTORY.md)。
 
+客户端的检查与安装复用原生更新链。Windows Workbench 在下载层接 GitHub 断点恢复，整包下载的流量取舍和恢复规则见 [客户端更新](06-module/客户端更新.md)。
+
 ## §3 · 实现架构与数据流
 
 ### Orca 执行核与 BW 叠层

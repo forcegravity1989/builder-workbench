@@ -13,6 +13,7 @@ import {
 import { compareVersions } from '../updater-fallback'
 import { listReleaseBuilds, resolveTargetBuild } from '../updater-release-builds'
 import { UpdaterMenuChecks } from './updater-menu-checks'
+import { setRecoverableReleaseFeed } from './workbench-update-feed'
 
 /** Handles local-build selection and exact release-channel/tag jumps. */
 export abstract class UpdaterBuildSelection extends UpdaterMenuChecks {
@@ -130,7 +131,7 @@ export abstract class UpdaterBuildSelection extends UpdaterMenuChecks {
       updater.disableDifferentialDownload = true
       updater.allowPrerelease = true
       console.info(`[updater] pinned to ${channel} build ${target.tag} → ${target.feedUrl}`)
-      updater.setFeedURL({ provider: 'generic', url: target.feedUrl })
+      await setRecoverableReleaseFeed(updater, target.feedUrl)
       this.availableReleaseUrl = target.feedUrl
       const attemptId = this.beginUpdateCheckAttempt()
       this.markUpdateCheckLaunched(attemptId)
