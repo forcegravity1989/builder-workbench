@@ -59,7 +59,7 @@ export type WorkspaceIntentName = {
 
 export function isNumberedGitIssue(
   item: WorkspaceIntentWorkItem | null | undefined
-): item is WorkspaceIntentWorkItem {
+): item is WorkspaceIntentWorkItem & { type: 'issue' } {
   return Boolean(
     item &&
     item.type === 'issue' &&
