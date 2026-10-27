@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="claude">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{版本号}} 验收证据报告</title>
+<style>
+/* ————————————————————————————————————————————————
+   验收证据报告模板(2026-10-23 设计轮,rev5 · 槽位骨架版)
+   · 本文件是表单本体:只有结构、槽位与固定标签;
+     类型怎么选、各槽怎么写好、硬规则,见 version-acceptance SKILL「验收证据报告」节
+   · 单一形态:会议投屏即归档件,同一份文件,无第二排版
+   · 零 JS:目录为纯锚点,截图点开原图走新标签
+   · data-theme 为主题钩子(本版单主题,变量全在 :root)
+   · 验收点按验证方式分型,各型有专属槽位形态:
+     现场演示=执行旅程+会后存证;截图留证=截图位+四件套说明;
+     读回留证=读数、平台读回、文件;缺口=缺什么/怎么补
+   ———————————————————————————————————————————————— */
+:root {
+  --color-bg: #faf9f5;
+  --color-surface: #f0eee6;
+  --color-card: #fefdfa;
+  --color-text: #1f1e1d;
+  --color-accent: #d97757;
+  --color-accent-100: #fef0eb;
+  --color-accent-300: #fec3af;
+  --color-accent-600: #af5233;
+  --color-accent-700: #893a1f;
+  --color-accent2-100: #edf4fe;
+  --color-accent2-700: #355781;
+  --color-success: #579766; --color-success-soft: #dcf7e1; --color-success-deep: #286037;
+  --color-warning: #ce9042; --color-warning-soft: #feecce; --color-warning-deep: #774a03;
+  --color-danger: #c15f4d; --color-danger-soft: #ffe4df; --color-danger-deep: #883334;
+  --color-divider: color-mix(in srgb, var(--color-text) 12%, transparent);
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #262421 4%, transparent), 0 1px 1px color-mix(in srgb, #262421 3%, transparent);
+}
+* , *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.sheet { max-width: 1060px; margin: 0 auto; padding: 28px 28px 96px; }
+a { color: var(--color-accent-600); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+code, .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.muted { color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+
+/* — 头部:eyebrow + 版本 + 一行元信息 — */
+.mast { border-bottom: 1px solid var(--color-divider); padding-bottom: 14px; }
+.eyebrow { margin: 0 0 4px; font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.mast h1 { margin: 0; font-size: 32px; letter-spacing: -0.02em; line-height: 1.1; }
+.mast h1 .v { font-family: var(--font-mono); letter-spacing: -0.01em; }
+.meta-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 10px 0 0; font-size: 13px; color: color-mix(in srgb, var(--color-text) 62%, transparent); }
+.meta-line .mi b { font-weight: 500; color: color-mix(in srgb, var(--color-text) 45%, transparent); margin-right: 4px; }
+.meta-line .sep { color: color-mix(in srgb, var(--color-text) 30%, transparent); }
+
+/* — 目标目录:sticky 锚点条,会议上一击直达 — */
+.toc {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; gap: 8px; flex-wrap: wrap;
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--color-divider);
+  padding: 10px 0 8px; margin-bottom: 4px;
+}
+.toc a {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  border: 1px solid var(--color-divider); border-radius: 999px;
+  background: var(--color-card);
+  padding: 4px 12px; font-size: 13px; color: var(--color-text);
+}
+.toc a b { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--color-accent-700); }
+.toc a:hover { border-color: var(--color-accent-300); text-decoration: none; }
+.toc .toc-gap { margin-left: auto; align-self: center; }
+.toc-legend { margin: 0 0 8px; font-size: 12.5px; color: color-mix(in srgb, var(--color-text) 50%, transparent); }
+.toc-legend b { font-weight: 500; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+
+/* — 目标区块 — */
+.goal { border-top: 1px solid var(--color-divider); margin-top: 40px; padding-top: 24px; scroll-margin-top: 64px; }
+.goal-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.goal-head .g { font-family: var(--font-mono); font-size: 14px; font-weight: 600; color: var(--color-accent-700); }
+.goal-head h2 { margin: 0; font-size: 22px; letter-spacing: -0.01em; line-height: 1.35; flex: 1 1 320px; }
+.goal-head .owner { font-size: 13px; color: color-mix(in srgb, var(--color-text) 55%, transparent); white-space: nowrap; }
+.criteria {
+  margin: 10px 0 0; font-size: 14px; color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  background: var(--color-surface); border-radius: var(--radius-md);
+  padding: 10px 14px; white-space: pre-line;
+}
+.criteria b { font-weight: 500; color: color-mix(in srgb, var(--color-text) 45%, transparent); margin-right: 6px; font-size: 12px; letter-spacing: 0.05em; }
+.goal .issues { margin: 8px 0 0; font-size: 13px; color: color-mix(in srgb, var(--color-text) 55%, transparent); }
+.goal .issues a { margin-right: 8px; }
+
+/* — 指标对比条:目标值 vs 本期读数 — */
+.metric-strip { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 10px; margin: 14px 0 0; }
+.metric-strip > div { background: var(--color-card); border: 1px solid var(--color-divider); border-radius: var(--radius-md); padding: 10px 14px; }
+.metric-strip dt { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 50%, transparent); margin: 0 0 2px; }
+.metric-strip dd { margin: 0; font-size: 22px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.metric-strip dd small { display: block; font-size: 12px; font-family: var(--font-body); color: color-mix(in srgb, var(--color-text) 55%, transparent); margin-top: 2px; }
+.metric-strip .met dd { color: var(--color-success-deep); }
+.metric-strip .miss dd { color: var(--color-danger-deep); }
+
+/* — 验收点卡片:形态随类型 — */
+.point {
+  background: var(--color-card); border: 1px solid var(--color-divider);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+  padding: 16px 20px; margin: 16px 0 0;
+}
+.point-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.point-head .id { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--color-accent-700); }
+.point-head h3 { margin: 0; font-size: 17px; line-height: 1.4; flex: 1 1 260px; }
+.tag { display: inline-flex; align-items: center; font-size: 12px; font-weight: 500; line-height: 1; padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
+.tag-demo { background: var(--color-accent-100); color: var(--color-accent-700); }
+.tag-shots { background: var(--color-accent2-100); color: var(--color-accent2-700); }
+.tag-readback { background: var(--color-surface); color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.tag-gap { background: var(--color-warning-soft); color: var(--color-warning-deep); }
+/* 判定签:目标头的人判读回,复用 tag 底形 */
+.tag.v-hold { background: var(--color-surface); color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.tag.v-met { background: var(--color-success-soft); color: var(--color-success-deep); }
+.tag.v-miss { background: var(--color-danger-soft); color: var(--color-danger-deep); }
+.point-desc { margin: 8px 0 0; font-size: 14.5px; }
+
+/* — 现场演示:执行旅程,每步 做什么→看到什么 — */
+.journey {
+  margin: 12px 0 0; padding: 12px 16px 12px 36px;
+  border-left: 3px solid var(--color-accent-300);
+  background: var(--color-accent-100); border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  font-size: 14.5px;
+}
+.journey li { margin: 6px 0; }
+.journey li::marker { font-family: var(--font-mono); font-weight: 600; color: var(--color-accent-700); }
+.journey .see { display: block; font-size: 13.5px; color: color-mix(in srgb, var(--color-text) 62%, transparent); }
+.journey .see::before { content: '看到 '; font-weight: 500; color: var(--color-accent-600); }
+
+/* — 证据区:截图位、读回列表 — */
+.evidence { margin: 14px 0 0; }
+.ev-label { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--color-text) 45%, transparent); margin: 10px 0 6px; }
+.evidence .ev-label:first-child { margin-top: 0; }
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+.shots figure { margin: 0; }
+.shots a { display: block; }
+.shots .shot-frame {
+  aspect-ratio: 16 / 10; border: 1px solid var(--color-divider); border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 12px;
+  color: color-mix(in srgb, var(--color-text) 45%, transparent);
+}
+.shots img { width: 100%; height: auto; border: 1px solid var(--color-divider); border-radius: var(--radius-sm); display: block; }
+.shots figcaption { margin: 6px 0 0; font-size: 12.5px; line-height: 1.55; color: color-mix(in srgb, var(--color-text) 70%, transparent); }
+.shots figcaption b { font-weight: 500; color: color-mix(in srgb, var(--color-text) 45%, transparent); margin-right: 3px; }
+
+/* — 读回留证:读数、平台读回、文件 — */
+.ev-list { margin: 0; padding: 0; list-style: none; font-size: 14px; }
+.ev-list li { margin: 4px 0; padding-left: 14px; position: relative; }
+.ev-list li::before { content: ''; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; border-radius: 2px; background: var(--color-accent-300); }
+.ev-list .k { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--color-accent-700); margin-right: 6px; }
+.ev-list code { font-size: 0.92em; background: var(--color-surface); border-radius: 4px; padding: 1px 5px; }
+
+/* — 缺口卡:显式警示,不留空占位 — */
+.point-gap { background: var(--color-warning-soft); border-color: color-mix(in srgb, var(--color-warning) 40%, transparent); }
+.gap-detail { margin: 10px 0 0; font-size: 14px; }
+.gap-detail p { margin: 4px 0; }
+.gap-detail b { font-weight: 500; color: var(--color-warning-deep); margin-right: 6px; font-size: 12px; letter-spacing: 0.05em; }
+
+/* — 缺口清单 — */
+.gaps { border-top: 1px solid var(--color-divider); margin-top: 40px; padding-top: 24px; scroll-margin-top: 64px; }
+.gaps h2 { margin: 0 0 10px; font-size: 20px; }
+.gaps ul { margin: 0; padding: 0; list-style: none; }
+.gaps li {
+  background: var(--color-warning-soft); border: 1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);
+  color: var(--color-warning-deep);
+  border-radius: var(--radius-md); padding: 10px 14px; margin: 8px 0; font-size: 14px;
+}
+.gaps li b { font-family: var(--font-mono); font-weight: 600; margin-right: 6px; }
+
+.foot { margin-top: 40px; border-top: 1px solid var(--color-divider); padding-top: 12px; font-size: 12px; color: color-mix(in srgb, var(--color-text) 45%, transparent); }
+
+/* 打印只防截断,不改形态 */
+@media print {
+  .toc { position: static; backdrop-filter: none; background: var(--color-bg); }
+  .point, .shots figure, .metric-strip > div { break-inside: avoid; }
+  body { font-size: 13px; }
+}
+</style>
+</head>
+<body>
+<main class="sheet">
+
+  <!--
+    验收证据报告模板:表单本体,只有结构、槽位与固定标签。
+    类型怎么选、各槽怎么写好、硬规则,见 version-acceptance SKILL「验收证据报告」节。
+    机械规则:复制本文件 → 逐个替换双花括号槽位 → 全文检索双花括号,零残留才算成稿
+    (注释一律不写花括号,检索命中即漏填)→ 逐枚点目录锚点核对跳转,缺口徽标数与清单条数一致
+    → 存为 .bw/planning/<版本>/acceptance-evidence.html,投屏与归档同一份。
+  -->
+
+  <header class="mast">
+    <p class="eyebrow">验收证据报告</p>
+    <h1><span class="v">{{版本号}}</span></h1>
+    <p class="meta-line">
+      <span class="mi"><b>项目</b>{{项目名}}</span><span class="sep">·</span>
+      <span class="mi"><b>候选</b><span class="mono">{{候选标识}}</span></span><span class="sep">·</span>
+      <span class="mi"><b>包</b>{{包版本与校验值,无包要求则写「无包要求」}}</span><span class="sep">·</span>
+      <span class="mi"><b>演示环境</b>{{URL 或启动方式}}</span><span class="sep">·</span>
+      <span class="mi"><b>生成</b>{{生成时间,补证校准可带注}}</span><span class="sep">·</span>
+      <span class="mi"><b>采集</b>{{采集方}}</span><span class="sep">·</span>
+      <span class="mi"><b>对齐</b>{{验收正本引用,如 cycleId}}</span>
+    </p>
+  </header>
+
+  <!-- 目录:每目标一枚锚点,与下方目标节 id 一致,目标短名取目标一句话的缩写;缺口徽标随缺口清单,无缺口则整枚去掉 -->
+  <nav class="toc" aria-label="目标目录">
+    <a href="#{{g编号}}"><b>{{G编号}}</b><span>{{目标短名}}</span></a>
+    <a class="toc-gap" href="#gaps"><b>缺口</b><span>{{N 项}}</span></a>
+  </nav>
+  <p class="toc-legend"><b>现场演示</b>=会上照旅程实走 · <b>截图留证</b>=看图核对 · <b>读回留证</b>=状态与数值读回 · <b>缺口</b>=如实标缺</p>
+
+  <!-- ———————————— 目标节(模式):每目标复制一节 ———————————— -->
+  <section class="goal" id="{{g编号}}">
+    <header class="goal-head">
+      <span class="g">{{G编号}}</span>
+      <h2>{{目标一句话,来自计划材料}}</h2>
+      <!-- 判定签:正本是验收界面的人判,本签只读回;达成加 v-met,未达加 v-miss,其余(待判等)保持 v-hold -->
+      <span class="tag v-hold">人判 {{判定结果,未经人确认写「待判」}}</span>
+      <span class="owner">负责人 {{姓名}}</span>
+    </header>
+    <p class="criteria"><b>验收标准</b>{{逐条,来自计划材料,每条一行}}</p>
+    <!-- 每条一个 a,无关联则整行删 -->
+    <p class="issues"><b>关联 Issue</b><a href="{{Issue 链接}}">{{#编号}}</a></p>
+    <!-- 指标对比条:读数达成加 class="met",未达加 class="miss";
+         一个目标多个指标:整条按指标复制,每指标一组三格;
+         无指标承诺:目标值与读数写「—」,两处 small 删除,口径写「无指标承诺;判据见验收标准」 -->
+    <dl class="metric-strip">
+      <div><dt>本版目标值</dt><dd>{{数值}}<small>{{指标名}}</small></div>
+      <div class="{{met 或 miss}}"><dt>本期读数</dt><dd>{{数值}}<small>{{达成,或未达与差距}}</small></div>
+      <div><dt>读数口径</dt><dd><small>{{窗口 · 粒度 · 来源 · 采集时间}}</small></dd></div>
+    </dl>
+
+    <!-- 以下四卡为四种验收点类型各自的形态:按本目标实际验收点选型复制,删掉不用的;选型方法见 SKILL -->
+    <article class="point">
+      <header class="point-head">
+        <span class="id">{{Gn.m}}</span>
+        <h3>{{验收点一句话}}</h3>
+        <span class="tag tag-demo">现场演示</span>
+      </header>
+      <p class="point-desc">{{验收说明:这个点核成什么样才算过}}</p>
+      <!-- 旅程每步一行:做什么 → 看到什么 -->
+      <ol class="journey">
+        <li>{{第 N 步:在哪个环境做什么}}<span class="see">{{可核对的具体结果}}</span></li>
+      </ol>
+      <!-- 会后存证:演示是会上的证明,这里是会后的;条目可引截图文件、平台读回、读数,
+           需内嵌截图时复制截图留证卡的 figure 形态;确无实物可挂,写一句为什么没有 -->
+      <div class="evidence">
+        <p class="ev-label">证据</p>
+        <ul class="ev-list">
+          <li><span class="k">{{类型:截图/平台读回/读数/文件}}</span>{{证据条目与状态}}</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="point">
+      <header class="point-head">
+        <span class="id">{{Gn.m}}</span>
+        <h3>{{验收点一句话}}</h3>
+        <span class="tag tag-shots">截图留证</span>
+      </header>
+      <p class="point-desc">{{验收说明:这个点核成什么样才算过}}</p>
+      <div class="evidence">
+        <p class="ev-label">截图</p>
+        <!-- 截图可多张,网格自适应;填充时把 .shot-frame 换成
+             <img src="shots/文件名.png" alt="截图内容一句话">,外层链接保持新标签打开;
+             说明配四件套:用例名、执行路径、期望结果、截图 -->
+        <div class="shots">
+          <figure>
+            <a href="{{shots/文件名.png}}" target="_blank"><div class="shot-frame">{{shots/文件名.png}}</div></a>
+            <figcaption><b>用例</b>{{用例名}} <b>· 路径</b>{{执行路径}} <b>· 期望</b>{{期望结果}}</figcaption>
+          </figure>
+        </div>
+        <!-- 可放平台读回与文件条目,按实选用,确无则整区删除 -->
+        <p class="ev-label">读回</p>
+        <ul class="ev-list">
+          <li><span class="k">{{类型:平台读回/文件}}</span>{{平台条目与状态}}</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="point">
+      <header class="point-head">
+        <span class="id">{{Gn.m}}</span>
+        <h3>{{验收点一句话}}</h3>
+        <span class="tag tag-readback">读回留证</span>
+      </header>
+      <p class="point-desc">{{验收说明:这个点核成什么样才算过}}</p>
+      <div class="evidence">
+        <!-- 三源按实选用:读数 / 平台读回(PR、Issue、CI、平台任务页)/ 文件 -->
+        <ul class="ev-list">
+          <li><span class="k">读数</span>{{指标读数与口径}}</li>
+          <li><span class="k">平台读回</span>{{平台条目}} —— {{状态}}</li>
+          <li><span class="k">文件</span><code>{{文件路径}}</code> —— {{是什么}}</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="point point-gap">
+      <header class="point-head">
+        <span class="id">{{Gn.m}}</span>
+        <h3>{{验收点一句话}}</h3>
+        <span class="tag tag-gap">缺口</span>
+      </header>
+      <p class="point-desc">{{验收说明:这个点核成什么样才算过}}</p>
+      <div class="gap-detail">
+        <p><b>缺什么</b>{{未采齐的证据,或未定的验收点}}</p>
+        <p><b>怎么补</b>{{谁何时补采,补后本卡转为何种类型}}</p>
+      </div>
+    </article>
+  </section>
+
+  <!-- ———————————— 缺口清单 ————————————
+       条目两种:挂验收点的带编号;全局缺口(环境/时序/口径,影响整份报告)不带编号直说事由。
+       无缺口时本节与目录缺口徽标整段删除 -->
+  <section class="gaps" id="gaps">
+    <h2>缺口清单</h2>
+    <ul>
+      <li><b>{{Gn.m}}</b>{{验收点}}:{{缺什么}};{{怎么补}}。</li>
+      <li>{{全局缺口:事由与处置}}</li>
+    </ul>
+  </section>
+
+  <p class="foot">本报告由验收会话生成,补证校准见生成时间注;证据只收可核对实物,缺口如实标缺,不凑数。</p>
+
+</main>
+</body>
+</html>
