@@ -80,12 +80,6 @@
     {
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 345,
-      "goalId": "G4"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 427,
       "goalId": "G4"
     },
@@ -177,7 +171,7 @@
   },
   "workflow": {
     "stage": "archive",
-    "updatedAt": "2026-10-26T20:00:20+08:00",
+    "updatedAt": "2026-10-27T15:34:00+08:00",
     "archivePr": {
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
