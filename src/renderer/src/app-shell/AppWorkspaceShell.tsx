@@ -337,7 +337,10 @@ function AppWorkspaceContent(props: {
                           className="vc-split vc-split-row"
                           role="separator"
                           aria-orientation="horizontal"
-                          aria-label="调整上下栏高度"
+                          aria-label={translate(
+                            'auto.app.shell.AppWorkspaceShell.5920545322',
+                            '调整上下栏高度'
+                          )}
                           onMouseDown={band.onResizeStart}
                         />
                       )}
