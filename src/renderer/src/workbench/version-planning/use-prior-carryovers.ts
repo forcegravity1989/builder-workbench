@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useAppStore } from '@/store'
 import { collectVersionCatalogWorkspaces } from '../../../../shared/workbench/version-catalog'
 import { selectPriorVersionSource } from '../../../../shared/workbench/prior-version-source'
@@ -16,6 +16,7 @@ import {
 } from '../version-acceptance/acceptance-issue-annotations'
 import { nativeVersionHistoryPort } from '../version-history-port'
 import { readPlanningProgressSource } from './planning-progress-source'
+import { createSnapshotCache, useSnapshotCache } from '../snapshot-cache'
 
 type PriorCarryoverIssue = {
   /** Full task identity — unique React key across repositories. */
@@ -150,6 +151,8 @@ export type PriorReviewState =
   | { kind: 'ready'; source: ProgressSource; carryovers: PriorCarryovers }
   | { kind: 'error'; reason: string }
 
+const priorCache = createSnapshotCache<PriorReviewState>(() => ({ kind: 'idle' }))
+
 type Identity = [
   { repoId: string; hostId: string; runtimeOwnerEnvironmentId?: string } | null,
   string | null,
@@ -201,20 +204,20 @@ export function usePriorCarryovers(
     () => nativeVersionHistoryPort(identity[0]?.runtimeOwnerEnvironmentId),
     [identity]
   )
-  const request = useRef(0)
-  const [state, setState] = useState<{ key: string; value: PriorReviewState }>({
-    key,
-    value: { kind: 'idle' }
-  })
+  const entry = useMemo(() => priorCache(key), [key])
+  const state = useSnapshotCache(entry)
+  const lastRefresh = useRef({ key, refreshToken })
   useEffect(() => {
+    const force =
+      lastRefresh.current.key === key && lastRefresh.current.refreshToken !== refreshToken
+    lastRefresh.current = { key, refreshToken }
     const [scopePart, treeId, sourcePart, selectedVersion, versions] = identity
     if (!scopePart || !treeId || (!sourcePart && !selectedVersion)) {
-      request.current++
-      setState({ key, value: { kind: 'idle' } })
       return
     }
-    const token = ++request.current
-    setState({ key, value: { kind: 'loading' } })
+    if (!force && entry.read().kind === 'ready') {
+      return
+    }
     const read = async (): Promise<PriorReviewState> => {
       const readScope = { repoId: scopePart.repoId, hostId: scopePart.hostId, worktreeId: treeId }
       let fixed = sourcePart
@@ -227,33 +230,42 @@ export function usePriorCarryovers(
         fixed = prior.source
       }
       const documents = await readPlanningProgressSource(history, readScope, fixed)
-      return {
+      const value: PriorReviewState = {
         kind: 'ready',
         source: fixed,
         carryovers: derivePriorCarryovers(documents.acceptance, documents.plan)
       }
+      // Automatic adoption adds progressSource to the plan; it is the same
+      // verified source, so the new explicit-reference key can reuse the result.
+      priorCache(JSON.stringify([scopePart, treeId, fixed, null, []])).publish(value)
+      return value
     }
-    void read().then(
-      (value) => {
-        if (request.current === token) {
-          setState({ key, value })
-        }
-      },
-      (reason: unknown) => {
-        if (request.current === token) {
-          setState({
-            key,
-            value: {
+    const run = () => {
+      if (entry.read().kind !== 'ready') {
+        entry.publish({ kind: 'loading' })
+      }
+      const pending = read()
+        .then(
+          (value) => entry.publish(value),
+          (reason: unknown) =>
+            entry.publish({
               kind: 'error',
               reason: reason instanceof Error ? reason.message : String(reason)
-            }
-          })
-        }
-      }
-    )
-    return () => {
-      request.current++
+            })
+        )
+        .finally(() => {
+          if (entry.pending === pending) {
+            entry.pending = null
+          }
+        })
+      entry.pending = pending
+      return pending
     }
-  }, [key, identity, history, refreshToken])
-  return { state: state.key === key ? state.value : { kind: 'loading' } }
+    if (!entry.pending) {
+      void run()
+    } else if (force) {
+      void entry.pending.then(run, run)
+    }
+  }, [key, identity, history, refreshToken, entry])
+  return { state }
 }

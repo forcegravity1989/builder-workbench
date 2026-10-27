@@ -13,7 +13,7 @@ export type SnapshotEntry<T> = {
 /** Renderer-lifetime snapshots survive page navigation; only a load replaces them,
  * and they die with the renderer so a restart recomputes everything. Shared
  * primitive: overview zones and cycle task reads (version-cycle/use-cycle-task-reads). */
-export function createSnapshotCache<T>(initial: () => T) {
+export function createSnapshotCache<T>(initial: () => T, capacity = 32) {
   const entries = new Map<string, SnapshotEntry<T>>()
   function createEntry(): SnapshotEntry<T> {
     let value = initial()
@@ -42,7 +42,7 @@ export function createSnapshotCache<T>(initial: () => T) {
       entry = createEntry()
       entries.set(key, entry)
       for (const [oldKey, oldEntry] of entries) {
-        if (entries.size <= 32) {
+        if (entries.size <= capacity) {
           break
         }
         if (oldKey !== key && !oldEntry.pending && !oldEntry.subscribed()) {

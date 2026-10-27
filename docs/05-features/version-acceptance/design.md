@@ -6,7 +6,7 @@
 
 ## 设计边界
 
-AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、会话、任务详情、文件打开和 Automations。BW 只保存版本材料与人工输入，不复制 Issue、PR 或会议转写正本。绑定树沿 `bw/<版本>/acceptance` 与 `bw/<版本>/plan`，绑定决定版本；旧无绑定固定树沿 `bw/week-acceptance`、`bw/week-plan` 与明确选版偏好。运行与材料身份继续按项目、仓库、宿主、runtime owner、工作树和 workflow 隔离，不由会话标题或日期推断。#439 已完成独立静态检视，CI 补验结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)；真实用户与模型旅程仍待验证，性能另窗处理。
+AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、会话、任务详情、文件打开和 Automations。BW 只保存版本材料与人工输入，不复制 Issue、PR 或会议转写正本。绑定树沿 `bw/<版本>/acceptance` 与 `bw/<版本>/plan`，绑定决定版本；旧无绑定固定树沿 `bw/week-acceptance`、`bw/week-plan` 与明确选版偏好。运行与材料身份继续按项目、仓库、宿主、runtime owner、工作树和 workflow 隔离，不由会话标题或日期推断。#439 已完成独立静态检视，CI 补验结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)；真实用户与模型旅程仍待验证，已接入三屏 Issue 共用读取、固定回顾复用和建版等待收窄；性能增量目前仅作静态检视，实际耗时仍待测。
 
 不修改 Orca 核心：对象级动作经共用包装件 `workbench/plan-send-menu.tsx` 递交——它把动作按钮包进 Radix DropdownMenu，内容是**原生** `ReviewNotesSendMenuContent`（「发送至」运行中会话列表 +「新建智能体」快捷启动），同时开 `useAppStore.openAgentSendPopoverTargetMode` 让侧边栏 agent 行成为第二个发送面。`source` 沿用 `'browser-annotations'`、`launchSource` 沿用 `'notes_send'`，不扩 Orca 的 source union（扩它属于改原生协议，登记为上游接缝候选，不在本特性内做）。
 

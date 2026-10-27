@@ -7,7 +7,7 @@
 
 ## G3 计划屏实现边界(2026-10-21 落地)
 
-[计划旅程高保真](planning-journey-prototype.html)（`prototype/g3-*` 源码与生成物）沿用已认可的 G3 布局。#439 的短启动卡、紧邻前版回顾和纪要处理已同步到现行行为与源码；独立静态检视已完成，CI 补验结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)，真实用户旅程仍待验证，性能另窗处理。原型仅为设计资产，历史证据与未验边界见 [STATUS](STATUS.md)。
+[计划旅程高保真](planning-journey-prototype.html)（`prototype/g3-*` 源码与生成物）沿用已认可的 G3 布局。#439 的短启动卡、紧邻前版回顾和纪要处理已同步到现行行为与源码；独立静态检视已完成，CI 补验结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)，真实用户旅程仍待验证，已接入三屏 Issue 共用读取、固定回顾复用和建版等待收窄；性能增量目前仅作静态检视，实际耗时仍待测。原型仅为设计资产，历史证据与未验边界见 [STATUS](STATUS.md)。
 
 会议纪要沿既有 `minutes` 正本与 Issue 引用，计划侧取消逐项闭环控件，整份人工确认与冻结保留；归档前每条已落实或关联真实跟进 Issue，由助手核对、PR 人审，Issue 未关闭不阻止归档，不加界面硬门禁。旧 `closed` 兼容读回并按原值保留，不自动迁移历史正文，不新增逐项状态协议。固定来源回顾仍是讨论参考，不自动转成下版任务或承诺。
 
@@ -89,7 +89,7 @@ usePlanningMaterial 继续复用 MaterialDraftController 的本地草稿、远�
 
 保留 `.bw/planning/<version>/data.json`、schema_version=3 与现有目标/任务/workflow/minutes 契约。上版来源先以 `selectPriorVersionSource` 按目录既有排序定位紧邻前版，再查该版验收；已有 `summary.progressSource` 优先，缺验收不回退更早版本，不生成成绩。`planning-progress-source` 经 history.read/readPlan 按 version/cycleId/sourceCommit/revision 核验固定验收与计划，`use-prior-carryovers` 只投影延期/会议遗留；固定读取失败两行留空、不增独立错误或重试界面，实时 Issue 参考的错误/重试保留。「查看验收依据」复用既有只读材料页与 readonlyBrowse，进入同一固定修订整页，返回原计划，不建树、不读当前稿或初始化替代材料。加载失败不新建替代物；版本不由日期、标题或 mtime 推断。
 
-任务只保存 provider/repo/number 与 goalId 的引用，展示状态从 Orca provider 读回；板面读数经 `version-cycle/use-cycle-task-reads` 的渲染进程快照缓存（复用总览 `snapshot-cache` 原语，#432）：按 scope + 序列化引用集合键控、计划/验收两屏共享同一条目，进屏立即回显上次读数并后台静默重读，「刷新 Issue」强制重读，单条读取全链路本无缓存（GitHub 每条一至两次 spawn gh——引用不带 kind 时 issue 先读、404 回退 PR；CodeHub 每条 spawn CLI）；缓存随渲染进程消亡、重启现算，读数带读取时间，离线不是空任务。会议纪要存材料可选 minutes 节（共识/遗留/人工确认，模型只写未确认正文），不再存 live_notes、transcript，也不由目标派生三节模板。协议细节的唯一模型参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
+任务只保存 provider/repo/number 与 goalId 引用。三屏共用 task-reference-reader 的原生行结果及在途请求，按 provider、宿主、项目/登记仓、来源身份及编号隔离，复用 snapshot-cache 原语、限于渲染进程；各屏按当前引用投影，挂载先回显再后台更新，按钮强制重读。GitHub 支持域内沿原生 gh:workItemsBatch 每 20 号分片，保留成功片、只补失败或缺失项；environment runtime 保持原生单项路由，CodeHub 复用有界逐项 CLI。use-cycle-task-reads 保留整批发布和新鲜证据回调，缓存回显不写 taskSnapshot；固定回顾核验成功后沿完整来源身份复用，来源变化或手动刷新才重读，实时 Issue 独立更新。会议纪要存材料可选 minutes 节（共识/遗留/人工确认，模型只写未确认正文），不再存 live_notes、transcript，也不由目标派生三节模板。协议细节的唯一模型参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
 
 UI 与模型共用在文件所属宿主执行的版本材料写入核心；模型入口是宿主下发的 `ORCA bw materials` CLI 薄入口。写入含受信任项目根、版本路径校验、expectedRevision、跨进程互斥和原子替换；重读修订后再提交，锁范围只含本文件事务，不锁住模型对话。CLI 与 UI 不各自实现一次校验。planning.py、version-plan.html 模板与 data-template.json 已在消费方切换的同一交付内退役删除，旧 confirm / submit-confirmed 不再控制任何流程；check-week-comment.py 与 week-plan-comment.md 保留作历史评论修复协议。
 
