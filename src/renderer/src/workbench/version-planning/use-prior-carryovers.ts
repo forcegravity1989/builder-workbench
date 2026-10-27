@@ -1,4 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useAppStore } from '@/store'
+import { collectVersionCatalogWorkspaces } from '../../../../shared/workbench/version-catalog'
+import { selectPriorVersionSource } from '../../../../shared/workbench/prior-version-source'
 import type {
   AcceptanceMaterial,
   PlanningMaterial,
@@ -6,7 +9,11 @@ import type {
   VersionTaskSnapshot
 } from '../../../../shared/workbench/version-material'
 import type { CycleScope, CycleTaskReference, CycleTaskSnapshot } from '../version-cycle/ports'
-import { issueKey, issueMarkFor } from '../version-acceptance/acceptance-issue-annotations'
+import {
+  isClosedIssueState,
+  issueKey,
+  issueMarkFor
+} from '../version-acceptance/acceptance-issue-annotations'
 import { nativeVersionHistoryPort } from '../version-history-port'
 import { readPlanningProgressSource } from './planning-progress-source'
 
@@ -90,6 +97,10 @@ export function derivePriorCarryovers(
         continue
       }
       const ready = readyByKey.get(issueKey(reference))
+      // Keep the human mark in history, but a closed frozen Issue is no longer deferred work.
+      if (ready && isClosedIssueState(ready.state)) {
+        continue
+      }
       issues.push(
         ready
           ? {
@@ -134,26 +145,44 @@ export function derivePriorCarryovers(
 export type PriorReviewState =
   | { kind: 'idle' }
   | { kind: 'loading' }
-  | { kind: 'ready'; carryovers: PriorCarryovers }
+  | { kind: 'none' }
+  | { kind: 'missing'; version: string }
+  | { kind: 'ready'; source: ProgressSource; carryovers: PriorCarryovers }
   | { kind: 'error'; reason: string }
 
 type Identity = [
   { repoId: string; hostId: string; runtimeOwnerEnvironmentId?: string } | null,
   string | null,
-  ProgressSource | null
+  ProgressSource | null,
+  string | null,
+  string[]
 ]
 
 /**
- * Reads the explicitly chosen fixed acceptance source and maps it to the two
- * carryover rows. A read failure stays honest — it never falls back to another
- * record or to the latest material; `retry` re-reads the same fixed source.
+ * Stored fixed sources always win. Without one, locate the adjacent catalog
+ * version first, including versions represented only by a bound working tree.
+ * Read failures remain diagnostics; they never become empty successful results.
  */
 export function usePriorCarryovers(
   scope: CycleScope | null,
   worktreeId: string | null,
   source: ProgressSource | undefined,
-  refreshToken?: number
-): { state: PriorReviewState; retry(): void } {
+  refreshToken?: number,
+  version?: string | null
+): { state: PriorReviewState } {
+  const worktreesByRepo = useAppStore((state) => state.worktreesByRepo)
+  const detectedWorktreesByRepo = useAppStore((state) => state.detectedWorktreesByRepo)
+  const knownVersions =
+    scope && !source
+      ? collectVersionCatalogWorkspaces(
+          [
+            ...(worktreesByRepo[scope.repoId] ?? []),
+            ...(detectedWorktreesByRepo[scope.repoId]?.worktrees ?? [])
+          ],
+          [scope.repoId],
+          scope.projectId
+        ).map((tree) => tree.binding.version)
+      : []
   const key = JSON.stringify([
     scope
       ? {
@@ -163,7 +192,9 @@ export function usePriorCarryovers(
         }
       : null,
     worktreeId,
-    source ?? null
+    source ?? null,
+    source ? null : (version ?? null),
+    [...new Set(knownVersions)].sort()
   ])
   const identity = useMemo(() => JSON.parse(key) as Identity, [key])
   const history = useMemo(
@@ -171,36 +202,41 @@ export function usePriorCarryovers(
     [identity]
   )
   const request = useRef(0)
-  const [retryToken, setRetryToken] = useState(0)
   const [state, setState] = useState<{ key: string; value: PriorReviewState }>({
     key,
     value: { kind: 'idle' }
   })
   useEffect(() => {
-    const [scopePart, treeId, sourcePart] = identity
-    if (!scopePart || !treeId || !sourcePart) {
-      // No fixed source: idle is a settled state, publish it under the new key
-      // and invalidate any in-flight read.
+    const [scopePart, treeId, sourcePart, selectedVersion, versions] = identity
+    if (!scopePart || !treeId || (!sourcePart && !selectedVersion)) {
       request.current++
       setState({ key, value: { kind: 'idle' } })
       return
     }
     const token = ++request.current
     setState({ key, value: { kind: 'loading' } })
-    void readPlanningProgressSource(
-      history,
-      { repoId: scopePart.repoId, hostId: scopePart.hostId, worktreeId: treeId },
-      sourcePart
-    ).then(
-      (documents) => {
+    const read = async (): Promise<PriorReviewState> => {
+      const readScope = { repoId: scopePart.repoId, hostId: scopePart.hostId, worktreeId: treeId }
+      let fixed = sourcePart
+      if (!fixed) {
+        const catalog = await history.list({ scope: readScope, currentOnly: true })
+        const prior = selectPriorVersionSource(selectedVersion!, catalog, versions)
+        if (prior.kind !== 'source') {
+          return prior
+        }
+        fixed = prior.source
+      }
+      const documents = await readPlanningProgressSource(history, readScope, fixed)
+      return {
+        kind: 'ready',
+        source: fixed,
+        carryovers: derivePriorCarryovers(documents.acceptance, documents.plan)
+      }
+    }
+    void read().then(
+      (value) => {
         if (request.current === token) {
-          setState({
-            key,
-            value: {
-              kind: 'ready',
-              carryovers: derivePriorCarryovers(documents.acceptance, documents.plan)
-            }
-          })
+          setState({ key, value })
         }
       },
       (reason: unknown) => {
@@ -215,7 +251,9 @@ export function usePriorCarryovers(
         }
       }
     )
-  }, [key, identity, history, refreshToken, retryToken])
-  const retry = useCallback(() => setRetryToken((token) => token + 1), [])
-  return { state: state.key === key ? state.value : { kind: 'loading' }, retry }
+    return () => {
+      request.current++
+    }
+  }, [key, identity, history, refreshToken])
+  return { state: state.key === key ? state.value : { kind: 'loading' } }
 }

@@ -1,6 +1,8 @@
 import type { ExecutionHostId } from '../../shared/execution-host'
 import type { Worktree } from '../../shared/worktree/types'
 import type { WorktreeMeta } from '../../shared/worktree/meta-types'
+import { areWorkspaceLinkedItemsEqual } from '../../shared/workspace-linked-item'
+import { areTaskSourceContextsEqual } from '../../shared/task-source-context'
 import {
   VersionBindingScopeSchema,
   VersionBindingSetSchema,
@@ -69,11 +71,19 @@ export function createVersionBindingService(
       }
       await reauthorize()
       const updated = await runtime.updateManagedWorktreeMeta(`identity:${worktree.identity.key}`, {
-        workbenchVersionBinding: binding
+        workbenchVersionBinding: binding,
+        ...(request.linkedWorkItem
+          ? { linkedWorkItem: request.linkedWorkItem, linkedTaskSourceContext: binding?.taskSource }
+          : {})
       })
       // 读回确认再返回：登记投影与请求不一致（旧宿主丢字段、并发覆盖）⇒ 不算已保存。
       const readBack = normalizeStoredWorkbenchVersionBinding(updated.workbenchVersionBinding)
-      if (!areWorkbenchVersionBindingsEqual(readBack, binding)) {
+      if (
+        !areWorkbenchVersionBindingsEqual(readBack, binding) ||
+        (request.linkedWorkItem &&
+          (!areWorkspaceLinkedItemsEqual(updated.linkedWorkItem, request.linkedWorkItem) ||
+            !areTaskSourceContextsEqual(updated.linkedTaskSourceContext, binding?.taskSource)))
+      ) {
         throw new WorkspaceScopeError('binding-unconfirmed', '绑定读回不一致，未保存；请刷新后重试')
       }
       return readBack

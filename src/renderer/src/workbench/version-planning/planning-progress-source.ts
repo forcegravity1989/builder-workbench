@@ -31,6 +31,7 @@ export async function readPlanningProgressSource(
     version: source.version,
     cycleId: source.cycleId,
     sourceCommit: source.sourceCommit,
+    expectedRevision: source.revision,
     workflow: 'acceptance'
   })
   const document = AcceptanceMaterialSchema.parse(snapshot.document)

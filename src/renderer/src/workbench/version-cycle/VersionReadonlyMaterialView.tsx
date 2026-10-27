@@ -1,36 +1,82 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
-import type {
-  AcceptanceMaterial,
-  PlanningMaterial
-} from '../../../../shared/workbench/version-material'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import { nativeVersionHistoryPort } from '../version-history-port'
 import { useVersionCatalogForRepo } from '../use-version-catalog'
 import { nativeWorkspaceScope } from './native-workspace'
-import { BoardLines } from '../board-ui'
-import {
-  DECISION_LABELS,
-  WORKFLOW_SCREEN_LABELS,
-  goalOrdinal,
-  shortCommit
-} from '../version-labels'
+import { BoardActionButton } from '../board-ui'
+import type { FixedAcceptanceBrowse } from '../cycle-view-state'
+import { returnFromAcceptanceSource } from './open-acceptance-source'
+import { readPlanningProgressSource } from '../version-planning/planning-progress-source'
+import { WORKFLOW_SCREEN_LABELS, shortCommit } from '../version-labels'
+import { ReadonlyMaterialSections, type ViewState } from './ReadonlyMaterialSections'
 
 /**
- * G2 只读回看（P3b，spec「版本级清理」/「版本总览、回看」）：已清理或未准备
- * 的版本没有绑定树与旧固定树，进屏走本视图——读主干已提交材料（固定
- * sourceCommit/revision，历史只读），不建树、不激活会话、不提供任何写入或
- * 人工确认入口（human-guard 字段只呈现状态）。工作树/会话不可用由登记缺失
- * 推导、如实显示；材料缺失或读取失败如实报，不装绿。
+ * 历史版本按目录读取固定提交；计划的验收入口直接显示已核验的固定快照。
+ * 两条入口共用只读正文，不建树、不改材料选择、不提供人工确认或写入入口。
  */
 
-type ViewState =
-  | { kind: 'loading' }
-  | { kind: 'missing'; message: string }
-  | { kind: 'plan'; document: PlanningMaterial; sourceCommit: string; committedAt: string }
-  | { kind: 'acceptance'; document: AcceptanceMaterial; sourceCommit: string; committedAt: string }
-
 export function VersionReadonlyMaterialView({
+  fixedAcceptance,
+  ...props
+}: {
+  workflow: VersionWorkflow
+  version: string
+  fixedAcceptance?: FixedAcceptanceBrowse
+}): React.JSX.Element {
+  return fixedAcceptance ? (
+    <FixedAcceptanceMaterialView
+      key={JSON.stringify([
+        fixedAcceptance.scope,
+        fixedAcceptance.originWorktreeId,
+        fixedAcceptance.originWorktreeInstanceId,
+        fixedAcceptance.originExecutionHostId,
+        fixedAcceptance.originPlan,
+        fixedAcceptance.source
+      ])}
+      view={fixedAcceptance}
+    />
+  ) : (
+    <CatalogReadonlyMaterialView {...props} />
+  )
+}
+
+function FixedAcceptanceMaterialView({ view }: { view: FixedAcceptanceBrowse }): React.JSX.Element {
+  const [notice, setNotice] = useState<string | null>(null)
+  return (
+    <div className="vc-readonly">
+      <BoardActionButton
+        onClick={() => {
+          try {
+            returnFromAcceptanceSource(view)
+          } catch (reason) {
+            setNotice(reason instanceof Error ? reason.message : String(reason))
+          }
+        }}
+      >
+        返回计划
+      </BoardActionButton>
+      <p role="note" className="vc-notice">
+        只读回看 {view.source.version} · 验收 · 固定来源 {shortCommit(view.source.sourceCommit)}
+      </p>
+      {notice ? (
+        <p role="status" className="vc-notice">
+          {notice}
+        </p>
+      ) : null}
+      <ReadonlyMaterialSections
+        state={{
+          kind: 'acceptance',
+          document: view.acceptance,
+          plan: view.plan,
+          sourceCommit: view.source.sourceCommit
+        }}
+      />
+    </div>
+  )
+}
+
+function CatalogReadonlyMaterialView({
   workflow,
   version
 }: {
@@ -52,8 +98,8 @@ export function VersionReadonlyMaterialView({
 
   const ref = workflow === 'plan' ? entry?.material.plan : entry?.material.acceptance
   const refKey = ref ? `${ref.sourceCommit}:${ref.revision}` : null
-  const catalogReady = catalog.catalog !== null
-  const catalogError = catalog.error
+  const catalogReady = catalog.materialReady
+  const catalogError = catalog.materialError ?? catalog.error
   useEffect(() => {
     let cancelled = false
     setState({ kind: 'loading' })
@@ -101,18 +147,17 @@ export function VersionReadonlyMaterialView({
             })
           }
         } else {
-          const result = await port.read({
-            scope: metricScope,
-            source: 'trunk',
+          const documents = await readPlanningProgressSource(port, metricScope, {
             sourceCommit: ref.sourceCommit,
+            revision: ref.revision,
             version,
-            cycleId: ref.cycleId,
-            workflow: 'acceptance'
+            cycleId: ref.cycleId
           })
           if (!cancelled) {
             setState({
               kind: 'acceptance',
-              document: result.document as AcceptanceMaterial,
+              document: documents.acceptance,
+              plan: documents.plan,
               sourceCommit: ref.sourceCommit,
               committedAt: ref.committedAt
             })
@@ -148,157 +193,7 @@ export function VersionReadonlyMaterialView({
           : ''}
         。编辑或发起会话请先在版本行「初始化工作区」。
       </p>
-      {state.kind === 'loading' ? <p className="vc-notice">材料读取中…</p> : null}
-      {state.kind === 'missing' ? <p className="vc-notice">{state.message}</p> : null}
-      {state.kind === 'plan' ? (
-        <>
-          <section className="vc-readonly-section">
-            <h3>进展与风险（当时记录）</h3>
-            <BoardLines text={state.document.summary.progress} empty="进展未记录" />
-            <BoardLines text={state.document.summary.risks} empty="风险未记录" />
-          </section>
-          <section className="vc-readonly-section">
-            <h3>本版目标（{state.document.goals.length}）</h3>
-            {state.document.goals.map((goal, index) => (
-              <article key={goal.goalId} className="vc-readonly-goal">
-                <h4>
-                  {goalOrdinal(index)} · {goal.title || '待明确目标'}
-                </h4>
-                <p className="vc-readonly-meta">
-                  {goal.owner || '负责人待明确'}
-                  {goal.deadline ? ` · 计划完成 ${goal.deadline}` : ''}
-                  {` · 关联 Issue ${state.document.tasks.filter((task) => task.goalId === goal.goalId).length}`}
-                </p>
-                <h5>验收标准</h5>
-                <BoardLines text={goal.acceptance} />
-                {goal.deliverable ? (
-                  <>
-                    <h5>交付约定</h5>
-                    <BoardLines text={goal.deliverable} />
-                  </>
-                ) : null}
-                {goal.metricTargets.length > 0 ? (
-                  <p className="vc-readonly-meta">
-                    指标承诺：
-                    {goal.metricTargets
-                      .map((target) => `${target.ref.name} → ${target.target}`)
-                      .join('；')}
-                  </p>
-                ) : null}
-              </article>
-            ))}
-          </section>
-          {state.document.minutes ? (
-            <section className="vc-readonly-section">
-              <h3>
-                会议纪要
-                {state.document.minutes.confirmed ? (
-                  <span className="vc-readonly-badge">人已确认（只读）</span>
-                ) : (
-                  <span className="vc-readonly-badge">未确认</span>
-                )}
-              </h3>
-              <h5>共识</h5>
-              {state.document.minutes.consensus.length > 0 ? (
-                <ul>
-                  {state.document.minutes.consensus.map((item, index) => (
-                    <li key={index}>{item}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="vc-readonly-meta">纪要未记录共识条目</p>
-              )}
-              <h5>遗留</h5>
-              {state.document.minutes.followups.length > 0 ? (
-                <ul>
-                  {state.document.minutes.followups.map((item) => (
-                    <li key={item.id}>
-                      {item.text}
-                      {item.closed ? <span className="vc-readonly-badge">已闭环</span> : null}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="vc-readonly-meta">纪要未记录遗留条目</p>
-              )}
-            </section>
-          ) : (
-            <section className="vc-readonly-section">
-              <h3>会议纪要</h3>
-              <p className="vc-readonly-meta">纪要未记录</p>
-            </section>
-          )}
-          <section className="vc-readonly-section">
-            <h3>归档 PR</h3>
-            {state.document.workflow?.archivePr ? (
-              <p className="vc-readonly-meta">
-                {state.document.workflow.archivePr.provider} ·{' '}
-                {state.document.workflow.archivePr.repository} #
-                {state.document.workflow.archivePr.number}
-                （合入状态以材料归档事实为准，此处不重复探测）
-              </p>
-            ) : (
-              <p className="vc-readonly-meta">未记录归档 PR</p>
-            )}
-          </section>
-        </>
-      ) : null}
-      {state.kind === 'acceptance' ? (
-        <>
-          <section className="vc-readonly-section">
-            <h3>
-              计划依据：{state.document.planRef.version} ·{' '}
-              {state.document.planRef.kind === 'committed'
-                ? `已提交 ${shortCommit(state.document.planRef.sourceCommit ?? '')}`
-                : '草案预验收'}
-            </h3>
-          </section>
-          <section className="vc-readonly-section">
-            <h3>逐目标人工结论（{state.document.results.length}）</h3>
-            {state.document.results.map((result, index) => (
-              <article key={result.goalId} className="vc-readonly-goal">
-                <h4>
-                  目标 {index + 1}（{result.goalId}）
-                  {result.decision ? (
-                    <span className="vc-readonly-badge">
-                      {DECISION_LABELS[result.decision.outcome]} · 记录于{' '}
-                      {result.decision.recordedAt}
-                    </span>
-                  ) : (
-                    <span className="vc-readonly-badge">结论未记录</span>
-                  )}
-                </h4>
-                {result.progress ? (
-                  <>
-                    <h5>进展</h5>
-                    <BoardLines text={result.progress} />
-                  </>
-                ) : null}
-                <h5>备注</h5>
-                <BoardLines text={result.note} empty="未记录" />
-                <h5>下一步</h5>
-                <BoardLines text={result.nextStep} empty="未记录" />
-                <p className="vc-readonly-meta">
-                  交付件 {result.deliveries?.length ?? 0} · 轮次 {result.rounds?.length ?? 0} ·
-                  会议指导 {result.meetingDirectives?.length ?? 0}
-                </p>
-              </article>
-            ))}
-          </section>
-          <section className="vc-readonly-section">
-            <h3>归档 PR</h3>
-            {state.document.workflow?.archivePr ? (
-              <p className="vc-readonly-meta">
-                {state.document.workflow.archivePr.provider} ·{' '}
-                {state.document.workflow.archivePr.repository} #
-                {state.document.workflow.archivePr.number}
-              </p>
-            ) : (
-              <p className="vc-readonly-meta">未记录归档 PR</p>
-            )}
-          </section>
-        </>
-      ) : null}
+      <ReadonlyMaterialSections state={state} />
     </div>
   )
 }

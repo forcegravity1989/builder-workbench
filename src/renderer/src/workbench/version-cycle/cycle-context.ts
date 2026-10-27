@@ -6,6 +6,8 @@ import type { ArchivePrPort, CycleScope, CycleSession, TaskPort } from './ports'
 export type VersionCycleContext = {
   scope: CycleScope | null
   worktreeId: string | null
+  /** Native instance identity separates a recreated tree from its prior view state. */
+  worktreeInstanceId?: string | null
   session: CycleSession | null
   version: string | null
   /**

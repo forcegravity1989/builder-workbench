@@ -13,10 +13,10 @@ import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
 import { recordHumanDecision } from './acceptance-decision'
 import { emptyGoalResult, upsertGoalResult, type GoalResult } from './acceptance-model'
 import {
-  isClosedIssueState,
   issueKey,
   issueMarkFor,
   issueNoteFor,
+  issueReadState,
   updateIssueCarry,
   updateIssueNote
 } from './acceptance-issue-annotations'
@@ -87,28 +87,31 @@ export function AcceptanceGoalRow({
   const result = document.results.find((item) => item.goalId === goalId)
   const outcome = result?.decision?.outcome
   const rows = new Map<string, AcceptanceIssueRow>()
+  const counts = { open: 0, closed: 0, unknown: 0, carry: 0 }
   for (const reference of relatedTasks) {
     const read = reads?.get(issueKey(reference))
+    const carry = Boolean(result && issueMarkFor(result, reference, relatedTasks)?.carry)
+    const state = issueReadState(read)
+    counts[state]++
+    if (state === 'open' && carry) {
+      counts.carry++
+    }
     rows.set(issueKey(reference), {
-      reference,
       note: (result && issueNoteFor(result, reference, relatedTasks)) || '',
-      carry: Boolean(result && issueMarkFor(result, reference, relatedTasks)?.carry),
-      closed: read?.kind === 'ready' && isClosedIssueState(read.task.state)
+      carry
     })
   }
 
   const patchResult = (next: GoalResult) =>
     onGoalChange({ ...document, results: upsertGoalResult(document.results, next) }, goalId)
 
-  async function decide(next: 'met' | 'not-met') {
-    if (deciding) {
+  async function decide(next: 'met' | 'not-met' | '') {
+    if (disabled || deciding || next === (outcome ?? '')) {
       return
     }
     setDeciding(true)
     try {
-      // Clicking the active verdict again clears it back to unmarked; an
-      // unmarked goal stays blank instead of being inferred from anything.
-      if (outcome === next) {
+      if (!next) {
         const cleared = (result ?? emptyGoalResult(goalId)).decision
           ? { ...(result ?? emptyGoalResult(goalId)), decision: undefined }
           : (result ?? emptyGoalResult(goalId))
@@ -172,28 +175,23 @@ export function AcceptanceGoalRow({
           label={`${goalNumber} 目标`}
           onOpenPanel={onOpenAnnotationPanel}
         />
-        <span className="acc-goal-count">{relatedTasks.length} Issue</span>
+        <span className="acc-goal-count" title="遗留是未关闭 Issue 中人工标记的部分">
+          未关闭 {counts.open} · 遗留 {counts.carry} · 已关闭 {counts.closed}
+          {counts.unknown > 0 && <> · 未知 {counts.unknown}</>}
+        </span>
         <span className="acc-verdict">
-          <button
-            type="button"
-            className={outcome === 'met' ? 'on' : undefined}
-            aria-pressed={outcome === 'met'}
+          <select
+            className={`acc-verdict-select${outcome === 'met' ? ' met' : outcome === 'not-met' ? ' unmet' : ''}`}
+            aria-label={`${goalNumber} 验收结论`}
             disabled={disabled || deciding}
-            title="人对着实物核对后标记：达成"
-            onClick={() => void decide('met')}
+            title="由人核对实物后判定；选择未判定可清除结论"
+            value={outcome ?? ''}
+            onChange={(event) => void decide(event.target.value as 'met' | 'not-met' | '')}
           >
-            达成
-          </button>
-          <button
-            type="button"
-            className={outcome === 'not-met' ? 'on unmet' : undefined}
-            aria-pressed={outcome === 'not-met'}
-            disabled={disabled || deciding}
-            title="人对着实物核对后标记：不达成（原因写纪要，安排写下一步）"
-            onClick={() => void decide('not-met')}
-          >
-            不达成
-          </button>
+            <option value="">未判定</option>
+            <option value="met">达成</option>
+            <option value="not-met">不达成</option>
+          </select>
         </span>
       </div>
       {error && (

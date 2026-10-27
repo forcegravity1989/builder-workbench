@@ -1,7 +1,7 @@
 // 验收旅程候选(v10)演示模型。计划材料复用 G3 的 v0.7 真实快照,验收侧状态为本稿演示数据¹。
 import snapshot from '../../version-planning/prototype/g3-snapshot.json'
 export { snapshot }
-export const g2Url = 'https://github.com/forcegravity1989/builder-workbench/pull/389'
+export const g2Url = '../version-workspace/version-workspace-prototype.html'
 // 注入提示词设计正本(对齐计划屏第九轮瘦身):按钮 prompt 只承载触发意图;
 // 落点 minutes 节、人工确认、遗留无闭环位等 SOP 规则归 version-acceptance
 // Skill 与系统提示词,按钮 prompt 不复述。批注发送句与计划屏同源
@@ -13,13 +13,14 @@ export const minutesRequestPrompt =
 // 四步旅程轴:只做同页定位,不是门禁;界面无灯,stage 是材料内部进度。
 export const stages = [
   ['prepare', '验收准备', '部署服务与证据报告'],
-  ['showcase', 'Showcase', '勾勾表逐目标 · 人判'],
+  ['showcase', 'Showcase', '逐目标核对交付结果'],
   ['minutes', '会议纪要', '共识与遗留 · 人工确认'],
   ['archive', '归档 PR 及发版本', '原生 PR 再审 · 授权发布']
 ]
-// 时期为原型场景切换器(不进生产界面):计划未合入空板 / 验收已开始 / 会前 / 会中 / 会后。
+// 时期切换只用于评审；未合入场景未取得可读固定计划，不借用其他场景的目标。
 export const scenes = [
-  ['planned', '计划未合入 · 空板'],
+  ['planned', '验收尚未开始'],
+  ['unmerged', '计划未合入 · 无固定计划'],
   ['started', '验收已开始 · 未出包'],
   ['prep', '会前 · 准备中'],
   ['meeting', '会中 · showcase'],
@@ -51,6 +52,7 @@ export const REPORT = {
 // 各时期的人判/备注/遗留演示预置¹(生产由人在界面点,模型不代勾)。
 export const sceneVerdicts = {
   planned: {},
+  unmerged: {},
   started: {},
   prep: {},
   meeting: { G1: '达成' },
@@ -58,6 +60,7 @@ export const sceneVerdicts = {
 }
 export const sceneIssueNotes = {
   planned: {},
+  unmerged: {},
   started: {},
   prep: {},
   meeting: {},
@@ -68,6 +71,7 @@ export const sceneIssueNotes = {
 }
 export const sceneCarry = {
   planned: {},
+  unmerged: {},
   started: {},
   prep: {},
   meeting: {},
@@ -76,6 +80,7 @@ export const sceneCarry = {
 // 未开始/未出包:尚无候选包,出包区块为空态。
 export const sceneLatest = {
   planned: null,
+  unmerged: null,
   started: null,
   prep: LATEST_PACKAGE,
   meeting: LATEST_PACKAGE,
@@ -84,21 +89,23 @@ export const sceneLatest = {
 export const nextSteps = {
   G3: '进展可读与旅程可见两项演示通过;任务顺手一项随转写链路(#374)带入下版,不自动承诺。'
 }
-// 纪要(与计划屏同款两块结构;验收侧遗留条目无闭环位,原样供下版计划屏「会议遗留」)。
+// 纪要示例与计划屏同样写清落实结果或 Issue 去向；下版回顾不自动承诺跟进工作。
 const initialMinutes = {
   confirmed: false,
   sources: '会议转写稿(周五验收会)· 人工编辑 3 处',
   consensus: [
     'G1/G2 演示通过;项目墙与侧边栏层次下周起按新结构使用。',
-    'G3 未达不阻断发布;原因与安排以目标卡「下一步」为准。'
+    'G3 未达不阻断发布;原因与安排以目标卡「下一步」为准。',
+    '验收证据报告记录操作与读数，版本收尾总结报告汇总交付与遗留。'
   ],
   followups: [
-    { text: '第 4 个项目特性与指标读回纳入下周计划 G1 候选。' },
-    { text: '验收证据报告格式规范另立,与版本收尾总结报告分工对齐。' }
+    { text: '第 4 个项目特性与指标读回由 #341 继续跟进，是否纳入下版由下次计划确认。' },
+    { text: '已落实：验收证据报告与版本收尾总结报告的分工已写入本次共识。' }
   ]
 }
 export const sceneMinutes = {
   planned: null,
+  unmerged: EMPTY_MINUTES,
   started: EMPTY_MINUTES,
   prep: EMPTY_MINUTES,
   meeting: EMPTY_MINUTES,
@@ -106,6 +113,7 @@ export const sceneMinutes = {
 }
 export const sceneArchive = {
   planned: null,
+  unmerged: null,
   started: null,
   prep: null,
   meeting: null,
@@ -127,9 +135,14 @@ const issueOverrides = {
   384: { state: 'CLOSED' }
 }
 export function taskRows() {
-  return snapshot.plan.tasks.map((ref) => ({
-    ...ref,
-    ...snapshot.issues.find((item) => item.number === ref.number),
-    ...issueOverrides[ref.number]
-  }))
+  return snapshot.plan.tasks.map((ref) => {
+    const issue = snapshot.issues.find((item) => item.number === ref.number)
+    return { ...ref, ...issue, ...issueOverrides[ref.number], readable: Boolean(issue) }
+  })
+}
+
+// Stable grouping keeps the plan's order within each native state category.
+export function sortIssueRows(tasks) {
+  const rank = (task) => (task.state === 'OPEN' ? 0 : task.state === 'CLOSED' ? 2 : 1)
+  return [...tasks].sort((left, right) => rank(left) - rank(right))
 }

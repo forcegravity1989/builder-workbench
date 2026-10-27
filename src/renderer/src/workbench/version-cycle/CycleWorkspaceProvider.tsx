@@ -82,15 +82,17 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
         await startCycleAutomation(scope, fixedId, automation.automationId, oneShot)
         toast.message('已打开本次运行的会话。')
         setNotice(null)
+        return true
       } catch (reason) {
         if (scope && fixedId) {
           try {
             assertCurrentCycleWorkspace(scope, fixedId)
           } catch {
-            return
+            return false
           }
         }
         setNotice(reason instanceof Error ? reason.message : String(reason))
+        return false
       } finally {
         setBusy(false)
       }
@@ -118,6 +120,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
               scope,
               worktreeId: fixedId,
               session,
+              worktreeInstanceId: worktree?.instanceId ?? null,
               version: version.version,
               boundVersion: flowBinding?.version ?? null,
               branch: worktree?.branch ? branchName(worktree.branch) || null : null,
@@ -143,6 +146,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       scope,
       fixedId,
       worktree?.branch,
+      worktree?.instanceId,
       session,
       version.version,
       flowBinding,

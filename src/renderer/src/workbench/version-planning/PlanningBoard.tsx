@@ -8,14 +8,11 @@ import {
 } from 'react'
 import { toast } from 'sonner'
 import { MessageSquarePlus } from 'lucide-react'
-import { useAppStore } from '@/store'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { CycleTaskSnapshot } from '../version-cycle/ports'
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
 import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
-import { setCycleView } from '../cycle-view-state'
-import { openAcceptanceSource } from '../version-cycle/open-acceptance-source'
 import { cycleBranch, cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { togglePlanChat } from '../plan-column-resize'
 import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
@@ -27,6 +24,7 @@ import { usePlanningMaterial, planningDraftKey } from './use-planning-material'
 import { usePlanMetrics } from './use-plan-metrics'
 import { usePlanVersionSelection } from './use-plan-version-selection'
 import { PlanningGoals } from './PlanningGoals'
+import { PlanningStartCard } from './PlanningStartCard'
 import { PlanningMinutesSection } from './PlanningMinutesSection'
 import { PlanningPriorReview } from './PlanningPriorReview'
 import { PlanningArchiveCard } from './PlanningArchiveCard'
@@ -35,8 +33,8 @@ import { PlanningPersistenceNotice } from './PlanningPersistenceNotice'
 import { PlanningHeader, PlanningJourneyNav } from './PlanningSections'
 import { useJourneySpy } from './use-journey-spy'
 import { usePlanningViewMemory } from './use-planning-view-memory'
-import { usePriorCarryovers } from './use-prior-carryovers'
-import { usePriorLiveOpen } from './use-prior-live-open'
+import { usePlanningPriorReview } from './use-planning-prior-review'
+import { usePlanningStart } from './use-planning-start'
 import { usePlanSendAction } from '../plan-send-menu'
 import { useArchivePrStatus } from '../version-cycle/use-archive-pr-status'
 import './version-planning.css'
@@ -48,7 +46,11 @@ type PlanningBoardProps = {
 }
 export function PlanningBoard(props: PlanningBoardProps) {
   const { scope, worktreeId } = props.context
-  const identity = JSON.stringify([scope && cycleScopeKey(scope), worktreeId])
+  const identity = JSON.stringify([
+    scope && cycleScopeKey(scope),
+    worktreeId,
+    props.context.worktreeInstanceId
+  ])
   return <PlanningBoardContent key={identity} {...props} />
 }
 function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardProps) {
@@ -58,28 +60,8 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const material = usePlanningMaterial(materialPort, scopeKey, { canSave })
   const plan = material.draft?.document
   const prStatus = useArchivePrStatus(context, plan?.workflow?.archivePr)
-  const progressSource = plan?.summary.progressSource
-  const prior = usePriorCarryovers(scope, worktreeId, progressSource, context.materialRefresh)
-  // Live open-state readback only when the frozen acceptance recorded no Issue
-  // marks at all — the prior row then reads Unknown, and this row states the
-  // current open facts of the frozen snapshot (never a carryover conclusion).
-  const liveRefs =
-    prior.state.kind === 'ready' ? prior.state.carryovers.openReadbackReferences : null
-  const liveEnabled =
-    prior.state.kind === 'ready' &&
-    !prior.state.carryovers.issueMarksRecorded &&
-    Boolean(progressSource)
-  const priorLive = usePriorLiveOpen(
-    scope,
-    worktreeId,
-    context.taskPort,
-    liveRefs,
-    liveEnabled,
-    context.materialRefresh
-  )
   const selection = usePlanVersionSelection(material, context.selectVersion)
   const selecting = selection.busy
-  const [openingSource, setOpeningSource] = useState(false)
   const [openingPr, setOpeningPr] = useState(false)
   const [view, setView] = useState({ key: '', notice: '' })
   const content = useRef<HTMLDivElement>(null)
@@ -91,7 +73,12 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   // switch reads a different, naturally empty session, and unsent notes survive
   // screen round-trips; no imperative clearAll effect (it wiped the sibling
   // board's notes when the store went module-level).
-  const boardIdentity = JSON.stringify([scopeKey, context.version])
+  const boardIdentity = JSON.stringify([
+    scopeKey,
+    worktreeId,
+    context.worktreeInstanceId,
+    context.version
+  ])
   const annotations = useBoardAnnotations(boardIdentity)
   const chatCollapsed = usePlanChatCollapsed()
   const metricScope = useMemo(
@@ -170,6 +157,22 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     }
   }
   const disabled = !plan || Boolean(context.syncing) || selecting
+  const { prior, progressSource, priorError, priorLive, openingSource, openAcceptance } =
+    usePlanningPriorReview({
+      context,
+      material,
+      disabled,
+      selectionKey,
+      currentSelection,
+      onAct: act
+    })
+  const { startVersion, started, start } = usePlanningStart({
+    context,
+    entry,
+    material,
+    priorState: prior.state,
+    priorError
+  })
   const edit = (next: PlanningMaterial) => {
     if (!disabled) {
       material.edit(next)
@@ -203,32 +206,6 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
     })
     annotations.removeForGoal(goalId)
   }
-  const openAcceptance = () =>
-    void act(async () => {
-      if (openingSource) {
-        return
-      }
-      setOpeningSource(true)
-      try {
-        if (material.draft?.dirty && !(await material.flush())) {
-          throw new Error('当前计划修改尚未保存，请处理保存提示后再查看验收依据。')
-        }
-        if (currentSelection.current !== selectionKey) {
-          return
-        }
-        if (progressSource) {
-          if (!scope || !worktreeId) {
-            throw new Error('计划工作区尚未就绪。')
-          }
-          await openAcceptanceSource(scope, worktreeId, progressSource)
-        } else {
-          setCycleView('acceptance')
-          useAppStore.getState().openArtifactsPage()
-        }
-      } finally {
-        setOpeningSource(false)
-      }
-    })
   const openPr = () =>
     void act(async () => {
       const archivePr = plan?.workflow?.archivePr
@@ -307,7 +284,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
         }
         annotateEntry={
           // 计划未建时无目标可批注，不渲染入口（spec 会议纪要条款）。
-          plan ? (
+          started && plan ? (
             <BoardActionButton
               className={`g3-annotate-entry${annotations.annotating ? ' g3-mode-on' : ''}`}
               aria-pressed={annotations.annotating}
@@ -326,82 +303,98 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
           ) : undefined
         }
       />
-      {(material.error || notice || selection.error || context.error || entry.notice) && (
+      {(material.error ||
+        notice ||
+        selection.error ||
+        context.error ||
+        entry.notice ||
+        priorError) && (
         <p className="vp-notice" role="status">
-          {material.error || selection.error || context.error || notice || entry.notice}
+          {material.error ||
+            selection.error ||
+            context.error ||
+            notice ||
+            entry.notice ||
+            priorError}
         </p>
       )}
       <PlanningPersistenceNotice material={material} onAct={act} />
-      <div className="vp-body" inert={selecting} aria-busy={selecting}>
-        <PlanningJourneyNav active={spy.activeSection} onNavigate={spy.navigate} />
-        {annotations.annotating && (
-          <div className="g3-annotate-banner" role="status">
-            批注模式中，点击板面元素即可添加批注 · Esc 退出
-          </div>
-        )}
-        <div
-          className="vp-content"
-          ref={content}
-          onScroll={onContentScroll}
-          onClickCapture={onContentClickCapture}
-          onFocusCapture={spy.clearNavigation}
-          onWheel={spy.clearNavigation}
-          onPointerDown={spy.clearNavigation}
-          onTouchStart={spy.clearNavigation}
-          onKeyDown={spy.onKeyDown}
-        >
-          <PlanningPriorReview
-            source={progressSource}
-            state={prior.state}
-            live={priorLive.state}
-            openingSource={openingSource}
-            onOpenAcceptance={openAcceptance}
-            onOpenTask={(task) => act(() => openTask(task))}
-            onRetry={prior.retry}
-            onRetryLive={priorLive.retry}
-            sectionRef={sectionRefs.context}
-          />
-          <PlanningGoals
-            plan={plan}
-            disabled={disabled}
-            edit={edit}
-            metrics={metrics}
-            prepare={() => void act(prepareMetrics)}
-            sectionRef={sectionRefs.goals}
-            scope={scope}
-            taskPort={taskPort}
-            onTask={(task) => act(() => openTask(task))}
-            onRemoveGoal={removeGoal}
-            onSendAction={wrapSend}
-            numbersFor={annotations.numbersFor}
-            onOpenAnnotationPanel={annotations.openPanel}
-            entry={entry}
-            problems={material.versions.filter((item) => item.state !== 'ready')}
-            version={context.version}
-          />
-          <PlanningMinutesSection
-            plan={plan}
-            disabled={disabled}
-            edit={edit}
-            onSendAction={wrapSend}
-            sectionRef={sectionRefs.minutes}
-          />
-          <PlanningArchiveCard
-            archivePr={plan?.workflow?.archivePr}
-            reachedArchive={plan?.workflow?.stage === 'archive'}
-            status={prStatus.status}
-            loading={prStatus.loading}
-            opening={openingPr}
-            onOpenPr={openPr}
-            sectionRef={sectionRefs.archive}
+      {!started ? (
+        <div className="vp-content">
+          <PlanningStartCard
+            version={startVersion}
+            busy={entry.busy}
+            onStart={() => void start()}
           />
         </div>
-        <PlanningAnnotationOverlays
-          annotations={annotations}
-          worktreeId={worktreeId}
-          onSentNotice={sendNotice}
-        />
-      </div>
+      ) : (
+        <div className="vp-body" inert={selecting} aria-busy={selecting}>
+          <PlanningJourneyNav active={spy.activeSection} onNavigate={spy.navigate} />
+          {annotations.annotating && (
+            <div className="g3-annotate-banner" role="status">
+              批注模式中，点击板面元素即可添加批注 · Esc 退出
+            </div>
+          )}
+          <div
+            className="vp-content"
+            ref={content}
+            onScroll={onContentScroll}
+            onClickCapture={onContentClickCapture}
+            onFocusCapture={spy.clearNavigation}
+            onWheel={spy.clearNavigation}
+            onPointerDown={spy.clearNavigation}
+            onTouchStart={spy.clearNavigation}
+            onKeyDown={spy.onKeyDown}
+          >
+            <PlanningPriorReview
+              source={progressSource}
+              state={prior.state}
+              live={priorLive.state}
+              openingSource={openingSource}
+              onOpenAcceptance={openAcceptance}
+              onOpenTask={(task) => act(() => openTask(task))}
+              onRetryLive={priorLive.retry}
+              sectionRef={sectionRefs.context}
+            />
+            <PlanningGoals
+              plan={plan}
+              disabled={disabled}
+              edit={edit}
+              metrics={metrics}
+              prepare={() => void act(prepareMetrics)}
+              sectionRef={sectionRefs.goals}
+              scope={scope}
+              taskPort={taskPort}
+              onTask={(task) => act(() => openTask(task))}
+              onRemoveGoal={removeGoal}
+              onSendAction={wrapSend}
+              numbersFor={annotations.numbersFor}
+              onOpenAnnotationPanel={annotations.openPanel}
+            />
+            <PlanningMinutesSection
+              plan={plan}
+              disabled={disabled}
+              edit={edit}
+              onSendAction={wrapSend}
+              sectionRef={sectionRefs.minutes}
+            />
+            <PlanningArchiveCard
+              archivePr={plan?.workflow?.archivePr}
+              reachedArchive={plan?.workflow?.stage === 'archive'}
+              status={prStatus.status}
+              loading={prStatus.loading}
+              opening={openingPr}
+              onOpenPr={openPr}
+              sectionRef={sectionRefs.archive}
+            />
+          </div>
+          <PlanningAnnotationOverlays
+            annotations={annotations}
+            worktreeId={worktreeId}
+            onSentNotice={sendNotice}
+          />
+        </div>
+      )}
     </div>
   )
 }

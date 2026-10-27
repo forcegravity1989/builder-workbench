@@ -10,10 +10,9 @@ import type { SendActionWrap } from '../plan-send-menu'
 /**
  * Acceptance meeting minutes: the assistant summarizes board annotations and the
  * optional transcript into two fixed blocks (共识 / 遗留), a human confirms on the
- * card, and confirmation never rides on generation or editing. Unlike the plan
- * side there is no per-point closure mark — acceptance has no closure consumer,
- * its followups flow verbatim into the next plan's 会议遗留 row, so the section
- * carries no always-false field. Confirmation is revocable in the UI; while
+ * card, and confirmation never rides on generation or editing. Followups name
+ * their resolution or tracking Issue; confirmed text is a source for the next
+ * plan, never an automatic task or commitment. Confirmation is revocable; while
  * confirmed the whole section is frozen against the model channel.
  */
 /**
@@ -42,15 +41,13 @@ export function AcceptanceMinutesSection({
   onSendAction,
   sectionRef
 }: {
-  // Required: the board renders its empty state (AcceptanceEmptyBoard) before
-  // any material exists, so this section never shows without a document.
-  document: AcceptanceMaterial
+  document?: AcceptanceMaterial
   disabled: boolean
   edit(next: AcceptanceMaterial): void
   onSendAction: SendActionWrap
   sectionRef: Ref<HTMLElement>
 }) {
-  const minutes = document.minutes
+  const minutes = document?.minutes
   return (
     <section id="minutes" ref={sectionRef} aria-label="会议纪要">
       <div className="acc-section-title">
@@ -75,7 +72,7 @@ export function AcceptanceMinutesSection({
         document={document}
         minutes={minutes ?? EMPTY_MINUTES}
         initialized={Boolean(minutes)}
-        disabled={disabled}
+        disabled={disabled || !document}
         edit={edit}
       />
     </section>
@@ -89,7 +86,7 @@ function MinutesCard({
   disabled,
   edit
 }: {
-  document: AcceptanceMaterial
+  document?: AcceptanceMaterial
   minutes: AcceptanceMeetingMinutes
   /** False while the section only exists as the empty placeholder. */
   initialized: boolean
@@ -97,7 +94,11 @@ function MinutesCard({
   edit(next: AcceptanceMaterial): void
 }) {
   const [editing, setEditing] = useState(false)
-  const patchMinutes = (next: AcceptanceMeetingMinutes) => edit({ ...document, minutes: next })
+  const patchMinutes = (next: AcceptanceMeetingMinutes) => {
+    if (document) {
+      edit({ ...document, minutes: next })
+    }
+  }
   const patchBody = (patch: Partial<AcceptanceMeetingMinutes>) =>
     patchMinutes({ ...minutes, ...patch, updatedAt: new Date().toISOString() })
 
@@ -177,9 +178,7 @@ function MinutesCard({
           )}
         </div>
         <div className="acc-minutes-section">
-          <strong>
-            遗留 <small>原样流入下版计划屏「会议遗留」</small>
-          </strong>
+          <strong>遗留</strong>
           {editing ? (
             <div className="acc-point-editor">
               {minutes.followups.map((point, index) => (
@@ -238,7 +237,9 @@ function MinutesCard({
           >
             {minutes.confirmed ? '已人工确认 · 撤销' : '标记人工确认'}
           </button>
-          <span className="acc-muted">纪要经人工确认生效，生成或填写不自动等于确认。</span>
+          <span className="acc-muted">
+            归档前逐条写明落实结果或跟进 Issue，由助手核对、人在 PR 中确认。
+          </span>
         </div>
       </article>
     </fieldset>

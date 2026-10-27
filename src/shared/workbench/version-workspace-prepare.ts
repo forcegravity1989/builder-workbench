@@ -74,3 +74,12 @@ export type VersionWorkspacePrepareResult = {
   steps: VersionWorkspacePrepareStep[]
   problems: { workflow: VersionFlowWorkflow; code: string; message: string }[]
 }
+
+/** 回顾来源是可选诊断；树、绑定或空计划初始化失败仍算未全就绪。 */
+export function prepareFailed(result: VersionWorkspacePrepareResult | null): boolean {
+  return (
+    result !== null &&
+    (result.problems.some((problem) => problem.code !== 'prior-source-unavailable') ||
+      result.steps.some((step) => step.state === 'failed'))
+  )
+}

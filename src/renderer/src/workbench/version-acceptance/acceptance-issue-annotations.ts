@@ -3,6 +3,7 @@ import type {
   AcceptanceMaterial,
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
+import type { CycleTaskRead } from '../version-cycle/ports'
 
 type GoalResultAnnotations = Pick<
   NonNullable<AcceptanceMaterial['results'][number]>,
@@ -13,6 +14,21 @@ type IssueReference = PlanningMaterial['tasks'][number]
 
 export function isClosedIssueState(state: string | undefined): boolean {
   return ['closed', 'merged'].includes(state?.trim().toLowerCase() ?? '')
+}
+
+/** Unknown provider states must not contribute to either open or completed counts. */
+export function issueReadState(read: CycleTaskRead | undefined): 'open' | 'closed' | 'unknown' {
+  if (read?.kind !== 'ready') {
+    return 'unknown'
+  }
+  if (isClosedIssueState(read.task.state)) {
+    return 'closed'
+  }
+  return ['open', 'opened', 'in_progress', 'in-progress'].includes(
+    read.task.state.trim().toLowerCase()
+  )
+    ? 'open'
+    : 'unknown'
 }
 
 export function issueKey(reference: IssueReference): string {

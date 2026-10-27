@@ -20,10 +20,8 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
-import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
 import type { Repo } from '../../../shared/repo-types'
-import type { Worktree } from '../../../shared/worktree/types'
-import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
+import type { Worktree, WorkspaceLinkedItem } from '../../../shared/worktree/types'
 import type {
   VersionCatalogEntry,
   VersionCatalogTaskRef
@@ -39,6 +37,10 @@ import { nativeVersionBindingPort } from './version-binding-port'
 import { nativeTaskPortDeps } from './native-task-port'
 import { readReference, resolveReferenceRepo } from './task-port'
 import type { NativeWorkspaceScope } from './version-cycle/native-workspace'
+import { nativeWorkspaceScope } from './version-cycle/native-workspace'
+import { useVersionCatalogForRepo } from './use-version-catalog'
+import { selectVersionBindingTree, useVersionBindingTree } from './version-tree-binding-state'
+import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import {
   GOAL_PURPOSE_LABEL,
   ISSUE_PURPOSE_LABEL,
@@ -47,7 +49,7 @@ import {
 } from './version-labels'
 
 /**
- * 常驻补绑定（P3b③）：把已有工作区纳入版本，由人显式断言归属。Issue 用途由人
+ * 原生单树右键菜单共用的绑定选择器。Issue 用途由人
  * 从本版计划材料中选定任务引用（零猜测）：taskSource 与 Start/Open 解析查询端
  * 同一构造函数，且须补写原生 linkedWorkItem——解析核要求绑定与 linked 双标记
  * 同时成立。先读后写：解析引用与读回 Issue 任一失败即不写任何数据；绑定写入
@@ -93,37 +95,26 @@ function worktreeLabel(tree: Worktree): string {
 }
 
 export function VersionTreeBindDialog({
-  version,
-  entry,
-  worktrees,
+  tree,
+  entries,
   repos,
   scope,
   onClose
 }: {
-  version: string
-  /** null=条目已从目录消失；目标/Issue 用途没有可选的投影来源。 */
-  entry: VersionCatalogEntry | null
-  worktrees: readonly Worktree[]
+  tree: Worktree
+  entries: readonly VersionCatalogEntry[]
   /** Issue 引用 → 已登记项目的身份解析范围。 */
   repos: readonly Repo[]
   /** Issue 读回与引用解析的项目范围。 */
   scope: NativeWorkspaceScope | null
   onClose(): void
 }): React.JSX.Element {
-  const candidates = useMemo(
-    () =>
-      worktrees.filter(
-        (tree) =>
-          !tree.isArchived &&
-          !tree.isMainWorktree &&
-          normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding) === null
-      ),
-    [worktrees]
-  )
+  const currentBinding = normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding)
+  const [version, setVersion] = useState(currentBinding?.version ?? '')
+  const entry = entries.find((item) => item.version === version) ?? null
   const goals = entry?.goals ?? []
-  const [selectedKey, setSelectedKey] = useState<string | null>(null)
-  const [workflow, setWorkflow] = useState<BindWorkflow>('plan')
-  const [goalId, setGoalId] = useState('')
+  const [workflow, setWorkflow] = useState<BindWorkflow>(currentBinding?.workflow ?? 'goal')
+  const [goalId, setGoalId] = useState(currentBinding?.goalId ?? '')
   const [issueKey, setIssueKey] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -146,38 +137,68 @@ export function VersionTreeBindDialog({
     return refs
   }, [entry, goalId])
 
-  const selected = candidates.find((tree) => getWorktreeHostIdentity(tree) === selectedKey) ?? null
-  const selectionSuggestion = selected ? suggestedWorkflow(selected, version) : null
-  const effectiveWorkflow = selectionSuggestion ?? workflow
-  const goalMissing = (effectiveWorkflow === 'goal' || effectiveWorkflow === 'issue') && !goalId
-  const issueMissing = effectiveWorkflow === 'issue' && !issueKey
-  const instanceMissing = selected !== null && !selected.instanceId
+  const linked = tree.linkedWorkItem
+  const existingIssue = issueRefs.find((reference) => {
+    if (
+      !scope ||
+      !linked ||
+      linked.type !== 'issue' ||
+      linked.provider !== reference.provider ||
+      linked.number !== reference.number
+    ) {
+      return false
+    }
+    return resolveReferenceRepo(taskDeps, scope, reference)?.id === linked.repoId
+  })
+  const selectedIssueKey = issueKey ?? (existingIssue ? taskRefKey(existingIssue) : null)
+  const goalMissing =
+    (workflow === 'goal' || workflow === 'issue') && !goals.some((goal) => goal.goalId === goalId)
+  const issueMissing = workflow === 'issue' && !selectedIssueKey
+  const instanceMissing = !tree.instanceId
+  const flowMismatch =
+    (workflow === 'plan' || workflow === 'acceptance') &&
+    suggestedWorkflow(tree, version) !== workflow
+  const versions = [
+    ...new Set([
+      ...entries.map((item) => item.version),
+      ...(currentBinding ? [currentBinding.version] : [])
+    ])
+  ].sort((a, b) => compareMaterialVersions(b, a))
 
   async function confirm(): Promise<void> {
-    if (!selected || !selected.instanceId || goalMissing || issueMissing || busy) {
+    if (
+      !tree.instanceId ||
+      !version ||
+      !entry ||
+      goalMissing ||
+      issueMissing ||
+      flowMismatch ||
+      busy
+    ) {
       return
     }
     setBusy(true)
-    const label = worktreeLabel(selected)
-    const hostId = selected.hostId ?? LOCAL_EXECUTION_HOST_ID
+    const label = worktreeLabel(tree)
     let binding: WorkbenchVersionBinding = {
       schema: WORKBENCH_VERSION_BINDING_SCHEMA_VERSION,
       version,
-      workflow: effectiveWorkflow
+      workflow
     }
+    let linkedWorkItem: WorkspaceLinkedItem | undefined
     try {
-      if (effectiveWorkflow === 'goal') {
+      const ownerScope = nativeWorkspaceScope(tree)
+      if (workflow === 'goal') {
         binding = { ...binding, goalId }
       }
-      if (effectiveWorkflow === 'issue') {
+      if (workflow === 'issue') {
         if (!scope) {
           throw new Error('项目工作区尚未就绪，无法核对 Issue 归属')
         }
-        const reference = issueRefs.find((task) => taskRefKey(task) === issueKey)
+        const reference = issueRefs.find((task) => taskRefKey(task) === selectedIssueKey)
         if (!reference) {
           throw new Error('所选 Issue 引用已不在列表中，请重新选择')
         }
-        const owner = { repoId: scope.repoId, hostId: scope.hostId }
+        const owner = { repoId: ownerScope.repoId, hostId: ownerScope.hostId }
         const repo = resolveReferenceRepo(taskDeps, owner, reference)
         if (!repo) {
           throw new Error(`未在已登记项目中找到 ${reference.repository} 对应的项目`)
@@ -187,40 +208,26 @@ export function VersionTreeBindDialog({
           throw new Error(`项目 ${repo.displayName || repo.id} 解析不出任务来源`)
         }
         const snapshot = await readReference(taskDeps, owner, reference)
-        const meta = await useAppStore.getState().updateWorktreeMeta(
-          selected.id,
-          {
-            linkedWorkItem: {
-              provider: reference.provider,
-              type: 'issue',
-              number: reference.number,
-              title: snapshot.title,
-              url: snapshot.url,
-              repoId: repo.id
-            },
-            linkedTaskSourceContext: taskSource
-          },
-          selected.hostId ? { executionHostId: selected.hostId } : undefined
-        )
-        if (!meta.ok) {
-          throw new Error(meta.error)
+        linkedWorkItem = {
+          provider: reference.provider,
+          type: 'issue',
+          number: reference.number,
+          title: snapshot.title,
+          url: snapshot.url,
+          repoId: repo.id
         }
         binding = { ...binding, goalId, taskSource }
       }
-      await nativeVersionBindingPort({
-        hostId,
-        ...(selected.runtimeOwnerEnvironmentId
-          ? { runtimeOwnerEnvironmentId: selected.runtimeOwnerEnvironmentId }
-          : {})
-      }).set(
+      await nativeVersionBindingPort(ownerScope).set(
         {
-          repoId: selected.repoId,
-          worktreeId: selected.id,
-          hostId,
-          ...(selected.projectId ? { projectId: selected.projectId } : {}),
-          instanceId: selected.instanceId
+          repoId: tree.repoId,
+          worktreeId: tree.id,
+          hostId: ownerScope.hostId,
+          ...(tree.projectId ? { projectId: tree.projectId } : {}),
+          instanceId: tree.instanceId
         },
-        binding
+        binding,
+        linkedWorkItem
       )
       toast.success(`已把工作区 ${label} 纳入 ${version}。`)
       onClose()
@@ -239,139 +246,175 @@ export function VersionTreeBindDialog({
     <Dialog open onOpenChange={(open) => !open && !busy && onClose()}>
       <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>把工作区纳入 {version}</DialogTitle>
-          <DialogDescription>选一棵工作区，指定它属于哪个版本、做什么用。</DialogDescription>
+          <DialogTitle>{currentBinding ? '更改版本绑定' : '绑定版本'}</DialogTitle>
+          <DialogDescription>{worktreeLabel(tree)}</DialogDescription>
         </DialogHeader>
-        {candidates.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            本仓当前没有可纳入的工作区；已归属版本的在版本目录里查看，不再需要的请在原生项目
-            工作区清理。
-          </p>
-        ) : (
-          <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="wb-bind-version">版本</Label>
+            <Select
+              value={version}
+              onValueChange={(value) => {
+                setVersion(value)
+                setGoalId('')
+                setIssueKey(null)
+                setWorkflow(suggestedWorkflow(tree, value) ?? 'goal')
+              }}
+            >
+              <SelectTrigger id="wb-bind-version" className="w-full">
+                <SelectValue placeholder="选择版本" />
+              </SelectTrigger>
+              <SelectContent>
+                {versions.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {versions.length === 0 ? (
+              <p className="text-xs text-muted-foreground">暂无版本，请先创建版本。</p>
+            ) : null}
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="wb-bind-workflow">用途</Label>
+            <Select value={workflow} onValueChange={(value) => setWorkflow(value as BindWorkflow)}>
+              <SelectTrigger id="wb-bind-workflow" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {WORKFLOW_ORDER.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {WORKFLOW_LABELS[item]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {version && flowMismatch ? (
+              <span className="text-xs text-destructive">
+                {WORKFLOW_LABELS[workflow]}工作区需要分支{' '}
+                {versionFlowBranch(version, workflow as 'plan' | 'acceptance')}。
+              </span>
+            ) : null}
+          </div>
+          {workflow === 'goal' || workflow === 'issue' ? (
             <div className="flex flex-col gap-2">
-              <Label htmlFor="wb-bind-worktree">工作区</Label>
+              <Label htmlFor="wb-bind-goal">所属目标</Label>
               <Select
-                value={selectedKey ?? ''}
-                onValueChange={(value) => setSelectedKey(value || null)}
+                value={goalId}
+                onValueChange={(value) => {
+                  setGoalId(value)
+                  setIssueKey(null)
+                }}
               >
-                <SelectTrigger id="wb-bind-worktree" className="w-full">
-                  <SelectValue placeholder="选择工作区" />
+                <SelectTrigger id="wb-bind-goal" className="w-full">
+                  <SelectValue placeholder="选择目标" />
                 </SelectTrigger>
                 <SelectContent>
-                  {candidates.map((tree) => {
-                    const key = getWorktreeHostIdentity(tree)
-                    return (
-                      <SelectItem key={key} value={key}>
-                        {worktreeLabel(tree)}
-                        {tree.hostId && tree.hostId !== LOCAL_EXECUTION_HOST_ID
-                          ? `（宿主 ${tree.hostId}）`
-                          : ''}
-                      </SelectItem>
-                    )
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="wb-bind-workflow">用途</Label>
-              <Select
-                value={effectiveWorkflow}
-                disabled={selectionSuggestion !== null}
-                onValueChange={(value) => setWorkflow(value as BindWorkflow)}
-              >
-                <SelectTrigger id="wb-bind-workflow" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {WORKFLOW_ORDER.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {WORKFLOW_LABELS[item]}
+                  {goals.map((goal, index) => (
+                    <SelectItem key={goal.goalId} value={goal.goalId}>
+                      {goalOrdinal(index)} · {goal.title}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {selectionSuggestion ? (
+              {goals.length === 0 ? (
                 <span className="text-xs text-muted-foreground">
-                  分支与本版{WORKFLOW_LABELS[selectionSuggestion]}分支一致，用途已对齐。
+                  本版计划还没有目标；先保存版本计划再纳入。
                 </span>
               ) : null}
             </div>
-            {effectiveWorkflow === 'goal' || effectiveWorkflow === 'issue' ? (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="wb-bind-goal">所属目标</Label>
-                <Select
-                  value={goalId}
-                  onValueChange={(value) => {
-                    setGoalId(value)
-                    setIssueKey(null)
-                  }}
-                >
-                  <SelectTrigger id="wb-bind-goal" className="w-full">
-                    <SelectValue placeholder="选择目标" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {goals.map((goal, index) => (
-                      <SelectItem key={goal.goalId} value={goal.goalId}>
-                        {goalOrdinal(index)} · {goal.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {goals.length === 0 ? (
-                  <span className="text-xs text-muted-foreground">
-                    本版计划还没有目标；先保存版本计划再纳入。
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
-            {effectiveWorkflow === 'issue' ? (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="wb-bind-issue">对应 Issue</Label>
-                <Select
-                  value={issueKey ?? ''}
-                  disabled={issueRefs.length === 0}
-                  onValueChange={(value) => setIssueKey(value || null)}
-                >
-                  <SelectTrigger id="wb-bind-issue" className="w-full">
-                    <SelectValue placeholder="选择 Issue" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {issueRefs.map((task) => (
-                      <SelectItem key={taskRefKey(task)} value={taskRefKey(task)}>
-                        #{task.number} · {task.repository}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {goalId && issueRefs.length === 0 ? (
-                  <span className="text-xs text-muted-foreground">
-                    本版计划材料没有可选的 Issue 引用。
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
-            {selected && instanceMissing ? (
-              <p className="text-sm text-destructive">
-                该工作区缺少实例身份，无法纳入；请在原生项目核对该工作区的登记。
-              </p>
-            ) : null}
-          </div>
-        )}
+          ) : null}
+          {workflow === 'issue' ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="wb-bind-issue">对应 Issue</Label>
+              <Select
+                value={selectedIssueKey ?? ''}
+                disabled={issueRefs.length === 0}
+                onValueChange={(value) => setIssueKey(value || null)}
+              >
+                <SelectTrigger id="wb-bind-issue" className="w-full">
+                  <SelectValue placeholder="选择 Issue" />
+                </SelectTrigger>
+                <SelectContent>
+                  {issueRefs.map((task) => (
+                    <SelectItem key={taskRefKey(task)} value={taskRefKey(task)}>
+                      #{task.number} · {task.repository}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {goalId && issueRefs.length === 0 ? (
+                <span className="text-xs text-muted-foreground">
+                  本版计划材料没有可选的 Issue 引用。
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+          {instanceMissing ? (
+            <p className="text-sm text-destructive">
+              该工作区缺少实例身份，无法纳入；请在原生项目核对该工作区的登记。
+            </p>
+          ) : null}
+        </div>
         <DialogFooter>
           <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
             取消
           </Button>
           <Button
             type="button"
-            disabled={!selected || instanceMissing || goalMissing || issueMissing || busy}
+            disabled={
+              !version ||
+              !entry ||
+              instanceMissing ||
+              goalMissing ||
+              issueMissing ||
+              flowMismatch ||
+              busy
+            }
             onClick={() => void confirm()}
           >
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            纳入版本
+            保存绑定
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
+}
+
+function BindingDialogForTree({ tree }: { tree: Worktree }): React.JSX.Element {
+  const catalog = useVersionCatalogForRepo(tree.repoId)
+  const repos = useAppStore((state) => state.repos)
+  const current = useAppStore((state) => state.getKnownWorktreeById(tree.id, tree.hostId))
+  const scope = useMemo(() => {
+    try {
+      return nativeWorkspaceScope(tree)
+    } catch {
+      return null
+    }
+  }, [tree])
+  return (
+    <VersionTreeBindDialog
+      tree={
+        current && current.instanceId === tree.instanceId
+          ? current
+          : { ...tree, instanceId: undefined }
+      }
+      entries={catalog.catalog?.entries ?? []}
+      repos={repos}
+      scope={scope}
+      onClose={() => selectVersionBindingTree(null)}
+    />
+  )
+}
+
+export function WorkbenchVersionBindingDialog(): React.JSX.Element | null {
+  const tree = useVersionBindingTree()
+  return tree ? (
+    <BindingDialogForTree
+      key={`${tree.hostId ?? ''}:${tree.id}:${tree.instanceId ?? ''}`}
+      tree={tree}
+    />
+  ) : null
 }

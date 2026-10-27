@@ -186,7 +186,11 @@ export function createVersionMaterialWorkspace(
         schema_version: 3,
         version: request.version,
         cycleId: request.cycleId,
-        summary: { progress: '', risks: '' },
+        summary: {
+          progress: '',
+          risks: '',
+          ...(request.progressSource ? { progressSource: request.progressSource } : {})
+        },
         goals: [],
         tasks: []
       }

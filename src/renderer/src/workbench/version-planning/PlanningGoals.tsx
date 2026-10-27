@@ -1,16 +1,10 @@
-import { ChartNoAxesCombined, ChevronDown, ChevronRight, Info, Plus, RefreshCw } from 'lucide-react'
+import { ChartNoAxesCombined, ChevronDown, ChevronRight, Plus, RefreshCw } from 'lucide-react'
 import { useState, type Ref } from 'react'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
 import { goalCardViewKey, writeGoalCardExpanded } from '../cycle-view-state'
 import type { AnnotationMatch } from '../annotations/types'
 import { BoardIconButton } from '../board-ui'
 import type { SendActionWrap } from '../plan-send-menu'
-import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
-import {
-  materialProblemFile,
-  materialProblemRequest,
-  type CycleMaterialProblem
-} from '../version-cycle/cycle-start-request'
 import type { CycleScope, CycleTaskSnapshot, TaskPort } from '../version-cycle/ports'
 import { useCycleTaskReads } from '../version-cycle/use-cycle-task-reads'
 import { PlanningGoalCard } from './PlanningGoalCard'
@@ -29,10 +23,7 @@ export function PlanningGoals({
   onRemoveGoal,
   onSendAction,
   numbersFor,
-  onOpenAnnotationPanel,
-  entry,
-  problems,
-  version
+  onOpenAnnotationPanel
 }: {
   plan?: PlanningMaterial
   disabled: boolean
@@ -48,9 +39,6 @@ export function PlanningGoals({
   onSendAction: SendActionWrap
   numbersFor(match: AnnotationMatch): number[]
   onOpenAnnotationPanel(): void
-  entry: CycleEntry
-  problems: CycleMaterialProblem[]
-  version: string | null
 }) {
   const [expanded, setExpanded] = useState(false)
   const [expandedSignal, setExpandedSignal] = useState(0)
@@ -155,21 +143,13 @@ export function PlanningGoals({
       </div>
       {!plan ? (
         <div className="g3-empty-board">
-          <p>{version ? `${version} 计划尚未建立。` : '尚未选定版本，可在页头选择已有版本。'}</p>
-          <PlanningStartButton entry={entry} problems={problems} version={version} />
-          <PlanningMaterialProblems problems={problems} />
+          <p>尚无目标</p>
         </div>
       ) : (
         <fieldset disabled={disabled} className="g3-goal-fieldset">
-          {/* Material problems of other versions stay visible while a plan is open — the retired always-on start card used to carry them. */}
-          <PlanningMaterialProblems problems={problems} />
           {plan.goals.length === 0 ? (
-            // #436 伴飞裁定（CF-9）：prepare 已 create-only 初始化空计划（有材料、
-            // goals=[]）时也要有会话入口——照验收屏空板语义补「与计划助手新建计
-            // 划」，点击走同一条 entry.start 注入链（cycle-prompt 绑定分支）。
             <div className="g3-empty-board">
-              <p>{plan.version} 计划已建立，还没有目标。</p>
-              <PlanningStartButton entry={entry} problems={problems} version={plan.version} />
+              <p>尚无目标</p>
             </div>
           ) : null}
           <div className="g3-goal-list">
@@ -208,62 +188,5 @@ export function PlanningGoals({
         </fieldset>
       )}
     </section>
-  )
-}
-
-/**
- * The single plan-creation launch entry (G2 seam: sessions start from the
- * board button, versions ride in from the sidebar later). Runs the registered
- * automation manually through the existing ensure chain; material problems ride
- * along as one-shot context. No second version-picker lives here.
- */
-function PlanningStartButton({
-  entry,
-  problems,
-  version
-}: {
-  entry: CycleEntry
-  problems: CycleMaterialProblem[]
-  version: string | null
-}) {
-  return (
-    <button
-      type="button"
-      disabled={entry.busy}
-      onClick={() =>
-        void entry.start(
-          [
-            version ? `本次计划版本：${version}。请读取该版本的当前材料并继续协作。` : '',
-            problems.length ? materialProblemRequest(problems, 'plan', version) : ''
-          ]
-            .filter(Boolean)
-            .join('\n') || undefined
-        )
-      }
-    >
-      {entry.busy ? '正在打开会话…' : '与计划助手新建计划'}
-    </button>
-  )
-}
-
-function PlanningMaterialProblems({ problems }: { problems: CycleMaterialProblem[] }) {
-  if (!problems.length) {
-    return null
-  }
-  return (
-    <p
-      className="vc-start-problem"
-      role="alert"
-      title={problems
-        .map((item) => `${materialProblemFile(item, 'plan')}：${item.error ?? item.state}`)
-        .join('\n')}
-    >
-      <Info size={14} aria-hidden="true" />
-      <span>
-        {[...new Set(problems.map((item) => item.version))].join('、')} 的版本材料格式
-        {problems.every((item) => item.state === 'migration-required') ? '较旧' : '有问题'}
-        ，暂无法读取；点「与计划助手新建计划」会把具体文件和迁移请求带入会话，由模型说明方案、经你确认后转换，不留旧文件副本。
-      </span>
-    </p>
   )
 }

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { branchName } from '@/lib/git-utils'
 import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import type { Worktree } from '../../../shared/worktree/types'
+import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import {
   loadVersionCatalog,
   type VersionCatalogLoad,
@@ -12,6 +13,10 @@ import {
 import { nativeWorkspaceScope, type NativeWorkspaceScope } from './version-cycle/native-workspace'
 import { cycleBranch } from './version-cycle/native-cycle-workspace'
 import { worktreeFingerprintTuple } from './worktree-fingerprint'
+import {
+  collectVersionCatalogWorkspaces,
+  mergeVersionCatalog
+} from '../../../shared/workbench/version-catalog'
 
 /**
  * 侧栏版本树的目录装载（G2 P3a）：目录=现算（绑定从原生登记、材料从主干与
@@ -28,6 +33,9 @@ export type VersionCatalogState = {
   catalog: VersionCatalogLoad | null
   loading: boolean
   error: string | null
+  /** Bound trees can be visible before the committed material catalog is known. */
+  materialReady: boolean
+  materialError: string | null
   reload: () => void
 }
 
@@ -42,6 +50,7 @@ function identityKeyOf(repo: {
 export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogState {
   const repos = useAppStore((s) => s.repos)
   const worktreesByRepo = useAppStore((s) => s.worktreesByRepo)
+  const detectedWorktreesByRepo = useAppStore((s) => s.detectedWorktreesByRepo)
   const [nonce, setNonce] = useState(0)
   const reload = useCallback(() => setNonce((value) => value + 1), [])
 
@@ -61,15 +70,18 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
   const repoIdsKey = repoIds.join(',')
 
   const worktrees = useMemo(() => {
-    const rows: Worktree[] = []
+    const rows = new Map<string, Worktree>()
     for (const id of repoIds) {
-      const bucket = worktreesByRepo[id]
-      if (bucket) {
-        rows.push(...bucket)
+      for (const tree of worktreesByRepo[id] ?? []) {
+        rows.set(getWorktreeHostIdentity(tree), tree)
+      }
+      // visible 只是原生侧栏的会话/显示投影，不能决定版本绑定是否存在。
+      for (const tree of detectedWorktreesByRepo[id]?.worktrees ?? []) {
+        rows.set(getWorktreeHostIdentity(tree), tree)
       }
     }
-    return rows
-  }, [repoIdsKey, worktreesByRepo]) // eslint-disable-line react-hooks/exhaustive-deps
+    return [...rows.values()]
+  }, [repoIdsKey, worktreesByRepo, detectedWorktreesByRepo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const home = useMemo(() => {
     const primary = worktrees.filter((tree) => tree.repoId === repoId)
@@ -98,18 +110,23 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
     const legacyTrees: VersionCatalogPlanTree[] = []
     const legacyBranch = cycleBranch({ workflow: 'plan' })
     const ownerOf = (tree: Worktree) => {
-      // 配对宿主树按自身 owner 路由读取；解析失败的行退回主树范围（读取失败
-      // 会如实进 problem 通道，不装绿）。
       try {
         const treeScope = nativeWorkspaceScope(tree)
         return {
+          repoId: treeScope.repoId,
           hostId: treeScope.hostId,
           ...(treeScope.runtimeOwnerEnvironmentId
             ? { runtimeOwnerEnvironmentId: treeScope.runtimeOwnerEnvironmentId }
             : {})
         }
-      } catch {
-        return {}
+      } catch (reason) {
+        // 不能把远端归属不明的树回落到主树或本机读取。
+        return {
+          repoId: tree.repoId,
+          hostId: tree.hostId,
+          runtimeOwnerEnvironmentId: tree.runtimeOwnerEnvironmentId,
+          ownerError: reason instanceof Error ? reason.message : String(reason)
+        }
       }
     }
     for (const tree of worktrees) {
@@ -118,11 +135,21 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
       }
       const binding = normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding)
       if (binding?.workflow === 'plan') {
-        trees.push({ worktreeId: tree.id, version: binding.version, ...ownerOf(tree) })
+        trees.push({
+          worktreeId: tree.id,
+          instanceId: tree.instanceId,
+          version: binding.version,
+          ...ownerOf(tree)
+        })
         continue
       }
       if (!binding && branchName(tree.branch) === legacyBranch) {
-        legacyTrees.push({ worktreeId: tree.id, version: null, ...ownerOf(tree) })
+        legacyTrees.push({
+          worktreeId: tree.id,
+          instanceId: tree.instanceId,
+          version: null,
+          ...ownerOf(tree)
+        })
       }
     }
     // 绑定树排前：目录 goals 派生按先到先得，绑定副本优先于旧固定树副本（C-2）。
@@ -132,12 +159,25 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
   const [catalog, setCatalog] = useState<VersionCatalogLoad | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const lastView = useRef<{
+    repoId: string | null
+    scopeKey: string
+    catalog: VersionCatalogLoad
+  } | null>(null)
 
   // 登记变化（绑定写入/删树/实例更换）用指纹触发重读；目录永远是现算。
   // 单树元组与墙卡版本链共用 worktreeFingerprintTuple；此处按 worktrees 原序
   // 连接、不排序（顺序变化也视为失效，与墙侧的排序无关键语义不同）。
   const fingerprint = useMemo(
-    () => worktrees.map((tree) => worktreeFingerprintTuple(tree)).join(';'),
+    () =>
+      JSON.stringify(
+        worktrees.map((tree) => [
+          worktreeFingerprintTuple(tree),
+          tree.repoId,
+          tree.hostId,
+          tree.runtimeOwnerEnvironmentId ?? ''
+        ])
+      ),
     [worktrees]
   )
   const homeId = home?.id ?? null
@@ -151,7 +191,9 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
     : null
   useEffect(() => {
     if (!scope || !homeId) {
-      setCatalog(null)
+      if (lastView.current?.repoId !== repoId) {
+        setCatalog(null)
+      }
       // scope 失效也要复位上一轮的装载/错误态：在飞轮次被 cleanup 取消后其
       // finally 不再落地，否则「读取中」或旧错误横幅永久残留到 scope 恢复。
       setLoading(false)
@@ -166,17 +208,22 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
         const load = await loadVersionCatalog({
           scope,
           homeWorktreeId: homeId,
+          homeInstanceId: home?.instanceId,
           planTrees,
           worktrees,
           repoIds,
-          projectId: scope.projectId
+          projectId: scope.projectId,
+          previous: lastView.current?.scopeKey === scopeKey ? lastView.current.catalog : null
         })
         if (!cancelled) {
+          lastView.current = { repoId, scopeKey: scopeKey ?? '', catalog: load }
           setCatalog(load)
         }
       } catch (reason) {
         if (!cancelled) {
-          setCatalog(null)
+          if (lastView.current?.scopeKey !== scopeKey) {
+            setCatalog(null)
+          }
           setError(reason instanceof Error ? reason.message : String(reason))
         }
       } finally {
@@ -189,7 +236,40 @@ export function useVersionCatalogForRepo(repoId: string | null): VersionCatalogS
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scopeKey, homeId, fingerprint, repoIdsKey, nonce])
+  }, [scopeKey, homeId, fingerprint, repoIdsKey, repoId, nonce])
 
-  return { scope, home, worktrees, repoIds, planTrees, catalog, loading, error, reload }
+  const currentLoad =
+    lastView.current?.scopeKey === scopeKey || (!scopeKey && lastView.current?.repoId === repoId)
+      ? catalog
+      : null
+  const visibleCatalog = useMemo(() => {
+    const registered = mergeVersionCatalog({
+      committed: { records: [], problems: [] },
+      workspaces: collectVersionCatalogWorkspaces(worktrees, repoIds, scope?.projectId)
+    })
+    const entries = new Map(registered.map((entry) => [entry.version, entry]))
+    for (const entry of currentLoad?.entries ?? []) {
+      const bindings = entries.get(entry.version)?.workspaces ?? []
+      entries.set(entry.version, {
+        ...entry,
+        workspaces: bindings,
+        state: bindings.length > 0 ? 'working' : 'retired'
+      })
+    }
+    return { entries: [...entries.values()], problems: currentLoad?.problems ?? [] }
+  }, [currentLoad, worktrees, repoIdsKey, scopeKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return {
+    scope,
+    home,
+    worktrees,
+    repoIds,
+    planTrees,
+    catalog: visibleCatalog,
+    loading,
+    error,
+    materialReady: currentLoad?.history?.ready ?? false,
+    materialError: error ?? currentLoad?.history?.error ?? null,
+    reload
+  }
 }

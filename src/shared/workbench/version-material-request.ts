@@ -4,7 +4,8 @@ import {
   MaterialRevision,
   MaterialVersion,
   AcceptanceMaterialSchema,
-  PlanningMaterialSchema
+  PlanningMaterialSchema,
+  PlanningProgressSourceSchema
 } from './version-material'
 
 export const VersionMaterialScopeSchema = z.strictObject({
@@ -23,7 +24,8 @@ export const VersionMaterialReadSchema = VersionMaterialScopeSchema.extend({
 export const VersionMaterialInitializeSchema = z.strictObject({
   version: MaterialVersion,
   cycleId: Id,
-  expectedBranch: z.string().min(1)
+  expectedBranch: z.string().min(1),
+  progressSource: PlanningProgressSourceSchema.optional()
 })
 export type VersionMaterialInitialize = z.infer<typeof VersionMaterialInitializeSchema>
 export const VersionMaterialSaveSchema = z.discriminatedUnion('workflow', [

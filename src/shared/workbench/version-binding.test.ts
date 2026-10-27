@@ -82,6 +82,27 @@ describe('WorkbenchVersionBindingSchema workflow coherence', () => {
         .success
     ).toBe(false)
     expect(VersionBindingSetSchema.safeParse({ ...scope }).success).toBe(false)
+    const linkedWorkItem = {
+      provider: 'github',
+      type: 'issue',
+      number: 439,
+      title: 'A',
+      url: 'https://github.com/example/repo/issues/439',
+      repoId: 'repo-1'
+    }
+    const request = {
+      ...scope,
+      binding: { ...base, workflow: 'issue', taskSource },
+      linkedWorkItem
+    }
+    expect(VersionBindingSetSchema.safeParse(request).success).toBe(true)
+    expect(VersionBindingSetSchema.safeParse({ ...request, binding: null }).success).toBe(false)
+    expect(
+      VersionBindingSetSchema.safeParse({
+        ...request,
+        linkedWorkItem: { ...linkedWorkItem, repoId: 'another-repo' }
+      }).success
+    ).toBe(false)
   })
 })
 

@@ -9,6 +9,7 @@ import { useCycleView } from './cycle-view-state'
 import { resolveWorkbenchNav, type WorkbenchNavId } from './workbench-nav'
 import { WorkbenchVersionNav } from './WorkbenchVersionNav'
 import { WorkbenchWorkspaceChoiceDialog } from './WorkbenchWorkspaceChoiceDialog'
+import { WorkbenchVersionBindingDialog } from './version-tree-bind-dialog'
 
 // G2（P3a，高保真修订 8）：项目级入口（总览/任务/自动化/知识库）＋分隔＋版本区。
 // 计划/验收不再设扁平入口——由版本行承载（业务入口与本树入口合一）；
@@ -86,10 +87,13 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
   }
 
   return (
-    <div className="wb-nav flex flex-col gap-1 px-2 pt-2 pb-1" data-workbench-nav>
+    <div
+      className="wb-nav flex max-h-[65%] min-h-0 min-w-0 shrink flex-col gap-1 px-2 pt-2 pb-1"
+      data-workbench-nav
+    >
       <button
         type="button"
-        className="wb-proj flex w-full items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-worktree-sidebar-foreground/8"
+        className="wb-proj flex w-full shrink-0 items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-worktree-sidebar-foreground/8"
         onClick={() => openProjectWall()}
         title="打开项目墙"
         data-workbench-project-wall
@@ -109,23 +113,22 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
         </span>
       </button>
 
-      <nav
-        className="flex flex-col gap-0.5"
-        aria-label="项目内导航"
-        onClickCapture={closeProjectPage}
-      >
-        {NAV_ITEMS.slice(0, 1).map((item) => (
-          <WorkbenchNavItem key={item.id} item={item} active={activeNav === item.id} onGo={go} />
-        ))}
-        <SidebarTaskNavButton />
-        {NAV_ITEMS.slice(1).map((item) => (
-          <WorkbenchNavItem key={item.id} item={item} active={activeNav === item.id} onGo={go} />
-        ))}
+      <nav className="flex min-h-0 min-w-0 flex-col gap-0.5" aria-label="项目内导航">
+        <div className="shrink-0" onClickCapture={closeProjectPage}>
+          {NAV_ITEMS.slice(0, 1).map((item) => (
+            <WorkbenchNavItem key={item.id} item={item} active={activeNav === item.id} onGo={go} />
+          ))}
+          <SidebarTaskNavButton />
+          {NAV_ITEMS.slice(1).map((item) => (
+            <WorkbenchNavItem key={item.id} item={item} active={activeNav === item.id} onGo={go} />
+          ))}
+        </div>
         <WorkbenchVersionNav />
       </nav>
       {/* G2 多候选工作区选择器挂在侧栏层：任务屏、侧栏目标菜单与流程行在任意
           视图触发选择时都可见（Radix portal，不受侧栏布局裁剪）。 */}
       <WorkbenchWorkspaceChoiceDialog />
+      <WorkbenchVersionBindingDialog />
     </div>
   )
 }

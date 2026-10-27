@@ -1,4 +1,4 @@
-const { React, createRoot, useState, useRef, useEffect } = window.BWPrototypeDependencies
+const { React, createRoot, useState, useRef, useEffect, Download } = window.BWPrototypeDependencies
 import {
   snapshot,
   stages,
@@ -16,10 +16,11 @@ import {
   EMPTY_MINUTES,
   releaseInfo,
   taskRows,
+  sortIssueRows,
   minutesRequestPrompt,
   g2Url
 } from './acceptance-model.js'
-import { annotationsSendPrompt } from '../../version-planning/prototype/g3-model.js'
+import { annotationsSendPrompt, taskKind } from '../../version-planning/prototype/g3-model.js'
 import {
   Icon,
   IconButton,
@@ -43,26 +44,21 @@ function Lines({ text, empty = '待明确' }) {
   )
 }
 
-// 行尾人判:达成/不达成互斥,再点取消回未标;演示进度不进材料。
-function Verdict({ value, onSet }) {
+// A single human decision; choosing the empty option clears the recorded verdict.
+function Verdict({ goalId, value, onSet }) {
   return (
     <span className="acc-verdict">
-      <button
-        className={`acc-verdict-btn met${value === '达成' ? ' on' : ''}`}
-        aria-pressed={value === '达成'}
-        title="人对着实物核对后标记:达成"
-        onClick={() => onSet(value === '达成' ? null : '达成')}
+      <select
+        className={`acc-verdict-select${value === '达成' ? ' met' : value === '不达成' ? ' unmet' : ''}`}
+        aria-label={`${goalId} 验收结论`}
+        title="由人核对实物后判定；选择未判定可清除结论"
+        value={value || ''}
+        onChange={(event) => onSet(event.target.value || null)}
       >
-        达成
-      </button>
-      <button
-        className={`acc-verdict-btn miss${value === '不达成' ? ' on' : ''}`}
-        aria-pressed={value === '不达成'}
-        title="人对着实物核对后标记:不达成(原因写纪要,安排写下一步)"
-        onClick={() => onSet(value === '不达成' ? null : '不达成')}
-      >
-        不达成
-      </button>
+        <option value="">未判定</option>
+        <option value="达成">达成</option>
+        <option value="不达成">不达成</option>
+      </select>
     </span>
   )
 }
@@ -89,6 +85,10 @@ function AcceptanceRow({
   // 验收标准参与批注(#426 验收会决议,与计划屏对齐);「下一步」输入件仍不参与。
   const criteriaTarget = `${goal.goalId} · 验收标准`
   const criteriaNumbers = taskNumbers[criteriaTarget] || []
+  const open = tasks.filter((task) => task.state === 'OPEN')
+  const closedCount = tasks.filter((task) => task.state === 'CLOSED').length
+  const carryCount = open.filter((task) => carry[task.number]).length
+  const unknownCount = tasks.length - open.length - closedCount
   return (
     <article className={`g3-goal ${expanded ? 'open' : ''}`} id={`acc-${goal.goalId}`}>
       <div className="g3-goal-head" data-annotate={goalTarget}>
@@ -113,8 +113,14 @@ function AcceptanceRow({
             {goalNumbers.join(',')}
           </button>
         )}
-        <span className="g3-goal-count">{tasks.length} Issue</span>
-        <Verdict value={verdict} onSet={onVerdict} />
+        <span
+          className="g3-goal-count acc-issue-counts"
+          title="遗留是未关闭 Issue 中人工标记的部分"
+        >
+          未关闭 {open.length} · 遗留 {carryCount} · 已关闭 {closedCount}
+          {unknownCount > 0 && <> · 未知 {unknownCount}</>}
+        </span>
+        <Verdict goalId={goal.goalId} value={verdict} onSet={onVerdict} />
       </div>
       {!expanded && (
         <div className="g3-goal-meta">
@@ -152,22 +158,35 @@ function AcceptanceRow({
           </div>
           <div className="g3-tasks">
             {tasks.length ? (
-              tasks.map((task) => {
+              sortIssueRows(tasks).map((task) => {
                 const taskTarget = `${goal.goalId} · #${task.number}`
                 const numbers = taskNumbers[taskTarget] || []
+                const kind = task.readable ? taskKind(task.labels) : null
                 return (
                   <div className="g3-task" key={task.number} data-annotate={taskTarget}>
-                    <a
-                      href={
-                        task.url ||
-                        `https://github.com/forcegravity1989/builder-workbench/issues/${task.number}`
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                    >
+                    {task.readable ? (
+                      <a
+                        href={
+                          task.url ||
+                          `https://github.com/forcegravity1989/builder-workbench/issues/${task.number}`
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <span className="g3-id">#{task.number}</span>
+                        {task.title?.replace(/^【.*?】/, '') || '标题未读到'}
+                      </a>
+                    ) : (
                       <span className="g3-id">#{task.number}</span>
-                      {task.title?.replace(/^【.*?】/, '') || '标题未读到'}
-                    </a>
+                    )}
+                    {kind && (
+                      <span
+                        className={`g3-task-kind${kind === 'Bug' ? ' bug' : ''}`}
+                        title="由 Issue 标签推导"
+                      >
+                        {kind}
+                      </span>
+                    )}
                     <span className="g3-task-state">
                       {task.state === 'CLOSED'
                         ? '已关闭'
@@ -186,7 +205,7 @@ function AcceptanceRow({
                         {numbers.join(',')}
                       </button>
                     )}
-                    {task.state !== 'CLOSED' && (
+                    {task.readable && task.state !== 'CLOSED' && (
                       <>
                         <input
                           className="acc-note-input"
@@ -205,19 +224,30 @@ function AcceptanceRow({
                         </button>
                       </>
                     )}
-                    {task.state === 'CLOSED' && notes[task.number] && (
+                    {(!task.readable || task.state === 'CLOSED') && notes[task.number] && (
                       <span
                         className="acc-note-readonly"
-                        title="已关闭 Issue:已存备注只读展示,不再编辑"
+                        title={
+                          task.readable
+                            ? '已关闭 Issue:已存备注只读展示,不再编辑'
+                            : '状态读不到，已存备注只读'
+                        }
                       >
                         {notes[task.number]}
                       </span>
                     )}
-                    <IconButton
-                      name="arrow"
-                      label={`打开 #${task.number} 原生任务详情(衔接示意)`}
-                      onClick={() => onOpenTask(task.number)}
-                    />
+                    {!task.readable && carry[task.number] && (
+                      <span className="acc-carry on" title="状态读不到；保留已存遗留标记">
+                        遗留
+                      </span>
+                    )}
+                    {task.readable && (
+                      <IconButton
+                        name="arrow"
+                        label={`打开 #${task.number} 原生任务详情(衔接示意)`}
+                        onClick={() => onOpenTask(task.number)}
+                      />
+                    )}
                   </div>
                 )
               })
@@ -244,6 +274,7 @@ function AcceptanceRow({
 
 function App() {
   const [scene, setScene] = useState('wrap')
+  const [workflowStarted, setWorkflowStarted] = useState(true)
   const [verdicts, setVerdicts] = useState({ ...sceneVerdicts.wrap })
   const [issueNotes, setIssueNotes] = useState({ ...sceneIssueNotes.wrap })
   const [carry, setCarry] = useState({ ...sceneCarry.wrap })
@@ -252,7 +283,6 @@ function App() {
     sceneMinutes.wrap ? structuredClone(sceneMinutes.wrap) : null
   )
   const [archive, setArchive] = useState(sceneArchive.wrap)
-  const [errorModal, setErrorModal] = useState(false)
   const [expanded, setExpanded] = useState([])
   const [active, setActive] = useState('prepare')
   const [session, setSession] = useState(true)
@@ -273,11 +303,11 @@ function App() {
   const [popover, setPopover] = useState(null)
   const scroll = useRef(null)
   const navigation = useRef(null)
-  const goals = snapshot.plan.goals
-  const tasks = taskRows()
+  const goals = scene === 'unmerged' ? [] : snapshot.plan.goals
+  const tasks = scene === 'unmerged' ? [] : taskRows()
   const latest = sceneLatest[scene] ?? null
   const report = scene === 'meeting' || scene === 'wrap' ? REPORT : null
-  const judged = goals.filter((g) => verdicts[g.goalId]).length
+  const notStarted = !workflowStarted
   const archiveStatus = archive
     ? { MERGED: '已合入', OPEN: '待合入', CLOSED: '已关闭' }[archive.state] || '状态未知'
     : null
@@ -340,20 +370,6 @@ function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [annotating, popover])
-  // 弹窗 Esc 关闭(与批注小窗同惯例:浮层可键盘退出)。发布预检弹窗已随规格退役,
-  // 现在只剩门禁阻断弹窗一个浮层。
-  useEffect(() => {
-    if (!errorModal) {
-      return
-    }
-    const onKey = (event) => {
-      if (event.key === 'Escape') {
-        setErrorModal(false)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [errorModal])
   const onScrollClickCapture = (event) => {
     if (!annotating) {
       return
@@ -376,6 +392,7 @@ function App() {
   }
   const switchScene = (value) => {
     setScene(value)
+    setWorkflowStarted(value !== 'planned' && value !== 'unmerged')
     setVerdicts({ ...sceneVerdicts[value] })
     setIssueNotes({ ...sceneIssueNotes[value] })
     setCarry({ ...sceneCarry[value] })
@@ -386,21 +403,26 @@ function App() {
     setDeployed(value === 'meeting' || value === 'wrap')
     setPrHandoff(false)
     setSentRequest(null)
-    setErrorModal(false)
     setPopover(null)
     setAnnotating(false)
     setPanelOpen(false)
     setAnnotations([])
-    if (value === 'planned') {
+    setExpanded([])
+    setActive('prepare')
+    if (value === 'planned' || value === 'unmerged') {
       setSession(false)
     }
     setNotice('')
   }
-  // 空板唯一动作:检测计划归档 PR 合入 → 通过则拉取计划、展开四步板面;未合入报错、保持空板。
+  // Opening the native conversation does not approve or merge a plan.
   const startAcceptance = () => {
-    switchScene('started')
+    if (scene === 'unmerged') {
+      setWorkflowStarted(true)
+    } else {
+      switchScene('started')
+    }
     toggleSession(true)
-    setNotice('检测通过:计划归档 PR #386 已合入,已拉取 v0.7 计划并新建验收会话 · 演示示意')
+    setNotice('已打开验收会话')
   }
   const openService = () => {
     toggleSession(true)
@@ -409,8 +431,8 @@ function App() {
   return (
     <div className={`g3-app ${compact ? 'constrained' : ''} ${annotating ? 'annotating' : ''}`}>
       <div className="g3-demo-bar">
-        <strong>验收 v10 候选</strong>
-        <span>四步会议屏 · v0.7 真实计划材料 · 编辑仅在本页演示</span>
+        <strong>#439 局部候选 · 验收</strong>
+        <span>沿用既有四区 · 场景与编辑仅在本页演示</span>
         <label className="g3-scene">
           时期
           <select
@@ -444,9 +466,9 @@ function App() {
           <p>
             <strong>定位与边界</strong>:验收屏为周五验收会议服务,四步——验收准备 → Showcase →
             会议纪要 → 归档 PR 及发版本。个人对需求的逐项自验在周中会话与开发流程,
-            不进本屏。计划制定中或计划归档 PR 未合入时,验收屏只有一块空板:点「与验收助手新建
-            验收」触发检测——检测通过才拉取计划、展开四步板面(目标与验收标准此时才同步上板);
-            未合入弹报错、保持空板(硬门禁,不做草案预验收)。选版与项目上下文归左侧栏(G2
+            不进本屏。尚未开始时与计划屏同为短启动卡；“开始验收”先打开原生会话并显示既有四区。
+            计划未合入或归档状态未知时由验收助手核对、提醒和协助处理，不自动合入。
+            未取得可读固定计划时目标区留空，不借用其他版本的目标。选版与项目上下文归左侧栏(G2
             外框);页头与计划屏同构:会话收折、批注模式、更新代码(唯一同步入口)、配置自动化——
             批注模式入口在页头右上角(#426 验收会决议,两屏同:页头不随内容滚动,会中随时进出、
             未发送条数角标常驻可见,取代第九轮「入口贴对象」形态);
@@ -457,7 +479,7 @@ function App() {
           </p>
           <p>
             <strong>验收准备</strong>:「出包」是板面固定逻辑(按项目远端直连流水线,主分支
-            构建);「部署」向验收助手会话注入请求——模型下载最新包、按项目自有部署入口部署
+            构建)，与“下载”同在出包展开区；“部署”常驻演示环境行，向验收助手会话注入请求——模型下载最新包、按项目自有部署入口部署
             启动(各服务逻辑不同,无固定脚本;桌面应用类=安装并启动,web 服务类=部署并起前 端,演示为 web
             服务型),完成后把演示环境写回材料(web 服务:系统名+URL;桌面应用:启动状态),
             「演示环境」行显示系统名(无系统名回退 URL),点击经内置 Orca
@@ -469,10 +491,13 @@ function App() {
             请人安装,不降级。
           </p>
           <p>
-            <strong>Showcase 勾勾表</strong>:目标行复用计划屏形态(只读);行尾「达成/不达成」
-            是人判结论(互斥、再点取消、未标空白),不是演示进度;会中逐条现场实操或打开报告
+            <strong>Showcase</strong>
+            :目标行复用计划屏形态(只读);行尾单个选择器显示未判定、达成或不达成，
+            选择未判定可清除人判结论。颜色沿用现有实现的中性色与警示色；结论不是演示进度。会中逐条现场实操或打开报告
             对应验收点。指标证据只在报告,板面不回显指标区。Issue 只有「遗留」标记(风险已
-            去掉)+备注;已关闭 Issue 不计遗留、已存备注只读。不达成目标出现「下一步」。
+            去掉)+备注；可读 Issue 依标签显示
+            Feature/Bug，按未关闭、未知、已关闭分组，组内沿用计划顺序。 已关闭 Issue
+            不计遗留、已存备注只读。不达成目标出现「下一步」。
           </p>
           <p>
             <strong>批注与助手</strong>:批注模式、对象小窗与板面批注窗与计划屏同一组件族和
@@ -488,9 +513,9 @@ function App() {
           <p>
             <strong>会议纪要</strong>
             :纪要卡常驻各时期、点「编辑纪要」进入编辑态后增删改或粘贴,不依赖会话唤起;与
-            计划屏同款两块结构(共识/遗留、人工确认生效);验收侧遗留条目<strong>无闭环位</strong>
-            ——原样成为下版计划屏「会议遗留」;Issue「遗留」标记对应「延期遗留」。模型只整理
-            草稿,不代确认。
+            计划屏同款两块结构(共识/遗留、人工确认生效)。归档前每条遗留写明落实结果或关联跟进
+            Issue， 由助手核对、人在 PR 中确认，不增加界面门禁。关联 Issue 不代表事情已完成；
+            下版会议回顾只提供来源参考，不自动生成任务或承诺。Issue「遗留」标记仍对应「延期遗留」。
           </p>
           <p>
             <strong>归档与发布</strong>:归档由会话执行,屏内放 PR 引用+状态+打开 Orca 原生 PR
@@ -552,6 +577,11 @@ function App() {
               <small>
                 这里只示意会话位置,不另设计聊天界面;「验收助手」是这个原生会话的产品称呼
               </small>
+              {scene === 'unmerged' && workflowStarted && (
+                <p className="acc-session-handoff" role="status">
+                  会话交接示意：本版计划尚未合入，验收助手将核对计划依据、提醒并协助处理，不会自动合入。
+                </p>
+              )}
             </div>
           ) : (
             <div className="g3-session-rail-text" aria-hidden="true">
@@ -580,7 +610,7 @@ function App() {
               {/* 批注入口在页头右上角(#426 验收会决议,两屏同):页头不随内容滚动,
                   会中随时进出批注模式、未发送条数角标常驻可见。空板(scene=planned)
                   无批注对象,不渲染。 */}
-              {scene !== 'planned' && (
+              {!notStarted && (
                 <button
                   type="button"
                   className={`g3-text-button g3-annotate-entry${annotating ? ' g3-mode-on' : ''}`}
@@ -618,7 +648,7 @@ function App() {
               </button>
             </div>
           </header>
-          {scene !== 'planned' && (
+          {!notStarted && (
             <nav className="g3-journey" aria-label="验收旅程">
               {stages.map(([id, title, detail], i) => (
                 <button
@@ -667,7 +697,7 @@ function App() {
               }
             }}
             onScroll={() => {
-              if (navigation.current || scene === 'planned') {
+              if (navigation.current || notStarted) {
                 return
               }
               const pane = scroll.current
@@ -684,26 +714,20 @@ function App() {
               }
             }}
           >
-            {scene === 'planned' && (
+            {notStarted && (
               <div className="g3-empty-board">
                 <p>v0.7 验收尚未开始。</p>
-                <button onClick={startAcceptance}>与验收助手新建验收</button>
-                <span className="g3-muted">
-                  计划归档 PR 合入后才能开始验收;未合入时点「新建验收」会报错并保持此空板。
-                </span>
-                <button className="acc-demo-link" onClick={() => setErrorModal(true)}>
-                  演示:计划 PR 未合入时的报错
-                </button>
+                <button onClick={startAcceptance}>开始验收</button>
               </div>
             )}
-            {scene !== 'planned' && (
+            {!notStarted && (
               <>
                 <section id="prepare">
                   <div className="g3-section-title">
                     <h2>
                       验收准备{' '}
                       <small>
-                        {scene === 'started'
+                        {scene === 'started' || scene === 'unmerged'
                           ? '候选未固定 · 尚未出包'
                           : `候选 ${CANDIDATE.short} · 已登记`}
                       </small>
@@ -745,20 +769,16 @@ function App() {
                           >
                             出包
                           </ActionButton>
-                          <ActionButton
+                          <button
+                            className="g3-action-button"
                             disabled={!latest}
-                            title={latest ? '向验收助手会话注入部署请求' : '尚无制品包;先出包'}
-                            onClick={() => {
-                              toggleSession(true)
-                              setDeployed(true)
-                              setSentRequest({
-                                kind: '部署请求',
-                                text: '下载最新安装包,按项目自有部署入口部署启动,完成后给出本次演示环境'
-                              })
-                            }}
+                            title={latest ? '选择本地目录，下载最新制品包' : '尚无制品包；先出包'}
+                            onClick={() =>
+                              setNotice('演示：打开原生目录选择器后下载制品包，本页不实际下载。')
+                            }
                           >
-                            部署
-                          </ActionButton>
+                            <Download size={14} aria-hidden="true" /> 下载
+                          </button>
                         </div>
                         {latest ? (
                           <dl className="acc-pkg-grid">
@@ -794,6 +814,18 @@ function App() {
                       ) : (
                         <span className="g3-muted">未部署 · 点「部署」注入请求</span>
                       )}
+                      <ActionButton
+                        disabled={!latest}
+                        title={latest ? '向验收助手会话注入部署请求' : '尚无制品包；先出包'}
+                        onClick={() =>
+                          sendRequest(
+                            '下载最新安装包，按项目自有部署入口部署启动，完成后给出本次演示环境',
+                            '部署请求'
+                          )
+                        }
+                      >
+                        部署
+                      </ActionButton>
                     </div>
                     <div className="acc-row-line">
                       <span className="acc-line-label">验收证据报告</span>
@@ -817,30 +849,30 @@ function App() {
                 </section>
                 <section id="showcase">
                   <div className="g3-section-title">
-                    <h2>
-                      Showcase{' '}
-                      <small>
-                        勾勾表 · 人判 {judged}/{goals.length}
-                      </small>
-                    </h2>
+                    <h2>Showcase</h2>
                     <span className="g3-title-actions">
-                      <IconButton
-                        name="refresh"
-                        label="刷新 Issue"
-                        onClick={() => setNotice('Issue 状态已重读 · 演示')}
-                      />
-                      <IconButton
-                        name={expanded.length === goals.length ? 'down' : 'right'}
-                        label={expanded.length === goals.length ? '全部收起' : '全部展开'}
-                        onClick={() =>
-                          setExpanded(
-                            expanded.length === goals.length ? [] : goals.map((g) => g.goalId)
-                          )
-                        }
-                      />
+                      {goals.length > 0 && (
+                        <IconButton
+                          name="refresh"
+                          label="刷新 Issue"
+                          onClick={() => setNotice('Issue 状态已重读 · 演示')}
+                        />
+                      )}
+                      {goals.length > 0 && (
+                        <IconButton
+                          name={expanded.length === goals.length ? 'down' : 'right'}
+                          label={expanded.length === goals.length ? '全部收起' : '全部展开'}
+                          onClick={() =>
+                            setExpanded(
+                              expanded.length === goals.length ? [] : goals.map((g) => g.goalId)
+                            )
+                          }
+                        />
+                      )}
                     </span>
                   </div>
                   <div className="g3-goal-list">
+                    {!goals.length && <p className="g3-empty">尚无可读的固定计划，目标暂为空。</p>}
                     {goals.map((goal) => (
                       <AcceptanceRow
                         key={goal.goalId}
@@ -892,7 +924,7 @@ function App() {
                     ))}
                   </div>
                   <p className="g3-demo-footnote g3-annotation">
-                    勾只有「达成/不达成」;指标证据在验收证据报告里;目标只读自计划。
+                    结论由人选择，可改回未判定；指标证据在验收证据报告里；目标只读自计划。
                   </p>
                 </section>
                 <section id="minutes">
@@ -914,8 +946,6 @@ function App() {
                   </div>
                   <MinutesCard
                     minutes={minutes || EMPTY_MINUTES}
-                    showFollowupStatus={false}
-                    footNote="纪要经人工确认生效,生成或填写不自动等于确认。"
                     update={(patch) => {
                       setMinutes({ ...(minutes || EMPTY_MINUTES), ...patch })
                       setNotice('本页演示修改 · 刷新后恢复原始材料')
@@ -1089,31 +1119,6 @@ function App() {
           }}
           onCancel={() => setPopover(null)}
         />
-      )}
-      {errorModal && (
-        <div className="acc-modal-backdrop" onClick={() => setErrorModal(false)}>
-          <section
-            className="acc-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="无法开始验收"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <header>
-              <h2>无法开始验收</h2>
-              <IconButton name="close" label="关闭" onClick={() => setErrorModal(false)} />
-            </header>
-            <p>
-              未检测到本版计划的归档 PR 已合入(当前读回:#386 待合入)。
-              验收屏保持空板;待计划合入后再点「与验收助手新建验收」。
-            </p>
-            <footer>
-              <button className="acc-btn" autoFocus onClick={() => setErrorModal(false)}>
-                知道了
-              </button>
-            </footer>
-          </section>
-        </div>
       )}
     </div>
   )

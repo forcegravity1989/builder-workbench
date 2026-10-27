@@ -1,6 +1,5 @@
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
@@ -9,12 +8,14 @@ import { setBrowsedVersion } from './version-context-state'
 import { WORKFLOW_SCREEN_LABELS } from './version-labels'
 import { openGoalStartComposer } from './goal-start-action'
 import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
-import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
 import { openVersionTasksPage } from './task-scope-load'
 import { loadVersionPlanDocument } from './version-task-entries'
 import { nativeVersionWorkspacePort } from './version-workspace-port'
-import { prepareFailed, prepareProblemSummary } from './version-workspace-prepare-report'
+import { prepareFailed } from '../../../shared/workbench/version-workspace-prepare'
+import { prepareProblemSummary } from './version-workspace-prepare-report'
 import type { VersionCatalogState } from './use-version-catalog'
+import { activateVersionWorktree } from './version-worktree-host'
+import { closeProjectPage } from './project-page-state'
 
 /**
  * G2 侧栏版本导航动作（P3a）：绑定树是唯一「本版流程树」的认定依据（不从
@@ -30,15 +31,15 @@ export function navigateVersionWorkflow(args: {
   projectKey: string | null
 }): void {
   const { catalog, version, workflow, projectKey } = args
-  setBrowsedVersion(projectKey, version)
   const bound = findVersionFlowWorktrees(catalog.worktrees, { version, workflow })
   if (bound.length === 1 && bound[0]) {
     const only = bound[0]
-    if (activateAndRevealWorktree(only.id, worktreeActivationHostOpts(only)) === false) {
-      toast.error('无法打开本版流程工作区，请在原生项目工作区中核对。')
+    if (activateVersionWorktree(only)) {
+      setBrowsedVersion(projectKey, version)
     }
     return
   }
+  setBrowsedVersion(projectKey, version)
   if (bound.length > 1) {
     openWorkbenchWorkspaceChoice({
       title: `${version} ${WORKFLOW_SCREEN_LABELS[workflow]}工作区`,
@@ -50,6 +51,7 @@ export function navigateVersionWorkflow(args: {
   // 决定 ensure 旧固定树（旧上下文显式保留）还是只读回看；浏览不建树，初始化
   // 是版本行「初始化工作区」按钮的显式动作。
   setCycleView(workflow)
+  closeProjectPage()
   useAppStore.getState().openArtifactsPage()
 }
 
@@ -129,6 +131,7 @@ export async function openVersionTasks(args: {
     references,
     homeRepoId: catalog.home.repoId
   })
+  closeProjectPage()
 }
 
 /**
@@ -165,6 +168,7 @@ export async function startVersionGoal(args: {
       `计划材料不可读（${read.problem ?? '原因未知'}）：目标上下文按已知信息预填，约定项标「待明确」。`
     )
   }
+  closeProjectPage()
   openGoalStartComposer({
     version,
     goal: {

@@ -6,7 +6,7 @@ import type {
 import { annotationAttributes, type AnnotationMatch } from '../annotations/types'
 import { BoardIconButton } from '../board-ui'
 import type { CycleTaskRead, CycleTaskSnapshot } from '../version-cycle/ports'
-import { isClosedIssueState } from './acceptance-issue-annotations'
+import { issueKey, issueReadState } from './acceptance-issue-annotations'
 import { AcceptanceAnnotationBadge } from './AcceptanceAnnotationBadge'
 
 /**
@@ -37,10 +37,8 @@ function readableTaskState(state: string): string {
 }
 
 export type AcceptanceIssueRow = {
-  reference: VersionTaskReference
   note: string
   carry: boolean
-  closed: boolean
 }
 
 /**
@@ -81,9 +79,15 @@ export function AcceptanceGoalTasks({
       </div>
     )
   }
+  const stateOrder = { open: 0, unknown: 1, closed: 2 }
+  const orderedTasks = [...relatedTasks].sort(
+    (left, right) =>
+      stateOrder[issueReadState(reads?.get(issueKey(left)))] -
+      stateOrder[issueReadState(reads?.get(issueKey(right)))]
+  )
   return (
     <div className="acc-tasks">
-      {relatedTasks.map((reference) => {
+      {orderedTasks.map((reference) => {
         const key = `${reference.provider}:${reference.repository}:${reference.number}`
         const label = `${goalNumber} · #${reference.number}`
         const markers = (
@@ -107,9 +111,8 @@ export function AcceptanceGoalTasks({
         const read = reads?.get(key)
         if (read?.kind !== 'ready') {
           // Unknown iron rule: no labels read → no badge, no fake state, no detail
-          // entry point — just the honest reference number. A stored note or carry
-          // mark still shows read-only: it keeps flowing into the next plan's
-          // 延期遗留, so hiding it would leave a mark nobody can see or revoke.
+          // entry point — just the honest reference number. Stored human fields
+          // remain visible, but unknown state cannot contribute to open counts.
           return (
             <div className="acc-task" key={key} {...attributes}>
               <span className="acc-task-static">
@@ -128,7 +131,7 @@ export function AcceptanceGoalTasks({
                 </span>
               )}
               {row?.carry && (
-                <span className="acc-carry on" title="状态读不到；遗留标记仍生效">
+                <span className="acc-carry on" title="已存遗留标记；状态未知，暂不计入未关闭遗留数">
                   遗留
                 </span>
               )}
@@ -137,7 +140,8 @@ export function AcceptanceGoalTasks({
         }
         const task = read.task
         const kind = taskKind(task.labels)
-        const closed = isClosedIssueState(task.state)
+        const state = issueReadState(read)
+        const editable = state === 'open'
         return (
           <div className="acc-task" key={key} {...attributes}>
             <button type="button" className="acc-task-link" onClick={() => void onTask(task)}>
@@ -152,12 +156,12 @@ export function AcceptanceGoalTasks({
             </span>
             <span className="acc-task-state">{readableTaskState(task.state)}</span>
             {markers}
-            {closed && row?.note ? (
-              <span className="acc-task-note readonly" title="已关闭 · 备注只读">
+            {!editable && row?.note ? (
+              <span className="acc-task-note readonly" title="已关闭或状态未知 · 备注只读">
                 {row.note}
               </span>
             ) : (
-              !closed && (
+              editable && (
                 <input
                   className="acc-task-note"
                   aria-label={`#${task.iid} 备注`}
@@ -168,7 +172,12 @@ export function AcceptanceGoalTasks({
                 />
               )
             )}
-            {!closed && (
+            {state === 'unknown' && row?.carry && (
+              <span className="acc-carry on" title="已存遗留标记；状态未知，暂不计入未关闭遗留数">
+                遗留
+              </span>
+            )}
+            {editable && (
               <button
                 type="button"
                 className={`acc-carry${row?.carry ? ' on' : ''}`}

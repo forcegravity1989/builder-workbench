@@ -14,22 +14,25 @@ import { useMaterialAutosave } from '../version-cycle/use-material-autosave'
 import type { AcceptanceBoardProps } from './AcceptanceBoard'
 import { useAcceptanceSources, useFixedAcceptancePlan } from './use-acceptance-plan'
 import { useAcceptanceOutput } from './use-acceptance-output'
-import { useAcceptanceGate } from './use-acceptance-gate'
 
 /**
  * Acceptance board data wiring: version catalog, draft material with autosave
  * and recovery, the fixed plan the material cites, and the edit entry points.
  *
  * Rounds are retired with the cross-week scenario, so there is no history
- * selection here — the board always shows the current material. Initialization is
- * gated: `canInitialize` carries the merged-plan check, and an unmerged plan
- * leaves the board empty instead of creating a draft pre-acceptance.
+ * selection here — the board always shows the current material. A successful
+ * session launch permits initialization only from a readable, verified fixed
+ * plan. Plan archive status is checked by the assistant in the session.
  */
 export function useAcceptanceBoard({
   context,
   history,
-  recoveryKey
-}: Pick<AcceptanceBoardProps, 'context' | 'history'> & { recoveryKey: string }) {
+  recoveryKey,
+  started
+}: Pick<AcceptanceBoardProps, 'context' | 'history'> & {
+  recoveryKey: string
+  started: boolean
+}) {
   const scope = context.scope!
   const worktreeId = context.worktreeId!
   const materialPort = context.materialPort!
@@ -93,37 +96,10 @@ export function useAcceptanceBoard({
     onSaved: catalog.refresh
   })
   const source = catalog.sources.find((item) => item.version === context.version)
-  // Memoized: an inline object here would give the gate a fresh identity every
-  // render and spin its effect forever.
-  const archiveScope = useMemo(
-    () => ({
-      repoId: scope.repoId,
-      hostId: scope.hostId,
-      worktreeId,
-      ...(scope.runtimeOwnerEnvironmentId
-        ? { runtimeOwnerEnvironmentId: scope.runtimeOwnerEnvironmentId }
-        : {})
-    }),
-    [scope.repoId, scope.hostId, scope.runtimeOwnerEnvironmentId, worktreeId]
-  )
-  const catalogLoaded = catalog.loadedRefresh === (context.materialRefresh ?? 0)
-  const gate = useAcceptanceGate({
-    history,
-    scope: metricScope,
-    archiveScope,
-    archivePort: context.archivePort,
-    source,
-    versionSelected: Boolean(context.version),
-    catalogLoaded,
-    materialRefresh: context.materialRefresh
-  })
-  // Hard gate: an unmerged plan archive PR leaves the board empty rather than
-  // creating a draft pre-acceptance.
-  const canInitialize = gate.state.kind === 'merged'
   useEffect(() => {
     if (
       context.syncing ||
-      !canInitialize ||
+      !started ||
       initializationSuppressed ||
       !source ||
       draft ||
@@ -168,7 +144,7 @@ export function useAcceptanceBoard({
     }
   }, [
     context.syncing,
-    canInitialize,
+    started,
     initializationSuppressed,
     source,
     draft,
@@ -244,9 +220,6 @@ export function useAcceptanceBoard({
       fixed.refresh()
       await refreshDraft()
       await catalog.refresh()
-      // The gate reads the plan's archive PR state; a trunk sync may have merged
-      // it, so re-check instead of leaving a stale block on screen.
-      await gate.recheck()
     } catch (reason) {
       setError(String(reason))
     }
@@ -292,7 +265,6 @@ export function useAcceptanceBoard({
     recoveryError,
     recoveryText,
     versions: catalog.versions,
-    gate,
     materialProblems: catalog.materialProblems,
     version,
     error: error ?? fixed.error ?? catalog.error,

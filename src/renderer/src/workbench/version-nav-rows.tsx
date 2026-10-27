@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import WorktreeCardAgents from '@/components/sidebar/WorktreeCardAgents'
 import WorktreeContextMenu from '@/components/sidebar/WorktreeContextMenu'
-import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { branchName } from '@/lib/git-utils'
 import type { Worktree } from '../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
@@ -27,7 +26,7 @@ import type { VersionWorkflow } from '../../../shared/workbench/version-document
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import { VERSION_TASKS_ENTRY_TITLE, WORKFLOW_SCREEN_LABELS } from './version-labels'
-import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
+import { activateVersionWorktree, VersionWorktreeHostGlyph } from './version-worktree-host'
 
 /**
  * G2 侧栏版本树的行组件（P3a，高保真修订 8）：流程行=业务入口＋本树入口合一
@@ -72,7 +71,7 @@ function ChevronSpacer(): React.JSX.Element {
  * 整行右击出原生工作树维护菜单（#436 伴飞裁定 CF-6f：对齐原生整卡右击形态，
  * 不另设三点——原生 WorktreeContextMenu 本就只响应右击）。
  */
-function BoundTreeRow({ tree }: { tree: Worktree }): React.JSX.Element {
+export function BoundTreeRow({ tree }: { tree: Worktree }): React.JSX.Element {
   const [agentsOpen, setAgentsOpen] = useState(true)
   const branch = branchName(tree.branch)
   const label = tree.displayName.trim() || branch
@@ -88,11 +87,12 @@ function BoundTreeRow({ tree }: { tree: Worktree }): React.JSX.Element {
           <button
             type="button"
             title={`${branch} · 右击出工作区维护菜单`}
-            onClick={() => activateAndRevealWorktree(tree.id, worktreeActivationHostOpts(tree))}
+            onClick={() => activateVersionWorktree(tree)}
             className="flex min-w-0 flex-1 items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-worktree-sidebar-foreground/8"
           >
             <GitBranch className="size-3.5 shrink-0 text-worktree-sidebar-foreground/40" />
             <span className="truncate">{label}</span>
+            <VersionWorktreeHostGlyph tree={tree} />
           </button>
         </div>
       </WorktreeContextMenu>
@@ -118,7 +118,7 @@ type WorkflowRowProps = {
  * 计划/验收流程行：入口与固定工作树合为一行；分支名在悬停中可见。
  * 菜单形态（#436 伴飞裁定 CF-5/CF-6f）：0 棵=只有「未准备」徽标（行点击=只读
  * 回看；初始化入口在版本行）；1 棵=整行右击出原生工作树维护菜单（无三点）；
- * ≥2 棵=三点列出绑定实例供选择（多实例无单一右击对象）。
+ * ≥2 棵=展开每棵实际工作树，每行沿同一个原生右键菜单。
  */
 export function WorkflowRow({
   version,
@@ -161,37 +161,11 @@ export function WorkflowRow({
           className={cn('size-3.5 shrink-0', active ? '' : 'text-worktree-sidebar-foreground/35')}
         />
         <span className="truncate">{label}</span>
+        {onlyTree ? <VersionWorktreeHostGlyph tree={onlyTree} /> : null}
         {trees.length === 0 ? (
           <span className="shrink-0 text-[10px] text-worktree-sidebar-foreground/40">未准备</span>
         ) : null}
       </button>
-      {trees.length > 1 ? (
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <span
-              role="button"
-              tabIndex={0}
-              aria-label={`${version} ${label}工作区选择`}
-              className="flex size-6 shrink-0 items-center justify-center rounded text-worktree-sidebar-foreground/45 hover:text-worktree-sidebar-foreground"
-            >
-              <EllipsisVertical className="size-3.5" />
-            </span>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            {trees.map((tree) => (
-              <DropdownMenuItem
-                key={getWorktreeHostIdentity(tree)}
-                onSelect={() =>
-                  activateAndRevealWorktree(tree.id, worktreeActivationHostOpts(tree))
-                }
-              >
-                <GitBranch className="size-4" />
-                {branchName(tree.branch)}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : null}
     </div>
   )
   return (
@@ -199,9 +173,11 @@ export function WorkflowRow({
       {onlyTree ? <WorktreeContextMenu worktree={onlyTree}>{row}</WorktreeContextMenu> : row}
       {agentsOpen && trees.length > 0 ? (
         <div className="pl-6">
-          {trees.map((tree) => (
-            <WorktreeCardAgents key={getWorktreeHostIdentity(tree)} worktreeId={tree.id} />
-          ))}
+          {onlyTree ? (
+            <WorktreeCardAgents worktreeId={onlyTree.id} />
+          ) : (
+            trees.map((tree) => <BoundTreeRow key={getWorktreeHostIdentity(tree)} tree={tree} />)
+          )}
         </div>
       ) : null}
     </div>

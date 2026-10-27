@@ -23,6 +23,8 @@ import { nativeVersionMaterialPort } from '../version-material-port'
 import type { TrunkUpdateResult } from '../../../../shared/workbench/trunk-update'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import type { CycleScope } from './ports'
+import { useFixedAcceptanceBrowseTarget } from './use-fixed-acceptance-browse-target'
+import type { ReadonlyCycleBrowse } from './cycle-workspace-context'
 
 /** Native HEAD/unread updates must not reset the material ports or workflow selection. */
 function useStableCycleScope(value: CycleScope | null) {
@@ -83,12 +85,18 @@ export function useCycleWorkspaceTarget(
   const repo = useAppStore((state) => state.repos.find((item) => item.id === repoId))
   const trees = useAppStore((state) => (repoId ? state.worktreesByRepo[repoId] : undefined))
   const selected = useAppStore((state) =>
-    state.activeWorktreeId ? state.getKnownWorktreeById(state.activeWorktreeId) : null
+    state.activeWorktreeId
+      ? state.getKnownWorktreeById(
+          state.activeWorktreeId,
+          state.activeWorkspaceExecutionHostId ?? undefined
+        )
+      : null
   )
+  const fixedBrowse = useFixedAcceptanceBrowseTarget(workflow)
   const [error, setError] = useState<string | null>(null)
   // G2（P3b）：无绑定树且无旧固定树的浏览版本进入只读回看（主干已提交材料），
   // 浏览不建树、不激活工作区、不假报就绪。
-  const [readonlyBrowse, setReadonlyBrowse] = useState<{ version: string } | null>(null)
+  const [readonlyBrowse, setReadonlyBrowse] = useState<ReadonlyCycleBrowse | null>(null)
   const syncSequence = useRef(0)
   const [syncStates, setSyncStates] = useState<
     Record<
@@ -100,7 +108,7 @@ export function useCycleWorkspaceTarget(
       }
     >
   >({})
-  const preparing = workflow !== null && activeView === 'artifacts'
+  const preparing = workflow !== null && activeView === 'artifacts' && !fixedBrowse
   const baseSettled = useAutoWorktreeBase(
     preparing ? repoId : null,
     repo?.worktreeBasePath?.trim() || null,
@@ -199,7 +207,9 @@ export function useCycleWorkspaceTarget(
     }
   }, [preparing, baseScope, baseSettled, workflow, browsedVersion])
   const worktree =
-    !preparing && workflow && cycleWorkflowForWorktree(selected) === workflow ? selected : null
+    !fixedBrowse && !preparing && workflow && cycleWorkflowForWorktree(selected) === workflow
+      ? selected
+      : null
   const resolved = useMemo(() => {
     try {
       return {
@@ -306,7 +316,9 @@ export function useCycleWorkspaceTarget(
     syncing: sync?.busy ?? false,
     materialRefresh: sync?.revision ?? 0,
     updateCode,
-    readonlyBrowse,
+    readonlyBrowse: fixedBrowse
+      ? { version: fixedBrowse.source.version, fixedAcceptance: fixedBrowse }
+      : readonlyBrowse,
     error: error ?? resolved.error ?? (preparing ? base.error : null)
   }
 }

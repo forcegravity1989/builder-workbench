@@ -6,6 +6,7 @@ import {
   omitDefaultWorktreeMetaFields
 } from '../../shared/worktree/meta-persisted-defaults'
 import { normalizeStoredWorkbenchVersionBinding } from '../../shared/workbench/version-binding'
+import type { TaskSourceContext } from '../../shared/task-source-context'
 import { mergeWorktreeMetaForWrite } from '../persistence/loading-store/worktree-meta-write-normalization'
 import { mergeWorktree } from '../ipc/worktree-metadata-merge'
 import { nativeVersionBindingService, type VersionBindingRuntime } from './version-binding-service'
@@ -32,11 +33,32 @@ const scope = {
 }
 
 const binding = { schema: 1 as const, version: 'v0.7', workflow: 'plan' as const }
+const taskSource: TaskSourceContext = {
+  kind: 'task-source',
+  provider: 'github',
+  projectId: 'proj-1',
+  repoId: 'repo-1',
+  hostId: 'local'
+}
+const issueBinding = { ...binding, workflow: 'issue' as const, goalId: 'G1', taskSource }
+const linkedWorkItem = {
+  provider: 'github' as const,
+  type: 'issue' as const,
+  number: 439,
+  title: 'Issue A',
+  url: 'https://github.com/example/repo/issues/439',
+  repoId: 'repo-1'
+}
 
 function createFakeRuntime(
-  options: { dropBindingOnWrite?: boolean; archived?: boolean; unregistered?: boolean } = {}
+  options: {
+    dropBindingOnWrite?: boolean
+    dropLinkedOnWrite?: boolean
+    archived?: boolean
+    unregistered?: boolean
+  } = {}
 ) {
-  const stored: { binding: unknown } = { binding: undefined }
+  const stored: Partial<WorktreeMeta> = {}
   const state = { writes: 0, lastSelector: '' }
   const worktree = () =>
     ({
@@ -49,7 +71,11 @@ function createFakeRuntime(
       instanceId: 'inst-1',
       projectId: 'proj-1',
       identity: { key: 'wt2:local:inst-1', executionHostId: 'local', instanceId: 'inst-1' },
-      workbenchVersionBinding: normalizeStoredWorkbenchVersionBinding(stored.binding)
+      workbenchVersionBinding: normalizeStoredWorkbenchVersionBinding(
+        stored.workbenchVersionBinding
+      ),
+      linkedWorkItem: stored.linkedWorkItem,
+      linkedTaskSourceContext: stored.linkedTaskSourceContext
     }) as Worktree
   const runtime: VersionBindingRuntime = {
     listRepos: () => (options.unregistered ? [] : [repo]) as never,
@@ -63,25 +89,62 @@ function createFakeRuntime(
       state.writes += 1
       state.lastSelector = selector
       if (!options.dropBindingOnWrite) {
-        stored.binding = updates.workbenchVersionBinding
+        stored.workbenchVersionBinding = updates.workbenchVersionBinding
+      }
+      if (!options.dropLinkedOnWrite && updates.linkedWorkItem) {
+        stored.linkedWorkItem = updates.linkedWorkItem
+        stored.linkedTaskSourceContext = updates.linkedTaskSourceContext
       }
       return worktree()
     }
   }
-  return { runtime, state }
+  return { runtime, state, stored }
 }
 
 describe('nativeVersionBindingService', () => {
   it('writes only for the registered owner instance and reads the binding back', async () => {
-    const { runtime, state } = createFakeRuntime()
+    const { runtime, state, stored } = createFakeRuntime()
     const service = nativeVersionBindingService(runtime)
 
     // 未绑定读回 null（Unknown，不是绿）。
     expect(await service.read(scope)).toBeNull()
 
+    // Issue 改绑与原生关联同次保存；解绑只清版本归属，不清原生关联。
+    const beforeIssueBind = state.writes
+    await service.set({ ...scope, binding: issueBinding, linkedWorkItem })
+    expect(state.writes).toBe(beforeIssueBind + 1)
+    expect(stored.linkedWorkItem).toEqual(linkedWorkItem)
+    expect(stored.linkedTaskSourceContext).toEqual({
+      ...taskSource,
+      projectHostSetupId: null,
+      providerIdentity: null,
+      accountLabel: null
+    })
+    const issueB = {
+      ...linkedWorkItem,
+      number: 440,
+      title: 'Issue B',
+      url: 'https://github.com/example/repo/issues/440'
+    }
+    await expect(
+      service.set({
+        ...scope,
+        instanceId: 'inst-stale',
+        binding: issueBinding,
+        linkedWorkItem: issueB
+      })
+    ).rejects.toMatchObject({ code: 'stale-instance' })
+    expect(stored.linkedWorkItem).toEqual(linkedWorkItem)
+    expect(state.writes).toBe(beforeIssueBind + 1)
+    await service.set({ ...scope, binding: issueBinding, linkedWorkItem: issueB })
+    expect(stored.linkedWorkItem).toEqual(issueB)
+    expect(state.writes).toBe(beforeIssueBind + 2)
+    await service.set({ ...scope, binding: null })
+    expect(stored.linkedWorkItem).toEqual(issueB)
+
     // owner 验证后写入 identity 选择器（实例更换即失败），读回一致才返回。
     expect(await service.set({ ...scope, binding })).toEqual(binding)
-    expect(state.writes).toBe(1)
+    expect(state.writes).toBe(beforeIssueBind + 4)
     expect(state.lastSelector).toBe('identity:wt2:local:inst-1')
     expect(await service.read(scope)).toEqual(binding)
 
@@ -123,6 +186,14 @@ describe('nativeVersionBindingService', () => {
     const dropping = createFakeRuntime({ dropBindingOnWrite: true })
     await expect(
       nativeVersionBindingService(dropping.runtime).set({ ...scope, binding })
+    ).rejects.toMatchObject({ code: 'binding-unconfirmed' })
+    const droppingLinked = createFakeRuntime({ dropLinkedOnWrite: true })
+    await expect(
+      nativeVersionBindingService(droppingLinked.runtime).set({
+        ...scope,
+        binding: issueBinding,
+        linkedWorkItem
+      })
     ).rejects.toMatchObject({ code: 'binding-unconfirmed' })
 
     // 权限撤销/登记消失（归档、注销注册行）：resolver 拒绝，写入根本不会发生。

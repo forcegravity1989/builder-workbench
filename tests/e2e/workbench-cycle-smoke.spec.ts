@@ -80,7 +80,7 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   // ---- 新建版本：轻表单 → prepare 两棵绑定流程树 → 进入计划屏 ----
   await workbenchPage.getByRole('button', { name: '新建版本', exact: true }).click()
   await workbenchPage.getByLabel('版本名').fill('v9.9')
-  await workbenchPage.getByRole('button', { name: '创建并进入计划', exact: true }).click()
+  await workbenchPage.getByRole('button', { name: '创建版本', exact: true }).click()
   await expect(workbenchPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
     timeout: 180_000
   })
@@ -88,10 +88,8 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect
     .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
     .toBe('terminal')
-  // prepare 已 create-only 初始化空计划（goals=[]）：#436 CF-9 后空计划态也渲染
-  // 「与计划助手新建计划」入口；锚点仍取材料加载完成后的稳定态「添加目标」；
-  // prepare 不启动任何会话/agent（activate:false，无 agent 启动路径）。
-  await expect(workbenchPage.getByRole('button', { name: '添加目标' })).toBeVisible({
+  // prepare 只初始化空计划，不启动 agent；未开始卡在真实会话启动或材料形成后展开。
+  await expect(workbenchPage.getByRole('button', { name: '开始计划', exact: true })).toBeVisible({
     timeout: 60_000
   })
   await expect
@@ -139,9 +137,12 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.locator('.g3-goal-toggle strong')).toHaveText('验证计划材料保存', {
     timeout: 60_000
   })
+  await expect(workbenchPage.getByRole('button', { name: '添加目标', exact: true })).toBeVisible()
   await workbenchPage.getByRole('button', { name: '展开 G1' }).click()
   await workbenchPage.getByRole('button', { name: '编辑目标', exact: true }).click()
-  await workbenchPage.getByLabel('G1 目标').fill('验证计划材料保存·烟测')
+  await workbenchPage
+    .getByRole('textbox', { name: 'G1 目标', exact: true })
+    .fill('验证计划材料保存·烟测')
   await workbenchPage.getByRole('button', { name: '结束编辑目标', exact: true }).click()
   await expect(workbenchPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
 
@@ -188,15 +189,12 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect
     .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
     .toBe('terminal')
-  // v10 退役了草案预验收通道，「新建验收」按钮已不存在（模型通道也不得再用
-  // kind=draft 的 planRef 建验收材料）。空板改为常驻门禁状态行，入口按钮文案是
-  // 「与验收助手新建验收」。这里锁「板面挂载 + 入口存在」，不锁具体门禁结论——
-  // 夹具里没有已合入的计划归档 PR，落到 blocked 还是 idle 取决于读回结果。
-  // 按钮在门禁核对中显示「正在核对计划归档状态…」，故给足超时等它落定。
+  // 计划尚未合入也可开始会话；材料创建仍须核验固定计划，本用例不启动 agent。
   await expect(workbenchPage.locator('.acc-empty-board')).toBeVisible({ timeout: 60_000 })
   await expect(
-    workbenchPage.getByRole('button', { name: '与验收助手新建验收', exact: true }).first()
+    workbenchPage.getByRole('button', { name: '开始验收', exact: true }).first()
   ).toBeVisible({ timeout: 60_000 })
+  await expect(workbenchPage.getByRole('button', { name: '开始验收', exact: true })).toBeEnabled()
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.jpg') })
 
   // ---- 总览：真实数据，未配置保持 Unknown，无演示值 ----

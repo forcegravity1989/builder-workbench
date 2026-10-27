@@ -39,14 +39,19 @@ export async function loadVersionPlanDocument(args: {
   // 两份工作副本，互相冒充即装绿）；仅在无绑定树时才用旧固定树（旧上下文）。
   for (const planTree of bound ? [bound] : legacy ? [legacy] : []) {
     try {
+      if (planTree.ownerError) {
+        throw new Error(planTree.ownerError)
+      }
       const materialPort = nativeVersionMaterialPort(
         {
-          repoId: scope.repoId,
+          repoId: planTree.repoId ?? scope.repoId,
           worktreeId: planTree.worktreeId,
           hostId: planTree.hostId ?? scope.hostId,
           workflow: 'plan'
         },
-        planTree.runtimeOwnerEnvironmentId ?? scope.runtimeOwnerEnvironmentId
+        planTree.hostId
+          ? (planTree.runtimeOwnerEnvironmentId ?? undefined)
+          : scope.runtimeOwnerEnvironmentId
       )
       const snapshot = await materialPort.read(version)
       if (!snapshot) {

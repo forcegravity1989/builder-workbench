@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react'
-import { toast } from 'sonner'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import type { Worktree } from '../../../shared/worktree/types'
 import { worktreeActivationHostOpts } from './worktree-activation-host-opts'
+import { activateVersionWorktree } from './version-worktree-host'
 
 /**
  * G2 多候选工作区选择器状态（P4）：同一任务在本版有多个明确绑定的工作区时，
@@ -41,10 +41,7 @@ export function closeWorkbenchWorkspaceChoice(): void {
 export function chooseWorkbenchWorkspace(worktree: Worktree): void {
   choice = null
   emit()
-  const result = activateAndRevealWorktree(worktree.id, worktreeActivationHostOpts(worktree))
-  if (result === false) {
-    toast.error('无法打开所选工作区，请在原生项目工作区中核对。')
-  }
+  activateVersionWorktree(worktree)
 }
 
 export function useWorkbenchWorkspaceChoice(): WorkbenchWorkspaceChoice | null {

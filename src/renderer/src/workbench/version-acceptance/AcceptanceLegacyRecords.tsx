@@ -9,6 +9,8 @@ import { projectLegacyAcceptance } from './acceptance-legacy'
  * and progress — so they are shown rather than dropped, and labelled as what they
  * are. Nothing here is editable and nothing feeds a v10 verdict: the showcase
  * conclusion, the minutes and the carry marks all come from current fields only.
+ * A legacy document without minutes still supplies confirmed next-week guidance
+ * to the following version's read-only review.
  * Converting the file on disk is a session action with human confirmation, the
  * same path schema2 migration uses; a read never rewrites stored material.
  */
@@ -56,7 +58,7 @@ export function AcceptanceLegacyRecords({
       {open && (
         <div className="acc-legacy-body">
           <p className="acc-legacy-note">
-            v10 已退役字段，只读呈现，不参与结论、纪要或遗留回显；转换在会话中发起，经你确认后执行。
+            旧格式记录只读保留，不改变当前结论；旧版没有纪要时，已确认的跟进事项仍供下版回顾。格式转换在会话中发起，经你确认后执行。
           </p>
           {legacy.goals.map((goal) => (
             <div className="acc-legacy-goal" key={goal.goalId}>
