@@ -55,6 +55,14 @@ codehub-cli project label delete "bug" -y -p Org/Group/repo -H green
 
 `list` 的 `--limit` 默认只有 10 且不翻页，要拿全量名单必须显式给足（Workbench 取 100）；删除要 `-y` 跳过终端确认。
 
+标签分项目/组两级：`project label list` 只回项目自有标签，组级要用 `group label list` 取；项目标签接口的 `include_ancestor_groups` 参数服务端不认（2026-10-27 实测）。Workbench 标签下拉按用户裁定只取项目级名单，共享组池不进下拉；给议题打组级标签在输入框直接键入名字即可，与项目标签混用一次保存（2026-10-27 实测）。
+
+```bash
+codehub-cli group label list Org/Group -H green
+```
+
+`api` 子命令发原始请求时端点要自带 `/api/v4/` 前缀，不带会打到网页路由被登录页拦截（2026-10-27 实测）。
+
 评论只有列表、新建、删除，没有修改正文：
 
 ```bash
