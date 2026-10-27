@@ -4,7 +4,7 @@
 >
 > 状态：**v10 现行规格（2026-10-22 负责人逐项拍板）**。验收屏收敛为「周五验收会议」四步屏——验收准备 → Showcase → 会议纪要 → 归档 PR 及发版本；个人自验移出本屏；界面全部灯退役。形态与交互对齐计划屏 G3 旅程（生产实现随 [PR #399](https://github.com/forcegravity1989/builder-workbench/pull/399) 合入 main，设计高保真为 [#391](https://github.com/forcegravity1989/builder-workbench/pull/391)）。形态正本：[acceptance-journey-prototype.html](acceptance-journey-prototype.html)；[prototype.html](prototype.html) 为 v9.5 基线旧稿，不代表本篇。v9.5（#369/#377）被本篇取代的机制集中在「退役清单」；发布环节的最终形态见「归档 PR 及发版本」——它不沿用 v10 候选稿的预检弹窗与板面发布读回。
 
-[Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439) 的局部决定已合并进下文现行条款。[当前高保真](acceptance-journey-prototype.html) 保留既有四区布局；启动、结论、Issue 行和纪要已作生产接线，本轮只有静态核对，未运行真壳旅程，证据见 [STATUS](STATUS.md)。性能与缓存由另一任务处理，不在本轮范围。
+[Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439) 的局部决定已合并进下文现行条款。[当前高保真](acceptance-journey-prototype.html) 保留既有四区布局；启动、结论、Issue 行和纪要已作生产接线，独立静态检视已完成，CI 补验与尚未验证的真实用户旅程边界见 [STATUS](STATUS.md)。性能与缓存由另一任务处理，不在本轮范围。
 
 ## 范围与入口
 
