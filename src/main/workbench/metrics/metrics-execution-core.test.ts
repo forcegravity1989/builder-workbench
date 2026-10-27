@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { afterAll, beforeAll, expect, it } from 'vitest'
 import {
+  METRICS_MAINTENANCE_BRANCH,
+  catchUpMetricsMaintenance,
   computeMetricsCheckoutRoot,
   executeMetricCollection,
   fingerprintMetricCollector,
@@ -78,6 +80,7 @@ it('reads the configuration from the trunk baseline pinned to a real SHA', async
   expect(snapshot.configurationCommit).toBe(scriptCommit)
   expect(snapshot.dataCommit).toBe(scriptCommit)
   expect(snapshot.toml).toContain('schema_version = 2')
+  expect(snapshot.draft).toBeNull()
   expect(snapshot.timezone.length).toBeGreaterThan(0)
   const missing = await readMetricConfiguration({
     repoPath: root,
@@ -85,6 +88,52 @@ it('reads the configuration from the trunk baseline pinned to a real SHA', async
     configurationCommit: emptyCommit
   })
   expect(missing.toml).toBeNull()
+
+  git(['branch', METRICS_MAINTENANCE_BRANCH, configCommit])
+  await catchUpMetricsMaintenance({ repoPath: root, baselineCommit: scriptCommit })
+  expect(git(['rev-parse', METRICS_MAINTENANCE_BRANCH]).toString().trim()).toBe(scriptCommit)
+
+  git(['switch', METRICS_MAINTENANCE_BRANCH])
+  write('.bw/metrics.toml', toml.replace('commits', 'discussion'))
+  const ahead = commit('maintenance catalog')
+  git(['switch', 'main'])
+  const adopted = await readMetricConfiguration({ repoPath: root, pinnedRef: null })
+  expect(adopted.configurationRef).toBe(METRICS_MAINTENANCE_BRANCH)
+  expect(adopted.configurationCommit).toBe(ahead)
+  expect(adopted.dataCommit).toBe(scriptCommit)
+  expect(adopted.toml).toContain('discussion')
+  writeFileSync(join(root, '.bw/metrics.toml'), 'uncommitted draft')
+  const draft = await readMetricConfiguration({ repoPath: root, pinnedRef: null })
+  expect(draft.configurationCommit).toBe(ahead)
+  expect(draft.draft).toBeNull()
+  expect(draft.toml).toContain('discussion')
+  const preview = join(dirname(root), `${basename(root)}-preview`)
+  git(['worktree', 'add', preview, METRICS_MAINTENANCE_BRANCH])
+  try {
+    writeFileSync(join(preview, '.bw/metrics.toml'), toml.replace('commits', 'live-draft'))
+    const live = await readMetricConfiguration({
+      repoPath: root,
+      pinnedRef: null,
+      previewMaintenanceWorktree: true
+    })
+    expect(live.toml).toContain('live-draft')
+    expect(live.draft).toMatch(/^[a-f0-9]{64}$/)
+    expect(live.configurationRef).toBe(METRICS_MAINTENANCE_BRANCH)
+    expect(live.configurationCommit).toBe(ahead)
+    expect(live.dataCommit).toBe(scriptCommit)
+    const pinned = await readMetricConfiguration({
+      repoPath: root,
+      pinnedRef: null,
+      configurationCommit: ahead,
+      previewMaintenanceWorktree: true
+    })
+    expect(pinned.toml).toContain('discussion')
+    expect(pinned.draft).toBeNull()
+  } finally {
+    git(['worktree', 'remove', '--force', preview])
+  }
+  git(['checkout', '--', '.bw/metrics.toml'])
+  git(['branch', '-D', METRICS_MAINTENANCE_BRANCH])
 })
 
 it('reports an invalid pinned base ref instead of switching branches', async () => {

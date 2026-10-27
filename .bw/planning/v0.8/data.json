@@ -19,7 +19,32 @@
       "deliverable": "1. 在 v0.7 已完成的 3 个项目初步梳理之上，统一一版特性与核心指标口径。\n2. 各项目特性树与核心指标录入真实数据，归档各自 .bw/，在 BW 可见。",
       "acceptance": "1. 4个项目统一口径经相关 builder 确认。\n2. 各项目特性树与核心指标在 BW 可读回，读数来自真实采集；没数据显示未知，不手设绿灯。\n3. 本版（本周）内必须解决，不再遗留。",
       "owner": "cfdcfd",
-      "metricTargets": []
+      "metricTargets": [
+        {
+          "ref": {
+            "name": "准备期修改程度",
+            "definitionHash": "scoreboard",
+            "configurationCommit": "42553338501a6f523ebe6afbed92129452ec047a"
+          },
+          "target": "≤15%"
+        },
+        {
+          "ref": {
+            "name": "准备耗时",
+            "definitionHash": "scoreboard",
+            "configurationCommit": "42553338501a6f523ebe6afbed92129452ec047a"
+          },
+          "target": "≤3h"
+        },
+        {
+          "ref": {
+            "name": "结论可核对率",
+            "definitionHash": "scoreboard",
+            "configurationCommit": "42553338501a6f523ebe6afbed92129452ec047a"
+          },
+          "target": "≥80%"
+        }
+      ]
     },
     {
       "goalId": "G2",

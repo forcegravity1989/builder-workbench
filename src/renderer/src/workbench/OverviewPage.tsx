@@ -13,8 +13,7 @@ import {
   type NativeWorkspaceScope
 } from './version-cycle/native-workspace'
 import { useVersionMinutes } from './use-version-minutes'
-import { OverviewMetricZones } from './overview-metric-zones'
-import { OverviewSdlcZones } from './overview-sdlc-zones'
+import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
 import { NorthStarCard } from './overview-north-star-card'
 import { ProjectCard } from './overview-project-card'
 import { MetricProblemsPanel } from './metric-problems-panel'
@@ -78,9 +77,8 @@ export function OverviewPage(): React.JSX.Element {
       return { plan: null, acceptance: null, error: String(error) }
     }
   }, [baseScope])
-  // 「更新代码」bump trunkToken → SDLC 区就地强制重读；history/metrics 快照由
-  // 按钮 handler 各自的 force reload 就地刷新，不换键、不清空显示。
-  const [trunkToken, setTrunkToken] = useState(0)
+  // 「更新代码」后 history/metrics 快照由按钮 handler 各自的 force reload 就地刷新，
+  // 不换键、不清空显示。
   const [updatingTrunk, setUpdatingTrunk] = useState(false)
   const dataIdentity = JSON.stringify([
     identity,
@@ -95,7 +93,7 @@ export function OverviewPage(): React.JSX.Element {
     baseScope,
     baseWorktreeId,
     identity: dataIdentity,
-    granularity: view.granularity
+    granularity: SCOREBOARD_GRANULARITY
   })
   const { catalog, northReading, zoneReadings, busy, refreshing, refreshReadings, reloadCatalog } =
     metrics
@@ -135,7 +133,7 @@ export function OverviewPage(): React.JSX.Element {
       setCharter({ key: charterKey, value })
     )
 
-  // 「更新代码」点击处理；trunkToken/updatingTrunk 状态声明在 dataIdentity 之前。
+  // 「更新代码」点击处理；updatingTrunk 状态声明在 dataIdentity 之前。
   const updateTrunk = async () => {
     if (!activeRepo || updatingTrunk) {
       return
@@ -162,9 +160,8 @@ export function OverviewPage(): React.JSX.Element {
       toast.message(`代码未更新（${detail}）。请让会话模型处理主检出的代码更新。`)
     } finally {
       setUpdatingTrunk(false)
-      // 无论快进成败都重读：三类快照就地强制重读（旧值保持显示、错误系列保留
-      // 上次数据回退），trunkToken 触发 SDLC 区重读，名片文件与 PR 状态一并刷新。
-      setTrunkToken((token) => token + 1)
+      // 无论快进成败都重读：快照就地强制重读（旧值保持显示、错误系列保留上次数据
+      // 回退），名片文件与 PR 状态一并刷新。
       historyState.reload()
       reloadCatalog()
       refreshCharterStatus()
@@ -251,6 +248,10 @@ export function OverviewPage(): React.JSX.Element {
       </header>
 
       <div className="content">
+        <header className="wb-ov-motto" aria-label="高效执行四原则">
+          <p>高效执行四原则 · FranklinCovey 4DX</p>
+          <h2>聚焦至关重要目标 · 贯彻引领指标 · 设立振奋人心的记分牌 · 保持相互担责的节奏</h2>
+        </header>
         <MetricProblemsPanel
           className="wb-muted"
           problems={fixedTrees.error ? [...problems, fixedTrees.error] : problems}
@@ -288,6 +289,20 @@ export function OverviewPage(): React.JSX.Element {
           />
         </div>
 
+        <OverviewScoreboard
+          catalog={catalog}
+          readings={zoneReadings}
+          busy={busy}
+          onRefresh={() => void refreshReadings()}
+          anchor={metrics.anchor}
+          identity={identity}
+          plan={minutes?.planDocument ?? null}
+          version={version}
+          setupBusy={metricsSetup.busy || !baseScope}
+          onSetup={() => void metricsSetup.prepareMetrics()}
+          worktreeId={baseWorktreeId}
+        />
+
         <OverviewVersionMinutes
           versions={versions}
           version={version}
@@ -297,30 +312,6 @@ export function OverviewPage(): React.JSX.Element {
           busy={historyState.busy}
           onRetry={historyState.reload}
           source={historySource}
-        />
-        <OverviewMetricZones
-          catalog={catalog}
-          readings={zoneReadings}
-          busy={busy}
-          onRefresh={() => void refreshReadings()}
-          granularity={view.granularity}
-          anchor={metrics.anchor}
-          onGranularityChange={(granularity) => setView({ granularity })}
-          identity={identity}
-          setupBusy={metricsSetup.busy || !baseScope}
-          onSetup={() => void metricsSetup.prepareMetrics()}
-        />
-
-        <OverviewSdlcZones
-          key={identity}
-          identity={dataIdentity}
-          repo={activeRepo}
-          baseScope={baseScope}
-          baseWorktreeId={baseWorktreeId}
-          baseWorktreePath={baseWorktree?.path ?? null}
-          timezone={catalog?.timezone}
-          ready={catalog !== null || metrics.loaded}
-          refreshToken={trunkToken}
         />
       </div>
       {refreshing && (

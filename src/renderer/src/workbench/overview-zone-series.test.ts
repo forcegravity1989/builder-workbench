@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { addCalendarDays } from '../../../shared/workbench/metric-windows'
-import type { MetricDefinition, MetricReading } from '../../../shared/workbench/metrics'
+import type { MetricReading } from '../../../shared/workbench/metrics'
 import {
-  groupZonePlots,
   isoWeekLabel,
   zoneBucketLabels,
   zoneChartRange,
@@ -13,23 +12,6 @@ import {
 
 const NOW = '2026-09-24T10:00:00.000Z' // Thursday of 2026-W39
 const TZ = 'UTC'
-
-function def(overrides: Partial<MetricDefinition> & { name: string }): MetricDefinition {
-  return {
-    ref: {
-      name: overrides.name,
-      definitionHash: `hash-${overrides.name}`,
-      configurationCommit: 'a'.repeat(40)
-    },
-    role: 'lagging',
-    def: `${overrides.name} 定义`,
-    target: '',
-    unit: '',
-    feature: '',
-    collect: { kind: 'script', run: ['node', 'x.js'], retro: true },
-    ...overrides
-  }
-}
 
 function windowReading(
   points: { day: string; value: number | string }[],
@@ -90,31 +72,6 @@ describe('isoWeekLabel', () => {
   })
 })
 
-describe('groupZonePlots', () => {
-  it('一图一滞后：leads 按名字挂到对应滞后', () => {
-    const plots = groupZonePlots([
-      def({ name: 'lag1' }),
-      def({ name: 'lag2' }),
-      def({ name: 'lead1', role: 'leading', leads: 'lag2' })
-    ])
-    expect(plots).toHaveLength(2)
-    expect(plots[0].leads).toHaveLength(0)
-    expect(plots[1].leads.map((item) => item.name)).toEqual(['lead1'])
-  })
-
-  it('leads 空缺或未匹配时独立展示，不伪造关联', () => {
-    const plots = groupZonePlots([
-      def({ name: 'lag1' }),
-      def({ name: 'lag2' }),
-      def({ name: 'lead-empty', role: 'leading' }),
-      def({ name: 'lead-unknown', role: 'leading', leads: '不存在的滞后' })
-    ])
-    expect(plots[0].leads).toEqual([])
-    expect(plots[2].lagging).toBeNull()
-    expect(plots[2].leads.map((item) => item.name)).toEqual(['lead-empty', 'lead-unknown'])
-  })
-})
-
 describe('zonePointState', () => {
   const range = zoneChartRange('week', TZ, NOW)
   const labels = zoneBucketLabels(range)
@@ -157,5 +114,19 @@ describe('zonePointState', () => {
     }
     expect(state.values).toEqual([null, 2, null, null, 5])
     expect(state.latest).toMatchObject({ value: 5 })
+  })
+
+  it('字符串读数不做数值曲线，只作为当前值文本', () => {
+    const state = zonePointState(
+      windowReading([{ day: '2026-09-21', value: '达标' }]),
+      labels,
+      range,
+      TZ
+    )
+    if (state.kind !== 'ready') {
+      throw new Error('expected ready')
+    }
+    expect(state.values).toEqual([null, null, null, null, null])
+    expect(state.latest?.value).toBe('达标')
   })
 })

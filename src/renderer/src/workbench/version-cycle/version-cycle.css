@@ -18,6 +18,22 @@
 .vc-board-slot-terminal {
   flex-direction: column;
 }
+/* 配置工作区：高度由分隔线拖动，默认约占六成。 */
+.vc-board-slot.vc-metrics-preview {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 160px;
+}
+.vc-split.vc-split-row {
+  cursor: row-resize;
+}
+.vc-split.vc-split-row::after {
+  top: 50%;
+  bottom: auto;
+  left: 0;
+  width: 100%;
+  height: 1px;
+}
 .vc-board-titlebar {
   display: flex;
   flex: 0 0 36px;

@@ -66,6 +66,8 @@ export type MetricDefinition = {
   collect: { kind: 'script'; run: string[]; retro: true }
 }
 export type MetricProblem = { code: string; message: string; name?: string }
+/** A declared feature tab; `value` explains what the feature delivers, empty when unwritten. */
+export type MetricFeature = { name: string; value: string }
 
 /** Render one catalog problem as fixable-error text; a problem is never shown as "not configured". */
 export function metricProblemText(problem: MetricProblem): string {
@@ -75,7 +77,10 @@ export type MetricCatalog = {
   scope: MetricScope
   configurationCommit: string
   configurationRef: string
+  /** Hash of the unsaved maintenance-worktree file the scoreboard is showing. */
+  draft: string | null
   timezone: string
+  features: MetricFeature[]
   definitions: MetricDefinition[]
   problems: MetricProblem[]
 }

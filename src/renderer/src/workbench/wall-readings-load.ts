@@ -196,7 +196,7 @@ async function countSlotOpenPrs(repo: Repo, current: () => boolean): Promise<num
     const target = getGitHubSourceRuntimeTarget(context)
     // 每页是独立实时查询，created-desc 窗口可能在页间平移：按条目 id 汇集取 size
     // 消除重复方向的多计；分页期间发生关闭/合入时窗口平移可能整页跳过边界条目
-    // （漏计方向），与 overview-sdlc 同族限制，按现值读数承受、不装 Unknown。
+    // （漏计方向），按现值读数承受、不装 Unknown。
     const ids = new Set<string>()
     let source = ''
     for (let page = 1; page <= 10; page++) {
@@ -220,7 +220,7 @@ async function countSlotOpenPrs(repo: Repo, current: () => boolean): Promise<num
       if (!origin) {
         throw new Error('未识别仓库数据来源')
       }
-      // 沿 overview-sdlc 守卫：分页期间数据来源漂移则整次读数作废，不拼半真计数。
+      // 分页期间数据来源漂移则整次读数作废，不拼半真计数。
       const nextSource = `${origin.host ?? 'github.com'}/${origin.owner}/${origin.repo}`
       if (source && source !== nextSource) {
         throw new Error('分页期间数据来源发生变化，请刷新')
