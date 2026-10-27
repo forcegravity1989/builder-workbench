@@ -13,7 +13,7 @@ import {
   type NativeWorkspaceScope
 } from './version-cycle/native-workspace'
 import { useVersionMinutes } from './use-version-minutes'
-import { OverviewScoreboard } from './overview-scoreboard'
+import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
 import { NorthStarCard } from './overview-north-star-card'
 import { ProjectCard } from './overview-project-card'
 import { MetricProblemsPanel } from './metric-problems-panel'
@@ -93,7 +93,7 @@ export function OverviewPage(): React.JSX.Element {
     baseScope,
     baseWorktreeId,
     identity: dataIdentity,
-    granularity: view.granularity
+    granularity: SCOREBOARD_GRANULARITY
   })
   const { catalog, northReading, zoneReadings, busy, refreshing, refreshReadings, reloadCatalog } =
     metrics
@@ -294,9 +294,7 @@ export function OverviewPage(): React.JSX.Element {
           readings={zoneReadings}
           busy={busy}
           onRefresh={() => void refreshReadings()}
-          granularity={view.granularity}
           anchor={metrics.anchor}
-          onGranularityChange={(granularity) => setView({ granularity })}
           identity={identity}
           plan={minutes?.planDocument ?? null}
           version={version}

@@ -1,6 +1,6 @@
 import { MessageSquarePlus } from 'lucide-react'
 import { useMemo } from 'react'
-import { OverviewGrain, OverviewRefresh } from './overview-controls'
+import { OverviewRefresh } from './overview-controls'
 import { useOverviewViewState } from './overview-view-state'
 import type {
   MetricCatalog,
@@ -14,12 +14,10 @@ import {
   type ScoreboardScene,
   type TargetVerdict
 } from './overview-scoreboard-model'
-import {
-  zoneBucketLabels,
-  zoneChartRange,
-  zonePointState,
-  type ZoneGranularity
-} from './overview-zone-series'
+import { zoneBucketLabels, zoneChartRange, zonePointState } from './overview-zone-series'
+
+/** 记分牌走势固定为周窗口。 */
+export const SCOREBOARD_GRANULARITY = 'week' as const
 
 const VERDICT_TEXT: Record<'met' | 'unmet' | 'unknown', string> = {
   met: '已达完成线',
@@ -201,9 +199,7 @@ export function OverviewScoreboard({
   readings,
   busy,
   onRefresh,
-  granularity,
   anchor,
-  onGranularityChange,
   identity,
   plan,
   version,
@@ -214,9 +210,7 @@ export function OverviewScoreboard({
   readings: Record<string, MetricReading | null>
   busy: boolean
   onRefresh(): void
-  granularity: ZoneGranularity
   anchor?: string
-  onGranularityChange(value: ZoneGranularity): void
   identity: string
   plan: PlanningMaterial | null
   version: string | null
@@ -227,7 +221,7 @@ export function OverviewScoreboard({
   const [view, setView] = useOverviewViewState(identity)
   const active = scenes.find((scene) => scene.name === view.feature) ?? scenes[0]
   const timezone = catalog?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone
-  const range = zoneChartRange(granularity, timezone, anchor)
+  const range = zoneChartRange(SCOREBOARD_GRANULARITY, timezone, anchor)
   const labels = zoneBucketLabels(range)
   const views = (scene: ScoreboardScene) => ({
     lagging: scene.lagging
@@ -268,7 +262,9 @@ export function OverviewScoreboard({
           <i className={`wb-sb-dot wb-sb-dot-${verdict ?? 'unknown'}`} aria-hidden="true" />
         )}
         {scene.name}
-        {verdict && <span className="wb-sb-tab-state">{VERDICT_TEXT[verdict]}</span>}
+        {verdict && verdict !== 'unknown' && (
+          <span className="wb-sb-tab-state">{VERDICT_TEXT[verdict]}</span>
+        )}
       </button>
     )
   }
@@ -277,13 +273,7 @@ export function OverviewScoreboard({
     <section className="card wb-ov-section" id="scoreboard" aria-label="记分牌">
       <header className="wb-ov-section-head">
         <h2>记分牌</h2>
-        <span className="wb-muted">
-          {focused.length
-            ? `本版聚焦 ${focused.length} 个 · 来自${version ? ` ${version} ` : ''}计划的目标值`
-            : `${version ? `${version} ` : ''}计划还没给场景指标写目标值，暂无聚焦`}
-        </span>
         <div className="wb-ov-tools">
-          <OverviewGrain label="记分牌粒度" value={granularity} onChange={onGranularityChange} />
           <button
             type="button"
             className="wb-btn wb-btn-secondary wb-btn-sm"

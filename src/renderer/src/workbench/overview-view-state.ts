@@ -3,12 +3,10 @@ import { useCallback, useSyncExternalStore } from 'react'
 export type OverviewViewState = {
   version: string | null
   feature: string | null
-  granularity: 'day' | 'week'
 }
 const empty: OverviewViewState = {
   version: null,
-  feature: null,
-  granularity: 'week'
+  feature: null
 }
 const cache = new Map<string, OverviewViewState>()
 const listeners = new Set<() => void>()
@@ -25,8 +23,7 @@ function read(key: string): OverviewViewState {
     if (saved && typeof saved === 'object') {
       value = {
         version: typeof saved.version === 'string' ? saved.version : null,
-        feature: typeof saved.feature === 'string' ? saved.feature : null,
-        granularity: saved.granularity === 'day' ? 'day' : 'week'
+        feature: typeof saved.feature === 'string' ? saved.feature : null
       }
     }
   } catch {
