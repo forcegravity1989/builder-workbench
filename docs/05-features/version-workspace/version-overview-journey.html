@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>#334 · 版本总览审阅旅程</title>
+    <link rel="stylesheet" href="../../04-design-system/styles.css" />
+    <link rel="stylesheet" href="prototype/overview-journey.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <span>BUILDER WORKBENCH / v0.8 / #334</span
+        ><a href="version-overview-prototype.html">打开高保真 ↗</a>
+      </header>
+      <p class="eyebrow">设计草案 · 待人工审阅</p>
+      <h1>从本版承诺，看到正在形成的交付。</h1>
+      <p class="lead">
+        版本总览连接“答应做什么”和“现在有什么可看、可审、可用”。两个大需求可以处于不同阶段，成果经过评审也可以返回修改。
+      </p>
+      <nav>
+        <a href="intent.md">意图草案 ↗</a><a href="spec.md#v08-overview-draft">规格草案 ↗</a
+        ><span>评审意见请使用 Orca 原生浏览器批注</span>
+      </nav>
+      <section class="intent">
+        <h2>这一版推荐的取舍</h2>
+        <p>
+          首屏保留版本与计划基本信息，用简明摘要对照承诺和交付，再按大需求展开成果与下一步。试用边界和日常任务各有位置，不用一盏状态灯代表整个
+          G2。
+        </p>
+        <p>
+          先以单项目、只读聚合与已有工作入口形成 MVP；未合入成果带来源和修订可见。跨版需求身份、B
+          版本关系和共享导航只提出建议，交统筹会话协调后再实现。
+        </p>
+      </section>
+      <h2>共同旅程</h2>
+      <p class="muted">
+        月度选择 → 先行 B MVP → 部分用户试用 → 后续 B 修理完善 → 后续 Issue 持续改善
+      </p>
+      <ol>
+        <li>
+          <div class="number">01</div>
+          <article>
+            <h3>月度选方向，带着需求进入版本</h3>
+            <p>
+              Leader 在 #440 的项目总览选择两个大需求及投入范围。进入 #334
+              版本总览后，先核对本版承诺、负责人、时间和计划依据。
+            </p>
+            <p class="check">
+              看点：需求完整目标与本 B 版本承担范围分开；G2 是计划目标编号，不是跨版需求身份。
+            </p>
+            <a href="version-overview-prototype.html?scene=design">进入先行 B 总览 →</a
+            ><small>#440 月度选择由另一窗口设计，本页只描述衔接。</small>
+          </article>
+        </li>
+        <li>
+          <div class="number">02</div>
+          <article>
+            <h3>先审成果，让两个大需求各自推进</h3>
+            <p>
+              #334 的设计正在评审，#440 已进入试用且有设计修订待审。展开任一需求，看意图、spec /
+              高保真、Plan、PR、测试和试用成果；从待审入口定位具体修订。
+            </p>
+            <p class="check">
+              看点：改稿可以返回设计；会话结束不能自动把需求推进到“已交付”。成果和原生工作会话都有明确入口。
+            </p>
+            <a href="version-overview-prototype.html?scene=design">查看成果与待审 →</a>
+          </article>
+        </li>
+        <li>
+          <div class="number">03</div>
+          <article>
+            <h3>MVP 先给部分用户使用</h3>
+            <p>
+              先行 B
+              形成可运行、可试用的最小范围，明确谁能用、通过哪个候选包或部署、哪些验证已做、哪些限制仍存在。
+            </p>
+            <p class="check">看点：合入代码不等于用户可用；试用反馈不是一次额外的正式版本验收。</p>
+            <a href="version-overview-prototype.html?scene=trial">查看试用范围与依据 →</a
+            ><small>试用者、包、部署和验证结果均为演示。</small>
+          </article>
+        </li>
+        <li>
+          <div class="number">04</div>
+          <article>
+            <h3>按周反馈，后续 B 修理完善</h3>
+            <p>
+              实际使用发现的问题进入 Issue。当前 B 的修理、后续 B
+              的候选与长期改善分开表达；大需求可以跨 B
+              版本，必要时跨周，时间主要用于反复握手与使用反馈。
+            </p>
+            <p class="check">
+              看点：小需求与 bug 沿原生
+              workflow，执行中、待处理和已有结果均能追到依据；同一成果不重复登记完成。
+            </p>
+            <a href="version-overview-prototype.html?scene=repair">查看后续 B 与日常任务 →</a
+            ><small>v0.9 仅为下一 B 版本示例，不定义新的编号协议。</small>
+          </article>
+        </li>
+        <li>
+          <div class="number">05</div>
+          <article>
+            <h3>人工验收一次，历史保留当时的承诺</h3>
+            <p>
+              每个 B
+              版本只有一次正式人工验收。回看旧版，承诺和验收结论固定在当时修订；之后修理、发布、Issue
+              关闭和目标达成仍各自有据。
+            </p>
+            <p class="check">
+              看点：当前编辑不改写历史；历史验收示例只用固定演示归档，不把当前草稿伪装成已认可成果。
+            </p>
+            <a href="version-overview-prototype.html?scene=history">回看历史版本 →</a>
+          </article>
+        </li>
+      </ol>
+      <section class="intent">
+        <h2>当来源不可读</h2>
+        <p>最新来源无法读取时显示未知，保留可定位的来源说明，不按空数据推断完成或倒写正式承诺。</p>
+        <a href="version-overview-prototype.html?scene=offline">查看未知状态 →</a>
+      </section>
+      <footer>
+        <strong>审阅边界</strong>
+        <p>
+          本轮是可编辑的浏览器原型与规格草案。除固定 v0.8
+          计划快照及当前设计文档外，进展、PR、会话、试用和历史验收均为模拟。原生入口展示衔接方式，不执行任务；生产代码、共享协议和真实
+          Electron 行为尚未实现或验证。
+        </p>
+        <p>
+          右上角“设计参考”记录业界来源及采用范围。内部审阅后，再在同一任务分支与 PR 中继续开发。
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

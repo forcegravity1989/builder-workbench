@@ -41,6 +41,8 @@
 
 ## 裁决与明细指引
 
+- 版本工作区的 v0.8 #334 重设计为[规格草案](version-workspace/spec.md#v08-overview-draft)与[可批注高保真](version-workspace/version-overview-prototype.html)，新增来源/跨版关系尚未实现或通过人 gate；第 9 行格值仍代表既有能力，不能用来证明本轮交付。新链状态见对应 STATUS。
+
 - 各特性链状态明细以其 `STATUS.md` 六环表与「验收点与旅程矩阵」小节为准（格式正本：[02 §6.2](../01-principles/02-working-backwards.md)「STATUS 格式」）；**本表是总览，冲突时以特性目录为准并回改本表**。
 - 1–3 行共同基线：设计 PR #264 已合入、用户授权实施；真壳 Playwright 烟测 `tests/e2e/workbench-cycle-smoke.spec.ts` 已编写，执行结果见对应 PR；SSH/WSL 实机、真实 provider 归档全链、真实到点自动化、真实出包/验包均未验证。逐条证据与缺口读各 STATUS，不在本表重复。
 
