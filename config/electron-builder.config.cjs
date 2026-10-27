@@ -478,7 +478,8 @@ module.exports = {
     ...(productName === 'Workbench'
       ? { oneClick: false, allowToChangeInstallationDirectory: true }
       : {}),
-    artifactName: 'orca-windows-setup.${ext}',
+    artifactName:
+      productName === 'Workbench' ? 'workbench-windows-setup.${ext}' : 'orca-windows-setup.${ext}',
     shortcutName: '${productName}',
     uninstallDisplayName: '${productName}',
     createDesktopShortcut: 'always',

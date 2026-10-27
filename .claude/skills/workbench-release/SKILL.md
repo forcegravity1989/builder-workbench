@@ -39,7 +39,7 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
    gh workflow run bw-release.yml --ref main -f version=<version> -F notes=@<release-notes.md 绝对路径>
    ```
 
-   workflow 在 GitHub runner 上出包并创建 Release：tag `v<version>` 指向主干 HEAD、标题 `Workbench <version>`、上传 `orca-windows-setup.exe` / `.exe.blockmap` / `latest.yml` 三资产；版本号含 `-rc` 时自动标记 prerelease。**包内与 `latest.yml` 的版本就是输入的 `<version>`——tag / 清单 / 包内自报三处必须一致，应用内更新链靠这一个字符串比新旧（#338）**；版本格式非法或清单账本不一致时 workflow 拒绝发布。
+   workflow 在 GitHub runner 上出包并创建 Release：tag `v<version>` 指向主干 HEAD、标题 `Workbench <version>`、上传 `workbench-windows-setup.exe` / `.exe.blockmap` / `latest.yml` 三资产；版本号含 `-rc` 时自动标记 prerelease。**包内与 `latest.yml` 的版本就是输入的 `<version>`——tag / 清单 / 包内自报三处必须一致，应用内更新链靠这一个字符串比新旧（#338）**；版本格式非法或清单账本不一致时 workflow 拒绝发布。
 3. 监控运行（约 6-10 分钟）：
 
    ```bash
@@ -51,7 +51,7 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
 
 ### C. 兜底：本地出包与外携发布（仅当 GitHub Actions 不可用）
 
-1. 本地出包：`node config/scripts/build-win-workbench.mjs --version <version>`（注入产品版本号，与 workflow 同口径），核对三产物（`dist/orca-windows-setup.exe`、`.exe.blockmap`、`dist/latest.yml`），汇报产物路径、大小、HEAD 和未验证项。**不创建标签或 Release**。
+1. 本地出包：`node config/scripts/build-win-workbench.mjs --version <version>`（注入产品版本号，与 workflow 同口径），核对三产物（`dist/workbench-windows-setup.exe`、`.exe.blockmap`、`dist/latest.yml`），汇报产物路径、大小、HEAD 和未验证项。**不创建标签或 Release**。
 2. 预演：`node config/scripts/release-win-workbench.mjs --version <version>`；授权后 `--publish --version <version> --notes-file release-notes.md`（rc 版自动 `--prerelease`）。脚本自带账本门禁：`latest.yml` 版本与发布版本不一致即阻断。
 3. 本机网络传不了大资产（公司代理限制上传体积）时，把三产物 + `release-notes.md` + 发布命令打成套件 zip，交不受限网络执行，发布后读回核对。
 
@@ -69,7 +69,7 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
 - [版本描述规范](references/release-notes-spec.md) + [骨架模板](assets/release-notes-template.md)：Release 正文写法。
 - [验收报告规范](references/acceptance-report-spec.md) + [骨架模板](assets/acceptance-report-template.html)：版本收尾报告写法（给领导看的人话；结构可参考 `docs/05-features/version-acceptance/showcase-v0.5-g1.html`，但不沿用其编号与六环矩阵）。
 - `docs/05-features/README.md`：特性矩阵正本（7 特性 × 六环）——**作者取材与查漏用**，确保按功能讲全；矩阵格值与编号不进正文。
-- `config/electron-builder.config.cjs`：产物名（`orca-windows-setup.${ext}`）。`src/renderer/src/workbench/SYNC.md`：打包环境与边界。
+- `config/electron-builder.config.cjs`：产物名（`workbench-windows-setup.${ext}`）。`src/renderer/src/workbench/SYNC.md`：打包环境与边界。
 
 ## 6. error_handling
 
