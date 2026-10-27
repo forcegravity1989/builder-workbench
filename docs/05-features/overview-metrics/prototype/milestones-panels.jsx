@@ -1,5 +1,6 @@
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import { versions, calendarSample, parseCalendar } from './milestones-data.js'
+import octoberPlan from '../../../../.bw/planning/v0.7/data.json'
 const {
   // React is used by the shared JSX build factory.
   // eslint-disable-next-line no-unused-vars
@@ -51,14 +52,15 @@ export function CalendarPanel({ calendar, apply, close }) {
   return (
     <Modal title="工作日历" close={close} wide>
       <p className="ml-callout">
-        尚未取得真实华为工作日历。此处验证“提供材料 → 核对日期 →
+        原型注释: 尚未取得真实华为工作日历。此处验证“提供材料 → 核对日期 →
         用于规划”的交互；没有连接华为系统，也不验证其文件格式。
       </p>
       <div className="ml-calendar-layout">
         <section>
           <h3>1. 提供日历材料</h3>
           <p className="muted">
-            目标体验：将日历文件或截图交给原生会话，模型整理出日期与工作／休息安排，再由人核对。当前仅支持粘贴或载入已整理的文本。
+            原型注释:
+            目标体验是将日历文件或截图交给原生会话，模型整理出日期与工作／休息安排，再由人核对。当前仅支持粘贴或载入已整理的文本。
           </p>
           <label className="field">
             来源说明
@@ -109,7 +111,7 @@ export function CalendarPanel({ calendar, apply, close }) {
                   setPreview(null)
                   setError('')
                   if (file.size > 100000) {
-                    setError('演示仅接受 100 KB 以内的文本。')
+                    setError('原型注释: 日历文本样本限 100 KB。')
                     return
                   }
                   try {
@@ -126,7 +128,8 @@ export function CalendarPanel({ calendar, apply, close }) {
             </label>
           </div>
           <p className="muted">
-            演示文本：一行一个日期，格式为“2026-11-DD,工作或休息,说明”。未提供的日期保持未知。
+            原型注释:
+            演示文本一行一个日期，格式为“2026-11-DD,工作或休息,说明”。未提供的日期保持未知。
           </p>
         </section>
         <section>
@@ -200,7 +203,7 @@ export function EditRequirement({ item, save, close }) {
             return
           }
           if (versions.indexOf(value.first) >= versions.indexOf(value.target)) {
-            setError('本演示旅程先交 MVP，再在后续 B 版本完善；后续版本应晚于先行版本。')
+            setError('原型注释: 本例先交 MVP，再在后续 B 版本完善；后续版本应晚于先行版本。')
             return
           }
           const firstDay = 2 + versions.indexOf(value.target) * 7
@@ -315,7 +318,7 @@ export function EditRequirement({ item, save, close }) {
             取消
           </button>
           <button className="btn btn-primary" type="submit">
-            保存演示安排
+            保存安排
           </button>
         </footer>
       </form>
@@ -329,7 +332,7 @@ export function VersionBridge({ item, version, step, close }) {
   return (
     <Modal title={`${version} · 版本总览衔接预览`} close={close} wide>
       <div className="ml-callout">
-        #334
+        原型注释: #334
         由另一窗口设计。本页仅校准跳转时要带入的需求、版本和本版交付，不代表双方协议或新版本总览已实现。
       </div>
       <p className="eyebrow">
@@ -367,7 +370,7 @@ export function VersionBridge({ item, version, step, close }) {
         <span>试用 / 人工验收</span>
       </div>
       <p className="muted">
-        成果均未接真实读取。此刻演示关注：
+        原型注释: 成果未接真实读取。此刻演示关注：
         {!related
           ? '未关联版本不能冒充本需求成果。'
           : step === 2
@@ -399,7 +402,7 @@ export function ReferencePanel({ close }) {
   return (
     <Modal title="设计依据" close={close}>
       <p className="muted">
-        2026-10-27 核对官方资料。本稿借鉴交互思路，产品规则以人工澄清与仓内原则为准。
+        原型注释: 2026-10-27 核对官方资料。本稿借鉴交互思路，产品规则以人工澄清与仓内原则为准。
       </p>
       <section className="ml-reference">
         <h3>
@@ -434,7 +437,7 @@ export function ReferencePanel({ close }) {
         </p>
       </section>
       <p>
-        本轮五步旅程来自你的明确方向：月度选择 → 先行 MVP → 部分用户试用 → 后续完善 → Issue
+        原型注释: 本轮五步旅程来自人工澄清：月度选择 → 先行 MVP → 部分用户试用 → 后续完善 → Issue
         持续改善。
       </p>
       <footer>
@@ -452,10 +455,7 @@ export function ReferencePanel({ close }) {
 export function PlanningSourcePanel({ close }) {
   return (
     <Modal title="项目里程碑在哪里规划" close={close} wide>
-      <p>
-        项目总览既是呈现入口，也是项目总里程碑的规划入口。月份只是查看和调整的一段；本稿仅用 2026-11
-        演示。
-      </p>
+      <p>项目总览既是呈现入口，也是项目总里程碑的规划入口。月份只是查看和调整的一段。</p>
       <div className="ml-bridge-grid">
         <section>
           <h3>正式总览</h3>
@@ -465,7 +465,9 @@ export function PlanningSourcePanel({ close }) {
         <section>
           <h3>规划草案</h3>
           <p>在总览直接编辑，也可借助原生会话持续讨论。先决定做什么、优先级、目标 B 版本和截止。</p>
-          <p className="muted">本页仅保存浏览器演示草案，没有读取真实主干或写入规划分支。</p>
+          <p className="muted">
+            原型注释: 本页仅保存浏览器演示草案，没有读取真实主干或写入规划分支。
+          </p>
         </section>
       </div>
       <h3>建议的材料评审路径 · 待主会话协调</h3>
@@ -478,7 +480,7 @@ export function PlanningSourcePanel({ close }) {
         <li>更新代码后重读正式总览；B 版本中的具体交付范围继续在版本计划里收敛。</li>
       </ol>
       <p className="ml-callout">
-        现有 bw/project
+        原型注释: 现有 bw/project
         承载项目名片评审；扩展到里程碑仍是建议。材料路径、事务与双机并发规则尚未确定，本原型不建立持久化协议。
       </p>
       <footer>
@@ -490,50 +492,202 @@ export function PlanningSourcePanel({ close }) {
   )
 }
 
-export function MetricsPanel({ close }) {
+export function PublishedMilestones({ draft, onAdjust, timeline }) {
+  const [month, setMonth] = useState('2026-10')
+  const months = [
+    {
+      id: '2026-10',
+      label: '2026 年 10 月',
+      status: '已制定',
+      rows: octoberPlan.goals.map((goal) => ({
+        id: `${octoberPlan.version}:${goal.goalId}`,
+        title: goal.title,
+        owner: goal.owner,
+        target: `${octoberPlan.version} · ${goal.goalId}`,
+        due: null,
+        result: goal.deliverable.split('\n')[0]
+      }))
+    },
+    {
+      id: '2026-11',
+      label: '2026 年 11 月',
+      status: '已制定',
+      rows: draft.requirements.filter((r) => r.selected)
+    },
+    {
+      id: '2026-12',
+      label: '2026 年 12 月',
+      status: '已制定',
+      rows: [
+        {
+          id: 'DEMO-04',
+          title: '让新一轮真实使用问题形成清晰改进方向',
+          owner: 'Builder B',
+          priority: 1,
+          target: 'B02',
+          due: '2026-12-18',
+          result: '下月安排，具体范围在 B 版本中收敛'
+        }
+      ]
+    }
+  ]
+  const current = months.find((item) => item.id === month)
   return (
-    <Modal title="项目背景与指标" close={close} wide>
-      <div className="ml-bridge-grid">
-        <section>
-          <h3>Builders’ Workbench</h3>
-          <p>帮助 Builder 用 AI 时代的方式构建产品、完成项目。</p>
-          <p className="muted">方向由人决定，复用原生会话、任务和工作树推进交付。</p>
-          <a
-            href="../../01-principles/03-press-release-faq-flywheel.md"
-            target="_blank"
-            rel="noreferrer"
+    <div className="ml-published">
+      <div className="ml-month-tabs" role="tablist" aria-label="月度版本">
+        {months.map((item) => (
+          <button
+            className="btn btn-ghost"
+            role="tab"
+            aria-selected={month === item.id}
+            key={item.id}
+            onClick={() => setMonth(item.id)}
           >
-            查看产品主张
-          </a>
-        </section>
-        <section>
-          <h3>北极星</h3>
-          <p>未定义</p>
-          <p className="muted">不以提交量、PR 数或演示进度代替项目健康。</p>
-        </section>
+            {item.label}
+            <small>{item.rows.length} 项大需求</small>
+          </button>
+        ))}
       </div>
-      <h3>指标入口保留</h3>
-      <table className="table">
-        <thead>
-          <tr>
-            <th>业务指标</th>
-            <th>读数</th>
-            <th>规划用途</th>
-          </tr>
-        </thead>
-        <tbody>
-          {['纳入项目数', '每周闭环 Issue 数', '使用周一屏项目数', '计划制定时长'].map((name) => (
-            <tr key={name}>
-              <td>{name}</td>
-              <td>未读取</td>
-              <td>讨论时按需引用</td>
-            </tr>
+      <div className="ml-section-head">
+        <h3>{current.label} · 正式安排</h3>
+        {month === '2026-11' && (
+          <button className="btn btn-secondary" onClick={onAdjust}>
+            调整本月规划
+          </button>
+        )}
+      </div>
+      <div role="tabpanel" aria-label={current.label}>
+        {month === '2026-11'
+          ? timeline
+          : current.rows.map((item) => (
+              <article className="ml-published-row" key={item.id}>
+                <div>
+                  <small>
+                    {item.priority ? `P${item.priority}` : '原计划目标'} · {item.owner}
+                  </small>
+                  <h3>{item.title}</h3>
+                  <p className="muted">{item.reason || item.result}</p>
+                </div>
+                <div>
+                  <b>{item.target}</b>
+                  <small>{item.due ? `截止 ${item.due}` : '截止 / B 版本映射未登记'}</small>
+                </div>
+              </article>
+            ))}
+      </div>
+      <p className="ml-footnote">
+        原型注释: 10 月引用 BW 已提交的 v0.7 计划，未推断验收通过，也未补造历史月度/B
+        版本映射。11、12 月为模拟安排，非真实 v0.8 承诺；完整编辑旅程以 11 月为例。
+      </p>
+      {month === '2026-10' && (
+        <a
+          className="btn btn-ghost"
+          href="https://github.com/forcegravity1989/builder-workbench/blob/90952d9bee18e436b165b82b5c08be92b3d82594/.bw/planning/v0.7/data.json"
+          target="_blank"
+          rel="noreferrer"
+        >
+          查看 10 月原计划 · v0.7 ↗
+        </a>
+      )}
+    </div>
+  )
+}
+
+export function PlanningReviewPanel({ chosen, stage, setStage, publish, close }) {
+  if (!['draft', 'review', 'merged'].includes(stage)) {
+    return (
+      <Modal title="规划评审" close={close}>
+        <p>先进入规划草案，核对修改后再提交评审。</p>
+      </Modal>
+    )
+  }
+  return (
+    <Modal
+      title={
+        stage === 'draft'
+          ? '核对规划并提交评审'
+          : stage === 'review'
+            ? '规划评审中'
+            : '规划已合入，等待更新总览'
+      }
+      close={close}
+      wide
+    >
+      <div className="ml-review-route">
+        <span>
+          规划草案 <code>bw/project</code>
+        </span>
+        <span aria-hidden="true">→</span>
+        <span>PR / MR 人审</span>
+        <span aria-hidden="true">→</span>
+        <span>项目主干</span>
+        <span aria-hidden="true">→</span>
+        <span>正式总览</span>
+      </div>
+      {stage === 'draft' ? (
+        <>
+          <p>
+            核对本月做哪些大需求、优先次序、目标 B
+            版本与截止。提交评审后，正式总览继续保留主干中的原安排。
+          </p>
+          {chosen.map((item) => (
+            <div className="ml-confirm-row" key={item.id}>
+              <strong>
+                P{item.priority} · {item.title}
+              </strong>
+              <p>
+                {item.owner} · {item.first} MVP → {item.target} 后续完善 · 截止 {item.due}
+              </p>
+              <small>{item.reason}</small>
+            </div>
           ))}
-        </tbody>
-      </table>
-      <p>项目统计：提交 · 合入 PR · 开放 Issue — 均未读取。</p>
-      <p className="muted">
-        生产指标继续沿现有采集、来源详情与配置会话。此原型未接采集；指标不是所有里程碑的统一验收门槛。
+          <footer>
+            <button className="btn btn-secondary" onClick={close}>
+              继续调整
+            </button>
+            <button className="btn btn-primary" onClick={() => setStage('review')}>
+              提交规划评审
+            </button>
+          </footer>
+        </>
+      ) : stage === 'review' ? (
+        <>
+          <h3>规划等待人工评审合入</h3>
+          <p>
+            草案已经提交，正式安排尚未更新。评审意见可继续带回规划会话；合入仍由人在 PR/MR 中完成。
+          </p>
+          <div className="ml-callout">待评审的规划：2026 年 11 月 · {chosen.length} 项大需求</div>
+          <footer>
+            <button className="btn btn-secondary" onClick={close}>
+              返回总览
+            </button>
+          </footer>
+          <div className="ml-prototype-controls">
+            <p>原型注释: 当前未创建真实 PR/MR。下面只模拟人在代码平台完成合入后的读回状态。</p>
+            <button className="btn btn-ghost" onClick={() => setStage('merged')}>
+              原型注释: 模拟人工已合入
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <h3>新规划已进入项目主干</h3>
+          <p>
+            本机总览仍展示更新前的材料。更新代码后，重读主干中的正式安排；不会把浏览器草案直接当作正式结果。
+          </p>
+          <footer>
+            <button className="btn btn-secondary" onClick={close}>
+              稍后更新
+            </button>
+            <button className="btn btn-primary" onClick={publish}>
+              更新正式总览
+            </button>
+          </footer>
+        </>
+      )}
+      <p className="ml-footnote">
+        原型注释: 此流程只模拟可见状态，不调用 Git、PR/MR 或 BW 运行时。bw/project
+        的规划材料归属、事务和并发策略待统筹确认。
       </p>
     </Modal>
   )

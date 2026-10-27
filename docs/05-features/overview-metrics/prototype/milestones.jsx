@@ -1,3 +1,5 @@
+import { OverviewV8 } from './screen.jsx'
+import { metrics } from '../../version-planning/prototype/snapshot.js'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import {
   initial,
@@ -11,10 +13,11 @@ import {
 import {
   CalendarPanel,
   EditRequirement,
-  MetricsPanel,
   Modal,
   ReferencePanel,
   PlanningSourcePanel,
+  PublishedMilestones,
+  PlanningReviewPanel,
   VersionBridge
 } from './milestones-panels.jsx'
 const {
@@ -36,11 +39,10 @@ const {
   Check,
   ArrowRight,
   ExternalLink,
-  RefreshCw,
-  ChartNoAxesCombined
+  RefreshCw
 } = window.BWPrototypeDependencies
 
-function Sidebar({ openVersion, openInfo }) {
+function Sidebar({ openVersion, openInfo, scenario }) {
   return (
     <aside className="ml-sidebar" aria-label="项目导航">
       <div className="ml-brand">
@@ -103,32 +105,34 @@ function Sidebar({ openVersion, openInfo }) {
       >
         ＋ 新建版本
       </button>
-      {versions.map((v, i) => (
-        <details key={v} open={i === 0}>
-          <summary>
-            <ChevronRight size={13} />
-            <span>{v}</span>
-            <small>11.{weeks[i]}</small>
-          </summary>
-          <div className="ml-subnav">
-            {['总览', '计划', '任务', '验收'].map((name) => (
-              <button
-                key={name}
-                onClick={() =>
-                  name === '总览'
-                    ? openVersion(v)
-                    : openInfo(
-                        `${v} · ${name}`,
-                        `沿用当前 BW 的${name}入口与本版上下文。本原型不启动会话、不创建工作树或写真实材料。`
-                      )
-                }
-              >
-                {name}
-              </button>
-            ))}
-          </div>
-        </details>
-      ))}
+      {scenario === 'empty' && <p className="ml-sidebar-label">尚无月度版本</p>}
+      {scenario !== 'empty' &&
+        versions.map((v, i) => (
+          <details key={v} open={i === 0}>
+            <summary>
+              <ChevronRight size={13} />
+              <span>{v}</span>
+              <small>11.{weeks[i]}</small>
+            </summary>
+            <div className="ml-subnav">
+              {['总览', '计划', '任务', '验收'].map((name) => (
+                <button
+                  key={name}
+                  onClick={() =>
+                    name === '总览'
+                      ? openVersion(v)
+                      : openInfo(
+                          `${v} · ${name}`,
+                          `沿用当前 BW 的${name}入口与本版上下文。本原型不启动会话、不创建工作树或写真实材料。`
+                        )
+                  }
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          </details>
+        ))}
       <div className="ml-nav-rule" />
       <div className="ml-sidebar-label">项目工作区</div>
       <button
@@ -160,6 +164,99 @@ function Sidebar({ openVersion, openInfo }) {
   )
 }
 
+function RequirementTimeline({ chosen, calendar, onSelect, onStep, openVersion, onInfo }) {
+  return (
+    <section aria-labelledby="lane-title" className="ml-lanes-section">
+      <div className="ml-section-head">
+        <h2 id="lane-title">从先行 MVP 到后续完善</h2>
+        <span className="muted">按大需求分泳道</span>
+      </div>
+      <div className="ml-timeline" role="region" aria-label="月度需求泳道" tabIndex={0}>
+        <div className="ml-time-head">
+          <span>大需求 / 主导人</span>
+          {versions.map((v, i) => (
+            <button key={v} onClick={() => openVersion(v)}>
+              <b>{v}</b>
+              <small>11.{weeks[i]}</small>
+            </button>
+          ))}
+        </div>
+        {chosen.length === 0 ? (
+          <div className="ml-empty">尚未选择本月大需求。从上方候选开始讨论。</div>
+        ) : (
+          chosen.map((item) => (
+            <div className="ml-lane" key={item.id}>
+              <button className="ml-lane-label" onClick={() => onSelect(item.id)}>
+                <small>
+                  P{item.priority} · {item.id} · {item.owner}
+                </small>
+                <b>{item.title}</b>
+                <span
+                  className={
+                    deadlineWarning(item, calendar).includes('休息') ? 'ml-warning' : 'muted'
+                  }
+                >
+                  {item.due.slice(5).replace('-', '/')} · {deadlineWarning(item, calendar)}
+                </span>
+              </button>
+              <div className="ml-lane-bars">
+                {versions.map((v) => (
+                  <span className="ml-grid-cell" key={v} />
+                ))}
+                <button
+                  className="ml-version-bar mvp"
+                  style={{ gridColumn: versions.indexOf(item.first) + 1 }}
+                  onClick={() => {
+                    onSelect(item.id)
+                    onStep(1)
+                    openVersion(item.first, item)
+                  }}
+                >
+                  <span>
+                    先行 MVP <ExternalLink size={12} />
+                  </span>
+                  <small>设计对齐 → 可试用</small>
+                </button>
+                <button
+                  className="ml-version-bar improve"
+                  style={{ gridColumn: versions.indexOf(item.target) + 1 }}
+                  onClick={() => {
+                    onSelect(item.id)
+                    onStep(3)
+                    openVersion(item.target, item)
+                  }}
+                >
+                  <span>
+                    修理完善 <ExternalLink size={12} />
+                  </span>
+                  <small>试用反馈 → 约定范围</small>
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+        <div className="ml-issue-lane">
+          <span>日常小需求与 bug</span>
+          <button
+            onClick={() => {
+              onStep(4)
+              onInfo(
+                'Issue 持续改善',
+                '大需求完成之后，bug、优化与衍生小需求继续进入现有 Issue workflow。复用任务、会话与工作树，Issue 关闭仍由人决定。原型未读取或创建真实 Issue。'
+              )
+            }}
+          >
+            贯穿每个 B 版本 · 沿现有 Issue workflow 处理 <ArrowRight size={14} />
+          </button>
+        </div>
+      </div>
+      <p className="ml-footnote">
+        周节奏便于反馈，必要时可跨周；每个 B 版本只做一次正式验收。需求数量与周期不固定。
+      </p>
+    </section>
+  )
+}
+
 function App() {
   const [draft, setDraft] = useState(loadDraft)
   const [saveError, setSaveError] = useState('')
@@ -172,7 +269,23 @@ function App() {
   )
   const [proposal, setProposal] = useState(null)
   const [toast, setToast] = useState('')
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(false)
+  const [scenario, setScenario] = useState('planning')
+  const [reviewStage, setReviewStage] = useState('draft')
+  const [published, setPublished] = useState(() => structuredClone(initial))
+  const [overviewUI, setOverviewUI] = useState({
+    feature: '',
+    grain: 'week',
+    repoGrain: 'week',
+    hidden: []
+  })
+  const chooseScenario = (value) => {
+    setScenario(value)
+    setExpanded(false)
+    setProposal(null)
+    setReviewStage('draft')
+    setModal(null)
+  }
   const selected = draft.requirements.find((r) => r.id === selectedId) || draft.requirements[0]
   const chosen = draft.requirements
     .filter((r) => r.selected)
@@ -197,6 +310,7 @@ function App() {
     setProposal(null)
   }
   const change = (id, values) => {
+    setReviewStage('draft')
     setProposal(null)
     setDraft({
       ...draft,
@@ -204,8 +318,25 @@ function App() {
       requirements: draft.requirements.map((r) => (r.id === id ? { ...r, ...values } : r))
     })
   }
-  const openInfo = (title, text) => setModal({ type: 'info', title, text })
-  const openVersion = (version, item = selected) => setModal({ type: 'version', version, item })
+  const openInfo = (title, text) =>
+    setModal({
+      type: 'info',
+      title,
+      text: text.startsWith('原型注释:') ? text : `原型注释: ${text}`
+    })
+  const openVersion = (
+    version,
+    item = scenario === 'ready'
+      ? published.requirements.find((r) => r.id === selectedId) || published.requirements[0]
+      : selected
+  ) => setModal({ type: 'version', version, item })
+  const publishPlanning = () => {
+    setPublished(structuredClone(draft))
+    setScenario('ready')
+    setReviewStage('ready')
+    setExpanded(false)
+    setModal(null)
+  }
   const propose = () => {
     const item = selected
     if (!prompt.trim()) {
@@ -257,7 +388,7 @@ function App() {
       setProposal({
         title: '本月先聚焦一个可试用的交付',
         text: other
-          ? `将“${other.title}”暂不安排，保留候选与理由。此演示不会推断团队容量。`
+          ? `将“${other.title}”暂不安排，保留候选与理由。本建议不推断团队容量。`
           : '本月已仅选择一项，无需移出其他需求。',
         changes: other
           ? [
@@ -287,6 +418,7 @@ function App() {
     }
   }
   const applyProposal = () => {
+    setReviewStage('draft')
     setDraft({
       ...draft,
       status: '讨论中',
@@ -297,14 +429,14 @@ function App() {
       decisions: [...new Set([...draft.decisions, `${proposal.title}；输入：${proposal.basis}`])]
     })
     setProposal(null)
-    setToast('建议已加入演示草案，尚未确认月度选择。')
+    setToast('建议已加入草案，尚未提交规划评审。')
   }
   return (
     <>
       <div className="ml-review-strip">
         <span>
-          <b>#440</b> 设计草案 <span className="strip-dot">·</span> 2026 年 11 月 / B01—B04
-          均为演示，非 v0.8 承诺
+          原型注释: <b>#440</b> 设计草案 <span className="strip-dot">·</span> 10 月引用 BW
+          既有计划；后续月份为演示，非 v0.8 承诺
         </span>
         <div className="ml-actions">
           <span className="ml-save-status">{saveError ? '未保存' : '仅本浏览器保存'}</span>
@@ -324,269 +456,296 @@ function App() {
         </div>
       </div>
       <div className="ml-app">
-        <Sidebar openVersion={openVersion} openInfo={openInfo} />
+        <Sidebar openVersion={openVersion} openInfo={openInfo} scenario={scenario} />
         <div className="ml-workspace">
           <div className="ml-topbar">
             <span>
               Builders’ Workbench <ChevronRight size={13} /> 项目总览
             </span>
             <div className="ml-actions">
-              <IconAction
-                label="项目背景与指标"
-                icon={ChartNoAxesCombined}
-                onClick={() => setModal({ type: 'metrics' })}
-              />
+              <label className="ml-scenario-label">
+                原型场景
+                <select
+                  className="input"
+                  aria-label="原型场景"
+                  value={scenario}
+                  onChange={(e) => chooseScenario(e.target.value)}
+                >
+                  <option value="empty">尚无月度版本</option>
+                  <option value="planning">制定中</option>
+                  <option value="ready">已制定 · 多月</option>
+                </select>
+              </label>
               <IconAction
                 label="设计依据"
                 icon={BookOpen}
                 onClick={() => setModal({ type: 'references' })}
               />
-              <IconAction
-                label={expanded ? '收起规划讨论' : '打开规划讨论'}
-                icon={MessageSquare}
-                onClick={() => setExpanded(!expanded)}
-              />
+              {scenario === 'planning' && (
+                <IconAction
+                  label={expanded ? '收起规划讨论' : '打开规划讨论'}
+                  icon={MessageSquare}
+                  onClick={() => setExpanded(!expanded)}
+                />
+              )}
             </div>
           </div>
           <div className={`ml-columns ${expanded ? '' : 'collapsed'}`}>
-            <main>
-              <div className="ml-draft-source">
-                <div>
-                  <b>规划草案</b>
-                  <span> 在项目总览规划全局安排，按月查看与调整。</span>
-                </div>
-                <button className="btn btn-ghost" onClick={() => setModal({ type: 'source' })}>
-                  正式总览与评审路径 <ArrowRight size={14} />
-                </button>
-              </div>
-              <div className="ml-heading">
-                <div>
-                  <p className="eyebrow">项目总览</p>
-                  <h1>项目里程碑</h1>
-                </div>
-                <span className="tag tag-outline">{draft.status}</span>
-              </div>
-              <div className="ml-context">
-                <span>
-                  方向 <b>让 Builder 不只更快，也更好地完成项目</b>
-                </span>
-                <button onClick={() => setModal({ type: 'metrics' })}>
-                  项目背景与指标 <ArrowRight size={14} />
-                </button>
-              </div>
-              <section aria-labelledby="month-title" className="ml-month">
-                <div className="ml-section-head">
-                  <h2 id="month-title">
-                    2026 年 11 月 <span className="muted">月度选择</span>
-                  </h2>
-                  <div className="ml-actions">
-                    <span className="tag tag-outline">{chosen.length} 项纳入</span>
-                    <IconAction
-                      label="导入或核对工作日历"
-                      icon={CalendarClock}
-                      onClick={() => setModal({ type: 'calendar' })}
-                    />
-                  </div>
-                </div>
-                <p className="ml-summary">
-                  先选值得做的大需求，约定优先次序和截止时间。具体范围与体验，在 B 版本中持续收敛。
-                </p>
-                <div className="ml-calendar-status">
-                  <CalendarRange size={15} />
-                  <span>
-                    {draft.calendar
-                      ? `${draft.calendar.fixture ? '演示日历' : '用户提供的文本 · 未核验来源'} · ${Object.keys(draft.calendar.days).length}/30 天有记录`
-                      : '华为工作日历未提供 · 日期暂作讨论参考'}
-                  </span>
-                  <button onClick={() => setModal({ type: 'calendar' })}>核对日历</button>
-                </div>
-                <div className="ml-choice-list">
-                  {[...draft.requirements]
-                    .sort((a, b) => a.priority - b.priority)
-                    .map((item) => (
-                      <article
-                        key={item.id}
-                        className={`ml-choice ${selectedId === item.id ? 'selected' : ''} ${item.selected ? '' : 'deferred'}`}
-                      >
-                        <input
-                          type="checkbox"
-                          aria-label={`本月选择 ${item.id}`}
-                          checked={item.selected}
-                          onChange={(e) => change(item.id, { selected: e.target.checked })}
-                        />
-                        <button
-                          className="ml-choice-main"
-                          onClick={() => selectRequirement(item.id)}
-                        >
-                          <span className="ml-choice-title">
-                            <span className="ml-priority">P{item.priority}</span>
-                            <strong>{item.title}</strong>
-                          </span>
-                          <span className="ml-reason">{item.reason}</span>
-                        </button>
-                        <div className="ml-choice-meta">
-                          <span>{item.owner}</span>
-                          <small>
-                            {item.selected
-                              ? `${item.target} · 截止 ${item.due.slice(5).replace('-', '/')}`
-                              : '暂不安排'}
-                          </small>
-                        </div>
-                        <IconAction
-                          label={`编辑 ${item.id}`}
-                          icon={Pencil}
-                          onClick={() => setModal({ type: 'edit', item })}
-                        />
-                      </article>
-                    ))}
-                </div>
-              </section>
-              <section aria-labelledby="lane-title" className="ml-lanes-section">
-                <div className="ml-section-head">
-                  <h2 id="lane-title">从先行 MVP 到后续完善</h2>
-                  <span className="muted">按大需求分泳道</span>
-                </div>
-                <div className="ml-timeline" role="region" aria-label="月度需求泳道" tabIndex={0}>
-                  <div className="ml-time-head">
-                    <span>大需求 / 主导人</span>
-                    {versions.map((v, i) => (
-                      <button key={v} onClick={() => openVersion(v)}>
-                        <b>{v}</b>
-                        <small>11.{weeks[i]}</small>
-                      </button>
-                    ))}
-                  </div>
-                  {chosen.length === 0 ? (
-                    <div className="ml-empty">尚未选择本月大需求。从上方候选开始讨论。</div>
-                  ) : (
-                    chosen.map((item) => (
-                      <div className="ml-lane" key={item.id}>
-                        <button
-                          className="ml-lane-label"
-                          onClick={() => selectRequirement(item.id)}
-                        >
-                          <small>
-                            {item.id} · {item.owner}
-                          </small>
-                          <b>{item.title}</b>
-                          <span
-                            className={
-                              deadlineWarning(item, draft.calendar).includes('休息')
-                                ? 'ml-warning'
-                                : 'muted'
-                            }
-                          >
-                            {item.due.slice(5).replace('-', '/')} ·{' '}
-                            {deadlineWarning(item, draft.calendar)}
-                          </span>
-                        </button>
-                        <div className="ml-lane-bars">
-                          {versions.map((v) => (
-                            <span className="ml-grid-cell" key={v} />
-                          ))}
-                          <button
-                            className="ml-version-bar mvp"
-                            style={{ gridColumn: versions.indexOf(item.first) + 1 }}
-                            onClick={() => {
-                              selectRequirement(item.id)
-                              setStep(1)
-                              openVersion(item.first, item)
-                            }}
-                          >
-                            <span>
-                              先行 MVP <ExternalLink size={12} />
-                            </span>
-                            <small>设计对齐 → 可试用</small>
-                          </button>
-                          <button
-                            className="ml-version-bar improve"
-                            style={{ gridColumn: versions.indexOf(item.target) + 1 }}
-                            onClick={() => {
-                              selectRequirement(item.id)
-                              setStep(3)
-                              openVersion(item.target, item)
-                            }}
-                          >
-                            <span>
-                              修理完善 <ExternalLink size={12} />
-                            </span>
-                            <small>试用反馈 → 约定范围</small>
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                  <div className="ml-issue-lane">
-                    <span>日常小需求与 bug</span>
-                    <button
-                      onClick={() => {
-                        setStep(4)
-                        openInfo(
-                          'Issue 持续改善',
-                          '大需求完成之后，bug、优化与衍生小需求继续进入现有 Issue workflow。复用任务、会话与工作树，Issue 关闭仍由人决定。原型未读取或创建真实 Issue。'
+            <main className="ml-main">
+              <header className="ml-page-heading">
+                <h1>项目总览</h1>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() =>
+                    reviewStage === 'merged'
+                      ? publishPlanning()
+                      : openInfo(
+                          '更新代码',
+                          '正式总览沿现有更新代码入口重读主干。本次未连接真实仓库。'
                         )
-                      }}
-                    >
-                      贯穿每个 B 版本 · 沿现有 Issue workflow 处理 <ArrowRight size={14} />
-                    </button>
-                  </div>
-                </div>
-                <p className="ml-footnote">
-                  周节奏便于反馈，必要时可跨周；每个 B 版本只做一次正式验收。需求数量与周期不固定。
-                </p>
-              </section>
-              <section className="ml-journey" aria-labelledby="journey-title">
-                <div className="ml-section-head">
-                  <h2 id="journey-title">沿同一个需求看交付</h2>
-                  <span className="muted">{selected.id} · 演示旅程</span>
-                </div>
-                <div className="ml-steps">
-                  {steps.map((label, i) => (
-                    <button
-                      aria-current={step === i ? 'step' : undefined}
-                      key={label}
-                      className={step === i ? 'current' : ''}
-                      onClick={() => setStep(i)}
-                    >
-                      <span>{i + 1}</span>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <div className="ml-journey-detail">
-                  <div>
-                    <h3>
-                      {
-                        [
-                          selected.title,
-                          `${selected.first} · 交付一个能试用的 MVP`,
-                          '邀请部分用户试用，收集实际问题',
-                          `${selected.target} · 修理、完善至约定范围`,
-                          '完成后，持续改善仍有去处'
-                        ][step]
-                      }
-                    </h3>
-                    <p>
-                      {
-                        [
-                          selected.reason,
-                          selected.mvp,
-                          '演示场景：3 位内部用户试用。反馈“调整后不知道哪个版本受影响”，带回后续 B 版本讨论；不据此判大需求完成。',
-                          selected.later,
-                          '新 bug 与衍生小需求进入 Issue。任务的处理结果来自原生状态，会话结束不等于完成。'
-                        ][step]
-                      }
-                    </p>
-                  </div>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => openVersion(step <= 2 ? selected.first : selected.target)}
-                  >
-                    进入 {step <= 2 ? selected.first : selected.target} 总览{' '}
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
-              </section>
+                  }
+                >
+                  更新代码 <RefreshCw size={14} />
+                </button>
+              </header>
+              <OverviewV8
+                annotationPrefix="原型注释: "
+                metrics={metrics}
+                overviewUI={overviewUI}
+                setOverviewUI={setOverviewUI}
+                onPrepare={() =>
+                  openInfo(
+                    '配置指标',
+                    '指标区沿用现有原型。配置继续由现有原生会话承载，本次不调整该功能。'
+                  )
+                }
+                milestoneSlot={
+                  <section className="ml-milestone-block" aria-labelledby="milestones-heading">
+                    <div className="ml-milestone-heading">
+                      <div>
+                        <h2 id="milestones-heading">项目里程碑</h2>
+                        <p className="muted">项目的月度取舍与跨 B 版本交付</p>
+                      </div>
+                      <div className="ml-actions">
+                        <span className="tag tag-outline">
+                          {scenario === 'empty'
+                            ? '尚未制定'
+                            : scenario === 'ready'
+                              ? '已制定'
+                              : reviewStage === 'review'
+                                ? '评审中'
+                                : reviewStage === 'merged'
+                                  ? '已合入 · 待更新'
+                                  : '制定中'}
+                        </span>
+                        {scenario === 'planning' && (
+                          <>
+                            <button
+                              className="btn btn-secondary"
+                              onClick={() => setExpanded(!expanded)}
+                            >
+                              与模型讨论
+                            </button>
+                            <button
+                              className="btn btn-primary"
+                              disabled={!chosen.length}
+                              onClick={() => setModal({ type: 'review' })}
+                            >
+                              {reviewStage === 'draft' ? '核对并提交评审' : '查看规划评审'}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {scenario === 'empty' ? (
+                      <div className="ml-first-plan">
+                        <CalendarRange size={26} />
+                        <h3>还没有月度版本</h3>
+                        <p>先讨论本月值得做的大需求，再约定优先级、目标 B 版本和截止时间。</p>
+                        <p className="muted">此时不要求先准备完整规格和高保真。</p>
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => chooseScenario('planning')}
+                        >
+                          制定首个月度规划 <ArrowRight size={15} />
+                        </button>
+                      </div>
+                    ) : scenario === 'ready' ? (
+                      <PublishedMilestones
+                        timeline={
+                          <RequirementTimeline
+                            chosen={published.requirements
+                              .filter((item) => item.selected)
+                              .sort((a, b) => a.priority - b.priority)}
+                            calendar={published.calendar}
+                            onSelect={selectRequirement}
+                            onStep={setStep}
+                            openVersion={openVersion}
+                            onInfo={openInfo}
+                          />
+                        }
+                        draft={published}
+                        openVersion={openVersion}
+                        onAdjust={() => {
+                          setDraft(structuredClone(published))
+                          chooseScenario('planning')
+                        }}
+                      />
+                    ) : (
+                      <div className="ml-planning-content">
+                        {' '}
+                        <section aria-labelledby="month-title" className="ml-month">
+                          <div className="ml-section-head">
+                            <h2 id="month-title">
+                              2026 年 11 月 <span className="muted">月度选择</span>
+                            </h2>
+                            <div className="ml-actions">
+                              <span className="tag tag-outline">{chosen.length} 项纳入</span>
+                              <IconAction
+                                label="导入或核对工作日历"
+                                icon={CalendarClock}
+                                onClick={() => setModal({ type: 'calendar' })}
+                              />
+                            </div>
+                          </div>
+                          <p className="ml-summary">
+                            先选值得做的大需求，约定优先次序和截止时间。具体范围与体验，在 B
+                            版本中持续收敛。
+                          </p>
+                          <div className="ml-calendar-status">
+                            <CalendarRange size={15} />
+                            <span>
+                              {draft.calendar
+                                ? `${draft.calendar.fixture ? '演示日历' : '用户提供的文本 · 未核验来源'} · ${Object.keys(draft.calendar.days).length}/30 天有记录`
+                                : '华为工作日历未提供 · 日期暂作讨论参考'}
+                            </span>
+                            <button onClick={() => setModal({ type: 'calendar' })}>核对日历</button>
+                          </div>
+                          <div className="ml-choice-list">
+                            {[...draft.requirements]
+                              .sort((a, b) => a.priority - b.priority)
+                              .map((item) => (
+                                <article
+                                  key={item.id}
+                                  className={`ml-choice ${selectedId === item.id ? 'selected' : ''} ${item.selected ? '' : 'deferred'}`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    aria-label={`本月选择 ${item.id}`}
+                                    checked={item.selected}
+                                    onChange={(e) =>
+                                      change(item.id, { selected: e.target.checked })
+                                    }
+                                  />
+                                  <button
+                                    className="ml-choice-main"
+                                    onClick={() => selectRequirement(item.id)}
+                                  >
+                                    <span className="ml-choice-title">
+                                      <span className="ml-priority">P{item.priority}</span>
+                                      <strong>{item.title}</strong>
+                                    </span>
+                                    <span className="ml-reason">{item.reason}</span>
+                                  </button>
+                                  <div className="ml-choice-meta">
+                                    <span>{item.owner}</span>
+                                    <small>
+                                      {item.selected
+                                        ? `${item.target} · 截止 ${item.due.slice(5).replace('-', '/')}`
+                                        : '暂不安排'}
+                                    </small>
+                                  </div>
+                                  <IconAction
+                                    label={`编辑 ${item.id}`}
+                                    icon={Pencil}
+                                    onClick={() => setModal({ type: 'edit', item })}
+                                  />
+                                </article>
+                              ))}
+                          </div>
+                        </section>
+                        <RequirementTimeline
+                          chosen={chosen}
+                          calendar={draft.calendar}
+                          onSelect={selectRequirement}
+                          onStep={setStep}
+                          openVersion={openVersion}
+                          onInfo={openInfo}
+                        />
+                        <section className="ml-journey" aria-labelledby="journey-title">
+                          <div className="ml-section-head">
+                            <h2 id="journey-title">沿同一个需求看交付</h2>
+                            <span className="muted">{selected.id} · 演示旅程</span>
+                          </div>
+                          <div className="ml-steps">
+                            {steps.map((label, i) => (
+                              <button
+                                aria-current={step === i ? 'step' : undefined}
+                                key={label}
+                                className={step === i ? 'current' : ''}
+                                onClick={() => setStep(i)}
+                              >
+                                <span>{i + 1}</span>
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="ml-journey-detail">
+                            <div>
+                              <h3>
+                                {
+                                  [
+                                    selected.title,
+                                    `${selected.first} · 交付一个能试用的 MVP`,
+                                    '邀请部分用户试用，收集实际问题',
+                                    `${selected.target} · 修理、完善至约定范围`,
+                                    '完成后，持续改善仍有去处'
+                                  ][step]
+                                }
+                              </h3>
+                              <p>
+                                {
+                                  [
+                                    selected.reason,
+                                    selected.mvp,
+                                    '原型注释: 本例为 3 位内部用户试用。反馈“调整后不知道哪个版本受影响”，带回后续 B 版本讨论；不据此判大需求完成。',
+                                    selected.later,
+                                    '新 bug 与衍生小需求进入 Issue。任务的处理结果来自原生状态，会话结束不等于完成。'
+                                  ][step]
+                                }
+                              </p>
+                            </div>
+                            <button
+                              className="btn btn-secondary"
+                              onClick={() =>
+                                openVersion(step <= 2 ? selected.first : selected.target)
+                              }
+                            >
+                              进入 {step <= 2 ? selected.first : selected.target} 总览{' '}
+                              <ArrowRight size={14} />
+                            </button>
+                          </div>
+                        </section>
+                      </div>
+                    )}
+                    <div className="ml-material-origin">
+                      <span>
+                        {scenario === 'ready'
+                          ? '正式总览 · 已合入项目主干'
+                          : scenario === 'empty'
+                            ? '项目主干 · 暂无月度规划'
+                            : '规划草案 · bw/project'}
+                      </span>
+                      <button
+                        className="btn btn-ghost"
+                        onClick={() => setModal({ type: 'source' })}
+                      >
+                        材料评审路径 <ArrowRight size={14} />
+                      </button>
+                    </div>
+                  </section>
+                }
+              />
             </main>
             {expanded && (
               <aside className="ml-discussion" aria-label="规划讨论">
@@ -610,22 +769,25 @@ function App() {
                       </p>
                     </div>
                   </div>
-                  <label className="field">
-                    讨论方式
-                    <select
-                      className="input"
-                      aria-label="讨论方式"
-                      value={mode}
-                      onChange={(e) => {
-                        setMode(e.target.value)
-                        setProposal(null)
-                      }}
-                    >
-                      <option value="mvp">先交 MVP，再按反馈完善</option>
-                      <option value="focus">减少本月并行需求</option>
-                      <option value="calendar">检查截止日与工作日历</option>
-                    </select>
-                  </label>
+                  <details className="ml-prototype-controls">
+                    <summary>原型注释: 选择建议样例</summary>
+                    <label className="field">
+                      讨论方式
+                      <select
+                        className="input"
+                        aria-label="讨论方式"
+                        value={mode}
+                        onChange={(e) => {
+                          setMode(e.target.value)
+                          setProposal(null)
+                        }}
+                      >
+                        <option value="mvp">先交 MVP，再按反馈完善</option>
+                        <option value="focus">减少本月并行需求</option>
+                        <option value="calendar">检查截止日与工作日历</option>
+                      </select>
+                    </label>
+                  </details>
                   <textarea
                     className="input ml-prompt"
                     aria-label="规划讨论输入"
@@ -639,7 +801,7 @@ function App() {
                     预览模型建议 <ArrowRight size={15} />
                   </button>
                   <p className="ml-footnote">
-                    脚本演示，未调用模型。真实使用拟复用原生会话与批注发送入口。
+                    原型注释: 当前建议由脚本模拟，落地复用原生会话；不以此下拉框限定真实讨论方式。
                   </p>
                   {proposal && (
                     <section className="ml-proposal" aria-label="模型建议预览">
@@ -704,9 +866,9 @@ function App() {
                     <button
                       className="btn btn-secondary"
                       disabled={chosen.length === 0}
-                      onClick={() => setModal({ type: 'confirm' })}
+                      onClick={() => setModal({ type: 'review' })}
                     >
-                      核对月度选择
+                      核对并提交评审
                     </button>
                   </div>
                 </div>
@@ -731,9 +893,10 @@ function App() {
         <CalendarPanel
           calendar={draft.calendar}
           apply={(calendar) => {
+            setReviewStage('draft')
             setProposal(null)
             setDraft({ ...draft, calendar, status: '讨论中' })
-            setToast('日历已应用到演示；截止时间未移动。')
+            setToast('日历已应用；截止时间未移动。')
           }}
           close={() => setModal(null)}
         />
@@ -753,7 +916,6 @@ function App() {
           close={() => setModal(null)}
         />
       )}
-      {modal?.type === 'metrics' && <MetricsPanel close={() => setModal(null)} />}
       {modal?.type === 'info' && (
         <Modal title={modal.title} close={() => setModal(null)}>
           <p>{modal.text}</p>
@@ -761,12 +923,17 @@ function App() {
       )}
       {modal?.type === 'reset' && (
         <Modal title="重置这份演示" close={() => setModal(null)}>
-          <p>将清除本浏览器保存的演示安排与日历。原生浏览器批注由 Orca 管理，不在本页修改。</p>
+          <p>原型注释: 将清除本浏览器保存的演示安排与日历。Orca 原生浏览器批注独立保留。</p>
           <footer>
             <button
               className="btn btn-primary"
               onClick={() => {
                 setDraft(structuredClone(initial))
+                setPublished(structuredClone(initial))
+                setReviewStage('draft')
+                setScenario('planning')
+                setExpanded(false)
+                setSelectedId('DEMO-01')
                 setProposal(null)
                 setStep(0)
                 setModal(null)
@@ -777,43 +944,14 @@ function App() {
           </footer>
         </Modal>
       )}
-      {modal?.type === 'confirm' && (
-        <Modal title="核对月度选择" close={() => setModal(null)}>
-          <p>只确认做哪些大需求、优先级、目标 B 版本及截止时间。具体交付范围在 B 版本中收敛。</p>
-          {chosen.map((item) => (
-            <div className="ml-confirm-row" key={item.id}>
-              <strong>
-                P{item.priority} · {item.title}
-              </strong>
-              <p>
-                {item.first} MVP → {item.target} 完善 · {item.due}
-              </p>
-              <small>{deadlineWarning(item, draft.calendar)}</small>
-            </div>
-          ))}
-          <p className="muted">这是一次演示确认，不写回真实计划，不代表需求完成或版本验收。</p>
-          <footer>
-            <button className="btn btn-secondary" onClick={() => setModal(null)}>
-              返回讨论
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={() => {
-                setDraft({
-                  ...draft,
-                  status: '已确认 · 演示',
-                  decisions: [
-                    ...draft.decisions,
-                    `人工确认演示月度选择：${chosen.map((r) => r.id).join('、')}`
-                  ]
-                })
-                setModal(null)
-              }}
-            >
-              确认演示选择
-            </button>
-          </footer>
-        </Modal>
+      {modal?.type === 'review' && (
+        <PlanningReviewPanel
+          chosen={chosen}
+          stage={reviewStage}
+          setStage={setReviewStage}
+          publish={publishPlanning}
+          close={() => setModal(null)}
+        />
       )}
     </>
   )
