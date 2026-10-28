@@ -1,4 +1,4 @@
-const { React, createRoot, useState, useRef, useEffect } = window.BWPrototypeDependencies
+const { React, createRoot, useState } = window.BWPrototypeDependencies
 import {
   MODULES,
   SCENARIOS,
@@ -7,7 +7,6 @@ import {
   PROMPTS,
   dotClass,
   moduleStateText,
-  navStateText,
   moduleButtons
 } from './ci-model.js'
 import { Icon, IconButton, ActionButton } from '../../version-planning/prototype/g3-components.jsx'
@@ -18,7 +17,7 @@ function errorsOf(records, moduleId) {
   return records.filter((r) => r.moduleId === moduleId && !r.ok).length
 }
 
-// 模块区：状态行 + 最近执行 + 动作行；灰态给扫描事实行，机制说明收在按钮提示。
+// 部署卡：状态行 + 最近执行 + 动作行；灰态给扫描事实行，机制说明收在按钮提示。
 function ModuleCard({ index, module, state, errors, executing, onAction }) {
   const buttons = moduleButtons(module, state, errors)
   return (
@@ -35,7 +34,7 @@ function ModuleCard({ index, module, state, errors, executing, onAction }) {
       <div className={`ci-card ${state.state}`}>
         {state.last && (
           <p className={`ci-last ${state.last.ok ? '' : 'bad'}`}>
-            最近{module.kind === 'poll' ? '一轮' : '一次'} {state.last.time}
+            最近一次 {state.last.time}
             <span className="ci-last-mark">{state.last.ok ? '✓' : '✗'}</span>
             {state.last.text}
           </p>
@@ -52,14 +51,10 @@ function ModuleCard({ index, module, state, errors, executing, onAction }) {
               onClick={() => onAction(b.key, module)}
               title={
                 b.key === 'generate'
-                  ? '向 CI 助手递交生成请求：按 ci-ops 模板结合项目实际代码生成脚本，PR 经人审合入 main'
+                  ? '向 CI 助手递交生成请求：按 ci-ops skill 先勘察项目实际代码与已有部署资产，复用优先，PR 经人审合入 main'
                   : b.key === 'run'
-                    ? '向 CI 助手递交执行请求：脚本在会话中执行，完成后独立读回并写记录'
-                    : b.key === 'start'
-                      ? '经 CI 助手登记 Orca 自动化定时调度，到点开会话执行脚本'
-                      : b.key === 'stop'
-                        ? '停用定时调度；已写记录保留，灯回到已接入·未启动'
-                        : '定位到记录区并按本模块筛选报错'
+                    ? '向 CI 助手递交执行请求：脚本在会话中执行，完成后独立读回（状态/版本/耗时）并写记录'
+                    : '定位到记录区并只看报错'
               }
             >
               {b.key === 'run' && executing ? `${module.short}中…` : b.label}
@@ -106,7 +101,6 @@ function App() {
   const [scene, setScene] = useState('first')
   const [states, setStates] = useState(() => structuredClone(sceneStates.first))
   const [records, setRecords] = useState(() => [...sceneRecords.first])
-  const [active, setActive] = useState('deploy')
   const [session, setSession] = useState(true)
   const [notice, setNotice] = useState('')
   const [handoff, setHandoff] = useState(null)
@@ -116,18 +110,12 @@ function App() {
   const [executing, setExecuting] = useState(null)
   const [filter, setFilter] = useState('all')
   const [openLogs, setOpenLogs] = useState([])
-  const scroll = useRef(null)
-  const navigation = useRef(null)
 
   const move = (id) => {
-    navigation.current = id
-    setActive(id)
     document.getElementById(id)?.scrollIntoView({ block: 'start' })
   }
   const toggleSession = (open) => {
-    navigation.current = active
     setSession(open)
-    requestAnimationFrame(() => document.getElementById(active)?.scrollIntoView({ block: 'start' }))
   }
   // 对象级动作复用 Orca 原生发送弹窗：人确认「发什么、发给谁」后再发送。
   const sendRequest = (text, kind) => {
@@ -139,7 +127,6 @@ function App() {
     setScene(value)
     setStates(structuredClone(sceneStates[value]))
     setRecords([...sceneRecords[value]])
-    setActive('deploy')
     setHandoff(null)
     setExecuting(null)
     setFilter('all')
@@ -156,52 +143,18 @@ function App() {
       return
     }
     if (key === 'errors') {
-      setFilter(module.id)
+      setFilter('error')
       move('records')
-      setNotice(`已定位到记录区 · 按「${module.name}」筛选`)
+      setNotice('已定位到记录区 · 只看报错')
       return
     }
-    if (key === 'stop') {
-      setModule(module.id, { state: 'yellow', running: false })
-      sendRequest(
-        module.id === 'monitor' ? PROMPTS.monitorStop : PROMPTS.healthStop,
-        '停止调度请求'
-      )
-      setNotice(`${module.name}已停止，灯回黄 · 记录保留`)
-      return
-    }
-    if (key === 'start') {
-      setModule(module.id, { state: 'green', running: true })
-      const text =
-        module.id === 'monitor' ? '服务在线 · 内存 60%' : '错误日志 0 条 · 指标在控制带内'
-      setRecords((current) => [
-        {
-          id: `demo-${Date.now()}`,
-          time: clock(),
-          moduleId: module.id,
-          ok: true,
-          result: '通过',
-          detail: text
-        },
-        ...current
-      ])
-      setModule(module.id, { last: { time: clock(), ok: true, text } })
-      sendRequest(
-        module.id === 'monitor' ? PROMPTS.monitorStart : PROMPTS.healthStart,
-        '启动调度请求'
-      )
-      setNotice(`${module.name}已启动轮询 · 首轮通过`)
-      return
-    }
-    // run：部署 / 重启单次执行，演示给执行中瞬态，完成后独立读回写记录；
-    // 重部署期间可先停止轮询的提醒归 CI 助手（spec：助手提醒、人决定），板面不重复。
+    // run：部署单次执行，演示给执行中瞬态，完成后独立读回写记录。
     setExecuting(module.id)
     setNotice(`${module.short}请求已递交 CI 助手`)
-    sendRequest(module.id === 'deploy' ? PROMPTS.deploy : PROMPTS.restart, `${module.short}请求`)
+    sendRequest(PROMPTS.deploy, `${module.short}请求`)
     setTimeout(() => {
       const time = clock()
-      const text =
-        module.id === 'deploy' ? 'v1.4.198 · 用时 3 分 08 秒' : '用时 41 秒 · 服务恢复在线'
+      const text = '版本 1.4.199 · 全程 3 分 08 秒 · /healthz 200'
       setExecuting(null)
       setModule(module.id, { state: 'green', last: { time, ok: true, text } })
       setRecords((current) => [
@@ -231,35 +184,14 @@ function App() {
     }
   }
 
-  useEffect(() => {
-    const pane = scroll.current
-    if (!pane) {
-      return
-    }
-    const onScroll = () => {
-      if (navigation.current) {
-        return
-      }
-      const top = pane.getBoundingClientRect().top
-      const current = MODULES.findLast(
-        (m) => document.getElementById(m.id)?.getBoundingClientRect().top <= top + 60
-      )
-      if (current) {
-        setActive(current.id)
-      }
-    }
-    pane.addEventListener('scroll', onScroll)
-    return () => pane.removeEventListener('scroll', onScroll)
-  }, [])
-
-  const filtered = filter === 'all' ? records : records.filter((r) => r.moduleId === filter)
+  const filtered = filter === 'all' ? records : records.filter((r) => !r.ok)
   const errorCount = records.filter((r) => !r.ok).length
 
   return (
     <div className={`g3-app ${compact ? 'constrained' : ''}`}>
       <div className="g3-demo-bar">
-        <strong>#461 评审草案 · CI</strong>
-        <span>四模块状态灯 · 场景与动作仅在本页演示</span>
+        <strong>#461 评审草案 · CI 部署</strong>
+        <span>部署模块状态灯 · 场景与动作仅在本页演示</span>
         <label className="g3-scene">
           场景
           <select
@@ -292,32 +224,38 @@ function App() {
         <div className="g3-design-notes">
           <p>
             <strong>定位与边界</strong>：CI
-            屏承载发布后的生产部署流程——验收屏「部署」只覆盖演示环境，生产机器的部署、可用性、报错与快速恢复在本屏。项目级入口「CI」与总览、任务同级；左侧
+            屏承载发布后的生产部署——验收屏「部署」只覆盖演示环境，生产机器的部署动作与结果读回在本屏。2026-10-28
+            评审收敛为只做部署模块：目标是简化部署动作、帮助用户构建和使用已有的部署脚本；监控/故障检测/重启转后续演进。项目级入口「CI」与总览、任务同级；左侧
             Orca 原生会话（CI
             助手），右侧业务板面，与计划/验收两屏同构。页头：标题左、动作右——会话收折
-            chip、更新代码（唯一同步入口）、配置自动化；不设批注模式（无会中逐对象评审事务）。板面不铺说明文本：模块语义、脚本路径、轮询间隔等工作机制收在按钮提示与
+            chip、更新代码（唯一同步入口）；不设批注模式。板面不铺说明文本：模块语义、脚本资产、扫描机制收在按钮提示与
             ci-ops skill 正本，板面只留状态、读数与动作。首次进入经原生工作树创建 bw/ci
             固定树，执行记录与错误日志存该树本地 .bw/ci/，默认不上仓。
           </p>
           <p>
-            <strong>四模块与灯</strong>
-            ：部署=拿已发布版本的包部署到指定环境（单次）；监控=轮询查整个服务可用性；故障检测=按指标与日志轮询查关键功能报错（阈值与控制带判定，不用模型判断「有没有事」）；重启=服务不可用时基于已发布版本的包快速重新拉起（人触发，自动自愈为后续演进）。灯是健康信号，只能从真实读数推导：灰=主检出未见脚本；黄=扫到资产、待执行或未启动；绿=最近成功或运行中·最近一轮通过；红=最近失败或最近一轮报错。停止→黄（重部署期间可预先停止监控/检测避免误报）；最新结果决定绿红；历史报错永久保留。顶部模块导航四灯一眼可比，点击定位各区。
+            <strong>部署与灯</strong>
+            ：部署=把已发布版本的包装到指定环境，完成后独立读回（服务状态、版本、耗时）并写执行记录；单次执行，人点按钮注入请求。助手按
+            ci-ops skill 生成脚本时复用项目已有资产优先（构建、装机、重启、监督脚本编排进
+            .bw/ci/deploy.sh 一条入口），缺失环节才按模板生成——样板间 gtsllm-dfx
+            已实证：项目已有脚本零改动，一条命令完成构建→部署→读回→记录。灯是健康信号，只能从执行记录推导：灰=主检出未见脚本；黄=扫到资产、待执行；绿=最近一次成功；红=最近一次失败。最新结果决定绿红；历史报错永久保留。
           </p>
           <p>
-            <strong>接入与执行</strong>：灰态点「生成脚本」向 CI 助手递交请求——按 ci-ops skill
-            模板结合项目实际代码生成 .bw/ci/deploy.sh 等四脚本，PR 经人审合入 main；板面每 5
-            秒扫描主检出固定路径，扫到即灰→黄。执行全会话驱动：部署/重启单次执行由人点按钮注入请求，脚本在会话中跑，完成后独立读回写记录；监控/故障检测经
-            Orca 自动化登记定时调度，到点真实开会话执行，不替人确认任何完成。
+            <strong>接入与执行</strong>：灰态点「生成部署脚本」向 CI
+            助手递交请求——勘察项目实际代码与已有部署资产后生成 .bw/ci/deploy.sh，PR 经人审合入
+            main；板面每 5
+            秒扫描主检出固定路径，扫到即灰→黄。执行全会话驱动：人点按钮注入请求，脚本在会话中真实跑，完成后独立读回写记录；失败如实红、不自动重试刷绿，恢复靠下一次真实成功。不替人确认任何完成。
           </p>
           <p>
-            <strong>记录与回显</strong>：每轮/每次结果写 bw/ci 树本地
-            records.jsonl，报错附日志文件。记录区按时间倒序回显全部执行与报错，可按模块筛选；报错条目默认折叠、页内展开看日志，不让用户去后台翻文件。脚本资产在项目
-            main（人审合入），运行数据在 bw/ci 本地（不上仓）——代码与数据分离，错误日志不默认进仓。
+            <strong>记录与回显</strong>：每次执行结果写 bw/ci 树本地
+            records.jsonl（时间、ok、版本、读回读数、耗时；失败附错误摘要与日志指针）。记录区按时间倒序回显全部执行与报错，可只看报错；报错条目默认折叠、页内展开看日志，不让用户去后台翻文件。脚本资产在项目
+            main（人审合入），运行数据在 bw/ci 本地（不上仓）——代码与数据分离。
           </p>
           <p>
             <strong>依赖与留白</strong>：组件与设计语言复用已合入 main 的 G3
-            计划屏（#391）；导航与工作区归 G2 外框。留白待评审：四脚本模板细则归 ci-ops skill
-            正本；重启是否演进为监控红灯时的一键建议；多环境（测试/预发/生产）是否扩环境维度。演示数据：记录、日志、读数均为预置，生产不预置任何记录。
+            计划屏（#391）；导航与工作区归 G2
+            外框。留白待评审：监控/故障检测/重启三模块的带入时机；多环境（测试/预发/生产）是否扩环境维度；告警通知通道；脚本模板细则归
+            ci-ops skill 正本（gate 后落
+            standard/skills/）。演示数据：记录、日志、读数均为预置，生产不预置任何记录。
           </p>
         </div>
       )}
@@ -390,46 +328,9 @@ function App() {
               >
                 <Icon name="refresh" size={13} /> 更新代码
               </button>
-              <button
-                className="g3-text-button"
-                title="打开原生自动化编辑器：监控/故障检测的定时调度在这里登记与停用"
-                onClick={() => setNotice('已打开自动化编辑器（演示）')}
-              >
-                <Icon name="automation" size={13} /> 配置自动化
-              </button>
             </div>
           </header>
-          <nav className="g3-journey ci-module-nav" aria-label="CI 模块状态">
-            {MODULES.map((m, i) => (
-              <button
-                key={m.id}
-                onClick={() => move(m.id)}
-                aria-current={active === m.id ? 'location' : undefined}
-              >
-                <span className="g3-stage-number">{i + 1}</span>
-                <span className="g3-stage-copy">
-                  <strong>{m.name}</strong>
-                  <small className="ci-nav-state">
-                    <span className={`g3-dot ${dotClass(states[m.id].state)}`} aria-hidden="true" />
-                    {navStateText(m, states[m.id])}
-                  </small>
-                </span>
-              </button>
-            ))}
-          </nav>
-          <div
-            className="g3-scroll"
-            ref={scroll}
-            onWheel={() => {
-              navigation.current = null
-            }}
-            onPointerDown={() => {
-              navigation.current = null
-            }}
-            onTouchStart={() => {
-              navigation.current = null
-            }}
-          >
+          <div className="g3-scroll">
             {MODULES.map((m, i) => (
               <ModuleCard
                 key={m.id}
@@ -444,25 +345,19 @@ function App() {
             <section id="records" className="ci-records-section">
               <div className="g3-section-title">
                 <h2>
-                  5·执行与报错记录 <small>bw/ci 树本地</small>
+                  2·执行与报错记录 <small>bw/ci 树本地</small>
                 </h2>
-                <span className="ci-filter" role="group" aria-label="按模块筛选记录">
+                <span className="ci-filter" role="group" aria-label="筛选记录">
                   <button className={filter === 'all' ? 'on' : ''} onClick={() => setFilter('all')}>
                     全部 {records.length}
                   </button>
-                  {MODULES.map((m) => {
-                    const count = records.filter((r) => r.moduleId === m.id).length
-                    return (
-                      <button
-                        key={m.id}
-                        className={filter === m.id ? 'on' : ''}
-                        disabled={!count}
-                        onClick={() => setFilter(m.id)}
-                      >
-                        {m.name} {count}
-                      </button>
-                    )
-                  })}
+                  <button
+                    className={filter === 'error' ? 'on' : ''}
+                    disabled={!errorCount}
+                    onClick={() => setFilter('error')}
+                  >
+                    报错 {errorCount}
+                  </button>
                 </span>
               </div>
               {filtered.length ? (
@@ -484,7 +379,7 @@ function App() {
                 </div>
               ) : (
                 <p className="g3-empty ci-records-empty">
-                  {records.length ? '该模块暂无记录' : '尚无执行记录'}
+                  {records.length ? '暂无报错记录' : '尚无执行记录'}
                 </p>
               )}
               {errorCount > 0 && <p className="ci-records-note">共 {errorCount} 条报错</p>}

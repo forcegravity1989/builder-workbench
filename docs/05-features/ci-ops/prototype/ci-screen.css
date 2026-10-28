@@ -9,13 +9,6 @@
   background: color-mix(in srgb, var(--muted-foreground, #767676) 45%, transparent);
 }
 
-/* 顶部模块状态导航：small 里内联灯，四灯一眼可比。 */
-.ci-nav-state {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
 /* 模块状态 chip：soft/deep 成对（背景/文字），沿用设计系统状态色用法。 */
 .ci-state {
   display: inline-flex;

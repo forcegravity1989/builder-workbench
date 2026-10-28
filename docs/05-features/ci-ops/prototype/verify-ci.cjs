@@ -1,5 +1,6 @@
-// #461 CI 原型 DOM 断言验证：元素存在、场景灯态切换、停止回黄、日志折叠展开、
-// console/page error 监听。截图只存临时目录供人查看，不进上下文（AGENTS 硬约束）。
+// #461 CI 部署原型 DOM 断言验证：元素存在、四场景灯态（灰/黄/绿/红）、执行瞬态、
+// 日志折叠展开、报错筛选、递交 prompt 一致性、console/page error 监听。
+// 截图只存临时目录供人查看，不进上下文（AGENTS 硬约束）。
 const path = require('node:path')
 const os = require('node:os')
 const fs = require('node:fs')
@@ -27,8 +28,7 @@ function resolveChromium() {
 }
 
 const pageUrl = `file:///${path.join(__dirname, '..', 'prototype.html').replace(/\\/g, '/')}`
-const navDot = (i) => `.g3-journey button:nth-child(${i + 1}) .ci-nav-state .g3-dot`
-const cardState = (id) => `#${id} .ci-state`
+const cardState = () => '#deploy .ci-state'
 
 let failures = 0
 const check = (name, ok) => {
@@ -47,24 +47,22 @@ const check = (name, ok) => {
   await page.goto(pageUrl)
   await page.waitForSelector('.ci-module', { timeout: 8000 })
 
-  // 骨架与入口
-  check('root 渲染四模块区', (await page.locator('.ci-module').count()) === 4)
-  check('模块导航四枚按钮', (await page.locator('.g3-journey button').count()) === 4)
+  // 骨架与入口（收敛后：单模块、无模块导航、页头两动作）
+  check('root 渲染部署卡（单模块）', (await page.locator('.ci-module').count()) === 1)
+  check('无模块导航（收敛后移除）', (await page.locator('.g3-journey').count()) === 0)
   check('侧栏 CI 选中项', (await page.locator('.g3-nav-selected').textContent()).trim() === 'CI')
   check('页头标题 CI', (await page.locator('.g3-header h1').textContent()) === 'CI')
   check(
-    '页头三动作（收折会话/更新代码/配置自动化）',
-    (await page.locator('.g3-header-actions button').count()) === 3
+    '页头两动作（收折会话/更新代码）',
+    (await page.locator('.g3-header-actions button').count()) === 2
   )
   check('记录区存在', (await page.locator('#records').count()) === 1)
+  check('四场景选项', (await page.locator('.g3-scene option').count()) === 4)
 
-  // 场景一：首次进入全灰
-  const firstDots = await page
-    .locator([navDot(0), navDot(1), navDot(2), navDot(3)].join(','))
-    .evaluateAll((els) => els.map((e) => e.className))
+  // 场景一：首次进入（灰）
   check(
-    '首次进入四灯全灰(off)',
-    firstDots.every((c) => c.includes('off'))
+    '首次进入灯灰(未接入)',
+    (await page.locator(cardState()).textContent()).includes('未接入')
   )
   check(
     '灰态卡虚线+未见脚本事实行',
@@ -83,30 +81,52 @@ const check = (name, ok) => {
   // 更新代码演示灰→黄
   await page.click('.g3-header-actions button:has-text("更新代码")')
   await page.waitForTimeout(100)
-  const armedDots = await page.locator(cardState('deploy')).textContent()
-  check('更新代码后部署灯黄(已接入·待执行)', armedDots.includes('已接入 · 待执行'))
+  check(
+    '更新代码后灯黄(已接入·待执行)',
+    (await page.locator(cardState()).textContent()).includes('已接入 · 待执行')
+  )
   check('footer 说明灰→黄', (await page.locator('.g3-footer').textContent()).includes('灯灰→黄'))
 
-  // 场景切换到运行中：绿绿红黄
-  await page.selectOption('.g3-scene select', 'running')
+  // 部署单次执行：执行中瞬态 → 绿 + 新记录
+  await page.click('#deploy .ci-actions button:has-text("部署")')
+  check(
+    '执行中瞬态',
+    (await page.locator('#deploy .ci-actions button').textContent()).includes('部署中')
+  )
+  await page.waitForTimeout(1800)
+  check(
+    '执行完成灯绿(最近一次成功)',
+    (await page.locator(cardState()).textContent()).includes('最近一次成功')
+  )
+  check('新记录入列', (await page.locator('.ci-record').count()) === 1)
+
+  // 场景三：部署成功（绿·历史保留）
+  await page.selectOption('.g3-scene select', 'success')
   await page.waitForTimeout(100)
-  const runningStates = await page.locator('.ci-state').allTextContents()
-  check('运行中：部署绿', runningStates[0].includes('最近执行成功'))
-  check('运行中：监控绿·运行中', runningStates[1].includes('运行中 · 最近一轮通过'))
-  check('运行中：检测红·报错', runningStates[2].includes('运行中 · 最近一轮报错'))
-  check('运行中：重启黄', runningStates[3].includes('已接入 · 待执行'))
-  const runningNav = await page
-    .locator('.ci-nav-state .g3-dot')
-    .evaluateAll((els) => els.map((e) => e.className))
   check(
-    '导航灯 ok/warn/err/warn',
-    runningNav.join(',').includes('ok') && runningNav.join(',').includes('err')
+    '成功场景灯绿',
+    (await page.locator(cardState()).textContent()).includes('最近一次成功')
+  )
+  check('最近执行读数行', (await page.locator('#deploy .ci-last').textContent()).includes('版本 1.4.198'))
+  check('记录 3 条', (await page.locator('.ci-record').count()) === 3)
+  check('绿态历史报错保留', (await page.locator('.ci-record.error').count()) === 1)
+  check(
+    '绿态历史报错提示行',
+    (await page.locator('#deploy .ci-errors-muted').textContent()).includes('历史报错 1 条')
+  )
+
+  // 场景四：最近失败（红）
+  await page.selectOption('.g3-scene select', 'failed')
+  await page.waitForTimeout(100)
+  check(
+    '失败场景灯红(最近一次失败)',
+    (await page.locator(cardState()).textContent()).includes('最近一次失败')
   )
   check(
-    '检测红态双按钮（停止检测+报错记录）',
-    (await page.locator('#health .ci-actions button').count()) === 2
+    '红态双按钮（重新部署+报错记录）',
+    (await page.locator('#deploy .ci-actions button').count()) === 2
   )
-  check('记录 8 条', (await page.locator('.ci-record').count()) === 8)
+  check('失败场景记录 2 条', (await page.locator('.ci-record').count()) === 2)
 
   // 报错条目默认折叠，展开页内回显日志
   check('日志默认折叠', (await page.locator('.ci-record-log').count()) === 0)
@@ -117,61 +137,24 @@ const check = (name, ok) => {
       (await page.locator('.ci-record-log').textContent()).includes('FAIL')
   )
 
-  // 停止监控 → 灯回黄，历史保留
-  await page.click('#monitor .ci-actions button:has-text("停止监控")')
-  await page.waitForTimeout(100)
-  check(
-    '停止后监控灯黄(已接入·未启动)',
-    (await page.locator(cardState('monitor')).textContent()).includes('已接入 · 未启动')
-  )
-  check(
-    '停止后按钮变启动监控',
-    (await page.locator('#monitor .ci-actions button').textContent()).trim() === '启动监控'
-  )
-  check('停止后记录保留', (await page.locator('.ci-record').count()) === 8)
-  // footer 递交说明优先于 notice：停止请求文本里带「灯回到已接入·未启动」
-  check(
-    'footer 停止说明',
-    (await page.locator('.g3-footer').textContent()).includes('灯回到已接入·未启动')
-  )
-
-  // 报错记录按钮定位 + 模块筛选
-  await page.click('#health .ci-actions button:has-text("报错记录")')
+  // 报错记录按钮定位 + 只看报错筛选
+  await page.click('#deploy .ci-actions button:has-text("报错记录")')
   await page.waitForTimeout(200)
-  check('筛选后只剩检测记录', (await page.locator('.ci-record').count()) === 2)
+  check('筛选后只剩报错', (await page.locator('.ci-record').count()) === 1)
+  check('footer 定位说明', (await page.locator('.g3-footer').textContent()).includes('只看报错'))
+  await page.click('.ci-filter button:has-text("全部")')
+  check('恢复全部筛选', (await page.locator('.ci-record').count()) === 2)
+
+  // 重新部署：footer 回显真实递交 prompt（与 skill-deploy.md 逐字一致的可视证据）
+  await page.click('#deploy .ci-actions button:has-text("重新部署")')
+  check(
+    'footer 回显真实部署 prompt',
+    (await page.locator('.g3-footer').textContent()).includes('执行本项目的 .bw/ci/deploy.sh')
+  )
   check(
     '会话区递交指令预览',
-    (await page.locator('.ci-session-draft').count()) >= 0 &&
-      (await page.locator('.g3-footer').textContent()).includes('递交')
-  )
-  // 恢复「全部」筛选，再验单次执行的记录入列
-  await page.click('.ci-filter button:has-text("全部")')
-
-  // 部署单次执行：执行中瞬态 → 绿
-  await page.click('#deploy .ci-actions button:has-text("再次部署")')
-  check(
-    '执行中瞬态',
-    (await page.locator('#deploy .ci-actions button').textContent()).includes('部署中')
-  )
-  await page.waitForTimeout(1800)
-  check(
-    '执行完成灯绿',
-    (await page.locator(cardState('deploy')).textContent()).includes('最近执行成功')
-  )
-  check('新记录入列', (await page.locator('.ci-record').count()) >= 9)
-
-  // 场景四：全部健康 + 历史报错保留
-  await page.selectOption('.g3-scene select', 'healthy')
-  await page.waitForTimeout(100)
-  const healthyStates = await page.locator('.ci-state').allTextContents()
-  check(
-    '全部健康四灯绿',
-    healthyStates.every((t) => t.includes('成功') || t.includes('通过'))
-  )
-  check('健康场景历史报错保留', (await page.locator('.ci-record.error').count()) === 2)
-  check(
-    '绿态历史报错提示行',
-    (await page.locator('#restart .ci-errors-muted').textContent()).includes('历史报错 1 条')
+    (await page.locator('.ci-session-draft').count()) === 1 &&
+      (await page.locator('.ci-session-draft').textContent()).includes('独立读回')
   )
 
   // 深浅切换 + 会话收折

@@ -27,7 +27,7 @@
 | 7 | Windows 出包与发布 | [workbench-release/](workbench-release/)³ | 开发方法资产·补链中 | ◐ | ◐ | ◐ | ◐ | ◐(R01/R02/R03/R05 v0.6.0 实走) | ◐(RJ01 走至读回) |
 | 8 | 集成页四卡收敛 | [connectors/](connectors/) · [原型](connectors/prototype.html)⁵ | 在用·补链中 | ● | ● | ● | ● | 待建(I01–I12 已定义) | 待建(IJ01 已定义) |
 | 9 | 版本工作区（侧边栏版本运作树） | [version-workspace/](version-workspace/) · [原型](version-workspace/version-workspace-prototype.html) · [旅程](version-workspace/version-workspace-journey.html) | G2 基线；#439 全树绑定/会话可见/断链已静态接线，真壳待验⁶ | ● | ● | ● | ◐(协议例＋ratchet 226) | ◐(headless 烟测主链，CI 随 push 复核) | ◐(绑定树旅程烟测；真壳归人) |
-| 10 | CI（生产部署四模块） | [ci-ops/](ci-ops/) · [高保真](ci-ops/prototype.html) | 设计中·#461 草案待人 gate⁷ | ◐ | ◐ | ○ | ○ | ○(C01–C10 已定义) | ○(CJ01 已定义) |
+| 10 | CI 部署（生产部署入口） | [ci-ops/](ci-ops/) · [高保真](ci-ops/prototype.html) | 设计中·#461 草案待人 gate⁷ | ◐ | ◐ | ○ | ○ | ○(C01–C06 已定义) | ○(CJ01 已定义) |
 
 ¹ 第 4 行：GitHub CI 路径 2026-08/09 在旧 main 侧交付并实测闭环（PR #132 及后续召唤）；2026-09-29 用户拍板迁入产品分支——workflow 与回执脚本（`.github/scripts/check-pr-review.mjs`）已落，实现设计 ●。2026-09-30 扶正后本定义即默认分支 main 的定义，`/code-review` 召唤直接执行它，不再经旧 main 定义中转。验收点 ◐：迁移 PR 自身修改 workflow 文件，按 #132 先例（时为 pull_request 触发下的防篡改跳过）保守不自召——该校验在现行 issue_comment 触发模型下是否适用未复核；主干首场真实召唤待下一条合格 PR 实测，未实测不判过。TDD ◐：回执脚本无单测，以召唤实测为准。台内「请评审」按钮路径规范件在仓但未接线，defer。明细见其 [STATUS](reviewer-agent/STATUS.md) 迁移节。
 
@@ -40,7 +40,7 @@
 ⁵ 第 8 行随 #323 设计 PR 首次登记（2026-10-14），2026-10-15 按人反馈两轮修订后 gate（简化为拼装现有能力；人不手敲命令），实现随同 PR 交付：集成页收敛为 GitHub / CodeHub / WeLink / CloudBuild 四卡（代码托管 / 项目群 / 构建三组；CloudBuild 随 #366 增补，2026-10-19），preflight 补 `welink-cli` / `cb` 探测与 codehub / welink / cb `auth status` 读回，安装由应用后台执行（gh 保持外链），登录在卡内展开上游内嵌终端粘贴命令、人按回车（远端运行时无按钮，WSL 工作树保留）。待决 1–4 与真壳拍板 5–8 均已由人拍板（2026-10-16 / 10-19）：六卡代码留仓、自包含安装命令（cloudbuild 为两步）、welink EXPIRED 判未登录、分组标题补中文、安装后台化、登录卡内嵌终端。真壳验收证据（I01–I12 / IJ01）未采。明细见其 [STATUS](connectors/STATUS.md)。
 ⁶ 第 9 行（[#383](https://github.com/forcegravity1989/builder-workbench/issues/383)/#328/#334）2026-10-20 评审定稿（Draft PR #389）：版本平铺导航、目标目录投影（含跨宿主实例汇总）、目标树按需、同一原生创建器开工、版本总览聚合视图（修订 9 表格周报风格，2026-10-22 人确认），以及版本级清理（版本行删除图标＋与 Orca 同口径确认对话框，复用原生删除链与预检，默认只删本机 owned 工作树；不级联删版本、材料与目录保留）。生产接线已随 #389 交付（2026-10-22：P1 绑定与目录、P2 版本准备、P4 任务范围与开工链、P3a 侧栏版本树、P3b 屏内选版移除/清理确认单/补绑定/只读回看/Issue 开工 hookup、P5 自动化身份版本化与墙读数、P6 版本总览）；验收侧 Skill 正本同步与护栏撤除待 #394 合入，真壳 J1–J9、发布证据检索与 CodeHub 范围路径归人/后续。证据与留白见 [version-workspace STATUS](version-workspace/STATUS.md)。 #439 增量：原生全树右击绑定/改绑/解绑、无会话绑定树可见、断链原生图标与导航保留已静态接线，无版本级重复绑定按钮，解绑不级联树/会话/父子。旧烟测不覆盖这些变化，真壳与双主机复验尚未进行。
 
-⁷ 第 10 行随 [#461](https://github.com/forcegravity1989/builder-workbench/issues/461) 首次登记（2026-10-28）：发布后生产部署无入口/流程/状态读回的缺口。intent/spec 为草案待人 gate，关键决定（四模块语义、灯态机四态与停止回黄、人触发重启、错误日志存 bw/ci 树本地不上仓、5 秒扫描主检出判灰→黄、板面不铺说明文本）已在设计对话拍板并写入草案；高保真原型四场景覆盖全部灯态（2026-10-28 板面文本按评审反馈两轮定稿：机制进提示、事实留板面），Playwright DOM 断言 38/38。无生产代码；明细见 [ci-ops STATUS](ci-ops/STATUS.md)。
+⁷ 第 10 行随 [#461](https://github.com/forcegravity1989/builder-workbench/issues/461) 首次登记（2026-10-28）：发布后生产部署无入口/流程/状态读回的缺口。同日评审收敛为**只做部署模块**（简化部署动作、构建并使用项目已有部署脚本；监控/故障检测/重启转后续演进），评审物扩展为四件：高保真原型、ci-ops skill 草案（勘察→复用→生成→读回→记录方法 + 递交 prompt 正文 + 记录协议）、真实样板间（gtsllm-dfx 本机实跑：项目已有脚本零改动，一条命令构建→部署→独立读回→写记录，监督自愈、失败路径与干净停止实证；远端路径已构建未实走）。intent/spec 为草案待人 gate；无生产代码；明细见 [ci-ops STATUS](ci-ops/STATUS.md)。
 
 ## 裁决与明细指引
 
