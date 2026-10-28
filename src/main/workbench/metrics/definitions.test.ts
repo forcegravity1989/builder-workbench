@@ -3,6 +3,9 @@ import { decodeMetricDefinitions } from './definitions'
 
 const commit = 'a'.repeat(40)
 const raw = `schema_version = 2
+[[feature]]
+name = "需求对齐"
+value = "确认前把承诺写清"
 [[lagging]]
 name = "结果"
 def = "真实计数"
@@ -15,9 +18,13 @@ def = "真实计数"
 collect = { kind = "script", run = ["python", "leading.py"], retro = true }
 `
 
-it('decodes schema2 and resolves only an unambiguous leading relationship', () => {
+it('decodes schema2 features and resolves only an unambiguous leading relationship', () => {
   const result = decodeMetricDefinitions(raw, commit)
+  expect(result.features).toEqual([{ name: '需求对齐', value: '确认前把承诺写清' }])
   expect(result.problems).toEqual([])
+  const repeated = decodeMetricDefinitions(`${raw}[[feature]]\nname = "需求对齐"\n`, commit)
+  expect(repeated.features).toEqual(result.features)
+  expect(repeated.problems.map((problem) => problem.code)).toEqual(['ambiguous-feature'])
   expect(result.definitions).toHaveLength(2)
   expect(result.definitions[1].leads).toBe('结果')
   const changedTarget = decodeMetricDefinitions(raw.replace('target = "3"', 'target = "9"'), commit)

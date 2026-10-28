@@ -1,6 +1,5 @@
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
-import { versions, calendarSample, parseCalendar } from './milestones-data.js'
-import octoberPlan from '../../../../.bw/planning/v0.7/data.json'
+import { versions, calendarDays, versionFacts } from './milestones-data.js'
 const {
   // React is used by the shared JSX build factory.
   // eslint-disable-next-line no-unused-vars
@@ -34,157 +33,56 @@ export function Modal({ title, close, children, wide = false }) {
   )
 }
 
-export function CalendarPanel({ calendar, apply, close }) {
-  const [text, setText] = useState('')
-  const [preview, setPreview] = useState(null)
-  const [error, setError] = useState('')
-  const [source, setSource] = useState('')
-  const [fixture, setFixture] = useState(false)
-  const validate = () => {
-    try {
-      setPreview(parseCalendar(text))
-      setError('')
-    } catch (e) {
-      setError(e.message)
-      setPreview(null)
-    }
-  }
+export function CalendarPanel({ close }) {
+  const [month, setMonth] = useState(11)
+  const days = calendarDays(month)
+  const offset = (days[0].weekday + 6) % 7
   return (
-    <Modal title="工作日历" close={close} wide>
-      <p className="ml-callout">
-        原型注释: 尚未取得真实华为工作日历。此处验证“提供材料 → 核对日期 →
-        用于规划”的交互；没有连接华为系统，也不验证其文件格式。
-      </p>
-      <div className="ml-calendar-layout">
-        <section>
-          <h3>1. 提供日历材料</h3>
-          <p className="muted">
-            原型注释:
-            目标体验是将日历文件或截图交给原生会话，模型整理出日期与工作／休息安排，再由人核对。当前仅支持粘贴或载入已整理的文本。
-          </p>
-          <label className="field">
-            来源说明
-            <input
-              className="input"
-              aria-label="日历来源说明"
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-              placeholder="文件名称、发布方、适用范围"
-            />
-          </label>
-          <textarea
-            className="input calendar-input"
-            aria-label="日历文本"
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value)
-              setPreview(null)
-              setFixture(false)
-            }}
-            placeholder="2026-11-02,工作,来源说明"
-          />
-          <div className="ml-actions">
-            <button
-              className="btn btn-secondary"
-              onClick={() => {
-                setText(calendarSample())
-                setSource('虚构的 2026-11 工作日历')
-                setPreview(null)
-                setFixture(true)
-                setError('')
-              }}
-            >
-              填入演示样本
-            </button>
-            <label className="btn btn-secondary">
-              载入文本
-              <input
-                className="sr-only"
-                type="file"
-                accept=".txt,.csv"
-                aria-label="载入已整理的日历文本"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0]
-                  if (!file) {
-                    return
-                  }
-                  setPreview(null)
-                  setError('')
-                  if (file.size > 100000) {
-                    setError('原型注释: 日历文本样本限 100 KB。')
-                    return
-                  }
-                  try {
-                    setText(await file.text())
-                    setSource(file.name)
-                    setFixture(false)
-                    setPreview(null)
-                    setError('')
-                  } catch {
-                    setError('文件读取失败，请重新选择。')
-                  }
-                }}
-              />
-            </label>
-          </div>
-          <p className="muted">
-            原型注释:
-            演示文本一行一个日期，格式为“2026-11-DD,工作或休息,说明”。未提供的日期保持未知。
-          </p>
-        </section>
-        <section>
-          <h3>2. 核对安排</h3>
-          {!preview ? (
-            <div className="ml-empty">先解析材料，再核对工作日、休息日与调班。</div>
-          ) : (
-            <>
-              <p>
-                {Object.keys(preview).length}/30 天有记录 ·{' '}
-                {Object.values(preview).filter((d) => d.work).length} 个工作日
-              </p>
-              <div className="calendar-grid">
-                {Array.from({ length: 30 }, (_, i) => {
-                  const date = `2026-11-${String(i + 1).padStart(2, '0')}`
-                  const day = preview[date]
-                  return (
-                    <div
-                      key={date}
-                      className={day ? (day.work ? 'workday' : 'restday') : 'unknown'}
-                    >
-                      <b>{i + 1}</b>
-                      <small>{day ? (day.work ? '工作' : '休息') : '未知'}</small>
-                    </div>
-                  )
-                })}
-              </div>
-              <p className="muted">
-                应用后仅提示安排冲突、计算已知可用日期；不会移动里程碑或改已确认的截止时间。
-              </p>
-            </>
-          )}
-          {calendar && <p className="muted">当前已应用：{calendar.source}</p>}
-        </section>
+    <Modal title="工作日历" close={close}>
+      <div className="ml-section-head">
+        <h3>2026 年 {month} 月</h3>
+        <div className="ml-actions">
+          <button
+            className="btn btn-ghost"
+            disabled={month === 10}
+            onClick={() => setMonth(10)}
+            aria-label="上个月"
+          >
+            ←
+          </button>
+          <button
+            className="btn btn-ghost"
+            disabled={month === 11}
+            onClick={() => setMonth(11)}
+            aria-label="下个月"
+          >
+            →
+          </button>
+        </div>
       </div>
-      {error && (
-        <p role="alert" className="ml-error">
-          {error}
-        </p>
-      )}
-      <footer>
-        <button className="btn btn-secondary" onClick={validate}>
-          解析并预览
-        </button>
-        <button
-          className="btn btn-primary"
-          disabled={!preview || !source.trim()}
-          onClick={() => {
-            apply({ source: source.trim(), fixture, days: preview })
-            close()
-          }}
-        >
-          核对后用于演示规划
-        </button>
-      </footer>
+      <div className="calendar-grid">
+        {['一', '二', '三', '四', '五', '六', '日'].map((d) => (
+          <span className="ml-weekday" key={d}>
+            {d}
+          </span>
+        ))}
+        {Array.from({ length: offset }, (_, i) => (
+          <span key={`blank${i}`} />
+        ))}
+        {days.map((d) => (
+          <div key={d.date} className={d.overtime ? 'overtime' : d.work ? 'workday' : 'restday'}>
+            <b>{d.day}</b>
+            {d.overtime && <small>加班</small>}
+          </div>
+        ))}
+      </div>
+      <p className="muted">
+        工作日历 · BW 预置 <span className="ml-overtime-key">加班</span> 周六加班
+      </p>
+      <p className="ml-footnote">
+        原型注释: 布局采用正常日历，10/17、11/14
+        的周六加班仅为示意，尚未核验真实华为日历；正式产品由 BW 预先对接，无用户导入步骤。
+      </p>
     </Modal>
   )
 }
@@ -229,7 +127,7 @@ export function EditRequirement({ item, save, close }) {
             required
             maxLength={80}
             value={value.title}
-            onChange={(e) => field('title', e.target.value)}
+            onInput={(e) => field('title', e.currentTarget.value)}
           />
         </label>
         <div className="ml-form-grid">
@@ -240,7 +138,7 @@ export function EditRequirement({ item, save, close }) {
               aria-label="主导 Builder"
               required
               value={value.owner}
-              onChange={(e) => field('owner', e.target.value)}
+              onInput={(e) => field('owner', e.currentTarget.value)}
             />
           </label>
           <label className="field">
@@ -295,7 +193,7 @@ export function EditRequirement({ item, save, close }) {
             max="2026-11-29"
             required
             value={value.due}
-            onChange={(e) => field('due', e.target.value)}
+            onInput={(e) => field('due', e.currentTarget.value)}
           />
         </label>
         <label className="field">
@@ -305,7 +203,7 @@ export function EditRequirement({ item, save, close }) {
             aria-label="取舍理由"
             required
             value={value.reason}
-            onChange={(e) => field('reason', e.target.value)}
+            onInput={(e) => field('reason', e.currentTarget.value)}
           />
         </label>
         {error && (
@@ -326,72 +224,73 @@ export function EditRequirement({ item, save, close }) {
   )
 }
 
-export function VersionBridge({ item, version, step, close }) {
-  const early = version === item.first
-  const related = item.selected && (early || version === item.target)
+export function VersionBridge({ item, version, close }) {
+  const [retried, setRetried] = useState(false)
+  const fact = versionFacts[version]
+  const related = item?.selected && (version === item.first || version === item.target)
   return (
-    <Modal title={`${version} · 版本总览衔接预览`} close={close} wide>
-      <div className="ml-callout">
+    <Modal title={`${version} · 版本总览`} close={close} wide>
+      <p className="ml-footnote">
         原型注释: #334
-        由另一窗口设计。本页仅校准跳转时要带入的需求、版本和本版交付，不代表双方协议或新版本总览已实现。
-      </div>
-      <p className="eyebrow">
-        {related
-          ? `${item.id} · ${item.owner}`
-          : !item.selected
-            ? `${item.id} · 本月暂不安排`
-            : '未关联当前需求'}{' '}
-        · 演示版本
+        衔接预览，状态为模拟材料读回。正式跳转将使用同一需求与版本上下文，路由与持久化尚待统筹。
       </p>
-      <h2>{related ? item.title : `${version} 尚未纳入当前需求`}</h2>
+      <div className="ml-section-head">
+        <h3>{item?.title || '版本工作'}</h3>
+        <span className="tag tag-outline">{fact.label}</span>
+      </div>
+      <p>{fact.source}</p>
+      {retried && <p role="alert">暂时无法读取，请稍后重试。</p>}
+      <p className="muted">{fact.detail}</p>
       <div className="ml-bridge-grid">
         <section>
-          <h3>本版交付</h3>
-          <p>{!related ? '未安排，不推断交付范围。' : early ? item.mvp : item.later}</p>
-          <p className="muted">
-            {!related
-              ? '返回月度规划可选择另一需求，或调整版本安排。'
-              : early
-                ? '对齐规格与高保真后，接上开发、测试，形成可运行的 MVP。'
-                : '承接部分用户的试用问题，收敛本月约定范围；不重写先行版本的验收。'}
+          <h3>月度安排</h3>
+          <p>
+            {related
+              ? version === item.first
+                ? `先行 MVP：${item.mvp}`
+                : `后续完善：${item.later}`
+              : '本版未关联当前需求。'}
           </p>
+          {related && (
+            <p className="muted">
+              {item.owner} · 整体约定截止 {item.due}
+            </p>
+          )}
         </section>
         <section>
-          <h3>{item.selected ? '大需求整体安排' : '候选安排 · 未纳入本月'}</h3>
+          <h3>版本计划</h3>
           <p>
-            {item.first} 先行 MVP → {item.target} 后续完善
+            {fact.plan === false
+              ? '尚未开始计划'
+              : fact.plan === null
+                ? '未能读取计划'
+                : '已形成版本计划'}
           </p>
-          <p>截止 {item.due} · 每个 B 版本一次正式验收</p>
+          <p className="muted">
+            {fact.plan === false
+              ? '本版范围和任务尚未确认。'
+              : fact.plan === null
+                ? '状态未知，不显示零任务或未开始。'
+                : '具体范围、任务和验收以本版材料为准。'}
+          </p>
         </section>
       </div>
-      <div className="ml-artifact-row">
-        <span>规格 / 高保真</span>
-        <span>Plan / 开发 / 测试</span>
-        <span>试用 / 人工验收</span>
-      </div>
-      <p className="muted">
-        原型注释: 成果未接真实读取。此刻演示关注：
-        {!related
-          ? '未关联版本不能冒充本需求成果。'
-          : step === 2
-            ? '3 位内部用户试用，收集反馈；试用不是第二次正式验收。'
-            : step === 4
-              ? '大需求完成后的 bug 与衍生小需求继续进入 Issue workflow；不会自动关闭 Issue。'
-              : early
-                ? '从设计收敛接到可试用交付，不能止于文档。'
-                : '按反馈修理、完善，保留原承诺与前版证据。'}
-      </p>
       <footer>
+        {fact.plan === null && (
+          <button className="btn btn-secondary" onClick={() => setRetried(true)}>
+            重试读取
+          </button>
+        )}
         <a
           className="btn btn-secondary"
           href="../version-workspace/version-workspace-prototype.html"
           target="_blank"
           rel="noreferrer"
         >
-          查看现有版本工作区原型
+          查看版本工作区原型 ↗
         </a>
         <button className="btn btn-primary" onClick={close}>
-          返回月度规划
+          返回里程碑
         </button>
       </footer>
     </Modal>
@@ -455,7 +354,9 @@ export function ReferencePanel({ close }) {
 export function PlanningSourcePanel({ close }) {
   return (
     <Modal title="项目里程碑在哪里规划" close={close} wide>
-      <p>项目总览既是呈现入口，也是项目总里程碑的规划入口。月份只是查看和调整的一段。</p>
+      <p>
+        项目总览既是呈现入口，也是项目总里程碑的规划入口。日常展示连续泳道；点“规划里程碑”进入左右工作区。左侧可直接编辑，右侧复用原生模型会话。
+      </p>
       <div className="ml-bridge-grid">
         <section>
           <h3>正式总览</h3>
@@ -464,7 +365,9 @@ export function PlanningSourcePanel({ close }) {
         </section>
         <section>
           <h3>规划草案</h3>
-          <p>在总览直接编辑，也可借助原生会话持续讨论。先决定做什么、优先级、目标 B 版本和截止。</p>
+          <p>
+            左侧直接编辑与右侧原生会话共同维护同一份草案。先决定做什么、优先级、目标 B 版本和截止。
+          </p>
           <p className="muted">
             原型注释: 本页仅保存浏览器演示草案，没有读取真实主干或写入规划分支。
           </p>
@@ -489,107 +392,6 @@ export function PlanningSourcePanel({ close }) {
         </button>
       </footer>
     </Modal>
-  )
-}
-
-export function PublishedMilestones({ draft, onAdjust, timeline }) {
-  const [month, setMonth] = useState('2026-10')
-  const months = [
-    {
-      id: '2026-10',
-      label: '2026 年 10 月',
-      status: '已制定',
-      rows: octoberPlan.goals.map((goal) => ({
-        id: `${octoberPlan.version}:${goal.goalId}`,
-        title: goal.title,
-        owner: goal.owner,
-        target: `${octoberPlan.version} · ${goal.goalId}`,
-        due: null,
-        result: goal.deliverable.split('\n')[0]
-      }))
-    },
-    {
-      id: '2026-11',
-      label: '2026 年 11 月',
-      status: '已制定',
-      rows: draft.requirements.filter((r) => r.selected)
-    },
-    {
-      id: '2026-12',
-      label: '2026 年 12 月',
-      status: '已制定',
-      rows: [
-        {
-          id: 'DEMO-04',
-          title: '让新一轮真实使用问题形成清晰改进方向',
-          owner: 'Builder B',
-          priority: 1,
-          target: 'B02',
-          due: '2026-12-18',
-          result: '下月安排，具体范围在 B 版本中收敛'
-        }
-      ]
-    }
-  ]
-  const current = months.find((item) => item.id === month)
-  return (
-    <div className="ml-published">
-      <div className="ml-month-tabs" role="tablist" aria-label="月度版本">
-        {months.map((item) => (
-          <button
-            className="btn btn-ghost"
-            role="tab"
-            aria-selected={month === item.id}
-            key={item.id}
-            onClick={() => setMonth(item.id)}
-          >
-            {item.label}
-            <small>{item.rows.length} 项大需求</small>
-          </button>
-        ))}
-      </div>
-      <div className="ml-section-head">
-        <h3>{current.label} · 正式安排</h3>
-        {month === '2026-11' && (
-          <button className="btn btn-secondary" onClick={onAdjust}>
-            调整本月规划
-          </button>
-        )}
-      </div>
-      <div role="tabpanel" aria-label={current.label}>
-        {month === '2026-11'
-          ? timeline
-          : current.rows.map((item) => (
-              <article className="ml-published-row" key={item.id}>
-                <div>
-                  <small>
-                    {item.priority ? `P${item.priority}` : '原计划目标'} · {item.owner}
-                  </small>
-                  <h3>{item.title}</h3>
-                  <p className="muted">{item.reason || item.result}</p>
-                </div>
-                <div>
-                  <b>{item.target}</b>
-                  <small>{item.due ? `截止 ${item.due}` : '截止 / B 版本映射未登记'}</small>
-                </div>
-              </article>
-            ))}
-      </div>
-      <p className="ml-footnote">
-        原型注释: 10 月引用 BW 已提交的 v0.7 计划，未推断验收通过，也未补造历史月度/B
-        版本映射。11、12 月为模拟安排，非真实 v0.8 承诺；完整编辑旅程以 11 月为例。
-      </p>
-      {month === '2026-10' && (
-        <a
-          className="btn btn-ghost"
-          href="https://github.com/forcegravity1989/builder-workbench/blob/90952d9bee18e436b165b82b5c08be92b3d82594/.bw/planning/v0.7/data.json"
-          target="_blank"
-          rel="noreferrer"
-        >
-          查看 10 月原计划 · v0.7 ↗
-        </a>
-      )}
-    </div>
   )
 }
 

@@ -136,7 +136,10 @@ export function VersionOverview({
                     : linked.length
                       ? `${linked.length} 条引用（状态未载入）`
                       : '无引用'}
-                  <IconAction label={`${label} 查看目标任务`} onClick={() => onTasks(goal.goalId)} />
+                  <IconAction
+                    label={`${label} 查看目标任务`}
+                    onClick={() => onTasks(goal.goalId)}
+                  />
                 </td>
                 <td>
                   <span className="badge">结论未记录</span>

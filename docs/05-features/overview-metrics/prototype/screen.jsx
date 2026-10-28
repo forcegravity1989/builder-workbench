@@ -14,9 +14,7 @@ function OverviewV8({
   selection,
   setSelection,
   overviewUI,
-  setOverviewUI,
-  milestoneSlot,
-  annotationPrefix = ''
+  setOverviewUI
 }) {
   const { feature, grain, repoGrain, hidden } = overviewUI
   const [detail, setDetail] = useState(null)
@@ -86,7 +84,7 @@ function OverviewV8({
       values: repoBins.map((_, i) => (i === repoBins.length - 1 ? facts.issues.length : null))
     }
   ]
-  const refresh = () => setNotice(`${annotationPrefix}原型使用历史快照，未执行实时采集。`)
+  const refresh = () => setNotice('原型使用历史快照，未执行实时采集。')
   return (
     <>
       <link rel="stylesheet" href="../overview-metrics/prototype/style.css" />
@@ -124,9 +122,7 @@ function OverviewV8({
             </div>
           </section>
         </div>
-        {milestoneSlot ?? (
-          <VersionSummary {...{ planMinutes, acceptanceDrafts, selection, setSelection }} />
-        )}
+        <VersionSummary {...{ planMinutes, acceptanceDrafts, selection, setSelection }} />
         <section className="ov-section" aria-label="业务指标">
           <header className="ov-section-head">
             <h2>业务指标</h2>
@@ -268,9 +264,7 @@ function OverviewV8({
           </div>
         </section>
         <footer className="ov-footer">
-          <span>
-            {annotationPrefix}原型 · 数据截至 {facts.readAt.slice(0, 16).replace('T', ' ')} UTC
-          </span>
+          <span>原型 · 数据截至 {facts.readAt.slice(0, 16).replace('T', ' ')} UTC</span>
           <button className="btn btn-ghost btn-sm" onClick={() => setDetail({ kind: 'source' })}>
             数据来源
           </button>
