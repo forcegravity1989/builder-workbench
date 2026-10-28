@@ -2,7 +2,7 @@ import snapshot from './bw-snapshot.json'
 export { snapshot }
 export const repository = snapshot.source.repository
 export const baseline = snapshot.source.sourceCommit
-export const revision = '334-draft-3'
+export const revision = '334-draft-4'
 export const scenarios = [
   { id: 'unplanned', label: '版本计划未制定', version: 'v0.9' },
   { id: 'during', label: '版本计划制定完（版本中）', version: 'v0.8' },
@@ -101,7 +101,11 @@ export const features = ['334', '440'].map((id) => {
   }
 })
 export const historicalFeatures = [
-  { id: '334', title: '版本总览', scope: '周报样式总览聚合本版计划与验收数据。' },
+  {
+    id: '334',
+    title: '版本总览',
+    scope: `关联目标：${snapshot.priorPlan.goals.find((g) => g.goalId === 'G2').title}。计划未单列此需求的交付增量。`
+  },
   {
     id: '383',
     title: '版本工作区',
@@ -137,3 +141,40 @@ export const historicalFeatures = [
     ['反馈维护', '目标下的 Issue', '查看任务', '只读归档计划中的任务关联', 'issues', null]
   ]
 }))
+
+// Local preview projection from explicit plan task references, not a shared version schema.
+export function relatedVersions(featureId) {
+  return [
+    { scene: 'during', version: 'v0.8', plan: snapshot.plan, commit: baseline },
+    {
+      scene: 'delivered',
+      version: 'v0.7',
+      plan: snapshot.priorPlan,
+      commit: snapshot.acceptance.planRef.sourceCommit
+    }
+  ].flatMap(({ scene, version, plan, commit }) => {
+    const task = plan.tasks.find(
+      (t) =>
+        t.provider === 'github' &&
+        t.repository === repository.replace('https://', '') &&
+        String(t.number) === featureId
+    )
+    if (!task) {
+      return []
+    }
+    const goal = plan.goals.find((g) => g.goalId === task.goalId)
+    const increment = scene === 'during' ? features.find((f) => f.id === featureId)?.scope : null
+    return [
+      {
+        scene,
+        version,
+        goalId: task.goalId,
+        scope: increment || goal.title,
+        scopeLabel: increment ? '本版承担' : '关联目标',
+        separateScope: Boolean(increment),
+        source: material(version, 'data', commit),
+        revision: commit.slice(0, 8)
+      }
+    ]
+  })
+}

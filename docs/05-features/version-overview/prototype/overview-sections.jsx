@@ -31,7 +31,9 @@ export function OverviewSections({
   openArtifact,
   openSession,
   allTasks,
-  setAllTasks
+  setAllTasks,
+  focusRequest,
+  openVersion
 }) {
   const tasks = unplanned ? [] : history ? historicalTasks : currentTasks
   const requirements = unplanned ? [] : history ? historicalFeatures : sample
@@ -104,6 +106,9 @@ export function OverviewSections({
               feature={f}
               openArtifact={openArtifact}
               openSession={openSession}
+              selectedVersion={selected.version}
+              focusRequest={focusRequest}
+              openVersion={openVersion}
             />
           ))
         ) : (

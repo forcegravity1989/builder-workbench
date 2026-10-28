@@ -1,5 +1,12 @@
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
-import { repository, baseline, stages, snapshot, material } from './overview-data.js'
+import {
+  repository,
+  baseline,
+  stages,
+  snapshot,
+  material,
+  relatedVersions
+} from './overview-data.js'
 // Official references are design inputs; they do not define BW's workflow or persistence.
 export function ReferencePanel() {
   return (
@@ -58,9 +65,9 @@ export function ReferencePanel() {
       <hr />
       <h3>BW 自己的依据</h3>
       <p>
-        原型注释: 沿用当前壳、导航与设计系统。月度选择、按周反馈、每个 B
-        版本一次正式人工验收、缺证据保持未知，来自本仓原则和本轮交接；不将业界工具的规则移植成 BW
-        协议。
+        原型注释: 沿用当前壳、导航与设计系统。以项目实际版本讨论范围与交付，不强制 C/B
+        命名。规划节奏不决定版本身份；每版一次正式人工验收，缺证据保持未知。不将业界工具的规则移植成
+        BW 协议。
       </p>
       <p>
         原型注释:
@@ -116,14 +123,37 @@ export function SectionTitle({ id, title, extra }) {
   )
 }
 
-export function Feature({ feature, openArtifact, openSession }) {
+export function Feature({
+  feature,
+  openArtifact,
+  openSession,
+  selectedVersion,
+  focusRequest,
+  openVersion
+}) {
   const [expanded, setExpanded] = window.BWPrototypeDependencies.useState(false)
+  const [versionsExpanded, setVersionsExpanded] = window.BWPrototypeDependencies.useState(false)
   const [stage, setStage] = window.BWPrototypeDependencies.useState(feature.currentStage)
+  const cardRef = useRef(null)
+  const toggleRef = useRef(null)
+  const versions = relatedVersions(feature.id)
+  useEffect(() => {
+    if (focusRequest?.id !== feature.id) {
+      return
+    }
+    setExpanded(true)
+    const frame = requestAnimationFrame(() => {
+      cardRef.current?.scrollIntoView({ block: 'start' })
+      toggleRef.current?.focus({ preventScroll: true })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [focusRequest, feature.id, setExpanded])
   const rows = stage ? feature.artifacts.filter((row) => row[0] === stage) : feature.artifacts
   return (
-    <article className="ov-feature" aria-label={feature.title}>
+    <article ref={cardRef} className="ov-feature" aria-label={feature.title}>
       <div className="ov-feature-head">
         <button
+          ref={toggleRef}
           className="ov-feature-toggle"
           onClick={() => setExpanded(!expanded)}
           aria-expanded={expanded}
@@ -166,6 +196,49 @@ export function Feature({ feature, openArtifact, openSession }) {
           <div className="ov-purpose">
             <span className="ov-label">整体目标</span>
             <span>{feature.purpose}</span>
+          </div>
+          <div className="ov-related-versions">
+            <button
+              className="ov-related-toggle"
+              aria-expanded={versionsExpanded}
+              onClick={() => setVersionsExpanded(!versionsExpanded)}
+            >
+              <ChevronRight size={14} className={versionsExpanded ? 'ov-rotate' : ''} />
+              关联版本 <span className="muted">{versions.length}</span>
+            </button>
+            {versionsExpanded && (
+              <div>
+                {versions.map((v) => (
+                  <div className="ov-related-version" key={v.version}>
+                    <div className="ov-related-heading">
+                      <strong>{v.version}</strong>
+                      <span className="muted">目标 {v.goalId}</span>
+                      {v.version === selectedVersion ? (
+                        <span className="ov-chip">当前查看</span>
+                      ) : (
+                        <button
+                          className="ov-link"
+                          onClick={() => openVersion(v.scene, feature.id)}
+                        >
+                          进入 {v.version} 并定位需求 ↗
+                        </button>
+                      )}
+                    </div>
+                    <p>
+                      <span className="ov-label">{v.scopeLabel}</span> {v.scope}
+                    </p>
+                    {!v.separateScope && <p className="muted">计划未单列此需求的交付增量</p>}
+                    <a href={v.source} target="_blank" rel="noreferrer">
+                      计划依据 · {v.revision} ↗
+                    </a>
+                  </div>
+                ))}
+                <p className="ov-note">
+                  原型注释:
+                  仅列已核对计划中的明确任务关联，不代表完整跨版历史；本版验收不等于需求整体完成。
+                </p>
+              </div>
+            )}
           </div>
           <div className="ov-stages" aria-label={`${feature.title}成果类别`}>
             <button aria-pressed={stage === null} onClick={() => setStage(null)}>

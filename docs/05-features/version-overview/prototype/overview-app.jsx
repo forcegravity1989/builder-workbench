@@ -7,6 +7,7 @@ import {
   revision,
   scenarios,
   features,
+  historicalFeatures,
   shortTitle,
   issueState,
   prState,
@@ -18,6 +19,7 @@ const {
   React,
   useState,
   useEffect,
+  useRef,
   createRoot,
   LayoutDashboard,
   CalendarRange,
@@ -52,11 +54,25 @@ function App() {
   const [editing, setEditing] = useState('')
   const [edited, setEdited] = useState(false)
   const [editError, setEditError] = useState('')
+  const [focusRequest, setFocusRequest] = useState(() => {
+    const id = new URLSearchParams(location.search).get('focus')
+    return ['334', '440', '383'].includes(id) ? { id, sequence: 0 } : null
+  })
+  const [navigationDraft, setNavigationDraft] = useState({
+    origin: 'project',
+    scene: 'during',
+    featureId: '334',
+    note: ''
+  })
+  const [returnContext, setReturnContext] = useState(null)
+  const mainRef = useRef(null)
   const selected = scenarios.find((s) => s.id === scenario)
   const unplanned = scenario === 'unplanned',
     history = scenario === 'delivered'
   const plan = history ? snapshot.priorPlan : snapshot.plan
   const acceptance = snapshot.acceptance
+  const requirements = unplanned ? [] : history ? historicalFeatures : sample
+  const missingFocus = focusRequest && !requirements.some((f) => f.id === focusRequest.id)
   const planLink = material(
     selected.version,
     'data',
@@ -67,6 +83,21 @@ function App() {
   }, [dark])
   function native(route) {
     setDialog({ kind: 'native', title: `原型注释: ${route}入口`, route })
+  }
+  function openVersion(scene, id = null) {
+    setScenario(scene)
+    setAllTasks(false)
+    setDialog(null)
+    setFocusRequest(id ? { id, sequence: (focusRequest?.sequence || 0) + 1 } : null)
+    mainRef.current?.scrollTo({ top: 0 })
+  }
+  function enterFromSource() {
+    setReturnContext({ ...navigationDraft })
+    openVersion(navigationDraft.scene, navigationDraft.featureId)
+  }
+  function returnToSource() {
+    setNavigationDraft({ ...returnContext })
+    setDialog({ kind: 'navigation', title: '原型注释: 返回来源上下文', returned: true })
   }
   function openArtifact(feature, row) {
     if (row[4] === 'issues') {
@@ -137,8 +168,7 @@ function App() {
           aria-label="版本生命周期情景"
           value={scenario}
           onChange={(e) => {
-            setScenario(e.target.value)
-            setAllTasks(false)
+            openVersion(e.target.value)
           }}
         >
           {scenarios.map((s) => (
@@ -148,6 +178,12 @@ function App() {
           ))}
         </select>
         <a href="journey.html">意图与旅程 ↗</a>
+        <button
+          className="ov-demo-navigation"
+          onClick={() => setDialog({ kind: 'navigation', title: '原型注释: 从来源进入版本' })}
+        >
+          原型注释: 来源导航
+        </button>
         <div className="ov-tools">
           <IconAction
             icon={Pencil}
@@ -202,7 +238,7 @@ function App() {
             <div key={s.id}>
               <button
                 className="nav-row"
-                onClick={() => setScenario(s.id)}
+                onClick={() => openVersion(s.id)}
                 aria-expanded={scenario === s.id}
               >
                 {scenario === s.id ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
@@ -283,13 +319,18 @@ function App() {
             仅用于未制定计划情景，未创建真实版本。
           </Note>
         </aside>
-        <main className="ov-main">
+        <main className="ov-main" ref={mainRef}>
           <div className="ov-top">
             <span>Builder Workbench</span>
             <ChevronRight size={12} />
             <span>{selected.version}</span>
             <ChevronRight size={12} />
             <span>总览</span>
+            {returnContext && (
+              <button className="ov-return" onClick={returnToSource}>
+                ← {returnContext.origin === 'planning' ? '返回规划工作区' : '返回项目总览'}
+              </button>
+            )}
           </div>
           <div className="ov-content">
             <div className="ov-heading">
@@ -333,6 +374,18 @@ function App() {
             {edited && !history && !unplanned && (
               <Note>当前范围含临时编辑，刷新还原；历史记录不受影响。</Note>
             )}
+            {missingFocus && (
+              <div className="ov-focus-missing" role="status">
+                <Link href={`${repository}/issues/${focusRequest.id}`}>
+                  来源需求 #{focusRequest.id}
+                </Link>
+                <span>
+                  {unplanned
+                    ? '本版尚未制定计划，未确认该需求的本版范围'
+                    : '已读取的本版计划中未发现该需求关联'}
+                </span>
+              </div>
+            )}
             <OverviewSections
               selected={selected}
               unplanned={unplanned}
@@ -346,6 +399,8 @@ function App() {
               openSession={openSession}
               allTasks={allTasks}
               setAllTasks={setAllTasks}
+              focusRequest={focusRequest}
+              openVersion={openVersion}
             />
           </div>
         </main>
@@ -357,6 +412,84 @@ function App() {
           wide={dialog.kind === 'source' || dialog.kind === 'edit'}
         >
           {dialog.kind === 'references' && <ReferencePanel />}
+          {dialog.kind === 'navigation' && (
+            <>
+              <Note>
+                这里只演示 #334 的进入、需求定位和返回上下文，不复刻 #440
+                页面。以下输入仅保留在本页内存，刷新清除；不是共享路由或存储协议。
+              </Note>
+              <div className="ov-navigation-fields">
+                <label>
+                  原型注释: 来源页面
+                  <select
+                    value={navigationDraft.origin}
+                    onChange={(e) =>
+                      setNavigationDraft({ ...navigationDraft, origin: e.target.value })
+                    }
+                  >
+                    <option value="project">项目总览</option>
+                    <option value="planning">规划工作区</option>
+                  </select>
+                </label>
+                <label>
+                  原型注释: 目标版本
+                  <select
+                    value={navigationDraft.scene}
+                    onChange={(e) =>
+                      setNavigationDraft({ ...navigationDraft, scene: e.target.value })
+                    }
+                  >
+                    {scenarios.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.version}
+                        {s.id === 'unplanned' ? '（未计划示例）' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  原型注释: 来源需求
+                  <select
+                    value={navigationDraft.featureId}
+                    onChange={(e) =>
+                      setNavigationDraft({ ...navigationDraft, featureId: e.target.value })
+                    }
+                  >
+                    <option value="334">#334 版本总览</option>
+                    <option value="440">#440 项目总览</option>
+                    <option value="383">#383 版本工作区</option>
+                  </select>
+                </label>
+              </div>
+              {navigationDraft.origin === 'planning' && (
+                <label>
+                  原型注释: 来源草案输入示例（不会写入版本计划）
+                  <textarea
+                    value={navigationDraft.note}
+                    onChange={(e) =>
+                      setNavigationDraft({ ...navigationDraft, note: e.target.value })
+                    }
+                    placeholder="输入一段文字，进入版本后返回，核对示例输入仍保留"
+                  />
+                </label>
+              )}
+              {dialog.returned && (
+                <Note>
+                  本地示例的来源选择和草案输入已保留；#440
+                  真实页面的视口、规划草案和跨屏返回尚未联调。本屏不会修改来源页面材料。
+                </Note>
+              )}
+              <p>
+                <button className="ov-primary" onClick={enterFromSource}>
+                  进入所选版本并定位需求
+                </button>
+              </p>
+              <Note>
+                版本按项目实际名称定位；不强制
+                C/B，也不按日期推断所属关系。未纳入计划的来源需求仅作为定位上下文，不补造本版承诺。
+              </Note>
+            </>
+          )}
           {dialog.kind === 'source' && <SourcePanel />}
           {dialog.kind === 'productivity' && <ProductivityEvidence focus={dialog.focus} />}
           {dialog.kind === 'workflow-evidence' && (

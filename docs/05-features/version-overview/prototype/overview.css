@@ -110,7 +110,12 @@
   overflow-y: auto;
 }
 .ov-top {
-  height: 44px;
+  min-height: 44px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--background);
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--border);
   padding: 0 28px;
   display: flex;
@@ -192,10 +197,79 @@
   margin-left: auto;
 }
 .ov-feature {
+  scroll-margin-top: 60px;
   border: 1px solid var(--border);
   border-radius: 10px;
   margin-bottom: 10px;
   background: var(--card);
+}
+
+.ov-return {
+  margin-left: auto;
+  padding: 8px 0;
+  font-size: 11px;
+}
+.ov-return:hover,
+.ov-related-version a:hover {
+  text-decoration: underline;
+}
+.ov-demo-navigation {
+  font-size: 11px;
+}
+.ov-related-versions {
+  margin-bottom: 16px;
+  font-size: 12px;
+}
+.ov-related-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 0;
+  font-weight: 500;
+}
+.ov-related-version {
+  border-top: 1px solid var(--border);
+  padding: 12px 0;
+}
+.ov-related-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.ov-related-heading .ov-link,
+.ov-related-heading .ov-chip {
+  margin-left: auto;
+}
+.ov-related-version p {
+  margin: 6px 0;
+}
+.ov-related-version a {
+  font-size: 11px;
+  text-underline-offset: 3px;
+}
+.ov-navigation-fields {
+  display: grid;
+  gap: 6px;
+}
+.ov-navigation-fields select {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  font: inherit;
+  color: inherit;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px;
+}
+.ov-focus-missing {
+  display: grid;
+  gap: 6px;
+  border-left: 2px solid var(--border);
+  margin-top: 18px;
+  padding-left: 12px;
+  font-size: 12px;
 }
 .ov-feature-head {
   display: flex;
