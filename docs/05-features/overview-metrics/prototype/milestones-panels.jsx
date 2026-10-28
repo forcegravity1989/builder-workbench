@@ -1,15 +1,14 @@
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
-import { versions, calendarDays, versionFacts } from './milestones-data.js'
-const {
-  // React is used by the shared JSX build factory.
-  // eslint-disable-next-line no-unused-vars
-  React,
-  useState,
-  useRef,
-  useEffect,
-  X
-} = window.BWPrototypeDependencies
-
+import {
+  fixedVersions,
+  versionById,
+  versionIndex,
+  validRequirement,
+  calendarDays
+} from './milestones-data.js'
+import { historicalRows, outcomeLabel, sourceUrl } from './milestones-history.js'
+// eslint-disable-next-line no-unused-vars
+const { React, useState, useRef, useEffect, X } = window.BWPrototypeDependencies
 export function Modal({ title, close, children, wide = false }) {
   const ref = useRef(null)
   useEffect(() => {
@@ -112,216 +111,6 @@ export function CalendarPanel({ anchor, close }) {
   )
 }
 
-export function EditRequirement({ item, save, close }) {
-  const [value, setValue] = useState({ ...item })
-  const [error, setError] = useState('')
-  const field = (name, v) => setValue({ ...value, [name]: v })
-  return (
-    <Modal title={`调整需求 · ${item.id}`} close={close}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (![value.title, value.owner, value.reason].every((text) => text.trim())) {
-            setError('需求名称、主导 Builder 和取舍理由不能只有空格。')
-            return
-          }
-          if (versions.indexOf(value.first) >= versions.indexOf(value.target)) {
-            setError('原型注释: 本例先交 MVP，再在后续版本完善；后续版本应晚于先行版本。')
-            return
-          }
-          const firstDay = 2 + versions.indexOf(value.target) * 7
-          const dueDay = Number(value.due.slice(-2))
-          if (dueDay < firstDay || dueDay > firstDay + 6) {
-            setError('截止时间应落在目标版本的日期范围内；可一并调整目标版本。')
-            return
-          }
-          save({
-            ...value,
-            title: value.title.trim(),
-            owner: value.owner.trim(),
-            reason: value.reason.trim()
-          })
-          close()
-        }}
-      >
-        <label className="field">
-          大需求
-          <input
-            className="input"
-            aria-label="需求名称"
-            required
-            maxLength={80}
-            value={value.title}
-            onInput={(e) => field('title', e.currentTarget.value)}
-          />
-        </label>
-        <div className="ml-form-grid">
-          <label className="field">
-            主导 Builder
-            <input
-              className="input"
-              aria-label="主导 Builder"
-              required
-              value={value.owner}
-              onInput={(e) => field('owner', e.currentTarget.value)}
-            />
-          </label>
-          <label className="field">
-            优先级
-            <select
-              className="input"
-              aria-label="优先级"
-              value={value.priority}
-              onChange={(e) => field('priority', Number(e.target.value))}
-            >
-              {[1, 2, 3].map((n) => (
-                <option key={n} value={n}>
-                  P{n}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            先行 MVP
-            <select
-              className="input"
-              aria-label="先行版本"
-              value={value.first}
-              onChange={(e) => field('first', e.target.value)}
-            >
-              {versions.map((v) => (
-                <option key={v}>{v}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            后续完善
-            <select
-              className="input"
-              aria-label="目标版本"
-              value={value.target}
-              onChange={(e) => field('target', e.target.value)}
-            >
-              {versions.map((v) => (
-                <option key={v}>{v}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <label className="field">
-          本月约定范围的截止时间
-          <input
-            className="input"
-            aria-label="需求截止时间"
-            type="date"
-            min="2026-11-02"
-            max="2026-11-29"
-            required
-            value={value.due}
-            onInput={(e) => field('due', e.currentTarget.value)}
-          />
-        </label>
-        <label className="field">
-          取舍理由
-          <textarea
-            className="input"
-            aria-label="取舍理由"
-            required
-            value={value.reason}
-            onInput={(e) => field('reason', e.currentTarget.value)}
-          />
-        </label>
-        {error && (
-          <p role="alert" className="ml-error">
-            {error}
-          </p>
-        )}
-        <footer>
-          <button className="btn btn-secondary" type="button" onClick={close}>
-            取消
-          </button>
-          <button className="btn btn-primary" type="submit">
-            保存安排
-          </button>
-        </footer>
-      </form>
-    </Modal>
-  )
-}
-
-export function VersionBridge({ item, version, close }) {
-  const [retried, setRetried] = useState(false)
-  const fact = versionFacts[version]
-  const related = item?.selected && (version === item.first || version === item.target)
-  return (
-    <Modal title={`${version} · 版本总览`} close={close} wide>
-      <p className="ml-footnote">
-        原型注释: #334
-        衔接预览，状态为模拟材料读回。正式跳转将使用同一需求与版本上下文，路由与持久化尚待统筹。
-      </p>
-      <div className="ml-section-head">
-        <h3>{item?.title || '版本工作'}</h3>
-        <span className="tag tag-outline">{fact.label}</span>
-      </div>
-      <p>{fact.source}</p>
-      {retried && <p role="alert">暂时无法读取，请稍后重试。</p>}
-      <p className="muted">{fact.detail}</p>
-      <div className="ml-bridge-grid">
-        <section>
-          <h3>月度安排</h3>
-          <p>
-            {related
-              ? version === item.first
-                ? `先行 MVP：${item.mvp}`
-                : `后续完善：${item.later}`
-              : '本版未关联当前需求。'}
-          </p>
-          {related && (
-            <p className="muted">
-              {item.owner} · 整体约定截止 {item.due}
-            </p>
-          )}
-        </section>
-        <section>
-          <h3>版本计划</h3>
-          <p>
-            {fact.plan === false
-              ? '尚未开始计划'
-              : fact.plan === null
-                ? '未能读取计划'
-                : '已形成版本计划'}
-          </p>
-          <p className="muted">
-            {fact.plan === false
-              ? '本版范围和任务尚未确认。'
-              : fact.plan === null
-                ? '状态未知，不显示零任务或未开始。'
-                : '具体范围、任务和验收以本版材料为准。'}
-          </p>
-        </section>
-      </div>
-      <footer>
-        {fact.plan === null && (
-          <button className="btn btn-secondary" onClick={() => setRetried(true)}>
-            重试读取
-          </button>
-        )}
-        <a
-          className="btn btn-secondary"
-          href="../version-workspace/version-workspace-prototype.html"
-          target="_blank"
-          rel="noreferrer"
-        >
-          查看版本工作区原型 ↗
-        </a>
-        <button className="btn btn-primary" onClick={close}>
-          返回里程碑
-        </button>
-      </footer>
-    </Modal>
-  )
-}
-
 export function ReferencePanel({ close }) {
   return (
     <Modal title="设计依据" close={close}>
@@ -356,17 +145,16 @@ export function ReferencePanel({ close }) {
         </h3>
         <p>借鉴：先讨论值得投入多少精力，再收敛问题与范围。</p>
         <p className="muted">
-          取舍：不照搬六周周期、团队人数或立项角色。月度先取舍，具体规格与可试用交付在版本
-          版本中收敛。
+          取舍：不照搬六周周期、团队人数或立项角色。月度先取舍，具体规格与可试用交付在版本中收敛。
         </p>
       </section>
       <p>
-        原型注释: 本轮五步旅程来自人工澄清：月度选择 → 先行 MVP → 部分用户试用 → 后续完善 → Issue
-        持续改善。
+        原型注释: 本轮五步旅程来自人工澄清：月度选择 → Pre版本 → 部分用户试用 → Release版本交付 →
+        Issue 持续改善。
       </p>
       <footer>
         <a className="btn btn-secondary" href="spec.md" target="_blank" rel="noreferrer">
-          查看完整规格与待审选择
+          查看完整规格
         </a>
         <button className="btn btn-primary" onClick={close}>
           返回原型
@@ -376,55 +164,350 @@ export function ReferencePanel({ close }) {
   )
 }
 
-export function PlanningSourcePanel({ close }) {
+export function EditRequirement({ item, save, close }) {
+  const [value, setValue] = useState({ ...item }),
+    [error, setError] = useState('')
+  const field = (key, v) => setValue((d) => ({ ...d, [key]: v }))
   return (
-    <Modal title="项目里程碑在哪里规划" close={close} wide>
-      <p>
-        项目总览既是呈现入口，也是项目总里程碑的规划入口。日常展示连续泳道；点“规划里程碑”进入左右工作区。左侧可直接编辑，右侧复用原生模型会话。
+    <Modal title={item.title ? `调整需求 · ${item.title}` : '添加支撑需求'} close={close}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          const cleaned = {
+            ...value,
+            title: value.title.trim(),
+            owner: value.owner.trim(),
+            preScope: value.preScope.trim(),
+            releaseScope: value.releaseScope.trim()
+          }
+          if (versionIndex(cleaned.pre) > versionIndex(cleaned.release)) {
+            setError('Pre版本不能晚于Release版本。')
+            return
+          }
+          if (!validRequirement(cleaned)) {
+            setError('请填写名称、负责人，并把截止放在Release版本的固定范围内。')
+            return
+          }
+          save(cleaned)
+          close()
+        }}
+      >
+        <label className="field">
+          需求名称
+          <input
+            className="input"
+            aria-label="需求名称"
+            required
+            maxLength={80}
+            value={value.title}
+            onInput={(e) => field('title', e.currentTarget.value)}
+          />
+        </label>
+        <div className="ml-form-grid">
+          <label className="field">
+            负责人
+            <input
+              className="input"
+              aria-label="负责人"
+              required
+              value={value.owner}
+              onInput={(e) => field('owner', e.currentTarget.value)}
+            />
+          </label>
+          <label className="field">
+            优先级
+            <select
+              className="input"
+              aria-label="优先级"
+              value={value.priority}
+              onChange={(e) => field('priority', Number(e.target.value))}
+            >
+              {[1, 2, 3].map((n) => (
+                <option key={n} value={n}>
+                  P{n}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            Pre版本
+            <select
+              className="input"
+              aria-label="Pre版本"
+              value={value.pre}
+              onChange={(e) => field('pre', e.target.value)}
+            >
+              {fixedVersions.map((v) => (
+                <option key={v.id}>{v.id}</option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            Release版本
+            <select
+              className="input"
+              aria-label="Release版本"
+              value={value.release}
+              onChange={(e) => {
+                const version = e.currentTarget.value
+                setValue((d) => ({ ...d, release: version, due: versionById[version].target }))
+              }}
+            >
+              {fixedVersions.map((v) => (
+                <option key={v.id}>{v.id}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <label className="field">
+          交付截止
+          <input
+            className="input"
+            type="date"
+            aria-label="交付截止"
+            required
+            min={versionById[value.release].start}
+            max={versionById[value.release].end}
+            value={value.due}
+            onInput={(e) => field('due', e.currentTarget.value)}
+          />
+        </label>
+        <label className="field">
+          Pre交付说明（选填）
+          <textarea
+            className="input"
+            aria-label="Pre交付说明"
+            value={value.preScope}
+            onInput={(e) => field('preScope', e.currentTarget.value)}
+          />
+        </label>
+        <label className="field">
+          Release交付说明（选填）
+          <textarea
+            className="input"
+            aria-label="Release交付说明"
+            value={value.releaseScope}
+            onInput={(e) => field('releaseScope', e.currentTarget.value)}
+          />
+        </label>
+        {error && (
+          <p className="ml-error" role="alert">
+            {error}
+          </p>
+        )}
+        <footer>
+          <button className="btn btn-secondary" type="button" onClick={close}>
+            取消
+          </button>
+          <button className="btn btn-primary" type="submit">
+            保存安排
+          </button>
+        </footer>
+      </form>
+    </Modal>
+  )
+}
+export function EditMilestone({ value, save, close }) {
+  const [draft, setDraft] = useState({ ...value })
+  const field = (key, value) => setDraft((d) => ({ ...d, [key]: value }))
+  return (
+    <Modal title="编辑阶段成果" close={close}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (!draft.title.trim() || !draft.outcome.trim()) {
+            return
+          }
+          save({ title: draft.title.trim(), outcome: draft.outcome.trim() })
+          close()
+        }}
+      >
+        <label className="field">
+          阶段成果
+          <input
+            className="input"
+            aria-label="阶段成果"
+            required
+            value={draft.title}
+            onInput={(e) => field('title', e.currentTarget.value)}
+          />
+        </label>
+        <label className="field">
+          要达到的能力结果
+          <textarea
+            className="input"
+            aria-label="能力结果"
+            required
+            value={draft.outcome}
+            onInput={(e) => field('outcome', e.currentTarget.value)}
+          />
+        </label>
+        <footer>
+          <button className="btn btn-secondary" type="button" onClick={close}>
+            取消
+          </button>
+          <button className="btn btn-primary" type="submit">
+            保存阶段成果
+          </button>
+        </footer>
+      </form>
+    </Modal>
+  )
+}
+export function VersionBridge({ item, version, close }) {
+  const pre = item?.included && item.pre === version,
+    release = item?.included && item.release === version
+  return (
+    <Modal title={`${version} · 版本总览`} close={close} wide>
+      <p className="ml-footnote">
+        原型注释: #334
+        衔接预览。真实需求对应关系、来源定位与返回字段仍待接入；原型返回保留当前草案和视口。
       </p>
-      <div className="ml-bridge-grid">
+      <h3>{item?.title || '版本工作'}</h3>
+      <div className="ml-source-columns">
         <section>
-          <h3>正式总览</h3>
-          <p>读取已合入项目主干的材料，展示可追溯的正式安排。</p>
-          <p className="muted">编辑草案、采纳模型建议、核对选择，都不会直接覆盖正式总览。</p>
+          <h3>里程碑安排</h3>
+          {pre && (
+            <p>
+              <b>Pre版本：</b>
+              {item.preScope || '交付范围待收敛'}
+            </p>
+          )}
+          {release && (
+            <p>
+              <b>Release版本：</b>
+              {item.releaseScope || '交付范围待收敛'}
+            </p>
+          )}
+          {!pre && !release && <p>本版未关联当前需求。</p>}
+          {(pre || release) && (
+            <p className="muted">
+              {item.owner} · 截止 {item.due}
+            </p>
+          )}
         </section>
         <section>
-          <h3>规划草案</h3>
-          <p>
-            左侧直接编辑与右侧原生会话共同维护同一份草案。先决定做什么、优先级、目标版本和截止。
-          </p>
+          <h3>版本计划与实际交付</h3>
+          <p>尚未读取</p>
           <p className="muted">
-            原型注释: 本页仅保存浏览器演示草案，没有读取真实主干或写入规划分支。
+            项目版本发布不代表本需求已交付Pre或Release，实际范围与验收以版本材料为准。
           </p>
         </section>
       </div>
-      <h3>建议的材料评审路径 · 待主会话协调</h3>
-      <ol className="ml-source-steps">
-        <li>从正式安排进入规划草案。</li>
-        <li>
-          复用项目固定分支 <code>bw/project</code> 保存项目层规划。
-        </li>
-        <li>核对后提交 PR / MR，由人评审合入项目主干。</li>
-        <li>更新代码后重读正式总览；版本中的具体交付范围继续在版本计划里收敛。</li>
-      </ol>
-      <p className="ml-callout">
-        原型注释: 现有 bw/project
-        承载项目名片评审；扩展到里程碑仍是建议。材料路径、事务与双机并发规则尚未确定，本原型不建立持久化协议。
-      </p>
       <footer>
+        <a
+          className="btn btn-secondary"
+          href="../version-workspace/version-workspace-prototype.html"
+          target="_blank"
+          rel="noreferrer"
+        >
+          查看版本工作区原型 ↗
+        </a>
         <button className="btn btn-primary" onClick={close}>
-          返回规划草案
+          返回来源视图
         </button>
       </footer>
     </Modal>
   )
 }
-
-export function PlanningReviewPanel({ chosen, stage, setStage, publish, close }) {
+export function HistoryDetail({ item, close }) {
+  const decision = item.result?.decision
+  return (
+    <Modal title={`${item.planVersion} · ${item.displayGoal}`} close={close} wide>
+      <h3>{item.title}</h3>
+      <p className="muted">负责人：{item.owner}</p>
+      <div className="ml-source-columns">
+        <section>
+          <h3>当版交付约定</h3>
+          <p className="ml-info-text">{item.scope || '未记录'}</p>
+          <details>
+            <summary>当版验收标准</summary>
+            <p className="ml-info-text">{item.criterion || '未记录'}</p>
+          </details>
+        </section>
+        <section>
+          <h3>当版人工验收</h3>
+          <p>{outcomeLabel(decision?.outcome)}</p>
+          {decision && (
+            <p className="muted">
+              {decision.recordedAt} · {decision.source}
+            </p>
+          )}
+          <p className="ml-info-text">{decision?.reason || item.result?.note || '未记录说明'}</p>
+          {item.result?.nextStep && (
+            <>
+              <h3>后续安排</h3>
+              <p className="ml-info-text">{item.result.nextStep}</p>
+            </>
+          )}
+        </section>
+      </div>
+      <p className="muted">需求级 Pre / Release 对应关系：未记录，不由项目发布或验收结论推定。</p>
+      <footer>
+        <a
+          className="btn btn-secondary"
+          href={sourceUrl(item.planPath)}
+          target="_blank"
+          rel="noreferrer"
+        >
+          原计划 ↗
+        </a>
+        {item.acceptancePath && (
+          <a
+            className="btn btn-secondary"
+            href={sourceUrl(item.acceptancePath)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            原验收 ↗
+          </a>
+        )}
+        <button className="btn btn-primary" onClick={close}>
+          返回历史回看
+        </button>
+      </footer>
+    </Modal>
+  )
+}
+export function HistoryVersion({ plan, close }) {
+  const rows = historicalRows.filter((r) => r.planVersion === plan.version)
+  return (
+    <Modal title={`${plan.version} · 真实版本材料`} close={close} wide>
+      <p>计划、人工验收和项目发布分别读取，不能互相代替。</p>
+      {rows.map((r) => (
+        <details className="ml-source-item" key={r.id}>
+          <summary>
+            {r.displayGoal} · {r.title}
+          </summary>
+          <p>
+            {outcomeLabel(r.result?.decision?.outcome)} ·{' '}
+            {r.result?.decision?.recordedAt || '未记录验收时间'}
+          </p>
+          <p className="ml-info-text">{r.scope}</p>
+          <p className="ml-info-text">{r.result?.decision?.reason || r.result?.note}</p>
+        </details>
+      ))}
+      <footer>
+        <a
+          className="btn btn-secondary"
+          href={sourceUrl(`.bw/planning/${plan.version}/data.json`)}
+          target="_blank"
+          rel="noreferrer"
+        >
+          查看原计划 ↗
+        </a>
+        <button className="btn btn-primary" onClick={close}>
+          返回来源视图
+        </button>
+      </footer>
+    </Modal>
+  )
+}
+export function PlanningReviewPanel({ chosen, milestone, stage, setStage, publish, close }) {
   if (!['draft', 'review', 'merged'].includes(stage)) {
     return (
       <Modal title="规划评审" close={close}>
-        <p>先进入规划草案，核对修改后再提交评审。</p>
+        <p>先核对当前草案。</p>
       </Modal>
     )
   }
@@ -432,65 +515,49 @@ export function PlanningReviewPanel({ chosen, stage, setStage, publish, close })
     <Modal
       title={
         stage === 'draft'
-          ? '核对规划并提交评审'
+          ? '核对里程碑安排'
           : stage === 'review'
             ? '规划评审中'
-            : '规划已合入，等待更新总览'
+            : '已合入，等待更新'
       }
       close={close}
       wide
     >
-      <div className="ml-review-route">
-        <span>
-          规划草案 <code>bw/project</code>
-        </span>
-        <span aria-hidden="true">→</span>
-        <span>PR / MR 人审</span>
-        <span aria-hidden="true">→</span>
-        <span>项目主干</span>
-        <span aria-hidden="true">→</span>
-        <span>正式总览</span>
-      </div>
+      <h3>{milestone.title}</h3>
+      <p>{milestone.outcome}</p>
       {stage === 'draft' ? (
         <>
-          <p>
-            核对本月做哪些大需求、优先次序、目标版本
-            版本与截止。提交评审后，正式总览继续保留主干中的原安排。
-          </p>
-          {chosen.map((item) => (
-            <div className="ml-confirm-row" key={item.id}>
-              <strong>
-                P{item.priority} · {item.title}
-              </strong>
+          {chosen.map((r) => (
+            <div className="ml-confirm-row" key={r.id}>
+              <strong>{r.title}</strong>
               <p>
-                {item.owner} · {item.first} MVP → {item.target} 后续完善 · 截止 {item.due}
+                {r.owner} · Pre {r.pre} → Release {r.release} · 截止 {r.due}
               </p>
-              <small>{item.reason}</small>
             </div>
           ))}
           <footer>
             <button className="btn btn-secondary" onClick={close}>
-              继续调整
+              继续规划
             </button>
-            <button className="btn btn-primary" onClick={() => setStage('review')}>
+            <button
+              className="btn btn-primary"
+              disabled={!chosen.length}
+              onClick={() => setStage('review')}
+            >
               提交规划评审
             </button>
           </footer>
         </>
       ) : stage === 'review' ? (
         <>
-          <h3>规划等待人工评审合入</h3>
-          <p>
-            草案已经提交，正式安排尚未更新。评审意见可继续带回规划会话；合入仍由人在 PR/MR 中完成。
-          </p>
-          <div className="ml-callout">待评审的规划：2026 年 11 月 · {chosen.length} 项大需求</div>
+          <p>等待人在 PR / MR 中评审合入，正式安排仍保持原快照。</p>
           <footer>
             <button className="btn btn-secondary" onClick={close}>
               返回总览
             </button>
           </footer>
           <div className="ml-prototype-controls">
-            <p>原型注释: 当前未创建真实 PR/MR。下面只模拟人在代码平台完成合入后的读回状态。</p>
+            <p>原型注释: 此处未创建真实 PR/MR。</p>
             <button className="btn btn-ghost" onClick={() => setStage('merged')}>
               原型注释: 模拟人工已合入
             </button>
@@ -498,23 +565,20 @@ export function PlanningReviewPanel({ chosen, stage, setStage, publish, close })
         </>
       ) : (
         <>
-          <h3>新规划已进入项目主干</h3>
-          <p>
-            本机总览仍展示更新前的材料。更新代码后，重读主干中的正式安排；不会把浏览器草案直接当作正式结果。
-          </p>
+          <p>更新代码后，正式总览重读已合入的安排。</p>
           <footer>
             <button className="btn btn-secondary" onClick={close}>
               稍后更新
             </button>
             <button className="btn btn-primary" onClick={publish}>
-              更新正式总览
+              更新正式安排
             </button>
           </footer>
         </>
       )}
       <p className="ml-footnote">
-        原型注释: 此流程只模拟可见状态，不调用 Git、PR/MR 或 BW 运行时。bw/project
-        的规划材料归属、事务和并发策略待统筹确认。
+        原型注释: 只模拟评审与更新状态，bw/project
+        材料路径、事务和真实写入尚未确定。阶段成果达成仍由人另行确认，不由提交或合入推定。
       </p>
     </Modal>
   )

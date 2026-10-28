@@ -1,130 +1,162 @@
-// Fixtures describe a simulated November, never the real v0.8 commitment.
-export const storageKey = 'bw-issue-440-prototype-v3'
-export const versions = ['v1.0.0', 'v1.0.1', 'v1.1.0', 'v1.1.1']
-export const historyVersionName = 'v0.7.0'
-export const weeks = ['02—08', '09—15', '16—22', '23—29']
+export const storageKey = 'bw-issue-440-prototype-v5'
 export const currentDay = '2026-11-11'
-export const versionFacts = {
-  'v1.0.0': {
-    label: '本版已验收',
-    source: '已有人工验收记录',
-    detail: '先行 MVP 已允许小范围试用。',
-    plan: true
-  },
-  'v1.0.1': {
-    label: '执行中',
-    source: '已有确认计划；5 个 Issue 中 2 个已关闭',
-    detail: '本版仍在执行，尚无正式验收结论。Issue 数是版本任务事实，不是大需求完成率。',
-    plan: true
-  },
-  'v1.1.0': {
-    label: '未开始计划',
-    source: '读取成功，未发现版本计划',
-    detail: '只有月度安排；尚无本版范围、任务或验收数据。',
-    plan: false
-  },
-  'v1.1.1': {
-    label: '状态未知',
-    source: '版本材料读取失败',
-    detail: '不能据读取失败判断尚未计划，保留月度安排并重试读取。',
-    plan: null
-  }
-}
+export const fixedVersions = [
+  { id: 'v1.0.0', start: '2026-11-02', end: '2026-11-08', target: '2026-11-06' },
+  { id: 'v1.0.1', start: '2026-11-09', end: '2026-11-15', target: '2026-11-13' },
+  { id: 'v1.1.0', start: '2026-11-16', end: '2026-11-22', target: '2026-11-20' },
+  { id: 'v1.1.1', start: '2026-11-23', end: '2026-11-29', target: '2026-11-27' }
+]
+export const versionById = Object.fromEntries(fixedVersions.map((v) => [v.id, v]))
+export const versionIndex = (id) => fixedVersions.findIndex((v) => v.id === id)
 export const initial = {
+  milestone: {
+    title: '协作与工程能力形成可用闭环',
+    outcome: '消息可触达、指标可运维、工程可观测，项目墙、知识库与 AI workflow 接入团队日常使用。'
+  },
   requirements: [
     {
-      id: 'DEMO-01',
-      title: '项目总览里程碑规划',
+      id: 'demo-notification',
+      title: '消息与通知',
+      owner: 'kanadead',
+      priority: 1,
+      included: true,
+      pre: 'v1.0.0',
+      release: 'v1.0.1',
+      due: '2026-11-13',
+      preScope: '重要工作事件能通知到少量内部试用者。',
+      releaseScope: '通知可定位回原对象，失败与遗漏有处理去处。'
+    },
+    {
+      id: 'demo-metrics',
+      title: '指标能力运维',
+      owner: 'cfdcfd',
+      priority: 1,
+      included: true,
+      pre: 'v1.0.0',
+      release: 'v1.1.0',
+      due: '2026-11-20',
+      preScope: '看清一次指标采集的来源、结果和失败。',
+      releaseScope: '真实使用中能发现采集异常并恢复，不以缺数冒充正常。'
+    },
+    {
+      id: 'demo-engineering',
+      title: '工程能力观测',
       owner: 'yuzhup',
       priority: 1,
-      selected: true,
-      first: 'v1.0.0',
-      target: 'v1.0.1',
-      due: '2026-11-13',
-      reason: '先让团队在总览选定重点，并沿同一需求看到可试用交付与后续完善。',
-      mvp: '选择大需求、安排版本，并从项目总览进入本版工作。',
-      later: '依据内部试用反馈完善直接编辑、跨月回看和日历提示。'
+      included: true,
+      pre: 'v1.0.1',
+      release: 'v1.1.0',
+      due: '2026-11-20',
+      preScope: '从项目进入实际流水线与检查结果。',
+      releaseScope: '跨项目核对工程事实，并进入相应工作对象处理问题。'
     },
     {
-      id: 'DEMO-02',
-      title: '评审意见回到原会话',
+      id: 'demo-wall',
+      title: '项目墙优化',
+      owner: 'yuzhup',
+      priority: 2,
+      included: true,
+      pre: 'v1.0.1',
+      release: 'v1.1.1',
+      due: '2026-11-27',
+      preScope: '团队试用项目定位与进入路径。',
+      releaseScope: '依据试用修理项目查找、切换和信息辨识。'
+    },
+    {
+      id: 'demo-knowledge',
+      title: '知识库',
+      owner: 'cfdcfd',
+      priority: 2,
+      included: true,
+      pre: 'v1.1.0',
+      release: 'v1.1.1',
+      due: '2026-11-27',
+      preScope: '从一项真实任务找到所需的项目知识。',
+      releaseScope: '常用知识可定位和维护，来源与未确认内容可辨。'
+    },
+    {
+      id: 'demo-workflow',
+      title: 'AI workflow',
       owner: 'kanadead',
       priority: 2,
-      selected: true,
-      first: 'v1.0.1',
-      target: 'v1.1.0',
-      due: '2026-11-20',
-      reason: '先验证一次会议批注到模型继续处理的闭环，再修理定位和遗漏。',
-      mvp: '一场内部评审的意见可以整理并回到原会话。',
-      later: '根据使用反馈修理定位、遗漏和批注处理体验。'
-    },
-    {
-      id: 'DEMO-03',
-      title: '重复问题沉淀为可复用做法',
-      owner: 'yuzhup',
-      priority: 3,
-      selected: false,
-      first: 'v1.1.0',
-      target: 'v1.1.1',
+      included: true,
+      pre: 'v1.1.0',
+      release: 'v1.1.1',
       due: '2026-11-27',
-      reason: '先积累真实试用问题；本月暂不占用主要精力。',
-      mvp: '从一次重复问题中提炼一份做法并试用。',
-      later: '用下一次任务检验是否减少重复讨论。'
+      preScope: '一条项目已有 workflow 能真实走完并回看。',
+      releaseScope: '依据实际使用修理中断和返工，任务结果仍沿 Issue 处理。'
     }
   ]
+}
+export function validRequirement(r) {
+  const v = versionById[r?.release]
+  return (
+    r &&
+    typeof r.id === 'string' &&
+    ['title', 'owner'].every((k) => typeof r[k] === 'string' && r[k].trim()) &&
+    ['preScope', 'releaseScope'].every((k) => typeof r[k] === 'string') &&
+    [1, 2, 3].includes(r.priority) &&
+    typeof r.included === 'boolean' &&
+    versionIndex(r.pre) >= 0 &&
+    versionIndex(r.pre) <= versionIndex(r.release) &&
+    /^2026-11-(0[1-9]|[12]\d|30)$/.test(r.due) &&
+    r.due >= v.start &&
+    r.due <= v.end
+  )
 }
 export function loadDraft() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey))
-    const oldSampleNames = { B01: 'v1.0.0', B02: 'v1.0.1', B03: 'v1.1.0', B04: 'v1.1.1' }
-    if (Array.isArray(saved?.requirements)) {
-      saved.requirements = saved.requirements.map(
-        (item) =>
-          item && {
-            ...item,
-            first: oldSampleNames[item.first] || item.first,
-            target: oldSampleNames[item.target] || item.target
-          }
-      )
-    }
     if (
-      saved &&
+      saved?.milestone &&
+      ['title', 'outcome'].every(
+        (k) => typeof saved.milestone[k] === 'string' && saved.milestone[k].trim()
+      ) &&
       Array.isArray(saved.requirements) &&
-      saved.requirements.length === initial.requirements.length &&
-      saved.requirements.every(
-        (r, i) =>
-          r?.id === initial.requirements[i].id &&
-          ['title', 'owner', 'reason', 'mvp', 'later'].every(
-            (k) => typeof r[k] === 'string' && r[k].trim()
-          ) &&
-          typeof r.selected === 'boolean' &&
-          [1, 2, 3].includes(r.priority) &&
-          versions.includes(r.first) &&
-          versions.indexOf(r.first) < versions.indexOf(r.target) &&
-          /^2026-11-(0[1-9]|[12]\d|30)$/.test(r.due) &&
-          Number(r.due.slice(-2)) >= 2 + versions.indexOf(r.target) * 7 &&
-          Number(r.due.slice(-2)) <= 8 + versions.indexOf(r.target) * 7
-      )
+      saved.requirements.every(validRequirement) &&
+      new Set(saved.requirements.map((r) => r.id)).size === saved.requirements.length
     ) {
-      return { requirements: saved.requirements }
+      return saved
     }
   } catch {
-    /* Storage may be disabled; the save path reports that separately. */
+    /* The save path reports denied storage. */
   }
   return structuredClone(initial)
 }
+export function moveDelivery(draft, id, kind, target) {
+  const old = draft.requirements.find((r) => r.id === id)
+  if (!old || !old.included || !['pre', 'release'].includes(kind) || !versionById[target]) {
+    return { error: '这项安排无法移动。' }
+  }
+  const next = { ...old, [kind]: target }
+  if (versionIndex(next.pre) > versionIndex(next.release)) {
+    return {
+      error:
+        kind === 'pre'
+          ? 'Pre版本不能晚于Release版本，请先调整Release版本。'
+          : 'Release版本不能早于Pre版本，请先调整Pre版本。'
+    }
+  }
+  if (
+    kind === 'release' &&
+    (next.due < versionById[target].start || next.due > versionById[target].end)
+  ) {
+    next.due = versionById[target].target
+  }
+  return {
+    draft: { ...draft, requirements: draft.requirements.map((r) => (r.id === id ? next : r)) }
+  }
+}
 export function calendarDays(month = 11) {
-  const count = new Date(Date.UTC(2026, month, 0)).getUTCDate()
-  return Array.from({ length: count }, (_, i) => {
-    const day = i + 1
-    const date = `2026-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    const weekday = new Date(`${date}T12:00:00Z`).getUTCDay()
-    // Illustrative Saturdays, not verified Huawei overtime dates.
-    const overtime = day === (month === 10 ? 17 : 14)
+  return Array.from({ length: new Date(Date.UTC(2026, month, 0)).getUTCDate() }, (_, i) => {
+    const day = i + 1,
+      date = `2026-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const weekday = new Date(`${date}T12:00:00Z`).getUTCDay(),
+      overtime = day === (month === 10 ? 17 : 14)
     return { date, day, weekday, overtime, work: overtime || (weekday > 0 && weekday < 6) }
   })
 }
 export function deadlineWarning(item) {
-  const day = calendarDays().find((d) => d.date === item.due)
-  return !day ? '日历未覆盖' : day.work ? '' : '截止在休息日'
+  const d = calendarDays().find((day) => day.date === item.due)
+  return !d ? '日历未覆盖' : d.work ? '' : '截止在休息日'
 }

@@ -34,6 +34,8 @@ export function TaskPageCodeHubFilters({
     setCodehubAuthor,
     codehubAssignee,
     setCodehubAssignee,
+    codehubLabels,
+    setCodehubLabels,
     selectedRepos,
     updateSettings,
     eligibleRepos,
@@ -66,6 +68,7 @@ export function TaskPageCodeHubFilters({
     setCodehubState('opened')
     setCodehubAuthor('')
     setCodehubAssignee('')
+    setCodehubLabels([])
   }
   return (
     <div
@@ -158,7 +161,8 @@ export function TaskPageCodeHubFilters({
                 codehubPreset === id &&
                   codehubState === 'opened' &&
                   !codehubAuthor &&
-                  !codehubAssignee
+                  !codehubAssignee &&
+                  codehubLabels.length === 0
                   ? 'border-border/50 bg-foreground/90 text-background shadow-xs'
                   : 'border-border/60 bg-background text-foreground shadow-xs hover:bg-muted/60'
               )}

@@ -116,8 +116,8 @@ describe('listCodeHubProjectLabels', () => {
     runCodeHubCliMock.mockReset()
   })
 
-  it('lists label names with an explicit pagination cap', async () => {
-    // CLI 的 --limit 默认 10 且不翻页;不给足上限,标签多的项目下拉缺项。
+  it('lists label names and stops after a short page', async () => {
+    // CLI 的 --limit 默认 10;必须显式给页大小并翻页,标签多的项目下拉才不缺项。
     runCodeHubCliMock.mockResolvedValue(
       JSON.stringify([
         { name: 'Bug', color: '#CC0033' },
@@ -138,10 +138,45 @@ describe('listCodeHubProjectLabels', () => {
         '-f',
         'json',
         '--limit',
+        '100',
+        '--offset',
+        '0'
+      ],
+      undefined
+    )
+    expect(runCodeHubCliMock).toHaveBeenCalledTimes(1)
+    expect(names).toEqual(['Bug', 'weekly-2026w44'])
+  })
+
+  it('keeps paging with --offset until a page comes back short', async () => {
+    runCodeHubCliMock
+      .mockResolvedValueOnce(
+        JSON.stringify(Array.from({ length: 100 }, (_, index) => ({ name: `label-${index}` })))
+      )
+      .mockResolvedValueOnce(JSON.stringify([{ name: 'tail' }]))
+    const names = await listCodeHubProjectLabels({ remote })
+    expect(runCodeHubCliMock).toHaveBeenCalledTimes(2)
+    expect(runCodeHubCliMock).toHaveBeenLastCalledWith(
+      [
+        'project',
+        'label',
+        'list',
+        '-p',
+        'Org/Group/repo',
+        '-H',
+        'codehub-g.huawei.com',
+        '-f',
+        'json',
+        '--limit',
+        '100',
+        '--offset',
         '100'
       ],
       undefined
     )
-    expect(names).toEqual(['Bug', 'weekly-2026w44'])
+    expect(names).toHaveLength(101)
+    expect(names).toContain('label-0')
+    expect(names).toContain('label-99')
+    expect(names).toContain('tail')
   })
 })

@@ -3,22 +3,34 @@ import {
   initial,
   storageKey,
   loadDraft,
-  versions,
-  weeks,
-  versionFacts,
+  fixedVersions,
+  versionById,
+  versionIndex,
+  moveDelivery,
   deadlineWarning,
-  historyVersionName
+  currentDay
 } from './milestones-data.js'
 import {
-  CalendarPanel,
-  EditRequirement,
+  historicalRows,
+  historyPlans,
+  historyCounts,
+  releaseGroups,
+  publishedReleases,
+  outcomeLabel,
+  sourceUrl
+} from './milestones-history.js'
+import { Sidebar, ProjectContext, Scoreboard } from './milestones-shell.jsx'
+import {
   Modal,
+  CalendarPanel,
   ReferencePanel,
-  PlanningSourcePanel,
+  EditRequirement,
+  EditMilestone,
   PlanningReviewPanel,
-  VersionBridge
+  VersionBridge,
+  HistoryDetail,
+  HistoryVersion
 } from './milestones-panels.jsx'
-import octoberPlan from '../../../../.bw/planning/v0.7/data.json'
 const {
   // eslint-disable-next-line no-unused-vars
   React,
@@ -26,252 +38,127 @@ const {
   useEffect,
   useRef,
   createRoot,
-  LayoutDashboard,
   BookOpen,
   CalendarRange,
-  CalendarClock,
-  MessageSquare,
-  GitBranch,
-  ChevronRight,
   Pencil,
-  Check,
+  Plus,
   RefreshCw,
   ExternalLink
 } = window.BWPrototypeDependencies
+const dayMs = 86400000,
+  axisStart = Date.parse('2026-10-01T00:00:00Z'),
+  dayWidth = 24,
+  labelWidth = 250,
+  totalDays = 61
+const xFor = (date) =>
+  ((Date.parse(date.length === 10 ? `${date}T00:00:00Z` : date) - axisStart) / dayMs) * dayWidth
+const centerFor = (v) => (xFor(v.start) + xFor(v.end) + dayWidth) / 2
 
-function Sidebar({ scenario, openVersion, info, home }) {
-  return (
-    <aside className="ml-sidebar" aria-label="项目导航">
-      <div className="ml-brand">
-        <span className="ml-logo">W</span>
-        <strong>Workbench</strong>
-      </div>
-      <button
-        className="ml-nav"
-        onClick={() => info('项目墙', '原型注释: 沿用当前项目墙入口，本稿固定在 BW 项目。')}
-      >
-        <LayoutDashboard size={16} />
-        项目墙
-      </button>
-      <div className="ml-project-name">Builders’ Workbench</div>
-      <button
-        className="ml-nav"
-        onClick={() => info('任务', '原型注释: 沿用原生任务列表；本稿不读写 Issue。')}
-      >
-        <Check size={16} />
-        任务
-      </button>
-      <button
-        className="ml-nav"
-        onClick={() => info('自动化', '原型注释: 沿用原生自动化入口；本稿不创建任务。')}
-      >
-        <CalendarClock size={16} />
-        自动化
-      </button>
-      <button className="ml-nav active" aria-current="page" onClick={home}>
-        <LayoutDashboard size={16} />
-        项目总览
-      </button>
-      <button className="ml-nav" onClick={() => info('知识库', '原型注释: 沿用既有知识库入口。')}>
-        <BookOpen size={16} />
-        知识库
-      </button>
-      <div className="ml-nav-rule" />
-      <div className="ml-sidebar-label">版本</div>
-      <button
-        className="ml-nav"
-        onClick={() => info('新建版本', '原型注释: 沿用原生版本准备入口，原型不创建版本或工作树。')}
-      >
-        ＋ 新建版本
-      </button>
-      {scenario !== 'empty' &&
-        versions.map((v, i) => (
-          <details key={v} open={i === 1}>
-            <summary>
-              <ChevronRight size={13} />
-              {v}
-              <small>11.{weeks[i]}</small>
-            </summary>
-            <div className="ml-subnav">
-              {['总览', '计划', '任务', '验收'].map((name) => (
-                <button
-                  key={name}
-                  onClick={() =>
-                    name === '总览'
-                      ? openVersion(v)
-                      : info(
-                          `${v} · ${name}`,
-                          '原型注释: 沿用该版本原生入口；当前只预览导航上下文。'
-                        )
-                  }
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-          </details>
-        ))}
-      {scenario !== 'empty' && (
-        <details>
-          <summary>
-            <ChevronRight size={13} />
-            {historyVersionName}
-            <small>10 月</small>
-          </summary>
-          <a
-            className="ml-history-link"
-            href="https://github.com/forcegravity1989/builder-workbench/blob/cfbc1a4c9/.bw/planning/v0.7/data.json"
-            target="_blank"
-            rel="noreferrer"
-          >
-            原计划 ↗
-          </a>
-        </details>
-      )}
-      <div className="ml-nav-rule" />
-      <div className="ml-sidebar-label">项目工作区</div>
-      <button
-        className="ml-nav"
-        onClick={() => info('原生工作区', '原型注释: 保留 #455 未归版工作树入口，不另建会话导航。')}
-      >
-        <GitBranch size={15} />
-        未归版工作树
-      </button>
-      <button
-        className="ml-nav"
-        onClick={() => info('其他项目', '原型注释: 沿用当前项目切换入口。')}
-      >
-        <ChevronRight size={15} />
-        其他项目
-      </button>
-      <div className="ml-sidebar-bottom">
-        <span className="avatar">Y</span>
-        <span>yuzhup</span>
-      </div>
-    </aside>
-  )
-}
-
-function ProjectContext() {
-  return (
-    <>
-      <div className="ml-motto">
-        <small>高效执行四原则 · FranklinCovey 4DX</small>
-        <p>聚焦至关重要目标 · 贯彻引领指标 · 设立振奋人心的记分牌 · 保持相互担责的节奏</p>
-      </div>
-      <div className="ml-context">
-        <section className="ml-card">
-          <h2>Builders’ Workbench</h2>
-          <p>让 builders 更快、更好地做项目</p>
-          <dl>
-            <dt>目标用户</dt>
-            <dd>Builder、Leader</dd>
-            <dt>目标方向</dt>
-            <dd>更多项目纳入 Workbench 管理</dd>
-            <dt>远端</dt>
-            <dd>forcegravity1989/builder-workbench</dd>
-          </dl>
-        </section>
-        <section className="ml-card">
-          <h2>北极星</h2>
-          <p className="ml-empty-value">未配置</p>
-        </section>
-      </div>
-    </>
-  )
-}
-
-function Scoreboard({ theme }) {
-  const frame = useRef(null)
-  const [height, setHeight] = useState(530)
-  useEffect(() => {
-    const resize = (e) => {
-      if (
-        e.source === frame.current?.contentWindow &&
-        e.origin === location.origin &&
-        e.data?.type === 'bw-scoreboard-height' &&
-        Number.isFinite(e.data.height)
-      ) {
-        setHeight(Math.max(250, Math.min(1500, e.data.height)))
-      }
-    }
-    addEventListener('message', resize)
-    return () => removeEventListener('message', resize)
-  }, [])
-  useEffect(() => {
-    frame.current?.contentWindow?.postMessage(
-      { type: 'bw-prototype-theme', theme },
-      location.origin === 'null' ? '*' : location.origin
-    )
-  }, [theme])
-  return (
-    <iframe
-      ref={frame}
-      title="记分牌 · 复用最新指标原型"
-      className="ml-scoreboard"
-      src="prototype/scoreboard.html?embed=scoreboard"
-      style={{ height }}
-      onLoad={() =>
-        frame.current?.contentWindow?.postMessage(
-          { type: 'bw-prototype-theme', theme },
-          location.origin === 'null' ? '*' : location.origin
-        )
-      }
-    />
-  )
-}
-
-function Timeline({ requirements, includeHistory, planning, openVersion, openHistory, edit }) {
-  const scroll = useRef(null)
-  const drag = useRef(null)
-  const label = 230
-  const unit = 25
-  const october = includeHistory ? 31 : 0
-  const total = (october + 30) * unit
-  const monthX = october * unit
-  const pan = (where) => {
-    const el = scroll.current
-    if (el) {
-      el.scrollTo({
-        left: where === 'history' ? 0 : Math.max(0, monthX - 30),
-        top: where === 'history' ? chosen.length * 96 : 0,
-        behavior: 'smooth'
-      })
-    }
-  }
+function Timeline({
+  historical,
+  rows,
+  planning,
+  onEdit,
+  onVersion,
+  onHistory,
+  onReleases,
+  onMove
+}) {
+  const scroll = useRef(null),
+    pan = useRef(null),
+    pointer = useRef(null),
+    suppress = useRef(false)
+  const [drag, setDrag] = useState(null)
   useEffect(() => {
     if (scroll.current) {
-      scroll.current.scrollLeft = Math.max(0, monthX - 30)
+      scroll.current.scrollTo({ left: historical ? 0 : xFor('2026-11-01') - 16, top: 0 })
     }
-  }, [monthX])
-  const chosen = requirements.filter((r) => r.selected).sort((a, b) => a.priority - b.priority)
-  const pointerDown = (e) => {
-    if (e.button !== 0 || e.target.closest('button,a,input,select')) {
+  }, [historical])
+  const position = (where) =>
+    scroll.current?.scrollTo({
+      left: where === 'history' ? 0 : xFor('2026-11-01') - 16,
+      top: 0,
+      behavior: 'smooth'
+    })
+  const down = (e, item, kind) => {
+    suppress.current = false
+    if (!planning || historical || !item.included || e.button !== 0) {
       return
     }
-    drag.current = { x: e.clientX, left: scroll.current.scrollLeft }
+    e.currentTarget.focus()
     e.currentTarget.setPointerCapture(e.pointerId)
+    pointer.current = { x: e.clientX, id: item.id, kind, target: item[kind], moved: false }
   }
-  const pointerMove = (e) => {
-    if (drag.current) {
-      scroll.current.scrollLeft = drag.current.left + drag.current.x - e.clientX
+  const move = (e) => {
+    const p = pointer.current
+    if (!p) {
+      return
+    }
+    if (Math.abs(e.clientX - p.x) > 5) {
+      p.moved = true
+    }
+    if (!p.moved) {
+      return
+    }
+    const r = scroll.current.getBoundingClientRect()
+    if (e.clientX > r.right - 30) {
+      scroll.current.scrollLeft += 12
+    }
+    if (e.clientX < r.left + labelWidth + 30) {
+      scroll.current.scrollLeft -= 12
+    }
+    const x = e.clientX - r.left + scroll.current.scrollLeft - labelWidth
+    const v = fixedVersions.reduce((a, b) =>
+      Math.abs(centerFor(a) - x) < Math.abs(centerFor(b) - x) ? a : b
+    )
+    p.target = v.id
+    setDrag({ ...p })
+  }
+  const up = () => {
+    const p = pointer.current
+    if (!p) {
+      return
+    }
+    pointer.current = null
+    setDrag(null)
+    suppress.current = p.moved
+    if (p.moved) {
+      onMove(p.id, p.kind, p.target)
     }
   }
-  const pointerEnd = () => {
-    drag.current = null
+  const cancel = () => {
+    pointer.current = null
+    setDrag(null)
+    suppress.current = false
+  }
+  const clickNode = (e, item, kind) => {
+    if (suppress.current) {
+      suppress.current = false
+      e.preventDefault()
+      return
+    }
+    onVersion(item[kind], item)
+  }
+  const groups = releaseGroups.map((g) => ({ ...g, left: xFor(g.date) }))
+  const lanes = []
+  for (const g of groups) {
+    let lane = 0
+    while ((lanes[lane] ?? -200) > g.left) {
+      lane++
+    }
+    g.lane = lane
+    lanes[lane] = g.left + 118
   }
   return (
     <div className="ml-timeline-wrap">
       <div className="ml-timeline-toolbar">
-        <span>{includeHistory ? '2026 年 10—11 月' : '2026 年 11 月'}</span>
+        <span>{historical ? '10 月 · 真实记录回看' : '11 月 · 需求交付安排'}</span>
         <div className="ml-actions">
-          {includeHistory && (
-            <button className="btn btn-ghost" onClick={() => pan('history')}>
-              10 月
-            </button>
-          )}
-          <button className="btn btn-secondary" onClick={() => pan('current')}>
-            今天 · 11/11
+          <button className="btn btn-ghost" onClick={() => position('history')}>
+            10 月
+          </button>
+          <button className="btn btn-secondary" onClick={() => position('future')}>
+            11 月
           </button>
         </div>
       </div>
@@ -279,352 +166,337 @@ function Timeline({ requirements, includeHistory, planning, openVersion, openHis
         className="ml-timeline-scroll"
         ref={scroll}
         role="region"
-        aria-label="跨月里程碑泳道"
+        aria-label="里程碑需求时间轴"
         tabIndex={0}
-        onPointerDown={pointerDown}
-        onPointerMove={pointerMove}
-        onPointerUp={pointerEnd}
-        onPointerCancel={pointerEnd}
+        onPointerDown={(e) => {
+          if (e.button !== 0 || e.target.closest('button,a,input,label')) {
+            return
+          }
+          pan.current = { x: e.clientX, left: scroll.current.scrollLeft }
+          e.currentTarget.setPointerCapture(e.pointerId)
+        }}
+        onPointerMove={(e) => {
+          if (pan.current) {
+            scroll.current.scrollLeft = pan.current.left + pan.current.x - e.clientX
+          }
+        }}
+        onPointerUp={() => {
+          pan.current = null
+        }}
+        onPointerCancel={() => {
+          pan.current = null
+        }}
       >
-        <div className="ml-timeline-canvas" style={{ width: label + total }}>
-          <div className="ml-timeline-header">
-            <div className="ml-sticky-label">大需求 / 主导人</div>
-            <div className="ml-month-scale" style={{ width: total }}>
-              {includeHistory && (
-                <div style={{ width: 31 * unit }}>
-                  2026 年 10 月 <small>已制定</small>
-                </div>
-              )}
-              <div style={{ width: 30 * unit }}>
-                2026 年 11 月 <small>{planning ? '草案' : '已制定'}</small>
+        <div className="ml-timeline-canvas" style={{ width: labelWidth + totalDays * dayWidth }}>
+          <div className="ml-month-row">
+            <div className="ml-sticky-label">需求 / 负责人</div>
+            <div className="ml-month-scale">
+              <div style={{ width: 31 * dayWidth }}>
+                <span>2026 年 10 月</span>
+              </div>
+              <div style={{ width: 30 * dayWidth }}>
+                <span>2026 年 11 月</span>
               </div>
             </div>
           </div>
-          <div className="ml-timeline-versions">
-            <div className="ml-sticky-label">目标版本与截止</div>
-            <div className="ml-date-scale" style={{ width: total }}>
-              {includeHistory && (
-                <div className="ml-history-scale" style={{ width: 31 * unit }}>
-                  {historyVersionName} · 历史计划
-                </div>
-              )}
-              {versions.map((v, i) => (
+          <div className="ml-date-row">
+            <div className="ml-sticky-label">日期</div>
+            <div className="ml-date-track">
+              {Array.from({ length: 9 }, (_, i) => (
+                <span key={i} style={{ left: i * 7 * dayWidth }}>
+                  {new Date(axisStart + i * 7 * dayMs).toISOString().slice(5, 10).replace('-', '/')}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="ml-version-row">
+            <div className="ml-sticky-label">
+              <span>{historical ? '项目发布记录' : '目标版本'}</span>
+              {historical && <small>项目发布与需求交付分别取证</small>}
+            </div>
+            <div className="ml-version-track">
+              {groups.map((g) => (
                 <button
-                  key={v}
-                  className={v === 'v1.0.1' ? 'current' : ''}
-                  style={{ left: monthX + (1 + i * 7) * unit, width: 7 * unit }}
-                  onClick={() => openVersion(v)}
+                  className="ml-release-marker"
+                  key={g.date}
+                  style={{ left: g.left, top: g.lane * 25 + 5 }}
+                  onClick={() => onReleases(g)}
                 >
-                  <b>
-                    {v}
-                    {v === 'v1.0.1' ? ' · 当前' : ''}
-                  </b>
-                  <small>11.{weeks[i]}</small>
+                  <b>{g.label}</b>
+                  <small>{g.date.slice(5).replace('-', '/')}</small>
+                </button>
+              ))}
+              {fixedVersions.map((v) => (
+                <button
+                  className={`ml-fixed-version ${
+                    currentDay >= v.start && currentDay <= v.end ? 'current' : ''
+                  }`}
+                  key={v.id}
+                  style={{ left: xFor(v.start), width: xFor(v.end) - xFor(v.start) + dayWidth }}
+                  onClick={() => onVersion(v.id)}
+                >
+                  <b>{v.id}</b>
+                  <small>
+                    {v.start.slice(5).replace('-', '/')}—{v.end.slice(-2)}
+                  </small>
                 </button>
               ))}
             </div>
           </div>
-          {chosen.map((item) => (
-            <div className="ml-timeline-row" key={item.id}>
-              <button
-                className="ml-sticky-label"
-                onClick={() => (planning ? edit(item) : openVersion(item.first, item))}
-              >
-                <small>
-                  P{item.priority} · {item.owner}
-                </small>
-                <b>{item.title}</b>
-                <span>
-                  截止 {item.due.slice(5).replace('-', '/')}{' '}
-                  {deadlineWarning(item) && <em>{deadlineWarning(item)}</em>}
-                </span>
-              </button>
-              <div className="ml-track" style={{ width: total }}>
-                {[
-                  { v: item.first, name: '先行 MVP' },
-                  { v: item.target, name: '修理完善' }
-                ].map(({ v, name }) => (
-                  <button
-                    key={v}
-                    className={`ml-delivery-bar ${v === 'v1.0.1' ? 'current' : ''}`}
-                    style={{
-                      left: monthX + (1 + versions.indexOf(v) * 7) * unit + 5,
-                      width: 7 * unit - 10
-                    }}
-                    onClick={() => openVersion(v, item)}
-                  >
+          {rows.map((item) => (
+            <div
+              className={`ml-timeline-row ${!historical && !item.included ? 'deferred' : ''}`}
+              key={item.id}
+            >
+              <div className="ml-sticky-label">
+                {historical ? (
+                  <>
+                    <small>
+                      {item.planVersion} · {item.displayGoal} · {item.owner}
+                    </small>
+                    <button className="ml-row-title" onClick={() => onHistory(item)}>
+                      {item.title}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="ml-row-meta">
+                      <small>
+                        P{item.priority} · {item.owner}
+                      </small>
+                      {planning && (
+                        <input
+                          type="checkbox"
+                          aria-label={`纳入 ${item.title}`}
+                          checked={item.included}
+                          onChange={(e) => onEdit({ ...item, included: e.target.checked }, true)}
+                        />
+                      )}
+                    </div>
+                    <button className="ml-row-title" onClick={() => onEdit(item)}>
+                      {item.title}
+                      {planning && <Pencil size={11} />}
+                    </button>
                     <span>
-                      {name}
-                      <ExternalLink size={12} />
+                      {item.included ? `截止 ${item.due.slice(5).replace('-', '/')}` : '暂不安排'}{' '}
+                      {item.included && deadlineWarning(item) && <em>{deadlineWarning(item)}</em>}
                     </span>
-                    <small>{versionFacts[v].label}</small>
-                  </button>
-                ))}
-                <div
-                  className="ml-deadline"
-                  style={{ left: monthX + (Number(item.due.slice(-2)) - 0.5) * unit }}
-                  title={`截止 ${item.due}`}
-                >
-                  ◆
-                </div>
+                  </>
+                )}
+              </div>
+              <div className="ml-track" style={{ width: totalDays * dayWidth }}>
+                {historical ? (
+                  item.result?.decision?.recordedAt ? (
+                    <button
+                      className={`ml-history-event ${
+                        item.result.decision.outcome === 'not-met' ? 'not-met' : ''
+                      }`}
+                      style={{ left: xFor(item.result.decision.recordedAt) - 54 }}
+                      onClick={() => onHistory(item)}
+                    >
+                      <span>验收 · {outcomeLabel(item.result.decision.outcome)}</span>
+                      <small>
+                        {item.result.decision.recordedAt.slice(5, 10).replace('-', '/')}
+                      </small>
+                    </button>
+                  ) : (
+                    <span className="ml-history-unknown">验收时间与 Pre / Release 未记录</span>
+                  )
+                ) : (
+                  item.included && (
+                    <>
+                      {drag?.id === item.id && (
+                        <div
+                          className="ml-drop-target"
+                          style={{
+                            left: xFor(versionById[drag.target].start),
+                            width: 7 * dayWidth
+                          }}
+                        />
+                      )}
+                      {['pre', 'release'].map((kind) => {
+                        const target =
+                          drag?.id === item.id && drag.kind === kind ? drag.target : item[kind]
+                        return (
+                          <button
+                            key={kind}
+                            className={`ml-delivery-node ${kind} ${planning ? 'editable' : ''} ${drag?.id === item.id && drag.kind === kind ? 'dragging' : ''}`}
+                            style={{
+                              left: centerFor(versionById[target]) - 65,
+                              top: kind === 'pre' ? 10 : 56
+                            }}
+                            aria-label={`${item.title} · ${kind === 'pre' ? 'Pre版本' : 'Release版本'} · ${item[kind]}`}
+                            title={
+                              planning
+                                ? '拖动调整版本；Shift+左右键移动一版；回车进入版本总览'
+                                : '进入对应版本总览'
+                            }
+                            onPointerDown={(e) => down(e, item, kind)}
+                            onPointerMove={move}
+                            onPointerUp={up}
+                            onPointerCancel={cancel}
+                            onClick={(e) => clickNode(e, item, kind)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                suppress.current = false
+                              }
+                              if (
+                                planning &&
+                                e.shiftKey &&
+                                ['ArrowLeft', 'ArrowRight'].includes(e.key)
+                              ) {
+                                e.preventDefault()
+                                const i =
+                                  versionIndex(item[kind]) + (e.key === 'ArrowRight' ? 1 : -1)
+                                if (fixedVersions[i]) {
+                                  onMove(item.id, kind, fixedVersions[i].id)
+                                }
+                              }
+                            }}
+                          >
+                            <span>
+                              <i />
+                              {kind === 'pre' ? 'Pre版本' : 'Release版本'}
+                              <ExternalLink size={11} />
+                            </span>
+                            <small>{target}</small>
+                          </button>
+                        )
+                      })}
+                    </>
+                  )
+                )}
               </div>
             </div>
           ))}
-          {includeHistory &&
-            octoberPlan.goals.map((goal) => (
-              <div className="ml-timeline-row ml-history-row" key={goal.goalId}>
-                <button className="ml-sticky-label" onClick={() => openHistory(goal)}>
-                  <small>{goal.owner}</small>
-                  <b>{goal.title}</b>
-                </button>
-                <div className="ml-track" style={{ width: total }}>
-                  <button
-                    className="ml-history-bar"
-                    style={{ width: 31 * unit - 20 }}
-                    onClick={() => openHistory(goal)}
-                  >
-                    <span>
-                      {historyVersionName} · {goal.goalId} <ExternalLink size={12} />
-                    </span>
-                    <small>月内日期未登记</small>
-                  </button>
-                </div>
-              </div>
-            ))}
-          {chosen.length === 0 && !includeHistory && (
-            <div className="ml-timeline-empty">尚未纳入大需求</div>
-          )}
-          <div className="ml-now-line" style={{ left: label + monthX + 10.5 * unit }} />
+          {rows.length === 0 && <div className="ml-timeline-empty">还没有支撑需求</div>}
+          <div
+            className="ml-now-line"
+            style={{ left: labelWidth + xFor(currentDay) + dayWidth / 2 }}
+          />
         </div>
       </div>
     </div>
   )
 }
 
-function Discussion() {
-  return (
-    <aside className="ml-discussion" aria-label="Orca 原生会话屏">
-      <header className="ml-session-head">
-        <MessageSquare size={16} />
-        <strong>里程碑规划</strong>
-      </header>
-      <div className="ml-native-placeholder">
-        <MessageSquare size={28} />
-        <p>原型注释: Orca 原生会话屏</p>
-        <dl>
-          <dt>固定分支</dt>
-          <dd>
-            <code>bw/project</code>（拟复用）
-          </dd>
-          <dt>配套 Skill</dt>
-          <dd>名称待确认</dd>
-        </dl>
-      </div>
-    </aside>
-  )
-}
-
 function App() {
-  const [scenario, setScenario] = useState('ready')
-  const [editing, setEditing] = useState(false)
-  const [hasHistory, setHasHistory] = useState(true)
-  const [sessionWidth, setSessionWidth] = useState(300)
-  const [draft, setDraft] = useState(loadDraft)
-  const [published, setPublished] = useState(() => structuredClone(initial))
-  const [reviewStage, setReviewStage] = useState('draft')
-  const [modal, setModal] = useState(null)
-  const [selectedId, setSelectedId] = useState('DEMO-01')
-  const [saveError, setSaveError] = useState('')
-  const [theme, setTheme] = useState('light')
-  const [toast, setToast] = useState('')
+  const [draft, setDraft] = useState(loadDraft),
+    [published, setPublished] = useState(() => structuredClone(initial))
+  const [scenario, setScenario] = useState('ready'),
+    [planning, setPlanning] = useState(false),
+    [phase, setPhase] = useState('future'),
+    [hasHistory, setHasHistory] = useState(true),
+    [hasPublished, setHasPublished] = useState(true)
+  const [modal, setModal] = useState(null),
+    [reviewStage, setReviewStage] = useState('draft'),
+    [theme, setTheme] = useState('light'),
+    [notice, setNotice] = useState(''),
+    [saveError, setSaveError] = useState('')
+  const board = useRef(null)
   useEffect(() => {
     try {
       localStorage.setItem(storageKey, JSON.stringify(draft))
       setSaveError('')
     } catch {
-      setSaveError('浏览器未能保存草案，刷新后修改会丢失。')
+      setSaveError('浏览器无法保存草案，刷新后修改会丢失。')
     }
   }, [draft])
   useEffect(() => {
     document.documentElement.dataset.theme = theme
   }, [theme])
   useEffect(() => {
-    if (!toast) {
+    if (!notice) {
       return
     }
-    const id = setTimeout(() => setToast(''), 3500)
+    const id = setTimeout(() => setNotice(''), 4500)
     return () => clearTimeout(id)
-  }, [toast])
-  const selected = draft.requirements.find((r) => r.id === selectedId) || draft.requirements[0]
-  const chosen = draft.requirements
-    .filter((r) => r.selected)
-    .sort((a, b) => a.priority - b.priority)
-  const openCalendar = (event) =>
-    setModal({ type: 'calendar', anchor: event.currentTarget.getBoundingClientRect() })
+  }, [notice])
+  const current = planning ? draft : published,
+    historical = phase === 'history' && hasHistory,
+    empty = !planning && !hasPublished
+  const included = current.requirements.filter((r) => r.included)
+  const target = included.toSorted((a, b) => b.due.localeCompare(a.due))[0]
   const info = (title, text) => setModal({ type: 'info', title, text })
-  const openVersion = (version, item) =>
-    setModal({
-      type: 'version',
-      version,
-      item:
-        item ||
-        (editing
-          ? selected
-          : published.requirements.find(
-              (r) => r.selected && (r.first === version || r.target === version)
-            ))
-    })
-  const change = (id, patch) => {
+  const openVersion = (version, item) => {
+    const history = historyPlans.find((p) => p.version === version)
+    setModal(
+      history ? { type: 'history-version', plan: history } : { type: 'version', version, item }
+    )
+  }
+  const edit = (item) => {
+    if (historical) {
+      return
+    }
+    setPlanning(true)
+    setScenario('planning')
+    setModal({ type: 'edit', item: draft.requirements.find((r) => r.id === item.id) || item })
+  }
+  const change = (item) => {
     setDraft((d) => ({
       ...d,
-      requirements: d.requirements.map((r) => (r.id === id ? { ...r, ...patch } : r))
+      requirements: d.requirements.some((r) => r.id === item.id)
+        ? d.requirements.map((r) => (r.id === item.id ? item : r))
+        : [...d.requirements, item]
     }))
     setReviewStage('draft')
   }
-  const edit = (item) => {
-    setSelectedId(item.id)
-    setModal({ type: 'edit', item })
+  const move = (id, kind, version) => {
+    const result = moveDelivery(draft, id, kind, version)
+    if (result.error) {
+      setNotice(result.error)
+    } else {
+      setDraft(result.draft)
+      setReviewStage('draft')
+      setNotice(`${kind === 'pre' ? 'Pre版本' : 'Release版本'}已安排到 ${version}`)
+    }
   }
-  const openHistory = (goal) =>
-    info(
-      `${historyVersionName} · ${goal.goalId}`,
-      `${goal.title}\n\n${goal.deliverable}\n\n原型注释: 直接引用 BW v0.7 计划；未登记月内日期及 具体排期，未据此推断验收完成。`
-    )
-  const chooseScene = (value) => {
-    setScenario(value)
-    setHasHistory(value !== 'empty')
-    setEditing(value === 'planning')
-    setReviewStage('draft')
-    setModal(null)
-  }
-  const startPlanning = () => {
-    setEditing(true)
+  const begin = () => {
+    setPlanning(true)
     setScenario('planning')
+    setPhase('future')
+    requestAnimationFrame(() =>
+      board.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    )
+  }
+  const choose = (value) => {
+    setScenario(value)
+    setPlanning(value === 'planning')
+    setHasHistory(value !== 'empty')
+    setHasPublished(value !== 'empty')
+    setPhase('future')
+    setModal(null)
+    setReviewStage('draft')
   }
   const publish = () => {
+    setHasPublished(true)
     setPublished(structuredClone(draft))
+    setPlanning(false)
     setScenario('ready')
-    setEditing(false)
     setReviewStage('draft')
     setModal(null)
-    setToast('已更新正式安排')
+    setNotice('正式安排已更新')
   }
-  const timeline = (
-    <Timeline
-      requirements={editing ? draft.requirements : published.requirements}
-      includeHistory={hasHistory}
-      planning={editing}
-      openVersion={openVersion}
-      openHistory={openHistory}
-      edit={edit}
-    />
-  )
-  const milestone = (
-    <section className="ml-milestone-block" aria-label="项目里程碑">
-      <div className="ml-milestone-heading">
-        <h2>{editing ? '2026 年 11 月 · 里程碑规划' : '项目里程碑'}</h2>
-        <div className="ml-actions">
-          {editing ? (
-            <>
-              <span className="tag tag-outline">
-                {reviewStage === 'review' ? '评审中' : reviewStage === 'merged' ? '待更新' : '草案'}
-              </span>
-              <button
-                className="btn btn-secondary"
-                onClick={() => {
-                  setEditing(false)
-                  setScenario('ready')
-                }}
-              >
-                返回总览
-              </button>
-              <button
-                className="btn btn-primary"
-                disabled={chosen.length === 0}
-                onClick={() => setModal({ type: 'review' })}
-              >
-                {reviewStage === 'draft'
-                  ? '提交评审'
-                  : reviewStage === 'review'
-                    ? '查看评审'
-                    : '更新正式总览'}
-              </button>
-            </>
-          ) : (
-            <>
-              {scenario !== 'empty' && (
-                <IconAction label="工作日历" icon={CalendarRange} onClick={openCalendar} />
-              )}
-              <button className="btn btn-primary" onClick={startPlanning}>
-                规划里程碑
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-      {scenario === 'empty' && !editing ? (
-        <div className="ml-first-plan">
-          <CalendarRange size={30} />
-          <h3>还没有月度里程碑</h3>
-        </div>
-      ) : (
-        <>
-          {editing && (
-            <section className="ml-candidates" aria-label="本月取舍">
-              <div className="ml-section-head">
-                <h3>
-                  本月取舍 <small>{chosen.length} 项纳入</small>
-                </h3>
-                <button className="btn btn-ghost" onClick={openCalendar}>
-                  <CalendarRange size={14} />
-                  工作日历
-                </button>
-              </div>
-              {draft.requirements.map((r) => (
-                <article className={`ml-choice ${!r.selected ? 'deferred' : ''}`} key={r.id}>
-                  <input
-                    type="checkbox"
-                    checked={r.selected}
-                    aria-label={`本月纳入 ${r.title}`}
-                    onChange={(e) => change(r.id, { selected: e.target.checked })}
-                  />
-                  <button className="ml-choice-main" onClick={() => edit(r)}>
-                    <small>
-                      P{r.priority} · {r.owner}
-                    </small>
-                    <b>{r.title}</b>
-                    <p>{r.reason}</p>
-                    <span>
-                      {r.selected
-                        ? `${r.first} MVP → ${r.target} 完善 · 截止 ${r.due.slice(5).replace('-', '/')}`
-                        : '暂不安排'}
-                    </span>
-                  </button>
-                  <IconAction label={`编辑 ${r.title}`} icon={Pencil} onClick={() => edit(r)} />
-                </article>
-              ))}
-            </section>
-          )}
-          {timeline}
-        </>
-      )}
-      {editing && (
-        <div className="ml-material-origin">
-          <span>草案 · bw/project</span>
-          <button className="btn btn-ghost" onClick={() => setModal({ type: 'source' })}>
-            查看材料来源
-          </button>
-        </div>
-      )}
-    </section>
-  )
+  const add = () =>
+    setModal({
+      type: 'edit',
+      item: {
+        id: `demo-${crypto.randomUUID()}`,
+        title: '',
+        owner: '',
+        priority: 2,
+        included: true,
+        pre: fixedVersions[0].id,
+        release: fixedVersions[1].id,
+        due: fixedVersions[1].target,
+        preScope: '',
+        releaseScope: ''
+      }
+    })
   return (
     <>
       <div className="ml-review-strip">
-        <span>
-          原型注释: 10 月引用 BW v0.7（展示名 v0.7.0）；当前时间模拟 11/11（v1.0.1），11
-          月安排、状态与日历为示意，非 v0.8 承诺。
-        </span>
+        <span>原型注释: 模拟时间 11/11；10 月按真实记录回看，11 月是演示规划，非 v0.8 承诺。</span>
         <div className="ml-actions">
           <IconAction
             label="重置原型"
@@ -633,8 +505,8 @@ function App() {
           />
           <button
             className="btn btn-ghost"
-            onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
             aria-label="切换主题"
+            onClick={() => setTheme((t) => (t === 'light' ? 'dark' : 'light'))}
           >
             ◐
           </button>
@@ -642,24 +514,15 @@ function App() {
       </div>
       <div className="ml-app">
         <Sidebar
-          scenario={scenario}
-          openVersion={openVersion}
-          info={info}
-          home={() => {
-            setEditing(false)
-            setScenario('ready')
-          }}
+          empty={empty}
+          onInfo={info}
+          onVersion={openVersion}
+          onHome={() => document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' })}
         />
         <div className="ml-workspace">
           <header className="ml-topbar">
             <span>
-              Builders’ Workbench <ChevronRight size={13} /> 项目总览{' '}
-              {editing && (
-                <>
-                  <ChevronRight size={13} />
-                  里程碑规划
-                </>
-              )}
+              Builders’ Workbench <span>›</span>项目总览
             </span>
             <div className="ml-actions">
               <label className="ml-scene-label">
@@ -668,7 +531,7 @@ function App() {
                   className="input"
                   aria-label="原型场景"
                   value={scenario}
-                  onChange={(e) => chooseScene(e.target.value)}
+                  onChange={(e) => choose(e.target.value)}
                 >
                   <option value="empty">尚无里程碑</option>
                   <option value="planning">制定中</option>
@@ -682,108 +545,282 @@ function App() {
               />
             </div>
           </header>
-          {editing ? (
-            <div
-              className="ml-edit-workspace"
-              style={{ gridTemplateColumns: `minmax(0,1fr) 5px ${sessionWidth}px` }}
-            >
-              <main className="ml-planning-board">{milestone}</main>
-              <div
-                className="ml-splitter"
-                role="separator"
-                aria-label="规划与会话分隔"
-                aria-orientation="vertical"
-                aria-valuemin={260}
-                aria-valuemax={500}
-                aria-valuenow={sessionWidth}
-                tabIndex={0}
-                onPointerDown={(e) => e.currentTarget.setPointerCapture(e.pointerId)}
-                onPointerMove={(e) => {
-                  if (e.buttons === 1) {
-                    setSessionWidth(
-                      Math.max(
-                        260,
-                        Math.min(
-                          500,
-                          e.currentTarget.parentElement.getBoundingClientRect().right - e.clientX
-                        )
-                      )
-                    )
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-                    e.preventDefault()
-                    setSessionWidth((w) =>
-                      Math.max(260, Math.min(500, w + (e.key === 'ArrowLeft' ? 16 : -16)))
-                    )
-                  }
-                }}
-              />
-              <Discussion />
+          <main className="ml-main">
+            <div className="ml-page-head">
+              <h1>项目总览</h1>
+              <button
+                className="btn btn-secondary"
+                onClick={() =>
+                  reviewStage === 'merged'
+                    ? publish()
+                    : setNotice('原型注释: 当前未连接真实主干更新。')
+                }
+              >
+                更新代码
+              </button>
             </div>
-          ) : (
-            <main className="ml-main">
-              <div className="ml-page-head">
-                <h1>项目总览</h1>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() =>
-                    reviewStage === 'merged'
-                      ? publish()
-                      : setToast('原型注释: 当前为本地预览，未拉取真实主干。')
-                  }
-                >
-                  更新代码
-                </button>
+            <ProjectContext />
+            <section className="ml-milestone-block" aria-label="项目里程碑" ref={board}>
+              <div className="ml-milestone-heading">
+                <h2>项目里程碑</h2>
+                <div className="ml-actions">
+                  <IconAction
+                    label="工作日历"
+                    icon={CalendarRange}
+                    onClick={(e) =>
+                      setModal({
+                        type: 'calendar',
+                        anchor: e.currentTarget.getBoundingClientRect()
+                      })
+                    }
+                  />
+                  {planning ? (
+                    <>
+                      <span className="tag tag-outline">
+                        {reviewStage === 'draft'
+                          ? '草案'
+                          : reviewStage === 'review'
+                            ? '评审中'
+                            : '待更新'}
+                      </span>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => {
+                          setPlanning(false)
+                          setScenario(hasPublished ? 'ready' : 'empty')
+                        }}
+                      >
+                        查看正式安排
+                      </button>
+                      <button
+                        className="btn btn-primary"
+                        disabled={!draft.requirements.some((r) => r.included)}
+                        onClick={() => setModal({ type: 'review' })}
+                      >
+                        {reviewStage === 'draft' ? '提交评审' : '查看评审'}
+                      </button>
+                    </>
+                  ) : (
+                    <button className="btn btn-primary" onClick={begin}>
+                      规划里程碑
+                    </button>
+                  )}
+                </div>
               </div>
-              <ProjectContext />
-              {milestone}
-              <Scoreboard theme={theme} />
-            </main>
-          )}
+              {empty ? (
+                <div className="ml-first-plan">
+                  <CalendarRange size={30} />
+                  <h3>还没有里程碑</h3>
+                </div>
+              ) : (
+                <>
+                  <div className="ml-outcomes" aria-label="阶段成果里程碑">
+                    {hasHistory && (
+                      <article className={`ml-outcome-card ${historical ? 'selected' : ''}`}>
+                        <button
+                          className="ml-outcome-select"
+                          aria-pressed={historical}
+                          onClick={() => setPhase('history')}
+                        >
+                          <small>10 月 · 历史回看</small>
+                          <h3>项目管理逻辑收尾</h3>
+                          <p>沿版本回看规划、执行、验收与发布主链的交付及遗留。</p>
+                          <span>
+                            各版目标验收：{historyCounts.met} 达成 · {historyCounts.notMet} 未达 ·{' '}
+                            {historyCounts.unknown} 未记录
+                          </span>
+                        </button>
+                      </article>
+                    )}
+                    <article className={`ml-outcome-card ${!historical ? 'selected' : ''}`}>
+                      <button
+                        className="ml-outcome-select"
+                        aria-pressed={!historical}
+                        onClick={() => setPhase('future')}
+                      >
+                        <small>11 月 · {planning ? '规划草案' : '正式安排'}</small>
+                        <h3>{current.milestone.title}</h3>
+                        <p>{current.milestone.outcome}</p>
+                        <span>
+                          {included.length} 项需求支撑 ·{' '}
+                          {target
+                            ? `目标 ${target.release} · ${target.due.slice(5).replace('-', '/')}`
+                            : '尚未安排交付'}
+                        </span>
+                      </button>
+                      {planning && (
+                        <IconAction
+                          label="编辑阶段成果"
+                          icon={Pencil}
+                          className="ml-outcome-edit"
+                          onClick={() => setModal({ type: 'milestone' })}
+                        />
+                      )}
+                    </article>
+                  </div>
+                  <div className="ml-support-head">
+                    <div>
+                      <h3>支撑需求</h3>
+                      <span>
+                        {historical
+                          ? `${historicalRows.length} 项目标 · 按来源版本回看`
+                          : `${new Set(included.map((r) => r.owner)).size} 位负责人 · ${included.length} 项纳入`}
+                      </span>
+                    </div>
+                    {planning && !historical && (
+                      <button className="btn btn-secondary" onClick={add}>
+                        <Plus size={13} />
+                        添加需求
+                      </button>
+                    )}
+                  </div>
+                  <Timeline
+                    historical={historical}
+                    rows={historical ? historicalRows : current.requirements}
+                    planning={planning}
+                    onEdit={(item, immediate) => (immediate ? change(item) : edit(item))}
+                    onMove={move}
+                    onVersion={openVersion}
+                    onHistory={(item) => setModal({ type: 'history', item })}
+                    onReleases={(group) => setModal({ type: 'releases', group })}
+                  />
+                  <div className="ml-material-origin">
+                    <span>
+                      {historical
+                        ? '来源：已提交计划、人工验收与发布快照 · 截至 2026-10-28'
+                        : planning
+                          ? '规划草案 · 尚未合入'
+                          : '正式安排'}
+                    </span>
+                    <button className="btn btn-ghost" onClick={() => setModal({ type: 'sources' })}>
+                      查看来源
+                    </button>
+                  </div>
+                </>
+              )}
+            </section>
+            <Scoreboard theme={theme} />
+          </main>
         </div>
       </div>
       {modal?.type === 'calendar' && (
         <CalendarPanel anchor={modal.anchor} close={() => setModal(null)} />
       )}
+      {modal?.type === 'references' && <ReferencePanel close={() => setModal(null)} />}
       {modal?.type === 'edit' && (
-        <EditRequirement
-          item={modal.item}
-          save={(item) => change(item.id, item)}
+        <EditRequirement item={modal.item} save={change} close={() => setModal(null)} />
+      )}
+      {modal?.type === 'milestone' && (
+        <EditMilestone
+          value={draft.milestone}
+          save={(value) => {
+            setDraft((d) => ({ ...d, milestone: value }))
+            setReviewStage('draft')
+          }}
           close={() => setModal(null)}
         />
       )}
       {modal?.type === 'version' && (
         <VersionBridge item={modal.item} version={modal.version} close={() => setModal(null)} />
       )}
-      {modal?.type === 'references' && <ReferencePanel close={() => setModal(null)} />}
-      {modal?.type === 'source' && <PlanningSourcePanel close={() => setModal(null)} />}
+      {modal?.type === 'history' && (
+        <HistoryDetail item={modal.item} close={() => setModal(null)} />
+      )}
+      {modal?.type === 'history-version' && (
+        <HistoryVersion plan={modal.plan} close={() => setModal(null)} />
+      )}
       {modal?.type === 'review' && (
         <PlanningReviewPanel
-          chosen={chosen}
+          chosen={draft.requirements.filter((r) => r.included)}
+          milestone={draft.milestone}
           stage={reviewStage}
           setStage={setReviewStage}
           publish={publish}
           close={() => setModal(null)}
         />
       )}
+      {modal?.type === 'releases' && (
+        <Modal title={`${modal.group.date} · 项目发布`} close={() => setModal(null)}>
+          {modal.group.rows.map((r) => (
+            <section className="ml-source-item" key={r.tag}>
+              <h3>
+                <a href={r.url} target="_blank" rel="noreferrer">
+                  {r.tag} ↗
+                </a>
+              </h3>
+              <p>{r.prerelease ? 'GitHub 项目预发布' : 'GitHub 项目发布'}</p>
+              <p className="muted">{r.publishedAt} · 不推定所有需求已交付 Pre 或 Release</p>
+            </section>
+          ))}
+        </Modal>
+      )}
+      {modal?.type === 'sources' && (
+        <Modal title="里程碑资料来源" close={() => setModal(null)} wide>
+          <p>
+            原型注释: 10 月阶段主题由人归纳，按真实版本材料恢复；不倒编月初承诺、日期或需求级 Pre /
+            Release。
+          </p>
+          <div className="ml-source-columns">
+            <section>
+              <h3>计划与人工验收</h3>
+              {historyPlans.map((p) => (
+                <p key={p.version}>
+                  <a
+                    href={sourceUrl(`.bw/planning/${p.version}/data.json`)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {p.version} 计划 ↗
+                  </a>
+                  {historicalRows.some((r) => r.planVersion === p.version && r.acceptancePath) && (
+                    <>
+                      {' '}
+                      ·{' '}
+                      <a
+                        href={sourceUrl(`.bw/planning/${p.version}/acceptance.json`)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        人工验收 ↗
+                      </a>
+                    </>
+                  )}
+                </p>
+              ))}
+            </section>
+            <section>
+              <h3>实际项目发布</h3>
+              {publishedReleases.map((r) => (
+                <p key={r.tag}>
+                  <a href={r.url} target="_blank" rel="noreferrer">
+                    {r.tag} ↗
+                  </a>
+                  <small> · {r.publishedAt.slice(5, 10)}</small>
+                </p>
+              ))}
+            </section>
+          </div>
+          <p className="ml-footnote">
+            原型注释: 11 月六个方向、人员与排期为演示。阶段成果未自动判达成；材料写入与 #334
+            跨屏字段仍未接入真实协议。
+          </p>
+        </Modal>
+      )}
       {modal?.type === 'info' && (
         <Modal title={modal.title} close={() => setModal(null)}>
-          <p className="ml-info-text">{modal.text}</p>
+          <p>{modal.text}</p>
         </Modal>
       )}
       {modal?.type === 'reset' && (
         <Modal title="重置原型" close={() => setModal(null)}>
-          <p>原型注释: 清除本浏览器草案，恢复初始模拟安排。Orca 原生批注保留。</p>
+          <p>原型注释: 恢复本浏览器中的演示安排，原生浏览器批注保留。</p>
           <footer>
             <button
               className="btn btn-primary"
               onClick={() => {
                 setDraft(structuredClone(initial))
                 setPublished(structuredClone(initial))
-                setSelectedId('DEMO-01')
-                chooseScene('ready')
+                choose('ready')
               }}
             >
               重置
@@ -791,14 +828,14 @@ function App() {
           </footer>
         </Modal>
       )}
+      {notice && (
+        <div className="ml-toast" role="status">
+          {notice}
+        </div>
+      )}
       {saveError && (
         <div className="ml-save-error" role="alert">
           {saveError}
-        </div>
-      )}
-      {toast && (
-        <div className="ml-toast" role="status">
-          {toast}
         </div>
       )}
     </>
