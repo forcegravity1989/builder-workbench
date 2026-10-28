@@ -99,7 +99,65 @@ const releases = [
 ]
 const position = (value) => `${(value / duration) * 100}%`
 
-function SampleJourney() {
+const phaseArtifacts = {
+  design: ['intent', 'prototype', 'spec', 'commitment'],
+  build: ['plan', 'pr'],
+  verify: ['test', 'release', 'acceptance'],
+  trial: ['release', 'issues', 'pr', 'test']
+}
+const artifactLabels = {
+  intent: '意图',
+  prototype: '原型',
+  spec: '规格',
+  plan: '详细设计 / Plan',
+  test: '设计稿 CI',
+  release: '发布记录',
+  issues: '关联 Issue',
+  commitment: '当时计划',
+  acceptance: '人工验收'
+}
+
+function ArtifactLinks({ feature, openArtifact, ids }) {
+  const rows = feature.artifacts.filter((row) => !ids || ids.includes(row[4]))
+  return (
+    <div className="ov-artifact-links" aria-label="成果入口">
+      {rows.map((row) => {
+        const label = row[4] === 'pr' ? `PR #${feature.pr.number}` : artifactLabels[row[4]]
+        const content = (
+          <>
+            <strong>{label}</strong>
+            <span>{row[2]}</span>
+            <span aria-hidden="true">↗</span>
+          </>
+        )
+        return (
+          <span className="ov-artifact-chip" key={row[4]}>
+            {row[5] ? (
+              <a href={row[5]} target="_blank" rel="noreferrer" title={`${row[1]} · ${row[3]}`}>
+                {content}
+              </a>
+            ) : (
+              <button onClick={() => openArtifact(feature, row)} title={row[3]}>
+                {content}
+              </button>
+            )}
+            {row[5] && (
+              <button
+                className="ov-artifact-info"
+                aria-label={`查看${label}的来源与状态`}
+                onClick={() => openArtifact(feature, row)}
+              >
+                ⓘ
+              </button>
+            )}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+function SampleJourney({ feature, openArtifact }) {
   const [phaseId, setPhaseId] = useState('design')
   const [releaseIndex, setReleaseIndex] = useState(null)
   const phase = phases.find((p) => p.id === phaseId)
@@ -177,93 +235,73 @@ function SampleJourney() {
           </div>
         </div>
       </div>
-      <div className="ov-journey-detail" aria-live="polite">
-        <div className="ov-journey-detail-heading">
-          <strong>{release ? `${release.version} · 项目已发布` : phase.title}</strong>
-          <span className="ov-chip">{release ? release.delivery : phase.state}</span>
+      <div className="ov-journey-selection" aria-live="polite">
+        <div className="ov-selection-heading">
+          <strong>{release ? `${release.version} · ${release.delivery}` : phase.title}</strong>
+          <time>
+            {release
+              ? stamp(at(release.at))
+              : `${stamp(at(phase.start))} → ${stamp(at(phase.end))}`}
+          </time>
         </div>
-        <time>
-          {release
-            ? stamp(at(release.at))
-            : `${stamp(at(phase.start))} → ${stamp(at(phase.end))} · ${phase.end - phase.start} 小时`}{' '}
-          · UTC
-        </time>
-        <p>{release ? release.detail : phase.summary}</p>
-        {!release && (
-          <ol className="ov-process-events">
-            {phase.events.map(([h, label]) => (
-              <li key={h}>
-                <time>{stamp(at(h))}</time>
-                <span>{label}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-        <div className="ov-sample-evidence">
-          <span>依据</span>
-          {(release ? [release.evidence] : phase.evidence).map((item) => (
-            <span key={item}>{item}</span>
-          ))}
-        </div>
+        <p className="ov-note">
+          原型注释: 以下打开 #{feature.id} 的实际材料，状态与上方模拟历程分开。
+        </p>
+        <ArtifactLinks
+          feature={feature}
+          openArtifact={openArtifact}
+          ids={release ? ['release'] : phaseArtifacts[phaseId]}
+        />
+        <details key={release ? release.version : phaseId} className="ov-process-disclosure">
+          <summary>过程详情</summary>
+          <div className="ov-journey-detail">
+            <div className="ov-journey-detail-heading">
+              <strong>{release ? `${release.version} · 项目已发布` : phase.title}</strong>
+              <span className="ov-chip">{release ? release.delivery : phase.state}</span>
+            </div>
+            <time>
+              {release
+                ? stamp(at(release.at))
+                : `${stamp(at(phase.start))} → ${stamp(at(phase.end))} · ${phase.end - phase.start} 小时`}{' '}
+              · UTC
+            </time>
+            <p>{release ? release.detail : phase.summary}</p>
+            {!release && (
+              <ol className="ov-process-events">
+                {phase.events.map(([h, label]) => (
+                  <li key={h}>
+                    <time>{stamp(at(h))}</time>
+                    <span>{label}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <div className="ov-sample-evidence">
+              <span>依据</span>
+              {(release ? [release.evidence] : phase.evidence).map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+          </div>
+        </details>
       </div>
       <p className="ov-note">
         原型注释:
-        以上版本、时刻、评审轮次和依据均为示例。时段为日历历时，包含等待；测试可并行，不把各段相加为人工工时。版本发布与本需求是否随版交付分别取据，每版正式验收仍只有一次。
+        轴上版本、时刻及“过程详情”中的记录均为模拟；成果链接打开真实固定读数或当前文件。历时包含等待，测试可并行，不累计为人工工时。
       </p>
     </>
   )
 }
 
-function ArtifactGroups({ feature, openArtifact }) {
-  const groups = [
-    ['意图与设计评审', ['intent', 'prototype', 'spec', 'commitment']],
-    ['详细设计与开发', ['plan', 'pr']],
-    ['测试、上线与反馈', ['test', 'release', 'acceptance', 'issues']]
-  ]
-  return (
-    <div className="ov-outcomes">
-      <h4>当前成果与依据</h4>
-      {groups.map(([label, ids]) => {
-        const rows = feature.artifacts.filter((row) => ids.includes(row[4]))
-        if (!rows.length) {
-          return null
-        }
-        return (
-          <section key={label} className="ov-outcome-group" aria-label={label}>
-            <strong>{label}</strong>
-            {label === '意图与设计评审' && !feature.historical && (
-              <p>原型与 spec 一起评审，保留各自修订和认可依据。</p>
-            )}
-            {rows.map((row) => (
-              <button
-                key={row[4]}
-                className="ov-outcome"
-                onClick={() => openArtifact(feature, row)}
-              >
-                <span>
-                  <strong>{row[1]}</strong>
-                  <small>{row[3]}</small>
-                </span>
-                <span className="ov-chip">{row[2]}</span>
-                <span aria-hidden="true">↗</span>
-              </button>
-            ))}
-          </section>
-        )
-      })}
-    </div>
-  )
-}
-
 export function FeatureTimeline({ feature, openArtifact }) {
-  const [demo, setDemo] = useState(false)
+  const [demo, setDemo] = useState(!feature.historical)
   const draft = feature.draftEvidence
   return (
     <div className="ov-timeline" aria-label={`${feature.title}成果时间轴`}>
       <div className="ov-timeline-heading">
         <strong>需求历程与版本交付</strong>
         <button className="ov-link" onClick={() => setDemo(!demo)} aria-pressed={demo}>
-          原型注释: {demo ? '返回实际材料' : '查看完整历程示例'}
+          原型注释: {demo ? '核对实际材料' : '显示完整模拟历程'}
         </button>
       </div>
       {demo ? (
@@ -272,7 +310,7 @@ export function FeatureTimeline({ feature, openArtifact }) {
             原型注释: 模拟历程。示例 v1.0 正常发布时，本需求尚无 Pre；后续 v1.1 提供 Pre，v1.2
             正式交付。不是 BW 的真实版本安排。
           </p>
-          <SampleJourney />
+          <SampleJourney feature={feature} openArtifact={openArtifact} />
         </>
       ) : (
         <>
@@ -290,10 +328,9 @@ export function FeatureTimeline({ feature, openArtifact }) {
             仅展示已核对的提交时刻，不由文件时间补造阶段历时，也不把项目版本已发布推成这个需求已交付
             Pre / Release。
           </p>
+          <ArtifactLinks feature={feature} openArtifact={openArtifact} />
         </>
       )}
-      {demo && <p className="ov-note">原型注释: 下方回到当前真实固定读数，与上方模拟历程分开。</p>}
-      <ArtifactGroups feature={feature} openArtifact={openArtifact} />
     </div>
   )
 }

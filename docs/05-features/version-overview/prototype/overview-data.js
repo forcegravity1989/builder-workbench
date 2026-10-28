@@ -2,7 +2,7 @@ import snapshot from './bw-snapshot.json'
 export { snapshot }
 export const repository = snapshot.source.repository
 export const baseline = snapshot.source.sourceCommit
-export const revision = '334-draft-7'
+export const revision = '334-draft-8'
 export const scenarios = [
   { id: 'unplanned', label: '版本计划未制定', version: 'v0.9' },
   { id: 'during', label: '版本计划制定完（版本中）', version: 'v0.8' },
@@ -58,6 +58,7 @@ export const features = ['334', '440'].map((id) => {
   const prefix = `${repository}/blob/${pr.headRefOid}/docs/05-features/overview-metrics/`
   return {
     id,
+    previewExpanded: own,
     draftEvidence: draftEvidence[id],
     goalId: 'G2',
     title: own ? '版本总览重设计' : '项目总览里程碑规划',

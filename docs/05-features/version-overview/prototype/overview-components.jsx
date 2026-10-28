@@ -170,7 +170,7 @@ export function Feature({
   focusRequest,
   openVersion
 }) {
-  const [expanded, setExpanded] = window.BWPrototypeDependencies.useState(false)
+  const [expanded, setExpanded] = window.BWPrototypeDependencies.useState(!!feature.previewExpanded)
   const cardRef = useRef(null)
   const toggleRef = useRef(null)
   const versions = relatedVersions(feature.id)
