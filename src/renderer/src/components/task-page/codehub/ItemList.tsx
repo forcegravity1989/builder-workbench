@@ -77,6 +77,10 @@ export function TaskPageCodeHubItemList({
     codehubView === 'issues' && !model.workbenchScopeActive
       ? codehubAssignee.trim().toLowerCase()
       : ''
+  const labelFilters =
+    codehubView === 'issues' && !model.workbenchScopeActive
+      ? model.codehubLabels.map((label) => label.toLowerCase())
+      : []
   const visibleItems = codehubItems.filter((item) => {
     if (item.type !== (mrView ? 'mr' : 'issue')) {
       return false
@@ -100,6 +104,14 @@ export function TaskPageCodeHubItemList({
       return false
     }
     if (assigneeFilter && !item.assignees.some((name) => name.toLowerCase() === assigneeFilter)) {
+      return false
+    }
+    if (
+      labelFilters.length > 0 &&
+      !labelFilters.every((filter) =>
+        (item.labels ?? []).some((label) => label.toLowerCase() === filter)
+      )
+    ) {
       return false
     }
     return true

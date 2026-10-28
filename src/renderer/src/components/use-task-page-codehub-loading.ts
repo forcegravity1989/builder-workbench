@@ -6,6 +6,8 @@ import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import { workbenchVersionTaskLabel } from '../../../shared/workbench/task-scope'
 
 const CODEHUB_LIST_LIMIT = 250
+// Why: 空数组必须是稳定引用，否则非 MR 视图下 effect 依赖每次渲染都变。
+const NO_SERVER_LABELS: string[] = []
 
 export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
   const [codehubHasMore, setCodehubHasMore] = useState(false)
@@ -27,6 +29,7 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
   const serverQuery = codehubView === 'mrs' ? codehubQuery : ''
   const serverAuthor = codehubView === 'mrs' ? codehubAuthor : ''
   const serverAssignee = codehubView === 'mrs' ? codehubAssignee : ''
+  const serverLabels = codehubView === 'mrs' ? model.codehubLabels : NO_SERVER_LABELS
   useEffect(() => {
     if (taskSource !== 'codehub') {
       return
@@ -66,8 +69,10 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
           state,
           limit: CODEHUB_LIST_LIMIT,
           labels: workbenchTaskScope
-            ? [workbenchVersionTaskLabel(workbenchTaskScope.version)]
-            : undefined,
+            ? [...new Set([workbenchVersionTaskLabel(workbenchTaskScope.version), ...serverLabels])]
+            : serverLabels.length > 0
+              ? serverLabels
+              : undefined,
           scope,
           search: serverQuery || undefined,
           author: serverAuthor || undefined,
@@ -117,6 +122,7 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
   }, [
     serverAssignee,
     serverAuthor,
+    serverLabels,
     serverQuery,
     codehubPreset,
     codehubRefreshNonce,

@@ -57,7 +57,10 @@ export function composeActiveTerminalTheme(
   settings: Pick<
     GlobalSettings,
     'terminalColorOverrides' | 'terminalBackgroundOpacity' | 'terminalCursorOpacity'
-  >
+  >,
+  // Why threaded: the Workbench surface override must follow the resolved app
+  // mode — a forced light surface under a dark terminal theme is unreadable (#354).
+  surfaceMode: 'dark' | 'light' = 'light'
 ): ITheme | null {
   if (!baseTheme) {
     return null
@@ -76,7 +79,7 @@ export function composeActiveTerminalTheme(
     theme = { ...theme, ...settings.terminalColorOverrides }
   }
   if (isWorkbenchShell()) {
-    theme = applyWorkbenchTerminalSurface(theme)
+    theme = applyWorkbenchTerminalSurface(theme, surfaceMode)
   }
   // Why: convert the hex background to rgba so xterm honors the opacity when allowTransparency is set.
   if (settings.terminalBackgroundOpacity !== undefined && theme.background) {
@@ -107,7 +110,7 @@ export function publishTerminalViewAttributesAtAppStart(
   }
   const appearance = resolveEffectiveTerminalAppearance(settings, systemPrefersDark)
   const baseTheme: ITheme | null = appearance.theme ?? getBuiltinTheme(appearance.themeName)
-  const theme = composeActiveTerminalTheme(baseTheme, settings)
+  const theme = composeActiveTerminalTheme(baseTheme, settings, appearance.mode)
   return send !== undefined
     ? publishTerminalViewAttributes(theme, appearance.mode, settings, send)
     : publishTerminalViewAttributes(theme, appearance.mode, settings)
@@ -151,7 +154,7 @@ export function applyTerminalAppearance(
   const appearance = resolveEffectiveTerminalAppearance(settings, systemPrefersDark)
   const paneStyles = resolvePaneStyleOptions(settings)
   const baseTheme: ITheme | null = appearance.theme ?? getBuiltinTheme(appearance.themeName)
-  const theme = composeActiveTerminalTheme(baseTheme, settings)
+  const theme = composeActiveTerminalTheme(baseTheme, settings, appearance.mode)
   // Publish composed appearance to main's hidden-PTY query responder — the only point it exists; deduped in the publisher.
   publishTerminalViewAttributes(theme, appearance.mode, settings)
   const paneBackground = theme?.background ?? '#000000'

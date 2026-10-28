@@ -20,6 +20,7 @@ import {
   computeMetricsCheckoutRoot,
   executeMetricCollection,
   fingerprintMetricCollector,
+  catchUpMetricsMaintenance,
   readMetricConfiguration,
   METRICS_COLLECT_TIMEOUT_MS,
   type MetricConfigurationSnapshot,
@@ -142,11 +143,32 @@ export function nativeMetricsHost(runtime: {
     async catalog(scope: MetricScope): Promise<MetricCatalog> {
       const { target, repo } = await resolver.resolve(scope)
       const execOptions = resolveWorkbenchGitExecOptions(runtime, repo)
-      const snapshot = (await executeMetricsOperation(target, execOptions, {
-        operation: 'configuration',
-        request: { adoptedRef: repo.worktreeBaseRef?.trim() || null }
-      })) as MetricConfigurationSnapshot
-      const { definitions, problems } = decodeMetricDefinitions(
+      const adoptedRef = repo.worktreeBaseRef?.trim() || null
+      const host = parseExecutionHostId(target.hostId)
+      let snapshot: MetricConfigurationSnapshot
+      if (host?.kind === 'local') {
+        const probe = (await executeMetricsOperation(target, execOptions, {
+          operation: 'configuration',
+          request: { adoptedRef }
+        })) as MetricConfigurationSnapshot
+        await catchUpMetricsMaintenance({
+          repoPath: target.repoPath,
+          baselineCommit: probe.dataCommit,
+          execOptions
+        })
+        snapshot = await readMetricConfiguration({
+          repoPath: target.repoPath,
+          execOptions,
+          pinnedRef: adoptedRef,
+          previewMaintenanceWorktree: true
+        })
+      } else {
+        snapshot = (await executeMetricsOperation(target, execOptions, {
+          operation: 'configuration',
+          request: { adoptedRef }
+        })) as MetricConfigurationSnapshot
+      }
+      const { features, definitions, problems } = decodeMetricDefinitions(
         snapshot.toml,
         snapshot.configurationCommit
       )
@@ -154,7 +176,9 @@ export function nativeMetricsHost(runtime: {
         scope,
         configurationCommit: snapshot.configurationCommit,
         configurationRef: snapshot.configurationRef,
+        draft: snapshot.draft ?? null,
         timezone: snapshot.timezone,
+        features,
         definitions,
         problems
       }

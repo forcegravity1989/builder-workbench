@@ -37,12 +37,7 @@
       "title": "【v0.5|W39|G2】BW 开发方法资产迁移至 orca-bw：CI/门禁/verify 入口、PR 评审召唤制、发布自用工具链",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/253",
-      "labels": [
-        "bw:category:build",
-        "Feature",
-        "bw:plan:v0.5",
-        "bw:plan:v0.6"
-      ],
+      "labels": ["bw:category:build", "Feature", "bw:plan:v0.5", "bw:plan:v0.6"],
       "readAt": "2026-10-23T06:38:04.735Z"
     },
     {
@@ -71,9 +66,7 @@
       "title": "仓里留着 Orca 的云端运维、发版和社区 CI 资产，BW 用不上还在消耗 Actions",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/314",
-      "labels": [
-        "bw:plan:v0.6"
-      ],
+      "labels": ["bw:plan:v0.6"],
       "readAt": "2026-10-23T06:38:04.692Z"
     },
     {
@@ -102,11 +95,7 @@
       "title": "【v0.6|G1】BW 的 PR 门禁 CI 在 orca-bw 上全红",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/329",
-      "labels": [
-        "bug",
-        "bw:category:build",
-        "bw:plan:v0.6"
-      ],
+      "labels": ["bug", "bw:category:build", "bw:plan:v0.6"],
       "readAt": "2026-10-23T06:38:04.736Z"
     },
     {
@@ -135,11 +124,7 @@
       "title": "【v0.6|G1】claude bot 检视 PR 在 orca-bw 召唤不出来",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/330",
-      "labels": [
-        "bug",
-        "bw:category:build",
-        "bw:plan:v0.6"
-      ],
+      "labels": ["bug", "bw:category:build", "bw:plan:v0.6"],
       "readAt": "2026-10-23T06:38:04.753Z"
     },
     {
@@ -168,11 +153,7 @@
       "title": "【v0.6|G1】BW 自身 E2E 用户旅程用例缺失",
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/331",
-      "labels": [
-        "bw:category:build",
-        "Feature",
-        "bw:plan:v0.6"
-      ],
+      "labels": ["bw:category:build", "Feature", "bw:plan:v0.6"],
       "readAt": "2026-10-23T06:38:05.690Z"
     },
     {
@@ -201,11 +182,7 @@
       "title": "【v0.6|G1】release skill 未落地步骤脚本化 + 版本描述规范 + 验收报告",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/332",
-      "labels": [
-        "bw:category:build",
-        "Feature",
-        "bw:plan:v0.6"
-      ],
+      "labels": ["bw:category:build", "Feature", "bw:plan:v0.6"],
       "readAt": "2026-10-23T06:38:05.751Z"
     },
     {
@@ -234,10 +211,7 @@
       "title": "【v0.6|G1】工程能力在 BW 落地：使能项目/builders 工程化能力（intent/spec/原型/开发）",
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/339",
-      "labels": [
-        "Feature",
-        "bw:plan:v0.6"
-      ],
+      "labels": ["Feature", "bw:plan:v0.6"],
       "readAt": "2026-10-23T06:38:05.732Z"
     },
     {
@@ -266,10 +240,7 @@
       "title": "【v0.6|G1】组内 6 个项目工程化能力适配：BW 看清各项目工程化现状",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/340",
-      "labels": [
-        "Feature",
-        "bw:plan:v0.6"
-      ],
+      "labels": ["Feature", "bw:plan:v0.6"],
       "readAt": "2026-10-23T06:38:05.805Z"
     },
     {
@@ -298,9 +269,7 @@
       "title": "[AI上报][项目接入] 仓库识别失败、CLI安装引导缺失等群反馈汇总",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/301",
-      "labels": [
-        "bw:plan:v0.6"
-      ],
+      "labels": ["bw:plan:v0.6"],
       "readAt": "2026-10-23T06:38:06.692Z"
     },
     {
@@ -329,11 +298,7 @@
       "title": "【v0.6|G2】易用性与体验问题收敛",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/333",
-      "labels": [
-        "enhancement",
-        "bw:category:build",
-        "bw:plan:v0.6"
-      ],
+      "labels": ["enhancement", "bw:category:build", "bw:plan:v0.6"],
       "readAt": "2026-10-23T06:38:06.786Z"
     },
     {
@@ -362,11 +327,7 @@
       "title": "【v0.7|G1】帮 builders 梳理特性与核心指标：统一一版并录入真实数据",
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/341",
-      "labels": [
-        "Feature",
-        "bw:plan:v0.6",
-        "bw:plan:v0.7"
-      ],
+      "labels": ["Feature", "bw:plan:v0.6", "bw:plan:v0.7"],
       "readAt": "2026-10-23T06:38:06.813Z"
     },
     {
@@ -395,10 +356,7 @@
       "title": "【v0.6|G3】首页项目墙",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/302",
-      "labels": [
-        "enhancement",
-        "bw:plan:v0.6"
-      ],
+      "labels": ["enhancement", "bw:plan:v0.6"],
       "readAt": "2026-10-23T06:38:06.840Z"
     },
     {
@@ -427,10 +385,7 @@
       "title": "【v0.6|G3】项目墙一次只能接入一个仓，多个仓要重复走接入流程",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/315",
-      "labels": [
-        "Feature",
-        "bw:plan:v0.6"
-      ],
+      "labels": ["Feature", "bw:plan:v0.6"],
       "readAt": "2026-10-23T06:38:07.676Z"
     },
     {

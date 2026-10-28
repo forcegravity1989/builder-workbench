@@ -1,40 +1,90 @@
 schema_version = 2
 
-# 北极星可缺席(BW 自身尚未定义清楚北极星,不硬立;等外部项目周期数据再议);
-# 滞后 / 引领各 ≤3。字段:name / def / target / collect / feature / leads / unit。
-# feature 空 = 主要页签;有值 = 「XX特性」页签。
-# leads 只写在引领上,值是它盯的那条滞后的 name。空 = 挂到同页签第一条滞后。
-# collect 只支持 { kind = "script", run = ["python", ".bw/scripts/x.py"], retro = true };
-# manual 与 retro=false 现行协议不支持(见 references/metrics.md),不写回目录。
-# 脚本 stdout 吐 {"points":[{"week":"YYYY-Www","value":…}]}(day 粒度吐 day)。
-# 窗口由 Workbench 传。失败不写 0。协议见 references/metrics.md。
+# 北极星可缺席(BW 自身尚未定义清楚北极星,不硬立)。
+# 记分牌场景与指标对齐总览保真稿。[[feature]] 顺序即页签顺序;
+# 聚焦不写在这里,由所选版本计划的目标值推出。
+# 八个指标的历史来源尚未接入,脚本退出 2,读数保持未知,不写示意数字。
+# 原先的纳入项目数、周一屏、计划制定时长、每周闭环 issue 数不再上记分牌;
+# 采集脚本仍留在 .bw/scripts,不在本目录注册。
+
+[[feature]]
+name = "需求对齐"
+value = "版本开始时，把 Top3 承诺写成 Leader 不翻聊天记录也能评审的样子，确认后落成真实任务。"
+
+[[feature]]
+name = "项目上下文"
+value = "项目身份、口径、承诺、交付事实只写一次。模型拿它干活，Leader 拿它核对。"
+
+[[feature]]
+name = "任务执行"
+value = "每件事一棵独立工作树、一个会话，可以并行推进。AI 跑完能跑的部分，人只审结果。"
+
+[[feature]]
+name = "需求验收"
+value = "版本结束时，逐个目标下结论，未达的写清下一步。证据在干活时备齐，不另写周报。"
 
 [[lagging]]
-name = "纳入 workbench 管理的项目数"
-feature = ""
-def = "白名单(.bw/managed-projects.toml)在册、且项目仓 .bw/ 真实落盘的项目去重计数;纳入周按条目 since 起累计归属,除名即删条目。只挂链接但仓里没落 .bw/ 的不算。"
-target = "≥3"
-collect = { kind = "script", run = ["python", ".bw/scripts/managed-projects.py", "--metric", "adoption"], retro = true }
-
-[[lagging]]
-name = "使用周一屏的被管理项目数"
-feature = "周一屏"
-def = "白名单内项目已合入数据来源的计划活动按周去重计数。schema3 以非空计划创建或目标/任务/进展/轮次实质变更的提交时间归周,纯格式迁移、空计划和未合入草稿不计;旧材料按 Git 历史中的 updated_at/confirmation 解释历史,仅 progress_updates 更新不计。衡量已归档计划活动,不等同页面点击;后续编辑不覆盖旧周事实。"
-target = "≥6"
-collect = { kind = "script", run = ["python", ".bw/scripts/managed-projects.py", "--metric", "monday-screen"], retro = true }
-
-[[lagging]]
-name = "计划制定时长"
-feature = "周一屏"
-def = "白名单项目在窗口内合入的 PR,从该 ISO 周周一 09:00(BW_METRICS_TIMEZONE)到合入时刻(provider 真源 mergedAt)的时长中位数(小时);测周交付节奏。合入事件由项目侧预采集落 .bw/metrics/daily-observation.jsonl(bw/daily-observation/v1,day=合入日 UTC,remote+pr 幂等);协议脚本固定读取 DATA_COMMIT 的白名单和事件账。只采用全部白名单项目共同可信的连续采集覆盖,被查询范围、当前时刻或真实采集覆盖截断的部分周声明 coverage;旧账无覆盖证明保持未知。没有合入事件的周不出点、不补 0;负时长如实保留,跨夏令时按绝对时间差计算。"
+name = "准备期修改程度"
+feature = "需求对齐"
+def = "越低越好。AI 生成初始版本后、Leader 确认前，人改过描述、验收标准或范围的目标数（删掉、新增也算）÷ 初始版本目标数。从计划文件的提交历史现算。"
 target = ""
-unit = "小时"
-collect = { kind = "script", run = ["python", ".bw/scripts/plan-cycle-hours.py"], retro = true }
+unit = "%"
+collect = { kind = "script", run = ["python3", ".bw/scripts/metric-unavailable.py", "准备期修改程度"], retro = true }
 
 [[leading]]
-name = "每周闭环的 issue 数"
-feature = ""
-leads = "纳入 workbench 管理的项目数"
-def = "远端上 closed 时刻落在这一周的 issue 数;本机合并提交 / MR 合入不算(口径不同)。反映『有人提活 + 项目自己闭环快』,对采纳滞后有预测性。"
-target = "≥1"
-collect = { kind = "script", run = ["python", ".bw/scripts/closed-issues.py"], retro = true }
+name = "准备耗时"
+feature = "需求对齐"
+leads = "准备期修改程度"
+def = "越短越好。从 Builder 开始准备，到 Leader 确认 Top3，Builder 实际投入的小时数。"
+target = ""
+unit = "h"
+collect = { kind = "script", run = ["python3", ".bw/scripts/metric-unavailable.py", "准备耗时"], retro = true }
+
+[[lagging]]
+name = "会话免交代率"
+feature = "项目上下文"
+def = "越高越好。不用再补方向、口径、承诺就开工的会话比例，按人参与时长加权；条数比例 81% 并列。"
+target = ""
+unit = "%"
+collect = { kind = "script", run = ["python3", ".bw/scripts/metric-unavailable.py", "会话免交代率"], retro = true }
+
+[[leading]]
+name = "文档完备性"
+feature = "项目上下文"
+leads = "会话免交代率"
+def = "越高越好。skill 按固定评分表打分，结果文件随提交留存，重启后读回同一分。补文档当周就能让它动。"
+target = ""
+collect = { kind = "script", run = ["python3", ".bw/scripts/metric-unavailable.py", "文档完备性"], retro = true }
+
+[[lagging]]
+name = "任务交付周期"
+feature = "任务执行"
+def = "越短越好。从 Issue 开工到产出待评审 PR 的中位时长。"
+target = ""
+unit = "h"
+collect = { kind = "script", run = ["python3", ".bw/scripts/metric-unavailable.py", "任务交付周期"], retro = true }
+
+[[lagging]]
+name = "首次评审通过率"
+feature = "任务执行"
+def = "越高越好。人第一次评审就同意合入的 PR ÷ PR 总数。"
+target = ""
+unit = "%"
+collect = { kind = "script", run = ["python3", ".bw/scripts/metric-unavailable.py", "首次评审通过率"], retro = true }
+
+[[lagging]]
+name = "结论可核对率"
+feature = "需求验收"
+def = "越高越好。只给验收归档，模型判断与人的结论一致且未达项写了下一步的目标 ÷ 目标总数。"
+target = ""
+unit = "%"
+collect = { kind = "script", run = ["python3", ".bw/scripts/metric-unavailable.py", "结论可核对率"], retro = true }
+
+[[leading]]
+name = "验收准备耗时"
+feature = "需求验收"
+leads = "结论可核对率"
+def = "越短越好。从候选版本就绪到可以逐个目标下结论的小时数，含产品外整理材料的时间。"
+target = ""
+unit = "h"
+collect = { kind = "script", run = ["python3", ".bw/scripts/metric-unavailable.py", "验收准备耗时"], retro = true }

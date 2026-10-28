@@ -96,7 +96,8 @@ export function AnnotationPanel({
   onBoardLevel,
   onCopy,
   onCopyError,
-  onSent
+  onSent,
+  onSendDirect
 }: {
   annotations: (BoardAnnotation & { number: number })[]
   annotating: boolean
@@ -112,8 +113,11 @@ export function AnnotationPanel({
   /** Surfaces a failed copy honestly instead of swallowing it. */
   onCopyError?(message: string): void
   onSent?(): void
+  /** Sends straight to one session. When set, the button does not open a picker. */
+  onSendDirect?(): Promise<boolean>
 }) {
   const [copied, setCopied] = useState(false)
+  const [sending, setSending] = useState(false)
   useEffect(() => {
     if (!copied) {
       return
@@ -162,17 +166,40 @@ export function AnnotationPanel({
           {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}{' '}
           {copied ? '已复制' : '复制'}
         </button>
-        <PlanSendMenu
-          worktreeId={worktreeId}
-          prompt={boardAnnotationsSendPrompt(annotations)}
-          label="板面批注"
-          assistant={assistant}
-          onSent={onSent}
-        >
-          <button type="button" className="primary" disabled={!annotations.length}>
+        {onSendDirect ? (
+          <button
+            type="button"
+            className="primary"
+            disabled={!annotations.length || sending}
+            onClick={() => {
+              setSending(true)
+              void onSendDirect()
+                .then(
+                  (sent) => {
+                    if (sent) {
+                      onSent?.()
+                    }
+                  },
+                  () => undefined
+                )
+                .finally(() => setSending(false))
+            }}
+          >
             <ArrowUp size={13} aria-hidden="true" /> 发送给{assistant}
           </button>
-        </PlanSendMenu>
+        ) : (
+          <PlanSendMenu
+            worktreeId={worktreeId}
+            prompt={boardAnnotationsSendPrompt(annotations)}
+            label="板面批注"
+            assistant={assistant}
+            onSent={onSent}
+          >
+            <button type="button" className="primary" disabled={!annotations.length}>
+              <ArrowUp size={13} aria-hidden="true" /> 发送给{assistant}
+            </button>
+          </PlanSendMenu>
+        )}
       </footer>
     </aside>
   )

@@ -171,6 +171,7 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
   const [codehubPreset, setCodehubPreset] = useState<'open' | 'mine' | 'review'>('open')
   const [codehubAuthor, setCodehubAuthor] = useState('')
   const [codehubAssignee, setCodehubAssignee] = useState('')
+  const [codehubLabels, setCodehubLabels] = useState<string[]>([])
   if (codehubView === 'issues' && codehubState === 'merged') {
     setCodehubState('opened')
   }
@@ -231,6 +232,8 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
     setCodehubAuthor: typeof setCodehubAuthor
     codehubAssignee: typeof codehubAssignee
     setCodehubAssignee: typeof setCodehubAssignee
+    codehubLabels: typeof codehubLabels
+    setCodehubLabels: typeof setCodehubLabels
   }
   nextModel.taskSourceManuallyChangedRef = taskSourceManuallyChangedRef
   nextModel.lastPageTaskSourceRef = lastPageTaskSourceRef
@@ -288,6 +291,8 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
   nextModel.setCodehubAuthor = setCodehubAuthor
   nextModel.codehubAssignee = codehubAssignee
   nextModel.setCodehubAssignee = setCodehubAssignee
+  nextModel.codehubLabels = codehubLabels
+  nextModel.setCodehubLabels = setCodehubLabels
   return nextModel
 }
 export type TaskPageProviderStateModel = ReturnType<typeof useTaskPageProviderState>

@@ -1,8 +1,4 @@
-import type {
-  MetricDefinition,
-  MetricRange,
-  MetricReading
-} from '../../../shared/workbench/metrics'
+import type { MetricRange, MetricReading } from '../../../shared/workbench/metrics'
 import {
   addCalendarDays,
   currentMetricWeek,
@@ -14,16 +10,6 @@ export type ZoneGranularity = 'day' | 'week'
 /** Chart span mirrors the hi-fi target: five weekly buckets or fourteen daily buckets. */
 export const ZONE_WEEK_BUCKETS = 5
 export const ZONE_DAY_BUCKETS = 14
-
-export const ZONE_MAIN_TAB = '主要'
-
-/** Lagging draws in the secondary accent; leads cycle through the warm ramp (hi-fi palette). */
-export const ZONE_LAG_COLOR = 'var(--color-accent-2, #4c73a5)'
-export const ZONE_LEAD_COLORS = [
-  'var(--color-accent, #d97757)',
-  'var(--color-success, #579766)',
-  'var(--color-warning, #ce9042)'
-] as const
 
 /** Range window covering the chart span; weekly buckets keep the protocol's Monday boundaries. */
 export function zoneChartRange(
@@ -132,46 +118,4 @@ export function zonePointState(
     values,
     latest
   }
-}
-
-export type ZonePlot = { lagging: MetricDefinition | null; leads: MetricDefinition[] }
-
-/** Only explicit matching leads share a plot; unresolved relationships stay separate. */
-export function groupZonePlots(defs: MetricDefinition[]): ZonePlot[] {
-  const lagging = defs.filter((def) => def.role === 'lagging')
-  const leads = defs.filter((def) => def.role === 'leading')
-  if (lagging.length === 0) {
-    return leads.length > 0 ? [{ lagging: null, leads }] : []
-  }
-  const plots = new Map<string, ZonePlot>(
-    lagging.map((def) => [def.name, { lagging: def, leads: [] }])
-  )
-  const unlinked: ZonePlot = { lagging: null, leads: [] }
-  for (const lead of leads) {
-    const target = plots.get(lead.leads?.trim() ?? '') ?? unlinked
-    target.leads.push(lead)
-  }
-  return [
-    ...lagging.map((def) => plots.get(def.name)!),
-    ...(unlinked.leads.length ? [unlinked] : [])
-  ]
-}
-
-/** Numeric target lines only when the target is a bare number; "≥3"-style text stays a row label. */
-export function numericTarget(target: string): number | null {
-  const match = /^(-?\d+(?:\.\d+)?)$/.exec(target.trim())
-  return match ? Number(match[1]) : null
-}
-
-/**
- * Axis split per the spec: one unit shares the left axis, a second unit gets the
- * right axis; three or more units fall back to aligned small charts, one per unit,
- * so no series is ever scaled against a mismatched axis.
- */
-export function splitSeriesByAxis<T extends { unit: string }>(series: T[]): T[][] {
-  const units = [...new Set(series.map((item) => item.unit))]
-  if (units.length <= 2) {
-    return [series]
-  }
-  return units.map((unit) => series.filter((item) => item.unit === unit))
 }

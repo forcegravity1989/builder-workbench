@@ -1,5 +1,8 @@
-/* Minimal Workbench tokens (claude warm palette) — from loop-buddy bw-tokens.css.
-   Only active when html[data-skin=ds] is set by WorkbenchShellBootstrap. */
+/* Workbench tokens (claude warm palette) — from loop-buddy bw-tokens.css.
+   Only active when html[data-skin=ds] is set by WorkbenchShellBootstrap.
+   Dark theme (#354): neutrals + status follow the design-system overlay-role
+   dark values (docs/04-design-system/tokens.json → Orca `.dark`); the bridge
+   below is light-only so Orca's own `.dark` chrome vars own the dark shell. */
 
 html[data-skin='ds'][data-theme='claude'] {
   --color-bg: #faf9f5;
@@ -41,8 +44,11 @@ html[data-skin='ds'][data-theme='claude'] {
   --radius-md: 8px;
   --radius-lg: 10px; /* 设计系统 tokens.css 同值;G3 卡片圆角 */
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
 
-  /* Bridge into Orca chrome vars for sidebar / surfaces */
+/* Bridge into Orca chrome vars — light chrome only. In dark mode this block
+   stays out of the way so Orca's `.dark` values own the chrome (#354). */
+html[data-skin='ds'][data-theme='claude']:not(.dark) {
   --background: var(--color-bg);
   --foreground: var(--color-text);
   --card: var(--color-card);
@@ -77,6 +83,44 @@ html[data-skin='ds'][data-theme='claude'] {
   --terminal-pane-title-on-light-button-hover-fg: var(--color-text);
   --terminal-pane-title-on-light-input-bg: var(--color-neutral-100);
   --terminal-pane-title-on-light-separator: var(--color-divider);
+}
+
+/* Dark overlay tokens (#354): neutrals + status are the design-system
+   overlay-role dark values (tokens.json → Orca `.dark`); the terracotta
+   accent keeps Workbench's identity on dark. Monochrome accent alignment
+   (tokens.json color-accent → primary) is the separate palette migration
+   registered in docs/04-design-system, out of this bug fix's scope. */
+html[data-skin='ds'][data-theme='claude'].dark {
+  --color-bg: #0a0a0a;
+  --color-surface: #262626;
+  --color-card: #171717;
+  --color-text: #fafafa;
+  --color-divider: rgb(255 255 255 / 0.07);
+  --color-accent: #d97757;
+  --color-accent-2: oklch(54.6% 0.245 262.881);
+  --color-neutral-100: oklch(20.5% 0 0);
+  --color-neutral-200: oklch(26.9% 0 0);
+  --color-neutral-300: oklch(37.1% 0 0);
+  --color-neutral-400: oklch(43.9% 0 0);
+  --color-neutral-500: oklch(55.6% 0 0);
+  --color-neutral-600: oklch(70.8% 0 0);
+  --color-neutral-700: oklch(87% 0 0);
+  --color-neutral-800: oklch(92.2% 0 0);
+  --color-neutral-900: oklch(97% 0 0);
+  --color-accent-100: color-mix(in srgb, #d97757 16%, transparent);
+  --color-accent-200: color-mix(in srgb, #d97757 24%, transparent);
+  --color-accent-300: #f5c4b3;
+  --color-accent-700: #f5c4b3;
+  --color-accent-800: #f5c4b3;
+  --color-success: #86efac;
+  --color-success-soft: rgba(134, 239, 172, 0.1);
+  --color-success-deep: #86efac;
+  --color-warning: oklch(82.8% 0.189 84.429);
+  --color-warning-soft: oklch(27.9% 0.077 45.635);
+  --color-warning-deep: oklch(87.9% 0.169 91.605);
+  --color-danger: #ff6568;
+  --color-danger-soft: rgba(255, 101, 104, 0.1);
+  --color-danger-deep: #ff6568;
 }
 
 html[data-skin='ds'] .wb-tag {
