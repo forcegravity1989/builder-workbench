@@ -68,6 +68,12 @@
 .ci-last.bad .ci-last-mark {
   color: var(--color-danger-deep, #a03c36);
 }
+/* 灰态扫描事实行：只陈述「主分支未见脚本」这个读数，不展开生成流程。 */
+.ci-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
 .ci-errors-muted {
   margin: 0;
   font-size: 12px;

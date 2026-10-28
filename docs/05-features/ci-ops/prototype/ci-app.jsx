@@ -18,7 +18,7 @@ function errorsOf(records, moduleId) {
   return records.filter((r) => r.moduleId === moduleId && !r.ok).length
 }
 
-// 模块区：状态行 + 最近执行 + 动作行。工作机制说明收在按钮提示，红态给报错入口。
+// 模块区：状态行 + 最近执行 + 动作行；灰态给扫描事实行，机制说明收在按钮提示。
 function ModuleCard({ index, module, state, errors, executing, onAction }) {
   const buttons = moduleButtons(module, state, errors)
   return (
@@ -40,6 +40,7 @@ function ModuleCard({ index, module, state, errors, executing, onAction }) {
             {state.last.text}
           </p>
         )}
+        {state.state === 'gray' && <p className="ci-hint">主分支未见脚本</p>}
         {errors > 0 && state.state !== 'red' && (
           <p className="ci-errors-muted">历史报错 {errors} 条</p>
         )}
@@ -166,7 +167,7 @@ function App() {
         module.id === 'monitor' ? PROMPTS.monitorStop : PROMPTS.healthStop,
         '停止调度请求'
       )
-      setNotice(`${module.name}已停止，灯回黄`)
+      setNotice(`${module.name}已停止，灯回黄 · 记录保留`)
       return
     }
     if (key === 'start') {
@@ -189,7 +190,7 @@ function App() {
         module.id === 'monitor' ? PROMPTS.monitorStart : PROMPTS.healthStart,
         '启动调度请求'
       )
-      setNotice(`${module.name}已启动轮询`)
+      setNotice(`${module.name}已启动轮询 · 首轮通过`)
       return
     }
     // run：部署 / 重启单次执行，演示给执行中瞬态，完成后独立读回写记录；
@@ -214,7 +215,7 @@ function App() {
         },
         ...current
       ])
-      setNotice(`${module.name}执行成功`)
+      setNotice(`${module.name}执行成功 · 已写记录`)
     }, 1600)
   }
 
@@ -336,6 +337,7 @@ function App() {
           <div className="g3-nav-muted">知识库</div>
           <div className="g3-scope">
             <strong>bw/ci 固定树</strong>
+            <span>记录与日志存本树，不上仓</span>
           </div>
         </aside>
         <aside
@@ -441,7 +443,9 @@ function App() {
             ))}
             <section id="records" className="ci-records-section">
               <div className="g3-section-title">
-                <h2>5·执行与报错记录</h2>
+                <h2>
+                  5·执行与报错记录 <small>bw/ci 树本地</small>
+                </h2>
                 <span className="ci-filter" role="group" aria-label="按模块筛选记录">
                   <button className={filter === 'all' ? 'on' : ''} onClick={() => setFilter('all')}>
                     全部 {records.length}

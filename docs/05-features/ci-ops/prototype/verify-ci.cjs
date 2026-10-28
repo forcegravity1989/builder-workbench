@@ -66,7 +66,11 @@ const check = (name, ok) => {
     '首次进入四灯全灰(off)',
     firstDots.every((c) => c.includes('off'))
   )
-  check('灰态卡虚线', (await page.locator('#deploy .ci-card.gray').count()) === 1)
+  check(
+    '灰态卡虚线+未见脚本事实行',
+    (await page.locator('#deploy .ci-card.gray').count()) === 1 &&
+      (await page.locator('#deploy .ci-hint').textContent()).includes('主分支未见脚本')
+  )
   check(
     '灰态按钮=生成部署脚本',
     (await page.locator('#deploy .ci-actions button').textContent()).trim() === '生成部署脚本'
