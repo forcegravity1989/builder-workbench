@@ -21,7 +21,7 @@
 |---|---|---|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) · [G3 旅程高保真](version-planning/planning-journey-prototype.html) | 在用·G3 基线；#439 启动/前版回顾/纪要已静态接线，真壳待验⁴ | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
 | 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [v9.5 旧稿](version-acceptance/prototype.html) · [v10 会议旅程高保真](version-acceptance/acceptance-journey-prototype.html) | 在用·v10 基线；#439 启动/结论/Issue/纪要已静态接线，真壳待验⁴ | ● | ● | ● | ◐ | ◐(A01–A13 代码已接入，真壳证据未取) | ○(AJ01 已定义未运行) |
-| 3 | 总览指标 | [overview-metrics/](overview-metrics/) · [原型](overview-metrics/prototype.html) | 在用·记分牌改版（#158） | ● | ● | ◐ | ◐ | ◐(M01–M10 未逐项) | ○(MJ01/MJ02 已定义) |
+| 3   | 项目总览与指标                  | [overview-metrics/](overview-metrics/) · [里程碑原型](overview-metrics/prototype.html)                                                                                   | 记分牌已随 #411 合入；#440 紧凑导航与特性 Pre/Release规划待审；本 PR 先交设计，见 STATUS | ◐(指标已确认；里程碑草案) | ◐(指标已确认；里程碑草案) |    ◐     | ◐(里程碑原型不新增产品单测) |      ◐(指标 M01–M10；规划 MP01–MP06 产品未验)       |                ○(MJ01/MJ02；规划 MPJ01 已定义)                 |
 | 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·在用（正本随扶正在 main）¹ | ● | ● | ● | ◐¹ | ◐¹ | ○(台内路径 defer) |
 | 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ● | ● | ◐(配置验收已登记，结果见 STATUS；P-01–P14 注册暂缓) | ◐(配置子旅程已登记，结果见 STATUS；主旅程/跨主机/扫墙候选待建) |
 | 6 | CodeHub 适配 | [codehub/](codehub/)³ | 在用·补链中 | ◐ | ◐ | ◐ | ◐ | ○(C01–C08 已定义) | ○(CJ01 已定义) |
