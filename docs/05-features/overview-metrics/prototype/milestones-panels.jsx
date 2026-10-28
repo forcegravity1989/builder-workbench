@@ -33,33 +33,60 @@ export function Modal({ title, close, children, wide = false }) {
   )
 }
 
-export function CalendarPanel({ close }) {
+export function CalendarPanel({ anchor, close }) {
   const [month, setMonth] = useState(11)
+  const ref = useRef(null)
   const days = calendarDays(month)
   const offset = (days[0].weekday + 6) % 7
+  useEffect(() => {
+    const previous = document.activeElement
+    ref.current.focus()
+    const outside = (event) => {
+      if (!ref.current?.contains(event.target)) {
+        close()
+      }
+    }
+    const escape = (event) => {
+      if (event.key === 'Escape') {
+        close()
+      }
+    }
+    addEventListener('pointerdown', outside)
+    addEventListener('keydown', escape)
+    return () => {
+      removeEventListener('pointerdown', outside)
+      removeEventListener('keydown', escape)
+      if (previous?.isConnected) {
+        previous.focus()
+      }
+    }
+  }, [close])
+  const left = Math.max(12, Math.min(innerWidth - 310, (anchor?.right || innerWidth) - 298))
+  const top =
+    (anchor?.bottom || 80) + 350 < innerHeight
+      ? anchor.bottom + 8
+      : Math.max(12, (anchor?.top || innerHeight) - 342)
   return (
-    <Modal title="工作日历" close={close}>
-      <div className="ml-section-head">
+    <section
+      ref={ref}
+      className="ml-calendar-popover"
+      role="dialog"
+      aria-label="工作日历"
+      tabIndex={-1}
+      style={{ left, top }}
+    >
+      <header>
         <h3>2026 年 {month} 月</h3>
         <div className="ml-actions">
-          <button
-            className="btn btn-ghost"
-            disabled={month === 10}
-            onClick={() => setMonth(10)}
-            aria-label="上个月"
-          >
-            ←
+          <button aria-label="上个月" disabled={month === 10} onClick={() => setMonth(10)}>
+            ‹
           </button>
-          <button
-            className="btn btn-ghost"
-            disabled={month === 11}
-            onClick={() => setMonth(11)}
-            aria-label="下个月"
-          >
-            →
+          <button aria-label="下个月" disabled={month === 11} onClick={() => setMonth(11)}>
+            ›
           </button>
+          <IconAction label="关闭日历" icon={X} onClick={close} />
         </div>
-      </div>
+      </header>
       <div className="calendar-grid">
         {['一', '二', '三', '四', '五', '六', '日'].map((d) => (
           <span className="ml-weekday" key={d}>
@@ -72,18 +99,16 @@ export function CalendarPanel({ close }) {
         {days.map((d) => (
           <div key={d.date} className={d.overtime ? 'overtime' : d.work ? 'workday' : 'restday'}>
             <b>{d.day}</b>
-            {d.overtime && <small>加班</small>}
+            {d.overtime && <small>班</small>}
           </div>
         ))}
       </div>
-      <p className="muted">
-        工作日历 · BW 预置 <span className="ml-overtime-key">加班</span> 周六加班
-      </p>
-      <p className="ml-footnote">
-        原型注释: 布局采用正常日历，10/17、11/14
-        的周六加班仅为示意，尚未核验真实华为日历；正式产品由 BW 预先对接，无用户导入步骤。
-      </p>
-    </Modal>
+      <footer>
+        <span>BW 预置工作日历</span>
+        <span>班 · 周六加班</span>
+      </footer>
+      <p className="ml-footnote">原型注释: 加班日仅示意，未核验真实华为数据。</p>
+    </section>
   )
 }
 
@@ -101,13 +126,13 @@ export function EditRequirement({ item, save, close }) {
             return
           }
           if (versions.indexOf(value.first) >= versions.indexOf(value.target)) {
-            setError('原型注释: 本例先交 MVP，再在后续 B 版本完善；后续版本应晚于先行版本。')
+            setError('原型注释: 本例先交 MVP，再在后续版本完善；后续版本应晚于先行版本。')
             return
           }
           const firstDay = 2 + versions.indexOf(value.target) * 7
           const dueDay = Number(value.due.slice(-2))
           if (dueDay < firstDay || dueDay > firstDay + 6) {
-            setError('截止时间应落在目标 B 版本的日期范围内；可一并调整目标版本。')
+            setError('截止时间应落在目标版本的日期范围内；可一并调整目标版本。')
             return
           }
           save({
@@ -160,7 +185,7 @@ export function EditRequirement({ item, save, close }) {
             先行 MVP
             <select
               className="input"
-              aria-label="先行 B 版本"
+              aria-label="先行版本"
               value={value.first}
               onChange={(e) => field('first', e.target.value)}
             >
@@ -173,7 +198,7 @@ export function EditRequirement({ item, save, close }) {
             后续完善
             <select
               className="input"
-              aria-label="目标 B 版本"
+              aria-label="目标版本"
               value={value.target}
               onChange={(e) => field('target', e.target.value)}
             >
@@ -311,7 +336,7 @@ export function ReferencePanel({ close }) {
         </h3>
         <p>借鉴：把方向、优先级、主导人和目标日期放在同一规划视图，再连接执行。</p>
         <p className="muted">
-          取舍：不照搬组织层级或手设健康灯；BW 保留一项大需求跨 B 版本的整体身份。
+          取舍：不照搬组织层级或手设健康灯；BW 保留一项大需求跨版本的整体身份。
         </p>
       </section>
       <section className="ml-reference">
@@ -331,7 +356,7 @@ export function ReferencePanel({ close }) {
         </h3>
         <p>借鉴：先讨论值得投入多少精力，再收敛问题与范围。</p>
         <p className="muted">
-          取舍：不照搬六周周期、团队人数或立项角色。月度先取舍，具体规格与可试用交付在 B
+          取舍：不照搬六周周期、团队人数或立项角色。月度先取舍，具体规格与可试用交付在版本
           版本中收敛。
         </p>
       </section>
@@ -366,7 +391,7 @@ export function PlanningSourcePanel({ close }) {
         <section>
           <h3>规划草案</h3>
           <p>
-            左侧直接编辑与右侧原生会话共同维护同一份草案。先决定做什么、优先级、目标 B 版本和截止。
+            左侧直接编辑与右侧原生会话共同维护同一份草案。先决定做什么、优先级、目标版本和截止。
           </p>
           <p className="muted">
             原型注释: 本页仅保存浏览器演示草案，没有读取真实主干或写入规划分支。
@@ -380,7 +405,7 @@ export function PlanningSourcePanel({ close }) {
           复用项目固定分支 <code>bw/project</code> 保存项目层规划。
         </li>
         <li>核对后提交 PR / MR，由人评审合入项目主干。</li>
-        <li>更新代码后重读正式总览；B 版本中的具体交付范围继续在版本计划里收敛。</li>
+        <li>更新代码后重读正式总览；版本中的具体交付范围继续在版本计划里收敛。</li>
       </ol>
       <p className="ml-callout">
         原型注释: 现有 bw/project
@@ -429,7 +454,7 @@ export function PlanningReviewPanel({ chosen, stage, setStage, publish, close })
       {stage === 'draft' ? (
         <>
           <p>
-            核对本月做哪些大需求、优先次序、目标 B
+            核对本月做哪些大需求、优先次序、目标版本
             版本与截止。提交评审后，正式总览继续保留主干中的原安排。
           </p>
           {chosen.map((item) => (
