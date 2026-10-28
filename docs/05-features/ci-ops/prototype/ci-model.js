@@ -2,6 +2,8 @@
 // 状态机（人已拍板）：灰=未接入（主检出未见脚本）；黄=已接入·待执行/未启动（扫到脚本，
 // 无记录或已停止）；绿=最近成功 / 运行中·最近一轮通过；红=最近失败 / 最近一轮报错。
 // 停止→黄；最新结果决定绿红；历史报错永久保留。灯由真实读数推导，不可手设。
+// 板面不铺说明文本（2026-10-28 人反馈）：模块语义、脚本路径、轮询间隔等工作机制
+// 收在按钮提示与 ci-ops skill 正本，模型只留驱动状态与动作所需的数据。
 
 export const MODULES = [
   {
@@ -9,42 +11,28 @@ export const MODULES = [
     name: '部署',
     short: '部署',
     kind: 'single',
-    script: '.bw/ci/deploy.sh',
-    skill: 'ci-ops · 部署',
-    summary:
-      '把已发布版本的安装包部署到指定环境（生产机器），完成后独立读回服务状态与版本并写执行记录。单次执行。'
+    script: '.bw/ci/deploy.sh'
   },
   {
     id: 'monitor',
     name: '监控',
     short: '监控',
     kind: 'poll',
-    interval: '每 5 分钟',
-    script: '.bw/ci/monitor.sh',
-    skill: 'ci-ops · 监控',
-    summary:
-      '轮询检查整个服务的可用性（在线 / 离线、健康端点），每轮结果写记录。轮询执行，经 Orca 自动化到点开会话。'
+    script: '.bw/ci/monitor.sh'
   },
   {
     id: 'health',
     name: '故障检测',
     short: '检测',
     kind: 'poll',
-    interval: '每 15 分钟',
-    script: '.bw/ci/health-check.sh',
-    skill: 'ci-ops · 故障检测',
-    summary:
-      '按指标与错误日志轮询检查关键功能是否报错；阈值与控制带判定，不用模型判断「有没有事」。轮询执行。'
+    script: '.bw/ci/health-check.sh'
   },
   {
     id: 'restart',
     name: '重启',
     short: '重启',
     kind: 'single',
-    script: '.bw/ci/restart.sh',
-    skill: 'ci-ops · 重启',
-    summary:
-      '服务不可用时，基于已发布版本的包快速重新拉起（同版本同环境，跳过完整检查，尽快恢复可用）。单次执行，人触发。'
+    script: '.bw/ci/restart.sh'
   }
 ]
 

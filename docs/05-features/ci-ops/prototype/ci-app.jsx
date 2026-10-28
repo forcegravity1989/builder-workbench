@@ -18,15 +18,14 @@ function errorsOf(records, moduleId) {
   return records.filter((r) => r.moduleId === moduleId && !r.ok).length
 }
 
-// 模块区：状态行 + 最近执行 + 资产行 + 动作行。灰态给接入指引，红态给报错入口。
+// 模块区：状态行 + 最近执行 + 动作行。工作机制说明收在按钮提示，红态给报错入口。
 function ModuleCard({ index, module, state, errors, executing, onAction }) {
   const buttons = moduleButtons(module, state, errors)
   return (
     <section id={module.id} className="ci-module">
       <div className="g3-section-title">
         <h2>
-          {index + 1}·{module.name}{' '}
-          <small>{module.kind === 'poll' ? `轮询 · ${module.interval}` : '单次执行'}</small>
+          {index + 1}·{module.name}
         </h2>
         <span className={`ci-state ${state.state}`}>
           <span className={`g3-dot ${dotClass(state.state)}`} aria-hidden="true" />
@@ -34,7 +33,6 @@ function ModuleCard({ index, module, state, errors, executing, onAction }) {
         </span>
       </div>
       <div className={`ci-card ${state.state}`}>
-        <p className="ci-summary">{module.summary}</p>
         {state.last && (
           <p className={`ci-last ${state.last.ok ? '' : 'bad'}`}>
             最近{module.kind === 'poll' ? '一轮' : '一次'} {state.last.time}
@@ -42,28 +40,8 @@ function ModuleCard({ index, module, state, errors, executing, onAction }) {
             {state.last.text}
           </p>
         )}
-        {state.state === 'gray' && (
-          <p className="ci-hint">
-            主分支未见 {module.script}。点「生成{module.short}脚本」由 CI 助手按 ci-ops
-            模板结合项目实际代码生成，经人审合入 main 后，主检出扫描到资产灯变黄。
-          </p>
-        )}
-        <div className="ci-asset">
-          <span>
-            脚本 <code>{module.script}</code>
-            {state.state === 'gray' && <em className="ci-missing">未见</em>}
-          </span>
-          <span>
-            Skill <code>{module.skill}</code>
-          </span>
-          <span>
-            {module.kind === 'poll'
-              ? `调度 ${module.interval} · Orca 自动化`
-              : '触发 板面按钮 · 人点'}
-          </span>
-        </div>
         {errors > 0 && state.state !== 'red' && (
-          <p className="ci-errors-muted">历史报错 {errors} 条 · 记录区可查</p>
+          <p className="ci-errors-muted">历史报错 {errors} 条</p>
         )}
         <div className="ci-actions">
           {buttons.map((b) => (
@@ -173,15 +151,13 @@ function App() {
   const onAction = (key, module) => {
     if (key === 'generate') {
       sendRequest(PROMPTS.generate(module), '生成脚本请求')
-      setNotice(
-        `已向 CI 助手递交生成${module.short}脚本请求 · 脚本 PR 经人审合入 main 后，主检出扫描到资产，${module.name}灯变黄`
-      )
+      setNotice(`已向 CI 助手递交生成${module.short}脚本请求`)
       return
     }
     if (key === 'errors') {
       setFilter(module.id)
       move('records')
-      setNotice(`已定位到记录区 · 按「${module.name}」筛选，报错条目可展开看日志`)
+      setNotice(`已定位到记录区 · 按「${module.name}」筛选`)
       return
     }
     if (key === 'stop') {
@@ -190,9 +166,7 @@ function App() {
         module.id === 'monitor' ? PROMPTS.monitorStop : PROMPTS.healthStop,
         '停止调度请求'
       )
-      setNotice(
-        `${module.name}已停止，灯回黄 · 已写记录保留；重新部署期间可先停止监控与检测，避免误报`
-      )
+      setNotice(`${module.name}已停止，灯回黄`)
       return
     }
     if (key === 'start') {
@@ -215,22 +189,13 @@ function App() {
         module.id === 'monitor' ? PROMPTS.monitorStart : PROMPTS.healthStart,
         '启动调度请求'
       )
-      setNotice(
-        `${module.name}已启动轮询（${module.interval}）· 首轮通过，灯绿；到点执行由 Orca 自动化真实触发`
-      )
+      setNotice(`${module.name}已启动轮询`)
       return
     }
-    // run：部署 / 重启单次执行，演示给执行中瞬态，完成后独立读回写记录。
-    // 执行前若轮询模块在运行，先提醒可停止避免误报（spec：助手提醒、人决定）。
-    const runningPolls = MODULES.filter((m) => m.kind === 'poll' && states[m.id]?.running)
+    // run：部署 / 重启单次执行，演示给执行中瞬态，完成后独立读回写记录；
+    // 重部署期间可先停止轮询的提醒归 CI 助手（spec：助手提醒、人决定），板面不重复。
     setExecuting(module.id)
-    setNotice(
-      `${module.short}请求已递交 CI 助手 · 脚本在会话中执行，完成后独立读回并写记录${
-        runningPolls.length
-          ? `；${runningPolls.map((m) => m.name).join('与')}仍在运行，重部署期间如需避免误报可先停止`
-          : ''
-      }`
-    )
+    setNotice(`${module.short}请求已递交 CI 助手`)
     sendRequest(module.id === 'deploy' ? PROMPTS.deploy : PROMPTS.restart, `${module.short}请求`)
     setTimeout(() => {
       const time = clock()
@@ -249,7 +214,7 @@ function App() {
         },
         ...current
       ])
-      setNotice(`${module.name}成功，灯绿 · 已写记录`)
+      setNotice(`${module.name}执行成功`)
     }, 1600)
   }
 
@@ -259,11 +224,9 @@ function App() {
     if (scene === 'first') {
       setStates(structuredClone(sceneStates.armed))
       setScene('armed')
-      setNotice(
-        '已更新代码：主检出快进到主干最新 · 5 秒扫描到四个模块脚本资产，灯灰→黄（演示假定脚本已生成并合入 main）'
-      )
+      setNotice('已更新代码 · 灯灰→黄（演示）')
     } else {
-      setNotice('已更新代码：主检出快进到主干最新，资产与记录已重读 · 演示示意')
+      setNotice('已更新代码（演示）')
     }
   }
 
@@ -331,8 +294,9 @@ function App() {
             屏承载发布后的生产部署流程——验收屏「部署」只覆盖演示环境，生产机器的部署、可用性、报错与快速恢复在本屏。项目级入口「CI」与总览、任务同级；左侧
             Orca 原生会话（CI
             助手），右侧业务板面，与计划/验收两屏同构。页头：标题左、动作右——会话收折
-            chip、更新代码（唯一同步入口）、配置自动化；不设批注模式（无会中逐对象评审事务）。首次进入经原生工作树创建
-            bw/ci 固定树，执行记录与错误日志存该树本地 .bw/ci/，默认不上仓。
+            chip、更新代码（唯一同步入口）、配置自动化；不设批注模式（无会中逐对象评审事务）。板面不铺说明文本：模块语义、脚本路径、轮询间隔等工作机制收在按钮提示与
+            ci-ops skill 正本，板面只留状态、读数与动作。首次进入经原生工作树创建 bw/ci
+            固定树，执行记录与错误日志存该树本地 .bw/ci/，默认不上仓。
           </p>
           <p>
             <strong>四模块与灯</strong>
@@ -372,9 +336,6 @@ function App() {
           <div className="g3-nav-muted">知识库</div>
           <div className="g3-scope">
             <strong>bw/ci 固定树</strong>
-            <span>
-              执行记录与错误日志存该树本地 .bw/ci/，默认不上仓；脚本资产在项目 main，经人审合入
-            </span>
           </div>
         </aside>
         <aside
@@ -430,11 +391,7 @@ function App() {
               <button
                 className="g3-text-button"
                 title="打开原生自动化编辑器：监控/故障检测的定时调度在这里登记与停用"
-                onClick={() =>
-                  setNotice(
-                    '配置自动化打开 Orca 原生自动化编辑器 · 轮询调度在这里登记与停用（演示示意）'
-                  )
-                }
+                onClick={() => setNotice('已打开自动化编辑器（演示）')}
               >
                 <Icon name="automation" size={13} /> 配置自动化
               </button>
@@ -458,9 +415,6 @@ function App() {
               </button>
             ))}
           </nav>
-          <div className="ci-scan-line">
-            主分支资产每 5 秒扫描主检出 · 执行记录读 bw/ci 固定树 · 灯由真实读数推导，不可手设
-          </div>
           <div
             className="g3-scroll"
             ref={scroll}
@@ -487,9 +441,7 @@ function App() {
             ))}
             <section id="records" className="ci-records-section">
               <div className="g3-section-title">
-                <h2>
-                  5·执行与报错记录 <small>bw/ci 固定树本地 · 默认不上仓</small>
-                </h2>
+                <h2>5·执行与报错记录</h2>
                 <span className="ci-filter" role="group" aria-label="按模块筛选记录">
                   <button className={filter === 'all' ? 'on' : ''} onClick={() => setFilter('all')}>
                     全部 {records.length}
@@ -528,29 +480,22 @@ function App() {
                 </div>
               ) : (
                 <p className="g3-empty ci-records-empty">
-                  {records.length
-                    ? '该模块暂无记录'
-                    : '尚无执行记录 · 每轮/每次结果写到这里，报错条目可展开回看日志'}
+                  {records.length ? '该模块暂无记录' : '尚无执行记录'}
                 </p>
               )}
-              {errorCount > 0 && (
-                <p className="ci-records-note">
-                  共 {errorCount} 条报错 · 历史报错永久保留，最新结果决定各模块灯的绿红
-                </p>
-              )}
+              {errorCount > 0 && <p className="ci-records-note">共 {errorCount} 条报错</p>}
             </section>
           </div>
           <footer className="g3-footer" role="status">
             {handoff ? (
               <div className="g3-footer-handoff">
                 <span>
-                  {handoff.kind}已通过 Orca 原生发送弹窗递交 CI 助手：「{handoff.text}
-                  」· 你在弹窗确认目标会话后发送，演示不真正发送。
+                  {handoff.kind}已递交 CI 助手：「{handoff.text}」
                 </span>
                 <IconButton name="close" label="收起发送说明" onClick={() => setHandoff(null)} />
               </div>
             ) : (
-              notice || '评审草案 · 演示数据为预置，生产不预置记录；灯由真实读数推导，不可手设'
+              notice || '评审草案 · 演示数据为预置'
             )}
           </footer>
         </main>

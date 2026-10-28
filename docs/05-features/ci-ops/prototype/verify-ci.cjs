@@ -56,7 +56,6 @@ const check = (name, ok) => {
     '页头三动作（收折会话/更新代码/配置自动化）',
     (await page.locator('.g3-header-actions button').count()) === 3
   )
-  check('扫描说明行', (await page.locator('.ci-scan-line').textContent()).includes('每 5 秒'))
   check('记录区存在', (await page.locator('#records').count()) === 1)
 
   // 场景一：首次进入全灰
@@ -67,11 +66,7 @@ const check = (name, ok) => {
     '首次进入四灯全灰(off)',
     firstDots.every((c) => c.includes('off'))
   )
-  check(
-    '灰态卡虚线 + 未见标注',
-    (await page.locator('#deploy .ci-card.gray').count()) === 1 &&
-      (await page.locator('#deploy .ci-missing').textContent()) === '未见'
-  )
+  check('灰态卡虚线', (await page.locator('#deploy .ci-card.gray').count()) === 1)
   check(
     '灰态按钮=生成部署脚本',
     (await page.locator('#deploy .ci-actions button').textContent()).trim() === '生成部署脚本'

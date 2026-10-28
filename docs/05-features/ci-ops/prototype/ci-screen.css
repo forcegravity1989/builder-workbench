@@ -1,5 +1,5 @@
 /* #461 CI 屏评审草案专属样式；布局与组件复用 g3-planning.css，只补 CI 特有词汇：
-   状态灯四色变体、模块卡、扫描说明行、记录区与折叠日志。颜色只用于状态。 */
+   状态灯四色变体、模块卡、记录区与折叠日志。颜色只用于状态。 */
 
 /* 灯色变体：ok/warn 复用 g3-planning.css，补红与灰（灰=未知/未接入，不是绿）。 */
 .g3-dot.err {
@@ -14,12 +14,6 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-}
-.ci-scan-line {
-  flex-shrink: 0;
-  padding: 6px 32px;
-  font-size: 11px;
-  color: var(--muted-foreground);
 }
 
 /* 模块状态 chip：soft/deep 成对（背景/文字），沿用设计系统状态色用法。 */
@@ -62,11 +56,6 @@
 .ci-card.gray {
   border-style: dashed;
 }
-.ci-summary {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.7;
-}
 .ci-last {
   margin: 0;
   font-size: 12px;
@@ -78,34 +67,6 @@
 }
 .ci-last.bad .ci-last-mark {
   color: var(--color-danger-deep, #a03c36);
-}
-.ci-hint {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.7;
-  color: var(--muted-foreground);
-}
-.ci-asset {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--color-hairline, rgba(128, 128, 128, 0.25));
-  font-size: 12px;
-  color: var(--color-text-muted, #767676);
-}
-.ci-asset code {
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 11px;
-  padding: 1px 5px;
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--muted-foreground, #767676) 10%, transparent);
-  color: inherit;
-}
-.ci-missing {
-  margin-left: 6px;
-  font-style: normal;
-  color: var(--muted-foreground);
 }
 .ci-errors-muted {
   margin: 0;
@@ -260,9 +221,6 @@
 }
 
 @container (max-width: 780px) {
-  .ci-scan-line {
-    padding-inline: 24px;
-  }
   .ci-filter {
     display: none;
   }
