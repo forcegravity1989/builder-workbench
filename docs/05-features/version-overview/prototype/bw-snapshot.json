@@ -3,7 +3,8 @@
     "repository": "https://github.com/forcegravity1989/builder-workbench",
     "checkedAt": "2026-10-27T12:20:25.829Z",
     "sourceCommit": "90952d9bee18e436b165b82b5c08be92b3d82594",
-    "kind": "Read-only Git/GitHub snapshot for prototype; not a product schema or live data adapter."
+    "kind": "Read-only Git/GitHub snapshot for prototype; not a product schema or live data adapter.",
+    "historicalTitlesReadAt": "2026-10-28T02:08:22.7602290Z"
   },
   "plan": {
     "schema_version": 3,
@@ -1626,6 +1627,33 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/releases/tag/v0.5.0-rc.20261011.4",
       "publishedAt": "2026-10-11T16:18:01Z",
       "isPrerelease": true
+    }
+  ],
+  "historicalIssueTitles": [
+    {
+      "number": 317,
+      "title": "【v0.7|G4】首次启动弹出 Orca 的向导、功能提示和功能墙，反馈入口仍指向 Orca",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/317"
+    },
+    {
+      "number": 323,
+      "title": "【v0.7|G4】设置→集成只留 GitHub，新增 CodeHub / WeLink 卡片，三张卡都能原地安装与登录",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/323"
+    },
+    {
+      "number": 387,
+      "title": "【v0.7|G4】CodeHub 支持问题集中修复：PR 渲染、项目维度筛选、来源路由与引导",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/387"
+    },
+    {
+      "number": 338,
+      "title": "Workbench 能查最新版本，点「更新」后自动下载安装包并完成更新",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/338"
+    },
+    {
+      "number": 383,
+      "title": "【v0.7|G2】Orca 侧边栏调整：项目墙 → 项目 → 版本运作树，会话随目标与版本归档",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/383"
     }
   ]
 }

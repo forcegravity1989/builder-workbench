@@ -6,8 +6,21 @@ export function ReferencePanel() {
     <>
       <p>
         原型注释: 本轮补充核对的业界参考 ·
-        2026-10-27。以下是设计取舍的依据，不是产品已实现或用户研究的证明。
+        2026-10-28。以下是设计取舍的依据，不是产品已实现或用户研究的证明。
       </p>
+      <h3>Claude · AI-native SDLC</h3>
+      <p>
+        原型注释: 参考 Plan、Design、Build、Test、Deploy、Maintain
+        六阶段及可回返的制品链。结合本次确认，实施 Plan
+        放在开发阶段；intent、spec、原型设计是独立评审对象。阶段、成果是否认可、版本验收分别表达，不照搬自动审批机制。
+      </p>
+      <a
+        href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook"
+        target="_blank"
+        rel="noreferrer"
+      >
+        The AI-native SDLC playbook · 官方原文 ↗
+      </a>
       <h3>Linear · 按需求看阶段与里程碑</h3>
       <p>
         原型注释:
@@ -31,8 +44,9 @@ export function ReferencePanel() {
       </a>
       <h3>LaunchDarkly · 逐步向使用者开放</h3>
       <p>
-        原型注释: 借鉴逐步开放能力时明确使用者范围的思路。本稿呈现 MVP
-        试用人群、包或部署依据、已知问题和后续 Issue；不引入流量分配、功能开关服务或自动发布能力。
+        原型注释:
+        借鉴逐步开放能力时明确使用者范围的思路。发布成果记录版本、包与使用范围；反馈统一进入目标下的
+        Issue，不另建 MVP 反馈列表，也不引入流量分配、功能开关服务或自动发布能力。
       </p>
       <a
         href="https://launchdarkly.com/docs/home/releases/progressive-rollouts"
@@ -104,7 +118,7 @@ export function SectionTitle({ id, title, extra }) {
 
 export function Feature({ feature, openArtifact, openSession }) {
   const [expanded, setExpanded] = window.BWPrototypeDependencies.useState(false)
-  const [stage, setStage] = window.BWPrototypeDependencies.useState(null)
+  const [stage, setStage] = window.BWPrototypeDependencies.useState(feature.currentStage)
   const rows = stage ? feature.artifacts.filter((row) => row[0] === stage) : feature.artifacts
   return (
     <article className="ov-feature" aria-label={feature.title}>
@@ -130,7 +144,7 @@ export function Feature({ feature, openArtifact, openSession }) {
       </div>
       <div className="ov-feature-summary">
         <div>
-          <span className="ov-label">本版承担</span>
+          <span className="ov-label">本版承担 · {feature.goalId}</span>
           <p>{feature.scope}</p>
         </div>
         <button
@@ -166,7 +180,7 @@ export function Feature({ feature, openArtifact, openSession }) {
           <div className="ov-artifacts">
             {rows.map((row) => (
               <button
-                key={row[0]}
+                key={row[4]}
                 className="ov-artifact"
                 onClick={() => openArtifact(feature, row)}
               >
@@ -180,8 +194,19 @@ export function Feature({ feature, openArtifact, openSession }) {
               </button>
             ))}
           </div>
+          {stage && rows.length === 0 && <p className="ov-inline-empty">此阶段尚无已记录成果</p>}
           <div className="ov-feature-bottom">
-            <span className="muted">后续 B · {feature.later}</span>
+            <button
+              className="ov-link"
+              onClick={() =>
+                openArtifact(
+                  feature,
+                  feature.artifacts.find((row) => row[4] === 'issues')
+                )
+              }
+            >
+              目标 {feature.goalId} 的关联 Issue ↗
+            </button>
             <button className="ov-link" onClick={() => openSession(feature)}>
               <GitBranch size={14} />
               工作会话
@@ -221,6 +246,22 @@ export function SourcePanel() {
         <dt>工作会话</dt>
         <dd>
           原型注释: Git 分支已核对；未读取 BW 宿主登记、会话、连接状态，不用 Git 数据推断运行事实。
+        </dd>
+        <dt>历史需求 / 任务</dt>
+        <dd>
+          原型注释: 历史大需求示例只呈现 #334 与 #383，依据 v0.7 计划关联与 Issue 的 v0.7
+          范围说明，未重建完整特性树；当时阶段保持未知。历史小任务名称另于{' '}
+          {snapshot.source.historicalTitlesReadAt} 读取，不用当前 Issue 状态覆盖验收时状态。
+        </dd>
+        <dt>小任务范围</dt>
+        <dd>
+          原型注释: 这份快照的小任务样本来自 G4；真实实现应纳入各目标下明确的小需求 /
+          bug，不以目标序号判断任务类型，也不按时间强制把 MVP 反馈移出 Issue。
+        </dd>
+        <dt>AI workflow</dt>
+        <dd>
+          原型注释:
+          表中“待核对”和下方空值来自尚未解析会话，并不表示未使用流程或没有人工介入。本轮只画视图，未创建执行器、会话统计库或自动质量判定。
         </dd>
       </dl>
       <p>

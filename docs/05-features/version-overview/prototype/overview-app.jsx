@@ -1,18 +1,12 @@
+import { OverviewSections, ProductivityEvidence } from './overview-sections.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
-import {
-  Dialog,
-  Feature,
-  SectionTitle,
-  SourcePanel,
-  ReferencePanel
-} from './overview-components.jsx'
+import { Dialog, SourcePanel, ReferencePanel } from './overview-components.jsx'
 import {
   snapshot,
   repository,
   revision,
   scenarios,
   features,
-  currentTasks,
   shortTitle,
   issueState,
   prState,
@@ -52,7 +46,6 @@ function App() {
     return scenarios.some((s) => s.id === value) ? value : 'during'
   })
   const [dialog, setDialog] = useState(null)
-  const [filter, setFilter] = useState('全部')
   const [allTasks, setAllTasks] = useState(false)
   const [dark, setDark] = useState(false)
   const [sample, setSample] = useState(features)
@@ -69,12 +62,6 @@ function App() {
     'data',
     history ? acceptance.planRef.sourceCommit : undefined
   )
-  const taskRows =
-    filter === '已有结果'
-      ? currentTasks.filter((t) => t.state === 'CLOSED')
-      : filter === '全部'
-        ? currentTasks
-        : []
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light'
   }, [dark])
@@ -82,21 +69,28 @@ function App() {
     setDialog({ kind: 'native', title: `原型注释: ${route}入口`, route })
   }
   function openArtifact(feature, row) {
+    if (row[4] === 'issues') {
+      setDialog({ kind: 'goal-tasks', title: '本版目标关联任务', feature })
+      return
+    }
     setDialog({ kind: 'artifact', title: row[1], feature, row })
   }
   function openSession(feature) {
+    if (feature.historical) {
+      native('历史任务与会话')
+      return
+    }
     setDialog({ kind: 'session', title: `工作会话 · #${feature.id}`, feature })
   }
   function edit() {
     setEditing(
       JSON.stringify(
-        sample.map(({ id, title, owner, purpose, scope, later }) => ({
+        sample.map(({ id, title, owner, purpose, scope }) => ({
           id,
           title,
           owner,
           purpose,
-          scope,
-          later
+          scope
         })),
         null,
         2
@@ -114,7 +108,7 @@ function App() {
         next.some(
           (f, i) =>
             f.id !== features[i].id ||
-            ['title', 'owner', 'purpose', 'scope', 'later'].some(
+            ['title', 'owner', 'purpose', 'scope'].some(
               (k) => typeof f[k] !== 'string' || !f[k].trim()
             )
         )
@@ -124,9 +118,7 @@ function App() {
       setSample(
         next.map((f, i) => ({
           ...features[i],
-          ...Object.fromEntries(
-            ['title', 'owner', 'purpose', 'scope', 'later'].map((k) => [k, f[k]])
-          )
+          ...Object.fromEntries(['title', 'owner', 'purpose', 'scope'].map((k) => [k, f[k]]))
         }))
       )
       setEdited(true)
@@ -144,7 +136,10 @@ function App() {
         <select
           aria-label="版本生命周期情景"
           value={scenario}
-          onChange={(e) => setScenario(e.target.value)}
+          onChange={(e) => {
+            setScenario(e.target.value)
+            setAllTasks(false)
+          }}
         >
           {scenarios.map((s) => (
             <option key={s.id} value={s.id}>
@@ -320,362 +315,38 @@ function App() {
                 />
               </div>
             </div>
-            {unplanned ? (
-              <>
-                <div className="ov-empty-plan">
-                  <CalendarRange size={32} />
-                  <h2>先明确这一版要交付什么</h2>
-                  <p>
-                    计划尚未制定。目标、负责人、交付范围和关联任务会随计划保存逐步出现；未确认的内容保持草案身份。
-                  </p>
-                  <button className="ov-primary" onClick={() => native('版本计划')}>
-                    开始制定版本计划
-                  </button>
-                </div>
-                <section className="ov-section">
-                  <SectionTitle id="previous" title="从上一版继续" extra="已有承诺与遗留可供参考" />
-                  <button className="ov-link" onClick={() => setScenario('during')}>
-                    查看 v0.8 的目标与当前成果 ↗
-                  </button>
-                  <p className="muted">
-                    沿用已有版本计划旅程，上一版的未完成事项由人决定是否纳入新计划。
-                  </p>
-                </section>
-                <Note>
-                  这是尚未制定计划的布局示例；没有写入版本、材料或任务。点击“开始制定版本计划”查看原有计划入口的衔接。
-                </Note>
-              </>
-            ) : (
-              <>
-                <div className="ov-meta">
-                  <span>
-                    负责人 ·{' '}
-                    {[
-                      ...new Set(
-                        plan.goals.flatMap((g) =>
-                          g.owner.split(/[;；]/).map((owner) => owner.trim())
-                        )
-                      )
-                    ].join('、')}
-                  </span>
-                  <span>{history ? '人工验收 · 2026-10-23' : '计划确认 · 2026-10-27'}</span>
-                  <span>交付时间 · {history ? '见验收与发布记录' : '计划未记录'}</span>
-                  <Link href={planLink}>计划依据</Link>
-                </div>
-                {edited && !history && (
-                  <Note>当前范围含临时编辑；刷新还原，不会改写真实计划或历史验收。</Note>
-                )}
-                <div className="ov-intro">
-                  <div>
-                    <span className="ov-label">{history ? '当时承诺' : '本版承诺'}</span>
-                    <div className="ov-goal-summary">
-                      {plan.goals.map((g) => (
-                        <button
-                          key={g.goalId}
-                          onClick={() => setDialog({ kind: 'goal', title: g.title, goal: g })}
-                        >
-                          <span>{g.goalId}</span>
-                          {g.title}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="ov-label">
-                      {history ? '当时交付与人工结论' : '目前形成的成果'}
-                    </span>
-                    {history ? (
-                      <>
-                        <p>
-                          正式验收记录：
-                          {acceptance.results
-                            .filter((r) => r.decision?.outcome === 'not-met')
-                            .map((r) => r.goalId)
-                            .join('、')}{' '}
-                          未达成；
-                          {acceptance.results
-                            .filter((r) => r.decision?.outcome === 'met')
-                            .map((r) => r.goalId)
-                            .join('、')}{' '}
-                          达成。
-                        </p>
-                        <p>已记录 v0.7.0 候选包及验收环境；后续修理不改写当时结论。</p>
-                        <Link href={material('v0.7', 'acceptance')}>查看正式验收依据</Link>
-                      </>
-                    ) : (
-                      <>
-                        <p>两个总览已有设计 Draft PR，正在结合评审反馈修改。</p>
-                        <p>
-                          日常任务 {currentTasks.filter((t) => t.state === 'OPEN').length} 项开放、
-                          {currentTasks.filter((t) => t.state === 'CLOSED').length}{' '}
-                          项已关闭。会话执行状态尚未读取。
-                        </p>
-                        <button
-                          className="ov-link"
-                          onClick={() => setDialog({ kind: 'review', title: '待审成果' })}
-                        >
-                          查看待审成果 ↗
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-                {history ? (
-                  <>
-                    <section className="ov-section">
-                      <SectionTitle
-                        id="acceptance"
-                        title="正式验收"
-                        extra="固定当时计划与人工结论"
-                      />
-                      <div className="ov-table-scroll">
-                        <table className="ov-task-table">
-                          <thead>
-                            <tr>
-                              <th>目标</th>
-                              <th>人工结论</th>
-                              <th>后续处理</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {plan.goals.map((g) => {
-                              const result = acceptance.results.find((r) => r.goalId === g.goalId)
-                              return (
-                                <tr key={g.goalId}>
-                                  <td>
-                                    <strong>
-                                      {g.goalId} · {g.title}
-                                    </strong>
-                                    <small>{g.owner}</small>
-                                  </td>
-                                  <td>
-                                    {result?.decision?.outcome === 'met'
-                                      ? '达成'
-                                      : result?.decision?.outcome === 'not-met'
-                                        ? '未达成'
-                                        : '尚未确认'}
-                                  </td>
-                                  <td>
-                                    {result?.nextStep || '未记录补充说明'}
-                                    {result?.issueNotes &&
-                                      Object.values(result.issueNotes).map((n, i) => (
-                                        <small key={i}>{n}</small>
-                                      ))}
-                                  </td>
-                                </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </section>
-                    <section className="ov-section">
-                      <SectionTitle
-                        id="release"
-                        title="交付依据与后续修理"
-                        extra="当时验收与后续发布分别保留"
-                      />
-                      <p>
-                        验收候选：Workbench {acceptance.candidateRef.version} ·{' '}
-                        <Link href={`${repository}/commit/${acceptance.candidateRef.commit}`}>
-                          {acceptance.candidateRef.commit.slice(0, 8)}
-                        </Link>
-                      </p>
-                      <p>{acceptance.demoEnv.detail}</p>
-                      <div className="ov-records">
-                        <Link href={`${repository}/releases/tag/v0.7.0`}>v0.7.0 发布</Link>
-                        <Link
-                          href={`${repository}/blob/${snapshot.source.sourceCommit}/.bw/planning/v0.7/acceptance-evidence.html`}
-                        >
-                          当时验收报告
-                        </Link>
-                        <Link href={`${repository}/pull/429`}>归档 PR #429</Link>
-                      </div>
-                      <p className="muted">
-                        后续补丁：
-                        {snapshot.releases
-                          .filter((r) => /^v0\.7\.[1-9]/.test(r.tagName))
-                          .map((r) => (
-                            <React.Fragment key={r.tagName}>
-                              <Link href={r.url}>{r.tagName}</Link>
-                              {' · '}
-                            </React.Fragment>
-                          ))}
-                      </p>
-                      <button className="ov-link" onClick={() => setScenario('during')}>
-                        进入 v0.8 查看后续承担 ↗
-                      </button>
-                    </section>
-                  </>
-                ) : (
-                  <>
-                    <section className="ov-section">
-                      <SectionTitle
-                        id="features"
-                        title="大需求与本版交付"
-                        extra="G2 · 两个总览各自推进"
-                      />
-                      {sample.map((f) => (
-                        <Feature
-                          key={f.id}
-                          feature={f}
-                          openArtifact={openArtifact}
-                          openSession={openSession}
-                        />
-                      ))}
-                    </section>
-                    <section className="ov-section">
-                      <SectionTitle
-                        id="trial"
-                        title="MVP 试用与后续完善"
-                        extra="使用范围与代码合入分别核对"
-                      />
-                      <div className="ov-trial">
-                        <div>
-                          <strong>本版试用交付尚未记录</strong>
-                          <p>
-                            尚未找到 v0.8
-                            的候选包、试用人群与使用反馈。两个总览目前提供的是可评审设计。
-                          </p>
-                          <button
-                            className="ov-link"
-                            onClick={() => setDialog({ kind: 'trial', title: '试用交付依据' })}
-                          >
-                            查看需要补齐的依据 ↗
-                          </button>
-                        </div>
-                        <div>
-                          <strong>问题继续进入 Issue</strong>
-                          <p>
-                            实际反馈分别进入本版修理、后续版本候选或持续改善。范围由下一次计划确认。
-                          </p>
-                          <Link href={`${repository}/issues/421`}>#421 更新下载中断与续传</Link>
-                          <br />
-                          <Link href={`${repository}/issues/432`}>#432 计划 / 验收 Issue 回显</Link>
-                        </div>
-                      </div>
-                    </section>
-                    <section className="ov-section">
-                      <SectionTitle
-                        id="workflow"
-                        title="小需求 / bug"
-                        extra="G4 · Issue 与原生会话分别取据"
-                      />
-                      <div className="ov-filters">
-                        {['全部', '执行中', '待处理', '已有结果'].map((f) => (
-                          <button key={f} aria-pressed={filter === f} onClick={() => setFilter(f)}>
-                            {f}
-                          </button>
-                        ))}
-                      </div>
-                      {filter === '执行中' || filter === '待处理' ? (
-                        <div className="ov-empty">
-                          <strong>会话状态未知</strong>
-                          <p>
-                            尚未读取原生会话，无法判断哪些正在执行或等待输入。Issue
-                            开放不代表待处理。
-                          </p>
-                          <Note>
-                            这里只读了 Git / GitHub；未访问或操控日常 BW。真实实现沿已有会话
-                            workflow 读取。
-                          </Note>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="ov-table-scroll">
-                            <table className="ov-task-table">
-                              <thead>
-                                <tr>
-                                  <th>任务</th>
-                                  <th>执行会话</th>
-                                  <th>Issue</th>
-                                  <th>成果 / 处理依据</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {(allTasks ? taskRows : taskRows.slice(0, 5)).map((t) => (
-                                  <tr key={t.number}>
-                                    <td>
-                                      <button
-                                        onClick={() =>
-                                          setDialog({
-                                            kind: 'task',
-                                            title: shortTitle(t.title),
-                                            task: t
-                                          })
-                                        }
-                                      >
-                                        {shortTitle(t.title)}
-                                      </button>
-                                      <small>#{t.number}</small>
-                                    </td>
-                                    <td>
-                                      未知<small>尚未读取</small>
-                                    </td>
-                                    <td>
-                                      {issueState(t)}
-                                      <small>
-                                        {t.state === 'CLOSED'
-                                          ? t.stateReason === 'COMPLETED'
-                                            ? '完成后关闭'
-                                            : '关闭原因见 Issue'
-                                          : '以 Issue 原生状态为准'}
-                                      </small>
-                                    </td>
-                                    <td>
-                                      <button
-                                        className="ov-link"
-                                        onClick={() =>
-                                          setDialog({
-                                            kind: 'task',
-                                            title: shortTitle(t.title),
-                                            task: t
-                                          })
-                                        }
-                                      >
-                                        查看 Issue 与 PR 依据 ↗
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                          {taskRows.length > 5 && (
-                            <button className="ov-link" onClick={() => setAllTasks(!allTasks)}>
-                              {allTasks ? '收起' : `展开全部 ${taskRows.length} 项`} ↗
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </section>
-                  </>
-                )}
-                <section className="ov-section">
-                  <SectionTitle
-                    id="records"
-                    title="本版记录"
-                    extra="计划、过程评审与正式验收分别保留"
-                  />
-                  <div className="ov-records">
-                    <Link href={planLink}>计划与纪要</Link>
-                    {!history && (
-                      <button onClick={() => setDialog({ kind: 'review', title: '待审成果' })}>
-                        规格 / 原型评审 ↗
-                      </button>
-                    )}
-                    <button onClick={() => native('版本验收')}>正式验收 ↗</button>
-                    <Link href={`${repository}/pull/${history ? 429 : 446}`}>归档 PR</Link>
-                    {history && <Link href={`${repository}/releases/tag/v0.7.0`}>发布依据</Link>}
-                  </div>
-                </section>
-                <Note>
-                  本页采用 BW 真实材料与 GitHub 快照（
-                  {snapshot.source.checkedAt.slice(0, 16).replace('T', ' ')}{' '}
-                  UTC），不持续联网刷新。未合入设计和已归档承诺分开；会话与新版本试用未读取。原生页面、宿主和菜单能力沿用，仅本版总览重设计。
-                </Note>
-              </>
+            {!unplanned && (
+              <div className="ov-meta">
+                <span>
+                  负责人 ·{' '}
+                  {[
+                    ...new Set(
+                      plan.goals.flatMap((g) => g.owner.split(/[;；]/).map((o) => o.trim()))
+                    )
+                  ].join('、')}
+                </span>
+                <span>{history ? '人工验收 · 2026-10-23' : '计划确认 · 2026-10-27'}</span>
+                <span>交付时间 · {history ? '见验收与发布记录' : '计划未记录'}</span>
+                <Link href={planLink}>计划依据</Link>
+              </div>
             )}
+            {edited && !history && !unplanned && (
+              <Note>当前范围含临时编辑，刷新还原；历史记录不受影响。</Note>
+            )}
+            <OverviewSections
+              selected={selected}
+              unplanned={unplanned}
+              history={history}
+              plan={plan}
+              planLink={planLink}
+              sample={sample}
+              setDialog={setDialog}
+              native={native}
+              openArtifact={openArtifact}
+              openSession={openSession}
+              allTasks={allTasks}
+              setAllTasks={setAllTasks}
+            />
           </div>
         </main>
       </div>
@@ -687,6 +358,69 @@ function App() {
         >
           {dialog.kind === 'references' && <ReferencePanel />}
           {dialog.kind === 'source' && <SourcePanel />}
+          {dialog.kind === 'productivity' && <ProductivityEvidence focus={dialog.focus} />}
+          {dialog.kind === 'workflow-evidence' && (
+            <>
+              <p>项目流程：workbench-start</p>
+              <dl>
+                <dt>使用情况</dt>
+                <dd>待核对</dd>
+                <dt>实际流程修订</dt>
+                <dd>尚未读取</dd>
+                <dt>会话依据</dt>
+                <dd>尚未解析</dd>
+              </dl>
+              <Note>
+                这里展示拟落地的执行依据。BW 开工已有任务、树与会话关联；仍需按会话核对实际使用的
+                workflow，不能仅由项目里存在 Skill
+                推断已使用。是否充分遵循流程与交付质量由下方生产力区域核对。
+              </Note>
+            </>
+          )}
+          {dialog.kind === 'goal-tasks' && (
+            <>
+              <p>
+                {selected.version} · 目标 {dialog.feature.goalId}
+              </p>
+              <div className="ov-records">
+                {plan.tasks
+                  .filter((t) => t.goalId === dialog.feature.goalId)
+                  .map((t) => (
+                    <Link key={t.number} href={`${repository}/issues/${t.number}`}>
+                      #{t.number}
+                    </Link>
+                  ))}
+              </div>
+              <Note>
+                这里只聚合已关联目标的原生 Issue。反馈、新需求和 bug
+                使用同一任务来源与计划关联，不另建反馈清单或两周分流规则。
+              </Note>
+            </>
+          )}
+          {dialog.kind === 'release' && (
+            <>
+              <p>
+                验收候选：Workbench {acceptance.candidateRef.version} ·{' '}
+                <Link href={`${repository}/commit/${acceptance.candidateRef.commit}`}>
+                  {acceptance.candidateRef.commit.slice(0, 8)}
+                </Link>
+              </p>
+              <p>{acceptance.demoEnv.detail}</p>
+              <Link
+                href={`${repository}/blob/${snapshot.source.sourceCommit}/.bw/planning/v0.7/acceptance-evidence.html`}
+              >
+                当时验收报告
+              </Link>
+              <h3>后续补丁</h3>
+              {snapshot.releases
+                .filter((r) => /^v0\.7\.[1-9]/.test(r.tagName))
+                .map((r) => (
+                  <p key={r.tagName}>
+                    <Link href={r.url}>{r.tagName}</Link>
+                  </p>
+                ))}
+            </>
+          )}
           {dialog.kind === 'goal' && (
             <>
               <p>
@@ -698,6 +432,29 @@ function App() {
               <p className="ov-prewrap">{dialog.goal.deliverable}</p>
               <h3>验收依据</h3>
               <p className="ov-prewrap">{dialog.goal.acceptance}</p>
+              {history && (
+                <>
+                  <h3>当时人工结论</h3>
+                  {acceptance.results
+                    .filter((r) => r.goalId === dialog.goal.goalId)
+                    .map((r) => (
+                      <div key={r.goalId}>
+                        <p>
+                          {r.decision?.outcome === 'met'
+                            ? '达成'
+                            : r.decision?.outcome === 'not-met'
+                              ? '未达成'
+                              : '未确认'}{' '}
+                          · {r.decision?.source}
+                        </p>
+                        <p>{r.nextStep}</p>
+                        {Object.values(r.issueNotes || {}).map((note, i) => (
+                          <p key={i}>{note}</p>
+                        ))}
+                      </div>
+                    ))}
+                </>
+              )}
               <h3>关联任务</h3>
               <div className="ov-records">
                 {plan.tasks
@@ -717,7 +474,15 @@ function App() {
                 <div className="ov-review-item" key={f.id}>
                   <strong>{f.title}</strong>
                   <p>意图、规格、旅程与高保真修订待人确认。</p>
-                  <button className="ov-link" onClick={() => openArtifact(f, f.artifacts[1])}>
+                  <button
+                    className="ov-link"
+                    onClick={() =>
+                      openArtifact(
+                        f,
+                        f.artifacts.find((row) => row[4] === 'prototype')
+                      )
+                    }
+                  >
                     打开设计成果 ↗
                   </button>
                   {' · '}
@@ -743,31 +508,9 @@ function App() {
               {dialog.row[5] ? (
                 <Link href={dialog.row[5]}>打开成果</Link>
               ) : (
-                <p>尚未记录可打开的成果，不能据此推断已完成。</p>
+                <p>暂无可打开的成果。</p>
               )}
-              {dialog.row[4] === 'design' && (
-                <p>
-                  <Link
-                    href={
-                      dialog.feature.id === '334'
-                        ? 'prototype.html'
-                        : `${repository}/blob/${dialog.feature.pr.headRefOid}/docs/05-features/overview-metrics/prototype.html`
-                    }
-                  >
-                    高保真原型
-                  </Link>
-                  {' · '}
-                  <Link
-                    href={
-                      dialog.feature.id === '334'
-                        ? 'journey.html'
-                        : `${repository}/blob/${dialog.feature.pr.headRefOid}/docs/05-features/overview-metrics/spec.md`
-                    }
-                  >
-                    旅程与规格
-                  </Link>
-                </p>
-              )}
+
               <p>
                 <button className="ov-link" onClick={() => openSession(dialog.feature)}>
                   继续原生工作会话 ↗
@@ -806,7 +549,8 @@ function App() {
           {dialog.kind === 'task' && (
             <>
               <p>
-                #{dialog.task.number} · {issueState(dialog.task)}
+                #{dialog.task.number} ·{' '}
+                {dialog.task.historical ? '历史处理状态未归档' : issueState(dialog.task)}
               </p>
               <p>原生会话：未知；可用性：尚未核对发布或试用依据。</p>
               <Link href={dialog.task.url}>打开原生 Issue</Link>
@@ -824,27 +568,39 @@ function App() {
                   继续处理此任务
                 </button>
               </p>
-              <h3>Issue 时间线中的 PR 线索</h3>
-              <p className="muted">
-                提及关系供继续核对；不能单凭 PR 出现或合入认定这个问题已解决。
-              </p>
-              {dialog.task.pullRequests
-                .filter((p) => p.number !== 446)
-                .map((p) => (
-                  <p key={p.number}>
-                    <Link href={p.url}>
-                      #{p.number} {p.title}
-                    </Link>{' '}
-                    · {prState(p)}
+              {dialog.task.historical ? (
+                <>
+                  <h3>历史 PR 依据</h3>
+                  <p>当时 PR 关联未归档，本轮未读取。</p>
+                  <Note>
+                    此处只补读了任务名称，没有查询这些历史任务的 PR
+                    时间线，也不以现在的关联重写当时结果。
+                  </Note>
+                </>
+              ) : (
+                <>
+                  <h3>Issue 时间线中的 PR 线索</h3>
+                  <p className="muted">
+                    提及关系供继续核对；不能单凭 PR 出现或合入认定这个问题已解决。
                   </p>
-                ))}
-              {dialog.task.pullRequests.filter((p) => p.number !== 446).length === 0 && (
-                <p>当前读取范围内未发现实施 PR。</p>
+                  {(dialog.task.pullRequests || [])
+                    .filter((p) => p.number !== 446)
+                    .map((p) => (
+                      <p key={p.number}>
+                        <Link href={p.url}>
+                          #{p.number} {p.title}
+                        </Link>{' '}
+                        · {prState(p)}
+                      </p>
+                    ))}
+                  {(dialog.task.pullRequests || []).filter((p) => p.number !== 446).length ===
+                    0 && <p>当前读取范围内未发现实施 PR。</p>}
+                  <Note>
+                    来源为该 Issue 最近 12 条交叉引用，排除本版计划归档 PR；不是完整 PR
+                    发现或自动归因协议。
+                  </Note>
+                </>
               )}
-              <Note>
-                来源为该 Issue 最近 12 条交叉引用，排除本版计划归档 PR；不是完整 PR
-                发现或自动归因协议。
-              </Note>
             </>
           )}
           {dialog.kind === 'task-session' && (
@@ -857,7 +613,9 @@ function App() {
                   #{dialog.task.number} · {shortTitle(dialog.task.title)}
                 </dd>
                 <dt>版本 / 目标</dt>
-                <dd>v0.8 / G4</dd>
+                <dd>
+                  {selected.version} / {dialog.task.goalId}
+                </dd>
                 <dt>会话与工作树</dt>
                 <dd>尚未读取原生登记</dd>
               </dl>
@@ -868,19 +626,6 @@ function App() {
               <Link href="../version-workspace/version-workspace-prototype.html?rev=439-feedback">
                 查看既有任务入口与创建器样式
               </Link>
-            </>
-          )}
-          {dialog.kind === 'trial' && (
-            <>
-              <p>
-                候选包 / 部署、对应提交、可用范围、试用人群、已验证边界、已知问题及反馈 Issue
-                尚未形成完整记录。
-              </p>
-              <p>
-                当前设计目标允许先供部分用户使用，再通过后续 B
-                版本修理完善。试用反馈和规格评审不增加正式版本验收次数。
-              </p>
-              <Note>此处展示缺证据时的真实空态，不用现有 v0.7 发布包冒充 v0.8 MVP。</Note>
             </>
           )}
           {dialog.kind === 'native' && (
@@ -933,7 +678,11 @@ function App() {
                 value={editing}
                 onChange={(e) => setEditing(e.target.value)}
               />
-              {editError && <p role="alert">{editError}</p>}
+              {editError && (
+                <p className="ov-error" role="alert">
+                  {editError}
+                </p>
+              )}
               <button className="ov-primary" onClick={applyEdits}>
                 应用到预览
               </button>
