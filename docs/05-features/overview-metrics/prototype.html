@@ -332,12 +332,12 @@ show("v07");
 // trend: 最近四个版本，最后一格是本版至今；null 表示那一版没有读数
 const SCENES = {
   align: {
-    wig: "准备期修改程度　从 40% 到 ≤15%　截至 v0.7 验收",
+    wig: "需求对齐会议耗时　从 40 分钟到 <15 分钟　截至 v0.7 验收",
     value: "版本开始时，把 Top3 承诺写成 Leader 不翻聊天记录也能评审的样子，确认后落成真实任务。",
     measures: [
-      { role: "结果", name: "准备期修改程度", num: "33%", pace: "完成线 ≤15%", state: "behind", stateText: "未达完成线",
-        trend: [45, 40, 36, 33], labels: ["v0.4", "v0.5", "v0.6", "v0.7"], unit: "%",
-        def: "越低越好。AI 生成初始版本后、Leader 确认前，人改过描述、验收标准或范围的目标数（删掉、新增也算）÷ 初始版本目标数。从计划文件的提交历史现算。" },
+      { role: "结果", name: "需求对齐会议耗时", num: "33分钟", pace: "完成线 <15分钟", state: "behind", stateText: "未达完成线",
+        trend: [45, 40, 36, 33], labels: ["v0.4", "v0.5", "v0.6", "v0.7"], unit: "分钟",
+        def: "越短越好。需求对齐会议从开始到 Leader 确认 Top3 承诺的实际时长，时间目标小于 15 分钟。" },
       { role: "引领", name: "准备耗时", num: "3.5h", pace: "完成线 ≤3h", state: "behind", stateText: "未达完成线",
         trend: [5.5, 4.5, 4, 3.5], labels: ["v0.4", "v0.5", "v0.6", "v0.7"], unit: "h",
         def: "越短越好。从 Builder 开始准备，到 Leader 确认 Top3，Builder 实际投入的小时数。" }
