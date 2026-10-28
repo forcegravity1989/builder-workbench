@@ -1,4 +1,4 @@
-import { Feature, SectionTitle, HintButton } from './overview-components.jsx'
+import { Feature, SectionTitle } from './overview-components.jsx'
 import { repository, historicalFeatures, acceptanceForVersion } from './overview-data.js'
 // eslint-disable-next-line no-unused-vars
 const { React } = window.BWPrototypeDependencies
@@ -78,10 +78,6 @@ export function OverviewSections({
                     目标任务 · {tasks.length} 项 ↗
                   </button>
                 </div>
-                <details className="ov-goal-scope">
-                  <summary>本版范围</summary>
-                  <p className="ov-prewrap">{goal.deliverable || '计划未记录交付范围'}</p>
-                </details>
                 {result && (
                   <div className="ov-goal-conclusion">
                     <span>人工验收 · {result.decision?.source || '来源未记录'}</span>
@@ -123,73 +119,15 @@ export function OverviewSections({
 
       <section className="ov-section" aria-labelledby="productivity">
         <SectionTitle id="productivity" title="AI workflow 生产力" extra="Builder Workbench" />
-        <div className="ov-workflow-heading">
-          <strong>workbench-start</strong>
-          <span className="muted">0 个统计样本</span>
-        </div>
         <p className="ov-note">
-          原型注释: 演示尚无统计样本；0 是纳入样本数，不代表 BW 没有使用
-          AI。真实会话解析尚未接入，读取失败应显示未知。
+          原型注释: 本轮仅保留指标布局占位；具体指标与统计由 workflow 专项确定，不显示模拟数值。
         </p>
         <div className="ov-productivity-metrics">
-          {[
-            [
-              '流程使用覆盖',
-              '已核对任务中，有会话记录证明使用了项目 AI 流程的任务占比。未核对的任务单独列出，不计入分母。'
-            ],
-            [
-              '首次交付可合入',
-              '已有首次评审结论的交付中，无需返工且通过质量检查、经人确认可以合入的占比。尚未评审的交付不计入。'
-            ],
-            [
-              '追加人工介入',
-              '初始信息提交后，人参与澄清、设计评审、真机验证等协作的次数。按参与原因分别统计；必要协作不视为质量问题。'
-            ],
-            [
-              '返工轮次',
-              '同一次交付被要求修改后，重新提交评审的轮数。同一批意见算一轮，并区分需求变化、实现缺陷和验证遗漏。'
-            ]
-          ].map(([label, hint], i) => (
-            <HintButton key={label} id={`metric-${i}`} text={hint} className="ov-metric-tip">
-              <span>{label} ⓘ</span>
+          {[1, 2, 3, 4].map((id) => (
+            <div className="ov-metric-placeholder" key={id}>
+              <span>指标待定</span>
               <strong>—</strong>
-              <small>暂无样本</small>
-            </HintButton>
-          ))}
-        </div>
-        <div className="ov-interventions">
-          {[
-            [
-              '初始输入',
-              '文字、截图、附件与约束',
-              '开工时提供的需求、截图、附件和约束，作为本次交付的初始条件，不计入追加人工介入。'
-            ],
-            [
-              '需求澄清',
-              'askuser 与人工回答',
-              '执行中为明确需求而提出的问题及人的回答。必要澄清与信息遗漏导致的追加沟通分别记录。'
-            ],
-            [
-              '原型评审',
-              '设计批注与修订',
-              '人对原型提出意见、确认或要求修改的过程。首次评审本身不算返工，同一批批注归为一轮。'
-            ],
-            [
-              '真机验证',
-              '验证报告、截图与复验',
-              '人在实际设备上对指定候选版本进行验证，保留环境、报告和结论。截图本身不代表验证通过。'
-            ]
-          ].map(([label, description, hint], i) => (
-            <HintButton
-              key={label}
-              id={`intervention-${i}`}
-              text={hint}
-              className="ov-intervention-tip"
-            >
-              <strong>{label}</strong>
-              <span>{description}</span>
-              <small>暂无样本</small>
-            </HintButton>
+            </div>
           ))}
         </div>
       </section>

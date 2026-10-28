@@ -1001,19 +1001,6 @@
 .ov-other-tasks button {
   font-size: 11px;
 }
-.ov-goal-scope {
-  font-size: 12px;
-  margin: 10px 0 14px;
-}
-.ov-goal-scope summary {
-  cursor: pointer;
-  color: var(--muted-foreground);
-  width: fit-content;
-}
-.ov-goal-scope p {
-  line-height: 1.7;
-  margin: 8px 0;
-}
 .ov-goal-conclusion {
   padding: 9px 0;
   border-top: 1px dashed var(--border);
@@ -1071,4 +1058,17 @@
     flex-wrap: wrap;
     gap: 6px;
   }
+}
+
+.ov-metric-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 4px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.ov-metric-placeholder strong {
+  font-size: 20px;
+  font-weight: 500;
 }

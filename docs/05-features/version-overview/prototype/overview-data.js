@@ -4,7 +4,7 @@ export const repository = snapshot.source.repository
 export const acceptanceForVersion = (version) =>
   snapshot.acceptance.version === version ? snapshot.acceptance : null
 export const baseline = snapshot.source.sourceCommit
-export const revision = '334-draft-9'
+export const revision = '334-draft-10'
 export const scenarios = [
   { id: 'unplanned', label: '版本计划未制定', version: 'v0.9' },
   { id: 'during', label: '版本计划制定完（版本中）', version: 'v0.8' },
