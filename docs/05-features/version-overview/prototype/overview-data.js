@@ -2,13 +2,33 @@ import snapshot from './bw-snapshot.json'
 export { snapshot }
 export const repository = snapshot.source.repository
 export const baseline = snapshot.source.sourceCommit
-export const revision = '334-draft-4'
+export const revision = '334-draft-5'
 export const scenarios = [
   { id: 'unplanned', label: '版本计划未制定', version: 'v0.9' },
   { id: 'during', label: '版本计划制定完（版本中）', version: 'v0.8' },
   { id: 'delivered', label: '版本交付后', version: 'v0.7' }
 ]
-export const stages = ['意图规划', '设计', '开发', '测试', '上线', '反馈维护']
+// Dates identify submitted drafts in these PRs, not human approval or production delivery.
+const draftEvidence = {
+  334: {
+    at: '2026-10-27T11:45:27Z',
+    commit: '870c0e5ef8afa0105ae355d1ffb144ad816d4a42',
+    paths: {
+      intent: 'docs/05-features/version-workspace/intent.md',
+      spec: 'docs/05-features/version-workspace/spec.md',
+      prototype: 'docs/05-features/version-workspace/version-overview-prototype.html'
+    }
+  },
+  440: {
+    at: '2026-10-27T11:47:06Z',
+    commit: '1630bc35530fcbee6de03c8d29afaa509c1ebbfe',
+    paths: {
+      intent: 'docs/05-features/overview-metrics/intent.md',
+      spec: 'docs/05-features/overview-metrics/spec.md',
+      prototype: 'docs/05-features/overview-metrics/prototype.html'
+    }
+  }
+}
 export const shortTitle = (title) => title.replace(/^【[^】]+】\s*/, '')
 export const issueState = (issue) => (issue.state === 'CLOSED' ? '已关闭' : '开放')
 export const prState = (pr) =>
@@ -38,6 +58,7 @@ export const features = ['334', '440'].map((id) => {
   const prefix = `${repository}/blob/${pr.headRefOid}/docs/05-features/overview-metrics/`
   return {
     id,
+    draftEvidence: draftEvidence[id],
     goalId: 'G2',
     title: own ? '版本总览重设计' : '项目总览里程碑规划',
     owner: issue.assignees.join('、') || snapshot.plan.goals.find((g) => g.goalId === 'G2').owner,
@@ -49,7 +70,6 @@ export const features = ['334', '440'].map((id) => {
       .deliverable.split('\n')
       [own ? 1 : 0].replace(/^\d+\.\s*/, ''),
     stage: '设计 · 原型评审',
-    currentStage: '设计',
     next: '审阅原型设计',
     reviewKeys: ['prototype'],
     pr,
@@ -118,7 +138,6 @@ export const historicalFeatures = [
   owner: snapshot.priorPlan.goals.find((g) => g.goalId === 'G2').owner,
   purpose: f.scope,
   stage: '当时阶段未归档',
-  currentStage: null,
   next: '查看本版计划依据',
   reviewKeys: ['commitment'],
   artifacts: [
@@ -145,14 +164,13 @@ export const historicalFeatures = [
 // Local preview projection from explicit plan task references, not a shared version schema.
 export function relatedVersions(featureId) {
   return [
-    { scene: 'during', version: 'v0.8', plan: snapshot.plan, commit: baseline },
+    { scene: 'during', version: 'v0.8', plan: snapshot.plan },
     {
       scene: 'delivered',
       version: 'v0.7',
-      plan: snapshot.priorPlan,
-      commit: snapshot.acceptance.planRef.sourceCommit
+      plan: snapshot.priorPlan
     }
-  ].flatMap(({ scene, version, plan, commit }) => {
+  ].flatMap(({ scene, version, plan }) => {
     const task = plan.tasks.find(
       (t) =>
         t.provider === 'github' &&
@@ -168,12 +186,9 @@ export function relatedVersions(featureId) {
       {
         scene,
         version,
-        goalId: task.goalId,
         scope: increment || goal.title,
         scopeLabel: increment ? '本版承担' : '关联目标',
-        separateScope: Boolean(increment),
-        source: material(version, 'data', commit),
-        revision: commit.slice(0, 8)
+        separateScope: Boolean(increment)
       }
     ]
   })

@@ -1,12 +1,6 @@
+import { FeatureTimeline } from './overview-timeline.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
-import {
-  repository,
-  baseline,
-  stages,
-  snapshot,
-  material,
-  relatedVersions
-} from './overview-data.js'
+import { repository, baseline, snapshot, material, relatedVersions } from './overview-data.js'
 // Official references are design inputs; they do not define BW's workflow or persistence.
 export function ReferencePanel() {
   return (
@@ -48,6 +42,18 @@ export function ReferencePanel() {
         rel="noreferrer"
       >
         Pull request reviews · 官方文档 ↗
+      </a>
+      <p>
+        原型注释: 沿用 GitHub 对 Pre-release 与正式 Release 的区分。本项目按用户确认，将 Pre
+        命名用于此前的 MVP 试用交付；实际包、使用范围与需求归属仍需证据。时间轴沿 Claude
+        六阶段，测试贯穿开发与发布，不强制串行。
+      </p>
+      <a
+        href="https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Managing releases · 官方文档 ↗
       </a>
       <h3>LaunchDarkly · 逐步向使用者开放</h3>
       <p>
@@ -123,6 +129,25 @@ export function SectionTitle({ id, title, extra }) {
   )
 }
 
+export function HintButton({ id, text, className = '', current = false, onClick, children }) {
+  return (
+    <span className="ov-hint">
+      <button
+        type="button"
+        className={className}
+        aria-describedby={id}
+        aria-current={current ? 'page' : undefined}
+        onClick={onClick}
+      >
+        {children}
+      </button>
+      <span id={id} className="ov-tooltip" role="tooltip">
+        {text}
+      </span>
+    </span>
+  )
+}
+
 export function Feature({
   feature,
   openArtifact,
@@ -132,8 +157,6 @@ export function Feature({
   openVersion
 }) {
   const [expanded, setExpanded] = window.BWPrototypeDependencies.useState(false)
-  const [versionsExpanded, setVersionsExpanded] = window.BWPrototypeDependencies.useState(false)
-  const [stage, setStage] = window.BWPrototypeDependencies.useState(feature.currentStage)
   const cardRef = useRef(null)
   const toggleRef = useRef(null)
   const versions = relatedVersions(feature.id)
@@ -148,7 +171,6 @@ export function Feature({
     })
     return () => cancelAnimationFrame(frame)
   }, [focusRequest, feature.id, setExpanded])
-  const rows = stage ? feature.artifacts.filter((row) => row[0] === stage) : feature.artifacts
   return (
     <article ref={cardRef} className="ov-feature" aria-label={feature.title}>
       <div className="ov-feature-head">
@@ -197,77 +219,22 @@ export function Feature({
             <span className="ov-label">整体目标</span>
             <span>{feature.purpose}</span>
           </div>
-          <div className="ov-related-versions">
-            <button
-              className="ov-related-toggle"
-              aria-expanded={versionsExpanded}
-              onClick={() => setVersionsExpanded(!versionsExpanded)}
-            >
-              <ChevronRight size={14} className={versionsExpanded ? 'ov-rotate' : ''} />
-              关联版本 <span className="muted">{versions.length}</span>
-            </button>
-            {versionsExpanded && (
-              <div>
-                {versions.map((v) => (
-                  <div className="ov-related-version" key={v.version}>
-                    <div className="ov-related-heading">
-                      <strong>{v.version}</strong>
-                      <span className="muted">目标 {v.goalId}</span>
-                      {v.version === selectedVersion ? (
-                        <span className="ov-chip">当前查看</span>
-                      ) : (
-                        <button
-                          className="ov-link"
-                          onClick={() => openVersion(v.scene, feature.id)}
-                        >
-                          进入 {v.version} 并定位需求 ↗
-                        </button>
-                      )}
-                    </div>
-                    <p>
-                      <span className="ov-label">{v.scopeLabel}</span> {v.scope}
-                    </p>
-                    {!v.separateScope && <p className="muted">计划未单列此需求的交付增量</p>}
-                    <a href={v.source} target="_blank" rel="noreferrer">
-                      计划依据 · {v.revision} ↗
-                    </a>
-                  </div>
-                ))}
-                <p className="ov-note">
-                  原型注释:
-                  仅列已核对计划中的明确任务关联，不代表完整跨版历史；本版验收不等于需求整体完成。
-                </p>
-              </div>
-            )}
-          </div>
-          <div className="ov-stages" aria-label={`${feature.title}成果类别`}>
-            <button aria-pressed={stage === null} onClick={() => setStage(null)}>
-              全部成果
-            </button>
-            {stages.map((name) => (
-              <button key={name} aria-pressed={stage === name} onClick={() => setStage(name)}>
-                {name}
-              </button>
-            ))}
-          </div>
-          <div className="ov-artifacts">
-            {rows.map((row) => (
-              <button
-                key={row[4]}
-                className="ov-artifact"
-                onClick={() => openArtifact(feature, row)}
+          <div className="ov-version-tags" aria-label="关联版本">
+            <span className="ov-label">关联版本</span>
+            {versions.map((v) => (
+              <HintButton
+                key={v.version}
+                id={`version-${feature.id}-${v.version}`}
+                text={`${v.scopeLabel}：${v.scope}${v.separateScope ? '' : '；计划未单列此需求增量'}`}
+                className="ov-version-tag"
+                current={v.version === selectedVersion}
+                onClick={() => openVersion(v.scene, feature.id)}
               >
-                <span className="ov-label">{row[0]}</span>
-                <span>
-                  <strong>{row[1]}</strong>
-                  <small>{row[3]}</small>
-                </span>
-                <span className="ov-chip">{row[2]}</span>
-                <ArrowUpRight size={15} />
-              </button>
+                {v.version}
+              </HintButton>
             ))}
           </div>
-          {stage && rows.length === 0 && <p className="ov-inline-empty">此阶段尚无已记录成果</p>}
+          <FeatureTimeline feature={feature} openArtifact={openArtifact} />
           <div className="ov-feature-bottom">
             <button
               className="ov-link"

@@ -1,4 +1,4 @@
-import { OverviewSections, ProductivityEvidence } from './overview-sections.jsx'
+import { OverviewSections } from './overview-sections.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import { Dialog, SourcePanel, ReferencePanel } from './overview-components.jsx'
 import {
@@ -491,7 +491,6 @@ function App() {
             </>
           )}
           {dialog.kind === 'source' && <SourcePanel />}
-          {dialog.kind === 'productivity' && <ProductivityEvidence focus={dialog.focus} />}
           {dialog.kind === 'workflow-evidence' && (
             <>
               <p>项目流程：workbench-start</p>
@@ -628,6 +627,22 @@ function App() {
             <>
               <span className="ov-chip">{dialog.row[2]}</span>
               <p>{dialog.row[3]}</p>
+              {dialog.feature.draftEvidence &&
+                ['intent', 'spec', 'prototype'].includes(dialog.row[4]) && (
+                  <p>
+                    本 PR 初稿提交：
+                    <time dateTime={dialog.feature.draftEvidence.at}>
+                      {dialog.feature.draftEvidence.at}
+                    </time>{' '}
+                    ·{' '}
+                    <Link
+                      href={`${repository}/blob/${dialog.feature.draftEvidence.commit}/${dialog.feature.draftEvidence.paths[dialog.row[4]]}`}
+                    >
+                      当时修订
+                    </Link>
+                    。当前认可状态仍见上方，不由提交日期推定。
+                  </p>
+                )}
               <dl>
                 <dt>需求</dt>
                 <dd>

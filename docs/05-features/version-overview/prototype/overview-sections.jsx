@@ -1,4 +1,4 @@
-import { Feature, SectionTitle } from './overview-components.jsx'
+import { Feature, SectionTitle, HintButton } from './overview-components.jsx'
 import {
   snapshot,
   repository,
@@ -198,38 +198,71 @@ export function OverviewSections({
         <div className="ov-workflow-heading">
           <strong>workbench-start</strong>
           <span className="muted">尚无会话统计</span>
-          <button
-            className="ov-link"
-            onClick={() => setDialog({ kind: 'productivity', title: 'AI workflow 统计依据' })}
-          >
-            统计口径与证据 ↗
-          </button>
         </div>
+        <p className="ov-note">
+          原型注释:
+          尚未解析会话，数值留空。悬停或键盘聚焦指标可看口径；必要的澄清、评审和验证不直接算返工，不用
+          Issue 关闭率评价 AI 质量。
+        </p>
         <div className="ov-productivity-metrics">
-          {['流程使用覆盖', '首次交付可合入', '追加人工介入', '返工轮次'].map((label) => (
-            <div key={label}>
-              <span>{label}</span>
+          {[
+            [
+              '流程使用覆盖',
+              '有实际使用项目流程依据的任务 / 已核对任务，同时列未核对数；配置了 Skill 不等于已使用。'
+            ],
+            [
+              '首次交付可合入',
+              '完整交付后的首次人工评审可接受比例，须有评审结论和质量门禁；PR 合入、Issue 关闭和 AI 自述不能替代。'
+            ],
+            [
+              '追加人工介入',
+              '保留初始信息，区分后续澄清、原型评审、真机验证及其他介入的次数、等待和原因。'
+            ],
+            [
+              '返工轮次',
+              '同一次交付被要求修正后的轮次，区分需求变化、实现缺陷与验证遗漏；一批批注不机械算多轮。'
+            ]
+          ].map(([label, hint], i) => (
+            <HintButton
+              key={label}
+              id={`metric-${i}`}
+              text={`原型注释: ${hint}`}
+              className="ov-metric-tip"
+            >
+              <span>{label} ⓘ</span>
               <strong>—</strong>
-            </div>
+            </HintButton>
           ))}
         </div>
         <div className="ov-interventions">
           {[
-            ['初始输入', '文字、截图、附件与约束'],
-            ['需求澄清', 'askuser 与人工回答'],
-            ['原型评审', '设计批注与修订'],
-            ['真机验证', '验证报告、截图与复验']
-          ].map(([label, description]) => (
-            <button
+            ['初始输入', '文字、截图、附件与约束', '作为初始上下文保留，不直接算追加介入或返工。'],
+            [
+              '需求澄清',
+              'askuser 与人工回答',
+              '区分必要澄清与遗漏导致的追加沟通，不能单凭提问次数判断质量。'
+            ],
+            [
+              '原型评审',
+              '设计批注与修订',
+              '必要的首次评审不直接算返工；多条批注可属于同一修订轮次。'
+            ],
+            [
+              '真机验证',
+              '验证报告、截图与复验',
+              '核对候选、环境和人工结论；有图片引用不等于已通过真机验证。'
+            ]
+          ].map(([label, description, hint], i) => (
+            <HintButton
               key={label}
-              onClick={() =>
-                setDialog({ kind: 'productivity', title: 'AI workflow 统计依据', focus: label })
-              }
+              id={`intervention-${i}`}
+              text={`原型注释: ${hint}`}
+              className="ov-intervention-tip"
             >
               <strong>{label}</strong>
               <span>{description}</span>
               <small>未统计</small>
-            </button>
+            </HintButton>
           ))}
         </div>
       </section>
@@ -257,48 +290,6 @@ export function OverviewSections({
           )}
         </div>
       </section>
-    </>
-  )
-}
-
-export function ProductivityEvidence({ focus }) {
-  return (
-    <>
-      {focus && (
-        <p>
-          <strong>{focus}</strong>
-        </p>
-      )}
-      <p>
-        按项目 workflow 及其修订观察处理质量；统计单位为同一 Issue
-        的一次处理过程，可包含多个关联会话。
-      </p>
-      <dl>
-        <dt>流程使用覆盖</dt>
-        <dd>
-          有实际调用或执行依据的任务 / 已核对任务；同时列出未核对数量。配置了 Skill 不等于已经使用。
-        </dd>
-        <dt>首次交付可合入</dt>
-        <dd>
-          完整交付后首次人工评审即可接受的比例；需要评审结论和质量门禁证据，不以 Issue 关闭、PR
-          已合入或 AI 自述代替。
-        </dd>
-        <dt>人工介入</dt>
-        <dd>
-          保留初始输入；后续区分需求澄清、原型评审、真机验证与其他介入，分别看次数、等待与原因。
-        </dd>
-        <dt>返工</dt>
-        <dd>
-          同一次交付被要求修正后的轮次，区分需求变化、实现缺陷、验证遗漏。必要的首次评审不直接算作返工。
-        </dd>
-      </dl>
-      <p>
-        比较同类任务和相同必需步骤；人工介入与返工减少时，仍需质量门禁通过。任务未关闭也可以已有可评审交付。
-      </p>
-      <p className="ov-note">
-        原型注释:
-        此区域是拟落地的独立统计视图。本轮未解析会话，数值为空；未来复用原生会话、提问和批注记录提取候选，脚本无法判断的原因保留待核对。统计口径待审，未新增采集器或持久化协议。
-      </p>
     </>
   )
 }
