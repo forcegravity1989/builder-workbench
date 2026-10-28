@@ -196,11 +196,11 @@ export function VersionBridge({ item, version, plan, close }) {
       <footer>
         <a
           className="btn btn-secondary"
-          href="../version-workspace/version-workspace-prototype.html"
+          href="../version-overview/prototype.html"
           target="_blank"
           rel="noreferrer"
         >
-          查看版本工作区原型 ↗
+          查看版本总览原型 ↗
         </a>
         <button className="btn btn-primary" onClick={close}>
           返回来源视图
