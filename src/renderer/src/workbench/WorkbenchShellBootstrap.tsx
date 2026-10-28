@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useAppStore } from '@/store'
 import { isWorkbenchShell } from './is-workbench-shell'
 
-/** Force light + claude tokens; keep left nav open; land on plan when idle terminal. */
+/** claude tokens; keep left nav open; land on plan when idle terminal. */
 export function WorkbenchShellBootstrap(): null {
   useEffect(() => {
     if (!isWorkbenchShell()) {
@@ -10,8 +10,8 @@ export function WorkbenchShellBootstrap(): null {
     }
     document.documentElement.setAttribute('data-skin', 'ds')
     document.documentElement.setAttribute('data-theme', 'claude')
-    document.documentElement.classList.remove('dark')
-    document.documentElement.classList.add('light')
+    // Why: theme classes (.dark/.light) belong to useDocumentAppearance so
+    // settings.theme drives the shell; forcing light here stranded dark (#354).
 
     const state = useAppStore.getState()
     // Why: Workbench nav lives in the left sidebar; a collapsed rail
