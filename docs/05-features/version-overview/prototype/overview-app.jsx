@@ -3,14 +3,12 @@ import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx
 import { Dialog, SourcePanel, ReferencePanel } from './overview-components.jsx'
 import {
   snapshot,
+  acceptanceForVersion,
   repository,
   revision,
   scenarios,
   features,
   historicalFeatures,
-  shortTitle,
-  issueState,
-  prState,
   material
 } from './overview-data.js'
 const {
@@ -48,7 +46,6 @@ function App() {
     return scenarios.some((s) => s.id === value) ? value : 'during'
   })
   const [dialog, setDialog] = useState(null)
-  const [allTasks, setAllTasks] = useState(false)
   const [dark, setDark] = useState(false)
   const [sample, setSample] = useState(features)
   const [editing, setEditing] = useState('')
@@ -81,12 +78,11 @@ function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light'
   }, [dark])
-  function native(route) {
-    setDialog({ kind: 'native', title: `原型注释: ${route}入口`, route })
+  function native(route, goal = null, feature = null) {
+    setDialog({ kind: 'native', title: `原型注释: ${route}入口`, route, goal, feature })
   }
   function openVersion(scene, id = null) {
     setScenario(scene)
-    setAllTasks(false)
     setDialog(null)
     setFocusRequest(id ? { id, sequence: (focusRequest?.sequence || 0) + 1 } : null)
     mainRef.current?.scrollTo({ top: 0 })
@@ -99,16 +95,9 @@ function App() {
     setNavigationDraft({ ...returnContext })
     setDialog({ kind: 'navigation', title: '原型注释: 返回来源上下文', returned: true })
   }
-  function openArtifact(feature, row) {
-    if (row[4] === 'issues') {
-      setDialog({ kind: 'goal-tasks', title: '本版目标关联任务', feature })
-      return
-    }
-    setDialog({ kind: 'artifact', title: row[1], feature, row })
-  }
   function openSession(feature) {
     if (feature.historical) {
-      native('历史任务与会话')
+      native('历史任务与会话', null, feature)
       return
     }
     setDialog({ kind: 'session', title: `工作会话 · #${feature.id}`, feature })
@@ -144,7 +133,7 @@ function App() {
             )
         )
       ) {
-        throw new Error('保留两个需求的 id，各文字字段不可为空。')
+        throw new Error('保留两个特性的 id，各文字字段不可为空。')
       }
       setSample(
         next.map((f, i) => ({
@@ -377,12 +366,12 @@ function App() {
             {missingFocus && (
               <div className="ov-focus-missing" role="status">
                 <Link href={`${repository}/issues/${focusRequest.id}`}>
-                  来源需求 #{focusRequest.id}
+                  来源特性 #{focusRequest.id}
                 </Link>
                 <span>
                   {unplanned
-                    ? '本版尚未制定计划，未确认该需求的本版范围'
-                    : '已读取的本版计划中未发现该需求关联'}
+                    ? '本版尚未制定计划，未确认该特性的本版范围'
+                    : '已读取的本版计划中未发现该特性关联'}
                 </span>
               </div>
             )}
@@ -395,10 +384,7 @@ function App() {
               sample={sample}
               setDialog={setDialog}
               native={native}
-              openArtifact={openArtifact}
               openSession={openSession}
-              allTasks={allTasks}
-              setAllTasks={setAllTasks}
               focusRequest={focusRequest}
               openVersion={openVersion}
             />
@@ -448,7 +434,7 @@ function App() {
                   </select>
                 </label>
                 <label>
-                  原型注释: 来源需求
+                  原型注释: 来源特性
                   <select
                     value={navigationDraft.featureId}
                     onChange={(e) =>
@@ -481,54 +467,16 @@ function App() {
               )}
               <p>
                 <button className="ov-primary" onClick={enterFromSource}>
-                  进入所选版本并定位需求
+                  进入所选版本并定位特性
                 </button>
               </p>
               <Note>
                 版本按项目实际名称定位；不强制
-                C/B，也不按日期推断所属关系。未纳入计划的来源需求仅作为定位上下文，不补造本版承诺。
+                C/B，也不按日期推断所属关系。未纳入计划的来源特性仅作为定位上下文，不补造本版承诺。
               </Note>
             </>
           )}
           {dialog.kind === 'source' && <SourcePanel />}
-          {dialog.kind === 'workflow-evidence' && (
-            <>
-              <p>项目流程：workbench-start</p>
-              <dl>
-                <dt>使用情况</dt>
-                <dd>待核对</dd>
-                <dt>实际流程修订</dt>
-                <dd>尚未读取</dd>
-                <dt>会话依据</dt>
-                <dd>尚未解析</dd>
-              </dl>
-              <Note>
-                这里展示拟落地的执行依据。BW 开工已有任务、树与会话关联；仍需按会话核对实际使用的
-                workflow，不能仅由项目里存在 Skill
-                推断已使用。是否充分遵循流程与交付质量由下方生产力区域核对。
-              </Note>
-            </>
-          )}
-          {dialog.kind === 'goal-tasks' && (
-            <>
-              <p>
-                {selected.version} · 目标 {dialog.feature.goalId}
-              </p>
-              <div className="ov-records">
-                {plan.tasks
-                  .filter((t) => t.goalId === dialog.feature.goalId)
-                  .map((t) => (
-                    <Link key={t.number} href={`${repository}/issues/${t.number}`}>
-                      #{t.number}
-                    </Link>
-                  ))}
-              </div>
-              <Note>
-                这里只聚合已关联目标的原生 Issue。反馈、新需求和 bug
-                使用同一任务来源与计划关联，不另建反馈清单或两周分流规则。
-              </Note>
-            </>
-          )}
           {dialog.kind === 'release' && (
             <>
               <p>
@@ -564,11 +512,11 @@ function App() {
               <p className="ov-prewrap">{dialog.goal.deliverable}</p>
               <h3>验收依据</h3>
               <p className="ov-prewrap">{dialog.goal.acceptance}</p>
-              {history && (
+              {acceptanceForVersion(selected.version) && (
                 <>
                   <h3>当时人工结论</h3>
-                  {acceptance.results
-                    .filter((r) => r.goalId === dialog.goal.goalId)
+                  {acceptanceForVersion(selected.version)
+                    .results.filter((r) => r.goalId === dialog.goal.goalId)
                     .map((r) => (
                       <div key={r.goalId}>
                         <p>
@@ -587,102 +535,12 @@ function App() {
                     ))}
                 </>
               )}
-              <h3>关联任务</h3>
-              <div className="ov-records">
-                {plan.tasks
-                  .filter((t) => t.goalId === dialog.goal.goalId)
-                  .map((t) => (
-                    <Link href={`${repository}/issues/${t.number}`} key={t.number}>
-                      #{t.number}
-                    </Link>
-                  ))}
-              </div>
-              <Link href={planLink}>固定计划原文</Link>
-            </>
-          )}
-          {dialog.kind === 'review' && (
-            <>
-              {sample.map((f) => (
-                <div className="ov-review-item" key={f.id}>
-                  <strong>{f.title}</strong>
-                  <p>意图、规格、旅程与高保真修订待人确认。</p>
-                  <button
-                    className="ov-link"
-                    onClick={() =>
-                      openArtifact(
-                        f,
-                        f.artifacts.find((row) => row[4] === 'prototype')
-                      )
-                    }
-                  >
-                    打开设计成果 ↗
-                  </button>
-                  {' · '}
-                  <Link href={f.pr.url}>PR #{f.pr.number}</Link>
-                </div>
-              ))}
-            </>
-          )}
-          {dialog.kind === 'artifact' && (
-            <>
-              <span className="ov-chip">{dialog.row[2]}</span>
-              <p>{dialog.row[3]}</p>
-              {dialog.feature.draftEvidence &&
-                ['intent', 'spec', 'prototype'].includes(dialog.row[4]) && (
-                  <p>
-                    本 PR 初稿提交：
-                    <time dateTime={dialog.feature.draftEvidence.at}>
-                      {dialog.feature.draftEvidence.at}
-                    </time>{' '}
-                    ·{' '}
-                    <Link
-                      href={`${repository}/blob/${dialog.feature.draftEvidence.commit}/${dialog.feature.draftEvidence.paths[dialog.row[4]]}`}
-                    >
-                      当时修订
-                    </Link>
-                    。当前认可状态仍见上方，不由提交日期推定。
-                  </p>
-                )}
-              <dl>
-                <dt>需求</dt>
-                <dd>
-                  <Link href={`${repository}/issues/${dialog.feature.id}`}>
-                    #{dialog.feature.id}
-                  </Link>
-                </dd>
-                <dt>来源</dt>
-                <dd>{dialog.row[3]}</dd>
-              </dl>
-              {['prototype', 'spec'].includes(dialog.row[4]) ? (
-                <div>
-                  <p>共同评审资料</p>
-                  {dialog.feature.artifacts
-                    .filter((row) => ['prototype', 'spec'].includes(row[4]))
-                    .map((row) => (
-                      <p key={row[4]}>
-                        <Link href={row[5]}>{row[1]}</Link>{' '}
-                        <span className="ov-chip">{row[2]}</span>
-                      </p>
-                    ))}
-                </div>
-              ) : dialog.row[5] ? (
-                <Link href={dialog.row[5]}>打开成果</Link>
-              ) : dialog.row[4] === 'plan' ? (
-                <p>
-                  详细设计与 Plan 从原生工作会话查看。当前尚未核对会话记录，不能据此判断没有 Plan。
-                </p>
-              ) : (
-                <p>暂无可打开的成果。</p>
-              )}
-
               <p>
-                <button className="ov-link" onClick={() => openSession(dialog.feature)}>
-                  继续原生工作会话 ↗
+                <button className="ov-link" onClick={() => native('目标任务', dialog.goal)}>
+                  打开本目标任务屏 ↗
                 </button>
               </p>
-              {dialog.row[4] === 'test' && (
-                <Note>CI 对应上面标明的已提交修订，不代表当前本地改稿或用户可用性已通过验证。</Note>
-              )}
+              <Link href={planLink}>固定计划原文</Link>
             </>
           )}
           {dialog.kind === 'session' && (
@@ -710,88 +568,6 @@ function App() {
               </Link>
             </>
           )}
-          {dialog.kind === 'task' && (
-            <>
-              <p>
-                #{dialog.task.number} ·{' '}
-                {dialog.task.historical ? '历史处理状态未归档' : issueState(dialog.task)}
-              </p>
-              <p>原生会话：未知；可用性：尚未核对发布或试用依据。</p>
-              <Link href={dialog.task.url}>打开原生 Issue</Link>
-              <p>
-                <button
-                  className="ov-primary"
-                  onClick={() =>
-                    setDialog({
-                      kind: 'task-session',
-                      title: `原型注释: 原生任务开工 · #${dialog.task.number}`,
-                      task: dialog.task
-                    })
-                  }
-                >
-                  继续处理此任务
-                </button>
-              </p>
-              {dialog.task.historical ? (
-                <>
-                  <h3>历史 PR 依据</h3>
-                  <p>当时 PR 关联未归档，本轮未读取。</p>
-                  <Note>
-                    此处只补读了任务名称，没有查询这些历史任务的 PR
-                    时间线，也不以现在的关联重写当时结果。
-                  </Note>
-                </>
-              ) : (
-                <>
-                  <h3>Issue 时间线中的 PR 线索</h3>
-                  <p className="muted">
-                    提及关系供继续核对；不能单凭 PR 出现或合入认定这个问题已解决。
-                  </p>
-                  {(dialog.task.pullRequests || [])
-                    .filter((p) => p.number !== 446)
-                    .map((p) => (
-                      <p key={p.number}>
-                        <Link href={p.url}>
-                          #{p.number} {p.title}
-                        </Link>{' '}
-                        · {prState(p)}
-                      </p>
-                    ))}
-                  {(dialog.task.pullRequests || []).filter((p) => p.number !== 446).length ===
-                    0 && <p>当前读取范围内未发现实施 PR。</p>}
-                  <Note>
-                    来源为该 Issue 最近 12 条交叉引用，排除本版计划归档 PR；不是完整 PR
-                    发现或自动归因协议。
-                  </Note>
-                </>
-              )}
-            </>
-          )}
-          {dialog.kind === 'task-session' && (
-            <>
-              <dl>
-                <dt>任务来源</dt>
-                <dd>GitHub · github.com/forcegravity1989/builder-workbench</dd>
-                <dt>任务</dt>
-                <dd>
-                  #{dialog.task.number} · {shortTitle(dialog.task.title)}
-                </dd>
-                <dt>版本 / 目标</dt>
-                <dd>
-                  {selected.version} / {dialog.task.goalId}
-                </dd>
-                <dt>会话与工作树</dt>
-                <dd>尚未读取原生登记</dd>
-              </dl>
-              <Note>
-                携带上述完整 Issue
-                引用，复用当前任务开工与工作区选择：已有匹配工作区则进入，多个实例按宿主选择，无匹配才进入原生创建器。这里不猜测已有会话，不执行建树或发送消息。
-              </Note>
-              <Link href="../version-workspace/version-workspace-prototype.html?rev=439-feedback">
-                查看既有任务入口与创建器样式
-              </Link>
-            </>
-          )}
           {dialog.kind === 'native' && (
             <>
               <Note>
@@ -799,6 +575,20 @@ function App() {
                 {dialog.route === '新建版本' ? '项目' : `/ ${selected.version}`}{' '}
                 上下文。此处保留原入口与旅程，真实会话和页面由现有能力承接；不会启动或操控日常 BW。
               </Note>
+              {dialog.goal && (
+                <p>
+                  当前定位：{selected.version} / {dialog.goal.goalId} · {dialog.goal.title}
+                </p>
+              )}
+              {dialog.feature && (
+                <>
+                  <p>
+                    历史任务定位：{selected.version} / {dialog.feature.goalId} / #
+                    {dialog.feature.id} · {dialog.feature.title}
+                  </p>
+                  <p>原生会话：尚未读取</p>
+                </>
+              )}
               <div className="ov-native-placeholder">
                 <strong>{dialog.route} · 原有界面不变</strong>
                 <p>
@@ -808,7 +598,9 @@ function App() {
                       ? '计划短开始卡 → 原生会话与计划板 → 人工确认 → 归档 PR'
                       : dialog.route === '版本验收'
                         ? '验收短开始卡 → 候选与固定计划 → 一次正式人工验收 → 归档'
-                        : '项目、版本、任务与工作会话沿现有壳导航。'}
+                        : dialog.route === '目标任务'
+                          ? '沿用本版本／目标的原生任务屏，目标上下文已带入；总览不重复维护任务列表。'
+                          : '项目、版本、任务与工作会话沿现有壳导航。'}
                 </p>
               </div>
               {dialog.route === '版本计划' && (

@@ -296,21 +296,6 @@
 .ov-purpose .ov-label {
   white-space: nowrap;
 }
-.ov-feature-bottom {
-  display: flex;
-  align-items: baseline;
-  gap: 15px;
-  border-top: 1px solid var(--border);
-  padding-top: 10px;
-  font-size: 11px;
-}
-.ov-feature-bottom .ov-link {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
 .ov-note {
   font-size: 12px;
   color: var(--muted-foreground);
@@ -459,11 +444,6 @@
 .ov-prewrap {
   white-space: pre-wrap;
 }
-.ov-review-item + .ov-review-item {
-  border-top: 1px solid var(--border);
-  margin-top: 20px;
-  padding-top: 20px;
-}
 @media (max-width: 800px) {
   .ov-content {
     padding: 18px;
@@ -531,35 +511,6 @@
 .ov-section-title > span {
   text-align: right;
 }
-.ov-commitments {
-  padding: 16px 0;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
-.ov-commitment {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 10px;
-  padding: 9px 0;
-  text-align: left;
-}
-.ov-commitment strong {
-  font-size: 12px;
-  line-height: 1.6;
-  font-weight: 500;
-}
-.ov-commitment small {
-  display: block;
-  font-size: 11px;
-  color: var(--muted-foreground);
-  margin-top: 2px;
-}
-.ov-commitment:hover strong {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
 .ov-plan-empty {
   padding: 14px 0 4px;
   display: flex;
@@ -569,15 +520,6 @@
   font-size: 12px;
   color: var(--muted-foreground);
 }
-.ov-delivery-reference {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 18px;
-  font-size: 11px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-  margin-top: 10px;
-}
 .ov-inline-empty {
   margin: 0;
   padding: 16px;
@@ -585,77 +527,6 @@
   border-radius: 6px;
   color: var(--muted-foreground);
   font-size: 12px;
-}
-.ov-feature-bottom > .ov-link:first-child {
-  margin-left: 0;
-}
-.ov-task-table {
-  min-width: 0;
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-.ov-task-table th {
-  color: var(--muted-foreground);
-  font-weight: 400;
-  padding: 8px 10px;
-  text-align: left;
-  white-space: nowrap;
-}
-.ov-task-table td {
-  padding: 12px 10px;
-  vertical-align: middle;
-  border-top: 1px solid var(--border);
-  overflow-wrap: anywhere;
-}
-.ov-task-table th:first-child {
-  width: 56%;
-  padding-left: 0;
-}
-.ov-task-table th:nth-child(2) {
-  width: 19%;
-}
-.ov-task-table td:first-child {
-  padding-left: 0;
-}
-.ov-task-table small {
-  display: block;
-  color: var(--muted-foreground);
-  font-size: 11px;
-  margin-top: 5px;
-}
-.ov-task-title {
-  text-align: left;
-  line-height: 1.65;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  width: 100%;
-}
-.ov-task-title:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.ov-task-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  font-size: 11px;
-}
-.ov-task-actions button {
-  white-space: nowrap;
-}
-.ov-task-actions button:hover {
-  text-decoration: underline;
-}
-.ov-expand-tasks {
-  font-size: 12px;
-  padding: 12px 0 0;
-  border-top: 1px solid var(--border);
-  width: 100%;
-  text-align: left;
 }
 .ov-workflow-heading {
   display: flex;
@@ -715,37 +586,11 @@
   background: var(--muted);
 }
 @container (max-width: 560px) {
-  .ov-task-table thead {
-    display: none;
-  }
-  .ov-task-table tr {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    border-top: 1px solid var(--border);
-    padding: 10px 0;
-  }
-  .ov-task-table td {
-    border: 0;
-    padding: 4px 0;
-  }
-  .ov-task-table td:first-child {
-    grid-column: 1 / -1;
-  }
-  .ov-task-table td[data-label]::before {
-    content: attr(data-label);
-    display: block;
-    color: var(--muted-foreground);
-    font-size: 10px;
-    margin-bottom: 4px;
-  }
   .ov-productivity-metrics {
     grid-template-columns: 1fr 1fr;
   }
   .ov-interventions {
     grid-template-columns: 1fr;
-  }
-  .ov-feature-bottom {
-    flex-wrap: wrap;
   }
 }
 
@@ -1044,24 +889,6 @@
 .ov-sample-evidence > span:first-child {
   color: var(--muted-foreground);
 }
-.ov-recorded-start {
-  padding: 12px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 12px;
-}
-.ov-recorded-start time,
-.ov-recorded-start p {
-  color: var(--muted-foreground);
-  font-size: 11px;
-  margin: 0;
-}
-.ov-event-empty {
-  padding: 18px 0;
-  color: var(--muted-foreground);
-  font-size: 12px;
-}
 .ov-timeline .ov-note {
   font-size: 10px;
   margin-top: 10px;
@@ -1116,11 +943,6 @@
 .ov-artifact-chip > button:hover {
   background: var(--muted);
 }
-.ov-artifact-chip .ov-artifact-info {
-  border-left: 1px solid var(--border);
-  padding: 7px;
-  color: var(--muted-foreground);
-}
 .ov-process-disclosure > summary {
   width: fit-content;
   cursor: pointer;
@@ -1140,6 +962,112 @@
     padding-left: 0;
   }
   .ov-journey-detail-heading {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+.ov-goal {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+.ov-goal-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  justify-content: space-between;
+}
+.ov-goal-heading h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.ov-goal-heading h2 .ov-label {
+  margin-right: 12px;
+}
+.ov-goal-meta,
+.ov-goal-conclusion,
+.ov-other-tasks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin: 10px 0;
+}
+.ov-goal-meta button,
+.ov-other-tasks button {
+  font-size: 11px;
+}
+.ov-goal-scope {
+  font-size: 12px;
+  margin: 10px 0 14px;
+}
+.ov-goal-scope summary {
+  cursor: pointer;
+  color: var(--muted-foreground);
+  width: fit-content;
+}
+.ov-goal-scope p {
+  line-height: 1.7;
+  margin: 8px 0;
+}
+.ov-goal-conclusion {
+  padding: 9px 0;
+  border-top: 1px dashed var(--border);
+}
+.ov-acceptance {
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.ov-acceptance[data-outcome='met'] {
+  color: var(--status-success);
+  border-color: var(--status-success);
+}
+.ov-acceptance[data-outcome='not-met'] {
+  color: var(--destructive);
+  border-color: var(--destructive);
+}
+.ov-merge-point {
+  position: absolute;
+  top: 85px;
+  font-size: 10px;
+  padding: 2px 4px;
+  background: var(--background);
+  z-index: 1;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--foreground);
+}
+.ov-merge-point.design {
+  transform: translateX(-100%);
+}
+.ov-merge-point::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  width: 5px;
+  height: 5px;
+  background: var(--foreground);
+  border-radius: 50%;
+}
+.ov-merge-point.design::after {
+  right: -2px;
+}
+.ov-merge-point.build::after {
+  left: -2px;
+}
+.ov-artifact-chip button:disabled {
+  cursor: default;
+  color: var(--muted-foreground);
+}
+.ov-metric-tip small {
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+@container (max-width: 560px) {
+  .ov-goal-heading {
     flex-wrap: wrap;
     gap: 6px;
   }

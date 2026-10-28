@@ -1,36 +1,15 @@
 import snapshot from './bw-snapshot.json'
 export { snapshot }
 export const repository = snapshot.source.repository
+export const acceptanceForVersion = (version) =>
+  snapshot.acceptance.version === version ? snapshot.acceptance : null
 export const baseline = snapshot.source.sourceCommit
-export const revision = '334-draft-8'
+export const revision = '334-draft-9'
 export const scenarios = [
   { id: 'unplanned', label: '版本计划未制定', version: 'v0.9' },
   { id: 'during', label: '版本计划制定完（版本中）', version: 'v0.8' },
   { id: 'delivered', label: '版本交付后', version: 'v0.7' }
 ]
-// Dates identify submitted drafts in these PRs, not human approval or production delivery.
-const draftEvidence = {
-  334: {
-    at: '2026-10-27T11:45:27Z',
-    commit: '870c0e5ef8afa0105ae355d1ffb144ad816d4a42',
-    paths: {
-      intent: 'docs/05-features/version-workspace/intent.md',
-      spec: 'docs/05-features/version-workspace/spec.md',
-      prototype: 'docs/05-features/version-workspace/version-overview-prototype.html'
-    }
-  },
-  440: {
-    at: '2026-10-27T11:47:06Z',
-    commit: '1630bc35530fcbee6de03c8d29afaa509c1ebbfe',
-    paths: {
-      intent: 'docs/05-features/overview-metrics/intent.md',
-      spec: 'docs/05-features/overview-metrics/spec.md',
-      prototype: 'docs/05-features/overview-metrics/prototype.html'
-    }
-  }
-}
-export const shortTitle = (title) => title.replace(/^【[^】]+】\s*/, '')
-export const issueState = (issue) => (issue.state === 'CLOSED' ? '已关闭' : '开放')
 export const prState = (pr) =>
   pr.state === 'MERGED'
     ? '已合入'
@@ -41,92 +20,28 @@ export const prState = (pr) =>
         : '待评审'
 export const material = (version, kind = 'data', commit = baseline) =>
   `${repository}/blob/${commit}/.bw/planning/${version}/${kind}.json`
-export const currentTasks = snapshot.plan.tasks
-  .filter((t) => t.goalId === 'G4')
-  .map((t) => ({ ...snapshot.issues.find((i) => i.number === t.number), goalId: t.goalId }))
-export const historicalTasks = snapshot.priorPlan.tasks
-  .filter((t) => t.goalId === 'G4')
-  .map((t) => ({
-    ...snapshot.historicalIssueTitles.find((i) => i.number === t.number),
-    goalId: t.goalId,
-    historical: true
-  }))
+// Explicit design samples; no labels or title associations are written to the source Issues.
 export const features = ['334', '440'].map((id) => {
-  const pr = snapshot.pulls.find((p) => p.number === (id === '334' ? 459 : 460))
+  const designPR = snapshot.pulls.find((p) => p.number === (id === '334' ? 459 : 460))
   const issue = snapshot.issues.find((i) => String(i.number) === id)
   const own = id === '334'
-  const prefix = `${repository}/blob/${pr.headRefOid}/docs/05-features/overview-metrics/`
   return {
     id,
     previewExpanded: own,
-    draftEvidence: draftEvidence[id],
     goalId: 'G2',
     title: own ? '版本总览重设计' : '项目总览里程碑规划',
     owner: issue.assignees.join('、') || snapshot.plan.goals.find((g) => g.goalId === 'G2').owner,
-    purpose: own
-      ? '看清一版的承诺、正在形成的成果与交付依据。'
-      : '在更长时间内选择大需求，安排各版本的交付增量。',
+    purpose: own ? '看清一版的承诺、特性历程与交付依据。' : '选择特性，安排各版本的交付增量。',
     scope: snapshot.plan.goals
       .find((g) => g.goalId === 'G2')
       .deliverable.split('\n')
       [own ? 1 : 0].replace(/^\d+\.\s*/, ''),
-    stage: '设计 · 原型评审',
-    next: '审阅原型与规格',
-    reviewKeys: ['prototype', 'spec'],
-    pr,
-    artifacts: [
-      [
-        '意图规划',
-        'intent · 用户价值与范围',
-        '待确认',
-        own ? '当前任务分支 · intent.md' : `PR #${pr.number} · ${pr.headRefOid.slice(0, 8)}`,
-        'intent',
-        own ? 'intent.md' : `${prefix}intent.md`
-      ],
-      [
-        '设计',
-        'spec · 行为与验收规格',
-        '待确认',
-        own ? '当前任务分支 · spec.md' : `PR #${pr.number} · ${pr.headRefOid.slice(0, 8)}`,
-        'spec',
-        own ? 'spec.md' : `${prefix}spec.md`
-      ],
-      [
-        '设计',
-        '原型设计 · 可点击高保真',
-        '批注迭代中',
-        own ? '当前任务分支 · prototype.html' : `PR #${pr.number} · ${pr.headRefOid.slice(0, 8)}`,
-        'prototype',
-        own ? 'prototype.html' : `${prefix}prototype.html`
-      ],
-      ['开发', '详细设计与实施 Plan', '会话待核对', '原生工作会话 · 尚未读取', 'plan', null],
-      [
-        '开发',
-        `PR #${pr.number} · 评审与后续开发`,
-        prState(pr),
-        '当前已提交设计与资料，生产实现尚未交付',
-        'pr',
-        pr.url
-      ],
-      [
-        '测试',
-        '已提交修订的 CI',
-        pr.commits.nodes[0]?.commit.statusCheckRollup?.state === 'SUCCESS' ? '通过' : '未知',
-        `${pr.headRefOid.slice(0, 8)} · PR 检查`,
-        'test',
-        `${repository}/commit/${pr.headRefOid}`
-      ],
-      ['上线', '发布包与使用范围', '尚未记录', '尚无关联发布记录', 'release', null],
-      ['反馈维护', '目标下的 Issue', '查看任务', 'v0.8 · G2 · 计划关联的任务', 'issues', null]
-    ]
+    stage: '设计评审中',
+    designPR
   }
 })
 export const historicalFeatures = [
-  {
-    id: '334',
-    title: '版本总览',
-    scope: `关联目标：${snapshot.priorPlan.goals.find((g) => g.goalId === 'G2').title}。计划未单列此需求的交付增量。`
-  },
+  { id: '334', title: '版本总览', scope: '计划未单列此特性的交付增量；参照本目标当时的承诺。' },
   {
     id: '383',
     title: '版本工作区',
@@ -134,32 +49,13 @@ export const historicalFeatures = [
   }
 ].map((f) => ({
   ...f,
+  previewExpanded: f.id === '334',
   goalId: 'G2',
   historical: true,
   owner: snapshot.priorPlan.goals.find((g) => g.goalId === 'G2').owner,
   purpose: f.scope,
-  stage: '当时阶段未归档',
-  next: '查看本版计划依据',
-  reviewKeys: ['commitment'],
-  artifacts: [
-    [
-      '意图规划',
-      '关联目标 G2 · 本版承诺',
-      '已归档',
-      `v0.7 planRef · ${snapshot.acceptance.planRef.sourceCommit.slice(0, 8)}`,
-      'commitment',
-      material('v0.7', 'data', snapshot.acceptance.planRef.sourceCommit)
-    ],
-    [
-      '测试',
-      '关联目标 G2 · 人工验收',
-      '目标未达成',
-      '目标结论不等同该需求整体结论',
-      'acceptance',
-      material('v0.7', 'acceptance')
-    ],
-    ['反馈维护', '目标下的 Issue', '查看任务', '只读归档计划中的任务关联', 'issues', null]
-  ]
+  stage: '当时阶段未记录',
+  designPR: null
 }))
 
 // Local preview projection from explicit plan task references, not a shared version schema.

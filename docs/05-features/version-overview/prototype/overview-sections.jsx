@@ -1,15 +1,5 @@
 import { Feature, SectionTitle, HintButton } from './overview-components.jsx'
-import {
-  snapshot,
-  repository,
-  currentTasks,
-  historicalTasks,
-  historicalFeatures,
-  shortTitle,
-  material,
-  issueState
-} from './overview-data.js'
-// Used by the shared JSX build factory.
+import { repository, historicalFeatures, acceptanceForVersion } from './overview-data.js'
 // eslint-disable-next-line no-unused-vars
 const { React } = window.BWPrototypeDependencies
 const outcome = (result) =>
@@ -17,7 +7,7 @@ const outcome = (result) =>
     ? '达成'
     : result?.decision?.outcome === 'not-met'
       ? '未达成'
-      : '未验收'
+      : '未记录验收'
 
 export function OverviewSections({
   selected,
@@ -28,178 +18,119 @@ export function OverviewSections({
   sample,
   setDialog,
   native,
-  openArtifact,
   openSession,
-  allTasks,
-  setAllTasks,
   focusRequest,
   openVersion
 }) {
-  const tasks = unplanned ? [] : history ? historicalTasks : currentTasks
   const requirements = unplanned ? [] : history ? historicalFeatures : sample
   return (
     <>
-      <section className="ov-section ov-commitments" aria-labelledby="commitments">
-        <SectionTitle
-          id="commitments"
-          title="本版承诺与验收"
-          extra={unplanned ? '计划未制定' : history ? '已正式验收' : '尚未验收'}
-        />
-        {unplanned ? (
+      {unplanned ? (
+        <section className="ov-section" aria-label="版本目标">
+          <SectionTitle title="版本目标" extra="计划未制定" />
           <div className="ov-plan-empty">
             <span>尚无版本计划</span>
             <button className="ov-primary" onClick={() => native('版本计划')}>
               开始制定版本计划
             </button>
           </div>
-        ) : (
-          <div className="ov-commitment-list">
-            {plan.goals.map((g) => {
-              const result = history
-                ? snapshot.acceptance.results.find((r) => r.goalId === g.goalId)
-                : null
-              return (
-                <button
-                  className="ov-commitment"
-                  key={g.goalId}
-                  onClick={() => setDialog({ kind: 'goal', title: g.title, goal: g })}
-                >
-                  <span className="ov-label">{g.goalId}</span>
-                  <span>
-                    <strong>{g.title}</strong>
-                    <small>
-                      {g.owner}
-                      {result?.nextStep ? ` · ${result.nextStep}` : ''}
-                    </small>
-                  </span>
-                  <span className="ov-chip">{outcome(result)}</span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-        {history && (
-          <div className="ov-delivery-reference">
-            <a href={material('v0.7', 'acceptance')} target="_blank" rel="noreferrer">
-              人工验收依据 ↗
-            </a>
-            <a href={`${repository}/releases/tag/v0.7.0`} target="_blank" rel="noreferrer">
-              交付候选 v{snapshot.acceptance.candidateRef.version} ↗
-            </a>
-            <button onClick={() => setDialog({ kind: 'release', title: 'v0.7 交付依据' })}>
-              报告与后续补丁 ↗
-            </button>
-          </div>
-        )}
-      </section>
-
-      <section className="ov-section" aria-labelledby="features">
-        <SectionTitle
-          id="features"
-          title="大需求与本版交付"
-          extra={unplanned ? '尚未纳入需求' : `${requirements.length} 项`}
-        />
-        {requirements.length ? (
-          requirements.map((f) => (
-            <Feature
-              key={`${selected.version}:${f.id}`}
-              feature={f}
-              openArtifact={openArtifact}
-              openSession={openSession}
-              selectedVersion={selected.version}
-              focusRequest={focusRequest}
-              openVersion={openVersion}
-            />
-          ))
-        ) : (
-          <p className="ov-inline-empty">暂无已纳入的大需求</p>
-        )}
-      </section>
-
-      <section className="ov-section" aria-labelledby="workflow">
-        <SectionTitle
-          id="workflow"
-          title="小需求 / bug"
-          extra={unplanned ? '尚未关联任务' : `${tasks.length} 项`}
-        />
-        <table className="ov-task-table">
-          <thead>
-            <tr>
-              <th>任务</th>
-              <th>AI workflow</th>
-              <th>会话与 PR</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(allTasks ? tasks : tasks.slice(0, 5)).map((t) => (
-              <tr key={t.number}>
-                <td>
+        </section>
+      ) : (
+        <div className="ov-goals" aria-label="版本目标">
+          {plan.goals.map((goal) => {
+            const result = acceptanceForVersion(selected.version)?.results.find(
+              (r) => r.goalId === goal.goalId
+            )
+            const tasks = plan.tasks.filter((t) => t.goalId === goal.goalId)
+            const goalFeatures = requirements.filter((f) => f.goalId === goal.goalId)
+            const otherCount = tasks.filter(
+              (t) => !goalFeatures.some((f) => f.id === String(t.number))
+            ).length
+            return (
+              <section
+                className="ov-section ov-goal"
+                key={goal.goalId}
+                aria-labelledby={`goal-${goal.goalId}`}
+              >
+                <div className="ov-goal-heading">
+                  <h2 id={`goal-${goal.goalId}`}>
+                    <span className="ov-label">{goal.goalId}</span>
+                    {goal.title}
+                  </h2>
                   <button
-                    className="ov-task-title"
-                    title={shortTitle(t.title)}
-                    onClick={() => setDialog({ kind: 'task', title: shortTitle(t.title), task: t })}
+                    className="ov-chip ov-acceptance"
+                    data-outcome={result?.decision?.outcome || 'unrecorded'}
+                    onClick={() => native('版本验收', goal)}
+                    title="查看验收屏中的本目标人工结论"
                   >
-                    {shortTitle(t.title)}
+                    {outcome(result)} ↗
                   </button>
-                  <small>
-                    #{t.number} · {t.goalId} · {t.historical ? '当时状态未归档' : issueState(t)}
-                  </small>
-                </td>
-                <td data-label="AI workflow">
+                </div>
+                <div className="ov-goal-meta">
+                  <span>负责人 · {goal.owner}</span>
                   <button
                     className="ov-link"
-                    onClick={() =>
-                      setDialog({
-                        kind: 'workflow-evidence',
-                        title: `AI workflow · #${t.number}`,
-                        task: t
-                      })
-                    }
+                    onClick={() => setDialog({ kind: 'goal', title: goal.title, goal })}
                   >
-                    待核对
+                    范围与验收标准 ↗
                   </button>
-                </td>
-                <td data-label="会话与 PR">
-                  <div className="ov-task-actions">
-                    <button
-                      onClick={() =>
-                        setDialog({
-                          kind: 'task-session',
-                          title: `原型注释: 原生任务开工 · #${t.number}`,
-                          task: t
-                        })
-                      }
-                    >
-                      会话 ↗
-                    </button>
-                    <button
-                      onClick={() =>
-                        setDialog({ kind: 'task', title: shortTitle(t.title), task: t })
-                      }
-                    >
-                      PR 依据 ↗
+                  <button className="ov-link" onClick={() => native('目标任务', goal)}>
+                    目标任务 · {tasks.length} 项 ↗
+                  </button>
+                </div>
+                <details className="ov-goal-scope">
+                  <summary>本版范围</summary>
+                  <p className="ov-prewrap">{goal.deliverable || '计划未记录交付范围'}</p>
+                </details>
+                {result && (
+                  <div className="ov-goal-conclusion">
+                    <span>人工验收 · {result.decision?.source || '来源未记录'}</span>
+                    {result.decision?.recordedAt && (
+                      <time dateTime={result.decision.recordedAt}>
+                        {result.decision.recordedAt.slice(0, 16).replace('T', ' ')} UTC
+                      </time>
+                    )}
+                    {result.nextStep && <span>后续处理 · {result.nextStep}</span>}
+                  </div>
+                )}
+                {goalFeatures.map((f) => (
+                  <Feature
+                    key={`${selected.version}:${f.id}`}
+                    feature={f}
+                    openSession={openSession}
+                    selectedVersion={selected.version}
+                    focusRequest={focusRequest}
+                    openVersion={openVersion}
+                  />
+                ))}
+                {goalFeatures.length > 0 && otherCount > 0 && (
+                  <div className="ov-other-tasks">
+                    <span>其他关联任务 · {otherCount} 项</span>
+                    <button className="ov-link" onClick={() => native('目标任务', goal)}>
+                      查看本目标全部 {tasks.length} 项任务 ↗
                     </button>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {!tasks.length && <p className="ov-inline-empty">暂无关联任务</p>}
-        {tasks.length > 5 && (
-          <button className="ov-expand-tasks" onClick={() => setAllTasks(!allTasks)}>
-            {allTasks ? '收起列表' : `查看全部 ${tasks.length} 项任务`} ↗
-          </button>
-        )}
-      </section>
+                )}
+              </section>
+            )
+          })}
+          <p className="ov-note">
+            原型注释: 特性主单标记与标题归属规则尚未接入；本稿显式选取 #334／#440（v0.7 为
+            #334／#383）演示特性，不改真实标签、标题与计划。其余任务保留原目标和任务入口。
+          </p>
+        </div>
+      )}
 
       <section className="ov-section" aria-labelledby="productivity">
         <SectionTitle id="productivity" title="AI workflow 生产力" extra="Builder Workbench" />
         <div className="ov-workflow-heading">
           <strong>workbench-start</strong>
-          <span className="muted">尚无会话统计</span>
+          <span className="muted">0 个统计样本</span>
         </div>
-        <p className="ov-note">原型注释: 会话统计尚未接入，指标暂未提供读数。</p>
+        <p className="ov-note">
+          原型注释: 演示尚无统计样本；0 是纳入样本数，不代表 BW 没有使用
+          AI。真实会话解析尚未接入，读取失败应显示未知。
+        </p>
         <div className="ov-productivity-metrics">
           {[
             [
@@ -222,6 +153,7 @@ export function OverviewSections({
             <HintButton key={label} id={`metric-${i}`} text={hint} className="ov-metric-tip">
               <span>{label} ⓘ</span>
               <strong>—</strong>
+              <small>暂无样本</small>
             </HintButton>
           ))}
         </div>
@@ -256,7 +188,7 @@ export function OverviewSections({
             >
               <strong>{label}</strong>
               <span>{description}</span>
-              <small>未统计</small>
+              <small>暂无样本</small>
             </HintButton>
           ))}
         </div>
@@ -272,12 +204,12 @@ export function OverviewSections({
               计划与纪要 ↗
             </a>
           )}
-          {!unplanned && !history && (
-            <button onClick={() => setDialog({ kind: 'review', title: '待审成果' })}>
-              意图 / 规格 / 原型评审 ↗
+          <button onClick={() => native('版本验收')}>正式验收 ↗</button>
+          {history && (
+            <button onClick={() => setDialog({ kind: 'release', title: 'v0.7 交付依据' })}>
+              交付依据与后续发布 ↗
             </button>
           )}
-          <button onClick={() => native('版本验收')}>正式验收 ↗</button>
           {!unplanned && (
             <a href={`${repository}/pull/${history ? 429 : 446}`} target="_blank" rel="noreferrer">
               归档 PR ↗

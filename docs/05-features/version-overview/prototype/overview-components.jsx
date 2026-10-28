@@ -12,8 +12,9 @@ export function ReferencePanel() {
       <h3>Claude · AI-native SDLC</h3>
       <p>
         原型注释: 参考 Plan、Design、Build、Test、Deploy、Maintain
-        六阶段、需求与设计共同收敛、测试贯穿实现及可回返的工作过程。按本次确认，初始意图进入原型与
-        spec 的共同评审，详细设计、Plan 与开发一起推进；Plan 通常留在原生会话，不照搬原文的 plan.md
+        对工作过程的分析，以及持续测试与回返。BW 按已确认的工作方式：已有 Issue 的
+        intent、spec、原型共同评审，以设计 PR 合入标记通过；详细设计、Plan 与开发一起推进，以实现 PR
+        合入标记本轮开发结束。Plan 留在原生会话，不照搬原文的 plan.md
         入库要求。阶段、成果认可、项目版本发布与需求交付分别表达。
       </p>
       <a
@@ -39,7 +40,7 @@ export function ReferencePanel() {
       <h3>Linear · 按需求看阶段与里程碑</h3>
       <p>
         原型注释:
-        借鉴项目内分阶段组织工作，并从概览进入相关成果的方式。本稿让两个大需求分别呈现当前工作与本版范围；不用任务完成比例推导目标达成，也不把所有需求合成一个
+        借鉴项目内分阶段组织工作，并从概览进入相关成果的方式。本稿让两个特性分别呈现当前工作与本版范围；不用任务完成比例推导目标达成，也不把所有需求合成一个
         G2 状态。
       </p>
       <a href="https://linear.app/docs/project-milestones" target="_blank" rel="noreferrer">
@@ -59,8 +60,7 @@ export function ReferencePanel() {
       </a>
       <p>
         原型注释: 沿用 GitHub 对 Pre-release 与正式 Release 的区分。本项目按用户确认，将 Pre
-        命名用于此前的 MVP 试用交付；实际包、使用范围与需求归属仍需证据。时间轴沿 Claude
-        六阶段，测试贯穿开发与发布，不强制串行。
+        命名用于先行试用交付；实际包、使用范围与需求归属仍需证据。时间轴沿本项目实际的设计评审、开发、随版交付与试用完善过程，不套用固定六阶段状态机。
       </p>
       <a
         href="https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository"
@@ -73,7 +73,7 @@ export function ReferencePanel() {
       <p>
         原型注释:
         借鉴逐步开放能力时明确使用者范围的思路。发布成果记录版本、包与使用范围；反馈统一进入目标下的
-        Issue，不另建 MVP 反馈列表，也不引入流量分配、功能开关服务或自动发布能力。
+        Issue，不另建 Pre 反馈列表，也不引入流量分配、功能开关服务或自动发布能力。
       </p>
       <a
         href="https://launchdarkly.com/docs/home/releases/progressive-rollouts"
@@ -106,8 +106,6 @@ const {
   useEffect,
   useRef,
   X,
-  ArrowUpRight,
-  GitBranch,
   ChevronRight
 } = window.BWPrototypeDependencies
 
@@ -162,14 +160,7 @@ export function HintButton({ id, text, className = '', current = false, onClick,
   )
 }
 
-export function Feature({
-  feature,
-  openArtifact,
-  openSession,
-  selectedVersion,
-  focusRequest,
-  openVersion
-}) {
+export function Feature({ feature, openSession, selectedVersion, focusRequest, openVersion }) {
   const [expanded, setExpanded] = window.BWPrototypeDependencies.useState(!!feature.previewExpanded)
   const cardRef = useRef(null)
   const toggleRef = useRef(null)
@@ -213,19 +204,6 @@ export function Feature({
           <span className="ov-label">本版承担 · {feature.goalId}</span>
           <p>{feature.scope}</p>
         </div>
-        <button
-          className="ov-next"
-          onClick={() =>
-            openArtifact(
-              feature,
-              feature.artifacts.find((row) => row[4] === feature.reviewKeys[0]) ||
-                feature.artifacts[5]
-            )
-          }
-        >
-          {feature.next}
-          <ArrowUpRight size={15} />
-        </button>
       </div>
       {expanded && (
         <div className="ov-feature-detail">
@@ -248,24 +226,7 @@ export function Feature({
               </HintButton>
             ))}
           </div>
-          <FeatureTimeline feature={feature} openArtifact={openArtifact} />
-          <div className="ov-feature-bottom">
-            <button
-              className="ov-link"
-              onClick={() =>
-                openArtifact(
-                  feature,
-                  feature.artifacts.find((row) => row[4] === 'issues')
-                )
-              }
-            >
-              目标 {feature.goalId} 的关联 Issue ↗
-            </button>
-            <button className="ov-link" onClick={() => openSession(feature)}>
-              <GitBranch size={14} />
-              工作会话
-            </button>
-          </div>
+          <FeatureTimeline feature={feature} openSession={openSession} />
         </div>
       )}
     </article>
@@ -303,19 +264,19 @@ export function SourcePanel() {
         </dd>
         <dt>历史需求 / 任务</dt>
         <dd>
-          原型注释: 历史大需求示例只呈现 #334 与 #383，依据 v0.7 计划关联与 Issue 的 v0.7
-          范围说明，未重建完整特性树；当时阶段保持未知。历史小任务名称另于{' '}
+          原型注释: 历史特性示例只呈现 #334 与 #383，依据 v0.7 计划关联与 Issue 的 v0.7
+          范围说明，未重建完整特性树；当时真实阶段保持未知，历史版同样默认展示明确标注的模拟横轴。历史任务名称另于{' '}
           {snapshot.source.historicalTitlesReadAt} 读取，不用当前 Issue 状态覆盖验收时状态。
         </dd>
         <dt>小任务范围</dt>
         <dd>
-          原型注释: 这份快照的小任务样本来自 G4；真实实现应纳入各目标下明确的小需求 /
-          bug，不以目标序号判断任务类型，也不按时间强制把 MVP 反馈移出 Issue。
+          原型注释:
+          按真实计划的各目标显示全部任务数量，进入原生目标任务屏；显式选取的特性主单只是展示样本，没有写回真实标签。没有特性标记时使用普通任务入口，不改目标名称或补造任务类型。
         </dd>
         <dt>AI workflow</dt>
         <dd>
-          原型注释:
-          表中“待核对”和下方空值来自尚未解析会话，并不表示未使用流程或没有人工介入。本轮只画视图，未创建执行器、会话统计库或自动质量判定。
+          原型注释: 0 表示本示例纳入的统计样本数；尚未解析真实会话，不能据此认定 BW
+          未使用流程或没有人工介入。本轮只画视图，未创建执行器、会话统计库或自动质量判定。
         </dd>
       </dl>
       <p>
