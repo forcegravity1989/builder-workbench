@@ -7,7 +7,7 @@
 ## 原型入口与来源
 
 - [prototype.html](prototype.html) 为入口。可编辑来源为 [页面与时间轴](prototype/milestones.jsx)、[面板](prototype/milestones-panels.jsx)、[壳](prototype/milestones-shell.jsx)、[演示规划](prototype/milestones-data.js)、[历史投影](prototype/milestones-history.js)与 [样式](prototype/milestones.css)。`node docs/05-features/overview-metrics/prototype/build-milestones.cjs` 重建，追加 `--check` 核对生成物。
-- 复用现有 DS、vendor、IconAction；[scoreboard.html](prototype/scoreboard.html) 单源嵌入 #411 记分牌，不改指标内容。核对 [OverviewPage](../../../src/renderer/src/workbench/OverviewPage.tsx)、[MetricsWorkspaceBoard](../../../src/renderer/src/workbench/metrics-workspace-board.tsx)及 [AppWorkspaceShell](../../../src/renderer/src/app-shell/AppWorkspaceShell.tsx)；主干基线 adf64a10a。
+- 复用现有 DS、vendor、IconAction；[scoreboard.html](prototype/scoreboard.html) 单源嵌入 #411 记分牌，不改指标内容。核对 [OverviewPage](../../../src/renderer/src/workbench/OverviewPage.tsx)、[MetricsWorkspaceBoard](../../../src/renderer/src/workbench/metrics-workspace-board.tsx)及 [AppWorkspaceShell](../../../src/renderer/src/app-shell/AppWorkspaceShell.tsx)；记分牌和历史材料的原型素材来自 adf64a10a。
 - 共同输入只读 [PR #458 @ d69058d](https://github.com/forcegravity1989/builder-workbench/blob/d69058d15aad9362456dbe353b9318275fa2b9e4/docs/05-features/version-workspace/overview-design-inputs.md)，不复制共享正本。最新人工批注优先于旧草案。
 - 模拟当前时间 2026-11-11。11 月六个特性、人员分配、`v1.0.0 / v1.0.1 / v1.1.0 / v1.1.1`、日期区间及加班日为演示；项目名风格不成为强制命名规则。未改真实 [v0.8 计划](../../../.bw/planning/v0.8/data.json)。
 - 浏览器保存草案、最近提交快照、正式快照和模拟评审状态。空态与已有安排使用独立演示样本；切换场景不丢修改或重置评审。刷新回正式视图，点规划续编；存储失败显示提醒。重置只重置样例，存储格式不是生产协议。
@@ -83,6 +83,8 @@ BW 提前对接预置工作日历，无用户导入。就近小月历显示正�
 ### 进入版本与返回来源
 
 从节点准确打开项目版本；有明确关联才定位、展开特性，缺失关系不猜；#334 可查看同一特性在其他版本的范围。返回恢复实际来源、阶段选择、特性和视口；若从草案进入，恢复同一草案，不覆盖未提交修改。
+
+特性识别沿已合入的 [版本总览规格](../version-overview/spec.md)：主 Issue 明确标记“特性”，执行 Issue 用 `【特性#编号】` 关联，身份包含平台、仓库和编号；目标序号不是特性身份。该约定不自动把任务纳入版本，也不代表真实联动已实现。首次规划与主 Issue 的绑定时机、共享字段和导航载体在实施时对齐。
 
 本轮仅用衔接弹窗预览，关闭后底层视图保留；另可打开既有版本原型，但不冒充真实路由联调。身份、关系载体与返回参数需共同对齐，不根据标题、G1/G2 或日期推断。
 
