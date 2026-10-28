@@ -6,7 +6,6 @@ import p8 from '../../../../.bw/planning/v0.8/data.json'
 import a5 from '../../../../.bw/planning/v0.5/acceptance.json'
 import a6 from '../../../../.bw/planning/v0.6/acceptance.json'
 import a7 from '../../../../.bw/planning/v0.7/acceptance.json'
-import releaseSnapshot from './october-releases.json'
 export const historyCommit = 'adf64a10a'
 export const historyPlans = [p4, p5, p6, p7, p8]
 const acceptances = { 'v0.5': a5, 'v0.6': a6, 'v0.7': a7 }
@@ -33,19 +32,6 @@ export const historyCounts = {
   notMet: historicalRows.filter((r) => r.result?.decision?.outcome === 'not-met').length,
   unknown: historicalRows.filter((r) => !r.result?.decision?.outcome).length
 }
-export const publishedReleases = releaseSnapshot.releases.toSorted((a, b) =>
-  a.publishedAt.localeCompare(b.publishedAt)
-)
-export const releaseGroups = Object.values(
-  Object.groupBy(publishedReleases, (r) => r.publishedAt.slice(0, 10))
-).map((rows) => ({
-  date: rows[0].publishedAt.slice(0, 10),
-  rows,
-  label:
-    rows.length > 1
-      ? `${rows[0].tag.startsWith('v0.5') ? 'v0.5 rc' : 'v0.7.2/.3'} · ${rows.length}次`
-      : rows[0].tag.replace('v0.5.0-rc.20261011.4', 'v0.5 rc.4')
-}))
 export const sourceUrl = (path) =>
   `https://github.com/forcegravity1989/builder-workbench/blob/${historyCommit}/${path}`
 export const outcomeLabel = (value) =>

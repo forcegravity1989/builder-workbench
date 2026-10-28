@@ -1,11 +1,5 @@
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
-import {
-  fixedVersions,
-  versionById,
-  versionIndex,
-  validRequirement,
-  calendarDays
-} from './milestones-data.js'
+import { calendarDays } from './milestones-data.js'
 import { historicalRows, outcomeLabel, sourceUrl } from './milestones-history.js'
 // eslint-disable-next-line no-unused-vars
 const { React, useState, useRef, useEffect, X } = window.BWPrototypeDependencies
@@ -124,9 +118,7 @@ export function ReferencePanel({ close }) {
           </a>
         </h3>
         <p>借鉴：把方向、优先级、主导人和目标日期放在同一规划视图，再连接执行。</p>
-        <p className="muted">
-          取舍：不照搬组织层级或手设健康灯；BW 保留一项大需求跨版本的整体身份。
-        </p>
+        <p className="muted">取舍：不照搬组织层级或手设健康灯；BW 保留一项特性跨版本的整体身份。</p>
       </section>
       <section className="ml-reference">
         <h3>
@@ -164,204 +156,15 @@ export function ReferencePanel({ close }) {
   )
 }
 
-export function EditRequirement({ item, save, close }) {
-  const [value, setValue] = useState({ ...item }),
-    [error, setError] = useState('')
-  const field = (key, v) => setValue((d) => ({ ...d, [key]: v }))
+export function VersionBridge({ item, version, plan, close }) {
+  const pre = item?.pre === version,
+    release = item?.release === version
+  const v = plan.versions.find((entry) => entry.id === version)
   return (
-    <Modal title={item.title ? `调整需求 · ${item.title}` : '添加支撑需求'} close={close}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          const cleaned = {
-            ...value,
-            title: value.title.trim(),
-            owner: value.owner.trim(),
-            preScope: value.preScope.trim(),
-            releaseScope: value.releaseScope.trim()
-          }
-          if (versionIndex(cleaned.pre) > versionIndex(cleaned.release)) {
-            setError('Pre版本不能晚于Release版本。')
-            return
-          }
-          if (!validRequirement(cleaned)) {
-            setError('请填写名称、负责人，并把截止放在Release版本的固定范围内。')
-            return
-          }
-          save(cleaned)
-          close()
-        }}
-      >
-        <label className="field">
-          需求名称
-          <input
-            className="input"
-            aria-label="需求名称"
-            required
-            maxLength={80}
-            value={value.title}
-            onInput={(e) => field('title', e.currentTarget.value)}
-          />
-        </label>
-        <div className="ml-form-grid">
-          <label className="field">
-            负责人
-            <input
-              className="input"
-              aria-label="负责人"
-              required
-              value={value.owner}
-              onInput={(e) => field('owner', e.currentTarget.value)}
-            />
-          </label>
-          <label className="field">
-            优先级
-            <select
-              className="input"
-              aria-label="优先级"
-              value={value.priority}
-              onChange={(e) => field('priority', Number(e.target.value))}
-            >
-              {[1, 2, 3].map((n) => (
-                <option key={n} value={n}>
-                  P{n}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            Pre版本
-            <select
-              className="input"
-              aria-label="Pre版本"
-              value={value.pre}
-              onChange={(e) => field('pre', e.target.value)}
-            >
-              {fixedVersions.map((v) => (
-                <option key={v.id}>{v.id}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            Release版本
-            <select
-              className="input"
-              aria-label="Release版本"
-              value={value.release}
-              onChange={(e) => {
-                const version = e.currentTarget.value
-                setValue((d) => ({ ...d, release: version, due: versionById[version].target }))
-              }}
-            >
-              {fixedVersions.map((v) => (
-                <option key={v.id}>{v.id}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <label className="field">
-          交付截止
-          <input
-            className="input"
-            type="date"
-            aria-label="交付截止"
-            required
-            min={versionById[value.release].start}
-            max={versionById[value.release].end}
-            value={value.due}
-            onInput={(e) => field('due', e.currentTarget.value)}
-          />
-        </label>
-        <label className="field">
-          Pre交付说明（选填）
-          <textarea
-            className="input"
-            aria-label="Pre交付说明"
-            value={value.preScope}
-            onInput={(e) => field('preScope', e.currentTarget.value)}
-          />
-        </label>
-        <label className="field">
-          Release交付说明（选填）
-          <textarea
-            className="input"
-            aria-label="Release交付说明"
-            value={value.releaseScope}
-            onInput={(e) => field('releaseScope', e.currentTarget.value)}
-          />
-        </label>
-        {error && (
-          <p className="ml-error" role="alert">
-            {error}
-          </p>
-        )}
-        <footer>
-          <button className="btn btn-secondary" type="button" onClick={close}>
-            取消
-          </button>
-          <button className="btn btn-primary" type="submit">
-            保存安排
-          </button>
-        </footer>
-      </form>
-    </Modal>
-  )
-}
-export function EditMilestone({ value, save, close }) {
-  const [draft, setDraft] = useState({ ...value })
-  const field = (key, value) => setDraft((d) => ({ ...d, [key]: value }))
-  return (
-    <Modal title="编辑阶段成果" close={close}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (!draft.title.trim() || !draft.outcome.trim()) {
-            return
-          }
-          save({ title: draft.title.trim(), outcome: draft.outcome.trim() })
-          close()
-        }}
-      >
-        <label className="field">
-          阶段成果
-          <input
-            className="input"
-            aria-label="阶段成果"
-            required
-            value={draft.title}
-            onInput={(e) => field('title', e.currentTarget.value)}
-          />
-        </label>
-        <label className="field">
-          要达到的能力结果
-          <textarea
-            className="input"
-            aria-label="能力结果"
-            required
-            value={draft.outcome}
-            onInput={(e) => field('outcome', e.currentTarget.value)}
-          />
-        </label>
-        <footer>
-          <button className="btn btn-secondary" type="button" onClick={close}>
-            取消
-          </button>
-          <button className="btn btn-primary" type="submit">
-            保存阶段成果
-          </button>
-        </footer>
-      </form>
-    </Modal>
-  )
-}
-export function VersionBridge({ item, version, close }) {
-  const pre = item?.included && item.pre === version,
-    release = item?.included && item.release === version
-  return (
-    <Modal title={`${version} · 版本总览`} close={close} wide>
+    <Modal title={`${v.name || '未命名版本'} · 版本总览`} close={close} wide>
       <p className="ml-footnote">
         原型注释: #334
-        衔接预览。真实需求对应关系、来源定位与返回字段仍待接入；原型返回保留当前草案和视口。
+        衔接预览。真实特性对应关系、来源定位与返回字段仍待接入；原型返回保留当前草案和视口。
       </p>
       <h3>{item?.title || '版本工作'}</h3>
       <div className="ml-source-columns">
@@ -370,27 +173,23 @@ export function VersionBridge({ item, version, close }) {
           {pre && (
             <p>
               <b>Pre版本：</b>
-              {item.preScope || '交付范围待收敛'}
+              {v.start} — {v.end}
             </p>
           )}
           {release && (
             <p>
               <b>Release版本：</b>
-              {item.releaseScope || '交付范围待收敛'}
+              {v.start} — {v.end}
             </p>
           )}
-          {!pre && !release && <p>本版未关联当前需求。</p>}
-          {(pre || release) && (
-            <p className="muted">
-              {item.owner} · 截止 {item.due}
-            </p>
-          )}
+          {!pre && !release && <p>本版未关联当前特性。</p>}
+          {(pre || release) && <p className="muted">负责人：{item.owner}</p>}
         </section>
         <section>
           <h3>版本计划与实际交付</h3>
           <p>尚未读取</p>
           <p className="muted">
-            项目版本发布不代表本需求已交付Pre或Release，实际范围与验收以版本材料为准。
+            项目版本发布不代表本特性已交付Pre或Release，实际范围与验收以版本材料为准。
           </p>
         </section>
       </div>
@@ -410,70 +209,11 @@ export function VersionBridge({ item, version, close }) {
     </Modal>
   )
 }
-export function HistoryDetail({ item, close }) {
-  const decision = item.result?.decision
-  return (
-    <Modal title={`${item.planVersion} · ${item.displayGoal}`} close={close} wide>
-      <h3>{item.title}</h3>
-      <p className="muted">负责人：{item.owner}</p>
-      <div className="ml-source-columns">
-        <section>
-          <h3>当版交付约定</h3>
-          <p className="ml-info-text">{item.scope || '未记录'}</p>
-          <details>
-            <summary>当版验收标准</summary>
-            <p className="ml-info-text">{item.criterion || '未记录'}</p>
-          </details>
-        </section>
-        <section>
-          <h3>当版人工验收</h3>
-          <p>{outcomeLabel(decision?.outcome)}</p>
-          {decision && (
-            <p className="muted">
-              {decision.recordedAt} · {decision.source}
-            </p>
-          )}
-          <p className="ml-info-text">{decision?.reason || item.result?.note || '未记录说明'}</p>
-          {item.result?.nextStep && (
-            <>
-              <h3>后续安排</h3>
-              <p className="ml-info-text">{item.result.nextStep}</p>
-            </>
-          )}
-        </section>
-      </div>
-      <p className="muted">需求级 Pre / Release 对应关系：未记录，不由项目发布或验收结论推定。</p>
-      <footer>
-        <a
-          className="btn btn-secondary"
-          href={sourceUrl(item.planPath)}
-          target="_blank"
-          rel="noreferrer"
-        >
-          原计划 ↗
-        </a>
-        {item.acceptancePath && (
-          <a
-            className="btn btn-secondary"
-            href={sourceUrl(item.acceptancePath)}
-            target="_blank"
-            rel="noreferrer"
-          >
-            原验收 ↗
-          </a>
-        )}
-        <button className="btn btn-primary" onClick={close}>
-          返回历史回看
-        </button>
-      </footer>
-    </Modal>
-  )
-}
 export function HistoryVersion({ plan, close }) {
   const rows = historicalRows.filter((r) => r.planVersion === plan.version)
   return (
     <Modal title={`${plan.version} · 真实版本材料`} close={close} wide>
-      <p>计划、人工验收和项目发布分别读取，不能互相代替。</p>
+      <p>原型注释: 此处只读 .bw 计划与人工验收；未记录排期的历史版本不绘入时间轴。</p>
       {rows.map((r) => (
         <details className="ml-source-item" key={r.id}>
           <summary>
@@ -503,82 +243,64 @@ export function HistoryVersion({ plan, close }) {
     </Modal>
   )
 }
-export function PlanningReviewPanel({ chosen, milestone, stage, setStage, publish, close }) {
-  if (!['draft', 'review', 'merged'].includes(stage)) {
-    return (
-      <Modal title="规划评审" close={close}>
-        <p>先核对当前草案。</p>
-      </Modal>
-    )
-  }
+export function PlanningReviewPanel({ state, changes, submit, markMerged, publish, close }) {
+  const dirty = changes.length > 0
   return (
     <Modal
       title={
-        stage === 'draft'
-          ? '核对里程碑安排'
-          : stage === 'review'
-            ? '规划评审中'
-            : '已合入，等待更新'
+        dirty && state.review !== 'merged'
+          ? '核对本次变更'
+          : state.review === 'merged'
+            ? '已合入，待更新'
+            : '已提交，待合入'
       }
       close={close}
-      wide
     >
-      <h3>{milestone.title}</h3>
-      <p>{milestone.outcome}</p>
-      {stage === 'draft' ? (
+      {dirty && state.review !== 'merged' ? (
         <>
-          {chosen.map((r) => (
-            <div className="ml-confirm-row" key={r.id}>
-              <strong>{r.title}</strong>
-              <p>
-                {r.owner} · Pre {r.pre} → Release {r.release} · 截止 {r.due}
-              </p>
+          {changes.map((c, i) => (
+            <div className="ml-confirm-row" key={i}>
+              <strong>{c.title}</strong>
+              <p>{c.detail}</p>
             </div>
           ))}
           <footer>
             <button className="btn btn-secondary" onClick={close}>
-              继续规划
+              继续修改
             </button>
-            <button
-              className="btn btn-primary"
-              disabled={!chosen.length}
-              onClick={() => setStage('review')}
-            >
-              提交规划评审
+            <button className="btn btn-primary" onClick={submit}>
+              {state.review === 'open' ? '更新评审' : '提交评审'}
             </button>
           </footer>
         </>
-      ) : stage === 'review' ? (
+      ) : state.review === 'merged' ? (
         <>
-          <p>等待人在 PR / MR 中评审合入，正式安排仍保持原快照。</p>
+          <p>正式总览将更新为最近已提交并合入的规划。</p>
+          {dirty && <p>另有未提交修改，更新后继续保留。</p>}
+          <footer>
+            <button className="btn btn-primary" onClick={publish}>
+              更新正式安排
+            </button>
+          </footer>
+        </>
+      ) : (
+        <>
+          <p>已提交的规划正在等待 PR / MR 合入。</p>
           <footer>
             <button className="btn btn-secondary" onClick={close}>
               返回总览
             </button>
           </footer>
           <div className="ml-prototype-controls">
-            <p>原型注释: 此处未创建真实 PR/MR。</p>
-            <button className="btn btn-ghost" onClick={() => setStage('merged')}>
+            <button className="btn btn-ghost" onClick={markMerged}>
               原型注释: 模拟人工已合入
             </button>
           </div>
         </>
-      ) : (
-        <>
-          <p>更新代码后，正式总览重读已合入的安排。</p>
-          <footer>
-            <button className="btn btn-secondary" onClick={close}>
-              稍后更新
-            </button>
-            <button className="btn btn-primary" onClick={publish}>
-              更新正式安排
-            </button>
-          </footer>
-        </>
       )}
       <p className="ml-footnote">
-        原型注释: 只模拟评审与更新状态，bw/project
-        材料路径、事务和真实写入尚未确定。阶段成果达成仍由人另行确认，不由提交或合入推定。
+        原型注释: 此处演示 bw/project → PR/MR → 主干的状态；没有真实 Git
+        写入。还原仅针对最近提交后的修改，阶段成果仍由人确认。
       </p>
     </Modal>
   )

@@ -13,7 +13,7 @@ const {
   ChevronRight,
   Check
 } = window.BWPrototypeDependencies
-export function Sidebar({ empty, onVersion, onInfo, onHome }) {
+export function Sidebar({ empty, onVersion, onInfo, onHome, versions = fixedVersions }) {
   return (
     <aside className="ml-sidebar" aria-label="项目导航">
       <div className="ml-brand">
@@ -56,13 +56,17 @@ export function Sidebar({ empty, onVersion, onInfo, onHome }) {
       </button>
       {!empty &&
         [
-          ...fixedVersions.map((v) => ({ id: v.id, date: v.start.slice(5).replace('-', '/') })),
+          ...versions.map((v) => ({
+            id: v.id,
+            name: v.name,
+            date: v.start.slice(5).replace('-', '/')
+          })),
           ...historyPlans.toReversed().map((p) => ({ id: p.version, date: '历史' }))
         ].map((v) => (
           <details key={v.id} open={v.id === 'v1.0.1'}>
             <summary>
               <ChevronRight size={13} />
-              {v.id}
+              {v.name || v.id}
               <small>{v.date}</small>
             </summary>
             <div className="ml-subnav">
@@ -73,7 +77,7 @@ export function Sidebar({ empty, onVersion, onInfo, onHome }) {
                     name === '总览'
                       ? onVersion(v.id)
                       : onInfo(
-                          `${v.id} · ${name}`,
+                          `${v.name || v.id} · ${name}`,
                           '原型注释: 沿用该版本原生入口，本稿不创建会话或工作树。'
                         )
                   }
