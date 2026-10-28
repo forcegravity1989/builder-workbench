@@ -12,8 +12,9 @@ export function ReferencePanel() {
       <h3>Claude · AI-native SDLC</h3>
       <p>
         原型注释: 参考 Plan、Design、Build、Test、Deploy、Maintain
-        六阶段及可回返的制品链。结合本次确认，实施 Plan
-        放在开发阶段；intent、spec、原型设计是独立评审对象。阶段、成果是否认可、版本验收分别表达，不照搬自动审批机制。
+        六阶段、需求与设计共同收敛、测试贯穿实现及可回返的工作过程。按本次确认，初始意图进入原型与
+        spec 的共同评审，详细设计、Plan 与开发一起推进；Plan 通常留在原生会话，不照搬原文的 plan.md
+        入库要求。阶段、成果认可、项目版本发布与需求交付分别表达。
       </p>
       <a
         href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook"
@@ -24,9 +25,9 @@ export function ReferencePanel() {
       </a>
       <h3>vis Timeline · 时间刻度与事件节点</h3>
       <p>
-        原型注释: 借鉴官方组件对时点事件和起止区间的区分。本轮提供横向与纵向两种单轴候选，
-        按时间比例放置节点、同日成果合并，直接标注相邻节点间隔。纵向布局是本稿的适配建议；
-        不把节点间隔当阶段工时，不引入该库或新增阶段协议。
+        原型注释: 借鉴官方组件对时点事件和起止区间的区分。横向按小时比例呈现过程时段，
+        端点显示日期、时分与时区；项目版本发布独立标记，具体需求是否随版提供 Pre / Release
+        另行取据。 日历历时包含等待，测试可重叠；不引入该库或新增阶段协议。
       </p>
       <a
         href="https://visjs.github.io/vis-timeline/docs/timeline/"

@@ -2,7 +2,7 @@ import snapshot from './bw-snapshot.json'
 export { snapshot }
 export const repository = snapshot.source.repository
 export const baseline = snapshot.source.sourceCommit
-export const revision = '334-draft-6'
+export const revision = '334-draft-7'
 export const scenarios = [
   { id: 'unplanned', label: '版本计划未制定', version: 'v0.9' },
   { id: 'during', label: '版本计划制定完（版本中）', version: 'v0.8' },
@@ -70,8 +70,8 @@ export const features = ['334', '440'].map((id) => {
       .deliverable.split('\n')
       [own ? 1 : 0].replace(/^\d+\.\s*/, ''),
     stage: '设计 · 原型评审',
-    next: '审阅原型设计',
-    reviewKeys: ['prototype'],
+    next: '审阅原型与规格',
+    reviewKeys: ['prototype', 'spec'],
     pr,
     artifacts: [
       [
@@ -98,7 +98,7 @@ export const features = ['334', '440'].map((id) => {
         'prototype',
         own ? 'prototype.html' : `${prefix}prototype.html`
       ],
-      ['开发', '实施 Plan', '尚未记录', '尚未关联实施计划', 'plan', null],
+      ['开发', '详细设计与实施 Plan', '会话待核对', '原生工作会话 · 尚未读取', 'plan', null],
       [
         '开发',
         `PR #${pr.number} · 评审与后续开发`,

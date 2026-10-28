@@ -653,8 +653,24 @@ function App() {
                 <dt>来源</dt>
                 <dd>{dialog.row[3]}</dd>
               </dl>
-              {dialog.row[5] ? (
+              {['prototype', 'spec'].includes(dialog.row[4]) ? (
+                <div>
+                  <p>共同评审资料</p>
+                  {dialog.feature.artifacts
+                    .filter((row) => ['prototype', 'spec'].includes(row[4]))
+                    .map((row) => (
+                      <p key={row[4]}>
+                        <Link href={row[5]}>{row[1]}</Link>{' '}
+                        <span className="ov-chip">{row[2]}</span>
+                      </p>
+                    ))}
+                </div>
+              ) : dialog.row[5] ? (
                 <Link href={dialog.row[5]}>打开成果</Link>
+              ) : dialog.row[4] === 'plan' ? (
+                <p>
+                  详细设计与 Plan 从原生工作会话查看。当前尚未核对会话记录，不能据此判断没有 Plan。
+                </p>
               ) : (
                 <p>暂无可打开的成果。</p>
               )}
