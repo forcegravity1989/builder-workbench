@@ -824,6 +824,7 @@
 .ov-interventions > .ov-hint {
   display: flex;
 }
+
 .ov-timeline {
   margin: 8px 0 14px;
 }
@@ -834,11 +835,32 @@
   flex-wrap: wrap;
   gap: 8px;
   font-size: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .ov-timeline-heading button {
   font-size: 11px;
   color: var(--muted-foreground);
+}
+.ov-timeline-variants {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 16px;
+  font-size: 11px;
+}
+.ov-timeline-variants > span {
+  color: var(--muted-foreground);
+  margin-right: 6px;
+}
+.ov-timeline-variants button {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.ov-timeline-variants button[aria-pressed='true'] {
+  background: var(--foreground);
+  color: var(--background);
 }
 .ov-demo-warning {
   font-size: 11px;
@@ -846,132 +868,189 @@
   background: var(--muted);
   border-left: 2px solid var(--foreground);
 }
-.ov-time-axis,
-.ov-time-row {
-  display: grid;
-  grid-template-columns: 74px minmax(0, 1fr) 70px;
-  gap: 14px;
+.ov-event-scroll {
+  width: 100%;
+  overflow-x: auto;
 }
-.ov-time-axis {
-  font-size: 10px;
-  color: var(--muted-foreground);
-  margin-bottom: 8px;
-  padding-right: 4px;
-}
-.ov-time-axis > div {
+.ov-event-canvas {
   position: relative;
-  height: 18px;
+  container-type: inline-size;
 }
-.ov-time-axis > div > span {
+.horizontal .ov-event-canvas {
+  height: 285px;
+  min-width: 510px;
+}
+.ov-event-rail {
   position: absolute;
-  transform: translateX(-50%);
-  white-space: nowrap;
+  background: var(--border);
 }
-.ov-time-axis > div > span:first-child {
-  transform: none;
+.horizontal .ov-event-rail {
+  top: 137px;
+  left: 42px;
+  right: 42px;
+  height: 2px;
 }
-.ov-time-axis > div > span:last-child {
-  transform: translateX(-100%);
+.vertical .ov-event-rail {
+  left: 50%;
+  top: 65px;
+  bottom: 65px;
+  width: 2px;
 }
-.ov-time-axis > span:last-child {
-  text-align: right;
-}
-.ov-time-row {
-  min-height: 66px;
-  border-top: 1px solid var(--border);
-  align-items: stretch;
-}
-.ov-time-row > strong {
-  font-size: 11px;
-  font-weight: 500;
-  align-self: center;
-}
-.ov-time-track {
-  position: relative;
-  min-width: 0;
-  background-image: linear-gradient(to right, var(--border) 1px, transparent 1px);
-  background-size: 25% 100%;
-}
-.ov-time-span {
+.ov-event-node {
   position: absolute;
-  top: 14px;
+  width: 0;
+  height: 0;
+}
+.ov-node-dot {
+  position: absolute;
+  width: 8px;
   height: 8px;
-  background: color-mix(in srgb, var(--foreground) 20%, var(--background));
-  border-radius: 4px;
+  background: var(--foreground);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
 }
-.ov-time-span.ongoing {
-  background: repeating-linear-gradient(
-    135deg,
-    var(--muted) 0px,
-    var(--muted) 3px,
-    var(--border) 3px,
-    var(--border) 5px
-  );
-}
-.ov-time-event {
+.ov-node-connector {
   position: absolute;
-  top: 13px;
+  background: var(--border);
+}
+.horizontal .ov-node-connector {
+  width: 1px;
+  height: 20px;
+  top: 4px;
+}
+.horizontal .before .ov-node-connector {
+  top: auto;
+  bottom: 4px;
+}
+.ov-event-card {
+  position: absolute;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  white-space: nowrap;
-  font-size: 10px;
+  gap: 5px;
   line-height: 1.4;
+}
+.horizontal .ov-event-card {
+  width: 80px;
+  left: 0;
+  top: 27px;
   transform: translateX(-50%);
-}
-.ov-time-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--foreground);
-  align-self: center;
-  margin-bottom: 3px;
-}
-.ov-time-date {
-  font-size: 10px;
-  color: var(--muted-foreground);
   text-align: center;
 }
-.ov-event-links {
+.horizontal .before .ov-event-card {
+  top: auto;
+  bottom: 27px;
+}
+.ov-event-card time {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.ov-event-artifact {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 1px;
 }
-.ov-event-links button {
+.ov-event-artifact small {
   font-size: 10px;
+  color: var(--muted-foreground);
 }
-.ov-event-links button:hover,
-.ov-time-pending button:hover {
+.ov-event-artifact strong,
+.ov-event-artifact button {
+  font-size: 12px;
+  font-weight: 500;
+}
+.ov-event-artifact button {
+  text-align: inherit;
+}
+.ov-event-artifact button:hover {
   text-decoration: underline;
 }
-.ov-time-pending {
-  display: flex;
-  align-items: center;
-  align-content: center;
+.ov-event-gap {
+  position: absolute;
+  white-space: nowrap;
+  padding: 1px 3px;
+  background: var(--background);
+  color: var(--muted-foreground);
+  font-size: 10px;
+}
+.horizontal .ov-event-gap {
+  top: 3px;
+  transform: translateX(-50%);
+}
+.vertical .ov-event-gap {
+  left: 0;
+  transform: translate(-50%, -50%);
+}
+.vertical .ov-node-connector {
+  top: 0;
+  left: 4px;
+  height: 1px;
+  width: 18px;
+}
+.vertical .before .ov-node-connector {
+  left: auto;
+  right: 4px;
+}
+.vertical .ov-event-card {
+  width: calc(50cqw - 44px);
+  max-width: 210px;
+  left: 26px;
+  top: 0;
+  transform: translateY(-50%);
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+}
+.vertical .before .ov-event-card {
+  left: auto;
+  right: 26px;
+}
+.vertical .ov-event-artifact {
+  flex-direction: row;
   flex-wrap: wrap;
-  gap: 6px 12px;
-  min-height: 65px;
-  font-size: 10px;
-  color: var(--muted-foreground);
-  padding: 5px 8px;
+  align-items: baseline;
+  gap: 7px;
 }
-.ov-time-pending button {
-  color: var(--foreground);
+.ov-single-event {
+  position: relative;
+  margin: 24px 0;
+  padding-left: 24px;
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px 24px;
 }
-.ov-time-duration {
+.ov-single-event .ov-node-dot {
+  left: 4px;
+  top: 9px;
+}
+.ov-single-event > time {
+  flex-basis: 100%;
   font-size: 12px;
-  text-align: right;
-  align-self: center;
 }
-.ov-time-duration small {
-  display: block;
+.ov-single-event > p {
+  flex-basis: 100%;
   color: var(--muted-foreground);
-  font-size: 10px;
+  margin: 0;
+  font-size: 11px;
+}
+.ov-event-empty {
+  padding: 18px 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.ov-event-reading {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  line-height: 1.7;
+  margin: 10px 0;
 }
 .ov-timeline-evidence {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 12px 16px;
   font-size: 11px;
-  padding-top: 8px;
+  padding-top: 14px;
 }
 .ov-timeline .ov-note {
   font-size: 10px;
@@ -982,26 +1061,7 @@
     left: auto;
     right: 0;
   }
-  .ov-time-axis,
-  .ov-time-row {
-    grid-template-columns: 60px minmax(0, 1fr) 48px;
-    gap: 8px;
-  }
-  .ov-time-row {
-    min-height: 72px;
-  }
-  .ov-time-event,
-  .ov-event-links button {
-    font-size: 9px;
-  }
-  .ov-event-links {
-    flex-direction: column;
-    gap: 1px;
-  }
   .ov-metric-tip {
     padding-left: 0;
-  }
-  .ov-time-pending {
-    min-height: 71px;
   }
 }

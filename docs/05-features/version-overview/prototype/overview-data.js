@@ -2,7 +2,7 @@ import snapshot from './bw-snapshot.json'
 export { snapshot }
 export const repository = snapshot.source.repository
 export const baseline = snapshot.source.sourceCommit
-export const revision = '334-draft-5'
+export const revision = '334-draft-6'
 export const scenarios = [
   { id: 'unplanned', label: '版本计划未制定', version: 'v0.9' },
   { id: 'during', label: '版本计划制定完（版本中）', version: 'v0.8' },

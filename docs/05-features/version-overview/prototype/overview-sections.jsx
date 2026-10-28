@@ -199,36 +199,27 @@ export function OverviewSections({
           <strong>workbench-start</strong>
           <span className="muted">尚无会话统计</span>
         </div>
-        <p className="ov-note">
-          原型注释:
-          尚未解析会话，数值留空。悬停或键盘聚焦指标可看口径；必要的澄清、评审和验证不直接算返工，不用
-          Issue 关闭率评价 AI 质量。
-        </p>
+        <p className="ov-note">原型注释: 会话统计尚未接入，指标暂未提供读数。</p>
         <div className="ov-productivity-metrics">
           {[
             [
               '流程使用覆盖',
-              '有实际使用项目流程依据的任务 / 已核对任务，同时列未核对数；配置了 Skill 不等于已使用。'
+              '已核对任务中，有会话记录证明使用了项目 AI 流程的任务占比。未核对的任务单独列出，不计入分母。'
             ],
             [
               '首次交付可合入',
-              '完整交付后的首次人工评审可接受比例，须有评审结论和质量门禁；PR 合入、Issue 关闭和 AI 自述不能替代。'
+              '已有首次评审结论的交付中，无需返工且通过质量检查、经人确认可以合入的占比。尚未评审的交付不计入。'
             ],
             [
               '追加人工介入',
-              '保留初始信息，区分后续澄清、原型评审、真机验证及其他介入的次数、等待和原因。'
+              '初始信息提交后，人参与澄清、设计评审、真机验证等协作的次数。按参与原因分别统计；必要协作不视为质量问题。'
             ],
             [
               '返工轮次',
-              '同一次交付被要求修正后的轮次，区分需求变化、实现缺陷与验证遗漏；一批批注不机械算多轮。'
+              '同一次交付被要求修改后，重新提交评审的轮数。同一批意见算一轮，并区分需求变化、实现缺陷和验证遗漏。'
             ]
           ].map(([label, hint], i) => (
-            <HintButton
-              key={label}
-              id={`metric-${i}`}
-              text={`原型注释: ${hint}`}
-              className="ov-metric-tip"
-            >
+            <HintButton key={label} id={`metric-${i}`} text={hint} className="ov-metric-tip">
               <span>{label} ⓘ</span>
               <strong>—</strong>
             </HintButton>
@@ -236,27 +227,31 @@ export function OverviewSections({
         </div>
         <div className="ov-interventions">
           {[
-            ['初始输入', '文字、截图、附件与约束', '作为初始上下文保留，不直接算追加介入或返工。'],
+            [
+              '初始输入',
+              '文字、截图、附件与约束',
+              '开工时提供的需求、截图、附件和约束，作为本次交付的初始条件，不计入追加人工介入。'
+            ],
             [
               '需求澄清',
               'askuser 与人工回答',
-              '区分必要澄清与遗漏导致的追加沟通，不能单凭提问次数判断质量。'
+              '执行中为明确需求而提出的问题及人的回答。必要澄清与信息遗漏导致的追加沟通分别记录。'
             ],
             [
               '原型评审',
               '设计批注与修订',
-              '必要的首次评审不直接算返工；多条批注可属于同一修订轮次。'
+              '人对原型提出意见、确认或要求修改的过程。首次评审本身不算返工，同一批批注归为一轮。'
             ],
             [
               '真机验证',
               '验证报告、截图与复验',
-              '核对候选、环境和人工结论；有图片引用不等于已通过真机验证。'
+              '人在实际设备上对指定候选版本进行验证，保留环境、报告和结论。截图本身不代表验证通过。'
             ]
           ].map(([label, description, hint], i) => (
             <HintButton
               key={label}
               id={`intervention-${i}`}
-              text={`原型注释: ${hint}`}
+              text={hint}
               className="ov-intervention-tip"
             >
               <strong>{label}</strong>

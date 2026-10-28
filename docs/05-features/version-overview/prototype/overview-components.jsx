@@ -22,6 +22,19 @@ export function ReferencePanel() {
       >
         The AI-native SDLC playbook · 官方原文 ↗
       </a>
+      <h3>vis Timeline · 时间刻度与事件节点</h3>
+      <p>
+        原型注释: 借鉴官方组件对时点事件和起止区间的区分。本轮提供横向与纵向两种单轴候选，
+        按时间比例放置节点、同日成果合并，直接标注相邻节点间隔。纵向布局是本稿的适配建议；
+        不把节点间隔当阶段工时，不引入该库或新增阶段协议。
+      </p>
+      <a
+        href="https://visjs.github.io/vis-timeline/docs/timeline/"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Timeline · 官方文档 ↗
+      </a>
       <h3>Linear · 按需求看阶段与里程碑</h3>
       <p>
         原型注释:
