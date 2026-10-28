@@ -1,0 +1,92 @@
+import snapshot from './bw-snapshot.json'
+export { snapshot }
+export const repository = snapshot.source.repository
+export const acceptanceForVersion = (version) =>
+  snapshot.acceptance.version === version ? snapshot.acceptance : null
+export const baseline = snapshot.source.sourceCommit
+export const revision = '334-draft-10'
+export const scenarios = [
+  { id: 'unplanned', label: '版本计划未制定', version: 'v0.9' },
+  { id: 'during', label: '版本计划制定完（版本中）', version: 'v0.8' },
+  { id: 'delivered', label: '版本交付后', version: 'v0.7' }
+]
+export const prState = (pr) =>
+  pr.state === 'MERGED'
+    ? '已合入'
+    : pr.state === 'CLOSED'
+      ? '已关闭'
+      : pr.isDraft
+        ? 'Draft'
+        : '待评审'
+export const material = (version, kind = 'data', commit = baseline) =>
+  `${repository}/blob/${commit}/.bw/planning/${version}/${kind}.json`
+// Explicit design samples; no labels or title associations are written to the source Issues.
+export const features = ['334', '440'].map((id) => {
+  const designPR = snapshot.pulls.find((p) => p.number === (id === '334' ? 459 : 460))
+  const issue = snapshot.issues.find((i) => String(i.number) === id)
+  const own = id === '334'
+  return {
+    id,
+    previewExpanded: own,
+    goalId: 'G2',
+    title: own ? '版本总览重设计' : '项目总览里程碑规划',
+    owner: issue.assignees.join('、') || snapshot.plan.goals.find((g) => g.goalId === 'G2').owner,
+    purpose: own ? '看清一版的承诺、特性历程与交付依据。' : '选择特性，安排各版本的交付增量。',
+    scope: snapshot.plan.goals
+      .find((g) => g.goalId === 'G2')
+      .deliverable.split('\n')
+      [own ? 1 : 0].replace(/^\d+\.\s*/, ''),
+    stage: '设计评审中',
+    designPR
+  }
+})
+export const historicalFeatures = [
+  { id: '334', title: '版本总览', scope: '计划未单列此特性的交付增量；参照本目标当时的承诺。' },
+  {
+    id: '383',
+    title: '版本工作区',
+    scope: snapshot.priorPlan.goals.find((g) => g.goalId === 'G2').title
+  }
+].map((f) => ({
+  ...f,
+  previewExpanded: f.id === '334',
+  goalId: 'G2',
+  historical: true,
+  owner: snapshot.priorPlan.goals.find((g) => g.goalId === 'G2').owner,
+  purpose: f.scope,
+  stage: '当时阶段未记录',
+  designPR: null
+}))
+
+// Local preview projection from explicit plan task references, not a shared version schema.
+export function relatedVersions(featureId) {
+  return [
+    { scene: 'during', version: 'v0.8', plan: snapshot.plan },
+    {
+      scene: 'delivered',
+      version: 'v0.7',
+      plan: snapshot.priorPlan
+    }
+  ].flatMap(({ scene, version, plan }) => {
+    const task = plan.tasks.find(
+      (t) =>
+        t.provider === 'github' &&
+        t.repository === repository.replace('https://', '') &&
+        String(t.number) === featureId
+    )
+    if (!task) {
+      return []
+    }
+    const goal = plan.goals.find((g) => g.goalId === task.goalId)
+    const increment = scene === 'during' ? features.find((f) => f.id === featureId)?.scope : null
+    return [
+      {
+        scene,
+        version,
+        scope: increment || goal.title,
+        scopeLabel: increment ? '本版承担' : '关联目标',
+        separateScope: Boolean(increment)
+      }
+    ]
+  })
+}
