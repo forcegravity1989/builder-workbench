@@ -1,5 +1,5 @@
 // #461 CI 部署原型 DOM 断言验证：进入即全量形态（无场景切换）、竖排四阶段六步流程列表
-// （数字标序、每步读数、块级日志开关）、两种模式与版本选择、统一配置入口与配置事实、
+// （阶段标签居中加粗、组间虚线分割、数字标序、每步读数、块级日志开关）、两种模式与版本选择、统一配置入口与配置事实、
 // 执行瞬态与逐步点亮（读数随完成进板面）、记录区默认收起与展开、报错筛选、
 // 递交 prompt 一致性、console/page error 监听。
 // 截图只存临时目录供人查看，不进上下文（AGENTS 硬约束）。
@@ -103,9 +103,21 @@ const check = (name, ok) => {
   )
   const phaseStyle = await page.evaluate(() => {
     const cs = getComputedStyle(document.querySelector('.ci-flow-phase'))
-    return { weight: cs.fontWeight, size: cs.fontSize }
+    return { weight: cs.fontWeight, size: cs.fontSize, align: cs.textAlign }
   })
-  check('阶段标签放大加粗（13px/600）', phaseStyle.size === '13px' && phaseStyle.weight === '600')
+  check(
+    '阶段标签放大加粗居中（13px/600/center）',
+    phaseStyle.size === '13px' && phaseStyle.weight === '600' && phaseStyle.align === 'center'
+  )
+  const sepOk = await page.evaluate(() => {
+    const seps = document.querySelectorAll('.ci-flow-group + .ci-flow-group')
+    return (
+      document.querySelectorAll('.ci-flow-group').length === 4 &&
+      seps.length === 3 &&
+      Array.from(seps).every((g) => getComputedStyle(g).borderTopStyle === 'dashed')
+    )
+  })
+  check('组间灰色虚线分割（4 组 3 条）', sepOk)
   check('初始六步全过', (await page.locator('.ci-flow-step.ok').count()) === 6)
   const readings = await page.locator('.ci-flow-reading').allTextContents()
   check(
