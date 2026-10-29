@@ -6,60 +6,57 @@ import {
   getDefaultTaskRepoSelection
 } from './task-page-default-repo-selection'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import {
-  buildBuilderTaskProjects,
-  normalizeBuilderTaskSelection
-} from '@/workbench/task-builder-projects'
+import { buildTaskProjectGroups, normalizeProjectTaskSelection } from '@/workbench/task-projects'
 
 export function useTaskProjectGrouping({
   repos,
+  projectHostSetups,
   runtimeEnvironments,
-  runtimeEnvironmentCatalogHydrated,
-  runtimeStatusByEnvironmentId
+  runtimeEnvironmentCatalogHydrated
 }: Pick<
   TaskPageStoreBindingsModel,
-  | 'repos'
-  | 'runtimeEnvironments'
-  | 'runtimeEnvironmentCatalogHydrated'
-  | 'runtimeStatusByEnvironmentId'
+  'repos' | 'projectHostSetups' | 'runtimeEnvironments' | 'runtimeEnvironmentCatalogHydrated'
 >) {
   const eligibleRepos = useMemo(() => getTaskEligibleRepos(repos), [repos])
-  const builderProjects = isWorkbenchShell()
-  const builderHosts = useMemo(
+  const hostQualifiedSelection = isWorkbenchShell()
+  const knownHosts = useMemo(
     () =>
-      builderProjects
-        ? runtimeEnvironments.map((host) => ({
-            id: host.id,
-            name: host.name,
-            offline: runtimeStatusByEnvironmentId.get(host.id)?.status === null
-          }))
-        : [],
-    [builderProjects, runtimeEnvironments, runtimeStatusByEnvironmentId]
+      new Set(
+        hostQualifiedSelection ? runtimeEnvironments.map((host) => `runtime:${host.id}`) : []
+      ),
+    [hostQualifiedSelection, runtimeEnvironments]
   )
-  const builderGroups = useMemo(
-    () => (builderProjects ? buildBuilderTaskProjects(eligibleRepos, builderHosts) : []),
-    [builderProjects, eligibleRepos, builderHosts]
+  const projectGroups = useMemo(
+    () =>
+      hostQualifiedSelection
+        ? buildTaskProjectGroups(eligibleRepos, new Set(), projectHostSetups)
+        : [],
+    [hostQualifiedSelection, eligibleRepos, projectHostSetups]
   )
   const normalizeRepoSelection = useCallback(
     (selection: ReadonlySet<string>) =>
-      builderProjects
-        ? normalizeBuilderTaskSelection(builderGroups, selection, runtimeEnvironmentCatalogHydrated)
+      hostQualifiedSelection
+        ? normalizeProjectTaskSelection(
+            projectGroups,
+            selection,
+            runtimeEnvironmentCatalogHydrated,
+            knownHosts
+          )
         : normalizeTaskRepoSelection(eligibleRepos, selection),
-    [builderProjects, builderGroups, eligibleRepos, runtimeEnvironmentCatalogHydrated]
+    [
+      hostQualifiedSelection,
+      projectGroups,
+      eligibleRepos,
+      runtimeEnvironmentCatalogHydrated,
+      knownHosts
+    ]
   )
   const allTaskRepoSelection = useMemo(
     () =>
-      builderProjects
-        ? normalizeBuilderTaskSelection(builderGroups, null)
+      hostQualifiedSelection
+        ? normalizeProjectTaskSelection(projectGroups, null)
         : getDefaultTaskRepoSelection(eligibleRepos),
-    [builderProjects, builderGroups, eligibleRepos]
+    [hostQualifiedSelection, projectGroups, eligibleRepos]
   )
-
-  return {
-    eligibleRepos,
-    builderProjects,
-    builderHosts,
-    normalizeRepoSelection,
-    allTaskRepoSelection
-  }
+  return { eligibleRepos, hostQualifiedSelection, normalizeRepoSelection, allTaskRepoSelection }
 }

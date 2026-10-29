@@ -55,4 +55,18 @@ it('fetches one bounded list and keeps issue search on the client', async () => 
   model.pageData = {}
   rerender()
   await waitFor(() => expect(listTasks.mock.lastCall?.[0]).toMatchObject({ labels: undefined }))
+  const pendingSource = {
+    ...model.selectedRepos[0],
+    executionHostId: 'runtime:builder-b' as const,
+    gitRemoteIdentity: undefined
+  }
+  listTasks.mockClear()
+  model.selectedRepos = [pendingSource]
+  rerender()
+  await waitFor(() =>
+    expect(listTasks).toHaveBeenCalledWith(
+      expect.objectContaining({ repoId: pendingSource.id }),
+      pendingSource
+    )
+  )
 })

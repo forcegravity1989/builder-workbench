@@ -16211,10 +16211,8 @@
               "hostCount": "{{value0}} hosts",
               "searchProjects": "Search projects...",
               "noMatches": "No projects match your search.",
-              "chooseSource": "Choose task source",
-              "builderOffline": "Builder is offline; reconnect to read tasks",
-              "builderScope": "All task repositories in this Builder",
-              "builderUnavailable": "No available repositories; check the Builder connection"
+              "sourceUnavailable": "Selected project source is unavailable",
+              "chooseSource": "Choose task source"
             }
           }
         },

@@ -67,11 +67,7 @@ export default function TaskProjectSourceCombobox({
     if (!trimmed) {
       return groups
     }
-    return groups.filter(
-      (group) =>
-        group.displayName?.toLowerCase().includes(trimmed.toLowerCase()) ||
-        searchRepos(group.sources, trimmed).length > 0
-    )
+    return groups.filter((group) => searchRepos(group.sources, trimmed).length > 0)
   }, [groups, query])
   const showHostLabels = useMemo(() => hasMultipleTaskProjectHosts(groups), [groups])
   const allSelected =
@@ -138,7 +134,7 @@ export default function TaskProjectSourceCombobox({
           next.delete(getTaskProjectSourceSelectionId(group, source))
         }
       } else {
-        for (const source of group.selectionMode === 'builder' ? group.sources : [group.repo]) {
+        for (const source of [group.repo]) {
           next.add(getTaskProjectSourceSelectionId(group, source))
         }
       }
@@ -171,13 +167,7 @@ export default function TaskProjectSourceCombobox({
       if (!first?.repo) {
         return
       }
-      onChange(
-        new Set(
-          (first.selectionMode === 'builder' ? first.sources : [first.repo]).map((repo) =>
-            getTaskProjectSourceSelectionId(first, repo)
-          )
-        )
-      )
+      onChange(new Set([first.repo].map((repo) => getTaskProjectSourceSelectionId(first, repo))))
       return
     }
     onSelectAll()
@@ -286,7 +276,7 @@ export default function TaskProjectSourceCombobox({
                     <div className="min-w-0 flex-1">
                       <span className="inline-flex items-center gap-1.5 text-xs">
                         <RepoBadgeLabel
-                          name={group.displayName ?? group.repo?.displayName ?? ''}
+                          name={group.repo.displayName}
                           color={group.repo?.badgeColor ?? '#737373'}
                           className="max-w-full"
                         />
@@ -329,11 +319,14 @@ export default function TaskProjectSourceCombobox({
                         <div className="py-1">
                           {group.sources.map((source) => {
                             const status = getRepoSourceStatus?.(source)
-                            const sourceSelected = source.id === selectedSource?.id
+                            const sourceId = getTaskProjectSourceSelectionId(group, source)
+                            const sourceSelected =
+                              !!selectedSource &&
+                              sourceId === getTaskProjectSourceSelectionId(group, selectedSource)
                             const sourceDetail = getSourceDetail(source, status)
                             return (
                               <button
-                                key={source.id}
+                                key={sourceId}
                                 type="button"
                                 disabled={status?.disabled}
                                 title={status?.title}

@@ -26,10 +26,7 @@ import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { getTaskPageRepoSourceContext } from './task-page-source-context'
 import { useTaskProjectGrouping } from './use-task-project-grouping'
-import {
-  buildBuilderTaskProjects,
-  builderTaskRepoSelectionId
-} from '@/workbench/task-builder-projects'
+import { buildTaskProjectGroups, taskRepoSelectionId } from '@/workbench/task-projects'
 import { findRepoForHost } from '@/store/slices/repo-host-identity'
 export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
   const {
@@ -42,26 +39,21 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
     preflightStatusCurrent,
     linearConnected
   } = model
-  const {
-    eligibleRepos,
-    builderProjects,
-    builderHosts,
-    normalizeRepoSelection,
-    allTaskRepoSelection
-  } = useTaskProjectGrouping(model)
+  const { eligibleRepos, hostQualifiedSelection, normalizeRepoSelection, allTaskRepoSelection } =
+    useTaskProjectGrouping(model)
 
   // Why: initial selection precedence — explicit preselection > persisted defaultRepoSelection > all eligible; preselection wins so "open tasks for this repo" lands single-repo.
   const resolvedInitialSelection = useMemo<ReadonlySet<string>>(() => {
     const preferred = pageData.preselectedRepoId
     if (preferred && eligibleRepos.some((repo) => repo.id === preferred)) {
-      if (builderProjects) {
+      if (hostQualifiedSelection) {
         const context = pageData.openCodeHubSourceContext
         const repo = findRepoForHost(eligibleRepos, preferred, {
           settings,
           hostId: context?.repoId === preferred ? context.hostId : undefined
         })
         return repo
-          ? normalizeRepoSelection(new Set([builderTaskRepoSelectionId(repo)]))
+          ? normalizeRepoSelection(new Set([taskRepoSelectionId(repo)]))
           : allTaskRepoSelection
       }
       return new Set([preferred])
@@ -76,17 +68,17 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
     pageData.preselectedRepoId,
     pageData.openCodeHubSourceContext,
     settings,
-    builderProjects,
+    hostQualifiedSelection,
     normalizeRepoSelection,
     allTaskRepoSelection
   ])
   const [repoSelection, setRepoSelection] = useState<ReadonlySet<string>>(resolvedInitialSelection)
   const taskPickerGroups = useMemo(
     () =>
-      builderProjects
-        ? buildBuilderTaskProjects(eligibleRepos, builderHosts, repoSelection)
+      hostQualifiedSelection
+        ? buildTaskProjectGroups(eligibleRepos, repoSelection, model.projectHostSetups)
         : getTaskProjectPickerGroups(eligibleRepos, repoSelection),
-    [builderProjects, eligibleRepos, builderHosts, repoSelection]
+    [hostQualifiedSelection, eligibleRepos, model.projectHostSetups, repoSelection]
   )
   const taskPickerRepos = useMemo(
     () => taskPickerGroups.flatMap((group) => (group.repo ? [group.repo] : [])),
@@ -99,12 +91,12 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
     const previousAll = previousAllSelectionRef.current
     previousAllSelectionRef.current = allTaskRepoSelection
     const eligibleIds = new Set(
-      eligibleRepos.map((r) => (builderProjects ? builderTaskRepoSelectionId(r) : r.id))
+      eligibleRepos.map((r) => (hostQualifiedSelection ? taskRepoSelectionId(r) : r.id))
     )
     const wasAll = previousAll.size > 0 && areStringSetsEqual(repoSelection, previousAll)
     const pruned = new Set<string>()
     for (const id of repoSelection) {
-      if (builderProjects || eligibleIds.has(id)) {
+      if (hostQualifiedSelection || eligibleIds.has(id)) {
         pruned.add(id)
       }
     }
@@ -122,13 +114,19 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
     if (!areStringSetsEqual(normalized, repoSelection)) {
       setRepoSelection(normalized)
     }
-  }, [eligibleRepos, repoSelection, builderProjects, allTaskRepoSelection, normalizeRepoSelection])
+  }, [
+    eligibleRepos,
+    repoSelection,
+    hostQualifiedSelection,
+    allTaskRepoSelection,
+    normalizeRepoSelection
+  ])
   const selectedRepos = useMemo(
     () =>
       eligibleRepos.filter((r) =>
-        repoSelection.has(builderProjects ? builderTaskRepoSelectionId(r) : r.id)
+        repoSelection.has(hostQualifiedSelection ? taskRepoSelectionId(r) : r.id)
       ),
-    [eligibleRepos, repoSelection, builderProjects]
+    [eligibleRepos, repoSelection, hostQualifiedSelection]
   )
   const selectedNativeRepoIds = useMemo(
     () => new Set(selectedRepos.map((repo) => repo.id)),

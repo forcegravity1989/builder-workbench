@@ -185,8 +185,8 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
       if (item.executionHostId && !sourceContext) {
         toast.error(
           translate(
-            'auto.components.task.project.source.combobox.builderUnavailable',
-            'No available repositories; check the Builder connection'
+            'auto.components.task.project.source.combobox.sourceUnavailable',
+            'Selected project source is unavailable'
           )
         )
         return

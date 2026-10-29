@@ -9,11 +9,9 @@ import type { Repo } from '../../../shared/repo-types'
 
 export type TaskProjectPickerGroup = {
   projectKey: string
-  repo: Repo | null
+  repo: Repo
   sources: Repo[]
-  displayName?: string
-  selectionMode?: 'builder'
-  offline?: boolean
+  selectionKey?: 'host'
 }
 
 // Why: a repo whose identity probe has not answered (offline SSH host, cold
@@ -43,9 +41,7 @@ export function getTaskProjectPickerRepos(
   repos: readonly Repo[],
   preferredSelection: ReadonlySet<string> = new Set()
 ): Repo[] {
-  return getTaskProjectPickerGroups(repos, preferredSelection).flatMap((group) =>
-    group.repo ? [group.repo] : []
-  )
+  return getTaskProjectPickerGroups(repos, preferredSelection).map((group) => group.repo)
 }
 
 export function getTaskProjectPickerGroups(
@@ -61,10 +57,7 @@ export function getTaskProjectPickerGroups(
       continue
     }
     current.sources.push(repo)
-    if (
-      !current.repo ||
-      compareTaskProjectPickerCandidate(repo, current.repo, preferredSelection) < 0
-    ) {
+    if (compareTaskProjectPickerCandidate(repo, current.repo, preferredSelection) < 0) {
       current.repo = repo
     }
   }

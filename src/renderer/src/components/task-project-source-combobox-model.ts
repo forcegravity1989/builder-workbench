@@ -4,7 +4,7 @@ import type { TaskProjectPickerGroup } from './task-page-default-repo-selection'
 import { getRepoHostIdentityForParts } from '../../../shared/repo-host-identity'
 
 export function getTaskProjectSourceSelectionId(group: TaskProjectPickerGroup, repo: Repo): string {
-  return group.selectionMode === 'builder'
+  return group.selectionKey === 'host'
     ? getRepoHostIdentityForParts(repo.id, getRepoExecutionHostId(repo))
     : repo.id
 }
@@ -20,9 +20,6 @@ export function isTaskProjectGroupSelected(
   group: TaskProjectPickerGroup,
   selected: ReadonlySet<string>
 ): boolean {
-  if (group.selectionMode === 'builder' && group.projectKey.startsWith('runtime:')) {
-    return [...selected].some((id) => id.startsWith(`${group.projectKey}\0`))
-  }
   return group.sources.some((source) =>
     selected.has(getTaskProjectSourceSelectionId(group, source))
   )
@@ -52,8 +49,5 @@ export function hasMultipleTaskProjectHosts(groups: readonly TaskProjectPickerGr
 }
 
 export function hasMultipleTaskProjectHostsInGroup(group: TaskProjectPickerGroup): boolean {
-  if (group.selectionMode === 'builder') {
-    return false
-  }
   return hasMultipleTaskProjectHosts([group])
 }

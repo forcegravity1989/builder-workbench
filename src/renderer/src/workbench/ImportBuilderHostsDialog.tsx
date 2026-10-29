@@ -197,8 +197,9 @@ export function ImportBuilderHostsDialog({
           </button>
         </div>
         <p className="wb-dialog-description">
-          每台共享主机对应一个 Builder 项目，主机内的仓库和工作树归属于这个项目。
-          导入后自动读取各主机共享的仓库目录；本机接入的项目单独保留。
+          导入共享的 Orca 主机配对配置，批量添加 Builder 主机；不克隆项目，也不改动 Orca Projects
+          的全量列表。导入后自动刷新各主机仓库目录，项目是否上墙仍按各项目里能否读到
+          .bw/project.toml 判定。
         </p>
 
         <div className="wb-dialog-section">
@@ -249,7 +250,7 @@ export function ImportBuilderHostsDialog({
 
         {plan && plan.length > 0 ? (
           <div className="wb-dialog-section">
-            <span className="wb-dialog-label">文件包含 {plan.length} 个 Builder 项目</span>
+            <span className="wb-dialog-label">将导入的主机</span>
             <div className="wb-import-hosts">
               {plan.map((entry) => {
                 const result = results[entry.name]

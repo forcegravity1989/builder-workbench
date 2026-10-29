@@ -1,6 +1,7 @@
 import { codehubApi } from '@/lib/codehub-api'
 import type { TaskPageGitLabLoadingModel } from './use-task-page-gitlab-loading'
 import { useEffect, useState } from 'react'
+import { isProjectRemoteIdentityPending } from '../../../shared/project-host-setup-projection'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import { workbenchVersionTaskLabel } from '../../../shared/workbench/task-scope'
@@ -41,7 +42,9 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     if (workbenchTaskScope?.goalId) {
       return
     }
-    const repos = selectedRepos.filter((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))
+    const repos = selectedRepos.filter(
+      (repo) => isCodeHubGitRemote(repo.gitRemoteIdentity) || isProjectRemoteIdentityPending(repo)
+    )
     if (repos.length === 0) {
       setCodehubItems([])
       setCodehubLoading(false)
