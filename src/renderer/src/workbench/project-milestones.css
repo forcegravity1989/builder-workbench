@@ -23,7 +23,7 @@
 .wb-ml-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 .wb-ml small {
@@ -32,62 +32,21 @@
   font-size: 11px;
   font-weight: 400;
 }
-.wb-ml-empty {
-  padding: 48px 20px;
-  text-align: center;
-  color: var(--muted-foreground);
-}
-.wb-ml-axis-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 16px 0;
+.wb-ml-toolbar {
   color: var(--muted-foreground);
   font-size: 11px;
+  padding: 8px 16px;
 }
-.wb-ml-axis-heading label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.wb-ml-action-separator {
+  height: 16px;
+  border-left: 1px solid var(--border);
+  margin: 0 2px;
 }
-.wb-ml-axis-heading input,
-.wb-ml-axis-heading select {
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--foreground);
-  border-radius: 5px;
-  padding: 3px 6px;
-}
-.wb-ml-empty-row {
-  display: flex;
-  min-height: 108px;
-  border-bottom: 1px solid var(--border);
+.wb-ml-empty {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
   color: var(--muted-foreground);
-  font-size: 12px;
-}
-.wb-ml-empty-grid {
-  display: flex;
-  align-items: center;
-  padding: 20px;
-  background-image: linear-gradient(to right, var(--border) 1px, transparent 1px);
-  background-size: 196px 100%;
-}
-.wb-ml-new-version {
-  position: absolute;
-  top: 15px;
-  padding: 0 8px;
-}
-.wb-ml-add-feature {
-  position: sticky;
-  left: 0;
-  width: 230px;
-  padding: 8px 12px;
-  background: var(--card);
-}
-.wb-ml-add-feature button {
-  width: 100%;
-  justify-content: flex-start;
 }
 .wb-ml .wb-ml-status {
   display: inline-flex;
@@ -101,113 +60,110 @@
   border-radius: 50%;
   background: var(--muted-foreground);
 }
-.wb-ml-nav {
-  display: flex;
-  overflow: auto;
-  gap: 0;
-  padding: 10px 16px 12px;
+
+.wb-ml-roadmap-scroll {
+  overflow-x: auto;
+  padding: 0 12px;
   border-bottom: 1px solid var(--border);
-}
-.wb-ml-month {
-  flex: 0 0 auto;
-  padding-bottom: 1px;
-}
-.wb-ml-outcome {
+  cursor: grab;
   position: relative;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-size: 12px;
-  min-width: 0;
-  width: calc(100% - 12px);
-  margin: 10px 6px 0;
-  background: var(--muted);
+  touch-action: pan-y;
 }
-.wb-ml-outcome::before {
+.wb-ml-roadmap-axis {
+  display: flex;
+  width: 100%;
+  height: 104px;
+  position: relative;
+}
+.wb-ml-roadmap-axis::before {
   content: '';
   position: absolute;
-  right: calc(50% - 4px);
+  top: 36px;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--border);
+}
+.wb-ml-roadmap-month {
+  flex: 1;
+  min-width: 240px;
+  position: relative;
+}
+.wb-ml-roadmap-month::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 2px);
+  top: 34px;
+  width: 5px;
+  height: 5px;
+  background: var(--foreground);
+  border-radius: 50%;
+}
+.wb-ml-roadmap-flag {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  white-space: nowrap;
+  border: 0;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0 5px;
+  border-radius: var(--radius-sm);
+}
+.wb-ml-roadmap-flag svg {
+  fill: currentColor;
+}
+.wb-ml-roadmap-caption {
+  position: absolute;
+  top: 54px;
+  left: calc(50% - 110px);
+  width: 220px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.wb-ml-roadmap-caption::before {
+  content: '';
+  position: absolute;
+  left: calc(50% - 4px);
   top: -5px;
   width: 8px;
   height: 8px;
-  border-left: 1px solid var(--border);
-  border-top: 1px solid var(--border);
-  background: var(--muted);
   transform: rotate(45deg);
-}
-.wb-ml-ticks {
-  display: grid;
-  position: relative;
-}
-.wb-ml-ticks::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 24px;
   border-top: 1px solid var(--border);
-}
-.wb-ml-tick {
-  min-width: 0;
-}
-.wb-ml-tick > button {
-  background: none;
-  border: 0;
-  position: relative;
-  width: 100%;
-  text-align: center;
-  white-space: nowrap;
-  cursor: pointer;
-  display: grid;
-  gap: 3px;
-  font-size: 12px;
-  line-height: 1.35;
-  padding: 0 4px;
-  color: var(--muted-foreground);
-}
-.wb-ml-tick b {
-  font-weight: 500;
-  color: var(--foreground);
-}
-.wb-ml-flag-slot {
-  height: 29px;
-  display: block;
-}
-.wb-ml-flag {
-  display: inline-flex;
-  gap: 5px;
-  align-items: center;
-  font-size: 11px;
-  color: var(--foreground);
-}
-.wb-ml-flag svg {
-  fill: currentColor;
-}
-.wb-ml-tick-dot {
-  position: absolute;
-  width: 5px;
-  height: 5px;
-  left: calc(50% - 2px);
-  top: 22px;
+  border-left: 1px solid var(--border);
   background: var(--card);
-  border: 1px solid var(--muted-foreground);
-  border-radius: 50%;
 }
-.wb-ml-month.selected .wb-ml-tick:last-child .wb-ml-tick-dot {
-  background: var(--foreground);
+.wb-ml-roadmap-caption > span {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
+
 .wb-ml-scroll {
   overflow: auto;
   max-height: 560px;
   min-height: 160px;
   position: relative;
+  cursor: grab;
+  touch-action: pan-y;
 }
 .wb-ml-canvas {
   min-width: 100%;
+  position: relative;
 }
 .wb-ml-row,
 .wb-ml-version-row,
-.wb-ml-date-row {
+.wb-ml-empty-row {
   display: flex;
   border-bottom: 1px solid var(--border);
 }
@@ -222,66 +178,127 @@
   border-right: 1px solid var(--border);
   display: flex;
   align-items: center;
+  cursor: default;
 }
 .wb-ml-track {
   position: relative;
   flex-shrink: 0;
 }
-.wb-ml-date-row {
-  height: 28px;
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background: var(--muted);
-}
-.wb-ml-date-row .wb-ml-track > span {
-  position: absolute;
-  top: 6px;
-  font-size: 11px;
-  color: var(--muted-foreground);
-}
 .wb-ml-version-row {
   height: 56px;
   position: sticky;
-  top: 28px;
-  z-index: 4;
+  top: 0;
+  z-index: 5;
   background: var(--card);
+}
+.wb-ml-version-row .wb-ml-label {
+  color: var(--muted-foreground);
+  font-size: 12px;
 }
 .wb-ml-window {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-right: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 5px;
+  gap: 3px;
   overflow: hidden;
+  background: color-mix(in srgb, var(--muted) 48%, var(--card));
+  padding: 4px;
+  font-size: 12px;
+}
+.wb-ml-window > .wb-ml-inline {
+  text-align: center;
+  font-size: 12px;
+  padding: 0 2px;
+}
+.wb-ml-window > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wb-ml-window small {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.wb-ml-unused-week {
+  background: transparent;
+}
+.wb-ml-unused-week .wb-ml-week-name {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+.wb-ml-week-grid {
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent 120px,
+      color-mix(in srgb, var(--muted) 35%, transparent) 120px,
+      color-mix(in srgb, var(--muted) 35%, transparent) 168px
+    ),
+    repeating-linear-gradient(
+      to right,
+      color-mix(in srgb, var(--border) 65%, transparent) 0,
+      color-mix(in srgb, var(--border) 65%, transparent) 1px,
+      transparent 1px,
+      transparent 168px
+    );
 }
 .wb-ml-row {
-  min-height: 108px;
+  min-height: 88px;
+  position: relative;
+}
+.wb-ml-drop-before::after,
+.wb-ml-drop-after::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--ring);
+  z-index: 6;
+  pointer-events: none;
+}
+.wb-ml-drop-before::after {
+  top: 0;
+}
+.wb-ml-drop-after::after {
+  bottom: 0;
+}
+.wb-ml-drop-target {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--ring) 8%, transparent);
+  border: 1px dashed var(--ring);
+  pointer-events: none;
+}
+.wb-ml-row.stacked {
+  min-height: 104px;
 }
 .wb-ml-feature {
-  gap: 7px;
+  gap: 6px;
 }
 .wb-ml-feature > div {
   flex: 1;
   min-width: 0;
   display: grid;
-  gap: 7px;
+  gap: 5px;
 }
-.wb-ml-grip,
-.wb-ml-remove {
-  padding: 3px;
-  border: 0;
-  background: none;
-  color: var(--muted-foreground);
-  cursor: pointer;
-  flex-shrink: 0;
+.wb-ml-feature > div > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .wb-ml-grip {
+  color: var(--muted-foreground);
   cursor: grab;
+  flex-shrink: 0;
   margin-left: -8px;
   touch-action: none;
   user-select: none;
@@ -291,7 +308,7 @@
   width: 100%;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 3px 4px;
   color: inherit;
   font: inherit;
@@ -302,49 +319,82 @@
 .wb-ml-inline:focus {
   outline: 2px solid var(--ring);
   outline-offset: 1px;
-}
-.wb-ml-deliveries {
-  background-image: linear-gradient(to right, var(--border) 1px, transparent 1px);
+  background: var(--card);
 }
 .wb-ml-node {
   position: absolute;
-  width: 156px;
-  min-height: 40px;
-  border: 1px dashed var(--border);
+  width: 138px;
+  height: 34px;
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 5px 8px;
+  padding: 3px 7px;
   background: var(--card);
   text-align: left;
   cursor: pointer;
   touch-action: none;
-  line-height: 1.35;
+  line-height: 1.25;
+  color: var(--foreground);
 }
 .wb-ml-node strong {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-}
-.wb-ml-node small {
-  padding-top: 2px;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
 }
 .wb-ml-node strong > span {
   display: flex;
   align-items: center;
   gap: 4px;
 }
+.wb-ml-node strong > svg {
+  opacity: 0;
+}
+.wb-ml-node:hover strong > svg,
+.wb-ml-node:focus-visible strong > svg {
+  opacity: 1;
+}
+.wb-ml-node small {
+  padding-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .wb-ml-node.release {
-  border-style: solid;
-  border-left: 3px solid var(--foreground);
-  background: var(--muted);
+  background: color-mix(in srgb, var(--muted) 45%, var(--card));
+}
+.wb-ml-node.release strong > span > svg {
+  fill: currentColor;
 }
 .wb-ml-node.moving {
-  opacity: 0.65;
+  opacity: 0.7;
   outline: 2px solid var(--ring);
 }
-.wb-ml-node:focus-visible {
+.wb-ml-node:focus-visible,
+.wb-ml-roadmap-flag:focus-visible {
   outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.wb-ml-row-actions {
+  position: sticky;
+  right: 0;
+  width: 40px;
+  margin-left: -40px;
+  flex: 0 0 40px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  cursor: default;
+}
+.wb-ml-row-actions button {
+  color: var(--muted-foreground);
+}
+.wb-ml-row-actions button:hover {
+  color: var(--foreground);
 }
 .wb-ml-today {
   position: absolute;
@@ -355,10 +405,24 @@
   opacity: 0.5;
   pointer-events: none;
 }
+.wb-ml-empty-row {
+  height: 88px;
+}
+.wb-ml-add-feature {
+  position: sticky;
+  left: 0;
+  width: 230px;
+  padding: 8px 12px;
+  background: var(--card);
+}
+.wb-ml-add-feature button {
+  width: 100%;
+  justify-content: flex-start;
+}
 .wb-ml-alert,
 .wb-ml-notice {
   margin: 0;
-  padding: 10px 18px;
+  padding: 10px 16px;
   color: var(--muted-foreground);
   border-bottom: 1px solid var(--border);
   font-size: 12px;
@@ -367,9 +431,7 @@
   padding: 0 12px;
   text-align: right;
 }
-.wb-ml-versions,
-.wb-ml-review,
-.wb-ml-small {
+.wb-ml-review {
   font-size: 13px;
   color: var(--popover-foreground);
   background: var(--popover);
@@ -377,41 +439,6 @@
   padding: 14px;
   max-height: 440px;
   overflow: auto;
-}
-.wb-ml-versions {
-  width: 320px;
-  display: grid;
-  gap: 12px;
-}
-.wb-ml-versions form {
-  display: grid;
-  gap: 12px;
-}
-.wb-ml-version-dates,
-.wb-ml-versions footer {
-  display: flex;
-  gap: 8px;
-}
-.wb-ml-versions label {
-  min-width: 0;
-  display: grid;
-  gap: 4px;
-  font-size: 11px;
-}
-.wb-ml-versions input,
-.wb-ml-small input {
-  width: 100%;
-  padding: 5px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--foreground);
-  border-radius: 4px;
-}
-.wb-ml-versions > small {
-  font-size: 11px;
-  color: var(--muted-foreground);
-}
-.wb-ml-review {
   width: 420px;
   max-width: 90vw;
 }
@@ -420,10 +447,6 @@
   margin: 12px 0;
   display: grid;
   gap: 8px;
-}
-
-.wb-ml-small {
-  width: 220px;
 }
 .wb-ml-return {
   display: flex;

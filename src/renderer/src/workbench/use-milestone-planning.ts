@@ -9,6 +9,12 @@ import {
 } from '../../../shared/workbench/project-milestones'
 import { ensureNamedWorktree, nativeWorkspaceScopeKey } from './version-cycle/native-workspace'
 import { readMilestones, submitMilestones, type MilestoneScope } from './milestone-port'
+import { latestMilestoneMonth } from '../../../shared/workbench/milestone-calendar'
+import {
+  milestoneRecoveryKey,
+  milestoneRecoveryValue,
+  parseMilestoneRecovery
+} from './milestone-recovery'
 
 type Session = {
   data: MilestoneRead
@@ -18,7 +24,7 @@ type Session = {
   expectedProposal: string | null
   editing: boolean
   month: string
-  scrollX: number
+  scrollX: number | null
   scrollY: number
   pageY: number
   retry: boolean
@@ -27,8 +33,11 @@ type Session = {
   past: MilestoneDraft[]
   future: MilestoneDraft[]
   field: Element | null
+  recoveryRaw: string | null
+  recoveryBlocked?: boolean
+  persistenceError?: string
 }
-// Unsubmitted edits are a view session, not a second business store. Git is the saved source.
+// The disk cache only recovers local edits; committed .bw materials remain authoritative.
 const sessions = new Map<string, Session>()
 const submitting = new Set<string>()
 const listeners = new Set<() => void>()
@@ -54,20 +63,62 @@ function fresh(data: MilestoneRead, previous?: Session): Session {
     expectedFormal: data.formal.revision,
     expectedProposal: data.branchHead,
     editing: previous?.editing ?? false,
-    month:
-      previous?.month ??
-      draft.material.months.at(-1)?.month ??
-      new Date().toISOString().slice(0, 7),
-    scrollX: previous?.scrollX ?? 0,
+    month: previous?.month ?? latestMilestoneMonth(draft),
+    scrollX: previous?.scrollX ?? null,
     scrollY: previous?.scrollY ?? 0,
     pageY: previous?.pageY ?? 0,
     retry: false,
     past: [],
     future: [],
-    field: null
+    field: null,
+    recoveryRaw: previous?.recoveryRaw ?? null,
+    recoveryBlocked: previous?.recoveryBlocked,
+    persistenceError: previous?.persistenceError
   }
 }
-function put(key: string, next: Session) {
+function persist(key: string, next: Session): Session {
+  if (next.recoveryBlocked) return next
+  try {
+    const storageKey = milestoneRecoveryKey(key)
+    if (localStorage.getItem(storageKey) !== next.recoveryRaw) {
+      return {
+        ...next,
+        persistenceError:
+          '另一窗口已更新本机恢复记录，当前输入仍在页面；提交后再退出，避免丢失修改。'
+      }
+    }
+    const raw = changed(next) || next.retry ? JSON.stringify(milestoneRecoveryValue(next)) : null
+    if (raw !== next.recoveryRaw) {
+      if (raw === null) localStorage.removeItem(storageKey)
+      else localStorage.setItem(storageKey, raw)
+    }
+    return { ...next, recoveryRaw: raw, persistenceError: undefined }
+  } catch {
+    return {
+      ...next,
+      persistenceError: '本机草案恢复保存失败，当前输入仍在页面；提交成功后再退出。'
+    }
+  }
+}
+function restore(key: string, data: MilestoneRead): Session | null {
+  let raw: string | null = null
+  try {
+    raw = localStorage.getItem(milestoneRecoveryKey(key))
+    if (!raw) return null
+    const saved = parseMilestoneRecovery(raw)
+    return { ...fresh(data), ...saved, recoveryRaw: raw, past: [], future: [], field: null }
+  } catch {
+    return {
+      ...fresh(data),
+      recoveryRaw: raw,
+      recoveryBlocked: true,
+      sourceConflict:
+        '本机草案恢复记录无法读取，原记录保留。核对后可放弃本次修改，从最新材料重新编辑。'
+    }
+  }
+}
+function put(key: string, next: Session, save = true) {
+  if (save) next = persist(key, next)
   sessions.set(key, next)
   notify()
 }
@@ -104,9 +155,11 @@ export function useMilestonePlanning(
       if (ticket !== generation.current) {
         return
       }
-      const previous = sessions.get(key)
+      const previous = sessions.get(key) ?? restore(key, data) ?? undefined
       const current = fresh(data, previous)
-      if (previous && submitting.has(key)) {
+      if (previous?.recoveryBlocked) {
+        put(key, { ...previous, data })
+      } else if (previous && submitting.has(key)) {
         put(key, { ...previous, data })
       } else if (
         previous &&
@@ -139,7 +192,7 @@ export function useMilestonePlanning(
             ...previous,
             data,
             sourceConflict:
-              '其他地方已调整规划，当前输入保留。请先查看评审核对差异；放弃本次修改后可从最新材料重新编辑。'
+              '其他地方已调整规划，当前输入保留。核对最新材料后可放弃本次修改重新编辑；不会覆盖模型或其他人的修改。'
           })
         }
       } else {
@@ -162,10 +215,21 @@ export function useMilestonePlanning(
       counter.current++
     }
   }, [reload, refreshToken])
+  useEffect(() => {
+    const save = () => {
+      const s = sessions.get(key)
+      if (s) sessions.set(key, persist(key, s))
+    }
+    window.addEventListener('beforeunload', save)
+    return () => {
+      save()
+      window.removeEventListener('beforeunload', save)
+    }
+  }, [key])
   const patch = (update: Partial<Session>) => {
     const s = sessions.get(key)
     if (s) {
-      put(key, { ...s, ...update })
+      put(key, { ...s, ...update }, false)
     }
   }
   const change = (update: (draft: MilestoneDraft) => MilestoneDraft, fieldEdit = false) => {
@@ -277,8 +341,8 @@ export function useMilestonePlanning(
   }
   const revert = () => {
     const s = sessions.get(key)
-    if (s && !submitting.has(key)) {
-      put(key, fresh(s.data, s))
+    if (s && !submitting.has(key) && !reading) {
+      put(key, { ...fresh(s.data, s), recoveryBlocked: false })
       setReadError(null)
     }
   }
@@ -286,6 +350,7 @@ export function useMilestonePlanning(
     state,
     busy: reading || writing,
     error: readError ?? state?.sourceConflict ?? state?.submitError ?? null,
+    persistenceError: state?.persistenceError ?? null,
     dirty: state ? changed(state) : false,
     patch,
     edit: (update: (draft: MilestoneDraft) => MilestoneDraft) => change(update),

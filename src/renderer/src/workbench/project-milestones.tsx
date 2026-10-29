@@ -12,7 +12,17 @@ import {
 import type { MilestoneScope } from './milestone-port'
 import { openVersionOverview } from './project-page-state'
 import { useMilestonePlanning } from './use-milestone-planning'
-import { MilestoneTimeline } from './milestone-timeline'
+import { MilestoneTimeline, type MilestoneLocation } from './milestone-timeline'
+import {
+  latestMilestoneMonth,
+  milestoneDay,
+  milestoneToday,
+  milestoneWeekAt,
+  materializeMilestoneWeek,
+  datedMilestoneVersions,
+  type MilestoneWeek
+} from '../../../shared/workbench/milestone-calendar'
+import { ScheduledVersionSchema } from '../../../shared/workbench/project-milestones'
 import { MilestoneNavigation } from './milestone-navigation'
 import { MilestoneReviewButton } from './milestone-review-button'
 import { describeMilestoneChanges } from './milestone-change-summary'
@@ -31,15 +41,7 @@ export function ProjectMilestones({
   const model = useMilestonePlanning(scope, refreshToken)
   const { state, busy, dirty, error, patch, edit } = model
   const root = useRef<HTMLElement>(null)
-  const undoToast = useRef<string | number | undefined>(undefined)
-  const clearUndo = () => {
-    if (undoToast.current !== undefined) {
-      toast.dismiss(undoToast.current)
-    }
-    undoToast.current = undefined
-  }
-  useEffect(() => clearUndo, [])
-  const [locate, setLocate] = useState<string | null>(null)
+  const [locate, setLocate] = useState<(MilestoneLocation & { scope: string | null }) | null>(null)
   const [restoreKey, setRestoreKey] = useState(0)
   const [newFeature, setNewFeature] = useState<string | null>(null)
   const restored = useRef<string | null>(null)
@@ -78,10 +80,19 @@ export function ProjectMilestones({
   const editing = state.editing
   const visible = editing ? state.draft : milestoneDraft(state.data.formal)
   const enabled = editing && !busy
-  const months = visible.material.months.toSorted((a, b) => a.month.localeCompare(b.month))
-  const month = months.some((m) => m.month === state.month)
-    ? state.month
-    : (months.at(-1)?.month ?? state.month)
+  const month = state.month
+  const hasPlanning =
+    visible.material.months.some((m) => m.outcome.trim()) ||
+    visible.material.features.length > 0 ||
+    datedMilestoneVersions(visible).length > 0
+  const navigate = (date: string) => {
+    patch({ month: date.slice(0, 7) })
+    setLocate((previous) => ({
+      date,
+      sequence: (previous?.sequence ?? 0) + 1,
+      scope: restoreScope
+    }))
+  }
   const problems = milestoneProblems(state.draft)
   const status = state.retry
     ? '提交未完成'
@@ -97,88 +108,76 @@ export function ProjectMilestones({
   const changes = describeMilestoneChanges(state.baseline, state.draft)
   function begin() {
     patch({ editing: true })
-    if (!state!.draft.material.months.length) {
-      edit((d) => ({ ...d, material: { ...d.material, months: [{ month, outcome: '' }] } }))
-    }
   }
-  function updateVersion(cycleId: string, values: Partial<ScheduledVersion>, fieldEdit = false) {
-    ;(fieldEdit ? model.editField : edit)((d) => ({
+  function renameVersion(cycleId: string, version: string) {
+    model.editField((d) => ({
       ...d,
-      versions: d.versions.map((v) => (v.cycleId === cycleId ? { ...v, ...values } : v)),
+      versions: d.versions.map((v) => (v.cycleId === cycleId ? { ...v, version } : v)),
       material: {
         ...d.material,
         features: d.material.features.map((f) => ({
           ...f,
-          pre:
-            f.pre?.cycleId === cycleId && values.version !== undefined
-              ? { ...f.pre, version: values.version }
-              : f.pre,
-          release:
-            f.release?.cycleId === cycleId && values.version !== undefined
-              ? { ...f.release, version: values.version }
-              : f.release
+          pre: f.pre?.cycleId === cycleId ? { ...f.pre, version } : f.pre,
+          release: f.release?.cycleId === cycleId ? { ...f.release, version } : f.release
         }))
       }
     }))
   }
   function remove(f: MilestoneFeature) {
-    const index = state!.draft.material.features.findIndex((item) => item.id === f.id)
     edit((d) => ({
       ...d,
       material: { ...d.material, features: d.material.features.filter((item) => item.id !== f.id) }
     }))
-    clearUndo()
-    undoToast.current = toast('已移除特性', {
-      action: {
-        label: '撤销',
-        onClick: () =>
-          edit((d) => {
-            if (d.material.features.some((item) => item.id === f.id)) {
-              return d
-            }
-            const features = [...d.material.features]
-            features.splice(Math.min(index, features.length), 0, f)
-            return { ...d, material: { ...d.material, features } }
-          })
-      }
-    })
   }
-  function saveVersion(value: ScheduledVersion) {
-    if (!enabled) {
+  function registerWeek(week: MilestoneWeek, name: string) {
+    if (!enabled) return
+    if (state!.draft.versions.some((v) => v.version.toLowerCase() === name.toLowerCase())) {
+      toast('版本名称已存在')
       return
     }
-    if (state!.draft.versions.some((v) => v.cycleId === value.cycleId)) {
-      updateVersion(value.cycleId, value)
-    } else {
-      edit((d) => ({ ...d, versions: [...d.versions, value] }))
+    const next = materializeMilestoneWeek(state!.draft, week, crypto.randomUUID(), name)
+    if (!ScheduledVersionSchema.safeParse(next.version).success) {
+      toast('版本名称无效，未登记')
+      return
     }
-    setLocate(value.cycleId)
+    edit(() => next.draft)
   }
   function addFeature() {
-    const versions = state!.draft.versions
-      .filter(
-        (v) =>
-          v.timeWindow &&
-          v.timeWindow.start.slice(0, 7) <= month &&
-          v.timeWindow.end.slice(0, 7) >= month
-      )
-      .toSorted((a, b) => a.timeWindow!.start.localeCompare(b.timeWindow!.start))
-    if (!versions.length) {
-      toast('先登记本月版本的名称和日期')
-      return
+    if (!enabled) return
+    const today = milestoneToday()
+    const focus = latestMilestoneMonth(state!.draft, today)
+    const firstVersion = datedMilestoneVersions(state!.draft).find(
+      (v) => v.timeWindow!.start.slice(0, 7) === focus
+    )
+    let date =
+      focus === today.slice(0, 7) ? today : (firstVersion?.timeWindow!.start ?? focus + '-01')
+    if (focus !== today.slice(0, 7) && milestoneWeekAt(milestoneDay(date)).end < focus + '-01') {
+      date = new Date((milestoneDay(milestoneWeekAt(milestoneDay(date)).start) + 7) * 86400000)
+        .toISOString()
+        .slice(0, 10)
     }
+    const used = materializeMilestoneWeek(
+      state!.draft,
+      milestoneWeekAt(milestoneDay(date)),
+      crypto.randomUUID()
+    )
     const id = crypto.randomUUID()
-    const ref = (v: ScheduledVersion) => ({ version: v.version, cycleId: v.cycleId })
-    edit((d) => ({
-      ...d,
+    const ref = { version: used.version.version, cycleId: used.version.cycleId }
+    const featureMonth = used.version.timeWindow!.start.slice(0, 7)
+    edit(() => ({
+      ...used.draft,
       material: {
-        ...d.material,
+        ...used.draft.material,
+        months: used.draft.material.months.some((m) => m.month === featureMonth)
+          ? used.draft.material.months
+          : [...used.draft.material.months, { month: featureMonth, outcome: '' }],
         features: [
-          ...d.material.features,
-          { id, month, title: '', owner: '', pre: ref(versions[0]), release: ref(versions.at(-1)!) }
+          ...used.draft.material.features,
+          { id, month: featureMonth, title: '', owner: '', pre: ref, release: ref }
         ]
       }
     }))
+    navigate(date)
     setNewFeature(id)
   }
   function open(version: ScheduledVersion, feature: MilestoneFeature) {
@@ -217,7 +216,6 @@ export function ProjectMilestones({
           return
         }
         event.preventDefault()
-        clearUndo()
         if (event.key.toLowerCase() === 'y' || event.shiftKey) {
           model.redo()
         } else {
@@ -237,15 +235,12 @@ export function ProjectMilestones({
               canUndo={model.canUndo}
               canRedo={model.canRedo}
               undo={() => {
-                clearUndo()
                 model.undo()
               }}
               redo={() => {
-                clearUndo()
                 model.redo()
               }}
               discard={() => {
-                clearUndo()
                 model.revert()
                 setRestoreKey((v) => v + 1)
               }}
@@ -270,7 +265,6 @@ export function ProjectMilestones({
               hasReview={state.data.review.pr?.state === 'open'}
               changes={changes}
               submit={() => {
-                clearUndo()
                 void model.submit()
               }}
             />
@@ -284,6 +278,11 @@ export function ProjectMilestones({
           </MilestoneIconButton>
         </div>
       </header>
+      {model.persistenceError && (
+        <p className="wb-ml-alert" role="alert">
+          {model.persistenceError}
+        </p>
+      )}
       {error && (
         <p className="wb-ml-alert" role="alert">
           {error}
@@ -332,53 +331,38 @@ export function ProjectMilestones({
           </Button>
         </div>
       )}
-      {!months.length ? (
-        <div className="wb-ml-empty">还没有月度里程碑</div>
+      {!editing && !hasPlanning ? (
+        <div className="wb-ml-empty">还没有里程碑</div>
       ) : (
         <>
           <MilestoneNavigation
             visible={visible}
             month={month}
+            editing={editing}
             enabled={enabled}
-            selectMonth={(month) => {
-              clearUndo()
-              patch({ month })
-            }}
-            setLocate={setLocate}
+            navigate={(value) => navigate(value + '-01')}
             editField={model.editField}
-            addMonth={(value) => {
-              edit((d) => ({
-                ...d,
-                material: {
-                  ...d.material,
-                  months: d.material.months.some((m) => m.month === value)
-                    ? d.material.months
-                    : [...d.material.months, { month: value, outcome: '' }]
-                }
-              }))
-              patch({ month: value })
-              setLocate(value)
-            }}
           />
           <div className="wb-ml-toolbar">
             <span>
-              {month} · {visible.material.features.filter((f) => f.month === month).length} 个特性
+              {visible.material.features.length} 个特性 ·{' '}
+              {new Set(visible.material.features.map((f) => f.owner.trim()).filter(Boolean)).size}{' '}
+              位负责人
             </span>
           </div>
           <MilestoneTimeline
-            key={`${editing}:${restoreKey}`}
+            key={`${restoreScope}:${editing}:${restoreKey}`}
             draft={visible}
             editField={model.editField}
-            saveVersion={saveVersion}
+            registerWeek={registerWeek}
             addFeature={addFeature}
             newFeature={newFeature}
-            month={month}
             editing={editing}
             busy={busy}
             edit={edit}
             open={open}
             remove={remove}
-            rename={(cycleId, version) => updateVersion(cycleId, { version }, true)}
+            rename={renameVersion}
             started={
               new Set(
                 (state.data.proposal ?? state.data.formal).versions
@@ -389,7 +373,7 @@ export function ProjectMilestones({
             scrollX={state.scrollX}
             scrollY={state.scrollY}
             onScroll={(scrollX, scrollY) => patch({ scrollX, scrollY })}
-            locate={locate}
+            locate={locate?.scope === restoreScope ? locate : null}
             notify={(text) => toast(text)}
           />
         </>

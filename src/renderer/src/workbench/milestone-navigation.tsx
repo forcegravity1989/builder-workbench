@@ -1,137 +1,103 @@
+import { useEffect, useRef } from 'react'
 import { Flag } from 'lucide-react'
 import { MilestoneField } from './milestone-field'
 import type { MilestoneDraft } from '../../../shared/workbench/project-milestones'
+
 export function MilestoneNavigation({
   visible,
-  month,
   enabled,
-  selectMonth,
-  setLocate,
-  editField,
-  addMonth
+  editing,
+  month,
+  navigate,
+  editField
 }: {
   visible: MilestoneDraft
-  month: string
   enabled: boolean
-  selectMonth(month: string): void
-  setLocate(value: string): void
+  editing: boolean
+  month: string
+  navigate(month: string): void
   editField(update: (d: MilestoneDraft) => MilestoneDraft): void
-  addMonth(month: string): void
 }) {
-  const months = visible.material.months.toSorted((a, b) => a.month.localeCompare(b.month))
+  const scroll = useRef<HTMLDivElement>(null)
+  const pan = useRef<{ x: number; left: number } | null>(null)
+  const candidates =
+    editing && !visible.material.months.length ? [{ month, outcome: '' }] : visible.material.months
+  const months = candidates
+    .filter((m) => editing || m.outcome.trim())
+    .toSorted((a, b) => a.month.localeCompare(b.month))
+  const keys = months.map((m) => m.month).join(',')
+  useEffect(() => {
+    const element = scroll.current
+    const point = element?.querySelector<HTMLElement>(`[data-month="${month}"]`)
+    if (element && point)
+      element.scrollLeft = Math.max(
+        0,
+        point.offsetLeft - element.clientWidth / 2 + point.clientWidth / 2
+      )
+  }, [keys, month])
+  if (!months.length) return null
   return (
-    <div className="wb-ml-navigation">
-      <div className="wb-ml-axis-heading">
-        <span>里程碑时间轴</span>
-        {enabled ? (
-          <label>
-            月份
-            <input
-              type="month"
-              aria-label="规划月份"
-              value={month}
-              onChange={(event) => {
-                if (/^\d{4}-(0[1-9]|1[0-2])$/.test(event.target.value)) {
-                  addMonth(event.target.value)
-                }
-              }}
-            />
-          </label>
-        ) : (
-          <select
-            aria-label="查看月份"
-            value={month}
-            onChange={(event) => {
-              selectMonth(event.target.value)
-              setLocate(event.target.value)
-            }}
-          >
-            {months.map((m) => (
-              <option key={m.month} value={m.month}>
-                {m.month}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-      <nav className="wb-ml-nav" aria-label="里程碑时间导航">
-        {months.map((m) => {
-          const first = `${m.month}-01`
-          const last = new Date(Date.parse(`${first}T00:00:00Z`))
-          last.setUTCMonth(last.getUTCMonth() + 1)
-          last.setUTCDate(0)
-          const end = last.toISOString().slice(0, 10)
-          const versions = visible.versions
-            .filter(
-              (v) =>
-                v.timeWindow?.start &&
-                v.timeWindow.end &&
-                v.timeWindow.start <= v.timeWindow.end &&
-                v.timeWindow.start <= end &&
-                v.timeWindow.end >= first
-            )
-            .toSorted((a, b) => a.timeWindow!.end.localeCompare(b.timeWindow!.end))
-          return (
-            <div
-              key={m.month}
-              className={`wb-ml-month ${m.month === month ? 'selected' : ''}`}
-              style={{ minWidth: Math.max(300, versions.length * 130) }}
+    <nav
+      ref={scroll}
+      className="wb-ml-roadmap-scroll"
+      aria-label="月度里程碑时间轴"
+      onPointerDown={(e) => {
+        if (e.button !== 0 || (e.target as HTMLElement).closest('button,input')) return
+        pan.current = { x: e.clientX, left: e.currentTarget.scrollLeft }
+        e.currentTarget.setPointerCapture(e.pointerId)
+      }}
+      onPointerMove={(e) => {
+        if (pan.current) e.currentTarget.scrollLeft = pan.current.left + pan.current.x - e.clientX
+      }}
+      onPointerUp={() => {
+        pan.current = null
+      }}
+      onPointerCancel={() => {
+        pan.current = null
+      }}
+      onLostPointerCapture={() => {
+        pan.current = null
+      }}
+    >
+      <div className="wb-ml-roadmap-axis" style={{ minWidth: months.length * 240 }}>
+        {months.map((m) => (
+          <div className="wb-ml-roadmap-month" data-month={m.month} key={m.month}>
+            <button
+              className="wb-ml-roadmap-flag"
+              aria-label={`定位里程碑 ${m.month}`}
+              onClick={() => navigate(m.month)}
             >
-              <div
-                className="wb-ml-ticks"
-                style={{ gridTemplateColumns: `repeat(${Math.max(1, versions.length)}, 1fr)` }}
-              >
-                {versions.map((v, index) => (
-                  <div key={v.cycleId} className="wb-ml-tick">
-                    <button
-                      aria-label={`定位 ${v.version}`}
-                      onClick={() => {
-                        selectMonth(m.month)
-                        setLocate(v.cycleId)
-                      }}
-                    >
-                      <span className="wb-ml-flag-slot">
-                        {index === versions.length - 1 && (
-                          <span className="wb-ml-flag">
-                            <Flag size={13} />
-                            {Number(m.month.slice(5))} 月
-                          </span>
-                        )}
-                      </span>
-                      <i className="wb-ml-tick-dot" />
-                      <b>{v.version}</b>
-                      <small>
-                        {v.timeWindow!.start.slice(5)} — {v.timeWindow!.end.slice(5)}
-                      </small>
-                    </button>
-                    {index === versions.length - 1 && (
-                      <div className="wb-ml-outcome">
-                        <MilestoneField
-                          label="本月阶段成果"
-                          value={m.outcome}
-                          editable={enabled}
-                          onChange={(outcome) =>
-                            editField((d) => ({
-                              ...d,
-                              material: {
-                                ...d.material,
-                                months: d.material.months.map((item) =>
-                                  item.month === m.month ? { ...item, outcome } : item
-                                )
-                              }
-                            }))
-                          }
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {!versions.length && <small>{m.month} · 尚未登记有日期的版本</small>}
+              <Flag size={17} />
+              <span>{m.month.replace('-', ' 年 ')} 月</span>
+            </button>
+            <div className="wb-ml-roadmap-caption" title={m.outcome}>
+              <MilestoneField
+                value={m.outcome}
+                label={`${m.month} 阶段成果`}
+                placeholder="一句阶段成果"
+                editable={enabled}
+                onChange={(outcome) =>
+                  editField((d) => {
+                    const existing = d.material.months.some((item) => item.month === m.month)
+                    if (!existing && !outcome) return d
+                    return {
+                      ...d,
+                      material: {
+                        ...d.material,
+                        months: existing
+                          ? d.material.months.map((item) =>
+                              item.month === m.month ? { ...item, outcome } : item
+                            )
+                          : [...d.material.months, { month: m.month, outcome }]
+                      }
+                    }
+                  })
+                }
+              />
             </div>
-          )
-        })}
-      </nav>
-    </div>
+          </div>
+        ))}
+      </div>
+    </nav>
   )
 }

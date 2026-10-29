@@ -4,13 +4,15 @@ export function MilestoneField({
   label,
   editable,
   onChange,
-  autoFocus = false
+  autoFocus = false,
+  placeholder = label
 }: {
   value: string
   label: string
   editable: boolean
   onChange(value: string): void
   autoFocus?: boolean
+  placeholder?: string
 }) {
   const entered = useRef(value)
   const cancelled = useRef(false)
@@ -44,7 +46,7 @@ export function MilestoneField({
           e.currentTarget.blur()
         }
       }}
-      placeholder={label}
+      placeholder={placeholder}
     />
   ) : (
     <span>{value || '—'}</span>

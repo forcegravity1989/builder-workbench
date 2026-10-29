@@ -1,6 +1,4 @@
-import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Ellipsis, Redo2, Undo2 } from 'lucide-react'
+import { Redo2, RotateCcw, Undo2 } from 'lucide-react'
 import { MilestoneIconButton } from './milestone-icon-button'
 
 export function MilestoneHistoryActions({
@@ -39,23 +37,14 @@ export function MilestoneHistoryActions({
       <MilestoneIconButton label="重做" disabled={busy || !canRedo} onClick={redo}>
         <Redo2 size={15} />
       </MilestoneIconButton>
-      <Popover>
-        <PopoverTrigger asChild>
-          <MilestoneIconButton label="更多规划操作" disabled={busy}>
-            <Ellipsis size={15} />
-          </MilestoneIconButton>
-        </PopoverTrigger>
-        <PopoverContent className="wb-ml-small" align="end">
-          <Button
-            variant="ghost"
-            size="xs"
-            disabled={busy || (!dirty && !conflict)}
-            onClick={discard}
-          >
-            放弃本次修改
-          </Button>
-        </PopoverContent>
-      </Popover>
+      <span className="wb-ml-action-separator" aria-hidden="true" />
+      <MilestoneIconButton
+        label={conflict ? '放弃本次修改，从最新材料重新编辑' : '放弃本次修改，恢复最近提交'}
+        disabled={busy || (!dirty && !conflict)}
+        onClick={discard}
+      >
+        <RotateCcw size={15} />
+      </MilestoneIconButton>
     </>
   )
 }

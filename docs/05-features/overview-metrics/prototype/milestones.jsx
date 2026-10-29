@@ -119,9 +119,9 @@ function MilestoneAxis({ plan, planning, changeMilestone, navigate, navigation }
   const months = React.useMemo(
     () =>
       plan.months
-        .filter((m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.month))
+        .filter((m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.month) && (planning || m.outcome.trim()))
         .toSorted((a, b) => a.month.localeCompare(b.month)),
-    [plan.months]
+    [plan.months, planning]
   )
   const monthKeys = months.map((m) => m.month).join(',')
   useEffect(() => {
@@ -674,9 +674,18 @@ function App() {
     const id = `demo-${crypto.randomUUID()}`
     const calendar = calendarFor(state.draft)
     const focus = latestMonth(state.draft)
-    const day = focus === currentDay.slice(0, 7) ? currentDay : `${focus}-01`
+    const firstVersion = state.draft.versions
+      .toSorted((a, b) => a.start.localeCompare(b.start))
+      .find((v) => v.start.slice(0, 7) === focus)
+    const day = focus === currentDay.slice(0, 7) ? currentDay : firstVersion?.start || `${focus}-01`
     const week =
-      calendar.weeks.find((w) => w.start <= day && iso(at(w.start) + 6 * dayMs) >= day) ||
+      calendar.weeks.find(
+        (w) =>
+          w.start <= day &&
+          iso(at(w.start) + 6 * dayMs) >= day &&
+          (focus === currentDay.slice(0, 7) || w.end >= `${focus}-01`)
+      ) ||
+      calendar.weeks.find((w) => w.start >= day) ||
       calendar.weeks.at(-3)
     const next = planWeek(state.draft, week)
     setNewFeature(id)

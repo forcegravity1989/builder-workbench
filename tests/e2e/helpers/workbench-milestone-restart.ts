@@ -40,15 +40,24 @@ export async function verifyMilestoneRestart(previous: ElectronApplication, info
     // Background restart has no animation frames for click stability; force only skips that check.
     await page.getByRole('button', { name: '项目总览', exact: true }).click({ force: true })
     const board = page.locator('.wb-ml')
-    await expect(board.getByText('消息与通知', { exact: true })).toBeVisible({ timeout: 60_000 })
-    await expect(board.getByText('工程能力观测', { exact: true })).toBeVisible()
+    await expect(board.getByLabel('负责人', { exact: true }).first()).toHaveValue(
+      '重启后恢复的草案',
+      { timeout: 60_000 }
+    )
+    await board
+      .getByRole('button', { name: '放弃本次修改，恢复最近提交', exact: true })
+      .click({ force: true })
+    await expect(board.getByLabel('负责人', { exact: true }).first()).toHaveValue('Builder 1')
+    await expect(board.getByLabel('特性名称', { exact: true }).first()).toHaveValue('消息与通知')
+    await expect(board.getByLabel('特性名称', { exact: true }).nth(1)).toHaveValue('工程能力观测')
     await expect(board.getByText('知识库', { exact: true })).toHaveCount(0)
     await expect(board.locator('.wb-ml-row')).toHaveCount(2)
     await info.attach('milestone-process-restart', {
       body: JSON.stringify({
         previousPid,
         restartedPid: restarted.process().pid,
-        formalFeatures: 2
+        formalFeatures: 2,
+        unsentDraftRecovered: true
       }),
       contentType: 'application/json'
     })

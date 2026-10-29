@@ -1,24 +1,33 @@
-import { useEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Diamond, ExternalLink, GripVertical, Plus, X } from 'lucide-react'
 import { MilestoneField } from './milestone-field'
 import { MilestoneIconButton } from './milestone-icon-button'
-import { Button } from '@/components/ui/button'
 import { MilestoneVersionRow } from './milestone-version-row'
-import { Diamond, ExternalLink, GripVertical, Plus, Trash2 } from 'lucide-react'
 import {
   reorderMilestoneFeature,
-  pickMilestoneVersion,
   type MilestoneDraft,
   type MilestoneFeature,
   type ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
+import {
+  latestMilestoneMonth,
+  milestoneCalendar,
+  milestoneDay,
+  milestoneToday,
+  milestoneTargetAt,
+  milestoneTargets,
+  targetWindow,
+  materializeMilestoneWeek,
+  type MilestoneTarget,
+  type MilestoneWeek
+} from '../../../shared/workbench/milestone-calendar'
 
-const day = (date: string) => Date.parse(`${date}T00:00:00Z`) / 86400000
-const iso = (n: number) => new Date(n * 86400000).toISOString().slice(0, 10)
-const width = 28
+const width = 24
 const labelWidth = 230
+export type MilestoneLocation = { date: string; sequence: number }
 type Props = {
   draft: MilestoneDraft
-  month: string
   editing: boolean
   busy: boolean
   edit(update: (draft: MilestoneDraft) => MilestoneDraft): void
@@ -28,366 +37,408 @@ type Props = {
   rename(id: string, version: string): void
   started: Set<string>
   onScroll(x: number, y: number): void
-  scrollX: number
+  scrollX: number | null
   scrollY: number
-  locate: string | null
+  locate: MilestoneLocation | null
   notify(message: string): void
-  saveVersion(version: ScheduledVersion): void
+  registerWeek(week: MilestoneWeek, name: string): void
   addFeature(): void
   newFeature: string | null
 }
 export function MilestoneTimeline(props: Props) {
-  const { draft, month, editing, edit } = props
+  const { draft, editing, edit } = props
   const enabled = editing && !props.busy
-  const versions = draft.versions
-    .filter(
-      (v) =>
-        v.timeWindow &&
-        Number.isFinite(day(v.timeWindow.start)) &&
-        day(v.timeWindow.end) >= day(v.timeWindow.start)
-    )
-    .sort((a, b) => a.timeWindow!.start.localeCompare(b.timeWindow!.start))
-  const features = draft.material.features.filter((f) => f.month === month)
-  const origin = versions.length
-    ? Math.min(...versions.map((v) => day(v.timeWindow!.start)))
-    : day(`${month}-01`)
-  const end = versions.length
-    ? Math.max(...versions.map((v) => day(v.timeWindow!.end)))
-    : Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0) / 86400000
-  const canvasWidth = Math.max(600, (end - origin + 1) * width)
+  const { versions, weeks, start: origin, end } = milestoneCalendar(draft)
+  const targets = milestoneTargets(draft, weeks)
+  const features = draft.material.features
+  const canvasWidth = (end - origin + 1) * width
   const viewport = useRef<HTMLDivElement>(null)
   const draggedRow = useRef<{ id: string; y: number; moved: boolean } | null>(null)
-  const pointer = useRef<{
-    id: string
-    kind: 'pre' | 'release'
-    start: number
-    moved: boolean
-    version: ScheduledVersion | null
-  } | null>(null)
+  const pointer = useRef<{ start: number; moved: boolean; target: MilestoneTarget | null } | null>(
+    null
+  )
+  const pan = useRef<{ x: number; left: number } | null>(null)
   const ignoreClick = useRef(false)
-  const [hover, setHover] = useState<{ key: string; version: ScheduledVersion | null } | null>(null)
-  const tickCount = Number.isFinite(origin) ? Math.min(1100, Math.ceil((end - origin + 1) / 7)) : 0
-  const initialScroll = useRef({ x: props.scrollX, y: props.scrollY })
-  useEffect(() => {
-    if (viewport.current) {
-      viewport.current.scrollLeft = initialScroll.current.x
-      viewport.current.scrollTop = initialScroll.current.y
+  const [hover, setHover] = useState<{ key: string; target: MilestoneTarget | null } | null>(null)
+  const [rowDrop, setRowDrop] = useState<{ id: string; side: 'before' | 'after' } | null>(null)
+  const initial = useRef({ x: props.scrollX, y: props.scrollY, month: latestMilestoneMonth(draft) })
+  const previousOrigin = useRef<number | null>(null)
+  useLayoutEffect(() => {
+    const el = viewport.current
+    if (!el) return
+    if (previousOrigin.current === null) {
+      el.scrollLeft =
+        initial.current.x ??
+        Math.max(0, (milestoneDay(`${initial.current.month}-01`) - origin) * width)
+      el.scrollTop = initial.current.y
+    } else if (previousOrigin.current !== origin) {
+      el.scrollLeft += (previousOrigin.current - origin) * width
     }
-  }, [])
-  const located = versions.find((item) => item.cycleId === props.locate)
-  const locatePosition = located ? day(located.timeWindow!.start) : day(`${props.locate}-01`)
-  useEffect(() => {
-    if (!props.locate || !viewport.current || !Number.isFinite(origin)) {
-      return
+    previousOrigin.current = origin
+  }, [origin])
+  const appliedLocation = useRef<MilestoneLocation | null>(props.locate)
+  useLayoutEffect(() => {
+    if (props.locate && props.locate !== appliedLocation.current && viewport.current) {
+      viewport.current.scrollLeft = Math.max(0, (milestoneDay(props.locate.date) - origin) * width)
+      appliedLocation.current = props.locate
     }
-    if (Number.isFinite(locatePosition)) {
-      viewport.current.scrollTo({
-        left: Math.max(0, (locatePosition - origin) * width),
-        behavior: 'smooth'
-      })
-    }
-  }, [props.locate, locatePosition, origin])
-  function move(id: string, kind: 'pre' | 'release', target: ScheduledVersion) {
-    if (!enabled) {
-      return
-    }
-    const ref = { version: target.version, cycleId: target.cycleId }
-    const f = draft.material.features.find((item) => item.id === id)
-    if (!f) {
-      return
-    }
-    const pre = kind === 'pre' ? target : versions.find((v) => v.cycleId === f.pre?.cycleId)
-    const release =
-      kind === 'release' ? target : versions.find((v) => v.cycleId === f.release?.cycleId)
+  }, [props.locate, origin])
+  useLayoutEffect(() => {
+    const el = viewport.current
+    const row =
+      props.newFeature &&
+      el?.querySelector<HTMLElement>(`[data-milestone-feature="${CSS.escape(props.newFeature)}"]`)
+    if (el && row) el.scrollTop = Math.max(0, row.offsetTop - el.clientHeight + row.clientHeight)
+  }, [props.newFeature])
+
+  function move(id: string, kind: 'pre' | 'release', target: MilestoneTarget) {
+    if (!enabled) return
+    const used =
+      'week' in target
+        ? materializeMilestoneWeek(draft, target.week, crypto.randomUUID())
+        : { draft, version: target.version }
+    const feature = used.draft.material.features.find((f) => f.id === id)
+    if (!feature) return
+    const locate = (ref: MilestoneFeature['pre']) =>
+      used.draft.versions.find((v) => v.cycleId === ref?.cycleId && v.version === ref.version)
+    const pre = kind === 'pre' ? used.version : locate(feature.pre)
+    const release = kind === 'release' ? used.version : locate(feature.release)
     if (pre?.timeWindow && release?.timeWindow && pre.timeWindow.start > release.timeWindow.end) {
       props.notify('Pre 不能晚于 Release，已保留原安排')
       return
     }
-    edit((d) => ({
-      ...d,
+    const ref = { version: used.version.version, cycleId: used.version.cycleId }
+    edit(() => ({
+      ...used.draft,
       material: {
-        ...d.material,
-        features: d.material.features.map((item) =>
-          item.id === id ? { ...item, [kind]: ref } : item
-        )
+        ...used.draft.material,
+        features: used.draft.material.features.map((f) => (f.id === id ? { ...f, [kind]: ref } : f))
       }
     }))
   }
-  const today = day(new Date().toISOString().slice(0, 10))
+  const center = (window: MilestoneWeek) =>
+    ((milestoneDay(window.start) + milestoneDay(window.end) + 1) / 2 - origin) * width
+  function rowTarget(x: number, y: number) {
+    const row = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-milestone-feature]')
+    const id = row?.dataset.milestoneFeature
+    if (!row || !id || !viewport.current?.contains(row)) return null
+    const bounds = row.getBoundingClientRect()
+    return {
+      id,
+      side: y > bounds.top + bounds.height / 2 ? ('after' as const) : ('before' as const)
+    }
+  }
+  const today = milestoneDay(milestoneToday())
   return (
     <div
       ref={viewport}
       className="wb-ml-scroll"
+      aria-label="特性交付泳道"
       onScroll={(e) => props.onScroll(e.currentTarget.scrollLeft, e.currentTarget.scrollTop)}
+      onPointerDown={(e) => {
+        if (e.button !== 0 || (e.target as HTMLElement).closest('button,input,[data-ml-stop-pan]'))
+          return
+        pan.current = { x: e.clientX, left: e.currentTarget.scrollLeft }
+        e.currentTarget.setPointerCapture(e.pointerId)
+      }}
+      onPointerMove={(e) => {
+        if (pan.current) e.currentTarget.scrollLeft = pan.current.left + pan.current.x - e.clientX
+      }}
+      onPointerUp={() => {
+        pan.current = null
+      }}
+      onPointerCancel={() => {
+        pan.current = null
+      }}
+      onLostPointerCapture={() => {
+        pan.current = null
+      }}
     >
-      <div
-        className="wb-ml-canvas"
-        style={{ width: canvasWidth + labelWidth + (editing && versions.length ? 130 : 0) }}
-      >
-        <div className="wb-ml-date-row">
-          <div className="wb-ml-label">特性 / 负责人</div>
-          <div className="wb-ml-track" style={{ width: canvasWidth }}>
-            {Array.from({ length: tickCount }, (_, i) => (
-              <span key={i} style={{ left: i * 7 * width }}>
-                {iso(origin + i * 7).slice(5)}
-              </span>
-            ))}
-          </div>
-        </div>
+      <div className="wb-ml-canvas" style={{ width: canvasWidth + labelWidth }}>
         <MilestoneVersionRow
           draft={draft}
           versions={versions}
+          weeks={weeks}
           editing={editing}
           disabled={props.busy}
           canvasWidth={canvasWidth}
           origin={origin}
           started={props.started}
           rename={props.rename}
-          save={props.saveVersion}
+          registerWeek={props.registerWeek}
         />
-        {features.map((f, row) => (
-          <div key={f.id} className="wb-ml-row" data-milestone-feature={f.id}>
-            <div className="wb-ml-label wb-ml-feature">
-              {editing && (
-                <MilestoneIconButton
-                  className="wb-ml-grip"
-                  disabled={!enabled}
-                  label={`排序 ${f.title || '新特性'}`}
-                  title="拖动排序；Alt + 上下键"
-                  onPointerDown={(e) => {
-                    if (e.button !== 0) {
-                      return
-                    }
-                    e.preventDefault()
-                    e.currentTarget.focus({ preventScroll: true })
-                    draggedRow.current = { id: f.id, y: e.clientY, moved: false }
-                    e.currentTarget.setPointerCapture(e.pointerId)
-                  }}
-                  onPointerMove={(e) => {
-                    const drag = draggedRow.current
-                    if (drag && Math.abs(e.clientY - drag.y) >= 5) {
-                      drag.moved = true
-                    }
-                  }}
-                  onPointerUp={(e) => {
-                    const drag = draggedRow.current
-                    draggedRow.current = null
-                    const target = document
-                      .elementFromPoint(e.clientX, e.clientY)
-                      ?.closest<HTMLElement>('[data-milestone-feature]')
-                    const to = target?.dataset.milestoneFeature
-                    if (!drag?.moved || !target || !to || !viewport.current?.contains(target)) {
-                      return
-                    }
-                    edit((d) => ({
-                      ...d,
-                      material: {
-                        ...d.material,
-                        features: reorderMilestoneFeature(d.material.features, drag.id, to)
-                      }
-                    }))
-                  }}
-                  onPointerCancel={() => {
-                    draggedRow.current = null
-                  }}
-                  onLostPointerCapture={() => {
-                    draggedRow.current = null
-                  }}
-                  onKeyDown={(e) => {
-                    const next = features[row + (e.key === 'ArrowUp' ? -1 : 1)]
-                    if (e.altKey && ['ArrowUp', 'ArrowDown'].includes(e.key) && next) {
+        {features.map((f, row) => {
+          const versionFor = (kind: 'pre' | 'release') =>
+            versions.find((v) => v.cycleId === f[kind]?.cycleId && v.version === f[kind]?.version)
+          const previewFor = (kind: 'pre' | 'release') =>
+            hover?.key === `${f.id}:${kind}` && hover.target
+              ? targetWindow(hover.target)
+              : versionFor(kind)?.timeWindow
+          const pre = previewFor('pre'),
+            release = previewFor('release')
+          const stacked = !pre || !release || Math.abs(center(pre) - center(release)) < 148
+          return (
+            <div
+              key={f.id}
+              className={`wb-ml-row${stacked ? ' stacked' : ''}${rowDrop?.id === f.id ? ` wb-ml-drop-${rowDrop.side}` : ''}`}
+              data-milestone-feature={f.id}
+            >
+              <div className="wb-ml-label wb-ml-feature" data-ml-stop-pan>
+                {editing && (
+                  <MilestoneIconButton
+                    className="wb-ml-grip"
+                    disabled={!enabled}
+                    label={`排序 ${f.title || '新特性'}`}
+                    title="拖动排序；Alt + 上下键"
+                    onPointerDown={(e) => {
+                      if (e.button !== 0) return
                       e.preventDefault()
+                      e.currentTarget.focus({ preventScroll: true })
+                      draggedRow.current = { id: f.id, y: e.clientY, moved: false }
+                      setRowDrop(null)
+                      e.currentTarget.setPointerCapture(e.pointerId)
+                    }}
+                    onPointerMove={(e) => {
+                      const drag = draggedRow.current
+                      const el = viewport.current
+                      if (!drag || !el || (!drag.moved && Math.abs(e.clientY - drag.y) < 5)) return
+                      drag.moved = true
+                      const bounds = el.getBoundingClientRect()
+                      if (e.clientY > bounds.bottom - 30) el.scrollTop += 14
+                      if (e.clientY < bounds.top + 86) el.scrollTop -= 14
+                      const target = rowTarget(e.clientX, e.clientY)
+                      setRowDrop(target?.id === drag.id ? null : target)
+                    }}
+                    onPointerUp={(e) => {
+                      const drag = draggedRow.current
+                      draggedRow.current = null
+                      setRowDrop(null)
+                      const target = rowTarget(e.clientX, e.clientY)
+                      if (!enabled || !drag?.moved || !target) return
                       edit((d) => ({
                         ...d,
                         material: {
                           ...d.material,
-                          features: reorderMilestoneFeature(d.material.features, f.id, next.id)
+                          features: reorderMilestoneFeature(
+                            d.material.features,
+                            drag.id,
+                            target.id,
+                            target.side
+                          )
                         }
                       }))
-                    }
-                  }}
-                >
-                  <GripVertical size={15} />
-                </MilestoneIconButton>
-              )}
-              <div>
-                <MilestoneField
-                  label="特性名称"
-                  autoFocus={f.id === props.newFeature}
-                  value={f.title}
-                  editable={enabled}
-                  onChange={(title) =>
-                    props.editField((d) => ({
-                      ...d,
-                      material: {
-                        ...d.material,
-                        features: d.material.features.map((v) =>
-                          v.id === f.id ? { ...v, title } : v
-                        )
+                    }}
+                    onPointerCancel={() => {
+                      draggedRow.current = null
+                      setRowDrop(null)
+                    }}
+                    onLostPointerCapture={() => {
+                      draggedRow.current = null
+                      setRowDrop(null)
+                    }}
+                    onKeyDown={(e) => {
+                      const next = features[row + (e.key === 'ArrowUp' ? -1 : 1)]
+                      if (enabled && e.altKey && ['ArrowUp', 'ArrowDown'].includes(e.key) && next) {
+                        e.preventDefault()
+                        edit((d) => ({
+                          ...d,
+                          material: {
+                            ...d.material,
+                            features: reorderMilestoneFeature(
+                              d.material.features,
+                              f.id,
+                              next.id,
+                              e.key === 'ArrowUp' ? 'before' : 'after'
+                            )
+                          }
+                        }))
                       }
-                    }))
-                  }
-                />
-                <small>
+                    }}
+                  >
+                    <GripVertical size={15} />
+                  </MilestoneIconButton>
+                )}
+                <div>
                   <MilestoneField
-                    label="负责人"
-                    value={f.owner}
+                    label="特性名称"
+                    autoFocus={f.id === props.newFeature}
+                    value={f.title}
                     editable={enabled}
-                    onChange={(owner) =>
+                    onChange={(title) =>
                       props.editField((d) => ({
                         ...d,
                         material: {
                           ...d.material,
                           features: d.material.features.map((v) =>
-                            v.id === f.id ? { ...v, owner } : v
+                            v.id === f.id ? { ...v, title } : v
                           )
                         }
                       }))
                     }
                   />
-                </small>
+                  <small>
+                    <MilestoneField
+                      label="负责人"
+                      value={f.owner}
+                      editable={enabled}
+                      onChange={(owner) =>
+                        props.editField((d) => ({
+                          ...d,
+                          material: {
+                            ...d.material,
+                            features: d.material.features.map((v) =>
+                              v.id === f.id ? { ...v, owner } : v
+                            )
+                          }
+                        }))
+                      }
+                    />
+                  </small>
+                </div>
+              </div>
+              <div className="wb-ml-track wb-ml-week-grid" style={{ width: canvasWidth }}>
+                {hover?.key.startsWith(`${f.id}:`) && hover.target && (
+                  <div
+                    className="wb-ml-drop-target"
+                    style={{
+                      left: (milestoneDay(targetWindow(hover.target).start) - origin) * width,
+                      width:
+                        (milestoneDay(targetWindow(hover.target).end) -
+                          milestoneDay(targetWindow(hover.target).start) +
+                          1) *
+                        width
+                    }}
+                  />
+                )}
+                {today >= origin && today <= end && (
+                  <i className="wb-ml-today" style={{ left: (today - origin) * width }} />
+                )}
+                {(['pre', 'release'] as const).map((kind) => {
+                  const version = versionFor(kind)
+                  const window = previewFor(kind)
+                  const active = hover?.key === `${f.id}:${kind}`
+                  const name =
+                    active && hover.target
+                      ? 'version' in hover.target
+                        ? hover.target.version.version
+                        : '新版本'
+                      : version?.version
+                  const left = window ? center(window) - 69 : 6
+                  return (
+                    <button
+                      key={kind}
+                      className={`wb-ml-node ${kind}${active ? ' moving' : ''}`}
+                      style={{ left, top: stacked ? (kind === 'pre' ? 10 : 54) : 26 }}
+                      title={editing ? '拖到版本时间窗口；Shift + 左右键移动' : '进入对应版本'}
+                      onPointerDown={(e) => {
+                        ignoreClick.current = false
+                        if (!enabled || e.button !== 0) return
+                        pointer.current = { start: e.clientX, moved: false, target: null }
+                        e.currentTarget.setPointerCapture(e.pointerId)
+                      }}
+                      onPointerMove={(e) => {
+                        const drag = pointer.current,
+                          el = viewport.current
+                        if (!drag || !el || (Math.abs(e.clientX - drag.start) < 5 && !drag.moved))
+                          return
+                        drag.moved = true
+                        const bounds = el.getBoundingClientRect()
+                        if (e.clientX > bounds.right - 45) el.scrollLeft += 18
+                        if (e.clientX < bounds.left + labelWidth + 35) el.scrollLeft -= 18
+                        const date = Math.max(
+                          origin,
+                          Math.min(
+                            end,
+                            origin + (e.clientX - bounds.left + el.scrollLeft - labelWidth) / width
+                          )
+                        )
+                        drag.target = milestoneTargetAt(draft, date)
+                        setHover({ key: `${f.id}:${kind}`, target: drag.target })
+                      }}
+                      onPointerUp={() => {
+                        const drag = pointer.current
+                        pointer.current = null
+                        setHover(null)
+                        if (drag?.moved) {
+                          ignoreClick.current = true
+                          if (drag.target) move(f.id, kind, drag.target)
+                        }
+                      }}
+                      onPointerCancel={() => {
+                        pointer.current = null
+                        setHover(null)
+                        ignoreClick.current = true
+                      }}
+                      onLostPointerCapture={() => {
+                        pointer.current = null
+                        setHover(null)
+                      }}
+                      onKeyDown={(e) => {
+                        if (!enabled || !e.shiftKey || !['ArrowLeft', 'ArrowRight'].includes(e.key))
+                          return
+                        e.preventDefault()
+                        const at = targets.findIndex(
+                          (t) => 'version' in t && t.version.cycleId === version?.cycleId
+                        )
+                        const next =
+                          targets[
+                            Math.max(
+                              0,
+                              Math.min(targets.length - 1, at + (e.key === 'ArrowLeft' ? -1 : 1))
+                            )
+                          ]
+                        if (next) move(f.id, kind, next)
+                      }}
+                      onClick={() => {
+                        if (ignoreClick.current) {
+                          ignoreClick.current = false
+                          return
+                        }
+                        if (version) props.open(version, f)
+                        else if (enabled)
+                          move(
+                            f.id,
+                            kind,
+                            milestoneTargetAt(
+                              draft,
+                              milestoneDay(`${latestMilestoneMonth(draft)}-01`)
+                            )
+                          )
+                      }}
+                    >
+                      <strong>
+                        <span>
+                          <Diamond size={8} />
+                          {kind === 'pre' ? 'Pre版本' : 'Release版本'}
+                        </span>
+                        {version && <ExternalLink size={12} />}
+                      </strong>
+                      <small>{name ?? (f[kind] ? '对应版本缺少排期' : '安排版本')}</small>
+                    </button>
+                  )
+                })}
               </div>
               {editing && (
-                <MilestoneIconButton
-                  className="wb-ml-remove"
-                  label={`移除 ${f.title || '新特性'}`}
-                  disabled={!enabled}
-                  onClick={() => props.remove(f)}
-                >
-                  <Trash2 size={14} />
-                </MilestoneIconButton>
-              )}
-            </div>
-            <div
-              className="wb-ml-track wb-ml-deliveries"
-              style={{ width: canvasWidth, backgroundSize: `${7 * width}px 100%` }}
-            >
-              {today >= origin && today <= end && (
-                <i className="wb-ml-today" style={{ left: (today - origin) * width }} />
-              )}
-              {(['pre', 'release'] as const).map((kind) => {
-                const version = versions.find(
-                  (v) => v.cycleId === f[kind]?.cycleId && v.version === f[kind]?.version
-                )
-                const preview =
-                  hover?.key === `${f.id}:${kind}` ? (hover.version ?? version) : version
-                const left = preview ? (day(preview.timeWindow!.start) - origin) * width + 6 : 6
-                return (
-                  <button
-                    key={kind}
-                    className={`wb-ml-node ${kind} ${hover?.key === `${f.id}:${kind}` ? 'moving' : ''}`}
-                    style={{ left, top: kind === 'pre' ? 8 : 56 }}
-                    title={editing ? '拖到版本时间窗口；Shift + 左右键移动' : '进入对应版本'}
-                    onPointerDown={(e) => {
-                      if (!enabled || !versions.length || e.button !== 0) {
-                        return
-                      }
-                      pointer.current = {
-                        id: f.id,
-                        kind,
-                        start: e.clientX,
-                        moved: false,
-                        version: null
-                      }
-                      e.currentTarget.setPointerCapture(e.pointerId)
-                    }}
-                    onPointerMove={(e) => {
-                      const drag = pointer.current,
-                        el = viewport.current
-                      if (!drag || !el) {
-                        return
-                      }
-                      if (Math.abs(e.clientX - drag.start) < 5 && !drag.moved) {
-                        return
-                      }
-                      drag.moved = true
-                      const bounds = el.getBoundingClientRect()
-                      if (e.clientX > bounds.right - 45) {
-                        el.scrollLeft += 18
-                      }
-                      if (e.clientX < bounds.left + labelWidth + 35) {
-                        el.scrollLeft -= 18
-                      }
-                      const date =
-                        origin + (e.clientX - bounds.left + el.scrollLeft - labelWidth) / width
-                      drag.version = pickMilestoneVersion(versions, date)
-                      setHover({ key: `${f.id}:${kind}`, version: drag.version })
-                    }}
-                    onPointerUp={() => {
-                      const drag = pointer.current
-                      pointer.current = null
-                      setHover(null)
-                      if (drag?.moved) {
-                        ignoreClick.current = true
-                        if (drag.version) {
-                          move(f.id, kind, drag.version)
-                        }
-                      }
-                    }}
-                    onPointerCancel={() => {
-                      pointer.current = null
-                      setHover(null)
-                      ignoreClick.current = true
-                    }}
-                    onKeyDown={(e) => {
-                      if (
-                        !enabled ||
-                        !versions.length ||
-                        !e.shiftKey ||
-                        !['ArrowLeft', 'ArrowRight'].includes(e.key)
-                      ) {
-                        return
-                      }
-                      e.preventDefault()
-                      const at = version ? versions.indexOf(version) : -1
-                      const target =
-                        versions[
-                          Math.max(
-                            0,
-                            Math.min(versions.length - 1, at + (e.key === 'ArrowLeft' ? -1 : 1))
-                          )
-                        ]
-                      move(f.id, kind, target)
-                    }}
-                    onClick={() => {
-                      if (ignoreClick.current) {
-                        ignoreClick.current = false
-                        return
-                      }
-                      if (version) {
-                        props.open(version, f)
-                      } else if (editing && versions.length) {
-                        move(f.id, kind, versions[0])
-                      }
-                    }}
+                <div className="wb-ml-row-actions" data-ml-stop-pan>
+                  <MilestoneIconButton
+                    label={`移除 ${f.title || '新特性'}`}
+                    disabled={!enabled}
+                    onClick={() => props.remove(f)}
                   >
-                    <strong>
-                      <span>
-                        <Diamond size={10} />
-                        {kind === 'pre' ? 'Pre版本' : 'Release版本'}
-                      </span>
-                      {version && <ExternalLink size={13} />}
-                    </strong>
-                    <small>{preview?.version ?? (f[kind] ? '对应版本缺少排期' : '安排版本')}</small>
-                  </button>
-                )
-              })}
+                    <X size={14} />
+                  </MilestoneIconButton>
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          )
+        })}
         {!features.length && (
           <div className="wb-ml-empty-row">
-            <div className="wb-ml-label">{versions.length ? '还没有特性' : '先登记版本'}</div>
-            <div className="wb-ml-track wb-ml-empty-grid" style={{ width: canvasWidth }}>
-              <span>
-                {versions.length
-                  ? '在下方添加特性，拖动安排 Pre / Release。'
-                  : '登记名称和日期后，在这里安排特性。'}
-              </span>
-            </div>
+            <div className="wb-ml-label" />
+            <div className="wb-ml-track wb-ml-week-grid" style={{ width: canvasWidth }} />
           </div>
         )}
-        {editing && versions.length > 0 && (
+        {editing && (
           <div className="wb-ml-add-feature">
             <Button variant="ghost" size="xs" disabled={!enabled} onClick={props.addFeature}>
               <Plus size={13} />

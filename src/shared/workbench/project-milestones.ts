@@ -123,7 +123,8 @@ export function milestoneProblems(draft: MilestoneDraft): string[] {
 export function reorderMilestoneFeature(
   features: MilestoneFeature[],
   from: string,
-  to: string
+  to: string,
+  side: 'before' | 'after'
 ): MilestoneFeature[] {
   const source = features.findIndex((f) => f.id === from),
     target = features.findIndex((f) => f.id === to)
@@ -132,29 +133,7 @@ export function reorderMilestoneFeature(
   }
   const next = [...features]
   const [moved] = next.splice(source, 1)
-  next.splice(target, 0, moved)
+  const insertion = next.findIndex((f) => f.id === to) + (side === 'after' ? 1 : 0)
+  next.splice(insertion, 0, moved)
   return next
-}
-
-/** Containing windows win; in gaps snap to the nearest boundary. Later overlapping windows paint on top. */
-export function pickMilestoneVersion(
-  versions: ScheduledVersion[],
-  date: number
-): ScheduledVersion | null {
-  const dated = versions
-    .filter((v) => v.timeWindow)
-    .toSorted((a, b) => a.timeWindow!.start.localeCompare(b.timeWindow!.start))
-  const at = (value: string) => Date.parse(`${value}T00:00:00Z`) / 86400000
-  const containing = dated.findLast(
-    (v) => at(v.timeWindow!.start) <= date && date < at(v.timeWindow!.end) + 1
-  )
-  if (containing) {
-    return containing
-  }
-  const distance = (v: ScheduledVersion) =>
-    Math.min(Math.abs(date - at(v.timeWindow!.start)), Math.abs(date - at(v.timeWindow!.end) - 1))
-  return dated.reduce<ScheduledVersion | null>(
-    (best, v) => (!best || distance(v) < distance(best) ? v : best),
-    null
-  )
 }
