@@ -99,6 +99,8 @@ PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行
 
 **先有 Issue 再开工**：按 [Issue 格式](standard/system-prompt/references/issue-state.md) 先查同类单，能复用就沿用，没有就新建（只需问题描述）。PR 正文开头写 `关联 #<编号>` 挂上这条 Issue；不用 `Fixes` / `Closes` 等关闭关键字——合入不等于完成，Issue 关闭仍由人决定。
 
+PR 的 [Issue 关联检查](.github/workflows/issue-linkage.yml)读取受信任基线脚本，只读核对首行主关联、真实 Issue 对象、Issue 与 PR/提交的时间，以及 PR 标题、正文和提交消息中的关闭语句。主关联可写 `关联 #123、#456`；后续派生单放正文并说明关系。普通提交的作者时间与提交时间取早值；merge 也可能包含冲突解决，纳入其自身提交时间，不带入父提交历史。补单或 rebase 不抹去历史；堆叠分支应以实际前置分支为 base，避免把前置工作算作本次开工。缺页或读取失败为 Unknown，检查失败；机器不能判断范围是否相符，也不能证明没有更早的本地工作，仍须人审。手动复查入口为该 workflow 的 PR 编号输入，或以只读 GitHub 凭据运行 `GITHUB_REPOSITORY=<owner/repo> PR_NUMBER=<编号> node .github/scripts/check-pr-issue.mjs`。禁止关闭语句同样适用于最终 squash 合并消息；检查通过不批准合入或关闭 Issue。
+
 每件独立提交、在分支和独立工作树上。**默认继续交付 PR**：完成门禁、对应 E2E 和推前 subagent 全方位检视（四维与 TODO 步骤见 [02 §6.2 横切站 B](docs/01-principles/02-working-backwards.md)）后，提交、push、开 PR 并补验证 Review；人明确说「只本地」时才停止在本地。不自动合入 PR、关闭 Issue 或正式发版本，除非人已明确授权该动作。标题应让人不查文档也懂改了什么，正文如实说明原因、取舍与偏差；变化与证据写进 commit/PR，当前知识写回正本。
 
 PR 展示实际改动、知识去向、验证结果和未验证项；文档改动按上节给出内容去向与头部变化。稳定规则写回正本，不把提交流水重新养成一份常驻文档。
