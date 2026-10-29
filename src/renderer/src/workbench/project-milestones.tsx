@@ -14,6 +14,7 @@ import type { MilestoneScope } from './milestone-port'
 import { openVersionOverview } from './project-page-state'
 import { useMilestonePlanning } from './use-milestone-planning'
 import { MilestoneTimeline, type MilestoneLocation } from './milestone-timeline'
+import { MilestoneLegend } from './milestone-delivery-node'
 import {
   latestMilestoneMonth,
   milestoneDay,
@@ -353,6 +354,7 @@ export function ProjectMilestones({
               {new Set(visible.material.features.map((f) => f.owner.trim()).filter(Boolean)).size}{' '}
               位负责人
             </span>
+            <MilestoneLegend />
           </div>
           <MilestoneTimeline
             key={`${restoreScope}:${editing}:${restoreKey}`}

@@ -47,7 +47,15 @@ const {
   X
 } = window.BWPrototypeDependencies
 const shortDate = (date) => date.slice(5).replace('-', '/')
-function InlineField({ value, label, placeholder, change, autoFocus = false, className = '' }) {
+function InlineField({
+  value,
+  label,
+  placeholder,
+  change,
+  autoFocus = false,
+  className = '',
+  required = true
+}) {
   const started = useRef(value)
   return (
     <input
@@ -56,7 +64,7 @@ function InlineField({ value, label, placeholder, change, autoFocus = false, cla
       placeholder={placeholder}
       value={value}
       autoFocus={autoFocus}
-      aria-invalid={!value.trim()}
+      aria-invalid={required && !value.trim()}
       onFocus={() => {
         started.current = value
       }}
@@ -182,6 +190,7 @@ function MilestoneAxis({ plan, planning, changeMilestone, navigate, navigation }
                   value={m.outcome}
                   label={`${m.month} 阶段成果`}
                   placeholder="一句阶段成果"
+                  required={false}
                   change={(value) => changeMilestone(m.month, value)}
                 />
               ) : (
@@ -342,6 +351,11 @@ function Timeline({
                 className={`ml-fixed-version ${currentDay >= v.start && currentDay <= v.end ? 'current' : ''}`}
                 style={{ left: xFor(v.start), width: xFor(v.end) - xFor(v.start) + dayWidth }}
               >
+                {currentDay >= v.start && currentDay <= v.end && (
+                  <span className="ml-current-version" aria-label="当前日期所在版本">
+                    当前
+                  </span>
+                )}
                 {planning ? (
                   <InlineField
                     value={v.name}
@@ -359,10 +373,16 @@ function Timeline({
           </div>
         </div>
         {rows.map((item, index) => {
-          const stacked =
-            byId[item.pre] &&
-            byId[item.release] &&
-            Math.abs(centerFor(byId[item.pre]) - centerFor(byId[item.release])) < 148
+          const pre = byId[drag?.id === item.id && drag.kind === 'pre' ? drag.target : item.pre]
+          const release =
+            byId[drag?.id === item.id && drag.kind === 'release' ? drag.target : item.release]
+          const stacked = pre && release && Math.abs(centerFor(pre) - centerFor(release)) < 148
+          const connection =
+            pre && release
+              ? stacked
+                ? `M ${centerFor(pre)} 44 V 49 H ${centerFor(release)} V 54`
+                : `M ${Math.min(centerFor(pre), centerFor(release)) + 69} 44 H ${Math.max(centerFor(pre), centerFor(release)) - 69}`
+              : null
           return (
             <div
               key={item.id}
@@ -467,6 +487,11 @@ function Timeline({
                       width: xFor(byId[drag.target].end) - xFor(byId[drag.target].start) + dayWidth
                     }}
                   />
+                )}
+                {connection && (
+                  <svg className="ml-delivery-link" aria-hidden="true">
+                    <path d={connection} />
+                  </svg>
                 )}
                 {['pre', 'release'].map((kind, i) => {
                   const target =
@@ -869,7 +894,21 @@ function App() {
               <div className="ml-milestone-heading">
                 <div className="ml-heading-title">
                   <h2>项目里程碑</h2>
-                  {!empty && <span>{plan.features.length} 个特性</span>}
+                  {!empty && (
+                    <span className="ml-feature-summary">
+                      <span>{plan.features.length} 个特性</span>
+                      <span className="ml-delivery-legend" role="group" aria-label="交付节点图例">
+                        <span>
+                          <i aria-hidden="true" />
+                          Pre版本
+                        </span>
+                        <span>
+                          <i className="release" aria-hidden="true" />
+                          Release版本
+                        </span>
+                      </span>
+                    </span>
+                  )}
                 </div>
                 <div className="ml-actions">
                   {planning ? (

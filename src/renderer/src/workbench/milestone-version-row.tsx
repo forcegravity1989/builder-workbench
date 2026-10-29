@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { MilestoneField } from './milestone-field'
 import {
   milestoneDay,
+  milestoneToday,
   versionInMilestoneWeek,
   type MilestoneWeek
 } from '../../../shared/workbench/milestone-calendar'
@@ -75,6 +76,7 @@ export function MilestoneVersionRow({
   rename(id: string, version: string): void
   registerWeek(week: MilestoneWeek, name: string): void
 }) {
+  const today = milestoneToday()
   const position = (window: MilestoneWeek) => ({
     left: (milestoneDay(window.start) - origin) * 24,
     width: (milestoneDay(window.end) - milestoneDay(window.start) + 1) * 24
@@ -101,11 +103,16 @@ export function MilestoneVersionRow({
           ))}
         {versions.map((v) => (
           <div
-            className="wb-ml-window"
+            className={`wb-ml-window${v.timeWindow!.start <= today && today <= v.timeWindow!.end ? ' wb-ml-current-window' : ''}`}
             key={v.cycleId}
             style={position(v.timeWindow!)}
             title={started.has(v.cycleId) ? '已开始计划，名称沿真实版本' : undefined}
           >
+            {v.timeWindow!.start <= today && today <= v.timeWindow!.end && (
+              <span className="wb-ml-current-marker" title={`今天 ${today} 在此排期内`}>
+                当前
+              </span>
+            )}
             <MilestoneField
               label="版本名称"
               value={v.version}

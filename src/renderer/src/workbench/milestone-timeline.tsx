@@ -4,7 +4,7 @@ import { GripVertical, Plus, X } from 'lucide-react'
 import { MilestoneField } from './milestone-field'
 import { MilestoneIconButton } from './milestone-icon-button'
 import { MilestoneVersionRow } from './milestone-version-row'
-import { MilestoneDeliveryNode } from './milestone-delivery-node'
+import { MilestoneConnection, MilestoneDeliveryNode } from './milestone-delivery-node'
 import {
   reorderMilestoneFeature,
   type MilestoneDraft,
@@ -91,6 +91,15 @@ export function MilestoneTimeline(props: Props) {
     }
   }, [props.newFeature])
 
+  function changeField(id: string, field: 'title' | 'owner', value: string) {
+    props.editField((d) => ({
+      ...d,
+      material: {
+        ...d.material,
+        features: d.material.features.map((f) => (f.id === id ? { ...f, [field]: value } : f))
+      }
+    }))
+  }
   function move(id: string, kind: 'pre' | 'release', target: MilestoneTarget) {
     if (!enabled) {
       return
@@ -281,39 +290,24 @@ export function MilestoneTimeline(props: Props) {
                     autoFocus={f.id === props.newFeature}
                     value={f.title}
                     editable={enabled}
-                    onChange={(title) =>
-                      props.editField((d) => ({
-                        ...d,
-                        material: {
-                          ...d.material,
-                          features: d.material.features.map((v) =>
-                            v.id === f.id ? { ...v, title } : v
-                          )
-                        }
-                      }))
-                    }
+                    onChange={(title) => changeField(f.id, 'title', title)}
                   />
                   <small>
                     <MilestoneField
                       label="负责人"
                       value={f.owner}
                       editable={enabled}
-                      onChange={(owner) =>
-                        props.editField((d) => ({
-                          ...d,
-                          material: {
-                            ...d.material,
-                            features: d.material.features.map((v) =>
-                              v.id === f.id ? { ...v, owner } : v
-                            )
-                          }
-                        }))
-                      }
+                      onChange={(owner) => changeField(f.id, 'owner', owner)}
                     />
                   </small>
                 </div>
               </div>
               <div className="wb-ml-track wb-ml-week-grid" style={{ width: canvasWidth }}>
+                <MilestoneConnection
+                  pre={pre ? center(pre) : null}
+                  release={release ? center(release) : null}
+                  stacked={stacked}
+                />
                 {hover?.key.startsWith(`${f.id}:`) && hover.target && (
                   <div
                     className="wb-ml-drop-target"

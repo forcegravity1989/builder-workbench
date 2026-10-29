@@ -8,6 +8,46 @@ import {
   type MilestoneTarget
 } from '../../../shared/workbench/milestone-calendar'
 
+export function MilestoneLegend() {
+  return (
+    <div className="wb-ml-legend" aria-label="交付节点图例" title="连线表示同一特性的两次交付安排">
+      <span>
+        <Diamond size={9} />
+        Pre版本
+      </span>
+      <span>
+        <Diamond size={9} fill="currentColor" />
+        Release版本
+      </span>
+    </div>
+  )
+}
+
+export function MilestoneConnection({
+  pre,
+  release,
+  stacked
+}: {
+  pre: number | null
+  release: number | null
+  stacked: boolean
+}) {
+  if (pre === null || release === null) {
+    return null
+  }
+  return (
+    <svg className="wb-ml-connection" aria-hidden="true">
+      <path
+        d={
+          stacked
+            ? `M ${pre} 44 V 49 H ${release} V 54`
+            : `M ${Math.min(pre, release) + 69} 43 H ${Math.max(pre, release) - 69}`
+        }
+      />
+    </svg>
+  )
+}
+
 export function MilestoneDeliveryNode({
   kind,
   version,

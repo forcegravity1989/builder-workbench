@@ -473,6 +473,15 @@
 .ml-fixed-version.current {
   background: var(--muted);
 }
+.ml-current-version {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
 .ml-fixed-version > button {
   border: 0;
   background: transparent;
@@ -508,6 +517,21 @@
   position: relative;
   flex: none;
   min-height: 88px;
+}
+.ml-delivery-link {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: color-mix(in srgb, var(--muted-foreground) 35%, var(--border));
+  pointer-events: none;
+  z-index: 1;
+}
+.ml-delivery-link path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
 }
 .ml-inline {
   width: 100%;
@@ -579,9 +603,11 @@
   margin-left: auto;
   opacity: 0;
 }
-.ml-delivery-node > span i {
+.ml-delivery-node > span i,
+.ml-delivery-legend i {
   width: 5px;
   height: 5px;
+  flex: none;
   border: 1px solid currentColor;
   transform: rotate(45deg);
   opacity: 0.75;
@@ -767,11 +793,30 @@
 .ml-heading-title {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: 10px;
 }
 .ml-heading-title > span {
   font-size: 11px;
   color: var(--muted-foreground);
+}
+.ml-feature-summary,
+.ml-delivery-legend,
+.ml-delivery-legend > span {
+  display: inline-flex;
+  align-items: center;
+}
+.ml-feature-summary {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.ml-delivery-legend {
+  gap: 12px;
+  font-size: 10px;
+}
+.ml-delivery-legend > span {
+  gap: 5px;
+  white-space: nowrap;
 }
 .ml-edit-actions {
   display: flex;
@@ -806,7 +851,8 @@
 .ml-timeline-row.stacked .ml-track {
   min-height: 104px;
 }
-.ml-delivery-node.release > span i {
+.ml-delivery-node.release > span i,
+.ml-delivery-legend i.release {
   background: currentColor;
 }
 .ml-delivery-node:hover > span svg,
