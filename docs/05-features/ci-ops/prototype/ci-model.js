@@ -189,13 +189,20 @@ export const PROMPTS = {
 export const dotClass = (state) =>
   ({ gray: 'off', yellow: 'wait', green: 'ok', red: 'err' })[state] || 'off'
 
-export const moduleStateText = (module, state) =>
-  ({
-    gray: '未接入',
-    yellow: '已接入 · 待执行',
-    green: '最近一次成功',
-    red: '最近一次失败'
-  })[state.state] || '未知'
+// 红态带步序定位：与流程条数字徽章、记录文案（第 N 步）同用一套序号。
+export const moduleStateText = (module, state) => {
+  if (state.state === 'red') {
+    const idx = FLOW.findIndex((s) => s.id === state.failedStep)
+    return idx !== -1 ? `最近一次失败 · 停在第 ${idx + 1} 步` : '最近一次失败'
+  }
+  return (
+    {
+      gray: '未接入',
+      yellow: '已接入 · 待执行',
+      green: '最近一次成功'
+    }[state.state] || '未知'
+  )
+}
 
 export const moduleButtons = (module, state, errors) => {
   if (state.state === 'gray') {

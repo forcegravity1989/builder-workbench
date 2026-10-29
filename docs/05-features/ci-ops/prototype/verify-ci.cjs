@@ -1,4 +1,4 @@
-// #461 CI 部署原型 DOM 断言验证：进入即全量形态（无场景切换）、三阶段六步流程条、
+// #461 CI 部署原型 DOM 断言验证：进入即全量形态（无场景切换）、三阶段六步流程条（数字标序）、
 // 两种模式与版本选择、统一配置入口与配置事实、执行瞬态与逐步点亮、
 // 日志折叠展开、报错筛选、递交 prompt 一致性、console/page error 监听。
 // 截图只存临时目录供人查看，不进上下文（AGENTS 硬约束）。
@@ -89,6 +89,11 @@ const check = (name, ok) => {
       '软件包准备|预检|清场|部署|验证|记录'
   )
   check(
+    '数字徽章标序 1–6（完成绿色实心）',
+    (await page.locator('.ci-flow-step .ci-flow-badge').allTextContents()).join('|') ===
+      '1|2|3|4|5|6'
+  )
+  check(
     '三阶段分组标签',
     (await page.locator('.ci-flow-phase').allTextContents()).join('|') ===
       '部署前准备|开始部署|部署后验证'
@@ -100,6 +105,10 @@ const check = (name, ok) => {
   )
   check('记录 4 条', (await page.locator('.ci-record').count()) === 4)
   check('历史报错保留', (await page.locator('.ci-record.error').count()) === 1)
+  check(
+    '报错记录定位带步序（第 4 步）',
+    (await page.locator('.ci-record.error .ci-record-detail').textContent()).includes('第 4 步')
+  )
   check(
     '记录行含开发/上线模式 chip',
     (await page.locator('.ci-record-mode').allTextContents()).includes('上线') &&
@@ -139,6 +148,10 @@ const check = (name, ok) => {
       (await page.locator('.ci-flow-step.current .ci-flow-name').textContent()) === '软件包准备'
   )
   check(
+    '执行中当前步徽章带序号',
+    (await page.locator('.ci-flow-step.current .ci-flow-badge').textContent()) === '1'
+  )
+  check(
     '上线递交 prompt 带模式与所选版本',
     (await page.locator('.g3-footer').textContent()).includes('--mode=release --version=1.4.201')
   )
@@ -148,6 +161,11 @@ const check = (name, ok) => {
     (await page.locator(cardState()).textContent()).includes('最近一次成功')
   )
   check('六步全过', (await page.locator('.ci-flow-step.ok').count()) === 6)
+  check(
+    '完成后数字标序保留',
+    (await page.locator('.ci-flow-step .ci-flow-badge').allTextContents()).join('|') ===
+      '1|2|3|4|5|6'
+  )
   check('上线新记录入列', (await page.locator('.ci-record').count()) === 5)
   await page.click('.g3-footer-handoff button')
   check(

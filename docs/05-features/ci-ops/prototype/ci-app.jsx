@@ -22,7 +22,17 @@ function errorsOf(records, moduleId) {
   return records.filter((r) => r.moduleId === moduleId && !r.ok).length
 }
 
-// 流程条：三阶段分组、六步状态点；执行中由 live（idx+done）驱动逐步点亮。
+// 步序号与状态读法：数字 1–6 常显（顺序在任何灯态下可读），完成只以徽章状态色表达。
+const STEP_NO = Object.fromEntries(FLOW.map((s, i) => [s.id, i + 1]))
+const STATUS_TEXT = {
+  ok: '已完成',
+  current: '执行中',
+  fail: '失败',
+  skip: '跳过',
+  pending: '未开始'
+}
+
+// 流程条：三阶段分组、数字徽章标序；执行中由 live（idx+done）驱动逐步点亮。
 function FlowBar({ steps, live, mode, failedStep }) {
   const statusOf = (step) => {
     const prior = steps?.[step.id]
@@ -37,8 +47,6 @@ function FlowBar({ steps, live, mode, failedStep }) {
     }
     return prior === 'ok' || prior === 'skip' ? prior : 'pending'
   }
-  const markOf = (status) =>
-    status === 'ok' ? '✓' : status === 'fail' ? '✗' : status === 'skip' ? '跳' : ''
   return (
     <div className="ci-flow" role="list" aria-label="部署流程六步">
       {FLOW_PHASES.map((phase) => (
@@ -52,12 +60,13 @@ function FlowBar({ steps, live, mode, failedStep }) {
                   key={step.id}
                   className={`ci-flow-step ${status}`}
                   role="listitem"
-                  title={`${phase} · ${step.name}：${mode === 'dev' ? step.dev : step.release}${
-                    failedStep === step.id ? '（失败步）' : ''
-                  }`}
+                  aria-label={`第 ${STEP_NO[step.id]} 步 ${step.name}：${STATUS_TEXT[status] || '未开始'}`}
+                  title={`第 ${STEP_NO[step.id]} 步 · ${step.name}（${phase}）：${
+                    mode === 'dev' ? step.dev : step.release
+                  }${failedStep === step.id ? '（失败步）' : ''}`}
                 >
-                  <span className="ci-flow-dot" aria-hidden="true">
-                    {markOf(status)}
+                  <span className="ci-flow-badge" aria-hidden="true">
+                    {STEP_NO[step.id]}
                   </span>
                   <span className="ci-flow-name">{step.name}</span>
                   {status === 'skip' && <span className="ci-flow-skip">跳过</span>}
