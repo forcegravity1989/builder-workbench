@@ -68,6 +68,7 @@ const PACKAGED_MAIN_REQUIRED_FILES = [
 const PACKAGED_MAIN_SOURCE_RE = /^out\/main\/.+\.js$/
 const TYPE_DECLARATION_ARTIFACT_RE = /\.d\.(?:c|m)?ts(?:\.map)?$/
 const JS_SOURCE_MAP_ARTIFACT_RE = /\.(?:c|m)?js\.map$/
+const WINDOWS_BUILD_ARTIFACT_RE = /\.(?:pdb|obj|ipdb|iobj|ilk|tlog|exp|lib|lastbuildstate)$/i
 const VERSIONED_ONNXRUNTIME_DYLIB_RE = /^libonnxruntime\.\d[\d.]*\.dylib$/
 
 const NODE_BUILTINS = new Set([
@@ -591,6 +592,13 @@ function prunePackagedRuntimeNodeModules(resourcesDir, electronPlatformName, ele
   // Why before the filename walk: zod/src is deleted wholesale, so walking it first is wasted work.
   prunePackagedZodSources(resourcesDir)
   prunePackagedRuntimeTypeAndSourceMapArtifacts(resourcesDir)
+  if (electronPlatformName === 'win32') {
+    const nodeModulesDir = join(resourcesDir, 'node_modules')
+    if (existsSync(nodeModulesDir)) {
+      // Why: MSVC symbols and link inputs are build-only; .node/.dll/.exe stay intact.
+      pruneMatchingFiles(nodeModulesDir, (filename) => WINDOWS_BUILD_ARTIFACT_RE.test(filename))
+    }
+  }
   prunePackagedSherpaOnnx(resourcesDir, electronPlatformName)
 }
 
