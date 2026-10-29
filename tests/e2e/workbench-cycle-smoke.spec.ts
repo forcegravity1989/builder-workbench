@@ -230,3 +230,23 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   })
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-version-overview.png') })
 })
+
+test('BW sidebar: fold and unfold project workspaces', async ({ workbenchPage }, testInfo) => {
+  test.setTimeout(180_000)
+  const collapse = workbenchPage.getByRole('button', { name: '全部收起', exact: true })
+  const expand = workbenchPage.getByRole('button', { name: '全部展开', exact: true })
+  const headers = workbenchPage.locator('[data-sidebar-original-row-key][aria-expanded]')
+  await expect(collapse).toBeVisible({ timeout: 60_000 })
+  await expand.click()
+  await expect(headers.first()).toHaveAttribute('aria-expanded', 'true')
+  const active = await workbenchPage.evaluate(() => window.__store?.getState().activeWorktreeId)
+  await workbenchPage.screenshot({ path: testInfo.outputPath('sidebar-expanded.png') })
+  await collapse.click()
+  await expect(headers.first()).toHaveAttribute('aria-expanded', 'false')
+  await workbenchPage.screenshot({ path: testInfo.outputPath('sidebar-collapsed.png') })
+  expect(await workbenchPage.evaluate(() => window.__store?.getState().activeWorktreeId)).toBe(
+    active
+  )
+  await expand.click()
+  await expect(headers.first()).toHaveAttribute('aria-expanded', 'true')
+})
