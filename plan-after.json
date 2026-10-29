@@ -1,0 +1,21 @@
+{
+  "defaultTuiAgent": "codex",
+  "automations": [
+    {
+      "id": "65a2f7e2-dabb-4e31-9a33-9f3a18043542",
+      "name": "v4.69 每周版本计划（BW）",
+      "agentId": "codex",
+      "precheck": null,
+      "projectId": "71d9892a-a009-4f03-a29d-715eb4e9635d",
+      "workspaceMode": "existing",
+      "workspaceId": "71d9892a-a009-4f03-a29d-715eb4e9635d::C:/Users/xiaoduo/AppData/Local/Temp/workbench-e2e-userdata-r4IK9o/home/orca/workspaces/workbench-e2e-repo-b1NdUd/plan-v4.69",
+      "baseBranch": null,
+      "reuseSession": false,
+      "timezone": "Europe/London",
+      "rrule": "FREQ=WEEKLY;BYDAY=MO;BYHOUR=9;BYMINUTE=0",
+      "dtstart": 1793610000000,
+      "enabled": false,
+      "missedRunGraceMinutes": 720
+    }
+  ]
+}

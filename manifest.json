@@ -1,0 +1,24 @@
+{
+  "issue": 469,
+  "base": "8706e52e472e00ebee4fca57add8b5cfd9096956",
+  "sourceCommit": "cf07d2c2a361b4c7313045cb136dd0a0e87b90da",
+  "workflow": "0.4.6-pilot",
+  "platform": "Windows real Electron; isolated HOME/profile; one worker",
+  "checks": {
+    "protocolTests": "12 passed",
+    "rendererTypecheck": "passed",
+    "lint": "passed",
+    "electronE2eBuild": "passed",
+    "lintStaged": "passed explicitly before final commit",
+    "plan": "1 passed",
+    "acceptance": "1 passed"
+  },
+  "notVerified": [
+    "model business execution",
+    "unknown-agent session reuse",
+    "SSH/paired hosts",
+    "scheduled trigger",
+    "reporter installation"
+  ],
+  "screenshotsBranchNeverMerge": true
+}

@@ -1,0 +1,37 @@
+{
+  "defaultTuiAgent": "codex",
+  "automations": [
+    {
+      "id": "897c5356-30c5-42ca-bc24-641938ca6057",
+      "name": "v4.69 每周版本计划（BW）",
+      "agentId": "claude",
+      "precheck": null,
+      "projectId": "48a3c8e7-5a16-4ab4-a71c-6512d7d27ff0",
+      "workspaceMode": "existing",
+      "workspaceId": "48a3c8e7-5a16-4ab4-a71c-6512d7d27ff0::C:/Users/xiaoduo/AppData/Local/Temp/workbench-e2e-userdata-3ilWON/home/orca/workspaces/workbench-e2e-repo-jAqjgs/plan-v4.69",
+      "baseBranch": null,
+      "reuseSession": false,
+      "timezone": "Europe/London",
+      "rrule": "FREQ=WEEKLY;BYDAY=MO;BYHOUR=9;BYMINUTE=0",
+      "dtstart": 1793610000000,
+      "enabled": false,
+      "missedRunGraceMinutes": 720
+    },
+    {
+      "id": "de23ab53-3f3d-4e0f-b538-d66fc06c18a3",
+      "name": "v4.69 每周版本验收（BW）",
+      "agentId": "codex",
+      "precheck": null,
+      "projectId": "48a3c8e7-5a16-4ab4-a71c-6512d7d27ff0",
+      "workspaceMode": "existing",
+      "workspaceId": "48a3c8e7-5a16-4ab4-a71c-6512d7d27ff0::C:/Users/xiaoduo/AppData/Local/Temp/workbench-e2e-userdata-3ilWON/home/orca/workspaces/workbench-e2e-repo-jAqjgs/acceptance-v4.69",
+      "baseBranch": null,
+      "reuseSession": false,
+      "timezone": "Europe/London",
+      "rrule": "FREQ=WEEKLY;BYDAY=FR;BYHOUR=16;BYMINUTE=0",
+      "dtstart": 1793376000000,
+      "enabled": false,
+      "missedRunGraceMinutes": 720
+    }
+  ]
+}
