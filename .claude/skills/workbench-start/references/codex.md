@@ -1,48 +1,68 @@
 # Codex 执行与会话反哺
 
-> Codex 在 Windows 操作 BW 真壳或提取本次会话时读取对应部分。本文维护本工具的命令、格式与失败处理；验证规则与六项口径仍由 Skill 的交付约定和真实任务反馈定义。启动入口、Codex 记录格式或脚本变化时更新；不要求 Claude 加载 Codex 的细节。
+> Codex 在 Windows 验证 BW、发布截图或提取会话时按需读取。本文维护工具入口、命令与失败处理；验证规则和六项口径分别归交付约定与真实任务反馈。启动入口、记录格式或脚本变化时更新，不要求 Claude 加载本工具细节。
 
-## 启动与复验
+## 真壳验证
 
-1. 在任务 worktree 核对根目录、分支与 HEAD；抓取最新目标分支后按任务需要同步，保留未提交改动。先查已有真壳/开发服务及 lint、tsc、测试进程，核对命令行、目录与窗口，归属不明不关别人的实例。可复用且源码匹配的实例优先复用。
-2. 本机真壳与本地 CI 严禁并发；测试 agent 与工作 agent 交接后顺序运行。先停本次重检查再起壳；先关本次壳和开发服务、确认退出再跑检查。CI 可降低 worker、逐个 TypeScript 项目串行，不把多核当作内存充裕。
-3. 按项目 setup 准备已有依赖和 Electron runtime。已有安装时使用下列已由真实 Issue 验证过的入口，避免 `pnpm exec` 或前置依赖检查意外触发并发安装。缺依赖时明确处理一次 setup，不循环尝试不同路径。Windows 的 `dev:workbench` 含 POSIX 环境赋值，PowerShell 直接设置同样环境再调用原生 runner：
+先核对任务 worktree、分支、HEAD 与未提交改动，按需同步目标分支。用 `git rev-parse --path-format=absolute --git-common-dir` 定位主 checkout，读取交付约定中的本机环境记录并核对机器身份。查明现有真壳、开发服务及重检查进程归属，保留他人的实例；低内存宿主真壳与本地 CI 串行，其他宿主按已确认资源安排。
+
+按交付约定先复用稳定 dev 环境；已有匹配实例直接操作，不重复启动。需要启动时使用下列 dev 入口：它沿用原 runner 与持久 `workbench-dev` profile（Windows 默认 `%APPDATA%/workbench-dev`），保留已纳入的 BW 项目、版本和会话。自定义 profile 沿用已确认的 `ORCA_DEV_USER_DATA_PATH`，不每条 Issue 换空目录；后台启动 helper 使用 `Start-Process -WindowStyle Hidden`。开启 CDP 前先查端口归属，启动后核对实际 Vite/CDP 地址、窗口与源码；通过 computer-use 时先读对应工具技能。
 
 ```powershell
 $taskRoot = (git rev-parse --show-toplevel).Trim()
-$env:WORKBENCH_SHELL = '1'
-$env:VITE_WORKBENCH_SHELL = '1'
-$env:ORCA_PRODUCT_NAME = 'Workbench'
-$env:ORCA_DEV_USER_DATA_PATH = Join-Path $taskRoot '.bw/runtime/verification/profile'
-$env:REMOTE_DEBUGGING_PORT = '9337' # 先查端口归属；被占用时选空闲端口
-node config/scripts/run-electron-vite-dev.mjs
+node .claude/skills/workbench-start/scripts/run-bw-verification.mjs dev --root $taskRoot
 ```
 
-4. 记录 runner 输出的实际 Vite/CDP 地址、源码 SHA 与 profile。通过当前可用的 computer-use 工具检查窗口，先读该工具技能；允许使用 CDP 时，`http://127.0.0.1:9337/json/version` 可确认调试服务，连接后仍需核对窗口与工作树。不要把“端口已开”当成应用已加载。
-5. 改 renderer 后沿用当前开发壳的热更新，先确认新代码已加载；main/preload、runner、依赖或持久化恢复验证需要重启。重启只停止本次 PID 及其开发服务，保留同一隔离 profile 和测试数据再运行上面入口。基线与修复保持相同数据/配置前提；需要修改前证据时先在未修改基线采集，不能用新代码截图补造旧结果。
-6. 输出和 profile 留 `.bw/runtime/`，避免 `.scratch/` 内生成的脚本被全仓 lint 误扫。要后台启动时用 PowerShell `Start-Process -WindowStyle Hidden`，保存 PID/日志路径。验证结束及时关闭本次实例，不删除别人的 profile。Node 工具从当前 worktree 的真实安装解析；使用持久 Node REPL 时可用 `createRequire(<实际仓根>/package.json)` 加载 `playwright-core`，不反复猜包导出入口。
+需要一次性隔离或自动回归时，用 `tests/e2e/helpers/workbench-app.ts` 管理真实 Electron、HOME/profile、测试仓及清理。沿用已有用例；临时场景放 `.bw/runtime/verification/<issue>/`，引用该 fixture 与现有 global-setup/global-teardown，不复制启动实现：
 
-项目启动正源是 `package.json`、`config/scripts/run-electron-vite-dev.mjs`、`config/scripts/dev-workbench-env.mjs`；命令变化时查这些实际文件。低内存时 `pnpm run typecheck` 的 runner 会并行三个项目，改用现有 `typecheck:node`、`typecheck:cli`、`typecheck:web` 逐项运行；已安装工具优先直接调用，pnpm 的依赖预检触发安装时先停下。完整门禁放远端 CI 时，明确本地未执行范围。
+```powershell
+# 已有冒烟只证明其原判据；Issue 用本次标准路径和断言替换 grep/config。
+node .claude/skills/workbench-start/scripts/run-bw-verification.mjs --root $taskRoot --grep 'BW project settings:'
+node .claude/skills/workbench-start/scripts/run-bw-verification.mjs --root $taskRoot --config .bw/runtime/verification/issue-编号/playwright.config.ts --grep '本次用例'
+```
+
+隔离包装只串起现有构建与已安装 Playwright，单 worker、可见但不抢焦点；源码或产物指纹变化就重建 E2E，匹配才复用，阶段耗时记 `.bw/runtime/verification/last-run.json`。缺依赖时按项目 setup 处理一次，不用 `pnpm exec` 重复安装；锁冲突先核对 PID。
+
+由测试 agent 从基线到修复复用同一场景文件、数据前提和截图位置；工作 agent 提供设计与判据，不另写一套临时用例重复探路。场景失败先检查当前页面、真实控件名称和遮挡，再修正标准路径；修改路径后补跑基线，不能跳过独立复验。源码修改后重新运行包装脚本，不手设 `SKIP_BUILD=1` 沿用不明产物。
+
+dev renderer 热更新须确认加载；main/preload、依赖或持久化验证重启已获授权的本次实例，保留同一 profile 与项目数据。不能关闭仍由其他任务使用的实例。产物与截图留 `.bw/runtime/`。
+
+运行入口正源为 `package.json` 与 `config/scripts/run-electron-vite-{dev,build}.mjs`。完整门禁串行执行；低内存时已有 `typecheck:node`、`typecheck:cli`、`typecheck:web` 分项运行，完整 CI 放远端时说明本地范围。
+
+## 截图发布与读回
+
+准备 manifest，例如 `{"files":[{"file":"before-plan.jpg","name":"before.jpg"},{"file":"after-plan.jpg","name":"after.jpg"}]}`。`file` 相对 manifest 所在目录或为绝对路径；`name` 为证据树中的唯一图片名。
+
+```powershell
+node .claude/skills/workbench-start/scripts/publish-pr-evidence.mjs publish --root $taskRoot --repo OWNER/REPO --branch shots/本任务分支 --manifest .bw/runtime/verification/图片清单.json --out .bw/runtime/verification/图片结果.json --push
+# 在已获授权的 PR 写入验证评论后，检查 GitHub 实际渲染的图片地址。
+node .claude/skills/workbench-start/scripts/publish-pr-evidence.mjs check --comment 'https://github.com/OWNER/REPO/pull/编号#issuecomment-评论ID' --out .bw/runtime/verification/评论图片检查.json
+```
+
+省略 `--push` 只准备本地证据提交。脚本不切分支、不改工作区或索引；仅收录清单图片，二进制 NUL 构树，生成钉 SHA 的 GitHub raw 地址。推送后读回图片格式和内容指纹，评论后再查渲染图片，失败时修原报告再交付。
 
 ## 会话反哺
 
-原始记录优先从 `$CODEX_HOME/sessions` 找；未设时用用户目录的 `.codex/sessions`。按会话 ID 定位文件，不扫描所有正文；会话名可用桌面 `list_threads` 找 ID。不要读取凭据或用 BW PTY 测试捕获脚本冒充会话导出。
+原始记录从 `$CODEX_HOME/sessions` 找；未设置时用用户目录 `.codex/sessions`，已归档则查同一根的 `archived_sessions`。按会话 ID 定位文件，不扫描所有正文；会话名用桌面 `list_threads` 找 ID。不要读凭据或用 BW PTY 捕获脚本冒充会话导出。
 
 ```powershell
 $taskCodexHome = $env:CODEX_HOME
 if (-not $taskCodexHome) { $taskCodexHome = Join-Path $env:USERPROFILE '.codex' }
-rg --files (Join-Path $taskCodexHome 'sessions') -g '*会话ID*.jsonl'
+rg --files (Join-Path $taskCodexHome 'sessions') (Join-Path $taskCodexHome 'archived_sessions') -g '*会话ID*.jsonl'
 node .claude/skills/workbench-start/scripts/codex-session-feedback.mjs extract --input 原始.jsonl --out 提取.json
+node .claude/skills/workbench-start/scripts/codex-session-feedback.mjs schema
 ```
 
-提取脚本优先使用 `event_msg/item_completed` 的 `UserMessage`、`AgentMessage`；旧记录回退到带用户来源的 `response_item/message` 或 `event_msg/user_message`。同一条在不同存储表示里只取一次，保留真实重复发送供模型判断。AGENTS、环境注入、工具回显和子 agent 不当用户输入。正文不可读、格式损坏或历史截断时保留缺口，不能继续生成零值。
+提取优先用 `event_msg/item_completed` 的 UserMessage/AgentMessage，旧记录回退到有用户来源的 response_item 或旧事件。存储镜像只取一次，真实重复发送留给模型判断；AGENTS、环境注入、工具回显和子 agent 不算人的输入。正文不可读、损坏或截断保留缺口，不能生成零值。
 
-模型读取提取结果与实际 PR 评审后，写一个本地标注 JSON，再运行同一脚本的 `report` 子命令。标注包含 Issue/PR URL、方法版本、首次交付消息 ID、覆盖范围、逐条用户输入摘要/标签、模型提问标签、首次评审结论与证据、返工重新交付 ID；具体字段和合法标签运行 `schema` 查看。标注只做有原文的语义判断，不按关键词猜“该不该问”；去重需明确指向原消息，返工后的参与按交付阶段分开。
+模型结合对应提问、实际 PR 评审和重新交付，逐条更新本地标注 JSON。字段与合法标签由 `schema` 给出；完整覆盖须核对全部用户输入，不能按关键词猜语义。首次交付引用真正完成回执，正常问答与范围纠正按原意区分；证据补修与产品代码返工保留不同原因。
 
 ```powershell
-node .claude/skills/workbench-start/scripts/codex-session-feedback.mjs schema
 node .claude/skills/workbench-start/scripts/codex-session-feedback.mjs report --input 提取.json --annotations 标注.json --out 评论.md --json 指标.json
+# 首次发布；已有反馈评论时按稳定标记找到自己的评论 ID，使用下面 PATCH 替换。
 gh pr comment PR编号 --body-file 评论.md
+@{body=(Get-Content 评论.md -Raw)} | ConvertTo-Json | Set-Content 更新.json -Encoding utf8
+gh api --method PATCH repos/OWNER/REPO/issues/comments/评论ID --input 更新.json
 ```
 
-先审阅生成的评论、核对目标 PR 与当前授权，再执行最后一条发布命令。重复运行时按评论中的稳定标记找到自己上次发布的评论并更新，不连续新发。评论只含六项计数、权限请求、必要用户输入摘要与覆盖范围，原文和提取产物留本地；人审前填待审，人审或返工后重跑并更新。不把脚本运行成功说成已证明下一条任务的 workflow 改善，也不把本地工具称为版本总览已接通。
+report 会重读原始来源核对用户输入；新增输入后旧快照不能生成报告。人审或返工后重跑 extract→标注→report，预览计数和摘要，再按当前授权更新原评论。合入不抹去此前返工；原文与提取产物留本地，脚本通过只证明计数与协议，不证明下一条任务的行为改善。
