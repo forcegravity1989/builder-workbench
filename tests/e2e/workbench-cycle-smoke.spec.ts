@@ -225,7 +225,9 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.getByRole('heading', { name: 'v9.9 版本总览' })).toBeVisible({
     timeout: 60_000
   })
-  await expect(workbenchPage.getByRole('button', { name: '计划草稿 ↗', exact: true })).toBeVisible({
+  await expect(
+    workbenchPage.locator('.bwo-header').getByText('计划草稿', { exact: true })
+  ).toBeVisible({
     timeout: 60_000
   })
   await expect(
