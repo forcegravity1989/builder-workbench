@@ -217,7 +217,7 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await cleanup.getByRole('button', { name: '取消' }).click()
   await expect(cleanup).toHaveCount(0)
 
-  // ---- 版本总览（P6）：每版「总览」行挂载表格页；未提交材料如实缺失，不装绿 ----
+  // The saved bound-tree plan is visible as a draft; it is not a formal plan or acceptance.
   const v99Group = workbenchPage.locator('.wb-version-group', {
     has: workbenchPage.getByRole('button', { name: 'v9.9 展开或收起' })
   })
@@ -225,8 +225,14 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.getByRole('heading', { name: 'v9.9 版本总览' })).toBeVisible({
     timeout: 60_000
   })
-  await expect(workbenchPage.getByText('主干没有 v9.9 的已提交计划材料。')).toBeVisible({
+  await expect(workbenchPage.getByRole('button', { name: '计划草稿 ↗', exact: true })).toBeVisible({
     timeout: 60_000
   })
+  await expect(
+    workbenchPage.getByRole('heading', { name: '验证计划材料保存·烟测', exact: true })
+  ).toBeVisible()
+  await expect(
+    workbenchPage.getByRole('button', { name: '未记录验收 ↗', exact: true })
+  ).toBeVisible()
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-version-overview.png') })
 })
