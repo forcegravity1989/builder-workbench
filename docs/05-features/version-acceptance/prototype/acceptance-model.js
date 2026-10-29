@@ -1,4 +1,6 @@
 // 验收旅程候选(v10)演示模型。计划材料复用 G3 的 v0.7 真实快照,验收侧状态为本稿演示数据¹。
+// #471 整改:举证前移到各 Issue/PR 合入时,验收证据报告改为按目标聚合各 Issue
+// 验收件;纪要按目标分组(条目前缀,呈现级实现)。
 import snapshot from '../../version-planning/prototype/g3-snapshot.json'
 export { snapshot }
 export const g2Url = '../version-workspace/version-workspace-prototype.html'
@@ -10,9 +12,19 @@ export const g2Url = '../version-workspace/version-workspace-prototype.html'
 // 输入之一」的双意图归 version-acceptance Skill。整理纪要「汇总」改「提炼」。
 export const minutesRequestPrompt =
   '整理本次验收会的会议纪要：把会话中已发送的板面批注提炼为共识 / 遗留两块。需要语音转写稿就问我要一次会议 ID。'
+// 「聚合」(#471):报告不再会前采集,改为聚合各 Issue / PR 合入时留下的验收证据;
+// prompt 同样只承载触发意图,聚合落点与缺口处置(人确认或自行补充)归 Skill。
+export const aggregateRequestPrompt =
+  '聚合本次验收的证据报告：把各 Issue / PR 合入时留下的验收证据按目标归并成一份报告，缺证的地方如实标缺。'
+// 「预订会议」与「同步会议纪要」(#471 评审新增,会议生命周期首片):预订周五
+// 验收会并把会议信息写回材料;同步把本页共识/遗留按固定样式写进该会议的纪要。
+// prompt 同样只承载触发意图;固定样式与会议工具归 Skill。
+export const bookMeetingRequestPrompt = '预订本周五的版本验收会议，完成后把会议信息写回材料。'
+export const syncMinutesRequestPrompt =
+  '把本页会议纪要的共识与遗留按固定样式同步到已预订的验收会议纪要中。'
 // 四步旅程轴:只做同页定位,不是门禁;界面无灯,stage 是材料内部进度。
 export const stages = [
-  ['prepare', '验收准备', '部署服务与证据报告'],
+  ['prepare', '验收准备', '部署 · 会议 · 证据报告'],
   ['showcase', 'Showcase', '逐目标核对交付结果'],
   ['minutes', '会议纪要', '共识与遗留 · 人工确认'],
   ['archive', '归档 PR 及发版本', '原生 PR 再审 · 授权发布']
@@ -44,7 +56,8 @@ export const LATEST_PACKAGE = {
 export const CANDIDATE = {
   short: 'f5ac309b'
 }
-// 验收证据报告:一份/版本、全目标合并;验收点=说明+证据罗列,演示项标操作路径。
+// 验收证据报告(#471 整改):一份/版本,按目标聚合各 Issue / PR 合入时留下的
+// 验收件(目标 → Issue),会话注入「聚合」生成;缺证如实呈现,人确认或自行补充。
 export const REPORT = {
   file: '.bw/planning/v0.7/acceptance-evidence.html',
   generatedAt: '2026-10-21 16:05'
@@ -86,21 +99,39 @@ export const sceneLatest = {
   meeting: LATEST_PACKAGE,
   wrap: LATEST_PACKAGE
 }
+// 预订会议演示数据¹:会话预订、信息写回材料;生产由模型用 welink-cli 创建会议
+// (逻辑内置于验收技能)执行。纪要区的「同步会议纪要」依赖已预订。
+export const MEETING = {
+  title: 'v0.7 版本验收会',
+  time: '10-23(周五) 14:00',
+  id: '92338821'
+}
+export const sceneMeeting = {
+  planned: null,
+  unmerged: null,
+  started: null,
+  prep: MEETING,
+  meeting: MEETING,
+  wrap: MEETING
+}
 export const nextSteps = {
   G3: '进展可读与旅程可见两项演示通过;任务顺手一项随转写链路(#374)带入下版,不自动承诺。'
 }
-// 纪要示例与计划屏同样写清落实结果或 Issue 去向；下版回顾不自动承诺跟进工作。
+// 纪要示例(#471 批注5):条目带「G<n> ·」目标前缀,读视图按前缀分组到各目标
+// 小标题下;协议仍是共识/遗留两条平铺清单。共识记各目标会上产生的结论性决定,
+// 不复述板面已呈现的达成情况(共享纪要规范:达成情况一律不进纪要);遗留与计划屏
+// 同样写清落实结果或 Issue 去向；下版回顾不自动承诺跟进工作。
 const initialMinutes = {
   confirmed: false,
   sources: '会议转写稿(周五验收会)· 人工编辑 3 处',
   consensus: [
-    'G1/G2 演示通过;项目墙与侧边栏层次下周起按新结构使用。',
-    'G3 未达不阻断发布;原因与安排以目标卡「下一步」为准。',
-    '验收证据报告记录操作与读数，版本收尾总结报告汇总交付与遗留。'
+    'G1 · 4 个核心项目特性与指标梳理结果自本版起作为组内基线，新增项目按同口径补录。',
+    'G2 · 项目墙与侧边栏层次下周起按新结构使用，会话归档验证通过。',
+    'G3 · 不阻断发布；原因与安排以目标卡「下一步」为准。'
   ],
   followups: [
-    { text: '第 4 个项目特性与指标读回由 #341 继续跟进，是否纳入下版由下次计划确认。' },
-    { text: '已落实：验收证据报告与版本收尾总结报告的分工已写入本次共识。' }
+    { text: 'G1 · 第 4 个项目特性与指标读回由 #341 继续跟进，是否纳入下版由下次计划确认。' },
+    { text: 'G3 · 已落实：转写链路调研已闭环，结论并入 #374 跟进（#384 已关闭）。' }
   ]
 }
 export const sceneMinutes = {
@@ -126,7 +157,7 @@ export const sceneArchive = {
 }
 export const releaseInfo = {
   version: 'v0.7.0',
-  at: '10-21 18:20',
+  at: '10-23 18:20',
   commit: 'f5ac309b',
   assets: 'orca-windows-setup.exe · blockmap · latest.yml'
 }

@@ -1,14 +1,48 @@
 /* 验收旅程候选(v10)专属样式;布局与组件样式复用 g3-planning.css。 */
 
-/* 验收准备卡 */
-.acc-prep-card {
+/* 验收准备:出包折叠卡 + 行卡,度量对齐生产 acceptance.css 的
+   .acc-package-block / .acc-prepare-rows(2026-10-24 生产实现)。 */
+.acc-package-block {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.acc-package-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+.acc-package-summary > span:first-of-type {
+  font-weight: 500;
+}
+.acc-package-summary .g3-muted {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+/* 折叠只隐藏不卸载(生产同款):与 .acc-package-body 互斥使用——展开无折叠类、
+   收起仅本类,避免同元素两条 display 规则竞争 */
+.acc-collapsed {
+  display: none;
+}
+.acc-package-body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  border: 1px solid var(--color-hairline, rgba(128, 128, 128, 0.25));
-  border-radius: 10px;
+  border-top: 1px solid var(--border);
   padding: 12px 14px;
-  background: var(--color-bg-subtle, rgba(128, 128, 128, 0.04));
 }
 .acc-pkg-toolbar {
   display: flex;
@@ -42,7 +76,7 @@
 }
 .acc-pkg-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(4rem, auto) minmax(6rem, 1.1fr) auto minmax(8rem, 1.6fr);
   gap: 4px 12px;
   margin: 0;
   font-size: 12px;
@@ -60,64 +94,97 @@
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 11.5px;
 }
-.acc-row-line {
+.acc-prepare-rows {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.acc-prepare-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 12px 14px;
   font-size: 13px;
-  border-top: 1px dashed var(--color-hairline, rgba(128, 128, 128, 0.25));
-  padding-top: 8px;
   min-width: 0;
 }
-.acc-line-label {
-  flex: none;
-  font-size: 12px;
-  color: var(--color-text-muted, #767676);
-  min-width: 84px;
+.acc-prepare-row + .acc-prepare-row {
+  border-top: 1px solid var(--border);
 }
-.acc-line-value {
+.acc-prepare-label {
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.acc-prepare-value {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-/* One decision control, using the current production neutral/warning treatment. */
-.acc-verdict {
+.acc-prepare-row .g3-muted,
+.acc-prepare-row .acc-link {
+  flex: 1;
+  min-width: 0;
+}
+/* 行内材料链接(演示环境/报告):生产 .acc-link 同款——继承色+下划线,
+   不用等宽字体(链接文本是系统名/生成时间,不是路径字面量) */
+.acc-link {
   display: inline-flex;
+  align-items: center;
   gap: 4px;
-  margin-left: auto;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  min-width: 0;
+}
+.acc-link svg {
   flex: none;
 }
+
+/* One decision control, verbatim from production acceptance.css (#471 批注6 裁定
+   「以真机为准」)：行内跟随计数、不推到行尾，边框/文字用设计系统
+   --border / --muted-foreground，met/unmet 不加字重。 */
+.acc-verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
 .acc-verdict-select {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: none;
+  padding: 3px 8px;
   font: inherit;
   font-size: 12px;
-  line-height: 1.4;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--color-hairline, rgba(128, 128, 128, 0.35));
-  background: transparent;
-  color: var(--color-text-muted, #767676);
+  color: var(--muted-foreground);
+  white-space: nowrap;
   cursor: pointer;
 }
 .acc-verdict-select.met {
   border-color: var(--foreground);
   background: var(--foreground);
   color: var(--background);
-  font-weight: 600;
 }
 .acc-verdict-select.unmet {
-  border-color: var(--color-warning-deep);
   background: var(--color-warning-deep);
+  border-color: var(--color-warning-deep);
   color: var(--color-bg);
-  font-weight: 600;
 }
 .acc-verdict-select option {
   color: var(--foreground);
   background: var(--background);
 }
-.acc-row-line > .g3-action-button {
-  margin-left: auto;
+.acc-prepare-row > .g3-action-button {
   flex: none;
 }
 .acc-session-handoff {
@@ -193,27 +260,10 @@
 }
 /* 发布读回行的 .acc-release-status 已随「板面不设发布状态读回行」的裁定删除。 */
 
-/* 出包区块收起行 */
-.acc-pkg-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  cursor: pointer;
-  color: inherit;
-  min-width: 0;
-}
-.acc-pkg-toggle strong {
-  font-size: 13px;
-  flex: none;
-}
-.acc-pkg-toggle .g3-muted {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* 出包空态:生产 .va-pkg-empty 同款(灰字一行,不重复操作指引) */
+.acc-pkg-empty {
+  margin: 0;
+  color: var(--color-text-muted, #767676);
   font-size: 12px;
 }
 
@@ -227,39 +277,53 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.acc-report-link:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  text-decoration: none;
-}
-
-/* 材料链接(演示环境):显示系统名,点击唤起 Orca 内置浏览器打开绑定的 web 链接 */
-.acc-report-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  font-size: 12.5px;
-  font-family: var(--font-mono, ui-monospace, monospace);
-  color: var(--color-accent, #5269ff);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.acc-report-link svg {
-  flex: none;
-}
 
 /* Issue counts stay readable when the native session narrows the board. */
 .acc-issue-counts {
   white-space: normal;
   text-align: right;
   line-height: 1.5;
+}
+
+/* 纪要按目标分组小标题(#471 批注5):读视图按「G1 ·」前缀把共识/遗留归到各
+   目标名下,小标题=左竖条+目标句;组内小节沿用纪要卡的共识/遗留样式。协议
+   不动(仍是平铺清单),前缀分组是呈现级实现;编辑态保持平铺清单。 */
+.acc-minutes-goal {
+  border-top: 1px solid var(--border);
+  padding: 12px 0 10px;
+}
+.acc-minutes-goal:first-child {
+  border-top: none;
+}
+.acc-minutes-goal h4 {
+  margin: 0 0 8px;
+  padding-left: 10px;
+  border-left: 3px solid var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.acc-minutes-goal-id {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  margin-right: 4px;
+}
+.acc-minutes-sub {
+  padding-left: 13px;
+  font-size: 13px;
+}
+.acc-minutes-sub + .acc-minutes-sub {
+  margin-top: 6px;
+}
+.acc-minutes-sub > strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  margin-bottom: 6px;
+}
+/* 纪要脚部的「同步会议纪要」是注入动作,沿用动作按钮样式;g3-planning.css 的
+   .g3-minutes-foot button 通配会盖掉动作按钮的底色/边框,这里按更高优先级恢复。 */
+.g3-minutes-foot .g3-action-button {
+  border-color: var(--border);
+  background: none;
 }
