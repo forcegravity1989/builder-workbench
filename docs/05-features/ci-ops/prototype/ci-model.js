@@ -1,4 +1,4 @@
-// CI 部署原型数据模型：模块、三阶段六步流程、两种模式、版本登记、配置事实、初始全量状态与记录、递交指令文本。
+// CI 部署原型数据模型：模块、三阶段六步流程、两种模式、版本登记、配置事实、每步读数与演示日志、初始全量状态与记录、递交指令文本。
 // 流程骨架与 spec.md「部署流程：三阶段六步」、skill-deploy.md「部署流程契约」逐字对齐；
 // PROMPTS 与 skill-deploy.md 递交文本表逐字一致（verify-ci.cjs 有断言盯住）。
 // 评审反馈（2026-10-29）：不做场景切换，进入即呈现已接入后的全量形态。
@@ -103,17 +103,77 @@ const okSteps = {
   record: 'ok'
 }
 
-// 进入即全量：已接入后的成熟状态（最近一次上线成功，六步全过），历史含成功与失败记录。
+// 每步读数（演示数据）：一行事实随步骤完成进板面；对应记录协议的 readings 字段。
+export const stepReadings = (mode, version) =>
+  mode === 'dev'
+    ? {
+        pkg: '启动命令已配置（npm start · 端口 8025）',
+        precheck: '端口 8025 空闲',
+        cleanup: '无旧进程，端口已确认释放',
+        deploy: '执行 npm start · 进程 5678 拉起 3 秒未退',
+        verify: '本地探针 /healthz 200',
+        record: '已写 .bw/ci/records.jsonl'
+      }
+    : {
+        pkg: `dist/app-${version}-20261029_0930.7z 存在可读 · 12.4 MB`,
+        precheck: 'ssh 连通 · 磁盘余量 8.2 GB ≥ 包×2 · /opt/app 存在',
+        cleanup: '远端 app.service 已停止',
+        deploy: '上传 12.4 MB → 解包 → systemctl restart app · 退出码 0',
+        verify: `/healthz 200 · 部署目录版本 ${version} = 所选 ${version}`,
+        record: '已写 .bw/ci/records.jsonl'
+      }
+
+// 最近一次执行的整段日志（演示数据）：流程块头「日志」开关页内回显。
+export const successLog = (mode, version) =>
+  mode === 'dev'
+    ? `[ci-step] pkg start
+[ci-step] pkg ok
+[ci-step] precheck start
+netstat -ano | findstr :8025 → 端口空闲
+[ci-step] precheck ok
+[ci-step] cleanup start
+taskkill → 无旧进程，端口已确认释放
+[ci-step] cleanup ok
+[ci-step] deploy start
+npm start → 进程 5678 拉起，3 秒未退
+[ci-step] deploy ok
+[ci-step] verify start
+curl -fsS http://127.0.0.1:8025/healthz → 200 {"ok":true}
+[ci-step] verify ok
+[ci-step] record start
+[ci-step] record ok`
+    : `[ci-step] pkg start
+[ci-step] pkg ok
+[ci-step] precheck start
+ssh deploy@192.168.1.30 "df -h /opt && test -d /opt/app" → 磁盘 8.2G 可用，目录存在
+[ci-step] precheck ok
+[ci-step] cleanup start
+ssh deploy@192.168.1.30 "systemctl stop app"
+[ci-step] cleanup ok
+[ci-step] deploy start
+scp dist/app-${version}-20261029_0930.7z deploy@192.168.1.30:/opt/app/
+ssh deploy@192.168.1.30 "cd /opt/app && tar xf app-${version}-20261029_0930.7z && systemctl restart app" → 退出码 0
+[ci-step] deploy ok
+[ci-step] verify start
+curl -fsS http://192.168.1.30:8025/healthz → 200 {"ok":true}
+部署目录版本 ${version} = 所选 ${version}
+[ci-step] verify ok
+[ci-step] record start
+[ci-step] record ok`
+
+// 进入即全量：已接入后的成熟状态（最近一次上线成功，六步全过、每步读数），历史含成功与失败记录。
 export const initialState = {
   deploy: {
     state: 'green',
     steps: okSteps,
+    readings: stepReadings('release', '1.4.201'),
     last: {
       time: '10-29 09:41',
       ok: true,
       mode: 'release',
       version: '1.4.201',
-      text: '上线 · 版本 1.4.201 · 全程 3 分 08 秒 · /healthz 200'
+      text: '上线 · 版本 1.4.201 · 全程 3 分 08 秒',
+      log: successLog('release', '1.4.201')
     }
   }
 }

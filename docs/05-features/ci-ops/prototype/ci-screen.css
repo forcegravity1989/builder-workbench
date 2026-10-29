@@ -49,28 +49,11 @@
 .ci-card.gray {
   border-style: dashed;
 }
-.ci-last {
-  margin: 0;
-  font-size: 12px;
-  color: var(--color-text-muted, #767676);
-}
-.ci-last .ci-last-mark {
-  margin: 0 6px 0 8px;
-  color: var(--color-success-deep, #2f6b44);
-}
-.ci-last.bad .ci-last-mark {
-  color: var(--color-danger-deep, #a03c36);
-}
 /* 灰态扫描事实行：只陈述「主分支未见脚本」这个读数，不展开生成流程。 */
 .ci-hint {
   margin: 0;
   font-size: 12px;
   color: var(--muted-foreground);
-}
-.ci-errors-muted {
-  margin: 0;
-  font-size: 12px;
-  color: var(--color-danger-deep, #a03c36);
 }
 .ci-actions {
   display: flex;
@@ -152,51 +135,134 @@
   margin-left: auto;
 }
 
-/* 六步流程条：三阶段分组横排；数字徽章 1–6 常显标序——完成=绿实心、执行中=蓝呼吸、
-   失败=红实心、跳过=虚线灰；步间连线随前一步完成变绿，顺序与进度一眼可读。 */
-.ci-flow {
+/* 竖排流程列表（板面核心）：最近一次执行的每步状态与读数自上而下排布；
+   徽章竖向连线随完成变绿，块头带最近一次读数与整段日志开关。 */
+.ci-flow-block {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 10px 18px;
-  padding: 8px 10px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
   border: 1px solid var(--color-hairline, rgba(128, 128, 128, 0.2));
   border-radius: 8px;
   background: color-mix(in srgb, var(--background, #fff) 65%, transparent);
 }
+.ci-flow-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted, #767676);
+}
+.ci-flow-head-time {
+  color: var(--foreground);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ci-flow-head-info {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ci-flow-logtoggle {
+  margin-left: auto;
+  font: inherit;
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ci-flow-log {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px dashed var(--color-hairline, rgba(128, 128, 128, 0.3));
+  border-radius: 8px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted, #767676);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.ci-flow-list {
+  display: flex;
+  flex-direction: column;
+}
 .ci-flow-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 .ci-flow-phase {
   font-size: 10px;
   letter-spacing: 0.04em;
   color: var(--muted-foreground);
+  margin: 8px 0 2px;
 }
-.ci-flow-steps {
-  display: flex;
-  align-items: center;
-}
-/* 步间连线：前一步完成变绿；间距由连线撑开（右距 = margin + 步内 gap 5px，两侧等距）。 */
-.ci-flow-step + .ci-flow-step::before {
-  content: '';
-  width: 16px;
-  height: 2px;
-  margin: 0 5px 0 10px;
-  border-radius: 1px;
-  background: var(--color-hairline, rgba(128, 128, 128, 0.3));
-  flex-shrink: 0;
-}
-.ci-flow-step.ok + .ci-flow-step::before {
-  background: color-mix(in srgb, var(--color-success-deep, #2f6b44) 45%, transparent);
+.ci-flow-group:first-child .ci-flow-phase {
+  margin-top: 0;
 }
 .ci-flow-step {
-  display: inline-flex;
+  position: relative;
+  display: flex;
+  gap: 8px;
+  padding: 3px 0;
+}
+.ci-flow-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+.ci-flow-step-line {
+  display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   font-size: 12px;
+}
+.ci-flow-name {
+  font-weight: 500;
   white-space: nowrap;
+}
+.ci-flow-status {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.ci-flow-step.current .ci-flow-status {
+  color: var(--accent);
+}
+.ci-flow-step.fail .ci-flow-status {
+  color: var(--color-danger-deep, #a03c36);
+}
+/* 每步读数：一行事实（端口/探针/退出码/版本核对），失败步读数着危险色。 */
+.ci-flow-reading {
+  font-size: 12px;
+  color: var(--color-text-muted, #767676);
+  overflow-wrap: anywhere;
+}
+.ci-flow-step.fail .ci-flow-reading {
+  color: var(--color-danger-deep, #a03c36);
+}
+/* 竖向连线：从徽章下延到下一步；本步完成变绿；组内末步不画。 */
+.ci-flow-step::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 25px;
+  bottom: -3px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--color-hairline, rgba(128, 128, 128, 0.3));
+}
+.ci-flow-step.ok::after {
+  background: color-mix(in srgb, var(--color-success-deep, #2f6b44) 45%, transparent);
+}
+.ci-flow-step:last-child::after {
+  display: none;
 }
 .ci-flow-badge {
   display: inline-flex;
@@ -234,10 +300,6 @@
 .ci-flow-step.skip .ci-flow-badge {
   border-style: dashed;
 }
-.ci-flow-skip {
-  font-size: 10px;
-  color: var(--muted-foreground);
-}
 .ci-flow-step.fail .ci-flow-name {
   color: var(--color-danger-deep, #a03c36);
   font-weight: 500;
@@ -252,11 +314,25 @@
   }
 }
 
-/* 记录区：筛选 chips + 记录行；报错行着危险色底，日志页内折叠回显。 */
+/* 记录区降位：默认收起为一行摘要（全部/报错计数），点开回显筛选 chips + 记录行；
+   报错行着危险色底，日志页内折叠回显。 */
+.ci-records-head {
+  cursor: pointer;
+  user-select: none;
+}
+.ci-records-counts {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
 .ci-filter {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin: 8px 0 6px;
 }
 .ci-filter button {
   font: inherit;

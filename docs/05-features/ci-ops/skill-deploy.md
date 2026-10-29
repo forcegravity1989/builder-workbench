@@ -55,7 +55,7 @@ deploy.sh 无论编排还是生成，都按同一条六步骨架执行（两种�
 | 5 | 部署后验证 | 验证 | 本地探针（退化：进程存活） | 远端探针 + 版本核对 |
 | 6 | 部署后验证 | 记录 | 写 records.jsonl | 同左 |
 
-**步骤标记协议**（板面流程条据此逐步点亮）：脚本在执行输出里按步打标记行——`[ci-step] <步骤> <start|ok|fail|skip>`，如 `[ci-step] precheck start`、`[ci-step] cleanup skip`。任何步 `fail` 后脚本立即停止，不再执行后续步骤。
+**步骤标记协议**（板面流程列表据此逐步点亮）：脚本在执行输出里按步打标记行——`[ci-step] <步骤> <start|ok|fail|skip>`，如 `[ci-step] precheck start`、`[ci-step] cleanup skip`。任何步 `fail` 后脚本立即停止，不再执行后续步骤。
 
 **从失败步重试**：deploy.sh 接受 `--from <步骤>` 参数，从指定步骤起跑，之前步骤视为已通过不重复执行（清场过的不用再清）。
 
@@ -77,11 +77,11 @@ deploy.sh 无论编排还是生成，都按同一条六步骨架执行（两种�
 `.bw/ci/records.jsonl`，一行一个 JSON，追加写，存 bw/ci 固定树本地、默认不上仓：
 
 ```json
-{"ts":1793184085077,"iso":"2026-10-28T10:41:25.077Z","module":"deploy","mode":"release","ok":true,"version":"1.0.0","steps":{"pkg":"ok","precheck":"ok","cleanup":"skip","deploy":"ok","verify":"ok","record":"ok"},"pkg":"dist/gtsllm-dfx-1.0.0-20261028_1841.7z","gitRev":"e62623f","healthz":200,"readyz":200,"elapsedMs":5348,"log":".bw/ci/logs/deploy-20261028T184114.log"}
+{"ts":1793184085077,"iso":"2026-10-28T10:41:25.077Z","module":"deploy","mode":"release","ok":true,"version":"1.0.0","steps":{"pkg":"ok","precheck":"ok","cleanup":"skip","deploy":"ok","verify":"ok","record":"ok"},"readings":{"pkg":"dist/gtsllm-dfx-1.0.0-20261028_1841.7z 存在可读","precheck":"ssh 连通 · 磁盘余量 4.2G ≥ 包×2","cleanup":"远端服务已停止","deploy":"退出码 0","verify":"/healthz 200 · 部署目录版本 1.0.0 = 所选","record":"已写记录"},"pkg":"dist/gtsllm-dfx-1.0.0-20261028_1841.7z","gitRev":"e62623f","healthz":200,"readyz":200,"elapsedMs":5348,"log":".bw/ci/logs/deploy-20261028T184114.log"}
 {"ts":1793184227485,"iso":"2026-10-28T10:43:47.485Z","module":"deploy","mode":"release","ok":false,"version":"1.0.0","failedStep":"pkg","steps":{"pkg":"fail"},"error":"打包失败，看日志","log":".bw/ci/logs/deploy-20261028T184341.log"}
 ```
 
-- 必备字段：`ts`/`iso`/`module`/`ok`/`mode`；上线附 `version` 与 `steps`（各步 `ok|fail|skip`）；失败附 `failedStep` 与 `error` 摘要；成功附读回读数与 `elapsedMs`；两者都带 `log` 指向 `.bw/ci/logs/` 下的完整输出。
+- 必备字段：`ts`/`iso`/`module`/`ok`/`mode`；上线附 `version` 与 `steps`（各步 `ok|fail|skip`）；成功附 `readings`（每步一行读数事实，板面流程列表内联展示）与 `elapsedMs`；失败附 `failedStep` 与 `error` 摘要；两者都带 `log` 指向 `.bw/ci/logs/` 下的完整输出。
 - 灯由记录推导：最近一条流程全步通过绿、停在失败步红、有脚本无记录黄、无脚本灰。**助手不得为「让灯变绿」重试刷记录或手改记录**——失败如实红，恢复靠下一次真实成功。
 
 ## 配置资产与密码

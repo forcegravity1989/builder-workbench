@@ -9,6 +9,8 @@ import {
   initialState,
   initialRecords,
   PROMPTS,
+  stepReadings,
+  successLog,
   dotClass,
   moduleStateText,
   moduleButtons
@@ -32,10 +34,14 @@ const STATUS_TEXT = {
   pending: '未开始'
 }
 
-// 流程条：三阶段分组、数字徽章标序；执行中由 live（idx+done）驱动逐步点亮。
-function FlowBar({ steps, live, mode, failedStep }) {
+// 竖排流程列表（板面核心）：最近一次执行的每步状态与一行读数自上而下排布；
+// 执行中由 live（idx+done+mode+version）驱动逐步点亮，读数随完成进板面。
+function FlowList({ state, live, mode }) {
+  const [logOpen, setLogOpen] = useState(false)
+  const last = state.last
+  const liveReadings = live ? stepReadings(live.mode, live.version) : null
   const statusOf = (step) => {
-    const prior = steps?.[step.id]
+    const prior = state.steps?.[step.id]
     if (!live) {
       return prior || 'pending'
     }
@@ -47,40 +53,73 @@ function FlowBar({ steps, live, mode, failedStep }) {
     }
     return prior === 'ok' || prior === 'skip' ? prior : 'pending'
   }
+  const readingOf = (step) => {
+    if (live) {
+      return live.done.includes(step.id) ? liveReadings[step.id] : null
+    }
+    return state.readings?.[step.id] || null
+  }
+  const headTime = live ? '执行中' : last ? `最近一次 ${last.time}` : '尚无执行记录'
+  const headInfo = live
+    ? `${live.mode === 'dev' ? '开发' : '上线'} 执行中${live.version ? ` · 版本 ${live.version}` : ''}`
+    : last?.text
   return (
-    <div className="ci-flow" role="list" aria-label="部署流程六步">
-      {FLOW_PHASES.map((phase) => (
-        <div className="ci-flow-group" key={phase} role="group" aria-label={phase}>
-          <span className="ci-flow-phase">{phase}</span>
-          <div className="ci-flow-steps">
+    <div className="ci-flow-block">
+      <div className="ci-flow-head">
+        <span className="ci-flow-head-time">{headTime}</span>
+        <span className="ci-flow-head-info">{headInfo}</span>
+        {last?.log && !live && (
+          <button
+            className="ci-flow-logtoggle"
+            aria-expanded={logOpen}
+            title="页内展开最近一次执行的整段日志（存于 bw/ci 树本地）"
+            onClick={() => setLogOpen(!logOpen)}
+          >
+            {logOpen ? '收起日志' : '日志'}
+          </button>
+        )}
+      </div>
+      {logOpen && last?.log && !live && <pre className="ci-flow-log">{last.log}</pre>}
+      <div className="ci-flow-list" role="list" aria-label="部署流程六步">
+        {FLOW_PHASES.map((phase) => (
+          <div className="ci-flow-group" key={phase} role="group" aria-label={phase}>
+            <span className="ci-flow-phase">{phase}</span>
             {FLOW.filter((s) => s.phase === phase).map((step) => {
               const status = statusOf(step)
+              const reading = readingOf(step)
               return (
-                <span
+                <div
                   key={step.id}
                   className={`ci-flow-step ${status}`}
                   role="listitem"
                   aria-label={`第 ${STEP_NO[step.id]} 步 ${step.name}：${STATUS_TEXT[status] || '未开始'}`}
                   title={`第 ${STEP_NO[step.id]} 步 · ${step.name}（${phase}）：${
                     mode === 'dev' ? step.dev : step.release
-                  }${failedStep === step.id ? '（失败步）' : ''}`}
+                  }${state.failedStep === step.id ? '（失败步）' : ''}`}
                 >
                   <span className="ci-flow-badge" aria-hidden="true">
                     {STEP_NO[step.id]}
                   </span>
-                  <span className="ci-flow-name">{step.name}</span>
-                  {status === 'skip' && <span className="ci-flow-skip">跳过</span>}
-                </span>
+                  <div className="ci-flow-step-body">
+                    <div className="ci-flow-step-line">
+                      <span className="ci-flow-name">{step.name}</span>
+                      {status === 'current' && <span className="ci-flow-status">执行中…</span>}
+                      {status === 'fail' && <span className="ci-flow-status">失败</span>}
+                      {status === 'skip' && <span className="ci-flow-status">跳过</span>}
+                    </div>
+                    {reading && <div className="ci-flow-reading">{reading}</div>}
+                  </div>
+                </div>
               )
             })}
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }
 
-// 部署卡：状态行 + 模式/版本/配置 + 六步流程条 + 最近执行 + 动作行；灰态给扫描事实行。
+// 部署卡：状态行 + 模式/版本/配置 + 最近一次执行块（竖排六步流程）+ 动作行；灰态给扫描事实行。
 function ModuleCard({
   index,
   module,
@@ -173,20 +212,8 @@ function ModuleCard({
             </ActionButton>
           </div>
         )}
-        {state.state !== 'gray' && (
-          <FlowBar steps={state.steps} live={live} mode={mode} failedStep={state.failedStep} />
-        )}
-        {state.last && (
-          <p className={`ci-last ${state.last.ok ? '' : 'bad'}`}>
-            最近一次 {state.last.time}
-            <span className="ci-last-mark">{state.last.ok ? '✓' : '✗'}</span>
-            {state.last.text}
-          </p>
-        )}
+        {state.state !== 'gray' && <FlowList state={state} live={live} mode={mode} />}
         {state.state === 'gray' && <p className="ci-hint">主分支未见脚本</p>}
-        {errors > 0 && state.state !== 'red' && (
-          <p className="ci-errors-muted">历史报错 {errors} 条</p>
-        )}
         <div className="ci-actions">
           {buttons.map((b) => (
             <ActionButton
@@ -260,6 +287,7 @@ function App() {
   const [mode, setMode] = useState('release')
   const [version, setVersion] = useState(VERSIONS[0].version)
   const [filter, setFilter] = useState('all')
+  const [recordsOpen, setRecordsOpen] = useState(false)
   const [openLogs, setOpenLogs] = useState([])
 
   const move = (id) => {
@@ -280,7 +308,12 @@ function App() {
   // 六步流程演示执行：从 fromIdx 起逐步点亮；重试时之前步骤保持已通过，不重复执行。
   const runFlow = (module, fromIdx, runMode, runVersion) => {
     setExecuting(module.id)
-    setLive({ idx: fromIdx, done: [] })
+    setLive({
+      idx: fromIdx,
+      done: [],
+      mode: runMode,
+      version: runMode === 'dev' ? null : runVersion
+    })
     const isRetry = fromIdx > 0
     const prompt = isRetry
       ? PROMPTS.retry(runMode, runVersion, FLOW[fromIdx].id)
@@ -306,12 +339,14 @@ function App() {
         state: 'green',
         steps: allOk(),
         failedStep: undefined,
+        readings: stepReadings(runMode, runVersion),
         last: {
           time,
           ok: true,
           mode: runMode,
           version: runMode === 'dev' ? null : runVersion,
-          text: `${runMode === 'dev' ? '开发' : '上线'} · ${text}`
+          text: `${runMode === 'dev' ? '开发' : '上线'} · ${text}`,
+          log: successLog(runMode, runVersion)
         }
       })
       setRecords((current) => [
@@ -353,6 +388,7 @@ function App() {
     }
     if (key === 'errors') {
       setFilter('error')
+      setRecordsOpen(true)
       move('records')
       setNotice('已定位到记录区 · 只看报错')
       return
@@ -389,7 +425,7 @@ function App() {
     <div className={`g3-app ${compact ? 'constrained' : ''}`}>
       <div className="g3-demo-bar">
         <strong>#461 评审草案 · CI 部署</strong>
-        <span>两种模式 · 三阶段六步流程 · 动作仅在本页演示</span>
+        <span>两种模式 · 竖排六步流程（每步读数） · 记录默认收起</span>
         <button onClick={() => setCompact(!compact)}>{compact ? '恢复宽度' : '窄板'}</button>
         <button
           onClick={() => {
@@ -431,13 +467,13 @@ function App() {
             + failedStep
             进记录；「从失败步重试」只重跑失败步及其后步骤，已完成步不重复执行（清场过的不用再清）。脚本按步骤标记协议输出
             [ci-step]
-            进度，板面流程条据此逐步点亮——把会话里模型的试错（端口冲突排查十分钟）变成脚本的确定性步骤（清场秒级）。
+            进度，板面流程列表据此自上而下逐步点亮，每步读数随完成进板面——把会话里模型的试错（端口冲突排查十分钟）变成脚本的确定性步骤（清场秒级）。竖排流程列表是板面核心：块头给最近一次读数与整段日志开关，每步徽章标序加一行读数事实；黄态（有脚本无记录）显示六步骨架。
           </p>
           <p>
             <strong>灯与记录</strong>
             ：灯是健康信号，只能从执行记录推导：灰=主检出未见脚本（新项目首见，板面给「主分支未见脚本」事实与生成脚本入口）；黄=扫到资产、待执行；绿=最近一次流程全步通过；红=最近一次停在失败步。最新结果决定绿红；历史报错永久保留。每次执行写
             bw/ci 树本地
-            records.jsonl（时间、ok、mode、version、steps、failedStep、读回读数、耗时、日志指针），记录区按时间倒序回显全部执行与报错（含模式与版本），报错默认折叠、页内展开看日志原文。本页固定呈现已接入后的全量形态（评审反馈：不做场景切换，进入即见全部）；灰/黄/红随真实数据自然出现。
+            records.jsonl（时间、ok、mode、version、steps、readings、failedStep、耗时、日志指针），记录区降位为默认收起的一行摘要（全部/报错计数），展开后按时间倒序回显全部执行与报错（含模式与版本），报错默认折叠、页内展开看日志原文；「报错记录」按钮=展开记录区并只看报错。本页固定呈现已接入后的全量形态（评审反馈：不做场景切换，进入即见全部——全量指部署卡完整形态与记录摘要行）；灰/黄/红随真实数据自然出现。
           </p>
           <p>
             <strong>依赖与留白</strong>：组件与设计语言复用已合入 main 的 G3
@@ -538,46 +574,69 @@ function App() {
               />
             ))}
             <section id="records" className="ci-records-section">
-              <div className="g3-section-title">
+              <div
+                className="g3-section-title ci-records-head"
+                role="button"
+                tabIndex={0}
+                aria-expanded={recordsOpen}
+                title={recordsOpen ? '收起记录列表' : '展开记录列表（存于 bw/ci 树本地）'}
+                onClick={() => setRecordsOpen(!recordsOpen)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    setRecordsOpen(!recordsOpen)
+                  }
+                }}
+              >
                 <h2>
                   2·执行与报错记录 <small>bw/ci 树本地</small>
                 </h2>
-                <span className="ci-filter" role="group" aria-label="筛选记录">
-                  <button className={filter === 'all' ? 'on' : ''} onClick={() => setFilter('all')}>
-                    全部 {records.length}
-                  </button>
-                  <button
-                    className={filter === 'error' ? 'on' : ''}
-                    disabled={!errorCount}
-                    onClick={() => setFilter('error')}
-                  >
-                    报错 {errorCount}
-                  </button>
+                <span className="ci-records-counts">
+                  全部 {records.length} · 报错 {errorCount}
+                  <Icon name={recordsOpen ? 'down' : 'right'} size={14} />
                 </span>
               </div>
-              {filtered.length ? (
-                <div className="ci-records">
-                  {filtered.map((r) => (
-                    <RecordRow
-                      key={r.id}
-                      record={r}
-                      expanded={openLogs.includes(r.id)}
-                      onToggle={() =>
-                        setOpenLogs((current) =>
-                          current.includes(r.id)
-                            ? current.filter((id) => id !== r.id)
-                            : [...current, r.id]
-                        )
-                      }
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="g3-empty ci-records-empty">
-                  {records.length ? '暂无报错记录' : '尚无执行记录'}
-                </p>
+              {recordsOpen && (
+                <>
+                  <div className="ci-filter" role="group" aria-label="筛选记录">
+                    <button
+                      className={filter === 'all' ? 'on' : ''}
+                      onClick={() => setFilter('all')}
+                    >
+                      全部 {records.length}
+                    </button>
+                    <button
+                      className={filter === 'error' ? 'on' : ''}
+                      disabled={!errorCount}
+                      onClick={() => setFilter('error')}
+                    >
+                      报错 {errorCount}
+                    </button>
+                  </div>
+                  {filtered.length ? (
+                    <div className="ci-records">
+                      {filtered.map((r) => (
+                        <RecordRow
+                          key={r.id}
+                          record={r}
+                          expanded={openLogs.includes(r.id)}
+                          onToggle={() =>
+                            setOpenLogs((current) =>
+                              current.includes(r.id)
+                                ? current.filter((id) => id !== r.id)
+                                : [...current, r.id]
+                            )
+                          }
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="g3-empty ci-records-empty">
+                      {records.length ? '暂无报错记录' : '尚无执行记录'}
+                    </p>
+                  )}
+                  {errorCount > 0 && <p className="ci-records-note">共 {errorCount} 条报错</p>}
+                </>
               )}
-              {errorCount > 0 && <p className="ci-records-note">共 {errorCount} 条报错</p>}
             </section>
           </div>
           <footer className="g3-footer" role="status">
