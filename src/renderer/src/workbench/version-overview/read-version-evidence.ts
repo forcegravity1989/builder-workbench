@@ -8,6 +8,7 @@ import { nativeVersionHistoryPort } from '../version-history-port'
 import { nativeArchivePrPort } from '../archive-pr-port'
 import { validTime, PARSER_REVISION } from './feature-model'
 import type { OverviewVersionPlan, VersionEvidence } from './version-evidence'
+import { mapLimit } from './read-feature-evidence'
 
 /** Archive merge metadata and the acceptance's pinned plan are independent evidence. */
 export async function readVersionEvidence(
@@ -89,67 +90,74 @@ export async function readVersionEvidence(
       archive: archiveEvent(document, status, 'plan')
     })
   }
-  for (const entry of catalog.catalog?.entries ?? []) {
-    if (versions && !versions.has(entry.version)) {
-      continue
-    }
-    try {
-      const ref = entry.material.acceptance
-      if (!ref) {
-        if (entry.material.plan) {
-          const fixed = await history.readPlan({
-            scope,
-            planRef: {
-              kind: 'committed',
-              version: entry.version,
-              cycleId: entry.material.plan.cycleId,
-              sourceCommit: entry.material.plan.sourceCommit,
-              revision: entry.material.plan.revision
-            }
-          })
-          await addPlan(fixed.document)
-        } else if (entry.draft) {
-          if (workingPlan?.document.version === entry.version) {
-            await addPlan(workingPlan.document, workingPlan.source)
-          } else {
-            plans.push({
-              version: entry.version,
-              tasks: entry.tasks,
-              goals: entry.goals.map((g) => ({ ...g, metricTargets: [] })),
-              source: 'draft'
+  const entries = (catalog.catalog?.entries ?? []).filter(
+    (entry) => !versions || versions.has(entry.version)
+  )
+  await mapLimit(
+    entries,
+    async (entry) => {
+      try {
+        const ref = entry.material.acceptance
+        if (!ref) {
+          if (entry.material.plan) {
+            const fixed = await history.readPlan({
+              scope,
+              planRef: {
+                kind: 'committed',
+                version: entry.version,
+                cycleId: entry.material.plan.cycleId,
+                sourceCommit: entry.material.plan.sourceCommit,
+                revision: entry.material.plan.revision
+              }
             })
+            await addPlan(fixed.document)
+          } else if (entry.draft) {
+            if (workingPlan?.document.version === entry.version) {
+              await addPlan(workingPlan.document, workingPlan.source)
+            } else {
+              plans.push({
+                version: entry.version,
+                tasks: entry.tasks,
+                goals: entry.goals.map((g) => ({ ...g, metricTargets: [] })),
+                source: 'draft'
+              })
+            }
           }
+          return
         }
-        continue
+        const read = await history.read({
+          scope,
+          source: 'trunk',
+          sourceCommit: ref.sourceCommit,
+          version: entry.version,
+          cycleId: ref.cycleId,
+          workflow: 'acceptance'
+        })
+        const acceptance = read.document as AcceptanceMaterial
+        const plan = await history.readPlan({ scope, planRef: acceptance.planRef })
+        await addPlan(plan.document)
+        const status = await readArchive(acceptance)
+        records.push({
+          version: entry.version,
+          plan: plan.document,
+          acceptance,
+          at:
+            status?.state === 'merged' && validTime(status.mergedAt) ? status.mergedAt : undefined,
+          archiveUrl: status && 'url' in status ? status.url : undefined,
+          archive: archiveEvent(acceptance, status, 'acceptance'),
+          revision: ref.sourceCommit,
+          readAt: new Date().toISOString()
+        })
+      } catch (error) {
+        problems.push(
+          `${entry.version} 验收依据：${error instanceof Error ? error.message : String(error)}`
+        )
       }
-      const read = await history.read({
-        scope,
-        source: 'trunk',
-        sourceCommit: ref.sourceCommit,
-        version: entry.version,
-        cycleId: ref.cycleId,
-        workflow: 'acceptance'
-      })
-      const acceptance = read.document as AcceptanceMaterial
-      const plan = await history.readPlan({ scope, planRef: acceptance.planRef })
-      await addPlan(plan.document)
-      const status = await readArchive(acceptance)
-      records.push({
-        version: entry.version,
-        plan: plan.document,
-        acceptance,
-        at: status?.state === 'merged' && validTime(status.mergedAt) ? status.mergedAt : undefined,
-        archiveUrl: status && 'url' in status ? status.url : undefined,
-        archive: archiveEvent(acceptance, status, 'acceptance'),
-        revision: ref.sourceCommit,
-        readAt: new Date().toISOString()
-      })
-    } catch (error) {
-      problems.push(
-        `${entry.version} 验收依据：${error instanceof Error ? error.message : String(error)}`
-      )
-    }
-  }
+    },
+    2
+  )
+  const order = new Map(entries.map((entry, index) => [entry.version, index]))
+  plans.sort((a, b) => (order.get(a.version) ?? Infinity) - (order.get(b.version) ?? Infinity))
   if (workingPlan && !plans.some((entry) => entry.version === workingPlan.document.version)) {
     await addPlan(workingPlan.document, workingPlan.source)
   }

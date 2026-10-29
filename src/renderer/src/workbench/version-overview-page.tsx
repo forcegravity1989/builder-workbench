@@ -307,6 +307,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
         version={version}
         revision={plan.kind === 'ready' ? (plan.sourceCommit ?? plan.revision) : undefined}
         planState={plan.kind}
+        sourceReady={Boolean(features.readAt) || !features.loading}
       />
       <section className="bwo-goal">
         <h2 className="mb-4 font-semibold">本版记录</h2>

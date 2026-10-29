@@ -45,7 +45,8 @@ export function useWorkflowEvidence(
   catalog: VersionCatalogState,
   plan: PlanningMaterial | null,
   version: string,
-  revision?: string
+  revision?: string,
+  sourceReady = true
 ) {
   // Source registrations may move independently of the page's own project.
   useAppStore((state) => state.repos)
@@ -73,7 +74,7 @@ export function useWorkflowEvidence(
   }>({ key: '', scopeKey: '', loading: false })
   useEffect(() => {
     let cancelled = false
-    if (!plan || !catalog.scope) {
+    if (!plan || !catalog.scope || !sourceReady) {
       return () => {
         cancelled = true
       }
@@ -104,7 +105,7 @@ export function useWorkflowEvidence(
     }
     // Scope identity and revision, not unrelated store renders, control reads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key])
+  }, [key, sourceReady])
   const current =
     state.scopeKey === scopeKey ? (state.value ?? cache.get(scopeKey)) : cache.get(scopeKey)
   return {

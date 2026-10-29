@@ -16,11 +16,15 @@ import {
 } from './feature-model'
 
 const problemText = (e: unknown) => (e instanceof Error ? e.message : String(e))
-export async function mapLimit<T, R>(items: T[], run: (item: T) => Promise<R>): Promise<R[]> {
+export async function mapLimit<T, R>(
+  items: T[],
+  run: (item: T) => Promise<R>,
+  limit = 4
+): Promise<R[]> {
   const output: R[] = []
   let cursor = 0
   await Promise.all(
-    Array.from({ length: Math.min(4, items.length) }, async () => {
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
       while (cursor < items.length) {
         const i = cursor++
         output[i] = await run(items[i]!)
