@@ -11,11 +11,14 @@ const monthAt = (value, offset = 0) => {
   date.setUTCMonth(date.getUTCMonth() + offset)
   return date.getTime()
 }
+const recordedMonths = (plan) =>
+  plan.months.filter((m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.month)).map((m) => m.month)
 export function latestMonth(plan) {
   return (
-    plan.versions
-      .filter((v) => Number.isFinite(at(v.start)))
-      .map((v) => v.start.slice(0, 7))
+    [
+      ...plan.versions.filter((v) => Number.isFinite(at(v.start))).map((v) => v.start.slice(0, 7)),
+      ...recordedMonths(plan)
+    ]
       .sort()
       .at(-1) || currentDay.slice(0, 7)
   )
@@ -23,7 +26,13 @@ export function latestMonth(plan) {
 export function calendarFor(plan) {
   const focus = latestMonth(plan)
   const dated = plan.versions.filter((v) => Number.isFinite(at(v.start)) && v.start <= v.end)
-  const start = monday(Math.min(monthAt(focus, -1), ...dated.map((v) => at(v.start))))
+  const start = monday(
+    Math.min(
+      monthAt(focus, -1),
+      ...dated.map((v) => at(v.start)),
+      ...recordedMonths(plan).map((month) => monthAt(month))
+    )
+  )
   const end = Math.max(monthAt(focus, 2) - dayMs, ...dated.map((v) => at(v.end))) + 7 * dayMs
   const weeks = []
   for (let value = start; value <= end; value += 7 * dayMs) {

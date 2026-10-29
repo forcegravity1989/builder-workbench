@@ -419,7 +419,7 @@
 .ml-version-row {
   height: 56px;
   position: sticky;
-  top: 76px;
+  top: 0;
   z-index: 5;
   background: var(--background);
   border-bottom: 1px solid var(--border);
@@ -615,7 +615,7 @@
 
 .ml-now-line {
   position: absolute;
-  top: 132px;
+  top: 56px;
   bottom: 0;
   border-left: 1px solid var(--muted-foreground);
   opacity: 0.45;
@@ -729,73 +729,6 @@
   box-shadow: inset 0 -2px var(--ring);
 }
 
-.ml-stage-row {
-  display: flex;
-  height: 76px;
-  position: sticky;
-  top: 0;
-  z-index: 7;
-  background: var(--background);
-  border-bottom: 1px solid var(--border);
-}
-.ml-stage-row > .ml-sticky-label {
-  font-size: 11px;
-  color: var(--muted-foreground);
-}
-.ml-stage-track {
-  position: relative;
-  flex: none;
-  background: var(--background);
-}
-.ml-stage-month {
-  position: absolute;
-  top: 0;
-  height: 76px;
-  border-left: 1px solid var(--border);
-}
-.ml-month-title {
-  border: 0;
-  background: transparent;
-  color: var(--muted-foreground);
-  font-size: 11px;
-  padding: 5px 10px;
-}
-.ml-stage-anchor {
-  position: absolute;
-  top: 10px;
-  width: 1px;
-  height: 18px;
-}
-.ml-stage-caption {
-  position: absolute;
-  top: 28px;
-  left: -100px;
-  width: 200px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--card);
-  padding: 2px 7px;
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: visible;
-}
-.ml-stage-caption::before {
-  content: '';
-  position: absolute;
-  top: -4px;
-  left: var(--tip-left, 96px);
-  width: 6px;
-  height: 6px;
-  transform: rotate(45deg);
-  background: var(--card);
-  border-top: 1px solid var(--border);
-  border-left: 1px solid var(--border);
-}
-.ml-stage-caption > span {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .ml-week-slot {
   position: absolute;
   top: 0;
@@ -880,27 +813,96 @@
 .ml-delivery-node:focus-visible > span svg {
   opacity: 0.65;
 }
-.ml-stage-track::before {
+
+.ml-roadmap-scroll {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  border-bottom: 1px solid var(--border);
+  padding: 0 12px;
+  cursor: grab;
+}
+.ml-roadmap-scroll:active {
+  cursor: grabbing;
+}
+.ml-roadmap-axis {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 104px;
+}
+.ml-roadmap-axis::before {
   content: '';
   position: absolute;
   left: 0;
   right: 0;
-  top: 27px;
+  top: 36px;
   border-top: 1px solid var(--border);
 }
-.ml-flag {
-  display: block;
-  color: var(--foreground);
-  fill: var(--background);
-  transform: translateX(-1px);
+.ml-roadmap-month {
+  flex: 1;
+  min-width: 240px;
+  position: relative;
 }
-.ml-stage-anchor::after {
+.ml-roadmap-flag {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  height: 24px;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ml-roadmap-flag svg {
+  height: 24px;
+  flex: none;
+}
+.ml-roadmap-month::after {
   content: '';
   position: absolute;
-  top: 15px;
-  left: -2px;
+  top: 34px;
+  left: calc(50% - 2px);
   width: 4px;
   height: 4px;
   border-radius: 50%;
   background: var(--foreground);
+}
+.ml-roadmap-caption {
+  position: absolute;
+  top: 54px;
+  left: calc(50% - 110px);
+  width: 220px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--card);
+  padding: 2px 7px;
+  font-size: 11px;
+}
+.ml-roadmap-caption::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: calc(50% - 3px);
+  width: 6px;
+  height: 6px;
+  transform: rotate(45deg);
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  background: var(--card);
+}
+.ml-roadmap-caption > span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 22px;
+}
+.ml-roadmap-caption .ml-inline {
+  padding: 2px 0;
 }

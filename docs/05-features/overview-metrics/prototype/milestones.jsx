@@ -113,61 +113,85 @@ function WeekName({ week, commit }) {
     />
   )
 }
-function MilestoneAxis({ plan, calendar, planning, changeMilestone, navigate }) {
-  const x = (value) => ((value - calendar.start) / dayMs) * dayWidth
+function MilestoneAxis({ plan, planning, changeMilestone, navigate, navigation }) {
+  const scroll = useRef(null),
+    pan = useRef(null)
+  const months = React.useMemo(
+    () =>
+      plan.months
+        .filter((m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.month))
+        .toSorted((a, b) => a.month.localeCompare(b.month)),
+    [plan.months]
+  )
+  const monthKeys = months.map((m) => m.month).join(',')
+  useEffect(() => {
+    const keys = monthKeys.split(',').filter(Boolean)
+    const month = keys.find((key) => key >= navigation.date.slice(0, 7)) || keys.at(-1)
+    const point = month && scroll.current?.querySelector(`[data-month="${month}"]`)
+    if (point) {
+      scroll.current.scrollTo({
+        left: Math.max(
+          0,
+          point.offsetLeft - scroll.current.clientWidth / 2 + point.clientWidth / 2
+        ),
+        behavior: 'smooth'
+      })
+    }
+  }, [navigation, monthKeys])
+  if (!months.length) {
+    return null
+  }
   return (
-    <div className="ml-stage-row">
-      <div className="ml-sticky-label">阶段成果</div>
-      <div
-        className="ml-stage-track"
-        style={{ width: ((calendar.end - calendar.start + dayMs) / dayMs) * dayWidth }}
-      >
-        {calendar.months.map((m) => {
-          const left = Math.max(0, x(m.start)),
-            right = x(Math.min(m.end, calendar.end) + dayMs),
-            span = right - left
-          if (span < 210) {
-            return null
-          }
-          const outcome = plan.months.find((item) => item.month === m.month)?.outcome || ''
-          const last = plan.versions
-            .filter((v) => v.start.slice(0, 7) <= m.month && v.end.slice(0, 7) >= m.month)
-            .toSorted((a, b) => a.end.localeCompare(b.end))
-            .at(-1)
-          const point = last ? x(Math.min(at(last.end), m.end) + dayMs / 2) - left : span - 12
-          const anchor = Math.max(0, Math.min(span - 1, point))
-          const captionLeft = Math.max(4 - anchor, Math.min(-100, span - anchor - 204))
-          return (
-            <div key={m.month} className="ml-stage-month" style={{ left, width: span }}>
-              <button className="ml-month-title" onClick={() => navigate(iso(m.start))}>
-                {m.month.replace('-', ' 年 ')} 月
-              </button>
-              {(planning || outcome) && (
-                <div className="ml-stage-anchor" style={{ left: anchor }}>
-                  <Flag className="ml-flag" size={14} />
-                  <div
-                    className="ml-stage-caption"
-                    title={outcome}
-                    style={{ left: captionLeft, '--tip-left': `${-captionLeft - 3}px` }}
-                  >
-                    {planning ? (
-                      <InlineField
-                        value={outcome}
-                        label={`${m.month} 阶段成果`}
-                        placeholder="一句阶段成果"
-                        change={(value) => changeMilestone(m.month, value)}
-                      />
-                    ) : (
-                      <span>{outcome}</span>
-                    )}
-                  </div>
-                </div>
+    <nav
+      className="ml-roadmap-scroll"
+      aria-label="月度里程碑时间轴"
+      ref={scroll}
+      onPointerDown={(e) => {
+        if (e.button !== 0 || e.target.closest('button,input')) {
+          return
+        }
+        pan.current = { x: e.clientX, left: scroll.current.scrollLeft }
+        e.currentTarget.setPointerCapture(e.pointerId)
+      }}
+      onPointerMove={(e) => {
+        if (pan.current) {
+          scroll.current.scrollLeft = pan.current.left + pan.current.x - e.clientX
+        }
+      }}
+      onPointerUp={() => {
+        pan.current = null
+      }}
+      onPointerCancel={() => {
+        pan.current = null
+      }}
+    >
+      <div className="ml-roadmap-axis" style={{ minWidth: months.length * 240 }}>
+        {months.map((m) => (
+          <div className="ml-roadmap-month" key={m.month} data-month={m.month}>
+            <button
+              className="ml-roadmap-flag"
+              aria-label={`定位里程碑 ${m.month}`}
+              onClick={() => navigate(`${m.month}-01`)}
+            >
+              <Flag size={17} />
+              <span>{m.month.replace('-', ' 年 ')} 月</span>
+            </button>
+            <div className="ml-roadmap-caption" title={m.outcome}>
+              {planning ? (
+                <InlineField
+                  value={m.outcome}
+                  label={`${m.month} 阶段成果`}
+                  placeholder="一句阶段成果"
+                  change={(value) => changeMilestone(m.month, value)}
+                />
+              ) : (
+                <span>{m.outcome || '未填写阶段成果'}</span>
               )}
             </div>
-          )
-        })}
+          </div>
+        ))}
       </div>
-    </div>
+    </nav>
   )
 }
 function Timeline({
@@ -183,8 +207,7 @@ function Timeline({
   onReorder,
   newFeature,
   onAdd,
-  onNameWeek,
-  changeMilestone
+  onNameWeek
 }) {
   const calendar = calendarFor(plan),
     axisStart = calendar.start,
@@ -294,15 +317,6 @@ function Timeline({
       }}
     >
       <div className="ml-timeline-canvas" style={{ width: labelWidth + trackWidth }}>
-        <MilestoneAxis
-          plan={plan}
-          calendar={calendar}
-          planning={planning}
-          changeMilestone={changeMilestone}
-          navigate={(date) =>
-            scroll.current?.scrollTo({ left: Math.max(0, xFor(date)), behavior: 'smooth' })
-          }
-        />
         <div className="ml-version-row">
           <div className="ml-sticky-label">特性 / 负责人</div>
           <div className="ml-version-track">
@@ -929,12 +943,18 @@ function App() {
                 </div>
               ) : (
                 <>
+                  <MilestoneAxis
+                    plan={plan}
+                    planning={planning}
+                    changeMilestone={changeMilestone}
+                    navigate={navigate}
+                    navigation={navigation}
+                  />
                   <Timeline
                     rows={plan.features}
                     plan={plan}
                     onAdd={add}
                     onNameWeek={nameWeek}
-                    changeMilestone={changeMilestone}
                     planning={planning}
                     navigation={navigation}
                     onChangeFeature={changeFeature}
