@@ -4,7 +4,7 @@
 
 ## 真壳验证
 
-先核对任务 worktree、分支、HEAD 与未提交改动，按需同步目标分支。用 `git rev-parse --path-format=absolute --git-common-dir` 定位主 checkout，读取交付约定中的本机环境记录并核对机器身份。查明现有真壳、开发服务及重检查进程归属，保留他人的实例；低内存宿主真壳与本地 CI 串行，其他宿主按已确认资源安排。
+先核对任务 worktree、分支、HEAD 与未提交改动，按需同步目标分支。首次、换机器或环境记录失效时先运行交付约定的 `prepare`，它从公共 Git 目录定位主 checkout，检查本机工具、原生 profile 与项目登记并保存忽略的记录；同机事实保留，异机信息不套用。记录是观察结果，不覆盖启动配置；`prepare` 和 `dev` 都沿用原生 `ORCA_DEV_USER_DATA_PATH` 或默认 profile。查明现有真壳、开发服务及重检查进程归属，保留他人的实例；低内存宿主真壳与本地 CI 串行，其他宿主按已确认资源安排。
 
 按交付约定先复用稳定 dev 环境；已有匹配实例直接操作，不重复启动。需要启动时使用下列 dev 入口：它沿用原 runner 与持久 `workbench-dev` profile（Windows 默认 `%APPDATA%/workbench-dev`），保留已纳入的 BW 项目、版本和会话。自定义 profile 沿用已确认的 `ORCA_DEV_USER_DATA_PATH`，不每条 Issue 换空目录；后台启动 helper 使用 `Start-Process -WindowStyle Hidden`。开启 CDP 前先查端口归属，启动后核对实际 Vite/CDP 地址、窗口与源码；通过 computer-use 时先读对应工具技能。
 

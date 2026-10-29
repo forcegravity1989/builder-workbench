@@ -10,7 +10,8 @@ import {
   outputFingerprint,
   canReuseBuild,
   verificationEnv,
-  developmentEnv
+  developmentEnv,
+  prepareEnvironment
 } from './run-bw-verification.mjs'
 
 const png = Buffer.from(
@@ -31,6 +32,64 @@ function repository(t) {
   git(root, 'commit', '--quiet', '-m', 'fixture')
   return root
 }
+
+test('preparation locates the common repository, checks existing registration and keeps machine facts local', (t) => {
+  const root = repository(t)
+  const task = path.join(root, 'task-tree')
+  git(root, 'worktree', 'add', '--quiet', '--detach', task, 'HEAD')
+  const profile = path.join(root, 'existing-profile')
+  mkdirSync(path.join(profile, 'profiles/local-default'), { recursive: true })
+  writeFileSync(
+    path.join(profile, 'orca-profile-index.json'),
+    JSON.stringify({ activeProfileId: 'local-default' })
+  )
+  writeFileSync(
+    path.join(profile, 'profiles/local-default/orca-data.json'),
+    JSON.stringify({ repos: [{ id: 'bw', path: root }] })
+  )
+  const recordPath = path.join(root, '.bw/runtime/verification/environment.json')
+  mkdirSync(path.dirname(recordPath), { recursive: true })
+  writeFileSync(
+    recordPath,
+    JSON.stringify({
+      machine: 'CURRENT',
+      network: 'internal',
+      devProfile: path.join(root, 'outdated-profile'),
+      maxConcurrentHeavyJobs: 4
+    })
+  )
+  const prepared = prepareEnvironment(task, {
+    assistant: 'claude',
+    devProfile: path.relative(task, profile),
+    machine: 'current'
+  })
+  assert.equal(prepared.recordPath, recordPath)
+  assert.equal(prepared.devProfile, profile)
+  assert.equal(prepared.projectRegistration, 'registered-in-profile')
+  assert.equal(prepared.projectId, 'bw')
+  assert.equal(prepared.network, 'internal')
+  assert.equal(prepared.maxConcurrentHeavyJobs, 4)
+  assert.equal(prepared.uiVerification, 'not-checked')
+  assert.doesNotThrow(() => git(root, 'check-ignore', '--quiet', recordPath))
+  const foreign = prepareEnvironment(task, {
+    assistant: 'codex',
+    devProfile: path.join(root, 'another-machine-profile'),
+    machine: 'different'
+  })
+  assert.equal(foreign.network, 'unknown')
+  assert.equal(foreign.projectRegistration, 'profile-missing')
+  assert.equal(foreign.maxConcurrentHeavyJobs, 1)
+  const saved = readFileSync(recordPath)
+  writeFileSync(
+    path.join(root, '.gitignore'),
+    '!.bw/runtime/verification/\n!.bw/runtime/verification/environment.json\n'
+  )
+  assert.throws(() => prepareEnvironment(task, { devProfile: profile }), /Git 忽略/)
+  assert.deepEqual(readFileSync(recordPath), saved)
+  git(root, 'add', '--force', recordPath)
+  assert.throws(() => prepareEnvironment(task, { devProfile: profile }), /Git 跟踪/)
+  assert.deepEqual(readFileSync(recordPath), saved)
+})
 
 test('binary evidence trees preserve exact names and image bytes without touching branch, index or worktree', (t) => {
   const root = repository(t)

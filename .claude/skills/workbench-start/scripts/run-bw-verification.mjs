@@ -1,6 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import {
+  appendFileSync,
   closeSync,
   existsSync,
   mkdirSync,
@@ -12,7 +13,103 @@ import {
   writeFileSync
 } from 'node:fs'
 import { createRequire } from 'node:module'
+import os from 'node:os'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+
+const devDependencies = [
+  'electron-vite/package.json',
+  '@xterm/headless/lib-headless/xterm-headless.js',
+  '@xterm/addon-serialize/lib/addon-serialize.js'
+]
+
+export function prepareEnvironment(root, { assistant, devProfile, machine = os.hostname() }) {
+  const git = (args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim()
+  const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir'])
+  const projectRepo = path.dirname(common)
+  const recordPath = path.join(projectRepo, '.bw/runtime/verification/environment.json')
+  if (
+    execFileSync('git', ['-C', projectRepo, 'ls-files', '--', recordPath], {
+      encoding: 'utf8'
+    }).trim()
+  ) {
+    throw new Error('本机环境记录已被 Git 跟踪，未覆盖')
+  }
+  let previous = {}
+  if (existsSync(recordPath)) {
+    const saved = JSON.parse(readFileSync(recordPath, 'utf8'))
+    if (
+      typeof saved.machine === 'string' &&
+      saved.machine.toLowerCase() === machine.toLowerCase()
+    ) {
+      previous = saved
+    }
+  }
+  devProfile = path.resolve(root, devProfile)
+  let projectRegistration = 'unverified'
+  let projectId = null
+  let registrationEvidence = null
+  if (!existsSync(devProfile)) {
+    projectRegistration = 'profile-missing'
+  } else {
+    try {
+      const index = JSON.parse(
+        readFileSync(path.join(devProfile, 'orca-profile-index.json'), 'utf8')
+      )
+      if (!/^[\w-]+$/.test(index.activeProfileId)) {
+        throw new Error('无效 profile 身份')
+      }
+      registrationEvidence = path.join(
+        devProfile,
+        'profiles',
+        index.activeProfileId,
+        'orca-data.json'
+      )
+      const data = JSON.parse(readFileSync(registrationEvidence, 'utf8'))
+      const normalized = (value) =>
+        process.platform === 'win32' ? path.resolve(value).toLowerCase() : path.resolve(value)
+      const repo = data.repos?.find(
+        (item) => typeof item.path === 'string' && normalized(item.path) === normalized(projectRepo)
+      )
+      projectRegistration = repo ? 'registered-in-profile' : 'not-registered'
+      projectId = repo?.id ?? null
+    } catch {
+      projectRegistration = 'unverified'
+    }
+  }
+  const ignored = spawnSync('git', ['-C', projectRepo, 'check-ignore', '--quiet', recordPath])
+  if (ignored.status === 1) {
+    const exclude = path.join(common, 'info/exclude')
+    mkdirSync(path.dirname(exclude), { recursive: true })
+    appendFileSync(exclude, '\n.bw/runtime/verification/\n')
+  }
+  if (spawnSync('git', ['-C', projectRepo, 'check-ignore', '--quiet', recordPath]).status !== 0) {
+    throw new Error('无法确认本机记录会被 Git 忽略，未写入')
+  }
+  const result = {
+    ...previous,
+    machine,
+    assistant: assistant ?? previous.assistant ?? 'unknown',
+    network: previous.network ?? 'unknown',
+    maxConcurrentHeavyJobs: previous.maxConcurrentHeavyJobs ?? 1,
+    memoryGiB: Math.round((os.totalmem() / 1024 ** 3) * 10) / 10,
+    devProfile,
+    projectRepo,
+    projectRegistration,
+    projectId,
+    registrationEvidence,
+    nodeVersion: process.version,
+    gitVersion: git(['--version']),
+    missingDevDependencies: devDependencies.filter(
+      (file) => !existsSync(path.join(root, 'node_modules', file))
+    ),
+    observedAt: new Date().toISOString(),
+    uiVerification: 'not-checked'
+  }
+  mkdirSync(path.dirname(recordPath), { recursive: true })
+  writeFileSync(recordPath, `${JSON.stringify(result, null, 2)}\n`)
+  return { recordPath, ...result }
+}
 
 export function sourceFingerprint(root) {
   const inputs = [
@@ -122,21 +219,24 @@ function run(root, script, args, env) {
 async function main() {
   const options = {}
   const args = process.argv.slice(2)
-  const dev = args[0] === 'dev'
-  if (dev) {
-    args.shift()
-  }
+  const mode = ['dev', 'prepare'].includes(args[0]) ? args.shift() : 'isolated'
+  const dev = mode === 'dev'
   while (args.length) {
     const key = args.shift()
-    if (!['--root', '--config', '--grep', '--project'].includes(key) || !args.length) {
-      throw new Error('参数：--root 仓根 [--config 已有配置 --grep 用例 --project 项目]')
+    if (
+      !['--root', '--config', '--grep', '--project', '--assistant'].includes(key) ||
+      !args.length
+    ) {
+      throw new Error(
+        'prepare: --root 仓根 [--assistant codex|claude]；dev: --root 仓根；隔离验证可选 --config/--grep/--project'
+      )
     }
     options[key.slice(2)] = args.shift()
   }
   if (!options.root) {
     throw new Error('需要 --root 显式指定任务 worktree')
   }
-  if (dev && (options.config || options.grep || options.project)) {
+  if (mode !== 'isolated' && (options.config || options.grep || options.project)) {
     throw new Error('dev 只启动持久开发实例；用例参数用于隔离验证模式')
   }
   const root = execFileSync('git', [
@@ -148,12 +248,31 @@ async function main() {
     .toString()
     .trim()
   const require = createRequire(path.join(root, 'package.json'))
-  const missing = [
-    ...(dev ? [] : ['@playwright/test/package.json']),
-    'electron-vite/package.json',
-    '@xterm/headless/lib-headless/xterm-headless.js',
-    '@xterm/addon-serialize/lib/addon-serialize.js'
-  ].filter((file) => !existsSync(path.join(root, 'node_modules', file)))
+  if (mode === 'prepare') {
+    if (options.assistant && !['codex', 'claude'].includes(options.assistant)) {
+      throw new Error('assistant 应为 codex 或 claude')
+    }
+    const { getDevUserDataPath } = await import(
+      pathToFileURL(path.join(root, 'config/scripts/dev-workbench-env.mjs')).href
+    )
+    console.log(
+      JSON.stringify(
+        prepareEnvironment(root, {
+          ...options,
+          devProfile: getDevUserDataPath(workbenchEnv(process.env))
+        }),
+        null,
+        2
+      )
+    )
+    return
+  }
+  if (options.assistant) {
+    throw new Error('assistant 参数只用于 prepare')
+  }
+  const missing = [...(dev ? [] : ['@playwright/test/package.json']), ...devDependencies].filter(
+    (file) => !existsSync(path.join(root, 'node_modules', file))
+  )
   if (missing.length) {
     throw new Error(
       `任务树依赖未准备完整，先按项目 setup 安装/复用匹配依赖；缺少：${missing.join(', ')}`
