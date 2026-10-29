@@ -1,0 +1,25 @@
+{
+  "success": true,
+  "total": 65,
+  "passed": 63,
+  "failed": 0,
+  "skipped": 2,
+  "suites": [
+    {
+      "file": "config/scripts/electron-builder-config.test.mjs",
+      "status": "passed"
+    },
+    {
+      "file": "config/scripts/electron-builder-runtime-resources.test.mjs",
+      "status": "passed"
+    },
+    {
+      "file": "config/scripts/packaged-node-pty-prebuild-prune.test.mjs",
+      "status": "passed"
+    },
+    {
+      "file": "config/scripts/packaged-source-map-prune.test.mjs",
+      "status": "passed"
+    }
+  ]
+}

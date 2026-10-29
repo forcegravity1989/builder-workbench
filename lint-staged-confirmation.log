@@ -1,0 +1,23 @@
+‼ Skipping backup because `--diff` was used.
+
+[STARTED] Preparing lint-staged...
+[COMPLETED] Preparing lint-staged...
+[STARTED] Running tasks for changed files...
+[STARTED] package.json — 5 files
+[STARTED] {*.{ts,tsx,js,jsx,mjs,mts,cts},!(cloud)/**/*.{ts,tsx,js,jsx,mjs,mts,cts}} — 2 files
+[STARTED] {*.{json,css},!(cloud)/**/*.{json,css}} — 0 files
+[SKIPPED] {*.{json,css},!(cloud)/**/*.{json,css}} — no files
+[STARTED] oxlint
+[COMPLETED] oxlint
+[STARTED] oxlint --config config/oxlint-react-doctor.json
+[COMPLETED] oxlint --config config/oxlint-react-doctor.json
+[STARTED] oxfmt --write
+[COMPLETED] oxfmt --write
+[COMPLETED] {*.{ts,tsx,js,jsx,mjs,mts,cts},!(cloud)/**/*.{ts,tsx,js,jsx,mjs,mts,cts}} — 2 files
+[COMPLETED] package.json — 5 files
+[COMPLETED] Running tasks for changed files...
+[STARTED] Applying modifications from tasks...
+[COMPLETED] Applying modifications from tasks...
+
+→ oxfmt --write:
+Finished in 15ms on 2 files using 22 threads.

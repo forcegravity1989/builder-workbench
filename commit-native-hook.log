@@ -1,0 +1,4 @@
+[native-pre-commit] running repository lint-staged tasks
+[native-pre-commit] lint-staged exit=0
+[codex/windows-package-size 8ca46601d] fix(packaging): trim Windows artifacts, relay copies and locales
+ 5 files changed, 62 insertions(+), 4 deletions(-)

@@ -1,0 +1,24 @@
+{
+  "beforeBytes": 183371031,
+  "afterBytes": 166551777,
+  "beforeMiB": 174.88,
+  "afterMiB": 158.84,
+  "savedBytes": 16819254,
+  "savedMiB": 16.04,
+  "reductionPercent": 9.17,
+  "beforeRawMiB": 616.34,
+  "afterRawMiB": 521.76,
+  "rawSavedMiB": 94.58,
+  "oldBuildArtifacts": {
+    "count": 32,
+    "MiB": 36.29
+  },
+  "relayFiles": 51,
+  "relayMiB": 12.71,
+  "nativeFilesUnchanged": 22,
+  "beforeLocaleCount": 55,
+  "afterLocales": [
+    "locales/en-US.pak",
+    "locales/zh-CN.pak"
+  ]
+}

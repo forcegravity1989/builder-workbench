@@ -1,0 +1,30 @@
+  • electron-builder  version=26.15.3 os=10.0.22631
+  • loaded configuration  file=D:\codex\b705\builders-workbench\pr-evidence\492\baseline-config.cjs
+  • @electron/rebuild already used by electron-builder, please consider to remove excess dependency from devDependencies
+
+To ensure your native dependencies are always matched electron version, simply add script `"postinstall": "electron-builder install-app-deps" to your `package.json`
+[native-build] reusing Windows CLI launcher at D:\codex\b705\builders-workbench\native\windows-cli-launcher\.build\workbench\orca.exe
+[rebuild] Skipping optional Electron rebuild modules: cpu-features
+[rebuild] Restored node-pty ConPTY runtime files for win10-x64.
+[rebuild] Native modules already load in Electron; skipping rebuild.
+  • packaging       platform=win32 arch=x64 electron=43.7.0 appOutDir=pr-evidence\492\before\win-unpacked
+  • downloaded      label=electron progress=100%
+  • downloaded electron zip extracted successfully  output=D:\codex\b705\builders-workbench\pr-evidence\492\before\win-unpacked
+  • updating asar integrity executable resource  executablePath=pr-evidence\492\before\win-unpacked\Workbench.exe
+  • signing with signtool.exe  path=pr-evidence\492\before\win-unpacked\resources\node_modules\ssh2\util\pagent.exe
+  • signing with signtool.exe  path=pr-evidence\492\before\win-unpacked\resources\node_modules\node-pty\third_party\conpty\1.23.251008001\win10-x64\OpenConsole.exe
+  • signing with signtool.exe  path=pr-evidence\492\before\win-unpacked\resources\node_modules\node-pty\third_party\conpty\1.23.251008001\win10-arm64\OpenConsole.exe
+  • signing with signtool.exe  path=pr-evidence\492\before\win-unpacked\resources\node_modules\node-pty\prebuilds\win32-x64\winpty-agent.exe
+  • signing with signtool.exe  path=pr-evidence\492\before\win-unpacked\resources\node_modules\node-pty\prebuilds\win32-x64\conpty\OpenConsole.exe
+  • signing with signtool.exe  path=pr-evidence\492\before\win-unpacked\resources\node_modules\node-pty\prebuilds\win32-arm64\winpty-agent.exe
+  • signing with signtool.exe  path=pr-evidence\492\before\win-unpacked\resources\node_modules\node-pty\prebuilds\win32-arm64\conpty\OpenConsole.exe
+  • signing with signtool.exe  path=pr-evidence\492\before\win-unpacked\resources\node_modules\node-pty\build\Release\conpty\OpenConsole.exe
+[verify-packaged-node-pty] OK — packaged ConPTY owns process trees
+[verify-packaged-daemon-entry] OK — packaged daemon-entry loads under plain Node
+[verify-packaged-plugin-resources] OK — verified 1 bundled plugin(s)
+  • signing with signtool.exe  path=pr-evidence\492\before\win-unpacked\Workbench.exe
+  • building        target=nsis file=pr-evidence\492\before\workbench-windows-setup.exe archs=x64 oneClick=false perMachine=false
+  • signing with signtool.exe  path=pr-evidence\492\before\win-unpacked\resources\elevate.exe
+  • signing with signtool.exe  path=pr-evidence\492\before\workbench-windows-setup.__uninstaller.exe
+  • signing with signtool.exe  path=pr-evidence\492\before\workbench-windows-setup.exe
+  • building block map  blockMapFile=pr-evidence\492\before\workbench-windows-setup.exe.blockmap

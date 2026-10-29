@@ -1,0 +1,41 @@
+[
+  {
+    "locale": "zh-CN",
+    "version": "1.4.197",
+    "userData": "D:\\codex\\b705\\builders-workbench\\pr-evidence\\492\\profile-zh-CN",
+    "home": "D:\\codex\\b705\\builders-workbench\\pr-evidence\\492\\profile-zh-CN\\home",
+    "pty": {
+      "exitCode": 0,
+      "marker": true
+    },
+    "nativePath": "D:\\codex\\b705\\builders-workbench\\dist\\win-unpacked\\resources\\node_modules\\node-pty\\lib\\index.js",
+    "renderedCharacters": 486,
+    "restart": false
+  },
+  {
+    "locale": "en-US",
+    "version": "1.4.197",
+    "userData": "D:\\codex\\b705\\builders-workbench\\pr-evidence\\492\\profile-en-US",
+    "home": "D:\\codex\\b705\\builders-workbench\\pr-evidence\\492\\profile-en-US\\home",
+    "pty": {
+      "exitCode": 0,
+      "marker": true
+    },
+    "nativePath": "D:\\codex\\b705\\builders-workbench\\dist\\win-unpacked\\resources\\node_modules\\node-pty\\lib\\index.js",
+    "renderedCharacters": 666,
+    "restart": false
+  },
+  {
+    "locale": "zh-CN",
+    "version": "1.4.197",
+    "userData": "D:\\codex\\b705\\builders-workbench\\pr-evidence\\492\\profile-zh-CN",
+    "home": "D:\\codex\\b705\\builders-workbench\\pr-evidence\\492\\profile-zh-CN\\home",
+    "pty": {
+      "exitCode": 0,
+      "marker": true
+    },
+    "nativePath": "D:\\codex\\b705\\builders-workbench\\dist\\win-unpacked\\resources\\node_modules\\node-pty\\lib\\index.js",
+    "renderedCharacters": 473,
+    "restart": true
+  }
+]
