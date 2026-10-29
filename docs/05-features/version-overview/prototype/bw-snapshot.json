@@ -1577,6 +1577,30 @@
       "isDraft": true,
       "mergedAt": null,
       "readAt": "2026-10-29T11:17:14.704Z"
+    },
+    {
+      "mergedAt": "2026-10-27T07:17:18Z",
+      "number": 446,
+      "state": "MERGED",
+      "title": "归档 v0.8 版本计划",
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/446",
+      "readAt": "2026-10-29T11:59:20.605Z"
+    },
+    {
+      "mergedAt": "2026-10-20T02:35:23Z",
+      "number": 386,
+      "state": "MERGED",
+      "title": "归档 v0.7 版本计划",
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/386",
+      "readAt": "2026-10-29T11:59:20.610Z"
+    },
+    {
+      "mergedAt": "2026-10-24T15:45:33Z",
+      "number": 429,
+      "state": "MERGED",
+      "title": "docs(acceptance): v0.7 版本验收归档——G1 遗留、G3/G4 达成、G2 补发 v0.7.1，附人工确认纪要",
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/429",
+      "readAt": "2026-10-29T11:59:20.610Z"
     }
   ],
   "releases": [
@@ -1649,5 +1673,23 @@
       "title": "【v0.7|G2】Orca 侧边栏调整：项目墙 → 项目 → 版本运作树，会话随目标与版本归档",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/383"
     }
-  ]
+  ],
+  "workflowSample": {
+    "issue": {
+      "number": 469,
+      "title": "计划屏默认开计划助手用的是 claude，而不是用户配置的默认智能体",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/469"
+    },
+    "pull": {
+      "number": 505,
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/505"
+    },
+    "comment": {
+      "id": 6494691114,
+      "body": "<!-- bw-workflow-feedback:https://github.com/forcegravity1989/builder-workbench/issues/469 -->\n## Workflow 会话反馈\n\n会话：01a185fc-5046-77c2-b2e8-3fff380fc4c8 · 方法：0.4.6-pilot。单任务计数。\n\n| 指标 | 本次记录 |\n|---|---|\n| 开工额外输入 | 有，本任务记 1 |\n| AskUser | 1 轮 |\n| 高保真前审 | 0 轮 |\n| 人工验证指导 | 0 批 |\n| 人工中途纠偏 | 1 批 |\n| PR 交付返工 | 待审 / 未知 |\n\n权限请求另记 0 轮。交付前验证指导与纠偏按消息去重后 1 批，不相加。前五项仅统计首次交付前；未审和缺记录不算零返工。\n\n**用户输入简述**（3 条原始消息，已标注 3 条 → 3 个事件）：\n- 首次交付前：要求同步主干、按 workbench-start 处理 #469，并指定隔离工作树目录。\n- 首次交付前：要求再次同步 main、重载新版方法并重读 Codex 记忆。\n- 首次交付前：回答工具优先级澄清：只保证计划和验收启动使用 BW 默认智能体，要求避免修复扩散。\n\n**反哺去向：** 调查已复现旧条目 Claude 与全局 Codex 不一致，但曾把讨论扩至原生协议；用户收窄后以已有 update→runNow 修复两个按钮；以正常 PR 首次可供审阅的回执消息为交付截点；尚无人审结论，返工保持待审，CI 状态另在验证报告更新。\n\n来源：Codex 原始会话提取、模型逐条标注、脚本校验计数及实际人审证据。初始输入 / 交付前过程 / 人审覆盖：完整 / 完整 / 未知。原文与消息定位留在本地提取和标注产物中。\n\r\n补充口径：权限项记录对人的权限提问。本次宿主执行经过工具自动审核，没有额外的人类权限答复，不计作人工介入。\r\n\r\n\r\n**交付后补修（证据发布）：** 用户指出截图加载失败。已查明证据树文件名末尾误带回车，修正截图分支及原验证评论，并逐张验证真实图片响应；这暴露了发布后只核对推送、未检查图片可读的漏项。本轮产品代码未变。用户另要求说明任务性质和代码质量，已补明为经确认的小范围行为需求／体验修正；人工合入结论仍待定。",
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/505#issuecomment-6494691114",
+      "updatedAt": "2026-10-29T11:11:20Z"
+    },
+    "readAt": "2026-10-29T11:59:20.612Z"
+  }
 }

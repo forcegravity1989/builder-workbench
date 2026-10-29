@@ -530,10 +530,45 @@
 }
 .ov-productivity-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   margin-top: 12px;
+}
+.ov-productivity-metrics > div {
+  padding: 16px 8px;
+  min-width: 0;
+}
+.ov-metric-tip {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: help;
+}
+.ov-workflow-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ov-workflow-heading h2 {
+  font-size: 15px;
+  margin: 0;
+}
+.ov-workflow-heading button:disabled {
+  color: var(--muted-foreground);
+  cursor: wait;
+}
+.ov-workflow-source {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 12px;
+  color: var(--muted-foreground);
+  font-size: 11px;
 }
 .ov-productivity-metrics span {
   font-size: 11px;
@@ -756,79 +791,24 @@
   transform: translateX(-100%);
   align-items: flex-end;
 }
-.ov-journey-detail {
-  padding: 14px 16px;
-  background: var(--muted);
-  border-left: 2px solid var(--border);
-  font-size: 12px;
-}
-.ov-journey-detail-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 6px;
-}
-.ov-journey-detail > time {
-  color: var(--muted-foreground);
-  font-size: 11px;
-}
-.ov-journey-detail > p {
-  line-height: 1.7;
-  margin: 10px 0;
-}
-.ov-process-events {
-  padding: 0;
-  list-style: none;
-  margin: 12px 0;
-  display: grid;
-  gap: 7px;
-}
-.ov-process-events li {
-  display: grid;
-  grid-template-columns: 92px 1fr;
-  gap: 12px;
-  font-size: 11px;
-  line-height: 1.6;
-}
-.ov-process-events time {
-  color: var(--muted-foreground);
-}
-.ov-sample-evidence {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  font-size: 10px;
-  line-height: 1.5;
-}
-.ov-sample-evidence > span:first-child {
-  color: var(--muted-foreground);
-}
 .ov-timeline .ov-note {
   font-size: 10px;
   margin-top: 10px;
-}
-.ov-journey-selection {
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
-}
-.ov-selection-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-}
-.ov-selection-heading time {
-  color: var(--muted-foreground);
-  font-size: 10px;
 }
 .ov-artifact-links {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin: 10px 0;
+  align-items: center;
+}
+.ov-artifact-chip.active {
+  border-color: var(--foreground);
+}
+.ov-source-unknown {
+  padding: 7px 9px;
+  color: var(--muted-foreground);
+  font-size: 11px;
 }
 .ov-artifact-chip {
   display: inline-flex;
@@ -857,22 +837,6 @@
 .ov-artifact-chip > a:hover,
 .ov-artifact-chip > button:hover {
   background: var(--muted);
-}
-.ov-process-disclosure > summary {
-  width: fit-content;
-  cursor: pointer;
-  font-size: 11px;
-  color: var(--muted-foreground);
-  padding: 6px 0;
-}
-.ov-process-disclosure[open] > summary {
-  margin-bottom: 6px;
-}
-@container (max-width:560px) {
-  .ov-journey-detail-heading {
-    flex-wrap: wrap;
-    gap: 6px;
-  }
 }
 
 .ov-goal {
@@ -966,26 +930,9 @@
 .ov-merge-point.first::after {
   left: 0;
 }
-.ov-artifact-chip button:disabled {
-  cursor: default;
-  color: var(--muted-foreground);
-}
 @container (max-width: 560px) {
   .ov-goal-heading {
     flex-wrap: wrap;
     gap: 6px;
   }
-}
-
-.ov-metric-placeholder {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 16px 4px;
-  color: var(--muted-foreground);
-  font-size: 12px;
-}
-.ov-metric-placeholder strong {
-  font-size: 20px;
-  font-weight: 500;
 }

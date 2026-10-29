@@ -60,8 +60,8 @@ export function ReferencePanel() {
       </a>
       <p>
         原型注释: 名称参考 GitHub 的 Pre-release 与正式 Release 区分。BW
-        本轮按正式计划关联和目标人工达成推导首次 Pre、第二次
-        Release；节点取验收确认时间，不表示逐包独立核验。每周一版、两版完成只是规划默认，不自动生成交付。
+        本轮按正式计划关联和目标人工达成推导首次 Pre、第二次 Release；节点取验收 PR
+        合入时间，不表示逐包独立核验。每周一版、两版完成只是规划默认，不自动生成交付。
       </p>
       <a
         href="https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository"
@@ -166,14 +166,7 @@ export function HintButton({ id, text, className = '', current = false, onClick,
   )
 }
 
-export function Feature({
-  feature,
-  openSession,
-  native,
-  selectedVersion,
-  focusRequest,
-  openVersion
-}) {
+export function Feature({ feature, selectedVersion, focusRequest, openVersion }) {
   const [expanded, setExpanded] = window.BWPrototypeDependencies.useState(!!feature.previewExpanded)
   const cardRef = useRef(null)
   const toggleRef = useRef(null)
@@ -239,7 +232,7 @@ export function Feature({
               </HintButton>
             ))}
           </div>
-          <FeatureTimeline feature={feature} openSession={openSession} native={native} />
+          <FeatureTimeline feature={feature} />
         </div>
       )}
     </article>
@@ -255,7 +248,7 @@ export function SourcePanel() {
         {snapshot.source.checkedAt}。
       </p>
       <p>
-        原型注释: #334 的 PR 状态单独只读刷新：
+        原型注释: 计划、验收及本任务 PR 分批只读刷新：
         {snapshot.pulls
           .filter((pr) => pr.readAt)
           .map((pr) => (
@@ -301,10 +294,16 @@ export function SourcePanel() {
         </dd>
         <dt>AI workflow</dt>
         <dd>
-          原型注释: 六项人工介入／返工口径沿 workflow
-          正本；本页指标仍为空布局，尚未接统计结果。不显示模拟数值。
+          原型注释: 六项人工介入／返工口径沿 workflow 正本。此处读取 PR #505
+          已发表的指标评论作为真实单任务样例，#469
+          尚不在这份版本计划内，不计入版本汇总。生产接线只处理目标内
+          Issue；指标独立刷新并保留来源采集时间，读取失败不显示为零。
         </dd>
       </dl>
+      <p>
+        原型注释: “刷新版本数据”重新加载静态页面；“刷新指标”只重读本地来源快照。两者都不冒充实时
+        provider 查询，生产页缓存与原生刷新接线仍待实现。
+      </p>
       <p>
         原型注释:
         当前设计文档可编辑；任务分支的源文件与固定快照分别标识。临时编辑不改写来源，也不回写

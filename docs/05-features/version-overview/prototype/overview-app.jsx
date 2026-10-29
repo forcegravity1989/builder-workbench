@@ -3,7 +3,8 @@ import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx
 import { Dialog, SourcePanel, ReferencePanel } from './overview-components.jsx'
 import {
   snapshot,
-  acceptanceForVersion,
+  archivePull,
+  formatTime,
   repository,
   revision,
   scenarios,
@@ -38,6 +39,28 @@ function Link({ href, children }) {
     <a href={href} target="_blank" rel="noreferrer">
       {children} ↗
     </a>
+  )
+}
+function ArchiveStamp({ version, workflow, label }) {
+  const pull = archivePull(version, workflow)
+  const merged = pull?.state === 'MERGED'
+  return (
+    <span>
+      {label} ·{' '}
+      {merged && pull.mergedAt ? (
+        <time dateTime={pull.mergedAt}>{formatTime(pull.mergedAt)}</time>
+      ) : pull && !merged ? (
+        '未合入'
+      ) : (
+        '未记录'
+      )}
+      {pull && (
+        <>
+          {' '}
+          · <Link href={pull.url}>#{pull.number}</Link>
+        </>
+      )}
+    </span>
   )
 }
 function App() {
@@ -94,6 +117,16 @@ function App() {
   function returnToSource() {
     setNavigationDraft({ ...returnContext })
     setDialog({ kind: 'navigation', title: '原型注释: 返回来源上下文', returned: true })
+  }
+  function refreshVersion() {
+    const url = new URL(location.href)
+    url.searchParams.set('scene', scenario)
+    if (focusRequest) {
+      url.searchParams.set('focus', focusRequest.id)
+    } else {
+      url.searchParams.delete('focus')
+    }
+    location.assign(url)
   }
   function openSession(feature) {
     if (feature.historical) {
@@ -261,7 +294,7 @@ function App() {
                           className="nav-row ov-goal-nav"
                           title={g.title}
                           key={g.goalId}
-                          onClick={() => setDialog({ kind: 'goal', title: g.title, goal: g })}
+                          onClick={() => native('目标任务', g)}
                         >
                           <ChevronRight size={12} />
                           <span>
@@ -355,9 +388,21 @@ function App() {
                     )
                   ].join('、')}
                 </span>
-                <span>{history ? '人工验收 · 2026-10-23' : '计划 PR 合入 · 2026-10-27'}</span>
-                <span>交付时间 · {history ? '见验收与发布记录' : '计划未记录'}</span>
+                <ArchiveStamp version={selected.version} workflow="planning" label="计划 PR 合入" />
+                <ArchiveStamp
+                  version={selected.version}
+                  workflow="acceptance"
+                  label="验收 PR 合入"
+                />
+                <span>北京时间 UTC+08:00</span>
                 <Link href={planLink}>计划依据</Link>
+                <button
+                  className="ov-link"
+                  onClick={refreshVersion}
+                  title="原型注释: 重新加载静态页面与来源快照；生产页刷新沿原生读取入口。"
+                >
+                  刷新版本数据 ↻
+                </button>
               </div>
             )}
             {edited && !history && !unplanned && (
@@ -384,7 +429,6 @@ function App() {
               sample={sample}
               setDialog={setDialog}
               native={native}
-              openSession={openSession}
               focusRequest={focusRequest}
               openVersion={openVersion}
             />
@@ -499,48 +543,6 @@ function App() {
                     <Link href={r.url}>{r.tagName}</Link>
                   </p>
                 ))}
-            </>
-          )}
-          {dialog.kind === 'goal' && (
-            <>
-              <p>
-                <strong>
-                  {dialog.goal.goalId} · {dialog.goal.owner}
-                </strong>
-              </p>
-              <h3>交付范围</h3>
-              <p className="ov-prewrap">{dialog.goal.deliverable}</p>
-              <h3>验收依据</h3>
-              <p className="ov-prewrap">{dialog.goal.acceptance}</p>
-              {acceptanceForVersion(selected.version) && (
-                <>
-                  <h3>当时人工结论</h3>
-                  {acceptanceForVersion(selected.version)
-                    .results.filter((r) => r.goalId === dialog.goal.goalId)
-                    .map((r) => (
-                      <div key={r.goalId}>
-                        <p>
-                          {r.decision?.outcome === 'met'
-                            ? '达成'
-                            : r.decision?.outcome === 'not-met'
-                              ? '未达成'
-                              : '未确认'}{' '}
-                          · {r.decision?.source}
-                        </p>
-                        <p>{r.nextStep}</p>
-                        {Object.values(r.issueNotes || {}).map((note, i) => (
-                          <p key={i}>{note}</p>
-                        ))}
-                      </div>
-                    ))}
-                </>
-              )}
-              <p>
-                <button className="ov-link" onClick={() => native('目标任务', dialog.goal)}>
-                  打开本目标任务屏 ↗
-                </button>
-              </p>
-              <Link href={planLink}>固定计划原文</Link>
             </>
           )}
           {dialog.kind === 'session' && (

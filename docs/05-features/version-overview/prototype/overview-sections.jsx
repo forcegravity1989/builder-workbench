@@ -1,5 +1,6 @@
 import { Feature, SectionTitle } from './overview-components.jsx'
 import { repository, historicalFeatures, acceptanceForVersion } from './overview-data.js'
+import { WorkflowProductivity } from './overview-workflow.jsx'
 // eslint-disable-next-line no-unused-vars
 const { React } = window.BWPrototypeDependencies
 const outcome = (result) =>
@@ -18,7 +19,6 @@ export function OverviewSections({
   sample,
   setDialog,
   native,
-  openSession,
   focusRequest,
   openVersion
 }) {
@@ -68,12 +68,6 @@ export function OverviewSections({
                 </div>
                 <div className="ov-goal-meta">
                   <span>负责人 · {goal.owner}</span>
-                  <button
-                    className="ov-link"
-                    onClick={() => setDialog({ kind: 'goal', title: goal.title, goal })}
-                  >
-                    范围与验收标准 ↗
-                  </button>
                   <button className="ov-link" onClick={() => native('目标任务', goal)}>
                     目标任务 · {tasks.length} 项 ↗
                   </button>
@@ -93,8 +87,6 @@ export function OverviewSections({
                   <Feature
                     key={`${selected.version}:${f.id}`}
                     feature={f}
-                    openSession={openSession}
-                    native={native}
                     selectedVersion={selected.version}
                     focusRequest={focusRequest}
                     openVersion={openVersion}
@@ -118,20 +110,7 @@ export function OverviewSections({
         </div>
       )}
 
-      <section className="ov-section" aria-labelledby="productivity">
-        <SectionTitle id="productivity" title="AI workflow 生产力" extra="Builder Workbench" />
-        <p className="ov-note">
-          原型注释: 口径沿 workflow 正本，本页仅保留布局占位，统计结果尚未接入，不显示模拟数值。
-        </p>
-        <div className="ov-productivity-metrics">
-          {[1, 2, 3, 4].map((id) => (
-            <div className="ov-metric-placeholder" key={id}>
-              <span>指标待定</span>
-              <strong>—</strong>
-            </div>
-          ))}
-        </div>
-      </section>
+      <WorkflowProductivity plan={plan} unplanned={unplanned} />
 
       <section className="ov-section" aria-labelledby="records">
         <SectionTitle id="records" title="本版记录" />

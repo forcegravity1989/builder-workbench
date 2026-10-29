@@ -4,7 +4,34 @@ export const repository = snapshot.source.repository
 export const acceptanceForVersion = (version) =>
   snapshot.acceptance.version === version ? snapshot.acceptance : null
 export const baseline = snapshot.source.sourceCommit
-export const revision = '334-draft-11'
+export const revision = '334-draft-12'
+export const formatTime = (value) =>
+  value && Number.isFinite(Date.parse(value))
+    ? new Intl.DateTimeFormat('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      })
+        .format(new Date(value))
+        .replaceAll('/', '-')
+    : '未记录'
+export function archivePull(version, workflow) {
+  const document =
+    workflow === 'acceptance'
+      ? acceptanceForVersion(version)
+      : version === snapshot.plan.version
+        ? snapshot.plan
+        : version === snapshot.priorPlan.version
+          ? snapshot.priorPlan
+          : null
+  return (
+    snapshot.pulls.find((pull) => pull.number === document?.workflow?.archivePr?.number) ?? null
+  )
+}
 export const scenarios = [
   { id: 'unplanned', label: '版本计划未制定', version: 'v0.9' },
   { id: 'during', label: '版本计划制定完（版本中）', version: 'v0.8' },
