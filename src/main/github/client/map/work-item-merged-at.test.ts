@@ -3,7 +3,15 @@ import { mapPullRequestWorkItem } from './work-item'
 import { WORK_ITEM_PR_LIST_JSON_FIELDS } from './work-item-field-coercion'
 
 it('requests mergedAt and preserves both CLI and REST merge times without using updatedAt', () => {
-  expect(WORK_ITEM_PR_LIST_JSON_FIELDS.split(',')).toContain('mergedAt')
+  expect(WORK_ITEM_PR_LIST_JSON_FIELDS.split(',')).toEqual(
+    expect.arrayContaining(['mergedAt', 'createdAt'])
+  )
+  for (const field of ['createdAt', 'created_at']) {
+    expect(mapPullRequestWorkItem({ number: 1, [field]: '2026-09-20T10:00:00Z' }).createdAt).toBe(
+      '2026-09-20T10:00:00Z'
+    )
+  }
+  expect(mapPullRequestWorkItem({ number: 1 }).createdAt).toBeUndefined()
   for (const field of ['mergedAt', 'merged_at']) {
     expect(
       mapPullRequestWorkItem({

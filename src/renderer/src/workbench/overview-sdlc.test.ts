@@ -25,9 +25,7 @@ describe('sdlcProviderOf', () => {
     expect(sdlcProviderOf(github)).toBe('github')
     expect(sdlcProviderOf(other)).toBeNull()
     expect(sdlcProviderOf(null)).toBeNull()
-  })
 
-  it('github.com 主机不落入 codehub，走 github 身份', () => {
     const githubRemote: RepoPick = {
       gitRemoteIdentity: {
         remoteUrl: 'https://github.com/octo/proj.git',

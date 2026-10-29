@@ -8,11 +8,11 @@ import { summarizeProviderChecks } from '../../../../shared/provider-check-summa
 export type MainWorkItem = Omit<GitHubWorkItem, 'repoId'>
 
 export const WORK_ITEM_PR_LIST_JSON_FIELDS =
-  'number,title,state,url,labels,updatedAt,mergedAt,author,isDraft,headRefName,baseRefName,headRefOid,headRepositoryOwner,reviewRequests'
+  'number,title,state,url,labels,createdAt,updatedAt,mergedAt,author,isDraft,headRefName,baseRefName,headRefOid,headRepositoryOwner,reviewRequests'
 
 // Checks and review details require expensive per-row GraphQL; mergedAt is a scalar list field.
 export const WORK_ITEM_PR_DETAIL_JSON_FIELDS =
-  'number,title,state,url,labels,updatedAt,mergedAt,author,isDraft,headRefName,baseRefName,headRefOid,headRepositoryOwner,additions,deletions,changedFiles,reviewDecision,reviewRequests,latestReviews,assignees,statusCheckRollup,mergeable,mergeStateStatus,autoMergeRequest,maintainerCanModify'
+  'number,title,state,url,labels,createdAt,updatedAt,mergedAt,author,isDraft,headRefName,baseRefName,headRefOid,headRepositoryOwner,additions,deletions,changedFiles,reviewDecision,reviewRequests,latestReviews,assignees,statusCheckRollup,mergeable,mergeStateStatus,autoMergeRequest,maintainerCanModify'
 
 /**
  * Derive author login + avatar_url together so GHE avatars render — the login-only

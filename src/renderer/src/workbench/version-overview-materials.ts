@@ -1,194 +1,244 @@
 import { useEffect, useState } from 'react'
-import { useAppStore } from '@/store'
-import type { Worktree } from '../../../shared/worktree/types'
 import type {
   AcceptanceMaterial,
   PlanningMaterial
 } from '../../../shared/workbench/version-material'
 import type { ArchivePrStatusResult } from '../../../shared/workbench/archive-pr-status'
-import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
+import type { VersionCatalogState } from './use-version-catalog'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeArchivePrPort } from './archive-pr-port'
-import { nativeWorkspaceScope, type NativeWorkspaceScope } from './version-cycle/native-workspace'
+import { loadVersionPlanDocument } from './version-task-entries'
+import { humanAcceptanceTime } from './version-overview/version-evidence'
+import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
+import { nativeWorkspaceScope } from './version-cycle/native-workspace'
+import { nativeVersionMaterialPort } from './version-material-port'
+import { AcceptanceMaterialSchema } from '../../../shared/workbench/version-material'
 
-/**
- * G2 版本总览的数据装载（P6，从 version-overview-page 拆出以满足文件行数上限）：
- * 主干已提交材料按目录固定 sourceCommit/revision 只读（history RPC），归档 PR
- * 合入状态按记录引用薄读取、失败保持未知。目录装载中不落判「无材料」（未成立的
- * 否定断言），就绪后重判；读取失败如实透出。铁律：全部派生自数据，杀进程重开
- * 结果一致。
- */
-
-type DocLoad<T> =
+export type OverviewDocument<T> =
   | { kind: 'loading' }
-  | { kind: 'ready'; document: T; sourceCommit: string; committedAt: string }
-  | { kind: 'missing'; message: string }
-
+  | {
+      kind: 'ready'
+      document: T
+      source: 'committed' | 'draft'
+      sourceCommit?: string
+      acceptedAt?: string
+      revision?: string
+    }
+  | { kind: 'missing' }
+  | { kind: 'error'; message: string }
 export type VersionOverviewMaterials = {
-  plan: DocLoad<PlanningMaterial>
-  acceptance: DocLoad<AcceptanceMaterial>
+  plan: OverviewDocument<PlanningMaterial>
+  acceptance: OverviewDocument<AcceptanceMaterial>
   prStatuses: { plan: ArchivePrStatusResult | null; acceptance: ArchivePrStatusResult | null }
 }
+const loading = (): VersionOverviewMaterials => ({
+  plan: { kind: 'loading' },
+  acceptance: { kind: 'loading' },
+  prStatuses: { plan: null, acceptance: null }
+})
+const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
-export function useVersionOverviewMaterials(args: {
-  repoId: string
+/** Formal acceptance pins the plan. A draft is read only when no formal plan exists. */
+export function useVersionOverviewMaterials({
+  catalog,
+  version,
+  refreshToken
+}: {
+  catalog: VersionCatalogState
   version: string
-  entry: VersionCatalogEntry | null
-  catalogReady: boolean
-  catalogError: string | null
+  refreshToken: number
 }): VersionOverviewMaterials {
-  const { repoId, version, entry, catalogReady, catalogError } = args
-  const trees = useAppStore((s) => s.worktreesByRepo[repoId])
-  const home: Worktree | null = trees?.find((tree) => tree.isMainWorktree) ?? trees?.[0] ?? null
-  const planRef = entry?.material.plan
-  const acceptanceRef = entry?.material.acceptance
-  const planRefKey = planRef ? `${planRef.sourceCommit}:${planRef.revision}` : null
-  const acceptanceRefKey = acceptanceRef
-    ? `${acceptanceRef.sourceCommit}:${acceptanceRef.revision}`
-    : null
-  const homeId = home?.id ?? null
-  const [plan, setPlan] = useState<DocLoad<PlanningMaterial>>({ kind: 'loading' })
-  const [acceptance, setAcceptance] = useState<DocLoad<AcceptanceMaterial>>({ kind: 'loading' })
-  const [prStatuses, setPrStatuses] = useState<{
-    plan: ArchivePrStatusResult | null
-    acceptance: ArchivePrStatusResult | null
-  }>({ plan: null, acceptance: null })
-
+  const entry = catalog.catalog?.entries.find((e) => e.version === version)
+  const key = JSON.stringify([
+    refreshToken,
+    catalog.loading,
+    catalog.scope,
+    catalog.home?.id,
+    version,
+    entry?.material,
+    entry?.draft,
+    catalog.materialReady,
+    catalog.materialError,
+    catalog.error,
+    catalog.planTrees,
+    catalog.worktrees.map((tree) => [
+      tree.id,
+      tree.hostId,
+      tree.runtimeOwnerEnvironmentId,
+      tree.workbenchVersionBinding
+    ])
+  ])
+  const [state, setState] = useState<{ key: string; value: VersionOverviewMaterials }>(() => ({
+    key: '',
+    value: loading()
+  }))
   useEffect(() => {
     let cancelled = false
-    setPlan({ kind: 'loading' })
-    setAcceptance({ kind: 'loading' })
-    setPrStatuses({ plan: null, acceptance: null })
-    if (!home || !homeId) {
-      const message = '项目工作区尚未就绪，无法读取主干材料。'
-      setPlan({ kind: 'missing', message })
-      setAcceptance({ kind: 'missing', message })
-      return
-    }
-    let scope: NativeWorkspaceScope
-    try {
-      scope = nativeWorkspaceScope(home)
-    } catch (reason) {
-      // home 行宿主/路由不明确时如实报读取失败，不让异常穿出 effect 打掉整页。
-      const message = `项目工作区解析失败：${reason instanceof Error ? reason.message : String(reason)}`
-      setPlan({ kind: 'missing', message })
-      setAcceptance({ kind: 'missing', message })
-      return
-    }
-    const historyPort = nativeVersionHistoryPort(home.runtimeOwnerEnvironmentId)
-    const archivePort = nativeArchivePrPort(home.runtimeOwnerEnvironmentId)
-    const metricScope = { repoId: scope.repoId, worktreeId: home.id, hostId: scope.hostId }
-    void (async () => {
-      if (planRef && planRefKey) {
-        try {
-          const result = await historyPort.readPlan({
-            scope: metricScope,
-            planRef: {
-              kind: 'committed',
-              version,
-              cycleId: planRef.cycleId,
-              revision: planRef.revision,
-              sourceCommit: planRef.sourceCommit
-            }
-          })
-          if (!cancelled) {
-            setPlan({
-              kind: 'ready',
-              document: result.document,
-              sourceCommit: planRef.sourceCommit,
-              committedAt: planRef.committedAt
-            })
-            const pr = result.document.workflow?.archivePr
-            if (pr) {
-              try {
-                const status = await archivePort.readStatus(metricScope, pr)
-                if (!cancelled) {
-                  setPrStatuses((previous) => ({ ...previous, plan: status }))
-                }
-              } catch {
-                // 薄读取失败保持未知，不阻塞页面。
-              }
-            }
-          }
-        } catch (reason) {
-          if (!cancelled) {
-            setPlan({
-              kind: 'missing',
-              message: `计划材料读取失败：${reason instanceof Error ? reason.message : String(reason)}`
-            })
-          }
-        }
-      } else if (!cancelled) {
-        // 目录装载中不落判「无材料」（未成立的否定断言）；就绪后重跑再判。
-        setPlan(
-          catalogReady || catalogError
-            ? {
-                kind: 'missing',
-                message: catalogError
-                  ? `版本目录读取失败：${catalogError}`
-                  : `主干没有 ${version} 的已提交计划材料。`
-              }
-            : { kind: 'loading' }
-        )
+    const publish = (value: VersionOverviewMaterials) => {
+      if (!cancelled) {
+        setState({ key, value })
       }
-      if (acceptanceRef && acceptanceRefKey) {
-        try {
-          const result = await historyPort.read({
-            scope: metricScope,
+    }
+    const result = loading()
+    const failure = catalog.materialError ?? catalog.error
+    if (!catalog.materialReady && !failure && catalog.loading) {
+      return () => {
+        cancelled = true
+      }
+    }
+    if (failure || !catalog.scope || !catalog.home) {
+      const error = { kind: 'error' as const, message: failure ?? '项目工作区尚未就绪' }
+      publish({ ...result, plan: error, acceptance: error })
+      return () => {
+        cancelled = true
+      }
+    }
+    const scope = {
+      repoId: catalog.scope.repoId,
+      worktreeId: catalog.home.id,
+      hostId: catalog.scope.hostId
+    }
+    const history = nativeVersionHistoryPort(catalog.scope.runtimeOwnerEnvironmentId)
+    const archive = nativeArchivePrPort(catalog.scope.runtimeOwnerEnvironmentId)
+    void (async () => {
+      const acceptanceRef = entry?.material.acceptance
+      const planRef = entry?.material.plan
+      try {
+        if (acceptanceRef) {
+          const read = await history.read({
+            scope,
             source: 'trunk',
             sourceCommit: acceptanceRef.sourceCommit,
             version,
             cycleId: acceptanceRef.cycleId,
             workflow: 'acceptance'
           })
-          if (!cancelled) {
-            const document = result.document as AcceptanceMaterial
-            setAcceptance({
-              kind: 'ready',
-              document,
-              sourceCommit: acceptanceRef.sourceCommit,
-              committedAt: acceptanceRef.committedAt
-            })
-            const pr = document.workflow?.archivePr
-            if (pr) {
-              try {
-                const status = await archivePort.readStatus(metricScope, pr)
-                if (!cancelled) {
-                  setPrStatuses((previous) => ({ ...previous, acceptance: status }))
-                }
-              } catch {
-                // 同上：保持未知。
-              }
-            }
+          result.acceptance = {
+            kind: 'ready',
+            document: read.document as AcceptanceMaterial,
+            source: 'committed',
+            sourceCommit: acceptanceRef.sourceCommit
           }
-        } catch (reason) {
-          if (!cancelled) {
-            setAcceptance({
-              kind: 'missing',
-              message: `验收材料读取失败：${reason instanceof Error ? reason.message : String(reason)}`
-            })
+        } else {
+          const trees = findVersionFlowWorktrees(catalog.worktrees, {
+            version,
+            workflow: 'acceptance'
+          })
+          if (trees.length > 1) {
+            throw new Error('有多个验收工作区，请从验收入口核对来源')
+          }
+          if (trees[0]) {
+            const owner = nativeWorkspaceScope(trees[0])
+            const draft = await nativeVersionMaterialPort(
+              {
+                repoId: owner.repoId,
+                worktreeId: trees[0].id,
+                hostId: owner.hostId,
+                workflow: 'acceptance'
+              },
+              owner.runtimeOwnerEnvironmentId
+            ).read(version)
+            result.acceptance = draft
+              ? {
+                  kind: 'ready',
+                  document: AcceptanceMaterialSchema.parse(draft.document),
+                  source: 'draft'
+                }
+              : { kind: 'missing' }
+          } else {
+            result.acceptance = { kind: 'missing' }
           }
         }
-      } else if (!cancelled) {
-        setAcceptance(
-          catalogReady || catalogError
-            ? {
-                kind: 'missing',
-                message: catalogError
-                  ? `版本目录读取失败：${catalogError}`
-                  : `主干没有 ${version} 的已提交验收材料。`
-              }
-            : { kind: 'loading' }
+      } catch (error) {
+        result.acceptance = { kind: 'error', message: `验收读取失败：${message(error)}` }
+      }
+      try {
+        if (result.acceptance.kind === 'error' && acceptanceRef) {
+          throw new Error('无法核对验收对应的固定计划，请重试验收读取')
+        }
+        const fixed =
+          result.acceptance.kind === 'ready' && result.acceptance.source === 'committed'
+            ? result.acceptance.document.planRef
+            : planRef
+              ? { kind: 'committed' as const, version, ...planRef }
+              : null
+        if (fixed) {
+          const read = await history.readPlan({ scope, planRef: fixed })
+          result.plan = {
+            kind: 'ready',
+            document: read.document,
+            revision: read.revision,
+            source: fixed.kind === 'committed' ? 'committed' : 'draft',
+            ...(fixed.kind === 'committed' ? { sourceCommit: fixed.sourceCommit } : {})
+          }
+        } else {
+          if (
+            findVersionFlowWorktrees(catalog.worktrees, { version, workflow: 'plan' }).length > 1
+          ) {
+            throw new Error('有多个计划工作区，请从计划入口核对来源')
+          }
+          const read = await loadVersionPlanDocument({
+            scope: catalog.scope!,
+            homeWorktreeId: catalog.home!.id,
+            version,
+            entry,
+            planTrees: catalog.planTrees
+          })
+          if (read.document) {
+            result.plan = {
+              kind: 'ready',
+              document: read.document,
+              source: read.source === 'draft' ? 'draft' : 'committed',
+              revision: read.revision
+            }
+          } else if (entry?.draft || entry?.problems.length || !read.missing) {
+            result.plan = { kind: 'error', message: read.problem ?? '计划来源读取失败' }
+          } else {
+            result.plan = { kind: 'missing' }
+          }
+        }
+      } catch (error) {
+        result.plan = { kind: 'error', message: `计划读取失败：${message(error)}` }
+      }
+      if (
+        result.acceptance.kind === 'ready' &&
+        result.acceptance.source === 'draft' &&
+        result.plan.kind === 'ready' &&
+        result.acceptance.document.planRef.revision !== result.plan.revision
+      ) {
+        result.acceptance = {
+          kind: 'error',
+          message: '验收工作稿引用的计划与当前计划不一致，请从验收入口核对；原记录未修改。'
+        }
+      }
+      if (result.acceptance.kind === 'ready' && result.plan.kind === 'ready') {
+        result.acceptance.acceptedAt = humanAcceptanceTime(
+          result.acceptance.document,
+          result.plan.document.goals.map((goal) => goal.goalId)
         )
       }
+      publish({ ...result })
+      await Promise.all(
+        (['plan', 'acceptance'] as const).map(async (kind) => {
+          const doc = result[kind]
+          const pr = doc.kind === 'ready' ? doc.document.workflow?.archivePr : null
+          if (!pr) {
+            return
+          }
+          try {
+            result.prStatuses[kind] = await archive.readStatus(scope, pr)
+          } catch {
+            result.prStatuses[kind] = { state: 'unknown', reason: '归档 PR 读取失败' }
+          }
+        })
+      )
+      publish({ ...result, prStatuses: { ...result.prStatuses } })
     })()
     return () => {
       cancelled = true
     }
-    // 固定来源（ref key）变化才重读；entry/home 对象每轮都是新引用，不进依赖，
-    // 目录就绪/失败以稳定布尔与文本进依赖。
+    // The key covers source revisions and owner routing; object identity is not a refresh trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [homeId, version, planRefKey, acceptanceRefKey, catalogReady, catalogError])
-
-  return { plan, acceptance, prStatuses }
+  }, [key])
+  return state.key === key ? state.value : loading()
 }
