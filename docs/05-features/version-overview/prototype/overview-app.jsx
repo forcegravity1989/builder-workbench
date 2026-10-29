@@ -26,6 +26,7 @@ const {
   ListTodo,
   BookOpen,
   GitBranch,
+  RefreshCw,
   ChevronDown,
   ChevronRight,
   Info,
@@ -48,7 +49,9 @@ function ArchiveStamp({ version, workflow, label }) {
     <span>
       {label} ·{' '}
       {merged && pull.mergedAt ? (
-        <time dateTime={pull.mergedAt}>{formatTime(pull.mergedAt)}</time>
+        <time dateTime={pull.mergedAt} title="北京时间 UTC+08:00">
+          {formatTime(pull.mergedAt)}
+        </time>
       ) : pull && !merged ? (
         '未合入'
       ) : (
@@ -361,6 +364,7 @@ function App() {
                 {unplanned ? '计划未制定' : history ? '已归档' : '版本中'}
               </span>
               <div className="ov-tools">
+                <IconAction icon={RefreshCw} label="刷新版本数据" onClick={refreshVersion} />
                 <IconAction
                   icon={CalendarRange}
                   label="进入本版计划"
@@ -394,15 +398,6 @@ function App() {
                   workflow="acceptance"
                   label="验收 PR 合入"
                 />
-                <span>北京时间 UTC+08:00</span>
-                <Link href={planLink}>计划依据</Link>
-                <button
-                  className="ov-link"
-                  onClick={refreshVersion}
-                  title="原型注释: 重新加载静态页面与来源快照；生产页刷新沿原生读取入口。"
-                >
-                  刷新版本数据 ↻
-                </button>
               </div>
             )}
             {edited && !history && !unplanned && (
