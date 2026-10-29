@@ -1,3 +1,4 @@
+import { createOverviewProviderReader } from './overview-provider-port'
 import { nativeTaskReferenceReader } from '../native-task-port'
 import { cycleTaskRead, type TaskReferenceValue } from '../task-reference-reader'
 import type { VersionCatalogState } from '../use-version-catalog'
@@ -90,6 +91,7 @@ export async function readOverviewFeatures(args: OverviewFeatureArgs, force: boo
       }
     })
   }
+  const provider = createOverviewProviderReader()
   const features = await mapLimit(
     [...needed.values()],
     async (ref): Promise<FeatureData | null> => {
@@ -146,7 +148,8 @@ export async function readOverviewFeatures(args: OverviewFeatureArgs, force: boo
           associated,
           catalog,
           [...new Set([version, ...feature.versions.map((item) => item.version)])],
-          before
+          before,
+          provider
         )
       )
       const pulls = historical && !before ? [] : feature.pulls

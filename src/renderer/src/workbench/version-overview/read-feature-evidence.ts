@@ -1,8 +1,6 @@
+import { createOverviewProviderReader } from './overview-provider-port'
 import { codehubApi } from '@/lib/codehub-api'
-import {
-  lookupGitHubWorkItemDetailsForSource,
-  lookupGitHubWorkItemByOwnerRepoForSource
-} from '@/lib/github-work-item-source-lookup'
+import { lookupGitHubWorkItemDetailsForSource } from '@/lib/github-work-item-source-lookup'
 import { nativeTaskPortDeps } from '../native-task-port'
 import { resolveReferenceRepo } from '../task-reference-repo'
 import { findVersionTaskWorktrees } from '../scoped-task-workspace'
@@ -37,7 +35,8 @@ export async function readFeatureEvidence(
   associated: CycleTaskSnapshot[],
   catalog: VersionCatalogState,
   versions: string[],
-  before?: string
+  before?: string,
+  provider = createOverviewProviderReader()
 ) {
   const feature: Pick<FeatureData, 'body' | 'createdAt' | 'closedAt' | 'pulls' | 'problems'> = {
     body: '',
@@ -149,30 +148,8 @@ export async function readFeatureEvidence(
       try {
         const readAt = new Date().toISOString()
         if (ref.provider === 'github') {
-          const identity = new URL(root.url)
-          const [owner, name, kind] = identity.pathname.split('/').filter(Boolean)
-          if (!owner || !name || kind !== 'issues') {
-            throw new Error('特性 Issue 仓库身份未知')
-          }
-          const item = await lookupGitHubWorkItemByOwnerRepoForSource({
-            repoPath: repo.path,
-            repoId: repo.id,
-            sourceContext: root.source,
-            owner,
-            repo: name,
-            host: identity.host,
-            number,
-            type: 'pr'
-          })
-          if (!item || typeof item.body !== 'string') {
-            throw new Error('PR 正文与元数据未返回')
-          }
-          const actual = new URL(item.url)
-          if (
-            actual.origin !== identity.origin ||
-            actual.pathname.replace(/\/$/, '').toLowerCase() !==
-              `/${owner}/${name}/pull/${number}`.toLowerCase()
-          ) {
+          const item = await provider.pull(catalog, root, number)
+          if (!linkedPullNumbers(item.url, root.url).includes(number)) {
             throw new Error('PR 与特性 Issue 仓库身份不一致')
           }
           if (
@@ -182,18 +159,7 @@ export async function readFeatureEvidence(
           ) {
             return null
           }
-          return {
-            number,
-            tasks: [...pullTasks.get(number)!.values()],
-            url: item.url,
-            title: item.title,
-            body: item.body,
-            state: item.state,
-            createdAt: item.createdAt,
-            mergedAt: item.mergedAt,
-            revision: item.headSha,
-            readAt
-          }
+          return { ...item, tasks: [...pullTasks.get(number)!.values()] }
         }
         const detail = await codehubApi.viewTask({
           repoPath: repo.path,

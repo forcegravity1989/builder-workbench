@@ -13,6 +13,7 @@ import {
 } from './feature-model'
 import { versionDeliveryEvents, type VersionEvidence } from './version-evidence'
 import { cycleBaseline, featureTimeline } from './feature-timeline'
+import { OverviewPullSchema } from '../../../../shared/workbench/overview-pull'
 
 it('projects scoped feature evidence without turning missing, later or unrelated records into delivery', () => {
   const reference = {
@@ -22,6 +23,17 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     goalId: 'g2'
   }
   const url = 'https://github.com/acme/app/pull/459'
+  const metadata = {
+    number: 459,
+    url,
+    title: 'design',
+    body: '',
+    state: 'merged',
+    readAt: '2026-10-29T00:00:00.000Z'
+  }
+  expect(OverviewPullSchema.safeParse(metadata).success).toBe(true)
+  expect(OverviewPullSchema.safeParse({ ...metadata, body: null }).success).toBe(false)
+  expect(OverviewPullSchema.safeParse({ ...metadata, state: 'unknown' }).success).toBe(false)
   expect(referenceForPlan(reference, [{ ...reference, goalId: 'new-goal' }]).goalId).toBe(
     'new-goal'
   )

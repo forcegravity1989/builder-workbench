@@ -9,7 +9,7 @@ import type { VersionCatalogState } from '../use-version-catalog'
 import { taskKey } from './feature-model'
 import { mapLimit, readFeatureEvidence } from './read-feature-evidence'
 import type { WorkflowEvidence, WorkflowTaskReport } from './workflow-evidence'
-import { readNativeWorkflowComments } from './workflow-comment-port'
+import { createOverviewProviderReader } from './overview-provider-port'
 import type { WorkflowCommentsResult } from '../../../../shared/workbench/workflow-report'
 
 /** Only explicitly planned goal members are queried; feature-root expansion is not a denominator. */
@@ -32,6 +32,7 @@ export async function readWorkflowEvidence(
   if (!catalog.scope) {
     throw new Error('项目来源未就绪')
   }
+  const provider = createOverviewProviderReader()
   const references = workflowReferences(plan)
   const values = await nativeTaskReferenceReader.read(catalog.scope, references, force)
   const tasks = await mapLimit(references, async (reference): Promise<WorkflowTaskReport> => {
@@ -54,12 +55,19 @@ export async function readWorkflowEvidence(
     }
     result.title = read.task.title
     result.issueUrl = read.task.url
-    const evidence = await readFeatureEvidence(read.task, [read.task], catalog, [plan.version])
+    const evidence = await readFeatureEvidence(
+      read.task,
+      [read.task],
+      catalog,
+      [plan.version],
+      undefined,
+      provider
+    )
     result.problems.push(...evidence.problems)
     for (const pull of evidence.pulls) {
       let comments: WorkflowCommentsResult
       try {
-        comments = await readNativeWorkflowComments(catalog, read.task, pull.number, force)
+        comments = await provider.comments(catalog, read.task, pull.number, force)
       } catch (reason) {
         result.problems.push(
           `PR #${pull.number} 指标评论：${reason instanceof Error ? reason.message : String(reason)}`

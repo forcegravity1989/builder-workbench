@@ -37,7 +37,7 @@ export async function verifyVersionOverview(
     body: JSON.stringify(provider),
     contentType: 'application/json'
   })
-  const open = async (version: string) => {
+  const open = async (version: string, afterBackgroundReload = false) => {
     const group = page.locator('.wb-version-group', {
       has: page.getByRole('button', { name: `${version} 展开或收起`, exact: true })
     })
@@ -45,10 +45,13 @@ export async function verifyVersionOverview(
     const toggle = group.getByRole('button', { name: `${version} 展开或收起`, exact: true })
     await expect(toggle).toBeVisible()
     if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
-      await toggle.click()
+      await toggle.click({ force: afterBackgroundReload })
     }
     await expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    await overview.click()
+    await expect(overview).toBeVisible()
+    await expect(overview).toBeEnabled()
+    // A background reload has no animation frames for Playwright's stability check.
+    await overview.click({ force: afterBackgroundReload })
     await expect(
       page.getByRole('heading', { name: `${version} 版本总览`, exact: true })
     ).toBeVisible()
@@ -85,6 +88,12 @@ export async function verifyVersionOverview(
     timeout: 180_000
   })
   await expect(ask).toContainText(/\d+\/\d+/)
+  await expect(productivity.locator('.text-destructive')).toHaveCount(0)
+  await expect(productivity).not.toContainText('刷新失败')
+  await info.attach('workflow-native-display', {
+    body: await productivity.innerText(),
+    contentType: 'text/plain'
+  })
   console.info('[overview] goal-scoped real workflow comments and independent refresh verified')
   await expect(feature.locator('.bwo-node')).not.toHaveCount(0)
   await feature.locator('.bwo-feature-heading').click()
@@ -162,7 +171,7 @@ export async function verifyVersionOverview(
   await open(overviewVersions.current)
   await page.reload()
   await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 120_000 })
-  await open(overviewVersions.current)
+  await open(overviewVersions.current, true)
   await expect(
     page.getByRole('heading', { name: '当前目标 · 版本总览开发', exact: true })
   ).toBeVisible()

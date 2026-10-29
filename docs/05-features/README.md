@@ -28,7 +28,7 @@
 | 7 | Windows 出包与发布 | [workbench-release/](workbench-release/)³ | 开发方法资产·补链中 | ◐ | ◐ | ◐ | ◐ | ◐(R01/R02/R03/R05 v0.6.0 实走) | ◐(RJ01 走至读回) |
 | 8 | 集成页四卡收敛 | [connectors/](connectors/) · [原型](connectors/prototype.html)⁵ | 在用·补链中 | ● | ● | ● | ● | 待建(I01–I12 已定义) | 待建(IJ01 已定义) |
 | 9 | 版本工作区（侧边栏版本运作树） | [version-workspace/](version-workspace/) · [原型](version-workspace/version-workspace-prototype.html) · [旅程](version-workspace/version-workspace-journey.html) | G2 基线；#439 全树绑定/会话可见/断链已静态接线，真壳待验⁶ | ● | ● | ● | ◐(协议例＋ratchet 226) | ◐(headless 烟测主链，CI 随 push 复核) | ◐(绑定树旅程烟测；真壳归人) |
-| 10 | 版本总览 | [version-overview/](version-overview/) · [高保真](version-overview/prototype.html) · [旅程](version-overview/journey.html) | #334 的 83db 基线真壳已验；修订 13 按批注收口，六节点与目标内 workflow 采集转实施 | ● | ◐(基线与增量决定已明确，实施中) | ◐(基线已实现；六节点及目标内 workflow 评论待接) | ◐(基线纯解析与协议检查) | ◐(基线 VO1–VO11 主路径；VO12 新联动未验) | ◐(基线生命周期、文件读回、重载、新进程读回通过) |
+| 10 | 版本总览 | [version-overview/](version-overview/) · [高保真](version-overview/prototype.html) · [旅程](version-overview/journey.html) | #334 修订13已生产接线；GitHub完整真壳旅程含已有节点来源/报告刷新/重载/新进程通过，其他平台留白 | ● | ● | ●(读取/纯解析/展示分离) | ●(核心时间/身份/报告协议) | ◐(GitHub主路径；CodeHub/新跨屏未验) | ◐(隔离Electron、Git/文件与新PID读回通过；模型未验) |
 
 
 ¹ 第 4 行：GitHub CI 路径 2026-08/09 在旧 main 侧交付并实测闭环（PR #132 及后续召唤）；2026-09-29 用户拍板迁入产品分支——workflow 与回执脚本（`.github/scripts/check-pr-review.mjs`）已落，实现设计 ●。2026-09-30 扶正后本定义即默认分支 main 的定义，`/code-review` 召唤直接执行它，不再经旧 main 定义中转。验收点 ◐：迁移 PR 自身修改 workflow 文件，按 #132 先例（时为 pull_request 触发下的防篡改跳过）保守不自召——该校验在现行 issue_comment 触发模型下是否适用未复核；主干首场真实召唤待下一条合格 PR 实测，未实测不判过。TDD ◐：回执脚本无单测，以召唤实测为准。台内「请评审」按钮路径规范件在仓但未接线，defer。明细见其 [STATUS](reviewer-agent/STATUS.md) 迁移节。
@@ -44,7 +44,7 @@
 
 ## 裁决与明细指引
 
-- 版本总览按用户明确决定独立承载于 [version-overview](version-overview/intent.md)。第 9 行只记录工作区既有能力；第 10 行实现基线已由人确认并完成隔离 Windows Electron 主旅程，六节点新增采集及外观尚未接入／验收，CodeHub／跨宿主／模型行为与 #440 新联动仍未验；来源和证据见其 STATUS。
+- 版本总览按用户明确决定独立承载于 [version-overview](version-overview/intent.md)。第 9 行只记录工作区既有能力；第 10 行沿已确认决定接入六节点、集中来源与目标内 workflow 报告，已完成本轮隔离 Windows Electron 主旅程，CodeHub／跨宿主／模型行为与 #440 新联动仍未验；来源和证据见其 STATUS。
 
 - 各特性链状态明细以其 `STATUS.md` 六环表与「验收点与旅程矩阵」小节为准（格式正本：[02 §6.2](../01-principles/02-working-backwards.md)「STATUS 格式」）；**本表是总览，冲突时以特性目录为准并回改本表**。
 - 1–3 行共同基线：设计 PR #264 已合入、用户授权实施；真壳 Playwright 烟测 `tests/e2e/workbench-cycle-smoke.spec.ts` 已编写，执行结果见对应 PR；SSH/WSL 实机、真实 provider 归档全链、真实到点自动化、真实出包/验包均未验证。逐条证据与缺口读各 STATUS，不在本表重复。

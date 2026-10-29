@@ -1229,6 +1229,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.metrics.list': CharterScopeSchema,
   'workbench.metrics.read': MetricReadRequestSchema,
   'workbench.metrics.refresh': MetricReadRequestSchema,
+  'workbench.overview.pull': WorkflowCommentsRequestSchema,
   'workbench.package.download': PackageDownloadSchema,
   'workbench.package.latest': PackageLatestSchema,
   'workbench.package.launch': PackageLaunchSchema,
