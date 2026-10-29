@@ -6,6 +6,7 @@ import { cycleScopeKey } from '../version-cycle/native-cycle-workspace'
 import { openArchivePrPage } from '../version-cycle/open-archive-pr'
 import { trunkUpdateNotice } from '../version-cycle/trunk-update-port'
 import { useArchivePrStatus } from '../version-cycle/use-archive-pr-status'
+import { useReleaseStatus } from '../version-cycle/use-release-status'
 import { togglePlanChat } from '../plan-column-resize'
 import { usePlanChatCollapsed } from '../use-plan-chat-collapsed'
 import { BoardActionButton } from '../board-ui'
@@ -68,6 +69,7 @@ export function AcceptanceBoardContent({
   const chatCollapsed = usePlanChatCollapsed()
   const spy = useAcceptanceJourneySpy()
   const prStatus = useArchivePrStatus(context, document?.workflow?.archivePr)
+  const releaseStatus = useReleaseStatus(context, document?.workflow?.release)
   const [openingPr, setOpeningPr] = useState(false)
   const { pruneMissing } = annotations
 
@@ -101,6 +103,8 @@ export function AcceptanceBoardContent({
   }
   const openMaterial = (location: string) =>
     void act(() => openAcceptanceMaterial(location, context))
+  // Release 页无原生任务页对应物,与验收材料 HTTP 链接同走内置浏览器链路(#462)。
+  const openRelease = (url: string) => void act(() => openAcceptanceMaterial(url, context))
   const openPr = () =>
     void act(async () => {
       const archivePr = document?.workflow?.archivePr
@@ -350,6 +354,10 @@ export function AcceptanceBoardContent({
             opening={openingPr}
             onOpenPr={openPr}
             onSendAction={sendAction}
+            release={document?.workflow?.release}
+            releaseStatus={releaseStatus.status}
+            releaseLoading={releaseStatus.loading}
+            onOpenRelease={openRelease}
             version={board.version}
             sectionRef={spy.sectionRefs.archive}
           />

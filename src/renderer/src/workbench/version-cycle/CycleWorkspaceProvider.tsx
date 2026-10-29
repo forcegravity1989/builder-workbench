@@ -18,6 +18,7 @@ import { CycleWorkspaceContext } from './cycle-workspace-context'
 import { nativeVersionMaterialPort } from '../version-material-port'
 import { nativeTaskPort } from '../native-task-port'
 import { nativeArchivePrPort } from '../archive-pr-port'
+import { nativeReleaseStatusPort } from '../release-port'
 import './version-cycle.css'
 
 export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
@@ -56,6 +57,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const version = useWorkflowVersion(materialPort)
   const taskPort = useMemo(() => nativeTaskPort(), [])
   const archivePort = useMemo(() => nativeArchivePrPort(owner), [owner])
+  const releasePort = useMemo(() => nativeReleaseStatusPort(owner), [owner])
   const automation = useEnsureCycleAutomation({
     cycleScope: scope,
     fixedId,
@@ -128,6 +130,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
               materialPort,
               taskPort,
               archivePort,
+              releasePort,
               error: error ?? version.error,
               syncing,
               materialRefresh,
@@ -155,6 +158,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       materialPort,
       taskPort,
       archivePort,
+      releasePort,
       error,
       syncing,
       materialRefresh,

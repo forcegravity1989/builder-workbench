@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ChevronRight, ListFilter } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { MultiSelectList } from '@/components/github/PRFilterPickers'
+import { codehubApi } from '@/lib/codehub-api'
+import { isCodeHubGitRemote } from '../../../../../shared/codehub'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 
 export function CodeHubFilterPopover({ model }: { model: TaskPageComposerActionsModel }) {
@@ -15,16 +18,59 @@ export function CodeHubFilterPopover({ model }: { model: TaskPageComposerActions
     codehubAuthor,
     setCodehubAuthor,
     codehubAssignee,
-    setCodehubAssignee
+    setCodehubAssignee,
+    codehubLabels,
+    setCodehubLabels,
+    selectedRepos
   } = model
   const [filterOpen, setFilterOpen] = useState(false)
-  const [filterSection, setFilterSection] = useState<'status' | 'author' | 'assignee' | null>(null)
+  const [filterSection, setFilterSection] = useState<
+    'status' | 'author' | 'assignee' | 'label' | null
+  >(null)
+  const [labelOptions, setLabelOptions] = useState<string[] | null>(null)
+  const [labelsLoading, setLabelsLoading] = useState(false)
+  const [labelsError, setLabelsError] = useState<string | null>(null)
+  // Why: 标签选项按首个选中的 CodeHub 仓拉取；跨仓筛选无法在同一个
+  // 下拉里枚举每个仓的标签，与 GitHub 筛选的既定取舍一致。
+  const codehubRepo = selectedRepos.find((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))
+  useEffect(() => {
+    if (filterSection !== 'label' || !codehubRepo) {
+      return
+    }
+    let stale = false
+    setLabelsLoading(true)
+    setLabelsError(null)
+    codehubApi
+      .listLabels({ repoPath: codehubRepo.path, repoId: codehubRepo.id })
+      .then((names) => {
+        if (!stale) {
+          setLabelOptions(names)
+        }
+      })
+      .catch((reason: unknown) => {
+        if (!stale) {
+          setLabelsError(reason instanceof Error ? reason.message : String(reason))
+          setLabelOptions(null)
+        }
+      })
+      .finally(() => {
+        if (!stale) {
+          setLabelsLoading(false)
+        }
+      })
+    return () => {
+      stale = true
+    }
+  }, [filterSection, codehubRepo])
   const states =
     codehubView === 'mrs'
       ? (['opened', 'merged', 'closed', 'all'] as const)
       : (['opened', 'closed', 'all'] as const)
   const filterCount =
-    (codehubState !== 'opened' ? 1 : 0) + (codehubAuthor ? 1 : 0) + (codehubAssignee ? 1 : 0)
+    (codehubState !== 'opened' ? 1 : 0) +
+    (codehubAuthor ? 1 : 0) +
+    (codehubAssignee ? 1 : 0) +
+    (codehubLabels.length > 0 ? 1 : 0)
   return (
     <Popover
       open={filterOpen}
@@ -70,6 +116,15 @@ export function CodeHubFilterPopover({ model }: { model: TaskPageComposerActions
                   'assignee',
                   translate('auto.components.github.PRFilterSections.ea3416d646', 'Assignee'),
                   codehubAssignee
+                ],
+                [
+                  'label',
+                  translate('auto.components.github.PRFilterSections.b1d9fdea08', 'Label'),
+                  codehubLabels.length === 0
+                    ? null
+                    : codehubLabels.length === 1
+                      ? codehubLabels[0]
+                      : `${codehubLabels.length} labels`
                 ]
               ] as const
             ).map(([key, label, value]) => (
@@ -114,6 +169,16 @@ export function CodeHubFilterPopover({ model }: { model: TaskPageComposerActions
               </button>
             ))}
           </div>
+        ) : filterSection === 'label' ? (
+          <MultiSelectList
+            options={(labelOptions ?? []).map((name) => ({ key: name, primary: name }))}
+            selected={codehubLabels}
+            loading={labelsLoading}
+            error={labelsError}
+            searchPlaceholder="Filter labels..."
+            emptyText={translate('auto.components.github.PRFilterSections.de26e2eb06', 'No labels')}
+            onChange={setCodehubLabels}
+          />
         ) : (
           <form
             className="flex flex-col gap-2 p-3"

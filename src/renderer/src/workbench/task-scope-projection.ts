@@ -52,7 +52,12 @@ export function resolveWorkbenchTaskScopeFilters({
 }
 
 export function buildCodeHubGoalQuery(
-  model: { codehubState: string; codehubAuthor: string; codehubAssignee: string },
+  model: {
+    codehubState: string
+    codehubAuthor: string
+    codehubAssignee: string
+    codehubLabels: string[]
+  },
   scope: WorkbenchTaskScope | null
 ): string {
   let query = withQualifier(
@@ -62,6 +67,11 @@ export function buildCodeHubGoalQuery(
   )
   query = withQualifier(query, 'author', model.codehubAuthor.trim() || null)
   query = withQualifier(query, 'assignee', model.codehubAssignee.trim() || null)
+  query = withQualifier(
+    query,
+    'labels',
+    model.codehubLabels.length > 0 ? model.codehubLabels : null
+  )
   return seedWorkbenchTaskQuery(query, scope)
 }
 

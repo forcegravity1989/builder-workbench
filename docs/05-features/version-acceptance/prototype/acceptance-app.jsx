@@ -15,6 +15,7 @@ import {
   sceneArchive,
   EMPTY_MINUTES,
   releaseInfo,
+  RELEASE_DEMO_STATES,
   taskRows,
   sortIssueRows,
   minutesRequestPrompt,
@@ -494,6 +495,9 @@ function App() {
   const [sentRequest, setSentRequest] = useState(null)
   const [prHandoff, setPrHandoff] = useState(false)
   const [releaseHandoff, setReleaseHandoff] = useState(false)
+  // 发布读回演示切换¹(评审用):跟随时期=wrap 已发布、其余未发布;生产由
+  // provider 真实读回推导(材料存 tag 引用、读数现算),不预置。
+  const [releaseDemo, setReleaseDemo] = useState('follow')
   const [dark, setDark] = useState(false)
   const [compact, setCompact] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
@@ -517,6 +521,24 @@ function App() {
   const archiveStatus = archive
     ? { MERGED: '已合入', OPEN: '待合入', CLOSED: '已关闭' }[archive.state] || '状态未知'
     : null
+  // 发布读回四态¹(#462):published=读回 Release 在;absent=材料无发布引用(未发布过,
+  // 材料事实推导,不需读回);missing=引用在而 provider 查无 Release(真实读数,如实呈现,
+  // 不是未知);unknown=读回失败(reason 进 title);reading=在途。生产由 provider 现算推导。
+  const releaseState =
+    releaseDemo === 'follow' ? (scene === 'wrap' ? 'published' : 'absent') : releaseDemo
+  const releaseStatusLabel = {
+    published: '已发布',
+    absent: '未发布',
+    missing: '未找到 Release',
+    unknown: '状态未知',
+    reading: '正在读取发布状态…'
+  }[releaseState]
+  // 未发布(absent)不配说明文字:chip 已表达状态,授权口径归发布按钮 title
+  // 与会话,板面不重复;reading 在途同样只有 chip 一行,不另配说明文字。
+  const releaseBlurb = {
+    missing: `标签 ${releaseInfo.tag} 读回确认尚无对应 Release;以 Git 标签与 Release 页为准。`,
+    unknown: '发布状态读回失败;以 Git 标签与 Release 页为准。'
+  }[releaseState]
   // 批注编号对齐计划屏:按记录顺序全局编号,板面角标与面板卡片同号。
   const numbered = annotations.map((item, i) => ({ ...item, number: i + 1 }))
   const annotationNumbers = numbered.reduce((map, item) => {
@@ -654,6 +676,20 @@ function App() {
             ))}
           </select>
         </label>
+        <label className="g3-scene">
+          发布读回
+          <select
+            aria-label="切换发布读回演示状态"
+            value={releaseDemo}
+            onChange={(e) => setReleaseDemo(e.target.value)}
+          >
+            {RELEASE_DEMO_STATES.map(([id, label]) => (
+              <option key={id} value={id}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
         <button onClick={() => setCompact(!compact)}>{compact ? '恢复宽度' : '窄板'}</button>
         <button
           onClick={() => {
@@ -744,11 +780,15 @@ function App() {
           </p>
           <p>
             <strong>归档与发布</strong>:归档由会话执行,屏内放 PR 引用+状态+打开 Orca 原生 PR
-            页入口+注入式「让验收助手发起归档」入口,无直接执行归档的按钮。发布区只有
-            一个「发布」按钮,点击即把请求注入验收会话——预检、发布提交与验收包一致性核对、
-            知情授权、按项目自有发布入口执行与发布后独立读回全在会话中完成并在会话中报告。
-            <strong>板面不设预检弹窗、不设发布状态读回行,材料不存发布记录</strong>:发布读数的 正本在
-            Git 标签与 provider Release 页,抄一份进板面即造第二正本;总览也不显示「已发布」。
+            页入口+注入式「让验收助手发起归档」入口,无直接执行归档的按钮。发布区保留唯一
+            「发布」注入入口——预检、发布提交与验收包一致性核对、知情授权、按项目自有发布入口
+            执行仍在会话中完成,板面不设预检弹窗。
+            <strong>#462 修订(取代 v10「板面不呈现发布状态」决策)</strong>:发布区新增发布
+            状态读回——是否已发布、标签、发布时间、Release 页地址与资产每次经 provider 现算 (参照归档
+            PR 薄读回:gh 现算、聚焦节流重读、读不到=未知);材料只存发布引用
+            (tag,助手经人授权执行后写回,同 workflow.archivePr 的「引用落材料、读数现算」),
+            读数不落材料、正本仍在 Git 标签与 Release 页;引用在而 Release 查无如实呈现,
+            均不猜。发布按钮不因已发布而禁用,板面不替人决定能否再发;总览仍不显示「已发布」。
             不达成与未标不阻断发布,由人知情决定;未经明确授权不建 Release、不打标签。
           </p>
           <p>
@@ -1246,7 +1286,7 @@ function App() {
                         title="让验收助手核对材料并发起归档"
                         onClick={() =>
                           sendRequest(
-                            '归档 本版:核对验收材料与结论状态后发起归档,在会话中给出归档 PR',
+                            '归档 v0.7:核对验收材料与结论状态后发起归档,在会话中给出归档 PR',
                             '归档请求'
                           )
                         }
@@ -1274,7 +1314,7 @@ function App() {
                         title="让验收助手核对材料并发起归档"
                         onClick={() =>
                           sendRequest(
-                            '归档 本版:核对验收材料与结论状态后发起归档,在会话中给出归档 PR',
+                            '归档 v0.7:核对验收材料与结论状态后发起归档,在会话中给出归档 PR',
                             '归档请求'
                           )
                         }
@@ -1284,16 +1324,66 @@ function App() {
                     </div>
                   )}
                   <div className="acc-release">
-                    {/* 规格:板面只有这一个发布入口,点击即注入请求。不设预检弹窗、
-                        不设发布状态读回行、材料不存发布记录——发布读数的正本在 Git
-                        标签与 provider Release 页,抄一份进板面即造第二正本。 */}
+                    {/* #462 修订(取代 v10「板面不呈现发布状态」决策):发布区在注入
+                        入口之外新增发布状态读回——是否已发布、标签、时间、Release 地址
+                        与资产每次经 provider 现算(参照 workbench.archive.prStatus 薄读
+                        回),材料只存发布引用(tag,助手经人授权执行后写回,同
+                        workflow.archivePr 的「引用落材料、读数现算」),读数不落材料、
+                        正本仍在 Git 标签与 Release 页;读不回=未知,引用在而 Release 查无
+                        如实呈现,均不猜。预检、授权、执行仍在会话中,板面仍不设预检弹窗;
+                        发布按钮不因已发布而禁用,板面不替人决定能否再发。 */}
+                    <div>
+                      <h3>
+                        发版本
+                        <span
+                          className="acc-release-status"
+                          title={
+                            releaseState === 'unknown'
+                              ? 'Release 读回失败:gh 未登录或速率限制(演示原因)'
+                              : undefined
+                          }
+                        >
+                          {releaseStatusLabel}
+                        </span>
+                      </h3>
+                      {releaseState === 'published' ? (
+                        <>
+                          <p>
+                            {releaseInfo.at} 发布 · 标签 {releaseInfo.tag}
+                          </p>
+                          <p className="acc-release-detail">
+                            Release 页:
+                            {/* 生产经 openAcceptanceMaterial 的 HTTP 链路走内置 Orca
+                                浏览器(同演示环境/报告入口),原型以 notice 衔接示意,
+                                不跳外部浏览器标签页。 */}
+                            <button
+                              type="button"
+                              className="acc-release-url"
+                              title={`经内置 Orca 浏览器打开 ${releaseInfo.url}`}
+                              onClick={() =>
+                                setNotice(`已在内置 Orca 浏览器打开 ${releaseInfo.url} · 衔接示意`)
+                              }
+                            >
+                              {releaseInfo.url}
+                            </button>
+                          </p>
+                          <p className="acc-release-detail" title={releaseInfo.assets.join(' · ')}>
+                            资产:{releaseInfo.assets.join(' · ')}
+                          </p>
+                        </>
+                      ) : (
+                        releaseBlurb && <p>{releaseBlurb}</p>
+                      )}
+                    </div>
                     {/* 生产发布用 Rocket 图标;vendor 冻结图标集无 rocket,原型以 send 近似。 */}
                     <ActionButton
                       icon="send"
                       title="发布请求注入验收助手会话;预检与授权在会话中完成"
                       onClick={() => {
                         sendRequest(
-                          `发布 ${releaseInfo.version}:先在会话中完成预检并报告,经我明确授权后再执行`,
+                          // 请求句对齐生产:携带版本号而非 tag——tag 由会话预检
+                          // 阶段按项目发布口径确定,不在注入句里预定。
+                          `发布 v0.7:先在会话中完成预检并报告,经我明确授权后再执行`,
                           '发布请求'
                         )
                         setReleaseHandoff(true)
@@ -1302,9 +1392,6 @@ function App() {
                       发布
                     </ActionButton>
                   </div>
-                  <p className="g3-demo-footnote g3-annotation">
-                    预检、授权、执行与读回全在会话中完成;未经明确授权不建 Release、不打标签。
-                  </p>
                 </section>
               </>
             )}

@@ -1,7 +1,11 @@
 import { Archive, ArrowUpRight, GitPullRequest, Rocket } from 'lucide-react'
 import type { Ref } from 'react'
 import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
-import type { WorkflowArchivePr } from '../../../../shared/workbench/version-workflow'
+import type { ReleaseStatusResult } from '../../../../shared/workbench/release-status'
+import type {
+  WorkflowArchivePr,
+  WorkflowReleaseRef
+} from '../../../../shared/workbench/version-workflow'
 import { BoardActionButton, BoardIconButton } from '../board-ui'
 import type { SendActionWrap } from '../plan-send-menu'
 
@@ -13,11 +17,15 @@ import type { SendActionWrap } from '../plan-send-menu'
  * native PR page, and an injection entry — no comment copying, no diff stats, no
  * button that archives directly.
  *
- * Release is one button that injects the request into the acceptance session.
- * Pre-flight, package/commit consistency, informed authorization, execution and
- * the independent read-back all happen in the session: the board renders no
- * pre-flight dialog and no release row, and the material stores no release
- * record — the tag and the provider Release page are the only source of truth.
+ * Release keeps the single injection button (pre-flight, consistency check,
+ * informed authorization and execution still happen in the session) and adds the
+ * #462 read-back row: whether this version is released, the tag, published time,
+ * the Release page URL and its assets — all provider-computed on every read,
+ * keyed by the material's tag reference only. No reference means never released
+ * (a material fact, no read); a tag with no matching Release is a real reading;
+ * unreadable stays unknown. The material stores no release record beyond the
+ * tag key, and the button stays enabled after a release — the board does not
+ * decide whether a re-release is allowed.
  */
 export function AcceptanceArchiveCard({
   archivePr,
@@ -27,6 +35,10 @@ export function AcceptanceArchiveCard({
   opening,
   onOpenPr,
   onSendAction,
+  release,
+  releaseStatus,
+  releaseLoading,
+  onOpenRelease,
   version,
   sectionRef
 }: {
@@ -37,6 +49,10 @@ export function AcceptanceArchiveCard({
   opening: boolean
   onOpenPr(): void
   onSendAction: SendActionWrap
+  release: WorkflowReleaseRef | undefined
+  releaseStatus: ReleaseStatusResult | null
+  releaseLoading: boolean
+  onOpenRelease(url: string): void
   version: string
   sectionRef: Ref<HTMLElement>
 }) {
@@ -50,6 +66,44 @@ export function AcceptanceArchiveCard({
           : status.state === 'closed'
             ? '已关闭'
             : '状态未知'
+  // 未发布不配说明文字:chip 已表达状态,授权口径归按钮提示与会话,板面不重复。
+  const releaseLabel = !release
+    ? '未发布'
+    : releaseLoading || !releaseStatus
+      ? '正在读取发布状态…'
+      : releaseStatus.state === 'published'
+        ? '已发布'
+        : releaseStatus.state === 'missing'
+          ? '未找到 Release'
+          : '状态未知'
+  const releaseDetail =
+    releaseStatus?.state === 'published' ? (
+      <>
+        <p>
+          {new Date(releaseStatus.publishedAt).toLocaleString('zh-CN')} 发布 · 标签 {release?.tag}
+        </p>
+        <p className="acc-release-detail">
+          Release 页:
+          <button
+            type="button"
+            className="acc-release-url"
+            onClick={() => onOpenRelease(releaseStatus.url)}
+          >
+            {releaseStatus.url}
+          </button>
+        </p>
+        <p
+          className="acc-release-detail"
+          title={releaseStatus.assets.length > 0 ? releaseStatus.assets.join('、') : undefined}
+        >
+          资产:{releaseStatus.assets.length > 0 ? releaseStatus.assets.join(' · ') : '无'}
+        </p>
+      </>
+    ) : releaseStatus?.state === 'missing' ? (
+      <p>标签 {release?.tag} 读回确认尚无对应 Release;以 Git 标签与 Release 页为准。</p>
+    ) : releaseStatus?.state === 'unknown' ? (
+      <p>发布状态读回失败;以 Git 标签与 Release 页为准。</p>
+    ) : null
   return (
     <section id="archive" ref={sectionRef} aria-label="归档 PR 及发版本">
       <div className="acc-section-title">
@@ -112,13 +166,21 @@ export function AcceptanceArchiveCard({
       </div>
       <div className="acc-release">
         <div>
-          <h3>发版本</h3>
-          <p>预检、授权、执行与读回全在会话中完成；未经明确授权不创建 Release、不打标签。</p>
+          <h3>
+            发版本
+            <span
+              className="acc-release-status"
+              title={releaseStatus?.state === 'unknown' ? releaseStatus.reason : undefined}
+            >
+              {releaseLabel}
+            </span>
+          </h3>
+          {releaseDetail}
         </div>
         {onSendAction(
           `发布 ${version || '本版'}：先在会话中完成预检并报告，经我明确授权后再执行`,
           '发布请求',
-          <BoardActionButton>
+          <BoardActionButton title="发布请求注入验收助手会话;预检与授权在会话中完成">
             <Rocket size={14} aria-hidden="true" /> 发布
           </BoardActionButton>
         )}
