@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { CircleCheck, Copy, MessageSquarePlus, Pencil, Send, Trash2 } from 'lucide-react'
+import { useEffect, useId, useState } from 'react'
+import { ChevronDown, CircleCheck, Copy, Pencil, Send, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -53,6 +53,25 @@ export function BrowserPageAnnotationTray({
   const [editingAnnotationId, setEditingAnnotationId] = useState<string | null>(null)
   const [editComment, setEditComment] = useState('')
   const [editIntent, setEditIntent] = useState<BrowserAnnotationIntent>('change')
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  const annotationListId = useId()
+  const annotationCountLabel =
+    browserAnnotations.length === 1
+      ? translate('auto.components.browser.pane.BrowserPane.ea6af700da', '{{value0}} annotation', {
+          value0: browserAnnotations.length
+        })
+      : translate('auto.components.browser.pane.BrowserPane.c13693fe27', '{{value0}} annotations', {
+          value0: browserAnnotations.length
+        })
+  const toggleLabel = isCollapsed
+    ? translate(
+        'auto.components.browser.pane.annotate.browser.page.annotation.tray.expand',
+        'Expand annotations'
+      )
+    : translate(
+        'auto.components.browser.pane.annotate.browser.page.annotation.tray.collapse',
+        'Collapse annotations'
+      )
 
   // Why: a delete or clear while a row is mid-edit must not leave edit state pointing at nothing.
   useEffect(() => {
@@ -86,20 +105,25 @@ export function BrowserPageAnnotationTray({
   return (
     <div className="absolute right-3 bottom-3 z-30 flex max-h-[45%] w-[min(20rem,calc(100%-1.5rem))] flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-[0_10px_24px_rgba(0,0,0,0.18)]">
       <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-        <MessageSquarePlus className="size-4 text-muted-foreground" />
-        <div className="min-w-0 flex-1 text-sm font-medium">
-          {browserAnnotations.length === 1
-            ? translate(
-                'auto.components.browser.pane.BrowserPane.ea6af700da',
-                '{{value0}} annotation',
-                { value0: browserAnnotations.length }
-              )
-            : translate(
-                'auto.components.browser.pane.BrowserPane.c13693fe27',
-                '{{value0}} annotations',
-                { value0: browserAnnotations.length }
-              )}
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="xs"
+              variant="ghost"
+              className="min-w-0 flex-1 shrink justify-start text-sm"
+              onClick={() => setIsCollapsed((collapsed) => !collapsed)}
+              aria-expanded={!isCollapsed}
+              aria-controls={annotationListId}
+              aria-label={`${annotationCountLabel}: ${toggleLabel}`}
+            >
+              <ChevronDown className={isCollapsed ? 'size-4 -rotate-90' : 'size-4'} />
+              <span className="truncate">{annotationCountLabel}</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top" sideOffset={6}>
+            {toggleLabel}
+          </TooltipContent>
+        </Tooltip>
         <DropdownMenu
           modal={false}
           open={annotationTraySendOpen}
@@ -170,7 +194,11 @@ export function BrowserPageAnnotationTray({
           </TooltipContent>
         </Tooltip>
       </div>
-      <div className="scrollbar-sleek min-h-0 flex-1 overflow-auto p-1.5">
+      <div
+        id={annotationListId}
+        hidden={isCollapsed}
+        className="scrollbar-sleek min-h-0 flex-1 overflow-auto p-1.5"
+      >
         {browserAnnotations.map((annotation, index) => {
           const isEditing = annotation.id === editingAnnotationId
           return (
