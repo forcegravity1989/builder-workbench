@@ -984,6 +984,11 @@ function App() {
                   )}
                 </div>
               </div>
+              {planning && dirty && !saveError && (
+                <small className="ml-save-status" title="原型注释: 演示本机保存完成状态。">
+                  本机草案已保存
+                </small>
+              )}
               {empty ? (
                 <div className="ml-first-plan">
                   <CalendarRange size={30} />

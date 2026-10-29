@@ -3,8 +3,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
 import { writeMilestoneFiles } from './milestone-write-files'
+import { createMilestoneRecoveryStore } from './milestone-recovery'
 
-it('validates all source bytes under locks before publishing and preserves conflicting or unsafe material', async () => {
+it('preserves conflicting or unsafe milestone materials and client recovery snapshots', async () => {
   const root = await mkdtemp(join(tmpdir(), 'bw-milestone-cas-'))
   try {
     const versionDir = join(root, '.bw', 'planning', 'v1')
@@ -67,6 +68,39 @@ it('validates all source bytes under locks before publishing and preserves confl
         commit: async () => {}
       })
     ).rejects.toThrow('not a regular file')
+    const recoveryDirectory = join(root, 'profile', 'milestone-drafts')
+    const recovery = createMilestoneRecoveryStore(() => recoveryDirectory)
+    expect(await recovery.read('project')).toEqual({ revision: null, payload: null })
+    const recoveryWrites = await Promise.allSettled([
+      recovery.write({ key: 'project', expectedRevision: null, payload: 'unfinished input' }),
+      recovery.write({ key: 'project', expectedRevision: null, payload: 'stale window' })
+    ])
+    expect(recoveryWrites[0].status).toBe('fulfilled')
+    expect(recoveryWrites[1].status).toBe('rejected')
+    const restarted = createMilestoneRecoveryStore(() => recoveryDirectory)
+    const saved = await restarted.read('project')
+    expect(saved.payload).toBe('unfinished input')
+    await expect(
+      restarted.write({
+        key: 'project',
+        expectedRevision: saved.revision,
+        payload: '\0'.repeat(4 * 1024 * 1024)
+      })
+    ).rejects.toThrow('大小限制')
+    expect(await restarted.read('project')).toEqual(saved)
+    const cleared = await restarted.write({
+      key: 'project',
+      expectedRevision: saved.revision,
+      payload: null
+    })
+    expect(cleared.revision).not.toBe(saved.revision)
+    await expect(
+      recovery.write({ key: 'project', expectedRevision: null, payload: 'stale empty window' })
+    ).rejects.toThrow('另一窗口')
+    const [recoveryFile] = await readdir(recoveryDirectory)
+    await writeFile(join(recoveryDirectory, recoveryFile), 'broken')
+    await expect(restarted.read('project')).rejects.toThrow()
+    expect(await readFile(join(recoveryDirectory, recoveryFile), 'utf8')).toBe('broken')
   } finally {
     await rm(root, { recursive: true, force: true })
   }

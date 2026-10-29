@@ -952,3 +952,10 @@
 .ml-roadmap-caption .ml-inline {
   padding: 2px 0;
 }
+.ml-save-status {
+  display: block;
+  padding: 4px 16px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  text-align: right;
+}

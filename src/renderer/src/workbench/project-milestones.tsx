@@ -80,7 +80,7 @@ export function ProjectMilestones({
   }
   const editing = state.editing
   const visible = editing ? state.draft : milestoneDraft(state.data.formal)
-  const enabled = editing && !busy
+  const enabled = editing && !busy && !state.recoveryBlocked
   const month = state.month
   const hasPlanning =
     visible.material.months.some((m) => m.outcome.trim()) ||
@@ -108,7 +108,9 @@ export function ProjectMilestones({
             : '编辑中'
   const changes = describeMilestoneChanges(state.baseline, state.draft)
   function begin() {
-    patch({ editing: true })
+    if (!state.recoveryBlocked) {
+      patch({ editing: true })
+    }
   }
   function renameVersion(cycleId: string, version: string) {
     model.editField((d) => ({
@@ -237,6 +239,7 @@ export function ProjectMilestones({
               dirty={dirty}
               busy={busy}
               conflict={!!state.sourceConflict}
+              recoveryBlocked={!!state.recoveryBlocked}
               canUndo={model.canUndo}
               canRedo={model.canRedo}
               undo={() => {
@@ -255,7 +258,7 @@ export function ProjectMilestones({
             <Button
               size="xs"
               className="bg-foreground text-background hover:bg-foreground/90"
-              disabled={busy}
+              disabled={busy || state.recoveryBlocked}
               onClick={begin}
             >
               规划里程碑
@@ -283,6 +286,11 @@ export function ProjectMilestones({
           </MilestoneIconButton>
         </div>
       </header>
+      {editing && (state.saving || (dirty && model.recoverySaved)) && (
+        <small className="wb-ml-save-status" role="status">
+          {state.saving ? '正在保存本机草案…' : '本机草案已保存'}
+        </small>
+      )}
       {model.persistenceError && (
         <p className="wb-ml-alert" role="alert">
           {model.persistenceError}
@@ -364,7 +372,7 @@ export function ProjectMilestones({
             addFeature={addFeature}
             newFeature={newFeature}
             editing={editing}
-            busy={busy}
+            busy={busy || !!state.recoveryBlocked}
             edit={edit}
             open={open}
             remove={remove}

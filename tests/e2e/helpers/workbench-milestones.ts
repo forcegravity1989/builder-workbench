@@ -197,8 +197,10 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await board.getByRole('button', { name: '规划里程碑', exact: true }).click()
   await board.getByLabel('负责人', { exact: true }).first().fill('重启后恢复的草案')
   await board.getByLabel('负责人', { exact: true }).first().press('Tab')
+  await expect(board.getByText('本机草案已保存', { exact: true })).toBeVisible()
   await page.reload()
   await page.getByRole('button', { name: '项目总览', exact: true }).click()
   await expect(board.getByLabel('负责人', { exact: true }).first()).toHaveValue('重启后恢复的草案')
+  await expect(board.getByText('本机草案已保存', { exact: true })).toBeVisible()
   expect(JSON.parse(readFileSync(materialPath, 'utf8'))).toEqual(material)
 }

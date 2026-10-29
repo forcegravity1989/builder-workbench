@@ -14,6 +14,7 @@ import {
   notify,
   subscribe,
   changed,
+  recoverySaved,
   fresh,
   persist,
   restore,
@@ -54,7 +55,11 @@ export function useMilestonePlanning(
       if (ticket !== generation.current) {
         return
       }
-      const previous = sessions.get(key) ?? restore(key, data) ?? undefined
+      const cached = sessions.get(key)
+      const previous = cached && !cached.recoveryBlocked ? cached : await restore(key, data)
+      if (ticket !== generation.current) {
+        return
+      }
       const current = fresh(data, previous)
       if (previous?.recoveryBlocked) {
         put(key, { ...previous, data })
@@ -118,7 +123,7 @@ export function useMilestonePlanning(
     const save = () => {
       const s = sessions.get(key)
       if (s) {
-        sessions.set(key, persist(key, s))
+        persist(key)
       }
     }
     window.addEventListener('beforeunload', save)
@@ -135,7 +140,7 @@ export function useMilestonePlanning(
   }
   const change = (update: (draft: MilestoneDraft) => MilestoneDraft, fieldEdit = false) => {
     const s = sessions.get(key)
-    if (s && !submitting.has(key) && !reading) {
+    if (s && !s.recoveryBlocked && !submitting.has(key) && !reading) {
       const draft = update(s.draft)
       if (JSON.stringify(draft) === JSON.stringify(s.draft)) {
         return
@@ -243,7 +248,11 @@ export function useMilestonePlanning(
   const revert = () => {
     const s = sessions.get(key)
     if (s && !submitting.has(key) && !reading) {
-      put(key, { ...fresh(s.data, s), recoveryBlocked: false })
+      if (s.recoveryBlocked) {
+        void reload()
+        return
+      }
+      put(key, fresh(s.data, s))
       setReadError(null)
     }
   }
@@ -252,6 +261,7 @@ export function useMilestonePlanning(
     busy: reading || writing,
     error: readError ?? state?.sourceConflict ?? state?.submitError ?? null,
     persistenceError: state?.persistenceError ?? null,
+    recoverySaved: state ? recoverySaved(state) : false,
     dirty: state ? changed(state) : false,
     patch,
     edit: (update: (draft: MilestoneDraft) => MilestoneDraft) => change(update),
