@@ -435,7 +435,7 @@ describe('OrcaRuntimeRpcServer WebSocket bind host (STA-2370)', () => {
       // stay tracked in activeTransports — a revert that runs loopback recovery here orphans a running wide
       // listener (an untracked 0.0.0.0 socket outside stop(): the exact STA-2370 exposure).
       const target = server as unknown as {
-        writeMetadata: () => void
+        writeMetadata: () => Promise<void>
         wsBoundHost: string | null
         activeTransports: unknown[]
       }

@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
@@ -137,7 +137,7 @@ describe('OrcaRuntimeRpcServer', () => {
     )
     const heldCheck = server.checkRuntimeMetadataOwnership()
 
-    await server.stop()
+    const stopping = server.stop()
     writeRuntimeMetadata(userDataPath, {
       runtimeId: 'rt_second_instance',
       pid: 99999999,
@@ -148,7 +148,7 @@ describe('OrcaRuntimeRpcServer', () => {
     // A missing record is the most reclaimable verdict there is, so an unguarded
     // resume would rewrite the file the second instance just published.
     releaseRead(null)
-    await heldCheck
+    await Promise.all([heldCheck, stopping])
 
     expect(readRuntimeMetadata(userDataPath)).toMatchObject({ runtimeId: 'rt_second_instance' })
   })
@@ -230,7 +230,7 @@ describe('OrcaRuntimeRpcServer', () => {
     const runtime = new OrcaRuntimeService()
     const server = new OrcaRuntimeRpcServer({ runtime, userDataPath })
     const writeMetadataSpy = vi
-      .spyOn(runtimeMetadataModule, 'writeRuntimeMetadata')
+      .spyOn(runtimeMetadataModule, 'writeRuntimeMetadataAsync')
       .mockImplementationOnce(() => {
         throw new Error('write failed')
       })
@@ -248,5 +248,35 @@ describe('OrcaRuntimeRpcServer', () => {
     expect(server['activeTransports']).toEqual([])
 
     writeMetadataSpy.mockRestore()
+  })
+
+  it('drains an in-flight metadata publication before shutdown completes', async () => {
+    const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-rpc-'))
+    const server = new OrcaRuntimeRpcServer({ runtime: new OrcaRuntimeService(), userDataPath })
+    await server.start()
+    let release!: () => void
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const original = runtimeMetadataModule.writeRuntimeMetadataAsync
+    const writing = vi
+      .spyOn(runtimeMetadataModule, 'writeRuntimeMetadataAsync')
+      .mockImplementationOnce(async (...args) => {
+        await gate
+        await original(...args)
+      })
+    rmSync(join(userDataPath, 'orca-runtime.json'))
+    const checking = server.checkRuntimeMetadataOwnership()
+    await vi.waitFor(() => expect(writing).toHaveBeenCalled())
+    let stopped = false
+    const stopping = server.stop().then(() => {
+      stopped = true
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(stopped).toBe(false)
+    release()
+    await Promise.all([checking, stopping])
+    expect(stopped).toBe(true)
+    writing.mockRestore()
   })
 })

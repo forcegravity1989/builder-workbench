@@ -42,6 +42,9 @@ const hardenedByFake = new Map<string, string>()
  * the spawn count per write a property of the real ACL path rather than of this double.
  */
 function fakeIcacls(spec: ProcessSpec): ProcessResult {
+  if (spec.program.endsWith('whoami.exe')) {
+    return { ...OK, stdout: `"USER","${USER_SID}"` }
+  }
   const args = spec.args ?? []
   const path = args[0] ?? ''
   const grantIndex = args.indexOf('/grant:r')
