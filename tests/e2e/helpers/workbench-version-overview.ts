@@ -56,28 +56,43 @@ export async function verifyVersionOverview(
   await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
   await open(overviewVersions.current)
   const board = page.locator('.bwo-page')
-  await expect(board.getByRole('button', { name: /^正式计划/ })).toBeVisible()
+  await expect(board.getByText(/计划 PR 合入/).first()).toBeVisible()
+  await expect(board.getByRole('button', { name: '#446 ↗', exact: true }).first()).toBeVisible()
   await expect(
     board.getByRole('heading', { name: '当前目标 · 版本总览开发', exact: true })
   ).toBeVisible()
   await expect(board.getByText('未关联目标 · 1 项')).toBeVisible()
   const feature = board.locator('.bwo-feature').first()
   await expect(feature).toContainText(provider.title, { timeout: 90_000 })
-  await expect(feature.locator('.bwo-node[title*="开发 PR #474"]').first()).toBeVisible({
+  await expect(feature.getByRole('button', { name: /开发 PR #474/ }).first()).toBeVisible({
     timeout: 90_000
   })
   console.info('[overview] formal plan and native Issue/PR evidence read successfully')
+  const productivity = board.locator('section[aria-label="AI workflow 生产力"]')
+  await expect(productivity).toContainText('本版目标内 2 项 Issue')
+  await expect(productivity.getByRole('button', { name: '刷新指标', exact: true })).toBeEnabled({
+    timeout: 180_000
+  })
+  await expect(productivity.locator('.bwo-productivity > div')).toHaveCount(6)
+  await productivity.getByText(/^报告来源与未读取范围/).click()
+  await expect(
+    productivity.getByRole('button', { name: '指标评论 ↗', exact: true }).first()
+  ).toBeVisible({ timeout: 180_000 })
+  const ask = productivity.locator('.bwo-productivity > div').filter({ hasText: 'AskUser' })
+  await expect(ask).toContainText(/\d+\/\d+/)
+  await productivity.getByRole('button', { name: '刷新指标', exact: true }).click()
+  await expect(productivity.getByRole('button', { name: '刷新指标', exact: true })).toBeEnabled({
+    timeout: 180_000
+  })
+  await expect(ask).toContainText(/\d+\/\d+/)
+  console.info('[overview] goal-scoped real workflow comments and independent refresh verified')
   await expect(feature.locator('.bwo-node')).not.toHaveCount(0)
   await feature.locator('.bwo-feature-heading').click()
-  await expect(feature.getByText('成果时间轴', { exact: true })).toHaveCount(0)
+  await expect(feature.getByText('特性历程与版本交付', { exact: true })).toHaveCount(0)
   await feature.locator('.bwo-feature-heading').click()
   await feature.locator('.bwo-node').last().click()
-  const event = page.getByRole('dialog', { name: '成果节点', exact: true })
-  await expect(event).toBeVisible()
-  await expect(event.getByRole('button', { name: 'PR / MR', exact: true }).first()).toBeVisible()
-  await expect(event.getByRole('button', { name: /工作会话/ }).first()).toBeVisible()
-  await page.keyboard.press('Escape')
-  await expect(event).toHaveCount(0)
+  await expect(page.getByRole('dialog', { name: '成果节点', exact: true })).toHaveCount(0)
+  await expect(feature.getByRole('button', { name: /工作会话/ })).toHaveCount(0)
   for (const width of [1360, 1000]) {
     await app.evaluate(({ BrowserWindow }, target) => {
       BrowserWindow.getAllWindows()[0]!.setSize(target, 900)
@@ -103,11 +118,8 @@ export async function verifyVersionOverview(
     await page.screenshot({ path: info.outputPath(`overview-${width}.png`) })
     expect(await board.evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true)
   }
-  await feature.getByRole('button', { name: '主单工作会话', exact: true }).click()
-  await expect(page.getByRole('dialog').last()).toContainText('334')
-  await page.keyboard.press('Escape')
   await open(overviewVersions.current)
-  await board.getByRole('button', { name: '目标任务 · 1 项 ↗', exact: true }).click()
+  await board.getByRole('button', { name: '目标任务 · 1 项 ↗', exact: true }).first().click()
   await expect(page.getByRole('button', { name: '移除目标筛选', exact: true })).toBeVisible()
   await expect(page.getByText('目标 当前目标 · 版本总览开发', { exact: true })).toBeVisible()
   await expect(page.getByText(provider.title, { exact: true }).last()).toBeVisible({
@@ -132,7 +144,8 @@ export async function verifyVersionOverview(
   await open(overviewVersions.error)
   await expect(board.getByText('状态未知', { exact: true })).toBeVisible()
   await expect(board.getByRole('alert')).toBeVisible()
-  await expect(board.getByText('指标待定', { exact: true })).toHaveCount(4)
+  await expect(board.getByText('指标待定', { exact: true })).toHaveCount(0)
+  await expect(board.getByText('统计范围未知', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: '新建版本', exact: true }).click()
   await page.getByLabel('版本名').fill('v0.336')
   await page.getByRole('button', { name: '创建版本', exact: true }).click()
@@ -148,7 +161,6 @@ export async function verifyVersionOverview(
   await expect(page.getByRole('heading', { name: '总览', exact: true })).toBeVisible()
   await open(overviewVersions.current)
   await page.reload()
-  await page.waitForFunction(() => window.__store?.getState().workspaceSessionReady === true)
   await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 120_000 })
   await open(overviewVersions.current)
   await expect(

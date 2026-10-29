@@ -1,5 +1,9 @@
 import { snapshot, repository, formatTime } from './overview-data.js'
-import { readWorkflowComment, workflowFields } from './workflow-comment.mjs'
+import {
+  readWorkflowComment,
+  workflowFields
+} from '../../../../src/shared/workbench/workflow-report'
+import { summarizeWorkflow } from '../../../../src/renderer/src/workbench/version-overview/workflow-evidence'
 import { HintButton } from './overview-components.jsx'
 // eslint-disable-next-line no-unused-vars
 const { React, useState } = window.BWPrototypeDependencies
@@ -55,6 +59,19 @@ export function WorkflowProductivity({ plan, unplanned }) {
     report.kind === 'ready'
       ? report.metrics
       : workflowFields.map(([key, label, hint]) => ({ key, label, hint, value: '未知' }))
+  const summary = summarizeWorkflow(
+    report.kind === 'ready'
+      ? [
+          {
+            reference: { provider: 'github', repository, number: source.issue.number },
+            title: source.issue.title,
+            issueUrl: source.issue.url,
+            reports: [{ report, url: source.comment.url, revision: source.readAt }],
+            problems: []
+          }
+        ]
+      : []
+  )
   return (
     <section className="ov-section" aria-labelledby="productivity">
       <div className="ov-workflow-heading">
@@ -69,15 +86,21 @@ export function WorkflowProductivity({ plan, unplanned }) {
         {inScope
           ? '已有目标关联'
           : `#${source?.issue?.number ?? '—'} 尚未纳入这份固定计划，不计入本版汇总`}
-        。正式版只读取目标内 Issue 的关联 PR 评论；此处独立刷新重读本地快照。
+        。比率仅为这个样例的涉及任务数／可统计任务数；正式版按目标内 Issue
+        汇总，此处独立刷新重读本地快照。
       </p>
       <div className="ov-productivity-metrics">
-        {metrics.map((metric) => (
+        {metrics.map((metric, index) => (
           <div key={metric.key}>
             <HintButton id={`metric-${metric.key}`} text={metric.hint} className="ov-metric-tip">
               {metric.label} ⓘ
             </HintButton>
-            <strong>{metric.value}</strong>
+            <strong>
+              {summary[index]?.samples
+                ? `${summary[index].involved}/${summary[index].samples}`
+                : '未知'}
+            </strong>
+            <span>{metric.value}</span>
           </div>
         ))}
       </div>

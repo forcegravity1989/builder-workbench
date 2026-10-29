@@ -50,6 +50,15 @@ export const overviewTest = test.extend({
       version,
       cycleId: `overview-${version}`,
       summary: { progress: '', risks: '' },
+      workflow: {
+        stage: 'archive',
+        updatedAt: '2026-10-29T00:00:00Z',
+        archivePr: {
+          provider: 'github',
+          repository: overviewRepository,
+          number: version === overviewVersions.history ? 386 : 446
+        }
+      },
       goals: [
         {
           goalId,
@@ -79,6 +88,11 @@ export const overviewTest = test.extend({
         sourceCommit
       },
       preparedArtifacts: [],
+      workflow: {
+        stage: 'archive',
+        updatedAt: '2026-10-29T00:00:00Z',
+        archivePr: { provider: 'github', repository: overviewRepository, number: 429 }
+      },
       results: [
         {
           goalId: 'old-goal',
@@ -102,7 +116,11 @@ export const overviewTest = test.extend({
         ...current.goals,
         { goalId: 'ordinary', title: '普通任务目标', owner: 'E2E fixture', metricTargets: [] }
       ],
-      tasks: [...current.tasks, { provider: 'github', repository: overviewRepository, number: 440 }]
+      tasks: [
+        ...current.tasks,
+        { provider: 'github', repository: overviewRepository, number: 440 },
+        { provider: 'github', repository: overviewRepository, number: 469, goalId: 'ordinary' }
+      ]
     })
     write(overviewVersions.error, 'data.json', {
       schema_version: 3,

@@ -39,7 +39,7 @@ export async function verifyOverviewRestart(previous: ElectronApplication, info:
     )
     expect(restarted.process().pid).not.toBe(previousPid)
     const page = await restarted.firstWindow({ timeout: 120_000 })
-    await page.waitForFunction(() => window.__store?.getState().workspaceSessionReady === true)
+    await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 120_000 })
     const group = page.locator('.wb-version-group', {
       has: page.getByRole('button', { name: 'v0.334 展开或收起', exact: true })
     })

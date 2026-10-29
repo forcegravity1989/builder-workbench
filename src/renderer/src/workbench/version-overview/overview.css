@@ -36,7 +36,7 @@
 }
 .bwo-goal {
   border-top: 1px solid var(--border);
-  padding: 26px 0;
+  padding: 20px 0;
 }
 .bwo-goal-heading {
   display: flex;
@@ -47,7 +47,7 @@
 .bwo-goal-heading h2 {
   flex: 1;
   min-width: 160px;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 600;
 }
 .bwo-goal-meta {
@@ -108,16 +108,6 @@
   background: var(--muted);
   font-weight: 600;
 }
-.bwo-feature-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  border-top: 1px solid var(--border);
-  margin-top: 16px;
-  padding-top: 8px;
-}
 .bwo-axis-scroll {
   max-width: 100%;
   overflow-x: auto;
@@ -147,14 +137,6 @@
 }
 .bwo-axis-end {
   right: 16px;
-}
-.bwo-window {
-  position: absolute;
-  height: 7px;
-  top: 123px;
-  background: var(--muted-foreground);
-  opacity: 0.25;
-  border-radius: 4px;
 }
 .bwo-node {
   position: absolute;
@@ -200,12 +182,6 @@
 .bwo-node-1 .bwo-node-label {
   top: 24px;
 }
-.bwo-node-2 .bwo-node-label {
-  bottom: 70px;
-}
-.bwo-node-3 .bwo-node-label {
-  top: 70px;
-}
 .bwo-node:focus-visible,
 .bwo-axis-scroll:focus-visible {
   outline: 2px solid var(--ring);
@@ -216,7 +192,7 @@
 }
 .bwo-productivity {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   padding: 20px 0;
   margin-top: 16px;
@@ -254,4 +230,99 @@
   .bwo-productivity {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+.bwo-timeline-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+.bwo-timeline-heading > span {
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.bwo-timeline .bwo-axis-start,
+.bwo-timeline .bwo-axis-end {
+  top: auto;
+  bottom: 10px;
+}
+.bwo-timeline .bwo-node-1 .bwo-node-label {
+  top: auto;
+  bottom: 72px;
+}
+.bwo-node-label > span {
+  display: block;
+  margin-bottom: 4px;
+}
+.bwo-stage-range {
+  position: absolute;
+  top: 148px;
+  height: 50px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  border-radius: 4px;
+  font-size: 11px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.bwo-stage-range strong,
+.bwo-stage-range span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 400;
+}
+.bwo-stage-range[aria-pressed='true'] {
+  background: var(--foreground);
+  color: var(--background);
+}
+.bwo-source-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 12px 0;
+  font-size: 11px;
+  align-items: center;
+}
+.bwo-source-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 8px;
+  color: var(--muted-foreground);
+}
+.bwo-source-group .bwo-link {
+  color: var(--foreground);
+}
+.bwo-source-group[data-selected='true'] {
+  border-color: var(--foreground);
+}
+.bwo-workflow-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.bwo-workflow-heading h2 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.bwo-metric-label {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  cursor: help;
+  text-align: left;
+}
+.bwo-productivity > div {
+  min-width: 0;
+}
+.bwo-productivity strong {
+  font-size: 20px;
+  margin-top: 8px;
+  font-weight: 500;
 }

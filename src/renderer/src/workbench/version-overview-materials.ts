@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type {
   AcceptanceMaterial,
   PlanningMaterial
@@ -8,7 +8,13 @@ import type { VersionCatalogState } from './use-version-catalog'
 import { nativeVersionHistoryPort } from './version-history-port'
 import { nativeArchivePrPort } from './archive-pr-port'
 import { loadVersionPlanDocument } from './version-task-entries'
-import { humanAcceptanceTime } from './version-overview/version-evidence'
+import { validTime } from './version-overview/feature-model'
+import {
+  materialCache,
+  materialGenerations,
+  retainMaterialRead,
+  materialReadMessage as message
+} from './version-overview/material-cache'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import { nativeWorkspaceScope } from './version-cycle/native-workspace'
 import { nativeVersionMaterialPort } from './version-material-port'
@@ -30,25 +36,15 @@ export type VersionOverviewMaterials = {
   plan: OverviewDocument<PlanningMaterial>
   acceptance: OverviewDocument<AcceptanceMaterial>
   prStatuses: { plan: ArchivePrStatusResult | null; acceptance: ArchivePrStatusResult | null }
+  readAt?: string
+  refreshing?: boolean
+  problems?: string[]
 }
 const loading = (): VersionOverviewMaterials => ({
   plan: { kind: 'loading' },
   acceptance: { kind: 'loading' },
   prStatuses: { plan: null, acceptance: null }
 })
-const message = (error: unknown) => {
-  const raw = error instanceof Error ? error.message : String(error)
-  try {
-    const issues = JSON.parse(raw)
-    if (Array.isArray(issues) && issues.some((issue) => typeof issue?.code === 'string')) {
-      return '材料结构无效，请通过对应计划或验收入口核对来源。'
-    }
-  } catch {
-    // Non-schema failures retain the native source's explanation.
-  }
-  return raw
-}
-
 /** Formal acceptance pins the plan. A draft is read only when no formal plan exists. */
 export function useVersionOverviewMaterials({
   catalog,
@@ -60,6 +56,21 @@ export function useVersionOverviewMaterials({
   refreshToken: number
 }): VersionOverviewMaterials {
   const entry = catalog.catalog?.entries.find((e) => e.version === version)
+  const lastRefresh = useRef(refreshToken)
+  const sourceKey = JSON.stringify([
+    catalog.scope,
+    catalog.home?.id,
+    version,
+    entry?.material,
+    entry?.draft,
+    catalog.planTrees,
+    catalog.worktrees.map((tree) => [
+      tree.id,
+      tree.hostId,
+      tree.runtimeOwnerEnvironmentId,
+      tree.workbenchVersionBinding
+    ])
+  ])
   const key = JSON.stringify([
     refreshToken,
     catalog.loading,
@@ -85,14 +96,32 @@ export function useVersionOverviewMaterials({
   }))
   useEffect(() => {
     let cancelled = false
+    const generation = (materialGenerations.get(sourceKey) ?? 0) + 1
+    materialGenerations.set(sourceKey, generation)
     const publish = (value: VersionOverviewMaterials) => {
-      if (!cancelled) {
-        setState({ key, value })
+      if (!cancelled && materialGenerations.get(sourceKey) === generation) {
+        const next = retainMaterialRead(value, materialCache.get(sourceKey))
+        if (
+          !next.refreshing &&
+          next.plan.kind !== 'loading' &&
+          next.acceptance.kind !== 'loading'
+        ) {
+          materialCache.set(sourceKey, next)
+        }
+        setState({ key, value: next })
       }
     }
     const result = loading()
     const failure = catalog.materialError ?? catalog.error
-    if (!catalog.materialReady && !failure && catalog.loading) {
+    if (!failure && catalog.loading) {
+      return () => {
+        cancelled = true
+      }
+    }
+    const force = lastRefresh.current !== refreshToken
+    lastRefresh.current = refreshToken
+    if (!force && materialCache.has(sourceKey) && !failure) {
+      setState({ key, value: materialCache.get(sourceKey)! })
       return () => {
         cancelled = true
       }
@@ -228,12 +257,6 @@ export function useVersionOverviewMaterials({
           message: '验收工作稿引用的计划与当前计划不一致，请从验收入口核对；原记录未修改。'
         }
       }
-      if (result.acceptance.kind === 'ready' && result.plan.kind === 'ready') {
-        result.acceptance.acceptedAt = humanAcceptanceTime(
-          result.acceptance.document,
-          result.plan.document.goals.map((goal) => goal.goalId)
-        )
-      }
       publish({ ...result })
       await Promise.all(
         (['plan', 'acceptance'] as const).map(async (kind) => {
@@ -243,7 +266,16 @@ export function useVersionOverviewMaterials({
             return
           }
           try {
-            result.prStatuses[kind] = await archive.readStatus(scope, pr)
+            const status = await archive.readStatus(scope, pr, refreshToken > 0)
+            result.prStatuses[kind] = status
+            if (
+              kind === 'acceptance' &&
+              result.acceptance.kind === 'ready' &&
+              status.state === 'merged' &&
+              validTime(status.mergedAt)
+            ) {
+              result.acceptance = { ...result.acceptance, acceptedAt: status.mergedAt }
+            }
           } catch {
             result.prStatuses[kind] = { state: 'unknown', reason: '归档 PR 读取失败' }
           }
@@ -257,5 +289,7 @@ export function useVersionOverviewMaterials({
     // The key covers source revisions and owner routing; object identity is not a refresh trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
-  return state.key === key ? state.value : loading()
+  return state.key === key
+    ? state.value
+    : { ...(materialCache.get(sourceKey) ?? loading()), refreshing: true }
 }

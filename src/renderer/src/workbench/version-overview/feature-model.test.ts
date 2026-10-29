@@ -11,11 +11,8 @@ import {
   timelineRange,
   type FeaturePull
 } from './feature-model'
-import {
-  humanAcceptanceTime,
-  versionDeliveryEvents,
-  type VersionEvidence
-} from './version-evidence'
+import { versionDeliveryEvents, type VersionEvidence } from './version-evidence'
+import { cycleBaseline, featureTimeline } from './feature-timeline'
 
 it('projects scoped feature evidence without turning missing, later or unrelated records into delivery', () => {
   const reference = {
@@ -102,9 +99,6 @@ it('projects scoped feature evidence without turning missing, later or unrelated
         : []
     }
   })
-  expect(humanAcceptanceTime(record('1').acceptance, ['g2'])).toBeUndefined()
-  expect(humanAcceptanceTime(record('1', 'pending').acceptance, ['g2'])).toBeUndefined()
-  expect(humanAcceptanceTime(record('1', 'met').acceptance, ['g2'])).toBe(pull.readAt)
   const deliveries = versionDeliveryEvents(
     [
       record('1'),
@@ -135,4 +129,75 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   )
   expect(incomplete[0]?.delivered).toBe(true)
   expect(incomplete[0]?.label).toContain('顺序未确认')
+  expect(cycleBaseline('2026-10-27T07:17:18Z')).toBe('2026-10-26T01:00:00.000Z')
+  const timelineFeature = {
+    root: {
+      reference,
+      source: {
+        kind: 'task-source',
+        provider: 'github',
+        projectId: 'test',
+        hostId: 'local',
+        repoId: 'repo'
+      },
+      title: '特性',
+      iid: 334,
+      state: 'open',
+      url: 'https://github.com/acme/app/issues/334',
+      readAt: pull.readAt
+    },
+    body: '',
+    members: [],
+    pulls: [{ ...pull, phase: 'design' as const }],
+    problems: [],
+    versions: [],
+    events: [{ ...events[0]!, phase: 'intent' as const, at: '2026-10-01T07:00:00Z' }, ...deliveries]
+  } as Parameters<typeof featureTimeline>[0]
+  const timeline = featureTimeline(timelineFeature)
+  expect(timeline.points.design?.at).toBe(pull.mergedAt)
+  expect(
+    featureTimeline({ ...timelineFeature, problems: ['PR 读取失败'] }).points.design
+  ).toBeUndefined()
+  expect(timeline.points.pre?.at).toBe(record('4', 'met').at)
+  expect(timeline.points.release?.at).toBe(record('5', 'met').at)
+  expect(timeline.segments.find((segment) => segment.id === 'design')?.duration).toBe(3 * 3600000)
+  expect(timeline.segments.find((segment) => segment.id === 'pre')?.duration).toBeNull()
+  expect(
+    featureTimeline({
+      ...timelineFeature,
+      pulls: [pull, pull].map((item) => ({ ...item, phase: 'design' as const }))
+    }).points.design
+  ).toBeUndefined()
+  expect(
+    featureTimeline({
+      ...timelineFeature,
+      closedAt: '2026-10-02T08:00:00Z',
+      root: { ...timelineFeature.root, state: 'closed' }
+    }).points.development?.url
+  ).toBe(timelineFeature.root.url)
+  expect(
+    featureTimeline({
+      ...timelineFeature,
+      problems: ['关联 PR 未读全'],
+      closedAt: '2026-10-02T08:00:00Z',
+      root: { ...timelineFeature.root, state: 'closed' }
+    }).points.development
+  ).toBeUndefined()
+  const future = [
+    record('4', 'met'),
+    { ...record('5', 'met'), at: '2026-10-09T00:00:00Z' },
+    { ...record('5', 'met'), at: '2026-10-09T00:00:00Z' }
+  ]
+  expect(
+    versionDeliveryEvents(future, new Set([taskKey(reference)]), '2026-10-05T00:00:00Z')[0]
+      ?.deliveryKind
+  ).toBe('pre')
+  const unlocated = featureTimeline({
+    ...timelineFeature,
+    events: [],
+    pulls: [],
+    archives: [{ ...events[0]!, phase: 'intent', at: '' }]
+  })
+  expect(unlocated.points.intent).toBeUndefined()
+  expect(unlocated.sources.find((source) => source.id === 'intent')?.events[0]?.url).toBe(url)
 })

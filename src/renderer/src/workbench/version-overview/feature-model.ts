@@ -8,8 +8,7 @@ export const PHASE_LABELS: Record<FeaturePhase, string> = {
   pre: 'Pre 试用与完善',
   release: 'Release'
 }
-export const PARSER_REVISION = 'feature-evidence-v1'
-type FeatureSession = { task: CycleTaskSnapshot; version: string }
+export const PARSER_REVISION = 'feature-evidence-v2'
 export type FeaturePull = {
   phase?: FeaturePhase | 'unknown'
   number: number
@@ -18,7 +17,6 @@ export type FeaturePull = {
   body: string
   state: string
   tasks?: CycleTaskSnapshot[]
-  sessions?: FeatureSession[]
   createdAt?: string
   mergedAt?: string | null
   revision?: string
@@ -26,25 +24,28 @@ export type FeaturePull = {
 }
 export type FeatureEvent = {
   id: string
-  phase: FeaturePhase | 'issue' | 'unknown' | 'version'
+  phase: FeaturePhase | 'issue' | 'unknown' | 'version' | 'intent' | 'baseline'
   label: string
   at: string
   url: string
   tasks?: CycleTaskSnapshot[]
-  sessions?: FeatureSession[]
   revision?: string
   readAt: string
   rule: string
   version?: string
   delivered?: boolean
+  deliveryKind?: 'pre' | 'release'
 }
 export type FeatureData = {
   root: CycleTaskSnapshot
   body: string
   createdAt?: string
+  closedAt?: string
+  planningComplete?: boolean
   members: CycleTaskSnapshot[]
   pulls: FeaturePull[]
   events: FeatureEvent[]
+  archives?: FeatureEvent[]
   problems: string[]
   versions: { version: string; scope: string }[]
 }
@@ -132,8 +133,7 @@ export function eventsFromPulls(pulls: readonly FeaturePull[], before?: string):
         revision: pull.revision,
         readAt: pull.readAt,
         rule: PARSER_REVISION,
-        tasks: pull.tasks,
-        sessions: pull.sessions
+        tasks: pull.tasks
       })
     }
   }

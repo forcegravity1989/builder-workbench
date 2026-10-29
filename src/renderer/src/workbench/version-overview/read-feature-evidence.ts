@@ -1,11 +1,12 @@
 import { codehubApi } from '@/lib/codehub-api'
 import {
   lookupGitHubWorkItemDetailsForSource,
-  lookupGitHubWorkItemForSource
+  lookupGitHubWorkItemByOwnerRepoForSource
 } from '@/lib/github-work-item-source-lookup'
 import { nativeTaskPortDeps } from '../native-task-port'
 import { resolveReferenceRepo } from '../task-reference-repo'
 import { findVersionTaskWorktrees } from '../scoped-task-workspace'
+import { readCodeHubIssuePulls } from './codehub-issue-pulls'
 import type { VersionCatalogState } from '../use-version-catalog'
 import type { CycleTaskSnapshot } from '../version-cycle/ports'
 import {
@@ -38,7 +39,7 @@ export async function readFeatureEvidence(
   versions: string[],
   before?: string
 ) {
-  const feature: Pick<FeatureData, 'body' | 'createdAt' | 'pulls' | 'problems'> = {
+  const feature: Pick<FeatureData, 'body' | 'createdAt' | 'closedAt' | 'pulls' | 'problems'> = {
     body: '',
     pulls: [],
     problems: []
@@ -85,6 +86,16 @@ export async function readFeatureEvidence(
         if (task.iid === root.iid) {
           feature.body = detail.body
           feature.createdAt = detail.item.createdAt
+          const stateEvents = (detail.timelineItems ?? [])
+            .filter(
+              (event) => ['closed', 'reopened'].includes(event.event) && validTime(event.createdAt)
+            )
+            .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
+          const lastState = stateEvents.at(-1)
+          feature.closedAt =
+            detail.item.state === 'closed' && lastState?.event === 'closed'
+              ? lastState.createdAt
+              : undefined
         }
       } else if (ref.provider === 'codehub') {
         const detail = await codehubApi.viewTask({
@@ -94,6 +105,8 @@ export async function readFeatureEvidence(
           iid: task.iid
         })
         addBodyLinks(detail.description, task)
+        const related = readCodeHubIssuePulls(task)
+        related.numbers.forEach((number) => addPull(number, task))
         if (task.iid === root.iid) {
           feature.body = detail.description
           feature.createdAt = detail.createdAt
@@ -120,6 +133,12 @@ export async function readFeatureEvidence(
           addPull(tree.linkedWorkItem.number, task)
         }
       }
+      if (
+        ref.provider === 'codehub' &&
+        ![...pullTasks.values()].some((tasks) => tasks.has(taskKey(task.reference)))
+      ) {
+        feature.problems.push(`#${task.iid}：${readCodeHubIssuePulls(task).reason}`)
+      }
     } catch (e) {
       feature.problems.push(`#${task.iid}：${problemText(e)}`)
     }
@@ -130,43 +149,49 @@ export async function readFeatureEvidence(
       try {
         const readAt = new Date().toISOString()
         if (ref.provider === 'github') {
-          // Historical views must not load later PR files, comments and checks.
-          if (before) {
-            const item = await lookupGitHubWorkItemForSource({
-              repoPath: repo.path,
-              repoId: repo.id,
-              sourceContext: root.source,
-              number,
-              type: 'pr'
-            })
-            if (
-              item &&
-              validTime(item.createdAt) &&
-              Date.parse(item.createdAt) > Date.parse(before)
-            ) {
-              return null
-            }
+          const identity = new URL(root.url)
+          const [owner, name, kind] = identity.pathname.split('/').filter(Boolean)
+          if (!owner || !name || kind !== 'issues') {
+            throw new Error('特性 Issue 仓库身份未知')
           }
-          const detail = await lookupGitHubWorkItemDetailsForSource({
+          const item = await lookupGitHubWorkItemByOwnerRepoForSource({
             repoPath: repo.path,
             repoId: repo.id,
             sourceContext: root.source,
+            owner,
+            repo: name,
+            host: identity.host,
             number,
             type: 'pr'
           })
-          if (!detail) {
-            throw new Error('PR 详情未返回')
+          if (!item || typeof item.body !== 'string') {
+            throw new Error('PR 正文与元数据未返回')
+          }
+          const actual = new URL(item.url)
+          if (
+            actual.origin !== identity.origin ||
+            actual.pathname.replace(/\/$/, '').toLowerCase() !==
+              `/${owner}/${name}/pull/${number}`.toLowerCase()
+          ) {
+            throw new Error('PR 与特性 Issue 仓库身份不一致')
+          }
+          if (
+            before &&
+            validTime(item.createdAt) &&
+            Date.parse(item.createdAt) > Date.parse(before)
+          ) {
+            return null
           }
           return {
             number,
             tasks: [...pullTasks.get(number)!.values()],
-            url: detail.item.url,
-            title: detail.item.title,
-            body: detail.body,
-            state: detail.item.state,
-            createdAt: detail.item.createdAt,
-            mergedAt: detail.item.mergedAt,
-            revision: detail.headSha,
+            url: item.url,
+            title: item.title,
+            body: item.body,
+            state: item.state,
+            createdAt: item.createdAt,
+            mergedAt: item.mergedAt,
+            revision: item.headSha,
             readAt
           }
         }
@@ -176,6 +201,7 @@ export async function readFeatureEvidence(
           kind: 'mr',
           iid: number
         })
+
         return {
           number,
           tasks: [...pullTasks.get(number)!.values()],

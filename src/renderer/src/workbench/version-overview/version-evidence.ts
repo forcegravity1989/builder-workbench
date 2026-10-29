@@ -2,13 +2,21 @@ import type {
   AcceptanceMaterial,
   PlanningMaterial
 } from '../../../../shared/workbench/version-material'
-import { taskKey, validTime, PARSER_REVISION, type FeatureEvent } from './feature-model'
+import {
+  taskKey,
+  validTime,
+  PARSER_REVISION,
+  type FeatureEvent,
+  type FeatureData
+} from './feature-model'
 
 export type OverviewVersionPlan = {
   version: string
   tasks: PlanningMaterial['tasks']
   goals: PlanningMaterial['goals']
   source: 'committed' | 'draft'
+  confirmation?: FeatureEvent
+  archive?: FeatureEvent
 }
 export type VersionEvidence = {
   version: string
@@ -17,30 +25,10 @@ export type VersionEvidence = {
   at?: string
   revision: string
   readAt: string
+  archiveUrl?: string
+  archive?: FeatureEvent
 }
 
-/** Catalog commit times describe the trunk snapshot, not the acceptance event. */
-export function humanAcceptanceTime(
-  acceptance: Pick<AcceptanceMaterial, 'results'>,
-  goalIds: readonly string[]
-): string | undefined {
-  if (!goalIds.length) {
-    return undefined
-  }
-  const decisions = goalIds.map(
-    (id) => acceptance.results.find((result) => result.goalId === id)?.decision
-  )
-  if (
-    decisions.some(
-      (decision) => !decision || decision.outcome === 'pending' || !validTime(decision.recordedAt)
-    )
-  ) {
-    return undefined
-  }
-  return decisions
-    .map((decision) => decision!.recordedAt)
-    .sort((a, b) => Date.parse(b) - Date.parse(a))[0]
-}
 /** Confirmed goal acceptance is the current delivery convention; unresolved goals stay unknown. */
 export function versionDeliveryEvents(
   records: readonly VersionEvidence[],
@@ -49,15 +37,17 @@ export function versionDeliveryEvents(
   historyComplete = true
 ): FeatureEvent[] {
   let delivered = 0
-  const related = records.filter((record) =>
-    record.plan.tasks.some((ref) => associatedTasks.has(taskKey(ref)))
+  const related = records.filter(
+    (record) =>
+      record.plan.tasks.some((ref) => associatedTasks.has(taskKey(ref))) &&
+      (!validTime(before) || !validTime(record.at) || Date.parse(record.at) <= Date.parse(before))
   )
   const times = related
     .filter((record) => validTime(record.at))
     .map((record) => Date.parse(record.at!))
   const orderKnown =
     historyComplete && times.length === related.length && new Set(times).size === times.length
-  return [...records]
+  return [...related]
     .filter(
       (record): record is VersionEvidence & { at: string } =>
         validTime(record.at) && (!validTime(before) || Date.parse(record.at) <= Date.parse(before))
@@ -92,14 +82,22 @@ export function versionDeliveryEvents(
         {
           id: `version:${record.version}:${record.revision}`,
           phase: 'version' as const,
-          label: `${record.version} · ${!hasGoal ? '交付归属未知' : notMet ? '目标未达成' : !confirmed ? '验收结论待确认' : !orderKnown ? '已交付（顺序未确认）' : delivered === 1 ? '首次交付（Pre）' : '后续交付（Release）'}`,
+          label: `${record.version} · ${!hasGoal ? '交付归属未知' : notMet ? '目标未达成' : !confirmed ? '验收结论待确认' : !orderKnown ? '已交付（顺序未确认）' : delivered === 1 ? '首次交付（Pre）' : delivered === 2 ? '后续交付（Release）' : '后续交付'}`,
           at: record.at,
-          url: '',
+          url: record.archiveUrl ?? '',
           revision: record.revision,
           readAt: record.readAt,
           rule: PARSER_REVISION,
           version: record.version,
-          delivered: included
+          delivered: included,
+          deliveryKind:
+            included && orderKnown
+              ? delivered === 1
+                ? ('pre' as const)
+                : delivered === 2
+                  ? ('release' as const)
+                  : undefined
+              : undefined
         }
       ]
     })
@@ -117,5 +115,61 @@ export function workActivityTimes(): {
     developmentStartedAt: null,
     testsStartedAt: null,
     testsFinishedAt: null
+  }
+}
+
+export function applyVersionEvidence(
+  feature: FeatureData,
+  entries: OverviewVersionPlan[],
+  records: VersionEvidence[],
+  associated: Set<string>,
+  historical: boolean,
+  before: string | undefined,
+  complete: boolean,
+  currentVersion?: string
+) {
+  const relatedPlans = entries.filter((entry) =>
+    entry.tasks.some((ref) => associated.has(taskKey(ref)))
+  )
+  const relatedRecords = records.filter((record) =>
+    record.plan.tasks.some((ref) => associated.has(taskKey(ref)))
+  )
+  feature.archives = [
+    ...relatedPlans.flatMap((entry) => (entry.archive ? [entry.archive] : [])),
+    ...relatedRecords.flatMap((entry) => (entry.archive ? [entry.archive] : []))
+  ].filter(
+    (event) =>
+      !historical ||
+      event.version === currentVersion ||
+      (before && validTime(event.at) && Date.parse(event.at) <= Date.parse(before))
+  )
+  if (historical && !before) {
+    feature.events = []
+    feature.planningComplete = false
+    feature.problems.push('历史验收 PR 合入时间未记录，暂不展示动态时序')
+    return
+  }
+  feature.events.push(...versionDeliveryEvents(records, associated, before, complete))
+  const related = entries.filter(
+    (entry) =>
+      entry.source === 'committed' &&
+      entry.tasks.some((ref) => associated.has(taskKey(ref))) &&
+      (!before ||
+        !validTime(entry.confirmation?.at) ||
+        Date.parse(entry.confirmation.at) <= Date.parse(before))
+  )
+  feature.planningComplete =
+    related.length > 0 && related.every((entry) => validTime(entry.confirmation?.at))
+  feature.events.push(
+    ...related.flatMap((entry) =>
+      entry.confirmation &&
+      validTime(entry.confirmation.at) &&
+      (!before || Date.parse(entry.confirmation.at) <= Date.parse(before))
+        ? [entry.confirmation]
+        : []
+    )
+  )
+  if (before && validTime(feature.closedAt) && Date.parse(feature.closedAt) > Date.parse(before)) {
+    feature.closedAt = undefined
   }
 }

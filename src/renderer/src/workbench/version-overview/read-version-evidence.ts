@@ -1,13 +1,20 @@
-import type { AcceptanceMaterial } from '../../../../shared/workbench/version-material'
+import type {
+  AcceptanceMaterial,
+  PlanningMaterial
+} from '../../../../shared/workbench/version-material'
+import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
 import type { VersionCatalogState } from '../use-version-catalog'
 import { nativeVersionHistoryPort } from '../version-history-port'
+import { nativeArchivePrPort } from '../archive-pr-port'
+import { validTime, PARSER_REVISION } from './feature-model'
 import type { OverviewVersionPlan, VersionEvidence } from './version-evidence'
-import { humanAcceptanceTime } from './version-evidence'
 
-/** Read the plan pinned by each acceptance; catalog goal rows can have a newer revision. */
+/** Archive merge metadata and the acceptance's pinned plan are independent evidence. */
 export async function readVersionEvidence(
   catalog: VersionCatalogState,
-  versions?: Set<string>
+  versions?: Set<string>,
+  force = false,
+  workingPlan?: { document: PlanningMaterial; source: 'committed' | 'draft' }
 ): Promise<{ records: VersionEvidence[]; plans: OverviewVersionPlan[]; problems: string[] }> {
   const records: VersionEvidence[] = [],
     plans: OverviewVersionPlan[] = [],
@@ -21,12 +28,73 @@ export async function readVersionEvidence(
     hostId: catalog.scope.hostId
   }
   const history = nativeVersionHistoryPort(catalog.scope.runtimeOwnerEnvironmentId)
+  const archive = nativeArchivePrPort(catalog.scope.runtimeOwnerEnvironmentId)
+  const reads = new Map<string, Promise<ArchivePrStatusResult>>()
+  async function readArchive(document: PlanningMaterial | AcceptanceMaterial) {
+    const pr = document.workflow?.archivePr
+    if (!pr) {
+      return null
+    }
+    const key = JSON.stringify(pr)
+    if (!reads.has(key)) {
+      reads.set(key, archive.readStatus(scope, pr, force))
+    }
+    const status = await reads.get(key)!
+    if (status.state === 'unknown') {
+      problems.push(`${document.version} 归档 PR #${pr.number}：${status.reason}`)
+    }
+    return status
+  }
+  function archiveEvent(
+    document: PlanningMaterial | AcceptanceMaterial,
+    status: ArchivePrStatusResult | null,
+    kind: 'plan' | 'acceptance'
+  ) {
+    const pr = document.workflow?.archivePr
+    if (!pr || !status) {
+      return undefined
+    }
+    return {
+      id: `${kind}:${document.version}:${pr.number}`,
+      phase: kind === 'plan' ? ('intent' as const) : ('version' as const),
+      label: `${document.version} ${kind === 'plan' ? '计划' : '验收'} PR #${pr.number} · ${status.state === 'merged' ? '已合入' : status.state === 'unknown' ? '状态未知' : '未合入'}`,
+      at: status.state === 'merged' && validTime(status.mergedAt) ? status.mergedAt : '',
+      url: status.url ?? '',
+      readAt: status.state === 'unknown' ? new Date().toISOString() : status.checkedAt,
+      rule: PARSER_REVISION,
+      version: document.version
+    }
+  }
+  async function addPlan(document: PlanningMaterial, source: 'committed' | 'draft' = 'committed') {
+    const status = await readArchive(document)
+    const confirmation =
+      status?.state === 'merged' && validTime(status.mergedAt)
+        ? {
+            id: `plan:${document.version}:${document.workflow!.archivePr!.number}`,
+            phase: 'intent' as const,
+            label: `${document.version} 计划 PR 合入确认意图`,
+            at: status.mergedAt,
+            url: status.url ?? '',
+            readAt: status.checkedAt,
+            rule: PARSER_REVISION,
+            version: document.version
+          }
+        : undefined
+    plans.push({
+      version: document.version,
+      tasks: document.tasks,
+      goals: document.goals,
+      source,
+      confirmation,
+      archive: archiveEvent(document, status, 'plan')
+    })
+  }
   for (const entry of catalog.catalog?.entries ?? []) {
-    const ref = entry.material.acceptance
     if (versions && !versions.has(entry.version)) {
       continue
     }
     try {
+      const ref = entry.material.acceptance
       if (!ref) {
         if (entry.material.plan) {
           const fixed = await history.readPlan({
@@ -39,19 +107,18 @@ export async function readVersionEvidence(
               revision: entry.material.plan.revision
             }
           })
-          plans.push({
-            version: entry.version,
-            tasks: fixed.document.tasks,
-            goals: fixed.document.goals,
-            source: 'committed'
-          })
+          await addPlan(fixed.document)
         } else if (entry.draft) {
-          plans.push({
-            version: entry.version,
-            tasks: entry.tasks,
-            goals: entry.goals.map((g) => ({ ...g, metricTargets: [] })),
-            source: 'draft'
-          })
+          if (workingPlan?.document.version === entry.version) {
+            await addPlan(workingPlan.document, workingPlan.source)
+          } else {
+            plans.push({
+              version: entry.version,
+              tasks: entry.tasks,
+              goals: entry.goals.map((g) => ({ ...g, metricTargets: [] })),
+              source: 'draft'
+            })
+          }
         }
         continue
       }
@@ -65,26 +132,26 @@ export async function readVersionEvidence(
       })
       const acceptance = read.document as AcceptanceMaterial
       const plan = await history.readPlan({ scope, planRef: acceptance.planRef })
-      plans.push({
-        version: entry.version,
-        tasks: plan.document.tasks,
-        goals: plan.document.goals,
-        source: 'committed'
-      })
+      await addPlan(plan.document)
+      const status = await readArchive(acceptance)
       records.push({
         version: entry.version,
         plan: plan.document,
         acceptance,
-        at: humanAcceptanceTime(
-          acceptance,
-          plan.document.goals.map((goal) => goal.goalId)
-        ),
+        at: status?.state === 'merged' && validTime(status.mergedAt) ? status.mergedAt : undefined,
+        archiveUrl: status && 'url' in status ? status.url : undefined,
+        archive: archiveEvent(acceptance, status, 'acceptance'),
         revision: ref.sourceCommit,
         readAt: new Date().toISOString()
       })
-    } catch (e) {
-      problems.push(`${entry.version} 验收依据：${e instanceof Error ? e.message : String(e)}`)
+    } catch (error) {
+      problems.push(
+        `${entry.version} 验收依据：${error instanceof Error ? error.message : String(error)}`
+      )
     }
+  }
+  if (workingPlan && !plans.some((entry) => entry.version === workingPlan.document.version)) {
+    await addPlan(workingPlan.document, workingPlan.source)
   }
   return { records, plans, problems }
 }

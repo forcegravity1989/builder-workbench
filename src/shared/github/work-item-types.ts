@@ -18,6 +18,8 @@ export type GitHubWorkItem = {
   type: 'issue' | 'pr'
   number: number
   title: string
+  /** Present on point-read PR metadata; list rows need not carry the body. */
+  body?: string
   state: 'open' | 'closed' | 'merged' | 'draft'
   url: string
   labels: string[]
