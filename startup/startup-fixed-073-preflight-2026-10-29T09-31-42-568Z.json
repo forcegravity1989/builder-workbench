@@ -1,0 +1,647 @@
+{
+  "label": "fixed-073-preflight",
+  "platform": "win32",
+  "arch": "x64",
+  "cpus": "Intel(R) Core(TM) Ultra 7 155H",
+  "fixtureDir": "D:\\codex\\windows-startup-latency\\evidence\\fixed-preflight",
+  "fixtureFiles": 0,
+  "stateProfile": "none",
+  "sessionTabs": 0,
+  "githubRepos": 0,
+  "ghHangMs": 0,
+  "waitForEvent": "renderer-startup-hydration-done",
+  "exe": "D:/codex/windows-startup-latency/startup-candidate/Workbench.exe",
+  "iterations": [
+    {
+      "outcome": "ok",
+      "events": [
+        {
+          "event": "preflight-start",
+          "details": {
+            "t": 3859
+          },
+          "harnessMs": 4305.3
+        },
+        {
+          "event": "preflight-persistence-ready",
+          "details": {
+            "t": 3868
+          },
+          "harnessMs": 4313.8
+        },
+        {
+          "event": "before-single-instance-lock",
+          "details": {
+            "version": "0.7.3",
+            "packaged": true,
+            "platform": "win32",
+            "osRelease": "10.0.22631",
+            "userData": "D:\\codex\\windows-startup-latency\\evidence\\fixed-preflight",
+            "e2eUserData": true
+          },
+          "harnessMs": 4314.5
+        },
+        {
+          "event": "single-instance-lock-result",
+          "details": {
+            "acquired": true,
+            "bypassed": false,
+            "skippedForDev": false
+          },
+          "harnessMs": 4318.2
+        },
+        {
+          "event": "preflight-host-bindings-ready",
+          "details": {
+            "t": 3874
+          },
+          "harnessMs": 4318.9
+        },
+        {
+          "event": "preflight-data-paths-ready",
+          "details": {
+            "t": 3875
+          },
+          "harnessMs": 4320.9
+        },
+        {
+          "event": "crashpad-start",
+          "details": {
+            "t": 3876
+          },
+          "harnessMs": 4321.5
+        },
+        {
+          "event": "crashpad-ready",
+          "details": {
+            "t": 4242
+          },
+          "harnessMs": 4687.6
+        },
+        {
+          "event": "preflight-complete",
+          "details": {
+            "t": 4252
+          },
+          "harnessMs": 4697
+        },
+        {
+          "event": "app-ready",
+          "details": {
+            "t": 4625
+          },
+          "harnessMs": 5070.6
+        },
+        {
+          "event": "persistence-load-start",
+          "details": {
+            "t": 4797,
+            "fileExists": false
+          },
+          "harnessMs": 5242
+        },
+        {
+          "event": "persistence-load-done",
+          "details": {
+            "t": 4846,
+            "repos": 0,
+            "workspaceSessionBytes": 383
+          },
+          "harnessMs": 5292.3
+        },
+        {
+          "event": "store-loaded",
+          "details": {
+            "t": 4865
+          },
+          "harnessMs": 5310.7
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 5915,
+            "maxGapMs": 717
+          },
+          "harnessMs": 6360.6
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 7959,
+            "maxGapMs": 84
+          },
+          "harnessMs": 8405.7
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 9994,
+            "maxGapMs": 83
+          },
+          "harnessMs": 10439.6
+        },
+        {
+          "event": "services-initialized",
+          "details": {
+            "t": 10765
+          },
+          "harnessMs": 11210.3
+        },
+        {
+          "event": "open-main-window-start",
+          "details": {
+            "t": 10823
+          },
+          "harnessMs": 11273.5
+        },
+        {
+          "event": "acl-grant-start",
+          "details": {
+            "t": 10824
+          },
+          "harnessMs": 11273.6
+        },
+        {
+          "event": "window-created",
+          "details": {
+            "t": 10994
+          },
+          "harnessMs": 11439.3
+        },
+        {
+          "event": "load-start",
+          "details": {
+            "t": 11030
+          },
+          "harnessMs": 11475.3
+        },
+        {
+          "event": "first-window-startup-services-start",
+          "details": {
+            "t": 11066
+          },
+          "harnessMs": 11511.7
+        },
+        {
+          "event": "startup-service-start",
+          "details": {
+            "t": 11074,
+            "service": "daemon-pty-provider"
+          },
+          "harnessMs": 11519.6
+        },
+        {
+          "event": "daemon-init-start",
+          "details": {
+            "t": 11075
+          },
+          "harnessMs": 11520.2
+        },
+        {
+          "event": "startup-service-start",
+          "details": {
+            "t": 11085,
+            "service": "agent-hook-server"
+          },
+          "harnessMs": 11536.9
+        },
+        {
+          "event": "i18n-ready",
+          "details": {
+            "t": 11165
+          },
+          "harnessMs": 11610.1
+        },
+        {
+          "event": "plugin-system-initialized",
+          "details": {
+            "t": 11191,
+            "durationMs": 481.57,
+            "installedPlugins": 0
+          },
+          "harnessMs": 11636.5
+        },
+        {
+          "event": "startup-service-done",
+          "details": {
+            "t": 11235,
+            "service": "agent-hook-server"
+          },
+          "harnessMs": 11680
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 12001,
+            "maxGapMs": 910
+          },
+          "harnessMs": 12452.5
+        },
+        {
+          "event": "acl-grant-done",
+          "details": {
+            "t": 13611,
+            "mode": "granted"
+          },
+          "harnessMs": 14056.4
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 14199,
+            "maxGapMs": 354
+          },
+          "harnessMs": 14644.6
+        },
+        {
+          "event": "daemon-current-ready",
+          "details": {
+            "t": 14296
+          },
+          "harnessMs": 14741.8
+        },
+        {
+          "event": "daemon-init-done",
+          "details": {
+            "t": 14399,
+            "legacyAdapters": 0
+          },
+          "harnessMs": 14844.5
+        },
+        {
+          "event": "startup-service-done",
+          "details": {
+            "t": 14402,
+            "service": "daemon-pty-provider"
+          },
+          "harnessMs": 14847.1
+        },
+        {
+          "event": "first-window-startup-services-ready",
+          "details": {
+            "t": 14406
+          },
+          "harnessMs": 14851.1
+        },
+        {
+          "event": "local-pty-startup-ready",
+          "details": {
+            "t": 14406
+          },
+          "harnessMs": 14851.3
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 16253,
+            "maxGapMs": 74
+          },
+          "harnessMs": 16698.2
+        },
+        {
+          "event": "ready-to-show",
+          "details": {
+            "t": 17344
+          },
+          "harnessMs": 17789.3
+        },
+        {
+          "event": "did-finish-load",
+          "details": {
+            "t": 17346
+          },
+          "harnessMs": 17791
+        },
+        {
+          "event": "tray-created",
+          "details": {
+            "t": 17447
+          },
+          "harnessMs": 17891.9
+        },
+        {
+          "event": "updater-setup-done",
+          "details": {
+            "t": 18517
+          },
+          "harnessMs": 18962.1
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 18519,
+            "maxGapMs": 1230
+          },
+          "harnessMs": 18964.4
+        },
+        {
+          "event": "renderer-startup-chain-start",
+          "details": {
+            "t": 18785,
+            "rendererT": 6970
+          },
+          "harnessMs": 19230.4
+        },
+        {
+          "event": "renderer-fetch-settings-done",
+          "details": {
+            "t": 19079,
+            "rendererT": 7888,
+            "durationMs": 914
+          },
+          "harnessMs": 19524.3
+        },
+        {
+          "event": "renderer-fetch-keybindings-done",
+          "details": {
+            "t": 19159,
+            "rendererT": 8090,
+            "durationMs": 200
+          },
+          "harnessMs": 19603.9
+        },
+        {
+          "event": "renderer-onboarding-get-done",
+          "details": {
+            "t": 19160,
+            "rendererT": 8091,
+            "durationMs": 200
+          },
+          "harnessMs": 19604.8
+        },
+        {
+          "event": "renderer-ui-get-done",
+          "details": {
+            "t": 19161,
+            "rendererT": 8091,
+            "durationMs": 201
+          },
+          "harnessMs": 19606.1
+        },
+        {
+          "event": "renderer-hydrate-persisted-ui-done",
+          "details": {
+            "t": 19166,
+            "rendererT": 8105,
+            "durationMs": 13
+          },
+          "harnessMs": 19610.9
+        },
+        {
+          "event": "renderer-list-runtime-session-hosts-done",
+          "details": {
+            "t": 19342,
+            "rendererT": 8310,
+            "durationMs": 206
+          },
+          "harnessMs": 19787
+        },
+        {
+          "event": "renderer-fetch-repos-local-done",
+          "details": {
+            "t": 19408,
+            "rendererT": 8377,
+            "durationMs": 271
+          },
+          "harnessMs": 19853.2
+        },
+        {
+          "event": "renderer-repo-catalog-settlement-done",
+          "details": {
+            "t": 19408,
+            "rendererT": 8377,
+            "durationMs": 0
+          },
+          "harnessMs": 19853.8
+        },
+        {
+          "event": "renderer-fetch-project-groups-local-done",
+          "details": {
+            "t": 19418,
+            "rendererT": 8387,
+            "durationMs": 10
+          },
+          "harnessMs": 19862.9
+        },
+        {
+          "event": "renderer-session-get-done",
+          "details": {
+            "t": 19420,
+            "rendererT": 8389,
+            "durationMs": 10
+          },
+          "harnessMs": 19865.1
+        },
+        {
+          "event": "renderer-fetch-folder-workspaces-local-done",
+          "details": {
+            "t": 19425,
+            "rendererT": 8394,
+            "durationMs": 7
+          },
+          "harnessMs": 19870.2
+        },
+        {
+          "event": "renderer-git-environment-barrier-await-done",
+          "details": {
+            "t": 19426,
+            "rendererT": 8395,
+            "durationMs": 5
+          },
+          "harnessMs": 19871.1
+        },
+        {
+          "event": "renderer-fetch-hydration-worktrees-done",
+          "details": {
+            "t": 19426,
+            "rendererT": 8395,
+            "durationMs": 0
+          },
+          "harnessMs": 19871.5
+        },
+        {
+          "event": "renderer-repo-catalog-final-settlement-done",
+          "details": {
+            "t": 19427,
+            "rendererT": 8395,
+            "durationMs": 0
+          },
+          "harnessMs": 19871.6
+        },
+        {
+          "event": "renderer-hydrate-session-stores-done",
+          "details": {
+            "t": 19438,
+            "rendererT": 8407,
+            "durationMs": 11
+          },
+          "harnessMs": 19882.8
+        },
+        {
+          "event": "renderer-prepare-terminal-startup-restoration-done",
+          "details": {
+            "t": 19509,
+            "rendererT": 8478,
+            "durationMs": 71
+          },
+          "harnessMs": 19954
+        },
+        {
+          "event": "renderer-visit-timestamp-prune-done",
+          "details": {
+            "t": 19509,
+            "rendererT": 8478,
+            "durationMs": 1
+          },
+          "harnessMs": 19954.7
+        },
+        {
+          "event": "renderer-ssh-reconnect-skipped",
+          "details": {
+            "t": 19514,
+            "rendererT": 8483,
+            "connectionIds": 0
+          },
+          "harnessMs": 19959
+        },
+        {
+          "event": "renderer-fetch-browser-session-profiles-done",
+          "details": {
+            "t": 19685,
+            "rendererT": 8614,
+            "durationMs": 136
+          },
+          "harnessMs": 20129.7
+        },
+        {
+          "event": "renderer-recover-legacy-worker-terminals-pre-reconnect-done",
+          "details": {
+            "t": 19695,
+            "rendererT": 8657,
+            "durationMs": 174
+          },
+          "harnessMs": 20140.5
+        },
+        {
+          "event": "renderer-terminal-provider-snapshot-capabilities-done",
+          "details": {
+            "t": 19697,
+            "rendererT": 8658,
+            "durationMs": 1
+          },
+          "harnessMs": 20142.6
+        },
+        {
+          "event": "renderer-reconnect-terminals-done",
+          "details": {
+            "t": 19849,
+            "rendererT": 8717,
+            "durationMs": 59
+          },
+          "harnessMs": 20294.9
+        },
+        {
+          "event": "renderer-recover-legacy-worker-terminals-post-reconnect-done",
+          "details": {
+            "t": 19942,
+            "rendererT": 8905,
+            "durationMs": 188
+          },
+          "harnessMs": 20387
+        },
+        {
+          "event": "renderer-startup-hydration-done",
+          "details": {
+            "t": 19942,
+            "rendererT": 8908,
+            "durationMs": 1939
+          },
+          "harnessMs": 20387.2
+        },
+        {
+          "event": "renderer-owner-visibility-defaults-done",
+          "details": {
+            "t": 20075,
+            "rendererT": 9043,
+            "durationMs": 134
+          },
+          "harnessMs": 20520.4
+        },
+        {
+          "event": "renderer-remote-catalog-refresh-done",
+          "details": {
+            "t": 20430,
+            "rendererT": 9375,
+            "durationMs": 332
+          },
+          "harnessMs": 20875.3
+        },
+        {
+          "event": "renderer-remote-worktree-refresh-done",
+          "details": {
+            "t": 20437,
+            "rendererT": 9404,
+            "durationMs": 29
+          },
+          "harnessMs": 20881.9
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 20523,
+            "maxGapMs": 526
+          },
+          "harnessMs": 25214.8
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 22531,
+            "maxGapMs": 122
+          },
+          "harnessMs": 25214.8
+        }
+      ],
+      "phases": {
+        "startupJsonParseMs": null,
+        "startupStoreLoadMs": 49,
+        "spawnToAppReady": 5070.6,
+        "appReadyToServices": 6140,
+        "servicesToI18n": 400,
+        "i18nToOpenWindow": -342,
+        "daemonInitMs": 3324,
+        "aclGrantMs": 2787,
+        "windowCreatedToLoadStart": 36,
+        "windowCreatedToLoaded": 6352,
+        "totalToWindowCreated": 11439.3,
+        "totalToDidFinishLoad": 17791,
+        "didFinishLoadToWorkspaceReady": 2596,
+        "totalToWorkspaceReady": 20387.2,
+        "rendererSshReconnectMs": null,
+        "rendererStartupBarrierMs": 5,
+        "rendererReconnectTerminalsMs": 59,
+        "maxEventLoopStallMs": 1230
+      }
+    }
+  ],
+  "summaryMedianMs": {
+    "startupJsonParseMs": null,
+    "startupStoreLoadMs": 49,
+    "spawnToAppReady": 5070.6,
+    "appReadyToServices": 6140,
+    "servicesToI18n": 400,
+    "i18nToOpenWindow": -342,
+    "daemonInitMs": 3324,
+    "aclGrantMs": 2787,
+    "windowCreatedToLoadStart": 36,
+    "windowCreatedToLoaded": 6352,
+    "totalToWindowCreated": 11439.3,
+    "totalToDidFinishLoad": 17791,
+    "didFinishLoadToWorkspaceReady": 2596,
+    "totalToWorkspaceReady": 20387.2,
+    "rendererSshReconnectMs": null,
+    "rendererStartupBarrierMs": 5,
+    "rendererReconnectTerminalsMs": 59,
+    "maxEventLoopStallMs": 1230
+  }
+}

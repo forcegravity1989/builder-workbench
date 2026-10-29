@@ -1,0 +1,574 @@
+{
+  "label": "baseline-073-paired",
+  "platform": "win32",
+  "arch": "x64",
+  "cpus": "Intel(R) Core(TM) Ultra 7 155H",
+  "fixtureDir": "D:\\codex\\windows-startup-latency\\evidence\\baseline-paired",
+  "fixtureFiles": 0,
+  "stateProfile": "none",
+  "sessionTabs": 0,
+  "githubRepos": 0,
+  "ghHangMs": 0,
+  "waitForEvent": "renderer-startup-hydration-done",
+  "exe": "D:/Program Files/Workbench/Workbench.exe",
+  "iterations": [
+    {
+      "outcome": "ok",
+      "events": [
+        {
+          "event": "before-single-instance-lock",
+          "details": {
+            "version": "0.7.3",
+            "packaged": true,
+            "platform": "win32",
+            "osRelease": "10.0.22631",
+            "userData": "D:\\codex\\windows-startup-latency\\evidence\\baseline-paired",
+            "e2eUserData": true
+          },
+          "harnessMs": 20363.1
+        },
+        {
+          "event": "single-instance-lock-result",
+          "details": {
+            "acquired": true,
+            "bypassed": false,
+            "skippedForDev": false
+          },
+          "harnessMs": 20366.4
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 55116,
+            "maxGapMs": 35164
+          },
+          "harnessMs": 55551.9
+        },
+        {
+          "event": "app-ready",
+          "details": {
+            "t": 55126
+          },
+          "harnessMs": 55562.1
+        },
+        {
+          "event": "persistence-load-start",
+          "details": {
+            "t": 55404,
+            "fileExists": false
+          },
+          "harnessMs": 55841.1
+        },
+        {
+          "event": "persistence-load-done",
+          "details": {
+            "t": 55414,
+            "repos": 0,
+            "workspaceSessionBytes": 383
+          },
+          "harnessMs": 55850.4
+        },
+        {
+          "event": "store-loaded",
+          "details": {
+            "t": 55433
+          },
+          "harnessMs": 55869.3
+        },
+        {
+          "event": "services-initialized",
+          "details": {
+            "t": 55948
+          },
+          "harnessMs": 56391.9
+        },
+        {
+          "event": "open-main-window-start",
+          "details": {
+            "t": 56497
+          },
+          "harnessMs": 56932.7
+        },
+        {
+          "event": "acl-grant-start",
+          "details": {
+            "t": 56497
+          },
+          "harnessMs": 56932.9
+        },
+        {
+          "event": "window-created",
+          "details": {
+            "t": 56648
+          },
+          "harnessMs": 57084.3
+        },
+        {
+          "event": "load-start",
+          "details": {
+            "t": 56695
+          },
+          "harnessMs": 57130.5
+        },
+        {
+          "event": "i18n-ready",
+          "details": {
+            "t": 57352
+          },
+          "harnessMs": 57788.1
+        },
+        {
+          "event": "plugin-system-initialized",
+          "details": {
+            "t": 57374,
+            "durationMs": 1491.45,
+            "installedPlugins": 0
+          },
+          "harnessMs": 57816.3
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 57414,
+            "maxGapMs": 1751
+          },
+          "harnessMs": 57849.9
+        },
+        {
+          "event": "acl-grant-done",
+          "details": {
+            "t": 59205,
+            "mode": "granted"
+          },
+          "harnessMs": 59640.9
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 59546,
+            "maxGapMs": 1539
+          },
+          "harnessMs": 59982
+        },
+        {
+          "event": "ready-to-show",
+          "details": {
+            "t": 60660
+          },
+          "harnessMs": 61095.9
+        },
+        {
+          "event": "did-finish-load",
+          "details": {
+            "t": 60662
+          },
+          "harnessMs": 61097.5
+        },
+        {
+          "event": "tray-created",
+          "details": {
+            "t": 60746
+          },
+          "harnessMs": 61181.9
+        },
+        {
+          "event": "updater-setup-done",
+          "details": {
+            "t": 73245
+          },
+          "harnessMs": 73680.7
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 73246,
+            "maxGapMs": 12569
+          },
+          "harnessMs": 73681.7
+        },
+        {
+          "event": "first-window-startup-services-start",
+          "details": {
+            "t": 73248
+          },
+          "harnessMs": 73684
+        },
+        {
+          "event": "startup-service-start",
+          "details": {
+            "t": 73252,
+            "service": "daemon-pty-provider"
+          },
+          "harnessMs": 73688.3
+        },
+        {
+          "event": "daemon-init-start",
+          "details": {
+            "t": 73253
+          },
+          "harnessMs": 73688.9
+        },
+        {
+          "event": "startup-service-start",
+          "details": {
+            "t": 73258,
+            "service": "agent-hook-server"
+          },
+          "harnessMs": 73693.8
+        },
+        {
+          "event": "startup-service-done",
+          "details": {
+            "t": 74899,
+            "service": "agent-hook-server"
+          },
+          "harnessMs": 75335.1
+        },
+        {
+          "event": "renderer-startup-chain-start",
+          "details": {
+            "t": 77318,
+            "rendererT": 4883
+          },
+          "harnessMs": 77753.6
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 77419,
+            "maxGapMs": 4148
+          },
+          "harnessMs": 77854.5
+        },
+        {
+          "event": "renderer-fetch-settings-done",
+          "details": {
+            "t": 77471,
+            "rendererT": 20775,
+            "durationMs": 15889
+          },
+          "harnessMs": 77906.8
+        },
+        {
+          "event": "renderer-fetch-keybindings-done",
+          "details": {
+            "t": 77651,
+            "rendererT": 20955,
+            "durationMs": 178
+          },
+          "harnessMs": 78087.1
+        },
+        {
+          "event": "renderer-onboarding-get-done",
+          "details": {
+            "t": 77652,
+            "rendererT": 20957,
+            "durationMs": 180
+          },
+          "harnessMs": 78088.2
+        },
+        {
+          "event": "renderer-ui-get-done",
+          "details": {
+            "t": 77654,
+            "rendererT": 20958,
+            "durationMs": 181
+          },
+          "harnessMs": 78090
+        },
+        {
+          "event": "renderer-hydrate-persisted-ui-done",
+          "details": {
+            "t": 77669,
+            "rendererT": 20973,
+            "durationMs": 13
+          },
+          "harnessMs": 78106.5
+        },
+        {
+          "event": "renderer-list-runtime-session-hosts-done",
+          "details": {
+            "t": 77808,
+            "rendererT": 21113,
+            "durationMs": 139
+          },
+          "harnessMs": 78244
+        },
+        {
+          "event": "renderer-fetch-repos-local-done",
+          "details": {
+            "t": 77904,
+            "rendererT": 21208,
+            "durationMs": 230
+          },
+          "harnessMs": 78339.4
+        },
+        {
+          "event": "renderer-repo-catalog-settlement-done",
+          "details": {
+            "t": 77904,
+            "rendererT": 21208,
+            "durationMs": 0
+          },
+          "harnessMs": 78339.6
+        },
+        {
+          "event": "renderer-fetch-project-groups-local-done",
+          "details": {
+            "t": 77911,
+            "rendererT": 21215,
+            "durationMs": 7
+          },
+          "harnessMs": 78346.7
+        },
+        {
+          "event": "renderer-session-get-done",
+          "details": {
+            "t": 77917,
+            "rendererT": 21219,
+            "durationMs": 10
+          },
+          "harnessMs": 78352.9
+        },
+        {
+          "event": "renderer-fetch-folder-workspaces-local-done",
+          "details": {
+            "t": 77925,
+            "rendererT": 21230,
+            "durationMs": 14
+          },
+          "harnessMs": 78361.3
+        },
+        {
+          "event": "renderer-git-environment-barrier-await-done",
+          "details": {
+            "t": 77928,
+            "rendererT": 21231,
+            "durationMs": 8
+          },
+          "harnessMs": 78363.7
+        },
+        {
+          "event": "renderer-fetch-hydration-worktrees-done",
+          "details": {
+            "t": 77928,
+            "rendererT": 21231,
+            "durationMs": 1
+          },
+          "harnessMs": 78364
+        },
+        {
+          "event": "renderer-repo-catalog-final-settlement-done",
+          "details": {
+            "t": 77928,
+            "rendererT": 21231,
+            "durationMs": 0
+          },
+          "harnessMs": 78364.2
+        },
+        {
+          "event": "renderer-hydrate-session-stores-done",
+          "details": {
+            "t": 77949,
+            "rendererT": 21252,
+            "durationMs": 21
+          },
+          "harnessMs": 78385.3
+        },
+        {
+          "event": "event-loop-stall",
+          "details": {
+            "t": 79421,
+            "maxGapMs": 569
+          },
+          "harnessMs": 79857.5
+        },
+        {
+          "event": "daemon-current-ready",
+          "details": {
+            "t": 80740
+          },
+          "harnessMs": 81176
+        },
+        {
+          "event": "daemon-init-done",
+          "details": {
+            "t": 80919,
+            "legacyAdapters": 0
+          },
+          "harnessMs": 81358.9
+        },
+        {
+          "event": "startup-service-done",
+          "details": {
+            "t": 80921,
+            "service": "daemon-pty-provider"
+          },
+          "harnessMs": 81358.9
+        },
+        {
+          "event": "first-window-startup-services-ready",
+          "details": {
+            "t": 80927
+          },
+          "harnessMs": 81362.4
+        },
+        {
+          "event": "local-pty-startup-ready",
+          "details": {
+            "t": 80927
+          },
+          "harnessMs": 81362.6
+        },
+        {
+          "event": "renderer-prepare-terminal-startup-restoration-done",
+          "details": {
+            "t": 80934,
+            "rendererT": 24236,
+            "durationMs": 2983
+          },
+          "harnessMs": 81370.3
+        },
+        {
+          "event": "renderer-visit-timestamp-prune-done",
+          "details": {
+            "t": 80935,
+            "rendererT": 24237,
+            "durationMs": 1
+          },
+          "harnessMs": 81370.4
+        },
+        {
+          "event": "renderer-ssh-reconnect-skipped",
+          "details": {
+            "t": 80935,
+            "rendererT": 24238,
+            "connectionIds": 0
+          },
+          "harnessMs": 81371
+        },
+        {
+          "event": "renderer-fetch-browser-session-profiles-done",
+          "details": {
+            "t": 81575,
+            "rendererT": 24335,
+            "durationMs": 98
+          },
+          "harnessMs": 82010.5
+        },
+        {
+          "event": "renderer-recover-legacy-worker-terminals-pre-reconnect-done",
+          "details": {
+            "t": 81576,
+            "rendererT": 24571,
+            "durationMs": 333
+          },
+          "harnessMs": 82012.4
+        },
+        {
+          "event": "renderer-terminal-provider-snapshot-capabilities-done",
+          "details": {
+            "t": 81586,
+            "rendererT": 24573,
+            "durationMs": 1
+          },
+          "harnessMs": 82022
+        },
+        {
+          "event": "renderer-reconnect-terminals-done",
+          "details": {
+            "t": 81655,
+            "rendererT": 24598,
+            "durationMs": 25
+          },
+          "harnessMs": 82091.5
+        },
+        {
+          "event": "renderer-recover-legacy-worker-terminals-post-reconnect-done",
+          "details": {
+            "t": 81736,
+            "rendererT": 25031,
+            "durationMs": 433
+          },
+          "harnessMs": 82171.9
+        },
+        {
+          "event": "renderer-startup-hydration-done",
+          "details": {
+            "t": 81745,
+            "rendererT": 25038,
+            "durationMs": 20156
+          },
+          "harnessMs": 82180.8
+        },
+        {
+          "event": "renderer-owner-visibility-defaults-done",
+          "details": {
+            "t": 81798,
+            "rendererT": 25102,
+            "durationMs": 64
+          },
+          "harnessMs": 82233.5
+        },
+        {
+          "event": "renderer-remote-catalog-refresh-done",
+          "details": {
+            "t": 81982,
+            "rendererT": 25285,
+            "durationMs": 183
+          },
+          "harnessMs": 82422.8
+        },
+        {
+          "event": "renderer-remote-worktree-refresh-done",
+          "details": {
+            "t": 82045,
+            "rendererT": 25350,
+            "durationMs": 57
+          },
+          "harnessMs": 82481.1
+        }
+      ],
+      "phases": {
+        "startupJsonParseMs": null,
+        "startupStoreLoadMs": 10,
+        "spawnToAppReady": 55562.1,
+        "appReadyToServices": 822,
+        "servicesToI18n": 1404,
+        "i18nToOpenWindow": -855,
+        "daemonInitMs": 7666,
+        "aclGrantMs": 2708,
+        "windowCreatedToLoadStart": 47,
+        "windowCreatedToLoaded": 4014,
+        "totalToWindowCreated": 57084.3,
+        "totalToDidFinishLoad": 61097.5,
+        "didFinishLoadToWorkspaceReady": 21083,
+        "totalToWorkspaceReady": 82180.8,
+        "rendererSshReconnectMs": null,
+        "rendererStartupBarrierMs": 8,
+        "rendererReconnectTerminalsMs": 25,
+        "maxEventLoopStallMs": 35164
+      }
+    }
+  ],
+  "summaryMedianMs": {
+    "startupJsonParseMs": null,
+    "startupStoreLoadMs": 10,
+    "spawnToAppReady": 55562.1,
+    "appReadyToServices": 822,
+    "servicesToI18n": 1404,
+    "i18nToOpenWindow": -855,
+    "daemonInitMs": 7666,
+    "aclGrantMs": 2708,
+    "windowCreatedToLoadStart": 47,
+    "windowCreatedToLoaded": 4014,
+    "totalToWindowCreated": 57084.3,
+    "totalToDidFinishLoad": 61097.5,
+    "didFinishLoadToWorkspaceReady": 21083,
+    "totalToWorkspaceReady": 82180.8,
+    "rendererSshReconnectMs": null,
+    "rendererStartupBarrierMs": 8,
+    "rendererReconnectTerminalsMs": 25,
+    "maxEventLoopStallMs": 35164
+  }
+}
