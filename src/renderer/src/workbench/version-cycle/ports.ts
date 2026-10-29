@@ -3,7 +3,11 @@ import type { TaskSourceContext } from '../../../../shared/task-source-context'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { ArchivePrStatusResult } from '../../../../shared/workbench/archive-pr-status'
-import type { WorkflowArchivePr } from '../../../../shared/workbench/version-workflow'
+import type { ReleaseStatusResult } from '../../../../shared/workbench/release-status'
+import type {
+  WorkflowArchivePr,
+  WorkflowReleaseRef
+} from '../../../../shared/workbench/version-workflow'
 
 /** Native identity, not a path-derived project or a title-derived run. */
 export type CycleScope = {
@@ -78,4 +82,12 @@ export type ArchivePrScope = {
 export type ArchivePrPort = {
   /** Status of the one recorded archive PR, read on the worktree's owning runtime. */
   readStatus(scope: ArchivePrScope, pr: WorkflowArchivePr): Promise<ArchivePrStatusResult>
+}
+
+export type ReleaseStatusPort = {
+  /**
+   * Status of the recorded release tag (#462), read on the worktree's owning
+   * runtime — provider facts stay provider-computed, unreadable stays unknown.
+   */
+  readStatus(scope: ArchivePrScope, release: WorkflowReleaseRef): Promise<ReleaseStatusResult>
 }

@@ -124,12 +124,27 @@ export const sceneArchive = {
     url: 'https://github.com/forcegravity1989/builder-workbench/pull/399'
   }
 }
+// 发布读回演示数据¹(#462 修订:板面呈现发布状态)。生产口径与归档 PR 同构:
+// 材料只存发布引用(tag,由助手在会话中经人授权执行后写回,同 workflow.archivePr
+// 的「引用落材料、读数现算」),是否已发布、Release 地址、资产、时间每次经
+// provider 现算读回(参照 workbench.archive.prStatus 薄读回),读数不落材料、
+// 不造第二正本;读不回=状态未知,不猜。
 export const releaseInfo = {
-  version: 'v0.7.0',
+  tag: 'v0.7.0',
   at: '10-21 18:20',
-  commit: 'f5ac309b',
-  assets: 'orca-windows-setup.exe · blockmap · latest.yml'
+  url: 'https://github.com/forcegravity1989/builder-workbench/releases/tag/v0.7.0',
+  assets: ['orca-windows-setup.exe', 'orca-windows-setup.exe.blockmap', 'latest.yml']
 }
+// 发布读回演示切换¹:仅供评审逐态查看;生产由真实读回推导,不预置。
+// 跟随时期 = wrap(会后)已发布、其余时期未发布。
+export const RELEASE_DEMO_STATES = [
+  ['follow', '跟随时期'],
+  ['published', '已发布'],
+  ['absent', '未发布'],
+  ['missing', '引用在 · Release 查无'],
+  ['unknown', '状态未知'],
+  ['reading', '读取中']
+]
 // 演示覆盖¹:#384 已关闭,演示「已关闭 Issue 不计遗留、已存备注只读展示」。
 const issueOverrides = {
   384: { state: 'CLOSED' }

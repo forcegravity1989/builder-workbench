@@ -573,6 +573,7 @@ import {
   PackageLaunchSchema,
   PackagePipelineListSchema
 } from '../workbench/package-pipeline'
+import { ReleaseStatusRequestSchema } from '../workbench/release-status'
 import { TrunkUpdateSchema } from '../workbench/trunk-update'
 import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../workbench/version-binding'
 import {
@@ -1231,6 +1232,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.package.latest': PackageLatestSchema,
   'workbench.package.launch': PackageLaunchSchema,
   'workbench.package.list': PackagePipelineListSchema,
+  'workbench.release.status': ReleaseStatusRequestSchema,
   'workbench.trunk.update': TrunkUpdateSchema,
   'workbench.versionBinding.read': VersionBindingScopeSchema,
   'workbench.versionBinding.set': VersionBindingSetSchema,
