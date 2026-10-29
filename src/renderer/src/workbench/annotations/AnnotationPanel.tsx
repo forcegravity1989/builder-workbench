@@ -1,5 +1,6 @@
 import { ArrowUp, Check, Copy, MessageSquarePlus, Pencil, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useOptionalShortcutLabel } from '@/hooks/useShortcutLabel'
 import { BoardIconButton } from '../board-ui'
 import { PlanSendMenu } from '../plan-send-menu'
 import { boardAnnotationsSendPrompt } from './annotation-markdown'
@@ -114,6 +115,7 @@ export function AnnotationPanel({
   onSent?(): void
 }) {
   const [copied, setCopied] = useState(false)
+  const toggleShortcut = useOptionalShortcutLabel('workbench.toggleAnnotationMode')
   useEffect(() => {
     if (!copied) {
       return
@@ -139,7 +141,11 @@ export function AnnotationPanel({
           <p className="g3-muted g3-annot-empty">暂无批注</p>
         )}
       </div>
-      {annotating && <p className="g3-annot-hint">批注模式中，点击板面元素即可添加批注</p>}
+      {annotating && (
+        <p className="g3-annot-hint">
+          批注模式中，点击板面元素即可添加批注{toggleShortcut ? `（${toggleShortcut} 退出）` : ''}
+        </p>
+      )}
       <button
         type="button"
         className="g3-annot-board"

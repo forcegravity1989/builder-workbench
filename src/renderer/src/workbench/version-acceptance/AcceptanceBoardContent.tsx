@@ -15,6 +15,8 @@ import { AnnotationPopover } from '../annotations/AnnotationPopover'
 import { formatBoardAnnotationsAsMarkdown } from '../annotations/annotation-markdown'
 import { annotationRefFromElement } from '../annotations/types'
 import { useBoardAnnotations } from '../annotations/use-board-annotations'
+import { useAnnotationModeShortcut } from '../annotations/use-annotation-mode-shortcut'
+import { useOptionalShortcutLabel } from '@/hooks/useShortcutLabel'
 import { AcceptanceNotices } from './AcceptanceNotices'
 import { AcceptanceArchiveCard } from './AcceptanceArchiveCard'
 import { AcceptanceEmptyBoard } from './AcceptanceEmptyBoard'
@@ -60,6 +62,10 @@ export function AcceptanceBoardContent({
     context.version
   ])
   const annotations = useBoardAnnotations(boardIdentity)
+  const annotateShortcut = useOptionalShortcutLabel('workbench.toggleAnnotationMode')
+  // Why: same gate as the header entry button below — the chord must not exist
+  // on surfaces where the button does not render (empty board, no fixed plan).
+  useAnnotationModeShortcut(Boolean(plan && document), annotations.toggleMode)
   const [notice, setNotice] = useState('')
   // 注入动作走共用发送弹窗(与计划屏同一件);assistant 只改用户可见文案里的 AI 角色名。
   // 取代原 use-acceptance-action-send:那个钩子只开侧边栏 target mode、从不渲染选择器,
@@ -254,8 +260,8 @@ export function AcceptanceBoardContent({
               aria-pressed={annotations.annotating}
               title={
                 annotations.annotating
-                  ? '退出批注模式（Esc 同样退出）'
-                  : '批注模式：点击目标行、验收标准或 Issue 行记录验收意见'
+                  ? `退出批注模式${annotateShortcut ? `（${annotateShortcut}）` : ''}`
+                  : `批注模式：点击目标行、验收标准或 Issue 行记录验收意见${annotateShortcut ? `（${annotateShortcut} 进入）` : ''}`
               }
               onClick={annotations.toggleMode}
             >
@@ -287,8 +293,8 @@ export function AcceptanceBoardContent({
         <AcceptanceJourneyNav active={spy.activeSection} onNavigate={spy.navigate} />
         {annotations.annotating && (
           <div className="acc-annotate-banner" role="status">
-            批注模式：点击目标、验收标准或 Issue 行，在对象旁的小窗记录意见 · Esc
-            先关小窗，再按一次退出
+            批注模式：点击目标、验收标准或 Issue 行，在对象旁的小窗记录意见
+            {annotateShortcut ? ` · ${annotateShortcut} 退出` : ''}
           </div>
         )}
         <div
