@@ -29,25 +29,32 @@ export function MilestoneNavigation({
   useEffect(() => {
     const element = scroll.current
     const point = element?.querySelector<HTMLElement>(`[data-month="${month}"]`)
-    if (element && point)
+    if (element && point) {
       element.scrollLeft = Math.max(
         0,
         point.offsetLeft - element.clientWidth / 2 + point.clientWidth / 2
       )
+    }
   }, [keys, month])
-  if (!months.length) return null
+  if (!months.length) {
+    return null
+  }
   return (
     <nav
       ref={scroll}
       className="wb-ml-roadmap-scroll"
       aria-label="月度里程碑时间轴"
       onPointerDown={(e) => {
-        if (e.button !== 0 || (e.target as HTMLElement).closest('button,input')) return
+        if (e.button !== 0 || (e.target as HTMLElement).closest('button,input')) {
+          return
+        }
         pan.current = { x: e.clientX, left: e.currentTarget.scrollLeft }
         e.currentTarget.setPointerCapture(e.pointerId)
       }}
       onPointerMove={(e) => {
-        if (pan.current) e.currentTarget.scrollLeft = pan.current.left + pan.current.x - e.clientX
+        if (pan.current) {
+          e.currentTarget.scrollLeft = pan.current.left + pan.current.x - e.clientX
+        }
       }}
       onPointerUp={() => {
         pan.current = null
@@ -79,7 +86,9 @@ export function MilestoneNavigation({
                 onChange={(outcome) =>
                   editField((d) => {
                     const existing = d.material.months.some((item) => item.month === m.month)
-                    if (!existing && !outcome) return d
+                    if (!existing && !outcome) {
+                      return d
+                    }
                     return {
                       ...d,
                       material: {

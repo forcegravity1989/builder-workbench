@@ -1,9 +1,10 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Diamond, ExternalLink, GripVertical, Plus, X } from 'lucide-react'
+import { GripVertical, Plus, X } from 'lucide-react'
 import { MilestoneField } from './milestone-field'
 import { MilestoneIconButton } from './milestone-icon-button'
 import { MilestoneVersionRow } from './milestone-version-row'
+import { MilestoneDeliveryNode } from './milestone-delivery-node'
 import {
   reorderMilestoneFeature,
   type MilestoneDraft,
@@ -15,7 +16,6 @@ import {
   milestoneCalendar,
   milestoneDay,
   milestoneToday,
-  milestoneTargetAt,
   milestoneTargets,
   targetWindow,
   materializeMilestoneWeek,
@@ -54,18 +54,16 @@ export function MilestoneTimeline(props: Props) {
   const canvasWidth = (end - origin + 1) * width
   const viewport = useRef<HTMLDivElement>(null)
   const draggedRow = useRef<{ id: string; y: number; moved: boolean } | null>(null)
-  const pointer = useRef<{ start: number; moved: boolean; target: MilestoneTarget | null } | null>(
-    null
-  )
   const pan = useRef<{ x: number; left: number } | null>(null)
-  const ignoreClick = useRef(false)
   const [hover, setHover] = useState<{ key: string; target: MilestoneTarget | null } | null>(null)
   const [rowDrop, setRowDrop] = useState<{ id: string; side: 'before' | 'after' } | null>(null)
   const initial = useRef({ x: props.scrollX, y: props.scrollY, month: latestMilestoneMonth(draft) })
   const previousOrigin = useRef<number | null>(null)
   useLayoutEffect(() => {
     const el = viewport.current
-    if (!el) return
+    if (!el) {
+      return
+    }
     if (previousOrigin.current === null) {
       el.scrollLeft =
         initial.current.x ??
@@ -88,17 +86,23 @@ export function MilestoneTimeline(props: Props) {
     const row =
       props.newFeature &&
       el?.querySelector<HTMLElement>(`[data-milestone-feature="${CSS.escape(props.newFeature)}"]`)
-    if (el && row) el.scrollTop = Math.max(0, row.offsetTop - el.clientHeight + row.clientHeight)
+    if (el && row) {
+      el.scrollTop = Math.max(0, row.offsetTop - el.clientHeight + row.clientHeight)
+    }
   }, [props.newFeature])
 
   function move(id: string, kind: 'pre' | 'release', target: MilestoneTarget) {
-    if (!enabled) return
+    if (!enabled) {
+      return
+    }
     const used =
       'week' in target
         ? materializeMilestoneWeek(draft, target.week, crypto.randomUUID())
         : { draft, version: target.version }
     const feature = used.draft.material.features.find((f) => f.id === id)
-    if (!feature) return
+    if (!feature) {
+      return
+    }
     const locate = (ref: MilestoneFeature['pre']) =>
       used.draft.versions.find((v) => v.cycleId === ref?.cycleId && v.version === ref.version)
     const pre = kind === 'pre' ? used.version : locate(feature.pre)
@@ -121,12 +125,21 @@ export function MilestoneTimeline(props: Props) {
   function rowTarget(x: number, y: number) {
     const row = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-milestone-feature]')
     const id = row?.dataset.milestoneFeature
-    if (!row || !id || !viewport.current?.contains(row)) return null
+    if (!row || !id || !viewport.current?.contains(row)) {
+      return null
+    }
     const bounds = row.getBoundingClientRect()
     return {
       id,
       side: y > bounds.top + bounds.height / 2 ? ('after' as const) : ('before' as const)
     }
+  }
+  const stopPan = () => {
+    pan.current = null
+  }
+  const stopOrdering = () => {
+    draggedRow.current = null
+    setRowDrop(null)
   }
   const today = milestoneDay(milestoneToday())
   return (
@@ -136,23 +149,23 @@ export function MilestoneTimeline(props: Props) {
       aria-label="特性交付泳道"
       onScroll={(e) => props.onScroll(e.currentTarget.scrollLeft, e.currentTarget.scrollTop)}
       onPointerDown={(e) => {
-        if (e.button !== 0 || (e.target as HTMLElement).closest('button,input,[data-ml-stop-pan]'))
+        if (
+          e.button !== 0 ||
+          (e.target as HTMLElement).closest('button,input,[data-ml-stop-pan]')
+        ) {
           return
+        }
         pan.current = { x: e.clientX, left: e.currentTarget.scrollLeft }
         e.currentTarget.setPointerCapture(e.pointerId)
       }}
       onPointerMove={(e) => {
-        if (pan.current) e.currentTarget.scrollLeft = pan.current.left + pan.current.x - e.clientX
+        if (pan.current) {
+          e.currentTarget.scrollLeft = pan.current.left + pan.current.x - e.clientX
+        }
       }}
-      onPointerUp={() => {
-        pan.current = null
-      }}
-      onPointerCancel={() => {
-        pan.current = null
-      }}
-      onLostPointerCapture={() => {
-        pan.current = null
-      }}
+      onPointerUp={stopPan}
+      onPointerCancel={stopPan}
+      onLostPointerCapture={stopPan}
     >
       <div className="wb-ml-canvas" style={{ width: canvasWidth + labelWidth }}>
         <MilestoneVersionRow
@@ -191,7 +204,9 @@ export function MilestoneTimeline(props: Props) {
                     label={`排序 ${f.title || '新特性'}`}
                     title="拖动排序；Alt + 上下键"
                     onPointerDown={(e) => {
-                      if (e.button !== 0) return
+                      if (e.button !== 0) {
+                        return
+                      }
                       e.preventDefault()
                       e.currentTarget.focus({ preventScroll: true })
                       draggedRow.current = { id: f.id, y: e.clientY, moved: false }
@@ -201,11 +216,17 @@ export function MilestoneTimeline(props: Props) {
                     onPointerMove={(e) => {
                       const drag = draggedRow.current
                       const el = viewport.current
-                      if (!drag || !el || (!drag.moved && Math.abs(e.clientY - drag.y) < 5)) return
+                      if (!drag || !el || (!drag.moved && Math.abs(e.clientY - drag.y) < 5)) {
+                        return
+                      }
                       drag.moved = true
                       const bounds = el.getBoundingClientRect()
-                      if (e.clientY > bounds.bottom - 30) el.scrollTop += 14
-                      if (e.clientY < bounds.top + 86) el.scrollTop -= 14
+                      if (e.clientY > bounds.bottom - 30) {
+                        el.scrollTop += 14
+                      }
+                      if (e.clientY < bounds.top + 86) {
+                        el.scrollTop -= 14
+                      }
                       const target = rowTarget(e.clientX, e.clientY)
                       setRowDrop(target?.id === drag.id ? null : target)
                     }}
@@ -214,7 +235,9 @@ export function MilestoneTimeline(props: Props) {
                       draggedRow.current = null
                       setRowDrop(null)
                       const target = rowTarget(e.clientX, e.clientY)
-                      if (!enabled || !drag?.moved || !target) return
+                      if (!enabled || !drag?.moved || !target) {
+                        return
+                      }
                       edit((d) => ({
                         ...d,
                         material: {
@@ -228,14 +251,8 @@ export function MilestoneTimeline(props: Props) {
                         }
                       }))
                     }}
-                    onPointerCancel={() => {
-                      draggedRow.current = null
-                      setRowDrop(null)
-                    }}
-                    onLostPointerCapture={() => {
-                      draggedRow.current = null
-                      setRowDrop(null)
-                    }}
+                    onPointerCancel={stopOrdering}
+                    onLostPointerCapture={stopOrdering}
                     onKeyDown={(e) => {
                       const next = features[row + (e.key === 'ArrowUp' ? -1 : 1)]
                       if (enabled && e.altKey && ['ArrowUp', 'ArrowDown'].includes(e.key) && next) {
@@ -325,96 +342,27 @@ export function MilestoneTimeline(props: Props) {
                       : version?.version
                   const left = window ? center(window) - 69 : 6
                   return (
-                    <button
+                    <MilestoneDeliveryNode
                       key={kind}
-                      className={`wb-ml-node ${kind}${active ? ' moving' : ''}`}
-                      style={{ left, top: stacked ? (kind === 'pre' ? 10 : 54) : 26 }}
-                      title={editing ? '拖到版本时间窗口；Shift + 左右键移动' : '进入对应版本'}
-                      onPointerDown={(e) => {
-                        ignoreClick.current = false
-                        if (!enabled || e.button !== 0) return
-                        pointer.current = { start: e.clientX, moved: false, target: null }
-                        e.currentTarget.setPointerCapture(e.pointerId)
-                      }}
-                      onPointerMove={(e) => {
-                        const drag = pointer.current,
-                          el = viewport.current
-                        if (!drag || !el || (Math.abs(e.clientX - drag.start) < 5 && !drag.moved))
-                          return
-                        drag.moved = true
-                        const bounds = el.getBoundingClientRect()
-                        if (e.clientX > bounds.right - 45) el.scrollLeft += 18
-                        if (e.clientX < bounds.left + labelWidth + 35) el.scrollLeft -= 18
-                        const date = Math.max(
-                          origin,
-                          Math.min(
-                            end,
-                            origin + (e.clientX - bounds.left + el.scrollLeft - labelWidth) / width
-                          )
-                        )
-                        drag.target = milestoneTargetAt(draft, date)
-                        setHover({ key: `${f.id}:${kind}`, target: drag.target })
-                      }}
-                      onPointerUp={() => {
-                        const drag = pointer.current
-                        pointer.current = null
-                        setHover(null)
-                        if (drag?.moved) {
-                          ignoreClick.current = true
-                          if (drag.target) move(f.id, kind, drag.target)
-                        }
-                      }}
-                      onPointerCancel={() => {
-                        pointer.current = null
-                        setHover(null)
-                        ignoreClick.current = true
-                      }}
-                      onLostPointerCapture={() => {
-                        pointer.current = null
-                        setHover(null)
-                      }}
-                      onKeyDown={(e) => {
-                        if (!enabled || !e.shiftKey || !['ArrowLeft', 'ArrowRight'].includes(e.key))
-                          return
-                        e.preventDefault()
-                        const at = targets.findIndex(
-                          (t) => 'version' in t && t.version.cycleId === version?.cycleId
-                        )
-                        const next =
-                          targets[
-                            Math.max(
-                              0,
-                              Math.min(targets.length - 1, at + (e.key === 'ArrowLeft' ? -1 : 1))
-                            )
-                          ]
-                        if (next) move(f.id, kind, next)
-                      }}
-                      onClick={() => {
-                        if (ignoreClick.current) {
-                          ignoreClick.current = false
-                          return
-                        }
-                        if (version) props.open(version, f)
-                        else if (enabled)
-                          move(
-                            f.id,
-                            kind,
-                            milestoneTargetAt(
-                              draft,
-                              milestoneDay(`${latestMilestoneMonth(draft)}-01`)
-                            )
-                          )
-                      }}
-                    >
-                      <strong>
-                        <span>
-                          <Diamond size={8} />
-                          {kind === 'pre' ? 'Pre版本' : 'Release版本'}
-                        </span>
-                        {version && <ExternalLink size={12} />}
-                      </strong>
-                      <small>{name ?? (f[kind] ? '对应版本缺少排期' : '安排版本')}</small>
-                    </button>
+                      kind={kind}
+                      version={version}
+                      name={name ?? (f[kind] ? '对应版本缺少排期' : '安排版本')}
+                      active={active}
+                      left={left}
+                      top={stacked ? (kind === 'pre' ? 10 : 54) : 26}
+                      enabled={enabled}
+                      editing={editing}
+                      draft={draft}
+                      origin={origin}
+                      end={end}
+                      targets={targets}
+                      viewport={viewport}
+                      hover={(target) =>
+                        setHover(target ? { key: `${f.id}:${kind}`, target } : null)
+                      }
+                      move={(target) => move(f.id, kind, target)}
+                      open={() => version && props.open(version, f)}
+                    />
                   )
                 })}
               </div>

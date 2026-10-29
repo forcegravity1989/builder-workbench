@@ -49,7 +49,9 @@ export function milestoneCalendar(draft: MilestoneDraft, today = milestoneToday(
   const last =
     Math.max(monthDay(focus, 2) - 1, ...versions.map((v) => milestoneDay(v.timeWindow!.end))) + 7
   const weeks: MilestoneWeek[] = []
-  for (let day = start; day <= last; day += 7) weeks.push(milestoneWeekAt(day))
+  for (let day = start; day <= last; day += 7) {
+    weeks.push(milestoneWeekAt(day))
+  }
   return { start, end: start + weeks.length * 7 - 1, weeks, versions }
 }
 export function versionInMilestoneWeek(draft: MilestoneDraft, week: MilestoneWeek) {
@@ -82,7 +84,9 @@ export function materializeMilestoneWeek(
   name?: string
 ) {
   const existing = versionInMilestoneWeek(draft, week)
-  if (existing) return { draft, version: existing }
+  if (existing) {
+    return { draft, version: existing }
+  }
   let version = name?.trim()
   if (!version) {
     const last = datedMilestoneVersions(draft).at(-1)?.version ?? draft.versions.at(-1)?.version

@@ -130,7 +130,9 @@ export function ProjectMilestones({
     }))
   }
   function registerWeek(week: MilestoneWeek, name: string) {
-    if (!enabled) return
+    if (!enabled) {
+      return
+    }
     if (state!.draft.versions.some((v) => v.version.toLowerCase() === name.toLowerCase())) {
       toast('版本名称已存在')
       return
@@ -143,15 +145,17 @@ export function ProjectMilestones({
     edit(() => next.draft)
   }
   function addFeature() {
-    if (!enabled) return
+    if (!enabled) {
+      return
+    }
     const today = milestoneToday()
     const focus = latestMilestoneMonth(state!.draft, today)
     const firstVersion = datedMilestoneVersions(state!.draft).find(
       (v) => v.timeWindow!.start.slice(0, 7) === focus
     )
     let date =
-      focus === today.slice(0, 7) ? today : (firstVersion?.timeWindow!.start ?? focus + '-01')
-    if (focus !== today.slice(0, 7) && milestoneWeekAt(milestoneDay(date)).end < focus + '-01') {
+      focus === today.slice(0, 7) ? today : (firstVersion?.timeWindow!.start ?? `${focus}-01`)
+    if (focus !== today.slice(0, 7) && milestoneWeekAt(milestoneDay(date)).end < `${focus}-01`) {
       date = new Date((milestoneDay(milestoneWeekAt(milestoneDay(date)).start) + 7) * 86400000)
         .toISOString()
         .slice(0, 10)
@@ -340,7 +344,7 @@ export function ProjectMilestones({
             month={month}
             editing={editing}
             enabled={enabled}
-            navigate={(value) => navigate(value + '-01')}
+            navigate={(value) => navigate(`${value}-01`)}
             editField={model.editField}
           />
           <div className="wb-ml-toolbar">

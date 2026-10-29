@@ -30,12 +30,18 @@ function WeekName({
       }}
       onChange={(e) => setValue(e.target.value)}
       onBlur={() => {
-        if (!cancelled.current && value.trim()) commit(value.trim())
+        if (!cancelled.current && value.trim()) {
+          commit(value.trim())
+        }
         setValue('')
       }}
       onKeyDown={(e) => {
-        if (e.nativeEvent.isComposing || e.keyCode === 229) return
-        if (e.key === 'Enter') e.currentTarget.blur()
+        if (e.nativeEvent.isComposing || e.keyCode === 229) {
+          return
+        }
+        if (e.key === 'Enter') {
+          e.currentTarget.blur()
+        }
         if (e.key === 'Escape') {
           cancelled.current = true
           setValue('')
