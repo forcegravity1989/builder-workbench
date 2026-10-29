@@ -78,11 +78,16 @@ export function getWorktreeCardModeProperties(mode: WorktreeCardMode): WorktreeC
 }
 
 export function getWorktreeCardModeUpdates(mode: WorktreeCardMode): {
-  settings: Pick<GlobalSettings, 'compactWorktreeCards'>
+  settings: Pick<GlobalSettings, 'compactWorktreeCards' | 'experimentalNewWorktreeCardStyle'>
   ui: Pick<PersistedUIState, 'worktreeCardProperties' | '_worktreeCardModeDefaulted'>
 } {
   return {
-    settings: { compactWorktreeCards: mode === 'Compact' },
+    // Why: the experimental card ignores Compact/Detailed; explicitly choosing
+    // a layout must also select the renderer that implements it.
+    settings: {
+      compactWorktreeCards: mode === 'Compact',
+      experimentalNewWorktreeCardStyle: false
+    },
     ui: {
       worktreeCardProperties: getWorktreeCardModeProperties(mode),
       _worktreeCardModeDefaulted: true

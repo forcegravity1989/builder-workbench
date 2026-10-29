@@ -55,13 +55,18 @@ describe('worktree card properties', () => {
   })
 
   it('returns combined mode update payloads', () => {
-    expect(getWorktreeCardModeUpdates('Compact')).toEqual({
-      settings: { compactWorktreeCards: true },
-      ui: {
-        worktreeCardProperties: getWorktreeCardModeProperties('Compact'),
-        _worktreeCardModeDefaulted: true
-      }
-    })
+    for (const mode of ['Compact', 'Default'] as const) {
+      expect(getWorktreeCardModeUpdates(mode)).toEqual({
+        settings: {
+          compactWorktreeCards: mode === 'Compact',
+          experimentalNewWorktreeCardStyle: false
+        },
+        ui: {
+          worktreeCardProperties: getWorktreeCardModeProperties(mode),
+          _worktreeCardModeDefaulted: true
+        }
+      })
+    }
   })
 
   it('recognizes only exact defaulted Compact presets', () => {

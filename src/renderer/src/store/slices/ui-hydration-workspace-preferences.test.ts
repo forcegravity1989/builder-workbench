@@ -723,15 +723,21 @@ describe('createUISlice hydratePersistedUI', () => {
     expect(setUI).toHaveBeenCalledWith({ taskResumeState: expected })
   })
 
-  it('sets Default worktree card mode with matching settings and UI writes', () => {
+  it('sets Default worktree card mode with matching settings and UI writes', async () => {
     const setUI = vi.fn().mockResolvedValue(undefined)
-    const setSettings = vi.fn().mockResolvedValue({ compactWorktreeCards: false })
+    const setSettings = vi.fn().mockResolvedValue({
+      compactWorktreeCards: false,
+      experimentalNewWorktreeCardStyle: false
+    })
     vi.stubGlobal('window', {
       api: { ui: { set: setUI }, settings: { set: setSettings } }
     })
     const store = createUIStore()
     store.setState({
-      settings: { compactWorktreeCards: true } as AppState['settings'],
+      settings: {
+        compactWorktreeCards: true,
+        experimentalNewWorktreeCardStyle: true
+      } as AppState['settings'],
       worktreeCardProperties: ['status', 'branch']
     })
 
@@ -739,23 +745,35 @@ describe('createUISlice hydratePersistedUI', () => {
 
     const expected = getWorktreeCardModeProperties('Default')
     expect(store.getState().settings?.compactWorktreeCards).toBe(false)
+    expect(store.getState().settings?.experimentalNewWorktreeCardStyle).toBe(false)
     expect(store.getState().worktreeCardProperties).toEqual(expected)
-    expect(setSettings).toHaveBeenCalledWith({ compactWorktreeCards: false })
+    expect(setSettings).toHaveBeenCalledWith({
+      compactWorktreeCards: false,
+      experimentalNewWorktreeCardStyle: false
+    })
     expect(setUI).toHaveBeenCalledWith({
       worktreeCardProperties: expected,
       _worktreeCardModeDefaulted: true
     })
+    await Promise.resolve()
+    expect(store.getState().settings?.experimentalNewWorktreeCardStyle).toBe(false)
   })
 
-  it('sets Compact worktree card mode and removes migrated branch', () => {
+  it('sets Compact worktree card mode and removes migrated branch', async () => {
     const setUI = vi.fn().mockResolvedValue(undefined)
-    const setSettings = vi.fn().mockResolvedValue({ compactWorktreeCards: true })
+    const setSettings = vi.fn().mockResolvedValue({
+      compactWorktreeCards: true,
+      experimentalNewWorktreeCardStyle: false
+    })
     vi.stubGlobal('window', {
       api: { ui: { set: setUI }, settings: { set: setSettings } }
     })
     const store = createUIStore()
     store.setState({
-      settings: { compactWorktreeCards: false } as AppState['settings'],
+      settings: {
+        compactWorktreeCards: false,
+        experimentalNewWorktreeCardStyle: true
+      } as AppState['settings'],
       worktreeCardProperties: ['status', 'branch', 'inline-agents']
     })
 
@@ -763,14 +781,20 @@ describe('createUISlice hydratePersistedUI', () => {
 
     const expected = getWorktreeCardModeProperties('Compact')
     expect(store.getState().settings?.compactWorktreeCards).toBe(true)
+    expect(store.getState().settings?.experimentalNewWorktreeCardStyle).toBe(false)
     expect(store.getState().worktreeCardProperties).toEqual(expected)
     expect(store.getState().worktreeCardProperties).not.toContain('branch')
     expect(store.getState().worktreeCardProperties).not.toContain('inline-agents')
-    expect(setSettings).toHaveBeenCalledWith({ compactWorktreeCards: true })
+    expect(setSettings).toHaveBeenCalledWith({
+      compactWorktreeCards: true,
+      experimentalNewWorktreeCardStyle: false
+    })
     expect(setUI).toHaveBeenCalledWith({
       worktreeCardProperties: expected,
       _worktreeCardModeDefaulted: true
     })
+    await Promise.resolve()
+    expect(store.getState().settings?.experimentalNewWorktreeCardStyle).toBe(false)
   })
 
   it('sets custom worktree card properties', () => {
