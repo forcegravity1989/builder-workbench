@@ -4,6 +4,7 @@ import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { MilestoneHistoryActions } from './milestone-history-actions'
 import {
+  ScheduledVersionSchema,
   milestoneDraft,
   milestoneProblems,
   type MilestoneFeature,
@@ -22,7 +23,6 @@ import {
   datedMilestoneVersions,
   type MilestoneWeek
 } from '../../../shared/workbench/milestone-calendar'
-import { ScheduledVersionSchema } from '../../../shared/workbench/project-milestones'
 import { MilestoneNavigation } from './milestone-navigation'
 import { MilestoneReviewButton } from './milestone-review-button'
 import { describeMilestoneChanges } from './milestone-change-summary'
