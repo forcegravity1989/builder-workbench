@@ -1,11 +1,20 @@
 import { codehubApi } from '@/lib/codehub-api'
-import { lookupGitHubWorkItemDetailsForSource } from '@/lib/github-work-item-source-lookup'
+import {
+  lookupGitHubWorkItemDetailsForSource,
+  lookupGitHubWorkItemForSource
+} from '@/lib/github-work-item-source-lookup'
 import { nativeTaskPortDeps } from '../native-task-port'
 import { resolveReferenceRepo } from '../task-reference-repo'
 import { findVersionTaskWorktrees } from '../scoped-task-workspace'
 import type { VersionCatalogState } from '../use-version-catalog'
 import type { CycleTaskSnapshot } from '../version-cycle/ports'
-import { taskKey, linkedPullNumbers, type FeatureData, type FeaturePull } from './feature-model'
+import {
+  taskKey,
+  linkedPullNumbers,
+  validTime,
+  type FeatureData,
+  type FeaturePull
+} from './feature-model'
 
 const problemText = (e: unknown) => (e instanceof Error ? e.message : String(e))
 export async function mapLimit<T, R>(items: T[], run: (item: T) => Promise<R>): Promise<R[]> {
@@ -26,7 +35,8 @@ export async function readFeatureEvidence(
   root: CycleTaskSnapshot,
   associated: CycleTaskSnapshot[],
   catalog: VersionCatalogState,
-  versions: string[]
+  versions: string[],
+  before?: string
 ) {
   const feature: Pick<FeatureData, 'body' | 'createdAt' | 'pulls' | 'problems'> = {
     body: '',
@@ -120,6 +130,23 @@ export async function readFeatureEvidence(
       try {
         const readAt = new Date().toISOString()
         if (ref.provider === 'github') {
+          // Historical views must not load later PR files, comments and checks.
+          if (before) {
+            const item = await lookupGitHubWorkItemForSource({
+              repoPath: repo.path,
+              repoId: repo.id,
+              sourceContext: root.source,
+              number,
+              type: 'pr'
+            })
+            if (
+              item &&
+              validTime(item.createdAt) &&
+              Date.parse(item.createdAt) > Date.parse(before)
+            ) {
+              return null
+            }
+          }
           const detail = await lookupGitHubWorkItemDetailsForSource({
             repoPath: repo.path,
             repoId: repo.id,

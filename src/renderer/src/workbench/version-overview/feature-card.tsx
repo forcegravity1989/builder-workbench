@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, ExternalLink, GitPullRequest, MessagesSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -49,11 +49,26 @@ export function FeatureCard({
   const activity = workActivityTimes()
   const [expanded, setExpanded] = useState(true)
   const [selected, setSelected] = useState<FeatureEvent[] | null>(null)
+  const axisRef = useRef<HTMLDivElement>(null)
+  const [axisWidth, setAxisWidth] = useState(760)
+  useEffect(() => {
+    const element = axisRef.current
+    if (!element) {
+      return
+    }
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) {
+        setAxisWidth(Math.max(560, entry.contentRect.width))
+      }
+    })
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [expanded, feature.events.length])
   const events = [...feature.events].sort(
     (a, b) => Date.parse(a.at) - Date.parse(b.at) || a.id.localeCompare(b.id)
   )
   const range = timelineRange(events)
-  const width = Math.max(760, events.length * 110)
+  const width = axisWidth
   const placements = timelineClusters(events, width)
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
   return (
@@ -101,6 +116,7 @@ export function FeatureCard({
           {range ? (
             <div
               className="bwo-axis-scroll"
+              ref={axisRef}
               tabIndex={0}
               role="region"
               aria-label={`${feature.root.title}成果时间轴，可横向滚动`}

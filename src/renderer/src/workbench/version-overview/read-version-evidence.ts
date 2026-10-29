@@ -31,7 +31,13 @@ export async function readVersionEvidence(
         if (entry.material.plan) {
           const fixed = await history.readPlan({
             scope,
-            planRef: { kind: 'committed', version: entry.version, ...entry.material.plan }
+            planRef: {
+              kind: 'committed',
+              version: entry.version,
+              cycleId: entry.material.plan.cycleId,
+              sourceCommit: entry.material.plan.sourceCommit,
+              revision: entry.material.plan.revision
+            }
           })
           plans.push({
             version: entry.version,

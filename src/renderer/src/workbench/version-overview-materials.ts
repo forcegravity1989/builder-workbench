@@ -36,7 +36,18 @@ const loading = (): VersionOverviewMaterials => ({
   acceptance: { kind: 'loading' },
   prStatuses: { plan: null, acceptance: null }
 })
-const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
+const message = (error: unknown) => {
+  const raw = error instanceof Error ? error.message : String(error)
+  try {
+    const issues = JSON.parse(raw)
+    if (Array.isArray(issues) && issues.some((issue) => typeof issue?.code === 'string')) {
+      return '材料结构无效，请通过对应计划或验收入口核对来源。'
+    }
+  } catch {
+    // Non-schema failures retain the native source's explanation.
+  }
+  return raw
+}
 
 /** Formal acceptance pins the plan. A draft is read only when no formal plan exists. */
 export function useVersionOverviewMaterials({
@@ -160,7 +171,13 @@ export function useVersionOverviewMaterials({
           result.acceptance.kind === 'ready' && result.acceptance.source === 'committed'
             ? result.acceptance.document.planRef
             : planRef
-              ? { kind: 'committed' as const, version, ...planRef }
+              ? {
+                  kind: 'committed' as const,
+                  version,
+                  cycleId: planRef.cycleId,
+                  sourceCommit: planRef.sourceCommit,
+                  revision: planRef.revision
+                }
               : null
         if (fixed) {
           const read = await history.readPlan({ scope, planRef: fixed })

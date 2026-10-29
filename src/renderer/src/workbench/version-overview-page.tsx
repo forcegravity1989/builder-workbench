@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CalendarDays, ClipboardCheck, ListTodo, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import { useVersionCatalogForRepo } from './use-version-catalog'
 import { useVersionOverviewMaterials } from './version-overview-materials'
@@ -24,6 +25,19 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
   const { plan, acceptance } = materials
   const planDocument = plan.kind === 'ready' ? plan.document : null
   const acceptanceDocument = acceptance.kind === 'ready' ? acceptance.document : null
+  const planUnstarted =
+    plan.kind === 'missing' ||
+    Boolean(
+      plan.kind === 'ready' &&
+      plan.source === 'draft' &&
+      planDocument &&
+      !planDocument.goals.length &&
+      !planDocument.tasks.length &&
+      !planDocument.workflow &&
+      !planDocument.minutes &&
+      !planDocument.summary.progress.trim() &&
+      !planDocument.summary.risks.trim()
+    )
   const entry = catalog.catalog?.entries.find((e) => e.version === version) ?? null
   const features = useOverviewFeatures({
     catalog,
@@ -56,9 +70,9 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
         ? '读取中'
         : acceptance.kind === 'ready' && acceptance.source === 'committed'
           ? '已有正式验收'
-          : plan.kind === 'missing'
+          : planUnstarted
             ? '计划未制定'
-            : plan.source === 'draft'
+            : plan.kind === 'ready' && plan.source === 'draft'
               ? '计划草稿'
               : '版本中'
   const refresh = () => {
@@ -74,42 +88,26 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
         <h1>{version} 版本总览</h1>
         <span className="bwo-badge">{status}</span>
         <div className="ml-auto flex gap-1">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            title="版本计划"
-            aria-label="版本计划"
-            onClick={() => workflow('plan')}
-          >
-            <CalendarDays />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            title="版本任务"
-            aria-label="版本任务"
-            onClick={() => tasks()}
-          >
-            <ListTodo />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            title="版本验收"
-            aria-label="版本验收"
-            onClick={() => workflow('acceptance')}
-          >
-            <ClipboardCheck />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            title="刷新来源"
-            aria-label="刷新来源"
-            onClick={refresh}
-          >
-            <RefreshCw className={features.loading || catalog.loading ? 'animate-spin' : ''} />
-          </Button>
+          {[
+            { label: '版本计划', Icon: CalendarDays, action: () => workflow('plan') },
+            { label: '版本任务', Icon: ListTodo, action: () => tasks() },
+            { label: '版本验收', Icon: ClipboardCheck, action: () => workflow('acceptance') },
+            {
+              label: '刷新来源',
+              Icon: RefreshCw,
+              action: refresh,
+              busy: features.loading || catalog.loading
+            }
+          ].map(({ label, Icon, action, busy }) => (
+            <Tooltip key={label}>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label={label} onClick={action}>
+                  <Icon className={busy ? 'animate-spin' : undefined} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{label}</TooltipContent>
+            </Tooltip>
+          ))}
         </div>
       </header>
       <div className="bwo-meta">
@@ -148,7 +146,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
           正在读取版本材料…
         </p>
       )}
-      {plan.kind === 'missing' && (
+      {planUnstarted && (
         <div className="bwo-empty">
           <h2>先明确这一版要交付什么</h2>
           <Button onClick={() => workflow('plan')}>开始制定版本计划</Button>

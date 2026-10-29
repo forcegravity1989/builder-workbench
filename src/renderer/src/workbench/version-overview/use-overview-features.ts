@@ -163,9 +163,13 @@ export function useOverviewFeatures(args: {
             )
           Object.assign(
             feature,
-            await readFeatureEvidence(root, associated, catalog, [
-              ...new Set([version, ...feature.versions.map((item) => item.version)])
-            ])
+            await readFeatureEvidence(
+              root,
+              associated,
+              catalog,
+              [...new Set([version, ...feature.versions.map((item) => item.version)])],
+              before
+            )
           )
           const pulls = historical && !before ? [] : feature.pulls
           feature.pulls = pulls
