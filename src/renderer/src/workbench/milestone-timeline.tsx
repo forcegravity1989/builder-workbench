@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { MilestoneField } from './milestone-field'
-import { ExternalLink, GripVertical, Trash2 } from 'lucide-react'
+import { MilestoneIconButton } from './milestone-icon-button'
+import { Diamond, ExternalLink, GripVertical, Trash2 } from 'lucide-react'
 import {
   reorderMilestoneFeature,
   pickMilestoneVersion,
@@ -47,7 +48,7 @@ export function MilestoneTimeline(props: Props) {
     : Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0) / 86400000
   const canvasWidth = Math.max(600, (end - origin + 1) * width)
   const viewport = useRef<HTMLDivElement>(null)
-  const draggedRow = useRef<string | null>(null)
+  const draggedRow = useRef<{ id: string; y: number; moved: boolean } | null>(null)
   const pointer = useRef<{
     id: string
     kind: 'pre' | 'release'
@@ -148,42 +149,49 @@ export function MilestoneTimeline(props: Props) {
           </div>
         </div>
         {features.map((f, row) => (
-          <div
-            key={f.id}
-            className="wb-ml-row"
-            onDragOver={(e) => {
-              if (editing && draggedRow.current) {
-                e.preventDefault()
-              }
-            }}
-            onDrop={(e) => {
-              e.preventDefault()
-              const from = draggedRow.current
-              draggedRow.current = null
-              if (editing && from) {
-                edit((d) => ({
-                  ...d,
-                  material: {
-                    ...d.material,
-                    features: reorderMilestoneFeature(d.material.features, from, f.id)
-                  }
-                }))
-              }
-            }}
-          >
+          <div key={f.id} className="wb-ml-row" data-milestone-feature={f.id}>
             <div className="wb-ml-label wb-ml-feature">
               {editing && (
-                <button
+                <MilestoneIconButton
                   className="wb-ml-grip"
-                  aria-label={`排序 ${f.title || '新特性'}`}
+                  label={`排序 ${f.title || '新特性'}`}
                   title="拖动排序；Alt + 上下键"
-                  draggable
-                  onDragStart={(e) => {
-                    draggedRow.current = f.id
-                    e.dataTransfer.setData('text/plain', f.id)
-                    e.dataTransfer.effectAllowed = 'move'
+                  onPointerDown={(e) => {
+                    if (e.button !== 0) {
+                      return
+                    }
+                    e.preventDefault()
+                    draggedRow.current = { id: f.id, y: e.clientY, moved: false }
+                    e.currentTarget.setPointerCapture(e.pointerId)
                   }}
-                  onDragEnd={() => {
+                  onPointerMove={(e) => {
+                    const drag = draggedRow.current
+                    if (drag && Math.abs(e.clientY - drag.y) >= 5) {
+                      drag.moved = true
+                    }
+                  }}
+                  onPointerUp={(e) => {
+                    const drag = draggedRow.current
+                    draggedRow.current = null
+                    const target = document
+                      .elementFromPoint(e.clientX, e.clientY)
+                      ?.closest<HTMLElement>('[data-milestone-feature]')
+                    const to = target?.dataset.milestoneFeature
+                    if (!drag?.moved || !target || !to || !viewport.current?.contains(target)) {
+                      return
+                    }
+                    edit((d) => ({
+                      ...d,
+                      material: {
+                        ...d.material,
+                        features: reorderMilestoneFeature(d.material.features, drag.id, to)
+                      }
+                    }))
+                  }}
+                  onPointerCancel={() => {
+                    draggedRow.current = null
+                  }}
+                  onLostPointerCapture={() => {
                     draggedRow.current = null
                   }}
                   onKeyDown={(e) => {
@@ -201,7 +209,7 @@ export function MilestoneTimeline(props: Props) {
                   }}
                 >
                   <GripVertical size={15} />
-                </button>
+                </MilestoneIconButton>
               )}
               <div>
                 <MilestoneField
@@ -240,13 +248,13 @@ export function MilestoneTimeline(props: Props) {
                 </small>
               </div>
               {editing && (
-                <button
+                <MilestoneIconButton
                   className="wb-ml-remove"
-                  aria-label={`移除 ${f.title || '新特性'}`}
+                  label={`移除 ${f.title || '新特性'}`}
                   onClick={() => props.remove(f)}
                 >
                   <Trash2 size={14} />
-                </button>
+                </MilestoneIconButton>
               )}
             </div>
             <div
@@ -267,7 +275,7 @@ export function MilestoneTimeline(props: Props) {
                   <button
                     key={kind}
                     className={`wb-ml-node ${kind} ${hover?.key === `${f.id}:${kind}` ? 'moving' : ''}`}
-                    style={{ left, top: kind === 'pre' ? 12 : 66 }}
+                    style={{ left, top: kind === 'pre' ? 8 : 56 }}
                     title={editing ? '拖到版本时间窗口；Shift + 左右键移动' : '进入对应版本'}
                     onPointerDown={(e) => {
                       if (!editing || !versions.length || e.button !== 0) {
@@ -353,7 +361,10 @@ export function MilestoneTimeline(props: Props) {
                     }}
                   >
                     <strong>
-                      ◆ {kind === 'pre' ? 'Pre版本' : 'Release版本'}{' '}
+                      <span>
+                        <Diamond size={10} />
+                        {kind === 'pre' ? 'Pre版本' : 'Release版本'}
+                      </span>
                       {version && <ExternalLink size={13} />}
                     </strong>
                     <small>{preview?.version ?? (f[kind] ? '对应版本缺少排期' : '安排版本')}</small>

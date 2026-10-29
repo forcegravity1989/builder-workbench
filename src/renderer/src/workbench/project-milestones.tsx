@@ -1,5 +1,6 @@
+import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
-import { Plus, RefreshCw } from 'lucide-react'
+import { CalendarPlus, Plus, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
@@ -17,6 +18,7 @@ import { MilestoneReference } from './milestone-reference'
 import { MilestoneReviewButton } from './milestone-review-button'
 import { describeMilestoneChanges } from './milestone-change-summary'
 import { MilestoneVersionEditor } from './milestone-version-editor'
+import { MilestoneIconButton } from './milestone-icon-button'
 import './project-milestones.css'
 
 export function ProjectMilestones({
@@ -67,9 +69,9 @@ export function ProjectMilestones({
         <strong>项目里程碑</strong>
         <p role="status">{error ?? '正在读取项目规划…'}</p>
         {error && (
-          <button className="wb-btn" onClick={() => void model.reload()}>
+          <Button variant="outline" size="xs" onClick={() => void model.reload()}>
             重试读取
-          </button>
+          </Button>
         )}
       </section>
     )
@@ -166,15 +168,17 @@ export function ProjectMilestones({
           {editing && (
             <>
               <small role="status">{status}</small>
-              <button
-                className="wb-btn wb-btn-secondary wb-btn-sm"
+              <Button
+                variant="outline"
+                size="xs"
                 disabled={busy}
                 onClick={() => patch({ editing: false })}
               >
                 查看正式安排
-              </button>
-              <button
-                className="wb-btn wb-btn-secondary wb-btn-sm"
+              </Button>
+              <Button
+                variant="outline"
+                size="xs"
                 disabled={busy || !dirty}
                 onClick={() => {
                   clearUndo()
@@ -183,13 +187,18 @@ export function ProjectMilestones({
                 }}
               >
                 还原修改
-              </button>
+              </Button>
             </>
           )}
           {!editing ? (
-            <button className="wb-btn wb-btn-primary wb-btn-sm" disabled={busy} onClick={begin}>
+            <Button
+              size="xs"
+              className="bg-foreground text-background hover:bg-foreground/90"
+              disabled={busy}
+              onClick={begin}
+            >
               规划里程碑
-            </button>
+            </Button>
           ) : (
             <MilestoneReviewButton
               busy={busy}
@@ -205,14 +214,13 @@ export function ProjectMilestones({
               }}
             />
           )}
-          <button
-            className="wb-btn wb-btn-ghost wb-btn-sm"
-            aria-label="刷新里程碑与评审"
+          <MilestoneIconButton
+            label="刷新里程碑与评审"
             disabled={busy}
             onClick={() => void model.reload()}
           >
             <RefreshCw size={15} />
-          </button>
+          </MilestoneIconButton>
           <MilestoneReference />
         </div>
       </header>
@@ -239,8 +247,9 @@ export function ProjectMilestones({
         <div className="wb-ml-notice">
           {state.data.sourceNotice}
           {state.data.mergedProposal && (
-            <button
-              className="wb-btn"
+            <Button
+              variant="outline"
+              size="xs"
               disabled={busy}
               onClick={async () => {
                 await updateFormal()
@@ -248,18 +257,19 @@ export function ProjectMilestones({
               }}
             >
               更新正式安排
-            </button>
+            </Button>
           )}
         </div>
       )}
       {state.data.review.pr?.url && (
         <div className="wb-ml-review-link">
-          <button
-            className="wb-btn wb-btn-ghost wb-btn-sm"
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={() => void window.api.shell.openUrl(state.data.review.pr!.url!)}
           >
             查看项目材料评审
-          </button>
+          </Button>
         </div>
       )}
       {!months.length ? (
@@ -284,9 +294,9 @@ export function ProjectMilestones({
                 <>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <button className="wb-btn wb-btn-secondary wb-btn-sm" disabled={busy}>
-                        添加月份
-                      </button>
+                      <MilestoneIconButton label="添加月份" disabled={busy}>
+                        <CalendarPlus size={14} />
+                      </MilestoneIconButton>
                     </PopoverTrigger>
                     <PopoverContent className="wb-ml-small">
                       <label>
@@ -323,8 +333,8 @@ export function ProjectMilestones({
                     updateVersion={updateVersion}
                     edit={edit}
                   />
-                  <button
-                    className="wb-btn wb-btn-secondary wb-btn-sm"
+                  <MilestoneIconButton
+                    label="添加特性"
                     disabled={busy}
                     onClick={() => {
                       const v =
@@ -352,8 +362,7 @@ export function ProjectMilestones({
                     }}
                   >
                     <Plus size={14} />
-                    添加特性
-                  </button>
+                  </MilestoneIconButton>
                 </>
               )}
             </div>

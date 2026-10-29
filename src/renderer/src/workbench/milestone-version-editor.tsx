@@ -1,5 +1,7 @@
+import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Plus, SlidersHorizontal, X } from 'lucide-react'
+import { MilestoneIconButton } from './milestone-icon-button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import type {
   MilestoneDraft,
@@ -25,9 +27,9 @@ export function MilestoneVersionEditor({
   return (
     <Popover open={versionEditor} onOpenChange={setVersionEditor}>
       <PopoverTrigger asChild>
-        <button className="wb-btn wb-btn-secondary wb-btn-sm" disabled={busy}>
-          版本与日期
-        </button>
+        <MilestoneIconButton label="版本与日期" disabled={busy}>
+          <SlidersHorizontal size={14} />
+        </MilestoneIconButton>
       </PopoverTrigger>
       <PopoverContent className="wb-ml-versions" align="end">
         <strong>版本与日期</strong>
@@ -42,8 +44,9 @@ export function MilestoneVersionEditor({
                 onChange={(version) => updateVersion(v.cycleId, { version })}
               />
               {!existing.some((item) => item.cycleId === v.cycleId) && (
-                <button
-                  className="wb-btn wb-btn-ghost wb-btn-sm"
+                <Button
+                  variant="ghost"
+                  size="xs"
                   disabled={busy}
                   aria-label={`撤销登记 ${v.version || '新版本'}`}
                   onClick={() =>
@@ -63,7 +66,7 @@ export function MilestoneVersionEditor({
                 >
                   <X size={13} />
                   撤销登记
-                </button>
+                </Button>
               )}
               {started && <small>已开始计划，名称沿真实版本</small>}
               <div>
@@ -105,8 +108,9 @@ export function MilestoneVersionEditor({
             </div>
           )
         })}
-        <button
-          className="wb-btn wb-btn-secondary"
+        <Button
+          variant="outline"
+          size="xs"
           disabled={busy}
           onClick={() =>
             edit((d) => ({
@@ -117,7 +121,7 @@ export function MilestoneVersionEditor({
         >
           <Plus size={14} />
           登记版本
-        </button>
+        </Button>
         <small>通用日历 · 加班日数据尚未接入</small>
       </PopoverContent>
     </Popover>

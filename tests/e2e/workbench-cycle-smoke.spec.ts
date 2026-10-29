@@ -2,7 +2,12 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { test, expect } from './helpers/workbench-app'
 import type { Page } from '@playwright/test'
-import { projectSettingsTest, verifyProjectSettings } from './helpers/workbench-project-settings'
+import {
+  projectSettingsTest as isolatedProjectTest,
+  verifyProjectSettings
+} from './helpers/workbench-project-settings'
+import { verifyMilestones } from './helpers/workbench-milestones'
+import { verifyMilestoneRestart } from './helpers/workbench-milestone-restart'
 
 /**
  * BW main-chain smoke (G2 journey): the version workspace entry must prepare the
@@ -24,11 +29,20 @@ test.use({
   }
 })
 
-projectSettingsTest(
+isolatedProjectTest(
   'BW project settings: reviewed edits, conflict protection and filesystem read-back',
   async ({ workbenchPage, seededRepoPath }, testInfo) => {
     test.setTimeout(300_000)
     await verifyProjectSettings(workbenchPage, seededRepoPath, testInfo)
+  }
+)
+
+isolatedProjectTest(
+  'BW milestones: real editing, pointer drag, source return and safe submit failure @headful',
+  async ({ workbenchPage, seededRepoPath, electronApp }, testInfo) => {
+    test.setTimeout(300_000)
+    await verifyMilestones(workbenchPage, seededRepoPath, testInfo)
+    await verifyMilestoneRestart(electronApp, testInfo)
   }
 )
 

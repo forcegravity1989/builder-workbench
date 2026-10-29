@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 export function MilestoneReviewButton({
@@ -23,12 +24,13 @@ export function MilestoneReviewButton({
   return (
     <Popover open={reviewOpen} onOpenChange={setReviewOpen}>
       <PopoverTrigger asChild>
-        <button
-          className="wb-btn wb-btn-primary wb-btn-sm"
+        <Button
+          size="xs"
+          className="bg-foreground text-background hover:bg-foreground/90"
           disabled={busy || conflict || (!dirty && !retry) || invalid}
         >
           {retry ? '重试提交' : hasReview ? '更新评审' : '提交评审'}
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent className="wb-ml-review" align="end">
         <strong>本次改动</strong>
@@ -38,8 +40,9 @@ export function MilestoneReviewButton({
           ))}
         </ul>
         {retry && <p>重试推送已提交内容并创建评审。</p>}
-        <button
-          className="wb-btn wb-btn-primary"
+        <Button
+          size="xs"
+          className="bg-foreground text-background hover:bg-foreground/90"
           disabled={busy}
           onClick={() => {
             setReviewOpen(false)
@@ -47,7 +50,7 @@ export function MilestoneReviewButton({
           }}
         >
           确认提交
-        </button>
+        </Button>
       </PopoverContent>
     </Popover>
   )
