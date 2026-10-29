@@ -44,6 +44,8 @@ ORCA_BACKGROUND_LAUNCH=1 REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench
 
 ## 品牌与开关
 
+正式标志源为 `resources/icon-source/workbench.png`。运行 `pnpm run build:icons` 从同一原图生成界面/运行时 PNG、Windows 多尺寸 ICO 和 macOS ICNS（只需 Node 与仓内依赖，不依赖 Xcode）。`node config/scripts/generate-workbench-icons.mjs --check` 校验生成物。开发与生产使用同一标志；旧的水彩/蓝色 Orca 偏好归一为默认标志，macOS 启动时清除旧 Finder 自定义图标以使用包内标志。macOS 菜单栏使用同源 18px / 36px 原色图（不作模板着色），注意提示叠加在原图上，开发实例以 `DEV` 文字区分。
+
 | Env | 作用 |
 |-----|------|
 | `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` | 启用 Workbench 壳 |

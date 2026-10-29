@@ -104,7 +104,6 @@
     "minimizeNotice": {
       "body": "Orca continue de tourner dans la zone de notification"
     },
-    "activityWaiting": "Orca - activité en attente",
     "activityWaitingSuffix": "activité en attente"
   },
   "worktreeJumpPalette": {
@@ -1312,8 +1311,6 @@
         "76a95f7f47": "Créer",
         "f05d237049": "Ajoutez d'abord un projet",
         "f9eaa9e12d": "Ajouter un projet",
-        "6ca6ff404e": "ORCA",
-        "520304a067": "Logo Orca",
         "ce44fad849": "Dépendances manquantes",
         "c1cf168479": "Masquer",
         "00cee697c1": "Exécutez \"gh auth login\" dans un terminal pour connecter votre compte GitHub.",
@@ -3927,7 +3924,6 @@
           "2d9eb39264": "Total de tokens",
           "beb6f24f37": "Coût estimé",
           "da62578d9d": "Utilisation",
-          "0eb31e79ee": "IDE Orca",
           "960324e9b8": "événements",
           "6adac63cfe": "tours"
         },
@@ -3971,7 +3967,6 @@
         "share": {
           "card": {
             "utils": {
-              "19f4b4dc75": "github.com/stablyai/orca",
               "d864fc5f98": "sortie",
               "5d66fdd7c2": "entrée",
               "7080aeaebb": "Raisonnement",
@@ -3979,7 +3974,8 @@
               "33d38e2177": "Sortie",
               "c2d7b23d57": "Entrée",
               "9d166247ee": "Écriture en cache",
-              "cc28cb965e": "Lecture du cache"
+              "cc28cb965e": "Lecture du cache",
+              "19f4b4dc75": "github.com/forcegravity1989/builder-workbench"
             }
           }
         },
@@ -6296,16 +6292,13 @@
           "noAgentsDetected": "Aucun agent détecté. Si un agent est installé, la détection a peut-être expiré."
         },
         "AppIconSelector": {
-          "d5a112dc9b": "Icône suivante",
-          "415fa76f64": "Icône d'app sélectionnée",
-          "5f5142a62a": "Icône précédente"
+          "415fa76f64": "Icône d'app sélectionnée"
         },
         "AppearancePane": {
           "3057983501": "Non assigné",
           "872af9556e": "Zone de notification",
           "2edf606c46": "Réduire dans la zone de notification à la fermeture",
           "b707773a0d": "Quand activé, fermer la fenêtre laisse Orca tourner dans la zone de notification au lieu de quitter.",
-          "0cd9b8228f": "Choisissez l'icône d'app affichée dans le Dock et le sélecteur de fenêtres.",
           "ca1590d42f": "Icône de l'app",
           "fa882a3e6b": "Afficher le bouton Automatisations en haut de la barre latérale gauche.",
           "511f270ebb": "Afficher le bouton Automatisations",
@@ -8564,14 +8557,11 @@
           "search": {
             "9a115966d3": "Réduire dans la zone de notification à la fermeture",
             "4d5b9427b5": "Quand activé, fermer la fenêtre laisse Orca tourner dans la zone de notification au lieu de quitter.",
-            "468448bba4": "aquarelle",
-            "f586abfa35": "bleu",
             "651f35b2c6": "sélecteur",
             "e5bc35d59e": "fenêtre",
             "d18b54ca90": "dock",
             "1f2880a9d5": "orca",
             "2cfb3420c0": "icône de l'app",
-            "e80c2af428": "Choisissez l'icône d'app affichée dans le Dock et le sélecteur de fenêtres.",
             "2b313598c6": "Icône de l'app",
             "ac79fe4a04": "afficher",
             "648eeada79": "masquer",
@@ -16203,5 +16193,8 @@
       "stopped": "arrêté",
       "finished": "terminé"
     }
+  },
+  "brand": {
+    "workbench": "Workbench"
   }
 }

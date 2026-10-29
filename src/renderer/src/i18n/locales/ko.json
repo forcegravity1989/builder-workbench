@@ -77,7 +77,6 @@
     "minimizeNotice": {
       "body": "Orca가 시스템 트레이에서 계속 실행 중입니다"
     },
-    "activityWaiting": "Orca - 활동 대기 중",
     "activityWaitingSuffix": "activity waiting"
   },
   "worktreeJumpPalette": {
@@ -1160,8 +1159,6 @@
         "76a95f7f47": "생성",
         "f05d237049": "먼저 프로젝트를 추가하세요.",
         "f9eaa9e12d": "프로젝트 추가",
-        "6ca6ff404e": "Orca",
-        "520304a067": "Orca 로고",
         "ce44fad849": "종속성 누락",
         "c1cf168479": "숨기기",
         "00cee697c1": "GitHub 계정을 연결하려면 terminal에서 \"gh auth login\"을 실행하세요.",
@@ -3715,7 +3712,6 @@
           "2d9eb39264": "총 토큰",
           "beb6f24f37": "예상 비용",
           "da62578d9d": "사용량",
-          "0eb31e79ee": "Orca IDE",
           "960324e9b8": "이벤트",
           "6adac63cfe": "턴"
         },
@@ -3758,7 +3754,6 @@
         "share": {
           "card": {
             "utils": {
-              "19f4b4dc75": "github.com/stablyai/orca",
               "d864fc5f98": "출력",
               "5d66fdd7c2": "입력",
               "7080aeaebb": "추론",
@@ -3766,7 +3761,8 @@
               "33d38e2177": "출력",
               "c2d7b23d57": "입력",
               "9d166247ee": "캐시 쓰기",
-              "cc28cb965e": "캐시 읽기"
+              "cc28cb965e": "캐시 읽기",
+              "19f4b4dc75": "github.com/forcegravity1989/builder-workbench"
             }
           }
         },
@@ -5546,16 +5542,13 @@
           "retryDetection": "Retry"
         },
         "AppIconSelector": {
-          "d5a112dc9b": "다음 아이콘",
-          "415fa76f64": "선택한 앱 아이콘",
-          "5f5142a62a": "이전 아이콘"
+          "415fa76f64": "선택한 앱 아이콘"
         },
         "AppearancePane": {
           "3057983501": "할당되지 않음",
           "872af9556e": "시스템 트레이",
           "2edf606c46": "닫을 때 트레이로 최소화",
           "b707773a0d": "활성화하면 창을 닫아도 Orca가 종료되지 않고 시스템 트레이에서 계속 실행됩니다.",
-          "0cd9b8228f": "Dock 및 창 전환기에 표시된 앱 아이콘을 선택합니다.",
           "ca1590d42f": "앱 아이콘",
           "fa882a3e6b": "왼쪽 사이드바 상단에 자동화 버튼을 표시합니다.",
           "511f270ebb": "자동화 버튼 표시",
@@ -7717,14 +7710,11 @@
         },
         "appearance": {
           "search": {
-            "468448bba4": "수채화",
-            "f586abfa35": "파란색",
             "651f35b2c6": "스위처",
             "e5bc35d59e": "창",
             "d18b54ca90": "독",
             "1f2880a9d5": "orca",
             "2cfb3420c0": "앱 아이콘",
-            "e80c2af428": "Dock 및 창 전환기에 표시된 앱 아이콘을 선택합니다.",
             "2b313598c6": "앱 아이콘",
             "ac79fe4a04": "표시",
             "648eeada79": "숨기기",
@@ -14744,5 +14734,8 @@
       "stopped": "중지됨",
       "finished": "완료됨"
     }
+  },
+  "brand": {
+    "workbench": "Workbench"
   }
 }
