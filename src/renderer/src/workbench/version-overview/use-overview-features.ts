@@ -5,6 +5,8 @@ import type { FeatureData } from './feature-model'
 import { readOverviewFeatures, type OverviewFeatureArgs } from './read-overview-features'
 import { nativeTaskReferenceReader } from '../native-task-port'
 import { useAppStore } from '@/store'
+import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
+import { taskKey } from './feature-model'
 
 type FeatureRead = { features: FeatureData[]; problems: string[]; readAt?: string; stale?: boolean }
 const cache = new Map<string, FeatureRead>()
@@ -68,11 +70,12 @@ export function useOverviewFeatures(args: {
 }) {
   const { catalog, plan, planSource, version, before, historical, refreshToken } = args
   useAppStore((state) => state.repos)
+  const references = [
+    ...(plan?.tasks ?? []),
+    ...(catalog.catalog?.entries.flatMap((entry) => entry.tasks) ?? [])
+  ].sort((a, b) => taskKey(a).localeCompare(taskKey(b)))
   const referenceSourceKey = catalog.scope
-    ? nativeTaskReferenceReader.key(catalog.scope, [
-        ...(plan?.tasks ?? []),
-        ...(catalog.catalog?.entries.flatMap((entry) => entry.tasks) ?? [])
-      ])
+    ? nativeTaskReferenceReader.key(catalog.scope, references)
     : null
   const contextKey = JSON.stringify([
     referenceSourceKey,
@@ -80,25 +83,32 @@ export function useOverviewFeatures(args: {
     catalog.home?.id,
     plan?.tasks,
     planSource,
-    catalog.catalog?.entries.map((entry) => [
-      entry.version,
-      entry.tasks,
-      entry.goals,
-      entry.material,
-      entry.draft
-    ]),
+    catalog.catalog?.entries
+      .map((entry) => [entry.version, entry.tasks, entry.goals, entry.material, entry.draft])
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
     version,
     before,
     historical,
-    catalog.worktrees.map((tree) => [
-      tree.id,
-      tree.repoId,
-      tree.hostId,
-      tree.runtimeOwnerEnvironmentId,
-      tree.linkedPR,
-      tree.linkedWorkItem,
-      tree.workbenchVersionBinding
-    ])
+    catalog.worktrees
+      .filter((tree) => {
+        const binding = normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding)
+        return (
+          binding?.workflow === 'issue' &&
+          (binding.version === version ||
+            catalog.catalog?.entries.some((entry) => entry.version === binding.version))
+        )
+      })
+      .map((tree) => [
+        tree.id,
+        tree.repoId,
+        tree.hostId,
+        tree.runtimeOwnerEnvironmentId,
+        tree.linkedPR,
+        tree.linkedWorkItem,
+        tree.workbenchVersionBinding,
+        tree.isArchived
+      ])
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
   ])
   const key = JSON.stringify([contextKey, refreshToken])
   const lastRefresh = useRef(refreshToken)

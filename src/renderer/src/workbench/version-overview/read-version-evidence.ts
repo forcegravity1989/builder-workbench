@@ -158,6 +158,7 @@ export async function readVersionEvidence(
   )
   const order = new Map(entries.map((entry, index) => [entry.version, index]))
   plans.sort((a, b) => (order.get(a.version) ?? Infinity) - (order.get(b.version) ?? Infinity))
+  records.sort((a, b) => (order.get(a.version) ?? Infinity) - (order.get(b.version) ?? Infinity))
   if (workingPlan && !plans.some((entry) => entry.version === workingPlan.document.version)) {
     await addPlan(workingPlan.document, workingPlan.source)
   }

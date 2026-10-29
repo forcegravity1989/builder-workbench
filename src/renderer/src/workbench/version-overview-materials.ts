@@ -13,6 +13,7 @@ import {
   materialCache,
   materialGenerations,
   retainMaterialRead,
+  materialSourceInputs,
   materialReadMessage as message
 } from './version-overview/material-cache'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
@@ -57,23 +58,24 @@ export function useVersionOverviewMaterials({
 }): VersionOverviewMaterials {
   const entry = catalog.catalog?.entries.find((e) => e.version === version)
   const lastRefresh = useRef(refreshToken)
+  const inputs = materialSourceInputs(
+    catalog.worktrees,
+    catalog.planTrees,
+    version,
+    Boolean(entry?.material.plan || entry?.material.acceptance)
+  )
+  const waitingForCatalog = catalog.loading && !catalog.materialReady
   const sourceKey = JSON.stringify([
     catalog.scope,
     catalog.home?.id,
     version,
     entry?.material,
     entry?.draft,
-    catalog.planTrees,
-    catalog.worktrees.map((tree) => [
-      tree.id,
-      tree.hostId,
-      tree.runtimeOwnerEnvironmentId,
-      tree.workbenchVersionBinding
-    ])
+    inputs
   ])
   const key = JSON.stringify([
     refreshToken,
-    catalog.loading,
+    waitingForCatalog,
     catalog.scope,
     catalog.home?.id,
     version,
@@ -82,13 +84,7 @@ export function useVersionOverviewMaterials({
     catalog.materialReady,
     catalog.materialError,
     catalog.error,
-    catalog.planTrees,
-    catalog.worktrees.map((tree) => [
-      tree.id,
-      tree.hostId,
-      tree.runtimeOwnerEnvironmentId,
-      tree.workbenchVersionBinding
-    ])
+    inputs
   ])
   const [state, setState] = useState<{ key: string; value: VersionOverviewMaterials }>(() => ({
     key: '',
@@ -113,7 +109,7 @@ export function useVersionOverviewMaterials({
     }
     const result = loading()
     const failure = catalog.materialError ?? catalog.error
-    if (!failure && catalog.loading) {
+    if (!failure && waitingForCatalog) {
       return () => {
         cancelled = true
       }

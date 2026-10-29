@@ -14,6 +14,7 @@ import {
 import { versionDeliveryEvents, type VersionEvidence } from './version-evidence'
 import { cycleBaseline, featureTimeline } from './feature-timeline'
 import { OverviewPullSchema } from '../../../../shared/workbench/overview-pull'
+import { materialSourceInputs } from './material-cache'
 
 it('projects scoped feature evidence without turning missing, later or unrelated records into delivery', () => {
   const reference = {
@@ -34,6 +35,25 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   expect(OverviewPullSchema.safeParse(metadata).success).toBe(true)
   expect(OverviewPullSchema.safeParse({ ...metadata, body: null }).success).toBe(false)
   expect(OverviewPullSchema.safeParse({ ...metadata, state: 'unknown' }).success).toBe(false)
+  const primary = { id: 'main', repoId: 'repo', isArchived: false }
+  expect(materialSourceInputs([primary], [], 'v0.8', true)).toBe(
+    materialSourceInputs([primary, { ...primary, id: 'unrelated-discovery' }], [], 'v0.8', true)
+  )
+  const flow = {
+    ...primary,
+    id: 'acceptance',
+    workbenchVersionBinding: {
+      schema: 1 as const,
+      version: 'v0.8',
+      workflow: 'acceptance' as const
+    }
+  }
+  expect(materialSourceInputs([flow], [], 'v0.8', true)).not.toBe(
+    materialSourceInputs([], [], 'v0.8', true)
+  )
+  expect(materialSourceInputs([flow], [], 'v0.7', true)).toBe(
+    materialSourceInputs([], [], 'v0.7', true)
+  )
   expect(referenceForPlan(reference, [{ ...reference, goalId: 'new-goal' }]).goalId).toBe(
     'new-goal'
   )

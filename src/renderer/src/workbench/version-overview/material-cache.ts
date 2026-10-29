@@ -1,4 +1,39 @@
 import type { VersionOverviewMaterials } from '../version-overview-materials'
+import type { Worktree } from '../../../../shared/worktree/types'
+import type { VersionCatalogPlanTree } from '../version-catalog-load'
+import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
+
+/** Unbound task discovery cannot invalidate a version's plan/acceptance read. */
+export function materialSourceInputs(
+  trees: readonly Pick<
+    Worktree,
+    | 'id'
+    | 'repoId'
+    | 'hostId'
+    | 'runtimeOwnerEnvironmentId'
+    | 'workbenchVersionBinding'
+    | 'isArchived'
+  >[],
+  planTrees: readonly VersionCatalogPlanTree[],
+  version: string,
+  formal: boolean
+) {
+  const workflows = trees.flatMap((tree) => {
+    const binding = normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding)
+    return !tree.isArchived &&
+      binding?.version === version &&
+      ['plan', 'acceptance'].includes(binding.workflow)
+      ? [[tree.id, tree.repoId, tree.hostId, tree.runtimeOwnerEnvironmentId, binding]]
+      : []
+  })
+  const plans = formal
+    ? []
+    : planTrees.filter((tree) => tree.version === version || tree.version === null)
+  return JSON.stringify([
+    plans.map((tree) => JSON.stringify(tree)).sort(),
+    workflows.map((tree) => JSON.stringify(tree)).sort()
+  ])
+}
 
 export const materialCache = new Map<string, VersionOverviewMaterials>()
 export const materialGenerations = new Map<string, number>()
