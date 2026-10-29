@@ -27,6 +27,7 @@ export function useTaskPageStoreBindings() {
   const sshConnectionStates = useAppStore((s) => s.sshConnectionStates)
   const sshTargetLabels = useAppStore((s) => s.sshTargetLabels)
   const runtimeEnvironments = useAppStore((s) => s.runtimeEnvironments)
+  const runtimeEnvironmentCatalogHydrated = useAppStore((s) => s.runtimeEnvironmentCatalogHydrated)
   const runtimeStatusByEnvironmentId = useAppStore((s) => s.runtimeStatusByEnvironmentId)
   const repoMap = useRepoMap()
   const allWorktrees = useAllWorktrees()
@@ -103,6 +104,7 @@ export function useTaskPageStoreBindings() {
     sshConnectionStates,
     sshTargetLabels,
     runtimeEnvironments,
+    runtimeEnvironmentCatalogHydrated,
     runtimeStatusByEnvironmentId,
     repoMap,
     allWorktrees,

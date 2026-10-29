@@ -63,6 +63,8 @@ it('keeps filter transitions and issue creation connected after extracting the c
     codehubQuery: '',
     codehubAuthor: '',
     codehubAssignee: '',
+    codehubLabels: [],
+    setCodehubLabels: vi.fn(),
     codehubLoading: false,
     setCodehubView: vi.fn(),
     setCodehubState: setState,
@@ -94,13 +96,16 @@ it('keeps filter transitions and issue creation connected after extracting the c
   })
   fireEvent.submit(screen.getByPlaceholderText('New issue title').closest('form')!)
   await waitFor(() => expect(refresh).toHaveBeenCalled())
-  expect(api.createIssue).toHaveBeenCalledWith({
-    repoId: 'r1',
-    repoPath: '/repo',
-    title: 'New work',
-    description: undefined,
-    assignee: undefined
-  })
+  expect(api.createIssue).toHaveBeenCalledWith(
+    {
+      repoId: 'r1',
+      repoPath: '/repo',
+      title: 'New work',
+      description: undefined,
+      assignee: undefined
+    },
+    repo
+  )
 })
 
 it('loads the detail and removes a deleted comment from the displayed conversation', async () => {

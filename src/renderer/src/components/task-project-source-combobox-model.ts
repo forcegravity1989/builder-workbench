@@ -1,26 +1,41 @@
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { Repo } from '../../../shared/repo-types'
 import type { TaskProjectPickerGroup } from './task-page-default-repo-selection'
+import { getRepoHostIdentityForParts } from '../../../shared/repo-host-identity'
+
+export function getTaskProjectSourceSelectionId(group: TaskProjectPickerGroup, repo: Repo): string {
+  return group.selectionMode === 'builder'
+    ? getRepoHostIdentityForParts(repo.id, getRepoExecutionHostId(repo))
+    : repo.id
+}
 
 export function selectedTaskProjectGroups(
   groups: readonly TaskProjectPickerGroup[],
   selected: ReadonlySet<string>
 ): TaskProjectPickerGroup[] {
-  return groups.filter((group) => group.sources.some((source) => selected.has(source.id)))
+  return groups.filter((group) => isTaskProjectGroupSelected(group, selected))
 }
 
 export function isTaskProjectGroupSelected(
   group: TaskProjectPickerGroup,
   selected: ReadonlySet<string>
 ): boolean {
-  return group.sources.some((source) => selected.has(source.id))
+  if (group.selectionMode === 'builder' && group.projectKey.startsWith('runtime:')) {
+    return [...selected].some((id) => id.startsWith(`${group.projectKey}\0`))
+  }
+  return group.sources.some((source) =>
+    selected.has(getTaskProjectSourceSelectionId(group, source))
+  )
 }
 
 export function getSelectedTaskProjectSource(
   group: TaskProjectPickerGroup,
   selected: ReadonlySet<string>
-): Repo {
-  return group.sources.find((source) => selected.has(source.id)) ?? group.repo
+): Repo | null {
+  return (
+    group.sources.find((source) => selected.has(getTaskProjectSourceSelectionId(group, source))) ??
+    group.repo
+  )
 }
 
 export function hasMultipleTaskProjectHosts(groups: readonly TaskProjectPickerGroup[]): boolean {
@@ -37,5 +52,8 @@ export function hasMultipleTaskProjectHosts(groups: readonly TaskProjectPickerGr
 }
 
 export function hasMultipleTaskProjectHostsInGroup(group: TaskProjectPickerGroup): boolean {
+  if (group.selectionMode === 'builder') {
+    return false
+  }
   return hasMultipleTaskProjectHosts([group])
 }

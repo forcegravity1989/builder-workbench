@@ -15,12 +15,15 @@ import { translate } from '@/i18n/i18n'
 import { codehubApi } from '@/lib/codehub-api'
 import { toast } from 'sonner'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
+import type { Repo } from '../../../../../shared/repo-types'
 
 export function CodeHubIssueListStatus({
   item,
+  owner,
   onChanged
 }: {
   item: CodeHubTaskItem
+  owner?: Repo
   onChanged: () => void
 }): React.JSX.Element {
   const [busy, setBusy] = useState(false)
@@ -29,19 +32,22 @@ export function CodeHubIssueListStatus({
       closed={item.state !== 'opened'}
       busy={busy}
       onSetState={(state, stateReason, duplicateOf) => {
-        if (!item.repoPath || busy) {
+        if (!item.repoPath || busy || (item.executionHostId && !owner)) {
           return
         }
         setBusy(true)
         void codehubApi
-          .setIssueState({
-            repoPath: item.repoPath,
-            repoId: item.repoId,
-            iid: item.iid,
-            state,
-            stateReason,
-            duplicateOf: stateReason === 'duplicate' ? (duplicateOf ?? null) : null
-          })
+          .setIssueState(
+            {
+              repoPath: item.repoPath,
+              repoId: item.repoId,
+              iid: item.iid,
+              state,
+              stateReason,
+              duplicateOf: stateReason === 'duplicate' ? (duplicateOf ?? null) : null
+            },
+            owner
+          )
           .then(() => {
             toast.success(
               state === 'open'

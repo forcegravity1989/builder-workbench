@@ -320,7 +320,7 @@ describe('getTaskProjectPickerGroups', () => {
       new Set(['ssh-orca'])
     )
 
-    expect(groups[0]?.repo.id).toBe('ssh-orca')
+    expect(groups[0]?.repo?.id).toBe('ssh-orca')
     expect(groups[0]?.sources.map((source) => source.id)).toEqual(['local-orca', 'ssh-orca'])
   })
 })

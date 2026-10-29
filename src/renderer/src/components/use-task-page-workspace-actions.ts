@@ -21,6 +21,7 @@ import {
   resolveScopedComposerAdditions
 } from '@/workbench/scoped-task-workspace'
 import { dispatchScopedWorktrees } from '@/workbench/version-workspace-choice-state'
+import { findCodeHubTaskRepo } from '@/lib/codehub-task-repo'
 export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   const { repoMap, openModal } = model
   // G2 (BW)：范围视图的 Issue 开工把版本归属上下文与目标树父级建议带进同一
@@ -172,15 +173,22 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
   )
   const codeHubSourceContextFor = useCallback(
     (item: CodeHubTaskItem) =>
-      getTaskPageRepoSourceContext(
-        item.repoId ? (repoMap.get(item.repoId) ?? null) : null,
-        'codehub'
-      ),
-    [repoMap]
+      getTaskPageRepoSourceContext(findCodeHubTaskRepo(model.repos, item), 'codehub'),
+    [model.repos]
   )
   const openComposerForCodeHubItem = useCallback(
     (item: CodeHubTaskItem): void => {
       if (!item.repoId) {
+        return
+      }
+      const sourceContext = codeHubSourceContextFor(item)
+      if (item.executionHostId && !sourceContext) {
+        toast.error(
+          translate(
+            'auto.components.task.project.source.combobox.builderUnavailable',
+            'No available repositories; check the Builder connection'
+          )
+        )
         return
       }
       const linkedWorkItem: LinkedWorkItemSummary = {
@@ -193,7 +201,7 @@ export function useTaskPageWorkspaceActions(model: TaskPageSearchActionsModel) {
       }
       openModal('new-workspace-composer', {
         linkedWorkItem,
-        taskSourceContext: codeHubSourceContextFor(item),
+        taskSourceContext: sourceContext,
         prefilledName: getLinkedWorkItemSuggestedName({ title: item.title }),
         initialRepoId: item.repoId,
         enableIssueAutomation: item.type === 'issue',

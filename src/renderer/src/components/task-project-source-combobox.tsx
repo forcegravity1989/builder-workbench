@@ -1,3 +1,8 @@
+import {
+  renderTriggerLabel,
+  getProjectDetail,
+  getSourceDetail
+} from './task-project-source-combobox-labels'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, ChevronRight, ChevronsUpDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -11,13 +16,14 @@ import type { Repo } from '../../../shared/repo-types'
 import type { TaskProjectPickerGroup } from './task-page-default-repo-selection'
 import {
   getSelectedTaskProjectSource,
+  getTaskProjectSourceSelectionId,
   hasMultipleTaskProjectHosts,
   hasMultipleTaskProjectHostsInGroup,
   isTaskProjectGroupSelected,
   selectedTaskProjectGroups
 } from './task-project-source-combobox-model'
 
-type TaskProjectSourceStatus = {
+export type TaskProjectSourceStatus = {
   label: string
   title?: string
   disabled?: boolean
@@ -31,66 +37,6 @@ type TaskProjectSourceComboboxProps = {
   getRepoHostLabel?: (repo: Repo) => string | null | undefined
   getRepoSourceStatus?: (repo: Repo) => TaskProjectSourceStatus | null | undefined
   triggerClassName?: string
-}
-
-function renderTriggerLabel(
-  groups: readonly TaskProjectPickerGroup[],
-  selected: ReadonlySet<string>
-): React.JSX.Element {
-  if (groups.length === 0) {
-    return (
-      <span className="text-muted-foreground">
-        {translate('auto.components.task.project.source.combobox.noProjects', 'No projects')}
-      </span>
-    )
-  }
-  const selectedProjectGroups = selectedTaskProjectGroups(groups, selected)
-  if (selectedProjectGroups.length === groups.length) {
-    return (
-      <span className="inline-flex min-w-0 items-center gap-1.5">
-        {translate('auto.components.task.project.source.combobox.allProjects', 'All projects')}
-      </span>
-    )
-  }
-  const [first, second, ...rest] = selectedProjectGroups
-  return (
-    <span className="inline-flex min-w-0 items-center gap-1.5 truncate">
-      {first ? (
-        <RepoBadgeLabel
-          name={first.repo.displayName}
-          color={first.repo.badgeColor}
-          badgeClassName="size-1.5"
-        />
-      ) : null}
-      {second ? <span className="text-muted-foreground">, {second.repo.displayName}</span> : null}
-      {rest.length > 0 ? <span className="text-muted-foreground">+{rest.length}</span> : null}
-    </span>
-  )
-}
-
-function getProjectDetail(
-  group: TaskProjectPickerGroup,
-  selected: ReadonlySet<string>,
-  showHostLabels: boolean,
-  getRepoHostLabel?: (repo: Repo) => string | null | undefined
-): string {
-  const selectedSource = getSelectedTaskProjectSource(group, selected)
-  const hostLabel = showHostLabels ? getRepoHostLabel?.(selectedSource)?.trim() : ''
-  if (hasMultipleTaskProjectHostsInGroup(group)) {
-    const hostCount = translate(
-      'auto.components.task.project.source.combobox.hostCount',
-      '{{value0}} hosts',
-      {
-        value0: String(group.sources.length)
-      }
-    )
-    return hostLabel ? `${hostLabel} · ${hostCount}` : hostCount
-  }
-  return hostLabel ? `${hostLabel} · ${selectedSource.path}` : selectedSource.path
-}
-
-function getSourceDetail(repo: Repo, status?: TaskProjectSourceStatus | null): string {
-  return status?.label ? `${repo.path} · ${status.label}` : repo.path
 }
 
 export default function TaskProjectSourceCombobox({
@@ -121,11 +67,18 @@ export default function TaskProjectSourceCombobox({
     if (!trimmed) {
       return groups
     }
-    return groups.filter((group) => searchRepos(group.sources, trimmed).length > 0)
+    return groups.filter(
+      (group) =>
+        group.displayName?.toLowerCase().includes(trimmed.toLowerCase()) ||
+        searchRepos(group.sources, trimmed).length > 0
+    )
   }, [groups, query])
   const showHostLabels = useMemo(() => hasMultipleTaskProjectHosts(groups), [groups])
   const allSelected =
-    groups.length > 0 && selectedTaskProjectGroups(groups, selected).length === groups.length
+    groups.some((group) => group.sources.length > 0) &&
+    groups
+      .filter((group) => group.sources.length > 0)
+      .every((group) => isTaskProjectGroupSelected(group, selected))
 
   const handleOpenChange = useCallback((nextOpen: boolean) => {
     setOpen(nextOpen)
@@ -170,17 +123,24 @@ export default function TaskProjectSourceCombobox({
 
   const toggleProject = useCallback(
     (group: TaskProjectPickerGroup) => {
+      if (!group.repo) {
+        return
+      }
       const next = new Set(selected)
-      const selectedSource = group.sources.find((source) => next.has(source.id))
+      const selectedSource = group.sources.find((source) =>
+        next.has(getTaskProjectSourceSelectionId(group, source))
+      )
       if (selectedSource) {
         if (selectedTaskProjectGroups(groups, selected).length <= 1) {
           return
         }
         for (const source of group.sources) {
-          next.delete(source.id)
+          next.delete(getTaskProjectSourceSelectionId(group, source))
         }
       } else {
-        next.add(group.repo.id)
+        for (const source of group.selectionMode === 'builder' ? group.sources : [group.repo]) {
+          next.add(getTaskProjectSourceSelectionId(group, source))
+        }
       }
       onChange(next)
     },
@@ -195,9 +155,9 @@ export default function TaskProjectSourceCombobox({
       }
       const next = new Set(selected)
       for (const candidate of group.sources) {
-        next.delete(candidate.id)
+        next.delete(getTaskProjectSourceSelectionId(group, candidate))
       }
-      next.add(source.id)
+      next.add(getTaskProjectSourceSelectionId(group, source))
       onChange(next)
       setSourceMenuProjectKey(null)
       sourceMenuHoverRef.current = { projectKey: null, row: false, content: false }
@@ -207,11 +167,17 @@ export default function TaskProjectSourceCombobox({
 
   const handleSelectAll = useCallback(() => {
     if (allSelected) {
-      const first = groups[0]
-      if (!first) {
+      const first = groups.find((group) => group.repo)
+      if (!first?.repo) {
         return
       }
-      onChange(new Set([first.repo.id]))
+      onChange(
+        new Set(
+          (first.selectionMode === 'builder' ? first.sources : [first.repo]).map((repo) =>
+            getTaskProjectSourceSelectionId(first, repo)
+          )
+        )
+      )
       return
     }
     onSelectAll()
@@ -289,7 +255,7 @@ export default function TaskProjectSourceCombobox({
                 <div
                   key={group.projectKey}
                   onMouseEnter={() => {
-                    setCommandValue(group.repo.id)
+                    setCommandValue(group.projectKey)
                     if (hasSourceMenu) {
                       setSourceMenuHover(group.projectKey, 'row', true)
                     }
@@ -301,14 +267,15 @@ export default function TaskProjectSourceCombobox({
                   }}
                   className={cn(
                     'group/source-row flex items-stretch transition-colors hover:bg-accent hover:text-accent-foreground',
-                    commandValue === group.repo.id && 'bg-accent text-accent-foreground'
+                    commandValue === group.projectKey && 'bg-accent text-accent-foreground'
                   )}
                 >
                   <button
                     type="button"
+                    disabled={!group.repo}
                     onClick={() => toggleProject(group)}
                     onMouseDown={(event) => event.preventDefault()}
-                    className="flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left text-xs"
+                    className="flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left text-xs disabled:opacity-50"
                   >
                     <Check
                       className={cn(
@@ -319,8 +286,8 @@ export default function TaskProjectSourceCombobox({
                     <div className="min-w-0 flex-1">
                       <span className="inline-flex items-center gap-1.5 text-xs">
                         <RepoBadgeLabel
-                          name={group.repo.displayName}
-                          color={group.repo.badgeColor}
+                          name={group.displayName ?? group.repo?.displayName ?? ''}
+                          color={group.repo?.badgeColor ?? '#737373'}
                           className="max-w-full"
                         />
                       </span>
@@ -362,7 +329,7 @@ export default function TaskProjectSourceCombobox({
                         <div className="py-1">
                           {group.sources.map((source) => {
                             const status = getRepoSourceStatus?.(source)
-                            const sourceSelected = source.id === selectedSource.id
+                            const sourceSelected = source.id === selectedSource?.id
                             const sourceDetail = getSourceDetail(source, status)
                             return (
                               <button

@@ -1,17 +1,30 @@
 import type { CodeHubApi } from '../../../shared/codehub-api'
+import type { Repo } from '../../../shared/repo-types'
 import { useAppStore } from '@/store'
 import { getExplicitRuntimeOwnerEnvironmentId } from './repo-runtime-owner'
 import { callRuntimeRpc, getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
+
+type RepoOwner = Pick<Repo, 'id' | 'executionHostId' | 'connectionId'>
+type OwnerRoutedCodeHubApi = {
+  [K in keyof CodeHubApi]: (
+    args: Parameters<CodeHubApi[K]>[0],
+    owner?: RepoOwner
+  ) => ReturnType<CodeHubApi[K]>
+}
 
 // Repo ownership selects the runtime for both reads and writes; UI focus may
 // have moved to a different host while a task detail remains open.
 function route<K extends keyof CodeHubApi>(
   method: K,
-  args: Parameters<CodeHubApi[K]>[0]
+  args: Parameters<CodeHubApi[K]>[0],
+  owner?: RepoOwner
 ): Promise<Awaited<ReturnType<CodeHubApi[K]>>> {
+  if (owner && owner.id !== args.repoId) {
+    return Promise.reject(new Error('CodeHub repository owner does not match the request'))
+  }
   const target = getActiveRuntimeTarget({
     activeRuntimeEnvironmentId: getExplicitRuntimeOwnerEnvironmentId(
-      useAppStore.getState(),
+      owner ? { repos: [owner] } : useAppStore.getState(),
       args.repoId
     )
   })
@@ -24,23 +37,23 @@ function route<K extends keyof CodeHubApi>(
   return call(args)
 }
 
-export const codehubApi: CodeHubApi = {
-  viewer: (args) => route('viewer', args),
-  listTasks: (args) => route('listTasks', args),
-  createIssue: (args) => route('createIssue', args),
-  updateIssueTitle: (args) => route('updateIssueTitle', args),
-  updateIssueLabels: (args) => route('updateIssueLabels', args),
-  listLabels: (args) => route('listLabels', args),
-  setIssueState: (args) => route('setIssueState', args),
-  closeMr: (args) => route('closeMr', args),
-  assignIssue: (args) => route('assignIssue', args),
-  mergeMr: (args) => route('mergeMr', args),
-  setReviewers: (args) => route('setReviewers', args),
-  listPipelines: (args) => route('listPipelines', args),
-  mrChecks: (args) => route('mrChecks', args),
-  mrChanges: (args) => route('mrChanges', args),
-  viewTask: (args) => route('viewTask', args),
-  listComments: (args) => route('listComments', args),
-  createComment: (args) => route('createComment', args),
-  deleteComment: (args) => route('deleteComment', args)
+export const codehubApi: OwnerRoutedCodeHubApi = {
+  viewer: (args, owner) => route('viewer', args, owner),
+  listTasks: (args, owner) => route('listTasks', args, owner),
+  createIssue: (args, owner) => route('createIssue', args, owner),
+  updateIssueTitle: (args, owner) => route('updateIssueTitle', args, owner),
+  updateIssueLabels: (args, owner) => route('updateIssueLabels', args, owner),
+  listLabels: (args, owner) => route('listLabels', args, owner),
+  setIssueState: (args, owner) => route('setIssueState', args, owner),
+  closeMr: (args, owner) => route('closeMr', args, owner),
+  assignIssue: (args, owner) => route('assignIssue', args, owner),
+  mergeMr: (args, owner) => route('mergeMr', args, owner),
+  setReviewers: (args, owner) => route('setReviewers', args, owner),
+  listPipelines: (args, owner) => route('listPipelines', args, owner),
+  mrChecks: (args, owner) => route('mrChecks', args, owner),
+  mrChanges: (args, owner) => route('mrChanges', args, owner),
+  viewTask: (args, owner) => route('viewTask', args, owner),
+  listComments: (args, owner) => route('listComments', args, owner),
+  createComment: (args, owner) => route('createComment', args, owner),
+  deleteComment: (args, owner) => route('deleteComment', args, owner)
 }

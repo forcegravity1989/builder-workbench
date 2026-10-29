@@ -1,7 +1,6 @@
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import { cn } from '@/lib/utils'
 import TaskProjectSourceCombobox from '@/components/task-project-source-combobox'
-import { normalizeTaskRepoSelection } from '@/components/task-page-default-repo-selection'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
@@ -14,11 +13,11 @@ export function TaskPageGitLabFilters({
 }): React.JSX.Element | null {
   const {
     updateSettings,
-    eligibleRepos,
+    normalizeRepoSelection,
     repoSelection,
     setRepoSelection,
     taskPickerGroups,
-    taskPickerRepos,
+    allTaskRepoSelection,
     gitLabIssueFilters,
     gitLabMRFilters,
     getTaskPickerRepoHostLabel,
@@ -60,7 +59,7 @@ export function TaskPageGitLabFilters({
             selected={repoSelection}
             getRepoHostLabel={getTaskPickerRepoHostLabel}
             onChange={(next) => {
-              const normalized = normalizeTaskRepoSelection(eligibleRepos, next)
+              const normalized = normalizeRepoSelection(next)
               setRepoSelection(normalized)
               void updateSettings({
                 defaultRepoSelection: [...normalized]
@@ -74,7 +73,7 @@ export function TaskPageGitLabFilters({
               })
             }}
             onSelectAll={() => {
-              const allIds = new Set(taskPickerRepos.map((r) => r.id))
+              const allIds = allTaskRepoSelection
               setRepoSelection(allIds)
               void updateSettings({
                 defaultRepoSelection: null

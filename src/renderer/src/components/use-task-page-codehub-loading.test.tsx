@@ -39,7 +39,10 @@ it('fetches one bounded list and keeps issue search on the client', async () => 
   const { result, rerender } = renderHook(() => useTaskPageCodeHubLoading(model))
   await waitFor(() => expect(setItems).toHaveBeenCalled())
   expect(listTasks.mock.lastCall?.[0]).toMatchObject({ limit: 250, search: undefined })
+  expect(listTasks.mock.lastCall?.[1]).toBe(model.selectedRepos[0])
+  expect(listTasks.mock.lastCall?.[0]).not.toHaveProperty('executionHostId')
   expect(setItems.mock.lastCall?.[0]).toHaveLength(35)
+  expect(setItems.mock.lastCall?.[0][0]).toMatchObject({ executionHostId: 'local' })
   listTasks.mockResolvedValue({
     remote: { host: 'codehub.example.com', project: 'team/project' },
     items: [],

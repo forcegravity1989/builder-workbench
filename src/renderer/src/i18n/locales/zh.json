@@ -14105,7 +14105,10 @@
               "hostCount": "{{value0}} 个主机",
               "searchProjects": "搜索项目...",
               "noMatches": "没有匹配搜索的项目。",
-              "chooseSource": "选择任务来源"
+              "chooseSource": "选择任务来源",
+              "builderOffline": "Builder 已离线，重新连接后读取任务",
+              "builderScope": "该 Builder 的全部任务仓库",
+              "builderUnavailable": "暂无可用仓库，请检查 Builder 连接"
             }
           }
         }

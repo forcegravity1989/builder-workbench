@@ -38,6 +38,8 @@ import {
 } from '../../task-page-source-context'
 import { CodeHubListResultNotice, TaskPageScopeFooter } from '@/workbench/TaskScopePanel'
 import { resolveTaskRowWorkspace } from '@/workbench/scoped-task-workspace'
+import { findCodeHubTaskRepo } from '@/lib/codehub-task-repo'
+import { getRepoHostIdentityForParts } from '../../../../../shared/repo-host-identity'
 
 function githubStateOf(item: CodeHubTaskItem): GitHubWorkItemStatusItem {
   return {
@@ -63,7 +65,6 @@ export function TaskPageCodeHubItemList({
     setCodehubDetailItem,
     handleUseCodeHubItem,
     setCodehubRefreshNonce,
-    repoMap,
     allWorktrees
   } = model
   const mrView = codehubView === 'mrs'
@@ -180,18 +181,15 @@ export function TaskPageCodeHubItemList({
           </div>
         ) : null}
         {visibleItems.map((item) => {
-          const key = `${item.repoId ?? ''}:${item.type}:${item.iid}`
-          const repo = selectedRepos.find((candidate) => candidate.id === item.repoId)
+          const key = `${getRepoHostIdentityForParts(item.repoId ?? '', item.executionHostId ?? '')}:${item.type}:${item.iid}`
+          const repo = findCodeHubTaskRepo(selectedRepos, item)
           // G2 (BW)：范围视图的 Issue 按明确绑定解析 Open/Start；无范围保持原 Start。
           const rowWorkspace = resolveTaskRowWorkspace({
             scope: model.workbenchScope,
             worktrees: allWorktrees,
             provider: 'codehub',
             item: { repoId: item.repoId, type: item.type, number: item.iid },
-            sourceContext: getTaskPageRepoSourceContext(
-              repoMap.get(item.repoId ?? '') ?? null,
-              'codehub'
-            )
+            sourceContext: getTaskPageRepoSourceContext(repo, 'codehub')
           })
           return (
             <div
@@ -266,6 +264,7 @@ export function TaskPageCodeHubItemList({
                   <span className="flex items-center">
                     <CodeHubIssueListStatus
                       item={item}
+                      owner={repo ?? undefined}
                       onChanged={() => setCodehubRefreshNonce((nonce) => nonce + 1)}
                     />
                   </span>
