@@ -196,11 +196,14 @@
   display: flex;
   flex-direction: column;
 }
+/* 阶段标签：放大加粗（评审反馈），缩进对齐步骤名；竖向连线从其左侧穿过不断线。 */
 .ci-flow-phase {
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  color: var(--muted-foreground);
-  margin: 8px 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: 0.02em;
+  color: var(--foreground);
+  margin: 10px 0 4px 26px;
 }
 .ci-flow-group:first-child .ci-flow-phase {
   margin-top: 0;
@@ -247,7 +250,7 @@
 .ci-flow-step.fail .ci-flow-reading {
   color: var(--color-danger-deep, #a03c36);
 }
-/* 竖向连线：从徽章下延到下一步；本步完成变绿；组内末步不画。 */
+/* 竖向连线：从徽章下延到下一步；本步完成变绿；跨阶段标签不断线，全列表末步不画。 */
 .ci-flow-step::after {
   content: '';
   position: absolute;
@@ -261,7 +264,11 @@
 .ci-flow-step.ok::after {
   background: color-mix(in srgb, var(--color-success-deep, #2f6b44) 45%, transparent);
 }
-.ci-flow-step:last-child::after {
+/* 组内末步：连线穿过下一组阶段标签接到首步徽章（标签块高 = 10+18+4 = 32px）。 */
+.ci-flow-group:not(:last-child) .ci-flow-step:last-child::after {
+  bottom: -35px;
+}
+.ci-flow-group:last-child .ci-flow-step:last-child::after {
   display: none;
 }
 .ci-flow-badge {

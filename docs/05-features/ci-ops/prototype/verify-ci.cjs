@@ -1,4 +1,4 @@
-// #461 CI 部署原型 DOM 断言验证：进入即全量形态（无场景切换）、竖排三阶段六步流程列表
+// #461 CI 部署原型 DOM 断言验证：进入即全量形态（无场景切换）、竖排四阶段六步流程列表
 // （数字标序、每步读数、块级日志开关）、两种模式与版本选择、统一配置入口与配置事实、
 // 执行瞬态与逐步点亮（读数随完成进板面）、记录区默认收起与展开、报错筛选、
 // 递交 prompt 一致性、console/page error 监听。
@@ -85,7 +85,7 @@ const check = (name, ok) => {
   )
   check('统一配置按钮存在', (await page.locator('#deploy .ci-config-button').count()) === 1)
 
-  // 竖排流程列表（板面核心）：六步名称、数字标序、三阶段分组、每步读数
+  // 竖排流程列表（板面核心）：六步名称、数字标序、四阶段分组、每步读数
   check(
     '六步名称顺序',
     (await page.locator('.ci-flow-step .ci-flow-name').allTextContents()).join('|') ===
@@ -97,10 +97,15 @@ const check = (name, ok) => {
       '1|2|3|4|5|6'
   )
   check(
-    '三阶段分组标签',
+    '四阶段分组标签（含归档）',
     (await page.locator('.ci-flow-phase').allTextContents()).join('|') ===
-      '部署前准备|开始部署|部署后验证'
+      '部署前准备|开始部署|部署后验证|归档'
   )
+  const phaseStyle = await page.evaluate(() => {
+    const cs = getComputedStyle(document.querySelector('.ci-flow-phase'))
+    return { weight: cs.fontWeight, size: cs.fontSize }
+  })
+  check('阶段标签放大加粗（13px/600）', phaseStyle.size === '13px' && phaseStyle.weight === '600')
   check('初始六步全过', (await page.locator('.ci-flow-step.ok').count()) === 6)
   const readings = await page.locator('.ci-flow-reading').allTextContents()
   check(

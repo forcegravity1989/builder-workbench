@@ -1,5 +1,5 @@
-// CI 部署原型数据模型：模块、三阶段六步流程、两种模式、版本登记、配置事实、每步读数与演示日志、初始全量状态与记录、递交指令文本。
-// 流程骨架与 spec.md「部署流程：三阶段六步」、skill-deploy.md「部署流程契约」逐字对齐；
+// CI 部署原型数据模型：模块、四阶段六步流程、两种模式、版本登记、配置事实、每步读数与演示日志、初始全量状态与记录、递交指令文本。
+// 流程骨架与 spec.md「部署流程：四阶段六步」、skill-deploy.md「部署流程契约」逐字对齐；
 // PROMPTS 与 skill-deploy.md 递交文本表逐字一致（verify-ci.cjs 有断言盯住）。
 // 评审反馈（2026-10-29）：不做场景切换，进入即呈现已接入后的全量形态。
 
@@ -12,7 +12,7 @@ export const MODES = [
   ['release', '上线']
 ]
 
-// 三阶段六步：软件包准备在最前——没有可用包（或未配置启动命令）时失败发生在清场之前。
+// 四阶段六步：软件包准备在最前——没有可用包（或未配置启动命令）时失败发生在清场之前。
 export const FLOW = [
   {
     id: 'pkg',
@@ -51,14 +51,14 @@ export const FLOW = [
   },
   {
     id: 'record',
-    phase: '部署后验证',
+    phase: '归档',
     name: '记录',
     dev: '写 records.jsonl（模式、版本、各步结果、失败步定位、耗时）',
     release: '同左'
   }
 ]
 
-export const FLOW_PHASES = ['部署前准备', '开始部署', '部署后验证']
+export const FLOW_PHASES = ['部署前准备', '开始部署', '部署后验证', '归档']
 
 // 上线版本登记（演示数据）：来自各版本验收材料的包登记（版本 → 包路径），默认最新；包不存在灰掉不隐藏。
 export const VERSIONS = [
@@ -234,7 +234,7 @@ export const initialRecords = [
 // 递交 prompt 真实文本：与 skill-deploy.md「递交 prompt 真实文本」表逐字一致。
 export const PROMPTS = {
   generate: () =>
-    '按 ci-ops skill 为本项目生成 .bw/ci/deploy.sh：先勘察项目实际代码与已有部署资产（构建方式、服务形态、探针口径、目标环境），已有资产编排复用、缺失环节按模板生成；按三阶段六步骨架（软件包准备→预检→清场→部署→验证→记录）编排，软件包准备必须在清场之前；执行时按步骤标记协议输出 [ci-step] 进度，执行后必须独立读回服务状态与版本并写 .bw/ci/records.jsonl 记录，失败如实写 ok:false 与 failedStep。完成后提 PR 经人审合入 main，不直接改 main。',
+    '按 ci-ops skill 为本项目生成 .bw/ci/deploy.sh：先勘察项目实际代码与已有部署资产（构建方式、服务形态、探针口径、目标环境），已有资产编排复用、缺失环节按模板生成；按四阶段六步骨架（软件包准备→预检→清场→部署→验证→记录）编排，软件包准备必须在清场之前；执行时按步骤标记协议输出 [ci-step] 进度，执行后必须独立读回服务状态与版本并写 .bw/ci/records.jsonl 记录，失败如实写 ok:false 与 failedStep。完成后提 PR 经人审合入 main，不直接改 main。',
   configure: () =>
     '按 ci-ops skill 配置本项目部署所需资产：开发启动命令与端口、探针 URL、上线服务器信息（IP/用户/上传路径）。已有配置先从项目资产读出来给我确认，缺失或要改的向我收集；配置写进项目资产随 .bw/ci/deploy.sh 同审合入。密码不进配置，只在部署执行时输入。',
   deployDev: () =>
