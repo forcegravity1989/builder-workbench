@@ -5,8 +5,8 @@ import type {
 } from '../../../shared/onboarding-state-types'
 import type { NotificationSettings } from '../../../shared/notification-settings-types'
 import type { PersistedState } from '../../../shared/persisted-state-types'
+import { getDefaultNotificationSettings } from '../../../shared/default-global-settings'
 import {
-  getDefaultNotificationSettings,
   getDefaultOnboardingState,
   ONBOARDING_FINAL_STEP,
   ONBOARDING_FLOW_VERSION
@@ -50,6 +50,7 @@ export function normalizeNotificationSettings(value: unknown): NotificationSetti
     enabled: booleanOr(candidate.enabled, defaults.enabled),
     agentTaskComplete: booleanOr(candidate.agentTaskComplete, defaults.agentTaskComplete),
     terminalBell: booleanOr(candidate.terminalBell, defaults.terminalBell),
+    reviewRequest: booleanOr(candidate.reviewRequest, defaults.reviewRequest),
     suppressWhenFocused: booleanOr(candidate.suppressWhenFocused, defaults.suppressWhenFocused),
     customSoundId,
     customSoundPath:

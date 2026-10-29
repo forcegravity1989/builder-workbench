@@ -163,6 +163,20 @@ export function NotificationsPane({
         }
       />
 
+      {/* BW pr-review-notify 方案二：评审请求通知的 source 级开关（中文产品口径）。 */}
+      <NotificationSettingToggle
+        icon={<BellRing className="size-4" />}
+        label="PR 评审请求"
+        description="其他 Workbench 用户经你配置的端点投递评审请求。"
+        checked={notificationSettings.reviewRequest}
+        disabled={!notificationSettings.enabled}
+        onToggle={() =>
+          void updateNotificationSettings({
+            reviewRequest: !notificationSettings.reviewRequest
+          })
+        }
+      />
+
       <Separator />
 
       <NotificationSoundSection

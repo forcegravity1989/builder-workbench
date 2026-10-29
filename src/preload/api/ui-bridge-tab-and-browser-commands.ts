@@ -200,5 +200,15 @@ export const uiTabAndBrowserCommandsApi = {
     ) => callback(data)
     ipcRenderer.on('ui:activateWorktree', listener)
     return () => ipcRenderer.removeListener('ui:activateWorktree', listener)
+  },
+  onOpenPrReview: (
+    callback: (data: { repo: string; prNumber: number; title: string; sender: string }) => void
+  ): (() => void) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      data: { repo: string; prNumber: number; title: string; sender: string }
+    ): void => callback(data)
+    ipcRenderer.on('ui:openPrReview', listener)
+    return () => ipcRenderer.removeListener('ui:openPrReview', listener)
   }
 } satisfies Partial<PreloadApi['ui']>

@@ -59,6 +59,8 @@ import type { DiagnosticsApi, MemoryApi, StatsApi, TelemetryApi } from './api/te
 import type { UiCommandEventApi } from './api/ui-command-event-api'
 import type { UiWindowApi } from './api/ui-window-api'
 import type { UpdaterApi } from './api/updater-api'
+import type { WelinkChatApi } from './api/welink-chat-api'
+import type { ReviewRequestApi } from './api/review-request-api'
 import type { WorkspaceCleanupApi, WorkspaceSpaceApi } from './api/workspace-cleanup-api'
 import type { LocalhostWorktreeLabelsApi, WorkspacePortsApi } from './api/workspace-port-api'
 import type { WorkspaceSessionApi } from './api/workspace-session-api'
@@ -110,6 +112,8 @@ export type PreloadApi = {
   preflight: PreflightApi
   cliInstall: CliInstallApi
   notifications: NotificationsApi
+  welinkChat: WelinkChatApi
+  bwReview: ReviewRequestApi
   onboarding: OnboardingApi
   dashboard: DashboardApi
   terminalPreview: TerminalPreviewApi

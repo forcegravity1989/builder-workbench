@@ -1,9 +1,12 @@
 import type { AgentStatusState, AgentType } from './agent-status-types'
+import type { ReviewRequestPayload } from './workbench/review-request-payload'
 
 export type NotificationSettings = {
   enabled: boolean
   agentTaskComplete: boolean
   terminalBell: boolean
+  /** BW pr-review-notify 方案二：评审请求通知的 source 级开关（照 agentTaskComplete 先例）。 */
+  reviewRequest: boolean
   suppressWhenFocused: boolean
   customSoundId:
     | 'system'
@@ -21,7 +24,11 @@ export type NotificationSettings = {
   customSoundVolume: number
 }
 
-export type NotificationEventSource = 'agent-task-complete' | 'terminal-bell' | 'test'
+export type NotificationEventSource =
+  | 'agent-task-complete'
+  | 'terminal-bell'
+  | 'review-request'
+  | 'test'
 
 export type NotificationDispatchRequest = {
   source: NotificationEventSource
@@ -43,6 +50,8 @@ export type NotificationDispatchRequest = {
   agentToolInput?: string
   agentLastAssistantMessage?: string
   agentInterrupted?: boolean
+  /** BW pr-review-notify 方案二：评审请求负载；点击通知经 ui:openPrReview 路由进 renderer 跳转协议。 */
+  reviewRequest?: ReviewRequestPayload | null
 }
 
 export type NotificationDispatchResult = {

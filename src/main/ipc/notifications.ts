@@ -25,7 +25,17 @@ import {
   resetNotificationPermissionEvidence
 } from './notification-permission-probe'
 
-export function registerNotificationHandlers(store: Store, runtime?: OrcaRuntimeService): void {
+export type NotificationHandlersRegistration = {
+  /** 桌面通知投递入口；BW 方案二评审监听经此弹通知（走同一开关/降噪面）。 */
+  dispatchNotification: (
+    args: NotificationDispatchRequest
+  ) => NotificationDispatchResult | Promise<NotificationDispatchResult>
+}
+
+export function registerNotificationHandlers(
+  store: Store,
+  runtime?: OrcaRuntimeService
+): NotificationHandlersRegistration {
   ipcMain.removeHandler('notifications:getDesktopAwayState')
   ipcMain.handle('notifications:getDesktopAwayState', () => readDesktopAwayState(powerMonitor))
   resetNotificationPermissionEvidence()
@@ -131,4 +141,6 @@ export function registerNotificationHandlers(store: Store, runtime?: OrcaRuntime
   )
 
   registerNotificationSoundHandlers(store)
+
+  return { dispatchNotification: (args) => deliveryService.dispatch(args) }
 }

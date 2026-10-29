@@ -16,6 +16,16 @@ export type ProjectCharter = {
   benchmark: string
   /** UI「目标方向」；仓文件字段名 opportunity */
   opportunity: string
+  /** 项目群绑定（[chat] 表）；provider 非 welink 或缺 group_id 时视为未配置，不装值。 */
+  chat?: ProjectCharterChat
+}
+
+/** `.bw/project.toml [chat]` 表：项目群绑定，pr-review-notify 方案一消费。 */
+export type ProjectCharterChat = {
+  provider: 'welink'
+  groupId: string
+  /** 沿用既有语义（merged/release 通知），本特性不消费；坏值省略不炸整份名片。 */
+  notify?: string[]
 }
 
 export const EMPTY_CHARTER: ProjectCharter = {
@@ -38,11 +48,23 @@ function quote(value: string): string {
   return JSON.stringify(value)
 }
 
-/** Minimal TOML top-level string fields (ignores [chat] tables). */
+/** 顶层文字字段（[chat] 表不参与字符串字段循环与保真补空）。 */
+export type CharterStringField = Exclude<keyof ProjectCharter, 'chat'>
+
+const CHARTER_FIELD_KEYS: readonly { field: CharterStringField; keys: readonly string[] }[] = [
+  { field: 'name', keys: ['name'] },
+  { field: 'kind', keys: ['kind'] },
+  { field: 'brief', keys: ['brief'] },
+  { field: 'benchmark', keys: ['benchmark'] },
+  // north_star 是 opportunity 的历史别名；已有该键时原位补值，不另插 opportunity。
+  { field: 'opportunity', keys: ['opportunity', 'north_star'] }
+]
+
+/** Minimal TOML top-level string fields plus the optional [chat] table. */
 export function parseProjectToml(raw: string): ProjectCharter {
   const out: ProjectCharter = { ...EMPTY_CHARTER }
   const source = parse(raw)
-  for (const field of Object.keys(out) as (keyof ProjectCharter)[]) {
+  for (const field of CHARTER_FIELD_KEYS.map((entry) => entry.field)) {
     const value = source[field] ?? (field === 'opportunity' ? source.north_star : undefined)
     if (value === undefined) {
       continue
@@ -52,7 +74,31 @@ export function parseProjectToml(raw: string): ProjectCharter {
     }
     out[field] = value
   }
+  const chat = parseChatTable(source.chat)
+  if (chat) {
+    out.chat = chat
+  }
   return out
+}
+
+/** [chat] 只在 provider=welink 且 group_id 为非空文字时成立；其余形态按未配置处理。 */
+function parseChatTable(raw: unknown): ProjectCharterChat | null {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+    return null
+  }
+  const table = raw as Record<string, unknown>
+  const groupId = table.group_id
+  if (table.provider !== 'welink' || typeof groupId !== 'string' || !groupId.trim()) {
+    return null
+  }
+  const notify = table.notify
+  return {
+    provider: 'welink',
+    groupId: groupId.trim(),
+    ...(Array.isArray(notify) && notify.every((item) => typeof item === 'string')
+      ? { notify: notify as string[] }
+      : {})
+  }
 }
 
 export function renderProjectToml(file: ProjectCharter): string {
@@ -67,15 +113,6 @@ export function renderProjectToml(file: ProjectCharter): string {
     ''
   ].join('\n')
 }
-
-const CHARTER_FIELD_KEYS: readonly { field: keyof ProjectCharter; keys: readonly string[] }[] = [
-  { field: 'name', keys: ['name'] },
-  { field: 'kind', keys: ['kind'] },
-  { field: 'brief', keys: ['brief'] },
-  { field: 'benchmark', keys: ['benchmark'] },
-  // north_star 是 opportunity 的历史别名；已有该键时原位补值，不另插 opportunity。
-  { field: 'opportunity', keys: ['opportunity', 'north_star'] }
-]
 
 function topLevelKeyOf(line: string): { key: string; value: string } | null {
   const t = line.trim()

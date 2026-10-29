@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { getDefaultNotificationSettings } from './default-global-settings'
 import {
   DEFAULT_TERMINAL_INACTIVE_PANE_OPACITY,
-  getDefaultNotificationSettings,
   getDefaultPrimarySelectionMiddleClickPaste,
   getDefaultTerminalRightClickToPaste,
   getDefaultSettings

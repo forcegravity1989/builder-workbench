@@ -29,6 +29,33 @@ opportunity = "纳入更多项目"
     expect(repoNameFromRemote('https://github.com/stablyai/orca.git')).toBe('orca')
   })
 
+  it('parses the [chat] table alongside top-level fields', () => {
+    const parsed = parseProjectToml(`name = "workbench"
+
+[chat]
+provider = "welink"
+group_id = "996840920634630304"
+notify = ["merged", "release"]
+`)
+    expect(parsed.chat).toEqual({
+      provider: 'welink',
+      groupId: '996840920634630304',
+      notify: ['merged', 'release']
+    })
+  })
+
+  it('treats a malformed [chat] table as unconfigured without failing the charter', () => {
+    const base = 'name = "workbench"\n'
+    // provider 非 welink、缺 group_id、notify 坏值：均按未配置处理，顶层字段照常解析。
+    expect(
+      parseProjectToml(`${base}\n[chat]\nprovider = "slack"\ngroup_id = "1"\n`).chat
+    ).toBeUndefined()
+    expect(parseProjectToml(`${base}\n[chat]\nprovider = "welink"\n`).chat).toBeUndefined()
+    expect(
+      parseProjectToml(`${base}\n[chat]\nprovider = "welink"\ngroup_id = "1"\nnotify = 3\n`).chat
+    ).toEqual({ provider: 'welink', groupId: '1' })
+  })
+
   it('fills only blank fields in place, keeping existing values', () => {
     const raw = `name = "a"
 kind = ""

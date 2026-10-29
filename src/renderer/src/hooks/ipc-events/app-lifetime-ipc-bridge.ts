@@ -3,6 +3,8 @@ import { getTabIdsAwaitingHostHydrationRemount } from '@/lib/parked-terminal-hos
 import { emitAutomationsChangedWindowEvent } from '@/lib/automations-changed-window-event'
 import { createBackgroundSleepingAgentWakeDispatcher } from '@/lib/wake-sleeping-agents-in-background'
 import { attachMobileMarkdownBridge } from '@/runtime/mobile-markdown-bridge'
+import { buildReviewMessage } from '../../../../shared/workbench/pr-review-message'
+import { openPrReviewFromMessage } from '../../workbench/pr-review-jump'
 import { resetAgentHookCompletionNotificationCoordinators } from '../agent-hook-completion-notifications'
 import { useAppStore } from '../../store'
 import { registerAgentStatusIpcBridge } from './agent-status-ipc-bridge'
@@ -108,6 +110,16 @@ export function installAppLifetimeIpcEvents(
           { allowRuntimeEnvironment: false }
         )
         .catch((error) => console.error('Failed to activate CLI-created worktree:', error))
+    })
+  )
+
+  // BW pr-review-notify 方案二：评审通知点击 → 构造与方案一同格式的评审消息文本，
+  // 走共用跳转协议（解析 → 定位项目 → PR 详情页）；未接入/读不到由协议内如实提示。
+  unsubs.push(
+    window.api.ui.onOpenPrReview(({ repo, prNumber, title }) => {
+      void openPrReviewFromMessage(buildReviewMessage({ repo, prNumber, title })).catch((error) =>
+        console.error('Failed to open PR review from notification:', error)
+      )
     })
   )
 

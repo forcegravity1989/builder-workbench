@@ -49,14 +49,24 @@ export function createNotificationDeliveryService(
   const recentDesktopNotifications = new Map<string, number>()
   const recentMobileNotifications = new Map<string, number>()
 
-  const dedupeKeyFor = (request: NotificationDispatchRequest): string =>
-    request.worktreeId ?? request.worktreeLabel ?? 'global'
+  const dedupeKeyFor = (request: NotificationDispatchRequest): string => {
+    // Why: review requests carry no worktree identity; keying them all as 'global'
+    // would let the burst cooldown swallow a second PR's review request.
+    if (request.source === 'review-request' && request.reviewRequest) {
+      return `review-request:${request.reviewRequest.repo}#${request.reviewRequest.prNumber}`
+    }
+    return request.worktreeId ?? request.worktreeLabel ?? 'global'
+  }
 
   return {
     dispatch: (request) => {
       // Why: light the tray attention dot before the cooldown/focus/enabled gates so they
       // can't hold it back (clears on window show/restore; see index.ts).
-      if (request.source === 'agent-task-complete' || request.source === 'terminal-bell') {
+      if (
+        request.source === 'agent-task-complete' ||
+        request.source === 'terminal-bell' ||
+        request.source === 'review-request'
+      ) {
         if (!deps.isWindowVisible(deps.findActiveWindow())) {
           deps.setTrayAttention(true)
         }
@@ -66,12 +76,18 @@ export function createNotificationDeliveryService(
       const desktopAllowed =
         settings.enabled &&
         (request.source !== 'agent-task-complete' || settings.agentTaskComplete) &&
-        (request.source !== 'terminal-bell' || settings.terminalBell)
+        (request.source !== 'terminal-bell' || settings.terminalBell) &&
+        (request.source !== 'review-request' || settings.reviewRequest)
 
       const notificationOptions = buildNotificationOptions(request)
 
       // Why: desktop focus only means this computer sees the worktree; the paired phone may still need the alert.
-      if (deps.dispatchMobileNotification && request.source !== 'test') {
+      // review-request（BW 方案二）是本机评审协作事件，不进移动推送面。
+      if (
+        deps.dispatchMobileNotification &&
+        request.source !== 'test' &&
+        request.source !== 'review-request'
+      ) {
         if (
           reserveNotificationCooldown(
             recentMobileNotifications,

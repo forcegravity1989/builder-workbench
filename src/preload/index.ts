@@ -45,6 +45,8 @@ import { agentTrustApi } from './api/agent-trust-bridge'
 import { preflightApi } from './api/preflight-bridge'
 import { cliInstallApi } from './api/cli-install-bridge'
 import { notificationsApi } from './api/notifications-bridge'
+import { welinkChatApi } from './api/welink-chat-api'
+import { reviewRequestApi } from './api/review-request-api'
 import { onboardingApi } from './api/onboarding-bridge'
 import { dashboardApi } from './api/dashboard-bridge'
 import { terminalPreviewApi } from './api/terminal-preview-bridge'
@@ -145,6 +147,8 @@ const api = {
   preflight: preflightApi,
   cliInstall: cliInstallApi,
   notifications: notificationsApi,
+  welinkChat: welinkChatApi,
+  bwReview: reviewRequestApi,
   onboarding: onboardingApi,
   dashboard: dashboardApi,
   terminalPreview: terminalPreviewApi,

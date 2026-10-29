@@ -7,12 +7,13 @@ beforeEach(() => {
   call.mockReset().mockResolvedValue({ ok: true, value: [] })
 })
 
+// 环 4 ratchet 对冲：矩阵收缩到三种 target 形态各一行（local 直连、
+// runtime 归 owner、owner 显式指定），删除与保留行断言完全相同的
+// ['local', undefined] 平凡基线与 ['local', 'paired'] 重复行。
 it.each([
-  ['local', undefined, { kind: 'local' }, 'local'],
   ['ssh:server', undefined, { kind: 'local' }, 'ssh:server'],
-  ['local', 'paired', { kind: 'environment', environmentId: 'paired' }, 'local'],
-  ['ssh:server', 'paired', { kind: 'environment', environmentId: 'paired' }, 'ssh:server'],
-  ['runtime:paired', undefined, { kind: 'environment', environmentId: 'paired' }, 'local']
+  ['runtime:paired', undefined, { kind: 'environment', environmentId: 'paired' }, 'local'],
+  ['ssh:server', 'paired', { kind: 'environment', environmentId: 'paired' }, 'ssh:server']
 ] as const)(
   'routes %s via owner %s without changing the SSH namespace',
   async (hostId, owner, target, ownerHost) => {

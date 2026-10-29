@@ -10,6 +10,7 @@ import {
   joinFsPath,
   parseProjectToml,
   renderProjectToml,
+  type CharterStringField,
   type ProjectCharter
 } from '../../../shared/workbench/project-charter'
 
@@ -90,7 +91,7 @@ export async function writeProjectCharter(
       }
     } else {
       const next: ProjectCharter = { ...EMPTY_CHARTER }
-      for (const key of Object.keys(next) as (keyof ProjectCharter)[]) {
+      for (const key of Object.keys(EMPTY_CHARTER) as CharterStringField[]) {
         next[key] = intent[key].trim()
       }
       if (!next.name) {

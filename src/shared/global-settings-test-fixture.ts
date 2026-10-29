@@ -1,6 +1,6 @@
 import type { GlobalSettings } from './global-settings-types'
-import { getDefaultNotificationSettings, getDefaultVoiceSettings } from './constants'
-import { buildDefaultSettings } from './default-global-settings'
+import { getDefaultVoiceSettings } from './constants'
+import { buildDefaultSettings, getDefaultNotificationSettings } from './default-global-settings'
 
 // Why: tests need a complete GlobalSettings without hand-copying every field, so
 // new settings only have to be added to buildDefaultSettings, not each fixture.

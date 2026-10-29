@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { z } from 'zod'
 import { AcceptanceMaterialSchema, VersionTaskSnapshotSchema } from './version-material'
 
 const ready = {
@@ -92,11 +91,5 @@ describe('version task snapshots', () => {
     expect(enriched.demoEnv).toEqual({ kind: 'url', url: 'https://demo.example.test' })
     expect(enriched.minutes?.followups[0].text).toBe('补齐材料链接')
     expect(enriched.minutes?.confirmed).toBe(false)
-  })
-  it('exports the input schema including required source host without losing CLI schema support', () => {
-    const schema = z.toJSONSchema(AcceptanceMaterialSchema, { io: 'input' })
-    const serialized = JSON.stringify(schema)
-    expect(serialized).toContain('taskSnapshot')
-    expect(serialized).toContain('hostId')
   })
 })

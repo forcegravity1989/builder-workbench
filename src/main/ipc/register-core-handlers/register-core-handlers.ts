@@ -30,6 +30,8 @@ import { registerAiVaultHandlers } from '../ai-vault'
 import { registerAiVaultSearchHandlers } from '../ai-vault-search'
 import { registerNativeChatHandlers } from '../native-chat'
 import { registerNotificationHandlers } from '../notifications'
+import { registerReviewRequestHandlers } from '../review-request'
+import { registerWelinkChatHandlers } from '../welink-chat'
 import { registerNotebookHandlers } from '../notebook'
 import { registerOnboardingHandlers } from '../onboarding'
 import { registerDashboardPopoutHandlers } from '../dashboard-popout'
@@ -168,7 +170,9 @@ export function registerCoreHandlers(
   registerExportHandlers()
   registerStatsHandlers(stats)
   registerMemoryHandlers(store)
-  registerNotificationHandlers(store, runtime)
+  const notificationHandlers = registerNotificationHandlers(store, runtime)
+  registerReviewRequestHandlers({ dispatchNotification: notificationHandlers.dispatchNotification })
+  registerWelinkChatHandlers()
   registerNotebookHandlers(store)
   registerOnboardingHandlers(store)
   registerDashboardPopoutHandlers(store, keybindings)

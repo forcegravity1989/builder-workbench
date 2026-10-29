@@ -41,6 +41,15 @@ export function buildNotificationOptions(args: NotificationDispatchRequest): {
     }
   }
 
+  // BW pr-review-notify 方案二：文案按 spec 定稿（中文产品口径），不走上游 i18n。
+  if (args.source === 'review-request' && args.reviewRequest) {
+    const review = args.reviewRequest
+    return {
+      title: 'PR 评审请求',
+      body: `${review.sender} 请求评审 PR #${review.prNumber} ${review.title}`
+    }
+  }
+
   const richOptions = buildAgentTaskCompleteNotificationOptions(args)
   if (richOptions) {
     return richOptions

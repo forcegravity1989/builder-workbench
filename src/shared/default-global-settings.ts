@@ -17,6 +17,19 @@ import {
 import { DEFAULT_SOURCE_CONTROL_GROUP_ORDER } from './source-control-group-order'
 import { DESKTOP_TERMINAL_SCROLLBACK_ROWS_DEFAULT } from './terminal-scrollback-policy'
 
+export function getDefaultNotificationSettings(): NotificationSettings {
+  return {
+    enabled: true,
+    agentTaskComplete: true,
+    terminalBell: false,
+    reviewRequest: true,
+    suppressWhenFocused: true,
+    customSoundId: 'system',
+    customSoundPath: null,
+    customSoundVolume: 100
+  }
+}
+
 export function buildDefaultSettings(args: {
   workspaceDir: string
   appFontFamily: string

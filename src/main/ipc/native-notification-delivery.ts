@@ -72,8 +72,25 @@ export function deliverNativeNotification(
   }
   notification.on('failed', failedHandler)
 
-  // Why: worktreeId is formatted "repoId::worktreePath"; without the separator we can't extract a repoId, so skip the click-to-navigate binding.
-  if (args.worktreeId && args.worktreeId.includes('::')) {
+  // BW pr-review-notify 方案二：评审请求点击 → ui:openPrReview 携负载进 renderer
+  // 走共用跳转协议（与方案一消息点击同协议）；先拉前台照 activateWorktree 模式。
+  if (args.reviewRequest) {
+    const reviewPayload = args.reviewRequest
+    clickHandler = () => {
+      release()
+      const win = getTrustedUIRendererWindow()
+      if (!win || win.isDestroyed()) {
+        return
+      }
+      if (process.platform === 'darwin' && !isBackgroundLaunch()) {
+        app.focus({ steal: true })
+      }
+      safelyRevealWindow(win)
+      win.webContents.send('ui:openPrReview', reviewPayload)
+    }
+    notification.on('click', clickHandler)
+  } else if (args.worktreeId && args.worktreeId.includes('::')) {
+    // Why: worktreeId is formatted "repoId::worktreePath"; without the separator we can't extract a repoId, so skip the click-to-navigate binding.
     const repoId = getRepoIdFromWorktreeId(args.worktreeId)
     clickHandler = () => {
       release()

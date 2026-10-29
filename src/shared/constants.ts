@@ -1,5 +1,4 @@
 import type { GlobalSettings } from './global-settings-types'
-import type { NotificationSettings } from './notification-settings-types'
 import type { OnboardingChecklistState, OnboardingState } from './onboarding-state-types'
 import type { RepoHookSettings } from './orca-yaml-hook-types'
 import type { PersistedState } from './persisted-state-types'
@@ -14,7 +13,7 @@ import { DEFAULT_WORKTREE_CARD_PROPERTIES } from './worktree/card-properties'
 import { DEFAULT_AGENTS_GROUP_BY, DEFAULT_AGENTS_READ_FILTER } from './agents-view-thread-filters'
 import { DEFAULT_USAGE_PERCENTAGE_DISPLAY } from './usage-percentage-display'
 import { DEFAULT_STATUS_BAR_USAGE_MODE } from './status-bar-usage-mode'
-import { buildDefaultSettings } from './default-global-settings'
+import { buildDefaultSettings, getDefaultNotificationSettings } from './default-global-settings'
 import { DEFAULT_SETUP_AGENT_STARTUP_POLICY } from './setup-agent-startup-policy'
 import { DEFAULT_BROWSER_PAGE_ZOOM_LEVEL } from './browser-page-zoom'
 
@@ -106,29 +105,17 @@ export const ORPHAN_WORKTREE_ID = '__orphan__'
 export const FLOATING_TERMINAL_WORKTREE_ID = 'global-floating-terminal'
 
 export const REPO_COLORS = [
-  '#737373', // neutral
-  '#ef4444', // red
-  '#f97316', // orange
-  '#eab308', // yellow
-  '#22c55e', // green
-  '#14b8a6', // teal
-  '#8b5cf6', // purple
-  '#ec4899' // pink
+  '#737373',
+  '#ef4444', // neutral, red
+  '#f97316',
+  '#eab308', // orange, yellow
+  '#22c55e',
+  '#14b8a6', // green, teal
+  '#8b5cf6',
+  '#ec4899' // purple, pink
 ] as const
 
 export const DEFAULT_REPO_BADGE_COLOR = REPO_COLORS[0]
-
-export function getDefaultNotificationSettings(): NotificationSettings {
-  return {
-    enabled: true,
-    agentTaskComplete: true,
-    terminalBell: false,
-    suppressWhenFocused: true,
-    customSoundId: 'system',
-    customSoundPath: null,
-    customSoundVolume: 100
-  }
-}
 
 export function getDefaultOnboardingState(): OnboardingState {
   return {

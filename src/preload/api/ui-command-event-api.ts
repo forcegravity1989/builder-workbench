@@ -139,6 +139,10 @@ export type UiCommandEventApi = {
       defaultTabs?: WorktreeDefaultTabsLaunch
     }) => void
   ) => () => void
+  /** BW pr-review-notify 方案二：评审通知点击携负载进 renderer 跳转协议。 */
+  onOpenPrReview: (
+    callback: (data: { repo: string; prNumber: number; title: string; sender: string }) => void
+  ) => () => void
   onCreateTerminal: (
     callback: (data: {
       requestId?: string

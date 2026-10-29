@@ -12,6 +12,7 @@ import { RightSidebarToggle, TitlebarMainStrip } from './TitlebarMainStrip'
 import type { AppChromeLayout } from './use-app-chrome-layout'
 import type { FloatingWorkspacePanelState } from './use-floating-workspace-panel'
 import { isWorkbenchShell } from '../workbench/is-workbench-shell'
+import { WorkbenchProjectChatFloating } from '../workbench/chat/ProjectChatFloating'
 import { useProjectPage } from '../workbench/project-page-state'
 import { CycleWorkspaceProvider } from '../workbench/version-cycle/CycleWorkspaceProvider'
 import { useCycleWorkspace } from '../workbench/version-cycle/cycle-workspace-context'
@@ -374,6 +375,7 @@ function AppWorkspaceContent(props: {
                     onToggle={() => floatingWorkspace.setOpenWithFocus((open) => !open)}
                   />
                 ) : null}
+                <WorkbenchProjectChatFloating />
               </div>
             </div>
           </div>

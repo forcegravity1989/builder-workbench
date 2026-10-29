@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="zh" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Builder Workbench · PR 评审通知与顺滑进入 高保真</title>
+  <link rel="stylesheet" href="../../04-design-system/styles.css">
+  <style>
+    html, body { min-height: 100%; }
+    body { max-width: 860px; margin: 0 auto; padding: 0 20px 80px; }
+    [hidden] { display: none !important; }
+    button { font: inherit; }
+
+    /* 评审切换条（不属产品 UI） */
+    .preview { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; min-height: 40px; padding: 6px 14px; margin: 0 -20px; border-bottom: 1px solid var(--border); background: var(--card); font-size: 12px; }
+    .preview strong { font-weight: 600; }
+    .preview .group { display: flex; align-items: center; gap: 6px; }
+    .preview-note { margin-left: auto; color: var(--muted-foreground); font-size: 11px; }
+
+    /* 舞台：模拟应用右下角 */
+    .stage { position: relative; height: 560px; margin-top: 18px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--muted); overflow: hidden; }
+    .stage-label { position: absolute; top: 10px; left: 12px; z-index: 1; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted-foreground); }
+    .corner-hint { position: absolute; top: 32px; left: 12px; z-index: 1; max-width: 300px; font-size: 11px; color: var(--muted-foreground); }
+
+    /* 版本工作区树片段（右键演示） */
+    .tree { position: absolute; top: 60px; left: 16px; z-index: 2; width: 320px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); font-size: 12px; }
+    .tree .head { padding: 8px 10px; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 11px; color: var(--muted-foreground); }
+    .tree-row { position: relative; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--border); }
+    .tree-row:last-child { border-bottom: none; }
+    .tree-row:hover { background: var(--muted); }
+    .tree-row .name { font-family: var(--font-mono); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tree-row .badge { flex: none; padding: 1px 6px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 10px; color: var(--muted-foreground); }
+
+    /* 右键菜单 */
+    .menu { position: absolute; top: calc(100% - 4px); right: 8px; z-index: 15; min-width: 170px; padding: 4px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.12)); }
+    .menu-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 9px; border: none; border-radius: var(--radius-sm); background: none; text-align: left; font-size: 12px; color: var(--foreground); cursor: pointer; }
+    .menu-item:hover { background: var(--muted); }
+    .menu-item.accent { font-weight: 600; }
+    .menu-item.muted { color: var(--muted-foreground); }
+    .menu-sep { height: 1px; margin: 4px 2px; background: var(--border); }
+
+    /* 浮动按钮 */
+    .fab { position: absolute; right: 20px; bottom: 20px; z-index: 12; display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border: 1px solid var(--border); border-radius: 50%; background: var(--card); box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.12)); font-size: 18px; cursor: pointer; }
+    .fab:hover { background: var(--muted); }
+    .fab .dot { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--destructive, #dc2626); color: #fff; font-size: 10px; font-weight: 600; line-height: 18px; text-align: center; }
+
+    /* 群聊面板 */
+    .chat-panel { position: absolute; right: 20px; bottom: 72px; z-index: 13; display: flex; flex-direction: column; width: 340px; max-height: 420px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,0.18)); overflow: hidden; }
+    .chat-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .chat-head .gid { font-family: var(--font-mono); font-size: 11px; color: var(--muted-foreground); }
+    .chat-head .close { margin-left: auto; border: none; background: none; color: var(--muted-foreground); font-size: 14px; cursor: pointer; }
+    .chat-list { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+    .msg { max-width: 86%; padding: 7px 9px; border-radius: var(--radius-md); font-size: 12px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+    .msg .who { display: block; margin-bottom: 2px; font-size: 10px; color: var(--muted-foreground); }
+    .msg.them { align-self: flex-start; background: var(--muted); }
+    .msg.me { align-self: flex-end; background: var(--primary); color: var(--primary-foreground, #fff); }
+    .msg.review { align-self: flex-start; border: 1px solid var(--border); background: var(--background); cursor: pointer; }
+    .msg.review:hover { border-color: var(--primary); }
+    .msg.review .cta { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 11px; font-weight: 600; color: var(--primary); }
+    .msg.card { align-self: flex-start; border: 1px dashed var(--border); background: var(--muted); color: var(--muted-foreground); font-size: 11px; }
+    .chat-input { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); }
+    .chat-input textarea { flex: 1; min-height: 54px; max-height: 110px; resize: none; padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--background); color: var(--foreground); font: inherit; font-size: 12px; }
+    .chat-input textarea:focus { outline: 2px solid var(--primary); outline-offset: -1px; }
+    .chat-input .send { align-self: flex-end; }
+
+    /* 引导态 */
+    .guide { padding: 18px 14px; font-size: 12px; color: var(--muted-foreground); }
+    .guide code { font-family: var(--font-mono); font-size: 11px; }
+
+    /* Windows 通知框（方案二） */
+    .toast { position: absolute; right: 20px; bottom: 72px; z-index: 14; width: 340px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--card); box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,0.22)); cursor: pointer; }
+    .toast:hover { background: var(--muted); }
+    .toast .app { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted-foreground); }
+    .toast .title { margin: 6px 0 2px; font-size: 13px; font-weight: 600; }
+    .toast .body { font-size: 12px; line-height: 1.5; }
+    .toast .hint { margin-top: 8px; font-size: 11px; color: var(--muted-foreground); }
+
+    .jump-note { position: absolute; left: 16px; bottom: 16px; z-index: 14; max-width: 330px; padding: 9px 11px; border: 1px solid var(--primary); border-radius: var(--radius-md); background: var(--card); font-size: 12px; }
+    .jump-note strong { color: var(--primary); }
+
+    .legend { margin-top: 16px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 11px; color: var(--muted-foreground); }
+    .legend strong { color: var(--foreground); }
+  </style>
+</head>
+<body>
+
+  <div class="preview">
+    <strong>PR 评审通知与顺滑进入</strong>
+    <span class="group">
+      <span>场景</span>
+      <span class="seg" id="seg-scenario">
+        <label class="seg-opt"><input type="radio" name="scenario" value="collapsed" checked><span>收起·红点</span></label>
+        <label class="seg-opt"><input type="radio" name="scenario" value="open"><span>面板展开</span></label>
+        <label class="seg-opt"><input type="radio" name="scenario" value="compose"><span>右键发送评审</span></label>
+        <label class="seg-opt"><input type="radio" name="scenario" value="toast"><span>系统通知（方案二）</span></label>
+        <label class="seg-opt"><input type="radio" name="scenario" value="nologin"><span>未登录</span></label>
+      </span>
+    </span>
+    <span class="group">
+      <span>主题</span>
+      <span class="seg" id="seg-theme">
+        <label class="seg-opt"><input type="radio" name="theme" value="light" checked><span>浅</span></label>
+        <label class="seg-opt"><input type="radio" name="theme" value="dark"><span>深</span></label>
+      </span>
+    </span>
+    <span class="preview-note">评审样张 · 发送/跳转为演示假体</span>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="stage-label">应用右下角（示意）</div>
+    <div class="corner-hint">浮动按钮与面板挂应用右下角；左侧为版本工作区树片段，演示 worktree 右键「发送评审」。</div>
+
+    <!-- 版本工作区树片段 -->
+    <div class="tree" id="tree">
+      <div class="head">版本工作区 · v0.8</div>
+      <div class="tree-row" id="wt-199">
+        <span class="badge">worktree</span>
+        <span class="name">kanadead/issue-199-v0.8-g3-welink</span>
+        <button type="button" class="btn btn-ghost" id="wt-menu-trigger" aria-label="更多操作">⋮</button>
+        <div class="menu" id="wt-menu" hidden>
+          <button type="button" class="menu-item accent" id="mi-review">📨 发送评审</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="menu-item muted">绑定 / 改绑 / 解绑（#439 既有项）</button>
+        </div>
+      </div>
+      <div class="tree-row">
+        <span class="badge">worktree</span>
+        <span class="name">feat/overview-scoreboard</span>
+      </div>
+    </div>
+
+    <!-- 浮动按钮 -->
+    <button type="button" class="fab" id="fab" aria-label="WeLink 项目群">
+      💬<span class="dot" id="fab-dot" hidden>3</span>
+    </button>
+
+    <!-- 群聊面板 -->
+    <div class="chat-panel" id="chat-panel" hidden>
+      <div class="chat-head">
+        <span>WeLink 项目群</span>
+        <span class="gid">996840920634630304</span>
+        <button type="button" class="close" id="chat-close" aria-label="收起">✕</button>
+      </div>
+      <div class="chat-list" id="chat-list">
+        <div class="msg them"><span class="who">builder-a</span>1、4 个高 level 的能站得住脚，就是能对外讲。
+2、每个能关联特性，不然我不知道哪个特性做的有价值。</div>
+        <div class="msg card"><span class="who">项目助手</span>[卡片] ✅ 已提单 builder-workbench#470「[原生Orca能力] 批注框不能缩小，遮盖界面」</div>
+        <div class="msg review" id="msg-review">
+          <span class="who">builder-b</span>【评审请求】PR #470 修复：批注框支持缩小与记忆尺寸
+仓库：forcegravity1989/builder-workbench
+分支：fix/annotation-box-resize
+链接：https://github.com/forcegravity1989/builder-workbench/pull/470
+<span class="cta">↗ 点击进入 PR 详情页评审</span>
+        </div>
+      </div>
+      <div class="chat-input" id="chat-input-row">
+        <textarea id="chat-input" placeholder="输入文本，发送到项目群…"></textarea>
+        <button type="button" class="btn btn-primary send" id="chat-send">发送</button>
+      </div>
+      <div class="guide" id="chat-guide" hidden>
+        welink-cli 未登录（或 EXPIRED）。到 <strong>设置 → 集成 → WeLink</strong> 卡登录后重开此面板；
+        群配置读自 <code>.bw/project.toml [chat]</code>。
+      </div>
+    </div>
+
+    <!-- Windows 通知（方案二） -->
+    <div class="toast" id="toast" hidden>
+      <div class="app">🖥 Workbench</div>
+      <div class="title">PR 评审请求</div>
+      <div class="body">builder-b 请求评审 PR #470 · 修复：批注框支持缩小与记忆尺寸</div>
+      <div class="hint">点击通知 → BW 前台并进入该 PR 详情页</div>
+    </div>
+
+    <div class="jump-note" id="jump-note" hidden>
+      <strong>跳转演示</strong>：点击后经 <code>openTaskPage</code> 落到任务屏该 PR 的 <code>PullRequestPage</code>（原生评审动作），全程不手动找项目找 PR。
+    </div>
+  </div>
+
+  <div class="legend">
+    <strong>原型边界</strong>：不真发送、不真跳转——发送/点击只演示状态流转；消息为演示数据（真实历史经 welink-cli
+    <code>query-history-message</code> 读回，TEXT_MSG 渲染文本、CARD_MSG 显示占位）；未读红点按 msgId 游标推进；
+    左侧树仅为右键入口示意，不重绘版本工作区全貌；顶部场景与主题切换条是评审工具，不属产品 UI。
+    行为正本见 <strong>spec.md</strong>，意图见 <strong>intent.md</strong>。
+  </div>
+
+  <script>
+    var scenario = 'collapsed'
+    var panelOpen = false
+    var unread = 3
+
+    var REVIEW_MSG = [
+      '【评审请求】PR #470 修复：批注框支持缩小与记忆尺寸',
+      '仓库：forcegravity1989/builder-workbench',
+      '分支：fix/annotation-box-resize',
+      '链接：https://github.com/forcegravity1989/builder-workbench/pull/470'
+    ].join('\n')
+
+    function $(id) { return document.getElementById(id) }
+
+    function render() {
+      var nologin = scenario === 'nologin'
+      var toast = scenario === 'toast'
+      var compose = scenario === 'compose'
+
+      // 场景驱动：收起场景面板合上，其余场景面板位打开；toast 场景由通知框占位
+      panelOpen = scenario !== 'collapsed'
+
+      $('chat-panel').hidden = !panelOpen || toast
+      $('toast').hidden = !toast
+      $('fab-dot').hidden = toast || nologin || panelOpen || unread === 0
+      $('fab-dot').textContent = String(unread)
+      $('chat-guide').hidden = !nologin
+      $('chat-input-row').hidden = nologin
+      $('chat-list').hidden = nologin
+
+      $('chat-input').value = compose ? REVIEW_MSG : ''
+      $('chat-input').placeholder = compose ? '' : '输入文本，发送到项目群…'
+      $('jump-note').hidden = true
+      $('wt-menu').hidden = true
+    }
+
+    $('fab').addEventListener('click', function () {
+      if (scenario === 'toast' || scenario === 'nologin') return
+      panelOpen = !panelOpen
+      if (panelOpen) unread = 0
+      $('chat-panel').hidden = !panelOpen
+      $('fab-dot').hidden = panelOpen || unread === 0
+      if (panelOpen) $('chat-input').focus()
+    })
+    $('chat-close').addEventListener('click', function () {
+      panelOpen = false
+      $('chat-panel').hidden = true
+    })
+    $('wt-menu-trigger').addEventListener('click', function (e) {
+      e.stopPropagation()
+      var m = $('wt-menu')
+      m.hidden = !m.hidden
+    })
+    $('mi-review').addEventListener('click', function () {
+      scenario = 'compose'
+      document.querySelectorAll('input[name="scenario"]').forEach(function (r) { r.checked = r.value === 'compose' })
+      unread = 0
+      render()
+      $('chat-input').focus()
+    })
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('.menu') && !e.target.closest('#wt-menu-trigger')) $('wt-menu').hidden = true
+    })
+    $('chat-send').addEventListener('click', function () {
+      var text = $('chat-input').value.trim()
+      if (!text) return
+      var el = document.createElement('div')
+      el.className = 'msg me'
+      el.textContent = text
+      $('chat-list').appendChild(el)
+      $('chat-list').scrollTop = $('chat-list').scrollHeight
+      $('chat-input').value = ''
+    })
+    $('msg-review').addEventListener('click', function () {
+      $('jump-note').hidden = false
+    })
+    $('toast').addEventListener('click', function () {
+      $('jump-note').hidden = false
+    })
+    document.querySelectorAll('input[name="scenario"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        scenario = this.value
+        if (scenario === 'collapsed') unread = 3
+        render()
+      })
+    })
+    document.querySelectorAll('input[name="theme"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        document.documentElement.dataset.theme = this.value
+      })
+    })
+    render()
+  </script>
+</body>
+</html>

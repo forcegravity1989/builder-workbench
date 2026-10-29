@@ -17,9 +17,6 @@ describe('classifyKbDocGroup', () => {
     )
     expect(classifyKbDocGroup('AGENTS.md')).toBe('eng-agents')
     expect(classifyKbDocGroup('.bw/project.toml')).toBe('eng-bw')
-  })
-
-  it('classifies principles and active features', () => {
     expect(classifyKbDocGroup('docs/01-principles/vision.md')).toBe('eng-principles')
     expect(classifyKbDocGroup('docs/05-features/foo/intent.md')).toBe('eng-features')
     expect(classifyKbDocGroup('docs/architecture.md')).toBe('eng-contract')
@@ -32,4 +29,3 @@ describe('classifyKbDocGroup', () => {
     expect(classifyKbDocGroup('docs/review-evidence/pr-19217/README.md')).toBeNull()
   })
 })
-
