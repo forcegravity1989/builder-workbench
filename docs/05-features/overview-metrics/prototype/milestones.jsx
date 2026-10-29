@@ -753,7 +753,6 @@ function App() {
                     )}
                   </div>
                   <Timeline
-                    historical={historical}
                     rows={plan.features}
                     plan={plan}
                     planning={planning}
