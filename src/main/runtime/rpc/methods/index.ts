@@ -6,6 +6,7 @@ import { WORKBENCH_VERSION_WORKSPACE_METHODS } from './workbench-version-workspa
 import { WORKBENCH_METRICS_METHODS } from './workbench-metrics'
 import { WORKBENCH_PACKAGE_METHODS } from './workbench-package'
 import { WORKBENCH_ARCHIVE_METHODS } from './workbench-archive'
+import { WORKBENCH_RELEASE_METHODS } from './workbench-release'
 import { WORKBENCH_CHARTER_METHODS } from './workbench-charter'
 import { WORKBENCH_TRUNK_METHODS } from './workbench-trunk'
 import { AI_VAULT_METHODS } from './ai-vault'
@@ -67,6 +68,7 @@ export const ALL_RPC_METHODS = [
   ...WORKBENCH_METRICS_METHODS,
   ...WORKBENCH_PACKAGE_METHODS,
   ...WORKBENCH_ARCHIVE_METHODS,
+  ...WORKBENCH_RELEASE_METHODS,
   ...WORKBENCH_CHARTER_METHODS,
   ...WORKBENCH_TRUNK_METHODS,
   ...STATUS_METHODS,
