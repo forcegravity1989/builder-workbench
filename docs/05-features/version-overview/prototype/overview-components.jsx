@@ -59,8 +59,9 @@ export function ReferencePanel() {
         Pull request reviews · 官方文档 ↗
       </a>
       <p>
-        原型注释: 沿用 GitHub 对 Pre-release 与正式 Release 的区分。本项目按用户确认，将 Pre
-        命名用于先行试用交付；实际包、使用范围与需求归属仍需证据。时间轴沿本项目实际的设计评审、开发、随版交付与试用完善过程，不套用固定六阶段状态机。
+        原型注释: 名称参考 GitHub 的 Pre-release 与正式 Release 区分。BW
+        本轮按正式计划关联和目标人工达成推导首次 Pre、第二次
+        Release；节点取验收确认时间，不表示逐包独立核验。每周一版、两版完成只是规划默认，不自动生成交付。
       </p>
       <a
         href="https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository"
@@ -88,6 +89,11 @@ export function ReferencePanel() {
         原型注释: 沿用当前壳、导航与设计系统。以项目实际版本讨论范围与交付，不强制 C/B
         命名。规划节奏不决定版本身份；每版一次正式人工验收，缺证据保持未知。不将业界工具的规则移植成
         BW 协议。
+      </p>
+      <p>
+        原型注释: 本轮按六个可采集节点组织横轴：周一09:00周期基线、版本计划 PR 合入确认意图、设计 PR
+        合入定稿、开发 PR 合入交付（缺失时用特性 Issue 关闭时间）、首次 Pre、第二次
+        Release。五段日历历时包含等待；同目标多特性暂沿整体人工结论。
       </p>
       <p>
         原型注释:
@@ -160,7 +166,14 @@ export function HintButton({ id, text, className = '', current = false, onClick,
   )
 }
 
-export function Feature({ feature, openSession, selectedVersion, focusRequest, openVersion }) {
+export function Feature({
+  feature,
+  openSession,
+  native,
+  selectedVersion,
+  focusRequest,
+  openVersion
+}) {
   const [expanded, setExpanded] = window.BWPrototypeDependencies.useState(!!feature.previewExpanded)
   const cardRef = useRef(null)
   const toggleRef = useRef(null)
@@ -226,7 +239,7 @@ export function Feature({ feature, openSession, selectedVersion, focusRequest, o
               </HintButton>
             ))}
           </div>
-          <FeatureTimeline feature={feature} openSession={openSession} />
+          <FeatureTimeline feature={feature} openSession={openSession} native={native} />
         </div>
       )}
     </article>
@@ -237,8 +250,21 @@ export function SourcePanel() {
   return (
     <>
       <p>
-        原型注释: 本稿使用 BW 自身的只读材料与 GitHub 快照，不是持续联网的数据接口。采集时间：
+        原型注释: 本稿使用 BW 自身的只读材料与 GitHub
+        快照，不是持续联网的数据接口。计划与历史材料快照时间：
         {snapshot.source.checkedAt}。
+      </p>
+      <p>
+        原型注释: #334 的 PR 状态单独只读刷新：
+        {snapshot.pulls
+          .filter((pr) => pr.readAt)
+          .map((pr) => (
+            <span key={pr.number}>
+              {' '}
+              #{pr.number} · {pr.readAt}；
+            </span>
+          ))}
+        仅更新编号、标题、链接、状态、草稿标记与合入时间，不代表其他材料同步刷新。
       </p>
       <dl>
         <dt>版本中</dt>
@@ -275,8 +301,8 @@ export function SourcePanel() {
         </dd>
         <dt>AI workflow</dt>
         <dd>
-          原型注释: 生产力指标仅保留空布局，具体定义和统计由 workflow
-          专项确定。本轮不显示模拟数值，也不实施会话统计。
+          原型注释: 六项人工介入／返工口径沿 workflow
+          正本；本页指标仍为空布局，尚未接统计结果。不显示模拟数值。
         </dd>
       </dl>
       <p>

@@ -355,7 +355,7 @@ function App() {
                     )
                   ].join('、')}
                 </span>
-                <span>{history ? '人工验收 · 2026-10-23' : '计划确认 · 2026-10-27'}</span>
+                <span>{history ? '人工验收 · 2026-10-23' : '计划 PR 合入 · 2026-10-27'}</span>
                 <span>交付时间 · {history ? '见验收与发布记录' : '计划未记录'}</span>
                 <Link href={planLink}>计划依据</Link>
               </div>

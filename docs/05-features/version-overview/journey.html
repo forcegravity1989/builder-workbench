@@ -9,14 +9,14 @@
   </head>
   <body>
     <main>
-      <header><span>BUILDER WORKBENCH / 版本总览 / #334</span><a href="prototype.html?rev=334-draft-10">打开高保真 ↗</a></header>
-      <p class="eyebrow">原型注释: 审阅旅程 · 设计已确认，生产实现待接入</p>
+      <header><span>BUILDER WORKBENCH / 版本总览 / #334</span><a href="prototype.html?rev=334-draft-11">打开高保真 ↗</a></header>
+      <p class="eyebrow">原型注释: 六节点口径已确认，修订 11 外观待审；已有生产主路径不等于新增节点已接入</p>
       <h1>按目标看承诺，沿特性历程看交付。</h1>
       <p class="lead">从 BW 原有侧边栏进入。未计划、版本中和交付后沿用同一布局：版本目标、AI workflow 生产力、本版记录。目标内保留负责人、范围与验收标准入口、任务入口与验收屏的人工结论。</p>
       <nav><a href="intent.md">意图草案 ↗</a><a href="spec.md">规格草案 ↗</a><span>原型注释: 使用 Orca 原生浏览器批注</span></nav>
       <section class="intent">
         <h2>原型注释: 本轮怎样看</h2>
-        <p>用顶部下拉切换时期。目标内有特性就显示横轴，普通任务保留数量与原生目标任务入口；同一目标可同时包含多个特性和其他任务。当前与历史版均默认展示完整模拟横轴，实际验收与 PR 状态分开标识。</p>
+        <p>用顶部下拉切换时期。目标内有特性就显示横轴，普通任务保留数量与原生目标任务入口；同一目标可同时包含多个特性和其他任务。当前与历史版均默认展示六节点、五段历时的完整模拟横轴，实际验收与 PR 状态分开标识。</p>
         <p>产品区只呈现对象、状态与动作；生产力指标暂留空位，模拟边界就地标“原型注释:”。右上文档弹窗说明参考与取舍。无需截图，可直接批注页面。</p>
       </section>
       <ol>
@@ -24,41 +24,43 @@
           <h3>计划未制定</h3>
           <p>目标区显示未制定计划和原有制定计划入口；没有目标就不补造目标。读取失败应显示未知，不能当未计划。</p>
           <p class="check">原型注释: v0.9 只是布局情景，未创建真实版本；沿原有计划短卡、原生会话与计划板进入。</p>
-          <a href="prototype.html?scene=unplanned&amp;rev=334-draft-10">审阅未制定计划 →</a>
+          <a href="prototype.html?scene=unplanned&amp;rev=334-draft-11">审阅未制定计划 →</a>
         </article></li>
         <li><div class="number">02</div><article>
           <h3>版本中</h3>
           <p>按 v0.8 G1–G4 逐目标阅读。G2 中 #334 默认展开，#440 可展开，各有自己的特性历程；普通任务查看数量并进入该目标原生任务屏。点击目标验收状态进入验收上下文。</p>
           <p class="check">原型注释: 目标、范围与数量来自固定计划。特性主单是显式选取的示例，没有改真实标签。横轴时间、PR 合入事件和示例版本是模拟，不能当作真实交付。</p>
-          <a href="prototype.html?scene=during&amp;rev=334-draft-10">审阅版本中 →</a>
+          <a href="prototype.html?scene=during&amp;rev=334-draft-11">审阅版本中 →</a>
         </article></li>
         <li><div class="number">03</div><article>
           <h3>版本交付后</h3>
           <p>每个目标原位回显 v0.7 人工结论：G1／G2 未达成，G3／G4 达成。下方特性仍使用同一横轴结构，目标任务入口仍在；特性阶段不能覆盖目标验收。</p>
           <p class="check">原型注释: 按验收 planRef 固定当时计划。真实历史阶段与 PR 缺证据时保持未记录；模拟横轴不改写人工结论。</p>
-          <a href="prototype.html?scene=delivered&amp;rev=334-draft-10">审阅交付后 →</a>
+          <a href="prototype.html?scene=delivered&amp;rev=334-draft-11">审阅交付后 →</a>
         </article></li>
       </ol>
       <section class="intent">
         <h2>同一特性，从设计走向随版交付</h2>
-        <p>已有 Issue → intent、spec、原型一起准备并评审 → 设计 PR 合入 → 会话中的详细设计、Plan 与开发 → 实现 PR 合入 → 随版本发布 Pre → 试用反馈、修理与回归 → 随后续版本发布 Release。</p>
-        <p>两个 PR 提供设计与开发的结束节点，不强制拆两个 Issue。测试与修复记录在实际发生的时段，合入后等待出包不全部算成测试时间。阶段时间按小时比例，端点显示时分；点击轴上过程只打开对应 PR／工作会话，资料通过 PR 文件或会话目录查看。</p>
-        <p>项目版本可因其他目标完成而正常发布，此特性未必随版交付；Pre 与 Release 必须有实际包含范围。所有反馈进入目标关联的 Issue，每版仍只有一次正式人工验收。</p>
+        <p>周期起点 → 意图确认 → 设计定稿 → 开发交付 → Pre → Release。周期起点取首次包含该特性的计划 PR 合入所在周周一 09:00，延期不重置；计划 PR 合入代表意图确认，不使用纪要确认时间。设计 PR 合入代表 intent、spec、原型联合评审定稿；开发 PR 合入优先，没有可识别开发 PR 时才用特性 Issue 关闭时间兜底，保留来源。</p>
+        <p>相邻节点形成意图收敛、设计评审、开发、测试与随版准备、试用完善五段日历历时，按小时比例呈现，端点显示日期、时分与时区。周期基线不是实际开工，历时包含等待，不当作人工工时或独立测得的测试耗时。测试、修订可以并行和回返；资料继续通过 PR 或原生会话目录查看。</p>
+        <p>正式计划包含特性主单或执行单，且对应目标人工验收达成，才按约定推导本版交付：第一次称 Pre，第二次称 Release。未达成不计，缺结论保持未知；同目标有多个特性时暂沿整体结论，不能区分个别交付例外。所有反馈进入目标关联的 Issue，每版仍只有一次正式人工验收。</p>
+        <p class="check">原型注释: 同一横轴可以对照两条模拟路径：按计划 v1.0 Pre → v1.1 Release；或 v1.0 未交付此特性 → 临时版 v1.0.1 Pre → v1.1 Release。每周一版、两个版本完成是规划默认值，不自动证明交付。示例版本、时间和历时均不改写 BW 真实计划或人工验收。</p>
       </section>
       <section class="intent">
         <h2>特性与目标关系保持清楚</h2>
         <p>主 Issue 使用“特性”标签，执行 Issue 用标题【特性#334】明确归属。目标下只有执行单时也能定位主特性；未识别到特性则使用普通任务入口，不改目标名称。现有 Feature 任务类型不自动当主单标记。</p>
         <p>关联版本是一排版本号标签，悬停看一句范围，点击定位对应版本；项目总览进入后可沿来源返回，规划草案仍保留。版本按项目实际名称讨论，不强制 C/B 或月／周分组。</p>
-        <p class="check">原型注释: 标签／标题规则待统筹接入，未改共享协议。来源导航仅演示 #334 端，未联调 #440 真实视口与草案；没有独立月度总览或会话屏。</p>
-        <nav><a href="prototype.html?scene=during&amp;focus=334&amp;rev=334-draft-10">定位 v0.8 的 #334 →</a><a href="prototype.html?scene=delivered&amp;focus=334&amp;rev=334-draft-10">定位 v0.7 的 #334 →</a></nav>
+        <p class="check">原型注释: 标签／标题身份规则已接入既有生产实现，不新增共享协议。来源导航仅演示 #334 端，未联调 #440 真实视口与草案；没有独立月度总览或会话屏。</p>
+        <nav><a href="prototype.html?scene=during&amp;focus=334&amp;rev=334-draft-11">定位 v0.8 的 #334 →</a><a href="prototype.html?scene=delivered&amp;focus=334&amp;rev=334-draft-11">定位 v0.7 的 #334 →</a></nav>
       </section>
       <section class="intent">
         <h2>统计跟着实际工作规范演进</h2>
         <p>来源读取、节点解析、时间轴展示分别承担职责。解析脚本随项目规范变化，不能把两个 PR 数量写死，也不能按 PR 出现顺序猜阶段。结果保留来源和规则修订，不改写人工验收。</p>
-        <p>AI workflow 生产力本轮保留空指标布局；具体指标与统计交由 workflow 专项，不阻塞总览落地。</p>
+        <p>GitHub 复用已有 Issue 回链。CodeHub 继续使用正文 MR 链接与原生工作树关联；内部 CLI 反查缺口只留独立来源函数返回未知，供内部助手补齐，其他实现由本任务统一完成。</p>
+        <p>AI workflow 生产力本轮保留空指标布局；人工介入和返工口径引用 <a href="../../../.claude/skills/workbench-start/references/workflow-feedback.md">workbench-start 真实任务反馈</a>，不复制另一套公式。脚本已存在不表示页面接通，也不替代特性时间轴的计划、PR 与验收依据。</p>
       </section>
       <footer><strong>原型注释: 当前设计与后续开发</strong>
-        <p>#459 只交付 intent、spec、旅程与高保真。人审合入后 #334 保持打开，同一任务分支另开开发 PR；通过 askuser 对齐实施 Plan，再执行开发和适用检查。用户明确不要求真机验证或截图，以独立四维检视和另一位 subagent 的静态 BUG／Plan 完成度／原型一致性检视收尾，不把未验证的运行能力说成通过。</p>
+        <p>#459 设计已合入，开发在 #474 沿同一分支继续，#334 保持打开。现有实现已完成隔离 Windows Electron 主旅程、独立文件读回和新进程读回；六节点新增采集尚未接入，不能沿用旧结果判通过。本轮先审原型外观，确认后统一完成读取、解析、展示和受影响验证，再做四维及静态 Bug／Plan／原型一致性检视。截图与 trace 仅留本地，不向 PR 堆临时图片；不操作日常 BW，不自动合入、关单或发布。</p>
       </footer>
     </main>
   </body>

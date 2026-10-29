@@ -94,6 +94,7 @@ export function OverviewSections({
                     key={`${selected.version}:${f.id}`}
                     feature={f}
                     openSession={openSession}
+                    native={native}
                     selectedVersion={selected.version}
                     focusRequest={focusRequest}
                     openVersion={openVersion}
@@ -111,7 +112,7 @@ export function OverviewSections({
             )
           })}
           <p className="ov-note">
-            原型注释: 特性主单标记与标题归属规则尚未接入；本稿显式选取 #334／#440（v0.7 为
+            原型注释: 本静态原型未动态解析特性身份；本稿显式选取 #334／#440（v0.7 为
             #334／#383）演示特性，不改真实标签、标题与计划。其余任务保留原目标和任务入口。
           </p>
         </div>
@@ -120,7 +121,7 @@ export function OverviewSections({
       <section className="ov-section" aria-labelledby="productivity">
         <SectionTitle id="productivity" title="AI workflow 生产力" extra="Builder Workbench" />
         <p className="ov-note">
-          原型注释: 本轮仅保留指标布局占位；具体指标与统计由 workflow 专项确定，不显示模拟数值。
+          原型注释: 口径沿 workflow 正本，本页仅保留布局占位，统计结果尚未接入，不显示模拟数值。
         </p>
         <div className="ov-productivity-metrics">
           {[1, 2, 3, 4].map((id) => (

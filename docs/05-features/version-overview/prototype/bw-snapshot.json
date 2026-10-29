@@ -1538,27 +1538,12 @@
   "pulls": [
     {
       "number": 459,
-      "title": "版本总览：补充意图、审阅旅程与高保真草案",
+      "title": "版本总览设计：按目标呈现特性历程与人工验收",
       "url": "https://github.com/forcegravity1989/builder-workbench/pull/459",
-      "state": "OPEN",
-      "isDraft": true,
-      "headRefOid": "870c0e5ef8afa0105ae355d1ffb144ad816d4a42",
-      "updatedAt": "2026-10-27T11:48:15Z",
-      "mergedAt": null,
-      "author": {
-        "login": "yuzhup"
-      },
-      "commits": {
-        "nodes": [
-          {
-            "commit": {
-              "statusCheckRollup": {
-                "state": "SUCCESS"
-              }
-            }
-          }
-        ]
-      }
+      "state": "MERGED",
+      "isDraft": false,
+      "mergedAt": "2026-10-28T15:42:07Z",
+      "readAt": "2026-10-29T11:17:14.686Z"
     },
     {
       "number": 460,
@@ -1583,6 +1568,15 @@
           }
         ]
       }
+    },
+    {
+      "number": 474,
+      "title": "版本总览：按目标呈现特性成果横轴与人工验收",
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/474",
+      "state": "OPEN",
+      "isDraft": true,
+      "mergedAt": null,
+      "readAt": "2026-10-29T11:17:14.704Z"
     }
   ],
   "releases": [

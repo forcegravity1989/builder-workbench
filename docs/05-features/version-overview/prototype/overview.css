@@ -632,6 +632,14 @@
   color: var(--muted-foreground);
   margin: 16px 0 10px;
 }
+.ov-time-legend select {
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--background);
+  font: inherit;
+  color: var(--foreground);
+}
 .ov-journey-scroll {
   width: 100%;
   overflow-x: auto;
@@ -654,8 +662,8 @@
 .ov-project-release {
   position: absolute;
   top: 0;
-  width: 88px;
-  height: 68px;
+  width: 116px;
+  height: 54px;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
@@ -679,7 +687,7 @@
   position: absolute;
   top: 100%;
   left: 50%;
-  height: 42px;
+  height: 91px;
   border-left: 1px dashed var(--muted-foreground);
   pointer-events: none;
 }
@@ -695,15 +703,15 @@
 }
 .ov-range-track {
   position: absolute;
-  top: 110px;
+  top: 145px;
   left: 0;
   right: 0;
-  height: 48px;
+  height: 42px;
 }
 .ov-phase-range {
   position: absolute;
   top: 0;
-  height: 48px;
+  height: 42px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -717,7 +725,7 @@
 }
 .ov-phase-range strong {
   white-space: nowrap;
-  font-size: 11px;
+  font-size: 10px;
 }
 .ov-phase-range[aria-pressed='true'] {
   background: var(--foreground);
@@ -725,7 +733,7 @@
 }
 .ov-hour-ticks {
   position: absolute;
-  top: 168px;
+  top: 200px;
   left: 0;
   right: 0;
 }
@@ -747,30 +755,6 @@
 .ov-hour-ticks .last {
   transform: translateX(-100%);
   align-items: flex-end;
-}
-.ov-test-periods {
-  position: absolute;
-  top: 212px;
-  left: 0;
-  right: 0;
-  height: 20px;
-}
-.ov-test-periods > span {
-  position: absolute;
-  height: 20px;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  font-size: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: repeating-linear-gradient(
-    135deg,
-    var(--muted),
-    var(--muted) 3px,
-    var(--background) 3px,
-    var(--background) 6px
-  );
 }
 .ov-journey-detail {
   padding: 14px 16px;
@@ -943,31 +927,44 @@
 }
 .ov-merge-point {
   position: absolute;
-  top: 85px;
+  top: 60px;
+  height: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  align-items: center;
+  transform: translateX(-50%);
   font-size: 10px;
   padding: 2px 4px;
   background: var(--background);
   z-index: 1;
   white-space: nowrap;
-  border-bottom: 1px solid var(--foreground);
 }
-.ov-merge-point.design {
-  transform: translateX(-100%);
+.ov-merge-point time {
+  color: var(--muted-foreground);
+  font-size: 9px;
+}
+.ov-merge-point.lower {
+  top: 101px;
+}
+.ov-merge-point.first {
+  transform: none;
+  align-items: flex-start;
 }
 .ov-merge-point::after {
   content: '';
   position: absolute;
-  bottom: -6px;
-  width: 5px;
-  height: 5px;
-  background: var(--foreground);
-  border-radius: 50%;
+  top: 100%;
+  left: 50%;
+  height: 55px;
+  border-left: 1px solid var(--foreground);
+  pointer-events: none;
 }
-.ov-merge-point.design::after {
-  right: -2px;
+.ov-merge-point.lower::after {
+  height: 14px;
 }
-.ov-merge-point.build::after {
-  left: -2px;
+.ov-merge-point.first::after {
+  left: 0;
 }
 .ov-artifact-chip button:disabled {
   cursor: default;

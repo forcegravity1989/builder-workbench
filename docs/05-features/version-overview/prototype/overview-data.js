@@ -4,7 +4,7 @@ export const repository = snapshot.source.repository
 export const acceptanceForVersion = (version) =>
   snapshot.acceptance.version === version ? snapshot.acceptance : null
 export const baseline = snapshot.source.sourceCommit
-export const revision = '334-draft-10'
+export const revision = '334-draft-11'
 export const scenarios = [
   { id: 'unplanned', label: '版本计划未制定', version: 'v0.9' },
   { id: 'during', label: '版本计划制定完（版本中）', version: 'v0.8' },
@@ -36,8 +36,9 @@ export const features = ['334', '440'].map((id) => {
       .find((g) => g.goalId === 'G2')
       .deliverable.split('\n')
       [own ? 1 : 0].replace(/^\d+\.\s*/, ''),
-    stage: '设计评审中',
-    designPR
+    stage: own ? '开发评审中' : '设计评审中',
+    designPR,
+    developmentPR: own ? snapshot.pulls.find((pr) => pr.number === 474) : null
   }
 })
 export const historicalFeatures = [
