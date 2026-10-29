@@ -57,7 +57,9 @@ const catalog: MetricCatalog = {
   scope,
   configurationCommit: 'c'.repeat(40),
   configurationRef: 'main',
+  draft: null,
   timezone: TZ,
+  features: [],
   definitions: [def({ name: 'north', role: 'north_star' }), def({ name: 'zone-retro' })],
   problems: []
 }

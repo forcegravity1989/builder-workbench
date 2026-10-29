@@ -394,6 +394,10 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
   background: #fff;
   color: var(--color-accent, #d97757);
 }
+/* #354 深色:反白态的纯白底在深色下刺眼,换深色主题的文字极色(沿用本文件显式色值防真壳回落的约定)。 */
+html[data-skin='ds'].dark .g3-annotate-entry.g3-mode-on .g3-annotate-count {
+  background: #fafafa;
+}
 .g3-muted {
   color: var(--muted-foreground);
 }
