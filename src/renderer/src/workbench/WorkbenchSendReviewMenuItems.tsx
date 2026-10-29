@@ -132,7 +132,7 @@ export function WorkbenchSendReviewMenuItems({
         toast.error(`分支 ${branch} 没有关联 PR，无法拼装评审消息`)
         return
       }
-      const text = buildReviewMessage({ repo: ownerRepo, ...target, branch })
+      const text = buildReviewMessage({ repo: ownerRepo, ...target })
       window.dispatchEvent(new CustomEvent(PROJECT_CHAT_COMPOSE_EVENT, { detail: { text } }))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error))

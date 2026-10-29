@@ -123,6 +123,25 @@ export function installAppLifetimeIpcEvents(
     })
   )
 
+  // BW pr-review-notify：冷启动深链（exe 被 OS 以 workbench:// 链接拉起）——
+  // main 只入队不推，挂载后拉取一次，走与通知点击相同的跳转协议。
+  const pendingPrReview = window.api.ui.consumePendingPrReview?.()
+  if (pendingPrReview && typeof pendingPrReview.then === 'function') {
+    void pendingPrReview
+      .then((payload) => {
+        if (payload) {
+          void openPrReviewFromMessage(
+            buildReviewMessage({
+              repo: payload.repo,
+              prNumber: payload.prNumber,
+              title: payload.title
+            })
+          ).catch((error) => console.error('Failed to open PR review from deep link:', error))
+        }
+      })
+      .catch(() => {})
+  }
+
   registerTerminalPresentationIpcBridge(unsubs)
   registerTerminalRequestIpcBridge(unsubs)
   registerPtySourceDisownedIpcBridge(unsubs)

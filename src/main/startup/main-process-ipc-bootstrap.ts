@@ -44,6 +44,8 @@ export function registerMainProcessIpcHandlers(): void {
     state.pendingOpenSettings.matches(event.sender.id, { consume: true })
   )
   ipcMain.handle('ui:consumePendingSkillShare', () => state.skillShareDeepLinks.consume())
+  // BW pr-review-notify：renderer 挂载后拉取冷启动评审深链（照 skill-share 模式）。
+  ipcMain.handle('ui:consumePendingPrReview', () => state.reviewDeepLinks.consume())
   // Why: the renderer pulls this once its ui:openMarkdownFiles listener attaches, so a
   // cold-start "Open With" queued before mount still opens. The pull doubles as the proof
   // that the listener is live, which is what lets main start pushing.

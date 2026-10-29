@@ -1,5 +1,6 @@
 import { app, type BrowserWindow } from 'electron'
 import { parseSkillShareId } from '../shared/skill-share-link'
+import { parseReviewDeepLink } from '../shared/workbench/pr-review-message'
 import { createMacAppActivationHandler } from './window/macos-app-activation'
 import {
   focusExistingWindow as focusExistingWindowAction,
@@ -27,6 +28,10 @@ function focusExistingWindow(): void {
 function requestDesktopActivation(argv: readonly string[] = []): void {
   state.skillShareDeepLinks.capture(argv, (shareId) => {
     state.mainWindow?.webContents.send('ui:openSkillShare', shareId)
+  })
+  // BW pr-review-notify：workbench:// 评审深链热路径——窗口在则直接推跳转负载。
+  state.reviewDeepLinks.capture(argv, (payload) => {
+    state.mainWindow?.webContents.send('ui:openPrReview', payload)
   })
   state.osOpenedMarkdownFiles.capture(argv, publishOsOpenedMarkdownFiles)
   // Why: a duplicate `orca serve` must not drag a headless server into opening a desktop window (#11935).
@@ -82,7 +87,7 @@ const preflightReady = runMainProcessPreflight({
 // Why: when another process holds the lock we've already exited; skip file-writing side effects so this transient process never touches userData.
 if (preflightReady) {
   app.on('open-url', (event, url) => {
-    if (!parseSkillShareId(url)) {
+    if (!parseSkillShareId(url) && !parseReviewDeepLink(url)) {
       return
     }
     event.preventDefault()
@@ -102,6 +107,8 @@ if (preflightReady) {
     }
   })
   state.skillShareDeepLinks.capture(process.argv)
+  // BW pr-review-notify：冷启动深链同样只入队不推（此时无人监听），renderer 挂载后拉取。
+  state.reviewDeepLinks.capture(process.argv)
   // Why no publish: nothing is listening this early, so the first renderer pulls these on mount.
   state.osOpenedMarkdownFiles.capture(process.argv)
   registerMainProcessIpcHandlers()

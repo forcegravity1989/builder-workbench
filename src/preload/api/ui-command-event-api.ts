@@ -49,6 +49,13 @@ export type UiCommandEventApi = {
   consumePendingOpenSettings: () => Promise<boolean>
   onOpenSkillShare: (callback: (shareId: string) => void) => () => void
   consumePendingSkillShare: () => Promise<string | null>
+  /** BW pr-review-notify：拉取冷启动 workbench:// 评审深链（renderer 挂载后一次性）。 */
+  consumePendingPrReview: () => Promise<{
+    repo: string
+    prNumber: number
+    title: string
+    sender: string
+  } | null>
   /** OS "Open With" markdown paths pushed while a renderer is already listening. */
   onOpenMarkdownFiles: (callback: (documents: MarkdownDocument[]) => void) => () => void
   /** Drains the "Open With" paths queued before this renderer's listener attached. */

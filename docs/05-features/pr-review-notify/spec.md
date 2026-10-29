@@ -1,6 +1,6 @@
 # spec — PR 评审通知与顺滑进入（pr-review-notify）
 
-> **30 秒导读**：两方案并行落地，共用同一跳转协议（解析 PR → `openTaskPage` 落到任务屏 `PullRequestPage`）：**方案一** WeLink 群聊面板——项目群配置沿用 `.bw/project.toml [chat]`（本仓已配），浮动面板看历史/发文本（welink-cli `im send-to-group`），未读红点按 `query-history-message` 的 msgId 游标推进，worktree 右键「发送评审」自动展开并预填，接收侧识别评审消息、点击跳转；**方案二** 原生通知——不经 WeLink，发送方经 Orca 既有 agent-hook 端点（HTTP＋token，远程连接场景已在用）向接收方投递评审事件，接收方弹 Windows 系统通知（`notifications:dispatch`），点击经 IPC 路由到同一跳转协议。两案均用户点击后跳转。行为正本见本篇，意图见 [intent.md](intent.md)，可点原型见 [prototype.html](prototype.html)。
+> **30 秒导读**：两方案并行落地，共用同一跳转协议（解析 PR → `openTaskPage` 落到任务屏 `PullRequestPage`）：**方案一** WeLink 群聊面板——项目群配置沿用 `.bw/project.toml [chat]`（本仓已配），浮动面板看历史/发文本（welink-cli `im send-to-group`），未读红点按 `query-history-message` 的 msgId 游标推进，worktree 右键「发送评审」自动展开并预填，接收侧识别评审消息、点击跳转（消息链接行是 `workbench://` 自有深链，落安装 exe）；**方案二** 原生通知——不经 WeLink，发送方经 Orca 既有 agent-hook 端点（HTTP＋token，远程连接场景已在用）向接收方投递评审事件，接收方弹 Windows 系统通知（`notifications:dispatch`），点击经 IPC 路由到同一跳转协议。两案均用户点击后跳转。行为正本见本篇，意图见 [intent.md](intent.md)，可点原型见 [prototype.html](prototype.html)。
 >
 > **状态**：草案（2026-10-28 调研结论落笔，随实现修订；规格 gate 随交付 PR 人审）。
 >
@@ -43,13 +43,14 @@
 ### 发送评审（worktree 右键）
 
 - 版本工作区树行右键菜单新增「发送评审」：拼装评审消息预填输入框＋面板自动展开（窗口事件，照 `openMaximized` 模式），发送仍由人点发送按钮。
-- 拼装口径：`【评审请求】PR #<编号> <标题>`＋仓库＋分支＋PR 链接各一行。worktree 无对应 PR（`gh` 查不到该分支的 PR）⇒ 菜单项如实置灰或提示，不猜；PR 在而标题查不到 ⇒ 占位「（标题获取失败）」照常拼装（识别协议键在「链接：」行，标题只作展示）。项目未配置 `[chat]` 或 worktree 属非活跃项目 ⇒ 「发送评审」置灰（预填事件由活跃项目面板接收，错投即静默失效）；「发送评审通知」不受此限。
-- 消息格式即识别协议：接收侧只认 `【评审请求】` 前缀＋可解析的仓库/编号行；解析失败按普通文本消息处理，不跳转。
+- 拼装口径（2026-10-29 owner 定：链接用 BW 自有深链，不做 github/codehub 外链）：`【评审请求】PR #<编号> <标题>`＋`链接：workbench://pr-review/github.com/<owner>/<name>/pull/<编号>` 两行，不携带仓库/分支行。worktree 无对应 PR（`gh` 查不到该分支的 PR）⇒ 菜单项如实置灰或提示，不猜；PR 在而标题查不到 ⇒ 占位「（标题获取失败）」照常拼装（识别协议键在「链接：」行，标题只作展示）。项目未配置 `[chat]` 或 worktree 属非活跃项目 ⇒ 「发送评审」置灰（预填事件由活跃项目面板接收，错投即静默失效）；「发送评审通知」不受此限。
+- 消息格式即识别协议：接收侧只认 `【评审请求】` 前缀＋可解析的「链接：」行（深链优先，历史消息的 github 链接行兼容识别）；解析失败按普通文本消息处理，不跳转。
 
 ### 接收与跳转
 
-- 轮询识别评审消息 ⇒ 面板内该消息呈可点击态（含 PR 标识）；点击 ⇒ 跳转协议。
+- 轮询识别评审消息 ⇒ 面板内该消息呈可点击态（含 PR 标识），链接行渲染为深链样式；点击（整行）⇒ 跳转协议，在 exe 内落 PR 页，不开浏览器。
 - 本机未接入该 repo ⇒ 点击后如实提示，不跳转。
+- 深链 OS 分发（2026-10-29 owner 定：跳转落安装 exe，不开 web 版页面）：`workbench://` scheme 由打包版注册（electron-builder `protocols`，与 skill-share 深链同机制）；exe 被 OS 以深链拉起（冷启动 argv）或热运行收到 `open-url`/`second-instance` ⇒ main 入队（照 skill-share 深链队列模式）⇒ 经 `ui:openPrReview` 进 renderer 走同一跳转协议。真实 WeLink 客户端是否把自定义 scheme 渲染成可点链接不承诺（owner 2026-10-29：只考虑 BW 内渲染的面板）。
 
 ## 方案二：原生通知
 
@@ -75,6 +76,7 @@
 | N11 | 方案二：点击系统通知 | BW 前台＋落到该 PR 详情页 |
 | N12 | 杀进程重开 | `[chat]` 配置、未读游标、面板开合读回一致 |
 | N13 | 拖动浮动按钮/面板 | 可拖到视口内任意位置（夹取不越界），重启后位置读回一致 |
+| N14 | 评审消息链接行 | 携 `workbench://pr-review/…` 深链、渲染为链接样式；面板内点击落 PR 详情页（不开浏览器）；历史 github 链接行消息照常可点 |
 
 旅程 **NJ01**（双用户真实评审，两案各走一遍）：A 在版本工作区右键「发送评审」发送 → B 侧收到提示（方案一红点/方案二通知）→ B 点击 → 落到 PR 详情页开始评审（原生评审动作）→ 全程 B 不手动找项目找 PR。
 

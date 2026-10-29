@@ -5,7 +5,7 @@
  */
 
 export type ReviewRequestPayload = {
-  /** owner/name 两段式，与评审消息「仓库：」行同格式。 */
+  /** owner/name 两段式，与评审消息深链正文的仓库段同格式。 */
   repo: string
   prNumber: number
   title: string

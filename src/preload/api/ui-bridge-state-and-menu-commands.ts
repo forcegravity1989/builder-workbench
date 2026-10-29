@@ -28,6 +28,12 @@ export const uiStateAndMenuCommandsApi = {
   },
   consumePendingSkillShare: (): Promise<string | null> =>
     ipcRenderer.invoke('ui:consumePendingSkillShare'),
+  consumePendingPrReview: (): Promise<{
+    repo: string
+    prNumber: number
+    title: string
+    sender: string
+  } | null> => ipcRenderer.invoke('ui:consumePendingPrReview'),
   onOpenMarkdownFiles: (callback: (documents: MarkdownDocument[]) => void): (() => void) => {
     const listener = (_event: Electron.IpcRendererEvent, documents: MarkdownDocument[]): void =>
       callback(documents)

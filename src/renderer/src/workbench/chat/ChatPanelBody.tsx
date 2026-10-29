@@ -105,6 +105,28 @@ function MessageBody({
   return <span className="whitespace-pre-wrap break-words">{body}</span>
 }
 
+/**
+ * 评审消息正文：链接行是 BW 自有深链（workbench://…），渲染成链接样式；
+ * 点击由整行接管（跳转协议在 exe 内落 PR 页，不开浏览器）。
+ */
+function ReviewMessageBody({ content }: { content: string }): React.JSX.Element {
+  return (
+    <>
+      {content.split(/\r?\n/).map((line, index) =>
+        line.startsWith('链接：') ? (
+          <span key={index} className="block break-all font-medium text-primary underline">
+            {line}
+          </span>
+        ) : (
+          <span key={index} className="block whitespace-pre-wrap break-words">
+            {line}
+          </span>
+        )
+      )}
+    </>
+  )
+}
+
 function ChatMessageRow({ message }: { message: WelinkChatMessage }): React.JSX.Element {
   const review = parseReviewMessage(message.content)
   const card = message.contentType === 'CARD_MSG' ? parseWelinkCardContent(message.content) : null
@@ -124,7 +146,11 @@ function ChatMessageRow({ message }: { message: WelinkChatMessage }): React.JSX.
       <span className="block text-[10px] text-muted-foreground">
         {message.sender} · {formatTime(message.serverSendTime)}
       </span>
-      <MessageBody message={message} card={card} image={image} />
+      {review ? (
+        <ReviewMessageBody content={message.content} />
+      ) : (
+        <MessageBody message={message} card={card} image={image} />
+      )}
       {review ? (
         <span className="mt-1 block text-[11px] font-semibold text-primary">
           ↗ 点击进入 PR 详情页评审
