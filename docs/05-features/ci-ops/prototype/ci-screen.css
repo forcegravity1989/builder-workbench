@@ -129,10 +129,27 @@
 .ci-version select option:disabled {
   opacity: 0.45;
 }
-.ci-version-empty,
+.ci-version-empty {
+  font-size: 12px;
+  color: var(--color-text-muted, #767676);
+}
+/* 配置事实：随模式显示对应配置项的已配置/未配置；未配置用警示色，引导走「配置」入口。 */
+.ci-config-facts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
 .ci-config-fact {
   font-size: 12px;
   color: var(--color-text-muted, #767676);
+  white-space: nowrap;
+}
+.ci-config-fact.missing {
+  color: var(--color-warning-deep, #8a6a2f);
+}
+.ci-config-button {
+  margin-left: auto;
 }
 
 /* 六步流程条：三阶段分组横排；状态点 ok=✓ 绿、fail=✗ 红、current=执行中呼吸、skip=跳过、pending=空心。 */

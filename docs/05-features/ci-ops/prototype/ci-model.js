@@ -1,6 +1,7 @@
-// CI 部署原型数据模型：模块、三阶段六步流程、两种模式、版本登记、场景灯态与记录、递交指令文本。
+// CI 部署原型数据模型：模块、三阶段六步流程、两种模式、版本登记、配置事实、初始全量状态与记录、递交指令文本。
 // 流程骨架与 spec.md「部署流程：三阶段六步」、skill-deploy.md「部署流程契约」逐字对齐；
 // PROMPTS 与 skill-deploy.md 递交文本表逐字一致（verify-ci.cjs 有断言盯住）。
+// 评审反馈（2026-10-29）：不做场景切换，进入即呈现已接入后的全量形态。
 
 export const MODULES = [
   { id: 'deploy', name: '部署', short: '部署', kind: 'single', script: '.bw/ci/deploy.sh' }
@@ -81,12 +82,17 @@ export const VERSIONS = [
   }
 ]
 
-export const SCENARIOS = [
-  ['first', '首次进入（灰）'],
-  ['armed', '已接入（黄）'],
-  ['success', '部署成功（绿）'],
-  ['failed', '最近失败（红）']
-]
+// 配置事实（演示数据全为已配置）：随模式显示对应配置项，板面只显示「已配置/未配置」，内容收在会话与资产。
+export const CONFIG_FACTS = {
+  dev: [
+    ['启动命令', true],
+    ['探针', true]
+  ],
+  release: [
+    ['服务器信息', true],
+    ['探针', true]
+  ]
+}
 
 const okSteps = {
   pkg: 'ok',
@@ -97,34 +103,17 @@ const okSteps = {
   record: 'ok'
 }
 
-export const sceneStates = {
-  first: { deploy: { state: 'gray' } },
-  armed: { deploy: { state: 'yellow' } },
-  success: {
-    deploy: {
-      state: 'green',
-      steps: okSteps,
-      last: {
-        time: '10-29 09:41',
-        ok: true,
-        mode: 'release',
-        version: '1.4.201',
-        text: '上线 · 版本 1.4.201 · 全程 3 分 08 秒 · /healthz 200'
-      }
-    }
-  },
-  failed: {
-    deploy: {
-      state: 'red',
-      steps: { pkg: 'ok', precheck: 'ok', cleanup: 'ok', deploy: 'fail' },
-      failedStep: 'deploy',
-      last: {
-        time: '10-29 10:12',
-        ok: false,
-        mode: 'release',
-        version: '1.4.199',
-        text: '上线 · 版本 1.4.199 · 第 4 步「部署」失败：远端解包后启动退出码 1'
-      }
+// 进入即全量：已接入后的成熟状态（最近一次上线成功，六步全过），历史含成功与失败记录。
+export const initialState = {
+  deploy: {
+    state: 'green',
+    steps: okSteps,
+    last: {
+      time: '10-29 09:41',
+      ok: true,
+      mode: 'release',
+      version: '1.4.201',
+      text: '上线 · 版本 1.4.201 · 全程 3 分 08 秒 · /healthz 200'
     }
   }
 }
@@ -137,106 +126,57 @@ ssh deploy@192.168.1.30 "cd /opt/app && tar xf app-1.4.199.tar.gz && systemctl r
 Job for app.service failed because the control process exited with error code (1)
 [ci-step] deploy fail`
 
-export const sceneRecords = {
-  first: [],
-  armed: [],
-  success: [
-    {
-      id: 'r-5',
-      time: '10-29 09:41',
-      moduleId: 'deploy',
-      ok: true,
-      mode: 'release',
-      version: '1.4.201',
-      result: '成功',
-      detail: '版本 1.4.201 · 全程 3 分 08 秒 · /healthz 200'
-    },
-    {
-      id: 'r-4',
-      time: '10-29 09:12',
-      moduleId: 'deploy',
-      ok: true,
-      mode: 'dev',
-      version: null,
-      result: '成功',
-      detail: '全程 42 秒 · 本地探针 200'
-    },
-    {
-      id: 'r-3',
-      time: '10-28 18:55',
-      moduleId: 'deploy',
-      ok: false,
-      mode: 'release',
-      version: '1.4.199',
-      result: '失败',
-      detail: '第 4 步「部署」失败：远端解包后启动退出码 1',
-      failedStep: 'deploy',
-      log: failLog
-    },
-    {
-      id: 'r-2',
-      time: '10-28 18:41',
-      moduleId: 'deploy',
-      ok: true,
-      mode: 'release',
-      version: '1.4.199',
-      result: '成功',
-      detail: '版本 1.4.199 · 全程 4 分 11 秒 · /healthz 200'
-    }
-  ],
-  failed: [
-    {
-      id: 'r-6',
-      time: '10-29 10:12',
-      moduleId: 'deploy',
-      ok: false,
-      mode: 'release',
-      version: '1.4.199',
-      result: '失败',
-      detail: '第 4 步「部署」失败：远端解包后启动退出码 1',
-      failedStep: 'deploy',
-      log: failLog
-    }
-  ].concat([
-    {
-      id: 'r-5',
-      time: '10-29 09:41',
-      moduleId: 'deploy',
-      ok: true,
-      mode: 'release',
-      version: '1.4.201',
-      result: '成功',
-      detail: '版本 1.4.201 · 全程 3 分 08 秒 · /healthz 200'
-    },
-    {
-      id: 'r-4',
-      time: '10-29 09:12',
-      moduleId: 'deploy',
-      ok: true,
-      mode: 'dev',
-      version: null,
-      result: '成功',
-      detail: '全程 42 秒 · 本地探针 200'
-    },
-    {
-      id: 'r-3',
-      time: '10-28 18:55',
-      moduleId: 'deploy',
-      ok: false,
-      mode: 'release',
-      version: '1.4.199',
-      result: '失败',
-      detail: '第 4 步「部署」失败：远端解包后启动退出码 1',
-      failedStep: 'deploy',
-      log: failLog
-    }
-  ])
-}
+export const initialRecords = [
+  {
+    id: 'r-5',
+    time: '10-29 09:41',
+    moduleId: 'deploy',
+    ok: true,
+    mode: 'release',
+    version: '1.4.201',
+    result: '成功',
+    detail: '版本 1.4.201 · 全程 3 分 08 秒 · /healthz 200'
+  },
+  {
+    id: 'r-4',
+    time: '10-29 09:12',
+    moduleId: 'deploy',
+    ok: true,
+    mode: 'dev',
+    version: null,
+    result: '成功',
+    detail: '全程 42 秒 · 本地探针 200'
+  },
+  {
+    id: 'r-3',
+    time: '10-28 18:55',
+    moduleId: 'deploy',
+    ok: false,
+    mode: 'release',
+    version: '1.4.199',
+    result: '失败',
+    detail: '第 4 步「部署」失败：远端解包后启动退出码 1',
+    failedStep: 'deploy',
+    log: failLog
+  },
+  {
+    id: 'r-2',
+    time: '10-28 18:41',
+    moduleId: 'deploy',
+    ok: true,
+    mode: 'release',
+    version: '1.4.199',
+    result: '成功',
+    detail: '版本 1.4.199 · 全程 4 分 11 秒 · /healthz 200'
+  }
+]
 
 // 递交 prompt 真实文本：与 skill-deploy.md「递交 prompt 真实文本」表逐字一致。
 export const PROMPTS = {
   generate: () =>
     '按 ci-ops skill 为本项目生成 .bw/ci/deploy.sh：先勘察项目实际代码与已有部署资产（构建方式、服务形态、探针口径、目标环境），已有资产编排复用、缺失环节按模板生成；按三阶段六步骨架（软件包准备→预检→清场→部署→验证→记录）编排，软件包准备必须在清场之前；执行时按步骤标记协议输出 [ci-step] 进度，执行后必须独立读回服务状态与版本并写 .bw/ci/records.jsonl 记录，失败如实写 ok:false 与 failedStep。完成后提 PR 经人审合入 main，不直接改 main。',
+  configure: () =>
+    '按 ci-ops skill 配置本项目部署所需资产：开发启动命令与端口、探针 URL、上线服务器信息（IP/用户/上传路径）。已有配置先从项目资产读出来给我确认，缺失或要改的向我收集；配置写进项目资产随 .bw/ci/deploy.sh 同审合入。密码不进配置，只在部署执行时输入。',
   deployDev: () =>
     '执行本项目的 .bw/ci/deploy.sh --mode=dev：软件包准备（校验启动命令）→ 预检（端口/旧实例）→ 清场（杀旧进程）→ 部署（执行启动命令）→ 验证（独立读回服务状态）→ 记录。按记录协议把结果追加进 .bw/ci/records.jsonl（mode=dev），失败如实写 ok:false 与 failedStep，不重试到绿。',
   deployRelease: (version) =>

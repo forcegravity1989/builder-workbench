@@ -5,9 +5,9 @@ import {
   FLOW,
   FLOW_PHASES,
   VERSIONS,
-  SCENARIOS,
-  sceneStates,
-  sceneRecords,
+  CONFIG_FACTS,
+  initialState,
+  initialRecords,
   PROMPTS,
   dotClass,
   moduleStateText,
@@ -71,7 +71,7 @@ function FlowBar({ steps, live, mode, failedStep }) {
   )
 }
 
-// 部署卡：状态行 + 模式与版本 + 六步流程条 + 最近执行 + 动作行；灰态给扫描事实行。
+// 部署卡：状态行 + 模式/版本/配置 + 六步流程条 + 最近执行 + 动作行；灰态给扫描事实行。
 function ModuleCard({
   index,
   module,
@@ -83,6 +83,7 @@ function ModuleCard({
   version,
   onMode,
   onVersion,
+  onConfigure,
   onAction
 }) {
   const buttons = moduleButtons(module, state, errors)
@@ -142,14 +143,25 @@ function ModuleCard({
               ) : (
                 <span className="ci-version-empty">验收屏未见包登记</span>
               ))}
-            {isRelease && (
-              <span
-                className="ci-config-fact"
-                title="服务器信息（IP/用户/上传路径/探针 URL）经 CI 助手会话配置；板面只显示已配置/未配置"
-              >
-                服务器信息 已配置
-              </span>
-            )}
+            <span
+              className="ci-config-facts"
+              title="六步流程所需的项目资产经 CI 助手会话配置；板面只显示已配置/未配置"
+            >
+              {CONFIG_FACTS[mode].map(([name, ready]) => (
+                <span key={name} className={`ci-config-fact ${ready ? '' : 'missing'}`}>
+                  {name} {ready ? '已配置' : '未配置'}
+                </span>
+              ))}
+            </span>
+            <ActionButton
+              className="ci-config-button"
+              icon="edit"
+              disabled={executing}
+              title="向 CI 助手递交配置请求：配置六步流程所需的项目资产（开发启动命令与端口、探针 URL、上线服务器信息），已有配置先读出确认，经会话落项目资产随脚本同审；密码不进配置"
+              onClick={onConfigure}
+            >
+              配置
+            </ActionButton>
           </div>
         )}
         {state.state !== 'gray' && (
@@ -226,9 +238,8 @@ function RecordRow({ record, expanded, onToggle }) {
 }
 
 function App() {
-  const [scene, setScene] = useState('first')
-  const [states, setStates] = useState(() => structuredClone(sceneStates.first))
-  const [records, setRecords] = useState(() => [...sceneRecords.first])
+  const [states, setStates] = useState(() => structuredClone(initialState))
+  const [records, setRecords] = useState(() => [...initialRecords])
   const [session, setSession] = useState(true)
   const [notice, setNotice] = useState('')
   const [handoff, setHandoff] = useState(null)
@@ -237,7 +248,7 @@ function App() {
   const [showNotes, setShowNotes] = useState(false)
   const [executing, setExecuting] = useState(null)
   const [live, setLive] = useState(null)
-  const [mode, setMode] = useState('dev')
+  const [mode, setMode] = useState('release')
   const [version, setVersion] = useState(VERSIONS[0].version)
   const [filter, setFilter] = useState('all')
   const [openLogs, setOpenLogs] = useState([])
@@ -252,19 +263,6 @@ function App() {
   const sendRequest = (text, kind) => {
     toggleSession(true)
     setHandoff({ kind, text })
-    setNotice('')
-  }
-  const switchScene = (value) => {
-    setScene(value)
-    setStates(structuredClone(sceneStates[value]))
-    setRecords([...sceneRecords[value]])
-    setHandoff(null)
-    setExecuting(null)
-    setLive(null)
-    setMode('dev')
-    setVersion(VERSIONS[0].version)
-    setFilter('all')
-    setOpenLogs([])
     setNotice('')
   }
   const setModule = (id, patch) =>
@@ -363,16 +361,16 @@ function App() {
     runFlow(module, 0, mode, version)
   }
 
-  // 「更新代码」在首次进入场景演示灰→黄：假定脚本已合入 main，主检出快进后扫描到资产。
+  // 「更新代码」：把主检出快进到主干最新并重读资产与记录（演示只给回执）。
   const updateCode = () => {
     toggleSession(true)
-    if (scene === 'first') {
-      setStates(structuredClone(sceneStates.armed))
-      setScene('armed')
-      setNotice('已更新代码 · 灯灰→黄（演示）')
-    } else {
-      setNotice('已更新代码（演示）')
-    }
+    setNotice('已更新代码 · 资产与记录已重读（演示）')
+  }
+
+  // 统一配置入口：向 CI 助手递交配置请求，配置六步流程所需的项目资产。
+  const onConfigure = () => {
+    sendRequest(PROMPTS.configure(), '配置请求')
+    setNotice('已向 CI 助手递交配置请求')
   }
 
   const filtered = filter === 'all' ? records : records.filter((r) => !r.ok)
@@ -382,21 +380,7 @@ function App() {
     <div className={`g3-app ${compact ? 'constrained' : ''}`}>
       <div className="g3-demo-bar">
         <strong>#461 评审草案 · CI 部署</strong>
-        <span>两种模式 · 三阶段六步流程 · 场景与动作仅在本页演示</span>
-        <label className="g3-scene">
-          场景
-          <select
-            aria-label="切换演示场景"
-            value={scene}
-            onChange={(e) => switchScene(e.target.value)}
-          >
-            {SCENARIOS.map(([id, label]) => (
-              <option key={id} value={id}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <span>两种模式 · 三阶段六步流程 · 动作仅在本页演示</span>
         <button onClick={() => setCompact(!compact)}>{compact ? '恢复宽度' : '窄板'}</button>
         <button
           onClick={() => {
@@ -424,10 +408,12 @@ function App() {
             固定树，执行记录与错误日志存该树本地 .bw/ci/，默认不上仓。
           </p>
           <p>
-            <strong>两种模式与版本</strong>
-            ：开发部署在本地执行启动命令把服务跑起来（启动命令由用户经会话输入、模型落进项目资产，板面不显示命令文本）；上线部署连服务器把所选版本的软件包部署到远端（服务器信息经会话配置，板面只显示已配置/未配置；密码在部署执行时输入——密文显示、不可复制、不落盘不进记录）。版本来自各版本验收材料的包登记（版本
+            <strong>两种模式与统一配置入口</strong>
+            ：开发部署在本地执行启动命令把服务跑起来；上线部署连服务器把所选版本的软件包部署到远端。版本来自各版本验收材料的包登记（版本
             →
-            包路径），默认最新；包不存在的版本灰掉标「包不存在」，不隐藏——历史记录引用的版本对得上号。
+            包路径），默认最新；包不存在的版本灰掉标「包不存在」，不隐藏——历史记录引用的版本对得上号。六步流程所需的配置（开发启动命令与端口、探针
+            URL、上线服务器信息）经统一「配置」按钮向 CI
+            助手递交请求：已有配置先读出给人确认、缺失项经会话收集，落项目资产随脚本同审；板面只显示各配置项「已配置/未配置」事实，不显示配置内容。密码不进配置——只在部署执行时输入（密文显示、不可复制、不落盘不进记录）。
           </p>
           <p>
             <strong>三阶段六步流程</strong>：部署前准备（软件包准备 → 预检 → 清场）→
@@ -440,9 +426,9 @@ function App() {
           </p>
           <p>
             <strong>灯与记录</strong>
-            ：灯是健康信号，只能从执行记录推导：灰=主检出未见脚本；黄=扫到资产、待执行；绿=最近一次流程全步通过；红=最近一次停在失败步。最新结果决定绿红；历史报错永久保留。每次执行写
+            ：灯是健康信号，只能从执行记录推导：灰=主检出未见脚本（新项目首见，板面给「主分支未见脚本」事实与生成脚本入口）；黄=扫到资产、待执行；绿=最近一次流程全步通过；红=最近一次停在失败步。最新结果决定绿红；历史报错永久保留。每次执行写
             bw/ci 树本地
-            records.jsonl（时间、ok、mode、version、steps、failedStep、读回读数、耗时、日志指针），记录区按时间倒序回显全部执行与报错（含模式与版本），报错默认折叠、页内展开看日志原文。
+            records.jsonl（时间、ok、mode、version、steps、failedStep、读回读数、耗时、日志指针），记录区按时间倒序回显全部执行与报错（含模式与版本），报错默认折叠、页内展开看日志原文。本页固定呈现已接入后的全量形态（评审反馈：不做场景切换，进入即见全部）；灰/黄/红随真实数据自然出现。
           </p>
           <p>
             <strong>依赖与留白</strong>：组件与设计语言复用已合入 main 的 G3
@@ -517,7 +503,7 @@ function App() {
               </button>
               <button
                 className="g3-text-button"
-                title="把主检出快进到主干最新并重读资产与记录（唯一同步入口）；首次进入场景演示灰→黄"
+                title="把主检出快进到主干最新并重读资产与记录（唯一同步入口）"
                 onClick={updateCode}
               >
                 <Icon name="refresh" size={13} /> 更新代码
@@ -538,6 +524,7 @@ function App() {
                 version={version}
                 onMode={setMode}
                 onVersion={setVersion}
+                onConfigure={onConfigure}
                 onAction={onAction}
               />
             ))}
