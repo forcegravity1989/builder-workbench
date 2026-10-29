@@ -1,6 +1,6 @@
 import type { createVersionMaterialPort } from '../../../../shared/workbench/version-material-client'
 import type { TrunkUpdateResult } from '../../../../shared/workbench/trunk-update'
-import type { ArchivePrPort, CycleScope, CycleSession, TaskPort } from './ports'
+import type { ArchivePrPort, CycleScope, CycleSession, ReleaseStatusPort, TaskPort } from './ports'
 
 /** Business screens consume native adapters without importing the shell component. */
 export type VersionCycleContext = {
@@ -22,6 +22,8 @@ export type VersionCycleContext = {
   branch: string | null
   taskPort: TaskPort
   archivePort: ArchivePrPort
+  /** Release tag status port for the acceptance board's release row (#462). */
+  releasePort: ReleaseStatusPort
   materialPort: ReturnType<typeof createVersionMaterialPort> | null
   error: string | null
   syncing?: boolean

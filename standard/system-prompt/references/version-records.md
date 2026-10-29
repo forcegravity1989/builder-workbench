@@ -51,7 +51,7 @@ candidateRef 仅保存 repository/version/commit，commit 是完整 SHA。prepar
 
 总览与版本索引按 version/workflow/cycleId 各取最新一条当前材料，不扫描旧提交铺旧记录；读取固定来源时核对版本、cycleId 与修订；未合入草稿在其工作区读取；损坏的当前文件如实提示。开始验收会话成功后，页面在固定计划可读且身份核对通过时初始化并保存缺失的空白验收；没有可读固定计划时四区仍可展示，目标留空并由会话处理来源问题。已有材料直接继续；新材料与归档后补证均自动保存。总览不显示发布状态。
 
-workflow 是模型写入材料的 SOP 进度节：`stage` 记录最近完成的阶段（计划 preparation/goals/breakdown/review/archive；验收 preparation/showcase/archive），`updatedAt` 记录写入时间，`archivePr`（provider/repository/number）在归档 PR 开出后补上。**两屏都不渲染旅程灯**：板面顶部旅程是同页定位导航，与 stage 不同名也不映射；stage 只供会话恢复校准与自动化读取。stage 是进度信号不是完成权威：不代表目标达成、不代替人工结论、不代表 PR 已合入；PR 合入状态由界面按 archivePr 向 provider 薄读取显示，读不到保持未知。纪要的人工确认是材料字段事实，不占 stage。会话恢复时先把 stage 校准到实际进度；内容实质调整使后续阶段失效时回退。界面不提供修改 stage 的入口，它只经材料保存写入。**材料里没有发布记录字段**：发布读数的正本在 Git 标签与 provider Release 页，模型发布后在会话中如实报告读回结果，不写入材料。归档提交固定落在该流程的本版固定分支（绑定版本树：计划 bw/<版本>/plan、验收 bw/<版本>/acceptance；旧无绑定固定树：bw/week-plan、bw/week-acceptance）上，PR/MR 由该固定分支开向主分支，不从其他分支或新建工作树归档。
+workflow 是模型写入材料的 SOP 进度节：`stage` 记录最近完成的阶段（计划 preparation/goals/breakdown/review/archive；验收 preparation/showcase/archive），`updatedAt` 记录写入时间，`archivePr`（provider/repository/number）在归档 PR 开出后补上，验收侧另有 `release`（仅 tag）在发布执行后作为读回键补上。**两屏都不渲染旅程灯**：板面顶部旅程是同页定位导航，与 stage 不同名也不映射；stage 只供会话恢复校准与自动化读取。stage 是进度信号不是完成权威：不代表目标达成、不代替人工结论、不代表 PR 已合入；PR 合入状态由界面按 archivePr 向 provider 薄读取显示，读不到保持未知。纪要的人工确认是材料字段事实，不占 stage。会话恢复时先把 stage 校准到实际进度；内容实质调整使后续阶段失效时回退。界面不提供修改 stage 的入口，它只经材料保存写入。**发布读数不落材料**：`workflow.release` 只存 tag 读回键（同 archivePr 的「引用落材料、读数现算」），是否已发布、发布时间、Release 地址与资产由验收屏按该键向 provider 现算读回；正本在 Git 标签与 provider Release 页，模型发布后在会话中如实报告读回结果并写入该键，此外不写入材料。归档提交固定落在该流程的本版固定分支（绑定版本树：计划 bw/<版本>/plan、验收 bw/<版本>/acceptance；旧无绑定固定树：bw/week-plan、bw/week-acceptance）上，PR/MR 由该固定分支开向主分支，不从其他分支或新建工作树归档。
 
 ## 写入与人的决定
 
@@ -65,6 +65,6 @@ workflow 是模型写入材料的 SOP 进度节：`stage` 记录最近完成的�
 
 先读 revision，再走同一材料服务 save(expectedRevision)；校验受信任工作树和流程白名单、路径、跨进程互斥、原子替换。不同分支不是一个写入路径。冲突保留双方输入并重读合并；不直接覆盖文件绕过服务。
 
-保存、评审、归档、目标达成和正式发布分别成立。人的决定绑定对象/修订/来源/时间，模型不代签。`decision.outcome` 只有 `met` 与 `not-met`，由人在界面行尾单个状态标识选择（未判定/达成/不达成；未判定即字段缺省，不冒充、不推定）。`decision.source` 记「验收界面人工确认」，`reason` 取该目标的 note——行尾状态选择不采集原因文本，不达成的原因与安排的正本是纪要、nextStep 与 Issue 备注。`decision.materialRevision` 是该目标证据账本（候选、交付包、报告、演示环境、本目标承诺与关联 Issue 快照）的确定性修订投影，只是账本字段：界面不据它渲染陈旧态或「待重核」，证据是否变化要重核由模型在会话中提醒、人决定。摘要只检测证据变化，不证明签署人的身份，Issue 关闭数不自动决定目标达成。旧认可和归档不可直接覆盖新修订。归档在会话中发起：核对材料与结论状态后更新 stage=archive、按项目门禁提 PR、开出后写入 archivePr 并回显链接；界面没有直接执行归档的按钮，归档后补证直接在原会话继续处理。发布由界面一个按钮注入请求，预检、一致性核对、知情授权、执行与独立读回都在会话中完成；后续执行遵从授权，不自动合入、完成 Issue 或发布。
+保存、评审、归档、目标达成和正式发布分别成立。人的决定绑定对象/修订/来源/时间，模型不代签。`decision.outcome` 只有 `met` 与 `not-met`，由人在界面行尾单个状态标识选择（未判定/达成/不达成；未判定即字段缺省，不冒充、不推定）。`decision.source` 记「验收界面人工确认」，`reason` 取该目标的 note——行尾状态选择不采集原因文本，不达成的原因与安排的正本是纪要、nextStep 与 Issue 备注。`decision.materialRevision` 是该目标证据账本（候选、交付包、报告、演示环境、本目标承诺与关联 Issue 快照）的确定性修订投影，只是账本字段：界面不据它渲染陈旧态或「待重核」，证据是否变化要重核由模型在会话中提醒、人决定。摘要只检测证据变化，不证明签署人的身份，Issue 关闭数不自动决定目标达成。旧认可和归档不可直接覆盖新修订。归档在会话中发起：核对材料与结论状态后更新 stage=archive、按项目门禁提 PR、开出后写入 archivePr 并回显链接；界面没有直接执行归档的按钮，归档后补证直接在原会话继续处理。发布由界面一个按钮注入请求，预检、一致性核对、知情授权、执行与独立读回都在会话中完成，发布后把 tag 引用写入 `workflow.release` 供板面现算读回；后续执行遵从授权，不自动合入、完成 Issue 或发布。
 
 Issue 关联以固定 plan.tasks 的完整任务身份与 goalId 为准，不能仅凭快照自己声明的 goalId。同一事实的刷新或列表重排不构成材料改动。未关联目标的 Issue 仍进入报告，不影响单目标结论；未记录与已记录空集分别呈现。

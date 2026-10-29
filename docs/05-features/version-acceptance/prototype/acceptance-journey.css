@@ -181,17 +181,59 @@
   padding-top: 8px;
 }
 
-/* 发布 */
+/* 发布(#462:发布状态读回回归)。卡片度量对齐生产 acceptance.css 的 .acc-release
+   (与 .g3-archive 同款):20px 内距、--card 底、flex-wrap 兜底窄板。 */
 .acc-release {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
   margin-top: 10px;
-  padding: 10px 14px;
-  border: 1px solid var(--color-hairline, rgba(128, 128, 128, 0.25));
-  border-radius: 10px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card);
 }
-/* 发布读回行的 .acc-release-status 已随「板面不设发布状态读回行」的裁定删除。 */
+.acc-release > div {
+  flex: 1;
+  min-width: 200px;
+}
+.acc-release h3 {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.acc-release p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+/* 发布状态 chip:与 .g3-archive-status 同款皮肤(12px 边框圆角 muted),
+   状态一律文字,不推导灯、不单靠颜色区分。 */
+.acc-release-status {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 400;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+}
+/* 读回详情行:Release 地址与资产一行条,12px;URL 等宽、可断行、可点。 */
+.acc-release .acc-release-detail {
+  font-size: 12px;
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+.acc-release .acc-release-url {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  color: inherit;
+  margin-left: 4px;
+}
 
 /* 出包区块收起行 */
 .acc-pkg-toggle {
