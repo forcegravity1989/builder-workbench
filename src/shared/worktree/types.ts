@@ -69,6 +69,8 @@ export type Worktree = {
   projectId?: string
   /** Execution host that owns the workspace. Optional for pre-project-host metadata. */
   hostId?: ExecutionHostId
+  /** Renderer-only row reconstructed from a saved runtime session, before catalog discovery. */
+  runtimeSessionPlaceholder?: true
   /** Renderer projection of the paired runtime that transports operations to `hostId`. */
   runtimeOwnerEnvironmentId?: string
   /** Authenticated client that created this workspace. Missing means unknown legacy origin. */

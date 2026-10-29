@@ -1,6 +1,7 @@
 import React from 'react'
 import { BookOpen, CalendarClock, LayoutDashboard } from 'lucide-react'
 import { useAppStore } from '@/store'
+import { useVisibleRuntimeSessionRepos } from '@/store/repos/use-visible-runtime-session-repos'
 import { cn } from '@/lib/utils'
 import { SidebarTaskNavButton } from '@/components/sidebar/SidebarTaskNavButton'
 import { isWorkbenchShell } from './is-workbench-shell'
@@ -61,8 +62,8 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
   const openActivityPage = useAppStore((s) => s.openActivityPage)
   const openAutomationsPage = useAppStore((s) => s.openAutomationsPage)
   const openSpacePage = useAppStore((s) => s.openSpacePage)
-  const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const repos = useVisibleRuntimeSessionRepos()
+  const activeRepoId = useAppStore((s) => s.activeRepoId)
   // Subscribes so version-row highlights follow the shared artifacts slot.
   useCycleView()
   const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]

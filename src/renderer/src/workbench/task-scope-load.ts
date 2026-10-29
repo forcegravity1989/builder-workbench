@@ -1,4 +1,5 @@
 import { useAppStore } from '@/store'
+import { visibleRuntimeSessionRepos } from '@/store/repos/runtime-session-placeholder-visibility'
 import { getRepoExecutionHostId, type ExecutionHostId } from '../../../shared/execution-host'
 import { sortWorkItemsByNumber } from '../../../shared/work-items'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
@@ -146,8 +147,17 @@ export function openVersionTasksPage(args: {
 /** 范围行的原生宿主解析入口（与 use-cycle-workspace-target 同口径取主仓与宿主）。 */
 type HomeSource = { repos: readonly Repo[]; activeRepoId: string | null }
 function versionTaskScopeHome(preselectedRepoId?: string, source?: HomeSource): Home | null {
-  const state = source ?? useAppStore.getState()
-  const repoId = preselectedRepoId ?? state.activeRepoId ?? state.repos[0]?.id ?? null
+  const appState = useAppStore.getState()
+  const state = source ?? {
+    ...appState,
+    repos: visibleRuntimeSessionRepos(
+      appState.repos,
+      appState.runtimeRepoCatalogIdsByHost,
+      appState.runtimeStatusByEnvironmentId
+    )
+  }
+  const selected = state.repos.find((repo) => repo.id === state.activeRepoId)
+  const repoId = preselectedRepoId ?? selected?.id ?? state.repos[0]?.id ?? null
   const repo = state.repos.find((item) => item.id === repoId)
   if (!repo) {
     return null

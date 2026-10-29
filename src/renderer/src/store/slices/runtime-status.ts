@@ -24,6 +24,11 @@ import {
   ensureBrowserClientHostsForRestoredPages
 } from '@/runtime/restored-client-hosted-browser-host-attach'
 import { applyRuntimeHostStatusSnapshot } from './runtime-status-snapshot'
+import {
+  withoutRuntimeRepoCatalogs,
+  clearRuntimeStatus,
+  retainRuntimeStatuses
+} from './runtime-status-catalog-invalidation'
 
 export const clearRuntimeEnvironmentConnectionGenerationsForTests = (): void => {
   runtimeStatusConnectionGeneration.clearRuntimeEnvironmentConnectionGenerations()
@@ -118,12 +123,17 @@ export const createRuntimeStatusSlice: StateCreator<AppState, [], [], RuntimeSta
         (environment) => environment.id
       )
       const catalogUnchanged = reconciled === s.runtimeEnvironments
+      const runtimeRepoCatalogIdsByHost = withoutRuntimeRepoCatalogs(
+        s.runtimeRepoCatalogIdsByHost,
+        [...removedIds, ...replacedEnvironmentIds]
+      )
       if (
         catalogUnchanged &&
         s.runtimeEnvironmentCatalogHydrated &&
         s.runtimeEnvironmentCatalogSettled &&
         !statusesChanged &&
-        !removedChanged
+        !removedChanged &&
+        runtimeRepoCatalogIdsByHost === s.runtimeRepoCatalogIdsByHost
       ) {
         return s
       }
@@ -132,7 +142,10 @@ export const createRuntimeStatusSlice: StateCreator<AppState, [], [], RuntimeSta
         runtimeEnvironmentCatalogHydrated: true,
         runtimeEnvironmentCatalogSettled: true,
         ...(statusesChanged ? { runtimeStatusByEnvironmentId: nextStatuses } : {}),
-        ...(removedChanged ? { removedRuntimeEnvironmentIds: nextRemoved } : {})
+        ...(removedChanged ? { removedRuntimeEnvironmentIds: nextRemoved } : {}),
+        ...(runtimeRepoCatalogIdsByHost !== s.runtimeRepoCatalogIdsByHost
+          ? { runtimeRepoCatalogIdsByHost }
+          : {})
       }
     })
     // Why: evict detected-agent caches for environments that no longer exist so
@@ -162,7 +175,15 @@ export const createRuntimeStatusSlice: StateCreator<AppState, [], [], RuntimeSta
         runtimeStatusByEnvironmentId: new Map(s.runtimeStatusByEnvironmentId).set(
           snapshot.environmentId,
           entry
-        )
+        ),
+        ...(entry.status === null
+          ? {
+              runtimeRepoCatalogIdsByHost: withoutRuntimeRepoCatalogs(
+                s.runtimeRepoCatalogIdsByHost,
+                [snapshot.environmentId]
+              )
+            }
+          : {})
       }))
     }),
 
@@ -233,14 +254,25 @@ export const createRuntimeStatusSlice: StateCreator<AppState, [], [], RuntimeSta
             )
           : s.runtimeEnvironments
       const environmentsChanged = runtimeEnvironments !== s.runtimeEnvironments
-      if (statusUnchanged && !environmentsChanged) {
+      const runtimeRepoCatalogIdsByHost =
+        status.status === null || connectionChanged
+          ? withoutRuntimeRepoCatalogs(s.runtimeRepoCatalogIdsByHost, [environmentId])
+          : s.runtimeRepoCatalogIdsByHost
+      if (
+        statusUnchanged &&
+        !environmentsChanged &&
+        runtimeRepoCatalogIdsByHost === s.runtimeRepoCatalogIdsByHost
+      ) {
         return s
       }
       return {
         runtimeStatusByEnvironmentId: statusUnchanged
           ? s.runtimeStatusByEnvironmentId
           : new Map(s.runtimeStatusByEnvironmentId).set(environmentId, nextEntry),
-        ...(environmentsChanged ? { runtimeEnvironments } : {})
+        ...(environmentsChanged ? { runtimeEnvironments } : {}),
+        ...(runtimeRepoCatalogIdsByHost !== s.runtimeRepoCatalogIdsByHost
+          ? { runtimeRepoCatalogIdsByHost }
+          : {})
       }
     })
     if (runtimeRestarted) {
@@ -255,38 +287,10 @@ export const createRuntimeStatusSlice: StateCreator<AppState, [], [], RuntimeSta
     }
   },
 
-  clearRuntimeEnvironmentStatus: (environmentId) => {
-    dismissRuntimeDisconnectedToast(environmentId)
-    set((s) => {
-      runtimeStatusConnectionGeneration.advanceRuntimeEnvironmentConnectionGeneration(environmentId)
-      if (!s.runtimeStatusByEnvironmentId.has(environmentId)) {
-        return s
-      }
-      const next = new Map(s.runtimeStatusByEnvironmentId)
-      next.delete(environmentId)
-      return { runtimeStatusByEnvironmentId: next }
-    })
-  },
+  clearRuntimeEnvironmentStatus: (environmentId) => clearRuntimeStatus(set, environmentId),
 
-  retainRuntimeEnvironmentStatuses: (environmentIds) => {
-    const keep = new Set(environmentIds)
-    for (const id of get().runtimeStatusByEnvironmentId.keys()) {
-      if (!keep.has(id)) {
-        dismissRuntimeDisconnectedToast(id)
-      }
-    }
-    set((s) => {
-      let changed = false
-      const next = new Map(s.runtimeStatusByEnvironmentId)
-      for (const id of next.keys()) {
-        if (!keep.has(id)) {
-          next.delete(id)
-          changed = true
-        }
-      }
-      return changed ? { runtimeStatusByEnvironmentId: next } : s
-    })
-  },
+  retainRuntimeEnvironmentStatuses: (environmentIds) =>
+    retainRuntimeStatuses(set, get, environmentIds),
 
   refreshRuntimeEnvironmentStatus: (environmentId, timeoutMs = 10_000) =>
     refreshRuntimeEnvironmentStatus(environmentId, timeoutMs, (entry) => {

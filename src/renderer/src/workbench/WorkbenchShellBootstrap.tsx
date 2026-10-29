@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { useAppStore } from '@/store'
 import { isWorkbenchShell } from './is-workbench-shell'
+import { reconcileMissingActiveRuntimeSession } from '@/store/repos/active-runtime-placeholder'
+import { openProjectWall } from './project-page-state'
 
 /** claude tokens; keep left nav open; land on plan when idle terminal. */
 export function WorkbenchShellBootstrap(): null {
@@ -22,6 +24,35 @@ export function WorkbenchShellBootstrap(): null {
     if (state.activeView === 'terminal' && !state.activeWorktreeId) {
       state.openArtifactsPage()
     }
+    let reconciling = false
+    const reconcileActivePlaceholder = (previous?: ReturnType<typeof useAppStore.getState>) => {
+      if (reconciling) {
+        return
+      }
+      reconciling = true
+      try {
+        reconcileMissingActiveRuntimeSession(useAppStore.getState(), openProjectWall, previous)
+      } finally {
+        reconciling = false
+      }
+    }
+    const unsubscribe = useAppStore.subscribe((state, previous) => {
+      if (
+        state.activeWorktreeId !== previous.activeWorktreeId ||
+        state.activeWorkspaceExecutionHostId !== previous.activeWorkspaceExecutionHostId ||
+        state.activeRepoId !== previous.activeRepoId ||
+        state.restoredRuntimeHostIdByWorkspaceSessionKey !==
+          previous.restoredRuntimeHostIdByWorkspaceSessionKey ||
+        state.worktreesByRepo !== previous.worktreesByRepo ||
+        state.repos !== previous.repos ||
+        state.runtimeRepoCatalogIdsByHost !== previous.runtimeRepoCatalogIdsByHost ||
+        state.runtimeStatusByEnvironmentId !== previous.runtimeStatusByEnvironmentId
+      ) {
+        reconcileActivePlaceholder(previous)
+      }
+    })
+    reconcileActivePlaceholder()
+    return unsubscribe
   }, [])
   return null
 }

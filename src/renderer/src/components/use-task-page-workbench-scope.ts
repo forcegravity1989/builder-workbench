@@ -22,6 +22,7 @@ import {
   type WorkbenchTaskScopeModelFields
 } from '@/workbench/task-scope-projection'
 import { useAppStore } from '@/store'
+import { useVisibleRuntimeSessionRepos } from '@/store/repos/use-visible-runtime-session-repos'
 import { useTaskScopeViewers } from '@/workbench/use-task-scope-viewers'
 
 /** Only a selected goal materializes references; a version uses native queries. */
@@ -61,7 +62,7 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     model.taskSource === 'codehub'
       ? model.codehubView === 'issues'
       : model.activeGithubTaskKind === 'issues'
-  const repos = useAppStore((state) => state.repos)
+  const repos = useVisibleRuntimeSessionRepos()
   const activeRepoId = useAppStore((state) => state.activeRepoId)
   const home = useMemo(() => {
     if (!goalScope) {

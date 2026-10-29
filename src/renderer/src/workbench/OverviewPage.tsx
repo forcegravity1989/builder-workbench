@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
+import { useVisibleRuntimeSessionActiveRepo } from '@/store/repos/use-visible-runtime-session-repos'
 import { parseExecutionHostId } from '../../../shared/execution-host'
 import { openProjectOnboard } from './project-page-state'
 import { CharterPrNotice } from './charter-pr-notice'
@@ -28,12 +29,11 @@ import { RefreshCw } from 'lucide-react'
 import './workbench-overview.css'
 
 export function OverviewPage(): React.JSX.Element {
-  const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const activeRepo = useVisibleRuntimeSessionActiveRepo()
+  const activeRepoId = activeRepo?.id ?? null
   const repoWorktrees = useAppStore((s) =>
     activeRepoId ? s.worktreesByRepo[activeRepoId] : undefined
   )
-  const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]
 
   /** Metrics/history read from the project's main worktree: the configuration baseline tree. */
   const baseScope = useMemo<NativeWorkspaceScope | null>(() => {

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useAppStore } from '@/store'
+import { useVisibleRuntimeSessionActiveRepo } from '@/store/repos/use-visible-runtime-session-repos'
 import type { VersionWorkflow } from '../../../../shared/workbench/version-document'
 import { nativeVersionHistoryPort } from '../version-history-port'
 import { useVersionCatalogForRepo } from '../use-version-catalog'
@@ -83,7 +84,7 @@ function CatalogReadonlyMaterialView({
   workflow: VersionWorkflow
   version: string
 }): React.JSX.Element {
-  const repoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const repoId = useVisibleRuntimeSessionActiveRepo()?.id ?? null
   const trees = useAppStore((s) => (repoId ? s.worktreesByRepo[repoId] : undefined))
   const home = useMemo(
     () => trees?.find((tree) => tree.isMainWorktree) ?? trees?.[0] ?? null,

@@ -91,7 +91,12 @@ export function ProjectWallPage({
     [runtimeEnvironments]
   )
   const wallProjects = useMemo(
-    () => buildWallProjects(repos, projectGroups, hostCatalog),
+    () =>
+      buildWallProjects(
+        repos.filter((repo) => !repo.runtimeSessionPlaceholder),
+        projectGroups,
+        hostCatalog
+      ),
     [repos, projectGroups, hostCatalog]
   )
   // 上墙判据:能读到 .bw/project.toml(或本机有名片 PR 证据)的项目才上墙。

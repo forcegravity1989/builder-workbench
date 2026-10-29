@@ -5,6 +5,7 @@ import type { Repo } from '../../../../../../shared/repo-types'
 import type { ProjectGroup } from '../../../../../../shared/project-group-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { getRepoExecutionHostId } from '../../../../../../shared/execution-host'
+import { buildWallProjects } from '@/workbench/workbench-wall-projects'
 
 type Header = GroupHeaderRow | HostHeaderRow
 type Node = { header?: Header; row?: HostSectionRow; children: Node[]; depth: number }
@@ -22,12 +23,27 @@ export function projectWorkbenchRows(args: {
   repoId: string
   currentRepoIds: readonly string[]
   repos: readonly Repo[]
+  allRepos?: readonly Repo[]
+  hostCatalog?: { environmentIds: ReadonlySet<string> }
   projectGroups: readonly ProjectGroup[]
   worktrees: readonly Worktree[]
   expanded: boolean
   onToggle: () => void
 }): HostSectionRow[] {
+  const projects = buildWallProjects(
+    args.allRepos ?? args.repos,
+    args.projectGroups,
+    args.hostCatalog
+  )
+  const projectByRepo = new Map(
+    projects.flatMap((project) => project.repoIds.map((id) => [id, project] as const))
+  )
   const wanted = new Set(args.currentRepoIds)
+  for (const id of args.currentRepoIds) {
+    for (const member of projectByRepo.get(id)?.repoIds ?? []) {
+      wanted.add(member)
+    }
+  }
   const groupMap = new Map(args.projectGroups.map((group) => [group.id, group]))
   const root: Node = { children: [], depth: -2 }
   const stack = [root]
@@ -129,13 +145,15 @@ export function projectWorkbenchRows(args: {
     return current
   }
   const count = new Set(
-    other.flatMap((row) => {
-      if (row.type === 'header' || row.type === 'host-header') {
-        return [...headerRepos(row)].filter((id) => !wanted.has(id))
-      }
-      const id = rowRepoId(row)
-      return id && !wanted.has(id) ? [id] : []
-    })
+    other
+      .flatMap((row) => {
+        if (row.type === 'header' || row.type === 'host-header') {
+          return [...headerRepos(row)].filter((id) => !wanted.has(id))
+        }
+        const id = rowRepoId(row)
+        return id && !wanted.has(id) ? [id] : []
+      })
+      .map((id) => projectByRepo.get(id)?.key ?? `repo:${id}`)
   ).size
   return [
     ...current,

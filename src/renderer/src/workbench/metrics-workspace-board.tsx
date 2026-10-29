@@ -1,5 +1,6 @@
 import { useMemo, type JSX } from 'react'
 import { useAppStore } from '@/store'
+import { useVisibleRuntimeSessionActiveRepo } from '@/store/repos/use-visible-runtime-session-repos'
 import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
 import { useOverviewHistory } from './use-overview-history'
@@ -20,12 +21,10 @@ import './workbench-overview.css'
  * so a save in that worktree shows up without leaving the workspace.
  */
 export function MetricsWorkspaceBoard(): JSX.Element {
-  const activeRepoId = useAppStore((state) => state.activeRepoId ?? state.repos[0]?.id ?? null)
+  const activeRepo = useVisibleRuntimeSessionActiveRepo()
+  const activeRepoId = activeRepo?.id ?? null
   const repoWorktrees = useAppStore((state) =>
     activeRepoId ? state.worktreesByRepo[activeRepoId] : undefined
-  )
-  const activeRepo = useAppStore(
-    (state) => state.repos.find((repo) => repo.id === activeRepoId) ?? state.repos[0]
   )
   const baseScope = useMemo<NativeWorkspaceScope | null>(() => {
     if (!activeRepoId || !repoWorktrees?.length) {

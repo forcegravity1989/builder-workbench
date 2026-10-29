@@ -1,3 +1,4 @@
+import { getRuntimeRepoCatalogEpoch } from './runtime-repo-catalog-epoch'
 import type { StateCreator } from 'zustand'
 import type { AppState } from '../types'
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
@@ -39,6 +40,7 @@ export function createRuntimeRepoCatalogActions(
       runtimeRepoFetchGenerationByEnvironment.set(environmentId, requestGeneration)
       const connectionGeneration = getEnvironmentSshStateGeneration(environmentId)
       const runtimeConnectionGeneration = getRuntimeEnvironmentConnectionGeneration(environmentId)
+      const catalogEpoch = getRuntimeRepoCatalogEpoch(environmentId)
       let catalogGeneration = 0
       set((s) => {
         catalogGeneration = s.reposFetchGeneration + 1
@@ -57,7 +59,9 @@ export function createRuntimeRepoCatalogActions(
           runtimeRepoFetchGenerationByEnvironment.get(environmentId) !== requestGeneration ||
           !isLatestRepoCatalogGeneration(get, targetHostId, catalogGeneration) ||
           getEnvironmentSshStateGeneration(environmentId) !== connectionGeneration ||
-          getRuntimeEnvironmentConnectionGeneration(environmentId) !== runtimeConnectionGeneration
+          getRuntimeEnvironmentConnectionGeneration(environmentId) !==
+            runtimeConnectionGeneration ||
+          getRuntimeRepoCatalogEpoch(environmentId) !== catalogEpoch
         ) {
           return []
         }
@@ -67,7 +71,9 @@ export function createRuntimeRepoCatalogActions(
             runtimeRepoFetchGenerationByEnvironment.get(environmentId) !== requestGeneration ||
             !isLatestRepoCatalogGeneration(get, targetHostId, catalogGeneration) ||
             getEnvironmentSshStateGeneration(environmentId) !== connectionGeneration ||
-            getRuntimeEnvironmentConnectionGeneration(environmentId) !== runtimeConnectionGeneration
+            getRuntimeEnvironmentConnectionGeneration(environmentId) !==
+              runtimeConnectionGeneration ||
+            getRuntimeRepoCatalogEpoch(environmentId) !== catalogEpoch
           ) {
             return s
           }
@@ -102,6 +108,10 @@ export function createRuntimeRepoCatalogActions(
           )
           return {
             repos: finalizedRepos,
+            runtimeRepoCatalogIdsByHost: {
+              ...s.runtimeRepoCatalogIdsByHost,
+              [catalog.hostId]: catalog.repos.map((repo) => repo.id)
+            },
             ...(visibilityDefaults === undefined
               ? {}
               : {

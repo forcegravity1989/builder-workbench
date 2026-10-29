@@ -1,4 +1,6 @@
+import { getRuntimeRepoCatalogEpoch } from './runtime-repo-catalog-epoch'
 import type { StateCreator } from 'zustand'
+import { getRuntimeEnvironmentConnectionGeneration } from '../slices/runtime-status'
 import type { AppState } from '../types'
 import type { Repo } from '../../../../shared/repo-types'
 import { applyManualRepoOrder } from '../../../../shared/manual-repo-order'
@@ -103,11 +105,23 @@ export function createRepoCatalogActions(
         return { reposFetchGeneration: generation }
       })
       const targetHostId = getRuntimeTargetHostId(target)
+      const connectionGeneration =
+        target.kind === 'environment'
+          ? getRuntimeEnvironmentConnectionGeneration(target.environmentId)
+          : null
+      const catalogEpoch =
+        target.kind === 'environment' ? getRuntimeRepoCatalogEpoch(target.environmentId) : null
       claimRepoCatalogGeneration(get, targetHostId, generation)
       try {
         const catalog = await fetchRepoCatalogForTarget(target)
         // A newer same-host fetch superseded us while we awaited — drop this stale result.
-        if (!isLatestRepoCatalogGeneration(get, targetHostId, generation)) {
+        if (
+          !isLatestRepoCatalogGeneration(get, targetHostId, generation) ||
+          (target.kind === 'environment' &&
+            (getRuntimeEnvironmentConnectionGeneration(target.environmentId) !==
+              connectionGeneration ||
+              getRuntimeRepoCatalogEpoch(target.environmentId) !== catalogEpoch))
+        ) {
           return
         }
         let finalizedHostRepos: Repo[] = []
@@ -144,6 +158,14 @@ export function createRepoCatalogActions(
           )
           return {
             repos: prunedRepos,
+            ...(catalog.hostId.startsWith('runtime:')
+              ? {
+                  runtimeRepoCatalogIdsByHost: {
+                    ...s.runtimeRepoCatalogIdsByHost,
+                    [catalog.hostId]: catalog.repos.map((repo) => repo.id)
+                  }
+                }
+              : {}),
             pendingSshRepoReadoptions: reconciliation.pendingReadoptions,
             ...reconcileReadoptedSshWorktreeState(s, s.pendingSshRepoReadoptions),
             ...mergedProjectCompatibility,

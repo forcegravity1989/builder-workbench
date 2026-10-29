@@ -294,16 +294,12 @@ describe('fetchWorkspaceSessionFromHosts', () => {
         }
       },
       {
-        repos: [
-          {
-            id: 'remote-repo',
-            connectionId: null,
-            executionHostId: 'runtime:env-1'
-          }
-        ],
+        // A successful catalog can remove the synthetic repo before sessions are written.
+        repos: [],
         worktreesByRepo: {
-          'remote-repo': [{ id: worktreeId, repoId: 'remote-repo' }]
-        }
+          'remote-repo': [{ id: worktreeId, repoId: 'remote-repo', hostId: 'runtime:env-1' }]
+        },
+        restoredRuntimeHostIdByWorkspaceSessionKey: { [worktreeId]: 'runtime:env-1' }
       }
     )
 

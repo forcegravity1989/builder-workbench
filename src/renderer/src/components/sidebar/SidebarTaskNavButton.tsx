@@ -13,6 +13,7 @@ import { getLocalPreflightContext, localPreflightContextKey } from '@/lib/local-
 import { getTaskEligibleRepos } from '@/components/task-page-default-repo-selection'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
+import { useVisibleRuntimeSessionActiveRepo } from '@/store/repos/use-visible-runtime-session-repos'
 import { useRepoMap } from '@/store/selectors'
 import { translate } from '@/i18n/i18n'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
@@ -62,6 +63,7 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
   const updateSettings = useAppStore((s) => s.updateSettings)
   const activeView = useAppStore((s) => s.activeView)
   const repos = useAppStore((s) => s.repos)
+  const visibleActiveRepo = useVisibleRuntimeSessionActiveRepo()
   const repoMap = useRepoMap()
   const showTasksButton = useAppStore((s) => s.settings?.showTasksButton !== false)
   const rawVisibleTaskProviders = useAppStore((s) => s.settings?.visibleTaskProviders)
@@ -159,7 +161,7 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
   // 复用原生 openTaskPage 的 preselectedRepoId 预选契约;页内项目筛选仍可改。
   // 仅当前项目确属页面口径的合格仓(git + 远端身份未被判无)才传预选:预选落空时
   // openTaskPage 的预取分支返回空集不回退,反而丢掉首屏预热;不合格按原样无参调用。
-  const currentProjectRepoId = activeRepoId ?? repos[0]?.id ?? null
+  const currentProjectRepoId = visibleActiveRepo?.id ?? null
   const workbenchProjectRepoId =
     isWorkbenchShell() &&
     currentProjectRepoId &&

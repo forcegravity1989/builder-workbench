@@ -1,5 +1,6 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react'
-import { useAppStore } from '@/store'
+import type { useAppStore } from '@/store'
+import { useVisibleRuntimeSessionActiveRepo } from '@/store/repos/use-visible-runtime-session-repos'
 import type { KbDoc } from './knowledge-doc-registry'
 import {
   loadKnowledgeFromRepo,
@@ -18,9 +19,7 @@ export function useKnowledgeRepo(): {
   reload: () => void
   saveDoc: (docId: string, content?: string) => Promise<WriteKnowledgeDocResult>
 } {
-  const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]
+  const activeRepo = useVisibleRuntimeSessionActiveRepo()
   const [docs, setDocs] = useState<KbDoc[]>([])
   const [bodies, setBodies] = useState<Record<string, string>>({})
   const [savedBodies, setSavedBodies] = useState<Record<string, string>>({})
