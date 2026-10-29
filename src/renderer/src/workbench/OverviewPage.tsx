@@ -21,7 +21,7 @@ import { useOverviewMetricCollection } from './use-overview-metric-collection'
 import { useOverviewHistory } from './use-overview-history'
 import { useMetricsSetup } from './version-cycle/metrics-setup'
 import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
-import { OverviewVersionMinutes } from './overview-version-minutes'
+import { ProjectMilestones } from './project-milestones'
 import { useOverviewViewState } from './overview-view-state'
 import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import { RefreshCw } from 'lucide-react'
@@ -54,6 +54,10 @@ export function OverviewPage(): React.JSX.Element {
     return repoWorktrees.find((item) => item.isMainWorktree) ?? repoWorktrees[0] ?? null
   }, [baseScope, repoWorktrees])
   const baseWorktreeId = baseWorktree?.id ?? null
+  const milestoneScope = useMemo(
+    () => (baseScope && baseWorktreeId ? { ...baseScope, worktreeId: baseWorktreeId } : null),
+    [baseScope, baseWorktreeId]
+  )
 
   const charterKey = JSON.stringify([activeRepo?.id, activeRepo?.path])
   const [charterState, setCharter] = useState<{
@@ -106,10 +110,6 @@ export function OverviewPage(): React.JSX.Element {
   })
   const { history, currentVersion } = historyState
   const problems = [...metrics.problems, ...(historyState.problem ? [historyState.problem] : [])]
-  // 版本区来源标注：目录读的是主检出基线的哪个分支、哪个提交。
-  const historySource = history?.baselineCommit
-    ? `${history.baselineRef ?? '主检出'} @ ${history.baselineCommit.slice(0, 12)}`
-    : null
 
   useEffect(() => {
     if (!activeRepo?.path) {
@@ -289,6 +289,26 @@ export function OverviewPage(): React.JSX.Element {
           />
         </div>
 
+        <ProjectMilestones
+          scope={milestoneScope}
+          refreshToken={history?.baselineCommit}
+          updateFormal={updateTrunk}
+        />
+
+        <label className="wb-muted">
+          指标依据版本{' '}
+          <select
+            aria-label="指标依据版本"
+            value={version ?? ''}
+            onChange={(event) => setView({ version: event.target.value })}
+          >
+            {versions.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </label>
         <OverviewScoreboard
           catalog={catalog}
           readings={zoneReadings}
@@ -301,17 +321,6 @@ export function OverviewPage(): React.JSX.Element {
           setupBusy={metricsSetup.busy || !baseScope}
           onSetup={() => void metricsSetup.prepareMetrics()}
           worktreeId={baseWorktreeId}
-        />
-
-        <OverviewVersionMinutes
-          versions={versions}
-          version={version}
-          onVersion={(value) => setView({ version: value })}
-          minutes={minutes}
-          historyProblems={history?.problems ?? []}
-          busy={historyState.busy}
-          onRetry={historyState.reload}
-          source={historySource}
         />
       </div>
       {refreshing && (
