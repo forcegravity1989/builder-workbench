@@ -5,7 +5,7 @@ const { createHash } = require('node:crypto')
 const esbuild = require('esbuild')
 const output = path.join(__dirname, 'milestones.js')
 const dependencies = {
-  react: ['React', 'useState', 'useRef', 'useEffect'],
+  react: ['React', 'useState', 'useRef', 'useEffect', 'forwardRef', 'createElement'],
   'react-dom/client': ['createRoot'],
   'react-markdown': ['ReactMarkdown'],
   'remark-gfm': ['remarkGfm'],
@@ -71,7 +71,10 @@ esbuild
           )
           build.onLoad({ filter: /.*/, namespace: 'frozen' }, (args) => ({
             contents: dependencies[args.path]
-              .map((name) => `export const ${name} = window.BWPrototypeDependencies.${name};`)
+              .map(
+                (name) =>
+                  `export const ${name} = window.BWPrototypeDependencies${args.path === 'react' && name !== 'React' ? '.React' : ''}.${name};`
+              )
               .join('\n')
           }))
         }

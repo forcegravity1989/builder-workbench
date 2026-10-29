@@ -1,3 +1,7 @@
+import Undo2 from 'lucide-react/dist/esm/icons/undo-2.js'
+import Redo2 from 'lucide-react/dist/esm/icons/redo-2.js'
+import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw.js'
+import Flag from 'lucide-react/dist/esm/icons/flag.js'
 import {
   calendarFor,
   latestMonth,
@@ -23,7 +27,6 @@ import { historicalRows, historyPlans, historyCounts, sourceUrl } from './milest
 import { Sidebar, ProjectContext, Scoreboard } from './milestones-shell.jsx'
 import {
   Modal,
-  CalendarPanel,
   ReferencePanel,
   PlanningReviewPanel,
   VersionBridge,
@@ -141,7 +144,7 @@ function MilestoneAxis({ plan, calendar, planning, changeMilestone, navigate }) 
               </button>
               {(planning || outcome) && (
                 <div className="ml-stage-anchor" style={{ left: anchor }}>
-                  <i className="ml-flag" />
+                  <Flag className="ml-flag" size={14} />
                   <div
                     className="ml-stage-caption"
                     title={outcome}
@@ -300,18 +303,8 @@ function Timeline({
             scroll.current?.scrollTo({ left: Math.max(0, xFor(date)), behavior: 'smooth' })
           }
         />
-        <div className="ml-date-row">
-          <div className="ml-sticky-label">特性 / 负责人</div>
-          <div className="ml-date-track">
-            {Array.from({ length: Math.ceil(totalDays / 7) }, (_, i) => (
-              <span key={i} style={{ left: i * 7 * dayWidth }}>
-                {shortDate(new Date(axisStart + i * 7 * dayMs).toISOString().slice(0, 10))}
-              </span>
-            ))}
-          </div>
-        </div>
         <div className="ml-version-row">
-          <div className="ml-sticky-label">周版本</div>
+          <div className="ml-sticky-label">特性 / 负责人</div>
           <div className="ml-version-track">
             {emptyWeeks.map((w) => (
               <div
@@ -351,171 +344,181 @@ function Timeline({
             ))}
           </div>
         </div>
-        {rows.map((item, index) => (
-          <div
-            key={item.id}
-            className={`ml-timeline-row ${rowDrop?.id === item.id ? `ml-row-drop-${rowDrop.side}` : ''}`}
-            data-feature-id={item.id}
-            onDragOver={(e) => {
-              if (!ordering.current) {
-                return
-              }
-              e.preventDefault()
-              e.dataTransfer.dropEffect = 'move'
-              const r = e.currentTarget.getBoundingClientRect()
-              setRowDrop({
-                id: item.id,
-                side: e.clientY > r.top + r.height / 2 ? 'after' : 'before'
-              })
-              const viewport = scroll.current.getBoundingClientRect()
-              if (e.clientY > viewport.bottom - 30) {
-                scroll.current.scrollTop += 10
-              }
-              if (e.clientY < viewport.top + 100) {
-                scroll.current.scrollTop -= 10
-              }
-            }}
-            onDrop={(e) => {
-              if (!ordering.current) {
-                return
-              }
-              e.preventDefault()
-              const r = e.currentTarget.getBoundingClientRect()
-              onReorder(
-                ordering.current,
-                item.id,
-                e.clientY > r.top + r.height / 2 ? 'after' : 'before'
-              )
-              ordering.current = null
-              setRowDrop(null)
-            }}
-          >
-            <div className="ml-sticky-label">
-              {planning ? (
-                <>
-                  <div className="ml-feature-heading">
+        {rows.map((item, index) => {
+          const stacked =
+            byId[item.pre] &&
+            byId[item.release] &&
+            Math.abs(centerFor(byId[item.pre]) - centerFor(byId[item.release])) < 148
+          return (
+            <div
+              key={item.id}
+              className={`ml-timeline-row ${stacked ? 'stacked' : ''} ${rowDrop?.id === item.id ? `ml-row-drop-${rowDrop.side}` : ''}`}
+              data-feature-id={item.id}
+              onDragOver={(e) => {
+                if (!ordering.current) {
+                  return
+                }
+                e.preventDefault()
+                e.dataTransfer.dropEffect = 'move'
+                const r = e.currentTarget.getBoundingClientRect()
+                setRowDrop({
+                  id: item.id,
+                  side: e.clientY > r.top + r.height / 2 ? 'after' : 'before'
+                })
+                const viewport = scroll.current.getBoundingClientRect()
+                if (e.clientY > viewport.bottom - 30) {
+                  scroll.current.scrollTop += 10
+                }
+                if (e.clientY < viewport.top + 100) {
+                  scroll.current.scrollTop -= 10
+                }
+              }}
+              onDrop={(e) => {
+                if (!ordering.current) {
+                  return
+                }
+                e.preventDefault()
+                const r = e.currentTarget.getBoundingClientRect()
+                onReorder(
+                  ordering.current,
+                  item.id,
+                  e.clientY > r.top + r.height / 2 ? 'after' : 'before'
+                )
+                ordering.current = null
+                setRowDrop(null)
+              }}
+            >
+              <div className="ml-sticky-label">
+                {planning ? (
+                  <>
+                    <div className="ml-feature-heading">
+                      <button
+                        className="ml-order-handle"
+                        draggable
+                        aria-label={`排序 ${item.title || '新特性'}`}
+                        title="拖动排序；Alt+上下键移动"
+                        onDragStart={(e) => {
+                          ordering.current = item.id
+                          e.dataTransfer.setData('text/plain', item.id)
+                          e.dataTransfer.effectAllowed = 'move'
+                        }}
+                        onDragEnd={() => {
+                          ordering.current = null
+                          setRowDrop(null)
+                        }}
+                        onKeyDown={(e) => {
+                          if (!e.altKey || !['ArrowUp', 'ArrowDown'].includes(e.key)) {
+                            return
+                          }
+                          e.preventDefault()
+                          const next = index + (e.key === 'ArrowUp' ? -1 : 1)
+                          if (rows[next]) {
+                            onReorder(item.id, rows[next].id, next < index ? 'before' : 'after')
+                          }
+                        }}
+                      >
+                        ⠿
+                      </button>
+                      <InlineField
+                        className="ml-feature-name"
+                        value={item.title}
+                        label={`特性名称 ${item.id}`}
+                        placeholder="特性名称"
+                        autoFocus={item.id === newFeature}
+                        change={(title) => onChangeFeature(item.id, { title })}
+                      />
+                    </div>
+                    <div className="ml-inline-owner">
+                      <InlineField
+                        value={item.owner}
+                        label={`负责人 ${item.title || '新特性'}`}
+                        placeholder="负责人"
+                        change={(owner) => onChangeFeature(item.id, { owner })}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <strong>{item.title}</strong>
+                    <small>{item.owner}</small>
+                  </>
+                )}
+              </div>
+              <div className="ml-track" style={{ width: totalDays * dayWidth }}>
+                {drag?.id === item.id && (
+                  <div
+                    className="ml-drop-target"
+                    style={{
+                      left: xFor(byId[drag.target].start),
+                      width: xFor(byId[drag.target].end) - xFor(byId[drag.target].start) + dayWidth
+                    }}
+                  />
+                )}
+                {['pre', 'release'].map((kind, i) => {
+                  const target =
+                      drag?.id === item.id && drag.kind === kind ? drag.target : item[kind],
+                    v = byId[target]
+                  if (!v) {
+                    return null
+                  }
+                  return (
                     <button
-                      className="ml-order-handle"
-                      draggable
-                      aria-label={`排序 ${item.title || '新特性'}`}
-                      title="拖动排序；Alt+上下键移动"
-                      onDragStart={(e) => {
-                        ordering.current = item.id
-                        e.dataTransfer.setData('text/plain', item.id)
-                        e.dataTransfer.effectAllowed = 'move'
-                      }}
-                      onDragEnd={() => {
-                        ordering.current = null
-                        setRowDrop(null)
+                      key={kind}
+                      className={`ml-delivery-node ${kind} ${planning ? 'editable' : ''} ${drag?.id === item.id && drag.kind === kind ? 'dragging' : ''}`}
+                      style={{ left: centerFor(v) - 69, top: stacked ? 10 + i * 44 : 27 }}
+                      aria-label={`${item.title || '新特性'} · ${kind === 'pre' ? 'Pre版本' : 'Release版本'} · ${v.name || '周窗口'}`}
+                      title={planning ? '拖动安排；Shift+左右键移动；点击进入版本' : '进入版本总览'}
+                      onPointerDown={(e) => down(e, item, kind)}
+                      onPointerMove={move}
+                      onPointerUp={up}
+                      onPointerCancel={cancel}
+                      onClick={(e) => {
+                        if (suppress.current) {
+                          suppress.current = false
+                          e.preventDefault()
+                          return
+                        }
+                        onVersion(item[kind], item)
                       }}
                       onKeyDown={(e) => {
-                        if (!e.altKey || !['ArrowUp', 'ArrowDown'].includes(e.key)) {
+                        if (
+                          !planning ||
+                          !e.shiftKey ||
+                          !['ArrowLeft', 'ArrowRight'].includes(e.key)
+                        ) {
                           return
                         }
                         e.preventDefault()
-                        const next = index + (e.key === 'ArrowUp' ? -1 : 1)
-                        if (rows[next]) {
-                          onReorder(item.id, rows[next].id, next < index ? 'before' : 'after')
+                        const n =
+                          targets.findIndex((entry) => entry.id === item[kind]) +
+                          (e.key === 'ArrowLeft' ? -1 : 1)
+                        if (targets[n]) {
+                          onMove(item.id, kind, targets[n].id)
                         }
                       }}
                     >
-                      ⠿
+                      <span>
+                        <i />
+                        {kind === 'pre' ? 'Pre版本' : 'Release版本'}
+                        <ExternalLink size={12} />
+                      </span>
+                      <small>{v.name || '周窗口'}</small>
                     </button>
-                    <InlineField
-                      className="ml-feature-name"
-                      value={item.title}
-                      label={`特性名称 ${item.id}`}
-                      placeholder="特性名称"
-                      autoFocus={item.id === newFeature}
-                      change={(title) => onChangeFeature(item.id, { title })}
-                    />
-                  </div>
-                  <div className="ml-inline-owner">
-                    <InlineField
-                      value={item.owner}
-                      label={`负责人 ${item.title || '新特性'}`}
-                      placeholder="负责人"
-                      change={(owner) => onChangeFeature(item.id, { owner })}
-                    />
-                    <IconAction
-                      label={`移除特性 ${item.title || '新特性'}`}
-                      icon={X}
-                      onClick={() => onDelete(item)}
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <strong>{item.title}</strong>
-                  <small>{item.owner}</small>
-                </>
+                  )
+                })}
+              </div>
+              {planning && (
+                <div className="ml-row-actions">
+                  <IconAction
+                    label={`移除特性 ${item.title || '新特性'}`}
+                    icon={X}
+                    onClick={() => onDelete(item)}
+                  />
+                </div>
               )}
             </div>
-            <div className="ml-track" style={{ width: totalDays * dayWidth }}>
-              {drag?.id === item.id && (
-                <div
-                  className="ml-drop-target"
-                  style={{
-                    left: xFor(byId[drag.target].start),
-                    width: xFor(byId[drag.target].end) - xFor(byId[drag.target].start) + dayWidth
-                  }}
-                />
-              )}
-              {['pre', 'release'].map((kind, i) => {
-                const target =
-                    drag?.id === item.id && drag.kind === kind ? drag.target : item[kind],
-                  v = byId[target]
-                if (!v) {
-                  return null
-                }
-                return (
-                  <button
-                    key={kind}
-                    className={`ml-delivery-node ${kind} ${planning ? 'editable' : ''} ${drag?.id === item.id && drag.kind === kind ? 'dragging' : ''}`}
-                    style={{ left: centerFor(v) - 65, top: 8 + i * 48 }}
-                    aria-label={`${item.title || '新特性'} · ${kind === 'pre' ? 'Pre版本' : 'Release版本'} · ${v.name || '周窗口'}`}
-                    title={planning ? '拖动安排；Shift+左右键移动；点击进入版本' : '进入版本总览'}
-                    onPointerDown={(e) => down(e, item, kind)}
-                    onPointerMove={move}
-                    onPointerUp={up}
-                    onPointerCancel={cancel}
-                    onClick={(e) => {
-                      if (suppress.current) {
-                        suppress.current = false
-                        e.preventDefault()
-                        return
-                      }
-                      onVersion(item[kind], item)
-                    }}
-                    onKeyDown={(e) => {
-                      if (
-                        !planning ||
-                        !e.shiftKey ||
-                        !['ArrowLeft', 'ArrowRight'].includes(e.key)
-                      ) {
-                        return
-                      }
-                      e.preventDefault()
-                      const n =
-                        targets.findIndex((entry) => entry.id === item[kind]) +
-                        (e.key === 'ArrowLeft' ? -1 : 1)
-                      if (targets[n]) {
-                        onMove(item.id, kind, targets[n].id)
-                      }
-                    }}
-                  >
-                    <span>
-                      <i />
-                      {kind === 'pre' ? 'Pre版本' : 'Release版本'}
-                      <ExternalLink size={12} />
-                    </span>
-                    <small>{v.name || '周窗口'}</small>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        ))}
+          )
+        })}
         {!rows.length && (
           <div className="ml-empty-lanes">
             <div className="ml-sticky-label">还没有特性</div>
@@ -552,7 +555,6 @@ function App() {
     [theme, setTheme] = useState('light'),
     [notice, setNotice] = useState(''),
     [saveError, setSaveError] = useState(''),
-    [removed, setRemoved] = useState(null),
     [newFeature, setNewFeature] = useState(null)
   const board = useRef(null),
     state = cases[caseId],
@@ -597,7 +599,6 @@ function App() {
     }
     ;(redo ? history.past : history.future).push(clone(state.draft))
     history.field = null
-    setRemoved(null)
     setState((s) => ({ ...s, draft }))
   }
   useEffect(() => {
@@ -629,7 +630,6 @@ function App() {
       `${latestMonth(value === 'planning' ? selected.draft : selected.published || selected.draft)}-01`
     )
     setModal(null)
-    setRemoved(null)
   }
   const begin = () => {
     setPlanning(true)
@@ -654,21 +654,7 @@ function App() {
     editPlan(() => result.plan)
   }
   const remove = (item) => {
-    setRemoved({ item, index: state.draft.features.findIndex((f) => f.id === item.id) })
     editPlan((p) => ({ ...p, features: p.features.filter((f) => f.id !== item.id) }))
-  }
-  const undoRemove = () => {
-    if (!removed) {
-      return
-    }
-    editPlan((p) => {
-      const features = [...p.features]
-      if (!features.some((f) => f.id === removed.item.id)) {
-        features.splice(Math.min(removed.index, features.length), 0, removed.item)
-      }
-      return { ...p, features }
-    })
-    setRemoved(null)
   }
   const add = () => {
     const id = `demo-${crypto.randomUUID()}`
@@ -712,8 +698,6 @@ function App() {
   }
   const restore = () => {
     setState((s) => ({ ...s, draft: clone(s.submitted) }))
-    setRemoved(null)
-    setNotice('已还原最近提交后的修改')
   }
   const submit = () => {
     if (!dirty || problem || state.review === 'merged') {
@@ -723,7 +707,6 @@ function App() {
     history.past = []
     history.future = []
     history.field = null
-    setRemoved(null)
   }
   const publish = () => {
     if (state.review !== 'merged') {
@@ -732,7 +715,6 @@ function App() {
     setState((s) => ({ ...s, published: clone(s.submitted), review: 'none' }))
     setPlanning(dirty)
     setModal(null)
-    setRemoved(null)
     setNotice(dirty ? '正式安排已更新，未提交修改仍保留' : '正式安排已更新')
   }
   const openVersion = (version, item) => {
@@ -862,56 +844,40 @@ function App() {
             <ProjectContext />
             <section className="ml-milestone-block" aria-label="项目里程碑" ref={board}>
               <div className="ml-milestone-heading">
-                <h2>项目里程碑</h2>
+                <div className="ml-heading-title">
+                  <h2>项目里程碑</h2>
+                  {!empty && <span>{plan.features.length} 个特性</span>}
+                </div>
                 <div className="ml-actions">
-                  <IconAction
-                    label="工作日历"
-                    icon={CalendarRange}
-                    onClick={(e) =>
-                      setModal({
-                        type: 'calendar',
-                        anchor: e.currentTarget.getBoundingClientRect()
-                      })
-                    }
-                  />
                   {planning ? (
                     <>
                       <span className={`tag tag-outline ${dirty ? 'ml-dirty' : ''}`}>{status}</span>
-                      <button
-                        className="btn btn-ghost ml-history-button"
-                        aria-label="撤销"
-                        title="撤销 · Ctrl+Z"
-                        disabled={!history.past.length}
-                        onClick={() => stepHistory()}
-                      >
-                        ↶
-                      </button>
-                      <button
-                        className="btn btn-ghost ml-history-button"
-                        aria-label="重做"
-                        title="重做 · Ctrl+Shift+Z"
-                        disabled={!history.future.length}
-                        onClick={() => stepHistory(true)}
-                      >
-                        ↷
-                      </button>
-                      <details className="ml-more-actions">
-                        <summary aria-label="更多规划操作">⋯</summary>
-                        <div>
-                          <button
-                            className="btn btn-ghost"
-                            disabled={!dirty}
-                            onClick={(e) => {
-                              restore()
-                              history.past = []
-                              history.future = []
-                              e.currentTarget.closest('details').open = false
-                            }}
-                          >
-                            放弃本次修改
-                          </button>
-                        </div>
-                      </details>
+                      <div className="ml-edit-actions" role="group" aria-label="规划编辑操作">
+                        <IconAction
+                          label="撤销 · Ctrl+Z"
+                          icon={Undo2}
+                          disabled={!history.past.length}
+                          onClick={() => stepHistory()}
+                        />
+                        <IconAction
+                          label="重做 · Ctrl+Shift+Z"
+                          icon={Redo2}
+                          disabled={!history.future.length}
+                          onClick={() => stepHistory(true)}
+                        />
+                        <span className="ml-action-divider" />
+                        <IconAction
+                          label="放弃本次修改，恢复最近提交"
+                          icon={RotateCcw}
+                          disabled={!dirty}
+                          onClick={() => {
+                            restore()
+                            history.past = []
+                            history.future = []
+                            history.field = null
+                          }}
+                        />
+                      </div>
                       {state.review === 'merged' ? (
                         <button
                           className="btn btn-primary"
@@ -963,15 +929,6 @@ function App() {
                 </div>
               ) : (
                 <>
-                  <div className="ml-support-head">
-                    <span>{plan.features.length} 个特性</span>
-                    <button
-                      className="btn btn-ghost"
-                      onClick={() => navigate(`${latestMonth(plan)}-01`)}
-                    >
-                      定位最新
-                    </button>
-                  </div>
                   <Timeline
                     rows={plan.features}
                     plan={plan}
@@ -1006,9 +963,6 @@ function App() {
           </main>
         </div>
       </div>
-      {modal?.type === 'calendar' && (
-        <CalendarPanel anchor={modal.anchor} close={() => setModal(null)} />
-      )}
       {modal?.type === 'references' && <ReferencePanel close={() => setModal(null)} />}
       {modal?.type === 'version' && (
         <VersionBridge
@@ -1096,15 +1050,6 @@ function App() {
             </button>
           </footer>
         </Modal>
-      )}
-      {removed && planning && (
-        <div className="ml-undo" role="status">
-          <span>已移除 {removed.item.title || '新特性'}</span>
-          <button className="btn btn-ghost" onClick={undoRemove}>
-            撤销
-          </button>
-          <IconAction label="关闭撤销提示" icon={X} onClick={() => setRemoved(null)} />
-        </div>
       )}
       {notice && (
         <div className="ml-toast" role="status">

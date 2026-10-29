@@ -25,34 +25,6 @@
   align-items: center;
   gap: 8px;
 }
-.ml-history-button {
-  width: 26px;
-  min-height: 26px;
-  font-size: 22px;
-  line-height: 1;
-  padding: 0;
-}
-.ml-more-actions {
-  position: relative;
-}
-.ml-more-actions summary {
-  list-style: none;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 0 6px;
-}
-.ml-more-actions > div {
-  position: absolute;
-  right: 0;
-  top: 28px;
-  width: max-content;
-  z-index: 15;
-  padding: 6px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--popover);
-  box-shadow: var(--shadow-md);
-}
 .ml-app {
   display: flex;
   height: calc(100vh - 34px);
@@ -270,79 +242,6 @@
   margin-top: 18px;
   background: var(--background);
 }
-.ml-calendar-popover {
-  position: fixed;
-  width: 298px;
-  max-width: calc(100vw - 24px);
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--popover);
-  color: var(--popover-foreground);
-  box-shadow: var(--shadow-dialog);
-  z-index: 50;
-}
-.ml-calendar-popover:focus {
-  outline: none;
-}
-.ml-calendar-popover header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.ml-calendar-popover h3 {
-  margin: 0;
-  font-size: 12px;
-}
-.ml-calendar-popover header button {
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-}
-.ml-calendar-popover .ml-actions {
-  gap: 3px;
-}
-.ml-calendar-popover .calendar-grid {
-  gap: 3px;
-  margin: 10px 0;
-}
-.ml-calendar-popover .calendar-grid > div {
-  min-height: 30px;
-  height: 30px;
-  padding: 3px 4px;
-  border: 0;
-  position: relative;
-  border-radius: 4px;
-}
-.ml-calendar-popover .calendar-grid b {
-  font-size: 11px;
-  font-weight: 500;
-}
-.ml-calendar-popover .calendar-grid .overtime {
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-.ml-calendar-popover .calendar-grid small {
-  font-size: 8px;
-  line-height: 11px;
-  padding: 0 1px;
-  position: absolute;
-  right: 1px;
-  bottom: 1px;
-}
-.ml-calendar-popover footer {
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  color: var(--muted-foreground);
-}
-.ml-calendar-popover .ml-footnote {
-  font-size: 10px;
-  margin: 7px 0 0;
-  line-height: 1.5;
-}
 .ml-milestone-block {
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -495,41 +394,6 @@
   bottom: 68px;
   color: var(--color-destructive);
 }
-.ml-calendar-popover .calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-}
-.ml-calendar-popover .ml-weekday {
-  text-align: center;
-  font-size: 10px;
-  color: var(--muted-foreground);
-}
-.ml-calendar-popover .restday {
-  background: var(--muted);
-  color: var(--muted-foreground);
-}
-.ml-calendar-popover .overtime small {
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-.ml-support-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  min-height: 42px;
-  padding: 6px 16px;
-  border-bottom: 1px solid var(--border);
-}
-.ml-support-head > span {
-  font-size: 11px;
-  color: var(--muted-foreground);
-}
-.ml-support-head .btn {
-  font-size: 11px;
-  padding: 3px 8px;
-  min-height: 26px;
-}
 .ml-timeline-scroll {
   overflow: auto;
   max-height: 540px;
@@ -548,24 +412,17 @@
   position: relative;
   isolation: isolate;
 }
-.ml-date-row,
 .ml-version-row,
 .ml-timeline-row {
   display: flex;
 }
-.ml-date-row {
-  height: 28px;
-  position: sticky;
-  top: 70px;
-  z-index: 6;
-  background: var(--muted);
-}
 .ml-version-row {
   height: 56px;
   position: sticky;
-  top: 98px;
+  top: 76px;
   z-index: 5;
   background: var(--background);
+  border-bottom: 1px solid var(--border);
 }
 .ml-sticky-label {
   position: sticky;
@@ -591,26 +448,14 @@
   color: var(--muted-foreground);
   font-size: 10px;
 }
-.ml-date-row .ml-sticky-label {
-  background: var(--muted);
-  font-size: 10px;
-  padding: 3px 12px;
-}
 .ml-version-row .ml-sticky-label {
   font-size: 11px;
   border-bottom: 1px solid var(--border);
 }
-.ml-date-track,
 .ml-version-track {
   position: relative;
   flex: 1;
   min-width: 0;
-}
-.ml-date-track > span {
-  position: absolute;
-  top: 4px;
-  font-size: 9px;
-  color: var(--muted-foreground);
 }
 .ml-fixed-version {
   position: absolute;
@@ -643,8 +488,8 @@
 }
 
 .ml-timeline-row {
-  min-height: 108px;
-  border-bottom: 1px solid var(--border);
+  min-height: 88px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
 }
 .ml-row-title {
   padding: 0;
@@ -662,14 +507,7 @@
 .ml-track {
   position: relative;
   flex: none;
-  min-height: 108px;
-  background: repeating-linear-gradient(
-    to right,
-    transparent 0,
-    transparent 195px,
-    var(--border) 167px,
-    var(--border) 196px
-  );
+  min-height: 88px;
 }
 .ml-inline {
   width: 100%;
@@ -696,20 +534,14 @@
 .ml-inline-owner {
   display: flex;
   align-items: center;
-  gap: 8px;
+  padding-left: 22px;
 }
 .ml-inline-owner .ml-inline {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted-foreground);
 }
-.ml-inline-owner .btn {
-  min-height: 24px;
-  width: 24px;
-  padding: 3px;
-  flex: none;
-}
 .ml-feature-name {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
 }
 .ml-version-name {
@@ -719,44 +551,46 @@
 }
 .ml-delivery-node {
   position: absolute;
-  width: 130px;
-  height: 32px;
+  width: 138px;
+  height: 34px;
   border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--background);
+  border-radius: 6px;
+  background: var(--card);
   color: var(--foreground);
-  padding: 3px 7px;
+  padding: 3px 8px;
   text-align: left;
   z-index: 2;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 .ml-delivery-node.pre {
-  border-style: dashed;
+  border-color: color-mix(in srgb, var(--border) 75%, var(--background));
 }
 .ml-delivery-node.release {
-  border-left: 3px solid var(--foreground);
-  background: var(--muted);
+  border-color: color-mix(in srgb, var(--foreground) 22%, var(--border));
+  background: color-mix(in srgb, var(--muted) 60%, var(--background));
 }
 .ml-delivery-node > span {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 10px;
+  gap: 5px;
+  font-size: 11px;
 }
 .ml-delivery-node > span svg {
   margin-left: auto;
+  opacity: 0;
 }
 .ml-delivery-node > span i {
-  width: 4px;
-  height: 4px;
-  background: currentColor;
+  width: 5px;
+  height: 5px;
+  border: 1px solid currentColor;
   transform: rotate(45deg);
+  opacity: 0.75;
 }
 .ml-delivery-node small {
   display: block;
-  font-size: 8px;
+  font-size: 10px;
   color: var(--muted-foreground);
-  margin-top: 3px;
+  margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -781,10 +615,10 @@
 
 .ml-now-line {
   position: absolute;
-  top: 76px;
+  top: 132px;
   bottom: 0;
   border-left: 1px solid var(--muted-foreground);
-  opacity: 0.55;
+  opacity: 0.45;
   pointer-events: none;
   z-index: 1;
 }
@@ -831,25 +665,6 @@
 }
 .ml-dirty {
   color: var(--foreground);
-}
-.ml-undo {
-  position: fixed;
-  bottom: 22px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 25;
-  background: var(--popover);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  box-shadow: var(--shadow-dialog);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-}
-.ml-toast {
-  bottom: 75px;
 }
 @media (max-width: 1100px) {
   .ml-sidebar {
@@ -916,7 +731,7 @@
 
 .ml-stage-row {
   display: flex;
-  height: 70px;
+  height: 76px;
   position: sticky;
   top: 0;
   z-index: 7;
@@ -935,7 +750,7 @@
 .ml-stage-month {
   position: absolute;
   top: 0;
-  height: 70px;
+  height: 76px;
   border-left: 1px solid var(--border);
 }
 .ml-month-title {
@@ -947,34 +762,19 @@
 }
 .ml-stage-anchor {
   position: absolute;
-  top: 12px;
+  top: 10px;
   width: 1px;
-  height: 12px;
-}
-.ml-flag {
-  display: block;
-  width: 10px;
-  height: 12px;
-  border-left: 1px solid currentColor;
-  color: var(--foreground);
-}
-.ml-flag::before {
-  content: '';
-  display: block;
-  width: 10px;
-  height: 7px;
-  background: currentColor;
-  clip-path: polygon(0 0, 100% 0, 75% 50%, 100% 100%, 0 100%);
+  height: 18px;
 }
 .ml-stage-caption {
   position: absolute;
-  top: 20px;
+  top: 28px;
   left: -100px;
   width: 200px;
   border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--muted);
-  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--card);
+  padding: 2px 7px;
   font-size: 11px;
   white-space: nowrap;
   overflow: visible;
@@ -987,7 +787,7 @@
   width: 6px;
   height: 6px;
   transform: rotate(45deg);
-  background: var(--muted);
+  background: var(--card);
   border-top: 1px solid var(--border);
   border-left: 1px solid var(--border);
 }
@@ -1026,6 +826,81 @@
   background-image: repeating-linear-gradient(
     to right,
     transparent 0 120px,
-    var(--muted) 120px 168px
+    color-mix(in srgb, var(--muted) 40%, var(--background)) 120px 167px,
+    color-mix(in srgb, var(--border) 70%, transparent) 167px 168px
   );
+}
+
+.ml-heading-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.ml-heading-title > span {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.ml-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.ml-action-divider {
+  height: 14px;
+  width: 1px;
+  margin: 0 5px;
+  background: var(--border);
+}
+.ml-row-actions {
+  position: sticky;
+  right: 0;
+  width: 40px;
+  margin-left: -40px;
+  flex: none;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background);
+}
+.ml-row-actions .icon-action {
+  color: var(--muted-foreground);
+}
+.ml-row-actions .icon-action:hover {
+  color: var(--destructive);
+}
+.ml-timeline-row.stacked,
+.ml-timeline-row.stacked .ml-track {
+  min-height: 104px;
+}
+.ml-delivery-node.release > span i {
+  background: currentColor;
+}
+.ml-delivery-node:hover > span svg,
+.ml-delivery-node:focus-visible > span svg {
+  opacity: 0.65;
+}
+.ml-stage-track::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 27px;
+  border-top: 1px solid var(--border);
+}
+.ml-flag {
+  display: block;
+  color: var(--foreground);
+  fill: var(--background);
+  transform: translateX(-1px);
+}
+.ml-stage-anchor::after {
+  content: '';
+  position: absolute;
+  top: 15px;
+  left: -2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--foreground);
 }

@@ -221,12 +221,3 @@ export function changesBetween(before, after) {
   }
   return changes
 }
-export function calendarDays(month = 11) {
-  return Array.from({ length: new Date(Date.UTC(2026, month, 0)).getUTCDate() }, (_, i) => {
-    const day = i + 1,
-      date = `2026-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    const weekday = new Date(`${date}T12:00:00Z`).getUTCDay(),
-      overtime = day === (month === 10 ? 17 : 14)
-    return { date, day, weekday, overtime, work: overtime || (weekday > 0 && weekday < 6) }
-  })
-}
