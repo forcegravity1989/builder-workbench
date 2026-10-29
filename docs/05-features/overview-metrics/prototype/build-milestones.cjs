@@ -86,10 +86,21 @@ esbuild
       .update(result.replace(/\r\n/g, '\n'))
       .digest('hex')
       .slice(0, 12)
-    const nextHtml = html.replace(
-      /src="prototype\/milestones\.js(?:\?v=[^"]*)?"/,
-      `src="prototype/milestones.js?v=${stamp}"`
-    )
+    const cssStamp = createHash('sha256')
+      .update(
+        fs.readFileSync(path.join(__dirname, 'milestones.css'), 'utf8').replace(/\r\n/g, '\n')
+      )
+      .digest('hex')
+      .slice(0, 12)
+    const nextHtml = html
+      .replace(
+        /src="prototype\/milestones\.js(?:\?v=[^"]*)?"/,
+        `src="prototype/milestones.js?v=${stamp}"`
+      )
+      .replace(
+        /href="prototype\/milestones\.css(?:\?v=[^"]*)?"/,
+        `href="prototype/milestones.css?v=${cssStamp}"`
+      )
     if (!html.includes('src="prototype/milestones.js')) {
       throw new Error('Milestone prototype entry is missing its script.')
     }

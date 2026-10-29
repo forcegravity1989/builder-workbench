@@ -22,7 +22,6 @@ import { useOverviewHistory } from './use-overview-history'
 import { useMetricsSetup } from './version-cycle/metrics-setup'
 import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
 import { ProjectMilestones } from './project-milestones'
-import { useOverviewViewState } from './overview-view-state'
 import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import { RefreshCw } from 'lucide-react'
 import './workbench-overview.css'
@@ -66,7 +65,6 @@ export function OverviewPage(): React.JSX.Element {
   } | null>(null)
   const charter = charterState?.key === charterKey ? charterState.value : null
   const identity = baseScope ? nativeWorkspaceScopeKey(baseScope) : (activeRepoId ?? 'none')
-  const [view, setView] = useOverviewViewState(identity)
   const fixedTrees = useMemo(() => {
     if (!baseScope) {
       return { plan: null, acceptance: null, error: null }
@@ -186,10 +184,7 @@ export function OverviewPage(): React.JSX.Element {
     }
     return [...found].sort((a, b) => compareMaterialVersions(b, a))
   }, [history, currentVersion])
-  const version =
-    view.version && versions.includes(view.version)
-      ? view.version
-      : (currentVersion ?? versions[0] ?? null)
+  const version = currentVersion ?? versions[0] ?? null
   const minutes = useVersionMinutes(
     {
       baseScope,
@@ -295,20 +290,6 @@ export function OverviewPage(): React.JSX.Element {
           updateFormal={updateTrunk}
         />
 
-        <label className="wb-muted">
-          指标依据版本{' '}
-          <select
-            aria-label="指标依据版本"
-            value={version ?? ''}
-            onChange={(event) => setView({ version: event.target.value })}
-          >
-            {versions.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </label>
         <OverviewScoreboard
           catalog={catalog}
           readings={zoneReadings}

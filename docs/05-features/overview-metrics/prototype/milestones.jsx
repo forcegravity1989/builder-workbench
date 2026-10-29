@@ -1,3 +1,13 @@
+import {
+  calendarFor,
+  latestMonth,
+  planWeek,
+  dayMs,
+  dayWidth,
+  labelWidth,
+  at,
+  iso
+} from './milestones-calendar.js'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import {
   clone,
@@ -17,8 +27,7 @@ import {
   ReferencePanel,
   PlanningReviewPanel,
   VersionBridge,
-  HistoryVersion,
-  VersionEditor
+  HistoryVersion
 } from './milestones-panels.jsx'
 const {
   // eslint-disable-next-line no-unused-vars
@@ -34,9 +43,6 @@ const {
   ExternalLink,
   X
 } = window.BWPrototypeDependencies
-const dayMs = 86400000,
-  dayWidth = 28,
-  labelWidth = 230
 const shortDate = (date) => date.slice(5).replace('-', '/')
 function InlineField({ value, label, placeholder, change, autoFocus = false, className = '' }) {
   const started = useRef(value)
@@ -69,86 +75,91 @@ function InlineField({ value, label, placeholder, change, autoFocus = false, cla
     />
   )
 }
-function Navigator({ plan, planning, month, navigate, changeMonth, changeMilestone }) {
+function WeekName({ week, commit }) {
+  const [value, setValue] = useState('')
+  const cancelled = useRef(false)
   return (
-    <div className="ml-navigator" aria-label="里程碑时间导航">
-      <div className="ml-axis-heading">
-        <span>里程碑时间轴</span>
-        {planning ? (
-          <label>
-            月份{' '}
-            <input
-              type="month"
-              aria-label="规划月份"
-              value={month}
-              onChange={(e) => e.target.value && changeMonth(e.target.value)}
-            />
-          </label>
-        ) : (
-          <select aria-label="查看月份" value={month} onChange={(e) => changeMonth(e.target.value)}>
-            {plan.months.map((m) => (
-              <option key={m.month} value={m.month}>
-                {m.month}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-      <div className="ml-month-axes">
-        {plan.months.map((m) => {
-          const versions = plan.versions
+    <input
+      className="ml-inline ml-week-name"
+      aria-label={`版本名称 ${week.start}`}
+      placeholder="版本名（自动）"
+      value={value}
+      onFocus={() => {
+        cancelled.current = false
+      }}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={() => {
+        if (!cancelled.current && value.trim()) {
+          commit(value.trim())
+        }
+        setValue('')
+      }}
+      onKeyDown={(e) => {
+        if (e.nativeEvent.isComposing) {
+          return
+        }
+        if (e.key === 'Enter') {
+          e.currentTarget.blur()
+        }
+        if (e.key === 'Escape') {
+          cancelled.current = true
+          setValue('')
+          e.currentTarget.blur()
+        }
+      }}
+    />
+  )
+}
+function MilestoneAxis({ plan, calendar, planning, changeMilestone, navigate }) {
+  const x = (value) => ((value - calendar.start) / dayMs) * dayWidth
+  return (
+    <div className="ml-stage-row">
+      <div className="ml-sticky-label">阶段成果</div>
+      <div
+        className="ml-stage-track"
+        style={{ width: ((calendar.end - calendar.start + dayMs) / dayMs) * dayWidth }}
+      >
+        {calendar.months.map((m) => {
+          const left = Math.max(0, x(m.start)),
+            right = x(Math.min(m.end, calendar.end) + dayMs),
+            span = right - left
+          if (span < 210) {
+            return null
+          }
+          const outcome = plan.months.find((item) => item.month === m.month)?.outcome || ''
+          const last = plan.versions
             .filter((v) => v.start.slice(0, 7) <= m.month && v.end.slice(0, 7) >= m.month)
             .toSorted((a, b) => a.end.localeCompare(b.end))
+            .at(-1)
+          const point = last ? x(Math.min(at(last.end), m.end) + dayMs / 2) - left : span - 12
+          const anchor = Math.max(0, Math.min(span - 1, point))
+          const captionLeft = Math.max(4 - anchor, Math.min(-100, span - anchor - 204))
           return (
-            <div
-              key={m.month}
-              className="ml-mini-axis"
-              style={{
-                minWidth: Math.max(300, versions.length * 130),
-                gridTemplateColumns: `repeat(${Math.max(1, versions.length)}, 1fr)`
-              }}
-            >
-              {versions.map((v, index) => (
-                <div className="ml-mini-tick" key={v.id}>
-                  <button
-                    className={`ml-mini-version ${currentDay >= v.start && currentDay <= v.end ? 'current' : ''}`}
-                    aria-label={`定位 ${v.name || '未命名版本'}`}
-                    onClick={() => {
-                      changeMonth(m.month)
-                      navigate(v.start)
-                    }}
+            <div key={m.month} className="ml-stage-month" style={{ left, width: span }}>
+              <button className="ml-month-title" onClick={() => navigate(iso(m.start))}>
+                {m.month.replace('-', ' 年 ')} 月
+              </button>
+              {(planning || outcome) && (
+                <div className="ml-stage-anchor" style={{ left: anchor }}>
+                  <i className="ml-flag" />
+                  <div
+                    className="ml-stage-caption"
+                    title={outcome}
+                    style={{ left: captionLeft, '--tip-left': `${-captionLeft - 3}px` }}
                   >
-                    <span className="ml-flag-slot">
-                      {index === versions.length - 1 && (
-                        <span className="ml-month-flag">
-                          <i className="ml-flag" />
-                          {Number(m.month.slice(5))} 月
-                        </span>
-                      )}
-                    </span>
-                    <i />
-                    {v.name || '未命名'}
-                    <small>
-                      {shortDate(v.start)}—{shortDate(v.end)}
-                    </small>
-                  </button>
-                  {index === versions.length - 1 && (
-                    <div className="ml-outcome-bubble">
-                      {planning ? (
-                        <InlineField
-                          value={m.outcome}
-                          label={`${m.month} 阶段成果`}
-                          placeholder="一句话写阶段成果"
-                          change={(value) => changeMilestone(m.month, value)}
-                        />
-                      ) : (
-                        <span>{m.outcome || '未填写阶段成果'}</span>
-                      )}
-                    </div>
-                  )}
+                    {planning ? (
+                      <InlineField
+                        value={outcome}
+                        label={`${m.month} 阶段成果`}
+                        placeholder="一句阶段成果"
+                        change={(value) => changeMilestone(m.month, value)}
+                      />
+                    ) : (
+                      <span>{outcome}</span>
+                    )}
+                  </div>
                 </div>
-              ))}
-              {!versions.length && <small>{m.month} · 尚未登记有日期的版本</small>}
+              )}
             </div>
           )
         })}
@@ -168,22 +179,19 @@ function Timeline({
   onVersion,
   onReorder,
   newFeature,
-  month,
   onAdd,
-  onEditVersion
+  onNameWeek,
+  changeMilestone
 }) {
-  const dated = plan.versions.filter((v) => v.start && v.end && v.start <= v.end)
-  const axisStart = dated.length
-    ? Math.min(...dated.map((v) => Date.parse(`${v.start}T00:00:00Z`)))
-    : Date.parse(`${month}-01T00:00:00Z`)
-  const axisEnd = dated.length
-    ? Math.max(...dated.map((v) => Date.parse(`${v.end}T00:00:00Z`)))
-    : Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0)
-  const totalDays = Math.max(22, (axisEnd - axisStart) / dayMs + 1)
-  const xFor = (date) => ((Date.parse(`${date}T00:00:00Z`) - axisStart) / dayMs) * dayWidth
+  const calendar = calendarFor(plan),
+    axisStart = calendar.start,
+    axisEnd = calendar.end
+  const totalDays = (axisEnd - axisStart + dayMs) / dayMs
+  const xFor = (date) => ((at(date) - axisStart) / dayMs) * dayWidth
   const centerFor = (v) => (xFor(v.start) + xFor(v.end) + dayWidth) / 2
-  const trackWidth = totalDays * dayWidth + (planning && dated.length ? 125 : 0)
+  const trackWidth = totalDays * dayWidth
   const scroll = useRef(null),
+    lastViewport = useRef(null),
     pan = useRef(null),
     pointer = useRef(null),
     suppress = useRef(false),
@@ -192,14 +200,20 @@ function Timeline({
     [rowDrop, setRowDrop] = useState(null)
   const navigationLeft = Math.max(0, xFor(navigation.date) - 16)
   useEffect(() => {
-    scroll.current?.scrollTo({
-      left: navigationLeft,
-      top: 0,
-      behavior: 'smooth'
-    })
-  }, [navigation, navigationLeft])
-  const versions = plan.versions.filter((v) => v.start && v.end),
-    byId = Object.fromEntries(versions.map((v) => [v.id, v]))
+    const previous = lastViewport.current
+    if (!previous || previous.navigation !== navigation) {
+      scroll.current?.scrollTo({ left: navigationLeft, top: 0, behavior: 'smooth' })
+    } else if (scroll.current && previous.start !== axisStart) {
+      scroll.current.scrollLeft += ((previous.start - axisStart) / dayMs) * dayWidth
+    }
+    lastViewport.current = { navigation, start: axisStart }
+  }, [navigation, navigationLeft, axisStart])
+  const versions = plan.versions.filter((v) => v.start && v.end)
+  const emptyWeeks = calendar.weeks.filter(
+    (w) => !versions.some((v) => v.start <= w.end && v.end >= w.start)
+  )
+  const targets = [...versions, ...emptyWeeks].sort((a, b) => a.start.localeCompare(b.start))
+  const byId = Object.fromEntries(targets.map((v) => [v.id, v]))
   const down = (e, item, kind) => {
     suppress.current = false
     if (!planning || e.button !== 0) {
@@ -228,7 +242,7 @@ function Timeline({
       scroll.current.scrollLeft -= 12
     }
     const x = e.clientX - r.left + scroll.current.scrollLeft - labelWidth
-    p.target = versions.reduce((a, b) =>
+    p.target = targets.reduce((a, b) =>
       Math.abs(centerFor(a) - x) < Math.abs(centerFor(b) - x) ? a : b
     ).id
     setDrag({ ...p })
@@ -277,6 +291,15 @@ function Timeline({
       }}
     >
       <div className="ml-timeline-canvas" style={{ width: labelWidth + trackWidth }}>
+        <MilestoneAxis
+          plan={plan}
+          calendar={calendar}
+          planning={planning}
+          changeMilestone={changeMilestone}
+          navigate={(date) =>
+            scroll.current?.scrollTo({ left: Math.max(0, xFor(date)), behavior: 'smooth' })
+          }
+        />
         <div className="ml-date-row">
           <div className="ml-sticky-label">特性 / 负责人</div>
           <div className="ml-date-track">
@@ -288,8 +311,24 @@ function Timeline({
           </div>
         </div>
         <div className="ml-version-row">
-          <div className="ml-sticky-label">{month} · 目标版本</div>
+          <div className="ml-sticky-label">周版本</div>
           <div className="ml-version-track">
+            {emptyWeeks.map((w) => (
+              <div
+                key={w.id}
+                className="ml-week-slot"
+                style={{ left: xFor(w.start), width: 5 * dayWidth }}
+              >
+                {planning ? (
+                  <WeekName week={w} commit={(name) => onNameWeek(w, name)} />
+                ) : (
+                  <span>周窗口</span>
+                )}
+                <small>
+                  {shortDate(w.start)}—{shortDate(w.end)}
+                </small>
+              </div>
+            ))}
             {versions.map((v) => (
               <div
                 key={v.id}
@@ -298,34 +337,18 @@ function Timeline({
               >
                 {planning ? (
                   <InlineField
-                    className="ml-version-name"
                     value={v.name}
-                    label={`版本名称 ${shortDate(v.start)}—${shortDate(v.end)}`}
-                    placeholder="版本名称"
+                    label={`版本名称 ${v.id}`}
                     change={(name) => onRenameVersion(v.id, name)}
                   />
                 ) : (
-                  <button onClick={() => onVersion(v.id)}>{v.name || '未命名版本'}</button>
+                  <button onClick={() => onVersion(v.id)}>{v.name}</button>
                 )}
-                <button
-                  className="ml-date-button"
-                  aria-label={`编辑 ${v.name} 日期`}
-                  onClick={(e) => planning && onEditVersion(v, e.currentTarget)}
-                >
+                <small>
                   {shortDate(v.start)}—{shortDate(v.end)}
-                </button>
+                </small>
               </div>
             ))}
-            {planning && (
-              <button
-                className="btn btn-ghost ml-add-version"
-                style={{ left: dated.length ? totalDays * dayWidth : 12 }}
-                onClick={(e) => onEditVersion(null, e.currentTarget)}
-              >
-                <Plus size={13} />
-                {dated.length ? '版本' : '登记首个版本'}
-              </button>
-            )}
           </div>
         </div>
         {rows.map((item, index) => (
@@ -450,7 +473,7 @@ function Timeline({
                     key={kind}
                     className={`ml-delivery-node ${kind} ${planning ? 'editable' : ''} ${drag?.id === item.id && drag.kind === kind ? 'dragging' : ''}`}
                     style={{ left: centerFor(v) - 65, top: 8 + i * 48 }}
-                    aria-label={`${item.title || '新特性'} · ${kind === 'pre' ? 'Pre版本' : 'Release版本'} · ${v.name || '未命名版本'}`}
+                    aria-label={`${item.title || '新特性'} · ${kind === 'pre' ? 'Pre版本' : 'Release版本'} · ${v.name || '周窗口'}`}
                     title={planning ? '拖动安排；Shift+左右键移动；点击进入版本' : '进入版本总览'}
                     onPointerDown={(e) => down(e, item, kind)}
                     onPointerMove={move}
@@ -474,10 +497,10 @@ function Timeline({
                       }
                       e.preventDefault()
                       const n =
-                        versions.findIndex((entry) => entry.id === item[kind]) +
+                        targets.findIndex((entry) => entry.id === item[kind]) +
                         (e.key === 'ArrowLeft' ? -1 : 1)
-                      if (versions[n]) {
-                        onMove(item.id, kind, versions[n].id)
+                      if (targets[n]) {
+                        onMove(item.id, kind, targets[n].id)
                       }
                     }}
                   >
@@ -486,7 +509,7 @@ function Timeline({
                       {kind === 'pre' ? 'Pre版本' : 'Release版本'}
                       <ExternalLink size={12} />
                     </span>
-                    <small>{v.name || '未命名版本'}</small>
+                    <small>{v.name || '周窗口'}</small>
                   </button>
                 )
               })}
@@ -495,17 +518,13 @@ function Timeline({
         ))}
         {!rows.length && (
           <div className="ml-empty-lanes">
-            <div className="ml-sticky-label">{dated.length ? '还没有特性' : '先登记版本'}</div>
+            <div className="ml-sticky-label">还没有特性</div>
             <div className="ml-empty-grid" style={{ width: trackWidth }}>
-              <span>
-                {dated.length
-                  ? '在下方添加特性，拖动安排 Pre / Release。'
-                  : '登记名称和日期后，在这里安排特性。'}
-              </span>
+              <span>添加特性后，直接拖动 Pre / Release 到周窗口。</span>
             </div>
           </div>
         )}
-        {planning && dated.length > 0 && (
+        {planning && (
           <div className="ml-add-feature">
             <button className="btn btn-ghost" onClick={onAdd}>
               <Plus size={13} />
@@ -524,9 +543,11 @@ function Timeline({
 function App() {
   const [cases, setCases] = useState(loadCases),
     [caseId, setCaseId] = useState('existing'),
-    [planning, setPlanning] = useState(false),
-    [month, setMonth] = useState('2026-11')
-  const [navigation, setNavigation] = useState({ date: '2026-11-01', sequence: 0 }),
+    [planning, setPlanning] = useState(false)
+  const [navigation, setNavigation] = useState(() => ({
+      date: `${latestMonth(cases.existing.published || cases.existing.draft)}-01`,
+      sequence: 0
+    })),
     [modal, setModal] = useState(null),
     [theme, setTheme] = useState('light'),
     [notice, setNotice] = useState(''),
@@ -601,16 +622,18 @@ function App() {
     setNavigation((n) => ({ date, sequence: n.sequence + 1 }))
   }
   const choose = (value) => {
+    const selected = value === 'empty' ? cases.empty : cases.existing
     setCaseId(value === 'empty' ? 'empty' : 'existing')
     setPlanning(value === 'planning')
-    setMonth('2026-11')
-    navigate('2026-11-01')
+    navigate(
+      `${latestMonth(value === 'planning' ? selected.draft : selected.published || selected.draft)}-01`
+    )
     setModal(null)
     setRemoved(null)
   }
   const begin = () => {
     setPlanning(true)
-    navigate('2026-11-01')
+    navigate(`${latestMonth(state.draft)}-01`)
     requestAnimationFrame(() =>
       board.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
     )
@@ -621,7 +644,9 @@ function App() {
       features: p.features.map((f) => (f.id === id ? { ...f, ...patch } : f))
     }))
   const move = (id, kind, target) => {
-    const result = moveDelivery(state.draft, id, kind, target)
+    const week = calendarFor(state.draft).weeks.find((w) => w.id === target)
+    const used = week ? planWeek(state.draft, week) : null
+    const result = moveDelivery(used?.plan || state.draft, id, kind, used?.version.id || target)
     if (result.error) {
       setNotice(result.error)
       return
@@ -647,18 +672,26 @@ function App() {
   }
   const add = () => {
     const id = `demo-${crypto.randomUUID()}`
-    const versions = state.draft.versions
-      .filter((v) => v.start.slice(0, 7) <= month && v.end.slice(0, 7) >= month)
-      .toSorted((a, b) => a.start.localeCompare(b.start))
-    if (!versions.length) {
-      return
-    }
+    const calendar = calendarFor(state.draft)
+    const focus = latestMonth(state.draft)
+    const day = focus === currentDay.slice(0, 7) ? currentDay : `${focus}-01`
+    const week =
+      calendar.weeks.find((w) => w.start <= day && iso(at(w.start) + 6 * dayMs) >= day) ||
+      calendar.weeks.at(-3)
+    const next = planWeek(state.draft, week)
     setNewFeature(id)
-    editPlan((p) => ({
-      ...p,
+    editPlan(() => ({
+      ...next.plan,
       features: [
-        ...p.features,
-        { id, month, title: '', owner: '', pre: versions[0].id, release: versions.at(-1).id }
+        ...next.plan.features,
+        {
+          id,
+          month: week.start.slice(0, 7),
+          title: '',
+          owner: '',
+          pre: next.version.id,
+          release: next.version.id
+        }
       ]
     }))
   }
@@ -709,37 +742,19 @@ function App() {
     )
   }
   const info = (title, text) => setModal({ type: 'info', title, text })
-  const changeMonth = (value) => {
-    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(value)) {
+  const changeMilestone = (month, outcome) =>
+    editFieldPlan((p) => ({
+      ...p,
+      months: p.months.some((m) => m.month === month)
+        ? p.months.map((m) => (m.month === month ? { ...m, outcome } : m))
+        : [...p.months, { month, outcome }]
+    }))
+  const nameWeek = (week, name) => {
+    if (state.draft.versions.some((v) => v.name === name)) {
+      setNotice('版本名称已存在')
       return
     }
-    if (planning && !state.draft.months.some((m) => m.month === value)) {
-      editPlan((p) => ({
-        ...p,
-        months: [...p.months, { month: value, outcome: '' }].sort((a, b) =>
-          a.month.localeCompare(b.month)
-        )
-      }))
-    }
-    setMonth(value)
-    navigate(`${value}-01`)
-  }
-  const editVersion = (item, element) =>
-    setModal({ type: 'version-editor', item, anchor: element.getBoundingClientRect() })
-  const saveVersion = (value) => {
-    const versions = state.draft.versions.some((v) => v.id === value.id)
-      ? state.draft.versions.map((v) => (v.id === value.id ? value : v))
-      : [...state.draft.versions, value]
-    for (const f of state.draft.features) {
-      const pre = versions.find((v) => v.id === f.pre),
-        release = versions.find((v) => v.id === f.release)
-      if (pre && release && pre.start > release.end) {
-        return `${f.title || '特性'}：Pre 不能晚于 Release`
-      }
-    }
-    editPlan((p) => ({ ...p, versions }))
-    navigate(value.start)
-    return ''
+    editPlan((p) => planWeek(p, week, name).plan)
   }
   const status = dirty
     ? '编辑中'
@@ -752,7 +767,9 @@ function App() {
     <>
       <div className="ml-review-strip">
         <span>
-          原型注释: 模拟时间 11/11；版本与日期为演示；历史计划无排期，未绘入时间轴，非 v0.8 承诺。
+          原型注释: 模拟
+          11/11；浅色周块是周一至周五的时间背景，拖入特性或改名才登记版本；未对接华为日历，非 v0.8
+          承诺。
         </span>
         <div className="ml-actions">
           <IconAction
@@ -946,30 +963,21 @@ function App() {
                 </div>
               ) : (
                 <>
-                  <Navigator
-                    plan={plan}
-                    month={month}
-                    planning={planning}
-                    navigate={navigate}
-                    changeMonth={changeMonth}
-                    changeMilestone={(target, outcome) =>
-                      editFieldPlan((p) => ({
-                        ...p,
-                        months: p.months.map((m) => (m.month === target ? { ...m, outcome } : m))
-                      }))
-                    }
-                  />
                   <div className="ml-support-head">
-                    <span>
-                      {`${plan.features.filter((f) => f.month === month).length} 个特性 · ${month}`}
-                    </span>
+                    <span>{plan.features.length} 个特性</span>
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => navigate(`${latestMonth(plan)}-01`)}
+                    >
+                      定位最新
+                    </button>
                   </div>
                   <Timeline
-                    rows={plan.features.filter((f) => f.month === month)}
+                    rows={plan.features}
                     plan={plan}
-                    month={month}
                     onAdd={add}
-                    onEditVersion={editVersion}
+                    onNameWeek={nameWeek}
+                    changeMilestone={changeMilestone}
                     planning={planning}
                     navigation={navigation}
                     onChangeFeature={changeFeature}
@@ -1002,15 +1010,6 @@ function App() {
         <CalendarPanel anchor={modal.anchor} close={() => setModal(null)} />
       )}
       {modal?.type === 'references' && <ReferencePanel close={() => setModal(null)} />}
-      {modal?.type === 'version-editor' && (
-        <VersionEditor
-          item={modal.item}
-          anchor={modal.anchor}
-          versions={state.draft.versions}
-          save={saveVersion}
-          close={() => setModal(null)}
-        />
-      )}
       {modal?.type === 'version' && (
         <VersionBridge
           item={modal.item}
