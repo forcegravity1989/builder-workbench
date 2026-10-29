@@ -81,7 +81,10 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
         if (!scope || !fixedId || !automation.automationId) {
           throw new Error('周期自动化尚未就绪，请在自动化页核对配置。')
         }
-        await startCycleAutomation(scope, fixedId, automation.automationId, oneShot)
+        if (!agent) {
+          throw new Error('会话工具尚未就绪，请先在设置中配置默认智能体。')
+        }
+        await startCycleAutomation(scope, fixedId, automation.automationId, agent, oneShot)
         toast.message('已打开本次运行的会话。')
         setNotice(null)
         return true
@@ -99,7 +102,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
         setBusy(false)
       }
     },
-    [scope, fixedId, automation.automationId]
+    [scope, fixedId, automation.automationId, agent]
   )
   const prepareMetrics = useCallback(async () => {
     if (!scope || !agent) {
