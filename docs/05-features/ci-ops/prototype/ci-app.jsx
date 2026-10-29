@@ -1,6 +1,10 @@
 const { React, createRoot, useState } = window.BWPrototypeDependencies
 import {
   MODULES,
+  MODES,
+  FLOW,
+  FLOW_PHASES,
+  VERSIONS,
   SCENARIOS,
   sceneStates,
   sceneRecords,
@@ -12,14 +16,77 @@ import {
 import { Icon, IconButton, ActionButton } from '../../version-planning/prototype/g3-components.jsx'
 
 const clock = () => new Date().toTimeString().slice(0, 5)
+const allOk = () => Object.fromEntries(FLOW.map((s) => [s.id, 'ok']))
 
 function errorsOf(records, moduleId) {
   return records.filter((r) => r.moduleId === moduleId && !r.ok).length
 }
 
-// 部署卡：状态行 + 最近执行 + 动作行；灰态给扫描事实行，机制说明收在按钮提示。
-function ModuleCard({ index, module, state, errors, executing, onAction }) {
+// 流程条：三阶段分组、六步状态点；执行中由 live（idx+done）驱动逐步点亮。
+function FlowBar({ steps, live, mode, failedStep }) {
+  const statusOf = (step) => {
+    const prior = steps?.[step.id]
+    if (!live) {
+      return prior || 'pending'
+    }
+    if (live.done.includes(step.id)) {
+      return 'ok'
+    }
+    if (FLOW[live.idx] && FLOW[live.idx].id === step.id) {
+      return 'current'
+    }
+    return prior === 'ok' || prior === 'skip' ? prior : 'pending'
+  }
+  const markOf = (status) =>
+    status === 'ok' ? '✓' : status === 'fail' ? '✗' : status === 'skip' ? '跳' : ''
+  return (
+    <div className="ci-flow" role="list" aria-label="部署流程六步">
+      {FLOW_PHASES.map((phase) => (
+        <div className="ci-flow-group" key={phase} role="group" aria-label={phase}>
+          <span className="ci-flow-phase">{phase}</span>
+          <div className="ci-flow-steps">
+            {FLOW.filter((s) => s.phase === phase).map((step) => {
+              const status = statusOf(step)
+              return (
+                <span
+                  key={step.id}
+                  className={`ci-flow-step ${status}`}
+                  role="listitem"
+                  title={`${phase} · ${step.name}：${mode === 'dev' ? step.dev : step.release}${
+                    failedStep === step.id ? '（失败步）' : ''
+                  }`}
+                >
+                  <span className="ci-flow-dot" aria-hidden="true">
+                    {markOf(status)}
+                  </span>
+                  <span className="ci-flow-name">{step.name}</span>
+                  {status === 'skip' && <span className="ci-flow-skip">跳过</span>}
+                </span>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// 部署卡：状态行 + 模式与版本 + 六步流程条 + 最近执行 + 动作行；灰态给扫描事实行。
+function ModuleCard({
+  index,
+  module,
+  state,
+  errors,
+  executing,
+  live,
+  mode,
+  version,
+  onMode,
+  onVersion,
+  onAction
+}) {
   const buttons = moduleButtons(module, state, errors)
+  const isRelease = mode === 'release'
   return (
     <section id={module.id} className="ci-module">
       <div className="g3-section-title">
@@ -32,6 +99,62 @@ function ModuleCard({ index, module, state, errors, executing, onAction }) {
         </span>
       </div>
       <div className={`ci-card ${state.state}`}>
+        {state.state !== 'gray' && (
+          <div className="ci-mode-row">
+            <div className="ci-mode-toggle" role="group" aria-label="部署模式">
+              {MODES.map(([value, label]) => (
+                <button
+                  key={value}
+                  className={mode === value ? 'on' : ''}
+                  disabled={executing}
+                  title={
+                    value === 'dev'
+                      ? '开发部署：六步流程在本地跑，执行启动命令把服务跑起来；无包选择'
+                      : '上线部署：六步流程在远端跑，部署所选版本的软件包；服务器密码在执行时输入'
+                  }
+                  onClick={() => onMode(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {isRelease &&
+              (VERSIONS.length ? (
+                <label
+                  className="ci-version"
+                  title="版本来自各版本验收材料的包登记，默认最新；包不存在的版本灰掉选不了"
+                >
+                  版本
+                  <select
+                    aria-label="选择部署版本"
+                    value={version}
+                    disabled={executing}
+                    onChange={(e) => onVersion(e.target.value)}
+                  >
+                    {VERSIONS.map((v) => (
+                      <option key={v.version} value={v.version} disabled={!v.available}>
+                        {v.version} · {v.time}
+                        {!v.available && ' · 包不存在'}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <span className="ci-version-empty">验收屏未见包登记</span>
+              ))}
+            {isRelease && (
+              <span
+                className="ci-config-fact"
+                title="服务器信息（IP/用户/上传路径/探针 URL）经 CI 助手会话配置；板面只显示已配置/未配置"
+              >
+                服务器信息 已配置
+              </span>
+            )}
+          </div>
+        )}
+        {state.state !== 'gray' && (
+          <FlowBar steps={state.steps} live={live} mode={mode} failedStep={state.failedStep} />
+        )}
         {state.last && (
           <p className={`ci-last ${state.last.ok ? '' : 'bad'}`}>
             最近一次 {state.last.time}
@@ -51,10 +174,12 @@ function ModuleCard({ index, module, state, errors, executing, onAction }) {
               onClick={() => onAction(b.key, module)}
               title={
                 b.key === 'generate'
-                  ? '向 CI 助手递交生成请求：按 ci-ops skill 先勘察项目实际代码与已有部署资产，复用优先，PR 经人审合入 main'
+                  ? '向 CI 助手递交生成请求：按 ci-ops skill 先勘察项目实际代码与已有部署资产，复用优先，按三阶段六步骨架编排，PR 经人审合入 main'
                   : b.key === 'run'
-                    ? '向 CI 助手递交执行请求：脚本在会话中执行，完成后独立读回（状态/版本/耗时）并写记录'
-                    : '定位到记录区并只看报错'
+                    ? '向 CI 助手递交执行请求：六步流程在会话中执行并按步骤标记输出进度，完成后独立读回（状态/版本/耗时）并写记录'
+                    : b.key === 'retry'
+                      ? '向 CI 助手递交重试请求：从失败步起跑，之前步骤不重复执行（清场过的不用再清）'
+                      : '定位到记录区并只看报错'
               }
             >
               {b.key === 'run' && executing ? `${module.short}中…` : b.label}
@@ -66,7 +191,7 @@ function ModuleCard({ index, module, state, errors, executing, onAction }) {
   )
 }
 
-// 记录行：一行摘要常驻回显；报错条目默认折叠，展开在页内看日志，不去后台。
+// 记录行：一行摘要常驻回显（含模式与版本）；报错条目默认折叠，展开在页内看日志，不去后台。
 function RecordRow({ record, expanded, onToggle }) {
   const module = MODULES.find((m) => m.id === record.moduleId)
   return (
@@ -87,6 +212,9 @@ function RecordRow({ record, expanded, onToggle }) {
         )}
         <span className="ci-record-time">{record.time}</span>
         <span className="ci-record-module">{module.name}</span>
+        <span className={`ci-record-mode ${record.mode}`}>
+          {record.mode === 'dev' ? '开发' : '上线'}
+        </span>
         <span className="ci-record-result">
           {record.ok ? '✓' : '✗'} {record.result}
         </span>
@@ -108,6 +236,9 @@ function App() {
   const [compact, setCompact] = useState(false)
   const [showNotes, setShowNotes] = useState(false)
   const [executing, setExecuting] = useState(null)
+  const [live, setLive] = useState(null)
+  const [mode, setMode] = useState('dev')
+  const [version, setVersion] = useState(VERSIONS[0].version)
   const [filter, setFilter] = useState('all')
   const [openLogs, setOpenLogs] = useState([])
 
@@ -129,6 +260,9 @@ function App() {
     setRecords([...sceneRecords[value]])
     setHandoff(null)
     setExecuting(null)
+    setLive(null)
+    setMode('dev')
+    setVersion(VERSIONS[0].version)
     setFilter('all')
     setOpenLogs([])
     setNotice('')
@@ -136,9 +270,77 @@ function App() {
   const setModule = (id, patch) =>
     setStates((current) => ({ ...current, [id]: { ...current[id], ...patch } }))
 
+  // 六步流程演示执行：从 fromIdx 起逐步点亮；重试时之前步骤保持已通过，不重复执行。
+  const runFlow = (module, fromIdx, runMode, runVersion) => {
+    setExecuting(module.id)
+    setLive({ idx: fromIdx, done: [] })
+    const isRetry = fromIdx > 0
+    const prompt = isRetry
+      ? PROMPTS.retry(runMode, runVersion, FLOW[fromIdx].id)
+      : runMode === 'dev'
+        ? PROMPTS.deployDev()
+        : PROMPTS.deployRelease(runVersion)
+    sendRequest(prompt, isRetry ? '从失败步重试请求' : `${module.short}请求`)
+    setNotice(
+      isRetry
+        ? `从「${FLOW[fromIdx].name}」重试 · 已递交 CI 助手`
+        : `${module.short}请求已递交 CI 助手`
+    )
+    let i = fromIdx
+    const finish = () => {
+      const time = clock()
+      const text =
+        runMode === 'dev'
+          ? '全程 38 秒 · 本地探针 200'
+          : `版本 ${runVersion} · 全程 3 分 08 秒 · /healthz 200`
+      setExecuting(null)
+      setLive(null)
+      setModule(module.id, {
+        state: 'green',
+        steps: allOk(),
+        failedStep: undefined,
+        last: {
+          time,
+          ok: true,
+          mode: runMode,
+          version: runMode === 'dev' ? null : runVersion,
+          text: `${runMode === 'dev' ? '开发' : '上线'} · ${text}`
+        }
+      })
+      setRecords((current) => [
+        {
+          id: `demo-${Date.now()}`,
+          time,
+          moduleId: module.id,
+          ok: true,
+          mode: runMode,
+          version: runMode === 'dev' ? null : runVersion,
+          result: '成功',
+          detail: text
+        },
+        ...current
+      ])
+      setNotice(
+        isRetry
+          ? `重试成功 · 六步全过 · 已写记录（「${FLOW[fromIdx].name}」之前步骤未重跑）`
+          : `${module.name}执行成功 · 六步全过 · 已写记录`
+      )
+    }
+    const step = () => {
+      i += 1
+      setLive((cur) => (cur ? { idx: i, done: [...cur.done, FLOW[i - 1].id] } : cur))
+      if (i < FLOW.length) {
+        setTimeout(step, 620)
+      } else {
+        setTimeout(finish, 500)
+      }
+    }
+    setTimeout(step, 620)
+  }
+
   const onAction = (key, module) => {
     if (key === 'generate') {
-      sendRequest(PROMPTS.generate(module), '生成脚本请求')
+      sendRequest(PROMPTS.generate(), '生成脚本请求')
       setNotice(`已向 CI 助手递交生成${module.short}脚本请求`)
       return
     }
@@ -148,28 +350,17 @@ function App() {
       setNotice('已定位到记录区 · 只看报错')
       return
     }
-    // run：部署单次执行，演示给执行中瞬态，完成后独立读回写记录。
-    setExecuting(module.id)
-    setNotice(`${module.short}请求已递交 CI 助手`)
-    sendRequest(PROMPTS.deploy, `${module.short}请求`)
-    setTimeout(() => {
-      const time = clock()
-      const text = '版本 1.4.199 · 全程 3 分 08 秒 · /healthz 200'
-      setExecuting(null)
-      setModule(module.id, { state: 'green', last: { time, ok: true, text } })
-      setRecords((current) => [
-        {
-          id: `demo-${Date.now()}`,
-          time,
-          moduleId: module.id,
-          ok: true,
-          result: '成功',
-          detail: text
-        },
-        ...current
-      ])
-      setNotice(`${module.name}执行成功 · 已写记录`)
-    }, 1600)
+    if (key === 'retry') {
+      const state = states[module.id]
+      const fromIdx = Math.max(
+        0,
+        FLOW.findIndex((s) => s.id === (state.failedStep || 'deploy'))
+      )
+      runFlow(module, fromIdx, state.last?.mode || mode, state.last?.version || version)
+      return
+    }
+    // run：部署单次执行，演示给执行中瞬态与流程条逐步点亮，完成后独立读回写记录。
+    runFlow(module, 0, mode, version)
   }
 
   // 「更新代码」在首次进入场景演示灰→黄：假定脚本已合入 main，主检出快进后扫描到资产。
@@ -191,7 +382,7 @@ function App() {
     <div className={`g3-app ${compact ? 'constrained' : ''}`}>
       <div className="g3-demo-bar">
         <strong>#461 评审草案 · CI 部署</strong>
-        <span>部署模块状态灯 · 场景与动作仅在本页演示</span>
+        <span>两种模式 · 三阶段六步流程 · 场景与动作仅在本页演示</span>
         <label className="g3-scene">
           场景
           <select
@@ -228,34 +419,37 @@ function App() {
             评审收敛为只做部署模块：目标是简化部署动作、帮助用户构建和使用已有的部署脚本；监控/故障检测/重启转后续演进。项目级入口「CI」与总览、任务同级；左侧
             Orca 原生会话（CI
             助手），右侧业务板面，与计划/验收两屏同构。页头：标题左、动作右——会话收折
-            chip、更新代码（唯一同步入口）；不设批注模式。板面不铺说明文本：模块语义、脚本资产、扫描机制收在按钮提示与
-            ci-ops skill 正本，板面只留状态、读数与动作。首次进入经原生工作树创建 bw/ci
+            chip、更新代码（唯一同步入口）；不设批注模式。板面不铺说明文本：机制与配置收在按钮提示与
+            ci-ops skill 正本，板面只留状态、读数、流程推进与动作。首次进入经原生工作树创建 bw/ci
             固定树，执行记录与错误日志存该树本地 .bw/ci/，默认不上仓。
           </p>
           <p>
-            <strong>部署与灯</strong>
-            ：部署=把已发布版本的包装到指定环境，完成后独立读回（服务状态、版本、耗时）并写执行记录；单次执行，人点按钮注入请求。助手按
-            ci-ops skill 生成脚本时复用项目已有资产优先（构建、装机、重启、监督脚本编排进
-            .bw/ci/deploy.sh 一条入口），缺失环节才按模板生成——样板间 gtsllm-dfx
-            已实证：项目已有脚本零改动，一条命令完成构建→部署→读回→记录。灯是健康信号，只能从执行记录推导：灰=主检出未见脚本；黄=扫到资产、待执行；绿=最近一次成功；红=最近一次失败。最新结果决定绿红；历史报错永久保留。
+            <strong>两种模式与版本</strong>
+            ：开发部署在本地执行启动命令把服务跑起来（启动命令由用户经会话输入、模型落进项目资产，板面不显示命令文本）；上线部署连服务器把所选版本的软件包部署到远端（服务器信息经会话配置，板面只显示已配置/未配置；密码在部署执行时输入——密文显示、不可复制、不落盘不进记录）。版本来自各版本验收材料的包登记（版本
+            →
+            包路径），默认最新；包不存在的版本灰掉标「包不存在」，不隐藏——历史记录引用的版本对得上号。
           </p>
           <p>
-            <strong>接入与执行</strong>：灰态点「生成部署脚本」向 CI
-            助手递交请求——勘察项目实际代码与已有部署资产后生成 .bw/ci/deploy.sh，PR 经人审合入
-            main；板面每 5
-            秒扫描主检出固定路径，扫到即灰→黄。执行全会话驱动：人点按钮注入请求，脚本在会话中真实跑，完成后独立读回写记录；失败如实红、不自动重试刷绿，恢复靠下一次真实成功。不替人确认任何完成。
+            <strong>三阶段六步流程</strong>：部署前准备（软件包准备 → 预检 → 清场）→
+            开始部署（部署）→ 部署后验证（验证 →
+            记录）。软件包准备在最前——没有可用包（或未配置启动命令）时，失败发生在清场之前，不该把正在跑的服务停了；破坏性步骤（清场）尽量晚。任何步失败流程停在该步，红灯
+            + failedStep
+            进记录；「从失败步重试」只重跑失败步及其后步骤，已完成步不重复执行（清场过的不用再清）。脚本按步骤标记协议输出
+            [ci-step]
+            进度，板面流程条据此逐步点亮——把会话里模型的试错（端口冲突排查十分钟）变成脚本的确定性步骤（清场秒级）。
           </p>
           <p>
-            <strong>记录与回显</strong>：每次执行结果写 bw/ci 树本地
-            records.jsonl（时间、ok、版本、读回读数、耗时；失败附错误摘要与日志指针）。记录区按时间倒序回显全部执行与报错，可只看报错；报错条目默认折叠、页内展开看日志，不让用户去后台翻文件。脚本资产在项目
-            main（人审合入），运行数据在 bw/ci 本地（不上仓）——代码与数据分离。
+            <strong>灯与记录</strong>
+            ：灯是健康信号，只能从执行记录推导：灰=主检出未见脚本；黄=扫到资产、待执行；绿=最近一次流程全步通过；红=最近一次停在失败步。最新结果决定绿红；历史报错永久保留。每次执行写
+            bw/ci 树本地
+            records.jsonl（时间、ok、mode、version、steps、failedStep、读回读数、耗时、日志指针），记录区按时间倒序回显全部执行与报错（含模式与版本），报错默认折叠、页内展开看日志原文。
           </p>
           <p>
             <strong>依赖与留白</strong>：组件与设计语言复用已合入 main 的 G3
             计划屏（#391）；导航与工作区归 G2
-            外框。留白待评审：监控/故障检测/重启三模块的带入时机；多环境（测试/预发/生产）是否扩环境维度；告警通知通道；脚本模板细则归
-            ci-ops skill 正本（gate 后落
-            standard/skills/）。演示数据：记录、日志、读数均为预置，生产不预置任何记录。
+            外框。留白待评审：监控/故障检测/重启三模块的带入时机；多环境（测试/预发/生产）是否扩环境维度；告警通知通道；启动命令自动获取（v1
+            为用户经会话输入）；脚本模板细则归 ci-ops skill 正本（gate 后落
+            standard/skills/）。演示数据：版本登记、记录、日志、读数均为预置，生产不预置任何记录。
           </p>
         </div>
       )}
@@ -339,6 +533,11 @@ function App() {
                 state={states[m.id]}
                 errors={errorsOf(records, m.id)}
                 executing={executing === m.id}
+                live={executing === m.id ? live : null}
+                mode={mode}
+                version={version}
+                onMode={setMode}
+                onVersion={setVersion}
                 onAction={onAction}
               />
             ))}
