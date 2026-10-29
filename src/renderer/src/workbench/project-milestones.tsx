@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
-import { CalendarPlus, Plus, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { MilestoneHistoryActions } from './milestone-history-actions'
 import {
   milestoneDraft,
   milestoneProblems,
@@ -14,10 +14,8 @@ import { openVersionOverview } from './project-page-state'
 import { useMilestonePlanning } from './use-milestone-planning'
 import { MilestoneTimeline } from './milestone-timeline'
 import { MilestoneNavigation } from './milestone-navigation'
-import { MilestoneReference } from './milestone-reference'
 import { MilestoneReviewButton } from './milestone-review-button'
 import { describeMilestoneChanges } from './milestone-change-summary'
-import { MilestoneVersionEditor } from './milestone-version-editor'
 import { MilestoneIconButton } from './milestone-icon-button'
 import './project-milestones.css'
 
@@ -43,6 +41,7 @@ export function ProjectMilestones({
   useEffect(() => clearUndo, [])
   const [locate, setLocate] = useState<string | null>(null)
   const [restoreKey, setRestoreKey] = useState(0)
+  const [newFeature, setNewFeature] = useState<string | null>(null)
   const restored = useRef<string | null>(null)
   const restoreScope = scope ? JSON.stringify(scope) : null
   const pageY = state?.pageY
@@ -87,14 +86,14 @@ export function ProjectMilestones({
   const status = state.retry
     ? '提交未完成'
     : dirty
-      ? '有未提交修改'
+      ? '编辑中'
       : state.data.proposal && state.data.review.pr?.state === 'merged'
         ? '已合入，待更新'
         : state.data.proposal && state.data.review.pr?.state === 'open'
           ? '已提交，待合入'
           : state.data.review.queryFailed
             ? '评审状态未读到'
-            : '未修改'
+            : '编辑中'
   const changes = describeMilestoneChanges(state.baseline, state.draft)
   function begin() {
     patch({ editing: true })
@@ -102,8 +101,8 @@ export function ProjectMilestones({
       edit((d) => ({ ...d, material: { ...d.material, months: [{ month, outcome: '' }] } }))
     }
   }
-  function updateVersion(cycleId: string, values: Partial<ScheduledVersion>) {
-    edit((d) => ({
+  function updateVersion(cycleId: string, values: Partial<ScheduledVersion>, fieldEdit = false) {
+    ;(fieldEdit ? model.editField : edit)((d) => ({
       ...d,
       versions: d.versions.map((v) => (v.cycleId === cycleId ? { ...v, ...values } : v)),
       material: {
@@ -144,6 +143,44 @@ export function ProjectMilestones({
       }
     })
   }
+  function saveVersion(value: ScheduledVersion) {
+    if (!enabled) {
+      return
+    }
+    if (state!.draft.versions.some((v) => v.cycleId === value.cycleId)) {
+      updateVersion(value.cycleId, value)
+    } else {
+      edit((d) => ({ ...d, versions: [...d.versions, value] }))
+    }
+    setLocate(value.cycleId)
+  }
+  function addFeature() {
+    const versions = state!.draft.versions
+      .filter(
+        (v) =>
+          v.timeWindow &&
+          v.timeWindow.start.slice(0, 7) <= month &&
+          v.timeWindow.end.slice(0, 7) >= month
+      )
+      .toSorted((a, b) => a.timeWindow!.start.localeCompare(b.timeWindow!.start))
+    if (!versions.length) {
+      toast('先登记本月版本的名称和日期')
+      return
+    }
+    const id = crypto.randomUUID()
+    const ref = (v: ScheduledVersion) => ({ version: v.version, cycleId: v.cycleId })
+    edit((d) => ({
+      ...d,
+      material: {
+        ...d.material,
+        features: [
+          ...d.material.features,
+          { id, month, title: '', owner: '', pre: ref(versions[0]), release: ref(versions.at(-1)!) }
+        ]
+      }
+    }))
+    setNewFeature(id)
+  }
   function open(version: ScheduledVersion, feature: MilestoneFeature) {
     if (
       !state!.data.formal.versions.some(
@@ -161,34 +198,58 @@ export function ProjectMilestones({
     })
   }
   return (
-    <section ref={root} className="wb-ml">
+    <section
+      ref={root}
+      className="wb-ml"
+      onFocusCapture={(event) => {
+        if (event.target instanceof HTMLInputElement && event.target.matches('.wb-ml-inline')) {
+          model.beginFieldEdit()
+        }
+      }}
+      onKeyDown={(event) => {
+        if (
+          !enabled ||
+          (event.target instanceof HTMLElement &&
+            event.target.closest('input, textarea, [contenteditable="true"]')) ||
+          !(event.ctrlKey || event.metaKey) ||
+          !['z', 'y'].includes(event.key.toLowerCase())
+        ) {
+          return
+        }
+        event.preventDefault()
+        clearUndo()
+        if (event.key.toLowerCase() === 'y' || event.shiftKey) {
+          model.redo()
+        } else {
+          model.undo()
+        }
+      }}
+    >
       <header className="wb-ml-heading">
         <strong>项目里程碑</strong>
         <div className="wb-ml-actions">
           {editing && (
-            <>
-              <small role="status">{status}</small>
-              <Button
-                variant="outline"
-                size="xs"
-                disabled={busy}
-                onClick={() => patch({ editing: false })}
-              >
-                查看正式安排
-              </Button>
-              <Button
-                variant="outline"
-                size="xs"
-                disabled={busy || !dirty}
-                onClick={() => {
-                  clearUndo()
-                  model.revert()
-                  setRestoreKey((v) => v + 1)
-                }}
-              >
-                还原修改
-              </Button>
-            </>
+            <MilestoneHistoryActions
+              status={status}
+              dirty={dirty}
+              busy={busy}
+              conflict={!!state.sourceConflict}
+              canUndo={model.canUndo}
+              canRedo={model.canRedo}
+              undo={() => {
+                clearUndo()
+                model.undo()
+              }}
+              redo={() => {
+                clearUndo()
+                model.redo()
+              }}
+              discard={() => {
+                clearUndo()
+                model.revert()
+                setRestoreKey((v) => v + 1)
+              }}
+            />
           )}
           {!editing ? (
             <Button
@@ -221,7 +282,6 @@ export function ProjectMilestones({
           >
             <RefreshCw size={15} />
           </MilestoneIconButton>
-          <MilestoneReference />
         </div>
       </header>
       {error && (
@@ -285,97 +345,40 @@ export function ProjectMilestones({
               patch({ month })
             }}
             setLocate={setLocate}
-            edit={edit}
+            editField={model.editField}
+            addMonth={(value) => {
+              edit((d) => ({
+                ...d,
+                material: {
+                  ...d.material,
+                  months: d.material.months.some((m) => m.month === value)
+                    ? d.material.months
+                    : [...d.material.months, { month: value, outcome: '' }]
+                }
+              }))
+              patch({ month: value })
+              setLocate(value)
+            }}
           />
           <div className="wb-ml-toolbar">
-            <span>{month} · 特性交付安排</span>
-            <div className="wb-ml-actions">
-              {editing && (
-                <>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <MilestoneIconButton label="添加月份" disabled={busy}>
-                        <CalendarPlus size={14} />
-                      </MilestoneIconButton>
-                    </PopoverTrigger>
-                    <PopoverContent className="wb-ml-small">
-                      <label>
-                        规划月份
-                        <input
-                          type="month"
-                          aria-label="规划月份"
-                          value={month}
-                          onChange={(e) => {
-                            const value = e.target.value
-                            if (!value) {
-                              return
-                            }
-                            edit((d) => ({
-                              ...d,
-                              material: {
-                                ...d.material,
-                                months: d.material.months.some((m) => m.month === value)
-                                  ? d.material.months
-                                  : [...d.material.months, { month: value, outcome: '' }]
-                              }
-                            }))
-                            patch({ month: value })
-                            setLocate(value)
-                          }}
-                        />
-                      </label>
-                    </PopoverContent>
-                  </Popover>
-                  <MilestoneVersionEditor
-                    draft={state.draft}
-                    existing={(state.data.proposal ?? state.data.formal).versions}
-                    busy={busy}
-                    updateVersion={updateVersion}
-                    edit={edit}
-                  />
-                  <MilestoneIconButton
-                    label="添加特性"
-                    disabled={busy}
-                    onClick={() => {
-                      const v =
-                        state.draft.versions.find((item) =>
-                          item.timeWindow?.start.startsWith(month)
-                        ) ?? state.draft.versions.find((item) => item.timeWindow)
-                      const ref = v ? { version: v.version, cycleId: v.cycleId } : null
-                      edit((d) => ({
-                        ...d,
-                        material: {
-                          ...d.material,
-                          features: [
-                            ...d.material.features,
-                            {
-                              id: crypto.randomUUID(),
-                              month,
-                              title: '',
-                              owner: '',
-                              pre: ref,
-                              release: ref
-                            }
-                          ]
-                        }
-                      }))
-                    }}
-                  >
-                    <Plus size={14} />
-                  </MilestoneIconButton>
-                </>
-              )}
-            </div>
+            <span>
+              {month} · {visible.material.features.filter((f) => f.month === month).length} 个特性
+            </span>
           </div>
           <MilestoneTimeline
             key={`${editing}:${restoreKey}`}
             draft={visible}
+            editField={model.editField}
+            saveVersion={saveVersion}
+            addFeature={addFeature}
+            newFeature={newFeature}
             month={month}
-            editing={enabled}
+            editing={editing}
+            busy={busy}
             edit={edit}
             open={open}
             remove={remove}
-            rename={(cycleId, version) => updateVersion(cycleId, { version })}
+            rename={(cycleId, version) => updateVersion(cycleId, { version }, true)}
             started={
               new Set(
                 (state.data.proposal ?? state.data.formal).versions

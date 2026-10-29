@@ -3,7 +3,7 @@ import { calendarDays } from './milestones-data.js'
 import { historicalRows, outcomeLabel, sourceUrl } from './milestones-history.js'
 // eslint-disable-next-line no-unused-vars
 const { React, useState, useRef, useEffect, X } = window.BWPrototypeDependencies
-export function Modal({ title, close, children, wide = false }) {
+export function Modal({ title, close, children, wide = false, anchor }) {
   const ref = useRef(null)
   useEffect(() => {
     const dialog = ref.current
@@ -15,6 +15,16 @@ export function Modal({ title, close, children, wide = false }) {
       ref={ref}
       aria-label={title}
       className={`ml-dialog ${wide ? 'wide' : ''}`}
+      style={
+        anchor
+          ? {
+              width: 312,
+              margin: 0,
+              left: Math.max(12, Math.min(innerWidth - 324, anchor.left)),
+              top: Math.max(12, Math.min(innerHeight - 300, anchor.bottom + 8))
+            }
+          : undefined
+      }
       onCancel={close}
     >
       <header>
@@ -23,6 +33,88 @@ export function Modal({ title, close, children, wide = false }) {
       </header>
       {children}
     </dialog>
+  )
+}
+
+export function VersionEditor({ item, anchor, versions, save, close }) {
+  const [value, setValue] = useState(
+    item || { id: crypto.randomUUID(), name: '', start: '', end: '' }
+  )
+  const [error, setError] = useState('')
+  return (
+    <Modal title={item ? '版本日期' : '登记版本'} anchor={anchor} close={close}>
+      <form
+        className="ml-version-editor"
+        onSubmit={(event) => {
+          event.preventDefault()
+          const next = { ...value, name: value.name.trim() }
+          if (
+            !next.name ||
+            !Number.isFinite(Date.parse(next.start)) ||
+            !Number.isFinite(Date.parse(next.end)) ||
+            next.start > next.end
+          ) {
+            setError('请填写版本名称和有效的起止日期')
+            return
+          }
+          if (
+            versions.some(
+              (v) => v.id !== next.id && v.name.toLowerCase() === next.name.toLowerCase()
+            )
+          ) {
+            setError('版本名称已存在')
+            return
+          }
+          const reason = save(next)
+          if (reason) {
+            setError(reason)
+          } else {
+            close()
+          }
+        }}
+      >
+        <label>
+          版本名称
+          <input
+            autoFocus
+            aria-label="登记版本名称"
+            value={value.name}
+            onChange={(e) => setValue((v) => ({ ...v, name: e.target.value }))}
+          />
+        </label>
+        <div className="ml-version-date-fields">
+          <label>
+            开始
+            <input
+              type="date"
+              aria-label="版本开始日期"
+              value={value.start}
+              onChange={(e) =>
+                setValue((v) => ({ ...v, start: e.target.value, end: v.end || e.target.value }))
+              }
+            />
+          </label>
+          <label>
+            结束
+            <input
+              type="date"
+              aria-label="版本结束日期"
+              value={value.end}
+              onChange={(e) => setValue((v) => ({ ...v, end: e.target.value }))}
+            />
+          </label>
+        </div>
+        {error && <p role="alert">{error}</p>}
+        <footer>
+          <button type="button" className="btn btn-ghost" onClick={close}>
+            取消
+          </button>
+          <button type="submit" className="btn btn-primary">
+            {item ? '保存' : '添加版本'}
+          </button>
+        </footer>
+      </form>
+    </Modal>
   )
 }
 
@@ -109,8 +201,36 @@ export function ReferencePanel({ close }) {
   return (
     <Modal title="设计依据" close={close}>
       <p className="muted">
-        原型注释: 2026-10-27 核对官方资料。本稿借鉴交互思路，产品规则以人工澄清与仓内原则为准。
+        原型注释: 2026-10-29
+        核对官方资料。本稿借鉴交互思路，产品规则以人工澄清与仓内原则为准；此入口仅供原型评审，不进入产品界面。
       </p>
+      <section className="ml-reference">
+        <h3>
+          <a
+            href="https://support.atlassian.com/jira-software-cloud/docs/edit-and-reorder-work-items-on-the-timeline/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Jira · 时间轴就地编辑与排序 ↗
+          </a>
+        </h3>
+        <p>
+          借鉴：在对象附近建立排期、直接改日期和拖动排序。BW
+          先登记版本，再在泳道添加特性；拖节点只改变版本引用。
+        </p>
+      </section>
+      <section className="ml-reference">
+        <h3>
+          <a
+            href="https://docs.github.com/en/issues/planning-and-tracking-with-projects/customizing-views-in-your-project/customizing-the-roadmap-layout"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub Projects · Roadmap ↗
+          </a>
+        </h3>
+        <p>借鉴：已有日期字段决定时间位置，关键节点帮助读轴。不从发布记录反推版本排期。</p>
+      </section>
       <section className="ml-reference">
         <h3>
           <a href="https://linear.app/docs/initiatives" target="_blank" rel="noreferrer">

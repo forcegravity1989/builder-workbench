@@ -7,7 +7,7 @@ export const fixedVersions = [
   { id: 'v1.1.1', name: 'v1.1.1', start: '2026-11-23', end: '2026-11-29' }
 ]
 export const initial = {
-  milestone: '协作与工程能力形成可用闭环',
+  months: [{ month: '2026-11', outcome: '协作与工程能力形成可用闭环' }],
   versions: fixedVersions,
   features: [
     {
@@ -40,14 +40,13 @@ export const initial = {
       pre: 'v1.1.0',
       release: 'v1.1.1'
     }
-  ]
+  ].map((f) => ({ ...f, month: '2026-11' }))
 }
 export const clone = (value) => structuredClone(value)
-export const versionIndex = (id) => fixedVersions.findIndex((v) => v.id === id)
 export const versionName = (plan, id) =>
   plan.versions.find((v) => v.id === id)?.name || '未命名版本'
 export function freshCases() {
-  const empty = { milestone: '', versions: clone(fixedVersions), features: [] }
+  const empty = { months: [{ month: '2026-11', outcome: '' }], versions: [], features: [] }
   return {
     existing: {
       draft: clone(initial),
@@ -61,15 +60,17 @@ export function freshCases() {
 export function validPlan(p) {
   return (
     p &&
-    typeof p.milestone === 'string' &&
+    Array.isArray(p.months) &&
+    p.months.every(
+      (m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.month) && typeof m.outcome === 'string'
+    ) &&
     Array.isArray(p.versions) &&
-    p.versions.length === fixedVersions.length &&
     p.versions.every(
-      (v, i) =>
-        v.id === fixedVersions[i].id &&
-        v.start === fixedVersions[i].start &&
-        v.end === fixedVersions[i].end &&
-        typeof v.name === 'string'
+      (v) =>
+        v.id &&
+        typeof v.name === 'string' &&
+        Number.isFinite(Date.parse(v.start)) &&
+        v.start <= v.end
     ) &&
     Array.isArray(p.features) &&
     new Set(p.features.map((f) => f.id)).size === p.features.length &&
@@ -78,14 +79,23 @@ export function validPlan(p) {
         f &&
         ['id', 'title', 'owner'].every((k) => typeof f[k] === 'string') &&
         f.id &&
-        versionIndex(f.pre) >= 0 &&
-        versionIndex(f.pre) <= versionIndex(f.release)
+        (f.pre === null || p.versions.some((v) => v.id === f.pre)) &&
+        (f.release === null || p.versions.some((v) => v.id === f.release))
     )
   )
 }
 export function loadCases() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey))
+    for (const state of Object.values(saved || {})) {
+      for (const p of [state.draft, state.submitted, state.published]) {
+        if (p && !p.months && typeof p.milestone === 'string') {
+          p.months = [{ month: '2026-11', outcome: p.milestone }]
+          p.features = p.features.map((f) => ({ ...f, month: '2026-11' }))
+          delete p.milestone
+        }
+      }
+    }
     if (
       saved &&
       ['existing', 'empty'].every((key) => {
@@ -107,24 +117,33 @@ export function loadCases() {
   return freshCases()
 }
 export function incomplete(plan) {
-  if (!plan.milestone.trim()) {
-    return '请填写旗帜旁的一句阶段成果'
-  }
   if (plan.versions.some((v) => !v.name.trim())) {
     return '请补全版本名称'
   }
   if (plan.features.some((f) => !f.title.trim() || !f.owner.trim())) {
     return '请补全特性名称和负责人'
   }
+  for (const f of plan.features) {
+    const pre = plan.versions.find((v) => v.id === f.pre),
+      release = plan.versions.find((v) => v.id === f.release)
+    if (!pre || !release) {
+      return '请安排特性的 Pre 和 Release 版本'
+    }
+    if (pre.start > release.end) {
+      return 'Pre版本不能晚于Release版本'
+    }
+  }
   return ''
 }
 export function moveDelivery(plan, id, kind, target) {
   const old = plan.features.find((f) => f.id === id)
-  if (!old || !['pre', 'release'].includes(kind) || versionIndex(target) < 0) {
+  if (!old || !['pre', 'release'].includes(kind) || !plan.versions.some((v) => v.id === target)) {
     return { error: '这项安排无法移动。' }
   }
   const next = { ...old, [kind]: target }
-  if (versionIndex(next.pre) > versionIndex(next.release)) {
+  const pre = plan.versions.find((v) => v.id === next.pre),
+    release = plan.versions.find((v) => v.id === next.release)
+  if (pre && release && pre.start > release.end) {
     return { error: 'Pre版本不能晚于Release版本。' }
   }
   return { plan: { ...plan, features: plan.features.map((f) => (f.id === id ? next : f)) } }
@@ -143,14 +162,27 @@ export function changesBetween(before, after) {
       detail: after.features.map((f) => f.title || '未命名特性').join(' → ')
     })
   }
-  if (before.milestone !== after.milestone) {
-    changes.push({
-      title: '阶段成果',
-      detail: `${before.milestone || '未填写'} → ${after.milestone || '未填写'}`
-    })
+  for (const m of after.months) {
+    const old = before.months.find((item) => item.month === m.month)
+    if (!old || old.outcome !== m.outcome) {
+      changes.push({
+        title: `${m.month} 阶段成果`,
+        detail: `${old?.outcome || '未填写'} → ${m.outcome || '未填写'}`
+      })
+    }
   }
   for (const v of after.versions) {
     const old = before.versions.find((b) => b.id === v.id)
+    if (!old) {
+      changes.push({ title: '登记版本', detail: `${v.name} · ${v.start} — ${v.end}` })
+      continue
+    }
+    if (old.start !== v.start || old.end !== v.end) {
+      changes.push({
+        title: `${v.name} 排期`,
+        detail: `${old.start} — ${old.end} → ${v.start} — ${v.end}`
+      })
+    }
     if (old.name !== v.name) {
       changes.push({ title: '版本改名', detail: `${old.name} → ${v.name}` })
     }

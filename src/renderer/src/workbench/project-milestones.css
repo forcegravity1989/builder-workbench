@@ -37,71 +37,164 @@
   text-align: center;
   color: var(--muted-foreground);
 }
+.wb-ml-axis-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px 0;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.wb-ml-axis-heading label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.wb-ml-axis-heading input,
+.wb-ml-axis-heading select {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+  border-radius: 5px;
+  padding: 3px 6px;
+}
+.wb-ml-empty-row {
+  display: flex;
+  min-height: 108px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.wb-ml-empty-grid {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  background-image: linear-gradient(to right, var(--border) 1px, transparent 1px);
+  background-size: 196px 100%;
+}
+.wb-ml-new-version {
+  position: absolute;
+  top: 15px;
+  padding: 0 8px;
+}
+.wb-ml-add-feature {
+  position: sticky;
+  left: 0;
+  width: 230px;
+  padding: 8px 12px;
+  background: var(--card);
+}
+.wb-ml-add-feature button {
+  width: 100%;
+  justify-content: flex-start;
+}
+.wb-ml .wb-ml-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.wb-ml-status::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+}
 .wb-ml-nav {
   display: flex;
   overflow: auto;
-  gap: 24px;
-  padding: 12px 16px;
+  gap: 0;
+  padding: 10px 16px 12px;
   border-bottom: 1px solid var(--border);
 }
 .wb-ml-month {
   flex: 0 0 auto;
-  min-width: 280px;
-  max-width: 640px;
-  display: grid;
-  grid-template-columns: auto minmax(140px, 1fr);
-  align-items: center;
-  gap: 6px 18px;
-}
-.wb-ml-month > button {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  background: none;
-  border: 0;
-  font-weight: 600;
-  cursor: pointer;
+  padding-bottom: 1px;
 }
 .wb-ml-outcome {
   position: relative;
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 3px 8px;
   font-size: 12px;
   min-width: 0;
+  width: calc(100% - 12px);
+  margin: 10px 6px 0;
+  background: var(--muted);
 }
 .wb-ml-outcome::before {
   content: '';
   position: absolute;
-  left: -5px;
-  top: calc(50% - 4px);
+  right: calc(50% - 4px);
+  top: -5px;
   width: 8px;
   height: 8px;
   border-left: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  background: var(--card);
+  border-top: 1px solid var(--border);
+  background: var(--muted);
   transform: rotate(45deg);
 }
-.wb-ml-month.selected > button {
-  color: var(--foreground);
-}
 .wb-ml-ticks {
-  grid-column: 1 / -1;
-  display: flex;
-  gap: 16px;
-  border-top: 1px solid var(--border);
-  padding-top: 6px;
+  display: grid;
+  position: relative;
 }
-.wb-ml-ticks > button {
+.wb-ml-ticks::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 24px;
+  border-top: 1px solid var(--border);
+}
+.wb-ml-tick {
+  min-width: 0;
+}
+.wb-ml-tick > button {
   background: none;
   border: 0;
-  text-align: left;
+  position: relative;
+  width: 100%;
+  text-align: center;
   white-space: nowrap;
   cursor: pointer;
   display: grid;
   gap: 3px;
   font-size: 12px;
   line-height: 1.35;
+  padding: 0 4px;
+  color: var(--muted-foreground);
+}
+.wb-ml-tick b {
+  font-weight: 500;
+  color: var(--foreground);
+}
+.wb-ml-flag-slot {
+  height: 29px;
+  display: block;
+}
+.wb-ml-flag {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--foreground);
+}
+.wb-ml-flag svg {
+  fill: currentColor;
+}
+.wb-ml-tick-dot {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  left: calc(50% - 2px);
+  top: 22px;
+  background: var(--card);
+  border: 1px solid var(--muted-foreground);
+  border-radius: 50%;
+}
+.wb-ml-month.selected .wb-ml-tick:last-child .wb-ml-tick-dot {
+  background: var(--foreground);
 }
 .wb-ml-scroll {
   overflow: auto;
@@ -139,7 +232,7 @@
   position: sticky;
   top: 0;
   z-index: 5;
-  background: var(--card);
+  background: var(--muted);
 }
 .wb-ml-date-row .wb-ml-track > span {
   position: absolute;
@@ -276,7 +369,6 @@
 }
 .wb-ml-versions,
 .wb-ml-review,
-.wb-ml-reference,
 .wb-ml-small {
   font-size: 13px;
   color: var(--popover-foreground);
@@ -291,23 +383,22 @@
   display: grid;
   gap: 12px;
 }
-.wb-ml-version-edit {
+.wb-ml-versions form {
   display: grid;
-  gap: 7px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
+  gap: 12px;
 }
-.wb-ml-version-edit > div {
+.wb-ml-version-dates,
+.wb-ml-versions footer {
   display: flex;
   gap: 8px;
 }
-.wb-ml-version-edit label {
+.wb-ml-versions label {
   min-width: 0;
   display: grid;
   gap: 4px;
   font-size: 11px;
 }
-.wb-ml-version-edit input[type='date'],
+.wb-ml-versions input,
 .wb-ml-small input {
   width: 100%;
   padding: 5px;
@@ -316,7 +407,6 @@
   color: var(--foreground);
   border-radius: 4px;
 }
-.wb-ml-version-edit small,
 .wb-ml-versions > small {
   font-size: 11px;
   color: var(--muted-foreground);
@@ -331,13 +421,7 @@
   display: grid;
   gap: 8px;
 }
-.wb-ml-reference {
-  width: 320px;
-}
-.wb-ml-reference p {
-  margin: 10px 0;
-  line-height: 1.6;
-}
+
 .wb-ml-small {
   width: 220px;
 }

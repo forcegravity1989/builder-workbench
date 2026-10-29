@@ -25,6 +25,34 @@
   align-items: center;
   gap: 8px;
 }
+.ml-history-button {
+  width: 26px;
+  min-height: 26px;
+  font-size: 22px;
+  line-height: 1;
+  padding: 0;
+}
+.ml-more-actions {
+  position: relative;
+}
+.ml-more-actions summary {
+  list-style: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0 6px;
+}
+.ml-more-actions > div {
+  position: absolute;
+  right: 0;
+  top: 28px;
+  width: max-content;
+  z-index: 15;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--popover);
+  box-shadow: var(--shadow-md);
+}
 .ml-app {
   display: flex;
   height: calc(100vh - 34px);
@@ -488,38 +516,33 @@
   padding: 10px 16px 5px;
   border-bottom: 1px solid var(--border);
 }
-.ml-flag-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.ml-flag-item {
+.ml-axis-heading {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 8px;
-  min-width: 0;
   font-size: 11px;
   color: var(--muted-foreground);
+  margin-bottom: 8px;
 }
-.ml-flag-item.selected {
-  color: var(--foreground);
-}
-.ml-flag-item button {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  padding: 3px 0;
+.ml-axis-heading label {
   display: flex;
   align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-  font-size: 11px;
+  gap: 6px;
 }
-.ml-flag-item .ml-flag-title {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 500;
+.ml-axis-heading input,
+.ml-axis-heading select {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--background);
+  color: var(--foreground);
+  padding: 3px 6px;
+  font: inherit;
+}
+.ml-month-axes {
+  display: flex;
+  overflow: auto;
+  padding-bottom: 8px;
 }
 .ml-flag {
   display: inline-block;
@@ -537,26 +560,38 @@
 }
 .ml-mini-axis {
   position: relative;
-  height: 54px;
+  display: grid;
+  flex: 1 0 auto;
+}
+.ml-mini-axis::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 24px;
   border-top: 1px solid var(--border);
-  margin: 6px 14px 0 0;
+}
+.ml-mini-tick {
+  min-width: 0;
 }
 .ml-mini-version {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
+  position: relative;
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  text-align: center;
   border: 0;
-  background: var(--background);
+  background: transparent;
   color: var(--muted-foreground);
-  font-size: 9px;
-  padding: 8px 2px 1px;
+  font-size: 11px;
+  padding: 0 4px;
   white-space: nowrap;
-  line-height: 1;
+  line-height: 1.35;
 }
-.ml-mini-version i {
+.ml-mini-version > i {
   position: absolute;
-  top: -3px;
-  left: 50%;
+  top: 22px;
+  left: calc(50% - 2px);
   width: 5px;
   height: 5px;
   border: 1px solid currentColor;
@@ -567,7 +602,7 @@
   color: var(--foreground);
   font-weight: 600;
 }
-.ml-mini-version.current i {
+.ml-mini-version.current > i {
   background: var(--foreground);
 }
 .ml-mini-version:hover {
@@ -616,16 +651,16 @@
   display: flex;
 }
 .ml-date-row {
-  height: 24px;
+  height: 28px;
   position: sticky;
   top: 0;
   z-index: 6;
   background: var(--muted);
 }
 .ml-version-row {
-  height: 52px;
+  height: 56px;
   position: sticky;
-  top: 24px;
+  top: 28px;
   z-index: 5;
   background: var(--background);
 }
@@ -676,7 +711,7 @@
 }
 .ml-fixed-version {
   position: absolute;
-  height: 52px;
+  height: 56px;
   border: 0;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
@@ -705,7 +740,7 @@
 }
 
 .ml-timeline-row {
-  min-height: 80px;
+  min-height: 108px;
   border-bottom: 1px solid var(--border);
 }
 .ml-row-title {
@@ -724,7 +759,7 @@
 .ml-track {
   position: relative;
   flex: none;
-  min-height: 80px;
+  min-height: 108px;
   background: repeating-linear-gradient(
     to right,
     transparent 0,
@@ -851,12 +886,68 @@
   z-index: 1;
 }
 .ml-empty-lanes {
-  position: sticky;
-  left: 0;
-  width: 450px;
-  padding: 40px 16px;
+  display: flex;
+  min-height: 108px;
+  border-bottom: 1px solid var(--border);
   font-size: 12px;
   color: var(--muted-foreground);
+}
+.ml-empty-grid {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  background-image: linear-gradient(to right, var(--border) 1px, transparent 1px);
+  background-size: 196px 100%;
+}
+.ml-add-feature {
+  position: sticky;
+  left: 0;
+  width: 230px;
+  padding: 8px 12px;
+  background: var(--background);
+}
+.ml-add-feature .btn {
+  width: 100%;
+  justify-content: flex-start;
+  font-size: 12px;
+}
+.ml-add-version {
+  position: absolute;
+  top: 12px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.ml-fixed-version > .ml-date-button {
+  color: var(--muted-foreground);
+  font-size: 10px;
+  font-weight: 400;
+  margin-top: 4px;
+}
+.ml-version-editor {
+  display: grid;
+  gap: 12px;
+}
+.ml-version-editor label {
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.ml-version-editor input {
+  min-width: 0;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font: inherit;
+  background: var(--background);
+  color: var(--foreground);
+}
+.ml-version-date-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 .ml-material-origin {
   display: flex;
@@ -917,9 +1008,6 @@
   .ml-scene-label {
     font-size: 0;
   }
-  .ml-flag-row {
-    gap: 10px;
-  }
 }
 @media (max-width: 760px) {
   .ml-sidebar {
@@ -937,18 +1025,16 @@
   .ml-milestone-heading .ml-actions {
     flex-wrap: wrap;
   }
-  .ml-flag-item .ml-flag-title {
-    font-size: 10px;
-  }
-  .ml-mini-version {
-    font-size: 8px;
-  }
 }
-.ml-flag-row {
-  display: flex;
+.ml-flag-slot {
+  height: 29px;
+  display: block;
 }
-.ml-flag-item {
-  max-width: 100%;
+.ml-month-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--foreground);
 }
 .ml-outcome-bubble {
   position: relative;
@@ -956,7 +1042,8 @@
   background: var(--muted);
   border-radius: 5px;
   padding: 2px 9px;
-  margin-left: 6px;
+  margin: 10px 6px 0;
+  width: calc(100% - 12px);
   min-width: 0;
 }
 .ml-outcome-bubble::before {
@@ -966,24 +1053,16 @@
   height: 7px;
   background: var(--muted);
   border-left: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   transform: rotate(45deg);
-  left: -5px;
-  top: 50%;
-  margin-top: -4px;
-}
-.ml-mini-axis {
-  margin-top: 12px;
-  height: 43px;
-}
-.ml-mini-version {
-  font-size: 10px;
+  right: calc(50% - 4px);
+  top: -5px;
 }
 .ml-mini-version small {
   display: block;
   font-size: 9px;
   color: var(--muted-foreground);
-  margin-top: 5px;
+  margin-top: 0;
   font-weight: 400;
 }
 .ml-feature-heading {

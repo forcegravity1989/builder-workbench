@@ -24,6 +24,9 @@ type Session = {
   retry: boolean
   submitError?: string
   sourceConflict?: string
+  past: MilestoneDraft[]
+  future: MilestoneDraft[]
+  field: Element | null
 }
 // Unsubmitted edits are a view session, not a second business store. Git is the saved source.
 const sessions = new Map<string, Session>()
@@ -58,7 +61,10 @@ function fresh(data: MilestoneRead, previous?: Session): Session {
     scrollX: previous?.scrollX ?? 0,
     scrollY: previous?.scrollY ?? 0,
     pageY: previous?.pageY ?? 0,
-    retry: false
+    retry: false,
+    past: [],
+    future: [],
+    field: null
   }
 }
 function put(key: string, next: Session) {
@@ -102,9 +108,14 @@ export function useMilestonePlanning(
       const current = fresh(data, previous)
       if (previous && submitting.has(key)) {
         put(key, { ...previous, data })
-      } else if (previous && (changed(previous) || previous.retry)) {
+      } else if (
+        previous &&
+        (changed(previous) || previous.retry || previous.past.length || previous.future.length)
+      ) {
         const equal = (a: MilestoneDraft, b: MilestoneDraft) =>
           JSON.stringify(a) === JSON.stringify(b)
+        const acceptedDraft =
+          !equal(current.baseline, previous.baseline) && equal(current.baseline, previous.draft)
         if (equal(current.baseline, previous.baseline) || equal(current.baseline, previous.draft)) {
           put(key, {
             ...previous,
@@ -118,14 +129,17 @@ export function useMilestonePlanning(
                 ? false
                 : previous.retry ||
                   (equal(current.baseline, previous.draft) && !!previous.submitError),
-            submitError: undefined
+            submitError: undefined,
+            past: acceptedDraft ? [] : previous.past,
+            future: acceptedDraft ? [] : previous.future,
+            field: null
           })
         } else {
           put(key, {
             ...previous,
             data,
             sourceConflict:
-              '其他地方已调整规划，当前输入保留。请先查看正式安排或评审核对差异；还原修改后可从最新提交重新编辑。'
+              '其他地方已调整规划，当前输入保留。请先查看评审核对差异；放弃本次修改后可从最新材料重新编辑。'
           })
         }
       } else {
@@ -154,11 +168,42 @@ export function useMilestonePlanning(
       put(key, { ...s, ...update })
     }
   }
-  const edit = (update: (draft: MilestoneDraft) => MilestoneDraft) => {
+  const change = (update: (draft: MilestoneDraft) => MilestoneDraft, fieldEdit = false) => {
     const s = sessions.get(key)
-    if (s && !submitting.has(key)) {
-      put(key, { ...s, draft: update(s.draft), submitError: undefined })
+    if (s && !submitting.has(key) && !reading) {
+      const draft = update(s.draft)
+      if (JSON.stringify(draft) === JSON.stringify(s.draft)) {
+        return
+      }
+      const field = fieldEdit
+        ? document.activeElement?.matches('input.wb-ml-inline')
+          ? document.activeElement
+          : s.field
+        : null
+      const past = field && field === s.field ? [...s.past] : [...s.past.slice(-99), s.draft]
+      if (JSON.stringify(past.at(-1)) === JSON.stringify(draft)) {
+        past.pop()
+      }
+      put(key, { ...s, draft, past, future: [], field, submitError: undefined })
     }
+  }
+  const history = (direction: 'undo' | 'redo') => {
+    const s = sessions.get(key)
+    if (!s || submitting.has(key) || reading) {
+      return
+    }
+    const draft = (direction === 'undo' ? s.past : s.future).at(-1)
+    if (!draft) {
+      return
+    }
+    put(key, {
+      ...s,
+      draft,
+      field: null,
+      submitError: undefined,
+      past: direction === 'undo' ? s.past.slice(0, -1) : [...s.past, s.draft],
+      future: direction === 'undo' ? [...s.future, s.draft] : s.future.slice(0, -1)
+    })
   }
   const submit = async () => {
     const s = sessions.get(key),
@@ -209,6 +254,9 @@ export function useMilestonePlanning(
           }
         },
         retry: result.outcome.mode === 'failed',
+        past: [],
+        future: [],
+        field: null,
         submitError: result.outcome.mode === 'failed' ? result.outcome.error : undefined
       })
       if (result.outcome.mode !== 'failed') {
@@ -240,9 +288,15 @@ export function useMilestonePlanning(
     error: readError ?? state?.sourceConflict ?? state?.submitError ?? null,
     dirty: state ? changed(state) : false,
     patch,
-    edit,
+    edit: (update: (draft: MilestoneDraft) => MilestoneDraft) => change(update),
+    editField: (update: (draft: MilestoneDraft) => MilestoneDraft) => change(update, true),
     reload,
     submit,
-    revert
+    revert,
+    undo: () => history('undo'),
+    redo: () => history('redo'),
+    beginFieldEdit: () => patch({ field: null }),
+    canUndo: Boolean(state?.past.length),
+    canRedo: Boolean(state?.future.length)
   }
 }

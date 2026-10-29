@@ -3,17 +3,20 @@ export function MilestoneField({
   value,
   label,
   editable,
-  onChange
+  onChange,
+  autoFocus = false
 }: {
   value: string
   label: string
   editable: boolean
   onChange(value: string): void
+  autoFocus?: boolean
 }) {
   const entered = useRef(value)
   const cancelled = useRef(false)
   return editable ? (
     <input
+      autoFocus={autoFocus}
       aria-label={label}
       className="wb-ml-inline"
       value={value}

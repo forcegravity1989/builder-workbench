@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { MilestoneField } from './milestone-field'
 import { MilestoneIconButton } from './milestone-icon-button'
-import { Diamond, ExternalLink, GripVertical, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { MilestoneVersionRow } from './milestone-version-row'
+import { Diamond, ExternalLink, GripVertical, Plus, Trash2 } from 'lucide-react'
 import {
   reorderMilestoneFeature,
   pickMilestoneVersion,
@@ -18,7 +20,9 @@ type Props = {
   draft: MilestoneDraft
   month: string
   editing: boolean
+  busy: boolean
   edit(update: (draft: MilestoneDraft) => MilestoneDraft): void
+  editField(update: (draft: MilestoneDraft) => MilestoneDraft): void
   open(version: ScheduledVersion, feature: MilestoneFeature): void
   remove(feature: MilestoneFeature): void
   rename(id: string, version: string): void
@@ -28,9 +32,13 @@ type Props = {
   scrollY: number
   locate: string | null
   notify(message: string): void
+  saveVersion(version: ScheduledVersion): void
+  addFeature(): void
+  newFeature: string | null
 }
 export function MilestoneTimeline(props: Props) {
   const { draft, month, editing, edit } = props
+  const enabled = editing && !props.busy
   const versions = draft.versions
     .filter(
       (v) =>
@@ -80,6 +88,9 @@ export function MilestoneTimeline(props: Props) {
     }
   }, [props.locate, locatePosition, origin])
   function move(id: string, kind: 'pre' | 'release', target: ScheduledVersion) {
+    if (!enabled) {
+      return
+    }
     const ref = { version: target.version, cycleId: target.cycleId }
     const f = draft.material.features.find((item) => item.id === id)
     if (!f) {
@@ -109,7 +120,10 @@ export function MilestoneTimeline(props: Props) {
       className="wb-ml-scroll"
       onScroll={(e) => props.onScroll(e.currentTarget.scrollLeft, e.currentTarget.scrollTop)}
     >
-      <div className="wb-ml-canvas" style={{ width: canvasWidth + labelWidth }}>
+      <div
+        className="wb-ml-canvas"
+        style={{ width: canvasWidth + labelWidth + (editing && versions.length ? 130 : 0) }}
+      >
         <div className="wb-ml-date-row">
           <div className="wb-ml-label">特性 / 负责人</div>
           <div className="wb-ml-track" style={{ width: canvasWidth }}>
@@ -120,40 +134,24 @@ export function MilestoneTimeline(props: Props) {
             ))}
           </div>
         </div>
-        <div className="wb-ml-version-row">
-          <div className="wb-ml-label">目标版本</div>
-          <div className="wb-ml-track" style={{ width: canvasWidth }}>
-            {!versions.length && (
-              <p className="wb-ml-alert">先在“版本与日期”登记排期，再拖动安排交付。</p>
-            )}
-            {versions.map((v) => (
-              <div
-                className="wb-ml-window"
-                key={v.cycleId}
-                style={{
-                  left: (day(v.timeWindow!.start) - origin) * width,
-                  width: (day(v.timeWindow!.end) - day(v.timeWindow!.start) + 1) * width
-                }}
-              >
-                <MilestoneField
-                  label="版本名称"
-                  value={v.version}
-                  editable={editing && !props.started.has(v.cycleId)}
-                  onChange={(version) => props.rename(v.cycleId, version)}
-                />
-                <small>
-                  {v.timeWindow!.start.slice(5)} — {v.timeWindow!.end.slice(5)}
-                </small>
-              </div>
-            ))}
-          </div>
-        </div>
+        <MilestoneVersionRow
+          draft={draft}
+          versions={versions}
+          editing={editing}
+          disabled={props.busy}
+          canvasWidth={canvasWidth}
+          origin={origin}
+          started={props.started}
+          rename={props.rename}
+          save={props.saveVersion}
+        />
         {features.map((f, row) => (
           <div key={f.id} className="wb-ml-row" data-milestone-feature={f.id}>
             <div className="wb-ml-label wb-ml-feature">
               {editing && (
                 <MilestoneIconButton
                   className="wb-ml-grip"
+                  disabled={!enabled}
                   label={`排序 ${f.title || '新特性'}`}
                   title="拖动排序；Alt + 上下键"
                   onPointerDown={(e) => {
@@ -161,6 +159,7 @@ export function MilestoneTimeline(props: Props) {
                       return
                     }
                     e.preventDefault()
+                    e.currentTarget.focus({ preventScroll: true })
                     draggedRow.current = { id: f.id, y: e.clientY, moved: false }
                     e.currentTarget.setPointerCapture(e.pointerId)
                   }}
@@ -214,10 +213,11 @@ export function MilestoneTimeline(props: Props) {
               <div>
                 <MilestoneField
                   label="特性名称"
+                  autoFocus={f.id === props.newFeature}
                   value={f.title}
-                  editable={editing}
+                  editable={enabled}
                   onChange={(title) =>
-                    edit((d) => ({
+                    props.editField((d) => ({
                       ...d,
                       material: {
                         ...d.material,
@@ -232,9 +232,9 @@ export function MilestoneTimeline(props: Props) {
                   <MilestoneField
                     label="负责人"
                     value={f.owner}
-                    editable={editing}
+                    editable={enabled}
                     onChange={(owner) =>
-                      edit((d) => ({
+                      props.editField((d) => ({
                         ...d,
                         material: {
                           ...d.material,
@@ -251,6 +251,7 @@ export function MilestoneTimeline(props: Props) {
                 <MilestoneIconButton
                   className="wb-ml-remove"
                   label={`移除 ${f.title || '新特性'}`}
+                  disabled={!enabled}
                   onClick={() => props.remove(f)}
                 >
                   <Trash2 size={14} />
@@ -278,7 +279,7 @@ export function MilestoneTimeline(props: Props) {
                     style={{ left, top: kind === 'pre' ? 8 : 56 }}
                     title={editing ? '拖到版本时间窗口；Shift + 左右键移动' : '进入对应版本'}
                     onPointerDown={(e) => {
-                      if (!editing || !versions.length || e.button !== 0) {
+                      if (!enabled || !versions.length || e.button !== 0) {
                         return
                       }
                       pointer.current = {
@@ -330,7 +331,7 @@ export function MilestoneTimeline(props: Props) {
                     }}
                     onKeyDown={(e) => {
                       if (
-                        !editing ||
+                        !enabled ||
                         !versions.length ||
                         !e.shiftKey ||
                         !['ArrowLeft', 'ArrowRight'].includes(e.key)
@@ -374,7 +375,26 @@ export function MilestoneTimeline(props: Props) {
             </div>
           </div>
         ))}
-        {!features.length && <div className="wb-ml-empty">本月尚未安排特性</div>}
+        {!features.length && (
+          <div className="wb-ml-empty-row">
+            <div className="wb-ml-label">{versions.length ? '还没有特性' : '先登记版本'}</div>
+            <div className="wb-ml-track wb-ml-empty-grid" style={{ width: canvasWidth }}>
+              <span>
+                {versions.length
+                  ? '在下方添加特性，拖动安排 Pre / Release。'
+                  : '登记名称和日期后，在这里安排特性。'}
+              </span>
+            </div>
+          </div>
+        )}
+        {editing && versions.length > 0 && (
+          <div className="wb-ml-add-feature">
+            <Button variant="ghost" size="xs" disabled={!enabled} onClick={props.addFeature}>
+              <Plus size={13} />
+              添加特性
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )
