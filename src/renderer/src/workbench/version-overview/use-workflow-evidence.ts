@@ -5,6 +5,7 @@ import { readWorkflowEvidence, workflowReferences } from './read-workflow-eviden
 import type { WorkflowEvidence } from './workflow-evidence'
 import { nativeTaskReferenceReader } from '../native-task-port'
 import { useAppStore } from '@/store'
+import { taskKey } from './feature-model'
 
 const cache = new Map<string, WorkflowEvidence>()
 const requests = new Map<string, Promise<WorkflowEvidence>>()
@@ -22,9 +23,21 @@ function load(key: string, catalog: VersionCatalogState, plan: PlanningMaterial,
   const previous = cache.get(key)
   const request = readWorkflowEvidence(catalog, plan, force)
     .then((value) => {
+      const invalidReports = new Map(
+        value.tasks
+          .filter((task) => task.reportProblem)
+          .map((task) => [taskKey(task.reference), task])
+      )
       const next =
         value.problems.length && previous
-          ? { ...previous, problems: value.problems, stale: true }
+          ? {
+              ...previous,
+              tasks: previous.tasks.map(
+                (task) => invalidReports.get(taskKey(task.reference)) ?? task
+              ),
+              problems: value.problems,
+              stale: true
+            }
           : value
       if (generations.get(key) === generation) {
         cache.set(key, next)

@@ -29,12 +29,12 @@ export function WorkflowProductivity({
         reference,
         title: '',
         issueUrl: '',
-        reports: [],
+        feedback: null,
         problems: []
       }))
     : []
   const metrics = summarizeWorkflow(evidence.value?.tasks ?? empty)
-  const readable = evidence.value?.tasks.filter((task) => task.reports.length) ?? []
+  const readable = evidence.value?.tasks.filter((task) => task.feedback) ?? []
   return (
     <section className="bwo-goal" aria-label="AI workflow 生产力">
       <div className="bwo-workflow-heading">
@@ -108,22 +108,30 @@ export function WorkflowProductivity({
               {metric.label}：{metric.samples} 项有结论 · {metric.unknown} 项未知
             </p>
           ))}
+          {evidence.value.tasks
+            .filter((task) => task.reportProblem)
+            .map((task) => (
+              <p
+                key={`${task.reference.provider}:${task.reference.repository}:${task.reference.number}`}
+              >
+                #{task.reference.number}：{task.reportProblem}
+              </p>
+            ))}
           {readable.map((task) => (
             <p
               key={`${task.reference.provider}:${task.reference.repository}:${task.reference.number}`}
               className="mt-2"
             >
               #{task.reference.number}
-              {task.reports.map((item) => (
+              {task.feedback && (
                 <button
                   className="bwo-link ml-3"
-                  key={item.revision}
-                  onClick={() => openEvidenceUrl(item.url)}
-                  title={`方法：${item.report.method}；六项原始记录见来源评论`}
+                  onClick={() => openEvidenceUrl(task.feedback!.url)}
+                  title={`方法：${task.feedback.report.method}；六项原始记录见来源评论`}
                 >
                   指标评论 ↗
                 </button>
-              ))}
+              )}
             </p>
           ))}
           {evidence.value.problems.map((problem) => (

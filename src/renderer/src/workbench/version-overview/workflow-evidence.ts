@@ -9,7 +9,8 @@ export type WorkflowTaskReport = {
   reference: CycleTaskReference
   title: string
   issueUrl: string
-  reports: { report: WorkflowReport; url: string; revision: string }[]
+  feedback: { report: WorkflowReport; url: string; revision: string } | null
+  reportProblem?: string
   problems: string[]
 }
 export type WorkflowEvidence = {
@@ -46,11 +47,10 @@ export function workflowMetricDisplay(metric: WorkflowMetricSummary) {
   return {
     value: metric.samples ? `${metric.involved}/${metric.rounds}/${metric.samples}` : '未知',
     caption,
-    hint: `${detail} 三个数依次为：${caption}。同一 Issue 只计一次；第三个数仅含本指标有明确记录且覆盖完整的任务，包括明确为零的任务。有报告但缺结论、覆盖不足或冲突的任务不计入。${metric.key === 'initial' ? '开工额外输入按任务记 0 或 1，不累计消息条数，因此前两个数相同。' : ''}`
+    hint: `${detail} 三个数依次为：${caption}。一个任务对应一份 PR 交付报告；第三个数仅含本指标有明确记录且覆盖完整的任务，包括明确为零的任务。有报告但缺结论、覆盖不足或报告不唯一的任务不计入。${metric.key === 'initial' ? '开工额外输入按任务记 0 或 1，不累计消息条数，因此前两个数相同。' : ''}`
   }
 }
 
-/** One Issue contributes at most once per metric; disagreeing reports are not added. */
 export function summarizeWorkflow(tasks: WorkflowTaskReport[]): WorkflowMetricSummary[] {
   return workflowFields.map(([key, label, hint]) => {
     let samples = 0,
@@ -58,38 +58,24 @@ export function summarizeWorkflow(tasks: WorkflowTaskReport[]): WorkflowMetricSu
       rounds = 0,
       rejections = 0
     for (const task of tasks) {
-      if (task.problems.length) {
+      if (task.problems.length || !task.feedback) {
         continue
       }
-      let incomplete = false
-      const values = new Map<string, { count: number; occurred: boolean; rejections: number }>()
-      for (const { report } of task.reports) {
-        const covered =
-          key === 'initial'
-            ? report.coverage.initial
-            : key === 'rework'
-              ? report.coverage.review
-              : report.coverage.process
-        const metric = report.metrics.find((item) => item.key === key)
-        if (!covered || metric?.count === null || metric?.occurred === null || !metric) {
-          incomplete = true
-          continue
-        }
-        const value = {
-          count: metric.count,
-          occurred: metric.occurred,
-          rejections: metric.rejections ?? 0
-        }
-        values.set(JSON.stringify(value), value)
-      }
-      if (incomplete || values.size !== 1) {
+      const { report } = task.feedback
+      const covered =
+        key === 'initial'
+          ? report.coverage.initial
+          : key === 'rework'
+            ? report.coverage.review
+            : report.coverage.process
+      const metric = report.metrics.find((item) => item.key === key)
+      if (!covered || !metric || metric.count === null || metric.occurred === null) {
         continue
       }
-      const value = [...values.values()][0]!
       samples++
-      involved += Number(value.occurred)
-      rounds += value.count
-      rejections += value.rejections
+      involved += Number(metric.occurred)
+      rounds += metric.count
+      rejections += metric.rejections ?? 0
     }
     return {
       key,

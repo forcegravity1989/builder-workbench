@@ -41,7 +41,7 @@ export async function readWorkflowEvidence(
       reference,
       title: `#${reference.number}`,
       issueUrl: '',
-      reports: [],
+      feedback: null,
       problems: []
     }
     if (!value) {
@@ -79,11 +79,16 @@ export async function readWorkflowEvidence(
         if (report.kind !== 'ready' || !sameWorkflowIssue(report.issueUrl, result.issueUrl)) {
           continue
         }
-        result.reports.push({
+        if (result.feedback) {
+          result.feedback = null
+          result.reportProblem = '交付报告不唯一，未计入指标；请在本次交付 PR 保留一份更新中的报告'
+          return result
+        }
+        result.feedback = {
           report,
           url: comment.url ?? pull.url,
           revision: JSON.stringify([pull.url, comment.id, comment.body])
-        })
+        }
       }
     }
     return result
