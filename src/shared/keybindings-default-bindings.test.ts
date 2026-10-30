@@ -437,4 +437,40 @@ describe('keybindings', () => {
       })
     ).toBe(true)
   })
+
+  it('binds board annotation mode toggle to Alt+A without touching Mod+Alt chords', () => {
+    for (const platform of ['darwin', 'linux', 'win32'] as const) {
+      expect(getEffectiveKeybindingsForAction('workbench.toggleAnnotationMode', platform)).toEqual([
+        'Alt+A'
+      ])
+    }
+
+    const altA = { key: 'a', code: 'KeyA', meta: false, control: false, alt: true, shift: false }
+    expect(keybindingMatchesAction('workbench.toggleAnnotationMode', altA, 'win32')).toBe(true)
+    // Why: Mod+Alt+A belongs to floatingTerminal.toggle; the bare-Alt default
+    // must not swallow the floating-terminal chord.
+    const modAltA = { ...altA, meta: true }
+    expect(keybindingMatchesAction('workbench.toggleAnnotationMode', modAltA, 'darwin')).toBe(false)
+    expect(keybindingMatchesAction('floatingTerminal.toggle', modAltA, 'darwin')).toBe(true)
+    // Why: macOS Option+A composes to å, so the chord resolves through the
+    // physical-code fallback (same mechanism as Alt+Z word wrap).
+    expect(
+      keybindingMatchesAction(
+        'workbench.toggleAnnotationMode',
+        { key: 'å', code: 'KeyA', meta: false, control: false, alt: true, shift: false },
+        'darwin'
+      )
+    ).toBe(true)
+
+    const definition = getKeybindingDefinition('workbench.toggleAnnotationMode')
+    expect(definition?.group).toBe('Workbench')
+    expect(definition?.scope).toBe('workbench')
+    // Why: conflictGroup 'global' makes Settings warn when a rebind shadows
+    // global chords instead of silently claiming them.
+    expect(definition?.conflictGroup).toBe('global')
+    expect(findKeybindingConflicts('darwin', { 'zoom.in': ['Alt+A'] })).toContainEqual({
+      binding: 'Alt+A',
+      actionIds: expect.arrayContaining(['zoom.in', 'workbench.toggleAnnotationMode'])
+    })
+  })
 })

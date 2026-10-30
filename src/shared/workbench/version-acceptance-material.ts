@@ -77,6 +77,22 @@ export const AcceptanceDemoEnvironmentSchema = z.discriminatedUnion('kind', [
 
 export type AcceptanceDemoEnvironment = z.infer<typeof AcceptanceDemoEnvironmentSchema>
 
+/**
+ * The version's booked acceptance meeting (#471): the model generates a full
+ * preview, creates the meeting via welink-cli after human confirmation, and
+ * writes the result back. Absent means not booked; rescheduling or cancelling
+ * goes through the same preview-then-execute flow in the session. Model-written,
+ * so it stays out of the human guard and CAS merge takes the remote value.
+ */
+export const AcceptanceMeetingSchema = z.strictObject({
+  title: z.string().trim().min(1),
+  time: z.string().trim().min(1),
+  id: z.string().trim().min(1).optional(),
+  link: z.string().trim().min(1).optional()
+})
+
+export type AcceptanceMeeting = z.infer<typeof AcceptanceMeetingSchema>
+
 export const AcceptanceMaterialSchema = z
   .strictObject({
     ...Identity,
@@ -86,6 +102,8 @@ export const AcceptanceMaterialSchema = z
     // Version-level demo environment written back after deployment; absent means
     // not deployed. Replaces the retired per-goal deliveries.
     demoEnv: AcceptanceDemoEnvironmentSchema.optional(),
+    // Version-level booked acceptance meeting (#471); absent means not booked.
+    meeting: AcceptanceMeetingSchema.optional(),
     preparationReview: z
       .strictObject({
         source: Id,

@@ -13446,6 +13446,18 @@
                 }
               }
             }
+          },
+          "annotate": {
+            "browser": {
+              "page": {
+                "annotation": {
+                  "tray": {
+                    "collapse": "收起批注",
+                    "expand": "展开批注"
+                  }
+                }
+              }
+            }
           }
         }
       },

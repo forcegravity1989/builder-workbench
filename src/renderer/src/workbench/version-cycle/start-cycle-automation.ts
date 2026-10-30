@@ -1,17 +1,20 @@
 import {
   listAutomationsForOwner,
   listAutomationRunsForOwner,
-  runAutomationNowForOwner
+  runAutomationNowForOwner,
+  updateAutomationForOwner
 } from '@/components/automations/automation-scoped-list-client'
 import { toScopedAutomationHostRows } from '@/components/automations/automation-host-cache-rows'
 import { openAutomationRunTerminal } from '@/components/automations/automation-run-workspace-action'
+import type { TuiAgent } from '../../../../shared/tui-agent'
 import { ownerKey } from '../../../../shared/automation-owner-key'
 import type { CycleScope } from './ports'
 import { cycleAutomationOwner } from './ensure-cycle-automation'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
 
 /**
- * Manual workflow launches use the saved native automation and reveal only that run.
+ * Manual workflow launches save the current BW default agent on the native automation
+ * before running it, then reveal only that run.
  * `oneShotPrompt` is this run's additional context (e.g. material problems): the host
  * appends it to the saved prompt in one delivery and never writes it back to the record.
  */
@@ -19,6 +22,7 @@ export async function startCycleAutomation(
   scope: CycleScope,
   worktreeId: string,
   automationId: string,
+  agent: TuiAgent,
   oneShotPrompt?: string
 ) {
   const requestedOwner = cycleAutomationOwner(scope)
@@ -40,6 +44,10 @@ export async function startCycleAutomation(
     }
   }
   assertCurrent()
+  if (automation.agentId !== agent) {
+    await updateAutomationForOwner(owner, automation.id, { agentId: agent })
+    assertCurrent()
+  }
   let run = await runAutomationNowForOwner(owner, automation.id, oneShotPrompt)
   const runId = run.id
   const deadline = Date.now() + 30_000

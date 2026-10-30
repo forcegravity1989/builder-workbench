@@ -6,12 +6,10 @@ import {
   PLAN_RIGHT_MIN_PX,
   planChatRatioFromWidth,
   planChatWidthFromRatio,
-  PLAN_CHAT_COLLAPSED_RAIL_PX,
   PLAN_CHAT_REVEAL_EVENT,
   PLAN_CHAT_TOGGLE_EVENT,
   readPlanChatCollapsed,
   readPlanChatRatio,
-  writePlanChatCollapsed,
   writePlanChatRatio
 } from './plan-column-resize'
 
@@ -20,16 +18,13 @@ export function usePlanColumnResize(enabled = true): {
   chatColRef: React.RefObject<HTMLDivElement | null>
   isResizing: boolean
   chatCollapsed: boolean
-  toggleChatCollapsed: () => void
   onResizeStart: (event: React.MouseEvent) => void
 } {
   const bodyRef = useRef<HTMLDivElement | null>(null)
   const [ratio, setRatio] = useState(readPlanChatRatio)
   const [chatCollapsed, setChatCollapsed] = useState(readPlanChatCollapsed)
   const [containerWidth, setContainerWidth] = useState(0)
-  const chatWidth = chatCollapsed
-    ? PLAN_CHAT_COLLAPSED_RAIL_PX
-    : planChatWidthFromRatio(ratio, containerWidth)
+  const chatWidth = planChatWidthFromRatio(ratio, containerWidth)
   const maxWidth = Math.max(PLAN_CHAT_MIN_PX, containerWidth - PLAN_RIGHT_MIN_PX)
 
   const setWidth = useCallback(
@@ -57,13 +52,6 @@ export function usePlanColumnResize(enabled = true): {
     deltaSign: 1,
     setWidth
   })
-
-  const toggleChatCollapsed = useCallback(() => {
-    const next = !chatCollapsed
-    setChatCollapsed(next)
-    writePlanChatCollapsed(next)
-    window.dispatchEvent(new Event(PLAN_CHAT_TOGGLE_EVENT))
-  }, [chatCollapsed])
 
   useEffect(() => {
     const reveal = () => setChatCollapsed(false)
@@ -108,7 +96,6 @@ export function usePlanColumnResize(enabled = true): {
     chatColRef,
     isResizing,
     chatCollapsed,
-    toggleChatCollapsed,
     onResizeStart: handleResizeStart
   }
 }

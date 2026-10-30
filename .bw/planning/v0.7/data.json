@@ -62,12 +62,6 @@
     {
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 334,
-      "goalId": "G2"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 372,
       "goalId": "G2"
     },

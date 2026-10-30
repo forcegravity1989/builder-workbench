@@ -184,7 +184,8 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 10px;
-  flex-shrink: 0;
+  max-width: 100%;
+  min-width: 0;
 }
 .g3-text-button {
   display: inline-flex;
@@ -202,30 +203,50 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
   background: var(--accent);
   color: var(--accent-foreground);
 }
-.g3-session-chip {
-  display: inline-flex;
+.g3-header-tools {
+  display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 4px;
   border: 1px solid var(--border);
-  background: none;
-  padding: 4px 10px;
-  border-radius: var(--radius-md);
-  color: var(--muted-foreground);
-  font-size: 12px;
-  white-space: nowrap;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
 }
-.g3-session-chip:hover {
+.g3-header-tools .g3-action-button {
+  min-height: 28px;
+  background: var(--card);
+  color: var(--foreground);
+}
+.g3-header-tools .g3-action-button:hover:not(:disabled) {
   background: var(--accent);
-  color: var(--accent-foreground);
   border-color: var(--foreground);
+  color: var(--accent-foreground);
+}
+.g3-header-tools .g3-action-button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.g3-header-tools .g3-action-button svg {
+  color: inherit;
 }
 .g3-branch {
+  max-width: 100%;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: 5px;
   color: var(--muted-foreground);
   font-size: 12px;
   white-space: nowrap;
+}
+
+.g3-branch > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ===== 顶部阶段导航(无灯,只做同页定位) ===== */
@@ -363,15 +384,13 @@ html[data-skin='ds'] .vp-board .wb-btn:hover:not(:disabled) {
    会中随时进出批注模式、未发送角标常驻可见；取代第八轮「入口贴对象」取舍）。
    带文字标签而非纯图标——评审会中要一眼找到入口；开启态强调色描边 + 文字，
    避免整块底色盖住页头动作组。 */
-.g3-annotate-entry {
-  border: 1px solid transparent;
-}
 .g3-annotate-entry.g3-mode-on {
   border-color: var(--color-accent, #d97757);
   color: var(--color-accent, #d97757);
   background: none;
 }
 .g3-annotate-entry.g3-mode-on:hover:not(:disabled) {
+  border-color: var(--color-accent, #d97757);
   background: var(--accent);
   color: var(--accent-foreground);
 }

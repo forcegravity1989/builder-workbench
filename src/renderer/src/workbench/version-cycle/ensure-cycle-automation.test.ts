@@ -112,7 +112,13 @@ it('refreshes a stale BW-owned prompt in place and never recreates the entry', a
 
 it('keeps an up-to-date entry untouched', async () => {
   rpcWith([
-    { id: 'a1', creationKey: KEY, name: '被人改过名', prompt: 'CYCLE-PROMPT', workspaceId: null } as Automation
+    {
+      id: 'a1',
+      creationKey: KEY,
+      name: '被人改过名',
+      prompt: 'CYCLE-PROMPT',
+      workspaceId: null
+    } as Automation
   ])
   await expect(ensureCycleAutomation(scope, FIXED_ID, 'claude')).resolves.toEqual({
     status: 'exists',
@@ -217,10 +223,16 @@ it('creates once when concurrent callers share one identity', async () => {
   expect(createCalls()).toHaveLength(1)
 })
 
-it('runs the saved automation with its SSH owner and opens only the matching run when ready', async () => {
+it('saves the current default agent with its SSH owner before running and opens only the matching run', async () => {
   vi.useFakeTimers()
   setState({ sshTargetGenerations: new Map([['server', 7]]) })
-  const automation = { id: 'a1', workspaceMode: 'existing', workspaceId: FIXED_ID }
+  const automation = {
+    id: 'a1',
+    agentId: 'claude',
+    workspaceMode: 'existing',
+    workspaceId: FIXED_ID
+  }
+  let rejectAgentUpdate = false
   const pending = { id: 'run-1', automationId: 'a1', status: 'pending', workspaceId: FIXED_ID }
   const ready = { ...pending, status: 'dispatched', terminalPaneKey: 'pane', terminalPtyId: 'pty' }
   test.openRun.mockImplementation((run) => run === ready)
@@ -236,6 +248,12 @@ it('runs the saved automation with its SSH owner and opens only the matching run
         ]
       }
     }
+    if (method === 'automation.update') {
+      if (rejectAgentUpdate) {
+        throw new Error('工具保存失败')
+      }
+      return { automation: { ...automation, agentId: 'codex' } }
+    }
     if (method === 'automation.runNow') {
       return { run: pending }
     }
@@ -245,7 +263,12 @@ it('runs the saved automation with its SSH owner and opens only the matching run
     throw new Error(`unexpected ${method}`)
   })
   try {
-    const running = startCycleAutomation({ ...scope, hostId: 'ssh:server' }, FIXED_ID, 'a1')
+    const running = startCycleAutomation(
+      { ...scope, hostId: 'ssh:server' },
+      FIXED_ID,
+      'a1',
+      'codex'
+    )
     await vi.advanceTimersByTimeAsync(1000)
     await running
     expect(test.rpc).toHaveBeenCalledWith(
@@ -257,8 +280,25 @@ it('runs the saved automation with its SSH owner and opens only the matching run
       },
       expect.anything()
     )
+    expect(updateCalls()).toEqual([
+      {
+        id: 'a1',
+        updates: { agentId: 'codex' },
+        expectedOwner: { selector: { kind: 'ssh', targetId: 'server', targetGeneration: 7 } }
+      }
+    ])
+    const methods = test.rpc.mock.calls.map((call) => call[1])
+    expect(methods.indexOf('automation.update')).toBeLessThan(methods.indexOf('automation.runNow'))
     expect(test.openRun).toHaveBeenLastCalledWith(ready, 'ssh:server')
     expect(test.rpc.mock.calls.filter((call) => call[1] === 'automation.runNow')).toHaveLength(1)
+    test.rpc.mockClear()
+    test.openRun.mockClear()
+    rejectAgentUpdate = true
+    await expect(
+      startCycleAutomation({ ...scope, hostId: 'ssh:server' }, FIXED_ID, 'a1', 'codex')
+    ).rejects.toThrow('工具保存失败')
+    expect(test.rpc.mock.calls.some((call) => call[1] === 'automation.runNow')).toBe(false)
+    expect(test.openRun).not.toHaveBeenCalled()
   } finally {
     vi.useRealTimers()
   }
@@ -266,7 +306,12 @@ it('runs the saved automation with its SSH owner and opens only the matching run
 
 it('forwards one-shot context into the saved automation run params', async () => {
   setState({ sshTargetGenerations: new Map([['server', 7]]) })
-  const automation = { id: 'a1', workspaceMode: 'existing', workspaceId: FIXED_ID }
+  const automation = {
+    id: 'a1',
+    agentId: 'codex',
+    workspaceMode: 'existing',
+    workspaceId: FIXED_ID
+  }
   const ready = {
     id: 'run-1',
     automationId: 'a1',
@@ -297,8 +342,10 @@ it('forwards one-shot context into the saved automation run params', async () =>
     { ...scope, hostId: 'ssh:server' },
     FIXED_ID,
     'a1',
+    'codex',
     '本次处理请求：修复 v0.3 数据文件'
   )
+  expect(updateCalls()).toHaveLength(0)
   const runNowCall = test.rpc.mock.calls.find((call) => call[1] === 'automation.runNow')
   expect(runNowCall?.[2]).toMatchObject({
     id: 'a1',
