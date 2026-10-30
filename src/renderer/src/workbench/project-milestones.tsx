@@ -316,13 +316,13 @@ export function ProjectMilestones({
           {error}
         </p>
       )}
-      {editing && problems.length > 0 && (
+      {editing && !state.sourceConflict && problems.length > 0 && (
         <p className="wb-ml-alert" role="status">
           {problems.slice(0, 3).join('；')}
           {problems.length > 3 ? `（另有 ${problems.length - 3} 项）` : ''}
         </p>
       )}
-      {editing && frozenProblems.length > 0 && (
+      {editing && !state.sourceConflict && frozenProblems.length > 0 && (
         <div className="wb-ml-notice">
           <span>
             还原已锁定版本的改动；涉及这些版本的新增特性整行移除，已有特性的其他未来排期保留。可撤销。

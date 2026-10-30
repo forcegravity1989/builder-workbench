@@ -97,7 +97,7 @@ export function useMilestonePlanning(
             ...previous,
             data,
             sourceConflict:
-              '其他地方已调整规划，当前输入保留。核对最新材料后可放弃本次修改重新编辑；不会覆盖模型或其他人的修改。'
+              '当前显示本机草案，项目规划已有更新。草案已保留；可用顶部“放弃本次修改”载入最新规划。'
           })
         }
       } else {
