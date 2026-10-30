@@ -29,9 +29,24 @@ export function ReferencePanel({ close }) {
   return (
     <Modal title="设计依据" close={close}>
       <p className="muted">
-        原型注释: 2026-10-29
+        原型注释: 2026-10-30
         核对官方资料。本稿借鉴交互思路，产品规则以人工澄清与仓内原则为准；此入口仅供原型评审，不进入产品界面。
       </p>
+      <section className="ml-reference">
+        <h3>
+          <a
+            href="https://github.com/forcegravity1989/builder-workbench/pull/320"
+            target="_blank"
+            rel="noreferrer"
+          >
+            PR #320 · 日排期与预置工作日历 ↗
+          </a>
+        </h3>
+        <p>
+          原型注释:
+          借用等宽日轴、拖动两端调整和班/休标记。真实日历样本尚未提供，缺配置时使用普通周末，不推算加班日；本稿保留原有就地规划旅程。
+        </p>
+      </section>
       <section className="ml-reference">
         <h3>时间轴组件取舍</h3>
         <p>原型注释: 本稿沿 React DOM 与设计系统整理泳道，未引入新图表依赖。</p>
@@ -43,7 +58,7 @@ export function ReferencePanel({ close }) {
           >
             ECharts custom series ↗
           </a>{' '}
-          能绘制时间图形，但字段编辑、行排序、版本吸附和撤销仍需自行接入；本轮不替换编辑器。
+          能绘制时间图形，但字段编辑、行排序、日粒度拖动和撤销仍需自行接入；本轮不替换编辑器。
         </p>
         <p>
           <a
@@ -113,8 +128,8 @@ export function ReferencePanel({ close }) {
         </p>
       </section>
       <p>
-        原型注释: 本轮五步旅程来自人工澄清：月度选择 → Pre版本 → 部分用户试用 → Release版本交付 →
-        Issue 持续改善。
+        原型注释: 本轮旅程：月度选择 → 首版 Plan / Design / Build / Test / Deploy → 后续版本
+        Maintain；反馈统一进入 Issue。Deploy 实际时间暂未跟踪。
       </p>
       <footer>
         <a className="btn btn-secondary" href="spec.md" target="_blank" rel="noreferrer">
@@ -129,8 +144,7 @@ export function ReferencePanel({ close }) {
 }
 
 export function VersionBridge({ item, version, plan, close }) {
-  const pre = item?.pre === version,
-    release = item?.release === version
+  const delivery = item?.deliveries.find((d) => d.versionId === version)
   const v = plan.versions.find((entry) => entry.id === version)
   return (
     <Modal title={`${v.name || '未命名版本'} · 版本总览`} close={close} wide>
@@ -142,26 +156,24 @@ export function VersionBridge({ item, version, plan, close }) {
       <div className="ml-source-columns">
         <section>
           <h3>里程碑安排</h3>
-          {pre && (
-            <p>
-              <b>Pre版本：</b>
-              {v.start} — {v.end}
-            </p>
+          {delivery ? (
+            <>
+              <p>{delivery.stages.map((s) => s.phase).join(' → ')}</p>
+              <p>
+                {v.start} — {v.end}
+              </p>
+              <p className="muted">负责人：{item.owner}</p>
+            </>
+          ) : (
+            <p>本版未关联当前特性。</p>
           )}
-          {release && (
-            <p>
-              <b>Release版本：</b>
-              {v.start} — {v.end}
-            </p>
-          )}
-          {!pre && !release && <p>本版未关联当前特性。</p>}
-          {(pre || release) && <p className="muted">负责人：{item.owner}</p>}
         </section>
         <section>
           <h3>版本计划与实际交付</h3>
           <p>尚未读取</p>
           <p className="muted">
-            项目版本发布不代表本特性已交付Pre或Release，实际范围与验收以版本材料为准。
+            本版范围、实际阶段与人工验收以版本材料为准。Deploy 尚未跟踪；Maintain
+            需有明确的后续版本安排。
           </p>
         </section>
       </div>

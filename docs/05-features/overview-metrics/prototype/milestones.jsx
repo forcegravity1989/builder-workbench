@@ -1,24 +1,17 @@
+import { InlineField } from './milestones-fields.jsx'
+import { Timeline } from './milestones-timeline.jsx'
+import { defaultStages } from './milestones-sdlc.js'
 import Undo2 from 'lucide-react/dist/esm/icons/undo-2.js'
 import Redo2 from 'lucide-react/dist/esm/icons/redo-2.js'
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw.js'
 import Flag from 'lucide-react/dist/esm/icons/flag.js'
-import {
-  calendarFor,
-  latestMonth,
-  planWeek,
-  dayMs,
-  dayWidth,
-  labelWidth,
-  at,
-  iso
-} from './milestones-calendar.js'
+import { availableWeek, latestMonth, planWeek } from './milestones-calendar.js'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import {
   clone,
   loadCases,
   freshCases,
   storageKey,
-  moveDelivery,
   changesBetween,
   incomplete,
   currentDay
@@ -41,86 +34,8 @@ const {
   createRoot,
   BookOpen,
   CalendarRange,
-  Plus,
-  RefreshCw,
-  ExternalLink,
-  X
+  RefreshCw
 } = window.BWPrototypeDependencies
-const shortDate = (date) => date.slice(5).replace('-', '/')
-function InlineField({
-  value,
-  label,
-  placeholder,
-  change,
-  autoFocus = false,
-  className = '',
-  required = true
-}) {
-  const started = useRef(value)
-  return (
-    <input
-      className={`ml-inline ${className}`}
-      aria-label={label}
-      placeholder={placeholder}
-      value={value}
-      autoFocus={autoFocus}
-      aria-invalid={required && !value.trim()}
-      onFocus={() => {
-        started.current = value
-      }}
-      onInput={(e) => change(e.currentTarget.value)}
-      onBlur={(e) => change(e.currentTarget.value.trim())}
-      onKeyDown={(e) => {
-        if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) {
-          return
-        }
-        if (e.key === 'Enter') {
-          e.currentTarget.blur()
-        }
-        if (e.key === 'Escape') {
-          e.stopPropagation()
-          e.currentTarget.blur()
-          change(started.current)
-        }
-      }}
-    />
-  )
-}
-function WeekName({ week, commit }) {
-  const [value, setValue] = useState('')
-  const cancelled = useRef(false)
-  return (
-    <input
-      className="ml-inline ml-week-name"
-      aria-label={`版本名称 ${week.start}`}
-      placeholder="版本名（自动）"
-      value={value}
-      onFocus={() => {
-        cancelled.current = false
-      }}
-      onChange={(e) => setValue(e.target.value)}
-      onBlur={() => {
-        if (!cancelled.current && value.trim()) {
-          commit(value.trim())
-        }
-        setValue('')
-      }}
-      onKeyDown={(e) => {
-        if (e.nativeEvent.isComposing) {
-          return
-        }
-        if (e.key === 'Enter') {
-          e.currentTarget.blur()
-        }
-        if (e.key === 'Escape') {
-          cancelled.current = true
-          setValue('')
-          e.currentTarget.blur()
-        }
-      }}
-    />
-  )
-}
 function MilestoneAxis({ plan, planning, changeMilestone, navigate, navigation }) {
   const scroll = useRef(null),
     pan = useRef(null)
@@ -201,385 +116,6 @@ function MilestoneAxis({ plan, planning, changeMilestone, navigate, navigation }
         ))}
       </div>
     </nav>
-  )
-}
-function Timeline({
-  rows,
-  plan,
-  planning,
-  navigation,
-  onChangeFeature,
-  onRenameVersion,
-  onDelete,
-  onMove,
-  onVersion,
-  onReorder,
-  newFeature,
-  onAdd,
-  onNameWeek
-}) {
-  const calendar = calendarFor(plan),
-    axisStart = calendar.start,
-    axisEnd = calendar.end
-  const totalDays = (axisEnd - axisStart + dayMs) / dayMs
-  const xFor = (date) => ((at(date) - axisStart) / dayMs) * dayWidth
-  const centerFor = (v) => (xFor(v.start) + xFor(v.end) + dayWidth) / 2
-  const trackWidth = totalDays * dayWidth
-  const scroll = useRef(null),
-    lastViewport = useRef(null),
-    pan = useRef(null),
-    pointer = useRef(null),
-    suppress = useRef(false),
-    ordering = useRef(null)
-  const [drag, setDrag] = useState(null),
-    [rowDrop, setRowDrop] = useState(null)
-  const navigationLeft = Math.max(0, xFor(navigation.date) - 16)
-  useEffect(() => {
-    const previous = lastViewport.current
-    if (!previous || previous.navigation !== navigation) {
-      scroll.current?.scrollTo({ left: navigationLeft, top: 0, behavior: 'smooth' })
-    } else if (scroll.current && previous.start !== axisStart) {
-      scroll.current.scrollLeft += ((previous.start - axisStart) / dayMs) * dayWidth
-    }
-    lastViewport.current = { navigation, start: axisStart }
-  }, [navigation, navigationLeft, axisStart])
-  const versions = plan.versions.filter((v) => v.start && v.end)
-  const emptyWeeks = calendar.weeks.filter(
-    (w) => !versions.some((v) => v.start <= w.end && v.end >= w.start)
-  )
-  const targets = [...versions, ...emptyWeeks].sort((a, b) => a.start.localeCompare(b.start))
-  const byId = Object.fromEntries(targets.map((v) => [v.id, v]))
-  const down = (e, item, kind) => {
-    suppress.current = false
-    if (!planning || e.button !== 0) {
-      return
-    }
-    e.currentTarget.focus()
-    e.currentTarget.setPointerCapture(e.pointerId)
-    pointer.current = { x: e.clientX, id: item.id, kind, target: item[kind], moved: false }
-  }
-  const move = (e) => {
-    const p = pointer.current
-    if (!p) {
-      return
-    }
-    if (Math.abs(e.clientX - p.x) > 5) {
-      p.moved = true
-    }
-    if (!p.moved) {
-      return
-    }
-    const r = scroll.current.getBoundingClientRect()
-    if (e.clientX > r.right - 30) {
-      scroll.current.scrollLeft += 12
-    }
-    if (e.clientX < r.left + labelWidth + 30) {
-      scroll.current.scrollLeft -= 12
-    }
-    const x = e.clientX - r.left + scroll.current.scrollLeft - labelWidth
-    p.target = targets.reduce((a, b) =>
-      Math.abs(centerFor(a) - x) < Math.abs(centerFor(b) - x) ? a : b
-    ).id
-    setDrag({ ...p })
-  }
-  const up = () => {
-    const p = pointer.current
-    if (!p) {
-      return
-    }
-    pointer.current = null
-    setDrag(null)
-    suppress.current = p.moved
-    if (p.moved) {
-      onMove(p.id, p.kind, p.target)
-    }
-  }
-  const cancel = () => {
-    pointer.current = null
-    setDrag(null)
-    suppress.current = false
-  }
-  return (
-    <div
-      className="ml-timeline-scroll"
-      ref={scroll}
-      role="region"
-      aria-label="特性泳道"
-      tabIndex={0}
-      onPointerDown={(e) => {
-        if (e.button !== 0 || e.target.closest('button,a,input,label')) {
-          return
-        }
-        pan.current = { x: e.clientX, left: scroll.current.scrollLeft }
-        e.currentTarget.setPointerCapture(e.pointerId)
-      }}
-      onPointerMove={(e) => {
-        if (pan.current) {
-          scroll.current.scrollLeft = pan.current.left + pan.current.x - e.clientX
-        }
-      }}
-      onPointerUp={() => {
-        pan.current = null
-      }}
-      onPointerCancel={() => {
-        pan.current = null
-      }}
-    >
-      <div className="ml-timeline-canvas" style={{ width: labelWidth + trackWidth }}>
-        <div className="ml-version-row">
-          <div className="ml-sticky-label">特性 / 负责人</div>
-          <div className="ml-version-track">
-            {emptyWeeks.map((w) => (
-              <div
-                key={w.id}
-                className="ml-week-slot"
-                style={{ left: xFor(w.start), width: 5 * dayWidth }}
-              >
-                {planning ? (
-                  <WeekName week={w} commit={(name) => onNameWeek(w, name)} />
-                ) : (
-                  <span>周窗口</span>
-                )}
-                <small>
-                  {shortDate(w.start)}—{shortDate(w.end)}
-                </small>
-              </div>
-            ))}
-            {versions.map((v) => (
-              <div
-                key={v.id}
-                className={`ml-fixed-version ${currentDay >= v.start && currentDay <= v.end ? 'current' : ''}`}
-                style={{ left: xFor(v.start), width: xFor(v.end) - xFor(v.start) + dayWidth }}
-              >
-                {currentDay >= v.start && currentDay <= v.end && (
-                  <span className="ml-current-version" aria-label="当前日期所在版本">
-                    当前
-                  </span>
-                )}
-                {planning ? (
-                  <InlineField
-                    value={v.name}
-                    label={`版本名称 ${v.id}`}
-                    change={(name) => onRenameVersion(v.id, name)}
-                  />
-                ) : (
-                  <button onClick={() => onVersion(v.id)}>{v.name}</button>
-                )}
-                <small>
-                  {shortDate(v.start)}—{shortDate(v.end)}
-                </small>
-              </div>
-            ))}
-          </div>
-        </div>
-        {rows.map((item, index) => {
-          const pre = byId[drag?.id === item.id && drag.kind === 'pre' ? drag.target : item.pre]
-          const release =
-            byId[drag?.id === item.id && drag.kind === 'release' ? drag.target : item.release]
-          const stacked = pre && release && Math.abs(centerFor(pre) - centerFor(release)) < 148
-          const connection =
-            pre && release
-              ? stacked
-                ? `M ${centerFor(pre)} 44 V 49 H ${centerFor(release)} V 54`
-                : `M ${Math.min(centerFor(pre), centerFor(release)) + 69} 44 H ${Math.max(centerFor(pre), centerFor(release)) - 69}`
-              : null
-          return (
-            <div
-              key={item.id}
-              className={`ml-timeline-row ${stacked ? 'stacked' : ''} ${rowDrop?.id === item.id ? `ml-row-drop-${rowDrop.side}` : ''}`}
-              data-feature-id={item.id}
-              onDragOver={(e) => {
-                if (!ordering.current) {
-                  return
-                }
-                e.preventDefault()
-                e.dataTransfer.dropEffect = 'move'
-                const r = e.currentTarget.getBoundingClientRect()
-                setRowDrop({
-                  id: item.id,
-                  side: e.clientY > r.top + r.height / 2 ? 'after' : 'before'
-                })
-                const viewport = scroll.current.getBoundingClientRect()
-                if (e.clientY > viewport.bottom - 30) {
-                  scroll.current.scrollTop += 10
-                }
-                if (e.clientY < viewport.top + 100) {
-                  scroll.current.scrollTop -= 10
-                }
-              }}
-              onDrop={(e) => {
-                if (!ordering.current) {
-                  return
-                }
-                e.preventDefault()
-                const r = e.currentTarget.getBoundingClientRect()
-                onReorder(
-                  ordering.current,
-                  item.id,
-                  e.clientY > r.top + r.height / 2 ? 'after' : 'before'
-                )
-                ordering.current = null
-                setRowDrop(null)
-              }}
-            >
-              <div className="ml-sticky-label">
-                {planning ? (
-                  <>
-                    <div className="ml-feature-heading">
-                      <button
-                        className="ml-order-handle"
-                        draggable
-                        aria-label={`排序 ${item.title || '新特性'}`}
-                        title="拖动排序；Alt+上下键移动"
-                        onDragStart={(e) => {
-                          ordering.current = item.id
-                          e.dataTransfer.setData('text/plain', item.id)
-                          e.dataTransfer.effectAllowed = 'move'
-                        }}
-                        onDragEnd={() => {
-                          ordering.current = null
-                          setRowDrop(null)
-                        }}
-                        onKeyDown={(e) => {
-                          if (!e.altKey || !['ArrowUp', 'ArrowDown'].includes(e.key)) {
-                            return
-                          }
-                          e.preventDefault()
-                          const next = index + (e.key === 'ArrowUp' ? -1 : 1)
-                          if (rows[next]) {
-                            onReorder(item.id, rows[next].id, next < index ? 'before' : 'after')
-                          }
-                        }}
-                      >
-                        ⠿
-                      </button>
-                      <InlineField
-                        className="ml-feature-name"
-                        value={item.title}
-                        label={`特性名称 ${item.id}`}
-                        placeholder="特性名称"
-                        autoFocus={item.id === newFeature}
-                        change={(title) => onChangeFeature(item.id, { title })}
-                      />
-                    </div>
-                    <div className="ml-inline-owner">
-                      <InlineField
-                        value={item.owner}
-                        label={`负责人 ${item.title || '新特性'}`}
-                        placeholder="负责人"
-                        change={(owner) => onChangeFeature(item.id, { owner })}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <strong>{item.title}</strong>
-                    <small>{item.owner}</small>
-                  </>
-                )}
-              </div>
-              <div className="ml-track" style={{ width: totalDays * dayWidth }}>
-                {drag?.id === item.id && (
-                  <div
-                    className="ml-drop-target"
-                    style={{
-                      left: xFor(byId[drag.target].start),
-                      width: xFor(byId[drag.target].end) - xFor(byId[drag.target].start) + dayWidth
-                    }}
-                  />
-                )}
-                {connection && (
-                  <svg className="ml-delivery-link" aria-hidden="true">
-                    <path d={connection} />
-                  </svg>
-                )}
-                {['pre', 'release'].map((kind, i) => {
-                  const target =
-                      drag?.id === item.id && drag.kind === kind ? drag.target : item[kind],
-                    v = byId[target]
-                  if (!v) {
-                    return null
-                  }
-                  return (
-                    <button
-                      key={kind}
-                      className={`ml-delivery-node ${kind} ${planning ? 'editable' : ''} ${drag?.id === item.id && drag.kind === kind ? 'dragging' : ''}`}
-                      style={{ left: centerFor(v) - 69, top: stacked ? 10 + i * 44 : 27 }}
-                      aria-label={`${item.title || '新特性'} · ${kind === 'pre' ? 'Pre版本' : 'Release版本'} · ${v.name || '周窗口'}`}
-                      title={planning ? '拖动安排；Shift+左右键移动；点击进入版本' : '进入版本总览'}
-                      onPointerDown={(e) => down(e, item, kind)}
-                      onPointerMove={move}
-                      onPointerUp={up}
-                      onPointerCancel={cancel}
-                      onClick={(e) => {
-                        if (suppress.current) {
-                          suppress.current = false
-                          e.preventDefault()
-                          return
-                        }
-                        onVersion(item[kind], item)
-                      }}
-                      onKeyDown={(e) => {
-                        if (
-                          !planning ||
-                          !e.shiftKey ||
-                          !['ArrowLeft', 'ArrowRight'].includes(e.key)
-                        ) {
-                          return
-                        }
-                        e.preventDefault()
-                        const n =
-                          targets.findIndex((entry) => entry.id === item[kind]) +
-                          (e.key === 'ArrowLeft' ? -1 : 1)
-                        if (targets[n]) {
-                          onMove(item.id, kind, targets[n].id)
-                        }
-                      }}
-                    >
-                      <span>
-                        <i />
-                        {kind === 'pre' ? 'Pre版本' : 'Release版本'}
-                        <ExternalLink size={12} />
-                      </span>
-                      <small>{v.name || '周窗口'}</small>
-                    </button>
-                  )
-                })}
-              </div>
-              {planning && (
-                <div className="ml-row-actions">
-                  <IconAction
-                    label={`移除特性 ${item.title || '新特性'}`}
-                    icon={X}
-                    onClick={() => onDelete(item)}
-                  />
-                </div>
-              )}
-            </div>
-          )
-        })}
-        {!rows.length && (
-          <div className="ml-empty-lanes">
-            <div className="ml-sticky-label">还没有特性</div>
-            <div className="ml-empty-grid" style={{ width: trackWidth }}>
-              <span>添加特性后，直接拖动 Pre / Release 到周窗口。</span>
-            </div>
-          </div>
-        )}
-        {planning && (
-          <div className="ml-add-feature">
-            <button className="btn btn-ghost" onClick={onAdd}>
-              <Plus size={13} />
-              添加特性
-            </button>
-          </div>
-        )}
-        {Date.parse(`${currentDay}T00:00:00Z`) >= axisStart &&
-          Date.parse(`${currentDay}T00:00:00Z`) <= axisEnd && (
-            <div className="ml-now-line" style={{ left: labelWidth + xFor(currentDay) }} />
-          )}
-      </div>
-    </div>
   )
 }
 function App() {
@@ -682,37 +218,17 @@ function App() {
       ...p,
       features: p.features.map((f) => (f.id === id ? { ...f, ...patch } : f))
     }))
-  const move = (id, kind, target) => {
-    const week = calendarFor(state.draft).weeks.find((w) => w.id === target)
-    const used = week ? planWeek(state.draft, week) : null
-    const result = moveDelivery(used?.plan || state.draft, id, kind, used?.version.id || target)
-    if (result.error) {
-      setNotice(result.error)
-      return
-    }
-    editPlan(() => result.plan)
-  }
   const remove = (item) => {
     editPlan((p) => ({ ...p, features: p.features.filter((f) => f.id !== item.id) }))
   }
-  const add = () => {
+  const add = (calendarData) => {
     const id = `demo-${crypto.randomUUID()}`
-    const calendar = calendarFor(state.draft)
-    const focus = latestMonth(state.draft)
-    const firstVersion = state.draft.versions
-      .toSorted((a, b) => a.start.localeCompare(b.start))
-      .find((v) => v.start.slice(0, 7) === focus)
-    const day = focus === currentDay.slice(0, 7) ? currentDay : firstVersion?.start || `${focus}-01`
-    const week =
-      calendar.weeks.find(
-        (w) =>
-          w.start <= day &&
-          iso(at(w.start) + 6 * dayMs) >= day &&
-          (focus === currentDay.slice(0, 7) || w.end >= `${focus}-01`)
-      ) ||
-      calendar.weeks.find((w) => w.start >= day) ||
-      calendar.weeks.at(-3)
-    const next = planWeek(state.draft, week)
+    const week = availableWeek(state.draft, currentDay)
+    const first = planWeek(state.draft, week)
+    const after = new Date(`${first.version.end}T00:00:00Z`)
+    after.setUTCDate(after.getUTCDate() + ((8 - after.getUTCDay()) % 7 || 7))
+    const nextWeek = availableWeek(first.plan, after.toISOString().slice(0, 10))
+    const next = planWeek(first.plan, nextWeek)
     setNewFeature(id)
     editPlan(() => ({
       ...next.plan,
@@ -723,11 +239,17 @@ function App() {
           month: week.start.slice(0, 7),
           title: '',
           owner: '',
-          pre: next.version.id,
-          release: next.version.id
+          deliveries: [
+            {
+              versionId: first.version.id,
+              stages: defaultStages(first.version, false, calendarData)
+            },
+            { versionId: next.version.id, stages: defaultStages(next.version, true, calendarData) }
+          ]
         }
       ]
     }))
+    navigate(first.version.start)
   }
   const reorder = (id, target, side) => {
     if (id === target) {
@@ -797,9 +319,8 @@ function App() {
     <>
       <div className="ml-review-strip">
         <span>
-          原型注释: 模拟
-          11/11；浅色周块是周一至周五的时间背景，拖入特性或改名才登记版本；未对接华为日历，非 v0.8
-          承诺。
+          原型注释: 模拟 11/11 15:30；SDLC 实际记录、版本关系均为样例，非 v0.8
+          承诺；已开始版原计划只读。
         </span>
         <div className="ml-actions">
           <IconAction
@@ -897,16 +418,6 @@ function App() {
                   {!empty && (
                     <span className="ml-feature-summary">
                       <span>{plan.features.length} 个特性</span>
-                      <span className="ml-delivery-legend" role="group" aria-label="交付节点图例">
-                        <span>
-                          <i aria-hidden="true" />
-                          Pre版本
-                        </span>
-                        <span>
-                          <i className="release" aria-hidden="true" />
-                          Release版本
-                        </span>
-                      </span>
                     </span>
                   )}
                 </div>
@@ -984,6 +495,11 @@ function App() {
                   )}
                 </div>
               </div>
+              {planning && problem && (
+                <p className="ml-schedule-problem" role="alert">
+                  {problem}
+                </p>
+              )}
               {planning && dirty && !saveError && (
                 <small className="ml-save-status" title="原型注释: 演示本机保存完成状态。">
                   本机草案已保存
@@ -1019,7 +535,7 @@ function App() {
                     }
                     onDelete={remove}
                     onReorder={reorder}
-                    onMove={move}
+                    onApply={(next) => editPlan(() => next)}
                     onVersion={openVersion}
                     newFeature={newFeature}
                   />

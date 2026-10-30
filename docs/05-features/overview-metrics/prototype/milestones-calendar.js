@@ -1,7 +1,7 @@
 import { currentDay } from './milestones-data.js'
 
 export const dayMs = 86400000
-export const dayWidth = 24
+export const dayWidth = 44
 export const labelWidth = 230
 export const at = (date) => Date.parse(`${date}T00:00:00Z`)
 export const iso = (value) => new Date(value).toISOString().slice(0, 10)
@@ -91,5 +91,19 @@ export function planWeek(plan, week, name) {
         ? plan.months
         : [...plan.months, { month, outcome: '' }]
     }
+  }
+}
+
+export function availableWeek(plan, from) {
+  let start = monday(at(from))
+  for (;;) {
+    const week = { id: `week-${iso(start)}`, start: iso(start), end: iso(start + 4 * dayMs) }
+    const locked = plan.versions.find(
+      (v) => v.started && v.start <= week.end && v.end >= week.start
+    )
+    if (!locked) {
+      return week
+    }
+    start = monday(at(locked.end)) + 7 * dayMs
   }
 }

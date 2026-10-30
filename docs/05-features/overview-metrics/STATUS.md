@@ -4,7 +4,11 @@
 
 ## 里程碑规划实现状态
 
-#440 最终高保真及落地范围已由用户确认；设计 PR #460 已合入，当前开发由同分支 [PR #477](https://github.com/forcegravity1989/builder-workbench/pull/477) 承接。Issue 保持开放。[原型](prototype.html)供批注，演示数据不改真实 v0.8 承诺；材料设计见 [milestone-design](milestone-design.md)。
+#440 前一轮高保真及落地范围已由用户确认；设计 PR #460 已合入，当前开发由同分支 [PR #477](https://github.com/forcegravity1989/builder-workbench/pull/477) 承接。Issue 保持开放。[原型](prototype.html)供批注，演示数据不改真实 v0.8 承诺；材料设计见 [milestone-design](milestone-design.md)。
+
+**本轮设计增量（待批注）**：2026-10-30 已确认改用 Plan / Design / Build / Test / Deploy / Maintain；日轴支持半天阶段与按天版本范围拖动，开始后原计划固定，实际只读。现已更新原型、intent/spec 和术语；下面的实现/运行证据仍针对前一轮生产代码，不为新 SDLC 原型背书。真实华为日历、SDLC 采集与跨屏映射未接入，Deploy 实际未知。本轮按用户要求不操控浏览器截图或真机。
+
+### 当前生产代码与证据（尚未切换 SDLC）
 
 | 环           | 状态           | 证据与边界                                                                       |
 | ------------ | -------------- | -------------------------------------------------------------------------------- |
