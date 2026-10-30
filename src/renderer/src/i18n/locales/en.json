@@ -15372,7 +15372,9 @@
                     "09a7c1df70": "Edit annotation {{value0}}",
                     "c16f932cb3": "Save",
                     "024467ceac": "Cancel",
-                    "449d2c2629": "Annotation intent"
+                    "449d2c2629": "Annotation intent",
+                    "collapse": "Collapse annotations",
+                    "expand": "Expand annotations"
                   }
                 }
               }
@@ -16723,7 +16725,6 @@
         "AppWorkspaceShell": {
           "5920545322": "调整上下栏高度",
           "e82b94df8a": "调整左右栏宽度",
-          "38f5d8318c": "展开会话栏",
           "4bf79d6d8c": "收折会话栏",
           "722fd4ab69": "展开会话",
           "5c18da0a65": "收折会话"

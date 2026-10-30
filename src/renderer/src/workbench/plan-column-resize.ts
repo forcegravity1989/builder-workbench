@@ -3,7 +3,6 @@ export const PLAN_RIGHT_MIN_PX = 360
 export const PLAN_CHAT_DEFAULT_RATIO = 0.3
 export const PLAN_COLUMN_RATIO_STORAGE_KEY = 'workbench.plan.chatRatio'
 export const PLAN_CHAT_COLLAPSED_STORAGE_KEY = 'workbench.plan.chatCollapsed'
-export const PLAN_CHAT_COLLAPSED_RAIL_PX = 36
 export const PLAN_CHAT_REVEAL_EVENT = 'workbench:reveal-plan-chat'
 export const PLAN_CHAT_TOGGLE_EVENT = 'workbench:toggle-plan-chat'
 

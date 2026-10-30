@@ -13356,6 +13356,18 @@
                 }
               }
             }
+          },
+          "annotate": {
+            "browser": {
+              "page": {
+                "annotation": {
+                  "tray": {
+                    "collapse": "Contraer anotaciones",
+                    "expand": "Expandir anotaciones"
+                  }
+                }
+              }
+            }
           }
         }
       },

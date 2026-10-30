@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
@@ -105,11 +105,20 @@ describe('electron-builder config', () => {
   })
 
   it('keeps runtime resources available through extraResources', () => {
+    const matcher = new FileMatcher('/app', '/dest', (value) => value, electronBuilderConfig.files)
+    const isPacked = matcher.createFilter()
+    expect(
+      isPacked(join('/app', 'out/relay/win32-x64/relay.js'), { isDirectory: () => false })
+    ).toBe(false)
     const bundledPluginResources = expect.objectContaining({
       from: 'resources/plugins/launch',
       to: 'plugins/launch'
     })
     for (const platform of ['mac', 'linux', 'win']) {
+      expect(electronBuilderConfig[platform].extraResources).toContainEqual({
+        from: 'out/relay',
+        to: 'relay'
+      })
       expect(electronBuilderConfig[platform].extraResources).toContainEqual({
         from: 'resources/skills',
         to: 'skills'
@@ -442,6 +451,7 @@ describe('arch-aware packaging guard', () => {
   const OTHER_ARCH_NAME = process.arch === 'arm64' ? 'x64' : 'arm64'
   const SHERPA_PLATFORM = process.platform === 'win32' ? 'win' : process.platform
   const otherSherpa = `sherpa-onnx-${SHERPA_PLATFORM}-${OTHER_ARCH_NAME}`
+  const otherWatcherPrefix = `watcher-${process.platform}-${OTHER_ARCH_NAME}`
   const packHost = (arch) =>
     electronBuilderConfig.beforePack({ electronPlatformName: process.platform, arch })
 
@@ -457,7 +467,16 @@ describe('arch-aware packaging guard', () => {
       require('../../package.json').optionalDependencies,
       otherSherpa
     )
-    if (otherSherpaExpected && !otherSherpaInstalled) {
+    const parcelDir = join(REPO_ROOT, 'node_modules', '@parcel')
+    const otherWatcherInstalled = readdirSync(parcelDir).some(
+      (name) =>
+        name.startsWith(otherWatcherPrefix) && existsSync(join(parcelDir, name, 'package.json'))
+    )
+    if (!otherWatcherInstalled) {
+      expect(() => packHost(OTHER_ARCH)).toThrow(otherWatcherPrefix)
+      expect(() => packHost(OTHER_ARCH)).toThrow('pnpm install:release')
+      expect(() => packHost(HOST_ARCH)).not.toThrow()
+    } else if (otherSherpaExpected && !otherSherpaInstalled) {
       expect(() => packHost(OTHER_ARCH)).toThrow(otherSherpa)
       expect(() => packHost(OTHER_ARCH)).toThrow('pnpm install:release')
       expect(() => packHost(HOST_ARCH)).not.toThrow()
