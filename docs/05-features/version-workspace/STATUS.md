@@ -4,7 +4,9 @@
 
 ## 现行实现与历史验证
 
-**本轮 #439 真机反馈局部纠偏：方案、高保真和实施计划已由用户确认，主体生产接线及独立静态检视已完成，本地 lint 与受影响测试通过，完整检查结果与未验项见 [PR #455](https://github.com/forcegravity1989/builder-workbench/pull/455)。** 涉及项目进入定位、原生项目区呈现与已归版树去重、复用原生树卡片及完整主机标识、Issue 树标题、完整原生任务页的可取消预选，以及删除自动目标备注与额外计划预读；不是新增特性。候选见 [高保真](version-workspace-prototype.html?rev=439-feedback)，既有行为依据见 [spec](spec.md)。本轮不处理原生建树耗时、不重做缓存或计划/验收协议；CodeHub 版本标签与目标当前用户身份已按内机 CLI v1.3.4 实测契约补齐，新增接线待本次 CI 与内机复验，见 spec；本机真壳由用户免验，本地 Web/Node 类型检查 OOM 未得结论，不能称全部验证通过。下面是前轮证据，不能代替本轮验证。
+**本轮 #500 增量：目标目录内置顶（复用原生 isPinned 排序）、完工树隐藏（看板 completed 态）＋「含 N 已完成」计数展开（会话态）、解绑清 pin 已实现并过真壳 E2E 五判据；零新增存储、零新增菜单项。** 行为正本见 [spec](spec.md)「目标目录内置顶与完工隐藏（#500）」，验证证据与未验留白见下「#500 目标置顶与完工隐藏」节。
+
+**前轮 #439 真机反馈局部纠偏：方案、高保真和实施计划已由用户确认，主体生产接线及独立静态检视已完成，本地 lint 与受影响测试通过，完整检查结果与未验项见 [PR #455](https://github.com/forcegravity1989/builder-workbench/pull/455)。** 涉及项目进入定位、原生项目区呈现与已归版树去重、复用原生树卡片及完整主机标识、Issue 树标题、完整原生任务页的可取消预选，以及删除自动目标备注与额外计划预读；不是新增特性。候选见 [高保真](version-workspace-prototype.html?rev=439-feedback)，既有行为依据见 [spec](spec.md)。本轮不处理原生建树耗时、不重做缓存或计划/验收协议；CodeHub 版本标签与目标当前用户身份已按内机 CLI v1.3.4 实测契约补齐，新增接线待本次 CI 与内机复验，见 spec；本机真壳由用户免验，本地 Web/Node 类型检查 OOM 未得结论，不能称全部验证通过。下面是前轮证据，不能代替本轮验证。
 
 **前轮 #439 非性能项已作生产接线，完成静态检视并补验 CI。** 绑定树可见性不依赖会话；所有树沿统一原生右击菜单绑定、改绑或解绑，无版本级常驻绑定按钮。解绑保留稳定身份、父子关系、文件和会话；断链仅原生图标，点击保留其他导航与现有内容；纵向滚动沿原生容器。新建版本简化文案，流程会话由短开始卡发起。行为见 [spec](spec.md)。本地与远端检查的实际结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)；手工真机仍未验证；绑定持久化、重启、双宿主与断链恢复仍待验证，已接入三屏 Issue 共用读取、固定回顾复用和建版等待收窄；性能增量目前仅作静态检视，实际耗时仍待测。以下日期/提交/PR 结果均为历史证据，不能覆盖此次增量。
 
@@ -102,6 +104,20 @@ Lens8（提示词/SKILL 规范）：F1 中 version-records 运行身份段补绑
 ## 伴飞裁定落地轮（#436/#437，2026-10-25 夜）
 
 人装机伴飞 v0.7 收尾＋v0.8 新建旅程，反馈 CF-1~CF-9 逐条 AskUser 拍板后本轮全部落地（设计面记 design「伴飞裁定落地」节）：P1 计划屏空计划态补「与计划助手新建计划」入口（`86369c06c`）；P2 任务屏范围读回批量化 `gh:workItemsBatch`（`b76968f9e`）；P3 初始化工作区旅程重排＋setup skip（与 P4 同 commit `37bd3f98e`）；P4 树行整行右击原生菜单去三点（同 `37bd3f98e`）；P5 开工入口预热（`df405f4c3`）；P6 Issue 开工预填名含号（`867cb865d`，plan 所指函数经源码核证不含号、按验收判据改取原生 intent 命名，偏差登记于 commit）；P7 两「任务」入口 tooltip（`93bcbfe9b`）。早轮已落：版本排序（`2d532dbfc`）、清理单文案（`b6afc2d9b`）、补绑定改造（`37976ee88`）、任务入口恢复（`299d118f7` revert `1c3c8e7d1`）。**验证方式**：本地无 node_modules——改动文件 npx oxlint --deny-warnings＋oxfmt 全过；typecheck/vitest/烟测交远端 CI（结论见 PR #437）；parity 测试两处清单同步（IPC 通道＋web 键集，既有测试最小修正非新增）。**未验证（归人真壳，明早临时包）**：初始化按钮秒级建两树无 Setup 窗口、树行右击菜单真壳形态、空计划态入口点击建会话、批量读回真网络耗时（result.timing 与 gh 信号量行为）、预热后开工创建耗时、intent 预填名端到端。**登记遗留**：codehub-cli 批量命令面待人内网 `codehub-cli --help` 复核（P2）；开工 10s 真壳 timing 归因（P5 预热后应显著改善）；OrcaYamlTrustDialog 文案「workbench」实为仓库名的 i18n 歧义归上游；任务屏范围态 SourceBar 手动切 provider 未锁死（调查发现小面）。
+
+## #500 目标置顶与完工隐藏（2026-10-30）
+
+**验什么**：目标目录（版本侧栏某目标展开区）内，右键「固定」将该树置顶（复用原生 isPinned 排序）、「取消固定」还原；看板状态移至 completed 的树从目标区隐藏，出现「含 N 已完成」计数按钮，点击展开回看、按钮变「收起已完成（N）」；「解除版本绑定」后该树回流原生项目区且 pin 随手清掉（原生区菜单显示「固定」而非「取消固定」）。行为正本见 [spec](spec.md)「目标目录内置顶与完工隐藏（#500）」。
+
+**命令与深链**：`pnpm run dev:workbench`（独立 profile `ORCA_DEV_USER_DATA_PATH` 避单实例锁，`REMOTE_DEBUGGING_PORT=9338`）；CDP 探针 `node .bw-tmp/issue500-e2e2.mjs`（DOM 断言；截图存 `.bw-tmp/` 供人查看，不回读）；深链：侧栏「版本工作区」v0.8 → G1 目标目录。测试树两棵经 `window.api.worktrees.create` 创建、经绑定对话框同一生产端口（`nativeVersionBindingPort`）绑到 v0.8/G1，验后经原生 remove 删净（目录/分支/登记全清）。
+
+**门禁**：oxlint 仓内 0 告警（仅 `.bw-tmp/` 临时探针有 lint 项，不提交）；`run-typecheck-projects-in-parallel` 0 错；`check-vitest-count-ratchet` 222 例恰在基线（本交付零测试增删）。
+
+**判据结果（五条全过，截图 `.bw-tmp/issue500-v2-*.png`）**：初始序 [A,B]（id 升序）→ C1 固定 B 序变 [B,A] → C2 取消固定还原 [A,B] → C3 A 置 completed 后从目标区消失＋「含 1 已完成」出现，展开后 A 在已完成区、按钮变「收起已完成（1）」→ C4 固定 B 后解除版本绑定，B 回流原生区、store 中 isPinned 已清、原生区右键菜单显示「固定」（非「取消固定」）→ C5 全程 console error/exception 为 0（覆盖 reveal 对被过滤树的 no-op 路径）。
+
+**实现口径说明**：C3 的状态写入走与菜单「移至状态→Done」完全相同的 store 动作（`updateWorktreeMeta(id, { workspaceStatus }, { executionHostId })`）。首轮自动化尝试直走菜单子项时未走通：菜单入场动画期间 rect 位移使点击落到相邻菜单项（「更改版本绑定…/解除版本绑定」一带，由当时 git show 读规划数据洪流佐证），且状态子项 role 为 menuitemradio 与探针选择器不符；菜单路径本身未改动，人手工旅程验证归下轮。
+
+**未验留白**：自定义看板状态集（非默认 4 态）下完工判定仍按 id==='completed'（宁可见不误藏）未真壳验证；断连/远程主机上写 pin 与状态（updateWorktreeMeta 经 executionHostId 路由）未验证；菜单「移至状态」子菜单人手工路径未走。另登记一项观察：首轮 E2E 中一棵测试树（e2e-500-a）被应用内一条未完全定位的路径删除——菜单删除路径有确认对话框门禁且 `skipDeleteWorktreeConfirm=false`，删除未经对话框，疑与点击落错项后的某条自治流程相关；仅波及自建测试树，未伤真实树，不归本特性，待上游核对。
 
 ## 历史交付边界（截至 #437，非 #439 结果）
 
