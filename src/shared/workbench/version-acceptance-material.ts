@@ -90,6 +90,9 @@ export const AcceptanceMeetingSchema = z.strictObject({
   time: z.string().trim().min(1),
   // welink-cli meetingId (the numeric meeting primary key), never meetingNo.
   id: z.string().trim().min(1).optional(),
+  // 32-digit eMeeting-side key from the create/info response; the minutes
+  // draft write (meeting-minutes skill) addresses the meeting by this ID.
+  enMeetingId: z.string().trim().min(1).optional(),
   // Meeting page read back from `welink-cli meeting info` jumpUrls.
   link: z.string().trim().min(1).optional(),
   // W3 IDs actually passed to `--meeting-user-list`; the board shows the count

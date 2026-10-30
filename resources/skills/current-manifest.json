@@ -194,17 +194,17 @@
       "name": "version-acceptance",
       "sourcePath": "skills/version-acceptance",
       "releaseRevision": 1,
-      "packageDigest": "e2a639653a85bf3df5324af47cb5514ddc925ae21bf63e51ccb192fa11841dbd",
-      "gitTreeSha": "a8bac8fd2ca2e8c4220473aa2a5be353d03d4106",
+      "packageDigest": "1acbf054f9552231ea389a44e6335c8a12e5a2fa07159ba3784ad5d4949b5f11",
+      "gitTreeSha": "dfbd6085d73b0aff7dfd47e44851227c1d32bb3f",
       "files": [
         {
           "path": "SKILL.md",
           "size": 2668,
           "executable": false,
           "classification": "text",
-          "exactSha256": "2621fcd39c5361c5d1ecfdfb44a31cf3a354bd34a1cb72653d8b0434733d4443",
-          "textNormalizedSha256": "2621fcd39c5361c5d1ecfdfb44a31cf3a354bd34a1cb72653d8b0434733d4443",
-          "identitySha256": "2621fcd39c5361c5d1ecfdfb44a31cf3a354bd34a1cb72653d8b0434733d4443"
+          "exactSha256": "d9efb57d29330b21e8ae20158167ecf05101b044ee622dcbf4e159ecd3672e8d",
+          "textNormalizedSha256": "d9efb57d29330b21e8ae20158167ecf05101b044ee622dcbf4e159ecd3672e8d",
+          "identitySha256": "d9efb57d29330b21e8ae20158167ecf05101b044ee622dcbf4e159ecd3672e8d"
         }
       ]
     },
