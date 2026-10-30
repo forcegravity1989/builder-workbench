@@ -7,7 +7,7 @@ import { nativeWorkspaceScope } from './native-workspace'
 import { BoardActionButton } from '../board-ui'
 import type { FixedAcceptanceBrowse } from '../cycle-view-state'
 import { returnFromAcceptanceSource } from './open-acceptance-source'
-import { readPlanningProgressSource } from '../../../../shared/workbench/planning-progress-source'
+import { readPlanningProgressSource } from '../version-planning/planning-progress-source'
 import { WORKFLOW_SCREEN_LABELS, shortCommit } from '../version-labels'
 import { ReadonlyMaterialSections, type ViewState } from './ReadonlyMaterialSections'
 

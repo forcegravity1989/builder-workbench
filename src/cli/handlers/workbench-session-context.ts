@@ -1,5 +1,4 @@
 import type { HandlerContext } from '../dispatch'
-import { readWorkbenchPriorContext } from './workbench-prior-context'
 import type { RuntimeWorktreeRecord, RuntimeWorktreeListResult } from '../../shared/runtime-types'
 import { getOptionalStringFlag, getRequiredStringFlag } from '../flags'
 import { resolveCurrentWorktreeSelector } from '../selectors'
@@ -10,18 +9,21 @@ import { normalizeStoredWorkbenchVersionBinding } from '../../shared/workbench/v
 import {
   VersionMaterialScopeSchema,
   type VersionMaterialCandidate,
-  type VersionMaterialResult
+  type VersionMaterialResult,
+  type VersionMaterialScope
 } from '../../shared/workbench/version-material-request'
+import type {
+  VersionTreePlanCatalog,
+  VersionHistoryCatalog,
+  VersionHistoryPort
+} from '../../shared/workbench/version-history'
+import { collectVersionCatalogWorkspaces } from '../../shared/workbench/version-catalog'
+import { selectPriorVersionSource } from '../../shared/workbench/prior-version-source'
+import { readPlanningProgressSource } from '../../shared/workbench/planning-progress-source'
 import {
-  renderWorkbenchPrompt,
-  type WorkbenchPromptContext
-} from '../../shared/workbench/workflow-prompt'
-import {
-  materialProblemRequest,
-  type CycleMaterialProblem
-} from '../../shared/workbench/cycle-start-request'
-import { MaterialVersion } from '../../shared/workbench/version-material'
-import type { VersionTreePlanCatalog } from '../../shared/workbench/version-history'
+  PlanningMaterialSchema,
+  type PlanningProgressSource
+} from '../../shared/workbench/version-material'
 
 /** Resolve identity from the caller's native workspace, never the UI's focused tab. */
 export async function readWorkbenchSessionContext(ctx: HandlerContext): Promise<void> {
@@ -124,25 +126,13 @@ export async function readWorkbenchSessionContext(ctx: HandlerContext): Promise<
       'Workflow binding changed or does not match this session. Read the workspace again.'
     )
   }
-  const context: WorkbenchPromptContext = {
+  const context = {
     projectId: worktree.projectId || worktree.repoId,
     ...scope,
     workspacePath: worktree.path,
     version: binding?.version ?? null,
     branch: worktree.branch?.replace(/^refs\/heads\//, '') || null
   }
-  const { WORKBENCH_SYSTEM_TEMPLATE } = await import('../bundled-skill-guides.js')
-  const problems: CycleMaterialProblem[] = [
-    ...listed.result.value.filter((item) => item.state !== 'ready'),
-    ...(planSources?.problems ?? [])
-      .filter((item) => MaterialVersion.safeParse(item.version).success)
-      .map((item): CycleMaterialProblem => ({
-        version: item.version,
-        workflow: 'plan',
-        state: item.code === 'migration-required' ? 'migration-required' : 'invalid',
-        error: item.message
-      }))
-  ]
   const priorReview =
     scope.workflow === 'plan'
       ? await readWorkbenchPriorContext(
@@ -153,19 +143,6 @@ export async function readWorkbenchSessionContext(ctx: HandlerContext): Promise<
           worktree.projectId
         )
       : undefined
-  const instructions = [
-    renderWorkbenchPrompt({ context, systemTemplate: WORKBENCH_SYSTEM_TEMPLATE }).prompt,
-    problems.length
-      ? materialProblemRequest(problems, scope.workflow, selected.result.value.version)
-      : '',
-    priorReview?.kind === 'missing'
-      ? `上版 ${priorReview.version} 尚无可用验收来源，回顾暂空；不要跳到更早版本或推断没有遗留。`
-      : priorReview?.kind === 'error'
-        ? `上版验收来源读取失败：${priorReview.reason}。不要改读其他记录或推断没有遗留。`
-        : ''
-  ]
-    .filter(Boolean)
-    .join('\n\n')
   printResult(
     {
       ...selected,
@@ -174,11 +151,80 @@ export async function readWorkbenchSessionContext(ctx: HandlerContext): Promise<
         context,
         candidates: listed.result.value,
         ...(planSources ? { planSources } : {}),
-        ...(priorReview ? { priorReview } : {}),
-        instructions
+        ...(priorReview ? { priorReview } : {})
       }
     },
     ctx.json,
     (value) => JSON.stringify(value, null, 2)
   )
+}
+
+type PriorReviewContext =
+  | { kind: 'unselected' | 'none' }
+  | { kind: 'missing'; version: string }
+  | { kind: 'ready'; source: PlanningProgressSource }
+  | { kind: 'error'; reason: string }
+
+/** The same adjacent-version and fixed-source checks as the planning board. */
+async function readWorkbenchPriorContext(
+  ctx: HandlerContext,
+  scope: VersionMaterialScope,
+  version: string | null,
+  knownVersions: string[],
+  projectId?: string
+): Promise<PriorReviewContext> {
+  if (!version) {
+    return { kind: 'unselected' }
+  }
+  const historyScope = { repoId: scope.repoId, worktreeId: scope.worktreeId, hostId: scope.hostId }
+  async function read<T>(method: string, params: unknown): Promise<T> {
+    const response = await ctx.client.call<VersionMaterialResult<T>>(method, params)
+    if (!response.result.ok) {
+      throw new RuntimeClientError(response.result.error.code, response.result.error.message)
+    }
+    return response.result.value
+  }
+  try {
+    const current = await read<{ document: unknown } | null>('workbench.materials.read', {
+      ...scope,
+      version
+    })
+    let source = current
+      ? PlanningMaterialSchema.parse(current.document).summary.progressSource
+      : undefined
+    if (!source) {
+      const catalog = await read<VersionHistoryCatalog>('workbench.history.list', {
+        scope: historyScope,
+        currentOnly: true
+      })
+      const trees = await ctx.client.call<RuntimeWorktreeListResult>('worktree.list', {
+        limit: 10_000
+      })
+      if (trees.result.truncated) {
+        throw new Error('版本工作树目录未完整返回，未猜测上版来源。')
+      }
+      const boundVersions = collectVersionCatalogWorkspaces(
+        trees.result.worktrees.filter(
+          (tree) =>
+            (tree.hostId ?? tree.identity?.executionHostId ?? 'local') === scope.hostId &&
+            !tree.runtimeOwnerEnvironmentId
+        ),
+        [scope.repoId],
+        projectId
+      ).map((tree) => tree.binding.version)
+      const prior = selectPriorVersionSource(version, catalog, [...knownVersions, ...boundVersions])
+      if (prior.kind !== 'source') {
+        return prior
+      }
+      source = prior.source
+    }
+    const history: Pick<VersionHistoryPort, 'read' | 'readPlan'> = {
+      read: (input) => read('workbench.history.read', input),
+      readPlan: (input) => read('workbench.history.readPlan', input)
+    }
+    await readPlanningProgressSource(history, historyScope, source)
+    return { kind: 'ready', source }
+  } catch (error) {
+    return { kind: 'error', reason: error instanceof Error ? error.message : String(error) }
+  }
 }

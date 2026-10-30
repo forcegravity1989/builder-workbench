@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
-import { BUNDLED_SKILL_GUIDES, WORKBENCH_SYSTEM_TEMPLATE } from '../../src/cli/bundled-skill-guides'
+import { BUNDLED_SKILL_GUIDES } from '../../src/cli/bundled-skill-guides'
 import {
   CANONICAL_GUIDE_NAMES,
   WORKBENCH_GUIDE_SOURCES,
@@ -102,6 +102,7 @@ describe('bundled skill guide generator', () => {
         ? BUNDLED_SKILL_GUIDES.find((guide) => guide.name === name).fullMarkdown
         : source
       expect(projection.length).toBeLessThan(fullSource.length)
+      expect(projection).toContain('discovery stub')
       expect(projection).toContain(`skills get ${name}`)
     }
   })
@@ -219,6 +220,13 @@ describe('bundled skill guide generator', () => {
       if (WORKBENCH_GUIDE_SOURCES[guide.name]) {
         // Source links must resolve through native CLI references in projects without standard/.
         expect(guide.markdown).toContain(`ORCA skills get ${guide.name} --reference`)
+        expect(guide.markdown).toContain('the executable used to read this guide')
+        if (guide.name !== 'metrics-refresh') {
+          const system = guide.references.find((reference) => reference.name === 'system')
+          expect(system?.markdown).toContain('完成由人确认')
+          expect(system?.markdown).toContain('仓根 AGENTS.md')
+          expect(system?.markdown).not.toContain('{{')
+        }
         expect(guide.fullMarkdown).not.toMatch(/\borca (?:skills|bw)\b/u)
         const projection = await readFile(
           path.join(projectDir, 'skills', guide.name, 'SKILL.md'),
@@ -319,11 +327,6 @@ describe('bundled skill guide generator', () => {
     const second = await buildArtifacts(projectDir)
 
     expect(second).toEqual(first)
-    expect(WORKBENCH_SYSTEM_TEMPLATE).toBe(
-      normalizeMarkdown(
-        await readFile(path.join(projectDir, 'standard/system-prompt/SYSTEM.md.tmpl'), 'utf8')
-      )
-    )
     await expect(verifyArtifacts(first, projectDir)).resolves.toBeUndefined()
   })
 

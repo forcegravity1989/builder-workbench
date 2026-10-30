@@ -9,7 +9,7 @@ import type { PlanReference } from './acceptance-model'
 import { assertFixedPlan } from './acceptance-model'
 import type { nativeVersionMaterialPort } from '../version-material-port'
 import { MaterialVersion } from '../../../../shared/workbench/version-material'
-import type { CycleMaterialProblem } from '../../../../shared/workbench/cycle-start-request'
+import type { CycleMaterialProblem } from '../version-cycle/cycle-start-request'
 import { compareMaterialVersions } from '../../../../shared/workbench/version-catalog'
 
 /**

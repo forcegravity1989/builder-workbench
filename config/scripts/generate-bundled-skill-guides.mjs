@@ -253,6 +253,7 @@ async function readWorkbenchReferences(repoRoot, name) {
   }))
   if (name === 'week-planning' || name === 'version-acceptance') {
     sources.push(
+      { name: 'system', source: 'standard/system-prompt/SYSTEM.md.tmpl' },
       {
         name: 'meeting-transcript',
         source: 'standard/system-prompt/references/meeting-transcript.md'
@@ -294,7 +295,23 @@ async function readWorkbenchReferences(repoRoot, name) {
 }
 
 function renderWorkbenchGuide(markdown, source, name, references) {
-  const normalized = normalizeMarkdown(markdown)
+  let normalized = normalizeMarkdown(markdown)
+  if (source === 'standard/system-prompt/SYSTEM.md.tmpl') {
+    const values = {
+      title: name === 'week-planning' ? '制定版本计划' : '准备与核对版本验收',
+      workflow: name,
+      identity: '',
+      skill: '',
+      references: ['version-records', 'metrics']
+        .map((reference) => `- ${reference}：ORCA skills get ${name} --reference ${reference}`)
+        .join('\n'),
+      version_context: ''
+    }
+    normalized = normalized.replace(/\{\{([a-z_]+)\}\}/g, (_match, key) => {
+      if (!(key in values)) throw new Error(`Unknown SYSTEM field: ${key}`)
+      return values[key]
+    })
+  }
   const guide =
     source === WORKBENCH_GUIDE_SOURCES[name]
       ? normalized.replace(
@@ -460,13 +477,7 @@ async function buildArtifacts(repoRoot = REPO_ROOT) {
   return [
     {
       path: path.join(repoRoot, 'src', 'cli', 'bundled-skill-guides.ts'),
-      content: `${serializeEmbeddedModule(
-        guides
-      )}\n// oxfmt-ignore\nexport const WORKBENCH_SYSTEM_TEMPLATE = ${JSON.stringify(
-        normalizeMarkdown(
-          await readFile(path.join(repoRoot, 'standard/system-prompt/SYSTEM.md.tmpl'), 'utf8')
-        )
-      )}\n`
+      content: serializeEmbeddedModule(guides)
     },
     ...projections
   ]

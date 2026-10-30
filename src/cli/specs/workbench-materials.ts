@@ -6,12 +6,12 @@ const scopeUsage = '--repo-id <id> --worktree-id <id> --workflow plan|acceptance
 export const WORKBENCH_MATERIAL_COMMAND_SPECS: CommandSpec[] = [
   {
     path: ['bw', 'materials', 'context'],
-    summary: 'Read the workflow selection, native identity and BW session instructions',
+    summary: 'Read the workflow selection, native identity and material sources',
     usage:
       'orca bw materials context --workflow plan|acceptance [--repo-id <id> --worktree-id <id>] [--host-id <id>] [--json]',
     allowedFlags: [...GLOBAL_FLAGS, ...scopeFlags],
     notes: [
-      'Without explicit scope, resolves the native terminal worktree or the registered enclosing worktree. Returns the shared SYSTEM instructions and live material problems; never uses the focused UI workspace.'
+      'Without explicit scope, resolves the native terminal worktree or the registered enclosing worktree. Returns the live identity, material problems and fixed-source status; never uses the focused UI workspace.'
     ]
   },
   {
