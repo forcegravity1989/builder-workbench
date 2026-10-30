@@ -126,15 +126,23 @@ export function HtmlDocPreview({
     [filePath, hostLabel, worktreeRoot]
   )
   const isUnavailable = state === 'unavailable' || failureReason !== null
-  const { grab, markup, annotationSend, grabAnnotations, browserOverlayViewport, elementTools } =
-    useDocPreviewGuestTools({
-      previewId,
-      worktreeId,
-      grantId,
-      webviewRef,
-      containerRef,
-      toolsReady: state === 'ready' && !isUnavailable
-    })
+  const {
+    grab,
+    markup,
+    annotationSend,
+    grabAnnotations,
+    browserOverlayViewport,
+    handleAnnotationViewportMessage,
+    resetBrowserOverlayViewport,
+    elementTools
+  } = useDocPreviewGuestTools({
+    previewId,
+    worktreeId,
+    grantId,
+    webviewRef,
+    containerRef,
+    toolsReady: state === 'ready' && !isUnavailable
+  })
   // Not `document`: shadowing the global inside a component is how a stray DOM call silently
   // starts reading a plain object.
   const previewDocument = useMemo(
@@ -147,6 +155,7 @@ export function HtmlDocPreview({
     let detach: (() => void) | undefined
     let loadFailed = false
     const onLoadStarted = (): void => {
+      resetBrowserOverlayViewport()
       loadFailed = false
       setFailureReason(null)
       setAssetFailures([])
@@ -228,6 +237,7 @@ export function HtmlDocPreview({
           onLoadStopped,
           onLoadFailed,
           onNavigated: syncHistory,
+          onViewportMessage: handleAnnotationViewportMessage,
           onTitleUpdated: (event) => {
             useAppStore.getState().updateBrowserPageState(previewId, { title: event.title })
             // A rename only — the mount already recorded this document's visit.
@@ -266,6 +276,8 @@ export function HtmlDocPreview({
     previewId,
     remintCount,
     resetDirectoryAccess,
+    handleAnnotationViewportMessage,
+    resetBrowserOverlayViewport,
     resetHistory,
     syncHistory,
     worktreeId
