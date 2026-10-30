@@ -29,6 +29,7 @@
 | 8 | 集成页四卡收敛 | [connectors/](connectors/) · [原型](connectors/prototype.html)⁵ | 在用·补链中 | ● | ● | ● | ● | 待建(I01–I12 已定义) | 待建(IJ01 已定义) |
 | 9 | 版本工作区（侧边栏版本运作树） | [version-workspace/](version-workspace/) · [原型](version-workspace/version-workspace-prototype.html) · [旅程](version-workspace/version-workspace-journey.html) | G2 基线；#439 全树绑定/会话可见/断链已静态接线，真壳待验⁶ | ● | ● | ● | ◐(协议例＋ratchet 226) | ◐(headless 烟测主链，CI 随 push 复核) | ◐(绑定树旅程烟测；真壳归人) |
 | 10  | 版本总览                        | [version-overview/](version-overview/) · [高保真](version-overview/prototype.html) · [旅程](version-overview/journey.html)                                               | #334 独立特性；设计已确认，生产实现待接入                 |   ●    |         ●         |    ◐     | —(本轮无新增算法/协议) |       ○(VO1–VO12 已定义，浏览器验证不代真壳)        |                     ○(三种生命周期已定义)                      |
+| 11 | 开工认领 | [issue-start-claim/](issue-start-claim/) | 在用·#512 首期交付⁷ | ● | ● | ●(薄挂载已实施) | —(准入谓词不立单测) | ◐(1/3/6/7 真壳已验；2/4/5 留白) | ○(跨机旅程待验) |
 
 
 ¹ 第 4 行：GitHub CI 路径 2026-08/09 在旧 main 侧交付并实测闭环（PR #132 及后续召唤）；2026-09-29 用户拍板迁入产品分支——workflow 与回执脚本（`.github/scripts/check-pr-review.mjs`）已落，实现设计 ●。2026-09-30 扶正后本定义即默认分支 main 的定义，`/code-review` 召唤直接执行它，不再经旧 main 定义中转。验收点 ◐：迁移 PR 自身修改 workflow 文件，按 #132 先例（时为 pull_request 触发下的防篡改跳过）保守不自召——该校验在现行 issue_comment 触发模型下是否适用未复核；主干首场真实召唤待下一条合格 PR 实测，未实测不判过。TDD ◐：回执脚本无单测，以召唤实测为准。台内「请评审」按钮路径规范件在仓但未接线，defer。明细见其 [STATUS](reviewer-agent/STATUS.md) 迁移节。
@@ -41,6 +42,8 @@
 
 ⁵ 第 8 行随 #323 设计 PR 首次登记（2026-10-14），2026-10-15 按人反馈两轮修订后 gate（简化为拼装现有能力；人不手敲命令），实现随同 PR 交付：集成页收敛为 GitHub / CodeHub / WeLink / CloudBuild 四卡（代码托管 / 项目群 / 构建三组；CloudBuild 随 #366 增补，2026-10-19），preflight 补 `welink-cli` / `cb` 探测与 codehub / welink / cb `auth status` 读回，安装由应用后台执行（gh 保持外链），登录在卡内展开上游内嵌终端粘贴命令、人按回车（远端运行时无按钮，WSL 工作树保留）。待决 1–4 与真壳拍板 5–8 均已由人拍板（2026-10-16 / 10-19）：六卡代码留仓、自包含安装命令（cloudbuild 为两步）、welink EXPIRED 判未登录、分组标题补中文、安装后台化、登录卡内嵌终端。真壳验收证据（I01–I12 / IJ01）未采。明细见其 [STATUS](connectors/STATUS.md)。
 ⁶ 第 9 行（[#383](https://github.com/forcegravity1989/builder-workbench/issues/383)/#328/#334）2026-10-20 评审定稿（Draft PR #389）：版本平铺导航、目标目录投影（含跨宿主实例汇总）、目标树按需、同一原生创建器开工、版本总览聚合视图（修订 9 表格周报风格，2026-10-22 人确认），以及版本级清理（版本行删除图标＋与 Orca 同口径确认对话框，复用原生删除链与预检，默认只删本机 owned 工作树；不级联删版本、材料与目录保留）。生产接线已随 #389 交付（2026-10-22：P1 绑定与目录、P2 版本准备、P4 任务范围与开工链、P3a 侧栏版本树、P3b 屏内选版移除/清理确认单/补绑定/只读回看/Issue 开工 hookup、P5 自动化身份版本化与墙读数、P6 版本总览）；验收侧 Skill 正本同步与护栏撤除待 #394 合入，真壳 J1–J9、发布证据检索与 CodeHub 范围路径归人/后续。证据与留白见 [version-workspace STATUS](version-workspace/STATUS.md)。 #439 增量：原生全树右击绑定/改绑/解绑、无会话绑定树可见、断链原生图标与导航保留已静态接线，无版本级重复绑定按钮，解绑不级联树/会话/父子。旧烟测不覆盖这些变化，真壳与双主机复验尚未进行。
+
+⁷ 第 11 行（[#512](https://github.com/forcegravity1989/builder-workbench/issues/512)，2026-10-30 人拍板）：Issue 开工创建工作区成功即把当前用户 add 为该 Issue 责任人（GitHub/CodeHub），开工状态借平台原生字段对所有协作者实例可见；零新增界面（复用原生责任人列），失败不阻断开工、如实提示、不自动摘除。认领逻辑住 BW 模块，挂 quick/full 两链创建结果站点（与版本绑定同模式）；准入为两条件谓词不立单测（ratchet 222 不动）。验收点 1/3/6/7 已真壳验证（2026-10-30，dev 壳经真实创建链开工、平台侧独立读回），2（CodeHub 成功路径）/4（双账号并集＋CodeHub 追加语义）/5（跨机）留白。明细见其 [STATUS](issue-start-claim/STATUS.md)。
 
 ## 裁决与明细指引
 

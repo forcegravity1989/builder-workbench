@@ -45,6 +45,7 @@ import { buildFullCreationIssueCommand } from './full-creation-issue-command'
 import { buildFullCreationStartup } from './full-creation-startup'
 import { resolveWorkbenchCreationBinding } from '../../../../shared/workbench/creation-context'
 import { writeWorkbenchCreationBinding } from '@/workbench/post-create-version-binding'
+import { claimIssueOnWorkspaceStart } from '@/workbench/issue-start-claim'
 
 export function useFullCreationExecution(input: FullCreationExecutionInput) {
   const {
@@ -205,6 +206,13 @@ export function useFullCreationExecution(input: FullCreationExecutionInput) {
       if (workbenchVersionBinding) {
         void writeWorkbenchCreationBinding(workbenchVersionBinding, worktree)
       }
+
+      // 开工认领（#512）：quick 链的同构镜像——full 链当前休眠，恢复即同语义。
+      void claimIssueOnWorkspaceStart({
+        linkedWorkItem: submitLinkedWorkItem ?? undefined,
+        repoId,
+        sourceContext: taskSourceContext ?? null
+      })
 
       const trimmedNote = note.trim()
 

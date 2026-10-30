@@ -1,11 +1,6 @@
 import { toast } from 'sonner'
-import { writeWorkbenchCreationBinding } from '@/workbench/post-create-version-binding'
+import { runPostCreateCompanionActions } from '@/workbench/post-create-companion-actions'
 import { useAppStore } from '@/store'
-import {
-  getProjectHostSetupForRepoHost,
-  repoHostId,
-  withRepoHostOwnership
-} from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import { preflightAgentTrust } from '@/lib/agent-trust-preflight'
 import { activateAndRevealWorktree, type ActivateAndRevealResult } from '@/lib/worktree-activation'
 import { ensureWorktreeHasInitialTerminal } from '@/lib/worktree-initial-terminal-seeding'
@@ -133,21 +128,15 @@ export async function executeWorktreeCreation(
   }
 
   const worktree = result.worktree
-  // G2 (BW): version attribution is recorded at the true creation result —
-  // before any cancellation/activation branch, so a created tree keeps its
-  // binding even when this run's UI handoff is abandoned. Failures surface
-  // honestly (tree kept, binding-retry offered) and never block the native flow.
-  if (preparedRequest.workbenchVersionBinding) {
-    // Why: 裸创建结果行带归属宿主侧拼写（hostId='local'、无 runtimeOwnerEnvironmentId），
-    // 直接写绑定会路由回访问者本机被拒；按 store 同源重拼写补齐访客侧宿主身份再写。
-    const state = useAppStore.getState()
-    const ownerHost = repoHostId(state, worktree.repoId)
-    const setup = getProjectHostSetupForRepoHost(state, worktree.repoId, ownerHost)
-    void writeWorkbenchCreationBinding(
-      preparedRequest.workbenchVersionBinding,
-      withRepoHostOwnership(worktree, ownerHost, setup)
-    )
-  }
+  // G2/#512 (BW): companion actions at the true creation result — version
+  // attribution + issue claim, before any cancellation/activation branch;
+  // fire-and-forget, failures never block the native flow.
+  runPostCreateCompanionActions({
+    workbenchVersionBinding: preparedRequest.workbenchVersionBinding,
+    linkedWorkItem: preparedRequest.linkedWorkItem,
+    linkedTaskSourceContext: preparedRequest.linkedTaskSourceContext,
+    worktree
+  })
   const structuredLaunch = preparedRequest.agentLaunchRoute === 'structured-native-chat'
   // Why: cancellation can race a successful backend adoption; clean up again after it settles so an adopted workspace cannot outlive its destroyed VM.
   if (!useAppStore.getState().pendingWorktreeCreations[creationId]) {
