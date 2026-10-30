@@ -1,6 +1,6 @@
 // #461 CI 部署原型 DOM 断言验证：进入即全量形态（无场景切换）、竖排四阶段六步流程列表
 // （阶段标签居中加粗、组间虚线分割、数字标序、每步时间/读数、命令与日志按步回显、历史报错常驻失败步）、
-// 模式行集中入口（配置·部署·命令·日志·历史记录，八/九轮反馈）、两种模式与版本选择、统一配置入口与配置事实、
+// 模式行集中入口（配置·部署·命令·日志·历史记录，八/九轮反馈）、两种模式与版本选择、统一配置入口（十轮反馈：配置事实已移除）、
 // 执行瞬态与逐步点亮（读数与时间随完成进板面）、历史记录下拉切换最近 10 次部署记录（九轮反馈，记录区已移除）、
 // 递交 prompt 一致性、console/page error 监听。
 // 截图只存临时目录供人查看，不进上下文（AGENTS 硬约束）。
@@ -79,10 +79,9 @@ const check = (name, ok) => {
         '包不存在'
       )
   )
-  const facts = await page.locator('.ci-config-fact').allTextContents()
   check(
-    '配置事实随模式显示（服务器信息/探针 已配置）',
-    facts.join('|').includes('服务器信息 已配置') && facts.join('|').includes('探针 已配置')
+    '无配置事实行（十轮反馈：配置状态经「配置」会话确认）',
+    (await page.locator('.ci-config-facts').count()) === 0
   )
   check('统一配置按钮存在', (await page.locator('#deploy .ci-config-button').count()) === 1)
 
@@ -364,14 +363,9 @@ const check = (name, ok) => {
     (await page.locator('.g3-footer').textContent()).includes('六步全过')
   )
 
-  // 切开发模式：版本选择消失、配置事实切换、执行带 --mode=dev、读数换本地口径
+  // 切开发模式：版本选择消失、执行带 --mode=dev、读数换本地口径
   await page.click('.ci-mode-toggle button:has-text("开发")')
   check('开发模式无版本选择', (await page.locator('.ci-version').count()) === 0)
-  const devFacts = (await page.locator('.ci-config-fact').allTextContents()).join('|')
-  check(
-    '配置事实切换为开发项（启动命令，无服务器信息）',
-    devFacts.includes('启动命令 已配置') && !devFacts.includes('服务器信息')
-  )
   await page.click('#deploy .ci-mode-row .ci-flow-cmdtoggle')
   const devCmds = (await page.locator('.ci-flow-cmd').allTextContents()).join('|')
   check(

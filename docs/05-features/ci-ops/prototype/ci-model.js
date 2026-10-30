@@ -83,18 +83,6 @@ export const VERSIONS = [
   }
 ]
 
-// 配置事实（演示数据全为已配置）：随模式显示对应配置项，板面只显示「已配置/未配置」，内容收在会话与资产。
-export const CONFIG_FACTS = {
-  dev: [
-    ['启动命令', true],
-    ['探针', true]
-  ],
-  release: [
-    ['服务器信息', true],
-    ['探针', true]
-  ]
-}
-
 const okSteps = {
   pkg: 'ok',
   precheck: 'ok',

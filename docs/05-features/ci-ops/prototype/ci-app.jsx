@@ -5,7 +5,6 @@ import {
   FLOW,
   FLOW_PHASES,
   VERSIONS,
-  CONFIG_FACTS,
   initialState,
   initialRecords,
   PROMPTS,
@@ -135,8 +134,9 @@ function FlowList({ view, live, mode, version, cmdOpen, logOpen, errorByStep }) 
   )
 }
 
-// 部署卡：状态行 + 模式行（模式/版本/配置事实 + 配置 · 主动作 · 命令 · 日志 · 历史记录）+ 执行块（按所选记录渲染）；
-// 灰态给扫描事实行与生成入口（八轮反馈：部署与查看开关集中到配置旁，报错不经按钮）。
+// 部署卡：状态行 + 模式行（模式/版本 + 配置 · 主动作 · 命令 · 日志 · 历史记录）+ 执行块（按所选记录渲染）；
+// 灰态给扫描事实行与生成入口（八轮反馈：部署与查看开关集中到配置旁，报错不经按钮；
+// 十轮反馈：配置事实不上板面，配置状态经「配置」会话确认）。
 function ModuleCard({
   index,
   module,
@@ -215,16 +215,6 @@ function ModuleCard({
               ) : (
                 <span className="ci-version-empty">验收屏未见包登记</span>
               ))}
-            <span
-              className="ci-config-facts"
-              title="六步流程所需的项目资产经 CI 助手会话配置；板面只显示已配置/未配置"
-            >
-              {CONFIG_FACTS[mode].map(([name, ready]) => (
-                <span key={name} className={`ci-config-fact ${ready ? '' : 'missing'}`}>
-                  {name} {ready ? '已配置' : '未配置'}
-                </span>
-              ))}
-            </span>
             <ActionButton
               className="ci-config-button"
               icon="edit"
@@ -587,7 +577,7 @@ function App() {
             →
             包路径），默认最新；包不存在的版本灰掉标「包不存在」，不隐藏——历史记录引用的版本对得上号。六步流程所需的配置（开发启动命令与端口、探针
             URL、上线服务器信息）经统一「配置」按钮向 CI
-            助手递交请求：已有配置先读出给人确认、缺失项经会话收集，落项目资产随脚本同审；板面只显示各配置项「已配置/未配置」事实，不显示配置内容。密码不进配置——只在部署执行时输入（密文显示、不可复制、不落盘不进记录）。
+            助手递交请求：已有配置先读出给人确认、缺失项经会话收集，落项目资产随脚本同审；板面不显示配置事实与内容（十轮反馈），是否已配置经「配置」会话读出确认。密码不进配置——只在部署执行时输入（密文显示、不可复制、不落盘不进记录）。
           </p>
           <p>
             <strong>四阶段六步流程</strong>：部署前准备（软件包准备 → 预检 → 清场）→
