@@ -238,8 +238,8 @@ export function createClaudeStructuredLaunchResolver(
     // user's own key is their sign-in and must reach the child.
     const env = withCliRuntimeOnPath(
       command,
-      // Every structured session can reach this app's CLI; only dispatched workers
-      // receive orchestration identity.
+      // Only a dispatched structured worker gets the orchestration identity and the Orca CLI on
+      // PATH; an ordinary chat session's env passes through untouched.
       structuredWorkerChildIdentityEnv(record.sessionId, {
         ...applyClaudeEnvPatch(
           cloneDefinedEnv(process.env),

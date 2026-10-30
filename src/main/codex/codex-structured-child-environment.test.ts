@@ -24,11 +24,10 @@ describe('buildCodexStructuredChildEnvironment', () => {
         'spawn-token',
         'session-not-a-worker'
       )
-    ).toMatchObject({
+    ).toEqual({
       EXAMPLE_GATEWAY_TOKEN: 'shell-exported',
       CODEX_HOME: '/pinned/home',
       [CODEX_SPAWN_TOKEN_ENV]: 'spawn-token',
-      ORCA_CLI_COMMAND: 'orca',
       [ORCA_STRUCTURED_SESSION_ENV]: '1'
     })
   })
@@ -43,16 +42,11 @@ describe('buildCodexStructuredChildEnvironment', () => {
       env: {}
     }
     const sessionId = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d'
-    expect(buildCodexStructuredChildEnvironment(launch, 'spawn-token', sessionId)).toMatchObject({
+    expect(buildCodexStructuredChildEnvironment(launch, 'spawn-token', sessionId)).toEqual({
       [CODEX_SPAWN_TOKEN_ENV]: 'spawn-token',
-      // CLI discovery is available, but the ordinary session still has no worker identity.
+      // No identity yet, so the child carries only the refuse-rather-than-guess marker.
       [ORCA_STRUCTURED_SESSION_ENV]: '1'
     })
-
-    const ordinary = buildCodexStructuredChildEnvironment(launch, 'spawn-token', sessionId)
-    expect(ordinary.ORCA_CLI_COMMAND).toBe('orca')
-    expect(ordinary.ORCA_TERMINAL_HANDLE).toBeUndefined()
-    expect(ordinary.ORCA_PANE_KEY).toBeUndefined()
 
     const handle = mintStructuredWorkerHandle()
     structuredWorkerIdentities.register({
