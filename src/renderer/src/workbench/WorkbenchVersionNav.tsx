@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
+import { useVisibleRuntimeSessionActiveRepo } from '@/store/repos/use-visible-runtime-session-repos'
 import { isVersionFlowWorkflow } from '../../../shared/workbench/version-workspace-prepare'
 import { Button } from '@/components/ui/button'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
@@ -55,11 +56,9 @@ function readExpandedStore(key: string | null): Set<string> | null {
 }
 
 export function WorkbenchVersionNav(): React.JSX.Element | null {
-  const repoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const projectName = useAppStore((s) => {
-    const active = s.activeRepoId ?? s.repos[0]?.id ?? null
-    return s.repos.find((repo) => repo.id === active)?.displayName?.trim() || null
-  })
+  const repo = useVisibleRuntimeSessionActiveRepo()
+  const repoId = repo?.id ?? null
+  const projectName = repo?.displayName?.trim() || null
   const activeView = useAppStore((s) => s.activeView)
   const activeWorktree = useAppStore((s) =>
     s.activeWorktreeId ? s.getKnownWorktreeById(s.activeWorktreeId) : null

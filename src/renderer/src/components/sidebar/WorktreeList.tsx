@@ -4,12 +4,7 @@ import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useVersionSidebarProjection } from '@/workbench/version-sidebar-state'
 import { getWorktreeHostIdentity } from '../../../../shared/worktree/host-qualified-identity'
 import { useShallow } from 'zustand/react/shallow'
-import {
-  useAllWorktrees,
-  useProjectHostSetupProjection,
-  useRepoMap,
-  useWorktreeMap
-} from '@/store/selectors'
+import { useAllWorktrees, useProjectHostSetupProjection, useWorktreeMap } from '@/store/selectors'
 import type { ProjectGroup } from '../../../../shared/project-group-types'
 import type { Repo } from '../../../../shared/repo-types'
 import {
@@ -36,6 +31,10 @@ import { useSidebarSectionRows } from './worktree-list/listing/use-section-rows'
 import { useSidebarWorktreeFilters } from './worktree-list/listing/use-filters'
 import { useSidebarWorktreeSelection } from './worktree-list/navigation/use-selection'
 import { useSidebarWorktreeSortOrder } from './worktree-list/listing/use-sort-order'
+import {
+  useRuntimePlaceholderVisibility,
+  useWorkbenchProjectScope
+} from './worktree-list/listing/use-runtime-placeholder-visibility'
 import { useVisibleSidebarWorktrees } from './worktree-list/listing/use-visible-worktrees'
 import { useWorktreeStatusMutations } from './worktree-list/drag/use-status-mutations'
 import { shouldFiltersHideAllRows } from './sidebar-empty-state-gate'
@@ -60,21 +59,22 @@ const WorktreeList = React.memo(function WorktreeList({
 }: WorktreeListProps) {
   // ── Granular selectors (each is a primitive or shallow-stable ref) ──
   const allWorktrees = useAllWorktrees()
-  const repoMap = useRepoMap()
   const worktreeMap = useWorktreeMap()
-  const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const { repos, repoMap, isMissingPlaceholder, hostCatalog } = useRuntimePlaceholderVisibility()
+  const projectGroups = useAppStore((s) => s.projectGroups ?? EMPTY_PROJECT_GROUPS)
+  const selectedRepoId = useAppStore((s) => s.activeRepoId)
+  const activeRepoId = repos.find((repo) => repo.id === selectedRepoId)?.id ?? repos[0]?.id ?? null
   const versionProjection = useVersionSidebarProjection()
   const workbenchProject =
     isWorkbenchShell() && versionProjection.repoId === activeRepoId && activeRepoId
       ? versionProjection
       : undefined
-  const workbenchScope = useMemo(
-    () =>
-      workbenchProject && activeRepoId
-        ? { repoId: activeRepoId, repoIds: workbenchProject.repoIds }
-        : undefined,
-    [workbenchProject, activeRepoId]
+  const workbenchScope = useWorkbenchProjectScope(
+    workbenchProject,
+    activeRepoId,
+    repos,
+    projectGroups,
+    hostCatalog
   )
   const worktreeLineageById = useAppStore((s) => s.worktreeLineageById)
   const workspaceLineageByChildKey = useAppStore((s) => s.workspaceLineageByChildKey)
@@ -101,7 +101,6 @@ const WorktreeList = React.memo(function WorktreeList({
   const clearPendingRevealSidebarRow = useAppStore((s) => s.clearPendingRevealSidebarRow)
   const collapsedGroups = useAppStore((s) => s.collapsedGroups)
   const toggleGroup = useAppStore((s) => s.toggleCollapsedGroup)
-  const projectGroups = useAppStore((s) => s.projectGroups ?? EMPTY_PROJECT_GROUPS)
   const folderWorkspaces = useAppStore((s) => s.folderWorkspaces)
   const settings = useAppStore((s) => s.settings)
   const cardProps = useAppStore((s) => s.worktreeCardProperties)
@@ -138,12 +137,13 @@ const WorktreeList = React.memo(function WorktreeList({
     })
   const visibleWorktrees = useMemo(
     () =>
-      workbenchProject
-        ? filteredWorktrees.filter(
-            (tree) => !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
-          )
-        : filteredWorktrees,
-    [filteredWorktrees, workbenchProject]
+      filteredWorktrees.filter(
+        (tree) =>
+          !isMissingPlaceholder(tree) &&
+          (!workbenchProject ||
+            !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree)))
+      ),
+    [filteredWorktrees, workbenchProject, isMissingPlaceholder]
   )
   const nativeDetectedWorktrees = useMemo(() => {
     if (!workbenchProject) {

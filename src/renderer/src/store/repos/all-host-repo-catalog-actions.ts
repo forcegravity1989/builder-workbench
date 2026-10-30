@@ -1,4 +1,6 @@
+import { getRuntimeRepoCatalogEpoch } from './runtime-repo-catalog-epoch'
 import type { StateCreator } from 'zustand'
+import { getRuntimeEnvironmentConnectionGeneration } from '../slices/runtime-status'
 import type { AppState } from '../types'
 import type { Repo } from '../../../../shared/repo-types'
 import { applyManualRepoOrder } from '../../../../shared/manual-repo-order'
@@ -87,6 +89,14 @@ export function createAllHostRepoCatalogActions(
           )
           return {
             repos: finalizedRepos,
+            ...(catalog.hostId.startsWith('runtime:')
+              ? {
+                  runtimeRepoCatalogIdsByHost: {
+                    ...s.runtimeRepoCatalogIdsByHost,
+                    [catalog.hostId]: catalog.repos.map((repo) => repo.id)
+                  }
+                }
+              : {}),
             pendingSshRepoReadoptions: reconciliation.pendingReadoptions,
             ...reconcileReadoptedSshWorktreeState(s, s.pendingSshRepoReadoptions),
             ...mergedProjectCompatibility,
@@ -146,6 +156,8 @@ export function createAllHostRepoCatalogActions(
             kind: 'environment' as const,
             environmentId: environment.id
           }
+          const connectionGeneration = getRuntimeEnvironmentConnectionGeneration(environment.id)
+          const catalogEpoch = getRuntimeRepoCatalogEpoch(environment.id)
           claimRepoCatalogGeneration(get, getRuntimeTargetHostId(target), generation)
           const [catalogResult, visibilitySnapshot] = await Promise.all([
             fetchRepoCatalogForTarget(target).then(
@@ -156,6 +168,13 @@ export function createAllHostRepoCatalogActions(
           ])
           const visibilityDefaults = visibilitySnapshot.defaults
           const hostId = getRuntimeTargetHostId(target)
+          if (
+            getRuntimeEnvironmentConnectionGeneration(environment.id) !== connectionGeneration ||
+            getRuntimeRepoCatalogEpoch(environment.id) !== catalogEpoch
+          ) {
+            failed = true
+            return
+          }
           if (
             visibilityDefaults !== undefined &&
             latestAllHostRepoCatalogGenerationByStore.get(get) === generation &&

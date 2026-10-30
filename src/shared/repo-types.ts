@@ -41,6 +41,8 @@ export type WorktreeVisibilitySourcePreferences = {
 
 export type Repo = {
   id: string
+  /** Synthetic owner metadata reconstructed from a persisted runtime session. */
+  runtimeSessionPlaceholder?: true
   path: string
   displayName: string
   badgeColor: string

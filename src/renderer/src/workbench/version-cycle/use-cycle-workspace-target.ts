@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
+import { useVisibleRuntimeSessionActiveRepo } from '@/store/repos/use-visible-runtime-session-repos'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
@@ -81,8 +82,8 @@ export function useCycleWorkspaceTarget(
   onNotice: (text: string) => void
 ) {
   const activeView = useAppStore((state) => state.activeView)
-  const repoId = useAppStore((state) => state.activeRepoId ?? state.repos[0]?.id ?? null)
-  const repo = useAppStore((state) => state.repos.find((item) => item.id === repoId))
+  const repo = useVisibleRuntimeSessionActiveRepo()
+  const repoId = repo?.id ?? null
   const trees = useAppStore((state) => (repoId ? state.worktreesByRepo[repoId] : undefined))
   const selected = useAppStore((state) =>
     state.activeWorktreeId

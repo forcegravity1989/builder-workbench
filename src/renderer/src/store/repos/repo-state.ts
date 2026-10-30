@@ -148,6 +148,8 @@ export type RepoSlice = {
   activeRepoId: string | null
   // Monotonic sequence so overlapping catalog fetches can drop stale same-host results (#7020).
   reposFetchGeneration: number
+  /** Last successful runtime catalogs; absent host means its catalog is unknown. */
+  runtimeRepoCatalogIdsByHost: Record<string, readonly string[]>
   pendingSshRepoReadoptions: readonly SshRepoReadoption[]
   recordSshRepoReadoptions: (readoptions: readonly SshRepoReadoption[]) => void
   fetchRepos: (options?: RuntimeCatalogFetchOptions) => Promise<void>

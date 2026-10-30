@@ -10,6 +10,7 @@ import {
 } from '../../runtime/runtime-compatibility-test-fixture'
 import { clearRuntimeCompatibilityCacheForTests } from '../../runtime/runtime-rpc-client'
 import { getSetupScriptPromptDismissalKey } from '../../lib/setup-script-prompt'
+import { registerRuntimeCatalogRetiredConnectionTests } from './repos-all-hosts-retired-connection-cases'
 
 const localRepo: Repo = {
   id: 'local-repo',
@@ -299,6 +300,7 @@ const repoReadoption = {
 }
 
 describe('fetchReposForAllHosts', () => {
+  registerRuntimeCatalogRetiredConnectionTests(runtimeEnvironmentCall, remoteRepo)
   it('prunes a superseded direct SSH row during a local catalog transaction', async () => {
     const staleRepo = directSshRepo('ssh-old')
     const liveRepo = directSshRepo('ssh-new')
@@ -362,6 +364,7 @@ describe('fetchReposForAllHosts', () => {
       liveRepo,
       { ...remoteRepo, executionHostId: 'runtime:env-1' }
     ])
+    expect(store.getState().runtimeRepoCatalogIdsByHost['runtime:env-1']).toEqual([remoteRepo.id])
   })
 
   it('loads local + all configured runtime environments even when a remote env is active', async () => {
@@ -378,7 +381,7 @@ describe('fetchReposForAllHosts', () => {
       .repos.map((repo) => repo.id)
       .sort()
     expect(ids).toEqual(['local-repo', 'remote-repo'])
-    expect(store.getState().projects).toContainEqual(localProject)
+    expect(store.getState().runtimeRepoCatalogIdsByHost['runtime:env-1']).toEqual([remoteRepo.id])
     expect(store.getState().projectHostSetups).toContainEqual(localProjectHostSetup)
   })
 

@@ -1,7 +1,11 @@
 import type { Repo } from '../../../../shared/repo-types'
 import type { Worktree } from '../../../../shared/worktree/types'
 import { DEFAULT_REPO_BADGE_COLOR } from '../../../../shared/constants'
-import { parseExecutionHostId, type ExecutionHostId } from '../../../../shared/execution-host'
+import {
+  getWorktreeExecutionHostId,
+  parseExecutionHostId,
+  type ExecutionHostId
+} from '../../../../shared/execution-host'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import { splitWorktreeIdForFilesystem } from '../../../../shared/worktree/id'
 
@@ -50,6 +54,7 @@ export function buildRuntimeSessionPlaceholders({
         ...nextRepos,
         {
           id: parsed.repoId,
+          runtimeSessionPlaceholder: true,
           path: parsed.worktreePath,
           displayName: getPathDisplayName(parsed.worktreePath, parsed.repoId),
           badgeColor: DEFAULT_REPO_BADGE_COLOR,
@@ -60,13 +65,20 @@ export function buildRuntimeSessionPlaceholders({
       ]
     }
     const current = nextWorktreesByRepo[parsed.repoId] ?? []
-    if (current.some((worktree) => worktree.id === worktreeId)) {
+    const owner = nextRepos.find((repo) => repo.id === parsed.repoId)
+    if (
+      current.some(
+        (worktree) =>
+          worktree.id === worktreeId && getWorktreeExecutionHostId(worktree, owner) === hostId
+      )
+    ) {
       continue
     }
     const placeholder: Worktree = {
       id: worktreeId,
       repoId: parsed.repoId,
       hostId,
+      runtimeSessionPlaceholder: true,
       displayName: getPathDisplayName(parsed.worktreePath, parsed.repoId),
       comment: '',
       linkedIssue: null,

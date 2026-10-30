@@ -56,15 +56,21 @@ describe('buildRuntimeSessionPlaceholders', () => {
   })
 
   it('keeps the original repos array when the session only references known repos', () => {
-    const repos = [repo]
+    const repos = [{ ...repo, executionHostId: 'runtime:host-1' as const }]
 
     const result = buildRuntimeSessionPlaceholders({
       repos,
       runtimeHostIdByWorkspaceSessionKey: { 'repo-1::/repos/one': 'runtime:host-1' },
-      worktreesByRepo: { 'repo-1': [worktree] }
+      worktreesByRepo: { 'repo-1': [{ ...worktree, hostId: 'runtime:host-1' }] }
     })
 
     expect(result.repos).toBe(repos)
+    const legacy = buildRuntimeSessionPlaceholders({
+      repos,
+      runtimeHostIdByWorkspaceSessionKey: { 'repo-1::/repos/one': 'runtime:host-1' },
+      worktreesByRepo: { 'repo-1': [{ ...worktree, hostId: undefined }] }
+    })
+    expect(legacy.worktreesByRepo['repo-1']).toHaveLength(1)
   })
 
   it('still appends a placeholder repo for an unknown runtime workspace', () => {
@@ -78,8 +84,20 @@ describe('buildRuntimeSessionPlaceholders', () => {
 
     expect(result.repos).not.toBe(repos)
     expect(result.repos.map((entry) => entry.id)).toEqual(['repo-1', 'repo-2'])
+    expect(result.repos[1].runtimeSessionPlaceholder).toBe(true)
+    expect(result.worktreesByRepo['repo-2'][0].runtimeSessionPlaceholder).toBe(true)
     // The caller's array must not be mutated in place.
     expect(repos).toHaveLength(1)
+  })
+
+  it('keeps same-id workspaces on different hosts distinct', () => {
+    const result = buildRuntimeSessionPlaceholders({
+      repos: [repo],
+      runtimeHostIdByWorkspaceSessionKey: { 'repo-1::/repos/one': 'runtime:host-1' },
+      worktreesByRepo: { 'repo-1': [worktree] }
+    })
+    expect(result.repos).toHaveLength(1)
+    expect(result.worktreesByRepo['repo-1']).toHaveLength(2)
   })
 })
 

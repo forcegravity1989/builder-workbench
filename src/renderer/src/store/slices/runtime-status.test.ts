@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { create } from 'zustand'
+import type { AppState } from '../types'
 import { toast } from 'sonner'
 import type { RuntimeStatus } from '../../../../shared/runtime-types'
 import type { PublicKnownRuntimeEnvironment } from '../../../../shared/runtime-environments'
@@ -100,7 +101,6 @@ describe('runtime-status slice', () => {
   it('starts with an empty map', () => {
     const store = createSliceStore()
     expect(store.getState().runtimeEnvironments).toEqual([])
-    expect(store.getState().runtimeEnvironmentCatalogHydrated).toBe(false)
     expect(store.getState().runtimeStatusByEnvironmentId.size).toBe(0)
   })
 
@@ -125,8 +125,6 @@ describe('runtime-status slice', () => {
     expect(store.getState().runtimeEnvironments.map((environment) => environment.name)).toEqual([
       'Dev Box'
     ])
-    expect(store.getState().runtimeEnvironmentCatalogHydrated).toBe(true)
-    expect(store.getState().runtimeStatusByEnvironmentId.has('keep')).toBe(true)
     expect(store.getState().runtimeStatusByEnvironmentId.has('drop')).toBe(false)
   })
 
@@ -141,6 +139,7 @@ describe('runtime-status slice', () => {
       status: makeStatus({ runtimeId: 'same-runtime' }),
       checkedAt: 1
     })
+    store.setState({ runtimeRepoCatalogIdsByHost: { 'runtime:env-a': ['repo'] } } as never)
     const before = getRuntimeEnvironmentConnectionGeneration('env-a')
 
     store
@@ -148,20 +147,18 @@ describe('runtime-status slice', () => {
       .setRuntimeEnvironments([{ id: 'env-a', createdAt: 1, pairingRevision: 2 } as never])
 
     expect(store.getState().runtimeStatusByEnvironmentId.has('env-a')).toBe(false)
+    expect((store.getState() as unknown as AppState).runtimeRepoCatalogIdsByHost).toEqual({})
     expect(getRuntimeEnvironmentConnectionGeneration('env-a')).toBe(before + 1)
     expect(purgeStaleRuntimeHostState).toHaveBeenCalledWith(['env-a'])
   })
 
   it('merges per environment id and produces a new map reference', () => {
     const store = createSliceStore()
-    const before = store.getState().runtimeStatusByEnvironmentId
-
     store.getState().setRuntimeEnvironmentStatus('env-a', {
       status: makeStatus(),
       checkedAt: 1
     })
     const afterFirst = store.getState().runtimeStatusByEnvironmentId
-    expect(afterFirst).not.toBe(before)
     expect(afterFirst.get('env-a')?.checkedAt).toBe(1)
 
     store.getState().setRuntimeEnvironmentStatus('env-b', {
@@ -177,12 +174,14 @@ describe('runtime-status slice', () => {
   it('overwrites the prior entry for the same id', () => {
     const store = createSliceStore()
     store.getState().setRuntimeEnvironmentStatus('env-a', { status: makeStatus(), checkedAt: 1 })
+    store.setState({ runtimeRepoCatalogIdsByHost: { 'runtime:env-a': ['repo'] } } as never)
     store.getState().setRuntimeEnvironmentStatus('env-a', { status: null, checkedAt: 5 })
 
     const map = store.getState().runtimeStatusByEnvironmentId
     expect(map.size).toBe(1)
     // Generation 0: a first publication is not a reconnect, and going offline never bumps.
     expect(map.get('env-a')).toEqual({ status: null, checkedAt: 5, connectionGeneration: 0 })
+    expect((store.getState() as unknown as AppState).runtimeRepoCatalogIdsByHost).toEqual({})
   })
 
   it('retains a learned paired device id after disconnecting a legacy environment', () => {

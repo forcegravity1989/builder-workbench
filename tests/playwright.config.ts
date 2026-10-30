@@ -45,7 +45,7 @@ export default defineConfig({
       // The Workbench lane owns the cycle and project configuration journeys. Legacy Orca
       // specs remain in the tree for source compatibility, but are not part of
       // the current CI entrypoint.
-      testMatch: 'workbench-cycle-smoke.spec.ts',
+      testMatch: ['workbench-cycle-smoke.spec.ts', 'workbench-stale-runtime-session.spec.ts'],
       grepInvert: /@headful/,
       metadata: {
         workbenchHeadful: false
@@ -55,7 +55,7 @@ export default defineConfig({
       name: 'electron-headful',
       // Keep manual headful verification on the same Workbench smoke journey;
       // restored legacy Orca specs are source-only compatibility material.
-      testMatch: 'workbench-cycle-smoke.spec.ts',
+      testMatch: ['workbench-cycle-smoke.spec.ts', 'workbench-stale-runtime-session.spec.ts'],
       metadata: {
         workbenchHeadful: true
       }
