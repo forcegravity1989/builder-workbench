@@ -2,7 +2,7 @@
 name: week-planning
 description: Use when 在 BW 计划屏协助用户制定、评审和归档版本计划，或对应 Orca 周期运行启动。验收已有版本使用 version-acceptance。
 metadata:
-  version: 0.8.2
+  version: 0.8.3
 ---
 
 # 版本计划
@@ -11,19 +11,23 @@ metadata:
 
 宿主下发原生项目、工作树与运行身份。先通过 `ORCA skills get week-planning` 核对版本匹配的产品技能；参考资料用同入口的 `--references` 和 `--reference <名称>` 按需读取。命令或权限不可用时保留讨论内容并报告真实错误。
 
+## 开工与恢复
+
+先执行 `ORCA bw materials context --workflow plan --json`，完整读取返回的 `instructions`（BW 公共纪律与执行上下文）、`context`、当前版本、材料问题与 `priorReview`，再开展协作。`priorReview` 保留上版固定来源、缺失或读取失败状态；失败不改读其他版本，也不推断没有遗留。入口沿原生终端身份或已登记的当前工作树解析，不按界面焦点猜项目；后续材料命令使用读回的身份参数。草稿版本与宿主绑定或当前选版不一致时先核对，不擅自改绑或改选版。读取失败先报告真实错误、保留讨论，不猜身份、不写材料。
+
 ## 旅程与阶段校准
 
 计划屏旅程四区：**计划准备 → 本版目标 → 会议纪要 → 归档 PR**。对用户讲话一律用这四个分区名——开场讲解与每步回执都按它说，用户能在板面上找到你说的每一步。
 
 材料的 `workflow.stage`（preparation/goals/breakdown/review/archive）记录最近完成的阶段，只供会话恢复校准与自动化读取：界面上没有阶段灯，也不把 stage 值当作面向用户的步骤名。每完成一个阶段用 `ORCA bw materials save` 更新：
 
-| stage | 何时写入 |
-|---|---|
-| `preparation` | 版本明确、现状与上版交付核对完成 |
-| `goals` | 版本目标成形并写入 goals |
-| `breakdown` | Issue 创建/更新完成并写入 tasks 引用 |
-| `review` | 用户在会话中明确确认评审通过后 |
-| `archive` | 提交归档 PR 之前；PR 开出后把 provider/repository/number 写入 `workflow.archivePr` |
+| stage         | 何时写入                                                                           |
+| ------------- | ---------------------------------------------------------------------------------- |
+| `preparation` | 版本明确、现状与上版交付核对完成                                                   |
+| `goals`       | 版本目标成形并写入 goals                                                           |
+| `breakdown`   | Issue 创建/更新完成并写入 tasks 引用                                               |
+| `review`      | 用户在会话中明确确认评审通过后                                                     |
+| `archive`     | 提交归档 PR 之前；PR 开出后把 provider/repository/number 写入 `workflow.archivePr` |
 
 恢复会话时先校准：按材料实际进度把 stage 补写到真实到达的阶段，再继续。评审必须由用户明确表达确认才写 `review`，不因改过目标就代人记录。内容实质调整使后续阶段失效时，把 stage 回退到实际阶段。PR 是否合入由界面按 `archivePr` 读 provider 显示，合入依人的授权，stage 不代表已合入。
 

@@ -299,7 +299,7 @@ function renderWorkbenchGuide(markdown, source, name, references) {
     source === WORKBENCH_GUIDE_SOURCES[name]
       ? normalized.replace(
           frontmatterBlock(normalized, source),
-          `${frontmatterBlock(normalized, source)}\nUse \`ORCA\` for the executable you resolved in the stub; reuse it for all commands below.\n`
+          `${frontmatterBlock(normalized, source)}\nUse \`ORCA\` for the executable used to read this guide (or resolved in the stub); reuse it for all commands below.\n`
         )
       : normalized
   return guide
@@ -460,7 +460,13 @@ async function buildArtifacts(repoRoot = REPO_ROOT) {
   return [
     {
       path: path.join(repoRoot, 'src', 'cli', 'bundled-skill-guides.ts'),
-      content: serializeEmbeddedModule(guides)
+      content: `${serializeEmbeddedModule(
+        guides
+      )}\n// oxfmt-ignore\nexport const WORKBENCH_SYSTEM_TEMPLATE = ${JSON.stringify(
+        normalizeMarkdown(
+          await readFile(path.join(repoRoot, 'standard/system-prompt/SYSTEM.md.tmpl'), 'utf8')
+        )
+      )}\n`
     },
     ...projections
   ]

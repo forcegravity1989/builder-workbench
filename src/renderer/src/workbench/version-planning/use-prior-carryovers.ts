@@ -15,7 +15,7 @@ import {
   issueMarkFor
 } from '../version-acceptance/acceptance-issue-annotations'
 import { nativeVersionHistoryPort } from '../version-history-port'
-import { readPlanningProgressSource } from './planning-progress-source'
+import { readPlanningProgressSource } from '../../../../shared/workbench/planning-progress-source'
 import { createSnapshotCache, useSnapshotCache } from '../snapshot-cache'
 
 type PriorCarryoverIssue = {

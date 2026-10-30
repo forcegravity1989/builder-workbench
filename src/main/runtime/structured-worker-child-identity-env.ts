@@ -21,8 +21,8 @@
  * precisely because a structured session emits no hook agent status. The CLI needs none of it once
  * the handle is present.
  *
- * A session that is not a dispatched worker gets ONE variable, `ORCA_STRUCTURED_SESSION`, and it
- * names nothing: no handle, no pane key, no session id, no token. Its only meaning is "this child
+ * A session that is not a dispatched worker gets the app-owned CLI path plus `ORCA_STRUCTURED_SESSION`, and it
+ * names no execution identity: no handle, no pane key, no session id, no token. Its only meaning is "this child
  * is a structured session with no orchestration identity", which is what a verb needs in order to
  * REFUSE rather than guess one. Because it names nothing it cannot be replayed, cannot impersonate,
  * and cannot flow into the hook, agent-row or mobile-projection pipelines the way a pane key would
@@ -46,7 +46,9 @@ export function structuredWorkerChildIdentityEnv(
 ): Record<string, string> {
   const identity = structuredWorkerIdentities.getBySessionId(sessionId)
   if (!identity) {
-    return { ...childEnv, [ORCA_STRUCTURED_SESSION_ENV]: '1' }
+    const env = { ...childEnv, [ORCA_STRUCTURED_SESSION_ENV]: '1', ORCA_CLI_COMMAND: 'orca' }
+    applyOrcaCliPath(env)
+    return env
   }
   const env: Record<string, string> = {
     ...childEnv,

@@ -25,7 +25,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 | `version-planning/PlanningMinutesSection.tsx`（含内部 MinutesCard）      | `version-acceptance/AcceptanceMinutesSection.tsx`  | 两屏共识/遗留文本与整份人工确认独立实现，无逐项闭环控件。验收 `document` 可选：原生会话实际打开后即展示四区，无材料时本节是只读空纪要并保留原生发送入口，不可编辑或确认。归档前每项已落实或关联真实跟进 Issue，由助手核对、PR 人审；整理 prompt 只承载触发意图，规则归 Skill，不新增材料协议。 |
 | `version-planning/PlanningArchiveCard.tsx`                               | `version-acceptance/AcceptanceArchiveCard.tsx`     | 文案改验收归档；发布按钮并入本区（见「发布」节）。打开原生 PR 页不拷贝——两屏都 import 共用 `version-cycle/open-archive-pr.ts`（已从计划屏目录移到共用层）                                                                                                                                      |
 | `version-planning/version-planning.css` 中验收需要的板面壳/分区/纪要样式 | `version-acceptance/acceptance.css`                | 只拷验收实际用到的选择器，类名前缀改 `acc-`，不整表复制；计划屏特有样式（上版回顾、目标卡编辑态、指标承诺）不拷。**批注与板面基础件的样式不在这里**——它们随共用组件走 `annotations/annotations.css` 与 `board-ui.css`，由组件自己 import，两屏自动同源                                         |
-| `version-planning/PlanningGoals.tsx` 中目标行只读裁剪形态                | `version-acceptance/AcceptanceGoalRows.tsx`        | 目标句/负责人/验收标准只读来自固定计划；计数后行内单个未判定/达成/不达成状态（#471 批注6 以真机为准），沿中性/警示色，清除回未判定。Issue 按未关闭、未知、已关闭稳定分组并分别计数；遗留是未关闭的人工标记子集，标签仅成功读回才显示，关闭后保留历史备注只读。                                                                |
+| `version-planning/PlanningGoals.tsx` 中目标行只读裁剪形态                | `version-acceptance/AcceptanceGoalRows.tsx`        | 目标句/负责人/验收标准只读来自固定计划；计数后行内单个未判定/达成/不达成状态（#471 批注6 以真机为准），沿中性/警示色，清除回未判定。Issue 按未关闭、未知、已关闭稳定分组并分别计数；遗留是未关闭的人工标记子集，标签仅成功读回才显示，关闭后保留历史备注只读。                                 |
 
 **直接 import，不拷贝**（这些不在计划屏目录下，是 #399 建在共用层、注释明写供两屏使用的模块，或 v9.5 起就是两屏共用的壳层）：
 
@@ -108,7 +108,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 ## 板面结构与异常
 
-未开始时 `AcceptanceEmptyBoard` 只显示“版本验收尚未开始 / 开始验收”。`entry.start` 成功必须对应原生运行会话实际打开，true 才写入 `cycle-view-state` 的 started 视图记忆，按 workflow、version（初读为空用 boundVersion）、scope/owner、worktreeId/instanceId 隔离；普通 shell 不推断启动，已有有效材料独立恢复。计划未合入不阻止开会话，启动上下文要求助手第一时间提醒，禁止自动合入。`useAcceptanceBoard` 初始化仍校验可读 committed 固定计划身份与并发归属，没有来源就不建材料、不伪造 planRef；旧 use-acceptance-gate 与 GateDialog 已删除。
+未开始时 `AcceptanceEmptyBoard` 只显示“版本验收尚未开始 / 开始验收”。`entry.start` 成功必须对应原生草稿会话实际打开，true 才写入 `cycle-view-state` 的 started 视图记忆，按 workflow、version（初读为空用 boundVersion）、scope/owner、worktreeId/instanceId 隔离；普通 shell 不推断启动，已有有效材料独立恢复。手动开工复用原生 draft 入口，输入区只预填一句话、不自动回车；技能通过材料 context 读回 SYSTEM 公共纪律及宿主身份、版本、材料错误，自动化仍用完整提示。计划未合入不阻止开会话，技能要求助手发送后先核对并提醒，禁止自动合入。`useAcceptanceBoard` 初始化仍校验可读 committed 固定计划身份与并发归属，没有来源就不建材料、不伪造 planRef；旧 use-acceptance-gate 与 GateDialog 已删除。
 
 开始成功后显示验收准备、Showcase、会议纪要、归档 PR 及发版本四区，缺固定计划时目标为空，纪要/归档组件接受缺材料并保留相应只读空态。顶部导航只定位，不作步骤门禁；原滚动侦测、导航抑制与会话收折重定位机制保留，未开始短卡不渲染导航。
 

@@ -1,5 +1,5 @@
-import type { MetricScope } from '../../../../shared/workbench/metrics'
-import type { VersionHistoryPort } from '../../../../shared/workbench/version-history'
+import type { MetricScope } from './metrics'
+import type { VersionHistoryPort } from './version-history'
 import {
   AcceptanceMaterialSchema,
   PlanningMaterialSchema,
@@ -7,7 +7,7 @@ import {
   type AcceptanceMaterial,
   type PlanningMaterial,
   type PlanningProgressSource
-} from '../../../../shared/workbench/version-material'
+} from './version-material'
 
 /** The fixed acceptance record plus the plan it adopted, both identity-verified. */
 type PlanningProgressSourceDocuments = {
@@ -21,7 +21,7 @@ type PlanningProgressSourceDocuments = {
  * never fall back to another record or to the latest material.
  */
 export async function readPlanningProgressSource(
-  history: VersionHistoryPort,
+  history: Pick<VersionHistoryPort, 'read' | 'readPlan'>,
   scope: MetricScope,
   input: PlanningProgressSource
 ): Promise<PlanningProgressSourceDocuments> {

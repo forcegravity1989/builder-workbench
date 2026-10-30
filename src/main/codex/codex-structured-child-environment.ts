@@ -8,8 +8,8 @@ export function buildCodexStructuredChildEnvironment(
   sessionId: string
 ): Record<string, string> {
   return {
-    // Only a dispatched structured worker gets the orchestration identity and the Orca CLI on
-    // PATH; an ordinary chat session's env passes through untouched.
+    // All structured children reach this app's CLI; only dispatched workers receive an
+    // orchestration identity. Ordinary chats retain the identity-free session marker.
     ...structuredWorkerChildIdentityEnv(sessionId, {
       ...launch.env,
       ...(launch.codexHome ? { CODEX_HOME: launch.codexHome } : {})

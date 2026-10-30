@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { delimiter, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { installFakeAppEnvironment } from '../../../config/scripts/vitest-host-ports-setup'
 
@@ -57,7 +57,7 @@ afterEach(() => {
 })
 
 describe('structuredWorkerChildIdentityEnv', () => {
-  it('marks an ordinary chat session as having NO identity, and grants it nothing', () => {
+  it('exposes this app CLI to ordinary chat without granting a worker identity', () => {
     // The marker names nothing — no handle, no pane key, no session id, no token — so it cannot be
     // replayed or impersonated, and it does not reach the hook, agent-row or mobile-projection
     // pipelines a pane key would. Its only job is to let the CLI REFUSE instead of guessing: this
@@ -67,13 +67,17 @@ describe('structuredWorkerChildIdentityEnv', () => {
     installFakeAppEnvironment({ isPackaged: () => true, getPath: () => USER_DATA })
     const childEnv = { PATH: '/usr/bin' }
     const env = structuredWorkerChildIdentityEnv(SESSION_ID, childEnv)
-    expect(env).toEqual({ PATH: '/usr/bin', ORCA_STRUCTURED_SESSION: '1' })
+    expect(env).toEqual({
+      PATH: `${SHIM_DIR + delimiter}/usr/bin`,
+      ORCA_STRUCTURED_SESSION: '1',
+      ORCA_CLI_COMMAND: 'orca'
+    })
     expect(env.ORCA_TERMINAL_HANDLE).toBeUndefined()
     expect(env.ORCA_PANE_KEY).toBeUndefined()
-    expect(env.ORCA_CLI_COMMAND).toBeUndefined()
-    // Still no CLI reachability granted, so packaged builds keep today's exposure.
+    expect(env.ORCA_CLI_COMMAND).toBe('orca')
+    // The input environment remains unchanged; CLI reachability grants no worker identity.
     expect(childEnv.PATH).toBe('/usr/bin')
-    expect(shim.ensureLinuxTerminalOrcaCliShimDir).not.toHaveBeenCalled()
+    expect(shim.ensureLinuxTerminalOrcaCliShimDir).toHaveBeenCalled()
   })
 
   it('gives a packaged-Linux worker the bare-orca shim its ORCA_CLI_COMMAND assumes', () => {
@@ -85,7 +89,7 @@ describe('structuredWorkerChildIdentityEnv', () => {
     const env = structuredWorkerChildIdentityEnv(SESSION_ID, { PATH: '/usr/bin:/bin' })
     expect(env.ORCA_TERMINAL_HANDLE).toBe(handle)
     expect(env.ORCA_CLI_COMMAND).toBe('orca')
-    expect(env.PATH).toBe(`${SHIM_DIR}:/usr/bin:/bin`)
+    expect(env.PATH).toBe(`${SHIM_DIR}${delimiter}/usr/bin:/bin`)
   })
 
   it('gives a packaged-macOS worker the bundled CLI dir', () => {
@@ -93,7 +97,7 @@ describe('structuredWorkerChildIdentityEnv', () => {
     installFakeAppEnvironment({ isPackaged: () => true, getPath: () => USER_DATA })
     registerWorker()
     const env = structuredWorkerChildIdentityEnv(SESSION_ID, { PATH: '/usr/bin' })
-    expect(env.PATH).toBe(`${join(RESOURCES, 'bin')}:/usr/bin`)
+    expect(env.PATH).toBe(`${join(RESOURCES, 'bin')}${delimiter}/usr/bin`)
   })
 
   it('gives a packaged-Windows worker the bundled CLI dir under the env block spelling', () => {
@@ -110,7 +114,7 @@ describe('structuredWorkerChildIdentityEnv', () => {
     installFakeAppEnvironment({ isPackaged: () => false, getPath: () => USER_DATA })
     registerWorker()
     const env = structuredWorkerChildIdentityEnv(SESSION_ID, { PATH: '/usr/bin' })
-    expect(env.PATH).toBe(`${join(USER_DATA, 'cli', 'bin')}:/usr/bin`)
+    expect(env.PATH).toBe(`${join(USER_DATA, 'cli', 'bin')}${delimiter}/usr/bin`)
   })
 
   it('never puts a pane key in the child environment', () => {

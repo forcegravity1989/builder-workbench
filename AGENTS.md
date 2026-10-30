@@ -1,6 +1,7 @@
 # AGENTS.md — Workbench 开发约定
 
 > **本篇维护约定**
+>
 > - **读者与时机**：在本仓工作的模型与开发者；开始任务、修改文档、提交和开 PR 前读取。
 > - **职责与边界**：只写任务读取路径、开发硬约束、建跑测命令、文档维护与交付规则；不承载产品介绍、模块设计正文或变更流水。
 > - **结构**：按任务读取 → 文档维护 → 项目硬约束 → 构建验证 → 修改交付 → CodeGraph。
@@ -12,18 +13,18 @@
 
 **[docs/01-principles/](docs/01-principles/README.md) 是最慢变的原则正本**，不得用草稿实现或聊天结论推翻。按任务读取对应资料，不把所有正文堆进入口：
 
-| 任务 | 读取路径与动作 |
-|---|---|
-| 叠层 / 与 Orca、旧 main 的差异 | 读 [ref/upstream.md](ref/upstream.md)。主干 `main` 即叠层（原 `bw-orca`）；Orca Mobile 产品已删；`standard/` 已从旧 main（现 `archive/main-pre-orca`）合入。叠层 UI 在 `src/renderer/src/workbench/` |
-| 叠层实现、运行或打包 | 读 [SYNC](src/renderer/src/workbench/SYNC.md) 的代码落点、开发命令与构建入口；产品行为读 [architecture](docs/architecture.md)，上游版本与同步取舍读 [ref/upstream.md](ref/upstream.md) |
-| 仓外 IDE 新会话 | 本篇 → [workbench-start](.claude/skills/workbench-start/SKILL.md)，按意图与影响分流开发、验证和交付；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。Workbench 发起的项目执行会话读产品传入提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill |
-| 特性级变更 | 对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，`plan.md` 仅大风险升 gate。交付按 02 §6.2 六环链，新工作先过 §6.3 带入三问；迁移在 Orca 上重新决策，按实际改动补链 |
-| 小 bug、文案、无新增用户价值的整理 | 先确认所属特性与已有行为依据；依据齐备则挂 Issue 直接修、验证、commit/PR 留痕，不为小修新立特性。所属独立特性的必要文档缺失时，按 [02 §6.3](docs/01-principles/02-working-backwards.md) 补齐本次定义并完成缺失决定的人确认，再改依赖这些决定的代码；粒度听 [01](docs/01-principles/01-document-organization.md) |
-| 改客群、飞轮或对外主张 | 先议再改 03；特性 intent 不得偷偷改写产品主张，不把草稿界面说成已交付 |
-| 改代码或现行设计 | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 Electron 叠层与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步相应特性资料；指南待旅程验证后补。视觉协同读 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/)，按文件归属与对应负责人协调 |
-| 改文档 | 先读下节维护流程 → 原则 01 → 目标文件原文头部约定与相关正本；用 [docs 地图](docs/README.md) 找去处。盘点、瘦身、职责/格式治理与模型指令整改使用 [project-knowledge](.claude/skills/project-knowledge/SKILL.md)，包含 HTML 决策、只读扫描和逐轮反哺；普通开发的必要文档同步不启动全库盘点 |
-| 周期复核 Orca/BW 边界 | 读 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md)；先读当前 BW 正本，再核对 Orca 公开版本；只把人采纳的稳定变化写回对应正本 |
-| 改 `standard/` | 先读 [standard/README](standard/README.md) 与 [系统提示词与渐进加载](docs/06-module/系统提示词与渐进加载.md)的维护对照；写 Skill 再读 [SKILL-MD-SPEC](standard/skills/SKILL-MD-SPEC.md)。本仓知识库不等于给被管项目分发的规范。合入记录见 [ref/upstream.md](ref/upstream.md) |
+| 任务                               | 读取路径与动作                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 叠层 / 与 Orca、旧 main 的差异     | 读 [ref/upstream.md](ref/upstream.md)。主干 `main` 即叠层（原 `bw-orca`）；Orca Mobile 产品已删；`standard/` 已从旧 main（现 `archive/main-pre-orca`）合入。叠层 UI 在 `src/renderer/src/workbench/`                                                                                                                                              |
+| 叠层实现、运行或打包               | 读 [SYNC](src/renderer/src/workbench/SYNC.md) 的代码落点、开发命令与构建入口；产品行为读 [architecture](docs/architecture.md)，上游版本与同步取舍读 [ref/upstream.md](ref/upstream.md)                                                                                                                                                            |
+| 仓外 IDE 新会话                    | 本篇 → [workbench-start](.claude/skills/workbench-start/SKILL.md)，按意图与影响分流开发、验证和交付；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。Workbench 发起的项目执行会话读产品传入提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill                                                                       |
+| 特性级变更                         | 对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，`plan.md` 仅大风险升 gate。交付按 02 §6.2 六环链，新工作先过 §6.3 带入三问；迁移在 Orca 上重新决策，按实际改动补链 |
+| 小 bug、文案、无新增用户价值的整理 | 先确认所属特性与已有行为依据；依据齐备则挂 Issue 直接修、验证、commit/PR 留痕，不为小修新立特性。所属独立特性的必要文档缺失时，按 [02 §6.3](docs/01-principles/02-working-backwards.md) 补齐本次定义并完成缺失决定的人确认，再改依赖这些决定的代码；粒度听 [01](docs/01-principles/01-document-organization.md)                                   |
+| 改客群、飞轮或对外主张             | 先议再改 03；特性 intent 不得偷偷改写产品主张，不把草稿界面说成已交付                                                                                                                                                                                                                                                                             |
+| 改代码或现行设计                   | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 Electron 叠层与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步相应特性资料；指南待旅程验证后补。视觉协同读 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/)，按文件归属与对应负责人协调                                  |
+| 改文档                             | 先读下节维护流程 → 原则 01 → 目标文件原文头部约定与相关正本；用 [docs 地图](docs/README.md) 找去处。盘点、瘦身、职责/格式治理与模型指令整改使用 [project-knowledge](.claude/skills/project-knowledge/SKILL.md)，包含 HTML 决策、只读扫描和逐轮反哺；普通开发的必要文档同步不启动全库盘点                                                          |
+| 周期复核 Orca/BW 边界              | 读 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md)；先读当前 BW 正本，再核对 Orca 公开版本；只把人采纳的稳定变化写回对应正本                                                                                                                                                                                                 |
+| 改 `standard/`                     | 先读 [standard/README](standard/README.md) 与 [系统提示词与渐进加载](docs/06-module/系统提示词与渐进加载.md)的维护对照；写 Skill 再读 [SKILL-MD-SPEC](standard/skills/SKILL-MD-SPEC.md)。本仓知识库不等于给被管项目分发的规范。合入记录见 [ref/upstream.md](ref/upstream.md)                                                                      |
 
 Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍须落回 `docs/05-features/<id>/`。找不到设计落点先澄清并补正本，再写代码；未锁定决策先走 grill/domain-modeling。跨会话以仓内正本及可追溯的 commit/PR 为据，不凭上次聊天改代码。
 
@@ -44,12 +45,12 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 
 ### 四铁律
 
-| 约束 | 如何守住 |
-|---|---|
-| 杀进程重开，所有数字能重新计算、前后一致 | 现算推导；用真实 E2E 重启后独立读回核对 |
-| 信号只能从数据推导；没数据就是 Unknown，不是绿 | 健康信号只能从读数推导；store 不提供手设绿灯；没数据就显示未知 |
-| 完成永远由人确认，同一工作不重复记录完成结果 | Issue 关闭由人决定，关闭即计入完成（关闭原因不参与计数）；目标达成仍由人确认；自动化、agent、定时不得自行关闭或确认完成 |
-| 定时任务真实到点触发；自动创建的 Issue 不自动完成 | 调度在 Orca，到点开会话，不能替人确认 Done |
+| 约束                                              | 如何守住                                                                                                                |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| 杀进程重开，所有数字能重新计算、前后一致          | 现算推导；用真实 E2E 重启后独立读回核对                                                                                 |
+| 信号只能从数据推导；没数据就是 Unknown，不是绿    | 健康信号只能从读数推导；store 不提供手设绿灯；没数据就显示未知                                                          |
+| 完成永远由人确认，同一工作不重复记录完成结果      | Issue 关闭由人决定，关闭即计入完成（关闭原因不参与计数）；目标达成仍由人确认；自动化、agent、定时不得自行关闭或确认完成 |
+| 定时任务真实到点触发；自动创建的 Issue 不自动完成 | 调度在 Orca，到点开会话，不能替人确认 Done                                                                              |
 
 - Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。提单格式与纳入计划时的补充见 [Issue 格式](standard/system-prompt/references/issue-state.md)，计划关联使用材料中的任务引用。不恢复已退役的状态标签或另造平行协议。工具与会话沿本机设置和原生入口。
 - Workbench MVP 本地零业务数据库。用 `gh` / `codehub-cli` / `git` / 文件独立读回；不用 V3 的 `sqlite3` 路径。项目约定和指标资产的归属读 [architecture](docs/architecture.md)，不能将资产盘点变成代写项目开发规范。
@@ -74,7 +75,7 @@ pnpm run typecheck
 
 旧 Dioxus 壳的 `cargo run -p app-shell`、`bw-dev` 深链与 `.bw/release/pack` 出包协议针对已删除的三 crate，不能用来解释本分支。现有 Electron 构建入口以 SYNC 和 package.json 为准；BW 的 CI/CD、评审与正式出包链随迁移任务验证，不能据此宣称已完成 v0.5 交付。
 
-计划/验收工作流入口（已登记自动化；数据文件问题作为一次性上下文随手动运行递交，不单独渲染）与「配置指标」携带 SYSTEM + 对应 Skill 指针；普通原生新建会话不额外注入 BW 提示（`version-cycle/cycle-prompt.ts`，正源 `standard/`）；真实执行依赖本机设置的会话工具、固定工作树及仓库权限。路径与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。
+计划/验收手动开工复用 Orca 原生 draft，会话输入区预填一句内置技能读取指令，不自动回车；技能调用材料 context 读回 SYSTEM 公共纪律与动态执行上下文。周期自动化和「配置指标」继续携带完整 SYSTEM + 对应 Skill，普通原生新建会话不额外注入。正源 `standard/`，真会话加载与执行证据按 [会话与执行](docs/06-module/会话与执行.md) 核对。
 
 ### 提交前门禁
 

@@ -5,7 +5,7 @@ import { useAppStore } from '@/store'
 import { isVersionFlowWorkflow } from '../../../../shared/workbench/version-workspace-prepare'
 import { branchName } from '@/lib/git-utils'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
-import { startCycleAutomation } from './start-cycle-automation'
+import { startCycleSession } from './start-cycle-session'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
 import { prepareMetricsSession, useMetricsSetupAgent } from './metrics-setup'
 import { getActiveCycleSession } from './native-session'
@@ -75,17 +75,17 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     onError: setNotice
   })
   const start = useCallback(
-    async (oneShot?: string) => {
+    async (selectedVersion?: string | null) => {
       setBusy(true)
       try {
-        if (!scope || !fixedId || !automation.automationId) {
-          throw new Error('周期自动化尚未就绪，请在自动化页核对配置。')
+        if (!scope || !fixedId) {
+          throw new Error('流程工作区尚未就绪，请稍后重试。')
         }
         if (!agent) {
           throw new Error('会话工具尚未就绪，请先在设置中配置默认智能体。')
         }
-        await startCycleAutomation(scope, fixedId, automation.automationId, agent, oneShot)
-        toast.message('已打开本次运行的会话。')
+        await startCycleSession(scope, fixedId, agent, selectedVersion ?? version.version)
+        toast.message('已打开会话，补充后发送。')
         setNotice(null)
         return true
       } catch (reason) {
@@ -102,7 +102,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
         setBusy(false)
       }
     },
-    [scope, fixedId, automation.automationId, agent]
+    [scope, fixedId, agent, version.version]
   )
   const prepareMetrics = useCallback(async () => {
     if (!scope || !agent) {

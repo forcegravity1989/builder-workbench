@@ -36,6 +36,7 @@ describe('version material CLI entry', () => {
   })
   afterEach(async () => {
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
     process.exitCode = undefined
     await rm(directory, { recursive: true, force: true })
   })
@@ -160,5 +161,224 @@ describe('version material CLI entry', () => {
     await main([...args, '--input', '/remote/draft.json'], directory)
     expect(process.exitCode).toBe(1)
     expect(call).toHaveBeenCalledTimes(1)
+  })
+  it.each([
+    ['plan', 'local'],
+    ['acceptance', 'ssh:server']
+  ] as const)(
+    'loads the %s session instructions from its native owner',
+    async (workflow, hostId) => {
+      vi.stubEnv('ORCA_WORKTREE_ID', 'tree-1')
+      const response = (result: unknown) => ({
+        id: 'context',
+        ok: true,
+        result,
+        _meta: { runtimeId: 'test' }
+      })
+      call.mockImplementation(async (method: string) => {
+        if (method === 'worktree.show') {
+          return response({
+            worktree: {
+              id: 'tree-1',
+              repoId: 'repo-1',
+              projectId: 'project-1',
+              hostId,
+              path: '/workspace',
+              branch: `refs/heads/bw/v0.8/${workflow}`,
+              workbenchVersionBinding: { schema: 1, workflow, version: 'v0.8' }
+            }
+          })
+        }
+        if (method === 'workbench.materials.read') {
+          return response({ ok: true, value: null })
+        }
+        if (method === 'workbench.history.list') {
+          return response({ ok: true, value: { records: [], problems: [] } })
+        }
+        if (method === 'worktree.list') {
+          return response({
+            worktrees: [
+              {
+                id: 'tree-1',
+                repoId: 'repo-1',
+                projectId: 'project-1',
+                hostId,
+                path: '/workspace',
+                branch: `refs/heads/bw/v0.8/${workflow}`,
+                workbenchVersionBinding: { schema: 1, workflow, version: 'v0.8' }
+              },
+              { id: 'tree-1', repoId: 'repo-1', hostId: 'ssh:other', path: '/other' },
+              {
+                id: 'archived',
+                repoId: 'repo-1',
+                projectId: 'project-1',
+                hostId,
+                isArchived: true,
+                workbenchVersionBinding: { schema: 1, workflow, version: 'v0.7.9' }
+              },
+              {
+                id: 'other-project',
+                repoId: 'repo-1',
+                projectId: 'project-2',
+                hostId,
+                workbenchVersionBinding: { schema: 1, workflow, version: 'v0.7.8' }
+              }
+            ],
+            truncated: false
+          })
+        }
+        if (method === 'workbench.materials.context') {
+          return response({ ok: true, value: { version: 'v0.8' } })
+        }
+        if (method === 'workbench.history.listTreePlans') {
+          return response({
+            ok: true,
+            value: {
+              head: 'abc',
+              plans: [],
+              problems: [
+                { version: 'v0.6', code: 'migration-required', message: 'old plan source' }
+              ]
+            }
+          })
+        }
+        if (method === 'workbench.materials.list') {
+          return response({
+            ok: true,
+            value: [{ version: 'v0.7', state: 'invalid', error: 'broken JSON' }]
+          })
+        }
+        throw new Error(`unexpected ${method}`)
+      })
+      await main(
+        [
+          'bw',
+          'materials',
+          'context',
+          '--workflow',
+          workflow,
+          ...(workflow === 'acceptance' ? ['--host-id', hostId] : []),
+          '--json'
+        ],
+        directory
+      )
+      expect(process.exitCode).toBeUndefined()
+      if (workflow === 'plan') {
+        expect(call).toHaveBeenCalledWith('worktree.show', { worktree: 'id:tree-1' })
+      }
+      expect(call).toHaveBeenCalledWith('worktree.list', { limit: 10_000 })
+      const result = JSON.parse(vi.mocked(console.log).mock.calls.at(-1)![0]).result
+      expect(result).toMatchObject({
+        version: 'v0.8',
+        context: {
+          repoId: 'repo-1',
+          projectId: 'project-1',
+          hostId,
+          workflow,
+          worktreeId: 'tree-1',
+          workspacePath: '/workspace',
+          version: 'v0.8',
+          branch: `bw/v0.8/${workflow}`
+        }
+      })
+      expect(result.instructions).toContain('完成由人确认')
+      expect(result.instructions).toContain('仓根 AGENTS.md')
+      expect(result.instructions).toContain('不另建工作树或分支')
+      expect(result.instructions).toContain('本工作树已绑定版本 v0.8')
+      expect(result.instructions).toContain('broken JSON')
+      if (workflow === 'acceptance') {
+        expect(result.instructions).toContain('.bw/planning/v0.6/data.json')
+        expect(result.instructions).toContain('old plan source')
+        expect(result.planSources.head).toBe('abc')
+      } else {
+        expect(result.priorReview).toEqual({ kind: 'missing', version: 'v0.7' })
+        expect(result.instructions).toContain('不要跳到更早版本')
+        const original = call.getMockImplementation()!
+        call.mockImplementation(async (method: string, params: unknown) =>
+          method === 'workbench.materials.read'
+            ? response({
+                ok: false,
+                error: { code: 'source-unavailable', message: 'fixed source unreadable' }
+              })
+            : original(method, params)
+        )
+        await main(['bw', 'materials', 'context', '--workflow', workflow, '--json'], directory)
+        const failed = JSON.parse(vi.mocked(console.log).mock.calls.at(-1)![0]).result
+        expect(failed.priorReview).toEqual({ kind: 'error', reason: 'fixed source unreadable' })
+        expect(failed.instructions).toContain('不要改读其他记录')
+        expect(failed.instructions).toContain('完成由人确认')
+      }
+      expect(result.instructions).not.toContain('{{')
+      expect(call).toHaveBeenCalledWith('workbench.materials.context', {
+        repoId: 'repo-1',
+        worktreeId: 'tree-1',
+        hostId,
+        workflow
+      })
+    }
+  )
+
+  it('rejects ambiguous explicit identity and retains native context failures', async () => {
+    vi.stubEnv('ORCA_WORKTREE_ID', 'tree-1')
+    call.mockResolvedValue({
+      id: 'test',
+      ok: true,
+      result: {
+        worktrees: [],
+        worktree: {
+          id: 'tree-1',
+          repoId: 'repo-1',
+          hostId: 'local',
+          path: '/workspace',
+          branch: 'bw/week-plan'
+        }
+      },
+      _meta: { runtimeId: 'test' }
+    })
+    await main(
+      ['bw', 'materials', 'context', '--repo-id', 'repo-1', '--workflow', 'plan', '--json'],
+      directory
+    )
+    expect(process.exitCode).toBe(1)
+    expect(call).not.toHaveBeenCalled()
+    process.exitCode = undefined
+    await main(
+      ['bw', 'materials', 'context', ...target, '--host-id', 'ssh:other', '--json'],
+      directory
+    )
+    expect(process.exitCode).toBe(1)
+    expect(call).toHaveBeenCalledTimes(1)
+    call.mockClear()
+    process.exitCode = undefined
+    call.mockImplementation(async (method: string) => {
+      if (method === 'worktree.show') {
+        return {
+          id: 'test',
+          ok: true,
+          result: {
+            worktree: {
+              id: 'tree-1',
+              repoId: 'repo-1',
+              hostId: 'local',
+              path: '/workspace',
+              branch: 'bw/week-plan'
+            }
+          },
+          _meta: { runtimeId: 'test' }
+        }
+      }
+      return {
+        id: 'test',
+        ok: true,
+        result: { ok: false, error: { code: 'invalid-scope', message: 'owner unavailable' } },
+        _meta: { runtimeId: 'test' }
+      }
+    })
+    await main(['bw', 'materials', 'context', ...target, '--json'], directory)
+    expect(process.exitCode).toBe(1)
+    expect(JSON.parse(vi.mocked(console.log).mock.calls.at(-1)![0]).error).toMatchObject({
+      code: 'invalid-scope',
+      message: 'owner unavailable'
+    })
   })
 })
