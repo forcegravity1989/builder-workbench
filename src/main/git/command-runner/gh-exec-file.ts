@@ -152,7 +152,7 @@ export async function ghExecFileAsync(
         !options.wslDistro &&
         isHostCommandMissing(err, 'gh')
       ) {
-        const wslResolved = resolveDefaultWslCli('gh', args)
+        const wslResolved = await resolveDefaultWslCli('gh', args)
         if (wslResolved) {
           // Why: WSL-only Windows installs have no host gh.exe, and global calls (rate_limit/auth) carry no cwd to route by.
           resolved = wslResolved

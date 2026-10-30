@@ -85,7 +85,7 @@ export class RuntimeRpcBinaryRouting extends RuntimeRpcState {
     state.controllers.clear()
   }
 
-  protected initializePairingIdentity(): PairingIdentityInitialization {
+  protected async initializePairingIdentity(): Promise<PairingIdentityInitialization> {
     let deviceRegistry: DeviceRegistry
     try {
       deviceRegistry = new DeviceRegistry(this.userDataPath)
@@ -101,7 +101,7 @@ export class RuntimeRpcBinaryRouting extends RuntimeRpcState {
     }
     let e2eeKeypair: E2EEKeypair
     try {
-      e2eeKeypair = loadOrCreateE2EEKeypair(this.userDataPath)
+      e2eeKeypair = await loadOrCreateE2EEKeypair(this.userDataPath)
     } catch (error) {
       console.error('[runtime] Failed to initialize E2EE identity:', error)
       return {

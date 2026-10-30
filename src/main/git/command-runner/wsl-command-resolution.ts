@@ -1,4 +1,4 @@
-import { getDefaultWslDistro, parseWslPath, type WslPathInfo } from '../../wsl'
+import { listWslDistrosAsync, parseWslPath, type WslPathInfo } from '../../wsl'
 import {
   buildWslCapturedLoginShellCommand,
   buildWslExecArgs,
@@ -42,11 +42,11 @@ export function setDefaultWslDistroOverride(distro: string | null): void {
   defaultWslDistroOverride = distro
 }
 
-export function resolveDefaultWslCli(
+export async function resolveDefaultWslCli(
   command: 'gh' | 'glab',
   args: string[]
-): ResolvedCommand | null {
-  const distro = defaultWslDistroOverride ?? getDefaultWslDistro()
+): Promise<ResolvedCommand | null> {
+  const distro = defaultWslDistroOverride ?? (await listWslDistrosAsync())[0]
   return distro ? resolveCommand(command, args, undefined, distro) : null
 }
 

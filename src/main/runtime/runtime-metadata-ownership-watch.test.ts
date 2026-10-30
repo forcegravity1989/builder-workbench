@@ -158,7 +158,7 @@ describe('watchRuntimeMetadataOwnership', () => {
   const watches: RuntimeMetadataOwnershipWatch[] = []
   const userDataPaths: string[] = []
 
-  afterEach(() => {
+  afterEach(async () => {
     metadataSyncCalls.state.recording = false
     metadataSyncCalls.state.calls.length = 0
     metadataReadGate.hold = false
@@ -168,7 +168,7 @@ describe('watchRuntimeMetadataOwnership', () => {
     }
     metadataReadGate.idle.splice(0)
     for (const watch of watches.splice(0)) {
-      watch.stop()
+      await watch.stop()
     }
     for (const dir of userDataPaths.splice(0)) {
       clearRuntimeMetadata(dir)
@@ -284,7 +284,7 @@ describe('watchRuntimeMetadataOwnership', () => {
     const userDataPath = makeUserDataPath()
     const watch = armWatch(userDataPath, 1_000)
 
-    watch.stop()
+    await watch.stop()
     writeRuntimeMetadata(
       userDataPath,
       record({ pid: FOREIGN_DEAD_PID, runtimeId: 'rt_second_instance' })
