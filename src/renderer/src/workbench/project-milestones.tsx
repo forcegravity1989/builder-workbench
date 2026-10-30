@@ -112,7 +112,7 @@ export function ProjectMilestones({
             : '编辑中'
   const changes = describeMilestoneChanges(state.baseline, state.draft)
   function begin() {
-    if (!state.recoveryBlocked) {
+    if (state && !state.recoveryBlocked) {
       patch({ editing: true })
     }
   }
