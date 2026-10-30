@@ -1,6 +1,7 @@
 // #461 CI 部署原型 DOM 断言验证：进入即全量形态（无场景切换）、竖排四阶段六步流程列表
-// （阶段标签居中加粗、组间虚线分割、数字标序、每步读数、每步命令详情、块级日志开关）、两种模式与版本选择、统一配置入口与配置事实、
-// 执行瞬态与逐步点亮（读数随完成进板面）、记录区默认收起与展开、报错筛选、
+// （阶段标签居中加粗、组间虚线分割、数字标序、每步时间/读数、命令与日志按步回显、历史报错常驻失败步）、
+// 模式行集中入口（配置·部署·命令·日志，八轮反馈）、两种模式与版本选择、统一配置入口与配置事实、
+// 执行瞬态与逐步点亮（读数与时间随完成进板面）、记录区默认收起与展开（历史索引，无筛选无日志展开）、
 // 递交 prompt 一致性、console/page error 监听。
 // 截图只存临时目录供人查看，不进上下文（AGENTS 硬约束）。
 const path = require('node:path')
@@ -131,20 +132,75 @@ const check = (name, ok) => {
     '最近一次块头（时间·上线·版本·耗时）',
     headText.includes('最近一次 10-29 09:41') && headText.includes('版本 1.4.201')
   )
-  check('流程块日志默认收起', (await page.locator('.ci-flow-log').count()) === 0)
-  await page.click('.ci-flow-logtoggle')
+
+  // 八轮反馈：动作与查看入口集中到配置旁；报错不经按钮，显示在流程对应步骤
   check(
-    '展开流程块日志回显步骤标记',
-    (await page.locator('.ci-flow-log').count()) === 1 &&
-      (await page.locator('.ci-flow-log').textContent()).includes('[ci-step] verify ok')
+    '模式行集中入口（配置·部署·命令·日志）',
+    (await page.locator('#deploy .ci-mode-row .ci-config-button').count()) === 1 &&
+      (await page.locator('#deploy .ci-mode-row button:has-text("部署")').count()) === 1 &&
+      (await page.locator('#deploy .ci-mode-row .ci-flow-cmdtoggle').count()) === 1 &&
+      (await page.locator('#deploy .ci-mode-row .ci-flow-logtoggle').count()) === 1
   )
-  await page.click('.ci-flow-logtoggle')
-  check('再点收起流程块日志', (await page.locator('.ci-flow-log').count()) === 0)
+  check(
+    '无报错记录按钮（报错进流程步骤）',
+    (await page.locator('#deploy button:has-text("报错记录")').count()) === 0
+  )
+  check('流程块头无开关（只留读数头）', (await page.locator('.ci-flow-head button').count()) === 0)
+  check('非灰态无动作行（主动作在模式行）', (await page.locator('#deploy .ci-actions').count()) === 0)
+
+  // 每步时间：跟在步骤名后（八轮反馈——时间显示在动作后面）
+  const stepTimes = await page.locator('.ci-flow-step .ci-flow-time').allTextContents()
+  check(
+    '每步时间显示（09:38–09:41）',
+    stepTimes.join('|') === '09:38|09:39|09:40|09:40|09:41|09:41'
+  )
+  const timeAfterName = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('.ci-flow-step-line')).every(
+      (line) =>
+        line.children[0]?.classList.contains('ci-flow-name') &&
+        line.children[1]?.classList.contains('ci-flow-time')
+    )
+  )
+  check('时间显示在动作后面（DOM 顺序：名称→时间）', timeAfterName)
+
+  // 日志按步骤区分（八轮反馈：不再一整块）；历史报错常驻失败步，报错日志在该步日志区
+  check('日志默认收起（无日志块）', (await page.locator('.ci-flow-log').count()) === 0)
+  await page.click('#deploy .ci-mode-row .ci-flow-logtoggle')
+  const logTexts = await page.locator('.ci-flow-log:not(.err)').allTextContents()
+  check(
+    '日志按步骤区分（6 块，预检含 ssh 读回、验证含 verify ok）',
+    logTexts.length === 6 &&
+      logTexts.join('|').includes('df -h /opt') &&
+      logTexts.join('|').includes('[ci-step] verify ok')
+  )
+  check(
+    '历史报错常驻失败步（上次失败时间与原因）',
+    (await page.locator('.ci-flow-error').count()) === 1 &&
+      (await page.locator('.ci-flow-error').textContent()).includes('上次失败 10-28 18:55') &&
+      (await page.locator('.ci-flow-error').textContent()).includes('退出码 1')
+  )
+  const errStep = await page.evaluate(() => {
+    const el = document.querySelector('.ci-flow-error')
+    const step = el?.closest('.ci-flow-step')
+    return step
+      ? {
+          name: step.querySelector('.ci-flow-name')?.textContent,
+          badge: step.querySelector('.ci-flow-badge')?.textContent
+        }
+      : null
+  })
+  check('报错定位在第 4 步「部署」', errStep?.name === '部署' && errStep?.badge === '4')
+  check(
+    '报错日志在对应步骤日志区（danger 块含 deploy fail）',
+    (await page.locator('.ci-flow-log.err').count()) === 1 &&
+      (await page.locator('.ci-flow-log.err').textContent()).includes('[ci-step] deploy fail')
+  )
+  await page.click('#deploy .ci-mode-row .ci-flow-logtoggle')
+  check('再点收起日志', (await page.locator('.ci-flow-log').count()) === 0)
 
   // 命令详情：每步背后将执行的命令页内回显（读 deploy.sh 步骤分段），纠错核对不经会话
-  check('流程块命令开关存在', (await page.locator('.ci-flow-cmdtoggle').count()) === 1)
   check('命令详情默认收起', (await page.locator('.ci-flow-cmd').count()) === 0)
-  await page.click('.ci-flow-cmdtoggle')
+  await page.click('#deploy .ci-mode-row .ci-flow-cmdtoggle')
   const cmdText = (await page.locator('.ci-flow-cmd').allTextContents()).join('|')
   check(
     '展开后每步命令回显（6 步，上线含 scp/ssh/curl）',
@@ -153,10 +209,10 @@ const check = (name, ok) => {
       cmdText.includes('ssh deploy@192.168.1.30') &&
       cmdText.includes('curl -fsS http://192.168.1.30:8025/healthz')
   )
-  await page.click('.ci-flow-cmdtoggle')
+  await page.click('#deploy .ci-mode-row .ci-flow-cmdtoggle')
   check('再点收起命令详情', (await page.locator('.ci-flow-cmd').count()) === 0)
 
-  // 记录区降位：默认收起为一行摘要，展开回显完整列表
+  // 记录区（八轮反馈收敛）：默认收起为一行摘要，展开回显执行历史索引（日志在流程步骤）
   check('记录区默认收起（无记录行）', (await page.locator('.ci-record').count()) === 0)
   const counts = await page.locator('.ci-records-counts').textContent()
   check('摘要行含全部与报错计数', counts.includes('全部 4') && counts.includes('报错 1'))
@@ -173,8 +229,10 @@ const check = (name, ok) => {
       (await page.locator('.ci-record-mode').allTextContents()).includes('开发')
   )
   check(
-    '绿态按钮（再次部署+报错记录）',
-    (await page.locator('#deploy .ci-actions button').count()) === 2
+    '记录区为历史索引（无筛选 chips、记录行不展开日志）',
+    (await page.locator('.ci-filter').count()) === 0 &&
+      (await page.locator('.ci-record-toggle').count()) === 0 &&
+      (await page.locator('.ci-record-log').count()) === 0
   )
 
   // 统一配置入口：递交 prompt 与 skill-deploy.md 逐字一致
@@ -193,11 +251,11 @@ const check = (name, ok) => {
   )
   await page.click('.g3-footer-handoff button')
 
-  // 上线部署执行：瞬态 + 自上而下逐步点亮 + 读数随完成进板面 → 六步全过绿 + 新记录
-  await page.click('#deploy .ci-actions button:has-text("再次部署")')
+  // 上线部署执行：瞬态 + 自上而下逐步点亮 + 读数与时间随完成进板面 → 六步全过绿 + 新记录
+  await page.click('#deploy .ci-mode-row button:has-text("部署")')
   check(
     '执行中瞬态',
-    (await page.locator('#deploy .ci-actions button', { hasText: '部署中' }).count()) === 1
+    (await page.locator('#deploy .ci-mode-row button', { hasText: '部署中' }).count()) === 1
   )
   await page.waitForTimeout(300)
   check(
@@ -234,6 +292,10 @@ const check = (name, ok) => {
       '1|2|3|4|5|6'
   )
   check('完成后每步读数更新（6 步）', (await page.locator('.ci-flow-reading').count()) === 6)
+  check(
+    '完成后每步时间更新（6 个）',
+    (await page.locator('.ci-flow-step .ci-flow-time').count()) === 6
+  )
   check('上线新记录入列', (await page.locator('.ci-record').count()) === 5)
   await page.click('.g3-footer-handoff button')
   check(
@@ -249,14 +311,14 @@ const check = (name, ok) => {
     '配置事实切换为开发项（启动命令，无服务器信息）',
     devFacts.includes('启动命令 已配置') && !devFacts.includes('服务器信息')
   )
-  await page.click('.ci-flow-cmdtoggle')
+  await page.click('#deploy .ci-mode-row .ci-flow-cmdtoggle')
   const devCmds = (await page.locator('.ci-flow-cmd').allTextContents()).join('|')
   check(
     '开发命令详情换本地口径（npm start/netstat）',
     devCmds.includes('npm start') && devCmds.includes('netstat')
   )
-  await page.click('.ci-flow-cmdtoggle')
-  await page.click('#deploy .ci-actions button:has-text("再次部署")')
+  await page.click('#deploy .ci-mode-row .ci-flow-cmdtoggle')
+  await page.click('#deploy .ci-mode-row button:has-text("部署")')
   check(
     '开发递交 prompt 带 --mode=dev',
     (await page.locator('.g3-footer').textContent()).includes('--mode=dev')
@@ -270,23 +332,6 @@ const check = (name, ok) => {
   await page.click('.g3-footer-handoff button')
   await page.click('.ci-mode-toggle button:has-text("上线")')
   check('切回上线版本选择恢复', (await page.locator('.ci-version').count()) === 1)
-
-  // 报错定位 + 只看报错筛选 + 日志页内展开
-  await page.click('#deploy .ci-actions button:has-text("报错记录")')
-  await page.waitForTimeout(200)
-  check('筛选后只剩报错', (await page.locator('.ci-record').count()) === 1)
-  check('footer 定位说明', (await page.locator('.g3-footer').textContent()).includes('只看报错'))
-  check('日志默认折叠', (await page.locator('.ci-record-log').count()) === 0)
-  await page.click('.ci-record.error .ci-record-toggle')
-  check(
-    '展开后日志回显步骤标记',
-    (await page.locator('.ci-record-log').count()) === 1 &&
-      (await page.locator('.ci-record-log').textContent()).includes('[ci-step] deploy fail')
-  )
-  await page.click('.ci-record.error .ci-record-toggle')
-  check('再点收起日志', (await page.locator('.ci-record-log').count()) === 0)
-  await page.click('.ci-filter button:has-text("全部")')
-  check('恢复全部筛选', (await page.locator('.ci-record').count()) === 6)
 
   // 深浅切换 + 会话收折
   await page.click('.g3-demo-bar button:has-text("深色")')

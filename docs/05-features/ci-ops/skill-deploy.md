@@ -55,7 +55,7 @@ deploy.sh 无论编排还是生成，都按同一条六步骨架执行（两种�
 | 5 | 部署后验证 | 验证 | 本地探针（退化：进程存活） | 远端探针 + 版本核对 |
 | 6 | 归档 | 记录 | 写 records.jsonl | 同左 |
 
-**步骤标记协议**（板面流程列表据此逐步点亮）：脚本在执行输出里按步打标记行——`[ci-step] <步骤> <start|ok|fail|skip>`，如 `[ci-step] precheck start`、`[ci-step] cleanup skip`。任何步 `fail` 后脚本立即停止，不再执行后续步骤。
+**步骤标记协议**（板面流程列表据此逐步点亮、按步分段回显日志）：脚本在执行输出里按步打标记行——`[ci-step] <步骤> <start|ok|fail|skip>`，如 `[ci-step] precheck start`、`[ci-step] cleanup skip`。任何步 `fail` 后脚本立即停止，不再执行后续步骤。
 
 **步骤分段注释**（板面「命令」详情的数据源）：deploy.sh 内每步段落以 `# [ci-step] <步骤>` 注释行分界（如 `# [ci-step] precheck`）；板面「命令」开关读脚本按分段回显每步将执行的命令，纠错核对不经会话。
 

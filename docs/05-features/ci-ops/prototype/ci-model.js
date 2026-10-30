@@ -1,4 +1,4 @@
-// CI 部署原型数据模型：模块、四阶段六步流程、两种模式、版本登记、配置事实、每步读数与演示日志、初始全量状态与记录、递交指令文本。
+// CI 部署原型数据模型：模块、四阶段六步流程、两种模式、版本登记、配置事实、每步读数/时间/日志、初始全量状态与记录、递交指令文本。
 // 流程骨架与 spec.md「部署流程：四阶段六步」、skill-deploy.md「部署流程契约」逐字对齐；
 // PROMPTS 与 skill-deploy.md 递交文本表逐字一致（verify-ci.cjs 有断言盯住）。
 // 评审反馈（2026-10-29）：不做场景切换，进入即呈现已接入后的全量形态。
@@ -151,65 +151,57 @@ export const stepCommands = (mode, version) =>
         record: ['printf \'%s\\n\' "$record" >> .bw/ci/records.jsonl']
       }
 
-// 最近一次执行的整段日志（演示数据）：流程块头「日志」开关页内回显。
-export const successLog = (mode, version) =>
+// 每步日志（演示数据，按步骤分段）：「日志」开关页内按步回显，不再整段一块（评审反馈八轮）。
+export const stepLogs = (mode, version) =>
   mode === 'dev'
-    ? `[ci-step] pkg start
-[ci-step] pkg ok
-[ci-step] precheck start
-netstat -ano | findstr :8025 → 端口空闲
-[ci-step] precheck ok
-[ci-step] cleanup start
-taskkill → 无旧进程，端口已确认释放
-[ci-step] cleanup ok
-[ci-step] deploy start
-npm start → 进程 5678 拉起，3 秒未退
-[ci-step] deploy ok
-[ci-step] verify start
-curl -fsS http://127.0.0.1:8025/healthz → 200 {"ok":true}
-[ci-step] verify ok
-[ci-step] record start
-[ci-step] record ok`
-    : `[ci-step] pkg start
-[ci-step] pkg ok
-[ci-step] precheck start
-ssh deploy@192.168.1.30 "df -h /opt && test -d /opt/app" → 磁盘 8.2G 可用，目录存在
-[ci-step] precheck ok
-[ci-step] cleanup start
-ssh deploy@192.168.1.30 "systemctl stop app"
-[ci-step] cleanup ok
-[ci-step] deploy start
-scp dist/app-${version}-20261029_0930.7z deploy@192.168.1.30:/opt/app/
-ssh deploy@192.168.1.30 "cd /opt/app && tar xf app-${version}-20261029_0930.7z && systemctl restart app" → 退出码 0
-[ci-step] deploy ok
-[ci-step] verify start
-curl -fsS http://192.168.1.30:8025/healthz → 200 {"ok":true}
-部署目录版本 ${version} = 所选 ${version}
-[ci-step] verify ok
-[ci-step] record start
-[ci-step] record ok`
+    ? {
+        pkg: '[ci-step] pkg start\n[ci-step] pkg ok',
+        precheck:
+          '[ci-step] precheck start\nnetstat -ano | findstr :8025 → 端口空闲\n[ci-step] precheck ok',
+        cleanup:
+          '[ci-step] cleanup start\ntaskkill → 无旧进程，端口已确认释放\n[ci-step] cleanup ok',
+        deploy: '[ci-step] deploy start\nnpm start → 进程 5678 拉起，3 秒未退\n[ci-step] deploy ok',
+        verify:
+          '[ci-step] verify start\ncurl -fsS http://127.0.0.1:8025/healthz → 200 {"ok":true}\n[ci-step] verify ok',
+        record: '[ci-step] record start\n[ci-step] record ok'
+      }
+    : {
+        pkg: '[ci-step] pkg start\n[ci-step] pkg ok',
+        precheck:
+          '[ci-step] precheck start\nssh deploy@192.168.1.30 "df -h /opt && test -d /opt/app" → 磁盘 8.2G 可用，目录存在\n[ci-step] precheck ok',
+        cleanup:
+          '[ci-step] cleanup start\nssh deploy@192.168.1.30 "systemctl stop app"\n[ci-step] cleanup ok',
+        deploy: `[ci-step] deploy start\nscp dist/app-${version}-20261029_0930.7z deploy@192.168.1.30:/opt/app/\nssh deploy@192.168.1.30 "cd /opt/app && tar xf app-${version}-20261029_0930.7z && systemctl restart app" → 退出码 0\n[ci-step] deploy ok`,
+        verify: `[ci-step] verify start\ncurl -fsS http://192.168.1.30:8025/healthz → 200 {"ok":true}\n部署目录版本 ${version} = 所选 ${version}\n[ci-step] verify ok`,
+        record: '[ci-step] record start\n[ci-step] record ok'
+      }
 
-// 进入即全量：已接入后的成熟状态（最近一次上线成功，六步全过、每步读数），历史含成功与失败记录。
+// 进入即全量：已接入后的成熟状态（最近一次上线成功，六步全过、每步时间与读数），历史含成功与失败记录。
 export const initialState = {
   deploy: {
     state: 'green',
     steps: okSteps,
+    times: {
+      pkg: '09:38',
+      precheck: '09:39',
+      cleanup: '09:40',
+      deploy: '09:40',
+      verify: '09:41',
+      record: '09:41'
+    },
     readings: stepReadings('release', '1.4.201'),
     last: {
       time: '10-29 09:41',
       ok: true,
       mode: 'release',
       version: '1.4.201',
-      text: '上线 · 版本 1.4.201 · 全程 3 分 08 秒',
-      log: successLog('release', '1.4.201')
+      text: '上线 · 版本 1.4.201 · 全程 3 分 08 秒'
     }
   }
 }
 
-const failLog = `[ci-step] pkg ok
-[ci-step] precheck ok
-[ci-step] cleanup ok
-[ci-step] deploy start
+// 历史报错（r-3）失败步的日志段：显示在流程第 4 步「部署」的日志区，不再经记录区展开。
+const failLog = `[ci-step] deploy start
 ssh deploy@192.168.1.30 "cd /opt/app && tar xf app-1.4.199.tar.gz && systemctl restart app"
 Job for app.service failed because the control process exited with error code (1)
 [ci-step] deploy fail`
@@ -244,6 +236,7 @@ export const initialRecords = [
     version: '1.4.199',
     result: '失败',
     detail: '第 4 步「部署」失败：远端解包后启动退出码 1',
+    cause: '远端解包后启动退出码 1',
     failedStep: 'deploy',
     log: failLog
   },
@@ -292,22 +285,14 @@ export const moduleStateText = (module, state) => {
   )
 }
 
-export const moduleButtons = (module, state, errors) => {
+// 动作按钮（八轮反馈）：非灰态主动作（部署/从失败步重试）进模式行「配置」旁；灰态单独动作行给生成入口。
+// 报错不经按钮——历史报错显示在流程列表对应步骤（在哪用在哪显示）。
+export const moduleButtons = (module, state) => {
   if (state.state === 'gray') {
     return [{ key: 'generate', label: '生成部署脚本' }]
   }
-  if (state.state === 'yellow') {
-    return [{ key: 'run', label: '部署' }]
+  if (state.state === 'red') {
+    return [{ key: 'retry', label: '从失败步重试' }]
   }
-  if (state.state === 'green') {
-    return [
-      { key: 'run', label: '再次部署' },
-      ...(errors ? [{ key: 'errors', label: `报错记录 ${errors}` }] : [])
-    ]
-  }
-  // red：从失败步重试 + 报错定位
-  return [
-    { key: 'retry', label: '从失败步重试' },
-    ...(errors ? [{ key: 'errors', label: `报错记录 ${errors}` }] : [])
-  ]
+  return [{ key: 'run', label: '部署' }]
 }

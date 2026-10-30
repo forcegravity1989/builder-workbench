@@ -11,7 +11,7 @@ import {
   PROMPTS,
   stepReadings,
   stepCommands,
-  successLog,
+  stepLogs,
   dotClass,
   moduleStateText,
   moduleButtons
@@ -20,10 +20,6 @@ import { Icon, IconButton, ActionButton } from '../../version-planning/prototype
 
 const clock = () => new Date().toTimeString().slice(0, 5)
 const allOk = () => Object.fromEntries(FLOW.map((s) => [s.id, 'ok']))
-
-function errorsOf(records, moduleId) {
-  return records.filter((r) => r.moduleId === moduleId && !r.ok).length
-}
 
 // 步序号与状态读法：数字 1–6 常显（顺序在任何灯态下可读），完成只以徽章状态色表达。
 const STEP_NO = Object.fromEntries(FLOW.map((s, i) => [s.id, i + 1]))
@@ -35,15 +31,16 @@ const STATUS_TEXT = {
   pending: '未开始'
 }
 
-// 竖排流程列表（板面核心）：最近一次执行的每步状态与一行读数自上而下排布；
-// 执行中由 live（idx+done+mode+version）驱动逐步点亮，读数随完成进板面；
-// 「命令」开关按 deploy.sh 步骤分段回显每步将执行的命令（纠错核对不经会话）。
-function FlowList({ state, live, mode, version }) {
-  const [logOpen, setLogOpen] = useState(false)
-  const [cmdOpen, setCmdOpen] = useState(false)
+// 竖排流程列表（板面核心）：最近一次执行的每步状态、时间与一行读数自上而下排布；
+// 执行中由 live（idx+done+mode+version+times）驱动逐步点亮，读数与时间随完成进板面；
+// 「命令」「日志」开关在配置旁（八轮反馈：动作与查看入口集中在模式行）——
+// 命令按 deploy.sh 步骤分段回显每步将执行的命令，日志按步骤区分回显；
+// 历史报错常驻失败步（上次失败时间与原因），报错日志随「日志」开关在该步回显（在哪用在哪显示）。
+function FlowList({ state, live, mode, version, cmdOpen, logOpen, errorByStep }) {
   const last = state.last
   const liveReadings = live ? stepReadings(live.mode, live.version) : null
   const commands = stepCommands(live ? live.mode : mode, live ? live.version : version)
+  const logs = stepLogs(live ? live.mode : mode, live ? live.version : version)
   const statusOf = (step) => {
     const prior = state.steps?.[step.id]
     if (!live) {
@@ -63,6 +60,12 @@ function FlowList({ state, live, mode, version }) {
     }
     return state.readings?.[step.id] || null
   }
+  const timeOf = (step) => {
+    if (live) {
+      return live.times?.[step.id] || null
+    }
+    return state.times?.[step.id] || null
+  }
   const headTime = live ? '执行中' : last ? `最近一次 ${last.time}` : '尚无执行记录'
   const headInfo = live
     ? `${live.mode === 'dev' ? '开发' : '上线'} 执行中${live.version ? ` · 版本 ${live.version}` : ''}`
@@ -72,26 +75,7 @@ function FlowList({ state, live, mode, version }) {
       <div className="ci-flow-head">
         <span className="ci-flow-head-time">{headTime}</span>
         <span className="ci-flow-head-info">{headInfo}</span>
-        <button
-          className="ci-flow-cmdtoggle"
-          aria-expanded={cmdOpen}
-          title="页内回显 deploy.sh 每步将执行的命令（按脚本步骤分段读出，纠错核对不经会话）"
-          onClick={() => setCmdOpen(!cmdOpen)}
-        >
-          {cmdOpen ? '收起命令' : '命令'}
-        </button>
-        {last?.log && !live && (
-          <button
-            className="ci-flow-logtoggle"
-            aria-expanded={logOpen}
-            title="页内展开最近一次执行的整段日志（存于 bw/ci 树本地）"
-            onClick={() => setLogOpen(!logOpen)}
-          >
-            {logOpen ? '收起日志' : '日志'}
-          </button>
-        )}
       </div>
-      {logOpen && last?.log && !live && <pre className="ci-flow-log">{last.log}</pre>}
       <div className="ci-flow-list" role="list" aria-label="部署流程六步">
         {FLOW_PHASES.map((phase) => (
           <div className="ci-flow-group" key={phase} role="group" aria-label={phase}>
@@ -99,6 +83,8 @@ function FlowList({ state, live, mode, version }) {
             {FLOW.filter((s) => s.phase === phase).map((step) => {
               const status = statusOf(step)
               const reading = readingOf(step)
+              const time = timeOf(step)
+              const error = errorByStep[step.id]
               return (
                 <div
                   key={step.id}
@@ -115,12 +101,20 @@ function FlowList({ state, live, mode, version }) {
                   <div className="ci-flow-step-body">
                     <div className="ci-flow-step-line">
                       <span className="ci-flow-name">{step.name}</span>
+                      {time && <span className="ci-flow-time">{time}</span>}
                       {status === 'current' && <span className="ci-flow-status">执行中…</span>}
                       {status === 'fail' && <span className="ci-flow-status">失败</span>}
                       {status === 'skip' && <span className="ci-flow-status">跳过</span>}
                     </div>
                     {reading && <div className="ci-flow-reading">{reading}</div>}
+                    {error && (
+                      <div className="ci-flow-error">
+                        上次失败 {error.time} · {error.cause}
+                      </div>
+                    )}
                     {cmdOpen && <pre className="ci-flow-cmd">{commands[step.id].join('\n')}</pre>}
+                    {logOpen && logs[step.id] && <pre className="ci-flow-log">{logs[step.id]}</pre>}
+                    {logOpen && error && <pre className="ci-flow-log err">{error.log}</pre>}
                   </div>
                 </div>
               )
@@ -132,22 +126,26 @@ function FlowList({ state, live, mode, version }) {
   )
 }
 
-// 部署卡：状态行 + 模式/版本/配置 + 最近一次执行块（竖排六步流程）+ 动作行；灰态给扫描事实行。
+// 部署卡：状态行 + 模式行（模式/版本/配置事实 + 配置 · 主动作 · 命令 · 日志）+ 最近一次执行块；
+// 灰态给扫描事实行与生成入口（八轮反馈：部署与查看开关集中到配置旁，报错不经按钮）。
 function ModuleCard({
   index,
   module,
   state,
-  errors,
   executing,
   live,
   mode,
   version,
+  errorByStep,
   onMode,
   onVersion,
   onConfigure,
   onAction
 }) {
-  const buttons = moduleButtons(module, state, errors)
+  const [cmdOpen, setCmdOpen] = useState(false)
+  const [logOpen, setLogOpen] = useState(false)
+  const buttons = moduleButtons(module, state)
+  const primary = state.state !== 'gray' ? buttons[0] : null
   const isRelease = mode === 'release'
   return (
     <section id={module.id} className="ci-module">
@@ -223,56 +221,75 @@ function ModuleCard({
             >
               配置
             </ActionButton>
+            {primary && (
+              <ActionButton
+                key={primary.key}
+                disabled={executing}
+                onClick={() => onAction(primary.key, module)}
+                title={
+                  primary.key === 'run'
+                    ? '向 CI 助手递交执行请求：六步流程在会话中执行并按步骤标记输出进度，完成后独立读回（状态/版本/耗时）并写记录'
+                    : '向 CI 助手递交重试请求：从失败步起跑，之前步骤不重复执行（清场过的不用再清）'
+                }
+              >
+                {primary.key === 'run' && executing ? `${module.short}中…` : primary.label}
+              </ActionButton>
+            )}
+            <button
+              className="ci-flow-cmdtoggle"
+              aria-expanded={cmdOpen}
+              title="页内回显 deploy.sh 每步将执行的命令（按脚本步骤分段读出，纠错核对不经会话）"
+              onClick={() => setCmdOpen(!cmdOpen)}
+            >
+              {cmdOpen ? '收起命令' : '命令'}
+            </button>
+            <button
+              className="ci-flow-logtoggle"
+              aria-expanded={logOpen}
+              title="页内按步骤回显最近一次执行的日志与历史报错日志（存于 bw/ci 树本地）"
+              onClick={() => setLogOpen(!logOpen)}
+            >
+              {logOpen ? '收起日志' : '日志'}
+            </button>
           </div>
         )}
         {state.state !== 'gray' && (
-          <FlowList state={state} live={live} mode={mode} version={version} />
+          <FlowList
+            state={state}
+            live={live}
+            mode={mode}
+            version={version}
+            cmdOpen={cmdOpen}
+            logOpen={logOpen}
+            errorByStep={errorByStep}
+          />
         )}
         {state.state === 'gray' && <p className="ci-hint">主分支未见脚本</p>}
-        <div className="ci-actions">
-          {buttons.map((b) => (
-            <ActionButton
-              key={b.key}
-              disabled={executing}
-              onClick={() => onAction(b.key, module)}
-              title={
-                b.key === 'generate'
-                  ? '向 CI 助手递交生成请求：按 ci-ops skill 先勘察项目实际代码与已有部署资产，复用优先，按四阶段六步骨架编排，PR 经人审合入 main'
-                  : b.key === 'run'
-                    ? '向 CI 助手递交执行请求：六步流程在会话中执行并按步骤标记输出进度，完成后独立读回（状态/版本/耗时）并写记录'
-                    : b.key === 'retry'
-                      ? '向 CI 助手递交重试请求：从失败步起跑，之前步骤不重复执行（清场过的不用再清）'
-                      : '定位到记录区并只看报错'
-              }
-            >
-              {b.key === 'run' && executing ? `${module.short}中…` : b.label}
-            </ActionButton>
-          ))}
-        </div>
+        {state.state === 'gray' && (
+          <div className="ci-actions">
+            {buttons.map((b) => (
+              <ActionButton
+                key={b.key}
+                disabled={executing}
+                onClick={() => onAction(b.key, module)}
+                title="向 CI 助手递交生成请求：按 ci-ops skill 先勘察项目实际代码与已有部署资产，复用优先，按四阶段六步骨架编排，PR 经人审合入 main"
+              >
+                {b.label}
+              </ActionButton>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )
 }
 
-// 记录行：一行摘要常驻回显（含模式与版本）；报错条目默认折叠，展开在页内看日志，不去后台。
-function RecordRow({ record, expanded, onToggle }) {
+// 记录行：一行历史索引（含模式与版本）；报错的事实与日志在流程列表对应步骤显示，记录行不展开日志（八轮反馈）。
+function RecordRow({ record }) {
   const module = MODULES.find((m) => m.id === record.moduleId)
   return (
     <div className={`ci-record ${record.ok ? 'ok' : 'error'}`}>
       <div className="ci-record-line">
-        {record.log ? (
-          <button
-            className="ci-record-toggle"
-            aria-expanded={expanded}
-            aria-label={`${expanded ? '收起' : '展开'} ${record.time} ${module.name}报错日志`}
-            title={expanded ? '收起日志' : '展开日志（存于 bw/ci 树本地，页内回显）'}
-            onClick={onToggle}
-          >
-            <Icon name={expanded ? 'down' : 'right'} size={12} />
-          </button>
-        ) : (
-          <span className="ci-record-toggle placeholder" aria-hidden="true" />
-        )}
         <span className="ci-record-time">{record.time}</span>
         <span className="ci-record-module">{module.name}</span>
         <span className={`ci-record-mode ${record.mode}`}>
@@ -283,7 +300,6 @@ function RecordRow({ record, expanded, onToggle }) {
         </span>
         <span className="ci-record-detail">{record.detail}</span>
       </div>
-      {record.log && expanded && <pre className="ci-record-log">{record.log}</pre>}
     </div>
   )
 }
@@ -301,13 +317,8 @@ function App() {
   const [live, setLive] = useState(null)
   const [mode, setMode] = useState('release')
   const [version, setVersion] = useState(VERSIONS[0].version)
-  const [filter, setFilter] = useState('all')
   const [recordsOpen, setRecordsOpen] = useState(false)
-  const [openLogs, setOpenLogs] = useState([])
 
-  const move = (id) => {
-    document.getElementById(id)?.scrollIntoView({ block: 'start' })
-  }
   const toggleSession = (open) => {
     setSession(open)
   }
@@ -320,14 +331,15 @@ function App() {
   const setModule = (id, patch) =>
     setStates((current) => ({ ...current, [id]: { ...current[id], ...patch } }))
 
-  // 六步流程演示执行：从 fromIdx 起逐步点亮；重试时之前步骤保持已通过，不重复执行。
+  // 六步流程演示执行：从 fromIdx 起逐步点亮，每步完成时间随完成进板面；重试时之前步骤保持已通过，不重复执行。
   const runFlow = (module, fromIdx, runMode, runVersion) => {
     setExecuting(module.id)
     setLive({
       idx: fromIdx,
       done: [],
       mode: runMode,
-      version: runMode === 'dev' ? null : runVersion
+      version: runMode === 'dev' ? null : runVersion,
+      times: {}
     })
     const isRetry = fromIdx > 0
     const prompt = isRetry
@@ -342,6 +354,7 @@ function App() {
         : `${module.short}请求已递交 CI 助手`
     )
     let i = fromIdx
+    const times = {}
     const finish = () => {
       const time = clock()
       const text =
@@ -355,13 +368,13 @@ function App() {
         steps: allOk(),
         failedStep: undefined,
         readings: stepReadings(runMode, runVersion),
+        times: { ...times },
         last: {
           time,
           ok: true,
           mode: runMode,
           version: runMode === 'dev' ? null : runVersion,
-          text: `${runMode === 'dev' ? '开发' : '上线'} · ${text}`,
-          log: successLog(runMode, runVersion)
+          text: `${runMode === 'dev' ? '开发' : '上线'} · ${text}`
         }
       })
       setRecords((current) => [
@@ -385,7 +398,17 @@ function App() {
     }
     const step = () => {
       i += 1
-      setLive((cur) => (cur ? { idx: i, done: [...cur.done, FLOW[i - 1].id] } : cur))
+      const doneId = FLOW[i - 1].id
+      times[doneId] = clock()
+      setLive((cur) =>
+        cur
+          ? {
+              idx: i,
+              done: [...cur.done, doneId],
+              times: { ...cur.times, [doneId]: times[doneId] }
+            }
+          : cur
+      )
       if (i < FLOW.length) {
         setTimeout(step, 620)
       } else {
@@ -399,13 +422,6 @@ function App() {
     if (key === 'generate') {
       sendRequest(PROMPTS.generate(), '生成脚本请求')
       setNotice(`已向 CI 助手递交生成${module.short}脚本请求`)
-      return
-    }
-    if (key === 'errors') {
-      setFilter('error')
-      setRecordsOpen(true)
-      move('records')
-      setNotice('已定位到记录区 · 只看报错')
       return
     }
     if (key === 'retry') {
@@ -433,14 +449,20 @@ function App() {
     setNotice('已向 CI 助手递交配置请求')
   }
 
-  const filtered = filter === 'all' ? records : records.filter((r) => !r.ok)
+  // 历史报错按失败步归位（在哪用在哪显示）：每个失败步取最近一次报错，显示在流程对应步骤。
+  const errorByStep = {}
+  for (const r of records) {
+    if (!r.ok && r.failedStep && !errorByStep[r.failedStep]) {
+      errorByStep[r.failedStep] = { time: r.time, cause: r.cause || r.detail, log: r.log }
+    }
+  }
   const errorCount = records.filter((r) => !r.ok).length
 
   return (
     <div className={`g3-app ${compact ? 'constrained' : ''}`}>
       <div className="g3-demo-bar">
         <strong>#461 评审草案 · CI 部署</strong>
-        <span>两种模式 · 竖排六步流程（每步读数与命令详情） · 记录默认收起</span>
+        <span>两种模式 · 竖排六步流程（每步时间·读数·命令·日志） · 报错显示在对应步骤</span>
         <button onClick={() => setCompact(!compact)}>{compact ? '恢复宽度' : '窄板'}</button>
         <button
           onClick={() => {
@@ -482,15 +504,15 @@ function App() {
             + failedStep
             进记录；「从失败步重试」只重跑失败步及其后步骤，已完成步不重复执行（清场过的不用再清）。脚本按步骤标记协议输出
             [ci-step]
-            进度，板面流程列表据此自上而下逐步点亮，每步读数随完成进板面——把会话里模型的试错（端口冲突排查十分钟）变成脚本的确定性步骤（清场秒级）。竖排流程列表是板面核心：块头给最近一次读数、「命令」与整段日志开关，每步徽章标序加一行读数事实；「命令」开关按
+            进度，板面流程列表据此自上而下逐步点亮，每步读数随完成进板面——把会话里模型的试错（端口冲突排查十分钟）变成脚本的确定性步骤（清场秒级）。竖排流程列表是板面核心：每步徽章标序、执行时间跟在步骤名后、每步读数内联；「命令」「日志」开关在配置旁——命令按
             deploy.sh
-            步骤分段回显每步将执行的命令（随模式），纠错核对不经会话；黄态（有脚本无记录）显示六步骨架。
+            步骤分段回显每步将执行的命令（随模式），日志按步骤区分回显；历史报错常驻失败步（上次失败时间与原因，报错日志随「日志」开关在该步回显），纠错核对不经会话；黄态（有脚本无记录）显示六步骨架。
           </p>
           <p>
             <strong>灯与记录</strong>
             ：灯是健康信号，只能从执行记录推导：灰=主检出未见脚本（新项目首见，板面给「主分支未见脚本」事实与生成脚本入口）；黄=扫到资产、待执行；绿=最近一次流程全步通过；红=最近一次停在失败步。最新结果决定绿红；历史报错永久保留。每次执行写
             bw/ci 树本地
-            records.jsonl（时间、ok、mode、version、steps、readings、failedStep、耗时、日志指针），记录区降位为默认收起的一行摘要（全部/报错计数），展开后按时间倒序回显全部执行与报错（含模式与版本），报错默认折叠、页内展开看日志原文；「报错记录」按钮=展开记录区并只看报错。本页固定呈现已接入后的全量形态（评审反馈：不做场景切换，进入即见全部——全量指部署卡完整形态与记录摘要行）；灰/黄/红随真实数据自然出现。
+            records.jsonl（时间、ok、mode、version、steps、readings、failedStep、耗时、日志指针），记录区收起为一行摘要（全部/报错计数），展开回显执行历史索引（含模式与版本，按时间倒序）；报错的事实与日志在流程列表对应步骤显示，记录行不展开日志、不设报错筛选。本页固定呈现已接入后的全量形态（评审反馈：不做场景切换，进入即见全部——全量指部署卡完整形态与记录摘要行）；灰/黄/红随真实数据自然出现。
           </p>
           <p>
             <strong>依赖与留白</strong>：组件与设计语言复用已合入 main 的 G3
@@ -579,11 +601,11 @@ function App() {
                 index={i}
                 module={m}
                 state={states[m.id]}
-                errors={errorsOf(records, m.id)}
                 executing={executing === m.id}
                 live={executing === m.id ? live : null}
                 mode={mode}
                 version={version}
+                errorByStep={errorByStep}
                 onMode={setMode}
                 onVersion={setVersion}
                 onConfigure={onConfigure}
@@ -612,48 +634,16 @@ function App() {
                   <Icon name={recordsOpen ? 'down' : 'right'} size={14} />
                 </span>
               </div>
-              {recordsOpen && (
-                <>
-                  <div className="ci-filter" role="group" aria-label="筛选记录">
-                    <button
-                      className={filter === 'all' ? 'on' : ''}
-                      onClick={() => setFilter('all')}
-                    >
-                      全部 {records.length}
-                    </button>
-                    <button
-                      className={filter === 'error' ? 'on' : ''}
-                      disabled={!errorCount}
-                      onClick={() => setFilter('error')}
-                    >
-                      报错 {errorCount}
-                    </button>
+              {recordsOpen &&
+                (records.length ? (
+                  <div className="ci-records">
+                    {records.map((r) => (
+                      <RecordRow key={r.id} record={r} />
+                    ))}
                   </div>
-                  {filtered.length ? (
-                    <div className="ci-records">
-                      {filtered.map((r) => (
-                        <RecordRow
-                          key={r.id}
-                          record={r}
-                          expanded={openLogs.includes(r.id)}
-                          onToggle={() =>
-                            setOpenLogs((current) =>
-                              current.includes(r.id)
-                                ? current.filter((id) => id !== r.id)
-                                : [...current, r.id]
-                            )
-                          }
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="g3-empty ci-records-empty">
-                      {records.length ? '暂无报错记录' : '尚无执行记录'}
-                    </p>
-                  )}
-                  {errorCount > 0 && <p className="ci-records-note">共 {errorCount} 条报错</p>}
-                </>
-              )}
+                ) : (
+                  <p className="g3-empty ci-records-empty">尚无执行记录</p>
+                ))}
             </section>
           </div>
           <footer className="g3-footer" role="status">

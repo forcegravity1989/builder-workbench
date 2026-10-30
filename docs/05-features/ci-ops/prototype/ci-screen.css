@@ -62,7 +62,8 @@
   margin-top: 2px;
 }
 
-/* 模式行：开发/上线 toggle + 版本选择（仅上线）+ 配置事实；机制收在提示，行内只留控件与事实。 */
+/* 模式行：开发/上线 toggle + 版本选择（仅上线）+ 配置事实 + 配置 · 主动作（部署/重试）·「命令」「日志」开关；
+   八轮反馈：动作与查看入口集中到配置旁，流程块头只留读数。机制收在提示，行内只留控件与事实。 */
 .ci-mode-row {
   display: flex;
   flex-wrap: wrap;
@@ -135,8 +136,8 @@
   margin-left: auto;
 }
 
-/* 竖排流程列表（板面核心）：最近一次执行的每步状态与读数自上而下排布；
-   徽章竖向连线随完成变绿，块头带最近一次读数、「命令」与整段日志开关。 */
+/* 竖排流程列表（板面核心）：最近一次执行的每步状态、时间与读数自上而下排布；
+   徽章竖向连线随完成变绿，块头只留最近一次读数（开关在模式行配置旁）。 */
 .ci-flow-block {
   display: flex;
   flex-direction: column;
@@ -162,7 +163,7 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
-/* 块头开关：「命令」（每步将执行的命令，读脚本分段）与「日志」（最近一次整段输出）同一 pill 样式。 */
+/* 「命令」「日志」查看开关（模式行配置旁）：同一 pill 样式；命令=每步将执行的命令（读脚本分段），日志=按步骤区分回显。 */
 .ci-flow-cmdtoggle,
 .ci-flow-logtoggle {
   font: inherit;
@@ -175,22 +176,23 @@
   cursor: pointer;
   white-space: nowrap;
 }
-.ci-flow-cmdtoggle {
-  margin-left: auto;
-}
+/* 每步日志（按步骤区分，八轮反馈）：随「日志」开关在该步下方回显；报错日志段着危险色。 */
 .ci-flow-log {
-  margin: 0;
-  padding: 8px 12px;
+  margin: 3px 0 0;
+  padding: 5px 8px;
   border: 1px dashed var(--color-hairline, rgba(128, 128, 128, 0.3));
-  border-radius: 8px;
+  border-radius: 6px;
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 11px;
-  line-height: 1.7;
+  line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: var(--color-text-muted, #767676);
-  max-height: 220px;
-  overflow-y: auto;
+}
+.ci-flow-log.err {
+  border-color: color-mix(in srgb, var(--color-danger, #c0504a) 32%, transparent);
+  background: color-mix(in srgb, var(--color-danger, #c0504a) 5%, transparent);
+  color: var(--color-danger-deep, #a03c36);
 }
 /* 每步命令详情：deploy.sh 对应步骤分段将执行的命令（纠错核对），「命令」开关展开，默认收起。 */
 .ci-flow-cmd {
@@ -271,8 +273,18 @@
   color: var(--color-text-muted, #767676);
   overflow-wrap: anywhere;
 }
-.ci-flow-step.fail .ci-flow-reading {
+/* 每步执行时间：跟在步骤名后（八轮反馈——时间显示在动作后面）。 */
+.ci-flow-time {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--color-text-muted, #767676);
+  white-space: nowrap;
+}
+/* 历史报错常驻失败步：上次失败时间与原因（报错日志随「日志」开关在该步回显）。 */
+.ci-flow-error {
+  font-size: 12px;
   color: var(--color-danger-deep, #a03c36);
+  overflow-wrap: anywhere;
 }
 /* 竖向连线：从徽章下延到下一步；本步完成变绿；跨阶段标签不断线，全列表末步不画。 */
 .ci-flow-step::after {
@@ -345,8 +357,8 @@
   }
 }
 
-/* 记录区降位：默认收起为一行摘要（全部/报错计数），点开回显筛选 chips + 记录行；
-   报错行着危险色底，日志页内折叠回显。 */
+/* 记录区（八轮反馈收敛）：默认收起为一行摘要（全部/报错计数），点开回显执行历史索引；
+   报错行着危险色底；报错的事实与日志在流程列表对应步骤显示，记录行不展开日志。 */
 .ci-records-head {
   cursor: pointer;
   user-select: none;
@@ -358,32 +370,6 @@
   font-size: 12px;
   color: var(--muted-foreground);
   white-space: nowrap;
-}
-.ci-filter {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 8px 0 6px;
-}
-.ci-filter button {
-  font: inherit;
-  font-size: 11px;
-  padding: 2px 9px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--muted-foreground);
-  cursor: pointer;
-  white-space: nowrap;
-}
-.ci-filter button.on {
-  background: var(--accent);
-  border-color: transparent;
-  color: var(--accent-foreground);
-}
-.ci-filter button:disabled {
-  opacity: 0.45;
-  cursor: default;
 }
 .ci-records {
   display: flex;
@@ -407,26 +393,6 @@
   padding: 6px 10px;
   font-size: 12px;
   min-width: 0;
-}
-.ci-record-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  flex-shrink: 0;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--muted-foreground);
-  cursor: pointer;
-}
-.ci-record-toggle:hover {
-  background: color-mix(in srgb, var(--muted-foreground, #767676) 12%, transparent);
-}
-.ci-record-toggle.placeholder {
-  visibility: hidden;
 }
 .ci-record-time {
   flex-shrink: 0;
@@ -465,26 +431,11 @@
   overflow-wrap: anywhere;
   color: var(--color-text-muted, #767676);
 }
-.ci-record-log {
-  margin: 0;
-  padding: 8px 12px 10px 36px;
-  border-top: 1px dashed var(--color-hairline, rgba(128, 128, 128, 0.3));
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 11px;
-  line-height: 1.7;
-  white-space: pre-wrap;
-  color: var(--color-text-muted, #767676);
-}
 .ci-records-empty {
   margin: 0;
   padding: 18px 14px;
   border: 1px dashed var(--color-hairline, rgba(128, 128, 128, 0.3));
   border-radius: 10px;
-}
-.ci-records-note {
-  margin: 8px 0 0;
-  font-size: 11px;
-  color: var(--muted-foreground);
 }
 
 /* 会话区最近递交指令：原生占位下方的小型指令预览，演示 prompt 内容。 */
@@ -513,7 +464,7 @@
 }
 
 @container (max-width: 780px) {
-  .ci-filter {
-    display: none;
+  .ci-mode-row {
+    gap: 8px;
   }
 }
