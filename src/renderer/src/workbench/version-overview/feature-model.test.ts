@@ -7,12 +7,11 @@ import {
   pullPhase,
   taskKey,
   referenceForPlan,
-  timelineClusters,
-  timelineRange,
   type FeaturePull
 } from './feature-model'
 import { versionDeliveryEvents, type VersionEvidence } from './version-evidence'
 import { cycleBaseline, featureTimeline, featureStage } from './feature-timeline'
+import { featureTimelineLayout } from './feature-timeline-layout'
 import { OverviewPullSchema } from '../../../../shared/workbench/overview-pull'
 import { materialSourceInputs } from './material-cache'
 
@@ -117,14 +116,6 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   expect(events.map((event) => event.phase)).toEqual(['design', 'design'])
   expect(eventsFromPulls([pull], '2026-10-01T09:00:00Z')).toHaveLength(1)
   expect(eventsFromPulls([{ ...pull, createdAt: undefined, mergedAt: undefined }])).toEqual([])
-  expect(timelineRange(events)?.duration).toBe(2 * 3600000)
-  expect(timelineRange(events)?.position(Date.parse('2026-10-01T09:00:00Z'))).toBe(50)
-  expect(
-    timelineClusters(
-      Array.from({ length: 6 }, (_, i) => ({ ...events[0]!, id: String(i) })),
-      760
-    )[0]?.events
-  ).toHaveLength(6)
   const record = (version: string, outcome?: 'met' | 'not-met' | 'pending'): VersionEvidence => ({
     version,
     at: `2026-10-0${version}T12:00:00Z`,
@@ -326,4 +317,69 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     ongoing: true,
     start: record('4', 'met').at
   })
+  const building = {
+    ...timelineFeature,
+    events: timelineFeature.events.filter((e) => e.phase === 'intent'),
+    observedAt: '2026-10-02T10:00:00Z',
+    pulls: [
+      ...timelineFeature.pulls,
+      {
+        ...pull,
+        number: 474,
+        url: url.replace('459', '474'),
+        phase: 'development' as const,
+        state: 'draft',
+        mergedAt: null
+      }
+    ]
+  }
+  const layout = featureTimelineLayout(building)
+  expect(layout.slots.map((slot) => slot.state)).toEqual([
+    'done',
+    'done',
+    'current',
+    'future',
+    'untracked',
+    'future'
+  ])
+  expect(layout.slots[2]?.source?.url).toContain('/474')
+  expect(layout.slots[2]?.duration).toBe(24 * 3600000)
+  expect(layout.slots[3]).toMatchObject({ hours: 24, duration: null, source: undefined })
+  expect(layout.slots[4]).toMatchObject({ hours: 12, duration: null, hint: '部署时间 · 未跟踪' })
+  expect(layout.slots[5]?.end).toBeUndefined()
+  const maintained = featureTimelineLayout(maintenanceFeature)
+  expect(maintained.slots[5]?.duration).toBe(maintenance.segments[5]?.duration)
+  expect(maintained.slots[5]?.source?.at).toBe(record('7', 'met').at)
+  expect(
+    featureTimelineLayout({ ...building, problems: ['读取失败'] }).slots.some(
+      (s) => s.state === 'current'
+    )
+  ).toBe(false)
+  const missedVersion = featureTimelineLayout({
+    ...building,
+    events: [
+      ...building.events,
+      ...versionDeliveryEvents(
+        [{ ...record('3', 'not-met'), archiveUrl: url }],
+        new Set([taskKey(reference)])
+      )
+    ]
+  })
+  expect(missedVersion.deliveries[0]?.event.label).toContain('目标未达成')
+  expect(missedVersion.deliveries[0]?.event.url).toBe(url)
+  expect(missedVersion.slots[3]?.state).not.toBe('done')
+  expect(missedVersion.slots[3]?.hint).toContain('目标未达成')
+  const unknownOrder = featureTimelineLayout({
+    ...building,
+    events: [...building.events, ...incomplete]
+  })
+  expect(unknownOrder.deliveries[0]?.event.label).toContain('顺序未确认')
+  expect(unknownOrder.slots[3]?.state).not.toBe('done')
+  const pendingAcceptance = featureTimelineLayout({
+    ...building,
+    archives: [{ ...events[0]!, phase: 'version', version: '4', at: '' }]
+  })
+  expect(pendingAcceptance.deliveries[0]?.event.url).toBe(url)
+  expect(Number.isFinite(pendingAcceptance.deliveries[0]?.offset)).toBe(true)
+  expect(pendingAcceptance.slots[3]?.state).not.toBe('done')
 })

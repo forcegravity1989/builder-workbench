@@ -4,7 +4,7 @@ export const repository = snapshot.source.repository
 export const acceptanceForVersion = (version) =>
   snapshot.acceptance.version === version ? snapshot.acceptance : null
 export const baseline = snapshot.source.sourceCommit
-export const revision = '334-draft-18'
+export const revision = '334-draft-19'
 export const formatTime = (value) =>
   value && Number.isFinite(Date.parse(value))
     ? new Intl.DateTimeFormat('zh-CN', {

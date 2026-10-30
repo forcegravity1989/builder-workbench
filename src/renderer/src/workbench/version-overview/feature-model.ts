@@ -167,38 +167,3 @@ export function linkedPullNumbers(body: string, issueUrl: string): number[] {
   }
   return [...found]
 }
-export function timelineRange(events: readonly FeatureEvent[]) {
-  const times = events.map((e) => Date.parse(e.at)).filter(Number.isFinite)
-  if (!times.length) {
-    return null
-  }
-  const start = Math.min(...times),
-    end = Math.max(...times)
-  return {
-    start,
-    end,
-    duration: end - start,
-    position: (time: number) => (end === start ? 50 : ((time - start) / (end - start)) * 100)
-  }
-}
-
-export function timelineClusters(
-  events: readonly FeatureEvent[],
-  width: number,
-  range = timelineRange(events)
-) {
-  const clusters: { x: number; events: FeatureEvent[] }[] = []
-  if (!range) {
-    return clusters
-  }
-  for (const event of [...events].sort((a, b) => Date.parse(a.at) - Date.parse(b.at))) {
-    const x = 80 + (range.position(Date.parse(event.at)) * (width - 160)) / 100
-    const last = clusters.at(-1)
-    if (last && x - last.x < 36) {
-      last.events.push(event)
-    } else {
-      clusters.push({ x, events: [event] })
-    }
-  }
-  return clusters
-}

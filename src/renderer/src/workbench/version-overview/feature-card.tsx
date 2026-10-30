@@ -53,7 +53,7 @@ export function FeatureCard({
               </button>
             ))}
           </div>
-          <FeatureTimelineView feature={feature} />
+          <FeatureTimelineView feature={feature} version={version} />
           {feature.problems.length > 0 && (
             <details className="bwo-muted mt-3">
               <summary>部分来源未读取（{feature.problems.length}）</summary>

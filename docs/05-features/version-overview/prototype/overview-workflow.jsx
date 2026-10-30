@@ -82,16 +82,23 @@ export function WorkflowProductivity({ plan, unplanned }) {
         {inScope
           ? '已有目标关联'
           : `#${source?.issue?.number ?? '—'} 尚未纳入这份固定计划，不计入本版汇总`}
-        。三段读数仅统计这个样例；正式版按目标内 Issue 汇总，此处独立刷新重读本地快照。
+        。以下读数仅统计这个样例；正式版按目标内 Issue 汇总，此处独立刷新重读本地快照。
       </p>
       <div className="ov-productivity-metrics">
         {summary.map((metric) => {
           const display = workflowMetricDisplay(metric)
           return (
             <div key={metric.key}>
-              <HintButton id={`metric-${metric.key}`} text={display.hint} className="ov-metric-tip">
-                {metric.label} ⓘ
-              </HintButton>
+              <div className="ov-metric-heading">
+                <HintButton
+                  id={`metric-${metric.key}`}
+                  text={display.hint}
+                  className="ov-metric-tip"
+                >
+                  {metric.label} ⓘ
+                </HintButton>
+                {display.activity && <span className="ov-metric-activity">{display.activity}</span>}
+              </div>
               <strong>{display.value}</strong>
               <span>{display.caption}</span>
             </div>

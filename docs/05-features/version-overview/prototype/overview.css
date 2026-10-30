@@ -905,3 +905,16 @@
   left: 100%;
   height: 10px;
 }
+
+.ov-metric-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ov-metric-activity {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  flex-shrink: 0;
+}

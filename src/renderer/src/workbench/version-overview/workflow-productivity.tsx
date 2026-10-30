@@ -73,12 +73,17 @@ export function WorkflowProductivity({
           const display = workflowMetricDisplay(metric)
           return (
             <div key={metric.key}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="bwo-metric-label">{metric.label} ⓘ</button>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-80">{display.hint}</TooltipContent>
-              </Tooltip>
+              <div className="bwo-metric-heading">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="bwo-metric-label">{metric.label} ⓘ</button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-80">{display.hint}</TooltipContent>
+                </Tooltip>
+                {display.activity && (
+                  <span className="bwo-metric-activity">{display.activity}</span>
+                )}
+              </div>
               <strong>
                 {metric.samples
                   ? display.value

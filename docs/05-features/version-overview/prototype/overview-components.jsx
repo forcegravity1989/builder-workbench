@@ -5,16 +5,13 @@ import { repository, baseline, snapshot, material, relatedVersions } from './ove
 export function ReferencePanel() {
   return (
     <>
-      <p>
-        原型注释: 业界参考核对于 2026-10-28，本轮按 2026-10-30 的人工反馈对齐 SDLC。
-        以下是设计取舍的依据，不是产品已实现或用户研究的证明。
-      </p>
+      <p>原型注释: 以下是设计取舍的依据，不是产品已实现或用户研究的证明。</p>
       <h3>Claude · AI-native SDLC</h3>
       <p>
         原型注释: 参考 Plan、Design、Build、Test、Deploy、Maintain
         对工作过程的分析，以及持续测试与回返。BW 按已确认的工作方式：已有 Issue 的
         intent、spec、原型共同评审，以设计 PR 合入标记通过；详细设计、Plan 与开发一起推进，以实现 PR
-        合入标记本轮开发结束。SDLC 的 Plan 表示意图收敛；详细实施 Plan 仍属于 Build，
+        合入标记开发交付。SDLC 的 Plan 表示意图收敛；详细实施 Plan 仍属于 Build，
         通常留在原生会话，不增加 plan.md 入库要求。阶段、成果认可、版本交付与实际部署分别取据。
       </p>
       <a
@@ -89,7 +86,7 @@ export function ReferencePanel() {
       <p>
         原型注释:
         <a href="spec.md" target="_blank" rel="noreferrer">
-          本轮规格草案 ↗
+          规格 ↗
         </a>{' '}
         · <a href="journey.html">审阅旅程 ↗</a>
       </p>
@@ -288,7 +285,7 @@ export function SourcePanel() {
       </dl>
       <p>
         原型注释: “刷新版本数据”重新加载静态页面；“刷新指标”只重读本地来源快照。两者都不冒充实时
-        provider 查询，生产页缓存与原生刷新接线仍待实现。
+        provider 查询。生产页分别刷新版本事实和目标内的 workflow 报告。
       </p>
       <p>
         原型注释:

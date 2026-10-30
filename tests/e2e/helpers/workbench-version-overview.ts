@@ -95,11 +95,15 @@ export async function verifyVersionOverview(
     contentType: 'text/plain'
   })
   console.info('[overview] goal-scoped real workflow comments and independent refresh verified')
-  await expect(feature.locator('.bwo-node')).not.toHaveCount(0)
+  await expect(feature.locator('.bwo-timeline-marker')).not.toHaveCount(0)
   await feature.locator('.bwo-feature-heading').click()
   await expect(feature.getByText('特性历程与版本交付', { exact: true })).toHaveCount(0)
   await feature.locator('.bwo-feature-heading').click()
-  await feature.locator('.bwo-node').last().click()
+  await feature.locator('.bwo-stage-range').filter({ hasText: 'Deploy' }).hover()
+  await expect(page.getByRole('tooltip')).toHaveText('部署时间 · 未跟踪')
+  await expect(
+    feature.locator('.bwo-source-row, .bwo-stage-legend, .bwo-untracked-stage')
+  ).toHaveCount(0)
   await expect(page.getByRole('dialog', { name: '成果节点', exact: true })).toHaveCount(0)
   await expect(feature.getByRole('button', { name: /工作会话/ })).toHaveCount(0)
   for (const width of [1360, 1000]) {
@@ -167,14 +171,26 @@ export async function verifyVersionOverview(
   console.info('[overview] invalid material and unstarted version verified')
   await open(overviewVersions.current)
   await expect(feature.locator('.bwo-stage-range')).not.toHaveCount(0, { timeout: 90_000 })
-  const versionStages = await feature
-    .locator('.bwo-stage-range')
-    .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('title') ?? ''))
-  const expectedActual = versionStages.map((label) => {
-    const match = /^(\w+) · .*?：(.+?) → (?:截至 )?(.+?)，/.exec(label)
-    expect(match).not.toBeNull()
-    return `${match![1]} · ${match![2]} — ${match![3]}`
-  })
+  const expectedActual = await feature
+    .locator('.bwo-stage-range[data-actual-start][data-actual-end]')
+    .evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const label = (value: string) =>
+          new Date(value).toLocaleString('zh-CN', {
+            timeZone: 'Asia/Shanghai',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          })
+        return `${node.getAttribute('data-stage')} · ${label(
+          node.getAttribute('data-actual-start')!
+        )} — ${label(node.getAttribute('data-actual-end')!)}`
+      })
+    )
+  expect(expectedActual.length).toBeGreaterThan(0)
   await page.getByRole('button', { name: '项目总览', exact: true }).click()
   await expect(page.getByRole('heading', { name: '总览', exact: true })).toBeVisible()
   const actual = page.locator('[data-actual-goal="overview-v0.334:current-goal"]')
