@@ -247,11 +247,18 @@ function AppWorkspaceContent(props: {
                   </div>
                 )}
                 <div
-                  className={`flex flex-1 min-w-0 min-h-0${metricsOnly ? ' flex-col' : ''}`}
+                  className={`relative flex flex-1 min-w-0 min-h-0${metricsOnly ? ' flex-col' : ''}`}
                   ref={resize.bodyRef}
                 >
                   <div
-                    className="relative flex min-w-0 min-h-0 flex-col"
+                    // Browser tools can still need frames while the session is collapsed.
+                    className={`flex min-w-0 min-h-0 flex-col${
+                      cycle && resize.chatCollapsed
+                        ? ' absolute inset-y-0 left-0 opacity-0 pointer-events-none'
+                        : ' relative'
+                    }`}
+                    inert={!!cycle && resize.chatCollapsed}
+                    aria-hidden={!!cycle && resize.chatCollapsed}
                     ref={metricsOnly ? undefined : resize.chatColRef}
                     style={
                       cycle
@@ -261,26 +268,12 @@ function AppWorkspaceContent(props: {
                         : { flex: 1, width: metricsOnly ? 'auto' : '100%', minWidth: 0 }
                     }
                   >
-                    {/* Why: the collapsed 36px rail's own content is unusable, so the whole
-                        rail doubles as the expand affordance (click anywhere); the board
-                        page-header chip stays the other entry. */}
-                    {cycle && resize.chatCollapsed && (
-                      <button
-                        type="button"
-                        className="absolute inset-0 z-10 p-0 border-0 bg-transparent cursor-pointer"
-                        aria-label={translate(
-                          'auto.app.shell.AppWorkspaceShell.38f5d8318c',
-                          '展开会话栏'
-                        )}
-                        title={translate(
-                          'auto.app.shell.AppWorkspaceShell.38f5d8318c',
-                          '展开会话栏'
-                        )}
-                        onClick={resize.toggleChatCollapsed}
-                      />
-                    )}
                     {layout.shouldMountTerminalWorkbench ? (
-                      <TerminalWorkbenchContainer isVisible={layout.terminalWorkbenchVisible}>
+                      <TerminalWorkbenchContainer
+                        isVisible={
+                          layout.terminalWorkbenchVisible && !(cycle && resize.chatCollapsed)
+                        }
+                      >
                         <Suspense fallback={null}>
                           <RecoverableRenderErrorBoundary
                             boundaryId="terminal.workbench"
@@ -317,9 +310,6 @@ function AppWorkspaceContent(props: {
                   </div>
                   {(cycle || metricsBoard) && (
                     <>
-                      {/* Why: the divider only resizes an expanded session column. While the column is collapsed
-                          there is nothing to resize, and a dead col-resize strip reads as broken drag affordance
-                          (round-9 decision 2026-10-22: hide it; expanding stays on the board header chip). */}
                       {cycle && !resize.chatCollapsed && (
                         <div
                           className="vc-split"

@@ -1,5 +1,6 @@
 import { GitBranch, MessageSquare, RefreshCw } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { BoardActionButton } from '../board-ui'
 import type { VersionMaterialCandidate } from '../../../../shared/workbench/version-material-request'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 
@@ -88,26 +89,26 @@ export function PlanningHeader({
         </div>
       </div>
       <div className="g3-header-actions">
-        <button
-          type="button"
-          className="g3-session-chip"
-          aria-expanded={!sessionCollapsed}
-          aria-label={sessionCollapsed ? '展开会话栏' : '收折会话栏'}
-          title={sessionCollapsed ? '展开会话栏' : '收折会话栏'}
-          onClick={onSessionToggle}
-        >
-          <MessageSquare size={13} aria-hidden="true" />
-          {sessionCollapsed ? '展开会话' : '收起会话'}
-        </button>
         <span className="g3-branch" title="固定工作树分支">
           <GitBranch size={13} aria-hidden="true" />
           <span>{branch}</span>
         </span>
-        {annotateEntry}
-        <button type="button" className="g3-text-button" disabled={disabled} onClick={onRefresh}>
-          <RefreshCw size={13} aria-hidden="true" /> 更新代码
-        </button>
-        <AutomationConfigureButton className="g3-text-button" onConfigure={onConfigure} />
+        <div className="g3-header-tools" role="group" aria-label="计划操作">
+          <BoardActionButton
+            aria-expanded={!sessionCollapsed}
+            aria-label={sessionCollapsed ? '展开会话栏' : '收折会话栏'}
+            title={sessionCollapsed ? '展开会话栏' : '收折会话栏'}
+            onClick={onSessionToggle}
+          >
+            <MessageSquare size={13} aria-hidden="true" />
+            {sessionCollapsed ? '展开会话' : '收起会话'}
+          </BoardActionButton>
+          {annotateEntry}
+          <BoardActionButton disabled={disabled} onClick={onRefresh}>
+            <RefreshCw size={13} aria-hidden="true" /> 更新代码
+          </BoardActionButton>
+          <AutomationConfigureButton className="g3-action-button" onConfigure={onConfigure} />
+        </div>
       </div>
     </header>
   )

@@ -67,7 +67,8 @@ const subscribeBoard = (boardId: string, listener: () => void) => {
 /**
  * Memory-only annotation state for one board (decision D): ordered records,
  * order-based global numbering shared by board markers and panel cards, mode
- * and popover lifecycle, and the Esc layering (popover first, then mode+panel).
+ * and popover lifecycle. Esc only collapses the popover; exiting the mode is
+ * exclusively the toggle shortcut / header button (#444, 2026-10-29).
  * Cascading goal removal filters by structured ref, not label prefixes.
  * `boardId` is the board's identity string (scope + version); sessions persist
  * across unmounts so screen switches keep each board's unsent notes.
@@ -237,12 +238,11 @@ export function useBoardAnnotations(boardId: string) {
       if (event.defaultPrevented) {
         return
       }
-      // Esc closes the nearest popover first, then exits the mode and panel.
+      // Esc only collapses the popover (layer convention). It never exits the
+      // mode — exit is exclusively the toggle shortcut / header button (#444).
       if (getSession(boardId).popover) {
         patchSession(boardId, { popover: null })
-        return
       }
-      patchSession(boardId, { annotating: false, panelOpen: false })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
