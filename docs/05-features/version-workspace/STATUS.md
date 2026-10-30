@@ -117,7 +117,7 @@ Lens8（提示词/SKILL 规范）：F1 中 version-records 运行身份段补绑
 
 **实现口径说明**：C3 的状态写入走与菜单「移至状态→Done」完全相同的 store 动作（`updateWorktreeMeta(id, { workspaceStatus }, { executionHostId })`）。首轮自动化尝试直走菜单子项时未走通：菜单入场动画期间 rect 位移使点击落到相邻菜单项（「更改版本绑定…/解除版本绑定」一带，由当时 git show 读规划数据洪流佐证），且状态子项 role 为 menuitemradio 与探针选择器不符；菜单路径本身未改动，人手工旅程验证归下轮。
 
-**未验留白**：自定义看板状态集（非默认 4 态）下完工判定仍按 id==='completed'（宁可见不误藏）未真壳验证；断连/远程主机上写 pin 与状态（updateWorktreeMeta 经 executionHostId 路由）未验证；菜单「移至状态」子菜单人手工路径未走。另登记一项观察：首轮 E2E 中一棵测试树（e2e-500-a）被应用内一条未完全定位的路径删除——菜单删除路径有确认对话框门禁且 `skipDeleteWorktreeConfirm=false`，删除未经对话框，疑与点击落错项后的某条自治流程相关；仅波及自建测试树，未伤真实树，不归本特性，待上游核对。
+**未验留白**：自定义看板状态集（非默认 4 态）下完工判定仍按 id==='completed'（宁可见不误藏；极端集删掉 in-progress 且默认态为 completed 时无状态树会判完工，spec 已点名）未真壳验证；断连/远程主机上写 pin 与状态（updateWorktreeMeta 经 executionHostId 路由）未验证；解绑清 pin 为 fire-and-forget，清绑定成功但清 pin 失败时静默、树回流原生区仍显示「已固定」（与仓内 updateWorktreeMeta 既有惯例一致，后果轻）；菜单「移至状态」子菜单人手工路径未走。另登记一项观察：首轮 E2E 中一棵测试树（e2e-500-a）被应用内一条未完全定位的路径删除——菜单删除路径有确认对话框门禁且 `skipDeleteWorktreeConfirm=false`，删除未经对话框，疑与点击落错项后的某条自治流程相关；仅波及自建测试树，未伤真实树，不归本特性，待上游核对。
 
 ## 历史交付边界（截至 #437，非 #439 结果）
 

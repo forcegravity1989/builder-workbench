@@ -41,11 +41,14 @@ export function WorkbenchVersionBindingMenuItems({
         null
       )
       // 解绑后树回流原生列表;目标内置顶(isPinned)语义不外溢成原生「已固定」,随手清掉。
-      void updateWorktreeMeta(
-        worktree.id,
-        { isPinned: false },
-        { executionHostId: worktree.hostId ?? 'local' }
-      )
+      // 已未固定则跳过,不发多余持久化写(对齐原生 setWorktreesPinnedAndReveal 的目标态短路)。
+      if (worktree.isPinned) {
+        void updateWorktreeMeta(
+          worktree.id,
+          { isPinned: false },
+          { executionHostId: worktree.hostId ?? 'local' }
+        )
+      }
       toast.success('已解除版本绑定。')
     } catch (reason) {
       toast.error(reason instanceof Error ? reason.message : String(reason))
