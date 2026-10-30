@@ -6,16 +6,16 @@ export function ReferencePanel() {
   return (
     <>
       <p>
-        原型注释: 本轮补充核对的业界参考 ·
-        2026-10-28。以下是设计取舍的依据，不是产品已实现或用户研究的证明。
+        原型注释: 业界参考核对于 2026-10-28，本轮按 2026-10-30 的人工反馈对齐 SDLC。
+        以下是设计取舍的依据，不是产品已实现或用户研究的证明。
       </p>
       <h3>Claude · AI-native SDLC</h3>
       <p>
         原型注释: 参考 Plan、Design、Build、Test、Deploy、Maintain
         对工作过程的分析，以及持续测试与回返。BW 按已确认的工作方式：已有 Issue 的
         intent、spec、原型共同评审，以设计 PR 合入标记通过；详细设计、Plan 与开发一起推进，以实现 PR
-        合入标记本轮开发结束。Plan 留在原生会话，不照搬原文的 plan.md
-        入库要求。阶段、成果认可、项目版本发布与需求交付分别表达。
+        合入标记本轮开发结束。SDLC 的 Plan 表示意图收敛；详细实施 Plan 仍属于 Build，
+        通常留在原生会话，不增加 plan.md 入库要求。阶段、成果认可、版本交付与实际部署分别取据。
       </p>
       <a
         href="https://claude.com/resources/articles/the-ai-native-sdlc-playbook"
@@ -27,8 +27,8 @@ export function ReferencePanel() {
       <h3>vis Timeline · 时间刻度与事件节点</h3>
       <p>
         原型注释: 借鉴官方组件对时点事件和起止区间的区分。横向按小时比例呈现过程时段，
-        端点显示日期、时分与时区；项目版本发布独立标记，具体需求是否随版提供 Pre / Release
-        另行取据。 日历历时包含等待，测试可重叠；不引入该库或新增阶段协议。
+        端点显示日期、时分与时区；版本验收节点独立标记，具体特性是否随版交付另行取据。
+        日历历时包含等待，测试可重叠；不引入该库或新增阶段协议。
       </p>
       <a
         href="https://visjs.github.io/vis-timeline/docs/timeline/"
@@ -58,23 +58,11 @@ export function ReferencePanel() {
       >
         Pull request reviews · 官方文档 ↗
       </a>
-      <p>
-        原型注释: 名称参考 GitHub 的 Pre-release 与正式 Release 区分。BW
-        本轮按正式计划关联和目标人工达成推导首次 Pre、第二次 Release；节点取验收 PR
-        合入时间，不表示逐包独立核验。每周一版、两版完成只是规划默认，不自动生成交付。
-      </p>
-      <a
-        href="https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository"
-        target="_blank"
-        rel="noreferrer"
-      >
-        Managing releases · 官方文档 ↗
-      </a>
       <h3>LaunchDarkly · 逐步向使用者开放</h3>
       <p>
         原型注释:
         借鉴逐步开放能力时明确使用者范围的思路。发布成果记录版本、包与使用范围；反馈统一进入目标下的
-        Issue，不另建 Pre 反馈列表，也不引入流量分配、功能开关服务或自动发布能力。
+        Issue，不另建反馈列表，也不引入流量分配、功能开关服务或自动发布能力。
       </p>
       <a
         href="https://launchdarkly.com/docs/home/releases/progressive-rollouts"
@@ -91,9 +79,12 @@ export function ReferencePanel() {
         BW 协议。
       </p>
       <p>
-        原型注释: 本轮按六个可采集节点组织横轴：周一09:00周期基线、版本计划 PR 合入确认意图、设计 PR
-        合入定稿、开发 PR 合入交付（缺失时用特性 Issue 关闭时间）、首次 Pre、第二次
-        Release。五段日历历时包含等待；同目标多特性暂沿整体人工结论。
+        原型注释: 横轴统一为 Plan / Design / Build / Test / Deploy / Maintain。
+        周一09:00是周期基线，计划、设计、开发 PR 合入和验收 PR 合入分别提供阶段依据；
+        仅在无法识别开发 PR 时用特性 Issue
+        关闭兜底。验收还要求目标人工达成，同目标多特性暂沿整体结论。
+        首版称首次交付，后续明确关联版本承接 Maintain。Deploy 暂无实际部署时间，显示未跟踪，
+        不用验收或发布记录补齐。日历历时含等待，不是人工工时。
       </p>
       <p>
         原型注释:

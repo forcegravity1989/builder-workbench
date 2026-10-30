@@ -84,7 +84,7 @@ function App() {
   const [navigationDraft, setNavigationDraft] = useState({
     origin: 'project',
     scene: 'during',
-    featureId: '334',
+    featureId: '',
     note: ''
   })
   const [returnContext, setReturnContext] = useState(null)
@@ -473,13 +473,14 @@ function App() {
                   </select>
                 </label>
                 <label>
-                  原型注释: 来源特性
+                  原型注释: 来源特性（有明确关系时）
                   <select
                     value={navigationDraft.featureId}
                     onChange={(e) =>
                       setNavigationDraft({ ...navigationDraft, featureId: e.target.value })
                     }
                   >
+                    <option value="">仅进入版本（未关联特性）</option>
                     <option value="334">#334 版本总览</option>
                     <option value="440">#440 项目总览</option>
                     <option value="383">#383 版本工作区</option>
@@ -506,12 +507,13 @@ function App() {
               )}
               <p>
                 <button className="ov-primary" onClick={enterFromSource}>
-                  进入所选版本并定位特性
+                  {navigationDraft.featureId ? '进入所选版本并定位特性' : '进入所选版本'}
                 </button>
               </p>
               <Note>
                 版本按项目实际名称定位；不强制
-                C/B，也不按日期推断所属关系。未纳入计划的来源特性仅作为定位上下文，不补造本版承诺。
+                C/B，也不按日期推断所属关系。从项目总览版本表头进入时可仅带版本；有明确特性关系才定位。
+                未纳入计划的来源特性仅作为定位上下文，不补造本版承诺。
               </Note>
             </>
           )}

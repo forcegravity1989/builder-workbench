@@ -766,6 +766,30 @@
   background: var(--foreground);
   color: var(--background);
 }
+.ov-phase-range.ongoing {
+  border-style: dashed;
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 6px,
+    color-mix(in srgb, currentColor 7%, transparent) 6px,
+    color-mix(in srgb, currentColor 7%, transparent) 9px
+  );
+}
+.ov-untracked-stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.ov-untracked-stage > span:first-child {
+  border: 1px dashed var(--border);
+  border-radius: 5px;
+  padding: 4px 8px;
+}
 .ov-hour-ticks {
   position: absolute;
   top: 200px;

@@ -4,7 +4,7 @@ export const repository = snapshot.source.repository
 export const acceptanceForVersion = (version) =>
   snapshot.acceptance.version === version ? snapshot.acceptance : null
 export const baseline = snapshot.source.sourceCommit
-export const revision = '334-draft-13'
+export const revision = '334-draft-14'
 export const formatTime = (value) =>
   value && Number.isFinite(Date.parse(value))
     ? new Intl.DateTimeFormat('zh-CN', {
@@ -63,7 +63,7 @@ export const features = ['334', '440'].map((id) => {
       .find((g) => g.goalId === 'G2')
       .deliverable.split('\n')
       [own ? 1 : 0].replace(/^\d+\.\s*/, ''),
-    stage: own ? '开发评审中' : '设计评审中',
+    stage: own ? 'Build · 评审中' : 'Design · 评审中',
     designPR,
     developmentPR: own ? snapshot.pulls.find((pr) => pr.number === 474) : null
   }
