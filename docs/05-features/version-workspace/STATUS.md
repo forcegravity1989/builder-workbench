@@ -113,7 +113,7 @@ Lens8（提示词/SKILL 规范）：F1 中 version-records 运行身份段补绑
 
 **门禁**：oxlint 仓内 0 告警（仅 `.bw-tmp/` 临时探针有 lint 项，不提交）；`run-typecheck-projects-in-parallel` 0 错；`check-vitest-count-ratchet` 222 例恰在基线（本交付零测试增删）。
 
-**判据结果（五条全过，截图 `.bw-tmp/issue500-v2-*.png`）**：初始序 [A,B]（id 升序）→ C1 固定 B 序变 [B,A] → C2 取消固定还原 [A,B] → C3 A 置 completed 后从目标区消失＋「含 1 已完成」出现，展开后 A 在已完成区、按钮变「收起已完成（1）」→ C4 固定 B 后解除版本绑定，B 回流原生区、store 中 isPinned 已清、原生区右键菜单显示「固定」（非「取消固定」）→ C5 全程 console error/exception 为 0（覆盖 reveal 对被过滤树的 no-op 路径）。开 PR 前合入 origin/main（增量未触碰本交付 5 文件）后，于独立 profile＋`REMOTE_DEBUGGING_PORT=9339` 复跑同探针，五判据与 console 双零复验通过，测试树再次删净。
+**判据结果（五条全过，截图 `.bw-tmp/issue500-v2-*.png`）**：初始序 [A,B]（id 升序）→ C1 固定 B 序变 [B,A] → C2 取消固定还原 [A,B] → C3 A 置 completed 后从目标区消失＋「含 1 已完成」出现，展开后 A 在已完成区、按钮变「收起已完成（1）」→ C4 固定 B 后解除版本绑定，B 回流原生区、store 中 isPinned 已清、原生区右键菜单显示「固定」（非「取消固定」）→ C5 全程 console error/exception 为 0（覆盖 reveal 对被过滤树的 no-op 路径）。开 PR 前合入 origin/main（增量未触碰本交付 5 文件）后，于独立 profile＋`REMOTE_DEBUGGING_PORT=9339` 复跑同探针，五判据与 console 双零复验通过，测试树再次删净。推前四维检视（独立 subagent）修正三处「解绑仅清除版本归属」过时措辞、spec 完工判定边缘口径与清 pin 目标态短路（发现项与结论见 PR #523 评论），再合入含 #522 的最新 main 后第三次复跑，五判据与 console 双零仍全过。
 
 **实现口径说明**：C3 的状态写入走与菜单「移至状态→Done」完全相同的 store 动作（`updateWorktreeMeta(id, { workspaceStatus }, { executionHostId })`）。首轮自动化尝试直走菜单子项时未走通：菜单入场动画期间 rect 位移使点击落到相邻菜单项（「更改版本绑定…/解除版本绑定」一带，由当时 git show 读规划数据洪流佐证），且状态子项 role 为 menuitemradio 与探针选择器不符；菜单路径本身未改动，人手工旅程验证归下轮。
 
