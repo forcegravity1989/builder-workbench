@@ -108,7 +108,10 @@ export function TaskPageGitHubList({
             {translate('auto.components.TaskPage.5eccb3c841', 'Title / Context')}
           </span>
           {activeGithubTaskKind === 'issues' ? (
-            <span>{translate('auto.components.TaskPage.8aba10579d', 'Assignees')}</span>
+            <>
+              <span>{translate('auto.components.TaskPage.8aba10579d', 'Assignees')}</span>
+              <span>{translate('auto.components.GitHubItemDialog.217e55d87c', 'Labels')}</span>
+            </>
           ) : null}
           {showPRManagementColumns ? (
             <>
@@ -248,9 +251,14 @@ export function TaskPageGitHubList({
                   <div className="mt-1.5 h-3 w-2/5 animate-pulse rounded bg-muted/60" />
                 </div>
                 {!showPRManagementColumns ? (
-                  <div className="flex items-center">
-                    <div className="h-3 w-24 animate-pulse rounded bg-muted/60" />
-                  </div>
+                  <>
+                    <div className="flex items-center">
+                      <div className="h-3 w-24 animate-pulse rounded bg-muted/60" />
+                    </div>
+                    <div className="flex items-center">
+                      <div className="h-5 w-16 animate-pulse rounded-full bg-muted/70" />
+                    </div>
+                  </>
                 ) : null}
                 {showPRManagementColumns ? (
                   <>

@@ -6,6 +6,7 @@ import {
   CodeHubUpdateIssueTitle,
   CodeHubUpdateIssueLabels,
   CodeHubListLabels,
+  CodeHubListMembers,
   CodeHubSetIssueState,
   CodeHubCloseMr,
   CodeHubAssignIssue,
@@ -50,6 +51,11 @@ export const CODEHUB_METHODS = [
     name: 'codehub.listLabels',
     params: CodeHubListLabels,
     handler: (params, { runtime }) => runtime.codehub.listLabels(params)
+  }),
+  defineMethod({
+    name: 'codehub.listMembers',
+    params: CodeHubListMembers,
+    handler: (params, { runtime }) => runtime.codehub.listMembers(params)
   }),
   defineMethod({
     name: 'codehub.setIssueState',

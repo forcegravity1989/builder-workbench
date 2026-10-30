@@ -46,6 +46,18 @@ export const CodeHubUpdateIssueLabels = Repo.extend({
 })
 // Project label names for the issue-detail picker (`project label list`).
 export const CodeHubListLabels = Repo
+// Project members for the assignee picker (`project member list`); the picker
+// filters client-side, so no server query passthrough. extend({}) keeps a
+// distinct schema identity so the RPC catalog maps it by its own name.
+export const CodeHubListMembers = Repo.extend({})
+export type CodeHubProjectMember = {
+  id: number
+  username: string
+  name: string | null
+  nameCn: string | null
+  avatarUrl: string | null
+  state: string
+}
 export const CodeHubViewer = Repo
 export type CodeHubViewerIdentity = { id: number; username: string; name: string; state: string }
 export const CodeHubSetIssueState = Repo.extend({
@@ -87,6 +99,7 @@ export const CODEHUB_REQUEST_SCHEMAS = {
   updateIssueTitle: CodeHubUpdateIssueTitle,
   updateIssueLabels: CodeHubUpdateIssueLabels,
   listLabels: CodeHubListLabels,
+  listMembers: CodeHubListMembers,
   viewer: CodeHubViewer,
   setIssueState: CodeHubSetIssueState,
   closeMr: CodeHubCloseMr,
@@ -112,6 +125,7 @@ export type CodeHubApi = {
   updateIssueTitle: (args: z.infer<typeof CodeHubUpdateIssueTitle>) => Promise<void>
   updateIssueLabels: (args: z.infer<typeof CodeHubUpdateIssueLabels>) => Promise<void>
   listLabels: (args: z.infer<typeof CodeHubListLabels>) => Promise<string[]>
+  listMembers: (args: z.infer<typeof CodeHubListMembers>) => Promise<CodeHubProjectMember[]>
   viewer: (args: z.infer<typeof CodeHubViewer>) => Promise<CodeHubViewerIdentity>
   setIssueState: (args: z.infer<typeof CodeHubSetIssueState>) => Promise<void>
   closeMr: (args: z.infer<typeof CodeHubCloseMr>) => Promise<void>

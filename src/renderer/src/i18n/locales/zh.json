@@ -1923,7 +1923,11 @@
         "loadPageNoMoreResults": "第 {{value0}} 页没有更多结果。",
         "codehubNoLoadedMatches": "已加载任务中没有匹配项",
         "codehubLoadedScope": "搜索和筛选仅作用于已加载的任务",
-        "codehubLoadMore": "加载更多"
+        "codehubLoadMore": "加载更多",
+        "codehubAssigned": "负责人已更新",
+        "codehubLabelsSaved": "标签已更新",
+        "codehubNoMembers": "未找到项目成员。",
+        "ghLabelsUpdateFailed": "更新标签失败。"
       },
       "Terminal": {
         "73768427cf": "关闭",
