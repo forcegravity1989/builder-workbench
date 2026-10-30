@@ -113,13 +113,39 @@ describe('packaged runtime type-declaration and source-map pruning', () => {
     }
   })
 
-  it('runs the artifact prune through aggregate runtime cleanup', async () => {
+  it('prunes Windows build artifacts while retaining loadable native runtime files', async () => {
     const resourcesDir = await mkdtemp(join(tmpdir(), 'orca-source-map-aggregate-prune-'))
     try {
       const { distDir, updaterDir, packageDir } =
         await createPackagedNodeModulesFixture(resourcesDir)
 
-      prunePackagedRuntimeNodeModules(resourcesDir, 'darwin', 'arm64')
+      const nativeDir = join(packageDir, 'build', 'Release')
+      await mkdir(nativeDir, { recursive: true })
+      for (const extension of [
+        'pdb',
+        'obj',
+        'ipdb',
+        'iobj',
+        'ilk',
+        'tlog',
+        'exp',
+        'lib',
+        'lastbuildstate',
+        'node',
+        'dll',
+        'exe'
+      ]) {
+        await writeFile(join(nativeDir, `addon.${extension}`), extension, 'utf8')
+      }
+      await writeFile(join(nativeDir, 'upper.PDB'), 'symbols', 'utf8')
+
+      prunePackagedRuntimeNodeModules(resourcesDir, 'win32', 'x64')
+
+      await expect(readdir(nativeDir).then((entries) => entries.sort())).resolves.toEqual([
+        'addon.dll',
+        'addon.exe',
+        'addon.node'
+      ])
 
       await expect(readdir(distDir).then((entries) => entries.sort())).resolves.toEqual([
         'index.cjs',

@@ -9,6 +9,7 @@ export type KeybindingScope =
   | 'fileExplorer'
   | 'composer'
   | 'settings'
+  | 'workbench'
 
 export type KeybindingContext = 'app' | 'terminal' | 'browser'
 
@@ -50,6 +51,7 @@ export type KeybindingActionId =
   | 'sidebar.focusWorktreeList'
   | 'floatingTerminal.toggle'
   | 'floatingWorkspace.maximize'
+  | 'workbench.toggleAnnotationMode'
   | 'floatingWorkspace.minimize'
   | 'zoom.in'
   | 'zoom.out'
