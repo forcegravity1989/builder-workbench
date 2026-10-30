@@ -1,6 +1,7 @@
 import { InlineField } from './milestones-fields.jsx'
 import { Timeline } from './milestones-timeline.jsx'
-import { defaultStages, fitVersions, laneConflict } from './milestones-sdlc.js'
+import { defaultStages, fitVersions, laneConflict, settleWindows } from './milestones-sdlc.js'
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js'
 import Undo2 from 'lucide-react/dist/esm/icons/undo-2.js'
 import Redo2 from 'lucide-react/dist/esm/icons/redo-2.js'
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw.js'
@@ -234,7 +235,7 @@ function App() {
     after.setUTCDate(after.getUTCDate() + ((8 - after.getUTCDay()) % 7 || 7))
     const nextWeek = availableWeek(first.plan, after.toISOString().slice(0, 10))
     const next = planWeek(first.plan, nextWeek)
-    const candidate = fitVersions(
+    const fitted = fitVersions(
       {
         ...next.plan,
         features: [
@@ -256,6 +257,12 @@ function App() {
       },
       [first.version.id, next.version.id]
     )
+    const settled = settleWindows(state.draft, fitted)
+    if (settled.conflict) {
+      setNotice(settled.conflict)
+      return
+    }
+    const candidate = settled.plan
     if (laneConflict(candidate)) {
       setNotice('同一泳道不能重叠，请先为后续版本留出时间。')
       return
@@ -420,12 +427,14 @@ function App() {
             <section className="ml-milestone-block" aria-label="项目里程碑" ref={board}>
               <div className="ml-milestone-heading">
                 <div className="ml-heading-title">
-                  <h2>项目里程碑</h2>
-                  {!empty && (
-                    <span className="ml-feature-summary">
-                      <span>{plan.features.length} 个特性</span>
-                    </span>
+                  {planning && (
+                    <IconAction
+                      label="结束编辑，返回项目里程碑"
+                      icon={ArrowLeft}
+                      onClick={() => setPlanning(false)}
+                    />
                   )}
+                  <h2>项目里程碑</h2>
                 </div>
                 <div className="ml-actions">
                   {planning ? (

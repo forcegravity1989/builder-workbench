@@ -111,6 +111,10 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await expect(rows.first().getByLabel('特性名称', { exact: true })).toHaveValue('消息与通知')
   await rows.first().getByLabel('负责人', { exact: true }).fill('评审 Builder  ')
   await rows.first().getByLabel('负责人', { exact: true }).press('Tab')
+  await board.getByRole('button', { name: '结束编辑，返回项目里程碑', exact: true }).click()
+  await expect(board.getByLabel('负责人', { exact: true })).toHaveCount(0)
+  await board.getByRole('button', { name: '规划里程碑', exact: true }).click()
+  await expect(rows.first().getByLabel('负责人', { exact: true })).toHaveValue('评审 Builder')
   await board.getByRole('button', { name: '撤销', exact: true }).click()
   await expect(rows.first().getByLabel('负责人', { exact: true })).toHaveValue('Builder 1')
   await board.getByRole('button', { name: '重做', exact: true }).click()
@@ -141,7 +145,7 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   })
   const planBar = notification.locator('.wb-phase-plan .wb-ml-phase-body')
   const initialStage = await planBar.getAttribute('title')
-  await moveNode(page, planBar, 22)
+  await moveNode(page, planBar, 18)
   await expect(planBar).toHaveAttribute('title', /2026-11-02 12:00/)
   await board.getByRole('button', { name: '撤销', exact: true }).click()
   await expect(planBar).toHaveAttribute('title', initialStage!)
@@ -153,7 +157,7 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
     name: 'Design 结束：拖动或方向键调整半天',
     exact: true
   })
-  await moveNode(page, boundary, 88)
+  await moveNode(page, boundary, 72)
   await expect(windows.first()).toContainText('11-02 — 11-08')
   await boundary.press('ArrowRight')
   await expect(board.getByText('同一泳道不能重叠', { exact: true })).toBeVisible()

@@ -34,6 +34,7 @@ export function MilestoneGoalPicker({
   if (!editable) {
     return (
       <span className="wb-ml-goal-tag" title={detail}>
+        <span className="wb-ml-goal-version">{delivery.version.version} ·</span>
         {label}
         {delivery.goalId && index === -1 ? ' · 待核对' : ''}
       </span>
@@ -47,6 +48,7 @@ export function MilestoneGoalPicker({
           title={detail}
           aria-label={`${feature} · ${delivery.version.version} 关联目标`}
         >
+          <span className="wb-ml-goal-version">{delivery.version.version} ·</span>
           {label}
           <ChevronDown size={11} />
         </button>

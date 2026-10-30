@@ -1,3 +1,4 @@
+import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 import { useRef, useState, type RefObject, type PointerEvent, type KeyboardEvent } from 'react'
 import type { MilestoneDraft } from '../../../shared/workbench/project-milestones'
 import {
@@ -14,8 +15,8 @@ import {
   type MilestoneDragMode
 } from '../../../shared/workbench/milestone-sdlc'
 
-export const MILESTONE_DAY_WIDTH = 44
-export const MILESTONE_LABEL_WIDTH = 230
+export const MILESTONE_DAY_WIDTH = 36
+export const MILESTONE_LABEL_WIDTH = 220
 export type MilestoneGesture =
   | { kind: 'version'; id: string; mode: 'move' }
   | {
@@ -101,7 +102,12 @@ export function useMilestoneGesture(
       : 0.5
   }
   function checked(base: MilestoneDraft, operation: MilestoneGesture, delta: number) {
-    const next = changed(base, operation, delta)
+    const settled = settleMilestoneWindows(base, changed(base, operation, delta), started)
+    if (settled.conflict) {
+      setWarning(settled.conflict)
+      return null
+    }
+    const next = settled.draft
     if (milestoneLaneConflict(next)) {
       setWarning('同一泳道不能重叠')
       return null

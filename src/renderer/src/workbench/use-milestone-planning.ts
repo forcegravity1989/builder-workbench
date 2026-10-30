@@ -259,6 +259,12 @@ export function useMilestonePlanning(
       setReadError(null)
     }
   }
+  const finishEditing = () => {
+    const s = sessions.get(key)
+    if (s && !submitting.has(key) && !reading) {
+      put(key, { ...s, editing: false, field: null })
+    }
+  }
   return {
     state,
     busy: reading || writing,
@@ -272,6 +278,7 @@ export function useMilestonePlanning(
     reload,
     submit,
     revert,
+    finishEditing,
     undo: () => history('undo'),
     redo: () => history('redo'),
     beginFieldEdit: () => patch({ field: null }),

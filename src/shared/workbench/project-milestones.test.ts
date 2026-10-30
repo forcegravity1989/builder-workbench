@@ -1,3 +1,4 @@
+import { settleMilestoneWindows } from './milestone-window-order'
 import { frozenMilestoneProblems, restoreFrozenMilestones } from './milestone-freeze'
 import { expect, it } from 'vitest'
 import {
@@ -128,6 +129,66 @@ it('keeps planning dates, precise version identity and snapshots through schedul
   const touching = adjustMilestoneVersion(fitted, 'two', -22)
   expect(milestoneLaneConflict(touching)).toBeUndefined()
   expect(milestoneLaneConflict(adjustMilestoneVersion(fitted, 'two', -23))).toBe('f1')
+  const withEmpty = {
+    ...fitted,
+    versions: [
+      ...fitted.versions,
+      { version: 'v3', cycleId: 'three', timeWindow: { start: '2026-11-09', end: '2026-11-13' } },
+      { version: 'v4', cycleId: 'four', timeWindow: { start: '2026-11-16', end: '2026-11-20' } }
+    ]
+  }
+  const expanded = adjustMilestoneDelivery(withEmpty, 'f1', 'f1-0', 'end', 1, 5)
+  const settled = settleMilestoneWindows(withEmpty, expanded, new Set())
+  expect(settled.conflict).toBeUndefined()
+  expect(settled.draft.versions.slice(2).map((v) => v.timeWindow)).toEqual([
+    { start: '2026-11-12', end: '2026-11-16' },
+    { start: '2026-11-17', end: '2026-11-21' }
+  ])
+  expect(settled.draft.material).toBe(expanded.material)
+  expect(withEmpty.versions[2].timeWindow?.start).toBe('2026-11-09')
+  expect(milestoneProblems(settled.draft)).toEqual([])
+  const shortened = settleMilestoneWindows(
+    settled.draft,
+    adjustMilestoneDelivery(settled.draft, 'f1', 'f1-0', 'end', 1, -5),
+    new Set()
+  )
+  expect(shortened.draft.versions.slice(2)).toEqual(settled.draft.versions.slice(2))
+  for (const frozenId of ['three', 'four']) {
+    const blocked = settleMilestoneWindows(withEmpty, expanded, new Set([frozenId]))
+    expect(blocked.conflict).toBeTruthy()
+    expect(blocked.draft).toBe(withEmpty)
+  }
+  const occupied = structuredClone(withEmpty)
+  occupied.material.features.push({
+    id: 'occupied',
+    month: '2026-11',
+    title: '已有排期',
+    owner: 'bob',
+    deliveries: [
+      {
+        id: 'occupied-0',
+        version: { version: 'v4', cycleId: 'four' },
+        stages: defaultMilestoneStages(occupied.versions[3])
+      }
+    ]
+  })
+  expect(
+    settleMilestoneWindows(
+      occupied,
+      adjustMilestoneDelivery(occupied, 'f1', 'f1-0', 'end', 1, 5),
+      new Set()
+    ).conflict
+  ).toBeTruthy()
+  const parallel = structuredClone(occupied)
+  parallel.versions[3].timeWindow = { start: '2026-11-02', end: '2026-11-06' }
+  parallel.material.features[2].deliveries[0].stages = defaultMilestoneStages(parallel.versions[3])
+  expect(
+    settleMilestoneWindows(
+      parallel,
+      adjustMilestoneDelivery(parallel, 'f1', 'f1-0', 'end', 1, 0.5),
+      new Set()
+    ).conflict
+  ).toBeUndefined()
   const earlyMaintain = adjustMilestoneDelivery(before, 'f1', 'f1-1', 'move', 0, -25)
   expect(milestoneProblems(earlyMaintain).join()).toContain('Maintain 不能早于')
   const frozen = {

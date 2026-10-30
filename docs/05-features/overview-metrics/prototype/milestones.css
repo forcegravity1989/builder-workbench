@@ -418,14 +418,14 @@
   display: flex;
 }
 .ml-version-row {
-  height: 64px;
+  height: 52px;
   background: var(--background);
   border-bottom: 1px solid var(--border);
 }
 .ml-sticky-label {
   position: sticky;
   left: 0;
-  width: 230px;
+  width: 220px;
   flex: none;
   z-index: 4;
   background: var(--background);
@@ -456,7 +456,7 @@
 }
 .ml-fixed-version {
   position: absolute;
-  height: 64px;
+  height: 52px;
   border: 0;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
@@ -567,7 +567,7 @@
 }
 .ml-now-line {
   position: absolute;
-  top: 104px;
+  top: 92px;
   bottom: 0;
   border-left: 1px solid var(--muted-foreground);
   opacity: 0.45;
@@ -590,7 +590,7 @@
 .ml-add-feature {
   position: sticky;
   left: 0;
-  width: 230px;
+  width: 220px;
   padding: 8px 12px;
   background: var(--background);
 }
@@ -679,7 +679,7 @@
 .ml-week-slot {
   position: absolute;
   top: 0;
-  height: 64px;
+  height: 52px;
   border-right: 1px dashed var(--border);
   display: flex;
   flex-direction: column;
@@ -703,21 +703,13 @@
 }
 .ml-heading-title {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: 10px;
 }
 .ml-heading-title > span {
   font-size: 11px;
   color: var(--muted-foreground);
-}
-.ml-feature-summary {
-  display: inline-flex;
-  align-items: center;
-}
-.ml-feature-summary {
-  flex-wrap: wrap;
-  gap: 8px 16px;
 }
 .ml-edit-actions {
   display: flex;
@@ -762,14 +754,14 @@
   position: relative;
   display: flex;
   width: 100%;
-  height: 104px;
+  height: 76px;
 }
 .ml-roadmap-axis::before {
   content: '';
   position: absolute;
   left: 0;
   right: 0;
-  top: 36px;
+  top: 28px;
   border-top: 1px solid var(--border);
 }
 .ml-roadmap-month {
@@ -780,7 +772,7 @@
 .ml-roadmap-flag {
   position: absolute;
   left: 50%;
-  top: 12px;
+  top: 4px;
   height: 24px;
   display: flex;
   gap: 7px;
@@ -800,7 +792,7 @@
 .ml-roadmap-month::after {
   content: '';
   position: absolute;
-  top: 34px;
+  top: 26px;
   left: calc(50% - 2px);
   width: 4px;
   height: 4px;
@@ -809,7 +801,7 @@
 }
 .ml-roadmap-caption {
   position: absolute;
-  top: 54px;
+  top: 39px;
   left: calc(50% - 110px);
   width: 220px;
   border: 1px solid var(--border);
@@ -845,6 +837,8 @@
 .ml-feature-goals {
   display: flex;
   align-items: center;
+  min-width: 0;
+  overflow-x: auto;
   gap: 4px;
   font-size: 10px;
   color: var(--muted-foreground);
@@ -852,17 +846,22 @@
 }
 .ml-goal-picker {
   position: relative;
+  flex-shrink: 0;
 }
 .ml-goal-picker summary,
 .ml-goal-tag {
   list-style: none;
   display: flex;
   align-items: center;
-  gap: 4px;
+  flex-shrink: 0;
+  gap: 3px;
   padding: 2px 5px;
   border-radius: 5px;
   background: var(--muted);
   color: var(--foreground);
+}
+.ml-goal-version {
+  color: var(--muted-foreground);
 }
 .ml-goal-picker summary {
   cursor: pointer;
@@ -881,9 +880,8 @@
   z-index: 40;
 }
 .ml-goal-options {
-  position: absolute;
-  top: 24px;
-  left: 0;
+  position: fixed;
+  z-index: 60;
   width: 68px;
   padding: 4px;
   background: var(--background);
@@ -907,10 +905,6 @@
 .ml-goal-options button:hover,
 .ml-goal-options button[aria-pressed='true'] {
   background: var(--muted);
-}
-.ml-goal-picker[data-align='up'] .ml-goal-options {
-  top: auto;
-  bottom: 24px;
 }
 .ml-drag-warning {
   color: var(--destructive);
@@ -972,7 +966,7 @@
 }
 .ml-days-background {
   position: absolute;
-  top: 104px;
+  top: 92px;
   bottom: 0;
   pointer-events: none;
 }
@@ -1026,8 +1020,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 16px;
-  padding: 10px 14px;
+  gap: 6px 12px;
+  padding: 7px 14px;
   border-bottom: 1px solid var(--border);
   font-size: 10px;
   color: var(--muted-foreground);
@@ -1036,8 +1030,11 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-right: auto;
+  gap: 9px;
+  margin-left: auto;
+}
+.ml-planning-count {
+  white-space: nowrap;
 }
 .ml-stage-legend > span {
   display: inline-flex;

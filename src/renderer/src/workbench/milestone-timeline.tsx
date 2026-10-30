@@ -5,7 +5,7 @@ import { GripVertical, Plus, X } from 'lucide-react'
 import { MilestoneField } from './milestone-field'
 import { MilestoneFeatureMetadata } from './milestone-goal-picker'
 import { MilestoneIconButton } from './milestone-icon-button'
-import { MilestoneVersionRow } from './milestone-version-row'
+import { MilestoneVersionRow, MILESTONE_VERSION_HEIGHT } from './milestone-version-row'
 import { MilestoneStageBars, MilestoneSdlcToolbar } from './milestone-stage-bars'
 import {
   useMilestoneGesture,
@@ -76,7 +76,7 @@ export function MilestoneTimeline(props: Props) {
     laneEnds[lane] = version.timeWindow!.end
     lanes.set(version.cycleId, lane)
   }
-  const versionHeight = Math.max(1, laneEnds.length) * 64
+  const versionHeight = Math.max(1, laneEnds.length) * MILESTONE_VERSION_HEIGHT
   const days = Array.from({ length: end - origin + 1 }, (_, i) => {
     const day = origin + i,
       date = milestoneDate(day)
@@ -148,7 +148,13 @@ export function MilestoneTimeline(props: Props) {
   const today = milestoneDay(milestoneToday())
   return (
     <>
-      <MilestoneSdlcToolbar showPlan={showPlan} onChange={setShowPlan} warning={gesture.warning} />
+      <MilestoneSdlcToolbar
+        showPlan={showPlan}
+        onChange={setShowPlan}
+        warning={gesture.warning}
+        featureCount={features.length}
+        ownerCount={new Set(features.map((feature) => feature.owner.trim()).filter(Boolean)).size}
+      />
       <div
         ref={viewport}
         className="wb-ml-scroll"

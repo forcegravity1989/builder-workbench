@@ -26,24 +26,33 @@ export function MilestoneLegend() {
 export function MilestoneSdlcToolbar({
   showPlan,
   onChange,
-  warning
+  warning,
+  featureCount,
+  ownerCount
 }: {
   showPlan: boolean
   onChange(value: boolean): void
   warning?: string
+  featureCount: number
+  ownerCount: number
 }) {
   return (
     <div className="wb-ml-sdlc-toolbar">
-      <MilestoneLegend />
+      <span className="wb-ml-counts">
+        {featureCount} 个特性 · {ownerCount} 位负责人
+      </span>
       {warning && (
         <span className="wb-ml-drag-warning" role="status">
           {warning}
         </span>
       )}
-      <label className="wb-ml-show-plan">
-        <input type="checkbox" checked={showPlan} onChange={(e) => onChange(e.target.checked)} />
-        显示计划
-      </label>
+      <div className="wb-ml-sdlc-options">
+        <MilestoneLegend />
+        <label className="wb-ml-show-plan">
+          <input type="checkbox" checked={showPlan} onChange={(e) => onChange(e.target.checked)} />
+          显示计划
+        </label>
+      </div>
     </div>
   )
 }

@@ -1,8 +1,8 @@
 import { currentDay } from './milestones-data.js'
 
 export const dayMs = 86400000
-export const dayWidth = 44
-export const labelWidth = 230
+export const dayWidth = 36
+export const labelWidth = 220
 export const at = (date) => Date.parse(`${date}T00:00:00Z`)
 export const iso = (value) => new Date(value).toISOString().slice(0, 10)
 const monday = (value) => value - ((new Date(value).getUTCDay() + 6) % 7) * dayMs

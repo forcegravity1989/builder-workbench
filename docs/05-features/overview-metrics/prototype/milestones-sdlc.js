@@ -1,4 +1,5 @@
 import * as core from '../../../../src/shared/workbench/milestone-sdlc.ts'
+import { settleMilestoneWindows } from '../../../../src/shared/workbench/milestone-window-order.ts'
 import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.ts'
 // Prototype-only civil-day coordinates. Actual evidence retains its original timestamp.
 export const dayMs = 86400000
@@ -95,6 +96,14 @@ export function fitVersions(plan, ids) {
 }
 export function laneConflict(plan) {
   return core.milestoneLaneConflict(toDraft(plan))
+}
+export function settleWindows(before, candidate) {
+  const result = settleMilestoneWindows(
+    toDraft(before),
+    toDraft(candidate),
+    new Set(before.versions.filter((v) => v.started).map((v) => v.id))
+  )
+  return { plan: fromDraft(candidate, result.draft), conflict: result.conflict }
 }
 export function adjustVersion(plan, id, mode, delta) {
   if (plan.versions.find((v) => v.id === id)?.started || mode !== 'move') {

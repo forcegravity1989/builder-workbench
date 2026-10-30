@@ -1,3 +1,4 @@
+import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 import {
   frozenMilestoneProblems,
   restoreFrozenMilestones
@@ -6,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
-import { MilestoneHistoryActions } from './milestone-history-actions'
+import { MilestoneHistoryActions, MilestoneTitle } from './milestone-history-actions'
 import {
   ScheduledVersionSchema,
   milestoneDraft,
@@ -171,7 +172,12 @@ export function ProjectMilestones({
         .filter((v) => v.started)
         .map((v) => v.cycleId)
     )
-    const { id, date, draft } = createMilestoneFeature(state!.draft, started)
+    const { id, date, draft: candidate } = createMilestoneFeature(state!.draft, started)
+    const { draft, conflict } = settleMilestoneWindows(state!.draft, candidate, started)
+    if (conflict) {
+      toast(conflict)
+      return
+    }
     if (milestoneLaneConflict(draft)) {
       toast('同一泳道不能重叠，请先为后续版本留出时间。')
       return
@@ -233,7 +239,7 @@ export function ProjectMilestones({
       }}
     >
       <header className="wb-ml-heading">
-        <strong>项目里程碑</strong>
+        <MilestoneTitle editing={editing} busy={busy} finishEditing={model.finishEditing} />
         <div className="wb-ml-actions">
           {editing && (
             <MilestoneHistoryActions
@@ -243,12 +249,8 @@ export function ProjectMilestones({
               recoveryBlocked={!!state.recoveryBlocked}
               canUndo={model.canUndo}
               canRedo={model.canRedo}
-              undo={() => {
-                model.undo()
-              }}
-              redo={() => {
-                model.redo()
-              }}
+              undo={model.undo}
+              redo={model.redo}
               discard={() => {
                 model.revert()
                 setRestoreKey((v) => v + 1)
@@ -360,13 +362,6 @@ export function ProjectMilestones({
             navigate={(value) => navigate(`${value}-01`)}
             editField={model.editField}
           />
-          <div className="wb-ml-toolbar">
-            <span>
-              {visible.material.features.length} 个特性 ·{' '}
-              {new Set(visible.material.features.map((f) => f.owner.trim()).filter(Boolean)).size}{' '}
-              位负责人
-            </span>
-          </div>
           <MilestoneTimeline
             key={`${restoreScope}:${editing}:${restoreKey}`}
             draft={visible}

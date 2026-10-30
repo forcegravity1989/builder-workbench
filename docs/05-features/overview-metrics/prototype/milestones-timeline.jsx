@@ -12,6 +12,7 @@ import {
   actualAsOf,
   isRest,
   laneConflict,
+  settleWindows,
   adjustVersion,
   adjustDelivery
 } from './milestones-sdlc.js'
@@ -59,7 +60,7 @@ export function Timeline({
     laneEnds[lane] = version.end
     versionLanes.set(version.id, lane)
   }
-  const versionHeight = Math.max(1, laneEnds.length) * 64
+  const versionHeight = Math.max(1, laneEnds.length) * 52
   const blankWeeks = baseCalendar.weeks.filter(
     (w) => !display.versions.some((v) => v.start <= w.end && v.end >= w.start)
   )
@@ -70,6 +71,19 @@ export function Timeline({
         : navigation.date
     scroll.current?.scrollTo({ left: Math.max(0, (day(date) - start - 1) * dayWidth) })
   }, [navigation, start])
+  useEffect(() => {
+    const closeGoalPickers = () => {
+      scroll.current?.querySelectorAll('.ml-goal-picker[open]').forEach((node) => {
+        node.open = false
+      })
+    }
+    window.addEventListener('scroll', closeGoalPickers, true)
+    window.addEventListener('resize', closeGoalPickers)
+    return () => {
+      window.removeEventListener('scroll', closeGoalPickers, true)
+      window.removeEventListener('resize', closeGoalPickers)
+    }
+  }, [])
   const beginDrag = (event, gesture) => {
     if (!planning || event.button !== 0) {
       return
@@ -137,7 +151,12 @@ export function Timeline({
       ? 1
       : 0.5
   const checkedChange = (gesture, delta) => {
-    const next = changed(gesture, delta)
+    const settled = settleWindows(gesture.base, changed(gesture, delta))
+    if (settled.conflict) {
+      setDragWarning(settled.conflict)
+      return null
+    }
+    const next = settled.plan
     if (laneConflict(next)) {
       setDragWarning('同一泳道不能重叠')
       return null
@@ -265,6 +284,10 @@ export function Timeline({
   return (
     <>
       <div className="ml-sdlc-toolbar">
+        <span className="ml-planning-count">
+          {display.features.length} 个特性 ·{' '}
+          {new Set(display.features.map((f) => f.owner.trim()).filter(Boolean)).size} 位负责人
+        </span>
         <div className="ml-stage-legend" aria-label="SDLC 阶段图例">
           {phases.map((phase) => (
             <span key={phase}>
@@ -369,7 +392,7 @@ export function Timeline({
                       key={v.id}
                       style={{
                         left: x(day(v.start)),
-                        top: versionLanes.get(v.id) * 64,
+                        top: versionLanes.get(v.id) * 52,
                         width: (day(v.end) - day(v.start) + 1) * dayWidth
                       }}
                     >
@@ -540,12 +563,11 @@ export function Timeline({
                           onToggle={(event) => {
                             const node = event.currentTarget
                             if (node.open) {
-                              node.dataset.align =
-                                scroll.current.getBoundingClientRect().bottom -
-                                  node.getBoundingClientRect().bottom <
-                                150
-                                  ? 'up'
-                                  : 'down'
+                              const trigger = node.querySelector('summary').getBoundingClientRect()
+                              const menu = node.querySelector('.ml-goal-options')
+                              const height = menu.getBoundingClientRect().height
+                              menu.style.left = `${Math.max(8, Math.min(trigger.left, window.innerWidth - 76))}px`
+                              menu.style.top = `${Math.max(8, window.innerHeight - trigger.bottom < height + 8 ? trigger.top - height - 4 : trigger.bottom + 4)}px`
                             }
                           }}
                           onKeyDown={(event) => {
@@ -564,6 +586,7 @@ export function Timeline({
                             aria-label={`${feature.title} ${v.name} 选择目标`}
                             title={`${v.name} 的目标`}
                           >
+                            <span className="ml-goal-version">{v.name} ·</span>
                             <span>{delivery.goalSlot ? `G${delivery.goalSlot}` : '目标'}</span>
                             <span>⌄</span>
                           </summary>
@@ -598,7 +621,8 @@ export function Timeline({
                         </details>
                       ) : (
                         <span className="ml-goal-tag" key={i} title={`${v.name} 的目标`}>
-                          {delivery.goalSlot ? `G${delivery.goalSlot}` : '未选目标'}
+                          <span className="ml-goal-version">{v.name} ·</span>
+                          <span>{delivery.goalSlot ? `G${delivery.goalSlot}` : '目标'}</span>
                         </span>
                       )
                     })}

@@ -11,6 +11,8 @@ import {
 } from '../../../shared/workbench/milestone-calendar'
 import type { MilestoneDraft, ScheduledVersion } from '../../../shared/workbench/project-milestones'
 
+export const MILESTONE_VERSION_HEIGHT = 52
+
 function WeekName({
   week,
   disabled,
@@ -90,7 +92,8 @@ export function MilestoneVersionRow({
   const today = milestoneToday()
   const position = (window: MilestoneWeek) => ({
     left: (milestoneDay(window.start) - origin) * dayWidth,
-    width: (milestoneDay(window.end) - milestoneDay(window.start) + 1) * dayWidth
+    width: (milestoneDay(window.end) - milestoneDay(window.start) + 1) * dayWidth,
+    height: MILESTONE_VERSION_HEIGHT
   })
   return (
     <div className="wb-ml-version-row" style={{ height }}>
@@ -116,7 +119,10 @@ export function MilestoneVersionRow({
           <div
             className={`wb-ml-window${v.timeWindow!.start <= today && today <= v.timeWindow!.end ? ' wb-ml-current-window' : ''}`}
             key={v.cycleId}
-            style={{ ...position(v.timeWindow!), top: (lanes.get(v.cycleId) ?? 0) * 64 }}
+            style={{
+              ...position(v.timeWindow!),
+              top: (lanes.get(v.cycleId) ?? 0) * MILESTONE_VERSION_HEIGHT
+            }}
             title={started.has(v.cycleId) ? '已开始计划，名称沿真实版本' : undefined}
           >
             {v.timeWindow!.start <= today && today <= v.timeWindow!.end && (
