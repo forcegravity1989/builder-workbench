@@ -1,12 +1,7 @@
-import type { CharterSubmitOutcome } from '../../shared/workbench/charter'
-
-const submissions = new Map<string, Promise<CharterSubmitOutcome>>()
+const submissions = new Map<string, Promise<unknown>>()
 
 /** All clients of an owning runtime share one fixed charter tree per repository. */
-export async function serializeCharterSubmission(
-  key: string,
-  submit: () => Promise<CharterSubmitOutcome>
-) {
+export async function serializeCharterSubmission<T>(key: string, submit: () => Promise<T>) {
   const previous = submissions.get(key)
   const current = (async () => {
     await previous?.catch(() => undefined)

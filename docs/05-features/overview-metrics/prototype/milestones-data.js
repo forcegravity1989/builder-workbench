@@ -1,53 +1,123 @@
-export const storageKey = 'bw-issue-440-prototype-v7'
+import { defaultStages, dateOf, scheduleProblem } from './milestones-sdlc.js'
+export const storageKey = 'bw-issue-440-prototype-sdlc-v1'
 export const currentDay = '2026-11-11'
 export const fixedVersions = [
-  { id: 'v1.0.0', name: 'v1.0.0', start: '2026-11-02', end: '2026-11-08' },
-  { id: 'v1.0.1', name: 'v1.0.1', start: '2026-11-09', end: '2026-11-15' },
-  { id: 'v1.1.0', name: 'v1.1.0', start: '2026-11-16', end: '2026-11-22' },
-  { id: 'v1.1.1', name: 'v1.1.1', start: '2026-11-23', end: '2026-11-29' }
+  { id: 'v1.0.0', name: 'v1.0.0', start: '2026-11-02', end: '2026-11-06', started: true },
+  { id: 'v1.0.1', name: 'v1.0.1', start: '2026-11-09', end: '2026-11-13', started: true },
+  { id: 'v1.1.0', name: 'v1.1.0', start: '2026-11-16', end: '2026-11-20' },
+  { id: 'v1.1.1', name: 'v1.1.1', start: '2026-11-23', end: '2026-11-27' }
+]
+// These are explicit demonstration associations, never matched by feature title.
+const delivery = (index, maintain = false) => ({
+  versionId: fixedVersions[index].id,
+  stages: defaultStages(fixedVersions[index], maintain)
+})
+const completed = [
+  {
+    phase: 'Plan',
+    startAt: '2026-11-02T09:00:00+08:00',
+    endAt: '2026-11-03T10:20:00+08:00',
+    source: '版本计划 PR 合入；起点为约定的周一 09:00'
+  },
+  {
+    phase: 'Design',
+    startAt: '2026-11-03T10:20:00+08:00',
+    endAt: '2026-11-04T14:40:00+08:00',
+    source: '明确关联的设计 PR 合入'
+  },
+  {
+    phase: 'Build',
+    startAt: '2026-11-04T14:40:00+08:00',
+    endAt: '2026-11-04T17:10:00+08:00',
+    source: '明确关联的实现 PR 合入'
+  },
+  {
+    phase: 'Test',
+    startAt: '2026-11-04T17:10:00+08:00',
+    endAt: '2026-11-06T11:30:00+08:00',
+    source: '版本验收 PR 合入，关联目标人工通过'
+  }
+]
+const running = [
+  {
+    phase: 'Plan',
+    startAt: '2026-11-09T09:00:00+08:00',
+    endAt: '2026-11-10T10:15:00+08:00',
+    source: '版本计划 PR 合入；起点为约定的周一 09:00'
+  },
+  {
+    phase: 'Design',
+    startAt: '2026-11-10T10:15:00+08:00',
+    endAt: '2026-11-11T14:20:00+08:00',
+    source: '明确关联的设计 PR 合入'
+  },
+  {
+    phase: 'Build',
+    startAt: '2026-11-11T14:20:00+08:00',
+    endAt: null,
+    source: '尚无实现 PR 合入或可用 Issue 关闭证据'
+  }
 ]
 export const initial = {
-  milestone: '协作与工程能力形成可用闭环',
+  months: [{ month: '2026-11', outcome: '协作与工程能力形成可用闭环' }],
   versions: fixedVersions,
   features: [
     {
       id: 'demo-notification',
       title: '消息与通知',
       owner: 'kanadead',
-      pre: 'v1.0.0',
-      release: 'v1.0.1'
+      deliveries: [
+        { ...delivery(0), actual: completed },
+        {
+          ...delivery(1, true),
+          actual: [
+            {
+              phase: 'Maintain',
+              startAt: '2026-11-09T10:15:00+08:00',
+              endAt: null,
+              source: '后续版本计划明确纳入跟进；尚未验收'
+            }
+          ]
+        }
+      ]
     },
     {
       id: 'demo-metrics',
       title: '指标能力运维',
       owner: 'cfdcfd',
-      pre: 'v1.0.0',
-      release: 'v1.1.0'
+      deliveries: [{ ...delivery(1), actual: running }, delivery(2, true)]
     },
     {
       id: 'demo-engineering',
       title: '工程能力观测',
       owner: 'yuzhup',
-      pre: 'v1.0.1',
-      release: 'v1.1.0'
+      deliveries: [{ ...delivery(1), actual: [] }, delivery(2, true)]
     },
-    { id: 'demo-wall', title: '项目墙优化', owner: 'yuzhup', pre: 'v1.0.1', release: 'v1.1.1' },
-    { id: 'demo-knowledge', title: '知识库', owner: 'cfdcfd', pre: 'v1.1.0', release: 'v1.1.1' },
+    {
+      id: 'demo-wall',
+      title: '项目墙优化',
+      owner: 'yuzhup',
+      deliveries: [delivery(2), delivery(3, true)]
+    },
+    {
+      id: 'demo-knowledge',
+      title: '知识库',
+      owner: 'cfdcfd',
+      deliveries: [delivery(2), delivery(3, true)]
+    },
     {
       id: 'demo-workflow',
       title: 'AI workflow',
       owner: 'kanadead',
-      pre: 'v1.1.0',
-      release: 'v1.1.1'
+      deliveries: [delivery(2), delivery(3, true)]
     }
-  ]
+  ].map((f) => ({ ...f, month: '2026-11' }))
 }
 export const clone = (value) => structuredClone(value)
-export const versionIndex = (id) => fixedVersions.findIndex((v) => v.id === id)
 export const versionName = (plan, id) =>
   plan.versions.find((v) => v.id === id)?.name || '未命名版本'
 export function freshCases() {
-  const empty = { milestone: '', versions: clone(fixedVersions), features: [] }
+  const empty = { months: [{ month: '2026-11', outcome: '' }], versions: [], features: [] }
   return {
     existing: {
       draft: clone(initial),
@@ -61,15 +131,17 @@ export function freshCases() {
 export function validPlan(p) {
   return (
     p &&
-    typeof p.milestone === 'string' &&
+    Array.isArray(p.months) &&
+    p.months.every(
+      (m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.month) && typeof m.outcome === 'string'
+    ) &&
     Array.isArray(p.versions) &&
-    p.versions.length === fixedVersions.length &&
     p.versions.every(
-      (v, i) =>
-        v.id === fixedVersions[i].id &&
-        v.start === fixedVersions[i].start &&
-        v.end === fixedVersions[i].end &&
-        typeof v.name === 'string'
+      (v) =>
+        v.id &&
+        typeof v.name === 'string' &&
+        Number.isFinite(Date.parse(v.start)) &&
+        v.start <= v.end
     ) &&
     Array.isArray(p.features) &&
     new Set(p.features.map((f) => f.id)).size === p.features.length &&
@@ -78,8 +150,16 @@ export function validPlan(p) {
         f &&
         ['id', 'title', 'owner'].every((k) => typeof f[k] === 'string') &&
         f.id &&
-        versionIndex(f.pre) >= 0 &&
-        versionIndex(f.pre) <= versionIndex(f.release)
+        Array.isArray(f.deliveries) &&
+        f.deliveries.every(
+          (d) =>
+            p.versions.some((v) => v.id === d.versionId) &&
+            Array.isArray(d.stages) &&
+            d.stages.length &&
+            d.stages.every(
+              (s) => Number.isFinite(s.start) && Number.isFinite(s.end) && s.start < s.end
+            )
+        )
     )
   )
 }
@@ -107,27 +187,13 @@ export function loadCases() {
   return freshCases()
 }
 export function incomplete(plan) {
-  if (!plan.milestone.trim()) {
-    return '请填写旗帜旁的一句阶段成果'
-  }
   if (plan.versions.some((v) => !v.name.trim())) {
     return '请补全版本名称'
   }
   if (plan.features.some((f) => !f.title.trim() || !f.owner.trim())) {
     return '请补全特性名称和负责人'
   }
-  return ''
-}
-export function moveDelivery(plan, id, kind, target) {
-  const old = plan.features.find((f) => f.id === id)
-  if (!old || !['pre', 'release'].includes(kind) || versionIndex(target) < 0) {
-    return { error: '这项安排无法移动。' }
-  }
-  const next = { ...old, [kind]: target }
-  if (versionIndex(next.pre) > versionIndex(next.release)) {
-    return { error: 'Pre版本不能晚于Release版本。' }
-  }
-  return { plan: { ...plan, features: plan.features.map((f) => (f.id === id ? next : f)) } }
+  return scheduleProblem(plan)
 }
 export function changesBetween(before, after) {
   const changes = []
@@ -143,14 +209,27 @@ export function changesBetween(before, after) {
       detail: after.features.map((f) => f.title || '未命名特性').join(' → ')
     })
   }
-  if (before.milestone !== after.milestone) {
-    changes.push({
-      title: '阶段成果',
-      detail: `${before.milestone || '未填写'} → ${after.milestone || '未填写'}`
-    })
+  for (const m of after.months) {
+    const old = before.months.find((item) => item.month === m.month)
+    if (!old || old.outcome !== m.outcome) {
+      changes.push({
+        title: `${m.month} 阶段成果`,
+        detail: `${old?.outcome || '未填写'} → ${m.outcome || '未填写'}`
+      })
+    }
   }
   for (const v of after.versions) {
     const old = before.versions.find((b) => b.id === v.id)
+    if (!old) {
+      changes.push({ title: '登记版本', detail: `${v.name} · ${v.start} — ${v.end}` })
+      continue
+    }
+    if (old.start !== v.start || old.end !== v.end) {
+      changes.push({
+        title: `${v.name} 排期`,
+        detail: `${old.start} — ${old.end} → ${v.start} — ${v.end}`
+      })
+    }
     if (old.name !== v.name) {
       changes.push({ title: '版本改名', detail: `${old.name} → ${v.name}` })
     }
@@ -165,7 +244,7 @@ export function changesBetween(before, after) {
     if (!old) {
       changes.push({
         title: `添加 ${f.title}`,
-        detail: `${f.owner} · Pre ${versionName(after, f.pre)} → Release ${versionName(after, f.release)}`
+        detail: `${f.owner} · ${f.deliveries.map((d) => versionName(after, d.versionId)).join(' → ')}`
       })
       continue
     }
@@ -176,25 +255,14 @@ export function changesBetween(before, after) {
     if (old.owner !== f.owner) {
       parts.push(`负责人：${old.owner} → ${f.owner}`)
     }
-    for (const kind of ['pre', 'release']) {
-      if (old[kind] !== f[kind]) {
-        parts.push(
-          `${kind === 'pre' ? 'Pre' : 'Release'}：${versionName(before, old[kind])} → ${versionName(after, f[kind])}`
-        )
-      }
+    if (JSON.stringify(old.deliveries) !== JSON.stringify(f.deliveries)) {
+      parts.push(
+        `SDLC 排期：${f.deliveries.map((d) => `${versionName(after, d.versionId)} ${d.stages.map((s) => `${s.phase} ${dateOf(s.start)} ${s.start % 1 ? '下午' : '上午'}—${dateOf(s.end)} ${s.end % 1 ? '下午' : '上午'}`).join(' / ')}`).join('；')}`
+      )
     }
     if (parts.length) {
       changes.push({ title: f.title, detail: parts.join('；') })
     }
   }
   return changes
-}
-export function calendarDays(month = 11) {
-  return Array.from({ length: new Date(Date.UTC(2026, month, 0)).getUTCDate() }, (_, i) => {
-    const day = i + 1,
-      date = `2026-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-    const weekday = new Date(`${date}T12:00:00Z`).getUTCDay(),
-      overtime = day === (month === 10 ? 17 : 14)
-    return { date, day, weekday, overtime, work: overtime || (weekday > 0 && weekday < 6) }
-  })
 }

@@ -1,11 +1,9 @@
 import { useCallback, useSyncExternalStore } from 'react'
 
 export type OverviewViewState = {
-  version: string | null
   feature: string | null
 }
 const empty: OverviewViewState = {
-  version: null,
   feature: null
 }
 const cache = new Map<string, OverviewViewState>()
@@ -22,7 +20,6 @@ function read(key: string): OverviewViewState {
     ) as Partial<OverviewViewState> | null
     if (saved && typeof saved === 'object') {
       value = {
-        version: typeof saved.version === 'string' ? saved.version : null,
         feature: typeof saved.feature === 'string' ? saved.feature : null
       }
     }

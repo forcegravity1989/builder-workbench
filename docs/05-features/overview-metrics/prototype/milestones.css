@@ -242,79 +242,6 @@
   margin-top: 18px;
   background: var(--background);
 }
-.ml-calendar-popover {
-  position: fixed;
-  width: 298px;
-  max-width: calc(100vw - 24px);
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--popover);
-  color: var(--popover-foreground);
-  box-shadow: var(--shadow-dialog);
-  z-index: 50;
-}
-.ml-calendar-popover:focus {
-  outline: none;
-}
-.ml-calendar-popover header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.ml-calendar-popover h3 {
-  margin: 0;
-  font-size: 12px;
-}
-.ml-calendar-popover header button {
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-}
-.ml-calendar-popover .ml-actions {
-  gap: 3px;
-}
-.ml-calendar-popover .calendar-grid {
-  gap: 3px;
-  margin: 10px 0;
-}
-.ml-calendar-popover .calendar-grid > div {
-  min-height: 30px;
-  height: 30px;
-  padding: 3px 4px;
-  border: 0;
-  position: relative;
-  border-radius: 4px;
-}
-.ml-calendar-popover .calendar-grid b {
-  font-size: 11px;
-  font-weight: 500;
-}
-.ml-calendar-popover .calendar-grid .overtime {
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-.ml-calendar-popover .calendar-grid small {
-  font-size: 8px;
-  line-height: 11px;
-  padding: 0 1px;
-  position: absolute;
-  right: 1px;
-  bottom: 1px;
-}
-.ml-calendar-popover footer {
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  color: var(--muted-foreground);
-}
-.ml-calendar-popover .ml-footnote {
-  font-size: 10px;
-  margin: 7px 0 0;
-  line-height: 1.5;
-}
 .ml-milestone-block {
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -467,137 +394,13 @@
   bottom: 68px;
   color: var(--color-destructive);
 }
-.ml-calendar-popover .calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-}
-.ml-calendar-popover .ml-weekday {
-  text-align: center;
-  font-size: 10px;
-  color: var(--muted-foreground);
-}
-.ml-calendar-popover .restday {
-  background: var(--muted);
-  color: var(--muted-foreground);
-}
-.ml-calendar-popover .overtime small {
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-.ml-navigator {
-  padding: 10px 16px 5px;
-  border-bottom: 1px solid var(--border);
-}
-.ml-flag-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.ml-flag-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  font-size: 11px;
-  color: var(--muted-foreground);
-}
-.ml-flag-item.selected {
-  color: var(--foreground);
-}
-.ml-flag-item button {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  padding: 3px 0;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-  font-size: 11px;
-}
-.ml-flag-item .ml-flag-title {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: 500;
-}
-.ml-flag {
-  display: inline-block;
-  width: 10px;
-  height: 12px;
-  border-left: 1px solid currentColor;
-}
-.ml-flag::before {
-  content: '';
-  display: block;
-  background: currentColor;
-  width: 9px;
-  height: 7px;
-  clip-path: polygon(0 0, 100% 0, 75% 50%, 100% 100%, 0 100%);
-}
-.ml-mini-axis {
-  position: relative;
-  height: 54px;
-  border-top: 1px solid var(--border);
-  margin: 6px 14px 0 0;
-}
-.ml-mini-version {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-  border: 0;
-  background: var(--background);
-  color: var(--muted-foreground);
-  font-size: 9px;
-  padding: 8px 2px 1px;
-  white-space: nowrap;
-  line-height: 1;
-}
-.ml-mini-version i {
-  position: absolute;
-  top: -3px;
-  left: 50%;
-  width: 5px;
-  height: 5px;
-  border: 1px solid currentColor;
-  background: var(--background);
-  border-radius: 50%;
-}
-.ml-mini-version.current {
-  color: var(--foreground);
-  font-weight: 600;
-}
-.ml-mini-version.current i {
-  background: var(--foreground);
-}
-.ml-mini-version:hover {
-  color: var(--foreground);
-  text-decoration: underline;
-}
-.ml-support-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  min-height: 42px;
-  padding: 6px 16px;
-  border-bottom: 1px solid var(--border);
-}
-.ml-support-head > span {
-  font-size: 11px;
-  color: var(--muted-foreground);
-}
-.ml-support-head .btn {
-  font-size: 11px;
-  padding: 3px 8px;
-  min-height: 26px;
-}
 .ml-timeline-scroll {
   overflow: auto;
   max-height: 540px;
   scrollbar-width: thin;
   cursor: grab;
   overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 .ml-timeline-scroll:active {
   cursor: grabbing;
@@ -610,24 +413,14 @@
   position: relative;
   isolation: isolate;
 }
-.ml-date-row,
 .ml-version-row,
 .ml-timeline-row {
   display: flex;
 }
-.ml-date-row {
-  height: 24px;
-  position: sticky;
-  top: 0;
-  z-index: 6;
-  background: var(--muted);
-}
 .ml-version-row {
-  height: 52px;
-  position: sticky;
-  top: 24px;
-  z-index: 5;
+  height: 64px;
   background: var(--background);
+  border-bottom: 1px solid var(--border);
 }
 .ml-sticky-label {
   position: sticky;
@@ -653,30 +446,17 @@
   color: var(--muted-foreground);
   font-size: 10px;
 }
-.ml-date-row .ml-sticky-label {
-  background: var(--muted);
-  font-size: 10px;
-  padding: 3px 12px;
-}
 .ml-version-row .ml-sticky-label {
   font-size: 11px;
   border-bottom: 1px solid var(--border);
 }
-.ml-date-track,
 .ml-version-track {
   position: relative;
-  flex: 1;
-  min-width: 0;
-}
-.ml-date-track > span {
-  position: absolute;
-  top: 4px;
-  font-size: 9px;
-  color: var(--muted-foreground);
+  flex: none;
 }
 .ml-fixed-version {
   position: absolute;
-  height: 52px;
+  height: 64px;
   border: 0;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
@@ -689,6 +469,15 @@
 }
 .ml-fixed-version.current {
   background: var(--muted);
+}
+.ml-current-version {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--muted-foreground);
+  pointer-events: none;
 }
 .ml-fixed-version > button {
   border: 0;
@@ -705,8 +494,8 @@
 }
 
 .ml-timeline-row {
-  min-height: 80px;
-  border-bottom: 1px solid var(--border);
+  min-height: 88px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
 }
 .ml-row-title {
   padding: 0;
@@ -724,14 +513,7 @@
 .ml-track {
   position: relative;
   flex: none;
-  min-height: 80px;
-  background: repeating-linear-gradient(
-    to right,
-    transparent 0,
-    transparent 195px,
-    var(--border) 167px,
-    var(--border) 196px
-  );
+  min-height: 88px;
 }
 .ml-inline {
   width: 100%;
@@ -758,20 +540,14 @@
 .ml-inline-owner {
   display: flex;
   align-items: center;
-  gap: 8px;
+  padding-left: 22px;
 }
 .ml-inline-owner .ml-inline {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted-foreground);
 }
-.ml-inline-owner .btn {
-  min-height: 24px;
-  width: 24px;
-  padding: 3px;
-  flex: none;
-}
 .ml-feature-name {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
 }
 .ml-version-name {
@@ -779,84 +555,39 @@
   text-align: center;
   font-weight: 600;
 }
-.ml-delivery-node {
-  position: absolute;
-  width: 130px;
-  height: 32px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--background);
-  color: var(--foreground);
-  padding: 3px 7px;
-  text-align: left;
-  z-index: 2;
-  line-height: 1.1;
-}
-.ml-delivery-node.pre {
-  border-style: dashed;
-}
-.ml-delivery-node.release {
-  border-left: 3px solid var(--foreground);
-  background: var(--muted);
-}
-.ml-delivery-node > span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-}
-.ml-delivery-node > span svg {
-  margin-left: auto;
-}
-.ml-delivery-node > span i {
-  width: 4px;
-  height: 4px;
-  background: currentColor;
-  transform: rotate(45deg);
-}
-.ml-delivery-node small {
-  display: block;
-  font-size: 8px;
-  color: var(--muted-foreground);
-  margin-top: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.ml-delivery-node.editable {
-  cursor: grab;
-  touch-action: none;
-}
-.ml-delivery-node.dragging {
-  cursor: grabbing;
-  outline: 1px solid var(--ring);
-  z-index: 3;
-}
-.ml-drop-target {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: var(--accent);
-  opacity: 0.6;
-  pointer-events: none;
-}
-
 .ml-now-line {
   position: absolute;
-  top: 76px;
+  top: 104px;
   bottom: 0;
   border-left: 1px solid var(--muted-foreground);
-  opacity: 0.55;
+  opacity: 0.45;
   pointer-events: none;
   z-index: 1;
 }
 .ml-empty-lanes {
-  position: sticky;
-  left: 0;
-  width: 450px;
-  padding: 40px 16px;
+  display: flex;
+  min-height: 108px;
+  border-bottom: 1px solid var(--border);
   font-size: 12px;
   color: var(--muted-foreground);
+}
+.ml-empty-grid {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 20px;
+}
+.ml-add-feature {
+  position: sticky;
+  left: 0;
+  width: 230px;
+  padding: 8px 12px;
+  background: var(--background);
+}
+.ml-add-feature .btn {
+  width: 100%;
+  justify-content: flex-start;
+  font-size: 12px;
 }
 .ml-material-origin {
   display: flex;
@@ -874,25 +605,6 @@
 }
 .ml-dirty {
   color: var(--foreground);
-}
-.ml-undo {
-  position: fixed;
-  bottom: 22px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 25;
-  background: var(--popover);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  box-shadow: var(--shadow-dialog);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-}
-.ml-toast {
-  bottom: 75px;
 }
 @media (max-width: 1100px) {
   .ml-sidebar {
@@ -917,9 +629,6 @@
   .ml-scene-label {
     font-size: 0;
   }
-  .ml-flag-row {
-    gap: 10px;
-  }
 }
 @media (max-width: 760px) {
   .ml-sidebar {
@@ -937,54 +646,6 @@
   .ml-milestone-heading .ml-actions {
     flex-wrap: wrap;
   }
-  .ml-flag-item .ml-flag-title {
-    font-size: 10px;
-  }
-  .ml-mini-version {
-    font-size: 8px;
-  }
-}
-.ml-flag-row {
-  display: flex;
-}
-.ml-flag-item {
-  max-width: 100%;
-}
-.ml-outcome-bubble {
-  position: relative;
-  border: 1px solid var(--border);
-  background: var(--muted);
-  border-radius: 5px;
-  padding: 2px 9px;
-  margin-left: 6px;
-  min-width: 0;
-}
-.ml-outcome-bubble::before {
-  content: '';
-  position: absolute;
-  width: 7px;
-  height: 7px;
-  background: var(--muted);
-  border-left: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  transform: rotate(45deg);
-  left: -5px;
-  top: 50%;
-  margin-top: -4px;
-}
-.ml-mini-axis {
-  margin-top: 12px;
-  height: 43px;
-}
-.ml-mini-version {
-  font-size: 10px;
-}
-.ml-mini-version small {
-  display: block;
-  font-size: 9px;
-  color: var(--muted-foreground);
-  margin-top: 5px;
-  font-weight: 400;
 }
 .ml-feature-heading {
   display: flex;
@@ -1006,4 +667,501 @@
 }
 .ml-row-drop-after {
   box-shadow: inset 0 -2px var(--ring);
+}
+
+.ml-week-slot {
+  position: absolute;
+  top: 0;
+  height: 64px;
+  border-right: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--background);
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.ml-week-slot small {
+  font-size: 10px;
+}
+.ml-week-name {
+  font-size: 11px;
+  text-align: center;
+  padding: 1px 3px;
+}
+.ml-fixed-version {
+  z-index: 2;
+}
+.ml-heading-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ml-heading-title > span {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.ml-feature-summary {
+  display: inline-flex;
+  align-items: center;
+}
+.ml-feature-summary {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.ml-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.ml-action-divider {
+  height: 14px;
+  width: 1px;
+  margin: 0 5px;
+  background: var(--border);
+}
+.ml-row-actions {
+  position: sticky;
+  right: 0;
+  width: 40px;
+  margin-left: -40px;
+  flex: none;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background);
+}
+.ml-row-actions .icon-action {
+  color: var(--muted-foreground);
+}
+.ml-row-actions .icon-action:hover {
+  color: var(--destructive);
+}
+.ml-roadmap-scroll {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  border-bottom: 1px solid var(--border);
+  padding: 0 12px;
+  cursor: grab;
+}
+.ml-roadmap-scroll:active {
+  cursor: grabbing;
+}
+.ml-roadmap-axis {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 104px;
+}
+.ml-roadmap-axis::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 36px;
+  border-top: 1px solid var(--border);
+}
+.ml-roadmap-month {
+  flex: 1;
+  min-width: 240px;
+  position: relative;
+}
+.ml-roadmap-flag {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  height: 24px;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ml-roadmap-flag svg {
+  height: 24px;
+  flex: none;
+}
+.ml-roadmap-month::after {
+  content: '';
+  position: absolute;
+  top: 34px;
+  left: calc(50% - 2px);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--foreground);
+}
+.ml-roadmap-caption {
+  position: absolute;
+  top: 54px;
+  left: calc(50% - 110px);
+  width: 220px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--card);
+  padding: 2px 7px;
+  font-size: 11px;
+}
+.ml-roadmap-caption::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: calc(50% - 3px);
+  width: 6px;
+  height: 6px;
+  transform: rotate(45deg);
+  border-left: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  background: var(--card);
+}
+.ml-roadmap-caption > span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 22px;
+}
+.ml-roadmap-caption .ml-inline {
+  padding: 2px 0;
+}
+.ml-save-status {
+  display: block;
+  padding: 4px 16px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  text-align: right;
+}
+
+/* Daily axis and SDLC segments share one coordinate system; monthly flags stay independent. */
+.ml-board-header {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--background);
+}
+.ml-day-row {
+  height: 40px;
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+.ml-day-row .ml-sticky-label {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-size: 11px;
+}
+.ml-day-row .ml-sticky-label small {
+  font-size: 9px;
+}
+.ml-day-track {
+  display: flex;
+  flex: none;
+}
+.ml-day-cell {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  font-size: 10px;
+  line-height: 16px;
+}
+.ml-day-cell small {
+  font-size: 9px;
+  color: var(--muted-foreground);
+}
+.ml-day-cell b {
+  border-radius: 2px;
+  background: var(--foreground);
+  color: var(--background);
+  padding: 0 2px;
+  font-size: 9px;
+  font-weight: 400;
+}
+.ml-day-cell.today {
+  box-shadow: inset 0 -2px var(--foreground);
+  font-weight: 600;
+}
+.ml-day-cell.rest,
+.ml-days-background i.rest {
+  background: color-mix(in srgb, var(--muted) 50%, transparent);
+}
+.ml-days-background {
+  position: absolute;
+  top: 104px;
+  bottom: 0;
+  pointer-events: none;
+}
+.ml-days-background i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-right: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+}
+.ml-fixed-version .ml-version-dates {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted-foreground);
+  margin: 1px 4px;
+}
+.ml-version-dates.editable {
+  cursor: grab;
+  touch-action: none;
+}
+.ml-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  border: 0;
+  background: transparent;
+  cursor: ew-resize !important;
+  touch-action: none;
+  padding: 0;
+  z-index: 3;
+}
+.ml-resize.start {
+  left: 0;
+}
+.ml-resize.end {
+  right: 0;
+}
+.ml-resize::after {
+  content: '';
+  position: absolute;
+  top: 30%;
+  bottom: 30%;
+  left: 3px;
+  border-left: 1px solid currentColor;
+  opacity: 0.4;
+}
+.ml-resize:focus-visible {
+  outline: 2px solid var(--ring);
+}
+.ml-sdlc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.ml-stage-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-right: auto;
+}
+.ml-stage-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ml-stage-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  background: var(--phase-bg);
+  color: var(--phase-fg);
+}
+.ml-show-plan {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ml-show-plan input {
+  accent-color: var(--foreground);
+}
+.phase-plan {
+  --phase-bg: #dce9ff;
+  --phase-fg: #254e8d;
+}
+.phase-design {
+  --phase-bg: #eae1fa;
+  --phase-fg: #61418f;
+}
+.phase-build {
+  --phase-bg: #d9eee3;
+  --phase-fg: #24634b;
+}
+.phase-test {
+  --phase-bg: #f8ebcd;
+  --phase-fg: #806016;
+}
+.phase-deploy {
+  --phase-bg: #f7ded9;
+  --phase-fg: #915043;
+}
+.phase-maintain {
+  --phase-bg: #dcecef;
+  --phase-fg: #356671;
+}
+[data-theme='dark'] .phase-plan {
+  --phase-bg: #263d60;
+  --phase-fg: #c2d8ff;
+}
+[data-theme='dark'] .phase-design {
+  --phase-bg: #443156;
+  --phase-fg: #e0cafa;
+}
+[data-theme='dark'] .phase-build {
+  --phase-bg: #234638;
+  --phase-fg: #c0e8d2;
+}
+[data-theme='dark'] .phase-test {
+  --phase-bg: #4c4025;
+  --phase-fg: #eddaa9;
+}
+[data-theme='dark'] .phase-deploy {
+  --phase-bg: #51342d;
+  --phase-fg: #f1c5ba;
+}
+[data-theme='dark'] .phase-maintain {
+  --phase-bg: #2b434a;
+  --phase-fg: #c4e2e8;
+}
+.ml-phase {
+  position: absolute;
+  height: 28px;
+  background: var(--phase-bg);
+  color: var(--phase-fg);
+  border: 1px solid color-mix(in srgb, var(--phase-fg) 20%, transparent);
+  border-radius: 3px;
+  z-index: 2;
+}
+.ml-phase-body {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.ml-phase.editable .ml-phase-body {
+  cursor: grab;
+  touch-action: none;
+}
+.ml-phase.editable:hover {
+  box-shadow: 0 0 0 1px var(--phase-fg);
+  z-index: 3;
+}
+.ml-phase-group.ghost .ml-phase {
+  height: 12px;
+  opacity: 0.35;
+  border-style: dashed;
+}
+.ml-phase-group.ghost .ml-phase-body {
+  font-size: 0;
+}
+.ml-baseline-caption {
+  position: absolute;
+  top: 92px;
+  font-size: 9px;
+  color: var(--muted-foreground);
+}
+.ml-timeline-row.with-baseline,
+.ml-timeline-row.with-baseline .ml-track {
+  min-height: 116px;
+}
+.ml-actual-phase {
+  position: absolute;
+  top: 31px;
+  height: 28px;
+  border: 0;
+  padding: 0;
+  text-align: center;
+  background: transparent;
+  z-index: 2;
+}
+.ml-actual-phase i {
+  position: absolute;
+  display: block;
+  inset: 0 auto 0 0;
+  background: var(--phase-bg);
+  border: 1px solid color-mix(in srgb, var(--phase-fg) 30%, transparent);
+  border-radius: 3px;
+}
+.ml-actual-phase span {
+  position: relative;
+  font-size: 10px;
+  color: var(--foreground);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 0 3px;
+}
+.ml-actual-phase.ongoing i {
+  background-image: repeating-linear-gradient(135deg, transparent 0 5px, #ffffff25 5px 8px);
+  border-right-style: dashed;
+}
+.ml-actual-unknown,
+.ml-deploy-unknown {
+  position: absolute;
+  top: 34px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+  padding: 3px 6px;
+  border: 1px dashed var(--border);
+  background: var(--background);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.ml-schedule-problem {
+  font-size: 11px;
+  margin: 0;
+  padding: 8px 14px;
+  color: var(--destructive);
+  border-bottom: 1px solid var(--border);
+}
+
+.ml-sdlc-connection {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  color: var(--border);
+}
+.ml-sdlc-connection path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.ml-version-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  padding: 0 8px;
+}
+.ml-version-title strong {
+  font-size: 11px;
+}
+.ml-version-title .icon-action {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
 }

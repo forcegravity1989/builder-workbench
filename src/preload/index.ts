@@ -28,6 +28,7 @@ import { ghApi } from './api/gh-bridge'
 import { hostedReviewApi } from './api/hosted-review-bridge'
 import { glApiBridge } from './api/gl-bridge'
 import { codehubApi } from './codehub'
+import { milestoneRecoveryApi } from './milestone-recovery'
 import { bitbucketApi } from './api/bitbucket-bridge'
 import { linearApi } from './api/linear-bridge'
 import { jiraApi } from './api/jira-bridge'
@@ -124,6 +125,7 @@ const api = {
   hostedReview: hostedReviewApi,
   gl: glApiBridge,
   codehub: codehubApi,
+  milestoneRecovery: milestoneRecoveryApi,
   bitbucket: bitbucketApi,
   linear: linearApi,
   jira: jiraApi,

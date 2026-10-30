@@ -573,6 +573,10 @@ import {
   PackageLaunchSchema,
   PackagePipelineListSchema
 } from '../workbench/package-pipeline'
+import {
+  MilestoneReadRequestSchema,
+  MilestoneSubmitRequestSchema
+} from '../workbench/project-milestones'
 import { ReleaseStatusRequestSchema } from '../workbench/release-status'
 import { TrunkUpdateSchema } from '../workbench/trunk-update'
 import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../workbench/version-binding'
@@ -1229,6 +1233,8 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.metrics.list': CharterScopeSchema,
   'workbench.metrics.read': MetricReadRequestSchema,
   'workbench.metrics.refresh': MetricReadRequestSchema,
+  'workbench.milestones.read': MilestoneReadRequestSchema,
+  'workbench.milestones.submit': MilestoneSubmitRequestSchema,
   'workbench.overview.pull': WorkflowCommentsRequestSchema,
   'workbench.package.download': PackageDownloadSchema,
   'workbench.package.latest': PackageLatestSchema,

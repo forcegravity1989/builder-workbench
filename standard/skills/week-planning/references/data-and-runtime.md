@@ -8,6 +8,8 @@
 
 结构使用 `ORCA bw materials schema --workflow plan|acceptance --json` 读取；子命令清单与参数以 `ORCA bw materials --help` 为准（context/select/list/read/save/schema 等），修订约束以版本材料 reference 为准。宿主未提供入口时，报告缺失、可以讨论并保留草稿建议，但不能编造命令或宣称已保存。自动化只创建/恢复 Orca 运行，不代替用户认可。Skill 安装目录是工具与模板来源，项目 .bw 是业务材料；不在项目里复制日常 HTML 编辑器，不另起浏览器服务。普通项目缺产品资产时由宿主补分发，不能要求用户克隆 BW 源码。
 
+项目里程碑可提前登记未来版本与日期；开始计划先读已有材料并沿用身份，不覆盖空计划。排期与宏观安排的来源、保留及不一致处理见[版本材料的里程碑与排期](../../../system-prompt/references/version-records.md#里程碑与版本排期)。月度规划不代替版内特性 Issue 与范围讨论。
+
 ## 进展的验收来源
 
 版本进展的固定引用结构见[版本材料](../../../system-prompt/references/version-records.md)。先读取计划已保存的 `summary.progressSource`，已有引用始终保持。没有来源时由宿主按材料版本顺序选择紧邻前版，只检查该版是否有可核验的验收；前版只有计划则提醒尚未完成验收、回顾留空，不跳到更早版本；首版直接留空。不能按日期或 mtime 选版，也不清空用户已有进展。计划屏「打开验收屏」定位同一固定来源的只读验收整页；人明确要求改源时，模型核验其来源后经材料 save 写入 `progressSource`。
