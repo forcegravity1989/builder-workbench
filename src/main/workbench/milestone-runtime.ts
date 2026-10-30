@@ -283,7 +283,7 @@ export function nativeMilestoneService(runtime: Runtime) {
           filled: paths,
           review: {
             title: '项目里程碑与版本排期',
-            body: '月度成果、特性 Pre/Release 安排与版本排期调整。具体特性 Issue 和版内范围由版本计划继续收敛；合入不代表交付或验收完成。'
+            body: '月度成果、特性 SDLC 阶段安排与版本排期调整。具体特性 Issue 和版内范围由版本计划继续收敛；合入不代表交付或验收完成。'
           }
         })
         return { proposal, outcome }

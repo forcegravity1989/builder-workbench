@@ -988,26 +988,6 @@
 .ml-show-plan input {
   accent-color: var(--foreground);
 }
-.ml-calendar-info {
-  position: relative;
-}
-.ml-calendar-info summary {
-  cursor: pointer;
-}
-.ml-calendar-info p {
-  position: absolute;
-  right: 0;
-  top: 18px;
-  width: 280px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  z-index: 10;
-  background: var(--background);
-  box-shadow: 0 4px 20px #0001;
-  font-size: 11px;
-  line-height: 1.6;
-}
 .phase-plan {
   --phase-bg: #dce9ff;
   --phase-fg: #254e8d;
@@ -1103,24 +1083,6 @@
 .ml-timeline-row.with-baseline .ml-track {
   min-height: 116px;
 }
-.ml-delivery-caption {
-  position: absolute;
-  top: 9px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font-size: 10px;
-  color: var(--muted-foreground);
-  z-index: 2;
-  white-space: nowrap;
-}
-.ml-delivery-caption span {
-  font-size: 9px;
-  opacity: 0.8;
-}
 .ml-actual-phase {
   position: absolute;
   top: 31px;
@@ -1185,4 +1147,21 @@
   stroke: currentColor;
   stroke-width: 1;
   stroke-dasharray: 3 3;
+}
+
+.ml-version-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  padding: 0 8px;
+}
+.ml-version-title strong {
+  font-size: 11px;
+}
+.ml-version-title .icon-action {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
 }

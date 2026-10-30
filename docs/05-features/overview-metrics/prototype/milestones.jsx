@@ -221,7 +221,7 @@ function App() {
   const remove = (item) => {
     editPlan((p) => ({ ...p, features: p.features.filter((f) => f.id !== item.id) }))
   }
-  const add = (calendarData) => {
+  const add = () => {
     const id = `demo-${crypto.randomUUID()}`
     const week = availableWeek(state.draft, currentDay)
     const first = planWeek(state.draft, week)
@@ -242,9 +242,9 @@ function App() {
           deliveries: [
             {
               versionId: first.version.id,
-              stages: defaultStages(first.version, false, calendarData)
+              stages: defaultStages(first.version)
             },
-            { versionId: next.version.id, stages: defaultStages(next.version, true, calendarData) }
+            { versionId: next.version.id, stages: defaultStages(next.version, true) }
           ]
         }
       ]
@@ -320,7 +320,7 @@ function App() {
       <div className="ml-review-strip">
         <span>
           原型注释: 模拟 11/11 15:30；SDLC 实际记录、版本关系均为样例，非 v0.8
-          承诺；已开始版原计划只读。
+          承诺；已开始版原计划只读。工作日历暂无预置，按普通周末显示。
         </span>
         <div className="ml-actions">
           <IconAction

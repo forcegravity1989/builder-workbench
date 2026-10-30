@@ -47,7 +47,13 @@ export async function readMilestoneSnapshot(
     contents.set(path, raw)
     hash.update(JSON.stringify([path, raw]))
     if (path === MILESTONES_PATH) {
-      snapshot.material = MilestoneMaterialSchema.parse(JSON.parse(raw))
+      try {
+        snapshot.material = MilestoneMaterialSchema.parse(JSON.parse(raw))
+      } catch {
+        throw new Error(
+          `${MILESTONES_PATH} 的格式无法读取，原文件未改动。请让计划助手核对并迁移为 schema_version=2 的 SDLC 排期后刷新；不会自动补造阶段。`
+        )
+      }
       continue
     }
     const version = path.split('/')[2]

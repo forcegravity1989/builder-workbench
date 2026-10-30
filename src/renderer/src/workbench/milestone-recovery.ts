@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import {
   MilestoneFeatureSchema,
+  MilestoneDeliverySchema,
   ScheduledVersionSchema
 } from '../../../shared/workbench/project-milestones'
 import type { Session } from './milestone-planning-session'
@@ -8,7 +9,7 @@ import type { Session } from './milestone-planning-session'
 // Recovery accepts unfinished fields; submission still validates the business material schema.
 const draftSchema = z.strictObject({
   material: z.strictObject({
-    schema_version: z.literal(1),
+    schema_version: z.literal(2),
     months: z
       .array(
         z.strictObject({
@@ -21,8 +22,11 @@ const draftSchema = z.strictObject({
       MilestoneFeatureSchema.extend({
         title: z.string(),
         owner: z.string(),
-        pre: z.strictObject({ version: z.string(), cycleId: z.string().min(1) }).nullable(),
-        release: z.strictObject({ version: z.string(), cycleId: z.string().min(1) }).nullable()
+        deliveries: z.array(
+          MilestoneDeliverySchema.extend({
+            version: z.strictObject({ version: z.string(), cycleId: z.string().min(1) })
+          })
+        )
       })
     )
   }),

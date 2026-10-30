@@ -1,3 +1,4 @@
+import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.ts'
 import { InlineField, WeekName } from './milestones-fields.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import { calendarFor, dayWidth, labelWidth, planWeek } from './milestones-calendar.js'
@@ -38,8 +39,6 @@ export function Timeline({
   const [preview, setPreview] = useState(null),
     [showPlan, setShowPlan] = useState(false),
     [dropRow, setDropRow] = useState(null)
-  const [calendarData, setCalendarData] = useState(null),
-    [calendarStatus, setCalendarStatus] = useState('正在读取工作日历')
   const baseCalendar = calendarFor(plan)
   const start = baseCalendar.start / dayMs,
     end = baseCalendar.end / dayMs + 1
@@ -63,46 +62,12 @@ export function Timeline({
     (w) => !display.versions.some((v) => v.start <= w.end && v.end >= w.start)
   )
   useEffect(() => {
-    const controller = new AbortController()
-    fetch(new URL('prototype/calendar.local.json', window.location.href), {
-      signal: controller.signal
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(
-            response.status === 404
-              ? '未配置华为日历，按普通周末显示'
-              : '工作日历读取失败，按普通周末显示'
-          )
-        }
-        const value = await response.json()
-        if (
-          !['years', 'workDays', 'restDays'].every((key) => Array.isArray(value[key])) ||
-          ![...value.workDays, ...value.restDays].every(
-            (d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && Number.isFinite(day(d))
-          )
-        ) {
-          throw new Error('工作日历格式无效，按普通周末显示')
-        }
-        setCalendarData(value)
-        setCalendarStatus('BW 预置工作日历；未覆盖年份按普通周末显示')
-      })
-      .catch((error) => {
-        if (!controller.signal.aborted) {
-          setCalendarStatus(error.message)
-        }
-      })
-    return () => controller.abort()
-  }, [])
-  useEffect(() => {
     const date =
       navigation.date.slice(0, 7) === currentDay.slice(0, 7) && navigation.sequence === 0
         ? currentDay
         : navigation.date
     scroll.current?.scrollTo({ left: Math.max(0, (day(date) - start - 1) * dayWidth) })
   }, [navigation, start])
-  const effectiveCalendar = (value) =>
-    calendarData?.years.map(String).includes(dateOf(value).slice(0, 4)) ? calendarData : null
   const beginDrag = (event, gesture) => {
     if (!planning || event.button !== 0) {
       return
@@ -236,7 +201,6 @@ export function Timeline({
                 title={label}
                 onPointerDown={editable ? (e) => beginDrag(e, gesture) : undefined}
                 onKeyDown={editable ? (e) => keyboardAdjust(e, gesture) : undefined}
-                onDoubleClick={() => onVersion(version.id, feature)}
               >
                 <span>
                   {(s.end - s.start) * dayWidth >= 38
@@ -282,13 +246,6 @@ export function Timeline({
           />
           显示计划
         </label>
-        <details className="ml-calendar-info">
-          <summary title={calendarStatus}>工作日历</summary>
-          <p>
-            原型注释: {calendarStatus}
-            。班、休由预置数据决定；本稿不含真实华为样本，也不提供导入入口。
-          </p>
-        </details>
       </div>
       <div
         className="ml-timeline-scroll"
@@ -335,7 +292,7 @@ export function Timeline({
             {days.map((d) => (
               <i
                 key={d}
-                className={isRest(d, effectiveCalendar(d)) ? 'rest' : ''}
+                className={isRest(d) ? 'rest' : ''}
                 style={{ left: x(d), width: dayWidth }}
               />
             ))}
@@ -377,21 +334,23 @@ export function Timeline({
                       }}
                     >
                       {active && <span className="ml-current-version">当前</span>}
-                      {editable ? (
-                        <InlineField
-                          value={v.name}
-                          label={`版本名称 ${v.name}`}
-                          change={(name) => onRenameVersion(v.id, name)}
-                          className="ml-version-name"
-                        />
-                      ) : (
-                        <button
-                          title={v.started ? '版本已开始；原计划保留' : '进入版本总览'}
+                      <div className="ml-version-title">
+                        {editable ? (
+                          <InlineField
+                            value={v.name}
+                            label={`版本名称 ${v.name}`}
+                            change={(name) => onRenameVersion(v.id, name)}
+                            className="ml-version-name"
+                          />
+                        ) : (
+                          <strong>{v.name}</strong>
+                        )}
+                        <IconAction
+                          label={`进入 ${v.name} 版本总览`}
+                          icon={ExternalLink}
                           onClick={() => onVersion(v.id)}
-                        >
-                          {v.name}
-                        </button>
-                      )}
+                        />
+                      </div>
                       <button
                         className={`ml-version-dates ${editable ? 'editable' : ''}`}
                         title={
@@ -430,18 +389,13 @@ export function Timeline({
               <div className="ml-day-track" style={{ width: totalWidth }}>
                 {days.map((d) => {
                   const date = dateOf(d),
-                    cal = effectiveCalendar(d),
-                    badge = cal?.workDays.includes(date)
-                      ? '班'
-                      : cal?.restDays.includes(date)
-                        ? '休'
-                        : ''
+                    { badge } = workCalendarDay(date)
                   return (
                     <div
                       key={d}
-                      className={`ml-day-cell ${isRest(d, cal) ? 'rest' : ''} ${date === currentDay ? 'today' : ''}`}
+                      className={`ml-day-cell ${isRest(d) ? 'rest' : ''} ${date === currentDay ? 'today' : ''}`}
                       style={{ width: dayWidth }}
-                      title={`${date} · ${badge || (isRest(d, cal) ? '休息日' : '工作日')}`}
+                      title={`${date} · ${badge || (isRest(d) ? '休息日' : '工作日')}`}
                     >
                       <span>{short(date)}</span>
                       <small>
@@ -564,19 +518,8 @@ export function Timeline({
                     first = delivery.stages[0],
                     actual = delivery.actual || []
                   const started = Boolean(v.started)
-                  const anchor =
-                    started && actual.length ? actualDay(actual[0].startAt) : first.start
                   return (
                     <React.Fragment key={delivery.stages[0].phase}>
-                      <button
-                        className="ml-delivery-caption"
-                        style={{ left: x(anchor) }}
-                        onClick={() => onVersion(v.id, feature)}
-                      >
-                        {v.name}
-                        <span>{started ? '实际' : '计划'}</span>
-                        <ExternalLink size={10} />
-                      </button>
                       {started ? (
                         <>
                           {!actual.length && (
@@ -597,7 +540,6 @@ export function Timeline({
                                 style={{ left, width: Math.max(width, 12) }}
                                 aria-label={`${s.phase} 实际记录`}
                                 title={`原型注释: 示例记录，非真实 PR。${s.phase} · ${actualTime(s.startAt)} → ${actualTime(s.endAt)}（北京时间）\n${s.source}${!s.endAt ? '\n进行中，截至 11/11 15:30；右端不是完成时间' : ''}`}
-                                onClick={() => onVersion(v.id, feature)}
                               >
                                 <i className={`phase-${s.phase.toLowerCase()}`} style={{ width }} />
                                 {width > 30 && (
@@ -649,7 +591,7 @@ export function Timeline({
           )}
           {planning && (
             <div className="ml-add-feature">
-              <button className="btn btn-ghost" onClick={() => onAdd(calendarData)}>
+              <button className="btn btn-ghost" onClick={() => onAdd()}>
                 <Plus size={14} />
                 添加特性
               </button>

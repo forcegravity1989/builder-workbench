@@ -3,11 +3,14 @@ import type { MilestoneDraft, ScheduledVersion } from './project-milestones'
 export const milestoneDay = (date: string) => Date.parse(`${date}T00:00:00Z`) / 86400000
 export const milestoneDate = (day: number) => new Date(day * 86400000).toISOString().slice(0, 10)
 export const milestoneToday = () => {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date())
 }
 export type MilestoneWeek = { start: string; end: string }
-export type MilestoneTarget = { version: ScheduledVersion } | { week: MilestoneWeek }
 export const datedMilestoneVersions = (draft: MilestoneDraft) =>
   draft.versions
     .filter(
@@ -59,23 +62,6 @@ export function versionInMilestoneWeek(draft: MilestoneDraft, week: MilestoneWee
     (v) => v.timeWindow!.start <= week.end && v.timeWindow!.end >= week.start
   )
 }
-export function milestoneTargetAt(draft: MilestoneDraft, day: number): MilestoneTarget {
-  const containing = datedMilestoneVersions(draft).findLast(
-    (v) => milestoneDay(v.timeWindow!.start) <= day && day < milestoneDay(v.timeWindow!.end) + 1
-  )
-  const week = milestoneWeekAt(day)
-  const version = containing ?? versionInMilestoneWeek(draft, week)
-  return version ? { version } : { week }
-}
-export function milestoneTargets(draft: MilestoneDraft, weeks: MilestoneWeek[]): MilestoneTarget[] {
-  return [
-    ...datedMilestoneVersions(draft).map((version) => ({ version })),
-    ...weeks.filter((week) => !versionInMilestoneWeek(draft, week)).map((week) => ({ week }))
-  ].sort((a, b) => targetWindow(a).start.localeCompare(targetWindow(b).start))
-}
-export const targetWindow = (target: MilestoneTarget) =>
-  'version' in target ? target.version.timeWindow! : target.week
-
 /** Previewing a week never creates materials; commit this result with the user's edit as one step. */
 export function materializeMilestoneWeek(
   draft: MilestoneDraft,

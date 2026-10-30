@@ -1,3 +1,4 @@
+import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.ts'
 // Prototype-only civil-day coordinates. Actual evidence retains its original timestamp.
 export const dayMs = 86400000
 export const day = (date) => Date.parse(`${date}T00:00:00Z`) / dayMs
@@ -5,31 +6,21 @@ export const dateOf = (value) => new Date(value * dayMs).toISOString().slice(0, 
 export const phases = ['Plan', 'Design', 'Build', 'Test', 'Deploy', 'Maintain']
 export const actualDay = (timestamp) => (Date.parse(timestamp) + 8 * 3600000) / dayMs
 export const actualAsOf = '2026-11-11T15:30:00+08:00'
-export function isRest(value, calendar) {
-  const date = dateOf(value)
-  if (calendar && !calendar.years?.map(String).includes(date.slice(0, 4))) {
-    calendar = null
-  }
-  if (calendar?.workDays?.includes(date)) {
-    return false
-  }
-  if (calendar?.restDays?.includes(date)) {
-    return true
-  }
-  return [0, 6].includes(new Date(value * dayMs).getUTCDay())
+export function isRest(value) {
+  return !workCalendarDay(dateOf(value)).working
 }
-export function defaultStages(version, maintain = false, calendar) {
+export function defaultStages(version, maintain = false) {
   if (maintain) {
     return [{ phase: 'Maintain', start: day(version.start), end: day(version.end) + 1 }]
   }
   let cursor = day(version.start)
-  return [2, 2, 1, 2, 1].map((slots, index) => {
-    while (isRest(Math.floor(cursor), calendar)) {
+  return [2, 4, 1, 2, 1].map((slots, index) => {
+    while (isRest(Math.floor(cursor))) {
       cursor = Math.floor(cursor) + 1
     }
     const start = cursor
     for (let slot = 0; slot < slots; slot++) {
-      while (isRest(Math.floor(cursor), calendar)) {
+      while (isRest(Math.floor(cursor))) {
         cursor = Math.floor(cursor) + 1
       }
       cursor += 0.5

@@ -14,12 +14,8 @@ import type { MilestoneScope } from './milestone-port'
 import { openVersionOverview } from './project-page-state'
 import { useMilestonePlanning } from './use-milestone-planning'
 import { MilestoneTimeline, type MilestoneLocation } from './milestone-timeline'
-import { MilestoneLegend } from './milestone-delivery-node'
+import { createMilestoneFeature } from './milestone-add-feature'
 import {
-  latestMilestoneMonth,
-  milestoneDay,
-  milestoneToday,
-  milestoneWeekAt,
   materializeMilestoneWeek,
   datedMilestoneVersions,
   type MilestoneWeek
@@ -120,8 +116,11 @@ export function ProjectMilestones({
         ...d.material,
         features: d.material.features.map((f) => ({
           ...f,
-          pre: f.pre?.cycleId === cycleId ? { ...f.pre, version } : f.pre,
-          release: f.release?.cycleId === cycleId ? { ...f.release, version } : f.release
+          deliveries: f.deliveries.map((item) =>
+            item.version.cycleId === cycleId
+              ? { ...item, version: { ...item.version, version } }
+              : item
+          )
         }))
       }
     }))
@@ -151,43 +150,17 @@ export function ProjectMilestones({
     if (!enabled) {
       return
     }
-    const today = milestoneToday()
-    const focus = latestMilestoneMonth(state!.draft, today)
-    const firstVersion = datedMilestoneVersions(state!.draft).find(
-      (v) => v.timeWindow!.start.slice(0, 7) === focus
+    const started = new Set(
+      (state!.data.proposal ?? state!.data.formal).versions
+        .filter((v) => v.started)
+        .map((v) => v.cycleId)
     )
-    let date =
-      focus === today.slice(0, 7) ? today : (firstVersion?.timeWindow!.start ?? `${focus}-01`)
-    if (focus !== today.slice(0, 7) && milestoneWeekAt(milestoneDay(date)).end < `${focus}-01`) {
-      date = new Date((milestoneDay(milestoneWeekAt(milestoneDay(date)).start) + 7) * 86400000)
-        .toISOString()
-        .slice(0, 10)
-    }
-    const used = materializeMilestoneWeek(
-      state!.draft,
-      milestoneWeekAt(milestoneDay(date)),
-      crypto.randomUUID()
-    )
-    const id = crypto.randomUUID()
-    const ref = { version: used.version.version, cycleId: used.version.cycleId }
-    const featureMonth = used.version.timeWindow!.start.slice(0, 7)
-    edit(() => ({
-      ...used.draft,
-      material: {
-        ...used.draft.material,
-        months: used.draft.material.months.some((m) => m.month === featureMonth)
-          ? used.draft.material.months
-          : [...used.draft.material.months, { month: featureMonth, outcome: '' }],
-        features: [
-          ...used.draft.material.features,
-          { id, month: featureMonth, title: '', owner: '', pre: ref, release: ref }
-        ]
-      }
-    }))
+    const { id, date, draft } = createMilestoneFeature(state!.draft, started)
+    edit(() => draft)
     navigate(date)
     setNewFeature(id)
   }
-  function open(version: ScheduledVersion, feature: MilestoneFeature) {
+  function open(version: ScheduledVersion) {
     if (
       !state!.data.formal.versions.some(
         (v) => v.version === version.version && v.cycleId === version.cycleId
@@ -200,7 +173,7 @@ export function ProjectMilestones({
     openVersionOverview({
       repoId: scope!.repoId,
       version: version.version,
-      milestoneOrigin: { feature: feature.title }
+      milestoneOrigin: { feature: '' }
     })
   }
   return (
@@ -362,7 +335,6 @@ export function ProjectMilestones({
               {new Set(visible.material.features.map((f) => f.owner.trim()).filter(Boolean)).size}{' '}
               位负责人
             </span>
-            <MilestoneLegend />
           </div>
           <MilestoneTimeline
             key={`${restoreScope}:${editing}:${restoreKey}`}
@@ -388,7 +360,6 @@ export function ProjectMilestones({
             scrollY={state.scrollY}
             onScroll={(scrollX, scrollY) => patch({ scrollX, scrollY })}
             locate={locate?.scope === restoreScope ? locate : null}
-            notify={(text) => toast(text)}
           />
         </>
       )}
