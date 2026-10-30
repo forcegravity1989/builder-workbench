@@ -84,4 +84,32 @@ it('keeps the workflow section optional and rejects stages outside the workflow'
       }
     }).success
   ).toBe(false)
+  // #471: the version-level booked meeting is acceptance-only; plan material has
+  // no meeting row, mirroring the release read-back key's screen ownership.
+  const acceptanceBase = {
+    schema_version: 3,
+    version: 'v1',
+    cycleId: 'cycle',
+    planRef: {
+      kind: 'committed',
+      version: 'v1',
+      cycleId: 'plan-cycle',
+      revision: `sha256:${'a'.repeat(64)}`,
+      sourceCommit: '1'.repeat(40)
+    },
+    preparedArtifacts: [],
+    results: []
+  }
+  expect(
+    AcceptanceMaterialSchema.safeParse({
+      ...acceptanceBase,
+      meeting: { title: 'v1 版本验收会', time: '周五 16:00', id: 'meeting-1' }
+    }).success
+  ).toBe(true)
+  expect(
+    PlanningMaterialSchema.safeParse({
+      ...plan,
+      meeting: { title: 'v1 版本验收会', time: '周五 16:00' }
+    }).success
+  ).toBe(false)
 })

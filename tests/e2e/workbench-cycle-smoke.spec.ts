@@ -80,6 +80,24 @@ async function waitForFixedWorktree(page: Page, branch: string): Promise<string>
   }, branch)
 }
 
+/**
+ * The native setup-script prompt card floats above the sidebar bottom
+ * (bottom-full) and can cover the version-row entries once the async
+ * inspection lands (seeded repos have no setup script, so it always does
+ * after a reload/worktree activation re-runs it). Dismiss the card when
+ * present, then click; one dismiss is persistent per repo, so later sidebar
+ * clicks stay uncovered.
+ */
+async function clickVersionRowEntry(page: Page, name: string): Promise<void> {
+  await expect(async () => {
+    const dismissSetupCard = page.getByRole('button', { name: '关闭安装脚本' })
+    if (await dismissSetupCard.isVisible().catch(() => false)) {
+      await dismissSetupCard.click()
+    }
+    await page.getByRole('button', { name, exact: true }).click({ timeout: 5_000 })
+  }).toPass({ timeout: 60_000 })
+}
+
 test('BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back', async ({
   workbenchPage,
   testRepoPath
@@ -157,8 +175,56 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await workbenchPage
     .getByRole('textbox', { name: 'G1 目标', exact: true })
     .fill('验证计划材料保存·烟测')
+  // 行内编辑聚焦时和弦不触发（isEditableTarget 守卫，#444）。
+  await workbenchPage.keyboard.press('Alt+A')
+  await expect(workbenchPage.locator('.g3-annotate-banner')).toHaveCount(0)
   await workbenchPage.getByRole('button', { name: '结束编辑目标', exact: true }).click()
   await expect(workbenchPage.getByRole('button', { name: '保存草稿', exact: true })).toHaveCount(0)
+
+  // ---- 批注模式同键进出（#444）：Alt+A ≡ 点页头按钮，再按退出 ----
+  const annotateEntry = workbenchPage.locator('.g3-annotate-entry')
+  await expect(annotateEntry).toBeVisible()
+  await workbenchPage.keyboard.press('Alt+A')
+  await expect(workbenchPage.locator('.g3-annotate-banner')).toBeVisible()
+  await expect(annotateEntry).toHaveAttribute('aria-pressed', 'true')
+  await expect(annotateEntry).toHaveAttribute('title', expect.stringMatching(/Alt\+A|⌥A/))
+  // Esc 不再退出模式（2026-10-29 拍板）：无小窗时按 Esc 模式保持，横幅不提 Esc。
+  await workbenchPage.keyboard.press('Escape')
+  await expect(workbenchPage.locator('.g3-annotate-banner')).toBeVisible()
+  await expect(annotateEntry).toHaveAttribute('aria-pressed', 'true')
+  await expect(workbenchPage.locator('.g3-annotate-banner')).not.toContainText('Esc')
+  await workbenchPage.keyboard.press('Alt+A')
+  await expect(workbenchPage.locator('.g3-annotate-banner')).toHaveCount(0)
+  await expect(annotateEntry).toHaveAttribute('aria-pressed', 'false')
+
+  // 改绑生效：store 走与设置录制相同的保存链；新和弦进出、旧和弦失效后恢复默认。
+  await workbenchPage.evaluate(async () => {
+    await window.__store
+      ?.getState()
+      .setKeybindingOverride('workbench.toggleAnnotationMode', ['Alt+Shift+A'])
+  })
+  await workbenchPage.keyboard.press('Alt+Shift+A')
+  await expect(workbenchPage.locator('.g3-annotate-banner')).toBeVisible()
+  await workbenchPage.keyboard.press('Alt+A')
+  await expect(workbenchPage.locator('.g3-annotate-banner')).toBeVisible()
+  await workbenchPage.keyboard.press('Alt+Shift+A')
+  await expect(workbenchPage.locator('.g3-annotate-banner')).toHaveCount(0)
+  await workbenchPage.evaluate(async () => {
+    await window.__store?.getState().resetKeybindingOverride('workbench.toggleAnnotationMode')
+  })
+
+  // 终端聚焦时和弦流向 TUI（getKeybindingContext 守卫）；终端缺席则降级人工项。
+  const terminalInput = workbenchPage.locator('.xterm-helper-textarea').first()
+  if (
+    await terminalInput.waitFor({ state: 'visible', timeout: 15_000 }).then(
+      () => true,
+      () => false
+    )
+  ) {
+    await terminalInput.focus()
+    await workbenchPage.keyboard.press('Alt+A')
+    await expect(workbenchPage.locator('.g3-annotate-banner')).toHaveCount(0)
+  }
 
   // Iron-law read-back: the material exists on the bound worktree's own disk path.
   await expect
@@ -182,7 +248,7 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   // ---- 重载读回：绑定即版本正本，侧栏版本行重新进屏，材料从宿主恢复 ----
   await workbenchPage.reload()
   await expect(workbenchPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
-  await workbenchPage.getByRole('button', { name: '计划', exact: true }).click()
+  await clickVersionRowEntry(workbenchPage, '计划')
   await expect(workbenchPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
     timeout: 60_000
   })
@@ -195,7 +261,7 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   )
 
   // ---- 验收屏：同一 prepare 交付的绑定验收树挂载 ----
-  await workbenchPage.getByRole('button', { name: '验收', exact: true }).click()
+  await clickVersionRowEntry(workbenchPage, '验收')
   await expect(workbenchPage.getByRole('heading', { name: '版本验收' })).toBeVisible({
     timeout: 60_000
   })
@@ -205,6 +271,10 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     .toBe('terminal')
   // 计划尚未合入也可开始会话；材料创建仍须核验固定计划，本用例不启动 agent。
   await expect(workbenchPage.locator('.acc-empty-board')).toBeVisible({ timeout: 60_000 })
+  // 空板无批注入口，和弦无反应（条件可用性负例，#444）。
+  await workbenchPage.keyboard.press('Alt+A')
+  await expect(workbenchPage.locator('.acc-annotate-banner')).toHaveCount(0)
+  await expect(workbenchPage.locator('.acc-annotate-entry')).toHaveCount(0)
   await expect(
     workbenchPage.getByRole('button', { name: '开始验收', exact: true }).first()
   ).toBeVisible({ timeout: 60_000 })
@@ -243,4 +313,17 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     timeout: 60_000
   })
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-version-overview.png') })
+
+  // ---- 设置页 Shortcuts 收录与搜索（#444 走原生键位体系）----
+  // 打开方式不是判据，走 store action 直达 shortcuts pane（与菜单/侧栏按钮同链切
+  // activeView）。不点 i18n 按钮：原生 UI 文案随系统 locale，CI Linux 是英文，
+  // 中文 accessible name 在 CI 上必超时（本地中文 Windows 曾误绿）。
+  await workbenchPage.evaluate(() => {
+    const store = window.__store?.getState()
+    store?.openSettingsPage()
+    store?.openSettingsTarget({ pane: 'shortcuts', repoId: null })
+  })
+  await workbenchPage.locator('#shortcut-filter-search').fill('批注')
+  await expect(workbenchPage.getByText('Toggle Board Annotation Mode')).toBeVisible()
+  await expect(workbenchPage.getByRole('heading', { name: 'Workbench' })).toBeVisible()
 })

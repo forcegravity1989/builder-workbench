@@ -434,6 +434,7 @@ html[data-skin='ds'].dark .acc-annotate-entry.acc-mode-on .acc-annotate-count {
   flex-shrink: 0;
 }
 .acc-prepare-value {
+  flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -848,6 +849,48 @@ html[data-skin='ds'].dark .acc-annotate-entry.acc-mode-on .acc-annotate-count {
   border-radius: var(--radius-md);
   padding: 4px 10px;
   font-size: 12px;
+}
+/* 脚部的「同步会议纪要」是注入动作，走 BoardActionButton 统一格式；上面的
+   通配按钮规则会盖掉动作按钮的底色/边框，这里按更高优先级恢复（原型同款）。 */
+.acc-minutes-foot .g3-action-button {
+  border-color: var(--border);
+  background: none;
+}
+
+/* ===== 纪要按目标分组（#471 批注5，呈现级） ===== */
+
+.acc-minutes-goal {
+  border-top: 1px solid var(--border);
+  padding: 12px 0 10px;
+}
+.acc-minutes-goal:first-child {
+  border-top: none;
+}
+.acc-minutes-goal h4 {
+  margin: 0 0 8px;
+  padding-left: 10px;
+  border-left: 3px solid var(--foreground);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.acc-minutes-goal-id {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  margin-right: 4px;
+}
+.acc-minutes-sub {
+  padding-left: 13px;
+  font-size: 13px;
+}
+.acc-minutes-sub + .acc-minutes-sub {
+  margin-top: 6px;
+}
+.acc-minutes-sub > strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  margin-bottom: 6px;
 }
 
 /* ===== 归档 PR 及发版本 ===== */
