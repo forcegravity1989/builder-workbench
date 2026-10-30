@@ -1,9 +1,9 @@
 import { snapshot, repository, formatTime } from './overview-data.js'
+import { readWorkflowComment } from '../../../../src/shared/workbench/workflow-report'
 import {
-  readWorkflowComment,
-  workflowFields
-} from '../../../../src/shared/workbench/workflow-report'
-import { summarizeWorkflow } from '../../../../src/renderer/src/workbench/version-overview/workflow-evidence'
+  summarizeWorkflow,
+  workflowMetricDisplay
+} from '../../../../src/renderer/src/workbench/version-overview/workflow-evidence'
 import { HintButton } from './overview-components.jsx'
 // eslint-disable-next-line no-unused-vars
 const { React, useState } = window.BWPrototypeDependencies
@@ -55,10 +55,6 @@ export function WorkflowProductivity({ plan, unplanned }) {
       setLoading(false)
     }
   }
-  const metrics =
-    report.kind === 'ready'
-      ? report.metrics
-      : workflowFields.map(([key, label, hint]) => ({ key, label, hint, value: '未知' }))
   const summary = summarizeWorkflow(
     report.kind === 'ready'
       ? [
@@ -86,23 +82,21 @@ export function WorkflowProductivity({ plan, unplanned }) {
         {inScope
           ? '已有目标关联'
           : `#${source?.issue?.number ?? '—'} 尚未纳入这份固定计划，不计入本版汇总`}
-        。比率仅为这个样例的涉及任务数／可统计任务数；正式版按目标内 Issue
-        汇总，此处独立刷新重读本地快照。
+        。三段读数仅统计这个样例；正式版按目标内 Issue 汇总，此处独立刷新重读本地快照。
       </p>
       <div className="ov-productivity-metrics">
-        {metrics.map((metric, index) => (
-          <div key={metric.key}>
-            <HintButton id={`metric-${metric.key}`} text={metric.hint} className="ov-metric-tip">
-              {metric.label} ⓘ
-            </HintButton>
-            <strong>
-              {summary[index]?.samples
-                ? `${summary[index].involved}/${summary[index].samples}`
-                : '未知'}
-            </strong>
-            <span>{metric.value}</span>
-          </div>
-        ))}
+        {summary.map((metric) => {
+          const display = workflowMetricDisplay(metric)
+          return (
+            <div key={metric.key}>
+              <HintButton id={`metric-${metric.key}`} text={display.hint} className="ov-metric-tip">
+                {metric.label} ⓘ
+              </HintButton>
+              <strong>{display.value}</strong>
+              <span>{display.caption}</span>
+            </div>
+          )
+        })}
       </div>
       {report.kind === 'unknown' && (
         <p className="ov-error" role="status">
@@ -121,6 +115,13 @@ export function WorkflowProductivity({ plan, unplanned }) {
       )}
       <details className="ov-workflow-disclosure">
         <summary>报告来源与未读取范围</summary>
+        <p className="muted">有报告不代表每项都有结论；缺报告、覆盖不足或冲突的任务保留未知。</p>
+        {summary.map((metric) => (
+          <p className="muted" key={metric.key}>
+            {metric.label}：{metric.samples} 项有结论 ·{' '}
+            {report.kind === 'ready' ? 1 - metric.samples : 1} 项未知
+          </p>
+        ))}
         <div className="ov-workflow-source">
           {source?.comment?.url && (
             <a className="ov-link" href={source.comment.url} target="_blank" rel="noreferrer">
@@ -130,6 +131,12 @@ export function WorkflowProductivity({ plan, unplanned }) {
           <span>评论更新 · {formatTime(source?.comment?.updatedAt)}</span>
           <span>来源采集 · {formatTime(source?.readAt)}</span>
         </div>
+        {report.kind === 'ready' &&
+          report.metrics.map((metric) => (
+            <p className="muted" key={metric.key}>
+              {metric.label}：{metric.value}
+            </p>
+          ))}
       </details>
     </section>
   )
