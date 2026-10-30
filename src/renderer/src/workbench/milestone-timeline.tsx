@@ -3,6 +3,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { GripVertical, Plus, X } from 'lucide-react'
 import { MilestoneField } from './milestone-field'
+import { MilestoneFeatureMetadata } from './milestone-goal-picker'
 import { MilestoneIconButton } from './milestone-icon-button'
 import { MilestoneVersionRow } from './milestone-version-row'
 import { MilestoneStageBars, MilestoneSdlcToolbar } from './milestone-stage-bars'
@@ -17,6 +18,7 @@ import {
   reorderMilestoneFeature,
   type MilestoneDraft,
   type MilestoneFeature,
+  type MilestoneVersion,
   type ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
 import {
@@ -32,6 +34,7 @@ import {
 export type MilestoneLocation = { date: string; sequence: number }
 type Props = {
   draft: MilestoneDraft
+  versionFacts: MilestoneVersion[]
   editing: boolean
   busy: boolean
   edit(update: (draft: MilestoneDraft) => MilestoneDraft): void
@@ -145,7 +148,7 @@ export function MilestoneTimeline(props: Props) {
   const today = milestoneDay(milestoneToday())
   return (
     <>
-      <MilestoneSdlcToolbar showPlan={showPlan} onChange={setShowPlan} />
+      <MilestoneSdlcToolbar showPlan={showPlan} onChange={setShowPlan} warning={gesture.warning} />
       <div
         ref={viewport}
         className="wb-ml-scroll"
@@ -326,14 +329,13 @@ export function MilestoneTimeline(props: Props) {
                       editable={enabled}
                       onChange={(title) => changeField(f.id, 'title', title)}
                     />
-                    <small>
-                      <MilestoneField
-                        label="负责人"
-                        value={f.owner}
-                        editable={enabled}
-                        onChange={(owner) => changeField(f.id, 'owner', owner)}
-                      />
-                    </small>
+                    <MilestoneFeatureMetadata
+                      feature={f}
+                      versions={props.versionFacts}
+                      editable={enabled}
+                      changeOwner={(owner) => changeField(f.id, 'owner', owner)}
+                      edit={edit}
+                    />
                   </div>
                 </div>
                 <div className="wb-ml-track" style={{ width: canvasWidth }}>

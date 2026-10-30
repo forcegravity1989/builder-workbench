@@ -4,6 +4,8 @@ import {
   defaultMilestoneStages,
   adjustMilestoneDelivery,
   adjustMilestoneVersion,
+  fitMilestoneVersions,
+  milestoneLaneConflict,
   plannedDay
 } from './milestone-sdlc'
 import { workCalendarDay } from './work-calendar'
@@ -11,6 +13,8 @@ import { PlanningMaterialSchema } from './version-planning-material'
 import {
   milestoneDraft,
   milestoneProblems,
+  milestoneGoalProblems,
+  ScheduledVersionSchema,
   reorderMilestoneFeature,
   type MilestoneDraft
 } from './project-milestones'
@@ -103,7 +107,7 @@ it('keeps planning dates, precise version identity and snapshots through schedul
     'f3',
     'f1'
   ])
-  const shifted = adjustMilestoneVersion(before, 'one', 'move', 1)
+  const shifted = adjustMilestoneVersion(before, 'one', 1)
   expect(shifted.versions[0].timeWindow?.start).toBe('2026-11-02')
   expect(plannedDay(shifted.material.features[0].deliveries[0].stages[0].start)).toBe(
     plannedDay(before.material.features[0].deliveries[0].stages[0].start) + 1
@@ -112,9 +116,18 @@ it('keeps planning dates, precise version identity and snapshots through schedul
   expect(resized.material.features[0].deliveries[0].stages[0].end).toBe('2026-11-03T12:00')
   expect(resized.material.features[0].deliveries[0].stages[1].start).toBe('2026-11-03T12:00')
   expect(adjustMilestoneDelivery(before, 'f1', 'f1-0', 'end', 2, -0.5)).toBe(before)
-  expect(milestoneProblems(adjustMilestoneVersion(before, 'one', 'end', -27)).join()).toContain(
-    '阶段超出'
+  const fitted = fitMilestoneVersions(before, new Set(['one']))
+  const longer = adjustMilestoneDelivery(fitted, 'f1', 'f1-0', 'end', 1, 5)
+  expect(longer.versions[0].timeWindow).toEqual({ start: '2026-11-02', end: '2026-11-11' })
+  expect(milestoneProblems(longer)).toEqual([])
+  expect(adjustMilestoneDelivery(longer, 'f1', 'f1-0', 'end', 1, -5).versions).toEqual(
+    fitted.versions
   )
+  expect(milestoneLaneConflict(fitted)).toBeUndefined()
+  expect(milestoneLaneConflict(adjustMilestoneVersion(fitted, 'one', 25))).toBe('f1')
+  const touching = adjustMilestoneVersion(fitted, 'two', -22)
+  expect(milestoneLaneConflict(touching)).toBeUndefined()
+  expect(milestoneLaneConflict(adjustMilestoneVersion(fitted, 'two', -23))).toBe('f1')
   const earlyMaintain = adjustMilestoneDelivery(before, 'f1', 'f1-1', 'move', 0, -25)
   expect(milestoneProblems(earlyMaintain).join()).toContain('Maintain 不能早于')
   const frozen = {
@@ -134,9 +147,19 @@ it('keeps planning dates, precise version identity and snapshots through schedul
   expect(frozenMilestoneProblems(frozen, renamed)).toEqual([])
   renamed.material.features.pop()
   expect(frozenMilestoneProblems(frozen, renamed).join()).toContain('不能新增、移除或调整阶段')
-  const mixed = adjustMilestoneDelivery(resized, 'f1', 'f1-1', 'end', 0, -0.5)
+  const mixed = adjustMilestoneDelivery(resized, 'f1', 'f1-1', 'end', 0, -1)
+  mixed.material.features[0].deliveries[0].goalSlot = 2
+  mixed.material.features[0].deliveries[0].goalId = 'goal-2'
+  const withGoals = {
+    ...frozen,
+    versions: frozen.versions.map((v) => ({ ...v, goals: [{ goalId: 'goal-2', title: '目标二' }] }))
+  }
+  expect(milestoneGoalProblems(mixed, withGoals.versions)).toEqual([])
+  expect(milestoneGoalProblems(mixed, frozen.versions)).toHaveLength(1)
   mixed.material.features[0].owner = '新的负责人'
-  const restored = restoreFrozenMilestones(frozen, mixed)
+  const restored = restoreFrozenMilestones(withGoals, mixed)
+  expect(restored.versions.every((v) => ScheduledVersionSchema.safeParse(v).success)).toBe(true)
+  expect(restored.material.features[0].deliveries[0].goalId).toBe('goal-2')
   expect(frozenMilestoneProblems(frozen, restored)).toEqual([])
   expect(restored.material.features[0].owner).toBe('新的负责人')
   expect(restored.material.features[0].deliveries[1]).toEqual(

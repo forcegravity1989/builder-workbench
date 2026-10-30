@@ -227,12 +227,22 @@ export function HistoryVersion({ plan, close }) {
     </Modal>
   )
 }
-export function PlanningReviewPanel({ state, changes, submit, markMerged, publish, close }) {
+export function PlanningReviewPanel({
+  state,
+  changes,
+  submit,
+  markMerged,
+  publish,
+  close,
+  viewOnly,
+  invalid
+}) {
   const dirty = changes.length > 0
+  const [viewReview, setViewReview] = useState(Boolean(viewOnly))
   return (
     <Modal
       title={
-        dirty && state.review !== 'merged'
+        dirty && !viewReview && state.review !== 'merged'
           ? '核对本次变更'
           : state.review === 'merged'
             ? '已合入，待更新'
@@ -240,7 +250,7 @@ export function PlanningReviewPanel({ state, changes, submit, markMerged, publis
       }
       close={close}
     >
-      {dirty && state.review !== 'merged' ? (
+      {dirty && !viewReview && state.review !== 'merged' ? (
         <>
           {changes.map((c, i) => (
             <div className="ml-confirm-row" key={i}>
@@ -249,10 +259,15 @@ export function PlanningReviewPanel({ state, changes, submit, markMerged, publis
             </div>
           ))}
           <footer>
+            {state.review === 'open' && (
+              <button className="btn btn-ghost" onClick={() => setViewReview(true)}>
+                查看评审
+              </button>
+            )}
             <button className="btn btn-secondary" onClick={close}>
               继续修改
             </button>
-            <button className="btn btn-primary" onClick={submit}>
+            <button className="btn btn-primary" disabled={invalid} onClick={submit}>
               {state.review === 'open' ? '更新评审' : '提交评审'}
             </button>
           </footer>

@@ -149,13 +149,17 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await planBar.press('ArrowRight')
   await expect(planBar).toHaveAttribute('title', /2026-11-02 12:00/)
   await board.getByRole('button', { name: '撤销', exact: true }).click()
-  const boundary = windows
-    .first()
-    .getByRole('button', { name: 'v1.0.0 结束：拖动或方向键调整一天', exact: true })
-  await boundary.press('ArrowLeft')
-  await expect(windows.first()).toContainText('11-02 — 11-07')
-  await board.getByRole('button', { name: '撤销', exact: true }).click()
+  const boundary = notification.getByRole('button', {
+    name: 'Design 结束：拖动或方向键调整半天',
+    exact: true
+  })
+  await moveNode(page, boundary, 88)
   await expect(windows.first()).toContainText('11-02 — 11-08')
+  await boundary.press('ArrowRight')
+  await expect(board.getByText('同一泳道不能重叠', { exact: true })).toBeVisible()
+  await expect(windows.first()).toContainText('11-02 — 11-08')
+  await board.getByRole('button', { name: '撤销', exact: true }).click()
+  await expect(windows.first()).toContainText('11-02 — 11-06')
   await expect(board.getByRole('button', { name: '工作日历', exact: true })).toHaveCount(0)
   await expect(notification.getByRole('button', { name: /版本总览/ })).toHaveCount(0)
   await board.getByLabel('版本名称 2026-11-23', { exact: true }).fill('v1.0.2')
@@ -249,10 +253,10 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await board.getByRole('button', { name: '撤销', exact: true }).click()
   await board.getByLabel('负责人', { exact: true }).first().fill('重启后恢复的草案')
   await board.getByLabel('负责人', { exact: true }).first().press('Tab')
-  await expect(board.getByText('本机草案已保存', { exact: true })).toBeVisible()
+  await expect(board).toHaveAttribute('data-draft-persistence', 'saved')
   await page.reload()
   await page.getByRole('button', { name: '项目总览', exact: true }).click()
   await expect(board.getByLabel('负责人', { exact: true }).first()).toHaveValue('重启后恢复的草案')
-  await expect(board.getByText('本机草案已保存', { exact: true })).toBeVisible()
+  await expect(board).toHaveAttribute('data-draft-persistence', 'saved')
   expect(JSON.parse(readFileSync(materialPath, 'utf8'))).toEqual(material)
 }

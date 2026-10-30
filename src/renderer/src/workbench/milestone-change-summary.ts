@@ -18,6 +18,19 @@ export function describeMilestoneChanges(before: MilestoneDraft, after: Mileston
       result.push(
         `调整特性：${old.title} → ${f.title} · ${f.owner} · ${f.deliveries.map((d) => `${d.version.version} ${d.stages[0]?.phase ?? ''}`).join(' → ')}`
       )
+      for (const delivery of f.deliveries) {
+        const previous = old.deliveries.find((item) => item.id === delivery.id)
+        if (
+          previous &&
+          (previous.goalSlot !== delivery.goalSlot || previous.goalId !== delivery.goalId)
+        ) {
+          const oldLabel = previous.goalSlot ? `G${previous.goalSlot}` : '未选目标'
+          const newLabel = delivery.goalSlot ? `G${delivery.goalSlot}` : '未选目标'
+          result.push(
+            `${f.title} · ${delivery.version.version} 目标：${oldLabel === newLabel ? `${newLabel} 关联已更新` : `${oldLabel} → ${newLabel}`}${delivery.goalId ? '' : '（规划位置）'}`
+          )
+        }
+      }
     }
   }
   for (const f of before.material.features) {

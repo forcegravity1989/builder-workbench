@@ -6,6 +6,7 @@ import {
   MILESTONES_PATH,
   milestoneDraft,
   milestoneProblems,
+  milestoneGoalProblems,
   type MilestoneRead,
   type MilestoneSubmit,
   type MilestoneSubmitResult
@@ -120,6 +121,7 @@ export function nativeMilestoneService(runtime: Runtime) {
         }
         const problems = [
           ...milestoneProblems(input),
+          ...milestoneGoalProblems(input, source.snapshot.versions),
           ...frozenMilestoneProblems(source.snapshot, input, c.started)
         ]
         if (problems.length) {

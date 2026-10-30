@@ -138,7 +138,9 @@ export function MilestoneVersionRow({
             <button
               className="wb-ml-version-dates"
               title={
-                started.has(v.cycleId) ? '已开始，原排期只读' : '拖动平移版本；两侧按天调整范围'
+                started.has(v.cycleId)
+                  ? '已开始，原排期只读'
+                  : '拖动整体平移版本；时长随下方 SDLC 联动'
               }
               onPointerDown={
                 editing && !disabled && !started.has(v.cycleId)
@@ -154,22 +156,6 @@ export function MilestoneVersionRow({
               {v.timeWindow!.start.slice(5)} — {v.timeWindow!.end.slice(5)}
               {started.has(v.cycleId) && ' · 已开始'}
             </button>
-            {editing &&
-              !disabled &&
-              !started.has(v.cycleId) &&
-              (['start', 'end'] as const).map((edge) => (
-                <button
-                  key={edge}
-                  className={`wb-ml-resize ${edge}`}
-                  aria-label={`${v.version} ${edge === 'start' ? '开始' : '结束'}：拖动或方向键调整一天`}
-                  onPointerDown={(e) =>
-                    gesture.begin(e, { kind: 'version', id: v.cycleId, mode: edge })
-                  }
-                  onKeyDown={(e) =>
-                    gesture.keyboard(e, { kind: 'version', id: v.cycleId, mode: edge })
-                  }
-                />
-              ))}
           </div>
         ))}
       </div>

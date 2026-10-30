@@ -1,6 +1,9 @@
 import { frozenMilestoneProblems } from '../../shared/workbench/milestone-freeze'
 import type { RuntimeWorktreeListResult } from '../../shared/runtime-worktree-contracts'
-import type { MilestoneSubmit } from '../../shared/workbench/project-milestones'
+import {
+  milestoneGoalProblems,
+  type MilestoneSubmit
+} from '../../shared/workbench/project-milestones'
 import { readMilestoneSnapshot } from './milestone-snapshot'
 
 export type MilestoneStartedRuntime = {
@@ -31,7 +34,10 @@ export async function recheckMilestoneStarted(
   if (fresh.snapshot.problems.length) {
     throw new Error('版本开工材料未能完整核对；草案保留，没有写入文件')
   }
-  const frozen = frozenMilestoneProblems(fresh.snapshot, input, active)
+  const frozen = [
+    ...frozenMilestoneProblems(fresh.snapshot, input, active),
+    ...milestoneGoalProblems(input, fresh.snapshot.versions)
+  ]
   if (frozen.length) {
     throw new Error(`${frozen.join('；')}；草案保留，没有写入文件`)
   }

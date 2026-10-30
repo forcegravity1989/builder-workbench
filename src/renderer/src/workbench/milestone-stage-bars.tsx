@@ -25,14 +25,21 @@ export function MilestoneLegend() {
 
 export function MilestoneSdlcToolbar({
   showPlan,
-  onChange
+  onChange,
+  warning
 }: {
   showPlan: boolean
   onChange(value: boolean): void
+  warning?: string
 }) {
   return (
     <div className="wb-ml-sdlc-toolbar">
       <MilestoneLegend />
+      {warning && (
+        <span className="wb-ml-drag-warning" role="status">
+          {warning}
+        </span>
+      )}
       <label className="wb-ml-show-plan">
         <input type="checkbox" checked={showPlan} onChange={(e) => onChange(e.target.checked)} />
         显示计划
@@ -69,6 +76,7 @@ export function MilestoneStageBars({
       {feature.deliveries.map((delivery) => {
         const frozen = started.has(delivery.version.cycleId),
           editable = enabled && !frozen
+        const hasFirstDelivery = gesture.hasFirstDelivery(delivery.version.cycleId)
         return (
           <Fragment key={delivery.id}>
             {frozen && (
@@ -87,6 +95,10 @@ export function MilestoneStageBars({
                     mode: 'move'
                   }
                   const pixels = x(s.end) - x(s.start)
+                  const move: MilestoneGesture =
+                    s.phase === 'Maintain'
+                      ? { kind: 'version', id: delivery.version.cycleId, mode: 'move' }
+                      : operation
                   const label = `${s.phase} · ${s.start.replace('T', ' ')} — ${s.end.replace('T', ' ')} · ${frozen ? '原计划，只读' : '计划'}`
                   return (
                     <div
@@ -98,19 +110,20 @@ export function MilestoneStageBars({
                         className="wb-ml-phase-body"
                         title={label}
                         aria-label={label}
-                        onPointerDown={editable ? (e) => gesture.begin(e, operation) : undefined}
-                        onKeyDown={editable ? (e) => gesture.keyboard(e, operation) : undefined}
+                        onPointerDown={editable ? (e) => gesture.begin(e, move) : undefined}
+                        onKeyDown={editable ? (e) => gesture.keyboard(e, move) : undefined}
                       >
                         <span>
                           {pixels >= 38 ? s.phase : s.phase.slice(0, s.phase === 'Deploy' ? 2 : 1)}
                         </span>
                       </button>
                       {editable &&
+                        (s.phase !== 'Maintain' || !hasFirstDelivery) &&
                         (['start', 'end'] as const).map((edge) => (
                           <button
                             key={edge}
                             className={`wb-ml-resize ${edge}`}
-                            aria-label={`${s.phase} ${edge === 'start' ? '开始' : '结束'}：拖动或方向键调整半天`}
+                            aria-label={`${s.phase} ${edge === 'start' ? '开始' : '结束'}：拖动或方向键调整${s.phase === 'Maintain' ? '一天' : '半天'}`}
                             onPointerDown={(e) => gesture.begin(e, { ...operation, mode: edge })}
                             onKeyDown={(e) => gesture.keyboard(e, { ...operation, mode: edge })}
                           />

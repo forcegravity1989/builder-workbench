@@ -20,7 +20,7 @@ export async function verifyMilestoneRestart(previous: ElectronApplication, info
         .map((name) => [name, readFileSync(path.join(recoveryDirectory, name), 'utf8')])
     )
   const previousPage = await previous.firstWindow()
-  await expect(previousPage.getByText('本机草案已保存', { exact: true })).toBeVisible()
+  await expect(previousPage.locator('.wb-ml')).toHaveAttribute('data-draft-persistence', 'saved')
   const recoveryBefore = readRecovery()
   expect(
     Object.values(recoveryBefore).some((raw) => {

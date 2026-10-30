@@ -21,6 +21,8 @@ export const MilestoneStageSchema = z.strictObject({
 export const MilestoneDeliverySchema = z.strictObject({
   id: Id,
   version: Ref,
+  goalId: Id.optional(),
+  goalSlot: z.number().int().min(1).max(4).optional(),
   stages: z.array(MilestoneStageSchema).min(1).max(5)
 })
 export const MilestoneFeatureSchema = z.strictObject({
@@ -67,7 +69,10 @@ export type MilestoneStage = z.infer<typeof MilestoneStageSchema>
 export type MilestoneDelivery = z.infer<typeof MilestoneDeliverySchema>
 export type MilestonePhase = MilestoneStage['phase']
 export type MilestoneMaterial = z.infer<typeof MilestoneMaterialSchema>
-export type MilestoneVersion = ScheduledVersion & { started: boolean }
+export type MilestoneVersion = ScheduledVersion & {
+  started: boolean
+  goals?: { goalId: string; title: string }[]
+}
 export type MilestoneDraft = { material: MilestoneMaterial; versions: ScheduledVersion[] }
 export type MilestoneSnapshot = {
   head: string
@@ -165,6 +170,26 @@ export function milestoneProblems(draft: MilestoneDraft): string[] {
     }
   }
   return [...new Set(problems)]
+}
+export function milestoneGoalProblems(
+  draft: MilestoneDraft,
+  versions: readonly MilestoneVersion[]
+): string[] {
+  return draft.material.features.flatMap((feature) =>
+    feature.deliveries.flatMap((delivery) => {
+      if (!delivery.goalId) {
+        return []
+      }
+      const version = versions.find(
+        (v) => v.cycleId === delivery.version.cycleId && v.version === delivery.version.version
+      )
+      return version?.goals?.some((goal) => goal.goalId === delivery.goalId)
+        ? []
+        : [
+            `${feature.title}：${delivery.version.version} 的关联目标已不存在或未读到，请重新选择目标`
+          ]
+    })
+  )
 }
 export function reorderMilestoneFeature(
   features: MilestoneFeature[],

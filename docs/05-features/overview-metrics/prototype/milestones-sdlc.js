@@ -1,3 +1,4 @@
+import * as core from '../../../../src/shared/workbench/milestone-sdlc.ts'
 import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.ts'
 // Prototype-only civil-day coordinates. Actual evidence retains its original timestamp.
 export const dayMs = 86400000
@@ -28,98 +29,101 @@ export function defaultStages(version, maintain = false) {
     return { phase: phases[index], start, end: cursor }
   })
 }
-export function adjustVersion(plan, id, mode, delta) {
-  const version = plan.versions.find((v) => v.id === id)
-  if (!version || version.started || !delta) {
-    return plan
-  }
-  const start = day(version.start) + (mode !== 'end' ? delta : 0)
-  const end = day(version.end) + (mode !== 'start' ? delta : 0)
-  if (end < start) {
-    return plan
-  }
+
+function toDraft(plan) {
   return {
-    ...plan,
-    versions: plan.versions.map((v) =>
-      v.id === id ? { ...v, start: dateOf(start), end: dateOf(end) } : v
-    ),
-    features:
-      mode === 'move'
-        ? plan.features.map((f) => ({
-            ...f,
-            deliveries: f.deliveries.map((d) =>
-              d.versionId === id
-                ? {
-                    ...d,
-                    stages: d.stages.map((s) => ({
-                      ...s,
-                      start: s.start + delta,
-                      end: s.end + delta
-                    }))
-                  }
-                : d
-            )
+    versions: plan.versions.map((v) => ({
+      version: v.name,
+      cycleId: v.id,
+      timeWindow: { start: v.start, end: v.end }
+    })),
+    material: {
+      schema_version: 2,
+      months: plan.months,
+      features: plan.features.map((f) => ({
+        ...f,
+        deliveries: f.deliveries.map((d, i) => ({
+          id: `${f.id}-${i}`,
+          version: {
+            version: plan.versions.find((v) => v.id === d.versionId).name,
+            cycleId: d.versionId
+          },
+          goalSlot: d.goalSlot,
+          goalId: d.goalId,
+          stages: d.stages.map((s) => ({
+            ...s,
+            start: core.plannedTime(s.start),
+            end: core.plannedTime(s.end)
           }))
-        : plan.features
-  }
-}
-export function adjustDelivery(plan, featureId, deliveryIndex, mode, stageIndex, delta, targetId) {
-  const feature = plan.features.find((f) => f.id === featureId)
-  const delivery = feature?.deliveries[deliveryIndex]
-  if (!delivery || plan.versions.find((v) => v.id === delivery.versionId)?.started || !delta) {
-    return plan
-  }
-  if (targetId && plan.versions.find((v) => v.id === targetId)?.started) {
-    return plan
-  }
-  const stages = delivery.stages.map((s) => ({ ...s }))
-  if (mode === 'move') {
-    stages.forEach((s) => {
-      s.start += delta
-      s.end += delta
-    })
-  } else {
-    const stage = stages[stageIndex]
-    if (mode === 'start') {
-      if (stage.end - (stage.start + delta) < 0.5) {
-        return plan
-      }
-      if (stageIndex && stage.start + delta - stages[stageIndex - 1].start < 0.5) {
-        return plan
-      }
-      stage.start += delta
-      if (stageIndex) {
-        stages[stageIndex - 1].end = stage.start
-      }
-    } else {
-      if (stage.end + delta - stage.start < 0.5) {
-        return plan
-      }
-      if (
-        stageIndex < stages.length - 1 &&
-        stages[stageIndex + 1].end - (stage.end + delta) < 0.5
-      ) {
-        return plan
-      }
-      stage.end += delta
-      if (stageIndex < stages.length - 1) {
-        stages[stageIndex + 1].start = stage.end
-      }
+        }))
+      }))
     }
   }
+}
+function fromDraft(plan, draft) {
   return {
     ...plan,
-    features: plan.features.map((f) =>
-      f.id === featureId
-        ? {
-            ...f,
-            deliveries: f.deliveries.map((d, i) =>
-              i === deliveryIndex ? { ...d, stages, versionId: targetId || d.versionId } : d
-            )
-          }
-        : f
-    )
+    versions: draft.versions.map((v) => ({
+      ...plan.versions.find((old) => old.id === v.cycleId),
+      start: v.timeWindow.start,
+      end: v.timeWindow.end
+    })),
+    features: draft.material.features.map((f) => ({
+      ...plan.features.find((old) => old.id === f.id),
+      deliveries: f.deliveries.map((d, i) => ({
+        ...plan.features.find((old) => old.id === f.id).deliveries[i],
+        versionId: d.version.cycleId,
+        goalId: d.goalId,
+        goalSlot: d.goalSlot,
+        stages: d.stages.map((s) => ({
+          ...s,
+          start: core.plannedDay(s.start),
+          end: core.plannedDay(s.end)
+        }))
+      }))
+    }))
   }
+}
+export function fitVersions(plan, ids) {
+  return fromDraft(
+    plan,
+    core.fitMilestoneVersions(
+      toDraft(plan),
+      new Set(ids.filter((id) => !plan.versions.find((v) => v.id === id)?.started))
+    )
+  )
+}
+export function laneConflict(plan) {
+  return core.milestoneLaneConflict(toDraft(plan))
+}
+export function adjustVersion(plan, id, mode, delta) {
+  if (plan.versions.find((v) => v.id === id)?.started || mode !== 'move') {
+    return plan
+  }
+  return fromDraft(plan, core.adjustMilestoneVersion(toDraft(plan), id, delta))
+}
+export function adjustDelivery(plan, featureId, deliveryIndex, mode, stageIndex, delta, targetId) {
+  const delivery = plan.features.find((f) => f.id === featureId)?.deliveries[deliveryIndex]
+  if (
+    !delivery ||
+    plan.versions.find((v) => v.id === delivery.versionId)?.started ||
+    (targetId && plan.versions.find((v) => v.id === targetId)?.started)
+  ) {
+    return plan
+  }
+  const draft = toDraft(plan)
+  return fromDraft(
+    plan,
+    core.adjustMilestoneDelivery(
+      draft,
+      featureId,
+      `${featureId}-${deliveryIndex}`,
+      mode,
+      stageIndex,
+      delta,
+      draft.versions.find((v) => v.cycleId === targetId)
+    )
+  )
 }
 export function scheduleProblem(plan) {
   for (const feature of plan.features) {

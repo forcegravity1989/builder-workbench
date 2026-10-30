@@ -110,6 +110,7 @@ export async function readMilestoneSnapshot(
       snapshot.versions.push({
         version,
         cycleId: plan.cycleId,
+        goals: plan.goals.map(({ goalId, title }) => ({ goalId, title })),
         ...(plan.timeWindow ? { timeWindow: plan.timeWindow } : {}),
         started:
           prepared ||

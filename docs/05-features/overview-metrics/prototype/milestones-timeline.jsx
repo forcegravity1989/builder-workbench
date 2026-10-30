@@ -11,6 +11,7 @@ import {
   actualDay,
   actualAsOf,
   isRest,
+  laneConflict,
   adjustVersion,
   adjustDelivery
 } from './milestones-sdlc.js'
@@ -37,6 +38,7 @@ export function Timeline({
     pan = useRef(null),
     ordering = useRef(null)
   const [preview, setPreview] = useState(null),
+    [dragWarning, setDragWarning] = useState(''),
     [showPlan, setShowPlan] = useState(false),
     [dropRow, setDropRow] = useState(null)
   const baseCalendar = calendarFor(plan)
@@ -74,6 +76,7 @@ export function Timeline({
     }
     event.preventDefault()
     event.stopPropagation()
+    setDragWarning('')
     drag.current = {
       ...gesture,
       originX: event.clientX,
@@ -128,6 +131,20 @@ export function Timeline({
       targetId
     )
   }
+  const stepFor = (g) =>
+    g.kind === 'version' ||
+    plan.features.find((f) => f.id === g.id)?.deliveries[g.index]?.stages[0]?.phase === 'Maintain'
+      ? 1
+      : 0.5
+  const checkedChange = (gesture, delta) => {
+    const next = changed(gesture, delta)
+    if (laneConflict(next)) {
+      setDragWarning('同一泳道不能重叠')
+      return null
+    }
+    setDragWarning('')
+    return next
+  }
   const movePointer = (event) => {
     if (drag.current) {
       const g = drag.current,
@@ -137,12 +154,12 @@ export function Timeline({
       } else if (event.clientX < bounds.left + labelWidth + 20) {
         scroll.current.scrollLeft -= 12
       }
-      const step = g.kind === 'version' ? 1 : 0.5
+      const step = stepFor(g)
       const delta =
         Math.round(
           (event.clientX - g.originX + scroll.current.scrollLeft - g.left) / dayWidth / step
         ) * step
-      g.next = changed(g, delta)
+      g.next = checkedChange(g, delta) || g.next
       setPreview(g.next)
     } else if (pan.current) {
       scroll.current.scrollLeft = pan.current.left + pan.current.x - event.clientX
@@ -155,14 +172,20 @@ export function Timeline({
     drag.current = null
     pan.current = null
     setPreview(null)
+    if (cancel) {
+      setDragWarning('')
+    }
   }
   const keyboardAdjust = (event, gesture) => {
     if (!planning || !['ArrowLeft', 'ArrowRight'].includes(event.key)) {
       return
     }
     event.preventDefault()
-    const delta = (event.key === 'ArrowLeft' ? -1 : 1) * (gesture.kind === 'version' ? 1 : 0.5)
-    onApply(changed({ ...gesture, base: plan }, delta))
+    const delta = (event.key === 'ArrowLeft' ? -1 : 1) * stepFor(gesture)
+    const next = checkedChange({ ...gesture, base: plan }, delta)
+    if (next) {
+      onApply(next)
+    }
   }
   const handle = (gesture, label, edge) => (
     <button
@@ -184,6 +207,14 @@ export function Timeline({
       >
         {delivery.stages.map((s, stage) => {
           const gesture = { kind: 'delivery', id: feature.id, index, stage, mode: 'move' }
+          const move =
+            s.phase === 'Maintain' ? { kind: 'version', id: version.id, mode: 'move' } : gesture
+          const canResize =
+            editable &&
+            (s.phase !== 'Maintain' ||
+              !display.features.some((f) =>
+                f.deliveries.some((d) => d.versionId === version.id && d.stages[0].phase === 'Plan')
+              ))
           const label = `${s.phase} · ${plannedTime(s.start)} — ${plannedTime(s.end)} · ${ghost ? '原计划，只读' : '计划'}`
           return (
             <div
@@ -199,8 +230,8 @@ export function Timeline({
                 className="ml-phase-body"
                 aria-label={label}
                 title={label}
-                onPointerDown={editable ? (e) => beginDrag(e, gesture) : undefined}
-                onKeyDown={editable ? (e) => keyboardAdjust(e, gesture) : undefined}
+                onPointerDown={editable ? (e) => beginDrag(e, move) : undefined}
+                onKeyDown={editable ? (e) => keyboardAdjust(e, move) : undefined}
               >
                 <span>
                   {(s.end - s.start) * dayWidth >= 38
@@ -208,14 +239,18 @@ export function Timeline({
                     : s.phase.slice(0, s.phase === 'Deploy' ? 2 : 1)}
                 </span>
               </button>
-              {editable &&
+              {canResize &&
                 handle(
                   { ...gesture, mode: 'start' },
-                  `${s.phase} 开始：拖动调整，方向键半天`,
+                  `${s.phase} 开始：拖动调整，方向键${s.phase === 'Maintain' ? '一天' : '半天'}`,
                   'start'
                 )}
-              {editable &&
-                handle({ ...gesture, mode: 'end' }, `${s.phase} 结束：拖动调整，方向键半天`, 'end')}
+              {canResize &&
+                handle(
+                  { ...gesture, mode: 'end' },
+                  `${s.phase} 结束：拖动调整，方向键${s.phase === 'Maintain' ? '一天' : '半天'}`,
+                  'end'
+                )}
             </div>
           )
         })}
@@ -238,6 +273,11 @@ export function Timeline({
             </span>
           ))}
         </div>
+        {dragWarning && (
+          <span className="ml-drag-warning" role="status">
+            {dragWarning}
+          </span>
+        )}
         <label className="ml-show-plan">
           <input
             type="checkbox"
@@ -276,7 +316,7 @@ export function Timeline({
           }
         }}
         onPointerDown={(e) => {
-          if (e.button !== 0 || e.target.closest('button,input,a,label,summary')) {
+          if (e.button !== 0 || e.target.closest('button,input,a,label,summary,details')) {
             return
           }
           pan.current = { x: e.clientX, left: scroll.current.scrollLeft }
@@ -355,7 +395,7 @@ export function Timeline({
                         className={`ml-version-dates ${editable ? 'editable' : ''}`}
                         title={
                           editable
-                            ? '拖动平移版本；两侧调整起止日期，按天吸附'
+                            ? '拖动整体平移版本；时长随下方 SDLC 联动'
                             : '版本已开始，日期只读'
                         }
                         onPointerDown={editable ? (e) => beginDrag(e, gesture) : undefined}
@@ -364,18 +404,6 @@ export function Timeline({
                         {short(v.start)}—{short(v.end)}
                         {v.started && <span> · 已开始</span>}
                       </button>
-                      {editable &&
-                        handle(
-                          { ...gesture, mode: 'start' },
-                          `${v.name} 开始：拖动或方向键调整一天`,
-                          'start'
-                        )}
-                      {editable &&
-                        handle(
-                          { ...gesture, mode: 'end' },
-                          `${v.name} 结束：拖动或方向键调整一天`,
-                          'end'
-                        )}
                     </div>
                   )
                 })}
@@ -489,17 +517,92 @@ export function Timeline({
                     <strong>{feature.title}</strong>
                   )}
                 </div>
-                <div className="ml-inline-owner">
-                  {planning ? (
-                    <InlineField
-                      value={feature.owner}
-                      label={`${feature.title} 负责人`}
-                      placeholder="负责人"
-                      change={(owner) => onChangeFeature(feature.id, { owner })}
-                    />
-                  ) : (
-                    <small>{feature.owner}</small>
-                  )}
+                <div className="ml-feature-meta">
+                  <div className="ml-inline-owner">
+                    {planning ? (
+                      <InlineField
+                        value={feature.owner}
+                        label={`${feature.title} 负责人`}
+                        placeholder="负责人"
+                        change={(owner) => onChangeFeature(feature.id, { owner })}
+                      />
+                    ) : (
+                      <small>{feature.owner}</small>
+                    )}
+                  </div>
+                  <div className="ml-feature-goals">
+                    {feature.deliveries.map((delivery, i) => {
+                      const v = versionById.get(delivery.versionId)
+                      return planning ? (
+                        <details
+                          key={i}
+                          className="ml-goal-picker"
+                          onToggle={(event) => {
+                            const node = event.currentTarget
+                            if (node.open) {
+                              node.dataset.align =
+                                scroll.current.getBoundingClientRect().bottom -
+                                  node.getBoundingClientRect().bottom <
+                                150
+                                  ? 'up'
+                                  : 'down'
+                            }
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                              event.currentTarget.open = false
+                              event.currentTarget.querySelector('summary').focus()
+                            }
+                          }}
+                          onBlur={(event) => {
+                            if (!event.currentTarget.contains(event.relatedTarget)) {
+                              event.currentTarget.open = false
+                            }
+                          }}
+                        >
+                          <summary
+                            aria-label={`${feature.title} ${v.name} 选择目标`}
+                            title={`${v.name} 的目标`}
+                          >
+                            <span>{delivery.goalSlot ? `G${delivery.goalSlot}` : '目标'}</span>
+                            <span>⌄</span>
+                          </summary>
+                          <div className="ml-goal-options">
+                            {[1, 2, 3, 4].map((slot) => (
+                              <button
+                                key={slot}
+                                aria-pressed={delivery.goalSlot === slot}
+                                onClick={(event) => {
+                                  event.currentTarget.closest('details').open = false
+                                  onApply({
+                                    ...plan,
+                                    features: plan.features.map((f) =>
+                                      f.id !== feature.id
+                                        ? f
+                                        : {
+                                            ...f,
+                                            deliveries: f.deliveries.map((d, index) =>
+                                              index !== i
+                                                ? d
+                                                : { ...d, goalSlot: slot, goalId: undefined }
+                                            )
+                                          }
+                                    )
+                                  })
+                                }}
+                              >
+                                G{slot}
+                              </button>
+                            ))}
+                          </div>
+                        </details>
+                      ) : (
+                        <span className="ml-goal-tag" key={i} title={`${v.name} 的目标`}>
+                          {delivery.goalSlot ? `G${delivery.goalSlot}` : '未选目标'}
+                        </span>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
               <div className="ml-track" style={{ width: totalWidth }}>
@@ -516,7 +619,10 @@ export function Timeline({
                 {feature.deliveries.map((delivery, i) => {
                   const v = versionById.get(delivery.versionId),
                     first = delivery.stages[0],
-                    actual = delivery.actual || []
+                    actual =
+                      !delivery.goalSlot || delivery.goalSlot === (delivery.actualGoalSlot ?? 1)
+                        ? delivery.actual || []
+                        : []
                   const started = Boolean(v.started)
                   return (
                     <React.Fragment key={delivery.stages[0].phase}>
@@ -524,7 +630,10 @@ export function Timeline({
                         <>
                           {!actual.length && (
                             <span className="ml-actual-unknown" style={{ left: x(first.start) }}>
-                              实际阶段未知
+                              {delivery.goalSlot &&
+                              delivery.goalSlot !== (delivery.actualGoalSlot ?? 1)
+                                ? '所选目标暂无对应实际记录'
+                                : '实际阶段未知'}
                             </span>
                           )}
                           {actual.map((s) => {

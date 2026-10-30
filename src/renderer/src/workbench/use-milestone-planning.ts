@@ -4,6 +4,7 @@ import { CHARTER_BRANCH } from '../../../shared/workbench/project-charter'
 import {
   milestoneDraft,
   milestoneProblems,
+  milestoneGoalProblems,
   type MilestoneDraft
 } from '../../../shared/workbench/project-milestones'
 import { ensureNamedWorktree, nativeWorkspaceScopeKey } from './version-cycle/native-workspace'
@@ -182,9 +183,11 @@ export function useMilestonePlanning(
       !target ||
       !s ||
       s.sourceConflict ||
+      s.data.review.queryFailed ||
       submitting.has(key) ||
       reading ||
-      milestoneProblems(s.draft).length
+      milestoneProblems(s.draft).length ||
+      milestoneGoalProblems(s.draft, (s.data.proposal ?? s.data.formal).versions).length
     ) {
       return
     }
