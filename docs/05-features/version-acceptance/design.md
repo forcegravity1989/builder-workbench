@@ -47,7 +47,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 - `minutes?: AcceptanceMeetingMinutes` —— 与计划侧 `PlanMeetingMinutes` 同形但**不含闭环位**：`consensus: string[]`、`followups: Array<{ id: string; text: string }>`、`confirmed: boolean`、`confirmedAt?`、`sources?`、`updatedAt?`。followup 的 `id` 用 `crypto.randomUUID()` 稳定身份，人工增删不让既有编号漂移；板面按数组序显示 M1…Mn。不给验收材料留恒假的 `closed` 字段。条目按目标组织（#471）：带「G<n> ·」目标前缀，读视图按前缀分组到各目标小标题下，协议仍是平铺清单（呈现级实现，协议级目标绑定留给后续会议相关 Issue）。
 - `demoEnv?: { kind: 'url'; label?: string; url: string } | { kind: 'launched'; detail: string }` —— 演示环境两形态。web 服务类写 `kind:'url'`，可附一句系统名 `label`：板面「演示环境」行显示系统名、缺省回退 URL，点击经内置 Orca 浏览器打开；桌面应用类写 `kind:'launched'`，板面渲染状态文字，不伪造链接。缺失即未部署，如实显示未部署与下一步。
-- `meeting?: { title: string; time: string; id?: string; link?: string }` —— 版本级预订会议（#471）。模型生成完整预览、**经人确认后**用 `welink-cli meeting create` 创建（默认开启 AI 听）并写回；缺省即未预订，已预订不重复订，改期或取消同样先预览后执行。同步会议纪要只把材料纪要按固定样式（按目标分节）写入该会议的纪要草稿，最终发送由人在会议系统手动完成。
+- `meeting?: { title: string; time: string; id?: string; link?: string; attendees?: string[] }` —— 版本级预订会议（#471，字段扩于 #516）。`time` 存人读的起止时间；`id` 存 `meetingId`（数字主键，不是 `meetingNo`）；`link` 存 `meeting info` 的 `jumpUrls` 会议页地址；`attendees` 存实际邀约的工号。模型生成完整预览、**经人确认后**用 `welink-cli meeting create` 创建（默认开启 AI 听）并写回；与会人默认取项目根 `.bw/project.toml` 的 `[chat].group_id` 项目群全部成员（排除机器人/助手），没有绑定项目群时请人提供群号。缺省即未预订，已预订不重复订，改期或取消同样先预览后执行。板面「验收会议」行读回标题、时间、会议 ID、与会人数与会页面入口。同步会议纪要只把材料纪要按固定样式（按目标分节）写入该会议的纪要草稿，最终发送由人在会议系统手动完成。
 - 版本级交付件不再按目标记录：`results[].deliveries` 退役，版本级交付件与演示环境由 `demoEnv` 与制品登记承载。
 - `workflow.release?: { tag: string }`（#462 修订 v10「板面不呈现发布状态」决策）——发布执行后由模型把 tag 引用写入材料作**读回键**，同 `archivePr` 的「引用落材料、读数现算」模式：读数（是否已发布、发布时间、Release 地址、资产）不落材料，正本在 Git 标签与 provider Release 页；板面按该键现算读回（见「发布」节），总览仍不显示「已发布」。计划侧 schema 不加 `release`，发布只属验收流程。
 

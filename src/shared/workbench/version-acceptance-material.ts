@@ -86,9 +86,15 @@ export type AcceptanceDemoEnvironment = z.infer<typeof AcceptanceDemoEnvironment
  */
 export const AcceptanceMeetingSchema = z.strictObject({
   title: z.string().trim().min(1),
+  // Human-readable local time, e.g. 「10-31(周五) 14:00–15:00」.
   time: z.string().trim().min(1),
+  // welink-cli meetingId (the numeric meeting primary key), never meetingNo.
   id: z.string().trim().min(1).optional(),
-  link: z.string().trim().min(1).optional()
+  // Meeting page read back from `welink-cli meeting info` jumpUrls.
+  link: z.string().trim().min(1).optional(),
+  // W3 IDs actually passed to `--meeting-user-list`; the board shows the count
+  // and a short list so a human can check the invitees without reopening WeLink.
+  attendees: z.array(z.string().trim().min(1)).optional()
 })
 
 export type AcceptanceMeeting = z.infer<typeof AcceptanceMeetingSchema>
