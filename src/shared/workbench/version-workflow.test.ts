@@ -106,6 +106,28 @@ it('keeps the workflow section optional and rejects stages outside the workflow'
       meeting: { title: 'v1 版本验收会', time: '周五 16:00', id: 'meeting-1' }
     }).success
   ).toBe(true)
+  // #516: booked meeting carries the invitees and page link read back from
+  // welink-cli, so the board can show who is invited without reopening WeLink.
+  // enMeetingId is the eMeeting-side key the minutes-draft write addresses.
+  expect(
+    AcceptanceMaterialSchema.safeParse({
+      ...acceptanceBase,
+      meeting: {
+        title: 'v1 版本验收会',
+        time: '10-31(周五) 14:00–15:00',
+        id: '203422177',
+        enMeetingId: '4028808b8f99a1a2018f9b7c6d5e4f3a',
+        link: 'https://w3.huawei.com/emeeting/#/agendaController/abc/manage',
+        attendees: ['z30026659', 'c00975486']
+      }
+    }).success
+  ).toBe(true)
+  expect(
+    AcceptanceMaterialSchema.safeParse({
+      ...acceptanceBase,
+      meeting: { title: 'v1 版本验收会', time: '周五 16:00', attendees: [1] }
+    }).success
+  ).toBe(false)
   expect(
     PlanningMaterialSchema.safeParse({
       ...plan,
