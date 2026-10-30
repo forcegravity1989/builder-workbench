@@ -32,7 +32,7 @@ let pendingPayload: BrowserGrabPayload | null = null
 vi.mock('@/components/browser-pane/annotate/use-browser-page-annotation-send', () => ({
   useBrowserPageAnnotationSend: (args: { browserTabId: string }) => {
     calls.annotationSend.push({ browserTabId: args.browserTabId })
-    return { browserAnnotations: [], setBrowserAnnotationTrayOpen: () => undefined }
+    return { browserAnnotations: [] }
   }
 }))
 

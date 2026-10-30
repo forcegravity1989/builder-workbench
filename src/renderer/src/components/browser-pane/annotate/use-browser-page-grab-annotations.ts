@@ -52,8 +52,7 @@ export function useBrowserPageGrabAnnotations({
   trackingScroller,
   webviewRef,
   setBrowserOverlayViewport,
-  browserAnnotationsLength,
-  setBrowserAnnotationTrayOpen
+  browserAnnotationsLength
 }: {
   /** Scopes the stored annotations. Stable for the life of the surface. */
   browserTabId: string
@@ -71,7 +70,6 @@ export function useBrowserPageGrabAnnotations({
   webviewRef: MutableRefObject<Electron.WebviewTag | null>
   setBrowserOverlayViewport: Dispatch<SetStateAction<BrowserOverlayViewport>>
   browserAnnotationsLength: number
-  setBrowserAnnotationTrayOpen: Dispatch<SetStateAction<boolean>>
 }): {
   grabIntent: GrabIntent
   startGrabIntent: (nextIntent: GrabIntent) => void
@@ -213,14 +211,12 @@ export function useBrowserPageGrabAnnotations({
       setGrabIntent(nextIntent)
       if (nextIntent === 'copy') {
         setPendingAnnotationPayload(null)
-      } else {
-        setBrowserAnnotationTrayOpen(true)
       }
       if (grab.state === 'idle' || grab.state === 'error' || grabIntent === nextIntent) {
         grab.toggle()
       }
     },
-    [grab, grabIntent, recordFeatureInteraction, setBrowserAnnotationTrayOpen]
+    [grab, grabIntent, recordFeatureInteraction]
   )
 
   // C / S copy the hovered element without clicking: extract via IPC while armed/awaiting, else use the captured payload.
@@ -285,7 +281,6 @@ export function useBrowserPageGrabAnnotations({
       })
       recordFeatureInteraction('browser-annotations')
       setPendingAnnotationPayload(null)
-      setBrowserAnnotationTrayOpen(true)
       showGrabToast(annotationAddedGrabToastMessage(), 'success', payload)
       grab.rearm()
     },
@@ -295,7 +290,6 @@ export function useBrowserPageGrabAnnotations({
       grab,
       pendingAnnotationPayload,
       recordFeatureInteraction,
-      setBrowserAnnotationTrayOpen,
       showGrabToast
     ]
   )

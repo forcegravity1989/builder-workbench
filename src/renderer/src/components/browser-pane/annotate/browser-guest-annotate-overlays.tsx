@@ -67,7 +67,6 @@ export function BrowserGuestAnnotateOverlays({
   const markupTarget = markupPortalContainer ?? containerRef.current
   const {
     browserAnnotations,
-    browserAnnotationTrayOpen,
     annotationTraySendOpen,
     handleAnnotationTraySendOpenChange,
     activeGroupId,
@@ -110,7 +109,7 @@ export function BrowserGuestAnnotateOverlays({
           onCancel={handleCancelPendingBrowserAnnotation}
         />
       ) : null}
-      {browserAnnotations.length > 0 && browserAnnotationTrayOpen ? (
+      {browserAnnotations.length > 0 ? (
         <BrowserPageAnnotationTray
           browserAnnotations={browserAnnotations}
           annotationTraySendOpen={annotationTraySendOpen}

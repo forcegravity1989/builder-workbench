@@ -77,8 +77,7 @@ export function useDocPreviewGuestTools({
     containerRef,
     webviewRef,
     setBrowserOverlayViewport,
-    browserAnnotationsLength: annotationSend.browserAnnotations.length,
-    setBrowserAnnotationTrayOpen: annotationSend.setBrowserAnnotationTrayOpen
+    browserAnnotationsLength: annotationSend.browserAnnotations.length
   })
 
   const { browserAnnotations } = annotationSend
