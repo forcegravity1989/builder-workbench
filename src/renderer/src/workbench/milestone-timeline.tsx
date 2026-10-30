@@ -5,7 +5,7 @@ import { GripVertical, Plus, X } from 'lucide-react'
 import { MilestoneField } from './milestone-field'
 import { MilestoneIconButton } from './milestone-icon-button'
 import { MilestoneVersionRow } from './milestone-version-row'
-import { MilestoneStageBars, MilestoneLegend } from './milestone-stage-bars'
+import { MilestoneStageBars, MilestoneSdlcToolbar } from './milestone-stage-bars'
 import {
   useMilestoneGesture,
   MILESTONE_DAY_WIDTH as width,
@@ -145,17 +145,7 @@ export function MilestoneTimeline(props: Props) {
   const today = milestoneDay(milestoneToday())
   return (
     <>
-      <div className="wb-ml-sdlc-toolbar">
-        <MilestoneLegend />
-        <label className="wb-ml-show-plan">
-          <input
-            type="checkbox"
-            checked={showPlan}
-            onChange={(e) => setShowPlan(e.target.checked)}
-          />
-          显示计划
-        </label>
-      </div>
+      <MilestoneSdlcToolbar showPlan={showPlan} onChange={setShowPlan} />
       <div
         ref={viewport}
         className="wb-ml-scroll"
@@ -237,10 +227,11 @@ export function MilestoneTimeline(props: Props) {
             <MilestoneDayAxis days={days} today={today} canvasWidth={canvasWidth} />
           </div>
           {features.map((f, row) => {
+            const frozen = f.deliveries.some((d) => props.started.has(d.version.cycleId))
             return (
               <div
                 key={f.id}
-                className={`wb-ml-row${showPlan && f.deliveries.some((d) => props.started.has(d.version.cycleId)) ? ' with-baseline' : ''}${rowDrop?.id === f.id ? ` wb-ml-drop-${rowDrop.side}` : ''}`}
+                className={`wb-ml-row${showPlan && frozen ? ' with-baseline' : ''}${rowDrop?.id === f.id ? ` wb-ml-drop-${rowDrop.side}` : ''}`}
                 data-milestone-feature={f.id}
               >
                 <div className="wb-ml-label wb-ml-feature" data-ml-stop-pan>
@@ -358,8 +349,8 @@ export function MilestoneTimeline(props: Props) {
                 {editing && (
                   <div className="wb-ml-row-actions" data-ml-stop-pan>
                     <MilestoneIconButton
-                      label={`移除 ${f.title || '新特性'}`}
-                      disabled={!enabled}
+                      label={frozen ? '已开始制定计划，保留原计划' : `移除 ${f.title || '新特性'}`}
+                      disabled={!enabled || frozen}
                       onClick={() => props.remove(f)}
                     >
                       <X size={14} />

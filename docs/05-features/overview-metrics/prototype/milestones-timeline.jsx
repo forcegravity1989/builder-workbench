@@ -573,7 +573,12 @@ export function Timeline({
               {planning && (
                 <div className="ml-row-actions">
                   <IconAction
-                    label={`移除 ${feature.title || '特性'}`}
+                    label={
+                      feature.deliveries.some((d) => versionById.get(d.versionId)?.started)
+                        ? '已开始制定计划，保留原计划'
+                        : `移除 ${feature.title || '特性'}`
+                    }
+                    disabled={feature.deliveries.some((d) => versionById.get(d.versionId)?.started)}
                     icon={X}
                     onClick={() => onDelete(feature)}
                   />

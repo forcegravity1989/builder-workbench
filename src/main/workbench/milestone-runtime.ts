@@ -1,3 +1,4 @@
+import { frozenMilestoneProblems } from '../../shared/workbench/milestone-freeze'
 import type { Repo } from '../../shared/repo-types'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../shared/execution-host'
 import { CHARTER_BRANCH } from '../../shared/workbench/project-charter'
@@ -21,7 +22,11 @@ import {
   type WorkbenchWorkspaceScope
 } from './workspace-resolver'
 import type { CharterRuntimeHost } from './charter-runtime'
-import type { VersionWorkspacePrepareRuntime } from './version-workspace-prepare'
+import {
+  readMilestoneStarted,
+  recheckMilestoneStarted,
+  type MilestoneStartedRuntime
+} from './milestone-started'
 import { resolveWorkbenchGitExecOptions } from './project-git-routing'
 import { runTrunkBaseline } from './trunk-baseline'
 import { serializeCharterSubmission } from './charter-submit-queue'
@@ -30,7 +35,7 @@ import { createCharterReview } from './charter-create-review'
 import { readMilestoneSnapshot } from './milestone-snapshot'
 import { writeMilestoneFiles } from './milestone-write-files'
 
-type Runtime = CharterRuntimeHost & Pick<VersionWorkspacePrepareRuntime, 'listManagedWorktrees'>
+type Runtime = CharterRuntimeHost & MilestoneStartedRuntime
 const json = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
@@ -42,10 +47,7 @@ export function nativeMilestoneService(runtime: Runtime) {
       throw new Error('此宿主的项目材料编辑尚未接入，请在所属运行环境打开项目；未改动文件')
     }
     const options = resolveWorkbenchGitExecOptions(runtime, resolved.repo)
-    const trees = (await runtime.listManagedWorktrees(`id:${resolved.repo.id}`)).worktrees
-    const started = new Set(
-      trees.flatMap((t) => (t.workbenchVersionBinding ? [t.workbenchVersionBinding.version] : []))
-    )
+    const started = await readMilestoneStarted(runtime, resolved.repo.id)
     const baseline = await runTrunkBaseline(
       resolved.repo.path,
       resolved.repo.worktreeBaseRef ?? null,
@@ -116,7 +118,10 @@ export function nativeMilestoneService(runtime: Runtime) {
         ) {
           throw new Error('发现已有项目材料草案，请刷新后核对；本次输入保留')
         }
-        const problems = milestoneProblems(input)
+        const problems = [
+          ...milestoneProblems(input),
+          ...frozenMilestoneProblems(source.snapshot, input, c.started)
+        ]
         if (problems.length) {
           throw new Error(problems.join('；'))
         }
@@ -209,20 +214,7 @@ export function nativeMilestoneService(runtime: Runtime) {
           contents: source.contents,
           recheck: async () => {
             await c.reauthorize()
-            const active = (
-              await runtime.listManagedWorktrees(`id:${c.repo.id}`)
-            ).worktrees.flatMap((t) =>
-              t.workbenchVersionBinding ? [t.workbenchVersionBinding.version] : []
-            )
-            for (const next of input.versions) {
-              const old = source.plans.get(next.cycleId)
-              if (
-                (!old || old.version !== next.version) &&
-                active.some((v) => v === next.version || v === old?.version)
-              ) {
-                throw new Error('版本刚开始计划，请重新核对身份；没有写入文件')
-              }
-            }
+            await recheckMilestoneStarted(runtime, c.repo, source.snapshot.head, c.options, input)
             const baseline = await runTrunkBaseline(
               c.repo.path,
               c.repo.worktreeBaseRef ?? null,

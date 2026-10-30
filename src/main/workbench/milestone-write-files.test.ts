@@ -1,9 +1,11 @@
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { execFileSync } from 'node:child_process'
 import { expect, it } from 'vitest'
 import { writeMilestoneFiles } from './milestone-write-files'
 import { createMilestoneRecoveryStore } from './milestone-recovery'
+import { readMilestoneSnapshot } from './milestone-snapshot'
 
 it('preserves conflicting or unsafe milestone materials and client recovery snapshots', async () => {
   const root = await mkdtemp(join(tmpdir(), 'bw-milestone-cas-'))
@@ -101,6 +103,45 @@ it('preserves conflicting or unsafe milestone materials and client recovery snap
     await writeFile(join(recoveryDirectory, recoveryFile), 'broken')
     await expect(restarted.read('project')).rejects.toThrow()
     expect(await readFile(join(recoveryDirectory, recoveryFile), 'utf8')).toBe('broken')
+    const repo = join(root, 'freeze-history')
+    const planPath = join(repo, '.bw/planning/v1')
+    await mkdir(planPath, { recursive: true })
+    const git = (args: string[]) =>
+      execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim()
+    git(['init', '-b', 'main'])
+    const plan = {
+      schema_version: 3,
+      version: 'v1',
+      cycleId: 'old',
+      summary: { progress: '', risks: '' },
+      goals: [],
+      tasks: []
+    }
+    await writeFile(join(planPath, 'data.json'), JSON.stringify(plan))
+    const commit = () => {
+      git(['add', '.bw'])
+      git([
+        '-c',
+        'user.name=fixture',
+        '-c',
+        'user.email=fixture@example.invalid',
+        'commit',
+        '-m',
+        'plan material'
+      ])
+      return git(['rev-parse', 'HEAD'])
+    }
+    commit()
+    git(['branch', 'bw/v1/plan'])
+    await writeFile(join(planPath, 'data.json'), JSON.stringify({ ...plan, cycleId: 'current' }))
+    const head = commit()
+    expect(
+      (await readMilestoneSnapshot(repo, head, {}, new Set())).snapshot.versions[0].started
+    ).toBe(false)
+    git(['branch', '-f', 'bw/v1/plan', head])
+    expect(
+      (await readMilestoneSnapshot(repo, head, {}, new Set())).snapshot.versions[0].started
+    ).toBe(true)
   } finally {
     await rm(root, { recursive: true, force: true })
   }

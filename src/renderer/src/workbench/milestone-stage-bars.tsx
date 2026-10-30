@@ -23,6 +23,24 @@ export function MilestoneLegend() {
   )
 }
 
+export function MilestoneSdlcToolbar({
+  showPlan,
+  onChange
+}: {
+  showPlan: boolean
+  onChange(value: boolean): void
+}) {
+  return (
+    <div className="wb-ml-sdlc-toolbar">
+      <MilestoneLegend />
+      <label className="wb-ml-show-plan">
+        <input type="checkbox" checked={showPlan} onChange={(e) => onChange(e.target.checked)} />
+        显示计划
+      </label>
+    </div>
+  )
+}
+
 export function MilestoneStageBars({
   feature,
   origin,
@@ -55,7 +73,7 @@ export function MilestoneStageBars({
           <Fragment key={delivery.id}>
             {frozen && (
               <span className="wb-ml-actual-unknown" style={{ left: x(delivery.stages[0].start) }}>
-                实际阶段未知
+                实际进度未接入
               </span>
             )}
             {(!frozen || showPlan) && (

@@ -6,6 +6,7 @@ import {
   type PlanningMaterial
 } from '../../shared/workbench/version-planning-material'
 import { MaterialVersion } from '../../shared/workbench/version-material-common'
+import { versionFlowBranch } from '../../shared/workbench/version-workspace-prepare'
 import {
   MILESTONES_PATH,
   MilestoneMaterialSchema,
@@ -19,6 +20,23 @@ export async function readMilestoneSnapshot(
   options: { wslDistro?: string },
   started: Set<string>
 ) {
+  const refs = new Map(
+    (
+      await gitExecFileAsync(
+        [
+          'for-each-ref',
+          '--format=%(refname) %(objectname)',
+          'refs/heads/bw/',
+          'refs/remotes/origin/bw/'
+        ],
+        { ...options, cwd: repoPath }
+      )
+    ).stdout
+      .trim()
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => line.trim().split(' ') as [string, string])
+  )
   const files = (
     await gitExecFileAsync(
       ['ls-tree', '-r', '-z', '--name-only', head, '--', '.bw/planning', MILESTONES_PATH],
@@ -64,11 +82,37 @@ export async function readMilestoneSnapshot(
         throw new Error('版本目录、身份不一致或重复')
       }
       plans.set(plan.cycleId, plan)
+      let prepared = false
+      const flow = versionFlowBranch(version, 'plan')
+      for (const ref of flow ? [`refs/heads/${flow}`, `refs/remotes/origin/${flow}`] : []) {
+        const oid = refs.get(ref)
+        if (!oid) {
+          continue
+        }
+        const prior = await readGitBlobAtOidPath(repoPath, oid, path, options)
+        if (prior.failed) {
+          throw new Error('未能核对版本计划来源，不能判为尚未开始')
+        }
+        if (!prior.exists || prior.isBinary) {
+          continue
+        }
+        const parsed = PlanningMaterialSchema.safeParse(JSON.parse(prior.content))
+        // A retained native plan ref survives worktree removal; names alone never prove identity.
+        if (
+          parsed.success &&
+          parsed.data.version === version &&
+          parsed.data.cycleId === plan.cycleId
+        ) {
+          prepared = true
+          break
+        }
+      }
       snapshot.versions.push({
         version,
         cycleId: plan.cycleId,
         ...(plan.timeWindow ? { timeWindow: plan.timeWindow } : {}),
         started:
+          prepared ||
           started.has(version) ||
           Boolean(
             plan.goals.length ||

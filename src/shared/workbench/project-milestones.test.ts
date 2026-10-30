@@ -1,3 +1,4 @@
+import { frozenMilestoneProblems, restoreFrozenMilestones } from './milestone-freeze'
 import { expect, it } from 'vitest'
 import {
   defaultMilestoneStages,
@@ -116,6 +117,57 @@ it('keeps planning dates, precise version identity and snapshots through schedul
   )
   const earlyMaintain = adjustMilestoneDelivery(before, 'f1', 'f1-1', 'move', 0, -25)
   expect(milestoneProblems(earlyMaintain).join()).toContain('Maintain 不能早于')
+  const frozen = {
+    ...before,
+    head: 'a',
+    revision: 'b',
+    problems: [],
+    versions: before.versions.map((v) => ({ ...v, started: v.cycleId === 'one' }))
+  }
+  expect(frozenMilestoneProblems(frozen, before)).toEqual([])
+  expect(frozenMilestoneProblems(frozen, shifted).join()).toContain('日期已锁定')
+  expect(frozenMilestoneProblems(frozen, resized).join()).toContain('原计划须保留')
+  expect(frozenMilestoneProblems(frozen, earlyMaintain)).toEqual([])
+  const renamed = structuredClone(before)
+  renamed.material.features.reverse()
+  renamed.material.features[0].title = '新的宏观描述'
+  expect(frozenMilestoneProblems(frozen, renamed)).toEqual([])
+  renamed.material.features.pop()
+  expect(frozenMilestoneProblems(frozen, renamed).join()).toContain('不能新增、移除或调整阶段')
+  const mixed = adjustMilestoneDelivery(resized, 'f1', 'f1-1', 'end', 0, -0.5)
+  mixed.material.features[0].owner = '新的负责人'
+  const restored = restoreFrozenMilestones(frozen, mixed)
+  expect(frozenMilestoneProblems(frozen, restored)).toEqual([])
+  expect(restored.material.features[0].owner).toBe('新的负责人')
+  expect(restored.material.features[0].deliveries[1]).toEqual(
+    mixed.material.features[0].deliveries[1]
+  )
+  expect(restoreFrozenMilestones(frozen, renamed).material.features).toHaveLength(2)
+  const reassigned = structuredClone(before)
+  reassigned.material.features[0].deliveries[0].version = { version: 'v2', cycleId: 'two' }
+  reassigned.material.features[0].deliveries[1].version = { version: 'v1', cycleId: 'one' }
+  const restoredAssignment = restoreFrozenMilestones(frozen, reassigned)
+  expect(restoredAssignment.material.features[0].deliveries).toEqual(
+    before.material.features[0].deliveries
+  )
+  expect(milestoneProblems(restoredAssignment)).toEqual([])
+  expect(
+    restoreFrozenMilestones(frozen, earlyMaintain).material.features[0].deliveries[0].stages[0]
+      .phase
+  ).toBe('Plan')
+  const newMixed = structuredClone(before)
+  newMixed.material.features.push({ ...structuredClone(before.material.features[0]), id: 'new' })
+  expect(restoreFrozenMilestones(frozen, newMixed).material.features.map((f) => f.id)).toEqual([
+    'f1',
+    'f2'
+  ])
+  expect(
+    frozenMilestoneProblems(
+      { ...frozen, versions: frozen.versions.map((v) => ({ ...v, started: false })) },
+      resized,
+      new Set(['v1'])
+    ).join()
+  ).toContain('原计划须保留')
   draft.material.features[0].deliveries[0].version.cycleId = 'wrong-cycle'
   expect(milestoneProblems(draft).join()).toContain('请安排有日期')
   const empty: MilestoneDraft = {
