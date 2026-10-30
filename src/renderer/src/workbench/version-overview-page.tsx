@@ -177,14 +177,6 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
         const grouped = features.features.filter((feature) =>
           feature.members.some((member) => member.reference.goalId === goal.goalId)
         )
-        const memberKeys = new Set(
-          grouped.flatMap((feature) =>
-            feature.members
-              .filter((m) => m.reference.goalId === goal.goalId)
-              .map((m) => taskKey(m.reference))
-          )
-        )
-        const others = references.filter((ref) => !memberKeys.has(taskKey(ref))).length
         const result = acceptanceDocument?.results.find((row) => row.goalId === goal.goalId)
         return (
           <section key={goal.goalId} className="bwo-goal">
@@ -249,14 +241,6 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               </div>
             ))}
             {features.loading && <p className="bwo-muted">正在读取特性与关联成果…</p>}
-            {!features.loading && grouped.length > 0 && others > 0 && (
-              <p className="bwo-muted mt-3">
-                其他关联任务 · {others} 项{' '}
-                <button className="bwo-link ml-3" onClick={() => tasks(goal)}>
-                  查看目标全部任务 ↗
-                </button>
-              </p>
-            )}
           </section>
         )
       })}

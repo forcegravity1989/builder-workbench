@@ -41,9 +41,6 @@ export function OverviewSections({
             )
             const tasks = plan.tasks.filter((t) => t.goalId === goal.goalId)
             const goalFeatures = requirements.filter((f) => f.goalId === goal.goalId)
-            const otherCount = tasks.filter(
-              (t) => !goalFeatures.some((f) => f.id === String(t.number))
-            ).length
             return (
               <section
                 className="ov-section ov-goal"
@@ -90,14 +87,6 @@ export function OverviewSections({
                     openVersion={openVersion}
                   />
                 ))}
-                {goalFeatures.length > 0 && otherCount > 0 && (
-                  <div className="ov-other-tasks">
-                    <span>其他关联任务 · {otherCount} 项</span>
-                    <button className="ov-link" onClick={() => native('目标任务', goal)}>
-                      查看本目标全部 {tasks.length} 项任务 ↗
-                    </button>
-                  </div>
-                )}
               </section>
             )
           })}
