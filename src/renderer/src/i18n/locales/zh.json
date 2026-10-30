@@ -1925,6 +1925,7 @@
         "codehubLoadedScope": "搜索和筛选仅作用于已加载的任务",
         "codehubLoadMore": "加载更多",
         "codehubAssigned": "负责人已更新",
+        "codehubAddLabel": "添加标签…",
         "codehubLabelsSaved": "标签已更新",
         "codehubNoMembers": "未找到项目成员。",
         "ghLabelsUpdateFailed": "更新标签失败。"

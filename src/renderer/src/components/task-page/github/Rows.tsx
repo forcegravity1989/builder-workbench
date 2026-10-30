@@ -186,6 +186,17 @@ export function TaskPageGitHubRows({
                       <span className="truncate">{attachedWorkspaceLabel}</span>
                     </span>
                   ) : null}
+                  {/* PR 视图无标签列（#457 只给 issue 视图加列），标签仍走标题下 pill。 */}
+                  {showPRManagementColumns
+                    ? item.labels.slice(0, 3).map((label) => (
+                        <span
+                          key={label}
+                          className="rounded-full border border-border/40 bg-muted/30 px-1.5 py-0 text-[10px] text-muted-foreground"
+                        >
+                          {label}
+                        </span>
+                      ))
+                    : null}
                 </div>
               </div>
 

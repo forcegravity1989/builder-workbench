@@ -65,9 +65,6 @@ export function CodeHubLabelsCell({
       const nextLabels = isOn
         ? labels.filter((name) => name.toLowerCase() !== label.toLowerCase())
         : [...labels, label]
-      if (nextLabels.length === labels.length && !isOn) {
-        return
-      }
       setPendingLabel(label)
       try {
         await codehubApi.updateIssueLabels({
