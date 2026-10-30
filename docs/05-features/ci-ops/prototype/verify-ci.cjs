@@ -1,5 +1,5 @@
 // #461 CI 部署原型 DOM 断言验证：进入即全量形态（无场景切换）、竖排四阶段六步流程列表
-// （阶段标签居中加粗、组间虚线分割、数字标序、每步读数、块级日志开关）、两种模式与版本选择、统一配置入口与配置事实、
+// （阶段标签居中加粗、组间虚线分割、数字标序、每步读数、每步命令详情、块级日志开关）、两种模式与版本选择、统一配置入口与配置事实、
 // 执行瞬态与逐步点亮（读数随完成进板面）、记录区默认收起与展开、报错筛选、
 // 递交 prompt 一致性、console/page error 监听。
 // 截图只存临时目录供人查看，不进上下文（AGENTS 硬约束）。
@@ -141,6 +141,21 @@ const check = (name, ok) => {
   await page.click('.ci-flow-logtoggle')
   check('再点收起流程块日志', (await page.locator('.ci-flow-log').count()) === 0)
 
+  // 命令详情：每步背后将执行的命令页内回显（读 deploy.sh 步骤分段），纠错核对不经会话
+  check('流程块命令开关存在', (await page.locator('.ci-flow-cmdtoggle').count()) === 1)
+  check('命令详情默认收起', (await page.locator('.ci-flow-cmd').count()) === 0)
+  await page.click('.ci-flow-cmdtoggle')
+  const cmdText = (await page.locator('.ci-flow-cmd').allTextContents()).join('|')
+  check(
+    '展开后每步命令回显（6 步，上线含 scp/ssh/curl）',
+    (await page.locator('.ci-flow-cmd').count()) === 6 &&
+      cmdText.includes('scp dist/app-1.4.201') &&
+      cmdText.includes('ssh deploy@192.168.1.30') &&
+      cmdText.includes('curl -fsS http://192.168.1.30:8025/healthz')
+  )
+  await page.click('.ci-flow-cmdtoggle')
+  check('再点收起命令详情', (await page.locator('.ci-flow-cmd').count()) === 0)
+
   // 记录区降位：默认收起为一行摘要，展开回显完整列表
   check('记录区默认收起（无记录行）', (await page.locator('.ci-record').count()) === 0)
   const counts = await page.locator('.ci-records-counts').textContent()
@@ -234,6 +249,13 @@ const check = (name, ok) => {
     '配置事实切换为开发项（启动命令，无服务器信息）',
     devFacts.includes('启动命令 已配置') && !devFacts.includes('服务器信息')
   )
+  await page.click('.ci-flow-cmdtoggle')
+  const devCmds = (await page.locator('.ci-flow-cmd').allTextContents()).join('|')
+  check(
+    '开发命令详情换本地口径（npm start/netstat）',
+    devCmds.includes('npm start') && devCmds.includes('netstat')
+  )
+  await page.click('.ci-flow-cmdtoggle')
   await page.click('#deploy .ci-actions button:has-text("再次部署")')
   check(
     '开发递交 prompt 带 --mode=dev',
@@ -281,10 +303,11 @@ const check = (name, ok) => {
   await page.click('.g3-demo-bar button:has-text("设计说明")')
   const notes = await page.locator('.g3-design-notes').textContent()
   check(
-    '设计说明展开（含统一配置入口、竖排读数与全量呈现）',
+    '设计说明展开（含统一配置入口、竖排读数、命令详情与全量呈现）',
     notes.includes('定位与边界') &&
       notes.includes('统一配置入口') &&
       notes.includes('每步读数') &&
+      notes.includes('每步将执行的命令') &&
       notes.includes('进入即见全部')
   )
 

@@ -123,6 +123,34 @@ export const stepReadings = (mode, version) =>
         record: '已写 .bw/ci/records.jsonl'
       }
 
+// 每步将执行的命令（演示数据，对应 deploy.sh 按步分段）：流程块「命令」开关页内回显，纠错核对不经会话。
+export const stepCommands = (mode, version) =>
+  mode === 'dev'
+    ? {
+        pkg: ['test -n "$BW_CI_START_CMD"  # 启动命令已配置'],
+        precheck: ['netstat -ano | findstr :8025'],
+        cleanup: ['taskkill /F /PID $OLD_PID 2>/dev/null || true', 'sleep 1  # 等端口释放'],
+        deploy: ['npm start > .bw/ci/logs/dev-server.log 2>&1 &'],
+        verify: ['curl -fsS http://127.0.0.1:8025/healthz'],
+        record: ['printf \'%s\\n\' "$record" >> .bw/ci/records.jsonl']
+      }
+    : {
+        pkg: [
+          `test -r "dist/app-${version}-20261029_0930.7z" && du -h "dist/app-${version}-20261029_0930.7z"`
+        ],
+        precheck: ['ssh deploy@192.168.1.30 "df -h /opt && test -d /opt/app"'],
+        cleanup: ['ssh deploy@192.168.1.30 "systemctl stop app"'],
+        deploy: [
+          `scp dist/app-${version}-20261029_0930.7z deploy@192.168.1.30:/opt/app/`,
+          `ssh deploy@192.168.1.30 "cd /opt/app && tar xf app-${version}-20261029_0930.7z && systemctl restart app"`
+        ],
+        verify: [
+          'curl -fsS http://192.168.1.30:8025/healthz',
+          'ssh deploy@192.168.1.30 "cat /opt/app/VERSION"  # 版本核对'
+        ],
+        record: ['printf \'%s\\n\' "$record" >> .bw/ci/records.jsonl']
+      }
+
 // 最近一次执行的整段日志（演示数据）：流程块头「日志」开关页内回显。
 export const successLog = (mode, version) =>
   mode === 'dev'

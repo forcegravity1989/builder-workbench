@@ -136,7 +136,7 @@
 }
 
 /* 竖排流程列表（板面核心）：最近一次执行的每步状态与读数自上而下排布；
-   徽章竖向连线随完成变绿，块头带最近一次读数与整段日志开关。 */
+   徽章竖向连线随完成变绿，块头带最近一次读数、「命令」与整段日志开关。 */
 .ci-flow-block {
   display: flex;
   flex-direction: column;
@@ -162,8 +162,9 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+/* 块头开关：「命令」（每步将执行的命令，读脚本分段）与「日志」（最近一次整段输出）同一 pill 样式。 */
+.ci-flow-cmdtoggle,
 .ci-flow-logtoggle {
-  margin-left: auto;
   font: inherit;
   font-size: 11px;
   padding: 2px 10px;
@@ -173,6 +174,9 @@
   color: var(--muted-foreground);
   cursor: pointer;
   white-space: nowrap;
+}
+.ci-flow-cmdtoggle {
+  margin-left: auto;
 }
 .ci-flow-log {
   margin: 0;
@@ -187,6 +191,20 @@
   color: var(--color-text-muted, #767676);
   max-height: 220px;
   overflow-y: auto;
+}
+/* 每步命令详情：deploy.sh 对应步骤分段将执行的命令（纠错核对），「命令」开关展开，默认收起。 */
+.ci-flow-cmd {
+  margin: 3px 0 0;
+  padding: 5px 8px;
+  border: 1px dashed var(--color-hairline, rgba(128, 128, 128, 0.3));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--muted-foreground, #767676) 4%, transparent);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted, #767676);
 }
 .ci-flow-list {
   display: flex;

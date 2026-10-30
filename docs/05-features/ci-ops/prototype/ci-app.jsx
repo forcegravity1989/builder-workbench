@@ -10,6 +10,7 @@ import {
   initialRecords,
   PROMPTS,
   stepReadings,
+  stepCommands,
   successLog,
   dotClass,
   moduleStateText,
@@ -35,11 +36,14 @@ const STATUS_TEXT = {
 }
 
 // 竖排流程列表（板面核心）：最近一次执行的每步状态与一行读数自上而下排布；
-// 执行中由 live（idx+done+mode+version）驱动逐步点亮，读数随完成进板面。
-function FlowList({ state, live, mode }) {
+// 执行中由 live（idx+done+mode+version）驱动逐步点亮，读数随完成进板面；
+// 「命令」开关按 deploy.sh 步骤分段回显每步将执行的命令（纠错核对不经会话）。
+function FlowList({ state, live, mode, version }) {
   const [logOpen, setLogOpen] = useState(false)
+  const [cmdOpen, setCmdOpen] = useState(false)
   const last = state.last
   const liveReadings = live ? stepReadings(live.mode, live.version) : null
+  const commands = stepCommands(live ? live.mode : mode, live ? live.version : version)
   const statusOf = (step) => {
     const prior = state.steps?.[step.id]
     if (!live) {
@@ -68,6 +72,14 @@ function FlowList({ state, live, mode }) {
       <div className="ci-flow-head">
         <span className="ci-flow-head-time">{headTime}</span>
         <span className="ci-flow-head-info">{headInfo}</span>
+        <button
+          className="ci-flow-cmdtoggle"
+          aria-expanded={cmdOpen}
+          title="页内回显 deploy.sh 每步将执行的命令（按脚本步骤分段读出，纠错核对不经会话）"
+          onClick={() => setCmdOpen(!cmdOpen)}
+        >
+          {cmdOpen ? '收起命令' : '命令'}
+        </button>
         {last?.log && !live && (
           <button
             className="ci-flow-logtoggle"
@@ -108,6 +120,7 @@ function FlowList({ state, live, mode }) {
                       {status === 'skip' && <span className="ci-flow-status">跳过</span>}
                     </div>
                     {reading && <div className="ci-flow-reading">{reading}</div>}
+                    {cmdOpen && <pre className="ci-flow-cmd">{commands[step.id].join('\n')}</pre>}
                   </div>
                 </div>
               )
@@ -212,7 +225,9 @@ function ModuleCard({
             </ActionButton>
           </div>
         )}
-        {state.state !== 'gray' && <FlowList state={state} live={live} mode={mode} />}
+        {state.state !== 'gray' && (
+          <FlowList state={state} live={live} mode={mode} version={version} />
+        )}
         {state.state === 'gray' && <p className="ci-hint">主分支未见脚本</p>}
         <div className="ci-actions">
           {buttons.map((b) => (
@@ -425,7 +440,7 @@ function App() {
     <div className={`g3-app ${compact ? 'constrained' : ''}`}>
       <div className="g3-demo-bar">
         <strong>#461 评审草案 · CI 部署</strong>
-        <span>两种模式 · 竖排六步流程（每步读数） · 记录默认收起</span>
+        <span>两种模式 · 竖排六步流程（每步读数与命令详情） · 记录默认收起</span>
         <button onClick={() => setCompact(!compact)}>{compact ? '恢复宽度' : '窄板'}</button>
         <button
           onClick={() => {
@@ -467,7 +482,9 @@ function App() {
             + failedStep
             进记录；「从失败步重试」只重跑失败步及其后步骤，已完成步不重复执行（清场过的不用再清）。脚本按步骤标记协议输出
             [ci-step]
-            进度，板面流程列表据此自上而下逐步点亮，每步读数随完成进板面——把会话里模型的试错（端口冲突排查十分钟）变成脚本的确定性步骤（清场秒级）。竖排流程列表是板面核心：块头给最近一次读数与整段日志开关，每步徽章标序加一行读数事实；黄态（有脚本无记录）显示六步骨架。
+            进度，板面流程列表据此自上而下逐步点亮，每步读数随完成进板面——把会话里模型的试错（端口冲突排查十分钟）变成脚本的确定性步骤（清场秒级）。竖排流程列表是板面核心：块头给最近一次读数、「命令」与整段日志开关，每步徽章标序加一行读数事实；「命令」开关按
+            deploy.sh
+            步骤分段回显每步将执行的命令（随模式），纠错核对不经会话；黄态（有脚本无记录）显示六步骨架。
           </p>
           <p>
             <strong>灯与记录</strong>
