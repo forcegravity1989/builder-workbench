@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import TaskProjectSourceCombobox from '@/components/task-project-source-combobox'
-import { normalizeTaskRepoSelection } from '@/components/task-page-default-repo-selection'
 import { LoaderCircle, Plus, RefreshCw, Search, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { isCodeHubGitRemote } from '../../../../../shared/codehub'
@@ -38,11 +37,11 @@ export function TaskPageCodeHubFilters({
     setCodehubLabels,
     selectedRepos,
     updateSettings,
-    eligibleRepos,
+    normalizeRepoSelection,
     repoSelection,
     setRepoSelection,
     taskPickerGroups,
-    taskPickerRepos,
+    allTaskRepoSelection,
     getTaskPickerRepoHostLabel
   } = model
   const [createOpen, setCreateOpen] = useState(false)
@@ -114,7 +113,7 @@ export function TaskPageCodeHubFilters({
             selected={repoSelection}
             getRepoHostLabel={getTaskPickerRepoHostLabel}
             onChange={(next) => {
-              const normalized = normalizeTaskRepoSelection(eligibleRepos, next)
+              const normalized = normalizeRepoSelection(next)
               if (model.workbenchScope) {
                 model.clearWorkbenchProject()
               }
@@ -134,7 +133,7 @@ export function TaskPageCodeHubFilters({
               if (model.workbenchScope) {
                 model.clearWorkbenchProject()
               }
-              setRepoSelection(new Set(taskPickerRepos.map((repo) => repo.id)))
+              setRepoSelection(allTaskRepoSelection)
               if (!model.workbenchScope) {
                 void updateSettings({ defaultRepoSelection: null }).catch(() => {
                   toast.error(

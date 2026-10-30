@@ -11,6 +11,7 @@ export type TaskProjectPickerGroup = {
   projectKey: string
   repo: Repo
   sources: Repo[]
+  selectionKey?: 'host'
 }
 
 // Why: a repo whose identity probe has not answered (offline SSH host, cold

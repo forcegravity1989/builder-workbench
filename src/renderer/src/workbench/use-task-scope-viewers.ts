@@ -93,7 +93,7 @@ export function useTaskScopeViewers(
         const args = { repoId: repo.id, repoPath: repo.path }
         const login =
           model.taskSource === 'codehub'
-            ? (await codehubApi.viewer(args)).username
+            ? (await codehubApi.viewer(args, repo)).username
             : (
                 await lookupGitHubViewerForSource({
                   ...args,

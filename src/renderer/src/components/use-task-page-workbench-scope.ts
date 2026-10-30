@@ -199,7 +199,15 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
 
   const selectedRepoKey = [...model.repoSelection].sort().join('|')
   const codehubGoalQuery = buildCodeHubGoalQuery(model, goalScope)
-  const goalViewers = useTaskScopeViewers(model, result, !!goalScope && goalIssueView)
+  const goalViewers = useTaskScopeViewers(
+    {
+      ...model,
+      repoSelection: model.selectedNativeRepoIds,
+      repoMap: new Map(model.selectedRepos.map((repo) => [repo.id, repo]))
+    },
+    result,
+    !!goalScope && goalIssueView
+  )
   const { filterProblem } = resolveWorkbenchTaskScopeFilters({
     active: !!goalScope && goalIssueView,
     taskSource: model.taskSource,
@@ -212,7 +220,7 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
     }
     const { githubPages, codehubItems } = projectWorkbenchTaskScope({
       result,
-      selectedRepoIds: model.repoSelection,
+      selectedRepoIds: model.selectedNativeRepoIds,
       githubIssueView: model.activeGithubTaskKind !== 'prs',
       githubQuery: model.appliedTaskSearch,
       viewerLogins: goalViewers.logins,

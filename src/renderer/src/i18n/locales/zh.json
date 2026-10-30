@@ -14117,6 +14117,7 @@
               "hostCount": "{{value0}} 个主机",
               "searchProjects": "搜索项目...",
               "noMatches": "没有匹配搜索的项目。",
+              "sourceUnavailable": "所选项目来源暂不可用",
               "chooseSource": "选择任务来源"
             }
           }

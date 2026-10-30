@@ -1,3 +1,5 @@
+import type { ExecutionHostId } from './execution-host'
+
 export type CodeHubTaskItem = {
   type: 'issue' | 'mr'
   iid: number
@@ -14,6 +16,7 @@ export type CodeHubTaskItem = {
   mergedAt?: string | null
   repoId?: string
   repoPath?: string
+  executionHostId?: ExecutionHostId
   host?: string
   project?: string
 }
