@@ -341,6 +341,7 @@ export function AcceptanceBoardContent({
           )}
           <AcceptanceMinutesSection
             document={document}
+            goals={plan?.document.goals ?? []}
             disabled={board.readOnly}
             edit={board.editDocument}
             onSendAction={sendAction}

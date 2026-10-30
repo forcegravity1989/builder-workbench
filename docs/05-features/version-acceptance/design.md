@@ -25,7 +25,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 | `version-planning/PlanningMinutesSection.tsx`（含内部 MinutesCard）      | `version-acceptance/AcceptanceMinutesSection.tsx`  | 两屏共识/遗留文本与整份人工确认独立实现，无逐项闭环控件。验收 `document` 可选：原生会话实际打开后即展示四区，无材料时本节是只读空纪要并保留原生发送入口，不可编辑或确认。归档前每项已落实或关联真实跟进 Issue，由助手核对、PR 人审；整理 prompt 只承载触发意图，规则归 Skill，不新增材料协议。 |
 | `version-planning/PlanningArchiveCard.tsx`                               | `version-acceptance/AcceptanceArchiveCard.tsx`     | 文案改验收归档；发布按钮并入本区（见「发布」节）。打开原生 PR 页不拷贝——两屏都 import 共用 `version-cycle/open-archive-pr.ts`（已从计划屏目录移到共用层）                                                                                                                                      |
 | `version-planning/version-planning.css` 中验收需要的板面壳/分区/纪要样式 | `version-acceptance/acceptance.css`                | 只拷验收实际用到的选择器，类名前缀改 `acc-`，不整表复制；计划屏特有样式（上版回顾、目标卡编辑态、指标承诺）不拷。**批注与板面基础件的样式不在这里**——它们随共用组件走 `annotations/annotations.css` 与 `board-ui.css`，由组件自己 import，两屏自动同源                                         |
-| `version-planning/PlanningGoals.tsx` 中目标行只读裁剪形态                | `version-acceptance/AcceptanceGoalRows.tsx`        | 目标句/负责人/验收标准只读来自固定计划；行尾单个未判定/达成/不达成状态，沿中性/警示色，清除回未判定。Issue 按未关闭、未知、已关闭稳定分组并分别计数；遗留是未关闭的人工标记子集，标签仅成功读回才显示，关闭后保留历史备注只读。                                                                |
+| `version-planning/PlanningGoals.tsx` 中目标行只读裁剪形态                | `version-acceptance/AcceptanceGoalRows.tsx`        | 目标句/负责人/验收标准只读来自固定计划；计数后行内单个未判定/达成/不达成状态（#471 批注6 以真机为准），沿中性/警示色，清除回未判定。Issue 按未关闭、未知、已关闭稳定分组并分别计数；遗留是未关闭的人工标记子集，标签仅成功读回才显示，关闭后保留历史备注只读。                                                                |
 
 **直接 import，不拷贝**（这些不在计划屏目录下，是 #399 建在共用层、注释明写供两屏使用的模块，或 v9.5 起就是两屏共用的壳层）：
 
@@ -45,14 +45,15 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 **新增**：
 
-- `minutes?: AcceptanceMeetingMinutes` —— 与计划侧 `PlanMeetingMinutes` 同形但**不含闭环位**：`consensus: string[]`、`followups: Array<{ id: string; text: string }>`、`confirmed: boolean`、`confirmedAt?`、`sources?`、`updatedAt?`。followup 的 `id` 用 `crypto.randomUUID()` 稳定身份，人工增删不让既有编号漂移；板面按数组序显示 M1…Mn。不给验收材料留恒假的 `closed` 字段。
+- `minutes?: AcceptanceMeetingMinutes` —— 与计划侧 `PlanMeetingMinutes` 同形但**不含闭环位**：`consensus: string[]`、`followups: Array<{ id: string; text: string }>`、`confirmed: boolean`、`confirmedAt?`、`sources?`、`updatedAt?`。followup 的 `id` 用 `crypto.randomUUID()` 稳定身份，人工增删不让既有编号漂移；板面按数组序显示 M1…Mn。不给验收材料留恒假的 `closed` 字段。条目按目标组织（#471）：带「G<n> ·」目标前缀，读视图按前缀分组到各目标小标题下，协议仍是平铺清单（呈现级实现，协议级目标绑定留给后续会议相关 Issue）。
 - `demoEnv?: { kind: 'url'; label?: string; url: string } | { kind: 'launched'; detail: string }` —— 演示环境两形态。web 服务类写 `kind:'url'`，可附一句系统名 `label`：板面「演示环境」行显示系统名、缺省回退 URL，点击经内置 Orca 浏览器打开；桌面应用类写 `kind:'launched'`，板面渲染状态文字，不伪造链接。缺失即未部署，如实显示未部署与下一步。
+- `meeting?: { title: string; time: string; id?: string; link?: string }` —— 版本级预订会议（#471）。模型生成完整预览、**经人确认后**用 `welink-cli meeting create` 创建（默认开启 AI 听）并写回；缺省即未预订，已预订不重复订，改期或取消同样先预览后执行。同步会议纪要只把材料纪要按固定样式（按目标分节）写入该会议的纪要草稿，最终发送由人在会议系统手动完成。
 - 版本级交付件不再按目标记录：`results[].deliveries` 退役，版本级交付件与演示环境由 `demoEnv` 与制品登记承载。
 - `workflow.release?: { tag: string }`（#462 修订 v10「板面不呈现发布状态」决策）——发布执行后由模型把 tag 引用写入材料作**读回键**，同 `archivePr` 的「引用落材料、读数现算」模式：读数（是否已发布、发布时间、Release 地址、资产）不落材料，正本在 Git 标签与 provider Release 页；板面按该键现算读回（见「发布」节），总览仍不显示「已发布」。计划侧 schema 不加 `release`，发布只属验收流程。
 
 `AcceptanceWorkflowStateSchema` 其余维持 `stage/updatedAt/archivePr`，`stage` 枚举维持 `preparation/showcase/archive` 三值（界面四步与材料三阶段不同名、不映射，界面不渲染灯）。
 
-**验收证据报告登记**：复用既有 `preparedArtifacts` 与 `Artifact.kind='verification'`（枚举与总览的「验证报告」渲染早已存在），不另立顶层字段。`Artifact.candidateRef` 必填，因此报告必须在候选固定之后生成——与技能 SOP 的顺序一致（固定候选 → 出包 → 部署 → 采集证据生成报告）。报告文件落 `.bw/planning/<版本>/`，`location` 存相对路径，截图落同目录 `shots/`。
+**验收证据报告登记**：复用既有 `preparedArtifacts` 与 `Artifact.kind='verification'`（枚举与总览的「验证报告」渲染早已存在），不另立顶层字段。`Artifact.candidateRef` 必填，因此报告必须在候选固定之后生成——与技能 SOP 的顺序一致（固定候选 → 出包 → 部署 → 预订会议 → 聚合报告）。报告文件落 `.bw/planning/<版本>/`，`location` 存相对路径，截图落同目录 `shots/`。
 
 **沿用**：`candidateRef`、`preparedArtifacts`（`kind=package`，含 checksum/location/实际命令）、`taskSnapshot`、`results[].decision`、`results[].note`、`results[].nextStep`、`results[].issueNotes`、`results[].issueMarks.carry`、`planRef`、`workflow`。
 
@@ -137,6 +138,6 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 协议纯函数与数据契约用 Vitest 覆盖，只立两类看护：新增的纪要守卫（模型通道拒写已确认节、撤销走人工通道）、演示环境两形态与报告登记的解析、`workflow.release` 读回键解析（验收侧可带、计划侧拒绝，随既有解析用例扩展）、退役字段原样保留读回、`derivePriorCarryovers` 改读纪要后的推导。界面渲染、布局、文案、交互序列与 hook 装配不立单测，交真壳与验收点 E2E。叠层单测受执行例数 ratchet 约束（基线见 `config/vitest-count-baseline.txt`），退役的 `acceptance-model.test.ts`/`acceptance-task-evidence.test.ts`/`acceptance-version-choices.test.ts` 中失效用例同批删除以对冲新增。
 
-行为正确性靠真壳：`pnpm run dev:workbench` 起独立 profile，验四区导航与滚动高亮、批注模式全流程（含纪要区排除与 Esc 分层）、行尾单个人工结论选择、清除与中性/警示色、纪要编辑态与确认/撤销、部署两形态读回、报告打开、归档原生 PR 页、发布注入、杀进程重启读回一致。交付附验证报告，本次新增或修改的判据内嵌真壳截图四件套，截图推永不合入的 `shots/<分支名>` 并钉 SHA。上述为真实旅程待验要求。#439 已追加授权补验本地与远端 CI，实际结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)；隔离自动冒烟与静态接线均不替代上述真实旅程验收。
+行为正确性靠真壳：`pnpm run dev:workbench` 起独立 profile，验四区导航与滚动高亮、批注模式全流程（含纪要区排除与 Esc 分层）、计数后行内单个人工结论选择、清除与中性/警示色、纪要编辑态与确认/撤销、部署两形态读回、报告打开、归档原生 PR 页、发布注入、杀进程重启读回一致。交付附验证报告，本次新增或修改的判据内嵌真壳截图四件套，截图推永不合入的 `shots/<分支名>` 并钉 SHA。上述为真实旅程待验要求。#439 已追加授权补验本地与远端 CI，实际结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)；隔离自动冒烟与静态接线均不替代上述真实旅程验收。
 
 技能资产（`standard/skills/version-acceptance/`）改动须连同 `skills/` 镜像、`resources/skills/` manifest 与 registry、`src/cli/bundled-skill-guides.ts` 一并再生，并过 `verify:skill-bundle-manifest` 与 `verify:bundled-skill-guides` 字节门禁。
