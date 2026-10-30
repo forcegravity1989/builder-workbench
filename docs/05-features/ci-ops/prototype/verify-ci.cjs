@@ -1,7 +1,7 @@
 // #461 CI 部署原型 DOM 断言验证：进入即全量形态（无场景切换）、竖排四阶段六步流程列表
 // （阶段标签居中加粗、组间虚线分割、数字标序、每步时间/读数、命令与日志按步回显、历史报错常驻失败步）、
-// 模式行集中入口（配置·部署·命令·日志，八轮反馈）、两种模式与版本选择、统一配置入口与配置事实、
-// 执行瞬态与逐步点亮（读数与时间随完成进板面）、记录区默认收起与展开（历史索引，无筛选无日志展开）、
+// 模式行集中入口（配置·部署·命令·日志·历史记录，八/九轮反馈）、两种模式与版本选择、统一配置入口与配置事实、
+// 执行瞬态与逐步点亮（读数与时间随完成进板面）、历史记录下拉切换最近 10 次部署记录（九轮反馈，记录区已移除）、
 // 递交 prompt 一致性、console/page error 监听。
 // 截图只存临时目录供人查看，不进上下文（AGENTS 硬约束）。
 const path = require('node:path')
@@ -60,7 +60,7 @@ const check = (name, ok) => {
     '页头两动作（收折会话/更新代码）',
     (await page.locator('.g3-header-actions button').count()) === 2
   )
-  check('记录区存在', (await page.locator('#records').count()) === 1)
+  check('无独立记录区（九轮反馈：历史经模式下拉）', (await page.locator('#records').count()) === 0)
 
   // 进入即全量：已接入后的成熟状态（绿·上线模式·六步全过·每步读数·记录收起）
   check('进入灯绿(最近一次成功)', (await page.locator(cardState()).textContent()).includes('最近一次成功'))
@@ -212,27 +212,78 @@ const check = (name, ok) => {
   await page.click('#deploy .ci-mode-row .ci-flow-cmdtoggle')
   check('再点收起命令详情', (await page.locator('.ci-flow-cmd').count()) === 0)
 
-  // 记录区（八轮反馈收敛）：默认收起为一行摘要，展开回显执行历史索引（日志在流程步骤）
-  check('记录区默认收起（无记录行）', (await page.locator('.ci-record').count()) === 0)
-  const counts = await page.locator('.ci-records-counts').textContent()
-  check('摘要行含全部与报错计数', counts.includes('全部 4') && counts.includes('报错 1'))
-  await page.click('.ci-records-head')
-  check('展开后记录 4 条', (await page.locator('.ci-record').count()) === 4)
-  check('历史报错保留', (await page.locator('.ci-record.error').count()) === 1)
+  // 历史记录下拉（九轮反馈）：模式行「命令」「日志」后的查看入口，点选最近 10 次部署记录切换流程块回显
   check(
-    '报错记录定位带步序（第 4 步）',
-    (await page.locator('.ci-record.error .ci-record-detail').textContent()).includes('第 4 步')
+    '历史记录入口在模式行',
+    (await page.locator('#deploy .ci-mode-row .ci-history-toggle').count()) === 1
+  )
+  const historyOrder = await page.evaluate(() => {
+    const names = Array.from(document.querySelector('#deploy .ci-mode-row')?.children || []).map(
+      (c) => c.className
+    )
+    const cmdIdx = names.findIndex((c) => c.includes('ci-flow-cmdtoggle'))
+    const logIdx = names.findIndex((c) => c.includes('ci-flow-logtoggle'))
+    const histIdx = names.findIndex((c) => c.includes('ci-history'))
+    return cmdIdx !== -1 && logIdx > cmdIdx && histIdx > logIdx
+  })
+  check('历史记录排在命令/日志后（DOM 顺序）', historyOrder)
+  check('历史下拉默认收起', (await page.locator('.ci-history-menu').count()) === 0)
+  await page.click('#deploy .ci-history-toggle')
+  const histItems = await page.locator('.ci-history-item').allTextContents()
+  check(
+    '下拉列出最近 4 次记录（时间/模式/版本/结果）',
+    histItems.length === 4 &&
+      histItems.join('|').includes('10-29 09:41') &&
+      histItems.join('|').includes('上线') &&
+      histItems.join('|').includes('1.4.201') &&
+      histItems.join('|').includes('开发') &&
+      histItems.join('|').includes('✗ 第 4 步「部署」失败')
   )
   check(
-    '记录行含开发/上线模式 chip',
-    (await page.locator('.ci-record-mode').allTextContents()).includes('上线') &&
-      (await page.locator('.ci-record-mode').allTextContents()).includes('开发')
+    '最新条目高亮（默认最近一次）',
+    (await page.locator('.ci-history-item.on').count()) === 1 &&
+      (await page.locator('.ci-history-item.on').textContent()).includes('10-29 09:41')
+  )
+  await page.click('.ci-history-item:has-text("10-28 18:55")')
+  check('点选后下拉收起', (await page.locator('.ci-history-menu').count()) === 0)
+  check(
+    '切换到失败记录：第 4 步红色定位（徽章 4·部署）',
+    (await page.locator('.ci-flow-step.fail').count()) === 1 &&
+      (await page.locator('.ci-flow-step.fail .ci-flow-badge').textContent()) === '4' &&
+      (await page.locator('.ci-flow-step.fail .ci-flow-name').textContent()) === '部署'
+  )
+  const histHead = await page.locator('.ci-flow-head').textContent()
+  check(
+    '失败记录块头带历史时间与原因',
+    histHead.includes('历史 10-28 18:55') && histHead.includes('退出码 1')
   )
   check(
-    '记录区为历史索引（无筛选 chips、记录行不展开日志）',
-    (await page.locator('.ci-filter').count()) === 0 &&
-      (await page.locator('.ci-record-toggle').count()) === 0 &&
-      (await page.locator('.ci-record-log').count()) === 0
+    '失败记录：前 3 步绿、后 2 步未开始、读数 3 条',
+    (await page.locator('.ci-flow-step.ok').count()) === 3 &&
+      (await page.locator('.ci-flow-step.pending').count()) === 2 &&
+      (await page.locator('.ci-flow-reading').count()) === 3
+  )
+  check(
+    '所选记录自身失败原因显示在该步',
+    (await page.locator('.ci-flow-error').count()) === 1 &&
+      (await page.locator('.ci-flow-error').textContent()).includes('退出码 1') &&
+      !(await page.locator('.ci-flow-error').textContent()).includes('上次失败')
+  )
+  await page.click('#deploy .ci-mode-row .ci-flow-logtoggle')
+  check(
+    '失败步日志在该步日志区（danger 块），已完成步日志 3 块',
+    (await page.locator('.ci-flow-log.err').count()) === 1 &&
+      (await page.locator('.ci-flow-log.err').textContent()).includes('[ci-step] deploy fail') &&
+      (await page.locator('.ci-flow-log:not(.err)').count()) === 3
+  )
+  await page.click('#deploy .ci-mode-row .ci-flow-logtoggle')
+  await page.click('#deploy .ci-history-toggle')
+  await page.click('.ci-history-item:has-text("10-29 09:41")')
+  check(
+    '切回最近一次恢复（六步全过）',
+    (await page.locator('.ci-flow-head').textContent()).includes('最近一次 10-29 09:41') &&
+      (await page.locator('.ci-flow-step.fail').count()) === 0 &&
+      (await page.locator('.ci-flow-step.ok').count()) === 6
   )
 
   // 统一配置入口：递交 prompt 与 skill-deploy.md 逐字一致
@@ -271,6 +322,10 @@ const check = (name, ok) => {
     '执行中读数未提前出现（随完成进板面）',
     (await page.locator('.ci-flow-reading').count()) === 0
   )
+  check(
+    '执行中历史下拉禁用（流程显示当前执行）',
+    (await page.locator('#deploy .ci-history-toggle:disabled').count()) === 1
+  )
   const liveHead = await page.locator('.ci-flow-head').textContent()
   check(
     '执行中块头显示执行中与版本',
@@ -296,7 +351,13 @@ const check = (name, ok) => {
     '完成后每步时间更新（6 个）',
     (await page.locator('.ci-flow-step .ci-flow-time').count()) === 6
   )
-  check('上线新记录入列', (await page.locator('.ci-record').count()) === 5)
+  check(
+    '完成后回最新记录（块头最近一次）',
+    (await page.locator('.ci-flow-head').textContent()).includes('最近一次')
+  )
+  await page.click('#deploy .ci-history-toggle')
+  check('上线新记录进历史下拉（5 条）', (await page.locator('.ci-history-item').count()) === 5)
+  await page.click('#deploy .ci-history-toggle')
   await page.click('.g3-footer-handoff button')
   check(
     'footer 成功说明六步全过',
@@ -324,7 +385,9 @@ const check = (name, ok) => {
     (await page.locator('.g3-footer').textContent()).includes('--mode=dev')
   )
   await page.waitForTimeout(4600)
-  check('开发新记录入列', (await page.locator('.ci-record').count()) === 6)
+  await page.click('#deploy .ci-history-toggle')
+  check('开发新记录进历史下拉（6 条）', (await page.locator('.ci-history-item').count()) === 6)
+  await page.click('#deploy .ci-history-toggle')
   check(
     '开发读数进流程（本地探针）',
     (await page.locator('.ci-flow-reading').allTextContents()).join('|').includes('本地探针')

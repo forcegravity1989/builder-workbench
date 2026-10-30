@@ -1,4 +1,4 @@
-const { React, createRoot, useState } = window.BWPrototypeDependencies
+const { React, createRoot, useState, useRef, useEffect } = window.BWPrototypeDependencies
 import {
   MODULES,
   MODES,
@@ -11,7 +11,8 @@ import {
   PROMPTS,
   stepReadings,
   stepCommands,
-  stepLogs,
+  recordResultText,
+  recordFlowView,
   dotClass,
   moduleStateText,
   moduleButtons
@@ -19,7 +20,6 @@ import {
 import { Icon, IconButton, ActionButton } from '../../version-planning/prototype/g3-components.jsx'
 
 const clock = () => new Date().toTimeString().slice(0, 5)
-const allOk = () => Object.fromEntries(FLOW.map((s) => [s.id, 'ok']))
 
 // 步序号与状态读法：数字 1–6 常显（顺序在任何灯态下可读），完成只以徽章状态色表达。
 const STEP_NO = Object.fromEntries(FLOW.map((s, i) => [s.id, i + 1]))
@@ -31,18 +31,19 @@ const STATUS_TEXT = {
   pending: '未开始'
 }
 
-// 竖排流程列表（板面核心）：最近一次执行的每步状态、时间与一行读数自上而下排布；
+// 竖排流程列表（板面核心）：按所选记录渲染每步状态、时间与一行读数，自上而下排布；
 // 执行中由 live（idx+done+mode+version+times）驱动逐步点亮，读数与时间随完成进板面；
 // 「命令」「日志」开关在配置旁（八轮反馈：动作与查看入口集中在模式行）——
-// 命令按 deploy.sh 步骤分段回显每步将执行的命令，日志按步骤区分回显；
-// 历史报错常驻失败步（上次失败时间与原因），报错日志随「日志」开关在该步回显（在哪用在哪显示）。
-function FlowList({ state, live, mode, version, cmdOpen, logOpen, errorByStep }) {
-  const last = state.last
+// 命令按 deploy.sh 步骤分段回显每步将执行的命令，日志按所选记录的步骤区分回显；
+// 所选记录自身的失败步红色定位带原因；更早的历史报错常驻失败步（上次失败时间与原因），
+// 报错日志随「日志」开关在该步回显（在哪用在哪显示）。
+function FlowList({ view, live, mode, version, cmdOpen, logOpen, errorByStep }) {
   const liveReadings = live ? stepReadings(live.mode, live.version) : null
+  // 命令详情是前瞻口径（C11：每步「将执行」的命令，随当前模式与所选版本）——浏览历史记录时
+  // 仍显示下次将跑的命令；日志才是回望口径（按所选记录回显）。
   const commands = stepCommands(live ? live.mode : mode, live ? live.version : version)
-  const logs = stepLogs(live ? live.mode : mode, live ? live.version : version)
   const statusOf = (step) => {
-    const prior = state.steps?.[step.id]
+    const prior = view.steps?.[step.id]
     if (!live) {
       return prior || 'pending'
     }
@@ -58,23 +59,23 @@ function FlowList({ state, live, mode, version, cmdOpen, logOpen, errorByStep })
     if (live) {
       return live.done.includes(step.id) ? liveReadings[step.id] : null
     }
-    return state.readings?.[step.id] || null
+    return view.readings?.[step.id] || null
   }
   const timeOf = (step) => {
     if (live) {
       return live.times?.[step.id] || null
     }
-    return state.times?.[step.id] || null
+    return view.times?.[step.id] || null
   }
-  const headTime = live ? '执行中' : last ? `最近一次 ${last.time}` : '尚无执行记录'
-  const headInfo = live
-    ? `${live.mode === 'dev' ? '开发' : '上线'} 执行中${live.version ? ` · 版本 ${live.version}` : ''}`
-    : last?.text
   return (
     <div className="ci-flow-block">
       <div className="ci-flow-head">
-        <span className="ci-flow-head-time">{headTime}</span>
-        <span className="ci-flow-head-info">{headInfo}</span>
+        <span className="ci-flow-head-time">{live ? '执行中' : view.headTime}</span>
+        <span className="ci-flow-head-info">
+          {live
+            ? `${live.mode === 'dev' ? '开发' : '上线'} 执行中${live.version ? ` · 版本 ${live.version}` : ''}`
+            : view.headInfo}
+        </span>
       </div>
       <div className="ci-flow-list" role="list" aria-label="部署流程六步">
         {FLOW_PHASES.map((phase) => (
@@ -85,6 +86,7 @@ function FlowList({ state, live, mode, version, cmdOpen, logOpen, errorByStep })
               const reading = readingOf(step)
               const time = timeOf(step)
               const error = errorByStep[step.id]
+              const ownFail = !live && view.failedStep === step.id
               return (
                 <div
                   key={step.id}
@@ -92,8 +94,8 @@ function FlowList({ state, live, mode, version, cmdOpen, logOpen, errorByStep })
                   role="listitem"
                   aria-label={`第 ${STEP_NO[step.id]} 步 ${step.name}：${STATUS_TEXT[status] || '未开始'}`}
                   title={`第 ${STEP_NO[step.id]} 步 · ${step.name}（${phase}）：${
-                    mode === 'dev' ? step.dev : step.release
-                  }${state.failedStep === step.id ? '（失败步）' : ''}`}
+                    (live ? live.mode : view.mode) === 'dev' ? step.dev : step.release
+                  }${ownFail ? '（失败步）' : ''}`}
                 >
                   <span className="ci-flow-badge" aria-hidden="true">
                     {STEP_NO[step.id]}
@@ -107,14 +109,21 @@ function FlowList({ state, live, mode, version, cmdOpen, logOpen, errorByStep })
                       {status === 'skip' && <span className="ci-flow-status">跳过</span>}
                     </div>
                     {reading && <div className="ci-flow-reading">{reading}</div>}
+                    {ownFail && view.cause && <div className="ci-flow-error">{view.cause}</div>}
                     {error && (
                       <div className="ci-flow-error">
                         上次失败 {error.time} · {error.cause}
                       </div>
                     )}
                     {cmdOpen && <pre className="ci-flow-cmd">{commands[step.id].join('\n')}</pre>}
-                    {logOpen && logs[step.id] && <pre className="ci-flow-log">{logs[step.id]}</pre>}
-                    {logOpen && error && <pre className="ci-flow-log err">{error.log}</pre>}
+                    {logOpen && !live && view.logs?.[step.id] && (
+                      <pre className={`ci-flow-log ${ownFail ? 'err' : ''}`}>
+                        {view.logs[step.id]}
+                      </pre>
+                    )}
+                    {logOpen && !live && error && (
+                      <pre className="ci-flow-log err">{error.log}</pre>
+                    )}
                   </div>
                 </div>
               )
@@ -126,7 +135,7 @@ function FlowList({ state, live, mode, version, cmdOpen, logOpen, errorByStep })
   )
 }
 
-// 部署卡：状态行 + 模式行（模式/版本/配置事实 + 配置 · 主动作 · 命令 · 日志）+ 最近一次执行块；
+// 部署卡：状态行 + 模式行（模式/版本/配置事实 + 配置 · 主动作 · 命令 · 日志 · 历史记录）+ 执行块（按所选记录渲染）；
 // 灰态给扫描事实行与生成入口（八轮反馈：部署与查看开关集中到配置旁，报错不经按钮）。
 function ModuleCard({
   index,
@@ -136,7 +145,11 @@ function ModuleCard({
   live,
   mode,
   version,
+  view,
   errorByStep,
+  records,
+  selectedRecordId,
+  onSelectRecord,
   onMode,
   onVersion,
   onConfigure,
@@ -246,16 +259,22 @@ function ModuleCard({
             <button
               className="ci-flow-logtoggle"
               aria-expanded={logOpen}
-              title="页内按步骤回显最近一次执行的日志与历史报错日志（存于 bw/ci 树本地）"
+              title="页内按步骤回显所选记录的日志与历史报错日志（存于 bw/ci 树本地）"
               onClick={() => setLogOpen(!logOpen)}
             >
               {logOpen ? '收起日志' : '日志'}
             </button>
+            <HistoryMenu
+              records={records}
+              selectedId={selectedRecordId}
+              disabled={executing}
+              onSelect={onSelectRecord}
+            />
           </div>
         )}
         {state.state !== 'gray' && (
           <FlowList
-            state={state}
+            view={view}
             live={live}
             mode={mode}
             version={version}
@@ -284,22 +303,78 @@ function ModuleCard({
   )
 }
 
-// 记录行：一行历史索引（含模式与版本）；报错的事实与日志在流程列表对应步骤显示，记录行不展开日志（八轮反馈）。
-function RecordRow({ record }) {
-  const module = MODULES.find((m) => m.id === record.moduleId)
+// 历史记录下拉（九轮反馈）：模式行「命令」「日志」后的查看入口，点选最近 10 次部署记录，
+// 流程块切换回显该次执行（每步状态/时间/读数/日志）；板面不设独立记录区——
+// 执行历史经此下拉查看，数据正本仍是 bw/ci 树本地 records.jsonl。
+// 面板 fixed 定位、打开时量按钮坐标：脱离 .g3-scroll 的 overflow 裁剪（面板向左展开会被裁）；
+// 点外关闭用 document 点击监听，不铺遮罩。
+function HistoryMenu({ records, selectedId, disabled, onSelect }) {
+  const [open, setOpen] = useState(false)
+  const [menuPos, setMenuPos] = useState(null)
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!open) {
+      return undefined
+    }
+    const onDocClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('click', onDocClick)
+    return () => document.removeEventListener('click', onDocClick)
+  }, [open])
+  const toggleMenu = () => {
+    if (!open && ref.current) {
+      const rect = ref.current.getBoundingClientRect()
+      setMenuPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right })
+    }
+    setOpen(!open)
+  }
+  const currentId = selectedId || records[0]?.id
+  const items = records.slice(0, 10)
   return (
-    <div className={`ci-record ${record.ok ? 'ok' : 'error'}`}>
-      <div className="ci-record-line">
-        <span className="ci-record-time">{record.time}</span>
-        <span className="ci-record-module">{module.name}</span>
-        <span className={`ci-record-mode ${record.mode}`}>
-          {record.mode === 'dev' ? '开发' : '上线'}
-        </span>
-        <span className="ci-record-result">
-          {record.ok ? '✓' : '✗'} {record.result}
-        </span>
-        <span className="ci-record-detail">{record.detail}</span>
-      </div>
+    <div className={`ci-history ${open ? 'open' : ''}`} ref={ref}>
+      <button
+        className="ci-history-toggle"
+        aria-expanded={open}
+        disabled={disabled}
+        title="切换查看最近 10 次部署记录（执行历史存 bw/ci 树本地，默认最近一次）"
+        onClick={toggleMenu}
+      >
+        历史记录 <Icon name="down" size={12} />
+      </button>
+      {open && menuPos && (
+        <div
+          className="ci-history-menu"
+          role="listbox"
+          aria-label="最近部署记录"
+          style={{ top: `${menuPos.top}px`, right: `${menuPos.right}px` }}
+        >
+          {items.map((r) => (
+            <button
+              key={r.id}
+              className={`ci-history-item ${r.ok ? 'ok' : 'error'} ${r.id === currentId ? 'on' : ''}`}
+              role="option"
+              aria-selected={r.id === currentId}
+              title={r.detail}
+              onClick={() => {
+                onSelect(r.id)
+                setOpen(false)
+              }}
+            >
+              <span className="ci-history-time">{r.time}</span>
+              <span className={`ci-history-mode ${r.mode}`}>
+                {r.mode === 'dev' ? '开发' : '上线'}
+              </span>
+              {r.version && <span className="ci-history-version">{r.version}</span>}
+              <span className={`ci-history-result ${r.ok ? 'ok' : 'error'}`}>
+                {recordResultText(r)}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -317,7 +392,8 @@ function App() {
   const [live, setLive] = useState(null)
   const [mode, setMode] = useState('release')
   const [version, setVersion] = useState(VERSIONS[0].version)
-  const [recordsOpen, setRecordsOpen] = useState(false)
+  // 九轮：历史记录下拉所选记录（null=最近一次）；执行完成后回到最近一次。
+  const [selectedRecordId, setSelectedRecordId] = useState(null)
 
   const toggleSession = (open) => {
     setSession(open)
@@ -363,20 +439,8 @@ function App() {
           : `版本 ${runVersion} · 全程 3 分 08 秒 · /healthz 200`
       setExecuting(null)
       setLive(null)
-      setModule(module.id, {
-        state: 'green',
-        steps: allOk(),
-        failedStep: undefined,
-        readings: stepReadings(runMode, runVersion),
-        times: { ...times },
-        last: {
-          time,
-          ok: true,
-          mode: runMode,
-          version: runMode === 'dev' ? null : runVersion,
-          text: `${runMode === 'dev' ? '开发' : '上线'} · ${text}`
-        }
-      })
+      setModule(module.id, { state: 'green', failedStep: undefined })
+      setSelectedRecordId(null)
       setRecords((current) => [
         {
           id: `demo-${Date.now()}`,
@@ -386,7 +450,8 @@ function App() {
           mode: runMode,
           version: runMode === 'dev' ? null : runVersion,
           result: '成功',
-          detail: text
+          detail: text,
+          times: { ...times }
         },
         ...current
       ])
@@ -426,11 +491,12 @@ function App() {
     }
     if (key === 'retry') {
       const state = states[module.id]
+      const latest = records[0]
       const fromIdx = Math.max(
         0,
-        FLOW.findIndex((s) => s.id === (state.failedStep || 'deploy'))
+        FLOW.findIndex((s) => s.id === (state.failedStep || latest?.failedStep || 'deploy'))
       )
-      runFlow(module, fromIdx, state.last?.mode || mode, state.last?.version || version)
+      runFlow(module, fromIdx, latest?.mode || mode, latest?.version || version)
       return
     }
     // run：部署单次执行，演示给执行中瞬态与流程条逐步点亮，完成后独立读回写记录。
@@ -449,20 +515,46 @@ function App() {
     setNotice('已向 CI 助手递交配置请求')
   }
 
-  // 历史报错按失败步归位（在哪用在哪显示）：每个失败步取最近一次报错，显示在流程对应步骤。
+  // 历史报错按失败步归位（在哪用在哪显示）：每个失败步取比所选记录更早的最近一次报错，
+  // 显示在流程对应步骤；所选记录自身的失败直接红色定位在该步，不重复挂「上次失败」。
+  const selected = records.find((r) => r.id === selectedRecordId) || records[0]
+  const selectedIdx = selected ? records.indexOf(selected) : -1
   const errorByStep = {}
-  for (const r of records) {
-    if (!r.ok && r.failedStep && !errorByStep[r.failedStep]) {
+  records.forEach((r, idx) => {
+    if (idx > selectedIdx && !r.ok && r.failedStep && !errorByStep[r.failedStep]) {
       errorByStep[r.failedStep] = { time: r.time, cause: r.cause || r.detail, log: r.log }
     }
-  }
-  const errorCount = records.filter((r) => !r.ok).length
+  })
+
+  // 流程块视图（九轮）：按所选记录推导每步状态/时间/读数/日志与块头，默认最近一次；执行中由 live 覆盖。
+  const view = selected
+    ? {
+        ...recordFlowView(selected),
+        mode: selected.mode,
+        version: selected.version,
+        headTime: selected === records[0] ? `最近一次 ${selected.time}` : `历史 ${selected.time}`,
+        headInfo: `${selected.mode === 'dev' ? '开发' : '上线'}${
+          selected.version ? ` · 版本 ${selected.version}` : ''
+        } · ${selected.detail}`
+      }
+    : {
+        steps: {},
+        times: {},
+        readings: {},
+        logs: {},
+        failedStep: undefined,
+        cause: undefined,
+        mode,
+        version,
+        headTime: '尚无执行记录',
+        headInfo: ''
+      }
 
   return (
     <div className={`g3-app ${compact ? 'constrained' : ''}`}>
       <div className="g3-demo-bar">
         <strong>#461 评审草案 · CI 部署</strong>
-        <span>两种模式 · 竖排六步流程（每步时间·读数·命令·日志） · 报错显示在对应步骤</span>
+        <span>两种模式 · 竖排六步流程（每步时间·读数·命令·日志） · 历史记录下拉切换最近 10 次</span>
         <button onClick={() => setCompact(!compact)}>{compact ? '恢复宽度' : '窄板'}</button>
         <button
           onClick={() => {
@@ -509,10 +601,12 @@ function App() {
             步骤分段回显每步将执行的命令（随模式），日志按步骤区分回显；历史报错常驻失败步（上次失败时间与原因，报错日志随「日志」开关在该步回显），纠错核对不经会话；黄态（有脚本无记录）显示六步骨架。
           </p>
           <p>
-            <strong>灯与记录</strong>
+            <strong>灯与历史</strong>
             ：灯是健康信号，只能从执行记录推导：灰=主检出未见脚本（新项目首见，板面给「主分支未见脚本」事实与生成脚本入口）；黄=扫到资产、待执行；绿=最近一次流程全步通过；红=最近一次停在失败步。最新结果决定绿红；历史报错永久保留。每次执行写
             bw/ci 树本地
-            records.jsonl（时间、ok、mode、version、steps、readings、failedStep、耗时、日志指针），记录区收起为一行摘要（全部/报错计数），展开回显执行历史索引（含模式与版本，按时间倒序）；报错的事实与日志在流程列表对应步骤显示，记录行不展开日志、不设报错筛选。本页固定呈现已接入后的全量形态（评审反馈：不做场景切换，进入即见全部——全量指部署卡完整形态与记录摘要行）；灰/黄/红随真实数据自然出现。
+            records.jsonl（时间、ok、mode、version、steps、readings、failedStep、耗时、日志指针）。板面不设独立记录区（九轮反馈）：模式行「命令」「日志」后的「历史记录」下拉列出最近
+            10
+            次部署记录（时间、模式、版本、结果，失败带步序定位），点选切换流程块回显该次执行——每步状态、时间、读数与按步日志；更早的历史报错常驻失败步（上次失败时间与原因，报错日志随「日志」开关在该步回显）。本页固定呈现已接入后的全量形态（评审反馈：不做场景切换，进入即见全部——全量指部署卡完整形态）；灰/黄/红随真实数据自然出现。
           </p>
           <p>
             <strong>依赖与留白</strong>：组件与设计语言复用已合入 main 的 G3
@@ -605,46 +699,17 @@ function App() {
                 live={executing === m.id ? live : null}
                 mode={mode}
                 version={version}
+                view={view}
                 errorByStep={errorByStep}
+                records={records}
+                selectedRecordId={selectedRecordId}
+                onSelectRecord={setSelectedRecordId}
                 onMode={setMode}
                 onVersion={setVersion}
                 onConfigure={onConfigure}
                 onAction={onAction}
               />
             ))}
-            <section id="records" className="ci-records-section">
-              <div
-                className="g3-section-title ci-records-head"
-                role="button"
-                tabIndex={0}
-                aria-expanded={recordsOpen}
-                title={recordsOpen ? '收起记录列表' : '展开记录列表（存于 bw/ci 树本地）'}
-                onClick={() => setRecordsOpen(!recordsOpen)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    setRecordsOpen(!recordsOpen)
-                  }
-                }}
-              >
-                <h2>
-                  2·执行与报错记录 <small>bw/ci 树本地</small>
-                </h2>
-                <span className="ci-records-counts">
-                  全部 {records.length} · 报错 {errorCount}
-                  <Icon name={recordsOpen ? 'down' : 'right'} size={14} />
-                </span>
-              </div>
-              {recordsOpen &&
-                (records.length ? (
-                  <div className="ci-records">
-                    {records.map((r) => (
-                      <RecordRow key={r.id} record={r} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="g3-empty ci-records-empty">尚无执行记录</p>
-                ))}
-            </section>
           </div>
           <footer className="g3-footer" role="status">
             {handoff ? (

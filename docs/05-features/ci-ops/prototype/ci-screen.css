@@ -1,5 +1,5 @@
 /* #461 CI 屏评审草案专属样式；布局与组件复用 g3-planning.css，只补 CI 特有词汇：
-   状态灯四色变体、模块卡、记录区与折叠日志。颜色只用于状态。 */
+   状态灯四色变体、模块卡、历史记录下拉与折叠日志。颜色只用于状态。 */
 
 /* 灯色变体：ok/warn 复用 g3-planning.css，补红与灰（灰=未知/未接入，不是绿）。 */
 .g3-dot.err {
@@ -62,8 +62,8 @@
   margin-top: 2px;
 }
 
-/* 模式行：开发/上线 toggle + 版本选择（仅上线）+ 配置事实 + 配置 · 主动作（部署/重试）·「命令」「日志」开关；
-   八轮反馈：动作与查看入口集中到配置旁，流程块头只留读数。机制收在提示，行内只留控件与事实。 */
+/* 模式行：开发/上线 toggle + 版本选择（仅上线）+ 配置事实 + 配置 · 主动作（部署/重试）·「命令」「日志」开关 ·「历史记录」下拉；
+   八轮反馈：动作与查看入口集中到配置旁；九轮反馈：记录区移除，历史经下拉切换。机制收在提示，行内只留控件与事实。 */
 .ci-mode-row {
   display: flex;
   flex-wrap: wrap;
@@ -175,6 +175,100 @@
   color: var(--muted-foreground);
   cursor: pointer;
   white-space: nowrap;
+}
+
+/* 历史记录下拉（九轮反馈）：模式行「命令」「日志」后的查看入口，点选最近 10 次部署记录切换流程块回显；
+   板面不设独立记录区——执行历史经此下拉查看。面板 fixed 定位（坐标由 JS 量按钮得出）：
+   脱离 .g3-scroll 的 overflow 裁剪——面板向左展开会伸出主栏被裁；点外关闭走 document 点击监听。 */
+.ci-history-toggle {
+  font: inherit;
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ci-history-toggle:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.ci-history.open .ci-history-toggle {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-foreground);
+}
+.ci-history-menu {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  min-width: 360px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+.ci-history-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  color: var(--foreground);
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+.ci-history-item:hover {
+  background: color-mix(in srgb, var(--muted-foreground, #767676) 10%, transparent);
+}
+.ci-history-item.on {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.ci-history-time {
+  flex-shrink: 0;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  color: var(--color-text-muted, #767676);
+}
+/* 条目模式 chip：开发/上线，事实随记录回显。 */
+.ci-history-mode {
+  flex-shrink: 0;
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--muted-foreground, #767676) 9%, transparent);
+}
+.ci-history-mode.release {
+  color: var(--color-warning-deep, #8a6a2f);
+  background: var(--color-warning-soft, rgba(206, 144, 66, 0.14));
+}
+.ci-history-version {
+  flex-shrink: 0;
+  color: var(--color-text-muted, #767676);
+}
+.ci-history-result.ok {
+  flex-shrink: 0;
+  font-weight: 500;
+  color: var(--color-success-deep, #2f6b44);
+}
+.ci-history-result.error {
+  flex-shrink: 0;
+  font-weight: 500;
+  color: var(--color-danger-deep, #a03c36);
 }
 /* 每步日志（按步骤区分，八轮反馈）：随「日志」开关在该步下方回显；报错日志段着危险色。 */
 .ci-flow-log {
@@ -355,87 +449,6 @@
   50% {
     box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 0%, transparent);
   }
-}
-
-/* 记录区（八轮反馈收敛）：默认收起为一行摘要（全部/报错计数），点开回显执行历史索引；
-   报错行着危险色底；报错的事实与日志在流程列表对应步骤显示，记录行不展开日志。 */
-.ci-records-head {
-  cursor: pointer;
-  user-select: none;
-}
-.ci-records-counts {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  color: var(--muted-foreground);
-  white-space: nowrap;
-}
-.ci-records {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.ci-record {
-  border: 1px solid var(--color-hairline, rgba(128, 128, 128, 0.25));
-  border-radius: 8px;
-  background: var(--color-bg-subtle, rgba(128, 128, 128, 0.04));
-  overflow: hidden;
-}
-.ci-record.error {
-  border-color: color-mix(in srgb, var(--color-danger, #c0504a) 28%, transparent);
-  background: color-mix(in srgb, var(--color-danger, #c0504a) 6%, transparent);
-}
-.ci-record-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  font-size: 12px;
-  min-width: 0;
-}
-.ci-record-time {
-  flex-shrink: 0;
-  font-family: var(--font-mono, ui-monospace, monospace);
-  color: var(--color-text-muted, #767676);
-}
-.ci-record-module {
-  flex-shrink: 0;
-}
-/* 记录行模式 chip：开发/上线，事实随记录回显。 */
-.ci-record-mode {
-  flex-shrink: 0;
-  font-size: 10px;
-  padding: 1px 7px;
-  border-radius: 999px;
-  color: var(--muted-foreground);
-  background: color-mix(in srgb, var(--muted-foreground, #767676) 9%, transparent);
-}
-.ci-record-mode.release {
-  color: var(--color-warning-deep, #8a6a2f);
-  background: var(--color-warning-soft, rgba(206, 144, 66, 0.14));
-}
-.ci-record-result {
-  flex-shrink: 0;
-  font-weight: 500;
-}
-.ci-record.ok .ci-record-result {
-  color: var(--color-success-deep, #2f6b44);
-}
-.ci-record.error .ci-record-result {
-  color: var(--color-danger-deep, #a03c36);
-}
-.ci-record-detail {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
-  color: var(--color-text-muted, #767676);
-}
-.ci-records-empty {
-  margin: 0;
-  padding: 18px 14px;
-  border: 1px dashed var(--color-hairline, rgba(128, 128, 128, 0.3));
-  border-radius: 10px;
 }
 
 /* 会话区最近递交指令：原生占位下方的小型指令预览，演示 prompt 内容。 */

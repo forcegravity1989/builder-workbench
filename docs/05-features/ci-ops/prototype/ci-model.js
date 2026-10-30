@@ -1,4 +1,5 @@
-// CI 部署原型数据模型：模块、四阶段六步流程、两种模式、版本登记、配置事实、每步读数/时间/日志、初始全量状态与记录、递交指令文本。
+// CI 部署原型数据模型：模块、四阶段六步流程、两种模式、版本登记、配置事实、每步读数/时间/日志、
+// 初始灯态与执行记录（含失败步数据）、记录→流程视图推导（九轮：流程块按所选记录渲染）、递交指令文本。
 // 流程骨架与 spec.md「部署流程：四阶段六步」、skill-deploy.md「部署流程契约」逐字对齐；
 // PROMPTS 与 skill-deploy.md 递交文本表逐字一致（verify-ci.cjs 有断言盯住）。
 // 评审反馈（2026-10-29）：不做场景切换，进入即呈现已接入后的全量形态。
@@ -103,6 +104,11 @@ const okSteps = {
   record: 'ok'
 }
 
+// 上线包路径从版本登记取（验收包登记是正源）：读数/命令/日志引用同一份，历史记录按各自版本对得上号。
+const pkgOf = (version) =>
+  VERSIONS.find((v) => v.version === version)?.pkg || `dist/app-${version}.7z`
+const pkgNameOf = (version) => pkgOf(version).split('/').pop()
+
 // 每步读数（演示数据）：一行事实随步骤完成进板面；对应记录协议的 readings 字段。
 export const stepReadings = (mode, version) =>
   mode === 'dev'
@@ -115,7 +121,7 @@ export const stepReadings = (mode, version) =>
         record: '已写 .bw/ci/records.jsonl'
       }
     : {
-        pkg: `dist/app-${version}-20261029_0930.7z 存在可读 · 12.4 MB`,
+        pkg: `${pkgOf(version)} 存在可读 · 12.4 MB`,
         precheck: 'ssh 连通 · 磁盘余量 8.2 GB ≥ 包×2 · /opt/app 存在',
         cleanup: '远端 app.service 已停止',
         deploy: '上传 12.4 MB → 解包 → systemctl restart app · 退出码 0',
@@ -135,14 +141,12 @@ export const stepCommands = (mode, version) =>
         record: ['printf \'%s\\n\' "$record" >> .bw/ci/records.jsonl']
       }
     : {
-        pkg: [
-          `test -r "dist/app-${version}-20261029_0930.7z" && du -h "dist/app-${version}-20261029_0930.7z"`
-        ],
+        pkg: [`test -r "${pkgOf(version)}" && du -h "${pkgOf(version)}"`],
         precheck: ['ssh deploy@192.168.1.30 "df -h /opt && test -d /opt/app"'],
         cleanup: ['ssh deploy@192.168.1.30 "systemctl stop app"'],
         deploy: [
-          `scp dist/app-${version}-20261029_0930.7z deploy@192.168.1.30:/opt/app/`,
-          `ssh deploy@192.168.1.30 "cd /opt/app && tar xf app-${version}-20261029_0930.7z && systemctl restart app"`
+          `scp ${pkgOf(version)} deploy@192.168.1.30:/opt/app/`,
+          `ssh deploy@192.168.1.30 "cd /opt/app && tar xf ${pkgNameOf(version)} && systemctl restart app"`
         ],
         verify: [
           'curl -fsS http://192.168.1.30:8025/healthz',
@@ -171,32 +175,16 @@ export const stepLogs = (mode, version) =>
           '[ci-step] precheck start\nssh deploy@192.168.1.30 "df -h /opt && test -d /opt/app" → 磁盘 8.2G 可用，目录存在\n[ci-step] precheck ok',
         cleanup:
           '[ci-step] cleanup start\nssh deploy@192.168.1.30 "systemctl stop app"\n[ci-step] cleanup ok',
-        deploy: `[ci-step] deploy start\nscp dist/app-${version}-20261029_0930.7z deploy@192.168.1.30:/opt/app/\nssh deploy@192.168.1.30 "cd /opt/app && tar xf app-${version}-20261029_0930.7z && systemctl restart app" → 退出码 0\n[ci-step] deploy ok`,
+        deploy: `[ci-step] deploy start\nscp ${pkgOf(version)} deploy@192.168.1.30:/opt/app/\nssh deploy@192.168.1.30 "cd /opt/app && tar xf ${pkgNameOf(version)} && systemctl restart app" → 退出码 0\n[ci-step] deploy ok`,
         verify: `[ci-step] verify start\ncurl -fsS http://192.168.1.30:8025/healthz → 200 {"ok":true}\n部署目录版本 ${version} = 所选 ${version}\n[ci-step] verify ok`,
         record: '[ci-step] record start\n[ci-step] record ok'
       }
 
-// 进入即全量：已接入后的成熟状态（最近一次上线成功，六步全过、每步时间与读数），历史含成功与失败记录。
+// 进入即全量：已接入后的成熟状态（最近一次上线成功），历史含成功与失败记录；
+// 九轮起流程块视图从所选记录推导（recordFlowView），灯态只留颜色与失败步定位。
 export const initialState = {
   deploy: {
-    state: 'green',
-    steps: okSteps,
-    times: {
-      pkg: '09:38',
-      precheck: '09:39',
-      cleanup: '09:40',
-      deploy: '09:40',
-      verify: '09:41',
-      record: '09:41'
-    },
-    readings: stepReadings('release', '1.4.201'),
-    last: {
-      time: '10-29 09:41',
-      ok: true,
-      mode: 'release',
-      version: '1.4.201',
-      text: '上线 · 版本 1.4.201 · 全程 3 分 08 秒'
-    }
+    state: 'green'
   }
 }
 
@@ -206,6 +194,8 @@ ssh deploy@192.168.1.30 "cd /opt/app && tar xf app-1.4.199.tar.gz && systemctl r
 Job for app.service failed because the control process exited with error code (1)
 [ci-step] deploy fail`
 
+// 执行记录（演示数据，按时间倒序）：九轮起每条记录带每步时间（times）与失败步数据（steps/failedStep/cause/log），
+// 流程块按所选记录渲染（recordFlowView）；历史下拉只列最近 10 条。
 export const initialRecords = [
   {
     id: 'r-5',
@@ -215,7 +205,15 @@ export const initialRecords = [
     mode: 'release',
     version: '1.4.201',
     result: '成功',
-    detail: '版本 1.4.201 · 全程 3 分 08 秒 · /healthz 200'
+    detail: '版本 1.4.201 · 全程 3 分 08 秒 · /healthz 200',
+    times: {
+      pkg: '09:38',
+      precheck: '09:39',
+      cleanup: '09:40',
+      deploy: '09:40',
+      verify: '09:41',
+      record: '09:41'
+    }
   },
   {
     id: 'r-4',
@@ -225,7 +223,15 @@ export const initialRecords = [
     mode: 'dev',
     version: null,
     result: '成功',
-    detail: '全程 42 秒 · 本地探针 200'
+    detail: '全程 42 秒 · 本地探针 200',
+    times: {
+      pkg: '09:11',
+      precheck: '09:11',
+      cleanup: '09:12',
+      deploy: '09:12',
+      verify: '09:12',
+      record: '09:12'
+    }
   },
   {
     id: 'r-3',
@@ -238,6 +244,8 @@ export const initialRecords = [
     detail: '第 4 步「部署」失败：远端解包后启动退出码 1',
     cause: '远端解包后启动退出码 1',
     failedStep: 'deploy',
+    steps: { pkg: 'ok', precheck: 'ok', cleanup: 'ok', deploy: 'fail' },
+    times: { pkg: '18:52', precheck: '18:53', cleanup: '18:54', deploy: '18:55' },
     log: failLog
   },
   {
@@ -248,9 +256,62 @@ export const initialRecords = [
     mode: 'release',
     version: '1.4.199',
     result: '成功',
-    detail: '版本 1.4.199 · 全程 4 分 11 秒 · /healthz 200'
+    detail: '版本 1.4.199 · 全程 4 分 11 秒 · /healthz 200',
+    times: {
+      pkg: '18:38',
+      precheck: '18:39',
+      cleanup: '18:40',
+      deploy: '18:40',
+      verify: '18:41',
+      record: '18:41'
+    }
   }
 ]
+
+// 记录结果短标（历史下拉条目用）：失败带步序定位，与流程条数字徽章同用一套序号。
+export const recordResultText = (record) => {
+  if (record.ok) {
+    return '✓ 成功'
+  }
+  const idx = FLOW.findIndex((s) => s.id === record.failedStep)
+  return idx !== -1 ? `✗ 第 ${idx + 1} 步「${FLOW[idx].name}」失败` : '✗ 失败'
+}
+
+// 记录 → 流程块视图（九轮：流程块按所选记录渲染）：成功记录按模式/版本模板推导每步读数与日志；
+// 失败记录只带已完成步的读数与日志，失败步日志取记录自带日志段，其后步骤未开始。
+export const recordFlowView = (record) => {
+  const templateReadings = stepReadings(record.mode, record.version)
+  const templateLogs = stepLogs(record.mode, record.version)
+  if (record.ok) {
+    return {
+      steps: { ...okSteps },
+      times: record.times || {},
+      readings: templateReadings,
+      logs: templateLogs,
+      failedStep: undefined,
+      cause: undefined
+    }
+  }
+  const readings = {}
+  const logs = {}
+  for (const s of FLOW) {
+    if (record.steps?.[s.id] === 'ok') {
+      readings[s.id] = templateReadings[s.id]
+      logs[s.id] = templateLogs[s.id]
+    }
+  }
+  if (record.failedStep) {
+    logs[record.failedStep] = record.log
+  }
+  return {
+    steps: record.steps || {},
+    times: record.times || {},
+    readings,
+    logs,
+    failedStep: record.failedStep,
+    cause: record.cause
+  }
+}
 
 // 递交 prompt 真实文本：与 skill-deploy.md「递交 prompt 真实文本」表逐字一致。
 export const PROMPTS = {
