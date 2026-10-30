@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createExtractor } from './codex-session-feedback.mjs'
+import { createExtractor, assertCurrentSnapshot } from './codex-session-feedback.mjs'
 import { summarizeFeedback, renderComment } from './workflow-feedback-report.mjs'
 
 const completed = (id, type, text) => ({
@@ -9,6 +9,29 @@ const completed = (id, type, text) => ({
     type: 'item_completed',
     item: { id, type, content: [{ type: 'Text', text }] }
   }
+})
+
+test('report rejects a stale human-input snapshot after review while ignoring tool-only progress', () => {
+  const snapshot = {
+    session: { id: 'one' },
+    issues: [],
+    messages: [{ id: 'u1', role: 'user', text: 'start' }]
+  }
+  assert.doesNotThrow(() =>
+    assertCurrentSnapshot(snapshot, {
+      ...snapshot,
+      messages: [...snapshot.messages, { id: 'a1', role: 'assistant', text: 'progress' }]
+    })
+  )
+  assert.throws(
+    () =>
+      assertCurrentSnapshot(snapshot, {
+        ...snapshot,
+        messages: [...snapshot.messages, { id: 'u2', role: 'user', text: '截图打不开，请修改' }]
+      }),
+    /重新 extract/
+  )
+  assert.throws(() => assertCurrentSnapshot(snapshot, { ...snapshot, issues: ['gap'] }), /覆盖变化/)
 })
 
 test('completion messages exclude injected instructions and mirrored response messages, retaining repeated sends', () => {

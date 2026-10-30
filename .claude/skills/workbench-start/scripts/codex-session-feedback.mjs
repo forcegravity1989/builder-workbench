@@ -166,6 +166,20 @@ export async function extractFile(input) {
   return extractor.finish()
 }
 
+export function assertCurrentSnapshot(snapshot, current) {
+  const humanInputs = (value) =>
+    value.messages.filter((item) => item.role === 'user').map(({ id, text }) => [id, text])
+  if (
+    snapshot.session.id !== current.session.id ||
+    JSON.stringify(humanInputs(snapshot)) !== JSON.stringify(humanInputs(current)) ||
+    JSON.stringify(snapshot.issues) !== JSON.stringify(current.issues)
+  ) {
+    throw new Error(
+      '原始会话已有新输入或覆盖变化；重新 extract、更新标注并重算，不能沿用旧表追加说明'
+    )
+  }
+}
+
 async function save(output, value, inputs) {
   if (!output) {
     throw new Error('必须指定输出文件')
@@ -213,6 +227,10 @@ async function main() {
     throw new Error('report 需要 --annotations；语义分类不得用关键词代替')
   }
   const transcript = JSON.parse(await readFile(options.input, 'utf8'))
+  if (!transcript.source?.file) {
+    throw new Error('提取结果缺少原始来源；请重新 extract')
+  }
+  assertCurrentSnapshot(transcript, await extractFile(transcript.source.file))
   const annotations = JSON.parse(await readFile(options.annotations, 'utf8'))
   const report = summarizeFeedback(transcript, annotations)
   const inputs = [options.input, options.annotations]
