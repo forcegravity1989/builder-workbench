@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import type { VersionGoal } from '../../../../shared/workbench/version-material'
-import { featureStage, taskKey, type FeatureData } from './feature-model'
+import { taskKey, type FeatureData } from './feature-model'
+import { featureStage } from './feature-timeline'
 import { FeatureTimelineView } from './feature-timeline-view'
 import './overview.css'
 export { timeLabel } from './overview-time'
@@ -36,9 +37,7 @@ export function FeatureCard({
         </strong>
         <span className="text-xs text-muted-foreground">{feature.root.assignee}</span>
         <span className="bwo-badge">
-          {feature.problems.length
-            ? '阶段来源未读全'
-            : featureStage(feature.pulls, historical, feature.events)}
+          {feature.problems.length ? '阶段来源未读全' : featureStage(feature, historical)}
         </span>
       </button>
       {expanded && (

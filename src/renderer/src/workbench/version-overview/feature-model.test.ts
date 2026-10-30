@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest'
+import { sdlcProviderOf } from '../overview-sdlc'
 import {
   eventsFromPulls,
   featureNumber,
-  featureStage,
   linkedPullNumbers,
   pullPhase,
   taskKey,
@@ -12,11 +12,31 @@ import {
   type FeaturePull
 } from './feature-model'
 import { versionDeliveryEvents, type VersionEvidence } from './version-evidence'
-import { cycleBaseline, featureTimeline } from './feature-timeline'
+import { cycleBaseline, featureTimeline, featureStage } from './feature-timeline'
 import { OverviewPullSchema } from '../../../../shared/workbench/overview-pull'
 import { materialSourceInputs } from './material-cache'
 
 it('projects scoped feature evidence without turning missing, later or unrelated records into delivery', () => {
+  expect(sdlcProviderOf({ upstream: { owner: 'acme', repo: 'app' } })).toBe('github')
+  expect(
+    sdlcProviderOf({
+      gitRemoteIdentity: {
+        remoteUrl: 'git@codehub.example.com:g/p.git',
+        canonicalKey: 'codehub.example.com/g/p',
+        remoteName: 'origin'
+      }
+    })
+  ).toBe('codehub')
+  expect(
+    sdlcProviderOf({
+      gitRemoteIdentity: {
+        remoteUrl: 'https://gitlab.com/g/p.git',
+        canonicalKey: 'gitlab.com/g/p',
+        remoteName: 'origin'
+      }
+    })
+  ).toBeNull()
+  expect(sdlcProviderOf(null)).toBeNull()
   const reference = {
     provider: 'github',
     repository: 'https://github.com/acme/app.git',
@@ -142,9 +162,8 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     new Set([taskKey(reference)])
   )
   expect(deliveries.map((event) => event.delivered)).toEqual([false, false, false, true, true])
-  expect(deliveries[3]?.label).toContain('首次交付（Pre）')
-  expect(deliveries[4]?.label).toContain('后续交付（Release）')
-  expect(featureStage([pull], false, deliveries)).toContain('Release')
+  expect(deliveries[3]?.label).toContain('首次交付')
+  expect(deliveries[4]?.label).toContain('维护交付')
   expect(
     versionDeliveryEvents(
       [record('4', 'met')],
@@ -185,15 +204,16 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     versions: [],
     events: [{ ...events[0]!, phase: 'intent' as const, at: '2026-10-01T07:00:00Z' }, ...deliveries]
   } as Parameters<typeof featureTimeline>[0]
+  expect(featureStage(timelineFeature, false)).toContain('Maintain')
   const timeline = featureTimeline(timelineFeature)
   expect(timeline.points.design?.at).toBe(pull.mergedAt)
   expect(
     featureTimeline({ ...timelineFeature, problems: ['PR 读取失败'] }).points.design
   ).toBeUndefined()
-  expect(timeline.points.pre?.at).toBe(record('4', 'met').at)
-  expect(timeline.points.release?.at).toBe(record('5', 'met').at)
-  expect(timeline.segments.find((segment) => segment.id === 'design')?.duration).toBe(3 * 3600000)
-  expect(timeline.segments.find((segment) => segment.id === 'pre')?.duration).toBeNull()
+  expect(timeline.points.first?.at).toBe(record('4', 'met').at)
+  expect(timeline.deliveries.at(-1)?.at).toBe(record('5', 'met').at)
+  expect(timeline.segments.find((segment) => segment.id === 'Design')?.duration).toBe(3 * 3600000)
+  expect(timeline.segments.find((segment) => segment.id === 'Test')?.duration).toBeNull()
   expect(
     featureTimeline({
       ...timelineFeature,
@@ -223,7 +243,7 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   expect(
     versionDeliveryEvents(future, new Set([taskKey(reference)]), '2026-10-05T00:00:00Z')[0]
       ?.deliveryKind
-  ).toBe('pre')
+  ).toBe('first')
   const unlocated = featureTimeline({
     ...timelineFeature,
     events: [],
@@ -231,5 +251,79 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     archives: [{ ...events[0]!, phase: 'intent', at: '' }]
   })
   expect(unlocated.points.intent).toBeUndefined()
-  expect(unlocated.sources.find((source) => source.id === 'intent')?.events[0]?.url).toBe(url)
+  expect(unlocated.sources.find((source) => source.id === 'Plan')?.events[0]?.url).toBe(url)
+  const maintenanceFeature = {
+    ...timelineFeature,
+    observedAt: '2026-10-10T12:00:00Z',
+    events: [
+      {
+        ...events[0]!,
+        id: 'plan4',
+        phase: 'intent' as const,
+        version: '4',
+        at: '2026-10-04T08:00:00Z'
+      },
+      ...versionDeliveryEvents(
+        [record('4', 'met'), record('5', 'not-met'), record('6', 'met'), record('7', 'met')],
+        new Set([taskKey(reference)])
+      ),
+      {
+        ...events[0]!,
+        id: 'plan5',
+        phase: 'intent' as const,
+        version: '5',
+        at: '2026-10-05T08:00:00Z'
+      },
+      {
+        ...events[0]!,
+        id: 'plan6',
+        phase: 'intent' as const,
+        version: '6',
+        at: '2026-10-06T08:00:00Z'
+      },
+      {
+        ...events[0]!,
+        id: 'plan7',
+        phase: 'intent' as const,
+        version: '7',
+        at: '2026-10-07T08:00:00Z'
+      }
+    ]
+  }
+  const maintenance = featureTimeline(maintenanceFeature)
+  expect(maintenance.deliveries).toHaveLength(3)
+  expect(maintenance.segments.find((s) => s.id === 'Deploy')?.duration).toBeNull()
+  expect(maintenance.segments.find((s) => s.id === 'Maintain')).toMatchObject({
+    start: record('4', 'met').at,
+    end: record('7', 'met').at,
+    ongoing: false
+  })
+  const next = featureTimeline({
+    ...maintenanceFeature,
+    events: [
+      ...maintenanceFeature.events,
+      { ...events[0]!, id: 'plan8', phase: 'intent', version: '8', at: '2026-10-07T09:00:00Z' }
+    ]
+  })
+  expect(next.segments.find((s) => s.id === 'Maintain')).toMatchObject({
+    start: record('4', 'met').at,
+    end: maintenanceFeature.observedAt,
+    ongoing: true
+  })
+  const overlap = featureTimeline({
+    ...maintenanceFeature,
+    events: maintenanceFeature.events
+      .filter((e) => e.version === '4')
+      .concat({
+        ...events[0]!,
+        id: 'early5',
+        phase: 'intent',
+        version: '5',
+        at: '2026-10-04T09:00:00Z'
+      })
+  })
+  expect(overlap.segments.find((s) => s.id === 'Maintain')).toMatchObject({
+    ongoing: true,
+    start: record('4', 'met').at
+  })
 })

@@ -82,7 +82,7 @@ export function versionDeliveryEvents(
         {
           id: `version:${record.version}:${record.revision}`,
           phase: 'version' as const,
-          label: `${record.version} · ${!hasGoal ? '交付归属未知' : notMet ? '目标未达成' : !confirmed ? '验收结论待确认' : !orderKnown ? '已交付（顺序未确认）' : delivered === 1 ? '首次交付（Pre）' : delivered === 2 ? '后续交付（Release）' : '后续交付'}`,
+          label: `${record.version} · ${!hasGoal ? '交付归属未知' : notMet ? '目标未达成' : !confirmed ? '验收结论待确认' : !orderKnown ? '已交付（顺序未确认）' : delivered === 1 ? '首次交付' : 'Maintain · 维护交付'}`,
           at: record.at,
           url: record.archiveUrl ?? '',
           revision: record.revision,
@@ -93,29 +93,12 @@ export function versionDeliveryEvents(
           deliveryKind:
             included && orderKnown
               ? delivered === 1
-                ? ('pre' as const)
-                : delivered === 2
-                  ? ('release' as const)
-                  : undefined
+                ? ('first' as const)
+                : ('maintenance' as const)
               : undefined
         }
       ]
     })
-}
-
-/** No reliable kickoff/test timestamps are provided by the current native readers. */
-export function workActivityTimes(): {
-  designStartedAt: string | null
-  developmentStartedAt: string | null
-  testsStartedAt: string | null
-  testsFinishedAt: string | null
-} {
-  return {
-    designStartedAt: null,
-    developmentStartedAt: null,
-    testsStartedAt: null,
-    testsFinishedAt: null
-  }
 }
 
 export function applyVersionEvidence(
@@ -128,6 +111,7 @@ export function applyVersionEvidence(
   complete: boolean,
   currentVersion?: string
 ) {
+  feature.observedAt = historical ? before : new Date().toISOString()
   const relatedPlans = entries.filter((entry) =>
     entry.tasks.some((ref) => associated.has(taskKey(ref)))
   )

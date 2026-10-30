@@ -1,3 +1,4 @@
+import type { MilestonePhase } from '../../../../shared/workbench/project-milestones'
 import {
   PARSER_REVISION,
   validTime,
@@ -7,15 +8,22 @@ import {
 } from './feature-model'
 
 export const OVERVIEW_TIME_ZONE = 'Asia/Shanghai'
-export const MILESTONES = ['baseline', 'intent', 'design', 'development', 'pre', 'release'] as const
+export const MILESTONES = ['baseline', 'intent', 'design', 'development', 'first'] as const
 export type Milestone = (typeof MILESTONES)[number]
 export const MILESTONE_LABELS: Record<Milestone, string> = {
   baseline: '周期起点',
-  intent: '意图确认',
-  design: '设计定稿',
-  development: '开发交付',
-  pre: 'Pre',
-  release: 'Release'
+  intent: 'Plan · 意图确认',
+  design: 'Design · 设计定稿',
+  development: 'Build · 开发交付',
+  first: '首次交付'
+}
+export type ActualStage = {
+  id: MilestonePhase
+  label: string
+  start?: string
+  end?: string
+  duration: number | null
+  ongoing: boolean
 }
 
 /** BW's agreed reporting baseline, not an observed work-session start. */
@@ -29,7 +37,6 @@ export function cycleBaseline(planMergedAt: string): string | null {
   local.setUTCHours(9, 0, 0, 0)
   return new Date(local.getTime() - offset).toISOString()
 }
-
 function pullEvent(pull: FeaturePull, label: string): FeatureEvent {
   return {
     id: pull.url,
@@ -42,12 +49,25 @@ function pullEvent(pull: FeaturePull, label: string): FeatureEvent {
     rule: PARSER_REVISION
   }
 }
+function interval(
+  id: MilestonePhase,
+  label: string,
+  start?: string,
+  end?: string,
+  ongoing = false
+): ActualStage {
+  const duration =
+    validTime(start) && validTime(end) && Date.parse(end) >= Date.parse(start)
+      ? Date.parse(end) - Date.parse(start)
+      : null
+  return { id, label, start, end, duration, ongoing: duration !== null && ongoing }
+}
 
-/** Multiple PRs stay visible; an unspecified delivery set cannot be reduced to its latest PR. */
+/** Both overviews project these same facts. Unspecified multi-PR completion stays unknown. */
 export function featureTimeline(feature: FeatureData) {
   const points: Partial<Record<Milestone, FeatureEvent>> = {}
   const plans = feature.events
-    .filter((event) => event.phase === 'intent' && validTime(event.at))
+    .filter((e) => e.phase === 'intent' && validTime(e.at))
     .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
   if (feature.planningComplete !== false && plans[0]) {
     points.intent = plans[0]
@@ -62,8 +82,8 @@ export function featureTimeline(feature: FeatureData) {
       }
     }
   }
-  const design = feature.pulls.filter((pull) => pull.phase === 'design')
-  const development = feature.pulls.filter((pull) => pull.phase === 'development')
+  const design = feature.pulls.filter((p) => p.phase === 'design')
+  const development = feature.pulls.filter((p) => p.phase === 'development')
   for (const [key, pulls] of [
     ['design', design],
     ['development', development]
@@ -89,63 +109,139 @@ export function featureTimeline(feature: FeatureData) {
       rule: PARSER_REVISION
     }
   }
-  for (const key of ['pre', 'release'] as const) {
-    points[key] = feature.events.find(
-      (event) => event.delivered && event.deliveryKind === key && validTime(event.at)
-    )
-  }
-  const segments = (
+  const deliveries = feature.events
+    .filter((e) => e.delivered && e.deliveryKind && validTime(e.at))
+    .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
+  points.first = deliveries.find((e) => e.deliveryKind === 'first')
+  const observed = feature.observedAt
+  const segments: ActualStage[] = (
     [
-      ['intent', '意图收敛', 'baseline', 'intent'],
-      ['design', '设计评审', 'intent', 'design'],
-      ['development', '开发', 'design', 'development'],
-      ['pre', '测试与随版准备', 'development', 'pre'],
-      ['release', '试用完善', 'pre', 'release']
+      ['Plan', '意图收敛', 'baseline', 'intent'],
+      ['Design', '设计评审', 'intent', 'design'],
+      ['Build', '开发', 'design', 'development'],
+      ['Test', '验收前交付', 'development', 'first']
     ] as const
   ).map(([id, label, from, to]) => {
-    const start = points[from]?.at,
-      end = points[to]?.at
-    return {
+    const fromIndex = MILESTONES.indexOf(from)
+    const laterKnown = MILESTONES.slice(fromIndex + 1).some((key) => points[key])
+    const ambiguous =
+      (id === 'Design' && design.length > 1) || (id === 'Build' && development.length > 1)
+    const ongoing = !points[to] && !laterKnown && !feature.problems.length && !ambiguous
+    return interval(
       id,
       label,
-      start,
-      end,
-      duration:
-        start && end && Date.parse(end) >= Date.parse(start)
-          ? Date.parse(end) - Date.parse(start)
-          : null
-    }
+      points[from]?.at,
+      points[to]?.at ?? (ongoing ? observed : undefined),
+      ongoing
+    )
   })
+  segments.push(interval('Deploy', '未跟踪'))
+  const first = points.first
+  const firstPlan = plans.find((p) => p.version === first?.version)
+  const laterPlans = first
+    ? plans.filter(
+        (p) =>
+          p.version !== first.version &&
+          firstPlan &&
+          Date.parse(p.at) > Date.parse(firstPlan.at) &&
+          !feature.events.some(
+            (e) =>
+              e.phase === 'version' &&
+              e.version === p.version &&
+              validTime(e.at) &&
+              Date.parse(e.at) <= Date.parse(first.at)
+          )
+      )
+    : []
+  const laterDeliveries = deliveries.filter((e) => e.deliveryKind === 'maintenance')
+  const last = laterDeliveries.at(-1)
+  // Maintain includes the wait between first delivery and the next explicitly related version.
+  const pending = laterPlans.some(
+    (p) =>
+      !laterDeliveries.some((e) => e.version === p.version) &&
+      !feature.events.some(
+        (e) =>
+          last &&
+          e.phase === 'version' &&
+          e.version === p.version &&
+          validTime(e.at) &&
+          Date.parse(e.at) <= Date.parse(last.at)
+      )
+  )
+  const maintaining = Boolean(first && (last || laterPlans.length))
+  segments.push(
+    interval(
+      'Maintain',
+      '持续完善',
+      maintaining ? first?.at : undefined,
+      pending ? observed : last?.at,
+      pending
+    )
+  )
   const sources = [
     {
-      id: 'intent',
+      id: 'Plan',
       label: '计划 PR',
-      events: feature.archives?.filter((event) => event.phase === 'intent') ?? plans
+      events: feature.archives?.filter((e) => e.phase === 'intent') ?? plans
     },
     {
-      id: 'design',
+      id: 'Design',
       label: '设计 PR',
-      events: design.map((pull) => pullEvent(pull, `设计 PR #${pull.number}`))
+      events: design.map((p) => pullEvent(p, `设计 PR #${p.number}`))
     },
     {
-      id: 'development',
+      id: 'Build',
       label: '开发来源',
       events: development.length
-        ? development.map((pull) => pullEvent(pull, `开发 PR #${pull.number}`))
+        ? development.map((p) => pullEvent(p, `开发 PR #${p.number}`))
         : points.development
           ? [points.development]
           : []
     },
-    { id: 'pre', label: 'Pre 验收 PR', events: points.pre ? [points.pre] : [] },
-    { id: 'release', label: 'Release 验收 PR', events: points.release ? [points.release] : [] },
+    { id: 'Test', label: '首次交付验收', events: first ? [first] : [] },
+    { id: 'Maintain', label: '维护交付验收', events: laterDeliveries },
     {
       id: 'version',
       label: '其他版本验收',
       events: (
-        feature.archives?.filter((event) => event.phase === 'version') ??
-        feature.events.filter((event) => event.phase === 'version')
-      ).filter((event) => ![points.pre?.url, points.release?.url].includes(event.url))
+        feature.archives?.filter((e) => e.phase === 'version') ??
+        feature.events.filter((e) => e.phase === 'version')
+      ).filter((e) => !deliveries.some((d) => d.url && d.url === e.url))
     }
   ]
-  return { points, segments, sources }
+  return { points, deliveries, segments, sources }
+}
+
+export function featureStage(feature: FeatureData, historical: boolean): string {
+  const timeline = featureTimeline(feature)
+  const delivered = timeline.deliveries.at(-1)
+  if (historical) {
+    return delivered?.label ?? '历史记录'
+  }
+  const ongoing = timeline.segments.findLast((stage) => stage.ongoing)
+  if (ongoing) {
+    return `${ongoing.id} · ${ongoing.label}中`
+  }
+  if (delivered) {
+    return delivered.label
+  }
+  if (
+    feature.pulls.some(
+      (p) => p.phase === 'development' && ['open', 'opened', 'draft'].includes(p.state)
+    )
+  ) {
+    return 'Build · 开发中'
+  }
+  if (
+    feature.pulls.some((p) => p.phase === 'design' && ['open', 'opened', 'draft'].includes(p.state))
+  ) {
+    return 'Design · 评审中'
+  }
+  if (timeline.points.development) {
+    return 'Test · 开发已交付'
+  }
+  if (timeline.points.design) {
+    return 'Build · 设计已定稿'
+  }
+  return '阶段未记录'
 }

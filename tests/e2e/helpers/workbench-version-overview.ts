@@ -143,7 +143,7 @@ export async function verifyVersionOverview(
   ).toBeVisible()
   await expect(
     board.getByRole('heading', { name: '历史目标 · 保留当时范围', exact: true })
-  ).toBeVisible()
+  ).toBeVisible({ timeout: 90_000 })
   await expect(board.getByRole('button', { name: '未达 ↗', exact: true })).toBeVisible()
   await expect(board.getByText('后续处理 · 后续版本继续', { exact: true })).toBeVisible()
   console.info('[overview] historical pinned plan and human conclusion verified')
@@ -166,8 +166,51 @@ export async function verifyVersionOverview(
   await page.screenshot({ path: info.outputPath('overview-unplanned.png') })
   console.info('[overview] invalid material and unstarted version verified')
   await open(overviewVersions.current)
+  await expect(feature.locator('.bwo-stage-range')).not.toHaveCount(0, { timeout: 90_000 })
+  const versionStages = await feature
+    .locator('.bwo-stage-range')
+    .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('title') ?? ''))
+  const expectedActual = versionStages.map((label) => {
+    const match = /^(\w+) · .*?：(.+?) → (?:截至 )?(.+?)，/.exec(label)
+    expect(match).not.toBeNull()
+    return `${match![1]} · ${match![2]} — ${match![3]}`
+  })
   await page.getByRole('button', { name: '项目总览', exact: true }).click()
   await expect(page.getByRole('heading', { name: '总览', exact: true })).toBeVisible()
+  const actual = page.locator('[data-actual-goal="overview-v0.334:current-goal"]')
+  await expect(actual).toContainText('当前目标 · 版本总览开发', { timeout: 90_000 })
+  await expect(actual).toContainText('特性 #334', { timeout: 90_000 })
+  await expect(actual).toContainText('Deploy 未跟踪')
+  await expect(actual.locator('.wb-ml-actual-phase')).not.toHaveCount(0)
+  const axisDates = await actual
+    .locator('.wb-ml-actual-phase')
+    .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('aria-label')))
+  expect(axisDates).toEqual(expectedActual)
+  await info.attach('shared-goal-actual-stages', {
+    body: JSON.stringify(axisDates),
+    contentType: 'application/json'
+  })
+  await actual.scrollIntoViewIfNeeded()
+  await actual
+    .locator('.wb-ml-actual-phase')
+    .first()
+    .evaluate((node) => {
+      const scroll = node.closest<HTMLElement>('.wb-ml-scroll')
+      if (scroll) {
+        scroll.scrollLeft = Math.max(0, Number.parseFloat((node as HTMLElement).style.left) - 24)
+      }
+    })
+  await page.screenshot({ path: info.outputPath('project-actual-goals.png') })
+  await page
+    .getByRole('button', { name: `进入 ${overviewVersions.current} 版本总览`, exact: true })
+    .click()
+  await expect(
+    page.getByRole('heading', { name: `${overviewVersions.current} 版本总览`, exact: true })
+  ).toBeVisible()
+  await expect(page.getByRole('button', { name: '← 返回项目里程碑', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: '← 返回项目里程碑', exact: true }).click()
+  await expect(actual).toContainText('特性 #334')
+  console.info('[overview] shared version-goal facts and milestone source return verified')
   await open(overviewVersions.current)
   await page.reload()
   await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 120_000 })

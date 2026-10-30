@@ -84,7 +84,6 @@ function App() {
   const [navigationDraft, setNavigationDraft] = useState({
     origin: 'project',
     scene: 'during',
-    featureId: '',
     note: ''
   })
   const [returnContext, setReturnContext] = useState(null)
@@ -115,7 +114,7 @@ function App() {
   }
   function enterFromSource() {
     setReturnContext({ ...navigationDraft })
-    openVersion(navigationDraft.scene, navigationDraft.featureId)
+    openVersion(navigationDraft.scene)
   }
   function returnToSource() {
     setNavigationDraft({ ...returnContext })
@@ -440,7 +439,7 @@ function App() {
           {dialog.kind === 'navigation' && (
             <>
               <Note>
-                这里只演示 #334 的进入、需求定位和返回上下文，不复刻 #440
+                这里只演示进入版本和返回上下文，不复刻 #440
                 页面。以下输入仅保留在本页内存，刷新清除；不是共享路由或存储协议。
               </Note>
               <div className="ov-navigation-fields">
@@ -472,20 +471,6 @@ function App() {
                     ))}
                   </select>
                 </label>
-                <label>
-                  原型注释: 来源特性（有明确关系时）
-                  <select
-                    value={navigationDraft.featureId}
-                    onChange={(e) =>
-                      setNavigationDraft({ ...navigationDraft, featureId: e.target.value })
-                    }
-                  >
-                    <option value="">仅进入版本（未关联特性）</option>
-                    <option value="334">#334 版本总览</option>
-                    <option value="440">#440 项目总览</option>
-                    <option value="383">#383 版本工作区</option>
-                  </select>
-                </label>
               </div>
               {navigationDraft.origin === 'planning' && (
                 <label>
@@ -501,19 +486,19 @@ function App() {
               )}
               {dialog.returned && (
                 <Note>
-                  本地示例的来源选择和草案输入已保留；#440
-                  真实页面的视口、规划草案和跨屏返回尚未联调。本屏不会修改来源页面材料。
+                  本地示例的来源选择和草案输入已保留；#440 真实页面的跨屏验证见
+                  STATUS；本屏仅演示返回目标，不会修改来源页面材料。
                 </Note>
               )}
               <p>
                 <button className="ov-primary" onClick={enterFromSource}>
-                  {navigationDraft.featureId ? '进入所选版本并定位特性' : '进入所选版本'}
+                  进入所选版本
                 </button>
               </p>
               <Note>
                 版本按项目实际名称定位；不强制
-                C/B，也不按日期推断所属关系。从项目总览版本表头进入时可仅带版本；有明确特性关系才定位。
-                未纳入计划的来源特性仅作为定位上下文，不补造本版承诺。
+                C/B，也不按日期推断所属关系。从项目总览版本表头进入准确版本；
+                特性卡片中的关联版本标签另行保留同一主 Issue 的定位。
               </Note>
             </>
           )}

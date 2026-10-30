@@ -652,18 +652,6 @@
 .wb-ml-row.with-baseline .wb-ml-track {
   min-height: 116px;
 }
-.wb-ml-actual-unknown {
-  position: absolute;
-  top: 34px;
-  font-size: 10px;
-  color: var(--muted-foreground);
-  padding: 3px 6px;
-  border: 1px dashed var(--border);
-  background: var(--card);
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
 .wb-ml-connection {
   position: absolute;
   inset: 0;
@@ -724,4 +712,34 @@
 .wb-ml-scroll button:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 1px;
+}
+.wb-ml-actual-row .wb-ml-feature strong {
+  display: block;
+  font-size: 12px;
+}
+.wb-ml-actual-status {
+  display: block;
+  position: sticky;
+  left: 230px;
+  width: fit-content;
+  padding: 16px 12px;
+  color: var(--muted-foreground);
+}
+.wb-ml-actual-notice {
+  position: sticky;
+  left: 0;
+  width: min(700px, 100%);
+  padding: 8px 12px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.wb-ml-actual-phase {
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+  font: inherit;
+  color: var(--foreground);
+}
+.wb-ml-actual-phase[data-ongoing] {
+  border-style: dashed;
 }

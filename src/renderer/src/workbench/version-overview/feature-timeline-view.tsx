@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import {
   timelineClusters,
   timelineRange,
@@ -12,19 +12,27 @@ import { elapsedLabel, timeLabel, openEvidenceUrl } from './overview-time'
 export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
   const axisRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(760)
-  const [selected, setSelected] = useState<string>('design')
+  const [selected, setSelected] = useState<string>('Design')
   const timeline = featureTimeline(feature)
   const points: { key: Milestone | 'version'; event: FeatureEvent }[] = MILESTONES.flatMap((key) =>
     timeline.points[key] ? [{ key, event: timeline.points[key]! }] : []
   )
   points.push(
     ...feature.events
-      .filter((event) => event.phase === 'version' && !event.deliveryKind && validTime(event.at))
+      .filter(
+        (event) =>
+          event.phase === 'version' && event.deliveryKind !== 'first' && validTime(event.at)
+      )
       .map((event) => ({ key: 'version' as const, event }))
   )
   const events = points.map((point) => point.event)
-  const range = timelineRange(events)
-  const clusters = timelineClusters(events, width)
+  const ongoing = timeline.segments.find((stage) => stage.ongoing)
+  const boundary = ongoing?.end
+    ? [{ ...events[0], id: 'observed', at: ongoing.end } as FeatureEvent]
+    : []
+  const range = timelineRange([...events, ...boundary])
+  const clusters = timelineClusters(events, width, range)
+  const extraHeight = Math.max(0, ...clusters.map((cluster) => cluster.events.length - 1)) * 44
   useEffect(() => {
     const element = axisRef.current
     if (!element) {
@@ -53,7 +61,16 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
         aria-label={`${feature.root.title}成果时间轴，可横向滚动`}
       >
         {range ? (
-          <div className="bwo-axis" style={{ width }}>
+          <div
+            className="bwo-axis"
+            style={
+              {
+                width,
+                height: 250 + extraHeight,
+                '--bwo-axis-shift': `${extraHeight}px`
+              } as CSSProperties
+            }
+          >
             <div className="bwo-axis-line" />
             {timeline.segments.map((segment) => {
               if (segment.duration === null || !segment.start || !segment.end) {
@@ -63,16 +80,20 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
                 <button
                   key={segment.id}
                   className="bwo-stage-range"
+                  data-ongoing={segment.ongoing || undefined}
                   aria-pressed={selected === segment.id}
                   style={{
                     left: 80 + (range.position(Date.parse(segment.start)) * (width - 160)) / 100,
                     width: range.duration ? (segment.duration * (width - 160)) / range.duration : 0
                   }}
-                  title={`${segment.label}：${timeLabel(segment.start)} → ${timeLabel(segment.end)}，${elapsedLabel(segment.duration)}（含等待，不是人工工时）`}
+                  title={`${segment.id} · ${segment.label}：${timeLabel(segment.start)} → ${segment.ongoing ? '截至 ' : ''}${timeLabel(segment.end)}，${elapsedLabel(segment.duration)}（含等待，不是人工工时）`}
                   onClick={() => setSelected(segment.id!)}
                 >
-                  <strong>{segment.label}</strong>
-                  <span>{elapsedLabel(segment.duration)}</span>
+                  <strong>{segment.id}</strong>
+                  <span>
+                    {segment.ongoing ? '进行中 · ' : ''}
+                    {elapsedLabel(segment.duration)}
+                  </span>
                 </button>
               )
             })}
@@ -84,7 +105,15 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
                 title={cluster.map((event) => `${event.label} · ${timeLabel(event.at)}`).join('\n')}
                 onClick={() => {
                   const point = points.find((item) => item.event.id === cluster[0]!.id)
-                  setSelected(point?.key === 'baseline' ? 'intent' : (point?.key ?? ''))
+                  const group = {
+                    baseline: 'Plan',
+                    intent: 'Plan',
+                    design: 'Design',
+                    development: 'Build',
+                    first: 'Test',
+                    version: point?.event.deliveryKind === 'maintenance' ? 'Maintain' : 'version'
+                  }
+                  setSelected(point ? group[point.key] : '')
                 }}
               >
                 <i />
@@ -92,12 +121,10 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
                   {cluster.map((event) => {
                     const key = points.find((item) => item.event.id === event.id)!.key
                     return (
-                      <span key={event.id}>
+                      <span key={event.id} data-version={event.phase === 'version' || undefined}>
                         <strong>
                           {key === 'version' ? event.label : MILESTONE_LABELS[key]}
-                          {event.version && ['pre', 'release'].includes(key)
-                            ? ` · ${event.version}`
-                            : ''}
+                          {event.version && key === 'first' ? ` · ${event.version}` : ''}
                         </strong>
                         <time dateTime={event.at}>{timeLabel(event.at)}</time>
                       </span>
@@ -107,6 +134,16 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
               </button>
             ))}
             <span className="bwo-axis-start">{timeLabel(range.start)}</span>
+            {range.duration > 0 &&
+              [0.25, 0.5, 0.75].map((fraction) => (
+                <span
+                  key={fraction}
+                  className="bwo-axis-tick"
+                  style={{ left: 80 + fraction * (width - 160) }}
+                >
+                  {timeLabel(range.start + range.duration * fraction)}
+                </span>
+              ))}
             <span className="bwo-axis-end">{timeLabel(range.end)}</span>
           </div>
         ) : (
@@ -118,6 +155,7 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
           未记录：{missing.map((key) => MILESTONE_LABELS[key]).join('、')}。
         </p>
       )}
+      <p className="bwo-muted">Deploy · 未跟踪</p>
       <div className="bwo-source-row" aria-label="采集来源">
         {timeline.sources
           .filter((group) => group.id !== 'version' || group.events.length)

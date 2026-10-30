@@ -35,9 +35,6 @@ export function materialSourceInputs(
   ])
 }
 
-export const materialCache = new Map<string, VersionOverviewMaterials>()
-export const materialGenerations = new Map<string, number>()
-
 /** Only a value from the exact same owner and material revision may survive a failed refresh. */
 export function retainMaterialRead(
   value: VersionOverviewMaterials,

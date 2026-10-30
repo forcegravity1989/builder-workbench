@@ -326,3 +326,28 @@
   margin-top: 8px;
   font-weight: 500;
 }
+.bwo-stage-range[data-ongoing] {
+  border-style: dashed;
+}
+.bwo-axis-line {
+  top: calc(126px + var(--bwo-axis-shift, 0px));
+}
+.bwo-node {
+  top: calc(120px + var(--bwo-axis-shift, 0px));
+}
+.bwo-stage-range {
+  top: calc(148px + var(--bwo-axis-shift, 0px));
+}
+.bwo-axis-tick {
+  position: absolute;
+  bottom: 10px;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.bwo-node-label > [data-version] {
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}

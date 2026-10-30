@@ -176,3 +176,21 @@ export function MilestoneVersionRow({
     </div>
   )
 }
+
+/** Overlapping version windows share the header without covering one another. */
+export function milestoneVersionLanes(versions: ScheduledVersion[]) {
+  const laneEnds: string[] = [],
+    lanes = new Map<string, number>()
+  for (const version of versions) {
+    if (!version.timeWindow) {
+      continue
+    }
+    let lane = laneEnds.findIndex((end) => end < version.timeWindow!.start)
+    if (lane === -1) {
+      lane = laneEnds.length
+    }
+    laneEnds[lane] = version.timeWindow.end
+    lanes.set(version.cycleId, lane)
+  }
+  return { lanes, height: Math.max(1, laneEnds.length) * 64 }
+}

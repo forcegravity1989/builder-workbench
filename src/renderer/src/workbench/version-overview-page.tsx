@@ -4,16 +4,13 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
 import { useVersionCatalogForRepo } from './use-version-catalog'
-import {
-  useVersionOverviewMaterials,
-  type VersionOverviewMaterials
-} from './version-overview-materials'
+import type { VersionOverviewMaterials } from './version-overview-materials'
 import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
 import { openVersionOverview, type VersionOverviewOptions } from './project-page-state'
 import type { VersionGoal } from '../../../shared/workbench/version-material'
 import { DECISION_LABELS, goalOrdinal } from './version-labels'
 import { FeatureCard, timeLabel } from './version-overview/feature-card'
-import { useOverviewFeatures } from './version-overview/use-overview-features'
+import { useVersionFacts } from './version-overview/use-version-facts'
 import { taskKey, validTime } from './version-overview/feature-model'
 import { openEvidenceUrl } from './version-overview/overview-time'
 import { WorkflowProductivity } from './version-overview/workflow-productivity'
@@ -56,7 +53,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
   const catalog = useVersionCatalogForRepo(repoId)
   const [refreshToken, setRefreshToken] = useState(0)
   const [focus, setFocus] = useState<string | null>(null)
-  const materials = useVersionOverviewMaterials({ catalog, version, refreshToken })
+  const { materials, features } = useVersionFacts(catalog, version, refreshToken)
   const { plan, acceptance } = materials
   const planDocument = plan.kind === 'ready' ? plan.document : null
   const acceptanceDocument = acceptance.kind === 'ready' ? acceptance.document : null
@@ -74,24 +71,6 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
       !planDocument.summary.risks.trim()
     )
   const entry = catalog.catalog?.entries.find((e) => e.version === version) ?? null
-  const features = useOverviewFeatures({
-    catalog,
-    plan:
-      acceptanceDocument?.workflow?.archivePr &&
-      acceptance.kind === 'ready' &&
-      acceptance.source === 'committed' &&
-      !materials.prStatuses.acceptance
-        ? null
-        : planDocument,
-    planSource: plan.kind === 'ready' ? plan.source : 'committed',
-    version,
-    before:
-      acceptance.kind === 'ready' && acceptance.source === 'committed'
-        ? acceptance.acceptedAt
-        : undefined,
-    refreshToken,
-    historical: acceptance.kind === 'ready' && acceptance.source === 'committed'
-  })
   const projectName = useAppStore(
     (state) => state.repos.find((repo) => repo.id === repoId)?.displayName ?? '项目'
   )

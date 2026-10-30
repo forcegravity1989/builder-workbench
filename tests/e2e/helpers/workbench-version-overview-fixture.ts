@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { test } from './workbench-app'
@@ -127,6 +127,21 @@ export const overviewTest = test.extend({
       version: overviewVersions.error,
       goals: 'invalid'
     })
+    writeFileSync(
+      path.join(root, '.bw/milestones.json'),
+      JSON.stringify({
+        schema_version: 2,
+        months: [{ month: '2026-10', outcome: '' }],
+        features: []
+      })
+    )
+    // Existing planned versions need no macro-feature/Issue binding to show actual goals.
+    const currentPath = path.join(root, '.bw/planning', current.version, 'data.json')
+    const currentDocument = JSON.parse(readFileSync(currentPath, 'utf8'))
+    writeFileSync(
+      currentPath,
+      JSON.stringify({ ...currentDocument, timeWindow: { start: '2026-10-26', end: '2026-10-30' } })
+    )
     git('add', '.bw')
     git('commit', '-m', 'seed isolated current and invalid materials')
     await provideFixture(root)

@@ -1,14 +1,12 @@
 import type { CycleTaskReference, CycleTaskSnapshot } from '../version-cycle/ports'
 import { normalizeGitRemoteUrl } from '../../../../shared/git-remote-identity'
 
-export type FeaturePhase = 'design' | 'development' | 'pre' | 'release'
+export type FeaturePhase = 'design' | 'development'
 export const PHASE_LABELS: Record<FeaturePhase, string> = {
   design: '设计与联合评审',
-  development: '开发',
-  pre: 'Pre 试用与完善',
-  release: 'Release'
+  development: 'Build'
 }
-export const PARSER_REVISION = 'feature-evidence-v2'
+export const PARSER_REVISION = 'feature-evidence-v3'
 export type FeaturePull = {
   phase?: FeaturePhase | 'unknown'
   number: number
@@ -34,7 +32,7 @@ export type FeatureEvent = {
   rule: string
   version?: string
   delivered?: boolean
-  deliveryKind?: 'pre' | 'release'
+  deliveryKind?: 'first' | 'maintenance'
 }
 export type FeatureData = {
   root: CycleTaskSnapshot
@@ -42,6 +40,8 @@ export type FeatureData = {
   createdAt?: string
   closedAt?: string
   planningComplete?: boolean
+  /** Snapshot boundary; historical views never advance their clock to now. */
+  observedAt?: string
   members: CycleTaskSnapshot[]
   pulls: FeaturePull[]
   events: FeatureEvent[]
@@ -85,7 +85,7 @@ export function pullPhase(
   pullUrl = ''
 ): FeaturePhase | 'unknown' {
   const values = [
-    ...body.matchAll(/^\s*(?:交付阶段|阶段)\s*[:：]\s*(设计|开发|Pre|Release)\s*$/gim)
+    ...body.matchAll(/^\s*(?:交付阶段|阶段)\s*[:：]\s*(设计|开发|Design|Build)\s*$/gim)
   ].map((m) => m[1]!.toLowerCase())
   if (pullUrl) {
     for (const line of associationBody.split(/\r?\n/)) {
@@ -105,12 +105,12 @@ export function pullPhase(
     return 'unknown'
   }
   return (
-    ({ 设计: 'design', 开发: 'development', pre: 'pre', release: 'release' } as const)[
-      unique[0] as '设计' | '开发' | 'pre' | 'release'
+    ({ 设计: 'design', 开发: 'development', design: 'design', build: 'development' } as const)[
+      unique[0] as '设计' | '开发' | 'design' | 'build'
     ] ?? 'unknown'
   )
 }
-/** A PR labelled Pre/Release is still a PR, not proof of publication. */
+/** PR creation and merge events retain their provider timestamps independently. */
 export function eventsFromPulls(pulls: readonly FeaturePull[], before?: string): FeatureEvent[] {
   const cutoff = validTime(before) ? Date.parse(before) : Infinity
   const events: FeatureEvent[] = []
@@ -138,38 +138,6 @@ export function eventsFromPulls(pulls: readonly FeaturePull[], before?: string):
     }
   }
   return events.sort((a, b) => Date.parse(a.at) - Date.parse(b.at) || a.id.localeCompare(b.id))
-}
-export function featureStage(
-  pulls: readonly FeaturePull[],
-  historical: boolean,
-  events: readonly FeatureEvent[] = []
-): string {
-  const deliveries = events
-    .filter((event) => event.delivered)
-    .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
-  const delivered = deliveries.at(-1)
-  const suffix = delivered ? ` · ${delivered.label}` : ''
-  if (historical) {
-    return delivered?.label ?? '历史记录'
-  }
-  const design = pulls.filter((p) => (p.phase ?? pullPhase(p.body)) === 'design')
-  const development = pulls.filter((p) => (p.phase ?? pullPhase(p.body)) === 'development')
-  if (development.some((p) => ['open', 'opened', 'draft'].includes(p.state))) {
-    return `开发中${suffix}`
-  }
-  if (design.some((p) => ['open', 'opened', 'draft'].includes(p.state))) {
-    return `设计评审中${suffix}`
-  }
-  if (delivered) {
-    return delivered.label
-  }
-  if (development.some((p) => p.state === 'merged')) {
-    return '已有实现合入'
-  }
-  if (design.some((p) => p.state === 'merged')) {
-    return '已有设计合入'
-  }
-  return '阶段未记录'
 }
 export function linkedPullNumbers(body: string, issueUrl: string): number[] {
   let base: URL
@@ -214,8 +182,11 @@ export function timelineRange(events: readonly FeatureEvent[]) {
   }
 }
 
-export function timelineClusters(events: readonly FeatureEvent[], width: number) {
-  const range = timelineRange(events)
+export function timelineClusters(
+  events: readonly FeatureEvent[],
+  width: number,
+  range = timelineRange(events)
+) {
   const clusters: { x: number; events: FeatureEvent[] }[] = []
   if (!range) {
     return clusters

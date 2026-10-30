@@ -83,7 +83,7 @@ export async function readOverviewFeatures(args: OverviewFeatureArgs, force: boo
   }
   const missing = [...needed.values()].filter((r) => !reads.has(taskKey(r)))
   if (missing.length) {
-    const roots = await nativeTaskReferenceReader.read(scope, missing)
+    const roots = await nativeTaskReferenceReader.read(scope, missing, force)
     roots.forEach((value, i) => {
       const read = cycleTaskRead(missing[i]!, value)
       if (read.kind === 'ready' && value.kind !== 'unavailable' && value.item.type === 'issue') {
