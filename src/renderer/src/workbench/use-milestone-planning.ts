@@ -97,7 +97,7 @@ export function useMilestonePlanning(
             ...previous,
             data,
             sourceConflict:
-              '当前显示本机草案，项目规划已有更新。草案已保留；可用顶部“放弃本次修改”载入最新规划。'
+              '本机草案与最新项目规划不同，草案已保留。可在规划时放弃本次修改，载入最新规划。'
           })
         }
       } else {
