@@ -1,8 +1,10 @@
 import { Fragment } from 'react'
 import {
   MilestonePhases,
-  type MilestoneFeature
+  type MilestoneFeature,
+  type ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
+import { milestoneDeliveryWindow } from '../../../shared/workbench/milestone-delivery-window'
 import { plannedDay } from '../../../shared/workbench/milestone-sdlc'
 import {
   MILESTONE_DAY_WIDTH as width,
@@ -59,6 +61,7 @@ export function MilestoneSdlcToolbar({
 
 export function MilestoneStageBars({
   feature,
+  versions,
   origin,
   enabled,
   started,
@@ -66,6 +69,7 @@ export function MilestoneStageBars({
   gesture
 }: {
   feature: MilestoneFeature
+  versions: ScheduledVersion[]
   origin: number
   enabled: boolean
   started: Set<string>
@@ -77,12 +81,36 @@ export function MilestoneStageBars({
     <>
       <svg className="wb-ml-connection" aria-hidden="true">
         {feature.deliveries.slice(1).map((d, i) => {
-          const left = x(feature.deliveries[i].stages.at(-1)!.end),
-            right = x(d.stages[0].start)
+          if (!d.stages.length || !feature.deliveries[i].stages.length) {
+            return null
+          }
+          const previous = milestoneDeliveryWindow(feature.deliveries[i], versions),
+            current = milestoneDeliveryWindow(d, versions)
+          if (!previous || !current) {
+            return null
+          }
+          const left = x(previous.end),
+            right = x(current.start)
           return right > left ? <path key={d.id} d={`M ${left} 45 H ${right}`} /> : null
         })}
       </svg>
       {feature.deliveries.map((delivery) => {
+        const window = milestoneDeliveryWindow(delivery, versions)
+        if (!window) {
+          return null
+        }
+        if (!delivery.stages.length) {
+          return (
+            <div
+              key={delivery.id}
+              className="wb-ml-unrecorded"
+              style={{ left: x(window.start), width: x(window.end) - x(window.start) }}
+              title={`${delivery.version.version} · 仅表示版本归属，未记录 SDLC 阶段时间`}
+            >
+              阶段未记录
+            </div>
+          )
+        }
         const frozen = started.has(delivery.version.cycleId),
           editable = enabled && !frozen
         const hasFirstDelivery = gesture.hasFirstDelivery(delivery.version.cycleId)

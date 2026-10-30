@@ -49,7 +49,7 @@ export function useMilestoneGesture(
     const delivery = base.material.features
       .find((f) => f.id === g.id)
       ?.deliveries.find((d) => d.id === g.deliveryId)
-    if (!delivery || started.has(delivery.version.cycleId)) {
+    if (!delivery?.stages.length || started.has(delivery.version.cycleId)) {
       return base
     }
     let next = base

@@ -107,6 +107,9 @@ export function Timeline({
     let draft = gesture.base,
       targetId
     const delivery = draft.features.find((f) => f.id === gesture.id).deliveries[gesture.index]
+    if (!delivery.stages.length) {
+      return draft
+    }
     if (gesture.mode === 'move' && delta) {
       const targetDay = delivery.stages[0].start + delta
       const candidates = draft.versions.filter(
@@ -232,7 +235,9 @@ export function Timeline({
             editable &&
             (s.phase !== 'Maintain' ||
               !display.features.some((f) =>
-                f.deliveries.some((d) => d.versionId === version.id && d.stages[0].phase === 'Plan')
+                f.deliveries.some(
+                  (d) => d.versionId === version.id && d.stages[0]?.phase === 'Plan'
+                )
               ))
           const label = `${s.phase} · ${plannedTime(s.start)} — ${plannedTime(s.end)} · ${ghost ? '原计划，只读' : '计划'}`
           return (
@@ -466,7 +471,7 @@ export function Timeline({
           {display.features.map((feature, index) => (
             <div
               key={feature.id}
-              className={`ml-timeline-row ${showPlan && feature.deliveries.some((d) => versionById.get(d.versionId).started) ? 'with-baseline' : ''} ${dropRow?.id === feature.id ? `ml-row-drop-${dropRow.side}` : ''}`}
+              className={`ml-timeline-row ${showPlan && feature.deliveries.some((d) => d.stages.length && versionById.get(d.versionId).started) ? 'with-baseline' : ''} ${dropRow?.id === feature.id ? `ml-row-drop-${dropRow.side}` : ''}`}
               onDragOver={(e) => {
                 if (!ordering.current || !planning) {
                   return
@@ -633,6 +638,9 @@ export function Timeline({
                 <svg className="ml-sdlc-connection" aria-hidden="true">
                   {feature.deliveries.slice(1).map((d, i) => {
                     const previous = feature.deliveries[i]
+                    if (!previous.stages.length || !d.stages.length) {
+                      return null
+                    }
                     const left = x(previous.stages.at(-1).end)
                     const right = x(d.stages[0].start)
                     return right > left ? (
@@ -648,6 +656,21 @@ export function Timeline({
                         ? delivery.actual || []
                         : []
                   const started = Boolean(v.started)
+                  if (!first) {
+                    return (
+                      <div
+                        key={delivery.versionId}
+                        className="ml-unrecorded"
+                        style={{
+                          left: x(day(v.start)),
+                          width: (day(v.end) - day(v.start) + 1) * dayWidth
+                        }}
+                        title={`${v.name} · 仅表示版本归属，未记录 SDLC 阶段时间`}
+                      >
+                        阶段未记录
+                      </div>
+                    )
+                  }
                   return (
                     <React.Fragment key={delivery.stages[0].phase}>
                       {started ? (

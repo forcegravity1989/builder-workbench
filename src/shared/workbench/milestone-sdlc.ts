@@ -1,5 +1,6 @@
 import { milestoneDay, milestoneDate } from './milestone-calendar'
 import { workCalendarDay } from './work-calendar'
+import { milestoneDeliveryWindow } from './milestone-delivery-window'
 import {
   MilestonePhases,
   type MilestoneDraft,
@@ -50,10 +51,12 @@ export function milestoneLaneConflict(draft: MilestoneDraft): string | undefined
   return draft.material.features.find((feature) =>
     feature.deliveries.some((delivery, index) => {
       const previous = feature.deliveries[index - 1]
+      const previousWindow = previous && milestoneDeliveryWindow(previous, draft.versions)
+      const window = milestoneDeliveryWindow(delivery, draft.versions)
       return (
         previous &&
         (delivery.version.cycleId === previous.version.cycleId ||
-          delivery.stages[0]?.start < previous.stages.at(-1)!.end)
+          (window && previousWindow && window.start < previousWindow.end))
       )
     })
   )?.id
@@ -164,7 +167,7 @@ export function adjustMilestoneDelivery(
   const delivery = draft.material.features
     .find((f) => f.id === featureId)
     ?.deliveries.find((d) => d.id === deliveryId)
-  if (!delivery || !Number.isInteger(delta * 2) || !delta) {
+  if (!delivery?.stages.length || !Number.isInteger(delta * 2) || !delta) {
     return draft
   }
   const versionId = target?.cycleId ?? delivery.version.cycleId

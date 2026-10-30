@@ -12,11 +12,11 @@ export function describeMilestoneChanges(before: MilestoneDraft, after: Mileston
     const old = before.material.features.find((item) => item.id === f.id)
     if (!old) {
       result.push(
-        `新增特性：${f.title} · ${f.owner} · ${f.deliveries.map((d) => `${d.version.version} ${d.stages[0]?.phase ?? ''}`).join(' → ')}`
+        `新增特性：${f.title} · ${f.owner} · ${f.deliveries.map((d) => `${d.version.version} ${d.stages[0]?.phase ?? '阶段未记录'}`).join(' → ')}`
       )
     } else if (JSON.stringify(old) !== JSON.stringify(f)) {
       result.push(
-        `调整特性：${old.title} → ${f.title} · ${f.owner} · ${f.deliveries.map((d) => `${d.version.version} ${d.stages[0]?.phase ?? ''}`).join(' → ')}`
+        `调整特性：${old.title} → ${f.title} · ${f.owner} · ${f.deliveries.map((d) => `${d.version.version} ${d.stages[0]?.phase ?? '阶段未记录'}`).join(' → ')}`
       )
       for (const delivery of f.deliveries) {
         const previous = old.deliveries.find((item) => item.id === delivery.id)

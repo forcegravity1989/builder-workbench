@@ -1185,6 +1185,21 @@
   background-image: repeating-linear-gradient(135deg, transparent 0 5px, #ffffff25 5px 8px);
   border-right-style: dashed;
 }
+.ml-unrecorded {
+  position: absolute;
+  top: 31px;
+  height: 28px;
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+}
 .ml-actual-unknown,
 .ml-deploy-unknown {
   position: absolute;

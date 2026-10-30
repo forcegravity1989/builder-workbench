@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { MetricScopeSchema } from './metrics'
 import { MaterialVersion } from './version-material-common'
 import { VersionTimeWindowSchema } from './version-time-window'
+import { milestoneDeliveryWindow } from './milestone-delivery-window'
 import type { CharterStatus, CharterSubmitOutcome } from './charter'
 
 export const MILESTONES_PATH = '.bw/milestones.json'
@@ -23,7 +24,8 @@ export const MilestoneDeliverySchema = z.strictObject({
   version: Ref,
   goalId: Id.optional(),
   goalSlot: z.number().int().min(1).max(4).optional(),
-  stages: z.array(MilestoneStageSchema).min(1).max(5)
+  // Empty means no recorded phase plan, not a default or completed delivery.
+  stages: z.array(MilestoneStageSchema).max(5)
 })
 export const MilestoneFeatureSchema = z.strictObject({
   id: Id,
@@ -142,13 +144,25 @@ export function milestoneProblems(draft: MilestoneDraft): string[] {
         (v) => v.cycleId === delivery.version.cycleId && v.version === delivery.version.version
       )
       const expected = index === 0 ? MilestonePhases.slice(0, 5) : ['Maintain']
-      if (delivery.stages.map((s) => s.phase).join() !== expected.join()) {
+      if (
+        delivery.stages.length &&
+        delivery.stages.map((s) => s.phase).join() !== expected.join()
+      ) {
         problems.push(`${feature.title}：首版使用 Plan 至 Deploy，后续版本使用 Maintain`)
       }
       const first = delivery.stages[0],
         last = delivery.stages.at(-1)
-      if (!version?.timeWindow || !first || !last) {
+      if (!version?.timeWindow || !VersionTimeWindowSchema.safeParse(version.timeWindow).success) {
         problems.push(`${feature.title || '新特性'}：请安排有日期的版本`)
+        continue
+      }
+      const window = milestoneDeliveryWindow(delivery, versions)!
+      const previous =
+        index > 0 ? milestoneDeliveryWindow(feature.deliveries[index - 1], versions) : undefined
+      if (previous && window.start < previous.end) {
+        problems.push(`${feature.title}：Maintain 不能早于上一版计划结束`)
+      }
+      if (!first || !last) {
         continue
       }
       const endDay = Date.parse(`${version.timeWindow.end}T00:00:00Z`) + 86400000
@@ -162,10 +176,6 @@ export function milestoneProblems(draft: MilestoneDraft): string[] {
         delivery.stages.some((s, i, all) => s.start >= s.end || (i > 0 && s.start < all[i - 1].end))
       ) {
         problems.push(`${feature.title}：阶段时间必须依次推进且不能重叠`)
-      }
-      const previous = feature.deliveries[index - 1]?.stages.at(-1)
-      if (previous && first.start < previous.end) {
-        problems.push(`${feature.title}：Maintain 不能早于上一版计划结束`)
       }
     }
   }

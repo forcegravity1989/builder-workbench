@@ -86,6 +86,25 @@ it('keeps planning dates, precise version identity and snapshots through schedul
     }).success
   ).toBe(false)
   expect(milestoneProblems(draft)).toEqual([])
+  const historical = structuredClone(draft)
+  historical.material.features.forEach((f) =>
+    f.deliveries.forEach((d) => {
+      d.stages = []
+    })
+  )
+  expect(milestoneProblems(historical)).toEqual([])
+  expect(milestoneLaneConflict(historical)).toBeUndefined()
+  expect(adjustMilestoneDelivery(historical, 'f1', 'f1-0', 'move', 0, 1)).toBe(historical)
+  expect(fitMilestoneVersions(historical, new Set(['one', 'two']))).toEqual(historical)
+  const overlappingHistory = adjustMilestoneVersion(historical, 'two', -1)
+  expect(milestoneLaneConflict(overlappingHistory)).toBe('f1')
+  expect(milestoneProblems(overlappingHistory).join()).toContain('Maintain 不能早于')
+  const undatedHistory = structuredClone(historical)
+  delete undatedHistory.versions[0].timeWindow
+  expect(milestoneProblems(undatedHistory).join()).toContain('请安排有日期')
+  const invalidHistory = structuredClone(historical)
+  invalidHistory.versions[0].timeWindow!.end = '2026-02-30'
+  expect(milestoneProblems(invalidHistory).join()).toContain('请核对名称及起止日期')
   const before = milestoneDraft({
     ...draft,
     head: 'a',
@@ -93,6 +112,18 @@ it('keeps planning dates, precise version identity and snapshots through schedul
     problems: [],
     versions: draft.versions.map((v) => ({ ...v, started: false }))
   })
+  expect(
+    frozenMilestoneProblems(
+      {
+        ...historical,
+        head: 'a',
+        revision: 'b',
+        problems: [],
+        versions: historical.versions.map((v) => ({ ...v, started: true }))
+      },
+      before
+    ).join()
+  ).toContain('原计划须保留')
   draft.material.features = reorderMilestoneFeature(draft.material.features, 'f2', 'f1', 'before')
   expect(draft.material.features.map((f) => f.id)).toEqual(['f2', 'f1'])
   expect(before.material.features.map((f) => f.id)).toEqual(['f1', 'f2'])

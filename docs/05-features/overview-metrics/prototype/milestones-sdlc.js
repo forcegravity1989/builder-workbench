@@ -114,7 +114,7 @@ export function adjustVersion(plan, id, mode, delta) {
 export function adjustDelivery(plan, featureId, deliveryIndex, mode, stageIndex, delta, targetId) {
   const delivery = plan.features.find((f) => f.id === featureId)?.deliveries[deliveryIndex]
   if (
-    !delivery ||
+    !delivery?.stages.length ||
     plan.versions.find((v) => v.id === delivery.versionId)?.started ||
     (targetId && plan.versions.find((v) => v.id === targetId)?.started)
   ) {
@@ -143,6 +143,7 @@ export function scheduleProblem(plan) {
       }
       if (
         !version.started &&
+        delivery.stages.length &&
         (delivery.stages[0].start < day(version.start) ||
           delivery.stages.at(-1).end > day(version.end) + 1)
       ) {

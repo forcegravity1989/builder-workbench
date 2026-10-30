@@ -163,7 +163,6 @@ export function validPlan(p) {
           (d) =>
             p.versions.some((v) => v.id === d.versionId) &&
             Array.isArray(d.stages) &&
-            d.stages.length &&
             d.stages.every(
               (s) => Number.isFinite(s.start) && Number.isFinite(s.end) && s.start < s.end
             )

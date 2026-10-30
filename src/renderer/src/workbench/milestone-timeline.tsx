@@ -237,10 +237,13 @@ export function MilestoneTimeline(props: Props) {
           </div>
           {features.map((f, row) => {
             const frozen = f.deliveries.some((d) => props.started.has(d.version.cycleId))
+            const hasBaseline = f.deliveries.some(
+              (d) => d.stages.length && props.started.has(d.version.cycleId)
+            )
             return (
               <div
                 key={f.id}
-                className={`wb-ml-row${showPlan && frozen ? ' with-baseline' : ''}${rowDrop?.id === f.id ? ` wb-ml-drop-${rowDrop.side}` : ''}`}
+                className={`wb-ml-row${showPlan && hasBaseline ? ' with-baseline' : ''}${rowDrop?.id === f.id ? ` wb-ml-drop-${rowDrop.side}` : ''}`}
                 data-milestone-feature={f.id}
               >
                 <div className="wb-ml-label wb-ml-feature" data-ml-stop-pan>
@@ -347,6 +350,7 @@ export function MilestoneTimeline(props: Props) {
                 <div className="wb-ml-track" style={{ width: canvasWidth }}>
                   <MilestoneStageBars
                     feature={f}
+                    versions={visible.versions}
                     origin={origin}
                     enabled={enabled}
                     started={props.started}
