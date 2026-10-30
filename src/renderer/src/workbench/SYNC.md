@@ -29,7 +29,7 @@ pnpm run dev:workbench
 
 - Renderer（叠层 UI / CSS）保存即 HMR，所见即所得
 - Main / preload 变更会整窗重启（electron-vite 默认）
-- 独立 profile：`~/Library/Application Support/workbench-dev`（不碰 `orca-dev`）
+- 独立 profile：macOS `~/Library/Application Support/workbench-dev`、Windows `%APPDATA%\workbench-dev`（不碰 `orca-dev`）
 - Dock 标题：`Workbench: <branch>`
 
 **自己看 UI**：不要设 `ORCA_BACKGROUND_LAUNCH=1`（该变量会隐藏窗口、藏 Dock，仅供 agent/CDP 自动化）。
@@ -38,6 +38,12 @@ pnpm run dev:workbench
 
 ```bash
 ORCA_BACKGROUND_LAUNCH=1 REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench
+```
+
+`dev:workbench` 本身已跨平台可直接跑；上面的 env 前缀是 POSIX 写法，在 Windows cmd/PowerShell 下不成立，改用该 shell 自己的赋值：
+
+```powershell
+$env:ORCA_BACKGROUND_LAUNCH = '1'; $env:REMOTE_DEBUGGING_PORT = '9337'; pnpm run dev:workbench
 ```
 
 打试用包仍用：`pnpm run build:mac:workbench`（签名 / 分发 / CDP smoke 前再打）。
