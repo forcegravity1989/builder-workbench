@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Sparkles, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { SidebarFoldActions } from '@/workbench/SidebarFoldActions'
 
 type SidebarHeaderProps = {
   onWorkspaceBoardMenuOpenChange: (open: boolean) => void
@@ -59,7 +60,8 @@ const SidebarHeader = React.memo(function SidebarHeader({
           {sidebarTitle}
         </span>
       </div>
-      <div className="flex shrink-0 items-center gap-1">
+      <div className={cn('flex shrink-0 items-center', isWorkbenchShell() ? 'gap-0' : 'gap-1')}>
+        {isWorkbenchShell() && !agentsViewActive ? <SidebarFoldActions /> : null}
         <Popover
           open={introOpen}
           onOpenChange={(open) => {
