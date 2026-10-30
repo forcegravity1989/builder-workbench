@@ -60,6 +60,8 @@ $env:ORCA_BACKGROUND_LAUNCH = '1'; $env:REMOTE_DEBUGGING_PORT = '9337'; pnpm run
 
 Windows Workbench：`pnpm run build:win:workbench`（脚本 `config/scripts/build-win-workbench.mjs`，沿用 `electron-builder` 的 Windows/NSIS 配置）。 Workbench 使用带目录选择的安装向导，手动运行安装包时可选择安装位置；已有安装默认沿用原目录，应用内自动更新沿用原目录并跳过选择页。产品名与 appId 保持独立于官方 Orca。包内 `resources/bin/orca.exe` 仍使用原生命令名，按产品编译并调用同包的 `Workbench.exe`；Workbench 与 Orca 启动器分别缓存，不能混用。打包后须通过该启动器读取 Skill 与材料 schema，不能只用 Node 直接调用 CLI JS 代替验证。
 
+Windows Workbench 的 Electron 语言资源只保留简体中文（`zh-CN`）和英语（`en-US`），其他系统语言回落英语；这不裁剪应用自身的翻译目录。打包清除运行依赖里的 MSVC 调试符号与编译中间文件，保留 `.node`、`.dll`、`.exe`。SSH relay 的全部目标平台文件只随 `extraResources` 放在 `resources/relay`，不重复进入 `app.asar`。
+
 产物示例：
 
 - `dist/mac-arm64/Workbench.app`
