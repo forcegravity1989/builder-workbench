@@ -1,5 +1,6 @@
 import { MessageSquare, RefreshCw } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { BoardActionButton } from '../board-ui'
 import { AutomationConfigureButton } from '../version-cycle/AutomationConfigureButton'
 import { ACCEPTANCE_SECTIONS, type AcceptanceSectionId } from './acceptance-sections'
 
@@ -85,10 +86,8 @@ export function AcceptanceHeader({
           </span>
         </div>
       </div>
-      <div className="acc-header-actions">
-        <button
-          type="button"
-          className="acc-session-chip"
+      <div className="acc-header-actions" role="group" aria-label="验收操作">
+        <BoardActionButton
           aria-expanded={!sessionCollapsed}
           aria-label={sessionCollapsed ? '展开会话栏' : '收折会话栏'}
           title={sessionCollapsed ? '展开会话栏' : '收折会话栏'}
@@ -96,12 +95,12 @@ export function AcceptanceHeader({
         >
           <MessageSquare size={13} aria-hidden="true" />
           {sessionCollapsed ? '展开会话' : '收起会话'}
-        </button>
+        </BoardActionButton>
         {annotateEntry}
-        <button type="button" className="acc-text-button" disabled={disabled} onClick={onRefresh}>
+        <BoardActionButton disabled={disabled} onClick={onRefresh}>
           <RefreshCw size={13} aria-hidden="true" /> 更新代码
-        </button>
-        <AutomationConfigureButton className="acc-text-button" onConfigure={onConfigure} />
+        </BoardActionButton>
+        <AutomationConfigureButton className="g3-action-button" onConfigure={onConfigure} />
       </div>
     </header>
   )
