@@ -1,67 +1,51 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { codehubApi } from '@/lib/codehub-api'
-import type { CodeHubMrFileChange } from '../../../../../shared/codehub-mr-detail'
-import type { PRCheckDetail } from '../../../../../shared/github/check-types'
+import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
+import {
+  codehubDetailCache,
+  ensureCodehubDetailFresh,
+  getCodehubDetailCacheKey,
+  refreshCodehubMrExtras,
+  subscribeCodehubDetailCache
+} from './codehub-detail-cache'
 
 // MR 详情的检查项与文件变更。null = 还没读到,区分「没有」与「未加载」;
-// tab 徽标与 Checks 空态靠它判断。
+// tab 徽标与 Checks 空态靠它判断。数据住共享 SWR 缓存,与详情主体同条目,
+// 由 ensureCodehubDetailFresh 的整批读取一并拉取。
 export function useCodeHubMrExtras(item: CodeHubTaskItem | null) {
-  const [checks, setChecks] = useState<PRCheckDetail[] | null>(null)
-  const [files, setFiles] = useState<CodeHubMrFileChange[] | null>(null)
-  const [mrExtrasLoading, setMrExtrasLoading] = useState(false)
-  const staleRef = useRef(false)
-
-  const load = useCallback((): void => {
+  const key =
+    item && item.type === 'mr'
+      ? getCodehubDetailCacheKey({ repoId: item.repoId, kind: item.type, iid: item.iid })
+      : ''
+  const entry = useSyncExternalStore(
+    subscribeCodehubDetailCache,
+    useCallback(() => (key ? codehubDetailCache.get(key) : undefined), [key])
+  )
+  useEffect(() => {
     if (!item?.repoPath || item.type !== 'mr') {
       return
     }
-    const isStale = () => staleRef.current
-    setMrExtrasLoading(true)
-    const checksReq = codehubApi
-      .mrChecks({ repoPath: item.repoPath, repoId: item.repoId, iid: item.iid })
-      .then((rows) => {
-        if (!isStale()) {
-          setChecks(rows)
-        }
-      })
-      .catch(() => {
-        if (!isStale()) {
-          setChecks([])
-        }
-      })
-    const filesReq = codehubApi
-      .mrChanges({ repoPath: item.repoPath, repoId: item.repoId, iid: item.iid })
-      .then((rows) => {
-        if (!isStale()) {
-          setFiles(rows)
-        }
-      })
-      .catch(() => {
-        if (!isStale()) {
-          setFiles([])
-        }
-      })
-    void Promise.all([checksReq, filesReq]).finally(() => {
-      if (!isStale()) {
-        setMrExtrasLoading(false)
-      }
+    // Idempotent: the detail hook's mount effect already ensures this read; the
+    // per-key pending promise dedupes when both fire.
+    void ensureCodehubDetailFresh({
+      repoPath: item.repoPath,
+      repoId: item.repoId,
+      kind: item.type,
+      iid: item.iid
     })
   }, [item])
-
-  useEffect(() => {
-    staleRef.current = false
-    setChecks(null)
-    setFiles(null)
-    setMrExtrasLoading(false)
-    load()
-    return () => {
-      staleRef.current = true
+  const checks = key ? (entry?.checks ?? null) : null
+  const files = key ? (entry?.files ?? null) : null
+  const mrExtrasLoading = Boolean(key && entry?.pending)
+  const reloadMrExtras = useCallback((): void => {
+    if (!item?.repoPath || item.type !== 'mr') {
+      return
     }
-  }, [load])
-
-  // 用户主动刷新当前 item 时走这里;首次加载由上面的 effect 驱动。
-  const reloadMrExtras = load
-
+    void refreshCodehubMrExtras({
+      repoPath: item.repoPath,
+      repoId: item.repoId,
+      kind: item.type,
+      iid: item.iid
+    })
+  }, [item])
   return { checks, files, mrExtrasLoading, reloadMrExtras }
 }

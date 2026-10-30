@@ -1,4 +1,5 @@
 import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { prefillCodehubDetailCache } from '@/components/task-page/codehub/codehub-detail-cache'
 import { codehubApi } from '@/lib/codehub-api'
 import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
 import { useAppStore } from '@/store'
@@ -72,6 +73,10 @@ export async function openArchivePrPage(
       kind: 'mr',
       iid: archivePr.number
     })
+    // Why: feed the jump's viewTask into the detail cache (fetchedAt=0) so the
+    // opening detail paints this lane instantly instead of re-running viewTask;
+    // the remaining lanes still trigger one full read on mount.
+    prefillCodehubDetailCache({ repoId: repo.id, kind: 'mr', iid: archivePr.number }, detail)
     const remote =
       parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ??
       parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey)

@@ -573,6 +573,7 @@ import {
   PackageLaunchSchema,
   PackagePipelineListSchema
 } from '../workbench/package-pipeline'
+import { ReleaseStatusRequestSchema } from '../workbench/release-status'
 import { TrunkUpdateSchema } from '../workbench/trunk-update'
 import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../workbench/version-binding'
 import {
@@ -762,6 +763,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'codehub.updateIssueLabels': CodeHubUpdateIssueLabels,
   'codehub.updateIssueTitle': CodeHubUpdateIssueTitle,
   'codehub.viewTask': CodeHubViewTask,
+  'codehub.viewer': CodeHubListLabels,
   'computer.capabilities': ComputerCapabilitiesParams,
   'computer.click': Click,
   'computer.drag': DragOfComputerSchemasParams,
@@ -904,6 +906,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'github.removePRReviewers': RemovePrReviewers,
   'github.repoSlug': RepoSelector,
   'github.repoUpstream': RepoSelector,
+  'github.repoViewer': RepoSelector,
   'github.requestPRReviewers': RequestPrReviewers,
   'github.rerunPRChecks': RerunPullRequestChecks,
   'github.resolveReviewThread': ReviewThread,
@@ -1229,6 +1232,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.package.latest': PackageLatestSchema,
   'workbench.package.launch': PackageLaunchSchema,
   'workbench.package.list': PackagePipelineListSchema,
+  'workbench.release.status': ReleaseStatusRequestSchema,
   'workbench.trunk.update': TrunkUpdateSchema,
   'workbench.versionBinding.read': VersionBindingScopeSchema,
   'workbench.versionBinding.set': VersionBindingSetSchema,

@@ -165,6 +165,22 @@ describe('useComposerState host-context boundaries', () => {
   })
 
   it('auto-owns linked-item generated prefilled names', () => {
+    const issue = {
+      type: 'issue' as const,
+      provider: 'codehub' as const,
+      number: 383,
+      title: '侧栏主机显示',
+      url: 'https://codehub.example/issues/383'
+    }
+    expect(
+      getInitialAutoManagedWorkspaceName({ initialName: 'issue-383', initialLinkedWorkItem: issue })
+    ).toBe('issue-383')
+    expect(
+      getInitialAutoManagedWorkspaceName({
+        initialName: '我手工起的名字',
+        initialLinkedWorkItem: issue
+      })
+    ).toBe('')
     expect(
       getInitialAutoManagedWorkspaceName({
         initialName: 'fix-workspace-name',

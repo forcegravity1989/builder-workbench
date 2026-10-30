@@ -57,6 +57,20 @@ export type WorkspaceIntentName = {
   seedName: string
 }
 
+export function isNumberedGitIssue(
+  item: WorkspaceIntentWorkItem | null | undefined
+): item is WorkspaceIntentWorkItem & { type: 'issue' } {
+  return Boolean(
+    item &&
+    item.type === 'issue' &&
+    item.number > 0 &&
+    item.provider !== 'linear' &&
+    item.provider !== 'jira' &&
+    !item.linearIdentifier &&
+    !item.jiraIdentifier
+  )
+}
+
 function getLinkedWorkItemTitleSubject(item: { title: string }): string {
   return item.title
     .trim()
@@ -175,6 +189,17 @@ export function getLinkedWorkItemWorkspaceName(
   item: WorkspaceIntentWorkItem
 ): WorkspaceIntentName | null {
   const identifier = item.linearIdentifier ?? item.jiraIdentifier
+  if (isNumberedGitIssue(item)) {
+    const title = item.title.trim()
+    return {
+      displayName:
+        title === `#${item.number}` || title.startsWith(`#${item.number} `)
+          ? title
+          : `#${item.number}${title ? ` ${title}` : ''}`,
+      // Keep the Issue identity when the title contains no ASCII branch-safe words.
+      seedName: getWorkspaceIntentName({ workItem: item })?.seedName ?? `issue-${item.number}`
+    }
+  }
   let subject = getLinkedWorkItemTitleSubject(item) || item.title.trim()
   if (identifier) {
     subject = subject
@@ -233,6 +258,40 @@ export function getWorkspaceIntentName(args: {
     return null
   }
   return { displayName, seedName }
+}
+
+export function isLinkedWorkItemWorkspaceNameSeed(
+  name: string,
+  item: WorkspaceIntentWorkItem
+): boolean {
+  return (
+    Boolean(name) &&
+    [
+      getLinkedWorkItemWorkspaceName(item)?.seedName,
+      getWorkspaceIntentName({ workItem: item })?.seedName,
+      getLinkedWorkItemSuggestedName(item)
+    ].includes(name)
+  )
+}
+
+// The native naming mode is authoritative; text equality never overrides a fixed label.
+export function isAutomaticLinkedIssueWorkspaceLabel(input: {
+  storedDisplayName: string | null | undefined
+  displayNameMode?: 'fixed' | 'automatic'
+  branchName?: string | null
+  linkedWorkItem?: WorkspaceIntentWorkItem | null
+}): boolean {
+  const item = input.linkedWorkItem
+  if (!isNumberedGitIssue(item)) {
+    return false
+  }
+  const name = input.storedDisplayName?.trim()
+  const branch = input.branchName?.replace(/^refs\/heads\//, '').trim()
+  if (input.displayNameMode) {
+    return input.displayNameMode === 'automatic'
+  }
+  // Older hosts omit the mode; only retain the native empty/branch fallback.
+  return !name || name === branch
 }
 
 export function getLinearIssueWorkspaceName(issue: { identifier: string; title: string }): string {

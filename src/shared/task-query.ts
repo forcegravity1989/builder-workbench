@@ -15,7 +15,7 @@ type SearchQueryToken = {
   raw: string
 }
 
-function tokenizeSearchQueryWithRaw(rawQuery: string): SearchQueryToken[] {
+export function tokenizeSearchQueryWithRaw(rawQuery: string): SearchQueryToken[] {
   const tokens: SearchQueryToken[] = []
   let value = ''
   let raw = ''

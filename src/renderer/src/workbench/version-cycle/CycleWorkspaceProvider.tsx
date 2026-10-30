@@ -18,6 +18,7 @@ import { CycleWorkspaceContext } from './cycle-workspace-context'
 import { nativeVersionMaterialPort } from '../version-material-port'
 import { nativeTaskPort } from '../native-task-port'
 import { nativeArchivePrPort } from '../archive-pr-port'
+import { nativeReleaseStatusPort } from '../release-port'
 import './version-cycle.css'
 
 export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
@@ -56,6 +57,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
   const version = useWorkflowVersion(materialPort)
   const taskPort = useMemo(() => nativeTaskPort(), [])
   const archivePort = useMemo(() => nativeArchivePrPort(owner), [owner])
+  const releasePort = useMemo(() => nativeReleaseStatusPort(owner), [owner])
   const automation = useEnsureCycleAutomation({
     cycleScope: scope,
     fixedId,
@@ -79,7 +81,10 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
         if (!scope || !fixedId || !automation.automationId) {
           throw new Error('周期自动化尚未就绪，请在自动化页核对配置。')
         }
-        await startCycleAutomation(scope, fixedId, automation.automationId, oneShot)
+        if (!agent) {
+          throw new Error('会话工具尚未就绪，请先在设置中配置默认智能体。')
+        }
+        await startCycleAutomation(scope, fixedId, automation.automationId, agent, oneShot)
         toast.message('已打开本次运行的会话。')
         setNotice(null)
         return true
@@ -97,7 +102,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
         setBusy(false)
       }
     },
-    [scope, fixedId, automation.automationId]
+    [scope, fixedId, automation.automationId, agent]
   )
   const prepareMetrics = useCallback(async () => {
     if (!scope || !agent) {
@@ -128,6 +133,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
               materialPort,
               taskPort,
               archivePort,
+              releasePort,
               error: error ?? version.error,
               syncing,
               materialRefresh,
@@ -155,6 +161,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
       materialPort,
       taskPort,
       archivePort,
+      releasePort,
       error,
       syncing,
       materialRefresh,

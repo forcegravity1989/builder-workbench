@@ -2,7 +2,7 @@
 
 > 给实现与技术评审者动代码前读；本文管对象、数据边界、模块归属和异常语义。用户行为以 [spec](spec.md) 为准，价值见 [intent](intent.md)，证据与缺口见 [STATUS](STATUS.md)。落地后同步 06-module。本文只描述当前有效方案，不保留被替代的形态或过程记录。
 >
-> 状态：v10（周五验收会议四步屏）实现设计，规格与意图已于 2026-10-22 经负责人确认。基线为 main（含计划屏 G3 生产实现 #399）。
+> 状态：v10（周五验收会议四步屏）实现设计，规格与意图已于 2026-10-22 经负责人确认；发布状态读回经 [#462](https://github.com/forcegravity1989/builder-workbench/issues/462) 修订（2026-10-27）。基线为 main（含计划屏 G3 生产实现 #399）。
 
 ## 设计边界
 
@@ -48,8 +48,9 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 - `minutes?: AcceptanceMeetingMinutes` —— 与计划侧 `PlanMeetingMinutes` 同形但**不含闭环位**：`consensus: string[]`、`followups: Array<{ id: string; text: string }>`、`confirmed: boolean`、`confirmedAt?`、`sources?`、`updatedAt?`。followup 的 `id` 用 `crypto.randomUUID()` 稳定身份，人工增删不让既有编号漂移；板面按数组序显示 M1…Mn。不给验收材料留恒假的 `closed` 字段。
 - `demoEnv?: { kind: 'url'; label?: string; url: string } | { kind: 'launched'; detail: string }` —— 演示环境两形态。web 服务类写 `kind:'url'`，可附一句系统名 `label`：板面「演示环境」行显示系统名、缺省回退 URL，点击经内置 Orca 浏览器打开；桌面应用类写 `kind:'launched'`，板面渲染状态文字，不伪造链接。缺失即未部署，如实显示未部署与下一步。
 - 版本级交付件不再按目标记录：`results[].deliveries` 退役，版本级交付件与演示环境由 `demoEnv` 与制品登记承载。
+- `workflow.release?: { tag: string }`（#462 修订 v10「板面不呈现发布状态」决策）——发布执行后由模型把 tag 引用写入材料作**读回键**，同 `archivePr` 的「引用落材料、读数现算」模式：读数（是否已发布、发布时间、Release 地址、资产）不落材料，正本在 Git 标签与 provider Release 页；板面按该键现算读回（见「发布」节），总览仍不显示「已发布」。计划侧 schema 不加 `release`，发布只属验收流程。
 
-**不新增** `workflow.release`：发布读数的正本在 Git 标签与 provider Release 页，抄进材料即造第二正本；板面不呈现发布状态，总览也不显示「已发布」。`AcceptanceWorkflowStateSchema` 维持 `stage/updatedAt/archivePr`，`stage` 枚举维持 `preparation/showcase/archive` 三值（界面四步与材料三阶段不同名、不映射，界面不渲染灯）。
+`AcceptanceWorkflowStateSchema` 其余维持 `stage/updatedAt/archivePr`，`stage` 枚举维持 `preparation/showcase/archive` 三值（界面四步与材料三阶段不同名、不映射，界面不渲染灯）。
 
 **验收证据报告登记**：复用既有 `preparedArtifacts` 与 `Artifact.kind='verification'`（枚举与总览的「验证报告」渲染早已存在），不另立顶层字段。`Artifact.candidateRef` 必填，因此报告必须在候选固定之后生成——与技能 SOP 的顺序一致（固定候选 → 出包 → 部署 → 采集证据生成报告）。报告文件落 `.bw/planning/<版本>/`，`location` 存相对路径，截图落同目录 `shots/`。
 
@@ -126,13 +127,15 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 ## 发布
 
-板面发布区只有一个「发布」按钮。点击弹出共用发送弹窗（`plan-send-menu.tsx`）：只读指令预览 +「发送至」运行中会话列表 +「新建智能体」快捷启动，由人选定会话后把一句话发布请求递交到验收会话（与人在会话里直说等价）。预检呈现、发布提交与验收包一致性核对、知情授权、按项目自有发布入口执行、发布后独立读回，全部在会话中由模型按技能 SOP 完成，结果在会话中报告。板面不设预检弹窗、不设发布状态读回行，材料不存发布记录。未经人明确授权不创建 Release、不打标签。
+板面发布区只有一个「发布」执行按钮。点击弹出共用发送弹窗（`plan-send-menu.tsx`）：只读指令预览 +「发送至」运行中会话列表 +「新建智能体」快捷启动，由人选定会话后把一句话发布请求递交到验收会话（与人在会话里直说等价）。预检呈现、发布提交与验收包一致性核对、知情授权、按项目自有发布入口执行、发布后独立读回，全部在会话中由模型按技能 SOP 完成，结果在会话中报告；发布后模型把 tag 引用写入 `workflow.release`。板面不设预检弹窗。未经人明确授权不创建 Release、不打标签。
+
+**发布状态读回行**（#462）：`AcceptanceArchiveCard` 发布卡按 `workflow.release` 呈现——无引用=「未发布」（材料事实，不发起读取，也不显示授权提示文本）；有引用经 `use-release-status.ts`（与 `use-archive-pr-status.ts` 同款薄读回：JSON 身份键防串版、聚焦 60s 节流、在途序号防旧读回覆盖、材料刷新后重读）调 `workbench.release.status` RPC，主进程 `readReleaseStatus` 经 `gh api repos/<owner>/<repo>/releases/tags/<tag>` 现算：命中=「已发布」+发布时间+标签+Release 页地址（点击经 `openAcceptanceMaterial` 的 HTTP 链路走内置 Orca 浏览器——Release 页无原生任务页对应物）+资产清单；HTTP 404=补一次 `repos/<owner>/<repo>` 可达性探测（GitHub 对 Release 缺失与仓库改名/删除/失私域同答 404），仓库可达才判「未找到 Release」（真实读数，注明以 Git 标签与 Release 页为准），仓库不可达归入下一档；其余失败=「状态未知」（title 注明原因）；在途=「正在读取发布状态…」。CodeHub 来源与限流守卫沿 `archive-pr-status` 口径，读不了如实未知，不猜；任何读数不写回材料。
 
 同一通道承载本屏全部注入动作：部署、整理纪要、发起归档、发布、板面批注发送。递交成功后板面给一条 notice（`onPromptDelivered` 回调），失败与无可发会话由原生菜单自己如实呈现，板面不另造状态。
 
 ## 验证边界与测试取舍
 
-协议纯函数与数据契约用 Vitest 覆盖，只立两类看护：新增的纪要守卫（模型通道拒写已确认节、撤销走人工通道）、演示环境两形态与报告登记的解析、退役字段原样保留读回、`derivePriorCarryovers` 改读纪要后的推导。界面渲染、布局、文案、交互序列与 hook 装配不立单测，交真壳与验收点 E2E。叠层单测受执行例数 ratchet 约束（基线见 `config/vitest-count-baseline.txt`），退役的 `acceptance-model.test.ts`/`acceptance-task-evidence.test.ts`/`acceptance-version-choices.test.ts` 中失效用例同批删除以对冲新增。
+协议纯函数与数据契约用 Vitest 覆盖，只立两类看护：新增的纪要守卫（模型通道拒写已确认节、撤销走人工通道）、演示环境两形态与报告登记的解析、`workflow.release` 读回键解析（验收侧可带、计划侧拒绝，随既有解析用例扩展）、退役字段原样保留读回、`derivePriorCarryovers` 改读纪要后的推导。界面渲染、布局、文案、交互序列与 hook 装配不立单测，交真壳与验收点 E2E。叠层单测受执行例数 ratchet 约束（基线见 `config/vitest-count-baseline.txt`），退役的 `acceptance-model.test.ts`/`acceptance-task-evidence.test.ts`/`acceptance-version-choices.test.ts` 中失效用例同批删除以对冲新增。
 
 行为正确性靠真壳：`pnpm run dev:workbench` 起独立 profile，验四区导航与滚动高亮、批注模式全流程（含纪要区排除与 Esc 只关小窗）、行尾单个人工结论选择、清除与中性/警示色、纪要编辑态与确认/撤销、部署两形态读回、报告打开、归档原生 PR 页、发布注入、杀进程重启读回一致。交付附验证报告，本次新增或修改的判据内嵌真壳截图四件套，截图推永不合入的 `shots/<分支名>` 并钉 SHA。上述为真实旅程待验要求。#439 已追加授权补验本地与远端 CI，实际结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)；隔离自动冒烟与静态接线均不替代上述真实旅程验收。
 

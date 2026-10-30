@@ -151,7 +151,7 @@ export function getStickyHeaderIndexes(rows: readonly RenderRow[]): number[] {
     // headers should not replace their containing group as the pinned header.
     if (
       row.type === 'host-header' ||
-      (row.type === 'header' && (row.projectGroupDepth ?? 0) === 0)
+      (row.type === 'header' && !row.displaySection && (row.projectGroupDepth ?? 0) === 0)
     ) {
       indexes.push(index)
     }

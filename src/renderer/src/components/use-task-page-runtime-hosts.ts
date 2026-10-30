@@ -1,3 +1,4 @@
+import { seedWorkbenchTaskQuery } from '../../../shared/workbench/task-scope'
 import type { TaskPageRepoSelectionModel } from './use-task-page-repo-selection'
 import { normalizeGitHubTaskPreset } from '@/components/task-page-github-task-kind'
 import { getTaskPresetQuery } from '../../../shared/task-preset-query'
@@ -28,7 +29,10 @@ export function useTaskPageRuntimeHosts(model: TaskPageRepoSelectionModel) {
   } = model
   // Why: seed preset + query synchronously so the first fetch issues one request; a prior post-mount re-seed caused a throwaway empty-query fetch, doubling time-to-first-paint.
   const defaultTaskViewPreset = normalizeGitHubTaskPreset(settings?.defaultTaskViewPreset ?? 'all')
-  const initialTaskQuery = getTaskPresetQuery(defaultTaskViewPreset)
+  const initialTaskQuery = seedWorkbenchTaskQuery(
+    getTaskPresetQuery(defaultTaskViewPreset),
+    pageData.workbenchTaskScope
+  )
   const preferredTaskSource = pageData.taskSource ?? defaultTaskSource
   const [taskSource, setTaskSource] = useState<TaskProvider>(
     resolveVisibleTaskProvider(preferredTaskSource, visibleTaskProviders)

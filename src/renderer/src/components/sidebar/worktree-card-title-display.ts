@@ -1,5 +1,14 @@
+import {
+  getLinkedWorkItemWorkspaceName,
+  isAutomaticLinkedIssueWorkspaceLabel,
+  isNumberedGitIssue
+} from '../../../../shared/workspace-name'
+import type { Worktree, WorkspaceLinkedItem } from '../../../../shared/worktree/types'
+
 type WorktreeCardTitleDisplayInput = {
   storedDisplayName: string | null | undefined
+  displayNameMode?: Worktree['displayNameMode']
+  linkedWorkItem?: WorkspaceLinkedItem | null
   branchName: string | null | undefined
   linearIssueTitle?: string | null
   jiraIssueTitle?: string | null
@@ -38,6 +47,8 @@ export function coerceWorktreeCardVisibleTitle(value: string | null | undefined)
 
 export function getWorktreeCardTitleDisplay({
   storedDisplayName,
+  displayNameMode,
+  linkedWorkItem,
   branchName,
   linearIssueTitle,
   jiraIssueTitle,
@@ -47,6 +58,26 @@ export function getWorktreeCardTitleDisplay({
   const normalizedStoredDisplayName = normalizeComparableTitle(storedDisplayName)
   const normalizedBranchName = normalizeComparableTitle(branchName)
   const visibleStoredDisplayName = coerceWorktreeCardVisibleTitle(storedDisplayName)
+
+  if (isNumberedGitIssue(linkedWorkItem)) {
+    const isAutomatic = isAutomaticLinkedIssueWorkspaceLabel({
+      storedDisplayName,
+      displayNameMode,
+      branchName,
+      linkedWorkItem
+    })
+    if (!isAutomatic) {
+      return visibleStoredDisplayName
+    }
+    // Persisted linked metadata is available before the existing provider read finishes.
+    const confirmedTitle = normalizeTitle(issueTitle) ?? normalizeTitle(linkedWorkItem.title)
+    if (confirmedTitle) {
+      return (
+        getLinkedWorkItemWorkspaceName({ ...linkedWorkItem, title: confirmedTitle })?.displayName ??
+        visibleStoredDisplayName
+      )
+    }
+  }
 
   if (!normalizedBranchName) {
     return normalizedStoredDisplayName ? visibleStoredDisplayName : ''

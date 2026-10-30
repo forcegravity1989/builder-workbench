@@ -75,6 +75,26 @@ describe('listCodeHubTasks', () => {
         updatedAt: '2026-09-24T00:00:00Z'
       }
     ])
+    for (const kind of ['issue', 'mr'] as const) {
+      await listCodeHubTasks({
+        remote,
+        kind,
+        state: 'all',
+        limit: 251,
+        labels: ['bw:plan:v0.1', 'bug']
+      })
+      const command = runCodeHubCliMock.mock.lastCall?.[0] as string[]
+      expect(command.slice(command.indexOf('--labels'))).toEqual(['--labels', 'bw:plan:v0.1,bug'])
+      expect(command).not.toContain('--state')
+      expect(command[command.indexOf('--limit') + 1]).toBe('251')
+    }
+    runCodeHubCliMock.mockResolvedValue('null')
+    expect(await listCodeHubTasks({ remote, kind: 'issue', state: 'all', labels: [] })).toEqual([])
+    expect(runCodeHubCliMock.mock.lastCall?.[0]).not.toContain('--labels')
+    runCodeHubCliMock.mockRejectedValue(new Error('HTTP 404: Project not found'))
+    await expect(listCodeHubTasks({ remote, kind: 'issue', state: 'all' })).rejects.toThrow(
+      'HTTP 404'
+    )
   })
 })
 

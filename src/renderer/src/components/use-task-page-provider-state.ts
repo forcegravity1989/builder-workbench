@@ -48,6 +48,7 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
       }
       const saved = resolveVisibleTaskProvider(pageData.taskSource, visibleTaskProviders)
       if (
+        !workbenchTaskScope?.goalId &&
         selectionIsCodeHub &&
         visibleTaskProviders.includes('codehub') &&
         !suppressCodeHubAutoRef.current &&
@@ -58,11 +59,17 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
       }
       setTaskSource(saved)
     }
-  }, [pageData.taskSource, selectionIsCodeHub, visibleTaskProviders, setTaskSource])
+  }, [
+    pageData.taskSource,
+    selectionIsCodeHub,
+    visibleTaskProviders,
+    setTaskSource,
+    workbenchTaskScope?.goalId
+  ])
   useEffect(() => {
     // Why: a BW workbench scope keeps the source its entry explicitly opened;
     // repo-remote auto-switching must not override the scoped view.
-    if (workbenchTaskScope) {
+    if (workbenchTaskScope?.goalId) {
       return
     }
     const selectionKey = selectedRepos
@@ -164,6 +171,7 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
   const [codehubPreset, setCodehubPreset] = useState<'open' | 'mine' | 'review'>('open')
   const [codehubAuthor, setCodehubAuthor] = useState('')
   const [codehubAssignee, setCodehubAssignee] = useState('')
+  const [codehubLabels, setCodehubLabels] = useState<string[]>([])
   if (codehubView === 'issues' && codehubState === 'merged') {
     setCodehubState('opened')
   }
@@ -224,6 +232,8 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
     setCodehubAuthor: typeof setCodehubAuthor
     codehubAssignee: typeof codehubAssignee
     setCodehubAssignee: typeof setCodehubAssignee
+    codehubLabels: typeof codehubLabels
+    setCodehubLabels: typeof setCodehubLabels
   }
   nextModel.taskSourceManuallyChangedRef = taskSourceManuallyChangedRef
   nextModel.lastPageTaskSourceRef = lastPageTaskSourceRef
@@ -281,6 +291,8 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
   nextModel.setCodehubAuthor = setCodehubAuthor
   nextModel.codehubAssignee = codehubAssignee
   nextModel.setCodehubAssignee = setCodehubAssignee
+  nextModel.codehubLabels = codehubLabels
+  nextModel.setCodehubLabels = setCodehubLabels
   return nextModel
 }
 export type TaskPageProviderStateModel = ReturnType<typeof useTaskPageProviderState>

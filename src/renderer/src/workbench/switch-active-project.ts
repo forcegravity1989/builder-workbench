@@ -1,27 +1,18 @@
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { closeProjectPage } from './project-page-state'
+import { requestVersionSidebarFocus } from './version-sidebar-state'
 
-/** Switch active project from the wall / after onboard, then land on 总览. */
+/** Project selection must not activate a native worktree or resume its sessions. */
 export async function switchActiveProject(repoId: string): Promise<boolean> {
   const store = useAppStore.getState()
-  const repo = store.repos.find((r) => r.id === repoId)
-  if (!repo) {
+  if (!store.repos.some((repo) => repo.id === repoId)) {
     toast.error('找不到该项目')
     return false
   }
-
-  await store.fetchWorktrees(repoId)
-  const worktrees = useAppStore.getState().worktreesByRepo[repoId] ?? []
-  const main = worktrees.find((w) => w.isMainWorktree) ?? worktrees[0]
-  if (!main) {
-    toast.error('项目还没有可打开的工作区')
-    return false
-  }
-
-  activateAndRevealWorktree(main.id, { revealInSidebar: true })
+  store.setActiveRepo(repoId)
   closeProjectPage()
   useAppStore.getState().openActivityPage()
+  requestVersionSidebarFocus(repoId)
   return true
 }

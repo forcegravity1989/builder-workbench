@@ -52,6 +52,7 @@ const EXPECTED_GITHUB_IPC_CHANNELS = [
   'gh:rerunPRChecks',
   'gh:requestPRReviewers',
   'gh:removePRReviewers',
+  'gh:repoViewer',
   'gh:updateIssue',
   'gh:addIssueComment',
   'gh:listLabels',

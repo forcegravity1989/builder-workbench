@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import type * as RuntimeRpcClient from '@/runtime/runtime-rpc-client'
-import { lookupGitHubWorkItemDetailsForSource } from './github-work-item-source-lookup'
+import {
+  lookupGitHubViewerForSource,
+  lookupGitHubWorkItemDetailsForSource
+} from './github-work-item-source-lookup'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
 
 vi.mock('@/runtime/runtime-rpc-client', async () => {
@@ -26,6 +29,7 @@ describe('GitHub source lookup routing', () => {
     vi.stubGlobal('window', {
       api: {
         gh: {
+          repoViewer: vi.fn(),
           workItemDetails: vi.fn()
         }
       }
@@ -52,6 +56,24 @@ describe('GitHub source lookup routing', () => {
       { timeoutMs: 30_000 }
     )
     expect(window.api.gh.workItemDetails).not.toHaveBeenCalled()
+    vi.mocked(callRuntimeRpc).mockResolvedValue({ login: 'runtime-user', email: null })
+    expect(
+      await lookupGitHubViewerForSource({
+        repoPath: '/home/runtime/app',
+        repoId: 'renderer-repo',
+        sourceContext: runtimeSourceContext
+      })
+    ).toEqual({ login: 'runtime-user', email: null })
+    expect(callRuntimeRpc).toHaveBeenLastCalledWith(
+      { kind: 'environment', environmentId: 'env-1' },
+      'github.repoViewer',
+      { repo: 'runtime-repo' },
+      { timeoutMs: 30_000 }
+    )
+    expect(window.api.gh.repoViewer).not.toHaveBeenCalled()
+    await expect(
+      lookupGitHubViewerForSource({ repoPath: '/home/runtime/app', repoId: 'renderer-repo' })
+    ).rejects.toThrow('source is unavailable')
   })
 
   // Regression for #6429: a runtime-sourced details lookup must never reach the

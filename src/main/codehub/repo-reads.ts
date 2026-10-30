@@ -140,27 +140,46 @@ export async function viewCodeHubProject(args: {
 }
 
 /**
- * 项目标签名单：议题详情标签编辑下拉的数据源。CLI 的 --limit 默认只有
- * 10 且不翻页，必须显式给足上限，否则标签多的项目下拉缺项。
+ * 项目标签名单：议题详情与任务筛选下拉的数据源。CLI 的 --limit 默认只有
+ * 10，单次给足上限仍会截断标签多的项目，必须用 --offset 翻页取全。
  */
 export async function listCodeHubProjectLabels(args: {
   remote: CodeHubRemote
   execOptions?: CodeHubExecOptions
 }): Promise<string[]> {
-  const parsed = parseJson(
-    await runCodeHubCli(
-      ['project', 'label', 'list', ...projectArgs(args.remote), '-f', 'json', '--limit', '100'],
-      args.execOptions
+  const pageSize = 100
+  const names: string[] = []
+  for (let offset = 0; ; offset += pageSize) {
+    const parsed = parseJson(
+      await runCodeHubCli(
+        [
+          'project',
+          'label',
+          'list',
+          ...projectArgs(args.remote),
+          '-f',
+          'json',
+          '--limit',
+          String(pageSize),
+          '--offset',
+          String(offset)
+        ],
+        args.execOptions
+      )
     )
-  )
-  if (!Array.isArray(parsed)) {
-    return []
-  }
-  return parsed.flatMap((entry) => {
-    if (!entry || typeof entry !== 'object') {
-      return []
+    if (!Array.isArray(parsed)) {
+      return names
     }
-    const name = (entry as Record<string, unknown>).name
-    return typeof name === 'string' && name.trim() ? [name.trim()] : []
-  })
+    const page = parsed.flatMap((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return []
+      }
+      const name = (entry as Record<string, unknown>).name
+      return typeof name === 'string' && name.trim() ? [name.trim()] : []
+    })
+    names.push(...page)
+    if (page.length < pageSize) {
+      return names
+    }
+  }
 }

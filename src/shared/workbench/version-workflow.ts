@@ -29,6 +29,17 @@ export const WorkflowArchivePrSchema = z.strictObject({
 })
 export type WorkflowArchivePr = z.infer<typeof WorkflowArchivePrSchema>
 
+/**
+ * Release reference recorded by the model after the human-authorized release
+ * run (#462). The tag is only the read-back key — published time, Release URL
+ * and assets are provider-computed on every read and never stored here; the
+ * Git tag and the provider Release page stay the source of truth.
+ */
+export const WorkflowReleaseRefSchema = z.strictObject({
+  tag: z.string().min(1)
+})
+export type WorkflowReleaseRef = z.infer<typeof WorkflowReleaseRefSchema>
+
 export const PlanWorkflowStateSchema = z.strictObject({
   stage: z.enum(PLAN_WORKFLOW_STAGES),
   updatedAt: z.iso.datetime({ offset: true }),
@@ -37,7 +48,8 @@ export const PlanWorkflowStateSchema = z.strictObject({
 export const AcceptanceWorkflowStateSchema = z.strictObject({
   stage: z.enum(ACCEPTANCE_WORKFLOW_STAGES),
   updatedAt: z.iso.datetime({ offset: true }),
-  archivePr: WorkflowArchivePrSchema.optional()
+  archivePr: WorkflowArchivePrSchema.optional(),
+  release: WorkflowReleaseRefSchema.optional()
 })
 export type PlanWorkflowState = z.infer<typeof PlanWorkflowStateSchema>
 export type AcceptanceWorkflowState = z.infer<typeof AcceptanceWorkflowStateSchema>
