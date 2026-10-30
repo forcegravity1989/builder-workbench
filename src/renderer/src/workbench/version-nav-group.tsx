@@ -2,6 +2,7 @@ import { goalOrdinal } from './version-labels'
 import React from 'react'
 import { ChevronDown, ChevronRight, FolderPlus, LoaderCircle, PackageCheck, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
@@ -66,6 +67,7 @@ export function VersionNavGroup({
   onStartGoal,
   onOpenGoalWorkspace
 }: VersionNavGroupProps): React.JSX.Element {
+  const workspaceStatuses = useAppStore((s) => s.workspaceStatuses)
   const retired = entry.state === 'retired'
   // #436 伴飞裁定（CF-5）：流程树不齐（计划/验收任一缺）才显示初始化入口；
   // 两树齐→按钮消失，不出现「点不了」的怪状态。判定与 WorkflowRow 同源
@@ -173,7 +175,12 @@ export function VersionNavGroup({
                 version={entry.version}
                 label={label}
                 title={goal.title}
-                goalTrees={goalDirectoryTrees(worktrees, entry.version, goal.goalId)}
+                goalTrees={goalDirectoryTrees(
+                  worktrees,
+                  entry.version,
+                  goal.goalId,
+                  workspaceStatuses
+                )}
                 busy={busy}
                 active={activeGoalId === goal.goalId}
                 onOpenTasks={() => onOpenTasks({ goalId: goal.goalId, label })}
