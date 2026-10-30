@@ -4,7 +4,9 @@
     "checkedAt": "2026-10-27T12:20:25.829Z",
     "sourceCommit": "90952d9bee18e436b165b82b5c08be92b3d82594",
     "kind": "Read-only Git/GitHub snapshot for prototype; not a product schema or live data adapter.",
-    "historicalTitlesReadAt": "2026-10-28T02:08:22.7602290Z"
+    "historicalTitlesReadAt": "2026-10-28T02:08:22.7602290Z",
+    "historicalCorrectionCommit": "4a3ac72ac714940e94cd628d50ce223acdd251f5",
+    "historicalReadAt": "2026-10-30T09:01:36.078Z"
   },
   "plan": {
     "schema_version": 3,
@@ -251,12 +253,6 @@
       {
         "provider": "github",
         "repository": "github.com/forcegravity1989/builder-workbench",
-        "number": 334,
-        "goalId": "G2"
-      },
-      {
-        "provider": "github",
-        "repository": "github.com/forcegravity1989/builder-workbench",
         "number": 372,
         "goalId": "G2"
       },
@@ -333,8 +329,8 @@
       "kind": "committed",
       "version": "v0.7",
       "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286",
-      "revision": "sha256:e596a743b3d8d197eb72ffdcc6800d0174281095b927376288eba114dd6d62dd",
-      "sourceCommit": "e6c619188d6c4eb542d2d99fb97d6e3ebf5f46ae"
+      "revision": "sha256:bd2c1308f3f922a5a309a583e913e6888d0918f2af3c69391638873c726381be",
+      "sourceCommit": "c08eef9c105ecd1eea102676f16c4f427fa97bce"
     },
     "candidateRef": {
       "repository": "github.com/forcegravity1989/builder-workbench",
@@ -433,35 +429,6 @@
         "url": "https://github.com/forcegravity1989/builder-workbench/issues/328",
         "labels": ["Feature", "bw:plan:v0.7"],
         "readAt": "2026-10-23T09:36:54.248Z"
-      },
-      {
-        "kind": "ready",
-        "reference": {
-          "provider": "github",
-          "repository": "github.com/forcegravity1989/builder-workbench",
-          "number": 334,
-          "goalId": "G2"
-        },
-        "source": {
-          "kind": "task-source",
-          "provider": "github",
-          "projectId": "github:forcegravity1989/builder-workbench",
-          "hostId": "runtime:83ca27ed-12ec-4652-9bfc-3836e935d211",
-          "projectHostSetupId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
-          "repoId": "8c5a677a-36b7-42d6-b075-c1c680eea6c0",
-          "providerIdentity": {
-            "provider": "github",
-            "owner": "forcegravity1989",
-            "repo": "builder-workbench"
-          },
-          "accountLabel": null
-        },
-        "iid": 334,
-        "title": "【v0.7|G2】版本总览屏（周报样式）：聚合该版本计划与验收数据",
-        "state": "open",
-        "url": "https://github.com/forcegravity1989/builder-workbench/issues/334",
-        "labels": ["Feature", "bw:plan:v0.7"],
-        "readAt": "2026-10-23T09:36:55.271Z"
       },
       {
         "kind": "ready",

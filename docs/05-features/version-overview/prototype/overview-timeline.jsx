@@ -182,6 +182,14 @@ export function FeatureTimeline({ feature }) {
         </label>
         <span>北京时间 UTC+08:00 · 日历历时</span>
       </div>
+      <div className="ov-stage-legend" aria-label="阶段图例">
+        {['Plan', 'Design', 'Build', 'Test', 'Deploy', 'Maintain'].map((stage) => (
+          <span className={`wb-phase-${stage.toLowerCase()}`} key={stage}>
+            <i />
+            {stage}
+          </span>
+        ))}
+      </div>
       <div className="ov-journey-scroll" tabIndex={0} aria-label="特性时间轴，可横向滚动">
         <div className="ov-journey-canvas">
           <div className="ov-journey-scale">
@@ -216,7 +224,7 @@ export function FeatureTimeline({ feature }) {
               {phases.map((item) => (
                 <button
                   key={item.id}
-                  className={`ov-phase-range ${item.ongoing ? 'ongoing' : ''}`}
+                  className={`ov-phase-range wb-phase-${item.id} ${item.ongoing ? 'ongoing' : ''}`}
                   style={{ left: position(item.start), width: position(item.end - item.start) }}
                   aria-label={`${item.title}，${stamp(at(item.start))} 至 ${stamp(at(item.end))}，${item.end - item.start} 小时`}
                   aria-pressed={selected === item.id}

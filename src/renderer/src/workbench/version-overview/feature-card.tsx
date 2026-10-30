@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
-import type { VersionGoal } from '../../../../shared/workbench/version-material'
 import { taskKey, type FeatureData } from './feature-model'
 import { featureStage } from './feature-timeline'
 import { FeatureTimelineView } from './feature-timeline-view'
@@ -9,13 +8,11 @@ export { timeLabel } from './overview-time'
 
 export function FeatureCard({
   feature,
-  goal,
   version,
   historical,
   onVersion
 }: {
   feature: FeatureData
-  goal: VersionGoal
   version: string
   historical: boolean
   onVersion: (version: string, featureKey: string) => void
@@ -42,11 +39,6 @@ export function FeatureCard({
       </button>
       {expanded && (
         <div className="bwo-feature-body">
-          <p className="bwo-muted mb-3">
-            <span className="mr-2">本版承担</span>
-            <span className="text-foreground">{goal.title}</span>
-            <span title="计划目前仅记录关联目标范围，未单列该特性的版内增量。"> · 目标范围 ⓘ</span>
-          </p>
           <div className="bwo-related">
             <span className="text-xs text-muted-foreground">关联版本</span>
             {feature.versions.map((item) => (

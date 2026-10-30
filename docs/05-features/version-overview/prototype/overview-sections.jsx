@@ -1,5 +1,5 @@
 import { Feature, SectionTitle } from './overview-components.jsx'
-import { repository, historicalFeatures, acceptanceForVersion } from './overview-data.js'
+import { historicalFeatures, acceptanceForVersion } from './overview-data.js'
 import { WorkflowProductivity } from './overview-workflow.jsx'
 // eslint-disable-next-line no-unused-vars
 const { React } = window.BWPrototypeDependencies
@@ -15,9 +15,7 @@ export function OverviewSections({
   unplanned,
   history,
   plan,
-  planLink,
   sample,
-  setDialog,
   native,
   focusRequest,
   openVersion
@@ -105,36 +103,12 @@ export function OverviewSections({
           })}
           <p className="ov-note">
             原型注释: 本静态原型未动态解析特性身份；本稿显式选取 #334／#440（v0.7 为
-            #334／#383）演示特性，不改真实标签、标题与计划。其余任务保留原目标和任务入口。
+            #383）演示特性，不改真实标签、标题与计划。其余任务保留原目标和任务入口。
           </p>
         </div>
       )}
 
       <WorkflowProductivity plan={plan} unplanned={unplanned} />
-
-      <section className="ov-section" aria-labelledby="records">
-        <SectionTitle id="records" title="本版记录" />
-        <div className="ov-records">
-          {unplanned ? (
-            <button onClick={() => native('版本计划')}>版本计划 ↗</button>
-          ) : (
-            <a href={planLink} target="_blank" rel="noreferrer">
-              计划与纪要 ↗
-            </a>
-          )}
-          <button onClick={() => native('版本验收')}>正式验收 ↗</button>
-          {history && (
-            <button onClick={() => setDialog({ kind: 'release', title: 'v0.7 交付依据' })}>
-              交付依据与后续发布 ↗
-            </button>
-          )}
-          {!unplanned && (
-            <a href={`${repository}/pull/${history ? 429 : 446}`} target="_blank" rel="noreferrer">
-              归档 PR ↗
-            </a>
-          )}
-        </div>
-      </section>
     </>
   )
 }

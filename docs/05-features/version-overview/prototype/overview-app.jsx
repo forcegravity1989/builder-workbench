@@ -9,8 +9,7 @@ import {
   revision,
   scenarios,
   features,
-  historicalFeatures,
-  material
+  historicalFeatures
 } from './overview-data.js'
 const {
   // Used by the shared JSX build factory.
@@ -92,16 +91,11 @@ function App() {
   const unplanned = scenario === 'unplanned',
     history = scenario === 'delivered'
   const plan = history ? snapshot.priorPlan : snapshot.plan
-  const acceptance = snapshot.acceptance
   const requirements = unplanned ? [] : history ? historicalFeatures : sample
   const missingFocus = focusRequest && !requirements.some((f) => f.id === focusRequest.id)
-  const planLink = material(
-    selected.version,
-    'data',
-    history ? acceptance.planRef.sourceCommit : undefined
-  )
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+    document.documentElement.classList.toggle('dark', dark)
   }, [dark])
   function native(route, goal = null, feature = null) {
     setDialog({ kind: 'native', title: `原型注释: ${route}入口`, route, goal, feature })
@@ -140,12 +134,10 @@ function App() {
   function edit() {
     setEditing(
       JSON.stringify(
-        sample.map(({ id, title, owner, purpose, scope }) => ({
+        sample.map(({ id, title, owner }) => ({
           id,
           title,
-          owner,
-          purpose,
-          scope
+          owner
         })),
         null,
         2
@@ -163,9 +155,7 @@ function App() {
         next.some(
           (f, i) =>
             f.id !== features[i].id ||
-            ['title', 'owner', 'purpose', 'scope'].some(
-              (k) => typeof f[k] !== 'string' || !f[k].trim()
-            )
+            ['title', 'owner'].some((k) => typeof f[k] !== 'string' || !f[k].trim())
         )
       ) {
         throw new Error('保留两个特性的 id，各文字字段不可为空。')
@@ -173,7 +163,7 @@ function App() {
       setSample(
         next.map((f, i) => ({
           ...features[i],
-          ...Object.fromEntries(['title', 'owner', 'purpose', 'scope'].map((k) => [k, f[k]]))
+          ...Object.fromEntries(['title', 'owner'].map((k) => [k, f[k]]))
         }))
       )
       setEdited(true)
@@ -419,9 +409,7 @@ function App() {
               unplanned={unplanned}
               history={history}
               plan={plan}
-              planLink={planLink}
               sample={sample}
-              setDialog={setDialog}
               native={native}
               focusRequest={focusRequest}
               openVersion={openVersion}
@@ -503,30 +491,6 @@ function App() {
             </>
           )}
           {dialog.kind === 'source' && <SourcePanel />}
-          {dialog.kind === 'release' && (
-            <>
-              <p>
-                验收候选：Workbench {acceptance.candidateRef.version} ·{' '}
-                <Link href={`${repository}/commit/${acceptance.candidateRef.commit}`}>
-                  {acceptance.candidateRef.commit.slice(0, 8)}
-                </Link>
-              </p>
-              <p>{acceptance.demoEnv.detail}</p>
-              <Link
-                href={`${repository}/blob/${snapshot.source.sourceCommit}/.bw/planning/v0.7/acceptance-evidence.html`}
-              >
-                当时验收报告
-              </Link>
-              <h3>后续补丁</h3>
-              {snapshot.releases
-                .filter((r) => /^v0\.7\.[1-9]/.test(r.tagName))
-                .map((r) => (
-                  <p key={r.tagName}>
-                    <Link href={r.url}>{r.tagName}</Link>
-                  </p>
-                ))}
-            </>
-          )}
           {dialog.kind === 'session' && (
             <>
               <dl>

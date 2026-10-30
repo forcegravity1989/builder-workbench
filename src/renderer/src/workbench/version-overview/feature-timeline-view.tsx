@@ -1,3 +1,4 @@
+import '../project-milestones.css'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import {
   timelineClusters,
@@ -14,25 +15,39 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
   const [width, setWidth] = useState(760)
   const [selected, setSelected] = useState<string>('Design')
   const timeline = featureTimeline(feature)
-  const points: { key: Milestone | 'version'; event: FeatureEvent }[] = MILESTONES.flatMap((key) =>
-    timeline.points[key] ? [{ key, event: timeline.points[key]! }] : []
-  )
-  points.push(
-    ...feature.events
-      .filter(
-        (event) =>
-          event.phase === 'version' && event.deliveryKind !== 'first' && validTime(event.at)
-      )
-      .map((event) => ({ key: 'version' as const, event }))
-  )
-  const events = points.map((point) => point.event)
+  const points: { key: Exclude<Milestone, 'first'>; event: FeatureEvent }[] = MILESTONES.filter(
+    (key) => key !== 'first'
+  ).flatMap((key) => (timeline.points[key] ? [{ key, event: timeline.points[key]! }] : []))
+  const events = [
+    ...points.map((point) => point.event),
+    ...feature.events.filter((event) => event.phase === 'version' && validTime(event.at))
+  ]
   const ongoing = timeline.segments.find((stage) => stage.ongoing)
   const boundary = ongoing?.end
     ? [{ ...events[0], id: 'observed', at: ongoing.end } as FeatureEvent]
     : []
   const range = timelineRange([...events, ...boundary])
-  const clusters = timelineClusters(events, width, range)
-  const extraHeight = Math.max(0, ...clusters.map((cluster) => cluster.events.length - 1)) * 44
+  const clusters = timelineClusters(
+    events.filter((event) => event.phase !== 'version'),
+    width,
+    range
+  )
+  const laneEnds: number[] = []
+  const releases = events
+    .filter((event) => event.phase === 'version')
+    .sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
+    .map((event) => {
+      const x = 80 + ((range?.position(Date.parse(event.at)) ?? 0) * (width - 160)) / 100
+      let lane = laneEnds.findIndex((end) => x - 64 > end)
+      if (lane === -1) {
+        lane = laneEnds.length
+      }
+      laneEnds[lane] = x + 64
+      return { event, x, lane }
+    })
+  const releaseHeight = Math.max(0, laneEnds.length - 1) * 64
+  const extraHeight =
+    releaseHeight + Math.max(0, ...clusters.map((cluster) => cluster.events.length - 1)) * 44
   useEffect(() => {
     const element = axisRef.current
     if (!element) {
@@ -46,12 +61,19 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
     observer.observe(element)
     return () => observer.disconnect()
   }, [])
-  const missing = MILESTONES.filter((key) => !timeline.points[key])
   return (
     <div className="bwo-timeline">
       <div className="bwo-timeline-heading">
         <strong>特性历程与版本交付</strong>
         <span title="Asia/Shanghai · UTC+08:00">北京时间 · 日历历时</span>
+      </div>
+      <div className="bwo-stage-legend" aria-label="阶段图例">
+        {['Plan', 'Design', 'Build', 'Test', 'Deploy', 'Maintain'].map((stage) => (
+          <span className={`wb-phase-${stage.toLowerCase()}`} key={stage}>
+            <i />
+            {stage}
+          </span>
+        ))}
       </div>
       <div
         className="bwo-axis-scroll"
@@ -79,7 +101,7 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
               return (
                 <button
                   key={segment.id}
-                  className="bwo-stage-range"
+                  className={`bwo-stage-range wb-phase-${segment.id.toLowerCase()}`}
                   data-ongoing={segment.ongoing || undefined}
                   aria-pressed={selected === segment.id}
                   style={{
@@ -97,6 +119,40 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
                 </button>
               )
             })}
+            {releases.map(({ event, x, lane }) => (
+              <button
+                key={event.id}
+                className="bwo-version-delivery"
+                style={
+                  {
+                    left: x,
+                    top: lane * 64,
+                    '--bwo-connector-height': `${148 + extraHeight - lane * 64 - 54}px`
+                  } as CSSProperties
+                }
+                aria-pressed={
+                  selected ===
+                  (event.deliveryKind === 'first'
+                    ? 'Test'
+                    : event.deliveryKind === 'maintenance'
+                      ? 'Maintain'
+                      : 'version')
+                }
+                title={`${event.label} · ${timeLabel(event.at)}`}
+                onClick={() =>
+                  setSelected(
+                    event.deliveryKind === 'first'
+                      ? 'Test'
+                      : event.deliveryKind === 'maintenance'
+                        ? 'Maintain'
+                        : 'version'
+                  )
+                }
+              >
+                <strong>{event.label}</strong>
+                <time dateTime={event.at}>{timeLabel(event.at)}</time>
+              </button>
+            ))}
             {clusters.map(({ x, events: cluster }, index) => (
               <button
                 key={cluster[0]!.id}
@@ -109,9 +165,7 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
                     baseline: 'Plan',
                     intent: 'Plan',
                     design: 'Design',
-                    development: 'Build',
-                    first: 'Test',
-                    version: point?.event.deliveryKind === 'maintenance' ? 'Maintain' : 'version'
+                    development: 'Build'
                   }
                   setSelected(point ? group[point.key] : '')
                 }}
@@ -121,11 +175,8 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
                   {cluster.map((event) => {
                     const key = points.find((item) => item.event.id === event.id)!.key
                     return (
-                      <span key={event.id} data-version={event.phase === 'version' || undefined}>
-                        <strong>
-                          {key === 'version' ? event.label : MILESTONE_LABELS[key]}
-                          {event.version && key === 'first' ? ` · ${event.version}` : ''}
-                        </strong>
+                      <span key={event.id}>
+                        <strong>{MILESTONE_LABELS[key]}</strong>
                         <time dateTime={event.at}>{timeLabel(event.at)}</time>
                       </span>
                     )
@@ -150,12 +201,15 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
           <p className="bwo-muted py-6">尚无可核对的特性节点时间。</p>
         )}
       </div>
-      {missing.length > 0 && (
-        <p className="bwo-muted">
-          未记录：{missing.map((key) => MILESTONE_LABELS[key]).join('、')}。
-        </p>
-      )}
-      <p className="bwo-muted">Deploy · 未跟踪</p>
+      <div className="bwo-untracked-stage">
+        <span
+          tabIndex={0}
+          title="未采集实际部署时间，无法计算 Deploy 历时。验收合入或维护交付均不证明已部署。"
+        >
+          <strong>Deploy</strong> · 未跟踪
+        </span>
+        <span>暂无实际部署时间</span>
+      </div>
       <div className="bwo-source-row" aria-label="采集来源">
         {timeline.sources
           .filter((group) => group.id !== 'version' || group.events.length)
@@ -183,17 +237,6 @@ export function FeatureTimelineView({ feature }: { feature: FeatureData }) {
             </div>
           ))}
       </div>
-      {feature.pulls
-        .filter((pull) => !['design', 'development'].includes(pull.phase ?? ''))
-        .map((pull) => (
-          <button
-            key={pull.url}
-            className="bwo-link bwo-muted mr-3"
-            onClick={() => openEvidenceUrl(pull.url)}
-          >
-            阶段未确认 · PR / MR #{pull.number} ↗
-          </button>
-        ))}
     </div>
   )
 }

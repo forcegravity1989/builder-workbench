@@ -119,15 +119,18 @@ export function WorkflowProductivity({ plan, unplanned }) {
           {notice}
         </p>
       )}
-      <div className="ov-workflow-source">
-        {source?.comment?.url && (
-          <a className="ov-link" href={source.comment.url} target="_blank" rel="noreferrer">
-            采集来源：PR #{source.pull?.number} 指标评论 ↗
-          </a>
-        )}
-        <span>评论更新 · {formatTime(source?.comment?.updatedAt)}</span>
-        <span>来源采集 · {formatTime(source?.readAt)}</span>
-      </div>
+      <details className="ov-workflow-disclosure">
+        <summary>报告来源与未读取范围</summary>
+        <div className="ov-workflow-source">
+          {source?.comment?.url && (
+            <a className="ov-link" href={source.comment.url} target="_blank" rel="noreferrer">
+              采集来源：PR #{source.pull?.number} 指标评论 ↗
+            </a>
+          )}
+          <span>评论更新 · {formatTime(source?.comment?.updatedAt)}</span>
+          <span>来源采集 · {formatTime(source?.readAt)}</span>
+        </div>
+      </details>
     </section>
   )
 }

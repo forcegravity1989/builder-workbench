@@ -238,7 +238,6 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                 }}
               >
                 <FeatureCard
-                  goal={goal}
                   feature={feature}
                   version={version}
                   historical={acceptance.kind === 'ready' && acceptance.source === 'committed'}
@@ -288,51 +287,6 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
         planState={plan.kind}
         sourceReady={Boolean(features.readAt) || !features.loading}
       />
-      <section className="bwo-goal">
-        <h2 className="mb-4 font-semibold">本版记录</h2>
-        <div className="flex flex-wrap gap-6 text-sm">
-          <button className="bwo-link" onClick={() => workflow('plan')}>
-            计划与纪要 ↗
-          </button>
-          <button className="bwo-link" onClick={() => workflow('acceptance')}>
-            正式验收 ↗
-          </button>
-          {(['plan', 'acceptance'] as const).map((kind) => {
-            const pr = materials.prStatuses[kind]
-            const document = materials[kind]
-            if (
-              (!pr || pr.state === 'unknown') &&
-              document.kind === 'ready' &&
-              document.document.workflow?.archivePr
-            ) {
-              return (
-                <button
-                  key={kind}
-                  className="bwo-link"
-                  onClick={() => workflow(kind)}
-                  title={pr?.state === 'unknown' ? pr.reason : undefined}
-                >
-                  {kind === 'plan' ? '计划' : '验收'}归档 PR · {pr ? '状态未知' : '读取中'} ↗
-                </button>
-              )
-            }
-            return pr && 'url' in pr && pr.url ? (
-              <button
-                key={kind}
-                className="bwo-link"
-                onClick={() => {
-                  if (/^https?:\/\//.test(pr.url!)) {
-                    void window.api.shell.openUrl(pr.url!)
-                  }
-                }}
-              >
-                {kind === 'plan' ? '计划' : '验收'}归档 PR ·{' '}
-                {pr.state === 'merged' ? '已合入' : pr.state === 'open' ? '开放' : '已关闭'} ↗
-              </button>
-            ) : null
-          })}
-        </div>
-      </section>
     </main>
   )
 }

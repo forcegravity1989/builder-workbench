@@ -117,14 +117,6 @@
   position: relative;
   height: 250px;
 }
-.bwo-axis-line {
-  position: absolute;
-  left: 80px;
-  right: 80px;
-  top: 126px;
-  height: 1px;
-  background: var(--border);
-}
 .bwo-axis-start,
 .bwo-axis-end {
   position: absolute;
@@ -138,28 +130,8 @@
 .bwo-axis-end {
   right: 16px;
 }
-.bwo-node {
-  position: absolute;
-  top: 120px;
-  width: 18px;
-  height: 18px;
-  transform: translateX(-50%);
-  cursor: pointer;
-}
-.bwo-node i {
-  display: block;
-  width: 9px;
-  height: 9px;
-  margin: 2px auto;
-  border-radius: 50%;
-  background: var(--foreground);
-  border: 2px solid var(--background);
-  box-shadow: 0 0 0 1px var(--foreground);
-}
 .bwo-node-label {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  display: block;
   width: 128px;
   text-align: center;
   font-size: 11px;
@@ -176,19 +148,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.bwo-node-0 .bwo-node-label {
-  bottom: 24px;
-}
-.bwo-node-1 .bwo-node-label {
-  top: 24px;
-}
 .bwo-node:focus-visible,
 .bwo-axis-scroll:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 3px;
-}
-.bwo-node:hover i {
-  transform: scale(1.3);
 }
 .bwo-productivity {
   display: grid;
@@ -247,20 +210,17 @@
   top: auto;
   bottom: 10px;
 }
-.bwo-timeline .bwo-node-1 .bwo-node-label {
-  top: auto;
-  bottom: 72px;
-}
 .bwo-node-label > span {
   display: block;
   margin-bottom: 4px;
 }
 .bwo-stage-range {
   position: absolute;
-  top: 148px;
+  top: calc(148px + var(--bwo-axis-shift, 0px));
   height: 50px;
   border: 1px solid var(--border);
-  background: var(--muted);
+  background: var(--phase-bg);
+  color: var(--phase-fg);
   border-radius: 4px;
   font-size: 11px;
   overflow: hidden;
@@ -275,8 +235,8 @@
   font-weight: 400;
 }
 .bwo-stage-range[aria-pressed='true'] {
-  background: var(--foreground);
-  color: var(--background);
+  outline: 1px solid var(--phase-fg);
+  outline-offset: -2px;
 }
 .bwo-source-row {
   display: flex;
@@ -329,15 +289,6 @@
 .bwo-stage-range[data-ongoing] {
   border-style: dashed;
 }
-.bwo-axis-line {
-  top: calc(126px + var(--bwo-axis-shift, 0px));
-}
-.bwo-node {
-  top: calc(120px + var(--bwo-axis-shift, 0px));
-}
-.bwo-stage-range {
-  top: calc(148px + var(--bwo-axis-shift, 0px));
-}
 .bwo-axis-tick {
   position: absolute;
   bottom: 10px;
@@ -345,9 +296,112 @@
   font-size: 11px;
   color: var(--muted-foreground);
 }
-.bwo-node-label > [data-version] {
-  padding: 4px;
+
+.bwo-stage-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.bwo-stage-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.bwo-stage-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--phase-bg);
+  border: 1px solid var(--phase-fg);
+}
+.bwo-version-delivery {
+  position: absolute;
+  width: 128px;
+  height: 54px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--card);
+  border-radius: 6px;
+  background: var(--background);
+  font-size: 11px;
+  cursor: pointer;
+}
+.bwo-version-delivery strong {
+  max-width: 100%;
+  padding-inline: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.bwo-version-delivery time {
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.bwo-version-delivery::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  height: var(--bwo-connector-height);
+  border-left: 1px dashed var(--muted-foreground);
+  pointer-events: none;
+}
+.bwo-version-delivery[aria-pressed='true'] {
+  border-color: var(--foreground);
+}
+.bwo-version-delivery:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.bwo-untracked-stage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.bwo-untracked-stage > span:first-child {
+  border: 1px dashed var(--border);
+  border-radius: 5px;
+  padding: 4px 8px;
+}
+
+.bwo-axis-line {
+  position: absolute;
+  left: 80px;
+  right: 80px;
+  top: calc(148px + var(--bwo-axis-shift, 0px));
+  height: 1px;
+  background: var(--border);
+}
+.bwo-node {
+  position: absolute;
+  top: calc(94px + var(--bwo-axis-shift, 0px));
+  width: 128px;
+  height: auto;
+  transform: translate(-50%, -100%);
+  cursor: pointer;
+}
+.bwo-node i {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  height: 54px;
+  width: 1px;
+  background: var(--muted-foreground);
+}
+.bwo-node-1 {
+  top: calc(136px + var(--bwo-axis-shift, 0px));
+}
+.bwo-node-1 i {
+  height: 12px;
 }

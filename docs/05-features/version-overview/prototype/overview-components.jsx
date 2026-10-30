@@ -196,25 +196,15 @@ export function Feature({ feature, selectedVersion, focusRequest, openVersion })
         <span className="muted">{feature.owner}</span>
         <span className="ov-chip">{feature.stage}</span>
       </div>
-      <div className="ov-feature-summary">
-        <div>
-          <span className="ov-label">本版承担 · {feature.goalId}</span>
-          <p>{feature.scope}</p>
-        </div>
-      </div>
       {expanded && (
         <div className="ov-feature-detail">
-          <div className="ov-purpose">
-            <span className="ov-label">整体目标</span>
-            <span>{feature.purpose}</span>
-          </div>
           <div className="ov-version-tags" aria-label="关联版本">
             <span className="ov-label">关联版本</span>
             {versions.map((v) => (
               <HintButton
                 key={v.version}
                 id={`version-${feature.id}-${v.version}`}
-                text={`${v.scopeLabel}：${v.scope}${v.separateScope ? '' : '；计划未单列此需求增量'}`}
+                text={`关联目标：${v.scope}`}
                 className="ov-version-tag"
                 current={v.version === selectedVersion}
                 onClick={() => openVersion(v.scene, feature.id)}
@@ -234,8 +224,8 @@ export function SourcePanel() {
   return (
     <>
       <p>
-        原型注释: 本稿使用 BW 自身的只读材料与 GitHub
-        快照，不是持续联网的数据接口。计划与历史材料快照时间：
+        原型注释: 本稿使用 BW 自身的只读材料与 GitHub 快照，不是持续联网的数据接口。v0.8
+        计划快照时间：
         {snapshot.source.checkedAt}。
       </p>
       <p>
@@ -260,11 +250,16 @@ export function SourcePanel() {
         </dd>
         <dt>交付后</dt>
         <dd>
-          <a href={material('v0.7', 'acceptance')} target="_blank" rel="noreferrer">
+          <a
+            href={material('v0.7', 'acceptance', snapshot.source.historicalCorrectionCommit)}
+            target="_blank"
+            rel="noreferrer"
+          >
             v0.7 归档验收
           </a>
           ；计划严格读取其 planRef.sourceCommit：
-          {snapshot.acceptance.planRef.sourceCommit.slice(0, 8)}。
+          {snapshot.acceptance.planRef.sourceCommit.slice(0, 8)}。历史材料采集于{' '}
+          {snapshot.source.historicalReadAt}。
         </dd>
         <dt>未制定计划</dt>
         <dd>原型注释: v0.9 是未创建版本的布局示例，不是实际计划或新编号协议。</dd>
@@ -274,7 +269,7 @@ export function SourcePanel() {
         </dd>
         <dt>历史需求 / 任务</dt>
         <dd>
-          原型注释: 历史特性示例只呈现 #334 与 #383，依据 v0.7 计划关联与 Issue 的 v0.7
+          原型注释: 历史特性示例只呈现 #383，依据 v0.7 计划关联与 Issue 的 v0.7
           范围说明，未重建完整特性树；当时真实阶段保持未知，历史版同样默认展示明确标注的模拟横轴。历史任务名称另于{' '}
           {snapshot.source.historicalTitlesReadAt} 读取，不用当前 Issue 状态覆盖验收时状态。
         </dd>
