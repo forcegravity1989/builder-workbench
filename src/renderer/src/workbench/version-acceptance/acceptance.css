@@ -121,41 +121,30 @@
   align-items: center;
   justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 10px;
-  flex-shrink: 0;
-}
-.acc-text-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 0;
-  background: none;
-  padding: 4px 6px;
-  border-radius: var(--radius-sm);
-  color: var(--muted-foreground);
-  font-size: 12px;
-  white-space: nowrap;
-}
-.acc-text-button:hover:not(:disabled) {
-  background: var(--accent);
-  color: var(--accent-foreground);
-}
-.acc-session-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  gap: 4px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 4px;
   border: 1px solid var(--border);
-  background: none;
-  padding: 4px 10px;
-  border-radius: var(--radius-md);
-  color: var(--muted-foreground);
-  font-size: 12px;
-  white-space: nowrap;
+  border-radius: var(--radius-lg);
+  background: var(--muted);
 }
-.acc-session-chip:hover {
+.acc-header-actions .g3-action-button {
+  min-height: 28px;
+  background: var(--card);
+  color: var(--foreground);
+}
+.acc-header-actions .g3-action-button:hover:not(:disabled) {
   background: var(--accent);
-  color: var(--accent-foreground);
   border-color: var(--foreground);
+  color: var(--accent-foreground);
+}
+.acc-header-actions .g3-action-button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.acc-header-actions .g3-action-button svg {
+  color: inherit;
 }
 .acc-muted {
   color: var(--muted-foreground);
@@ -344,15 +333,13 @@
    会中随时进出批注模式、未发送角标常驻可见；取代对齐轮「入口贴对象」取舍）。
    带文字标签而非纯图标——会中要一眼找到入口；开启态强调色描边 + 文字，
    避免整块底色盖住页头动作组。 */
-.acc-annotate-entry {
-  border: 1px solid transparent;
-}
 .acc-annotate-entry.acc-mode-on {
   border-color: var(--color-accent, #d97757);
   color: var(--color-accent, #d97757);
   background: none;
 }
 .acc-annotate-entry.acc-mode-on:hover:not(:disabled) {
+  border-color: var(--color-accent, #d97757);
   background: var(--accent);
   color: var(--accent-foreground);
 }
