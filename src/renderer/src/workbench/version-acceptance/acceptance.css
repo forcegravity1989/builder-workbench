@@ -810,6 +810,11 @@ html[data-skin='ds'].dark .acc-annotate-entry.acc-mode-on .acc-annotate-count {
   align-items: flex-start;
   gap: 8px;
 }
+/* 编辑行的全局 M 编号对齐 textarea 首行（8px padding + 半行高）。 */
+.acc-point-edit-row .acc-id {
+  flex: none;
+  padding-top: 9px;
+}
 .acc-point-edit-row textarea {
   flex: 1;
   min-width: 0;

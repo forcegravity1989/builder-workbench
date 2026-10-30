@@ -17,10 +17,12 @@ import type { SendActionWrap } from '../plan-send-menu'
  * confirmed the whole section is frozen against the model channel.
  *
  * #471: the read view groups entries under per-goal sections keyed by the
- * 「G<n> ·」 prefix — presentation only, the protocol stays a flat list and the
- * editor stays flat; followups keep their global M ids so next-plan citations
- * survive grouping. The foot's sync button pushes this page into the booked
- * meeting's minutes through the session; it needs a booked meeting first.
+ * 「G<n> ·」 prefix — presentation only, the protocol stays a flat list; followups
+ * keep their global M ids so next-plan citations survive grouping. #516: the
+ * editor groups the same way (per-goal headings, prefix hidden while editing
+ * and re-attached on write) so editing no longer drops back to the flat layout.
+ * The foot's sync button pushes this page into the booked meeting's minutes
+ * through the session; it needs a booked meeting first.
  */
 /**
  * 注入提示词设计正本（对齐计划屏第九轮瘦身）：按钮 prompt 只承载触发意图；
@@ -45,16 +47,20 @@ const EMPTY_MINUTES: AcceptanceMeetingMinutes = {
   confirmed: false
 }
 
-// #471 批注5：读视图按目标分组。协议不动——共识/遗留仍是平铺清单，编辑态保持
-// 平铺；条目带「G<n> ·」前缀（n 为目标序号，非协议里的真实 goalId）归入对应
-// 节，读视图剥前缀；无前缀条目原样平铺在目标节之后，兜底不丢弃。
-const GOAL_PREFIX = /^(G\d+)\s*·\s*(.+)$/
+// #471 批注5：读视图按目标分组。协议不动——共识/遗留仍是平铺清单；条目带
+// 「G<n> ·」前缀（n 为目标序号，非协议里的真实 goalId）归入对应节，视图剥前缀；
+// 无前缀条目原样平铺在目标节之后，兜底不丢弃。#516：编辑态同样按目标分节，
+// textarea 只显示剥前缀正文、写回时按所在节重新拼前缀；尾部为空也算命中前缀
+// （(.*)），清空正文不让条目跳去未归类节。
+const GOAL_PREFIX = /^(G\d+)\s*·\s*(.*)$/
 
+/** One per-goal group shared by the read view and the editor; index is the
+ * position in the flat protocol arrays so an edit writes back to its slot. */
 type MinutesGoalSection = {
   goalId: string | null
   title: string | null
-  consensus: string[]
-  followups: { mark: string; text: string }[]
+  consensus: { index: number; text: string }[]
+  followups: { index: number; id: string; text: string }[]
 }
 
 function groupMinutesByGoal(
@@ -78,21 +84,21 @@ function groupMinutesByGoal(
     }
     return section
   }
-  minutes.consensus.forEach((text) => {
+  minutes.consensus.forEach((text, index) => {
     const match = GOAL_PREFIX.exec(text || '')
     if (match) {
-      sectionFor(match[1]).consensus.push(match[2])
+      sectionFor(match[1]).consensus.push({ index, text: match[2] })
     } else {
-      loose.consensus.push(text)
+      loose.consensus.push({ index, text })
     }
   })
   // 遗留保留全局 M 编号：下一版计划屏按 M 编号引用条目，分组呈现不能改号。
   minutes.followups.forEach((point, index) => {
     const match = GOAL_PREFIX.exec(point.text || '')
     if (match) {
-      sectionFor(match[1]).followups.push({ mark: `M${index + 1}`, text: match[2] })
+      sectionFor(match[1]).followups.push({ index, id: point.id, text: match[2] })
     } else {
-      loose.followups.push({ mark: `M${index + 1}`, text: point.text })
+      loose.followups.push({ index, id: point.id, text: point.text })
     }
   })
   // 无前缀条目并入无小标题的平铺节；无目标可读且两块全空（尚未整理）也保留
@@ -180,16 +186,45 @@ function MinutesCard({
   const patchBody = (patch: Partial<AcceptanceMeetingMinutes>) =>
     patchMinutes({ ...minutes, ...patch, updatedAt: new Date().toISOString() })
 
-  const setConsensusPoint = (index: number, text: string) =>
-    patchBody({ consensus: minutes.consensus.map((point, i) => (i === index ? text : point)) })
+  // 编辑态按节分组（#516）：写回时按所在节重新拼「G<n> ·」前缀，textarea 只显示
+  // 正文；未归类节（goalId=null）不拼前缀，原文往返——在未归类条目里打前缀仍是
+  // 借前缀归类的逃生口。目标节剥掉输入里手打的前缀再拼节前缀，归属由节决定，
+  // 不产生嵌套前缀。协议仍是平铺清单，索引对位写回。
+  const stripGoalPrefix = (text: string) => {
+    const match = GOAL_PREFIX.exec(text)
+    return match ? match[2] : text
+  }
+  const setConsensusPoint = (index: number, goalId: string | null, text: string) =>
+    patchBody({
+      consensus: minutes.consensus.map((point, i) =>
+        i === index ? (goalId ? `${goalId} · ${stripGoalPrefix(text)}` : text) : point
+      )
+    })
   const removeConsensusPoint = (index: number) =>
     patchBody({ consensus: minutes.consensus.filter((_, i) => i !== index) })
-  const setFollowupText = (id: string, text: string) =>
+  const setFollowupText = (id: string, goalId: string | null, text: string) =>
     patchBody({
-      followups: minutes.followups.map((point) => (point.id === id ? { ...point, text } : point))
+      followups: minutes.followups.map((point) =>
+        point.id === id
+          ? {
+              ...point,
+              text: goalId ? `${goalId} · ${stripGoalPrefix(text)}` : text
+            }
+          : point
+      )
     })
   const removeFollowup = (id: string) =>
     patchBody({ followups: minutes.followups.filter((point) => point.id !== id) })
+  // 节内「添加一点」自动带该节前缀，人只输正文；未归类节不加前缀。
+  const addConsensusPoint = (goalId: string | null) =>
+    patchBody({ consensus: [...minutes.consensus, goalId ? `${goalId} · ` : ''] })
+  const addFollowupPoint = (goalId: string | null) =>
+    patchBody({
+      followups: [
+        ...minutes.followups,
+        { id: crypto.randomUUID(), text: goalId ? `${goalId} · ` : '' }
+      ]
+    })
 
   return (
     <fieldset disabled={disabled} className="acc-minutes-fieldset">
@@ -217,106 +252,120 @@ function MinutesCard({
             </BoardIconButton>
           </span>
         </div>
-        {editing ? (
-          <>
-            <div className="acc-minutes-section">
-              <strong>共识</strong>
-              <div className="acc-point-editor">
-                {minutes.consensus.map((point, index) => (
-                  <div className="acc-point-edit-row" key={index}>
-                    <textarea
-                      rows={2}
-                      aria-label={`共识第 ${index + 1} 点`}
-                      value={point}
-                      onChange={(event) => setConsensusPoint(index, event.target.value)}
-                    />
-                    <BoardIconButton
-                      label={`删除共识第 ${index + 1} 点`}
-                      onClick={() => removeConsensusPoint(index)}
-                    >
-                      <X size={15} aria-hidden="true" />
-                    </BoardIconButton>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  className="acc-add-point"
-                  onClick={() => patchBody({ consensus: [...minutes.consensus, ''] })}
-                >
-                  <Plus size={13} aria-hidden="true" /> 添加一点
-                </button>
-              </div>
-            </div>
-            <div className="acc-minutes-section">
-              <strong>遗留</strong>
-              <div className="acc-point-editor">
-                {minutes.followups.map((point, index) => (
-                  <div className="acc-point-edit-row" key={point.id}>
-                    <textarea
-                      rows={2}
-                      aria-label={`遗留第 ${index + 1} 点`}
-                      value={point.text}
-                      onChange={(event) => setFollowupText(point.id, event.target.value)}
-                    />
-                    <BoardIconButton
-                      label={`删除遗留第 ${index + 1} 点`}
-                      onClick={() => removeFollowup(point.id)}
-                    >
-                      <X size={15} aria-hidden="true" />
-                    </BoardIconButton>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  className="acc-add-point"
-                  onClick={() =>
-                    patchBody({
-                      followups: [...minutes.followups, { id: crypto.randomUUID(), text: '' }]
-                    })
-                  }
-                >
-                  <Plus size={13} aria-hidden="true" /> 添加一点
-                </button>
-              </div>
-            </div>
-          </>
-        ) : (
-          groupMinutesByGoal(minutes, goals).map((section) => (
-            <section className="acc-minutes-goal" key={section.goalId || 'plain'}>
-              {section.goalId ? (
+        {editing
+          ? groupMinutesByGoal(minutes, goals).map((section) => (
+              <div className="acc-minutes-goal" key={section.goalId || 'plain'}>
                 <h4>
-                  <span className="acc-minutes-goal-id">{section.goalId}</span>
-                  {section.title || '目标句待明确'}
+                  {section.goalId ? (
+                    <>
+                      <span className="acc-minutes-goal-id">{section.goalId}</span>
+                      {section.title || '目标句待明确'}
+                    </>
+                  ) : (
+                    // 无前缀条目的兜底节：读视图无小标题，编辑态标出归属让人可辨。
+                    '未归类'
+                  )}
                 </h4>
-              ) : null}
-              <div className="acc-minutes-sub">
-                <strong>共识</strong>
-                <ul className="acc-points">
-                  {section.consensus.length ? (
-                    section.consensus.map((text, index) => <li key={index}>{text || '待填写'}</li>)
-                  ) : (
-                    <li className="acc-muted">无</li>
-                  )}
-                </ul>
+                <div className="acc-minutes-sub">
+                  <strong>共识</strong>
+                  <div className="acc-point-editor">
+                    {section.consensus.map((item, i) => (
+                      <div className="acc-point-edit-row" key={item.index}>
+                        <textarea
+                          rows={2}
+                          aria-label={`${section.goalId ?? '未归类'}共识第 ${i + 1} 点`}
+                          value={item.text}
+                          onChange={(event) =>
+                            setConsensusPoint(item.index, section.goalId, event.target.value)
+                          }
+                        />
+                        <BoardIconButton
+                          label={`删除${section.goalId ?? '未归类'}共识第 ${i + 1} 点`}
+                          onClick={() => removeConsensusPoint(item.index)}
+                        >
+                          <X size={15} aria-hidden="true" />
+                        </BoardIconButton>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className="acc-add-point"
+                      onClick={() => addConsensusPoint(section.goalId)}
+                    >
+                      <Plus size={13} aria-hidden="true" /> 添加一点
+                    </button>
+                  </div>
+                </div>
+                <div className="acc-minutes-sub">
+                  <strong>遗留</strong>
+                  <div className="acc-point-editor">
+                    {section.followups.map((item, i) => (
+                      <div className="acc-point-edit-row" key={item.id}>
+                        <span className="acc-id">{`M${item.index + 1}`}</span>
+                        <textarea
+                          rows={2}
+                          aria-label={`${section.goalId ?? '未归类'}遗留第 ${i + 1} 点`}
+                          value={item.text}
+                          onChange={(event) =>
+                            setFollowupText(item.id, section.goalId, event.target.value)
+                          }
+                        />
+                        <BoardIconButton
+                          label={`删除${section.goalId ?? '未归类'}遗留第 ${i + 1} 点`}
+                          onClick={() => removeFollowup(item.id)}
+                        >
+                          <X size={15} aria-hidden="true" />
+                        </BoardIconButton>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      className="acc-add-point"
+                      onClick={() => addFollowupPoint(section.goalId)}
+                    >
+                      <Plus size={13} aria-hidden="true" /> 添加一点
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div className="acc-minutes-sub">
-                <strong>遗留</strong>
-                <ul className="acc-points">
-                  {section.followups.length ? (
-                    section.followups.map((item) => (
-                      <li key={item.mark}>
-                        <span className="acc-id">{item.mark}</span>
-                        <span>{item.text || '待填写'}</span>
-                      </li>
-                    ))
-                  ) : (
-                    <li className="acc-muted">无</li>
-                  )}
-                </ul>
-              </div>
-            </section>
-          ))
-        )}
+            ))
+          : groupMinutesByGoal(minutes, goals).map((section) => (
+              <section className="acc-minutes-goal" key={section.goalId || 'plain'}>
+                {section.goalId ? (
+                  <h4>
+                    <span className="acc-minutes-goal-id">{section.goalId}</span>
+                    {section.title || '目标句待明确'}
+                  </h4>
+                ) : null}
+                <div className="acc-minutes-sub">
+                  <strong>共识</strong>
+                  <ul className="acc-points">
+                    {section.consensus.length ? (
+                      section.consensus.map((item) => (
+                        <li key={item.index}>{item.text || '待填写'}</li>
+                      ))
+                    ) : (
+                      <li className="acc-muted">无</li>
+                    )}
+                  </ul>
+                </div>
+                <div className="acc-minutes-sub">
+                  <strong>遗留</strong>
+                  <ul className="acc-points">
+                    {section.followups.length ? (
+                      section.followups.map((item) => (
+                        <li key={item.id}>
+                          <span className="acc-id">{`M${item.index + 1}`}</span>
+                          <span>{item.text || '待填写'}</span>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="acc-muted">无</li>
+                    )}
+                  </ul>
+                </div>
+              </section>
+            ))}
         <div className="acc-minutes-foot">
           <button
             type="button"
