@@ -301,10 +301,14 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-version-overview.png') })
 
   // ---- 设置页 Shortcuts 收录与搜索（#444 走原生键位体系）----
-  // Mod+Comma 经主进程 before-input-event 的焦点镜像路由，headless 焦点态不可靠
-  // 且非本特性判据；侧栏「设置」按钮与菜单同链打开设置页，中文 UI 导航项为「快捷键」。
-  await workbenchPage.getByRole('button', { name: '设置', exact: true }).click()
-  await workbenchPage.getByRole('button', { name: '快捷键', exact: true }).click()
+  // 打开方式不是判据，走 store action 直达 shortcuts pane（与菜单/侧栏按钮同链切
+  // activeView）。不点 i18n 按钮：原生 UI 文案随系统 locale，CI Linux 是英文，
+  // 中文 accessible name 在 CI 上必超时（本地中文 Windows 曾误绿）。
+  await workbenchPage.evaluate(() => {
+    const store = window.__store?.getState()
+    store?.openSettingsPage()
+    store?.openSettingsTarget({ pane: 'shortcuts', repoId: null })
+  })
   await workbenchPage.locator('#shortcut-filter-search').fill('批注')
   await expect(workbenchPage.getByText('Toggle Board Annotation Mode')).toBeVisible()
   await expect(workbenchPage.getByRole('heading', { name: 'Workbench' })).toBeVisible()
