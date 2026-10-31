@@ -1,0 +1,15 @@
+{
+  "schema_version": 3,
+  "version": "v1.10",
+  "cycleId": "c2af3cc8-f711-41f4-97cc-db37b6fa5157",
+  "summary": {
+    "progress": "",
+    "risks": ""
+  },
+  "goals": [],
+  "tasks": [],
+  "timeWindow": {
+    "start": "2026-11-02",
+    "end": "2026-11-06"
+  }
+}

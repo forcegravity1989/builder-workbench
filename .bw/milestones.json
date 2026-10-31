@@ -4,9 +4,71 @@
     {
       "month": "2026-10",
       "outcome": "贯通项目规划、版本推进与验收，让团队在 BW 内完成项目管理主流程。"
+    },
+    {
+      "month": "2026-11",
+      "outcome": "构建更多的项目上下文和任务多人协作并行执行旅程"
     }
   ],
   "features": [
+    {
+      "id": "58eac73c-2132-4359-9a72-68bc94e54fcf",
+      "month": "2026-11",
+      "title": "workflow",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "f796d362-6aaf-4216-9ceb-93fdddaa2689",
+          "version": {
+            "version": "v1.10",
+            "cycleId": "c2af3cc8-f711-41f4-97cc-db37b6fa5157"
+          },
+          "goalSlot": 2,
+          "stages": [
+            {
+              "phase": "Plan",
+              "start": "2026-11-02T00:00",
+              "end": "2026-11-03T00:00"
+            },
+            {
+              "phase": "Design",
+              "start": "2026-11-03T00:00",
+              "end": "2026-11-05T00:00"
+            },
+            {
+              "phase": "Build",
+              "start": "2026-11-05T00:00",
+              "end": "2026-11-05T12:00"
+            },
+            {
+              "phase": "Test",
+              "start": "2026-11-05T12:00",
+              "end": "2026-11-06T12:00"
+            },
+            {
+              "phase": "Deploy",
+              "start": "2026-11-06T12:00",
+              "end": "2026-11-07T00:00"
+            }
+          ]
+        },
+        {
+          "id": "c17d33e6-4fac-4c21-b999-dfa5559afc0f",
+          "version": {
+            "version": "v1.20",
+            "cycleId": "11b09ce2-9bc4-43b8-98d1-575e79beb4ed"
+          },
+          "goalSlot": 2,
+          "stages": [
+            {
+              "phase": "Maintain",
+              "start": "2026-11-09T00:00",
+              "end": "2026-11-14T00:00"
+            }
+          ]
+        }
+      ]
+    },
     {
       "id": "october-version-navigation",
       "month": "2026-10",
@@ -15,7 +77,10 @@
       "deliveries": [
         {
           "id": "october-version-navigation-v07",
-          "version": { "version": "v0.7", "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286" },
+          "version": {
+            "version": "v0.7",
+            "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286"
+          },
           "goalId": "G2",
           "goalSlot": 2,
           "stages": []
@@ -30,7 +95,10 @@
       "deliveries": [
         {
           "id": "october-version-planning-v07",
-          "version": { "version": "v0.7", "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286" },
+          "version": {
+            "version": "v0.7",
+            "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286"
+          },
           "goalId": "G3",
           "goalSlot": 3,
           "stages": []
@@ -45,7 +113,10 @@
       "deliveries": [
         {
           "id": "october-version-acceptance-v07",
-          "version": { "version": "v0.7", "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286" },
+          "version": {
+            "version": "v0.7",
+            "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286"
+          },
           "goalId": "G3",
           "goalSlot": 3,
           "stages": []
@@ -60,7 +131,10 @@
       "deliveries": [
         {
           "id": "october-project-overview-v08",
-          "version": { "version": "v0.8", "cycleId": "228a67d9-49c0-4908-b595-e4475086288c" },
+          "version": {
+            "version": "v0.8",
+            "cycleId": "228a67d9-49c0-4908-b595-e4475086288c"
+          },
           "goalId": "G2",
           "goalSlot": 2,
           "stages": []
@@ -75,7 +149,10 @@
       "deliveries": [
         {
           "id": "october-version-overview-v08",
-          "version": { "version": "v0.8", "cycleId": "228a67d9-49c0-4908-b595-e4475086288c" },
+          "version": {
+            "version": "v0.8",
+            "cycleId": "228a67d9-49c0-4908-b595-e4475086288c"
+          },
           "goalId": "G2",
           "goalSlot": 2,
           "stages": []
