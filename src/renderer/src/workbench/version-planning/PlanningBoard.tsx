@@ -220,7 +220,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
       }
       setOpeningPr(true)
       try {
-        await openArchivePrPage(scope, archivePr)
+        await openArchivePrPage(context, archivePr)
       } finally {
         setOpeningPr(false)
       }

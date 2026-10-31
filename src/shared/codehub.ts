@@ -170,7 +170,7 @@ export function assertCodeHubDetailIdentity(
       normalizeCodeHubMergeRequestRoute(decodeURIComponent(value.pathname)).toLowerCase()
     if (
       !['http:', 'https:'].includes(actual.protocol) ||
-      actual.host !== expected.host ||
+      (actual.host !== args.remote.host && actual.host !== args.remote.webHost) ||
       path(actual) !== path(expected)
     ) {
       throw new Error('CodeHub 返回的 MR 链接与请求来源不一致')

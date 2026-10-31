@@ -8,7 +8,7 @@ import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
 import type { WorkflowArchivePr } from '../../../../shared/workbench/version-workflow'
 import { codehubStateOf, codehubWebUrl } from '../codehub-task-item'
 import { resolveReferenceRepo } from '../task-port'
-import type { CycleScope } from './ports'
+import type { VersionCycleContext } from './cycle-context'
 
 /**
  * Opens the recorded archive PR/MR on the Orca native PR page (never an external
@@ -23,15 +23,27 @@ import type { CycleScope } from './ports'
  * being duplicated per screen.
  */
 export async function openArchivePrPage(
-  scope: CycleScope,
+  context: Pick<VersionCycleContext, 'scope' | 'worktreeId' | 'archivePort'>,
   archivePr: WorkflowArchivePr
 ): Promise<void> {
+  const { scope, worktreeId, archivePort } = context
+  if (!scope) {
+    throw new Error('版本工作区来源未就绪')
+  }
   const reference = {
     provider: archivePr.provider,
     repository: archivePr.repository,
     number: archivePr.number
   }
-  const repo = resolveReferenceRepo({ repos: () => useAppStore.getState().repos }, scope, reference)
+  let repo = resolveReferenceRepo({ repos: () => useAppStore.getState().repos }, scope, reference)
+  if (!repo && archivePr.provider === 'codehub' && worktreeId) {
+    // Only the owning runtime can prove a web host aliases this scope's registered repo.
+    const status = await archivePort.readStatus({ ...scope, worktreeId }, archivePr)
+    if (status.state === 'unknown') {
+      throw new Error(status.reason)
+    }
+    repo = useAppStore.getState().repos.find((candidate) => candidate.id === scope.repoId) ?? null
+  }
   if (!repo) {
     throw new Error(`未在已登记项目中找到归档仓库 ${archivePr.repository}`)
   }
