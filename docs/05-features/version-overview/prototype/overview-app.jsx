@@ -1,15 +1,15 @@
 import { OverviewSections } from './overview-sections.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
-import { Dialog, SourcePanel, ReferencePanel } from './overview-components.jsx'
+import { Dialog, SourcePanel } from './overview-components.jsx'
 import {
   snapshot,
-  acceptanceForVersion,
+  archivePull,
+  formatTime,
   repository,
   revision,
   scenarios,
   features,
-  historicalFeatures,
-  material
+  historicalFeatures
 } from './overview-data.js'
 const {
   // Used by the shared JSX build factory.
@@ -25,6 +25,7 @@ const {
   ListTodo,
   BookOpen,
   GitBranch,
+  RefreshCw,
   ChevronDown,
   ChevronRight,
   Info,
@@ -38,6 +39,30 @@ function Link({ href, children }) {
     <a href={href} target="_blank" rel="noreferrer">
       {children} ↗
     </a>
+  )
+}
+function ArchiveStamp({ version, workflow, label }) {
+  const pull = archivePull(version, workflow)
+  const merged = pull?.state === 'MERGED'
+  return (
+    <span>
+      {label} ·{' '}
+      {merged && pull.mergedAt ? (
+        <time dateTime={pull.mergedAt} title="北京时间 UTC+08:00">
+          {formatTime(pull.mergedAt)}
+        </time>
+      ) : pull && !merged ? (
+        '未合入'
+      ) : (
+        '未记录'
+      )}
+      {pull && (
+        <>
+          {' '}
+          · <Link href={pull.url}>#{pull.number}</Link>
+        </>
+      )}
+    </span>
   )
 }
 function App() {
@@ -58,7 +83,6 @@ function App() {
   const [navigationDraft, setNavigationDraft] = useState({
     origin: 'project',
     scene: 'during',
-    featureId: '334',
     note: ''
   })
   const [returnContext, setReturnContext] = useState(null)
@@ -67,16 +91,11 @@ function App() {
   const unplanned = scenario === 'unplanned',
     history = scenario === 'delivered'
   const plan = history ? snapshot.priorPlan : snapshot.plan
-  const acceptance = snapshot.acceptance
   const requirements = unplanned ? [] : history ? historicalFeatures : sample
   const missingFocus = focusRequest && !requirements.some((f) => f.id === focusRequest.id)
-  const planLink = material(
-    selected.version,
-    'data',
-    history ? acceptance.planRef.sourceCommit : undefined
-  )
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+    document.documentElement.classList.toggle('dark', dark)
   }, [dark])
   function native(route, goal = null, feature = null) {
     setDialog({ kind: 'native', title: `原型注释: ${route}入口`, route, goal, feature })
@@ -89,11 +108,21 @@ function App() {
   }
   function enterFromSource() {
     setReturnContext({ ...navigationDraft })
-    openVersion(navigationDraft.scene, navigationDraft.featureId)
+    openVersion(navigationDraft.scene)
   }
   function returnToSource() {
     setNavigationDraft({ ...returnContext })
     setDialog({ kind: 'navigation', title: '原型注释: 返回来源上下文', returned: true })
+  }
+  function refreshVersion() {
+    const url = new URL(location.href)
+    url.searchParams.set('scene', scenario)
+    if (focusRequest) {
+      url.searchParams.set('focus', focusRequest.id)
+    } else {
+      url.searchParams.delete('focus')
+    }
+    location.assign(url)
   }
   function openSession(feature) {
     if (feature.historical) {
@@ -105,12 +134,10 @@ function App() {
   function edit() {
     setEditing(
       JSON.stringify(
-        sample.map(({ id, title, owner, purpose, scope }) => ({
+        sample.map(({ id, title, owner }) => ({
           id,
           title,
-          owner,
-          purpose,
-          scope
+          owner
         })),
         null,
         2
@@ -128,9 +155,7 @@ function App() {
         next.some(
           (f, i) =>
             f.id !== features[i].id ||
-            ['title', 'owner', 'purpose', 'scope'].some(
-              (k) => typeof f[k] !== 'string' || !f[k].trim()
-            )
+            ['title', 'owner'].some((k) => typeof f[k] !== 'string' || !f[k].trim())
         )
       ) {
         throw new Error('保留两个特性的 id，各文字字段不可为空。')
@@ -138,7 +163,7 @@ function App() {
       setSample(
         next.map((f, i) => ({
           ...features[i],
-          ...Object.fromEntries(['title', 'owner', 'purpose', 'scope'].map((k) => [k, f[k]]))
+          ...Object.fromEntries(['title', 'owner'].map((k) => [k, f[k]]))
         }))
       )
       setEdited(true)
@@ -184,11 +209,6 @@ function App() {
             icon={Info}
             label="原型注释: 数据来源"
             onClick={() => setDialog({ kind: 'source', title: '原型注释: 数据来源' })}
-          />
-          <IconAction
-            icon={BookOpen}
-            label="原型注释: 设计参考"
-            onClick={() => setDialog({ kind: 'references', title: '原型注释: 设计参考' })}
           />
           <button aria-label="原型注释: 切换明暗主题" onClick={() => setDark(!dark)}>
             {dark ? '浅色' : '深色'}
@@ -261,7 +281,7 @@ function App() {
                           className="nav-row ov-goal-nav"
                           title={g.title}
                           key={g.goalId}
-                          onClick={() => setDialog({ kind: 'goal', title: g.title, goal: g })}
+                          onClick={() => native('目标任务', g)}
                         >
                           <ChevronRight size={12} />
                           <span>
@@ -328,6 +348,7 @@ function App() {
                 {unplanned ? '计划未制定' : history ? '已归档' : '版本中'}
               </span>
               <div className="ov-tools">
+                <IconAction icon={RefreshCw} label="刷新版本数据" onClick={refreshVersion} />
                 <IconAction
                   icon={CalendarRange}
                   label="进入本版计划"
@@ -355,9 +376,12 @@ function App() {
                     )
                   ].join('、')}
                 </span>
-                <span>{history ? '人工验收 · 2026-10-23' : '计划确认 · 2026-10-27'}</span>
-                <span>交付时间 · {history ? '见验收与发布记录' : '计划未记录'}</span>
-                <Link href={planLink}>计划依据</Link>
+                <ArchiveStamp version={selected.version} workflow="planning" label="计划 PR 合入" />
+                <ArchiveStamp
+                  version={selected.version}
+                  workflow="acceptance"
+                  label="验收 PR 合入"
+                />
               </div>
             )}
             {edited && !history && !unplanned && (
@@ -380,11 +404,8 @@ function App() {
               unplanned={unplanned}
               history={history}
               plan={plan}
-              planLink={planLink}
               sample={sample}
-              setDialog={setDialog}
               native={native}
-              openSession={openSession}
               focusRequest={focusRequest}
               openVersion={openVersion}
             />
@@ -397,11 +418,10 @@ function App() {
           close={() => setDialog(null)}
           wide={dialog.kind === 'source' || dialog.kind === 'edit'}
         >
-          {dialog.kind === 'references' && <ReferencePanel />}
           {dialog.kind === 'navigation' && (
             <>
               <Note>
-                这里只演示 #334 的进入、需求定位和返回上下文，不复刻 #440
+                这里只演示进入版本和返回上下文，不复刻 #440
                 页面。以下输入仅保留在本页内存，刷新清除；不是共享路由或存储协议。
               </Note>
               <div className="ov-navigation-fields">
@@ -433,19 +453,6 @@ function App() {
                     ))}
                   </select>
                 </label>
-                <label>
-                  原型注释: 来源特性
-                  <select
-                    value={navigationDraft.featureId}
-                    onChange={(e) =>
-                      setNavigationDraft({ ...navigationDraft, featureId: e.target.value })
-                    }
-                  >
-                    <option value="334">#334 版本总览</option>
-                    <option value="440">#440 项目总览</option>
-                    <option value="383">#383 版本工作区</option>
-                  </select>
-                </label>
               </div>
               {navigationDraft.origin === 'planning' && (
                 <label>
@@ -461,88 +468,21 @@ function App() {
               )}
               {dialog.returned && (
                 <Note>
-                  本地示例的来源选择和草案输入已保留；#440
-                  真实页面的视口、规划草案和跨屏返回尚未联调。本屏不会修改来源页面材料。
+                  本地示例的来源选择和草案输入已保留；本屏仅演示返回目标，不修改来源页面材料。
                 </Note>
               )}
               <p>
                 <button className="ov-primary" onClick={enterFromSource}>
-                  进入所选版本并定位特性
+                  进入所选版本
                 </button>
               </p>
               <Note>
-                版本按项目实际名称定位；不强制
-                C/B，也不按日期推断所属关系。未纳入计划的来源特性仅作为定位上下文，不补造本版承诺。
+                版本按项目实际名称定位，不按日期推断所属关系。从项目总览版本表头进入准确版本；
+                特性卡片中的关联版本标签另行保留同一主 Issue 的定位。
               </Note>
             </>
           )}
           {dialog.kind === 'source' && <SourcePanel />}
-          {dialog.kind === 'release' && (
-            <>
-              <p>
-                验收候选：Workbench {acceptance.candidateRef.version} ·{' '}
-                <Link href={`${repository}/commit/${acceptance.candidateRef.commit}`}>
-                  {acceptance.candidateRef.commit.slice(0, 8)}
-                </Link>
-              </p>
-              <p>{acceptance.demoEnv.detail}</p>
-              <Link
-                href={`${repository}/blob/${snapshot.source.sourceCommit}/.bw/planning/v0.7/acceptance-evidence.html`}
-              >
-                当时验收报告
-              </Link>
-              <h3>后续补丁</h3>
-              {snapshot.releases
-                .filter((r) => /^v0\.7\.[1-9]/.test(r.tagName))
-                .map((r) => (
-                  <p key={r.tagName}>
-                    <Link href={r.url}>{r.tagName}</Link>
-                  </p>
-                ))}
-            </>
-          )}
-          {dialog.kind === 'goal' && (
-            <>
-              <p>
-                <strong>
-                  {dialog.goal.goalId} · {dialog.goal.owner}
-                </strong>
-              </p>
-              <h3>交付范围</h3>
-              <p className="ov-prewrap">{dialog.goal.deliverable}</p>
-              <h3>验收依据</h3>
-              <p className="ov-prewrap">{dialog.goal.acceptance}</p>
-              {acceptanceForVersion(selected.version) && (
-                <>
-                  <h3>当时人工结论</h3>
-                  {acceptanceForVersion(selected.version)
-                    .results.filter((r) => r.goalId === dialog.goal.goalId)
-                    .map((r) => (
-                      <div key={r.goalId}>
-                        <p>
-                          {r.decision?.outcome === 'met'
-                            ? '达成'
-                            : r.decision?.outcome === 'not-met'
-                              ? '未达成'
-                              : '未确认'}{' '}
-                          · {r.decision?.source}
-                        </p>
-                        <p>{r.nextStep}</p>
-                        {Object.values(r.issueNotes || {}).map((note, i) => (
-                          <p key={i}>{note}</p>
-                        ))}
-                      </div>
-                    ))}
-                </>
-              )}
-              <p>
-                <button className="ov-link" onClick={() => native('目标任务', dialog.goal)}>
-                  打开本目标任务屏 ↗
-                </button>
-              </p>
-              <Link href={planLink}>固定计划原文</Link>
-            </>
-          )}
           {dialog.kind === 'session' && (
             <>
               <dl>

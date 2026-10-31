@@ -261,6 +261,12 @@ export async function viewCodeHubTask(args: {
     assignees: namesOf(record.assignees ?? record.assignee),
     reviewers: namesOf(record.reviewers ?? record.approval_reviewers),
     labels: namesOf(record.labels),
+    ...(plainText(record, ['created_at', 'createdAt'])
+      ? { createdAt: plainText(record, ['created_at', 'createdAt'])! }
+      : {}),
+    ...(plainText(record, ['merged_at', 'mergedAt'])
+      ? { mergedAt: plainText(record, ['merged_at', 'mergedAt'])! }
+      : {}),
     sourceBranch: plainText(record, ['source_branch', 'sourceBranch']),
     targetBranch: plainText(record, ['target_branch', 'targetBranch'])
   }

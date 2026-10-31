@@ -7,7 +7,7 @@ import type { Repo } from '../../shared/repo-types'
 import type { CodeHubExecOptions } from './cli'
 import { applyCodeHubIssueState } from './issue-state'
 import { readCodeHubMrChanges, readCodeHubMrChecks } from './mr-reads'
-import { listCodeHubProjectLabels } from './repo-reads'
+import { listCodeHubProjectLabels, listCodeHubProjectMembers } from './repo-reads'
 import { listCodeHubTasks } from './work-items'
 import { getCodeHubViewer } from './viewer'
 import {
@@ -68,6 +68,9 @@ export function createCodeHubService(deps: {
     },
     async listLabels(args) {
       return listCodeHubProjectLabels(await context(args))
+    },
+    async listMembers(args) {
+      return listCodeHubProjectMembers(await context(args))
     },
     async setIssueState(args) {
       const { remote, execOptions } = await context(args)

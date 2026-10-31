@@ -81,7 +81,11 @@ export type ArchivePrScope = {
 }
 export type ArchivePrPort = {
   /** Status of the one recorded archive PR, read on the worktree's owning runtime. */
-  readStatus(scope: ArchivePrScope, pr: WorkflowArchivePr): Promise<ArchivePrStatusResult>
+  readStatus(
+    scope: ArchivePrScope,
+    pr: WorkflowArchivePr,
+    force?: boolean
+  ): Promise<ArchivePrStatusResult>
 }
 
 export type ReleaseStatusPort = {
