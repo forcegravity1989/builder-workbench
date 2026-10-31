@@ -30,7 +30,8 @@ const REPO = 'github.com/forcegravity1989/builder-workbench'
 const CODEHUB_REPO = 'codehub-g.huawei.com/Org/Group/repo'
 
 describe('deriveCommitmentProgress', () => {
-  it('关闭即完成：closed 全部计入完成，开放计入开放（关闭原因不参与计数）', () => {
+  // 环 4 ratchet 对冲（#516）：同一纯函数的三条薄用例合并为一条，全部断言原样保留。
+  it('关闭即完成并按状态回执计数；任一读不到为 Unknown；provider 中立', () => {
     const tasks = [
       { provider: 'github', repository: REPO, number: 1 },
       { provider: 'github', repository: REPO, number: 2 },
@@ -49,29 +50,23 @@ describe('deriveCommitmentProgress', () => {
       ])
     )
     expect(progress).toEqual({ completed: 3, open: 2 })
-  })
-
-  it('任一任务状态读不到 → null（整行 Unknown，不拼半真数字）', () => {
-    const tasks = [
-      { provider: 'github', repository: REPO, number: 1 },
-      { provider: 'github', repository: REPO, number: 2 }
-    ]
-    expect(deriveCommitmentProgress(tasks, states([[REPO, 1, 'OPEN']]))).toBeNull()
-  })
-
-  it('provider 中立：GitHub 与 CodeHub 任务按状态回执一同计数', () => {
-    const tasks = [
-      { provider: 'github', repository: REPO, number: 1 },
-      { provider: 'codehub', repository: CODEHUB_REPO, number: 7 }
-    ]
-    const progress = deriveCommitmentProgress(
-      tasks,
-      states([
-        [REPO, 1, 'OPEN'],
-        [CODEHUB_REPO, 7, 'CLOSED']
-      ])
-    )
-    expect(progress).toEqual({ completed: 1, open: 1 })
+    // 任一任务状态读不到 → 整行 Unknown，不拼半真数字。
+    expect(
+      deriveCommitmentProgress(tasks.slice(0, 2), states([[REPO, 1, 'OPEN']]))
+    ).toBeNull()
+    // provider 中立：GitHub 与 CodeHub 任务按状态回执一同计数。
+    expect(
+      deriveCommitmentProgress(
+        [
+          { provider: 'github', repository: REPO, number: 1 },
+          { provider: 'codehub', repository: CODEHUB_REPO, number: 7 }
+        ],
+        states([
+          [REPO, 1, 'OPEN'],
+          [CODEHUB_REPO, 7, 'CLOSED']
+        ])
+      )
+    ).toEqual({ completed: 1, open: 1 })
   })
 })
 

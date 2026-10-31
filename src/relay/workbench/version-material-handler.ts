@@ -4,6 +4,7 @@ import { createVersionMaterialWorkspace } from '../../main/workbench/version-mat
 import { materialResult } from '../../main/workbench/version-material-error'
 import { WorkbenchVersionBindingSchema } from '../../shared/workbench/version-binding'
 import {
+  VersionMaterialAddArtifactSchema,
   VersionMaterialReadSchema,
   VersionMaterialSaveSchema,
   VersionMaterialScopeSchema,
@@ -17,7 +18,15 @@ import {
 
 const Command = z.strictObject({
   target: z.strictObject({ repoPath: z.string().min(1), worktreePath: z.string().min(1) }),
-  operation: z.enum(['list', 'read', 'save', 'previewMigration', 'migrate', 'initializeEmptyPlan']),
+  operation: z.enum([
+    'list',
+    'read',
+    'save',
+    'addArtifact',
+    'previewMigration',
+    'migrate',
+    'initializeEmptyPlan'
+  ]),
   request: z.unknown(),
   /** G2 (P3a)：绑定围栏随请求下发；缺省=无绑定树（旧语义逐字不变）。 */
   binding: WorkbenchVersionBindingSchema.nullable().optional()
@@ -41,6 +50,10 @@ export function registerVersionMaterialRelay(dispatcher: Pick<RelayDispatcher, '
         return materialResult(() => workspace.read(VersionMaterialReadSchema.parse(request)))
       case 'save':
         return materialResult(() => workspace.save(VersionMaterialSaveSchema.parse(request)))
+      case 'addArtifact':
+        return materialResult(() =>
+          workspace.addArtifact(VersionMaterialAddArtifactSchema.parse(request))
+        )
       case 'initializeEmptyPlan':
         return materialResult(() =>
           workspace.initializeEmptyPlan(VersionMaterialInitializeSchema.parse(request))

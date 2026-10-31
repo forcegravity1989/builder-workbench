@@ -592,6 +592,7 @@ import {
   VersionMigrationReadSchema
 } from '../workbench/version-material-migration'
 import {
+  VersionMaterialAddArtifactSchema,
   VersionMaterialReadSchema,
   VersionMaterialSaveSchema,
   VersionMaterialScopeSchema
@@ -1225,6 +1226,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.history.listTreePlans': VersionTreePlansSchema,
   'workbench.history.read': VersionHistoryReadSchema,
   'workbench.history.readPlan': VersionHistoryReadPlanSchema,
+  'workbench.materials.addArtifact': VersionMaterialAddArtifactSchema,
   'workbench.materials.context': VersionMaterialScopeSchema,
   'workbench.materials.list': VersionMaterialScopeSchema,
   'workbench.materials.migrate': VersionMigrationApplySchema,

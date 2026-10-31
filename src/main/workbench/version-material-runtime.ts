@@ -52,6 +52,7 @@ export const executeVersionMaterial: VersionMaterialExecutor = (target, reauthor
     list: (request) => call('list', request),
     read: (request) => call('read', request),
     save: (request) => call('save', request),
+    addArtifact: (request) => call('addArtifact', request),
     initializeEmptyPlan: (request) => call('initializeEmptyPlan', request)
   }
 }
