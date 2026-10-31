@@ -7,16 +7,9 @@ const {
   composeAttentionMock,
   createAppIconImageMock,
   createFromPathMock,
-  devBadgeImage,
-  devBadgeRetinaImage,
   menuFromTemplateMock,
-  nativeThemeMock,
   resizedImage,
   retinaMacImage,
-  stampDevBadgeMock,
-  themeState,
-  tintedMacImage,
-  tintTemplateMock,
   trayInstances
 } = vi.hoisted(() => {
   const makeImage = (name: string) => ({
@@ -25,46 +18,17 @@ const {
     getScaleFactors: vi.fn(() => [1, 2]),
     getSize: vi.fn(() => ({ width: 16, height: 16 })),
     setTemplateImage: vi.fn(),
-    toBitmap: vi.fn(() => Buffer.alloc(16 * 16 * 4)),
     toDataURL: vi.fn(() => `data:image/png;base64,${name}`)
   })
-  const resizedImage = makeImage('windows')
-  const baseMacImage = makeImage('mac-base')
-  const retinaMacImage = makeImage('mac-retina')
-  const tintedMacImage = makeImage('mac-tinted')
-  const attentionImage = makeImage('attention')
-  const devBadgeImage = makeImage('dev-badge')
-  const devBadgeRetinaImage = makeImage('dev-badge-retina')
-  const themeState = { updatedListener: null as (() => void) | null }
-  const nativeThemeMock = {
-    shouldUseDarkColors: false,
-    on: vi.fn((_event: string, listener: () => void) => {
-      themeState.updatedListener = listener
-    }),
-    removeListener: vi.fn((_event: string, listener: () => void) => {
-      if (themeState.updatedListener === listener) {
-        themeState.updatedListener = null
-      }
-    })
-  }
   return {
-    attentionImage,
-    baseMacImage,
-    composeAttentionMock: vi.fn(() => attentionImage),
+    attentionImage: makeImage('attention'),
+    baseMacImage: makeImage('mac-base'),
+    composeAttentionMock: vi.fn(),
     createAppIconImageMock: vi.fn(),
     createFromPathMock: vi.fn(),
-    devBadgeImage,
-    devBadgeRetinaImage,
     menuFromTemplateMock: vi.fn((template: unknown) => ({ template })),
-    nativeThemeMock,
-    resizedImage,
-    retinaMacImage,
-    stampDevBadgeMock: vi.fn((_base: unknown, scaleFactor?: number) =>
-      scaleFactor === 2 ? devBadgeRetinaImage : devBadgeImage
-    ),
-    themeState,
-    tintedMacImage,
-    tintTemplateMock: vi.fn(() => tintedMacImage),
+    resizedImage: makeImage('windows'),
+    retinaMacImage: makeImage('mac-retina'),
     trayInstances: [] as FakeTray[]
   }
 })
@@ -85,16 +49,15 @@ class FakeTray {
 vi.mock('electron', () => ({
   Tray: FakeTray,
   Menu: { buildFromTemplate: menuFromTemplateMock },
-  nativeImage: { createFromPath: createFromPathMock },
-  nativeTheme: nativeThemeMock
+  nativeImage: { createFromPath: createFromPathMock }
 }))
 
-vi.mock('../../../resources/tray/orca-menu-barTemplate.png?asset&asarUnpack', () => ({
-  default: '/assets/orca-menu-barTemplate.png'
+vi.mock('../../../resources/tray/workbench.png?asset&asarUnpack', () => ({
+  default: '/assets/workbench.png'
 }))
 
-vi.mock('../../../resources/tray/orca-menu-barTemplate@2x.png?asset&asarUnpack', () => ({
-  default: '/assets/orca-menu-barTemplate@2x.png'
+vi.mock('../../../resources/tray/workbench@2x.png?asset&asarUnpack', () => ({
+  default: '/assets/workbench@2x.png'
 }))
 
 vi.mock('../app-icon', () => ({
@@ -102,12 +65,7 @@ vi.mock('../app-icon', () => ({
 }))
 
 vi.mock('./tray-attention-icon', () => ({
-  composeTrayAttentionIcon: composeAttentionMock,
-  tintTrayTemplateForAttention: tintTemplateMock
-}))
-
-vi.mock('./tray-dev-badge', () => ({
-  stampTrayDevBadge: stampDevBadgeMock
+  composeTrayAttentionIcon: composeAttentionMock
 }))
 
 type TrayModule = typeof SystemTrayModule
@@ -152,37 +110,20 @@ beforeEach(() => {
   vi.useFakeTimers()
   trayInstances.length = 0
   menuFromTemplateMock.mockClear()
-  composeAttentionMock.mockClear()
-  tintTemplateMock.mockClear()
+  composeAttentionMock.mockReset().mockReturnValue(attentionImage)
   createAppIconImageMock.mockReset()
   createAppIconImageMock.mockReturnValue({ resize: vi.fn(() => resizedImage) })
   createFromPathMock.mockReset()
   createFromPathMock.mockImplementation((path: string) =>
     path.includes('@2x') ? retinaMacImage : baseMacImage
   )
-  stampDevBadgeMock.mockClear()
-  stampDevBadgeMock.mockImplementation((_base: unknown, scaleFactor?: number) =>
-    scaleFactor === 2 ? devBadgeRetinaImage : devBadgeImage
-  )
-  for (const image of [
-    baseMacImage,
-    retinaMacImage,
-    tintedMacImage,
-    attentionImage,
-    devBadgeImage,
-    devBadgeRetinaImage
-  ]) {
+  for (const image of [baseMacImage, retinaMacImage, attentionImage]) {
     image.addRepresentation.mockClear()
     image.getScaleFactors.mockReset().mockReturnValue([1, 2])
     image.getSize.mockReset().mockReturnValue({ width: 16, height: 16 })
     image.setTemplateImage.mockClear()
-    image.toBitmap.mockClear()
     image.toDataURL.mockClear().mockReturnValue(`data:image/png;base64,${image.name}`)
   }
-  nativeThemeMock.shouldUseDarkColors = false
-  nativeThemeMock.on.mockClear()
-  nativeThemeMock.removeListener.mockClear()
-  themeState.updatedListener = null
 })
 
 afterEach(() => {
@@ -201,7 +142,7 @@ describe('createSystemTray', () => {
 
     expect(trayInstances).toHaveLength(1)
     expect(trayInstances[0].image).toBe(resizedImage)
-    expect(trayInstances[0].setToolTip).toHaveBeenCalledWith('Orca')
+    expect(trayInstances[0].setToolTip).toHaveBeenCalledWith('Workbench')
     expect(builtMenuItems().map((item) => item.label)).toEqual(['Open Orca', undefined, 'Quit'])
     const clickHandler = trayInstances[0].on.mock.calls.find((call) => call[0] === 'click')?.[1]
     expect(clickHandler).toBeTypeOf('function')
@@ -213,7 +154,7 @@ describe('createSystemTray', () => {
     expect(options.onQuit).toHaveBeenCalledOnce()
   })
 
-  it('creates a macOS template status item with the full native menu', async () => {
+  it('creates a macOS product status item with the full native menu', async () => {
     setPlatform('darwin')
     const { createSystemTray } = await loadModule()
     const options = createOptions()
@@ -222,7 +163,7 @@ describe('createSystemTray', () => {
 
     expect(trayInstances).toHaveLength(1)
     expect(trayInstances[0].image).toBe(baseMacImage)
-    expect(baseMacImage.setTemplateImage).toHaveBeenCalledWith(true)
+    expect(baseMacImage.setTemplateImage).toHaveBeenCalledWith(false)
     expect(baseMacImage.addRepresentation).toHaveBeenCalledWith({
       scaleFactor: 2,
       dataURL: 'data:image/png;base64,mac-retina'
@@ -236,7 +177,6 @@ describe('createSystemTray', () => {
       'Quit'
     ])
     expect(trayInstances[0].on).not.toHaveBeenCalled()
-    expect(nativeThemeMock.on).toHaveBeenCalledWith('updated', expect.any(Function))
 
     for (const [label, callback] of [
       ['Open Orca', options.onOpen],
@@ -251,7 +191,7 @@ describe('createSystemTray', () => {
     }
   })
 
-  it('does not create a blank macOS item when the template asset fails to load', async () => {
+  it('does not create a blank macOS item when the product asset fails to load', async () => {
     setPlatform('darwin')
     baseMacImage.getSize.mockReturnValue({ width: 0, height: 0 })
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -276,53 +216,18 @@ describe('createSystemTray', () => {
 })
 
 describe('dev instance indicator', () => {
-  it('stamps the DEV badge into the macOS template with a rebuilt Retina rep', async () => {
+  it('marks the macOS status item as DEV while preserving the product image', async () => {
     setPlatform('darwin')
     const { createSystemTray } = await loadModule()
 
     createSystemTray(createOptions({ isDevInstance: true, devInstanceLabel: 'my-branch' }))
 
-    expect(stampDevBadgeMock).toHaveBeenCalledWith(baseMacImage)
-    expect(stampDevBadgeMock).toHaveBeenCalledWith(baseMacImage, 2)
-    expect(devBadgeImage.addRepresentation).toHaveBeenCalledWith({
-      scaleFactor: 2,
-      dataURL: 'data:image/png;base64,dev-badge-retina'
-    })
-    expect(devBadgeImage.setTemplateImage).toHaveBeenCalledWith(true)
-    expect(trayInstances[0].image).toBe(devBadgeImage)
-    expect(trayInstances[0].setTitle).not.toHaveBeenCalled()
-    expect(trayInstances[0].setToolTip).toHaveBeenCalledWith('Orca DEV (my-branch)')
+    expect(trayInstances[0].image).toBe(baseMacImage)
+    expect(trayInstances[0].setTitle).toHaveBeenCalledWith('DEV')
     expect(builtMenuItems()[0]).toMatchObject({
-      label: 'Orca DEV (my-branch)',
+      label: 'Workbench DEV (my-branch)',
       enabled: false
     })
-  })
-
-  it('tints the badged image (not the plain one) for macOS attention', async () => {
-    setPlatform('darwin')
-    const { createSystemTray, setTrayAttention } = await loadModule()
-    createSystemTray(createOptions({ isDevInstance: true, devInstanceLabel: 'my-branch' }))
-
-    setTrayAttention(true)
-    flushTraySceneMutation()
-
-    expect(tintTemplateMock).toHaveBeenCalledWith(devBadgeImage, false)
-  })
-
-  it('falls back to the plain icon when badge stamping fails', async () => {
-    setPlatform('darwin')
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    stampDevBadgeMock.mockImplementation(() => {
-      throw new Error('bitmap failure')
-    })
-    const { createSystemTray } = await loadModule()
-
-    expect(createSystemTray(createOptions({ isDevInstance: true }))).not.toBeNull()
-    expect(trayInstances[0].image).toBe(baseMacImage)
-    expect(warn).toHaveBeenCalledWith(
-      '[system-tray] dev badge could not be stamped; showing plain icon',
-      expect.any(Error)
-    )
   })
 
   it('omits the label suffix when the dev instance has none', async () => {
@@ -331,8 +236,8 @@ describe('dev instance indicator', () => {
 
     createSystemTray(createOptions({ isDevInstance: true }))
 
-    expect(trayInstances[0].setToolTip).toHaveBeenCalledWith('Orca DEV')
-    expect(builtMenuItems()[0]).toMatchObject({ label: 'Orca DEV', enabled: false })
+    expect(trayInstances[0].setToolTip).toHaveBeenCalledWith('Workbench DEV')
+    expect(builtMenuItems()[0]).toMatchObject({ label: 'Workbench DEV', enabled: false })
   })
 
   it('keeps the DEV marker in the tooltip across the attention toggle', async () => {
@@ -344,10 +249,10 @@ describe('dev instance indicator', () => {
 
     setTrayAttention(true)
     flushTraySceneMutation()
-    expect(created.setToolTip).toHaveBeenCalledWith('Orca DEV (my-branch) - activity waiting')
+    expect(created.setToolTip).toHaveBeenCalledWith('Workbench DEV (my-branch) - activity waiting')
     setTrayAttention(false)
     flushTraySceneMutation()
-    expect(created.setToolTip).toHaveBeenLastCalledWith('Orca DEV (my-branch)')
+    expect(created.setToolTip).toHaveBeenLastCalledWith('Workbench DEV (my-branch)')
   })
 
   it('marks the Windows tooltip without badging the icon', async () => {
@@ -356,9 +261,12 @@ describe('dev instance indicator', () => {
 
     createSystemTray(createOptions({ isDevInstance: true, devInstanceLabel: 'my-branch' }))
 
-    expect(trayInstances[0].setToolTip).toHaveBeenCalledWith('Orca DEV (my-branch)')
-    expect(stampDevBadgeMock).not.toHaveBeenCalled()
-    expect(builtMenuItems()[0]).toMatchObject({ label: 'Orca DEV (my-branch)', enabled: false })
+    expect(trayInstances[0].setToolTip).toHaveBeenCalledWith('Workbench DEV (my-branch)')
+    expect(trayInstances[0].setTitle).not.toHaveBeenCalled()
+    expect(builtMenuItems()[0]).toMatchObject({
+      label: 'Workbench DEV (my-branch)',
+      enabled: false
+    })
   })
 
   it('adds no DEV marker for production instances', async () => {
@@ -367,7 +275,7 @@ describe('dev instance indicator', () => {
 
     createSystemTray(createOptions())
 
-    expect(stampDevBadgeMock).not.toHaveBeenCalled()
+    expect(trayInstances[0].setTitle).not.toHaveBeenCalled()
     expect(trayInstances[0].image).toBe(baseMacImage)
     expect(builtMenuItems()[0].label).toBe('Open Orca')
   })
@@ -407,7 +315,7 @@ describe('setTrayAttention', () => {
     expect(created.setImage).toHaveBeenLastCalledWith(resizedImage)
   })
 
-  it('uses a literal theme-aware glyph for macOS attention, then restores template mode', async () => {
+  it('preserves the product image at both macOS scales when adding and clearing attention', async () => {
     setPlatform('darwin')
     const { createSystemTray, setTrayAttention } = await loadModule()
     createSystemTray(createOptions())
@@ -417,41 +325,23 @@ describe('setTrayAttention', () => {
 
     setTrayAttention(true)
     flushTraySceneMutation()
-    expect(tintTemplateMock).toHaveBeenCalledWith(baseMacImage, false)
-    expect(composeAttentionMock).toHaveBeenCalledWith(tintedMacImage)
+    expect(composeAttentionMock).toHaveBeenCalledWith(baseMacImage)
     // Why: the attention image is rebuilt from 1x pixels, so the @2x
     // representation must be re-added or the glyph blurs on Retina.
-    expect(tintTemplateMock).toHaveBeenCalledWith(baseMacImage, false, 2)
+    expect(composeAttentionMock).toHaveBeenCalledWith(baseMacImage, 2)
     expect(attentionImage.addRepresentation).toHaveBeenCalledWith({
       scaleFactor: 2,
       dataURL: 'data:image/png;base64,attention'
     })
     expect(attentionImage.setTemplateImage).toHaveBeenCalledWith(false)
     expect(created.setImage).toHaveBeenCalledWith(attentionImage)
-    expect(created.setToolTip).toHaveBeenCalledWith('Orca - activity waiting')
+    expect(created.setToolTip).toHaveBeenCalledWith('Workbench - activity waiting')
 
     setTrayAttention(false)
     flushTraySceneMutation()
-    expect(baseMacImage.setTemplateImage).toHaveBeenLastCalledWith(true)
+    expect(baseMacImage.setTemplateImage).toHaveBeenLastCalledWith(false)
     expect(created.setImage).toHaveBeenLastCalledWith(baseMacImage)
-    expect(created.setToolTip).toHaveBeenLastCalledWith('Orca')
-  })
-
-  it('recomposes active macOS attention when the system appearance changes', async () => {
-    setPlatform('darwin')
-    const { createSystemTray, setTrayAttention } = await loadModule()
-    createSystemTray(createOptions())
-    setTrayAttention(true)
-    flushTraySceneMutation()
-    tintTemplateMock.mockClear()
-    nativeThemeMock.shouldUseDarkColors = true
-
-    themeState.updatedListener?.()
-    // Why: appearance changes arrive on an AppKit dispatch too, so the recompose defers.
-    expect(tintTemplateMock).not.toHaveBeenCalled()
-
-    flushTraySceneMutation()
-    expect(tintTemplateMock).toHaveBeenCalledWith(baseMacImage, true)
+    expect(created.setToolTip).toHaveBeenLastCalledWith('Workbench')
   })
 
   it('reflects attention requested before deferred macOS creation', async () => {
@@ -556,18 +446,16 @@ describe('setTrayAttention', () => {
 })
 
 describe('destroySystemTray', () => {
-  it('destroys idempotently and removes the macOS appearance listener', async () => {
+  it('destroys the macOS status item idempotently', async () => {
     setPlatform('darwin')
     const { createSystemTray, destroySystemTray } = await loadModule()
     createSystemTray(createOptions())
     const created = trayInstances[0]
-    const listener = themeState.updatedListener
 
     destroySystemTray()
     destroySystemTray()
 
     expect(created.destroy).toHaveBeenCalledOnce()
-    expect(nativeThemeMock.removeListener).toHaveBeenCalledWith('updated', listener)
   })
 })
 
@@ -600,7 +488,7 @@ describe('macOS hardening', () => {
     setTrayAttention(true)
     expect(() => flushTraySceneMutation()).not.toThrow()
     expect(created.setImage).toHaveBeenLastCalledWith(baseMacImage)
-    expect(created.setToolTip).toHaveBeenLastCalledWith('Orca')
+    expect(created.setToolTip).toHaveBeenLastCalledWith('Workbench')
     expect(warn).toHaveBeenCalledWith(
       '[system-tray] macOS attention icon failed; showing plain icon',
       expect.any(Error)
