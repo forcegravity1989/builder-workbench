@@ -220,7 +220,13 @@ describe('bundled skill guide generator', () => {
       if (WORKBENCH_GUIDE_SOURCES[guide.name]) {
         // Source links must resolve through native CLI references in projects without standard/.
         expect(guide.markdown).toContain(`ORCA skills get ${guide.name} --reference`)
-        expect(guide.markdown).toContain('the executable you resolved in the stub')
+        expect(guide.markdown).toContain('the executable used to read this guide')
+        if (guide.name !== 'metrics-refresh') {
+          const system = guide.references.find((reference) => reference.name === 'system')
+          expect(system?.markdown).toContain('完成由人确认')
+          expect(system?.markdown).toContain('仓根 AGENTS.md')
+          expect(system?.markdown).not.toContain('{{')
+        }
         expect(guide.fullMarkdown).not.toMatch(/\borca (?:skills|bw)\b/u)
         const projection = await readFile(
           path.join(projectDir, 'skills', guide.name, 'SKILL.md'),

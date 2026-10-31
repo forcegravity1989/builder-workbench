@@ -5,14 +5,23 @@ const scopeFlags = ['repo-id', 'worktree-id', 'host-id', 'workflow']
 const scopeUsage = '--repo-id <id> --worktree-id <id> --workflow plan|acceptance [--host-id <id>]'
 export const WORKBENCH_MATERIAL_COMMAND_SPECS: CommandSpec[] = [
   {
-    path: ['bw', 'materials', 'context'], summary: 'Read the workflow current version selection',
-    usage: `orca bw materials context ${scopeUsage} [--json]`, allowedFlags: [...GLOBAL_FLAGS, ...scopeFlags]
+    path: ['bw', 'materials', 'context'],
+    summary: 'Read the workflow selection, native identity and material sources',
+    usage:
+      'orca bw materials context --workflow plan|acceptance [--repo-id <id> --worktree-id <id>] [--host-id <id>] [--json]',
+    allowedFlags: [...GLOBAL_FLAGS, ...scopeFlags],
+    notes: [
+      'Without explicit scope, resolves the native terminal worktree or the registered enclosing worktree. Returns the live identity, material problems and fixed-source status; never uses the focused UI workspace.'
+    ]
   },
   {
-    path: ['bw', 'materials', 'select'], summary: 'Select the explicitly confirmed version without creating material',
+    path: ['bw', 'materials', 'select'],
+    summary: 'Select the explicitly confirmed version without creating material',
     usage: `orca bw materials select ${scopeUsage} --version <version> [--json]`,
     allowedFlags: [...GLOBAL_FLAGS, ...scopeFlags, 'version'],
-    notes: ['Select only after user confirmation. History conversation selection does not change this workflow selection.']
+    notes: [
+      'Select only after user confirmation. History conversation selection does not change this workflow selection.'
+    ]
   },
   {
     path: ['bw', 'materials', 'migration-preview'],

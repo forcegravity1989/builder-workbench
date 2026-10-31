@@ -15,8 +15,8 @@ export type CycleWorkspace = {
    * 非 null 时 context.worktreeId 为 null，壳渲染只读材料视图，不建树。
    */
   readonlyBrowse: ReadonlyCycleBrowse | null
-  /** Returns true only after the run's native session opens; `oneShot` is sent once. */
-  start(oneShot?: string): Promise<boolean>
+  /** Opens a native session with one editable draft; only the user submits it. */
+  start(version?: string | null): Promise<boolean>
   configure(): Promise<void>
   prepareMetrics(): Promise<void>
 }

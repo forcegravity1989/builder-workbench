@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { readWorkbenchSessionContext } from './workbench-session-context'
 import { resolve } from 'node:path'
 import { text } from 'node:stream/consumers'
 import { z } from 'zod'
@@ -47,8 +48,7 @@ async function invoke(ctx: HandlerContext, operation: string, params: unknown): 
 }
 
 export const WORKBENCH_MATERIAL_HANDLERS: Record<string, CommandHandler> = {
-  'bw materials context': async (ctx) =>
-    invoke(ctx, 'context', VersionMaterialScopeSchema.parse(scope(ctx))),
+  'bw materials context': readWorkbenchSessionContext,
   'bw materials select': async (ctx) =>
     invoke(
       ctx,

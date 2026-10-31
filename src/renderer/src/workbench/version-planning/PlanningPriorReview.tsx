@@ -61,7 +61,7 @@ export function PlanningPriorReview({
       {state.kind === 'none' && <p className="g3-muted">暂无上版</p>}
       {state.kind === 'missing' && (
         <p className="g3-muted" role="status">
-          上版 {state.version} 尚未完成验收，回顾暂为空
+          上版 {state.version} 验收来源当前不可用，实际验收状态待核对，回顾暂为空
         </p>
       )}
       <div className="g3-prior-card">

@@ -5,7 +5,8 @@ import { useAppStore } from '@/store'
 import { isVersionFlowWorkflow } from '../../../../shared/workbench/version-workspace-prepare'
 import { branchName } from '@/lib/git-utils'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
-import { startCycleAutomation } from './start-cycle-automation'
+import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
+import { revealPlanChat } from '../plan-column-resize'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
 import { prepareMetricsSession, useMetricsSetupAgent } from './metrics-setup'
 import { getActiveCycleSession } from './native-session'
@@ -75,17 +76,52 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
     onError: setNotice
   })
   const start = useCallback(
-    async (oneShot?: string) => {
+    async (selectedVersion?: string | null) => {
       setBusy(true)
       try {
-        if (!scope || !fixedId || !automation.automationId) {
-          throw new Error('周期自动化尚未就绪，请在自动化页核对配置。')
+        if (!scope || !fixedId) {
+          throw new Error('流程工作区尚未就绪，请稍后重试。')
         }
         if (!agent) {
           throw new Error('会话工具尚未就绪，请先在设置中配置默认智能体。')
         }
-        await startCycleAutomation(scope, fixedId, automation.automationId, agent, oneShot)
-        toast.message('已打开本次运行的会话。')
+        assertCurrentCycleWorkspace(scope, fixedId)
+        const selected = selectedVersion ?? version.version
+        const target = selected ? ` ${selected} 的版本` : '本版'
+        const topic = scope.workflow === 'plan' ? 'week-planning' : 'version-acceptance'
+        const task = scope.workflow === 'plan' ? `和我制定${target}计划` : `协助我开展${target}验收`
+        revealPlanChat()
+        const result = launchAgentInNewTab({
+          agent,
+          worktreeId: fixedId,
+          prompt: `先用 \`ORCA_CLI_COMMAND\` 指定的命令（未设置则用 \`orca\`）执行 \`skills get ${topic}\`，按 BW 内置技能读全公共纪律与当前上下文，再${task}。`,
+          promptDelivery: 'draft',
+          activate: true
+        })
+        if (!result) {
+          throw new Error('会话未能打开，请核对默认智能体配置后重试。')
+        }
+        if (result.structuredSettlement) {
+          const settled = await result.structuredSettlement
+          if (settled.kind === 'failed') {
+            throw settled.error
+          }
+          if (
+            settled.kind !== 'structured' &&
+            !(settled.kind === 'refused-then-legacy' && settled.primaryTabId)
+          ) {
+            throw new Error('会话尚未确认打开，请先核对原生会话列表，避免重复启动。')
+          }
+        } else if (result.runtimeLaunch) {
+          const launched = await result.runtimeLaunch
+          if (!launched.hostTabId || !launched.delivered) {
+            throw new Error('宿主会话草稿尚未确认就绪，请先核对原生会话输入区。')
+          }
+        } else if (!result.tabId) {
+          throw new Error('会话尚未确认打开，请先核对原生会话列表。')
+        }
+        assertCurrentCycleWorkspace(scope, fixedId)
+        toast.message('已打开会话，补充后发送。')
         setNotice(null)
         return true
       } catch (reason) {
@@ -102,7 +138,7 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
         setBusy(false)
       }
     },
-    [scope, fixedId, automation.automationId, agent]
+    [scope, fixedId, agent, version.version]
   )
   const prepareMetrics = useCallback(async () => {
     if (!scope || !agent) {

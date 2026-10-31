@@ -108,7 +108,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 ## 板面结构与异常
 
-未开始时 `AcceptanceEmptyBoard` 只显示“版本验收尚未开始 / 开始验收”。`entry.start` 成功必须对应原生运行会话实际打开，true 才写入 `cycle-view-state` 的 started 视图记忆，按 workflow、version（初读为空用 boundVersion）、scope/owner、worktreeId/instanceId 隔离；普通 shell 不推断启动，已有有效材料独立恢复。计划未合入不阻止开会话，启动上下文要求助手第一时间提醒，禁止自动合入。`useAcceptanceBoard` 初始化仍校验可读 committed 固定计划身份与并发归属，没有来源就不建材料、不伪造 planRef；旧 use-acceptance-gate 与 GateDialog 已删除。
+未开始时 `AcceptanceEmptyBoard` 只显示“版本验收尚未开始 / 开始验收”。`entry.start` 成功必须对应原生草稿会话实际打开，true 才写入 `cycle-view-state` 的 started 视图记忆，按 workflow、version（初读为空用 boundVersion）、scope/owner、worktreeId/instanceId 隔离；普通 shell 不推断启动，已有有效材料独立恢复。手动开工复用原生 draft 入口，输入区只预填一句话、不自动回车；技能通过 system/版本材料引用读取公共纪律，通过材料 context 读回宿主身份、版本、材料错误，自动化仍用完整提示。计划未合入不阻止开会话，技能要求助手发送后先核对并提醒，禁止自动合入。`useAcceptanceBoard` 初始化仍校验可读 committed 固定计划身份与并发归属，没有来源就不建材料、不伪造 planRef；旧 use-acceptance-gate 与 GateDialog 已删除。
 
 开始成功后显示验收准备、Showcase、会议纪要、归档 PR 及发版本四区，缺固定计划时目标为空，纪要/归档组件接受缺材料并保留相应只读空态。顶部导航只定位，不作步骤门禁；原滚动侦测、导航抑制与会话收折重定位机制保留，未开始短卡不渲染导航。
 

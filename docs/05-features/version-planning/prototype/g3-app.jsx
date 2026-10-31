@@ -588,7 +588,7 @@ function App() {
                       <p className="g3-muted" role="status">
                         {priorSource === 'first'
                           ? '暂无上版'
-                          : '上版 v0.6 尚未完成验收，回顾暂为空。'}
+                          : '上版 v0.6 验收来源当前不可用，实际验收状态待核对，回顾暂为空。'}
                       </p>
                       <div className="g3-prior-card">
                         <div className="g3-carryover-row">
