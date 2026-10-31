@@ -4,7 +4,6 @@ import { compareMaterialVersions } from '../../../shared/workbench/version-catal
 import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
 import { useOverviewHistory } from './use-overview-history'
 import { useOverviewMetricCollection } from './use-overview-metric-collection'
-import { useOverviewViewState } from './overview-view-state'
 import { useVersionMinutes } from './use-version-minutes'
 import { findCycleWorktree } from './version-cycle/native-cycle-workspace'
 import {
@@ -82,7 +81,6 @@ export function MetricsWorkspaceBoard(): JSX.Element {
     acceptanceWorktreeId: fixedTrees.acceptance,
     identity: dataIdentity
   })
-  const [view] = useOverviewViewState(identity)
   const versions = useMemo(() => {
     const found = new Set<string>()
     for (const record of historyState.history?.records ?? []) {
@@ -96,10 +94,7 @@ export function MetricsWorkspaceBoard(): JSX.Element {
     }
     return [...found].sort((left, right) => compareMaterialVersions(right, left))
   }, [historyState.history, historyState.currentVersion])
-  const version =
-    view.version && versions.includes(view.version)
-      ? view.version
-      : (historyState.currentVersion ?? versions[0] ?? null)
+  const version = historyState.currentVersion ?? versions[0] ?? null
   const minutes = useVersionMinutes(
     {
       baseScope,

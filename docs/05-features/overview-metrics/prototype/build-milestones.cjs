@@ -1,10 +1,11 @@
 // Reuse the frozen prototype vendor and the existing overview component.
 const fs = require('node:fs')
 const path = require('node:path')
+const { createHash } = require('node:crypto')
 const esbuild = require('esbuild')
 const output = path.join(__dirname, 'milestones.js')
 const dependencies = {
-  react: ['React', 'useState', 'useRef', 'useEffect'],
+  react: ['React', 'useState', 'useRef', 'useEffect', 'forwardRef', 'createElement'],
   'react-dom/client': ['createRoot'],
   'react-markdown': ['ReactMarkdown'],
   'remark-gfm': ['remarkGfm'],
@@ -55,6 +56,7 @@ esbuild
     jsxFactory: 'React.createElement',
     jsxFragment: 'React.Fragment',
     charset: 'utf8',
+    supported: { 'template-literal': false },
     minifyWhitespace: true,
     minifyIdentifiers: true,
     banner: {
@@ -70,7 +72,10 @@ esbuild
           )
           build.onLoad({ filter: /.*/, namespace: 'frozen' }, (args) => ({
             contents: dependencies[args.path]
-              .map((name) => `export const ${name} = window.BWPrototypeDependencies.${name};`)
+              .map(
+                (name) =>
+                  `export const ${name} = window.BWPrototypeDependencies${args.path === 'react' && name !== 'React' ? '.React' : ''}.${name};`
+              )
               .join('\n')
           }))
         }
@@ -79,8 +84,33 @@ esbuild
   })
   .then((build) => {
     const result = build.outputFiles[0].text
+    const entry = path.join(__dirname, '../prototype.html')
+    const html = fs.readFileSync(entry, 'utf8')
+    const stamp = createHash('sha256')
+      .update(result.replace(/\r\n/g, '\n'))
+      .digest('hex')
+      .slice(0, 12)
+    const cssStamp = createHash('sha256')
+      .update(
+        fs.readFileSync(path.join(__dirname, 'milestones.css'), 'utf8').replace(/\r\n/g, '\n')
+      )
+      .digest('hex')
+      .slice(0, 12)
+    const nextHtml = html
+      .replace(
+        /src="prototype\/milestones\.js(?:\?v=[^"]*)?"/,
+        `src="prototype/milestones.js?v=${stamp}"`
+      )
+      .replace(
+        /href="prototype\/milestones\.css(?:\?v=[^"]*)?"/,
+        `href="prototype/milestones.css?v=${cssStamp}"`
+      )
+    if (!html.includes('src="prototype/milestones.js')) {
+      throw new Error('Milestone prototype entry is missing its script.')
+    }
     if (process.argv.includes('--check')) {
       if (
+        html !== nextHtml ||
         !fs.existsSync(output) ||
         fs.readFileSync(output, 'utf8').replace(/\r\n/g, '\n') !== result.replace(/\r\n/g, '\n')
       ) {
@@ -89,6 +119,7 @@ esbuild
       console.log('Milestone prototype matches editable source.')
     } else {
       fs.writeFileSync(output, result)
+      fs.writeFileSync(entry, nextHtml)
     }
   })
   .catch((error) => {

@@ -19,6 +19,12 @@ import type { SendActionWrap } from '../plan-send-menu'
 import { latestVerificationArtifact } from './acceptance-model'
 import { AcceptancePackage } from './AcceptancePackage'
 
+/** Keep the prepare row one line: first three accounts, then 等; full list in title. */
+function attendeePreview(attendees: string[]): string {
+  const shown = attendees.slice(0, 3)
+  return attendees.length > shown.length ? `${shown.join('、')} 等` : shown.join('、')
+}
+
 /**
  * First zone: candidate + packaging + demo environment + the single evidence
  * report. Packaging is collapsible and starts collapsed to a one-line summary of
@@ -62,6 +68,7 @@ export function AcceptancePrepareSection({
   const report = document ? latestVerificationArtifact(document) : undefined
   const demoEnv = document?.demoEnv
   const meeting = document?.meeting
+  const meetingLink = meeting?.link
   return (
     <section id="prepare" ref={sectionRef} aria-label="验收准备">
       <div className="acc-section-title">
@@ -138,24 +145,50 @@ export function AcceptancePrepareSection({
           <CalendarClock size={15} aria-hidden="true" />
           <span className="acc-prepare-label">验收会议</span>
           {meeting ? (
-            <span
-              className="acc-prepare-value"
-              title={
-                meeting.id
-                  ? `会议 ID ${meeting.id} · 经会话预订，信息已写回材料`
-                  : '经会话预订，信息已写回材料'
-              }
-            >
-              {meeting.title} · {meeting.time}
-            </span>
+            <div className="acc-meeting">
+              <span className="acc-prepare-value" title="经会话预订，信息已写回材料">
+                {meeting.title} · {meeting.time}
+              </span>
+              <span
+                className="acc-meeting-meta"
+                title={
+                  meeting.attendees?.length ? `与会人：${meeting.attendees.join('、')}` : undefined
+                }
+              >
+                {meeting.id ? <>会议 ID {meeting.id}</> : null}
+                {meeting.attendees?.length ? (
+                  <>
+                    {meeting.id ? ' · ' : ''}
+                    与会人 {meeting.attendees.length} 人（{attendeePreview(meeting.attendees)}）
+                  </>
+                ) : null}
+                {meetingLink ? (
+                  <>
+                    {meeting.id || meeting.attendees?.length ? ' · ' : ''}
+                    <button
+                      type="button"
+                      className="acc-link"
+                      title={`经内置 Orca 浏览器打开 ${meetingLink}`}
+                      onClick={() => onOpenMaterial(meetingLink)}
+                    >
+                      打开会议页面
+                      <ArrowUpRight size={12} aria-hidden="true" />
+                    </button>
+                  </>
+                ) : null}
+              </span>
+            </div>
           ) : (
             <span className="acc-muted">未预订 · 点「预订会议」注入请求</span>
           )}
           {/* 预订会议（#471 评审新增，会议生命周期首片）：预订走会话，模型用
               welink-cli 创建会议（逻辑内置于验收技能）并把信息写回材料；已预订后
-              置灰，改期或取消在会话中说明。纪要区的「同步会议纪要」依赖它。 */}
+              置灰，改期或取消在会话中说明。纪要区的「同步会议纪要」依赖它。
+              #516：prompt 点名时间、与会人来源与写回要求——此前只写「写回材料」，
+              模型不知道与会人取项目群、也不知道要回读并保存 meeting，导致预订后
+              板面一直显示未预订。SOP 细节仍在验收技能，prompt 只点出易漏的硬约束。 */}
           {onSendAction(
-            '预订本周五的版本验收会议，完成后把会议信息写回材料。',
+            '预订本周五的版本验收会议。先给我完整预览：起止时间、与会人、议题；与会人默认取本项目绑定项目群的全部成员，没有绑定项目群就问我群号；时间或与会人缺失先问我，不要猜。确认后用 welink-cli meeting create 创建，再用 meeting info 读回会议 ID 与链接，把会议信息写回验收材料的 meeting 字段。',
             '预订会议请求',
             <BoardActionButton
               disabled={Boolean(meeting)}
@@ -183,9 +216,12 @@ export function AcceptancePrepareSection({
             <span className="acc-muted">未生成 · 点「聚合」注入请求</span>
           )}
           {/* #471：举证在各 Issue/PR 合入时已留下，报告=按目标聚合各 Issue 的
-              验收件；缺口如实标出，由人确认或自行补充，模型不代采。 */}
+              验收件；缺口如实标出，由人确认或自行补充，模型不代采。
+              #516：prompt 点名落盘目录与登记要求——此前只说「归并成一份报告」，
+              模型生成后只写盘、不登记 preparedArtifacts，板面行永远不亮。SOP
+              细节仍在验收技能，prompt 只点出易漏的硬约束。 */}
           {onSendAction(
-            '聚合本次验收的证据报告：把各 Issue / PR 合入时留下的验收证据按目标归并成一份报告，缺证的地方如实标缺。',
+            '聚合本次验收的证据报告：把各 Issue / PR 合入时留下的验收证据按目标归并成一份报告，缺证的地方如实标缺。报告文件落本版 .bw/planning/<版本>/ 目录，生成后经材料服务把报告登记为 preparedArtifacts 的 verification 制品再保存；只写盘不登记，板面「验收证据报告」行不会亮。',
             '聚合请求',
             <BoardActionButton title="向验收助手会话注入聚合请求：按目标归并各 Issue/PR 的验收件">
               <BrainCircuit size={14} aria-hidden="true" /> 聚合

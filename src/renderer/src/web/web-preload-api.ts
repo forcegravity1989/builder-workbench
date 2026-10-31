@@ -86,6 +86,12 @@ function createWebPreloadApi(): Partial<PreloadApi> {
     gh: createGitHubApi(),
     gl: createGitLabApi(),
     codehub: createRuntimeNamespaceApi('codehub'),
+    milestoneRecovery: {
+      read: async () => ({ revision: null, payload: null }),
+      write: async () => {
+        throw new Error('浏览器端尚不支持本机草案恢复，请提交成功后再退出')
+      }
+    },
     hostedReview: createRuntimeNamespaceApi('hostedReview'),
     linear: createRuntimeNamespaceApi('linear'),
     hooks: createHooksApi(),
