@@ -150,7 +150,7 @@ export const overviewTest = test.extend({
         ]
       })
     )
-    // Explicit delivery selects the version; its goal tasks provide the actual Issue identity.
+    // An explicit planned delivery provides the version-header navigation target.
     const currentPath = path.join(root, '.bw/planning', current.version, 'data.json')
     const currentDocument = JSON.parse(readFileSync(currentPath, 'utf8'))
     writeFileSync(

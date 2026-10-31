@@ -14,7 +14,7 @@ export type CharterEditOptions = {
 
 /** G2（P6）：版本总览页选项——按项目注册行与版本打开，只读派生，无第二份存储。 */
 export type VersionOverviewOptions = {
-  milestoneOrigin?: true
+  milestoneOrigin?: { feature: string }
   repoId: string
   version: string
 }

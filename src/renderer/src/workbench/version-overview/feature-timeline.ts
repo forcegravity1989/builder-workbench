@@ -63,7 +63,7 @@ function interval(
   return { id, label, start, end, duration, ongoing: duration !== null && ongoing }
 }
 
-/** Both overviews project these same facts. Unspecified multi-PR completion stays unknown. */
+/** Derive stage facts independently of their presentation. Ambiguous completion stays unknown. */
 export function featureTimeline(feature: FeatureData) {
   const points: Partial<Record<Milestone, FeatureEvent>> = {}
   const plans = feature.events

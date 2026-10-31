@@ -116,6 +116,11 @@ export function MilestoneStageBars({
         const hasFirstDelivery = gesture.hasFirstDelivery(delivery.version.cycleId)
         return (
           <Fragment key={delivery.id}>
+            {frozen && (
+              <span className="wb-ml-actual-unknown" style={{ left: x(delivery.stages[0].start) }}>
+                实际进度未接入
+              </span>
+            )}
             {(!frozen || showPlan) && (
               <div className={`wb-ml-phase-group ${frozen ? 'ghost' : ''}`}>
                 {delivery.stages.map((s, index) => {

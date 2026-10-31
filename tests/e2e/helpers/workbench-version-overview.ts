@@ -171,54 +171,8 @@ export async function verifyVersionOverview(
   console.info('[overview] invalid material and unstarted version verified')
   await open(overviewVersions.current)
   await expect(feature.locator('.bwo-stage-range')).not.toHaveCount(0, { timeout: 90_000 })
-  const expectedActual = await feature
-    .locator('.bwo-stage-range[data-actual-start][data-actual-end]')
-    .evaluateAll((nodes) =>
-      nodes.map((node) => {
-        const label = (value: string) =>
-          new Date(value).toLocaleString('zh-CN', {
-            timeZone: 'Asia/Shanghai',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
-          })
-        return `${node.getAttribute('data-stage')} · ${label(
-          node.getAttribute('data-actual-start')!
-        )} — ${label(node.getAttribute('data-actual-end')!)}`
-      })
-    )
-  expect(expectedActual.length).toBeGreaterThan(0)
   await page.getByRole('button', { name: '项目总览', exact: true }).click()
   await expect(page.getByRole('heading', { name: '总览', exact: true })).toBeVisible()
-  const actual = page.locator(
-    '[data-actual-goal="overview-v0.334:current-goal"][data-actual-feature="github:github.com/forcegravity1989/builder-workbench:334"]'
-  )
-  await expect(actual).toContainText(`${overviewVersions.current} · G1 · #334`, { timeout: 90_000 })
-  await expect(actual).toContainText('#334', { timeout: 90_000 })
-  await expect(actual).toContainText('Deploy 未跟踪')
-  await expect(actual.locator('.wb-ml-actual-phase')).not.toHaveCount(0)
-  const axisDates = await actual
-    .locator('.wb-ml-actual-phase')
-    .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('aria-label')))
-  expect(axisDates).toEqual(expectedActual)
-  await info.attach('shared-goal-actual-stages', {
-    body: JSON.stringify(axisDates),
-    contentType: 'application/json'
-  })
-  await actual.scrollIntoViewIfNeeded()
-  await actual
-    .locator('.wb-ml-actual-phase')
-    .first()
-    .evaluate((node) => {
-      const scroll = node.closest<HTMLElement>('.wb-ml-scroll')
-      if (scroll) {
-        scroll.scrollLeft = Math.max(0, Number.parseFloat((node as HTMLElement).style.left) - 24)
-      }
-    })
-  await page.screenshot({ path: info.outputPath('project-actual-goals.png') })
   await page
     .getByRole('button', { name: `进入 ${overviewVersions.current} 版本总览`, exact: true })
     .click()
@@ -227,8 +181,8 @@ export async function verifyVersionOverview(
   ).toBeVisible()
   await expect(page.getByRole('button', { name: '← 返回项目里程碑', exact: true })).toBeVisible()
   await page.getByRole('button', { name: '← 返回项目里程碑', exact: true }).click()
-  await expect(actual).toContainText('#334')
-  console.info('[overview] shared version-goal facts and milestone source return verified')
+  await expect(page.getByRole('heading', { name: '总览', exact: true })).toBeVisible()
+  console.info('[overview] version header navigation and milestone source return verified')
   await open(overviewVersions.current)
   await page.reload()
   await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 120_000 })

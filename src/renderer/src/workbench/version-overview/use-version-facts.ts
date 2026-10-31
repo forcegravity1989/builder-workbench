@@ -2,7 +2,7 @@ import type { VersionCatalogState } from '../use-version-catalog'
 import { useVersionOverviewMaterials } from '../version-overview-materials'
 import { useOverviewFeatures } from './use-overview-features'
 
-/** Project and version views share material pinning, historical cutoffs and feature cache identity. */
+/** Compose pinned materials, historical cutoffs and source-scoped feature reads. */
 export function useVersionFacts(
   catalog: VersionCatalogState,
   version: string,

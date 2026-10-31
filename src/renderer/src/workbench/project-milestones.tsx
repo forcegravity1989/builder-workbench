@@ -35,7 +35,6 @@ import { MilestoneReviewButton } from './milestone-review-button'
 import { describeMilestoneChanges } from './milestone-change-summary'
 import { MilestoneIconButton } from './milestone-icon-button'
 import './project-milestones.css'
-import { useVersionCatalogForRepo } from './use-version-catalog'
 
 export function ProjectMilestones({
   scope,
@@ -47,8 +46,6 @@ export function ProjectMilestones({
   updateFormal(): Promise<void>
 }) {
   const model = useMilestonePlanning(scope, refreshToken)
-  const versionCatalog = useVersionCatalogForRepo(scope?.repoId ?? null)
-  const [factsRefresh, setFactsRefresh] = useState(0)
   const { state, busy, dirty, error, patch, edit } = model
   const root = useRef<HTMLElement>(null)
   const [locate, setLocate] = useState<(MilestoneLocation & { scope: string | null }) | null>(null)
@@ -67,12 +64,20 @@ export function ProjectMilestones({
       }
     }
   }, [restoreScope, pageY])
-  if (!scope || !state) {
+  if (!scope) {
     return (
       <section className="card wb-ml">
         <strong>项目里程碑</strong>
-        <p role="status">{!scope ? '工作树来源尚未就绪' : (error ?? '正在读取项目规划…')}</p>
-        {scope && error && (
+        <p>工作树来源尚未就绪</p>
+      </section>
+    )
+  }
+  if (!state) {
+    return (
+      <section className="card wb-ml">
+        <strong>项目里程碑</strong>
+        <p role="status">{error ?? '正在读取项目规划…'}</p>
+        {error && (
           <Button variant="outline" size="xs" onClick={() => void model.reload()}>
             重试读取
           </Button>
@@ -87,8 +92,7 @@ export function ProjectMilestones({
   const hasPlanning =
     visible.material.months.some((m) => m.outcome.trim()) ||
     visible.material.features.length > 0 ||
-    datedMilestoneVersions(visible).length > 0 ||
-    (state.data.proposal ?? state.data.formal).versions.some((v) => v.started)
+    datedMilestoneVersions(visible).length > 0
   const navigate = (date: string) => {
     patch({ month: date.slice(0, 7) })
     setLocate((previous) => ({
@@ -195,7 +199,7 @@ export function ProjectMilestones({
     openVersionOverview({
       repoId: scope!.repoId,
       version: version.version,
-      milestoneOrigin: true
+      milestoneOrigin: { feature: '' }
     })
   }
   return (
@@ -291,11 +295,7 @@ export function ProjectMilestones({
           <MilestoneIconButton
             label="刷新里程碑与评审"
             disabled={busy}
-            onClick={() => {
-              setFactsRefresh((n) => n + 1)
-              versionCatalog.reload()
-              void model.reload()
-            }}
+            onClick={() => void model.reload()}
           >
             <RefreshCw size={15} />
           </MilestoneIconButton>
@@ -363,8 +363,6 @@ export function ProjectMilestones({
             editField={model.editField}
           />
           <MilestoneTimeline
-            catalog={versionCatalog}
-            factsRefresh={factsRefresh}
             key={`${restoreScope}:${editing}:${restoreKey}`}
             draft={visible}
             versionFacts={versionFacts}

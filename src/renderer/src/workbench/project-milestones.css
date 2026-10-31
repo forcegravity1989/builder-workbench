@@ -791,33 +791,3 @@
   outline: 2px solid var(--ring);
   outline-offset: 1px;
 }
-.wb-ml-actual-row .wb-ml-feature strong {
-  display: block;
-  font-size: 12px;
-}
-.wb-ml-actual-status {
-  display: block;
-  position: sticky;
-  left: 230px;
-  width: fit-content;
-  padding: 16px 12px;
-  color: var(--muted-foreground);
-}
-.wb-ml-actual-notice {
-  position: sticky;
-  left: 0;
-  width: min(700px, 100%);
-  padding: 8px 12px;
-  color: var(--muted-foreground);
-  font-size: 12px;
-}
-.wb-ml-actual-phase {
-  overflow: hidden;
-  white-space: nowrap;
-  cursor: pointer;
-  font: inherit;
-  color: var(--foreground);
-}
-.wb-ml-actual-phase[data-ongoing] {
-  border-style: dashed;
-}

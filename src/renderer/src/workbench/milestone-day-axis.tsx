@@ -1,7 +1,4 @@
-import {
-  MILESTONE_DAY_WIDTH as width,
-  MILESTONE_LABEL_WIDTH as labelWidth
-} from './use-milestone-gesture'
+import { MILESTONE_DAY_WIDTH as width } from './use-milestone-gesture'
 import type { WorkCalendarDay } from '../../../shared/workbench/work-calendar'
 export type MilestoneAxisDay = WorkCalendarDay & { day: number; date: string }
 export function MilestoneDayAxis({
@@ -34,34 +31,6 @@ export function MilestoneDayAxis({
           </div>
         ))}
       </div>
-    </div>
-  )
-}
-
-export function MilestoneDayBackground({
-  days,
-  canvasWidth,
-  top,
-  origin
-}: {
-  days: MilestoneAxisDay[]
-  canvasWidth: number
-  top: number
-  origin: number
-}) {
-  return (
-    <div
-      className="wb-ml-days-background"
-      aria-hidden="true"
-      style={{ left: labelWidth, width: canvasWidth, top }}
-    >
-      {days.map((d) => (
-        <i
-          key={d.date}
-          className={d.working ? '' : 'rest'}
-          style={{ left: (d.day - origin) * width, width }}
-        />
-      ))}
     </div>
   )
 }

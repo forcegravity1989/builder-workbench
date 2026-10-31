@@ -103,7 +103,7 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
     }
     if (projectPage?.kind === 'version-overview') {
       return (
-        <MilestoneVersionOrigin fromMilestones={projectPage.options.milestoneOrigin}>
+        <MilestoneVersionOrigin feature={projectPage.options.milestoneOrigin?.feature}>
           <VersionOverviewPage options={projectPage.options} />
         </MilestoneVersionOrigin>
       )

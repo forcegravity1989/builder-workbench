@@ -1,14 +1,11 @@
-import { MilestoneDayAxis, MilestoneDayBackground } from './milestone-day-axis'
+import { MilestoneDayAxis } from './milestone-day-axis'
 import { useLayoutEffect, useRef, useState } from 'react'
-import { explicitMilestoneVersions, useMilestoneActualRange } from './milestone-actual-context'
-import { MilestoneActualVersions } from './milestone-actual-goals'
-import type { VersionCatalogState } from './use-version-catalog'
 import { Button } from '@/components/ui/button'
 import { GripVertical, Plus, X } from 'lucide-react'
 import { MilestoneField } from './milestone-field'
 import { MilestoneFeatureMetadata } from './milestone-goal-picker'
 import { MilestoneIconButton } from './milestone-icon-button'
-import { MilestoneVersionRow, milestoneVersionLanes } from './milestone-version-row'
+import { MilestoneVersionRow, MILESTONE_VERSION_HEIGHT } from './milestone-version-row'
 import { MilestoneStageBars, MilestoneSdlcToolbar } from './milestone-stage-bars'
 import {
   useMilestoneGesture,
@@ -26,16 +23,16 @@ import {
 } from '../../../shared/workbench/project-milestones'
 import {
   latestMilestoneMonth,
+  milestoneCalendar,
   milestoneDay,
   milestoneToday,
   milestoneDate,
   datedMilestoneVersions,
   type MilestoneWeek
 } from '../../../shared/workbench/milestone-calendar'
+
 export type MilestoneLocation = { date: string; sequence: number }
 type Props = {
-  catalog: VersionCatalogState
-  factsRefresh: number
   draft: MilestoneDraft
   versionFacts: MilestoneVersion[]
   editing: boolean
@@ -57,7 +54,7 @@ type Props = {
 export function MilestoneTimeline(props: Props) {
   const { draft, editing, edit } = props
   const enabled = editing && !props.busy
-  const { weeks, origin, end, reportRange } = useMilestoneActualRange(draft, props.started)
+  const { weeks, start: origin, end } = milestoneCalendar(draft)
   const canvasWidth = (end - origin + 1) * width
   const viewport = useRef<HTMLDivElement>(null)
   const draggedRow = useRef<{ id: string; y: number; moved: boolean } | null>(null)
@@ -69,7 +66,17 @@ export function MilestoneTimeline(props: Props) {
   const versions = datedMilestoneVersions(visible)
   const features = visible.material.features
   const [showPlan, setShowPlan] = useState(false)
-  const { lanes, height: versionHeight } = milestoneVersionLanes(versions)
+  const laneEnds: string[] = [],
+    lanes = new Map<string, number>()
+  for (const version of versions) {
+    let lane = laneEnds.findIndex((end) => end < version.timeWindow!.start)
+    if (lane === -1) {
+      lane = laneEnds.length
+    }
+    laneEnds[lane] = version.timeWindow!.end
+    lanes.set(version.cycleId, lane)
+  }
+  const versionHeight = Math.max(1, laneEnds.length) * MILESTONE_VERSION_HEIGHT
   const days = Array.from({ length: end - origin + 1 }, (_, i) => {
     const day = origin + i,
       date = milestoneDate(day)
@@ -109,6 +116,7 @@ export function MilestoneTimeline(props: Props) {
       el.scrollTop = Math.max(0, row.offsetTop - el.clientHeight + row.clientHeight)
     }
   }, [props.newFeature])
+
   function changeField(id: string, field: 'title' | 'owner', value: string) {
     props.editField((d) => ({
       ...d,
@@ -195,12 +203,19 @@ export function MilestoneTimeline(props: Props) {
         }}
       >
         <div className="wb-ml-canvas" style={{ width: canvasWidth + labelWidth }}>
-          <MilestoneDayBackground
-            days={days}
-            canvasWidth={canvasWidth}
-            top={versionHeight + 40}
-            origin={origin}
-          />
+          <div
+            className="wb-ml-days-background"
+            aria-hidden="true"
+            style={{ left: labelWidth, width: canvasWidth, top: versionHeight + 40 }}
+          >
+            {days.map((d) => (
+              <i
+                key={d.date}
+                className={d.working ? '' : 'rest'}
+                style={{ left: (d.day - origin) * width, width }}
+              />
+            ))}
+          </div>
           <div className="wb-ml-board-header">
             <MilestoneVersionRow
               draft={visible}
@@ -220,13 +235,6 @@ export function MilestoneTimeline(props: Props) {
             />
             <MilestoneDayAxis days={days} today={today} canvasWidth={canvasWidth} />
           </div>
-          <MilestoneActualVersions
-            {...props}
-            versions={explicitMilestoneVersions(visible)}
-            origin={origin}
-            canvasWidth={canvasWidth}
-            reportRange={reportRange}
-          />
           {features.map((f, row) => {
             const frozen = f.deliveries.some((d) => props.started.has(d.version.cycleId))
             const hasBaseline = f.deliveries.some(
@@ -323,7 +331,6 @@ export function MilestoneTimeline(props: Props) {
                     </MilestoneIconButton>
                   )}
                   <div>
-                    {frozen && <small>原计划</small>}
                     <MilestoneField
                       label="特性名称"
                       autoFocus={f.id === props.newFeature}
