@@ -93,6 +93,16 @@ Issue [#471](https://github.com/forcegravity1989/builder-workbench/issues/471) �
 
 与计划屏共用同一动作 `workbench.toggleAnnotationMode`（Orca 设置 → Shortcuts 原生键位体系，默认 Alt+A、可改绑）：同键进出批注模式，是退出模式的唯一键盘路径——小窗开着时按它直接退模式（与点按钮一致）；Esc 退出路径同轮经人真壳验证拍板移除（与计划屏同口径）：Esc 只关小窗、不退模式。终端聚焦、行内编辑与浏览器 webview 不触发；空板或无可读固定计划时入口不渲染、按键无反应（E2E 负例已覆盖空板态）。横幅、按钮 title 与面板提示行随设置改绑实时回显键位。验收板有材料态的 `aria-pressed` 翻转与横幅进出（V8）及 macOS Option+A（å）组合字符物理码回退（V9）归人工真壳验证。
 
+## 2026-10-31 #516 验收屏使用轮（证据登记命令化、纪要同步自带）
+
+Issue [#516](https://github.com/forcegravity1989/builder-workbench/issues/516)（v0.8 验收实测暴露的使用断点）两件：
+
+**证据报告登记命令化**：报告落盘后模型漏登记、板面「验收证据报告」行永远不亮——登记收拢成一条 `ORCA bw materials add-artifact` 命令（--repo-id/--worktree-id/--workflow/--version/--kind/--location，可选 --artifact-id/--command/--checksum），拥有工作树一侧一次完成读改存：文件必须真实存在（不存在如实报错、不登记幽灵制品）、mtime 作 generatedAt、candidateRef 复用材料现有值（候选未固定报错）、同 artifactId 覆盖、revision 冲突自动重读重试一次；板面不 stat 文件系统。聚合注入句由「提醒登记」改为给出可直接执行的命令；SKILL 0.9.5 登记三步改写、version-records 补命令参数。一次性真壳 E2E（临时 spec，未提交）全链验证：注入句含命令 → 真 CLI 经运行中 runtime 登记 → 行 5s 轮询内点亮 → 报告经内置浏览器打开 → 反例缺文件非零退出且不登记幽灵制品。
+
+**纪要同步自带（解耦外部技能）**：「同步会议纪要」原复用宿主 meeting-minutes 技能（依赖同目录 web-access 技能），未安装即断、且驱动的是 Orca 内置浏览器（in-app 分区 + cookie 导入）。改为流程自带：新增 `references/minutes-sync.md`（SKILL 0.9.6），内嵌自包含极简 CDP 驱动脚本（Node ≥22；version/new/list/navigate/eval/close，已在本机 Edge 156 实测全命令面），驱动**用户自己的浏览器**——本机 Chrome/Edge 独立临时实例 + 调试端口、可见窗口，不用 Orca 内置浏览器；Chrome 136+ 默认 profile 禁调试端口以独立 user-data-dir 规避，内网 w3 SSO 全新 profile 透明自动登录（实测零手工输入），非内网请人在窗口登录后继续。定位会议优先材料 link、打不开重取 `meeting info`、仍缺请人给链接；先预览后写入、只写草稿不代发、幂等跳过、中断先核对；窗口留人完成最终发送。version-records 与 design 同步；注入句不动（prompt 只承载触发意图，机制归 Skill）。
+
+**验证状态**：门禁与 ratchet 见 PR 验证报告；CDP 驱动脚本本机 Edge 156 实测通过。**真壳未验**：纪要同步全流程（需真实 eMeeting 环境）、预订会议链。
+
 ## 当前验收点与旅程矩阵
 
 > 口径：○ = 未实现；◐ = 代码已接入但真实用户旅程未完整；● = 齐。协议测试、静态检查与原型结果不等同真壳 E2E。本轮全部为 ◐ 的原因见上「证据边界」——不是代码没写，是真壳证据没取。
@@ -102,7 +112,7 @@ Issue [#471](https://github.com/forcegravity1989/builder-workbench/issues/471) �
 | A01 独立树、原生会话、单页四区 | ◐ | #439 短卡只在未开始时出现，实际会话打开后四区与空目标可见，视图内存支持切屏；已静态接线，启动链未真壳复验；会话收起与页头操作组按 #445 复验，已在真实 Electron 证明两屏、1600/1100 窗口零占位，PTY、栏宽与对象动作展开均保留 |
 | A02 固定计划身份与安全初始化 | ◐ | 启动硬门禁与 GateDialog 已删除；会话开场提示未合入/未知，不自动合入。use-acceptance-board 保留 readPlan/assertFixedPlan 与并发护栏，无 committed 来源不建材料；未真壳复验 |
 | A03 出包真实读数、部署注入、演示环境两形态读回 | ◐ | `AcceptancePackage.tsx` 出包读数沿用既有链（按钮本轮统一 `BoardActionButton`）；部署改经共用发送弹窗注入；`demoEnv` 两形态已接（web 显示系统名 `label`、缺省回退 URL 可点打开，桌面应用显示「已启动 · detail」不伪造链接）。**两形态都未在真壳用真实项目验过**，注入通道修复后也未验 |
-| A04 验收证据报告一份/版本、登记、可打开 | ◐ | 模板正本在技能资产；报告经 `latestVerificationArtifact` 读回、登记复用 `verification` 制品类型；未生成时入口禁用；入口只在「验收准备」行（目标行报告入口 2026-10-23 UI 对齐轮删除）。真壳未验内置浏览器打开 |
+| A04 验收证据报告一份/版本、登记、可打开 | ◐ | 模板正本在技能资产；报告经 `latestVerificationArtifact` 读回、登记复用 `verification` 制品类型；未生成时入口禁用；入口只在「验收准备」行（目标行报告入口 2026-10-23 UI 对齐轮删除）。#516 起登记经 `add-artifact` 一条命令，一次性真壳 E2E 已验命令登记、行轮询点亮与内置浏览器打开（证据见 PR 验证报告） |
 | A05 单个人工结论状态 | ◐ | AcceptanceGoalRow 使用未判定/达成/不达成选择，沿中性/警示色、清除仍受人工守卫；本轮只有静态证据，重启一致性待验 |
 | A06 纪要文本、整份确认与落实去向 | ◐ | 无材料时只读空态、整理请求可用；有材料时沿整份确认/撤销与已确认冻结。#471 起读视图按目标分组（`G<n> ·` 前缀呈现级、编辑态保持平铺、遗留保全局 M 编号）。归档前已落实或真实 Issue 跟进由助手核对、PR 人审；本轮模型和真壳未验 |
 | A07 归档引用+状态+原生 PR 页+注入式发起归档 | ◐ | `AcceptanceArchiveCard.tsx` 引用 + provider 真实状态（读不到显示「状态未知」）+ 原生 PR 页入口 + 注入式「发起归档」；无直接执行归档按钮。真壳未验 |
