@@ -19,6 +19,7 @@ import { findVersionFlowWorktrees } from '../../../shared/workbench/version-work
 import { nativeWorkspaceScope } from './version-cycle/native-workspace'
 import { nativeVersionMaterialPort } from './version-material-port'
 import { AcceptanceMaterialSchema } from '../../../shared/workbench/version-material'
+import { assertFixedPlan } from './version-acceptance/acceptance-model'
 
 export type OverviewDocument<T> =
   | { kind: 'loading' }
@@ -46,7 +47,7 @@ const loading = (): VersionOverviewMaterials => ({
   acceptance: { kind: 'loading' },
   prStatuses: { plan: null, acceptance: null }
 })
-/** Formal acceptance pins the plan. A draft is read only when no formal plan exists. */
+/** Acceptance pins its plan, including while acceptance is still a draft. */
 export function useVersionOverviewMaterials({
   catalog,
   version,
@@ -142,6 +143,7 @@ async function readMaterials(catalog: VersionCatalogState, version: string, forc
   }
   const history = nativeVersionHistoryPort(catalog.scope.runtimeOwnerEnvironmentId)
   const archive = nativeArchivePrPort(catalog.scope.runtimeOwnerEnvironmentId)
+  let acceptancePlanSource = { scope, history }
 
   const acceptanceRef = entry?.material.acceptance
   const planRef = entry?.material.plan
@@ -171,13 +173,13 @@ async function readMaterials(catalog: VersionCatalogState, version: string, forc
       }
       if (trees[0]) {
         const owner = nativeWorkspaceScope(trees[0])
+        const draftScope = {
+          repoId: owner.repoId,
+          worktreeId: trees[0].id,
+          hostId: owner.hostId
+        }
         const draft = await nativeVersionMaterialPort(
-          {
-            repoId: owner.repoId,
-            worktreeId: trees[0].id,
-            hostId: owner.hostId,
-            workflow: 'acceptance'
-          },
+          { ...draftScope, workflow: 'acceptance' },
           owner.runtimeOwnerEnvironmentId
         ).read(version)
         result.acceptance = draft
@@ -187,6 +189,12 @@ async function readMaterials(catalog: VersionCatalogState, version: string, forc
               source: 'draft'
             }
           : { kind: 'missing' }
+        if (draft) {
+          acceptancePlanSource = {
+            scope: draftScope,
+            history: nativeVersionHistoryPort(owner.runtimeOwnerEnvironmentId)
+          }
+        }
       } else {
         result.acceptance = { kind: 'missing' }
       }
@@ -199,7 +207,7 @@ async function readMaterials(catalog: VersionCatalogState, version: string, forc
       throw new Error('无法核对验收对应的固定计划，请重试验收读取')
     }
     const fixed =
-      result.acceptance.kind === 'ready' && result.acceptance.source === 'committed'
+      result.acceptance.kind === 'ready'
         ? result.acceptance.document.planRef
         : planRef
           ? {
@@ -211,10 +219,11 @@ async function readMaterials(catalog: VersionCatalogState, version: string, forc
             }
           : null
     if (fixed) {
-      const read = await history.readPlan({ scope, planRef: fixed })
+      const source = result.acceptance.kind === 'ready' ? acceptancePlanSource : { scope, history }
+      const read = await source.history.readPlan({ scope: source.scope, planRef: fixed })
       result.plan = {
         kind: 'ready',
-        document: read.document,
+        document: assertFixedPlan(fixed, read),
         revision: read.revision,
         source: fixed.kind === 'committed' ? 'committed' : 'draft',
         ...(fixed.kind === 'committed' ? { sourceCommit: fixed.sourceCommit } : {})
@@ -245,17 +254,6 @@ async function readMaterials(catalog: VersionCatalogState, version: string, forc
     }
   } catch (error) {
     result.plan = { kind: 'error', message: `计划读取失败：${message(error)}` }
-  }
-  if (
-    result.acceptance.kind === 'ready' &&
-    result.acceptance.source === 'draft' &&
-    result.plan.kind === 'ready' &&
-    result.acceptance.document.planRef.revision !== result.plan.revision
-  ) {
-    result.acceptance = {
-      kind: 'error',
-      message: '验收工作稿引用的计划与当前计划不一致，请从验收入口核对；原记录未修改。'
-    }
   }
   await Promise.all(
     (['plan', 'acceptance'] as const).map(async (kind) => {
