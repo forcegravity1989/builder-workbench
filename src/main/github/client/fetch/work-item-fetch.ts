@@ -49,13 +49,7 @@ export async function fetchIssueWorkItem(
   }
 
   const { stdout } = await ghExecFileAsync(
-    [
-      'issue',
-      'view',
-      String(number),
-      '--json',
-      'number,title,state,url,labels,createdAt,updatedAt,author'
-    ],
+    ['issue', 'view', String(number), '--json', 'number,title,state,url,labels,updatedAt,author'],
     ghOptions
   )
   return mapIssueWorkItem(JSON.parse(stdout) as Record<string, unknown>)

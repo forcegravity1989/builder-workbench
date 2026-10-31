@@ -36,7 +36,7 @@
 }
 .bwo-goal {
   border-top: 1px solid var(--border);
-  padding: 26px 0;
+  padding: 20px 0;
 }
 .bwo-goal-heading {
   display: flex;
@@ -47,7 +47,7 @@
 .bwo-goal-heading h2 {
   flex: 1;
   min-width: 160px;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 600;
 }
 .bwo-goal-meta {
@@ -108,124 +108,184 @@
   background: var(--muted);
   font-weight: 600;
 }
-.bwo-feature-footer {
+
+.bwo-timeline-heading,
+.bwo-workflow-heading,
+.bwo-metric-heading {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
+  justify-content: space-between;
   gap: 8px;
-  border-top: 1px solid var(--border);
-  margin-top: 16px;
-  padding-top: 8px;
+}
+.bwo-timeline-heading {
+  font-size: 12px;
+}
+.bwo-timeline-heading > span,
+.bwo-metric-activity {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  white-space: nowrap;
 }
 .bwo-axis-scroll {
   max-width: 100%;
   overflow-x: auto;
-  margin: 10px 0;
+  margin: 12px 0 4px;
 }
 .bwo-axis {
   position: relative;
-  height: 250px;
 }
-.bwo-axis-line {
+.bwo-axis-scale {
   position: absolute;
-  left: 80px;
-  right: 80px;
-  top: 126px;
-  height: 1px;
-  background: var(--border);
+  inset: 0 28px;
 }
-.bwo-axis-start,
-.bwo-axis-end {
+.bwo-stage-range {
   position: absolute;
-  top: 4px;
-  color: var(--muted-foreground);
-  font-size: 11px;
-}
-.bwo-axis-start {
-  left: 16px;
-}
-.bwo-axis-end {
-  right: 16px;
-}
-.bwo-window {
-  position: absolute;
-  height: 7px;
-  top: 123px;
-  background: var(--muted-foreground);
-  opacity: 0.25;
+  top: var(--bwo-axis-top);
+  height: 56px;
+  min-width: 2px;
+  border: 1px solid var(--border);
   border-radius: 4px;
+  padding: 4px 2px;
+  font-size: 11px;
+  background: var(--background);
+  color: var(--foreground);
+  cursor: pointer;
+  overflow: hidden;
 }
-.bwo-node {
+.bwo-stage-range strong,
+.bwo-stage-range span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.8;
+}
+.bwo-stage-range strong {
+  font-weight: 600;
+}
+.bwo-stage-range.done {
+  background: var(--muted);
+}
+.bwo-stage-range.current {
+  background: var(--foreground);
+  color: var(--background);
+  border-color: var(--foreground);
+}
+.bwo-stage-range.future,
+.bwo-stage-range.unknown,
+.bwo-stage-range.untracked {
+  border-style: dashed;
+  color: var(--muted-foreground);
+}
+.bwo-stage-range[aria-disabled='true'],
+.bwo-version-delivery[aria-disabled='true'] {
+  cursor: help;
+}
+.bwo-stage-range:focus-visible,
+.bwo-version-delivery:focus-visible,
+.bwo-axis-scroll:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.bwo-version-delivery {
   position: absolute;
-  top: 120px;
-  width: 18px;
-  height: 18px;
-  transform: translateX(-50%);
+  width: 128px;
+  height: 54px;
+  transform: translateX(calc(-1 * var(--bwo-label-shift)));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  font-size: 11px;
   cursor: pointer;
 }
-.bwo-node i {
-  display: block;
-  width: 9px;
-  height: 9px;
-  margin: 2px auto;
-  border-radius: 50%;
-  background: var(--foreground);
-  border: 2px solid var(--background);
-  box-shadow: 0 0 0 1px var(--foreground);
-}
-.bwo-node-label {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 128px;
-  text-align: center;
-  font-size: 11px;
-  line-height: 1.5;
-}
-.bwo-node-label time {
-  display: block;
+.bwo-version-delivery.future {
+  border-style: dashed;
   color: var(--muted-foreground);
 }
-.bwo-node-label strong {
-  display: block;
-  font-weight: 500;
+.bwo-version-delivery strong {
+  max-width: 100%;
+  padding-inline: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 500;
 }
-.bwo-node-0 .bwo-node-label {
-  bottom: 24px;
+.bwo-version-delivery time {
+  font-size: 10px;
+  color: var(--muted-foreground);
 }
-.bwo-node-1 .bwo-node-label {
-  top: 24px;
+.bwo-version-delivery::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: var(--bwo-label-shift);
+  height: var(--bwo-connector-height);
+  border-left: 1px dashed var(--muted-foreground);
+  pointer-events: none;
 }
-.bwo-node-2 .bwo-node-label {
-  bottom: 70px;
+.bwo-timeline-marker {
+  position: absolute;
+  width: 112px;
+  height: 36px;
+  transform: translateX(calc(-1 * var(--bwo-label-shift)));
+  font-size: 10px;
+  line-height: 1.7;
 }
-.bwo-node-3 .bwo-node-label {
-  top: 70px;
+.bwo-timeline-marker strong,
+.bwo-timeline-marker time {
+  display: block;
+  white-space: nowrap;
 }
-.bwo-node:focus-visible,
-.bwo-axis-scroll:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 3px;
+.bwo-timeline-marker strong {
+  font-size: 11px;
+  font-weight: 500;
 }
-.bwo-node:hover i {
-  transform: scale(1.3);
+.bwo-timeline-marker time {
+  color: var(--muted-foreground);
+}
+.bwo-timeline-marker::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: var(--bwo-label-shift);
+  height: var(--bwo-marker-height);
+  border-left: 1px solid var(--muted-foreground);
+  pointer-events: none;
 }
 .bwo-productivity {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   padding: 20px 0;
   margin-top: 16px;
   border-block: 1px solid var(--border);
 }
+.bwo-productivity > div {
+  min-width: 0;
+}
 .bwo-productivity strong {
   display: block;
-  font-size: 22px;
-  margin-top: 12px;
+  font-size: 20px;
+  margin-top: 8px;
+  font-weight: 500;
+}
+.bwo-metric-label {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  cursor: help;
+  text-align: left;
+}
+.bwo-metric-activity {
+  flex-shrink: 0;
+}
+.bwo-workflow-heading h2 {
+  font-size: 15px;
+  font-weight: 600;
 }
 .bwo-empty {
   padding: 52px 20px;
