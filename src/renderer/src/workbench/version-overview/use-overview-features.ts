@@ -17,7 +17,7 @@ export const featureFactsCache = createOverviewReadCache<FeatureRead>((result, p
       feature.problems.map((p) => `#${feature.root.iid}：${p}`)
     )
   ]
-  return failures.length && previous
+  return failures.length && previous && (!previous.problems.length || previous.stale)
     ? { ...previous, problems: failures, stale: true }
     : { ...result, problems: failures, readAt: new Date().toISOString() }
 })
@@ -97,7 +97,8 @@ export function useOverviewFeatures(args: {
   return {
     ...(state.value ?? { features: [], problems: [] }),
     problems: [...(state.value?.problems ?? []), ...(state.error ? [state.error] : [])],
-    stale: state.value?.stale || Boolean(state.error && state.value),
+    stale:
+      state.value?.stale || Boolean(state.error && state.value && !state.value.problems.length),
     loading: Boolean(plan) && (state.loading || (!state.value && !state.error))
   }
 }

@@ -19,6 +19,7 @@ import {
 import type { MilestoneScope } from './milestone-port'
 import { openVersionOverview } from './project-page-state'
 import { useMilestonePlanning } from './use-milestone-planning'
+import { useVersionCatalogForRepo } from './use-version-catalog'
 import { MilestoneTimeline, type MilestoneLocation } from './milestone-timeline'
 import { createMilestoneFeature } from './milestone-add-feature'
 import {
@@ -46,6 +47,7 @@ export function ProjectMilestones({
   updateFormal(): Promise<void>
 }) {
   const model = useMilestonePlanning(scope, refreshToken)
+  const catalog = useVersionCatalogForRepo(scope?.repoId ?? null)
   const { state, busy, dirty, error, patch, edit } = model
   const root = useRef<HTMLElement>(null)
   const [locate, setLocate] = useState<(MilestoneLocation & { scope: string | null }) | null>(null)
@@ -363,6 +365,7 @@ export function ProjectMilestones({
             editField={model.editField}
           />
           <MilestoneTimeline
+            catalog={catalog}
             key={`${restoreScope}:${editing}:${restoreKey}`}
             draft={visible}
             versionFacts={versionFacts}

@@ -100,7 +100,7 @@ export async function verifyVersionOverview(
   await expect(feature.getByText('特性历程与版本交付', { exact: true })).toHaveCount(0)
   await feature.locator('.bwo-feature-heading').click()
   await feature.locator('.bwo-stage-range').filter({ hasText: 'Deploy' }).hover()
-  await expect(page.getByRole('tooltip')).toHaveText('部署时间 · 未跟踪')
+  await expect(page.getByRole('tooltip')).toHaveText('部署时间 · 未跟踪；规划未读回，使用默认长度')
   await expect(
     feature.locator('.bwo-source-row, .bwo-stage-legend, .bwo-untracked-stage')
   ).toHaveCount(0)

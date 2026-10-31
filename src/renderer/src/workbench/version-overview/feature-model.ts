@@ -1,9 +1,10 @@
 import type { CycleTaskReference, CycleTaskSnapshot } from '../version-cycle/ports'
 import { normalizeGitRemoteUrl } from '../../../../shared/git-remote-identity'
 import { parseGitHubIssueOrPRLink } from '../../../../shared/github/links'
+import { normalizeCodeHubMergeRequestRoute } from '../../../../shared/codehub'
 
 export type FeaturePhase = 'design' | 'development'
-export const PARSER_REVISION = 'feature-evidence-v4'
+export const PARSER_REVISION = 'feature-evidence-v5'
 export type FeaturePull = {
   phase?: FeaturePhase | 'unknown'
   number: number
@@ -87,7 +88,9 @@ export function pullPhase(
       if (
         role &&
         [...line.matchAll(/https?:\/\/[^\s<>"\])]+/g)].some(
-          (match) => match[0].replace(/\/$/, '') === pullUrl.replace(/\/$/, '')
+          (match) =>
+            normalizeCodeHubMergeRequestRoute(match[0]) ===
+            normalizeCodeHubMergeRequestRoute(pullUrl)
         )
       ) {
         values.push(role[1]!.toLowerCase())
@@ -117,7 +120,7 @@ export function linkedPullNumbers(body: string, issueUrl: string): number[] {
     try {
       const url = new URL(match[0])
       const suffix = url.pathname.slice(prefix.length)
-      const id = /^(?:\/pull\/|\/-\/merge_requests\/)([1-9]\d*)\/?$/.exec(suffix)
+      const id = /^(?:\/pull\/|\/(?:-\/)?merge_requests\/)([1-9]\d*)\/?$/.exec(suffix)
       if (
         url.origin === base.origin &&
         url.pathname.startsWith(prefix) &&

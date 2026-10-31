@@ -38,6 +38,7 @@ export type VersionOverviewMaterials = {
   prStatuses: { plan: ArchivePrStatusResult | null; acceptance: ArchivePrStatusResult | null }
   readAt?: string
   refreshing?: boolean
+  stale?: boolean
   problems?: string[]
 }
 const loading = (): VersionOverviewMaterials => ({
@@ -119,7 +120,10 @@ export function useVersionOverviewMaterials({
         }
       : {}),
     problems: [...(value.problems ?? []), ...(state.error ? [state.error] : [])],
-    refreshing: state.loading || waitingForCatalog
+    refreshing: state.loading || waitingForCatalog,
+    stale:
+      value.stale ||
+      Boolean(state.error && state.value && !value.refreshing && !value.problems?.length)
   }
 }
 

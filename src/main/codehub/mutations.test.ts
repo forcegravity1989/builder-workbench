@@ -149,7 +149,12 @@ describe('codehub mutations', () => {
       JSON.stringify({
         title: 'Login',
         description: 'SSO',
-        state: 'opened',
+        state: 'closed',
+        closed_at: '2026-10-01T10:00:00Z',
+        merge_requests_count: 1,
+        linked_merge_requests: [
+          { iid: 8, web_url: 'https://codehub-g.huawei.com/Org/Group/repo/merge_requests/8' }
+        ],
         web_url: 'https://example/4',
         author: { username: 'ada' },
         assignees: [{ username: 'bob' }]
@@ -169,7 +174,11 @@ describe('codehub mutations', () => {
       iid: 4,
       title: 'Login',
       description: 'SSO',
-      state: 'opened',
+      state: 'closed',
+      closedAt: '2026-10-01T10:00:00Z',
+      linkedMergeRequests: [
+        { iid: 8, url: 'https://codehub-g.huawei.com/Org/Group/repo/merge_requests/8' }
+      ],
       url: 'https://example/4',
       author: 'ada',
       assignees: ['bob'],
@@ -177,6 +186,26 @@ describe('codehub mutations', () => {
       labels: [],
       sourceBranch: null,
       targetBranch: null
+    })
+    for (const linked of [
+      [{ iid: 8, web_url: 'https://codehub-g.huawei.com/Org/other/-/merge_requests/8' }],
+      [{ iid: 8, web_url: 'https://codehub-g.huawei.com/Org/Group/repo/-/merge_requests/9' }],
+      [{ iid: 0, web_url: 'https://codehub-g.huawei.com/Org/Group/repo/-/merge_requests/0' }],
+      [{ iid: 8 }],
+      [null]
+    ]) {
+      runCodeHubCliMock.mockResolvedValue(JSON.stringify({ linked_merge_requests: linked }))
+      await expect(viewCodeHubTask({ remote, kind: 'issue', iid: 4 })).rejects.toThrow('CodeHub')
+    }
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify({ linked_merge_requests: [], merge_requests_count: 1 })
+    )
+    await expect(viewCodeHubTask({ remote, kind: 'issue', iid: 4 })).rejects.toThrow('未完整返回')
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify({ linked_merge_requests: [], merge_requests_count: 0 })
+    )
+    await expect(viewCodeHubTask({ remote, kind: 'issue', iid: 4 })).resolves.toMatchObject({
+      linkedMergeRequests: []
     })
   })
 
@@ -197,6 +226,31 @@ describe('codehub mutations', () => {
     expect(detail.sourceBranch).toBe('feat/task-style')
     expect(detail.targetBranch).toBe('main')
     expect(detail.state).toBe('unknown')
+    runCodeHubCliMock.mockResolvedValue(JSON.stringify({ iid: 4, state: 'merged' }))
+    await expect(viewCodeHubTask({ remote, kind: 'mr', iid: 3 })).rejects.toThrow(
+      '编号与请求不一致'
+    )
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify({
+        iid: 3,
+        state: 'merged',
+        web_url: 'https://codehub-g.huawei.com/Org/other/-/merge_requests/3'
+      })
+    )
+    await expect(viewCodeHubTask({ remote, kind: 'mr', iid: 3 })).rejects.toThrow(
+      '链接与请求来源不一致'
+    )
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify({
+        iid: 3,
+        state: 'merged',
+        web_url: 'https://codehub-g.huawei.com/Org/Group/repo/-/merge_requests/3'
+      })
+    )
+    await expect(viewCodeHubTask({ remote, kind: 'mr', iid: 3 })).resolves.toMatchObject({
+      iid: 3,
+      state: 'merged'
+    })
   })
 
   it('lists merge request pipelines', async () => {

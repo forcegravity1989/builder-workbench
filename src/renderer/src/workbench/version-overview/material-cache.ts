@@ -72,6 +72,11 @@ export function retainMaterialRead(
     ...value,
     readAt: previous && (errors.length || pending) ? previous.readAt : new Date().toISOString(),
     problems: [...new Set(errors)],
+    stale: Boolean(
+      previous?.readAt &&
+      ((!previous.refreshing && !previous.problems?.length) || previous.stale) &&
+      (errors.length || pending)
+    ),
     refreshing: pending
   }
 }

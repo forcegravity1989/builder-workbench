@@ -13,6 +13,20 @@ import type { MilestoneDraft, ScheduledVersion } from '../../../shared/workbench
 
 export const MILESTONE_VERSION_HEIGHT = 52
 
+export function milestoneVersionLanes(versions: ScheduledVersion[]) {
+  const ends: string[] = [],
+    lanes = new Map<string, number>()
+  for (const version of versions) {
+    let lane = ends.findIndex((end) => end < version.timeWindow!.start)
+    if (lane === -1) {
+      lane = ends.length
+    }
+    ends[lane] = version.timeWindow!.end
+    lanes.set(version.cycleId, lane)
+  }
+  return { lanes, versionHeight: Math.max(1, ends.length) * MILESTONE_VERSION_HEIGHT }
+}
+
 function WeekName({
   week,
   disabled,

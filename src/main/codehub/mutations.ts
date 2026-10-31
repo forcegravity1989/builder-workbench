@@ -1,6 +1,7 @@
-import type { CodeHubRemote } from '../../shared/codehub'
+import { assertCodeHubDetailIdentity, type CodeHubRemote } from '../../shared/codehub'
 import type { CodeHubPipeline, CodeHubTaskDetail } from '../../shared/codehub-tasks'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
+import { linkedMergeRequestsOf } from './issue-links'
 
 export function projectArgs(remote: CodeHubRemote): string[] {
   return ['-p', remote.project, '-H', remote.host.replace(/:\d+$/, '')]
@@ -250,6 +251,10 @@ export async function viewCodeHubTask(args: {
     )
   )
   const url = record.web_url ?? record.html_url ?? record.url
+  assertCodeHubDetailIdentity(args, record.iid ?? record.number, url)
+  const linkedMergeRequests =
+    args.kind === 'issue' ? linkedMergeRequestsOf(record, args.remote) : undefined
+  const closedAt = plainText(record, ['closed_at', 'closedAt'])
   return {
     iid: args.iid,
     title: String(record.title ?? ''),
@@ -266,6 +271,14 @@ export async function viewCodeHubTask(args: {
       : {}),
     ...(plainText(record, ['merged_at', 'mergedAt'])
       ? { mergedAt: plainText(record, ['merged_at', 'mergedAt'])! }
+      : {}),
+    ...(closedAt ? { closedAt } : {}),
+    ...(linkedMergeRequests ? { linkedMergeRequests } : {}),
+    ...(record.source_project
+      ? { sourceProjectUrl: plainText(detailRecord(record.source_project), ['web_url']) }
+      : {}),
+    ...(record.target_project
+      ? { targetProjectUrl: plainText(detailRecord(record.target_project), ['web_url']) }
       : {}),
     sourceBranch: plainText(record, ['source_branch', 'sourceBranch']),
     targetBranch: plainText(record, ['target_branch', 'targetBranch'])

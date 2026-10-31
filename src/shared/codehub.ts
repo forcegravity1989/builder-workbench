@@ -135,3 +135,44 @@ export function codeHubIssueCloseComment(
   }
   return '关闭原因: completed'
 }
+/** Canonical MR link from an already resolved repository and positive provider iid. */
+export function normalizeCodeHubMergeRequestRoute(value: string): string {
+  return value
+    .replace(/\/-\/merge_requests\/([1-9]\d*)\/?$/, '/merge_requests/$1')
+    .replace(/\/$/, '')
+}
+
+export function codeHubMergeRequestUrl(
+  remote: CodeHubRemote,
+  number: number,
+  recorded?: string
+): string {
+  if (!Number.isSafeInteger(number) || number <= 0) {
+    throw new Error('CodeHub MR 编号无效')
+  }
+  const fallback = `https://${remote.host}/${remote.project.split('/').filter(Boolean).map(encodeURIComponent).join('/')}/merge_requests/${number}`
+  return recorded?.trim() || fallback
+}
+
+export function assertCodeHubDetailIdentity(
+  args: { remote: CodeHubRemote; iid: number; kind: 'issue' | 'mr' },
+  returnedIid: unknown,
+  url: unknown
+) {
+  if (returnedIid !== undefined && Number(returnedIid) !== args.iid) {
+    throw new Error('CodeHub 返回的条目编号与请求不一致')
+  }
+  if (args.kind === 'mr' && typeof url === 'string' && url.trim()) {
+    const actual = new URL(url)
+    const expected = new URL(codeHubMergeRequestUrl(args.remote, args.iid))
+    const path = (value: URL) =>
+      normalizeCodeHubMergeRequestRoute(decodeURIComponent(value.pathname)).toLowerCase()
+    if (
+      !['http:', 'https:'].includes(actual.protocol) ||
+      actual.host !== expected.host ||
+      path(actual) !== path(expected)
+    ) {
+      throw new Error('CodeHub 返回的 MR 链接与请求来源不一致')
+    }
+  }
+}
