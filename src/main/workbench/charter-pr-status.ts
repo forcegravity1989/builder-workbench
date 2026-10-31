@@ -1,15 +1,44 @@
-import { getRepoExecutionHostId, type ExecutionHostId } from '../../shared/execution-host'
+import {
+  getRepoExecutionHostId,
+  parseExecutionHostId,
+  type ExecutionHostId
+} from '../../shared/execution-host'
 import type { Repo } from '../../shared/repo-types'
 import { isCodeHubGitRemote, parseCodeHubRemote } from '../../shared/codehub'
 import { CHARTER_BRANCH, PROJECT_TOML_REL } from '../../shared/workbench/project-charter'
 import type { CharterStatus } from '../../shared/workbench/charter'
 import { getHostedReviewForBranch } from '../source-control/hosted-review'
 import { readGitBlobAtOidPath } from '../git/source-control/git-blob-read'
+import { gitExecFileAsync } from '../git/runner'
 import { probeGitRemoteIdentity } from '../repo-git-remote-identity'
 import { openCodeHubMrForBranch } from '../codehub/mr-creation'
 import type { WorkbenchWorkspaceRepo } from './workspace-resolver'
 
 type CharterGitExecOptions = { wslDistro?: string }
+
+async function readProjectBranchReview(
+  repoPath: string,
+  executionHostId: ExecutionHostId,
+  execOptions: CharterGitExecOptions
+) {
+  let headOid: string | null = null
+  if (parseExecutionHostId(executionHostId)?.kind !== 'ssh') {
+    const { stdout } = await gitExecFileAsync(
+      ['for-each-ref', '--format=%(objectname)', `refs/heads/${CHARTER_BRANCH}`],
+      { ...execOptions, cwd: repoPath, timeout: 30_000 }
+    )
+    headOid = stdout.trim() || null
+  }
+  // The provider's merged-review visibility must use the material branch, not the main checkout.
+  const review = await getHostedReviewForBranch({
+    repoPath,
+    executionHostId,
+    branch: CHARTER_BRANCH,
+    currentHeadOid: headOid,
+    localGitExecOptions: execOptions
+  })
+  return { review, headOid }
+}
 
 /** bw/project 上开放中的名片 PR/MR;查不到或查询失败都返回 null(调用方按无 PR 呈现)。 */
 export async function lookupOpenCharterPr(
@@ -31,12 +60,7 @@ export async function lookupOpenCharterPr(
       })
       return iid === null ? null : { provider: 'codehub', number: iid, url: null }
     }
-    const review = await getHostedReviewForBranch({
-      repoPath,
-      executionHostId,
-      branch: CHARTER_BRANCH,
-      localGitExecOptions: execOptions
-    })
+    const { review } = await readProjectBranchReview(repoPath, executionHostId, execOptions)
     if (!review || (review.state !== 'open' && review.state !== 'draft')) {
       return null
     }
@@ -53,7 +77,7 @@ export async function lookupOpenCharterPr(
 export async function readCharterStatus(
   repo: WorkbenchWorkspaceRepo,
   execOptions: CharterGitExecOptions
-): Promise<CharterStatus> {
+): Promise<CharterStatus & { mergedHeadOid?: string }> {
   const executionHostId = getRepoExecutionHostId(repo as Repo)
   let headHasCharter = false
   let headContent: string | null = null
@@ -88,12 +112,11 @@ export async function readCharterStatus(
         remoteAvailable
       }
     }
-    const review = await getHostedReviewForBranch({
-      repoPath: repo.path,
+    const { review, headOid } = await readProjectBranchReview(
+      repo.path,
       executionHostId,
-      branch: CHARTER_BRANCH,
-      localGitExecOptions: execOptions
-    })
+      execOptions
+    )
     if (!review) {
       return { pr: null, headHasCharter, remoteAvailable }
     }
@@ -118,6 +141,12 @@ export async function readCharterStatus(
       pr: { provider: 'github', number: review.number, url: review.url || null, state },
       headHasCharter,
       headMatchesProposal,
+      mergedHeadOid:
+        state === 'merged' &&
+        headOid &&
+        (review.headSha === headOid || review.confirmedContainedHeadOid === headOid)
+          ? headOid
+          : undefined,
       remoteAvailable
     }
   } catch {

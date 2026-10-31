@@ -9,6 +9,7 @@
 .wb-ov .page-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   min-height: 48px;
   padding: 0 24px;
   flex-shrink: 0;
@@ -227,76 +228,6 @@
 .wb-ov .wb-ov-section-body {
   padding: 12px 16px;
 }
-.wb-ov .goal-week {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
-.wb-ov .goal-week > article {
-  min-width: 0;
-  padding: 12px 16px;
-}
-.wb-ov .goal-week > article + article {
-  border-left: 1px solid var(--color-divider);
-}
-.wb-ov .wb-ov-minutes-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 32px;
-}
-.wb-ov .wb-ov-minutes-head h3 {
-  font-size: 13px;
-  font-weight: 600;
-  margin: 0;
-}
-.wb-ov .wb-ov-minutes-body {
-  height: 16rem;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-  overscroll-behavior: contain;
-  padding-right: 12px;
-  margin-top: 8px;
-  font-size: 13px;
-  line-height: 1.8;
-  overflow-wrap: anywhere;
-}
-.wb-ov .wb-ov-minutes-body > * {
-  margin: 0;
-}
-.wb-ov .wb-ov-minutes-body > * + * {
-  margin-top: 12px;
-}
-.wb-ov .wb-ov-minutes-body h1,
-.wb-ov .wb-ov-minutes-body h2,
-.wb-ov .wb-ov-minutes-body h3 {
-  font-size: 13px;
-  font-weight: 600;
-}
-.wb-ov .wb-ov-minutes-body ul,
-.wb-ov .wb-ov-minutes-body ol {
-  padding-left: 20px;
-}
-.wb-ov .wb-ov-minutes-body pre {
-  white-space: pre-wrap;
-}
-.wb-ov .wb-ov-minutes-body table {
-  width: 100%;
-  table-layout: fixed;
-}
-.wb-ov .wb-ov-minutes-body a {
-  color: var(--color-accent);
-  text-decoration: underline;
-}
-.wb-ov .wb-ov-minutes-body::-webkit-scrollbar {
-  width: 8px;
-}
-.wb-ov .wb-ov-minutes-body::-webkit-scrollbar-track {
-  background: var(--color-bg);
-}
-.wb-ov .wb-ov-minutes-body::-webkit-scrollbar-thumb {
-  background: var(--color-neutral-300);
-  border-radius: var(--radius-sm);
-}
 .wb-ov .wb-ov-alert {
   color: var(--color-warning);
   font-size: 12px;
@@ -310,14 +241,14 @@
 }
 .wb-ov .wb-ov-motto p {
   margin: 0;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 400;
   color: var(--color-neutral-600);
 }
 .wb-ov .wb-ov-motto h2 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   line-height: 1.45;
 }
 .wb-ov .wb-sb-tabs {
@@ -530,11 +461,9 @@
 }
 @media (max-width: 48rem) {
   .wb-ov .row-2,
-  .wb-ov .goal-week,
   .wb-ov .wb-sb-duo {
     grid-template-columns: minmax(0, 1fr);
   }
-  .wb-ov .goal-week > article + article,
   .wb-ov .wb-sb-measure + .wb-sb-measure {
     border-left: 0;
     border-top: 1px solid var(--color-divider);

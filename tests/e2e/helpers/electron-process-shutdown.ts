@@ -182,8 +182,10 @@ export async function forceQuitElectronAppForE2E(app: ElectronApplication): Prom
   await app.close().catch(() => undefined)
 }
 
-export async function closeElectronAppForE2E(app: ElectronApplication): Promise<void> {
-  const proc = app.process()
+export async function closeElectronAppForE2E(
+  app: ElectronApplication,
+  proc: ChildProcess = app.process()
+): Promise<void> {
   const releasePipes = (): void => releaseExitedProcessPipes(proc)
   proc.once('exit', releasePipes)
   releasePipes()

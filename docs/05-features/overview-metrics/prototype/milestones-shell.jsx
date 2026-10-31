@@ -49,7 +49,7 @@ export function Sidebar({ empty, onVersion, onInfo, onHome, versions = fixedVers
       <button
         className="ml-nav"
         onClick={() =>
-          onInfo('新建版本', '原型注释: 复用原生版本准备入口，不在此改变固定版本与时间范围。')
+          onInfo('新建版本', '原型注释: 复用原生版本准备入口；未来版本的日期可在里程碑日轴调整。')
         }
       >
         ＋ 新建版本
