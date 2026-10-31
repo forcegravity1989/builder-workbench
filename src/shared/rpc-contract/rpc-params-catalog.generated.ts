@@ -597,6 +597,7 @@ import {
   VersionMaterialScopeSchema
 } from '../workbench/version-material-request'
 import { VersionWorkspacePrepareSchema } from '../workbench/version-workspace-prepare'
+import { WorkflowCommentsRequestSchema } from '../workbench/workflow-comments'
 
 // Why: the host parses params with these schemas, so a client that matches this map
 // matches the dispatcher. Clients must import it for types only — parsing a params
@@ -1236,6 +1237,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.metrics.refresh': MetricReadRequestSchema,
   'workbench.milestones.read': MilestoneReadRequestSchema,
   'workbench.milestones.submit': MilestoneSubmitRequestSchema,
+  'workbench.overview.pull': WorkflowCommentsRequestSchema,
   'workbench.package.download': PackageDownloadSchema,
   'workbench.package.latest': PackageLatestSchema,
   'workbench.package.launch': PackageLaunchSchema,
@@ -1245,6 +1247,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.versionBinding.read': VersionBindingScopeSchema,
   'workbench.versionBinding.set': VersionBindingSetSchema,
   'workbench.versionWorkspace.prepare': VersionWorkspacePrepareSchema,
+  'workbench.workflow.comments': WorkflowCommentsRequestSchema,
   'workspacePorts.kill': WorkspacePortKillParams,
   'workspacePorts.scan': WorkspacePortScanParams,
   'worktree.activate': WorktreeActivate,

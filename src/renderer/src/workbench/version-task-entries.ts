@@ -21,6 +21,8 @@ type VersionPlanDocumentRead = {
   document: PlanningMaterial | null
   source: VersionPlanDocumentSource
   problem?: string
+  missing?: boolean
+  revision?: string
 }
 
 export async function loadVersionPlanDocument(args: {
@@ -62,7 +64,7 @@ export async function loadVersionPlanDocument(args: {
         draftProblems.push(`计划树读取到无法解析的 ${version} 计划材料`)
         continue
       }
-      return { document: parsed.data, source: 'draft' }
+      return { document: parsed.data, source: 'draft', revision: snapshot.revision }
     } catch (reason) {
       draftProblems.push(
         `计划树读取失败：${reason instanceof Error ? reason.message : String(reason)}`
@@ -88,6 +90,7 @@ export async function loadVersionPlanDocument(args: {
         return {
           document: parsed.data,
           source: 'committed',
+          revision: plan.revision,
           ...(draftProblems.length > 0
             ? { problem: `${draftProblems.join('；')}；已回落已提交材料（可能不含未提交修改）` }
             : {})
@@ -103,6 +106,7 @@ export async function loadVersionPlanDocument(args: {
   return {
     document: null,
     source: 'none',
+    missing: draftProblems.length === 0,
     problem:
       draftProblems.length > 0 ? draftProblems.join('；') : `版本 ${version} 没有可读的计划材料`
   }
