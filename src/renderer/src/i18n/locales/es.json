@@ -77,7 +77,6 @@
     "minimizeNotice": {
       "body": "Orca sigue ejecutándose en la bandeja del sistema"
     },
-    "activityWaiting": "Orca: actividad en espera",
     "activityWaitingSuffix": "activity waiting"
   },
   "worktreeJumpPalette": {
@@ -1155,8 +1154,6 @@
         "76a95f7f47": "Crear",
         "f05d237049": "Añade un proyecto primero",
         "f9eaa9e12d": "Agregar proyecto",
-        "6ca6ff404e": "ORCA",
-        "520304a067": "logotipo de Orca",
         "ce44fad849": "Dependencias faltantes",
         "c1cf168479": "Ocultar",
         "00cee697c1": "Ejecuta \"gh auth login\" en una terminal para conectar tu cuenta de GitHub.",
@@ -3710,7 +3707,6 @@
           "2d9eb39264": "Tokens totales",
           "beb6f24f37": "Costo est.",
           "da62578d9d": "Uso",
-          "0eb31e79ee": "IDE de Orca",
           "960324e9b8": "eventos",
           "6adac63cfe": "turnos"
         },
@@ -3753,7 +3749,6 @@
         "share": {
           "card": {
             "utils": {
-              "19f4b4dc75": "github.com/stablyai/orca",
               "d864fc5f98": "salida",
               "5d66fdd7c2": "entrada",
               "7080aeaebb": "Razonamiento",
@@ -3761,7 +3756,8 @@
               "33d38e2177": "Salida",
               "c2d7b23d57": "Entrada",
               "9d166247ee": "Escritura de caché",
-              "cc28cb965e": "Lectura de caché"
+              "cc28cb965e": "Lectura de caché",
+              "19f4b4dc75": "github.com/forcegravity1989/builder-workbench"
             }
           }
         },
@@ -5556,13 +5552,10 @@
           "retryDetection": "Retry"
         },
         "AppIconSelector": {
-          "d5a112dc9b": "Icono siguiente",
-          "415fa76f64": "Icono de aplicación seleccionada",
-          "5f5142a62a": "Icono anterior"
+          "415fa76f64": "Icono de aplicación seleccionada"
         },
         "AppearancePane": {
           "3057983501": "No asignado",
-          "0cd9b8228f": "Elige el icono de la app que se muestra en el Dock y en el selector de ventanas.",
           "ca1590d42f": "Icono de la app",
           "fa882a3e6b": "Muestra el botón de Automatizaciones en la parte superior de la barra lateral izquierda.",
           "511f270ebb": "Mostrar botón de Automatizaciones",
@@ -7727,14 +7720,11 @@
         },
         "appearance": {
           "search": {
-            "468448bba4": "acuarela",
-            "f586abfa35": "azul",
             "651f35b2c6": "conmutador",
             "e5bc35d59e": "ventana",
             "d18b54ca90": "Dock",
             "1f2880a9d5": "orca",
             "2cfb3420c0": "icono de la aplicación",
-            "e80c2af428": "Elija el ícono de la aplicación que se muestra en el Dock y en el selector de ventanas.",
             "2b313598c6": "Icono de aplicación",
             "ac79fe4a04": "mostrar",
             "648eeada79": "ocultar",
@@ -14582,5 +14572,8 @@
       "stopped": "detenido",
       "finished": "finalizado"
     }
+  },
+  "brand": {
+    "workbench": "Workbench"
   }
 }

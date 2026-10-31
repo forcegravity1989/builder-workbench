@@ -530,8 +530,8 @@ describe('Store', () => {
 
     expect(store.getSettings().appIcon).toBe('classic')
 
-    expect(store.updateSettings({ appIcon: 'watercolor' }).appIcon).toBe('watercolor')
-    expect(store.updateSettings({ appIcon: 'blue' }).appIcon).toBe('blue')
+    expect(store.updateSettings({ appIcon: 'watercolor' as never }).appIcon).toBe('classic')
+    expect(store.updateSettings({ appIcon: 'blue' as never }).appIcon).toBe('classic')
     expect(store.updateSettings({ appIcon: 'not-real' as never }).appIcon).toBe('classic')
   })
 

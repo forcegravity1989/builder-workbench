@@ -27,7 +27,7 @@
 | [primitives/](primitives/) | 15 个 Orca React 原语：`<名>.md` 用法与 props、`<名>.html` 浅色预览（加 `data-theme="dark"` 看深色）、`primitives.css` 静态复刻样式、`index.d.ts` props 类型 |
 | [components/](components/)、[foundations/](foundations/) | HTML 类词汇的示例页（纯 HTML、无脚本，浏览器直接开） |
 
-图标从 `lucide-react` 引入，不进本目录；Logo 与应用图标在 [`resources/`](../../resources/)；Geist 字体文件在 `src/renderer/src/assets/fonts/`。
+图标从 `lucide-react` 引入，不进本目录；产品标志统一使用 [`resources/icon-source/workbench.png`](../../resources/icon-source/workbench.png)，保留原图颜色与构图，浅色/深色主题均不反色；界面引用生成的 `resources/icon.png`，应用图标也在 [`resources/`](../../resources/)；Geist 字体文件在 `src/renderer/src/assets/fonts/`。
 
 ## 值从哪来、怎么不漂
 
