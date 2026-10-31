@@ -14,7 +14,7 @@ import {
   Settings
 } from 'lucide-react'
 import { toast } from 'sonner'
-import logo from '../../../../../resources/logo.svg'
+import logo from '../../../../../resources/icon.png'
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -262,12 +262,7 @@ export function SidebarSettingsHelpMenu(): React.JSX.Element {
             </DropdownMenuItem>
             {showMilestones ? (
               <DropdownMenuItem onSelect={openMilestones}>
-                <img
-                  src={logo}
-                  alt=""
-                  aria-hidden="true"
-                  className="size-3.5 object-contain invert opacity-55 dark:invert-0"
-                />
+                <img src={logo} alt="" aria-hidden="true" className="size-3.5 object-contain" />
                 {translate(
                   'auto.components.sidebar.SidebarSettingsHelpMenu.f8a2c91d4e',
                   'Milestones'

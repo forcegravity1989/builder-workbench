@@ -1,11 +1,10 @@
-import { Menu, Tray, nativeImage, nativeTheme, type NativeImage } from 'electron'
-import menuBarIconPath from '../../../resources/tray/orca-menu-barTemplate.png?asset&asarUnpack'
-import menuBarIconRetinaPath from '../../../resources/tray/orca-menu-barTemplate@2x.png?asset&asarUnpack'
+import { Menu, Tray, nativeImage, type NativeImage } from 'electron'
+import menuBarIconPath from '../../../resources/tray/workbench.png?asset&asarUnpack'
+import menuBarIconRetinaPath from '../../../resources/tray/workbench@2x.png?asset&asarUnpack'
 import { deferAppKitSceneMutation } from '../appkit-scene-mutation'
 import { createAppIconImage } from '../app-icon'
 import { translateMain } from '../i18n/main-i18n'
-import { composeTrayAttentionIcon, tintTrayTemplateForAttention } from './tray-attention-icon'
-import { stampTrayDevBadge } from './tray-dev-badge'
+import { composeTrayAttentionIcon } from './tray-attention-icon'
 
 export type SystemTrayOptions = {
   /** App icon id from settings; the tray reuses the app icon image. */
@@ -37,19 +36,17 @@ let baseTrayImage: NativeImage | null = null
 // freshly created tray reflects it immediately.
 let attentionActive = false
 
-// Why: dev instances share the production template glyph, so remember dev-ness
+// Why: dev instances share the production icon, so remember dev-ness
 // at module scope; tooltip rebuilds (attention on/off) must keep the marker.
 let devIndicator: { label: string | null } | null = null
-
-let nativeThemeUpdatedListener: (() => void) | null = null
 
 // Why: multiple dev instances can run side by side (one per worktree); the
 // tooltip carries the worktree/branch label so hovering tells them apart.
 function baseTooltip(): string {
   if (!devIndicator) {
-    return 'Orca'
+    return 'Workbench'
   }
-  return devIndicator.label ? `Orca DEV (${devIndicator.label})` : 'Orca DEV'
+  return devIndicator.label ? `Workbench DEV (${devIndicator.label})` : 'Workbench DEV'
 }
 
 // Why: on Windows the notification area expects a 16px icon; the app icon PNG
@@ -66,18 +63,11 @@ function applyTrayImage(): void {
   if (process.platform === 'darwin') {
     if (attentionActive) {
       try {
-        // Why: disabling template tinting makes the amber dot possible, but the
-        // glyph then needs literal pixels chosen for the current menu-bar theme.
-        const useLightGlyph = nativeTheme.shouldUseDarkColors
-        const attentionImage = composeTrayAttentionIcon(
-          tintTrayTemplateForAttention(baseTrayImage, useLightGlyph)
-        )
+        const attentionImage = composeTrayAttentionIcon(baseTrayImage)
         if (baseTrayImage.getScaleFactors().includes(2)) {
           // Why: toBitmap reads only the 1x pixels, so rebuild the @2x
           // representation or the glyph blurs on Retina during attention.
-          const retinaAttentionImage = composeTrayAttentionIcon(
-            tintTrayTemplateForAttention(baseTrayImage, useLightGlyph, 2)
-          )
+          const retinaAttentionImage = composeTrayAttentionIcon(baseTrayImage, 2)
           attentionImage.addRepresentation({
             scaleFactor: 2,
             dataURL: retinaAttentionImage.toDataURL()
@@ -86,20 +76,17 @@ function applyTrayImage(): void {
         attentionImage.setTemplateImage(false)
         tray.setImage(attentionImage)
         tray.setToolTip(
-          devIndicator
-            ? `${baseTooltip()} - ${translateMain('tray.activityWaitingSuffix', 'activity waiting')}`
-            : translateMain('tray.activityWaiting', 'Orca - activity waiting')
+          `${baseTooltip()} - ${translateMain('tray.activityWaitingSuffix', 'activity waiting')}`
         )
         return
       } catch (error) {
-        // Why: this path runs inside unguarded callbacks (nativeTheme 'updated',
-        // the notification bell), so a NativeImage failure must degrade to the
-        // plain template icon rather than throw an uncaught exception into them.
+        // Why: this path runs inside unguarded callbacks (the notification bell), so a NativeImage failure must degrade to the
+        // plain product icon rather than throw an uncaught exception into them.
         console.warn('[system-tray] macOS attention icon failed; showing plain icon', error)
       }
     }
 
-    baseTrayImage.setTemplateImage(true)
+    baseTrayImage.setTemplateImage(false)
     tray.setImage(baseTrayImage)
     tray.setToolTip(baseTooltip())
     return
@@ -153,56 +140,8 @@ function createMacMenuBarImage(): NativeImage | null {
     // glyph on a modern display is diagnosable, matching the base-image warning.
     console.warn('[system-tray] macOS retina menu bar icon could not be loaded')
   }
-  image.setTemplateImage(true)
+  image.setTemplateImage(false)
   return image
-}
-
-// Why: dev builds reuse the production template glyph, so without a marker a
-// dev status item is indistinguishable from the installed app's. Stamping the
-// badge into the template (instead of tray.setTitle) keeps the status item at
-// the exact production width, and the attention tint path inherits it since it
-// reads these same pixels.
-function stampMacDevBadge(base: NativeImage): NativeImage {
-  try {
-    const stamped = stampTrayDevBadge(base)
-    if (base.getScaleFactors().includes(2)) {
-      // Why: createFromBitmap starts from 1x pixels only, so the @2x
-      // representation must be rebuilt or the badge blurs on Retina.
-      const retinaStamped = stampTrayDevBadge(base, 2)
-      stamped.addRepresentation({
-        scaleFactor: 2,
-        dataURL: retinaStamped.toDataURL()
-      })
-    }
-    stamped.setTemplateImage(true)
-    return stamped
-  } catch (error) {
-    // Why: the badge is diagnostics-only chrome; a NativeImage failure must
-    // degrade to the plain icon, not abort tray creation.
-    console.warn('[system-tray] dev badge could not be stamped; showing plain icon', error)
-    return base
-  }
-}
-
-function watchMacAppearance(): void {
-  if (nativeThemeUpdatedListener) {
-    return
-  }
-  nativeThemeUpdatedListener = () => {
-    if (attentionActive) {
-      // Why: 'updated' fires from AppKit's appearance-change dispatch.
-      scheduleTrayImage()
-    }
-  }
-  nativeTheme.on('updated', nativeThemeUpdatedListener)
-}
-
-function stopWatchingMacAppearance(): void {
-  if (!nativeThemeUpdatedListener) {
-    return
-  }
-  nativeTheme.removeListener('updated', nativeThemeUpdatedListener)
-  nativeThemeUpdatedListener = null
 }
 
 // Why: Electron Menu/Tray click callbacks are plain event listeners (not
@@ -236,9 +175,6 @@ export function createSystemTray(opts: SystemTrayOptions): Tray | null {
     baseTrayImage = createMacMenuBarImage()
     if (!baseTrayImage) {
       return null
-    }
-    if (devIndicator) {
-      baseTrayImage = stampMacDevBadge(baseTrayImage)
     }
   } else {
     baseTrayImage = createAppIconImage(opts.appIcon).resize({
@@ -290,8 +226,8 @@ export function createSystemTray(opts: SystemTrayOptions): Tray | null {
       'click',
       safeMenuAction(() => opts.onOpen())
     )
-  } else {
-    watchMacAppearance()
+  } else if (devIndicator) {
+    tray.setTitle('DEV')
   }
   return tray
 }
@@ -326,7 +262,6 @@ export function setTrayAttention(active: boolean): void {
 
 /** Destroys the tray icon if present. Safe to call repeatedly or with no tray. */
 export function destroySystemTray(): void {
-  stopWatchingMacAppearance()
   if (tray && !tray.isDestroyed()) {
     tray.destroy()
   }

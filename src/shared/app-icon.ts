@@ -1,8 +1,4 @@
-export const APP_ICON_OPTIONS = [
-  { id: 'classic', label: 'Classic Orca' },
-  { id: 'watercolor', label: 'Watercolor Orca' },
-  { id: 'blue', label: 'Blue Orca' }
-] as const
+export const APP_ICON_OPTIONS = [{ id: 'classic', label: 'Workbench' }] as const
 
 export type AppIconId = (typeof APP_ICON_OPTIONS)[number]['id']
 
