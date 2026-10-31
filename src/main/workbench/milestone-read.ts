@@ -1,8 +1,4 @@
-import { getRepoExecutionHostId } from '../../shared/execution-host'
-import type { Repo } from '../../shared/repo-types'
-import { CHARTER_BRANCH } from '../../shared/workbench/project-charter'
 import { milestoneDraft, type MilestoneRead } from '../../shared/workbench/project-milestones'
-import { getHostedReviewForBranch } from '../source-control/hosted-review'
 import { readCharterStatus } from './charter-pr-status'
 import { readMilestoneSnapshot } from './milestone-snapshot'
 import type { WorkbenchWorkspaceRepo } from './workspace-resolver'
@@ -43,20 +39,7 @@ export async function readMilestoneSources(c: {
   let sourceNotice: string | undefined
   let mergedHead = false
   if (!incorporated && status.pr?.state === 'merged') {
-    try {
-      const review = await getHostedReviewForBranch({
-        repoPath: c.repo.path,
-        executionHostId: getRepoExecutionHostId(c.repo as Repo),
-        branch: CHARTER_BRANCH,
-        currentHeadOid: c.branchHead,
-        localGitExecOptions: c.options
-      })
-      mergedHead =
-        review?.state === 'merged' &&
-        (review.headSha === c.branchHead || review.confirmedContainedHeadOid === c.branchHead)
-    } catch {
-      /* A failed remote lookup cannot prove a proposal is current. */
-    }
+    mergedHead = !!c.branchHead && status.mergedHeadOid === c.branchHead
     if (mergedHead && c.branchHead) {
       const merged = await readMilestoneSnapshot(c.repo.path, c.branchHead, c.options, c.started)
       if (

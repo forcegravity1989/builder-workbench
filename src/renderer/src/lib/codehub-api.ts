@@ -31,6 +31,7 @@ export const codehubApi: CodeHubApi = {
   updateIssueTitle: (args) => route('updateIssueTitle', args),
   updateIssueLabels: (args) => route('updateIssueLabels', args),
   listLabels: (args) => route('listLabels', args),
+  listMembers: (args) => route('listMembers', args),
   setIssueState: (args) => route('setIssueState', args),
   closeMr: (args) => route('closeMr', args),
   assignIssue: (args) => route('assignIssue', args),

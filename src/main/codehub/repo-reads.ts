@@ -1,4 +1,5 @@
 import type { CodeHubRemote } from '../../shared/codehub'
+import type { CodeHubProjectMember } from '../../shared/codehub-api'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 import { projectArgs, parseJson } from './mutations'
 
@@ -180,6 +181,73 @@ export async function listCodeHubProjectLabels(args: {
     names.push(...page)
     if (page.length < pageSize) {
       return names
+    }
+  }
+}
+
+function mapMemberEntry(entry: unknown): CodeHubProjectMember | null {
+  if (!entry || typeof entry !== 'object') {
+    return null
+  }
+  const record = entry as Record<string, unknown>
+  const username = record.username
+  if (typeof username !== 'string' || !username.trim()) {
+    return null
+  }
+  const id = Number(record.id)
+  const name = record.name
+  const nameCn = record.name_cn
+  const avatarUrl = record.avatar_url
+  const state = record.state
+  return {
+    id: Number.isFinite(id) ? id : 0,
+    username: username.trim(),
+    name: typeof name === 'string' ? name : null,
+    nameCn: typeof nameCn === 'string' ? nameCn : null,
+    avatarUrl: typeof avatarUrl === 'string' ? avatarUrl : null,
+    state: typeof state === 'string' ? state : ''
+  }
+}
+
+/**
+ * 项目成员名单：任务列表负责人候选的数据源。与标签名单同款翻页取全
+ * （CLI 的 --limit 默认 10，成员多的项目单页必截断）；无成员时 CLI 输出
+ * `null`，按空名单处理。
+ */
+export async function listCodeHubProjectMembers(args: {
+  remote: CodeHubRemote
+  execOptions?: CodeHubExecOptions
+}): Promise<CodeHubProjectMember[]> {
+  const pageSize = 100
+  const members: CodeHubProjectMember[] = []
+  for (let offset = 0; ; offset += pageSize) {
+    const parsed = parseJson(
+      await runCodeHubCli(
+        [
+          'project',
+          'member',
+          'list',
+          ...projectArgs(args.remote),
+          '-f',
+          'json',
+          '--limit',
+          String(pageSize),
+          '--offset',
+          String(offset)
+        ],
+        args.execOptions
+      )
+    )
+    if (!Array.isArray(parsed)) {
+      return members
+    }
+    const page = parsed.flatMap((entry) => {
+      const mapped = mapMemberEntry(entry)
+      return mapped ? [mapped] : []
+    })
+    members.push(...page)
+    if (page.length < pageSize) {
+      return members
     }
   }
 }
