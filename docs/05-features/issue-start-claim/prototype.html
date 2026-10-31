@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>开工认领 · 体验对照原型</title>
+<!-- 特性原型：静态示意任务屏 Issue 行在开工认领前后的差异，非交付界面、无运行依赖。
+     正源：docs/05-features/issue-start-claim/spec.md -->
+<style>
+  :root { --fg:#1a1d21; --muted:#6b7280; --border:#e2e5ea; --bg:#f7f8fa; --accent:#2563eb; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:"Segoe UI","Microsoft YaHei",sans-serif; color:var(--fg); background:var(--bg); padding:32px; }
+  h1 { font-size:18px; margin-bottom:6px; }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:24px; }
+  .row { display:flex; gap:16px; flex-wrap:wrap; align-items:stretch; }
+  .card { flex:1; min-width:320px; background:#fff; border:1px solid var(--border); border-radius:10px; padding:16px; }
+  .card h2 { font-size:13px; margin-bottom:4px; }
+  .card .note { font-size:12px; color:var(--muted); margin-bottom:12px; min-height:32px; }
+  .issue { display:grid; grid-template-columns:64px 1fr 110px 84px; gap:10px; align-items:center; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; background:#fff; }
+  .num { font-family:ui-monospace,Consolas,monospace; color:var(--muted); }
+  .title { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .meta { font-size:11px; color:var(--muted); margin-top:2px; }
+  .assignees { font-size:12px; color:var(--muted); display:flex; gap:4px; align-items:center; }
+  .avatar { width:20px; height:20px; border-radius:50%; color:#fff; font-size:11px; display:inline-flex; align-items:center; justify-content:center; }
+  .a1 { background:#7c3aed; } .a2 { background:#0891b2; }
+  .btn { font-size:12px; font-weight:600; border-radius:6px; padding:4px 12px; text-align:center; }
+  .start { border:1px solid var(--border); color:var(--fg); background:#fff; }
+  .open { background:var(--accent); color:#fff; border:1px solid var(--accent); }
+  .legend { margin-top:20px; font-size:12px; color:var(--muted); }
+  .legend b { color:var(--fg); }
+</style>
+</head>
+<body>
+  <h1>开工认领 · 体验对照</h1>
+  <p class="sub">同一 Issue（#512 任务屏行）在「开工前 → A 开工后 → 协作者 B 视角」三态下的差异。认领写进 Issue 原生责任人字段，所有协作者实例与平台网页同见。</p>
+  <div class="row">
+    <div class="card">
+      <h2>① 开工前</h2>
+      <p class="note">任何实例看都是未开工：无责任人，按钮为 Start。</p>
+      <div class="issue">
+        <span class="num">#512</span>
+        <div><div class="title">修复登录页在深色模式下的对比度</div><div class="meta">alice · builder-workbench</div></div>
+        <span class="assignees">—</span>
+        <span class="btn start">Start →</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>② A 开工后（A 的实例）</h2>
+      <p class="note">创建工作区成功即自动认领：A 出现在责任人列，按钮变 Open。A 无额外操作。</p>
+      <div class="issue">
+        <span class="num">#512</span>
+        <div><div class="title">修复登录页在深色模式下的对比度</div><div class="meta">alice · builder-workbench</div></div>
+        <span class="assignees"><span class="avatar a1" title="alice">A</span></span>
+        <span class="btn open">Open →</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>③ 协作者 B 的实例</h2>
+      <p class="note">B 本机无该工作区（按钮仍 Start），但责任人列显示 A——B 知道已有人在做，不再重复开工。</p>
+      <div class="issue">
+        <span class="num">#512</span>
+        <div><div class="title">修复登录页在深色模式下的对比度</div><div class="meta">alice · builder-workbench</div></div>
+        <span class="assignees"><span class="avatar a1" title="alice">A</span></span>
+        <span class="btn start">Start →</span>
+      </div>
+    </div>
+  </div>
+  <p class="legend"><b>行为要点</b>：只认领 Issue（PR 不认领）；追加不移除已有责任人；认领失败不阻断开工、如实提示；关闭/删树不自动摘除责任人。完整规则见 <b>spec.md</b>。</p>
+</body>
+</html>
