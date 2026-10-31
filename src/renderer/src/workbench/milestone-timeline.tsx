@@ -1,6 +1,6 @@
 import { MilestoneDayAxis, MilestoneDayBackground } from './milestone-day-axis'
 import { useLayoutEffect, useRef, useState } from 'react'
-import { useMilestoneActualRange } from './milestone-actual-context'
+import { explicitMilestoneVersions, useMilestoneActualRange } from './milestone-actual-context'
 import { MilestoneActualVersions } from './milestone-actual-goals'
 import type { VersionCatalogState } from './use-version-catalog'
 import { Button } from '@/components/ui/button'
@@ -222,15 +222,7 @@ export function MilestoneTimeline(props: Props) {
           </div>
           <MilestoneActualVersions
             {...props}
-            versions={visible.versions.filter((version) =>
-              features.some((feature) =>
-                feature.deliveries.some(
-                  (delivery) =>
-                    delivery.version.version === version.version &&
-                    delivery.version.cycleId === version.cycleId
-                )
-              )
-            )}
+            versions={explicitMilestoneVersions(visible)}
             origin={origin}
             canvasWidth={canvasWidth}
             reportRange={reportRange}

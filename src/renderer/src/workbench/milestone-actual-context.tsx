@@ -31,3 +31,15 @@ export function useMilestoneActualRange(draft: MilestoneDraft, started: Set<stri
     reportRange
   }
 }
+
+export function explicitMilestoneVersions(draft: MilestoneDraft) {
+  return draft.versions.filter((version) =>
+    draft.material.features.some((feature) =>
+      feature.deliveries.some(
+        (delivery) =>
+          delivery.version.version === version.version &&
+          delivery.version.cycleId === version.cycleId
+      )
+    )
+  )
+}
