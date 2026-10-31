@@ -1,0 +1,793 @@
+.wb-ml {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--foreground);
+}
+.wb-ml-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.wb-ml-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.wb-ml-title > strong {
+  font-size: 16px;
+}
+.wb-ml-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.wb-ml small {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 400;
+}
+.wb-ml-action-separator {
+  height: 16px;
+  border-left: 1px solid var(--border);
+  margin: 0 2px;
+}
+.wb-ml-legend,
+.wb-ml-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.wb-ml-legend {
+  gap: 16px;
+}
+.wb-ml-empty {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  color: var(--muted-foreground);
+}
+
+.wb-ml-roadmap-scroll {
+  overflow-x: auto;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: grab;
+  position: relative;
+  touch-action: pan-y;
+}
+.wb-ml-roadmap-axis {
+  display: flex;
+  width: 100%;
+  height: 76px;
+  position: relative;
+}
+.wb-ml-roadmap-axis::before {
+  content: '';
+  position: absolute;
+  top: 28px;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--border);
+}
+.wb-ml-roadmap-month {
+  flex: 1;
+  min-width: 240px;
+  position: relative;
+}
+.wb-ml-roadmap-month::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 2px);
+  top: 26px;
+  width: 5px;
+  height: 5px;
+  background: var(--foreground);
+  border-radius: 50%;
+}
+.wb-ml-roadmap-flag {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  white-space: nowrap;
+  border: 0;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0 5px;
+  border-radius: var(--radius-sm);
+}
+.wb-ml-roadmap-flag svg {
+  fill: currentColor;
+}
+.wb-ml-roadmap-caption {
+  position: absolute;
+  top: 40px;
+  left: calc(50% - 110px);
+  width: 220px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.wb-ml-roadmap-caption::before {
+  content: '';
+  position: absolute;
+  left: calc(50% - 4px);
+  top: -5px;
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  background: var(--card);
+}
+.wb-ml-roadmap-caption > span {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.wb-ml-scroll {
+  overflow: auto;
+  max-height: 560px;
+  min-height: 160px;
+  position: relative;
+  cursor: grab;
+  touch-action: pan-y;
+}
+.wb-ml-canvas {
+  min-width: 100%;
+  position: relative;
+}
+.wb-ml-row,
+.wb-ml-version-row,
+.wb-ml-empty-row {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+.wb-ml-label {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  width: 220px;
+  flex: 0 0 220px;
+  padding: 10px 12px;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  cursor: default;
+}
+.wb-ml-track {
+  position: relative;
+  flex-shrink: 0;
+}
+.wb-ml-version-row {
+  position: relative;
+  z-index: 5;
+  background: var(--card);
+}
+.wb-ml-version-row .wb-ml-label {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.wb-ml-window {
+  position: absolute;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--muted) 48%, var(--card));
+  padding: 9px 4px 2px;
+  font-size: 12px;
+}
+.wb-ml-current-window {
+  background: var(--muted);
+}
+.wb-ml-window .wb-ml-current-marker {
+  position: absolute;
+  top: 1px;
+  right: 5px;
+  font-size: 11px;
+  line-height: 12px;
+  color: var(--muted-foreground);
+}
+.wb-ml-window > .wb-ml-inline {
+  text-align: center;
+  font-size: 12px;
+  padding: 0 2px;
+}
+.wb-ml-window > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wb-ml-window small {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.wb-ml-unused-week {
+  background: transparent;
+}
+.wb-ml-unused-week .wb-ml-week-name {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+.wb-ml-row {
+  min-height: 88px;
+  position: relative;
+}
+.wb-ml-drop-before::after,
+.wb-ml-drop-after::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--ring);
+  z-index: 6;
+  pointer-events: none;
+}
+.wb-ml-drop-before::after {
+  top: 0;
+}
+.wb-ml-drop-after::after {
+  bottom: 0;
+}
+.wb-ml-row.with-baseline {
+  min-height: 116px;
+}
+.wb-ml-feature {
+  gap: 6px;
+}
+.wb-ml-feature > div {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.wb-ml-feature > div > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wb-ml-grip {
+  color: var(--muted-foreground);
+  cursor: grab;
+  flex-shrink: 0;
+  margin-left: -8px;
+  touch-action: none;
+  user-select: none;
+}
+.wb-ml-inline {
+  min-width: 0;
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 3px 4px;
+  color: inherit;
+  font: inherit;
+}
+.wb-ml-inline:hover {
+  border-color: var(--border);
+}
+.wb-ml-inline:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+  background: var(--card);
+}
+.wb-ml-connection {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.wb-ml-row-actions {
+  position: sticky;
+  right: 0;
+  width: 40px;
+  margin-left: -40px;
+  flex: 0 0 40px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  cursor: default;
+}
+.wb-ml-row-actions button {
+  color: var(--muted-foreground);
+}
+.wb-ml-row-actions button:hover {
+  color: var(--foreground);
+}
+.wb-ml-today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--ring);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.wb-ml-empty-row {
+  height: 88px;
+}
+.wb-ml-add-feature {
+  position: sticky;
+  left: 0;
+  width: 220px;
+  padding: 8px 12px;
+  background: var(--card);
+}
+.wb-ml-add-feature button {
+  width: 100%;
+  justify-content: flex-start;
+}
+.wb-ml-alert,
+.wb-ml-notice {
+  margin: 0;
+  padding: 10px 16px;
+  color: var(--muted-foreground);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.wb-ml-review {
+  font-size: 13px;
+  color: var(--popover-foreground);
+  background: var(--popover);
+  border: 1px solid var(--border);
+  padding: 14px;
+  max-height: 440px;
+  overflow: auto;
+  width: 420px;
+  max-width: 90vw;
+}
+.wb-ml-review ul {
+  padding-left: 18px;
+  margin: 12px 0;
+  display: grid;
+  gap: 8px;
+}
+.wb-ml-return {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  background: var(--card);
+  color: var(--foreground);
+}
+
+.wb-ml-board-header {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--card);
+}
+.wb-ml-day-row {
+  height: 40px;
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+.wb-ml-day-row .wb-ml-label {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  font-size: 11px;
+}
+.wb-ml-day-row .wb-ml-label small {
+  font-size: 9px;
+}
+.wb-ml-day-track {
+  display: flex;
+  flex: none;
+}
+.wb-ml-day-cell {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  font-size: 10px;
+  line-height: 16px;
+}
+.wb-ml-day-cell small {
+  font-size: 9px;
+  color: var(--muted-foreground);
+}
+.wb-ml-day-cell b {
+  border-radius: 2px;
+  background: var(--foreground);
+  color: var(--card);
+  padding: 0 2px;
+  font-size: 9px;
+  font-weight: 400;
+}
+.wb-ml-day-cell.today {
+  box-shadow: inset 0 -2px var(--foreground);
+  font-weight: 600;
+}
+.wb-ml-day-cell.rest,
+.wb-ml-days-background i.rest {
+  background: color-mix(in srgb, var(--muted) 50%, transparent);
+}
+.wb-ml-days-background {
+  position: absolute;
+  bottom: 0;
+  pointer-events: none;
+}
+.wb-ml-days-background i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-right: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+}
+.wb-ml-window .wb-ml-version-dates {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted-foreground);
+  margin: 1px 4px;
+}
+.wb-ml-version-dates.editable {
+  cursor: grab;
+  touch-action: none;
+}
+.wb-ml-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  border: 0;
+  background: transparent;
+  cursor: ew-resize !important;
+  touch-action: none;
+  padding: 0;
+  z-index: 3;
+}
+.wb-ml-resize.start {
+  left: 0;
+}
+.wb-ml-resize.end {
+  right: 0;
+}
+.wb-ml-resize::after {
+  content: '';
+  position: absolute;
+  top: 30%;
+  bottom: 30%;
+  left: 3px;
+  border-left: 1px solid currentColor;
+  opacity: 0.4;
+}
+.wb-ml-resize:focus-visible {
+  outline: 2px solid var(--ring);
+}
+.wb-ml-sdlc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.wb-ml-counts {
+  flex-shrink: 0;
+  font-size: 11px;
+}
+.wb-ml-sdlc-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px 14px;
+  margin-left: auto;
+}
+.wb-ml-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.wb-ml-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.wb-ml-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  background: var(--phase-bg);
+  color: var(--phase-fg);
+}
+.wb-ml-show-plan {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.wb-ml-show-plan input {
+  accent-color: var(--foreground);
+}
+.wb-phase-plan {
+  --phase-bg: #dce9ff;
+  --phase-fg: #254e8d;
+}
+.wb-phase-design {
+  --phase-bg: #eae1fa;
+  --phase-fg: #61418f;
+}
+.wb-phase-build {
+  --phase-bg: #d9eee3;
+  --phase-fg: #24634b;
+}
+.wb-phase-test {
+  --phase-bg: #f8ebcd;
+  --phase-fg: #806016;
+}
+.wb-phase-deploy {
+  --phase-bg: #f7ded9;
+  --phase-fg: #915043;
+}
+.wb-phase-maintain {
+  --phase-bg: #dcecef;
+  --phase-fg: #356671;
+}
+.dark .wb-phase-plan {
+  --phase-bg: #263d60;
+  --phase-fg: #c2d8ff;
+}
+.dark .wb-phase-design {
+  --phase-bg: #443156;
+  --phase-fg: #e0cafa;
+}
+.dark .wb-phase-build {
+  --phase-bg: #234638;
+  --phase-fg: #c0e8d2;
+}
+.dark .wb-phase-test {
+  --phase-bg: #4c4025;
+  --phase-fg: #eddaa9;
+}
+.dark .wb-phase-deploy {
+  --phase-bg: #51342d;
+  --phase-fg: #f1c5ba;
+}
+.dark .wb-phase-maintain {
+  --phase-bg: #2b434a;
+  --phase-fg: #c4e2e8;
+}
+.wb-ml-phase {
+  position: absolute;
+  height: 28px;
+  background: var(--phase-bg);
+  color: var(--phase-fg);
+  border: 1px solid color-mix(in srgb, var(--phase-fg) 20%, transparent);
+  border-radius: 3px;
+  z-index: 2;
+}
+.wb-ml-unrecorded {
+  position: absolute;
+  top: 31px;
+  height: 28px;
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.wb-ml-phase-body {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.wb-ml-phase.editable .wb-ml-phase-body {
+  cursor: grab;
+  touch-action: none;
+}
+.wb-ml-phase.editable:hover {
+  box-shadow: 0 0 0 1px var(--phase-fg);
+  z-index: 3;
+}
+.wb-ml-phase-group.ghost .wb-ml-phase {
+  height: 12px;
+  opacity: 0.35;
+  border-style: dashed;
+}
+.wb-ml-phase-group.ghost .wb-ml-phase-body {
+  font-size: 0;
+}
+.wb-ml-baseline-caption {
+  position: absolute;
+  top: 92px;
+  font-size: 9px;
+  color: var(--muted-foreground);
+}
+.wb-ml-row.with-baseline,
+.wb-ml-row.with-baseline .wb-ml-track {
+  min-height: 116px;
+}
+.wb-ml-actual-unknown {
+  position: absolute;
+  top: 34px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+  padding: 3px 6px;
+  border: 1px dashed var(--border);
+  background: var(--card);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.wb-ml-feature-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+}
+.wb-ml-owner {
+  flex: 0 1 76px;
+  min-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wb-ml-goal-trigger,
+.wb-ml-goal-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: var(--muted);
+  color: var(--foreground);
+  font: inherit;
+  border: 0;
+}
+.wb-ml-goal-trigger {
+  cursor: pointer;
+}
+.wb-ml-goal-trigger:hover {
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.wb-ml-goal-version {
+  color: var(--muted-foreground);
+}
+.wb-ml-goal-options {
+  width: 68px;
+  padding: 4px;
+  font-size: 11px;
+}
+.wb-ml-goal-options button {
+  display: block;
+  width: 100%;
+  padding: 7px 9px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  text-align: left;
+  font: inherit;
+  color: var(--foreground);
+  cursor: pointer;
+}
+.wb-ml-goal-options button:hover,
+.wb-ml-goal-options button[aria-pressed='true'] {
+  background: var(--muted);
+}
+.wb-ml-drag-warning {
+  color: var(--destructive);
+}
+
+.wb-ml-connection {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  color: var(--border);
+}
+.wb-ml-connection path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.wb-ml-version-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  padding: 0 8px;
+}
+.wb-ml-version-title strong {
+  font-size: 11px;
+}
+.wb-ml-version-title .icon-action {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+}
+
+.wb-ml-day-row .wb-ml-label {
+  display: block;
+}
+.wb-ml-version-title {
+  min-width: 0;
+}
+.wb-ml-version-title > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wb-ml-version-title .wb-ml-inline {
+  text-align: center;
+  font-size: 12px;
+}
+.wb-ml-version-dates {
+  background: transparent;
+  border: 0;
+  white-space: nowrap;
+  touch-action: none;
+  cursor: grab;
+}
+.wb-ml-version-row .wb-ml-window {
+  border-right: 1px solid var(--border);
+}
+.wb-ml-scroll button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
