@@ -1,0 +1,317 @@
+.bwo-page {
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px 30px 48px;
+  color: var(--foreground);
+  background: var(--background);
+}
+.bwo-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.bwo-header h1 {
+  font-size: 24px;
+  line-height: 1.4;
+  font-weight: 650;
+}
+.bwo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin-bottom: 28px;
+}
+.bwo-badge {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.bwo-goal {
+  border-top: 1px solid var(--border);
+  padding: 20px 0;
+}
+.bwo-goal-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.bwo-goal-heading h2 {
+  flex: 1;
+  min-width: 160px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.bwo-goal-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+  margin: 12px 0 18px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.bwo-link {
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.bwo-muted {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.bwo-feature {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+.bwo-feature-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+  padding: 16px 20px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.bwo-feature-body {
+  padding: 0 20px 8px;
+}
+.bwo-related {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 20px;
+}
+.bwo-version {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 11px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.bwo-version[aria-current='page'],
+.bwo-version:hover {
+  background: var(--muted);
+  font-weight: 600;
+}
+
+.bwo-timeline-heading,
+.bwo-workflow-heading,
+.bwo-metric-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.bwo-timeline-heading {
+  font-size: 12px;
+}
+.bwo-timeline-heading > span,
+.bwo-metric-activity {
+  color: var(--muted-foreground);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.bwo-axis-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 12px 0 4px;
+}
+.bwo-axis {
+  position: relative;
+}
+.bwo-axis-scale {
+  position: absolute;
+  inset: 0 28px;
+}
+.bwo-stage-range {
+  position: absolute;
+  top: var(--bwo-axis-top);
+  height: 56px;
+  min-width: 2px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 2px;
+  font-size: 11px;
+  background: var(--background);
+  color: var(--foreground);
+  cursor: pointer;
+  overflow: hidden;
+}
+.bwo-stage-range strong,
+.bwo-stage-range span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.8;
+}
+.bwo-stage-range strong {
+  font-weight: 600;
+}
+.bwo-stage-range.done {
+  background: var(--muted);
+}
+.bwo-stage-range.current {
+  background: var(--foreground);
+  color: var(--background);
+  border-color: var(--foreground);
+}
+.bwo-stage-range.future,
+.bwo-stage-range.unknown,
+.bwo-stage-range.untracked {
+  border-style: dashed;
+  color: var(--muted-foreground);
+}
+.bwo-stage-range[aria-disabled='true'],
+.bwo-version-delivery[aria-disabled='true'] {
+  cursor: help;
+}
+.bwo-stage-range:focus-visible,
+.bwo-version-delivery:focus-visible,
+.bwo-axis-scroll:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.bwo-version-delivery {
+  position: absolute;
+  width: 128px;
+  height: 54px;
+  transform: translateX(calc(-1 * var(--bwo-label-shift)));
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  font-size: 11px;
+  cursor: pointer;
+}
+.bwo-version-delivery.future {
+  border-style: dashed;
+  color: var(--muted-foreground);
+}
+.bwo-version-delivery strong {
+  max-width: 100%;
+  padding-inline: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.bwo-version-delivery time {
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.bwo-version-delivery::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: var(--bwo-label-shift);
+  height: var(--bwo-connector-height);
+  border-left: 1px dashed var(--muted-foreground);
+  pointer-events: none;
+}
+.bwo-timeline-marker {
+  position: absolute;
+  width: 112px;
+  height: 36px;
+  transform: translateX(calc(-1 * var(--bwo-label-shift)));
+  font-size: 10px;
+  line-height: 1.7;
+}
+.bwo-timeline-marker strong,
+.bwo-timeline-marker time {
+  display: block;
+  white-space: nowrap;
+}
+.bwo-timeline-marker strong {
+  font-size: 11px;
+  font-weight: 500;
+}
+.bwo-timeline-marker time {
+  color: var(--muted-foreground);
+}
+.bwo-timeline-marker::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: var(--bwo-label-shift);
+  height: var(--bwo-marker-height);
+  border-left: 1px solid var(--muted-foreground);
+  pointer-events: none;
+}
+.bwo-productivity {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 20px 0;
+  margin-top: 16px;
+  border-block: 1px solid var(--border);
+}
+.bwo-productivity > div {
+  min-width: 0;
+}
+.bwo-productivity strong {
+  display: block;
+  font-size: 20px;
+  margin-top: 8px;
+  font-weight: 500;
+}
+.bwo-metric-label {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  cursor: help;
+  text-align: left;
+}
+.bwo-metric-activity {
+  flex-shrink: 0;
+}
+.bwo-workflow-heading h2 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.bwo-empty {
+  padding: 52px 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: center;
+}
+.bwo-empty h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+@media (max-width: 760px) {
+  .bwo-page {
+    padding: 20px 18px;
+  }
+  .bwo-header h1 {
+    font-size: 21px;
+  }
+  .bwo-feature-heading {
+    padding: 14px;
+  }
+  .bwo-feature-body {
+    padding-inline: 14px;
+  }
+  .bwo-productivity {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

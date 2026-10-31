@@ -4,7 +4,34 @@ export const repository = snapshot.source.repository
 export const acceptanceForVersion = (version) =>
   snapshot.acceptance.version === version ? snapshot.acceptance : null
 export const baseline = snapshot.source.sourceCommit
-export const revision = '334-draft-10'
+export const revision = '334-draft-19'
+export const formatTime = (value) =>
+  value && Number.isFinite(Date.parse(value))
+    ? new Intl.DateTimeFormat('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      })
+        .format(new Date(value))
+        .replaceAll('/', '-')
+    : '未记录'
+export function archivePull(version, workflow) {
+  const document =
+    workflow === 'acceptance'
+      ? acceptanceForVersion(version)
+      : version === snapshot.plan.version
+        ? snapshot.plan
+        : version === snapshot.priorPlan.version
+          ? snapshot.priorPlan
+          : null
+  return (
+    snapshot.pulls.find((pull) => pull.number === document?.workflow?.archivePr?.number) ?? null
+  )
+}
 export const scenarios = [
   { id: 'unplanned', label: '版本计划未制定', version: 'v0.9' },
   { id: 'during', label: '版本计划制定完（版本中）', version: 'v0.8' },
@@ -31,29 +58,22 @@ export const features = ['334', '440'].map((id) => {
     goalId: 'G2',
     title: own ? '版本总览重设计' : '项目总览里程碑规划',
     owner: issue.assignees.join('、') || snapshot.plan.goals.find((g) => g.goalId === 'G2').owner,
-    purpose: own ? '看清一版的承诺、特性历程与交付依据。' : '选择特性，安排各版本的交付增量。',
-    scope: snapshot.plan.goals
-      .find((g) => g.goalId === 'G2')
-      .deliverable.split('\n')
-      [own ? 1 : 0].replace(/^\d+\.\s*/, ''),
-    stage: '设计评审中',
-    designPR
+    stage: own ? 'Build · 评审中' : 'Design · 评审中',
+    designPR,
+    developmentPR: own ? snapshot.pulls.find((pr) => pr.number === 474) : null
   }
 })
 export const historicalFeatures = [
-  { id: '334', title: '版本总览', scope: '计划未单列此特性的交付增量；参照本目标当时的承诺。' },
   {
     id: '383',
-    title: '版本工作区',
-    scope: snapshot.priorPlan.goals.find((g) => g.goalId === 'G2').title
+    title: '版本工作区'
   }
 ].map((f) => ({
   ...f,
-  previewExpanded: f.id === '334',
+  previewExpanded: f.id === '383',
   goalId: 'G2',
   historical: true,
   owner: snapshot.priorPlan.goals.find((g) => g.goalId === 'G2').owner,
-  purpose: f.scope,
   stage: '当时阶段未记录',
   designPR: null
 }))
@@ -78,14 +98,11 @@ export function relatedVersions(featureId) {
       return []
     }
     const goal = plan.goals.find((g) => g.goalId === task.goalId)
-    const increment = scene === 'during' ? features.find((f) => f.id === featureId)?.scope : null
     return [
       {
         scene,
         version,
-        scope: increment || goal.title,
-        scopeLabel: increment ? '本版承担' : '关联目标',
-        separateScope: Boolean(increment)
+        scope: goal?.title || '目标范围未记录'
       }
     ]
   })

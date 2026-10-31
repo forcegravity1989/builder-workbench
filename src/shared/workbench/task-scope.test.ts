@@ -55,6 +55,11 @@ describe('native task entry filters', () => {
       items.filter((item) => matchesWorkbenchTaskQuery(item, 'is:pr state:all', 'alice'))
     ).toEqual([])
     expect(matchesWorkbenchTaskQuery({ ...items[65], labels: [] }, query, 'alice')).toBe(false)
+    const goalQuery = removeWorkbenchVersionQuery(query, { ...scope, goalId: 'goal' })
+    expect(matchesWorkbenchTaskQuery({ ...items[65], labels: [] }, goalQuery, 'alice')).toBe(true)
+    expect(
+      matchesWorkbenchTaskQuery({ ...items[65], labels: [] }, `${goalQuery} label:bug`, 'alice')
+    ).toBe(false)
     expect(matchesWorkbenchTaskQuery(items[65], '#66', 'alice')).toBe(true)
     expect(hasUnsupportedWorkbenchTaskSearch('in:title API')).toBe(true)
     expect(hasUnsupportedWorkbenchTaskSearch('"in:title"')).toBe(false)

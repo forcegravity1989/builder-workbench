@@ -214,11 +214,12 @@ export function useTaskPageWorkbenchScope(model: TaskPageJiraCreationMetadataMod
       result,
       selectedRepoIds: model.repoSelection,
       githubIssueView: model.activeGithubTaskKind !== 'prs',
-      githubQuery: model.appliedTaskSearch,
+      // Goal membership comes from plan references; the seeded version label is navigation context.
+      githubQuery: removeWorkbenchVersionQuery(model.appliedTaskSearch, goalScope),
       viewerLogins: goalViewers.logins,
       githubPageSize,
       codehubIssueView: model.codehubView !== 'mrs',
-      codehubQuery: codehubGoalQuery,
+      codehubQuery: removeWorkbenchVersionQuery(codehubGoalQuery, goalScope),
       codehubPreset: model.codehubPreset,
       blocked: !!filterProblem || goalViewers.loading
     })
