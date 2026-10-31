@@ -58,15 +58,6 @@ export type MinutesInput = {
   currentVersion: string | null
   version: string | null
 }
-export function taskDistribution(document: AcceptanceMaterial): [string, number][] {
-  const counts = new Map<string, number>()
-  for (const item of document.taskSnapshot ?? []) {
-    if (item.kind === 'ready') {
-      counts.set(item.state, (counts.get(item.state) ?? 0) + 1)
-    }
-  }
-  return [...counts.entries()]
-}
 function emptyMinutes(version: string): VersionMinutes {
   return {
     version,
