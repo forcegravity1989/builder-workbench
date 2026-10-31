@@ -9,7 +9,13 @@ import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workb
 import { taskKey, PARSER_REVISION } from './feature-model'
 import { createOverviewReadCache } from './overview-read-cache'
 
-type FeatureRead = { features: FeatureData[]; problems: string[]; readAt?: string; stale?: boolean }
+type FeatureRead = {
+  features: FeatureData[]
+  problems: string[]
+  materialState: string
+  readAt?: string
+  stale?: boolean
+}
 export const featureFactsCache = createOverviewReadCache<FeatureRead>((result, previous) => {
   const failures = [
     ...result.problems,
@@ -18,7 +24,7 @@ export const featureFactsCache = createOverviewReadCache<FeatureRead>((result, p
     )
   ]
   return failures.length && previous && (!previous.problems.length || previous.stale)
-    ? { ...previous, problems: failures, stale: true }
+    ? { ...previous, materialState: result.materialState, problems: failures, stale: true }
     : { ...result, problems: failures, readAt: new Date().toISOString() }
 })
 
@@ -40,6 +46,13 @@ export function useOverviewFeatures(args: {
   const referenceSourceKey = catalog.scope
     ? nativeTaskReferenceReader.key(catalog.scope, references)
     : null
+  const materialState = JSON.stringify([
+    catalog.materialReady,
+    catalog.materialError,
+    catalog.catalog?.entries
+      .map((entry) => [entry.version, entry.problems])
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
+  ])
   const contextKey = JSON.stringify([
     PARSER_REVISION,
     referenceSourceKey,
@@ -74,7 +87,7 @@ export function useOverviewFeatures(args: {
       ])
       .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
   ])
-  const key = JSON.stringify([contextKey, refreshToken])
+  const key = JSON.stringify([contextKey, refreshToken, materialState])
   const lastRefresh = useRef(refreshToken)
   const state = useSyncExternalStore(
     (listener) => featureFactsCache.subscribe(contextKey, listener),
@@ -84,13 +97,33 @@ export function useOverviewFeatures(args: {
     if (!plan || !catalog.scope) {
       return
     }
-    const force = lastRefresh.current !== refreshToken
+    const cached = featureFactsCache.get(contextKey)
+    const force =
+      lastRefresh.current !== refreshToken ||
+      cached.loading ||
+      Boolean(cached.value && cached.value.materialState !== materialState)
     lastRefresh.current = refreshToken
-    void featureFactsCache.read(
-      contextKey,
-      () => readOverviewFeatures({ catalog, plan, planSource, version, before, historical }, force),
-      force
-    )
+    let cancelled = false
+    const running = cached.loading
+    const load = async () => ({
+      ...(await readOverviewFeatures(
+        { catalog, plan, planSource, version, before, historical },
+        force
+      )),
+      materialState
+    })
+    const request = featureFactsCache.read(contextKey, load, force)
+    // A changed catalog must be read after an older in-flight request, not absorbed by it.
+    if (force && running) {
+      void request.then(() => {
+        if (!cancelled) {
+          return featureFactsCache.read(contextKey, load, true)
+        }
+      })
+    }
+    return () => {
+      cancelled = true
+    }
     // The key covers owner routing and source revisions, not unrelated catalog discovery.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])

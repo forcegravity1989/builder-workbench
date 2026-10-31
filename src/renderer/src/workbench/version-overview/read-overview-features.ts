@@ -104,7 +104,8 @@ export async function readOverviewFeatures(args: OverviewFeatureArgs, force: boo
   }
   const versionEvidence = history ?? (await readVersions())
   const historyComplete =
-    catalog.catalog?.history?.ready !== false &&
+    catalog.materialReady &&
+    !catalog.materialError &&
     !(catalog.catalog?.entries ?? []).some(
       (entry) =>
         (entry.material.plan || entry.material.acceptance || entry.problems.length > 0) &&
