@@ -7,7 +7,7 @@ function escapeWindowsBatchValue(value) {
 }
 
 function quotePosixShellValue(value) {
-  return "'" + value.replaceAll("'", "'\\''") + "'"
+  return `'${value.replaceAll("'", "'\\''")}'`
 }
 
 export function prepareDevCliTerminalWrappers({

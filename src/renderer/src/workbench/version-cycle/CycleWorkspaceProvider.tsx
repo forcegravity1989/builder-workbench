@@ -98,10 +98,14 @@ export function CycleWorkspaceProvider({ children }: { children: ReactNode }) {
           promptDelivery: 'draft',
           activate: true
         })
-        if (!result) throw new Error('会话未能打开，请核对默认智能体配置后重试。')
+        if (!result) {
+          throw new Error('会话未能打开，请核对默认智能体配置后重试。')
+        }
         if (result.structuredSettlement) {
           const settled = await result.structuredSettlement
-          if (settled.kind === 'failed') throw settled.error
+          if (settled.kind === 'failed') {
+            throw settled.error
+          }
           if (
             settled.kind !== 'structured' &&
             !(settled.kind === 'refused-then-legacy' && settled.primaryTabId)

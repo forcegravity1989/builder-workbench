@@ -220,7 +220,9 @@ describe('version material CLI entry', () => {
       }
     }
     call.mockImplementation(async (method: string) => {
-      if (!(method in values)) throw new Error(`unexpected ${method}`)
+      if (!(method in values)) {
+        throw new Error(`unexpected ${method}`)
+      }
       return response(values[method])
     })
     await main(

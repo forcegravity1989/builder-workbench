@@ -308,7 +308,9 @@ function renderWorkbenchGuide(markdown, source, name, references) {
       version_context: ''
     }
     normalized = normalized.replace(/\{\{([a-z_]+)\}\}/g, (_match, key) => {
-      if (!(key in values)) throw new Error(`Unknown SYSTEM field: ${key}`)
+      if (!(key in values)) {
+        throw new Error(`Unknown SYSTEM field: ${key}`)
+      }
       return values[key]
     })
   }

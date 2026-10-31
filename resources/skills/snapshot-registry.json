@@ -1941,17 +1941,17 @@
     "week-planning": [
       {
         "releaseRevision": 1,
-        "packageDigest": "0bc7219c1cac7152de55a84856b6ef9750da929150839a9e0e67becf69fccf14",
-        "gitTreeSha": "4a230fbdc39571868ae927c7d41a8121a094573f",
+        "packageDigest": "3252a7e7c4a8d9490e785a7cc6ee6ad896eca2ba159d2d41cbf488805a42e258",
+        "gitTreeSha": "a44f9ebc5ff3ad2045914fceca3ef0fbf97e3533",
         "files": [
           {
             "path": "SKILL.md",
             "size": 2474,
             "executable": false,
             "classification": "text",
-            "exactSha256": "d0a8f9c5770ae03db37d7fa2cb14f58fed98a7986aa3a9e62ad3dba79b0c18f4",
-            "textNormalizedSha256": "d0a8f9c5770ae03db37d7fa2cb14f58fed98a7986aa3a9e62ad3dba79b0c18f4",
-            "identitySha256": "d0a8f9c5770ae03db37d7fa2cb14f58fed98a7986aa3a9e62ad3dba79b0c18f4"
+            "exactSha256": "c3bb223a9865cd69ff872d919e7c827167180d3b6ecfa8ca5da079fa4ff866e2",
+            "textNormalizedSha256": "c3bb223a9865cd69ff872d919e7c827167180d3b6ecfa8ca5da079fa4ff866e2",
+            "identitySha256": "c3bb223a9865cd69ff872d919e7c827167180d3b6ecfa8ca5da079fa4ff866e2"
           }
         ]
       }
