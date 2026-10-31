@@ -117,7 +117,7 @@ export function useOverviewFeatures(args: {
     if (force && running) {
       void request.then(() => {
         if (!cancelled) {
-          return featureFactsCache.read(contextKey, load, true)
+          void featureFactsCache.read(contextKey, load, true)
         }
       })
     }
@@ -128,7 +128,8 @@ export function useOverviewFeatures(args: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
   return {
-    ...(state.value ?? { features: [], problems: [] }),
+    features: state.value?.features ?? [],
+    readAt: state.value?.readAt,
     problems: [...(state.value?.problems ?? []), ...(state.error ? [state.error] : [])],
     stale:
       state.value?.stale || Boolean(state.error && state.value && !state.value.problems.length),
