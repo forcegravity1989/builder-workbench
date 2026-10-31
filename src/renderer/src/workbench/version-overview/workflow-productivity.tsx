@@ -27,7 +27,6 @@ export function WorkflowProductivity({
   const empty = plan
     ? workflowReferences(plan).map((reference) => ({
         reference,
-        title: '',
         issueUrl: '',
         feedback: null,
         problems: []

@@ -13,7 +13,6 @@ import { mapLimit } from './read-feature-evidence'
 /** Archive merge metadata and the acceptance's pinned plan are independent evidence. */
 export async function readVersionEvidence(
   catalog: VersionCatalogState,
-  versions?: Set<string>,
   force = false,
   workingPlan?: { document: PlanningMaterial; source: 'committed' | 'draft' }
 ): Promise<{ records: VersionEvidence[]; plans: OverviewVersionPlan[]; problems: string[] }> {
@@ -90,9 +89,7 @@ export async function readVersionEvidence(
       archive: archiveEvent(document, status, 'plan')
     })
   }
-  const entries = (catalog.catalog?.entries ?? []).filter(
-    (entry) => !versions || versions.has(entry.version)
-  )
+  const entries = catalog.catalog?.entries ?? []
   await mapLimit(
     entries,
     async (entry) => {

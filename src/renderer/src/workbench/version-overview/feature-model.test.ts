@@ -1,7 +1,6 @@
 import { expect, it } from 'vitest'
 import { sdlcProviderOf } from '../overview-sdlc'
 import {
-  eventsFromPulls,
   featureNumber,
   linkedPullNumbers,
   pullDeclaresIssue,
@@ -125,10 +124,15 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     mergedAt: '2026-10-01T10:00:00Z',
     readAt: '2026-10-10T00:00:00Z'
   }
-  const events = eventsFromPulls([pull])
-  expect(events.map((event) => event.phase)).toEqual(['design', 'design'])
-  expect(eventsFromPulls([pull], '2026-10-01T09:00:00Z')).toHaveLength(1)
-  expect(eventsFromPulls([{ ...pull, createdAt: undefined, mergedAt: undefined }])).toEqual([])
+  const intentEvent = {
+    id: 'plan',
+    phase: 'intent' as const,
+    label: '计划 PR 合入',
+    at: '2026-10-01T07:00:00Z',
+    url,
+    readAt: pull.readAt,
+    rule: 'fixture'
+  }
   const record = (version: string, outcome?: 'met' | 'not-met' | 'pending'): VersionEvidence => ({
     version,
     at: `2026-10-0${version}T12:00:00Z`,
@@ -206,7 +210,10 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     pulls: [{ ...pull, phase: 'design' as const }],
     problems: [],
     versions: [],
-    events: [{ ...events[0]!, phase: 'intent' as const, at: '2026-10-01T07:00:00Z' }, ...deliveries]
+    events: [
+      { ...intentEvent, phase: 'intent' as const, at: '2026-10-01T07:00:00Z' },
+      ...deliveries
+    ]
   } as Parameters<typeof featureTimeline>[0]
   expect(featureStage(timelineFeature, false)).toContain('Maintain')
   const timeline = featureTimeline(timelineFeature)
@@ -252,7 +259,7 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     ...timelineFeature,
     events: [],
     pulls: [],
-    archives: [{ ...events[0]!, phase: 'intent', at: '' }]
+    archives: [{ ...intentEvent, phase: 'intent', at: '' }]
   })
   expect(unlocated.points.intent).toBeUndefined()
   expect(unlocated.sources.find((source) => source.id === 'Plan')?.events[0]?.url).toBe(url)
@@ -261,7 +268,7 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     observedAt: '2026-10-10T12:00:00Z',
     events: [
       {
-        ...events[0]!,
+        ...intentEvent,
         id: 'plan4',
         phase: 'intent' as const,
         version: '4',
@@ -272,21 +279,21 @@ it('projects scoped feature evidence without turning missing, later or unrelated
         new Set([taskKey(reference)])
       ),
       {
-        ...events[0]!,
+        ...intentEvent,
         id: 'plan5',
         phase: 'intent' as const,
         version: '5',
         at: '2026-10-05T08:00:00Z'
       },
       {
-        ...events[0]!,
+        ...intentEvent,
         id: 'plan6',
         phase: 'intent' as const,
         version: '6',
         at: '2026-10-06T08:00:00Z'
       },
       {
-        ...events[0]!,
+        ...intentEvent,
         id: 'plan7',
         phase: 'intent' as const,
         version: '7',
@@ -306,7 +313,7 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     ...maintenanceFeature,
     events: [
       ...maintenanceFeature.events,
-      { ...events[0]!, id: 'plan8', phase: 'intent', version: '8', at: '2026-10-07T09:00:00Z' }
+      { ...intentEvent, id: 'plan8', phase: 'intent', version: '8', at: '2026-10-07T09:00:00Z' }
     ]
   })
   expect(next.segments.find((s) => s.id === 'Maintain')).toMatchObject({
@@ -319,7 +326,7 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     events: maintenanceFeature.events
       .filter((e) => e.version === '4')
       .concat({
-        ...events[0]!,
+        ...intentEvent,
         id: 'early5',
         phase: 'intent',
         version: '5',
@@ -390,7 +397,7 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   expect(unknownOrder.slots[3]?.state).not.toBe('done')
   const pendingAcceptance = featureTimelineLayout({
     ...building,
-    archives: [{ ...events[0]!, phase: 'version', version: '4', at: '' }]
+    archives: [{ ...intentEvent, phase: 'version', version: '4', at: '' }]
   })
   expect(pendingAcceptance.deliveries[0]?.event.url).toBe(url)
   expect(Number.isFinite(pendingAcceptance.deliveries[0]?.offset)).toBe(true)

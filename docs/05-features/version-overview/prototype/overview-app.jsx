@@ -1,6 +1,6 @@
 import { OverviewSections } from './overview-sections.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
-import { Dialog, SourcePanel, ReferencePanel } from './overview-components.jsx'
+import { Dialog, SourcePanel } from './overview-components.jsx'
 import {
   snapshot,
   archivePull,
@@ -210,11 +210,6 @@ function App() {
             label="原型注释: 数据来源"
             onClick={() => setDialog({ kind: 'source', title: '原型注释: 数据来源' })}
           />
-          <IconAction
-            icon={BookOpen}
-            label="原型注释: 设计参考"
-            onClick={() => setDialog({ kind: 'references', title: '原型注释: 设计参考' })}
-          />
           <button aria-label="原型注释: 切换明暗主题" onClick={() => setDark(!dark)}>
             {dark ? '浅色' : '深色'}
           </button>
@@ -423,7 +418,6 @@ function App() {
           close={() => setDialog(null)}
           wide={dialog.kind === 'source' || dialog.kind === 'edit'}
         >
-          {dialog.kind === 'references' && <ReferencePanel />}
           {dialog.kind === 'navigation' && (
             <>
               <Note>
@@ -474,8 +468,7 @@ function App() {
               )}
               {dialog.returned && (
                 <Note>
-                  本地示例的来源选择和草案输入已保留；#440 真实页面的跨屏验证见
-                  STATUS；本屏仅演示返回目标，不会修改来源页面材料。
+                  本地示例的来源选择和草案输入已保留；本屏仅演示返回目标，不修改来源页面材料。
                 </Note>
               )}
               <p>
@@ -484,8 +477,7 @@ function App() {
                 </button>
               </p>
               <Note>
-                版本按项目实际名称定位；不强制
-                C/B，也不按日期推断所属关系。从项目总览版本表头进入准确版本；
+                版本按项目实际名称定位，不按日期推断所属关系。从项目总览版本表头进入准确版本；
                 特性卡片中的关联版本标签另行保留同一主 Issue 的定位。
               </Note>
             </>

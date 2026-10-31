@@ -86,6 +86,7 @@ describe('feature interaction writer boundaries', () => {
     const sections = [
       componentSource('task-page/github/StatusCell.tsx'),
       componentSource('task-page/github/AssigneesCell.tsx'),
+      componentSource('task-page/github/LabelsCell.tsx'),
       componentSource('task-page/github/ReviewCell.tsx'),
       componentSource('task-page/github/MergeCell.tsx'),
       sourceBetween(
@@ -102,7 +103,7 @@ describe('feature interaction writer boundaries', () => {
     // Rows inline the repo lookup per cell rather than hoisting one const.
     expect(
       rowSource.match(/sourceContext=\{getTaskPageRepoSourceContext\(itemRepo, 'github'\)\}/g)
-    ).toHaveLength(4)
+    ).toHaveLength(5)
   })
 
   it('suppresses Tasks surface telemetry for in-page provider switches and detail opens', () => {

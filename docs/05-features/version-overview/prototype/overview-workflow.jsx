@@ -60,9 +60,8 @@ export function WorkflowProductivity({ plan, unplanned }) {
       ? [
           {
             reference: { provider: 'github', repository, number: source.issue.number },
-            title: source.issue.title,
             issueUrl: source.issue.url,
-            feedback: { report, url: source.comment.url, revision: source.readAt },
+            feedback: { report, url: source.comment.url },
             problems: []
           }
         ]

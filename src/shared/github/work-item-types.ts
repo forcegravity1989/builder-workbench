@@ -21,7 +21,6 @@ export type GitHubWorkItem = {
   state: 'open' | 'closed' | 'merged' | 'draft'
   url: string
   labels: string[]
-  createdAt?: string
   updatedAt: string
   mergedAt?: string | null
   author: string | null

@@ -9,9 +9,7 @@ import {
   referenceForPlan,
   featureNumber,
   pullPhase,
-  eventsFromPulls,
   validTime,
-  PARSER_REVISION,
   type FeatureData,
   type FeaturePull
 } from './feature-model'
@@ -34,7 +32,7 @@ export async function readOverviewFeatures(args: OverviewFeatureArgs, force: boo
   if (!scope) {
     throw new Error('项目来源未就绪')
   }
-  const versionEvidence = await readVersionEvidence(catalog, undefined, force, {
+  const versionEvidence = await readVersionEvidence(catalog, force, {
     document: plan,
     source: planSource
   })
@@ -155,14 +153,21 @@ export async function readOverviewFeatures(args: OverviewFeatureArgs, force: boo
       const pulls = historical && !before ? [] : feature.pulls
       feature.pulls = pulls
         .filter((p): p is FeaturePull => Boolean(p))
-        .filter(
-          (p) =>
+        .filter((p) => {
+          if (
             !before ||
-            (validTime(p.createdAt) && Date.parse(p.createdAt) <= Date.parse(before)) ||
             (p.state === 'merged' &&
               validTime(p.mergedAt) &&
               Date.parse(p.mergedAt) <= Date.parse(before))
-        )
+          ) {
+            return true
+          }
+          if (validTime(p.createdAt)) {
+            return Date.parse(p.createdAt) <= Date.parse(before)
+          }
+          feature.problems.push(`PR/MR #${p.number} 创建时间未记录，历史阶段待核对`)
+          return true
+        })
       for (const pull of feature.pulls) {
         if (
           historical &&
@@ -174,22 +179,6 @@ export async function readOverviewFeatures(args: OverviewFeatureArgs, force: boo
           pull.mergedAt = undefined
         }
         pull.phase = pullPhase(pull.body, feature.body, pull.url)
-      }
-      feature.events = eventsFromPulls(feature.pulls, before)
-      if (
-        (!historical || before) &&
-        validTime(feature.createdAt) &&
-        (!before || Date.parse(feature.createdAt) <= Date.parse(before))
-      ) {
-        feature.events.unshift({
-          id: `${root.url}:created`,
-          phase: 'issue',
-          label: '特性 Issue 创建',
-          at: feature.createdAt,
-          url: root.url,
-          readAt: root.readAt,
-          rule: PARSER_REVISION
-        })
       }
       return feature
     }

@@ -10,8 +10,6 @@ export const timeLabel = (time: string | number) =>
     minute: '2-digit',
     hour12: false
   })
-export const elapsedLabel = (milliseconds: number) =>
-  `${Math.round(milliseconds / 360000) / 10} 小时`
 
 export function openEvidenceUrl(url: string) {
   if (/^https?:\/\//i.test(url)) {

@@ -199,15 +199,7 @@ export function featureTimeline(feature: FeatureData) {
           : []
     },
     { id: 'Test', label: '首次交付验收', events: first ? [first] : [] },
-    { id: 'Maintain', label: '维护交付验收', events: laterDeliveries },
-    {
-      id: 'version',
-      label: '其他版本验收',
-      events: (
-        feature.archives?.filter((e) => e.phase === 'version') ??
-        feature.events.filter((e) => e.phase === 'version')
-      ).filter((e) => !deliveries.some((d) => d.url && d.url === e.url))
-    }
+    { id: 'Maintain', label: '维护交付验收', events: laterDeliveries }
   ]
   return { points, deliveries, segments, sources }
 }

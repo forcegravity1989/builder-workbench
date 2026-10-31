@@ -7,9 +7,8 @@ import type { CycleTaskReference } from '../version-cycle/ports'
 
 export type WorkflowTaskReport = {
   reference: CycleTaskReference
-  title: string
   issueUrl: string
-  feedback: { report: WorkflowReport; url: string; revision: string } | null
+  feedback: { report: WorkflowReport; url: string } | null
   reportProblem?: string
   problems: string[]
 }
@@ -26,7 +25,6 @@ export type WorkflowMetricSummary = {
   samples: number
   involved: number
   rounds: number
-  rejections: number
   unknown: number
 }
 
@@ -58,8 +56,7 @@ export function summarizeWorkflow(tasks: WorkflowTaskReport[]): WorkflowMetricSu
   return workflowFields.map(([key, label, hint]) => {
     let samples = 0,
       involved = 0,
-      rounds = 0,
-      rejections = 0
+      rounds = 0
     for (const task of tasks) {
       if (task.problems.length || !task.feedback) {
         continue
@@ -78,7 +75,6 @@ export function summarizeWorkflow(tasks: WorkflowTaskReport[]): WorkflowMetricSu
       samples++
       involved += Number(metric.occurred)
       rounds += metric.count
-      rejections += metric.rejections ?? 0
     }
     return {
       key,
@@ -87,7 +83,6 @@ export function summarizeWorkflow(tasks: WorkflowTaskReport[]): WorkflowMetricSu
       samples,
       involved,
       rounds,
-      rejections,
       unknown: tasks.length - samples
     }
   })

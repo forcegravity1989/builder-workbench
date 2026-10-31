@@ -39,7 +39,6 @@ export async function readWorkflowEvidence(
     const value = values[references.indexOf(reference)]
     const result: WorkflowTaskReport = {
       reference,
-      title: `#${reference.number}`,
       issueUrl: '',
       feedback: null,
       problems: []
@@ -53,7 +52,6 @@ export async function readWorkflowEvidence(
       result.problems.push(read.kind === 'unavailable' ? read.error : '计划引用未读为 Issue')
       return result
     }
-    result.title = read.task.title
     result.issueUrl = read.task.url
     const evidence = await readFeatureEvidence(
       read.task,
@@ -86,8 +84,7 @@ export async function readWorkflowEvidence(
         }
         result.feedback = {
           report,
-          url: comment.url ?? pull.url,
-          revision: JSON.stringify([pull.url, comment.id, comment.body])
+          url: comment.url ?? pull.url
         }
       }
     }

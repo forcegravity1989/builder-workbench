@@ -33,7 +33,7 @@ AI workflow 生产力读取本版本目标内 Issue 关联 PR 评论中的六项
 - 特性主 Issue 使用“特性”标签，执行 Issue 用明确标题引用保持归属。跨版沿同一个特性身份；G 序号只是版内目标编号。
 - 同目标多个特性沿该目标的人工验收结论推导随版交付，不能识别单个特性的例外。计划关联、目标达成和验收 PR 合入缺一时，不补造交付。
 - 单版验收和后续维护交付均不表示整个特性完成。反馈、新需求与 bug 继续进入目标关联 Issue。
-- 版本按项目实际名称讨论。月／周是节奏，不强制 C/B 命名。每个版本只有一次正式人工验收。
+- 版本按项目实际名称讨论。每个版本只有一次正式人工验收。
 - [版本工作区](../version-workspace/spec.md)负责侧栏、工作树归属与版本收尾。事实读取与缓存复用现有能力，不新增业务数据库、平行执行器或会话系统。
 
 ## 审阅与成功判据
@@ -42,4 +42,4 @@ AI workflow 生产力读取本版本目标内 Issue 关联 PR 评论中的六项
 
 成功标准是用户能从本版目标定位真实成果、待审项和原生工作入口，分清当前阶段与缺失依据，并在历史版本核对当时人工结论。具体判据见 spec，验证结论见 STATUS 所链接的 PR。
 
-依据：[Issue #334](https://github.com/forcegravity1989/builder-workbench/issues/334)、版本正式计划、[共享设计输入](https://github.com/forcegravity1989/builder-workbench/blob/d69058d15aad9362456dbe353b9318275fa2b9e4/docs/05-features/version-workspace/overview-design-inputs.md)与用户确认的原型。
+依据：[Issue #334](https://github.com/forcegravity1989/builder-workbench/issues/334)、版本正式计划与用户确认的原型。

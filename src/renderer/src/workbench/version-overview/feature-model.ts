@@ -3,10 +3,6 @@ import { normalizeGitRemoteUrl } from '../../../../shared/git-remote-identity'
 import { parseGitHubIssueOrPRLink } from '../../../../shared/github/links'
 
 export type FeaturePhase = 'design' | 'development'
-export const PHASE_LABELS: Record<FeaturePhase, string> = {
-  design: '设计与联合评审',
-  development: 'Build'
-}
 export const PARSER_REVISION = 'feature-evidence-v4'
 export type FeaturePull = {
   phase?: FeaturePhase | 'unknown'
@@ -15,7 +11,6 @@ export type FeaturePull = {
   title: string
   body: string
   state: string
-  tasks?: CycleTaskSnapshot[]
   createdAt?: string
   mergedAt?: string | null
   revision?: string
@@ -23,11 +18,10 @@ export type FeaturePull = {
 }
 export type FeatureEvent = {
   id: string
-  phase: FeaturePhase | 'issue' | 'unknown' | 'version' | 'intent' | 'baseline'
+  phase: FeaturePhase | 'unknown' | 'version' | 'intent' | 'baseline'
   label: string
   at: string
   url: string
-  tasks?: CycleTaskSnapshot[]
   revision?: string
   readAt: string
   rule: string
@@ -38,7 +32,6 @@ export type FeatureEvent = {
 export type FeatureData = {
   root: CycleTaskSnapshot
   body: string
-  createdAt?: string
   closedAt?: string
   planningComplete?: boolean
   /** Snapshot boundary; historical views never advance their clock to now. */
@@ -110,35 +103,6 @@ export function pullPhase(
       unique[0] as '设计' | '开发' | 'design' | 'build'
     ] ?? 'unknown'
   )
-}
-/** PR creation and merge events retain their provider timestamps independently. */
-export function eventsFromPulls(pulls: readonly FeaturePull[], before?: string): FeatureEvent[] {
-  const cutoff = validTime(before) ? Date.parse(before) : Infinity
-  const events: FeatureEvent[] = []
-  for (const pull of pulls) {
-    const phase = pull.phase ?? pullPhase(pull.body)
-    const label = phase === 'unknown' ? 'PR' : `${PHASE_LABELS[phase]} PR`
-    for (const [at, action] of [
-      [pull.createdAt, '提交'],
-      [pull.state === 'merged' ? pull.mergedAt : null, '合入']
-    ] as const) {
-      if (!validTime(at) || Date.parse(at) > cutoff) {
-        continue
-      }
-      events.push({
-        id: `${pull.url}:${action}`,
-        phase,
-        label: `${label} #${pull.number} ${action}`,
-        at,
-        url: pull.url,
-        revision: pull.revision,
-        readAt: pull.readAt,
-        rule: PARSER_REVISION,
-        tasks: pull.tasks
-      })
-    }
-  }
-  return events.sort((a, b) => Date.parse(a.at) - Date.parse(b.at) || a.id.localeCompare(b.id))
 }
 export function linkedPullNumbers(body: string, issueUrl: string): number[] {
   let base: URL

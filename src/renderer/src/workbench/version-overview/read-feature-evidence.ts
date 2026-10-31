@@ -43,7 +43,7 @@ export async function readFeatureEvidence(
   before?: string,
   provider = createOverviewProviderReader()
 ) {
-  const feature: Pick<FeatureData, 'body' | 'createdAt' | 'closedAt' | 'pulls' | 'problems'> = {
+  const feature: Pick<FeatureData, 'body' | 'closedAt' | 'pulls' | 'problems'> = {
     body: '',
     pulls: [],
     problems: []
@@ -93,7 +93,6 @@ export async function readFeatureEvidence(
         }
         if (task.iid === root.iid) {
           feature.body = detail.body
-          feature.createdAt = detail.item.createdAt
           const stateEvents = (detail.timelineItems ?? [])
             .filter(
               (event) => ['closed', 'reopened'].includes(event.event) && validTime(event.createdAt)
@@ -117,7 +116,6 @@ export async function readFeatureEvidence(
         related.numbers.forEach((number) => addPull(number, task))
         if (task.iid === root.iid) {
           feature.body = detail.description
-          feature.createdAt = detail.createdAt
         }
       }
       const candidates = versions.flatMap((relatedVersion) =>
@@ -161,10 +159,10 @@ export async function readFeatureEvidence(
           if (!linkedPullNumbers(item.url, root.url).includes(number)) {
             throw new Error('PR 与特性 Issue 仓库身份不一致')
           }
-          const tasks = [...pullTasks.get(number)!.values()]
-            .filter(({ task, explicit }) => explicit || pullDeclaresIssue(item.body, task.url))
-            .map(({ task }) => task)
-          if (!tasks.length) {
+          const hasAssociation = [...pullTasks.get(number)!.values()].some(
+            ({ task, explicit }) => explicit || pullDeclaresIssue(item.body, task.url)
+          )
+          if (!hasAssociation) {
             return null
           }
           if (
@@ -174,7 +172,7 @@ export async function readFeatureEvidence(
           ) {
             return null
           }
-          return { ...item, tasks }
+          return item
         }
         const detail = await codehubApi.viewTask({
           repoPath: repo.path,
@@ -185,7 +183,6 @@ export async function readFeatureEvidence(
 
         return {
           number,
-          tasks: [...pullTasks.get(number)!.values()].map(({ task }) => task),
           url: detail.url ?? '',
           title: detail.title,
           body: detail.description,

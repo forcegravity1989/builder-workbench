@@ -30,6 +30,7 @@ import { translate } from '@/i18n/i18n'
 import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page-github-work-item-status-badge'
 import RepoBadgeLabel from '@/components/repo/RepoBadgeLabel'
 import { GHAssigneesCell } from './AssigneesCell'
+import { GHLabelsCell } from './LabelsCell'
 import { PRReviewCell } from './ReviewCell'
 import { PRChecksCell } from './ChecksCell'
 import { PRMergeCell } from './MergeCell'
@@ -185,26 +186,39 @@ export function TaskPageGitHubRows({
                       <span className="truncate">{attachedWorkspaceLabel}</span>
                     </span>
                   ) : null}
-                  {item.labels.slice(0, 3).map((label) => (
-                    <span
-                      key={label}
-                      className="rounded-full border border-border/40 bg-muted/30 px-1.5 py-0 text-[10px] text-muted-foreground"
-                    >
-                      {label}
-                    </span>
-                  ))}
+                  {/* PR 视图无标签列（#457 只给 issue 视图加列），标签仍走标题下 pill。 */}
+                  {showPRManagementColumns
+                    ? item.labels.slice(0, 3).map((label) => (
+                        <span
+                          key={label}
+                          className="rounded-full border border-border/40 bg-muted/30 px-1.5 py-0 text-[10px] text-muted-foreground"
+                        >
+                          {label}
+                        </span>
+                      ))
+                    : null}
                 </div>
               </div>
 
               {!showPRManagementColumns ? (
-                <div className="min-w-0 flex items-center text-xs text-muted-foreground">
-                  <GHAssigneesCell
-                    item={item}
-                    repo={itemRepo ?? null}
-                    sourceContext={getTaskPageRepoSourceContext(itemRepo, 'github')}
-                    workItemMutation={githubWorkItemMutation}
-                  />
-                </div>
+                <>
+                  <div className="min-w-0 flex items-center text-xs text-muted-foreground">
+                    <GHAssigneesCell
+                      item={item}
+                      repo={itemRepo ?? null}
+                      sourceContext={getTaskPageRepoSourceContext(itemRepo, 'github')}
+                      workItemMutation={githubWorkItemMutation}
+                    />
+                  </div>
+                  <div className="flex min-w-0 items-center">
+                    <GHLabelsCell
+                      item={item}
+                      repo={itemRepo ?? null}
+                      sourceContext={getTaskPageRepoSourceContext(itemRepo, 'github')}
+                      workItemMutation={githubWorkItemMutation}
+                    />
+                  </div>
+                </>
               ) : null}
 
               {showPRManagementColumns ? (

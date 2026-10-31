@@ -83,8 +83,7 @@ export function useWorkflowEvidence(
     scopeKey: string
     value?: WorkflowEvidence
     error?: string
-    loading: boolean
-  }>({ key: '', scopeKey: '', loading: false })
+  }>({ key: '', scopeKey: '' })
   useEffect(() => {
     let cancelled = false
     if (!plan || !catalog.scope || !sourceReady) {
@@ -99,7 +98,7 @@ export function useWorkflowEvidence(
     void load(scopeKey, catalog, plan, force)
       .then((value) => {
         if (!cancelled) {
-          setState({ key, scopeKey, value, loading: false })
+          setState({ key, scopeKey, value })
         }
       })
       .catch((reason) => {
@@ -108,8 +107,7 @@ export function useWorkflowEvidence(
             key,
             scopeKey,
             value: cache.get(scopeKey),
-            error: reason instanceof Error ? reason.message : String(reason),
-            loading: false
+            error: reason instanceof Error ? reason.message : String(reason)
           })
         }
       })
