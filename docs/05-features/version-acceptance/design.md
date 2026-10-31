@@ -47,13 +47,13 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 - `minutes?: AcceptanceMeetingMinutes` —— 与计划侧 `PlanMeetingMinutes` 同形但**不含闭环位**：`consensus: string[]`、`followups: Array<{ id: string; text: string }>`、`confirmed: boolean`、`confirmedAt?`、`sources?`、`updatedAt?`。followup 的 `id` 用 `crypto.randomUUID()` 稳定身份，人工增删不让既有编号漂移；板面按数组序显示 M1…Mn。不给验收材料留恒假的 `closed` 字段。条目按目标组织（#471）：带「G<n> ·」目标前缀，读视图按前缀分组到各目标小标题下，协议仍是平铺清单（呈现级实现，协议级目标绑定留给后续会议相关 Issue）。
 - `demoEnv?: { kind: 'url'; label?: string; url: string } | { kind: 'launched'; detail: string }` —— 演示环境两形态。web 服务类写 `kind:'url'`，可附一句系统名 `label`：板面「演示环境」行显示系统名、缺省回退 URL，点击经内置 Orca 浏览器打开；桌面应用类写 `kind:'launched'`，板面渲染状态文字，不伪造链接。缺失即未部署，如实显示未部署与下一步。
-- `meeting?: { title: string; time: string; id?: string; enMeetingId?: string; link?: string; attendees?: string[] }` —— 版本级预订会议（#471，字段扩于 #516）。`time` 存人读的起止时间；`id` 存 `meetingId`（数字主键，不是 `meetingNo`）；`enMeetingId` 存建会/读回响应里的 eMeeting 侧 32 位主键（写入纪要草稿靠它定位会议，板面不显示）；`link` 存 `meeting info` 的 `jumpUrls` 会议页地址；`attendees` 存实际邀约的工号。模型生成完整预览、**经人确认后**用 `welink-cli meeting create` 创建（默认开启 AI 听）并写回；与会人默认取项目根 `.bw/project.toml` 的 `[chat].group_id` 项目群全部成员（排除机器人/助手），没有绑定项目群时请人提供群号。缺省即未预订，已预订不重复订，改期或取消同样先预览后执行。板面「验收会议」行读回标题、时间、会议 ID、与会人数与会页面入口。同步会议纪要把材料纪要按固定样式（按目标分节）写入该会议的纪要草稿——流程自带（`references/minutes-sync.md`）：驱动用户本机的 Chrome/Edge（CDP 临时实例，不用 Orca 内置浏览器），最终发送由人在会议系统手动完成。
+- `meeting?: { title: string; time: string; id?: string; enMeetingId?: string; link?: string; attendees?: string[] }` —— 版本级预订会议（#471，字段扩于 #516）。`time` 存人读的起止时间；`id` 存 `meetingId`（数字主键，不是 `meetingNo`）；`enMeetingId` 存建会/读回响应里的 eMeeting 侧 32 位主键（写入纪要草稿靠它定位会议，板面不显示）；`link` 存 `meeting info` 的 `jumpUrls` 会议页地址；`attendees` 存实际邀约的工号。模型生成完整预览、**经人确认后**用 `welink-cli meeting create` 创建（默认开启 AI 听）并写回；与会人默认取项目根 `.bw/project.toml` 的 `[chat].group_id` 项目群全部成员（排除机器人/助手），没有绑定项目群时请人提供群号。缺省即未预订，已预订不重复订，改期或取消同样先预览后执行。板面「验收会议」行读回标题、时间、会议 ID、与会人数与会页面入口。同步会议纪要把材料纪要按固定样式（按目标分节）写入该会议的纪要草稿——流程自带（`standard/skills/version-acceptance/references/minutes-sync.md`）：驱动用户本机的 Chrome/Edge（CDP 临时实例，不用 Orca 内置浏览器），最终发送由人在会议系统手动完成。
 - 版本级交付件不再按目标记录：`results[].deliveries` 退役，版本级交付件与演示环境由 `demoEnv` 与制品登记承载。
 - `workflow.release?: { tag: string }`（#462 修订 v10「板面不呈现发布状态」决策）——发布执行后由模型把 tag 引用写入材料作**读回键**，同 `archivePr` 的「引用落材料、读数现算」模式：读数（是否已发布、发布时间、Release 地址、资产）不落材料，正本在 Git 标签与 provider Release 页；板面按该键现算读回（见「发布」节），总览仍不显示「已发布」。计划侧 schema 不加 `release`，发布只属验收流程。
 
 `AcceptanceWorkflowStateSchema` 其余维持 `stage/updatedAt/archivePr`，`stage` 枚举维持 `preparation/showcase/archive` 三值（界面四步与材料三阶段不同名、不映射，界面不渲染灯）。
 
-**验收证据报告登记**：复用既有 `preparedArtifacts` 与 `Artifact.kind='verification'`（枚举与总览的「验证报告」渲染早已存在），不另立顶层字段。`Artifact.candidateRef` 必填，因此报告必须在候选固定之后生成——与技能 SOP 的顺序一致（固定候选 → 出包 → 部署 → 预订会议 → 聚合报告）。报告文件落 `.bw/planning/<版本>/`，`location` 存相对路径，截图落同目录 `shots/`。
+**验收证据报告登记**：复用既有 `preparedArtifacts` 与 `Artifact.kind='verification'`（枚举与总览的「验证报告」渲染早已存在），不另立顶层字段。`Artifact.candidateRef` 必填，因此报告必须在候选固定之后生成——与技能 SOP 的顺序一致（固定候选 → 出包 → 部署 → 预订会议 → 聚合报告）。报告文件落 `.bw/planning/<版本>/`，`location` 存相对路径，截图落同目录 `shots/`。登记通道自 #516 起收拢为一条 CLI 动词：`ORCA bw materials add-artifact` 在拥有工作树的一侧一次完成读改存——文件必须真实存在（不存在如实报错、不登记幽灵制品）、mtime 作 `generatedAt`、`candidateRef` 复用材料现有值（候选未固定报错）、同 artifactId 覆盖而非追加、revision 冲突自动重读重试一次；板面不 stat 文件系统。location 围栏拒绝绝对路径与 `..` 穿越，绝对性按 posix 与 win32 双语义判定——围栏跑在拥有工作树的主机上（可能是 Linux SSH 宿主），平台本位的 isAbsolute 会把 `C:\x.html` 当合法相对名放行。
 
 **沿用**：`candidateRef`、`preparedArtifacts`（`kind=package`，含 checksum/location/实际命令）、`taskSnapshot`、`results[].decision`、`results[].note`、`results[].nextStep`、`results[].issueNotes`、`results[].issueMarks.carry`、`planRef`、`workflow`。
 
@@ -136,7 +136,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 ## 验证边界与测试取舍
 
-协议纯函数与数据契约用 Vitest 覆盖，只立两类看护：新增的纪要守卫（模型通道拒写已确认节、撤销走人工通道）、演示环境两形态与报告登记的解析、`workflow.release` 读回键解析（验收侧可带、计划侧拒绝，随既有解析用例扩展）、退役字段原样保留读回、`derivePriorCarryovers` 改读纪要后的推导。界面渲染、布局、文案、交互序列与 hook 装配不立单测，交真壳与验收点 E2E。叠层单测受执行例数 ratchet 约束（基线见 `config/vitest-count-baseline.txt`），退役的 `acceptance-model.test.ts`/`acceptance-task-evidence.test.ts`/`acceptance-version-choices.test.ts` 中失效用例同批删除以对冲新增。
+协议纯函数与数据契约用 Vitest 覆盖，只立两类看护：新增的纪要守卫（模型通道拒写已确认节、撤销走人工通道）、演示环境两形态与报告登记的解析、`workflow.release` 读回键解析（验收侧可带、计划侧拒绝，随既有解析用例扩展）、退役字段原样保留读回、`derivePriorCarryovers` 改读纪要后的推导、制品登记命令的围栏/构建/覆盖/CAS 重试纯函数（`version-material-artifact.ts`，#516）。界面渲染、布局、文案、交互序列与 hook 装配不立单测，交真壳与验收点 E2E。叠层单测受执行例数 ratchet 约束（基线见 `config/vitest-count-baseline.txt`），退役的 `acceptance-model.test.ts`/`acceptance-task-evidence.test.ts`/`acceptance-version-choices.test.ts` 中失效用例同批删除以对冲新增。
 
 行为正确性靠真壳：`pnpm run dev:workbench` 起独立 profile，验四区导航与滚动高亮、批注模式全流程（含纪要区排除与 Esc 只关小窗）、计数后行内单个人工结论选择、清除与中性/警示色、纪要编辑态与确认/撤销、部署两形态读回、报告打开、归档原生 PR 页、发布注入、杀进程重启读回一致。交付附验证报告，本次新增或修改的判据内嵌真壳截图四件套，截图推永不合入的 `shots/<分支名>` 并钉 SHA。上述为真实旅程待验要求。#439 已追加授权补验本地与远端 CI，实际结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)；隔离自动冒烟与静态接线均不替代上述真实旅程验收。
 

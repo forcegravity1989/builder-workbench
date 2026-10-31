@@ -101,7 +101,7 @@ Issue [#516](https://github.com/forcegravity1989/builder-workbench/issues/516)�
 
 **纪要同步自带（解耦外部技能）**：「同步会议纪要」原复用宿主 meeting-minutes 技能（依赖同目录 web-access 技能），未安装即断、且驱动的是 Orca 内置浏览器（in-app 分区 + cookie 导入）。改为流程自带：新增 `references/minutes-sync.md`（SKILL 0.9.6），内嵌自包含极简 CDP 驱动脚本（Node ≥22；version/new/list/navigate/eval/close，已在本机 Edge 156 实测全命令面），驱动**用户自己的浏览器**——本机 Chrome/Edge 独立临时实例 + 调试端口、可见窗口，不用 Orca 内置浏览器；Chrome 136+ 默认 profile 禁调试端口以独立 user-data-dir 规避，内网 w3 SSO 全新 profile 透明自动登录（实测零手工输入），非内网请人在窗口登录后继续。定位会议优先材料 link、打不开重取 `meeting info`、仍缺请人给链接；先预览后写入、只写草稿不代发、幂等跳过、中断先核对；窗口留人完成最终发送。version-records 与 design 同步；注入句不动（prompt 只承载触发意图，机制归 Skill）。
 
-**验证状态**：门禁与 ratchet 见 PR 验证报告；CDP 驱动脚本本机 Edge 156 实测通过。**真壳未验**：纪要同步全流程（需真实 eMeeting 环境）、预订会议链。
+**验证状态**：门禁与 ratchet 见 PR 验证报告；CDP 驱动脚本本机 Edge 156 实测通过。**真壳未验**：纪要同步全流程（需真实 eMeeting 环境）、预订会议链。原型欠账：acceptance-model.js 的聚合 prompt 与注释仍为纯意图句，未跟生产注入句内嵌命令的 #516 形态，随高保真专项同步。
 
 ## 当前验收点与旅程矩阵
 
@@ -122,7 +122,7 @@ Issue [#516](https://github.com/forcegravity1989/builder-workbench/issues/516)�
 | A11 无个人自验工作面、无验收件清单 UI | ◐ | 屏上无逐条验收件核对工作面，准备产物只以报告与登记形态存在 |
 | A12 自动化真实到点、不自动确认完成 | ◐ | 复用已登记自动化（`version-cycle/cycle-prompt.ts`）；**真实到点触发未在本轮运行** |
 | A13 旧格式材料宽容读回、固定提交历史链路仍可用 | ◐ | `acceptance-legacy.ts` + `AcceptanceLegacyRecords.tsx` 末尾只读折叠区；退役字段留作 schema 只读可选字段；模型通道改写被拒；按固定提交的历史链路保留（计划屏上版回顾依赖）。负责人上一轮报的「旧版本数据显示不出来」已修两处根因，**修复后未复验**；注意 sessionStorage 里可能还留着旧的失败草稿，复验时用冲突提示切回宿主材料 |
-| A14 预订会议先预览后执行、同步纪要只写草稿 | ◐ | 生产接线已入：协议 `meeting` 字段（模型写、不入人守卫、merge 取远端）、准备区「预订会议」行（已预订置灰、改期取消在会话说明）与「同步会议纪要」（未预订禁用）两个注入按钮；先预览后执行/只写草稿的会话侧行为归验收 Skill。真壳与模型旅程未验 |
+| A14 预订会议先预览后执行、同步纪要只写草稿 | ◐ | 生产接线已入：协议 `meeting` 字段（模型写、不入人守卫、merge 取远端）、准备区「预订会议」行（已预订置灰、改期取消在会话说明）与「同步会议纪要」（未预订禁用）两个注入按钮；先预览后执行/只写草稿的会话侧行为归验收 Skill。#516 起纪要同步流程自带（minutes-sync.md，CDP 驱动用户自己的浏览器），驱动脚本本机 Edge 156 实测；全流程真壳与模型旅程未验 |
 | A15 批注模式快捷键（#444） | ◐ | 与计划屏共用 `workbench.toggleAnnotationMode`（默认 Alt+A，设置可改绑）：空板不触发经 workbench-cycle-smoke E2E；有材料板的 `aria-pressed` 翻转与横幅进出（V8）、macOS å 物理码回退（V9）归人工真壳 |
 
 | 旅程 | 状态 | 覆盖与留白 |

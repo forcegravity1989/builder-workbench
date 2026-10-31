@@ -54,7 +54,7 @@ export async function statArtifactFile(root: string, location: string): Promise<
     }
     throw error
   }
-  // lstat 不跟随符号链接，与材料事务核的 inspectPath 同一口径。
+  // lstat 不跟随符号链接，与材料事务核 readRegular（version-document-store）的普通文件判定同一口径。
   if (!info.isFile()) {
     throw new VersionDocumentError(
       'unsafe-path',
