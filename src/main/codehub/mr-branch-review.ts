@@ -7,6 +7,7 @@ import {
 import type { CodeHubTaskDetail } from '../../shared/codehub-tasks'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 import { parseJson, projectArgs, viewCodeHubTask } from './mutations'
+import { resolveCodeHubWebIdentity } from './web-identity'
 
 /** Compares a recorded provider reference to the registered remote. */
 export function codeHubRepositoryMatches(repository: string, remote: CodeHubRemote): boolean {
@@ -20,7 +21,11 @@ export function codeHubRepositoryMatches(repository: string, remote: CodeHubRemo
     return true
   }
   const parsed = parseCodeHubRemote(repository)
-  return parsed !== null && `${parsed.host}/${parsed.project}`.toLowerCase() === remoteIdentity
+  return (
+    parsed !== null &&
+    (parsed.host === remote.host || parsed.host === remote.webHost) &&
+    parsed.project.toLowerCase() === remote.project.toLowerCase()
+  )
 }
 
 export function mapCodeHubArchiveState(
@@ -125,6 +130,7 @@ export async function readCodeHubBranchReview(
   if (!args.sourceBranch || !args.targetBranch) {
     throw new Error('CodeHub MR 来源和目标分支不能为空')
   }
+  let remote = args.remote
   for (const state of args.states ?? ['opened', 'merged', 'closed']) {
     if (state === 'merged' && !args.currentHeadOid) {
       continue
@@ -164,7 +170,8 @@ export async function readCodeHubBranchReview(
         if (typeof row.web_url !== 'string' || !row.web_url.trim()) {
           throw new Error('CodeHub MR 列表缺少可核对的来源链接')
         }
-        assertCodeHubDetailIdentity({ remote: args.remote, kind: 'mr', iid }, row.iid, row.web_url)
+        remote = await resolveCodeHubWebIdentity(remote, row.web_url, args.execOptions)
+        assertCodeHubDetailIdentity({ remote, kind: 'mr', iid }, row.iid, row.web_url)
         if (row.source_branch !== args.sourceBranch || row.target_branch !== args.targetBranch) {
           continue
         }
@@ -172,18 +179,18 @@ export async function readCodeHubBranchReview(
         const targetUrl = objectRecord(row.target_project).web_url
         // List projections may omit web_url; the full detail below must prove both projects.
         if (
-          (sourceUrl != null && !projectMatches(sourceUrl, args.remote)) ||
-          (targetUrl != null && !projectMatches(targetUrl, args.remote))
+          (sourceUrl != null && !projectMatches(sourceUrl, remote)) ||
+          (targetUrl != null && !projectMatches(targetUrl, remote))
         ) {
           continue
         }
-        const detail = await viewCodeHubTask({ ...args, kind: 'mr', iid })
+        const detail = await viewCodeHubTask({ ...args, remote, kind: 'mr', iid })
         if (!detail.url?.trim()) {
           throw new Error('CodeHub MR 详情缺少可核对的来源链接')
         }
         if (
-          !projectMatches(detail.sourceProjectUrl, args.remote) ||
-          !projectMatches(detail.targetProjectUrl, args.remote)
+          !projectMatches(detail.sourceProjectUrl, remote) ||
+          !projectMatches(detail.targetProjectUrl, remote)
         ) {
           continue
         }

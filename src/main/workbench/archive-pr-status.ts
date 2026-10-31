@@ -16,6 +16,7 @@ import {
 import { codeHubRepositoryMatches, mapCodeHubArchiveState } from '../codehub/mr-branch-review'
 export { codeHubRepositoryMatches, mapCodeHubArchiveState } from '../codehub/mr-branch-review'
 import { viewCodeHubTask } from '../codehub/mutations'
+import { resolveCodeHubRepositoryIdentity } from '../codehub/web-identity'
 import type {
   ArchivePrStatusRequest,
   ArchivePrStatusResult
@@ -166,19 +167,30 @@ export async function readArchivePrStatus(
     if (repo.connectionId) {
       return { state: 'unknown', reason: 'CodeHub 归档 MR 读取尚不支持 SSH 宿主' }
     }
-    if (!codeHubRepositoryMatches(params.pr.repository, codeHubRemote)) {
+    const wslDistro = parseWslPath(repo.path)?.distro
+    const execOptions = { cwd: repo.path, ...(wslDistro ? { wslDistro } : {}) }
+    let identity: CodeHubRemote
+    try {
+      identity = await resolveCodeHubRepositoryIdentity(
+        codeHubRemote,
+        params.pr.repository,
+        execOptions
+      )
+    } catch (reason) {
+      return {
+        state: 'unknown',
+        reason: `CodeHub 项目来源核对失败：${reason instanceof Error ? reason.message : String(reason)}`
+      }
+    }
+    if (!codeHubRepositoryMatches(params.pr.repository, identity)) {
       return { state: 'unknown', reason: 'PR 引用与项目真实 CodeHub 来源不一致' }
     }
-    const wslDistro = repo.connectionId ? undefined : parseWslPath(repo.path)?.distro
     return readCodeHubArchiveStatus({
       executionScope: JSON.stringify([params.repoId, params.worktreeId, params.hostId]),
       force: params.force,
-      remote: codeHubRemote,
+      remote: identity,
       number: params.pr.number,
-      execOptions: {
-        ...(repo.connectionId ? {} : { cwd: repo.path }),
-        ...(wslDistro ? { wslDistro } : {})
-      }
+      execOptions
     })
   }
   if (params.pr.provider !== 'github' || codeHubRemote) {

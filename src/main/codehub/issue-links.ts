@@ -1,18 +1,19 @@
 import { assertCodeHubDetailIdentity, type CodeHubRemote } from '../../shared/codehub'
 import type { CodeHubTaskDetail } from '../../shared/codehub-tasks'
+import type { CodeHubExecOptions } from './cli'
+import { resolveCodeHubWebIdentity } from './web-identity'
 
-export function linkedMergeRequestsOf(
+export async function linkedMergeRequestsOf(
   record: Record<string, unknown>,
-  remote: CodeHubRemote
-): CodeHubTaskDetail['linkedMergeRequests'] {
+  remote: CodeHubRemote,
+  execOptions?: CodeHubExecOptions
+): Promise<CodeHubTaskDetail['linkedMergeRequests']> {
   if (!Array.isArray(record.linked_merge_requests)) {
     return undefined
   }
-  const count = record.merge_requests_count
-  if (typeof count === 'number' && count !== record.linked_merge_requests.length) {
-    throw new Error('CodeHub Issue 关联 MR 未完整返回')
-  }
-  return record.linked_merge_requests.map((value: unknown) => {
+  // The Issue's merge_requests_count does not count the CLI's native linked-MR collection.
+  const linked: NonNullable<CodeHubTaskDetail['linkedMergeRequests']> = []
+  for (const value of record.linked_merge_requests) {
     if (!value || typeof value !== 'object') {
       throw new Error('CodeHub Issue 关联 MR 记录无效')
     }
@@ -26,7 +27,9 @@ export function linkedMergeRequestsOf(
     ) {
       throw new Error('CodeHub Issue 关联 MR 缺少编号或来源链接')
     }
+    remote = await resolveCodeHubWebIdentity(remote, mr.web_url, execOptions)
     assertCodeHubDetailIdentity({ remote, kind: 'mr', iid: mr.iid }, mr.iid, mr.web_url)
-    return { iid: mr.iid, url: mr.web_url }
-  })
+    linked.push({ iid: mr.iid, url: mr.web_url })
+  }
+  return linked
 }

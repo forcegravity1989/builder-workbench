@@ -151,7 +151,7 @@ describe('codehub mutations', () => {
         description: 'SSO',
         state: 'closed',
         closed_at: '2026-10-01T10:00:00Z',
-        merge_requests_count: 1,
+        merge_requests_count: 0,
         linked_merge_requests: [
           { iid: 8, web_url: 'https://codehub-g.huawei.com/Org/Group/repo/merge_requests/8' }
         ],
@@ -200,13 +200,48 @@ describe('codehub mutations', () => {
     runCodeHubCliMock.mockResolvedValue(
       JSON.stringify({ linked_merge_requests: [], merge_requests_count: 1 })
     )
-    await expect(viewCodeHubTask({ remote, kind: 'issue', iid: 4 })).rejects.toThrow('未完整返回')
+    await expect(viewCodeHubTask({ remote, kind: 'issue', iid: 4 })).resolves.toMatchObject({
+      linkedMergeRequests: []
+    })
     runCodeHubCliMock.mockResolvedValue(
       JSON.stringify({ linked_merge_requests: [], merge_requests_count: 0 })
     )
     await expect(viewCodeHubTask({ remote, kind: 'issue', iid: 4 })).resolves.toMatchObject({
       linkedMergeRequests: []
     })
+
+    const cloneRemote = { ...remote, host: 'git.codehub.example.test' }
+    const linked = [8, 9].map((iid) => ({
+      iid,
+      web_url: `https://${remote.host}/${remote.project}/merge_requests/${iid}`
+    }))
+    const project = {
+      path_with_namespace: remote.project,
+      http_url_to_repo: `https://${cloneRemote.host}/${remote.project}.git`,
+      web_url: `https://${remote.host}/${remote.project}`
+    }
+    runCodeHubCliMock.mockImplementation(async (args: string[]) =>
+      JSON.stringify(
+        args[0] === 'project' ? project : { linked_merge_requests: linked, merge_requests_count: 0 }
+      )
+    )
+    await expect(
+      viewCodeHubTask({ remote: cloneRemote, kind: 'issue', iid: 4 })
+    ).resolves.toMatchObject({
+      linkedMergeRequests: linked.map((mr) => ({ iid: mr.iid, url: mr.web_url }))
+    })
+    for (const invalidProject of [
+      { ...project, http_url_to_repo: `https://other.codehub.example.test/${remote.project}.git` },
+      { ...project, path_with_namespace: 'Other/repo' },
+      { ...project, web_url: `https://other.codehub.example.test/${remote.project}` }
+    ]) {
+      runCodeHubCliMock.mockImplementation(async (args: string[]) =>
+        JSON.stringify(args[0] === 'project' ? invalidProject : { linked_merge_requests: linked })
+      )
+      await expect(viewCodeHubTask({ remote: cloneRemote, kind: 'issue', iid: 4 })).rejects.toThrow(
+        '来源'
+      )
+    }
   })
 
   it('reads a nested issue body and merge request branches', async () => {

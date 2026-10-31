@@ -1,4 +1,5 @@
-import { codeHubMergeRequestUrl, type CodeHubRemote } from '../../shared/codehub'
+import type { CodeHubRemote } from '../../shared/codehub'
+import { viewCodeHubTask } from './mutations'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 import { projectArgs } from './mutations'
 import { readCodeHubBranchReview } from './mr-branch-review'
@@ -27,9 +28,9 @@ export async function createCodeHubMr(args: {
   title: string
   description: string
 }): Promise<{ iid: number; adopted: boolean; url: string | null }> {
-  const existing = await openCodeHubMrForBranch(args)
+  const existing = await readCodeHubBranchReview({ ...args, states: ['opened'] })
   if (existing !== null) {
-    return { iid: existing, adopted: true, url: codeHubMergeRequestUrl(args.remote, existing) }
+    return { iid: existing.number, adopted: true, url: existing.url }
   }
   const stdout = await runCodeHubCli(
     [
@@ -54,5 +55,9 @@ export async function createCodeHubMr(args: {
   if (!Number.isSafeInteger(iid) || iid <= 0) {
     throw new Error(`无法解析 codehub MR iid：${text || '(空输出)'}`)
   }
-  return { iid, adopted: false, url: codeHubMergeRequestUrl(args.remote, iid) }
+  const detail = await viewCodeHubTask({ ...args, kind: 'mr', iid })
+  if (!detail.url?.trim()) {
+    throw new Error('CodeHub MR 已创建，但详情未返回评审链接')
+  }
+  return { iid, adopted: false, url: detail.url }
 }

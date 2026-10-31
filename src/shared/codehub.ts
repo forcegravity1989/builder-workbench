@@ -4,6 +4,7 @@ import type { GitRemoteIdentity } from './git-remote-identity'
 export type CodeHubRemote = {
   host: string
   project: string
+  webHost?: string
 }
 
 function normalizeHost(host: string): string {
@@ -150,7 +151,7 @@ export function codeHubMergeRequestUrl(
   if (!Number.isSafeInteger(number) || number <= 0) {
     throw new Error('CodeHub MR 编号无效')
   }
-  const fallback = `https://${remote.host}/${remote.project.split('/').filter(Boolean).map(encodeURIComponent).join('/')}/merge_requests/${number}`
+  const fallback = `https://${remote.webHost ?? remote.host}/${remote.project.split('/').filter(Boolean).map(encodeURIComponent).join('/')}/merge_requests/${number}`
   return recorded?.trim() || fallback
 }
 

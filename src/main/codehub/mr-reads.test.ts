@@ -10,7 +10,7 @@ vi.mock('./cli', () => ({
 
 import { readCodeHubMrChecks, readCodeHubMrChanges } from './mr-reads'
 import { readCodeHubBranchReview } from './mr-branch-review'
-import { openCodeHubMrForBranch } from './mr-creation'
+import { createCodeHubMr, openCodeHubMrForBranch } from './mr-creation'
 
 const remote = { host: 'codehub-g.huawei.com', project: 'Org/Group/repo' }
 const headOid = 'f'.repeat(40)
@@ -213,6 +213,46 @@ describe('codehub mr reads', () => {
       .mockResolvedValueOnce(JSON.stringify(mr(7, 'opened')))
     expect(await openCodeHubMrForBranch(branchArgs)).toBe(7)
     expect(runCodeHubCliMock.mock.calls.every(([args]) => args[1] !== 'commits')).toBe(true)
+
+    const cloneRemote = { ...remote, host: 'git.codehub.example.test' }
+    runCodeHubCliMock.mockImplementation(async (args: string[]) => {
+      if (args[0] === 'project') {
+        return JSON.stringify({
+          path_with_namespace: remote.project,
+          http_url_to_repo: `https://${cloneRemote.host}/${remote.project}.git`,
+          web_url: `https://${remote.host}/${remote.project}`
+        })
+      }
+      return JSON.stringify(args[1] === 'list' ? [mr(7, 'opened')] : mr(7, 'opened'))
+    })
+    expect(
+      await createCodeHubMr({
+        ...branchArgs,
+        remote: cloneRemote,
+        title: 'Proposal',
+        description: ''
+      })
+    ).toEqual({
+      iid: 7,
+      adopted: true,
+      url: mr(7).web_url
+    })
+    expect(runCodeHubCliMock.mock.calls.some(([args]) => args[1] === 'create')).toBe(false)
+
+    runCodeHubCliMock.mockImplementation(async (args: string[]) => {
+      if (args[1] === 'list') {
+        return '[]'
+      }
+      if (args[1] === 'create') {
+        return '7'
+      }
+      return JSON.stringify(mr(7, 'opened'))
+    })
+    expect(await createCodeHubMr({ ...branchArgs, title: 'Proposal', description: '' })).toEqual({
+      iid: 7,
+      adopted: false,
+      url: mr(7).web_url
+    })
   })
 
   it('excludes reused-branch commits and propagates unverifiable provider responses', async () => {

@@ -4,18 +4,13 @@ import {
   type ExecutionHostId
 } from '../../shared/execution-host'
 import type { Repo } from '../../shared/repo-types'
-import {
-  isCodeHubGitRemote,
-  parseCodeHubRemote,
-  codeHubMergeRequestUrl
-} from '../../shared/codehub'
+import { isCodeHubGitRemote, parseCodeHubRemote } from '../../shared/codehub'
 import { CHARTER_BRANCH, PROJECT_TOML_REL } from '../../shared/workbench/project-charter'
 import type { CharterStatus } from '../../shared/workbench/charter'
 import { getHostedReviewForBranch } from '../source-control/hosted-review'
 import { readGitBlobAtOidPath } from '../git/source-control/git-blob-read'
 import { gitExecFileAsync } from '../git/runner'
 import { probeGitRemoteIdentity } from '../repo-git-remote-identity'
-import { openCodeHubMrForBranch } from '../codehub/mr-creation'
 import { readCodeHubBranchReview } from '../codehub/mr-branch-review'
 import { runTrunkBaseline } from './trunk-baseline'
 import type { WorkbenchWorkspaceRepo } from './workspace-resolver'
@@ -82,15 +77,14 @@ export async function lookupOpenCharterPr(
     if (!remote) {
       throw new Error('未解析项目的真实 CodeHub 来源')
     }
-    const iid = await openCodeHubMrForBranch({
+    const review = await readCodeHubBranchReview({
       remote,
       execOptions: { ...execOptions, cwd: repo.path },
       sourceBranch: CHARTER_BRANCH,
-      targetBranch: await charterTargetBranch(repo.path, repo.worktreeBaseRef ?? null, execOptions)
+      targetBranch: await charterTargetBranch(repo.path, repo.worktreeBaseRef ?? null, execOptions),
+      states: ['opened']
     })
-    return iid === null
-      ? null
-      : { provider: 'codehub', number: iid, url: codeHubMergeRequestUrl(remote, iid) }
+    return review === null ? null : { provider: 'codehub', number: review.number, url: review.url }
   }
   try {
     const { review } = await readProjectBranchReview(repo.path, executionHostId, execOptions)
