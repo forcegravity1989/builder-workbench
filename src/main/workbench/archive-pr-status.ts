@@ -116,10 +116,11 @@ async function readCodeHubArchiveStatus(args: {
   remote: CodeHubRemote
   number: number
   execOptions: { cwd?: string; wslDistro?: string }
+  force?: boolean
 }): Promise<ArchivePrStatusResult> {
   const key = codeHubArchiveCacheKey(args.remote, args.number)
   const cached = codeHubArchiveCache.get(key)
-  if (cached && cached.expiresAt > Date.now()) {
+  if (!args.force && cached && cached.expiresAt > Date.now()) {
     return cached.result
   }
   const inFlight = codeHubArchiveReads.get(key)
@@ -136,16 +137,24 @@ async function readCodeHubArchiveStatus(args: {
       })
       const state = mapCodeHubArchiveState(detail)
       if (!state) {
-        return { state: 'unknown', reason: `CodeHub 返回了未识别的 MR 状态：${detail.state}` }
+        return {
+          state: 'unknown',
+          reason: `CodeHub 返回了未识别的 MR 状态：${detail.state}`,
+          url: codeHubArchiveUrl(args.remote, args.number, detail.url ?? undefined)
+        }
       }
       return {
         state,
         url: codeHubArchiveUrl(args.remote, args.number, detail.url ?? undefined),
-        checkedAt: new Date().toISOString()
+        checkedAt: new Date().toISOString(),
+        ...(state === 'merged' && detail.mergedAt && Number.isFinite(Date.parse(detail.mergedAt))
+          ? { mergedAt: new Date(detail.mergedAt).toISOString() }
+          : {})
       }
     } catch (reason) {
       return {
         state: 'unknown',
+        url: codeHubArchiveUrl(args.remote, args.number),
         reason: `CodeHub MR 状态读取失败：${reason instanceof Error ? reason.message : String(reason)}`
       }
     }
@@ -187,6 +196,7 @@ export async function readArchivePrStatus(
     }
     const wslDistro = repo.connectionId ? undefined : parseWslPath(repo.path)?.distro
     return readCodeHubArchiveStatus({
+      force: params.force,
       remote: codeHubRemote,
       number: params.pr.number,
       execOptions: {
@@ -236,11 +246,17 @@ export async function readArchivePrStatus(
     return {
       state,
       ...(typeof parsed.html_url === 'string' && parsed.html_url ? { url: parsed.html_url } : {}),
-      checkedAt: new Date().toISOString()
+      checkedAt: new Date().toISOString(),
+      ...(merged &&
+      typeof parsed.merged_at === 'string' &&
+      Number.isFinite(Date.parse(parsed.merged_at))
+        ? { mergedAt: new Date(parsed.merged_at).toISOString() }
+        : {})
     }
   } catch (reason) {
     return {
       state: 'unknown',
+      url: `https://${ownerRepo.host ?? 'github.com'}/${ownerRepo.owner}/${ownerRepo.repo}/pull/${params.pr.number}`,
       reason: `PR 状态读取失败：${reason instanceof Error ? reason.message : String(reason)}`
     }
   }

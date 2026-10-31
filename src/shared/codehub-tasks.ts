@@ -19,6 +19,8 @@ export type CodeHubTaskItem = {
 }
 
 export type CodeHubTaskDetail = {
+  createdAt?: string
+  mergedAt?: string
   iid: number
   title: string
   description: string

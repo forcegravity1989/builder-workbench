@@ -66,6 +66,7 @@ export async function listCodeHubComments(args: {
   execOptions?: CodeHubExecOptions
   kind: 'issue' | 'mr'
   iid: number
+  requireComplete?: boolean
 }): Promise<CodeHubComment[]> {
   const command =
     args.kind === 'issue'
@@ -92,7 +93,29 @@ export async function listCodeHubComments(args: {
           '50'
         ]
   const parsed = parseJson(await runCodeHubCli(command, args.execOptions))
+  if (args.requireComplete && (!Array.isArray(parsed) || parsed.length >= 50)) {
+    throw new Error('CodeHub指标评论未能确认完整返回，需核对CLI分页能力')
+  }
   const rows = Array.isArray(parsed) ? parsed : []
+  if (args.requireComplete) {
+    for (const row of rows) {
+      if (!row || typeof row !== 'object') {
+        throw new Error('CodeHub指标评论记录无效')
+      }
+      const notes = Array.isArray(row.notes) ? row.notes : [row]
+      for (const note of notes) {
+        if (
+          !note ||
+          typeof note !== 'object' ||
+          (typeof (note.id ?? note.note_id ?? note.noteId) !== 'string' &&
+            typeof (note.id ?? note.note_id ?? note.noteId) !== 'number') ||
+          typeof (note.body ?? note.note ?? note.description) !== 'string'
+        ) {
+          throw new Error('CodeHub指标评论字段不完整')
+        }
+      }
+    }
+  }
   // `mr review list` returns discussions whose comments are nested in
   // `notes`; `issue comment list` returns flat comments. Every MR note keeps
   // its discussion id so `mr review reply` can address it — standalone notes
