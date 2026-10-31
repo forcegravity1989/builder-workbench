@@ -1,5 +1,4 @@
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
-import { calendarDays } from './milestones-data.js'
 import { historicalRows, outcomeLabel, sourceUrl } from './milestones-history.js'
 // eslint-disable-next-line no-unused-vars
 const { React, useState, useRef, useEffect, X } = window.BWPrototypeDependencies
@@ -26,91 +25,79 @@ export function Modal({ title, close, children, wide = false }) {
   )
 }
 
-export function CalendarPanel({ anchor, close }) {
-  const [month, setMonth] = useState(11)
-  const ref = useRef(null)
-  const days = calendarDays(month)
-  const offset = (days[0].weekday + 6) % 7
-  useEffect(() => {
-    const previous = document.activeElement
-    ref.current.focus()
-    const outside = (event) => {
-      if (!ref.current?.contains(event.target)) {
-        close()
-      }
-    }
-    const escape = (event) => {
-      if (event.key === 'Escape') {
-        close()
-      }
-    }
-    addEventListener('pointerdown', outside)
-    addEventListener('keydown', escape)
-    return () => {
-      removeEventListener('pointerdown', outside)
-      removeEventListener('keydown', escape)
-      if (previous?.isConnected) {
-        previous.focus()
-      }
-    }
-  }, [close])
-  const left = Math.max(12, Math.min(innerWidth - 310, (anchor?.right || innerWidth) - 298))
-  const top =
-    (anchor?.bottom || 80) + 350 < innerHeight
-      ? anchor.bottom + 8
-      : Math.max(12, (anchor?.top || innerHeight) - 342)
-  return (
-    <section
-      ref={ref}
-      className="ml-calendar-popover"
-      role="dialog"
-      aria-label="工作日历"
-      tabIndex={-1}
-      style={{ left, top }}
-    >
-      <header>
-        <h3>2026 年 {month} 月</h3>
-        <div className="ml-actions">
-          <button aria-label="上个月" disabled={month === 10} onClick={() => setMonth(10)}>
-            ‹
-          </button>
-          <button aria-label="下个月" disabled={month === 11} onClick={() => setMonth(11)}>
-            ›
-          </button>
-          <IconAction label="关闭日历" icon={X} onClick={close} />
-        </div>
-      </header>
-      <div className="calendar-grid">
-        {['一', '二', '三', '四', '五', '六', '日'].map((d) => (
-          <span className="ml-weekday" key={d}>
-            {d}
-          </span>
-        ))}
-        {Array.from({ length: offset }, (_, i) => (
-          <span key={`blank${i}`} />
-        ))}
-        {days.map((d) => (
-          <div key={d.date} className={d.overtime ? 'overtime' : d.work ? 'workday' : 'restday'}>
-            <b>{d.day}</b>
-            {d.overtime && <small>班</small>}
-          </div>
-        ))}
-      </div>
-      <footer>
-        <span>BW 预置工作日历</span>
-        <span>班 · 周六加班</span>
-      </footer>
-      <p className="ml-footnote">原型注释: 加班日仅示意，未核验真实华为数据。</p>
-    </section>
-  )
-}
-
 export function ReferencePanel({ close }) {
   return (
     <Modal title="设计依据" close={close}>
       <p className="muted">
-        原型注释: 2026-10-27 核对官方资料。本稿借鉴交互思路，产品规则以人工澄清与仓内原则为准。
+        原型注释: 2026-10-30
+        核对官方资料。本稿借鉴交互思路，产品规则以人工澄清与仓内原则为准；此入口仅供原型评审，不进入产品界面。
       </p>
+      <section className="ml-reference">
+        <h3>
+          <a
+            href="https://github.com/forcegravity1989/builder-workbench/pull/320"
+            target="_blank"
+            rel="noreferrer"
+          >
+            PR #320 · 日排期与预置工作日历 ↗
+          </a>
+        </h3>
+        <p>
+          原型注释:
+          借用等宽日轴、拖动两端调整和班/休标记。真实日历样本尚未提供，缺配置时使用普通周末，不推算加班日；本稿保留原有就地规划旅程。
+        </p>
+      </section>
+      <section className="ml-reference">
+        <h3>时间轴组件取舍</h3>
+        <p>原型注释: 本稿沿 React DOM 与设计系统整理泳道，未引入新图表依赖。</p>
+        <p>
+          <a
+            href="https://echarts.apache.org/handbook/en/how-to/custom-series/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            ECharts custom series ↗
+          </a>{' '}
+          能绘制时间图形，但字段编辑、行排序、日粒度拖动和撤销仍需自行接入；本轮不替换编辑器。
+        </p>
+        <p>
+          <a
+            href="https://visjs.github.io/vis-timeline/docs/timeline/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            vis-timeline ↗
+          </a>{' '}
+          提供 DOM/CSS 时间轴与可编辑节点，可作为今后需要成熟缩放或大数据布局时的候选，当前未接入。
+        </p>
+      </section>
+      <section className="ml-reference">
+        <h3>
+          <a
+            href="https://support.atlassian.com/jira-software-cloud/docs/edit-and-reorder-work-items-on-the-timeline/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Jira · 时间轴就地编辑与排序 ↗
+          </a>
+        </h3>
+        <p>
+          借鉴：在对象附近建立排期、直接改日期和拖动排序。BW
+          在同一连续画布添加特性，空周在使用时登记；拖节点保持特性身份。
+        </p>
+      </section>
+      <section className="ml-reference">
+        <h3>
+          <a
+            href="https://docs.github.com/en/issues/planning-and-tracking-with-projects/customizing-views-in-your-project/customizing-the-roadmap-layout"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub Projects · Roadmap ↗
+          </a>
+        </h3>
+        <p>借鉴：已有日期字段决定时间位置，关键节点帮助读轴。不从发布记录反推版本排期。</p>
+      </section>
       <section className="ml-reference">
         <h3>
           <a href="https://linear.app/docs/initiatives" target="_blank" rel="noreferrer">
@@ -141,8 +128,8 @@ export function ReferencePanel({ close }) {
         </p>
       </section>
       <p>
-        原型注释: 本轮五步旅程来自人工澄清：月度选择 → Pre版本 → 部分用户试用 → Release版本交付 →
-        Issue 持续改善。
+        原型注释: 本轮旅程：月度选择 → 首版 Plan / Design / Build / Test / Deploy → 后续版本
+        Maintain；反馈统一进入 Issue。Deploy 实际时间暂未跟踪。
       </p>
       <footer>
         <a className="btn btn-secondary" href="spec.md" target="_blank" rel="noreferrer">
@@ -157,8 +144,7 @@ export function ReferencePanel({ close }) {
 }
 
 export function VersionBridge({ item, version, plan, close }) {
-  const pre = item?.pre === version,
-    release = item?.release === version
+  const delivery = item?.deliveries.find((d) => d.versionId === version)
   const v = plan.versions.find((entry) => entry.id === version)
   return (
     <Modal title={`${v.name || '未命名版本'} · 版本总览`} close={close} wide>
@@ -170,26 +156,24 @@ export function VersionBridge({ item, version, plan, close }) {
       <div className="ml-source-columns">
         <section>
           <h3>里程碑安排</h3>
-          {pre && (
-            <p>
-              <b>Pre版本：</b>
-              {v.start} — {v.end}
-            </p>
+          {delivery ? (
+            <>
+              <p>{delivery.stages.map((s) => s.phase).join(' → ')}</p>
+              <p>
+                {v.start} — {v.end}
+              </p>
+              <p className="muted">负责人：{item.owner}</p>
+            </>
+          ) : (
+            <p>本版未关联当前特性。</p>
           )}
-          {release && (
-            <p>
-              <b>Release版本：</b>
-              {v.start} — {v.end}
-            </p>
-          )}
-          {!pre && !release && <p>本版未关联当前特性。</p>}
-          {(pre || release) && <p className="muted">负责人：{item.owner}</p>}
         </section>
         <section>
           <h3>版本计划与实际交付</h3>
           <p>尚未读取</p>
           <p className="muted">
-            项目版本发布不代表本特性已交付Pre或Release，实际范围与验收以版本材料为准。
+            本版范围、实际阶段与人工验收以版本材料为准。Deploy 尚未跟踪；Maintain
+            需有明确的后续版本安排。
           </p>
         </section>
       </div>
@@ -243,12 +227,22 @@ export function HistoryVersion({ plan, close }) {
     </Modal>
   )
 }
-export function PlanningReviewPanel({ state, changes, submit, markMerged, publish, close }) {
+export function PlanningReviewPanel({
+  state,
+  changes,
+  submit,
+  markMerged,
+  publish,
+  close,
+  viewOnly,
+  invalid
+}) {
   const dirty = changes.length > 0
+  const [viewReview, setViewReview] = useState(Boolean(viewOnly))
   return (
     <Modal
       title={
-        dirty && state.review !== 'merged'
+        dirty && !viewReview && state.review !== 'merged'
           ? '核对本次变更'
           : state.review === 'merged'
             ? '已合入，待更新'
@@ -256,7 +250,7 @@ export function PlanningReviewPanel({ state, changes, submit, markMerged, publis
       }
       close={close}
     >
-      {dirty && state.review !== 'merged' ? (
+      {dirty && !viewReview && state.review !== 'merged' ? (
         <>
           {changes.map((c, i) => (
             <div className="ml-confirm-row" key={i}>
@@ -265,10 +259,15 @@ export function PlanningReviewPanel({ state, changes, submit, markMerged, publis
             </div>
           ))}
           <footer>
+            {state.review === 'open' && (
+              <button className="btn btn-ghost" onClick={() => setViewReview(true)}>
+                查看评审
+              </button>
+            )}
             <button className="btn btn-secondary" onClick={close}>
               继续修改
             </button>
-            <button className="btn btn-primary" onClick={submit}>
+            <button className="btn btn-primary" disabled={invalid} onClick={submit}>
               {state.review === 'open' ? '更新评审' : '提交评审'}
             </button>
           </footer>

@@ -21,7 +21,7 @@ import {
   type ElectronApplication,
   type TestInfo
 } from '@stablyai/playwright-test'
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { TEST_REPO_PATH_FILE } from '../global-setup'
@@ -30,6 +30,7 @@ import { getWorkbenchElectronLaunchArgs } from './workbench-launch-args'
 import { retryTransientMainEvaluate } from './electron-main-evaluate-retry'
 import { runsOnCiVirtualDisplay } from './ci-virtual-display'
 import { getE2ECompletedOnboardingProfile } from './e2e-completed-onboarding-profile'
+import { removeUserDataDirAfterShutdown } from './windows-ime-profile-cleanup'
 import {
   assertElectronResolvedIsolatedHome,
   createElectronHomeIsolation
@@ -87,22 +88,6 @@ const ORCA_E2E_SLOWMO_MS = ((): number => {
   }
   return Math.max(parsed, 0)
 })()
-
-async function removeUserDataDirAfterShutdown(userDataDir: string): Promise<void> {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    try {
-      rmSync(userDataDir, { recursive: true, force: true })
-      return
-    } catch (error) {
-      if (attempt === 4) {
-        throw error
-      }
-      // Why: Windows can briefly keep Electron profile files locked after the
-      // process exits; retrying avoids turning a passed flow into teardown noise.
-      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)))
-    }
-  }
-}
 
 function shouldLaunchHeadful(testInfo: TestInfo): boolean {
   // Why: ORCA_E2E_FORCE_HEADFUL lets a developer watch any spec in a real
@@ -263,13 +248,15 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
       }
     })
     forwardElectronProcessLogs(app, testInfo)
+    // A force-quit disposes Playwright's process handle; retain this fixture's owned child.
+    const ownedProcess = app.process()
     try {
       const resolvedHome = await retryTransientMainEvaluate(() =>
         app.evaluate(({ app }) => app.getPath('home'))
       )
       assertElectronResolvedIsolatedHome(resolvedHome, homeIsolation)
     } catch (error) {
-      await closeElectronAppForE2E(app)
+      await closeElectronAppForE2E(app, ownedProcess)
       await cleanupE2EDaemons(userDataDir)
       await removeUserDataDirAfterShutdown(userDataDir)
       throw error
@@ -277,7 +264,7 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
     await provideFixture(app)
     // Why: the Playwright close promise can settle before all Electron and PTY
     // descendants are gone in CI; worker teardown then hangs on open handles.
-    await closeElectronAppForE2E(app)
+    await closeElectronAppForE2E(app, ownedProcess)
     await cleanupE2EDaemons(userDataDir)
     await removeUserDataDirAfterShutdown(userDataDir)
   },

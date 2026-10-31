@@ -1,3 +1,4 @@
+import { MilestoneVersionOrigin } from '../workbench/milestone-version-origin'
 import { Suspense, useRef } from 'react'
 import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { translate } from '@/i18n/i18n'
@@ -101,7 +102,11 @@ function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element 
       return <ProjectWallPage configureRepoId={projectPage.configureRepoId} />
     }
     if (projectPage?.kind === 'version-overview') {
-      return <VersionOverviewPage options={projectPage.options} />
+      return (
+        <MilestoneVersionOrigin feature={projectPage.options.milestoneOrigin?.feature}>
+          <VersionOverviewPage options={projectPage.options} />
+        </MilestoneVersionOrigin>
+      )
     }
     if (projectPage?.kind === 'onboard') {
       return <OnboardProjectPage options={projectPage.options} />

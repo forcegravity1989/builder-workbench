@@ -1,0 +1,86 @@
+{
+  "schema_version": 2,
+  "months": [
+    {
+      "month": "2026-10",
+      "outcome": "贯通项目规划、版本推进与验收，让团队在 BW 内完成项目管理主流程。"
+    }
+  ],
+  "features": [
+    {
+      "id": "october-version-navigation",
+      "month": "2026-10",
+      "title": "侧边栏版本管理",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "october-version-navigation-v07",
+          "version": { "version": "v0.7", "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286" },
+          "goalId": "G2",
+          "goalSlot": 2,
+          "stages": []
+        }
+      ]
+    },
+    {
+      "id": "october-version-planning",
+      "month": "2026-10",
+      "title": "计划屏",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "october-version-planning-v07",
+          "version": { "version": "v0.7", "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286" },
+          "goalId": "G3",
+          "goalSlot": 3,
+          "stages": []
+        }
+      ]
+    },
+    {
+      "id": "october-version-acceptance",
+      "month": "2026-10",
+      "title": "验收屏",
+      "owner": "kanadead",
+      "deliveries": [
+        {
+          "id": "october-version-acceptance-v07",
+          "version": { "version": "v0.7", "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286" },
+          "goalId": "G3",
+          "goalSlot": 3,
+          "stages": []
+        }
+      ]
+    },
+    {
+      "id": "october-project-overview",
+      "month": "2026-10",
+      "title": "项目总览里程碑",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "october-project-overview-v08",
+          "version": { "version": "v0.8", "cycleId": "228a67d9-49c0-4908-b595-e4475086288c" },
+          "goalId": "G2",
+          "goalSlot": 2,
+          "stages": []
+        }
+      ]
+    },
+    {
+      "id": "october-version-overview",
+      "month": "2026-10",
+      "title": "版本总览",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "october-version-overview-v08",
+          "version": { "version": "v0.8", "cycleId": "228a67d9-49c0-4908-b595-e4475086288c" },
+          "goalId": "G2",
+          "goalSlot": 2,
+          "stages": []
+        }
+      ]
+    }
+  ]
+}

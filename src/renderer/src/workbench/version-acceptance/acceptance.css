@@ -430,6 +430,23 @@ html[data-skin='ds'].dark .acc-annotate-entry.acc-mode-on .acc-annotate-count {
   flex: 1;
   min-width: 0;
 }
+/* Booked meeting reads back as two lines: title/time, then the hard facts a
+   human checks before the meeting (ID, attendee count, page link). */
+.acc-meeting {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.acc-meeting .acc-prepare-value {
+  flex: none;
+}
+.acc-meeting-meta {
+  color: var(--muted-foreground);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
 .acc-link {
   display: inline-flex;
   align-items: center;
@@ -792,6 +809,11 @@ html[data-skin='ds'].dark .acc-annotate-entry.acc-mode-on .acc-annotate-count {
   display: flex;
   align-items: flex-start;
   gap: 8px;
+}
+/* 编辑行的全局 M 编号对齐 textarea 首行（8px padding + 半行高）。 */
+.acc-point-edit-row .acc-id {
+  flex: none;
+  padding-top: 9px;
 }
 .acc-point-edit-row textarea {
   flex: 1;
