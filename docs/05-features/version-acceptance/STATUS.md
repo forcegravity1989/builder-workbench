@@ -101,6 +101,8 @@ Issue [#516](https://github.com/forcegravity1989/builder-workbench/issues/516)�
 
 **纪要同步自带（解耦外部技能）**：「同步会议纪要」原复用宿主 meeting-minutes 技能（依赖同目录 web-access 技能），未安装即断、且驱动的是 Orca 内置浏览器（in-app 分区 + cookie 导入）。改为流程自带：新增 `references/minutes-sync.md`（SKILL 0.9.6），内嵌自包含极简 CDP 驱动脚本（Node ≥22；version/new/list/navigate/eval/close，已在本机 Edge 156 实测全命令面），驱动**用户自己的浏览器**——本机 Chrome/Edge 独立临时实例 + 调试端口、可见窗口，不用 Orca 内置浏览器；Chrome 136+ 默认 profile 禁调试端口以独立 user-data-dir 规避，内网 w3 SSO 全新 profile 透明自动登录（实测零手工输入），非内网请人在窗口登录后继续。定位会议优先材料 link、打不开重取 `meeting info`、仍缺请人给链接；先预览后写入、只写草稿不代发、幂等跳过、中断先核对；窗口留人完成最终发送。version-records 与 design 同步；注入句不动（prompt 只承载触发意图，机制归 Skill）。
 
+**证据报告字段化子集口径**（v0.8 实测后续）：实测聚合报告把开发侧逐条判据压缩成一段转述——每句都真、没有一条能独立核对（正确的废话）。SKILL 聚合节与报告模板改为字段化子集口径：判据逐条一行（用例名、期望结果、实际结果或通过与否、截图钉 SHA、执行路径），每条 Issue 一行门禁实数与未验留白；命令与深链全文、四维检视过程、排查叙事只留链接；「验收说明」写归并（兑现哪条目标承诺）、与判据行分开不揉成一段；点名反面模式（禁止压缩转述、禁止大段文本凑数、子集不够先扩开发侧规范）。聚合注入句在 #516 命令句前补一句口径（SKILL 0.9.8）。
+
 **验证状态**：门禁与 ratchet 见 PR 验证报告；CDP 驱动脚本本机 Edge 156 实测通过。**真壳未验**：纪要同步全流程（需真实 eMeeting 环境）、预订会议链。原型欠账：acceptance-model.js 的聚合 prompt 与注释仍为纯意图句，未跟生产注入句内嵌命令的 #516 形态，随高保真专项同步。
 
 ## 当前验收点与旅程矩阵
