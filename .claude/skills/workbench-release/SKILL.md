@@ -11,7 +11,7 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
 
 ## 2. When to Use / When NOT to Use
 
-- 用户说「出包」「打 Windows Workbench 包」→ 为发版本而出包并入 B（随 workflow 出）；只要试用包不发版 → `gh workflow run bw-package.yml --ref <分支>`（ADHOC prerelease）或 C.1 本地出包。
+- 用户说「出包」「打 Windows Workbench 包」→ 为发版本而出包并入 B（随 workflow 出）；只要试用包不发版 → `gh workflow run bw-package.yml --ref <分支>`（ADHOC prerelease）或 C.1 本地出包；只要调试 exe、不要 Release 实体 → `gh workflow run bw-package.yml --ref <分支> -f publish=false`，产物为 run artifact（`gh run download <run-id>` 取，保留 7 天），不建 Release、不打 tag。
 - 用户说「发版本」「发布 Release」→ 发布流程（先备版本描述正文）。
 - 用户说「写版本描述 / Release 正文」→ 按 [版本描述规范](references/release-notes-spec.md) 写。
 - 用户说「出版本收尾报告 / 验收报告」「版本收尾」→ 按 [验收报告规范](references/acceptance-report-spec.md) 产出。
@@ -65,7 +65,7 @@ Builder Workbench 的版本交付入口，一条技能覆盖四件事：**出包
 
 - `.github/workflows/bw-release.yml`：出包与发布的固定动作（workflow_dispatch：`version` + `notes` 两输入）。
 - `config/scripts/build-win-workbench.mjs` / `config/scripts/release-win-workbench.mjs`：C 兜底路径的本地出包与发布脚本。
-- `.github/workflows/bw-package.yml`：试用包流水线（ADHOC prerelease，验收屏出包区块用），与正式发布无关。
+- `.github/workflows/bw-package.yml`：试用包流水线（ADHOC prerelease，验收屏出包区块用），与正式发布无关；`publish` 输入默认开（验收屏「最新包」读回依赖 prerelease），调试取包传 `-f publish=false` 只留 run artifact。
 - [版本描述规范](references/release-notes-spec.md) + [骨架模板](assets/release-notes-template.md)：Release 正文写法。
 - [验收报告规范](references/acceptance-report-spec.md) + [骨架模板](assets/acceptance-report-template.html)：版本收尾报告写法（给领导看的人话；结构可参考 `docs/05-features/version-acceptance/showcase-v0.5-g1.html`，但不沿用其编号与六环矩阵）。
 - `docs/05-features/README.md`：特性矩阵正本（7 特性 × 六环）——**作者取材与查漏用**，确保按功能讲全；矩阵格值与编号不进正文。

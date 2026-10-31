@@ -18,9 +18,21 @@ name: BW Package Windows
 # Version scheme mirrors local trial builds (createLocalBuildVersion):
 # <packageVersion>-local.<unix-seconds>.<commit12>, tagged v<version>, so every
 # dispatch produces a fresh tag and the releases list stays newest-first.
+#
+# Debug toggle: dispatch with -f publish=false to skip the prerelease entirely
+# (no release, no tag) and upload the installer as a run artifact instead —
+# for grabbing a debug exe without polluting the releases/tags lists. The
+# acceptance screen's 最新包/下载 depends on the prerelease, so publish
+# defaults to true and the screen's own launches never pass the toggle.
 
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: '发布为本仓 prerelease（验收屏「最新包」读回依赖）；关闭则只上传 run artifact，不建 Release、不打 tag'
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: write
@@ -98,7 +110,11 @@ jobs:
           ORCA_WIN_ADHOC: '1'
           ORCA_ADHOC_BUILD_VERSION: ${{ steps.identity.outputs.version }}
 
+      # Why the publish gate: the prerelease IS the acceptance screen's readback
+      # channel (最新包/下载), so it stays the default; publish=false serves
+      # debug-only builds that must not create a release or tag.
       - name: Publish installer as a prerelease
+        if: inputs.publish
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -111,3 +127,14 @@ jobs:
             --title "Workbench $VERSION" \
             --notes "Workbench Windows x64 installer built from ${GITHUB_REF_NAME} @ $GITHUB_SHA." \
             --prerelease
+
+      # Why retention is short: debug exes are throwaway; the artifact only
+      # needs to outlive the debugging session, not the default 90 days.
+      - name: Upload installer as a run artifact
+        if: ${{ !inputs.publish }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: workbench-windows-setup-${{ steps.identity.outputs.version }}
+          path: dist/workbench-windows-setup.exe
+          retention-days: 7
+          if-no-files-found: error
