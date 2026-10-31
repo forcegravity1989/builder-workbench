@@ -2,7 +2,7 @@
 name: version-acceptance
 description: Use when 在 BW 验收屏准备周五验收会议的材料(出包、部署、预订会议、聚合验收证据报告)、支持 Showcase 展示与按目标组织的会议纪要(可同步到预订会议)、归档验收结果并发布版本,或对应 Orca 周期运行启动。制定新版本计划使用 week-planning。
 metadata:
-  version: 0.9.8
+  version: 0.9.9
 ---
 
 # 版本验收
@@ -19,7 +19,7 @@ metadata:
 |---|---|---|
 | 「出包」 | 固定逻辑在板面(按项目远端直连出包流水线),无需你执行;包出现后核对四字段对应本次候选,不把旧包当本次交付包 | `candidateRef`(候选固定即写);`preparedArtifacts` kind=package(checksum/location/实际命令) |
 | 「部署」 | 注入部署请求:下载最新包,**按项目自有部署入口**部署启动——各服务部署逻辑不同,无固定脚本;桌面应用=安装并启动,web 服务=部署并起前端。缺入口说明缺什么,不虚构命令;缺工具请人安装,不降级绕道 | `demoEnv`:web 服务写 kind=url,附系统名 label 与 URL;桌面应用写 kind=launched,附启动状态。板面「演示环境」行显示系统名(缺省回退 URL),点击经内置浏览器打开 |
-| 「预订会议」 | 注入预订请求:生成完整预览(起止时间、与会人、议题),**人确认后创建会议**;与会人默认取项目绑定项目群的全部成员,没有绑定群就请人给群号(见「预订会议与纪要同步」节) | `meeting`(标题、时间、会议 ID、eMeeting ID、会议页面链接、与会人工号;eMeeting ID 供同步纪要定位,板面不显示);板面「验收会议」行读回标题、时间、ID、与会人数与页面入口 |
+| 「预订会议」 | 注入预订请求:生成完整预览(起止时间、与会人、议题),**人确认后创建会议、再向项目群发会议通知**(均先预览后执行);与会人默认取项目绑定项目群的全部成员,没有绑定群就请人给群号(见「预订会议与纪要同步」节) | `meeting`(标题、时间、会议 ID、eMeeting ID、会议页面链接、与会人工号;eMeeting ID 供同步纪要定位,板面不显示);板面「验收会议」行读回标题、时间、ID、与会人数与页面入口 |
 | 「更新代码」 | 板面原生同步,快进不了时按提示在会话处理 | — |
 | 「聚合」 | 注入聚合请求:把各 Issue/PR 合入时留下的验收件按目标归并成一份验收证据报告并登记(见下节);缺证如实标出,由人确认或自行补充,不代采 | 报告文件落 `.bw/planning/<版本>/` 并登记为 verification 制品;板面「验收证据报告」行读回生成时间与打开入口 |
 | 「发布」 | 注入发布请求:先呈现知情状态 → 核对一致性 → **经人明确授权**按项目发布入口执行 → 独立读回并在会话中报告 → 把 tag 引用写入 `workflow.release` | 板面读回行现算呈现是否已发布、标签、时间、Release 地址与资产(读数不落材料,正本在 Git 标签与 Release 页) |
@@ -56,13 +56,18 @@ metadata:
      welink-cli meeting create --start-time <开始毫秒> --end-time <结束毫秒> --subject "<标题>" --meeting-user-list <工号...>
      ```
   6. 用 `welink-cli meeting info --meeting-id <meetingId>` 读回 `meetingId`、`jumpUrls` 与时间;`meetingNo` 不是会议主键,不要拿它当 ID。建会与读回的响应里另有 32 位 `enMeetingId`(eMeeting 侧主键,写入纪要草稿靠它定位会议),一并记下;读不到就缺省,不猜。
-  7. 把会议信息写回验收材料 `meeting`:`{title, time, id?, enMeetingId?, link?, attendees?}`——`id` 存 `meetingId`;`enMeetingId` 存 eMeeting 侧 32 位 ID(同步纪要定位会议用);`link` 取 `jumpUrls` 中 `type=basic`(缺省用 `summary`)的地址;`attendees` 存实际传给 `--meeting-user-list` 的工号;`time` 用「MM-DD(周X) HH:mm–HH:mm」的人读写法。写回用原生材料服务,`--repo-id`/`--worktree-id` 用入口提供的原生身份:
+  7. 向项目群发会议通知(独立外部写入:正文全文+收件群单独预览,经人确认后执行,不因建会已确认而免确认)。收件群取 `.bw/project.toml` 的 `[chat].group_id`(与定与会人同一来源),读不到或为空先请人给群号,不猜;正文含标题、时间(人读写法)、会议号(`meetingId`,稳定标识)、入会链接、议题(按验收屏四分区:验收准备、Showcase、会议纪要、归档 PR 及发版本),用 `\n` 分行。已知事实:入会链接里的 `enMeetingId` 每次 `meeting info` 查询都会轮换,通知发当时读回的那条;材料里存的 `link` 可能已不是最新,会上打不开时重新 `meeting info` 取一条,会议号才是稳定标识。WeLink 建会/改期时会议系统是否已自动通知与会人未核实,按仍需向项目群发一条处理。确认后执行:
+     ```bash
+     welink-cli im send-to-group --group-id "<群号>" --text "<正文>"
+     ```
+     发送后把 `msgId`/`resultCode` 如实回执;发不出去就说没发出去,不假装已通知。通知发送事实不进验收材料,只在会话中回执。
+  8. 把会议信息写回验收材料 `meeting`:`{title, time, id?, enMeetingId?, link?, attendees?}`——`id` 存 `meetingId`;`enMeetingId` 存 eMeeting 侧 32 位 ID(同步纪要定位会议用);`link` 取 `jumpUrls` 中 `type=basic`(缺省用 `summary`)的地址;`attendees` 存实际传给 `--meeting-user-list` 的工号;`time` 用「MM-DD(周X) HH:mm–HH:mm」的人读写法。写回用原生材料服务,`--repo-id`/`--worktree-id` 用入口提供的原生身份:
      ```bash
      ORCA bw materials read --repo-id <id> --worktree-id <id> --workflow acceptance --version <版本>
      ORCA bw materials save --repo-id <id> --worktree-id <id> --workflow acceptance --version <版本> --expected-revision <revision> --input <JSON 草稿文件>
      ```
      先读拿 `revision`,再带 `--expected-revision` 保存,不直接改文件;完整参数见[版本材料](../../system-prompt/references/version-records.md)。写回后告知人板面「验收会议」行已读回标题、时间、会议 ID、与会人数与会议页面。
-  8. 已预订不重复订;改期用 `welink-cli meeting update`,取消用 `welink-cli meeting cancel`,由人说明后同样先预览再执行。
+  9. 已预订不重复订;改期用 `welink-cli meeting update`,取消用 `welink-cli meeting cancel`,由人说明后同样先预览再执行。改期与取消后同样向项目群发通知(口径同第 7 步,单独预览确认):改期正文补一句原时间与改期说明(原时间从材料 `meeting.time` 读),改期后重新 `meeting info` 取新链接再发;取消后无 `info` 可读,正文用材料已存信息。
 - **同步会议纪要**:先读验收材料 `meeting` 定位目标会议——优先用 `enMeetingId`,没有就解析 `link`,两者都缺时如实说明并请人从 eMeeting 复制该会议的链接,不猜;材料尚未预订会议时说明先在准备区预订。把材料中已形成的纪要按固定样式渲染成草稿——按目标分节(目标句作小标题),节内共识与遗留逐条,只写人已填写或确认的内容,不虚构、不补写 → 按[纪要同步](references/minutes-sync.md)的步骤用用户自己的浏览器写入该会议的纪要草稿(浏览器连接、写入与幂等/中断规则以该 reference 为准):完整预览(含写回目标会议)经人确认后写入 → 返回纪要链接并提醒人最终发送是手动动作。已写入且草稿未变化的重复执行直接跳过、不重复写入;草稿或目标会议有变化时不盲覆盖,先向人说明再按新预览确认。中断或状态不确定时先打开会议系统核对草稿是否已写入,不直接重试覆盖。
 
 ## 阶段进度(材料内部,界面无灯)
@@ -89,7 +94,7 @@ metadata:
 2. **验收准备区:出包、部署、预订会议、聚合报告。**
    - **出包**:人在界面点「出包」(或按项目自有出包入口执行);受理后最新包每分钟自动刷新,不重复启动;核对最新包四字段对应本次候选。候选固定后**写入 `candidateRef`**;包出现后**登记 `preparedArtifacts`**(kind=package,含 checksum、location、实际命令)。
    - **部署**:收到部署请求(板面「部署」或人口头)→ 下载最新包 → 按项目自有部署入口部署启动 → **把演示环境写回材料 `demoEnv`**(web 服务:kind=url,附一句系统名 label 与 URL;桌面应用:kind=launched,附启动状态),并告知人板面可点击打开。区块报错(无流水线、无权限、远端认不出)如实转告,改按项目自有入口执行并核对;没有包要求就不造包要求。
-   - **预订会议**:收到预订请求 → 与会人默认取项目绑定项目群的成员,没有绑定群先请人给群号 → 生成完整预览(起止时间、与会人、议题)→ 人确认后按「预订会议与纪要同步」节的命令创建 → 读回会议 ID、页面链接与与会人并写回材料 `meeting`,告知人板面「验收会议」行已读回;已预订不重复订,改期或取消由人说明后同样先预览再执行。
+   - **预订会议**:收到预订请求 → 与会人默认取项目绑定项目群的成员,没有绑定群先请人给群号 → 生成完整预览(起止时间、与会人、议题)→ 人确认后按「预订会议与纪要同步」节的命令创建 → 读回会议 ID、页面链接与与会人 → 向项目群发会议通知(单独预览确认,发送事实不进材料)→ 写回材料 `meeting`,告知人板面「验收会议」行已读回;已预订不重复订,改期或取消由人说明后同样先预览再执行、并同样向项目群发通知。
    - **聚合报告**:收到聚合请求 → 按各目标的 Issue 清单归并验收件(有开发=开发侧验证报告与 PR 验证评论,无开发直接关闭=Issue 评论;只消费现成产物,不反推补写,判据逐条一行按字段化子集提取、不压缩成转述)→ 按模板生成一份报告,按「验收证据报告(聚合)」节落盘并登记 → 告知人板面「验收证据报告」行已读回;缺口按三类如实标出,由人确认或自行补充,不代采、不凑数。
    - 包重出不自动刷新板面已填内容;检测到包变化时在会话提醒是否重新部署演示环境、是否重新聚合报告,由人决定——验收件在各 Issue/PR 合入时已留下,包重出不改变它们。板面批注是人的意见输入:收到批注按对象(目标/验收标准/Issue/板面级)理解意见,回应或修订材料。准备齐后写 `stage=preparation`。
 
