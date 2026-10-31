@@ -391,6 +391,12 @@ vi.mock('../gitlab', () => ({
 vi.mock('../codehub', () => ({
   registerCodeHubHandlers: registerCodeHubHandlersMock
 }))
+vi.mock('../../workbench/milestone-recovery-ipc', () => ({
+  registerMilestoneRecoveryHandlers: vi.fn()
+}))
+vi.mock('../bw-cli-install', () => ({
+  registerCliInstallHandlers: vi.fn()
+}))
 
 vi.mock('../hosted-review', () => ({
   registerHostedReviewHandlers: registerHostedReviewHandlersMock

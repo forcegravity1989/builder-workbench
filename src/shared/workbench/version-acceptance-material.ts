@@ -77,6 +77,31 @@ export const AcceptanceDemoEnvironmentSchema = z.discriminatedUnion('kind', [
 
 export type AcceptanceDemoEnvironment = z.infer<typeof AcceptanceDemoEnvironmentSchema>
 
+/**
+ * The version's booked acceptance meeting (#471): the model generates a full
+ * preview, creates the meeting via welink-cli after human confirmation, and
+ * writes the result back. Absent means not booked; rescheduling or cancelling
+ * goes through the same preview-then-execute flow in the session. Model-written,
+ * so it stays out of the human guard and CAS merge takes the remote value.
+ */
+export const AcceptanceMeetingSchema = z.strictObject({
+  title: z.string().trim().min(1),
+  // Human-readable local time, e.g. 「10-31(周五) 14:00–15:00」.
+  time: z.string().trim().min(1),
+  // welink-cli meetingId (the numeric meeting primary key), never meetingNo.
+  id: z.string().trim().min(1).optional(),
+  // 32-digit eMeeting-side key from the create/info response; the minutes
+  // draft write (meeting-minutes skill) addresses the meeting by this ID.
+  enMeetingId: z.string().trim().min(1).optional(),
+  // Meeting page read back from `welink-cli meeting info` jumpUrls.
+  link: z.string().trim().min(1).optional(),
+  // W3 IDs actually passed to `--meeting-user-list`; the board shows the count
+  // and a short list so a human can check the invitees without reopening WeLink.
+  attendees: z.array(z.string().trim().min(1)).optional()
+})
+
+export type AcceptanceMeeting = z.infer<typeof AcceptanceMeetingSchema>
+
 export const AcceptanceMaterialSchema = z
   .strictObject({
     ...Identity,
@@ -86,6 +111,8 @@ export const AcceptanceMaterialSchema = z
     // Version-level demo environment written back after deployment; absent means
     // not deployed. Replaces the retired per-goal deliveries.
     demoEnv: AcceptanceDemoEnvironmentSchema.optional(),
+    // Version-level booked acceptance meeting (#471); absent means not booked.
+    meeting: AcceptanceMeetingSchema.optional(),
     preparationReview: z
       .strictObject({
         source: Id,

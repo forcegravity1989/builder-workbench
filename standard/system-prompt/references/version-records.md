@@ -9,11 +9,11 @@
 | 对象          | 正本                                                     | 边界                                                                                            |
 | ------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | 计划          | 本版固定计划树的 .bw/planning/<version>/data.json（绑定版本树 bw/<版本>/plan；旧无绑定固定树 bw/week-plan）   | summary、稳定 goalId、承诺/可选交付与验收说明、metricRef/目标、任务引用、会议纪要（minutes）、workflow 阶段 |
-| 验收          | 本版固定验收树（绑定版本树 bw/<版本>/acceptance；旧无绑定固定树 bw/week-acceptance）的同目录 acceptance.json        | 固定 planRef、候选、演示环境（demoEnv）、制品登记（含验收证据报告）、readingRef、Issue 备注与遗留标记、会议纪要（minutes）、人的结论与下一步、workflow 阶段；不改计划 |
+| 验收          | 本版固定验收树（绑定版本树 bw/<版本>/acceptance；旧无绑定固定树 bw/week-acceptance）的同目录 acceptance.json        | 固定 planRef、候选、演示环境（demoEnv）、预订会议（meeting）、制品登记（含验收证据报告）、readingRef、Issue 备注与遗留标记、会议纪要（minutes）、人的结论与下一步、workflow 阶段；不改计划 |
 | 指标          | 项目最新已合入配置中的 .bw/metrics.toml 及真实历史采集源 | 新采集固定本次采用的定义/脚本修订；旧 baseline 和归档证据保留，不以常驻树旧文件或旧引用锁住目录 |
 | Issue/会话/PR | 原生 provider / Orca                                     | 材料只存引用，不另建正文、聊天或状态正本                                                        |
 | 纪要          | 计划与验收材料各自的 minutes 节                           | 纪要正文由模型在未确认时撰写，人工确认只能由人标记，不另建第二份会议正文文件                     |
-| 验收证据报告  | .bw/planning/<version>/ 下的报告文件，登记为 preparedArtifacts 的 verification 制品 | 一个版本一份、全目标合并，由模型按 version-acceptance 技能模板生成；不是界面派生文本，也不代替 workbench-release 的版本收尾报告 |
+| 验收证据报告  | .bw/planning/<version>/ 下的报告文件，登记为 preparedArtifacts 的 verification 制品 | 一个版本一份，按「目标 → Issue」聚合各 Issue/PR 合入时留下的验收件（有开发取 PR 验证评论，无开发直接关闭取 Issue 评论），由模型按 version-acceptance 技能模板生成，缺证如实标注；不是界面派生文本，也不代替 workbench-release 的版本收尾报告 |
 
 计划/验收固定分支（绑定版本树为 bw/<版本>/plan、bw/<版本>/acceptance；旧无绑定固定树为 bw/week-plan、bw/week-acceptance）分别由原生项目/宿主/worktree 身份定位；物理目录由 Orca 原生创建和登记，不硬编码 .bw/worktrees 下的路径。冲突目录不得自动搬移/删除。同步基线前检查未归档修改，不 reset 脏树；跨树读取用固定提交，不把另一树的工作中草稿当正式材料。
 
@@ -21,13 +21,23 @@
 
 cycleId 标识同一版本同一流程的材料身份，不是自然周、原生会话或自动化 runId；编辑、换会话和归档后补证都保留 cycleId。同一版本的计划、验收各自保留一份当前材料。**一个版本做一轮验收**：没有验收轮次，也不按周呈现，周次只是运行上下文。未达也能如实归档，不自动承诺遗留目标。
 
+## 里程碑与版本排期
+
+计划 schema 3 可选 `timeWindow: {start, end}`，两端为包含当日的 ISO 日期；开始不得晚于结束。项目里程碑与版本计划使用这一个日期来源，其他字段编辑须原样保留。无日期就是未登记，不从 Releases、验收或提交时间猜排期。
+
+未来版本可先在项目里程碑登记名称、日期和空计划，真正开工才创建本版工作树与会话；发现已有计划时沿用 cycleId，不重新初始化覆盖。月度宏观安排保存于 `.bw/milestones.json`，含 schema_version=2、months（month/outcome）与按显示顺序排列的 features（id/month/title/owner/deliveries）。每次 delivery 含稳定 id、version（version + cycleId）、可选 goalSlot/goalId 与 stages；阶段含 phase/start/end，使用北京时间半日坐标 YYYY-MM-DDT00:00 或 T12:00，结束边界不包含。首版阶段为 Plan/Design/Build/Test/Deploy，后续为 Maintain；实际事件不回写为规划。行 id 不是 Issue 身份。goalSlot 仅为 G1–G4 的规划位置（1–4），不是目标身份；用户明确选择本版已有目标时才保存其稳定 goalId。提交须按版本名称/cycleId 校验 goalId；没有对应时不按序号自动绑定，改派到其他版本清除旧引用。
+
+历史未记录阶段时允许 `stages: []`，只保留已确认的特性、版本与目标归属；版本仍须有明确日期。空阶段表示未知，不自动补成默认五阶段、实际工期或完成结果。历史回填由用户授权后直接编辑材料并经 Git 评审，界面冻结规则保持。
+
+里程碑不创建或绑定特性 Issue；版内细化、Issue 关联和验收范围仍由计划助手与人讨论。计划助手核对已合入宏观安排与实际版本，发现名称、日期或特性安排不一致时提醒用户；不要用宏观改名改写已发生的计划、任务和验收，也不按标题自动猜特性对应关系。开始制定版本计划即冻结原计划和版本日期，仅后续未开工版本可调整。未开工版本表头仅整体平移，带动本版全部阶段；时长通过 SDLC 调整，版本日期跟随本版最早 Plan 与最晚 Deploy，Maintain 铺满后续版（仅有 Maintain 时由其时长确定窗口）。同一特性的前后安排不能重叠或倒序，阶段拖动、整版平移及新增扩窗均检查全部受影响行；不同特性可以并行。项目材料经 bw/project 评审进入主干，固定计划树经自身 Git 同步后再读，不能把另一树工作中草稿当正式安排。
+
 ## 来源与历史
 
 计划 `summary.progressSource` 是可选的已归档验收引用，只包含 version/cycleId/sourceCommit/revision，流程固定为 acceptance，项目与宿主来自当前原生上下文；没有该字段的材料仍有效。新计划默认按材料版本顺序选择紧邻前版，并只检查该版的验收；前版只有计划没有验收时提示尚未完成验收，回顾留空，不跳到更早版本。首版没有前版则留空。已有 progressSource 保持固定，不因出现新版本而改写。页面读取固定提交并核对材料修订及其 planRef；保存格式通过不能代替归档或内容核验。来源不可用时保留原输入，不改读最新记录，也不把读取失败当作没有验收。
 
 现行 planRef 的 kind 固定为 committed，字段为 version/cycleId/revision/sourceCommit，不接受草案来源。项目身份由请求的原生项目上下文约束，材料路径从 version 推导为 .bw/planning/<version>/data.json。修订（revision）是材料内容指纹：固定提交引用保持原始指纹，当前工作材料的指纹不分换行形态，归档核对不因换行差异误报。**开始验收会话不以计划归档 PR 合入为门禁**：助手首轮核对并提醒未合入状态，不自动合入。验收材料仍须建立在可读且身份核对通过的已提交固定计划上；来源缺失时保留空目标，不伪造材料、目标或 planRef。
 
-指标 ref 保存 name/definitionHash/configurationCommit；readingEvidence 保存 ref/value/unit/source/collectedAt/collectorRevision。新业务采集只使用日/周历史窗口，observation 记录 start/end/granularity/timezone；旧的即时读数形态只保留为历史证据的解释，不恢复当前值采集。计划 baseline 不被新采集覆盖；**验收板面不设指标区**，指标证据只进验收证据报告，报告里每个目标必含「本版目标值 vs 本期读数」对比。用户明确需要额外指标时，可在会话中按最新目录补充 readings；新旧配置不同不阻止采集。由人追溯核对可比性，不自动改原承诺或判断达成。不另建每日台账，来源真实性由指标服务及消费方核验。
+指标 ref 保存 name/definitionHash/configurationCommit；readingEvidence 保存 ref/value/unit/source/collectedAt/collectorRevision。新业务采集只使用日/周历史窗口，observation 记录 start/end/granularity/timezone；旧的即时读数形态只保留为历史证据的解释，不恢复当前值采集。计划 baseline 不被新采集覆盖；**验收板面不设指标区**，指标证据只进验收证据报告（随各 Issue 的验收件归并）；「本版目标值 vs 本期读数」对比已随 #471 举证前移退役。用户明确需要额外指标时，可在会话中按最新目录补充 readings；新旧配置不同不阻止采集。由人追溯核对可比性，不自动改原承诺或判断达成。不另建每日台账，来源真实性由指标服务及消费方核验。
 
 taskSnapshot 保存验收当时逐项读取的 Issue 状态：每项含任务身份、标题、状态、链接，失败项记错误与读取时间。缺少 taskSnapshot 表示尚未记录，空数组才表示当时没有关联任务。快照不是 Issue 状态正本，不保存页面交互状态，也不授权自动完成任务。
 
@@ -35,11 +45,13 @@ taskSnapshot 保存验收当时逐项读取的 Issue 状态：每项含任务身
 
 `demoEnv` 是版本级演示环境，由模型部署后写回，两种形态二选一：`{kind:'url', url, label?}` 给 web 服务（url 必须是以 http:// 或 https:// 开头的绝对地址，不接受协议相对或相对路径；label 是一句系统名，板面「演示环境」行显示系统名、缺省回退 URL，点击经内置浏览器打开）；`{kind:'launched', detail}` 给桌面应用，如实记录启动状态，不伪造链接。缺省表示尚未部署。
 
-验收材料可选 `minutes` 节，结构与计划侧同形但**没有闭环位**：`consensus` 为共识若干点（字符串数组），`followups` 为遗留若干点（条目含稳定 id 与 text），`confirmed`/`confirmedAt` 记录人工确认，`sources`/`updatedAt` 可选。正文由验收助手基于板面在线批注与可选会议转写稿提炼撰写，仅在未确认时可由模型通道写入或改写；人在界面确认后整节对模型冻结，要改正文须先由人在屏上撤销确认。验收侧遗留条目不另设闭环开关；正文记录落实到计划或结论的结果，或真实跟进 Issue。归档前由助手逐条核对、人在 PR 中确认；关联 Issue 不代表完成，开放 Issue 也可随纪要归档。只有人工确认过的纪要才会被下版回顾读取，读取不自动建任务或排期。`followups[].id` 用稳定身份，人工增删不让既有编号漂移，界面按数组序显示 M1…Mn。
+`meeting` 是版本级预订会议，由模型生成完整预览、**经人确认后预订**写回：`{title, time, id?, enMeetingId?, link?, attendees?}`——`title` 会议标题；`time` 人读的起止时间（如「10-31(周五) 14:00–15:00」）；`id` 是 `welink-cli meeting create` 返回并在 `meeting info` 读回的 `meetingId`（数字主键，不是 `meetingNo`）；`enMeetingId` 是建会/读回响应里的 eMeeting 侧 32 位主键（写入纪要草稿靠它定位会议，读不到就缺省不猜）；`link` 是 `meeting info` 的 `jumpUrls` 中 `type=basic`（缺省 `summary`）的会议页面地址；`attendees` 是实际传给 `--meeting-user-list` 的工号列表。与会人默认取项目根 `.bw/project.toml` 的 `[chat].group_id` 项目群全部成员（排除机器人/助手），没有绑定项目群时请人提供群号。缺省表示尚未预订；已预订不重复订，改期或取消由人说明后同样先预览再执行。写回必须走材料服务（先 `read` 取 `revision`，再 `save --expected-revision`），不直接改文件；板面「验收会议」行读回标题、时间、会议 ID、与会人数与会议页面入口（`enMeetingId` 供会话侧同步纪要使用，板面不显示）。同步会议纪要只把材料纪要按固定样式写入该会议的纪要草稿（复用宿主 meeting-minutes 技能，经人确认预览后写入），已写入且未变化的重复执行跳过；最终发送由人在会议系统手动完成。
+
+验收材料可选 `minutes` 节，结构与计划侧同形但**没有闭环位**：`consensus` 为共识若干点（字符串数组），`followups` 为遗留若干点（条目含稳定 id 与 text），`confirmed`/`confirmedAt` 记录人工确认，`sources`/`updatedAt` 可选。正文由验收助手基于板面在线批注与可选会议转写稿提炼撰写，条目按目标组织（带「G<n> ·」目标前缀，读视图按前缀分组呈现，协议仍是平铺清单），仅在未确认时可由模型通道写入或改写；人在界面确认后整节对模型冻结，要改正文须先由人在屏上撤销确认。验收侧遗留条目不另设闭环开关；正文记录落实到计划或结论的结果，或真实跟进 Issue。归档前由助手逐条核对、人在 PR 中确认；关联 Issue 不代表完成，开放 Issue 也可随纪要归档。只有人工确认过的纪要才会被下版回顾读取，读取不自动建任务或排期。`followups[].id` 用稳定身份，人工增删不让既有编号漂移，界面按数组序显示 M1…Mn。
 
 计划材料可选 `minutes` 节承载会议纪要：`consensus` 为共识若干点（字符串数组），`followups` 为遗留若干点（条目含稳定 id、text、closed），`confirmed`/`confirmedAt` 记录人工确认，`sources`/`updatedAt` 为可选的输入来源描述与正文更新时间。正文由计划助手基于在线批注与可选会议转写稿提炼撰写，仅在未确认（confirmed=false 或整节缺省）时可由模型通道写入或改写；人在计划屏确认后整节对模型冻结，要改正文须先由人在屏上撤销确认。`followups[].closed` 是历史人工字段，现行界面不再提供逐条闭环开关；读写继续保留旧值，模型对既有条目按 id 原样往返，新增条目必须 closed=false，不得删除历史已闭环条目。现行正文与验收侧一致，记录落实结果或真实跟进 Issue，归档前由助手核对、人在 PR 中确认。纪要确认不是目标达成或 Issue 完成；生成或填写纪要不自动等于确认。总览直接读取本节呈现，无存储纪要的历史版本如实显示纪要未记录。
 
-candidateRef 仅保存 repository/version/commit，commit 是完整 SHA。preparedArtifacts 含 artifactId/kind/location/candidateRef/generatedAt，可选 command/executionRoot/checksum；kind 为 package（制品包）或 verification（验收证据报告）等。验收证据报告必须在候选固定之后生成登记，location 存 .bw 相对路径，截图落同目录 shots/。执行根记录在该材料上，不加到 candidateRef。验收树只承载材料，出包从指定源码候选的执行工作区进行。包重出不自动刷新板面已填内容；是否重核相关证据由模型在会话中提醒、人决定，界面不做主动失效或「待重核」呈现。
+candidateRef 仅保存 repository/version/commit，commit 是完整 SHA。preparedArtifacts 含 artifactId/kind/location/candidateRef/generatedAt，可选 command/executionRoot/checksum；kind 为 package（制品包）或 verification（验收证据报告）等。验收证据报告必须在候选固定之后生成登记，location 存 .bw 相对路径，截图落同目录 shots/。执行根记录在该材料上，不加到 candidateRef。验收树只承载材料，出包从指定源码候选的执行工作区进行。包重出不自动刷新板面已填内容；是否重新部署演示环境、是否重新聚合报告由模型在会话中提醒、人决定，界面不做主动失效或「待重核」呈现；验收件在各 Issue/PR 合入时已留下，包重出不改变它们。
 
 总览与版本索引按 version/workflow/cycleId 各取最新一条当前材料，不扫描旧提交铺旧记录；读取固定来源时核对版本、cycleId 与修订；未合入草稿在其工作区读取；损坏的当前文件如实提示。开始验收会话成功后，页面在固定计划可读且身份核对通过时初始化并保存缺失的空白验收；没有可读固定计划时四区仍可展示，目标留空并由会话处理来源问题。已有材料直接继续；新材料与归档后补证均自动保存。总览不显示发布状态。
 

@@ -20,7 +20,8 @@ export async function createCharterReview({
   execOptions,
   firstTime,
   treePath,
-  filled
+  filled,
+  review
 }: {
   repo: WorkbenchWorkspaceRepo
   executionHostId: ExecutionHostId
@@ -29,9 +30,10 @@ export async function createCharterReview({
   firstTime: boolean
   treePath: string
   filled: string[]
+  review?: { title: string; body: string }
 }): Promise<CharterSubmitOutcome> {
-  const body = firstTime ? FIRST_CHARTER_BODY : EDIT_CHARTER_BODY
-  const title = firstTime ? '项目约定' : '项目信息改动'
+  const body = review?.body ?? (firstTime ? FIRST_CHARTER_BODY : EDIT_CHARTER_BODY)
+  const title = review?.title ?? (firstTime ? '项目约定' : '项目信息改动')
   // PR/MR 目标分支统一走主干基线解析：钉值或主检出当前分支；解析不出如实
   // 失败，不猜名、不设兜底分支。
   let targetBranch = ''

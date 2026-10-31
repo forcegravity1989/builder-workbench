@@ -224,6 +224,8 @@ module.exports = {
     // for decoding minified crash traces. The app never loads them (no
     // sourceMappingURL is emitted), and packing them would add ~34MB to app.asar.
     '!out/**/*.map',
+    // Why: SSH deploy reads Resources/relay; extraResources already carries every target.
+    '!out/relay{,/**/*}',
     // Why: Vite's manifest is only used to project the paired web client.
     '!out/renderer/.vite{,/**/*}',
     // Why: out/electron-dev caches `pnpm dev`'s per-branch Electron.app copies (~270MB each).
@@ -426,6 +428,7 @@ module.exports = {
   },
   win: {
     executableName: macExecutableName,
+    ...(productName === 'Workbench' ? { electronLanguages: ['zh-CN', 'en-US'] } : {}),
     // Why: Windows installers are signed after electron-builder packaging by
     // SignPath, so the packager cannot infer the updater publisherName.
     //

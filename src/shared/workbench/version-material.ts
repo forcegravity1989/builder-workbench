@@ -4,12 +4,14 @@ export type { PlanningMaterial, PlanMeetingMinutes } from './version-planning-ma
 export {
   AcceptanceMaterialSchema,
   AcceptanceMeetingMinutesSchema,
-  AcceptanceDemoEnvironmentSchema
+  AcceptanceDemoEnvironmentSchema,
+  AcceptanceMeetingSchema
 } from './version-acceptance-material'
 export type {
   AcceptanceMaterial,
   AcceptanceMeetingMinutes,
-  AcceptanceDemoEnvironment
+  AcceptanceDemoEnvironment,
+  AcceptanceMeeting
 } from './version-acceptance-material'
 import type { PlanningMaterial } from './version-planning-material'
 import type { AcceptanceMaterial } from './version-acceptance-material'
