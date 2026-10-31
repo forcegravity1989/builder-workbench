@@ -1,3 +1,4 @@
+import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 import {
   frozenMilestoneProblems,
   restoreFrozenMilestones
@@ -6,11 +7,12 @@ import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
-import { MilestoneHistoryActions } from './milestone-history-actions'
+import { MilestoneHistoryActions, MilestoneTitle } from './milestone-history-actions'
 import {
   ScheduledVersionSchema,
   milestoneDraft,
   milestoneProblems,
+  milestoneGoalProblems,
   type MilestoneFeature,
   type ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
@@ -19,6 +21,10 @@ import { openVersionOverview } from './project-page-state'
 import { useMilestonePlanning } from './use-milestone-planning'
 import { MilestoneTimeline, type MilestoneLocation } from './milestone-timeline'
 import { createMilestoneFeature } from './milestone-add-feature'
+import {
+  fitMilestoneVersions,
+  milestoneLaneConflict
+} from '../../../shared/workbench/milestone-sdlc'
 import {
   materializeMilestoneWeek,
   datedMilestoneVersions,
@@ -48,6 +54,7 @@ export function ProjectMilestones({
   const [locate, setLocate] = useState<(MilestoneLocation & { scope: string | null }) | null>(null)
   const [restoreKey, setRestoreKey] = useState(0)
   const [newFeature, setNewFeature] = useState<string | null>(null)
+  const [updatingFormal, setUpdatingFormal] = useState(false)
   const restored = useRef<string | null>(null)
   const restoreScope = scope ? JSON.stringify(scope) : null
   const pageY = state?.pageY
@@ -94,18 +101,12 @@ export function ProjectMilestones({
     state.data.proposal ?? state.data.formal,
     state.draft
   )
-  const problems = [...milestoneProblems(state.draft), ...frozenProblems]
-  const status = state.retry
-    ? '提交未完成'
-    : dirty
-      ? '编辑中'
-      : state.data.proposal && state.data.review.pr?.state === 'merged'
-        ? '已合入，待更新'
-        : state.data.proposal && state.data.review.pr?.state === 'open'
-          ? '已提交，待合入'
-          : state.data.review.queryFailed
-            ? '评审状态未读到'
-            : '编辑中'
+  const versionFacts = (state.data.proposal ?? state.data.formal).versions
+  const problems = [
+    ...milestoneProblems(state.draft),
+    ...milestoneGoalProblems(state.draft, versionFacts),
+    ...frozenProblems
+  ]
   const changes = describeMilestoneChanges(state.baseline, state.draft)
   function begin() {
     if (state && !state.recoveryBlocked) {
@@ -130,10 +131,18 @@ export function ProjectMilestones({
     }))
   }
   function remove(f: MilestoneFeature) {
-    edit((d) => ({
-      ...d,
-      material: { ...d.material, features: d.material.features.filter((item) => item.id !== f.id) }
-    }))
+    edit((d) =>
+      fitMilestoneVersions(
+        {
+          ...d,
+          material: {
+            ...d.material,
+            features: d.material.features.filter((item) => item.id !== f.id)
+          }
+        },
+        new Set(f.deliveries.map((delivery) => delivery.version.cycleId))
+      )
+    )
   }
   function registerWeek(week: MilestoneWeek, name: string) {
     if (!enabled) {
@@ -159,7 +168,16 @@ export function ProjectMilestones({
         .filter((v) => v.started)
         .map((v) => v.cycleId)
     )
-    const { id, date, draft } = createMilestoneFeature(state!.draft, started)
+    const { id, date, draft: candidate } = createMilestoneFeature(state!.draft, started)
+    const { draft, conflict } = settleMilestoneWindows(state!.draft, candidate, started)
+    if (conflict) {
+      toast(conflict)
+      return
+    }
+    if (milestoneLaneConflict(draft)) {
+      toast('同一泳道不能重叠，请先为后续版本留出时间。')
+      return
+    }
     edit(() => draft)
     navigate(date)
     setNewFeature(id)
@@ -184,6 +202,15 @@ export function ProjectMilestones({
     <section
       ref={root}
       className="wb-ml"
+      data-draft-persistence={
+        model.persistenceError
+          ? 'failed'
+          : state.saving
+            ? 'saving'
+            : model.recoverySaved
+              ? 'saved'
+              : 'idle'
+      }
       onFocusCapture={(event) => {
         if (event.target instanceof HTMLInputElement && event.target.matches('.wb-ml-inline')) {
           model.beginFieldEdit()
@@ -208,30 +235,25 @@ export function ProjectMilestones({
       }}
     >
       <header className="wb-ml-heading">
-        <strong>项目里程碑</strong>
+        <MilestoneTitle editing={editing} busy={busy} finishEditing={model.finishEditing} />
         <div className="wb-ml-actions">
           {editing && (
             <MilestoneHistoryActions
-              status={status}
               dirty={dirty}
               busy={busy}
               conflict={!!state.sourceConflict}
               recoveryBlocked={!!state.recoveryBlocked}
               canUndo={model.canUndo}
               canRedo={model.canRedo}
-              undo={() => {
-                model.undo()
-              }}
-              redo={() => {
-                model.redo()
-              }}
+              undo={model.undo}
+              redo={model.redo}
               discard={() => {
                 model.revert()
                 setRestoreKey((v) => v + 1)
               }}
             />
           )}
-          {!editing ? (
+          {!editing && (
             <Button
               size="xs"
               className="bg-foreground text-background hover:bg-foreground/90"
@@ -240,14 +262,26 @@ export function ProjectMilestones({
             >
               规划里程碑
             </Button>
-          ) : (
+          )}
+          {(editing || state.data.review.pr || state.data.mergedProposal) && (
             <MilestoneReviewButton
-              busy={busy}
-              conflict={!!state.sourceConflict}
-              dirty={dirty}
+              busy={busy || updatingFormal}
+              conflict={!!state.sourceConflict || !!state.data.review.queryFailed}
+              dirty={editing && dirty}
               retry={state.retry}
               invalid={problems.length > 0}
               hasReview={state.data.review.pr?.state === 'open'}
+              reviewUrl={state.data.review.pr?.url ?? undefined}
+              needsUpdate={!!state.data.mergedProposal}
+              updateFormal={() => {
+                setUpdatingFormal(true)
+                void updateFormal()
+                  .then(() => model.reload())
+                  .catch((reason) =>
+                    toast.error(reason instanceof Error ? reason.message : String(reason))
+                  )
+                  .finally(() => setUpdatingFormal(false))
+              }}
               changes={changes}
               submit={() => {
                 void model.submit()
@@ -267,10 +301,10 @@ export function ProjectMilestones({
           </MilestoneIconButton>
         </div>
       </header>
-      {editing && (state.saving || (dirty && model.recoverySaved)) && (
-        <small className="wb-ml-save-status" role="status">
-          {state.saving ? '正在保存本机草案…' : '本机草案已保存'}
-        </small>
+      {state.data.review.queryFailed && (
+        <p className="wb-ml-alert" role="alert">
+          评审状态未读到，请刷新里程碑与评审后再提交。
+        </p>
       )}
       {model.persistenceError && (
         <p className="wb-ml-alert" role="alert">
@@ -282,13 +316,13 @@ export function ProjectMilestones({
           {error}
         </p>
       )}
-      {editing && problems.length > 0 && (
+      {editing && !state.sourceConflict && problems.length > 0 && (
         <p className="wb-ml-alert" role="status">
           {problems.slice(0, 3).join('；')}
           {problems.length > 3 ? `（另有 ${problems.length - 3} 项）` : ''}
         </p>
       )}
-      {editing && frozenProblems.length > 0 && (
+      {editing && !state.sourceConflict && frozenProblems.length > 0 && (
         <div className="wb-ml-notice">
           <span>
             还原已锁定版本的改动；涉及这些版本的新增特性整行移除，已有特性的其他未来排期保留。可撤销。
@@ -315,35 +349,7 @@ export function ProjectMilestones({
           ))}
         </details>
       )}
-      {state.data.sourceNotice && (
-        <div className="wb-ml-notice">
-          {state.data.sourceNotice}
-          {state.data.mergedProposal && (
-            <Button
-              variant="outline"
-              size="xs"
-              disabled={busy}
-              onClick={async () => {
-                await updateFormal()
-                await model.reload()
-              }}
-            >
-              更新正式安排
-            </Button>
-          )}
-        </div>
-      )}
-      {state.data.review.pr?.url && (
-        <div className="wb-ml-review-link">
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={() => void window.api.shell.openUrl(state.data.review.pr!.url!)}
-          >
-            查看项目材料评审
-          </Button>
-        </div>
-      )}
+      {state.data.sourceNotice && <div className="wb-ml-notice">{state.data.sourceNotice}</div>}
       {!editing && !hasPlanning ? (
         <div className="wb-ml-empty">还没有里程碑</div>
       ) : (
@@ -356,18 +362,12 @@ export function ProjectMilestones({
             navigate={(value) => navigate(`${value}-01`)}
             editField={model.editField}
           />
-          <div className="wb-ml-toolbar">
-            <span>
-              {visible.material.features.length} 个特性 ·{' '}
-              {new Set(visible.material.features.map((f) => f.owner.trim()).filter(Boolean)).size}{' '}
-              位负责人
-            </span>
-          </div>
           <MilestoneTimeline
             catalog={versionCatalog}
             factsRefresh={factsRefresh}
             key={`${restoreScope}:${editing}:${restoreKey}`}
             draft={visible}
+            versionFacts={versionFacts}
             editField={model.editField}
             registerWeek={registerWeek}
             addFeature={addFeature}

@@ -193,9 +193,11 @@ export async function verifyVersionOverview(
   expect(expectedActual.length).toBeGreaterThan(0)
   await page.getByRole('button', { name: '项目总览', exact: true }).click()
   await expect(page.getByRole('heading', { name: '总览', exact: true })).toBeVisible()
-  const actual = page.locator('[data-actual-goal="overview-v0.334:current-goal"]')
-  await expect(actual).toContainText('当前目标 · 版本总览开发', { timeout: 90_000 })
-  await expect(actual).toContainText('特性 #334', { timeout: 90_000 })
+  const actual = page.locator(
+    '[data-actual-goal="overview-v0.334:current-goal"][data-actual-feature="github:github.com/forcegravity1989/builder-workbench:334"]'
+  )
+  await expect(actual).toContainText(`${overviewVersions.current} · G1 · #334`, { timeout: 90_000 })
+  await expect(actual).toContainText('#334', { timeout: 90_000 })
   await expect(actual).toContainText('Deploy 未跟踪')
   await expect(actual.locator('.wb-ml-actual-phase')).not.toHaveCount(0)
   const axisDates = await actual
@@ -225,7 +227,7 @@ export async function verifyVersionOverview(
   ).toBeVisible()
   await expect(page.getByRole('button', { name: '← 返回项目里程碑', exact: true })).toBeVisible()
   await page.getByRole('button', { name: '← 返回项目里程碑', exact: true }).click()
-  await expect(actual).toContainText('特性 #334')
+  await expect(actual).toContainText('#334')
   console.info('[overview] shared version-goal facts and milestone source return verified')
   await open(overviewVersions.current)
   await page.reload()

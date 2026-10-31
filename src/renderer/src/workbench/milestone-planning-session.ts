@@ -154,8 +154,7 @@ export async function restore(key: string, data: MilestoneRead): Promise<Session
       recoveryRaw: record.payload,
       recoveryRevision: record.revision,
       recoveryBlocked: true,
-      sourceConflict:
-        '本机草案格式过旧或无法读取，原记录保留。请让模型核对当前客户端 profile 的 workbench/milestone-drafts/ 恢复文件，迁移未提交排期后点“重试读取本机草案”；本次不会覆盖记录。'
+      sourceConflict: '本机草案无法读取，原文件已保留。请让模型检查恢复文件后，刷新里程碑重试。'
     }
   }
 }

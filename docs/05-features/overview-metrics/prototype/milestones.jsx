@@ -1,6 +1,7 @@
 import { InlineField } from './milestones-fields.jsx'
 import { Timeline } from './milestones-timeline.jsx'
-import { defaultStages } from './milestones-sdlc.js'
+import { defaultStages, fitVersions, laneConflict, settleWindows } from './milestones-sdlc.js'
+import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js'
 import Undo2 from 'lucide-react/dist/esm/icons/undo-2.js'
 import Redo2 from 'lucide-react/dist/esm/icons/redo-2.js'
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw.js'
@@ -219,7 +220,12 @@ function App() {
       features: p.features.map((f) => (f.id === id ? { ...f, ...patch } : f))
     }))
   const remove = (item) => {
-    editPlan((p) => ({ ...p, features: p.features.filter((f) => f.id !== item.id) }))
+    editPlan((p) =>
+      fitVersions(
+        { ...p, features: p.features.filter((f) => f.id !== item.id) },
+        item.deliveries.map((d) => d.versionId)
+      )
+    )
   }
   const add = () => {
     const id = `demo-${crypto.randomUUID()}`
@@ -229,26 +235,40 @@ function App() {
     after.setUTCDate(after.getUTCDate() + ((8 - after.getUTCDay()) % 7 || 7))
     const nextWeek = availableWeek(first.plan, after.toISOString().slice(0, 10))
     const next = planWeek(first.plan, nextWeek)
+    const fitted = fitVersions(
+      {
+        ...next.plan,
+        features: [
+          ...next.plan.features,
+          {
+            id,
+            month: week.start.slice(0, 7),
+            title: '',
+            owner: '',
+            deliveries: [
+              {
+                versionId: first.version.id,
+                stages: defaultStages(first.version)
+              },
+              { versionId: next.version.id, stages: defaultStages(next.version, true) }
+            ]
+          }
+        ]
+      },
+      [first.version.id, next.version.id]
+    )
+    const settled = settleWindows(state.draft, fitted)
+    if (settled.conflict) {
+      setNotice(settled.conflict)
+      return
+    }
+    const candidate = settled.plan
+    if (laneConflict(candidate)) {
+      setNotice('同一泳道不能重叠，请先为后续版本留出时间。')
+      return
+    }
     setNewFeature(id)
-    editPlan(() => ({
-      ...next.plan,
-      features: [
-        ...next.plan.features,
-        {
-          id,
-          month: week.start.slice(0, 7),
-          title: '',
-          owner: '',
-          deliveries: [
-            {
-              versionId: first.version.id,
-              stages: defaultStages(first.version)
-            },
-            { versionId: next.version.id, stages: defaultStages(next.version, true) }
-          ]
-        }
-      ]
-    }))
+    editPlan(() => candidate)
     navigate(first.version.start)
   }
   const reorder = (id, target, side) => {
@@ -308,13 +328,6 @@ function App() {
     }
     editPlan((p) => planWeek(p, week, name).plan)
   }
-  const status = dirty
-    ? '编辑中'
-    : state.review === 'open'
-      ? '已提交，待合入'
-      : state.review === 'merged'
-        ? '已合入，待更新'
-        : '编辑中'
   return (
     <>
       <div className="ml-review-strip">
@@ -414,17 +427,18 @@ function App() {
             <section className="ml-milestone-block" aria-label="项目里程碑" ref={board}>
               <div className="ml-milestone-heading">
                 <div className="ml-heading-title">
-                  <h2>项目里程碑</h2>
-                  {!empty && (
-                    <span className="ml-feature-summary">
-                      <span>{plan.features.length} 个特性</span>
-                    </span>
+                  {planning && (
+                    <IconAction
+                      label="结束编辑，返回项目里程碑"
+                      icon={ArrowLeft}
+                      onClick={() => setPlanning(false)}
+                    />
                   )}
+                  <h2>项目里程碑</h2>
                 </div>
                 <div className="ml-actions">
                   {planning ? (
                     <>
-                      <span className={`tag tag-outline ${dirty ? 'ml-dirty' : ''}`}>{status}</span>
                       <div className="ml-edit-actions" role="group" aria-label="规划编辑操作">
                         <IconAction
                           label="撤销 · Ctrl+Z"
@@ -461,7 +475,7 @@ function App() {
                       ) : (
                         <button
                           className="btn btn-primary"
-                          disabled={dirty ? Boolean(problem) : state.review === 'none'}
+                          disabled={state.review === 'none' && (!dirty || Boolean(problem))}
                           title={
                             dirty
                               ? problem || '核对本次变更'
@@ -482,16 +496,19 @@ function App() {
                       )}
                     </>
                   ) : (
-                    <button className="btn btn-primary" onClick={begin}>
-                      规划里程碑
-                      {dirty
-                        ? ' · 有修改'
-                        : state.review === 'open'
-                          ? ' · 待合入'
-                          : state.review === 'merged'
-                            ? ' · 待更新'
-                            : ''}
-                    </button>
+                    <>
+                      <button className="btn btn-primary" onClick={begin}>
+                        规划里程碑
+                      </button>
+                      {state.review !== 'none' && (
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => setModal({ type: 'review', viewOnly: true })}
+                        >
+                          {state.review === 'merged' ? '更新正式安排' : '查看评审'}
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -499,11 +516,6 @@ function App() {
                 <p className="ml-schedule-problem" role="alert">
                   {problem}
                 </p>
-              )}
-              {planning && dirty && !saveError && (
-                <small className="ml-save-status" title="原型注释: 演示本机保存完成状态。">
-                  本机草案已保存
-                </small>
               )}
               {empty ? (
                 <div className="ml-first-plan">
@@ -566,6 +578,8 @@ function App() {
       )}
       {modal?.type === 'review' && (
         <PlanningReviewPanel
+          viewOnly={modal.viewOnly}
+          invalid={Boolean(problem)}
           state={state}
           changes={changes}
           submit={submit}

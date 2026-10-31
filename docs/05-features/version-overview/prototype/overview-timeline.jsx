@@ -175,7 +175,7 @@ export function FeatureTimeline({ feature }) {
         虚线使用默认长度，不是正式排期；Deploy 未跟踪，Maintain 暂用 1 天占位。
       </p>
       <div className="ov-journey-scroll" tabIndex={0} aria-label="特性时间轴，可横向滚动">
-        <div className="ov-journey-canvas" style={{ minWidth: Math.max(600, total * 3.4) }}>
+        <div className="ov-journey-canvas" style={{ minWidth: Math.max(600, total * 4.5) }}>
           <div className="ov-journey-scale">
             {releases.map((release) => {
               const Target = release.source.href ? 'a' : 'button'

@@ -1,12 +1,13 @@
 import type { CycleTaskReference, CycleTaskSnapshot } from '../version-cycle/ports'
 import { normalizeGitRemoteUrl } from '../../../../shared/git-remote-identity'
+import { parseGitHubIssueOrPRLink } from '../../../../shared/github/links'
 
 export type FeaturePhase = 'design' | 'development'
 export const PHASE_LABELS: Record<FeaturePhase, string> = {
   design: '设计与联合评审',
   development: 'Build'
 }
-export const PARSER_REVISION = 'feature-evidence-v3'
+export const PARSER_REVISION = 'feature-evidence-v4'
 export type FeaturePull = {
   phase?: FeaturePhase | 'unknown'
   number: number
@@ -166,4 +167,35 @@ export function linkedPullNumbers(body: string, issueUrl: string): number[] {
     }
   }
   return [...found]
+}
+
+/** A timeline mention is only a candidate; the PR must declare the Issue it delivers. */
+export function pullDeclaresIssue(body: string, issueUrl: string): boolean {
+  const issue = parseGitHubIssueOrPRLink(issueUrl)
+  if (issue?.type !== 'issue') {
+    return false
+  }
+  return [...body.matchAll(/^[\t ]*关联[\t ]*[:：]?[\t ]*([^\r\n]+)[\t ]*\r?$/gm)].some((line) => {
+    const references = line[1]
+      .trim()
+      .split(/[、,，\s]+/)
+      .map((value) => {
+        if (/^#[1-9]\d*$/.test(value)) {
+          const number = Number(value.slice(1))
+          return Number.isSafeInteger(number) ? { ...issue, number } : null
+        }
+        return parseGitHubIssueOrPRLink(value)
+      })
+    return (
+      references.every((reference) => reference?.type === 'issue') &&
+      references.some(
+        (reference) =>
+          reference &&
+          reference.number === issue.number &&
+          reference.slug.host?.toLowerCase() === issue.slug.host?.toLowerCase() &&
+          reference.slug.owner.toLowerCase() === issue.slug.owner.toLowerCase() &&
+          reference.slug.repo.toLowerCase() === issue.slug.repo.toLowerCase()
+      )
+    )
+  })
 }

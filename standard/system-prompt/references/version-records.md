@@ -25,9 +25,11 @@ cycleId 标识同一版本同一流程的材料身份，不是自然周、原生
 
 计划 schema 3 可选 `timeWindow: {start, end}`，两端为包含当日的 ISO 日期；开始不得晚于结束。项目里程碑与版本计划使用这一个日期来源，其他字段编辑须原样保留。无日期就是未登记，不从 Releases、验收或提交时间猜排期。
 
-未来版本可先在项目里程碑登记名称、日期和空计划，真正开工才创建本版工作树与会话；发现已有计划时沿用 cycleId，不重新初始化覆盖。月度宏观安排保存于 `.bw/milestones.json`，含 schema_version=2、months（month/outcome）与按显示顺序排列的 features（id/month/title/owner/deliveries）。每次 delivery 含稳定 id、version（version + cycleId）与 stages；阶段含 phase/start/end，使用北京时间半日坐标 YYYY-MM-DDT00:00 或 T12:00，结束边界不包含。首版阶段为 Plan/Design/Build/Test/Deploy，后续为 Maintain；实际事件不回写为规划。行 id 不是 Issue 身份。
+未来版本可先在项目里程碑登记名称、日期和空计划，真正开工才创建本版工作树与会话；发现已有计划时沿用 cycleId，不重新初始化覆盖。月度宏观安排保存于 `.bw/milestones.json`，含 schema_version=2、months（month/outcome）与按显示顺序排列的 features（id/month/title/owner/deliveries）。每次 delivery 含稳定 id、version（version + cycleId）、可选 goalSlot/goalId 与 stages；阶段含 phase/start/end，使用北京时间半日坐标 YYYY-MM-DDT00:00 或 T12:00，结束边界不包含。首版阶段为 Plan/Design/Build/Test/Deploy，后续为 Maintain；实际事件不回写为规划。行 id 不是 Issue 身份。goalSlot 仅为 G1–G4 的规划位置（1–4），不是目标身份；用户明确选择本版已有目标时才保存其稳定 goalId。提交须按版本名称/cycleId 校验 goalId；没有对应时不按序号自动绑定，改派到其他版本清除旧引用。
 
-里程碑不创建或绑定特性 Issue；版内细化、Issue 关联和验收范围仍由计划助手与人讨论。计划助手核对已合入宏观安排与实际版本，发现名称、日期或特性安排不一致时提醒用户；不要用宏观改名改写已发生的计划、任务和验收，也不按标题自动猜特性对应关系。开始制定版本计划即冻结原计划和版本日期，仅后续未开工版本可调整。整体移动未开工版本时关联规划阶段同比移动，扩缩边界不缩放阶段；阶段超出版本或 Maintain 早于上一版结束时须先解决冲突。项目材料经 bw/project 评审进入主干，固定计划树经自身 Git 同步后再读，不能把另一树工作中草稿当正式安排。
+历史未记录阶段时允许 `stages: []`，只保留已确认的特性、版本与目标归属；版本仍须有明确日期。空阶段表示未知，不自动补成默认五阶段、实际工期或完成结果。历史回填由用户授权后直接编辑材料并经 Git 评审，界面冻结规则保持。
+
+里程碑不创建或绑定特性 Issue；版内细化、Issue 关联和验收范围仍由计划助手与人讨论。计划助手核对已合入宏观安排与实际版本，发现名称、日期或特性安排不一致时提醒用户；不要用宏观改名改写已发生的计划、任务和验收，也不按标题自动猜特性对应关系。开始制定版本计划即冻结原计划和版本日期，仅后续未开工版本可调整。未开工版本表头仅整体平移，带动本版全部阶段；时长通过 SDLC 调整，版本日期跟随本版最早 Plan 与最晚 Deploy，Maintain 铺满后续版（仅有 Maintain 时由其时长确定窗口）。同一特性的前后安排不能重叠或倒序，阶段拖动、整版平移及新增扩窗均检查全部受影响行；不同特性可以并行。项目材料经 bw/project 评审进入主干，固定计划树经自身 Git 同步后再读，不能把另一树工作中草稿当正式安排。
 
 ## 来源与历史
 

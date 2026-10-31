@@ -4,6 +4,7 @@ import { CHARTER_BRANCH } from '../../../shared/workbench/project-charter'
 import {
   milestoneDraft,
   milestoneProblems,
+  milestoneGoalProblems,
   type MilestoneDraft
 } from '../../../shared/workbench/project-milestones'
 import { ensureNamedWorktree, nativeWorkspaceScopeKey } from './version-cycle/native-workspace'
@@ -96,7 +97,7 @@ export function useMilestonePlanning(
             ...previous,
             data,
             sourceConflict:
-              '其他地方已调整规划，当前输入保留。核对最新材料后可放弃本次修改重新编辑；不会覆盖模型或其他人的修改。'
+              '本机草案与最新项目规划不同，草案已保留。可在规划时放弃本次修改，载入最新规划。'
           })
         }
       } else {
@@ -182,9 +183,11 @@ export function useMilestonePlanning(
       !target ||
       !s ||
       s.sourceConflict ||
+      s.data.review.queryFailed ||
       submitting.has(key) ||
       reading ||
-      milestoneProblems(s.draft).length
+      milestoneProblems(s.draft).length ||
+      milestoneGoalProblems(s.draft, (s.data.proposal ?? s.data.formal).versions).length
     ) {
       return
     }
@@ -256,6 +259,12 @@ export function useMilestonePlanning(
       setReadError(null)
     }
   }
+  const finishEditing = () => {
+    const s = sessions.get(key)
+    if (s && !submitting.has(key) && !reading) {
+      put(key, { ...s, editing: false, field: null })
+    }
+  }
   return {
     state,
     busy: reading || writing,
@@ -269,6 +278,7 @@ export function useMilestonePlanning(
     reload,
     submit,
     revert,
+    finishEditing,
     undo: () => history('undo'),
     redo: () => history('redo'),
     beginFieldEdit: () => patch({ field: null }),

@@ -132,10 +132,25 @@ export const overviewTest = test.extend({
       JSON.stringify({
         schema_version: 2,
         months: [{ month: '2026-10', outcome: '' }],
-        features: []
+        features: [
+          {
+            id: 'overview-current',
+            month: '2026-10',
+            title: '版本总览',
+            owner: 'E2E fixture',
+            deliveries: [
+              {
+                id: 'overview-current-delivery',
+                version: { version: current.version, cycleId: current.cycleId },
+                goalId: 'current-goal',
+                stages: []
+              }
+            ]
+          }
+        ]
       })
     )
-    // Existing planned versions need no macro-feature/Issue binding to show actual goals.
+    // Explicit delivery selects the version; its goal tasks provide the actual Issue identity.
     const currentPath = path.join(root, '.bw/planning', current.version, 'data.json')
     const currentDocument = JSON.parse(readFileSync(currentPath, 'utf8'))
     writeFileSync(

@@ -56,6 +56,7 @@ esbuild
     jsxFactory: 'React.createElement',
     jsxFragment: 'React.Fragment',
     charset: 'utf8',
+    supported: { 'template-literal': false },
     minifyWhitespace: true,
     minifyIdentifiers: true,
     banner: {

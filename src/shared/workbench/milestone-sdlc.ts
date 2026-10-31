@@ -1,5 +1,6 @@
 import { milestoneDay, milestoneDate } from './milestone-calendar'
 import { workCalendarDay } from './work-calendar'
+import { milestoneDeliveryWindow } from './milestone-delivery-window'
 import {
   MilestonePhases,
   type MilestoneDraft,
@@ -45,54 +46,115 @@ export function defaultMilestoneStages(
 
 export type MilestoneDragMode = 'move' | 'start' | 'end'
 
-/** Version resizing never silently rescales feature plans; submission reports overflow. */
-export function adjustMilestoneVersion(
+/** Delivery order belongs to one feature; separate features may run in parallel. */
+export function milestoneLaneConflict(draft: MilestoneDraft): string | undefined {
+  return draft.material.features.find((feature) =>
+    feature.deliveries.some((delivery, index) => {
+      const previous = feature.deliveries[index - 1]
+      const previousWindow = previous && milestoneDeliveryWindow(previous, draft.versions)
+      const window = milestoneDeliveryWindow(delivery, draft.versions)
+      return (
+        previous &&
+        (delivery.version.cycleId === previous.version.cycleId ||
+          (window && previousWindow && window.start < previousWindow.end))
+      )
+    })
+  )?.id
+}
+
+/** A version covers its earliest Plan and latest Deploy; Maintain occupies the whole window. */
+export function fitMilestoneVersions(
   draft: MilestoneDraft,
-  id: string,
-  mode: MilestoneDragMode,
-  delta: number
+  ids: ReadonlySet<string>
 ): MilestoneDraft {
-  const version = draft.versions.find((v) => v.cycleId === id)
-  if (!version?.timeWindow || !Number.isInteger(delta) || !delta) {
-    return draft
-  }
-  const start = milestoneDay(version.timeWindow.start) + (mode !== 'end' ? delta : 0)
-  const end = milestoneDay(version.timeWindow.end) + (mode !== 'start' ? delta : 0)
-  if (end < start) {
-    return draft
-  }
+  const versions = draft.versions.map((v) => {
+    if (!ids.has(v.cycleId)) {
+      return v
+    }
+    const plans = draft.material.features
+      .flatMap((f) => f.deliveries)
+      .filter((d) => d.version.cycleId === v.cycleId && d.stages[0]?.phase === 'Plan')
+    if (!plans.length) {
+      return v
+    }
+    return {
+      ...v,
+      timeWindow: {
+        start: milestoneDate(
+          Math.floor(Math.min(...plans.map((d) => plannedDay(d.stages[0].start))))
+        ),
+        end: milestoneDate(
+          Math.ceil(Math.max(...plans.map((d) => plannedDay(d.stages.at(-1)!.end)))) - 1
+        )
+      }
+    }
+  })
+  return fillMaintenance({ ...draft, versions }, ids)
+}
+
+function fillMaintenance(draft: MilestoneDraft, ids: ReadonlySet<string>): MilestoneDraft {
   return {
     ...draft,
-    versions: draft.versions.map((v) =>
-      v.cycleId === id
-        ? { ...v, timeWindow: { start: milestoneDate(start), end: milestoneDate(end) } }
-        : v
-    ),
     material: {
       ...draft.material,
-      features:
-        mode !== 'move'
-          ? draft.material.features
-          : draft.material.features.map((f) => ({
-              ...f,
-              deliveries: f.deliveries.map((d) =>
-                d.version.cycleId !== id
-                  ? d
-                  : {
-                      ...d,
-                      stages: d.stages.map((s) => ({
-                        ...s,
-                        start: plannedTime(plannedDay(s.start) + delta),
-                        end: plannedTime(plannedDay(s.end) + delta)
-                      }))
-                    }
-              )
-            }))
+      features: draft.material.features.map((f) => ({
+        ...f,
+        deliveries: f.deliveries.map((d) => {
+          const v = draft.versions.find((v) => v.cycleId === d.version.cycleId)
+          return ids.has(d.version.cycleId) && d.stages[0]?.phase === 'Maintain' && v?.timeWindow
+            ? { ...d, stages: defaultMilestoneStages(v, true) }
+            : d
+        })
+      }))
     }
   }
 }
 
-/** Half-day resizing moves the shared boundary, retaining at least half a day per phase. */
+/** The version header translates every plan together; duration is edited on the SDLC bars. */
+export function adjustMilestoneVersion(
+  draft: MilestoneDraft,
+  id: string,
+  delta: number
+): MilestoneDraft {
+  const v = draft.versions.find((v) => v.cycleId === id)
+  if (!v?.timeWindow || !Number.isInteger(delta) || !delta) {
+    return draft
+  }
+  return {
+    ...draft,
+    versions: draft.versions.map((item) =>
+      item.cycleId !== id
+        ? item
+        : {
+            ...item,
+            timeWindow: {
+              start: milestoneDate(milestoneDay(v.timeWindow!.start) + delta),
+              end: milestoneDate(milestoneDay(v.timeWindow!.end) + delta)
+            }
+          }
+    ),
+    material: {
+      ...draft.material,
+      features: draft.material.features.map((f) => ({
+        ...f,
+        deliveries: f.deliveries.map((d) =>
+          d.version.cycleId !== id
+            ? d
+            : {
+                ...d,
+                stages: d.stages.map((s) => ({
+                  ...s,
+                  start: plannedTime(plannedDay(s.start) + delta),
+                  end: plannedTime(plannedDay(s.end) + delta)
+                }))
+              }
+        )
+      }))
+    }
+  }
+}
+
+/** Resizing a phase shifts its neighbours without compressing their duration. */
 export function adjustMilestoneDelivery(
   draft: MilestoneDraft,
   featureId: string,
@@ -105,7 +167,17 @@ export function adjustMilestoneDelivery(
   const delivery = draft.material.features
     .find((f) => f.id === featureId)
     ?.deliveries.find((d) => d.id === deliveryId)
-  if (!delivery || !Number.isInteger(delta * 2) || !delta) {
+  if (!delivery?.stages.length || !Number.isInteger(delta * 2) || !delta) {
+    return draft
+  }
+  const versionId = target?.cycleId ?? delivery.version.cycleId
+  const isMaintain = delivery.stages[0]?.phase === 'Maintain'
+  if (isMaintain && mode === 'move') {
+    return target && target.cycleId !== delivery.version.cycleId
+      ? draft
+      : adjustMilestoneVersion(draft, versionId, delta)
+  }
+  if (isMaintain && !Number.isInteger(delta)) {
     return draft
   }
   const stages = delivery.stages.map((s) => ({
@@ -123,31 +195,31 @@ export function adjustMilestoneDelivery(
     if (!stage) {
       return draft
     }
-    if (mode === 'start') {
+    if (isMaintain) {
+      // Where new features set this version's dates, maintenance follows them, never defines a second range.
       if (
-        stage.end - (stage.start + delta) < 0.5 ||
-        (stageIndex > 0 && stage.start + delta - stages[stageIndex - 1].start < 0.5)
+        draft.material.features.some((f) =>
+          f.deliveries.some((d) => d.version.cycleId === versionId && d.stages[0]?.phase === 'Plan')
+        )
       ) {
         return draft
-      }
-      stage.start += delta
-      if (stageIndex) {
-        stages[stageIndex - 1].end = stage.start
-      }
-    } else {
-      if (
-        stage.end + delta - stage.start < 0.5 ||
-        (stageIndex < stages.length - 1 && stages[stageIndex + 1].end - (stage.end + delta) < 0.5)
-      ) {
-        return draft
-      }
-      stage.end += delta
-      if (stageIndex < stages.length - 1) {
-        stages[stageIndex + 1].start = stage.end
       }
     }
+    const start = stage.start + (mode === 'start' ? delta : 0)
+    const end = stage.end + (mode === 'end' ? delta : 0)
+    if (end - start < 0.5) {
+      return draft
+    }
+    stage.start = start
+    stage.end = end
+    stages.forEach((s, i) => {
+      if ((mode === 'start' && i < stageIndex) || (mode === 'end' && i > stageIndex)) {
+        s.start += delta
+        s.end += delta
+      }
+    })
   }
-  return {
+  let next: MilestoneDraft = {
     ...draft,
     material: {
       ...draft.material,
@@ -162,7 +234,10 @@ export function adjustMilestoneDelivery(
                   : {
                       ...d,
                       ...(target
-                        ? { version: { version: target.version, cycleId: target.cycleId } }
+                        ? {
+                            version: { version: target.version, cycleId: target.cycleId },
+                            ...(target.cycleId !== d.version.cycleId ? { goalId: undefined } : {})
+                          }
                         : {}),
                       stages: stages.map((s) => ({
                         ...s,
@@ -175,4 +250,21 @@ export function adjustMilestoneDelivery(
       )
     }
   }
+  if (isMaintain && mode !== 'move') {
+    next = {
+      ...next,
+      versions: next.versions.map((v) =>
+        v.cycleId !== versionId
+          ? v
+          : {
+              ...v,
+              timeWindow: {
+                start: milestoneDate(Math.floor(stages[0].start)),
+                end: milestoneDate(Math.ceil(stages[0].end) - 1)
+              }
+            }
+      )
+    }
+  }
+  return fitMilestoneVersions(next, new Set([delivery.version.cycleId, versionId]))
 }

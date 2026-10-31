@@ -16,7 +16,7 @@ export function FeatureTimelineView({
   version: string
 }) {
   const layout = featureTimelineLayout(feature)
-  const width = Math.max(600, layout.total * 3.4)
+  const width = Math.max(600, layout.total * 4.5)
   const percent = (hours: number) => `${String(layout.total ? (hours / layout.total) * 100 : 0)}%`
   const markerEnds: number[] = []
   const markers = layout.markers.map((marker) => {

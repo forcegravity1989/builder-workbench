@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import type { MilestoneDraft, ScheduledVersion } from '../../../shared/workbench/project-milestones'
+import type { MilestoneDraft } from '../../../shared/workbench/project-milestones'
 import { milestoneCalendar } from '../../../shared/workbench/milestone-calendar'
 
 export function useMilestoneActualRange(draft: MilestoneDraft, started: Set<string>) {
@@ -31,26 +30,4 @@ export function useMilestoneActualRange(draft: MilestoneDraft, started: Set<stri
     end: Math.max(calendar.end, ...active.map((r) => r[1])),
     reportRange
   }
-}
-
-export function UndatedMilestoneVersions({
-  versions,
-  started,
-  open
-}: {
-  versions: ScheduledVersion[]
-  started: Set<string>
-  open(v: ScheduledVersion): void
-}) {
-  const undated = versions.filter((v) => !v.timeWindow && started.has(v.cycleId))
-  return undated.length ? (
-    <div className="wb-ml-toolbar" aria-label="未记录日期的版本">
-      <span>版本日期未记录</span>
-      {undated.map((v) => (
-        <Button key={v.cycleId} variant="ghost" size="xs" onClick={() => open(v)}>
-          {v.version} ↗
-        </Button>
-      ))}
-    </div>
-  ) : null
 }

@@ -7,8 +7,7 @@
   font-size: 13px;
   color: var(--foreground);
 }
-.wb-ml-heading,
-.wb-ml-toolbar {
+.wb-ml-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -17,7 +16,13 @@
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
 }
-.wb-ml-heading > strong {
+.wb-ml-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.wb-ml-title > strong {
   font-size: 16px;
 }
 .wb-ml-actions {
@@ -31,15 +36,6 @@
   color: var(--muted-foreground);
   font-size: 11px;
   font-weight: 400;
-}
-.wb-ml-save-status {
-  padding: 4px 16px;
-  text-align: right;
-}
-.wb-ml-toolbar {
-  color: var(--muted-foreground);
-  font-size: 11px;
-  padding: 8px 16px;
 }
 .wb-ml-action-separator {
   height: 16px;
@@ -61,18 +57,6 @@
   place-items: center;
   color: var(--muted-foreground);
 }
-.wb-ml .wb-ml-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-.wb-ml-status::before {
-  content: '';
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--muted-foreground);
-}
 
 .wb-ml-roadmap-scroll {
   overflow-x: auto;
@@ -85,13 +69,13 @@
 .wb-ml-roadmap-axis {
   display: flex;
   width: 100%;
-  height: 104px;
+  height: 76px;
   position: relative;
 }
 .wb-ml-roadmap-axis::before {
   content: '';
   position: absolute;
-  top: 36px;
+  top: 28px;
   left: 0;
   right: 0;
   border-top: 1px solid var(--border);
@@ -105,7 +89,7 @@
   content: '';
   position: absolute;
   left: calc(50% - 2px);
-  top: 34px;
+  top: 26px;
   width: 5px;
   height: 5px;
   background: var(--foreground);
@@ -113,7 +97,7 @@
 }
 .wb-ml-roadmap-flag {
   position: absolute;
-  top: 12px;
+  top: 4px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -134,7 +118,7 @@
 }
 .wb-ml-roadmap-caption {
   position: absolute;
-  top: 54px;
+  top: 40px;
   left: calc(50% - 110px);
   width: 220px;
   border: 1px solid var(--border);
@@ -184,8 +168,8 @@
   position: sticky;
   left: 0;
   z-index: 3;
-  width: 230px;
-  flex: 0 0 230px;
+  width: 220px;
+  flex: 0 0 220px;
   padding: 10px 12px;
   background: var(--card);
   border-right: 1px solid var(--border);
@@ -209,15 +193,14 @@
 .wb-ml-window {
   position: absolute;
   top: 0;
-  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 3px;
+  gap: 0;
   overflow: hidden;
   background: color-mix(in srgb, var(--muted) 48%, var(--card));
-  padding: 12px 4px 4px;
+  padding: 9px 4px 2px;
   font-size: 12px;
 }
 .wb-ml-current-window {
@@ -363,7 +346,7 @@
 .wb-ml-add-feature {
   position: sticky;
   left: 0;
-  width: 230px;
+  width: 220px;
   padding: 8px 12px;
   background: var(--card);
 }
@@ -378,10 +361,6 @@
   color: var(--muted-foreground);
   border-bottom: 1px solid var(--border);
   font-size: 12px;
-}
-.wb-ml-review-link {
-  padding: 0 12px;
-  text-align: right;
 }
 .wb-ml-review {
   font-size: 13px;
@@ -467,7 +446,6 @@
 }
 .wb-ml-days-background {
   position: absolute;
-  top: 104px;
   bottom: 0;
   pointer-events: none;
 }
@@ -521,18 +499,29 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 16px;
-  padding: 10px 14px;
+  gap: 6px 12px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--border);
   font-size: 10px;
   color: var(--muted-foreground);
+}
+.wb-ml-counts {
+  flex-shrink: 0;
+  font-size: 11px;
+}
+.wb-ml-sdlc-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px 14px;
+  margin-left: auto;
 }
 .wb-ml-legend {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-right: auto;
+  gap: 10px;
 }
 .wb-ml-legend > span {
   display: inline-flex;
@@ -614,6 +603,21 @@
   border-radius: 3px;
   z-index: 2;
 }
+.wb-ml-unrecorded {
+  position: absolute;
+  top: 31px;
+  height: 28px;
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+}
 .wb-ml-phase-body {
   display: block;
   width: 100%;
@@ -652,6 +656,80 @@
 .wb-ml-row.with-baseline .wb-ml-track {
   min-height: 116px;
 }
+.wb-ml-actual-unknown {
+  position: absolute;
+  top: 34px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+  padding: 3px 6px;
+  border: 1px dashed var(--border);
+  background: var(--card);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.wb-ml-feature-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  min-width: 0;
+  overflow-x: auto;
+}
+.wb-ml-owner {
+  flex: 0 1 76px;
+  min-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wb-ml-goal-trigger,
+.wb-ml-goal-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: var(--muted);
+  color: var(--foreground);
+  font: inherit;
+  border: 0;
+}
+.wb-ml-goal-trigger {
+  cursor: pointer;
+}
+.wb-ml-goal-trigger:hover {
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.wb-ml-goal-version {
+  color: var(--muted-foreground);
+}
+.wb-ml-goal-options {
+  width: 68px;
+  padding: 4px;
+  font-size: 11px;
+}
+.wb-ml-goal-options button {
+  display: block;
+  width: 100%;
+  padding: 7px 9px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  text-align: left;
+  font: inherit;
+  color: var(--foreground);
+  cursor: pointer;
+}
+.wb-ml-goal-options button:hover,
+.wb-ml-goal-options button[aria-pressed='true'] {
+  background: var(--muted);
+}
+.wb-ml-drag-warning {
+  color: var(--destructive);
+}
+
 .wb-ml-connection {
   position: absolute;
   inset: 0;

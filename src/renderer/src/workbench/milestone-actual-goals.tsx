@@ -5,6 +5,7 @@ import { actualDay } from '../../../shared/workbench/milestone-sdlc'
 import type { VersionCatalogState } from './use-version-catalog'
 import { useVersionFacts } from './version-overview/use-version-facts'
 import { featureTimeline } from './version-overview/feature-timeline'
+import { taskKey } from './version-overview/feature-model'
 import { elapsedLabel, timeLabel, openEvidenceUrl } from './version-overview/overview-time'
 import { goalOrdinal, DECISION_LABELS } from './version-labels'
 import { MILESTONE_DAY_WIDTH } from './use-milestone-gesture'
@@ -18,7 +19,7 @@ type Props = {
   reportRange(key: string, start: number | null, end: number | null): void
 }
 
-/** Actual rows are version goals. Macro planning names never serve as Issue bindings. */
+/** Actual rows use explicit Issue identity. Macro planning names never serve as bindings. */
 export function MilestoneActualGoals({
   catalog,
   version,
@@ -31,13 +32,26 @@ export function MilestoneActualGoals({
   const plan = materials.plan.kind === 'ready' ? materials.plan.document : null
   const identityMatches = plan?.cycleId === version.cycleId && plan.version === version.version
   const failures = [...(materials.problems ?? []), ...features.problems]
-  const times = identityMatches
-    ? features.features.flatMap((f) =>
-        featureTimeline(f).segments.flatMap((s) =>
-          s.duration !== null && s.start && s.end ? [actualDay(s.start), actualDay(s.end)] : []
-        )
-      )
-    : []
+  const rows =
+    identityMatches && plan
+      ? features.features
+          .map((feature) => ({
+            feature,
+            goals: plan.goals.flatMap((goal, index) =>
+              feature.members.some((member) => member.reference.goalId === goal.goalId)
+                ? [{ goal, index }]
+                : []
+            )
+          }))
+          .filter((row) => row.goals.length > 0)
+      : []
+  const times = rows.flatMap(({ feature }) =>
+    featureTimeline(feature).segments.flatMap((stage) =>
+      stage.duration !== null && stage.start && stage.end
+        ? [actualDay(stage.start), actualDay(stage.end)]
+        : []
+    )
+  )
   const start = times.length ? Math.floor(Math.min(...times)) : null
   const end = times.length ? Math.ceil(Math.max(...times)) : null
   useEffect(() => {
@@ -65,51 +79,46 @@ export function MilestoneActualGoals({
   }
   return (
     <>
-      {plan.goals.map((goal, index) => {
-        const grouped = features.features.filter((f) =>
-          f.members.some((m) => m.reference.goalId === goal.goalId)
-        )
-        const feature = grouped.length === 1 ? grouped[0] : null
-        const timeline = feature ? featureTimeline(feature) : null
-        const result =
-          materials.acceptance.kind === 'ready'
-            ? materials.acceptance.document.results.find((r) => r.goalId === goal.goalId)?.decision
-            : null
-        const count = plan.tasks.filter((task) => task.goalId === goal.goalId).length
-        const status =
-          features.loading && !grouped.length
-            ? '正在读取特性依据…'
-            : grouped.length > 1
-              ? `${grouped.length} 个特性，历程分别保留在版本总览`
-              : !grouped.length
-                ? `${count} 项任务 · 尚无可读取的特性历程`
+      {features.loading && !rows.length && (
+        <div className="wb-ml-actual-notice" role="status">
+          {version.version}：正在读取特性依据…
+        </div>
+      )}
+      {rows.map(({ feature, goals }) => {
+        const timeline = featureTimeline(feature)
+        const goalLabels = goals.map(({ index }) => goalOrdinal(index)).join('、')
+        const acceptance = goals
+          .map(({ goal, index }) => {
+            const result =
+              materials.acceptance.kind === 'ready'
+                ? materials.acceptance.document.results.find(
+                    (entry) => entry.goalId === goal.goalId
+                  )?.decision
                 : null
+            return `${goalOrdinal(index)} · ${result ? DECISION_LABELS[result.outcome] : '未记录验收'}`
+          })
+          .join('；')
         return (
           <div
             className="wb-ml-row wb-ml-actual-row"
-            key={goal.goalId}
-            data-actual-goal={`${version.cycleId}:${goal.goalId}`}
+            key={taskKey(feature.root.reference)}
+            data-actual-goal={`${version.cycleId}:${goals[0].goal.goalId}`}
+            data-actual-feature={taskKey(feature.root.reference)}
           >
             <div className="wb-ml-label wb-ml-feature" data-ml-stop-pan>
               <div>
-                <strong title={goal.title}>
-                  {version.version} · {goalOrdinal(index)} · {goal.title}
+                <strong title={feature.root.title}>
+                  {version.version} · {goalLabels} · #{feature.root.iid} · {feature.root.title}
                 </strong>
                 <small>
-                  {goal.owner || '负责人未记录'} ·{' '}
-                  {result ? DECISION_LABELS[result.outcome] : '未记录验收'}
+                  {feature.root.assignee || '负责人未记录'} · {acceptance}
                 </small>
-                {feature && <small>特性 #{feature.root.iid} · Deploy 未跟踪</small>}
-                {features.loading && grouped.length > 0 && <small>正在刷新</small>}
+                <small>实际 · Deploy 未跟踪</small>
+                {features.loading && <small>正在刷新</small>}
               </div>
             </div>
             <div className="wb-ml-track" style={{ width: canvasWidth }}>
-              {status && (
-                <span className="wb-ml-actual-status" role="status">
-                  {status}
-                </span>
-              )}
-              {timeline?.segments.map((stage) => {
+              {timeline.segments.map((stage) => {
                 if (stage.duration === null || !stage.start || !stage.end) {
                   return null
                 }
@@ -122,7 +131,7 @@ export function MilestoneActualGoals({
                       <button
                         className={`wb-ml-phase wb-phase-${stage.id.toLowerCase()} wb-ml-actual-phase`}
                         data-ongoing={stage.ongoing || undefined}
-                        style={{ left: x, width: Math.max(1, pixels) }}
+                        style={{ left: x, width: Math.max(1, pixels), top: 31 }}
                         aria-label={`${stage.id} · ${timeLabel(stage.start)} — ${timeLabel(stage.end)}`}
                         onClick={() => {
                           if (sources.length === 1 && sources[0].url) {
@@ -145,7 +154,7 @@ export function MilestoneActualGoals({
                   </Tooltip>
                 )
               })}
-              {timeline && !timeline.segments.some((s) => s.duration !== null) && (
+              {!timeline.segments.some((s) => s.duration !== null) && (
                 <span className="wb-ml-actual-status">节点时间未记录</span>
               )}
             </div>

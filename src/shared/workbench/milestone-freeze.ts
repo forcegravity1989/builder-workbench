@@ -46,7 +46,12 @@ export function restoreFrozenMilestones(
 ): MilestoneDraft {
   const frozen = new Set(baseline.versions.filter((v) => v.started).map((v) => v.cycleId))
   const next = structuredClone(draft)
-  for (const { started: _, ...version } of baseline.versions.filter((v) => v.started)) {
+  for (const source of baseline.versions.filter((v) => v.started)) {
+    const version = {
+      version: source.version,
+      cycleId: source.cycleId,
+      timeWindow: source.timeWindow
+    }
     const index = next.versions.findIndex((v) => v.cycleId === version.cycleId)
     if (index === -1) {
       next.versions.push(version)
@@ -79,7 +84,15 @@ export function restoreFrozenMilestones(
     ]
     const deliveries = [
       ...feature.deliveries.filter((d) => !affected.has(d.id)),
-      ...structuredClone(original?.deliveries.filter((d) => affected.has(d.id)) ?? [])
+      ...structuredClone(original?.deliveries.filter((d) => affected.has(d.id)) ?? []).map((d) => {
+        const edited = feature.deliveries.find(
+          (item) =>
+            item.id === d.id &&
+            item.version.cycleId === d.version.cycleId &&
+            item.version.version === d.version.version
+        )
+        return edited ? { ...d, goalSlot: edited.goalSlot, goalId: edited.goalId } : d
+      })
     ].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id))
     // Keep the original semantic order even while future dates contain an editable conflict.
     return deliveries.length ? [{ ...feature, deliveries }] : []

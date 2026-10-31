@@ -1,11 +1,12 @@
 import { MilestoneDayAxis, MilestoneDayBackground } from './milestone-day-axis'
 import { useLayoutEffect, useRef, useState } from 'react'
-import { useMilestoneActualRange, UndatedMilestoneVersions } from './milestone-actual-context'
+import { useMilestoneActualRange } from './milestone-actual-context'
 import { MilestoneActualVersions } from './milestone-actual-goals'
 import type { VersionCatalogState } from './use-version-catalog'
 import { Button } from '@/components/ui/button'
 import { GripVertical, Plus, X } from 'lucide-react'
 import { MilestoneField } from './milestone-field'
+import { MilestoneFeatureMetadata } from './milestone-goal-picker'
 import { MilestoneIconButton } from './milestone-icon-button'
 import { MilestoneVersionRow, milestoneVersionLanes } from './milestone-version-row'
 import { MilestoneStageBars, MilestoneSdlcToolbar } from './milestone-stage-bars'
@@ -20,6 +21,7 @@ import {
   reorderMilestoneFeature,
   type MilestoneDraft,
   type MilestoneFeature,
+  type MilestoneVersion,
   type ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
 import {
@@ -35,6 +37,7 @@ type Props = {
   catalog: VersionCatalogState
   factsRefresh: number
   draft: MilestoneDraft
+  versionFacts: MilestoneVersion[]
   editing: boolean
   busy: boolean
   edit(update: (draft: MilestoneDraft) => MilestoneDraft): void
@@ -137,11 +140,12 @@ export function MilestoneTimeline(props: Props) {
   const today = milestoneDay(milestoneToday())
   return (
     <>
-      <MilestoneSdlcToolbar showPlan={showPlan} onChange={setShowPlan} />
-      <UndatedMilestoneVersions
-        versions={visible.versions}
-        started={props.started}
-        open={props.open}
+      <MilestoneSdlcToolbar
+        showPlan={showPlan}
+        onChange={setShowPlan}
+        warning={gesture.warning}
+        featureCount={features.length}
+        ownerCount={new Set(features.map((feature) => feature.owner.trim()).filter(Boolean)).size}
       />
       <div
         ref={viewport}
@@ -218,24 +222,28 @@ export function MilestoneTimeline(props: Props) {
           </div>
           <MilestoneActualVersions
             {...props}
-            versions={visible.versions}
+            versions={visible.versions.filter((version) =>
+              features.some((feature) =>
+                feature.deliveries.some(
+                  (delivery) =>
+                    delivery.version.version === version.version &&
+                    delivery.version.cycleId === version.cycleId
+                )
+              )
+            )}
             origin={origin}
             canvasWidth={canvasWidth}
             reportRange={reportRange}
           />
           {features.map((f, row) => {
             const frozen = f.deliveries.some((d) => props.started.has(d.version.cycleId))
-            if (
-              !editing &&
-              !showPlan &&
-              f.deliveries.every((d) => props.started.has(d.version.cycleId))
-            ) {
-              return null
-            }
+            const hasBaseline = f.deliveries.some(
+              (d) => d.stages.length && props.started.has(d.version.cycleId)
+            )
             return (
               <div
                 key={f.id}
-                className={`wb-ml-row${showPlan && frozen ? ' with-baseline' : ''}${rowDrop?.id === f.id ? ` wb-ml-drop-${rowDrop.side}` : ''}`}
+                className={`wb-ml-row${showPlan && hasBaseline ? ' with-baseline' : ''}${rowDrop?.id === f.id ? ` wb-ml-drop-${rowDrop.side}` : ''}`}
                 data-milestone-feature={f.id}
               >
                 <div className="wb-ml-label wb-ml-feature" data-ml-stop-pan>
@@ -331,19 +339,19 @@ export function MilestoneTimeline(props: Props) {
                       editable={enabled}
                       onChange={(title) => changeField(f.id, 'title', title)}
                     />
-                    <small>
-                      <MilestoneField
-                        label="负责人"
-                        value={f.owner}
-                        editable={enabled}
-                        onChange={(owner) => changeField(f.id, 'owner', owner)}
-                      />
-                    </small>
+                    <MilestoneFeatureMetadata
+                      feature={f}
+                      versions={props.versionFacts}
+                      editable={enabled}
+                      changeOwner={(owner) => changeField(f.id, 'owner', owner)}
+                      edit={edit}
+                    />
                   </div>
                 </div>
                 <div className="wb-ml-track" style={{ width: canvasWidth }}>
                   <MilestoneStageBars
                     feature={f}
+                    versions={visible.versions}
                     origin={origin}
                     enabled={enabled}
                     started={props.started}

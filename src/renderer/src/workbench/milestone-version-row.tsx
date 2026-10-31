@@ -11,6 +11,8 @@ import {
 } from '../../../shared/workbench/milestone-calendar'
 import type { MilestoneDraft, ScheduledVersion } from '../../../shared/workbench/project-milestones'
 
+export const MILESTONE_VERSION_HEIGHT = 52
+
 function WeekName({
   week,
   disabled,
@@ -90,7 +92,8 @@ export function MilestoneVersionRow({
   const today = milestoneToday()
   const position = (window: MilestoneWeek) => ({
     left: (milestoneDay(window.start) - origin) * dayWidth,
-    width: (milestoneDay(window.end) - milestoneDay(window.start) + 1) * dayWidth
+    width: (milestoneDay(window.end) - milestoneDay(window.start) + 1) * dayWidth,
+    height: MILESTONE_VERSION_HEIGHT
   })
   return (
     <div className="wb-ml-version-row" style={{ height }}>
@@ -116,7 +119,10 @@ export function MilestoneVersionRow({
           <div
             className={`wb-ml-window${v.timeWindow!.start <= today && today <= v.timeWindow!.end ? ' wb-ml-current-window' : ''}`}
             key={v.cycleId}
-            style={{ ...position(v.timeWindow!), top: (lanes.get(v.cycleId) ?? 0) * 64 }}
+            style={{
+              ...position(v.timeWindow!),
+              top: (lanes.get(v.cycleId) ?? 0) * MILESTONE_VERSION_HEIGHT
+            }}
             title={started.has(v.cycleId) ? '已开始计划，名称沿真实版本' : undefined}
           >
             {v.timeWindow!.start <= today && today <= v.timeWindow!.end && (
@@ -138,7 +144,9 @@ export function MilestoneVersionRow({
             <button
               className="wb-ml-version-dates"
               title={
-                started.has(v.cycleId) ? '已开始，原排期只读' : '拖动平移版本；两侧按天调整范围'
+                started.has(v.cycleId)
+                  ? '已开始，原排期只读'
+                  : '拖动整体平移版本；时长随下方 SDLC 联动'
               }
               onPointerDown={
                 editing && !disabled && !started.has(v.cycleId)
@@ -154,22 +162,6 @@ export function MilestoneVersionRow({
               {v.timeWindow!.start.slice(5)} — {v.timeWindow!.end.slice(5)}
               {started.has(v.cycleId) && ' · 已开始'}
             </button>
-            {editing &&
-              !disabled &&
-              !started.has(v.cycleId) &&
-              (['start', 'end'] as const).map((edge) => (
-                <button
-                  key={edge}
-                  className={`wb-ml-resize ${edge}`}
-                  aria-label={`${v.version} ${edge === 'start' ? '开始' : '结束'}：拖动或方向键调整一天`}
-                  onPointerDown={(e) =>
-                    gesture.begin(e, { kind: 'version', id: v.cycleId, mode: edge })
-                  }
-                  onKeyDown={(e) =>
-                    gesture.keyboard(e, { kind: 'version', id: v.cycleId, mode: edge })
-                  }
-                />
-              ))}
           </div>
         ))}
       </div>
@@ -192,5 +184,5 @@ export function milestoneVersionLanes(versions: ScheduledVersion[]) {
     laneEnds[lane] = version.timeWindow.end
     lanes.set(version.cycleId, lane)
   }
-  return { lanes, height: Math.max(1, laneEnds.length) * 64 }
+  return { lanes, height: Math.max(1, laneEnds.length) * MILESTONE_VERSION_HEIGHT }
 }

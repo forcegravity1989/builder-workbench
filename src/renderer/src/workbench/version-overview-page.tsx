@@ -9,10 +9,10 @@ import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions
 import { openVersionOverview, type VersionOverviewOptions } from './project-page-state'
 import type { VersionGoal } from '../../../shared/workbench/version-material'
 import { DECISION_LABELS, goalOrdinal } from './version-labels'
-import { FeatureCard, timeLabel } from './version-overview/feature-card'
+import { FeatureCard } from './version-overview/feature-card'
 import { useVersionFacts } from './version-overview/use-version-facts'
 import { taskKey, validTime } from './version-overview/feature-model'
-import { openEvidenceUrl } from './version-overview/overview-time'
+import { openEvidenceUrl, timeLabel } from './version-overview/overview-time'
 import { WorkflowProductivity } from './version-overview/workflow-productivity'
 import './version-overview/overview.css'
 

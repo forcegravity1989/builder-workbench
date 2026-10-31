@@ -4,7 +4,6 @@ import { taskKey, type FeatureData } from './feature-model'
 import { featureStage } from './feature-timeline'
 import { FeatureTimelineView } from './feature-timeline-view'
 import './overview.css'
-export { timeLabel } from './overview-time'
 
 export function FeatureCard({
   feature,

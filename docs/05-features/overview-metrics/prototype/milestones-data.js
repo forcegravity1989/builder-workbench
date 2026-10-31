@@ -111,7 +111,15 @@ export const initial = {
       owner: 'kanadead',
       deliveries: [delivery(2), delivery(3, true)]
     }
-  ].map((f) => ({ ...f, month: '2026-11' }))
+  ].map((f, i) => ({
+    ...f,
+    month: '2026-11',
+    deliveries: f.deliveries.map((d) => ({
+      ...d,
+      goalSlot: (i % 4) + 1,
+      actualGoalSlot: (i % 4) + 1
+    }))
+  }))
 }
 export const clone = (value) => structuredClone(value)
 export const versionName = (plan, id) =>
@@ -155,7 +163,6 @@ export function validPlan(p) {
           (d) =>
             p.versions.some((v) => v.id === d.versionId) &&
             Array.isArray(d.stages) &&
-            d.stages.length &&
             d.stages.every(
               (s) => Number.isFinite(s.start) && Number.isFinite(s.end) && s.start < s.end
             )
@@ -255,6 +262,14 @@ export function changesBetween(before, after) {
     if (old.owner !== f.owner) {
       parts.push(`负责人：${old.owner} → ${f.owner}`)
     }
+    f.deliveries.forEach((delivery, index) => {
+      const previous = old.deliveries[index]
+      if (previous && previous.goalSlot !== delivery.goalSlot) {
+        parts.push(
+          `${versionName(after, delivery.versionId)} 目标：${previous.goalSlot ? `G${previous.goalSlot}` : '未选目标'} → ${delivery.goalSlot ? `G${delivery.goalSlot}` : '未选目标'}`
+        )
+      }
+    })
     if (JSON.stringify(old.deliveries) !== JSON.stringify(f.deliveries)) {
       parts.push(
         `SDLC 排期：${f.deliveries.map((d) => `${versionName(after, d.versionId)} ${d.stages.map((s) => `${s.phase} ${dateOf(s.start)} ${s.start % 1 ? '下午' : '上午'}—${dateOf(s.end)} ${s.end % 1 ? '下午' : '上午'}`).join(' / ')}`).join('；')}`

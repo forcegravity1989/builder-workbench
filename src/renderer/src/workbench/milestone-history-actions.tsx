@@ -1,8 +1,32 @@
-import { Redo2, RotateCcw, Undo2 } from 'lucide-react'
+import { ArrowLeft, Redo2, RotateCcw, Undo2 } from 'lucide-react'
 import { MilestoneIconButton } from './milestone-icon-button'
 
+export function MilestoneTitle({
+  editing,
+  busy,
+  finishEditing
+}: {
+  editing: boolean
+  busy: boolean
+  finishEditing(): void
+}) {
+  return (
+    <div className="wb-ml-title">
+      {editing && (
+        <MilestoneIconButton
+          label="结束编辑，返回项目里程碑"
+          disabled={busy}
+          onClick={finishEditing}
+        >
+          <ArrowLeft size={15} />
+        </MilestoneIconButton>
+      )}
+      <strong>项目里程碑</strong>
+    </div>
+  )
+}
+
 export function MilestoneHistoryActions({
-  status,
   dirty,
   busy,
   conflict,
@@ -13,7 +37,6 @@ export function MilestoneHistoryActions({
   redo,
   discard
 }: {
-  status: string
   dirty: boolean
   busy: boolean
   conflict: boolean
@@ -26,13 +49,6 @@ export function MilestoneHistoryActions({
 }) {
   return (
     <>
-      <small
-        className="wb-ml-status"
-        role="status"
-        title={dirty ? '本次修改尚未提交评审' : undefined}
-      >
-        {status}
-      </small>
       <MilestoneIconButton label="撤销" disabled={busy || !canUndo} onClick={undo}>
         <Undo2 size={15} />
       </MilestoneIconButton>

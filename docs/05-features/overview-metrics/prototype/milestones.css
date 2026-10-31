@@ -418,14 +418,14 @@
   display: flex;
 }
 .ml-version-row {
-  height: 64px;
+  height: 52px;
   background: var(--background);
   border-bottom: 1px solid var(--border);
 }
 .ml-sticky-label {
   position: sticky;
   left: 0;
-  width: 230px;
+  width: 220px;
   flex: none;
   z-index: 4;
   background: var(--background);
@@ -456,7 +456,7 @@
 }
 .ml-fixed-version {
   position: absolute;
-  height: 64px;
+  height: 52px;
   border: 0;
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
@@ -540,7 +540,17 @@
 .ml-inline-owner {
   display: flex;
   align-items: center;
-  padding-left: 22px;
+  flex: 0 1 76px;
+  min-width: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ml-feature-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  white-space: nowrap;
 }
 .ml-inline-owner .ml-inline {
   font-size: 11px;
@@ -557,7 +567,7 @@
 }
 .ml-now-line {
   position: absolute;
-  top: 104px;
+  top: 92px;
   bottom: 0;
   border-left: 1px solid var(--muted-foreground);
   opacity: 0.45;
@@ -580,7 +590,7 @@
 .ml-add-feature {
   position: sticky;
   left: 0;
-  width: 230px;
+  width: 220px;
   padding: 8px 12px;
   background: var(--background);
 }
@@ -602,9 +612,6 @@
   padding: 3px 6px;
   min-height: 24px;
   font-size: 10px;
-}
-.ml-dirty {
-  color: var(--foreground);
 }
 @media (max-width: 1100px) {
   .ml-sidebar {
@@ -672,7 +679,7 @@
 .ml-week-slot {
   position: absolute;
   top: 0;
-  height: 64px;
+  height: 52px;
   border-right: 1px dashed var(--border);
   display: flex;
   flex-direction: column;
@@ -696,21 +703,13 @@
 }
 .ml-heading-title {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: 10px;
 }
 .ml-heading-title > span {
   font-size: 11px;
   color: var(--muted-foreground);
-}
-.ml-feature-summary {
-  display: inline-flex;
-  align-items: center;
-}
-.ml-feature-summary {
-  flex-wrap: wrap;
-  gap: 8px 16px;
 }
 .ml-edit-actions {
   display: flex;
@@ -755,14 +754,14 @@
   position: relative;
   display: flex;
   width: 100%;
-  height: 104px;
+  height: 76px;
 }
 .ml-roadmap-axis::before {
   content: '';
   position: absolute;
   left: 0;
   right: 0;
-  top: 36px;
+  top: 28px;
   border-top: 1px solid var(--border);
 }
 .ml-roadmap-month {
@@ -773,7 +772,7 @@
 .ml-roadmap-flag {
   position: absolute;
   left: 50%;
-  top: 12px;
+  top: 4px;
   height: 24px;
   display: flex;
   gap: 7px;
@@ -793,7 +792,7 @@
 .ml-roadmap-month::after {
   content: '';
   position: absolute;
-  top: 34px;
+  top: 26px;
   left: calc(50% - 2px);
   width: 4px;
   height: 4px;
@@ -802,7 +801,7 @@
 }
 .ml-roadmap-caption {
   position: absolute;
-  top: 54px;
+  top: 39px;
   left: calc(50% - 110px);
   width: 220px;
   border: 1px solid var(--border);
@@ -833,19 +832,88 @@
 .ml-roadmap-caption .ml-inline {
   padding: 2px 0;
 }
-.ml-save-status {
-  display: block;
-  padding: 4px 16px;
-  color: var(--muted-foreground);
-  font-size: 11px;
-  text-align: right;
-}
 
 /* Daily axis and SDLC segments share one coordinate system; monthly flags stay independent. */
+.ml-feature-goals {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow-x: auto;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+}
+.ml-goal-picker {
+  position: relative;
+  flex-shrink: 0;
+}
+.ml-goal-picker summary,
+.ml-goal-tag {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 3px;
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: var(--muted);
+  color: var(--foreground);
+}
+.ml-goal-version {
+  color: var(--muted-foreground);
+}
+.ml-goal-picker summary {
+  cursor: pointer;
+}
+.ml-goal-picker summary::-webkit-details-marker {
+  display: none;
+}
+.ml-goal-picker summary:hover,
+.ml-goal-picker[open] summary {
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.ml-goal-picker[open] {
+  z-index: 30;
+}
+.ml-sticky-label:has(details[open]) {
+  z-index: 40;
+}
+.ml-goal-options {
+  position: fixed;
+  z-index: 60;
+  width: 68px;
+  padding: 4px;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px #0002;
+}
+.ml-goal-options button {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 9px;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  text-align: left;
+  font: inherit;
+  color: var(--foreground);
+  cursor: pointer;
+}
+.ml-goal-options button:hover,
+.ml-goal-options button[aria-pressed='true'] {
+  background: var(--muted);
+}
+.ml-drag-warning {
+  color: var(--destructive);
+  font-size: 11px;
+}
 .ml-board-header {
   position: sticky;
   top: 0;
-  z-index: 6;
+  z-index: 50;
   background: var(--background);
 }
 .ml-day-row {
@@ -898,7 +966,7 @@
 }
 .ml-days-background {
   position: absolute;
-  top: 104px;
+  top: 92px;
   bottom: 0;
   pointer-events: none;
 }
@@ -952,8 +1020,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 16px;
-  padding: 10px 14px;
+  gap: 6px 12px;
+  padding: 7px 14px;
   border-bottom: 1px solid var(--border);
   font-size: 10px;
   color: var(--muted-foreground);
@@ -962,8 +1030,11 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-right: auto;
+  gap: 9px;
+  margin-left: auto;
+}
+.ml-planning-count {
+  white-space: nowrap;
 }
 .ml-stage-legend > span {
   display: inline-flex;
@@ -1113,6 +1184,21 @@
 .ml-actual-phase.ongoing i {
   background-image: repeating-linear-gradient(135deg, transparent 0 5px, #ffffff25 5px 8px);
   border-right-style: dashed;
+}
+.ml-unrecorded {
+  position: absolute;
+  top: 31px;
+  height: 28px;
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  overflow: hidden;
+  white-space: nowrap;
 }
 .ml-actual-unknown,
 .ml-deploy-unknown {

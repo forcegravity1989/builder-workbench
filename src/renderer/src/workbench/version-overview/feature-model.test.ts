@@ -4,6 +4,7 @@ import {
   eventsFromPulls,
   featureNumber,
   linkedPullNumbers,
+  pullDeclaresIssue,
   pullPhase,
   taskKey,
   referenceForPlan,
@@ -102,6 +103,18 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   expect(pullPhase('', `设计 PR：${url}`, url)).toBe('design')
   expect(pullPhase('交付阶段：开发', `设计 PR：${url}`, url)).toBe('unknown')
   expect(pullPhase('changed intent.md, spec.md')).toBe('unknown')
+  const featureIssueUrl = 'https://github.com/acme/app/issues/440'
+  expect(pullDeclaresIssue('关联 #334\n\n交付阶段：开发\n参考 #440', featureIssueUrl)).toBe(false)
+  expect(pullDeclaresIssue('关联 #334、#440\r\n\r\n交付阶段：开发', featureIssueUrl)).toBe(true)
+  expect(pullDeclaresIssue(`关联：${featureIssueUrl}`, featureIssueUrl)).toBe(true)
+  expect(pullDeclaresIssue('关联 https://github.com/acme/other/issues/440', featureIssueUrl)).toBe(
+    false
+  )
+  expect(
+    pullDeclaresIssue('关联 https://github.example/acme/app/issues/440', featureIssueUrl)
+  ).toBe(false)
+  expect(pullDeclaresIssue('关联 #334 的实现，参考 #440', featureIssueUrl)).toBe(false)
+  expect(pullDeclaresIssue('关联 #4400', featureIssueUrl)).toBe(false)
   const pull: FeaturePull = {
     number: 459,
     title: 'design',

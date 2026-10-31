@@ -7,7 +7,10 @@ import {
   materializeMilestoneWeek,
   datedMilestoneVersions
 } from '../../../shared/workbench/milestone-calendar'
-import { defaultMilestoneStages } from '../../../shared/workbench/milestone-sdlc'
+import {
+  defaultMilestoneStages,
+  fitMilestoneVersions
+} from '../../../shared/workbench/milestone-sdlc'
 
 export function createMilestoneFeature(draft: MilestoneDraft, started: Set<string>) {
   const today = milestoneToday()
@@ -47,35 +50,41 @@ export function createMilestoneFeature(draft: MilestoneDraft, started: Set<strin
   return {
     id,
     date,
-    draft: {
-      ...following.draft,
-      material: {
-        ...following.draft.material,
-        months: following.draft.material.months.some((m) => m.month === featureMonth)
-          ? following.draft.material.months
-          : [...following.draft.material.months, { month: featureMonth, outcome: '' }],
-        features: [
-          ...used.draft.material.features,
-          {
-            id,
-            month: featureMonth,
-            title: '',
-            owner: '',
-            deliveries: [
-              {
-                id: crypto.randomUUID(),
-                version: ref,
-                stages: defaultMilestoneStages(used.version)
-              },
-              {
-                id: crypto.randomUUID(),
-                version: { version: following.version.version, cycleId: following.version.cycleId },
-                stages: defaultMilestoneStages(following.version, true)
-              }
-            ]
-          }
-        ]
-      }
-    }
+    draft: fitMilestoneVersions(
+      {
+        ...following.draft,
+        material: {
+          ...following.draft.material,
+          months: following.draft.material.months.some((m) => m.month === featureMonth)
+            ? following.draft.material.months
+            : [...following.draft.material.months, { month: featureMonth, outcome: '' }],
+          features: [
+            ...used.draft.material.features,
+            {
+              id,
+              month: featureMonth,
+              title: '',
+              owner: '',
+              deliveries: [
+                {
+                  id: crypto.randomUUID(),
+                  version: ref,
+                  stages: defaultMilestoneStages(used.version)
+                },
+                {
+                  id: crypto.randomUUID(),
+                  version: {
+                    version: following.version.version,
+                    cycleId: following.version.cycleId
+                  },
+                  stages: defaultMilestoneStages(following.version, true)
+                }
+              ]
+            }
+          ]
+        }
+      },
+      new Set([used.version.cycleId, following.version.cycleId])
+    )
   }
 }

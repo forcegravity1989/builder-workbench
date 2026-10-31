@@ -10,6 +10,7 @@ import type { CycleTaskSnapshot } from '../version-cycle/ports'
 import {
   taskKey,
   linkedPullNumbers,
+  pullDeclaresIssue,
   validTime,
   type FeatureData,
   type FeaturePull
@@ -58,12 +59,14 @@ export async function readFeatureEvidence(
     feature.problems.push('未找到原生仓库来源')
     return feature
   }
-  const pullTasks = new Map<number, Map<string, CycleTaskSnapshot>>()
-  const addPull = (number: number, task: CycleTaskSnapshot) => {
+  const pullTasks = new Map<number, Map<string, { task: CycleTaskSnapshot; explicit: boolean }>>()
+  const addPull = (number: number, task: CycleTaskSnapshot, explicit = true) => {
     if (!pullTasks.has(number)) {
       pullTasks.set(number, new Map())
     }
-    pullTasks.get(number)!.set(taskKey(task.reference), task)
+    const tasks = pullTasks.get(number)!,
+      key = taskKey(task.reference)
+    tasks.set(key, { task, explicit: explicit || Boolean(tasks.get(key)?.explicit) })
   }
   const addBodyLinks = (body: string, task: CycleTaskSnapshot) =>
     linkedPullNumbers(body, task.url).forEach((number) => addPull(number, task))
@@ -83,7 +86,9 @@ export async function readFeatureEvidence(
         addBodyLinks(detail.body, task)
         for (const activity of detail.timelineItems ?? []) {
           if (activity.source?.type === 'pr') {
-            addBodyLinks(activity.source.url, task)
+            linkedPullNumbers(activity.source.url, task.url).forEach((number) =>
+              addPull(number, task, false)
+            )
           }
         }
         if (task.iid === root.iid) {
@@ -156,6 +161,12 @@ export async function readFeatureEvidence(
           if (!linkedPullNumbers(item.url, root.url).includes(number)) {
             throw new Error('PR 与特性 Issue 仓库身份不一致')
           }
+          const tasks = [...pullTasks.get(number)!.values()]
+            .filter(({ task, explicit }) => explicit || pullDeclaresIssue(item.body, task.url))
+            .map(({ task }) => task)
+          if (!tasks.length) {
+            return null
+          }
           if (
             before &&
             validTime(item.createdAt) &&
@@ -163,7 +174,7 @@ export async function readFeatureEvidence(
           ) {
             return null
           }
-          return { ...item, tasks: [...pullTasks.get(number)!.values()] }
+          return { ...item, tasks }
         }
         const detail = await codehubApi.viewTask({
           repoPath: repo.path,
@@ -174,7 +185,7 @@ export async function readFeatureEvidence(
 
         return {
           number,
-          tasks: [...pullTasks.get(number)!.values()],
+          tasks: [...pullTasks.get(number)!.values()].map(({ task }) => task),
           url: detail.url ?? '',
           title: detail.title,
           body: detail.description,
