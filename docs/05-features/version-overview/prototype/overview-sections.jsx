@@ -52,6 +52,12 @@ export function OverviewSections({
                     <span className="ov-label">{goal.goalId}</span>
                     {goal.title}
                   </h2>
+                  <div className="ov-goal-meta">
+                    <span>负责人 · {goal.owner}</span>
+                    <button className="ov-link" onClick={() => native('目标任务', goal)}>
+                      目标任务 · {tasks.length} 项 ↗
+                    </button>
+                  </div>
                   <button
                     className="ov-chip ov-acceptance"
                     data-outcome={result?.decision?.outcome || 'unrecorded'}
@@ -61,23 +67,6 @@ export function OverviewSections({
                     {outcome(result)} ↗
                   </button>
                 </div>
-                <div className="ov-goal-meta">
-                  <span>负责人 · {goal.owner}</span>
-                  <button className="ov-link" onClick={() => native('目标任务', goal)}>
-                    目标任务 · {tasks.length} 项 ↗
-                  </button>
-                </div>
-                {result && (
-                  <div className="ov-goal-conclusion">
-                    <span>人工验收 · {result.decision?.source || '来源未记录'}</span>
-                    {result.decision?.recordedAt && (
-                      <time dateTime={result.decision.recordedAt}>
-                        {result.decision.recordedAt.slice(0, 16).replace('T', ' ')} UTC
-                      </time>
-                    )}
-                    {result.nextStep && <span>后续处理 · {result.nextStep}</span>}
-                  </div>
-                )}
                 {goalFeatures.map((f) => (
                   <Feature
                     key={`${selected.version}:${f.id}`}

@@ -196,6 +196,12 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
             <div className="bwo-goal-heading">
               <span className="bwo-muted">{goalOrdinal(index)}</span>
               <h2>{goal.title}</h2>
+              <div className="bwo-goal-meta">
+                <span>负责人 · {goal.owner || '未记录'}</span>
+                <button className="bwo-link" onClick={() => tasks(goal)}>
+                  目标任务 · {references.length} 项 ↗
+                </button>
+              </div>
               <button
                 className="bwo-badge"
                 onClick={() => workflow('acceptance')}
@@ -209,29 +215,6 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                 ↗
               </button>
             </div>
-            <div className="bwo-goal-meta">
-              <span>负责人 · {goal.owner || '未记录'}</span>
-              <button className="bwo-link" onClick={() => tasks(goal)}>
-                目标任务 · {references.length} 项 ↗
-              </button>
-            </div>
-            {result && (
-              <div className="bwo-goal-meta">
-                <span>
-                  {acceptance.kind === 'ready' && acceptance.source === 'draft'
-                    ? '验收工作稿'
-                    : '正式验收'}
-                  {' · 人工结论来源：'}
-                  {result.decision?.source || '未记录'}
-                </span>
-                {result.decision && validTime(result.decision.recordedAt) && (
-                  <time dateTime={result.decision.recordedAt} title={result.decision.recordedAt}>
-                    {timeLabel(result.decision.recordedAt)}
-                  </time>
-                )}
-                {result.nextStep && <span>后续处理 · {result.nextStep}</span>}
-              </div>
-            )}
             {grouped.map((feature) => (
               <div
                 key={taskKey(feature.root.reference)}
