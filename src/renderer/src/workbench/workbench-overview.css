@@ -234,57 +234,41 @@
   overflow-wrap: anywhere;
   margin: 4px 0;
 }
-.wb-ov .wb-ov-motto {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.wb-ov #scoreboard .wb-ov-section-head {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
-.wb-ov .wb-ov-motto p {
-  margin: 0;
+.wb-ov .wb-sb-draft {
   font-size: 11px;
-  font-weight: 400;
+  font-weight: 600;
+  line-height: 1;
   color: var(--color-neutral-600);
-}
-.wb-ov .wb-ov-motto h2 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.45;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  padding: 3px 8px;
 }
 .wb-ov .wb-sb-tabs {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: flex-end;
+  gap: 0;
   overflow-x: auto;
   padding: 4px 16px 0;
   border-bottom: 1px solid var(--color-divider);
 }
-.wb-ov .wb-sb-tabs > * {
+.wb-ov .wb-sb-cluster {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   flex: none;
-  white-space: nowrap;
 }
-.wb-ov .wb-sb-group {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-neutral-600);
-  margin-right: 2px;
-}
-.wb-ov .wb-sb-sep {
-  width: 1px;
-  height: 18px;
-  flex: none;
-  background: var(--color-divider);
-  margin: 0 8px;
+.wb-ov .wb-sb-cluster + .wb-sb-cluster {
+  margin-left: 28px;
 }
 .wb-ov .wb-sb-tab {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-.wb-ov .wb-sb-tab-state {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--color-neutral-600);
+  white-space: nowrap;
 }
 .wb-ov .wb-sb-dot {
   width: 7px;
@@ -302,35 +286,7 @@
 .wb-ov .wb-sb-body {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 16px 0;
-}
-.wb-ov .wb-sb-goal {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-.wb-ov .wb-sb-goal-k {
-  flex: none;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-neutral-600);
-}
-.wb-ov .wb-sb-goal-t {
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-}
-.wb-ov .wb-sb-goal-t.wb-muted {
-  font-size: 14px;
-  font-weight: 500;
-}
-.wb-ov .wb-sb-value {
-  margin: 0 0 0 34px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--color-neutral-600);
+  padding: 0 16px;
 }
 .wb-ov .wb-sb-duo {
   display: grid;
@@ -361,8 +317,13 @@
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+.wb-ov .wb-sb-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 10px;
+}
 .wb-ov .wb-sb-num {
-  margin-top: 6px;
   font: 600 30px/1 var(--font-mono);
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
@@ -373,21 +334,15 @@
   font-weight: 500;
   color: var(--color-neutral-500, var(--color-neutral-600));
 }
-.wb-ov .wb-sb-status {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
-  font-size: 12px;
+.wb-ov .wb-sb-num-met {
+  color: var(--color-success);
 }
-.wb-ov .wb-sb-def {
-  grid-column: 1 / -1;
-  margin: 6px 0 0;
-  font-size: 12px;
-  line-height: 1.55;
+.wb-ov .wb-sb-num-unmet {
+  color: var(--color-warning);
+}
+.wb-ov .wb-sb-finish {
+  font: 500 13px/1 var(--font-mono);
   color: var(--color-neutral-600);
-  overflow-wrap: anywhere;
 }
 .wb-ov .wb-sb-trend {
   align-self: end;
@@ -424,27 +379,9 @@
   color: var(--color-neutral-600);
   white-space: nowrap;
 }
-.wb-ov .wb-sb-others {
-  margin: 0 0 8px;
-}
 .wb-ov .wb-sb-empty {
   margin: 0;
   padding: 16px;
-}
-.wb-ov .wb-sb-foot {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 32px;
-  margin: 0 16px;
-  padding: 8px 0 10px;
-  border-top: 1px solid var(--color-divider);
-  font-size: 12px;
-  color: var(--color-neutral-600);
-}
-.wb-ov .wb-sb-foot b {
-  margin-right: 8px;
-  color: var(--color-text);
-  font-weight: 600;
 }
 
 .wb-ov :focus-visible {

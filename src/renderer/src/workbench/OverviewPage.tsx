@@ -243,10 +243,6 @@ export function OverviewPage(): React.JSX.Element {
       </header>
 
       <div className="content">
-        <header className="wb-ov-motto" aria-label="高效执行四原则">
-          <p>高效执行四原则 · FranklinCovey 4DX</p>
-          <h2>聚焦至关重要目标 · 贯彻引领指标 · 设立振奋人心的记分牌 · 保持相互担责的节奏</h2>
-        </header>
         <MetricProblemsPanel
           className="wb-muted"
           problems={fixedTrees.error ? [...problems, fixedTrees.error] : problems}

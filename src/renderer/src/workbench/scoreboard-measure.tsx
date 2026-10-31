@@ -4,33 +4,11 @@ import type { MetricDefinition, MetricReading } from '../../../shared/workbench/
 import { targetVerdict, type TargetVerdict } from './overview-scoreboard-model'
 import { zonePointState, type zoneChartRange } from './overview-zone-series'
 
-export const VERDICT_TEXT: Record<'met' | 'unmet' | 'unknown', string> = {
-  met: '已达完成线',
-  unmet: '未达完成线',
-  unknown: '看不出输赢'
-}
-
 export type MeasureView = {
   valueText: string
   unknown: boolean
-  statusText: string
   values: (number | null)[]
   latestNumber: number | null
-}
-
-function collectedText(iso: string, timezone: string): string {
-  const at = new Date(iso)
-  if (Number.isNaN(at.getTime())) {
-    return iso
-  }
-  return new Intl.DateTimeFormat('zh-CN', {
-    timeZone: timezone,
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  }).format(at)
 }
 
 export function measureView(
@@ -43,11 +21,10 @@ export function measureView(
 ): MeasureView {
   const state = zonePointState(readings[def.ref.definitionHash] ?? null, labels, range, timezone)
   if (state.kind === 'ready' && state.latest) {
-    const { value, collectedAt } = state.latest
+    const { value } = state.latest
     return {
       valueText: typeof value === 'number' ? `${value}${def.unit}` : value,
       unknown: false,
-      statusText: `采集于 ${collectedText(collectedAt, timezone)}`,
       values: state.values,
       latestNumber: typeof value === 'number' ? value : null
     }
@@ -55,16 +32,6 @@ export function measureView(
   return {
     valueText: busy && state.kind !== 'ready' ? '读取中' : '未知',
     unknown: true,
-    statusText:
-      busy && state.kind !== 'ready'
-        ? '正在读取…'
-        : state.kind === 'unknown'
-          ? state.stale
-            ? `${state.message} · 陈旧读数 ${state.stale.value}（采集于 ${collectedText(state.stale.collectedAt, timezone)}）`
-            : state.message
-          : state.kind === 'unread'
-            ? '未读取'
-            : '本窗口无读数',
     values: state.kind === 'ready' ? state.values : labels.map(() => null),
     latestNumber: null
   }
@@ -149,14 +116,11 @@ export function Measure({
     return (
       <div className="wb-sb-measure wb-sb-measure-empty">
         <div className="wb-sb-role">{role}</div>
-        <div className="wb-sb-name wb-muted">还没有{role}指标</div>
-        <p className="wb-sb-def">
-          用「配置指标」新建会话，给这个场景配一条可按周采集的{role}指标。
-        </p>
       </div>
     )
   }
   const verdict = target ? verdictOf(def, target, view) : null
+  const tone = view.unknown ? 'unknown' : verdict
   return (
     <div className="wb-sb-measure" {...(note ? annotationAttributes(note) : {})}>
       <div className="wb-sb-main">
@@ -167,24 +131,12 @@ export function Measure({
             <AnnotationMarkers numbers={noteNumbers} label={note.label} onOpenPanel={onOpenNotes} />
           )}
         </div>
-        <div className={view.unknown ? 'wb-sb-num wb-sb-num-unknown' : 'wb-sb-num'}>
-          {view.valueText}
+        <div className="wb-sb-figure">
+          <div className={tone ? `wb-sb-num wb-sb-num-${tone}` : 'wb-sb-num'}>{view.valueText}</div>
+          {target && <span className="wb-sb-finish">{target}</span>}
         </div>
-        <div className="wb-sb-status">
-          {target ? (
-            <>
-              <i className={`wb-sb-dot wb-sb-dot-${verdict ?? 'unknown'}`} aria-hidden="true" />
-              <span>{VERDICT_TEXT[verdict ?? 'unknown']}</span>
-              <span className="wb-muted">· 完成线 {target}</span>
-            </>
-          ) : (
-            <span className="wb-muted">{view.statusText}</span>
-          )}
-        </div>
-        {target && <div className="wb-sb-status wb-muted">{view.statusText}</div>}
       </div>
       <Trend name={def.name} labels={labels} values={view.values} />
-      <p className="wb-sb-def">{def.def}</p>
     </div>
   )
 }
