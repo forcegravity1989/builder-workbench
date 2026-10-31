@@ -105,6 +105,21 @@ describe('buildTaskPageGitHubWorkItemMutationPatch', () => {
     expect(patch.opKey).toBe('reviewRequests:batch:bob,carol')
     expect(patch.listOp.logins).toEqual(['bob', 'carol'])
   })
+
+  it('builds whole-field label toggle add and remove', () => {
+    const add = buildTaskPageGitHubWorkItemMutationPatch(baseItem({ labels: ['bug'] }), {
+      type: 'toggleLabel',
+      label: 'enhancement'
+    })
+    expect(add.kind).toBe('whole')
+    expect(add.previous).toEqual({ labels: ['bug'] })
+    expect(add.next).toEqual({ labels: ['bug', 'enhancement'] })
+    const remove = buildTaskPageGitHubWorkItemMutationPatch(
+      baseItem({ labels: ['bug', 'enhancement'] }),
+      { type: 'toggleLabel', label: 'BUG' }
+    )
+    expect(remove.next).toEqual({ labels: ['enhancement'] })
+  })
 })
 
 describe('loginSetsEqual', () => {

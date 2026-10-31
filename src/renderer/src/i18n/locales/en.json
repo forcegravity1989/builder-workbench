@@ -2321,7 +2321,9 @@
         "codehubAddLabel": "Add label…",
         "codehubCancelLabels": "Cancel",
         "codehubSaveLabels": "Save",
-        "codehubLabelsSaved": "Labels updated"
+        "codehubLabelsSaved": "Labels updated",
+        "codehubNoMembers": "No project members found.",
+        "ghLabelsUpdateFailed": "Failed to update labels."
       },
       "Terminal": {
         "73768427cf": "Close",

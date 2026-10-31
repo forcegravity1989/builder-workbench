@@ -10,6 +10,7 @@ import {
 export type TaskPageGitHubMutationIntent =
   | { type: 'setState'; state: 'open' | 'closed'; closeAction?: TaskPageGitHubCloseAction }
   | { type: 'toggleAssignee'; user: GitHubAssignableUser }
+  | { type: 'toggleLabel'; label: string }
   | { type: 'addReviewers'; logins: string[]; candidates: GitHubAssignableUser[] }
   | { type: 'removeReviewers'; logins: string[] }
   | { type: 'merge' }
@@ -174,6 +175,23 @@ export function buildTaskPageGitHubWorkItemMutationPatch(
         previous: { assignees: current },
         next: { assignees: nextAssignees },
         families: ['assignees']
+      }
+    }
+    case 'toggleLabel': {
+      // Labels are plain strings, so a whole-field patch carries the full
+      // next array; the list-op machinery is for user objects with avatars.
+      const label = intent.label.trim()
+      const current = [...(baseItem.labels ?? [])]
+      const isOn = current.some((name) => name.toLowerCase() === label.toLowerCase())
+      const nextLabels = isOn
+        ? current.filter((name) => name.toLowerCase() !== label.toLowerCase())
+        : [...current, label]
+      return {
+        kind: 'whole',
+        opKey: 'labels',
+        previous: { labels: current },
+        next: { labels: nextLabels },
+        families: ['labels']
       }
     }
     case 'addReviewers': {
