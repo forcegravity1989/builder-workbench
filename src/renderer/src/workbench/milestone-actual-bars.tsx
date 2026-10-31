@@ -35,14 +35,14 @@ export function MilestoneActualBars({
         </span>
       ))}
       {stages.map((stage) => {
-        const width = (actualDay(stage.end!) - actualDay(stage.start!)) * MILESTONE_DAY_WIDTH
+        const width = (actualDay(stage.end) - actualDay(stage.start)) * MILESTONE_DAY_WIDTH
         return (
           <button
             key={stage.id}
             type="button"
             className={`wb-ml-actual-phase${stage.ongoing ? ' ongoing' : ''}`}
             style={{
-              left: (actualDay(stage.start!) - origin) * MILESTONE_DAY_WIDTH,
+              left: (actualDay(stage.start) - origin) * MILESTONE_DAY_WIDTH,
               width: Math.max(12, width)
             }}
             title={`${stage.id} · ${timeLabel(stage.start)} → ${timeLabel(stage.end)}${stage.ongoing ? ' · 进行中，截至采集时刻' : ''}`}
@@ -63,7 +63,7 @@ export function MilestoneActualBars({
       {completedTest && (
         <span
           className="wb-ml-actual-unknown wb-ml-deploy-unknown"
-          style={{ left: (actualDay(completedTest.end!) - origin) * MILESTONE_DAY_WIDTH + 7 }}
+          style={{ left: (actualDay(completedTest.end) - origin) * MILESTONE_DAY_WIDTH + 7 }}
         >
           Deploy · 未跟踪
         </span>

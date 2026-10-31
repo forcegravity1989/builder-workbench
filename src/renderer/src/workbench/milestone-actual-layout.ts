@@ -9,7 +9,7 @@ import {
   milestoneWeekAt
 } from '../../../shared/workbench/milestone-calendar'
 import { actualDay } from '../../../shared/workbench/milestone-sdlc'
-import { featureTimeline } from './version-overview/feature-timeline'
+import { featureTimeline, type ActualStage } from './version-overview/feature-timeline'
 import { taskKey, validTime } from './version-overview/feature-model'
 import {
   matchMilestoneFeature,
@@ -46,7 +46,8 @@ export function milestoneActualLayout(
   const latest = candidates.toSorted((a, b) => observed(b) - observed(a))[0]?.feature
   const stages = latest
     ? featureTimeline(latest).segments.filter(
-        (stage) => stage.duration !== null && validTime(stage.start) && validTime(stage.end)
+        (stage): stage is ActualStage & { start: string; end: string } =>
+          stage.duration !== null && validTime(stage.start) && validTime(stage.end)
       )
     : []
   const missing = resolved.filter(
@@ -64,13 +65,13 @@ export function milestoneActualCalendar(
   const calendar = milestoneCalendar(draft)
   const times = draft.material.features.flatMap((feature) =>
     milestoneActualLayout(feature, draft.material, facts, started).stages.flatMap((stage) => [
-      actualDay(stage.start!),
-      actualDay(stage.end!)
+      actualDay(stage.start),
+      actualDay(stage.end)
     ])
   )
   const start = milestoneDay(milestoneWeekAt(Math.min(calendar.start, ...times)).start)
   const last = Math.max(calendar.end, ...times)
-  const weeks = []
+  const weeks: typeof calendar.weeks = []
   for (let day = start; day <= last; day += 7) {
     weeks.push(milestoneWeekAt(day))
   }
