@@ -117,14 +117,14 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   expect(pullPhase('', `设计 PR：${url}`, url)).toBe('design')
   expect(
     pullPhase(
-      '',
+      '交付阶段：Build',
       '开发 MR：https://codehub.example/g/p/-/merge_requests/3',
       'https://codehub.example/g/p/merge_requests/3'
     )
   ).toBe('development')
   expect(
     pullPhase(
-      '',
+      '交付阶段：Design',
       '设计 MR：https://codehub.example/g/p/merge_requests/3',
       'https://codehub.example/g/p/-/merge_requests/3'
     )
@@ -137,6 +137,8 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     )
   ).toBe('unknown')
   expect(pullPhase('交付阶段：开发', `设计 PR：${url}`, url)).toBe('unknown')
+  expect(pullPhase('交付阶段：Build', `设计 PR：${url}`, url)).toBe('unknown')
+  expect(pullPhase('交付阶段：设计\n阶段：Design')).toBe('design')
   expect(pullPhase('changed intent.md, spec.md')).toBe('unknown')
   const featureIssueUrl = 'https://github.com/acme/app/issues/440'
   expect(pullDeclaresIssue('关联 #334\n\n交付阶段：开发\n参考 #440', featureIssueUrl)).toBe(false)

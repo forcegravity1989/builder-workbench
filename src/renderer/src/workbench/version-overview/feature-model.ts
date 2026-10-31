@@ -4,7 +4,7 @@ import { parseGitHubIssueOrPRLink } from '../../../../shared/github/links'
 import { normalizeCodeHubMergeRequestRoute } from '../../../../shared/codehub'
 
 export type FeaturePhase = 'design' | 'development'
-export const PARSER_REVISION = 'feature-evidence-v5'
+export const PARSER_REVISION = 'feature-evidence-v6'
 export type FeaturePull = {
   phase?: FeaturePhase | 'unknown'
   number: number
@@ -97,15 +97,14 @@ export function pullPhase(
       }
     }
   }
-  const unique = [...new Set(values)]
-  if (unique.length !== 1) {
-    return 'unknown'
+  const phases: Record<string, FeaturePhase> = {
+    设计: 'design',
+    开发: 'development',
+    design: 'design',
+    build: 'development'
   }
-  return (
-    ({ 设计: 'design', 开发: 'development', design: 'design', build: 'development' } as const)[
-      unique[0] as '设计' | '开发' | 'design' | 'build'
-    ] ?? 'unknown'
-  )
+  const unique = [...new Set(values.map((value) => phases[value]))]
+  return unique.length === 1 ? (unique[0] ?? 'unknown') : 'unknown'
 }
 export function linkedPullNumbers(body: string, issueUrl: string): number[] {
   let base: URL

@@ -1,7 +1,7 @@
 import { milestoneDay, milestoneDate } from './milestone-calendar'
 import type { MilestoneDraft } from './project-milestones'
 
-/** Push only unused future windows; a drag never reschedules someone else's work. */
+/** Move only unused, unstarted windows; a drag never reschedules someone else's work. */
 export function settleMilestoneWindows(
   before: MilestoneDraft,
   candidate: MilestoneDraft,
@@ -31,52 +31,61 @@ export function settleMilestoneWindows(
       })
       .map((v) => v.cycleId)
   )
-  const reach: { index: number; start: string; end: string }[] = []
   let shifted = false
-  for (const [index, version] of ordered.entries()) {
-    const window = windows.get(version.cycleId)!
-    const old = original.get(version.cycleId)?.timeWindow
-    if (moving.has(version.cycleId)) {
-      if (!old || window.end > old.end) {
-        reach.push({ index, ...window })
+  for (const direction of [1, -1] as const) {
+    const traversal = direction === 1 ? ordered : ordered.toReversed()
+    const reach: { start: string; end: string }[] = []
+    const action = direction === 1 ? '顺延' : '前移'
+    for (const [index, version] of traversal.entries()) {
+      const window = windows.get(version.cycleId)!
+      const old = original.get(version.cycleId)?.timeWindow
+      if (moving.has(version.cycleId)) {
+        if (!old || (direction === 1 ? window.end > old.end : window.start < old.start)) {
+          reach.push(window)
+        }
+        continue
       }
-      continue
-    }
-    if (occupied.has(version.cycleId)) {
-      continue
-    }
-    const collisions = reach.filter(
-      (r) => r.index < index && r.start <= window.end && window.start <= r.end
-    )
-    if (!collisions.length) {
-      continue
-    }
-    if (started.has(version.cycleId)) {
-      return { draft: before, conflict: `${version.version} 已开始，不能顺延，请调整当前排期` }
-    }
-    const end = collisions.reduce((latest, r) => (r.end > latest ? r.end : latest), window.start)
-    const delta = milestoneDay(end) + 1 - milestoneDay(window.start)
-    const next = {
-      start: milestoneDate(milestoneDay(window.start) + delta),
-      end: milestoneDate(milestoneDay(window.end) + delta)
-    }
-    // Do not push an empty window through a later fixed version, even if the final windows would not overlap.
-    const blocked = ordered.slice(index + 1).find((v) => {
-      if (!started.has(v.cycleId) && !occupied.has(v.cycleId)) {
-        return false
+      if (occupied.has(version.cycleId)) {
+        continue
       }
-      const fixed = windows.get(v.cycleId)!
-      return fixed.start <= next.end && window.start <= fixed.end
-    })
-    if (blocked) {
-      return {
-        draft: before,
-        conflict: `${version.version} 顺延会与 ${blocked.version} 重叠，请先调整后续排期`
+      const collisions = reach.filter((r) => r.start <= window.end && window.start <= r.end)
+      if (!collisions.length) {
+        continue
       }
+      if (started.has(version.cycleId)) {
+        return {
+          draft: before,
+          conflict: `${version.version} 已开始，不能${action}，请调整当前排期`
+        }
+      }
+      const delta =
+        direction === 1
+          ? Math.max(...collisions.map((r) => milestoneDay(r.end))) + 1 - milestoneDay(window.start)
+          : Math.min(...collisions.map((r) => milestoneDay(r.start))) - 1 - milestoneDay(window.end)
+      const next = {
+        start: milestoneDate(milestoneDay(window.start) + delta),
+        end: milestoneDate(milestoneDay(window.end) + delta)
+      }
+      // Check the swept interval so a large drag cannot jump an empty window past fixed work.
+      const blocked = traversal.slice(index + 1).find((v) => {
+        if (!started.has(v.cycleId) && !occupied.has(v.cycleId)) {
+          return false
+        }
+        const fixed = windows.get(v.cycleId)!
+        return direction === 1
+          ? fixed.start <= next.end && window.start <= fixed.end
+          : fixed.start <= window.end && next.start <= fixed.end
+      })
+      if (blocked) {
+        return {
+          draft: before,
+          conflict: `${version.version} ${action}会与 ${blocked.version} 重叠，请先调整相邻排期`
+        }
+      }
+      windows.set(version.cycleId, next)
+      reach.push(next)
+      shifted = true
     }
-    windows.set(version.cycleId, next)
-    reach.push({ index, ...next })
-    shifted = true
   }
   return {
     draft: shifted
