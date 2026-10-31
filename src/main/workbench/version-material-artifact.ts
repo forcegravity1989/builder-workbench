@@ -1,5 +1,5 @@
 import { lstat } from 'node:fs/promises'
-import { isAbsolute, join } from 'node:path'
+import { join, posix, win32 } from 'node:path'
 import type { AcceptanceMaterial } from '../../shared/workbench/version-material'
 import type { VersionMaterialAddArtifact } from '../../shared/workbench/version-material-request'
 import { VersionDocumentError } from '../../shared/workbench/version-document'
@@ -15,12 +15,22 @@ type PreparedArtifact = AcceptanceMaterial['preparedArtifacts'][number]
  * 树——所以这些函数由 workspace.addArtifact 在文件系统拥有者上调用。
  */
 
-/** 工作树相对路径围栏：拒绝绝对路径与 `..` 穿越，不给出树外文件句柄。 */
+/**
+ * 工作树相对路径围栏：拒绝绝对路径与 `..` 穿越，不给出树外文件句柄。
+ * location 是跨平台的材料数据，围栏却跑在拥有工作树的主机上——Linux 宿主
+ * 眼里 `C:\x.html` 是合法相对文件名，Windows 消费侧却按绝对路径解——所以
+ * 绝对性要按 posix 与 win32 两种语义都判，不用平台本位的 isAbsolute。
+ */
 export function resolveArtifactFile(root: string, location: string): string {
   const segments = location
     .split(/[\\/]/)
     .filter((segment) => segment.length > 0 && segment !== '.')
-  if (isAbsolute(location) || segments.length === 0 || segments.includes('..')) {
+  if (
+    posix.isAbsolute(location) ||
+    win32.isAbsolute(location) ||
+    segments.length === 0 ||
+    segments.includes('..')
+  ) {
     throw new VersionDocumentError(
       'unsafe-path',
       `制品 location 必须是工作树内相对路径，拒绝：${location}`
