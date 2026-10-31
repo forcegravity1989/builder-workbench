@@ -23,7 +23,8 @@ import {
   milestoneCalendar,
   milestoneDay,
   milestoneWeekAt,
-  materializeMilestoneWeek
+  materializeMilestoneWeek,
+  editMilestoneVersionName
 } from './milestone-calendar'
 
 it('keeps planning dates, precise version identity and snapshots through scheduling and reordering', () => {
@@ -169,6 +170,33 @@ it('keeps planning dates, precise version identity and snapshots through schedul
     ]
   }
   const expanded = adjustMilestoneDelivery(withEmpty, 'f1', 'f1-0', 'end', 1, 5)
+  const typingName = editMilestoneVersionName(withEmpty, 'three', '').draft
+  expect(typingName.versions).toHaveLength(4)
+  const clearedName = editMilestoneVersionName(typingName, 'three', '', {
+    previousName: 'v3',
+    registered: before.versions
+  })
+  expect(clearedName.problem).toBeUndefined()
+  expect(clearedName.draft.versions.map((v) => v.cycleId)).toEqual(['one', 'two', 'four'])
+  expect(clearedName.draft.material).toBe(typingName.material)
+  expect(withEmpty.versions[2].version).toBe('v3')
+  const registeredName = editMilestoneVersionName(typingName, 'three', '', {
+    previousName: 'v3',
+    registered: withEmpty.versions
+  })
+  expect(registeredName.problem).toContain('已提交')
+  expect(registeredName.draft.versions).toEqual(withEmpty.versions)
+  const usedName = editMilestoneVersionName(withEmpty, 'one', '', {
+    previousName: 'v1',
+    registered: []
+  })
+  expect(usedName.problem).toContain('仍有特性安排')
+  expect(usedName.draft).toEqual(withEmpty)
+  const editedName = editMilestoneVersionName(withEmpty, 'one', 'v1-next').draft
+  expect(editedName.material.features[0].deliveries[0].version).toEqual({
+    version: 'v1-next',
+    cycleId: 'one'
+  })
   const settled = settleMilestoneWindows(withEmpty, expanded, new Set())
   expect(settled.conflict).toBeUndefined()
   expect(settled.draft.versions.slice(2).map((v) => v.timeWindow)).toEqual([

@@ -44,7 +44,7 @@ type Props = {
   editField(update: (draft: MilestoneDraft) => MilestoneDraft): void
   open(version: ScheduledVersion): void
   remove(feature: MilestoneFeature): void
-  rename(id: string, version: string): void
+  rename(id: string, version: string, previousName?: string): void
   started: Set<string>
   onScroll(x: number, y: number): void
   scrollX: number | null

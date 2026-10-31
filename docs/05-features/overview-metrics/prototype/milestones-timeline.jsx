@@ -423,6 +423,7 @@ export function Timeline({
                             value={v.name}
                             label={`版本名称 ${v.name}`}
                             change={(name) => onRenameVersion(v.id, name)}
+                            commit={(name, previous) => onRenameVersion(v.id, name, previous)}
                             className="ml-version-name"
                           />
                         ) : (

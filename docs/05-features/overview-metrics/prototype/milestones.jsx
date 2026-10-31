@@ -1,6 +1,12 @@
 import { InlineField } from './milestones-fields.jsx'
 import { Timeline } from './milestones-timeline.jsx'
-import { defaultStages, fitVersions, laneConflict, settleWindows } from './milestones-sdlc.js'
+import {
+  defaultStages,
+  fitVersions,
+  laneConflict,
+  settleWindows,
+  editVersionName
+} from './milestones-sdlc.js'
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js'
 import Undo2 from 'lucide-react/dist/esm/icons/undo-2.js'
 import Redo2 from 'lucide-react/dist/esm/icons/redo-2.js'
@@ -552,12 +558,19 @@ function App() {
                     planning={planning}
                     navigation={navigation}
                     onChangeFeature={changeFeature}
-                    onRenameVersion={(id, name) =>
-                      editFieldPlan((p) => ({
-                        ...p,
-                        versions: p.versions.map((v) => (v.id === id ? { ...v, name } : v))
-                      }))
-                    }
+                    onRenameVersion={(id, name, previous) => {
+                      const result = editVersionName(
+                        state.draft,
+                        id,
+                        name,
+                        previous,
+                        state.submitted
+                      )
+                      editFieldPlan(() => result.plan)
+                      if (result.problem) {
+                        setNotice(result.problem)
+                      }
+                    }}
                     onDelete={remove}
                     onReorder={reorder}
                     onApply={(next) => editPlan(() => next)}

@@ -28,6 +28,7 @@ import {
 } from '../../../shared/workbench/milestone-sdlc'
 import {
   materializeMilestoneWeek,
+  editMilestoneVersionName,
   datedMilestoneVersions,
   type MilestoneWeek
 } from '../../../shared/workbench/milestone-calendar'
@@ -108,6 +109,7 @@ export function ProjectMilestones({
     state.draft
   )
   const versionFacts = (state.data.proposal ?? state.data.formal).versions
+  const registeredVersions = state.data.formal.versions.concat(state.data.proposal?.versions ?? [])
   const problems = [
     ...milestoneProblems(state.draft),
     ...milestoneGoalProblems(state.draft, versionFacts),
@@ -119,22 +121,17 @@ export function ProjectMilestones({
       patch({ editing: true })
     }
   }
-  function renameVersion(cycleId: string, version: string) {
-    model.editField((d) => ({
-      ...d,
-      versions: d.versions.map((v) => (v.cycleId === cycleId ? { ...v, version } : v)),
-      material: {
-        ...d.material,
-        features: d.material.features.map((f) => ({
-          ...f,
-          deliveries: f.deliveries.map((item) =>
-            item.version.cycleId === cycleId
-              ? { ...item, version: { ...item.version, version } }
-              : item
-          )
-        }))
-      }
-    }))
+  function renameVersion(cycleId: string, version: string, previousName?: string) {
+    const result = editMilestoneVersionName(
+      state!.draft,
+      cycleId,
+      version,
+      previousName === undefined ? undefined : { previousName, registered: registeredVersions }
+    )
+    model.editField(() => result.draft)
+    if (result.problem) {
+      toast(result.problem)
+    }
   }
   function remove(f: MilestoneFeature) {
     edit((d) =>

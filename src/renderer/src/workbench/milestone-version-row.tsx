@@ -96,7 +96,7 @@ export function MilestoneVersionRow({
   canvasWidth: number
   origin: number
   started: Set<string>
-  rename(id: string, version: string): void
+  rename(id: string, version: string, previousName?: string): void
   registerWeek(week: MilestoneWeek, name: string): void
   gesture: MilestoneGestureApi
   open(version: ScheduledVersion): void
@@ -150,6 +150,7 @@ export function MilestoneVersionRow({
                 value={v.version}
                 editable={editing && !disabled && !started.has(v.cycleId)}
                 onChange={(value) => rename(v.cycleId, value)}
+                onCommit={(value, previous) => rename(v.cycleId, value, previous)}
               />
               <MilestoneIconButton label={`进入 ${v.version} 版本总览`} onClick={() => open(v)}>
                 <ExternalLink size={13} />
