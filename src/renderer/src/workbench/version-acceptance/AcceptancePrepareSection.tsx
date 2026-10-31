@@ -217,11 +217,12 @@ export function AcceptancePrepareSection({
           )}
           {/* #471：举证在各 Issue/PR 合入时已留下，报告=按目标聚合各 Issue 的
               验收件；缺口如实标出，由人确认或自行补充，模型不代采。
-              #516：prompt 点名落盘目录与登记要求——此前只说「归并成一份报告」，
-              模型生成后只写盘、不登记 preparedArtifacts，板面行永远不亮。SOP
-              细节仍在验收技能，prompt 只点出易漏的硬约束。 */}
+              #516：登记收拢成一条 add-artifact 命令——此前靠 prompt 提醒「登记
+              后再保存」，真实会话里模型仍漏登记，板面行永远不亮；命令内部完成
+              读改存与冲突重试，文件不存在如实报错，不登记幽灵制品。SOP 细节仍
+              在验收技能，prompt 只给出可直接执行的命令。 */}
           {onSendAction(
-            '聚合本次验收的证据报告：把各 Issue / PR 合入时留下的验收证据按目标归并成一份报告，缺证的地方如实标缺。报告文件落本版 .bw/planning/<版本>/ 目录，生成后经材料服务把报告登记为 preparedArtifacts 的 verification 制品再保存；只写盘不登记，板面「验收证据报告」行不会亮。',
+            '聚合本次验收的证据报告：把各 Issue / PR 合入时留下的验收证据按目标归并成一份报告，缺证的地方如实标缺。报告文件落本版 .bw/planning/<版本>/ 目录；生成后执行一条命令完成登记（--repo-id/--worktree-id 用入口提供的原生身份，candidateRef 复用材料现有值，文件不存在会如实报错）：ORCA bw materials add-artifact --repo-id <id> --worktree-id <id> --workflow acceptance --version <版本> --kind verification --location .bw/planning/<版本>/<报告文件名>',
             '聚合请求',
             <BoardActionButton title="向验收助手会话注入聚合请求：按目标归并各 Issue/PR 的验收件">
               <BrainCircuit size={14} aria-hidden="true" /> 聚合

@@ -73,5 +73,26 @@ export const WORKBENCH_MATERIAL_COMMAND_SPECS: CommandSpec[] = [
       'Use --input-stdin in SSH sessions; Orca forwards the payload through its native CLI bridge. --input reads a file on the CLI process host.',
       'Uses the running Orca runtime and native project/worktree IDs; it never writes material files directly.'
     ]
+  },
+  {
+    path: ['bw', 'materials', 'add-artifact'],
+    summary: 'Register an existing worktree file as a prepared artifact in one command',
+    usage:
+      'orca bw materials add-artifact --repo-id <id> --worktree-id <id> --workflow acceptance [--host-id <id>] --version <version> --kind <kind> --location <worktree-relative-path> [--artifact-id <id>] [--command <command>] [--checksum <checksum>] [--json]',
+    allowedFlags: [
+      ...GLOBAL_FLAGS,
+      ...scopeFlags,
+      'version',
+      'kind',
+      'location',
+      'artifact-id',
+      'command',
+      'checksum'
+    ],
+    notes: [
+      'Acceptance workflow only: preparedArtifacts live on acceptance material. The file must exist inside the workflow worktree (its mtime becomes generatedAt) and the material candidateRef must already be fixed; the command never invents either.',
+      'Runs read-modify-save on the owning runtime through the same revision guard as save; one automatic reread retry on conflict, then it reports currentRevision.',
+      'Same artifactId replaces the existing entry instead of appending; the default id is <kind>-<version>-<filename>.'
+    ]
   }
 ]

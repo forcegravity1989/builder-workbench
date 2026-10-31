@@ -2,7 +2,7 @@
 name: version-acceptance
 description: Use when 在 BW 验收屏准备周五验收会议的材料(出包、部署、预订会议、聚合验收证据报告)、支持 Showcase 展示与按目标组织的会议纪要(可同步到预订会议)、归档验收结果并发布版本,或对应 Orca 周期运行启动。制定新版本计划使用 week-planning。
 metadata:
-  version: 0.9.4
+  version: 0.9.5
 ---
 
 # 版本验收
@@ -35,16 +35,12 @@ metadata:
 
 生成与登记按下面顺序执行,不直接改材料文件:
 1. 报告文件落本版 `.bw/planning/<版本>/` 目录(一个版本一份,文件名自定;截图等实物落同目录 `shots/`),在候选固定之后生成。
-2. 先读材料拿 `revision`,`--repo-id`/`--worktree-id` 用入口提供的原生身份:
+2. 用一条命令登记,`--repo-id`/`--worktree-id` 用入口提供的原生身份:
    ```bash
-   ORCA bw materials read --repo-id <id> --worktree-id <id> --workflow acceptance --version <版本>
+   ORCA bw materials add-artifact --repo-id <id> --worktree-id <id> --workflow acceptance --version <版本> --kind verification --location .bw/planning/<版本>/<报告文件名>
    ```
-3. 往 `preparedArtifacts` 追加一条 verification 制品:`{artifactId, kind:'verification', location:'.bw/planning/<版本>/<文件名>', candidateRef, generatedAt}`,可选 `command`(生成报告的实际命令);`location` 存 `.bw` 相对路径。
-4. 带 `--expected-revision` 保存:
-   ```bash
-   ORCA bw materials save --repo-id <id> --worktree-id <id> --workflow acceptance --version <版本> --expected-revision <revision> --input <JSON 草稿文件>
-   ```
-5. 写回后告知人板面「验收证据报告」行已读回(板面约 5 秒轮询刷新);完整参数与 revision 冲突处理见[版本材料](../../system-prompt/references/version-records.md)。
+   命令在拥有工作树的一侧一次完成读改存:文件必须真实存在(不存在如实报错,不登记幽灵制品),mtime 作 `generatedAt`,`candidateRef` 复用材料现有值(候选未固定报错),同 artifactId 覆盖而非追加,revision 冲突自动重读重试一次。可选 `--artifact-id <id>`(缺省按 kind+版本+文件名生成)、`--command <生成报告的实际命令>`、`--checksum <校验值>`;报错就先补齐再重跑,不手改材料文件。
+3. 写回后告知人板面「验收证据报告」行已读回(板面约 5 秒轮询刷新);完整参数见[版本材料](../../system-prompt/references/version-records.md)。
 
 ## 预订会议与纪要同步
 
