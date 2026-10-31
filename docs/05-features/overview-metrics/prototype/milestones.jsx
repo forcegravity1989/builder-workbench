@@ -240,7 +240,6 @@ function App() {
       {
         ...next.plan,
         features: [
-          ...next.plan.features,
           {
             id,
             month: week.start.slice(0, 7),
@@ -253,7 +252,8 @@ function App() {
               },
               { versionId: next.version.id, stages: defaultStages(next.version, true) }
             ]
-          }
+          },
+          ...next.plan.features
         ]
       },
       [first.version.id, next.version.id]
