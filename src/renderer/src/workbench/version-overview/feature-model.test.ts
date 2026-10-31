@@ -17,12 +17,12 @@ import { materialSourceInputs } from './material-cache'
 import {
   matchMilestoneFeature,
   milestoneStageHours,
+  milestoneVersionKey,
   type MilestoneVersionFacts
 } from '../milestone-feature-facts'
 import type { MilestoneMaterial } from '../../../../shared/workbench/project-milestones'
 import { milestoneActualCalendar, milestoneActualLayout } from '../milestone-actual-layout'
 import { milestoneDay } from '../../../../shared/workbench/milestone-calendar'
-import { milestoneVersionKey } from '../milestone-feature-facts'
 
 it('projects scoped feature evidence without turning missing, later or unrelated records into delivery', () => {
   expect(sdlcProviderOf({ upstream: { owner: 'acme', repo: 'app' } })).toBe('github')
