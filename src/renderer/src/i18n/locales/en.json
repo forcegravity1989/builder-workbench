@@ -15252,7 +15252,6 @@
             "deb5293610": "Browser annotations unavailable in remote runtime",
             "90d021f2ad": "Add",
             "0cb3bd6221": "Annotation intent",
-            "8f87e6c2e5": "Intent",
             "532bac48c5": "Describe what the agent should change here...",
             "d2a7092e6e": "Annotation comment",
             "b472c5fe03": "Add browser annotation",
@@ -15373,8 +15372,8 @@
                     "c16f932cb3": "Save",
                     "024467ceac": "Cancel",
                     "449d2c2629": "Annotation intent",
-                    "collapse": "Collapse annotations",
-                    "expand": "Expand annotations"
+                    "38d320108c": "Collapse annotations",
+                    "9f209891a7": "Expand annotations"
                   }
                 }
               }
