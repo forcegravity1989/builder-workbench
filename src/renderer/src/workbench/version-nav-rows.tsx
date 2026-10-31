@@ -19,8 +19,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { VersionNativeTrees } from './VersionNativeTrees'
 import WorktreeContextMenu from '@/components/sidebar/WorktreeContextMenu'
+import { getWorkspaceStatus } from '@/components/sidebar/workspace-status'
 import { branchName } from '@/lib/git-utils'
-import type { Worktree } from '../../../shared/worktree/types'
+import type { Worktree, WorkspaceStatusDefinition } from '../../../shared/worktree/types'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
@@ -146,7 +147,7 @@ type GoalRowProps = {
   version: string
   label: string
   title: string
-  goalTrees: Worktree[]
+  goalTrees: GoalDirectoryTreeGroups
   active: boolean
   busy: boolean
   onOpenTasks: () => void
@@ -154,7 +155,8 @@ type GoalRowProps = {
   onOpenWorkspace: () => void
 }
 
-/** 目标目录行：点名称=同一任务屏的目标筛选；「···」接 P4 目标开工 hook。 */
+/** 目标目录行：点名称=同一任务屏的目标筛选；「···」接 P4 目标开工 hook。
+ * 完工树默认隐藏,「含 N 已完成」计数展开回看(会话态,重启回默认收起)。 */
 export function GoalDirectoryRow({
   version,
   label,
@@ -167,10 +169,18 @@ export function GoalDirectoryRow({
   onOpenWorkspace
 }: GoalRowProps): React.JSX.Element {
   const [expanded, setExpanded] = useState(false)
+  // 完工回看是会话态:不落存储,重启回默认收起。
+  const [showCompleted, setShowCompleted] = useState(false)
+  const treeCount = goalTrees.active.length + goalTrees.completed.length
+  const sectionBase = `version:${version}:goal:${
+    normalizeStoredWorkbenchVersionBinding(
+      (goalTrees.active[0] ?? goalTrees.completed[0])?.workbenchVersionBinding
+    )?.goalId ?? label
+  }`
   return (
     <div className="min-w-0">
       <div className={cn(ROW_CLASS, active ? ROW_ACTIVE : ROW_IDLE)}>
-        {goalTrees.length > 0 ? (
+        {treeCount > 0 ? (
           <ChevronToggle
             expanded={expanded}
             onToggle={() => setExpanded((open) => !open)}
@@ -213,7 +223,7 @@ export function GoalDirectoryRow({
               <ListTodo className="size-4" />
               查看目标任务
             </DropdownMenuItem>
-            {goalTrees.length > 0 ? (
+            {treeCount > 0 ? (
               <DropdownMenuItem onSelect={onOpenWorkspace}>
                 <ChevronRight className="size-4" />
                 打开目标工作区
@@ -224,36 +234,78 @@ export function GoalDirectoryRow({
       </div>
       {expanded ? (
         <div className="pl-5">
-          <VersionNativeTrees
-            trees={goalTrees}
-            sectionKey={`version:${version}:goal:${normalizeStoredWorkbenchVersionBinding(goalTrees[0]?.workbenchVersionBinding)?.goalId ?? label}`}
-          />
+          <VersionNativeTrees trees={goalTrees.active} sectionKey={sectionBase} />
+          {goalTrees.completed.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowCompleted((open) => !open)}
+              aria-expanded={showCompleted}
+              className="mt-0.5 flex w-full items-center gap-1 rounded px-1 py-0.5 text-left text-[11px] text-worktree-sidebar-foreground/45 hover:text-worktree-sidebar-foreground"
+            >
+              {showCompleted ? (
+                <ChevronDown className="size-3 shrink-0" />
+              ) : (
+                <ChevronRight className="size-3 shrink-0" />
+              )}
+              {showCompleted
+                ? `收起已完成（${goalTrees.completed.length}）`
+                : `含 ${goalTrees.completed.length} 已完成`}
+            </button>
+          ) : null}
+          {showCompleted && goalTrees.completed.length > 0 ? (
+            <VersionNativeTrees
+              trees={goalTrees.completed}
+              sectionKey={`${sectionBase}:completed`}
+            />
+          ) : null}
         </div>
       ) : null}
     </div>
   )
 }
 
-/** 目标目录体：业务归属分组（目标树 + 挂该目标的 Issue 树），不是原生 lineage。 */
+/** 完工判定只认原生看板状态的 completed id;树无状态走默认(非 completed),
+ *  自定义状态集没有该 id 时无树判完工——宁可见,不误藏。 */
+const COMPLETED_WORKSPACE_STATUS_ID = 'completed'
+
+export type GoalDirectoryTreeGroups = {
+  active: Worktree[]
+  completed: Worktree[]
+}
+
+/** 目标目录体：业务归属分组（目标树 + 挂该目标的 Issue 树），不是原生 lineage。
+ * 完工树（看板状态 completed）默认让位隐藏;活跃树内固定（isPinned）置顶,
+ * 其余按 id 稳定排序。完工隐藏优先于置顶。 */
 export function goalDirectoryTrees(
   worktrees: readonly Worktree[],
   version: string,
-  goalId: string
-): Worktree[] {
-  return worktrees
-    .filter((tree) => {
-      if (tree.isArchived) {
-        return false
-      }
-      const binding = normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding)
-      return (
-        !!binding &&
-        binding.version === version &&
-        binding.goalId === goalId &&
-        (binding.workflow === 'goal' || binding.workflow === 'issue')
-      )
-    })
-    .sort((a, b) => a.id.localeCompare(b.id))
+  goalId: string,
+  statuses: readonly WorkspaceStatusDefinition[]
+): GoalDirectoryTreeGroups {
+  const active: Worktree[] = []
+  const completed: Worktree[] = []
+  for (const tree of worktrees) {
+    if (tree.isArchived) {
+      continue
+    }
+    const binding = normalizeStoredWorkbenchVersionBinding(tree.workbenchVersionBinding)
+    if (
+      !binding ||
+      binding.version !== version ||
+      binding.goalId !== goalId ||
+      (binding.workflow !== 'goal' && binding.workflow !== 'issue')
+    ) {
+      continue
+    }
+    if (getWorkspaceStatus(tree, statuses) === COMPLETED_WORKSPACE_STATUS_ID) {
+      completed.push(tree)
+    } else {
+      active.push(tree)
+    }
+  }
+  active.sort((a, b) => Number(b.isPinned) - Number(a.isPinned) || a.id.localeCompare(b.id))
+  completed.sort((a, b) => a.id.localeCompare(b.id))
+  return { active, completed }
 }
 
 /** 任务行（版本全部任务，无目标筛选）。 */
