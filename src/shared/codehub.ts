@@ -147,3 +147,25 @@ export function codeHubMergeRequestUrl(
   const fallback = `https://${remote.host}/${remote.project.split('/').filter(Boolean).map(encodeURIComponent).join('/')}/-/merge_requests/${number}`
   return recorded?.trim() || fallback
 }
+
+export function assertCodeHubDetailIdentity(
+  args: { remote: CodeHubRemote; iid: number; kind: 'issue' | 'mr' },
+  returnedIid: unknown,
+  url: unknown
+) {
+  if (returnedIid !== undefined && Number(returnedIid) !== args.iid) {
+    throw new Error('CodeHub 返回的条目编号与请求不一致')
+  }
+  if (args.kind === 'mr' && typeof url === 'string' && url.trim()) {
+    const actual = new URL(url)
+    const expected = new URL(codeHubMergeRequestUrl(args.remote, args.iid))
+    const path = (value: URL) => decodeURIComponent(value.pathname).replace(/\/$/, '').toLowerCase()
+    if (
+      !['http:', 'https:'].includes(actual.protocol) ||
+      actual.host !== expected.host ||
+      path(actual) !== path(expected)
+    ) {
+      throw new Error('CodeHub 返回的 MR 链接与请求来源不一致')
+    }
+  }
+}
