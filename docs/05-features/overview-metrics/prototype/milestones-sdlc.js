@@ -1,6 +1,7 @@
 import * as core from '../../../../src/shared/workbench/milestone-sdlc.ts'
 import { settleMilestoneWindows } from '../../../../src/shared/workbench/milestone-window-order.ts'
 import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.ts'
+import { editMilestoneVersionName } from '../../../../src/shared/workbench/milestone-calendar.ts'
 // Prototype-only civil-day coordinates. Actual evidence retains its original timestamp.
 export const dayMs = 86400000
 export const day = (date) => Date.parse(`${date}T00:00:00Z`) / dayMs
@@ -66,6 +67,7 @@ function fromDraft(plan, draft) {
     ...plan,
     versions: draft.versions.map((v) => ({
       ...plan.versions.find((old) => old.id === v.cycleId),
+      name: v.version,
       start: v.timeWindow.start,
       end: v.timeWindow.end
     })),
@@ -93,6 +95,17 @@ export function fitVersions(plan, ids) {
       new Set(ids.filter((id) => !plan.versions.find((v) => v.id === id)?.started))
     )
   )
+}
+export function editVersionName(plan, id, name, previousName, submitted) {
+  const result = editMilestoneVersionName(
+    toDraft(plan),
+    id,
+    name,
+    previousName === undefined
+      ? undefined
+      : { previousName, registered: toDraft(submitted).versions }
+  )
+  return { plan: fromDraft(plan, result.draft), problem: result.problem }
 }
 export function laneConflict(plan) {
   return core.milestoneLaneConflict(toDraft(plan))

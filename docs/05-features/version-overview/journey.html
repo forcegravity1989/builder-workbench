@@ -9,15 +9,15 @@
   </head>
   <body>
     <main>
-      <header><span>BUILDER WORKBENCH / 版本总览 / #334</span><a href="prototype.html?rev=334-draft-19">打开高保真 ↗</a></header>
+      <header><span>BUILDER WORKBENCH / 版本总览 / #334</span><a href="prototype.html?rev=530-draft-1">打开高保真 ↗</a></header>
       <p class="eyebrow">原型注释: 本页是审阅指南，原型不作为生产运行证据</p>
       <h1>按目标看承诺，沿特性历程看交付。</h1>
       <p class="lead">从 BW 原有侧边栏进入。未计划、版本中和交付后保持同一结构：版本基础信息、版本目标、AI workflow 生产力。目标保留负责人、任务数量入口与人工验收，完整承诺从原有计划／验收导航查看。</p>
       <nav><a href="intent.md">意图 ↗</a><a href="spec.md">规格 ↗</a><span>原型注释: 使用 Orca 原生浏览器批注</span></nav>
       <section class="intent">
         <h2>原型注释: 审阅关注点</h2>
-        <p>目标任务数量与入口只保留在目标标题下。特性卡片以 Issue 标题、阶段、关联版本和时间轴为主，普通任务从目标入口进入原生任务屏。</p>
-        <p>横轴浅灰表示已结束，深色表示当前，白底虚线表示后续。默认展示 #334 的 Build 进行中快照；点击横条直接打开对应来源，悬停只显示一行状态。检查是否一眼能看出当前阶段与较长区间，再按需核对 PR。</p>
+        <p>负责人、目标任务入口与验收状态放在目标标题行，窄窗口自然换行。特性卡片以 Issue 标题、阶段、关联版本和时间轴为主，普通任务从目标入口进入原生任务屏。</p>
+        <p>横轴浅灰表示已结束，深色表示当前，白底虚线表示后续。默认展示 #334 的 Test 进行中快照；点击横条直接打开对应来源，悬停只显示一行状态。检查是否一眼能看出当前阶段与较长区间，再按需核对 PR。</p>
         <p>AI workflow 主读数是人工介入任务／有结论任务总数，轮次或批次在右上角；开工额外输入不重复显示次数。来源与未知范围可折叠展开，避免把每份报告铺满页面。</p>
       </section>
       <ol>
@@ -25,28 +25,28 @@
           <h3>计划未制定</h3>
           <p>目标区显示未制定计划和原有制定计划入口，没有目标就不补造目标。读取失败应保持未知，不能当作未计划。</p>
           <p class="check">原型注释: v0.9 是布局情景，未创建真实版本。入口演示沿原有计划工作区承接。</p>
-          <a href="prototype.html?scene=unplanned&amp;rev=334-draft-19">审阅未制定计划 →</a>
+          <a href="prototype.html?scene=unplanned&amp;rev=530-draft-1">审阅未制定计划 →</a>
         </article></li>
         <li><div class="number">02</div><article>
           <h3>版本中</h3>
           <p>按 v0.8 G1–G4 逐目标阅读。G2 中 #334 与 #440 各自呈现特性历程，普通任务从该目标任务入口查看。人工结论直接在目标处回显。</p>
-          <p class="check">原型注释: 目标与数量来自固定计划。默认 #334 使用计划、设计 PR 的合入快照与固定观察时点；后续虚线是默认长度。其他阶段的模拟可在轴上方切换。</p>
-          <a href="prototype.html?scene=during&amp;focus=334&amp;rev=334-draft-19">审阅版本中 →</a>
+          <p class="check">原型注释: 目标与数量来自固定计划。默认 #334 使用计划、设计和开发 PR 的合入快照与固定观察时点；后续虚线可切换模拟规划长度与默认长度。其他阶段的模拟可在轴上方切换。</p>
+          <a href="prototype.html?scene=during&amp;focus=334&amp;rev=530-draft-1">审阅版本中 →</a>
         </article></li>
         <li><div class="number">03</div><article>
           <h3>版本交付后</h3>
           <p>历史版本保持目标与时间轴布局，回显当时计划和人工结论。特性阶段不能覆盖目标验收，关联版本入口仍可继续核对同一特性。</p>
           <p class="check">原型注释: v0.7 按验收 planRef 固定计划，G1／G2 未达成、G3／G4 达成。#383 的模拟历程不改写这些人工结论。</p>
-          <a href="prototype.html?scene=delivered&amp;focus=383&amp;rev=334-draft-19">审阅交付后 →</a>
+          <a href="prototype.html?scene=delivered&amp;focus=383&amp;rev=530-draft-1">审阅交付后 →</a>
         </article></li>
       </ol>
       <section class="intent">
         <h2>读懂一条特性历程</h2>
         <p>Plan 从首次计划 PR 合入所在周周一 09:00 的统计基线开始，到计划 PR 合入结束。Design 对应 intent、spec 与原型共同评审，明确设计 PR 合入标记定稿。Build 包含详细设计、实施 Plan 和开发，以明确实现 PR 合入优先，没有可识别实现 PR 才用特性 Issue 关闭兜底。</p>
         <p>Test 从 Build 结束到目标人工达成且验收 PR 合入，代表验收前交付区间。后续明确关联版本继续完善同一特性时，Maintain 从首次交付连续计至后续验收，包含中间等待。实际历时包含评审和等待，不是人工工时。</p>
-        <p>Deploy 没有实际部署时点时提示未跟踪。后续默认长度为 Plan 1 天、Design 2 天、Build 半天、Test 1 天、Deploy 半天、Maintain 1 天；只作视觉占位，不生成日期承诺，也不把 Maintain 的真实起点推迟半天。</p>
+        <p>Deploy 没有实际部署时点时提示未跟踪。后续阶段优先使用明确关联的里程碑规划长度；没有匹配规划时，默认 Plan 1 天、Design 2 天、Build 半天、Test 1 天、Deploy 半天、Maintain 1 天。虚线只作视觉占位，不生成实际日期，也不把 Maintain 的真实起点推迟半天。</p>
         <p>横条每阶段只打开一个明确来源，缺来源提示未记录；交付卡片保留实际版本号和时分。特性是否随版交付同时需要计划关联、目标达成和验收 PR 合入，其他版本发布不会自动补出交付节点。</p>
-        <p class="check">原型注释: Test 进行中、Maintain 进行中和维护交付后的场景使用模拟时序，模拟已合入状态不跳转真实 PR。原型演示值不等于生产读取结果。</p>
+        <p class="check">原型注释: 默认情景采用已标明采集时间的 PR 快照；切换后的 Test 进行中、Maintain 进行中和维护交付后情景使用模拟时序，模拟已合入状态不跳转真实 PR。原型演示值不等于生产读取结果。</p>
       </section>
       <section class="intent">
         <h2>定位特性与关联版本</h2>

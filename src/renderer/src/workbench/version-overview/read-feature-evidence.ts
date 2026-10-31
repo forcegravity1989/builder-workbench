@@ -72,6 +72,7 @@ export async function readFeatureEvidence(
     linkedPullNumbers(body, task.url).forEach((number) => addPull(number, task))
   await mapLimit(associated, async (task) => {
     try {
+      let missingAssociationReason: string | undefined
       if (ref.provider === 'github') {
         const detail = await lookupGitHubWorkItemDetailsForSource({
           repoPath: repo.path,
@@ -112,10 +113,15 @@ export async function readFeatureEvidence(
           iid: task.iid
         })
         addBodyLinks(detail.description, task)
-        const related = readCodeHubIssuePulls(task)
+        const related = readCodeHubIssuePulls(detail)
         related.numbers.forEach((number) => addPull(number, task))
+        if (related.kind === 'unavailable') {
+          missingAssociationReason = related.reason
+        }
         if (task.iid === root.iid) {
           feature.body = detail.description
+          feature.closedAt =
+            detail.state === 'closed' && validTime(detail.closedAt) ? detail.closedAt : undefined
         }
       }
       const candidates = versions.flatMap((relatedVersion) =>
@@ -141,9 +147,10 @@ export async function readFeatureEvidence(
       }
       if (
         ref.provider === 'codehub' &&
+        missingAssociationReason &&
         ![...pullTasks.values()].some((tasks) => tasks.has(taskKey(task.reference)))
       ) {
-        feature.problems.push(`#${task.iid}：${readCodeHubIssuePulls(task).reason}`)
+        feature.problems.push(`#${task.iid}：${missingAssociationReason}`)
       }
     } catch (e) {
       feature.problems.push(`#${task.iid}：${problemText(e)}`)
@@ -180,7 +187,18 @@ export async function readFeatureEvidence(
           kind: 'mr',
           iid: number
         })
+        // The native reader verifies the MR identity, including proven clone/web host aliases.
+        if (!detail.url?.trim()) {
+          throw new Error('CodeHub MR 未返回原生来源链接')
+        }
 
+        if (
+          before &&
+          validTime(detail.createdAt) &&
+          Date.parse(detail.createdAt) > Date.parse(before)
+        ) {
+          return null
+        }
         return {
           number,
           url: detail.url ?? '',

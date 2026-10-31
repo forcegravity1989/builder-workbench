@@ -4,6 +4,7 @@ export function MilestoneField({
   label,
   editable,
   onChange,
+  onCommit,
   autoFocus = false,
   placeholder = label
 }: {
@@ -11,6 +12,7 @@ export function MilestoneField({
   label: string
   editable: boolean
   onChange(value: string): void
+  onCommit?(value: string, previousValue: string): void
   autoFocus?: boolean
   placeholder?: string
 }) {
@@ -29,7 +31,11 @@ export function MilestoneField({
       onChange={(e) => onChange(e.target.value)}
       onBlur={(e) => {
         if (!cancelled.current) {
-          onChange(e.target.value.trim())
+          if (onCommit) {
+            onCommit(e.target.value.trim(), entered.current)
+          } else {
+            onChange(e.target.value.trim())
+          }
         }
         cancelled.current = false
       }}

@@ -1,9 +1,17 @@
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import path from 'node:path'
 import type { Page, TestInfo } from '@playwright/test'
 import { expect, type ElectronApplication } from '@stablyai/playwright-test'
-import { overviewVersions } from './workbench-version-overview-fixture'
+import {
+  overviewVersions,
+  overviewFlowPaths,
+  overviewPinnedTitle,
+  overviewLatestTitle,
+  snapshotOverviewMaterials,
+  bindOverviewFlowsAndRead
+} from './workbench-version-overview-fixture'
 import { verifyOverviewRestart } from './workbench-overview-restart'
 
 export async function verifyVersionOverview(
@@ -12,31 +20,7 @@ export async function verifyVersionOverview(
   root: string,
   info: TestInfo
 ) {
-  const git = (...args: string[]) =>
-    execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
-  const initialHead = git('rev-parse', 'HEAD')
-  const planBytes = readFileSync(`${root}/.bw/planning/${overviewVersions.current}/data.json`)
-  const originalHash = createHash('sha256').update(planBytes).digest('hex')
-  const provider = JSON.parse(
-    execFileSync(
-      'gh',
-      [
-        'issue',
-        'view',
-        '334',
-        '--repo',
-        'forcegravity1989/builder-workbench',
-        '--json',
-        'number,title,labels,state,url'
-      ],
-      { encoding: 'utf8', timeout: 30_000 }
-    )
-  )
-  expect(provider.labels.some((label: { name: string }) => label.name === '特性')).toBe(true)
-  await info.attach('readonly-provider-source', {
-    body: JSON.stringify(provider),
-    contentType: 'application/json'
-  })
+  const materialsBefore = snapshotOverviewMaterials(root)
   const open = async (version: string, afterBackgroundReload = false) => {
     const group = page.locator('.wb-version-group', {
       has: page.getByRole('button', { name: `${version} 展开或收起`, exact: true })
@@ -57,6 +41,27 @@ export async function verifyVersionOverview(
     ).toBeVisible()
   }
   await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
+  await verifyDraftAcceptanceSource(page, root, info, open)
+  const provider = JSON.parse(
+    execFileSync(
+      'gh',
+      [
+        'issue',
+        'view',
+        '334',
+        '--repo',
+        'forcegravity1989/builder-workbench',
+        '--json',
+        'number,title,labels,state,url'
+      ],
+      { encoding: 'utf8', timeout: 30_000 }
+    )
+  )
+  expect(provider.labels.some((label: { name: string }) => label.name === '特性')).toBe(true)
+  await info.attach('readonly-provider-source', {
+    body: JSON.stringify(provider),
+    contentType: 'application/json'
+  })
   await open(overviewVersions.current)
   const board = page.locator('.bwo-page')
   await expect(board.getByText(/计划 PR 合入/).first()).toBeVisible()
@@ -100,7 +105,7 @@ export async function verifyVersionOverview(
   await expect(feature.getByText('特性历程与版本交付', { exact: true })).toHaveCount(0)
   await feature.locator('.bwo-feature-heading').click()
   await feature.locator('.bwo-stage-range').filter({ hasText: 'Deploy' }).hover()
-  await expect(page.getByRole('tooltip')).toHaveText('部署时间 · 未跟踪')
+  await expect(page.getByRole('tooltip')).toHaveText('部署时间 · 未跟踪；规划未读回，使用默认长度')
   await expect(
     feature.locator('.bwo-source-row, .bwo-stage-legend, .bwo-untracked-stage')
   ).toHaveCount(0)
@@ -149,7 +154,7 @@ export async function verifyVersionOverview(
     board.getByRole('heading', { name: '历史目标 · 保留当时范围', exact: true })
   ).toBeVisible({ timeout: 90_000 })
   await expect(board.getByRole('button', { name: '未达 ↗', exact: true })).toBeVisible()
-  await expect(board.getByText('后续处理 · 后续版本继续', { exact: true })).toBeVisible()
+  await expect(board).not.toContainText('后续处理 ·')
   console.info('[overview] historical pinned plan and human conclusion verified')
   await expect(board.locator('.bwo-feature').first()).toContainText('历史记录', { timeout: 90_000 })
   await expect(board).not.toContainText('开发 PR #474')
@@ -190,16 +195,107 @@ export async function verifyVersionOverview(
   await expect(
     page.getByRole('heading', { name: '当前目标 · 版本总览开发', exact: true })
   ).toBeVisible()
-  expect(git('rev-parse', 'HEAD')).toBe(initialHead)
-  expect(
-    createHash('sha256')
-      .update(readFileSync(`${root}/.bw/planning/${overviewVersions.current}/data.json`))
-      .digest('hex')
-  ).toBe(originalHash)
-  expect(git('status', '--porcelain')).toBe('')
+  expect(snapshotOverviewMaterials(root)).toEqual(materialsBefore)
   await info.attach('independent-file-readback', {
-    body: JSON.stringify({ initialHead, planSha256: originalHash, unchanged: true }),
+    body: JSON.stringify({ materialsBefore, unchanged: true }),
     contentType: 'application/json'
   })
   await verifyOverviewRestart(app, info)
+  expect(snapshotOverviewMaterials(root)).toEqual(materialsBefore)
+}
+
+async function verifyDraftAcceptanceSource(
+  page: Page,
+  root: string,
+  info: TestInfo,
+  open: (version: string, afterBackgroundReload?: boolean) => Promise<void>
+) {
+  const flows = overviewFlowPaths(root)
+  const version = overviewVersions.draftAcceptance
+  const materialPath = (directory: string, file: string) =>
+    path.join(directory, '.bw', 'planning', version, file)
+  const acceptance = JSON.parse(
+    readFileSync(materialPath(flows.acceptance, 'acceptance.json'), 'utf8')
+  )
+  const latestBytes = readFileSync(materialPath(flows.plan, 'data.json'))
+  const latest = JSON.parse(latestBytes.toString('utf8'))
+  const fixedBytes = execFileSync(
+    'git',
+    ['show', `${acceptance.planRef.sourceCommit}:.bw/planning/${version}/data.json`],
+    { cwd: flows.acceptance }
+  )
+  expect(existsSync(materialPath(root, 'data.json'))).toBe(false)
+  expect(existsSync(materialPath(root, 'acceptance.json'))).toBe(false)
+  expect(acceptance.planRef.kind).toBe('committed')
+  expect(acceptance.planRef.cycleId).toBe(latest.cycleId)
+  expect(acceptance.planRef.version).toBe(latest.version)
+  expect(`sha256:${createHash('sha256').update(fixedBytes).digest('hex')}`).toBe(
+    acceptance.planRef.revision
+  )
+  expect(`sha256:${createHash('sha256').update(latestBytes).digest('hex')}`).not.toBe(
+    acceptance.planRef.revision
+  )
+  const reachability = [root, flows.plan, flows.acceptance].map((directory) => ({
+    directory,
+    reachable:
+      spawnSync('git', ['merge-base', '--is-ancestor', acceptance.planRef.sourceCommit, 'HEAD'], {
+        cwd: directory
+      }).status === 0
+  }))
+  expect(reachability.map((entry) => entry.reachable)).toEqual([false, false, true])
+  const before = snapshotOverviewMaterials(root)
+  try {
+    const nativeReads = await bindOverviewFlowsAndRead(page, root, acceptance.planRef)
+    expect(nativeReads.acceptance.ok).toBe(true)
+    expect(nativeReads.acceptance.value?.document.goals[0]?.title).toBe(overviewPinnedTitle)
+    expect(nativeReads.home.error?.code).toBe('unverified-source')
+    expect(nativeReads.plan.error?.code).toBe('unverified-source')
+    await info.attach('draft-acceptance-fixture-proof', {
+      body: JSON.stringify({
+        provider: 'not used in this scenario (no mock)',
+        version,
+        reachability,
+        nativeReads,
+        before
+      }),
+      contentType: 'application/json'
+    })
+    console.info(
+      '[overview] draft acceptance fixture verified: fixed plan is reachable only in its native acceptance scope'
+    )
+    await open(version)
+    const board = page.locator('.bwo-page')
+    await expect(board.locator('.bwo-header .bwo-badge')).not.toHaveText('读取中', {
+      timeout: 90_000
+    })
+    await expect(board.getByText('正在读取版本材料…', { exact: true })).toHaveCount(0)
+    await page.screenshot({ path: info.outputPath('overview-draft-acceptance.png') })
+    await info.attach('draft-acceptance-observation', {
+      body: await board.innerText(),
+      contentType: 'text/plain'
+    })
+    await expect(
+      board.getByRole('heading', { name: overviewPinnedTitle, exact: true })
+    ).toBeVisible()
+    await expect(
+      board.getByRole('heading', { name: overviewLatestTitle, exact: true })
+    ).toHaveCount(0)
+    await expect(board.getByRole('button', { name: '未达 ↗', exact: true })).toBeVisible()
+    expect(acceptance.results[0]?.nextStep).toBe('保留原人工结论后继续')
+    await expect(board).not.toContainText('后续处理 ·')
+    await expect(board.getByRole('alert')).toHaveCount(0)
+    await expect(board).not.toContainText('已有正式验收')
+    await expect(board).not.toContainText('已归档')
+  } finally {
+    const after = snapshotOverviewMaterials(root)
+    await info.attach('draft-acceptance-independent-readback', {
+      body: JSON.stringify({
+        before,
+        after,
+        unchanged: JSON.stringify(before) === JSON.stringify(after)
+      }),
+      contentType: 'application/json'
+    })
+    expect(after).toEqual(before)
+  }
 }

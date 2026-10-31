@@ -4,7 +4,7 @@ export const repository = snapshot.source.repository
 export const acceptanceForVersion = (version) =>
   snapshot.acceptance.version === version ? snapshot.acceptance : null
 export const baseline = snapshot.source.sourceCommit
-export const revision = '334-draft-19'
+export const revision = '530-draft-1'
 export const formatTime = (value) =>
   value && Number.isFinite(Date.parse(value))
     ? new Intl.DateTimeFormat('zh-CN', {
@@ -50,6 +50,7 @@ export const material = (version, kind = 'data', commit = baseline) =>
 // Explicit design samples; no labels or title associations are written to the source Issues.
 export const features = ['334', '440'].map((id) => {
   const designPR = snapshot.pulls.find((p) => p.number === (id === '334' ? 459 : 460))
+  const developmentPR = snapshot.pulls.find((p) => p.number === (id === '334' ? 474 : 477))
   const issue = snapshot.issues.find((i) => String(i.number) === id)
   const own = id === '334'
   return {
@@ -58,9 +59,13 @@ export const features = ['334', '440'].map((id) => {
     goalId: 'G2',
     title: own ? '版本总览重设计' : '项目总览里程碑规划',
     owner: issue.assignees.join('、') || snapshot.plan.goals.find((g) => g.goalId === 'G2').owner,
-    stage: own ? 'Build · 评审中' : 'Design · 评审中',
+    stage: developmentPR?.mergedAt
+      ? 'Test · 进行中'
+      : designPR?.mergedAt
+        ? 'Build · 评审中'
+        : 'Design · 评审中',
     designPR,
-    developmentPR: own ? snapshot.pulls.find((pr) => pr.number === 474) : null
+    developmentPR
   }
 })
 export const historicalFeatures = [

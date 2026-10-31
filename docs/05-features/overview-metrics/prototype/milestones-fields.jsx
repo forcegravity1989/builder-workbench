@@ -5,11 +5,13 @@ export function InlineField({
   label,
   placeholder,
   change,
+  commit,
   autoFocus = false,
   className = '',
   required = true
 }) {
   const started = useRef(value)
+  const cancelled = useRef(false)
   return (
     <input
       className={`ml-inline ${className}`}
@@ -20,9 +22,19 @@ export function InlineField({
       aria-invalid={required && !value.trim()}
       onFocus={() => {
         started.current = value
+        cancelled.current = false
       }}
       onInput={(e) => change(e.currentTarget.value)}
-      onBlur={(e) => change(e.currentTarget.value.trim())}
+      onBlur={(e) => {
+        if (!cancelled.current) {
+          if (commit) {
+            commit(e.currentTarget.value.trim(), started.current)
+          } else {
+            change(e.currentTarget.value.trim())
+          }
+        }
+        cancelled.current = false
+      }}
       onKeyDown={(e) => {
         if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) {
           return
@@ -32,8 +44,9 @@ export function InlineField({
         }
         if (e.key === 'Escape') {
           e.stopPropagation()
-          e.currentTarget.blur()
+          cancelled.current = true
           change(started.current)
+          e.currentTarget.blur()
         }
       }}
     />

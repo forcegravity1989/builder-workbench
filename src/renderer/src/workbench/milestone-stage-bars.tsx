@@ -1,7 +1,13 @@
 import { Fragment } from 'react'
+import { RefreshCw } from 'lucide-react'
+import { MilestoneIconButton } from './milestone-icon-button'
+import { timeLabel } from './version-overview/overview-time'
+import { MilestoneActualBars } from './milestone-actual-bars'
+import type { MilestoneVersionFacts } from './milestone-feature-facts'
 import {
   MilestonePhases,
   type MilestoneFeature,
+  type MilestoneMaterial,
   type ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
 import { milestoneDeliveryWindow } from '../../../shared/workbench/milestone-delivery-window'
@@ -30,13 +36,15 @@ export function MilestoneSdlcToolbar({
   onChange,
   warning,
   featureCount,
-  ownerCount
+  ownerCount,
+  actual
 }: {
   showPlan: boolean
   onChange(value: boolean): void
   warning?: string
   featureCount: number
   ownerCount: number
+  actual: { loading: boolean; failed: boolean; readAt?: string; refresh(): void }
 }) {
   return (
     <div className="wb-ml-sdlc-toolbar">
@@ -54,12 +62,32 @@ export function MilestoneSdlcToolbar({
           <input type="checkbox" checked={showPlan} onChange={(e) => onChange(e.target.checked)} />
           显示计划
         </label>
+        <div className="wb-ml-actual-refresh" role="status">
+          <span>
+            {actual.failed
+              ? `本次未采集到${actual.readAt ? ` · 保留 ${timeLabel(actual.readAt)} 数据` : ''}，请到版本总览查看`
+              : actual.readAt
+                ? `截至 ${timeLabel(actual.readAt)}`
+                : actual.loading
+                  ? '正在采集…'
+                  : ''}
+          </span>
+          <MilestoneIconButton
+            label="刷新实际进度"
+            onClick={actual.refresh}
+            disabled={actual.loading}
+          >
+            <RefreshCw size={13} className={actual.loading ? 'animate-spin' : undefined} />
+          </MilestoneIconButton>
+        </div>
       </div>
     </div>
   )
 }
 
 export function MilestoneStageBars({
+  material,
+  facts,
   feature,
   versions,
   origin,
@@ -68,6 +96,8 @@ export function MilestoneStageBars({
   showPlan,
   gesture
 }: {
+  material: MilestoneMaterial
+  facts: Record<string, MilestoneVersionFacts>
   feature: MilestoneFeature
   versions: ScheduledVersion[]
   origin: number
@@ -79,6 +109,13 @@ export function MilestoneStageBars({
   const x = (time: string) => (plannedDay(time) - origin) * width
   return (
     <>
+      <MilestoneActualBars
+        feature={feature}
+        material={material}
+        facts={facts}
+        started={started}
+        origin={origin}
+      />
       <svg className="wb-ml-connection" aria-hidden="true">
         {feature.deliveries.slice(1).map((d, i) => {
           if (!d.stages.length || !feature.deliveries[i].stages.length) {
@@ -116,11 +153,6 @@ export function MilestoneStageBars({
         const hasFirstDelivery = gesture.hasFirstDelivery(delivery.version.cycleId)
         return (
           <Fragment key={delivery.id}>
-            {frozen && (
-              <span className="wb-ml-actual-unknown" style={{ left: x(delivery.stages[0].start) }}>
-                实际进度未接入
-              </span>
-            )}
             {(!frozen || showPlan) && (
               <div className={`wb-ml-phase-group ${frozen ? 'ghost' : ''}`}>
                 {delivery.stages.map((s, index) => {

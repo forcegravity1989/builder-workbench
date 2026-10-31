@@ -797,11 +797,13 @@
 }
 .ov-goal-heading {
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 .ov-goal-heading h2 {
+  flex: 1;
+  min-width: 160px;
   margin: 0;
   font-size: 15px;
   font-weight: 600;
@@ -810,22 +812,22 @@
 .ov-goal-heading h2 .ov-label {
   margin-right: 12px;
 }
-.ov-goal-meta,
-.ov-goal-conclusion {
+.ov-goal-meta {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   flex-wrap: wrap;
-  gap: 8px 18px;
+  gap: 8px 16px;
   align-items: center;
   font-size: 11px;
   color: var(--muted-foreground);
-  margin: 10px 0;
+}
+.ov-goal-meta span {
+  overflow-wrap: anywhere;
 }
 .ov-goal-meta button {
+  white-space: nowrap;
   font-size: 11px;
-}
-.ov-goal-conclusion {
-  padding: 9px 0;
-  border-top: 1px dashed var(--border);
 }
 .ov-acceptance {
   flex-shrink: 0;

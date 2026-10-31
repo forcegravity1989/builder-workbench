@@ -127,13 +127,20 @@ it('registers with one conflict retry on a fresh document, then reports currentR
   )
   expect(registered).toEqual({ revision: 'sha256:saved', artifact: first })
   await expect(
-    registerPreparedArtifact(async () => null, async () => 'unused', () => first)
+    registerPreparedArtifact(
+      async () => null,
+      async () => 'unused',
+      () => first
+    )
   ).rejects.toMatchObject({ code: 'invalid-document' })
   // 仍冲突：报错并带 currentRevision，不循环覆盖。
   let conflicts = 0
   await expect(
     registerPreparedArtifact(
-      async () => ({ document: document({ preparedArtifacts: [second] }), revision: 'sha256:stale' }),
+      async () => ({
+        document: document({ preparedArtifacts: [second] }),
+        revision: 'sha256:stale'
+      }),
       async () => {
         conflicts += 1
         throw new VersionDocumentError('revision-conflict', 'changed', 'sha256:live')

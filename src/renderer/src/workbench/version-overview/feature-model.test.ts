@@ -9,11 +9,26 @@ import {
   referenceForPlan,
   type FeaturePull
 } from './feature-model'
-import { versionDeliveryEvents, type VersionEvidence } from './version-evidence'
+import {
+  versionDeliveryEvents,
+  type OverviewVersionPlan,
+  type VersionEvidence
+} from './version-evidence'
+import { featureHistoryScopes } from './feature-history-scope'
+import type { CycleTaskSnapshot } from '../version-cycle/ports'
 import { cycleBaseline, featureTimeline, featureStage } from './feature-timeline'
 import { featureTimelineLayout } from './feature-timeline-layout'
 import { OverviewPullSchema } from '../../../../shared/workbench/overview-pull'
 import { materialSourceInputs } from './material-cache'
+import {
+  matchMilestoneFeature,
+  milestoneStageHours,
+  milestoneVersionKey,
+  type MilestoneVersionFacts
+} from '../milestone-feature-facts'
+import type { MilestoneMaterial } from '../../../../shared/workbench/project-milestones'
+import { milestoneActualCalendar, milestoneActualLayout } from '../milestone-actual-layout'
+import { milestoneDay } from '../../../../shared/workbench/milestone-calendar'
 
 it('projects scoped feature evidence without turning missing, later or unrelated records into delivery', () => {
   expect(sdlcProviderOf({ upstream: { owner: 'acme', repo: 'app' } })).toBe('github')
@@ -87,6 +102,107 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   expect(featureNumber({ iid: 334, title: '总览', labels: ['特性'] })).toBe(334)
   expect(featureNumber({ iid: 500, title: '【v1|G2】【特性#334】执行', labels: [] })).toBe(334)
   expect(featureNumber({ iid: 500, title: '【特性#334】【特性#440】执行' })).toBeNull()
+  const root440 = { ...reference, number: 440 }
+  const child = { ...reference, number: 501 }
+  const removed = { ...reference, number: 502 }
+  const foreign = { ...reference, repository: 'https://github.com/acme/other.git', number: 503 }
+  const childSnapshot: CycleTaskSnapshot & { kind: 'ready' } = {
+    kind: 'ready',
+    reference: child,
+    iid: child.number,
+    title: '【特性#440】执行',
+    state: 'closed',
+    url: 'https://github.com/acme/app/issues/501',
+    readAt: metadata.readAt,
+    source: { kind: 'task-source', provider: 'github', projectId: 'project', hostId: 'local' }
+  }
+  const past: OverviewVersionPlan = {
+    version: 'v0.7',
+    tasks: [child],
+    goals: [],
+    source: 'committed',
+    taskSnapshot: [childSnapshot, { ...childSnapshot, reference: removed, iid: removed.number }]
+  }
+  const currentPlan: OverviewVersionPlan = {
+    version: 'v0.8',
+    tasks: [reference, root440, child],
+    goals: [],
+    source: 'committed'
+  }
+  const currentReads = new Map([
+    [taskKey(reference), { ...childSnapshot, reference, iid: 334, labels: ['特性'] }],
+    [taskKey(root440), { ...childSnapshot, reference: root440, iid: 440, labels: ['特性'] }],
+    [taskKey(child), { ...childSnapshot, title: '【特性#334】执行' }]
+  ])
+  const fixedHistory = featureHistoryScopes(
+    [past, currentPlan],
+    [reference, root440],
+    'v0.8',
+    currentReads
+  )
+  expect(fixedHistory.scopes.get(taskKey(reference))?.byVersion.has('v0.7')).toBe(false)
+  expect([...fixedHistory.scopes.get(taskKey(root440))!.byVersion.get('v0.7')!]).toEqual([
+    taskKey(child)
+  ])
+  expect(fixedHistory.candidates).toEqual([])
+  const noLiveChild = new Map(currentReads)
+  noLiveChild.delete(taskKey(child))
+  expect(featureHistoryScopes([past], [root440], 'v0.8', noLiveChild).candidates).toEqual([child])
+  expect(featureHistoryScopes([past], [reference], 'v0.8', noLiveChild).candidates).toEqual([])
+  const legacy = { ...past, taskSnapshot: undefined, tasks: [removed, foreign] }
+  const unresolved = featureHistoryScopes([legacy], [reference], 'v0.8', noLiveChild)
+  expect(unresolved.candidates).toEqual([removed])
+  expect(unresolved.scopes.get(taskKey(reference))).toEqual({
+    byVersion: new Map(),
+    complete: false
+  })
+  expect(
+    featureHistoryScopes(
+      [{ ...legacy, source: 'draft' }],
+      [reference],
+      'v0.8',
+      noLiveChild
+    ).scopes.get(taskKey(reference))?.complete
+  ).toBe(true)
+  const laterPlan: OverviewVersionPlan = {
+    ...legacy,
+    version: 'v0.9',
+    confirmation: {
+      id: 'later-plan',
+      phase: 'intent',
+      label: '计划合入',
+      at: '2026-11-02T09:00:00Z',
+      url,
+      readAt: metadata.readAt,
+      rule: 'test'
+    }
+  }
+  const cutoffScope = featureHistoryScopes(
+    [laterPlan],
+    [reference],
+    'v0.8',
+    noLiveChild,
+    '2026-10-30T17:00:00Z'
+  )
+  expect(cutoffScope.candidates).toEqual([])
+  expect(cutoffScope.scopes.get(taskKey(reference))?.complete).toBe(true)
+  expect([
+    ...featureHistoryScopes([past], [root440], 'v0.7', currentReads)
+      .scopes.get(taskKey(root440))!
+      .byVersion.get('v0.7')!
+  ]).toEqual([taskKey(child)])
+  const discovered = new Map(noLiveChild)
+  discovered.set(taskKey(removed), {
+    ...childSnapshot,
+    reference: removed,
+    iid: removed.number,
+    title: '【特性#334】执行'
+  })
+  const related = featureHistoryScopes([legacy], [reference], 'v0.8', discovered)
+  expect(related.scopes.get(taskKey(reference))?.complete).toBe(true)
+  expect([...related.scopes.get(taskKey(reference))!.byVersion.get('v0.7')!]).toEqual([
+    taskKey(removed)
+  ])
   expect(
     linkedPullNumbers(
       `${url} https://github.com/acme/other/pull/459`,
@@ -99,8 +215,37 @@ it('projects scoped feature evidence without turning missing, later or unrelated
       'https://codehub.example/g/p/-/issues/1'
     )
   ).toEqual([3])
+  expect(
+    linkedPullNumbers(
+      'https://codehub.example/g/p/merge_requests/3 https://codehub.example/g/other/merge_requests/4 https://codehub-other.example/g/p/merge_requests/5',
+      'https://codehub.example/g/p/issues/1'
+    )
+  ).toEqual([3])
   expect(pullPhase('', `设计 PR：${url}`, url)).toBe('design')
+  expect(
+    pullPhase(
+      '交付阶段：Build',
+      '开发 MR：https://codehub.example/g/p/-/merge_requests/3',
+      'https://codehub.example/g/p/merge_requests/3'
+    )
+  ).toBe('development')
+  expect(
+    pullPhase(
+      '交付阶段：Design',
+      '设计 MR：https://codehub.example/g/p/merge_requests/3',
+      'https://codehub.example/g/p/-/merge_requests/3'
+    )
+  ).toBe('design')
+  expect(
+    pullPhase(
+      '',
+      '开发 MR：https://codehub.example/g/other/merge_requests/3',
+      'https://codehub.example/g/p/merge_requests/3'
+    )
+  ).toBe('unknown')
   expect(pullPhase('交付阶段：开发', `设计 PR：${url}`, url)).toBe('unknown')
+  expect(pullPhase('交付阶段：Build', `设计 PR：${url}`, url)).toBe('unknown')
+  expect(pullPhase('交付阶段：设计\n阶段：Design')).toBe('design')
   expect(pullPhase('changed intent.md, spec.md')).toBe('unknown')
   const featureIssueUrl = 'https://github.com/acme/app/issues/440'
   expect(pullDeclaresIssue('关联 #334\n\n交付阶段：开发\n参考 #440', featureIssueUrl)).toBe(false)
@@ -215,6 +360,133 @@ it('projects scoped feature evidence without turning missing, later or unrelated
       ...deliveries
     ]
   } as Parameters<typeof featureTimeline>[0]
+  const goalFeature = { ...timelineFeature, members: [timelineFeature.root] }
+  const facts: MilestoneVersionFacts = {
+    plan: {
+      version: 'v0.8',
+      cycleId: 'cycle-eight',
+      goals: [{ goalId: 'g2', title: '目标', metricTargets: [] }]
+    },
+    features: [goalFeature],
+    loading: false,
+    failed: false,
+    stale: false
+  }
+  const material: MilestoneMaterial = {
+    schema_version: 2,
+    months: [{ month: '2026-10', outcome: '' }],
+    features: [
+      {
+        id: 'planned',
+        month: '2026-10',
+        title: '任意标题',
+        owner: 'builder',
+        deliveries: [
+          {
+            id: 'delivery',
+            version: { version: 'v0.8', cycleId: 'cycle-eight' },
+            goalId: 'g2',
+            stages: [{ phase: 'Test', start: '2026-10-29T00:00', end: '2026-10-30T12:00' }]
+          }
+        ]
+      }
+    ]
+  }
+  const delivery = material.features[0]!.deliveries[0]!
+  expect(matchMilestoneFeature(delivery, facts, material)).toBe(goalFeature)
+  expect(
+    matchMilestoneFeature(
+      { ...delivery, version: { ...delivery.version, cycleId: 'different' } },
+      facts,
+      material
+    )
+  ).toBeUndefined()
+  expect(
+    matchMilestoneFeature({ ...delivery, goalId: undefined, goalSlot: 2 }, facts, material)
+  ).toBeUndefined()
+  expect(matchMilestoneFeature(delivery, { ...facts, failed: true }, material)).toBeUndefined()
+  expect(
+    matchMilestoneFeature(
+      delivery,
+      {
+        ...facts,
+        features: [goalFeature, { ...goalFeature, root: { ...goalFeature.root, iid: 440 } }]
+      },
+      material
+    )
+  ).toBeUndefined()
+  expect(milestoneStageHours(material, facts, goalFeature)).toEqual({ Test: 36 })
+  const continuedMaterial = structuredClone(material)
+  const continued = {
+    ...delivery,
+    id: 'later',
+    version: { version: 'v0.9', cycleId: 'cycle-nine' },
+    stages: [{ phase: 'Maintain' as const, start: '2026-11-02T00:00', end: '2026-11-06T12:00' }]
+  }
+  continuedMaterial.features[0]!.deliveries.push(continued)
+  const finalFeature = {
+    ...goalFeature,
+    observedAt: '2027-01-07T08:00:00Z',
+    pulls: [
+      ...goalFeature.pulls,
+      { ...pull, number: 474, phase: 'development' as const, mergedAt: '2027-01-05T08:00:00Z' }
+    ],
+    events: [
+      intentEvent,
+      {
+        ...intentEvent,
+        id: 'first',
+        phase: 'version' as const,
+        delivered: true,
+        deliveryKind: 'first' as const,
+        at: '2027-01-06T08:00:00Z'
+      }
+    ]
+  }
+  const projectedFacts = {
+    [milestoneVersionKey(delivery.version)]: {
+      ...facts,
+      features: [{ ...goalFeature, observedAt: '2026-10-02T08:00:00Z' }]
+    },
+    [milestoneVersionKey(continued.version)]: {
+      ...facts,
+      plan: { ...facts.plan!, ...continued.version },
+      features: [finalFeature]
+    }
+  }
+  const started = new Set(['cycle-eight', 'cycle-nine'])
+  const actual = milestoneActualLayout(
+    continuedMaterial.features[0]!,
+    continuedMaterial,
+    projectedFacts,
+    started
+  )
+  expect(actual.stages.find((stage) => stage.id === 'Build')?.end).toBe('2027-01-05T08:00:00Z')
+  expect(actual.stages.filter((stage) => stage.id === 'Test')).toHaveLength(1)
+  expect(
+    milestoneActualCalendar({ material: continuedMaterial, versions: [] }, projectedFacts, started)
+      .end
+  ).toBeGreaterThanOrEqual(milestoneDay('2027-01-06'))
+  expect(
+    milestoneStageHours(
+      {
+        ...material,
+        features: [...material.features, { ...material.features[0]!, id: 'another' }]
+      },
+      facts,
+      goalFeature
+    )
+  ).toEqual({})
+  const futureFeature = { ...timelineFeature, pulls: [], events: [] }
+  const plannedLayout = featureTimelineLayout(futureFeature, { Test: 36 })
+  expect(plannedLayout.slots[3]).toMatchObject({
+    hours: 36,
+    planned: true,
+    placeholder: true,
+    start: undefined,
+    end: undefined
+  })
+  expect(featureTimelineLayout(futureFeature).slots[3]).toMatchObject({ hours: 24, planned: false })
   expect(featureStage(timelineFeature, false)).toContain('Maintain')
   const timeline = featureTimeline(timelineFeature)
   expect(timeline.points.design?.at).toBe(pull.mergedAt)

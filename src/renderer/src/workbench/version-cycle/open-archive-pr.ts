@@ -3,12 +3,14 @@ import { prefillCodehubDetailCache } from '@/components/task-page/codehub/codehu
 import { codehubApi } from '@/lib/codehub-api'
 import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
 import { useAppStore } from '@/store'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { parseCodeHubRemote } from '../../../../shared/codehub'
 import type { CodeHubTaskItem } from '../../../../shared/codehub-tasks'
+import { getRepoExecutionHostId } from '../../../../shared/execution-host'
 import type { WorkflowArchivePr } from '../../../../shared/workbench/version-workflow'
 import { codehubStateOf, codehubWebUrl } from '../codehub-task-item'
 import { resolveReferenceRepo } from '../task-port'
-import type { CycleScope } from './ports'
+import type { VersionCycleContext } from './cycle-context'
 
 /**
  * Opens the recorded archive PR/MR on the Orca native PR page (never an external
@@ -23,15 +25,34 @@ import type { CycleScope } from './ports'
  * being duplicated per screen.
  */
 export async function openArchivePrPage(
-  scope: CycleScope,
+  context: Pick<VersionCycleContext, 'scope' | 'worktreeId' | 'archivePort'>,
   archivePr: WorkflowArchivePr
 ): Promise<void> {
+  const { scope, worktreeId, archivePort } = context
+  if (!scope) {
+    throw new Error('版本工作区来源未就绪')
+  }
   const reference = {
     provider: archivePr.provider,
     repository: archivePr.repository,
     number: archivePr.number
   }
-  const repo = resolveReferenceRepo({ repos: () => useAppStore.getState().repos }, scope, reference)
+  let repo = resolveReferenceRepo(
+    {
+      repos: () =>
+        useAppStore.getState().repos.filter((repo) => getRepoExecutionHostId(repo) === scope.hostId)
+    },
+    scope,
+    reference
+  )
+  if (!repo && archivePr.provider === 'codehub' && worktreeId) {
+    // Only the owning runtime can prove a web host aliases this scope's registered repo.
+    const status = await archivePort.readStatus({ ...scope, worktreeId }, archivePr)
+    if (status.state === 'unknown') {
+      throw new Error(status.reason)
+    }
+    repo = findRepoForHost(useAppStore.getState().repos, scope.repoId, { hostId: scope.hostId })
+  }
   if (!repo) {
     throw new Error(`未在已登记项目中找到归档仓库 ${archivePr.repository}`)
   }
@@ -66,6 +87,12 @@ export async function openArchivePrPage(
     const sourceContext = getTaskPageRepoSourceContext(repo, 'codehub')
     if (!sourceContext) {
       throw new Error('无法解析 codehub 任务来源上下文')
+    }
+    const state = useAppStore.getState()
+    const routedRepo = findRepoForHost(state.repos, repo.id, { settings: state.settings })
+    // The native CodeHub API routes by bare repo id; duplicated ids must resolve to this owner.
+    if (!routedRepo || getRepoExecutionHostId(routedRepo) !== getRepoExecutionHostId(repo)) {
+      throw new Error('归档 MR 所属宿主与当前 CodeHub 路由不一致，请切回对应宿主后重试')
     }
     const detail = await codehubApi.viewTask({
       repoPath: repo.path,

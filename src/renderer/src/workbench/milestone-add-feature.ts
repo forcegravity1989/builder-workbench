@@ -59,7 +59,6 @@ export function createMilestoneFeature(draft: MilestoneDraft, started: Set<strin
             ? following.draft.material.months
             : [...following.draft.material.months, { month: featureMonth, outcome: '' }],
           features: [
-            ...used.draft.material.features,
             {
               id,
               month: featureMonth,
@@ -80,7 +79,8 @@ export function createMilestoneFeature(draft: MilestoneDraft, started: Set<strin
                   stages: defaultMilestoneStages(following.version, true)
                 }
               ]
-            }
+            },
+            ...used.draft.material.features
           ]
         }
       },

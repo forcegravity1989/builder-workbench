@@ -23,7 +23,8 @@ import {
   milestoneCalendar,
   milestoneDay,
   milestoneWeekAt,
-  materializeMilestoneWeek
+  materializeMilestoneWeek,
+  editMilestoneVersionName
 } from './milestone-calendar'
 
 it('keeps planning dates, precise version identity and snapshots through scheduling and reordering', () => {
@@ -169,6 +170,33 @@ it('keeps planning dates, precise version identity and snapshots through schedul
     ]
   }
   const expanded = adjustMilestoneDelivery(withEmpty, 'f1', 'f1-0', 'end', 1, 5)
+  const typingName = editMilestoneVersionName(withEmpty, 'three', '').draft
+  expect(typingName.versions).toHaveLength(4)
+  const clearedName = editMilestoneVersionName(typingName, 'three', '', {
+    previousName: 'v3',
+    registered: before.versions
+  })
+  expect(clearedName.problem).toBeUndefined()
+  expect(clearedName.draft.versions.map((v) => v.cycleId)).toEqual(['one', 'two', 'four'])
+  expect(clearedName.draft.material).toBe(typingName.material)
+  expect(withEmpty.versions[2].version).toBe('v3')
+  const registeredName = editMilestoneVersionName(typingName, 'three', '', {
+    previousName: 'v3',
+    registered: withEmpty.versions
+  })
+  expect(registeredName.problem).toContain('已提交')
+  expect(registeredName.draft.versions).toEqual(withEmpty.versions)
+  const usedName = editMilestoneVersionName(withEmpty, 'one', '', {
+    previousName: 'v1',
+    registered: []
+  })
+  expect(usedName.problem).toContain('仍有特性安排')
+  expect(usedName.draft).toEqual(withEmpty)
+  const editedName = editMilestoneVersionName(withEmpty, 'one', 'v1-next').draft
+  expect(editedName.material.features[0].deliveries[0].version).toEqual({
+    version: 'v1-next',
+    cycleId: 'one'
+  })
   const settled = settleMilestoneWindows(withEmpty, expanded, new Set())
   expect(settled.conflict).toBeUndefined()
   expect(settled.draft.versions.slice(2).map((v) => v.timeWindow)).toEqual([
@@ -217,6 +245,77 @@ it('keeps planning dates, precise version identity and snapshots through schedul
     settleMilestoneWindows(
       parallel,
       adjustMilestoneDelivery(parallel, 'f1', 'f1-0', 'end', 1, 0.5),
+      new Set()
+    ).conflict
+  ).toBeUndefined()
+  const withEarlierEmpty = {
+    ...withEmpty,
+    versions: withEmpty.versions.map((v) =>
+      v.cycleId === 'three'
+        ? { ...v, timeWindow: { start: '2026-10-26', end: '2026-10-30' } }
+        : v.cycleId === 'four'
+          ? { ...v, timeWindow: { start: '2026-10-19', end: '2026-10-23' } }
+          : v
+    )
+  }
+  const expandedLeft = adjustMilestoneDelivery(withEarlierEmpty, 'f1', 'f1-0', 'start', 0, -5)
+  const settledLeft = settleMilestoneWindows(withEarlierEmpty, expandedLeft, new Set())
+  expect(settledLeft.conflict).toBeUndefined()
+  expect(settledLeft.draft.versions.slice(2).map((v) => v.timeWindow)).toEqual([
+    { start: '2026-10-23', end: '2026-10-27' },
+    { start: '2026-10-18', end: '2026-10-22' }
+  ])
+  expect(settledLeft.draft.versions.map((v) => v.cycleId)).toEqual(
+    withEarlierEmpty.versions.map((v) => v.cycleId)
+  )
+  expect(settledLeft.draft.material).toBe(expandedLeft.material)
+  expect(withEarlierEmpty.versions[2].timeWindow?.start).toBe('2026-10-26')
+  expect(milestoneProblems(settledLeft.draft)).toEqual([])
+  expect(
+    settleMilestoneWindows(
+      settledLeft.draft,
+      adjustMilestoneDelivery(settledLeft.draft, 'f1', 'f1-0', 'start', 0, 5),
+      new Set()
+    ).draft.versions.slice(2)
+  ).toEqual(settledLeft.draft.versions.slice(2))
+  for (const frozenId of ['three', 'four']) {
+    const blocked = settleMilestoneWindows(withEarlierEmpty, expandedLeft, new Set([frozenId]))
+    expect(blocked.conflict).toBeTruthy()
+    expect(blocked.draft).toBe(withEarlierEmpty)
+  }
+  const occupiedLeft = structuredClone(withEarlierEmpty)
+  occupiedLeft.material.features.push({
+    id: 'earlier-work',
+    month: '2026-11',
+    title: '前面的排期',
+    owner: 'bob',
+    deliveries: [
+      {
+        id: 'earlier-work-0',
+        version: { version: 'v4', cycleId: 'four' },
+        stages: defaultMilestoneStages(occupiedLeft.versions[3])
+      }
+    ]
+  })
+  expect(milestoneProblems(occupiedLeft)).toEqual([])
+  for (const delta of [-5, -14]) {
+    const blocked = settleMilestoneWindows(
+      occupiedLeft,
+      adjustMilestoneDelivery(occupiedLeft, 'f1', 'f1-0', 'start', 0, delta),
+      new Set()
+    )
+    expect(blocked.conflict).toBeTruthy()
+    expect(blocked.draft).toBe(occupiedLeft)
+  }
+  const parallelLeft = structuredClone(occupiedLeft)
+  parallelLeft.versions[3].timeWindow = { start: '2026-11-02', end: '2026-11-06' }
+  parallelLeft.material.features[2].deliveries[0].stages = defaultMilestoneStages(
+    parallelLeft.versions[3]
+  )
+  expect(
+    settleMilestoneWindows(
+      parallelLeft,
+      adjustMilestoneDelivery(parallelLeft, 'f1', 'f1-0', 'start', 0, -0.5),
       new Set()
     ).conflict
   ).toBeUndefined()

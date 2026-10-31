@@ -1,6 +1,8 @@
 import type { CodeHubRemote } from '../../shared/codehub'
 import type { CodeHubPipeline, CodeHubTaskDetail } from '../../shared/codehub-tasks'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
+import { linkedMergeRequestsOf } from './issue-links'
+import { verifyCodeHubTaskIdentity } from './web-identity'
 
 export function projectArgs(remote: CodeHubRemote): string[] {
   return ['-p', remote.project, '-H', remote.host.replace(/:\d+$/, '')]
@@ -8,10 +10,7 @@ export function projectArgs(remote: CodeHubRemote): string[] {
 
 export function parseJson(stdout: string): unknown {
   const text = stdout.trim()
-  if (!text) {
-    return null
-  }
-  return JSON.parse(text) as unknown
+  return text ? (JSON.parse(text) as unknown) : null
 }
 
 export async function createCodeHubIssue(args: {
@@ -250,6 +249,14 @@ export async function viewCodeHubTask(args: {
     )
   )
   const url = record.web_url ?? record.html_url ?? record.url
+  const remote = await verifyCodeHubTaskIdentity(args, record.iid ?? record.number, url)
+  const linkedMergeRequests =
+    args.kind === 'issue'
+      ? await linkedMergeRequestsOf(record, remote, args.execOptions)
+      : undefined
+  const createdAt = plainText(record, ['created_at', 'createdAt'])
+  const mergedAt = plainText(record, ['merged_at', 'mergedAt'])
+  const closedAt = plainText(record, ['closed_at', 'closedAt'])
   return {
     iid: args.iid,
     title: String(record.title ?? ''),
@@ -261,11 +268,15 @@ export async function viewCodeHubTask(args: {
     assignees: namesOf(record.assignees ?? record.assignee),
     reviewers: namesOf(record.reviewers ?? record.approval_reviewers),
     labels: namesOf(record.labels),
-    ...(plainText(record, ['created_at', 'createdAt'])
-      ? { createdAt: plainText(record, ['created_at', 'createdAt'])! }
+    ...(createdAt ? { createdAt } : {}),
+    ...(mergedAt ? { mergedAt } : {}),
+    ...(closedAt ? { closedAt } : {}),
+    ...(linkedMergeRequests ? { linkedMergeRequests } : {}),
+    ...(record.source_project
+      ? { sourceProjectUrl: plainText(detailRecord(record.source_project), ['web_url']) }
       : {}),
-    ...(plainText(record, ['merged_at', 'mergedAt'])
-      ? { mergedAt: plainText(record, ['merged_at', 'mergedAt'])! }
+    ...(record.target_project
+      ? { targetProjectUrl: plainText(detailRecord(record.target_project), ['web_url']) }
       : {}),
     sourceBranch: plainText(record, ['source_branch', 'sourceBranch']),
     targetBranch: plainText(record, ['target_branch', 'targetBranch'])
