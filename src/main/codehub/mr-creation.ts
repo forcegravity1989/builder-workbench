@@ -1,7 +1,6 @@
 import type { CodeHubRemote } from '../../shared/codehub'
-import { viewCodeHubTask } from './mutations'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
-import { projectArgs } from './mutations'
+import { projectArgs, viewCodeHubTask } from './mutations'
 import { readCodeHubBranchReview } from './mr-branch-review'
 
 /** Open MR in the registered repository with both material branches matching. */
