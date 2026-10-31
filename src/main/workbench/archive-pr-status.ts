@@ -106,8 +106,8 @@ async function readCodeHubArchiveStatus(args: {
         iid: args.number
       })
       const state = mapCodeHubArchiveState(detail)
-      if (detail.iid !== args.number) {
-        throw new Error('CodeHub 返回的 MR 编号与请求不一致')
+      if (!detail.url?.trim()) {
+        throw new Error('CodeHub MR 未返回原生来源链接')
       }
       if (!state) {
         return {

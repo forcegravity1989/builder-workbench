@@ -154,7 +154,7 @@ export async function verifyVersionOverview(
     board.getByRole('heading', { name: '历史目标 · 保留当时范围', exact: true })
   ).toBeVisible({ timeout: 90_000 })
   await expect(board.getByRole('button', { name: '未达 ↗', exact: true })).toBeVisible()
-  await expect(board.getByText('后续处理 · 后续版本继续', { exact: true })).toBeVisible()
+  await expect(board).not.toContainText('后续处理 ·')
   console.info('[overview] historical pinned plan and human conclusion verified')
   await expect(board.locator('.bwo-feature').first()).toContainText('历史记录', { timeout: 90_000 })
   await expect(board).not.toContainText('开发 PR #474')
@@ -281,13 +281,11 @@ async function verifyDraftAcceptanceSource(
       board.getByRole('heading', { name: overviewLatestTitle, exact: true })
     ).toHaveCount(0)
     await expect(board.getByRole('button', { name: '未达 ↗', exact: true })).toBeVisible()
-    await expect(board.getByText('后续处理 · 保留原人工结论后继续', { exact: true })).toBeVisible()
+    expect(acceptance.results[0]?.nextStep).toBe('保留原人工结论后继续')
+    await expect(board).not.toContainText('后续处理 ·')
     await expect(board.getByRole('alert')).toHaveCount(0)
     await expect(board).not.toContainText('已有正式验收')
     await expect(board).not.toContainText('已归档')
-    console.info(
-      '[overview] draft acceptance retains fixed scope and human conclusion without claiming formal acceptance'
-    )
   } finally {
     const after = snapshotOverviewMaterials(root)
     await info.attach('draft-acceptance-independent-readback', {

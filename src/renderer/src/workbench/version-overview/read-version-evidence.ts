@@ -96,7 +96,9 @@ export async function readVersionEvidence(
       try {
         const ref = entry.material.acceptance
         if (!ref) {
-          if (entry.material.plan) {
+          if (workingPlan?.document.version === entry.version) {
+            await addPlan(workingPlan.document, workingPlan.source)
+          } else if (entry.material.plan) {
             const fixed = await history.readPlan({
               scope,
               planRef: {
@@ -109,16 +111,12 @@ export async function readVersionEvidence(
             })
             await addPlan(fixed.document)
           } else if (entry.draft) {
-            if (workingPlan?.document.version === entry.version) {
-              await addPlan(workingPlan.document, workingPlan.source)
-            } else {
-              plans.push({
-                version: entry.version,
-                tasks: entry.tasks,
-                goals: entry.goals.map((g) => ({ ...g, metricTargets: [] })),
-                source: 'draft'
-              })
-            }
+            plans.push({
+              version: entry.version,
+              tasks: entry.tasks,
+              goals: entry.goals.map((g) => ({ ...g, metricTargets: [] })),
+              source: 'draft'
+            })
           }
           return
         }

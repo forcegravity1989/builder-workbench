@@ -10,7 +10,7 @@ vi.mock('./cli', () => ({
 
 import { readCodeHubMrChecks, readCodeHubMrChanges } from './mr-reads'
 import { readCodeHubBranchReview } from './mr-branch-review'
-import { createCodeHubMr, openCodeHubMrForBranch } from './mr-creation'
+import { createCodeHubMr } from './mr-creation'
 
 const remote = { host: 'codehub-g.huawei.com', project: 'Org/Group/repo' }
 const headOid = 'f'.repeat(40)
@@ -207,14 +207,8 @@ describe('codehub mr reads', () => {
       ],
       branchArgs.execOptions
     )
-    runCodeHubCliMock.mockReset()
-    runCodeHubCliMock
-      .mockResolvedValueOnce(JSON.stringify([mr(7, 'opened')]))
-      .mockResolvedValueOnce(JSON.stringify(mr(7, 'opened')))
-    expect(await openCodeHubMrForBranch(branchArgs)).toBe(7)
-    expect(runCodeHubCliMock.mock.calls.every(([args]) => args[1] !== 'commits')).toBe(true)
-
     const cloneRemote = { ...remote, host: 'git.codehub.example.test' }
+    runCodeHubCliMock.mockReset()
     runCodeHubCliMock.mockImplementation(async (args: string[]) => {
       if (args[0] === 'project') {
         return JSON.stringify({
@@ -238,6 +232,7 @@ describe('codehub mr reads', () => {
       url: mr(7).web_url
     })
     expect(runCodeHubCliMock.mock.calls.some(([args]) => args[1] === 'create')).toBe(false)
+    expect(runCodeHubCliMock.mock.calls.every(([args]) => args[1] !== 'commits')).toBe(true)
 
     runCodeHubCliMock.mockImplementation(async (args: string[]) => {
       if (args[1] === 'list') {

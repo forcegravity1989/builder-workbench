@@ -35,7 +35,7 @@ export function materialSourceInputs(
   ])
 }
 
-/** Only a value from the exact same owner and material revision may survive a failed refresh. */
+/** Keep a failed refresh's material pair together; PR facts belong to their recorded reference. */
 export function retainMaterialRead(
   value: VersionOverviewMaterials,
   previous?: VersionOverviewMaterials
@@ -43,8 +43,18 @@ export function retainMaterialRead(
   const errors = [value.plan, value.acceptance].flatMap((doc) =>
     doc.kind === 'error' ? [doc.message] : []
   )
+  const keepMaterials = Boolean(
+    errors.length &&
+    previous &&
+    ((!previous.problems?.length && !previous.refreshing) || previous.stale) &&
+    [previous.plan, previous.acceptance].every(
+      (doc) => doc.kind === 'ready' || doc.kind === 'missing'
+    )
+  )
+  let retained = keepMaterials
   let pending = false
-  value = { ...value, prStatuses: { ...value.prStatuses } }
+  value = keepMaterials ? { ...previous! } : { ...value }
+  value.prStatuses = { ...value.prStatuses }
   for (const kind of ['plan', 'acceptance'] as const) {
     const status = value.prStatuses[kind]
     const document = value[kind]
@@ -53,11 +63,23 @@ export function retainMaterialRead(
     if (status?.state === 'unknown') {
       errors.push(status.reason)
     }
-    if (previous && document.kind === 'error' && previous[kind].kind === 'ready') {
-      value = { ...value, [kind]: previous[kind] }
-    }
-    if (previous?.prStatuses[kind] && (!status || status.state === 'unknown')) {
-      value.prStatuses[kind] = previous.prStatuses[kind]
+    const prior = previous?.[kind]
+    const reference = document.kind === 'ready' ? document.document.workflow?.archivePr : null
+    const priorReference = prior?.kind === 'ready' ? prior.document.workflow?.archivePr : null
+    const priorStatus = previous?.prStatuses[kind]
+    if (
+      !keepMaterials &&
+      status?.state === 'unknown' &&
+      priorStatus &&
+      priorStatus.state !== 'unknown' &&
+      reference &&
+      priorReference &&
+      reference.provider === priorReference.provider &&
+      reference.repository === priorReference.repository &&
+      reference.number === priorReference.number
+    ) {
+      value.prStatuses[kind] = priorStatus
+      retained = true
     }
   }
   const acceptanceStatus = value.prStatuses.acceptance
@@ -70,13 +92,9 @@ export function retainMaterialRead(
   }
   return {
     ...value,
-    readAt: previous && (errors.length || pending) ? previous.readAt : new Date().toISOString(),
+    readAt: retained ? previous?.readAt : new Date().toISOString(),
     problems: [...new Set(errors)],
-    stale: Boolean(
-      previous?.readAt &&
-      ((!previous.refreshing && !previous.problems?.length) || previous.stale) &&
-      (errors.length || pending)
-    ),
+    stale: Boolean(retained && previous?.readAt),
     refreshing: pending
   }
 }

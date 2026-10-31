@@ -3,17 +3,6 @@ import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 import { projectArgs, viewCodeHubTask } from './mutations'
 import { readCodeHubBranchReview } from './mr-branch-review'
 
-/** Open MR in the registered repository with both material branches matching. */
-export async function openCodeHubMrForBranch(args: {
-  remote: CodeHubRemote
-  execOptions?: CodeHubExecOptions
-  sourceBranch: string
-  targetBranch: string
-}): Promise<number | null> {
-  const review = await readCodeHubBranchReview({ ...args, states: ['opened'] })
-  return review?.number ?? null
-}
-
 /**
  * Create an MR for `sourceBranch`, adopting an already-open one instead of
  * failing (main create_mr_on_branch semantics). Target branch must be resolved

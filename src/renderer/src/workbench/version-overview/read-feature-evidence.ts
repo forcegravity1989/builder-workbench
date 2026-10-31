@@ -187,12 +187,9 @@ export async function readFeatureEvidence(
           kind: 'mr',
           iid: number
         })
-        if (
-          detail.iid !== number ||
-          !detail.url ||
-          !linkedPullNumbers(detail.url, root.url).includes(number)
-        ) {
-          throw new Error('CodeHub MR 来源与特性 Issue 的仓库或编号不一致，或缺少来源链接')
+        // The native reader verifies the MR identity, including proven clone/web host aliases.
+        if (!detail.url?.trim()) {
+          throw new Error('CodeHub MR 未返回原生来源链接')
         }
 
         if (
