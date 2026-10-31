@@ -249,6 +249,12 @@
       "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 492,
       "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 483,
+      "goalId": "G4"
     }
   ],
   "minutes": {
