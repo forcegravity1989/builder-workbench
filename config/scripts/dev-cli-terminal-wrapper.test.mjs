@@ -22,6 +22,18 @@ describe('dev CLI terminal wrappers', () => {
     expect(readFileSync(path.join(userDataPath, 'cli', 'bin', 'orca.cmd'), 'utf8')).toBe(wrapper)
     expect(readFileSync(path.join(root, 'out', 'bin', 'orca-dev.cmd'), 'utf8')).toBe(wrapper)
     expect(readFileSync(path.join(root, 'out', 'bin', 'orca.cmd'), 'utf8')).toBe(wrapper)
+
+    const shellWrapper = readFileSync(path.join(userDataPath, 'cli', 'bin', 'orca'), 'utf8')
+    expect(shellWrapper).toContain('#!/usr/bin/env bash\n')
+    expect(shellWrapper).toContain(`export ORCA_USER_DATA_PATH='${userDataPath}'`)
+    expect(shellWrapper).toContain('export ORCA_DEV_CLI_INVOCATION=1')
+    expect(shellWrapper).toContain(`export ORCA_APP_EXECUTABLE='${path.join(root, 'electron.exe')}'`)
+    expect(shellWrapper).toContain('export ORCA_APP_EXECUTABLE_NEEDS_APP_ROOT=1')
+    expect(shellWrapper).toContain(`exec node '${path.join(root, 'out', 'cli', 'index.js')}' "$@"`)
+    expect(readFileSync(path.join(userDataPath, 'cli', 'bin', 'orca-dev'), 'utf8')).toBe(shellWrapper)
+    for (const commandName of ['orca', 'orca-dev']) {
+      expect(readFileSync(path.join(root, 'out', 'bin', commandName), 'utf8')).toBe(shellWrapper)
+    }
   })
 
   it('escapes literal percent signs in every Windows batch path', () => {
@@ -58,10 +70,10 @@ describe('dev CLI terminal wrappers', () => {
     })
 
     const wrapper = readFileSync(path.join(userDataPath, 'cli', 'bin', 'orca-dev'), 'utf8')
-    expect(wrapper).toContain(`export ORCA_USER_DATA_PATH=${JSON.stringify(userDataPath)}`)
+    expect(wrapper).toContain(`export ORCA_USER_DATA_PATH='${userDataPath}'`)
     expect(wrapper).toContain('export ORCA_DEV_CLI_INVOCATION=1')
     expect(wrapper).toContain(
-      `exec node ${JSON.stringify(path.join(root, 'out', 'cli', 'index.js'))}`
+      `exec node '${path.join(root, 'out', 'cli', 'index.js')}'`
     )
     expect(readFileSync(path.join(userDataPath, 'cli', 'bin', 'orca'), 'utf8')).toBe(wrapper)
     expect(readFileSync(path.join(root, 'out', 'bin', 'orca-dev'), 'utf8')).toBe(wrapper)
