@@ -9,7 +9,13 @@ import {
   referenceForPlan,
   type FeaturePull
 } from './feature-model'
-import { versionDeliveryEvents, type VersionEvidence } from './version-evidence'
+import {
+  versionDeliveryEvents,
+  type OverviewVersionPlan,
+  type VersionEvidence
+} from './version-evidence'
+import { featureHistoryScopes } from './feature-history-scope'
+import type { CycleTaskSnapshot } from '../version-cycle/ports'
 import { cycleBaseline, featureTimeline, featureStage } from './feature-timeline'
 import { featureTimelineLayout } from './feature-timeline-layout'
 import { OverviewPullSchema } from '../../../../shared/workbench/overview-pull'
@@ -96,6 +102,107 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   expect(featureNumber({ iid: 334, title: '总览', labels: ['特性'] })).toBe(334)
   expect(featureNumber({ iid: 500, title: '【v1|G2】【特性#334】执行', labels: [] })).toBe(334)
   expect(featureNumber({ iid: 500, title: '【特性#334】【特性#440】执行' })).toBeNull()
+  const root440 = { ...reference, number: 440 }
+  const child = { ...reference, number: 501 }
+  const removed = { ...reference, number: 502 }
+  const foreign = { ...reference, repository: 'https://github.com/acme/other.git', number: 503 }
+  const childSnapshot: CycleTaskSnapshot & { kind: 'ready' } = {
+    kind: 'ready',
+    reference: child,
+    iid: child.number,
+    title: '【特性#440】执行',
+    state: 'closed',
+    url: 'https://github.com/acme/app/issues/501',
+    readAt: metadata.readAt,
+    source: { kind: 'task-source', provider: 'github', projectId: 'project', hostId: 'local' }
+  }
+  const past: OverviewVersionPlan = {
+    version: 'v0.7',
+    tasks: [child],
+    goals: [],
+    source: 'committed',
+    taskSnapshot: [childSnapshot, { ...childSnapshot, reference: removed, iid: removed.number }]
+  }
+  const currentPlan: OverviewVersionPlan = {
+    version: 'v0.8',
+    tasks: [reference, root440, child],
+    goals: [],
+    source: 'committed'
+  }
+  const currentReads = new Map([
+    [taskKey(reference), { ...childSnapshot, reference, iid: 334, labels: ['特性'] }],
+    [taskKey(root440), { ...childSnapshot, reference: root440, iid: 440, labels: ['特性'] }],
+    [taskKey(child), { ...childSnapshot, title: '【特性#334】执行' }]
+  ])
+  const fixedHistory = featureHistoryScopes(
+    [past, currentPlan],
+    [reference, root440],
+    'v0.8',
+    currentReads
+  )
+  expect(fixedHistory.scopes.get(taskKey(reference))?.byVersion.has('v0.7')).toBe(false)
+  expect([...fixedHistory.scopes.get(taskKey(root440))!.byVersion.get('v0.7')!]).toEqual([
+    taskKey(child)
+  ])
+  expect(fixedHistory.candidates).toEqual([])
+  const noLiveChild = new Map(currentReads)
+  noLiveChild.delete(taskKey(child))
+  expect(featureHistoryScopes([past], [root440], 'v0.8', noLiveChild).candidates).toEqual([child])
+  expect(featureHistoryScopes([past], [reference], 'v0.8', noLiveChild).candidates).toEqual([])
+  const legacy = { ...past, taskSnapshot: undefined, tasks: [removed, foreign] }
+  const unresolved = featureHistoryScopes([legacy], [reference], 'v0.8', noLiveChild)
+  expect(unresolved.candidates).toEqual([removed])
+  expect(unresolved.scopes.get(taskKey(reference))).toEqual({
+    byVersion: new Map(),
+    complete: false
+  })
+  expect(
+    featureHistoryScopes(
+      [{ ...legacy, source: 'draft' }],
+      [reference],
+      'v0.8',
+      noLiveChild
+    ).scopes.get(taskKey(reference))?.complete
+  ).toBe(true)
+  const laterPlan: OverviewVersionPlan = {
+    ...legacy,
+    version: 'v0.9',
+    confirmation: {
+      id: 'later-plan',
+      phase: 'intent',
+      label: '计划合入',
+      at: '2026-11-02T09:00:00Z',
+      url,
+      readAt: metadata.readAt,
+      rule: 'test'
+    }
+  }
+  const cutoffScope = featureHistoryScopes(
+    [laterPlan],
+    [reference],
+    'v0.8',
+    noLiveChild,
+    '2026-10-30T17:00:00Z'
+  )
+  expect(cutoffScope.candidates).toEqual([])
+  expect(cutoffScope.scopes.get(taskKey(reference))?.complete).toBe(true)
+  expect([
+    ...featureHistoryScopes([past], [root440], 'v0.7', currentReads)
+      .scopes.get(taskKey(root440))!
+      .byVersion.get('v0.7')!
+  ]).toEqual([taskKey(child)])
+  const discovered = new Map(noLiveChild)
+  discovered.set(taskKey(removed), {
+    ...childSnapshot,
+    reference: removed,
+    iid: removed.number,
+    title: '【特性#334】执行'
+  })
+  const related = featureHistoryScopes([legacy], [reference], 'v0.8', discovered)
+  expect(related.scopes.get(taskKey(reference))?.complete).toBe(true)
+  expect([...related.scopes.get(taskKey(reference))!.byVersion.get('v0.7')!]).toEqual([
+    taskKey(removed)
+  ])
   expect(
     linkedPullNumbers(
       `${url} https://github.com/acme/other/pull/459`,

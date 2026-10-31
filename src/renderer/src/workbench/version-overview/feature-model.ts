@@ -4,7 +4,7 @@ import { parseGitHubIssueOrPRLink } from '../../../../shared/github/links'
 import { normalizeCodeHubMergeRequestRoute } from '../../../../shared/codehub'
 
 export type FeaturePhase = 'design' | 'development'
-export const PARSER_REVISION = 'feature-evidence-v6'
+export const PARSER_REVISION = 'feature-evidence-v7'
 export type FeaturePull = {
   phase?: FeaturePhase | 'unknown'
   number: number
