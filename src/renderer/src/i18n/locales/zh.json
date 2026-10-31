@@ -77,7 +77,6 @@
     "minimizeNotice": {
       "body": "Orca 仍在系统托盘中运行"
     },
-    "activityWaiting": "Orca - 活动等待中",
     "activityWaitingSuffix": "等待活动"
   },
   "worktreeJumpPalette": {
@@ -1158,8 +1157,6 @@
         "76a95f7f47": "创建",
         "f05d237049": "先添加一个项目",
         "f9eaa9e12d": "添加项目",
-        "6ca6ff404e": "ORCA",
-        "520304a067": "Orca 标志",
         "ce44fad849": "缺少依赖项",
         "c1cf168479": "隐藏",
         "00cee697c1": "在终端中运行“gh auth login”以连接您的 GitHub 账户。",
@@ -3735,7 +3732,6 @@
           "2d9eb39264": "token总数",
           "beb6f24f37": "预计成本",
           "da62578d9d": "用法",
-          "0eb31e79ee": "Orca IDE",
           "960324e9b8": "事件",
           "6adac63cfe": "轮流"
         },
@@ -3778,7 +3774,6 @@
         "share": {
           "card": {
             "utils": {
-              "19f4b4dc75": "github.com/stablyai/orca",
               "d864fc5f98": "输出",
               "5d66fdd7c2": "输入",
               "7080aeaebb": "推理",
@@ -3786,7 +3781,8 @@
               "33d38e2177": "输出",
               "c2d7b23d57": "输入",
               "9d166247ee": "缓存写入",
-              "cc28cb965e": "缓存读取"
+              "cc28cb965e": "缓存读取",
+              "19f4b4dc75": "github.com/forcegravity1989/builder-workbench"
             }
           }
         },
@@ -5617,13 +5613,10 @@
           "retryDetection": "Retry"
         },
         "AppIconSelector": {
-          "d5a112dc9b": "下一个图标",
-          "415fa76f64": "选定的应用程序图标",
-          "5f5142a62a": "上一个图标"
+          "415fa76f64": "选定的应用程序图标"
         },
         "AppearancePane": {
           "3057983501": "未分配",
-          "0cd9b8228f": "选择 Dock 和窗口切换器中显示的应用程序图标。",
           "ca1590d42f": "应用程序图标",
           "fa882a3e6b": "在左侧边栏顶部显示“自动化”按钮。",
           "511f270ebb": "显示自动化按钮",
@@ -7799,14 +7792,11 @@
         },
         "appearance": {
           "search": {
-            "468448bba4": "水彩",
-            "f586abfa35": "蓝色",
             "651f35b2c6": "切换器",
             "e5bc35d59e": "窗户",
             "d18b54ca90": "码头",
             "1f2880a9d5": "orca",
             "2cfb3420c0": "应用程序图标",
-            "e80c2af428": "选择 Dock 和窗口切换器中显示的应用程序图标。",
             "2b313598c6": "应用程序图标",
             "ac79fe4a04": "显示",
             "648eeada79": "隐藏",
@@ -14738,5 +14728,8 @@
       "stopped": "已停止",
       "finished": "已完成"
     }
+  },
+  "brand": {
+    "workbench": "Workbench"
   }
 }

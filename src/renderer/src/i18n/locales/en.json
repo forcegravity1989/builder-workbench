@@ -220,7 +220,6 @@
     "minimizeNotice": {
       "body": "Orca is still running in the system tray"
     },
-    "activityWaiting": "Orca - activity waiting",
     "activityWaitingSuffix": "activity waiting"
   },
   "worktreeJumpPalette": {
@@ -1503,8 +1502,6 @@
         "76a95f7f47": "Create",
         "f05d237049": "Add a project first",
         "f9eaa9e12d": "Add project",
-        "6ca6ff404e": "ORCA",
-        "520304a067": "Orca logo",
         "ce44fad849": "Missing dependencies",
         "c1cf168479": "Hide",
         "00cee697c1": "Run \"gh auth login\" in a terminal to connect your GitHub account.",
@@ -4232,7 +4229,6 @@
           "2d9eb39264": "Total tokens",
           "beb6f24f37": "Est. cost",
           "da62578d9d": "Usage",
-          "0eb31e79ee": "Orca IDE",
           "960324e9b8": "events",
           "6adac63cfe": "turns"
         },
@@ -4276,7 +4272,6 @@
         "share": {
           "card": {
             "utils": {
-              "19f4b4dc75": "github.com/stablyai/orca",
               "d864fc5f98": "output",
               "5d66fdd7c2": "input",
               "7080aeaebb": "Reasoning",
@@ -4284,7 +4279,8 @@
               "33d38e2177": "Output",
               "c2d7b23d57": "Input",
               "9d166247ee": "Cache write",
-              "cc28cb965e": "Cache read"
+              "cc28cb965e": "Cache read",
+              "19f4b4dc75": "github.com/forcegravity1989/builder-workbench"
             }
           }
         },
@@ -6658,16 +6654,13 @@
           "noAgentsDetected": "No agents detected. If one is installed, the probe may have timed out."
         },
         "AppIconSelector": {
-          "d5a112dc9b": "Next icon",
-          "415fa76f64": "Selected app icon",
-          "5f5142a62a": "Previous icon"
+          "415fa76f64": "Selected app icon"
         },
         "AppearancePane": {
           "3057983501": "Unassigned",
           "872af9556e": "System Tray",
           "2edf606c46": "Minimize to Tray on Close",
           "b707773a0d": "When enabled, closing the window keeps Orca running in the system tray instead of quitting.",
-          "0cd9b8228f": "Choose the app icon shown in the Dock and window switcher.",
           "ca1590d42f": "App Icon",
           "fa882a3e6b": "Show the Automations button at the top of the left sidebar.",
           "511f270ebb": "Show Automations Button",
@@ -8974,14 +8967,11 @@
           "search": {
             "9a115966d3": "Minimize to Tray on Close",
             "4d5b9427b5": "When enabled, closing the window keeps Orca running in the system tray instead of quitting.",
-            "468448bba4": "watercolor",
-            "f586abfa35": "blue",
             "651f35b2c6": "switcher",
             "e5bc35d59e": "window",
             "d18b54ca90": "dock",
             "1f2880a9d5": "orca",
             "2cfb3420c0": "app icon",
-            "e80c2af428": "Choose the app icon shown in the Dock and window switcher.",
             "2b313598c6": "App Icon",
             "ac79fe4a04": "show",
             "648eeada79": "hide",
@@ -17645,5 +17635,8 @@
   },
   "common": {
     "retry": "Retry"
+  },
+  "brand": {
+    "workbench": "Workbench"
   }
 }

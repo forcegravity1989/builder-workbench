@@ -29,8 +29,7 @@ import { getTerminalAppearanceSearchEntries } from './terminal-search'
 import { TerminalAppearanceSection } from './TerminalAppearanceSection'
 import type { UseGhosttyImportReturn } from './useGhosttyImport'
 import type { UseWarpThemeImportReturn } from './useWarpThemeImport'
-import { AppIconSelector } from './AppIconSelector'
-import { normalizeAppIconId } from '../../../../shared/app-icon'
+import { AppIconPreview } from './AppIconPreview'
 import { getRendererAppPlatform } from '@/lib/renderer-app-platform'
 import { isWebClientLocation } from '@/lib/web-client-location'
 import { SHOW_UI_LANGUAGE_SETTING } from '@/i18n/supported-languages'
@@ -278,15 +277,9 @@ export function AppearancePane({
         </AppearanceSection>
       ) : null}
 
-      {/* App icon stays at the bottom of Appearance as a small easter egg,
-          matching production — not buried inside Interface advanced. */}
       {appIconMatches ? (
         <SearchableSetting
           title={translate('auto.components.settings.AppearancePane.ca1590d42f', 'App Icon')}
-          description={translate(
-            'auto.components.settings.AppearancePane.0cd9b8228f',
-            'Choose the app icon shown in the Dock and window switcher.'
-          )}
           keywords={getAppIconEntries().flatMap((entry) => [
             entry.title,
             entry.description ?? '',
@@ -294,10 +287,7 @@ export function AppearancePane({
           ])}
           className="max-w-none px-1 pt-2"
         >
-          <AppIconSelector
-            value={normalizeAppIconId(settings.appIcon)}
-            onChange={(appIcon) => updateSettings({ appIcon })}
-          />
+          <AppIconPreview />
         </SearchableSetting>
       ) : null}
     </div>
