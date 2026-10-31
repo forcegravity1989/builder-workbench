@@ -4,7 +4,11 @@ import {
   type ExecutionHostId
 } from '../../shared/execution-host'
 import type { Repo } from '../../shared/repo-types'
-import { isCodeHubGitRemote, parseCodeHubRemote } from '../../shared/codehub'
+import {
+  isCodeHubGitRemote,
+  parseCodeHubRemote,
+  codeHubMergeRequestUrl
+} from '../../shared/codehub'
 import { CHARTER_BRANCH, PROJECT_TOML_REL } from '../../shared/workbench/project-charter'
 import type { CharterStatus } from '../../shared/workbench/charter'
 import { getHostedReviewForBranch } from '../source-control/hosted-review'
@@ -55,10 +59,12 @@ export async function lookupOpenCharterPr(
       }
       const iid = await openCodeHubMrForBranch({
         remote,
-        execOptions,
+        execOptions: { ...execOptions, cwd: repoPath },
         sourceBranch: CHARTER_BRANCH
       })
-      return iid === null ? null : { provider: 'codehub', number: iid, url: null }
+      return iid === null
+        ? null
+        : { provider: 'codehub', number: iid, url: codeHubMergeRequestUrl(remote, iid) }
     }
     const { review } = await readProjectBranchReview(repoPath, executionHostId, execOptions)
     if (!review || (review.state !== 'open' && review.state !== 'draft')) {
@@ -103,11 +109,19 @@ export async function readCharterStatus(
       }
       const iid = await openCodeHubMrForBranch({
         remote,
-        execOptions,
+        execOptions: { ...execOptions, cwd: repo.path },
         sourceBranch: CHARTER_BRANCH
       })
       return {
-        pr: iid === null ? null : { provider: 'codehub', number: iid, url: null, state: 'open' },
+        pr:
+          iid === null
+            ? null
+            : {
+                provider: 'codehub',
+                number: iid,
+                url: codeHubMergeRequestUrl(remote, iid),
+                state: 'open'
+              },
         headHasCharter,
         remoteAvailable
       }

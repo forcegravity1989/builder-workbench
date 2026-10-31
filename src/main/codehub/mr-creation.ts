@@ -1,4 +1,4 @@
-import type { CodeHubRemote } from '../../shared/codehub'
+import { codeHubMergeRequestUrl, type CodeHubRemote } from '../../shared/codehub'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 import { projectArgs } from './mutations'
 
@@ -27,7 +27,7 @@ export async function openCodeHubMrForBranch(args: {
     return null
   }
   const iid = Number(text)
-  if (!Number.isFinite(iid)) {
+  if (!Number.isSafeInteger(iid) || iid <= 0) {
     // 垃圾输出不静默当「无开放 MR」,否则会重复建 MR(main 正本 Parse 错语义)。
     throw new Error(`无法解析 codehub MR 列表输出：${text}`)
   }
@@ -49,7 +49,7 @@ export async function createCodeHubMr(args: {
 }): Promise<{ iid: number; adopted: boolean; url: string | null }> {
   const existing = await openCodeHubMrForBranch(args)
   if (existing !== null) {
-    return { iid: existing, adopted: true, url: null }
+    return { iid: existing, adopted: true, url: codeHubMergeRequestUrl(args.remote, existing) }
   }
   const stdout = await runCodeHubCli(
     [
@@ -71,9 +71,8 @@ export async function createCodeHubMr(args: {
   )
   const text = stdout.trim()
   const iid = Number(text)
-  if (!Number.isFinite(iid)) {
+  if (!Number.isSafeInteger(iid) || iid <= 0) {
     throw new Error(`无法解析 codehub MR iid：${text || '(空输出)'}`)
   }
-  return { iid, adopted: false, url: null }
+  return { iid, adopted: false, url: codeHubMergeRequestUrl(args.remote, iid) }
 }
-

@@ -2,13 +2,12 @@
 
 > 给设计、实现和验收者读取；本文管项目总览的可观察行为。价值见 [intent](intent.md)，现行指标接口见 [design](design.md)，认可与证据见 [STATUS](STATUS.md)。行为或认可边界变化时更新；不在此单方面定义 #334 的持久化协议。
 >
-> **认可边界**：#411 记分牌沿用；#440 前一轮设计已随 PR #460 合入。SDLC、日粒度排期、原计划锁定及本轮试用反馈的调整方向已由用户确认，不能据此宣称真实 SDLC 已接入。本轮不跑本地完整 CI；开发实例由模型重启后保留，真实旅程由用户验证；静态检查与未验范围记录于本次交付报告。
+> **认可边界**：#411 记分牌沿用。SDLC、日粒度排期、原计划锁定及原泳道实际进度已由用户确认；实现与验证状态见 STATUS，原型不作为真实运行证据。
 
 ## 原型入口与来源
 
 - [prototype.html](prototype.html) 为入口。可编辑来源为 [页面](prototype/milestones.jsx)、[日轴与色条](prototype/milestones-timeline.jsx)、[排期计算](prototype/milestones-sdlc.js)、[周窗口推导](prototype/milestones-calendar.js)、[面板](prototype/milestones-panels.jsx)、[壳](prototype/milestones-shell.jsx)、[演示规划](prototype/milestones-data.js)、[历史投影](prototype/milestones-history.js)与 [样式](prototype/milestones.css)。`node docs/05-features/overview-metrics/prototype/build-milestones.cjs` 重建，追加 `--check` 核对生成物。
 - 复用现有 DS、vendor、IconAction；[scoreboard.html](prototype/scoreboard.html) 单源嵌入 #411 记分牌，不改指标内容。核对 [OverviewPage](../../../src/renderer/src/workbench/OverviewPage.tsx)、[MetricsWorkspaceBoard](../../../src/renderer/src/workbench/metrics-workspace-board.tsx)及 [AppWorkspaceShell](../../../src/renderer/src/app-shell/AppWorkspaceShell.tsx)；记分牌和历史材料的原型素材来自 adf64a10a。
-- 共同输入只读 [PR #458 @ d69058d](https://github.com/forcegravity1989/builder-workbench/blob/d69058d15aad9362456dbe353b9318275fa2b9e4/docs/05-features/version-workspace/overview-design-inputs.md)，不复制共享正本。最新人工批注优先于旧草案。
 - 模拟当前时间 2026-11-11 15:30（北京时间）。实际 SDLC 事件与关联关系也是演示。11 月六个特性、人员分配、`v1.0.0 / v1.0.1 / v1.1.0 / v1.1.1`、日期区间为演示；项目名风格不成为强制命名规则。未改真实 [v0.8 计划](../../../.bw/planning/v0.8/data.json)。
 - 浏览器保存草案、最近提交快照、正式快照和模拟评审状态。空态与已有安排使用独立演示样本；切换场景不丢修改或重置评审。刷新回正式视图，点规划续编；存储失败显示提醒。重置只重置样例，存储格式不是生产协议。
 - 内部使用 Orca 原生浏览器批注，不自建批注，不调用真实模型或写 Git、Issue、PR/MR、BW 配置。原型注释统一前缀 `原型注释:`；PR 不补临时截图。
@@ -53,13 +52,13 @@
 | Build | 明确关联实现 PR 合入；没有可识别实现 PR 才以特性 Issue 关闭作为替代证据 | 半天 |
 | Test | 版本验收 PR 合入，并且相关目标人工标记通过 | 1 天 |
 | Deploy | 暂未采集，实际显示“未跟踪”；不得填默认时间或按 Releases 推断 | 半天 |
-| Maintain | 后续版本明确纳入同一特性后的关注/修理与验收证据；未关联不推断 | 后续版本窗口 |
+| Maintain | 从首次交付连续计至后续明确关联版本验收 PR 合入且目标人工达成，包含中间等待；未关联不推断 | 后续版本窗口 |
 
-当前来源核对的是尚未合入主干的 [#334 开发分支 @ 50f34e56](https://github.com/forcegravity1989/builder-workbench/blob/50f34e56aebeac38699b37924b83e3245166cd33/src/renderer/src/workbench/version-overview/feature-timeline.ts)，不以本工作树旧版材料声称已接入。设计/实现角色按显式 PR 关联识别，不能机械取全仓第一个/第二个 PR；多个 PR、缺失或冲突证据按 #334 现有解析边界保留未知。Test 区间包括等待，是事件跨度，不是纯测试或开发工时；本版验收通过不能推出整个跨版本特性完成。
+两屏共用 `useVersionFacts` 的材料及来源缓存和 `featureTimeline` 解析。设计/实现角色按显式 PR 关联识别，不能机械取第一个/第二个 PR；缺失或冲突证据保留未知。Test 区间包括等待，是事件跨度，不是纯测试或开发工时；本版验收通过不能推出整个跨版本特性完成。多个后续安排的累计 Maintain 只画一次，不重复相加。
 
 未开始时默认显示可编辑计划。已开始后默认显示只读实际；“显示计划”打开下方淡色原计划，原计划在版本开始时固定，用来比较差距。关闭不删除基线，不影响未来可编辑计划。真实时间按北京时间折算到日格的连续比例，半格或更短均可呈现，提示保留原始时分及证据。进行中阶段右边界仅到明确观测时间，以斜纹区分，并说明不是完成时间；前置事件未知时不补色。Deploy 只有中性未知标签，没有伪造的实际半天段。
 
-原型的 started、时间戳、实际阶段和特性/版本关系均为明确样例，不从浏览器日期或标题推断，也不写入真实版本材料。生产要复用 #334 的读取与证据解析；里程碑宏观特性不创建 Issue，特性主 Issue、对应关系、实际读取及缓存由 #334 负责，并由该侧接入共享函数。#440 本轮独立交付排期和原计划虚影，生产显示“实际进度未接入”；不建立绑定表单或第二套采集/缓存。原型实际色条为后续呈现参考，不证明本轮已接入。
+原型的 started、时间戳、实际阶段和特性/版本关系均为明确样例，不从浏览器日期或标题推断，也不写入真实版本材料。宏观规划不创建 Issue；实际对应核对版本名称、cycleId 与正式计划中的明确 goalId，该目标唯一的特性 Issue 才回显实际。缺关系、无法确定唯一对应或首次读取失败统一提示“未采集到实际进度，请到版本总览查看”，不新增绑定表单、Issue 编号或诊断区。刷新失败可保留同范围已成功读数并标明截至时间；首次部分读取结果不能当作完整事实。刷新及同源请求由两屏共用缓存处理，不另建采集器。
 
 ### 编辑历史、提交与正式来源
 
@@ -100,7 +99,7 @@
 
 版本身份与排期复用 .bw 计划材料和 `bw/project` 评审链；本机未提交草案恢复沿现有事务设计。生产使用阶段排期结构，原型存储不能直接写入主干材料。已按确认后的高保真更新仓外实施 plan；同一交付删除被替代的节点代码，不保留两套产品路径。试用旧格式材料保留原文件并明确要求核对迁移，不悄悄推导阶段工期或覆盖旧草案。[里程碑实现设计](milestone-design.md)记录当前实现边界。
 
-#334 负责实际阶段证据、版本目标与特性 Issue；#440 负责宏观排期和工作日历。共同协调准确身份、版本内定位与返回来源，不猜对应关系，不自行定义共享协议。尚未接入的 Deploy 保留未知；下一版本 Maintain 不成为自动完成结论。不增加规划 Skill、会话屏或独立反馈系统。
+版本总览负责实际阶段证据、版本目标与特性 Issue；项目总览负责宏观排期和工作日历，两屏复用事实函数与来源限定缓存。版本内定位与返回沿原生版本入口，不猜对应关系。Deploy 保留未知；后续 Maintain 不成为自动完成结论。不增加规划 Skill、会话屏或独立反馈系统。
 
 ## 业界参考与取舍
 

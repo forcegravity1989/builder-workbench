@@ -135,3 +135,15 @@ export function codeHubIssueCloseComment(
   }
   return '关闭原因: completed'
 }
+/** Canonical MR link from an already resolved repository and positive provider iid. */
+export function codeHubMergeRequestUrl(
+  remote: CodeHubRemote,
+  number: number,
+  recorded?: string
+): string {
+  if (!Number.isSafeInteger(number) || number <= 0) {
+    throw new Error('CodeHub MR 编号无效')
+  }
+  const fallback = `https://${remote.host}/${remote.project.split('/').filter(Boolean).map(encodeURIComponent).join('/')}/-/merge_requests/${number}`
+  return recorded?.trim() || fallback
+}

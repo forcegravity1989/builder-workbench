@@ -4,16 +4,21 @@ import { taskKey, type FeatureData } from './feature-model'
 import { featureStage } from './feature-timeline'
 import { FeatureTimelineView } from './feature-timeline-view'
 import './overview.css'
+import type { PlannedStageHours } from '../milestone-feature-facts'
 
 export function FeatureCard({
   feature,
   version,
   historical,
+  plannedHours,
+  planningFailed,
   onVersion
 }: {
   feature: FeatureData
   version: string
   historical: boolean
+  plannedHours?: PlannedStageHours
+  planningFailed?: boolean
   onVersion: (version: string, featureKey: string) => void
 }) {
   const [expanded, setExpanded] = useState(true)
@@ -52,7 +57,12 @@ export function FeatureCard({
               </button>
             ))}
           </div>
-          <FeatureTimelineView feature={feature} version={version} />
+          <FeatureTimelineView
+            feature={feature}
+            version={version}
+            plannedHours={plannedHours}
+            planningFailed={planningFailed}
+          />
           {feature.problems.length > 0 && (
             <details className="bwo-muted mt-3">
               <summary>部分来源未读取（{feature.problems.length}）</summary>

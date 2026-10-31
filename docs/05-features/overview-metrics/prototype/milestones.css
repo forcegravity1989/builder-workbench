@@ -1212,6 +1212,33 @@
   border-radius: 4px;
   white-space: nowrap;
 }
+.ml-deploy-unknown {
+  top: 8px;
+}
+.ml-actual-refresh {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.ml-actual-refresh .icon-action {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+}
+.ml-actual-refresh .ml-refresh-error {
+  color: var(--destructive);
+}
+.ml-review-strip select {
+  max-width: 240px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  border-radius: 4px;
+  padding: 4px;
+  font: inherit;
+}
 .ml-schedule-problem {
   font-size: 11px;
   margin: 0;

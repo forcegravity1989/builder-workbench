@@ -1,5 +1,5 @@
 import { defaultStages, dateOf, scheduleProblem } from './milestones-sdlc.js'
-export const storageKey = 'bw-issue-440-prototype-sdlc-v1'
+export const storageKey = 'bw-issue-530-prototype-sdlc-v1'
 export const currentDay = '2026-11-11'
 export const fixedVersions = [
   { id: 'v1.0.0', name: 'v1.0.0', start: '2026-11-02', end: '2026-11-06', started: true },
@@ -67,17 +67,11 @@ export const initial = {
       title: '消息与通知',
       owner: 'kanadead',
       deliveries: [
-        { ...delivery(0), actual: completed },
+        { ...delivery(0), goalSlot: 1, goalId: 'demo-notification-goal' },
         {
           ...delivery(1, true),
-          actual: [
-            {
-              phase: 'Maintain',
-              startAt: '2026-11-09T10:15:00+08:00',
-              endAt: null,
-              source: '后续版本计划明确纳入跟进；尚未验收'
-            }
-          ]
+          goalSlot: 1,
+          goalId: 'demo-notification-followup'
         }
       ]
     },
@@ -85,13 +79,19 @@ export const initial = {
       id: 'demo-metrics',
       title: '指标能力运维',
       owner: 'cfdcfd',
-      deliveries: [{ ...delivery(1), actual: running }, delivery(2, true)]
+      deliveries: [
+        { ...delivery(1), goalSlot: 2, goalId: 'demo-metrics-goal' },
+        { ...delivery(2, true), goalSlot: 2 }
+      ]
     },
     {
       id: 'demo-engineering',
       title: '工程能力观测',
       owner: 'yuzhup',
-      deliveries: [{ ...delivery(1), actual: [] }, delivery(2, true)]
+      deliveries: [
+        { ...delivery(1), goalSlot: 3, goalId: 'demo-engineering-goal' },
+        { ...delivery(2, true), goalSlot: 3 }
+      ]
     },
     {
       id: 'demo-wall',
@@ -111,15 +111,44 @@ export const initial = {
       owner: 'kanadead',
       deliveries: [delivery(2), delivery(3, true)]
     }
-  ].map((f, i) => ({
+  ].map((f) => ({
     ...f,
-    month: '2026-11',
-    deliveries: f.deliveries.map((d) => ({
-      ...d,
-      goalSlot: (i % 4) + 1,
-      actualGoalSlot: (i % 4) + 1
-    }))
+    month: '2026-11'
   }))
+}
+
+// Prototype fixtures, separate from editable planning. These are not provider contracts.
+const sampleGoalFacts = {
+  'v1.0.0/demo-notification-goal': [{ issue: '#901', actual: completed }],
+  'v1.0.1/demo-notification-followup': [
+    {
+      issue: '#901',
+      actual: [
+        {
+          phase: 'Maintain',
+          startAt: completed.at(-1).endAt,
+          endAt: null,
+          source: '首次交付后持续完善；后续明确关联版本尚未验收'
+        }
+      ]
+    }
+  ],
+  'v1.0.1/demo-metrics-goal': [{ issue: '#902', actual: running }],
+  'v1.0.1/demo-engineering-goal': [{ issue: '#903' }, { issue: '#904' }]
+}
+
+export function sampleActual(delivery, scenario = 'normal') {
+  if (!delivery.goalId || scenario === 'unlinked') {
+    return { actual: [], note: '未采集到实际进度，请到版本总览查看' }
+  }
+  const candidates = sampleGoalFacts[`${delivery.versionId}/${delivery.goalId}`] || []
+  if (candidates.length > 1 || scenario === 'ambiguous') {
+    return { actual: [], note: '未采集到实际进度，请到版本总览查看' }
+  }
+  if (candidates.length !== 1) {
+    return { actual: [], note: '未采集到实际进度，请到版本总览查看' }
+  }
+  return { ...candidates[0], note: '' }
 }
 export const clone = (value) => structuredClone(value)
 export const versionName = (plan, id) =>

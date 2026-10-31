@@ -180,6 +180,13 @@ export async function readFeatureEvidence(
           kind: 'mr',
           iid: number
         })
+        if (
+          detail.iid !== number ||
+          !detail.url ||
+          !linkedPullNumbers(detail.url, root.url).includes(number)
+        ) {
+          throw new Error('CodeHub MR 来源与特性 Issue 的仓库或编号不一致，或缺少来源链接')
+        }
 
         return {
           number,

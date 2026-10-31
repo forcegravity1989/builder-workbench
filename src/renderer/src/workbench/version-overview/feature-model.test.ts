@@ -14,6 +14,15 @@ import { cycleBaseline, featureTimeline, featureStage } from './feature-timeline
 import { featureTimelineLayout } from './feature-timeline-layout'
 import { OverviewPullSchema } from '../../../../shared/workbench/overview-pull'
 import { materialSourceInputs } from './material-cache'
+import {
+  matchMilestoneFeature,
+  milestoneStageHours,
+  type MilestoneVersionFacts
+} from '../milestone-feature-facts'
+import type { MilestoneMaterial } from '../../../../shared/workbench/project-milestones'
+import { milestoneActualCalendar, milestoneActualLayout } from '../milestone-actual-layout'
+import { milestoneDay } from '../../../../shared/workbench/milestone-calendar'
+import { milestoneVersionKey } from '../milestone-feature-facts'
 
 it('projects scoped feature evidence without turning missing, later or unrelated records into delivery', () => {
   expect(sdlcProviderOf({ upstream: { owner: 'acme', repo: 'app' } })).toBe('github')
@@ -215,6 +224,133 @@ it('projects scoped feature evidence without turning missing, later or unrelated
       ...deliveries
     ]
   } as Parameters<typeof featureTimeline>[0]
+  const goalFeature = { ...timelineFeature, members: [timelineFeature.root] }
+  const facts: MilestoneVersionFacts = {
+    plan: {
+      version: 'v0.8',
+      cycleId: 'cycle-eight',
+      goals: [{ goalId: 'g2', title: '目标', metricTargets: [] }]
+    },
+    features: [goalFeature],
+    loading: false,
+    failed: false,
+    stale: false
+  }
+  const material: MilestoneMaterial = {
+    schema_version: 2,
+    months: [{ month: '2026-10', outcome: '' }],
+    features: [
+      {
+        id: 'planned',
+        month: '2026-10',
+        title: '任意标题',
+        owner: 'builder',
+        deliveries: [
+          {
+            id: 'delivery',
+            version: { version: 'v0.8', cycleId: 'cycle-eight' },
+            goalId: 'g2',
+            stages: [{ phase: 'Test', start: '2026-10-29T00:00', end: '2026-10-30T12:00' }]
+          }
+        ]
+      }
+    ]
+  }
+  const delivery = material.features[0]!.deliveries[0]!
+  expect(matchMilestoneFeature(delivery, facts, material)).toBe(goalFeature)
+  expect(
+    matchMilestoneFeature(
+      { ...delivery, version: { ...delivery.version, cycleId: 'different' } },
+      facts,
+      material
+    )
+  ).toBeUndefined()
+  expect(
+    matchMilestoneFeature({ ...delivery, goalId: undefined, goalSlot: 2 }, facts, material)
+  ).toBeUndefined()
+  expect(matchMilestoneFeature(delivery, { ...facts, failed: true }, material)).toBeUndefined()
+  expect(
+    matchMilestoneFeature(
+      delivery,
+      {
+        ...facts,
+        features: [goalFeature, { ...goalFeature, root: { ...goalFeature.root, iid: 440 } }]
+      },
+      material
+    )
+  ).toBeUndefined()
+  expect(milestoneStageHours(material, facts, goalFeature)).toEqual({ Test: 36 })
+  const continuedMaterial = structuredClone(material)
+  const continued = {
+    ...delivery,
+    id: 'later',
+    version: { version: 'v0.9', cycleId: 'cycle-nine' },
+    stages: [{ phase: 'Maintain' as const, start: '2026-11-02T00:00', end: '2026-11-06T12:00' }]
+  }
+  continuedMaterial.features[0]!.deliveries.push(continued)
+  const finalFeature = {
+    ...goalFeature,
+    observedAt: '2027-01-07T08:00:00Z',
+    pulls: [
+      ...goalFeature.pulls,
+      { ...pull, number: 474, phase: 'development' as const, mergedAt: '2027-01-05T08:00:00Z' }
+    ],
+    events: [
+      intentEvent,
+      {
+        ...intentEvent,
+        id: 'first',
+        phase: 'version' as const,
+        delivered: true,
+        deliveryKind: 'first' as const,
+        at: '2027-01-06T08:00:00Z'
+      }
+    ]
+  }
+  const projectedFacts = {
+    [milestoneVersionKey(delivery.version)]: {
+      ...facts,
+      features: [{ ...goalFeature, observedAt: '2026-10-02T08:00:00Z' }]
+    },
+    [milestoneVersionKey(continued.version)]: {
+      ...facts,
+      plan: { ...facts.plan!, ...continued.version },
+      features: [finalFeature]
+    }
+  }
+  const started = new Set(['cycle-eight', 'cycle-nine'])
+  const actual = milestoneActualLayout(
+    continuedMaterial.features[0]!,
+    continuedMaterial,
+    projectedFacts,
+    started
+  )
+  expect(actual.stages.find((stage) => stage.id === 'Build')?.end).toBe('2027-01-05T08:00:00Z')
+  expect(actual.stages.filter((stage) => stage.id === 'Test')).toHaveLength(1)
+  expect(
+    milestoneActualCalendar({ material: continuedMaterial, versions: [] }, projectedFacts, started)
+      .end
+  ).toBeGreaterThanOrEqual(milestoneDay('2027-01-06'))
+  expect(
+    milestoneStageHours(
+      {
+        ...material,
+        features: [...material.features, { ...material.features[0]!, id: 'another' }]
+      },
+      facts,
+      goalFeature
+    )
+  ).toEqual({})
+  const futureFeature = { ...timelineFeature, pulls: [], events: [] }
+  const plannedLayout = featureTimelineLayout(futureFeature, { Test: 36 })
+  expect(plannedLayout.slots[3]).toMatchObject({
+    hours: 36,
+    planned: true,
+    placeholder: true,
+    start: undefined,
+    end: undefined
+  })
+  expect(featureTimelineLayout(futureFeature).slots[3]).toMatchObject({ hours: 24, planned: false })
   expect(featureStage(timelineFeature, false)).toContain('Maintain')
   const timeline = featureTimeline(timelineFeature)
   expect(timeline.points.design?.at).toBe(pull.mergedAt)

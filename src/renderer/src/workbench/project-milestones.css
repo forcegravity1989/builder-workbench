@@ -667,6 +667,47 @@
   border-radius: 4px;
   white-space: nowrap;
 }
+.wb-ml-actual-refresh {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+}
+.wb-ml-deploy-unknown {
+  top: 8px;
+}
+.wb-ml-actual-phase {
+  position: absolute;
+  top: 31px;
+  height: 28px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: center;
+  z-index: 2;
+}
+.wb-ml-actual-phase i {
+  position: absolute;
+  display: block;
+  inset: 0 auto 0 0;
+  background: var(--phase-bg);
+  border: 1px solid color-mix(in srgb, var(--phase-fg) 30%, transparent);
+  border-radius: 3px;
+}
+.wb-ml-actual-phase span {
+  position: relative;
+  display: block;
+  padding: 0 3px;
+  color: var(--foreground);
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.wb-ml-actual-phase.ongoing i {
+  background-image: repeating-linear-gradient(135deg, transparent 0 5px, #ffffff25 5px 8px);
+  border-right-style: dashed;
+}
 .wb-ml-feature-meta {
   display: flex;
   align-items: center;

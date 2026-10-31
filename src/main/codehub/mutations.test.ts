@@ -197,6 +197,31 @@ describe('codehub mutations', () => {
     expect(detail.sourceBranch).toBe('feat/task-style')
     expect(detail.targetBranch).toBe('main')
     expect(detail.state).toBe('unknown')
+    runCodeHubCliMock.mockResolvedValue(JSON.stringify({ iid: 4, state: 'merged' }))
+    await expect(viewCodeHubTask({ remote, kind: 'mr', iid: 3 })).rejects.toThrow(
+      '编号与请求不一致'
+    )
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify({
+        iid: 3,
+        state: 'merged',
+        web_url: 'https://codehub-g.huawei.com/Org/other/-/merge_requests/3'
+      })
+    )
+    await expect(viewCodeHubTask({ remote, kind: 'mr', iid: 3 })).rejects.toThrow(
+      '链接与请求来源不一致'
+    )
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify({
+        iid: 3,
+        state: 'merged',
+        web_url: 'https://codehub-g.huawei.com/Org/Group/repo/-/merge_requests/3'
+      })
+    )
+    await expect(viewCodeHubTask({ remote, kind: 'mr', iid: 3 })).resolves.toMatchObject({
+      iid: 3,
+      state: 'merged'
+    })
   })
 
   it('lists merge request pipelines', async () => {

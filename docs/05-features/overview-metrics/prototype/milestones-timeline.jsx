@@ -2,7 +2,7 @@ import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.
 import { InlineField, WeekName } from './milestones-fields.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import { calendarFor, dayWidth, labelWidth, planWeek } from './milestones-calendar.js'
-import { currentDay } from './milestones-data.js'
+import { currentDay, sampleActual } from './milestones-data.js'
 import {
   day,
   dateOf,
@@ -16,7 +16,8 @@ import {
   adjustVersion,
   adjustDelivery
 } from './milestones-sdlc.js'
-const { React, useState, useRef, useEffect, Plus, X, ExternalLink } = window.BWPrototypeDependencies
+const { React, useState, useRef, useEffect, Plus, X, ExternalLink, RefreshCw } =
+  window.BWPrototypeDependencies
 const short = (date) => date.slice(5).replace('-', '/')
 const plannedTime = (value) => `${short(dateOf(value))} ${value % 1 ? '12:00' : '00:00'}`
 const actualTime = (value) => (value ? value.slice(5, 16).replace('T', ' ') : '尚无完成记录')
@@ -24,6 +25,8 @@ export function Timeline({
   plan,
   planning,
   navigation,
+  actualScenario,
+  onActualScenario,
   onChangeFeature,
   onRenameVersion,
   onDelete,
@@ -314,6 +317,18 @@ export function Timeline({
           />
           显示计划
         </label>
+        <div className="ml-actual-refresh" role="status">
+          <span className={actualScenario === 'error' ? 'ml-refresh-error' : ''}>
+            {actualScenario === 'error'
+              ? '本次未采集到 · 保留 11/11 15:30 数据，请到版本总览查看'
+              : '截至 11/11 15:30'}
+          </span>
+          <IconAction
+            label="刷新实际进度"
+            icon={RefreshCw}
+            onClick={() => onActualScenario('normal')}
+          />
+        </div>
       </div>
       <div
         className="ml-timeline-scroll"
@@ -651,10 +666,8 @@ export function Timeline({
                 {feature.deliveries.map((delivery, i) => {
                   const v = versionById.get(delivery.versionId),
                     first = delivery.stages[0],
-                    actual =
-                      !delivery.goalSlot || delivery.goalSlot === (delivery.actualGoalSlot ?? 1)
-                        ? delivery.actual || []
-                        : []
+                    facts = sampleActual(delivery, actualScenario),
+                    actual = facts.actual || []
                   const started = Boolean(v.started)
                   if (!first) {
                     return (
@@ -677,10 +690,7 @@ export function Timeline({
                         <>
                           {!actual.length && (
                             <span className="ml-actual-unknown" style={{ left: x(first.start) }}>
-                              {delivery.goalSlot &&
-                              delivery.goalSlot !== (delivery.actualGoalSlot ?? 1)
-                                ? '所选目标暂无对应实际记录'
-                                : '实际阶段未知'}
+                              {facts.note || '实际阶段未知'}
                             </span>
                           )}
                           {actual.map((s) => {

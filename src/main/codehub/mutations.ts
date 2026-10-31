@@ -1,4 +1,4 @@
-import type { CodeHubRemote } from '../../shared/codehub'
+import { codeHubMergeRequestUrl, type CodeHubRemote } from '../../shared/codehub'
 import type { CodeHubPipeline, CodeHubTaskDetail } from '../../shared/codehub-tasks'
 import { runCodeHubCli, type CodeHubExecOptions } from './cli'
 
@@ -250,6 +250,22 @@ export async function viewCodeHubTask(args: {
     )
   )
   const url = record.web_url ?? record.html_url ?? record.url
+  const returnedIid = record.iid ?? record.number
+  if (returnedIid !== undefined && Number(returnedIid) !== args.iid) {
+    throw new Error('CodeHub 返回的条目编号与请求不一致')
+  }
+  if (args.kind === 'mr' && typeof url === 'string' && url.trim()) {
+    const actual = new URL(url)
+    const expected = new URL(codeHubMergeRequestUrl(args.remote, args.iid))
+    const path = (value: URL) => decodeURIComponent(value.pathname).replace(/\/$/, '').toLowerCase()
+    if (
+      !['http:', 'https:'].includes(actual.protocol) ||
+      actual.host !== expected.host ||
+      path(actual) !== path(expected)
+    ) {
+      throw new Error('CodeHub 返回的 MR 链接与请求来源不一致')
+    }
+  }
   return {
     iid: args.iid,
     title: String(record.title ?? ''),
