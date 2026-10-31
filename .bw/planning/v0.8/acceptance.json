@@ -1,0 +1,1212 @@
+{
+  "schema_version": 3,
+  "version": "v0.8",
+  "cycleId": "5a62a92d-4f40-4144-b0bb-660b0281f0de",
+  "planRef": {
+    "kind": "committed",
+    "version": "v0.8",
+    "cycleId": "228a67d9-49c0-4908-b595-e4475086288c",
+    "revision": "sha256:18ae87215469ed49c4b9560c8b3e1958ddfb2d8b66440b231dd1f7b22cb6459f",
+    "sourceCommit": "461866ced0b4e1874f2b89d86135db9b281da434"
+  },
+  "candidateRef": {
+    "repository": "github.com/forcegravity1989/builder-workbench",
+    "version": "0.7.4",
+    "commit": "dc88a212ac5dc17453509065d6d7134078f224f1"
+  },
+  "preparedArtifacts": [
+    {
+      "artifactId": "pkg-v0.7.4-win-x64-setup",
+      "kind": "package",
+      "location": "https://github.com/forcegravity1989/builder-workbench/releases/download/v0.7.4/workbench-windows-setup.exe",
+      "candidateRef": {
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "version": "0.7.4",
+        "commit": "dc88a212ac5dc17453509065d6d7134078f224f1"
+      },
+      "generatedAt": "2026-10-30T10:46:29Z",
+      "command": "GitHub Actions「BW Release Windows」run 41042685116（workflow_dispatch，headSha dc88a212ac5dc17453509065d6d7134078f224f1，conclusion success）→ release v0.7.4「Workbench 0.7.4」，资产 166870182 字节",
+      "checksum": "sha256:257a48c697507ea17b18f7a27de043a41a015a508f74682d6e644993ed7ce624"
+    },
+    {
+      "artifactId": "report-v0.8-acceptance-evidence",
+      "kind": "verification",
+      "location": ".bw/planning/v0.8/acceptance-evidence.html",
+      "candidateRef": {
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "version": "0.7.4",
+        "commit": "dc88a212ac5dc17453509065d6d7134078f224f1"
+      },
+      "generatedAt": "2026-10-31T04:35:50.991Z",
+      "command": "验收会话按 version-acceptance 技能 evidence-report-template 生成（HTML 正本，逐 Issue 罗列合入时留下的验收件）；2026-10-31 重做为两层结构：归并层（计划判据原文＋判据→Issue→证据落点→缺口映射，不下达成结论）＋判据层（开发侧验收件的固定子集：用例名·期望结果·实际结果·截图钉SHA＋文件名·执行路径，另门禁/未验留白/人工核对）；证据采集：gh api / gh pr / gh release 平台读回 ＋ 仓内文件核验，只消费合入时留下的现成产物、未重新采集；开发侧未留字段如实标注并汇入末尾缺失清单"
+    }
+  ],
+  "meeting": {
+    "title": "Workbench v0.8 版本验收会议",
+    "time": "10-31(周六) 14:30–15:30",
+    "id": "217063480",
+    "enMeetingId": "99EB28B862AAF64BE51ED99FA95793AA",
+    "link": "https://w3.huawei.com/emeeting/#/agendaController/73586957725A6F3257497371474E6F68786B6970766433647A707A6848362F77/manage",
+    "attendees": [
+      "c00975486",
+      "z30026659",
+      "y00520957",
+      "l00808797",
+      "x30040976",
+      "y00652259",
+      "z30056994",
+      "w30058663",
+      "a30030291",
+      "p30039791"
+    ]
+  },
+  "taskSnapshot": [
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 341,
+        "goalId": "G1"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 341,
+      "title": "【v0.8|G1】帮 builders 梳理特性与核心指标：统一一版并录入真实数据",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/341",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.6",
+        "bw:plan:v0.7",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "cfdcfd",
+      "readAt": "2026-10-31T09:10:00.479Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 440,
+        "goalId": "G2"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 440,
+      "title": "【v0.8|G2】项目总览里程碑规划：版本规划之外的更长时间里程碑视图",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/440",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.8",
+        "特性"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:10:01.519Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 334,
+        "goalId": "G2"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 334,
+      "title": "【v0.8|G2】版本总览屏重设计：核心大需求本周走到 SDLC 哪一步＋小需求/bug 解决列表",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/334",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.7",
+        "bw:plan:v0.8",
+        "特性"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:10:01.531Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 158,
+        "goalId": "G2"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 158,
+      "title": "【v0.8|G2】按执行四原则重做总览与计划两屏的可视化",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/158",
+      "labels": [
+        "bw:status:todo",
+        "bw:category:prototype",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:10:01.592Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 530,
+        "goalId": "G2"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 530,
+      "title": "【v0.8|G2】项目总览与版本总览遗留收口：CodeHub、华为工作日历与两屏联动",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/530",
+      "labels": [
+        "bw:plan:v0.8"
+      ],
+      "readAt": "2026-10-31T09:10:01.608Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 199,
+        "goalId": "G3"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 199,
+      "title": "【v0.8|G3】员工助手一期：WeLink 群消息与群助手对接（发起评审；旅程设计＋高保真＋落地）",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/199",
+      "labels": [
+        "bw:category:build",
+        "bw:status:todo",
+        "Feature",
+        "bw:plan:v0.8",
+        "特性"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-10-31T09:10:02.636Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 427,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 427,
+      "title": "【v0.8|G4】验收/发布流程补齐：归档 PR 跳转卡顿、生产部署流程、发布后状态显示",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/427",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-10-31T09:10:02.658Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 422,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 422,
+      "title": "【v0.8|G4】验收证据报告模板应为 HTML 正本——现 Markdown 骨架却要求存为 .html，模板/SKILL/spec 连带修正",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/422",
+      "labels": [
+        "bw:plan:v0.8"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-10-31T09:10:03.365Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 415,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 415,
+      "title": "【v0.8|G4】验收屏 v10:进屏自动初始化材料吞掉「新建验收」入口,验收会话无法建立",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/415",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-10-31T09:10:03.000Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 419,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 419,
+      "title": "【v0.8|G4】版本工作区：补绑定对话框对分支不一致的「可写不可用死绑定」就地预警",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/419",
+      "labels": [
+        "bw:plan:v0.8"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:10:03.658Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 432,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 432,
+      "title": "【v0.8|G4】计划屏/验收屏 Issue 回显每次进屏全量重读，整列闪「状态未知」卡顿",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/432",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:10:03.725Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 354,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 354,
+      "title": "【v0.8|G4】外观主题切换深色不生效",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/354",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-10-31T09:10:04.075Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 404,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 404,
+      "title": "【v0.8|G4】Windows 上 pnpm run dev:workbench 无法启动（POSIX 环境变量前缀在 cmd.exe 下不成立）",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/404",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "cfdcfd",
+      "readAt": "2026-10-31T09:10:04.398Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 421,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 421,
+      "title": "【v0.8|G4】应用内更新经公司代理下载断流后需自动重试与断点续传",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/421",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:10:04.857Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 438,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 438,
+      "title": "【v0.8|G4】BW 发布的安装包名仍是 orca-windows-setup.exe，应换成 Workbench 正式名",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/438",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:10:05.130Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 443,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 443,
+      "title": "【v0.8|G4】计划屏/验收屏直接向用户展示助手注入提示词，应收敛为一句话 SOP 且两屏一致，支持开始即补充信息输入",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/443",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:10:05.439Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 444,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 444,
+      "title": "【v0.8|G4】批注模式进入/退出用同一个快捷键切换",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/444",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-10-31T09:10:05.720Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 445,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 445,
+      "title": "【v0.8|G4】计划屏/验收屏收起会话仍留空白不能完全收起，收起入口不易发现、功能键区一眼难识别",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/445",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:10:05.946Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 425,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 425,
+      "title": "【v0.8|G4】CodeHub 支持补充：PR 评论 bug 与样式对齐、集成界面三区 token 配置展示、任务界面调整 issue 标签",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/425",
+      "labels": [
+        "bug",
+        "enhancement",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-10-31T09:10:06.198Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 439,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 439,
+      "title": "【v0.8|G4】侧边栏特性相关问题",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/439",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:10:07.188Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 451,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 451,
+      "title": "【v0.8|G4】任务来源自动识别被初始化恢复覆盖，CodeHub 列表首次进入为空",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/451",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:09:58.339Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 456,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 456,
+      "title": "【v0.8|G4】[原生Orca能力] 侧边栏工作区卡片布局改为紧凑不生效",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/456",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:09:58.356Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 462,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 462,
+      "title": "【v0.8|G4】验收屏发布模块展示发布后状态（是否已发布、发布包地址）",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/462",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-10-31T09:09:58.363Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 466,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 466,
+      "title": "【v0.8|G4】CodeHub 版本筛选异常：benchmark 项目版本下显示大量不相关 issue",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/466",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-10-31T09:09:58.319Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 471,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 471,
+      "title": "【v0.8|G4】验收屏整改：举证移到各 PR 合入时、报告聚合各 PR 验收件、消化高保真评审批注",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/471",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-10-31T09:09:59.415Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 457,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 457,
+      "title": "【v0.8|G4】[任务屏] 列表上直接指定负责人与标签，不用进详情",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/457",
+      "labels": [
+        "enhancement",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-10-31T09:09:59.391Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 463,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 463,
+      "title": "【v0.8|G4】完善 Issue workflow 开工分流与真实会话反哺",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/463",
+      "labels": [
+        "bw:plan:v0.8"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:09:59.391Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 469,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 469,
+      "title": "【v0.8|G4】计划屏默认开计划助手用的是 claude，而不是用户配置的默认智能体",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/469",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-10-31T09:09:59.360Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 516,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 516,
+      "title": "【v0.8|G4】验收屏使用bug",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/516",
+      "labels": [
+        "bw:plan:v0.8"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-10-31T09:10:00.450Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 492,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 492,
+      "title": "【v0.8|G4】缩小 Windows 安装包：清除编译产物、移除重复 relay、仅保留简中和英语",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/492",
+      "labels": [
+        "bw:plan:v0.8"
+      ],
+      "assignee": "forcegravity1989",
+      "readAt": "2026-10-31T09:10:00.468Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 483,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 483,
+      "title": "【v0.8|G4】统一使用 BW 正式标志替换应用内与安装包的 Orca 图标",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/483",
+      "labels": [
+        "bw:plan:v0.8"
+      ],
+      "assignee": "forcegravity1989",
+      "readAt": "2026-10-31T09:10:00.487Z"
+    }
+  ],
+  "results": [
+    {
+      "goalId": "G1",
+      "readings": [],
+      "decision": {
+        "outcome": "met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-10-31T08:34:15.164Z",
+        "materialRevision": "sha256:5c07f1ebe80c3a3bb55ff707396fb16c7d1c179f2c1960287f2d6c11099182e2",
+        "reason": ""
+      },
+      "note": "",
+      "nextStep": ""
+    },
+    {
+      "goalId": "G2",
+      "readings": [],
+      "decision": {
+        "outcome": "met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-10-31T08:26:47.142Z",
+        "materialRevision": "sha256:fc4a8719d24268c4d8d2f758e88f8641556ce67dd5970dfcf05580001aa6d620",
+        "reason": ""
+      },
+      "note": "",
+      "nextStep": "",
+      "issueNotes": {
+        "github:github.com/forcegravity1989/builder-workbench:530": "华为工作日历遗留，暂未开发完毕"
+      },
+      "issueMarks": {
+        "github:github.com/forcegravity1989/builder-workbench:530": {
+          "carry": true
+        }
+      }
+    },
+    {
+      "goalId": "G3",
+      "readings": [],
+      "decision": {
+        "outcome": "not-met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-10-31T08:31:48.946Z",
+        "materialRevision": "sha256:61a071299b5410b1e3290805bc6c4dd3ea9fe26b65dc1d299e33694113b14d0f",
+        "reason": ""
+      },
+      "note": "",
+      "nextStep": "带入下版",
+      "issueNotes": {
+        "github:github.com/forcegravity1989/builder-workbench:199": "需要进一步进行原型设计，带基础的原型进行下一步原型评审和进行头脑风暴"
+      },
+      "issueMarks": {
+        "github:github.com/forcegravity1989/builder-workbench:199": {
+          "carry": true
+        }
+      }
+    },
+    {
+      "goalId": "G4",
+      "readings": [],
+      "decision": {
+        "outcome": "met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-10-31T08:27:52.896Z",
+        "materialRevision": "sha256:1fd9bddfa2af78729a9bc964c4915bf50e8c92948a7883b778f4d92b97da76a9",
+        "reason": ""
+      },
+      "note": "",
+      "nextStep": "",
+      "issueNotes": {
+        "github:github.com/forcegravity1989/builder-workbench:422": "现有html中文本内容过多，可读性差，需要优化模板"
+      },
+      "issueMarks": {
+        "github:github.com/forcegravity1989/builder-workbench:422": {
+          "carry": true
+        }
+      }
+    }
+  ],
+  "minutes": {
+    "consensus": [
+      "G2 · 本周G2目标 项目总览里程碑 与 版本总览已完成，对接华为日历能力遗留在issue #530",
+      "G3 · 本周G3目标，welink内部系统对接 未完成，遗留",
+      "G4 · 本周G4日常小需求与 bug 固定处理通道， 部分issue遗留"
+    ],
+    "followups": [
+      {
+        "id": "db1b1b5f-0017-491d-a79a-3577e51f08c8",
+        "text": "G2 · 会上提出问题，转Issue跟踪遗留，包括#535「项目总览里程碑变更走 PR 提交，并评估比 welink 群空间内外更通的共享空间」、#536、#537"
+      },
+      {
+        "id": "62635cf7-8daa-4f08-8019-4cc2384f9b2d",
+        "text": "G4 · 任务屏负责人框修改完负责人后不会自动关闭（跟进 #540）"
+      },
+      {
+        "id": "9b46a21f-d979-412f-a292-0935766555c0",
+        "text": "G3 · 1、支持绑定多个群。2、收和发分开：哪些是放权发，哪些是要认确认再回车， 3. 以cowelink为参考，不做额外开发 4.多个群 UI聊天框怎么体现，群怎么配置 5. 看看能不能嵌入使用用原生的welink屏。（承接 #199，本版 G3 已标遗留）"
+      },
+      {
+        "id": "0124f990-4397-41cf-b90d-b2b8a94cb1c2",
+        "text": "G4 · 项目名称修改为builder-workbench（跟进 #541）"
+      },
+      {
+        "id": "1ffc4ed4-23fb-4e44-a07b-86e00faf22cf",
+        "text": "G4 · 多用户连接时，点击了其他用户的worktree后，任务屏会切成其他用户的（跟进 #542）"
+      },
+      {
+        "id": "643eb32f-9e7c-47fb-a86f-8e4384642562",
+        "text": "G4 · 验收材料需要补充，如一些性能的需要提供前后的性能（跟进 #543）"
+      }
+    ],
+    "confirmed": false,
+    "updatedAt": "2026-10-31T11:47:47.849Z"
+  },
+  "workflow": {
+    "stage": "archive",
+    "updatedAt": "2026-10-31T10:42:53.476Z",
+    "archivePr": {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 539
+    }
+  }
+}
