@@ -281,14 +281,15 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.getByRole('button', { name: '开始验收', exact: true })).toBeEnabled()
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.jpg') })
 
-  // ---- 总览：真实数据，未配置保持 Unknown，无演示值 ----
+  // ---- 总览：项目名片可见，未配置保持 Unknown；北极星卡片已移除 ----
   await workbenchPage.getByRole('button', { name: '项目总览', exact: true }).click()
   await expect(workbenchPage.getByRole('heading', { name: '总览', exact: true })).toBeVisible({
     timeout: 60_000
   })
-  await expect(workbenchPage.getByText('未配置北极星指标')).toBeVisible({
+  await expect(workbenchPage.locator('#project-card')).toContainText('未知', {
     timeout: 60_000
   })
+  await expect(workbenchPage.getByText('未配置北极星指标')).toHaveCount(0)
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-overview-real.png') })
 
   // ---- 版本级清理确认单：本机实例默认勾选；删除执行沿 Orca 原生确认单，
