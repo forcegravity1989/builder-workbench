@@ -12,6 +12,7 @@ import { FsHandler } from './fs-handler'
 import { registerVersionMaterialRelay } from './workbench/version-material-handler'
 import { registerVersionHistoryRelay } from './workbench/history-handler'
 import { registerMetricsRelay } from './workbench/metrics-handler'
+import { registerFixedWorkspaceRelay } from './workbench/fixed-workspace-handler'
 import { GitHandler } from './git-handler'
 import { GitResponseStreamRegistry } from './git-response-stream'
 import { PreflightHandler } from './preflight-handler'
@@ -48,6 +49,7 @@ export class RelayRuntimeServices {
     registerVersionMaterialRelay(dispatcher)
     registerVersionHistoryRelay(dispatcher)
     registerMetricsRelay(dispatcher)
+    registerFixedWorkspaceRelay(dispatcher)
     this.registerSessionHandlers(context)
     this.ptyHandler = new PtyHandler(dispatcher, graceTimeMs)
     this.ptyConsumerSessionAdapter = new SshPtyConsumerSessionAdapter(

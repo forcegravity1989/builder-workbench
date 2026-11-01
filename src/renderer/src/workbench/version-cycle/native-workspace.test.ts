@@ -3,8 +3,11 @@ import type { Worktree } from '../../../../shared/worktree/types'
 
 const test = vi.hoisted(() => ({ state: {} as Record<string, unknown>, rpc: vi.fn() }))
 vi.mock('@/store', () => ({ useAppStore: { getState: () => test.state } }))
-vi.mock('@/runtime/runtime-rpc-client', () => ({ callRuntimeRpc: test.rpc }))
-import { ensureNamedWorktree, findNamedWorktree, nativeWorkspaceScope } from './native-workspace'
+vi.mock('@/runtime/runtime-rpc-client', () => ({
+  callRuntimeRpc: test.rpc,
+  assertRuntimeEnvironmentCapability: vi.fn()
+}))
+import { findNamedWorktree, nativeWorkspaceScope } from './native-workspace'
 
 const row = (hostId: Worktree['hostId'], runtimeOwnerEnvironmentId?: string) =>
   ({
@@ -33,79 +36,4 @@ it('keeps equal path ids on different hosts distinct regardless of active focus'
   const scope = nativeWorkspaceScope(b)
   expect(scope).toMatchObject({ hostId: 'ssh:b', runtimeOwnerEnvironmentId: 'transport-b' })
   expect(findNamedWorktree(scope, 'bw/week-plan')).toBe(b)
-})
-
-it.each(['runtime:b', 'ssh:nested'] as const)(
-  'refreshes creation through the captured runtime for %s after focus changes',
-  async (hostId) => {
-    const created = row(hostId, 'b')
-    const rows: Worktree[] = []
-    const fetchWorktrees = vi.fn(async () => {
-      rows.push(created)
-      return true
-    })
-    test.state = { repos: [], allWorktrees: () => rows, fetchWorktrees }
-    test.rpc.mockImplementation(async (_target, method: string) => {
-      if (method === 'repo.searchRefs') {
-        return {
-          refs: ['origin/bw/week-plan'],
-          refDetails: [{ refName: 'origin/bw/week-plan', localBranchName: 'bw/week-plan' }],
-          truncated: false
-        }
-      }
-      test.state.activeWorkspaceExecutionHostId = 'runtime:a'
-      return { worktree: created }
-    })
-    const scope = {
-      projectId: 'project',
-      repoId: 'repo',
-      hostId,
-      runtimeOwnerEnvironmentId: 'b'
-    }
-    await expect(ensureNamedWorktree(scope, 'bw/week-plan', 'week-plan')).resolves.toBe(created)
-    expect(test.rpc).toHaveBeenCalledWith(
-      { kind: 'environment', environmentId: 'b' },
-      'worktree.create',
-      expect.objectContaining({
-        repo: 'id:repo',
-        branchNameOverride: 'bw/week-plan',
-        baseBranch: 'origin/bw/week-plan'
-      }),
-      expect.anything()
-    )
-    expect(fetchWorktrees).toHaveBeenCalledWith('repo', { executionHostId: 'runtime:b' })
-  }
-)
-
-it('rolls back a stray tree when native create uniquifies an occupied branch', async () => {
-  const stray = { ...row('runtime:b', 'b'), id: 'repo::/stray', branch: 'bw/week-plan-2' }
-  test.state = {
-    repos: [],
-    allWorktrees: () => [],
-    fetchWorktrees: vi.fn(async () => true)
-  }
-  test.rpc.mockImplementation(async (_target, method: string) => {
-    if (method === 'repo.searchRefs') {
-      return { refs: [], refDetails: [], truncated: false }
-    }
-    if (method === 'worktree.create') {
-      return { worktree: stray }
-    }
-    if (method === 'worktree.rm') {
-      return {}
-    }
-    throw new Error(`unexpected ${method}`)
-  })
-  const scope = {
-    projectId: 'project',
-    repoId: 'repo',
-    hostId: 'runtime:b' as const,
-    runtimeOwnerEnvironmentId: 'b'
-  }
-  await expect(ensureNamedWorktree(scope, 'bw/week-plan', 'week-plan')).rejects.toThrow(/回滚删除/)
-  expect(test.rpc).toHaveBeenCalledWith(
-    { kind: 'environment', environmentId: 'b' },
-    'worktree.rm',
-    expect.objectContaining({ worktreeId: stray.id, force: true })
-  )
 })

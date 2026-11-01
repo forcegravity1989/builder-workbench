@@ -8,6 +8,9 @@ import {
 } from './helpers/workbench-project-settings'
 import { verifyMilestones } from './helpers/workbench-milestones'
 import { verifyMilestoneRestart } from './helpers/workbench-milestone-restart'
+import { fixedWorkspaceTest } from './helpers/workbench-fixed-workspace-fixture'
+import { verifyFixedWorkspaceRemoteReuse } from './helpers/workbench-fixed-workspace'
+import { recordWorkspaceInventory } from './helpers/workbench-fixed-workspace-readback'
 
 /**
  * BW main-chain smoke (G2 journey): the version workspace entry must prepare the
@@ -34,6 +37,14 @@ isolatedProjectTest(
   async ({ workbenchPage, seededRepoPath }, testInfo) => {
     test.setTimeout(300_000)
     await verifyProjectSettings(workbenchPage, seededRepoPath, testInfo)
+  }
+)
+
+fixedWorkspaceTest(
+  'BW fixed workspaces: restore remote branches with narrow fetch and existing reviews',
+  async ({ workbenchPage, fixedRemote }, testInfo) => {
+    test.setTimeout(900_000)
+    await verifyFixedWorkspaceRemoteReuse(workbenchPage, fixedRemote, testInfo)
   }
 )
 
@@ -100,14 +111,14 @@ async function clickVersionRowEntry(page: Page, name: string): Promise<void> {
 
 test('BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back', async ({
   workbenchPage,
-  testRepoPath
+  seededRepoPath
 }, testInfo) => {
   test.setTimeout(900_000)
-  void testRepoPath
 
   // The workbench chrome is the readiness signal for the BW shell; the helper
   // already seeded the project repo and its worktrees.
   await expect(workbenchPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
+  await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'initial')
 
   // ---- 新建版本：轻表单 → prepare 两棵绑定流程树 → 进入计划屏 ----
   await workbenchPage.getByRole('button', { name: '新建版本', exact: true }).click()
@@ -139,6 +150,7 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     .not.toBeNull()
   // prepare 的空计划是 create-only 初始化；绑定树无屏内选版，页头只读回显绑定版本。
   await expect(workbenchPage.locator('.g3-version-bound')).toHaveText('v9.9', { timeout: 60_000 })
+  await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'prepared')
 
   // The conversation/CLI creates materials in product use. Seed only this test
   // version on the bound tree's real path; listing and editing remain UI work.
@@ -334,4 +346,5 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await workbenchPage.locator('#shortcut-filter-search').fill('批注')
   await expect(workbenchPage.getByText('Toggle Board Annotation Mode')).toBeVisible()
   await expect(workbenchPage.getByRole('heading', { name: 'Workbench' })).toBeVisible()
+  await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'final')
 })

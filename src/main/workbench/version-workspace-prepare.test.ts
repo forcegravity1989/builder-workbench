@@ -8,6 +8,7 @@ import type { PlanningMaterial } from '../../shared/workbench/version-material'
 import type { VersionMaterialInitialize } from '../../shared/workbench/version-material-request'
 import { prepareFailed } from '../../shared/workbench/version-workspace-prepare'
 import { nativeWorkbenchWorkspaceHost } from './workspace-resolver'
+import { createFixedWorkspaceService, type FixedWorkspaceRuntime } from './fixed-workspace-service'
 import {
   createVersionWorkspacePrepareService,
   type VersionWorkspacePrepareRuntime
@@ -71,7 +72,7 @@ function createFakeEnvironment(
     historyReads: 0
   }
   let seq = 0
-  const inFlight = new Map<string, Promise<unknown>>()
+  let fixedService: ReturnType<typeof createFixedWorkspaceService>
 
   const asWorktree = (tree: FakeTree): Worktree =>
     ({
@@ -93,7 +94,7 @@ function createFakeEnvironment(
 
   const findById = (id: string): FakeTree | undefined => registry.get(id)
 
-  const runtime: VersionWorkspacePrepareRuntime = {
+  const runtime: VersionWorkspacePrepareRuntime & FixedWorkspaceRuntime = {
     listRepos: () => [repo] as never,
     showManagedWorktree: async (selector: string) => {
       if (selector.startsWith('identity:')) {
@@ -129,35 +130,15 @@ function createFakeEnvironment(
       ({ worktrees: [...registry.values()].map(asWorktree) }) as never,
     listDetectedManagedWorktrees: async () =>
       ({
+        authoritative: true,
         worktrees: [...registry.values(), ...external.values()].map(asWorktree)
       }) as never,
-    searchRepoRefs: async () => ({ refs: [], truncated: false }),
-    dedupeWorktreeCreate: <T>(
-      repoSelector: string,
-      clientMutationId: string | undefined,
-      run: () => Promise<T>
-    ): Promise<T> => {
-      // 忠实映射原生语义：in-flight 同键收敛为同一 promise，失败立即释放。
-      if (!clientMutationId) {
-        return run()
+    ensureWorkbenchFixedWorkspace: (request) => fixedService.ensure(request),
+    updateRepo: async () => {
+      for (const [id, tree] of external) {
+        registry.set(id, tree)
       }
-      const key = `${repoSelector}\0${clientMutationId}`
-      const existing = inFlight.get(key)
-      if (existing) {
-        return existing as Promise<T>
-      }
-      const created = run().then(
-        (value) => {
-          setTimeout(() => inFlight.delete(key), 0)
-          return value
-        },
-        (error) => {
-          inFlight.delete(key)
-          throw error
-        }
-      )
-      inFlight.set(key, created)
-      return created
+      return repo as never
     },
     createManagedWorktree: async (args: RuntimeManagedWorktreeCreateArgs) => {
       calls.create += 1
@@ -189,6 +170,24 @@ function createFakeEnvironment(
     }
   }
 
+  fixedService = createFixedWorkspaceService(runtime, {
+    trees: async () =>
+      [...registry.values(), ...external.values()].map((tree) => ({
+        path: tree.path,
+        branch: tree.branch,
+        head: 'c'.repeat(40),
+        isBare: false,
+        isMainWorktree: tree.isMainWorktree
+      })),
+    git: () => ({
+      exec: async (args) => ({
+        stdout: args[0] === 'for-each-ref' ? `${args.at(-1)} ${'c'.repeat(40)}` : ''
+      }),
+      fetch: async () => undefined,
+      recordCreation: async () => undefined,
+      ensureTracking: async () => undefined
+    })
+  })
   const materialExecutor = ((_target: unknown, _reauthorize: unknown) =>
     ({
       read: async (input: { version: string }) => materialDocs.get(input.version) ?? null,
@@ -284,6 +283,7 @@ describe('versionWorkspace prepare', () => {
     const revisionBefore = env.materialDocs.get('v0.8')
     const historyReadsBefore = env.calls.historyReads
     options.historyError = 'new history is unavailable'
+    planTree.branch = 'refs/heads/renamed-plan'
     const reentry = await env.service.prepare({ ...scope, version: 'v0.8' })
     expect(env.calls.create).toBe(2)
     expect(reentry.steps.map((step) => step.state)).toEqual(['existing', 'existing'])
