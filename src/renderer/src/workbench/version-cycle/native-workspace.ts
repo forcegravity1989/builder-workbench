@@ -1,4 +1,5 @@
 import { useAppStore } from '@/store'
+import { withRepoHostOwnership } from '@/store/slices/worktrees/listing/worktree-host-ownership'
 import { assertRuntimeEnvironmentCapability, callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import { resolveExactWorktreeRoute, routeForOwner } from '@/lib/worktree-owner-route'
 import { branchName } from '@/lib/git-utils'
@@ -91,6 +92,8 @@ export async function ensureNamedWorktree(
     throw new Error('固定工作区名称与用途不一致')
   }
   const target = nativeWorkspaceRuntimeTarget(scope)
+  const ownerHostId =
+    target.kind === 'environment' ? toRuntimeExecutionHostId(target.environmentId) : scope.hostId
   if (target.kind === 'environment') {
     await assertRuntimeEnvironmentCapability(
       target.environmentId,
@@ -115,12 +118,11 @@ export async function ensureNamedWorktree(
   // A refresh failure must not turn a completed host mutation into another create attempt.
   try {
     await useAppStore.getState().fetchWorktrees(scope.repoId, {
-      executionHostId: scope.runtimeOwnerEnvironmentId
-        ? toRuntimeExecutionHostId(scope.runtimeOwnerEnvironmentId)
-        : scope.hostId
+      executionHostId: ownerHostId
     })
   } catch {
     /* Native registration notifications also deliver the completed result. */
   }
-  return result.value.worktree
+  // RPC rows use owner-relative host IDs; activation requires the client's host identity.
+  return withRepoHostOwnership(result.value.worktree, ownerHostId)
 }
