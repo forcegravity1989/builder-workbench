@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { ChevronRight } from 'lucide-react'
 import type { ProjectCharter } from './project-charter'
 
 function charterRows(
@@ -28,28 +29,37 @@ export function ProjectCard({
   /** 名片 PR 状态行(待合入/已合入未更新/没读到);无状态时不渲染。 */
   notice?: React.ReactNode
 }) {
+  // 名片字段平时不看,默认收起为一行;展开状态不跨页保存。
+  const [open, setOpen] = useState(false)
   const rows = charterRows(remote, charter)
   return (
     <section className="card" id="project-card">
-      <div className="row-between">
-        <div className="row-start">
-          <span className="card-title">{projectName}</span>
-          <span className="status" title="健康信号未知">
-            <span className="status-dot" />
-            未知
-          </span>
-          {version && <span className="wb-tag wb-tag-outline wb-mono">{version}</span>}
-        </div>
-      </div>
+      <button
+        type="button"
+        className="card-toggle"
+        aria-expanded={open}
+        title={open ? '收起项目名片' : '展开项目名片'}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <ChevronRight size={14} aria-hidden className={`card-chevron${open ? ' is-open' : ''}`} />
+        <span className="card-title">{projectName}</span>
+        <span className="status" title="健康信号未知">
+          <span className="status-dot" />
+          未知
+        </span>
+        {version && <span className="wb-tag wb-tag-outline wb-mono">{version}</span>}
+      </button>
       {notice}
-      <div className="detail-grid">
-        {rows.map((row) => (
-          <React.Fragment key={row.k}>
-            <div className="detail-k">{row.k}</div>
-            <div className={`detail-v${row.mono ? ' mono' : ''}`}>{row.v}</div>
-          </React.Fragment>
-        ))}
-      </div>
+      {open && (
+        <div className="detail-grid">
+          {rows.map((row) => (
+            <React.Fragment key={row.k}>
+              <div className="detail-k">{row.k}</div>
+              <div className={`detail-v${row.mono ? ' mono' : ''}`}>{row.v}</div>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
     </section>
   )
 }
