@@ -99,22 +99,49 @@ describe('browser mobile session sync', () => {
     )
   })
 
-  it('withdraws local profile authority when the active page becomes a remote mirror', () => {
-    const workspace = { ...makeBrowserWorkspace(), sessionProfileId: 'local-login' }
+  it('withdraws a browser row when its active page belongs to another runtime', () => {
+    const workspace = {
+      ...makeBrowserWorkspace(),
+      pageIds: ['page-1', 'remote-page'],
+      sessionProfileId: 'local-login'
+    }
     const page = {
       ...workspace,
       id: 'page-1',
       workspaceId: workspace.id,
       browserRuntimeEnvironmentId: null
     }
+    const remotePage = {
+      ...page,
+      id: 'remote-page',
+      browserRuntimeEnvironmentId: 'remote-host'
+    }
     const base = makeState({
       browserTabsByWorktree: { 'wt-1': [workspace] },
-      browserPagesByWorkspace: { [workspace.id]: [page] }
+      browserPagesByWorkspace: { [workspace.id]: [page, remotePage] }
     })
     const initialKey = getRuntimeMobileSessionSyncKey(base)
     expect(buildMobileSessionTabSnapshots(base)[0]?.tabs[0]).toMatchObject({
       browserProfileId: 'local-login'
     })
+    const remoteActive = {
+      ...base,
+      browserTabsByWorktree: { 'wt-1': [{ ...workspace, activePageId: remotePage.id }] }
+    }
+    expect(buildMobileSessionTabSnapshots(remoteActive)[0]?.tabs).toEqual([])
+    const missingActive = {
+      ...base,
+      browserTabsByWorktree: { 'wt-1': [{ ...workspace, activePageId: 'missing-page' }] }
+    }
+    expect(buildMobileSessionTabSnapshots(missingActive)[0]?.tabs[0]).toMatchObject({
+      browserProfileId: 'local-login'
+    })
+    expect(
+      buildMobileSessionTabSnapshots({
+        ...missingActive,
+        browserPagesByWorkspace: { [workspace.id]: [remotePage, page] }
+      })[0]?.tabs
+    ).toEqual([])
     const changed = {
       ...base,
       browserPagesByWorkspace: {
@@ -128,8 +155,12 @@ describe('browser mobile session sync', () => {
         getRuntimeMobileSessionSyncKey(changed, base, initialKey)
       )
     ).toBe(false)
-    const row = buildMobileSessionTabSnapshots(changed)[0]?.tabs[0]
-    expect(row?.type === 'browser' && row.browserProfileId).toBeUndefined()
+    const snapshot = buildMobileSessionTabSnapshots(changed)[0]
+    expect(snapshot?.tabs).toEqual([])
+    expect(buildMobileSessionTabSnapshots(changed)[0]).toBe(snapshot)
+    expect(buildMobileSessionTabSnapshots(base)[0]?.tabs[0]).toMatchObject({
+      browserProfileId: 'local-login'
+    })
   })
 
   it('publishes browser tabs with active page metadata', () => {
