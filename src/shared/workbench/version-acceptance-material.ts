@@ -91,7 +91,7 @@ export const AcceptanceMeetingSchema = z.strictObject({
   // welink-cli meetingId (the numeric meeting primary key), never meetingNo.
   id: z.string().trim().min(1).optional(),
   // 32-digit eMeeting-side key from the create/info response; the minutes
-  // draft write (meeting-minutes skill) addresses the meeting by this ID.
+  // draft write (minutes-sync reference) addresses the meeting by this ID.
   enMeetingId: z.string().trim().min(1).optional(),
   // Meeting page read back from `welink-cli meeting info` jumpUrls.
   link: z.string().trim().min(1).optional(),

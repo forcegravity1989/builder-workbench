@@ -92,28 +92,71 @@ export async function listCodeHubComments(args: {
           '--limit',
           '50'
         ]
-  const parsed = parseJson(await runCodeHubCli(command, args.execOptions))
-  if (args.requireComplete && (!Array.isArray(parsed) || parsed.length >= 50)) {
-    throw new Error('CodeHub指标评论未能确认完整返回，需核对CLI分页能力')
-  }
-  const rows = Array.isArray(parsed) ? parsed : []
-  if (args.requireComplete) {
-    for (const row of rows) {
-      if (!row || typeof row !== 'object') {
-        throw new Error('CodeHub指标评论记录无效')
-      }
-      const notes = Array.isArray(row.notes) ? row.notes : [row]
-      for (const note of notes) {
-        if (
-          !note ||
-          typeof note !== 'object' ||
-          (typeof (note.id ?? note.note_id ?? note.noteId) !== 'string' &&
-            typeof (note.id ?? note.note_id ?? note.noteId) !== 'number') ||
-          typeof (note.body ?? note.note ?? note.description) !== 'string'
-        ) {
-          throw new Error('CodeHub指标评论字段不完整')
+  const rows: unknown[] = []
+  const seen = new Set<string>()
+  const seenNotes = new Set<string>()
+  for (let page = 0; ; page++) {
+    if (page >= 100) {
+      throw new Error('CodeHub指标评论分页超出读取上限，无法确认完整结果')
+    }
+    const stdout = await runCodeHubCli(
+      args.requireComplete
+        ? [
+            ...command,
+            '--offset',
+            String(rows.length),
+            '--order-by',
+            'created_at',
+            '--sort',
+            'asc',
+            '--no-cache'
+          ]
+        : command,
+      args.execOptions
+    )
+    const parsed = parseJson(stdout)
+    // v1.3.4 returns JSON null for an empty page; empty stdout is not that contract.
+    const pageRows = parsed === null && stdout.trim() === 'null' ? [] : parsed
+    if (args.requireComplete && (!Array.isArray(pageRows) || pageRows.length > 50)) {
+      throw new Error('CodeHub指标评论分页格式无效，无法确认完整结果')
+    }
+    const current = Array.isArray(pageRows) ? pageRows : []
+    if (args.requireComplete) {
+      for (const row of current) {
+        if (!row || typeof row !== 'object') {
+          throw new Error('CodeHub指标评论记录无效')
+        }
+        const record = row as Record<string, unknown>
+        const id = record.id ?? record.note_id ?? record.noteId
+        if ((typeof id !== 'string' && typeof id !== 'number') || String(id).trim() === '') {
+          throw new Error('CodeHub指标评论缺少分页标识')
+        }
+        if (seen.has(String(id))) {
+          throw new Error('CodeHub指标评论分页重复，无法确认完整结果')
+        }
+        seen.add(String(id))
+        const notes = Array.isArray(record.notes) ? record.notes : [record]
+        for (const note of notes) {
+          const noteId = note?.id ?? note?.note_id ?? note?.noteId
+          if (
+            !note ||
+            typeof note !== 'object' ||
+            (typeof noteId !== 'string' && typeof noteId !== 'number') ||
+            String(noteId).trim() === '' ||
+            typeof (note.body ?? note.note ?? note.description) !== 'string'
+          ) {
+            throw new Error('CodeHub指标评论字段不完整')
+          }
+          if (seenNotes.has(String(noteId))) {
+            throw new Error('CodeHub指标评论记录重复，无法确认完整结果')
+          }
+          seenNotes.add(String(noteId))
         }
       }
+    }
+    rows.push(...current)
+    if (!args.requireComplete || current.length < 50) {
+      break
     }
   }
   // `mr review list` returns discussions whose comments are nested in

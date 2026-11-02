@@ -241,7 +241,7 @@ function createCharterService(runtime: CharterRuntimeHost) {
       }
     } else if (!reviewed) {
       // 无新内容且远端已同步:有开放 PR 就复用,没有才 noop;文案按真实态区分。
-      const openPr = await lookupOpenCharterPr(repo.path, executionHostId, identity, execOptions)
+      const openPr = await lookupOpenCharterPr(repo, executionHostId, identity, execOptions)
       if (openPr) {
         return { mode: 'pr', pr: { ...openPr, adopted: true }, filled }
       }

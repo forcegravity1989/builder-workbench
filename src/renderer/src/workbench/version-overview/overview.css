@@ -52,12 +52,19 @@
 }
 .bwo-goal-meta {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   align-items: center;
-  gap: 12px 24px;
+  gap: 8px 16px;
   flex-wrap: wrap;
-  margin: 12px 0 18px;
   color: var(--muted-foreground);
   font-size: 12px;
+}
+.bwo-goal-meta span {
+  overflow-wrap: anywhere;
+}
+.bwo-goal-meta button {
+  white-space: nowrap;
 }
 .bwo-link {
   text-align: left;

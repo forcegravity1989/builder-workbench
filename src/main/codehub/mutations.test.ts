@@ -149,7 +149,12 @@ describe('codehub mutations', () => {
       JSON.stringify({
         title: 'Login',
         description: 'SSO',
-        state: 'opened',
+        state: 'closed',
+        closed_at: '2026-10-01T10:00:00Z',
+        merge_requests_count: 0,
+        linked_merge_requests: [
+          { iid: 8, web_url: 'https://codehub-g.huawei.com/Org/Group/repo/merge_requests/8' }
+        ],
         web_url: 'https://example/4',
         author: { username: 'ada' },
         assignees: [{ username: 'bob' }]
@@ -169,7 +174,11 @@ describe('codehub mutations', () => {
       iid: 4,
       title: 'Login',
       description: 'SSO',
-      state: 'opened',
+      state: 'closed',
+      closedAt: '2026-10-01T10:00:00Z',
+      linkedMergeRequests: [
+        { iid: 8, url: 'https://codehub-g.huawei.com/Org/Group/repo/merge_requests/8' }
+      ],
       url: 'https://example/4',
       author: 'ada',
       assignees: ['bob'],
@@ -178,6 +187,61 @@ describe('codehub mutations', () => {
       sourceBranch: null,
       targetBranch: null
     })
+    for (const linked of [
+      [{ iid: 8, web_url: 'https://codehub-g.huawei.com/Org/other/-/merge_requests/8' }],
+      [{ iid: 8, web_url: 'https://codehub-g.huawei.com/Org/Group/repo/-/merge_requests/9' }],
+      [{ iid: 0, web_url: 'https://codehub-g.huawei.com/Org/Group/repo/-/merge_requests/0' }],
+      [{ iid: 8 }],
+      [null]
+    ]) {
+      runCodeHubCliMock.mockResolvedValue(JSON.stringify({ linked_merge_requests: linked }))
+      await expect(viewCodeHubTask({ remote, kind: 'issue', iid: 4 })).rejects.toThrow('CodeHub')
+    }
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify({ linked_merge_requests: [], merge_requests_count: 1 })
+    )
+    await expect(viewCodeHubTask({ remote, kind: 'issue', iid: 4 })).resolves.toMatchObject({
+      linkedMergeRequests: []
+    })
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify({ linked_merge_requests: [], merge_requests_count: 0 })
+    )
+    await expect(viewCodeHubTask({ remote, kind: 'issue', iid: 4 })).resolves.toMatchObject({
+      linkedMergeRequests: []
+    })
+
+    const cloneRemote = { ...remote, host: 'git.codehub.example.test' }
+    const linked = [8, 9].map((iid) => ({
+      iid,
+      web_url: `https://${remote.host}/${remote.project}/merge_requests/${iid}`
+    }))
+    const project = {
+      path_with_namespace: remote.project,
+      http_url_to_repo: `https://${cloneRemote.host}/${remote.project}.git`,
+      web_url: `https://${remote.host}/${remote.project}`
+    }
+    runCodeHubCliMock.mockImplementation(async (args: string[]) =>
+      JSON.stringify(
+        args[0] === 'project' ? project : { linked_merge_requests: linked, merge_requests_count: 0 }
+      )
+    )
+    await expect(
+      viewCodeHubTask({ remote: cloneRemote, kind: 'issue', iid: 4 })
+    ).resolves.toMatchObject({
+      linkedMergeRequests: linked.map((mr) => ({ iid: mr.iid, url: mr.web_url }))
+    })
+    for (const invalidProject of [
+      { ...project, http_url_to_repo: `https://other.codehub.example.test/${remote.project}.git` },
+      { ...project, path_with_namespace: 'Other/repo' },
+      { ...project, web_url: `https://other.codehub.example.test/${remote.project}` }
+    ]) {
+      runCodeHubCliMock.mockImplementation(async (args: string[]) =>
+        JSON.stringify(args[0] === 'project' ? invalidProject : { linked_merge_requests: linked })
+      )
+      await expect(viewCodeHubTask({ remote: cloneRemote, kind: 'issue', iid: 4 })).rejects.toThrow(
+        '来源'
+      )
+    }
   })
 
   it('reads a nested issue body and merge request branches', async () => {
@@ -197,6 +261,31 @@ describe('codehub mutations', () => {
     expect(detail.sourceBranch).toBe('feat/task-style')
     expect(detail.targetBranch).toBe('main')
     expect(detail.state).toBe('unknown')
+    runCodeHubCliMock.mockResolvedValue(JSON.stringify({ iid: 4, state: 'merged' }))
+    await expect(viewCodeHubTask({ remote, kind: 'mr', iid: 3 })).rejects.toThrow(
+      '编号与请求不一致'
+    )
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify({
+        iid: 3,
+        state: 'merged',
+        web_url: 'https://codehub-g.huawei.com/Org/other/-/merge_requests/3'
+      })
+    )
+    await expect(viewCodeHubTask({ remote, kind: 'mr', iid: 3 })).rejects.toThrow(
+      '链接与请求来源不一致'
+    )
+    runCodeHubCliMock.mockResolvedValue(
+      JSON.stringify({
+        iid: 3,
+        state: 'merged',
+        web_url: 'https://codehub-g.huawei.com/Org/Group/repo/-/merge_requests/3'
+      })
+    )
+    await expect(viewCodeHubTask({ remote, kind: 'mr', iid: 3 })).resolves.toMatchObject({
+      iid: 3,
+      state: 'merged'
+    })
   })
 
   it('lists merge request pipelines', async () => {

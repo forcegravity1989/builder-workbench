@@ -23,7 +23,7 @@ describe('CodeHub archive PR status protocol', () => {
     )
     expect(codeHubRepositoryMatches('other.example.com/team/workbench', remote)).toBe(false)
     expect(codeHubArchiveUrl(remote, 17)).toBe(
-      'https://codehub.example.com/team/workbench/-/merge_requests/17'
+      'https://codehub.example.com/team/workbench/merge_requests/17'
     )
     expect(codeHubArchiveUrl(remote, 17, 'https://review.example/mr/17')).toBe(
       'https://review.example/mr/17'

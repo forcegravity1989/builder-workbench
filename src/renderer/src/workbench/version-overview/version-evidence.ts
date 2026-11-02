@@ -17,6 +17,7 @@ export type OverviewVersionPlan = {
   source: 'committed' | 'draft'
   confirmation?: FeatureEvent
   archive?: FeatureEvent
+  taskSnapshot?: AcceptanceMaterial['taskSnapshot']
 }
 export type VersionEvidence = {
   version: string
@@ -143,7 +144,7 @@ export function applyVersionEvidence(
         Date.parse(entry.confirmation.at) <= Date.parse(before))
   )
   feature.planningComplete =
-    related.length > 0 && related.every((entry) => validTime(entry.confirmation?.at))
+    complete && related.length > 0 && related.every((entry) => validTime(entry.confirmation?.at))
   feature.events.push(
     ...related.flatMap((entry) =>
       entry.confirmation &&

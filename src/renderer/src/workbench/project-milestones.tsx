@@ -19,6 +19,7 @@ import {
 import type { MilestoneScope } from './milestone-port'
 import { openVersionOverview } from './project-page-state'
 import { useMilestonePlanning } from './use-milestone-planning'
+import { useVersionCatalogForRepo } from './use-version-catalog'
 import { MilestoneTimeline, type MilestoneLocation } from './milestone-timeline'
 import { createMilestoneFeature } from './milestone-add-feature'
 import {
@@ -27,6 +28,7 @@ import {
 } from '../../../shared/workbench/milestone-sdlc'
 import {
   materializeMilestoneWeek,
+  editMilestoneVersionName,
   datedMilestoneVersions,
   type MilestoneWeek
 } from '../../../shared/workbench/milestone-calendar'
@@ -46,6 +48,7 @@ export function ProjectMilestones({
   updateFormal(): Promise<void>
 }) {
   const model = useMilestonePlanning(scope, refreshToken)
+  const catalog = useVersionCatalogForRepo(scope?.repoId ?? null)
   const { state, busy, dirty, error, patch, edit } = model
   const root = useRef<HTMLElement>(null)
   const [locate, setLocate] = useState<(MilestoneLocation & { scope: string | null }) | null>(null)
@@ -106,6 +109,7 @@ export function ProjectMilestones({
     state.draft
   )
   const versionFacts = (state.data.proposal ?? state.data.formal).versions
+  const registeredVersions = state.data.formal.versions.concat(state.data.proposal?.versions ?? [])
   const problems = [
     ...milestoneProblems(state.draft),
     ...milestoneGoalProblems(state.draft, versionFacts),
@@ -117,22 +121,17 @@ export function ProjectMilestones({
       patch({ editing: true })
     }
   }
-  function renameVersion(cycleId: string, version: string) {
-    model.editField((d) => ({
-      ...d,
-      versions: d.versions.map((v) => (v.cycleId === cycleId ? { ...v, version } : v)),
-      material: {
-        ...d.material,
-        features: d.material.features.map((f) => ({
-          ...f,
-          deliveries: f.deliveries.map((item) =>
-            item.version.cycleId === cycleId
-              ? { ...item, version: { ...item.version, version } }
-              : item
-          )
-        }))
-      }
-    }))
+  function renameVersion(cycleId: string, version: string, previousName?: string) {
+    const result = editMilestoneVersionName(
+      state!.draft,
+      cycleId,
+      version,
+      previousName === undefined ? undefined : { previousName, registered: registeredVersions }
+    )
+    model.editField(() => result.draft)
+    if (result.problem) {
+      toast(result.problem)
+    }
   }
   function remove(f: MilestoneFeature) {
     edit((d) =>
@@ -363,6 +362,7 @@ export function ProjectMilestones({
             editField={model.editField}
           />
           <MilestoneTimeline
+            catalog={catalog}
             key={`${restoreScope}:${editing}:${restoreKey}`}
             draft={visible}
             versionFacts={versionFacts}

@@ -13,6 +13,20 @@ import type { MilestoneDraft, ScheduledVersion } from '../../../shared/workbench
 
 export const MILESTONE_VERSION_HEIGHT = 52
 
+export function milestoneVersionLanes(versions: ScheduledVersion[]) {
+  const ends: string[] = [],
+    lanes = new Map<string, number>()
+  for (const version of versions) {
+    let lane = ends.findIndex((end) => end < version.timeWindow!.start)
+    if (lane === -1) {
+      lane = ends.length
+    }
+    ends[lane] = version.timeWindow!.end
+    lanes.set(version.cycleId, lane)
+  }
+  return { lanes, versionHeight: Math.max(1, ends.length) * MILESTONE_VERSION_HEIGHT }
+}
+
 function WeekName({
   week,
   disabled,
@@ -82,7 +96,7 @@ export function MilestoneVersionRow({
   canvasWidth: number
   origin: number
   started: Set<string>
-  rename(id: string, version: string): void
+  rename(id: string, version: string, previousName?: string): void
   registerWeek(week: MilestoneWeek, name: string): void
   gesture: MilestoneGestureApi
   open(version: ScheduledVersion): void
@@ -136,6 +150,7 @@ export function MilestoneVersionRow({
                 value={v.version}
                 editable={editing && !disabled && !started.has(v.cycleId)}
                 onChange={(value) => rename(v.cycleId, value)}
+                onCommit={(value, previous) => rename(v.cycleId, value, previous)}
               />
               <MilestoneIconButton label={`进入 ${v.version} 版本总览`} onClick={() => open(v)}>
                 <ExternalLink size={13} />
