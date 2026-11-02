@@ -52,7 +52,9 @@ export function validatePlanningVersion(version: string): void {
     version.endsWith('.') ||
     /[<>:"/\\|?*]/.test(version) ||
     Array.from(version).some((character) => character.charCodeAt(0) < 32) ||
-    /^(con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³])(?:\.|$)/i.test(version) ||
+    /^(con|prn|aux|nul|com[1-9\u00B9\u00B2\u00B3]|lpt[1-9\u00B9\u00B2\u00B3])(?:\.|$)/i.test(
+      version
+    ) ||
     version.toLowerCase() === 'template'
   ) {
     throw new VersionDocumentError(

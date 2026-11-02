@@ -89,7 +89,7 @@ git merge-tree --write-tree --merge-base=<上次上游SHA> <当前BW提交> <新
 - **版本归属**：`workbenchVersionBinding` 是原生 WorktreeMeta 的附属字段，undefined 保留、null 清除，RPC/IPC/列表投影保持一致。写入和清除均检查 capability，按 owner 与 instanceId 围栏定位，读回确认；创建成功但绑定失败保留树并允许重试绑定。`workbench.versionWorkspace.prepare` 在归属宿主预检、去重创建、绑定和初始化材料；固定工作区复用与缺失分支恢复统一由 `workbench.fixedWorkspace.ensure` 执行，不在访问者本机另建树。
 - **任务来源身份**：同一 repoId 可存在于多台主机。查询、列表、详情缓存和 Start/Open 都需带宿主；CodeHub 还区分服务地址与项目。远端持久化使用 owner-local 来源，客户端读回映射到该连接的 runtime 身份。迁移仅转换来源宿主和仓库均能证明的身份；跨主机的客户端 local 来源无法可靠表达时明确拒绝，不猜旧 runtime ID。
 - **自动化与发送**：`automation.runNow.oneShotPrompt` 只影响本次 renderer/headless 派发，不改保存的提示。自动化编辑请求保持显式 target/draft；BW 对象动作复用原生发送与 QuickLaunch，不另建会话系统。
-- **业务 RPC**：材料、指标、历史、版本绑定/准备、归档与发布状态注册在原生 RPC/CLI，事务和执行落在 BW 模块。SSH 要先转换为运行 BW 构建的 managed server；headless orcad 不提供嵌套 SSH。WSL 开关与可用性沿原生，不因代码存在宣称全部迁移入口已开放。
+- **业务 RPC**：材料、指标、历史、版本绑定/准备、归档与发布状态注册在原生 RPC/CLI，事务和执行落在 BW 模块。云龙制品读取与下载沿归属宿主执行；Playwright 保持完整包布局，作为外置运行依赖纳入 orcad 的公共文件清单、模板与部署校验，不另增桌面专属限制。SSH 要先转换为运行 BW 构建的 managed server；headless orcad 不提供嵌套 SSH。WSL 开关与可用性沿原生，不因代码存在宣称全部迁移入口已开放。
 - **产品身份**：Workbench 图标、profile、launcher、更新仓库与内置推广策略保持 BW 身份。原生检查/安装行为保留；Windows GitHub 整包断点恢复、未签名产品版本通道见 [客户端更新](../docs/06-module/客户端更新.md)。
 - **浏览器与 Markdown**：HTTPS 显式继续沿会话级端点/证书指纹授权；换证书拒绝、重启清除。知识库 Markdown 的安全 HTML 兼容与编辑回写是独立用例，不能用静态编译代替焦点/保存旅程。
 - **Skill 分发**：BW 的四项 Skill 登记进入原生 manifest、`skill-stubs/` 与 `skill-guides/`；三个周期指南正源在 `standard/`，知识治理指南正源在 `skill-guides/bw-knowledge-docs.md`；发现 Stub 从 `skill-stubs/` 生成至 `skills/<name>/SKILL.md`。按生成脚本更新，不手改投影；包内 CLI 必须能读取完整指南和 references。

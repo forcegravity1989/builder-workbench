@@ -132,7 +132,7 @@ export function OverviewPage(): React.JSX.Element {
 
   // 主检出没有名片才查 PR 状态:待合入 / 已合入未更新 / 没查成(spec 规则 2)。
   const { charterStatus, updatingMain, updateMainCheckout, refreshCharterStatus } =
-    useCharterPrStatus(activeRepo, Boolean(charter), charterKey, (value) =>
+    useCharterPrStatus(activeRepo ?? undefined, Boolean(charter), charterKey, (value) =>
       setCharter({ key: charterKey, value })
     )
 

@@ -99,6 +99,110 @@ export const ORCAD_EMOJI_SHORTCODE_DATASET =
 // linear-sdk.ts loads it through createRequire, which the server bundle cannot follow.
 export const ORCAD_LINEAR_SDK_ENTRY = 'node_modules/@linear/sdk/index.js'
 
+// CloudDragon loads the original package lazily; the same list drives staging and remote install hashes.
+export const ORCAD_PLAYWRIGHT_VERSION = '1.64.1'
+export const ORCAD_PLAYWRIGHT_PACKAGE_FILES = [
+  ...['channelSessions', 'cli', 'minimist', 'output', 'program', 'registry', 'session'].map(
+    (name) => `lib/tools/cli-client/${name}.js`
+  ),
+  ...['bootstrap.js', 'coreBundle.js', 'package.js', 'webp_codec.wasm', 'xdg-open'].map(
+    (file) => `lib/${file}`
+  ),
+  ...['serverRegistry.js', 'utilsBundle.js'].flatMap((file) => [
+    `lib/${file}`,
+    `lib/${file}.LICENSE`
+  ]),
+  'LICENSE',
+  'NOTICE',
+  'README.md',
+  'ThirdPartyNotices.txt',
+  'browsers.json',
+  'cli.js',
+  'index.d.ts',
+  'index.js',
+  'index.mjs',
+  'package.json',
+  ...['chrome_beta', 'chrome_stable', 'msedge_beta', 'msedge_dev', 'msedge_stable'].flatMap(
+    (channel) =>
+      ['linux.sh', 'mac.sh', 'win.ps1'].map((platform) => `bin/reinstall_${channel}_${platform}`)
+  ),
+  ...['cliDaemon.js', 'dashboardApp.js', 'mcp.js', 'oopBrowserDownload.js'].map(
+    (file) => `lib/entry/${file}`
+  ),
+  ...['protocol.d.ts', 'structs.d.ts', 'types.d.ts'].map((file) => `types/${file}`),
+  'bin/install_media_pack.ps1',
+  'bin/install_webkit_wsl.ps1',
+  'lib/server/chromium/appIcon.png',
+  'lib/server/electron/loader.js',
+  'lib/tools/cli-client/help.json',
+  'lib/tools/dashboard/appIcon.png',
+  'lib/tools/skills/playwright-cli/SKILL.md',
+  'lib/tools/skills/playwright-cli/references/element-attributes.md',
+  'lib/tools/skills/playwright-cli/references/playwright-tests.md',
+  'lib/tools/skills/playwright-cli/references/pr-attachments.md',
+  'lib/tools/skills/playwright-cli/references/request-mocking.md',
+  'lib/tools/skills/playwright-cli/references/running-code.md',
+  'lib/tools/skills/playwright-cli/references/session-management.md',
+  'lib/tools/skills/playwright-cli/references/storage-state.md',
+  'lib/tools/skills/playwright-cli/references/test-generation.md',
+  'lib/tools/skills/playwright-cli/references/tracing.md',
+  'lib/tools/skills/playwright-cli/references/video-recording.md',
+  'lib/tools/skills/playwright-component-testing/SKILL.md',
+  'lib/tools/skills/playwright-component-testing/references/gallery-spec.md',
+  'lib/tools/skills/playwright-component-testing/references/migration.md',
+  'lib/tools/skills/playwright-component-testing/references/react.md',
+  'lib/tools/skills/playwright-component-testing/references/typing.md',
+  'lib/tools/skills/playwright-component-testing/references/vue.md',
+  'lib/tools/skills/playwright-trace/SKILL.md',
+  'lib/tools/utils/extension.js',
+  'lib/tools/utils/socketConnection.js',
+  'lib/vite/dashboard/assets/codeMirrorModule--QdMvsKi.css',
+  'lib/vite/dashboard/assets/codeMirrorModule-CQ8RZGBm.js',
+  'lib/vite/dashboard/assets/codicon-DCmgc-ay.ttf',
+  'lib/vite/dashboard/assets/firefox-1bWoP6pv.svg',
+  'lib/vite/dashboard/assets/firefox-beta-k3eOH_eK.svg',
+  'lib/vite/dashboard/assets/firefox-nightly-Cp5nfeDT.svg',
+  'lib/vite/dashboard/assets/index-AwgwcYie.css',
+  'lib/vite/dashboard/assets/index-hRvO4yU2.js',
+  'lib/vite/dashboard/assets/safari-na3_-uQk.svg',
+  'lib/vite/dashboard/index.html',
+  'lib/vite/dashboard/playwright-logo.svg',
+  'lib/vite/htmlReport/index.html',
+  'lib/vite/htmlReport/report.css',
+  'lib/vite/htmlReport/report.js',
+  'lib/vite/recorder/assets/codeMirrorModule--QdMvsKi.css',
+  'lib/vite/recorder/assets/codeMirrorModule-DK72OMRi.js',
+  'lib/vite/recorder/assets/codicon-DCmgc-ay.ttf',
+  'lib/vite/recorder/assets/index-BZpYJZ-P.css',
+  'lib/vite/recorder/assets/index-Cn0mmDuv.js',
+  'lib/vite/recorder/index.html',
+  'lib/vite/recorder/playwright-logo.svg',
+  'lib/vite/traceViewer/assets/codeMirrorModule-BEB2e8M3.js',
+  'lib/vite/traceViewer/assets/defaultSettingsView-D-g2vrvf.js',
+  'lib/vite/traceViewer/assets/urlMatch-L3liM589.js',
+  'lib/vite/traceViewer/assets/xtermModule-B794rD2Z.js',
+  'lib/vite/traceViewer/codeMirrorModule.-QdMvsKi.css',
+  'lib/vite/traceViewer/codicon.DCmgc-ay.ttf',
+  'lib/vite/traceViewer/defaultSettingsView.C8BeHuxd.css',
+  'lib/vite/traceViewer/index.B_TqY17P.css',
+  'lib/vite/traceViewer/index.html',
+  'lib/vite/traceViewer/index.oNry3Hjv.js',
+  'lib/vite/traceViewer/manifest.webmanifest',
+  'lib/vite/traceViewer/playwright-logo.svg',
+  'lib/vite/traceViewer/snapshot.B_Jk1wbt.js',
+  'lib/vite/traceViewer/snapshot.html',
+  'lib/vite/traceViewer/sw.bundle.js',
+  'lib/vite/traceViewer/uiMode.CYwC_gH1.js',
+  'lib/vite/traceViewer/uiMode.CyMfwkXJ.css',
+  'lib/vite/traceViewer/uiMode.html',
+  'lib/vite/traceViewer/xtermModule.kHJ-D0s7.css',
+  'lib/webp_codec.LICENSE'
+].sort()
+
+export const ORCAD_PLAYWRIGHT_ARTIFACTS = ORCAD_PLAYWRIGHT_PACKAGE_FILES.map(
+  (file) => `node_modules/playwright-core/${file}`
+)
+
 export const ORCAD_VERSION = '0.1.0'
 export const ORCAD_LAUNCHER_FILENAME = 'orcad.js'
 export const ORCAD_SERVER_ENTRY_FILENAME = 'orcad-server.js'
@@ -216,6 +320,7 @@ export const ORCAD_ARTIFACTS: readonly OrcadArtifact[] = [
   { filename: ORCAD_PARCEL_WATCHER_NATIVE },
   { filename: ORCAD_EMOJI_SHORTCODE_DATASET },
   { filename: ORCAD_LINEAR_SDK_ENTRY },
+  ...ORCAD_PLAYWRIGHT_ARTIFACTS.map((filename) => ({ filename })),
   ...ORCAD_NODE_PTY_JS_ARTIFACTS.map((filename) => ({ filename })),
   ...ORCAD_RIPGREP_LICENSE_ARTIFACTS.map((filename) => ({ filename })),
   ...ORCAD_NATIVE_CHAT_VISUALS_ARTIFACTS.map((filename) => ({ filename }))

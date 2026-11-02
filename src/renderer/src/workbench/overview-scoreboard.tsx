@@ -209,7 +209,7 @@ export function OverviewScoreboard({
         <AnnotationPanel
           annotations={notes.numbered}
           annotating={notes.annotating}
-          worktreeId={worktreeId}
+          worktreeId={sourceWorktree?.id ?? null}
           assistant="指标配置"
           onClose={notes.closePanel}
           onUpdate={notes.update}

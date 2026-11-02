@@ -440,9 +440,13 @@
       "id": "release-facts",
       "category": "bw-owned",
       "useCase": "验收出包与发布状态读取真实结果",
-      "reason": "按目标项目/tag 读回，无数据和失败显示未知，不代人发布或确认。",
-      "retireWhen": "原生扩展可承载只读事实查询时简化方法注册，保留 BW 引用与未知语义。",
-      "checks": ["docs/05-features/version-acceptance/spec.md", "docs/architecture.md"]
+      "reason": "按目标项目/tag 与归属宿主读回；云龙浏览器依赖随服务模板分发。无数据和失败显示未知，不代人发布或确认。",
+      "retireWhen": "原生扩展可承载事实查询及运行依赖分发时简化挂载，保留 BW 引用与未知语义，并复验归属宿主上的制品读取和下载。",
+      "checks": [
+        "docs/05-features/version-acceptance/spec.md",
+        "docs/architecture.md",
+        "src/main/orcad/orcad-playwright-package.test.ts"
+      ]
     },
     {
       "id": "meeting-minutes",
@@ -1616,8 +1620,8 @@
     {
       "path": "config/scripts/build-orcad.mjs",
       "mode": "100644",
-      "blob": "f0e95f2a1805a83b4a1650c0f7ade164fcecd11b",
-      "cases": ["mobile-product-removal"]
+      "blob": "b0c323675856b26ebe7ac567a75a0425e11f21ec",
+      "cases": ["mobile-product-removal", "release-facts"]
     },
     {
       "path": "config/scripts/build-win-workbench.mjs",
@@ -1866,6 +1870,12 @@
       "cases": ["mobile-product-removal"]
     },
     {
+      "path": "config/scripts/orcad-entry-build.mjs",
+      "mode": "100644",
+      "blob": "b97d43e0d4bd8066324efc6baa6c9c9550d28183",
+      "cases": ["release-facts"]
+    },
+    {
       "path": "config/scripts/orcad-mobile-web-bundle.mjs",
       "mode": "000000",
       "blob": null,
@@ -1876,6 +1886,12 @@
       "mode": "000000",
       "blob": null,
       "cases": ["mobile-product-removal"]
+    },
+    {
+      "path": "config/scripts/orcad-playwright-package.mjs",
+      "mode": "100644",
+      "blob": "a63cce9318f49b94e89d701385c5f4d2aaca5821",
+      "cases": ["release-facts"]
     },
     {
       "path": "config/scripts/orcad-template-test-fixture.mjs",
@@ -2824,6 +2840,12 @@
       "mode": "100644",
       "blob": "bbf469f08bc82ddb53e5a505edee7bacda3d7fe9",
       "cases": ["mobile-product-removal"]
+    },
+    {
+      "path": "src/main/orcad/orcad-playwright-package.test.ts",
+      "mode": "100644",
+      "blob": "4e1efd454a72490698f4e4996920de609a524945",
+      "cases": ["release-facts"]
     },
     {
       "path": "src/main/orcad/orcad-runtime-entry-artifacts.test.ts",
@@ -5555,8 +5577,8 @@
     {
       "path": "src/shared/orcad-artifacts.ts",
       "mode": "100644",
-      "blob": "ac29949672acc793027a0b6ec688080e96b09f99",
-      "cases": ["mobile-product-removal"]
+      "blob": "32e31ecd807f6c099b399efa31bcb6b470599562",
+      "cases": ["mobile-product-removal", "release-facts"]
     },
     {
       "path": "src/shared/protocol-version.ts",
