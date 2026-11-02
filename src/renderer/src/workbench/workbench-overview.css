@@ -43,30 +43,33 @@
   gap: 4px;
   min-width: 0;
 }
-.wb-ov .row-2 {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
-  gap: 12px;
-}
-.wb-ov .row-between,
-.wb-ov .row-start {
+.wb-ov .card-toggle {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
   flex-wrap: wrap;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-.wb-ov .row-between {
-  justify-content: space-between;
+.wb-ov .card-chevron {
+  flex-shrink: 0;
+  color: var(--color-neutral-600);
+  transition: transform 120ms ease;
+}
+.wb-ov .card-chevron.is-open {
+  transform: rotate(90deg);
 }
 .wb-ov .card-title {
   font-size: 16px;
   font-weight: 600;
   overflow-wrap: anywhere;
-}
-.wb-ov .card-kicker {
-  color: var(--color-neutral-600);
-  font-size: 12px;
 }
 .wb-ov .status {
   display: inline-flex;
@@ -99,14 +102,6 @@
 }
 .wb-ov .mono {
   font-family: var(--font-mono);
-}
-.wb-ov .metric-value {
-  font: 600 28px/1.5 var(--font-mono);
-  margin: 0;
-}
-.wb-ov .metric-target {
-  font-size: 12px;
-  color: var(--color-neutral-600);
 }
 .wb-ov .wb-muted {
   color: var(--color-neutral-600);
@@ -460,7 +455,6 @@
   }
 }
 @media (max-width: 48rem) {
-  .wb-ov .row-2,
   .wb-ov .wb-sb-duo {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -511,4 +505,9 @@
   gap: 8px;
   margin: 6px 0 2px;
   font-size: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wb-ov .card-chevron {
+    transition: none;
+  }
 }

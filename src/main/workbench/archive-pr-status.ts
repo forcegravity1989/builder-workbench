@@ -7,9 +7,16 @@ import {
 } from '../github/gh-utils'
 import { githubHostExecOptions } from '../github/github-api-repository'
 import { noteRepositoryRateLimitSpend, repositoryRateLimitGuard } from '../github/rate-limit'
-import { isCodeHubGitRemote, parseCodeHubRemote, type CodeHubRemote } from '../../shared/codehub'
-import type { CodeHubTaskDetail } from '../../shared/codehub-tasks'
+import {
+  isCodeHubGitRemote,
+  parseCodeHubRemote,
+  codeHubMergeRequestUrl,
+  type CodeHubRemote
+} from '../../shared/codehub'
+import { codeHubRepositoryMatches, mapCodeHubArchiveState } from '../codehub/mr-branch-review'
+export { codeHubRepositoryMatches, mapCodeHubArchiveState } from '../codehub/mr-branch-review'
 import { viewCodeHubTask } from '../codehub/mutations'
+import { resolveCodeHubRepositoryIdentity } from '../codehub/web-identity'
 import type {
   ArchivePrStatusRequest,
   ArchivePrStatusResult
@@ -24,14 +31,6 @@ type RestPull = { state?: unknown; merged_at?: unknown; html_url?: unknown }
 const CODEHUB_ARCHIVE_CACHE_TTL_MS = 30_000
 const codeHubArchiveCache = new Map<string, { expiresAt: number; result: ArchivePrStatusResult }>()
 const codeHubArchiveReads = new Map<string, Promise<ArchivePrStatusResult>>()
-
-function normalizedCodeHubIdentity(value: string): string {
-  return value
-    .trim()
-    .replace(/\.git$/i, '')
-    .replace(/^\/+|\/+$/g, '')
-    .toLowerCase()
-}
 
 function normalizedGithubIdentity(value: string): { host: string; slug: string } | null {
   const normalized = value
@@ -67,58 +66,29 @@ export function githubRepositoryMatches(
   )
 }
 
-/** @internal — compares the recorded provider reference to the registered remote. */
-export function codeHubRepositoryMatches(repository: string, remote: CodeHubRemote): boolean {
-  const recorded = normalizedCodeHubIdentity(repository)
-  const remoteIdentity = `${remote.host}/${remote.project}`.toLowerCase()
-  if (recorded === remoteIdentity || recorded === remote.project.toLowerCase()) {
-    return true
-  }
-  const parsed = parseCodeHubRemote(repository)
-  return parsed !== null && `${parsed.host}/${parsed.project}`.toLowerCase() === remoteIdentity
-}
-
-/** @internal — CodeHub CLI state is deliberately narrower than its free-form detail state. */
-export function mapCodeHubArchiveState(
-  detail: Pick<CodeHubTaskDetail, 'state'>
-): 'merged' | 'closed' | 'open' | null {
-  const state = detail.state.trim().toLowerCase()
-  if (state === 'merged') {
-    return 'merged'
-  }
-  if (state === 'closed') {
-    return 'closed'
-  }
-  if (state === 'open' || state === 'opened') {
-    return 'open'
-  }
-  return null
-}
-
 export function codeHubArchiveUrl(
   remote: CodeHubRemote,
   number: number,
   recorded?: string
 ): string {
-  const fallback = `https://${remote.host}/${remote.project
-    .split('/')
-    .filter(Boolean)
-    .map((part) => encodeURIComponent(part))
-    .join('/')}/-/merge_requests/${number}`
-  return recorded?.trim() || fallback
-}
-
-function codeHubArchiveCacheKey(remote: CodeHubRemote, number: number): string {
-  return `${remote.host.toLowerCase()}/${remote.project.toLowerCase()}!${number}`
+  return codeHubMergeRequestUrl(remote, number, recorded)
 }
 
 async function readCodeHubArchiveStatus(args: {
   remote: CodeHubRemote
   number: number
   execOptions: { cwd?: string; wslDistro?: string }
+  executionScope: string
   force?: boolean
 }): Promise<ArchivePrStatusResult> {
-  const key = codeHubArchiveCacheKey(args.remote, args.number)
+  const key = JSON.stringify([
+    args.remote.host.toLowerCase(),
+    args.remote.project.toLowerCase(),
+    args.number,
+    args.executionScope,
+    args.execOptions.cwd,
+    args.execOptions.wslDistro
+  ])
   const cached = codeHubArchiveCache.get(key)
   if (!args.force && cached && cached.expiresAt > Date.now()) {
     return cached.result
@@ -136,6 +106,9 @@ async function readCodeHubArchiveStatus(args: {
         iid: args.number
       })
       const state = mapCodeHubArchiveState(detail)
+      if (!detail.url?.trim()) {
+        throw new Error('CodeHub MR 未返回原生来源链接')
+      }
       if (!state) {
         return {
           state: 'unknown',
@@ -191,18 +164,33 @@ export async function readArchivePrStatus(
       parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey))
     : null
   if (params.pr.provider === 'codehub' && codeHubRemote) {
-    if (!codeHubRepositoryMatches(params.pr.repository, codeHubRemote)) {
+    if (repo.connectionId) {
+      return { state: 'unknown', reason: 'CodeHub 归档 MR 读取尚不支持 SSH 宿主' }
+    }
+    const wslDistro = parseWslPath(repo.path)?.distro
+    const execOptions = { cwd: repo.path, ...(wslDistro ? { wslDistro } : {}) }
+    let identity: CodeHubRemote
+    try {
+      identity = await resolveCodeHubRepositoryIdentity(
+        codeHubRemote,
+        params.pr.repository,
+        execOptions
+      )
+    } catch (reason) {
+      return {
+        state: 'unknown',
+        reason: `CodeHub 项目来源核对失败：${reason instanceof Error ? reason.message : String(reason)}`
+      }
+    }
+    if (!codeHubRepositoryMatches(params.pr.repository, identity)) {
       return { state: 'unknown', reason: 'PR 引用与项目真实 CodeHub 来源不一致' }
     }
-    const wslDistro = repo.connectionId ? undefined : parseWslPath(repo.path)?.distro
     return readCodeHubArchiveStatus({
+      executionScope: JSON.stringify([params.repoId, params.worktreeId, params.hostId]),
       force: params.force,
-      remote: codeHubRemote,
+      remote: identity,
       number: params.pr.number,
-      execOptions: {
-        ...(repo.connectionId ? {} : { cwd: repo.path }),
-        ...(wslDistro ? { wslDistro } : {})
-      }
+      execOptions
     })
   }
   if (params.pr.provider !== 'github' || codeHubRemote) {

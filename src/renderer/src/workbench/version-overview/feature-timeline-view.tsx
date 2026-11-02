@@ -3,6 +3,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { FeatureData } from './feature-model'
 import { featureTimelineLayout } from './feature-timeline-layout'
 import { timeLabel, openEvidenceUrl } from './overview-time'
+import type { PlannedStageHours } from '../milestone-feature-facts'
 const durationLabel = (milliseconds: number) => {
   const minutes = Math.floor(milliseconds / 60000)
   return `${Math.floor(minutes / 60)}小时${minutes % 60 ? `${minutes % 60}分` : ''}`
@@ -10,12 +11,16 @@ const durationLabel = (milliseconds: number) => {
 
 export function FeatureTimelineView({
   feature,
-  version
+  version,
+  plannedHours,
+  planningFailed
 }: {
   feature: FeatureData
   version: string
+  plannedHours?: PlannedStageHours
+  planningFailed?: boolean
 }) {
-  const layout = featureTimelineLayout(feature)
+  const layout = featureTimelineLayout(feature, plannedHours)
   const width = Math.max(600, layout.total * 4.5)
   const percent = (hours: number) => `${String(layout.total ? (hours / layout.total) * 100 : 0)}%`
   const markerEnds: number[] = []
@@ -153,12 +158,19 @@ export function FeatureTimelineView({
                       {slot.placeholder
                         ? slot.state === 'done' || slot.state === 'unknown'
                           ? '历时未记录'
-                          : `默认${slot.hours === 12 ? '半' : slot.hours / 24}天`
+                          : `${slot.planned ? '规划' : '默认'}${slot.hours === 12 ? '半' : slot.hours / 24}天`
                         : (slot.ongoing ? '已 ' : '') + durationLabel(slot.duration!)}
                     </span>
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>{slot.hint}</TooltipContent>
+                <TooltipContent>
+                  {slot.hint}
+                  {slot.placeholder && planningFailed
+                    ? slot.planned
+                      ? '；本次规划未读回，保留原读数'
+                      : '；规划未读回，使用默认长度'
+                    : ''}
+                </TooltipContent>
               </Tooltip>
             ))}
           </div>

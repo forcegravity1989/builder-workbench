@@ -119,7 +119,7 @@ export function AcceptanceBoardContent({
       }
       setOpeningPr(true)
       try {
-        await openArchivePrPage(scope, archivePr)
+        await openArchivePrPage(context, archivePr)
       } finally {
         setOpeningPr(false)
       }

@@ -176,8 +176,6 @@ export function useOverviewMetricCollection(args: {
   const reading = snapshot.readings[granularity]
   return {
     ...snapshot,
-    northReading:
-      reading?.north ?? snapshot.readings.day?.north ?? snapshot.readings.week?.north ?? null,
     zoneReadings: reading?.map ?? {},
     problems: [...snapshot.problems, ...(reading?.problems ?? [])],
     reloadCatalog: () => load('reload'),

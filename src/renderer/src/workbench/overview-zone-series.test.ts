@@ -45,23 +45,21 @@ function windowReading(
 }
 
 describe('zoneChartRange', () => {
-  it('周粒度返回周一到周一的完整周边界，覆盖五个周桶', () => {
-    const range = zoneChartRange('week', TZ, NOW)
-    expect(range.granularity).toBe('week')
+  // 环 4 ratchet 对冲（#516）：同一纯函数的周/日两条用例合并为一条，断言原样保留。
+  it('周粒度返回周一到周一的完整周边界；日粒度返回含今日的十四个日桶，左闭右开', () => {
+    const week = zoneChartRange('week', TZ, NOW)
+    expect(week.granularity).toBe('week')
     // 2026-09-24 is Thursday; its Monday is 2026-09-21 (2026-W39).
-    expect(range.since).toBe('2026-08-24')
-    expect(range.until).toBe('2026-09-28')
-    expect(new Date(`${range.since}T00:00:00Z`).getUTCDay()).toBe(1)
-    expect(new Date(`${range.until}T00:00:00Z`).getUTCDay()).toBe(1)
-    expect(zoneBucketLabels(range)).toHaveLength(ZONE_WEEK_BUCKETS)
-  })
-
-  it('日粒度返回含今日的十四个日桶，左闭右开', () => {
-    const range = zoneChartRange('day', TZ, NOW)
-    expect(range.since).toBe('2026-09-11')
-    expect(range.until).toBe('2026-09-25')
-    expect(zoneBucketLabels(range)).toHaveLength(ZONE_DAY_BUCKETS)
-    expect(zoneBucketLabels(range).at(-1)).toBe('09-24')
+    expect(week.since).toBe('2026-08-24')
+    expect(week.until).toBe('2026-09-28')
+    expect(new Date(`${week.since}T00:00:00Z`).getUTCDay()).toBe(1)
+    expect(new Date(`${week.until}T00:00:00Z`).getUTCDay()).toBe(1)
+    expect(zoneBucketLabels(week)).toHaveLength(ZONE_WEEK_BUCKETS)
+    const day = zoneChartRange('day', TZ, NOW)
+    expect(day.since).toBe('2026-09-11')
+    expect(day.until).toBe('2026-09-25')
+    expect(zoneBucketLabels(day)).toHaveLength(ZONE_DAY_BUCKETS)
+    expect(zoneBucketLabels(day).at(-1)).toBe('09-24')
   })
 })
 

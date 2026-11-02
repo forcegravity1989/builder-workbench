@@ -14,7 +14,6 @@ import {
 } from './version-cycle/native-workspace'
 import { useVersionMinutes } from './use-version-minutes'
 import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
-import { NorthStarCard } from './overview-north-star-card'
 import { ProjectCard } from './overview-project-card'
 import { MetricProblemsPanel } from './metric-problems-panel'
 import { useOverviewMetricCollection } from './use-overview-metric-collection'
@@ -97,8 +96,7 @@ export function OverviewPage(): React.JSX.Element {
     identity: dataIdentity,
     granularity: SCOREBOARD_GRANULARITY
   })
-  const { catalog, northReading, zoneReadings, busy, refreshing, refreshReadings, reloadCatalog } =
-    metrics
+  const { catalog, zoneReadings, busy, refreshing, refreshReadings, reloadCatalog } = metrics
   const historyState = useOverviewHistory({
     baseScope,
     baseWorktreeId,
@@ -225,7 +223,6 @@ export function OverviewPage(): React.JSX.Element {
     )
   }
   const projectName = charter?.name?.trim() || activeRepo.displayName || activeRepo.id
-  const north = catalog?.definitions.find((item) => item.role === 'north_star')
 
   return (
     <div className="wb-ov">
@@ -256,33 +253,22 @@ export function OverviewPage(): React.JSX.Element {
             {metricsSetup.notice}
           </p>
         )}
-        <div className="row-2">
-          <ProjectCard
-            projectName={projectName}
-            charter={charter}
-            remote={activeRepo.gitRemoteIdentity?.canonicalKey ?? null}
-            version={version}
-            notice={
-              !charter ? (
-                <CharterPrNotice
-                  status={charterStatus}
-                  variant="overview"
-                  updating={updatingMain}
-                  onUpdateMain={() => void updateMainCheckout()}
-                />
-              ) : undefined
-            }
-          />
-
-          <NorthStarCard
-            north={north}
-            northReading={northReading}
-            busy={busy}
-            hasCatalog={catalog !== null}
-            workspaceReady={baseScope !== null}
-            fallbackTitle={charter?.opportunity?.trim() || '（未配置）'}
-          />
-        </div>
+        <ProjectCard
+          projectName={projectName}
+          charter={charter}
+          remote={activeRepo.gitRemoteIdentity?.canonicalKey ?? null}
+          version={version}
+          notice={
+            !charter ? (
+              <CharterPrNotice
+                status={charterStatus}
+                variant="overview"
+                updating={updatingMain}
+                onUpdateMain={() => void updateMainCheckout()}
+              />
+            ) : undefined
+          }
+        />
 
         <ProjectMilestones
           scope={milestoneScope}
