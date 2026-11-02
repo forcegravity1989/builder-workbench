@@ -24,17 +24,17 @@ name = "需求验收"
 value = "版本结束时，逐个目标下结论，未达的写清下一步。证据在干活时备齐，不另写周报。"
 
 [[lagging]]
-name = "准备期修改程度"
+name = "需求对齐会议耗时"
 feature = "需求对齐"
-def = "越低越好。AI 生成初始版本后、Leader 确认前，人改过描述、验收标准或范围的目标数（删掉、新增也算）÷ 初始版本目标数。从计划文件的提交历史现算。"
-target = ""
-unit = "%"
-collect = { kind = "script", run = ["python3", ".bw/scripts/metric-unavailable.py", "准备期修改程度"], retro = true }
+def = "越短越好。需求对齐会议从开始到 Leader 确认 Top3 承诺的实际时长，时间目标小于 15 分钟。"
+target = "<15"
+unit = "分钟"
+collect = { kind = "script", run = ["python3", ".bw/scripts/metric-unavailable.py", "需求对齐会议耗时"], retro = true }
 
 [[leading]]
 name = "准备耗时"
 feature = "需求对齐"
-leads = "准备期修改程度"
+leads = "需求对齐会议耗时"
 def = "越短越好。从 Builder 开始准备，到 Leader 确认 Top3，Builder 实际投入的小时数。"
 target = ""
 unit = "h"
