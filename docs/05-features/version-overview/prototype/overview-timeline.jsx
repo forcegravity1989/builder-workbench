@@ -1,9 +1,9 @@
-import { prState, archivePull } from './overview-data.js'
+import { prState, archivePull, snapshot } from './overview-data.js'
 // eslint-disable-next-line no-unused-vars
 const { React, useState } = window.BWPrototypeDependencies
 const hour = 3600000
 const origin = Date.parse('2026-10-26T01:00:00Z')
-const observedAt = Date.parse('2026-10-30T13:17:57Z')
+const observedAt = Date.parse(snapshot.source.pullsCheckedAt)
 const stamp = (value) =>
   new Intl.DateTimeFormat('zh-CN', {
     timeZone: 'Asia/Shanghai',
@@ -20,6 +20,9 @@ const elapsedLabel = (hours) => {
 const stageNames = ['Plan', 'Design', 'Build', 'Test', 'Deploy', 'Maintain']
 const defaultHours = [24, 48, 12, 24, 12, 24]
 const defaultLabels = ['1天', '2天', '半天', '1天', '半天', '1天']
+// A review-only example of explicitly matched planning lengths, never actual dates.
+const plannedHours = [24, 48, 12, 36, 12, 72]
+const plannedLabels = ['1天', '2天', '半天', '1.5天', '半天', '3天']
 const sourceNames = [
   '计划 PR',
   '设计 PR',
@@ -30,7 +33,7 @@ const sourceNames = [
 ]
 
 // Local review examples only. Default future widths do not create planned or actual timestamps.
-function model(feature, path) {
+function model(feature, path, widthSource) {
   const recorded = path === 'recorded'
   const planPR = archivePull(feature.historical ? 'v0.7' : 'v0.8', 'plan')
   const sources = [
@@ -42,17 +45,28 @@ function model(feature, path) {
     feature.maintenanceAcceptancePR
   ]
   const active = recorded
-    ? feature.id === '334'
-      ? 2
-      : 1
+    ? feature.developmentPR?.mergedAt
+      ? 3
+      : feature.designPR?.mergedAt
+        ? 2
+        : 1
     : { test: 3, maintain: 5, complete: 6 }[path]
   const planEnd = recorded ? Date.parse(planPR.mergedAt) : origin + 32 * hour
   const designEnd =
     recorded && feature.designPR?.mergedAt
       ? Date.parse(feature.designPR.mergedAt)
       : planEnd + 24 * hour
+  const buildEnd =
+    recorded && feature.developmentPR?.mergedAt
+      ? Date.parse(feature.developmentPR.mergedAt)
+      : observedAt
   const actual = recorded
-    ? [(planEnd - origin) / hour, (designEnd - planEnd) / hour, (observedAt - designEnd) / hour]
+    ? [
+        (planEnd - origin) / hour,
+        (designEnd - planEnd) / hour,
+        (buildEnd - designEnd) / hour,
+        (observedAt - buildEnd) / hour
+      ]
     : [32, 24, 24, 24, 0, path === 'complete' ? 168 : 72]
   if (recorded && active === 1) {
     actual[1] = (observedAt - planEnd) / hour
@@ -63,7 +77,12 @@ function model(feature, path) {
     const state =
       index === 4 ? 'untracked' : index < active ? 'done' : index === active ? 'current' : 'future'
     const placeholder = state === 'future' || state === 'untracked'
-    const hours = placeholder ? defaultHours[index] : actual[index]
+    const planned = widthSource === 'planned'
+    const hours = placeholder
+      ? planned
+        ? plannedHours[index]
+        : defaultHours[index]
+      : actual[index]
     const source = sources[index]
     const hint =
       index === 4
@@ -82,7 +101,7 @@ function model(feature, path) {
       startAt: time,
       endAt: placeholder ? null : time + hours * hour,
       label: placeholder
-        ? `默认${defaultLabels[index]}`
+        ? `${planned ? '规划' : '默认'}${planned ? plannedLabels[index] : defaultLabels[index]}`
         : `${state === 'current' ? '已 ' : ''}${elapsedLabel(hours)}`,
       hint,
       href: recorded ? source?.url : null
@@ -98,7 +117,8 @@ function model(feature, path) {
 
 export function FeatureTimeline({ feature }) {
   const [path, setPath] = useState(feature.historical ? 'complete' : 'recorded')
-  const { phases, total, recorded } = model(feature, path)
+  const [widthSource, setWidthSource] = useState('planned')
+  const { phases, total, recorded } = model(feature, path, widthSource)
   const position = (h) => `${(h / total) * 100}%`
   const test = phases[3]
   const maintain = phases[5]
@@ -158,11 +178,7 @@ export function FeatureTimeline({ feature }) {
             value={path}
             onChange={(event) => setPath(event.target.value)}
           >
-            {!feature.historical && (
-              <option value="recorded">
-                PR 快照 · {feature.id === '334' ? 'Build' : 'Design'} 进行中
-              </option>
-            )}
+            {!feature.historical && <option value="recorded">PR 快照 · Test 进行中</option>}
             <option value="test">模拟 · Test 进行中</option>
             <option value="maintain">模拟 · Maintain 进行中</option>
             <option value="complete">模拟 · 维护交付后</option>
@@ -170,9 +186,20 @@ export function FeatureTimeline({ feature }) {
         </label>
         <span>北京时间 · 日历历时</span>
       </div>
+      <label className="ov-note">
+        原型注释: 后续阶段长度{' '}
+        <select value={widthSource} onChange={(event) => setWidthSource(event.target.value)}>
+          <option value="planned">已明确关联规划（模拟）</option>
+          <option value="default">无匹配规划（默认长度）</option>
+        </select>
+      </label>
       <p className="ov-note">
-        原型注释: {recorded ? '前段采用 PR 快照，截至 10-30 21:17。' : '本场景时序与交付为模拟。'}
-        虚线使用默认长度，不是正式排期；Deploy 未跟踪，Maintain 暂用 1 天占位。
+        原型注释:{' '}
+        {recorded ? `前段采用 PR 快照，截至 ${stamp(observedAt)}。` : '本场景时序与交付为模拟。'}
+        {widthSource === 'planned'
+          ? '虚线演示明确关联规划的长度，排期为模拟。'
+          : '未匹配规划时，虚线使用默认长度。'}
+        虚线不代表实际时间；Deploy 未跟踪。
       </p>
       <div className="ov-journey-scroll" tabIndex={0} aria-label="特性时间轴，可横向滚动">
         <div className="ov-journey-canvas" style={{ minWidth: Math.max(600, total * 4.5) }}>
@@ -239,7 +266,7 @@ export function FeatureTimeline({ feature }) {
             </div>
             <div className="ov-timeline-captions">
               <span>{recorded ? '已记录历程' : '原型注释: 模拟历程'}</span>
-              <span>原型注释: 虚线为默认长度</span>
+              <span>原型注释: 虚线为{widthSource === 'planned' ? '模拟规划' : '默认'}长度</span>
             </div>
           </div>
         </div>

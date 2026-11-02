@@ -10,17 +10,23 @@ import { validTime, PARSER_REVISION } from './feature-model'
 import type { OverviewVersionPlan, VersionEvidence } from './version-evidence'
 import { mapLimit } from './read-feature-evidence'
 
+export type VersionEvidenceProblem = { version: string; message: string }
+
 /** Archive merge metadata and the acceptance's pinned plan are independent evidence. */
 export async function readVersionEvidence(
   catalog: VersionCatalogState,
   force = false,
   workingPlan?: { document: PlanningMaterial; source: 'committed' | 'draft' }
-): Promise<{ records: VersionEvidence[]; plans: OverviewVersionPlan[]; problems: string[] }> {
+): Promise<{
+  records: VersionEvidence[]
+  plans: OverviewVersionPlan[]
+  problems: VersionEvidenceProblem[]
+}> {
   const records: VersionEvidence[] = [],
     plans: OverviewVersionPlan[] = [],
-    problems: string[] = []
+    problems: VersionEvidenceProblem[] = []
   if (!catalog.scope || !catalog.home) {
-    return { records, plans, problems: ['版本工作区未就绪'] }
+    throw new Error('版本工作区未就绪')
   }
   const scope = {
     repoId: catalog.scope.repoId,
@@ -37,11 +43,20 @@ export async function readVersionEvidence(
     }
     const key = JSON.stringify(pr)
     if (!reads.has(key)) {
-      reads.set(key, archive.readStatus(scope, pr, force))
+      reads.set(
+        key,
+        archive.readStatus(scope, pr, force).catch((error): ArchivePrStatusResult => ({
+          state: 'unknown',
+          reason: error instanceof Error ? error.message : String(error)
+        }))
+      )
     }
     const status = await reads.get(key)!
     if (status.state === 'unknown') {
-      problems.push(`${document.version} 归档 PR #${pr.number}：${status.reason}`)
+      problems.push({
+        version: document.version,
+        message: `${document.version} 归档 PR #${pr.number}：${status.reason}`
+      })
     }
     return status
   }
@@ -65,7 +80,11 @@ export async function readVersionEvidence(
       version: document.version
     }
   }
-  async function addPlan(document: PlanningMaterial, source: 'committed' | 'draft' = 'committed') {
+  async function addPlan(
+    document: PlanningMaterial,
+    source: 'committed' | 'draft' = 'committed',
+    taskSnapshot?: AcceptanceMaterial['taskSnapshot']
+  ) {
     const status = await readArchive(document)
     const confirmation =
       status?.state === 'merged' && validTime(status.mergedAt)
@@ -85,6 +104,7 @@ export async function readVersionEvidence(
       tasks: document.tasks,
       goals: document.goals,
       source,
+      taskSnapshot,
       confirmation,
       archive: archiveEvent(document, status, 'plan')
     })
@@ -96,7 +116,9 @@ export async function readVersionEvidence(
       try {
         const ref = entry.material.acceptance
         if (!ref) {
-          if (entry.material.plan) {
+          if (workingPlan?.document.version === entry.version) {
+            await addPlan(workingPlan.document, workingPlan.source)
+          } else if (entry.material.plan) {
             const fixed = await history.readPlan({
               scope,
               planRef: {
@@ -109,16 +131,12 @@ export async function readVersionEvidence(
             })
             await addPlan(fixed.document)
           } else if (entry.draft) {
-            if (workingPlan?.document.version === entry.version) {
-              await addPlan(workingPlan.document, workingPlan.source)
-            } else {
-              plans.push({
-                version: entry.version,
-                tasks: entry.tasks,
-                goals: entry.goals.map((g) => ({ ...g, metricTargets: [] })),
-                source: 'draft'
-              })
-            }
+            plans.push({
+              version: entry.version,
+              tasks: entry.tasks,
+              goals: entry.goals.map((g) => ({ ...g, metricTargets: [] })),
+              source: 'draft'
+            })
           }
           return
         }
@@ -132,7 +150,7 @@ export async function readVersionEvidence(
         })
         const acceptance = read.document as AcceptanceMaterial
         const plan = await history.readPlan({ scope, planRef: acceptance.planRef })
-        await addPlan(plan.document)
+        await addPlan(plan.document, 'committed', acceptance.taskSnapshot)
         const status = await readArchive(acceptance)
         records.push({
           version: entry.version,
@@ -146,9 +164,10 @@ export async function readVersionEvidence(
           readAt: new Date().toISOString()
         })
       } catch (error) {
-        problems.push(
-          `${entry.version} 验收依据：${error instanceof Error ? error.message : String(error)}`
-        )
+        problems.push({
+          version: entry.version,
+          message: `${entry.version} 验收依据：${error instanceof Error ? error.message : String(error)}`
+        })
       }
     },
     2

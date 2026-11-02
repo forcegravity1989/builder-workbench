@@ -75,13 +75,13 @@ function windowFor(list: MetricReadRequest[], name: string): MetricReadRequest['
 }
 
 describe('readAllMetricReadings windows', () => {
-  it('北极星保持单周当前窗口；滞后/引领按粒度取图表窗口', async () => {
+  // 环 4 ratchet 对冲（#516）：同一函数的周/日粒度两条用例合并为一条，断言原样保留。
+  it('北极星保持单周当前窗口；滞后/引领按粒度取图表窗口，日粒度切换后经同一 read RPC 重读', async () => {
     await readAllMetricReadings({ scope, owner: undefined, catalog, granularity: 'week' })
     expect(windowFor(requests.read, 'north')).toEqual(currentMetricWeek(TZ))
     expect(windowFor(requests.read, 'zone-retro')).toEqual(zoneChartRange('week', TZ))
-  })
-
-  it('日粒度切换后，可回溯定义改按日窗口经同一 read RPC 重读', async () => {
+    // 原两条用例各自从空请求表开始（beforeEach 清表）；合并后在此手动清表。
+    requests.read.length = 0
     await readAllMetricReadings({ scope, owner: undefined, catalog, granularity: 'day' })
     const window = windowFor(requests.read, 'zone-retro')
     expect(window).toEqual(zoneChartRange('day', TZ))
