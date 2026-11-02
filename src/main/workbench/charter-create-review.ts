@@ -64,7 +64,7 @@ export async function createCharterReview({
     try {
       const created = await createCodeHubMr({
         remote,
-        execOptions,
+        execOptions: { ...execOptions, cwd: treePath },
         sourceBranch: CHARTER_BRANCH,
         targetBranch,
         title,

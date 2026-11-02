@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  assertCodeHubDetailIdentity,
   codeHubIssueCloseComment,
   isCodeHubGitRemote,
   isCodeHubHost,
@@ -38,6 +39,35 @@ describe('codehub host detection', () => {
     expect(
       isCodeHubGitRemote({ remoteUrl: issueUrl, canonicalKey: 'github.com/acme/widgets' })
     ).toBe(true)
+    const remote = {
+      host: 'git.codehub.example.com',
+      webHost: 'codehub.example.com',
+      project: 'Org/Group/repo'
+    }
+    const request = { remote, kind: 'mr' as const, iid: 12 }
+    for (const host of [remote.host, remote.webHost]) {
+      expect(() =>
+        assertCodeHubDetailIdentity(
+          request,
+          12,
+          `https://${host}/${remote.project}/merge_requests/12`
+        )
+      ).not.toThrow()
+    }
+    for (const url of [
+      'https://other.codehub.example.com/Org/Group/repo/merge_requests/12',
+      `https://${remote.webHost}/Other/repo/merge_requests/12`,
+      `https://${remote.webHost}/${remote.project}/merge_requests/13`
+    ]) {
+      expect(() => assertCodeHubDetailIdentity(request, 12, url)).toThrow('来源不一致')
+    }
+    expect(() =>
+      assertCodeHubDetailIdentity(
+        request,
+        13,
+        `https://${remote.webHost}/${remote.project}/merge_requests/12`
+      )
+    ).toThrow('编号与请求不一致')
   })
 
   it('maps the three close buttons onto one comment each', () => {

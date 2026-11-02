@@ -7,6 +7,7 @@ import type {
   WorkflowSourceComment
 } from '../../shared/workbench/workflow-report'
 import { codeHubRepositoryMatches } from './archive-pr-status'
+import { resolveCodeHubRepositoryIdentity } from '../codehub/web-identity'
 import type { nativeWorkbenchWorkspaceHost } from './workspace-resolver'
 import {
   overviewProviderContext,
@@ -25,7 +26,8 @@ export async function readWorkflowComments(
     if (repo.connectionId) {
       throw new Error('此 CodeHub 项目的 SSH 评论读取尚未接入，请使用项目所属 runtime')
     }
-    if (!codeHubRepositoryMatches(params.pr.repository, remote)) {
+    const identity = await resolveCodeHubRepositoryIdentity(remote, params.pr.repository, local)
+    if (!codeHubRepositoryMatches(params.pr.repository, identity)) {
       throw new Error('指标 MR 与项目 CodeHub 来源不一致')
     }
     const notes = await listCodeHubComments({

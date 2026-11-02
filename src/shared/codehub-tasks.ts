@@ -21,6 +21,8 @@ export type CodeHubTaskItem = {
 export type CodeHubTaskDetail = {
   createdAt?: string
   mergedAt?: string
+  closedAt?: string
+  linkedMergeRequests?: { iid: number; url: string }[]
   iid: number
   title: string
   description: string
@@ -32,6 +34,8 @@ export type CodeHubTaskDetail = {
   labels: string[]
   sourceBranch: string | null
   targetBranch: string | null
+  sourceProjectUrl?: string | null
+  targetProjectUrl?: string | null
 }
 
 export type CodeHubComment = {

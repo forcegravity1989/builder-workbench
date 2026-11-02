@@ -8,14 +8,17 @@ import { compareMaterialVersions } from '../../shared/workbench/version-catalog'
 import {
   AcceptanceMaterialSchema,
   PlanningMaterialSchema,
+  type AcceptanceMaterial,
   type PlanningMaterial,
   type VersionMaterial
 } from '../../shared/workbench/version-material'
 import {
+  VersionMaterialAddArtifactSchema,
   VersionMaterialReadSchema,
   VersionMaterialSaveSchema,
   VersionMaterialScopeSchema,
   VersionMaterialInitializeSchema,
+  type VersionMaterialAddArtifact,
   type VersionMaterialScope,
   type VersionMaterialRead,
   type VersionMaterialSave,
@@ -28,6 +31,11 @@ import { WorkspaceScopeError } from './workspace-scope-error'
 import { resolveWorktreeHostPath } from '../../shared/git-metadata-path'
 import { createVersionDocumentStore } from './version-document-store'
 import { isMissingFile, resolveVersionPlanningRoot } from './version-document-path'
+import {
+  buildPreparedArtifact,
+  registerPreparedArtifact,
+  statArtifactFile
+} from './version-material-artifact'
 import { createVersionMaterialMigration } from './version-material-migration'
 import type { WorkbenchVersionBinding } from '../../shared/workbench/version-binding'
 import type {
@@ -273,6 +281,38 @@ export function createVersionMaterialWorkspace(
       const request = VersionMaterialSaveSchema.parse(input)
       assertBindingVersion(request, request.version)
       return (await storeFor(request)).save(request)
+    },
+    /**
+     * #516 制品登记：读当前文档 → 在工作树内核对制品文件真实存在（mtime 作
+     * generatedAt）→ 复用材料现有 candidateRef → 同 artifactId 覆盖 → 走同一
+     * store.save 事务核（CAS revision 守卫），冲突自动重读重试一次。文件校验
+     * 必须发生在拥有工作树的一侧：本函数经 relay 在远端执行，CLI 侧不 stat。
+     * 操作面只收制品字段，文档从新鲜读取重建、只改 preparedArtifacts——人工
+     * 字段按构造原样往返，不依赖 save RPC 的通道守卫。
+     */
+    async addArtifact(
+      input: VersionMaterialAddArtifact
+    ): Promise<{ revision: string; artifact: AcceptanceMaterial['preparedArtifacts'][number] }> {
+      const request = VersionMaterialAddArtifactSchema.parse(input)
+      assertBindingVersion(request, request.version)
+      const root = await authorize(request)
+      const generatedAtMs = await statArtifactFile(root, request.location)
+      const store = createVersionDocumentStore<AcceptanceMaterial>({
+        trustedWorkspacePath: root,
+        workflow: 'acceptance',
+        decode: (value) => AcceptanceMaterialSchema.parse(value),
+        beforeCommit: async () => {
+          if ((await authorize(request)) !== root) {
+            throw new WorkspaceScopeError('invalid-scope', '工作树位置已改变，请重新打开')
+          }
+        }
+      })
+      return registerPreparedArtifact(
+        () => store.read(request.version),
+        async (expectedRevision, document) =>
+          (await store.save({ version: request.version, expectedRevision, document })).revision,
+        (document) => buildPreparedArtifact(document, request, generatedAtMs)
+      )
     }
   }
 }
