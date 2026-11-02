@@ -6,8 +6,8 @@
     "kind": "committed",
     "version": "v0.8",
     "cycleId": "228a67d9-49c0-4908-b595-e4475086288c",
-    "revision": "sha256:18ae87215469ed49c4b9560c8b3e1958ddfb2d8b66440b231dd1f7b22cb6459f",
-    "sourceCommit": "461866ced0b4e1874f2b89d86135db9b281da434"
+    "revision": "sha256:7ff2e3816741e3d5d9bd91cb209eafda02754e9bc4968c3c3a709b09e463eec1",
+    "sourceCommit": "68512e5d125665658c9f96bdab36b4faaba60c67"
   },
   "candidateRef": {
     "repository": "github.com/forcegravity1989/builder-workbench",
@@ -31,14 +31,14 @@
     {
       "artifactId": "report-v0.8-acceptance-evidence",
       "kind": "verification",
-      "location": ".bw/planning/v0.8/acceptance-evidence.html",
+      "location": ".bw\\planning\\v0.8\\acceptance-evidence.html",
       "candidateRef": {
         "repository": "github.com/forcegravity1989/builder-workbench",
         "version": "0.7.4",
         "commit": "dc88a212ac5dc17453509065d6d7134078f224f1"
       },
-      "generatedAt": "2026-10-31T04:35:50.991Z",
-      "command": "验收会话按 version-acceptance 技能 evidence-report-template 生成（HTML 正本，逐 Issue 罗列合入时留下的验收件）；2026-10-31 重做为两层结构：归并层（计划判据原文＋判据→Issue→证据落点→缺口映射，不下达成结论）＋判据层（开发侧验收件的固定子集：用例名·期望结果·实际结果·截图钉SHA＋文件名·执行路径，另门禁/未验留白/人工核对）；证据采集：gh api / gh pr / gh release 平台读回 ＋ 仓内文件核验，只消费合入时留下的现成产物、未重新采集；开发侧未留字段如实标注并汇入末尾缺失清单"
+      "generatedAt": "2026-11-02T03:59:49.211Z",
+      "command": "五目标31任务对齐、签名历史追溯与链接例外核验；按用户要求移出纪要技术长文"
     }
   ],
   "meeting": {
@@ -73,7 +73,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -89,7 +89,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/341",
       "labels": ["Feature", "bw:plan:v0.6", "bw:plan:v0.7", "bw:plan:v0.8"],
       "assignee": "cfdcfd",
-      "readAt": "2026-10-31T09:10:00.479Z"
+      "readAt": "2026-11-02T03:47:13.140Z"
     },
     {
       "kind": "ready",
@@ -103,7 +103,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -119,7 +119,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/440",
       "labels": ["Feature", "bw:plan:v0.8", "特性"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:10:01.519Z"
+      "readAt": "2026-11-02T03:47:13.694Z"
     },
     {
       "kind": "ready",
@@ -127,13 +127,13 @@
         "provider": "github",
         "repository": "github.com/forcegravity1989/builder-workbench",
         "number": 334,
-        "goalId": "G2"
+        "goalId": "G5"
       },
       "source": {
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -144,12 +144,12 @@
         "accountLabel": null
       },
       "iid": 334,
-      "title": "【v0.8|G2】版本总览屏重设计：核心大需求本周走到 SDLC 哪一步＋小需求/bug 解决列表",
+      "title": "【v0.8|G5】版本总览屏重设计：核心大需求本周走到 SDLC 哪一步＋小需求/bug 解决列表",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/334",
       "labels": ["Feature", "bw:plan:v0.7", "bw:plan:v0.8", "特性"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:10:01.531Z"
+      "readAt": "2026-11-02T03:47:15.312Z"
     },
     {
       "kind": "ready",
@@ -163,7 +163,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -179,7 +179,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/158",
       "labels": ["bw:status:todo", "bw:category:prototype", "bw:plan:v0.8"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:10:01.592Z"
+      "readAt": "2026-11-02T03:47:15.577Z"
     },
     {
       "kind": "ready",
@@ -193,7 +193,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -208,7 +208,7 @@
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/530",
       "labels": ["bw:plan:v0.8"],
-      "readAt": "2026-10-31T09:10:01.608Z"
+      "readAt": "2026-11-02T03:47:15.868Z"
     },
     {
       "kind": "ready",
@@ -222,7 +222,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -238,7 +238,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/199",
       "labels": ["bw:category:build", "bw:status:todo", "Feature", "bw:plan:v0.8", "特性"],
       "assignee": "kanadead",
-      "readAt": "2026-10-31T09:10:02.636Z"
+      "readAt": "2026-11-02T03:47:17.364Z"
     },
     {
       "kind": "ready",
@@ -252,7 +252,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -268,7 +268,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/427",
       "labels": ["Feature", "bw:plan:v0.8"],
       "assignee": "kanadead",
-      "readAt": "2026-10-31T09:10:02.658Z"
+      "readAt": "2026-11-02T03:47:16.639Z"
     },
     {
       "kind": "ready",
@@ -282,7 +282,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -298,7 +298,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/422",
       "labels": ["bw:plan:v0.8"],
       "assignee": "kanadead",
-      "readAt": "2026-10-31T09:10:03.365Z"
+      "readAt": "2026-11-02T03:47:17.655Z"
     },
     {
       "kind": "ready",
@@ -312,7 +312,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -328,7 +328,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/415",
       "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "kanadead",
-      "readAt": "2026-10-31T09:10:03.000Z"
+      "readAt": "2026-11-02T03:47:19.515Z"
     },
     {
       "kind": "ready",
@@ -342,7 +342,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -358,7 +358,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/419",
       "labels": ["bw:plan:v0.8"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:10:03.658Z"
+      "readAt": "2026-11-02T03:47:20.706Z"
     },
     {
       "kind": "ready",
@@ -372,7 +372,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -388,7 +388,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/432",
       "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:10:03.725Z"
+      "readAt": "2026-11-02T03:47:19.840Z"
     },
     {
       "kind": "ready",
@@ -402,7 +402,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -418,7 +418,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/354",
       "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "kanadead",
-      "readAt": "2026-10-31T09:10:04.075Z"
+      "readAt": "2026-11-02T03:47:20.591Z"
     },
     {
       "kind": "ready",
@@ -432,7 +432,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -448,7 +448,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/404",
       "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "cfdcfd",
-      "readAt": "2026-10-31T09:10:04.398Z"
+      "readAt": "2026-11-02T03:47:21.306Z"
     },
     {
       "kind": "ready",
@@ -462,7 +462,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -478,7 +478,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/421",
       "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:10:04.857Z"
+      "readAt": "2026-11-02T03:47:21.619Z"
     },
     {
       "kind": "ready",
@@ -492,7 +492,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -508,7 +508,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/438",
       "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:10:05.130Z"
+      "readAt": "2026-11-02T03:47:23.409Z"
     },
     {
       "kind": "ready",
@@ -522,7 +522,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -538,7 +538,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/443",
       "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:10:05.439Z"
+      "readAt": "2026-11-02T03:47:23.517Z"
     },
     {
       "kind": "ready",
@@ -552,7 +552,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -568,7 +568,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/444",
       "labels": ["Feature", "bw:plan:v0.8"],
       "assignee": "kanadead",
-      "readAt": "2026-10-31T09:10:05.720Z"
+      "readAt": "2026-11-02T03:47:24.117Z"
     },
     {
       "kind": "ready",
@@ -582,7 +582,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -598,7 +598,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/445",
       "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:10:05.946Z"
+      "readAt": "2026-11-02T03:47:24.484Z"
     },
     {
       "kind": "ready",
@@ -612,7 +612,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -628,7 +628,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/425",
       "labels": ["bug", "enhancement", "bw:plan:v0.8"],
       "assignee": "kanadead",
-      "readAt": "2026-10-31T09:10:06.198Z"
+      "readAt": "2026-11-02T03:47:05.229Z"
     },
     {
       "kind": "ready",
@@ -642,7 +642,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -658,7 +658,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/439",
       "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:10:07.188Z"
+      "readAt": "2026-11-02T03:47:05.335Z"
     },
     {
       "kind": "ready",
@@ -672,7 +672,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -688,7 +688,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/451",
       "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:09:58.339Z"
+      "readAt": "2026-11-02T03:47:06.714Z"
     },
     {
       "kind": "ready",
@@ -702,7 +702,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -718,7 +718,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/456",
       "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:09:58.356Z"
+      "readAt": "2026-11-02T03:47:06.415Z"
     },
     {
       "kind": "ready",
@@ -732,7 +732,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -748,7 +748,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/462",
       "labels": ["Feature", "bw:plan:v0.8"],
       "assignee": "kanadead",
-      "readAt": "2026-10-31T09:09:58.363Z"
+      "readAt": "2026-11-02T03:47:07.595Z"
     },
     {
       "kind": "ready",
@@ -762,7 +762,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -778,7 +778,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/466",
       "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "kanadead",
-      "readAt": "2026-10-31T09:09:58.319Z"
+      "readAt": "2026-11-02T03:47:08.070Z"
     },
     {
       "kind": "ready",
@@ -792,7 +792,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -808,7 +808,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/471",
       "labels": ["Feature", "bw:plan:v0.8"],
       "assignee": "kanadead",
-      "readAt": "2026-10-31T09:09:59.415Z"
+      "readAt": "2026-11-02T03:47:07.802Z"
     },
     {
       "kind": "ready",
@@ -822,7 +822,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -838,7 +838,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/457",
       "labels": ["enhancement", "bw:plan:v0.8"],
       "assignee": "kanadead",
-      "readAt": "2026-10-31T09:09:59.391Z"
+      "readAt": "2026-11-02T03:47:07.952Z"
     },
     {
       "kind": "ready",
@@ -852,7 +852,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -868,7 +868,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/463",
       "labels": ["bw:plan:v0.8"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:09:59.391Z"
+      "readAt": "2026-11-02T03:47:09.022Z"
     },
     {
       "kind": "ready",
@@ -882,7 +882,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -898,7 +898,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/469",
       "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
-      "readAt": "2026-10-31T09:09:59.360Z"
+      "readAt": "2026-11-02T03:47:11.308Z"
     },
     {
       "kind": "ready",
@@ -912,7 +912,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -928,7 +928,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/516",
       "labels": ["bw:plan:v0.8"],
       "assignee": "kanadead",
-      "readAt": "2026-10-31T09:10:00.450Z"
+      "readAt": "2026-11-02T03:47:12.072Z"
     },
     {
       "kind": "ready",
@@ -942,7 +942,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -958,7 +958,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/492",
       "labels": ["bw:plan:v0.8"],
       "assignee": "forcegravity1989",
-      "readAt": "2026-10-31T09:10:00.468Z"
+      "readAt": "2026-11-02T03:47:12.234Z"
     },
     {
       "kind": "ready",
@@ -972,7 +972,7 @@
         "kind": "task-source",
         "provider": "github",
         "projectId": "github:forcegravity1989/builder-workbench",
-        "hostId": "local",
+        "hostId": "runtime:5b024cb0-dcc1-424d-bd84-f9b5c5596679",
         "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
         "providerIdentity": {
@@ -988,7 +988,7 @@
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/483",
       "labels": ["bw:plan:v0.8"],
       "assignee": "forcegravity1989",
-      "readAt": "2026-10-31T09:10:00.487Z"
+      "readAt": "2026-11-02T03:47:12.378Z"
     }
   ],
   "results": [
@@ -1067,18 +1067,25 @@
           "carry": true
         }
       }
+    },
+    {
+      "goalId": "G5",
+      "readings": [],
+      "note": "",
+      "nextStep": ""
     }
   ],
   "minutes": {
     "consensus": [
-      "G2 · 本周G2目标 项目总览里程碑 与 版本总览已完成，对接华为日历能力遗留在issue #530",
+      "G2 · 项目总览里程碑已完成。华为工作日历遗留由 #530 承接。",
+      "G5 · 版本总览达成（用户已确认）；原 G2 签名保留。",
       "G3 · 本周G3目标，welink内部系统对接 未完成，遗留",
       "G4 · 本周G4日常小需求与 bug 固定处理通道， 部分issue遗留"
     ],
     "followups": [
       {
         "id": "db1b1b5f-0017-491d-a79a-3577e51f08c8",
-        "text": "G2 · 会上提出问题，转Issue跟踪遗留，包括#535「项目总览里程碑变更走 PR 提交，并评估比 welink 群空间内外更通的共享空间」、#536、#537"
+        "text": "G2 · #535：项目总览里程碑变更走 PR 提交，评估内外互通的共享空间（关联 #440/#530）。G5 · #536：版本总览跳转验收/任务屏丢上下文，调研原生 Orca 多页签与左右分屏；#537：版本总览 SDLC 补关键文件修改回溯。#530 承接两屏收口与华为工作日历遗留。"
       },
       {
         "id": "62635cf7-8daa-4f08-8019-4cc2384f9b2d",
@@ -1102,7 +1109,8 @@
       }
     ],
     "confirmed": false,
-    "updatedAt": "2026-10-31T11:47:47.849Z"
+    "sources": "",
+    "updatedAt": "2026-11-02T03:59:49.210Z"
   },
   "workflow": {
     "stage": "archive",
