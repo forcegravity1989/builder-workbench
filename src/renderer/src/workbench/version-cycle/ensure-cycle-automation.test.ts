@@ -89,14 +89,15 @@ it('identity key embeds the cycle scope and workflow', () => {
   expect(KEY).toBe(`bw-cycle:${JSON.stringify(['project', 'repo', 'local', '', 'plan'])}:plan`)
 })
 
-it('refreshes a stale BW-owned prompt in place and never recreates the entry', async () => {
+it('refreshes a stale BW-owned prompt and re-pins a vanished-tree workspace in one update', async () => {
   rpcWith([
     {
       id: 'a1',
       creationKey: KEY,
       name: '被人改过名',
       prompt: '旧版 BW 提示',
-      workspaceId: null
+      workspaceMode: 'existing',
+      workspaceId: 'repo::D:/gone/.orca-preparing/35332-dead'
     } as Automation
   ])
   await expect(ensureCycleAutomation(scope, FIXED_ID, 'claude')).resolves.toEqual({
@@ -106,8 +107,30 @@ it('refreshes a stale BW-owned prompt in place and never recreates the entry', a
   expect(createCalls()).toHaveLength(0)
   const [params] = updateCalls()
   expect(params).toMatchObject({ id: 'a1' })
-  // 覆盖同步只动 BW 所有的提示词，人所有的字段（名字、开关、时间、模型）不出现在更新里。
-  expect(params.updates).toEqual({ prompt: 'CYCLE-PROMPT' })
+  // 覆盖同步只动 BW 所有的提示词与工作区指向（树 id 含路径，暂存/落位或重建后
+  // 旧条目钉在已消失树上），人所有的字段（名字、开关、时间、模型）不出现在更新里。
+  // workspaceId 在 wire 上序列化为 workspace 选择器（automation-host-client）。
+  expect(params.updates).toEqual({ prompt: 'CYCLE-PROMPT', workspace: `id:${FIXED_ID}` })
+})
+
+it('re-pins only the workspace when the prompt is already current', async () => {
+  rpcWith([
+    {
+      id: 'a1',
+      creationKey: KEY,
+      prompt: 'CYCLE-PROMPT',
+      workspaceMode: 'existing',
+      workspaceId: 'repo::D:/gone/.orca-preparing/35332-dead'
+    } as Automation
+  ])
+  await expect(ensureCycleAutomation(scope, FIXED_ID, 'claude')).resolves.toEqual({
+    status: 'exists',
+    automationId: 'a1'
+  })
+  expect(createCalls()).toHaveLength(0)
+  const [params] = updateCalls()
+  expect(params).toMatchObject({ id: 'a1' })
+  expect(params.updates).toEqual({ workspace: `id:${FIXED_ID}` })
 })
 
 it('keeps an up-to-date entry untouched', async () => {
@@ -117,7 +140,8 @@ it('keeps an up-to-date entry untouched', async () => {
       creationKey: KEY,
       name: '被人改过名',
       prompt: 'CYCLE-PROMPT',
-      workspaceId: null
+      workspaceMode: 'existing',
+      workspaceId: FIXED_ID
     } as Automation
   ])
   await expect(ensureCycleAutomation(scope, FIXED_ID, 'claude')).resolves.toEqual({
@@ -194,21 +218,16 @@ it.each([
   expect(params).not.toHaveProperty('sourceContext')
 })
 
-it('does not create when the host setup is not ready', async () => {
+it('skips creation without a ready host setup or a detected session agent', async () => {
+  rpcWith([])
   setState({ projectHostSetups: [] })
-  rpcWith([])
-  const result = await ensureCycleAutomation(scope, FIXED_ID, 'claude')
-  expect(result.status).toBe('skipped')
-  expect(result).toHaveProperty('reason')
-  expect((result as { reason: string }).reason).toContain('宿主 setup 未就绪')
-  expect(createCalls()).toHaveLength(0)
-})
-
-it('does not create without a detected session agent', async () => {
-  rpcWith([])
-  const result = await ensureCycleAutomation(scope, FIXED_ID, null)
-  expect(result.status).toBe('skipped')
-  expect((result as { reason: string }).reason).toContain('会话工具')
+  const noSetup = await ensureCycleAutomation(scope, FIXED_ID, 'claude')
+  expect(noSetup.status).toBe('skipped')
+  expect((noSetup as { reason: string }).reason).toContain('宿主 setup 未就绪')
+  setState()
+  const noAgent = await ensureCycleAutomation(scope, FIXED_ID, null)
+  expect(noAgent.status).toBe('skipped')
+  expect((noAgent as { reason: string }).reason).toContain('会话工具')
   expect(createCalls()).toHaveLength(0)
 })
 

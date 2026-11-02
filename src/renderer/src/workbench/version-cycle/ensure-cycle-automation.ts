@@ -5,15 +5,21 @@
  * 身份是 creationKey（旧无绑定固定树 `bw-cycle:<scopeKey>:<workflow>`；G2 绑定
  * 流程树加版本维度 `bw-cycle:<scopeKey>:<workflow>:<version>`——每版独立登记，
  * 不复用旧版条目、不落错执行树）。字段按归属分治：
- * BW 所有的提示词每次进屏覆盖同步为当前 BW 版本（BW 持续演进，定时与手动
- * 跑的必须始终是新版提示）；人所有的字段（启用、时间、模型、会话复用）注册
- * 后永不触碰。四铁律：定时任务真实到点触发，且由人启用后才到点，BW 不代启。
+ * BW 所有的提示词与工作区指向每次进屏覆盖同步为当前 BW 版本（BW 持续演进，
+ * 定时与手动跑的必须始终是新版提示；树 id 含路径，建树暂存落位或恢复重建后
+ * 旧条目会钉在已消失的树上，工作区指向随提示词一并迁回当前固定树）；人所有
+ * 的字段（启用、时间、模型、会话复用）注册后永不触碰。四铁律：定时任务真实
+ * 到点触发，且由人启用后才到点，BW 不代启。
  */
 
 import { useEffect, useState } from 'react'
 import { useAppStore } from '@/store'
 import { LOCAL_EXECUTION_HOST_ID, parseExecutionHostId } from '../../../../shared/execution-host'
-import type { Automation, AutomationCreateInput } from '../../../../shared/automations-types'
+import type {
+  Automation,
+  AutomationCreateInput,
+  AutomationUpdateInput
+} from '../../../../shared/automations-types'
 import type {
   AutomationAuthorityRef,
   AutomationOwnerRef,
@@ -184,12 +190,22 @@ async function runEnsure(
   if (existing) {
     // BW 持续演进：提示词是 BW 所有字段，每次进屏覆盖同步为当前版本；
     // 人所有字段（启用开关、触发时间、模型、会话复用）永不触碰。
+    // 工作区指向同属 BW 所有：固定树由 BW 准备，树 id 含路径，建树的暂存
+    // 落位或恢复重建会让旧条目钉在已消失的树上（启动校验随之死锁），随
+    // 提示词一起迁回当前固定树；人改成非 existing 模式时不迁移，留人核对。
     const prompt = await buildCyclePrompt(scope, fixedId)
-    if (existing.prompt === prompt) {
+    const updates: Partial<Pick<AutomationUpdateInput, 'prompt' | 'workspaceId'>> = {}
+    if (existing.prompt !== prompt) {
+      updates.prompt = prompt
+    }
+    if (existing.workspaceMode === 'existing' && existing.workspaceId !== fixedId) {
+      updates.workspaceId = fixedId
+    }
+    if (Object.keys(updates).length === 0) {
       return { status: 'exists', automationId: existing.id }
     }
     try {
-      await updateAutomationForOwner(cycleAutomationOwner(scope), existing.id, { prompt })
+      await updateAutomationForOwner(cycleAutomationOwner(scope), existing.id, updates)
       return { status: 'exists', automationId: existing.id }
     } catch (reason) {
       // 同步失败不阻断：已有条目仍可手动运行，如实提示让人核对。
@@ -298,7 +314,7 @@ export function useEnsureCycleAutomation({
           )
         }
         if (result.status === 'exists' && result.syncError) {
-          onNotice(`同步周期自动化提示词失败：${result.syncError}`)
+          onNotice(`同步周期自动化配置失败：${result.syncError}`)
         }
       } catch (reason) {
         // 注册失败不打断本页：会话与看板照常，「配置自动化」仍可手工预填创建。
