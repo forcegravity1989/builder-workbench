@@ -11,6 +11,8 @@ import type { VersionGoal } from '../../../shared/workbench/version-material'
 import { DECISION_LABELS, goalOrdinal } from './version-labels'
 import { FeatureCard } from './version-overview/feature-card'
 import { useVersionFacts } from './version-overview/use-version-facts'
+import { useMilestoneSource } from './use-milestone-source'
+import { milestoneStageHours, type MilestoneVersionFacts } from './milestone-feature-facts'
 import { taskKey, validTime } from './version-overview/feature-model'
 import { openEvidenceUrl, timeLabel } from './version-overview/overview-time'
 import { WorkflowProductivity } from './version-overview/workflow-productivity'
@@ -54,6 +56,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
   const [refreshToken, setRefreshToken] = useState(0)
   const [focus, setFocus] = useState<string | null>(null)
   const { materials, features } = useVersionFacts(catalog, version, refreshToken)
+  const milestoneSource = useMilestoneSource(catalog, refreshToken)
   const { plan, acceptance } = materials
   const planDocument = plan.kind === 'ready' ? plan.document : null
   const acceptanceDocument = acceptance.kind === 'ready' ? acceptance.document : null
@@ -89,6 +92,16 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
       ...[plan, acceptance].flatMap((doc) => (doc.kind === 'error' ? [doc.message] : []))
     ])
   ]
+  const planningFailed = Boolean(milestoneSource.error || milestoneSource.formal?.problems.length)
+  const milestoneFacts: MilestoneVersionFacts = {
+    plan: planDocument,
+    features: features.features,
+    loading: features.loading,
+    failed: Boolean(materialErrors.length || features.problems.length),
+    stale:
+      (!materialErrors.length || materials.stale === true) &&
+      (!features.problems.length || features.stale === true)
+  }
   const status =
     materialErrors.length > 0
       ? '状态未知'
@@ -183,6 +196,12 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
             <div className="bwo-goal-heading">
               <span className="bwo-muted">{goalOrdinal(index)}</span>
               <h2>{goal.title}</h2>
+              <div className="bwo-goal-meta">
+                <span>负责人 · {goal.owner || '未记录'}</span>
+                <button className="bwo-link" onClick={() => tasks(goal)}>
+                  目标任务 · {references.length} 项 ↗
+                </button>
+              </div>
               <button
                 className="bwo-badge"
                 onClick={() => workflow('acceptance')}
@@ -196,29 +215,6 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                 ↗
               </button>
             </div>
-            <div className="bwo-goal-meta">
-              <span>负责人 · {goal.owner || '未记录'}</span>
-              <button className="bwo-link" onClick={() => tasks(goal)}>
-                目标任务 · {references.length} 项 ↗
-              </button>
-            </div>
-            {result && (
-              <div className="bwo-goal-meta">
-                <span>
-                  {acceptance.kind === 'ready' && acceptance.source === 'draft'
-                    ? '验收工作稿'
-                    : '正式验收'}
-                  {' · 人工结论来源：'}
-                  {result.decision?.source || '未记录'}
-                </span>
-                {result.decision && validTime(result.decision.recordedAt) && (
-                  <time dateTime={result.decision.recordedAt} title={result.decision.recordedAt}>
-                    {timeLabel(result.decision.recordedAt)}
-                  </time>
-                )}
-                {result.nextStep && <span>后续处理 · {result.nextStep}</span>}
-              </div>
-            )}
             {grouped.map((feature) => (
               <div
                 key={taskKey(feature.root.reference)}
@@ -230,6 +226,14 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                 }}
               >
                 <FeatureCard
+                  plannedHours={milestoneStageHours(
+                    milestoneSource.formal?.problems.length
+                      ? undefined
+                      : milestoneSource.formal?.material,
+                    milestoneFacts,
+                    feature
+                  )}
+                  planningFailed={planningFailed}
                   feature={feature}
                   version={version}
                   historical={acceptance.kind === 'ready' && acceptance.source === 'committed'}

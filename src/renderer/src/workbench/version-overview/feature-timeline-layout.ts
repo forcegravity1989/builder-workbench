@@ -1,5 +1,6 @@
 import { validTime, type FeatureData, type FeatureEvent } from './feature-model'
 import { featureTimeline, type ActualStage } from './feature-timeline'
+import type { PlannedStageHours } from '../milestone-feature-facts'
 
 const HOUR = 3600000
 const DEFAULT_HOURS = { Plan: 24, Design: 48, Build: 12, Test: 24, Deploy: 12, Maintain: 24 }
@@ -16,12 +17,13 @@ export type TimelineSlot = ActualStage & {
   offset: number
   hours: number
   placeholder: boolean
+  planned: boolean
   source?: FeatureEvent
   hint: string
 }
 
 /** Display widths never become evidence timestamps or planned dates. */
-export function featureTimelineLayout(feature: FeatureData) {
+export function featureTimelineLayout(feature: FeatureData, plannedHours: PlannedStageHours = {}) {
   const timeline = featureTimeline(feature)
   const versions = feature.events.filter((event) => event.phase === 'version')
   versions.push(
@@ -88,13 +90,23 @@ export function featureTimelineLayout(feature: FeatureData) {
               ? 'unknown'
               : 'future'
     const placeholder = stage.duration === null
-    const hours = placeholder ? DEFAULT_HOURS[stage.id] : stage.duration! / HOUR
+    const planned =
+      placeholder &&
+      (state === 'future' || state === 'untracked') &&
+      Number.isFinite(plannedHours[stage.id]) &&
+      plannedHours[stage.id]! > 0
+    const hours = placeholder
+      ? planned
+        ? plannedHours[stage.id]!
+        : DEFAULT_HOURS[stage.id]
+      : stage.duration! / HOUR
     const slot: TimelineSlot = {
       ...stage,
       state,
       offset,
       hours,
       placeholder,
+      planned,
       source,
       hint:
         stage.id === 'Deploy'

@@ -51,9 +51,7 @@ describe('deriveCommitmentProgress', () => {
     )
     expect(progress).toEqual({ completed: 3, open: 2 })
     // 任一任务状态读不到 → 整行 Unknown，不拼半真数字。
-    expect(
-      deriveCommitmentProgress(tasks.slice(0, 2), states([[REPO, 1, 'OPEN']]))
-    ).toBeNull()
+    expect(deriveCommitmentProgress(tasks.slice(0, 2), states([[REPO, 1, 'OPEN']]))).toBeNull()
     // provider 中立：GitHub 与 CodeHub 任务按状态回执一同计数。
     expect(
       deriveCommitmentProgress(

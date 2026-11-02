@@ -75,7 +75,10 @@ export function defaultArtifactId(kind: string, version: string, location: strin
  */
 export function buildPreparedArtifact(
   document: AcceptanceMaterial,
-  request: Pick<VersionMaterialAddArtifact, 'kind' | 'location' | 'artifactId' | 'command' | 'checksum'>,
+  request: Pick<
+    VersionMaterialAddArtifact,
+    'kind' | 'location' | 'artifactId' | 'command' | 'checksum'
+  >,
   generatedAtMs: number
 ): PreparedArtifact {
   if (!document.candidateRef) {
@@ -101,7 +104,9 @@ export function upsertPreparedArtifact(
   document: AcceptanceMaterial,
   artifact: PreparedArtifact
 ): AcceptanceMaterial {
-  const replaced = document.preparedArtifacts.some((item) => item.artifactId === artifact.artifactId)
+  const replaced = document.preparedArtifacts.some(
+    (item) => item.artifactId === artifact.artifactId
+  )
   return {
     ...document,
     preparedArtifacts: replaced
