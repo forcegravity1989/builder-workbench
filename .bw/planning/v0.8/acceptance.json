@@ -6,8 +6,8 @@
     "kind": "committed",
     "version": "v0.8",
     "cycleId": "228a67d9-49c0-4908-b595-e4475086288c",
-    "revision": "sha256:7ff2e3816741e3d5d9bd91cb209eafda02754e9bc4968c3c3a709b09e463eec1",
-    "sourceCommit": "723c0683eca67fd9c7e424a7e02b789380da2052"
+    "revision": "sha256:18ae87215469ed49c4b9560c8b3e1958ddfb2d8b66440b231dd1f7b22cb6459f",
+    "sourceCommit": "461866ced0b4e1874f2b89d86135db9b281da434"
   },
   "candidateRef": {
     "repository": "github.com/forcegravity1989/builder-workbench",
@@ -127,7 +127,7 @@
         "provider": "github",
         "repository": "github.com/forcegravity1989/builder-workbench",
         "number": 334,
-        "goalId": "G5"
+        "goalId": "G2"
       },
       "source": {
         "kind": "task-source",
@@ -144,7 +144,7 @@
         "accountLabel": null
       },
       "iid": 334,
-      "title": "【v0.8|G5】版本总览屏重设计：核心大需求本周走到 SDLC 哪一步＋小需求/bug 解决列表",
+      "title": "【v0.8|G2】版本总览屏重设计：核心大需求本周走到 SDLC 哪一步＋小需求/bug 解决列表",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/334",
       "labels": ["Feature", "bw:plan:v0.7", "bw:plan:v0.8", "特性"],
@@ -1067,36 +1067,18 @@
           "carry": true
         }
       }
-    },
-    {
-      "goalId": "G5",
-      "readings": [],
-      "decision": {
-        "outcome": "met",
-        "source": "2026-11-02 本次会话用户人工确认：我确认 G5 达成；记录本次人工确认，保留原 G2 签名。recordedAt 为本次材料记录时刻，不是原验收界面签名时刻。",
-        "recordedAt": "2026-11-02T02:38:25.550Z",
-        "materialRevision": "sha256:9ae79a9e5270d5ab93dbef7dc48e7c7a34455122419fc1f5ce16da6e85706d82",
-        "reason": "将原联合 G2 的版本总览范围拆为 G5；用户明确确认沿用该范围达成结论，不新增技术验证或替用户关闭 Issue。"
-      },
-      "note": "仅调整目标归属；原 G2 人工签名、遗留、制品及历史采集证据保留。",
-      "nextStep": ""
     }
   ],
   "minutes": {
     "consensus": [
-      "G2 · 项目总览里程碑已完成，对接华为日历能力遗留在issue #530（2026-11-02 按原联合 G2 拆分归属，保留原人工结论）",
-      "G5 · 版本总览已完成（2026-11-02 本次会话用户明确确认拆分后的 G5 达成）",
+      "G2 · 本周G2目标 项目总览里程碑 与 版本总览已完成，对接华为日历能力遗留在issue #530",
       "G3 · 本周G3目标，welink内部系统对接 未完成，遗留",
       "G4 · 本周G4日常小需求与 bug 固定处理通道， 部分issue遗留"
     ],
     "followups": [
       {
         "id": "db1b1b5f-0017-491d-a79a-3577e51f08c8",
-        "text": "G2 · 会上提出问题，转Issue跟踪遗留，包括#535「项目总览里程碑变更走 PR 提交，并评估比 welink 群空间内外更通的共享空间」、#536；版本总览 #537 的跟进归属已于 2026-11-02 拆到 G5"
-      },
-      {
-        "id": "57f61cf9-65ab-4c3b-a082-24e83fd926dc",
-        "text": "G5 · 会上提出的版本总览特性 SDLC 关键文件修改回溯，转 #537 跟踪（2026-11-02 从原联合 G2 遗留条目拆分归属，不新增或重复完成记录）"
+        "text": "G2 · 会上提出问题，转Issue跟踪遗留，包括#535「项目总览里程碑变更走 PR 提交，并评估比 welink 群空间内外更通的共享空间」、#536、#537"
       },
       {
         "id": "62635cf7-8daa-4f08-8019-4cc2384f9b2d",
