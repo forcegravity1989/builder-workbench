@@ -6,8 +6,8 @@
     "kind": "committed",
     "version": "v0.8",
     "cycleId": "228a67d9-49c0-4908-b595-e4475086288c",
-    "revision": "sha256:18ae87215469ed49c4b9560c8b3e1958ddfb2d8b66440b231dd1f7b22cb6459f",
-    "sourceCommit": "461866ced0b4e1874f2b89d86135db9b281da434"
+    "revision": "sha256:7ff2e3816741e3d5d9bd91cb209eafda02754e9bc4968c3c3a709b09e463eec1",
+    "sourceCommit": "723c0683eca67fd9c7e424a7e02b789380da2052"
   },
   "candidateRef": {
     "repository": "github.com/forcegravity1989/builder-workbench",
@@ -87,12 +87,7 @@
       "title": "【v0.8|G1】帮 builders 梳理特性与核心指标：统一一版并录入真实数据",
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/341",
-      "labels": [
-        "Feature",
-        "bw:plan:v0.6",
-        "bw:plan:v0.7",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["Feature", "bw:plan:v0.6", "bw:plan:v0.7", "bw:plan:v0.8"],
       "assignee": "cfdcfd",
       "readAt": "2026-10-31T09:10:00.479Z"
     },
@@ -122,11 +117,7 @@
       "title": "【v0.8|G2】项目总览里程碑规划：版本规划之外的更长时间里程碑视图",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/440",
-      "labels": [
-        "Feature",
-        "bw:plan:v0.8",
-        "特性"
-      ],
+      "labels": ["Feature", "bw:plan:v0.8", "特性"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:10:01.519Z"
     },
@@ -136,7 +127,7 @@
         "provider": "github",
         "repository": "github.com/forcegravity1989/builder-workbench",
         "number": 334,
-        "goalId": "G2"
+        "goalId": "G5"
       },
       "source": {
         "kind": "task-source",
@@ -153,15 +144,10 @@
         "accountLabel": null
       },
       "iid": 334,
-      "title": "【v0.8|G2】版本总览屏重设计：核心大需求本周走到 SDLC 哪一步＋小需求/bug 解决列表",
+      "title": "【v0.8|G5】版本总览屏重设计：核心大需求本周走到 SDLC 哪一步＋小需求/bug 解决列表",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/334",
-      "labels": [
-        "Feature",
-        "bw:plan:v0.7",
-        "bw:plan:v0.8",
-        "特性"
-      ],
+      "labels": ["Feature", "bw:plan:v0.7", "bw:plan:v0.8", "特性"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:10:01.531Z"
     },
@@ -191,11 +177,7 @@
       "title": "【v0.8|G2】按执行四原则重做总览与计划两屏的可视化",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/158",
-      "labels": [
-        "bw:status:todo",
-        "bw:category:prototype",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bw:status:todo", "bw:category:prototype", "bw:plan:v0.8"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:10:01.592Z"
     },
@@ -225,9 +207,7 @@
       "title": "【v0.8|G2】项目总览与版本总览遗留收口：CodeHub、华为工作日历与两屏联动",
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/530",
-      "labels": [
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bw:plan:v0.8"],
       "readAt": "2026-10-31T09:10:01.608Z"
     },
     {
@@ -256,13 +236,7 @@
       "title": "【v0.8|G3】员工助手一期：WeLink 群消息与群助手对接（发起评审；旅程设计＋高保真＋落地）",
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/199",
-      "labels": [
-        "bw:category:build",
-        "bw:status:todo",
-        "Feature",
-        "bw:plan:v0.8",
-        "特性"
-      ],
+      "labels": ["bw:category:build", "bw:status:todo", "Feature", "bw:plan:v0.8", "特性"],
       "assignee": "kanadead",
       "readAt": "2026-10-31T09:10:02.636Z"
     },
@@ -292,10 +266,7 @@
       "title": "【v0.8|G4】验收/发布流程补齐：归档 PR 跳转卡顿、生产部署流程、发布后状态显示",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/427",
-      "labels": [
-        "Feature",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["Feature", "bw:plan:v0.8"],
       "assignee": "kanadead",
       "readAt": "2026-10-31T09:10:02.658Z"
     },
@@ -325,9 +296,7 @@
       "title": "【v0.8|G4】验收证据报告模板应为 HTML 正本——现 Markdown 骨架却要求存为 .html，模板/SKILL/spec 连带修正",
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/422",
-      "labels": [
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bw:plan:v0.8"],
       "assignee": "kanadead",
       "readAt": "2026-10-31T09:10:03.365Z"
     },
@@ -357,10 +326,7 @@
       "title": "【v0.8|G4】验收屏 v10:进屏自动初始化材料吞掉「新建验收」入口,验收会话无法建立",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/415",
-      "labels": [
-        "bug",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "kanadead",
       "readAt": "2026-10-31T09:10:03.000Z"
     },
@@ -390,9 +356,7 @@
       "title": "【v0.8|G4】版本工作区：补绑定对话框对分支不一致的「可写不可用死绑定」就地预警",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/419",
-      "labels": [
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bw:plan:v0.8"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:10:03.658Z"
     },
@@ -422,10 +386,7 @@
       "title": "【v0.8|G4】计划屏/验收屏 Issue 回显每次进屏全量重读，整列闪「状态未知」卡顿",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/432",
-      "labels": [
-        "bug",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:10:03.725Z"
     },
@@ -455,10 +416,7 @@
       "title": "【v0.8|G4】外观主题切换深色不生效",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/354",
-      "labels": [
-        "bug",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "kanadead",
       "readAt": "2026-10-31T09:10:04.075Z"
     },
@@ -488,10 +446,7 @@
       "title": "【v0.8|G4】Windows 上 pnpm run dev:workbench 无法启动（POSIX 环境变量前缀在 cmd.exe 下不成立）",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/404",
-      "labels": [
-        "bug",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "cfdcfd",
       "readAt": "2026-10-31T09:10:04.398Z"
     },
@@ -521,10 +476,7 @@
       "title": "【v0.8|G4】应用内更新经公司代理下载断流后需自动重试与断点续传",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/421",
-      "labels": [
-        "bug",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:10:04.857Z"
     },
@@ -554,10 +506,7 @@
       "title": "【v0.8|G4】BW 发布的安装包名仍是 orca-windows-setup.exe，应换成 Workbench 正式名",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/438",
-      "labels": [
-        "bug",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:10:05.130Z"
     },
@@ -587,10 +536,7 @@
       "title": "【v0.8|G4】计划屏/验收屏直接向用户展示助手注入提示词，应收敛为一句话 SOP 且两屏一致，支持开始即补充信息输入",
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/443",
-      "labels": [
-        "bug",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:10:05.439Z"
     },
@@ -620,10 +566,7 @@
       "title": "【v0.8|G4】批注模式进入/退出用同一个快捷键切换",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/444",
-      "labels": [
-        "Feature",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["Feature", "bw:plan:v0.8"],
       "assignee": "kanadead",
       "readAt": "2026-10-31T09:10:05.720Z"
     },
@@ -653,10 +596,7 @@
       "title": "【v0.8|G4】计划屏/验收屏收起会话仍留空白不能完全收起，收起入口不易发现、功能键区一眼难识别",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/445",
-      "labels": [
-        "bug",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:10:05.946Z"
     },
@@ -686,11 +626,7 @@
       "title": "【v0.8|G4】CodeHub 支持补充：PR 评论 bug 与样式对齐、集成界面三区 token 配置展示、任务界面调整 issue 标签",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/425",
-      "labels": [
-        "bug",
-        "enhancement",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "enhancement", "bw:plan:v0.8"],
       "assignee": "kanadead",
       "readAt": "2026-10-31T09:10:06.198Z"
     },
@@ -720,10 +656,7 @@
       "title": "【v0.8|G4】侧边栏特性相关问题",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/439",
-      "labels": [
-        "bug",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:10:07.188Z"
     },
@@ -753,10 +686,7 @@
       "title": "【v0.8|G4】任务来源自动识别被初始化恢复覆盖，CodeHub 列表首次进入为空",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/451",
-      "labels": [
-        "bug",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:09:58.339Z"
     },
@@ -786,10 +716,7 @@
       "title": "【v0.8|G4】[原生Orca能力] 侧边栏工作区卡片布局改为紧凑不生效",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/456",
-      "labels": [
-        "bug",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:09:58.356Z"
     },
@@ -819,10 +746,7 @@
       "title": "【v0.8|G4】验收屏发布模块展示发布后状态（是否已发布、发布包地址）",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/462",
-      "labels": [
-        "Feature",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["Feature", "bw:plan:v0.8"],
       "assignee": "kanadead",
       "readAt": "2026-10-31T09:09:58.363Z"
     },
@@ -852,10 +776,7 @@
       "title": "【v0.8|G4】CodeHub 版本筛选异常：benchmark 项目版本下显示大量不相关 issue",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/466",
-      "labels": [
-        "bug",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "kanadead",
       "readAt": "2026-10-31T09:09:58.319Z"
     },
@@ -885,10 +806,7 @@
       "title": "【v0.8|G4】验收屏整改：举证移到各 PR 合入时、报告聚合各 PR 验收件、消化高保真评审批注",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/471",
-      "labels": [
-        "Feature",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["Feature", "bw:plan:v0.8"],
       "assignee": "kanadead",
       "readAt": "2026-10-31T09:09:59.415Z"
     },
@@ -918,10 +836,7 @@
       "title": "【v0.8|G4】[任务屏] 列表上直接指定负责人与标签，不用进详情",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/457",
-      "labels": [
-        "enhancement",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["enhancement", "bw:plan:v0.8"],
       "assignee": "kanadead",
       "readAt": "2026-10-31T09:09:59.391Z"
     },
@@ -951,9 +866,7 @@
       "title": "【v0.8|G4】完善 Issue workflow 开工分流与真实会话反哺",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/463",
-      "labels": [
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bw:plan:v0.8"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:09:59.391Z"
     },
@@ -983,10 +896,7 @@
       "title": "【v0.8|G4】计划屏默认开计划助手用的是 claude，而不是用户配置的默认智能体",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/469",
-      "labels": [
-        "bug",
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bug", "bw:plan:v0.8"],
       "assignee": "yuzhup",
       "readAt": "2026-10-31T09:09:59.360Z"
     },
@@ -1016,9 +926,7 @@
       "title": "【v0.8|G4】验收屏使用bug",
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/516",
-      "labels": [
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bw:plan:v0.8"],
       "assignee": "kanadead",
       "readAt": "2026-10-31T09:10:00.450Z"
     },
@@ -1048,9 +956,7 @@
       "title": "【v0.8|G4】缩小 Windows 安装包：清除编译产物、移除重复 relay、仅保留简中和英语",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/492",
-      "labels": [
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bw:plan:v0.8"],
       "assignee": "forcegravity1989",
       "readAt": "2026-10-31T09:10:00.468Z"
     },
@@ -1080,9 +986,7 @@
       "title": "【v0.8|G4】统一使用 BW 正式标志替换应用内与安装包的 Orca 图标",
       "state": "closed",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/483",
-      "labels": [
-        "bw:plan:v0.8"
-      ],
+      "labels": ["bw:plan:v0.8"],
       "assignee": "forcegravity1989",
       "readAt": "2026-10-31T09:10:00.487Z"
     }
@@ -1163,18 +1067,36 @@
           "carry": true
         }
       }
+    },
+    {
+      "goalId": "G5",
+      "readings": [],
+      "decision": {
+        "outcome": "met",
+        "source": "2026-11-02 本次会话用户人工确认：我确认 G5 达成；记录本次人工确认，保留原 G2 签名。recordedAt 为本次材料记录时刻，不是原验收界面签名时刻。",
+        "recordedAt": "2026-11-02T02:38:25.550Z",
+        "materialRevision": "sha256:9ae79a9e5270d5ab93dbef7dc48e7c7a34455122419fc1f5ce16da6e85706d82",
+        "reason": "将原联合 G2 的版本总览范围拆为 G5；用户明确确认沿用该范围达成结论，不新增技术验证或替用户关闭 Issue。"
+      },
+      "note": "仅调整目标归属；原 G2 人工签名、遗留、制品及历史采集证据保留。",
+      "nextStep": ""
     }
   ],
   "minutes": {
     "consensus": [
-      "G2 · 本周G2目标 项目总览里程碑 与 版本总览已完成，对接华为日历能力遗留在issue #530",
+      "G2 · 项目总览里程碑已完成，对接华为日历能力遗留在issue #530（2026-11-02 按原联合 G2 拆分归属，保留原人工结论）",
+      "G5 · 版本总览已完成（2026-11-02 本次会话用户明确确认拆分后的 G5 达成）",
       "G3 · 本周G3目标，welink内部系统对接 未完成，遗留",
       "G4 · 本周G4日常小需求与 bug 固定处理通道， 部分issue遗留"
     ],
     "followups": [
       {
         "id": "db1b1b5f-0017-491d-a79a-3577e51f08c8",
-        "text": "G2 · 会上提出问题，转Issue跟踪遗留，包括#535「项目总览里程碑变更走 PR 提交，并评估比 welink 群空间内外更通的共享空间」、#536、#537"
+        "text": "G2 · 会上提出问题，转Issue跟踪遗留，包括#535「项目总览里程碑变更走 PR 提交，并评估比 welink 群空间内外更通的共享空间」、#536；版本总览 #537 的跟进归属已于 2026-11-02 拆到 G5"
+      },
+      {
+        "id": "57f61cf9-65ab-4c3b-a082-24e83fd926dc",
+        "text": "G5 · 会上提出的版本总览特性 SDLC 关键文件修改回溯，转 #537 跟踪（2026-11-02 从原联合 G2 遗留条目拆分归属，不新增或重复完成记录）"
       },
       {
         "id": "62635cf7-8daa-4f08-8019-4cc2384f9b2d",
