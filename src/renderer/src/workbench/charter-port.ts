@@ -14,7 +14,8 @@ import type {
 } from '../../../shared/workbench/charter'
 import type { VersionMaterialResult } from '../../../shared/workbench/version-material-request'
 import { routeForOwner } from '../lib/worktree-owner-route'
-import { callRuntimeRpc, type RuntimeClientTarget } from '../runtime/runtime-rpc-client'
+import { callRuntimeRpc } from '../runtime/runtime-rpc-client'
+import type { RuntimeClientTarget } from '../../../shared/runtime-client-target'
 import { MetricRuntimeError, callMetricRuntime } from './metric-runtime-rpc'
 import { readProjectCharter } from './project-charter'
 

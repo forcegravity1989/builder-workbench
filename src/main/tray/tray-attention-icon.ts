@@ -1,8 +1,6 @@
 import { nativeImage, type NativeImage } from 'electron'
 
-// Why: amber-500 (#f59e0b) is Orca's "needs attention / unread" color, matching
-// the renderer launcher dot and the tab-unread bell. Kept in sync with the
-// bg-amber-500 used in FloatingTerminalToggleButton.
+// Match renderer attention/unread amber-500, including FloatingTerminalToggleButton.
 const DOT_RGB = { r: 0xf5, g: 0x9e, b: 0x0b }
 // A near-white halo separates the dot from the icon glyph on any tray theme.
 const RING_RGB = { r: 0xff, g: 0xff, b: 0xff }
@@ -25,9 +23,7 @@ export function composeTrayAttentionIcon(base: NativeImage, scaleFactor = 1): Na
   const bitmap = Buffer.from(base.toBitmap({ scaleFactor }))
   const dotRadius = Math.max(2, Math.round(Math.min(width, height) * 0.2))
   const ringRadius = dotRadius + 1
-  // Hug the top-right corner so the dot reads as a badge and leaves the app
-  // glyph (bottom-left) visible. The dot stays fully on-canvas; the outer ring
-  // may clip a pixel at the very corner, which is expected for a corner badge.
+  // Top-right badge preserves the main bottom-left glyph; only the outer ring may clip a corner pixel.
   const centerX = width - 1 - dotRadius
   const centerY = dotRadius
   const dotRadiusSq = dotRadius * dotRadius

@@ -1,3 +1,4 @@
+import type { ExecutionHostId } from '../../../shared/execution-host'
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import {
   ChevronDown,
@@ -246,7 +247,10 @@ export function ProjectSettingsRail({
                       onClick={() =>
                         void (slot.href
                           ? window.api.shell.openUrl(slot.href)
-                          : window.api.shell.openPath(slot.path))
+                          : window.api.shell.openPath(
+                              slot.path,
+                              slot.hostIds[0] as ExecutionHostId
+                            ))
                       }
                     />
                     <WorkbenchIconButton

@@ -17,41 +17,48 @@ import { versionSelection } from '../../../workbench/version-selection'
 export const WORKBENCH_MATERIAL_METHODS = [
   defineMethod({
     name: 'workbench.materials.context',
+    permission: 'workspace',
     params: VersionMaterialScopeSchema,
     handler: (params, { runtime }) => materialResult(() => versionSelection(runtime, params))
   }),
   defineMethod({
     name: 'workbench.materials.select',
+    permission: 'workspace',
     params: VersionMaterialReadSchema,
     handler: (params, { runtime }) =>
       materialResult(() => versionSelection(runtime, params, params.version))
   }),
   defineMethod({
     name: 'workbench.materials.previewMigration',
+    permission: 'workspace',
     params: VersionMigrationReadSchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).previewMigration(params))
   }),
   defineMethod({
     name: 'workbench.materials.migrate',
+    permission: 'workspace',
     params: VersionMigrationApplySchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).migrate(params))
   }),
   defineMethod({
     name: 'workbench.materials.list',
+    permission: 'workspace',
     params: VersionMaterialScopeSchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).list(params))
   }),
   defineMethod({
     name: 'workbench.materials.read',
+    permission: 'workspace',
     params: VersionMaterialReadSchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).read(params))
   }),
   defineMethod({
     name: 'workbench.materials.save',
+    permission: 'workspace',
     params: VersionMaterialSaveSchema,
     handler: (params, ctx) =>
       materialResult(async () => {
@@ -68,6 +75,7 @@ export const WORKBENCH_MATERIAL_METHODS = [
   // 守卫（见 version-material-artifact.ts）。
   defineMethod({
     name: 'workbench.materials.addArtifact',
+    permission: 'workspace',
     params: VersionMaterialAddArtifactSchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionMaterialService(runtime).addArtifact(params))

@@ -55,23 +55,26 @@ function renderCss() {
 
 // ── main.css drift check ──────────────────────────────────────────────
 function declarations(css, selector) {
-  const m = new RegExp(`(?:^|\\n)${selector.replace('.', '\\.')}\\s*\\{([\\s\\S]*?)\\n\\}`).exec(
-    css
+  const map = new Map()
+  const clean = css.replace(/\/\*[\s\S]*?\*\//g, '')
+  const blocks = [...clean.matchAll(/(?:^|\n)([^{}]+)\{([^{}]*)\}/g)].filter((match) =>
+    match[1].split(',').some((item) => item.trim() === selector)
   )
-  if (!m) {
+  if (!blocks.length) {
     throw new Error(`main.css: no ${selector} block`)
   }
-  const map = new Map()
-  for (const d of m[1].replace(/\/\*[\s\S]*?\*\//g, '').split(';')) {
-    const i = d.indexOf(':')
-    if (i > 0) {
-      map.set(
-        d.slice(0, i).trim().replace(/^--/, ''),
-        d
-          .slice(i + 1)
-          .trim()
-          .replace(/\s+/g, ' ')
-      )
+  for (const [, , body] of blocks) {
+    for (const declaration of body.split(';')) {
+      const colon = declaration.indexOf(':')
+      if (colon > 0) {
+        map.set(
+          declaration.slice(0, colon).trim().replace(/^--/, ''),
+          declaration
+            .slice(colon + 1)
+            .trim()
+            .replace(/\s+/g, ' ')
+        )
+      }
     }
   }
   return map

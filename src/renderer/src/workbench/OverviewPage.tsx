@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
+import { useRepoById, useWorktreesForRepo } from '@/store/selectors'
+import { getRepoExecutionHostId, getWorktreeExecutionHostId } from '../../../shared/execution-host'
 import { parseExecutionHostId } from '../../../shared/execution-host'
 import { openProjectOnboard } from './project-page-state'
 import { CharterPrNotice } from './charter-pr-notice'
@@ -26,14 +28,19 @@ import { RefreshCw } from 'lucide-react'
 import './workbench-overview.css'
 
 export function OverviewPage(): React.JSX.Element {
-  const repos = useAppStore((s) => s.repos)
   const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const repoWorktrees = useAppStore((s) =>
-    activeRepoId ? s.worktreesByRepo[activeRepoId] : undefined
+  const activeRepo = useRepoById(activeRepoId)
+  const allRepoWorktrees = useWorktreesForRepo(activeRepoId)
+  const repoWorktrees = useMemo(
+    () =>
+      activeRepo
+        ? allRepoWorktrees.filter(
+            (tree) =>
+              getWorktreeExecutionHostId(tree, activeRepo) === getRepoExecutionHostId(activeRepo)
+          )
+        : [],
+    [allRepoWorktrees, activeRepo]
   )
-  const activeRepo = repos.find((r) => r.id === activeRepoId) ?? repos[0]
-
-  /** Metrics/history read from the project's main worktree: the configuration baseline tree. */
   const baseScope = useMemo<NativeWorkspaceScope | null>(() => {
     if (!activeRepoId || !repoWorktrees?.length) {
       return null
@@ -283,7 +290,7 @@ export function OverviewPage(): React.JSX.Element {
           version={version}
           setupBusy={metricsSetup.busy || !baseScope}
           onSetup={() => void metricsSetup.prepareMetrics()}
-          worktreeId={baseWorktreeId}
+          sourceWorktree={baseWorktree}
         />
       </div>
       {refreshing && (

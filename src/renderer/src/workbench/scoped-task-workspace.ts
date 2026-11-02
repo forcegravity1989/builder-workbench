@@ -1,8 +1,12 @@
 import type { Worktree } from '../../../shared/worktree/types'
 import type { Repo } from '../../../shared/repo-types'
 import type { TaskSourceContext } from '../../../shared/task-source-context'
-import { getRepoExecutionHostId } from '../../../shared/execution-host'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getRepoExecutionHostId, getWorktreeExecutionHostId } from '../../../shared/execution-host'
+import { getWorkspaceAttachments } from '../../../shared/workspace-attachments'
+import { areTaskSourceContextsEqual } from '../../../shared/task-source-context'
+import { getWorkspaceAttachmentUrlScope } from '../../../shared/workspace-attachment-normalization'
+import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
+import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import type { WorkbenchTaskScope } from '../../../shared/workbench/task-scope'
@@ -78,17 +82,36 @@ export function attachedCodeHubDetailWorkspace(args: {
       sourceContext: getTaskPageRepoSourceContext(repo, 'codehub')
     }).attached
   }
+  if (!repo || (item.repoId && item.repoId !== repo.id)) {
+    return null
+  }
   const kind = item.type === 'mr' ? 'mr' : 'issue'
-  return (
-    worktrees.find(
-      (worktree) =>
-        !worktree.isArchived &&
-        worktree.repoId === item.repoId &&
-        worktree.linkedWorkItem?.provider === 'codehub' &&
-        worktree.linkedWorkItem.type === kind &&
-        worktree.linkedWorkItem.number === item.iid
-    ) ?? null
+  const source = getTaskPageRepoSourceContext(repo, 'codehub')
+  const candidates = worktrees.filter(
+    (worktree) =>
+      !worktree.isArchived &&
+      worktree.repoId === repo.id &&
+      getWorktreeExecutionHostId(worktree, repo) === getRepoExecutionHostId(repo) &&
+      getWorkspaceAttachments(worktree).some((attachment) => {
+        if (
+          attachment.provider !== 'codehub' ||
+          attachment.type !== kind ||
+          attachment.number !== item.iid ||
+          (attachment.repoId && attachment.repoId !== repo.id)
+        ) {
+          return false
+        }
+        if (attachment.taskSourceContext) {
+          return areTaskSourceContextsEqual(attachment.taskSourceContext, source)
+        }
+        return (
+          !attachment.url ||
+          normalizeGitRemoteUrl(getWorkspaceAttachmentUrlScope(attachment)) ===
+            repo.gitRemoteIdentity?.canonicalKey
+        )
+      })
   )
+  return candidates.length === 1 ? candidates[0] : null
 }
 
 /**
@@ -101,7 +124,7 @@ export function resolveTaskRowWorkspace<T extends Worktree>(args: {
   scope: WorkbenchTaskScope | null
   worktrees: readonly T[]
   provider: 'github' | 'codehub'
-  item: { repoId?: string | null; type: string; number: number }
+  item: { repoId?: string | null; type: string; number: number; url?: string }
   sourceContext: TaskSourceContext | null
 }): { attached: T | null; hasWorkspace: boolean } {
   const { scope, worktrees, provider, item, sourceContext } = args
@@ -129,7 +152,8 @@ export function resolveTaskRowWorkspace<T extends Worktree>(args: {
     worktrees,
     item.repoId,
     item.type === 'pr' ? 'pr' : 'issue',
-    item.number
+    item.number,
+    item.url
   ) as T | null
   return { attached, hasWorkspace: attached !== null }
 }
@@ -186,6 +210,7 @@ export function openGoalWorkspace(args: {
 export function resolveScopedComposerAdditions(args: {
   scope: WorkbenchTaskScope | null
   repoMap: ReadonlyMap<string, Repo>
+  repo?: Repo
   item: { repoId?: string | null; type: string; number: number; provider: 'github' | 'codehub' }
 }): { workbenchCreation?: WorkbenchCreationContext; initialParentWorktreeId?: string } {
   const { scope, repoMap, item } = args
@@ -193,7 +218,7 @@ export function resolveScopedComposerAdditions(args: {
     return {}
   }
   const itemRepoId = item.repoId
-  const repo = repoMap.get(itemRepoId)
+  const repo = args.repo ?? repoMap.get(itemRepoId)
   if (!repo) {
     return {}
   }

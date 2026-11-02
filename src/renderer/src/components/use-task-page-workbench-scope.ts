@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { TaskPageJiraCreationMetadataModel } from './use-task-page-jira-creation-metadata'
+import type { TaskPageJiraCreationMetadataModel } from './task-page/jira/use-task-page-jira-creation-metadata'
 import { parseTaskQuery } from '../../../shared/task-query'
 import {
   workbenchTaskScopeKey,

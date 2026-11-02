@@ -25,7 +25,7 @@ async function scopeFor(page: Page, repoPath: string) {
     if (!repo) {
       throw new Error('Fixed workspace fixture repo is not registered')
     }
-    await store.getState().fetchWorktrees(repo.id)
+    await store.getState().fetchWorktrees(repo.id, { executionHostId: 'local' })
     const main = store
       .getState()
       .allWorktrees()

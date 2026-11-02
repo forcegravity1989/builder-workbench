@@ -9,7 +9,11 @@ import type {
   CodeHubTaskItem
 } from './codehub-tasks'
 
-const Repo = z.object({ repoPath: z.string().min(1), repoId: z.string().nullish() })
+const Repo = z.object({
+  repoPath: z.string().min(1),
+  repoId: z.string().nullish(),
+  repoHostId: z.string().min(1).optional()
+})
 const Iid = z.number().int().positive()
 const Kind = z.enum(['issue', 'mr'])
 export type CodeHubRepoArgs = z.infer<typeof Repo>

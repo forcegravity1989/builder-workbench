@@ -29,6 +29,12 @@ const store = vi.hoisted(() => ({
   unifiedTabsByWorktree: {} as Record<string, unknown[]>
 }))
 
+vi.mock('@/lib/agent-session/structured-agent-session-busy', async () => ({
+  admitStructuredAgentSession: (
+    await import('@/store/slices/store-session-test-harness')
+  ).admissionFromBusy(() => false)
+}))
+
 vi.mock('react', async () => {
   const actual = await vi.importActual<typeof ReactModule>('react')
   return {
@@ -56,23 +62,18 @@ vi.mock('../terminal/terminal-tab-actions', () => ({
   closeTerminalTab: mocks.closeTerminalTab
 }))
 
-vi.mock('../../runtime/web-runtime-session', () => ({
-  closeWebRuntimeSessionTab: vi.fn(),
-  isWebRuntimeSessionActive: vi.fn(() => false)
+vi.mock('../../runtime/web-runtime-session-tab-lifecycle', () => ({
+  closeWebRuntimeSessionTab: vi.fn()
 }))
-
-vi.mock('@/lib/worktree-runtime-owner', () => ({
-  getRuntimeEnvironmentIdForWorktree: () => null
+vi.mock('../../runtime/web-runtime-session-environment', () => ({
+  isWebRuntimeSessionActive: vi.fn(() => false)
 }))
 
 vi.mock('@/runtime/remote-browser-tab-ownership', () => ({
   browserWorkspaceHasRemoteOwner: () => false
 }))
 
-vi.mock('@/runtime/runtime-rpc-client', () => ({
-  callRuntimeRpc: mocks.callRuntimeRpc,
-  getActiveRuntimeTarget: () => ({ kind: 'local' })
-}))
+vi.mock('@/runtime/runtime-rpc-client', () => ({ callRuntimeRpc: mocks.callRuntimeRpc }))
 
 vi.mock('@/runtime/structured-agent-session-close', () => ({
   closeStructuredAgentSession: mocks.closeStructuredAgentSession
@@ -117,77 +118,18 @@ beforeEach(() => {
 })
 
 describe('structured agent-session close ordering', () => {
-  it('disposes the owner before asking the host to remove the canonical tab', async () => {
-    const order: string[] = []
-    mocks.closeStructuredAgentSession.mockImplementation(async () => {
-      order.push('agent-close')
-      return 'closed'
-    })
-    mocks.callRuntimeRpc.mockImplementation(async () => {
-      order.push('tab-close')
-      return { ok: true }
-    })
-    mocks.closeUnifiedTab.mockImplementation(() => order.push('local-remove'))
-
-    const { closeItem } = useTabGroupTabCloseCommands({
-      worktreeId: 'wt-1',
-      groupTabs: [AGENT_TAB]
-    })
+  it('dispatches local structured-session tab removal synchronously', async () => {
+    const { closeItem } = useTabGroupTabCloseCommands({ worktreeId: 'wt-1' })
     closeItem(AGENT_TAB.id)
 
-    await vi.waitFor(() => expect(order).toEqual(['agent-close', 'tab-close', 'local-remove']))
-    expect(mocks.cancelStructuredAgentLaunch).toHaveBeenCalledWith('wt-1', 'session-1')
+    expect(mocks.closeUnifiedTab).toHaveBeenCalledWith(AGENT_TAB.id)
   })
 
-  it('drops an unadopted launch draft seed once the tab is removed', async () => {
-    const { closeItem } = useTabGroupTabCloseCommands({
-      worktreeId: 'wt-1',
-      groupTabs: [AGENT_TAB]
-    })
-    closeItem(AGENT_TAB.id)
-
-    await vi.waitFor(() => expect(mocks.closeUnifiedTab).toHaveBeenCalledWith(AGENT_TAB.id))
-    expect(mocks.clearNativeChatLaunchDraft).toHaveBeenCalledWith(
-      'structured-agent-session-session-1'
-    )
-  })
-
-  it('keeps an unadopted launch draft seed when owner disposal fails', async () => {
-    mocks.closeStructuredAgentSession.mockRejectedValueOnce(new Error('owner unavailable'))
-
-    const { closeItem } = useTabGroupTabCloseCommands({
-      worktreeId: 'wt-1',
-      groupTabs: [AGENT_TAB]
-    })
-    closeItem(AGENT_TAB.id)
-    await vi.waitFor(() => expect(mocks.toastError).toHaveBeenCalled())
-
-    expect(mocks.clearNativeChatLaunchDraft).not.toHaveBeenCalled()
-  })
-
-  it('keeps the tab available when owner disposal fails, so close can be retried', async () => {
-    mocks.closeStructuredAgentSession.mockRejectedValueOnce(new Error('owner unavailable'))
-
-    const { closeItem } = useTabGroupTabCloseCommands({
-      worktreeId: 'wt-1',
-      groupTabs: [AGENT_TAB]
-    })
-    closeItem(AGENT_TAB.id)
-    await vi.waitFor(() => expect(mocks.toastError).toHaveBeenCalled())
-
-    expect(mocks.callRuntimeRpc).not.toHaveBeenCalled()
-    expect(mocks.closeUnifiedTab).not.toHaveBeenCalled()
-  })
-
-  it('cancels reconciling launches before a bulk close', async () => {
-    const { closeMany } = useTabGroupTabCloseCommands({
-      worktreeId: 'wt-1',
-      groupTabs: [AGENT_TAB]
-    })
+  it('dispatches local structured-session tab removal synchronously during bulk close', async () => {
+    const { closeMany } = useTabGroupTabCloseCommands({ worktreeId: 'wt-1' })
 
     closeMany([AGENT_TAB.id])
 
-    expect(mocks.cancelStructuredAgentLaunch).toHaveBeenCalledWith('wt-1', 'session-1')
-    await vi.waitFor(() => expect(mocks.closeUnifiedTab).toHaveBeenCalledWith(AGENT_TAB.id))
+    expect(mocks.closeUnifiedTab).toHaveBeenCalledWith(AGENT_TAB.id)
   })
 })

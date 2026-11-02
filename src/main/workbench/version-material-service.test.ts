@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdtemp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   createVersionMaterialService as createService,
   materialResult,
@@ -15,10 +15,6 @@ import type { VersionMaterialResult } from '../../shared/workbench/version-mater
 import { createVersionMaterialPort } from '../../shared/workbench/version-material-client'
 
 import { executeVersionMaterial } from './version-material-runtime'
-import { registerVersionMaterialRelay } from '../../relay/workbench/version-material-handler'
-import { setSshActiveMultiplexerResolver } from '../ssh/ssh-target-registry'
-import type { SshChannelMultiplexer } from '../ssh/ssh-channel-multiplexer'
-import type { MethodHandler } from '../../relay/dispatcher'
 import { createVersionMaterialWorkspace } from './version-material-workspace'
 const createVersionMaterialService = (host: VersionMaterialHost) =>
   createService(host, createVersionMaterialWorkspace)
@@ -86,7 +82,6 @@ describe('native version material service', () => {
   })
 
   afterEach(async () => {
-    setSshActiveMultiplexerResolver(null)
     // This test owns the freshly created temporary root, including both linked worktrees.
     await rm(directory, { recursive: true, force: true })
   })
@@ -323,68 +318,44 @@ describe('native version material service', () => {
     ).toEqual(changed)
     expect(await readdir(join(planning, '.bw/planning/v0.5'))).toEqual(['data.json'])
   })
-  it.each(['local', 'ssh:server'])(
-    'migrates through the registered RPC and host transaction on %s',
-    async (hostId) => {
-      const handlers = new Map<string, MethodHandler>()
-      registerVersionMaterialRelay({
-        onRequest: (name, handler) => {
-          handlers.set(name, handler)
-        }
-      })
-      const request = vi.fn(async (name: string, params: Record<string, unknown>) =>
-        handlers.get(name)!(params, {} as never)
-      )
-      setSshActiveMultiplexerResolver((id) =>
-        id === 'server' ? ({ request } as unknown as SshChannelMultiplexer) : undefined
-      )
-      const trees = await host.listWorktrees(scope)
-      const runtime = {
-        listRepos: () => [{ id: 'repo', path: repo, kind: 'git', executionHostId: hostId }],
-        showManagedWorktree: async (selector: string) => {
-          expect(selector).toBe('id:plan')
-          return { ...trees.find((tree) => tree.id === 'plan')!, hostId }
-        }
-      }
-      const methods = eraseRpcMethods(WORKBENCH_MATERIAL_METHODS)
-      const port = createVersionMaterialPort({ ...scope, hostId }, async ({ method, params }) => {
-        const registered = methods.find((entry) => entry.name === method)!
-        return (await registered.handler(registered.params!.parse(params), {
-          runtime
-        } as never)) as VersionMaterialResult<unknown>
-      })
-      const directory = join(planning, '.bw/planning/v0.5')
-      await mkdir(directory, { recursive: true })
-      const file = join(directory, 'data.json')
-      const original = JSON.stringify({
-        schema_version: 2,
-        version: 'v0.5',
-        plan: { goals: [{ id: 'one', title: 'Existing commitment' }], tasks: [] },
-        summary: { progress: '', risks: '' }
-      })
-      await writeFile(file, original)
-      const preview = await port.previewMigration('v0.5', 'new-cycle')
-      expect(await readFile(file, 'utf8')).toBe(original)
-      expect(await readdir(directory)).toEqual(['data.json'])
-      await expect(
-        port.migrate('v0.5', 'new-cycle', `sha256:${'0'.repeat(64)}`)
-      ).rejects.toMatchObject({ code: 'revision-conflict' })
-      const migrated = await port.migrate('v0.5', 'new-cycle', preview.sourceRevision)
-      expect(migrated.snapshot.document).toEqual(preview.plan)
-      expect(await readFile(join(directory, preview.backupName), 'utf8')).toBe(original)
-      expect((await port.read('v0.5'))?.document).toEqual(preview.plan)
-      if (hostId === 'ssh:server') {
-        expect(request).toHaveBeenCalledWith(
-          'workbench.materials.execute',
-          expect.objectContaining({ operation: 'previewMigration' })
-        )
-        expect(request).toHaveBeenCalledWith(
-          'workbench.materials.execute',
-          expect.objectContaining({ operation: 'migrate' })
-        )
+  it('migrates through the registered owner RPC and host transaction', async () => {
+    const hostId = 'local' as const
+    const trees = await host.listWorktrees(scope)
+    const runtime = {
+      listRepos: () => [{ id: 'repo', path: repo, kind: 'git', executionHostId: hostId }],
+      showManagedWorktree: async (selector: string) => {
+        expect(selector).toBe('id:plan')
+        return { ...trees.find((tree) => tree.id === 'plan')!, hostId }
       }
     }
-  )
+    const methods = eraseRpcMethods(WORKBENCH_MATERIAL_METHODS)
+    const port = createVersionMaterialPort({ ...scope, hostId }, async ({ method, params }) => {
+      const registered = methods.find((entry) => entry.name === method)!
+      return (await registered.handler(registered.params!.parse(params), {
+        runtime
+      } as never)) as VersionMaterialResult<unknown>
+    })
+    const directory = join(planning, '.bw/planning/v0.5')
+    await mkdir(directory, { recursive: true })
+    const file = join(directory, 'data.json')
+    const original = JSON.stringify({
+      schema_version: 2,
+      version: 'v0.5',
+      plan: { goals: [{ id: 'one', title: 'Existing commitment' }], tasks: [] },
+      summary: { progress: '', risks: '' }
+    })
+    await writeFile(file, original)
+    const preview = await port.previewMigration('v0.5', 'new-cycle')
+    expect(await readFile(file, 'utf8')).toBe(original)
+    expect(await readdir(directory)).toEqual(['data.json'])
+    await expect(
+      port.migrate('v0.5', 'new-cycle', `sha256:${'0'.repeat(64)}`)
+    ).rejects.toMatchObject({ code: 'revision-conflict' })
+    const migrated = await port.migrate('v0.5', 'new-cycle', preview.sourceRevision)
+    expect(migrated.snapshot.document).toEqual(preview.plan)
+    expect(await readFile(join(directory, preview.backupName), 'utf8')).toBe(original)
+    expect((await port.read('v0.5'))?.document).toEqual(preview.plan)
+  })
   it('bound flow tree fences version and purpose: only its bound version reads/writes (G2 P3a)', async () => {
     const boundDir = join(directory, 'plan-v09')
     git(repo, 'worktree', 'add', '-b', 'bw/v0.9/plan', boundDir)
@@ -434,21 +405,7 @@ describe('native version material service', () => {
     expect((await service.list(boundScope)).map((candidate) => candidate.version)).toEqual(['v0.9'])
     expect((await service.read({ ...boundScope, version: 'v0.9' }))?.document).toEqual(document)
   })
-  it('uses the native SSH channel and the same host transaction, preserving conflicts and offline state', async () => {
-    const handlers = new Map<string, MethodHandler>()
-    registerVersionMaterialRelay({
-      onRequest: (method, handler) => {
-        handlers.set(method, handler)
-      }
-    })
-    const request = vi.fn(async (method: string, params: Record<string, unknown>) =>
-      handlers.get(method)!(params, {} as never)
-    )
-    const resolve = vi.fn((connectionId: string) =>
-      connectionId === 'server' ? ({ request } as unknown as SshChannelMultiplexer) : undefined
-    )
-    setSshActiveMultiplexerResolver(resolve)
-    const remoteScope = { ...scope, hostId: 'ssh:server' }
+  it('rejects unconverted SSH execution rather than writing to the visitor machine', async () => {
     const trees = await host.listWorktrees(scope)
     const remote = createService(
       {
@@ -457,39 +414,17 @@ describe('native version material service', () => {
       },
       executeVersionMaterial
     )
-    const saved = await remote.save({
-      ...remoteScope,
-      version: 'v0.5',
-      expectedRevision: null,
-      document: plan
-    })
-    expect(resolve).toHaveBeenCalledWith('server')
-    expect(request).toHaveBeenCalledWith(
-      'workbench.materials.execute',
-      expect.objectContaining({
-        target: { repoPath: repo, worktreePath: planning },
-        operation: 'save'
-      })
-    )
-    expect(await remote.read({ ...remoteScope, version: 'v0.5' })).toEqual(saved)
-    await expect(
-      remote.save({ ...remoteScope, version: 'v0.5', expectedRevision: null, document: plan })
-    ).rejects.toMatchObject({ code: 'revision-conflict', currentRevision: saved.revision })
-    git(planning, 'checkout', '--detach')
     await expect(
       remote.save({
-        ...remoteScope,
+        ...scope,
+        hostId: 'ssh:server',
         version: 'v0.5',
-        expectedRevision: saved.revision,
+        expectedRevision: null,
         document: plan
       })
-    ).rejects.toMatchObject({ code: 'wrong-branch' })
-    setSshActiveMultiplexerResolver(() => undefined)
-    await expect(remote.read({ ...remoteScope, version: 'v0.5' })).rejects.toMatchObject({
-      code: 'host-unavailable'
+    ).rejects.toMatchObject({ code: 'invalid-scope' })
+    await expect(stat(join(planning, '.bw/planning/v0.5/data.json'))).rejects.toMatchObject({
+      code: 'ENOENT'
     })
-    expect(
-      JSON.parse(await readFile(join(planning, '.bw/planning/v0.5/data.json'), 'utf8'))
-    ).toEqual(plan)
   })
 })

@@ -1,3 +1,4 @@
+import { createBrowserUuid } from '@/lib/browser-uuid'
 import { ChartNoAxesCombined, ChevronDown, ChevronRight, Plus, RefreshCw } from 'lucide-react'
 import { useState, type Ref } from 'react'
 import type { PlanningMaterial, VersionGoal } from '../../../../shared/workbench/version-material'
@@ -67,7 +68,7 @@ export function PlanningGoals({
     if (!plan) {
       return
     }
-    const goalId = crypto.randomUUID()
+    const goalId = createBrowserUuid()
     edit({
       ...plan,
       goals: [...plan.goals, { goalId, title: '', metricTargets: [] }]

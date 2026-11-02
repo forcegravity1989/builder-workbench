@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { AiVaultSearchRequestSchema } from '../../shared/ai-vault-search-contract'
 import { SESSION_SEARCH_QUERY_MAX_LENGTH } from './session-search-engine-types'
 import type { SessionSearchRequest, SessionSearchResponse } from './session-search-engine-types'
 import { planSessionSearchQuery } from './session-search-query-planner'
@@ -57,7 +58,6 @@ describe('the route ladder tries phrase, then AND, then repair, then OR', () => 
 
   it('repairs a typo before the OR fallback, and says which terms it changed', async () => {
     const { db, engine } = await open('ss-engine-typo')
-    // Two copies: the repair only suggests a term the index really holds.
     addSyntheticSession(db, { id: 1, text: 'the coalesces path is slow' })
     addSyntheticSession(db, { id: 2, text: 'coalesces again here' })
     const result = engine.search({ query: 'coalescs' })
@@ -66,16 +66,21 @@ describe('the route ladder tries phrase, then AND, then repair, then OR', () => 
     expect(ids(result).sort()).toEqual(['1', '2'])
   })
 
+  it('keeps the stop words a repaired prose phrase was typed with', async () => {
+    const { db, engine } = await open('ss-engine-typo-phrase')
+    addSyntheticSession(db, { id: 1, text: 'relay is dropping frames' })
+    addSyntheticSession(db, { id: 2, text: 'dropping frames again here' })
+    // Repair must retain the original phrase’s stop-word decisions.
+    const result = engine.search({ query: 'relay is droppng frames' })
+    expect(result.planner.route).toBe('typo+phrase')
+    expect(ids(result)).toEqual(['1'])
+  })
+
   it('keeps every term a repaired literal was typed with', async () => {
     const { db, engine } = await open('ss-engine-typo-literal')
     addSyntheticSession(db, { id: 1, text: 'parseJson the data' })
     addSyntheticSession(db, { id: 2, text: 'parseJson the data again' })
-    // `parseJsonn(the, data)` is literal because of its punctuation; the
-    // corrected spelling read on its own is prose. Re-planning without carrying
-    // the original decision across would drop `the` and report a body that was
-    // never typed.
-    // A corrected term comes back in the index's own spelling, which unicode61
-    // has folded; the terms the repair left alone keep the case they were typed.
+    // Repair retains the original literal mode; re-planning corrected prose would drop stop words.
     const result = engine.search({ query: 'parseJsonn(the, data)' })
     expect(result.planner.repairedTerms).toEqual(['parsejson', 'the', 'data'])
   })
@@ -118,8 +123,6 @@ describe('scope picks the corpus and never switches it', () => {
   })
 
   it('returns nothing rather than widening when the narrow scope misses', async () => {
-    // The panel's two-tier typing is a UI policy (PR 7). An engine that widened
-    // here would make a result impossible to reproduce from its own request.
     const { engine } = await corpus()
     const result = engine.search({ query: 'output', scope: 'conversation' })
     expect(result.hits).toEqual([])
@@ -129,7 +132,6 @@ describe('scope picks the corpus and never switches it', () => {
   it('matches an identifier through its pieces only in the full corpus', async () => {
     const { db, engine } = await open('ss-engine-identifiers')
     addSyntheticSession(db, { id: 1, text: 'resolveTerminalPath' })
-    // The identifier shadow column lives in messages_fts alone.
     expect(ids(engine.search({ query: 'terminal path' }))).toEqual(['1'])
     expect(engine.search({ query: 'terminal path', scope: 'conversation' }).hits).toEqual([])
   })
@@ -137,15 +139,11 @@ describe('scope picks the corpus and never switches it', () => {
 
 describe('the conversation scope is a column filter, and it binds the whole query', () => {
   it('refuses an AND whose second term lives only in tool output', async () => {
-    // The filter binds to the expression it prefixes. `{cols}: (a AND b)`
-    // filters both terms; `{cols}: a AND b` filters only `a` and searches tool
-    // output for the rest, which is a conversation search answering from a
-    // column it promised not to read.
+    // Parenthesize the whole FTS expression so its column filter applies to every term.
     const { db, engine } = await open('ss-engine-scope-binding')
     addSyntheticSession(db, { id: 1, text: 'alpha gamma beta' })
     addSyntheticSession(db, { id: 2, text: 'alpha gamma', toolText: 'beta' })
-    // Quoted, so the query is literal; not adjacent, so the phrase rung misses
-    // and the AND rung is the one that answers.
+    // Literal nonadjacent terms force the AND fallback.
     const query = '"alpha" beta'
 
     const wide = engine.search({ query, scope: 'all' })
@@ -158,12 +156,7 @@ describe('the conversation scope is a column filter, and it binds the whole quer
   })
 
   it('ranks a conversation hit down for tool output it will not show', async () => {
-    // The one behavioural difference the column filter carries, pinned rather
-    // than wished away. FTS5's bm25 normalises by the whole row's length and
-    // has no per-column length, so two rows with identical prose do not score
-    // identically when one of them also holds tool output. A dedicated
-    // two-column table scored them the same. The rowid set is unchanged, which
-    // is what the decision was measured on; the order within it can move.
+    // FTS5 bm25 uses whole-row length, so hidden tool output still changes conversation scores.
     const { db, engine } = await open('ss-engine-scope-weights')
     addSyntheticSession(db, { id: 1, text: 'harbor pilot' })
     addSyntheticSession(db, { id: 2, text: 'harbor pilot', toolText: 'unrelated '.repeat(40) })
@@ -178,14 +171,13 @@ describe('the conversation scope is a column filter, and it binds the whole quer
     const [hit] = engine.search({ query: 'harbor', scope: 'conversation' }).hits
     expect(hit?.evidence?.snippet).toContain('pilot')
     expect(hit?.evidence?.snippet).not.toContain('output')
-    // And asked for a tool-only row directly, it has nothing to show.
     addSyntheticSession(db, { id: 2, text: 'harbor tool output line', role: 'tool' })
     const rowid = Number(
       (db.prepare('SELECT max(id) AS id FROM messages').get() as { id: number }).id
     )
     const plan = planSessionSearchQuery('harbor')
-    expect(sessionSearchSnippet(db, 'conversation', rowid, plan)).toEqual(EMPTY_SNIPPET)
-    expect(sessionSearchSnippet(db, 'all', rowid, plan).text).toContain('output')
+    expect(sessionSearchSnippet(db, 'conversation', rowid, plan, 'or')).toEqual(EMPTY_SNIPPET)
+    expect(sessionSearchSnippet(db, 'all', rowid, plan, 'or').text).toContain('output')
   })
 })
 
@@ -200,9 +192,6 @@ describe('a session is one hit, however many of its rows matched', () => {
         text: 'needle padding',
         updatedAt: '2026-09-05T00:00:00.000Z'
       })
-      // Collapsing to one row per session happens before the candidate limit,
-      // so the 650-row session cannot crowd the one-row session off the page on
-      // either order; which of them ranks first is the sort's business.
       expect(ids(engine.search({ query: 'needle', filters: { sort } })).sort()).toEqual(['1', '2'])
     }
   )
@@ -255,13 +244,22 @@ describe('filters narrow retrieval, not just the page', () => {
       ids(engine.search({ query: 'resolveTerminalPath', filters: { scopePaths: ['/target'] } }))
     ).toEqual(['2'])
   })
+
+  it('reads a sub-millisecond `since` as the instant it names, whatever its offset', async () => {
+    const { db, engine } = await open('ss-engine-since-sub-ms')
+    addSyntheticSession(db, { id: 1, text: 'needle', updatedAt: '2026-01-01T08:00:00.000Z' })
+    addSyntheticSession(db, { id: 2, text: 'needle', updatedAt: '2026-01-01T08:00:00.001Z' })
+    for (const since of ['2026-01-01T10:00:00.0005+02:00', '2026-01-01T08:00:00.0005Z']) {
+      const { filters } = AiVaultSearchRequestSchema.parse({ query: 'needle', filters: { since } })
+      expect(ids(engine.search({ query: 'needle', filters }))).toEqual(['2'])
+    }
+  })
 })
 
 describe('evidence', () => {
   it('takes each snippet from that hit’s own best message', async () => {
     const { db, engine } = await open('ss-engine-snippet')
-    // Written first, so its row owns the lowest rowid: the row a dropped rowid
-    // constraint would hand back for every hit.
+    // A missing rowid constraint would return this first row for every snippet.
     addSyntheticSession(db, {
       id: 1,
       text: 'hydration marmoset appears once in a long paragraph about routing and caching',
@@ -291,8 +289,7 @@ describe('evidence', () => {
 
   it('flags a snippet it had to cut, and counts it on the result', async () => {
     const { db, engine } = await open('ss-engine-snippet-truncated')
-    // The window is twelve tokens wide, and one of them is 4000 characters, so
-    // the token count is no bound at all on what a hit carries.
+    // A token window does not bound character count when one token is huge.
     addSyntheticSession(db, { id: 1, text: `needle ${'x'.repeat(4000)}` })
     const result = engine.search({ query: 'needle' })
     expect(result.hits[0]?.evidence?.snippetTruncated).toBe(true)
@@ -317,7 +314,6 @@ describe('source presence comes from the files table, never a stat', () => {
   })
 
   it('calls a session with no file record unverifiable, and still returns it', async () => {
-    // Loss of contact is never evidence of absence: the hit stays on the page.
     const { db, engine } = await open('ss-engine-presence-unknown')
     addSyntheticSession(db, { id: 1, filePath: null })
     const hits = engine.search({ query: 'needle' }).hits
@@ -328,8 +324,6 @@ describe('source presence comes from the files table, never a stat', () => {
 
 describe('the engine carries its own schema and puts it back', () => {
   it('installs the vocabulary over an index a writer built alone', async () => {
-    // The store creates none of these: PR 3's indexer can fill a whole index
-    // before anything opens an engine over it.
     const { db, engine } = await open('ss-engine-installs')
     addSyntheticSession(db, { id: 1, text: 'the coalesces path is slow' })
     addSyntheticSession(db, { id: 2, text: 'coalesces again here' })
@@ -373,11 +367,9 @@ describe('the engine carries its own schema and puts it back', () => {
     expect(() => ensureSessionSearchQuerySchema(db)).toThrow('missing messages_fts')
 
     db.exec(fts)
-    // Two, because the vocabulary only offers a term at least two rows carry.
+    // Repair vocabulary requires at least two rows containing a term.
     addSyntheticSession(db, { id: 3, text: 'coalesces one more time' })
     addSyntheticSession(db, { id: 4, text: 'coalesces once again' })
-    // Nothing throws on the way back up, so the recovery cannot come from the
-    // error path; it comes from the probe running per search.
     const restored = engine.search({ query: 'coalescs' })
     expect(restored.planner.route).toBe('typo+or')
   })
@@ -385,11 +377,6 @@ describe('the engine carries its own schema and puts it back', () => {
 
 describe('a query the engine had to cut says so', () => {
   it('answers a query whose cap falls inside an astral character', async () => {
-    // The cut is on a whole code point rather than a code unit, so nothing
-    // downstream is handed half a surrogate pair. That is hygiene rather than a
-    // behaviour: the planner's tokenizer does not treat a lone surrogate as a
-    // token character, so it drops out of the terms either way. What this pins
-    // is that the boundary is answerable at all.
     const { db, engine } = await open('ss-engine-surrogate-cap')
     const kept = 'x'.repeat(SESSION_SEARCH_QUERY_MAX_LENGTH - 2)
     addSyntheticSession(db, { id: 1, text: kept })
@@ -399,9 +386,6 @@ describe('a query the engine had to cut says so', () => {
   })
 
   it('loads a candidate set larger than one batch of bound ids', async () => {
-    // The id list is as long as the candidate limit and every id is a bound
-    // parameter. No SQLite this stack can run refuses 1,100 of them, so this
-    // pins that batching returns the same answer, not that it rescues one.
     const { db, engine } = await open('ss-engine-id-batching', {
       sessionCandidateLimit: 1200
     })
@@ -414,8 +398,7 @@ describe('a query the engine had to cut says so', () => {
   })
 
   it('reports truncation when the planner drops terms past its cap', async () => {
-    // The 56th term is the only one that matches. Without the flag this is a
-    // confident empty answer to a query the engine never finished reading.
+    // Only the dropped final term matches; an empty result must still report truncation.
     const { db, engine } = await open('ss-engine-term-cap')
     addSyntheticSession(db, { id: 1, text: 'onlyattheend' })
     const query = `${Array.from({ length: 55 }, (_unused, n) => `term${n}`).join(' ')} onlyattheend`
@@ -441,11 +424,7 @@ describe('a query the engine had to cut says so', () => {
 describe('a query longer than the engine will plan is cut, not refused', () => {
   it('cuts one enormous token down to the cap before FTS5 ever sees it', async () => {
     const { db, engine } = await open('ss-engine-long-query')
-    // The planner already caps how many terms it will plan, so a long query of
-    // ordinary words is bounded without this. What is not bounded is a single
-    // token: one 100 kB word is one term, and FTS5 would carry the whole thing
-    // into the MATCH expression. The cut is observable because the indexed
-    // token is exactly the capped length.
+    // A term-count cap alone cannot bound a single huge token.
     addSyntheticSession(db, { id: 1, text: 'x'.repeat(SESSION_SEARCH_QUERY_MAX_LENGTH) })
     expect(ids(engine.search({ query: 'x'.repeat(4000) }))).toEqual(['1'])
   })
@@ -471,3 +450,55 @@ it.each(['repo:target', 'path:/work/target'])(
     expect(result.truncated.candidates).toBe(false)
   }
 )
+
+describe('a sentence pasted out of a transcript is found behind a full candidate set', () => {
+  // Common OR terms can fill the candidate cap before an older exact sentence reaches ranking.
+  const sentence = 'The sol review says the PR is not quite merge-ready yet'
+
+  async function pasted(sessionCandidateLimit = 600): Promise<SessionSearchHarness> {
+    const opened = await open('ss-engine-pasted-sentence', { sessionCandidateLimit })
+    addSyntheticSession(opened.db, {
+      id: 1,
+      text: `${sentence}, but not because of the implementation.`,
+      updatedAt: '2026-08-01T00:00:00.000Z'
+    })
+    for (let id = 2; id <= sessionCandidateLimit + 50; id++) {
+      addSyntheticSession(opened.db, {
+        id,
+        text: 'the review says the implementation is not quite there yet',
+        updatedAt: '2026-09-09T00:00:00.000Z'
+      })
+    }
+    return opened
+  }
+
+  it('returns the exact sentence first, over the phrase route', async () => {
+    const { engine } = await pasted()
+    const result = engine.search({ query: sentence })
+    expect(result.planner.route).toBe('phrase')
+    expect(ids(result)).toEqual(['1'])
+  })
+
+  it('does not claim the results were limited when the phrase rung answered', async () => {
+    const { engine } = await pasted()
+    expect(engine.search({ query: sentence }).truncated.candidates).toBe(false)
+    expect(engine.search({ query: 'the review says yet' }).truncated.candidates).toBe(true)
+  })
+
+  it('falls to AND for prose whose words are all present but not adjacent', async () => {
+    const { db, engine } = await open('ss-engine-prose-and')
+    addSyntheticSession(db, {
+      id: 1,
+      text: 'yet quite merge-ready the PR is not what sol says a review of it'
+    })
+    const result = engine.search({ query: sentence })
+    expect(result.planner.route).toBe('and')
+    expect(ids(result)).toEqual(['1'])
+  })
+
+  it('still sends a single prose word straight to OR', async () => {
+    const { db, engine } = await open('ss-engine-prose-one-word')
+    addSyntheticSession(db, { id: 1, text: 'relay' })
+    expect(engine.search({ query: 'relay' }).planner.route).toBe('or')
+  })
+})

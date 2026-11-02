@@ -3,6 +3,7 @@ import { AgentHookServer } from './server'
 import { AGENT_STATUS_STALE_AFTER_MS } from '../../shared/agent-status-types'
 import { selectFreshExplicitAgentStatus } from '../runtime/runtime-hook-agent-row-selection'
 import { wslHookRelayConnectionId } from '../../shared/wsl-hook-relay-contract'
+import { seedLegacyAgentStatusForTests } from '../../shared/agent-hook-listener/listener-state'
 
 const PANE_KEY = 'tab-handle:33333333-3333-4333-8333-333333333333'
 const HANDLE = 'term_identity'
@@ -31,8 +32,7 @@ describe('the terminal handle a status row is stamped with', () => {
   })
 
   it('survives a later write that resolved no handle', () => {
-    // Only main's OSC parse resolves one; an HTTP hook post for the same pane carries none and
-    // must not erase the row's only join back to its terminal.
+    // HTTP hooks lack OSC terminal handles and must not erase the row's terminal association.
     const server = new AgentHookServer()
     ingest(server)
     ingest(server, { terminalHandle: undefined, payload: { state: 'done', prompt: 'ship it' } })
@@ -205,13 +205,20 @@ describe('the terminal handle a status row is stamped with', () => {
     server.subscribeStatusRowMutations(mutations)
     const payload = { state: 'working' as const, prompt: 'ship it', agentType: 'claude' as const }
     ingest(server, { payload })
-    const row = server._getStateForTests().lastStatusByPaneKey.get(PANE_KEY) as
-      | { claudeLeadBoundaryChildOnly?: true }
-      | undefined
+    const row = server._getStateForTests().lastStatusByPaneKey.get(PANE_KEY)
     if (!row) {
       throw new Error('expected seeded status row')
     }
-    row.claudeLeadBoundaryChildOnly = true
+    const childOnlyRow = {
+      ...row,
+      claudeRunningNonAgentTask: false,
+      payload: {
+        ...row.payload,
+        mainAgent: { state: 'done' as const, stateStartedAt: 1 },
+        subagents: [{ id: 'child-1', state: 'working' as const, startedAt: 1 }]
+      }
+    }
+    seedLegacyAgentStatusForTests(server._getStateForTests(), childOnlyRow)
     enriched.mockClear()
     mutations.mockClear()
 

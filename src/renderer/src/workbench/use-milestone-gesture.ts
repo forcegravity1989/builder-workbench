@@ -1,3 +1,4 @@
+import { createBrowserUuid } from '@/lib/browser-uuid'
 import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 import { useRef, useState, type RefObject, type PointerEvent, type KeyboardEvent } from 'react'
 import type { MilestoneDraft } from '../../../shared/workbench/project-milestones'
@@ -65,7 +66,7 @@ export function useMilestoneGesture(
       }
       target = own ?? candidates[0]
       if (!target) {
-        const used = materializeMilestoneWeek(base, milestoneWeekAt(day), crypto.randomUUID())
+        const used = materializeMilestoneWeek(base, milestoneWeekAt(day), createBrowserUuid())
         next = used.draft
         target = used.version
       }

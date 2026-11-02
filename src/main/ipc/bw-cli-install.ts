@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { spawnProcess } from '@orca/process-host'
 import { homedir } from 'node:os'
 import { BrowserWindow, ipcMain } from 'electron'
 import {
@@ -26,21 +26,13 @@ function broadcastCliInstallFinished(payload: BwCliInstallFinishedPayload): void
 // Why (BW #366): a CLI's install口径 can be a sequence (cloudbuild sets the
 // scoped registry before installing) — steps run in order and the first
 // failure aborts the rest, with the reason naming the failing step.
-function runInstallStep(command: readonly string[], onOutput: (chunk: string) => void): Promise<number | null> {
+function runInstallStep(
+  command: readonly string[],
+  onOutput: (chunk: string) => void
+): Promise<number | null> {
   return new Promise((resolve, reject) => {
-    // Why: npm is npm.cmd on Windows — route through cmd.exe so the shim
-    // resolves; posix spawns npm directly. cmd.exe /c bare-expands the argv,
-    // so BW_CLI_INSTALL_COMMANDS entries must never carry cmd.exe
-    // metacharacters (space & | < > ^ ( ) , ;) — registry URLs and package
-    // ids are safe. No timeout: installs against the internal registry can
-    // take minutes, and the finish broadcast carries the outcome either way.
-    const child =
-      process.platform === 'win32'
-        ? spawn('cmd.exe', ['/d', '/c', ...command], {
-            cwd: homedir(),
-            windowsHide: true
-          })
-        : spawn(command[0], command.slice(1), { cwd: homedir() })
+    // The native process host resolves Windows npm shims and owns quoting and hidden windows.
+    const child = spawnProcess({ program: command[0], args: command.slice(1), cwd: homedir() })
     child.stdout?.on('data', (chunk: Buffer | string) => onOutput(String(chunk)))
     child.stderr?.on('data', (chunk: Buffer | string) => onOutput(String(chunk)))
     child.on('error', (error) => reject(error))

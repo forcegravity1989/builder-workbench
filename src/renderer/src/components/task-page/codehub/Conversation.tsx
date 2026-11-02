@@ -11,7 +11,7 @@ import {
 } from '@/lib/pr-comment-audience-labels'
 import type { PRCommentAudienceFilter } from '../../../../../shared/pr-comment-audience'
 import { cn } from '@/lib/utils'
-import { formatRelativeTime } from '../../task-page-source-context'
+import { formatRelativeTime } from '../task-page-source-context'
 import {
   CodeHubCommentThread,
   codeHubCommentAudienceCounts,

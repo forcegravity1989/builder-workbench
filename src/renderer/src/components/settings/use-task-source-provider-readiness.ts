@@ -6,7 +6,7 @@ import {
 } from '@/hooks/useInstalledAgentSkills'
 import { useActiveProjectSkillRuntime } from '@/hooks/useActiveProjectSkillRuntime'
 import { useLinearProviderConnected } from '@/hooks/useLinearProviderConnected'
-import { LINEAR_AGENT_SKILL_NAMES } from '@/lib/agent-feature-install-commands'
+import { LINEAR_AGENT_SKILL_NAMES } from '@/lib/agent-feature-skill-names'
 import { getLocalPreflightContext, localPreflightContextKey } from '@/lib/local-preflight-context'
 import { getProviderRuntimeContextKey } from '@/lib/provider-runtime-context'
 import { useAppStore } from '@/store'
@@ -36,7 +36,8 @@ export function useTaskSourceProviderReadiness(
   const {
     installed: linearSkillInstalled,
     loading: linearSkillLoading,
-    settled: linearSkillSettled
+    settled: linearSkillSettled,
+    installedUnverifiable: linearSkillUnverifiable
   } = useInstalledAgentSkillNames(LINEAR_AGENT_SKILL_NAMES, {
     discoveryTarget: activeSkillRuntime.discoveryTarget,
     sourceKinds: GLOBAL_AGENT_SKILL_SOURCE_KINDS
@@ -44,8 +45,7 @@ export function useTaskSourceProviderReadiness(
 
   const preflightCurrent = preflightStatusContextKey === expectedPreflightContextKey
   const reviewChecking = preflightStatusLoading || !preflightStatusChecked || !preflightCurrent
-  // A failed preflight leaves the previous status object in place, so mirror
-  // Integrations and refuse to read connection facts out of a stale snapshot.
+  // Failed preflight retains stale status; reject it so Task Sources agrees with Integrations.
   const reviewReadyForConnection = !reviewChecking && preflightStatusError === null
   const reviewUnavailable = !reviewChecking && preflightStatusError !== null
   const githubConnected =
@@ -56,8 +56,7 @@ export function useTaskSourceProviderReadiness(
     reviewReadyForConnection &&
     preflightStatus?.glab?.installed === true &&
     preflightStatus.glab.authenticated === true
-  const codehubConnected =
-    reviewReadyForConnection && preflightStatus?.codehub?.installed === true
+  const codehubConnected = reviewReadyForConnection && preflightStatus?.codehub?.installed === true
   const jiraChecking = jiraStatusContextKey !== providerRuntimeContextKey || !jiraStatusChecked
   const jiraConnected = !jiraChecking && jiraStatus.connected === true
   const linearChecking =
@@ -91,6 +90,7 @@ export function useTaskSourceProviderReadiness(
         checking: linearChecking,
         skillInstalled: linearSkillInstalled,
         skillChecking: linearSkillLoading && !linearSkillSettled,
+        skillUnverifiable: linearSkillUnverifiable,
         visible: visible.has('linear')
       },
       jira: {
@@ -110,6 +110,7 @@ export function useTaskSourceProviderReadiness(
     linearSkillInstalled,
     linearSkillLoading,
     linearSkillSettled,
+    linearSkillUnverifiable,
     reviewChecking,
     reviewUnavailable,
     visibleProvidersKey

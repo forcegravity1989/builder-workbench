@@ -34,7 +34,7 @@ export function CodeHubLabelsCell({
     setLoading(true)
     setError(null)
     codehubApi
-      .listLabels({ repoPath: item.repoPath, repoId: item.repoId })
+      .listLabels({ repoPath: item.repoPath, repoHostId: item.repoHostId, repoId: item.repoId })
       .then((names) => {
         if (!stale) {
           setProjectLabels(names)
@@ -69,6 +69,7 @@ export function CodeHubLabelsCell({
       try {
         await codehubApi.updateIssueLabels({
           repoPath: item.repoPath,
+          repoHostId: item.repoHostId,
           repoId: item.repoId,
           iid: item.iid,
           labels: [...new Set(nextLabels.map((name) => name.trim()).filter(Boolean))]

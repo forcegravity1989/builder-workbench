@@ -4,12 +4,12 @@
 // next to the gh/glab readbacks.
 import {
   execCommandInWslOrThrow,
-  execLocalPreflightCommandOrThrow,
-  shellQuote
+  execLocalPreflightCommandOrThrow
 } from '../ipc/preflight-command-exec'
+import { quotePosixShell as shellQuote } from '../../shared/shell-argument-quoting'
 import type { WslPreflightTarget } from '../ipc/preflight-wsl-agent-detection'
 
-export type BwCliProbe = { installed: boolean; wslTarget?: WslPreflightTarget }
+export type BwCliProbe = { installed: boolean; wslTarget?: WslPreflightTarget; binary?: string }
 
 // Why (BW #366): the BW CLI probe/auth orchestration lives here so the upstream
 // agent-detection module stays within its line budget. The detect callback is
@@ -37,13 +37,13 @@ export async function readBwCliAuths(probes: {
 }): Promise<{ codehub: boolean; welink: boolean; cloudbuild: boolean }> {
   const [codehub, welink, cloudbuild] = await Promise.all([
     probes.codehub.installed
-      ? isCodehubAuthenticated(probes.codehub.wslTarget)
+      ? isCodehubAuthenticated(probes.codehub.wslTarget, probes.codehub.binary)
       : Promise.resolve(false),
     probes.welink.installed
-      ? isWelinkAuthenticated(probes.welink.wslTarget)
+      ? isWelinkAuthenticated(probes.welink.wslTarget, probes.welink.binary)
       : Promise.resolve(false),
     probes.cloudbuild.installed
-      ? isCloudbuildAuthenticated(probes.cloudbuild.wslTarget)
+      ? isCloudbuildAuthenticated(probes.cloudbuild.wslTarget, probes.cloudbuild.binary)
       : Promise.resolve(false)
   ])
   return { codehub, welink, cloudbuild }
@@ -54,11 +54,14 @@ export async function readBwCliAuths(probes: {
 // (codehub prints "You are not logged in.", welink prints "Status: not
 // authenticated"), so exit-0-implies-authenticated would light a false green.
 // The verdict is parsed from output markers in every branch.
-export async function isCodehubAuthenticated(wslTarget?: WslPreflightTarget): Promise<boolean> {
+export async function isCodehubAuthenticated(
+  wslTarget?: WslPreflightTarget,
+  binary = 'codehub-cli'
+): Promise<boolean> {
   try {
     const result = await (wslTarget
       ? execCommandInWslOrThrow(wslTarget, `${shellQuote('codehub-cli')} auth status`)
-      : execLocalPreflightCommandOrThrow('codehub-cli', ['auth', 'status']))
+      : execLocalPreflightCommandOrThrow(binary, ['auth', 'status']))
     return codehubOutputSaysLoggedIn(`${result.stdout}\n${result.stderr}`)
   } catch (error) {
     return codehubOutputSaysLoggedIn(errorOutput(error))
@@ -76,11 +79,14 @@ function codehubOutputSaysLoggedIn(output: string): boolean {
 // line with EXPIRED (human decision on intent 待决 3, 2026-10-16: counts as
 // not authenticated — no green light on a stale token); never logged in
 // prints `Status: not authenticated` with no User Token line at all.
-export async function isWelinkAuthenticated(wslTarget?: WslPreflightTarget): Promise<boolean> {
+export async function isWelinkAuthenticated(
+  wslTarget?: WslPreflightTarget,
+  binary = 'welink-cli'
+): Promise<boolean> {
   try {
     const result = await (wslTarget
       ? execCommandInWslOrThrow(wslTarget, `${shellQuote('welink-cli')} auth status`)
-      : execLocalPreflightCommandOrThrow('welink-cli', ['auth', 'status']))
+      : execLocalPreflightCommandOrThrow(binary, ['auth', 'status']))
     return welinkOutputSaysAuthenticated(`${result.stdout}\n${result.stderr}`)
   } catch (error) {
     return welinkOutputSaysAuthenticated(errorOutput(error))
@@ -100,11 +106,14 @@ function welinkOutputSaysAuthenticated(output: string): boolean {
 // prints `Token Expires: … (expired)`), so the verdict comes from output
 // markers: only a Token Expires line WITHOUT the (expired) suffix is a live
 // login. Never-logged-in output carries no Token Expires line at all.
-export async function isCloudbuildAuthenticated(wslTarget?: WslPreflightTarget): Promise<boolean> {
+export async function isCloudbuildAuthenticated(
+  wslTarget?: WslPreflightTarget,
+  binary = 'cb'
+): Promise<boolean> {
   try {
     const result = await (wslTarget
       ? execCommandInWslOrThrow(wslTarget, `${shellQuote('cb')} auth status`)
-      : execLocalPreflightCommandOrThrow('cb', ['auth', 'status']))
+      : execLocalPreflightCommandOrThrow(binary, ['auth', 'status']))
     return cloudbuildOutputSaysAuthenticated(`${result.stdout}\n${result.stderr}`)
   } catch (error) {
     return cloudbuildOutputSaysAuthenticated(errorOutput(error))

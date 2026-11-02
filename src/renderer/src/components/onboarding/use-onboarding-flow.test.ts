@@ -5,7 +5,7 @@ import {
   remapOpenOnboardingLastCompletedStep,
   shouldSkipIntegrationsStep
 } from './onboarding-flow-state'
-import { getDefaultOnboardingState } from '../../../../shared/constants'
+import { getDefaultOnboardingState } from '../../../../shared/onboarding-defaults'
 
 vi.mock('sonner', () => ({
   toast: { error: vi.fn(), info: vi.fn(), success: vi.fn() }

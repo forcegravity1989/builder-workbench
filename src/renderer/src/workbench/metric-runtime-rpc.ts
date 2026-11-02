@@ -2,7 +2,9 @@ import { normalizeExecutionHostId, parseExecutionHostId } from '../../../shared/
 import type { MetricScope } from '../../../shared/workbench/metrics'
 import type { VersionMaterialResult } from '../../../shared/workbench/version-material-request'
 import { routeForOwner } from '../lib/worktree-owner-route'
-import { callRuntimeRpc, type RuntimeClientTarget } from '../runtime/runtime-rpc-client'
+import type { RuntimeClientTarget } from '../../../shared/runtime-client-target'
+import { callHostRoute } from '../runtime/host-route-call'
+import type { HostRoute } from '../runtime/runtime-client-target'
 
 export class MetricRuntimeError extends Error {
   constructor(
@@ -23,8 +25,8 @@ export async function callMetricRuntime<T>(
   timeoutMs?: number
 ): Promise<T> {
   const { target, ownerScope } = metricRuntimeRoute(scope, runtimeOwnerEnvironmentId)
-  const result = await callRuntimeRpc<VersionMaterialResult<T>>(
-    target,
+  const result = await callHostRoute<VersionMaterialResult<T>>(
+    { target, at: ownerScope.hostId },
     method,
     params(ownerScope),
     timeoutMs === undefined ? undefined : { timeoutMs }
@@ -42,7 +44,7 @@ export async function callMetricRuntime<T>(
 export function metricRuntimeRoute(
   scope: MetricScope,
   runtimeOwnerEnvironmentId: string | undefined
-): { target: RuntimeClientTarget; ownerScope: MetricScope } {
+): { target: RuntimeClientTarget; ownerScope: MetricScope & { hostId: HostRoute['at'] } } {
   const hostId = normalizeExecutionHostId(scope.hostId)
   if (!hostId) {
     throw new MetricRuntimeError('invalid-scope', '无法识别工作树所属宿主')
@@ -51,9 +53,10 @@ export function metricRuntimeRoute(
   const target = route.runtimeEnvironmentId
     ? { kind: 'environment' as const, environmentId: route.runtimeEnvironmentId }
     : { kind: 'local' as const }
+  const owner = parseExecutionHostId(hostId)!
   const ownerScope = {
     ...scope,
-    hostId: parseExecutionHostId(hostId)?.kind === 'runtime' ? 'local' : hostId
+    hostId: owner.kind === 'runtime' ? ('local' as const) : owner.id
   }
   return { target, ownerScope }
 }

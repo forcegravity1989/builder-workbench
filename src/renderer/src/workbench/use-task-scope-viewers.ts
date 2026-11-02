@@ -5,7 +5,7 @@ import { parseTaskQuery } from '../../../shared/task-query'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { codehubApi } from '@/lib/codehub-api'
 import { lookupGitHubViewerForSource } from '@/lib/github-work-item-source-lookup'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
 import type { TaskScopeLoadResult } from './task-scope-load'
 import { useAppStore } from '@/store'
 
@@ -90,7 +90,11 @@ export function useTaskScopeViewers(
         if (!repo) {
           throw new Error('Repository is unavailable')
         }
-        const args = { repoId: repo.id, repoPath: repo.path }
+        const args = {
+          repoId: repo.id,
+          repoPath: repo.path,
+          repoHostId: getRepoExecutionHostId(repo)
+        }
         const login =
           model.taskSource === 'codehub'
             ? (await codehubApi.viewer(args)).username

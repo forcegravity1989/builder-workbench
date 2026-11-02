@@ -4,7 +4,10 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getExecutionHostLabel } from '../../../../shared/execution-host'
-import { GitHubIntegrationCard, GitLabIntegrationCard } from './cli-source-control-integration-cards'
+import {
+  GitHubIntegrationCard,
+  GitLabIntegrationCard
+} from './cli-source-control-integration-cards'
 import { CodeHubIntegrationCard } from './bw-cli-integration-cards'
 
 const LOCAL_HOST_LABEL = getExecutionHostLabel('local')

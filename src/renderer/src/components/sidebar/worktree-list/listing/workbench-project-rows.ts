@@ -1,6 +1,9 @@
 import { WORKBENCH_OTHER_PROJECTS_LABEL } from '@/workbench/version-sidebar-state'
-import type { HostHeaderRow, HostSectionRow } from '../../host-section-rows'
-import type { GroupHeaderRow } from '../grouping/row-types'
+import type {
+  HostHeaderRow,
+  HostSectionRow
+} from '../../../../../../shared/sidebar-list/host-section-rows'
+import type { GroupHeaderRow } from '../../../../../../shared/sidebar-list/row-types'
 import type { Repo } from '../../../../../../shared/repo-types'
 import type { ProjectGroup } from '../../../../../../shared/project-group-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
@@ -111,6 +114,7 @@ export function projectWorkbenchRows(args: {
         ? args.worktrees.filter(
             (tree) =>
               memberRepos.has(tree.repoId) &&
+              (!header.hostId || (tree.hostId ?? 'local') === header.hostId) &&
               (!memberIds || memberIds.has(tree.id)) &&
               wanted.has(tree.repoId) === (side === 0)
           ).length
@@ -144,7 +148,7 @@ export function projectWorkbenchRows(args: {
       key: `workbench:other-projects:${args.repoId}`,
       label: WORKBENCH_OTHER_PROJECTS_LABEL,
       count,
-      tone: '',
+      icon: { kind: 'all' },
       displaySection: { expanded: args.expanded, onToggle: args.onToggle }
     },
     ...(args.expanded ? other : [])

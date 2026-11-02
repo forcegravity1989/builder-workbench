@@ -15,14 +15,7 @@ function record(...fields: string[]): string {
 }
 
 function wslResult(stdout: string): WslResult {
-  return {
-    environmentResolved: true,
-    code: 0,
-    stdout,
-    stderr: '',
-    timedOut: false,
-    outputTruncated: false
-  }
+  return { environmentResolved: true, code: 0, stdout, stderr: '', timedOut: false }
 }
 
 function recordedScript(index: number): string {
@@ -92,8 +85,7 @@ describe('WSL Claude plugin skill discovery', () => {
     async (explicitWorkspace) => {
       const homeDir = '/home/alice'
       const cwd = explicitWorkspace ? '/work/orca' : homeDir
-      // Why: a Windows host's own Hermes location says nothing about the distro's,
-      // so neither variable may reach the posix scan script.
+      // Windows host Hermes paths must not leak into distro discovery.
       vi.stubEnv('HERMES_HOME', 'C:\\Users\\alice\\hermes')
       vi.stubEnv('LOCALAPPDATA', 'C:\\Users\\alice\\AppData\\Local')
       const pluginId = 'compound-engineering@compound-engineering-plugin'

@@ -1,4 +1,7 @@
-export { GitHubIntegrationCard, GitLabIntegrationCard } from './cli-source-control-integration-cards'
+export {
+  GitHubIntegrationCard,
+  GitLabIntegrationCard
+} from './cli-source-control-integration-cards'
 export {
   CloudBuildIntegrationCard,
   CodeHubIntegrationCard,

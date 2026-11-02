@@ -40,9 +40,18 @@ it('keeps fixed-workspace owner identity regardless of active focus and refresh 
   expect(scope).toMatchObject({ hostId: 'ssh:b', runtimeOwnerEnvironmentId: 'transport-b' })
   expect(findNamedWorktree(scope, 'bw/week-plan')).toBe(b)
 
+  for (const runtimeOwnerEnvironmentId of [undefined, 'transport-b']) {
+    await expect(
+      ensureNamedWorktree(
+        { projectId: 'project', repoId: 'repo', hostId: 'ssh:b', runtimeOwnerEnvironmentId },
+        'bw/week-plan',
+        'week-plan'
+      )
+    ).rejects.toThrow('托管主机')
+    expect(test.rpc).not.toHaveBeenCalled()
+  }
   const owners = [
     { label: 'local', hostId: 'local', ownerHostId: 'local' },
-    { label: 'direct SSH', hostId: 'ssh:b', ownerHostId: 'ssh:b' },
     {
       label: 'paired local',
       hostId: 'runtime:transport-b',
@@ -54,12 +63,6 @@ it('keeps fixed-workspace owner identity regardless of active focus and refresh 
       hostId: 'runtime:transport-b',
       ownerHostId: 'local',
       inferredRuntimeOwnerEnvironmentId: 'transport-b'
-    },
-    {
-      label: 'paired SSH',
-      hostId: 'ssh:b',
-      ownerHostId: 'ssh:b',
-      runtimeOwnerEnvironmentId: 'transport-b'
     }
   ] as const
   for (const owner of owners) {
@@ -99,8 +102,7 @@ it('keeps fixed-workspace owner identity regardless of active focus and refresh 
             { id: 'repo', executionHostId: 'runtime:transport-a', connectionId: 'a' },
             {
               id: 'repo',
-              executionHostId: refreshHost,
-              ...(owner.ownerHostId === 'ssh:b' ? { connectionId: 'b' } : {})
+              executionHostId: refreshHost
             }
           ],
           allWorktrees: () => rows,

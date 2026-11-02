@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { MultiSelectList } from '@/components/github/PRFilterPickers'
 import { codehubApi } from '@/lib/codehub-api'
 import { isCodeHubGitRemote } from '../../../../../shared/codehub'
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
+import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
 
 export function CodeHubFilterPopover({ model }: { model: TaskPageComposerActionsModel }) {
   const {

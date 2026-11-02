@@ -1,5 +1,7 @@
 import { useMemo, type JSX } from 'react'
 import { useAppStore } from '@/store'
+import { useRepoById, useWorktreesForRepo } from '@/store/selectors'
+import { getRepoExecutionHostId, getWorktreeExecutionHostId } from '../../../shared/execution-host'
 import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import { OverviewScoreboard, SCOREBOARD_GRANULARITY } from './overview-scoreboard'
 import { useOverviewHistory } from './use-overview-history'
@@ -20,11 +22,17 @@ import './workbench-overview.css'
  */
 export function MetricsWorkspaceBoard(): JSX.Element {
   const activeRepoId = useAppStore((state) => state.activeRepoId ?? state.repos[0]?.id ?? null)
-  const repoWorktrees = useAppStore((state) =>
-    activeRepoId ? state.worktreesByRepo[activeRepoId] : undefined
-  )
-  const activeRepo = useAppStore(
-    (state) => state.repos.find((repo) => repo.id === activeRepoId) ?? state.repos[0]
+  const activeRepo = useRepoById(activeRepoId)
+  const allRepoWorktrees = useWorktreesForRepo(activeRepoId)
+  const repoWorktrees = useMemo(
+    () =>
+      activeRepo
+        ? allRepoWorktrees.filter(
+            (tree) =>
+              getWorktreeExecutionHostId(tree, activeRepo) === getRepoExecutionHostId(activeRepo)
+          )
+        : [],
+    [allRepoWorktrees, activeRepo]
   )
   const baseScope = useMemo<NativeWorkspaceScope | null>(() => {
     if (!activeRepoId || !repoWorktrees?.length) {
@@ -122,7 +130,7 @@ export function MetricsWorkspaceBoard(): JSX.Element {
           version={version}
           setupBusy={metricsSetup.busy || !baseScope}
           onSetup={() => void metricsSetup.prepareMetrics()}
-          worktreeId={baseWorktreeId}
+          sourceWorktree={baseWorktree}
         />
       </div>
     </section>

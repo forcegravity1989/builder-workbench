@@ -1,48 +1,8 @@
 #!/usr/bin/env node
 
-import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-
-export function shouldReuseCompiledWindowsCliLauncher(
-  outputPath,
-  sourcePath,
-  { reuseCached = false } = {}
-) {
-  if (!existsSync(outputPath)) {
-    return false
-  }
-  // Why reuseCached: Actions cache keys already hash the C# source, but restore
-  // does not preserve mtimes, so a hit would look stale and recompile anyway.
-  if (reuseCached) {
-    return true
-  }
-  return statSync(outputPath).mtimeMs >= statSync(sourcePath).mtimeMs
-}
-
-function defaultOutputPath(projectRoot, isWorkbench) {
-  return join(
-    projectRoot,
-    'native',
-    'windows-cli-launcher',
-    '.build',
-    ...(isWorkbench ? ['workbench'] : []),
-    'orca.exe'
-  )
-}
-
-function findFrameworkCompiler(env) {
-  const windowsDirectory = env.WINDIR ?? env.SystemRoot
-  if (!windowsDirectory) {
-    return null
-  }
-  const candidates = [
-    join(windowsDirectory, 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'),
-    join(windowsDirectory, 'Microsoft.NET', 'Framework', 'v4.0.30319', 'csc.exe')
-  ]
-  return candidates.find((candidate) => existsSync(candidate)) ?? null
-}
+import { compileWindowsRustExecutable } from './windows-rust-executable-build.mjs'
 
 function readArg(name) {
   const index = process.argv.indexOf(name)
@@ -50,54 +10,36 @@ function readArg(name) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  if (process.platform !== 'win32') {
-    // Why: electron-builder treats a skipped native build like success and can
-    // continue toward a Windows package whose declared orca.exe does not exist.
-    throw new Error(
-      'Windows CLI launcher compilation requires a Windows host; refusing to package without it.'
-    )
-  }
-
   const repoRoot = resolve(import.meta.dirname, '../..')
-  const sourcePath = join(repoRoot, 'native', 'windows-cli-launcher', 'OrcaCliLauncher.cs')
-  const isWorkbench = process.env.ORCA_PRODUCT_NAME === 'Workbench'
-  const outputPath = readArg('--output') ?? defaultOutputPath(repoRoot, isWorkbench)
-  const compilerPath = findFrameworkCompiler(process.env)
-
-  if (!compilerPath) {
-    throw new Error('Unable to find the .NET Framework C# compiler required for orca.exe.')
-  }
-
-  mkdirSync(dirname(outputPath), { recursive: true })
-  if (
-    shouldReuseCompiledWindowsCliLauncher(outputPath, sourcePath, {
-      reuseCached: process.env.ORCA_REUSE_WINDOWS_CLI_LAUNCHER === '1'
+  const crateRoot = join(repoRoot, 'native', 'windows-cli-launcher')
+  const iconPath = join(repoRoot, 'resources', 'build', 'icon.ico')
+  const productName = process.env.ORCA_PRODUCT_NAME === 'Workbench' ? 'Workbench' : 'Orca'
+  const output =
+    readArg('--output') ??
+    join(crateRoot, '.build', ...(productName === 'Workbench' ? ['workbench'] : []), 'orca.exe')
+  for (const binName of ['orca', 'orca-administrator-restart']) {
+    compileWindowsRustExecutable({
+      repoRoot,
+      crateRoot,
+      binName,
+      fingerprintSalt: `${productName}\0${binName}`,
+      label: binName === 'orca' ? 'Windows CLI launcher' : 'Windows administrator restart launcher',
+      fingerprintInputs: [
+        join(crateRoot, 'src', 'administrator_status.rs'),
+        join(crateRoot, 'src', 'administrator_restart.rs'),
+        join(crateRoot, 'src', 'administrator_launcher.rs'),
+        iconPath,
+        join(repoRoot, 'config/scripts/build-windows-cli-launcher.mjs')
+      ],
+      arch: readArg('--arch'),
+      outputPath: binName === 'orca' ? output : join(dirname(output), `${binName}.exe`),
+      buildEnv: (version) => ({
+        ORCA_LAUNCHER_VERSION: version,
+        ORCA_LAUNCHER_PRODUCT_NAME: productName,
+        ORCA_LAUNCHER_APP_EXECUTABLE: `${productName}.exe`,
+        ORCA_LAUNCHER_ICON: iconPath,
+        ORCA_LAUNCHER_FILENAME: `${binName}.exe`
+      })
     })
-  ) {
-    console.log(`[native-build] reusing Windows CLI launcher at ${outputPath}`)
-    process.exit(0)
-  }
-  const result = spawnSync(
-    compilerPath,
-    [
-      '/nologo',
-      '/target:exe',
-      '/optimize+',
-      '/warnaserror+',
-      ...(isWorkbench ? ['/define:WORKBENCH'] : []),
-      `/out:${outputPath}`,
-      sourcePath
-    ],
-    { cwd: repoRoot, stdio: 'inherit' }
-  )
-
-  if (result.signal) {
-    process.kill(process.pid, result.signal)
-  }
-  if (result.error) {
-    throw result.error
-  }
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1)
   }
 }

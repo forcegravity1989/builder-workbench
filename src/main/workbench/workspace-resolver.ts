@@ -55,7 +55,7 @@ export function createWorkbenchRepoResolver(host: Pick<WorkbenchWorkspaceHost, '
     hostId: ExecutionHostId
   } {
     const hostId = parseExecutionHostId(input.hostId)
-    if (!hostId || hostId.kind === 'runtime') {
+    if (!hostId || hostId.kind !== 'local') {
       throw new WorkspaceScopeError('invalid-scope', '请通过工作树所属的 Orca runtime 访问')
     }
     const candidates = host.listRepos().filter((repo) => repo.id === input.repoId)
@@ -148,7 +148,7 @@ export function nativeWorkbenchWorkspaceHost(runtime: {
     listRepos: () => runtime.listRepos(),
     listWorktrees: async (scope) => {
       const hostId = parseExecutionHostId(scope.hostId)
-      if (!hostId || hostId.kind === 'runtime') {
+      if (!hostId || hostId.kind !== 'local') {
         throw new WorkspaceScopeError('invalid-scope', '请通过工作树所属的 Orca runtime 访问')
       }
       return [await runtime.showManagedWorktree(`id:${scope.worktreeId}`, hostId.id)]

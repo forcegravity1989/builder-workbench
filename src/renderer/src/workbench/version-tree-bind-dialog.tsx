@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
 import type { Repo } from '../../../shared/repo-types'
 import type { Worktree, WorkspaceLinkedItem } from '../../../shared/worktree/types'
 import type {

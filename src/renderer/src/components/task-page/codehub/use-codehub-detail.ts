@@ -12,7 +12,7 @@ import {
   touchCodehubDetailCache
 } from './codehub-detail-cache'
 import { useCodeHubMrExtras } from './use-codehub-mr-extras'
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
+import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
 
 /**
  * The CodeHub detail lives in taskPageData (not local state) so external opens —
@@ -23,9 +23,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   const { codehubDetailItem, setCodehubDetailItem, handleUseCodeHubItem, setCodehubRefreshNonce } =
     model
   const item = codehubDetailItem
-  const key = item
-    ? getCodehubDetailCacheKey({ repoId: item.repoId, kind: item.type, iid: item.iid })
-    : ''
+  const key = item ? getCodehubDetailCacheKey({ ...item, kind: item.type }) : ''
   // Why: cache writes replace entry identity (delete+set), so Map.get is a stable snapshot for useSyncExternalStore.
   const entry = useSyncExternalStore(
     subscribeCodehubDetailCache,
@@ -61,7 +59,10 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     setEditingLabels(false)
     setTab('conversation')
     void ensureCodehubDetailFresh({
+      host: item.host,
+      project: item.project,
       repoPath: item.repoPath,
+      repoHostId: item.repoHostId,
       repoId: item.repoId,
       kind: item.type,
       iid: item.iid
@@ -74,7 +75,10 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     }
     invalidateCodehubDetailCache(key)
     void ensureCodehubDetailFresh({
+      host: item.host,
+      project: item.project,
       repoPath: item.repoPath,
+      repoHostId: item.repoHostId,
       repoId: item.repoId,
       kind: item.type,
       iid: item.iid
@@ -107,6 +111,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     return codehubApi
       .createComment({
         repoPath: item.repoPath,
+        repoHostId: item.repoHostId,
         repoId: item.repoId,
         kind: item.type,
         iid: item.iid,
@@ -152,6 +157,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     void codehubApi
       .updateIssueTitle({
         repoPath: item.repoPath,
+        repoHostId: item.repoHostId,
         repoId: item.repoId,
         iid: item.iid,
         title: nextTitle
@@ -185,6 +191,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     void codehubApi
       .updateIssueLabels({
         repoPath: item.repoPath,
+        repoHostId: item.repoHostId,
         repoId: item.repoId,
         iid: item.iid,
         labels: nextLabels
@@ -214,6 +221,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     void codehubApi
       .setIssueState({
         repoPath: item.repoPath,
+        repoHostId: item.repoHostId,
         repoId: item.repoId,
         iid: item.iid,
         state,

@@ -1,5 +1,4 @@
 import { useAppStore } from '@/store'
-import { authorizeWorkbenchLocalPath } from './authorize-workbench-local-path'
 import { submitProjectCharter } from './charter-port'
 import {
   CHARTER_BRANCH,
@@ -17,7 +16,7 @@ export async function probeLocalCharter(path: string): Promise<{
   prefill: ProjectCharter
   note: string
 }> {
-  const result = await readProjectCharter(path)
+  const result = await readProjectCharter(path, undefined, { kind: 'user-file' })
   if (result.error) {
     return {
       prefill: { name: '', kind: '', brief: '', benchmark: '', opportunity: '' },
@@ -61,15 +60,6 @@ export async function submitProjectOnboard(args: {
   if (localRepo) {
     repoPath = workspace.trim()
     onLog({ kind: 'doing', text: `接入本地仓 ${repoPath}…` })
-    try {
-      await authorizeWorkbenchLocalPath(repoPath)
-    } catch (e) {
-      onLog({
-        kind: 'fail',
-        text: `无法授权读取该路径：${e instanceof Error ? e.message : String(e)}`
-      })
-      return { ok: false, repoId: '', attached: false }
-    }
     const repo = await addRepoPath(repoPath, 'git', { displayName: intent.name })
     if (!repo) {
       onLog({
@@ -92,7 +82,7 @@ export async function submitProjectOnboard(args: {
     const cloned = await window.api.repos.clone({ url, destination: parent })
     repoId = cloned.id
     repoPath = cloned.path
-    await fetchRepos()
+    await fetchRepos({ runtimeEnvironmentId: null })
     const existing = useAppStore.getState().repos.find((r) => r.id === repoId)
     if (!existing) {
       await addRepoPath(repoPath, 'git', { displayName: intent.name })
@@ -101,19 +91,19 @@ export async function submitProjectOnboard(args: {
   }
 
   if (repoId) {
-    await updateRepo(repoId, { displayName: intent.name })
+    await updateRepo(repoId, { displayName: intent.name }, { hostId: 'local' })
     // Why: BW fixed trees (bw/week-plan / bw/week-acceptance / bw/project) follow Orca's
     // per-repo worktree base; without one they land under the global workspaceDir, often on
     // another drive than the project. Set the project-local convention once, visibly.
     const registered = useAppStore.getState().repos.find((r) => r.id === repoId)
     if (registered && !registered.worktreeBasePath?.trim()) {
-      await updateRepo(repoId, { worktreeBasePath: '.bw/worktrees' })
+      await updateRepo(repoId, { worktreeBasePath: '.bw/worktrees' }, { hostId: 'local' })
       onLog({
         kind: 'ok',
         text: '已设单仓工作树基址 `.bw/worktrees`（工作树落在项目目录内）；可在 设置 > Repository worktree defaults 修改或清空'
       })
     }
-    await fetchWorktrees(repoId)
+    await fetchWorktrees(repoId, { executionHostId: 'local' })
   }
 
   await runCharterFlow({ repoId, repoPath, intent, onLog })
@@ -124,7 +114,11 @@ export async function submitProjectOnboard(args: {
     const order = useAppStore
       .getState()
       .repos.filter((r) => r.projectGroupId === attachToGroupId).length
-    const moved = await moveProjectToGroup(repoId, attachToGroupId, order)
+    const moved = await moveProjectToGroup(
+      { id: repoId, executionHostId: 'local' },
+      attachToGroupId,
+      order
+    )
     if (!moved) {
       onLog({ kind: 'fail', text: '代码仓已接入，但挂入项目组失败' })
     } else {

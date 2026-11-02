@@ -1,4 +1,5 @@
 import { defineConfig } from '@stablyai/playwright-test'
+import { resolveBuildSourceCommit } from '../config/scripts/build-source-commit.mjs'
 
 /**
  * Playwright config for the Workbench Electron smoke test.
@@ -14,28 +15,23 @@ import { defineConfig } from '@stablyai/playwright-test'
  */
 export default defineConfig({
   testDir: './e2e',
+  // Keep checkout provenance without fetching the PR base during test setup.
+  captureGitInfo: { commit: false, diff: false },
+  metadata: { sourceCommit: resolveBuildSourceCommit() },
   globalSetup: './e2e/global-setup.ts',
   globalTeardown: './e2e/global-teardown.ts',
-  // Why: this suite launches a fresh Electron app and isolated userData dir per
-  // test. Cold-starts late in the run can exceed 60s on CI even when the app is
-  // healthy, so the per-test budget needs to cover startup plus assertions.
+  // Budget startup plus assertions: fresh app/profile launches can exceed 60s late in CI.
   timeout: 120_000,
   expect: { timeout: 10_000 },
-  // Why: the headless Electron specs launch isolated app instances and can
-  // safely fan out across workers, which cuts the default E2E runtime
-  // substantially. The few visible-window tests that still rely on real
-  // pointer interaction are marked serial in their spec file instead.
+  // Isolated hidden apps can fan out; visible-window pointer specs serialize themselves.
   fullyParallel: true,
-  // Why: each CI worker launches a real Electron/Chromium process tree against
-  // a mutable seeded repo. Release runners showed two apps per VM can contend
-  // on Xvfb/git enough to create false E2E failures, so CI uses one worker.
+  // CI scales by shards: two real Electron trees per VM contended on Xvfb/git and caused false failures.
   workers: process.env.CI ? 1 : undefined,
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: 'list',
   use: {
-    // Why: this suite intentionally runs with retries disabled so first-failure
-    // traces are the only reliable debugging artifact we can collect in CI.
+    // Disable retries so CI retains the first failure’s reliable trace.
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure'
   },

@@ -1,5 +1,6 @@
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { codehubApi } from '@/lib/codehub-api'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
 import {
   getGitHubRuntimeRepoId,
   getGitHubSourceRuntimeTarget
@@ -243,6 +244,7 @@ async function countSlotOpenPrs(repo: Repo, current: () => boolean): Promise<num
       const result = await codehubApi.listTasks({
         repoPath: repo.path,
         repoId: repo.id,
+        repoHostId: getRepoExecutionHostId(repo),
         kind: 'mr',
         state: 'opened',
         limit

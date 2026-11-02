@@ -1,31 +1,56 @@
+import {
+  findAmbiguousWorktreeIds,
+  getPaletteOwnershipWorktreeIds,
+  isUnifiedTabOwnedByWorktree
+} from '@/lib/unified-tab-host-ownership'
+import type { Worktree } from '../../../shared/worktree/types'
 import { useAppStore } from '@/store'
-import { branchName } from '@/lib/git-utils'
-import { sendNotesToActiveAgentSession } from '@/lib/active-agent-note-send'
+import { sendMessageToAgent } from '@/lib/agent-message-send'
+import type { AgentMessageTarget } from '@/lib/agent-message-target'
+import { getStructuredChatTabNames } from '@/runtime/structured-chat-name-observation'
 import { deriveNotesSendAgentTargets } from '@/lib/notes-send-agent-targets'
 import type { ActiveAgentNotesSendStatus } from '@/lib/active-agent-note-send-result'
 import { METRICS_BRANCH } from './version-cycle/metrics-setup'
+import { findNamedWorktree, nativeWorkspaceScope } from './version-cycle/native-workspace'
 
-export function metricsMaintenanceWorktreeId(): string | null {
-  const state = useAppStore.getState()
-  const repoId = state.activeRepoId
-  const trees = repoId ? state.worktreesByRepo[repoId] : undefined
-  return (
-    trees?.find((tree) => tree.branch && branchName(tree.branch) === METRICS_BRANCH)?.id ?? null
-  )
+function metricsMaintenanceWorktree(source: Worktree | null) {
+  return source ? findNamedWorktree(nativeWorkspaceScope(source), METRICS_BRANCH) : null
 }
 
 /** The metrics workspace session: its active tab when that tab can take input, otherwise the only eligible one. */
-export function metricsSessionTarget(worktreeId: string): { tabId: string; leafId: string } | null {
+export function metricsSessionTarget(
+  worktree: Worktree
+): { tabId: string; messageTarget: AgentMessageTarget } | null {
   const state = useAppStore.getState()
-  const targets = deriveNotesSendAgentTargets(state, worktreeId)
+  const worktreeId = worktree.id
+  const ambiguous = findAmbiguousWorktreeIds(getPaletteOwnershipWorktreeIds(state))
+  const tabs = state.unifiedTabsByWorktree[worktreeId] ?? []
+  const targets = deriveNotesSendAgentTargets(
+    state,
+    worktreeId,
+    getStructuredChatTabNames()
+  ).filter((target) => {
+    const tab = tabs.find((tab) =>
+      target.messageTarget.kind === 'terminal'
+        ? tab.contentType === 'terminal' && tab.entityId === target.tabId
+        : tab.id === target.tabId
+    )
+    return isUnifiedTabOwnedByWorktree(tab, worktree, ambiguous)
+  })
   const eligible = targets.filter((target) => target.status === 'eligible')
   const choices = eligible.length ? eligible : targets
   if (!choices.length) {
     return null
   }
-  const activeTab = state.activeTabIdByWorktree[worktreeId]
-  const target = choices.find((item) => item.tabId === activeTab) ?? choices[0]
-  return { tabId: target.tabId, leafId: target.leafId }
+  const activeGroupId = state.activeGroupIdByWorktree[worktreeId]
+  const group = state.groupsByWorktree[worktreeId]?.find((entry) => entry.id === activeGroupId)
+  const tab = state.unifiedTabsByWorktree[worktreeId]?.find(
+    (entry) => entry.id === group?.activeTabId
+  )
+  const activeTab = tab?.contentType === 'terminal' ? tab.entityId : tab?.id
+  const target =
+    choices.find((item) => item.tabId === activeTab) ?? (choices.length === 1 ? choices[0] : null)
+  return target ? { tabId: target.tabId, messageTarget: target.messageTarget } : null
 }
 
 export function scoreboardSendFailure(status: Exclude<ActiveAgentNotesSendStatus, 'sent'>): string {
@@ -43,27 +68,40 @@ export function scoreboardSendFailure(status: Exclude<ActiveAgentNotesSendStatus
       return '读不到指标配置会话的状态，稍后再发送。'
     case 'not-writable':
       return '指标配置会话没有收下批注。'
+    case 'unconfirmed':
+      return '批注已发出，但无法确认指标配置会话是否收到，请先检查会话。'
     case 'partial-submit-failed':
       return '批注可能已经贴进指标配置会话，但没有提交成功。'
   }
 }
 
 export async function sendScoreboardNotes(
-  prompt: string
+  prompt: string,
+  sourceWorktree: Worktree | null
 ): Promise<{ ok: true } | { ok: false; message: string }> {
-  const worktreeId = metricsMaintenanceWorktreeId()
-  const target = worktreeId ? metricsSessionTarget(worktreeId) : null
-  if (!worktreeId || !target) {
+  let worktree
+  try {
+    worktree = metricsMaintenanceWorktree(sourceWorktree)
+  } catch {
+    return { ok: false, message: scoreboardSendFailure('status-unavailable') }
+  }
+  const worktreeId = worktree?.id
+  const target = worktree ? metricsSessionTarget(worktree) : null
+  if (!worktree || !worktreeId || !target) {
     return { ok: false, message: scoreboardSendFailure('no-active-terminal') }
   }
   const state = useAppStore.getState()
-  state.setActiveWorktree(worktreeId)
+  state.setActiveWorktree(worktreeId, nativeWorkspaceScope(worktree).hostId)
   state.setActiveView('terminal')
-  state.setActiveTab(target.tabId)
-  const result = await sendNotesToActiveAgentSession({
+  if (target.messageTarget.kind === 'terminal') {
+    state.setActiveTab(target.tabId)
+  } else {
+    state.activateTab(target.tabId, { worktreeId })
+  }
+  const result = await sendMessageToAgent({
     worktreeId,
     prompt,
-    noteTarget: target
+    target: target.messageTarget
   })
   if (result.status === 'sent') {
     return { ok: true }

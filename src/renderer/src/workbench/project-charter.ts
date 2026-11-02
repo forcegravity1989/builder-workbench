@@ -2,6 +2,7 @@
  * Workbench project charter — renderer 侧 fs 包装。
  * 纯函数核心（解析/渲染/保真补空/归一化）在 shared,与 main 侧 bw/project PR 流共用。
  */
+import type { LocalFileAccess } from '../../../shared/local-file-access'
 import {
   BW_GITIGNORE_REL,
   EMPTY_CHARTER,
@@ -29,7 +30,8 @@ export type { ProjectCharter } from '../../../shared/workbench/project-charter'
 
 export async function readProjectCharter(
   repoPath: string,
-  connectionId?: string | null
+  connectionId?: string | null,
+  access?: LocalFileAccess
 ): Promise<{
   charter: ProjectCharter | null
   /** 原文文本，供保真合并与知识库正文展示；缺失或不可读时为 null。 */
@@ -38,7 +40,7 @@ export async function readProjectCharter(
   error: string | null
 }> {
   const filePath = joinFsPath(repoPath, PROJECT_TOML_REL)
-  const ssh = connectionId ? { connectionId } : {}
+  const ssh = connectionId ? { connectionId } : { access }
   let exists = false
   try {
     exists = await window.api.fs.pathExists({ filePath, ...ssh })

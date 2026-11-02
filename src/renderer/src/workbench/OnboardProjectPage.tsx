@@ -3,7 +3,6 @@ import { useAppStore } from '@/store'
 import { getDefaultCloneParent } from '@/components/sidebar/clone-defaults'
 import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
 import { closeProjectPage, openProjectWall, type ProjectOnboardOptions } from './project-page-state'
-import { authorizeWorkbenchLocalPath } from './authorize-workbench-local-path'
 import { probeRemoteCharter } from './charter-port'
 import {
   joinFsPath,
@@ -83,7 +82,9 @@ export function OnboardProjectPage({
       } else if (result.kind === 'absent') {
         setProbeNote('远端还没有名片，确认后经 PR 新建。')
       } else if (result.kind === 'no-repo') {
-        setProbeNote(`读不到该仓：${result.error}（仓不存在或没有权限）。仍可继续，克隆时会再验证。`)
+        setProbeNote(
+          `读不到该仓：${result.error}（仓不存在或没有权限）。仍可继续，克隆时会再验证。`
+        )
       } else {
         applyNote(
           `远端名片没查成：${result.error} —— 不代表仓里没有名片；克隆后以已有名片为准，只补空字段。`
@@ -105,9 +106,10 @@ export function OnboardProjectPage({
     try {
       if (localRepo) {
         const path = workspace.trim()
-        // Why: typed paths are outside fs allow-list until authorized; OS picker also authorizes in main.
-        await authorizeWorkbenchLocalPath(path)
-        const exists = await window.api.fs.pathExists({ filePath: path })
+        const exists = await window.api.fs.pathExists({
+          filePath: path,
+          access: { kind: 'user-file' }
+        })
         if (!exists) {
           setStepError(`路径不存在：${path}。请点「浏览文件夹」选真实 Git 仓。`)
           return
@@ -120,8 +122,10 @@ export function OnboardProjectPage({
         setProbeNote(probed.note)
       } else {
         const parent = cloneParent.trim()
-        await authorizeWorkbenchLocalPath(parent)
-        const parentExists = await window.api.fs.pathExists({ filePath: parent })
+        const parentExists = await window.api.fs.pathExists({
+          filePath: parent,
+          access: { kind: 'user-file' }
+        })
         if (!parentExists) {
           setStepError(`父文件夹不存在：${parent}`)
           return
@@ -283,7 +287,6 @@ export function OnboardProjectPage({
                         onClick={async () => {
                           const path = await window.api.repos.pickFolder()
                           if (path) {
-                            await authorizeWorkbenchLocalPath(path)
                             setWorkspace(path)
                             setStepError(null)
                           }
@@ -325,7 +328,6 @@ export function OnboardProjectPage({
                           onClick={async () => {
                             const dir = await window.api.repos.pickDirectory()
                             if (dir) {
-                              await authorizeWorkbenchLocalPath(dir)
                               setCloneParent(dir)
                               setStepError(null)
                             }

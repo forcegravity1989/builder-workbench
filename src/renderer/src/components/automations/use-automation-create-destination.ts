@@ -1,12 +1,4 @@
-/**
- * The create dialog's destination: chosen once, shown, and re-checked at submit.
- *
- * The captured destination is deliberately state rather than a derivation of the
- * live catalog. A dialog keeps the owner it captured for its whole lifetime, so
- * a host that re-pairs or re-registers while the form is open is reported as
- * moved instead of silently followed — which is the only way the user's "create
- * it on that machine" survives the machine changing identity underneath it.
- */
+/** Capture the displayed destination in state for the dialog lifetime; re-pair/re-registration must report movement instead of silently changing the chosen machine. */
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { translate } from '@/i18n/i18n'
@@ -146,8 +138,7 @@ export function useAutomationCreateDestination(
     [captured, reason]
   )
 
-  // Why refs: the check runs inside an async submit, where a value closed over
-  // when the handler was created could be an incarnation old.
+  // Async submit checks read live entries through refs; a closed-over owner may already be obsolete.
   const entriesRef = useRef(entries)
   entriesRef.current = entries
   const repoTablesRef = useRef(repoTables)

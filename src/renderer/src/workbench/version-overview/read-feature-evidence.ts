@@ -1,3 +1,8 @@
+import { getRepoExecutionHostId } from '../../../../shared/execution-host'
+import { getWorkspaceAttachments } from '../../../../shared/workspace-attachments'
+import { areTaskSourceContextsEqual } from '../../../../shared/task-source-context'
+import { getWorkspaceAttachmentUrlScope } from '../../../../shared/workspace-attachment-normalization'
+import { normalizeGitRemoteUrl } from '../../../../shared/git-remote-identity'
 import { createOverviewProviderReader } from './overview-provider-port'
 import { codehubApi } from '@/lib/codehub-api'
 import { lookupGitHubWorkItemDetailsForSource } from '@/lib/github-work-item-source-lookup'
@@ -109,6 +114,7 @@ export async function readFeatureEvidence(
         const detail = await codehubApi.viewTask({
           repoPath: repo.path,
           repoId: repo.id,
+          repoHostId: getRepoExecutionHostId(repo),
           kind: 'issue',
           iid: task.iid
         })
@@ -137,12 +143,23 @@ export async function readFeatureEvidence(
         if (ref.provider === 'github' && tree.linkedPR) {
           addPull(tree.linkedPR, task)
         }
-        if (
-          ref.provider === 'codehub' &&
-          tree.linkedWorkItem?.provider === 'codehub' &&
-          tree.linkedWorkItem.type === 'mr'
-        ) {
-          addPull(tree.linkedWorkItem.number, task)
+        if (ref.provider === 'codehub') {
+          for (const attachment of getWorkspaceAttachments(tree)) {
+            if (attachment.provider !== 'codehub' || attachment.type !== 'mr') {
+              continue
+            }
+            if (attachment.repoId && attachment.repoId !== repo.id) {
+              continue
+            }
+            const sameSource = attachment.taskSourceContext
+              ? areTaskSourceContextsEqual(attachment.taskSourceContext, task.source)
+              : !!attachment.url &&
+                normalizeGitRemoteUrl(getWorkspaceAttachmentUrlScope(attachment)) ===
+                  repo.gitRemoteIdentity?.canonicalKey
+            if (sameSource) {
+              addPull(attachment.number, task)
+            }
+          }
         }
       }
       if (
@@ -184,6 +201,7 @@ export async function readFeatureEvidence(
         const detail = await codehubApi.viewTask({
           repoPath: repo.path,
           repoId: repo.id,
+          repoHostId: getRepoExecutionHostId(repo),
           kind: 'mr',
           iid: number
         })

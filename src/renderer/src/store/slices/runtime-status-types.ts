@@ -1,15 +1,11 @@
-import type { RuntimeHostStatusSnapshot } from '../../../../shared/runtime-host-status'
+import type {
+  RuntimeEnvironmentStatus,
+  RuntimeHostStatusSnapshot
+} from '../../../../shared/runtime-host-status'
 import type { PublicKnownRuntimeEnvironment } from '../../../../shared/runtime-environments'
-import type { RuntimeStatus } from '../../../../shared/runtime-types'
+import type { AppState } from '../types'
 
-export type RuntimeEnvironmentStatus = {
-  snapshot?: RuntimeHostStatusSnapshot
-  status: RuntimeStatus | null
-  remoteControl?: RuntimeStatus['remoteControl'] | null
-  appVersion?: string | null
-  checkedAt: number
-  connectionGeneration?: number
-}
+export type { RuntimeEnvironmentStatus }
 
 export type RuntimeStatusSlice = {
   readRuntimeHostStatusSnapshots: () => Promise<void>
@@ -30,3 +26,32 @@ export type RuntimeStatusSlice = {
   refreshRuntimeEnvironmentStatus: (environmentId: string, timeoutMs?: number) => Promise<boolean>
   hydrateRuntimeEnvironmentStatuses: () => Promise<void>
 }
+
+export type RuntimeStatusStoreState = RuntimeStatusSlice &
+  Pick<
+    AppState,
+    'clientHostedBrowserCloseIntentsByEnvironment' | 'clearClientHostedBrowserCloseIntents'
+  > &
+  Partial<
+    Pick<
+      AppState,
+      | 'settings'
+      | 'remoteBrowserPageHandlesByPageId'
+      | 'retainRuntimeDetectedAgents'
+      | 'retainRuntimeTerminalQuickCommands'
+      | 'retainEnvironmentSshState'
+      | 'clearRuntimeDetectedAgents'
+      | 'markEnvironmentSshStateStale'
+      | 'purgeStaleRuntimeHostState'
+      | 'clearHostWorkspaceStatuses'
+      | 'pairedTerminalTabCloseIntentsByEnvironment'
+      | 'recordPairedTerminalTabCloseIntent'
+      | 'clearPairedTerminalTabCloseIntents'
+    >
+  >
+
+export type RuntimeStatusStoreSetState = (
+  partial:
+    | Partial<RuntimeStatusStoreState>
+    | ((state: RuntimeStatusStoreState) => Partial<RuntimeStatusStoreState>)
+) => void

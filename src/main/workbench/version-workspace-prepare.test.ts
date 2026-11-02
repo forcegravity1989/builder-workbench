@@ -331,7 +331,10 @@ describe('versionWorkspace prepare', () => {
       code: 'create-branch-mismatch'
     })
     expect(mismatch.calls.remove).toBe(1)
-    expect(mismatch.calls.removeOptions[0]).toEqual({ hostId: 'local' })
+    expect(mismatch.calls.removeOptions[0]).toEqual({
+      hostId: 'local',
+      waitForBackgroundRemoval: true
+    })
     // 误建的计划树没有被绑定；验收树正常绑定。
     expect(
       [...mismatch.registry.values()].some(

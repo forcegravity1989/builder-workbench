@@ -5,6 +5,10 @@ import { release, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { connectMacOSProviderSocket } from './macos-native-provider-socket'
+import {
+  reapMacOSProviderProcess,
+  type MacOSProviderProcessOwner
+} from './macos-native-provider-process-reaping'
 import { RuntimeClientError } from './runtime-client-error'
 
 const HELPER_CONNECT_TIMEOUT_MS = 10_000
@@ -21,8 +25,7 @@ export function isMacOS14OrNewer(): boolean {
   return Number.isFinite(darwinMajor) && darwinMajor >= 23
 }
 
-// Why: Node treats unhandled socket 'error' events as process exceptions, so
-// stale helper sockets keep a no-op listener that does not retain the client.
+// Suppress stale socket errors without retaining the client or crashing the process.
 export function ignoreStaleSocketError(): void {}
 
 export function attachMacOSNativeProviderSocketListeners(
@@ -86,10 +89,12 @@ export function consumeNativeProviderLines(
 
 export async function startMacOSNativeProviderSocket({
   helperExecutablePath,
-  isCurrent
+  isCurrent,
+  providerProcess
 }: {
   helperExecutablePath: string
   isCurrent: (socketPath: string) => boolean
+  providerProcess: MacOSProviderProcessOwner
 }): Promise<StartedMacOSProviderSocket> {
   const socketDirectory = mkdtempSync(join(tmpdir(), 'orca-computer-use-'))
   chmodSync(socketDirectory, 0o700)
@@ -97,9 +102,10 @@ export async function startMacOSNativeProviderSocket({
   const socketToken = randomUUID()
   const socketTokenPath = join(socketDirectory, 'provider.token')
   writeFileSync(socketTokenPath, socketToken, { encoding: 'utf8', mode: 0o600 })
-  // Why: launching the nested helper via LaunchServices can make TCC evaluate
-  // Orca.app as responsible; the signed helper executable owns this grant.
+  // Spawn the signed helper directly so TCC does not charge LaunchServices activity to Orca.app.
   const provider = spawnProvider(helperExecutablePath, socketPath, socketTokenPath)
+  // Own the helper before connecting so shutdown during startup cannot strand it.
+  providerProcess.adopt(provider)
   const providerFailure = waitForProviderLaunchFailure(provider)
   const connectAbort = new AbortController()
   try {
@@ -111,7 +117,6 @@ export async function startMacOSNativeProviderSocket({
     rmSync(socketTokenPath, { force: true })
     if (!isCurrent(socketPath)) {
       socket.destroy()
-      cleanupSocketDirectory(socketDirectory)
       throw new RuntimeClientError(
         'accessibility_error',
         'native macOS provider startup was superseded'
@@ -121,12 +126,9 @@ export async function startMacOSNativeProviderSocket({
   } catch (error) {
     connectAbort.abort()
     providerFailure.cleanup()
-    // Why: connect failures happen after spawn; terminate the detached helper
-    // so repeated startup attempts do not leave orphan providers.
-    provider.kill('SIGTERM')
-    if (isCurrent(socketPath)) {
-      cleanupSocketDirectory(socketDirectory)
-    }
+    // Escalate cleanup after failed or superseded startup, even if the helper ignores SIGTERM.
+    reapMacOSProviderProcess(provider)
+    cleanupSocketDirectory(socketDirectory)
     throw error
   }
 }

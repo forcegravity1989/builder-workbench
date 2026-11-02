@@ -1,3 +1,4 @@
+import type { Worktree } from '../../../shared/worktree/types'
 import { MessageSquarePlus } from 'lucide-react'
 import { useMemo, useState, type MouseEvent } from 'react'
 import { AnnotationPanel } from './annotations/AnnotationPanel'
@@ -32,7 +33,7 @@ export function OverviewScoreboard({
   version,
   setupBusy,
   onSetup,
-  worktreeId
+  sourceWorktree
 }: {
   catalog: MetricCatalog | null
   readings: Record<string, MetricReading | null>
@@ -44,7 +45,7 @@ export function OverviewScoreboard({
   version: string | null
   setupBusy: boolean
   onSetup(): void
-  worktreeId: string | null
+  sourceWorktree: Worktree | null
 }) {
   const notes = useBoardAnnotations(`scoreboard:${identity}:${version ?? ''}`)
   const [noteNotice, setNoteNotice] = useState<string | null>(null)
@@ -221,7 +222,10 @@ export function OverviewScoreboard({
           }}
           onCopyError={(message) => setNoteNotice(`复制批注失败：${message}`)}
           onSendDirect={async () => {
-            const result = await sendScoreboardNotes(boardAnnotationsSendPrompt(notes.annotations))
+            const result = await sendScoreboardNotes(
+              boardAnnotationsSendPrompt(notes.annotations),
+              sourceWorktree
+            )
             if (!result.ok) {
               setNoteNotice(result.message)
               return false

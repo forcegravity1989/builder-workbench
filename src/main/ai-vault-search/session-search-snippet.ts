@@ -4,25 +4,20 @@ import {
   SESSION_SEARCH_SNIPPET_MARK_OPEN
 } from './session-search-engine-types'
 import {
+  andExpression,
   orExpression,
+  phraseExpression,
   scopedExpression,
   type SessionSearchQueryPlan
 } from './session-search-query-planner'
-import type { SessionSearchScope } from './session-search-engine-types'
+import type { SessionSearchRoute, SessionSearchScope } from './session-search-engine-types'
 
-// What FTS5 wraps a match in before this module rewrites it to the public
-// marks. Private-use code points, and not `[[`, because two different jobs here
-// have to tell a mark from content: choosing the column to show, and refusing
-// to cut a snippet between an open mark and its close. Transcripts contain
-// `[[` — a bash `[[ -f x ]]`, numpy's `[[1, 2]]` — and a mark the content can
-// forge makes both of those decisions wrong on real text.
+// Private markers avoid treating literal transcript brackets as highlights.
 const MARK_OPEN = '\uE000'
 const MARK_CLOSE = '\uE001'
 
 const SNIPPET_TOKENS = 12
-// Why a ceiling on top of the token count: a transcript chunk can be 8000
-// characters with no separator in it, which FTS5 reports as one token, so
-// "twelve tokens" is not by itself a bound on what a hit carries.
+// A single FTS5 token can exceed the snippet’s character budget.
 const SNIPPET_MAX_CHARS = 512
 
 export type SessionSearchSnippet = {
@@ -32,36 +27,18 @@ export type SessionSearchSnippet = {
 
 export const EMPTY_SNIPPET: SessionSearchSnippet = { text: '', truncated: false }
 
-/**
- * The window of one message that shows why it matched.
- *
- * The expression is the plan's OR form rather than the route's, so a hit found
- * through typo repair is marked with the repaired terms it was actually
- * retrieved by, and a phrase hit still marks each of its words.
- */
+/** Use the effective retrieval expression so phrase and typo-repaired highlights match the hit. */
 export function sessionSearchSnippet(
   db: SyncDatabase,
   scope: SessionSearchScope,
   rowid: number,
-  plan: SessionSearchQueryPlan
+  plan: SessionSearchQueryPlan,
+  route: SessionSearchRoute
 ): SessionSearchSnippet {
-  // Why: the identifier shadow column is word soup; a hit that also matches in a
-  // prose column should be shown from there. Column -1 (any column) is the
-  // fallback for rows that only matched through the shadow column.
-  //
-  // The same four for every scope, because the scope is already in the
-  // expression below. A conversation snippet cannot come out of `tool_text` for
-  // the reason the search could not: the row has to match
-  // `{user_text assistant_text}: …` before any of these columns is read, and a
-  // row that matches under that filter carries its mark in column 0 or 1. A
-  // second list here would be a guard with nothing left to guard, and the two
-  // would mask each other's mistakes.
+  // Prefer prose over identifier fragments; -1 covers shadow-only matches.
+  // The MATCH expression already restricts columns to the requested scope.
   const columns = [0, 1, 2, -1]
-  // Each column twice: once marked, once with empty marks. Whether a column
-  // matched is then the difference between two renderings of the same text,
-  // which content cannot forge — searching the marked one for a mark reads a
-  // transcript's own `[[` as a highlight and shows a column that matched
-  // nothing.
+  // Compare marked and plain renderings so content cannot pose as a highlight.
   const select = columns
     .flatMap((column, index) => [
       `snippet(messages_fts, ${column}, '${MARK_OPEN}', '${MARK_CLOSE}', '…', ${SNIPPET_TOKENS}) AS c${index}`,
@@ -69,13 +46,8 @@ export function sessionSearchSnippet(
     ])
     .join(', ')
   try {
-    // Why the subselect: a bound `rowid = ?` or `rowid IN (?)` next to MATCH is
-    // silently ignored by the FTS5 planner, which then returns the first match
-    // in the table. Why the join to `sessions`: retrieval proved this rowid
-    // belonged to a live session, but a purge can commit between that statement
-    // and this one, and a message row outlives its session row until the drain
-    // reaches it. INNER, never LEFT — this is the last read before content is
-    // returned to a caller.
+    // FTS5 needs a subselect to honor the bound rowid alongside MATCH.
+    // A purge can leave orphaned messages between reads; require a live session.
     const row = db
       .prepare(
         `SELECT ${select} FROM messages_fts
@@ -83,13 +55,10 @@ export function sessionSearchSnippet(
          JOIN sessions s ON s.id = m.session_row_id
          WHERE messages_fts MATCH ? AND messages_fts.rowid IN (SELECT ?)`
       )
-      .get(scopedExpression(scope, orExpression(plan.terms)), rowid) as
-      | Record<string, string>
-      | undefined
-    if (!row) {
+      .get(scopedExpression(scope, routeExpression(plan, route)), rowid)
+    if (!isSnippetRow(row)) {
       return EMPTY_SNIPPET
     }
-    // A snippet with nothing highlighted tells the user nothing; omit it.
     const index = columns.findIndex(
       (_column, at) => row[`c${at}`] !== undefined && row[`c${at}`] !== row[`p${at}`]
     )
@@ -103,18 +72,27 @@ export function sessionSearchSnippet(
   }
 }
 
-/** One run of the snippet's own text, or one mark FTS5 put between two runs. */
+function isSnippetRow(value: unknown): value is Record<string, string> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    Object.values(value).every((column) => typeof column === 'string')
+  )
+}
+
+function routeExpression(plan: SessionSearchQueryPlan, route: SessionSearchRoute): string {
+  if (route.endsWith('phrase')) {
+    return phraseExpression(plan.phrase)
+  }
+  if (route.endsWith('and')) {
+    return andExpression(plan.phrase)
+  }
+  return orExpression(plan.terms)
+}
+
 type SnippetPiece = { kind: 'text'; value: string } | { kind: 'mark'; value: string }
 
-/**
- * The marked rendering as its text and the marks FTS5 inserted into it.
- *
- * A mark is a private-use character the marked rendering has where the plain one
- * has something else, so a Nerd Font glyph the transcript itself wrote stays
- * text — replacing every private-use character would hand the renderer a
- * highlight the content forged. Null when the two renderings differ for any
- * other reason, which is not a difference this can attribute.
- */
+/** Compare against plain text to preserve literal private-use glyphs; reject unexplained differences. */
 function splitMarks(marked: string, plain: string): SnippetPiece[] | null {
   const pieces: SnippetPiece[] = []
   const rest = [...plain]
@@ -139,14 +117,7 @@ function splitMarks(marked: string, plain: string): SnippetPiece[] | null {
   return pieces
 }
 
-/**
- * The public marks, and the character ceiling.
- *
- * Cut on a code-point boundary, and never between a mark and its close: an open
- * mark with no close hands the renderer something it can never close. The
- * ceiling counts the snippet's own characters, so the marks cost the caller
- * nothing and a transcript's own private-use character costs it one.
- */
+/** Count content code points only and discard any highlight crossing the character ceiling. */
 function renderSnippet(pieces: SnippetPiece[]): SessionSearchSnippet {
   let text = ''
   let shown = 0

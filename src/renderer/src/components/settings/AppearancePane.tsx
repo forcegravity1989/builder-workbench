@@ -79,19 +79,16 @@ export function AppearancePane({
   )
   const isSearching = normalizeSettingsSearchQuery(searchQuery).length > 0
   const isWebClient = isWebClientLocation()
-  // Why: the system tray behavior is desktop-Electron Windows-only; a Windows
-  // browser web client has no local tray to control.
+  // Windows web clients have no local system tray; require desktop Electron.
   const isDesktopWindows = getRendererAppPlatform() === 'win32' && !isWebClient
   const isDesktopMac = getRendererAppPlatform() === 'darwin' && !isWebClient
 
-  // Why: Terminal / Window settings were too easy to miss when only Interface
-  // started open; keep sections independently collapsible but expanded by default.
+  // Expand by default so Terminal/Window controls remain discoverable; sections still collapse independently.
   const [openSections, setOpenSections] = useState<ReadonlySet<AppearanceSectionKey>>(
     () => new Set(ALL_APPEARANCE_SECTIONS)
   )
 
-  // Why: nested deep links (e.g. Usage percentages) land under Window & Sidebar;
-  // expand that section before Settings scrolls so the row is actually visible.
+  // Expand deep-link parents before scrolling so the target row is visible.
   useLayoutEffect(() => {
     if (!appearanceAccordionDeepLink) {
       return
@@ -105,8 +102,7 @@ export function AppearancePane({
       return next
     })
     clearAppearanceAccordionDeepLink()
-    // Why: expand is layout-synchronous; scroll on the next frame so the target
-    // has non-zero height when Settings (or this fallback) scrolls.
+    // Scroll next frame after synchronous expansion so the target has nonzero height.
     const frameId = requestAnimationFrame(() => {
       document
         .getElementById(USAGE_PERCENTAGE_DISPLAY_SETTING_ID)
@@ -133,7 +129,6 @@ export function AppearancePane({
     'Sidebar, status bar, and file explorer'
   )
 
-  // Search-entry buckets per section so a query can force-open the matching one.
   const interfaceSearchEntries = [
     { title: interfaceTitle },
     ...getThemeEntries(),
@@ -173,9 +168,7 @@ export function AppearancePane({
   })
   const appIconMatches = matchesSettingsSearch(searchQuery, getAppIconEntries())
 
-  // While searching, force-open every section that contains a match so its
-  // controls (including advanced ones) are revealed; otherwise use the user's
-  // independent open/closed state (all expanded by default).
+  // Search reveals matching sections, including advanced controls, without replacing saved disclosure state.
   function isSectionOpen(key: AppearanceSectionKey): boolean {
     if (isSearching) {
       return key === 'interface'
@@ -230,12 +223,6 @@ export function AppearancePane({
         </AppearanceSection>
       ) : null}
 
-      {/* Why: Code & Markdown is intentionally omitted. Orca has no Appearance-level
-          code/markdown settings — the Monaco editor reuses the terminal font and
-          there is no markdown-style or line-number setting — so a fourth row would
-          be empty. We surface only the three sections that hold real controls
-          rather than fabricate settings. */}
-
       {terminalMatches ? (
         <AppearanceSection
           id="terminal"
@@ -277,6 +264,7 @@ export function AppearancePane({
         </AppearanceSection>
       ) : null}
 
+      {/* Keep the App Icon easter egg at the bottom instead of inside Interface advanced. */}
       {appIconMatches ? (
         <SearchableSetting
           title={translate('auto.components.settings.AppearancePane.ca1590d42f', 'App Icon')}

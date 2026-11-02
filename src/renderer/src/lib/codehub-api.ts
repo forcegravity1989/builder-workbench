@@ -1,22 +1,35 @@
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { CodeHubApi } from '../../../shared/codehub-api'
 import { useAppStore } from '@/store'
 import { getExplicitRuntimeOwnerEnvironmentId } from './repo-runtime-owner'
-import { callRuntimeRpc, getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
+import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { runtimeTargetForOwnerEnvironment } from '@/runtime/runtime-client-target'
 
 // Repo ownership selects the runtime for both reads and writes; UI focus may
 // have moved to a different host while a task detail remains open.
-function route<K extends keyof CodeHubApi>(
+async function route<K extends keyof CodeHubApi>(
   method: K,
   args: Parameters<CodeHubApi[K]>[0]
 ): Promise<Awaited<ReturnType<CodeHubApi[K]>>> {
-  const target = getActiveRuntimeTarget({
-    activeRuntimeEnvironmentId: getExplicitRuntimeOwnerEnvironmentId(
-      useAppStore.getState(),
-      args.repoId
+  const state = useAppStore.getState()
+  const owners = state.repos.filter(
+    (repo) =>
+      (!args.repoId || repo.id === args.repoId) &&
+      repo.path === args.repoPath &&
+      (!args.repoHostId || getRepoExecutionHostId(repo) === args.repoHostId)
+  )
+  if (owners.length !== 1) {
+    throw new Error(
+      'CodeHub repository owner is missing or ambiguous. Select a host-specific repository.'
     )
-  })
+  }
+  const target = runtimeTargetForOwnerEnvironment(
+    getExplicitRuntimeOwnerEnvironmentId({ repos: owners }, owners[0].id)
+  )
   if (target.kind === 'environment') {
-    return callRuntimeRpc(target, `codehub.${method}`, args, { timeoutMs: 60_000 })
+    return callRuntimeRpc<Awaited<ReturnType<CodeHubApi[K]>>>(target, `codehub.${method}`, args, {
+      timeoutMs: 60_000
+    })
   }
   const call = window.api.codehub[method] as (
     input: typeof args

@@ -1,3 +1,4 @@
+import { createBrowserUuid } from '@/lib/browser-uuid'
 import type { MilestoneDraft } from '../../../shared/workbench/project-milestones'
 import {
   latestMilestoneMonth,
@@ -26,25 +27,25 @@ export function createMilestoneFeature(draft: MilestoneDraft, started: Set<strin
       .slice(0, 10)
   }
   let week = milestoneWeekAt(milestoneDay(date))
-  let used = materializeMilestoneWeek(draft, week, crypto.randomUUID())
+  let used = materializeMilestoneWeek(draft, week, createBrowserUuid())
   while (started.has(used.version.cycleId)) {
     week = milestoneWeekAt(milestoneDay(used.version.timeWindow!.end) + 7)
-    used = materializeMilestoneWeek(draft, week, crypto.randomUUID())
+    used = materializeMilestoneWeek(draft, week, createBrowserUuid())
   }
   date = used.version.timeWindow!.start
   let following = materializeMilestoneWeek(
     used.draft,
     milestoneWeekAt(milestoneDay(used.version.timeWindow!.end) + 7),
-    crypto.randomUUID()
+    createBrowserUuid()
   )
   while (started.has(following.version.cycleId)) {
     following = materializeMilestoneWeek(
       used.draft,
       milestoneWeekAt(milestoneDay(following.version.timeWindow!.end) + 7),
-      crypto.randomUUID()
+      createBrowserUuid()
     )
   }
-  const id = crypto.randomUUID()
+  const id = createBrowserUuid()
   const ref = { version: used.version.version, cycleId: used.version.cycleId }
   const featureMonth = used.version.timeWindow!.start.slice(0, 7)
   return {
@@ -66,12 +67,12 @@ export function createMilestoneFeature(draft: MilestoneDraft, started: Set<strin
               owner: '',
               deliveries: [
                 {
-                  id: crypto.randomUUID(),
+                  id: createBrowserUuid(),
                   version: ref,
                   stages: defaultMilestoneStages(used.version)
                 },
                 {
-                  id: crypto.randomUUID(),
+                  id: createBrowserUuid(),
                   version: {
                     version: following.version.version,
                     cycleId: following.version.cycleId

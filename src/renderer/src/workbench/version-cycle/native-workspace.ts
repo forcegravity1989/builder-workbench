@@ -87,6 +87,9 @@ export async function ensureNamedWorktree(
   branch: string,
   name: string
 ): Promise<Worktree> {
+  if (parseExecutionHostId(scope.hostId)?.kind === 'ssh') {
+    throw new Error('请先将旧 SSH 项目转换为托管主机，并更新所属 BW 服务后重试')
+  }
   const definition = fixedWorkspaceRequestForBranch(branch)
   if (fixedWorkspaceDefinition(definition).name !== name) {
     throw new Error('固定工作区名称与用途不一致')

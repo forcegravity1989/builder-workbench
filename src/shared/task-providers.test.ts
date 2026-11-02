@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   filterAvailableTaskProviders,
-  normalizeTaskProviderSettings,
   normalizeVisibleTaskProviders,
-  restoreAvailableDefaultTaskProvider,
-  resolveVisibleTaskProvider
+  resolveVisibleTaskProvider,
+  normalizeTaskProviderSettings,
+  restoreAvailableDefaultTaskProvider
 } from './task-providers'
 
 describe('task providers', () => {

@@ -1,3 +1,4 @@
+import { createBrowserUuid } from '@/lib/browser-uuid'
 import { BrainCircuit, Check, Pencil, Plus, X } from 'lucide-react'
 import { useState, type Ref } from 'react'
 import type {
@@ -183,6 +184,7 @@ function MinutesCard({
       edit({ ...document, minutes: next })
     }
   }
+  // oxlint-disable-next-line react/purity -- SAFETY: Called only from edit event handlers; the persisted timestamp records the human edit.
   const patchBody = (patch: Partial<AcceptanceMeetingMinutes>) =>
     patchMinutes({ ...minutes, ...patch, updatedAt: new Date().toISOString() })
 
@@ -222,7 +224,7 @@ function MinutesCard({
     patchBody({
       followups: [
         ...minutes.followups,
-        { id: crypto.randomUUID(), text: goalId ? `${goalId} · ` : '' }
+        { id: createBrowserUuid(), text: goalId ? `${goalId} · ` : '' }
       ]
     })
 

@@ -1,4 +1,4 @@
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import { normalizeGitRemoteUrl } from '../../../shared/git-remote-identity'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
@@ -94,7 +94,12 @@ export async function viewCodeHubTaskByIid(
   repo: Repo,
   iid: number
 ): Promise<{ kind: 'issue' | 'mr'; detail: CodeHubTaskDetail }> {
-  const args = { repoPath: repo.path, repoId: repo.id, iid }
+  const args = {
+    repoPath: repo.path,
+    repoId: repo.id,
+    repoHostId: getRepoExecutionHostId(repo),
+    iid
+  }
   try {
     return { kind: 'issue', detail: await deps.viewCodeHubTask({ ...args, kind: 'issue' }) }
   } catch (issueError) {

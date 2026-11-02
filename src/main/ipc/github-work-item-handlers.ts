@@ -20,9 +20,13 @@ import {
   assertRegisteredGitHubRepo,
   getGitHubLocalGitOptionArgs,
   getGitHubRepoConnectionId,
+  readGitHubRepoUnlessWslStopped,
   type GitHubRepoScopedArgs
 } from './github-repo-routing'
 import { broadcastGitHubWorkItemMutation } from './github-work-item-mutation-events'
+
+// A sidebar card's issue retry is a background read too, so the refusal can't promise one.
+const NO_WAKING_RETRY = { retryStartsIt: false }
 
 export function registerGitHubWorkItemHandlers(store: Store): void {
   ipcMain.handle(
@@ -37,11 +41,18 @@ export function registerGitHubWorkItemHandlers(store: Store): void {
       }
     ) => {
       const repo = assertRegisteredGitHubRepo(args, store)
-      return getIssue(
-        repo.path,
-        args.number,
-        getGitHubRepoConnectionId(repo),
-        ...getGitHubLocalGitOptionArgs(store, repo)
+      // Polled per sidebar card with a linked issue.
+      return readGitHubRepoUnlessWslStopped(
+        store,
+        repo,
+        () =>
+          getIssue(
+            repo.path,
+            args.number,
+            getGitHubRepoConnectionId(repo),
+            ...getGitHubLocalGitOptionArgs(store, repo)
+          ),
+        NO_WAKING_RETRY
       )
     }
   )
@@ -91,32 +102,50 @@ export function registerGitHubWorkItemHandlers(store: Store): void {
         query?: string
         page?: number
         noCache?: boolean
+        /** A Tasks Refresh/Retry/search or single-repo open: a user act that may start the distro. */
+        wakeWslDistro?: boolean
       }
     ) => {
       const repo = assertRegisteredGitHubRepo(args, store)
-      return listWorkItems(
-        repo.path,
-        args.limit,
-        args.query,
-        args.page,
-        repo.issueSourcePreference,
-        getGitHubRepoConnectionId(repo),
-        args.noCache,
-        ...getGitHubLocalGitOptionArgs(store, repo)
+      // A multi-repo Tasks open and the composer fan out across every repo: background (E9).
+      return readGitHubRepoUnlessWslStopped(
+        store,
+        repo,
+        () =>
+          listWorkItems(
+            repo.path,
+            args.limit,
+            args.query,
+            args.page,
+            repo.issueSourcePreference,
+            getGitHubRepoConnectionId(repo),
+            args.noCache,
+            ...getGitHubLocalGitOptionArgs(store, repo)
+          ),
+        { wake: args.wakeWslDistro === true }
       )
     }
   )
 
-  ipcMain.handle('gh:countWorkItems', (_event, args: { repoPath: string; query?: string }) => {
-    const repo = assertRegisteredGitHubRepo(args, store)
-    return countWorkItems(
-      repo.path,
-      args.query,
-      repo.issueSourcePreference,
-      getGitHubRepoConnectionId(repo),
-      ...getGitHubLocalGitOptionArgs(store, repo)
-    )
-  })
+  ipcMain.handle(
+    'gh:countWorkItems',
+    (_event, args: { repoPath: string; query?: string; wakeWslDistro?: boolean }) => {
+      const repo = assertRegisteredGitHubRepo(args, store)
+      return readGitHubRepoUnlessWslStopped(
+        store,
+        repo,
+        () =>
+          countWorkItems(
+            repo.path,
+            args.query,
+            repo.issueSourcePreference,
+            getGitHubRepoConnectionId(repo),
+            ...getGitHubLocalGitOptionArgs(store, repo)
+          ),
+        { wake: args.wakeWslDistro === true }
+      )
+    }
+  )
 
   // 平台侧批量读取：只认 owner/repo 与本机 gh 登录态，不要求仓库在本机注册
   // （墙卡承诺进展要读被管项目登记的 issue，仓可能只在 Builder 主机上）。
@@ -160,6 +189,7 @@ export function registerGitHubWorkItemHandlers(store: Store): void {
         host?: string
         number: number
         type: 'issue' | 'pr'
+        preview?: boolean
       }
     ) => {
       const repo = assertRegisteredGitHubRepo(args, store)
@@ -169,20 +199,26 @@ export function registerGitHubWorkItemHandlers(store: Store): void {
         args.number,
         args.type,
         getGitHubRepoConnectionId(repo),
-        ...getGitHubLocalGitOptionArgs(store, repo)
+        getGitHubLocalGitOptionArgs(store, repo)[0],
+        { preview: args.preview === true }
       )
     }
   )
 
-  ipcMain.handle('gh:workItemDetails', (_event, args: WorkItemArgs) => {
-    const repo = assertRegisteredGitHubRepo(args, store)
-    return dispatchWorkItem(
-      args,
-      repo,
-      getWorkItemDetails,
-      getGitHubLocalGitOptionArgs(store, repo)[0]
-    )
-  })
+  ipcMain.handle(
+    'gh:workItemDetails',
+    (_event, args: WorkItemArgs & { ownerRepo?: GitHubOwnerRepo }) => {
+      const repo = assertRegisteredGitHubRepo(args, store)
+      return dispatchWorkItem(
+        args,
+        repo,
+        args.ownerRepo
+          ? (...params) => getWorkItemDetails(...params, args.ownerRepo)
+          : getWorkItemDetails,
+        getGitHubLocalGitOptionArgs(store, repo)[0]
+      )
+    }
+  )
 
   ipcMain.handle(
     'gh:notifyWorkItemMutated',

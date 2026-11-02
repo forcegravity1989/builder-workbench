@@ -1,4 +1,6 @@
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
+import { getCodeHubTaskRepo } from '../../../../../shared/codehub'
+import { getCodehubDetailCacheKey } from './codehub-detail-cache'
+import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
@@ -10,11 +12,11 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { CodeHubIssueListStatus } from './IssueStatusMenu'
-import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page-github-work-item-status-badge'
+import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page/github/task-page-github-work-item-status-badge'
 import {
   getTaskPageGitHubPRIconTone,
   type GitHubWorkItemStatusItem
-} from '@/components/task-page-github-work-item-status'
+} from '@/components/task-page/github/task-page-github-work-item-status'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
@@ -35,7 +37,7 @@ import {
   GITHUB_TASK_STICKY_TITLE_CELL_CLASS,
   GITHUB_TASK_STICKY_TITLE_HEADER_CLASS,
   getTaskPageRepoSourceContext
-} from '../../task-page-source-context'
+} from '../task-page-source-context'
 import { CodeHubListResultNotice, TaskPageScopeFooter } from '@/workbench/TaskScopePanel'
 import { resolveTaskRowWorkspace } from '@/workbench/scoped-task-workspace'
 import { CodeHubAssigneesCell } from './AssigneesCell'
@@ -65,7 +67,6 @@ export function TaskPageCodeHubItemList({
     setCodehubDetailItem,
     handleUseCodeHubItem,
     setCodehubRefreshNonce,
-    repoMap,
     allWorktrees
   } = model
   const mrView = codehubView === 'mrs'
@@ -184,18 +185,15 @@ export function TaskPageCodeHubItemList({
           </div>
         ) : null}
         {visibleItems.map((item) => {
-          const key = `${item.repoId ?? ''}:${item.type}:${item.iid}`
-          const repo = selectedRepos.find((candidate) => candidate.id === item.repoId)
+          const key = getCodehubDetailCacheKey({ ...item, kind: item.type })
+          const repo = getCodeHubTaskRepo(selectedRepos, item)
           // G2 (BW)：范围视图的 Issue 按明确绑定解析 Open/Start；无范围保持原 Start。
           const rowWorkspace = resolveTaskRowWorkspace({
             scope: model.workbenchScope,
             worktrees: allWorktrees,
             provider: 'codehub',
             item: { repoId: item.repoId, type: item.type, number: item.iid },
-            sourceContext: getTaskPageRepoSourceContext(
-              repoMap.get(item.repoId ?? '') ?? null,
-              'codehub'
-            )
+            sourceContext: getTaskPageRepoSourceContext(repo ?? null, 'codehub')
           })
           return (
             <div

@@ -34,7 +34,7 @@ export function CodeHubAssigneesCell({
     setLoading(true)
     setError(null)
     codehubApi
-      .listMembers({ repoPath: item.repoPath, repoId: item.repoId })
+      .listMembers({ repoPath: item.repoPath, repoHostId: item.repoHostId, repoId: item.repoId })
       .then((list) => {
         if (!stale) {
           setMembers(list)
@@ -69,6 +69,7 @@ export function CodeHubAssigneesCell({
       try {
         await codehubApi.assignIssue({
           repoPath: item.repoPath,
+          repoHostId: item.repoHostId,
           repoId: item.repoId,
           iid: item.iid,
           assignee: member.username

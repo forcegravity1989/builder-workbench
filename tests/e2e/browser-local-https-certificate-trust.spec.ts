@@ -64,7 +64,7 @@ async function switchToBrowserTab(page: Page, worktreeId: string, browserTabId: 
         return
       }
       state.setActiveBrowserTab(targetBrowserTabId)
-      state.setActiveTabType('browser')
+      state.setActiveTabType('browser', window.__store?.getState().activeWorktreeId ?? null)
     },
     { targetWorktreeId: worktreeId, targetBrowserTabId: browserTabId }
   )
@@ -149,7 +149,7 @@ test.describe('local HTTPS certificate trust', () => {
     const siblingProbeServer = await startLocalHttpProbeServer(firstServer)
     try {
       const worktreeId = (await getActiveWorktreeId(orcaPage))!
-      const firstTab = await createBrowserTab(orcaPage, worktreeId, firstServer.schemeLessUrl)
+      const firstTab = await createBrowserTab(orcaPage, worktreeId, firstServer.secureUrl)
       const firstSlot = browserSlot(orcaPage, firstTab.id)
 
       await expect(firstSlot.getByRole('button', { name: TRY_HTTPS })).toBeVisible()

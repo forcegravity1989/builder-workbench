@@ -3,7 +3,7 @@ import { attachedCodeHubDetailWorkspace } from '@/workbench/scoped-task-workspac
 import { CodeHubChecksTab } from './ChecksTab'
 import { CodeHubConversation } from './Conversation'
 import { CodeHubFilesTab } from './FilesTab'
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
+import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
@@ -26,8 +26,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
-import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page-github-work-item-status-badge'
-import { formatRelativeTime } from '../../task-page-source-context'
+import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page/github/task-page-github-work-item-status-badge'
+import { formatRelativeTime } from '../task-page-source-context'
 import type { Worktree } from '../../../../../shared/worktree/types'
 
 const NO_WORKTREES: readonly Worktree[] = []

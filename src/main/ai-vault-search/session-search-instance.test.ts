@@ -93,8 +93,6 @@ it('indexes and answers once the setting is on', async () => {
   expect(errors).toEqual([])
 })
 
-// The whole reason the indexer is immutable: a change is a new instance, and the
-// old one is closed before it exists, so there is never a second writer.
 it('closes the live pair and starts a new one on a settings change', async () => {
   const recent = transcriptPath(RECENT_SESSION_ID)
   const ancient = transcriptPath(ANCIENT_SESSION_ID)
@@ -108,13 +106,11 @@ it('closes the live pair and starts a new one on a settings change', async () =>
   await subject.settled()
   expect(await searchFor('ancient')).toEqual([ANCIENT_SESSION_ID])
 
-  // Narrowing: the new instance's opening sweep purges what the window no longer covers.
   subject.apply({ enabled: true, historyDays: 30 })
   await subject.settled()
   expect(await searchFor('ancient')).toEqual([])
   expect(await searchFor('recent')).toEqual([RECENT_SESSION_ID])
 
-  // Widening: the same recipe the other way, admitting files no read ever saw.
   subject.apply({ enabled: true, historyDays: null })
   await subject.settled()
   expect(await searchFor('ancient')).toEqual([ANCIENT_SESSION_ID])
@@ -134,8 +130,6 @@ it('leaves nothing running and no live claim when the setting goes off', async (
 
   subject.apply({ enabled: false, historyDays: null })
   expect(subject.running).toBe(false)
-  // The index is left on disk: disabling is not a deletion, and the claim the
-  // closed indexer staked on the path has to be released or nothing can reopen it.
   expect(existsSync(harness.databasePath)).toBe(true)
   subject.apply({ enabled: true, historyDays: null })
   await subject.settled()
@@ -167,6 +161,27 @@ it('removes the database on clear and rebuilds only while consent stands', async
   expect(errors).toEqual([])
 })
 
+it('refuses a page cursor minted before clear even when the rebuilt generation matches', async () => {
+  for (const id of [RECENT_SESSION_ID, ANCIENT_SESSION_ID]) {
+    await writeClaudeTranscript(transcriptPath(id), [`shared clear fence ${id}`], id)
+  }
+  const subject = newInstance()
+  subject.apply({ enabled: true, historyDays: null })
+  await subject.settled()
+  const first = await subject.search({ query: 'shared clear fence', limit: 1 })
+  if (first.kind !== 'results' || !first.page.cursor) {
+    throw new Error('expected a paged result')
+  }
+
+  subject.clear()
+  await subject.settled()
+  expect(subject.status().generation).toBe(first.generation)
+  expect(
+    await subject.search({ query: 'shared clear fence', limit: 1, cursor: first.page.cursor })
+  ).toMatchObject({ kind: 'stale-cursor', generation: first.generation })
+  expect(errors).toEqual([])
+})
+
 it('keeps pagination stable when the clock crosses retention before a purge', async () => {
   for (const id of [RECENT_SESSION_ID, ANCIENT_SESSION_ID]) {
     await writeClaudeTranscript(transcriptPath(id), [`distinctive conversation ${id}`], id)
@@ -192,4 +207,44 @@ it('keeps pagination stable when the clock crosses retention before a purge', as
   expect(second.hits).toHaveLength(1)
   expect(second.hits[0].sessionId).not.toBe(first.hits[0].sessionId)
   expect(errors).toEqual([])
+})
+
+it('reports being switched off before blaming a scope it does not know', async () => {
+  const subject = newInstance()
+  subject.apply({ enabled: false, historyDays: null })
+  await subject.settled()
+
+  expect(await subject.search({ query: 'anything' }, { kind: 'unknown' })).toEqual({
+    kind: 'unavailable',
+    reason: 'disabled'
+  })
+})
+
+it('reports not being ready before blaming a scope it does not know', async () => {
+  const subject = newInstance()
+  subject.apply({ enabled: true, historyDays: null })
+  await subject.settled()
+  subject.close()
+
+  expect(await subject.search({ query: 'anything' }, { kind: 'unknown' })).toEqual({
+    kind: 'unavailable',
+    reason: 'not-ready'
+  })
+})
+
+it('answers scope-unknown once it is switched on and ready', async () => {
+  await writeClaudeTranscript(
+    transcriptPath(RECENT_SESSION_ID),
+    ['a distinctive conversation'],
+    RECENT_SESSION_ID
+  )
+  const subject = newInstance()
+  subject.apply({ enabled: true, historyDays: null })
+  await subject.settled()
+
+  expect(await subject.search({ query: 'distinctive' }, { kind: 'unknown' })).toEqual({
+    kind: 'unavailable',
+    reason: 'scope-unknown'
+  })
+  expect(await searchFor('distinctive')).toEqual([RECENT_SESSION_ID])
 })

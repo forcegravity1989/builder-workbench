@@ -1,3 +1,4 @@
+import { createBrowserUuid } from '@/lib/browser-uuid'
 import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 import {
   frozenMilestoneProblems,
@@ -155,7 +156,7 @@ export function ProjectMilestones({
       toast('版本名称已存在')
       return
     }
-    const next = materializeMilestoneWeek(state!.draft, week, crypto.randomUUID(), name)
+    const next = materializeMilestoneWeek(state!.draft, week, createBrowserUuid(), name)
     if (!ScheduledVersionSchema.safeParse(next.version).success) {
       toast('版本名称无效，未登记')
       return

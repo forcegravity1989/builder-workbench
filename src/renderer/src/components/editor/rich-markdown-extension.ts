@@ -1,4 +1,5 @@
 import { Markdown } from '@tiptap/markdown'
+import { registerRichMarkdownBlockSource } from './rich-markdown-block-source'
 import { preserveLiteralMarkdownSource } from './rich-markdown-literal-serialization'
 import type { RichMarkdownEditorCodec } from './rich-markdown-source-transport'
 
@@ -19,10 +20,12 @@ export function createRichMarkdownExtension(
   codec: RichMarkdownEditorCodec,
   htmlSuperscriptLinks = false
 ) {
-  return RichMarkdownExtension.extend({
+  // configure() first so extend() does not link this per-editor child onto the shared module extension.
+  return RichMarkdownExtension.configure().extend({
     onBeforeCreate(event) {
       this.parent?.(event)
       preserveLiteralMarkdownSource(this.editor, codec, htmlSuperscriptLinks)
+      registerRichMarkdownBlockSource(this.editor, codec, htmlSuperscriptLinks)
     }
   })
 }

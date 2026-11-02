@@ -84,7 +84,7 @@ export function usePreflightCardStatuses(
 
   const refresh = (): void => {
     setRefreshing(true)
-    void refreshPreflightStatus({ force: true }).finally(() => {
+    void refreshPreflightStatus({ force: true, wakeWslDistro: true }).finally(() => {
       if (mountedRef.current) {
         setRefreshing(false)
       }

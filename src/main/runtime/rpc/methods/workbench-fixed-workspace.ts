@@ -5,6 +5,7 @@ import { materialResult } from '../../../workbench/version-material-error'
 export const WORKBENCH_FIXED_WORKSPACE_METHODS = [
   defineMethod({
     name: 'workbench.fixedWorkspace.ensure',
+    permission: 'workspace',
     params: FixedWorkspaceEnsureSchema,
     handler: (params, { runtime }) =>
       materialResult(() => runtime.ensureWorkbenchFixedWorkspace(params))

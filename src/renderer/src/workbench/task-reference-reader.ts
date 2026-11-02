@@ -1,5 +1,5 @@
 import { getGitHubSourceRuntimeTarget } from '@/lib/github-source-runtime-context'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import { getProjectProviderIdentity } from '../../../shared/project-host-setup-projection'

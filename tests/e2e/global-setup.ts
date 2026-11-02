@@ -1,50 +1,36 @@
-/**
- * Playwright globalSetup: builds the Electron app and creates a test git repo.
- *
- * Why: _electron.launch() needs the compiled output in out/main/index.js.
- * Running electron-vite build here ensures the tests are always against
- * the current source, without requiring the user to remember a manual step.
- *
- * Why: a dedicated test repo makes the suite idempotent — tests don't
- * depend on whatever the user has open. The repo path is written to a
- * temp file so the worker fixture can pick it up at runtime.
- */
+// Build current E2E output and create an isolated fixture repo whose path is shared with workers.
 
 import { execSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
+import { prepareDockerSshHostImage } from './helpers/docker-ssh-host-image'
+
 import {
   createSeededTestRepo,
   E2E_TEST_REPO_PATH_FILE_ENV,
   TEST_REPO_PATH_FILE
 } from './helpers/workbench-test-repo'
-
-// Why re-export: the disposable-repo path is owned by the seeded-repo helper,
-// but legacy specs and global-teardown import it from './global-setup'. Keep
-// that surface stable instead of touching every importer.
-export { E2E_TEST_REPO_PATH_FILE_ENV, TEST_REPO_PATH_FILE }
-
+export {
+  E2E_TEST_REPO_PATH_FILE_ENV,
+  TEST_REPO_PATH_FILE,
+  workerTestRepositoryPathFile
+} from './helpers/workbench-test-repo'
 const ELECTRON_E2E_BUILD_TIMEOUT_MS = 300_000
+const CLI_E2E_BUILD_TIMEOUT_MS = 120_000
+const WEB_E2E_BUILD_TIMEOUT_MS = 300_000
 
 export default function globalSetup(): void {
   // Why: workers and teardown need this run's path, never another concurrent run's.
   process.env[E2E_TEST_REPO_PATH_FILE_ENV] = TEST_REPO_PATH_FILE
   const root = process.cwd()
   const outMain = path.join(root, 'out', 'main', 'index.js')
+  const outCli = path.join(root, 'out', 'cli', 'index.js')
+  const outWeb = path.join(root, 'out', 'web', 'web-index.html')
 
-  // ── 1. Build the Electron app ──────────────────────────────────────
   if (process.env.SKIP_BUILD && existsSync(outMain)) {
     console.error('[e2e] SKIP_BUILD set and out/main/index.js exists — skipping build')
   } else {
-    // Why: --mode e2e is the build-time signal that exposes window.__store;
-    // the explicit env var keeps older local overrides working too.
-    // Why the Workbench triple: this playwright config only serves the
-    // Workbench smoke lane, and the shell is build-time baked —
-    // isWorkbenchShell() reads import.meta.env.VITE_WORKBENCH_SHELL, which
-    // electron.vite.config.ts derives from these vars in the build process
-    // env. Without them the build yields a plain Orca renderer and the smoke
-    // never sees [data-workbench-nav]. Setting them here (not per-shell in
-    // package.json) keeps Windows cmd, POSIX shells and CI on one source.
+    // Use E2E mode to expose window.__store; retain the env flag for older local overrides.
     console.error('[e2e] Building Electron app with electron-vite build --mode e2e...')
     execSync('npx electron-vite build --mode e2e', {
       env: {
@@ -56,18 +42,53 @@ export default function globalSetup(): void {
       },
       cwd: root,
       stdio: 'inherit',
-      // Why: Windows renderer builds can exceed 120s on local/CI hosts even
-      // when healthy; global setup should not fail before specs can run.
+      // Allow healthy Windows renderer builds to outlast 120s before specs start.
       timeout: ELECTRON_E2E_BUILD_TIMEOUT_MS
     })
     console.error('[e2e] Build complete.')
   }
+  if (process.env.SKIP_BUILD && existsSync(outCli)) {
+    console.error('[e2e] SKIP_BUILD set and out/cli/index.js exists — skipping CLI build')
+    // Artifact downloads lose executable bits; each runner still needs its local dev launcher.
+    execSync('pnpm run prepare:cli-output', {
+      cwd: root,
+      stdio: 'inherit',
+      timeout: CLI_E2E_BUILD_TIMEOUT_MS
+    })
+  } else {
+    console.error('[e2e] Building bundled CLI...')
+    execSync('pnpm run build:cli', {
+      cwd: root,
+      stdio: 'inherit',
+      timeout: CLI_E2E_BUILD_TIMEOUT_MS
+    })
+    console.error('[e2e] CLI build complete.')
+  }
+  if (process.env.ORCA_E2E_WEB_CLIENT === '1') {
+    if (process.env.SKIP_BUILD && existsSync(outWeb)) {
+      console.error('[e2e] SKIP_BUILD set and web client exists — skipping web build')
+    } else {
+      // Why: paired-browser specs need the web bundle served by the runtime; ordinary Electron E2E does not.
+      console.error('[e2e] Building paired runtime web client...')
+      execSync('pnpm run build:web', {
+        env: { ...process.env, VITE_EXPOSE_STORE: 'true' },
+        cwd: root,
+        stdio: 'inherit',
+        timeout: WEB_E2E_BUILD_TIMEOUT_MS
+      })
+      console.error('[e2e] Web client build complete.')
+    }
+  }
+  if (process.env.ORCA_E2E_SSH_DOCKER === '1') {
+    console.error('[e2e] Preparing Docker OpenSSH fixture image...')
+    prepareDockerSshHostImage(root)
+  }
 
-  // ── 2. Create a seeded test git repo ───────────────────────────────
-  // Why: each test run gets its own git repo so the suite is fully
-  // idempotent. No test depends on whatever repos the user has open. The
-  // helper seeds files, commits, adds a secondary worktree, and publishes the
-  // repo path to TEST_REPO_PATH_FILE for the worker fixture to read.
   const testRepoDir = createSeededTestRepo()
   console.error(`[e2e] Test repo created at ${testRepoDir}`)
+}
+
+// Shared by global setup and worker fallbacks so both seed paths stay identical.
+export function seedTestRepository(): string {
+  return createSeededTestRepo({ publishPath: false })
 }

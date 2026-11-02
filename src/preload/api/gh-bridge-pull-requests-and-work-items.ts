@@ -32,6 +32,7 @@ export const ghPullRequestsAndWorkItemsApi = {
     fallbackPRNumber?: number | null
     acceptMergedFallbackPR?: boolean
     currentHeadOid?: string | null
+    wakeWslDistro?: boolean
   }) => ipcRenderer.invoke('gh:prForBranch', args),
   refreshPRNow: (args: { candidate: GitHubPRRefreshCandidate }) =>
     ipcRenderer.invoke('gh:refreshPRNow', args),
@@ -66,11 +67,13 @@ export const ghPullRequestsAndWorkItemsApi = {
   workItemByOwnerRepo: (args: {
     repoPath: string
     repoId?: string | null
+    sourceContext?: TaskSourceContext | null
     owner: string
     repo: string
     host?: string
     number: number
     type: 'issue' | 'pr'
+    preview?: boolean
   }) => ipcRenderer.invoke('gh:workItemByOwnerRepo', args),
   workItemDetails: (args: {
     repoPath: string
@@ -108,8 +111,12 @@ export const ghPullRequestsAndWorkItemsApi = {
     labels?: string[]
     assignees?: string[]
   }): Promise<GitHubCreateIssueResult> => ipcRenderer.invoke('gh:createIssue', args),
-  countWorkItems: (args: { repoPath: string; repoId?: string; query?: string }): Promise<number> =>
-    ipcRenderer.invoke('gh:countWorkItems', args),
+  countWorkItems: (args: {
+    repoPath: string
+    repoId?: string
+    query?: string
+    wakeWslDistro?: boolean
+  }): Promise<number> => ipcRenderer.invoke('gh:countWorkItems', args),
   issueStates: (args: {
     owner: string
     repo: string
@@ -129,6 +136,7 @@ export const ghPullRequestsAndWorkItemsApi = {
     query?: string
     page?: number
     noCache?: boolean
+    wakeWslDistro?: boolean
   }): Promise<ListWorkItemsResult<Omit<GitHubWorkItem, 'repoId'>>> =>
     ipcRenderer.invoke('gh:listWorkItems', args),
   prChecks: (args: {
@@ -139,6 +147,7 @@ export const ghPullRequestsAndWorkItemsApi = {
     headSha?: string
     prRepo?: GitHubOwnerRepo | null
     noCache?: boolean
+    wakeWslDistro?: boolean
   }) => ipcRenderer.invoke('gh:prChecks', args),
   prCheckDetails: (args: {
     repoPath: string

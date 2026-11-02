@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
 import { canonicalWorktreeIdentity } from '../../shared/worktree/identity'
+import { describe, expect, it } from 'vitest'
 import type { GitWorktreeInfo } from '../../shared/worktree/types'
 import { mergeWorktree } from './worktree-metadata-merge'
 

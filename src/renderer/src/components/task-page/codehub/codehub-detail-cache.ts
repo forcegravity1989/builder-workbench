@@ -1,6 +1,10 @@
 import { codehubApi } from '@/lib/codehub-api'
 import type { CodeHubMrFileChange } from '../../../../../shared/codehub-mr-detail'
-import type { CodeHubComment, CodeHubTaskDetail } from '../../../../../shared/codehub-tasks'
+import type {
+  CodeHubComment,
+  CodeHubTaskDetail,
+  CodeHubTaskItem
+} from '../../../../../shared/codehub-tasks'
 import type { PRCheckDetail } from '../../../../../shared/github/check-types'
 
 /**
@@ -8,7 +12,7 @@ import type { PRCheckDetail } from '../../../../../shared/github/check-types'
  * pull-request-page/cache/work-item-details.ts: reopening a detail paints the
  * cached lanes instantly while a background refetch reconciles, and concurrent
  * opens share one in-flight read. One entry carries the detail's four read
- * lanes (detail / comments / mr checks / mr files) keyed by repoId+kind+iid.
+ * lanes (detail / comments / mr checks / mr files) keyed by repository, host, path, provider project and item.
  *
  * Honest boundary: CodeHub mutations emit no cross-window invalidation events
  * (GitHub has gh:workItemMutated), so invalidation is same-window only — the
@@ -34,9 +38,12 @@ export type CodeHubDetailCacheEntry = {
   pending?: Promise<void>
 }
 
-export type CodeHubDetailKeyArgs = {
+export type CodeHubDetailKeyArgs = Pick<
+  CodeHubTaskItem,
+  'repoPath' | 'repoHostId' | 'host' | 'project'
+> & {
   // Optional to match CodeHubTaskItem/API nullish; the key normalizes it to ''.
-  repoId: string | undefined
+  repoId?: string
   kind: 'issue' | 'mr'
   iid: number
 }
@@ -62,7 +69,15 @@ function notifyCodehubDetailCache(): void {
 
 export function getCodehubDetailCacheKey(args: CodeHubDetailKeyArgs): string {
   // Why: `\0` separator avoids collisions between key fields that may contain `:` or `/`.
-  return [args.repoId ?? '', args.kind, args.iid].join('\0')
+  return [
+    args.repoId ?? '',
+    args.repoHostId ?? '',
+    args.repoPath ?? '',
+    args.host ?? '',
+    args.project ?? '',
+    args.kind,
+    args.iid
+  ].join('\0')
 }
 
 export function touchCodehubDetailCache(key: string, entry: CodeHubDetailCacheEntry): void {

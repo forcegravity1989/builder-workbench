@@ -6,7 +6,7 @@ import {
   worktree,
   remoteWorktree
 } from '../../worktree-list-groups-test-fixtures'
-import type { WorktreeRow, GroupHeaderRow } from '../grouping/row-types'
+import type { WorktreeRow, GroupHeaderRow } from '../../../../../../shared/sidebar-list/row-types'
 
 describe('merged project sidebar projection', () => {
   it('retains both hosts and the original order while folding only other projects in every grouping', () => {
@@ -20,7 +20,6 @@ describe('merged project sidebar projection', () => {
       repo: owner,
       depth: 0,
       groupDepth: 0,
-      lineageTrail: [],
       isLastLineageChild: true,
       lineageChildCount: 0
     })
@@ -59,7 +58,7 @@ describe('merged project sidebar projection', () => {
       label: owner.displayName,
       repo: owner,
       count: 1,
-      tone: ''
+      icon: { kind: 'all' }
     }))
     const collapsedGroups = projectWorkbenchRows({ ...options, rows: headers, expanded: true })
     expect(
