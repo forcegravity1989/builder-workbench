@@ -1,0 +1,209 @@
+{
+  "schema_version": 3,
+  "version": "v0.9",
+  "cycleId": "e325805e-3213-4661-868f-24d63a96cbd8",
+  "timeWindow": {
+    "start": "2026-11-02",
+    "end": "2026-11-08"
+  },
+  "summary": {
+    "progress": "",
+    "risks": "",
+    "progressSource": {
+      "version": "v0.8",
+      "cycleId": "5a62a92d-4f40-4144-b0bb-660b0281f0de",
+      "sourceCommit": "838a5fcabba03cab32bf6a72e9a27497c733f87a",
+      "revision": "sha256:c12a65adcfd37401f0b956bd95aa0cf9d3037591959b0a0c65bef709f318efcb"
+    }
+  },
+  "goals": [
+    {
+      "goalId": "G1",
+      "title": "项目总览跟随真实业务使用优化",
+      "deliverable": "1. 在 benchmark、建木、运维看板三个真实项目上伴飞使用项目总览，按业务实际使用反馈完成优化。\n2. 让业务方通过项目总览看清版本与里程碑安排，并完成真实变更。",
+      "acceptance": "1. 四个项目11月份里程碑制定完毕\n2.项目总览里程碑Issue清理",
+      "owner": "cfdcfd; yuzhup",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G2",
+      "title": "版本总览呈现真实 SDLC 运作过程",
+      "deliverable": "1. 版本总览反映特性从意图、设计、Plan、开发、测试到上线的真实推进，各阶段成果可下钻查看。\n2. 呈现同一阶段被反复修改的活动情况，不只显示最终状态。",
+      "acceptance": "1.、BW自身 SDLC完善优化。\n2、版本总览issue清理。",
+      "owner": "cfdcfd; yuzhup",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G3",
+      "title": "WeLink 真实旅程补齐",
+      "deliverable": "1. 完成上周已规划但未完成的 WeLink 功能设计与优化：发起评审、群消息与群助手。\n2. 补齐 v0.8 验收遗留：支持绑定多个群、多群聊天的界面呈现、收发权限边界（哪些可自动发、哪些需人工确认）。\n3. 明确接入边界：群消息与群助手、会议系统各承担什么，以 cowelink 为参考，不做额外开发。\n4. 探索嵌入原生 WeLink 屏的可行性。",
+      "acceptance": "1. 真实 WeLink 环境跑通发起评审与多群聊天旅程，不是原型。\n2. 设计与高保真归档；接入边界结论明确；未完成部分如实标注。",
+      "owner": "kanadead",
+      "metricTargets": []
+    },
+    {
+      "goalId": "G4",
+      "title": "小需求与 Bug 固定处理通道",
+      "deliverable": "1. 本周进入的小需求与 bug 逐条处理到修复或关闭，修复以 PR 关联留痕。\n2. 建立每个特性进来多少单的统计口径，能按特性读回单量。",
+      "acceptance": "1. 本周新增单都有归属特性与处理结果。\n2. 团队形成使用习惯，当周单当周有结论。\n3. 能读回每个特性的单量。",
+      "owner": "all",
+      "metricTargets": []
+    }
+  ],
+  "tasks": [
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 551,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 535,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 537,
+      "goalId": "G2"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 199,
+      "goalId": "G3"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 555,
+      "goalId": "G3"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 540,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 541,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 542,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 543,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 422,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 548,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 554,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 556,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 557,
+      "goalId": "G1"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 558,
+      "goalId": "G2"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 559,
+      "goalId": "G3"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 560,
+      "goalId": "G3"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 561,
+      "goalId": "G3"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 562,
+      "goalId": "G3"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 546,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 552,
+      "goalId": "G4"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 553,
+      "goalId": "G4"
+    }
+  ],
+  "minutes": {
+    "consensus": [
+      "1、11月15号发布V1.0版本，围绕加强Builders项目管理能力，覆盖如下特性添加项目、项目墙、项目总览、版本计划、版本会话管理、任务、验收、版本总览、指标能力、工程部署（CI+部署）、内部类似Codehub等集成。",
+      "2、项目总览与版本总览进入 maintain 阶段，完成benchmark、建木、运维看板、BW自身共计四个项目的11月份里程碑规划。",
+      "3、版本总览需呈现真实 SDLC 运作过程，并显示同一阶段被反复修改的活动，不只显示最终状态。",
+      "4、WeLink 本版补齐真实旅程：发起评审、多群绑定与群配置、多群聊天界面、收发权限边界、接入边界；以 cowelink 为参考，不做额外开发。"
+    ],
+    "followups": [
+      {
+        "id": "a7ea32b4-0b3f-477c-bb8b-0325ed0f8208",
+        "text": "1.0 盘点中的项目墙、多人协作、指标能力、工程能力等暂不纳入v0.9，交由1.0实施落地",
+        "closed": false
+      }
+    ],
+    "confirmed": false,
+    "sources": "2026-11-02 版本计划会要点（用户提供）＋本会话逐条讨论；未读取 eMeeting 语音转写稿与板面批注。",
+    "updatedAt": "2026-11-03T07:12:14.071Z"
+  },
+  "workflow": {
+    "stage": "breakdown",
+    "updatedAt": "2026-11-03T12:30:00+08:00"
+  }
+}
