@@ -1,0 +1,273 @@
+/* 克隆到本机 · 本屏新增样式。
+   外壳（design-bar / app-window / wall / config-rail / dialog / toast）复用
+   prototype/project-settings.css，颜色与间距只取 docs/04-design-system/tokens.css 变量。 */
+
+/* 卡片右上角由 2 个图标变 3 个（总览 / 配置 / 克隆到本机） */
+.project-card .card-top {
+  padding-right: 108px;
+}
+
+.nav-heading span {
+  font-weight: 400;
+  color: var(--muted-foreground);
+}
+.nav-heading .nav-hint {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+/* — 左栏：Orca 项目工作区树（克隆完成后新仓出现在这里） — */
+.ws-tree {
+  padding: 2px 0 6px;
+}
+.ws-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ws-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ws-node.repo {
+  padding-left: 22px;
+}
+.ws-node.branch {
+  padding-left: 38px;
+  color: var(--muted-foreground);
+}
+.ws-node .tag {
+  flex: none;
+  margin-left: auto;
+}
+.ws-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+  flex: none;
+}
+.ws-dot.local {
+  background: var(--status-success);
+}
+.ws-empty {
+  padding: 4px 10px 8px;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+
+/* — 项目墙工具条 — */
+.wall-hint {
+  margin-left: 8px;
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+
+/* — 代码仓槽 — */
+.slot-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.slot {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.slot:first-child {
+  border-top: 0;
+  padding-top: 4px;
+}
+.slot-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.slot-head strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.slot-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+.slot-meta {
+  margin-top: 6px;
+  font-size: 11.5px;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+.slot-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.source-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 10.5px;
+  color: var(--muted-foreground);
+}
+.slot-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 11.5px;
+}
+.slot-status[data-state='queued'] {
+  color: var(--muted-foreground);
+}
+.slot-status[data-state='done'] {
+  color: var(--status-success);
+}
+.slot-status[data-state='failed'] {
+  color: var(--destructive);
+}
+.slot-progress {
+  height: 3px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: var(--muted);
+  overflow: hidden;
+}
+.slot-progress > i {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.16s linear;
+}
+
+/* — 克隆确认框 — */
+.clone-parent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--muted);
+}
+.clone-parent-label {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+#clone-parent-path {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+#clone-parent-path.empty {
+  color: var(--warning-text);
+}
+.clone-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 4px;
+}
+.clone-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.clone-item:first-child {
+  border-top: 0;
+}
+.clone-item input[type='checkbox'] {
+  margin: 3px 0 0;
+  flex: none;
+  accent-color: var(--primary);
+}
+.clone-copy {
+  flex: 1;
+  min-width: 0;
+}
+.clone-copy strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.clone-copy small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+.clone-target {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 11.5px;
+}
+.clone-target > span:first-child {
+  color: var(--muted-foreground);
+}
+.clone-target .mono {
+  overflow-wrap: anywhere;
+}
+
+/* — 目录选择演示框 — */
+.picker-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.picker-list button {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  text-align: left;
+  background: var(--card);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.picker-list button:hover,
+.picker-list button:focus-visible {
+  border-color: var(--foreground);
+}
+.picker-list small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+/* — 底部汇总 — */
+#clone-summary {
+  display: block;
+  min-height: 20px;
+}
+#clone-summary .summary-line {
+  display: block;
+  margin-bottom: 8px;
+}
+#clone-summary .summary-line.failed {
+  color: var(--destructive);
+}
+.summary-actions {
+  display: flex;
+  gap: 6px;
+}

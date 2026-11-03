@@ -1,0 +1,207 @@
+<!--
+  克隆到本机 · 交互原型
+
+  身份：设计草案（未交付）。示例数据 + 模拟克隆过程；不调用产品 API、不落盘、不持久化。
+  来源：Issue #563「支持项目一键 clone 到本机（路径默认为 orca workspace）」；
+        设计依据 docs/05-features/project-intake/spec.md「项目卡片配置增量」。
+  复用的生产能力（本原型不实现，仅还原交互）：repos:clone IPC、getDefaultCloneParent(settings.workspaceDir)、
+        「接入项目」向导的克隆后动作（挂项目组 / 设 .bw/worktrees / 切总览）。
+  外壳复用：../../04-design-system/styles.css + prototype/project-settings.css。
+-->
+<!doctype html>
+<html lang="zh" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Workbench · 克隆到本机设计</title>
+    <link rel="stylesheet" href="../../04-design-system/styles.css" />
+    <link rel="stylesheet" href="prototype/project-settings.css" />
+    <link rel="stylesheet" href="prototype/clone-to-local.css" />
+    <script src="prototype/clone-to-local.js" defer></script>
+  </head>
+  <body>
+    <header class="design-bar">
+      <span class="tag tag-neutral">设计草案</span><strong>克隆到本机</strong>
+      <span class="design-note">示例数据 · 操作仅演示</span>
+      <span class="grow"></span>
+      <label for="scenario">场景</label>
+      <select id="scenario" class="input">
+        <option value="mixed">本机已有 1 仓</option>
+        <option value="remoteOnly">3 仓都在 Builder 主机</option>
+        <option value="noWorkspace">未设置工作区目录</option>
+        <option value="duplicate">远端已在本机注册</option>
+        <option value="partialFail">批量中 1 仓失败</option>
+      </select>
+      <button id="theme" class="btn btn-secondary" type="button">深色</button>
+      <button id="reset" class="btn btn-ghost" type="button">重置演示</button>
+    </header>
+    <div class="app-window">
+      <header class="app-title">
+        <span class="brand">W</span><strong>Workbench</strong><span class="grow"></span
+        ><span class="muted">项目墙</span>
+      </header>
+      <div class="workspace">
+        <aside class="app-nav" aria-label="工作台导航">
+          <div class="nav-heading">工作台</div>
+          <button class="nav-entry current" type="button" data-action="wall">
+            项目墙 <span id="wall-count">2</span>
+          </button>
+          <div class="nav-heading nav-gap">
+            Orca 项目工作区 <span class="nav-hint">克隆落点</span>
+          </div>
+          <div id="workspace-tree" class="ws-tree"></div>
+          <div class="nav-heading nav-gap">其他项目 <span id="other-count">0</span></div>
+          <div class="grow"></div>
+          <div class="nav-bottom">本机工作区</div>
+        </aside>
+        <main class="wall">
+          <header class="wall-heading">
+            <h1>项目墙</h1>
+            <div class="wall-actions" role="group" aria-label="项目墙操作">
+              <button
+                class="btn btn-ghost btn-icon icon-action"
+                type="button"
+                data-action="refresh-wall"
+                aria-label="刷新项目墙"
+              >
+                <span data-icon="refresh"></span><span class="action-tooltip" role="tooltip">刷新</span>
+              </button>
+              <button
+                class="btn btn-ghost btn-icon icon-action"
+                type="button"
+                data-handoff="导入 Builder 主机"
+                aria-label="导入 Builder 主机"
+              >
+                <span data-icon="file-import"></span
+                ><span class="action-tooltip" role="tooltip">导入 Builder 主机</span>
+              </button>
+              <button
+                class="btn btn-ghost btn-icon icon-action"
+                type="button"
+                data-handoff="接入项目"
+                aria-label="接入项目"
+              >
+                <span data-icon="plus"></span><span class="action-tooltip" role="tooltip">接入项目</span>
+              </button>
+            </div>
+          </header>
+          <div class="wall-tools">
+            <span id="wall-summary">2 个项目</span>
+            <span id="wall-clone-hint" class="wall-hint"></span>
+          </div>
+          <div id="project-cards" class="project-grid"></div>
+        </main>
+        <aside id="rail" class="config-rail" aria-label="项目配置" tabindex="-1">
+          <header class="rail-heading">
+            <div>
+              <div class="eyebrow">项目配置</div>
+              <h2 id="rail-name"></h2>
+            </div>
+            <button
+              id="close-rail"
+              class="btn btn-ghost btn-icon icon-action"
+              type="button"
+              aria-label="关闭项目配置"
+            >
+              <span data-icon="x"></span
+              ><span class="action-tooltip" role="tooltip">关闭项目配置</span>
+            </button>
+          </header>
+          <div class="rail-scroll">
+            <section class="config-section">
+              <button
+                class="section-toggle"
+                type="button"
+                aria-expanded="true"
+                aria-controls="repositories-body"
+                data-section="repositories"
+              >
+                <span data-icon="git"></span><span class="section-name">代码仓</span
+                ><span id="repositories-summary" class="section-summary"></span
+                ><span class="chevron" data-icon="chevron"></span>
+              </button>
+              <div id="repositories-body" class="section-body">
+                <div id="slot-list" class="slot-list"></div>
+                <p class="source-note" id="repositories-note"></p>
+              </div>
+            </section>
+            <section class="config-section">
+              <button
+                class="section-toggle"
+                type="button"
+                aria-expanded="true"
+                aria-controls="hosts-body"
+                data-section="hosts"
+              >
+                <span data-icon="monitor"></span><span class="section-name">Builder 主机</span
+                ><span id="hosts-summary" class="section-summary"></span
+                ><span class="chevron" data-icon="chevron"></span>
+              </button>
+              <div id="hosts-body" class="section-body">
+                <div id="host-list"></div>
+              </div>
+            </section>
+          </div>
+          <footer class="rail-footer">
+            <div id="clone-summary" class="draft-status" aria-live="polite"></div>
+            <div id="footer-note" class="footer-note"></div>
+          </footer>
+        </aside>
+      </div>
+    </div>
+
+    <dialog id="clone-dialog" aria-labelledby="clone-title">
+      <form method="dialog">
+        <header class="modal-heading">
+          <h2 id="clone-title">克隆到本机</h2>
+          <button
+            class="btn btn-ghost btn-icon icon-action"
+            value="cancel"
+            aria-label="关闭克隆到本机"
+          >
+            <span data-icon="x"></span><span class="action-tooltip" role="tooltip">关闭</span>
+          </button>
+        </header>
+        <p id="clone-copy" class="muted"></p>
+        <div class="clone-parent">
+          <span class="clone-parent-label">父目录</span>
+          <span id="clone-parent-path" class="mono"></span>
+          <button id="pick-parent" class="btn btn-ghost" type="button">更改</button>
+        </div>
+        <div id="clone-list" class="clone-list"></div>
+        <div id="clone-error" class="error-message" role="alert" hidden></div>
+        <footer class="modal-actions">
+          <button class="btn btn-ghost" value="cancel">取消</button>
+          <button id="clone-confirm" class="btn btn-primary" type="button">克隆</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="picker-dialog" aria-labelledby="picker-title">
+      <form method="dialog">
+        <header class="modal-heading">
+          <h2 id="picker-title">选择父目录</h2>
+          <button
+            class="btn btn-ghost btn-icon icon-action"
+            value="cancel"
+            aria-label="关闭目录选择"
+          >
+            <span data-icon="x"></span><span class="action-tooltip" role="tooltip">关闭</span>
+          </button>
+        </header>
+        <p class="muted">实际产品在这里打开系统文件夹选择框；原型用固定候选代替。</p>
+        <ul id="picker-list" class="picker-list"></ul>
+      </form>
+    </dialog>
+
+    <dialog id="handoff-dialog" aria-labelledby="handoff-title">
+      <form method="dialog">
+        <h2 id="handoff-title"></h2>
+        <p id="handoff-copy" class="muted"></p>
+        <button class="btn btn-secondary" value="close">返回配置</button>
+      </form>
+    </dialog>
+
+    <div id="toast" class="prototype-toast" role="status" hidden></div>
+  </body>
+</html>
