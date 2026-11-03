@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import {
   ChevronDown,
+  Download,
   ExternalLink,
   FilePenLine,
   FolderGit2,
@@ -58,6 +59,7 @@ export function ProjectSettingsRail({
   onChanged,
   onAddRepo,
   onRemoveRepo,
+  onCloneToLocal,
   busyRepoId,
   leave,
   discardRef
@@ -69,6 +71,8 @@ export function ProjectSettingsRail({
   onChanged: () => void
   onAddRepo: () => void
   onRemoveRepo: (repoId: string) => void
+  /** 槽级入口：把这一个仓克隆到本机（确认框里仍列出全部待克隆仓）。 */
+  onCloneToLocal: (repoId: string) => void
   busyRepoId: string | null
   leave: (action: () => void) => void
   discardRef: RefObject<(() => void) | null>
@@ -254,6 +258,15 @@ export function ProjectSettingsRail({
                       icon={SlidersHorizontal}
                       onClick={() => openSettings('repo', slot.repoId)}
                     />
+                    {!slot.localRepoId && slot.remoteUrl ? (
+                      <WorkbenchIconButton
+                        label={`克隆 ${slot.name} 到本机`}
+                        icon={Download}
+                        disabled={busyRepoId === slot.repoId}
+                        onClick={() => onCloneToLocal(slot.repoId)}
+                        data-workbench-clone-repo
+                      />
+                    ) : null}
                     {slot.localRepoId ? (
                       <WorkbenchIconButton
                         label={`解除 ${slot.name} 本机注册`}

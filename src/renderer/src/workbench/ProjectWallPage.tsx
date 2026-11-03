@@ -14,10 +14,12 @@ import {
   countWallProjectWorktrees,
   type WallProject
 } from './workbench-wall-projects'
+import { cloneableSlots } from './clone-to-local-plan'
 import { buildWallHostFact } from './wall-host-facts'
 import { useWallAdoptions } from './use-wall-adoptions'
 import { ensureWallProjectGroup, removeRepoFromWallProject } from './wall-project-repo-actions'
 import { ImportBuilderHostsDialog } from './ImportBuilderHostsDialog'
+import { CloneProjectToLocalDialog } from './CloneProjectToLocalDialog'
 import { ProjectWallCard, type CardHostTag, type WallCardView } from './ProjectWallCard'
 import { useWallReadings } from './use-wall-readings'
 import type { WallCardReadings } from './wall-card-readings'
@@ -59,6 +61,11 @@ export function ProjectWallPage({
   const [adoptionToken, setAdoptionToken] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  /** 「克隆到本机」轻确认框：卡级=全部待克隆仓，槽级=那一个仓（框里仍可增减）。 */
+  const [cloneRequest, setCloneRequest] = useState<{
+    projectKey: string
+    repoIds: readonly string[]
+  } | null>(null)
   const [switchingKey, setSwitchingKey] = useState<string | null>(null)
   const [busyRepoId, setBusyRepoId] = useState<string | null>(null)
   const [configurationKey, setConfigurationKey] = useState<string | null | undefined>(undefined)
@@ -178,6 +185,10 @@ export function ProjectWallPage({
         configureRepoId &&
         card.project.repoIds.includes(configureRepoId))
   )
+  // 克隆框跟着卡片走：克隆过程中槽会变成「本机已注册」，卡片本身要能实时更新。
+  const cloneCard = cloneRequest
+    ? cards.find((card) => card.project.key === cloneRequest.projectKey)
+    : undefined
   const closeConfiguration = () =>
     leave(() => {
       setConfigurationKey(null)
@@ -280,6 +291,15 @@ export function ProjectWallPage({
                       setConfigurationBusy(false)
                     })
                   }}
+                  onCloneToLocal={() =>
+                    leave(() =>
+                      setCloneRequest({
+                        projectKey: card.project.key,
+                        // 卡级入口：预选全部待克隆仓（确认框里仍可取消勾选）。
+                        repoIds: cloneableSlots(card.project.slots).map((slot) => slot.repoId)
+                      })
+                    )
+                  }
                 />
               ))}
             </div>
@@ -311,6 +331,20 @@ export function ProjectWallPage({
                   .finally(() => setBusyRepoId(null))
               })
             }
+            onCloneToLocal={(repoId) =>
+              leave(() =>
+                setCloneRequest({ projectKey: selectedCard.project.key, repoIds: [repoId] })
+              )
+            }
+          />
+        ) : null}
+        {cloneCard && cloneRequest ? (
+          <CloneProjectToLocalDialog
+            key={cloneRequest.projectKey}
+            card={cloneCard}
+            initialRepoIds={cloneRequest.repoIds}
+            onClose={() => setCloneRequest(null)}
+            onCloned={refreshWall}
           />
         ) : null}
         <ImportBuilderHostsDialog
