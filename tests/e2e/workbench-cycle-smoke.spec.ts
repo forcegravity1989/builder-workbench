@@ -154,7 +154,7 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   // prepare 的空计划是 create-only 初始化；绑定树无屏内选版，页头只读回显绑定版本。
   await expect(workbenchPage.locator('.g3-version-bound')).toHaveText('v9.9', { timeout: 60_000 })
   await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'prepared')
-  await configureGoldenStubAgent(workbenchPage)
+  await configureGoldenStubAgent(workbenchPage, { agentArgs: '--codex-draft' })
   await workbenchPage.getByRole('button', { name: '开始计划', exact: true }).click()
   await verifyWorkflowDraft(workbenchPage, 'week-planning', testInfo)
 
