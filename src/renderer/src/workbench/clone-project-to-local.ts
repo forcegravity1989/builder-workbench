@@ -6,7 +6,7 @@
  * - `repos:clone` IPC 与主进程的落点校验/占用（同「接入项目」向导的克隆分支）。
  * - 落点默认值由交互层用 `getDefaultCloneParent(settings.workspaceDir)` 算好传入。
  * - 克隆后的登记动作与 `run-project-onboard` 一致：本机注册 → 展示名 → 单仓工作树基址
- *   → 刷新工作树 → 挂入项目组；全部成功才切到项目总览（`finishCloneToLocal`）。
+ *   → 刷新工作树 → 挂入项目组；全部成功才切到项目总览（`switchToClonedProject`）。
  *
  * 同远端去重：墙上同一远端身份只一槽（`buildWallProjects` 按身份键归并），
  * 所以本模块只克隆调用方明确选中的槽；调用方已用 `cloneableSlots` 排除了本机已注册的槽。
@@ -30,9 +30,9 @@ export type CloneRepoOutcome = {
 
 export type CloneToLocalResult = {
   outcomes: CloneRepoOutcome[]
-  /** 克隆成功并挂入项目组的本机注册行 id。 */
+  /** 已克隆落盘并注册到本机的行 id（含挂组失败但已落盘的仓；决定墙刷新与切换落点）。 */
   clonedRepoIds: string[]
-  /** 选中仓全部成功（至少一个）；此时才自动切到项目总览。 */
+  /** 选中仓全部成功（至少一个，含挂组）；此时才自动切到项目总览。 */
   allSucceeded: boolean
   /** 整体性失败原因（父目录缺失、项目组建不出来）；为空表示没发生。 */
   error: string | null
@@ -113,6 +113,9 @@ export async function cloneProjectReposToLocal(args: {
       await useAppStore.getState().fetchWorktrees(repo.id)
 
       const store = useAppStore.getState()
+      // Why: 先记「已落盘」再试挂组——挂组失败时这个仓仍已克隆并注册到本机，
+      // 漏记会让墙上不刷新、结果被误报成「一个都没成」（挂组失败另有逐仓原因）。
+      clonedRepoIds.push(repo.id)
       const order = store.repos.filter((r) => r.projectGroupId === groupId).length
       const moved = await store.moveProjectToGroup(repo.id, groupId, order)
       if (!moved) {
@@ -120,7 +123,6 @@ export async function cloneProjectReposToLocal(args: {
         outcomes.push({ repoId: repo.id, name, ok: false, reason: '挂入项目组失败' })
         continue
       }
-      clonedRepoIds.push(repo.id)
       outcomes.push({ repoId: repo.id, name, ok: true })
       onStep(slotRepoId, 'done', repo.path)
     } catch (e) {
