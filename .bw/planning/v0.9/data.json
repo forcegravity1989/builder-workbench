@@ -29,7 +29,7 @@
       "goalId": "G2",
       "title": "版本总览呈现真实 SDLC 运作过程",
       "deliverable": "1. 版本总览反映特性从意图、设计、Plan、开发、测试到上线的真实推进，各阶段成果可下钻查看。\n2. 呈现同一阶段被反复修改的活动情况，不只显示最终状态。",
-      "acceptance": "1.、版本总览issue清理。\n2、BW自身 SDLC完善优化。",
+      "acceptance": "1.、SDLC能力默认关闭，支持开启。",
       "owner": "yuzhup",
       "metricTargets": []
     },
@@ -74,6 +74,12 @@
       "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 558,
       "goalId": "G2"
+    },
+    {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 568,
+      "goalId": "G3"
     }
   ],
   "minutes": {
@@ -83,8 +89,7 @@
       "3、版本总览需呈现真实 SDLC 运作过程，并显示同一阶段被反复修改的活动，不只显示最终状态。",
       "4、内部Welink集成研讨（暂不纳入开发）：WeLink 本版真实旅程：发起评审、多群绑定与群配置、多群聊天界面、收发权限边界、接入边界；以 cowelink 为参考，不做额外开发。",
       "5、本周先落地多人协作的消息通知的基础能力，基础旅程使用PR评审。",
-      "6、v0.9 任务盘点补充：G1 关联 #551、#535、#530；BW 自身 11 月里程碑制定沿里程碑 PR、正式材料和页面回显验收，不另建 Issue。#544 已处理，不纳入；#557 为各项目 Owner 的接入与伴飞事项，不纳入 v0.9。",
-      "7、v0.9 任务盘点补充：G2 关联 #558，承接实际 SDLC 统计的实验开关，默认关闭、按项目开启；#530 的版本总览遗留联动收口但不重复挂单。#537 关键文件修改回溯暂不纳入。G4 暂不关联具体 Issue，由开发按实际情况处理，周五再盘点。"
+      "6、SDLC背后有一套规范需要被评审，当前先作为实验性质能力在BW使用"
     ],
     "followups": [
       {
@@ -95,7 +100,7 @@
     ],
     "confirmed": false,
     "sources": "2026-11-02 版本计划会要点（用户提供）＋本会话逐条讨论；未读取 eMeeting 语音转写稿与板面批注。",
-    "updatedAt": "2026-11-04T02:24:24.811Z"
+    "updatedAt": "2026-11-04T03:10:31.564Z"
   },
   "workflow": {
     "stage": "archive",
