@@ -96,6 +96,11 @@ runs:
           git -C "$GITHUB_WORKSPACE" diff --exit-code -- package.json pnpm-lock.yaml pnpm-workspace.yaml
         fi
 
+    # Why --if-present: release cuts can run against older tags without this script.
+    - name: Build internal packages
+      shell: bash
+      run: pnpm run --if-present build:packages
+
     - name: Resolve Electron package cache
       id: electron-package-cache
       if: inputs.native-runtime == 'electron' || inputs.cache-electron-package == 'true'
