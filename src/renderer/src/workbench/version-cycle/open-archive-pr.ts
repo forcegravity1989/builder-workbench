@@ -76,7 +76,7 @@ export async function openArchivePrPage(
       {
         taskSource: 'github',
         preselectedRepoId: repo.id,
-        openGitHubWorkItem: { ...item, repoId: repo.id },
+        openGitHubWorkItem: { ...item, repoId: repo.id, repoHostId: getRepoExecutionHostId(repo) },
         openGitHubSourceContext: sourceContext
       },
       options

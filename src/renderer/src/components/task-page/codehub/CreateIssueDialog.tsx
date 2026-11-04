@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { LoaderCircle } from 'lucide-react'
 import type { Repo } from '../../../../../shared/repo-types'
+import { getRepoExecutionHostId } from '../../../../../shared/execution-host'
 
 export function CodeHubCreateIssueDialog({
   repo: codehubRepo,
@@ -52,6 +53,7 @@ export function CodeHubCreateIssueDialog({
               .createIssue({
                 repoPath: codehubRepo.path,
                 repoId: codehubRepo.id,
+                repoHostId: getRepoExecutionHostId(codehubRepo),
                 title: nextTitle,
                 description: description.trim() || undefined,
                 assignee: assignee.trim() || undefined

@@ -71,8 +71,11 @@ export function resolveReferenceRepo(
     return null
   }
   return (
-    matches.find((repo) => repo.id === scope.repoId) ??
+    matches.find(
+      (repo) => repo.id === scope.repoId && getRepoExecutionHostId(repo) === scope.hostId
+    ) ??
     matches.find((repo) => getRepoExecutionHostId(repo) === scope.hostId) ??
+    matches.find((repo) => repo.id === scope.repoId) ??
     matches[0]!
   )
 }

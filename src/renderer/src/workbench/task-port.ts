@@ -1,5 +1,6 @@
 import type { AppState } from '@/store/types'
 import type { CodeHubTaskDetail } from '../../../shared/codehub-tasks'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { WorkItemsBatchResult } from '../../../shared/github/work-item-batch-types'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import type { Repo } from '../../../shared/repo-types'
@@ -97,7 +98,7 @@ async function openDetail(
       {
         taskSource: 'github',
         preselectedRepoId: repo.id,
-        openGitHubWorkItem: { ...item, repoId: repo.id },
+        openGitHubWorkItem: { ...item, repoId: repo.id, repoHostId: getRepoExecutionHostId(repo) },
         openGitHubSourceContext: sourceContext
       },
       options

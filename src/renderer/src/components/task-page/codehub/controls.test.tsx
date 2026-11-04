@@ -49,6 +49,7 @@ const repo = {
   id: 'r1',
   path: '/repo',
   displayName: 'Project',
+  executionHostId: 'runtime:owner',
   gitRemoteIdentity: { remoteUrl: 'https://codehub.example.com/team/project.git' }
 }
 
@@ -99,6 +100,7 @@ it('keeps filter transitions and issue creation connected after extracting the c
   expect(api.createIssue).toHaveBeenCalledWith({
     repoId: 'r1',
     repoPath: '/repo',
+    repoHostId: 'runtime:owner',
     title: 'New work',
     description: undefined,
     assignee: undefined

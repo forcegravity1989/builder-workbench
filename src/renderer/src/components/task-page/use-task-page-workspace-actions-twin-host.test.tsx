@@ -8,7 +8,10 @@ import type { TaskPageSearchActionsModel } from './use-task-page-search-actions'
 import { useTaskPageWorkspaceActions } from './use-task-page-workspace-actions'
 
 vi.mock('@/store', () => ({
-  useAppStore: { getState: () => ({ recordFeatureInteraction: vi.fn() }) }
+  useAppStore: {
+    getState: () => ({ recordFeatureInteraction: vi.fn() }),
+    subscribe: vi.fn(() => () => {})
+  }
 }))
 
 const sshRow: Repo = {

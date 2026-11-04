@@ -327,7 +327,8 @@
         "ref/upstream.md",
         "src/renderer/src/hooks/useComposerState-host-context-boundaries.test.ts",
         "src/renderer/src/lib/composer-issue-command.test.ts",
-        "src/renderer/src/lib/new-workspace.test.ts"
+        "src/renderer/src/lib/new-workspace.test.ts",
+        "src/renderer/src/components/task-page/use-task-page-workspace-actions-twin-host.test.tsx"
       ]
     },
     {
@@ -4599,7 +4600,7 @@
     {
       "path": "src/renderer/src/components/task-page/codehub/AssigneesCell.tsx",
       "mode": "100644",
-      "blob": "9a5d3dd25d28ac78dab438b106d8e5fa37a14e9c",
+      "blob": "9b4f5f5f7d5ba49212f011ac8e89ee2d495731f5",
       "cases": ["codehub-task-ui"]
     },
     {
@@ -4623,13 +4624,13 @@
     {
       "path": "src/renderer/src/components/task-page/codehub/CreateIssueDialog.tsx",
       "mode": "100644",
-      "blob": "d6b5bdb9834c074c5f9b4703e96c9ed2ba4dbef9",
+      "blob": "0d73881876b45a5761332ebef595ca992b9c0213",
       "cases": ["codehub-task-ui"]
     },
     {
       "path": "src/renderer/src/components/task-page/codehub/Detail.tsx",
       "mode": "100644",
-      "blob": "d419451b5eda049652aaeebd0eac75d4c57195bb",
+      "blob": "1b8b97493ab628fad3de8d1be7cd34e1063ad7dd",
       "cases": ["codehub-task-ui"]
     },
     {
@@ -4641,7 +4642,7 @@
     {
       "path": "src/renderer/src/components/task-page/codehub/FilterPopover.tsx",
       "mode": "100644",
-      "blob": "964a2f62cb44ab6564b60940e7502d6f84867d3c",
+      "blob": "5e5a4696adaf815c72d852dfb57ac9624c30dfde",
       "cases": ["codehub-task-ui"]
     },
     {
@@ -4653,7 +4654,7 @@
     {
       "path": "src/renderer/src/components/task-page/codehub/IssueProperties.tsx",
       "mode": "100644",
-      "blob": "1ba6741ec3ec285650d19798aa1e0f9faf71e7ab",
+      "blob": "09eb17f1745f450f8c5ec3df126c7ec98679a2f6",
       "cases": ["codehub-task-ui"]
     },
     {
@@ -4695,7 +4696,7 @@
     {
       "path": "src/renderer/src/components/task-page/codehub/controls.test.tsx",
       "mode": "100644",
-      "blob": "eb2bf0f01f3a61ec3edf7dae4428d14c4493809e",
+      "blob": "d42569052377de6e5a601846a2e1299ba0d8404f",
       "cases": ["codehub-task-ui"]
     },
     {
@@ -4913,6 +4914,12 @@
       "mode": "100644",
       "blob": "84c0482d219b3b77f88d6af74fe678b55f43614c",
       "cases": ["codehub-registration"]
+    },
+    {
+      "path": "src/renderer/src/components/task-page/use-task-page-workspace-actions-twin-host.test.tsx",
+      "mode": "100644",
+      "blob": "a221a427b8fe349fcf98ac8bb5f5cfc2bc8c2e36",
+      "cases": ["worktree-creation-context"]
     },
     {
       "path": "src/renderer/src/components/task-page/use-task-page-workspace-actions.ts",

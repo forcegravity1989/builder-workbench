@@ -20,6 +20,7 @@ vi.mock('@/lib/github-work-item-source-lookup', () => ({
 vi.mock('@/lib/codehub-api', () => ({ codehubApi: { viewTask: mocks.viewTask } }))
 
 import { createTaskPort } from './task-port'
+import { createTaskReferenceReader } from './task-reference-reader'
 
 const githubRepo = {
   id: 'repo-gh',
@@ -154,27 +155,37 @@ describe('createTaskPort reads', () => {
     )
     mocks.lookupGitHub.mockImplementation(async ({ number }) => ({ ...ghItem, number }))
     const refs = Array.from({ length: 201 }, (_, index) => ({ ...ghReference, number: index + 1 }))
-    const reads = await createTaskPort(makeDeps({ lookupGitHubWorkItems: batch })).listVersion(
-      scope,
-      refs
-    )
+    const deps = makeDeps({ lookupGitHubWorkItems: batch })
+    const reader = createTaskReferenceReader(deps)
+    const reads = await createTaskPort(deps, reader).listVersion(scope, refs)
     expect(batch).toHaveBeenCalledTimes(11)
     expect(batch.mock.calls.every(([args]) => args.numbers.length <= 20)).toBe(true)
     expect(
       mocks.lookupGitHub.mock.calls.map(([args]) => args.number).sort((a, b) => a - b)
     ).toEqual(Array.from({ length: 20 }, (_, index) => 41 + index))
     expect(reads.every((read) => read.kind === 'ready')).toBe(true)
+    expect(
+      reader
+        .cached(scope, refs)
+        ?.every((read) => read.kind === 'github' && read.item.repoHostId === 'local')
+    ).toBe(true)
   })
 
   it('isolates runtime sources and keeps environment reads off local GitHub batching', async () => {
-    const other = { ...githubRepo, id: 'repo-remote', executionHostId: 'runtime:builder' } as Repo
+    const other = { ...githubRepo, executionHostId: 'runtime:builder' } as Repo
     const batch = vi.fn()
     mocks.lookupGitHub.mockResolvedValue(ghItem)
-    const port = createTaskPort(
-      makeDeps({ repos: () => [githubRepo, other], lookupGitHubWorkItems: batch })
-    )
+    const deps = makeDeps({ repos: () => [githubRepo, other], lookupGitHubWorkItems: batch })
+    const reader = createTaskReferenceReader(deps)
+    const port = createTaskPort(deps, reader)
     const remote = { ...scope, repoId: other.id, hostId: 'runtime:builder' as const }
-    await port.listVersion(remote, [ghReference])
+    const [remoteRead] = await port.listVersion(remote, [ghReference])
+    expect(reader.cached(remote, [ghReference])).toEqual([
+      expect.objectContaining({
+        kind: 'github',
+        item: expect.objectContaining({ repoId: other.id, repoHostId: 'runtime:builder' })
+      })
+    ])
     expect(batch).not.toHaveBeenCalled()
     expect(mocks.lookupGitHub).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -183,6 +194,29 @@ describe('createTaskPort reads', () => {
       })
     )
     expect(port.cached?.(scope, [ghReference])).toBeNull()
+    expect(remoteRead?.kind).toBe('ready')
+    if (remoteRead?.kind !== 'ready') {
+      throw new Error('Expected the remote task to be available')
+    }
+    await port.openDetail(remoteRead.task, {
+      ...remote,
+      page: 'plan',
+      version: 'v1',
+      cycleId: 'cycle',
+      worktreeId: 'plan',
+      scrollTop: 0,
+      draftKey: 'plan'
+    })
+    expect(mocks.storeState.openTaskPage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        openGitHubWorkItem: expect.objectContaining({
+          repoId: other.id,
+          repoHostId: 'runtime:builder'
+        }),
+        openGitHubSourceContext: expect.objectContaining({ hostId: 'runtime:builder' })
+      }),
+      expect.anything()
+    )
     const enterprise = {
       ...githubRepo,
       id: 'repo-ghes',

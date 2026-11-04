@@ -1,4 +1,5 @@
 import { useAppStore } from '@/store'
+import { findRepoForHost } from '@/store/slices/repo-host-identity'
 import { submitProjectCharter } from './charter-port'
 import {
   CHARTER_BRANCH,
@@ -60,7 +61,10 @@ export async function submitProjectOnboard(args: {
   if (localRepo) {
     repoPath = workspace.trim()
     onLog({ kind: 'doing', text: `接入本地仓 ${repoPath}…` })
-    const repo = await addRepoPath(repoPath, 'git', { displayName: intent.name })
+    const repo = await addRepoPath(repoPath, 'git', {
+      displayName: intent.name,
+      runtimeEnvironmentId: null
+    })
     if (!repo) {
       onLog({
         kind: 'fail',
@@ -83,9 +87,9 @@ export async function submitProjectOnboard(args: {
     repoId = cloned.id
     repoPath = cloned.path
     await fetchRepos({ runtimeEnvironmentId: null })
-    const existing = useAppStore.getState().repos.find((r) => r.id === repoId)
+    const existing = findRepoForHost(useAppStore.getState().repos, repoId, { hostId: 'local' })
     if (!existing) {
-      await addRepoPath(repoPath, 'git', { displayName: intent.name })
+      await addRepoPath(repoPath, 'git', { displayName: intent.name, runtimeEnvironmentId: null })
     }
     onLog({ kind: 'ok', text: `克隆完成 ${repoPath}` })
   }
@@ -95,7 +99,7 @@ export async function submitProjectOnboard(args: {
     // Why: BW fixed trees (bw/week-plan / bw/week-acceptance / bw/project) follow Orca's
     // per-repo worktree base; without one they land under the global workspaceDir, often on
     // another drive than the project. Set the project-local convention once, visibly.
-    const registered = useAppStore.getState().repos.find((r) => r.id === repoId)
+    const registered = findRepoForHost(useAppStore.getState().repos, repoId, { hostId: 'local' })
     if (registered && !registered.worktreeBasePath?.trim()) {
       await updateRepo(repoId, { worktreeBasePath: '.bw/worktrees' }, { hostId: 'local' })
       onLog({
