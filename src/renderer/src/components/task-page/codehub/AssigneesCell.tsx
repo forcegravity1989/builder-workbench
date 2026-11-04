@@ -10,8 +10,9 @@ import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 
 /**
  * 任务列表行的负责人单元格。CLI `issue update --assignee` 是单值替换语义
- * （无 add/remove、无清除），所以点选成员即把负责人替换为该成员；已是
- * 唯一负责人的成员不可再点，也不提供移除入口——如实反映 CLI 能力。
+ * （无 add/remove、无清除），所以点选成员即把负责人替换为该成员，成功后
+ * 收起下拉；已是唯一负责人的成员再点只收起、不重复请求；不提供移除入口
+ * ——如实反映 CLI 单值能力。
  */
 export function CodeHubAssigneesCell({
   item,
@@ -63,6 +64,8 @@ export function CodeHubAssigneesCell({
       }
       const username = member.username.toLowerCase()
       if (item.assignees.length === 1 && item.assignees[0]!.toLowerCase() === username) {
+        // Why: 已是唯一负责人，指派是空操作；收起下拉让人看到操作已完成。
+        setOpen(false)
         return
       }
       setPendingUsername(member.username)
@@ -74,6 +77,8 @@ export function CodeHubAssigneesCell({
           assignee: member.username
         })
         toast.success(translate('auto.components.TaskPage.codehubAssigned', 'Assignee updated'))
+        // Why: 单值替换选完即达成目的，保持展开只会让人再手动关一次。
+        setOpen(false)
         onChanged()
       } catch (reason: unknown) {
         toast.error(reason instanceof Error ? reason.message : String(reason))
@@ -136,31 +141,22 @@ export function CodeHubAssigneesCell({
             const isOn = item.assignees.some(
               (name) => name.toLowerCase() === member.username.toLowerCase()
             )
-            const isSole = isOn && item.assignees.length === 1
             const pending = pendingUsername === member.username
             return (
               <button
                 key={member.username}
                 type="button"
-                disabled={pendingUsername !== null || isSole}
-                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-muted/50 disabled:opacity-60"
+                aria-pressed={isOn}
+                disabled={pendingUsername !== null}
+                className={cn(
+                  'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-xs hover:bg-accent disabled:opacity-60',
+                  isOn && 'bg-accent/50'
+                )}
                 onClick={(event) => {
                   event.stopPropagation()
                   void assign(member)
                 }}
               >
-                <span
-                  className={cn(
-                    'flex size-3.5 shrink-0 items-center justify-center rounded-sm border',
-                    isOn ? 'border-primary bg-primary text-primary-foreground' : 'border-input'
-                  )}
-                >
-                  {pending ? (
-                    <LoaderCircle className="size-3 animate-spin" />
-                  ) : isOn ? (
-                    <Check className="size-3" />
-                  ) : null}
-                </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">
                     {member.nameCn ?? member.name ?? member.username}
@@ -169,6 +165,11 @@ export function CodeHubAssigneesCell({
                     {member.username}
                   </span>
                 </span>
+                {pending ? (
+                  <LoaderCircle className="size-3.5 shrink-0 animate-spin" />
+                ) : isOn ? (
+                  <Check className="size-3.5 shrink-0 text-primary" />
+                ) : null}
               </button>
             )
           })
