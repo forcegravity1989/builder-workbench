@@ -72,18 +72,6 @@
     {
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 199,
-      "goalId": "G3"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 555,
-      "goalId": "G3"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 540,
       "goalId": "G4"
     },
@@ -144,30 +132,6 @@
     {
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 559,
-      "goalId": "G3"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 560,
-      "goalId": "G3"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 561,
-      "goalId": "G3"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 562,
-      "goalId": "G3"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 546,
       "goalId": "G4"
     },
@@ -205,7 +169,7 @@
   },
   "workflow": {
     "stage": "archive",
-    "updatedAt": "2026-11-03T15:45:00+08:00",
+    "updatedAt": "2026-11-04T09:30:00+08:00",
     "archivePr": {
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
