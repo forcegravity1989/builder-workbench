@@ -9,10 +9,11 @@
   </head>
   <body>
     <main>
-      <header><span>BUILDER WORKBENCH / 版本总览 / #334</span><a href="prototype.html?rev=530-draft-1">打开高保真 ↗</a></header>
+      <header><span>BUILDER WORKBENCH / 版本总览 / #334</span><a href="prototype.html?rev=558-opt-in-1">打开高保真 ↗</a></header>
       <p class="eyebrow">原型注释: 本页是审阅指南，原型不作为生产运行证据</p>
-      <h1>按目标看承诺，沿特性历程看交付。</h1>
-      <p class="lead">从 BW 原有侧边栏进入。未计划、版本中和交付后保持同一结构：版本基础信息、版本目标、AI workflow 生产力。目标保留负责人、任务数量入口与人工验收，完整承诺从原有计划／验收导航查看。</p>
+      <h1>先看本版目标，按需开启过程统计。</h1>
+      <p class="lead">从 BW 原有侧边栏进入。SDLC 和 AI 生产力默认关闭，总览保留版本信息、目标、负责人、任务入口与人工验收，不显示统计占位。开启对应能力后，才显示原有特性历程或 AI workflow 生产力。</p>
+      <section class="intent"><h2>原型注释: #558 开关评审</h2><p>从侧栏「设置 → 实验性功能」进入，两个开关独立生效，作用范围标明当前项目；样式与入口参考 Orca，原生既有条目为全局设置。本原型不写真实设置、不采集远端数据，开启后仍为原固定快照。</p><nav><a href="prototype.html?scene=during&amp;sdlc=off&amp;ai=off">默认关闭 →</a><a href="prototype.html?scene=during&amp;sdlc=on&amp;ai=on">两项开启 →</a><a href="prototype.html?scene=during&amp;view=settings&amp;sdlc=off&amp;ai=off">实验设置 →</a></nav><p>下列阶段与生产力说明在对应开关开启后适用；本次不新增反复修改活动的统计模型。</p></section>
       <nav><a href="intent.md">意图 ↗</a><a href="spec.md">规格 ↗</a><span>原型注释: 使用 Orca 原生浏览器批注</span></nav>
       <section class="intent">
         <h2>原型注释: 审阅关注点</h2>
@@ -25,19 +26,19 @@
           <h3>计划未制定</h3>
           <p>目标区显示未制定计划和原有制定计划入口，没有目标就不补造目标。读取失败应保持未知，不能当作未计划。</p>
           <p class="check">原型注释: v0.9 是布局情景，未创建真实版本。入口演示沿原有计划工作区承接。</p>
-          <a href="prototype.html?scene=unplanned&amp;rev=530-draft-1">审阅未制定计划 →</a>
+          <a href="prototype.html?scene=unplanned&amp;rev=558-opt-in-1">审阅未制定计划 →</a>
         </article></li>
         <li><div class="number">02</div><article>
           <h3>版本中</h3>
           <p>按 v0.8 G1–G4 逐目标阅读。G2 中 #334 与 #440 各自呈现特性历程，普通任务从该目标任务入口查看。人工结论直接在目标处回显。</p>
           <p class="check">原型注释: 目标与数量来自固定计划。默认 #334 使用计划、设计和开发 PR 的合入快照与固定观察时点；后续虚线可切换模拟规划长度与默认长度。其他阶段的模拟可在轴上方切换。</p>
-          <a href="prototype.html?scene=during&amp;focus=334&amp;rev=530-draft-1">审阅版本中 →</a>
+          <a href="prototype.html?scene=during&amp;focus=334&amp;sdlc=on&amp;ai=on&amp;rev=558-opt-in-1">审阅版本中 →</a>
         </article></li>
         <li><div class="number">03</div><article>
           <h3>版本交付后</h3>
           <p>历史版本保持目标与时间轴布局，回显当时计划和人工结论。特性阶段不能覆盖目标验收，关联版本入口仍可继续核对同一特性。</p>
           <p class="check">原型注释: v0.7 按验收 planRef 固定计划，G1／G2 未达成、G3／G4 达成。#383 的模拟历程不改写这些人工结论。</p>
-          <a href="prototype.html?scene=delivered&amp;focus=383&amp;rev=530-draft-1">审阅交付后 →</a>
+          <a href="prototype.html?scene=delivered&amp;focus=383&amp;sdlc=on&amp;ai=on&amp;rev=558-opt-in-1">审阅交付后 →</a>
         </article></li>
       </ol>
       <section class="intent">

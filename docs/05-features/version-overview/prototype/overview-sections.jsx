@@ -18,7 +18,8 @@ export function OverviewSections({
   sample,
   native,
   focusRequest,
-  openVersion
+  openVersion,
+  experiments
 }) {
   const requirements = unplanned ? [] : history ? historicalFeatures : sample
   return (
@@ -67,26 +68,29 @@ export function OverviewSections({
                     {outcome(result)} ↗
                   </button>
                 </div>
-                {goalFeatures.map((f) => (
-                  <Feature
-                    key={`${selected.version}:${f.id}`}
-                    feature={f}
-                    selectedVersion={selected.version}
-                    focusRequest={focusRequest}
-                    openVersion={openVersion}
-                  />
-                ))}
+                {experiments.sdlc &&
+                  goalFeatures.map((f) => (
+                    <Feature
+                      key={`${selected.version}:${f.id}`}
+                      feature={f}
+                      selectedVersion={selected.version}
+                      focusRequest={focusRequest}
+                      openVersion={openVersion}
+                    />
+                  ))}
               </section>
             )
           })}
-          <p className="ov-note">
-            原型注释: 本静态原型未动态解析特性身份；本稿显式选取 #334／#440（v0.7 为
-            #383）演示特性，不改真实标签、标题与计划。其余任务保留原目标和任务入口。
-          </p>
+          {experiments.sdlc && (
+            <p className="ov-note">
+              原型注释: 本静态原型未动态解析特性身份；本稿显式选取 #334／#440（v0.7 为
+              #383）演示特性，不改真实标签、标题与计划。其余任务保留原目标和任务入口。
+            </p>
+          )}
         </div>
       )}
 
-      <WorkflowProductivity plan={plan} unplanned={unplanned} />
+      {experiments.ai && <WorkflowProductivity plan={plan} unplanned={unplanned} />}
     </>
   )
 }

@@ -1,4 +1,5 @@
 import { OverviewSections } from './overview-sections.jsx'
+import { ExperimentalSettings, SettingsIcon } from './overview-settings.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import { Dialog, SourcePanel } from './overview-components.jsx'
 import {
@@ -70,6 +71,30 @@ function App() {
     const value = new URLSearchParams(location.search).get('scene')
     return scenarios.some((s) => s.id === value) ? value : 'during'
   })
+  const [settingsOpen, setSettingsOpen] = useState(
+    () => new URLSearchParams(location.search).get('view') === 'settings'
+  )
+  const [experiments, setExperiments] = useState(() => {
+    const params = new URLSearchParams(location.search)
+    return { sdlc: params.get('sdlc') === 'on', ai: params.get('ai') === 'on' }
+  })
+  function changeExperiments(next) {
+    setExperiments(next)
+    const url = new URL(location.href)
+    url.searchParams.set('sdlc', next.sdlc ? 'on' : 'off')
+    url.searchParams.set('ai', next.ai ? 'on' : 'off')
+    window.history.replaceState(null, '', url)
+  }
+  function navigateSettings(open) {
+    setSettingsOpen(open)
+    const url = new URL(location.href)
+    if (open) {
+      url.searchParams.set('view', 'settings')
+    } else {
+      url.searchParams.delete('view')
+    }
+    window.history.replaceState(null, '', url)
+  }
   const [dialog, setDialog] = useState(null)
   const [dark, setDark] = useState(false)
   const [sample, setSample] = useState(features)
@@ -101,6 +126,7 @@ function App() {
     setDialog({ kind: 'native', title: `原型注释: ${route}入口`, route, goal, feature })
   }
   function openVersion(scene, id = null) {
+    navigateSettings(false)
     setScenario(scene)
     setDialog(null)
     setFocusRequest(id ? { id, sequence: (focusRequest?.sequence || 0) + 1 } : null)
@@ -191,6 +217,27 @@ function App() {
             </option>
           ))}
         </select>
+        <div className="ov-review-states" aria-label="原型注释: 统计状态对照">
+          <span>原型注释: 统计</span>
+          <button
+            aria-pressed={!experiments.sdlc && !experiments.ai}
+            onClick={() => {
+              changeExperiments({ sdlc: false, ai: false })
+              navigateSettings(false)
+            }}
+          >
+            默认关闭
+          </button>
+          <button
+            aria-pressed={experiments.sdlc && experiments.ai}
+            onClick={() => {
+              changeExperiments({ sdlc: true, ai: true })
+              navigateSettings(false)
+            }}
+          >
+            全部开启
+          </button>
+        </div>
         <a href="journey.html">意图与旅程 ↗</a>
         <button
           className="ov-demo-navigation"
@@ -322,6 +369,17 @@ function App() {
             <ChevronRight size={14} />
             其他项目
           </button>
+          <button
+            className={`nav-row${settingsOpen ? ' selected' : ''}`}
+            onClick={() => {
+              setDialog(null)
+              navigateSettings(true)
+            }}
+            aria-label="设置"
+          >
+            <SettingsIcon />
+            设置
+          </button>
           <Note>
             沿用 BW
             导航与原生树卡片；版下树按任务关系展示，实际绑定、宿主与会话未读取，完整原生菜单不变。v0.9
@@ -329,87 +387,102 @@ function App() {
           </Note>
         </aside>
         <main className="ov-main" ref={mainRef}>
-          <div className="ov-top">
-            <span>Builder Workbench</span>
-            <ChevronRight size={12} />
-            <span>{selected.version}</span>
-            <ChevronRight size={12} />
-            <span>总览</span>
-            {returnContext && (
-              <button className="ov-return" onClick={returnToSource}>
-                ← {returnContext.origin === 'planning' ? '返回规划工作区' : '返回项目总览'}
-              </button>
-            )}
-          </div>
-          <div className="ov-content">
-            <div className="ov-heading">
-              <h1>{selected.version} 版本总览</h1>
-              <span className="ov-chip">
-                {unplanned ? '计划未制定' : history ? '已归档' : '版本中'}
-              </span>
-              <div className="ov-tools">
-                <IconAction icon={RefreshCw} label="刷新版本数据" onClick={refreshVersion} />
-                <IconAction
-                  icon={CalendarRange}
-                  label="进入本版计划"
-                  onClick={() => native('版本计划')}
-                />
-                <IconAction
-                  icon={ListTodo}
-                  label="进入本版任务"
-                  onClick={() => native('版本任务')}
-                />
-                <IconAction
-                  icon={ClipboardCheck}
-                  label="进入本版验收"
-                  onClick={() => native('版本验收')}
-                />
-              </div>
-            </div>
-            {!unplanned && (
-              <div className="ov-meta">
-                <span>
-                  负责人 ·{' '}
-                  {[
-                    ...new Set(
-                      plan.goals.flatMap((g) => g.owner.split(/[;；]/).map((o) => o.trim()))
-                    )
-                  ].join('、')}
-                </span>
-                <ArchiveStamp version={selected.version} workflow="planning" label="计划 PR 合入" />
-                <ArchiveStamp
-                  version={selected.version}
-                  workflow="acceptance"
-                  label="验收 PR 合入"
-                />
-              </div>
-            )}
-            {edited && !history && !unplanned && (
-              <Note>当前范围含临时编辑，刷新还原；历史记录不受影响。</Note>
-            )}
-            {missingFocus && (
-              <div className="ov-focus-missing" role="status">
-                <Link href={`${repository}/issues/${focusRequest.id}`}>
-                  来源特性 #{focusRequest.id}
-                </Link>
-                <span>
-                  {unplanned
-                    ? '本版尚未制定计划，未确认该特性的本版范围'
-                    : '已读取的本版计划中未发现该特性关联'}
-                </span>
-              </div>
-            )}
-            <OverviewSections
-              selected={selected}
-              unplanned={unplanned}
-              history={history}
-              plan={plan}
-              sample={sample}
-              native={native}
-              focusRequest={focusRequest}
-              openVersion={openVersion}
+          {settingsOpen ? (
+            <ExperimentalSettings
+              value={experiments}
+              onChange={changeExperiments}
+              onBack={() => navigateSettings(false)}
             />
-          </div>
+          ) : (
+            <>
+              <div className="ov-top">
+                <span>Builder Workbench</span>
+                <ChevronRight size={12} />
+                <span>{selected.version}</span>
+                <ChevronRight size={12} />
+                <span>总览</span>
+                {returnContext && (
+                  <button className="ov-return" onClick={returnToSource}>
+                    ← {returnContext.origin === 'planning' ? '返回规划工作区' : '返回项目总览'}
+                  </button>
+                )}
+              </div>
+              <div className="ov-content">
+                <div className="ov-heading">
+                  <h1>{selected.version} 版本总览</h1>
+                  <span className="ov-chip">
+                    {unplanned ? '计划未制定' : history ? '已归档' : '版本中'}
+                  </span>
+                  <div className="ov-tools">
+                    <IconAction icon={RefreshCw} label="刷新版本数据" onClick={refreshVersion} />
+                    <IconAction
+                      icon={CalendarRange}
+                      label="进入本版计划"
+                      onClick={() => native('版本计划')}
+                    />
+                    <IconAction
+                      icon={ListTodo}
+                      label="进入本版任务"
+                      onClick={() => native('版本任务')}
+                    />
+                    <IconAction
+                      icon={ClipboardCheck}
+                      label="进入本版验收"
+                      onClick={() => native('版本验收')}
+                    />
+                  </div>
+                </div>
+                {!unplanned && (
+                  <div className="ov-meta">
+                    <span>
+                      负责人 ·{' '}
+                      {[
+                        ...new Set(
+                          plan.goals.flatMap((g) => g.owner.split(/[;；]/).map((o) => o.trim()))
+                        )
+                      ].join('、')}
+                    </span>
+                    <ArchiveStamp
+                      version={selected.version}
+                      workflow="planning"
+                      label="计划 PR 合入"
+                    />
+                    <ArchiveStamp
+                      version={selected.version}
+                      workflow="acceptance"
+                      label="验收 PR 合入"
+                    />
+                  </div>
+                )}
+                {edited && !history && !unplanned && (
+                  <Note>当前范围含临时编辑，刷新还原；历史记录不受影响。</Note>
+                )}
+                {missingFocus && (
+                  <div className="ov-focus-missing" role="status">
+                    <Link href={`${repository}/issues/${focusRequest.id}`}>
+                      来源特性 #{focusRequest.id}
+                    </Link>
+                    <span>
+                      {unplanned
+                        ? '本版尚未制定计划，未确认该特性的本版范围'
+                        : '已读取的本版计划中未发现该特性关联'}
+                    </span>
+                  </div>
+                )}
+                <OverviewSections
+                  selected={selected}
+                  unplanned={unplanned}
+                  history={history}
+                  plan={plan}
+                  sample={sample}
+                  native={native}
+                  focusRequest={focusRequest}
+                  openVersion={openVersion}
+                  experiments={experiments}
+                />
+              </div>
+            </>
+          )}
         </main>
       </div>
       {dialog && (
