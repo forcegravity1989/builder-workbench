@@ -316,3 +316,28 @@
   color: var(--color-danger);
   font-family: inherit;
 }
+/* ─── 克隆到本机：父目录行与逐仓落点预览 ─── */
+.wb-clone-parent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 4px 0 9px;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm, 4px);
+}
+.wb-clone-parent-path {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.wb-clone-parent-path.is-missing {
+  color: var(--color-warning-deep);
+  font-family: inherit;
+}
+.wb-import-copy .wb-clone-target {
+  color: var(--muted-foreground);
+  font-family: inherit;
+}

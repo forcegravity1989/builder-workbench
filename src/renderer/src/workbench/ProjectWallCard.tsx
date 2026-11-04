@@ -1,9 +1,10 @@
 import React from 'react'
 import type { Repo } from '../../../shared/repo-types'
 import type { CharterStatus } from '../../../shared/workbench/charter'
-import { ExternalLink, LoaderCircle, SlidersHorizontal } from 'lucide-react'
+import { Download, ExternalLink, LoaderCircle, SlidersHorizontal } from 'lucide-react'
 import { WorkbenchIconButton } from './WorkbenchIconButton'
 import { ProjectSourceTag } from './ProjectSourceTag'
+import { cloneableSlots } from './clone-to-local-plan'
 import type { ProjectCharter } from './project-charter'
 import type { WallCardReadings } from './wall-card-readings'
 import type { WallProject } from './workbench-wall-projects'
@@ -132,15 +133,20 @@ export function ProjectWallCard({
   switching,
   configured,
   onOpen,
-  onConfigure
+  onConfigure,
+  onCloneToLocal
 }: {
   card: WallCardView
   switching: boolean
   configured: boolean
   onOpen: () => void
   onConfigure: (trigger: HTMLButtonElement) => void
+  /** 卡片级入口：一次克隆该项目全部待克隆仓（仍可在确认框里增减）。 */
+  onCloneToLocal: () => void
 }): React.JSX.Element {
   const opportunity = card.charter?.opportunity?.trim() || ''
+  // 有本机还没注册、又带远端地址的仓才提供入口；全都已在本机就没什么可克隆。
+  const cloneableCount = cloneableSlots(card.project.slots).length
   return (
     <article
       className={`pcard${configured ? ' is-configured' : ''}`}
@@ -168,6 +174,15 @@ export function ProjectWallCard({
             onClick={(event) => onConfigure(event.currentTarget)}
             data-workbench-edit-charter
           />
+          {cloneableCount > 0 ? (
+            <WorkbenchIconButton
+              label={`克隆 ${card.displayName} 的 ${cloneableCount} 个仓到本机`}
+              icon={Download}
+              disabled={switching}
+              onClick={onCloneToLocal}
+              data-workbench-clone-local
+            />
+          ) : null}
         </div>
       </div>
       <button
