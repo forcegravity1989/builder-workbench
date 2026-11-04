@@ -10,8 +10,8 @@ import {
 } from '@/components/ui/context-menu'
 import { PER_REPO_FETCH_LIMIT } from '@/lib/new-workspace'
 import { getLocalPreflightContext, localPreflightContextKey } from '@/lib/local-preflight-context'
-import { getTaskEligibleRepos } from '@/components/task-page-default-repo-selection'
 import { cn } from '@/lib/utils'
+import { resolveTaskEntryRepoId } from './task-entry-project'
 import { useAppStore } from '@/store'
 import { useRepoMap } from '@/store/selectors'
 import { translate } from '@/i18n/i18n'
@@ -79,6 +79,16 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
   const prefetchWorkItems = useAppStore((s) => s.prefetchWorkItems)
   const activeRepoId = useAppStore((s) => s.activeRepoId)
   const defaultTaskViewPreset = useAppStore((s) => s.settings?.defaultTaskViewPreset ?? 'all')
+  // BW 壳内任务入口的当前项目基准与验收/计划屏一致(activeRepoId ?? repos[0]),
+  // 再按项目身份解析任务屏要打开的仓库副本;复用原生 preselectedRepoId 预选契约,
+  // 页内项目筛选仍可改。#542：当前项目可能来自其他设备的工作区；同项目有本机副本
+  // 时回到本机副本，避免数据宿主跟着最后一次点击的 worktree 走；无本机副本时保持当前副本。
+  const currentProjectRepoId = activeRepoId ?? repos[0]?.id ?? null
+  const workbenchProjectRepoId = isWorkbenchShell()
+    ? resolveTaskEntryRepoId(currentProjectRepoId, repos)
+    : null
+  const prefetchRepoId =
+    isWorkbenchShell() && workbenchProjectRepoId ? workbenchProjectRepoId : activeRepoId
   const preferredVisibleTaskProviders = React.useMemo(
     () => normalizeVisibleTaskProviders(rawVisibleTaskProviders),
     [rawVisibleTaskProviders]
@@ -126,7 +136,7 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
     if (resolvedDefaultTaskSource !== 'github') {
       return
     }
-    const activeRepo = activeRepoId ? (repoMap.get(activeRepoId) ?? null) : null
+    const activeRepo = prefetchRepoId ? (repoMap.get(prefetchRepoId) ?? null) : null
     const activeGitRepo = activeRepo && isGitRepoKind(activeRepo) ? activeRepo : null
     const firstGitRepo = activeGitRepo ?? repos.find((r) => isGitRepoKind(r))
     if (firstGitRepo?.path) {
@@ -138,7 +148,7 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
       )
     }
   }, [
-    activeRepoId,
+    prefetchRepoId,
     defaultTaskViewPreset,
     prefetchWorkItems,
     repoMap,
@@ -155,17 +165,6 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
   }
 
   const tasksActive = activeView === 'tasks'
-  // BW 壳内任务入口默认带入项目墙当前项目(与验收/计划屏同一解析:activeRepoId ?? repos[0]),
-  // 复用原生 openTaskPage 的 preselectedRepoId 预选契约;页内项目筛选仍可改。
-  // 仅当前项目确属页面口径的合格仓(git + 远端身份未被判无)才传预选:预选落空时
-  // openTaskPage 的预取分支返回空集不回退,反而丢掉首屏预热;不合格按原样无参调用。
-  const currentProjectRepoId = activeRepoId ?? repos[0]?.id ?? null
-  const workbenchProjectRepoId =
-    isWorkbenchShell() &&
-    currentProjectRepoId &&
-    getTaskEligibleRepos(repos).some((repo) => repo.id === currentProjectRepoId)
-      ? currentProjectRepoId
-      : null
 
   const button = (
     <div className="group relative">
