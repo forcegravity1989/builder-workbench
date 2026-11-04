@@ -1,10 +1,12 @@
 import {
+  VersionMaterialAddArtifactSchema,
   VersionMaterialReadSchema,
   VersionMaterialSaveSchema,
   VersionMaterialScopeSchema,
   type VersionMaterialScope,
   type VersionMaterialRead,
   type VersionMaterialSave,
+  type VersionMaterialAddArtifact,
   type VersionMaterialInitialize
 } from '../../shared/workbench/version-material-request'
 import {
@@ -94,6 +96,13 @@ export function createVersionMaterialService(
       const resolved = await workspace(request)
       assertVersion(request, resolved.binding, request.version)
       return resolved.workspace.save(request)
+    },
+    /** #516 制品登记：编排与文件校验都在拥有工作树的一侧（见 workspace.addArtifact）。 */
+    async addArtifact(input: VersionMaterialAddArtifact) {
+      const request = VersionMaterialAddArtifactSchema.parse(input)
+      const resolved = await workspace(request)
+      assertVersion(request, resolved.binding, request.version)
+      return resolved.workspace.addArtifact(request)
     },
     /** G2 P2：新建流程树上的空计划初始化；create-only，已有材料不覆盖。 */
     async initializeEmptyPlan(scope: VersionMaterialScope, initialize: VersionMaterialInitialize) {

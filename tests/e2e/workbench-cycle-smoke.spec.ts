@@ -8,6 +8,9 @@ import {
 } from './helpers/workbench-project-settings'
 import { verifyMilestones } from './helpers/workbench-milestones'
 import { verifyMilestoneRestart } from './helpers/workbench-milestone-restart'
+import { fixedWorkspaceTest } from './helpers/workbench-fixed-workspace-fixture'
+import { verifyFixedWorkspaceRemoteReuse } from './helpers/workbench-fixed-workspace'
+import { recordWorkspaceInventory } from './helpers/workbench-fixed-workspace-readback'
 
 /**
  * BW main-chain smoke (G2 journey): the version workspace entry must prepare the
@@ -34,6 +37,14 @@ isolatedProjectTest(
   async ({ workbenchPage, seededRepoPath }, testInfo) => {
     test.setTimeout(300_000)
     await verifyProjectSettings(workbenchPage, seededRepoPath, testInfo)
+  }
+)
+
+fixedWorkspaceTest(
+  'BW fixed workspaces: restore remote branches with narrow fetch and existing reviews',
+  async ({ workbenchPage, fixedRemote }, testInfo) => {
+    test.setTimeout(900_000)
+    await verifyFixedWorkspaceRemoteReuse(workbenchPage, fixedRemote, testInfo)
   }
 )
 
@@ -100,14 +111,14 @@ async function clickVersionRowEntry(page: Page, name: string): Promise<void> {
 
 test('BW cycle main chain: bound flow trees via new-version prepare, material save and independent read-back', async ({
   workbenchPage,
-  testRepoPath
+  seededRepoPath
 }, testInfo) => {
   test.setTimeout(900_000)
-  void testRepoPath
 
   // The workbench chrome is the readiness signal for the BW shell; the helper
   // already seeded the project repo and its worktrees.
   await expect(workbenchPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
+  await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'initial')
 
   // ---- 新建版本：轻表单 → prepare 两棵绑定流程树 → 进入计划屏 ----
   await workbenchPage.getByRole('button', { name: '新建版本', exact: true }).click()
@@ -139,6 +150,7 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     .not.toBeNull()
   // prepare 的空计划是 create-only 初始化；绑定树无屏内选版，页头只读回显绑定版本。
   await expect(workbenchPage.locator('.g3-version-bound')).toHaveText('v9.9', { timeout: 60_000 })
+  await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'prepared')
 
   // The conversation/CLI creates materials in product use. Seed only this test
   // version on the bound tree's real path; listing and editing remain UI work.
@@ -281,14 +293,15 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.getByRole('button', { name: '开始验收', exact: true })).toBeEnabled()
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.jpg') })
 
-  // ---- 总览：真实数据，未配置保持 Unknown，无演示值 ----
+  // ---- 总览：项目名片可见，未配置保持 Unknown；北极星卡片已移除 ----
   await workbenchPage.getByRole('button', { name: '项目总览', exact: true }).click()
   await expect(workbenchPage.getByRole('heading', { name: '总览', exact: true })).toBeVisible({
     timeout: 60_000
   })
-  await expect(workbenchPage.getByText('未配置北极星指标')).toBeVisible({
+  await expect(workbenchPage.locator('#project-card')).toContainText('未知', {
     timeout: 60_000
   })
+  await expect(workbenchPage.getByText('未配置北极星指标')).toHaveCount(0)
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-overview-real.png') })
 
   // ---- 版本级清理确认单：本机实例默认勾选；删除执行沿 Orca 原生确认单，
@@ -301,7 +314,7 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await cleanup.getByRole('button', { name: '取消' }).click()
   await expect(cleanup).toHaveCount(0)
 
-  // ---- 版本总览（P6）：每版「总览」行挂载表格页；未提交材料如实缺失，不装绿 ----
+  // The saved bound-tree plan is visible as a draft; it is not a formal plan or acceptance.
   const v99Group = workbenchPage.locator('.wb-version-group', {
     has: workbenchPage.getByRole('button', { name: 'v9.9 展开或收起' })
   })
@@ -309,9 +322,17 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.getByRole('heading', { name: 'v9.9 版本总览' })).toBeVisible({
     timeout: 60_000
   })
-  await expect(workbenchPage.getByText('主干没有 v9.9 的已提交计划材料。')).toBeVisible({
+  await expect(
+    workbenchPage.locator('.bwo-header').getByText('计划草稿', { exact: true })
+  ).toBeVisible({
     timeout: 60_000
   })
+  await expect(
+    workbenchPage.getByRole('heading', { name: '验证计划材料保存·烟测', exact: true })
+  ).toBeVisible()
+  await expect(
+    workbenchPage.getByRole('button', { name: '未记录验收 ↗', exact: true })
+  ).toBeVisible()
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-version-overview.png') })
 
   // ---- 设置页 Shortcuts 收录与搜索（#444 走原生键位体系）----
@@ -326,4 +347,5 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await workbenchPage.locator('#shortcut-filter-search').fill('批注')
   await expect(workbenchPage.getByText('Toggle Board Annotation Mode')).toBeVisible()
   await expect(workbenchPage.getByRole('heading', { name: 'Workbench' })).toBeVisible()
+  await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'final')
 })

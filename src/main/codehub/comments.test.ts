@@ -257,6 +257,55 @@ describe('codehub comments', () => {
         isOutdated: true
       }
     ])
+
+    const page = Array.from({ length: 50 }, (_, id) => ({
+      id: `discussion-${id}`,
+      notes: [{ id, body: `snapshot-${id}` }]
+    }))
+    runCodeHubCliMock.mockReset()
+    runCodeHubCliMock
+      .mockResolvedValueOnce(JSON.stringify(page))
+      .mockResolvedValueOnce(JSON.stringify([{ id: 'last', notes: [{ id: 50, body: 'latest' }] }]))
+    const complete = await listCodeHubComments({
+      remote,
+      kind: 'mr',
+      iid: 4092,
+      requireComplete: true
+    })
+    expect(complete).toHaveLength(51)
+    expect(complete.at(-1)).toMatchObject({ id: '50', body: 'latest', discussionId: 'last' })
+    expect(
+      runCodeHubCliMock.mock.calls.map(([args]) => args[args.indexOf('--offset') + 1])
+    ).toEqual(['0', '50'])
+
+    runCodeHubCliMock.mockReset()
+    runCodeHubCliMock.mockResolvedValue(JSON.stringify(page))
+    await expect(
+      listCodeHubComments({ remote, kind: 'mr', iid: 4092, requireComplete: true })
+    ).rejects.toThrow('分页重复')
+    expect(runCodeHubCliMock).toHaveBeenCalledTimes(2)
+
+    for (const invalid of [
+      '',
+      '{}',
+      '[null]',
+      '[{"id":"thread","notes":[{"id":1}]}]',
+      '[{"id":"thread","notes":[{"id":"","body":"note"}]}]',
+      '[{"id":"a","notes":[{"id":1,"body":"note"}]},{"id":"b","notes":[{"id":1,"body":"note"}]}]'
+    ]) {
+      runCodeHubCliMock.mockReset()
+      runCodeHubCliMock.mockResolvedValue(invalid)
+      await expect(
+        listCodeHubComments({ remote, kind: 'mr', iid: 4092, requireComplete: true })
+      ).rejects.toThrow('CodeHub指标评论')
+    }
+    runCodeHubCliMock.mockReset()
+    runCodeHubCliMock
+      .mockResolvedValueOnce(JSON.stringify(page))
+      .mockRejectedValueOnce(new Error('read failed'))
+    await expect(
+      listCodeHubComments({ remote, kind: 'mr', iid: 4092, requireComplete: true })
+    ).rejects.toThrow('read failed')
   })
 
   it('maps flat issue comments as-is', async () => {
@@ -308,6 +357,20 @@ describe('codehub comments', () => {
         isOutdated: false
       }
     ])
+    runCodeHubCliMock.mockReset()
+    runCodeHubCliMock
+      .mockResolvedValueOnce(
+        JSON.stringify(Array.from({ length: 50 }, (_, id) => ({ id, body: `note-${id}` })))
+      )
+      .mockResolvedValueOnce('null')
+    expect(
+      await listCodeHubComments({ remote, kind: 'issue', iid: 70, requireComplete: true })
+    ).toHaveLength(50)
+    expect(runCodeHubCliMock).toHaveBeenCalledTimes(2)
+    runCodeHubCliMock.mockResolvedValue('null')
+    expect(
+      await listCodeHubComments({ remote, kind: 'issue', iid: 70, requireComplete: true })
+    ).toEqual([])
   })
 
   it('replies within an mr discussion via mr review reply', async () => {

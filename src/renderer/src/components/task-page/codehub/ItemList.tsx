@@ -38,6 +38,8 @@ import {
 } from '../../task-page-source-context'
 import { CodeHubListResultNotice, TaskPageScopeFooter } from '@/workbench/TaskScopePanel'
 import { resolveTaskRowWorkspace } from '@/workbench/scoped-task-workspace'
+import { CodeHubAssigneesCell } from './AssigneesCell'
+import { CodeHubLabelsCell } from './LabelsCell'
 
 function githubStateOf(item: CodeHubTaskItem): GitHubWorkItemStatusItem {
   return {
@@ -141,6 +143,7 @@ export function TaskPageCodeHubItemList({
           ) : (
             <>
               <span>{translate('auto.components.TaskPage.8aba10579d', 'Assignees')}</span>
+              <span>{translate('auto.components.GitHubItemDialog.217e55d87c', 'Labels')}</span>
               <span>{translate('auto.components.TaskPage.154b0fa623', 'Status')}</span>
             </>
           )}
@@ -158,6 +161,7 @@ export function TaskPageCodeHubItemList({
               <div key={index} className={cn('grid min-h-12 gap-3 px-3 py-2.5', gridClass)}>
                 <div className="h-4 w-10 animate-pulse rounded bg-muted/70" />
                 <div className="h-4 w-3/5 animate-pulse rounded bg-muted/70" />
+                <div className="h-3 w-12 animate-pulse rounded bg-muted/60" />
                 <div className="h-3 w-12 animate-pulse rounded bg-muted/60" />
                 <div className="h-3 w-12 animate-pulse rounded bg-muted/60" />
                 <div className="h-3 w-12 animate-pulse rounded bg-muted/60" />
@@ -231,16 +235,6 @@ export function TaskPageCodeHubItemList({
                       translate('auto.components.TaskPage.6430594b18', 'unknown author')}
                     {repo ? ` · ${repo.displayName}` : ''}
                   </span>
-                  {item.type === 'issue'
-                    ? (item.labels ?? []).slice(0, 3).map((label) => (
-                        <span
-                          key={label}
-                          className="rounded-full border border-border/40 bg-muted/30 px-1.5 py-0 text-[10px] text-muted-foreground"
-                        >
-                          {label}
-                        </span>
-                      ))
-                    : null}
                   {item.type === 'mr' && item.sourceBranch && item.targetBranch ? (
                     <span className="truncate font-mono text-[11px]">
                       {item.sourceBranch} → {item.targetBranch}
@@ -260,8 +254,17 @@ export function TaskPageCodeHubItemList({
                 </>
               ) : (
                 <>
-                  <span className="flex min-w-0 items-center truncate text-[12px] text-muted-foreground">
-                    {item.assignees.join(', ') || '—'}
+                  <span className="flex min-w-0 items-center">
+                    <CodeHubAssigneesCell
+                      item={item}
+                      onChanged={() => setCodehubRefreshNonce((nonce) => nonce + 1)}
+                    />
+                  </span>
+                  <span className="flex min-w-0 items-center">
+                    <CodeHubLabelsCell
+                      item={item}
+                      onChanged={() => setCodehubRefreshNonce((nonce) => nonce + 1)}
+                    />
                   </span>
                   <span className="flex items-center">
                     <CodeHubIssueListStatus

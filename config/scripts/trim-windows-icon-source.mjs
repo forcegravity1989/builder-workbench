@@ -3,8 +3,6 @@
 // transparent Icon Composer "safe-area" inset so the glyph fills the canvas the
 // way other Windows taskbar/"Open with" icons do. Without this the glyph is only
 // ~83% of the frame and looks visibly small next to native apps (issue #5357).
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
 import { PNG } from 'pngjs'
 
 // Why: Windows renders the largest ICO frame at small sizes too, so the glyph
@@ -191,31 +189,4 @@ export function buildWindowsIcoFromPng(sourcePngBuffer, sizes = ICO_FRAME_SIZES)
   const filled = squareWithMargin(trimmed)
   const frames = sizes.map((size) => resizeImage(filled, size, size))
   return encodeIco(frames)
-}
-
-function resolveDefaultPaths() {
-  const scriptDir = import.meta.dirname
-  const projectDir = dirname(dirname(scriptDir))
-  return {
-    sourcePng: join(projectDir, 'resources', 'build', 'icon.png'),
-    outputIco: join(projectDir, 'resources', 'build', 'icon.ico')
-  }
-}
-
-function main() {
-  const { sourcePng, outputIco } = resolveDefaultPaths()
-  if (!existsSync(sourcePng)) {
-    console.error(`Error: source PNG not found at ${sourcePng}`)
-    process.exit(1)
-  }
-  const ico = buildWindowsIcoFromPng(readFileSync(sourcePng))
-  writeFileSync(outputIco, ico)
-  console.log(`  -> ${outputIco} (filled multi-size ICO, safe-area inset trimmed)`)
-}
-
-if (
-  import.meta.url === `file://${process.argv[1]}` ||
-  process.argv[1]?.endsWith('trim-windows-icon-source.mjs')
-) {
-  main()
 }
