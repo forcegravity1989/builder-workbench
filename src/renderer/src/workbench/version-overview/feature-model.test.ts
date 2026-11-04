@@ -434,7 +434,8 @@ it('projects scoped feature evidence without turning missing, later or unrelated
   ]) {
     expect(matchMilestoneFeature(delivery, invalid, material)).toBeUndefined()
   }
-  expect(milestoneStageHours(material, facts, goalFeature)).toEqual({ Test: 36 })
+  const plannedHours = milestoneStageHours(material, facts, goalFeature)
+  expect(plannedHours).toEqual({ Test: 36, Maintain: 108 })
   const duplicateMaterial = {
     ...material,
     features: [...material.features, { ...material.features[0]!, id: 'another' }]
