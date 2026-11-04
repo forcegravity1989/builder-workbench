@@ -1651,7 +1651,7 @@
     {
       "path": "config/scripts/check-orca-boundary.test.mjs",
       "mode": "100644",
-      "blob": "110bb2674fc769b72137c9af8b02ea524637529a",
+      "blob": "d9b8a033b1c46b8bad7e8d3e72b155a729033faa",
       "cases": ["bw-boundary-governance"]
     },
     {

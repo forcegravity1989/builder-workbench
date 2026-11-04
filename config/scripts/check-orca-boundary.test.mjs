@@ -150,14 +150,18 @@ test('covers delivery configuration and rejects restoration of the removed Mobil
   )
 })
 
-test('requires review for a staged executable mode change', (t) => {
+test('requires review for an executable mode change', (t) => {
   const f = fixture(t)
   f.write('src/main/host.ts', 'BW host\n')
   f.git('add', 'src/main/host.ts')
   const registry = f.registry(readDifferences(f.root, f.commit))
+  // Match the reviewed worktree on POSIX and the recorded executable bit on Windows.
+  fs.chmodSync(path.join(f.root, 'src/main/host.ts'), 0o755)
   f.git('update-index', '--chmod=+x', 'src/main/host.ts')
+  const differences = readDifferences(f.root, f.commit)
+  assert.equal(differences.find((item) => item.path === 'src/main/host.ts')?.mode, '100755')
   assert.ok(
-    checkRegistry(f.root, registry, readDifferences(f.root, f.commit)).some((line) =>
+    checkRegistry(f.root, registry, differences).some((line) =>
       line.startsWith('REVIEW src/main/host.ts')
     )
   )
