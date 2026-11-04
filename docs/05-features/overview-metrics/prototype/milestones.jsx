@@ -1,18 +1,13 @@
+import { MilestoneReviewNav } from './milestone-review-nav.jsx'
 import { InlineField } from './milestones-fields.jsx'
 import { Timeline } from './milestones-timeline.jsx'
-import {
-  defaultStages,
-  fitVersions,
-  laneConflict,
-  settleWindows,
-  editVersionName
-} from './milestones-sdlc.js'
+import { defaultStages, laneConflict, settleWindows, editVersionName } from './milestones-sdlc.js'
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js'
 import Undo2 from 'lucide-react/dist/esm/icons/undo-2.js'
 import Redo2 from 'lucide-react/dist/esm/icons/redo-2.js'
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw.js'
 import Flag from 'lucide-react/dist/esm/icons/flag.js'
-import { availableWeek, latestMonth, planWeek } from './milestones-calendar.js'
+import { newFeatureVersions, latestMonth, planWeek } from './milestones-calendar.js'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import {
   clone,
@@ -21,7 +16,8 @@ import {
   storageKey,
   changesBetween,
   incomplete,
-  currentDay
+  currentDay,
+  dateExample
 } from './milestones-data.js'
 import { historicalRows, historyPlans, historyCounts, sourceUrl } from './milestones-history.js'
 import { Sidebar, ProjectContext, Scoreboard } from './milestones-shell.jsx'
@@ -131,8 +127,8 @@ function App() {
     [planning, setPlanning] = useState(false)
   const [actualScenario, setActualScenario] = useState('normal')
   const [navigation, setNavigation] = useState(() => ({
-      date: `${latestMonth(cases.existing.published || cases.existing.draft)}-01`,
-      sequence: 0
+      date: cases.existing.draft.versions[0]?.start || currentDay,
+      sequence: 1
     })),
     [modal, setModal] = useState(null),
     [theme, setTheme] = useState('light'),
@@ -144,6 +140,11 @@ function App() {
     dirty = JSON.stringify(state.draft) !== JSON.stringify(state.submitted),
     current = planning ? state.draft : state.published,
     empty = !planning && !state.published
+  useEffect(() => {
+    if (dateExample) {
+      board.current?.scrollIntoView({ block: 'start' })
+    }
+  }, [])
   const histories = useRef({
     existing: { past: [], future: [], field: null },
     empty: { past: [], future: [], field: null }
@@ -216,7 +217,7 @@ function App() {
   }
   const begin = () => {
     setPlanning(true)
-    navigate(`${latestMonth(state.draft)}-01`)
+    navigate(state.draft.versions[0]?.start || `${latestMonth(state.draft)}-01`)
     requestAnimationFrame(() =>
       board.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
     )
@@ -227,44 +228,31 @@ function App() {
       features: p.features.map((f) => (f.id === id ? { ...f, ...patch } : f))
     }))
   const remove = (item) => {
-    editPlan((p) =>
-      fitVersions(
-        { ...p, features: p.features.filter((f) => f.id !== item.id) },
-        item.deliveries.map((d) => d.versionId)
-      )
-    )
+    editPlan((p) => ({ ...p, features: p.features.filter((f) => f.id !== item.id) }))
   }
   const add = () => {
     const id = `demo-${crypto.randomUUID()}`
-    const week = availableWeek(state.draft, currentDay)
-    const first = planWeek(state.draft, week)
-    const after = new Date(`${first.version.end}T00:00:00Z`)
-    after.setUTCDate(after.getUTCDate() + ((8 - after.getUTCDay()) % 7 || 7))
-    const nextWeek = availableWeek(first.plan, after.toISOString().slice(0, 10))
-    const next = planWeek(first.plan, nextWeek)
-    const fitted = fitVersions(
-      {
-        ...next.plan,
-        features: [
-          {
-            id,
-            month: week.start.slice(0, 7),
-            title: '',
-            owner: '',
-            deliveries: [
-              {
-                versionId: first.version.id,
-                stages: defaultStages(first.version)
-              },
-              { versionId: next.version.id, stages: defaultStages(next.version, true) }
-            ]
-          },
-          ...next.plan.features
-        ]
-      },
-      [first.version.id, next.version.id]
-    )
-    const settled = settleWindows(state.draft, fitted)
+    const versions = newFeatureVersions(state.draft, currentDay)
+    const expanded = {
+      ...versions.plan,
+      features: [
+        {
+          id,
+          month: versions.first.start.slice(0, 7),
+          title: '',
+          owner: '',
+          deliveries: [
+            {
+              versionId: versions.first.id,
+              stages: defaultStages(versions.first)
+            },
+            { versionId: versions.next.id, stages: defaultStages(versions.next, true) }
+          ]
+        },
+        ...versions.plan.features
+      ]
+    }
+    const settled = settleWindows(state.draft, expanded)
     if (settled.conflict) {
       setNotice(settled.conflict)
       return
@@ -276,7 +264,7 @@ function App() {
     }
     setNewFeature(id)
     editPlan(() => candidate)
-    navigate(first.version.start)
+    navigate(versions.first.start)
   }
   const reorder = (id, target, side) => {
     if (id === target) {
@@ -338,20 +326,21 @@ function App() {
   return (
     <>
       <div className="ml-review-strip">
-        <span>
-          原型注释: #530 · 模拟 11/11 15:30；Issue、目标与实际阶段均为样例。
-          原泳道显示实际，勾选“显示计划”可对照。日历按普通周末。
-        </span>
+        <MilestoneReviewNav screen="project" />
         <div className="ml-actions">
           <select
             aria-label="原型注释：实际进度读取场景"
             value={actualScenario}
             onChange={(event) => setActualScenario(event.target.value)}
           >
-            <option value="normal">原型注释：已有读数与未采集到</option>
-            <option value="unlinked">原型注释：缺少目标关系</option>
-            <option value="ambiguous">原型注释：目标关系无法确定</option>
-            <option value="error">原型注释：本次未采集到，保留旧值</option>
+            <option value="normal">
+              {dateExample
+                ? '原型注释：A 规划 1–5 → 采用 1–10'
+                : '原型注释：A 未上线 → B 已上线 → C 维护未完成'}
+            </option>
+            <option value="unlinked">原型注释：名称未匹配，无实际结果</option>
+            <option value="ambiguous">原型注释：名称匹配不唯一</option>
+            <option value="error">原型注释：验收读取失败</option>
           </select>
           <IconAction
             label="重置原型"

@@ -1,8 +1,4 @@
 import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
-import {
-  frozenMilestoneProblems,
-  restoreFrozenMilestones
-} from '../../../shared/workbench/milestone-freeze'
 import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
@@ -12,7 +8,6 @@ import {
   ScheduledVersionSchema,
   milestoneDraft,
   milestoneProblems,
-  milestoneGoalProblems,
   type MilestoneFeature,
   type ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
@@ -22,10 +17,7 @@ import { useMilestonePlanning } from './use-milestone-planning'
 import { useVersionCatalogForRepo } from './use-version-catalog'
 import { MilestoneTimeline, type MilestoneLocation } from './milestone-timeline'
 import { createMilestoneFeature } from './milestone-add-feature'
-import {
-  fitMilestoneVersions,
-  milestoneLaneConflict
-} from '../../../shared/workbench/milestone-sdlc'
+import { milestoneLaneConflict } from '../../../shared/workbench/milestone-sdlc'
 import {
   materializeMilestoneWeek,
   editMilestoneVersionName,
@@ -104,17 +96,10 @@ export function ProjectMilestones({
       scope: restoreScope
     }))
   }
-  const frozenProblems = frozenMilestoneProblems(
-    state.data.proposal ?? state.data.formal,
-    state.draft
-  )
-  const versionFacts = (state.data.proposal ?? state.data.formal).versions
-  const registeredVersions = state.data.formal.versions.concat(state.data.proposal?.versions ?? [])
-  const problems = [
-    ...milestoneProblems(state.draft),
-    ...milestoneGoalProblems(state.draft, versionFacts),
-    ...frozenProblems
-  ]
+  const registeredVersions = (
+    state.data.formal.registeredVersions ?? state.data.formal.versions
+  ).concat(state.data.proposal?.registeredVersions ?? state.data.proposal?.versions ?? [])
+  const problems = milestoneProblems(state.draft)
   const changes = describeMilestoneChanges(state.baseline, state.draft)
   function begin() {
     if (state && !state.recoveryBlocked) {
@@ -134,18 +119,10 @@ export function ProjectMilestones({
     }
   }
   function remove(f: MilestoneFeature) {
-    edit((d) =>
-      fitMilestoneVersions(
-        {
-          ...d,
-          material: {
-            ...d.material,
-            features: d.material.features.filter((item) => item.id !== f.id)
-          }
-        },
-        new Set(f.deliveries.map((delivery) => delivery.version.cycleId))
-      )
-    )
+    edit((d) => ({
+      ...d,
+      material: { ...d.material, features: d.material.features.filter((item) => item.id !== f.id) }
+    }))
   }
   function registerWeek(week: MilestoneWeek, name: string) {
     if (!enabled) {
@@ -155,10 +132,19 @@ export function ProjectMilestones({
       toast('版本名称已存在')
       return
     }
-    const next = materializeMilestoneWeek(state!.draft, week, crypto.randomUUID(), name)
+    const next = materializeMilestoneWeek(
+      state!.draft,
+      week,
+      crypto.randomUUID(),
+      name,
+      registeredVersions
+    )
     if (!ScheduledVersionSchema.safeParse(next.version).success) {
       toast('版本名称无效，未登记')
       return
+    }
+    if (next.version.version !== name) {
+      toast(`该日期已有 ${next.version.version}，已复用现有版本纳入规划`)
     }
     edit(() => next.draft)
   }
@@ -166,13 +152,8 @@ export function ProjectMilestones({
     if (!enabled) {
       return
     }
-    const started = new Set(
-      (state!.data.proposal ?? state!.data.formal).versions
-        .filter((v) => v.started)
-        .map((v) => v.cycleId)
-    )
-    const { id, date, draft: candidate } = createMilestoneFeature(state!.draft, started)
-    const { draft, conflict } = settleMilestoneWindows(state!.draft, candidate, started)
+    const { id, date, draft: candidate } = createMilestoneFeature(state!.draft, registeredVersions)
+    const { draft, conflict } = settleMilestoneWindows(state!.draft, candidate)
     if (conflict) {
       toast(conflict)
       return
@@ -187,8 +168,11 @@ export function ProjectMilestones({
   }
   function open(version: ScheduledVersion) {
     if (
-      !state!.data.formal.versions.some(
-        (v) => v.version === version.version && v.cycleId === version.cycleId
+      !catalog.catalog?.entries.some(
+        (entry) =>
+          entry.version === version.version &&
+          (entry.material.plan?.cycleId === version.cycleId ||
+            entry.material.acceptance?.cycleId === version.cycleId)
       )
     ) {
       toast('该版本尚未进入正式材料，合入并更新后可进入')
@@ -321,25 +305,6 @@ export function ProjectMilestones({
           {problems.length > 3 ? `（另有 ${problems.length - 3} 项）` : ''}
         </p>
       )}
-      {editing && !state.sourceConflict && frozenProblems.length > 0 && (
-        <div className="wb-ml-notice">
-          <span>
-            还原已锁定版本的改动；涉及这些版本的新增特性整行移除，已有特性的其他未来排期保留。可撤销。
-          </span>
-          <Button
-            variant="outline"
-            size="xs"
-            disabled={!enabled}
-            onClick={() =>
-              edit((draft) =>
-                restoreFrozenMilestones(state.data.proposal ?? state.data.formal, draft)
-              )
-            }
-          >
-            还原已锁定版本的改动
-          </Button>
-        </div>
-      )}
       {state.data.formal.problems.length > 0 && (
         <details className="wb-ml-alert">
           <summary>部分版本材料未读到</summary>
@@ -365,7 +330,7 @@ export function ProjectMilestones({
             catalog={catalog}
             key={`${restoreScope}:${editing}:${restoreKey}`}
             draft={visible}
-            versionFacts={versionFacts}
+            registeredVersions={registeredVersions}
             editField={model.editField}
             registerWeek={registerWeek}
             addFeature={addFeature}
@@ -378,7 +343,10 @@ export function ProjectMilestones({
             rename={renameVersion}
             started={
               new Set(
-                (state.data.proposal ?? state.data.formal).versions
+                (
+                  (state.data.proposal ?? state.data.formal).registeredVersions ??
+                  (state.data.proposal ?? state.data.formal).versions
+                )
                   .filter((v) => v.started)
                   .map((v) => v.cycleId)
               )

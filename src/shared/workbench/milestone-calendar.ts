@@ -103,11 +103,15 @@ export function materializeMilestoneWeek(
   draft: MilestoneDraft,
   week: MilestoneWeek,
   cycleId: string,
-  name?: string
+  name?: string,
+  registered: readonly ScheduledVersion[] = []
 ) {
-  const existing = versionInMilestoneWeek(draft, week)
+  const candidates = availableMilestoneVersions(draft, registered)
+  const existing =
+    versionInMilestoneWeek(draft, week) ??
+    versionInMilestoneWeek({ ...draft, versions: candidates }, week)
   if (existing) {
-    return { draft, version: existing }
+    return includeMilestoneVersion(draft, existing)
   }
   let version = name?.trim()
   if (!version) {
@@ -118,7 +122,7 @@ export function materializeMilestoneWeek(
     let number = match ? Number(match[2]) + 1 : 0
     do {
       version = `${prefix}${number++}`
-    } while (draft.versions.some((v) => v.version.toLowerCase() === version!.toLowerCase()))
+    } while (candidates.some((v) => v.version.toLowerCase() === version!.toLowerCase()))
   }
   const next: ScheduledVersion = { version, cycleId, timeWindow: { ...week } }
   const month = week.start.slice(0, 7)
@@ -135,4 +139,88 @@ export function materializeMilestoneWeek(
       }
     }
   }
+}
+
+function createFreeMilestoneWeek(
+  draft: MilestoneDraft,
+  from: string,
+  registered: readonly ScheduledVersion[]
+) {
+  let week = milestoneWeekAt(milestoneDay(from))
+  if (week.end < from) {
+    week = milestoneWeekAt(milestoneDay(week.start) + 7)
+  }
+  for (;;) {
+    const blockers = datedMilestoneVersions({
+      ...draft,
+      versions: availableMilestoneVersions(draft, registered)
+    }).filter((v) => v.timeWindow!.start <= week.end && v.timeWindow!.end >= week.start)
+    if (!blockers.length) {
+      return materializeMilestoneWeek(draft, week, crypto.randomUUID(), undefined, registered)
+    }
+    const last = Math.max(...blockers.map((v) => milestoneDay(v.timeWindow!.end)))
+    week = milestoneWeekAt(milestoneDay(milestoneWeekAt(last).start) + 7)
+  }
+}
+
+/** Formal versions are selectable without becoming roadmap commitments until used. */
+export function availableMilestoneVersions(
+  draft: MilestoneDraft,
+  registered: readonly ScheduledVersion[]
+) {
+  return [...draft.versions, ...new Map(registered.map((v) => [v.cycleId, v])).values()].filter(
+    (v, index, all) => all.findIndex((p) => p.cycleId === v.cycleId) === index
+  )
+}
+
+export function includeMilestoneVersion(draft: MilestoneDraft, version: ScheduledVersion) {
+  return {
+    draft: draft.versions.some((v) => v.cycleId === version.cycleId)
+      ? draft
+      : {
+          ...draft,
+          versions: [
+            ...draft.versions,
+            {
+              version: version.version,
+              cycleId: version.cycleId,
+              ...(version.timeWindow ? { timeWindow: { ...version.timeWindow } } : {})
+            }
+          ]
+        },
+    version
+  }
+}
+
+export function nextMilestoneVersion(
+  draft: MilestoneDraft,
+  after: string,
+  registered: readonly ScheduledVersion[] = []
+) {
+  const version = datedMilestoneVersions({
+    ...draft,
+    versions: availableMilestoneVersions(draft, registered)
+  }).find((v) => v.timeWindow!.start > after)
+  return version
+    ? includeMilestoneVersion(draft, version)
+    : createFreeMilestoneWeek(draft, milestoneDate(milestoneDay(after) + 1), registered)
+}
+
+export function newFeatureMilestoneVersions(
+  draft: MilestoneDraft,
+  from = milestoneToday(),
+  registered: readonly ScheduledVersion[] = []
+) {
+  const ordered = datedMilestoneVersions({
+    ...draft,
+    versions: availableMilestoneVersions(draft, registered)
+  })
+  const current =
+    ordered.find((v) => v.timeWindow!.start <= from && v.timeWindow!.end >= from) ??
+    ordered.find((v) => v.timeWindow!.start > from)
+  const first = current
+    ? includeMilestoneVersion(draft, current)
+    : createFreeMilestoneWeek(draft, from, registered)
+  const second = nextMilestoneVersion(first.draft, first.version.timeWindow!.end, registered)
+  return { draft: second.draft, first: first.version, next: second.version }
 }

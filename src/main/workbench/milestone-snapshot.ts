@@ -110,7 +110,6 @@ export async function readMilestoneSnapshot(
       snapshot.versions.push({
         version,
         cycleId: plan.cycleId,
-        goals: plan.goals.map(({ goalId, title }) => ({ goalId, title })),
         ...(plan.timeWindow ? { timeWindow: plan.timeWindow } : {}),
         started:
           prepared ||
@@ -130,11 +129,25 @@ export async function readMilestoneSnapshot(
       )
     }
   }
+  const registeredVersions = snapshot.versions
+  snapshot.registeredVersions = registeredVersions
+  if (snapshot.material.versionPlans) {
+    snapshot.versions = snapshot.material.versionPlans.flatMap((planned) => {
+      const version = registeredVersions.find((v) => v.cycleId === planned.cycleId)
+      if (!version || version.version !== planned.version) {
+        snapshot.problems.push(`${planned.version}：里程碑规划与版本计划身份不一致，请核对材料`)
+        return []
+      }
+      const scheduled = { ...version }
+      delete scheduled.timeWindow
+      return [{ ...scheduled, ...planned }]
+    })
+  }
   snapshot.revision = hash.digest('hex')
   snapshot.versions.sort(
     (a, b) =>
       (a.timeWindow?.start ?? '9999').localeCompare(b.timeWindow?.start ?? '9999') ||
       a.version.localeCompare(b.version)
   )
-  return { snapshot, plans, contents }
+  return { snapshot, plans, contents, registeredVersions }
 }

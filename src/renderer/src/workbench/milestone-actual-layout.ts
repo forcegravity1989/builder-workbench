@@ -1,74 +1,221 @@
 import type {
   MilestoneDraft,
   MilestoneFeature,
-  MilestoneMaterial
+  MilestoneMaterial,
+  ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
 import {
   milestoneCalendar,
   milestoneDay,
   milestoneWeekAt
 } from '../../../shared/workbench/milestone-calendar'
-import { actualDay } from '../../../shared/workbench/milestone-sdlc'
-import { featureTimeline, type ActualStage } from './version-overview/feature-timeline'
-import { taskKey, validTime } from './version-overview/feature-model'
+import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
+import { taskKey } from './version-overview/feature-model'
 import {
-  matchMilestoneFeature,
+  milestoneFeatureGoal,
   milestoneVersionKey,
+  resolveMilestoneFeature,
   type MilestoneVersionFacts
 } from './milestone-feature-facts'
 
-/** Later explicit deliveries can finish first-delivery work; planned phases never filter facts. */
+/** Formal plan windows describe version periods, not measured feature work time. */
+export function milestoneActualVersions(facts: Record<string, MilestoneVersionFacts>) {
+  return Object.values(facts)
+    .filter((read) => read.formalPlan && read.plan)
+    .flatMap((read): ScheduledVersion[] => {
+      const plan = read.plan!
+      const window = plan.timeWindow
+      return window &&
+        Number.isFinite(milestoneDay(window.start)) &&
+        Number.isFinite(milestoneDay(window.end)) &&
+        window.end >= window.start
+        ? [{ version: plan.version, cycleId: plan.cycleId, timeWindow: window }]
+        : []
+    })
+    .toSorted((a, b) => compareMaterialVersions(a.version, b.version))
+}
+
+const hasOutcome = (outcome: string | undefined): outcome is 'met' | 'not-met' =>
+  outcome === 'met' || outcome === 'not-met'
+
+function milestoneResultVersions(
+  material: MilestoneMaterial,
+  facts: Record<string, MilestoneVersionFacts>
+) {
+  const reads = Object.values(facts).filter((read) => read.formalPlan)
+  const keys = new Set(
+    material.features.flatMap((feature) => {
+      const matched = resolveMilestoneFeature(feature, material, reads).feature
+      return matched ? [taskKey(matched.root.reference)] : []
+    })
+  )
+  return milestoneActualVersions(facts).filter((version) => {
+    const read = facts[milestoneVersionKey(version)]!
+    return [...keys].some((key) => {
+      const goalId = milestoneFeatureGoal(read, key)
+      return (
+        goalId &&
+        hasOutcome(
+          read.acceptance?.results.find((result) => result.goalId === goalId)?.decision?.outcome
+        )
+      )
+    })
+  })
+}
+
+export type MilestoneActualResult = {
+  version: ScheduledVersion
+  outcome: 'met' | 'not-met'
+  label: string
+  goalId: string
+  featureKey: string
+  lane: number
+}
+
+/** Version lanes stay aligned across features, even when formally adopted dates overlap. */
 export function milestoneActualLayout(
   feature: MilestoneFeature,
   material: MilestoneMaterial,
-  facts: Record<string, MilestoneVersionFacts>,
-  started: Set<string>
+  facts: Record<string, MilestoneVersionFacts>
 ) {
-  const resolved = feature.deliveries
-    .filter((delivery) => started.has(delivery.version.cycleId) && delivery.stages.length)
-    .map((delivery) => ({
-      delivery,
-      read: facts[milestoneVersionKey(delivery.version)],
-      feature: matchMilestoneFeature(
-        delivery,
-        facts[milestoneVersionKey(delivery.version)],
-        material
-      )
-    }))
-  const identities = new Set(
-    resolved.flatMap((entry) => (entry.feature ? [taskKey(entry.feature.root.reference)] : []))
+  const reads = Object.values(facts)
+  const matched = resolveMilestoneFeature(
+    feature,
+    material,
+    reads.filter((read) => read.formalPlan)
   )
-  const candidates = identities.size === 1 ? resolved.filter((entry) => entry.feature) : []
-  const observed = (entry: (typeof resolved)[number]) => {
-    const at = entry.feature?.observedAt ?? entry.read?.readAt
-    return validTime(at) ? Date.parse(at) : 0
+  const results: MilestoneActualResult[] = []
+  const empty = (note: string) => ({ results, lanes: 1, note })
+  if (!matched.feature) {
+    return empty(
+      Object.values(facts).some((read) => read.failed && !read.stale)
+        ? '实际结果读取失败'
+        : Object.values(facts).some((read) => read.loading)
+          ? '正在读取实际结果…'
+          : matched.note
+    )
   }
-  const latest = candidates.toSorted((a, b) => observed(b) - observed(a))[0]?.feature
-  const stages = latest
-    ? featureTimeline(latest).segments.filter(
-        (stage): stage is ActualStage & { start: string; end: string } =>
-          stage.duration !== null && validTime(stage.start) && validTime(stage.end)
-      )
-    : []
-  const missing = resolved.filter(
-    (entry) => !entry.feature || identities.size !== 1 || !stages.length
-  )
-  return { stages, missing }
+  const featureKey = taskKey(matched.feature.root.reference)
+  const versions = milestoneActualVersions(facts)
+  const laneEnds: number[] = []
+  const lanes = new Map<string, number>()
+  for (const version of milestoneResultVersions(material, facts).toSorted((a, b) =>
+    a.timeWindow!.start.localeCompare(b.timeWindow!.start)
+  )) {
+    const start = milestoneDay(version.timeWindow!.start)
+    let lane = laneEnds.findIndex((end) => end < start)
+    if (lane === -1) {
+      lane = laneEnds.length
+    }
+    laneEnds[lane] = milestoneDay(version.timeWindow!.end)
+    lanes.set(milestoneVersionKey(version), lane)
+  }
+  let delivered = false
+  let priorUnknown = false
+  let classificationUnknown = false
+  let incomplete = false
+  let failed = false
+  let undated = false
+  for (const read of reads.toSorted((a, b) =>
+    compareMaterialVersions(
+      a.plan?.version ?? a.version?.version ?? '',
+      b.plan?.version ?? b.version?.version ?? ''
+    )
+  )) {
+    if (!read.plan) {
+      priorUnknown ||= !delivered
+      incomplete = true
+      failed ||= read.failed
+      continue
+    }
+    // A fixed plan that excludes this main Issue cannot affect its delivery history.
+    if (!read.plan.tasks.some((task) => taskKey(task) === featureKey)) {
+      continue
+    }
+    const goalId = read.formalPlan ? milestoneFeatureGoal(read, featureKey) : undefined
+    if (!goalId) {
+      priorUnknown ||= !delivered
+      incomplete = true
+      failed ||= read.failed
+      continue
+    }
+    const outcome = read.acceptance?.results.find((result) => result.goalId === goalId)?.decision
+      ?.outcome
+    if (!hasOutcome(outcome)) {
+      priorUnknown ||= !delivered
+      incomplete = true
+      continue
+    }
+    if (!delivered && priorUnknown) {
+      classificationUnknown = true
+      // This met may be first or maintenance, but subsequent outcomes are certainly maintenance.
+      delivered = outcome === 'met'
+      continue
+    }
+    const label = delivered
+      ? outcome === 'met'
+        ? '维护完成'
+        : '维护未完成'
+      : outcome === 'met'
+        ? '已上线'
+        : '未上线'
+    const version = versions.find(
+      (item) => milestoneVersionKey(item) === milestoneVersionKey(read.plan!)
+    )
+    if (version) {
+      results.push({
+        version,
+        outcome,
+        label,
+        goalId,
+        featureKey,
+        lane: lanes.get(milestoneVersionKey(version)) ?? 0
+      })
+    } else {
+      undated = true
+    }
+    delivered ||= outcome === 'met'
+  }
+  return {
+    results,
+    lanes: Math.max(1, ...results.map((result) => result.lane + 1)),
+    note: classificationUnknown
+      ? '前序版本结果未确认'
+      : failed
+        ? '部分结果读取失败'
+        : undated
+          ? '部分版本未记录周期日期'
+          : incomplete
+            ? '部分版本暂无已归档结论'
+            : results.length
+              ? ''
+              : '暂无已归档结果'
+  }
 }
 
-/** Expand only the view to collected timestamps; never rewrite version windows or the plan. */
+/** Keep unrelated historical versions out of this roadmap's calendar and version header. */
+export function milestoneVisibleActualVersions(
+  draft: MilestoneDraft,
+  facts: Record<string, MilestoneVersionFacts>
+) {
+  const keys = new Set(draft.versions.map(milestoneVersionKey))
+  for (const version of milestoneResultVersions(draft.material, facts)) {
+    keys.add(milestoneVersionKey(version))
+  }
+  return milestoneActualVersions(facts).filter((version) => keys.has(milestoneVersionKey(version)))
+}
+
+/** Expand only the calendar, never the saved roadmap or version windows. */
 export function milestoneActualCalendar(
   draft: MilestoneDraft,
   facts: Record<string, MilestoneVersionFacts>,
-  started: Set<string>
+  versions = milestoneVisibleActualVersions(draft, facts)
 ) {
   const calendar = milestoneCalendar(draft)
-  const times = draft.material.features.flatMap((feature) =>
-    milestoneActualLayout(feature, draft.material, facts, started).stages.flatMap((stage) => [
-      actualDay(stage.start),
-      actualDay(stage.end)
-    ])
-  )
+  const times = versions.flatMap((version) => [
+    milestoneDay(version.timeWindow!.start),
+    milestoneDay(version.timeWindow!.end)
+  ])
   const start = milestoneDay(milestoneWeekAt(Math.min(calendar.start, ...times)).start)
   const last = Math.max(calendar.end, ...times)
   const weeks: typeof calendar.weeks = []

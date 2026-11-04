@@ -94,16 +94,41 @@ export function planWeek(plan, week, name) {
   }
 }
 
-export function availableWeek(plan, from) {
-  let start = monday(at(from))
-  for (;;) {
-    const week = { id: `week-${iso(start)}`, start: iso(start), end: iso(start + 4 * dayMs) }
-    const locked = plan.versions.find(
-      (v) => v.started && v.start <= week.end && v.end >= week.start
-    )
-    if (!locked) {
-      return week
-    }
-    start = monday(at(locked.end)) + 7 * dayMs
+export function availableWeek(_plan, from) {
+  const start = monday(at(from))
+  return { id: `week-${iso(start)}`, start: iso(start), end: iso(start + 4 * dayMs) }
+}
+
+const createFreeWeek = (source, date) => {
+  let week = availableWeek(source, date)
+  if (week.end < date) {
+    week = availableWeek(source, iso(at(week.start) + 7 * dayMs))
   }
+  for (;;) {
+    const blockers = source.versions.filter((v) => v.start <= week.end && v.end >= week.start)
+    if (!blockers.length) {
+      let id = week.id
+      while (source.versions.some((v) => v.id === id)) {
+        id += '-next'
+      }
+      return planWeek(source, { ...week, id })
+    }
+    const lastEnd = Math.max(...blockers.map((v) => at(v.end)))
+    week = availableWeek(source, iso(monday(lastEnd) + 7 * dayMs))
+  }
+}
+export function nextVersion(plan, after) {
+  const version = plan.versions
+    .toSorted((a, b) => a.start.localeCompare(b.start))
+    .find((v) => v.start > after)
+  return version ? { plan, version } : createFreeWeek(plan, iso(at(after) + dayMs))
+}
+
+export function newFeatureVersions(plan, from) {
+  const ordered = plan.versions.toSorted((a, b) => a.start.localeCompare(b.start))
+  const current =
+    ordered.find((v) => v.start <= from && v.end >= from) || ordered.find((v) => v.start > from)
+  const first = current ? { plan, version: current } : createFreeWeek(plan, from)
+  const second = nextVersion(first.plan, first.version.end)
+  return { plan: second.plan, first: first.version, next: second.version }
 }

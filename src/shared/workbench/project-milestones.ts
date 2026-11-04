@@ -9,21 +9,20 @@ export const MILESTONES_PATH = '.bw/milestones.json'
 const Id = z.string().trim().min(1).max(160)
 const Ref = z.strictObject({ version: MaterialVersion, cycleId: Id })
 export const MilestonePhases = ['Plan', 'Design', 'Build', 'Test', 'Deploy', 'Maintain'] as const
-// Civil time in the project's calendar (Asia/Shanghai), exclusive end, half-day precision.
+// Civil time in the project's calendar (Asia/Shanghai), with an exclusive end.
 const PlannedTime = z
   .string()
-  .regex(/^\d{4}-\d{2}-\d{2}T(00|12):00$/)
+  .regex(/^\d{4}-\d{2}-\d{2}T([01]\d|2[0-3]):[0-5]\d$/)
   .refine((value) => z.iso.date().safeParse(value.slice(0, 10)).success, '阶段日期无效')
 export const MilestoneStageSchema = z.strictObject({
   phase: z.enum(MilestonePhases),
   start: PlannedTime,
   end: PlannedTime
 })
-export const MilestoneDeliverySchema = z.strictObject({
+// Discard retired goal projections when reading existing deliveries.
+export const MilestoneDeliverySchema = z.object({
   id: Id,
   version: Ref,
-  goalId: Id.optional(),
-  goalSlot: z.number().int().min(1).max(4).optional(),
   // Empty means no recorded phase plan, not a default or completed delivery.
   stages: z.array(MilestoneStageSchema).max(5)
 })
@@ -33,6 +32,11 @@ export const MilestoneFeatureSchema = z.strictObject({
   title: z.string().trim().min(1).max(200),
   owner: z.string().trim().min(1).max(100),
   deliveries: z.array(MilestoneDeliverySchema).min(1).max(100)
+})
+export const ScheduledVersionSchema = z.strictObject({
+  version: MaterialVersion,
+  cycleId: Id,
+  timeWindow: VersionTimeWindowSchema.optional()
 })
 export const MilestoneMaterialSchema = z
   .strictObject({
@@ -45,7 +49,8 @@ export const MilestoneMaterialSchema = z
         })
       )
       .max(240),
-    features: z.array(MilestoneFeatureSchema).max(2000)
+    features: z.array(MilestoneFeatureSchema).max(2000),
+    versionPlans: z.array(ScheduledVersionSchema).max(2000).optional()
   })
   .superRefine((value, context) => {
     if (
@@ -54,17 +59,19 @@ export const MilestoneMaterialSchema = z
     ) {
       context.addIssue({ code: 'custom', message: '月份和特性身份不能重复' })
     }
+    const versions = value.versionPlans ?? []
+    if (
+      new Set(versions.map((v) => v.cycleId)).size !== versions.length ||
+      new Set(versions.map((v) => v.version.toLowerCase())).size !== versions.length
+    ) {
+      context.addIssue({ code: 'custom', message: '版本名称或身份不能重复' })
+    }
     for (const f of value.features) {
       if (!value.months.some((m) => m.month === f.month)) {
         context.addIssue({ code: 'custom', message: '特性所属月份不存在' })
       }
     }
   })
-export const ScheduledVersionSchema = z.strictObject({
-  version: MaterialVersion,
-  cycleId: Id,
-  timeWindow: VersionTimeWindowSchema.optional()
-})
 export type ScheduledVersion = z.infer<typeof ScheduledVersionSchema>
 export type MilestoneFeature = z.infer<typeof MilestoneFeatureSchema>
 export type MilestoneStage = z.infer<typeof MilestoneStageSchema>
@@ -73,7 +80,6 @@ export type MilestonePhase = MilestoneStage['phase']
 export type MilestoneMaterial = z.infer<typeof MilestoneMaterialSchema>
 export type MilestoneVersion = ScheduledVersion & {
   started: boolean
-  goals?: { goalId: string; title: string }[]
 }
 export type MilestoneDraft = { material: MilestoneMaterial; versions: ScheduledVersion[] }
 export type MilestoneSnapshot = {
@@ -81,6 +87,7 @@ export type MilestoneSnapshot = {
   revision: string
   material: MilestoneMaterial
   versions: MilestoneVersion[]
+  registeredVersions?: MilestoneVersion[]
   problems: string[]
 }
 export type MilestoneRead = {
@@ -108,8 +115,10 @@ export const emptyMilestones = (): MilestoneMaterial => ({
   features: []
 })
 export function milestoneDraft(snapshot: MilestoneSnapshot): MilestoneDraft {
+  const material = structuredClone(snapshot.material)
+  delete material.versionPlans
   return {
-    material: structuredClone(snapshot.material),
+    material,
     versions: snapshot.versions.map(({ version, cycleId, timeWindow }) => ({
       version,
       cycleId,
@@ -165,12 +174,15 @@ export function milestoneProblems(draft: MilestoneDraft): string[] {
       if (!first || !last) {
         continue
       }
+      if (!/T(00|12):00$/.test(first.start) || !/T(00|12):00$/.test(last.end)) {
+        problems.push(`${feature.title}：排期起止须对齐半天，内部阶段可等比分配`)
+      }
       const endDay = Date.parse(`${version.timeWindow.end}T00:00:00Z`) + 86400000
       if (
         first.start < `${version.timeWindow.start}T00:00` ||
         Date.parse(`${last.end}:00Z`) > endDay
       ) {
-        problems.push(`${feature.title}：阶段超出 ${version.version}，请调整阶段或版本范围`)
+        problems.push(`${feature.title}：阶段超出 ${version.version}，请调整整段计划或版本范围`)
       }
       if (
         delivery.stages.some((s, i, all) => s.start >= s.end || (i > 0 && s.start < all[i - 1].end))
@@ -180,26 +192,6 @@ export function milestoneProblems(draft: MilestoneDraft): string[] {
     }
   }
   return [...new Set(problems)]
-}
-export function milestoneGoalProblems(
-  draft: MilestoneDraft,
-  versions: readonly MilestoneVersion[]
-): string[] {
-  return draft.material.features.flatMap((feature) =>
-    feature.deliveries.flatMap((delivery) => {
-      if (!delivery.goalId) {
-        return []
-      }
-      const version = versions.find(
-        (v) => v.cycleId === delivery.version.cycleId && v.version === delivery.version.version
-      )
-      return version?.goals?.some((goal) => goal.goalId === delivery.goalId)
-        ? []
-        : [
-            `${feature.title}：${delivery.version.version} 的关联目标已不存在或未读到，请重新选择目标`
-          ]
-    })
-  )
 }
 export function reorderMilestoneFeature(
   features: MilestoneFeature[],

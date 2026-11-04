@@ -258,9 +258,6 @@
 .wb-ml-drop-after::after {
   bottom: 0;
 }
-.wb-ml-row.with-baseline {
-  min-height: 116px;
-}
 .wb-ml-feature {
   gap: 6px;
 }
@@ -342,17 +339,6 @@
 }
 .wb-ml-empty-row {
   height: 88px;
-}
-.wb-ml-add-feature {
-  position: sticky;
-  left: 0;
-  width: 220px;
-  padding: 8px 12px;
-  background: var(--card);
-}
-.wb-ml-add-feature button {
-  width: 100%;
-  justify-content: flex-start;
 }
 .wb-ml-alert,
 .wb-ml-notice {
@@ -536,14 +522,14 @@
   background: var(--phase-bg);
   color: var(--phase-fg);
 }
-.wb-ml-show-plan {
+.wb-ml-show-actual {
   display: flex;
   align-items: center;
   gap: 5px;
   white-space: nowrap;
   cursor: pointer;
 }
-.wb-ml-show-plan input {
+.wb-ml-show-actual input {
   accent-color: var(--foreground);
 }
 .wb-phase-plan {
@@ -594,119 +580,13 @@
   --phase-bg: #2b434a;
   --phase-fg: #c4e2e8;
 }
-.wb-ml-phase {
-  position: absolute;
-  height: 28px;
-  background: var(--phase-bg);
-  color: var(--phase-fg);
-  border: 1px solid color-mix(in srgb, var(--phase-fg) 20%, transparent);
-  border-radius: 3px;
-  z-index: 2;
-}
-.wb-ml-unrecorded {
-  position: absolute;
-  top: 31px;
-  height: 28px;
-  border: 1px dashed var(--border);
-  border-radius: 3px;
-  background: var(--muted);
-  color: var(--muted-foreground);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.wb-ml-phase-body {
-  display: block;
-  width: 100%;
-  height: 100%;
-  padding: 0 3px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font-size: 10px;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.wb-ml-phase.editable .wb-ml-phase-body {
-  cursor: grab;
-  touch-action: none;
-}
-.wb-ml-phase.editable:hover {
-  box-shadow: 0 0 0 1px var(--phase-fg);
-  z-index: 3;
-}
-.wb-ml-phase-group.ghost .wb-ml-phase {
-  height: 12px;
-  opacity: 0.35;
-  border-style: dashed;
-}
-.wb-ml-phase-group.ghost .wb-ml-phase-body {
-  font-size: 0;
-}
-.wb-ml-baseline-caption {
-  position: absolute;
-  top: 92px;
-  font-size: 9px;
-  color: var(--muted-foreground);
-}
-.wb-ml-row.with-baseline,
-.wb-ml-row.with-baseline .wb-ml-track {
-  min-height: 116px;
-}
-.wb-ml-actual-unknown {
-  position: absolute;
-  top: 34px;
-  font-size: 10px;
-  color: var(--muted-foreground);
-  padding: 3px 6px;
-  border: 1px dashed var(--border);
-  background: var(--card);
-  border-radius: 4px;
-  white-space: nowrap;
-}
+
 .wb-ml-actual-refresh {
   display: flex;
   align-items: center;
   gap: 4px;
   color: var(--muted-foreground);
   font-size: 11px;
-}
-.wb-ml-deploy-unknown {
-  top: 8px;
-}
-.wb-ml-actual-phase {
-  position: absolute;
-  top: 31px;
-  height: 28px;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  text-align: center;
-  z-index: 2;
-}
-.wb-ml-actual-phase i {
-  position: absolute;
-  display: block;
-  inset: 0 auto 0 0;
-  background: var(--phase-bg);
-  border: 1px solid color-mix(in srgb, var(--phase-fg) 30%, transparent);
-  border-radius: 3px;
-}
-.wb-ml-actual-phase span {
-  position: relative;
-  display: block;
-  padding: 0 3px;
-  color: var(--foreground);
-  font-size: 10px;
-  white-space: nowrap;
-  overflow: hidden;
-}
-.wb-ml-actual-phase.ongoing i {
-  background-image: repeating-linear-gradient(135deg, transparent 0 5px, #ffffff25 5px 8px);
-  border-right-style: dashed;
 }
 .wb-ml-feature-meta {
   display: flex;
@@ -718,55 +598,7 @@
   min-width: 0;
   overflow-x: auto;
 }
-.wb-ml-owner {
-  flex: 0 1 76px;
-  min-width: 40px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.wb-ml-goal-trigger,
-.wb-ml-goal-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  flex-shrink: 0;
-  padding: 2px 5px;
-  border-radius: 5px;
-  background: var(--muted);
-  color: var(--foreground);
-  font: inherit;
-  border: 0;
-}
-.wb-ml-goal-trigger {
-  cursor: pointer;
-}
-.wb-ml-goal-trigger:hover {
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-.wb-ml-goal-version {
-  color: var(--muted-foreground);
-}
-.wb-ml-goal-options {
-  width: 68px;
-  padding: 4px;
-  font-size: 11px;
-}
-.wb-ml-goal-options button {
-  display: block;
-  width: 100%;
-  padding: 7px 9px;
-  background: transparent;
-  border: 0;
-  border-radius: 4px;
-  text-align: left;
-  font: inherit;
-  color: var(--foreground);
-  cursor: pointer;
-}
-.wb-ml-goal-options button:hover,
-.wb-ml-goal-options button[aria-pressed='true'] {
-  background: var(--muted);
-}
+
 .wb-ml-drag-warning {
   color: var(--destructive);
 }
@@ -831,4 +663,95 @@
 .wb-ml-scroll button:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 1px;
+}
+
+.wb-ml-version-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid color-mix(in srgb, var(--foreground) 22%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--foreground) 22%, transparent);
+  background: color-mix(in srgb, var(--muted) 12%, transparent);
+}
+.wb-ml-version-band.alternate {
+  background: color-mix(in srgb, var(--muted) 35%, transparent);
+}
+.wb-ml-delivery {
+  position: absolute;
+  top: 31px;
+  height: 28px;
+  border: 1px solid color-mix(in srgb, var(--foreground) 15%, transparent);
+  border-radius: 3px;
+  overflow: hidden;
+  z-index: 2;
+}
+.wb-ml-delivery-body {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+.wb-ml-delivery-body > span {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  overflow: hidden;
+  padding: 0 3px;
+  line-height: 26px;
+  font-size: 10px;
+  white-space: nowrap;
+  border-right: 1px solid color-mix(in srgb, var(--phase-fg) 20%, transparent);
+  color: var(--phase-fg);
+  background: var(--phase-bg);
+}
+.wb-ml-delivery.editable .wb-ml-delivery-body {
+  cursor: grab;
+  touch-action: none;
+}
+.wb-ml-delivery.editable:hover {
+  box-shadow: 0 0 0 1px var(--border);
+}
+.wb-ml-plan-reference,
+.wb-ml-result-note {
+  white-space: normal;
+  line-height: 1.5;
+}
+.wb-ml-result-bar {
+  position: absolute;
+  height: 28px;
+  padding: 0 9px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: left;
+  font-size: 11px;
+  border: 1px solid color-mix(in srgb, var(--foreground) 22%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--muted) 82%, var(--card));
+  color: var(--foreground);
+  cursor: pointer;
+  z-index: 2;
+}
+.wb-ml-result-bar.not-met {
+  border-style: dashed;
+  background: var(--card);
+  color: var(--muted-foreground);
+}
+.wb-ml-result-bar:hover {
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.wb-ml-delivery.unrecorded {
+  border-style: dashed;
+}
+.wb-ml-delivery-body > .wb-ml-unrecorded-label {
+  background: var(--muted);
+  color: var(--muted-foreground);
+  text-align: center;
 }

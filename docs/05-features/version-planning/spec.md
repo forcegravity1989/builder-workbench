@@ -10,6 +10,30 @@
 
 [Issue #439](https://github.com/forcegravity1989/builder-workbench/issues/439) 的局部调整已合并进下文现行条款：[当前高保真](planning-journey-prototype.html) 保留既有四区与卡片，非性能项已作生产接线并补验 CI，证据见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)。性能增量目前仅作静态检视，实际耗时仍待测；真壳旅程留白见 [STATUS](STATUS.md)。Issue 读取与刷新遵循[三屏共用策略](../version-workspace/spec.md#issue-范围列表的读取与刷新)。
 
+## 计划助手与里程碑衔接
+
+[共同方案](../overview-metrics/spec.md#里程碑与版本联动)已由用户确认，[原计划屏](planning-journey-prototype.html?review=551)继续沿用目标卡、Issue 行、原生计划助手及既有评审/归档；本轮不加周期差异面板、阶段配置、额外确认或绑定表单。助手规则以 `standard/` 中的计划 Skill、版本材料和 Issue 格式为正本。
+
+### 助手需要执行的最小步骤
+
+1. 读本版 version + cycleId；已合入的 `.bw/milestones.json` 存在时，读取特性和 `versionPlans` 预期日期作为可选参考，没有里程碑照常制定、保存和渲染计划。和人讨论这版纳入哪些特性、放哪个目标及验收标准。里程碑默认上线版/Maintain 仅是预期，不强制目标、不自动纳入、不限制后续版继续开发。首日 Plan 可校准日期和范围，正式采用周期写本版 `data.json.timeWindow`；里程碑重排不覆盖它。是否调整里程碑由人决定，不自动重写两棵树。
+2. 查重并复用带精确“特性”标签的主 Issue。主单标题保留完整里程碑特性名，允许现有 `【版本|目标】` 前缀及其他说明；不得用简称或目标标题代替。里程碑采用“标题包含完整去首尾空白特性名”的确定匹配，多个候选先在会话核对材料，不让页面猜。普通 Bug/Feature 分类中的 Feature 不等于主单“特性”标签。
+3. 人明确确认特性改名时，同步主 Issue 标题与里程碑对应行 title，保留行 id、主单身份和历史引用；普通目标标题编辑不触发。里程碑修改走既有 bw/project 项目材料评审，分别读回两处结果，不在计划树静默改另一树草稿。
+4. 把主 Issue 本身写入本版 `tasks`，保存完整 provider/repository/number 和唯一 goalId，不能只写在纪要、目标标题或主单正文里。每目标最多一个主特性，同一主特性在同版归一个目标；一个目标可以关联该特性的多条执行 Issue。
+5. 子 Issue 按现有 `【特性#N】` 规则指向主单，并归同一目标；无关联证据不按词义猜根。原有子任务拆解和原生状态规则不变，纳入计划不代表授权关闭或确认完成。
+6. 上版没达成时，在本版讨论是否继续纳入，沿用同一主 Issue，不能按版本创建另一个同名特性主单。里程碑里 B 名义是 Maintain 也不阻挡 B 实际继续开发；以后 C/D 依次复用，actual 由历史验收判定。没有人选定就不自动结转。
+7. 沿现有评审与归档提交计划，助手在原材料中核对名称、标签、主单身份和唯一目标，不加第二套确认。验收以后采用固定 planRef；重排里程碑不改历史计划。无法唯一关联时保留规划并在会话指出需要核对的具体主单，不造额外绑定协议。
+
+### 最小材料例子
+
+里程碑行“项目墙优化”，主单 `#901 【v1.0.0|G1】项目墙优化`，标签“特性”。A 计划将主单纳入 G1，子 Issue #906 的标题按现有规范引用 `【特性#901】`，也纳入 G1。B 计划可把同一主单放到 G3，目标标题无需包含特性名；实际依次读 A/G1、B/G3 的固定验收。主 Issue 标题可能仍保留 A 的前缀，版本归属以各版 tasks 为准。C 是否继续纳入也由 C 计划决定。
+
+### 规范来源与验收
+
+计划助手执行路径为 [week-planning](../../../standard/skills/week-planning/SKILL.md) 及其直接引用的材料/Issue 规范；[version-records](../../../standard/system-prompt/references/version-records.md#里程碑与版本排期) 定义可选数据源、日期分工、改名与评审边界，[issue-state](../../../standard/system-prompt/references/issue-state.md#特性主单与拆分任务) 定义完整名称、精确标签、主子引用及唯一目标。分发投影由生成脚本维护，不另立协议。
+
+验证应通过真实助手生成/更新材料，再独立读回：无里程碑仍可制定、预期与采用日期独立、确认特性改名同步而普通目标编辑不触发、目标标题不同仍关联、只有子 Issue 不冒充已纳入主单、多执行 Issue 不重复、后版换目标沿用同一主单、无/多候选保持未知。静态原型仅展示既有操作位置，不证明模型已经遵守。
+
 ## 计划旅程（G3 · 现行行为，2026-10-21 落地）
 
 本节是计划屏现行行为正本，源自 Builder 版本规划旅程的重新设计并经七轮人评审认可：定清目标与验收标准，拆解 Issue，生成并人工确认会议纪要，最后经 PR 由 Leader 在 Orca 原生 PR 页再审、合入归档。高保真 [planning-journey-prototype.html](planning-journey-prototype.html)（源码 `prototype/g3-app.jsx`、`g3-components.jsx`、`g3-model.js`、`g3-planning.css`，构建 `node docs/05-features/version-planning/prototype/build-g3.cjs`，加 `--check` 校验生成物）是形态依据；生产接线落点见 [design](design.md) 的 G3 落点表，本节条款与高保真的有意偏差在 design 登记。复用设计系统和已有 vendor；`prototype.html` 及验收/总览共用源码保持各自历史身份。

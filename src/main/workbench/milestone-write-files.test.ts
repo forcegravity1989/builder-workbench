@@ -6,6 +6,7 @@ import { expect, it } from 'vitest'
 import { writeMilestoneFiles } from './milestone-write-files'
 import { createMilestoneRecoveryStore } from './milestone-recovery'
 import { readMilestoneSnapshot } from './milestone-snapshot'
+import { milestoneDraft } from '../../shared/workbench/project-milestones'
 
 it('preserves conflicting or unsafe milestone materials and client recovery snapshots', async () => {
   const root = await mkdtemp(join(tmpdir(), 'bw-milestone-cas-'))
@@ -103,7 +104,7 @@ it('preserves conflicting or unsafe milestone materials and client recovery snap
     await writeFile(join(recoveryDirectory, recoveryFile), 'broken')
     await expect(restarted.read('project')).rejects.toThrow()
     expect(await readFile(join(recoveryDirectory, recoveryFile), 'utf8')).toBe('broken')
-    const repo = join(root, 'freeze-history')
+    const repo = join(root, 'version-identity-history')
     const planPath = join(repo, '.bw/planning/v1')
     await mkdir(planPath, { recursive: true })
     const git = (args: string[]) =>
@@ -142,6 +143,55 @@ it('preserves conflicting or unsafe milestone materials and client recovery snap
     expect(
       (await readMilestoneSnapshot(repo, head, {}, new Set())).snapshot.versions[0].started
     ).toBe(true)
+    const actualWindow = { start: '2026-11-01', end: '2026-11-10' }
+    const plannedWindow = { start: '2026-11-01', end: '2026-11-05' }
+    await writeFile(
+      join(planPath, 'data.json'),
+      JSON.stringify({ ...plan, cycleId: 'current', timeWindow: actualWindow })
+    )
+    const legacy = await readMilestoneSnapshot(repo, commit(), {}, new Set())
+    expect(legacy.snapshot.material.versionPlans).toBeUndefined()
+    expect(legacy.snapshot.versions[0].timeWindow).toEqual(actualWindow)
+    await mkdir(join(repo, '.bw/planning/v2'), { recursive: true })
+    await writeFile(
+      join(repo, '.bw/planning/v2/data.json'),
+      JSON.stringify({ ...plan, version: 'v2', cycleId: 'actual-only', timeWindow: actualWindow })
+    )
+    await writeFile(
+      join(repo, project),
+      JSON.stringify({
+        schema_version: 2,
+        months: [{ month: '2026-11', outcome: '' }],
+        features: [
+          {
+            id: 'feature',
+            month: '2026-11',
+            title: 'Feature',
+            owner: 'Builder',
+            deliveries: [
+              {
+                id: 'delivery',
+                version: { version: 'v1', cycleId: 'current' },
+                goalId: 'retired',
+                goalSlot: 1,
+                stages: []
+              }
+            ]
+          }
+        ],
+        versionPlans: [{ version: 'v1', cycleId: 'current', timeWindow: plannedWindow }]
+      })
+    )
+    const planned = await readMilestoneSnapshot(repo, commit(), {}, new Set())
+    expect(planned.snapshot.problems).toEqual([])
+    expect(planned.snapshot.versions[0].timeWindow).toEqual(plannedWindow)
+    expect(planned.snapshot.versions.map((entry) => entry.version)).toEqual(['v1'])
+    expect(planned.registeredVersions.map((entry) => entry.version)).toEqual(['v1', 'v2'])
+    expect(planned.plans.get('actual-only')?.version).toBe('v2')
+    expect(planned.plans.get('current')?.timeWindow).toEqual(actualWindow)
+    expect(planned.snapshot.material.features[0].deliveries[0]).not.toHaveProperty('goalId')
+    expect(planned.snapshot.material.features[0].deliveries[0]).not.toHaveProperty('goalSlot')
+    expect(milestoneDraft(planned.snapshot).material).not.toHaveProperty('versionPlans')
   } finally {
     await rm(root, { recursive: true, force: true })
   }

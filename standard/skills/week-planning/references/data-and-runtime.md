@@ -8,7 +8,7 @@
 
 结构使用 `ORCA bw materials schema --workflow plan|acceptance --json` 读取；子命令清单与参数以 `ORCA bw materials --help` 为准（context/select/list/read/save/schema 等），修订约束以版本材料 reference 为准。宿主未提供入口时，报告缺失、可以讨论并保留草稿建议，但不能编造命令或宣称已保存。自动化只创建/恢复 Orca 运行，不代替用户认可。Skill 安装目录是工具与模板来源，项目 .bw 是业务材料；不在项目里复制日常 HTML 编辑器，不另起浏览器服务。普通项目缺产品资产时由宿主补分发，不能要求用户克隆 BW 源码。
 
-项目里程碑可提前登记未来版本与日期；开始计划先读已有材料并沿用身份，不覆盖空计划。排期与宏观安排的来源、保留及不一致处理见[版本材料的里程碑与排期](../../../system-prompt/references/version-records.md#里程碑与版本排期)。月度规划不代替版内特性 Issue 与范围讨论。
+项目里程碑可提前登记未来版本；开始计划先读已有材料并沿用身份，不重新初始化覆盖。已合入的 `.bw/milestones.json` 与 `versionPlans` 是可选参考，没有里程碑照常制定和渲染计划。预期与本版采用日期的分工、旧材料读法、名称同步及评审边界见[里程碑与版本排期](../../../system-prompt/references/version-records.md#里程碑与版本排期)；宏观安排不代替版内特性 Issue、目标与范围讨论。
 
 ## 进展的验收来源
 
