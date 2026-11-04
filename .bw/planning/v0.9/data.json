@@ -36,7 +36,7 @@
     {
       "goalId": "G3",
       "title": "消息通知基础开发落地与旅程梳理",
-      "deliverable": "1. 完成上周已规划但未完成的 WeLink 功能设计与优化：发起评审、群消息与群助手。\n2. 补齐 v0.8 验收遗留：支持绑定多个群、多群聊天的界面呈现、收发权限边界（哪些可自动发、哪些需人工确认）。\n3. 明确接入边界：群消息与群助手、会议系统各承担什么，以 cowelink 为参考，不做额外开发。\n4. 探索嵌入原生 WeLink 屏的可行性。",
+      "deliverable": "1. 完成消息通知基础开发落地，以 PR 评审作为基础旅程。\n2. 参考业界和实际运作，梳理多人协作下的消息通知交互旅程。",
       "acceptance": "1. 完成消息通知基础开发落地，并用PR评审作为基础旅程。\n2.参考业界和实际运作，梳理多人协作下有哪些消息通知交互旅程。",
       "owner": "kanadead",
       "metricTargets": []
@@ -169,7 +169,7 @@
   },
   "workflow": {
     "stage": "archive",
-    "updatedAt": "2026-11-04T09:30:00+08:00",
+    "updatedAt": "2026-11-04T10:20:00+08:00",
     "archivePr": {
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
