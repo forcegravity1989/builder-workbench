@@ -19,6 +19,7 @@
 | 仓外 IDE 新会话 | 本篇 → [workbench-start](.claude/skills/workbench-start/SKILL.md)，按意图与影响分流开发、验证和交付；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。Workbench 发起的项目执行会话读产品传入提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill |
 | 特性级变更 | 对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，`plan.md` 仅大风险升 gate。交付按 02 §6.2 六环链，新工作先过 §6.3 带入三问；迁移在 Orca 上重新决策，按实际改动补链 |
 | 小 bug、文案、无新增用户价值的整理 | 先确认所属特性与已有行为依据；依据齐备则挂 Issue 直接修、验证、commit/PR 留痕，不为小修新立特性。所属独立特性的必要文档缺失时，按 [02 §6.3](docs/01-principles/02-working-backwards.md) 补齐本次定义并完成缺失决定的人确认，再改依赖这些决定的代码；粒度听 [01](docs/01-principles/01-document-organization.md) |
+| 提单或维护 BW 自身 Issue | 创建、改写或关联前，先读取 [Issue 规范](standard/system-prompt/references/issue-state.md)正文；标题格式、提单性质和主单引用沿该正本，归属名称按本文「BW 自身 Issue 归属」。计划场景另执行计划 Skill 的纳入要求 |
 | 改客群、飞轮或对外主张 | 先议再改 03；特性 intent 不得偷偷改写产品主张，不把草稿界面说成已交付 |
 | 改代码或现行设计 | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 Electron 叠层与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步相应特性资料；指南待旅程验证后补。视觉协同读 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/)，按文件归属与对应负责人协调 |
 | 改文档 | 先读下节维护流程 → 原则 01 → 目标文件原文头部约定与相关正本；用 [docs 地图](docs/README.md) 找去处。盘点、瘦身、职责/格式治理与模型指令整改使用 [project-knowledge](.claude/skills/project-knowledge/SKILL.md)，包含 HTML 决策、只读扫描和逐轮反哺；普通开发的必要文档同步不启动全库盘点 |
@@ -51,7 +52,7 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 | 完成永远由人确认，同一工作不重复记录完成结果 | Issue 关闭由人决定，关闭即计入完成（关闭原因不参与计数）；目标达成仍由人确认；自动化、agent、定时不得自行关闭或确认完成 |
 | 定时任务真实到点触发；自动创建的 Issue 不自动完成 | 调度在 Orca，到点开会话，不能替人确认 Done |
 
-- Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。提单格式与纳入计划时的补充见 [Issue 格式](standard/system-prompt/references/issue-state.md)，计划关联使用材料中的任务引用。不恢复已退役的状态标签或另造平行协议。工具与会话沿本机设置和原生入口。
+- Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。计划关联使用材料中的任务引用，不恢复已退役的状态标签或另造平行协议。工具与会话沿本机设置和原生入口。
 - Workbench MVP 本地零业务数据库。用 `gh` / `codehub-cli` / `git` / 文件独立读回；不用 V3 的 `sqlite3` 路径。项目约定和指标资产的归属读 [architecture](docs/architecture.md)，不能将资产盘点变成代写项目开发规范。
 - 入口层不写业务正本；计划 JSON 保存版本/目标与任务关联，Issue 原生字段保存实际状态。
 - 日常 BW 工作先依据当前仓库的代码、调用链和现行正本选方案，不要求查询或等待 Orca 上游；按“先复用原生能力 → 再用 BW 薄挂载或自有模块接入 → 只有确实必须改变 Orca 核心、协议或宿主路由时才停在方案层交人决定”的顺序判断。优先复用原生执行核和薄挂载。只有会影响后续方案选择的稳定边界才写入对应正本；周期性上游核对由 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md) 承担，未被人采纳的候选不写入仓库。
@@ -95,9 +96,18 @@ PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行
 - 注释只写代码无法表达的约束、原因、单位、协议及边界，不复述控制流或历史；实现术语留在代码与技术对照中。
 - 新文档用头部给出 30 秒导读与维护约定；工具导入、上游镜像或生成文件遵守对应格式，不机械塞入头部。具体例外听原则 01。
 
+### BW 自身 Issue 归属
+
+本节只定义本仓提单的归属名称与判断要求；通用格式按「按任务读取」中的 Issue 规范执行，不将以下名单作为被管项目的默认分类。
+
+- 产品归属名称：项目纳入、项目墙、项目总览、指标能力、版本计划、版本验收、版本会话管理、版本总览、任务管理、内部集成、工程部署。
+- 特性之外只用三类盘点容器：产品基础、研发保障、待定/预研。
+- 按主要用户结果确定归属。`[原生Orca能力]` 等提示只说明实现来源，整理标题时保留，不据此把侧栏或任务屏改动归入基础类；统一侧栏规划归版本会话管理，通用任务交互归任务管理。
+- 这些名称是提单归属口径，不代表对应文档已齐全或能力已交付。
+
 ### commit 与 PR
 
-**先有 Issue 再开工**：按 [Issue 格式](standard/system-prompt/references/issue-state.md) 先查同类单，能复用就沿用，没有就新建（只需问题描述）。PR 正文开头写 `关联 #<编号>` 挂上这条 Issue；不用 `Fixes` / `Closes` 等关闭关键字——合入不等于完成，Issue 关闭仍由人决定。
+**先有 Issue 再开工**：按上述 Issue 规范先查同类单，能复用就沿用，没有就新建（只需问题描述）。PR 正文开头写 `关联 #<编号>` 挂上这条 Issue；不用 `Fixes` / `Closes` 等关闭关键字——合入不等于完成，Issue 关闭仍由人决定。
 
 每件独立提交、在分支和独立工作树上。**默认继续交付 PR**：完成门禁、对应 E2E 和推前 subagent 全方位检视（四维与 TODO 步骤见 [02 §6.2 横切站 B](docs/01-principles/02-working-backwards.md)）后，提交、push、开 PR 并补验证 Review；人明确说「只本地」时才停止在本地。不自动合入 PR、关闭 Issue 或正式发版本，除非人已明确授权该动作。标题应让人不查文档也懂改了什么，正文如实说明原因、取舍与偏差；变化与证据写进 commit/PR，当前知识写回正本。
 
