@@ -42,16 +42,10 @@ describe('builder hosts import manifest', () => {
       expect(template.hosts).toHaveLength(2)
       expect(template.hosts.every((h) => h.issue !== null)).toBe(true)
     }
-  })
-
-  it('rejects broken structure with an honest reason', () => {
     expect(parseBuilderHostsFile('not json')).toMatchObject({ ok: false })
     expect(parseBuilderHostsFile(JSON.stringify({ servers: [] }))).toMatchObject({ ok: false })
     expect(parseBuilderHostsFile(manifest([]))).toMatchObject({ ok: false })
-  })
-
-  it('flags per-entry problems without failing the whole file', () => {
-    const parsed = parseBuilderHostsFile(
+    const invalidEntries = parseBuilderHostsFile(
       manifest([
         { name: 'Builder 01', address: accessLink('wss://orca.example.com/runtime') },
         { name: 'Builder 01', address: accessLink('wss://orca2.example.com/runtime') },
@@ -59,14 +53,14 @@ describe('builder hosts import manifest', () => {
         { name: 'Loopback', address: accessLink('ws://127.0.0.1:6768') }
       ])
     )
-    expect(parsed.ok).toBe(true)
-    if (!parsed.ok) {
+    expect(invalidEntries.ok).toBe(true)
+    if (!invalidEntries.ok) {
       return
     }
-    expect(parsed.hosts[0].issue).toBeNull()
-    expect(parsed.hosts[1].issue).toContain('重复')
-    expect(parsed.hosts[2].issue).toContain('缺配对地址')
-    expect(parsed.hosts[3].issue).toContain('loopback')
+    expect(invalidEntries.hosts[0].issue).toBeNull()
+    expect(invalidEntries.hosts[1].issue).toContain('重复')
+    expect(invalidEntries.hosts[2].issue).toContain('缺配对地址')
+    expect(invalidEntries.hosts[3].issue).toContain('loopback')
   })
 
   it('plans already-paired names as skip so re-importing the same file is idempotent', () => {

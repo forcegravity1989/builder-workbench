@@ -90,7 +90,7 @@ function CodeHubCommentCard({
   state: CodeHubDetailState
   isReply?: boolean
 }) {
-  const { item, setComments } = state
+  const { item, owner, setComments } = state
   const [replyOpen, setReplyOpen] = useState(false)
   // GitLab-style note anchor: the task page URL plus #note_<id> jumps to
   // this comment on the CodeHub website.
@@ -200,29 +200,35 @@ function CodeHubCommentCard({
                   'Delete comment'
                 )}
                 onClick={() => {
-                  if (!item.repoPath) {
+                  if (!item.repoPath || (item.executionHostId && !owner)) {
                     return
                   }
                   void codehubApi
-                    .deleteComment({
-                      repoPath: item.repoPath,
-                      repoId: item.repoId,
-                      kind: item.type,
-                      iid: item.iid,
-                      commentId: comment.id,
-                      // Standalone notes delete by note id alone; only notes in a
-                      // multi-note discussion need the discussion id.
-                      discussionId: comment.individual ? null : comment.discussionId
-                    })
+                    .deleteComment(
+                      {
+                        repoPath: item.repoPath,
+                        repoId: item.repoId,
+                        kind: item.type,
+                        iid: item.iid,
+                        commentId: comment.id,
+                        // Standalone notes delete by note id alone; only notes in a
+                        // multi-note discussion need the discussion id.
+                        discussionId: comment.individual ? null : comment.discussionId
+                      },
+                      owner ?? undefined
+                    )
                     // Re-list instead of filtering locally: deleting a thread
                     // starter must also drop its now-orphaned replies.
                     .then(() =>
-                      codehubApi.listComments({
-                        repoPath: item.repoPath!,
-                        repoId: item.repoId,
-                        kind: item.type,
-                        iid: item.iid
-                      })
+                      codehubApi.listComments(
+                        {
+                          repoPath: item.repoPath!,
+                          repoId: item.repoId,
+                          kind: item.type,
+                          iid: item.iid
+                        },
+                        owner ?? undefined
+                      )
                     )
                     .then((rows) => setComments(rows))
                     .catch((reason: unknown) => {

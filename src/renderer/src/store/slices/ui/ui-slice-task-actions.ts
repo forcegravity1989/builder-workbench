@@ -9,6 +9,7 @@ import {
 import { PER_REPO_FETCH_LIMIT } from '../../../../../shared/work-items'
 import { isGitRepoKind } from '../../../../../shared/repo-kind'
 import { presetToQuery } from './ui-slice-hydration-sanitizers'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 const LINEAR_TASK_PREFETCH_LIMIT = 36
 
@@ -132,7 +133,13 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
       const resolvedMode = state.taskResumeState?.githubMode ?? 'items'
       // Why: a BW workbench scope materializes its own reference-driven list; the
       // unscoped query prefetch would warm a cache the scoped view never reads.
-      if (resolvedSource === 'github' && resolvedMode === 'items' && !data.workbenchTaskScope) {
+      // BW resolves its Builder scope after catalog hydration; a bare-id warm-up would fetch other Builders.
+      if (
+        resolvedSource === 'github' &&
+        resolvedMode === 'items' &&
+        !data.workbenchTaskScope &&
+        !isWorkbenchShell()
+      ) {
         const eligibleRepos = state.repos.filter((repo) => isGitRepoKind(repo) && repo.path)
         const selectedRepos = (() => {
           const preferred = data.preselectedRepoId

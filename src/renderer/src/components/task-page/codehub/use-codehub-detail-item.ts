@@ -3,6 +3,7 @@ import { useAppStore } from '@/store'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
 import { getTaskPageRepoSourceContext } from '../../task-page-source-context'
 import type { TaskPageSourceAvailabilityModel } from '../../use-task-page-source-availability'
+import { findCodeHubTaskRepo } from '@/lib/codehub-task-repo'
 
 /**
  * The CodeHub detail lives in taskPageData (not local state) so external opens —
@@ -17,9 +18,7 @@ export function useCodeHubDetailItem(model: TaskPageSourceAvailabilityModel) {
       if (item) {
         const state = useAppStore.getState()
         const repo =
-          selectedRepos.find(
-            (candidate) => candidate.id === item.repoId && candidate.path === item.repoPath
-          ) ?? state.repos.find((candidate) => candidate.id === item.repoId)
+          findCodeHubTaskRepo(selectedRepos, item) ?? findCodeHubTaskRepo(state.repos, item)
         // Why: a BW workbench scope must survive the detail round-trip so the
         // close path restores the scoped list, matching the GitHub detail flow.
         const workbenchTaskScope = state.taskPageData.workbenchTaskScope ?? null

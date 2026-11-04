@@ -96,13 +96,16 @@ it('keeps filter transitions and issue creation connected after extracting the c
   })
   fireEvent.submit(screen.getByPlaceholderText('New issue title').closest('form')!)
   await waitFor(() => expect(refresh).toHaveBeenCalled())
-  expect(api.createIssue).toHaveBeenCalledWith({
-    repoId: 'r1',
-    repoPath: '/repo',
-    title: 'New work',
-    description: undefined,
-    assignee: undefined
-  })
+  expect(api.createIssue).toHaveBeenCalledWith(
+    {
+      repoId: 'r1',
+      repoPath: '/repo',
+      title: 'New work',
+      description: undefined,
+      assignee: undefined
+    },
+    repo
+  )
 })
 
 it('loads the detail and removes a deleted comment from the displayed conversation', async () => {
@@ -117,6 +120,7 @@ it('loads the detail and removes a deleted comment from the displayed conversati
       assignees: [],
       url: 'https://codehub.example.com/team/project/issues/12'
     },
+    selectedRepos: [],
     setCodehubDetailItem: vi.fn(),
     handleUseCodeHubItem: vi.fn(),
     setCodehubRefreshNonce: vi.fn()
@@ -129,13 +133,16 @@ it('loads the detail and removes a deleted comment from the displayed conversati
   expect(screen.queryByRole('button', { name: 'Close as completed' })).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Delete comment' }))
   await waitFor(() => expect(screen.queryByText('Review comment')).toBeNull())
-  expect(api.deleteComment).toHaveBeenCalledWith({
-    repoId: 'r1',
-    repoPath: '/repo',
-    kind: 'issue',
-    iid: 12,
-    commentId: 'c1'
-  })
+  expect(api.deleteComment).toHaveBeenCalledWith(
+    {
+      repoId: 'r1',
+      repoPath: '/repo',
+      kind: 'issue',
+      iid: 12,
+      commentId: 'c1'
+    },
+    undefined
+  )
 })
 
 it('shows a merge request branch and copy control without the old action form', async () => {
@@ -155,6 +162,7 @@ it('shows a merge request branch and copy control without the old action form', 
       url: 'https://codehub.example.com/team/project/merge_requests/8',
       updatedAt: ''
     },
+    selectedRepos: [],
     setCodehubDetailItem: vi.fn(),
     handleUseCodeHubItem: vi.fn(),
     setCodehubRefreshNonce: vi.fn()

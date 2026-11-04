@@ -69,11 +69,13 @@ export function TaskPageCodeHubDetail({
   )
   // G2（P4 详情往返携带范围）：范围态归属呈现与任务屏行/板面箭头同一解析核。
   const workbenchTaskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
-  const repo = useAppStore((s) => (repoId ? (s.repos.find((r) => r.id === repoId) ?? null) : null))
   const detailState = useCodeHubDetail(model)
   if (!detailState) {
     return null
   }
+  // 归属仓库用与详情钩子同一的唯一 owner 解析（先选区后全量），跨主机重复
+  // id 只会命中其 host 钉住的仓库；裸 id 查找会错配同名副本。
+  const repo = detailState.owner ?? null
   const {
     item,
     detail,

@@ -54,6 +54,16 @@ it('builds collision-free keys from repoId, kind and iid', () => {
   )
 })
 
+it('host-qualifies the key so a cross-host duplicate id keeps its own lane', () => {
+  const base = getCodehubDetailCacheKey({ repoId: 'r1', kind: 'mr', iid: 8 })
+  expect(
+    getCodehubDetailCacheKey({ repoId: 'r1', kind: 'mr', iid: 8, executionHostId: 'host-b' })
+  ).not.toBe(base)
+  expect(
+    getCodehubDetailCacheKey({ repoId: 'r1', kind: 'mr', iid: 8, executionHostId: 'host-b' })
+  ).toBe(getCodehubDetailCacheKey({ repoId: 'r1', kind: 'mr', iid: 8, executionHostId: 'host-b' }))
+})
+
 it('dedupes concurrent full reads and skips refetch inside the fresh window', async () => {
   let releaseView: ((value: CodeHubTaskDetail) => void) | undefined
   api.viewTask.mockImplementation(

@@ -41,7 +41,7 @@ export function CodeHubFilterPopover({ model }: { model: TaskPageComposerActions
     setLabelsLoading(true)
     setLabelsError(null)
     codehubApi
-      .listLabels({ repoPath: codehubRepo.path, repoId: codehubRepo.id })
+      .listLabels({ repoPath: codehubRepo.path, repoId: codehubRepo.id }, codehubRepo)
       .then((names) => {
         if (!stale) {
           setLabelOptions(names)

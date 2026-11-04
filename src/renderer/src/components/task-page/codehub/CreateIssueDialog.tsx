@@ -49,13 +49,16 @@ export function CodeHubCreateIssueDialog({
             }
             setCreating(true)
             void codehubApi
-              .createIssue({
-                repoPath: codehubRepo.path,
-                repoId: codehubRepo.id,
-                title: nextTitle,
-                description: description.trim() || undefined,
-                assignee: assignee.trim() || undefined
-              })
+              .createIssue(
+                {
+                  repoPath: codehubRepo.path,
+                  repoId: codehubRepo.id,
+                  title: nextTitle,
+                  description: description.trim() || undefined,
+                  assignee: assignee.trim() || undefined
+                },
+                codehubRepo
+              )
               .then(() => {
                 setTitle('')
                 setDescription('')

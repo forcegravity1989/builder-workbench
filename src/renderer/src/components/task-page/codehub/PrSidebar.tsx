@@ -34,7 +34,7 @@ function PeopleList({
 }
 
 export function CodeHubPrSidebar({ state }: { state: CodeHubDetailState }): React.JSX.Element {
-  const { item, detail, actionItem, reloadDetail } = state
+  const { item, detail, owner, actionItem, reloadDetail } = state
   const [busy, setBusy] = useState<'merge' | 'close' | 'reviewers' | null>(null)
   const [reviewerDraft, setReviewerDraft] = useState('')
   const [reviewersOpen, setReviewersOpen] = useState(false)
@@ -47,7 +47,7 @@ export function CodeHubPrSidebar({ state }: { state: CodeHubDetailState }): Reac
   }
 
   const run = async (kind: 'merge' | 'close' | 'reviewers', action: () => Promise<void>): Promise<void> => {
-    if (!item.repoPath || busy) {
+    if (!item.repoPath || (item.executionHostId && !owner) || busy) {
       return
     }
     setBusy(kind)
@@ -84,11 +84,14 @@ export function CodeHubPrSidebar({ state }: { state: CodeHubDetailState }): Reac
             )}
             onClick={() => {
               void run('merge', async () => {
-                await codehubApi.mergeMr({
-                  repoPath: item.repoPath!,
-                  repoId: item.repoId,
-                  iid: item.iid
-                })
+                await codehubApi.mergeMr(
+                  {
+                    repoPath: item.repoPath!,
+                    repoId: item.repoId,
+                    iid: item.iid
+                  },
+                  owner ?? undefined
+                )
                 toast.success(translate('auto.components.TaskPage.codehubMerged', 'Merge requested'))
               })
             }}
@@ -108,11 +111,14 @@ export function CodeHubPrSidebar({ state }: { state: CodeHubDetailState }): Reac
             className="w-full justify-center gap-2 border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50"
             onClick={() => {
               void run('close', async () => {
-                await codehubApi.closeMr({
-                  repoPath: item.repoPath!,
-                  repoId: item.repoId,
-                  iid: item.iid
-                })
+                await codehubApi.closeMr(
+                  {
+                    repoPath: item.repoPath!,
+                    repoId: item.repoId,
+                    iid: item.iid
+                  },
+                  owner ?? undefined
+                )
                 toast.success(
                   translate('auto.components.TaskPage.codehubMrClosed', 'Merge request closed')
                 )
@@ -167,12 +173,15 @@ export function CodeHubPrSidebar({ state }: { state: CodeHubDetailState }): Reac
                     return
                   }
                   void run('reviewers', async () => {
-                    await codehubApi.setReviewers({
-                      repoPath: item.repoPath!,
-                      repoId: item.repoId,
-                      iid: item.iid,
-                      reviewers: names
-                    })
+                    await codehubApi.setReviewers(
+                      {
+                        repoPath: item.repoPath!,
+                        repoId: item.repoId,
+                        iid: item.iid,
+                        reviewers: names
+                      },
+                      owner ?? undefined
+                    )
                     setReviewerDraft('')
                     setReviewersOpen(false)
                     toast.success(

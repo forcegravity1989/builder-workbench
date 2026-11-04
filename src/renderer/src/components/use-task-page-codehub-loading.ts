@@ -1,9 +1,11 @@
 import { codehubApi } from '@/lib/codehub-api'
 import type { TaskPageGitLabLoadingModel } from './use-task-page-gitlab-loading'
 import { useEffect, useState } from 'react'
+import { isProjectRemoteIdentityPending } from '../../../shared/project-host-setup-projection'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import { workbenchVersionTaskLabel } from '../../../shared/workbench/task-scope'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 
 const CODEHUB_LIST_LIMIT = 250
 // Why: 空数组必须是稳定引用，否则非 MR 视图下 effect 依赖每次渲染都变。
@@ -40,7 +42,9 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
     if (workbenchTaskScope?.goalId) {
       return
     }
-    const repos = selectedRepos.filter((repo) => isCodeHubGitRemote(repo.gitRemoteIdentity))
+    const repos = selectedRepos.filter(
+      (repo) => isCodeHubGitRemote(repo.gitRemoteIdentity) || isProjectRemoteIdentityPending(repo)
+    )
     if (repos.length === 0) {
       setCodehubItems([])
       setCodehubLoading(false)
@@ -62,28 +66,37 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
             : codehubPreset === 'review' && kind === 'mr'
               ? 'need_my_review'
               : undefined
-        const listed = await codehubApi.listTasks({
-          repoPath: repo.path,
-          repoId: repo.id,
-          kind,
-          state,
-          limit: CODEHUB_LIST_LIMIT,
-          labels: workbenchTaskScope
-            ? [...new Set([workbenchVersionTaskLabel(workbenchTaskScope.version), ...serverLabels])]
-            : serverLabels.length > 0
-              ? serverLabels
-              : undefined,
-          scope,
-          search: serverQuery || undefined,
-          author: serverAuthor || undefined,
-          assignee: serverAssignee || undefined
-        })
+        const listed = await codehubApi.listTasks(
+          {
+            repoPath: repo.path,
+            repoId: repo.id,
+            kind,
+            state,
+            limit: CODEHUB_LIST_LIMIT,
+            labels: workbenchTaskScope
+              ? [
+                  ...new Set([
+                    workbenchVersionTaskLabel(workbenchTaskScope.version),
+                    ...serverLabels
+                  ])
+                ]
+              : serverLabels.length > 0
+                ? serverLabels
+                : undefined,
+            scope,
+            search: serverQuery || undefined,
+            author: serverAuthor || undefined,
+            assignee: serverAssignee || undefined
+          },
+          repo
+        )
         return {
           hasMore: listed.hasMore,
           items: listed.items.map((item) => ({
             ...item,
             repoId: repo.id,
             repoPath: repo.path,
+            executionHostId: getRepoExecutionHostId(repo),
             host: listed.remote.host,
             project: listed.remote.project
           }))

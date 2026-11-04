@@ -1,7 +1,6 @@
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
 import { cn } from '@/lib/utils'
 import TaskProjectSourceCombobox from '@/components/task-project-source-combobox'
-import { normalizeTaskRepoSelection } from '@/components/task-page-default-repo-selection'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
@@ -19,11 +18,11 @@ export function TaskPageGitHubModeControls({
   const {
     setTaskResumeState,
     updateSettings,
-    eligibleRepos,
+    normalizeRepoSelection,
     repoSelection,
     setRepoSelection,
     taskPickerGroups,
-    taskPickerRepos,
+    allTaskRepoSelection,
     githubModeButtons,
     taskSource,
     getTaskPickerRepoHostLabel,
@@ -84,7 +83,7 @@ export function TaskPageGitHubModeControls({
           selected={repoSelection}
           getRepoHostLabel={getTaskPickerRepoHostLabel}
           onChange={(next) => {
-            const normalized = normalizeTaskRepoSelection(eligibleRepos, next)
+            const normalized = normalizeRepoSelection(next)
             if (model.workbenchScope) {
               model.clearWorkbenchProject()
             }
@@ -106,7 +105,7 @@ export function TaskPageGitHubModeControls({
             if (model.workbenchScope) {
               model.clearWorkbenchProject()
             }
-            const allIds = new Set(taskPickerRepos.map((r) => r.id))
+            const allIds = allTaskRepoSelection
             setRepoSelection(allIds)
             if (!model.workbenchScope) {
               void updateSettings({
