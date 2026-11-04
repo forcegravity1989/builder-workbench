@@ -66,61 +66,7 @@
     {
       "provider": "github",
       "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 537,
-      "goalId": "G2"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 540,
-      "goalId": "G4"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 541,
-      "goalId": "G4"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 542,
-      "goalId": "G4"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 543,
-      "goalId": "G4"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 422,
-      "goalId": "G4"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 548,
-      "goalId": "G4"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 554,
-      "goalId": "G4"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 556,
-      "goalId": "G4"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 557,
+      "number": 530,
       "goalId": "G1"
     },
     {
@@ -128,24 +74,6 @@
       "repository": "github.com/forcegravity1989/builder-workbench",
       "number": 558,
       "goalId": "G2"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 546,
-      "goalId": "G4"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 552,
-      "goalId": "G4"
-    },
-    {
-      "provider": "github",
-      "repository": "github.com/forcegravity1989/builder-workbench",
-      "number": 553,
-      "goalId": "G4"
     }
   ],
   "minutes": {
@@ -154,7 +82,9 @@
       "2、项目总览与版本总览进入 maintain 阶段，完成benchmark、建木、运维看板、BW自身共计四个项目的11月份里程碑规划。",
       "3、版本总览需呈现真实 SDLC 运作过程，并显示同一阶段被反复修改的活动，不只显示最终状态。",
       "4、内部Welink集成研讨（暂不纳入开发）：WeLink 本版真实旅程：发起评审、多群绑定与群配置、多群聊天界面、收发权限边界、接入边界；以 cowelink 为参考，不做额外开发。",
-      "5、本周先落地多人协作的消息通知的基础能力，基础旅程使用PR评审。"
+      "5、本周先落地多人协作的消息通知的基础能力，基础旅程使用PR评审。",
+      "6、v0.9 任务盘点补充：G1 关联 #551、#535、#530；BW 自身 11 月里程碑制定沿里程碑 PR、正式材料和页面回显验收，不另建 Issue。#544 已处理，不纳入；#557 为各项目 Owner 的接入与伴飞事项，不纳入 v0.9。",
+      "7、v0.9 任务盘点补充：G2 关联 #558，承接实际 SDLC 统计的实验开关，默认关闭、按项目开启；#530 的版本总览遗留联动收口但不重复挂单。#537 关键文件修改回溯暂不纳入。G4 暂不关联具体 Issue，由开发按实际情况处理，周五再盘点。"
     ],
     "followups": [
       {
@@ -165,7 +95,7 @@
     ],
     "confirmed": false,
     "sources": "2026-11-02 版本计划会要点（用户提供）＋本会话逐条讨论；未读取 eMeeting 语音转写稿与板面批注。",
-    "updatedAt": "2026-11-04T01:16:49.291Z"
+    "updatedAt": "2026-11-04T02:24:24.811Z"
   },
   "workflow": {
     "stage": "archive",
