@@ -1,5 +1,9 @@
 import { useRef, useState, type RefObject, type PointerEvent, type KeyboardEvent } from 'react'
-import type { MilestoneDraft, ScheduledVersion } from '../../../shared/workbench/project-milestones'
+import type {
+  MilestoneDraft,
+  MilestoneDelivery,
+  ScheduledVersion
+} from '../../../shared/workbench/project-milestones'
 import {
   datedMilestoneVersions,
   materializeMilestoneWeek,
@@ -25,6 +29,23 @@ export const MILESTONE_LABEL_WIDTH = 220
 export type MilestoneGesture =
   | { kind: 'version'; id: string; mode: MilestoneDragMode }
   | { kind: 'delivery'; id: string; deliveryId: string; mode: MilestoneDragMode }
+
+function replaceDelivery(draft: MilestoneDraft, featureId: string, delivery: MilestoneDelivery) {
+  return {
+    ...draft,
+    material: {
+      ...draft.material,
+      features: draft.material.features.map((f) =>
+        f.id !== featureId
+          ? f
+          : {
+              ...f,
+              deliveries: f.deliveries.map((d) => (d.id === delivery.id ? delivery : d))
+            }
+      )
+    }
+  }
+}
 
 export function useMilestoneGesture(
   draft: MilestoneDraft,
@@ -74,20 +95,7 @@ export function useMilestoneGesture(
         return reject('请先为原版本安排日期')
       }
       delivery = { ...delivery, stages: defaultMilestoneStages(source, index > 0) }
-      next = {
-        ...base,
-        material: {
-          ...base.material,
-          features: base.material.features.map((f) =>
-            f.id !== g.id
-              ? f
-              : {
-                  ...f,
-                  deliveries: f.deliveries.map((d) => (d.id === g.deliveryId ? delivery! : d))
-                }
-          )
-        }
-      }
+      next = replaceDelivery(base, g.id, delivery)
     }
     let target = base.versions.find((v) => v.cycleId === delivery.version.cycleId)
     if (g.mode === 'move') {
@@ -152,24 +160,10 @@ export function useMilestoneGesture(
     ) {
       if (!maintain.stages.length) {
         const source = next.versions.find((v) => v.cycleId === maintain.version.cycleId)!
-        next = {
-          ...next,
-          material: {
-            ...next.material,
-            features: next.material.features.map((f) =>
-              f.id !== g.id
-                ? f
-                : {
-                    ...f,
-                    deliveries: f.deliveries.map((d) =>
-                      d.id !== maintain.id
-                        ? d
-                        : { ...d, stages: defaultMilestoneStages(source, true) }
-                    )
-                  }
-            )
-          }
-        }
+        next = replaceDelivery(next, g.id, {
+          ...maintain,
+          stages: defaultMilestoneStages(source, true)
+        })
       }
       const following = nextMilestoneVersion(next, target!.timeWindow!.end, registered)
       const duration = plannedDay(maintainWindow.end) - plannedDay(maintainWindow.start)
