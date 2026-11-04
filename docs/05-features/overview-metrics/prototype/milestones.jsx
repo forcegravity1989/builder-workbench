@@ -1,6 +1,12 @@
 import { InlineField } from './milestones-fields.jsx'
 import { Timeline } from './milestones-timeline.jsx'
-import { defaultStages, fitVersions, laneConflict, settleWindows } from './milestones-sdlc.js'
+import {
+  defaultStages,
+  fitVersions,
+  laneConflict,
+  settleWindows,
+  editVersionName
+} from './milestones-sdlc.js'
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js'
 import Undo2 from 'lucide-react/dist/esm/icons/undo-2.js'
 import Redo2 from 'lucide-react/dist/esm/icons/redo-2.js'
@@ -123,6 +129,7 @@ function App() {
   const [cases, setCases] = useState(loadCases),
     [caseId, setCaseId] = useState('existing'),
     [planning, setPlanning] = useState(false)
+  const [actualScenario, setActualScenario] = useState('normal')
   const [navigation, setNavigation] = useState(() => ({
       date: `${latestMonth(cases.existing.published || cases.existing.draft)}-01`,
       sequence: 0
@@ -239,7 +246,6 @@ function App() {
       {
         ...next.plan,
         features: [
-          ...next.plan.features,
           {
             id,
             month: week.start.slice(0, 7),
@@ -252,7 +258,8 @@ function App() {
               },
               { versionId: next.version.id, stages: defaultStages(next.version, true) }
             ]
-          }
+          },
+          ...next.plan.features
         ]
       },
       [first.version.id, next.version.id]
@@ -332,10 +339,20 @@ function App() {
     <>
       <div className="ml-review-strip">
         <span>
-          原型注释: 模拟 11/11 15:30；SDLC 实际记录、版本关系均为样例，非 v0.8
-          承诺；已开始版原计划只读。工作日历暂无预置，按普通周末显示。
+          原型注释: #530 · 模拟 11/11 15:30；Issue、目标与实际阶段均为样例。
+          原泳道显示实际，勾选“显示计划”可对照。日历按普通周末。
         </span>
         <div className="ml-actions">
+          <select
+            aria-label="原型注释：实际进度读取场景"
+            value={actualScenario}
+            onChange={(event) => setActualScenario(event.target.value)}
+          >
+            <option value="normal">原型注释：已有读数与未采集到</option>
+            <option value="unlinked">原型注释：缺少目标关系</option>
+            <option value="ambiguous">原型注释：目标关系无法确定</option>
+            <option value="error">原型注释：本次未采集到，保留旧值</option>
+          </select>
           <IconAction
             label="重置原型"
             icon={RefreshCw}
@@ -532,6 +549,8 @@ function App() {
                     navigation={navigation}
                   />
                   <Timeline
+                    actualScenario={actualScenario}
+                    onActualScenario={setActualScenario}
                     rows={plan.features}
                     plan={plan}
                     onAdd={add}
@@ -539,12 +558,19 @@ function App() {
                     planning={planning}
                     navigation={navigation}
                     onChangeFeature={changeFeature}
-                    onRenameVersion={(id, name) =>
-                      editFieldPlan((p) => ({
-                        ...p,
-                        versions: p.versions.map((v) => (v.id === id ? { ...v, name } : v))
-                      }))
-                    }
+                    onRenameVersion={(id, name, previous) => {
+                      const result = editVersionName(
+                        state.draft,
+                        id,
+                        name,
+                        previous,
+                        state.submitted
+                      )
+                      editFieldPlan(() => result.plan)
+                      if (result.problem) {
+                        setNotice(result.problem)
+                      }
+                    }}
                     onDelete={remove}
                     onReorder={reorder}
                     onApply={(next) => editPlan(() => next)}

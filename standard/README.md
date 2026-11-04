@@ -1,67 +1,34 @@
-# standard/
+# Workbench 执行资产
 
-> **维护约定**：给修改 BW 产品执行规范的人和模型读取；只写各层职责、目录与当前加载边界，内容或分发入口变化时更新。实际用户旅程与执行覆盖见模块设计，不把文件存在写成已经派发。
+> **维护约定**：给维护 BW 分发资产的人和模型读。本文规定目录、正本与交付职责，不写业务 SOP、项目开发规矩或变更记录。目录、分工与分发方式变化时更新；修改前先读目标文件头部。写作要求见 [Skill 规范](skills/SKILL-MD-SPEC.md)，实现边界见[系统提示词与渐进加载](../docs/06-module/系统提示词与渐进加载.md)。
 
-本目录是 Workbench 执行规范的源码，面向被管项目的业务会话，不是 BW 研发知识库。SYSTEM 模板、技能指南和 references 随产品打包；计划/验收手动开工只预填一句内置技能读取草稿、不自动回车，用户发送后由技能读取随包的公共纪律和版本材料引用，再调用材料 context 取得动态执行上下文。自动化与指标配置仍用完整提示；普通原生新建会话不额外注入。规则递交、正文读取和模型遵守分别验证，边界见模块说明。
+本目录面向被管项目的计划、验收和指标配置会话。项目自己的开发与文档约定由其 AGENTS.md 及引用负责；BW 研发规则在本仓 AGENTS.md，不随本目录给所有项目派发。
 
-`standard/vendor/` 未迁入本分支；旧开发环境的复制机制和默认 workflow 派发承诺不适用于这里。
+## 目录与职责
 
-从仓根 [`AGENTS.md`](../AGENTS.md)「按任务读取」点过来。主提示词 / reference / skill 注入对照见 [`docs/06-module/系统提示词与渐进加载`](../docs/06-module/系统提示词与渐进加载.md)。
+| 路径                          | 唯一职责                                             |
+| ----------------------------- | ---------------------------------------------------- |
+| `skills/SKILL-MD-SPEC.md`     | 资产写作、加载、依赖和验证规范；维护资产前完整读取   |
+| `skills/<topic>/SKILL.md`     | 完整用户旅程与 SOP、必要读取时机                     |
+| `skills/<topic>/references/`  | 本流程的方法与低频处理；正文明确说明何时完整读取     |
+| `skills/<topic>/assets/`      | 真实产出模板；与生成方一起维护                       |
+| `skills/<topic>/scripts/`     | 可执行的确定性动作，不藏 TODO 或遗留清单             |
+| `references/`                 | 跨 Skill 的执行、Issue、版本材料、指标与会议规范正本 |
+| `templates/metrics.toml.tmpl` | 指标配置样例，不自动铺进项目                         |
 
-## 系统提示词 / reference / skill 各写什么
+## 从入口到完整正文
 
-被管仓里的模型看不见 Workbench 源码,也默认不认识 `.bw/`。这三层只补它看不见的,各写一层:
+计划、验收、指标配置的手动入口只预填一句可编辑请求，指向执行宿主上已安装的完整 SKILL.md，由用户发送。普通原生会话不额外注入 BW 规范。定时自动化按用户保存的调度运行，使用同一份 Skill。
 
-| 层 | 补什么 | 现在(第一层:转得顺) | 先不写(第二层:少问人) |
-|---|---|---|---|
-| SYSTEM | 哪个 Issue、项目入口、哪类 Issue 加载哪份 reference、原生 Issue 状态与人的处理边界 | 索引 + 全场纪律 | 四段 gate、代填正本 |
-| reference | `.bw/`、评论、标签、健康信号、界面认什么 | 格式/落点/失败怎么说 | 北极星该量什么、打分 |
-| skill | 这场怎么带人 | 先展示全程，再围绕真实缺口交流。写法正本 [`skills/SKILL-MD-SPEC.md`](skills/SKILL-MD-SPEC.md)；SOP 在各份 SKILL.md 的执行流程，方法和协议按需读取 | 熟练后自动走完 |
+完整包复用 Orca 原生 Skill 安装能力，包含正文及所需 references、assets、scripts。公共规范在源目录只维护一次，构建生成包内 `references/shared/` 依赖并修正相对引用；生成物不手改。模型读取包内文件，不要求用户项目检出 BW 源码，不依赖开发机绝对路径。
 
-一句只住一处。后一层只点名,不复述。过时词直接删。
+Skill 开工明确要求读项目 AGENTS 与公共执行规范；涉及 Issue、材料写入、指标或会议时，在动作之前完整读取相应规范。运行身份和材料状态由原生工具实时读回，不写死在通用资产或入口中。
 
-## 现行结构
+安装、版本匹配、用户修改冲突和实际文件路径分别验证。文件随包、文件可读、模型实际读取、模型正确执行是不同证据。
 
-| 路径 | 干什么 | 决策 |
-|---|---|---|
-| `templates/` | `.bw` 格式样例 | 接入时不复制。指标定义由独立指标配置任务讨论、试采并按项目规则采用 |
-| `system-prompt/`    | 开工注入的主提示词 + 任务规范          | SYSTEM 由原入口渲染自动化提示，手动会话经技能的 system 引用读取；context 只读动态数据；不复制到项目仓                                             |
-| `skills/`           | Workbench 技能与历史 workflow 入口内容 | 计划、验收、指标配置的 Stub 与指南已接入原生分发；两个版本技能开工及恢复时先读公共纪律和版本材料引用，再从材料 context 读取动态身份；其余资产按实际入口核对 |
-| `vendor/`（未迁入） | 旧业界 workflow 依赖 | 不存在，相关入口不能按已安装使用 |
+## 维护顺序
 
-仓根 `AGENTS.md` / `CLAUDE.md` 是项目自己的,不在这套里,盘点不代写。项目知识文档的归属与落点沿该入口及其引用确定；BW 研发知识库的编号目录不作为被管项目的默认目录模板。
-
-## templates/
-
-| 文件 | 干什么 | 决策 |
-|---|---|---|
-| `metrics.toml.tmpl` | 指标定义格式(`schema_version = 2`) | 不预铺空壳 |
-| `issue-policy.toml.tmpl` | 旧开工约定样例 | **仅供旧文件清理检查**。产品不读、不铺;盘点整份删 `.bw/issue-policy.toml` |
-| `design/` | 设计稿落点说明 | 不复制 |
-
-旧 SDLC 过程指标采集脚本模板(`scripts/*.py`)与过程指标目录(`process-catalog.md`)已退役删除:采集分发通道从未打通(bundle 只打包 .md、不铺进项目),过程统计如需上总览记分牌，按指标协议配置为历史脚本指标。历史从 Git 找(PR #125),指针见 [playbook 提炼](../docs/10-reference/ai-native-sdlc-playbook.md)。
-
-## system-prompt/
-
-| 文件 | 干什么 | 决策 |
-|---|---|---|
-| `SYSTEM.md.tmpl` | 主提示词:身份 + 读 `AGENTS.md` + 按任务加载 reference + 纪律（含计划页签不另开 HTML）+「对用户说话」表达口径 | 自动化及指标配置时渲染完整提示；手动开工经 system 引用读取，材料问题由 context 读回。普通新建与历史恢复不额外注入。覆盖边界见模块说明 |
-| `REVIEW.md.tmpl` | 评审会话主提示词 | 已收录,尚未派发 |
-| `references/issue-state.md` | Issue 提单格式、计划补充、材料任务关联与处理结果 | 所有 Issue |
-| `references/metrics.md` | 脚本指标协议 | 指标配置及两个版本流程按需读取 |
-| `references/week-plan-comment.md` | 旧计划 Issue 评论三标题 | 仅供历史评论核对、修复和导入 |
-| `references/version-records.md` | 版本计划 / 验收材料及修订契约 | 两个版本流程与资产盘点写入明确版本进展时按需读取 |
-| `references/meeting-transcript.md` | eMeeting 取稿命令、来源与失败处理 | 两个版本流程需要拉取会议转写稿时按需读取 |
-| `references/meeting-minutes.md` | 会议纪要内容质量标准（共识/遗留条目要素、提炼方法、正反例） | 两个版本流程整理或改写纪要前读取 |
-| `references/legacy-materials.md` | 旧格式材料字段语义、会议遗留回退与迁移边界 | 仅读回异常、字段对不上或迁移时查；默认不加载 |
-| `references/build.md` | 改仓:分支 / MR / 合并是人 / 0 提交不装前进 | 构建类 + 资产盘点 Issue |
-| `references/bw-assets.md` | `.bw` 现行格式 + 样例 | 资产盘点 Issue |
-| `references/review.md` | 独立评审 | 尚未派发 |
-
-## skills/
-
-清单与适用任务见 [`skills/README.md`](skills/README.md)。week-planning、version-acceptance、metrics-refresh 的正文与 references 由 `config/scripts/generate-bundled-skill-guides.mjs` 生成原生指南，根级 `skills/` 保留发现 Stub；两个版本流程经 `ORCA bw materials` 与界面读写同一材料服务。实际加载与模型遵守仍需对应会话证据；`mr-review` 与 `REVIEW.md.tmpl` 的存在不代表独立评审已经接入。
-
-## 外部 workflow 的边界
-
-本分支未迁 `standard/vendor/`。`mattpocock-skills` 仍有入口文件，但依赖正文缺失，不能宣称可执行或已打包；proto-design 也未作为 BW 默认交付。需要这些方法时，在特性迁移中决定来源与分发路径，不自动搬回 Rust 资产机制。
+1. 先明确职责和加载时机，再改内容；规范与覆盖的存量同批维护。
+2. 规则只保留一个正本，读取动作不重复正文。删除前核对消费者和仍有价值的反馈。
+3. 源、包内投影、安装与读取方同批切换。
+4. 当前知识留在正本；内容去向、取舍、验证及未验证项写 commit/PR，不维护常驻退役清单或提交流水。

@@ -65,24 +65,6 @@
       ]
     },
     {
-      "name": "metrics-refresh",
-      "sourcePath": "skills/metrics-refresh",
-      "releaseRevision": 1,
-      "packageDigest": "260f2b23fb548ebb7d89447280840b0b29c70b47132496a778c59849374b59b8",
-      "gitTreeSha": "9d3b3a35cf7f60854b2533e8693ee911058ed254",
-      "files": [
-        {
-          "path": "SKILL.md",
-          "size": 2237,
-          "executable": false,
-          "classification": "text",
-          "exactSha256": "ee4542fe9ab7617b2f424433d4df1f9ca0fa5c54f8299b6742c362d4a799b931",
-          "textNormalizedSha256": "ee4542fe9ab7617b2f424433d4df1f9ca0fa5c54f8299b6742c362d4a799b931",
-          "identitySha256": "ee4542fe9ab7617b2f424433d4df1f9ca0fa5c54f8299b6742c362d4a799b931"
-        }
-      ]
-    },
-    {
       "name": "orca-cli",
       "sourcePath": "skills/orca-cli",
       "releaseRevision": 37,
@@ -187,42 +169,6 @@
           "exactSha256": "f7da0dd40d8681e2b0303fa0fa2f7ee4e36f2eca6495a4af57b92b9857dff732",
           "textNormalizedSha256": "f7da0dd40d8681e2b0303fa0fa2f7ee4e36f2eca6495a4af57b92b9857dff732",
           "identitySha256": "f7da0dd40d8681e2b0303fa0fa2f7ee4e36f2eca6495a4af57b92b9857dff732"
-        }
-      ]
-    },
-    {
-      "name": "version-acceptance",
-      "sourcePath": "skills/version-acceptance",
-      "releaseRevision": 1,
-      "packageDigest": "28943b1e7afd8ab34527d8f6ba324052427d713d4485d627233689a6caff3714",
-      "gitTreeSha": "d3d5799b4b0eba4090cd0d045bf3df1e161b7ffb",
-      "files": [
-        {
-          "path": "SKILL.md",
-          "size": 2668,
-          "executable": false,
-          "classification": "text",
-          "exactSha256": "7e7f5086c3e22f2a249d4faf995530c95e50bd7ab8dc3fea1bf7d26d2b6024e0",
-          "textNormalizedSha256": "7e7f5086c3e22f2a249d4faf995530c95e50bd7ab8dc3fea1bf7d26d2b6024e0",
-          "identitySha256": "7e7f5086c3e22f2a249d4faf995530c95e50bd7ab8dc3fea1bf7d26d2b6024e0"
-        }
-      ]
-    },
-    {
-      "name": "week-planning",
-      "sourcePath": "skills/week-planning",
-      "releaseRevision": 1,
-      "packageDigest": "3252a7e7c4a8d9490e785a7cc6ee6ad896eca2ba159d2d41cbf488805a42e258",
-      "gitTreeSha": "a44f9ebc5ff3ad2045914fceca3ef0fbf97e3533",
-      "files": [
-        {
-          "path": "SKILL.md",
-          "size": 2474,
-          "executable": false,
-          "classification": "text",
-          "exactSha256": "c3bb223a9865cd69ff872d919e7c827167180d3b6ecfa8ca5da079fa4ff866e2",
-          "textNormalizedSha256": "c3bb223a9865cd69ff872d919e7c827167180d3b6ecfa8ca5da079fa4ff866e2",
-          "identitySha256": "c3bb223a9865cd69ff872d919e7c827167180d3b6ecfa8ca5da079fa4ff866e2"
         }
       ]
     }

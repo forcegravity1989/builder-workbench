@@ -14,7 +14,7 @@
 **[docs/01-principles/](docs/01-principles/README.md) 是最慢变的原则正本**，不得用草稿实现或聊天结论推翻。按任务读取对应资料，不把所有正文堆进入口：
 
 | 任务 | 读取路径与动作 |
-|---|---|
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 叠层 / 与 Orca、旧 main 的差异 | 读 [ref/upstream.md](ref/upstream.md)。主干 `main` 即叠层（原 `bw-orca`）；Orca Mobile 产品已删；`standard/` 已从旧 main（现 `archive/main-pre-orca`）合入。叠层 UI 在 `src/renderer/src/workbench/` |
 | 叠层实现、运行或打包 | 读 [SYNC](src/renderer/src/workbench/SYNC.md) 的代码落点、开发命令与构建入口；产品行为读 [architecture](docs/architecture.md)，上游版本与同步取舍读 [ref/upstream.md](ref/upstream.md) |
 | 仓外 IDE 新会话 | 本篇 → [workbench-start](.claude/skills/workbench-start/SKILL.md)，按意图与影响分流开发、验证和交付；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。Workbench 发起的项目执行会话读产品传入提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill |
@@ -46,13 +46,13 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 ### 四铁律
 
 | 约束 | 如何守住 |
-|---|---|
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | 杀进程重开，所有数字能重新计算、前后一致 | 现算推导；用真实 E2E 重启后独立读回核对 |
 | 信号只能从数据推导；没数据就是 Unknown，不是绿 | 健康信号只能从读数推导；store 不提供手设绿灯；没数据就显示未知 |
 | 完成永远由人确认，同一工作不重复记录完成结果 | Issue 关闭由人决定，关闭即计入完成（关闭原因不参与计数）；目标达成仍由人确认；自动化、agent、定时不得自行关闭或确认完成 |
 | 定时任务真实到点触发；自动创建的 Issue 不自动完成 | 调度在 Orca，到点开会话，不能替人确认 Done |
 
-- Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。提单格式与纳入计划时的补充见 [Issue 格式](standard/system-prompt/references/issue-state.md)，计划关联使用材料中的任务引用。不恢复已退役的状态标签或另造平行协议。工具与会话沿本机设置和原生入口。
+- Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。提单格式与纳入计划时的补充见 [Issue 格式](standard/references/issue-state.md)，计划关联使用材料中的任务引用。不恢复已退役的状态标签或另造平行协议。工具与会话沿本机设置和原生入口。
 - Workbench MVP 本地零业务数据库。用 `gh` / `codehub-cli` / `git` / 文件独立读回；不用 V3 的 `sqlite3` 路径。项目约定和指标资产的归属读 [architecture](docs/architecture.md)，不能将资产盘点变成代写项目开发规范。
 - 入口层不写业务正本；计划 JSON 保存版本/目标与任务关联，Issue 原生字段保存实际状态。
 - 日常 BW 工作先依据当前仓库的代码、调用链和现行正本选方案，不要求查询或等待 Orca 上游；按“先复用原生能力 → 再用 BW 薄挂载或自有模块接入 → 只有确实必须改变 Orca 核心、协议或宿主路由时才停在方案层交人决定”的顺序判断。优先复用原生执行核和薄挂载。只有会影响后续方案选择的稳定边界才写入对应正本；周期性上游核对由 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md) 承担，未被人采纳的候选不写入仓库。
@@ -75,7 +75,7 @@ pnpm run typecheck
 
 旧 Dioxus 壳的 `cargo run -p app-shell`、`bw-dev` 深链与 `.bw/release/pack` 出包协议针对已删除的三 crate，不能用来解释本分支。现有 Electron 构建入口以 SYNC 和 package.json 为准；BW 的 CI/CD、评审与正式出包链随迁移任务验证，不能据此宣称已完成 v0.5 交付。
 
-计划/验收手动开工复用 Orca 原生 draft，会话输入区预填一句内置技能读取指令，不自动回车；技能读取随包的公共纪律和版本材料引用，再调用材料 context 读回动态执行上下文。周期自动化和「配置指标」继续携带完整 SYSTEM + 对应 Skill，普通原生新建会话不额外注入。正源 `standard/`，真会话加载与执行证据按 [会话与执行](docs/06-module/会话与执行.md) 核对。
+计划、验收和「配置指标」手动入口准备完整 Skill 包后打开原生会话草稿，用户发送后由模型完整读取 Skill 及其必读规范；定时运行仍沿原生自动化。普通原生新建会话不额外注入 BW 提示（`version-cycle/cycle-prompt.ts`，正源 `standard/`）。路径、宿主与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。
 
 ### 提交前门禁
 
@@ -98,7 +98,7 @@ PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行
 
 ### commit 与 PR
 
-**先有 Issue 再开工**：按 [Issue 格式](standard/system-prompt/references/issue-state.md) 先查同类单，能复用就沿用，没有就新建（只需问题描述）。PR 正文开头写 `关联 #<编号>` 挂上这条 Issue；不用 `Fixes` / `Closes` 等关闭关键字——合入不等于完成，Issue 关闭仍由人决定。
+**先有 Issue 再开工**：按 [Issue 格式](standard/references/issue-state.md) 先查同类单，能复用就沿用，没有就新建（只需问题描述）。PR 正文开头写 `关联 #<编号>` 挂上这条 Issue；不用 `Fixes` / `Closes` 等关闭关键字——合入不等于完成，Issue 关闭仍由人决定。
 
 每件独立提交、在分支和独立工作树上。**默认继续交付 PR**：完成门禁、对应 E2E 和推前 subagent 全方位检视（四维与 TODO 步骤见 [02 §6.2 横切站 B](docs/01-principles/02-working-backwards.md)）后，提交、push、开 PR 并补验证 Review；人明确说「只本地」时才停止在本地。不自动合入 PR、关闭 Issue 或正式发版本，除非人已明确授权该动作。标题应让人不查文档也懂改了什么，正文如实说明原因、取舍与偏差；变化与证据写进 commit/PR，当前知识写回正本。
 

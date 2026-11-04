@@ -567,6 +567,7 @@ import {
   CharterStatusRequestSchema,
   CharterSubmitRequestSchema
 } from '../workbench/charter'
+import { FixedWorkspaceEnsureSchema } from '../workbench/fixed-workspace'
 import { MetricReadRequestSchema } from '../workbench/metrics'
 import {
   PackageDownloadSchema,
@@ -579,6 +580,7 @@ import {
   MilestoneSubmitRequestSchema
 } from '../workbench/project-milestones'
 import { ReleaseStatusRequestSchema } from '../workbench/release-status'
+import { WorkbenchSkillPrepareRequest } from '../workbench/skill-assets'
 import { TrunkUpdateSchema } from '../workbench/trunk-update'
 import { VersionBindingScopeSchema, VersionBindingSetSchema } from '../workbench/version-binding'
 import {
@@ -592,6 +594,7 @@ import {
   VersionMigrationReadSchema
 } from '../workbench/version-material-migration'
 import {
+  VersionMaterialAddArtifactSchema,
   VersionMaterialReadSchema,
   VersionMaterialSaveSchema,
   VersionMaterialScopeSchema
@@ -1221,10 +1224,12 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.charter.read': CharterReadRequestSchema,
   'workbench.charter.status': CharterStatusRequestSchema,
   'workbench.charter.submit': CharterSubmitRequestSchema,
+  'workbench.fixedWorkspace.ensure': FixedWorkspaceEnsureSchema,
   'workbench.history.list': VersionHistoryListSchema,
   'workbench.history.listTreePlans': VersionTreePlansSchema,
   'workbench.history.read': VersionHistoryReadSchema,
   'workbench.history.readPlan': VersionHistoryReadPlanSchema,
+  'workbench.materials.addArtifact': VersionMaterialAddArtifactSchema,
   'workbench.materials.context': VersionMaterialScopeSchema,
   'workbench.materials.list': VersionMaterialScopeSchema,
   'workbench.materials.migrate': VersionMigrationApplySchema,
@@ -1243,6 +1248,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.package.launch': PackageLaunchSchema,
   'workbench.package.list': PackagePipelineListSchema,
   'workbench.release.status': ReleaseStatusRequestSchema,
+  'workbench.skills.prepare': WorkbenchSkillPrepareRequest,
   'workbench.trunk.update': TrunkUpdateSchema,
   'workbench.versionBinding.read': VersionBindingScopeSchema,
   'workbench.versionBinding.set': VersionBindingSetSchema,

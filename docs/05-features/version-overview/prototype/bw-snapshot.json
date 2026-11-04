@@ -5,7 +5,8 @@
     "sourceCommit": "90952d9bee18e436b165b82b5c08be92b3d82594",
     "kind": "Read-only Git/GitHub snapshot for prototype; not a product schema or live data adapter.",
     "historicalCorrectionCommit": "4a3ac72ac714940e94cd628d50ce223acdd251f5",
-    "historicalReadAt": "2026-10-30T09:01:36.078Z"
+    "historicalReadAt": "2026-10-30T09:01:36.078Z",
+    "pullsCheckedAt": "2026-10-31T04:03:50.166Z"
   },
   "plan": {
     "schema_version": 3,
@@ -394,20 +395,21 @@
     },
     {
       "number": 460,
-      "title": "项目总览：月度里程碑规划高保真与规格草案",
+      "title": "项目总览：可编辑的特性里程碑规划设计",
       "url": "https://github.com/forcegravity1989/builder-workbench/pull/460",
-      "state": "OPEN",
-      "isDraft": true,
-      "mergedAt": null
+      "state": "MERGED",
+      "isDraft": false,
+      "mergedAt": "2026-10-28T16:07:05Z",
+      "readAt": "2026-10-31T04:03:50.166Z"
     },
     {
       "number": 474,
-      "title": "版本总览：按目标呈现特性成果横轴与人工验收",
+      "title": "版本总览：按目标展示特性历程与 workflow 报告",
       "url": "https://github.com/forcegravity1989/builder-workbench/pull/474",
-      "state": "OPEN",
-      "isDraft": true,
-      "mergedAt": null,
-      "readAt": "2026-10-29T11:17:14.704Z"
+      "state": "MERGED",
+      "isDraft": false,
+      "mergedAt": "2026-10-31T03:42:20Z",
+      "readAt": "2026-10-31T03:57:44.014Z"
     },
     {
       "mergedAt": "2026-10-27T07:17:18Z",
@@ -432,6 +434,15 @@
       "title": "docs(acceptance): v0.7 版本验收归档——G1 遗留、G3/G4 达成、G2 补发 v0.7.1，附人工确认纪要",
       "url": "https://github.com/forcegravity1989/builder-workbench/pull/429",
       "readAt": "2026-10-29T11:59:20.610Z"
+    },
+    {
+      "isDraft": false,
+      "mergedAt": "2026-10-31T00:12:35Z",
+      "number": 477,
+      "state": "MERGED",
+      "title": "项目总览支持 SDLC 排期、目标关联与评审",
+      "url": "https://github.com/forcegravity1989/builder-workbench/pull/477",
+      "readAt": "2026-10-31T03:57:46.573Z"
     }
   ],
   "workflowSample": {

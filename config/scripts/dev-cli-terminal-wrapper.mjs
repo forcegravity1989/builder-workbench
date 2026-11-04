@@ -6,10 +6,6 @@ function escapeWindowsBatchValue(value) {
   return value.replaceAll('%', '%%')
 }
 
-function quotePosixShellValue(value) {
-  return `'${value.replaceAll("'", "'\\''")}'`
-}
-
 export function prepareDevCliTerminalWrappers({
   repoRoot,
   userDataPath,
@@ -29,15 +25,14 @@ export function prepareDevCliTerminalWrappers({
         writeFileSync(path.join(targetDir, commandName), wrapperContent, 'utf8')
       }
     }
-  }
-
-  // Git Bash resolves extensionless commands, even when the dev PATH also contains .cmd wrappers.
-  const wrapperContent = `#!/usr/bin/env bash\nexport ORCA_USER_DATA_PATH=${quotePosixShellValue(userDataPath)}\nexport ORCA_DEV_CLI_INVOCATION=1\nexport ORCA_APP_EXECUTABLE=${quotePosixShellValue(electronExecutable)}\nexport ORCA_APP_EXECUTABLE_NEEDS_APP_ROOT=1\nexec node ${quotePosixShellValue(cliPath)} "$@"\n`
-  for (const targetDir of [binDir, userDataBinDir]) {
-    for (const commandName of ['orca-dev', 'orca']) {
-      const wrapperPath = path.join(targetDir, commandName)
-      writeFileSync(wrapperPath, wrapperContent, 'utf8')
-      chmodSync(wrapperPath, 0o755)
+  } else {
+    const wrapperContent = `#!/usr/bin/env bash\nexport ORCA_USER_DATA_PATH=${JSON.stringify(userDataPath)}\nexport ORCA_DEV_CLI_INVOCATION=1\nexport ORCA_APP_EXECUTABLE=${JSON.stringify(electronExecutable)}\nexport ORCA_APP_EXECUTABLE_NEEDS_APP_ROOT=1\nexec node ${JSON.stringify(cliPath)} "$@"\n`
+    for (const targetDir of [binDir, userDataBinDir]) {
+      for (const commandName of ['orca-dev', 'orca']) {
+        const wrapperPath = path.join(targetDir, commandName)
+        writeFileSync(wrapperPath, wrapperContent, 'utf8')
+        chmodSync(wrapperPath, 0o755)
+      }
     }
   }
 

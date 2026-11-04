@@ -89,7 +89,7 @@ export async function initializeVersionWorkspace(args: {
   if (prepareFailed(result)) {
     // 步骤链非原子：已成功步骤保留，重试即重入补齐（不重复建树）。
     toast.error(
-      `版本 ${version} 工作区未全就绪：${prepareProblemSummary(result)}。重试即补齐缺失步骤，不会重复建树。`
+      `版本 ${version} 工作区未全就绪：${prepareProblemSummary(result)}。处理提示的问题后重试，已就绪的工作区会复用。`
     )
     return
   }

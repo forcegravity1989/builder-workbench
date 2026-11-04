@@ -5,8 +5,11 @@ import { GripVertical, Plus, X } from 'lucide-react'
 import { MilestoneField } from './milestone-field'
 import { MilestoneFeatureMetadata } from './milestone-goal-picker'
 import { MilestoneIconButton } from './milestone-icon-button'
-import { MilestoneVersionRow, MILESTONE_VERSION_HEIGHT } from './milestone-version-row'
+import { MilestoneVersionRow, milestoneVersionLanes } from './milestone-version-row'
 import { MilestoneStageBars, MilestoneSdlcToolbar } from './milestone-stage-bars'
+import { milestoneActualCalendar } from './milestone-actual-layout'
+import { useMilestoneFactReaders } from './milestone-fact-readers'
+import type { VersionCatalogState } from './use-version-catalog'
 import {
   useMilestoneGesture,
   MILESTONE_DAY_WIDTH as width,
@@ -23,7 +26,6 @@ import {
 } from '../../../shared/workbench/project-milestones'
 import {
   latestMilestoneMonth,
-  milestoneCalendar,
   milestoneDay,
   milestoneToday,
   milestoneDate,
@@ -33,6 +35,7 @@ import {
 
 export type MilestoneLocation = { date: string; sequence: number }
 type Props = {
+  catalog: VersionCatalogState
   draft: MilestoneDraft
   versionFacts: MilestoneVersion[]
   editing: boolean
@@ -41,7 +44,7 @@ type Props = {
   editField(update: (draft: MilestoneDraft) => MilestoneDraft): void
   open(version: ScheduledVersion): void
   remove(feature: MilestoneFeature): void
-  rename(id: string, version: string): void
+  rename(id: string, version: string, previousName?: string): void
   started: Set<string>
   onScroll(x: number, y: number): void
   scrollX: number | null
@@ -54,7 +57,8 @@ type Props = {
 export function MilestoneTimeline(props: Props) {
   const { draft, editing, edit } = props
   const enabled = editing && !props.busy
-  const { weeks, start: origin, end } = milestoneCalendar(draft)
+  const facts = useMilestoneFactReaders(props.catalog, draft, props.started)
+  const { weeks, start: origin, end } = milestoneActualCalendar(draft, facts.values, props.started)
   const canvasWidth = (end - origin + 1) * width
   const viewport = useRef<HTMLDivElement>(null)
   const draggedRow = useRef<{ id: string; y: number; moved: boolean } | null>(null)
@@ -66,17 +70,7 @@ export function MilestoneTimeline(props: Props) {
   const versions = datedMilestoneVersions(visible)
   const features = visible.material.features
   const [showPlan, setShowPlan] = useState(false)
-  const laneEnds: string[] = [],
-    lanes = new Map<string, number>()
-  for (const version of versions) {
-    let lane = laneEnds.findIndex((end) => end < version.timeWindow!.start)
-    if (lane === -1) {
-      lane = laneEnds.length
-    }
-    laneEnds[lane] = version.timeWindow!.end
-    lanes.set(version.cycleId, lane)
-  }
-  const versionHeight = Math.max(1, laneEnds.length) * MILESTONE_VERSION_HEIGHT
+  const { lanes, versionHeight } = milestoneVersionLanes(versions)
   const days = Array.from({ length: end - origin + 1 }, (_, i) => {
     const day = origin + i,
       date = milestoneDate(day)
@@ -148,7 +142,9 @@ export function MilestoneTimeline(props: Props) {
   const today = milestoneDay(milestoneToday())
   return (
     <>
+      {facts.readers}
       <MilestoneSdlcToolbar
+        actual={facts}
         showPlan={showPlan}
         onChange={setShowPlan}
         warning={gesture.warning}
@@ -349,6 +345,8 @@ export function MilestoneTimeline(props: Props) {
                 </div>
                 <div className="wb-ml-track" style={{ width: canvasWidth }}>
                   <MilestoneStageBars
+                    material={visible.material}
+                    facts={facts.values}
                     feature={f}
                     versions={visible.versions}
                     origin={origin}

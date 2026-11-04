@@ -784,8 +784,8 @@ describe('registerSettingsHandlers', () => {
   })
 
   it('normalizes and applies app icon changes from renderer settings IPC', async () => {
-    store.getSettings.mockReturnValue({ appIcon: 'classic' })
-    store.updateSettings.mockReturnValue({ appIcon: 'watercolor' })
+    store.getSettings.mockReturnValue({ appIcon: 'watercolor' })
+    store.updateSettings.mockReturnValue({ appIcon: 'classic' })
     registerSettingsHandlers(store as never)
 
     const handler = handleMock.mock.calls.find((call) => call[0] === 'settings:set')?.[1] as (
@@ -796,10 +796,10 @@ describe('registerSettingsHandlers', () => {
     await handler(settingsInvokeEvent, { appIcon: 'watercolor' })
 
     expect(store.updateSettings).toHaveBeenCalledWith(
-      { appIcon: 'watercolor' },
+      { appIcon: 'classic' },
       { notifyListeners: true, originWebContentsId: 1 }
     )
-    expect(applyAppIconMock).toHaveBeenCalledWith('watercolor')
+    expect(applyAppIconMock).toHaveBeenCalledWith('classic')
   })
 
   it('falls back to the classic app icon for invalid renderer settings IPC values', async () => {

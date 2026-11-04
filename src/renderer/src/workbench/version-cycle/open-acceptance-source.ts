@@ -7,7 +7,7 @@ import type { CycleScope } from './ports'
 import { assertCurrentCycleWorkspace } from './current-cycle-workspace'
 import { cycleScopeForWorktree, cycleScopeKey } from './native-cycle-workspace'
 import { nativeVersionHistoryPort } from '../version-history-port'
-import { readPlanningProgressSource } from '../../../../shared/workbench/planning-progress-source'
+import { readPlanningProgressSource } from '../version-planning/planning-progress-source'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
 import { cycleWorkflowForWorktree } from '../workbench-nav'
 import {

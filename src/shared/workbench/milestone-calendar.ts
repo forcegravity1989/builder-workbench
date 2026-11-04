@@ -1,5 +1,41 @@
 import type { MilestoneDraft, ScheduledVersion } from './project-milestones'
 
+export function editMilestoneVersionName(
+  draft: MilestoneDraft,
+  cycleId: string,
+  name: string,
+  commit?: { previousName: string; registered: readonly ScheduledVersion[] }
+): { draft: MilestoneDraft; problem?: string } {
+  let problem: string | undefined
+  if (commit && !name.trim()) {
+    const registered = commit.registered.find((v) => v.cycleId === cycleId)
+    const used = draft.material.features.some((f) =>
+      f.deliveries.some((d) => d.version.cycleId === cycleId)
+    )
+    if (!registered && !used) {
+      return { draft: { ...draft, versions: draft.versions.filter((v) => v.cycleId !== cycleId) } }
+    }
+    name = commit.previousName || registered?.version || ''
+    problem = used ? '该版本仍有特性安排，请先移走安排' : '该版本已提交，不能通过清空名称移除'
+  }
+  return {
+    problem,
+    draft: {
+      ...draft,
+      versions: draft.versions.map((v) => (v.cycleId === cycleId ? { ...v, version: name } : v)),
+      material: {
+        ...draft.material,
+        features: draft.material.features.map((f) => ({
+          ...f,
+          deliveries: f.deliveries.map((d) =>
+            d.version.cycleId === cycleId ? { ...d, version: { ...d.version, version: name } } : d
+          )
+        }))
+      }
+    }
+  }
+}
+
 export const milestoneDay = (date: string) => Date.parse(`${date}T00:00:00Z`) / 86400000
 export const milestoneDate = (day: number) => new Date(day * 86400000).toISOString().slice(0, 10)
 export const milestoneToday = () => {

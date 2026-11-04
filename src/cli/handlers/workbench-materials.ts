@@ -1,5 +1,4 @@
 import { readFile } from 'node:fs/promises'
-import { readWorkbenchSessionContext } from './workbench-session-context'
 import { resolve } from 'node:path'
 import { text } from 'node:stream/consumers'
 import { z } from 'zod'
@@ -16,6 +15,7 @@ import { getOptionalStringFlag, getRequiredStringFlag } from '../flags'
 import { printResult } from '../format'
 import { RuntimeClientError } from '../runtime/types'
 import {
+  VersionMaterialAddArtifactSchema,
   VersionMaterialReadSchema,
   VersionMaterialSaveSchema,
   VersionMaterialScopeSchema,
@@ -48,7 +48,8 @@ async function invoke(ctx: HandlerContext, operation: string, params: unknown): 
 }
 
 export const WORKBENCH_MATERIAL_HANDLERS: Record<string, CommandHandler> = {
-  'bw materials context': readWorkbenchSessionContext,
+  'bw materials context': async (ctx) =>
+    invoke(ctx, 'context', VersionMaterialScopeSchema.parse(scope(ctx))),
   'bw materials select': async (ctx) =>
     invoke(
       ctx,
@@ -138,5 +139,22 @@ export const WORKBENCH_MATERIAL_HANDLERS: Record<string, CommandHandler> = {
         document
       })
     )
-  }
+  },
+  // #516 制品登记：文件存在性、candidateRef 复用、artifactId 缺省与 CAS 冲突
+  // 重试都在拥有工作树的一侧一次做完；本通道只传身份与制品字段，不 stat 文件
+  // （SSH 工作树时 CLI 所在机器查不到那棵树）。
+  'bw materials add-artifact': async (ctx) =>
+    invoke(
+      ctx,
+      'addArtifact',
+      VersionMaterialAddArtifactSchema.parse({
+        ...scope(ctx),
+        version: getRequiredStringFlag(ctx.flags, 'version'),
+        kind: getRequiredStringFlag(ctx.flags, 'kind'),
+        location: getRequiredStringFlag(ctx.flags, 'location'),
+        artifactId: getOptionalStringFlag(ctx.flags, 'artifact-id'),
+        command: getOptionalStringFlag(ctx.flags, 'command'),
+        checksum: getOptionalStringFlag(ctx.flags, 'checksum')
+      })
+    )
 }

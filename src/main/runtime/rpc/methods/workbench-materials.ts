@@ -1,5 +1,6 @@
 import { defineMethod } from '../core'
 import {
+  VersionMaterialAddArtifactSchema,
   VersionMaterialReadSchema,
   VersionMaterialSaveSchema,
   VersionMaterialScopeSchema
@@ -61,5 +62,14 @@ export const WORKBENCH_MATERIAL_METHODS = [
         await assertHumanFieldsUntouched((input) => service.read(input), params, ctx)
         return service.save(params)
       })
+  }),
+  // #516 制品登记：操作面只收制品字段，文档在拥有工作树的一侧从新鲜读取
+  // 重建、只改 preparedArtifacts——人工字段按构造原样往返，无需 save 的通道
+  // 守卫（见 version-material-artifact.ts）。
+  defineMethod({
+    name: 'workbench.materials.addArtifact',
+    params: VersionMaterialAddArtifactSchema,
+    handler: (params, { runtime }) =>
+      materialResult(() => nativeVersionMaterialService(runtime).addArtifact(params))
   })
 ]

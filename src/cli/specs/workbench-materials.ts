@@ -6,13 +6,9 @@ const scopeUsage = '--repo-id <id> --worktree-id <id> --workflow plan|acceptance
 export const WORKBENCH_MATERIAL_COMMAND_SPECS: CommandSpec[] = [
   {
     path: ['bw', 'materials', 'context'],
-    summary: 'Read the workflow selection, native identity and material sources',
-    usage:
-      'orca bw materials context --workflow plan|acceptance [--repo-id <id> --worktree-id <id>] [--host-id <id>] [--json]',
-    allowedFlags: [...GLOBAL_FLAGS, ...scopeFlags],
-    notes: [
-      'Without explicit scope, resolves the native terminal worktree or the registered enclosing worktree. Returns the live identity, material problems and fixed-source status; never uses the focused UI workspace.'
-    ]
+    summary: 'Read the workflow current version selection',
+    usage: `orca bw materials context ${scopeUsage} [--json]`,
+    allowedFlags: [...GLOBAL_FLAGS, ...scopeFlags]
   },
   {
     path: ['bw', 'materials', 'select'],
@@ -81,6 +77,27 @@ export const WORKBENCH_MATERIAL_COMMAND_SPECS: CommandSpec[] = [
       'A conflict preserves the stored document and the input file. Reread and merge deliberately before retrying.',
       'Use --input-stdin in SSH sessions; Orca forwards the payload through its native CLI bridge. --input reads a file on the CLI process host.',
       'Uses the running Orca runtime and native project/worktree IDs; it never writes material files directly.'
+    ]
+  },
+  {
+    path: ['bw', 'materials', 'add-artifact'],
+    summary: 'Register an existing worktree file as a prepared artifact in one command',
+    usage:
+      'orca bw materials add-artifact --repo-id <id> --worktree-id <id> --workflow acceptance [--host-id <id>] --version <version> --kind <kind> --location <worktree-relative-path> [--artifact-id <id>] [--command <command>] [--checksum <checksum>] [--json]',
+    allowedFlags: [
+      ...GLOBAL_FLAGS,
+      ...scopeFlags,
+      'version',
+      'kind',
+      'location',
+      'artifact-id',
+      'command',
+      'checksum'
+    ],
+    notes: [
+      'Acceptance workflow only: preparedArtifacts live on acceptance material. The file must exist inside the workflow worktree (its mtime becomes generatedAt) and the material candidateRef must already be fixed; the command never invents either.',
+      'Runs read-modify-save on the owning runtime through the same revision guard as save; one automatic reread retry on conflict, then it reports currentRevision.',
+      'Same artifactId replaces the existing entry instead of appending; the default id is <kind>-<version>-<filename>.'
     ]
   }
 ]

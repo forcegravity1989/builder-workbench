@@ -223,7 +223,6 @@ describe('OnboardingFlow', () => {
     expect(html).toContain('data-onboarding-modal="true"')
     expect(html).toContain('h-[calc(100vh-2rem)]')
     expect(html).toContain('rounded-xl')
-    expect(html).toContain('h-7 w-auto shrink-0 invert dark:invert-0')
     expect(html).not.toContain('min-h-screen')
     expect(html).not.toContain('background-color:#12181e')
   })

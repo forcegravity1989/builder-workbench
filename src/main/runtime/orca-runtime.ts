@@ -1,8 +1,22 @@
 import { installRuntimeLinearCommandSurface } from './runtime-linear-command-surface'
 import { OrcaRuntimeWithResolveWaiter } from './orca-runtime-resolve-waiter'
 import type { RuntimeCommandSurfaceHost } from './orca-runtime-core'
+import { nativeFixedWorkspaceService } from '../workbench/fixed-workspace-runtime'
+import type {
+  FixedWorkspaceEnsureRequest,
+  FixedWorkspaceEnsureResult
+} from '../../shared/workbench/fixed-workspace'
 
-class OrcaRuntimeService extends OrcaRuntimeWithResolveWaiter {}
+class OrcaRuntimeService extends OrcaRuntimeWithResolveWaiter {
+  ensureWorkbenchFixedWorkspace(
+    request: FixedWorkspaceEnsureRequest
+  ): Promise<FixedWorkspaceEnsureResult> {
+    return nativeFixedWorkspaceService(
+      this as RuntimeCommandSurfaceHost<this>,
+      this.requireStore()
+    ).ensure(request)
+  }
+}
 type OrcaRuntimeServiceExport = RuntimeCommandSurfaceHost<OrcaRuntimeService>
 const OrcaRuntimeServiceExport = OrcaRuntimeService as unknown as {
   new (...args: ConstructorParameters<typeof OrcaRuntimeService>): OrcaRuntimeServiceExport
