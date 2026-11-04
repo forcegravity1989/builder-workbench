@@ -105,19 +105,21 @@ Lens8（提示词/SKILL 规范）：F1 中 version-records 运行身份段补绑
 
 人装机伴飞 v0.7 收尾＋v0.8 新建旅程，反馈 CF-1~CF-9 逐条 AskUser 拍板后本轮全部落地（设计面记 design「伴飞裁定落地」节）：P1 计划屏空计划态补「与计划助手新建计划」入口（`86369c06c`）；P2 任务屏范围读回批量化 `gh:workItemsBatch`（`b76968f9e`）；P3 初始化工作区旅程重排＋setup skip（与 P4 同 commit `37bd3f98e`）；P4 树行整行右击原生菜单去三点（同 `37bd3f98e`）；P5 开工入口预热（`df405f4c3`）；P6 Issue 开工预填名含号（`867cb865d`，plan 所指函数经源码核证不含号、按验收判据改取原生 intent 命名，偏差登记于 commit）；P7 两「任务」入口 tooltip（`93bcbfe9b`）。早轮已落：版本排序（`2d532dbfc`）、清理单文案（`b6afc2d9b`）、补绑定改造（`37976ee88`）、任务入口恢复（`299d118f7` revert `1c3c8e7d1`）。**验证方式**：本地无 node_modules——改动文件 npx oxlint --deny-warnings＋oxfmt 全过；typecheck/vitest/烟测交远端 CI（结论见 PR #437）；parity 测试两处清单同步（IPC 通道＋web 键集，既有测试最小修正非新增）。**未验证（归人真壳，明早临时包）**：初始化按钮秒级建两树无 Setup 窗口、树行右击菜单真壳形态、空计划态入口点击建会话、批量读回真网络耗时（result.timing 与 gh 信号量行为）、预热后开工创建耗时、intent 预填名端到端。**登记遗留**：codehub-cli 批量命令面待人内网 `codehub-cli --help` 复核（P2）；开工 10s 真壳 timing 归因（P5 预热后应显著改善）；OrcaYamlTrustDialog 文案「workbench」实为仓库名的 i18n 歧义归上游；任务屏范围态 SourceBar 手动切 provider 未锁死（调查发现小面）。
 
-## #500 目标置顶与完工隐藏（2026-10-30）
+## #500 置顶栏目（2026-11-04 重做）
 
-**验什么**：目标目录（版本侧栏某目标展开区）内，右键「固定」将该树置顶（复用原生 isPinned 排序）、「取消固定」还原；看板状态移至 completed 的树从目标区隐藏，出现「含 N 已完成」计数按钮，点击展开回看、按钮变「收起已完成（N）」；「解除版本绑定」后该树回流原生项目区且 pin 随手清掉（原生区菜单显示「固定」而非「取消固定」）。行为正本见 [spec](spec.md)「目标目录内置顶与完工隐藏（#500）」。
+**设计变更（撤回 2026-10-30 旧方案）**：旧方案在目标目录内按 `isPinned` 自造排序、把 completed 树隐藏并加「含 N 已完成」计数展开、解绑时清 pin。经人确认整段撤除：置顶改为复用原生「已固定」栏目（位置在版本区之下、Orca 项目分组之上），完工隐藏与解绑清 pin 不做。旧节列出的五判据（排序、完工隐藏、计数展开、解绑清 pin）已不适用，不再作为现行行为证据。行为正本见 [spec](spec.md)「置顶栏目（#500）」。
 
-**命令与深链**：`pnpm run dev:workbench`（独立 profile `ORCA_DEV_USER_DATA_PATH` 避单实例锁，`REMOTE_DEBUGGING_PORT=9338`）；CDP 探针 `node .bw-tmp/issue500-e2e2.mjs`（DOM 断言；截图存 `.bw-tmp/` 供人查看，不回读）；深链：侧栏「版本工作区」v0.8 → G1 目标目录。测试树两棵经 `window.api.worktrees.create` 创建、经绑定对话框同一生产端口（`nativeVersionBindingPort`）绑到 v0.8/G1，验后经原生 remove 删净（目录/分支/登记全清）。
+**验什么**：版本区行右键「固定」后，侧栏在版本区与 Orca 项目分组之间出现「已固定」栏目并含该树，版本区原件不动；「取消固定」后栏目消失、版本区仍不动。BW 壳默认 `showPinnedWorktreesInGroups=true`（duplicate-in-groups）：未绑定版本的原生树置顶后「已固定」多一份，项目分组原件仍在；显式关闭该设置回到原生 single-location。版本绑定树由版本区独占（BW 既有过滤，不进项目分组），置顶只进「已固定」。
 
-**门禁**：oxlint 仓内 0 告警（仅 `.bw-tmp/` 临时探针有 lint 项，不提交）；`run-typecheck-projects-in-parallel` 0 错；`check-vitest-count-ratchet` 222 例恰在基线（本交付零测试增删）。
+**命令与深链**：`pnpm run dev:workbench`（独立 profile `ORCA_DEV_USER_DATA_PATH`、`REMOTE_DEBUGGING_PORT=9342` 避单实例锁）；CDP 探针 `node .bw-tmp/issue500-e2e5.mjs`（全 DOM 断言；截图存 `.bw-tmp/` 供人查看，不回读）；深链：侧栏「版本工作区」v0.8 → G1 目标目录。版本绑定经生产端口 `nativeVersionBindingPort` 写入测试 profile，不落仓库文件。
 
-**判据结果（五条全过，截图 `.bw-tmp/issue500-v2-*.png`）**：初始序 [A,B]（id 升序）→ C1 固定 B 序变 [B,A] → C2 取消固定还原 [A,B] → C3 A 置 completed 后从目标区消失＋「含 1 已完成」出现，展开后 A 在已完成区、按钮变「收起已完成（1）」→ C4 固定 B 后解除版本绑定，B 回流原生区、store 中 isPinned 已清、原生区右键菜单显示「固定」（非「取消固定」）→ C5 全程 console error/exception 为 0（覆盖 reveal 对被过滤树的 no-op 路径）。开 PR 前合入 origin/main（增量未触碰本交付 5 文件）后，于独立 profile＋`REMOTE_DEBUGGING_PORT=9339` 复跑同探针，五判据与 console 双零复验通过，测试树再次删净。推前四维检视（独立 subagent）修正三处「解绑仅清除版本归属」过时措辞、spec 完工判定边缘口径与清 pin 目标态短路（发现项与结论见 PR #523 评论），再合入含 #522 的最新 main 后第三次复跑，五判据与 console 双零仍全过。
+**门禁**：oxlint 改动文件 0 告警；`run-typecheck-projects-in-parallel` 0 错；`check-vitest-count-ratchet` 222 例在基线（BW 叠层零增删）；新增 1 例在 `components/sidebar/.../build-rows.test.ts`（不在叠层套件计数的目录内），覆盖「pinnedOnly 进已固定、不进自然分组」。
 
-**实现口径说明**：C3 的状态写入走与菜单「移至状态→Done」完全相同的 store 动作（`updateWorktreeMeta(id, { workspaceStatus }, { executionHostId })`）。首轮自动化尝试直走菜单子项时未走通：菜单入场动画期间 rect 位移使点击落到相邻菜单项（「更改版本绑定…/解除版本绑定」一带，由当时 git show 读规划数据洪流佐证），且状态子项 role 为 menuitemradio 与探针选择器不符；菜单路径本身未改动，人手工旅程验证归下轮。
+**判据结果（S0–C5 全过，截图 `.bw-tmp/issue500-v5-*.png`）**：S0 设置缺省读回 true → S1 两棵真实树绑到 v0.8/G1 并在版本区可见、无已固定栏目 → C1 固定绑定树：已固定头 key `workbench:0:header::pinned`、文案「已固定」、索引在项目分组头之前，栏目内含该树且原生列表副本数 1（不重复渲染绑定树），版本区仍有原件 → C2 取消固定：栏目消失，版本区不动 → C3 显式关闭设置后固定另一棵：绑定树仍进已固定（single-location 只影响未绑定树的自然分组归属），版本区不动 → C4 未绑定树置顶：副本数由 1 变 2，已固定与项目分组各一份，取消固定回到 1 → C5 刷新后全程 console error / exception 为 0。
 
-**未验留白**：自定义看板状态集（非默认 4 态）下完工判定仍按 id==='completed'（宁可见不误藏；极端集删掉 in-progress 且默认态为 completed 时无状态树会判完工，spec 已点名）未真壳验证；断连/远程主机上写 pin 与状态（updateWorktreeMeta 经 executionHostId 路由）未验证；解绑清 pin 为 fire-and-forget，清绑定成功但清 pin 失败时静默、树回流原生区仍显示「已固定」（与仓内 updateWorktreeMeta 既有惯例一致，后果轻）；菜单「移至状态」子菜单人手工路径未走。另登记一项观察：首轮 E2E 中一棵测试树（e2e-500-a）被应用内一条未完全定位的路径删除——菜单删除路径有确认对话框门禁且 `skipDeleteWorktreeConfirm=false`，删除未经对话框，疑与点击落错项后的某条自治流程相关；仅波及自建测试树，未伤真实树，不归本特性，待上游核对。
+**实现要点**：`showPinnedWorktreesInGroups` 的 BW 缺省经 `workbench-settings-defaults.ts` 同时补在「有状态文件」的 `normalizeLoadedGlobalSettings` 与「首次安装无状态文件」的 `loadedStateParsing` 两条载入路径，用户显式存 `false` 原样保留；`buildRows` 新增可选 `pinnedOnlyIdentities`（原 `WorktreeList` 把版本绑定树整棵过滤掉，导致固定后无栏目可进）；解绑只移除版本归属，不动 pin。
+
+**未验留白**：跨宿主 / 远程主机上写 pin 与绑定未验；「已固定」在收起状态下的拖放排序、折叠记忆未走人手工路径；版本绑定树若带固定后代（lineage）时子行是否随祖先进已固定未验；本机其余测试树（`e2e-500-p1/p2`）与测试 profile 的绑定属一次性验证数据，未并入仓库。
 
 ## 历史交付边界（截至 #437，非 #439 结果）
 
