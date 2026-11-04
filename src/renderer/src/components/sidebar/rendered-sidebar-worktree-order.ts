@@ -9,6 +9,9 @@ import { getRepoMapFromState, getWorktreeMapFromState } from '@/store/selectors'
 import { getProjectHostSetupProjectionFromState } from '@/store/project-host-setup-selector'
 import { buildRows } from './worktree-list/grouping/build-rows'
 import { getPinnedWorktreeDisplayPolicy } from './worktree-list/grouping/row-types'
+import { scopeWorktreesForVersionSidebar } from './worktree-list/listing/use-version-scoped-worktrees'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { getVersionSidebarProjection } from '@/workbench/version-sidebar-state'
 import { addHostSectionRows } from './host-section-rows'
 import { orderHostSectionOptions } from './host-section-order'
 import { buildSidebarHostOptions } from './sidebar-host-options'
@@ -53,9 +56,24 @@ export function computeRenderedSidebarWorktrees(
     state.worktreeCardProperties
   )
 
+  // Why (#500): this path replays the sidebar pipeline, so it must scope the
+  // same trees the sidebar does — otherwise a pinned bound tree is numbered in
+  // a natural group it never renders in.
+  const activeRepoId = state.activeRepoId ?? state.repos[0]?.id ?? null
+  const versionProjection = getVersionSidebarProjection()
+  const versionScoped = scopeWorktreesForVersionSidebar({
+    workbenchProject:
+      isWorkbenchShell() && versionProjection.repoId === activeRepoId && activeRepoId
+        ? versionProjection
+        : undefined,
+    filteredWorktrees: visibleWorktrees,
+    worktreeLineageById: state.worktreeLineageById,
+    worktreeMap: getWorktreeMapFromState(state)
+  })
+
   const rows = buildRows(
     state.groupBy,
-    [...visibleWorktrees],
+    [...versionScoped.visibleWorktrees],
     getRepoMapFromState(state),
     prCache,
     state.collapsedGroups,
@@ -82,7 +100,8 @@ export function computeRenderedSidebarWorktrees(
     // Why no hostLabelById: it only feeds display-only host context labels, never row order.
     undefined,
     defaultHostId,
-    pinnedDisplayPolicy
+    pinnedDisplayPolicy,
+    versionScoped.pinnedOnlyIdentities
   )
 
   // Why lazy: with no host filter, addHostSectionRows is a pass-through, so skip building the whole host registry on a keystroke.

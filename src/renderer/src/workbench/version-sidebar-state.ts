@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 
 export const WORKBENCH_OTHER_PROJECTS_LABEL = '其他项目'
 
-type VersionSidebarProjection = {
+export type VersionSidebarProjection = {
   repoId: string | null
   repoIds: readonly string[]
   worktreeIdentities: ReadonlySet<string>
@@ -45,6 +45,14 @@ export function publishVersionSidebarProjection(next: VersionSidebarProjection):
 export function requestVersionSidebarFocus(repoId: string): void {
   focusRequest = { repoId, sequence: (focusRequest?.sequence ?? 0) + 1 }
   emit()
+}
+
+/**
+ * Non-React read for pipelines that run outside the sidebar tree (e.g. the
+ * Cmd+1–9 ordering fallback); consumers still re-run on the next keystroke.
+ */
+export function getVersionSidebarProjection(): VersionSidebarProjection {
+  return projection
 }
 
 export function useVersionSidebarProjection(): VersionSidebarProjection {

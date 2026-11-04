@@ -175,7 +175,8 @@ const WorktreeList = React.memo(function WorktreeList({
     projectGroups,
     projectGrouping,
     folderWorkspaces,
-    defaultHostId
+    defaultHostId,
+    pinnedOnlyIdentities: versionBoundIdentities
   })
   const visibleScope = useSidebarHostVisibleScope({
     filterState,

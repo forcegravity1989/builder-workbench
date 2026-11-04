@@ -117,9 +117,9 @@ Lens8（提示词/SKILL 规范）：F1 中 version-records 运行身份段补绑
 
 **判据结果（S0–C5 全过，截图 `.bw-tmp/issue500-v5-*.png`）**：S0 设置缺省读回 true → S1 两棵真实树绑到 v0.8/G1 并在版本区可见、无已固定栏目 → C1 固定绑定树：已固定头 key `workbench:0:header::pinned`、文案「已固定」、索引在项目分组头之前，栏目内含该树且原生列表副本数 1（不重复渲染绑定树），版本区仍有原件 → C2 取消固定：栏目消失，版本区不动 → C3 显式关闭设置后固定另一棵：绑定树仍进已固定（single-location 只影响未绑定树的自然分组归属），版本区不动 → C4 未绑定树置顶：副本数由 1 变 2，已固定与项目分组各一份，取消固定回到 1 → C5 刷新后全程 console error / exception 为 0。
 
-**实现要点**：`showPinnedWorktreesInGroups` 的 BW 缺省经 `workbench-settings-defaults.ts` 同时补在「有状态文件」的 `normalizeLoadedGlobalSettings` 与「首次安装无状态文件」的 `loadedStateParsing` 两条载入路径，用户显式存 `false` 原样保留；`buildRows` 新增可选 `pinnedOnlyIdentities`（原 `WorktreeList` 把版本绑定树整棵过滤掉，导致固定后无栏目可进）；解绑只移除版本归属，不动 pin。
+**实现要点**：`showPinnedWorktreesInGroups` 的 BW 缺省经 `workbench-settings-defaults.ts` 同时补在「有状态文件」的 `normalizeLoadedGlobalSettings` 与「首次安装无状态文件」的 `loadedStateParsing` 两条载入路径，用户显式存 `false` 原样保留；`buildRows` 新增可选 `pinnedOnlyIdentities`（原 `WorktreeList` 把版本绑定树整棵过滤掉，导致固定后无栏目可进）；Cmd+1–9 的侧栏顺序回放路径（`computeRenderedSidebarWorktrees`）与 agent-send 展开逻辑同样接入该集合，避免绑定树按不存在的自然分组编号、或被收起的「已固定」栏目藏住；解绑只移除版本归属，不动 pin。
 
-**未验留白**：跨宿主 / 远程主机上写 pin 与绑定未验；「已固定」在收起状态下的拖放排序、折叠记忆未走人手工路径；版本绑定树若带固定后代（lineage）时子行是否随祖先进已固定未验；本机其余测试树（`e2e-500-p1/p2`）与测试 profile 的绑定属一次性验证数据，未并入仓库。
+**未验留白**：跨宿主 / 远程主机上写 pin 与绑定未验；「已固定」在收起状态下的拖放排序、折叠记忆未走人手工路径；版本绑定树若带固定后代（lineage）时子行是否随祖先进已固定未验；其他项目的固定树随「其他项目」分区呈现未经真壳；原生外观 → 侧栏设置对该策略的描述仍写「also appear in All, Project, Status, and PR」，与 BW 中绑定树只在版本区与「已固定」出现不一致（上游文案，本交付未改）；本机其余测试树（`e2e-500-p1/p2`）与测试 profile 的绑定属一次性验证数据，未并入仓库。
 
 ## 历史交付边界（截至 #437，非 #439 结果）
 
