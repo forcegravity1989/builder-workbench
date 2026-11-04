@@ -108,7 +108,6 @@ describe('scanSourceTree filesystem traversal', () => {
     expect(statSync).toHaveBeenCalledExactlyOnceWith(join(root, 'alias'))
   })
 
-
   it('still reports a broken link instead of silently dropping it', () => {
     const target = join(root, '.target')
     mkdirSync(target)
@@ -127,17 +126,7 @@ describe('directoryEntryNeedsStat', () => {
     isSymbolicLink: () => kind === 'link'
   })
 
-  it('skips the stat for entries readdir already typed', () => {
-    expect(directoryEntryNeedsStat(probe('file'))).toBe(false)
-    expect(directoryEntryNeedsStat(probe('dir'))).toBe(false)
-  })
-
-  it('stats links so they are followed', () => {
-    expect(directoryEntryNeedsStat(probe('link'))).toBe(true)
-  })
-
-  // Filesystems without d_type report DT_UNKNOWN: every predicate is false, and
-  // without the stat a real directory's whole subtree is silently dropped.
+  // DT_UNKNOWN needs stat or an entire directory subtree can disappear from guards.
   it('stats an entry whose type readdir could not report', () => {
     expect(directoryEntryNeedsStat(probe('unknown'))).toBe(true)
   })

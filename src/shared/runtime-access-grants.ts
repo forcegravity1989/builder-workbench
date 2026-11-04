@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { RuntimeHostDescriptorSchema } from './runtime-host-descriptor'
 
 export type RuntimeAccessGrant = {
   deviceId: string
@@ -15,7 +16,8 @@ export const RuntimePairingLinkReferenceSchema = z.object({
   publicKeyB64: z.string().min(1).max(128),
   address: z.string().min(1).max(4096),
   intent: z.enum(['another', 'local', 'custom']),
-  webClientAvailable: z.boolean()
+  webClientAvailable: z.boolean(),
+  hostDescriptor: RuntimeHostDescriptorSchema.optional()
 })
 
 export type RuntimePairingLinkReference = z.infer<typeof RuntimePairingLinkReferenceSchema>

@@ -2,6 +2,7 @@ import { appendFile, mkdir, mkdtemp, rm, stat, truncate, utimes, writeFile } fro
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it, vi } from 'vitest'
+import { isAiVaultScanCancelledError } from '../../shared/ai-vault-types'
 import { scanAiVaultSessions } from './session-scanner'
 import {
   parseAgentSessionFileCached,
@@ -16,12 +17,17 @@ const OPENCODE_SQLITE_SESSION = {
   agent: 'opencode' as const,
   sessionId: 'sqlite-session'
 }
+const OPENCODE_SQLITE_MESSAGES = [
+  { role: 'user' as const, text: 'ask sqlite', timestamp: null },
+  { role: 'assistant' as const, text: 'reply sqlite', timestamp: null }
+]
 
-// Stands in for the worker thread: the point is that its messages never come
-// back over the channel, not what the SQLite read returns.
+// Replace worker transport while retaining the transcript channel integration.
 vi.mock('./session-scanner-opencode-sqlite-worker-spawn', async (importOriginal) => ({
   ...(await importOriginal<typeof OpenCodeSqliteWorkerSpawn>()),
-  parseOpenCodeSqliteSessionViaWorker: () => Promise.resolve(OPENCODE_SQLITE_SESSION)
+  parseOpenCodeSqliteSessionViaWorker: () => Promise.resolve(OPENCODE_SQLITE_SESSION),
+  captureOpenCodeSqliteSessionViaWorker: () =>
+    Promise.resolve({ session: OPENCODE_SQLITE_SESSION, messages: OPENCODE_SQLITE_MESSAGES })
 }))
 import type * as OpenCodeSqliteWorkerSpawn from './session-scanner-opencode-sqlite-worker-spawn'
 import {
@@ -110,6 +116,38 @@ async function writeClaudeFixture(): Promise<{
   return { root, roots, transcript }
 }
 
+it('reports a scan cancelled mid-read as cancelled, and the next scan matches a cold one', async () => {
+  const { roots, transcript } = await writeClaudeFixture()
+  // Span several chunks so cancellation leaves most of the file unread.
+  const padding = Array.from({ length: 100 }, (_, index) => ({
+    type: 'user',
+    sessionId: 'claude-session',
+    timestamp: '2026-05-01T11:00:00.000Z',
+    message: { role: 'user', content: `${index} ${'x'.repeat(2_000)}` }
+  }))
+  await appendFile(transcript, `${jsonLines(padding)}\n`)
+  const recorder = recordingConsumer()
+  const controller = new AbortController()
+  const unregister = registerTranscriptConsumer({
+    beginRead: () => ({ message: () => controller.abort(), finish: () => {} })
+  })
+
+  await expect(
+    scanAiVaultSessions({ ...roots, platform: 'darwin', limit: 20, signal: controller.signal })
+  ).rejects.toSatisfy(isAiVaultScanCancelledError)
+  unregister()
+  expect(recorder.reads.map((read) => read.outcome)).toEqual([
+    expect.objectContaining({ incomplete: true, cancelled: true })
+  ])
+  expect(recorder.reads[0].messages.length).toBeLessThan(padding.length)
+
+  const next = await scanAiVaultSessions({ ...roots, platform: 'darwin', limit: 20 })
+  resetSessionParseCacheForTests()
+  const cold = await scanAiVaultSessions({ ...roots, platform: 'darwin', limit: 20 })
+  expect(next.issues).toEqual([])
+  expect(next.sessions).toEqual(cold.sessions)
+})
+
 it('delivers one message stream to every registered consumer', async () => {
   const { roots } = await writeClaudeFixture()
   const first = recordingConsumer()
@@ -134,8 +172,6 @@ it('delivers one message stream to every registered consumer', async () => {
     'assistant:reply 4',
     'tool:Bash: ls 4'
   ])
-  // The list's own fold keeps only the newest five preview turns, so the stream
-  // is demonstrably the reader's, not a projection of the session row.
   const session = result.sessions.find((entry) => entry.agent === 'claude')
   expect(session?.previewMessages).toHaveLength(5)
   expect(session?.messageCount).toBe(8)
@@ -222,7 +258,6 @@ it('publishes a trailing unterminated line once, when it is complete', async () 
   const consumer = recordingConsumer()
   await scanAiVaultSessions({ ...roots, platform: 'darwin', limit: 20 })
 
-  // A half-written record: the list shows it, the stream must not carry it yet.
   const [partial] = claudeTurns(5, 5)
   await appendFile(transcript, JSON.stringify(partial))
   consumer.reads.length = 0
@@ -277,7 +312,6 @@ async function claudeCandidate(transcript: string): Promise<SessionFileCandidate
 
 it('serializes overlapping parses of one path so no consumer read is orphaned', async () => {
   const { transcript } = await writeClaudeFixture()
-  // Seed a resume point: the channel it stores is what concurrent reads share.
   await parseAgentSessionFileCached(await claudeCandidate(transcript), 'darwin')
 
   await appendFile(transcript, `${jsonLines(claudeTurns(5, 5))}\n`)
@@ -289,8 +323,6 @@ it('serializes overlapping parses of one path so no consumer read is orphaned', 
     parseAgentSessionFileCached(appended, 'darwin')
   ])
 
-  // Every read that opened must also close, or its consumer keeps a half-read
-  // stream forever and never learns the outcome.
   expect(consumer.reads.filter((read) => read.outcome === null)).toEqual([])
   expect(consumer.reads).toHaveLength(1)
   expect(consumer.reads[0].start.mode).toBe('append')
@@ -299,12 +331,11 @@ it('serializes overlapping parses of one path so no consumer read is orphaned', 
     'assistant:reply 5',
     'tool:Bash: ls 5'
   ])
-  // The later caller reuses the stored entry rather than moving the cursor back.
   expect(first?.messageCount).toBe(10)
   expect(second?.messageCount).toBe(10)
 })
 
-it('reports a read whose parser cannot publish its messages as not complete', async () => {
+it('publishes an OpenCode SQLite session over the channel and reports it complete', async () => {
   const root = await mkdtemp(join(tmpdir(), 'orca-transcript-opencode-'))
   tempRoots.push(root)
   const dbPath = join(root, 'opencode.db')
@@ -327,16 +358,16 @@ it('reports a read whose parser cannot publish its messages as not complete', as
 
   expect(session).toEqual(OPENCODE_SQLITE_SESSION)
   expect(consumer.reads).toHaveLength(1)
-  expect(consumer.reads[0].messages).toEqual([])
-  expect(consumer.reads[0].outcome?.incomplete).toBe(true)
+  expect(consumer.reads[0].messages).toEqual(OPENCODE_SQLITE_MESSAGES)
+  expect(consumer.reads[0].outcome?.incomplete).toBe(false)
+  consumer.unregister()
 })
 
 it('reports the transcript size, not the cache key, as a whole-file read offset', async () => {
   const root = await mkdtemp(join(tmpdir(), 'orca-transcript-cline-'))
   tempRoots.push(root)
   const roots = isolatedScanRoots(root)
-  // Cline is whole-file and declares a sibling content dependency, so its cache
-  // key covers two files while the read covers one.
+  // Cline’s cache key includes its sibling file, while this read covers only the transcript.
   const sessionDir = join(roots.clineSessionsDir, 'cline-session')
   await mkdir(sessionDir, { recursive: true })
   const metadataPath = join(sessionDir, 'cline-session.json')

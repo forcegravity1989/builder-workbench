@@ -1,3 +1,8 @@
+import {
+  localizeWorktreeTaskSources,
+  projectWorktreeTaskSources
+} from '../../../shared/workbench/task-source-host-projection'
+import { toRuntimeExecutionHostId } from '../../../shared/execution-host'
 import { assertRuntimeEnvironmentCapability, callRuntimeRpc } from '../runtime/runtime-rpc-client'
 import { routeForOwner } from '../lib/worktree-owner-route'
 import {
@@ -68,18 +73,51 @@ export function nativeVersionBindingPort(owner: {
     return result.value
   }
 
+  const clientHost =
+    target.kind === 'environment'
+      ? toRuntimeExecutionHostId(target.environmentId)
+      : LOCAL_EXECUTION_HOST_ID
+  const projectBinding = (
+    binding: WorkbenchVersionBinding | null,
+    scope: VersionBindingScope,
+    from: ExecutionHostId,
+    to: ExecutionHostId
+  ) =>
+    (to === LOCAL_EXECUTION_HOST_ID && from !== LOCAL_EXECUTION_HOST_ID
+      ? localizeWorktreeTaskSources(
+          { workbenchVersionBinding: binding },
+          from,
+          new Set([scope.repoId])
+        )
+      : projectWorktreeTaskSources(
+          { workbenchVersionBinding: binding },
+          from,
+          to,
+          new Set([scope.repoId])
+        )
+    ).workbenchVersionBinding
   return {
-    read: (scope: VersionBindingScope) =>
-      invoke<WorkbenchVersionBinding | null>('read', ownerSpelledScope(scope)),
-    set: (
+    read: async (scope: VersionBindingScope) =>
+      projectBinding(
+        await invoke<WorkbenchVersionBinding | null>('read', ownerSpelledScope(scope)),
+        scope,
+        LOCAL_EXECUTION_HOST_ID,
+        clientHost
+      ),
+    set: async (
       scope: VersionBindingScope,
       binding: WorkbenchVersionBinding | null,
       linkedWorkItem?: VersionBindingSetRequest['linkedWorkItem']
     ) =>
-      invoke<WorkbenchVersionBinding | null>('set', {
-        ...ownerSpelledScope(scope),
-        binding,
-        ...(linkedWorkItem ? { linkedWorkItem } : {})
-      })
+      projectBinding(
+        await invoke<WorkbenchVersionBinding | null>('set', {
+          ...ownerSpelledScope(scope),
+          binding: projectBinding(binding, scope, clientHost, LOCAL_EXECUTION_HOST_ID),
+          ...(linkedWorkItem ? { linkedWorkItem } : {})
+        }),
+        scope,
+        LOCAL_EXECUTION_HOST_ID,
+        clientHost
+      )
   }
 }

@@ -13,11 +13,14 @@ const SCRIPT_DIR = import.meta.dirname
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..')
 
 const CANONICAL_GUIDE_NAMES = [
+  'bw-knowledge-docs',
   'computer-use',
+  'jira-tickets',
   'linear-tickets',
   'orca-cli',
   'orca-emulator',
   'orca-emulator-android',
+  'orca-jira',
   'orca-linear',
   'orca-per-workspace-env',
   'orchestration'
@@ -35,11 +38,14 @@ const WORKBENCH_COMMON_REFERENCES = ['version-records', 'metrics', 'issue-state'
 // Why: old discovery stubs can outlive a rename indefinitely, so aliases are
 // a compatibility ledger: add entries for renames, but never remove them.
 const GUIDE_ALIASES = {
+  'bw-knowledge-docs': [],
   'computer-use': [],
+  'jira-tickets': [],
   'linear-tickets': [],
   'orca-cli': [],
   'orca-emulator': [],
   'orca-emulator-android': [],
+  'orca-jira': [],
   'orca-linear': [],
   'orca-per-workspace-env': [],
   orchestration: []
@@ -48,17 +54,17 @@ for (const name of Object.keys(WORKBENCH_GUIDE_SOURCES)) {
   GUIDE_ALIASES[name] = []
 }
 
-// Why: a stubbed topic ships a hybrid discovery stub as its installable projection while
-// `orca skills get <topic>` still serves the full version-matched guide from the binary.
-// Migrating a topic here is effectively one-way — earlier fat installs rely on the stub
-// landing to converge — so entries are added as skills convert, never removed. The stub
-// body lives in skill-stubs/<topic>.md; the projection reuses the guide's own frontmatter.
+// Stubbed topics install thin projections but skills get serves full version-matched guides.
+// Migration is one-way: old fat installs need new stubs to converge, so only add STUB_TOPICS; bodies live in skill-stubs/<topic>.md.
 const STUB_TOPICS = [
+  'bw-knowledge-docs',
   'computer-use',
+  'jira-tickets',
   'linear-tickets',
   'orca-cli',
   'orca-emulator',
   'orca-emulator-android',
+  'orca-jira',
   'orca-linear',
   'orca-per-workspace-env',
   'orchestration',
@@ -106,10 +112,7 @@ function frontmatterBlock(markdown, sourcePath) {
   return match[0]
 }
 
-// Why: the stub's routing frontmatter (name + description) must stay byte-identical to the
-// guide's — it is the unchanged discovery surface — so we reuse the guide's own block and
-// replace only the body. The body is the per-topic stub with its shared markers expanded,
-// normalized to LF with exactly one trailing newline.
+// Reuse byte-identical guide routing frontmatter; expand stub markers and normalize body to LF plus one trailing newline.
 function composeStubProjection(guideMarkdown, stubBody, sourcePath, { sharedBlocks }) {
   const block = frontmatterBlock(guideMarkdown, sourcePath)
   const composed = renderSharedStubBody(normalizeMarkdown(stubBody), {
@@ -138,53 +141,31 @@ function constantName(name) {
   return `${name.replace(/-/g, '_').toUpperCase()}_MARKDOWN`
 }
 
-function fullConstantName(name) {
-  return `${name.replace(/-/g, '_').toUpperCase()}_FULL_MARKDOWN`
-}
-
 function referenceConstantName(guideName, referenceName) {
   return `${`${guideName}_${referenceName}`.replace(/-/g, '_').toUpperCase()}_REFERENCE_MARKDOWN`
 }
 
-function composeFullMarkdown(markdown, references) {
-  if (references.length === 0) {
-    return markdown
-  }
-  const packageHeader =
-    '\n\n---\n\n# Bundled references\n\n' +
-    'These references belong to the version-matched guide above. Read only the documents ' +
-    'named by its action gates.\n'
-  const documents = references
-    .map(
-      ({ relativePath, markdown: referenceMarkdown }) =>
-        `\n<!-- bundled-reference: ${relativePath} -->\n\n${referenceMarkdown.trimEnd()}\n`
-    )
-    .join('')
-  return `${markdown.trimEnd()}${packageHeader}${documents}`
+function serializeMarkdown(markdown) {
+  const lines = markdown.split('\n').map((line) => `  ${JSON.stringify(line)},`)
+  return `[\n${lines.join('\n')}\n].join('\\n')`
 }
 
 function serializeEmbeddedModule(guides) {
   const referenceConstants = guides.flatMap((guide) =>
     guide.references.map((reference) => referenceConstantName(guide.name, reference.name))
   )
-  // Why: the constant name flattens guide and reference names, so two topics could otherwise
-  // produce one identifier and silently serve the wrong reference.
+  // Flattened guide/reference constant names can collide and silently serve the wrong reference.
   if (new Set(referenceConstants).size !== referenceConstants.length) {
     throw new Error(`Guide reference constant names collide: ${referenceConstants.join(', ')}`)
   }
   const markdownConstants = guides
     .flatMap((guide) => {
       const constants = [
-        `// oxfmt-ignore\nconst ${constantName(guide.name)} = ${JSON.stringify(guide.markdown)}`
+        `// oxfmt-ignore\nconst ${constantName(guide.name)} = ${serializeMarkdown(guide.markdown)}`
       ]
-      if (guide.fullMarkdown !== guide.markdown) {
-        constants.push(
-          `// oxfmt-ignore\nconst ${fullConstantName(guide.name)} = ${JSON.stringify(guide.fullMarkdown)}`
-        )
-      }
       for (const reference of guide.references) {
         constants.push(
-          `// oxfmt-ignore\nconst ${referenceConstantName(guide.name, reference.name)} = ${JSON.stringify(reference.markdown)}`
+          `// oxfmt-ignore\nconst ${referenceConstantName(guide.name, reference.name)} = ${serializeMarkdown(reference.markdown)}`
         )
       }
       return constants
@@ -204,7 +185,6 @@ function serializeEmbeddedModule(guides) {
         `    name: ${JSON.stringify(guide.name)},`,
         `    description: ${JSON.stringify(guide.description)},`,
         `    markdown: ${markdownConstant},`,
-        `    fullMarkdown: ${guide.fullMarkdown === guide.markdown ? markdownConstant : fullConstantName(guide.name)},`,
         `    aliases: ${JSON.stringify(guide.aliases)},`,
         `    references: [${referenceEntries}]`,
         '  }'
@@ -212,7 +192,7 @@ function serializeEmbeddedModule(guides) {
     })
     .join(',\n')
 
-  return `// Generated by config/scripts/generate-bundled-skill-guides.mjs. Do not edit.\n\nexport type BundledSkillGuideReference = {\n  readonly name: string\n  readonly markdown: string\n}\n\nexport type BundledSkillGuide = {\n  readonly name: string\n  readonly description: string\n  readonly markdown: string\n  readonly fullMarkdown: string\n  readonly aliases: readonly string[]\n  readonly references: readonly BundledSkillGuideReference[]\n}\n\n${markdownConstants}\n\n// oxfmt-ignore\nexport const BUNDLED_SKILL_GUIDES = [\n${guideEntries}\n] as const satisfies readonly BundledSkillGuide[]\n`
+  return `// Generated by config/scripts/generate-bundled-skill-guides.mjs. Do not edit.\n\nexport type BundledSkillGuideReference = {\n  readonly name: string\n  readonly markdown: string\n}\n\nexport type BundledSkillGuide = {\n  readonly name: string\n  readonly description: string\n  readonly markdown: string\n  readonly aliases: readonly string[]\n  readonly references: readonly BundledSkillGuideReference[]\n}\n\n${markdownConstants}\n\n// oxfmt-ignore\nexport const BUNDLED_SKILL_GUIDES = [\n${guideEntries}\n] as const satisfies readonly BundledSkillGuide[]\n`
 }
 
 async function readGuideReferences(repoRoot, guideName) {
@@ -241,7 +221,7 @@ async function readGuideReferences(repoRoot, guideName) {
         if (!markdown.trim()) {
           throw new Error(`Guide reference is empty: ${toPosixRelativePath(repoRoot, sourcePath)}`)
         }
-        return { name: entry.name.slice(0, -3), relativePath: `references/${entry.name}`, markdown }
+        return { name: entry.name.slice(0, -3), markdown }
       })
   )
 }
@@ -346,7 +326,7 @@ async function assertStubSourcesMatchTopics(repoRoot) {
       .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
       .map((entry) => entry.name.slice(0, -3))
   } catch (error) {
-    // Why: a repo state with no stubbed topics yet has no skill-stubs directory at all.
+    // Before first stub migration, skill-stubs need not exist.
     if (error.code !== 'ENOENT') {
       throw error
     }
@@ -365,8 +345,7 @@ async function assertStubSourcesMatchTopics(repoRoot) {
   }
 }
 
-// Why: path.relative yields `\` on Windows, but these paths are asserted in tests and pasted into commands.
-// split(sep) rather than replaceAll('\\', '/') so a POSIX filename containing a backslash survives intact.
+// Normalize Windows separators for commands/tests with split(sep), preserving literal POSIX backslashes.
 function toPosixRelativePath(repoRoot, filePath, pathModule = path) {
   return pathModule.relative(repoRoot, filePath).split(pathModule.sep).join('/')
 }
@@ -432,14 +411,8 @@ async function buildArtifacts(repoRoot = REPO_ROOT) {
       name,
       description: frontmatter.description,
       markdown,
-      fullMarkdown: composeFullMarkdown(markdown, references),
       aliases,
-      // Why: `skills get --reference` serves one of these alone, so it keeps the
-      // per-file identity that fullMarkdown's concatenation erases.
-      references: references.map(({ name: referenceName, markdown: referenceMarkdown }) => ({
-        name: referenceName,
-        markdown: referenceMarkdown
-      }))
+      references
     })
     const stubPath = path.join(repoRoot, 'skill-stubs', `${name}.md`)
     const content = stubTopics.has(name)
@@ -513,7 +486,6 @@ export {
   STUB_TOPICS,
   assertAliasContract,
   buildArtifacts,
-  composeFullMarkdown,
   composeStubProjection,
   frontmatterBlock,
   normalizeMarkdown,

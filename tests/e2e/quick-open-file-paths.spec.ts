@@ -45,16 +45,21 @@ test('cmd+p quick open prioritizes the filename and reveals the full path on hov
   const tooltip = orcaPage
     .locator('[data-slot="tooltip-content"]')
     .filter({ hasText: relativeFilePath })
-  // Streaming results can remount the row under a stationary pointer.
+  // Streaming remounts rows under the pointer; clear prior tooltips before retrying hover.
   await expect(async () => {
-    await row.hover({ position: { x: 20, y: 12 }, timeout: 1_000 })
-    await row.hover({ position: { x: 40, y: 12 }, timeout: 1_000 })
-    await expect(tooltip).toBeVisible({ timeout: 1_000 })
-  }).toPass({ timeout: 10_000, intervals: [100, 250, 500] })
+    await orcaPage.mouse.move(8, 8)
+    const currentRow = dialog.getByRole('option').filter({ hasText: 'QuickOpenTarget.tsx' }).first()
+    await expect(currentRow).toBeVisible()
+    const currentBox = await currentRow.boundingBox()
+    if (!currentBox) {
+      throw new Error('Quick Open result remounted before hover')
+    }
+    await orcaPage.mouse.move(currentBox.x + 20, currentBox.y + 12)
+    await orcaPage.mouse.move(currentBox.x + 40, currentBox.y + 12)
+    await expect(tooltip).toBeVisible({ timeout: 2_000 })
+  }).toPass({ timeout: 15_000, intervals: [100, 250, 500] })
 
-  // Exact cursor placement is arithmetic, unit-tested via cursorTooltipOffsets.
-  // Asserting it here measures the app mid-reflow and is flaky; what E2E is
-  // uniquely good for is that the tooltip really opens with the whole path.
+  // Pin exact offsets in cursorTooltipOffsets units; E2E proves the full-path tooltip opens without measuring mid-reflow geometry.
   await expect(tooltip).toBeVisible()
 
   const proofPath = process.env.ORCA_QUICK_OPEN_PROOF_PATH

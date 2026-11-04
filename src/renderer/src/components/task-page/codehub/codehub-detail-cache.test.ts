@@ -43,7 +43,16 @@ beforeEach(() => {
   api.mrChanges.mockReset().mockResolvedValue([])
 })
 
-it('builds collision-free keys from repoId, kind and iid', () => {
+it('builds collision-free keys from owner, repository and item', () => {
+  expect(getCodehubDetailCacheKey({ ...mrArgs, repoHostId: 'runtime:a' })).not.toBe(
+    getCodehubDetailCacheKey({ ...mrArgs, repoHostId: 'runtime:b' })
+  )
+  expect(getCodehubDetailCacheKey({ ...mrArgs, repoPath: '/a' })).not.toBe(
+    getCodehubDetailCacheKey({ ...mrArgs, repoPath: '/b' })
+  )
+  expect(getCodehubDetailCacheKey({ ...mrArgs, host: 'codehub.a' })).not.toBe(
+    getCodehubDetailCacheKey({ ...mrArgs, host: 'codehub.b' })
+  )
   // `\0` separator: a repoId containing ':' or '/' must not collide with
   // another field split.
   expect(getCodehubDetailCacheKey({ repoId: 'a/b', kind: 'mr', iid: 8 })).not.toBe(

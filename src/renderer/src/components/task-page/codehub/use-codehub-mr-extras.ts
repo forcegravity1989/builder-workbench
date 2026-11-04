@@ -13,9 +13,7 @@ import {
 // 由 ensureCodehubDetailFresh 的整批读取一并拉取。
 export function useCodeHubMrExtras(item: CodeHubTaskItem | null) {
   const key =
-    item && item.type === 'mr'
-      ? getCodehubDetailCacheKey({ repoId: item.repoId, kind: item.type, iid: item.iid })
-      : ''
+    item && item.type === 'mr' ? getCodehubDetailCacheKey({ ...item, kind: item.type }) : ''
   const entry = useSyncExternalStore(
     subscribeCodehubDetailCache,
     useCallback(() => (key ? codehubDetailCache.get(key) : undefined), [key])
@@ -28,6 +26,9 @@ export function useCodeHubMrExtras(item: CodeHubTaskItem | null) {
     // per-key pending promise dedupes when both fire.
     void ensureCodehubDetailFresh({
       repoPath: item.repoPath,
+      host: item.host,
+      project: item.project,
+      repoHostId: item.repoHostId,
       repoId: item.repoId,
       kind: item.type,
       iid: item.iid
@@ -42,6 +43,9 @@ export function useCodeHubMrExtras(item: CodeHubTaskItem | null) {
     }
     void refreshCodehubMrExtras({
       repoPath: item.repoPath,
+      host: item.host,
+      project: item.project,
+      repoHostId: item.repoHostId,
       repoId: item.repoId,
       kind: item.type,
       iid: item.iid

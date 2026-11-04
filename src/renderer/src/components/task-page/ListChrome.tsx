@@ -1,6 +1,6 @@
 import { TaskPageScopeHeader } from '@/workbench/TaskScopePanel'
 import { useEffect } from 'react'
-import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
+import type { TaskPageComposerActionsModel } from './use-task-page-composer-actions'
 import { cn } from '@/lib/utils'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { TaskPageSourceBar } from './SourceBar'

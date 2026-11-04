@@ -373,6 +373,18 @@ describe('web GitHub preload API', () => {
         expectedParams: { force: true }
       },
       {
+        key: 'listBindableAccounts',
+        args: { repoPath, refreshCapability: true },
+        expectedMethod: 'github.listBindableAccounts',
+        expectedParams: withRepo({ repoPath, refreshCapability: true })
+      },
+      {
+        key: 'validateAccountBinding',
+        args: { repoPath, host: 'github.com', user: 'octocat' },
+        expectedMethod: 'github.validateAccountBinding',
+        expectedParams: withRepo({ repoPath, host: 'github.com', user: 'octocat' })
+      },
+      {
         key: 'listAccessibleProjects',
         args: { host: 'ghe.example.com' },
         expectedMethod: 'github.project.listAccessible',

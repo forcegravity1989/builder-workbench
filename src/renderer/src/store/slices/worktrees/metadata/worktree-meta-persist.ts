@@ -1,18 +1,25 @@
+import { localizeWorktreeTaskSources } from '../../../../../../shared/workbench/task-source-host-projection'
+import { getRepoIdFromWorktreeId } from '../../../../../../shared/worktree/id'
+import { toRuntimeExecutionHostId } from '../../../../../../shared/execution-host'
+import { assertWorkspaceAttachmentWriteCapability } from '../../../../runtime/runtime-workspace-attachment-capabilities'
+import type { WorkspaceAttachmentMutation } from '../../../../../../shared/workspace-attachment-mutation'
+import { getLegacyWorkspaceReviewSelectionUpdates } from '../../../../../../shared/workspace-attachment-legacy'
+import { WORKTREE_LINKED_ITEMS_RUNTIME_CAPABILITY } from '../../../../../../shared/workspace-attachment-capabilities'
 import {
   assertRuntimeEnvironmentCapability,
   callRuntimeRpc,
-  getActiveRuntimeTarget,
   runtimeEnvironmentSupportsCapability
 } from '../../../../runtime/runtime-rpc-client'
 import {
   TASK_SOURCE_CONTEXT_RUNTIME_CAPABILITY,
   WORKBENCH_VERSION_BINDING_RUNTIME_CAPABILITY,
+  WORKTREE_RENAME_ERROR_DISMISS_RUNTIME_CAPABILITY,
   WORKTREE_GITHUB_PR_SUPPRESSION_RUNTIME_CAPABILITY,
   WORKTREE_LINKED_WORK_ITEM_CONTEXT_RUNTIME_CAPABILITY
 } from '../../../../../../shared/protocol-version'
 import { toRuntimeWorktreeSelector } from '../../../../runtime/runtime-worktree-selector'
 import { translate } from '@/i18n/i18n'
-import type { AppState } from '../../../types'
+import type { RuntimeClientTarget } from '../../../../../../shared/runtime-client-target'
 import type { WorktreeMeta } from '../../../../../../shared/worktree/meta-types'
 import type { ExecutionHostId } from '../../../../../../shared/execution-host'
 import { encodePushTargetClearForRuntimeRpc } from './hosted-review-link-mutation'
@@ -50,14 +57,14 @@ export function isDisplayNamePersistencePending(
 }
 
 export function persistWorktreeMeta(
-  settings: AppState['settings'],
+  target: RuntimeClientTarget,
   worktreeId: string,
-  updates: Partial<WorktreeMeta>,
+  updates: Partial<WorktreeMeta> & WorkspaceAttachmentMutation,
   executionHostId?: ExecutionHostId,
   identityKey?: string
 ): Promise<void> {
   const operation = persistWorktreeMetaUntracked(
-    settings,
+    target,
     worktreeId,
     updates,
     executionHostId,
@@ -79,24 +86,32 @@ export function persistWorktreeMeta(
 }
 
 async function persistWorktreeMetaUntracked(
-  settings: AppState['settings'],
+  target: RuntimeClientTarget,
   worktreeId: string,
-  updates: Partial<WorktreeMeta>,
+  updates: Partial<WorktreeMeta> & WorkspaceAttachmentMutation,
   executionHostId?: ExecutionHostId,
   identityKey?: string
 ): Promise<void> {
-  const target = getActiveRuntimeTarget(settings)
   if (target.kind === 'local') {
     await window.api.worktrees.updateMeta({
       worktreeId,
       ...(executionHostId ? { executionHostId } : {}),
-      updates
+      updates: updates
     })
     return
   }
-  // Why: `worktree.set` parses in strip mode, so an older runtime drops the key
-  // and applies the rest. Both gates key off presence, not value — a dropped
-  // *clear* strands a stale link that the Issue row then hides.
+  await assertWorkspaceAttachmentWriteCapability(target, updates)
+  if (updates.firstAgentMessageRenameError === null && updates.displayName === undefined) {
+    await assertRuntimeEnvironmentCapability(
+      target.environmentId,
+      WORKTREE_RENAME_ERROR_DISMISS_RUNTIME_CAPABILITY,
+      translate(
+        'auto.store.slices.worktrees.metadata.worktree.meta.persist.dismissRenameError',
+        'Update the remote runtime to dismiss auto-name errors'
+      )
+    )
+  }
+  // Old worktree.set strips unknown keys, including clears; gate by presence so dropped fields cannot strand hidden review links.
   if (
     target.kind === 'environment' &&
     ('linkedWorkItem' in updates || 'linkedTaskSourceContext' in updates)
@@ -136,6 +151,17 @@ async function persistWorktreeMetaUntracked(
     )
   }
   let compatibleUpdates = updates
+  const legacySelection = getLegacyWorkspaceReviewSelectionUpdates(updates)
+  if (
+    legacySelection !== updates &&
+    target.kind === 'environment' &&
+    !(await runtimeEnvironmentSupportsCapability(
+      target.environmentId,
+      WORKTREE_LINKED_ITEMS_RUNTIME_CAPABILITY
+    ))
+  ) {
+    compatibleUpdates = legacySelection
+  }
   if (target.kind === 'environment' && 'suppressedGitHubPR' in updates) {
     if (typeof updates.suppressedGitHubPR === 'number' && updates.suppressedGitHubPR > 0) {
       await assertRuntimeEnvironmentCapability(
@@ -153,7 +179,7 @@ async function persistWorktreeMetaUntracked(
         WORKTREE_GITHUB_PR_SUPPRESSION_RUNTIME_CAPABILITY
       ))
     ) {
-      const olderHostUpdates = { ...updates }
+      const olderHostUpdates = { ...compatibleUpdates }
       delete olderHostUpdates.suppressedGitHubPR
       compatibleUpdates = olderHostUpdates
     }
@@ -163,7 +189,13 @@ async function persistWorktreeMetaUntracked(
     'worktree.set',
     {
       worktree: identityKey ? `identity:${identityKey}` : toRuntimeWorktreeSelector(worktreeId),
-      ...encodePushTargetClearForRuntimeRpc(compatibleUpdates)
+      ...encodePushTargetClearForRuntimeRpc(
+        localizeWorktreeTaskSources(
+          compatibleUpdates,
+          toRuntimeExecutionHostId(target.environmentId),
+          new Set([getRepoIdFromWorktreeId(worktreeId)])
+        )
+      )
     },
     { timeoutMs: 15_000 }
   )

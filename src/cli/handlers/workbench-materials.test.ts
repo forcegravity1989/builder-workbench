@@ -2,7 +2,6 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { text } from 'node:stream/consumers'
-import { shouldReadRemoteCliStdin } from '../../relay/remote-cli-stdin'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:stream/consumers', () => ({ text: vi.fn() }))
@@ -129,7 +128,7 @@ describe('version material CLI entry', () => {
     })
     expect(await readFile(join(directory, 'draft.json'), 'utf8')).toBe(input)
   })
-  it('uses Orca stdin forwarding for SSH drafts instead of reading a remote path on the client', async () => {
+  it('reads an owner-side draft from stdin and refuses conflicting input sources', async () => {
     call.mockResolvedValue({
       id: 'test',
       ok: true,
@@ -143,19 +142,18 @@ describe('version material CLI entry', () => {
       'save',
       ...target,
       '--host-id',
-      'ssh:server',
+      'local',
       '--version',
       'v0.5',
       '--create',
       '--input-stdin',
       '--json'
     ]
-    expect(shouldReadRemoteCliStdin(args)).toBe(true)
     await main(args, directory)
     expect(process.exitCode).toBeUndefined()
     expect(call).toHaveBeenCalledWith(
       'workbench.materials.save',
-      expect.objectContaining({ hostId: 'ssh:server', document })
+      expect.objectContaining({ hostId: 'local', document })
     )
     await main([...args, '--input', '/remote/draft.json'], directory)
     expect(process.exitCode).toBe(1)

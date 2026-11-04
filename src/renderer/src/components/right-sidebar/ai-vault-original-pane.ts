@@ -1,6 +1,7 @@
+import { agentRowDisplayDotState } from '@/lib/agent-row-dot-state'
 import type { AppState } from '@/store/types'
-import { resolveRuntimePaneTitleLeafId } from '@/lib/runtime-pane-title-leaf-id'
-import type { AgentStatusState } from '../../../../shared/agent-status-types'
+import { resolveRuntimePaneTitleLeafId } from '../../../../shared/runtime-pane-title-leaf-id'
+import type { AgentDotState } from '@/components/AgentStateDot'
 import type { AiVaultSession } from '../../../../shared/ai-vault-types'
 import { parseLegacyNumericPaneKey, parsePaneKey } from '../../../../shared/stable-pane-id'
 import type {
@@ -175,26 +176,22 @@ export function resolveOriginalPaneTarget(args: {
   return { paneKey, worktreeId, tabId: legacy.tabId, leafId }
 }
 
-/**
- * The hook-reported live state of the agent currently running this session,
- * or null when the session is not live in any pane. Matches by provider
- * session id first; falls back to a prompt match only when it is unambiguous.
- */
+/** Find live state by provider session ID, falling back to prompt matches only when unambiguous. */
 export function findAiVaultSessionLiveState(
   state: Pick<AppState, 'agentStatusByPaneKey'>,
   session: AiVaultSession
-): AgentStatusState | null {
-  const promptMatchedStates: AgentStatusState[] = []
+): AgentDotState | null {
+  const promptMatchedStates: AgentDotState[] = []
 
   for (const entry of Object.values(state.agentStatusByPaneKey)) {
     if (!agentMatches(session, entry.agentType)) {
       continue
     }
     if (providerSessionMatches(session, entry.providerSession?.id)) {
-      return entry.state
+      return agentRowDisplayDotState({ state: entry.state, entry })
     }
     if (entry.providerSession === undefined && promptsMatchSession(session, entry)) {
-      promptMatchedStates.push(entry.state)
+      promptMatchedStates.push(agentRowDisplayDotState({ state: entry.state, entry }))
     }
   }
 
@@ -203,13 +200,11 @@ export function findAiVaultSessionLiveState(
 
 export function findOriginalAiVaultSessionPane(
   state: OriginalPaneState,
-  session: AiVaultSession,
-  options: { worktreeId?: string; allowPromptFallback?: boolean } = {}
+  session: AiVaultSession
 ): AiVaultOriginalPaneTarget | null {
   const promptMatchedTargets: AiVaultOriginalPaneTarget[] = []
 
   for (const entry of Object.values(state.agentStatusByPaneKey)) {
-    if (options.worktreeId && entry.worktreeId !== options.worktreeId) {continue}
     if (
       agentMatches(session, entry.agentType) &&
       providerSessionMatches(session, entry.providerSession?.id)
@@ -225,7 +220,7 @@ export function findOriginalAiVaultSessionPane(
       }
     }
     if (
-      options.allowPromptFallback !== false && agentMatches(session, entry.agentType) &&
+      agentMatches(session, entry.agentType) &&
       entry.providerSession === undefined &&
       promptsMatchSession(session, entry)
     ) {
@@ -242,7 +237,6 @@ export function findOriginalAiVaultSessionPane(
   }
 
   for (const retained of Object.values(state.retainedAgentsByPaneKey)) {
-    if (options.worktreeId && retained.worktreeId !== options.worktreeId) {continue}
     if (
       agentMatches(session, retained.agentType) &&
       providerSessionMatches(session, retained.entry.providerSession?.id)
@@ -258,7 +252,7 @@ export function findOriginalAiVaultSessionPane(
       }
     }
     if (
-      options.allowPromptFallback !== false && agentMatches(session, retained.agentType) &&
+      agentMatches(session, retained.agentType) &&
       retained.entry.providerSession === undefined &&
       promptsMatchSession(session, retained.entry)
     ) {
@@ -275,7 +269,6 @@ export function findOriginalAiVaultSessionPane(
   }
 
   for (const record of Object.values(state.sleepingAgentSessionsByPaneKey)) {
-    if (options.worktreeId && record.worktreeId !== options.worktreeId) {continue}
     if (
       agentMatches(session, record.agent) &&
       providerSessionMatches(session, record.providerSession.id)

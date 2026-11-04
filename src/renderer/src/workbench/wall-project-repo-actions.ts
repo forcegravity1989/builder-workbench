@@ -1,4 +1,5 @@
 import { toast } from 'sonner'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { useAppStore } from '@/store'
 import type { WallProject } from './workbench-wall-projects'
 
@@ -8,7 +9,7 @@ export async function ensureWallProjectGroup(project: WallProject): Promise<stri
     return project.groupId
   }
   const store = useAppStore.getState()
-  const primary = store.repos.find((r) => r.id === project.primaryRepoId)
+  const primary = project.rows.find((r) => r.id === project.primaryRepoId)
   if (!primary) {
     toast.error('找不到主代码仓')
     return null
@@ -16,12 +17,15 @@ export async function ensureWallProjectGroup(project: WallProject): Promise<stri
   if (primary.projectGroupId) {
     return primary.projectGroupId
   }
-  const group = await store.createProjectGroup(project.name || primary.displayName || '项目')
+  const group = await store.createProjectGroup(
+    project.name || primary.displayName || '项目',
+    getRepoExecutionHostId(primary)
+  )
   if (!group) {
     toast.error('无法创建项目组')
     return null
   }
-  const moved = await store.moveProjectToGroup(primary.id, group.id, 0)
+  const moved = await store.moveProjectToGroup(primary, group.id, 0)
   if (!moved) {
     toast.error('无法把现有仓放入项目组')
     return null
@@ -49,14 +53,14 @@ export async function removeRepoFromWallProject(args: {
     return false
   }
 
-  await store.removeProject(repoId, { errorFeedback: 'toast' })
+  await store.removeProject(repoId, { hostId: 'local', errorFeedback: 'toast' })
 
   if (project.groupId) {
     const remaining = useAppStore
       .getState()
       .repos.filter((r) => r.projectGroupId === project.groupId)
     if (remaining.length === 0) {
-      await store.deleteProjectGroup(project.groupId)
+      await store.deleteProjectGroup(project.groupId, { hostId: 'local' })
     }
   }
   return true

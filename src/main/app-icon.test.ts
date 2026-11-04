@@ -2,27 +2,33 @@ import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
+  appState,
   browserWindowGetAllWindowsMock,
   createFromPathMock,
   dockSetIconMock,
-  isMock,
   windowSetIconMock
 } = vi.hoisted(() => ({
+  appState: { isPackaged: true },
   browserWindowGetAllWindowsMock: vi.fn(),
   createFromPathMock: vi.fn(),
   dockSetIconMock: vi.fn(),
-  isMock: { dev: false },
   windowSetIconMock: vi.fn()
 }))
 
 vi.mock('electron', () => ({
-  app: { dock: { setIcon: dockSetIconMock } },
+  app: {
+    get isPackaged() {
+      return appState.isPackaged
+    },
+    // applyAppIcon exercises the live image only; persistent writes have injected fixtures below.
+    getPath: () => '/test/non-app/bin/electron',
+    dock: { setIcon: dockSetIconMock }
+  },
   BrowserWindow: { getAllWindows: browserWindowGetAllWindowsMock },
-  nativeImage: { createFromPath: createFromPathMock }
-}))
-
-vi.mock('@electron-toolkit/utils', () => ({
-  is: isMock
+  nativeImage: {
+    createFromPath: createFromPathMock,
+    createEmpty: () => ({ isEmpty: () => true })
+  }
 }))
 
 vi.mock('../../resources/icon.png?asset', () => ({
@@ -59,7 +65,7 @@ describe('app icon selection', () => {
     createFromPathMock.mockReset()
     dockSetIconMock.mockReset()
     windowSetIconMock.mockReset()
-    isMock.dev = false
+    appState.isPackaged = true
   })
 
   afterEach(() => {
@@ -187,37 +193,30 @@ describe('app icon selection', () => {
     warnSpy.mockRestore()
   })
 
-  it('warns when the AppKit classic icon reset fails', async () => {
+  it('restores the bundle Dock icon only after the custom icon clear succeeds', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const execFile = vi.fn(
-      (
-        file: string,
-        _args: string[],
-        optionsOrCallback: unknown,
-        callback?: (error: Error | null) => void
-      ) => {
-        const onComplete =
-          typeof optionsOrCallback === 'function'
-            ? (optionsOrCallback as (error: Error | null) => void)
-            : callback
-        onComplete?.(file === '/usr/bin/osascript' ? new Error('reset denied') : null)
-      }
-    )
-
-    persistMacDockIcon('classic', {
-      appBundlePath: '/Applications/Orca.app',
-      execFile,
-      isDevApp: false,
-      platform: 'darwin'
-    })
-    await waitForQueuedPersistence()
-
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[app-icon] failed to clear macOS dock icon:',
-      expect.any(Error)
-    )
-
-    warnSpy.mockRestore()
+    const persistClassic = (clearError: Error | null): Promise<void> => {
+      persistMacDockIcon('classic', {
+        appBundlePath: '/Applications/Workbench.app',
+        execFile: (file, _args, _options, callback) =>
+          callback?.(file === '/usr/bin/osascript' ? clearError : null),
+        isDevApp: false,
+        platform: 'darwin'
+      })
+      return waitForQueuedPersistence()
+    }
+    try {
+      await persistClassic(new Error('clear failed'))
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[app-icon] failed to clear macOS dock icon:',
+        expect.any(Error)
+      )
+      expect(dockSetIconMock).not.toHaveBeenCalled()
+      await persistClassic(null)
+      expect(dockSetIconMock.mock.lastCall?.[0].isEmpty()).toBe(true)
+    } finally {
+      warnSpy.mockRestore()
+    }
   })
 
   it('continues macOS dock icon persistence when a command never completes', async () => {

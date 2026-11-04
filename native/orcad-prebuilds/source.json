@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "repository": "stablyai/orca",
+  "release": "v1.4.245",
+  "sourceCommit": "1c6ac8c3c4d2c3dec2cb5966d225ca2a0e0471d3",
+  "runUrl": "https://github.com/stablyai/orca/actions/runs/41005607567",
+  "checkoutProof": {
+    "jobId": 123900362249,
+    "jobName": "orcad-template / cache",
+    "jobUrl": "https://github.com/stablyai/orca/actions/runs/41005607567/job/123900362249",
+    "evidence": [
+      "2026-10-30T04:58:38.0662195Z ref: refs/tags/v1.4.245",
+      "2026-10-30T04:58:57.4294733Z git checkout --progress --force refs/tags/v1.4.245",
+      "2026-10-30T04:58:59.2977952Z 1c6ac8c3c4d2c3dec2cb5966d225ca2a0e0471d3",
+      "2026-10-30T04:59:06.5241572Z key: orcad-qualified-template-v2-github-hosted-85576c14074976ec750b8e952c1c093df3e4f06d-1c6ac8c3c4d2c3dec2cb5966d225ca2a0e0471d3-20261030"
+    ]
+  },
+  "dependencies": {
+    "node-pty": "^1.1.0",
+    "@vscode/windows-process-tree": "0.8.0",
+    "@parcel/watcher": "^2.5.6"
+  },
+  "sourceInputs": [
+    {
+      "path": "config/patches/node-pty@1.1.0.patch",
+      "blob": "9e42c7545988ed7f00dfcf58db2765bbff19fe06"
+    },
+    {
+      "path": "config/patches/@vscode__windows-process-tree@0.8.0.patch",
+      "blob": "ac0defcee9fa4d86cac4e9dcaf5daed9bd57070e"
+    },
+    {
+      "path": "src/shared/node-runtime-pin.ts",
+      "blob": "7777b668b926af14e14892a641a8585afc2925a4"
+    },
+    {
+      "path": "config/scripts/build-orcad-prebuilds.mjs",
+      "blob": "ea7c39f6afd8816ec0a96334daad9b145dda285c"
+    },
+    {
+      "path": "config/scripts/orcad-prebuild-slot-contents.mjs",
+      "blob": "3e182b3b6d8762beedead0e2b4280b579044ba19"
+    },
+    {
+      "path": "config/scripts/orcad-prebuild-node-gyp.mjs",
+      "blob": "6000d3586e772b4833867c69515acce57d9bd22a"
+    },
+    {
+      "path": "config/scripts/orcad-prebuild-compat-addons.mjs",
+      "blob": "dbfaeab0dee5a75f005a1d6e8496078829306533"
+    },
+    {
+      "path": "config/scripts/build-windows-security-addon.mjs",
+      "blob": "ea56e8d1d0886042526b777f81725f0b2c3de30c"
+    },
+    {
+      "path": "config/scripts/windows-process-tree-gyp-rebuild.mjs",
+      "blob": "f69538203b1f8cbb1d1bf9929f565e3b469d58da"
+    },
+    {
+      "path": "native/windows-security/binding.gyp",
+      "blob": "d9fdbd3d81a9c8df61d34802e1e92d9fbaa277da"
+    },
+    {
+      "path": "native/windows-security/index.d.ts",
+      "blob": "e3b492b17ffbfe3270ada818e85163e6e7405297"
+    },
+    {
+      "path": "native/windows-security/index.js",
+      "blob": "ca849d405d22bf4603a5cf3d094dccc548102a01"
+    },
+    {
+      "path": "native/windows-security/package.json",
+      "blob": "f9e824828e2105a9398d8397b41aee97d4fbc51f"
+    },
+    {
+      "path": "native/windows-security/src/addon.cc",
+      "blob": "922bdff1c2725a7733409e75d8f38c302b2bdc49"
+    },
+    {
+      "path": "native/windows-security/src/isolated-spawn.cc",
+      "blob": "787f5ec23c7904928d3a25b22d4734460d2c3163"
+    },
+    {
+      "path": "native/windows-security/src/isolated-spawn.h",
+      "blob": "a3a3ef053573fee3a99868089e751b729f56dae6"
+    },
+    {
+      "path": "src/main/orcad/orcad-cli-launcher.ts",
+      "blob": "5f8987750d5d043f97e1210abf8560113242491f"
+    },
+    {
+      "path": "native/windows-cli-launcher/src/administrator_status.rs",
+      "blob": "aec81835723e91eaaa06d8d104653b54ae195303"
+    },
+    {
+      "path": "native/windows-cli-launcher/src/administrator_restart.rs",
+      "blob": "36603a5a353ac8aee69837b2bf4f050e4b153a65"
+    },
+    {
+      "path": "native/windows-cli-launcher/src/administrator_launcher.rs",
+      "blob": "a4b332020e9d74c357b0d2c777ac3101e179f903"
+    },
+    {
+      "path": "native/windows-cli-launcher/Cargo.toml",
+      "blob": "1bd55b42328a3dfb293190746f74eb4ea178c5e4"
+    },
+    {
+      "path": "native/windows-cli-launcher/Cargo.lock",
+      "blob": "6342f1b41e4f33f7a2a314b31d0235c68bb260b1"
+    },
+    {
+      "path": "native/windows-cli-launcher/app.manifest",
+      "blob": "34f0426701c3b9c67e50a85b3a485d55ca06d1f5"
+    },
+    {
+      "path": "native/windows-cli-launcher/src/main.rs",
+      "blob": "b87d74f2c44fa9b9264a1f1860583cef31f0d732"
+    },
+    {
+      "path": "native/windows-cli-launcher/build.rs",
+      "blob": "afcfbda992ecac20ffadf0fbc1e96773ba4733b2"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "orcad-prebuild-macos-15-intel.zip",
+      "id": 12956125206,
+      "name": "orcad-prebuild-macos-15-intel",
+      "bytes": 37662,
+      "sha256": "226288de14108311b299b37409ada164def5d1d0c4626e00c62b6b0547b88e27"
+    },
+    {
+      "file": "orcad-prebuild-windows-11-arm.zip",
+      "id": 12956120458,
+      "name": "orcad-prebuild-windows-11-arm",
+      "bytes": 1487076,
+      "sha256": "081bfff43eac21fd50b7195605479e2c145997bbcc49dc1cd11adb282f5c40fb"
+    },
+    {
+      "file": "orcad-prebuild-musl-ubuntu-24.04-arm.zip",
+      "id": 12955855858,
+      "name": "orcad-prebuild-musl-ubuntu-24.04-arm",
+      "bytes": 27309,
+      "sha256": "2609ace4b24f2c3ea57ab2a76f4e4c693d831ad5fdebe7a1568bae0d2f4547c5"
+    },
+    {
+      "file": "orcad-prebuild-glibc-ubuntu-24.04-arm.zip",
+      "id": 12955811184,
+      "name": "orcad-prebuild-glibc-ubuntu-24.04-arm",
+      "bytes": 26011,
+      "sha256": "dddc58ef3612408c542a5e749c7fc09c9104720d22b07dd9f99c628af8bb0878"
+    },
+    {
+      "file": "orcad-windows-security.zip",
+      "id": 12955727231,
+      "name": "orcad-windows-security",
+      "bytes": 153231,
+      "sha256": "7ed23d6319a4720244dce893a6a86a14c5393515503347080a97a0173b146007"
+    },
+    {
+      "file": "orcad-prebuild-macos-15.zip",
+      "id": 12955651770,
+      "name": "orcad-prebuild-macos-15",
+      "bytes": 37563,
+      "sha256": "c42133da4eb05fe04124eef5d8c944a697f5044aa8c46ce2ed0dfe86193cadf1"
+    },
+    {
+      "file": "orcad-prebuild-glibc217.zip",
+      "id": 12955592052,
+      "name": "orcad-prebuild-glibc217",
+      "bytes": 921570,
+      "sha256": "1d9b9a28efbfab517841d5dc7e54017a747476f573d5557aa255928e6f8a87aa"
+    },
+    {
+      "file": "orcad-windows-process-tree.zip",
+      "id": 12955553166,
+      "name": "orcad-windows-process-tree",
+      "bytes": 149981,
+      "sha256": "38fcf35e80fc5635d11708acc1f90465606116a0d5e01f3f727301398b5f125c"
+    },
+    {
+      "file": "orcad-prebuild-windows-2022.zip",
+      "id": 12955493648,
+      "name": "orcad-prebuild-windows-2022",
+      "bytes": 1601269,
+      "sha256": "781aa058eda94da8b169fca412eef57dde286ceff7e4321e35d9b4510d17dce6"
+    },
+    {
+      "file": "orcad-prebuild-glibc-ubuntu-22.04.zip",
+      "id": 12955448504,
+      "name": "orcad-prebuild-glibc-ubuntu-22.04",
+      "bytes": 27370,
+      "sha256": "4adba97f1e1f3041280ebe290fd3101a9532ec5745cb6fffeb675564bdc66c0c"
+    },
+    {
+      "file": "orcad-prebuild-musl-ubuntu-22.04.zip",
+      "id": 12954519997,
+      "name": "orcad-prebuild-musl-ubuntu-22.04",
+      "bytes": 28822,
+      "sha256": "6f314b4ad89d15b19aa55799f0013cf57c14fe3352729404937d1982ae1097f8"
+    },
+    {
+      "file": "orcad-windows-cli-launcher.zip",
+      "id": 12955801754,
+      "name": "orcad-windows-cli-launcher",
+      "bytes": 824253,
+      "sha256": "1412ca9405d46803623b8e1427a574b7b2e80a8f19c65db1742173649b6a081c"
+    }
+  ],
+  "serverLauncher": "Official artifact is reusable ONLY under .build/windows-cli-launcher/<arch>/orca.exe for orcad server templates. Runtime prepareOrcadCliLauncher writes sibling orca-launcher.cfg with actual Node, BW CLI and profile paths before publishing launcherPath. Rust run_server_cli returns ! before desktop APP_EXECUTABLE code. Desktop resources/bin/orca.exe must still be compiled from BW source into native/windows-cli-launcher/.build/workbench.",
+  "installedDependencies": {
+    "@parcel/watcher": "2.5.6"
+  }
+}

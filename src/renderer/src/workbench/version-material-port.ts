@@ -4,7 +4,7 @@ import type {
   VersionMaterialScope,
   VersionMaterialResult
 } from '../../../shared/workbench/version-material-request'
-import { callRuntimeRpc } from '../runtime/runtime-rpc-client'
+import { callHostRoute } from '../runtime/host-route-call'
 import { routeForOwner } from '../lib/worktree-owner-route'
 
 /** The selected native worktree supplies both its filesystem host and optional paired runtime. */
@@ -20,11 +20,12 @@ export function nativeVersionMaterialPort(
   const target = route.runtimeEnvironmentId
     ? { kind: 'environment' as const, environmentId: route.runtimeEnvironmentId }
     : { kind: 'local' as const }
+  const owner = parseExecutionHostId(hostId)!
   const ownerScope = {
     ...scope,
-    hostId: parseExecutionHostId(hostId)?.kind === 'runtime' ? 'local' : hostId
+    hostId: owner.kind === 'runtime' ? ('local' as const) : owner.id
   }
   return createVersionMaterialPort(ownerScope, ({ method, params }) =>
-    callRuntimeRpc<VersionMaterialResult<unknown>>(target, method, params)
+    callHostRoute<VersionMaterialResult<unknown>>({ target, at: ownerScope.hostId }, method, params)
   )
 }

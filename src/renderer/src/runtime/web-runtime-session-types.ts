@@ -11,7 +11,7 @@ import type { RuntimeTerminalCreate } from '../../../shared/runtime-types'
 import type { TuiAgent } from '../../../shared/tui-agent'
 
 export type WebRuntimeTerminalCreateOutcome =
-  | { status: 'created'; hostTabId?: string }
+  | { status: 'created' }
   | { status: 'failed'; message: string }
 
 export type CreateWebRuntimeSessionTerminalArgs = {
@@ -20,6 +20,8 @@ export type CreateWebRuntimeSessionTerminalArgs = {
   afterTabId?: string
   targetGroupId?: string
   command?: string
+  /** The Windows shell the terminal runs as, never typed into the host default shell. */
+  shell?: string
   cwd?: string
   env?: Record<string, string>
   envToDelete?: string[]
@@ -45,6 +47,8 @@ export type CreateWebRuntimeSessionTerminalArgs = {
 export type CreatedWebRuntimeSessionTerminal = {
   outcome: WebRuntimeTerminalCreateOutcome
   hostTabId?: string
+  /** A live session existed and the create was not confirmed, as opposed to no session to ask. */
+  hostFailed?: true
 }
 
 export type CreatedAgentTerminalIdentity = Pick<RuntimeTerminalCreate, 'tabId' | 'paneKey'> & {

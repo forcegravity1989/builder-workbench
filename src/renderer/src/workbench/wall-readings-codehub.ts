@@ -1,3 +1,4 @@
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { codehubApi } from '@/lib/codehub-api'
 import type { Repo } from '../../../shared/repo-types'
 import type { CycleScope, CycleTaskReference } from './version-cycle/ports'
@@ -30,6 +31,7 @@ export async function readCodeHubTaskStates(
       const detail = await codehubApi.viewTask({
         repoPath: repo.path,
         repoId: repo.id,
+        repoHostId: getRepoExecutionHostId(repo),
         kind: 'issue',
         iid: task.number
       })

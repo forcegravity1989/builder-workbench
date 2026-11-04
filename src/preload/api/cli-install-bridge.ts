@@ -7,9 +7,7 @@ export const cliInstallApi = {
     ipcRenderer.invoke('cliInstall:start', args),
   isRunning: (args: Parameters<PreloadApi['cliInstall']['isRunning']>[0]) =>
     ipcRenderer.invoke('cliInstall:isRunning', args),
-  onFinished: (
-    callback: (payload: BwCliInstallFinishedPayload) => void
-  ): (() => void) => {
+  onFinished: (callback: (payload: BwCliInstallFinishedPayload) => void): (() => void) => {
     const listener = (
       _event: Electron.IpcRendererEvent,
       payload: BwCliInstallFinishedPayload

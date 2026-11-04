@@ -8,7 +8,7 @@ import {
   quoteFtsTerm
 } from './session-search-query-planner'
 
-describe('literal shape decides whether the phrase route is even tried', () => {
+describe('literal shape controls stop-word retention and identifier expansion', () => {
   it.each([
     'resolveTerminalPath',
     'src/main/foo-bar.ts',
@@ -31,8 +31,8 @@ describe('literal shape decides whether the phrase route is even tried', () => {
   )
 })
 
-describe('the body is what the phrase and AND routes see', () => {
-  it('drops stop words from prose so the AND route is not defeated by "the"', () => {
+describe('the OR body drops prose stop words and retains literal tokens', () => {
+  it('drops stop words from the prose body', () => {
     expect(planSessionSearchQuery('why is the relay dropping frames').body).toEqual([
       'relay',
       'dropping',
@@ -41,7 +41,6 @@ describe('the body is what the phrase and AND routes see', () => {
   })
 
   it('keeps stop words inside a literal, where they are part of what was quoted', () => {
-    // The literal shape is `foo.ts`; dropping `the` would change what was typed.
     expect(planSessionSearchQuery('the foo.ts file').body).toEqual(['the', 'foo.ts', 'file'])
   })
 
@@ -60,7 +59,6 @@ describe('the OR fallback fans an identifier out into its pieces', () => {
     expect(plan.terms[0]).toBe('resolveTerminalPath')
     expect(plan.terms).toContain('terminal')
     expect(plan.terms).toContain('path')
-    // `resolve` is not a stop word, so the whole identifier is reachable by piece.
     expect(plan.terms).toContain('resolve')
   })
 
@@ -80,5 +78,30 @@ describe('FTS5 expressions quote every term', () => {
     expect(phraseExpression(['alpha', 'beta'])).toBe('"alpha beta"')
     expect(andExpression(['alpha', 'beta'])).toBe('"alpha" AND "beta"')
     expect(orExpression(['alpha', 'beta'])).toBe('"alpha" OR "beta"')
+  })
+})
+
+describe('the phrase candidate is the query as typed', () => {
+  const sentence = 'The sol review says the PR is not quite merge-ready yet'
+
+  it('classifies a pasted sentence as prose', () => {
+    expect(isLiteralQuery(sentence)).toBe(false)
+  })
+
+  it('keeps the stop words the OR body drops, because the index holds them', () => {
+    const plan = planSessionSearchQuery('why is the relay dropping frames')
+    expect(plan.phrase).toEqual(['why', 'is', 'the', 'relay', 'dropping', 'frames'])
+    expect(plan.body).toEqual(['relay', 'dropping', 'frames'])
+  })
+
+  it('is the same list as the body for a literal, which keeps every token', () => {
+    const plan = planSessionSearchQuery('the foo.ts file')
+    expect(plan.phrase).toEqual(plan.body)
+  })
+
+  it('quotes into one phrase a pasted sentence can actually match', () => {
+    expect(phraseExpression(planSessionSearchQuery(sentence).phrase)).toBe(
+      '"The sol review says the PR is not quite merge-ready yet"'
+    )
   })
 })

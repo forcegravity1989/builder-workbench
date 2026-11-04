@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as LocalCommandResolver from './command-path-resolver'
+import type { ProcessSpec } from '@orca/process-host/process-spec'
 
 const {
   handleMock,
@@ -7,13 +9,13 @@ const {
   runWslProcessMock,
   hydrateShellPathMock,
   mergePathSegmentsMock,
-  getActiveMultiplexerMock,
   getBitbucketAuthStatusMock,
   getAzureDevOpsAuthStatusMock,
   getGiteaAuthStatusMock,
   resolveCliCommandsMock,
+  findCommandsOnLocalPathMock,
   isCommandOnLocalPathMock,
-  resolveCommandOnLocalPathMock,
+  listLocalCommandPathsMock,
   mergePersistedWindowsPathAsyncMock,
   mergePersistedWindowsPathMock
 } = vi.hoisted(() => ({
@@ -23,15 +25,21 @@ const {
   runWslProcessMock: vi.fn(),
   hydrateShellPathMock: vi.fn(),
   mergePathSegmentsMock: vi.fn(),
-  getActiveMultiplexerMock: vi.fn(),
   getBitbucketAuthStatusMock: vi.fn(),
   getAzureDevOpsAuthStatusMock: vi.fn(),
   getGiteaAuthStatusMock: vi.fn(),
   resolveCliCommandsMock: vi.fn(),
+  findCommandsOnLocalPathMock: vi.fn(),
   isCommandOnLocalPathMock: vi.fn(),
-  resolveCommandOnLocalPathMock: vi.fn(),
+  listLocalCommandPathsMock: vi.fn(),
   mergePersistedWindowsPathAsyncMock: vi.fn(),
   mergePersistedWindowsPathMock: vi.fn()
+}))
+
+// These cases cover a running distro; the E9 stopped-distro gate has its own suite.
+vi.mock('../wsl/wsl-background-exec-gate', () => ({
+  assertWslDistroRunningForExec: async () => {},
+  runAsWslExecUserAct: async (_distro: unknown, act: () => Promise<unknown>) => act()
 }))
 
 vi.mock('electron', () => ({
@@ -50,7 +58,19 @@ vi.mock('child_process', () => {
   }
 })
 
-// WSL commands now route through the runner, not execFile('wsl.exe', ...).
+vi.mock('@orca/process-host', () => ({
+  runProcess: async (spec: ProcessSpec) => ({
+    ...(await execFileAsyncMock(spec.program, spec.args, {
+      encoding: 'utf-8',
+      timeout: spec.timeoutMs,
+      windowsHide: true,
+      ...(spec.env ? { env: spec.env } : {})
+    })),
+    code: 0,
+    timedOut: false
+  })
+}))
+
 vi.mock('../wsl/wsl-runner', () => ({ runWslProcess: runWslProcessMock }))
 
 vi.mock('../startup/hydrate-shell-path', () => ({
@@ -62,21 +82,17 @@ vi.mock('../../shared/node-cli-command-resolution', () => ({
   resolveCliCommands: resolveCliCommandsMock
 }))
 
-// Why (#9297): local PATH resolution is now fs-based (no where/which spawn).
-// These tests express "which commands are on PATH" via the where/which mock,
-// so route the resolver through that same mock to preserve their intent.
-vi.mock('./command-path-resolver', () => ({
+// Route filesystem PATH resolution through the existing command-lookup mock.
+vi.mock('./command-path-resolver', async (importOriginal) => ({
+  ...(await importOriginal<typeof LocalCommandResolver>()),
+  findCommandsOnLocalPath: findCommandsOnLocalPathMock,
   isCommandOnLocalPath: isCommandOnLocalPathMock,
-  resolveCommandOnLocalPath: resolveCommandOnLocalPathMock
+  listLocalCommandPaths: listLocalCommandPathsMock
 }))
 
 vi.mock('../pty/windows-environment-path', () => ({
   mergePersistedWindowsPathAsync: mergePersistedWindowsPathAsyncMock,
   mergePersistedWindowsPath: mergePersistedWindowsPathMock
-}))
-
-vi.mock('./ssh', () => ({
-  getActiveMultiplexer: getActiveMultiplexerMock
 }))
 
 vi.mock('../bitbucket/client', () => ({
@@ -91,7 +107,8 @@ vi.mock('../gitea/client', () => ({
   getGiteaAuthStatus: getGiteaAuthStatusMock
 }))
 
-import { _resetPreflightCache, registerPreflightHandlers, runPreflightCheck } from './preflight'
+import { _resetPreflightCache, runPreflightCheck } from '../preflight/agent-detection'
+import { registerPreflightHandlers } from './preflight'
 import {
   defaultAzureDevOpsStatus,
   defaultBitbucketStatus,
@@ -112,13 +129,13 @@ describe('preflight', () => {
         runWslProcessMock,
         hydrateShellPathMock,
         mergePathSegmentsMock,
-        getActiveMultiplexerMock,
         getBitbucketAuthStatusMock,
         getAzureDevOpsAuthStatusMock,
         getGiteaAuthStatusMock,
         resolveCliCommandsMock,
+        findCommandsOnLocalPathMock,
         isCommandOnLocalPathMock,
-        resolveCommandOnLocalPathMock,
+        listLocalCommandPathsMock,
         mergePersistedWindowsPathAsyncMock,
         mergePersistedWindowsPathMock
       },
@@ -127,284 +144,371 @@ describe('preflight', () => {
   })
 
   afterEach(() => {
+    vi.restoreAllMocks()
     Object.defineProperty(process, 'platform', {
       configurable: true,
       value: originalPlatform
     })
   })
 
-  // Why: the execFile options every local probe passes — shared so the
-  // call-shape assertions stay one line each.
-  const EXEC_OPTS = { encoding: 'utf-8', timeout: 5000, windowsHide: true }
-
-  // Why (BW #323): every auth-readback case queues the same six version
-  // probes before its auth variation — one helper keeps the repeated prefix
-  // from eating the file's max-lines budget. Returns the mock so cases (and
-  // mockHappyAuthPathPrefix) can chain their variation.
-  const mockVersionProbes = () =>
-    execFileAsyncMock
-      .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
-      .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'cloudbuild version v0.1.16\n' })
-
-  // Why: the happy prefix adds successful gh/glab auth readbacks on top of
-  // the version probes — the baseline for cases that vary only the
-  // codehub/welink/cloudbuild readbacks.
-  const mockHappyAuthPathPrefix = () =>
-    mockVersionProbes()
-      .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
-      .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
-
-  // Why: every preflight run probes (in order) `git --version`, `gh --version`,
-  // `glab --version`, `codehub-cli --version`, `welink-cli --version`,
-  // `cb version` (BW #366: cb rejects --version), then in parallel
-  // `gh auth status` + `glab auth status` + `codehub-cli auth status` +
-  // `welink-cli auth status` + `cb auth status` — eleven execFile calls per
-  // cycle. Tests below provide values for all eleven.
+  // Sequential version probes precede concurrent gh/glab auth checks; fixtures supply all five responses.
   it('marks gh as authenticated when gh auth status exits successfully', async () => {
-    mockHappyAuthPathPrefix()
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
+    const responses: Record<string, (() => unknown)[]> = {
+      'git --version': [
+        () => {
+          return { stdout: 'git version 2.0.0\n' }
+        }
+      ],
+      'gh --version': [
+        () => {
+          return { stdout: 'gh version 2.0.0\n' }
+        }
+      ],
+      'glab --version': [
+        () => {
+          return { stdout: 'glab version 1.92.1\n' }
+        }
+      ],
+      'gh auth status': [
+        () => {
+          return { stdout: 'github.com\n  - Active account: true\n' }
+        }
+      ],
+      'glab auth status': [
+        () => {
+          return { stdout: 'Logged in to gitlab.com\n' }
+        }
+      ]
+    }
+    execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
+      const response = responses[[command, ...args].join(' ')]?.shift()
+      if (!response) {
+        throw new Error('command unavailable')
+      }
+      return response()
+    })
 
     const status = await runPreflightCheck()
 
-    expect(status).toEqual({
+    expect(status).toMatchObject({
       git: { installed: true },
       gh: { installed: true, authenticated: true },
       glab: { installed: true, authenticated: true },
-      codehub: { installed: true, authenticated: true },
-      welink: { installed: true, authenticated: true },
-      cloudbuild: { installed: true, authenticated: true },
       bitbucket: defaultBitbucketStatus,
       azureDevOps: defaultAzureDevOpsStatus,
-      gitea: defaultGiteaStatus
+      gitea: defaultGiteaStatus,
+      codehub: { installed: false, authenticated: false },
+      cloudbuild: { installed: false, authenticated: false },
+      welink: { installed: false, authenticated: false }
     })
-    expect(execFileAsyncMock).toHaveBeenNthCalledWith(7, 'gh', ['auth', 'status'], EXEC_OPTS)
-    expect(execFileAsyncMock).toHaveBeenNthCalledWith(8, 'glab', ['auth', 'status'], EXEC_OPTS)
+    expect(execFileAsyncMock).toHaveBeenCalledWith('gh', ['auth', 'status'], {
+      encoding: 'utf-8',
+      timeout: 5000,
+      windowsHide: true
+    })
+    expect(execFileAsyncMock).toHaveBeenCalledWith('glab', ['auth', 'status'], {
+      encoding: 'utf-8',
+      timeout: 5000,
+      windowsHide: true
+    })
   })
 
-  it('treats gh as unauthenticated when gh auth status fails without auth markers', async () => {
-    mockVersionProbes()
-      .mockRejectedValueOnce({ stderr: 'You are not logged into any GitHub hosts.\n' })
-      .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
+  it.each(['gh', 'glab'])('does not switch %s copies after authentication fails', async (cli) => {
+    const first = `/test/first/${cli}`
+    const second = `/test/second/${cli}`
+    listLocalCommandPathsMock.mockImplementation(async (command: string) =>
+      command === cli ? [first, second] : []
+    )
+    execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
+      if (command === first && args[0] === 'auth') {
+        throw Object.assign(new Error('not authenticated'), { code: 1, stderr: 'not logged in' })
+      }
+      return { stdout: 'fixture success', stderr: '' }
+    })
 
     const status = await runPreflightCheck()
 
-    expect(status.gh).toEqual({ installed: true, authenticated: false })
+    expect(cli === 'gh' ? status.gh : status.glab).toEqual({
+      installed: true,
+      authenticated: false
+    })
+    expect(
+      execFileAsyncMock.mock.calls.filter(([command]) => command === first).map(([, args]) => args)
+    ).toEqual([['--version'], ['auth', 'status']])
+    expect(execFileAsyncMock.mock.calls.some(([command]) => command === second)).toBe(false)
   })
 
   it('keeps older gh stderr success output from showing a false auth warning', async () => {
-    mockVersionProbes()
-      .mockRejectedValueOnce({ stderr: 'Logged in to github.com account octocat\n' })
-      .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
+    const responses: Record<string, (() => unknown)[]> = {
+      'git --version': [
+        () => {
+          return { stdout: 'git version 2.0.0\n' }
+        }
+      ],
+      'gh --version': [
+        () => {
+          return { stdout: 'gh version 2.0.0\n' }
+        }
+      ],
+      'glab --version': [
+        () => {
+          return { stdout: 'glab version 1.92.1\n' }
+        }
+      ],
+      'gh auth status': [
+        () => {
+          throw { stderr: 'Logged in to github.com account octocat\n' }
+        }
+      ],
+      'glab auth status': [
+        () => {
+          return { stdout: 'Logged in to gitlab.com\n' }
+        }
+      ]
+    }
+    execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
+      const response = responses[[command, ...args].join(' ')]?.shift()
+      if (!response) {
+        throw new Error('command unavailable')
+      }
+      return response()
+    })
 
     const status = await runPreflightCheck()
 
     expect(status.gh).toEqual({ installed: true, authenticated: true })
   })
 
+  // Match command/args because fallback version probes and concurrent auth checks vary call order.
+  it('authenticates the gh copy that actually ran, not the shim PATH chose', async () => {
+    const shim = '/Users/octocat/.asdf/shims/gh'
+    const working = '/opt/homebrew/bin/gh'
+    const glabShim = '/Users/octocat/.asdf/shims/glab'
+    const glabWorking = '/usr/local/bin/glab'
+    const shims = new Set([shim, glabShim])
+    listLocalCommandPathsMock.mockImplementation(async (command: string) => {
+      if (command === 'gh') {
+        return [shim, working]
+      }
+      return command === 'glab' ? [glabShim, glabWorking] : []
+    })
+    execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
+      if (shims.has(command)) {
+        throw Object.assign(new Error('spawn failed'), { code: 126 })
+      }
+      const auth = args[0] === 'auth'
+      if (command === working) {
+        return { stdout: auth ? 'github.com\n  - Active account: true\n' : 'gh version 2.6.0\n' }
+      }
+      if (command === glabWorking) {
+        return { stdout: auth ? 'Logged in to gitlab.com\n' : 'glab version 1.92.1\n' }
+      }
+      if (command === 'git') {
+        return { stdout: 'git version 2.0.0\n' }
+      }
+      throw new Error(`unexpected command ${command}`)
+    })
+
+    const status = await runPreflightCheck()
+
+    expect(status).toMatchObject({
+      gh: { installed: true, authenticated: true },
+      glab: { installed: true, authenticated: true }
+    })
+    for (const [cli, copy] of [
+      ['gh', working],
+      ['glab', glabWorking]
+    ]) {
+      expect(execFileAsyncMock).toHaveBeenCalledWith(copy, ['auth', 'status'], {
+        encoding: 'utf-8',
+        timeout: 5000,
+        windowsHide: true
+      })
+      expect(execFileAsyncMock).not.toHaveBeenCalledWith(cli, ['auth', 'status'], {
+        encoding: 'utf-8',
+        timeout: 5000,
+        windowsHide: true
+      })
+    }
+  })
+
+  it('marks gh not installed when no copy PATH offers can run', async () => {
+    const doomed = ['/Users/octocat/.asdf/shims/gh', '/Users/octocat/.local/bin/gh']
+    listLocalCommandPathsMock.mockImplementation(async (command: string) =>
+      command === 'gh' ? doomed : []
+    )
+    execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
+      if (doomed.includes(command)) {
+        throw Object.assign(new Error('spawn failed'), { code: 126 })
+      }
+      if (command === 'git') {
+        return { stdout: 'git version 2.0.0\n' }
+      }
+      if (command === 'glab') {
+        return {
+          stdout: args[0] === 'auth' ? 'Logged in to gitlab.com\n' : 'glab version 1.92.1\n'
+        }
+      }
+      throw new Error(`unexpected command ${command}`)
+    })
+
+    const status = await runPreflightCheck()
+
+    expect(status.gh).toEqual({ installed: false, authenticated: false })
+    expect(
+      execFileAsyncMock.mock.calls.filter(
+        ([command]) => !['codehub-cli', 'welink-cli', 'cb'].includes(command)
+      )
+    ).toHaveLength(5)
+  })
+
   it('marks glab as not installed when `glab --version` fails', async () => {
-    execFileAsyncMock
-      .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
-      .mockRejectedValueOnce(new Error('command not found: glab'))
-      .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'cloudbuild version v0.1.16\n' })
-      .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
+    const responses: Record<string, (() => unknown)[]> = {
+      'git --version': [
+        () => {
+          return { stdout: 'git version 2.0.0\n' }
+        }
+      ],
+      'gh --version': [
+        () => {
+          return { stdout: 'gh version 2.0.0\n' }
+        }
+      ],
+      'glab --version': [
+        () => {
+          throw new Error('command not found: glab')
+        }
+      ],
+      'gh auth status': [
+        () => {
+          return { stdout: 'github.com\n  - Active account: true\n' }
+        }
+      ]
+    }
+    execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
+      const response = responses[[command, ...args].join(' ')]?.shift()
+      if (!response) {
+        throw new Error('command unavailable')
+      }
+      return response()
+    })
 
     const status = await runPreflightCheck()
 
     expect(status.glab).toEqual({ installed: false, authenticated: false })
-    // Why: with glab uninstalled, glab auth status must not run — that
-    // would surface a misleading "command not found" error in logs. The
-    // remaining ten calls are the six version probes plus the gh /
-    // codehub / welink / cloudbuild auth checks.
-    expect(execFileAsyncMock).toHaveBeenCalledTimes(10)
+    // An absent glab must not generate a misleading auth command failure.
+    expect(execFileAsyncMock).not.toHaveBeenCalledWith(
+      'glab',
+      ['auth', 'status'],
+      expect.anything()
+    )
   })
 
   it('marks glab as installed but unauthenticated when auth status fails', async () => {
-    mockVersionProbes()
-      .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
-      .mockRejectedValueOnce({ stderr: 'You are not logged into any GitLab hosts.\n' })
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
+    const responses: Record<string, (() => unknown)[]> = {
+      'git --version': [
+        () => {
+          return { stdout: 'git version 2.0.0\n' }
+        }
+      ],
+      'gh --version': [
+        () => {
+          return { stdout: 'gh version 2.0.0\n' }
+        }
+      ],
+      'glab --version': [
+        () => {
+          return { stdout: 'glab version 1.92.1\n' }
+        }
+      ],
+      'gh auth status': [
+        () => {
+          return { stdout: 'github.com\n  - Active account: true\n' }
+        }
+      ],
+      'glab auth status': [
+        () => {
+          throw { stderr: 'You are not logged into any GitLab hosts.\n' }
+        }
+      ]
+    }
+    execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
+      const response = responses[[command, ...args].join(' ')]?.shift()
+      if (!response) {
+        throw new Error('command unavailable')
+      }
+      return response()
+    })
 
     const status = await runPreflightCheck()
 
     expect(status.glab).toEqual({ installed: true, authenticated: false })
   })
 
-  // Why (BW #323): welink-cli exits 0 in every logged-out state — an EXPIRED
-  // token (human decision on intent 待决 3, 2026-10-16: NOT authenticated, no
-  // green light on a stale token), a failed probe without markers, and
-  // never-logged-in (real-shell capture 2026-10-16: "Status: not
-  // authenticated", no User Token line). One case walks the three output
-  // shapes through the same probe path (cache reset between runs) so the
-  // vitest-count ratchet stays put.
+  function mockBwCli(command: string, output: string, rejected = false, installed = true): void {
+    execFileAsyncMock.mockImplementation(async (binary: string, args: string[]) => {
+      if (binary !== command || !installed) {
+        throw new Error('command unavailable')
+      }
+      if (args[0] !== 'auth') {
+        return { stdout: 'fixture version', stderr: '' }
+      }
+      if (rejected) {
+        throw { stdout: output, stderr: '' }
+      }
+      return { stdout: output, stderr: '' }
+    })
+    _resetPreflightCache()
+  }
+
   it('derives welink auth only from output markers across its logged-out shapes', async () => {
-    for (const queueLoggedOutWelinkOutput of [
-      () =>
-        execFileAsyncMock.mockResolvedValueOnce({
-          stdout: 'User Token: EXPIRED\nHint: Token will auto-refresh on next command\n'
-        }),
-      () => execFileAsyncMock.mockRejectedValueOnce({ stderr: 'not logged in\n' }),
-      () =>
-        execFileAsyncMock.mockResolvedValueOnce({
-          stdout:
-            'Configuration:\n  Environment:  pro\n\nCredentials:\n  Status:       not authenticated\n  Hint:         Run \'welink-cli auth login\' to authenticate.\n'
-        })
-    ]) {
-      mockHappyAuthPathPrefix().mockResolvedValueOnce({
-        stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n'
-      })
-      queueLoggedOutWelinkOutput()
-      execFileAsyncMock.mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
-      _resetPreflightCache()
-
-      const status = await runPreflightCheck()
-
-      expect(status.welink).toEqual({ installed: true, authenticated: false })
+    for (const [output, rejected] of [
+      ['User Token: EXPIRED\nHint: Token will auto-refresh', false],
+      ['not logged in', true],
+      ['Configuration:\nCredentials:\nStatus: not authenticated', false]
+    ] as const) {
+      mockBwCli('welink-cli', output, rejected)
+      expect((await runPreflightCheck()).welink).toEqual({ installed: true, authenticated: false })
     }
   })
 
-  // Why (BW #323): codehub-cli prints a host table whose LOGIN column reads
-  // `yes`; partial output can surface on a thrown error, so the markers must
-  // rescue it the same way gh's "Logged in" does.
   it('reads codehub login markers from a failed auth status output', async () => {
-    mockHappyAuthPathPrefix()
-      .mockRejectedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
-
-    const status = await runPreflightCheck()
-
-    expect(status.codehub).toEqual({ installed: true, authenticated: true })
+    mockBwCli('codehub-cli', 'Host: https://codehub.example.com\nLOGIN: yes\n', true)
+    expect((await runPreflightCheck()).codehub).toEqual({ installed: true, authenticated: true })
   })
 
-  // Why (BW #323): codehub-cli exits 0 when logged out too (real-shell capture
-  // 2026-10-16: "You are not logged in." with exit 0) — trusting the exit code
-  // lit a false green; the LOGIN-column markers decide.
   it('treats codehub as unauthenticated when auth status exits 0 logged out', async () => {
-    mockHappyAuthPathPrefix()
-      .mockResolvedValueOnce({
-        stdout: 'You are not logged in.\nTo authenticate, run: codehub-cli auth login\n'
-      })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
-
-    const status = await runPreflightCheck()
-
-    expect(status.codehub).toEqual({ installed: true, authenticated: false })
+    mockBwCli('codehub-cli', 'You are not logged in.\nTo authenticate, run: codehub-cli auth login')
+    expect((await runPreflightCheck()).codehub).toEqual({ installed: true, authenticated: false })
   })
 
-  // Why (BW #366): cb is the first probed CLI that rejects `--version`
-  // (cobra: unknown flag) — its `version` subcommand is the liveness probe —
-  // and like codehub/welink its `auth status` exits 0 even on an expired
-  // token (real-shell capture 2026-10-19: `Token Expires: … (expired)`), so
-  // the verdict comes from the (expired) marker. One case walks the three
-  // shapes (missing / expired / live) with cache resets between runs.
   it('probes cb with its version subcommand and reads auth from token markers', async () => {
-    // missing: the failed cb version probe must skip the auth readback
-    // entirely (manual chain — the happy prefix queues cb as installed).
-    execFileAsyncMock
-      .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
-      .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
-      .mockRejectedValueOnce(new Error('command not found: cb'))
-      .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
-      .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-    _resetPreflightCache()
-    expect(await runPreflightCheck()).toMatchObject({
-      cloudbuild: { installed: false, authenticated: false }
-    })
-
-    // expired token: exit 0, no green light (same verdict as welink EXPIRED).
-    mockHappyAuthPathPrefix()
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({
-        stdout: 'Profile:       default\nToken Expires: 2026-10-19 10:10 CST (expired)\n'
-      })
-    _resetPreflightCache()
-    expect(await runPreflightCheck()).toMatchObject({
-      cloudbuild: { installed: true, authenticated: false }
-    })
-
-    // live token: the only shape whose Token Expires line carries no marker.
-    mockHappyAuthPathPrefix()
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({
-        stdout: 'Profile:       default\nToken Expires: 2026-10-25 10:10 CST\n'
-      })
-    _resetPreflightCache()
-    expect(await runPreflightCheck()).toMatchObject({
-      cloudbuild: { installed: true, authenticated: true }
-    })
-
-    // cb rejects --version; the probe must call its version subcommand.
-    expect(execFileAsyncMock).toHaveBeenCalledWith('cb', ['version'], EXEC_OPTS)
+    for (const [installed, output, authenticated] of [
+      [false, '', false],
+      [true, 'Token Expires: 2026-10-19 10:10 CST (expired)', false],
+      [true, 'Token Expires: 2026-10-25 10:10 CST', true]
+    ] as const) {
+      mockBwCli('cb', output, false, installed)
+      expect((await runPreflightCheck()).cloudbuild).toEqual({ installed, authenticated })
+    }
+    expect(execFileAsyncMock).toHaveBeenCalledWith('cb', ['version'], expect.anything())
     expect(execFileAsyncMock).not.toHaveBeenCalledWith('cb', ['--version'], expect.anything())
   })
 
-  // Why (BW #323): npm-installed CLIs on Windows only expose .cmd shims,
-  // which CreateProcess cannot launch — the probe must resolve the shim and
-  // route it through cmd.exe, or a successful install keeps reading
-  // "not installed" (real-shell finding 2026-10-16).
-  it('probes npm .cmd shims through cmd.exe so installed CLIs are detected', async () => {
-    Object.defineProperty(process, 'platform', {
-      configurable: true,
-      value: 'win32'
-    })
-    resolveCommandOnLocalPathMock.mockImplementation(
-      async (command: string) =>
-        (command === 'codehub-cli'
-          ? 'C:\\Users\\dev\\AppData\\Roaming\\npm\\codehub-cli.cmd'
-          : null) as string | null
+  it('authenticates the successful CodeHub cmd shim through the shared process runner', async () => {
+    Object.defineProperty(process, 'platform', { configurable: true, value: 'win32' })
+    const shim = 'C:\\Users\\dev\\AppData\\Roaming\\npm\\codehub-cli.cmd'
+    listLocalCommandPathsMock.mockImplementation(async (command: string) =>
+      command === 'codehub-cli' ? [shim] : []
     )
-    execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
-      if (command === 'cmd.exe') {
-        return args.includes('auth')
-          ? { stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' }
-          : { stdout: 'codehub-cli version 1.4.1\n' }
-      }
-      if (command === 'git') {
-        return { stdout: 'git version 2.0.0\n' }
-      }
-      if (command === 'gh') {
-        return args[0] === '--version'
-          ? { stdout: 'gh version 2.0.0\n' }
-          : { stdout: 'github.com\n  - Active account: true\n' }
-      }
-      throw new Error(`unexpected command ${String(command)}`)
-    })
-
-    const status = await runPreflightCheck()
-
-    expect(status.codehub).toEqual({ installed: true, authenticated: true })
-    expect(execFileAsyncMock).toHaveBeenCalledWith(
-      'cmd.exe',
-      ['/d', '/c', 'C:\\Users\\dev\\AppData\\Roaming\\npm\\codehub-cli.cmd', '--version'],
-      expect.objectContaining({ windowsHide: true })
+    mockBwCli(shim, 'Host: https://codehub.example.com\nLOGIN: yes\n')
+    expect((await runPreflightCheck()).codehub).toEqual({ installed: true, authenticated: true })
+    expect(execFileAsyncMock).toHaveBeenCalledWith(shim, ['--version'], expect.anything())
+    expect(execFileAsyncMock).toHaveBeenCalledWith(shim, ['auth', 'status'], expect.anything())
+    expect(execFileAsyncMock).not.toHaveBeenCalledWith(
+      'codehub-cli',
+      ['auth', 'status'],
+      expect.anything()
     )
   })
 
@@ -508,8 +612,7 @@ describe('preflight', () => {
   })
 
   describe('WSL preflight caching', () => {
-    // Why win32 + these stubs: a WSL target probes git/gh/glab through the
-    // runner, so every case below counts runner spawns rather than execFile.
+    // WSL probes use the runner, so count runner calls rather than local execFile calls.
     function stubWslProbes(): void {
       Object.defineProperty(process, 'platform', { configurable: true, value: 'win32' })
       execFileAsyncMock.mockImplementation(async () => {
@@ -572,21 +675,13 @@ describe('preflight', () => {
       await runPreflightCheck(true, { wslDistro: 'Ubuntu' })
 
       expect(first).toEqual(second)
-      // One shared run, not two: a second full set would double the spawn count.
       expect(singleRunSpawns).toBe(runWslProcessMock.mock.calls.length)
     })
 
-    // Why this matters: an unreachable distro reports the same `installed:
-    // false` as a distro with no tooling, so a session-lifetime cache would pin
-    // "git not installed" until relaunch. The TTL must let it recover.
-    // Why these two: a slower run settling last must not overwrite a newer
-    // answer, or a forced refresh silently returns to the status it replaced.
+    // A superseded probe must not overwrite the forced refresh even when it settles last.
     it('does not let a superseded probe overwrite a newer forced refresh', async () => {
       stubWslProbes()
-      // Why gate on phase captured at call time: the stale run's five
-      // --version probes all start before the refresh, and all report nothing
-      // installed, so it never issues auth calls. The two runs are then
-      // trivially distinguishable in the cached result.
+      // Capture phase at issue time so the held stale probes remain distinguishable from refreshed probes.
       let phase: 'stale' | 'fresh' = 'stale'
       let releaseStale!: () => void
       const staleGate = new Promise<void>((resolve) => {
@@ -611,6 +706,8 @@ describe('preflight', () => {
       })
 
       const stalePending = runPreflightCheck(false, { wslDistro: 'Ubuntu' })
+      // The running-distro gate resolves first; hold the stale git/gh/glab probes before refreshing.
+      await expect.poll(() => runWslProcessMock.mock.calls.length).toBe(6)
       phase = 'fresh'
       const fresh = await runPreflightCheck(true, { wslDistro: 'Ubuntu' })
       expect(fresh.git).toEqual({ installed: true })
@@ -619,8 +716,6 @@ describe('preflight', () => {
       const staleResult = await stalePending
       expect(staleResult.git).toEqual({ installed: false })
 
-      // The superseded run still returns its own answer to its own caller, but
-      // must not have become the cached one.
       const cachedNow = await runPreflightCheck(false, { wslDistro: 'Ubuntu' })
       expect(cachedNow.git).toEqual({ installed: true })
     })
@@ -677,6 +772,7 @@ describe('preflight', () => {
   })
 
   it('uses the persisted Windows Path when probing host CLIs', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_000)
     Object.defineProperty(process, 'platform', {
       configurable: true,
       value: 'win32'
@@ -684,17 +780,49 @@ describe('preflight', () => {
     mergePersistedWindowsPathMock.mockImplementation((env: Record<string, string>) => {
       env.Path = 'C:\\Windows\\System32;C:\\Program Files\\GitHub CLI'
     })
-    mockHappyAuthPathPrefix()
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
+    const responses: Record<string, (() => unknown)[]> = {
+      'git --version': [
+        () => {
+          return { stdout: 'git version 2.0.0\n' }
+        }
+      ],
+      'gh --version': [
+        () => {
+          return { stdout: 'gh version 2.0.0\n' }
+        }
+      ],
+      'glab --version': [
+        () => {
+          return { stdout: 'glab version 1.92.1\n' }
+        }
+      ],
+      'gh auth status': [
+        () => {
+          return { stdout: 'github.com\n  - Active account: true\n' }
+        }
+      ],
+      'glab auth status': [
+        () => {
+          return { stdout: 'Logged in to gitlab.com\n' }
+        }
+      ]
+    }
+    execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
+      const response = responses[[command, ...args].join(' ')]?.shift()
+      if (!response) {
+        throw new Error('command unavailable')
+      }
+      return response()
+    })
 
     const status = await runPreflightCheck()
 
     expect(status.gh).toEqual({ installed: true, authenticated: true })
     expect(mergePersistedWindowsPathMock).toHaveBeenCalled()
     expect(execFileAsyncMock).toHaveBeenNthCalledWith(2, 'gh', ['--version'], {
-      ...EXEC_OPTS,
+      encoding: 'utf-8',
+      timeout: 5000,
+      windowsHide: true,
       env: expect.objectContaining({
         Path: 'C:\\Windows\\System32;C:\\Program Files\\GitHub CLI'
       })
@@ -747,36 +875,121 @@ describe('preflight', () => {
   })
 
   it('re-runs the probe when forced so updated gh auth state is visible without relaunch', async () => {
-    execFileAsyncMock
-      .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
-      .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'cloudbuild version v0.1.16\n' })
-      .mockRejectedValueOnce({ stderr: 'You are not logged into any GitHub hosts.\n' })
-      .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
-      .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
-      .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'cloudbuild version v0.1.16\n' })
-      .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
-      .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
+    const responses: Record<string, (() => unknown)[]> = {
+      'git --version': [
+        () => {
+          return { stdout: 'git version 2.0.0\n' }
+        },
+        () => {
+          return { stdout: 'git version 2.0.0\n' }
+        }
+      ],
+      'gh --version': [
+        () => {
+          return { stdout: 'gh version 2.0.0\n' }
+        },
+        () => {
+          return { stdout: 'gh version 2.0.0\n' }
+        }
+      ],
+      'glab --version': [
+        () => {
+          return { stdout: 'glab version 1.92.1\n' }
+        },
+        () => {
+          return { stdout: 'glab version 1.92.1\n' }
+        }
+      ],
+      'gh auth status': [
+        () => {
+          throw { stderr: 'You are not logged into any GitHub hosts.\n' }
+        },
+        () => {
+          return { stdout: 'github.com\n  - Active account: true\n' }
+        }
+      ],
+      'glab auth status': [
+        () => {
+          return { stdout: 'Logged in to gitlab.com\n' }
+        },
+        () => {
+          return { stdout: 'Logged in to gitlab.com\n' }
+        }
+      ]
+    }
+    execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
+      const response = responses[[command, ...args].join(' ')]?.shift()
+      if (!response) {
+        throw new Error('command unavailable')
+      }
+      return response()
+    })
 
     const firstStatus = await runPreflightCheck()
     const refreshedStatus = await runPreflightCheck(true)
 
     expect(firstStatus.gh).toEqual({ installed: true, authenticated: false })
     expect(refreshedStatus.gh).toEqual({ installed: true, authenticated: true })
-    expect(execFileAsyncMock).toHaveBeenCalledTimes(22)
+    expect(
+      execFileAsyncMock.mock.calls.filter(([command]) => ['git', 'gh', 'glab'].includes(command))
+    ).toHaveLength(10)
+  })
+
+  it.each(['linux', 'darwin'])(
+    'waits for the %s shell PATH before detecting and caching GitHub CLI status',
+    async (platform) => {
+      Object.defineProperty(process, 'platform', { configurable: true, value: platform })
+      let finishHydration: ((result: { ok: true; segments: string[] }) => void) | undefined
+      hydrateShellPathMock.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishHydration = resolve
+          })
+      )
+      let merged = false
+      mergePathSegmentsMock.mockImplementation(() => {
+        merged = true
+      })
+      execFileAsyncMock.mockImplementation(async () => {
+        if (!merged) {
+          throw Object.assign(new Error('spawn ENOENT'), { code: 'ENOENT' })
+        }
+        return { stdout: 'version fixture', stderr: '' }
+      })
+
+      const check = runPreflightCheck()
+      await Promise.resolve()
+      expect(execFileAsyncMock).not.toHaveBeenCalled()
+      expect(finishHydration).toBeDefined()
+      finishHydration?.({ ok: true, segments: ['/home/user/.local/share/mise/shims'] })
+
+      await expect(check).resolves.toMatchObject({ gh: { installed: true, authenticated: true } })
+      await expect(runPreflightCheck()).resolves.toMatchObject({ gh: { installed: true } })
+      expect(hydrateShellPathMock).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('refreshes the POSIX shell PATH on Re-check after a CLI install', async () => {
+    execFileAsyncMock.mockRejectedValue(
+      Object.assign(new Error('spawn ENOENT'), { code: 'ENOENT' })
+    )
+    await expect(runPreflightCheck()).resolves.toMatchObject({ gh: { installed: false } })
+    hydrateShellPathMock.mockResolvedValue({ ok: true, segments: ['/new/cli/bin'] })
+    mergePathSegmentsMock.mockImplementation(() => {
+      execFileAsyncMock.mockResolvedValue({ stdout: 'version fixture', stderr: '' })
+    })
+
+    await expect(runPreflightCheck(true)).resolves.toMatchObject({ gh: { installed: true } })
+    expect(hydrateShellPathMock).toHaveBeenLastCalledWith({ force: true })
+    expect(mergePathSegmentsMock).toHaveBeenCalledWith(['/new/cli/bin'])
+  })
+
+  it('uses the inherited PATH when POSIX shell hydration fails', async () => {
+    hydrateShellPathMock.mockResolvedValue({ ok: false, segments: [], failureReason: 'timeout' })
+    execFileAsyncMock.mockResolvedValue({ stdout: 'version fixture', stderr: '' })
+
+    await expect(runPreflightCheck()).resolves.toMatchObject({ gh: { installed: true } })
+    expect(mergePathSegmentsMock).not.toHaveBeenCalled()
   })
 
   it('awaits the persisted Windows Path refresh before a forced host CLI preflight', async () => {
@@ -791,10 +1004,40 @@ describe('preflight', () => {
           finishRefresh = resolve
         })
     )
-    mockHappyAuthPathPrefix()
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
+    const responses: Record<string, (() => unknown)[]> = {
+      'git --version': [
+        () => {
+          return { stdout: 'git version 2.0.0\n' }
+        }
+      ],
+      'gh --version': [
+        () => {
+          return { stdout: 'gh version 2.0.0\n' }
+        }
+      ],
+      'glab --version': [
+        () => {
+          return { stdout: 'glab version 1.92.1\n' }
+        }
+      ],
+      'gh auth status': [
+        () => {
+          return { stdout: 'github.com\n  - Active account: true\n' }
+        }
+      ],
+      'glab auth status': [
+        () => {
+          return { stdout: 'Logged in to gitlab.com\n' }
+        }
+      ]
+    }
+    execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
+      const response = responses[[command, ...args].join(' ')]?.shift()
+      if (!response) {
+        throw new Error('command unavailable')
+      }
+      return response()
+    })
 
     const check = runPreflightCheck(true)
     await Promise.resolve()
@@ -849,21 +1092,44 @@ describe('preflight', () => {
     })
 
     expect(mergePersistedWindowsPathAsyncMock).not.toHaveBeenCalled()
+    expect(hydrateShellPathMock).not.toHaveBeenCalled()
   })
 
   it('registers the preflight handler', async () => {
-    execFileAsyncMock
-      .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
-      .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'cloudbuild version v0.1.16\n' })
-      .mockResolvedValueOnce({ stdout: 'github.com\n' })
-      .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
+    const responses: Record<string, (() => unknown)[]> = {
+      'git --version': [
+        () => {
+          return { stdout: 'git version 2.0.0\n' }
+        }
+      ],
+      'gh --version': [
+        () => {
+          return { stdout: 'gh version 2.0.0\n' }
+        }
+      ],
+      'glab --version': [
+        () => {
+          return { stdout: 'glab version 1.92.1\n' }
+        }
+      ],
+      'gh auth status': [
+        () => {
+          return { stdout: 'github.com\n' }
+        }
+      ],
+      'glab auth status': [
+        () => {
+          return { stdout: 'Logged in to gitlab.com\n' }
+        }
+      ]
+    }
+    execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
+      const response = responses[[command, ...args].join(' ')]?.shift()
+      if (!response) {
+        throw new Error('command unavailable')
+      }
+      return response()
+    })
 
     registerPreflightHandlers()
 
@@ -873,39 +1139,65 @@ describe('preflight', () => {
       git: { installed: true },
       gh: { installed: true, authenticated: true },
       glab: { installed: true, authenticated: true },
-      codehub: { installed: true, authenticated: true },
-      welink: { installed: true, authenticated: true },
-      cloudbuild: { installed: true, authenticated: true },
       bitbucket: defaultBitbucketStatus,
       azureDevOps: defaultAzureDevOpsStatus,
-      gitea: defaultGiteaStatus
+      gitea: defaultGiteaStatus,
+      codehub: { installed: false, authenticated: false },
+      cloudbuild: { installed: false, authenticated: false },
+      welink: { installed: false, authenticated: false }
     })
   })
 
   it('lets the IPC handler bypass the session cache when forced', async () => {
-    execFileAsyncMock
-      .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
-      .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'cloudbuild version v0.1.16\n' })
-      .mockRejectedValueOnce({ stderr: 'You are not logged into any GitHub hosts.\n' })
-      .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
-      .mockResolvedValueOnce({ stdout: 'git version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'gh version 2.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'glab version 1.92.1\n' })
-      .mockResolvedValueOnce({ stdout: 'codehub-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'welink-cli version 1.0.0\n' })
-      .mockResolvedValueOnce({ stdout: 'cloudbuild version v0.1.16\n' })
-      .mockResolvedValueOnce({ stdout: 'github.com\n  - Active account: true\n' })
-      .mockResolvedValueOnce({ stdout: 'Logged in to gitlab.com\n' })
-      .mockResolvedValueOnce({ stdout: 'Host: https://codehub.example.com\nLOGIN: yes\n' })
-      .mockResolvedValueOnce({ stdout: 'User Token: valid\n' })
-      .mockResolvedValueOnce({ stdout: 'Token Expires: 2026-10-25 10:10 CST\n' })
+    const responses: Record<string, (() => unknown)[]> = {
+      'git --version': [
+        () => {
+          return { stdout: 'git version 2.0.0\n' }
+        },
+        () => {
+          return { stdout: 'git version 2.0.0\n' }
+        }
+      ],
+      'gh --version': [
+        () => {
+          return { stdout: 'gh version 2.0.0\n' }
+        },
+        () => {
+          return { stdout: 'gh version 2.0.0\n' }
+        }
+      ],
+      'glab --version': [
+        () => {
+          return { stdout: 'glab version 1.92.1\n' }
+        },
+        () => {
+          return { stdout: 'glab version 1.92.1\n' }
+        }
+      ],
+      'gh auth status': [
+        () => {
+          throw { stderr: 'You are not logged into any GitHub hosts.\n' }
+        },
+        () => {
+          return { stdout: 'github.com\n  - Active account: true\n' }
+        }
+      ],
+      'glab auth status': [
+        () => {
+          return { stdout: 'Logged in to gitlab.com\n' }
+        },
+        () => {
+          return { stdout: 'Logged in to gitlab.com\n' }
+        }
+      ]
+    }
+    execFileAsyncMock.mockImplementation(async (command: string, args: string[]) => {
+      const response = responses[[command, ...args].join(' ')]?.shift()
+      if (!response) {
+        throw new Error('command unavailable')
+      }
+      return response()
+    })
 
     registerPreflightHandlers()
 
@@ -916,23 +1208,23 @@ describe('preflight', () => {
       git: { installed: true },
       gh: { installed: true, authenticated: false },
       glab: { installed: true, authenticated: true },
-      codehub: { installed: true, authenticated: true },
-      welink: { installed: true, authenticated: true },
-      cloudbuild: { installed: true, authenticated: true },
       bitbucket: defaultBitbucketStatus,
       azureDevOps: defaultAzureDevOpsStatus,
-      gitea: defaultGiteaStatus
+      gitea: defaultGiteaStatus,
+      codehub: { installed: false, authenticated: false },
+      cloudbuild: { installed: false, authenticated: false },
+      welink: { installed: false, authenticated: false }
     })
     expect(refreshedStatus).toEqual({
       git: { installed: true },
       gh: { installed: true, authenticated: true },
       glab: { installed: true, authenticated: true },
-      codehub: { installed: true, authenticated: true },
-      welink: { installed: true, authenticated: true },
-      cloudbuild: { installed: true, authenticated: true },
       bitbucket: defaultBitbucketStatus,
       azureDevOps: defaultAzureDevOpsStatus,
-      gitea: defaultGiteaStatus
+      gitea: defaultGiteaStatus,
+      codehub: { installed: false, authenticated: false },
+      cloudbuild: { installed: false, authenticated: false },
+      welink: { installed: false, authenticated: false }
     })
   })
 

@@ -1,8 +1,6 @@
 import type { PreflightStatus } from '../../../../preload/api-types'
 
 export type GhStatus = 'checking' | 'connected' | 'not-installed' | 'not-authenticated'
-// Why: parallel to GhStatus — GitLab uses glab and the same three failure
-// modes (probe in-flight / installed-but-unauth / missing entirely).
 export type GlabStatus = GhStatus
 // Why (BW #323): WeLink uses welink-cli and mirrors the gh failure modes.
 export type WelinkStatus = GhStatus

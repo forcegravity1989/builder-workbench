@@ -73,6 +73,17 @@ describe('agent status provider alias index', () => {
     expect(decoded?.get(aliasKey)).toEqual(new Set(['run-a', 'run-b']))
   })
 
+  it('round-trips more than 2,048 run ids for one alias', () => {
+    const aliasKey = serializeAgentStatusProviderAliasKey(alias())
+    const runIds = new Set(Array.from({ length: 2_049 }, (_, index) => `run-${index}`))
+
+    const decoded = deserializeAgentStatusRunAliasIndex(
+      serializeAgentStatusRunAliasIndex(new Map([[aliasKey, runIds]]))
+    )
+
+    expect(decoded?.get(aliasKey)).toEqual(runIds)
+  })
+
   it('serializes deterministically regardless of insertion order', () => {
     const firstKey = serializeAgentStatusProviderAliasKey(alias({ providerId: 'provider-a' }))
     const secondKey = serializeAgentStatusProviderAliasKey(alias({ providerId: 'provider-b' }))

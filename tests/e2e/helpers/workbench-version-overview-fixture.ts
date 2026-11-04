@@ -259,7 +259,7 @@ export async function bindOverviewFlowsAndRead(
       if (!repo) {
         throw new Error('Isolated overview repository was not registered')
       }
-      await store.getState().fetchWorktrees(repo.id)
+      await store.getState().fetchWorktrees(repo.id, { executionHostId: 'local' })
       const trees = store.getState().worktreesByRepo[repo.id] ?? []
       const scopeFor = (directory: string) => {
         const tree = trees.find((entry) => normalize(entry.path) === normalize(directory))
@@ -288,7 +288,7 @@ export async function bindOverviewFlowsAndRead(
           throw new Error(JSON.stringify(result.error))
         }
       }
-      await store.getState().fetchWorktrees(repo.id)
+      await store.getState().fetchWorktrees(repo.id, { executionHostId: 'local' })
       return Object.fromEntries(
         await Promise.all(
           Object.entries({ home: root, ...flows }).map(async ([name, directory]) => [

@@ -9,12 +9,14 @@ import { workbenchRuntimeResult } from '../../../workbench/workbench-runtime-res
 export const WORKBENCH_MILESTONE_METHODS = [
   defineMethod({
     name: 'workbench.milestones.read',
+    permission: 'workspace',
     params: MilestoneReadRequestSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => nativeMilestoneService(runtime).read(params.scope))
   }),
   defineMethod({
     name: 'workbench.milestones.submit',
+    permission: 'workspace',
     params: MilestoneSubmitRequestSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => nativeMilestoneService(runtime).submit(params))

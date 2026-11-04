@@ -91,7 +91,10 @@ export const getIntegrationsPaneSearchEntries = createLocalizedCatalog(() => [
         'auto.components.settings.integrations.search.cloudbuildKeyword',
         'cloudbuild'
       ),
-      ...translateSearchKeyword('auto.components.settings.integrations.search.cloudbuildCbKeyword', 'cb'),
+      ...translateSearchKeyword(
+        'auto.components.settings.integrations.search.cloudbuildCbKeyword',
+        'cb'
+      ),
       ...translateSearchKeyword(
         'auto.components.settings.integrations.search.c450244ad7',
         'integration'

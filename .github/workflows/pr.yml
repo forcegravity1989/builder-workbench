@@ -32,11 +32,21 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Fetch the fixed Orca boundary baseline
+        shell: bash
+        run: |
+          baseline=$(node -p "require('./ref/orca-differences.json').upstream.commit")
+          [[ "$baseline" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          git fetch --no-tags --depth=1 https://github.com/stablyai/orca.git "$baseline"
+
       - name: Install Node dependencies
         uses: ./.github/actions/install-node-dependencies
         with:
           native-runtime: node
           cache-electron-package: 'true'
+
+      - name: Test Orca boundary guard
+        run: node --test config/scripts/check-orca-boundary.test.mjs
 
       - name: Lint
         run: pnpm run lint
@@ -54,7 +64,6 @@ jobs:
           src/main/ipc/repos
           src/preload/api/platform-bridge.test.ts
           src/renderer/src/workbench
-          src/relay/workbench
           src/shared/workbench
 
       - name: Build desktop application

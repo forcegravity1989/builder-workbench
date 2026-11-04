@@ -3,7 +3,7 @@ import { GitMerge, GitPullRequest, GitPullRequestClosed, LoaderCircle, Pencil } 
 import { toast } from 'sonner'
 import { codehubApi } from '@/lib/codehub-api'
 import { GitHubUserAvatar } from '@/components/github/github-user-avatar'
-import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page-github-work-item-status-badge'
+import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page/github/task-page-github-work-item-status-badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -46,7 +46,10 @@ export function CodeHubPrSidebar({ state }: { state: CodeHubDetailState }): Reac
     state: actionItem.state === 'opened' ? ('open' as const) : actionItem.state
   }
 
-  const run = async (kind: 'merge' | 'close' | 'reviewers', action: () => Promise<void>): Promise<void> => {
+  const run = async (
+    kind: 'merge' | 'close' | 'reviewers',
+    action: () => Promise<void>
+  ): Promise<void> => {
     if (!item.repoPath || busy) {
       return
     }
@@ -86,10 +89,13 @@ export function CodeHubPrSidebar({ state }: { state: CodeHubDetailState }): Reac
               void run('merge', async () => {
                 await codehubApi.mergeMr({
                   repoPath: item.repoPath!,
+                  repoHostId: item.repoHostId,
                   repoId: item.repoId,
                   iid: item.iid
                 })
-                toast.success(translate('auto.components.TaskPage.codehubMerged', 'Merge requested'))
+                toast.success(
+                  translate('auto.components.TaskPage.codehubMerged', 'Merge requested')
+                )
               })
             }}
           >
@@ -110,6 +116,7 @@ export function CodeHubPrSidebar({ state }: { state: CodeHubDetailState }): Reac
               void run('close', async () => {
                 await codehubApi.closeMr({
                   repoPath: item.repoPath!,
+                  repoHostId: item.repoHostId,
                   repoId: item.repoId,
                   iid: item.iid
                 })
@@ -169,6 +176,7 @@ export function CodeHubPrSidebar({ state }: { state: CodeHubDetailState }): Reac
                   void run('reviewers', async () => {
                     await codehubApi.setReviewers({
                       repoPath: item.repoPath!,
+                      repoHostId: item.repoHostId,
                       repoId: item.repoId,
                       iid: item.iid,
                       reviewers: names

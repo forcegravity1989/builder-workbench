@@ -1,6 +1,7 @@
 import { codehubApi } from '@/lib/codehub-api'
-import type { TaskPageGitLabLoadingModel } from './use-task-page-gitlab-loading'
+import type { TaskPageProviderMetadataModel } from './task-page/use-task-page-provider-metadata'
 import { useEffect, useState } from 'react'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { isCodeHubGitRemote } from '../../../shared/codehub'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import { workbenchVersionTaskLabel } from '../../../shared/workbench/task-scope'
@@ -9,7 +10,7 @@ const CODEHUB_LIST_LIMIT = 250
 // Why: 空数组必须是稳定引用，否则非 MR 视图下 effect 依赖每次渲染都变。
 const NO_SERVER_LABELS: string[] = []
 
-export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
+export function useTaskPageCodeHubLoading(model: TaskPageProviderMetadataModel) {
   const [codehubHasMore, setCodehubHasMore] = useState(false)
   const {
     selectedRepos,
@@ -65,6 +66,7 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
         const listed = await codehubApi.listTasks({
           repoPath: repo.path,
           repoId: repo.id,
+          repoHostId: getRepoExecutionHostId(repo),
           kind,
           state,
           limit: CODEHUB_LIST_LIMIT,
@@ -83,6 +85,7 @@ export function useTaskPageCodeHubLoading(model: TaskPageGitLabLoadingModel) {
           items: listed.items.map((item) => ({
             ...item,
             repoId: repo.id,
+            repoHostId: getRepoExecutionHostId(repo),
             repoPath: repo.path,
             host: listed.remote.host,
             project: listed.remote.project

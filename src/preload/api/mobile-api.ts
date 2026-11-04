@@ -33,7 +33,6 @@ export type MobileApi = {
         /** Null when no direct address was advertised — the QR pairs over Relay alone. */
         endpoint: string | null
         deviceId: string
-        /** Mode the QR actually encodes. */
         connectionMode: MobilePairingConnectionMode
       }
   >
@@ -85,10 +84,8 @@ export type MobileApi = {
   revokeDevice: (args: { deviceId: string }) => Promise<{ revoked: boolean }>
   listRuntimeAccessGrants: () => Promise<{ grants: RuntimeAccessGrant[] }>
   revokeRuntimeAccess: (args: { deviceId: string }) => Promise<{ revoked: boolean }>
-  isWebSocketReady: () => Promise<{ ready: boolean; endpoint: string | null }>
   getRelayStatus: () => Promise<MobileRelayStatusDetail>
   onRelayStatusChanged: (callback: (detail: MobileRelayStatusDetail) => void) => () => void
-  /** Consumes an auth-failure notification that arrived before the renderer listener mounted. */
   consumePendingUnpairedDeviceAuthFailure?: () => Promise<boolean>
   /** Fires (throttled, once per session) when an unpaired phone repeatedly fails direct-transport auth. */
   onUnpairedDeviceAuthFailure?: (callback: () => void) => () => void

@@ -7,7 +7,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { MultiSelectList } from '@/components/github/PRFilterPickers'
 import { codehubApi } from '@/lib/codehub-api'
 import { isCodeHubGitRemote } from '../../../../../shared/codehub'
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
+import { getRepoExecutionHostId } from '../../../../../shared/execution-host'
+import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
 
 export function CodeHubFilterPopover({ model }: { model: TaskPageComposerActionsModel }) {
   const {
@@ -41,7 +42,11 @@ export function CodeHubFilterPopover({ model }: { model: TaskPageComposerActions
     setLabelsLoading(true)
     setLabelsError(null)
     codehubApi
-      .listLabels({ repoPath: codehubRepo.path, repoId: codehubRepo.id })
+      .listLabels({
+        repoPath: codehubRepo.path,
+        repoId: codehubRepo.id,
+        repoHostId: getRepoExecutionHostId(codehubRepo)
+      })
       .then((names) => {
         if (!stale) {
           setLabelOptions(names)

@@ -25,7 +25,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 
 import os from 'node:os'
 import path from 'node:path'
 import { TEST_REPO_PATH_FILE } from '../global-setup'
-import { cleanupE2EDaemons, closeElectronAppForE2E } from './electron-process-shutdown'
+import { closeElectronAppForE2E } from './electron-process-shutdown'
 import { getWorkbenchElectronLaunchArgs } from './workbench-launch-args'
 import { retryTransientMainEvaluate } from './electron-main-evaluate-retry'
 import { runsOnCiVirtualDisplay } from './ci-virtual-display'
@@ -256,16 +256,14 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
       )
       assertElectronResolvedIsolatedHome(resolvedHome, homeIsolation)
     } catch (error) {
-      await closeElectronAppForE2E(app, ownedProcess)
-      await cleanupE2EDaemons(userDataDir)
+      await closeElectronAppForE2E(app, { cleanupDaemonsForUserDataDir: userDataDir }, ownedProcess)
       await removeUserDataDirAfterShutdown(userDataDir)
       throw error
     }
     await provideFixture(app)
     // Why: the Playwright close promise can settle before all Electron and PTY
     // descendants are gone in CI; worker teardown then hangs on open handles.
-    await closeElectronAppForE2E(app, ownedProcess)
-    await cleanupE2EDaemons(userDataDir)
+    await closeElectronAppForE2E(app, { cleanupDaemonsForUserDataDir: userDataDir }, ownedProcess)
     await removeUserDataDirAfterShutdown(userDataDir)
   },
 
@@ -336,7 +334,7 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
             if (!store) {
               return false
             }
-            await store.getState().fetchRepos()
+            await store.getState().fetchRepos({ runtimeEnvironmentId: null })
             const repo = store.getState().repos.find((candidate) => candidate.id === repoId)
             if (!repo) {
               return false
@@ -363,7 +361,7 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
         if (!store) {
           return
         }
-        await store.getState().fetchWorktrees(repoId)
+        await store.getState().fetchWorktrees(repoId, { executionHostId: 'local' })
       }, seededRepoId)
       .catch(() => false)
 
@@ -378,7 +376,7 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
             if (!store) {
               return 0
             }
-            await store.getState().fetchWorktrees(repoId)
+            await store.getState().fetchWorktrees(repoId, { executionHostId: 'local' })
             return store.getState().worktreesByRepo[repoId]?.length ?? 0
           }, seededRepoId),
         {
@@ -415,7 +413,7 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
         (worktree) => worktree.isMainWorktree
       )
       if (testWorktree) {
-        state.setActiveWorktree(testWorktree.id)
+        state.setActiveWorktree(testWorktree.id, 'local')
       }
     }, seededRepoId)
 

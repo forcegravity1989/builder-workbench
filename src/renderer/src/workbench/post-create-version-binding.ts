@@ -1,3 +1,10 @@
+import { useAppStore } from '@/store'
+import {
+  getProjectHostSetupForRepoHost,
+  repoHostId,
+  withRepoHostOwnership
+} from '@/store/slices/worktrees/listing/worktree-host-ownership'
+import type { ExecutionHostId } from '../../../shared/execution-host'
 import { toast } from 'sonner'
 import type { Worktree } from '../../../shared/worktree/types'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host'
@@ -71,4 +78,16 @@ export async function writeWorkbenchCreationBinding(
     }
   }
   await attempt(false)
+}
+
+export async function recordWorkbenchCreationBinding(
+  binding: WorkbenchVersionBinding | null | undefined,
+  worktree: Worktree,
+  creationHostId?: ExecutionHostId | null
+): Promise<void> {
+  if (!binding) return
+  const state = useAppStore.getState()
+  const ownerHost = creationHostId ?? repoHostId(state, worktree.repoId)
+  const setup = getProjectHostSetupForRepoHost(state, worktree.repoId, ownerHost)
+  await writeWorkbenchCreationBinding(binding, withRepoHostOwnership(worktree, ownerHost, setup))
 }

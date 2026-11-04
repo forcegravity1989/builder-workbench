@@ -1,9 +1,10 @@
 import { useCodeHubDetail } from './use-codehub-detail'
 import { attachedCodeHubDetailWorkspace } from '@/workbench/scoped-task-workspace'
+import { getCodeHubTaskRepo } from '../../../../../shared/codehub'
 import { CodeHubChecksTab } from './ChecksTab'
 import { CodeHubConversation } from './Conversation'
 import { CodeHubFilesTab } from './FilesTab'
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
+import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
@@ -26,8 +27,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getWorktreeAttachmentLabel } from '@/lib/worktree-attachment-label'
-import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page-github-work-item-status-badge'
-import { formatRelativeTime } from '../../task-page-source-context'
+import { TaskPageGitHubWorkItemStateBadge } from '@/components/task-page/github/task-page-github-work-item-status-badge'
+import { formatRelativeTime } from '../task-page-source-context'
 import type { Worktree } from '../../../../../shared/worktree/types'
 
 const NO_WORKTREES: readonly Worktree[] = []
@@ -69,7 +70,9 @@ export function TaskPageCodeHubDetail({
   )
   // G2（P4 详情往返携带范围）：范围态归属呈现与任务屏行/板面箭头同一解析核。
   const workbenchTaskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
-  const repo = useAppStore((s) => (repoId ? (s.repos.find((r) => r.id === repoId) ?? null) : null))
+  const repo = useAppStore((s) =>
+    model.codehubDetailItem ? (getCodeHubTaskRepo(s.repos, model.codehubDetailItem) ?? null) : null
+  )
   const detailState = useCodeHubDetail(model)
   if (!detailState) {
     return null
@@ -263,6 +266,7 @@ export function TaskPageCodeHubDetail({
               labels={detail?.labels?.length ? detail.labels : (item.labels ?? [])}
               repoPath={item.repoPath ?? null}
               repoId={item.repoId}
+              repoHostId={item.repoHostId}
               editingLabels={editingLabels}
               setEditingLabels={setEditingLabels}
               labelDraft={labelDraft}

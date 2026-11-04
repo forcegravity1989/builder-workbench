@@ -80,7 +80,7 @@ it('normalizes a paired draft source for the owner and returns its caller-visibl
       scope,
       planRef: { ...planRef, sourceHostId: 'local' }
     },
-    undefined
+    { expectedEnvironmentPairingRevision: undefined }
   )
   expect(result.planRef).toEqual(planRef)
   expect(result.source).toMatchObject({ sourceHostId: 'runtime:paired' })
@@ -117,7 +117,7 @@ it('returns valid history alongside unreadable records through the native owner'
     { kind: 'environment', environmentId: 'paired' },
     'workbench.history.list',
     { scope },
-    undefined
+    { expectedEnvironmentPairingRevision: undefined }
   )
   expect(result).toEqual(value)
 })

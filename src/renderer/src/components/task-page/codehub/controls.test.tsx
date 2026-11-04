@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
+import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
 
 const { api } = vi.hoisted(() => {
   // 详情页删除评论后会重读列表（不再本地过滤），mock 按同样语义维护状态。
@@ -49,6 +49,7 @@ const repo = {
   id: 'r1',
   path: '/repo',
   displayName: 'Project',
+  executionHostId: 'runtime:owner',
   gitRemoteIdentity: { remoteUrl: 'https://codehub.example.com/team/project.git' }
 }
 
@@ -99,6 +100,7 @@ it('keeps filter transitions and issue creation connected after extracting the c
   expect(api.createIssue).toHaveBeenCalledWith({
     repoId: 'r1',
     repoPath: '/repo',
+    repoHostId: 'runtime:owner',
     title: 'New work',
     description: undefined,
     assignee: undefined

@@ -11,9 +11,24 @@ import path from 'node:path'
 
 export const E2E_TEST_REPO_PATH_FILE_ENV = 'WORKBENCH_E2E_TEST_REPO_PATH_FILE'
 /** Temp file where the test repo path is stored for the fixture to read. */
-export const TEST_REPO_PATH_FILE =
+const RUN_TEST_REPO_PATH_FILE =
   process.env[E2E_TEST_REPO_PATH_FILE_ENV] ??
   path.join(os.tmpdir(), `workbench-e2e-test-repo-path-${randomUUID()}.txt`)
+
+export function workerTestRepositoryPathFile(runPathFile: string, workerIndex?: string): string {
+  if (workerIndex === undefined) {
+    return runPathFile
+  }
+  if (!/^\d+$/.test(workerIndex)) {
+    throw new Error('Invalid Playwright worker index')
+  }
+  return `${runPathFile}.worker-${workerIndex}`
+}
+
+export const TEST_REPO_PATH_FILE = workerTestRepositoryPathFile(
+  RUN_TEST_REPO_PATH_FILE,
+  process.env.TEST_WORKER_INDEX
+)
 
 export function isValidGitRepo(repoPath: string): boolean {
   if (!repoPath || !existsSync(repoPath)) {
@@ -58,15 +73,21 @@ export function createSeededTestRepo(options: { publishPath?: boolean } = {}): s
   writeFileSync(path.join(testRepoDir, 'src', 'diff-note-layout.ts'), 'export const seed = true\n')
 
   execSync('git add -A', { cwd: testRepoDir, stdio: 'pipe' })
-  execSync('git commit -m "Initial commit for E2E tests"', { cwd: testRepoDir, stdio: 'pipe' })
+  execSync(
+    'git -c core.hooksPath=/dev/null -c commit.gpgsign=false commit -m "Initial commit for E2E tests"',
+    { cwd: testRepoDir, stdio: 'pipe' }
+  )
 
   // Why: worker-scoped fixture fallbacks can run in parallel; UUIDs avoid
   // colliding on the same temp repo/worktree when workers start together.
   const worktreeDir = path.join(testRepoDir, '..', `workbench-e2e-worktree-${randomUUID()}`)
-  execSync(`git worktree add "${worktreeDir}" -b workbench-e2e-secondary`, {
-    cwd: testRepoDir,
-    stdio: 'pipe'
-  })
+  execSync(
+    `git -c core.hooksPath=/dev/null -c commit.gpgsign=false worktree add "${worktreeDir}" -b workbench-e2e-secondary`,
+    {
+      cwd: testRepoDir,
+      stdio: 'pipe'
+    }
+  )
 
   if (options.publishPath !== false) {
     writeFileSync(TEST_REPO_PATH_FILE, testRepoDir)

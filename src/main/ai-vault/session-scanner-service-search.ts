@@ -15,17 +15,10 @@ import type {
 
 type SearchOperation = Extract<
   AiVaultServiceRequest,
-  { operation: 'searchSessions' | 'searchStatus' | 'searchReconcile' }
+  { operation: 'searchSessions' | 'searchStatus' | 'searchReconcile' | 'searchClear' }
 >
 
-/**
- * The scanner-service child's half of session search.
- *
- * Why the child and not the parent: the transcript reader runs here, so the
- * index consumer has to as well — one process reads a transcript once and both
- * the session list and the index see that read. Main, the CLI and a remote
- * server never open the database; they ask over this protocol.
- */
+/** Keep indexing with transcript readers; callers access the database through service IPC. */
 export class SessionScannerServiceSearch {
   private instance: SessionSearchInstance | null = null
   private databasePath: string | null = null
@@ -33,18 +26,15 @@ export class SessionScannerServiceSearch {
 
   constructor(private readonly resolveRoots?: SessionSearchIndexerOptions['resolveRoots']) {}
 
-  /** Applied at init and again on every settings change; both are close-and-construct. */
   apply(init: AiVaultSessionSearchInit): void {
     if (!sessionSearchSqliteAvailable()) {
       return
     }
     if (this.instance && this.databasePath !== init.databasePath) {
-      // A data root cannot move under a running process, so this is a caller bug
-      // rather than a case to support: close the old one before it writes there.
       this.close()
     }
     if (this.instance && this.roots && !sameSessionSearchRoots(this.roots, init.roots)) {
-      // Explicit init-root changes replace the fallback used by callers without a resolver.
+      // Refresh fallback roots for callers without a resolver.
       this.close()
     }
     this.databasePath = init.databasePath
@@ -61,7 +51,8 @@ export class SessionScannerServiceSearch {
     return (
       request.operation === 'searchSessions' ||
       request.operation === 'searchStatus' ||
-      request.operation === 'searchReconcile'
+      request.operation === 'searchReconcile' ||
+      request.operation === 'searchClear'
     )
   }
 
@@ -77,10 +68,20 @@ export class SessionScannerServiceSearch {
       await instance?.reconcile()
       return { operation: 'searchReconcile', value: null }
     }
+    if (request.operation === 'searchClear') {
+      if (!instance) {
+        throw new Error('Agent Session History search is not available.')
+      }
+      instance.clear()
+      return { operation: 'searchClear', value: null }
+    }
     return {
       operation: 'searchSessions',
       value: instance
-        ? await instance.search(AiVaultSearchRequestSchema.parse(request.request))
+        ? await instance.search(
+            AiVaultSearchRequestSchema.parse(request.request),
+            request.hostScope
+          )
         : { kind: 'unavailable', reason: 'disabled' }
     }
   }

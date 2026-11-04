@@ -1,7 +1,7 @@
 import { WORKBENCH_GOAL_SEARCH_PLACEHOLDER } from '@/workbench/TaskScopePanel'
 import { seedWorkbenchTaskQuery } from '../../../../../shared/workbench/task-scope'
-import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
-import { getGitHubTaskKindPresets } from '@/components/task-page-localized-options'
+import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
+import { getGitHubTaskKindPresets } from '@/components/task-page/task-page-localized-options'
 import { cn } from '@/lib/utils'
 import PRFilterDropdowns from '@/components/github/PRFilterDropdowns'
 import { Search, X, Plus, LoaderCircle, RefreshCw } from 'lucide-react'
@@ -9,21 +9,24 @@ import { Input } from '@/components/ui/input'
 import { translate } from '@/i18n/i18n'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
-import { resolveNewIssueOpenSeed } from '@/components/task-page-new-issue-draft'
+import { resolveNewIssueOpenSeed } from '@/components/task-page/task-page-new-issue-draft'
 import { useAppStore } from '@/store'
-import { hasUpstreamCandidateDivergence, hasDivergentSources } from '../../task-page-draft-storage'
+import { useShallow } from 'zustand/react/shallow'
+import { getGitHubRepoRoutingTarget } from '@/lib/github-source-runtime-context'
+import { hasUpstreamCandidateDivergence, hasDivergentSources } from '../task-page-draft-storage'
 import IssueSourceIndicator from '@/components/github/IssueSourceIndicator'
 import IssueSourceSelector, { issueSourceChipClass } from '@/components/github/IssueSourceSelector'
 import RepoBadgeLabel from '@/components/repo/RepoBadgeLabel'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { TaskPageGitHubModeControls } from './ModeControls'
+import { repoMatchesHostIdentity } from '@/store/slices/repo-host-identity'
+import { deriveGitHubTaskPreset } from './task-page-preset-highlight'
 export function TaskPageGitHubFilters({
   model
 }: {
   model: TaskPageComposerActionsModel
 }): React.JSX.Element | null {
   const {
-    settings,
     setTaskResumeState,
     setIssueSourcePreference,
     selectedRepos,
@@ -32,7 +35,6 @@ export function TaskPageGitHubFilters({
     appliedTaskSearch,
     setAppliedTaskSearch,
     taskSearchInputRef,
-    activeTaskPreset,
     setActiveTaskPreset,
     setTaskRefreshNonce,
     perRepoSourceState,
@@ -56,10 +58,21 @@ export function TaskPageGitHubFilters({
     githubTasksBusy
   } = model
   const workbench = isWorkbenchShell()
+  const highlightedPreset = deriveGitHubTaskPreset(activeGithubTaskKind, appliedTaskQuery)
+  // Why: filter metadata for the primary slug is read from the host that owns the repo it came from.
+  const primaryGithubFilterSource = perRepoSourceState.find((state) =>
+    activeGithubTaskKind === 'prs' ? state.sources?.prs : state.sources?.issues
+  )
+  const primaryGithubFilterRepoId = primaryGithubFilterSource?.repoId ?? null
+  // Why the host: a twin's two rows share the id, so only the source's row host names one.
+  const primaryGithubFilterHostId = primaryGithubFilterSource?.hostId ?? null
+  const primaryGithubFilterTarget = useAppStore(
+    useShallow((s) =>
+      getGitHubRepoRoutingTarget(s, primaryGithubFilterRepoId, null, primaryGithubFilterHostId)
+    )
+  )
   return (
-    // Why: top of the joined GitHub list card — pairs with the
-    // table shell below (rounded-t-none border-t-0) as one surface.
-    // Workbench puts Issues/PRs, presets, and Filters on that one row.
+    // Join filter chrome and table as one surface.
     <div
       className="flex min-w-0 flex-col gap-2.5 rounded-md rounded-b-none border border-border/50 bg-muted/35 px-3 py-2.5"
       data-contextual-tour-target="tasks-search-presets"
@@ -74,7 +87,7 @@ export function TaskPageGitHubFilters({
         {workbench ? <span className="h-4 w-px shrink-0 bg-border/80" aria-hidden /> : null}
         <div className="flex shrink-0 flex-wrap gap-1.5">
           {getGitHubTaskKindPresets(activeGithubTaskKind).map((option) => {
-            const active = activeTaskPreset === option.id
+            const active = highlightedPreset === option.id
             return (
               <button
                 key={option.id}
@@ -120,7 +133,7 @@ export function TaskPageGitHubFilters({
             kind={activeGithubTaskKind}
             authorLogins={loadedGitHubAuthorLogins}
             primarySlug={primaryGithubFilterSlug}
-            settings={settings}
+            ownerTarget={primaryGithubFilterTarget}
             onChange={(change) => applyPRFilterChange(change)}
           />
           <div className="relative min-w-0 flex-1 basis-64">
@@ -227,14 +240,15 @@ export function TaskPageGitHubFilters({
         return (
           <div className="flex flex-wrap items-center gap-2">
             {rows.map((s) => {
-              const repo = selectedRepos.find((r) => r.id === s.repoId)
+              // Why the host: a twin's rows share the id (and maybe the path); each row has its own preference.
+              const repo = selectedRepos.find((r) => repoMatchesHostIdentity(r, s.repoId, s.hostId))
               const showRepoBadgeLabel = selectedRepos.length > 1 && repo
               const selectorRenderable = hasUpstreamCandidateDivergence(s)
               // Why: render the indicator standalone — it has its own chip styles, so nesting it in our chip would double-border it.
               if (!selectorRenderable && hasDivergentSources(s)) {
                 return (
                   <IssueSourceIndicator
-                    key={s.repoId}
+                    key={s.sourceKey}
                     issues={s.sources.issues}
                     prs={s.sources.prs}
                     localRepo={
@@ -251,9 +265,9 @@ export function TaskPageGitHubFilters({
               if (!selectorRenderable || !repo) {
                 return null
               }
-              // Why: <div> not <span> — the child selector renders a block <div> (div-in-span is invalid HTML); inline-flex class looks identical.
+              // The selector renders a div; keep a block wrapper to avoid invalid nesting.
               return (
-                <div key={s.repoId} className={issueSourceChipClass}>
+                <div key={s.sourceKey} className={issueSourceChipClass}>
                   {showRepoBadgeLabel ? (
                     <RepoBadgeLabel
                       name={repo.displayName}
@@ -267,7 +281,7 @@ export function TaskPageGitHubFilters({
                     origin={s.sources.originCandidate}
                     upstream={s.sources.upstreamCandidate}
                     onChange={(next) => {
-                      void setIssueSourcePreference(repo.id, repo.path, next)
+                      void setIssueSourcePreference(repo.id, repo.path, next, s.hostId)
                     }}
                   />
                 </div>

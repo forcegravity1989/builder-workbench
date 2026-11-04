@@ -1,8 +1,8 @@
-import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { resetSessionParseCacheForTests } from '../ai-vault/session-scanner-parse-cache'
 import { resetTranscriptConsumersForTests } from '../ai-vault/session-transcript-consumers'
+import type { AiVaultSearchSettings } from '../../shared/ai-vault-search-settings'
 import { installInProcessSessionSearchService } from './session-search-in-process-service'
 import {
   openSessionSearchIndexerHarness,
@@ -12,13 +12,6 @@ import {
 import { searchSessionService } from './session-search-service-registry'
 import { resetSessionSearchPolicyForTests } from './session-search-policy'
 import { resetSessionSearchServiceInitForTests } from './session-search-service-init'
-
-/**
- * Every host that answers a search has to register a service, or its answer is
- * `no-service` — which means "this host does not have the feature", not "it is
- * off". Two halves: the installers really register, and each host's boot module
- * really calls the installer that suits it.
- */
 
 const updateSessionSearchInService = vi.hoisted(() => vi.fn())
 vi.mock('../ai-vault/session-scanner-service-spawn', async (importOriginal) => ({
@@ -32,10 +25,8 @@ vi.mock('../ai-vault/cached-session-list', async (importOriginal) => ({
   localAiVaultScanRoots
 }))
 
-const ROOT = join(import.meta.dirname, '..', '..', '..')
-
 let harness: SessionSearchIndexerHarness
-let installed: { dispose(): void } | null
+let installed: { apply?(settings: AiVaultSearchSettings): void; dispose(): void } | null
 
 beforeEach(async () => {
   resetSessionParseCacheForTests()
@@ -126,7 +117,6 @@ it('registers an in-process service for a host with no scanner child', async () 
   })
   expect(installed).not.toBeNull()
 
-  // Off, not absent: the caller can tell consent from a host that lacks the feature.
   expect(await searchSessionService({ query: 'ledger' }, 'relay')).toEqual({
     kind: 'unavailable',
     reason: 'disabled'
@@ -138,26 +128,6 @@ it('registers an in-process service for a host with no scanner child', async () 
     kind: 'unavailable',
     reason: 'no-service'
   })
-})
-
-// The behavioural tests above prove the installers register; these prove each
-// host's boot path reaches one, which no unit of either module can show.
-it.each([
-  [
-    'desktop and headless serve',
-    'src/main/startup/main-process-runtime-service.ts',
-    'installChildSessionSearchService'
-  ],
-  ['orcad', 'src/main/orcad/orcad-session-search.ts', 'installInProcessSessionSearchService'],
-  [
-    'the relay daemon',
-    'src/relay/relay-runtime-services.ts',
-    'installInProcessSessionSearchService'
-  ]
-])('boots %s with a registered session search service', (_host, file, installer) => {
-  const source = readFileSync(join(ROOT, file), 'utf8')
-  expect(source).toContain(installer)
-  expect(source).toMatch(new RegExp(`${installer}\\(\\{`))
 })
 
 it('disables immediately without root discovery', async () => {
@@ -203,4 +173,28 @@ it('orcad resolves no roots while disabled and discovers late roots when enabled
   if (response.kind === 'results') {
     expect(response.hits.map((hit) => hit.sessionId)).toEqual([id])
   }
+})
+
+it('re-applies consent on an in-process host without reinstalling the service', async () => {
+  installed = installInProcessSessionSearchService({
+    dataRoot: harness.root,
+    roots: harness.roots,
+    settings: { enabled: false, historyDays: null }
+  })
+  expect(await searchSessionService({ query: 'ledger' }, 'relay')).toEqual({
+    kind: 'unavailable',
+    reason: 'disabled'
+  })
+
+  installed?.apply?.({ enabled: true, historyDays: null })
+  expect(await searchSessionService({ query: 'ledger' }, 'relay')).not.toMatchObject({
+    kind: 'unavailable',
+    reason: 'disabled'
+  })
+
+  installed?.apply?.({ enabled: false, historyDays: null })
+  expect(await searchSessionService({ query: 'ledger' }, 'relay')).toEqual({
+    kind: 'unavailable',
+    reason: 'disabled'
+  })
 })

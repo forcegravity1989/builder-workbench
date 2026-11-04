@@ -51,7 +51,7 @@ export default function GitHubItemDialog({
       scope: workbenchTaskScope,
       worktrees: allWorktrees,
       provider: 'github',
-      item: { repoId: effectiveRepoId, type: 'issue', number: workItem.number },
+      item: { repoId: effectiveRepoId, type: 'issue', number: workItem.number, url: workItem.url },
       sourceContext: sourceContext ?? null
     }).attached
   }, [allWorktrees, effectiveRepoId, workItem, workbenchTaskScope, sourceContext])
@@ -93,14 +93,17 @@ export default function GitHubItemDialog({
       const currentAttached = findGithubIssueWorkspaceAttachment(
         worktrees,
         effectiveRepoId,
-        item.number
+        item.number,
+        item.url
       )
       if (!currentAttached) {
         onUse(item)
         return
       }
 
-      const result = activateAndRevealWorktree(currentAttached.id)
+      const result = activateAndRevealWorktree(currentAttached.id, {
+        navigationIntent: 'user-open'
+      })
       if (result === false) {
         toast.error(
           translate(
@@ -288,7 +291,6 @@ export default function GitHubItemDialog({
   ) : null
 
   return (
-    // Why: rendered inline (not a Radix dialog), so e2e needs a stable hook to scope assertions to this detail surface.
     <div
       data-testid="github-item-detail"
       className="flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-border/50 bg-background shadow-sm"

@@ -1,3 +1,4 @@
+import { createBrowserUuid } from '@/lib/browser-uuid'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AcceptanceMaterialSchema,
@@ -127,7 +128,7 @@ export function useAcceptanceBoard({
             document: createAcceptanceMaterial({
               planRef,
               plan: selected,
-              cycleId: crypto.randomUUID()
+              cycleId: createBrowserUuid()
             }),
             expectedRevision: null,
             dirty: true

@@ -20,6 +20,7 @@ beforeEach(() => {
   })
   rpc.mockReset()
   local.mockReset()
+  state.repos.splice(1)
   state.repos[0].executionHostId = 'runtime:owner'
 })
 it('uses the repo owner instead of the newly focused runtime for reads and writes', async () => {
@@ -32,6 +33,18 @@ it('uses the repo owner instead of the newly focused runtime for reads and write
     { timeoutMs: 60_000 }
   )
   expect(local).not.toHaveBeenCalled()
+  state.repos.push({ id: 'repo-1', path: '/repo', executionHostId: 'runtime:twin' })
+  await expect(codehubApi.viewer({ repoId: 'repo-1', repoPath: '/repo' })).rejects.toThrow(
+    'ambiguous'
+  )
+  await codehubApi.viewer({ repoId: 'repo-1', repoPath: '/repo', repoHostId: 'runtime:twin' })
+  expect(rpc).toHaveBeenLastCalledWith(
+    { kind: 'environment', environmentId: 'twin' },
+    'codehub.viewer',
+    expect.objectContaining({ repoHostId: 'runtime:twin' }),
+    { timeoutMs: 60_000 }
+  )
+  state.repos.splice(1)
   await codehubApi.viewer({ repoId: args.repoId, repoPath: args.repoPath })
   expect(rpc).toHaveBeenLastCalledWith(
     { kind: 'environment', environmentId: 'owner' },

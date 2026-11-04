@@ -14,7 +14,7 @@ import {
 import type { PRCommentAudienceFilter } from '../../../../../shared/pr-comment-audience'
 import { cn } from '@/lib/utils'
 import { codehubApi } from '@/lib/codehub-api'
-import { formatRelativeTime } from '../../task-page-source-context'
+import { formatRelativeTime } from '../task-page-source-context'
 import type { CodeHubComment } from '../../../../../shared/codehub-tasks'
 import type { CodeHubDetailState } from './use-codehub-detail'
 
@@ -206,6 +206,7 @@ function CodeHubCommentCard({
                   void codehubApi
                     .deleteComment({
                       repoPath: item.repoPath,
+                      repoHostId: item.repoHostId,
                       repoId: item.repoId,
                       kind: item.type,
                       iid: item.iid,
@@ -219,6 +220,7 @@ function CodeHubCommentCard({
                     .then(() =>
                       codehubApi.listComments({
                         repoPath: item.repoPath!,
+                        repoHostId: item.repoHostId,
                         repoId: item.repoId,
                         kind: item.type,
                         iid: item.iid

@@ -262,6 +262,7 @@ function CodeHubFilesSections({
       return codehubApi
         .createComment({
           repoPath,
+          repoHostId: item.repoHostId,
           repoId: item.repoId,
           kind: item.type,
           iid: item.iid,
@@ -273,6 +274,7 @@ function CodeHubFilesSections({
         .then(async () => {
           const rows = await codehubApi.listComments({
             repoPath,
+            repoHostId: item.repoHostId,
             repoId: item.repoId,
             kind: item.type,
             iid: item.iid

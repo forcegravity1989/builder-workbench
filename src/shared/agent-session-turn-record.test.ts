@@ -8,7 +8,8 @@ import {
   agentJournalTurnBody,
   isRunningAgentJournalTurn,
   legacyAgentJournalTurnStatusBody,
-  readAgentJournalTurn
+  readAgentJournalTurn,
+  readAgentJournalTurnOutcome
 } from './agent-session-turn-record'
 
 const turn: AgentJournalTurnLifecycle = {
@@ -48,6 +49,107 @@ describe('readAgentJournalTurn', () => {
   })
 })
 
+describe('agentJournalTurnBody', () => {
+  it('preserves every lifecycle field', () => {
+    const complete: Required<AgentJournalTurnLifecycle> = {
+      turnId: 't1',
+      state: 'completed',
+      outcome: 'success',
+      userItemId: 'codex:thread:t1:0',
+      startedAt: 1_000,
+      requestedAt: 900,
+      completedAt: 8_200,
+      durationMs: 7_172,
+      contextUsage: { window: { tokens: 100, capturedAt: 8_200 } },
+      providerTurnId: 'provider-t1'
+    }
+    expect(agentJournalTurnBody(complete)).toEqual({ kind: 'turn', ...complete })
+  })
+
+  it('normalizes known fields and preserves extensions without changing the saved lifecycle', () => {
+    const saved = {
+      ...turn,
+      kind: 'tool-call',
+      laterField: { kept: true },
+      providerTurnId: '',
+      contextUsage: {
+        window: { tokens: 10, capturedAt: 1, laterWindowField: true },
+        used: { kind: 'unknown' as const, capturedAt: 1, laterUsedField: true },
+        laterUsageField: { kept: true }
+      }
+    }
+    const before = structuredClone(saved)
+    expect(agentJournalTurnBody(saved)).toEqual({
+      kind: 'turn',
+      ...turn,
+      laterField: { kept: true },
+      contextUsage: saved.contextUsage
+    })
+    expect(saved).toEqual(before)
+  })
+
+  it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])(
+    'omits an invalid optional time %s without inventing an end',
+    (completedAt) => {
+      expect(agentJournalTurnBody({ turnId: 't', state: 'interrupted', completedAt })).toEqual({
+        kind: 'turn',
+        turnId: 't',
+        state: 'interrupted'
+      })
+    }
+  )
+
+  it('omits invalid fields newly typed on a legacy lifecycle', () => {
+    const saved = {
+      ...turn,
+      providerTurnId: '',
+      contextUsage: { window: { tokens: -1, capturedAt: 1 } }
+    }
+    expect(agentJournalTurnBody(saved)).toEqual({ kind: 'turn', ...turn })
+  })
+})
+
+describe('readAgentJournalTurnOutcome', () => {
+  it.each(['success', 'failure', 'cancellation'] as const)(
+    'reads a %s verdict off either journal shape',
+    (outcome) => {
+      const withOutcome = { ...turn, outcome }
+      expect(
+        readAgentJournalTurnOutcome(readAgentJournalTurn(agentJournalTurnBody(withOutcome)))
+      ).toBe(outcome)
+      expect(
+        readAgentJournalTurnOutcome(
+          readAgentJournalTurn({ kind: 'status', text: 'x', turnLifecycle: withOutcome })
+        )
+      ).toBe(outcome)
+    }
+  )
+
+  it('never reads an old host completed row as success', () => {
+    // Pre-outcome hosts marked API-error turns completed; absent verdict must remain unknown or historical failures become successes.
+    expect(readAgentJournalTurnOutcome(turn)).toBeNull()
+    expect(readAgentJournalTurnOutcome({ turnId: 't', state: 'completed' })).toBeNull()
+    expect(
+      readAgentJournalTurnOutcome(
+        readAgentJournalTurn({ kind: 'status', text: 'Claude turn completed', turnLifecycle: turn })
+      )
+    ).toBeNull()
+  })
+
+  it('reads a verdict from a later vocabulary as unknown rather than an arm', () => {
+    // Persisted verdicts are open strings; the reader, not schema typing, checks known arms.
+    expect(readAgentJournalTurnOutcome({ ...turn, outcome: 'partially-refused' })).toBeNull()
+  })
+
+  it('answers unknown for a body that carries no turn at all', () => {
+    expect(readAgentJournalTurnOutcome(null)).toBeNull()
+    expect(readAgentJournalTurnOutcome(undefined)).toBeNull()
+    expect(
+      readAgentJournalTurnOutcome(readAgentJournalTurn({ kind: 'status', text: 'compacted' }))
+    ).toBeNull()
+  })
+})
+
 describe('legacyAgentJournalTurnStatusBody', () => {
   it('names the agent from the lifecycle identity and never calls an unobserved end completed', () => {
     expect(legacyAgentJournalTurnStatusBody(turn, 'legacy:claude:s:turn-lifecycle%3At1')).toEqual({
@@ -62,11 +164,40 @@ describe('legacyAgentJournalTurnStatusBody', () => {
       ).text
     ).toBe('Codex turn outcome unverifiable')
   })
+
+  it('names any other agent by its own name, never as Codex', () => {
+    expect(legacyAgentJournalTurnStatusBody(turn, 'orca:command-turn:t1', 'gemini').text).toBe(
+      'Gemini turn completed'
+    )
+    expect(legacyAgentJournalTurnStatusBody(turn, 'legacy:gemini:s:turn-lifecycle%3At1').text).toBe(
+      'Gemini turn completed'
+    )
+    // Nothing names the agent: say so rather than guess one.
+    expect(legacyAgentJournalTurnStatusBody(turn, 'orca:command-turn:t1').text).toBe(
+      'Agent turn completed'
+    )
+    expect(legacyAgentJournalTurnStatusBody(turn, 'orca:command-turn:t1', 'codex').text).toBe(
+      'Codex turn completed'
+    )
+  })
+
+  it('carries the verdict to a client that predates the turn item', () => {
+    // Keep legacy completed copy while carrying the verdict under turnLifecycle, so clients can learn outcomes without a host change.
+    const failed = { ...turn, outcome: 'failure' as const }
+    expect(legacyAgentJournalTurnStatusBody(failed, 'legacy:claude:s:turn-lifecycle%3At1')).toEqual(
+      {
+        kind: 'status',
+        text: 'Claude turn completed',
+        turnLifecycle: failed
+      }
+    )
+  })
 })
 
 describe('journalRowSchemaVersion', () => {
   it('stamps only rows that carry a turn item with the current version', () => {
-    expect(AGENT_SESSION_JOURNAL_SCHEMA_VERSION).toBe(3)
+    // The newest this build reads is the queue row's.
+    expect(AGENT_SESSION_JOURNAL_SCHEMA_VERSION).toBe(4)
     expect(journalRowSchemaVersion([agentJournalTurnBody(turn)])).toBe(3)
     expect(journalRowSchemaVersion([{ kind: 'message' }, { kind: 'status' }])).toBe(2)
     expect(journalRowSchemaVersion([])).toBe(2)

@@ -14,7 +14,7 @@ vi.mock('electron', () => ({
 
 import { composeTrayAttentionIcon } from './tray-attention-icon'
 
-// The compositor receives BGRA. amber-500 = #f59e0b.
+// Electron bitmaps use BGRA; renderer attention token is amber-500 (#f59e0b).
 const AMBER = { b: 0x0b, g: 0x9e, r: 0xf5 }
 
 describe('composeTrayAttentionIcon', () => {
@@ -60,8 +60,6 @@ describe('composeTrayAttentionIcon', () => {
       return [bitmap[o], bitmap[o + 1], bitmap[o + 2], bitmap[o + 3]]
     }
 
-    // The dot must exist, be centered in the top-right, and never touch the
-    // opposite (bottom-left) corner where the app glyph is most visible.
     let amberCount = 0
     let sumX = 0
     let sumY = 0

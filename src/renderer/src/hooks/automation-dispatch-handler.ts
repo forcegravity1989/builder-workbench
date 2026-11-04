@@ -7,6 +7,7 @@ import { findReusableAutomationSession } from '@/lib/automation-session-reuse'
 import type { AutomationTerminalOwnership } from '@/lib/automation-terminal-ownership'
 import { combineAutomationRunPrompt } from '../../../shared/automation-run-prompt'
 import { useAppStore } from '@/store'
+import { captureWorkspaceSelection, restoreWorkspaceSelection } from '@/lib/active-workspace-host'
 import type {
   AutomationDispatchRequest,
   AutomationDispatchResult
@@ -36,15 +37,14 @@ export async function handleAutomationDispatchRequest({
   // One-shot context rides with the saved prompt as a single delivery; the record stays untouched.
   const runPrompt = combineAutomationRunPrompt(automation.prompt, oneShotPrompt)
   const markDispatchResult = async (result: AutomationDispatchResult): Promise<void> => {
-    // Deliberately no local emit: the write publishes its own host-scoped event
-    // (automation-run-writer.ts) before this reply returns, and an unscoped one
-    // here would arrive second and invalidate every host in the catalog.
+    // The writer publishes host-scoped change before reply; another unscoped emit would invalidate every host.
     await window.api.automations.markDispatchResult(result)
   }
   const state = useAppStore.getState()
   const focusBeforeDispatch = {
     activeView: state.activeView,
     activeWorktreeId: state.activeWorktreeId,
+    selection: captureWorkspaceSelection(state),
     activeTabId: state.activeTabId,
     activeTabType: state.activeTabType
   }
@@ -55,10 +55,10 @@ export async function handleAutomationDispatchRequest({
     terminalOwnership = null
     ownership?.release()
   }
-  const finalizeTerminalOwnership = (): boolean => {
+  const finalizeTerminalOwnership: AutomationTerminalOwnership['finalize'] = async (options) => {
     const ownership = terminalOwnership
     terminalOwnership = null
-    return ownership?.finalize() ?? false
+    return (await ownership?.finalize(options)) ?? null
   }
 
   if (!resolved.repo) {
@@ -102,8 +102,7 @@ export async function handleAutomationDispatchRequest({
         agentId: automation.agentId,
         worktreeId: worktree.id,
         currentRunId: run.id,
-        // Why: the dispatch loop only ever executes for the desktop authority,
-        // so its history read addresses the local runtime explicitly.
+        // Dispatch runs only on desktop authority, so history reads explicitly target the local runtime.
         runs: await listAutomationRunsForTarget({ kind: 'local' }, automation.id),
         state: useAppStore.getState()
       })
@@ -172,6 +171,7 @@ export async function handleAutomationDispatchRequest({
       agent: automation.agentId,
       worktreeId: worktree.id,
       prompt: runPrompt,
+      ...(automation.extraAgentArgs ? { extraAgentArgs: automation.extraAgentArgs } : {}),
       launchSource: 'unknown',
       title: run.title,
       onData: completion.appendOutput,
@@ -191,9 +191,9 @@ export async function handleAutomationDispatchRequest({
       throw new Error('Unable to build an agent launch plan.')
     }
     terminalOwnership = result.terminalOwnership
+    completion.setSessionObserver(result.releaseRuntimeObservers)
     if (automation.reuseSession) {
-      // Why: the first fresh launch is the seed for later reuse and must
-      // survive completion under the same policy as an already-reused tab.
+      // Preserve the first fresh-launch seed under the same completion policy as reused tabs.
       releaseTerminalOwnership()
     }
     const launchedTabId = result.tabId
@@ -216,18 +216,20 @@ export async function handleAutomationDispatchRequest({
       throw error
     }
     const currentState = useAppStore.getState()
-    // Why: Run Now and scheduled dispatches should create workspaces/tabs in
-    // the background; only an explicit row click should navigate there.
+    // Scheduled/Run Now dispatch stays in background; explicit row clicks alone navigate.
     if (
       focusBeforeDispatch.activeWorktreeId !== worktree.id &&
       currentState.activeWorktreeId === worktree.id
     ) {
       currentState.setActiveView(focusBeforeDispatch.activeView)
-      currentState.setActiveWorktree(focusBeforeDispatch.activeWorktreeId)
+      restoreWorkspaceSelection(currentState, focusBeforeDispatch.selection)
       if (focusBeforeDispatch.activeTabId) {
         currentState.setActiveTab(focusBeforeDispatch.activeTabId)
       }
-      currentState.setActiveTabType(focusBeforeDispatch.activeTabType)
+      currentState.setActiveTabType(
+        focusBeforeDispatch.activeTabType,
+        focusBeforeDispatch.activeWorktreeId
+      )
     }
   } catch (error) {
     releaseTerminalOwnership()

@@ -34,7 +34,10 @@ export const TerminalSubscribe = TerminalHandle.extend({
       mobileInputLeaseOnly: z.literal(1).optional(),
       writeUnavailable: z.literal(1).optional()
     })
-    .optional()
+    .optional(),
+  /** Budget the JSON frame, not raw text: ESC expands sixfold and can push a 512 KiB snapshot past a 640 KiB bridge cap.
+   * Optional for legacy raw-byte trimming; never infer from client.type because mobile socket clients have no frame cap. */
+  snapshotByteBudget: z.number().int().positive().optional()
 })
 
 export const TerminalMultiplex = z.object({})

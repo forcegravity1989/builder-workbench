@@ -6,6 +6,7 @@ import { readReleaseStatus } from '../../../workbench/release-status'
 export const WORKBENCH_RELEASE_METHODS = [
   defineMethod({
     name: 'workbench.release.status',
+    permission: 'workspace',
     params: ReleaseStatusRequestSchema,
     handler: (params, { runtime }) =>
       workbenchRuntimeResult(() => readReleaseStatus(runtime, params))

@@ -6,20 +6,34 @@ import {
 } from '../ai-vault-search/session-search-service-registry'
 import {
   createSessionSearchClient,
+  isUnknownSessionSearchMethod,
   unavailableSessionSearchStatus
 } from '../../shared/ai-vault-search-client'
-import { AiVaultSearchRequestSchema } from '../../shared/ai-vault-search-contract'
+import {
+  AiVaultSearchRequestSchema,
+  AiVaultSearchStatusSchema,
+  AiVaultSetSearchEnabledParamsSchema
+} from '../../shared/ai-vault-search-contract'
 import type {
   AiVaultSearchRequest,
   AiVaultSearchResponse,
   AiVaultSearchStatus
 } from '../../shared/ai-vault-search-types'
 import {
+  ALL_EXECUTION_HOSTS_SCOPE,
   LOCAL_EXECUTION_HOST_ID,
-  parseExecutionHostId,
+  parseRoutableExecutionHostId,
   type ParsedExecutionHost
 } from '../../shared/execution-host'
-import { requestActiveSshSessionSearch } from './ssh'
+import { redactStatusForTransport } from '../../shared/ai-vault-search-transport'
+import { clearSessionSearchInService } from '../ai-vault/session-scanner-service-spawn'
+import { searchAllExecutionHosts, type SessionSearchHostLeg } from './ai-vault-search-all-hosts'
+import { getActiveRuntimeAiVaultHostInfosResult } from './ai-vault'
+import { AI_VAULT_ALL_HOST_TIMEOUT_MS } from './ai-vault-all-host-timeouts'
+import {
+  OPENS_EVERY_STRUCTURED_CHAT,
+  searchWithStructuredOwners
+} from '../ai-vault/structured-session-ownership'
 
 export type RuntimeSessionSearchCall = (
   environmentId: string,
@@ -29,10 +43,16 @@ export type RuntimeSessionSearchCall = (
 
 export type AiVaultSearchHandlerOptions = {
   callRuntimeSearch?: RuntimeSessionSearchCall
+  ensureStructuredSessionOwnership?: () => Promise<void>
 }
 
-// One wording with the session list, which refuses the same unroutable scope.
 const UNROUTABLE_HOST_MESSAGE = 'Agent Session History is not available for this execution host.'
+// Consent is written where the index lives: locally through settings, never here.
+const LOCAL_ENABLE_MESSAGE =
+  'Local Agent Session History indexing is changed through Settings, not this channel.'
+const SSH_ENABLE_MESSAGE = 'unsupported'
+/** Exact text, not a class: the renderer maps this one message to its own copy. */
+const HOST_TOO_OLD_MESSAGE = 'host-too-old'
 const scopeSchema = z.string().min(1).optional()
 
 let handlerOptions: AiVaultSearchHandlerOptions = {}
@@ -41,26 +61,63 @@ export function registerAiVaultSearchHandlers(options: AiVaultSearchHandlerOptio
   handlerOptions = options
   // Async so a refused scope reaches the renderer as a rejection, like every other parse failure.
   ipcMain.handle('aiVault:searchSessions', async (_event, raw: unknown, rawScope?: unknown) => {
-    const scope = requestedSearchScope(rawScope)
-    return searchByExecutionHostScope(AiVaultSearchRequestSchema.parse(raw), scope)
+    const request = AiVaultSearchRequestSchema.parse(raw)
+    // Only the desktop fans out: a runtime or CLI caller would make it two hops.
+    if (scopeSchema.parse(rawScope) === ALL_EXECUTION_HOSTS_SCOPE) {
+      return searchAllExecutionHosts(request, allExecutionHostLegs())
+    }
+    return searchByExecutionHostScope(request, requestedSearchScope(rawScope))
   })
   ipcMain.handle('aiVault:searchStatus', async (_event, rawScope?: unknown) => {
     const scope = requestedSearchScope(rawScope)
     return statusByExecutionHost(scope)
   })
+  ipcMain.handle(
+    'aiVault:setSearchEnabled',
+    async (_event, rawScope: unknown, rawEnabled: unknown) => {
+      const { enabled } = AiVaultSetSearchEnabledParamsSchema.parse({ enabled: rawEnabled })
+      return setSearchEnabledByExecutionHost(requestedSearchScope(rawScope), enabled)
+    }
+  )
+  ipcMain.handle('aiVault:clearSearchIndex', () => clearSessionSearchInService())
 }
 
-/**
- * Why not the list's `requestedExecutionHostScope`: it normalizes an unparseable
- * id to `all`, which would answer an unroutable request by searching every host.
- * Same parser, same omitted-means-this-host rule, but garbage is refused.
- */
+/** Only paired runtimes support toggling here; local consent belongs to Settings and SSH has no setter. */
+async function setSearchEnabledByExecutionHost(
+  scope: ParsedExecutionHost,
+  enabled: boolean
+): Promise<AiVaultSearchStatus> {
+  if (scope.kind === 'local') {
+    throw new Error(LOCAL_ENABLE_MESSAGE)
+  }
+  if (scope.kind === 'ssh') {
+    throw new Error(SSH_ENABLE_MESSAGE)
+  }
+  const call = handlerOptions.callRuntimeSearch
+  if (!call) {
+    throw new Error(HOST_TOO_OLD_MESSAGE)
+  }
+  const { environmentId } = scope
+  try {
+    return AiVaultSearchStatusSchema.parse(
+      await call(environmentId, 'aiVault.setSearchEnabled', { enabled })
+    )
+  } catch (error) {
+    // An old host has no such method; every other refusal is the host's own answer.
+    if (isUnknownSessionSearchMethod(error)) {
+      throw new Error(HOST_TOO_OLD_MESSAGE)
+    }
+    throw error
+  }
+}
+
+/** Reject malformed host IDs; list-scope normalization to all would search unintended hosts. */
 function requestedSearchScope(raw: unknown): ParsedExecutionHost {
   const value = scopeSchema.parse(raw)
   if (value === undefined) {
     return { kind: 'local', id: LOCAL_EXECUTION_HOST_ID }
   }
-  const parsed = parseExecutionHostId(value)
+  const parsed = parseRoutableExecutionHostId(value)
   if (!parsed) {
     throw new Error(UNROUTABLE_HOST_MESSAGE)
   }
@@ -72,7 +129,7 @@ async function searchByExecutionHostScope(
   scope: ParsedExecutionHost
 ): Promise<AiVaultSearchResponse> {
   if (scope.kind === 'local') {
-    return searchSessionService(request, 'ipc')
+    return searchLocalSessions(request)
   }
   const client = remoteSearchClient(scope, handlerOptions.callRuntimeSearch)
   if (!client) {
@@ -85,26 +142,76 @@ async function searchByExecutionHostScope(
     : response
 }
 
-function statusByExecutionHost(scope: ParsedExecutionHost): Promise<AiVaultSearchStatus> {
+async function searchLocalSessions(request: AiVaultSearchRequest): Promise<AiVaultSearchResponse> {
+  return searchWithStructuredOwners(searchSessionService(request, 'ipc'), {
+    ensureHost: handlerOptions.ensureStructuredSessionOwnership,
+    opensChat: OPENS_EVERY_STRUCTURED_CHAT
+  })
+}
+
+/** One leg per list-visible host; broken enumeration loses only its own host class. */
+function allExecutionHostLegs(): SessionSearchHostLeg[] {
+  const localLeg: SessionSearchHostLeg = {
+    executionHostId: LOCAL_EXECUTION_HOST_ID,
+    search: searchLocalSessions
+  }
+  const runtimeLegs = getActiveRuntimeAiVaultHostInfosResult().hostInfos.map((hostInfo) =>
+    remoteHostLeg({
+      kind: 'runtime',
+      id: hostInfo.executionHostId,
+      environmentId: hostInfo.environmentId
+    })
+  )
+  return [localLeg, ...runtimeLegs]
+}
+
+function remoteHostLeg(host: ParsedExecutionHost): SessionSearchHostLeg {
+  const client = remoteSearchClient(host, handlerOptions.callRuntimeSearch)
+  return {
+    executionHostId: host.id,
+    timeoutMs: AI_VAULT_ALL_HOST_TIMEOUT_MS.search,
+    search: (request) =>
+      client
+        ? client.searchSessions(request)
+        : Promise.resolve({ kind: 'unavailable', reason: 'no-service' })
+  }
+}
+
+async function statusByExecutionHost(scope: ParsedExecutionHost): Promise<AiVaultSearchStatus> {
   if (scope.kind === 'local') {
     return sessionSearchServiceStatus({}, 'ipc')
   }
+  if (scope.kind === 'runtime') {
+    return runtimeHostStatus(scope.environmentId)
+  }
   const client = remoteSearchClient(scope, handlerOptions.callRuntimeSearch)
-  return client ? client.searchStatus() : Promise.resolve(unavailableSessionSearchStatus())
+  return client ? client.searchStatus() : unavailableSessionSearchStatus()
 }
 
-// Null for the local host and for a runtime environment with no injected transport.
+/** Bypass the shared client: distinguish unsupported methods from a current host with indexing disabled. */
+async function runtimeHostStatus(environmentId: string): Promise<AiVaultSearchStatus> {
+  const call = handlerOptions.callRuntimeSearch
+  if (!call) {
+    return unavailableSessionSearchStatus()
+  }
+  try {
+    return redactStatusForTransport(
+      AiVaultSearchStatusSchema.parse(await call(environmentId, 'aiVault.searchStatus', {})),
+      'relay'
+    )
+  } catch (error) {
+    if (isUnknownSessionSearchMethod(error)) {
+      throw new Error(HOST_TOO_OLD_MESSAGE)
+    }
+    throw error
+  }
+}
+
+/** Null for local scope or runtimes without injected transport. */
 function remoteSearchClient(
   host: ParsedExecutionHost,
   call: RuntimeSessionSearchCall | undefined
 ): ReturnType<typeof createSessionSearchClient> | null {
-  if (host.kind === 'ssh') {
-    const { targetId } = host
-    return createSessionSearchClient(
-      (method, params) => requestActiveSshSessionSearch(targetId, method, params),
-      'relay'
-    )
-  }
   if (host.kind === 'runtime' && call) {
     const { environmentId } = host
     return createSessionSearchClient(

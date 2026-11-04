@@ -8,47 +8,34 @@ description: >-
 
 # Workbench 文档维护
 
-仓与仓的**路径不同**，但 AI-native 项目的**文档角色**一致。不要把单仓路径写死进 Workbench 代码；真相在该仓的 `.bw/knowledge-map.toml`。
+This discovery stub loads the version-matched guide from the Workbench executable used for this session.
 
-详细角色与维护策略见同目录 [`roles.md`](roles.md)。
+## Resolve the CLI for this session
 
-## 何时用
+Choose the executable once and reuse it for every later command:
 
-- 项目刚接入，地图 `status = "draft"`
-- 知识库分组不对（该进契约的进了参考等）
-- 文档目录重组后需要重映角色
+- If the `ORCA_CLI_COMMAND` environment variable is set, use its value. Orca exports this
+  for managed WSL sessions.
+- Otherwise, in a dev checkout whose session exposes `ORCA_DEV_REPO_ROOT`, use `orca-dev`.
+- Otherwise, on Linux outside an Orca-managed terminal, use `orca-ide`. Never run bare
+  `orca` there — outside Orca's terminals it normally resolves to the
+  GNOME Orca screen reader (`/usr/bin/orca`) and starts speech on the user's machine.
+- Otherwise, use `orca`.
 
-## 步骤
+Below, `ORCA` is a placeholder for the executable you resolved. Substitute it before
+running anything; do not create a shell variable or run `ORCA` literally. This works the
+same way in POSIX shells, PowerShell, and cmd.exe.
 
-1. **列仓内文档**：Markdown / MDX，以及 `.bw/project.toml`。跳过生成物与无关树（常见：`node_modules/`、构建产物、`docs/review-evidence/`）。
-2. **按角色归类**（见 `roles.md`）：先定「这份文档干什么」，再填路径；不要先猜目录名。
-3. **写 / 改** `.bw/knowledge-map.toml`：
-   - `[[section]]`：`role` + `paths`（精确文件或目录前缀，目录以 `/` 结尾）
-   - `[[exclude]]`：明确不进知识库的前缀
-   - 冲突时：**更长 / 更精确的 path 优先**；exclude 优先于 section
-4. **把 `status` 改为 `"reviewed"`**，并简述你改了哪几段角色。
-5. **完成标准**：每个进知识库的文档都能落到唯一 role；用户文不对账；契约与当前活跃特性可对账；参考 / Agent 入口侧栏即可。
+If the selected executable cannot run, report its exact error and stop. Do not fall through
+to another executable, which could silently target a different Orca build.
 
-## 禁止
-
-- 把某个仓库的路径白名单提交进 Orca/Workbench 运行时代码
-- 把实现现状写回愿景 / 契约「正本」来消对账差异
-- 用「文档很多」当理由把整棵 `docs/` 丢进同一 role
-
-## 地图骨架
-
-```toml
-version = 1
-status = "draft"
-
-[[section]]
-role = "eng-features"
-paths = ["docs/features/"]
-
-[[section]]
-role = "eng-contract"
-paths = ["docs/architecture.md"]
-
-[[exclude]]
-paths = ["docs/review-evidence/"]
+```text
+ORCA skills get bw-knowledge-docs
 ```
+
+Prefer `--json`. Use the selected executable's `--help` for commands or flags the guide does
+not cover. If a command reports that Orca is not running, start it with `ORCA open --json`
+and retry. If it fails with `runtime_access_denied`, your sandbox blocked the connection:
+re-run it with escalated permissions, and do not run `ORCA open` or restart Orca. If
+`skills get` is unknown, explain that updating Orca restores the guide; use `--help` for
+read-only discovery and do not guess unsupported commands.

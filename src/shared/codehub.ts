@@ -1,5 +1,8 @@
 import type { GitHubIssueCloseReason } from './issue-mutation-types'
 import type { GitRemoteIdentity } from './git-remote-identity'
+import type { Repo } from './repo-types'
+import type { CodeHubTaskItem } from './codehub-tasks'
+import { getRepoExecutionHostId } from './execution-host'
 
 export type CodeHubRemote = {
   host: string
@@ -176,4 +179,18 @@ export function assertCodeHubDetailIdentity(
       throw new Error('CodeHub 返回的 MR 链接与请求来源不一致')
     }
   }
+}
+
+/** The fetched row's path and host survive focus changes; ambiguous legacy rows have no owner. */
+export function getCodeHubTaskRepo(
+  repos: readonly Repo[],
+  item: Pick<CodeHubTaskItem, 'repoId' | 'repoPath' | 'repoHostId'>
+): Repo | undefined {
+  const matches = repos.filter(
+    (repo) =>
+      repo.id === item.repoId &&
+      (!item.repoPath || repo.path === item.repoPath) &&
+      (!item.repoHostId || getRepoExecutionHostId(repo) === item.repoHostId)
+  )
+  return matches.length === 1 ? matches[0] : undefined
 }

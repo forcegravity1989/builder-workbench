@@ -1,6 +1,7 @@
 import { getGitHubSourceRuntimeTarget } from '@/lib/github-source-runtime-context'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
 import type { CodeHubTaskItem } from '../../../shared/codehub-tasks'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import { getProjectProviderIdentity } from '../../../shared/project-host-setup-projection'
 import {
@@ -124,7 +125,12 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
           if (!item) {
             throw new Error(`GitHub 未返回编号 ${reference.number} 的工作项`)
           }
-          return { kind: 'github', item: { ...item, repoId: repo.id }, source, readAt: deps.now() }
+          return {
+            kind: 'github',
+            item: { ...item, repoId: repo.id, repoHostId: getRepoExecutionHostId(repo) },
+            source,
+            readAt: deps.now()
+          }
         }
         const { kind, detail } = await viewCodeHubTaskByIid(deps, repo, reference.number)
         if (!/^(open|opened|closed|merged)$/i.test(detail.state)) {
@@ -201,7 +207,11 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
                   if (item && job.repo && job.source) {
                     job.finish({
                       kind: 'github',
-                      item: { ...item, repoId: job.repo.id },
+                      item: {
+                        ...item,
+                        repoId: job.repo.id,
+                        repoHostId: getRepoExecutionHostId(job.repo)
+                      },
                       source: job.source,
                       readAt: deps.now()
                     })

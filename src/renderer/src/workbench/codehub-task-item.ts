@@ -1,3 +1,4 @@
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { parseCodeHubRemote } from '../../../shared/codehub'
 import type { CodeHubTaskDetail, CodeHubTaskItem } from '../../../shared/codehub-tasks'
 import type { Repo } from '../../../shared/repo-types'
@@ -56,6 +57,7 @@ export function codeHubTaskItemFromDetail(args: {
     // Why: viewTask carries no updated timestamp; leave empty rather than pass readAt off as one.
     updatedAt: '',
     repoId: repo.id,
+    repoHostId: getRepoExecutionHostId(repo),
     repoPath: repo.path,
     ...(remote ? { host: remote.host, project: remote.project } : {})
   }

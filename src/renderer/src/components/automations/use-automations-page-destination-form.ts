@@ -52,7 +52,6 @@ export function useAutomationsPageDestinationForm({
   } = store
   const {
     createOpen,
-    createTarget,
     editingAutomationId,
     editingRowKey,
     editingHostStableKey,
@@ -84,7 +83,6 @@ export function useAutomationsPageDestinationForm({
       getAutomationTargetFromHostId(editingRow?.automation.runContext?.hostId)
     )
   })()
-  const isOrcaForm = createTarget === 'orca' && local.editingExternalTarget === null
   const dialogAuthorityRepos = getAutomationCreateRepos(repos, automationDialogTarget)
   const dialogAuthorityKey = automationAuthorityCatalogKey(
     automationDialogTarget.kind === 'environment'
@@ -160,21 +158,11 @@ export function useAutomationsPageDestinationForm({
         ).replace('{host}', () => editMoveTargetEntry.authorityLabel)
       : null
   }
-  const dialogRepos = isOrcaForm
-    ? editingAutomationId !== null
-      ? editHostProjects
-      : editorProjects
-    : getAutomationCreateRepos(repos, { kind: 'local' })
+  const dialogRepos = editingAutomationId !== null ? editHostProjects : editorProjects
 
-  // A destination change can strand the chosen project on another host; clear
-  // it so the draft/default-target effect can select a project the host owns.
+  // Clear projects stranded by destination changes so defaults can select one the chosen host owns.
   useEffect(() => {
-    if (
-      !createOpen ||
-      editingAutomationId !== null ||
-      createTarget !== 'orca' ||
-      createHostStableKey
-    ) {
+    if (!createOpen || editingAutomationId !== null || createHostStableKey) {
       return
     }
     setDraft((current) =>
@@ -182,7 +170,7 @@ export function useAutomationsPageDestinationForm({
         ? current
         : { ...current, projectId: '', workspaceId: '', baseBranch: '' }
     )
-  }, [createOpen, createTarget, editingAutomationId, editorProjects, setDraft, createHostStableKey])
+  }, [createOpen, editingAutomationId, editorProjects, setDraft, createHostStableKey])
 
   const dialogWorktrees = useMemo(() => {
     const candidates = worktreesByRepo[draft.projectId] ?? []
@@ -236,7 +224,6 @@ export function useAutomationsPageDestinationForm({
     editingRow,
     editingRowCapturedOwner,
     automationDialogTarget,
-    isOrcaForm,
     dialogAuthorityRepos,
     dialogAuthorityKey,
     editHostEntries,

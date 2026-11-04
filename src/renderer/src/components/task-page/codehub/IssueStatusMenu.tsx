@@ -36,6 +36,7 @@ export function CodeHubIssueListStatus({
         void codehubApi
           .setIssueState({
             repoPath: item.repoPath,
+            repoHostId: item.repoHostId,
             repoId: item.repoId,
             iid: item.iid,
             state,

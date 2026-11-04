@@ -1,6 +1,6 @@
 import type { AgentStatusEntry } from '../../../shared/agent-status-types'
 import { isFreshNonDoneAgentStatus } from '../../../shared/agent-status-types'
-import { resolveAgentStatusWorktreeId } from '../lib/agent-status-worktree-attribution'
+import { resolveAgentStatusWorktreeId } from '../../../shared/agent-status-worktree-attribution'
 
 /**
  * 墙卡读数推导（spec「墙卡读数」）：纯函数、全部现算，不落任何状态。

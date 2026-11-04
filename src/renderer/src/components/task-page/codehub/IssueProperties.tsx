@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button'
 import { codehubApi } from '@/lib/codehub-api'
 import { cn } from '@/lib/utils'
+import { ImeInput } from '@/lib/ime-text-field'
 
 export function CodeHubIssueProperties({
   closed,
@@ -15,6 +16,7 @@ export function CodeHubIssueProperties({
   labels,
   repoPath,
   repoId,
+  repoHostId,
   editingLabels,
   setEditingLabels,
   labelDraft,
@@ -34,6 +36,7 @@ export function CodeHubIssueProperties({
   labels: string[]
   repoPath: string | null
   repoId?: string
+  repoHostId?: string
   editingLabels: boolean
   setEditingLabels: (editing: boolean) => void
   labelDraft: string[]
@@ -56,7 +59,7 @@ export function CodeHubIssueProperties({
     setLabelsLoading(true)
     setLabelsError(null)
     codehubApi
-      .listLabels({ repoPath, repoId })
+      .listLabels({ repoPath, repoId, repoHostId })
       .then((names) => {
         if (!stale) {
           setProjectLabels(names)
@@ -76,7 +79,7 @@ export function CodeHubIssueProperties({
     return () => {
       stale = true
     }
-  }, [editingLabels, repoPath, repoId])
+  }, [editingLabels, repoPath, repoId, repoHostId])
   // New label names are typed free-text (CodeHub auto-creates them on
   // save); comma and Enter both finish an entry.
   const commitLabelInput = (): void => {
@@ -166,7 +169,7 @@ export function CodeHubIssueProperties({
                     </div>
                   )}
                 </div>
-                <input
+                <ImeInput
                   value={labelInput}
                   onChange={(event) => setLabelInput(event.target.value)}
                   onKeyDown={(event) => {

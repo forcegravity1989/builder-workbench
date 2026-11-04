@@ -8,7 +8,7 @@ import {
   prepareWorktreeCreateCheckout
 } from '../../git/worktree-create-preparation'
 import { runWslProcess } from '../../wsl/wsl-runner'
-import { runProcess } from '../../../shared/child-process/run-process'
+import { runProcess } from '@orca/process-host'
 import { isWindowsAbsolutePathLike } from '../../../shared/cross-platform-path'
 import { toLinuxPath } from '../../../shared/wsl-paths'
 import {
@@ -326,7 +326,7 @@ export async function executeMetricCollection(input: {
           code: result.code,
           signal: null,
           timedOut: result.timedOut,
-          outputTruncated: result.outputTruncated
+          outputTruncated: result.outputTruncated === true
         }))
       : await runProcess({
           program: input.run[0],
@@ -343,7 +343,12 @@ export async function executeMetricCollection(input: {
           outputTruncated: result.outputTruncated === true
         }))
   } finally {
-    await discardPreparedWorktree(repoPath, checkoutPath, execOptions).catch(() => {
+    await discardPreparedWorktree(
+      repoPath,
+      checkoutPath,
+      execOptions,
+      createWorktreePreparationLockReason(preparationId)
+    ).catch(() => {
       // The preparation lock reason keeps the stranded tree recognizable to the
       // native stale-preparation cleanup; the run outcome stays the primary fact.
     })

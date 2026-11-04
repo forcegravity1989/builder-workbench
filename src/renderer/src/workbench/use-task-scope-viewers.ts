@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import type { Repo } from '../../../shared/repo-types'
 import type { WorkbenchTaskScope } from '../../../shared/workbench/task-scope'
 import { parseTaskQuery } from '../../../shared/task-query'
 import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { codehubApi } from '@/lib/codehub-api'
 import { lookupGitHubViewerForSource } from '@/lib/github-work-item-source-lookup'
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
 import type { TaskScopeLoadResult } from './task-scope-load'
 import { useAppStore } from '@/store'
 
@@ -16,7 +15,6 @@ type ViewerModel = {
   codehubPreset: string
   codehubAuthor: string
   codehubAssignee: string
-  repoMap: ReadonlyMap<string, Repo>
   repoSelection: ReadonlySet<string>
   taskRefreshNonce: number
   codehubRefreshNonce: number
@@ -31,6 +29,7 @@ export function useTaskScopeViewers(
   active: boolean
 ) {
   const projects = useAppStore((state) => state.projects)
+  const repos = useAppStore((state) => state.repos)
   const runtimeDefault = useAppStore((state) => state.settings?.localWindowsRuntimeDefault)
   const query = parseTaskQuery(model.appliedTaskSearch)
   const needsViewer =
@@ -49,6 +48,18 @@ export function useTaskScopeViewers(
         .filter((id): id is string => !!id && model.repoSelection.has(id))
     )
   ].sort()
+  const owners = new Map(
+    ids.map((id) => {
+      const hosts = new Set(
+        (items ?? []).filter((item) => item.repoId === id).map((item) => item.repoHostId)
+      )
+      const [hostId] = hosts
+      const matches = repos.filter(
+        (repo) => repo.id === id && (!hostId || getRepoExecutionHostId(repo) === hostId)
+      )
+      return [id, hosts.size === 1 && matches.length === 1 ? matches[0] : undefined] as const
+    })
+  )
   const requestKey =
     active && needsViewer && ids.length
       ? JSON.stringify([
@@ -56,7 +67,7 @@ export function useTaskScopeViewers(
           model.pageData.workbenchTaskScope?.version,
           model.pageData.workbenchTaskScope?.goalId,
           ids.map((id) => {
-            const repo = model.repoMap.get(id)
+            const repo = owners.get(id)
             return [
               id,
               repo && getRepoExecutionHostId(repo),
@@ -86,11 +97,15 @@ export function useTaskScopeViewers(
     let stale = false
     void Promise.allSettled(
       ids.map(async (id) => {
-        const repo = model.repoMap.get(id)
+        const repo = owners.get(id)
         if (!repo) {
           throw new Error('Repository is unavailable')
         }
-        const args = { repoId: repo.id, repoPath: repo.path }
+        const args = {
+          repoId: repo.id,
+          repoPath: repo.path,
+          repoHostId: getRepoExecutionHostId(repo)
+        }
         const login =
           model.taskSource === 'codehub'
             ? (await codehubApi.viewer(args)).username

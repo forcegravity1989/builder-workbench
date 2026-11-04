@@ -10,6 +10,7 @@ import { OnboardingInlineCommandTerminal } from './OnboardingInlineCommandTermin
 import { CodeHubRow } from './CodeHubRow'
 import { translate } from '@/i18n/i18n'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { openAppHttpLink } from '@/lib/app-http-link-open'
 
 type GitHubSetupState = 'checking' | 'connected' | 'not-installed' | 'not-authenticated'
 
@@ -85,7 +86,7 @@ export function GitHubRow(props: { compact?: boolean } = {}): React.JSX.Element 
             <Button
               variant="outline"
               size="sm"
-              onClick={() => window.api.shell.openUrl('https://cli.github.com')}
+              onClick={(event) => openAppHttpLink('https://cli.github.com', { event })}
             >
               <ExternalLink className="size-3.5" />
               {translate('auto.components.onboarding.IntegrationsStep.bd5d976fb2', 'Install gh')}
@@ -108,7 +109,7 @@ export function GitHubRow(props: { compact?: boolean } = {}): React.JSX.Element 
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => void refreshPreflightStatus({ force: true })}
+              onClick={() => void refreshPreflightStatus({ force: true, wakeWslDistro: true })}
             >
               {translate('auto.components.onboarding.IntegrationsStep.80e3ce0bc9', 'Re-check')}
             </Button>
@@ -171,11 +172,17 @@ export function LinearRow(props: { compact?: boolean } = {}): React.JSX.Element 
               </div>
               <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
                 {linearStatus.connected
-                  ? translate(
-                      'auto.components.onboarding.IntegrationsStep.b08a6ac93c',
-                      '{{value0}} workspace{{value1}} linked. Add another workspace or replace a restricted key any time.',
-                      { value0: workspaceCount, value1: workspaceCount === 1 ? '' : 's' }
-                    )
+                  ? workspaceCount === 1
+                    ? translate(
+                        'auto.components.onboarding.IntegrationsStep.linearWorkspacesLinkedSingular',
+                        '{{count}} workspace linked. Add another workspace or replace a restricted key any time.',
+                        { count: workspaceCount }
+                      )
+                    : translate(
+                        'auto.components.onboarding.IntegrationsStep.linearWorkspacesLinkedPlural',
+                        '{{count}} workspaces linked. Add another workspace or replace a restricted key any time.',
+                        { count: workspaceCount }
+                      )
                   : translate(
                       'auto.components.onboarding.IntegrationsStep.4983ae7433',
                       'Add Linear access with a Personal API key. Full-access keys can show every team the key owner can access.'

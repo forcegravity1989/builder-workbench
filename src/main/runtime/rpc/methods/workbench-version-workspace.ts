@@ -6,6 +6,7 @@ import { nativeVersionWorkspacePrepare } from '../../../workbench/version-worksp
 export const WORKBENCH_VERSION_WORKSPACE_METHODS = [
   defineMethod({
     name: 'workbench.versionWorkspace.prepare',
+    permission: 'workspace',
     params: VersionWorkspacePrepareSchema,
     handler: (params, { runtime }) =>
       materialResult(() => nativeVersionWorkspacePrepare(runtime).prepare(params))

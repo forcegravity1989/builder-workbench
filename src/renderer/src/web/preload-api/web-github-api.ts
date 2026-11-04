@@ -8,7 +8,7 @@ import { WORK_ITEMS_BATCH_WEB_UNAVAILABLE } from '../../../../shared/github/work
 import { translate } from '@/i18n/i18n'
 import { GITHUB_WEB_RPC_METHODS } from './web-github-routes'
 import type { WebGitHubRuntimeMethod } from './web-github-routes'
-import { mapRepoPathArg } from './web-review-api'
+import { mapRepoPathArg } from '@/runtime/runtime-repo-selector-params'
 import { callRuntimeResult, getRemoteRuntimeStatus } from './web-runtime-calls'
 import { noopUnsubscribe } from './web-storage'
 
@@ -26,7 +26,7 @@ export function createGitHubApi(): WebGitHubApi {
     repoSlug: (args) => route<WebGitHubResult<'repoSlug'>>(GITHUB_WEB_RPC_METHODS.repoSlug, args),
     repoUpstream: (args) =>
       route<WebGitHubResult<'repoUpstream'>>(GITHUB_WEB_RPC_METHODS.repoUpstream, args),
-    prForBranch: (args) =>
+    prForBranch: ({ wakeWslDistro: _wake, ...args }) =>
       route<WebGitHubResult<'prForBranch'>>(GITHUB_WEB_RPC_METHODS.prForBranch, args),
     refreshPRNow: async ({ candidate, reason }) => {
       const acceptMergedFallbackPR =
@@ -66,11 +66,13 @@ export function createGitHubApi(): WebGitHubApi {
       route<WebGitHubResult<'listIssues'>>(GITHUB_WEB_RPC_METHODS.listIssues, args),
     createIssue: (args) =>
       route<WebGitHubResult<'createIssue'>>(GITHUB_WEB_RPC_METHODS.createIssue, args),
-    countWorkItems: (args) =>
+    countWorkItems: ({ wakeWslDistro: _wake, ...args }) =>
       route<WebGitHubResult<'countWorkItems'>>(GITHUB_WEB_RPC_METHODS.countWorkItems, args),
-    listWorkItems: (args) =>
+    listWorkItems: ({ wakeWslDistro: _wake, ...args }) =>
       route<WebGitHubResult<'listWorkItems'>>(GITHUB_WEB_RPC_METHODS.listWorkItems, args),
-    prChecks: (args) => route<WebGitHubResult<'prChecks'>>(GITHUB_WEB_RPC_METHODS.prChecks, args),
+    // The host gates its own WSL reads; the wake hint is for local IPC only.
+    prChecks: ({ wakeWslDistro: _wake, ...args }) =>
+      route<WebGitHubResult<'prChecks'>>(GITHUB_WEB_RPC_METHODS.prChecks, args),
     prCheckDetails: (args) =>
       route<WebGitHubResult<'prCheckDetails'>>(GITHUB_WEB_RPC_METHODS.prCheckDetails, args),
     rerunPRChecks: (args) =>
@@ -133,6 +135,16 @@ export function createGitHubApi(): WebGitHubApi {
     starOrca: () => Promise.resolve(false),
     rateLimit: (args) =>
       route<WebGitHubResult<'rateLimit'>>(GITHUB_WEB_RPC_METHODS.rateLimit, args),
+    listBindableAccounts: (args) =>
+      route<WebGitHubResult<'listBindableAccounts'>>(
+        GITHUB_WEB_RPC_METHODS.listBindableAccounts,
+        args
+      ),
+    validateAccountBinding: (args) =>
+      route<WebGitHubResult<'validateAccountBinding'>>(
+        GITHUB_WEB_RPC_METHODS.validateAccountBinding,
+        args
+      ),
     diagnoseAuth: () =>
       Promise.resolve({
         ok: false,

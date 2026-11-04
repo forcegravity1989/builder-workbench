@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useAgentDetectionTargetForWorktree } from '@/hooks/useAgentDetectionTarget'
 import { useDetectedAgents } from '@/hooks/useDetectedAgents'
+import { newAgentLaunchRequestId } from '@/lib/agent-launch-request-id'
 import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
 import type { TuiAgent } from '../../../../shared/tui-agent'
@@ -39,6 +40,7 @@ export async function prepareMetricsSession(args: {
     })
   }
   launchAgentInNewTab({
+    requestId: newAgentLaunchRequestId(),
     agent,
     worktreeId: maintenance.id,
     prompt: assets.prompt,

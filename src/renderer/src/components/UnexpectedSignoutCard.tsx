@@ -7,6 +7,7 @@ import { Button } from './ui/button'
 import { Card } from './ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible'
 import { shouldShowUnexpectedSignoutCard } from './unexpected-signout/unexpected-signout-visibility'
+import { OrcaSignInButton, OrcaSignInWaitNotice } from './OrcaSignInProgress'
 
 function readPreviewFlag(): boolean {
   if (!import.meta.env.DEV) {
@@ -48,8 +49,6 @@ export function UnexpectedSignoutCard(): React.JSX.Element | null {
   const persistedDismissedVersion = useAppStore((s) => s.dismissedUnexpectedSignoutVersion)
   const dismissedVersions = useAppStore((s) => s.unexpectedSignoutDismissedVersions)
   const dismissForVersion = useAppStore((s) => s.dismissUnexpectedSignoutCard)
-  const connecting = useAppStore((s) => s.orcaProfileConnecting)
-  const connect = useAppStore((s) => s.connectCurrentOrcaProfile)
   const [appVersion, setAppVersion] = useState<string | null>(null)
   const [authRefreshReady, setAuthRefreshReady] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -60,6 +59,7 @@ export function UnexpectedSignoutCard(): React.JSX.Element | null {
   useEffect(() => {
     let cancelled = false
     let attempts = 0
+    let retryTimer: number | null = null
     const refresh = (): void => {
       attempts += 1
       void useAppStore
@@ -72,13 +72,19 @@ export function UnexpectedSignoutCard(): React.JSX.Element | null {
           if (status != null) {
             setAuthRefreshReady(true)
           } else if (attempts < 3) {
-            window.setTimeout(refresh, 500)
+            retryTimer = window.setTimeout(() => {
+              retryTimer = null
+              refresh()
+            }, 500)
           }
         })
     }
     refresh()
     return () => {
       cancelled = true
+      if (retryTimer !== null) {
+        window.clearTimeout(retryTimer)
+      }
     }
   }, [])
 
@@ -232,18 +238,11 @@ export function UnexpectedSignoutCard(): React.JSX.Element | null {
           </Collapsible>
 
           <div className="mt-0.5 flex gap-2">
-            <Button
-              variant="default"
-              size="sm"
-              className="flex-1"
-              disabled={!canConnect || connecting}
-              onClick={() => void connect()}
-            >
-              {connecting
-                ? translate('auto.components.UnexpectedSignoutCard.7e1a9c4d2f', 'Signing in…')
-                : translate('auto.components.UnexpectedSignoutCard.c5b3e8a17d', 'Sign in to Orca')}
-            </Button>
+            <OrcaSignInButton variant="default" size="sm" className="flex-1" disabled={!canConnect}>
+              {translate('auto.components.UnexpectedSignoutCard.c5b3e8a17d', 'Sign in to Orca')}
+            </OrcaSignInButton>
           </div>
+          <OrcaSignInWaitNotice />
         </div>
       </Card>
     </div>

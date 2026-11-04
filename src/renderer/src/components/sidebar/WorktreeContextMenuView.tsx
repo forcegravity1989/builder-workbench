@@ -27,7 +27,7 @@ import {
   FolderTree
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { WorktreeOpenInSubMenu } from './WorktreeOpenInMenu'
+import { WorktreeRowOpenInSubMenu } from './WorktreeRowOpenInSubMenu'
 import { WorktreeDeveloperMenu } from './WorktreeDeveloperMenu'
 import { WorkspaceSleepMenuItems } from './WorkspaceSleepMenuItems'
 import { isEventTargetInsideCurrentTarget } from './worktree-card-dom-events'
@@ -38,7 +38,6 @@ import { WorktreeStatusMenuItems } from './WorktreeStatusMenuItems'
 import { WorktreeContextMenuOverlays } from './WorktreeContextMenuOverlays'
 import { WorkbenchVersionBindingMenuItems } from '@/workbench/WorkbenchVersionBindingMenuItems'
 import {
-  CLOSE_ALL_CONTEXT_MENUS_EVENT,
   WORKTREE_CONTEXT_MENU_SCOPE_ATTR,
   getWorktreeParentPickerLabel,
   isWorktreeParentPickerDisabled,
@@ -46,6 +45,7 @@ import {
   shouldRevealWorktreeDeveloperMenu,
   shouldUseNativeContextMenu
 } from './worktree-context-menu-policy'
+import { CLOSE_ALL_CONTEXT_MENUS_EVENT } from '@/lib/close-all-context-menus'
 
 export default function WorktreeContextMenuView({ model }: { model: WorktreeContextMenuModel }) {
   const {
@@ -65,6 +65,7 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
     handleAssignWorkspaceStatus,
     handleCloseAutoFocus,
     handleCloseTerminals,
+    handleCopyName,
     handleCopyPath,
     handleCreateGroupFromRepo,
     handleDelete,
@@ -141,7 +142,7 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
           />
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className={cn(lineageDescendantCount > 0 ? 'w-60' : 'w-52', contentClassName)}
+          className={cn(lineageDescendantCount > 0 ? 'min-w-60' : 'min-w-52', contentClassName)}
           sideOffset={0}
           align="start"
           onPointerUpCapture={suppressOpeningPointerEvent}
@@ -154,7 +155,7 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
           onClickCapture={suppressOpeningPointerEvent}
           onCloseAutoFocus={handleCloseAutoFocus}
         >
-          <DropdownMenuLabel className="px-2 py-1 text-[11px] font-medium text-muted-foreground">
+          <DropdownMenuLabel>
             {translate('auto.components.sidebar.WorktreeContextMenu.workspaceSection', 'Workspace')}
           </DropdownMenuLabel>
           {!isMultiContext && (
@@ -176,14 +177,21 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
           <DropdownMenuSeparator />
           {!isMultiContext && (
             <>
-              <WorktreeOpenInSubMenu
-                worktreePath={worktree.path}
+              <WorktreeRowOpenInSubMenu
+                worktree={worktree}
                 connectionId={repo?.connectionId ?? null}
                 disabled={isDeleting}
               />
               <DropdownMenuItem onSelect={handleCopyPath} disabled={isDeleting}>
                 <Copy className="size-3.5" />
                 {translate('auto.components.sidebar.WorktreeContextMenu.3350101edb', 'Copy Path')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleCopyName} disabled={isDeleting}>
+                <Copy className="size-3.5" />
+                {translate(
+                  'auto.components.sidebar.WorktreeContextMenu.copyWorktreeName',
+                  'Copy Worktree Name'
+                )}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={handleTogglePin} disabled={isDeleting}>
@@ -309,9 +317,7 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
             onSleep={handleCloseTerminals}
             onSleepSubtree={handleSleepSubtree}
           />
-          {/* Why: primary checkout rows can't be git-worktree-removed, so keep a
-             disabled Delete Worktree for parity with non-primary cards and pair
-             it with the enabled Remove Project action below. */}
+          {/* Git cannot remove primary checkouts; keep disabled Delete beside the enabled Remove Project action. */}
           {!isMultiContext && removesProject ? (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -333,10 +339,7 @@ export default function WorktreeContextMenuView({ model }: { model: WorktreeCont
               </TooltipContent>
             </Tooltip>
           ) : null}
-          {/* Why: primary checkout rows remove the project from Orca instead of
-             invoking git worktree deletion. Radix forwards unknown props to the
-             DOM element, so `title` works directly without a wrapper span —
-             this preserves Radix's flat roving-tabindex keyboard navigation. */}
+          {/* Use Radix’s direct title prop for project-removal copy; wrapper elements break flat roving-keyboard navigation. */}
           <DropdownMenuItem
             variant="destructive"
             onSelect={handleDelete}

@@ -9,10 +9,12 @@ import {
 } from '../../../shared/execution-host'
 import { getHostContextLabel } from '../../../shared/worktree/host-context-labels'
 import { getHostDisplayLabelOverrides } from '../../../shared/host-setting-overrides'
-import { getCyclicProjectedWorktreeLineageIds } from '@/components/sidebar/worktree-lineage-projection'
+import { createHostScopedRepoOf } from '../../../shared/sidebar-list/sidebar-feed-index'
+import { buildWorktreeOccurrencePlan } from '../../../shared/worktree-occurrence-plan'
+import { getSidebarLineageChildren } from '../../../shared/sidebar-list/pinned-section-worktrees'
 import { buildSidebarHostOptions } from '@/components/sidebar/sidebar-host-options'
-import { appendWorktreeRows } from '@/components/sidebar/worktree-list/grouping/row-builders'
-import type { Row } from '@/components/sidebar/worktree-list/grouping/row-types'
+import { appendWorktreeRows } from '../../../shared/sidebar-list/row-builders'
+import type { Row } from '../../../shared/sidebar-list/row-types'
 import { buildRenderableRows } from '@/components/sidebar/worktree-list/listing/renderable-rows'
 import {
   renderWorktreeItemRow,
@@ -49,6 +51,7 @@ export function VersionNativeTrees({
   const runtimeEnvironments = useAppStore((state) => state.runtimeEnvironments)
   const runtimeStatusByEnvironmentId = useAppStore((state) => state.runtimeStatusByEnvironmentId)
   const defaultHostId = getSettingsFocusedExecutionHostId(settings)
+  const repoOf = useMemo(() => createHostScopedRepoOf(repos, repoMap), [repos, repoMap])
   const hostLabels = useMemo(
     () =>
       new Map(
@@ -73,19 +76,25 @@ export function VersionNativeTrees({
   )
   const rows = useMemo(() => {
     const result: Row[] = []
-    appendWorktreeRows(result, [...trees], repoMap, lineage, worktreeMap, {
-      nestLineage: true,
+    const plan = buildWorktreeOccurrencePlan({
+      rows: trees,
+      identityOf: getWorktreeHostIdentity,
+      childrenByParentIdentity: getSidebarLineageChildren(trees, lineage, worktreeMap),
+      isPinned: () => false,
+      duplicatePinned: false,
+      sectionsOf: () => [{ key: sectionKey, items: trees }],
+      projectIdOf: (tree) => tree.repoId
+    })
+    appendWorktreeRows(result, repoOf, plan, {
       collapsedGroups,
       groupDepth: 0,
       sectionKey,
-      cyclicLineageIds: getCyclicProjectedWorktreeLineageIds(lineage, worktreeMap),
       hostContextLabelByWorktreeIdentity: new Map(
         trees.map((tree) => [
           getWorktreeHostIdentity(tree),
-          getHostContextLabel(
-            getWorktreeExecutionHostId(tree, repoMap.get(tree.repoId), defaultHostId),
-            { hostLabelById: hostLabels }
-          )
+          getHostContextLabel(getWorktreeExecutionHostId(tree, repoOf(tree), defaultHostId), {
+            hostLabelById: hostLabels
+          })
         ])
       )
     })
@@ -93,6 +102,7 @@ export function VersionNativeTrees({
   }, [
     trees,
     repoMap,
+    repoOf,
     lineage,
     worktreeMap,
     collapsedGroups,

@@ -1,3 +1,4 @@
+import { useNow } from '@/hooks/use-now'
 import { MilestoneDayAxis } from './milestone-day-axis'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -56,6 +57,7 @@ type Props = {
 }
 export function MilestoneTimeline(props: Props) {
   const { draft, editing, edit } = props
+  const now = useNow(60_000)
   const enabled = editing && !props.busy
   const facts = useMilestoneFactReaders(props.catalog, draft, props.started)
   const { weeks, start: origin, end } = milestoneActualCalendar(draft, facts.values, props.started)
@@ -387,7 +389,7 @@ export function MilestoneTimeline(props: Props) {
           <div
             className="wb-ml-today"
             style={{
-              left: labelWidth + (actualDay(new Date().toISOString()) - origin) * width,
+              left: labelWidth + (actualDay(new Date(now).toISOString()) - origin) * width,
               top: versionHeight + 40
             }}
             aria-hidden="true"

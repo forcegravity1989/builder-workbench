@@ -55,6 +55,45 @@ async function toggleTerminalTabToChatView(
   }, args)
 }
 
+async function activateNewTerminalTab(page: Page, worktreeId: string): Promise<void> {
+  await page.evaluate((id) => {
+    const store = window.__store
+    if (!store) {
+      throw new Error('Store unavailable')
+    }
+    const state = store.getState()
+    const tab = state.createTab(id, undefined, undefined, { activate: true })
+    state.setActiveTab(tab.id)
+    state.setActiveTabType('terminal', store.getState().activeWorktreeId)
+  }, worktreeId)
+}
+
+async function activateTerminalTab(page: Page, tabId: string): Promise<void> {
+  await page.evaluate((id) => {
+    const store = window.__store
+    if (!store) {
+      throw new Error('Store unavailable')
+    }
+    const state = store.getState()
+    state.setActiveTab(id)
+    state.setActiveTabType('terminal', store.getState().activeWorktreeId)
+  }, tabId)
+}
+
+async function publishHiddenLaunchMessage(
+  page: Page,
+  args: { tabId: string; text: string }
+): Promise<void> {
+  await page.evaluate(({ tabId, text }) => {
+    window.__store?.getState().seedNativeChatLaunchPrompt({
+      tabId,
+      agent: 'claude',
+      text,
+      createdAt: Date.now()
+    })
+  }, args)
+}
+
 function claudeTranscript(rowCount: number, sessionId: string): string {
   const startedAt = Date.now() - rowCount * 1_000
   return `${Array.from({ length: rowCount }, (_, index) => {
@@ -77,7 +116,7 @@ function claudeTranscript(rowCount: number, sessionId: string): string {
   }).join('\n')}\n`
 }
 
-test.describe('Native chat history prepend anchoring', () => {
+test.describe('Native chat transcript anchoring', () => {
   test('keeps the visible transcript row at the same viewport offset', async ({ orcaPage }) => {
     await waitForSessionReady(orcaPage)
     await waitForActiveWorktree(orcaPage)
@@ -99,6 +138,13 @@ test.describe('Native chat history prepend anchoring', () => {
         sessionId,
         transcriptPath
       })
+      // Exercise the supported manual paging fallback while the reader stays mid-transcript.
+      await orcaPage.evaluate(() => {
+        Object.defineProperty(window, 'IntersectionObserver', {
+          value: undefined,
+          configurable: true
+        })
+      })
       await toggleTerminalTabToChatView(orcaPage, {
         tabId,
         worktreeId: descriptor.worktreeId
@@ -116,7 +162,9 @@ test.describe('Native chat history prepend anchoring', () => {
         .poll(() => transcriptWindow.locator(':scope > [data-index]').count())
         .toBeGreaterThan(3)
 
-      const initialTotalSize = await transcriptWindow.evaluate((element) => element.offsetHeight)
+      const initialTotalSize = await transcriptWindow.evaluate(
+        (element: HTMLElement) => element.offsetHeight
+      )
       const anchor = await scroll.evaluate(async (element) => {
         element.scrollTop = element.scrollHeight * 0.55
         element.dispatchEvent(new Event('scroll', { bubbles: true }))
@@ -157,11 +205,10 @@ test.describe('Native chat history prepend anchoring', () => {
         throw new Error('Expected a fully visible measured row to anchor')
       }
 
-      // The button stays off-screen so invoking it here exercises the real pagination
-      // handler without Playwright first scrolling the reader to the transcript head.
+      // Invoke the off-screen button directly so Playwright cannot scroll the reader to the head before paging.
       await loadEarlier.evaluate((button: HTMLButtonElement) => button.click())
       await expect
-        .poll(() => transcriptWindow.evaluate((element) => element.offsetHeight))
+        .poll(() => transcriptWindow.evaluate((element: HTMLElement) => element.offsetHeight))
         .toBeGreaterThan(initialTotalSize)
       await expect(loadEarlier).toBeAttached({ timeout: 30_000 })
 
@@ -197,6 +244,89 @@ test.describe('Native chat history prepend anchoring', () => {
         `content grew ${contentGrowth}px while scrollTop adjusted ${scrollAdjustment}px`
       ).toBeLessThanOrEqual(2)
       expect(Math.abs((after?.viewportOffset ?? 0) - anchor.viewportOffset)).toBeLessThanOrEqual(3)
+    } finally {
+      rmSync(scratchDir, { recursive: true, force: true })
+    }
+  })
+
+  test('keeps a detached transcript in place across a hidden update', async ({ orcaPage }) => {
+    await waitForSessionReady(orcaPage)
+    await waitForActiveWorktree(orcaPage)
+    await ensureTerminalVisible(orcaPage)
+    await waitForActiveTerminalManager(orcaPage, 30_000)
+
+    const descriptor = await waitForActivePaneHookDescriptor(orcaPage)
+    const [tabId] = descriptor.paneKey.split(':')
+    const sessionId = `e2e-hidden-scroll-${randomUUID()}`
+    const scratchDir = mkdtempSync(path.join(os.tmpdir(), 'orca-e2e-native-chat-hidden-'))
+    const transcriptPath = path.join(scratchDir, `${sessionId}.jsonl`)
+    writeFileSync(transcriptPath, claudeTranscript(TRANSCRIPT_ROWS, sessionId))
+
+    try {
+      await enableNativeChatSetting(orcaPage)
+      await seedClaudeProviderSession(orcaPage, {
+        paneKey: descriptor.paneKey,
+        worktreeId: descriptor.worktreeId,
+        sessionId,
+        transcriptPath
+      })
+      await toggleTerminalTabToChatView(orcaPage, {
+        tabId,
+        worktreeId: descriptor.worktreeId
+      })
+
+      const root = orcaPage.locator('[data-native-chat-root="true"]')
+      const scroll = orcaPage.locator('[data-native-chat-scroll]')
+      const jump = orcaPage.getByRole('button', { name: 'Jump to latest' })
+      await expect(root).toBeVisible({ timeout: 15_000 })
+      await expect(orcaPage.getByText('E2E transcript row 0649', { exact: true })).toBeAttached({
+        timeout: 30_000
+      })
+      await scroll.hover()
+      await orcaPage.mouse.wheel(0, -2_000)
+      await expect
+        .poll(async () =>
+          scroll.evaluate(
+            (element) => element.scrollHeight - element.clientHeight - element.scrollTop
+          )
+        )
+        .toBeGreaterThan(1_000)
+      // Rows the wheel mounted above the reader settle their measured heights frames later.
+      const readingAt = await scroll.evaluate(async (element) => {
+        let previousGeometry = ''
+        let stableFrames = 0
+        for (let frame = 0; frame < 120 && stableFrames < 5; frame += 1) {
+          await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+          const geometry = `${element.scrollHeight}:${element.scrollTop}`
+          stableFrames = geometry === previousGeometry ? stableFrames + 1 : 0
+          previousGeometry = geometry
+        }
+        return element.scrollTop
+      })
+      await expect(jump).toBeVisible()
+
+      await activateNewTerminalTab(orcaPage, descriptor.worktreeId)
+      await expect(root).toBeHidden()
+      await publishHiddenLaunchMessage(orcaPage, {
+        tabId,
+        text: 'E2E update received while the transcript is hidden'
+      })
+      await activateTerminalTab(orcaPage, tabId)
+
+      await expect(root).toBeVisible({ timeout: 15_000 })
+      await expect(
+        orcaPage.getByText('E2E update received while the transcript is hidden', { exact: true })
+      ).toBeAttached()
+      await expect
+        .poll(async () =>
+          Math.abs((await scroll.evaluate((element) => element.scrollTop)) - readingAt)
+        )
+        .toBeLessThanOrEqual(2)
+      await orcaPage.waitForTimeout(500)
+      expect(
+        Math.abs((await scroll.evaluate((element) => element.scrollTop)) - readingAt)
+      ).toBeLessThanOrEqual(2)
+      await expect(jump).toBeVisible()
     } finally {
       rmSync(scratchDir, { recursive: true, force: true })
     }

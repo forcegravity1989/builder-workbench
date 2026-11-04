@@ -18,7 +18,7 @@ import {
   type FixedWorkspaceEnsureResult
 } from '../../shared/workbench/fixed-workspace'
 import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/runtime-managed-worktree-create-types'
-import { areWorktreePathsEqual } from '../ipc/worktree-logic'
+import { areWorktreePathsEqual } from '../git/worktree-path-comparison'
 import { createWorkbenchRepoResolver, nativeWorkbenchWorkspaceHost } from './workspace-resolver'
 import { ensureFixedBranch, type FixedWorkspaceGit } from './fixed-workspace-branch'
 import { WorkspaceScopeError } from './workspace-scope-error'
@@ -31,7 +31,10 @@ export type FixedWorkspaceRuntime = {
   ): Promise<{ worktrees: Worktree[]; truncated?: boolean }>
   listDetectedManagedWorktrees(repo: string): Promise<DetectedWorktreeListResult>
   createManagedWorktree(args: RuntimeManagedWorktreeCreateArgs): Promise<CreateWorktreeResult>
-  removeManagedWorktree(selector: string, options: { hostId: ExecutionHostId }): Promise<unknown>
+  removeManagedWorktree(
+    selector: string,
+    options: { hostId: ExecutionHostId; waitForBackgroundRemoval?: boolean }
+  ): Promise<unknown>
   updateRepo(selector: string, updates: Pick<Repo, 'importedExternalWorktreePaths'>): Promise<Repo>
   showManagedWorktree: Parameters<typeof nativeWorkbenchWorkspaceHost>[0]['showManagedWorktree']
 }
@@ -214,7 +217,10 @@ export function createFixedWorkspaceService(
       if (branchName(created.branch) !== definition.branch) {
         let cleaned = false
         try {
-          await runtime.removeManagedWorktree(`id:${created.id}`, { hostId })
+          await runtime.removeManagedWorktree(`id:${created.id}`, {
+            hostId,
+            waitForBackgroundRemoval: true
+          })
           cleaned = true
         } catch {
           /* Native safety rules decide whether removal is permitted. */

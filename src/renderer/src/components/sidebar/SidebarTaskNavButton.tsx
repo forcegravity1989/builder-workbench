@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/context-menu'
 import { PER_REPO_FETCH_LIMIT } from '@/lib/new-workspace'
 import { getLocalPreflightContext, localPreflightContextKey } from '@/lib/local-preflight-context'
-import { getTaskEligibleRepos } from '@/components/task-page-default-repo-selection'
+import { getTaskEligibleRepos } from '@/components/task-page/task-page-default-repo-selection'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { useRepoMap } from '@/store/selectors'

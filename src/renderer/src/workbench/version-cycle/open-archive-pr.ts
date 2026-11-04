@@ -1,4 +1,4 @@
-import { getTaskPageRepoSourceContext } from '@/components/task-page-source-context'
+import { getTaskPageRepoSourceContext } from '@/components/task-page/task-page-source-context'
 import { prefillCodehubDetailCache } from '@/components/task-page/codehub/codehub-detail-cache'
 import { codehubApi } from '@/lib/codehub-api'
 import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
@@ -76,7 +76,7 @@ export async function openArchivePrPage(
       {
         taskSource: 'github',
         preselectedRepoId: repo.id,
-        openGitHubWorkItem: { ...item, repoId: repo.id },
+        openGitHubWorkItem: { ...item, repoId: repo.id, repoHostId: getRepoExecutionHostId(repo) },
         openGitHubSourceContext: sourceContext
       },
       options
@@ -88,22 +88,16 @@ export async function openArchivePrPage(
     if (!sourceContext) {
       throw new Error('无法解析 codehub 任务来源上下文')
     }
-    const state = useAppStore.getState()
-    const routedRepo = findRepoForHost(state.repos, repo.id, { settings: state.settings })
-    // The native CodeHub API routes by bare repo id; duplicated ids must resolve to this owner.
-    if (!routedRepo || getRepoExecutionHostId(routedRepo) !== getRepoExecutionHostId(repo)) {
-      throw new Error('归档 MR 所属宿主与当前 CodeHub 路由不一致，请切回对应宿主后重试')
-    }
     const detail = await codehubApi.viewTask({
       repoPath: repo.path,
       repoId: repo.id,
+      repoHostId: getRepoExecutionHostId(repo),
       kind: 'mr',
       iid: archivePr.number
     })
     // Why: feed the jump's viewTask into the detail cache (fetchedAt=0) so the
     // opening detail paints this lane instantly instead of re-running viewTask;
     // the remaining lanes still trigger one full read on mount.
-    prefillCodehubDetailCache({ repoId: repo.id, kind: 'mr', iid: archivePr.number }, detail)
     const remote =
       parseCodeHubRemote(repo.gitRemoteIdentity?.remoteUrl) ??
       parseCodeHubRemote(repo.gitRemoteIdentity?.canonicalKey)
@@ -125,9 +119,11 @@ export async function openArchivePrPage(
       targetBranch: detail.targetBranch,
       updatedAt: '',
       repoId: repo.id,
+      repoHostId: getRepoExecutionHostId(repo),
       repoPath: repo.path,
       ...(remote ? { host: remote.host, project: remote.project } : {})
     }
+    prefillCodehubDetailCache({ ...item, kind: 'mr' }, detail)
     useAppStore.getState().openTaskPage(
       {
         taskSource: 'codehub',
