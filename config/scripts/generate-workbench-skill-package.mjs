@@ -11,7 +11,7 @@ const output = path.join(root, 'src/shared/workbench/skill-package.json')
 async function files(directory, prefix = '') {
   const entries = await readdir(directory, { withFileTypes: true })
   const result = []
-  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name, 'en'))) {
+  for (const entry of entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
     if (entry.isSymbolicLink()) {
       throw new Error(`Skill source cannot be a link: ${entry.name}`)
     }
@@ -84,7 +84,8 @@ async function main() {
         await writeFile(target, content)
         hash.update(`${topic}/${item.destination}\0`).update(content)
       }
-      sources.push({ id: topic, sourceDirectory: projectedRoot })
+      // Scripts run through their declared interpreter; package modes must not depend on the build OS.
+      sources.push({ id: topic, sourceDirectory: projectedRoot, executablePaths: new Set() })
     }
     // Native creation verifies the complete file set, stages it and creates the standard archive.
     const builder = path.join(work, 'native-bundle.mjs')
@@ -126,7 +127,10 @@ async function main() {
     if (process.argv.includes('--write')) {
       await writeFile(output, content)
     } else if ((await readFile(output, 'utf8')) !== content) {
-      throw new Error('Workbench Skill package is stale; regenerate it.')
+      const previous = JSON.parse(await readFile(output, 'utf8'))
+      throw new Error(
+        `Workbench Skill package is stale; regenerate it. Stored identity: ${JSON.stringify(previous.package)}; generated identity: ${JSON.stringify(JSON.parse(content).package)}`
+      )
     }
   } finally {
     await rm(work, { recursive: true, force: true })
