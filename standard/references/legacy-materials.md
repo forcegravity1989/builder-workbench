@@ -8,15 +8,15 @@
 
 ## 旧字段语义（验收材料）
 
-| 字段 | 语义与读回 |
-|---|---|
-| `results[].rounds[]` | 验收轮次记录与快照；轮次概念已退役，只读呈现 |
-| `results[].meetingDirectives[]` | 会议指导：正文 + 处置标签 + 确认状态 + 来源。处置标签：`next-week-plan`（纳入下周计划）、`record-remaining`（遗留背景）、`resolved-this-acceptance`（该次验收已解决）、`pending`（未确认） |
-| `results[].deliveries[]`、`results[].materials[]` | 目标级交付件与材料链接；已由版本级交付件与演示环境取代 |
-| `results[].progress` | 目标级人工进展文本 |
-| `issueMarks[].risk` | 风险标记；风险能力已整体退役，`issueMarks` 只剩 `carry`（延期遗留） |
-| `preparationReview` | 人工材料备齐核对记录；界面已不消费，保留原值，不证明命令执行或目标达成 |
-| `decision.outcome='pending'` | 历史结论读回保留；板面不写不显，现行结论只有 `met` / `not-met` |
+| 字段                                              | 语义与读回                                                                                                                                                                                 |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `results[].rounds[]`                              | 验收轮次记录与快照；轮次概念已退役，只读呈现                                                                                                                                               |
+| `results[].meetingDirectives[]`                   | 会议指导：正文 + 处置标签 + 确认状态 + 来源。处置标签：`next-week-plan`（纳入下周计划）、`record-remaining`（遗留背景）、`resolved-this-acceptance`（该次验收已解决）、`pending`（未确认） |
+| `results[].deliveries[]`、`results[].materials[]` | 目标级交付件与材料链接；已由版本级交付件与演示环境取代                                                                                                                                     |
+| `results[].progress`                              | 目标级人工进展文本                                                                                                                                                                         |
+| `issueMarks[].risk`                               | 风险标记；风险能力已整体退役，`issueMarks` 只剩 `carry`（延期遗留）                                                                                                                        |
+| `preparationReview`                               | 人工材料备齐核对记录；界面已不消费，保留原值，不证明命令执行或目标达成                                                                                                                     |
+| `decision.outcome='pending'`                      | 历史结论读回保留；板面不写不显，现行结论只有 `met` / `not-met`                                                                                                                             |
 
 验收屏末尾的旧格式只读折叠区如实呈现这些字段，它们不参与任何结论、纪要与遗留回显。
 

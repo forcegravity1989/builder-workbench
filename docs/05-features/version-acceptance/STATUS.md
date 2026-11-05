@@ -31,7 +31,7 @@ v10 生产实现（#394 分支交付、已合入 main），按提交顺序：
 
 v10 复用的共用件随计划屏 G3（[#399](https://github.com/forcegravity1989/builder-workbench/pull/399)）与真机四修（[#407](https://github.com/forcegravity1989/builder-workbench/pull/407)）落地，验收屏已接入：板面批注组件族（内存态）、会议纪要机制、对象级动作经 `plan-send-menu.tsx` 包装 Orca 原生发送弹窗递交、上版回顾按固定来源寻址。
 
-技能正本 `standard/skills/version-acceptance/SKILL.md` 与 `standard/system-prompt/references/version-records.md` **已按 v10 最终裁定同步**：四步 SOP、发布环节「板面注入 + tag 读回键 + 现算读回、读数不落材料、总览不显示已发布」（#462 修订）、纪要编辑态与撤销语义、演示环境两形态、跨周与轮次表述已清除。技能资产有字节门禁，改动须连同 `generate:bundled-skill-guides` 与 `generate:skill-bundle-manifest` 的产物一并再生。
+技能正本 `standard/skills/version-acceptance/SKILL.md` 与 `standard/references/version-records.md` **已按 v10 最终裁定同步**：四步 SOP、发布环节「板面注入 + tag 读回键 + 现算读回、读数不落材料、总览不显示已发布」（#462 修订）、纪要编辑态与撤销语义、演示环境两形态、跨周与轮次表述已清除。当前完整包经 `generate:workbench-skills` 生成并由 `verify:workbench-skills` 核对；历史验证记录不代表新入口已验证。
 
 | 环 | 状态 | 证据或缺口 |
 |---|---|---|
