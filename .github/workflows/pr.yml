@@ -25,6 +25,10 @@ jobs:
     name: Windows Codex protocol and lifecycle
     runs-on: windows-latest
     timeout-minutes: 30
+    env:
+      # MSBuild's native-addon intermediates exceed MAX_PATH under the runner's
+      # checkout plus pnpm's peer/patch suffix. This store belongs to this job.
+      PNPM_CONFIG_VIRTUAL_STORE_DIR: 'D:\bw452-store'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
