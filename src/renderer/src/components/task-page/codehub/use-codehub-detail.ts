@@ -2,17 +2,53 @@ import { codehubApi } from '@/lib/codehub-api'
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import type { CodeHubComment, CodeHubTaskDetail } from '../../../../../shared/codehub-tasks'
+import { useAppStore } from '@/store'
+import { findCodeHubTaskRepo } from '@/lib/codehub-task-repo'
+import type {
+  CodeHubComment,
+  CodeHubTaskDetail,
+  CodeHubTaskItem
+} from '../../../../../shared/codehub-tasks'
+import type { Repo } from '../../../../../shared/repo-types'
 import {
   codehubDetailCache,
   ensureCodehubDetailFresh,
   getCodehubDetailCacheKey,
   invalidateCodehubDetailCache,
   subscribeCodehubDetailCache,
-  touchCodehubDetailCache
+  touchCodehubDetailCache,
+  type CodeHubDetailReadArgs
 } from './codehub-detail-cache'
 import { useCodeHubMrExtras } from './use-codehub-mr-extras'
 import type { TaskPageComposerActionsModel } from '../../use-task-page-composer-actions'
+
+/** Resolves the single repo a CodeHub item belongs to, mirroring the row-level
+ * owner resolution: the active task-page selection first, then the full store.
+ * A cross-host duplicate id resolves to the host the item's executionHostId
+ * pins, so reads and mutations never route to another host's CLI. */
+// 详情读取的宿主限定参数从 item 推导；每个读取点用同一构造器，mount 效果、
+// 手动 reload 与详情钩子不会各写一套导致 host 段漂移。repoPath 单独立参，让
+// 调用点的守卫（!item?.repoPath）能把窄化结果直接传进来。
+function codeHubDetailReadArgs(item: CodeHubTaskItem, repoPath: string): CodeHubDetailReadArgs {
+  return {
+    repoPath,
+    repoId: item.repoId,
+    kind: item.type,
+    iid: item.iid,
+    executionHostId: item.executionHostId
+  }
+}
+
+function resolveCodeHubDetailOwner(
+  model: TaskPageComposerActionsModel,
+  item: CodeHubTaskItem
+): Repo | null {
+  const bySelection = findCodeHubTaskRepo(model.selectedRepos, item)
+  if (bySelection) {
+    return bySelection
+  }
+  return findCodeHubTaskRepo(useAppStore.getState().repos, item)
+}
 
 /**
  * The CodeHub detail lives in taskPageData (not local state) so external opens —
@@ -23,8 +59,14 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   const { codehubDetailItem, setCodehubDetailItem, handleUseCodeHubItem, setCodehubRefreshNonce } =
     model
   const item = codehubDetailItem
+  const owner = item ? resolveCodeHubDetailOwner(model, item) : null
   const key = item
-    ? getCodehubDetailCacheKey({ repoId: item.repoId, kind: item.type, iid: item.iid })
+    ? getCodehubDetailCacheKey({
+        repoId: item.repoId,
+        kind: item.type,
+        iid: item.iid,
+        executionHostId: item.executionHostId
+      })
     : ''
   // Why: cache writes replace entry identity (delete+set), so Map.get is a stable snapshot for useSyncExternalStore.
   const entry = useSyncExternalStore(
@@ -42,7 +84,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   const [labelDraft, setLabelDraft] = useState<string[]>([])
   const [savingLabels, setSavingLabels] = useState(false)
   const [stateBusy, setStateBusy] = useState(false)
-  const { checks, files, mrExtrasLoading, reloadMrExtras } = useCodeHubMrExtras(item)
+  const { checks, files, mrExtrasLoading, reloadMrExtras } = useCodeHubMrExtras(item, owner)
   // Data lanes read from the shared SWR cache: a reopen paints cached data
   // instantly while ensureCodehubDetailFresh reconciles in the background.
   const detail: CodeHubTaskDetail | null = entry?.detail ?? null
@@ -60,27 +102,17 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
     setEditingTitle(false)
     setEditingLabels(false)
     setTab('conversation')
-    void ensureCodehubDetailFresh({
-      repoPath: item.repoPath,
-      repoId: item.repoId,
-      kind: item.type,
-      iid: item.iid
-    })
-  }, [item])
+    void ensureCodehubDetailFresh(codeHubDetailReadArgs(item, item.repoPath), owner)
+  }, [item, owner])
 
   const reloadDetail = useCallback((): void => {
     if (!item?.repoPath) {
       return
     }
     invalidateCodehubDetailCache(key)
-    void ensureCodehubDetailFresh({
-      repoPath: item.repoPath,
-      repoId: item.repoId,
-      kind: item.type,
-      iid: item.iid
-    })
+    void ensureCodehubDetailFresh(codeHubDetailReadArgs(item, item.repoPath), owner)
     setCodehubRefreshNonce((nonce) => nonce + 1)
-  }, [item, key, setCodehubRefreshNonce])
+  }, [item, key, owner, setCodehubRefreshNonce])
 
   // Comment threads and the files tab write fetched rows back through this
   // instead of local state (same callers as before the cache existed).
@@ -100,26 +132,21 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   // postComment and postReply share the create→reload chain; only what
   // happens after a successful reload differs (clearing the draft vs the
   // boolean result).
-  const submitComment = (extra: { body: string; discussionId?: string }): Promise<boolean> => {
-    if (!item?.repoPath) {
-      return Promise.resolve(false)
+  const submitComment = async (extra: { body: string; discussionId?: string }): Promise<boolean> => {
+    if (!item?.repoPath || (item.executionHostId && !owner)) {
+      return false
     }
-    return codehubApi
-      .createComment({
-        repoPath: item.repoPath,
-        repoId: item.repoId,
-        kind: item.type,
-        iid: item.iid,
-        ...extra
-      })
-      .then(() => {
-        reloadDetail()
-        return true
-      })
-      .catch((reason: unknown) => {
-        toast.error(reason instanceof Error ? reason.message : String(reason))
-        return false
-      })
+    try {
+      await codehubApi.createComment(
+        { ...codeHubDetailReadArgs(item, item.repoPath), ...extra },
+        owner ?? undefined
+      )
+      reloadDetail()
+      return true
+    } catch (reason: unknown) {
+      toast.error(reason instanceof Error ? reason.message : String(reason))
+      return false
+    }
   }
   const postComment = (): void => {
     const body = draft.trim()
@@ -137,10 +164,11 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   }
   const postReply = (discussionId: string, body: string): Promise<boolean> =>
     !body ? Promise.resolve(false) : submitComment({ body, discussionId })
-  const saveTitle = (): void => {
+  const saveTitle = async (): Promise<void> => {
     const nextTitle = titleDraft.trim()
     if (
       !item?.repoPath ||
+      (item.executionHostId && !owner) ||
       !nextTitle ||
       savingTitle ||
       nextTitle === (detail?.title || item.title)
@@ -149,25 +177,27 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
       return
     }
     setSavingTitle(true)
-    void codehubApi
-      .updateIssueTitle({
-        repoPath: item.repoPath,
-        repoId: item.repoId,
-        iid: item.iid,
-        title: nextTitle
-      })
-      .then(() => {
-        setEditingTitle(false)
-        toast.success(translate('auto.components.TaskPage.codehubTitleSaved', 'Title updated'))
-        reloadDetail()
-      })
-      .catch((reason: unknown) => {
-        toast.error(reason instanceof Error ? reason.message : String(reason))
-      })
-      .finally(() => setSavingTitle(false))
+    try {
+      await codehubApi.updateIssueTitle(
+        {
+          repoPath: item.repoPath,
+          repoId: item.repoId,
+          iid: item.iid,
+          title: nextTitle
+        },
+        owner ?? undefined
+      )
+      setEditingTitle(false)
+      toast.success(translate('auto.components.TaskPage.codehubTitleSaved', 'Title updated'))
+      reloadDetail()
+    } catch (reason: unknown) {
+      toast.error(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setSavingTitle(false)
+    }
   }
-  const saveLabels = (): void => {
-    if (!item?.repoPath || savingLabels) {
+  const saveLabels = async (): Promise<void> => {
+    if (!item?.repoPath || (item.executionHostId && !owner) || savingLabels) {
       return
     }
     const current = detail?.labels?.length ? detail.labels : (item.labels ?? [])
@@ -182,56 +212,60 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
       return
     }
     setSavingLabels(true)
-    void codehubApi
-      .updateIssueLabels({
-        repoPath: item.repoPath,
-        repoId: item.repoId,
-        iid: item.iid,
-        labels: nextLabels
-      })
-      .then(() => {
-        setEditingLabels(false)
-        toast.success(translate('auto.components.TaskPage.codehubLabelsSaved', 'Labels updated'))
-        reloadDetail()
-      })
-      .catch((reason: unknown) => {
-        toast.error(reason instanceof Error ? reason.message : String(reason))
-      })
-      .finally(() => setSavingLabels(false))
+    try {
+      await codehubApi.updateIssueLabels(
+        {
+          repoPath: item.repoPath,
+          repoId: item.repoId,
+          iid: item.iid,
+          labels: nextLabels
+        },
+        owner ?? undefined
+      )
+      setEditingLabels(false)
+      toast.success(translate('auto.components.TaskPage.codehubLabelsSaved', 'Labels updated'))
+      reloadDetail()
+    } catch (reason: unknown) {
+      toast.error(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setSavingLabels(false)
+    }
   }
-  const setIssueState = (
+  const setIssueState = async (
     state: 'open' | 'closed',
     stateReason?: 'completed' | 'not_planned' | 'duplicate',
     duplicateNumber?: number
-  ): void => {
-    if (!item?.repoPath || stateBusy) {
+  ): Promise<void> => {
+    if (!item?.repoPath || (item.executionHostId && !owner) || stateBusy) {
       return
     }
     if (stateReason === 'duplicate' && !Number.isInteger(duplicateNumber)) {
       return
     }
     setStateBusy(true)
-    void codehubApi
-      .setIssueState({
-        repoPath: item.repoPath,
-        repoId: item.repoId,
-        iid: item.iid,
-        state,
-        stateReason,
-        duplicateOf: stateReason === 'duplicate' ? (duplicateNumber ?? null) : null
-      })
-      .then(() => {
-        toast.success(
-          state === 'open'
-            ? translate('auto.components.TaskPage.codehubIssueReopened', 'Issue reopened')
-            : translate('auto.components.TaskPage.codehubIssueClosed', 'Issue closed')
-        )
-        reloadDetail()
-      })
-      .catch((reason: unknown) => {
-        toast.error(reason instanceof Error ? reason.message : String(reason))
-      })
-      .finally(() => setStateBusy(false))
+    try {
+      await codehubApi.setIssueState(
+        {
+          repoPath: item.repoPath,
+          repoId: item.repoId,
+          iid: item.iid,
+          state,
+          stateReason,
+          duplicateOf: stateReason === 'duplicate' ? (duplicateNumber ?? null) : null
+        },
+        owner ?? undefined
+      )
+      toast.success(
+        state === 'open'
+          ? translate('auto.components.TaskPage.codehubIssueReopened', 'Issue reopened')
+          : translate('auto.components.TaskPage.codehubIssueClosed', 'Issue closed')
+      )
+      reloadDetail()
+    } catch (reason: unknown) {
+      toast.error(reason instanceof Error ? reason.message : String(reason))
+    } finally {
+      setStateBusy(false)
+    }
   }
   if (!item) {
     return null
@@ -250,6 +284,7 @@ export function useCodeHubDetail(model: TaskPageComposerActionsModel) {
   const projectLabel = item.project ?? ''
   return {
     item,
+    owner,
     detail,
     comments,
     setComments,

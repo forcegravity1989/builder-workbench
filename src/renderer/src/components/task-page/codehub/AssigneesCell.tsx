@@ -7,18 +7,22 @@ import { codehubApi } from '@/lib/codehub-api'
 import { toast } from 'sonner'
 import type { CodeHubProjectMember } from '../../../../../shared/codehub-api'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
+import type { Repo } from '../../../../../shared/repo-types'
 
 /**
  * 任务列表行的负责人单元格。CLI `issue update --assignee` 是单值替换语义
  * （无 add/remove、无清除），所以点选成员即把负责人替换为该成员，成功后
  * 收起下拉；已是唯一负责人的成员再点只收起、不重复请求；不提供移除入口
- * ——如实反映 CLI 单值能力。
+ * ——如实反映 CLI 单值能力。owner 把读写钉在仓库所属执行主机上，跨主机
+ * 重复 id 不会错路由。
  */
 export function CodeHubAssigneesCell({
   item,
+  owner,
   onChanged
 }: {
   item: CodeHubTaskItem
+  owner?: Repo
   onChanged: () => void
 }): React.JSX.Element {
   const [open, setOpen] = useState(false)
@@ -28,14 +32,14 @@ export function CodeHubAssigneesCell({
   const [pendingUsername, setPendingUsername] = useState<string | null>(null)
   // 候选名单在 popover 打开时拉取（重开重拉），与详情页标签选择器一致。
   useEffect(() => {
-    if (!open || !item.repoPath) {
+    if (!open || !item.repoPath || (item.executionHostId && !owner)) {
       return
     }
     let stale = false
     setLoading(true)
     setError(null)
     codehubApi
-      .listMembers({ repoPath: item.repoPath, repoId: item.repoId })
+      .listMembers({ repoPath: item.repoPath, repoId: item.repoId }, owner ?? undefined)
       .then((list) => {
         if (!stale) {
           setMembers(list)
@@ -55,11 +59,11 @@ export function CodeHubAssigneesCell({
     return () => {
       stale = true
     }
-  }, [open, item.repoPath, item.repoId])
+  }, [open, owner, item.repoPath, item.repoId, item.executionHostId])
 
   const assign = useCallback(
     async (member: CodeHubProjectMember): Promise<void> => {
-      if (!item.repoPath || pendingUsername) {
+      if (!item.repoPath || (item.executionHostId && !owner) || pendingUsername) {
         return
       }
       const username = member.username.toLowerCase()
@@ -70,12 +74,15 @@ export function CodeHubAssigneesCell({
       }
       setPendingUsername(member.username)
       try {
-        await codehubApi.assignIssue({
-          repoPath: item.repoPath,
-          repoId: item.repoId,
-          iid: item.iid,
-          assignee: member.username
-        })
+        await codehubApi.assignIssue(
+          {
+            repoPath: item.repoPath,
+            repoId: item.repoId,
+            iid: item.iid,
+            assignee: member.username
+          },
+          owner ?? undefined
+        )
         toast.success(translate('auto.components.TaskPage.codehubAssigned', 'Assignee updated'))
         // Why: 单值替换选完即达成目的，保持展开只会让人再手动关一次。
         setOpen(false)
@@ -86,7 +93,16 @@ export function CodeHubAssigneesCell({
         setPendingUsername(null)
       }
     },
-    [item.assignees, item.iid, item.repoId, item.repoPath, onChanged, pendingUsername]
+    [
+      item.assignees,
+      item.executionHostId,
+      item.iid,
+      item.repoId,
+      item.repoPath,
+      owner,
+      onChanged,
+      pendingUsername
+    ]
   )
 
   const assigneeNames = item.assignees.join(', ')

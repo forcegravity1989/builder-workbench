@@ -77,7 +77,7 @@ function CodeHubFilesSections({
   state: CodeHubDetailState
   files: CodeHubMrFileChange[]
 }): React.JSX.Element {
-  const { item, detail, comments, setComments } = state
+  const { item, detail, comments, owner, setComments } = state
   const settings = useAppStore((s) => s.settings)
   const isDark =
     settings?.theme === 'dark' ||
@@ -244,7 +244,7 @@ function CodeHubFilesSections({
       { lineNumber, startLine, body }: { lineNumber: number; startLine?: number; body: string }
     ): Promise<boolean> => {
       const repoPath = item.repoPath
-      if (!repoPath) {
+      if (!repoPath || (item.executionHostId && !owner)) {
         return false
       }
       // The rebuilt diff concatenates hunks, so the editor's line number is a
@@ -260,23 +260,29 @@ function CodeHubFilesSections({
       }
       const realStartLine = startLine != null ? realLines?.[startLine - 1] : undefined
       return codehubApi
-        .createComment({
-          repoPath,
-          repoId: item.repoId,
-          kind: item.type,
-          iid: item.iid,
-          body,
-          path: section.path,
-          line: realLine,
-          startLine: realStartLine != null && realStartLine !== realLine ? realStartLine : null
-        })
-        .then(async () => {
-          const rows = await codehubApi.listComments({
+        .createComment(
+          {
             repoPath,
             repoId: item.repoId,
             kind: item.type,
-            iid: item.iid
-          })
+            iid: item.iid,
+            body,
+            path: section.path,
+            line: realLine,
+            startLine: realStartLine != null && realStartLine !== realLine ? realStartLine : null
+          },
+          owner ?? undefined
+        )
+        .then(async () => {
+          const rows = await codehubApi.listComments(
+            {
+              repoPath,
+              repoId: item.repoId,
+              kind: item.type,
+              iid: item.iid
+            },
+            owner ?? undefined
+          )
           setComments(rows)
           toast.success(
             translate('auto.components.GitHubItemDialog.a341343303', 'Review comment added.')
@@ -288,7 +294,7 @@ function CodeHubFilesSections({
           return false
         })
     },
-    [item, patchByPath, setComments]
+    [item, owner, patchByPath, setComments]
   )
 
   return (

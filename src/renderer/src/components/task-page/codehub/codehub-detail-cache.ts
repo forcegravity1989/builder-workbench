@@ -1,4 +1,4 @@
-import { codehubApi } from '@/lib/codehub-api'
+import { codehubApi, type CodeHubRepoOwner } from '@/lib/codehub-api'
 import type { CodeHubMrFileChange } from '../../../../../shared/codehub-mr-detail'
 import type { CodeHubComment, CodeHubTaskDetail } from '../../../../../shared/codehub-tasks'
 import type { PRCheckDetail } from '../../../../../shared/github/check-types'
@@ -39,6 +39,12 @@ export type CodeHubDetailKeyArgs = {
   repoId: string | undefined
   kind: 'issue' | 'mr'
   iid: number
+  /**
+   * Host-qualified lane: the same repoId copied to another execution host is a
+   * separate detail object with its own cache entry, so a cross-host duplicate
+   * must neither collide with nor evict the active host's lane.
+   */
+  executionHostId?: string
 }
 export type CodeHubDetailReadArgs = CodeHubDetailKeyArgs & { repoPath: string }
 
@@ -62,7 +68,7 @@ function notifyCodehubDetailCache(): void {
 
 export function getCodehubDetailCacheKey(args: CodeHubDetailKeyArgs): string {
   // Why: `\0` separator avoids collisions between key fields that may contain `:` or `/`.
-  return [args.repoId ?? '', args.kind, args.iid].join('\0')
+  return [args.repoId ?? '', args.executionHostId ?? '', args.kind, args.iid].join('\0')
 }
 
 export function touchCodehubDetailCache(key: string, entry: CodeHubDetailCacheEntry): void {
@@ -93,8 +99,14 @@ function errorText(reason: unknown): string {
  * Ensures the entry holds fresh data, deduping concurrent full reads per key.
  * A fresh entry resolves immediately; a partial prefill (fetchedAt=0) still
  * triggers the full read while its detail lane keeps painting.
+ *
+ * The owner pins the read to the repo's execution host, so a cross-host
+ * duplicate id can never route the detail to another host's CLI.
  */
-export function ensureCodehubDetailFresh(args: CodeHubDetailReadArgs): Promise<void> {
+export function ensureCodehubDetailFresh(
+  args: CodeHubDetailReadArgs,
+  owner?: CodeHubRepoOwner | null
+): Promise<void> {
   const key = getCodehubDetailCacheKey(args)
   const cached = codehubDetailCache.get(key)
   if (cached?.fetchedAt && Date.now() - cached.fetchedAt <= CODEHUB_DETAIL_FRESH_MS) {
@@ -106,10 +118,10 @@ export function ensureCodehubDetailFresh(args: CodeHubDetailReadArgs): Promise<v
   // Why: `.then` closure (not an async IIFE) so the write-back guard can compare
   // against `read` itself — an immediately-invoked body trips TS2454.
   const read: Promise<void> = Promise.allSettled([
-    codehubApi.viewTask(args),
-    codehubApi.listComments(args),
-    args.kind === 'mr' ? codehubApi.mrChecks(args) : Promise.resolve(null),
-    args.kind === 'mr' ? codehubApi.mrChanges(args) : Promise.resolve(null)
+    codehubApi.viewTask(args, owner ?? undefined),
+    codehubApi.listComments(args, owner ?? undefined),
+    args.kind === 'mr' ? codehubApi.mrChecks(args, owner ?? undefined) : Promise.resolve(null),
+    args.kind === 'mr' ? codehubApi.mrChanges(args, owner ?? undefined) : Promise.resolve(null)
   ]).then(([detailRes, commentsRes, checksRes, filesRes]) => {
     const current = codehubDetailCache.get(key)
     // Why: an invalidation (post-mutation) dropped/replaced this entry mid-flight; don't resurrect stale data.
@@ -139,13 +151,17 @@ export function ensureCodehubDetailFresh(args: CodeHubDetailReadArgs): Promise<v
 
 /**
  * Refreshes only the mr checks/files lanes (Checks/Files tab refresh buttons);
- * the detail/comments lanes and freshness stay untouched.
+ * the detail/comments lanes and freshness stay untouched. The owner pins the
+ * lanes to the repo's execution host like the main read.
  */
-export function refreshCodehubMrExtras(args: CodeHubDetailReadArgs): Promise<void> {
+export function refreshCodehubMrExtras(
+  args: CodeHubDetailReadArgs,
+  owner?: CodeHubRepoOwner | null
+): Promise<void> {
   const key = getCodehubDetailCacheKey(args)
   const read: Promise<void> = Promise.allSettled([
-    codehubApi.mrChecks(args),
-    codehubApi.mrChanges(args)
+    codehubApi.mrChecks(args, owner ?? undefined),
+    codehubApi.mrChanges(args, owner ?? undefined)
   ]).then(([checksRes, filesRes]) => {
     const current = codehubDetailCache.get(key)
     if (!current || current.pending !== read) {

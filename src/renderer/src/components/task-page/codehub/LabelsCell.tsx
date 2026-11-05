@@ -6,17 +6,21 @@ import { translate } from '@/i18n/i18n'
 import { codehubApi } from '@/lib/codehub-api'
 import { toast } from 'sonner'
 import type { CodeHubTaskItem } from '../../../../../shared/codehub-tasks'
+import type { Repo } from '../../../../../shared/repo-types'
 
 /**
  * 任务列表行的标签单元格。CLI `issue update --labels` 是整组替换语义，
  * 所以每次点击都按「当前全量 ± 该标签」发送完整数组（去重），点击即
- * 保存——与详情页的草稿模式不同，列表层要的是快速单点操作。
+ * 保存——与详情页的草稿模式不同，列表层要的是快速单点操作。owner 把
+ * 读写钉在仓库所属执行主机上，跨主机重复 id 不会错路由。
  */
 export function CodeHubLabelsCell({
   item,
+  owner,
   onChanged
 }: {
   item: CodeHubTaskItem
+  owner?: Repo
   onChanged: () => void
 }): React.JSX.Element {
   const [open, setOpen] = useState(false)
@@ -27,14 +31,14 @@ export function CodeHubLabelsCell({
   const labels = useMemo(() => item.labels ?? [], [item.labels])
   // 候选名单在 popover 打开时拉取（重开重拉），新建标签下次打开可见。
   useEffect(() => {
-    if (!open || !item.repoPath) {
+    if (!open || !item.repoPath || (item.executionHostId && !owner)) {
       return
     }
     let stale = false
     setLoading(true)
     setError(null)
     codehubApi
-      .listLabels({ repoPath: item.repoPath, repoId: item.repoId })
+      .listLabels({ repoPath: item.repoPath, repoId: item.repoId }, owner ?? undefined)
       .then((names) => {
         if (!stale) {
           setProjectLabels(names)
@@ -54,11 +58,11 @@ export function CodeHubLabelsCell({
     return () => {
       stale = true
     }
-  }, [open, item.repoPath, item.repoId])
+  }, [open, owner, item.repoPath, item.repoId, item.executionHostId])
 
   const toggleLabel = useCallback(
     async (label: string): Promise<void> => {
-      if (!item.repoPath || pendingLabel) {
+      if (!item.repoPath || (item.executionHostId && !owner) || pendingLabel) {
         return
       }
       const isOn = labels.some((name) => name.toLowerCase() === label.toLowerCase())
@@ -67,12 +71,15 @@ export function CodeHubLabelsCell({
         : [...labels, label]
       setPendingLabel(label)
       try {
-        await codehubApi.updateIssueLabels({
-          repoPath: item.repoPath,
-          repoId: item.repoId,
-          iid: item.iid,
-          labels: [...new Set(nextLabels.map((name) => name.trim()).filter(Boolean))]
-        })
+        await codehubApi.updateIssueLabels(
+          {
+            repoPath: item.repoPath,
+            repoId: item.repoId,
+            iid: item.iid,
+            labels: [...new Set(nextLabels.map((name) => name.trim()).filter(Boolean))]
+          },
+          owner ?? undefined
+        )
         toast.success(translate('auto.components.TaskPage.codehubLabelsSaved', 'Labels updated'))
         onChanged()
       } catch (reason: unknown) {
@@ -81,7 +88,16 @@ export function CodeHubLabelsCell({
         setPendingLabel(null)
       }
     },
-    [item.iid, item.repoId, item.repoPath, labels, onChanged, pendingLabel]
+    [
+      item.executionHostId,
+      item.iid,
+      item.repoId,
+      item.repoPath,
+      labels,
+      owner,
+      onChanged,
+      pendingLabel
+    ]
   )
 
   const triggerContent =
