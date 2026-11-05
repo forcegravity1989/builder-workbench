@@ -67,8 +67,14 @@ export function ExperimentalPane({
         <>
           <OverviewExperimentSettings />
           <SettingsSubsectionHeader
-            title="全局设置"
-            description="以下设置适用于本机所有项目。"
+            title={translate(
+              'auto.components.settings.ExperimentalPane.globalScopeTitle',
+              'Global settings'
+            )}
+            description={translate(
+              'auto.components.settings.ExperimentalPane.globalScopeDescription',
+              'These settings apply to all projects on this device.'
+            )}
             className="border-t border-border pt-5 first:border-0 first:pt-0 last:hidden"
           />
         </>
