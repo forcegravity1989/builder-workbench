@@ -64,10 +64,7 @@ export function ReferencePanel({ close }) {
             PR #320 · 日排期与预置工作日历 ↗
           </a>
         </h3>
-        <p>
-          原型注释:
-          借用等宽日轴、拖动两端调整和班/休标记。真实日历样本尚未提供，缺配置时使用普通周末，不推算加班日；本稿保留原有就地规划旅程。
-        </p>
+        <p>原型注释: 等宽日轴与正式里程碑共用 2026 年工作日历。</p>
       </section>
       <section className="ml-reference">
         <h3>时间轴组件取舍</h3>

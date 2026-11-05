@@ -56,6 +56,9 @@ it('preserves material identity and independent version windows through whole-de
   ).toEqual([1, 2, 0.5, 1, 0.5])
   expect(workCalendarDay('2026-11-14').working).toBe(false)
   expect(workCalendarDay('2026-11-16').working).toBe(true)
+  expect(workCalendarDay('2026-11-28')).toMatchObject({ working: true, badge: '班' })
+  expect(workCalendarDay('2026-09-26')).toMatchObject({ working: false, badge: '休' })
+  expect(workCalendarDay('2027-01-30').badge).toBeNull()
   const plan = {
     schema_version: 3,
     version: 'v1',
