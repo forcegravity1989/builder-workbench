@@ -228,9 +228,10 @@ export function AcceptancePrepareSection({
               压缩成一段转述（每句都真、没有一条能独立核对），点名逐条一行与
               反面模式；细节仍留 SKILL，不让注入句膨胀成第二份规范。
               #422：无截图不再一律判缺证——先逐单判断证据形态，证据不足或漏截图
-              的列「待核对」，生成后先与人确认处置再标缺口、再登记。 */}
+              的列「待核对」，生成后先与人确认处置再标缺口、再登记。报告改为 HTML
+              正本：每 Issue 一句人话、基本用例成表、截图内嵌，不再产出 Markdown。 */}
           {onSendAction(
-            '聚合本次验收的证据报告：把各 Issue / PR 合入时留下的验收证据按目标归并成一份报告，判据逐条一行按字段提取（用例名、期望结果、实际结果、证据形态、钉 SHA 的截图或链接、执行路径），不压缩成一段转述、不用大段文本凑数。无截图先逐单判断证据形态；证据不足或漏截图的列为「待核对」，生成报告后先逐条与我确认处置（PR 补充后重新聚合 / 本次会话补充后加入报告 / 会上实机演示），再按确认结果标缺口并登记。报告文件落本版 .bw/planning/<版本>/ 目录；登记执行一条命令（--repo-id/--worktree-id 用入口提供的原生身份，candidateRef 复用材料现有值，文件不存在会如实报错）：ORCA bw materials add-artifact --repo-id <id> --worktree-id <id> --workflow acceptance --version <版本> --kind verification --location .bw/planning/<版本>/<报告文件名>',
+            '聚合本次验收的证据报告：把各 Issue / PR 合入时留下的验收证据按目标归并成一份 HTML 报告。每个 Issue 先一句人话说明兑现哪条承诺、怎么验、看哪里；基本用例成表按字段提取（用例名、期望结果、实际结果、证据形态、钉 SHA 的截图或链接、执行路径），截图直接内嵌，不压缩成一段转述、不用大段文本凑数；组合、异常、负例与门禁细节只给原验证报告链接，不搬正文。无截图先逐单判断证据形态；证据不足或漏截图的列为「待核对」，生成报告后先逐条与我确认处置（PR 补充后重新聚合 / 本次会话补充后加入报告 / 会上实机演示），再按确认结果标缺口并登记；缺口只写我确认后的结论，待定的汇总到文末「会上需要人定的事」。按技能里的 HTML 模板生成 .bw/planning/<版本>/acceptance-evidence.html（HTML 正本，不产出 Markdown）；登记执行一条命令（--repo-id/--worktree-id 用入口提供的原生身份，candidateRef 复用材料现有值，文件不存在会如实报错）：ORCA bw materials add-artifact --repo-id <id> --worktree-id <id> --workflow acceptance --version <版本> --kind verification --location .bw/planning/<版本>/acceptance-evidence.html',
             '聚合请求',
             <BoardActionButton title="向验收助手会话注入聚合请求：按目标归并各 Issue/PR 的验收件">
               <BrainCircuit size={14} aria-hidden="true" /> 聚合

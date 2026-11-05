@@ -124,6 +124,16 @@ Issue [#516](https://github.com/forcegravity1989/builder-workbench/issues/516)�
 
 **验证状态**：`generate:workbench-skills --check`、`generate:skill-bundle-manifest`、`generate:bundled-skill-guides --check` 通过；`skill-install.test.ts` 5/5 通过。**未验**：真实验收会话中的「生成后逐条与人确认」可执行性、新注入句在模型会话中的实际效果；真壳旅程未跑。原型欠账延续：`acceptance-model.js` 的聚合 prompt 与注释仍为纯意图句，未跟本轮口径，随高保真专项同步。
 
+## 2026-11-05 #422 报告 HTML 正本与精简轮（同 Issue 后续）
+
+技能 `version-acceptance` 0.10.0 → 0.11.0，兑现 #422 主诉「模板应为 HTML 正本」：
+
+- **模板换成 HTML**：删除 Markdown 骨架 `evidence-report-template.md`，新增 `evidence-report-template.html`（语义标签 + 最小内联样式），报告落盘 `.bw/planning/<版本>/acceptance-evidence.html`；「或 .md 按项目约定」的双格式口子一并去掉——板面按扩展名路由，HTML 经内置浏览器（SSH/配对走 doc-preview）打开，Markdown 只见源码。
+- **生成侧精简**：每个 Issue 先一句人话（兑现哪条承诺、怎么验、看哪里）；基本用例成表（用例名 · 期望 · 实际 · 证据形态与钉 SHA 的截图/链接 · 执行路径），截图用 `<img>` 内嵌；组合、异常、负例与门禁细节点名原验证报告链接，不搬正文；文末固定「缺口汇总（三类）」与「会上需要人定的事」，缺口只写人确认后的结论，待定项不替人拍板。
+- 同步 SKILL（聚合节、执行流程、模板索引）、`evidence-aggregation.md`、`screen-actions.md`、`version-records.md`、spec 的聚合条款与材料打开规则、design 的报告落点、intent 的目标体验句；`skill-package.json` 等派生件再生。
+
+**验证状态**：派生件 `--check` 通过、既有 version-acceptance/skill-install 单测通过。**未验**：真实聚合会话实际产出的 HTML 报告形态、精简后是否满足会议现场核对、模型是否会漏掉「其余用例指向原报告」；真壳未跑。原型 `acceptance-model.js` 的聚合 prompt 仍为纯意图句（欠账延续）。
+
 ## 当前验收点与旅程矩阵
 
 > 口径：○ = 未实现；◐ = 代码已接入但真实用户旅程未完整；● = 齐。协议测试、静态检查与原型结果不等同真壳 E2E。本轮全部为 ◐ 的原因见上「证据边界」——不是代码没写，是真壳证据没取。
@@ -133,7 +143,7 @@ Issue [#516](https://github.com/forcegravity1989/builder-workbench/issues/516)�
 | A01 独立树、原生会话、单页四区 | ◐ | #439 短卡只在未开始时出现，实际会话打开后四区与空目标可见，视图内存支持切屏；已静态接线，启动链未真壳复验；会话收起与页头操作组按 #445 复验，已在真实 Electron 证明两屏、1600/1100 窗口零占位，PTY、栏宽与对象动作展开均保留 |
 | A02 固定计划身份与安全初始化 | ◐ | 启动硬门禁与 GateDialog 已删除；会话开场提示未合入/未知，不自动合入。use-acceptance-board 保留 readPlan/assertFixedPlan 与并发护栏，无 committed 来源不建材料；未真壳复验 |
 | A03 出包真实读数、部署注入、演示环境两形态读回 | ◐ | `AcceptancePackage.tsx` 出包读数沿用既有链（按钮本轮统一 `BoardActionButton`）；部署改经共用发送弹窗注入；`demoEnv` 两形态已接（web 显示系统名 `label`、缺省回退 URL 可点打开，桌面应用显示「已启动 · detail」不伪造链接）。**两形态都未在真壳用真实项目验过**，注入通道修复后也未验 |
-| A04 验收证据报告一份/版本、登记、可打开 | ◐ | 模板正本在技能资产；报告经 `latestVerificationArtifact` 读回、登记复用 `verification` 制品类型；未生成时入口禁用；入口只在「验收准备」行（目标行报告入口 2026-10-23 UI 对齐轮删除）。#516 起登记经 `add-artifact` 一条命令，一次性真壳 E2E 已验命令登记、行轮询点亮与内置浏览器打开（证据见 PR 验证报告） |
+| A04 验收证据报告一份/版本、登记、可打开 | ◐ | 模板正本为技能资产的 HTML 模板（#422 起唯一形态，`.md` 已删）；报告经 `latestVerificationArtifact` 读回、登记复用 `verification` 制品类型；未生成时入口禁用；入口只在「验收准备」行（目标行报告入口 2026-10-23 UI 对齐轮删除）。#516 起登记经 `add-artifact` 一条命令，一次性真壳 E2E 已验命令登记、行轮询点亮与内置浏览器打开（证据见 PR 验证报告） |
 | A05 单个人工结论状态 | ◐ | AcceptanceGoalRow 使用未判定/达成/不达成选择，沿中性/警示色、清除仍受人工守卫；本轮只有静态证据，重启一致性待验 |
 | A06 纪要文本、整份确认与落实去向 | ◐ | 无材料时只读空态、整理请求可用；有材料时沿整份确认/撤销与已确认冻结。#471 起读视图按目标分组（`G<n> ·` 前缀呈现级、编辑态保持平铺、遗留保全局 M 编号）。归档前已落实或真实 Issue 跟进由助手核对、PR 人审；本轮模型和真壳未验 |
 | A07 归档引用+状态+原生 PR 页+注入式发起归档 | ◐ | `AcceptanceArchiveCard.tsx` 引用 + provider 真实状态（读不到显示「状态未知」）+ 原生 PR 页入口 + 注入式「发起归档」；无直接执行归档按钮。真壳未验 |
