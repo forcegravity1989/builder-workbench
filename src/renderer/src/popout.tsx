@@ -7,6 +7,7 @@ import './lib/react-commit-cascade-observer'
 import './assets/main.css'
 
 import { StrictMode, useEffect } from 'react'
+import { DESKTOP_PRODUCT_NAME } from '../../shared/app-identity'
 import { useTranslation } from 'react-i18next'
 import { DashboardPopoutRoot } from './components/dashboard-popout/DashboardPopoutRoot'
 import { RecoverableRenderErrorBoundary } from './components/error-boundaries/RecoverableRenderErrorBoundary'
@@ -107,7 +108,11 @@ function PopoutRoot(): React.JSX.Element {
     <RecoverableRenderErrorBoundary
       boundaryId="dashboard-popout.root"
       surface="dashboard-popout"
-      title={translate('dashboardPopout.recoverableError.title', 'Orca dashboard hit an error.')}
+      title={translate(
+        'dashboardPopout.recoverableError.title',
+        '{{product}} dashboard hit an error.',
+        { product: DESKTOP_PRODUCT_NAME }
+      )}
       description={translate(
         'dashboardPopout.recoverableError.description',
         'The dashboard could not finish rendering. Retry to remount it, or reopen it.'

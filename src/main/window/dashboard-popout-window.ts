@@ -1,5 +1,6 @@
 import { app, BrowserWindow, nativeTheme, type WebContents } from 'electron'
 import { join } from 'node:path'
+import { DESKTOP_PRODUCT_NAME } from '../../shared/app-identity'
 import { is } from '@electron-toolkit/utils'
 import type { Store } from '../persistence'
 import { isBackgroundLaunch, showWindowWithoutStealingFocus } from './foreground-activation-policy'
@@ -165,7 +166,7 @@ export function createOrFocusDashboardPopout(
     ...(savedBounds ? { x: savedBounds.x, y: savedBounds.y } : {}),
     minWidth: MIN_WIDTH,
     minHeight: MIN_HEIGHT,
-    title: 'Orca Agent Dashboard',
+    title: `${DESKTOP_PRODUCT_NAME} Agent Dashboard`,
     show: false,
     autoHideMenuBar: true,
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#0a0a0a' : '#ffffff',

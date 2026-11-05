@@ -115,7 +115,7 @@ jobs:
           set -euo pipefail
           commit="$(echo "$GITHUB_SHA" | cut -c1-12)"
           echo "version=$VERSION" >>"$GITHUB_OUTPUT"
-          echo "Building Workbench $VERSION from ${GITHUB_REF_NAME} ($commit)"
+          echo "Building builder-workbench $VERSION from ${GITHUB_REF_NAME} ($commit)"
 
       - name: Build Workbench Windows installer
         shell: bash
@@ -140,8 +140,8 @@ jobs:
         run: |
           set -euo pipefail
           ls -la dist/
-          test -f dist/workbench-windows-setup.exe
-          test -f dist/workbench-windows-setup.exe.blockmap
+          test -f dist/builder-workbench-windows-setup.exe
+          test -f dist/builder-workbench-windows-setup.exe.blockmap
           test -f dist/latest.yml
           # Ledger gate: latest.yml's version is what the in-app updater compares
           # against; if it differs from the release version, every installed copy
@@ -163,18 +163,18 @@ jobs:
           printf '%s' "$NOTES" > release-notes.md
           case "$VERSION" in
             *-rc*)
-              gh release create "v$VERSION" dist/workbench-windows-setup.exe \
-                dist/workbench-windows-setup.exe.blockmap dist/latest.yml \
+              gh release create "v$VERSION" dist/builder-workbench-windows-setup.exe \
+                dist/builder-workbench-windows-setup.exe.blockmap dist/latest.yml \
                 --target "$GITHUB_SHA" \
-                --title "Workbench $VERSION" \
+                --title "builder-workbench $VERSION" \
                 --notes-file release-notes.md \
                 --prerelease
               ;;
             *)
-              gh release create "v$VERSION" dist/workbench-windows-setup.exe \
-                dist/workbench-windows-setup.exe.blockmap dist/latest.yml \
+              gh release create "v$VERSION" dist/builder-workbench-windows-setup.exe \
+                dist/builder-workbench-windows-setup.exe.blockmap dist/latest.yml \
                 --target "$GITHUB_SHA" \
-                --title "Workbench $VERSION" \
+                --title "builder-workbench $VERSION" \
                 --notes-file release-notes.md
               ;;
           esac

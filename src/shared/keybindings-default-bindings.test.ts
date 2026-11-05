@@ -463,7 +463,7 @@ describe('keybindings', () => {
     ).toBe(true)
 
     const definition = getKeybindingDefinition('workbench.toggleAnnotationMode')
-    expect(definition?.group).toBe('Workbench')
+    expect(definition?.group).toBe('builder-workbench')
     expect(definition?.scope).toBe('workbench')
     // Why: conflictGroup 'global' makes Settings warn when a rebind shadows
     // global chords instead of silently claiming them.

@@ -112,7 +112,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
           throw new Error(`未在已登记项目中找到引用仓库 ${reference.repository}`)
         }
         if (!source) {
-          throw new Error(`provider ${reference.provider} 尚未接入 Workbench 任务读取`)
+          throw new Error(`provider ${reference.provider} 尚未接入 builder-workbench 任务读取`)
         }
         if (reference.provider === 'github') {
           const item = await deps.lookupGitHubWorkItem({

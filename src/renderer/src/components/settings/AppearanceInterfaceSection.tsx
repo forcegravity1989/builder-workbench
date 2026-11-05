@@ -1,3 +1,4 @@
+import { DESKTOP_PRODUCT_NAME } from '../../../../shared/app-identity'
 import type React from 'react'
 
 import type { GlobalSettings } from '../../../../shared/global-settings-types'
@@ -236,7 +237,8 @@ export function AppearanceInterfaceSection({
                   // both non-obvious from the label alone.
                   description={translate(
                     'auto.components.settings.AppearancePane.b707773a0d',
-                    'When enabled, closing the window keeps Orca running in the system tray instead of quitting.'
+                    'When enabled, closing the window keeps {{product}} running in the system tray instead of quitting.',
+                    { product: DESKTOP_PRODUCT_NAME }
                   )}
                   checked={settings.minimizeToTrayOnClose === true}
                   onChange={() =>

@@ -118,7 +118,7 @@ async function openDetail(
     )
     return
   }
-  throw new Error(`provider ${task.reference.provider} 尚未接入 Workbench 详情打开`)
+  throw new Error(`provider ${task.reference.provider} 尚未接入 builder-workbench 详情打开`)
 }
 
 export function createTaskPort(

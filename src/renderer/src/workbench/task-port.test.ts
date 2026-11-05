@@ -293,7 +293,7 @@ describe('createTaskPort reads', () => {
     expect(read).toEqual({
       kind: 'unavailable',
       reference: { provider: 'gitlab', repository: 'github.com/acme/repo', number: 1 },
-      error: 'provider gitlab 尚未接入 Workbench 任务读取',
+      error: 'provider gitlab 尚未接入 builder-workbench 任务读取',
       readAt: '2026-09-26T00:00:00.000Z'
     })
     const [missing] = await createTaskPort(makeDeps({ repos: () => [] })).listVersion(scope, [

@@ -1,4 +1,4 @@
-export const APP_ICON_OPTIONS = [{ id: 'classic', label: 'Workbench' }] as const
+export const APP_ICON_OPTIONS = [{ id: 'classic', label: 'builder-workbench' }] as const
 
 export type AppIconId = (typeof APP_ICON_OPTIONS)[number]['id']
 

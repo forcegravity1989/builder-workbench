@@ -1,3 +1,4 @@
+import { DESKTOP_PRODUCT_NAME } from '../../../../shared/app-identity'
 import type { SettingsSearchEntry } from './settings-search'
 import { getGeneralEditorSearchEntries } from './general-editor-search'
 import { translate } from '@/i18n/i18n'
@@ -198,7 +199,8 @@ export const getGeneralUpdateSearchEntries = createLocalizedCatalog(() => [
     title: translate('auto.components.settings.general.search.e15af4eb64', 'Check for Updates'),
     description: translate(
       'auto.components.settings.general.search.79ff46776e',
-      'Check for app updates and install a newer Orca version.'
+      'Check for app updates and install a newer {{product}} version.',
+      { product: DESKTOP_PRODUCT_NAME }
     ),
     keywords: [
       ...translateSearchKeyword('auto.components.settings.general.search.f89a94773c', 'update'),

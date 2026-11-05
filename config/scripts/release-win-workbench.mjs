@@ -13,10 +13,10 @@ import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { truncateReleaseBody } from './create-draft-release.mjs'
 
-// electron-builder.config.cjs 的 win artifactName 为 'workbench-windows-setup.${ext}'；latest.yml 是更新清单。
+// electron-builder.config.cjs 的 win artifactName 为 'builder-workbench-windows-setup.${ext}'；latest.yml 是更新清单。
 export const WORKBENCH_RELEASE_ASSETS = [
-  'workbench-windows-setup.exe',
-  'workbench-windows-setup.exe.blockmap',
+  'builder-workbench-windows-setup.exe',
+  'builder-workbench-windows-setup.exe.blockmap',
   'latest.yml'
 ]
 
@@ -243,7 +243,7 @@ export async function runWorkbenchRelease({
   const args = parseReleaseArgs(argv)
   const version = resolveReleaseVersion({ explicitVersion: args.version })
   const tag = deriveReleaseTag(version)
-  const title = `Workbench ${version}`
+  const title = `builder-workbench ${version}`
   const distDir = resolve(cwd, args.distDir)
   const notesFile = args.notesFile ? resolve(cwd, args.notesFile) : null
 

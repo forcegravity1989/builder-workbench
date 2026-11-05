@@ -23,7 +23,7 @@
 ## 硬规则
 
 1. **人话**：面向升级试用者与领导，技术细节与内部编号不进正文。
-2. **只有【这版有什么变化】一节**：节名固定 `### 这版有什么变化`，不改、不加节、不拆节；开头不加版本定位段（Release 标题已带 `Workbench <version>`）。
+2. **只有【这版有什么变化】一节**：节名固定 `### 这版有什么变化`，不改、不加节、不拆节；开头不加版本定位段（Release 标题已带 `builder-workbench <version>`）。
 3. **不是罗列**：不粘 `--generate-notes` 的 PR 清单，不逐条列 issue 号，不堆文件名/编号；按**功能**组织。
 4. **诚实边界**：没做到或部分做到的变化写清「没做到 + 原因 + 下一步」；缺数如实写、不填 0、不冒充绿（参照 [`evidence-and-follow-up.md`](../../../../standard/skills/version-acceptance/references/evidence-and-follow-up.md)、四铁律）。
 

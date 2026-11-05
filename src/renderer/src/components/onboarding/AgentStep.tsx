@@ -127,7 +127,7 @@ export function AgentStep({
             {isWorkbenchShell()
               ? translate(
                   'auto.components.onboarding.AgentStep.0e00a37e49',
-                  "isn't on your PATH yet. Workbench will set it as your default and you can install it any time."
+                  "isn't on your PATH yet. builder-workbench will set it as your default and you can install it any time."
                 )
               : translate(
                   'auto.components.onboarding.AgentStep.69af7e9c1c',

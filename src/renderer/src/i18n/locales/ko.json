@@ -1,8 +1,8 @@
 {
   "app": {
     "recoverableError": {
-      "rootTitle": "Orca에 렌더러 오류가 발생했습니다.",
-      "rootDescription": "앱 셸에서 렌더링을 완료할 수 없습니다. 다시 마운트해 보거나 오류가 지속되면 Orca를 다시 시작하세요.",
+      "rootTitle": "{{product}}에 렌더러 오류가 발생했습니다.",
+      "rootDescription": "앱 셸에서 렌더링을 완료할 수 없습니다. 다시 마운트해 보거나 오류가 지속되면 {{product}}를 다시 시작하세요.",
       "webTitle": "Orca 웹에 렌더러 오류가 발생했습니다.",
       "webDescription": "웹 클라이언트를 다시 시도하거나 페어링된 런타임에 다시 연결하세요."
     }
@@ -46,7 +46,9 @@
     "checkForUpdates": "업데이트 확인...",
     "settings": "설정",
     "exploreOrca": "Orca 둘러보기",
+    "exploreWorkbench": "builder-workbench 둘러보기",
     "gettingStarted": "Orca 시작하기",
+    "gettingStartedWorkbench": "builder-workbench 시작하기",
     "reportCrash": "크래시 신고...",
     "file": "파일",
     "exit": "종료",
@@ -73,9 +75,11 @@
   },
   "tray": {
     "openOrca": "Orca 열기",
+    "openWorkbench": "builder-workbench 열기",
     "quit": "종료",
     "minimizeNotice": {
-      "body": "Orca가 시스템 트레이에서 계속 실행 중입니다"
+      "body": "Orca가 시스템 트레이에서 계속 실행 중입니다",
+      "workbenchBody": "builder-workbench가 시스템 트레이에서 계속 실행 중입니다"
     },
     "activityWaitingSuffix": "activity waiting"
   },
@@ -636,7 +640,7 @@
         "notification": {
           "fallback": {
             "de50bef680": "macOS가 Orca 알림을 차단하고 있습니다",
-            "8d4c07e6b5": "macOS가 Workbench 알림을 차단하고 있습니다"
+            "8d4c07e6b5": "macOS가 builder-workbench 알림을 차단하고 있습니다"
           }
         }
       },
@@ -4831,7 +4835,7 @@
           "addLocation": "위치 추가",
           "worktreeRoot": "워크트리 루트",
           "add": "추가",
-          "rootHelp": "Orca는 이 폴더 아래의 워크트리를 인식합니다.",
+          "rootHelp": "{{product}}는 이 폴더 아래의 워크트리를 인식합니다.",
           "visibility": "{{value0}} 표시 설정",
           "show": "표시",
           "hide": "숨김",
@@ -5548,7 +5552,7 @@
           "3057983501": "할당되지 않음",
           "872af9556e": "시스템 트레이",
           "2edf606c46": "닫을 때 트레이로 최소화",
-          "b707773a0d": "활성화하면 창을 닫아도 Orca가 종료되지 않고 시스템 트레이에서 계속 실행됩니다.",
+          "b707773a0d": "활성화하면 창을 닫아도 {{product}}가 종료되지 않고 시스템 트레이에서 계속 실행됩니다.",
           "ca1590d42f": "앱 아이콘",
           "fa882a3e6b": "왼쪽 사이드바 상단에 자동화 버튼을 표시합니다.",
           "511f270ebb": "자동화 버튼 표시",
@@ -5774,7 +5778,7 @@
           "5dae812f50": "새로고침",
           "52e640f3a0": "CLI 상태 새로 고침",
           "38edbb5721": "셸 명령",
-          "6930feda9e": "terminals에서 Orca를 사용하여 앱을 열고, 작업 트리를 관리하고, Orca terminals과 상호 작용할 수 있습니다.",
+          "6930feda9e": "orca 명령으로 {{product}} 앱을 열고 워크트리를 관리하거나 앱의 터미널을 사용할 수 있습니다.",
           "c5c0f2641d": "Orca CLI",
           "d77352f2df": "PATH에서 `{{value0}}`을(를) 제거하지 못했습니다.",
           "af5540930c": "PATH에서 `{{value0}}`을 제거했습니다.",
@@ -6056,7 +6060,7 @@
           "42717918f4": "업데이트 설치(",
           "02dc082e70": "업데이트 다운로드를 시작할 수 없습니다.",
           "e1a647adc5": "업데이트 확인",
-          "ceb579abaf": "앱 업데이트를 확인하고 최신 Orca 버전을 설치하세요.",
+          "ceb579abaf": "앱 업데이트를 확인하고 최신 {{product}} 버전을 설치하세요.",
           "d91ebfb87e": "현재 버전: {{value0}}",
           "f2b1ccc12a": "업데이트",
           "bd79d412f0": "업데이트 확인에 실패했습니다. {{value0}}",
@@ -7821,7 +7825,7 @@
               "description": "왼쪽 사이드바를 terminal에 맞추거나 기본값을 유지하거나 은은한 색조를 적용합니다."
             },
             "9a115966d3": "닫을 때 트레이로 최소화",
-            "4d5b9427b5": "활성화하면 창을 닫아도 Orca가 종료되지 않고 시스템 트레이에서 계속 실행됩니다.",
+            "4d5b9427b5": "활성화하면 창을 닫아도 {{product}}가 종료되지 않고 시스템 트레이에서 계속 실행됩니다.",
             "workspaceCardLayout": {
               "title": "워크스페이스 카드 레이아웃",
               "description": "워크스페이스 카드는 컴팩트 또는 상세 레이아웃을 사용할 수 있습니다.",
@@ -8204,7 +8208,7 @@
             "c9d8c1ce66": "릴리스 노트",
             "9e86ccd05c": "버전",
             "f89a94773c": "업데이트",
-            "79ff46776e": "앱 업데이트를 확인하고 최신 Orca 버전을 설치하세요.",
+            "79ff46776e": "앱 업데이트를 확인하고 최신 {{product}} 버전을 설치하세요.",
             "e15af4eb64": "업데이트 확인",
             "6382fe9724": "npx",
             "baa263d6d8": "에이전트",
@@ -11520,7 +11524,7 @@
           "yoloPermissionsLabel": "Yolo / 권한 확인 위험하게 건너뛰기",
           "yoloPermissionsInfo": "Agent 권한 정보",
           "yoloPermissionsTooltip": "중단을 줄이기 위해 agents 권한 확인을 건너뜁니다.",
-          "0e00a37e49": "아직 PATH에 없습니다. Workbench가 기본값으로 설정합니다. 나중에 언제든 설치할 수 있습니다."
+          "0e00a37e49": "아직 PATH에 없습니다. builder-workbench가 기본값으로 설정합니다. 나중에 언제든 설치할 수 있습니다."
         },
         "FeatureSetupInlineTerminal": {
           "789b59936e": "Enter를 눌러 명령을 실행하고 요청 시 npx를 확인합니다. 나중에 설정에서 설정할 수도 있습니다.",
@@ -11552,9 +11556,9 @@
           "0b4a7d23ab": "로그인 중",
           "a74c6d6b18": "설치되지 않은",
           "c773943637": "CodeHub 이슈 또는 병합 요청에서 워크스페이스를 시작합니다. 제목과 컨텍스트가 미리 채워집니다",
-          "6d4596cdf7": "Workbench를 벗어나지 않고 작업 보기에서 CodeHub 이슈와 병합 요청을 탐색합니다",
+          "6d4596cdf7": "builder-workbench를 벗어나지 않고 작업 보기에서 CodeHub 이슈와 병합 요청을 탐색합니다",
           "c1ee44aa7a": "GitHub도 지원됩니다 — GitHub CLI로 이슈, 풀 리퀘스트, CI 검사를 처리하세요",
-          "09df324e47": "Workbench를 벗어나지 않고 풀 리퀘스트 또는 병합 요청을 읽고, 댓글을 달고, 병합합니다",
+          "09df324e47": "builder-workbench를 벗어나지 않고 풀 리퀘스트 또는 병합 요청을 읽고, 댓글을 달고, 병합합니다",
           "172af1b2c8": "CodeHub",
           "5b0e29617c": "이슈 및 병합 요청.",
           "10e495afa8": "CodeHub CLI 설치",
@@ -11585,9 +11589,9 @@
           "4f6a1da718": "시스템 설정 열기",
           "90b5d2e363": "macOS가 Orca 알림을 전달하지 않고 있습니다",
           "2c47f5465f": "시스템 설정에서 Orca에 대한 알림 허용을 켜세요. 활성화되면 이 단계가 자동으로 업데이트됩니다.",
-          "72256f6d85": "데스크톱 알림이 전달된 후 Workbench가 재생하는 알림음을 선택하세요.",
-          "3f8a21c6d0": "Workbench 알림 허용",
-          "b7e94d02a1": "macOS가 Workbench 알림을 전달하지 않습니다"
+          "72256f6d85": "데스크톱 알림이 전달된 후 builder-workbench가 재생하는 알림음을 선택하세요.",
+          "3f8a21c6d0": "builder-workbench 알림 허용",
+          "b7e94d02a1": "macOS가 builder-workbench 알림을 전달하지 않습니다"
         },
         "OnboardingFlow": {
           "1130745139": "작업 소스 설정",
@@ -11610,11 +11614,11 @@
           "c47e1bd149": "agent",
           "windowsTerminalTitle": "Windows terminal 기본값 설정",
           "windowsTerminalSubtitle": "새 창에서 사용할 기본 셸과 terminal에서 오른쪽 클릭이 동작하는 방식을 선택하세요.",
-          "78d1d003d2": "Workbench",
-          "685d4ffbeb": "Workbench에 오신 것을 환영합니다",
-          "c64d33bfb8": "Workbench 온보딩",
-          "43b8463d5c": "Workbench는 모든 CLI 에이전트와 함께 작동합니다. 가장 자주 사용할 것을 선택하세요. 언제든지 변경할 수 있습니다.",
-          "54fbfde99e": "에이전트가 작업을 마치거나 도움이 필요할 때 Workbench가 알려드립니다.",
+          "78d1d003d2": "builder-workbench",
+          "685d4ffbeb": "builder-workbench에 오신 것을 환영합니다",
+          "c64d33bfb8": "builder-workbench 온보딩",
+          "43b8463d5c": "builder-workbench는 모든 CLI 에이전트와 함께 작동합니다. 가장 자주 사용할 것을 선택하세요. 언제든지 변경할 수 있습니다.",
+          "54fbfde99e": "에이전트가 작업을 마치거나 도움이 필요할 때 builder-workbench가 알려드립니다.",
           "9977a23fbe": "필요한 CLI를 설치하세요. CodeHub는 이슈와 병합 요청을, GitHub은 이슈와 풀 리퀘스트를 담당합니다. 둘 다 선택 사항입니다."
         },
         "OnboardingFooter": {
@@ -11684,7 +11688,7 @@
           "windowsDefault": "Windows 기본값",
           "rightClickBehavior": "오른쪽 클릭 동작",
           "rightClickBehaviorDescription": "Windows에서 익숙한 terminal 마우스 동작을 선택하세요.",
-          "184e11638a": "Workbench가 새 Windows 터미널 창에서 열 셸을 선택하세요."
+          "184e11638a": "builder-workbench가 새 Windows 터미널 창에서 열 셸을 선택하세요."
         },
         "mac": {
           "notification": {
@@ -11693,7 +11697,7 @@
                 "f696515944": "macOS 대화 상자에서 허용을 클릭하세요.",
                 "3d18cf71f9": "자동으로 업데이트됩니다.",
                 "721d2bedb6": "시스템 설정에서 Orca에 대한 알림 허용을 켜세요.",
-                "c25d81f9e3": "시스템 설정에서 Workbench 알림 허용을 켜세요."
+                "c25d81f9e3": "시스템 설정에서 builder-workbench 알림 허용을 켜세요."
               }
             }
           }
@@ -14748,6 +14752,6 @@
     }
   },
   "brand": {
-    "workbench": "Workbench"
+    "workbench": "builder-workbench"
   }
 }

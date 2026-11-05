@@ -359,6 +359,6 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   })
   await workbenchPage.locator('#shortcut-filter-search').fill('批注')
   await expect(workbenchPage.getByText('Toggle Board Annotation Mode')).toBeVisible()
-  await expect(workbenchPage.getByRole('heading', { name: 'Workbench' })).toBeVisible()
+  await expect(workbenchPage.getByRole('heading', { name: 'builder-workbench' })).toBeVisible()
   await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'final')
 })

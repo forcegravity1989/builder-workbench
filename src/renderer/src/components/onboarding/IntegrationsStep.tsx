@@ -252,7 +252,8 @@ const WORKBENCH_CAPABILITIES = [
   },
   {
     key: 'auto.components.onboarding.IntegrationsStep.6d4596cdf7',
-    fallback: 'Browse CodeHub issues and merge requests in the Tasks view without leaving Workbench'
+    fallback:
+      'Browse CodeHub issues and merge requests in the Tasks view without leaving builder-workbench'
   },
   {
     key: 'auto.components.onboarding.IntegrationsStep.c1ee44aa7a',
@@ -261,7 +262,7 @@ const WORKBENCH_CAPABILITIES = [
   {
     key: 'auto.components.onboarding.IntegrationsStep.09df324e47',
     fallback:
-      'Read, comment on, and merge pull requests or merge requests without leaving Workbench'
+      'Read, comment on, and merge pull requests or merge requests without leaving builder-workbench'
   }
 ] as const
 

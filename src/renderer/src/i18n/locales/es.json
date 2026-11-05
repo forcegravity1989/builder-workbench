@@ -1,8 +1,8 @@
 {
   "app": {
     "recoverableError": {
-      "rootTitle": "Orca tuvo un error de renderizado.",
-      "rootDescription": "El shell de la aplicación no pudo terminar de renderizarse. Vuelva a intentar volver a montarlo o reinicie Orca si el error persiste.",
+      "rootTitle": "{{product}} tuvo un error de renderizado.",
+      "rootDescription": "El shell de la aplicación no pudo terminar de renderizarse. Vuelva a intentar volver a montarlo o reinicie {{product}} si el error persiste.",
       "webTitle": "Orca web tuvo un error de renderizado.",
       "webDescription": "Vuelva a cargar el cliente web o vuelva a conectarse al servidor Orca vinculado."
     }
@@ -46,7 +46,9 @@
     "checkForUpdates": "Buscar actualizaciones...",
     "settings": "Ajustes",
     "exploreOrca": "Explorar Orca",
+    "exploreWorkbench": "Explorar builder-workbench",
     "gettingStarted": "Primeros pasos con Orca",
+    "gettingStartedWorkbench": "Primeros pasos con builder-workbench",
     "reportCrash": "Informar fallo...",
     "file": "Archivo",
     "exit": "Salir",
@@ -73,9 +75,11 @@
   },
   "tray": {
     "openOrca": "Abrir Orca",
+    "openWorkbench": "Abrir builder-workbench",
     "quit": "Salir",
     "minimizeNotice": {
-      "body": "Orca sigue ejecutándose en la bandeja del sistema"
+      "body": "Orca sigue ejecutándose en la bandeja del sistema",
+      "workbenchBody": "builder-workbench sigue ejecutándose en la bandeja del sistema"
     },
     "activityWaitingSuffix": "activity waiting"
   },
@@ -633,7 +637,7 @@
         "notification": {
           "fallback": {
             "de50bef680": "macOS está bloqueando las notificaciones de Orca",
-            "8d4c07e6b5": "macOS está bloqueando las notificaciones de Workbench"
+            "8d4c07e6b5": "macOS está bloqueando las notificaciones de builder-workbench"
           }
         }
       },
@@ -4845,7 +4849,7 @@
           "addLocation": "Añadir ubicación",
           "worktreeRoot": "Raíz de worktrees",
           "add": "Añadir",
-          "rootHelp": "Orca reconocerá los worktrees dentro de esta carpeta.",
+          "rootHelp": "{{product}} reconocerá los worktrees dentro de esta carpeta.",
           "visibility": "Visibilidad de {{value0}}",
           "show": "Mostrar",
           "hide": "Ocultar",
@@ -5597,7 +5601,7 @@
           "workspaceCardLayoutGuidance": "Gestionado desde la barra lateral del espacio de trabajo.",
           "872af9556e": "Bandeja del sistema",
           "2edf606c46": "Minimizar a la bandeja al cerrar",
-          "b707773a0d": "Cuando está activado, cerrar la ventana mantiene Orca en ejecución en la bandeja del sistema en lugar de salir.",
+          "b707773a0d": "Cuando está activado, cerrar la ventana mantiene {{product}} en ejecución en la bandeja del sistema en lugar de salir.",
           "interfaceDefaultFont": "Fuente predeterminada",
           "terminalDefaultFont": "Fuente predeterminada",
           "interfaceTitle": "Interfaz",
@@ -5784,7 +5788,7 @@
           "5dae812f50": "Actualizar",
           "52e640f3a0": "Actualizar estado de la CLI",
           "38edbb5721": "Comando de shell",
-          "6930feda9e": "Usa Orca desde tu terminal para abrir la app, administrar worktrees e interactuar con terminales de Orca.",
+          "6930feda9e": "Usa el comando orca para abrir {{product}}, gestionar los árboles de trabajo e interactuar con sus terminales.",
           "c5c0f2641d": "Orca CLI",
           "d77352f2df": "No se pudo eliminar `{{value0}}` de PATH.",
           "af5540930c": "Se eliminó `{{value0}}` de PATH.",
@@ -6066,7 +6070,7 @@
           "42717918f4": "Instalar actualización (",
           "02dc082e70": "No se pudo iniciar la descarga de la actualización.",
           "e1a647adc5": "Buscar actualizaciones",
-          "ceb579abaf": "Busca actualizaciones de la app e instala una versión más reciente de Orca.",
+          "ceb579abaf": "Busca actualizaciones de la app e instala una versión más reciente de {{product}}.",
           "d91ebfb87e": "Versión actual: {{value0}}",
           "f2b1ccc12a": "Actualizaciones",
           "bd79d412f0": "No se pudo buscar actualizaciones. {{value0}}",
@@ -7842,7 +7846,7 @@
               "detailed": "detallado"
             },
             "9a115966d3": "Minimizar a la bandeja al cerrar",
-            "4d5b9427b5": "Cuando está activado, cerrar la ventana mantiene Orca en ejecución en la bandeja del sistema en lugar de salir.",
+            "4d5b9427b5": "Cuando está activado, cerrar la ventana mantiene {{product}} en ejecución en la bandeja del sistema en lugar de salir.",
             "showPinnedWorktreesInGroups": {
               "title": "Mostrar también los worktrees fijados en sus listas originales",
               "description": "Los worktrees fijados permanecen en Fijados y también aparecen en Todos, Proyecto, Estado y PR."
@@ -8214,7 +8218,7 @@
             "c9d8c1ce66": "notas de lanzamiento",
             "9e86ccd05c": "versión",
             "f89a94773c": "actualizar",
-            "79ff46776e": "Busque actualizaciones de la aplicación e instale una versión más reciente de Orca.",
+            "79ff46776e": "Busque actualizaciones de la aplicación e instale una versión más reciente de {{product}}.",
             "e15af4eb64": "Buscar actualizaciones",
             "6382fe9724": "npx",
             "baa263d6d8": "agentes",
@@ -11477,7 +11481,7 @@
           "yoloPermissionsLabel": "Yolo / Omitir permisos de forma peligrosa",
           "yoloPermissionsInfo": "Información de permisos del agente",
           "yoloPermissionsTooltip": "Omite las comprobaciones de permisos de los agentes para reducir interrupciones",
-          "0e00a37e49": "todavía no está en tu PATH. Workbench lo establecerá como predeterminado y podrás instalarlo cuando quieras."
+          "0e00a37e49": "todavía no está en tu PATH. builder-workbench lo establecerá como predeterminado y podrás instalarlo cuando quieras."
         },
         "FeatureSetupInlineTerminal": {
           "789b59936e": "Pulsa Enter para ejecutar el comando y confirma npx si se te solicita. También puedes configurarlo más tarde en Configuración.",
@@ -11509,9 +11513,9 @@
           "0b4a7d23ab": "Iniciando sesión",
           "a74c6d6b18": "no instalado",
           "c773943637": "Inicia un espacio de trabajo desde cualquier incidencia o solicitud de fusión de CodeHub, con el título y el contexto ya rellenados",
-          "6d4596cdf7": "Explora incidencias y solicitudes de fusión de CodeHub en la vista de tareas sin salir de Workbench",
+          "6d4596cdf7": "Explora incidencias y solicitudes de fusión de CodeHub en la vista de tareas sin salir de builder-workbench",
           "c1ee44aa7a": "GitHub también funciona: incidencias, solicitudes de extracción y comprobaciones de CI mediante la CLI de GitHub",
-          "09df324e47": "Lee, comenta y fusiona solicitudes de extracción o de fusión sin salir de Workbench",
+          "09df324e47": "Lee, comenta y fusiona solicitudes de extracción o de fusión sin salir de builder-workbench",
           "172af1b2c8": "CodeHub",
           "5b0e29617c": "Incidencias y solicitudes de fusión.",
           "10e495afa8": "Instalar la CLI de CodeHub",
@@ -11542,9 +11546,9 @@
           "4f6a1da718": "Abrir Configuración del sistema",
           "90b5d2e363": "macOS no está entregando las notificaciones de Orca",
           "2c47f5465f": "Activa Permitir notificaciones para Orca en Configuración del sistema. Este paso se actualizará automáticamente cuando estén activadas.",
-          "72256f6d85": "Elige la alerta que reproduce Workbench tras entregar una notificación de escritorio.",
-          "3f8a21c6d0": "Permitir notificaciones de Workbench",
-          "b7e94d02a1": "macOS no está entregando las notificaciones de Workbench"
+          "72256f6d85": "Elige la alerta que reproduce builder-workbench tras entregar una notificación de escritorio.",
+          "3f8a21c6d0": "Permitir notificaciones de builder-workbench",
+          "b7e94d02a1": "macOS no está entregando las notificaciones de builder-workbench"
         },
         "OnboardingFlow": {
           "1130745139": "Configurar las fuentes de tareas",
@@ -11567,11 +11571,11 @@
           "c47e1bd149": "agente",
           "windowsTerminalTitle": "Configura los valores predeterminados de la terminal de Windows",
           "windowsTerminalSubtitle": "Elige la Shell predeterminada para los paneles nuevos y cómo se comporta el clic derecho en la terminal.",
-          "78d1d003d2": "Workbench",
-          "685d4ffbeb": "Te damos la bienvenida a Workbench",
-          "c64d33bfb8": "Incorporación a Workbench",
-          "43b8463d5c": "Workbench funciona con todos los agentes de CLI. Elige el que más vayas a usar. Puedes cambiarlo en cualquier momento.",
-          "54fbfde99e": "Workbench te avisará cuando los agentes terminen o necesiten ayuda.",
+          "78d1d003d2": "builder-workbench",
+          "685d4ffbeb": "Te damos la bienvenida a builder-workbench",
+          "c64d33bfb8": "Incorporación a builder-workbench",
+          "43b8463d5c": "builder-workbench funciona con todos los agentes de CLI. Elige el que más vayas a usar. Puedes cambiarlo en cualquier momento.",
+          "54fbfde99e": "builder-workbench te avisará cuando los agentes terminen o necesiten ayuda.",
           "9977a23fbe": "Instala las CLI que necesites: CodeHub para incidencias y solicitudes de fusión, GitHub para incidencias y solicitudes de extracción. Ambas son opcionales."
         },
         "OnboardingFooter": {
@@ -11641,7 +11645,7 @@
           "windowsDefault": "Predeterminada de Windows",
           "rightClickBehavior": "Comportamiento del clic derecho",
           "rightClickBehaviorDescription": "Elige el comportamiento del ratón en la terminal que coincida con tu memoria muscular de Windows.",
-          "184e11638a": "Elige el shell que Workbench abre para los nuevos paneles de terminal de Windows."
+          "184e11638a": "Elige el shell que builder-workbench abre para los nuevos paneles de terminal de Windows."
         },
         "mac": {
           "notification": {
@@ -11650,7 +11654,7 @@
                 "f696515944": "Haz clic en Permitir en el diálogo de macOS.",
                 "3d18cf71f9": "Se actualizará automáticamente.",
                 "721d2bedb6": "Activa Permitir notificaciones para Orca en Configuración del sistema.",
-                "c25d81f9e3": "Activa Permitir notificaciones de Workbench en Ajustes del Sistema."
+                "c25d81f9e3": "Activa Permitir notificaciones de builder-workbench en Ajustes del Sistema."
               }
             }
           }
@@ -14574,6 +14578,6 @@
     }
   },
   "brand": {
-    "workbench": "Workbench"
+    "workbench": "builder-workbench"
   }
 }

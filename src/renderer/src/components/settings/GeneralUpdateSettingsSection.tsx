@@ -10,6 +10,7 @@ import { translate } from '@/i18n/i18n'
 import { getUpdateCheckClickOptions, getUpdateCheckHint } from '@/lib/update-check-click-options'
 import { GeneralRemoteServerUpdates } from './GeneralRemoteServerUpdates'
 import { ReleaseChannelSection } from './ReleaseChannelSection'
+import { DESKTOP_PRODUCT_NAME } from '../../../../shared/app-identity'
 import { getReleaseNotesUrlForVersion } from '../../../../shared/release-channel'
 
 export function GeneralUpdateSettingsSection(): React.JSX.Element {
@@ -85,7 +86,8 @@ export function GeneralUpdateSettingsSection(): React.JSX.Element {
         )}
         description={translate(
           'auto.components.settings.GeneralUpdateSettingsSection.ceb579abaf',
-          'Check for app updates and install a newer Orca version.'
+          'Check for app updates and install a newer {{product}} version.',
+          { product: DESKTOP_PRODUCT_NAME }
         )}
         keywords={['update', 'version', 'release notes', 'download']}
         className="space-y-3"
@@ -171,7 +173,8 @@ export function GeneralUpdateSettingsSection(): React.JSX.Element {
               {updateStatus.externallyManaged
                 ? translate(
                     'auto.components.settings.GeneralUpdateSettingsSection.e3b9d21c07',
-                    'is available. Update Orca through your system package manager — Orca cannot install this release itself.'
+                    'is available. Update {{product}} through your system package manager — {{product}} cannot install this release itself.',
+                    { product: DESKTOP_PRODUCT_NAME }
                   )
                 : translate(
                     'auto.components.settings.GeneralUpdateSettingsSection.8311da27ba',

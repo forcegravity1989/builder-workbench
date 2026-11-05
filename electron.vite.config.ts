@@ -1,3 +1,4 @@
+import { WORKBENCH_APP_NAME } from './src/shared/app-identity'
 import { isBuiltin } from 'node:module'
 import { resolve } from 'node:path'
 import { defineConfig, type UserConfig } from 'electron-vite'
@@ -311,6 +312,9 @@ export const electronViteConfig: UserConfig = {
       }
     },
     define: {
+      'import.meta.env.VITE_DESKTOP_PRODUCT_NAME': JSON.stringify(
+        workbenchShellEnabled ? WORKBENCH_APP_NAME : 'Orca'
+      ),
       'import.meta.env.VITE_WORKBENCH_SHELL': VITE_WORKBENCH_SHELL_LITERAL,
       // Why: shared/release-channel resolves the update-source repo at import time
       // and is bundled into the renderer too (update card / settings link into it),

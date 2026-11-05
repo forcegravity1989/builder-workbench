@@ -1,3 +1,4 @@
+import { DESKTOP_PRODUCT_NAME, isWorkbenchProduct } from './app-identity'
 import { compareAppVersions, isValidAppVersion } from './app-version'
 
 export type ReleaseChannel = 'stable' | 'rc' | 'hourly' | 'daily' | 'adhoc'
@@ -18,28 +19,10 @@ export const RELEASE_CHANNEL_LABELS: Readonly<Record<ReleaseChannel, string>> = 
   adhoc: 'Adhoc'
 }
 
-/** Compile-time flag from electron.vite `define` (main and renderer bundles). */
-declare const WORKBENCH_SHELL: string | undefined
-
 export const WORKBENCH_RELEASE_REPO = 'forcegravity1989/builder-workbench'
 
-/** Same identity sources as main/startup/workbench-product.ts, duplicated here
- *  because shared code cannot import from main and this module is evaluated in
- *  the renderer bundle too (update card / settings link straight into it). */
-function isWorkbenchUpdateIdentity(): boolean {
-  if (
-    typeof process !== 'undefined' &&
-    (process.env?.ORCA_PRODUCT_NAME === 'Workbench' || process.env?.WORKBENCH_SHELL === '1')
-  ) {
-    return true
-  }
-  // The build constant is absent in plain Node entry points and source-level tests.
-  // oxlint-disable-next-line unicorn/no-typeof-undefined
-  return typeof WORKBENCH_SHELL !== 'undefined' && WORKBENCH_SHELL === '1'
-}
-
-const workbenchUpdateIdentity = isWorkbenchUpdateIdentity()
-export const UPDATE_PRODUCT_NAME = workbenchUpdateIdentity ? 'Workbench' : 'Orca'
+const workbenchUpdateIdentity = isWorkbenchProduct()
+export const UPDATE_PRODUCT_NAME = DESKTOP_PRODUCT_NAME
 
 /** Dev builds live in their own repos so their tags never enter the main
  *  releases atom feed, which only exposes the 10 newest entries — 24 hourly

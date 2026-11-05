@@ -5,7 +5,7 @@ export const KEYBINDING_DEFINITION_CORE_2: readonly KeybindingDefinition[] = [
   {
     id: 'workbench.toggleAnnotationMode',
     title: 'Toggle Board Annotation Mode',
-    group: 'Workbench',
+    group: 'builder-workbench',
     scope: 'workbench',
     // Why: board-local listener, not a native handler; conflictGroup 'global' makes Settings warn when a user rebind shadows global chords.
     conflictGroup: 'global',

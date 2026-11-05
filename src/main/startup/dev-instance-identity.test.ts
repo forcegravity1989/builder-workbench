@@ -15,8 +15,8 @@ describe('dev-instance-identity', () => {
 
   it('uses a Workbench identity for packaged Workbench builds', () => {
     expect(getDevInstanceIdentity(false, { ORCA_PRODUCT_NAME: 'Workbench' })).toMatchObject({
-      name: 'Workbench',
-      appName: 'Workbench',
+      name: 'builder-workbench',
+      appName: 'builder-workbench',
       isDev: false,
       appUserModelId: 'com.stablyai.workbench.dev'
     })

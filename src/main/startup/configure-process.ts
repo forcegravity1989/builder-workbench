@@ -214,9 +214,7 @@ export function configureDevUserDataPath(isDev: boolean): void {
   }
 
   if (!isDev) {
-    // Why: Workbench.app still ships package.json name "orca"; without a pin,
-    // userData shares Application Support/orca and the single-instance lock
-    // activates the installed Orca instead of launching Workbench.
+    // Keep installed profiles and their single-instance lock across display-name changes.
     if (isWorkbenchProduct()) {
       app.setPath('userData', join(app.getPath('appData'), WORKBENCH_USER_DATA_DIR_NAME))
     }

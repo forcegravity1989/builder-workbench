@@ -1,8 +1,8 @@
 {
   "app": {
     "recoverableError": {
-      "rootTitle": "Orca 遇到渲染器错误。",
-      "rootDescription": "应用 shell 无法完成渲染。重试以重新挂载，如果错误仍然存在，请重新启动 Orca。",
+      "rootTitle": "{{product}} 遇到渲染器错误。",
+      "rootDescription": "应用 shell 无法完成渲染。重试以重新挂载，如果错误仍然存在，请重新启动 {{product}}。",
       "webTitle": "Orca Web 遇到渲染器错误。",
       "webDescription": "重试 Web 客户端或重新连接到配对的运行时。"
     }
@@ -46,7 +46,9 @@
     "checkForUpdates": "检查更新...",
     "settings": "设置",
     "exploreOrca": "探索 Orca",
+    "exploreWorkbench": "探索 builder-workbench",
     "gettingStarted": "Orca 入门",
+    "gettingStartedWorkbench": "builder-workbench 入门",
     "reportCrash": "发送崩溃报告...",
     "file": "文件",
     "exit": "退出",
@@ -73,9 +75,11 @@
   },
   "tray": {
     "openOrca": "打开 Orca",
+    "openWorkbench": "打开 builder-workbench",
     "quit": "退出",
     "minimizeNotice": {
-      "body": "Orca 仍在系统托盘中运行"
+      "body": "Orca 仍在系统托盘中运行",
+      "workbenchBody": "builder-workbench 仍在系统托盘中运行"
     },
     "activityWaitingSuffix": "等待活动"
   },
@@ -636,7 +640,7 @@
         "notification": {
           "fallback": {
             "de50bef680": "macOS 正在阻止 Orca 通知",
-            "8d4c07e6b5": "macOS 正在拦截 Workbench 通知"
+            "8d4c07e6b5": "macOS 正在拦截 builder-workbench 通知"
           }
         }
       },
@@ -4884,7 +4888,7 @@
           "addLocation": "添加位置",
           "worktreeRoot": "工作树根目录",
           "add": "添加",
-          "rootHelp": "Orca 会识别此文件夹下的工作树。",
+          "rootHelp": "{{product}} 会识别此文件夹下的工作树。",
           "visibility": "{{value0}} 的可见性",
           "show": "显示",
           "hide": "隐藏",
@@ -5658,7 +5662,7 @@
           "workspaceCardLayoutGuidance": "从工作区侧边栏管理。",
           "872af9556e": "系统托盘",
           "2edf606c46": "关闭时最小化到托盘",
-          "b707773a0d": "启用后，关闭窗口会让 Orca 继续在系统托盘中运行，而不是退出。",
+          "b707773a0d": "启用后，关闭窗口会让 {{product}} 继续在系统托盘中运行，而不是退出。",
           "interfaceDefaultFont": "默认字体",
           "terminalDefaultFont": "默认字体",
           "interfaceTitle": "界面",
@@ -5845,7 +5849,7 @@
           "5dae812f50": "刷新",
           "52e640f3a0": "刷新 CLI 状态",
           "38edbb5721": "Shell 命令",
-          "6930feda9e": "从终端使用 Orca 打开应用程序、管理工作树并与 Orca 终端交互。",
+          "6930feda9e": "用 orca 命令打开 {{product}}、管理工作树并与应用内终端交互。",
           "c5c0f2641d": "Orca CLI",
           "d77352f2df": "无法从 PATH 中删除 `{{value0}}`。",
           "af5540930c": "从路径中删除了“{{value0}}”。",
@@ -6127,7 +6131,7 @@
           "42717918f4": "安装更新（",
           "02dc082e70": "无法开始更新下载。",
           "e1a647adc5": "检查更新",
-          "ceb579abaf": "检查应用程序更新并安装较新的 Orca 版本。",
+          "ceb579abaf": "检查应用程序更新并安装较新的 {{product}} 版本。",
           "d91ebfb87e": "当前版本：{{value0}}",
           "f2b1ccc12a": "更新",
           "bd79d412f0": "更新检查失败。 {{value0}}",
@@ -7914,7 +7918,7 @@
               "detailed": "详细"
             },
             "9a115966d3": "关闭时最小化到托盘",
-            "4d5b9427b5": "启用后，关闭窗口会让 Orca 继续在系统托盘中运行，而不是退出。",
+            "4d5b9427b5": "启用后，关闭窗口会让 {{product}} 继续在系统托盘中运行，而不是退出。",
             "showPinnedWorktreesInGroups": {
               "title": "也在原来的列表中显示已固定的工作树",
               "description": "已固定的工作树会保留在 Pinned 中，同时也显示在全部、项目、状态和 PR 中。"
@@ -8286,7 +8290,7 @@
             "c9d8c1ce66": "发行说明",
             "9e86ccd05c": "版本",
             "f89a94773c": "更新",
-            "79ff46776e": "检查应用程序更新并安装较新的 Orca 版本。",
+            "79ff46776e": "检查应用程序更新并安装较新的 {{product}} 版本。",
             "e15af4eb64": "检查更新",
             "6382fe9724": "恩克斯",
             "baa263d6d8": "智能体",
@@ -11572,7 +11576,7 @@
           "yoloPermissionsLabel": "Yolo / 危险地跳过权限检查",
           "yoloPermissionsInfo": "智能体权限信息",
           "yoloPermissionsTooltip": "跳过智能体权限检查，减少打断",
-          "0e00a37e49": "还不在你的 PATH 上。Workbench 会把它设为默认，你可以随时再安装。"
+          "0e00a37e49": "还不在你的 PATH 上。builder-workbench 会把它设为默认，你可以随时再安装。"
         },
         "FeatureSetupInlineTerminal": {
           "789b59936e": "按 Enter 运行命令并在询问时确认 npx。您也可以稍后在“设置”中进行设置。",
@@ -11604,9 +11608,9 @@
           "0b4a7d23ab": "登录",
           "a74c6d6b18": "未安装",
           "c773943637": "从任意 CodeHub 议题或合并请求发起工作区，标题与上下文自动带齐",
-          "6d4596cdf7": "在任务视图里浏览 CodeHub 议题与合并请求，无需离开 Workbench",
+          "6d4596cdf7": "在任务视图里浏览 CodeHub 议题与合并请求，无需离开 builder-workbench",
           "c1ee44aa7a": "GitHub 同样支持——通过 GitHub CLI 处理议题、拉取请求与 CI 检查",
-          "09df324e47": "阅读、评论并合并拉取请求或合并请求，无需离开 Workbench",
+          "09df324e47": "阅读、评论并合并拉取请求或合并请求，无需离开 builder-workbench",
           "172af1b2c8": "CodeHub",
           "5b0e29617c": "议题与合并请求。",
           "10e495afa8": "安装 CodeHub CLI",
@@ -11637,9 +11641,9 @@
           "4f6a1da718": "打开系统设置",
           "90b5d2e363": "macOS 未送达 Orca 的通知",
           "2c47f5465f": "在系统设置中启用 Orca 的允许通知。启用后此步骤会自动更新。",
-          "72256f6d85": "选择桌面通知送达后 Workbench 播放的提示音。",
-          "3f8a21c6d0": "允许 Workbench 通知",
-          "b7e94d02a1": "macOS 未送达 Workbench 通知"
+          "72256f6d85": "选择桌面通知送达后 builder-workbench 播放的提示音。",
+          "3f8a21c6d0": "允许 builder-workbench 通知",
+          "b7e94d02a1": "macOS 未送达 builder-workbench 通知"
         },
         "OnboardingFlow": {
           "1130745139": "设置任务源",
@@ -11662,11 +11666,11 @@
           "c47e1bd149": "智能体",
           "windowsTerminalTitle": "设置 Windows 终端默认值",
           "windowsTerminalSubtitle": "为新面板选择默认 Shell，以及终端中右键单击的行为。",
-          "78d1d003d2": "Workbench",
-          "685d4ffbeb": "欢迎使用 Workbench",
-          "c64d33bfb8": "Workbench 新手引导",
-          "43b8463d5c": "Workbench 兼容所有 CLI 智能体。选一个你最常用的，随时可以更换。",
-          "54fbfde99e": "当智能体完成任务或需要帮助时，Workbench 会通知你。",
+          "78d1d003d2": "builder-workbench",
+          "685d4ffbeb": "欢迎使用 builder-workbench",
+          "c64d33bfb8": "builder-workbench 新手引导",
+          "43b8463d5c": "builder-workbench 兼容所有 CLI 智能体。选一个你最常用的，随时可以更换。",
+          "54fbfde99e": "当智能体完成任务或需要帮助时，builder-workbench 会通知你。",
           "9977a23fbe": "按需安装 CLI——CodeHub 管议题与合并请求，GitHub 管议题与拉取请求。两者都是可选的。"
         },
         "OnboardingFooter": {
@@ -11736,7 +11740,7 @@
           "windowsDefault": "Windows 默认值",
           "rightClickBehavior": "右键单击行为",
           "rightClickBehaviorDescription": "选择符合你在 Windows 上使用习惯的终端鼠标行为。",
-          "184e11638a": "选择 Workbench 为新 Windows 终端面板打开的 shell。"
+          "184e11638a": "选择 builder-workbench 为新 Windows 终端面板打开的 shell。"
         },
         "mac": {
           "notification": {
@@ -11745,7 +11749,7 @@
                 "f696515944": "在 macOS 对话框中点按允许。",
                 "3d18cf71f9": "将自动更新。",
                 "721d2bedb6": "在系统设置中为 Orca 开启允许通知。",
-                "c25d81f9e3": "在系统设置中打开「允许 Workbench 通知」。"
+                "c25d81f9e3": "在系统设置中打开「允许 builder-workbench 通知」。"
               }
             }
           }
@@ -14730,6 +14734,6 @@
     }
   },
   "brand": {
-    "workbench": "Workbench"
+    "workbench": "builder-workbench"
   }
 }

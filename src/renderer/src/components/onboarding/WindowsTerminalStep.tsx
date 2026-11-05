@@ -189,7 +189,7 @@ export function WindowsTerminalStep({
             {isWorkbenchShell()
               ? translate(
                   'auto.components.onboarding.WindowsTerminalStep.184e11638a',
-                  'Choose the shell Workbench opens for new Windows terminal panes.'
+                  'Choose the shell builder-workbench opens for new Windows terminal panes.'
                 )
               : translate(
                   'auto.components.onboarding.WindowsTerminalStep.defaultShellDescription',

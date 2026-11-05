@@ -132,7 +132,7 @@ export function ProductLogo(): React.JSX.Element {
   return (
     <img
       src={logo}
-      alt={translate('brand.workbench', 'Workbench')}
+      alt={translate('brand.workbench', 'builder-workbench')}
       width={26}
       height={26}
       style={{ verticalAlign: 'middle' }}
