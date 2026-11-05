@@ -7,11 +7,11 @@ import { useVersionCatalogForRepo } from './use-version-catalog'
 import type { VersionOverviewMaterials } from './version-overview-materials'
 import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
 import { openVersionOverview, type VersionOverviewOptions } from './project-page-state'
-import type { VersionGoal } from '../../../shared/workbench/version-material'
+import type { PlanningMaterial } from '../../../shared/workbench/version-material'
 import { DECISION_LABELS, goalOrdinal } from './version-labels'
 import { FeatureCard } from './version-overview/feature-card'
 import { useVersionFacts } from './version-overview/use-version-facts'
-import { nativeTaskReferenceReader } from './native-task-port'
+import { nativeTaskPort, nativeTaskReferenceReader } from './native-task-port'
 import { useMilestoneSource } from './use-milestone-source'
 import {
   milestoneMaterialFacts,
@@ -20,6 +20,12 @@ import {
 } from './milestone-feature-facts'
 import { taskKey, validTime } from './version-overview/feature-model'
 import { openEvidenceUrl, timeLabel } from './version-overview/overview-time'
+import { useCycleTaskReads } from './version-cycle/use-cycle-task-reads'
+import { unfinishedTaskLabel } from './version-overview/goal-task-summary'
+import {
+  overviewExperimentEnabled,
+  overviewProjectId
+} from './version-overview/overview-experiments'
 import { WorkflowProductivity } from './version-overview/workflow-productivity'
 import './version-overview/overview.css'
 
@@ -60,11 +66,27 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
   const catalog = useVersionCatalogForRepo(repoId)
   const [refreshToken, setRefreshToken] = useState(0)
   const [focus, setFocus] = useState<string | null>(null)
-  const { materials, features } = useVersionFacts(catalog, version, refreshToken)
-  const milestoneSource = useMilestoneSource(catalog, refreshToken)
+  const projectId = useAppStore((state) => overviewProjectId(state, repoId))
+  const sdlcEnabled = useAppStore((state) =>
+    overviewExperimentEnabled(state.settings, projectId, 'sdlc')
+  )
+  const aiEnabled = useAppStore((state) =>
+    overviewExperimentEnabled(state.settings, projectId, 'ai')
+  )
+  const { materials, features } = useVersionFacts(catalog, version, refreshToken, sdlcEnabled)
+  const milestoneSource = useMilestoneSource(catalog, refreshToken, sdlcEnabled)
   const { plan, acceptance } = materials
   const planDocument = plan.kind === 'ready' ? plan.document : null
   const acceptanceDocument = acceptance.kind === 'ready' ? acceptance.document : null
+  const taskReads = useCycleTaskReads({
+    scope: catalog.scope ? { ...catalog.scope, workflow: 'plan' } : null,
+    tasks: planDocument?.tasks,
+    taskPort: nativeTaskPort()
+  })
+  const taskReadAt = taskReads.reads
+    ?.map((read) => (read.kind === 'ready' ? read.task.readAt : read.readAt))
+    .filter((at) => validTime(at))
+    .sort()[0]
   const planUnstarted =
     plan.kind === 'missing' ||
     Boolean(
@@ -84,13 +106,8 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
   )
   const workflow = (kind: 'plan' | 'acceptance') =>
     navigateVersionWorkflow({ catalog, version, workflow: kind, projectKey: repoId })
-  const tasks = (goal?: VersionGoal) =>
-    void openVersionTasks({
-      catalog,
-      version,
-      entry,
-      goal: goal ? { goalId: goal.goalId, label: goal.title } : null
-    })
+  const tasks = (goal?: { goalId: string; label: string; references: PlanningMaterial['tasks'] }) =>
+    void openVersionTasks({ catalog, version, entry, goal })
   const materialErrors = [
     ...new Set([
       ...(materials.problems ?? []),
@@ -131,6 +148,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               ? '计划草稿'
               : '版本中'
   const refresh = () => {
+    void taskReads.refresh()
     setRefreshToken((n) => n + 1)
     catalog.reload()
   }
@@ -151,7 +169,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               label: '刷新来源',
               Icon: RefreshCw,
               action: refresh,
-              busy: features.loading || catalog.loading || materials.refreshing
+              busy: features.loading || taskReads.busy || catalog.loading || materials.refreshing
             }
           ].map(({ label, Icon, action, busy }) => (
             <Tooltip key={label}>
@@ -214,8 +232,18 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               <h2>{goal.title}</h2>
               <div className="bwo-goal-meta">
                 <span>负责人 · {goal.owner || '未记录'}</span>
-                <button className="bwo-link" onClick={() => tasks(goal)}>
-                  目标任务 · {references.length} 项 ↗
+                <button
+                  className="bwo-link"
+                  onClick={() =>
+                    tasks({
+                      goalId: goal.goalId,
+                      label: `${goalOrdinal(index)} · ${goal.title}`,
+                      references
+                    })
+                  }
+                >
+                  目标任务 · {references.length} 项 ·{' '}
+                  {unfinishedTaskLabel(references, taskReads.reads)} ↗
                 </button>
               </div>
               <button
@@ -231,36 +259,39 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
                 ↗
               </button>
             </div>
-            {grouped.map((feature) => (
-              <div
-                key={taskKey(feature.root.reference)}
-                ref={(node) => {
-                  if (node && focus === feature.root.url) {
-                    node.scrollIntoView({ block: 'center' })
-                    setFocus(null)
-                  }
-                }}
-              >
-                <FeatureCard
-                  plannedHours={milestoneStageHours(
-                    milestoneSource.formal?.problems.length
-                      ? undefined
-                      : milestoneSource.formal?.material,
-                    milestoneFacts,
-                    feature
-                  )}
-                  planningFailed={planningFailed}
-                  feature={feature}
-                  version={version}
-                  historical={acceptance.kind === 'ready' && acceptance.source === 'committed'}
-                  onVersion={(next, id) => {
-                    setFocus(id)
-                    openVersionOverview({ repoId, version: next })
+            {sdlcEnabled &&
+              grouped.map((feature) => (
+                <div
+                  key={taskKey(feature.root.reference)}
+                  ref={(node) => {
+                    if (node && focus === feature.root.url) {
+                      node.scrollIntoView({ block: 'center' })
+                      setFocus(null)
+                    }
                   }}
-                />
-              </div>
-            ))}
-            {features.loading && <p className="bwo-muted">正在读取特性与关联成果…</p>}
+                >
+                  <FeatureCard
+                    plannedHours={milestoneStageHours(
+                      milestoneSource.formal?.problems.length
+                        ? undefined
+                        : milestoneSource.formal?.material,
+                      milestoneFacts,
+                      feature
+                    )}
+                    planningFailed={planningFailed}
+                    feature={feature}
+                    version={version}
+                    historical={acceptance.kind === 'ready' && acceptance.source === 'committed'}
+                    onVersion={(next, id) => {
+                      setFocus(id)
+                      openVersionOverview({ repoId, version: next })
+                    }}
+                  />
+                </div>
+              ))}
+            {sdlcEnabled && features.loading && (
+              <p className="bwo-muted">正在读取特性与关联成果…</p>
+            )}
           </section>
         )
       })}
@@ -272,7 +303,7 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
           </button>
         </p>
       )}
-      {features.problems.length > 0 && (
+      {sdlcEnabled && features.problems.length > 0 && (
         <details className="bwo-muted">
           <summary>部分任务或特性来源未读取（{features.problems.length}）</summary>
           {features.problems.map((text) => (
@@ -280,17 +311,33 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
           ))}
         </details>
       )}
-      {features.stale && features.readAt && (
+      {sdlcEnabled && features.stale && features.readAt && (
         <p className="bwo-muted">特性来源刷新失败，保留上次快照：{timeLabel(features.readAt)}</p>
       )}
-      <WorkflowProductivity
-        catalog={catalog}
-        plan={planDocument}
-        version={version}
-        revision={plan.kind === 'ready' ? (plan.sourceCommit ?? plan.revision) : undefined}
-        planState={plan.kind}
-        sourceReady={Boolean(features.readAt) || !features.loading}
-      />
+      {taskReads.error && (
+        <p className="bwo-muted" role="alert">
+          任务状态刷新失败：{taskReads.error}
+        </p>
+      )}
+      {planDocument && planDocument.tasks.length > 0 && (
+        <p className="bwo-muted">
+          未完成数按当前任务状态统计，目标是否达成以人工验收为准。
+          {taskReads.busy
+            ? ' 正在读取任务状态…'
+            : taskReadAt && (
+                <span title="北京时间 UTC+08:00"> · 读取于 {timeLabel(taskReadAt)}</span>
+              )}
+        </p>
+      )}
+      {aiEnabled && (
+        <WorkflowProductivity
+          catalog={catalog}
+          plan={planDocument}
+          version={version}
+          revision={plan.kind === 'ready' ? (plan.sourceCommit ?? plan.revision) : undefined}
+          planState={plan.kind}
+        />
+      )}
     </main>
   )
 }

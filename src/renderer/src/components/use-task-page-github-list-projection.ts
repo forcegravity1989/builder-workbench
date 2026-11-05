@@ -1,10 +1,7 @@
 import type { TaskPageWorkbenchScopeModel } from './use-task-page-workbench-scope'
 import { useCallback, useMemo, useEffect } from 'react'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
-import {
-  matchesWorkbenchTaskQuery,
-  removeWorkbenchVersionQuery
-} from '../../../shared/workbench/task-scope'
+import { matchesWorkbenchTaskQuery } from '../../../shared/workbench/task-scope'
 import { taskPageGitHubItemKey } from '@/components/task-page-github-work-item-mutation-registry'
 import { deriveTaskPagePRCheckSummary } from '@/components/task-page-pr-check-summary'
 import { deriveAdvertisedTotalPages } from '@/components/task-page-work-item-pagination'
@@ -35,10 +32,7 @@ export function useTaskPageGitHubListProjection(model: TaskPageWorkbenchScopeMod
     workbenchScopeActive,
     workbenchScopeItemKeys
   } = model
-  const goalDisplayQuery =
-    workbenchScopeActive && model.workbenchScope
-      ? removeWorkbenchVersionQuery(model.appliedTaskSearch, model.workbenchScope)
-      : model.appliedTaskSearch
+  const goalDisplayQuery = model.appliedTaskSearch
   // Why: defense-in-depth — keep stale cache rows from leaking across the issue/PR split tabs.
   const applyTypeFilter = useCallback(
     (items: GitHubWorkItem[]) => {
