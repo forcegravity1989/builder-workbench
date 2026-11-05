@@ -1,11 +1,13 @@
-import { useAppStore } from '@/store'
-import { requestContextualTourWhenReady } from '@/components/contextual-tours/request-contextual-tour-when-ready'
 import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
-import { CircleHelp, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
-import { MilestoneHistoryActions, MilestoneTitle } from './milestone-history-actions'
+import {
+  MilestoneGuide,
+  MilestoneHistoryActions,
+  MilestoneTitle
+} from './milestone-history-actions'
 import {
   ScheduledVersionSchema,
   milestoneDraft,
@@ -50,29 +52,6 @@ export function ProjectMilestones({
   const [updatingFormal, setUpdatingFormal] = useState(false)
   const restored = useRef<string | null>(null)
   const restoreScope = scope ? JSON.stringify(scope) : null
-  const uiReady = useAppStore((s) => s.persistedUIReady)
-  useEffect(() => {
-    if (!state?.editing || state.recoveryBlocked || !uiReady) {
-      return
-    }
-    const app = useAppStore.getState()
-    const wasFeaturePreviouslyInteracted = Boolean(app.featureInteractions['workbench-milestones'])
-    void app.recordFeatureInteraction('workbench-milestones')
-    return requestContextualTourWhenReady({
-      wasFeaturePreviouslyInteracted,
-      id: 'workbench-milestones',
-      source: 'milestone_planning',
-      waitForActiveTourToClear: true,
-      shouldContinue: () =>
-        !useAppStore.getState().contextualToursSeenIds.includes('workbench-milestones')
-    })
-  }, [state?.editing, state?.recoveryBlocked, uiReady, restoreScope])
-  useEffect(
-    () => () => {
-      useAppStore.getState().suppressContextualTour('workbench-milestones', 'milestone_planning')
-    },
-    [restoreScope, state?.editing]
-  )
   const pageY = state?.pageY
   useEffect(() => {
     if (restoreScope && pageY !== undefined && root.current && restored.current !== restoreScope) {
@@ -247,18 +226,11 @@ export function ProjectMilestones({
       <header className="wb-ml-heading">
         <MilestoneTitle editing={editing} busy={busy} finishEditing={model.finishEditing} />
         <div className="wb-ml-actions">
-          <MilestoneIconButton
-            label="里程碑操作引导"
-            onClick={() =>
-              useAppStore
-                .getState()
-                .requestContextualTour('workbench-milestones', 'milestone_planning', false, {
-                  force: true
-                })
-            }
-          >
-            <CircleHelp size={15} />
-          </MilestoneIconButton>
+          <MilestoneGuide
+            editing={editing}
+            blocked={!!state.recoveryBlocked}
+            scopeKey={restoreScope}
+          />
           {editing && (
             <MilestoneHistoryActions
               dirty={dirty}

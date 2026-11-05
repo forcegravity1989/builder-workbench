@@ -11,6 +11,7 @@ import { ensureNamedWorktree, nativeWorkspaceScopeKey } from './version-cycle/na
 import { readMilestones, submitMilestones, type MilestoneScope } from './milestone-port'
 import {
   sessions,
+  recordMilestoneSubmission,
   submitting,
   notify,
   subscribe,
@@ -206,34 +207,7 @@ export function useMilestonePlanning(
           ...s.draft
         }
       )
-      const baseline = milestoneDraft(result.proposal)
-      const latest = sessions.get(key) ?? s
-      put(key, {
-        ...latest,
-        baseline,
-        draft:
-          JSON.stringify(latest.draft) === JSON.stringify(s.draft)
-            ? structuredClone(baseline)
-            : latest.draft,
-        expectedFormal: s.expectedFormal,
-        expectedProposal: result.proposal.head,
-        data: {
-          ...latest.data,
-          branchHead: result.proposal.head,
-          proposal: result.proposal,
-          review: {
-            ...latest.data.review,
-            ...(result.outcome.mode === 'pr'
-              ? { pr: { ...result.outcome.pr, state: 'open' as const } }
-              : {})
-          }
-        },
-        retry: result.outcome.mode === 'failed',
-        past: [],
-        future: [],
-        field: null,
-        submitError: result.outcome.mode === 'failed' ? result.outcome.error : undefined
-      })
+      recordMilestoneSubmission(key, s, result)
       const outcome = result.outcome
       if (outcome.mode === 'failed') {
         toast.error('里程碑提交失败', { id: notice })

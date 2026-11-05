@@ -1,6 +1,7 @@
 import {
   milestoneDraft,
   type MilestoneRead,
+  type MilestoneSubmitResult,
   type MilestoneDraft
 } from '../../../shared/workbench/project-milestones'
 import { MilestoneRecoveryRecordSchema } from '../../../shared/workbench/milestone-recovery'
@@ -161,4 +162,35 @@ export function put(key: string, next: Session, save = true) {
     persist(key)
   }
   notify()
+}
+
+export function recordMilestoneSubmission(key: string, s: Session, result: MilestoneSubmitResult) {
+  const baseline = milestoneDraft(result.proposal)
+  const latest = sessions.get(key) ?? s
+  put(key, {
+    ...latest,
+    baseline,
+    draft:
+      JSON.stringify(latest.draft) === JSON.stringify(s.draft)
+        ? structuredClone(baseline)
+        : latest.draft,
+    expectedFormal: s.expectedFormal,
+    expectedProposal: result.proposal.head,
+    data: {
+      ...latest.data,
+      branchHead: result.proposal.head,
+      proposal: result.proposal,
+      review: {
+        ...latest.data.review,
+        ...(result.outcome.mode === 'pr'
+          ? { pr: { ...result.outcome.pr, state: 'open' as const } }
+          : {})
+      }
+    },
+    retry: result.outcome.mode === 'failed',
+    past: [],
+    future: [],
+    field: null,
+    submitError: result.outcome.mode === 'failed' ? result.outcome.error : undefined
+  })
 }
