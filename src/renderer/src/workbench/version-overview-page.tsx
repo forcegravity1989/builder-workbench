@@ -11,7 +11,7 @@ import type { PlanningMaterial } from '../../../shared/workbench/version-materia
 import { DECISION_LABELS, goalOrdinal } from './version-labels'
 import { FeatureCard } from './version-overview/feature-card'
 import { useVersionFacts } from './version-overview/use-version-facts'
-import { nativeTaskReferenceReader } from './native-task-port'
+import { nativeTaskPort, nativeTaskReferenceReader } from './native-task-port'
 import { useMilestoneSource } from './use-milestone-source'
 import {
   milestoneMaterialFacts,
@@ -21,7 +21,6 @@ import {
 import { taskKey, validTime } from './version-overview/feature-model'
 import { openEvidenceUrl, timeLabel } from './version-overview/overview-time'
 import { useCycleTaskReads } from './version-cycle/use-cycle-task-reads'
-import { nativeTaskPort } from './native-task-port'
 import { unfinishedTaskLabel } from './version-overview/goal-task-summary'
 import {
   overviewExperimentEnabled,
