@@ -10,7 +10,7 @@ BW Issue 按主要用户结果选一个主归属。每行名称可直接用于�
 |---|---|---|---|
 | 项目纳入 | 将仓库纳入 BW，记录项目身份与信息 | [接入规格](project-intake/spec.md) · [状态](project-intake/STATUS.md) | 接入已有定义；共享链接回显已在进程重启后验证，完整接入旅程未验证。 |
 | 项目墙 | 跨项目、主机扫墙，按真实读数选择要跟进的项目 | [墙卡规格](project-intake/spec.md) · [状态](project-intake/STATUS.md) | 墙卡读数与配置已有设计、协议测试及局部真壳证据；跨主机扫墙旅程未验证。 |
-| 项目总览 | 在一个项目中安排里程碑、查看跨版本进度 | [总览规格](overview-metrics/spec.md) · [里程碑状态](overview-metrics/STATUS.md#里程碑规划实现状态) | 规划读写、排期与本机恢复有证据；跨屏实际事实的联合旅程未完整验证。 |
+| 项目总览 | 按日期和特性安排里程碑，对照版本计划与实际目标结果 | [总览规格](overview-metrics/spec.md) · [里程碑状态](overview-metrics/STATUS.md#里程碑认可与验证边界) | 里程碑规划、独立预期日期和目标结果投影已确认；规划到验收及重启的完整旅程未验证。 |
 | 版本计划 | 与团队确定本版目标、验收条件和任务，评审并归档计划 | [计划规格](version-planning/spec.md) · [状态](version-planning/STATUS.md) | 目标与规格已确认，材料协议和部分真壳旅程已验；模型执行与真实来源归档的覆盖见状态。 |
 | 版本会话管理 | 从侧栏找到版本、目标、工作区与会话，准备并进入流程树 | [侧栏规格](version-workspace/spec.md) · [状态](version-workspace/STATUS.md) | 版本导航、绑定和固定树恢复有协议与真壳证据；跨宿主与侧栏其他交互按已验范围判断。 |
 | 任务管理 | 跨来源查找、筛选和处理 Issue、PR/MR，跟进任务结果 | [任务页现有资料](codehub/spec.md#任务列表与详情) · [CodeHub 范围证据](codehub/STATUS.md) | 独立用户特性，现有资料覆盖 CodeHub 来源及部分任务交互，通用任务旅程尚无完整定义和验证。 |

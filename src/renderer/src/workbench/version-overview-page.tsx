@@ -11,8 +11,13 @@ import type { VersionGoal } from '../../../shared/workbench/version-material'
 import { DECISION_LABELS, goalOrdinal } from './version-labels'
 import { FeatureCard } from './version-overview/feature-card'
 import { useVersionFacts } from './version-overview/use-version-facts'
+import { nativeTaskReferenceReader } from './native-task-port'
 import { useMilestoneSource } from './use-milestone-source'
-import { milestoneStageHours, type MilestoneVersionFacts } from './milestone-feature-facts'
+import {
+  milestoneMaterialFacts,
+  milestoneStageHours,
+  type MilestoneVersionFacts
+} from './milestone-feature-facts'
 import { taskKey, validTime } from './version-overview/feature-model'
 import { openEvidenceUrl, timeLabel } from './version-overview/overview-time'
 import { WorkflowProductivity } from './version-overview/workflow-productivity'
@@ -94,8 +99,19 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
   ]
   const planningFailed = Boolean(milestoneSource.error || milestoneSource.formal?.problems.length)
   const milestoneFacts: MilestoneVersionFacts = {
-    plan: planDocument,
-    features: features.features,
+    ...milestoneMaterialFacts(materials),
+    features: features.features.map((feature) => {
+      const current = catalog.scope
+        ? nativeTaskReferenceReader.cached(catalog.scope, [feature.root.reference])?.[0]
+        : null
+      return {
+        ...feature,
+        currentTitle:
+          current && current.kind !== 'unavailable' && current.item.type === 'issue'
+            ? current.item.title
+            : undefined
+      }
+    }),
     loading: features.loading,
     failed: Boolean(materialErrors.length || features.problems.length),
     stale:

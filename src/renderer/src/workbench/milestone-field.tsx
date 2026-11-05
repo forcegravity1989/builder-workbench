@@ -3,6 +3,7 @@ export function MilestoneField({
   value,
   label,
   editable,
+  multiline = false,
   onChange,
   onCommit,
   autoFocus = false,
@@ -11,6 +12,7 @@ export function MilestoneField({
   value: string
   label: string
   editable: boolean
+  multiline?: boolean
   onChange(value: string): void
   onCommit?(value: string, previousValue: string): void
   autoFocus?: boolean
@@ -18,8 +20,11 @@ export function MilestoneField({
 }) {
   const entered = useRef(value)
   const cancelled = useRef(false)
+  const Field = multiline ? 'textarea' : 'input'
   return editable ? (
-    <input
+    <Field
+      maxLength={multiline ? 200 : undefined}
+      rows={multiline ? 2 : undefined}
       autoFocus={autoFocus}
       aria-label={label}
       className="wb-ml-inline"
@@ -43,10 +48,12 @@ export function MilestoneField({
         if (e.nativeEvent.isComposing || e.keyCode === 229) {
           return
         }
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && (!multiline || e.ctrlKey || e.metaKey)) {
+          e.preventDefault()
           e.currentTarget.blur()
         }
         if (e.key === 'Escape') {
+          e.stopPropagation()
           cancelled.current = true
           onChange(entered.current)
           e.currentTarget.blur()
