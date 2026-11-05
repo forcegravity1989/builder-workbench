@@ -21,6 +21,32 @@ permissions:
   contents: read
 
 jobs:
+  codex-windows:
+    name: Windows Codex protocol and lifecycle
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install Node dependencies
+        uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+
+      # Account-free protocol checks; these do not launch Electron or prove
+      # that a signed-in Codex conversation works in the Windows Chat UI.
+      - name: Test Codex transport and session lifecycle
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/codex/codex-app-server-connection.test.ts
+          src/main/codex/codex-app-server-process-teardown.test.ts
+          src/main/codex/codex-structured-session-close.test.ts
+          src/main/codex/codex-structured-session-cancel.test.ts
+          src/main/codex/codex-structured-launch-resolution.test.ts
+
   verify:
     name: lint, typecheck, tests, build
     runs-on: ubuntu-latest
