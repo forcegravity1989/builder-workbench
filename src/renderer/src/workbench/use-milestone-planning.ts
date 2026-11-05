@@ -1,16 +1,17 @@
+import { toast } from 'sonner'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useAppStore } from '@/store'
 import { CHARTER_BRANCH } from '../../../shared/workbench/project-charter'
 import {
   milestoneDraft,
   milestoneProblems,
-  milestoneGoalProblems,
   type MilestoneDraft
 } from '../../../shared/workbench/project-milestones'
 import { ensureNamedWorktree, nativeWorkspaceScopeKey } from './version-cycle/native-workspace'
 import { readMilestones, submitMilestones, type MilestoneScope } from './milestone-port'
 import {
   sessions,
+  recordMilestoneSubmission,
   submitting,
   notify,
   subscribe,
@@ -147,7 +148,7 @@ export function useMilestonePlanning(
         return
       }
       const field = fieldEdit
-        ? document.activeElement?.matches('input.wb-ml-inline')
+        ? document.activeElement?.matches('.wb-ml-inline')
           ? document.activeElement
           : s.field
         : null
@@ -183,15 +184,17 @@ export function useMilestonePlanning(
       !target ||
       !s ||
       s.sourceConflict ||
+      s.recoveryBlocked ||
+      (!changed(s) && !s.retry) ||
       s.data.review.queryFailed ||
       submitting.has(key) ||
       reading ||
-      milestoneProblems(s.draft).length ||
-      milestoneGoalProblems(s.draft, (s.data.proposal ?? s.data.formal).versions).length
+      milestoneProblems(s.draft).length
     ) {
       return
     }
     submitting.add(key)
+    const notice = toast.loading('正在提交里程碑…')
     notify()
     setReadError(null)
     try {
@@ -204,38 +207,28 @@ export function useMilestonePlanning(
           ...s.draft
         }
       )
-      const baseline = milestoneDraft(result.proposal)
-      const latest = sessions.get(key) ?? s
-      put(key, {
-        ...latest,
-        baseline,
-        draft:
-          JSON.stringify(latest.draft) === JSON.stringify(s.draft)
-            ? structuredClone(baseline)
-            : latest.draft,
-        expectedFormal: s.expectedFormal,
-        expectedProposal: result.proposal.head,
-        data: {
-          ...latest.data,
-          branchHead: result.proposal.head,
-          proposal: result.proposal,
-          review: {
-            ...latest.data.review,
-            ...(result.outcome.mode === 'pr'
-              ? { pr: { ...result.outcome.pr, state: 'open' as const } }
-              : {})
-          }
-        },
-        retry: result.outcome.mode === 'failed',
-        past: [],
-        future: [],
-        field: null,
-        submitError: result.outcome.mode === 'failed' ? result.outcome.error : undefined
-      })
+      recordMilestoneSubmission(key, s, result)
+      const outcome = result.outcome
+      if (outcome.mode === 'failed') {
+        toast.error('里程碑提交失败', { id: notice })
+      } else if (outcome.mode === 'pr') {
+        const url = outcome.pr.url
+        toast.success('里程碑已提交评审', {
+          id: notice,
+          action: url
+            ? { label: '查看评审', onClick: () => void window.api.shell.openUrl(url) }
+            : undefined
+        })
+      } else if (outcome.mode === 'noop') {
+        toast.info(outcome.note || '没有新的里程碑改动需要评审', { id: notice })
+      } else {
+        toast.info(outcome.reason, { id: notice })
+      }
       if (result.outcome.mode !== 'failed') {
         void useAppStore.getState().fetchWorktrees(target.repoId)
       }
     } catch (reason) {
+      toast.error('里程碑提交失败', { id: notice })
       const latest = sessions.get(key)
       if (latest) {
         put(key, {
@@ -267,8 +260,9 @@ export function useMilestonePlanning(
   }
   return {
     state,
+    writing,
     busy: reading || writing,
-    error: readError ?? state?.sourceConflict ?? state?.submitError ?? null,
+    error: readError ?? state?.sourceConflict ?? null,
     persistenceError: state?.persistenceError ?? null,
     recoverySaved: state ? recoverySaved(state) : false,
     dirty: state ? changed(state) : false,
