@@ -38,13 +38,14 @@ const {
   CalendarRange,
   RefreshCw
 } = window.BWPrototypeDependencies
+const calendarExample = new URLSearchParams(window.location.search).get('example') === 'calendar'
 function App() {
   const [cases, setCases] = useState(loadCases),
     [caseId, setCaseId] = useState('existing'),
     [planning, setPlanning] = useState(false)
   const [actualScenario, setActualScenario] = useState('normal')
   const [navigation, setNavigation] = useState(() => ({
-      date: cases.existing.draft.versions[0]?.start || currentDay,
+      date: calendarExample ? '2026-11-25' : cases.existing.draft.versions[0]?.start || currentDay,
       sequence: 1
     })),
     [modal, setModal] = useState(null),
@@ -62,7 +63,7 @@ function App() {
     current = planning ? state.draft : state.published,
     empty = !planning && !state.published
   useEffect(() => {
-    if (dateExample) {
+    if (dateExample || calendarExample) {
       board.current?.scrollIntoView({ block: 'start' })
     }
   }, [])

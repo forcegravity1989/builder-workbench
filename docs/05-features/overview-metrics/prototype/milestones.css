@@ -984,7 +984,7 @@
 .ml-day-cell b {
   border-radius: 2px;
   background: var(--foreground);
-  color: var(--background);
+  color: var(--card);
   padding: 0 2px;
   font-size: 9px;
   font-weight: 400;
