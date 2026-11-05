@@ -1,5 +1,6 @@
+import { MilestoneNavigation, milestoneNodeActions } from './milestone-navigation'
 import { MilestoneRowGrip, type MilestoneRowDrop } from './milestone-row-grip'
-import { MilestoneDayAxis } from './milestone-day-axis'
+import { MilestoneDayAxis, MilestoneDayGrid } from './milestone-day-axis'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { MilestoneField } from './milestone-field'
@@ -27,7 +28,6 @@ import type {
   ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
 import {
-  latestMilestoneMonth,
   milestoneDay,
   milestoneToday,
   milestoneDate,
@@ -53,6 +53,7 @@ type Props = {
   scrollY: number
   locate: MilestoneLocation | null
   registerWeek(week: MilestoneWeek, name: string): void
+  navigate(date: string): void
   addFeature(): void
   newFeature: string | null
 }
@@ -62,7 +63,19 @@ export function MilestoneTimeline(props: Props) {
   const enabled = editing && !props.busy && !showActual
   const facts = useMilestoneFactReaders(props.catalog)
   const actualVersions = showActual ? milestoneVisibleActualVersions(draft, facts.values) : []
-  const { weeks, start: origin, end } = milestoneActualCalendar(draft, facts.values, actualVersions)
+  const initial = useRef({ x: props.scrollX, y: props.scrollY, locate: props.locate })
+  const requested = props.locate !== initial.current.locate ? props.locate : null
+  const calendar = milestoneActualCalendar(
+    draft,
+    facts.values,
+    actualVersions,
+    requested
+      ? { date: requested.date }
+      : initial.current.x !== null
+        ? { offset: initial.current.x / width }
+        : {}
+  )
+  const { weeks, start: origin, end } = calendar
   const canvasWidth = (end - origin + 1) * width
   const viewport = useRef<HTMLDivElement>(null)
   const pan = useRef<{ x: number; left: number } | null>(null)
@@ -90,7 +103,6 @@ export function MilestoneTimeline(props: Props) {
     return { day, date, ...workCalendarDay(date) }
   })
   const [rowDrop, setRowDrop] = useState<MilestoneRowDrop>(null)
-  const initial = useRef({ x: props.scrollX, y: props.scrollY, month: latestMilestoneMonth(draft) })
   const previousOrigin = useRef<number | null>(null)
   useLayoutEffect(() => {
     const el = viewport.current
@@ -98,19 +110,32 @@ export function MilestoneTimeline(props: Props) {
       return
     }
     if (previousOrigin.current === null) {
-      el.scrollLeft =
-        initial.current.x ??
-        Math.max(0, (milestoneDay(`${initial.current.month}-01`) - origin) * width)
+      el.scrollLeft = Math.max(
+        0,
+        (calendar.focusDay - origin) * width + ((initial.current.x ?? 0) % width)
+      )
       el.scrollTop = initial.current.y
     } else if (previousOrigin.current !== origin) {
       el.scrollLeft += (previousOrigin.current - origin) * width
     }
     previousOrigin.current = origin
-  }, [origin])
+  }, [origin, calendar.focusDay])
+  const centerOnDate = useRef(false)
+  function navigateDate(date: string) {
+    centerOnDate.current = true
+    props.navigate(date)
+  }
   const appliedLocation = useRef<MilestoneLocation | null>(props.locate)
   useLayoutEffect(() => {
     if (props.locate && props.locate !== appliedLocation.current && viewport.current) {
-      viewport.current.scrollLeft = Math.max(0, (milestoneDay(props.locate.date) - origin) * width)
+      const space = centerOnDate.current
+        ? Math.max(0, (viewport.current.clientWidth - labelWidth - width) / 2)
+        : 0
+      viewport.current.scrollLeft = Math.max(
+        0,
+        (milestoneDay(props.locate.date) - origin) * width - space
+      )
+      centerOnDate.current = false
       appliedLocation.current = props.locate
     }
   }, [props.locate, origin])
@@ -142,22 +167,31 @@ export function MilestoneTimeline(props: Props) {
       {showActual && facts.readers}
       <MilestoneSdlcToolbar
         actual={facts}
+        editing={props.editing}
         showActual={showActual}
         onChange={setShowActual}
-        addFeature={enabled ? props.addFeature : undefined}
         warning={gesture.warning}
         featureCount={features.length}
         ownerCount={new Set(features.map((feature) => feature.owner.trim()).filter(Boolean)).size}
       />
       <div
+        data-segmented={calendar.yearTargets.size > 0 || undefined}
         ref={viewport}
         className="wb-ml-scroll"
+        data-contextual-tour-target="milestone-schedule"
         aria-label="特性交付泳道"
-        onScroll={(e) => props.onScroll(e.currentTarget.scrollLeft, e.currentTarget.scrollTop)}
+        onScroll={(e) =>
+          props.onScroll(
+            (origin - calendar.first) * width + e.currentTarget.scrollLeft,
+            e.currentTarget.scrollTop
+          )
+        }
         onPointerDown={(e) => {
           if (
             e.button !== 0 ||
-            (e.target as HTMLElement).closest('button,input,[data-ml-stop-pan]')
+            (e.target as HTMLElement).closest(
+              'button,input,textarea,select,label,[data-ml-stop-pan]'
+            )
           ) {
             return
           }
@@ -196,35 +230,29 @@ export function MilestoneTimeline(props: Props) {
           }
         }}
       >
+        <MilestoneNavigation
+          nodes={draft.material.milestones}
+          origin={origin}
+          width={canvasWidth}
+          enabled={enabled}
+          visibleDate={() =>
+            milestoneDate(
+              Math.min(end, origin + Math.floor((viewport.current?.scrollLeft ?? 0) / width) + 1)
+            )
+          }
+          {...milestoneNodeActions(draft.material.milestones, edit, props.editField, navigateDate)}
+        />
         <div className="wb-ml-canvas" style={{ width: canvasWidth + labelWidth }}>
-          <div
-            className="wb-ml-days-background"
-            aria-hidden="true"
-            style={{ left: labelWidth, width: canvasWidth, top: versionHeight + 40 }}
-          >
-            {!showActual &&
-              versions.map((v, index) => (
-                <b
-                  key={v.cycleId}
-                  className={`wb-ml-version-band${index % 2 ? ' alternate' : ''}`}
-                  style={{
-                    left: (milestoneDay(v.timeWindow!.start) - origin) * width,
-                    width:
-                      (milestoneDay(v.timeWindow!.end) - milestoneDay(v.timeWindow!.start) + 1) *
-                      width
-                  }}
-                />
-              ))}
-            {days.map((d) => (
-              <i
-                key={d.date}
-                className={d.working ? '' : 'rest'}
-                style={{ left: (d.day - origin) * width, width }}
-              />
-            ))}
-          </div>
+          <MilestoneDayGrid
+            days={days}
+            versions={showActual ? [] : versions}
+            origin={origin}
+            canvasWidth={canvasWidth}
+            versionHeight={versionHeight}
+          />
           <div className="wb-ml-board-header">
             <MilestoneVersionRow
+              addFeature={props.addFeature}
               draft={visible}
               versions={versions}
               actualVersions={actualVersions}
@@ -244,7 +272,14 @@ export function MilestoneTimeline(props: Props) {
               lanes={lanes}
               height={versionHeight}
             />
-            <MilestoneDayAxis days={days} today={today} canvasWidth={canvasWidth} />
+            <MilestoneDayAxis
+              days={days}
+              today={today}
+              canvasWidth={canvasWidth}
+              year={calendar.year}
+              yearTargets={calendar.yearTargets}
+              navigate={navigateDate}
+            />
           </div>
           {features.map((f, row) => {
             const actual = showActual
@@ -335,14 +370,16 @@ export function MilestoneTimeline(props: Props) {
               <div className="wb-ml-track" style={{ width: canvasWidth }} />
             </div>
           )}
-          <div
-            className="wb-ml-today"
-            style={{
-              left: labelWidth + (actualDay(new Date().toISOString()) - origin) * width,
-              top: versionHeight + 40
-            }}
-            aria-hidden="true"
-          />
+          {today >= origin && today <= end && (
+            <div
+              className="wb-ml-today"
+              style={{
+                left: labelWidth + (actualDay(new Date().toISOString()) - origin) * width,
+                top: versionHeight + 40
+              }}
+              aria-hidden="true"
+            />
+          )}
         </div>
       </div>
     </>

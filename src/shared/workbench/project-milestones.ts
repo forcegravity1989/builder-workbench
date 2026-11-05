@@ -38,26 +38,70 @@ export const ScheduledVersionSchema = z.strictObject({
   cycleId: Id,
   timeWindow: VersionTimeWindowSchema.optional()
 })
+const Month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+export const MilestoneNodeSchema = z
+  .strictObject({
+    id: Id,
+    date: z.iso.date().optional(),
+    month: Month.optional(),
+    outcome: z.string()
+  })
+  .refine((node) => Boolean(node.date) !== Boolean(node.month), '节点必须有日期或原月份')
+export type MilestoneNode = z.infer<typeof MilestoneNodeSchema>
+
+const LegacyMonths = z.array(z.strictObject({ month: Month, outcome: z.string() })).max(240)
+export function upgradeMilestoneMaterial(input: unknown): unknown {
+  if (
+    !input ||
+    typeof input !== 'object' ||
+    !('schema_version' in input) ||
+    input.schema_version !== 2 ||
+    !('months' in input) ||
+    'milestones' in input
+  ) {
+    return input
+  }
+  const { months, ...rest } = input
+  const parsed = LegacyMonths.safeParse(months)
+  if (!parsed.success) {
+    return input
+  }
+  const monthsByName = new Set(parsed.data.map((m) => m.month))
+  if (
+    monthsByName.size !== parsed.data.length ||
+    !('features' in input) ||
+    !Array.isArray(input.features) ||
+    input.features.some((f) => !monthsByName.has(f?.month))
+  ) {
+    return input
+  }
+  return {
+    ...rest,
+    schema_version: 3,
+    milestones: parsed.data
+      .filter((m) => m.outcome.trim())
+      .map((m) => ({ id: `month-${m.month}`, ...m }))
+  }
+}
 export const MilestoneMaterialSchema = z
   .strictObject({
-    schema_version: z.literal(2),
-    months: z
-      .array(
-        z.strictObject({
-          month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
-          outcome: z.string().trim().max(200)
-        })
-      )
-      .max(240),
+    schema_version: z.literal(3),
+    milestones: z.array(MilestoneNodeSchema).max(2000),
     features: z.array(MilestoneFeatureSchema).max(2000),
     versionPlans: z.array(ScheduledVersionSchema).max(2000).optional()
   })
   .superRefine((value, context) => {
     if (
-      new Set(value.months.map((m) => m.month)).size !== value.months.length ||
+      new Set(value.milestones.map((m) => m.id)).size !== value.milestones.length ||
       new Set(value.features.map((f) => f.id)).size !== value.features.length
     ) {
-      context.addIssue({ code: 'custom', message: '月份和特性身份不能重复' })
+      context.addIssue({ code: 'custom', message: '里程碑或特性身份重复' })
+    }
+    if (value.milestones.some((m) => !m.outcome.trim())) {
+      context.addIssue({ code: 'custom', message: '请补全里程碑成果' })
+    }
+    if (value.milestones.some((m) => m.outcome.trim().length > 200)) {
+      context.addIssue({ code: 'custom', message: '里程碑成果最多 200 字' })
     }
     const versions = value.versionPlans ?? []
     if (
@@ -65,11 +109,6 @@ export const MilestoneMaterialSchema = z
       new Set(versions.map((v) => v.version.toLowerCase())).size !== versions.length
     ) {
       context.addIssue({ code: 'custom', message: '版本名称或身份不能重复' })
-    }
-    for (const f of value.features) {
-      if (!value.months.some((m) => m.month === f.month)) {
-        context.addIssue({ code: 'custom', message: '特性所属月份不存在' })
-      }
     }
   })
 export type ScheduledVersion = z.infer<typeof ScheduledVersionSchema>
@@ -110,8 +149,8 @@ export type MilestoneSubmit = z.infer<typeof MilestoneSubmitRequestSchema>
 export type MilestoneSubmitResult = { outcome: CharterSubmitOutcome; proposal: MilestoneSnapshot }
 
 export const emptyMilestones = (): MilestoneMaterial => ({
-  schema_version: 2,
-  months: [],
+  schema_version: 3,
+  milestones: [],
   features: []
 })
 export function milestoneDraft(snapshot: MilestoneSnapshot): MilestoneDraft {
@@ -128,7 +167,11 @@ export function milestoneDraft(snapshot: MilestoneSnapshot): MilestoneDraft {
 }
 export function milestoneProblems(draft: MilestoneDraft): string[] {
   const parsed = MilestoneMaterialSchema.safeParse(draft.material)
-  const problems = parsed.success ? [] : ['请补齐特性名称、负责人，并核对月份']
+  const problems = parsed.success
+    ? []
+    : parsed.error.issues.map((issue) =>
+        issue.code === 'custom' ? issue.message : '请核对里程碑、特性名称和负责人'
+      )
   const versions = draft.versions
   if (
     new Set(versions.map((v) => v.cycleId)).size !== versions.length ||

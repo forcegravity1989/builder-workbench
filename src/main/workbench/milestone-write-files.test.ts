@@ -160,8 +160,8 @@ it('preserves conflicting or unsafe milestone materials and client recovery snap
     await writeFile(
       join(repo, project),
       JSON.stringify({
-        schema_version: 2,
-        months: [{ month: '2026-11', outcome: '' }],
+        schema_version: 3,
+        milestones: [],
         features: [
           {
             id: 'feature',

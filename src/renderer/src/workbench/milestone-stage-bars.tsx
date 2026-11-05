@@ -1,5 +1,4 @@
-import { Plus, RefreshCw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { RefreshCw } from 'lucide-react'
 import { MilestoneIconButton } from './milestone-icon-button'
 import { timeLabel } from './version-overview/overview-time'
 import {
@@ -18,28 +17,22 @@ import {
 export function MilestoneSdlcToolbar({
   showActual,
   onChange,
+  editing,
   warning,
   featureCount,
   ownerCount,
-  actual,
-  addFeature
+  actual
 }: {
+  editing: boolean
   showActual: boolean
   onChange(value: boolean): void
   warning?: string
   featureCount: number
   ownerCount: number
   actual: { loading: boolean; failed: boolean; readAt?: string; refresh(): void }
-  addFeature?: () => void
 }) {
   return (
     <div className="wb-ml-sdlc-toolbar">
-      {addFeature && (
-        <Button variant="ghost" size="xs" onClick={addFeature}>
-          <Plus size={13} />
-          添加特性
-        </Button>
-      )}
       <span className="wb-ml-counts">
         {featureCount} 个特性 · {ownerCount} 位负责人
       </span>
@@ -59,7 +52,10 @@ export function MilestoneSdlcToolbar({
             ))}
           </div>
         )}
-        <label className="wb-ml-show-actual">
+        <label
+          className="wb-ml-show-actual"
+          data-contextual-tour-target={editing && showActual ? 'milestone-start' : undefined}
+        >
           <input
             type="checkbox"
             checked={showActual}

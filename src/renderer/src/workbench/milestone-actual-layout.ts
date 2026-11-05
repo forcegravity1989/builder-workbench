@@ -4,11 +4,7 @@ import type {
   MilestoneMaterial,
   ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
-import {
-  milestoneCalendar,
-  milestoneDay,
-  milestoneWeekAt
-} from '../../../shared/workbench/milestone-calendar'
+import { milestoneCalendar, milestoneDay } from '../../../shared/workbench/milestone-calendar'
 import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import { taskKey } from './version-overview/feature-model'
 import {
@@ -209,18 +205,8 @@ export function milestoneVisibleActualVersions(
 export function milestoneActualCalendar(
   draft: MilestoneDraft,
   facts: Record<string, MilestoneVersionFacts>,
-  versions = milestoneVisibleActualVersions(draft, facts)
+  versions = milestoneVisibleActualVersions(draft, facts),
+  location?: { date?: string; offset?: number }
 ) {
-  const calendar = milestoneCalendar(draft)
-  const times = versions.flatMap((version) => [
-    milestoneDay(version.timeWindow!.start),
-    milestoneDay(version.timeWindow!.end)
-  ])
-  const start = milestoneDay(milestoneWeekAt(Math.min(calendar.start, ...times)).start)
-  const last = Math.max(calendar.end, ...times)
-  const weeks: typeof calendar.weeks = []
-  for (let day = start; day <= last; day += 7) {
-    weeks.push(milestoneWeekAt(day))
-  }
-  return { ...calendar, start, end: start + weeks.length * 7 - 1, weeks }
+  return milestoneCalendar(draft, undefined, versions, location)
 }

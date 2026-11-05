@@ -6,14 +6,14 @@
 
 ## 对象与工作区
 
-| 对象          | 正本                                                     | 边界                                                                                            |
-| ------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| 计划          | 本版固定计划树的 .bw/planning/<version>/data.json（绑定版本树 bw/<版本>/plan；旧无绑定固定树 bw/week-plan）   | summary、稳定 goalId、承诺/可选交付与验收说明、metricRef/目标、任务引用、会议纪要（minutes）、workflow 阶段 |
-| 验收          | 本版固定验收树（绑定版本树 bw/<版本>/acceptance；旧无绑定固定树 bw/week-acceptance）的同目录 acceptance.json        | 固定 planRef、候选、演示环境（demoEnv）、预订会议（meeting）、制品登记（含验收证据报告）、readingRef、Issue 备注与遗留标记、会议纪要（minutes）、人的结论与下一步、workflow 阶段；不改计划 |
-| 指标          | 项目最新已合入配置中的 .bw/metrics.toml 及真实历史采集源 | 新采集固定本次采用的定义/脚本修订；旧 baseline 和归档证据保留，不以常驻树旧文件或旧引用锁住目录 |
-| Issue/会话/PR | 原生 provider / Orca                                     | 材料只存引用，不另建正文、聊天或状态正本                                                        |
-| 纪要          | 计划与验收材料各自的 minutes 节                           | 纪要正文由模型在未确认时撰写，人工确认只能由人标记，不另建第二份会议正文文件                     |
-| 验收证据报告  | .bw/planning/<version>/ 下的报告文件，登记为 preparedArtifacts 的 verification 制品 | 一个版本一份，按「目标 → Issue」聚合各 Issue/PR 合入时留下的验收件（有开发取 PR 验证评论，无开发直接关闭取 Issue 评论），由模型按 version-acceptance 技能模板生成，缺证如实标注；不是界面派生文本，也不代替 workbench-release 的版本收尾报告 |
+| 对象          | 正本                                                                                                         | 边界                                                                                                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 计划          | 本版固定计划树的 .bw/planning/<version>/data.json（绑定版本树 bw/<版本>/plan；旧无绑定固定树 bw/week-plan）  | summary、稳定 goalId、承诺/可选交付与验收说明、metricRef/目标、任务引用、会议纪要（minutes）、workflow 阶段                                                                                                             |
+| 验收          | 本版固定验收树（绑定版本树 bw/<版本>/acceptance；旧无绑定固定树 bw/week-acceptance）的同目录 acceptance.json | 固定 planRef、候选、演示环境（demoEnv）、预订会议（meeting）、制品登记（含验收证据报告）、readingRef、Issue 备注与遗留标记、会议纪要（minutes）、人的结论与下一步、workflow 阶段；不改计划                              |
+| 指标          | 项目基线或包含该基线的维护提交中的 .bw/metrics.toml 及真实历史采集源                                         | 新采集固定本次采用的定义/脚本修订；旧 baseline 和归档证据保留，不以常驻树旧文件或旧引用锁住目录                                                                                                                         |
+| Issue/会话/PR | 原生 provider / Orca                                                                                         | 材料只存引用，不另建正文、聊天或状态正本                                                                                                                                                                                |
+| 纪要          | 计划与验收材料各自的 minutes 节                                                                              | 纪要正文由模型在未确认时撰写，人工确认只能由人标记，不另建第二份会议正文文件                                                                                                                                            |
+| 验收证据报告  | .bw/planning/<version>/ 下的报告文件，登记为 preparedArtifacts 的 verification 制品                          | 一个版本一份，按「目标 → Issue」聚合各 Issue/PR 合入时留下的验收件（有开发取 PR 验证评论，无开发直接关闭取 Issue 评论），由模型按 version-acceptance 技能模板生成，缺证如实标注；不是界面派生文本，也不代替项目发布总结 |
 
 计划/验收固定分支（绑定版本树为 bw/<版本>/plan、bw/<版本>/acceptance；旧无绑定固定树为 bw/week-plan、bw/week-acceptance）分别由原生项目/宿主/worktree 身份定位；物理目录由 Orca 原生创建和登记，不硬编码 .bw/worktrees 下的路径。冲突目录不得自动搬移/删除。同步基线前检查未归档修改，不 reset 脏树；跨树读取用固定提交，不把另一树的工作中草稿当正式材料。
 
@@ -27,12 +27,12 @@ cycleId 标识同一版本同一流程的材料身份，不是自然周、原生
 
 两种日期分别保存：
 
-- `.bw/milestones.json` 使用 schema_version=2，可选 `versionPlans` 数组中每项为 `{version, cycleId, timeWindow: {start, end}}`，表示里程碑预期的版本窗口。
+- `.bw/milestones.json` 使用 schema_version=3，可选 `versionPlans` 数组中每项为 `{version, cycleId, timeWindow: {start, end}}`，表示里程碑预期的版本窗口。
 - `.bw/planning/<version>/data.json` 使用计划 schema 3，可选 `timeWindow: {start, end}`，表示本版计划实际采用的周期。两端均为包含当日的 ISO 日期，开始不得晚于结束。编辑其他字段原样保留日期；没有日期就是未登记，不从 Releases、验收或提交时间猜。
 
 首日 Plan 可以校准日期、目标和范围，与里程碑预期不同并不使计划失效。里程碑重新编排只更新预期，不覆盖已有版本计划的 timeWindow 或其他字段；计划改期也不自动重写里程碑。新版本可由里程碑登记身份及最小空计划，真正开工再创建对应工作树与会话。已有材料沿用 cycleId，不能重新初始化覆盖。
 
-里程碑还保存 months（month/outcome）与按显示顺序排列的 features（id/month/title/owner/deliveries）。每个 delivery 保存稳定 id、版本引用（version + cycleId）及 stages；阶段含 phase/start/end，使用北京时间民用时间 `YYYY-MM-DDTHH:mm`，结束边界不包含。首段为 Plan/Design/Build/Test/Deploy，后一段为 Maintain；整段外边界按半天调整，内部按比例生成分钟精度边界，只表达规划分配。里程碑不选择目标，行 id 也不是 Issue 身份；实际事件不回写为规划。
+里程碑还保存 milestones（id、outcome、date；仅有月份精度的成果保留 month 直至人工指定日期）与按显示顺序排列的 features（id/month/title/owner/deliveries）。每个 delivery 保存稳定 id、版本引用（version + cycleId）及 stages；阶段含 phase/start/end，使用北京时间民用时间 `YYYY-MM-DDTHH:mm`，结束边界不包含。首段为 Plan/Design/Build/Test/Deploy，后一段为 Maintain；整段外边界按半天调整，内部按比例生成分钟精度边界，只表达规划分配。里程碑不选择目标，行 id 也不是 Issue 身份；实际事件不回写为规划。
 
 没有 versionPlans 的旧材料可借当前可读版本窗口展示，正常提交时才保存预期窗口；这不表示恢复了从未记录的原始计划日期。旧 goalSlot/goalId 在读取时归一化移除，不作为匹配或保存约束。历史 `stages: []` 保留已确认特性与版本归属，不补造阶段、工期或结果；人重新安排时才生成默认阶段。旧版与已开工版本也可重新编排，仍须通过来源修订、身份、并发和排期冲突校验；不修改固定验收来源，也不通过里程碑重命名已建立执行或归档身份的版本。
 

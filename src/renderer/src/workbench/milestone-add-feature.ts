@@ -17,9 +17,6 @@ export function createMilestoneFeature(
       ...selected.draft,
       material: {
         ...selected.draft.material,
-        months: selected.draft.material.months.some((m) => m.month === month)
-          ? selected.draft.material.months
-          : [...selected.draft.material.months, { month, outcome: '' }],
         features: [
           {
             id,

@@ -4,7 +4,6 @@ import {
   type MilestoneDraft
 } from '../../../shared/workbench/project-milestones'
 import { MilestoneRecoveryRecordSchema } from '../../../shared/workbench/milestone-recovery'
-import { latestMilestoneMonth } from '../../../shared/workbench/milestone-calendar'
 import { milestoneRecoveryPayload, milestoneRecoverySchema } from './milestone-recovery'
 
 export type Session = {
@@ -14,7 +13,6 @@ export type Session = {
   expectedFormal: string
   expectedProposal: string | null
   editing: boolean
-  month: string
   scrollX: number | null
   scrollY: number
   pageY: number
@@ -61,7 +59,6 @@ export function fresh(data: MilestoneRead, previous?: Session): Session {
     expectedFormal: data.formal.revision,
     expectedProposal: data.branchHead,
     editing: previous?.editing ?? false,
-    month: previous?.month ?? latestMilestoneMonth(draft),
     scrollX: previous?.scrollX ?? null,
     scrollY: previous?.scrollY ?? 0,
     pageY: previous?.pageY ?? 0,

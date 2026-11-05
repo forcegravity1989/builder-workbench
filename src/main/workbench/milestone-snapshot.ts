@@ -11,6 +11,7 @@ import {
   MILESTONES_PATH,
   MilestoneMaterialSchema,
   emptyMilestones,
+  upgradeMilestoneMaterial,
   type MilestoneSnapshot
 } from '../../shared/workbench/project-milestones'
 
@@ -66,10 +67,10 @@ export async function readMilestoneSnapshot(
     hash.update(JSON.stringify([path, raw]))
     if (path === MILESTONES_PATH) {
       try {
-        snapshot.material = MilestoneMaterialSchema.parse(JSON.parse(raw))
+        snapshot.material = MilestoneMaterialSchema.parse(upgradeMilestoneMaterial(JSON.parse(raw)))
       } catch {
         throw new Error(
-          `${MILESTONES_PATH} 的格式无法读取，原文件未改动。请让计划助手核对并迁移为 schema_version=2 的 SDLC 排期后刷新；不会自动补造阶段。`
+          `${MILESTONES_PATH} 的格式无法读取，原文件未改动。请核对里程碑、特性和版本排期后刷新。`
         )
       }
       continue

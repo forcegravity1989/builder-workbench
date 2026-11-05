@@ -1,7 +1,9 @@
+import { useAppStore } from '@/store'
+import { requestContextualTourWhenReady } from '@/components/contextual-tours/request-contextual-tour-when-ready'
 import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { CircleHelp, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { MilestoneHistoryActions, MilestoneTitle } from './milestone-history-actions'
 import {
@@ -24,7 +26,6 @@ import {
   datedMilestoneVersions,
   type MilestoneWeek
 } from '../../../shared/workbench/milestone-calendar'
-import { MilestoneNavigation } from './milestone-navigation'
 import { MilestoneReviewButton } from './milestone-review-button'
 import { describeMilestoneChanges } from './milestone-change-summary'
 import { MilestoneIconButton } from './milestone-icon-button'
@@ -49,6 +50,29 @@ export function ProjectMilestones({
   const [updatingFormal, setUpdatingFormal] = useState(false)
   const restored = useRef<string | null>(null)
   const restoreScope = scope ? JSON.stringify(scope) : null
+  const uiReady = useAppStore((s) => s.persistedUIReady)
+  useEffect(() => {
+    if (!state?.editing || state.recoveryBlocked || !uiReady) {
+      return
+    }
+    const app = useAppStore.getState()
+    const wasFeaturePreviouslyInteracted = Boolean(app.featureInteractions['workbench-milestones'])
+    void app.recordFeatureInteraction('workbench-milestones')
+    return requestContextualTourWhenReady({
+      wasFeaturePreviouslyInteracted,
+      id: 'workbench-milestones',
+      source: 'milestone_planning',
+      waitForActiveTourToClear: true,
+      shouldContinue: () =>
+        !useAppStore.getState().contextualToursSeenIds.includes('workbench-milestones')
+    })
+  }, [state?.editing, state?.recoveryBlocked, uiReady, restoreScope])
+  useEffect(
+    () => () => {
+      useAppStore.getState().suppressContextualTour('workbench-milestones', 'milestone_planning')
+    },
+    [restoreScope, state?.editing]
+  )
   const pageY = state?.pageY
   useEffect(() => {
     if (restoreScope && pageY !== undefined && root.current && restored.current !== restoreScope) {
@@ -81,15 +105,14 @@ export function ProjectMilestones({
     )
   }
   const editing = state.editing
+  const hasReviewAction = editing || !!state.data.review.pr || !!state.data.mergedProposal
   const visible = editing ? state.draft : milestoneDraft(state.data.formal)
   const enabled = editing && !busy && !state.recoveryBlocked
-  const month = state.month
   const hasPlanning =
-    visible.material.months.some((m) => m.outcome.trim()) ||
+    visible.material.milestones.length > 0 ||
     visible.material.features.length > 0 ||
     datedMilestoneVersions(visible).length > 0
   const navigate = (date: string) => {
-    patch({ month: date.slice(0, 7) })
     setLocate((previous) => ({
       date,
       sequence: (previous?.sequence ?? 0) + 1,
@@ -199,7 +222,7 @@ export function ProjectMilestones({
               : 'idle'
       }
       onFocusCapture={(event) => {
-        if (event.target instanceof HTMLInputElement && event.target.matches('.wb-ml-inline')) {
+        if (event.target instanceof HTMLElement && event.target.matches('.wb-ml-inline')) {
           model.beginFieldEdit()
         }
       }}
@@ -224,6 +247,18 @@ export function ProjectMilestones({
       <header className="wb-ml-heading">
         <MilestoneTitle editing={editing} busy={busy} finishEditing={model.finishEditing} />
         <div className="wb-ml-actions">
+          <MilestoneIconButton
+            label="里程碑操作引导"
+            onClick={() =>
+              useAppStore
+                .getState()
+                .requestContextualTour('workbench-milestones', 'milestone_planning', false, {
+                  force: true
+                })
+            }
+          >
+            <CircleHelp size={15} />
+          </MilestoneIconButton>
           {editing && (
             <MilestoneHistoryActions
               dirty={dirty}
@@ -245,14 +280,18 @@ export function ProjectMilestones({
               size="xs"
               className="bg-foreground text-background hover:bg-foreground/90"
               disabled={busy || state.recoveryBlocked}
+              data-contextual-tour-target={
+                hasReviewAction ? 'milestone-start' : 'milestone-start milestone-submit'
+              }
               onClick={begin}
             >
               规划里程碑
             </Button>
           )}
-          {(editing || state.data.review.pr || state.data.mergedProposal) && (
+          {hasReviewAction && (
             <MilestoneReviewButton
-              busy={busy || updatingFormal}
+              writing={model.writing}
+              busy={busy || updatingFormal || !!state.recoveryBlocked}
               conflict={!!state.sourceConflict || !!state.data.review.queryFailed}
               dirty={editing && dirty}
               retry={state.retry}
@@ -294,6 +333,25 @@ export function ProjectMilestones({
           {model.persistenceError}
         </p>
       )}
+      {state.submitError && (
+        <details className="wb-ml-alert" role="status">
+          <summary>里程碑提交失败 · 查看详情</summary>
+          <p>{state.submitError}</p>
+          <Button
+            size="xs"
+            variant="outline"
+            disabled={
+              !enabled ||
+              !!state.sourceConflict ||
+              !!state.data.review.queryFailed ||
+              problems.length > 0
+            }
+            onClick={() => void model.submit()}
+          >
+            重试提交
+          </Button>
+        </details>
+      )}
       {error && (
         <p className="wb-ml-alert" role="alert">
           {error}
@@ -315,48 +373,41 @@ export function ProjectMilestones({
       )}
       {state.data.sourceNotice && <div className="wb-ml-notice">{state.data.sourceNotice}</div>}
       {!editing && !hasPlanning ? (
-        <div className="wb-ml-empty">还没有里程碑</div>
+        <div className="wb-ml-empty" data-contextual-tour-target="milestone-schedule">
+          还没有里程碑
+        </div>
       ) : (
-        <>
-          <MilestoneNavigation
-            visible={visible}
-            month={month}
-            editing={editing}
-            enabled={enabled}
-            navigate={(value) => navigate(`${value}-01`)}
-            editField={model.editField}
-          />
-          <MilestoneTimeline
-            catalog={catalog}
-            key={`${restoreScope}:${editing}:${restoreKey}`}
-            draft={visible}
-            registeredVersions={registeredVersions}
-            editField={model.editField}
-            registerWeek={registerWeek}
-            addFeature={addFeature}
-            newFeature={newFeature}
-            editing={editing}
-            busy={busy || !!state.recoveryBlocked}
-            edit={edit}
-            open={open}
-            remove={remove}
-            rename={renameVersion}
-            started={
-              new Set(
-                (
-                  (state.data.proposal ?? state.data.formal).registeredVersions ??
-                  (state.data.proposal ?? state.data.formal).versions
-                )
-                  .filter((v) => v.started)
-                  .map((v) => v.cycleId)
+        <MilestoneTimeline
+          catalog={catalog}
+          key={`${restoreScope}:${editing}:${restoreKey}`}
+          draft={visible}
+          registeredVersions={registeredVersions}
+          editField={model.editField}
+          registerWeek={registerWeek}
+          navigate={navigate}
+          addFeature={addFeature}
+          newFeature={newFeature}
+          editing={editing}
+          busy={busy || !!state.recoveryBlocked}
+          edit={edit}
+          open={open}
+          remove={remove}
+          rename={renameVersion}
+          started={
+            new Set(
+              (
+                (state.data.proposal ?? state.data.formal).registeredVersions ??
+                (state.data.proposal ?? state.data.formal).versions
               )
-            }
-            scrollX={state.scrollX}
-            scrollY={state.scrollY}
-            onScroll={(scrollX, scrollY) => patch({ scrollX, scrollY })}
-            locate={locate?.scope === restoreScope ? locate : null}
-          />
-        </>
+                .filter((v) => v.started)
+                .map((v) => v.cycleId)
+            )
+          }
+          scrollX={state.scrollX}
+          scrollY={state.scrollY}
+          onScroll={(scrollX, scrollY) => patch({ scrollX, scrollY })}
+          locate={locate?.scope === restoreScope ? locate : null}
+        />
       )}
     </section>
   )

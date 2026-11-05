@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useAgentDetectionTargetForWorktree } from '@/hooks/useAgentDetectionTarget'
 import { useDetectedAgents } from '@/hooks/useDetectedAgents'
-import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
+import { openWorkflowDraft } from '../open-workflow-draft'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import { ensureNamedWorktree, type NativeWorkspaceScope } from './native-workspace'
@@ -14,8 +14,8 @@ export const METRICS_WORKTREE_NAME = 'metrics-refresh'
 
 /**
  * The one「配置指标」pipeline shared by the plan board and the overview: ensure the
- * fixed maintenance tree, inject the metrics-refresh prompt with the live catalog,
- * move the native selection to that tree, launch an auto-submit project
+ * fixed maintenance tree, install the complete metrics Skill on its owner,
+ * move the native selection to that tree, launch an editable project
  * session, then leave the overview so that session is the visible workspace.
  * Errors are thrown unchanged; each screen surfaces them in its own notice.
  */
@@ -38,13 +38,7 @@ export async function prepareMetricsSession(args: {
       environmentId: baseScope.runtimeOwnerEnvironmentId
     })
   }
-  launchAgentInNewTab({
-    agent,
-    worktreeId: maintenance.id,
-    prompt: assets.prompt,
-    activate: true,
-    promptDelivery: 'auto-submit'
-  })
+  await openWorkflowDraft(agent, maintenance.id, assets.prompt)
   // Why: overview is the activity page. Selecting the maintenance tree and
   // opening a tab does not leave it, so the new session stays hidden.
   const view = useAppStore.getState()

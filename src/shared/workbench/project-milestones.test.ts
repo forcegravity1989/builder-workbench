@@ -11,6 +11,7 @@ import { workCalendarDay } from './work-calendar'
 import { PlanningMaterialSchema } from './version-planning-material'
 import {
   MilestoneMaterialSchema,
+  upgradeMilestoneMaterial,
   milestoneDraft,
   milestoneProblems,
   reorderMilestoneFeature,
@@ -28,8 +29,8 @@ import {
 it('preserves material identity and independent version windows through whole-delivery scheduling', () => {
   const draft: MilestoneDraft = {
     material: {
-      schema_version: 2,
-      months: [{ month: '2026-11', outcome: '可试用' }],
+      schema_version: 3,
+      milestones: [{ id: 'launch', date: '2026-11-05', outcome: '可试用' }],
       features: [
         { id: 'f1', month: '2026-11', title: '消息', owner: 'alice', deliveries: [] },
         { id: 'f2', month: '2026-11', title: '知识库', owner: 'bob', deliveries: [] }
@@ -74,6 +75,17 @@ it('preserves material identity and independent version windows through whole-de
     }).success
   ).toBe(false)
   expect(milestoneProblems(draft)).toEqual([])
+  const legacy = {
+    schema_version: 2,
+    months: [
+      { month: '2026-11', outcome: '保留月份' },
+      { month: '2026-12', outcome: '' }
+    ],
+    features: []
+  }
+  expect(MilestoneMaterialSchema.parse(upgradeMilestoneMaterial(legacy)).milestones).toEqual([
+    { id: 'month-2026-11', month: '2026-11', outcome: '保留月份' }
+  ])
   const historical = structuredClone(draft)
   historical.material.features.forEach((feature) =>
     feature.deliveries.forEach((delivery) => {
@@ -227,7 +239,11 @@ it('preserves material identity and independent version windows through whole-de
   expect(reused.next.version).not.toBe('v3')
 
   const empty: MilestoneDraft = {
-    material: { schema_version: 2, months: [{ month: '2026-07', outcome: '' }], features: [] },
+    material: {
+      schema_version: 3,
+      milestones: [{ id: 'kickoff', date: '2026-07-01', outcome: '立项' }],
+      features: []
+    },
     versions: [{ version: 'v0.7.0', cycleId: 'history' }]
   }
   const week = milestoneWeekAt(milestoneDay('2026-11-14'))

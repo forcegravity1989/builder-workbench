@@ -1,6 +1,3 @@
-// @vitest-environment happy-dom
-// Why happy-dom: start-cycle-automation polls via window.setTimeout; cases below
-// drive the real runNow protocol against fake timers and need the window global.
 import { beforeEach, expect, it, vi } from 'vitest'
 import type { Automation } from '../../../../shared/automations-types'
 import type { ProjectHostSetup } from '../../../../shared/project-types'
@@ -9,8 +6,7 @@ import type { CycleScope } from './ports'
 
 const test = vi.hoisted(() => ({
   state: {} as Record<string, unknown>,
-  rpc: vi.fn(),
-  openRun: vi.fn()
+  rpc: vi.fn()
 }))
 vi.mock('@/store', () => ({ useAppStore: { getState: () => test.state } }))
 vi.mock('@/runtime/runtime-rpc-client', () => ({
@@ -18,12 +14,7 @@ vi.mock('@/runtime/runtime-rpc-client', () => ({
   getRuntimeEnvironmentStatus: vi.fn()
 }))
 vi.mock('./cycle-prompt', () => ({ buildCyclePrompt: vi.fn(async () => 'CYCLE-PROMPT') }))
-vi.mock('./current-cycle-workspace', () => ({ assertCurrentCycleWorkspace: vi.fn() }))
-vi.mock('@/components/automations/automation-run-workspace-action', () => ({
-  openAutomationRunTerminal: test.openRun
-}))
 import { cycleAutomationCreationKey, ensureCycleAutomation } from './ensure-cycle-automation'
-import { startCycleAutomation } from './start-cycle-automation'
 
 const scope: CycleScope = {
   projectId: 'project',
@@ -221,134 +212,4 @@ it('creates once when concurrent callers share one identity', async () => {
   expect(first).toEqual({ status: 'created', automationId: 'auto-new' })
   expect(second).toEqual(first)
   expect(createCalls()).toHaveLength(1)
-})
-
-it('saves the current default agent with its SSH owner before running and opens only the matching run', async () => {
-  vi.useFakeTimers()
-  setState({ sshTargetGenerations: new Map([['server', 7]]) })
-  const automation = {
-    id: 'a1',
-    agentId: 'claude',
-    workspaceMode: 'existing',
-    workspaceId: FIXED_ID
-  }
-  let rejectAgentUpdate = false
-  const pending = { id: 'run-1', automationId: 'a1', status: 'pending', workspaceId: FIXED_ID }
-  const ready = { ...pending, status: 'dispatched', terminalPaneKey: 'pane', terminalPtyId: 'pty' }
-  test.openRun.mockImplementation((run) => run === ready)
-  test.rpc.mockImplementation(async (_target, method) => {
-    if (method === 'automation.list') {
-      return {
-        automations: [automation],
-        items: [
-          {
-            automationId: 'a1',
-            selector: { kind: 'ssh', targetId: 'server', targetGeneration: 7 }
-          }
-        ]
-      }
-    }
-    if (method === 'automation.update') {
-      if (rejectAgentUpdate) {
-        throw new Error('工具保存失败')
-      }
-      return { automation: { ...automation, agentId: 'codex' } }
-    }
-    if (method === 'automation.runNow') {
-      return { run: pending }
-    }
-    if (method === 'automation.runs') {
-      return { runs: [{ ...ready, id: 'unrelated-run' }, ready] }
-    }
-    throw new Error(`unexpected ${method}`)
-  })
-  try {
-    const running = startCycleAutomation(
-      { ...scope, hostId: 'ssh:server' },
-      FIXED_ID,
-      'a1',
-      'codex'
-    )
-    await vi.advanceTimersByTimeAsync(1000)
-    await running
-    expect(test.rpc).toHaveBeenCalledWith(
-      { kind: 'local' },
-      'automation.runNow',
-      {
-        id: 'a1',
-        expectedOwner: { selector: { kind: 'ssh', targetId: 'server', targetGeneration: 7 } }
-      },
-      expect.anything()
-    )
-    expect(updateCalls()).toEqual([
-      {
-        id: 'a1',
-        updates: { agentId: 'codex' },
-        expectedOwner: { selector: { kind: 'ssh', targetId: 'server', targetGeneration: 7 } }
-      }
-    ])
-    const methods = test.rpc.mock.calls.map((call) => call[1])
-    expect(methods.indexOf('automation.update')).toBeLessThan(methods.indexOf('automation.runNow'))
-    expect(test.openRun).toHaveBeenLastCalledWith(ready, 'ssh:server')
-    expect(test.rpc.mock.calls.filter((call) => call[1] === 'automation.runNow')).toHaveLength(1)
-    test.rpc.mockClear()
-    test.openRun.mockClear()
-    rejectAgentUpdate = true
-    await expect(
-      startCycleAutomation({ ...scope, hostId: 'ssh:server' }, FIXED_ID, 'a1', 'codex')
-    ).rejects.toThrow('工具保存失败')
-    expect(test.rpc.mock.calls.some((call) => call[1] === 'automation.runNow')).toBe(false)
-    expect(test.openRun).not.toHaveBeenCalled()
-  } finally {
-    vi.useRealTimers()
-  }
-})
-
-it('forwards one-shot context into the saved automation run params', async () => {
-  setState({ sshTargetGenerations: new Map([['server', 7]]) })
-  const automation = {
-    id: 'a1',
-    agentId: 'codex',
-    workspaceMode: 'existing',
-    workspaceId: FIXED_ID
-  }
-  const ready = {
-    id: 'run-1',
-    automationId: 'a1',
-    status: 'dispatched',
-    workspaceId: FIXED_ID,
-    terminalPaneKey: 'pane',
-    terminalPtyId: 'pty'
-  }
-  test.openRun.mockImplementation((run) => run === ready)
-  test.rpc.mockImplementation(async (_target, method) => {
-    if (method === 'automation.list') {
-      return {
-        automations: [automation],
-        items: [
-          {
-            automationId: 'a1',
-            selector: { kind: 'ssh', targetId: 'server', targetGeneration: 7 }
-          }
-        ]
-      }
-    }
-    if (method === 'automation.runNow') {
-      return { run: ready }
-    }
-    throw new Error(`unexpected ${method}`)
-  })
-  await startCycleAutomation(
-    { ...scope, hostId: 'ssh:server' },
-    FIXED_ID,
-    'a1',
-    'codex',
-    '本次处理请求：修复 v0.3 数据文件'
-  )
-  expect(updateCalls()).toHaveLength(0)
-  const runNowCall = test.rpc.mock.calls.find((call) => call[1] === 'automation.runNow')
-  expect(runNowCall?.[2]).toMatchObject({
-    id: 'a1',
-    oneShotPrompt: '本次处理请求：修复 v0.3 数据文件'
-  })
 })

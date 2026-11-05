@@ -29,6 +29,10 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   const windows = board.locator('.wb-ml-window:not(.wb-ml-unused-week)')
   await expect(board.getByText('还没有里程碑')).toBeVisible({ timeout: 60_000 })
   await page.screenshot({ path: info.outputPath('milestones-empty.png') })
+  await board.getByRole('button', { name: '里程碑操作引导', exact: true }).click()
+  const guide = page.locator('[data-contextual-tour-panel]')
+  await guide.getByRole('button', { name: /^(Skip tour|跳过导览)$/ }).click()
+  await expect(guide).toHaveCount(0)
   await board.getByRole('button', { name: '规划里程碑', exact: true }).click()
   await expect(board.getByRole('button', { name: '登记版本', exact: true })).toHaveCount(0)
   await expect(board.getByLabel('规划月份', { exact: true })).toHaveCount(0)
@@ -64,8 +68,8 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   }
   const materialPath = path.join(repoPath, '.bw/milestones.json')
   const material = {
-    schema_version: 2,
-    months: [{ month: '2026-11', outcome: '协作能力形成可用闭环' }],
+    schema_version: 3,
+    milestones: [{ id: 'launch', date: '2026-11-05', outcome: '协作能力形成可用闭环' }],
     features: ['消息与通知', '工程能力观测'].map((title, i) => ({
       id: `feature-${i}`,
       month: '2026-11',
@@ -94,9 +98,23 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await board.getByRole('button', { name: '刷新里程碑与评审', exact: true }).click()
   await expect(board.getByLabel('特性名称', { exact: true }).first()).toHaveValue('消息与通知')
   await expect(windows).toHaveCount(2)
-  await expect(board.getByRole('navigation')).not.toContainText('v1.0.0')
   await expect(windows.first()).toContainText('11-02 — 11-08')
-  await board.getByRole('button', { name: '定位里程碑 2026-11', exact: true }).click()
+  const roadmap = board.locator('.wb-ml-roadmap')
+  await roadmap.getByRole('button', { name: '添加里程碑', exact: true }).click()
+  const add = page.getByRole('dialog', { name: '添加里程碑' })
+  await add.getByLabel('日期', { exact: true }).fill('2026-11-05')
+  await add.getByLabel('预期成果').fill('正式推广')
+  await add.getByRole('button', { name: '添加', exact: true }).click()
+  const sameDay = roadmap.getByRole('button', { name: '2026-11-05 2 个里程碑', exact: true })
+  await sameDay.click()
+  const detail = page.getByRole('dialog', { name: '里程碑详情' })
+  await detail.getByRole('button', { name: '删除里程碑：正式推广' }).click()
+  await expect(
+    roadmap.getByRole('button', { name: '2026-11-05 协作能力形成可用闭环' })
+  ).toBeVisible()
+  await board.getByRole('button', { name: '撤销', exact: true }).click()
+  await expect(sameDay).toBeVisible()
+  await board.getByRole('button', { name: '放弃本次修改，恢复最近提交', exact: true }).click()
   await expect(board.getByRole('button', { name: '提交评审', exact: true })).toBeDisabled()
   const rows = board.locator('.wb-ml-row')
   await rows.first().getByLabel('负责人', { exact: true }).fill('临时负责人')
@@ -178,7 +196,6 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await expect(windows).toHaveCount(3)
   await expect(windows.last()).toContainText('11-23 — 11-27')
   expect(git(['worktree', 'list', '--porcelain'])).not.toContain('bw/v1.0.2/plan')
-  await board.getByRole('button', { name: '定位里程碑 2026-11', exact: true }).click()
   await windows
     .nth(1)
     .getByRole('button', { name: '进入 v1.0.1 版本总览', exact: true })
@@ -228,7 +245,11 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await board.getByRole('button', { name: '提交评审', exact: true }).click()
   await expect(page.getByText('本次改动', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: '确认提交', exact: true }).click()
-  await expect(board.getByRole('alert')).toContainText('未确认远端身份', { timeout: 120_000 })
+  const failure = board.locator('details').filter({ hasText: '里程碑提交失败' })
+  await expect(failure.locator('summary')).toBeVisible({ timeout: 120_000 })
+  await failure.locator('summary').click()
+  await expect(failure).toContainText('未确认远端身份')
+  await expect(failure.getByRole('button', { name: '重试提交' })).toBeEnabled()
   await expect(notification.getByLabel('负责人', { exact: true })).toHaveValue('评审 Builder')
   await page.screenshot({ path: info.outputPath('milestones-submit-retained.png') })
   expect(git(['rev-parse', 'HEAD'])).toBe(formalHead)

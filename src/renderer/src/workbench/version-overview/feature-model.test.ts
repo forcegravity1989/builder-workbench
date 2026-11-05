@@ -393,8 +393,8 @@ it('projects scoped feature evidence without turning missing, later or unrelated
     stages: [{ phase: 'Maintain' as const, start: '2026-11-02T00:00', end: '2026-11-06T12:00' }]
   }
   const material: MilestoneMaterial = {
-    schema_version: 2,
-    months: [{ month: '2026-10', outcome: '' }],
+    schema_version: 3,
+    milestones: [],
     features: [
       {
         id: 'planned',
