@@ -1,23 +1,19 @@
-# 有了 Orca，怎样判断 BW 对交付的帮助？
+# AI 辅助开发的交付研究
 
-> 给评估总览、指标、计划与验收价值的 Builder 和产品评审者。本文从外部研究和一次 BW 历史记录提炼三个判断，把真实项目仍需验证的问题单列。外部研究截至 2026-10-09，来源变化或取得可追溯的试用结果时复核。现行产品取舍见[项目总览意图](../05-features/overview-metrics/intent.md)，七份专题、来源日期和反证见[原研究](https://github.com/forcegravity1989/builder-workbench/blob/705d33dd5427a287bce996315108caf8742441e2/docs/10-reference/ai-native-delivery-2026/README.md)。
+> 给想判断 AI 对软件交付有多大帮助的读者。本文从 PR 初稿追踪到正式发布和用户使用，区分平台统计、团队研究与公开方法。截至 2026-11-05 核对一手来源，样本、统计口径或结论变化时更新。
 
-## 一次交付应当观察什么
+## 从初稿到评审
 
-**代码产出和用户结果需要分别取证。** Anthropic 的内部问卷和访谈发现，工程师会借助 AI 做过去搁置的工作。METR 指出，AI 改变了人选择的任务。比较同一任务的耗时，只能回答速度问题。在 BW 中，PR 合入可以作为工程进展的证据。要判断用户有没有受益，还要知道谁拿到了哪个版本、尝试了什么、在哪一步成功或受阻。[Anthropic 内部研究，2025-12-02](https://www.anthropic.com/research/how-ai-is-transforming-work-at-anthropic) · [METR 对任务选择的分析，2026-05-08](https://metr.org/blog/2026-05-08-task-substitution-and-uplift/)
+GitHub 统计了有可识别代理参与起草的拉取请求（PR）。它们占当月 PR 的比例从 2026 年 3 月的 17% 升至 9 月的 40% 以上。这个比例回答的是谁参与了初稿。要知道一项改动从提出到合入花了多久，还需要跟踪同一批 PR 的后续经历。[GitHub Octoverse，2026-10-28](https://github.blog/news-insights/octoverse/octoverse-commits-pushes-reach-new-highs-in-2026-as-developers-build-with-agents/)
 
-**读数的含义取决于它数了什么。** BW v0.5 验收里，G3 在 10 月 5 日至 8 日的窗口内读到 0。指标只数白名单内有已合入计划活动的项目，每个项目按周去重。实际有多少人试用了 BW，需要另外取证。原计划和验收采用的指标定义也有变化，直接用实际值除以原目标会给出误导性的达成率。保留观察窗口、统计对象和原始记录，才知道哪一个问题仍然没有答案。[当时的计划](https://github.com/forcegravity1989/builder-workbench/blob/5202485e0773eef8c2c19da540d59bbd07bd45bc/.bw/planning/v0.5/data.json) · [指标定义](https://github.com/forcegravity1989/builder-workbench/blob/5202485e0773eef8c2c19da540d59bbd07bd45bc/.bw/metrics.toml) · [当时的验收](https://github.com/forcegravity1989/builder-workbench/blob/5202485e0773eef8c2c19da540d59bbd07bd45bc/.bw/planning/v0.5/acceptance.json)
+Okta 对自己的团队做了前后比较。2024 年引入 Copilot 时，74 名问卷参与者的人均 PR 数和 PR 周期均无显著变化。2026 年引入 Claude Code 后，在最大代码仓前后两个窗口都贡献过的 295 人中，人均每月 PR 增加 37%，PR 平均周期缩短 16%。后一次比较取 2025 年 11 月至 2026 年 1 月与 2026 年 4 至 6 月，排除了代理署名的 PR。两次研究的样本和时期不同，无法据此给工具排名，也无法单独算出工具贡献了多少变化。[Okta 团队研究，2026-10-29](https://www.okta.com/blog/industry-insights/ai-engineering-productivity-okta-study/)
 
-**BW 的增量价值，要看反馈有没有改变下一次决定。** Orca 已能把工作树、Issue、PR 和检查结果带到执行现场。DORA 的小批量交付建议强调尽早拿到反馈。Spotify 的设计伙伴预览展示了把一次失败操作追溯到具体问题的做法。回到 BW，可以看上一次用户卡住后，Builder 是否据此缩小了本版范围、优先修了阻断，或向共享 SE 请求了具体帮助？这些资料说明了可借鉴的做法，效果仍须在 BW 项目上观察。[Orca 评审与 Issue 文档](https://www.onorca.dev/docs/review/github) · [DORA 小批量交付](https://dora.dev/capabilities/working-in-small-batches/) · [Spotify 早期预览，2026-09-30](https://confidence.spotify.com/blog/confidence-loop)
+## 从提交到发布和使用
 
-## 怎样在一个项目里检验
+Demirer、Musolff 与 Yang 把 50 多万名 GitHub 开发者的活动与 AI 工具使用记录相匹配。在其工作论文的 9 月修订版中，采用工具直至自主代理这一代，估计的累计增幅在提交次数上为 240%，在正式发布次数上为 30%。作者另行考察四个软件市场，观察到新应用数量上升，而新应用的早期总使用量未见相应增长。两个分析的观察对象不同，无法由此断言某个团队的某次发布有多少用户受益。[工作论文与 2026-09 修订日期](https://www.nber.org/papers/w35275) · [作者修订版摘要及市场结果](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6843118)
 
-从一位 Builder 最近的一次真实交付入手，用原生 Orca、Issue 和已有材料还原当时的承诺、实际使用结果和下一步。再观察一次使用 BW 的可比交付，记录团队规模、任务难度或用户条件的差异。下表是研究提出的观察方法，是否开展试用由项目负责人决定。
+## 怎样解释速度和用户反馈
 
-| 想知道什么 | 值得保留的观察 |
-|---|---|
-| 用户是否更早用上了 | 两次交付分别记下范围确定和首位真实用户尝试的时间，再比较等待时长。记录对方尝试的任务和遇到的阻断。到观察截止仍无人尝试，就记为尚未发生。 |
-| 计划或验收帮助作了什么决定 | 哪条反馈使 Builder 优先修复、暂缓候选需求或停止投入。若两种做法都能支持同一决定，记下各自花了多少时间。 |
-| 整理成本由谁承担 | Builder 为材料多花了多久，共享 SE 或 Leader 是否少翻了一段会话、少追问一次进度，又能否据此提供帮助。 |
+METR 指出，有了 AI，人也会改选任务。固定采用前的任务清单，会漏掉此前成本太高、现在才值得做的工作。固定采用后的清单，又容易高估收益，因为在没有 AI 的情况下，人本来就会换一种做法或选别的工作。后一份清单包含采用 AI 后选择的全部任务，其中有些仍由人独立完成。在作者的模型里，整体价值增益介于这两种固定清单估算的提速幅度之间。[METR 方法分析，2026-05-08](https://metr.org/blog/2026-05-08-task-substitution-and-uplift/)
 
-一次复测跑通可以支持这次修复。持续价值还要看以后是否再次使用、同类阻断是否减少，以及节省的时间能否覆盖整理成本。如果原生工具已能用更少步骤支持同样的决定，这就是精简 BW 流程的依据。
+Spotify 的 Confidence 团队给出了观察使用结果的具体例子。一次 iOS 支付失败，可以把操作记录、报错和支持请求串起来，调查这些信号是否来自同一个问题，再决定怎样修复。该文发布时产品处于设计伙伴预览阶段。它展示了怎样追溯一次失败，未给出采用这套方法后支付成功率的比较数据。[Spotify 设计伙伴预览，2026-09-30](https://confidence.spotify.com/blog/confidence-loop)
