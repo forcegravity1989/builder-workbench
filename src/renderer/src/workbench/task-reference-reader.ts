@@ -244,7 +244,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
     signal?.throwIfAborted()
     if (force) {
       // A click during a previous load requests another source check after it.
-      await Promise.all(references.map((reference) => locate(home, reference).entry.pending))
+      await Promise.all(references.flatMap((ref) => locate(home, ref).entry.pending ?? []))
       signal?.throwIfAborted()
     }
     const jobs: Job[] = []
