@@ -41,13 +41,14 @@ jobs:
       - name: Test DSH CLI integration contracts
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/shared/dsh-integration.test.ts
+          src/main/dsh/dsh-integration.test.ts
           src/main/dsh/dsh-hook-packages.test.ts
           src/shared/agent-process-recognition.test.ts
           src/shared/agent-session-resume.test.ts
           src/shared/tui-agent-startup.test.ts
           src/main/agent-hooks/managed-hook-script-refresh.test.ts
           src/main/agent-hooks/managed-hook-command-contract.test.ts
+          src/main/agent-hooks/server-retired-pane-new-turn.test.ts
 
       - name: Lint
         run: pnpm run lint
