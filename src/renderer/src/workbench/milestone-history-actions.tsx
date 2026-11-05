@@ -87,7 +87,7 @@ export function MilestoneGuide({
 }) {
   const uiReady = useAppStore((s) => s.persistedUIReady)
   useEffect(() => {
-    if (!editing || state.recoveryBlocked || !uiReady) {
+    if (!editing || blocked || !uiReady) {
       return
     }
     const app = useAppStore.getState()
