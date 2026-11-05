@@ -9,7 +9,6 @@ import type { Repo } from '../../../../../../shared/repo-types'
 import type { WorkspaceStatusDefinition, Worktree } from '../../../../../../shared/worktree/types'
 import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-types'
 import type { ExecutionHostId } from '../../../../../../shared/execution-host'
-import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { getHostDisplayLabelOverrides } from '../../../../../../shared/host-setting-overrides'
 import { buildRows } from '../grouping/build-rows'
 import type { ProjectGroupingModel } from '../grouping/project-grouping'
@@ -22,7 +21,8 @@ import { buildSidebarHostOptions } from '../../sidebar-host-options'
 import { selectPendingWorktreeCreationKeys } from './pending-worktree-creation-keys'
 import { projectWorkbenchRows } from './workbench-project-rows'
 import { useWorkbenchProjectFold } from './use-workbench-project-fold'
-
+import { useSidebarFoldActions } from '@/workbench/sidebar-fold'
+import { collectRenderedSidebarRowKeys } from './collect-rendered-sidebar-row-keys'
 type SectionRowsArgs = {
   workbenchProject?: { repoId: string; repoIds: readonly string[] }
   groupBy: WorktreeGroupBy
@@ -47,26 +47,6 @@ type SectionRowsArgs = {
   filterRepoIds: readonly string[]
   visibleWorkspaceHostIds: readonly ExecutionHostId[] | null
   workspaceHostScope: AppState['workspaceHostScope']
-}
-
-function collectRenderedSidebarRowKeys(sectionRows: ReturnType<typeof addHostSectionRows>) {
-  const keys = new Set<string>()
-  for (const row of sectionRows) {
-    if (row.type === 'header') {
-      keys.add(row.key)
-    } else if (row.type === 'item') {
-      keys.add(row.rowKey)
-    } else if (row.type === 'folder-workspace') {
-      keys.add(folderWorkspaceKey(row.folderWorkspace.id))
-    } else if (row.type === 'pending-creation') {
-      keys.add(`pending:${row.creationId}`)
-    } else if (row.type === 'imported-worktrees-card') {
-      keys.add(row.key)
-    } else if (row.type === 'new-external-worktrees-inbox') {
-      keys.add(row.key)
-    }
-  }
-  return keys
 }
 
 // Builds the full sidebar row model: grouped worktree rows first, then the host-section
@@ -159,14 +139,14 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
     [hostOptions]
   )
 
-  const rows: Row[] = useMemo(
-    () =>
+  const buildGroupRows = useCallback(
+    (collapsedGroups: Set<string>): Row[] =>
       buildRows(
         args.groupBy,
         worktrees,
         repoMap,
         args.prCache,
-        effectiveCollapsedGroups,
+        collapsedGroups,
         repoOrder,
         args.workspaceStatuses,
         args.projectOrderBy,
@@ -190,7 +170,6 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
       worktrees,
       repoMap,
       args.prCache,
-      effectiveCollapsedGroups,
       defaultHostId,
       repoOrder,
       args.workspaceStatuses,
@@ -208,6 +187,10 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
       hostLabelById,
       args.pinnedDisplayPolicy
     ]
+  )
+  const rows = useMemo(
+    () => buildGroupRows(effectiveCollapsedGroups),
+    [buildGroupRows, effectiveCollapsedGroups]
   )
   const orderedHostOptions = useMemo(
     () => orderHostSectionOptions(hostOptions, workspaceHostOrder),
@@ -257,6 +240,19 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
     ]
   )
   const otherProjects = useWorkbenchProjectFold(args.workbenchProject, args.worktreeMap)
+  useSidebarFoldActions(
+    () =>
+      addHostSectionRows({
+        rows: buildGroupRows(new Set()),
+        hostOptions: orderedHostOptions,
+        workspaceHostScope: args.workspaceHostScope,
+        visibleWorkspaceHostIds: args.visibleWorkspaceHostIds,
+        defaultHostId,
+        collapsedHostKeys: new Set(),
+        preferProjectGrouping: true
+      }),
+    otherProjects.setExpanded
+  )
   const sectionRows = useMemo(
     () =>
       args.workbenchProject
@@ -285,7 +281,6 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
     () => collectRenderedSidebarRowKeys(args.workbenchProject ? nativeSectionRows : sectionRows),
     [args.workbenchProject, nativeSectionRows, sectionRows]
   )
-
   return {
     rows,
     sectionRows,

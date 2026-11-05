@@ -15,7 +15,8 @@ import type {
   WorkspaceStatusDefinition
 } from '../../../../../../shared/worktree/types'
 import type { GroupHeaderRow, WorktreeGroupBy } from '../grouping/row-types'
-import { PINNED_GROUP_KEY } from '../grouping/group-keys'
+import { ALL_GROUP_KEY, PINNED_GROUP_KEY } from '../grouping/group-keys'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { getWorkspaceStatusFromGroupKey } from '../../workspace-status'
 import { getVirtualRowTransform } from '../viewport/virtual-rows'
 import { resolveProjectGroupHeaderColor } from '../../project-header-color'
@@ -174,10 +175,13 @@ export function renderWorktreeSectionHeaderRow(args: {
       })
     : null
   const isHeaderCollapsed = ctx.collapsedGroups.has(row.key)
-  // Why: repo/project/status/pinned share compact section chrome; flat "All" stays a simple label.
   const showHeaderCollapseAffordance =
     row.count > 0 &&
-    (isRepoHeader || isProjectGroupHeader || headerWorkspaceStatus !== null || isPinnedHeader)
+    (isRepoHeader ||
+      isProjectGroupHeader ||
+      headerWorkspaceStatus !== null ||
+      isPinnedHeader ||
+      (isWorkbenchShell() && row.key === ALL_GROUP_KEY))
   return (
     <div
       key={vItem.key}

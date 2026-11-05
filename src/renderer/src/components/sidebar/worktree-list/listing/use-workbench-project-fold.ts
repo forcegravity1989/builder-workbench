@@ -32,5 +32,13 @@ export function useWorkbenchProjectFold(
       setExpanded((current) => ({ ...current, [key]: !current[key] }))
     }
   }, [key])
-  return { expanded: !!expanded[key], toggle }
+  const setProjectExpanded = useCallback(
+    (value: boolean) => {
+      if (key) {
+        setExpanded((current) => ({ ...current, [key]: value }))
+      }
+    },
+    [key]
+  )
+  return { expanded: !!expanded[key], toggle, setExpanded: setProjectExpanded }
 }

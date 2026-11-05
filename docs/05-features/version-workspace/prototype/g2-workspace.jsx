@@ -1047,6 +1047,19 @@ function App() {
             <div className="section-label native-workspaces-heading">
               <span>Orca 项目工作区</span>
               <div className="native-workspaces-tools">
+                <Button icon={ChevronRight} label="全部收起" onClick={() => {
+                  setNativeProjectOpen(false)
+                  setNativeOtherOpen(false)
+                  setOtherProjectsOpen(false)
+                  setClosedTrees((items) => [...new Set([...items, ...nativeProjectTrees.map((tree) => tree.id)])])
+                }} />
+                <Button icon={ChevronDown} label="全部展开" onClick={() => {
+                  setNativeProjectOpen(true)
+                  setNativeOtherOpen(true)
+                  setOtherProjectsOpen(true)
+                  const ids = new Set(nativeProjectTrees.map((tree) => tree.id))
+                  setClosedTrees((items) => items.filter((id) => !ids.has(id)))
+                }} />
                 <Button
                   icon={(props) => <NativeToolIcon kind="activity" {...props} />}
                   label="活动"
