@@ -5,7 +5,7 @@ import { InlineField } from './milestones-fields.jsx'
 import { day } from './milestones-sdlc.js'
 import { dayWidth, labelWidth } from './milestones-calendar.js'
 // eslint-disable-next-line no-unused-vars
-const { React, useState, useRef, useEffect, CircleHelp, X } = window.BWPrototypeDependencies
+const { React, useState, useRef, useEffect, CircleHelp, Plus, X } = window.BWPrototypeDependencies
 
 function FloatingPanel({ anchor, label, close, children, className = '' }) {
   const ref = useRef(null)
@@ -75,7 +75,7 @@ function MilestoneCaption({ item, planning, onChange, onRemove, onRead }) {
   )
 }
 
-export function MilestoneAxis({ milestones, planning, start, width, onChange, onRemove }) {
+export function MilestoneAxis({ milestones, planning, start, width, onAdd, onChange, onRemove }) {
   const [selected, setSelected] = useState(null)
   const groups = []
   for (const item of milestones
@@ -105,6 +105,9 @@ export function MilestoneAxis({ milestones, planning, start, width, onChange, on
         style={{ width: width + labelWidth }}
       >
         <div className="ml-sticky-label">
+          {planning && (
+            <IconAction className="ml-cell-add" label="添加里程碑" icon={Plus} onClick={onAdd} />
+          )}
           <strong>关键里程碑</strong>
           {undated.length > 0 && (
             <button className="ml-undated" onClick={(e) => open(e, undated)}>
@@ -299,13 +302,20 @@ export function MilestoneGuide({ planning }) {
       setStep(null)
     }
   }, [planning])
+  const viewingActual = planning && document.querySelector('.ml-show-actual input:checked')
   const steps = [
     [
       '添加与编排',
-      planning
-        ? '列表＋添加特性，旗帜＋添加里程碑；点文本编辑，点 X 删除，可撤销。'
-        : '点击「规划里程碑」开始编排，添加特性与关键日期。',
-      planning ? '.ml-sdlc-toolbar' : '.ml-milestone-heading .btn-primary'
+      viewingActual
+        ? '取消「显示实际」回到计划，然后点对应表头的＋。'
+        : planning
+          ? '点左列表头的＋添加里程碑或特性。点成果文字编辑，点 X 删除，误删可撤销。'
+          : '点击「规划里程碑」开始编排，添加特性与关键日期。',
+      viewingActual
+        ? '.ml-show-actual'
+        : planning
+          ? '.ml-roadmap .ml-cell-add'
+          : '.ml-milestone-heading .btn-primary'
     ],
     [
       '调整时间',

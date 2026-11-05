@@ -821,7 +821,9 @@
   cursor: pointer;
 }
 .ml-node-remove {
-  flex: none;
+  position: absolute;
+  top: 0;
+  right: 0;
   width: 24px;
   height: 22px;
   border: 0;
@@ -1319,18 +1321,21 @@
   background: color-mix(in srgb, var(--muted-foreground) 5%, transparent);
 }
 
-.ml-add-flag {
-  position: relative;
-  display: inline-flex;
-}
-.ml-add-flag > svg:last-child {
+.ml-sticky-label > .ml-cell-add {
   position: absolute;
-  right: -4px;
-  bottom: -2px;
-  background: var(--background);
+  top: 4px;
+  right: 5px;
+}
+.ml-milestone-caption:has(> .ml-node-remove) {
+  border: 0;
+  background: transparent;
+  padding-right: 24px;
 }
 .ml-node-summary.ml-inline {
   display: block;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--background);
   height: 38px;
   min-height: 38px;
   margin: 0;
@@ -1341,9 +1346,9 @@
 }
 .ml-milestone-caption:focus-within {
   z-index: 12;
-  box-shadow: var(--shadow-dialog);
 }
 .ml-node-summary.ml-inline:focus {
+  box-shadow: var(--shadow-dialog);
   height: 112px;
   overflow-y: auto;
 }

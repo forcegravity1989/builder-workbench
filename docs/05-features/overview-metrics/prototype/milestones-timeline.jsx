@@ -1,5 +1,3 @@
-import ListPlus from 'lucide-react/dist/esm/icons/list-plus.js'
-import Flag from 'lucide-react/dist/esm/icons/flag.js'
 import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.ts'
 import { MilestoneAxis } from './milestones-roadmap.jsx'
 import { InlineField, WeekName } from './milestones-fields.jsx'
@@ -348,28 +346,6 @@ export function Timeline({
   return (
     <>
       <div className="ml-sdlc-toolbar">
-        {canEdit && (
-          <>
-            <IconAction label="添加特性" icon={ListPlus} onClick={onAdd} />
-            <IconAction
-              label="添加里程碑"
-              glyph={
-                <span className="ml-add-flag">
-                  <Flag size={16} />
-                  <Plus size={9} />
-                </span>
-              }
-              onClick={() =>
-                onAddMilestone({
-                  date: dateOf(
-                    start + Math.floor((scroll.current?.scrollLeft || 0) / dayWidth) + 1
-                  ),
-                  outcome: ''
-                })
-              }
-            />
-          </>
-        )}
         <span className="ml-planning-count">
           {display.features.length} 个特性 ·{' '}
           {new Set(display.features.map((f) => f.owner.trim()).filter(Boolean)).size} 位负责人
@@ -457,6 +433,12 @@ export function Timeline({
           planning={canEdit}
           start={start}
           width={totalWidth}
+          onAdd={() =>
+            onAddMilestone({
+              date: dateOf(start + Math.floor((scroll.current?.scrollLeft || 0) / dayWidth) + 1),
+              outcome: ''
+            })
+          }
           onChange={onChangeMilestone}
           onRemove={onRemoveMilestone}
         />
@@ -489,6 +471,14 @@ export function Timeline({
           <div className="ml-board-header">
             <div className="ml-version-row" style={{ height: versionHeight }}>
               <div className="ml-sticky-label">
+                {canEdit && (
+                  <IconAction
+                    className="ml-cell-add"
+                    label="添加特性"
+                    icon={Plus}
+                    onClick={onAdd}
+                  />
+                )}
                 特性 / 负责人<small>{showActual ? '版本日期对照' : '计划 · 日排期'}</small>
               </div>
               <div className="ml-version-track" style={{ width: totalWidth }}>
