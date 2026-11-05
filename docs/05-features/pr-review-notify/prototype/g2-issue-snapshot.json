@@ -1,0 +1,106 @@
+{
+  "readAt": "2026-10-20T03:22:58.6215739Z",
+  "repository": "github.com/forcegravity1989/builder-workbench",
+  "items": [
+    {
+      "number": 341,
+      "title": "【v0.7|G1】帮 builders 梳理特性与核心指标：统一一版并录入真实数据",
+      "state": "OPEN",
+      "updatedAt": "2026-10-19T12:17:35Z",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/341",
+      "assignees": {
+        "nodes": []
+      }
+    },
+    {
+      "number": 328,
+      "title": "【v0.7|G2】计划屏/验收屏适配侧边栏版本运作树（去掉屏内版本筛选等）",
+      "state": "OPEN",
+      "updatedAt": "2026-10-19T12:49:08Z",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/328",
+      "assignees": {
+        "nodes": []
+      }
+    },
+    {
+      "number": 334,
+      "title": "【v0.7|G2】版本总览屏（周报样式）：聚合该版本计划与验收数据",
+      "state": "OPEN",
+      "updatedAt": "2026-10-19T12:49:06Z",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/334",
+      "assignees": {
+        "nodes": []
+      }
+    },
+    {
+      "number": 372,
+      "title": "【v0.7|G2】未重装时共享连接反复失效，重新生成链接后团队成员需重新配对",
+      "state": "OPEN",
+      "updatedAt": "2026-10-19T12:36:46Z",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/372",
+      "assignees": {
+        "nodes": []
+      }
+    },
+    {
+      "number": 383,
+      "title": "【v0.7|G2】Orca 侧边栏调整：项目墙 → 项目 → 版本运作树，会话随目标与版本归档",
+      "state": "OPEN",
+      "updatedAt": "2026-10-19T12:31:14Z",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/383",
+      "assignees": {
+        "nodes": []
+      }
+    },
+    {
+      "number": 374,
+      "title": "【v0.7|G3】计划屏/验收屏 skill 增加「获取会议纪要」步骤：按会议 ID 抓转写稿 + 子代理按议题提炼，继承进计划与验收产物",
+      "state": "OPEN",
+      "updatedAt": "2026-10-19T12:39:20Z",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/374",
+      "assignees": {
+        "nodes": []
+      }
+    },
+    {
+      "number": 384,
+      "title": "【v0.7|G3】计划屏易用性问题：版本进展不可读、目标卡标题重复渲染（同步检查验收屏是否有相似问题）",
+      "state": "OPEN",
+      "updatedAt": "2026-10-19T12:38:46Z",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/384",
+      "assignees": {
+        "nodes": []
+      }
+    },
+    {
+      "number": 385,
+      "title": "【v0.7|G3】计划屏目标下 Issue 直接「开工」：侧边栏固定目录建 worktree，不跳任务屏",
+      "state": "OPEN",
+      "updatedAt": "2026-10-19T12:38:49Z",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/385",
+      "assignees": {
+        "nodes": []
+      }
+    },
+    {
+      "number": 317,
+      "title": "【v0.7|G4】首次启动弹出 Orca 的向导、功能提示和功能墙，反馈入口仍指向 Orca",
+      "state": "OPEN",
+      "updatedAt": "2026-10-19T12:37:14Z",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/317",
+      "assignees": {
+        "nodes": []
+      }
+    },
+    {
+      "number": 323,
+      "title": "【v0.7|G4】设置→集成只留 GitHub，新增 CodeHub / WeLink 卡片，三张卡都能原地安装与登录",
+      "state": "OPEN",
+      "updatedAt": "2026-10-19T12:37:09Z",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/323",
+      "assignees": {
+        "nodes": []
+      }
+    }
+  ]
+}
