@@ -1,7 +1,7 @@
 import { Modal } from './milestones-panels.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import Flag from 'lucide-react/dist/esm/icons/flag.js'
-import Ellipsis from 'lucide-react/dist/esm/icons/ellipsis.js'
+import { InlineField } from './milestones-fields.jsx'
 import { day } from './milestones-sdlc.js'
 import { dayWidth, labelWidth } from './milestones-calendar.js'
 // eslint-disable-next-line no-unused-vars
@@ -44,7 +44,38 @@ function FloatingPanel({ anchor, label, close, children, className = '' }) {
   )
 }
 
-export function MilestoneAxis({ milestones, planning, start, width, onOpen, onRemove }) {
+function MilestoneCaption({ item, planning, onChange, onRemove, onRead }) {
+  return (
+    <div className="ml-milestone-caption">
+      {planning ? (
+        <InlineField
+          value={item.outcome}
+          label={`${item.date || item.month} 里程碑成果`}
+          multiline
+          maxLength={200}
+          className="ml-node-summary"
+          change={(outcome) => onChange({ ...item, outcome })}
+        />
+      ) : (
+        <button className="ml-node-summary" title={item.outcome} onClick={onRead}>
+          {item.outcome}
+        </button>
+      )}
+      {planning && (
+        <button
+          className="ml-node-remove"
+          aria-label={`删除里程碑：${item.outcome}`}
+          title="删除里程碑，可撤销"
+          onClick={() => onRemove(item.id)}
+        >
+          <X size={14} />
+        </button>
+      )}
+    </div>
+  )
+}
+
+export function MilestoneAxis({ milestones, planning, start, width, onChange, onRemove }) {
   const [selected, setSelected] = useState(null)
   const groups = []
   for (const item of milestones
@@ -61,9 +92,11 @@ export function MilestoneAxis({ milestones, planning, start, width, onOpen, onRe
       })
     }
   }
-  useEffect(() => setSelected(null), [planning, milestones])
+  useEffect(() => setSelected(null), [planning])
   const undated = milestones.filter((m) => !m.date)
-  const open = (event, items) => setSelected({ anchor: event.currentTarget, items })
+  const open = (event, items) =>
+    setSelected({ anchor: event.currentTarget, ids: items.map((item) => item.id) })
+  const selectedItems = selected ? milestones.filter((m) => selected.ids.includes(m.id)) : []
   return (
     <>
       <section
@@ -112,64 +145,73 @@ export function MilestoneAxis({ milestones, planning, start, width, onOpen, onRe
                   {nodeWidth >= 90 && <span>{group.date.slice(5).replace('-', '/')}</span>}
                   {group.items.length > 1 && nodeWidth >= 90 && <small>{group.items.length}</small>}
                 </button>
-                {nodeWidth >= 80 && (
-                  <div className="ml-milestone-caption">
+                {nodeWidth >= 80 &&
+                  (group.items.length === 1 ? (
+                    <MilestoneCaption
+                      item={group.items[0]}
+                      planning={planning}
+                      onChange={onChange}
+                      onRemove={onRemove}
+                      onRead={(e) => open(e, group.items)}
+                    />
+                  ) : (
                     <button
-                      className="ml-node-summary"
-                      title={group.items.map((m) => m.outcome).join('；')}
+                      className="ml-milestone-caption ml-group-summary"
                       onClick={(e) => open(e, group.items)}
                     >
                       {title}
                     </button>
-                    {planning && (
-                      <button
-                        className="ml-node-more"
-                        aria-label={`${group.date} 更多操作`}
-                        title="编辑或删除里程碑"
-                        onClick={(e) => open(e, group.items)}
-                      >
-                        <Ellipsis size={15} />
-                      </button>
-                    )}
-                  </div>
-                )}
+                  ))}
               </div>
             )
           })}
         </div>
       </section>
-      {selected && (
-        <FloatingPanel
-          anchor={selected.anchor}
-          label="里程碑详情与操作"
-          close={() => setSelected(null)}
-        >
-          {selected.items.map((item) => (
+      {selectedItems.length > 0 && (
+        <FloatingPanel anchor={selected.anchor} label="里程碑详情" close={() => setSelected(null)}>
+          {selectedItems.map((item) => (
             <section className="ml-node-detail" key={item.id}>
-              <small>{item.date || `${item.month} · 未指定日期`}</small>
-              <p>{item.outcome}</p>
-              {planning && (
-                <div className="ml-actions">
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => {
+              {planning ? (
+                <input
+                  className="input ml-inline ml-node-date-input"
+                  type="date"
+                  aria-label={`里程碑日期：${item.outcome}`}
+                  defaultValue={item.date}
+                  onBlur={(e) => {
+                    const date = e.currentTarget.value
+                    if (date && e.currentTarget.validity.valid && date !== item.date) {
+                      onChange({ ...item, date })
                       setSelected(null)
-                      onOpen(item)
-                    }}
-                  >
-                    编辑
-                  </button>
-                  <button
-                    className="btn btn-ghost ml-delete-milestone"
-                    aria-label={`删除里程碑：${item.outcome}`}
-                    onClick={() => {
-                      setSelected(null)
-                      onRemove(item.id)
-                    }}
-                  >
-                    删除
-                  </button>
-                </div>
+                    } else {
+                      e.currentTarget.value = item.date
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      e.stopPropagation()
+                      e.currentTarget.value = item.date
+                      e.currentTarget.blur()
+                    }
+                    if (e.key === 'Enter') {
+                      e.currentTarget.blur()
+                    }
+                  }}
+                />
+              ) : (
+                <small>{item.date || `${item.month} · 未指定日期`}</small>
+              )}
+              {planning ? (
+                <MilestoneCaption
+                  item={item}
+                  planning
+                  onChange={onChange}
+                  onRemove={(id) => {
+                    setSelected(null)
+                    onRemove(id)
+                  }}
+                />
+              ) : (
+                <p>{item.outcome}</p>
               )}
             </section>
           ))}
@@ -179,71 +221,52 @@ export function MilestoneAxis({ milestones, planning, start, width, onOpen, onRe
   )
 }
 
-export function MilestoneEditor({ item, planning, save, remove, close }) {
+export function AddMilestone({ item, save, close }) {
   const [draft, setDraft] = useState(item)
   return (
-    <Modal title={planning ? (item.id ? '编辑里程碑' : '添加里程碑') : '里程碑'} close={close}>
-      {planning ? (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            save({ ...draft, outcome: draft.outcome.trim() })
-          }}
-        >
-          <label className="ml-milestone-field">
-            日期
-            <input
-              className="input"
-              type="date"
-              value={draft.date}
-              required={!item.month}
-              onChange={(e) => setDraft({ ...draft, date: e.target.value })}
-            />
-          </label>
-          {item.month && !draft.date && (
-            <p className="muted">原规划仅记录 {item.month}，尚未指定日期。</p>
-          )}
-          <label className="ml-milestone-field">
-            预期成果
-            <textarea
-              aria-label="预期成果"
-              className="input"
-              rows={4}
-              maxLength={200}
-              required
-              value={draft.outcome}
-              placeholder="例如：发布 1.0，完成首次正式推广"
-              onChange={(e) => setDraft({ ...draft, outcome: e.target.value })}
-            />
-          </label>
-          <footer>
-            {item.id && (
-              <button
-                type="button"
-                className="btn btn-ghost ml-delete-milestone"
-                onClick={() => remove(item.id)}
-              >
-                删除里程碑
-              </button>
-            )}
-            <button type="button" className="btn btn-secondary" onClick={close}>
-              取消
-            </button>
-            <button
-              className="btn btn-primary"
-              type="submit"
-              disabled={!draft.outcome.trim() || (!draft.date && !item.month)}
-            >
-              保存
-            </button>
-          </footer>
-        </form>
-      ) : (
-        <>
-          <p className="muted">{item.date || `${item.month} · 未指定日期`}</p>
-          <p className="ml-info-text">{item.outcome}</p>
-        </>
-      )}
+    <Modal title="添加里程碑" close={close}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          save({ ...draft, outcome: draft.outcome.trim() })
+        }}
+      >
+        <label className="ml-milestone-field">
+          日期
+          <input
+            className="input"
+            type="date"
+            required
+            value={draft.date}
+            onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+          />
+        </label>
+        <label className="ml-milestone-field">
+          预期成果
+          <textarea
+            aria-label="预期成果"
+            className="input"
+            rows={4}
+            maxLength={200}
+            required
+            value={draft.outcome}
+            placeholder="例如：发布 1.0，完成首次正式推广"
+            onChange={(e) => setDraft({ ...draft, outcome: e.target.value })}
+          />
+        </label>
+        <footer>
+          <button type="button" className="btn btn-secondary" onClick={close}>
+            取消
+          </button>
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={!draft.outcome.trim() || !draft.date}
+          >
+            添加
+          </button>
+        </footer>
+      </form>
     </Modal>
   )
 }
@@ -280,7 +303,7 @@ export function MilestoneGuide({ planning }) {
     [
       '添加与编排',
       planning
-        ? '从这里添加特性或里程碑。旗帜旁的 ⋯ 可以编辑、删除节点。'
+        ? '列表＋添加特性，旗帜＋添加里程碑；点文本编辑，点 X 删除，可撤销。'
         : '点击「规划里程碑」开始编排，添加特性与关键日期。',
       planning ? '.ml-sdlc-toolbar' : '.ml-milestone-heading .btn-primary'
     ],

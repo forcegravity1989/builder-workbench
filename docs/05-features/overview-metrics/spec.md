@@ -6,7 +6,7 @@
 
 ## 原型入口与来源
 
-- [原项目总览高保真](prototype.html?review=551&revision=compact)继续使用原壳和特性泳道，关键节点与泳道共用日轴。可编辑来源为 [页面](prototype/milestones.jsx)、[日轴](prototype/milestones-timeline.jsx)、[关键节点](prototype/milestones-roadmap.jsx)、[排期计算](prototype/milestones-sdlc.js)、[样例](prototype/milestones-data.js)、[面板](prototype/milestones-panels.jsx)、[日历](prototype/milestones-calendar.js)、[历史](prototype/milestones-history.js)及[样式](prototype/milestones.css)。`node docs/05-features/overview-metrics/prototype/build-milestones.cjs` 重建，追加 `--check` 核对生成物。
+- [原项目总览高保真](prototype.html?review=551&revision=inline)继续使用原壳和特性泳道，关键节点与泳道共用日轴。可编辑来源为 [页面](prototype/milestones.jsx)、[日轴](prototype/milestones-timeline.jsx)、[关键节点](prototype/milestones-roadmap.jsx)、[排期计算](prototype/milestones-sdlc.js)、[样例](prototype/milestones-data.js)、[面板](prototype/milestones-panels.jsx)、[日历](prototype/milestones-calendar.js)、[历史](prototype/milestones-history.js)及[样式](prototype/milestones.css)。`node docs/05-features/overview-metrics/prototype/build-milestones.cjs` 重建，追加 `--check` 核对生成物。
 - 复用原 DS、vendor、IconAction、侧栏与 [scoreboard.html](prototype/scoreboard.html)；记分牌不改。项目里程碑只保留此高保真入口。
 - 11 月六个特性、负责人、A～D 四个版本、Issue 编号及验收结论均为模拟。A 为 `v1.0.0`，B 为 `v1.0.1`，C 为 `v1.1.0`，D 为 `v1.1.1`；A 有 8 个工作日，消息与通知只排 5 个工作日。模拟当前日期为 2026-11-27，日期位置不决定是否完成。
 - 浏览器保存草案、最近提交和正式样例，刷新回正式视图后可续编；重置只影响样例。不写真实 Git、Issue、PR/MR 或 BW 材料。[原计划屏](../version-planning/planning-journey-prototype.html?review=551)、[原验收屏](../version-acceptance/acceptance-journey-prototype.html?review=551)只补评审说明和导航，沿用原控件。三个静态页面不共享业务状态；版本总览不作本轮 UI 或 SDLC 开关改动。
@@ -80,13 +80,13 @@
 
 ### 关键节点与操作反馈（原型待评审）
 
-关键节点使用具体日期，例如 11/05 发布 1.0 并正式推广；同月、同日都可有多个。保留原横轴和旗帜，节点区固定 88px；常态成果最多两行，点击旗帜或摘要展开全文。制定中，顶部操作区提供添加入口，节点旁常显“⋯”菜单，就近编辑或删除；右键节点也可打开。相同日期合为带数量的旗帜，展开后逐项操作；相邻日期拥挤时收起摘要，保留准确日期位置及可点击旗帜，不向下堆行。编辑继续使用可伸缩多行文本框。与特性共用等宽日轴和同一滚动区域，左右浏览保持对齐；更改特性/版本排期不自动移动关键节点。删除及修改纳入现有撤销和评审摘要，不增加目标绑定、依赖、自动完成或开发/维护段增删。
+关键节点使用具体日期，例如 11/05 发布 1.0 并正式推广；同月、同日都可有多个。保留原横轴和旗帜，节点区固定 88px；常态成果最多两行，点击旗帜或摘要展开全文。制定中，顶部操作区使用“列表＋”添加特性、“旗帜＋”添加里程碑，均复用图标按钮与悬停/聚焦提示，不常驻文字。成果直接在节点文本框编辑，聚焦时展开长文本，不撑高节点区；旁边 X 直接删除，不弹确认，误删使用撤销。点旗帜展开日期和全文，日期就地修改。相同日期合为带数量的旗帜，展开后逐项操作；相邻日期拥挤时收起摘要，保留准确日期位置及可点击旗帜，不向下堆行。编辑继续使用可伸缩多行文本框。与特性共用等宽日轴和同一滚动区域，左右浏览保持对齐；更改特性/版本排期不自动移动关键节点。删除及修改纳入现有撤销和评审摘要，不增加目标绑定、依赖、自动完成或开发/维护段增删。
 
 仅有月份的旧成果保留原文并显示“未指定日期”，由人补日期，不能捏造为月初或月末。原型样例模型使用 `milestones` 节点；生产目前仍采用月度 `months`，本轮不修改正式 schema、材料写入或迁移协议。待交互确认再按独立身份、保留原精度和统一评审原则落实。
 
-引导沿仓内 Orca `ContextualTourOverlaySurface` 的锚定浮层思路：标题栏问号打开分步提示，支持跳过、关闭及记住已看状态；首次进入编排且从未看过引导时才自动提示。常态不增加说明行、折叠区或页面占位。原型模拟浮层交互，生产接入沿原生 contextual tours，不另建引导系统。提交开始立即锁住重复请求，按钮显示“提交中…”，全局通知随后更新为成功或失败；成功可查看评审，仍须合入后更新正式安排。失败保留草案，页面仅留简短重试/详情入口，原始错误不铺在泳道。正式接入复用 Orca 现有 Sonner 通知和请求互斥；原型顶部“演示提交反馈”选择成功或失败后立即播放进行中与结果，失败可重试；这条演示不要求先修改草案，也不改变正式样例、提交基线或真实 Git/PR。实际编辑后的提交仍走原评审流程。
+引导沿仓内 Orca `ContextualTourOverlaySurface` 的锚定浮层思路：标题栏问号打开分步提示，支持跳过、关闭及记住已看状态；首次进入编排且从未看过引导时才自动提示。常态不增加说明行、折叠区或页面占位。原型模拟浮层交互，生产接入沿原生 contextual tours，不另建引导系统。提交开始立即锁住重复请求，按钮显示“提交中…”，全局通知随后更新为成功或失败；成功可查看评审，仍须合入后更新正式安排。失败保留草案，页面仅留简短重试/详情入口，原始错误不铺在泳道。正式接入沿项目里程碑已使用的 `sonner` 调用及应用壳统一的 `Toaster`，复用通知样式和宿主，不移植原型的演示通知组件；请求互斥贯穿提交过程。原型顶部“演示提交反馈”选择成功或失败后立即播放进行中与结果，失败可重试；这条演示不要求先修改草案，也不改变正式样例、提交基线或真实 Git/PR。实际编辑后的提交仍走原评审流程。
 
-交互参考 [Linear 项目里程碑](https://linear.app/docs/project-milestones) 的日期节点增删改、节点旁更多菜单和展开详情，以及 [Asana Timeline](https://help.asana.com/s/article/plan-and-execute-projects-with-timeline?language=en_US) 的菱形节点表达；只借用与 BW 现有规划相关的部分。
+交互参考 [Linear 项目里程碑](https://linear.app/docs/project-milestones) 的日期节点和展开详情，以及 [Asana Timeline](https://help.asana.com/s/article/plan-and-execute-projects-with-timeline?language=en_US) 的菱形节点表达；只借用与 BW 现有规划相关的部分。
 
 日轴每天等宽，特性栏 220px；计划模式的版本起止分界贯穿泳道，相邻版本以极淡底色区分，日格线保持次要；工作日历复用 `workCalendarDay`，休息日底纹贯穿泳道，没有真实年度样本时按普通周末，不增加导入/配置入口。空周只是背景，使用或命名时才登记版本，不批量建材料/会话。“添加特性”放在泳道上方，新增行插在顶部；默认先取覆盖当前日期的已有版本，没有则取最近未来版本，再取起点晚于首版终点的紧邻已有版本。没有相应版本才生成默认周窗口，不因首版跨周而跳过下一已有版本。默认两段；就地编辑名称和负责人，行首排序、行尾移除，统一撤销。计划与实际常态行均为 88px；正式版本真实重叠时按版本分层增加行高。统计和图例共用一行，实际模式以版本周期说明替代阶段图例，版本段内标示版本名和结果，同一版本头内增加一行日期对照。
 

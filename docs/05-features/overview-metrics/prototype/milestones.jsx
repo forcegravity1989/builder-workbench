@@ -1,5 +1,5 @@
 import { MilestoneReviewNav } from './milestone-review-nav.jsx'
-import { MilestoneEditor, MilestoneGuide } from './milestones-roadmap.jsx'
+import { AddMilestone, MilestoneGuide } from './milestones-roadmap.jsx'
 import { Timeline } from './milestones-timeline.jsx'
 import { defaultStages, laneConflict, settleWindows, editVersionName } from './milestones-sdlc.js'
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js'
@@ -81,7 +81,7 @@ function App() {
       return
     }
     const field = fieldEdit
-      ? document.activeElement?.matches('input.ml-inline')
+      ? document.activeElement?.matches('input.ml-inline,textarea.ml-inline')
         ? document.activeElement
         : history.field
       : null
@@ -256,18 +256,14 @@ function App() {
     )
   }
   const info = (title, text) => setModal({ type: 'info', title, text })
-  const saveMilestone = (item) => {
-    const milestone = { ...item, id: item.id || crypto.randomUUID() }
+  const addMilestone = (item) => {
+    const milestone = { ...item, id: crypto.randomUUID() }
     editPlan((p) => ({
       ...p,
-      milestones: p.milestones.some((m) => m.id === milestone.id)
-        ? p.milestones.map((m) => (m.id === milestone.id ? milestone : m))
-        : [...p.milestones, milestone]
+      milestones: [...p.milestones, milestone]
     }))
     setModal(null)
-    if (milestone.date) {
-      navigate(milestone.date)
-    }
+    navigate(milestone.date)
   }
   const nameWeek = (week, name) => {
     if (state.draft.versions.some((v) => v.name === name)) {
@@ -325,7 +321,7 @@ function App() {
       <div
         className="ml-app"
         onFocusCapture={(event) => {
-          if (event.target.matches('input.ml-inline')) {
+          if (event.target.matches('input.ml-inline,textarea.ml-inline')) {
             history.field = null
           }
         }}
@@ -504,15 +500,19 @@ function App() {
               ) : (
                 <>
                   <Timeline
+                    onChangeMilestone={(item) =>
+                      editFieldPlan((p) => ({
+                        ...p,
+                        milestones: p.milestones.map((m) => (m.id === item.id ? item : m))
+                      }))
+                    }
                     onRemoveMilestone={(id) =>
                       editPlan((p) => ({
                         ...p,
                         milestones: p.milestones.filter((m) => m.id !== id)
                       }))
                     }
-                    onMilestone={(item, editable) =>
-                      setModal({ type: 'milestone', item, editable })
-                    }
+                    onAddMilestone={(item) => setModal({ type: 'milestone', item })}
                     actualScenario={actualScenario}
                     onActualScenario={setActualScenario}
                     rows={plan.features}
@@ -573,16 +573,7 @@ function App() {
         </div>
       </div>
       {modal?.type === 'milestone' && (
-        <MilestoneEditor
-          item={modal.item}
-          planning={modal.editable}
-          save={saveMilestone}
-          remove={(id) => {
-            editPlan((p) => ({ ...p, milestones: p.milestones.filter((m) => m.id !== id) }))
-            setModal(null)
-          }}
-          close={() => setModal(null)}
-        />
+        <AddMilestone item={modal.item} save={addMilestone} close={() => setModal(null)} />
       )}
       {modal?.type === 'references' && <ReferencePanel close={() => setModal(null)} />}
       {modal?.type === 'version' && (

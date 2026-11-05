@@ -1,3 +1,5 @@
+import ListPlus from 'lucide-react/dist/esm/icons/list-plus.js'
+import Flag from 'lucide-react/dist/esm/icons/flag.js'
 import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.ts'
 import { MilestoneAxis } from './milestones-roadmap.jsx'
 import { InlineField, WeekName } from './milestones-fields.jsx'
@@ -36,8 +38,9 @@ export function Timeline({
   onAdd,
   onNameWeek,
   onApply,
-  onMilestone,
-  onRemoveMilestone
+  onAddMilestone,
+  onRemoveMilestone,
+  onChangeMilestone
 }) {
   const scroll = useRef(null),
     drag = useRef(null),
@@ -347,27 +350,24 @@ export function Timeline({
       <div className="ml-sdlc-toolbar">
         {canEdit && (
           <>
-            <button className="btn btn-ghost" onClick={onAdd}>
-              <Plus size={14} />
-              添加特性
-            </button>
-            <button
-              className="btn btn-ghost"
-              onClick={() =>
-                onMilestone(
-                  {
-                    date: dateOf(
-                      start + Math.floor((scroll.current?.scrollLeft || 0) / dayWidth) + 1
-                    ),
-                    outcome: ''
-                  },
-                  true
-                )
+            <IconAction label="添加特性" icon={ListPlus} onClick={onAdd} />
+            <IconAction
+              label="添加里程碑"
+              glyph={
+                <span className="ml-add-flag">
+                  <Flag size={16} />
+                  <Plus size={9} />
+                </span>
               }
-            >
-              <Plus size={14} />
-              添加里程碑
-            </button>
+              onClick={() =>
+                onAddMilestone({
+                  date: dateOf(
+                    start + Math.floor((scroll.current?.scrollLeft || 0) / dayWidth) + 1
+                  ),
+                  outcome: ''
+                })
+              }
+            />
           </>
         )}
         <span className="ml-planning-count">
@@ -445,7 +445,7 @@ export function Timeline({
           }
         }}
         onPointerDown={(e) => {
-          if (e.button !== 0 || e.target.closest('button,input,a,label,summary,details')) {
+          if (e.button !== 0 || e.target.closest('button,input,textarea,a,label,summary,details')) {
             return
           }
           pan.current = { x: e.clientX, left: scroll.current.scrollLeft }
@@ -457,7 +457,7 @@ export function Timeline({
           planning={canEdit}
           start={start}
           width={totalWidth}
-          onOpen={(item) => onMilestone(item, canEdit)}
+          onChange={onChangeMilestone}
           onRemove={onRemoveMilestone}
         />
         <div className="ml-timeline-canvas" style={{ width: totalWidth + labelWidth }}>

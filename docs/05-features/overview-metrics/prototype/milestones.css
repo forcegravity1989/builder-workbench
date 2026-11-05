@@ -730,6 +730,8 @@
   color: var(--destructive);
 }
 .ml-roadmap {
+  position: relative;
+  z-index: 7;
   display: flex;
   height: 88px;
   border-bottom: 1px solid var(--border);
@@ -818,7 +820,7 @@
   overflow-wrap: anywhere;
   cursor: pointer;
 }
-.ml-node-more {
+.ml-node-remove {
   flex: none;
   width: 24px;
   height: 22px;
@@ -829,7 +831,7 @@
   cursor: pointer;
 }
 .ml-node-summary:hover,
-.ml-node-more:hover {
+.ml-node-remove:hover {
   background: var(--muted);
 }
 .ml-undated {
@@ -870,9 +872,6 @@
   line-height: 1.7;
   margin: 8px 0;
 }
-.ml-node-detail .ml-actions {
-  justify-content: flex-end;
-}
 .ml-milestone-field {
   display: flex;
   flex-direction: column;
@@ -886,10 +885,7 @@
   min-height: 100px;
   line-height: 1.7;
 }
-.ml-delete-milestone {
-  margin-right: auto;
-  color: var(--destructive);
-}
+
 .ml-help {
   display: inline-flex;
 }
@@ -1321,4 +1317,56 @@
 }
 .ml-version-boundary[data-alternate='1'] {
   background: color-mix(in srgb, var(--muted-foreground) 5%, transparent);
+}
+
+.ml-add-flag {
+  position: relative;
+  display: inline-flex;
+}
+.ml-add-flag > svg:last-child {
+  position: absolute;
+  right: -4px;
+  bottom: -2px;
+  background: var(--background);
+}
+.ml-node-summary.ml-inline {
+  display: block;
+  height: 38px;
+  min-height: 38px;
+  margin: 0;
+  resize: none;
+  white-space: pre-wrap;
+  cursor: text;
+  -webkit-line-clamp: unset;
+}
+.ml-milestone-caption:focus-within {
+  z-index: 12;
+  box-shadow: var(--shadow-dialog);
+}
+.ml-node-summary.ml-inline:focus {
+  height: 112px;
+  overflow-y: auto;
+}
+.ml-node-remove:hover {
+  color: var(--destructive);
+}
+.ml-group-summary {
+  justify-content: center;
+  padding: 5px;
+  color: var(--foreground);
+  font-size: 11px;
+  cursor: pointer;
+}
+.ml-node-detail .ml-milestone-caption {
+  position: relative;
+  top: auto;
+  margin-top: 8px;
+}
+.ml-node-detail .ml-node-summary.ml-inline {
+  height: 96px;
+  overflow-y: auto;
+}
+.ml-node-date-input {
+  width: 150px;
+  font-size: 12px;
 }

@@ -289,6 +289,9 @@ export function loadCases() {
   return freshCases()
 }
 export function incomplete(plan) {
+  if (plan.milestones.some((m) => !m.outcome.trim())) {
+    return '请补全里程碑成果'
+  }
   if (plan.versions.some((v) => !v.name.trim())) {
     return '请补全版本名称'
   }
