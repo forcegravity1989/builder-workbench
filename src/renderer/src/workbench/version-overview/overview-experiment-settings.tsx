@@ -3,8 +3,13 @@ import { useAppStore } from '@/store'
 import { useProjectPage } from '../project-page-state'
 import { getProjectHostSetupProjectionFromState } from '@/store/project-host-setup-selector'
 import { SearchableSetting } from '@/components/settings/SearchableSetting'
-import { SettingsRow, SettingsSwitch } from '@/components/settings/SettingsFormControls'
+import {
+  SettingsRow,
+  SettingsSubsectionHeader,
+  SettingsSwitch
+} from '@/components/settings/SettingsFormControls'
 import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -54,63 +59,92 @@ export function OverviewExperimentSettings() {
   }
   return (
     <SearchableSetting
-      title="项目统计"
-      description={overviewExperimentEntries.map((entry) => entry.title).join(' ')}
+      title="按项目设置"
+      description={`版本总览统计 ${overviewExperimentEntries.map((entry) => entry.title).join(' ')}`}
       keywords={overviewExperimentEntries.flatMap((entry) => [...entry.keywords])}
       className="space-y-3 py-2"
       id="workbench-overview-experiments"
     >
-      <Label>项目统计</Label>
-      <Select
-        value={project?.id ?? ''}
-        disabled={busy || !projects.length}
-        onValueChange={(value) => {
-          setSelection(value)
-          setError(null)
-        }}
+      <SettingsSubsectionHeader title="按项目设置" />
+      <Card
+        className="gap-4 py-4 shadow-none"
+        role="group"
+        aria-labelledby="overview-statistics-title"
       >
-        <SelectTrigger aria-label="适用项目" className="w-full max-w-sm">
-          <SelectValue placeholder="尚未添加项目" />
-        </SelectTrigger>
-        <SelectContent>
-          {projects.map((item) => (
-            <SelectItem key={item.id} value={item.id}>
-              {item.displayName}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <p className="text-xs text-muted-foreground">仅在本机生效，项目内所有版本共用。</p>
-      {overviewExperimentEntries.map((entry) => (
-        <SettingsRow
-          key={entry.key}
-          label={entry.title}
-          description={entry.description}
-          control={
-            <SettingsSwitch
-              checked={overviewExperimentEnabled(settings, project?.id, entry.key)}
-              disabled={!settings || !project || busy}
-              ariaLabel={entry.title}
-              onChange={() => {
-                void save(entry.key, !overviewExperimentEnabled(settings, project?.id, entry.key))
+        <CardHeader className="px-4">
+          <CardTitle id="overview-statistics-title" className="text-sm">
+            版本总览统计
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 px-4">
+          <div className="space-y-2">
+            <Label htmlFor="overview-statistics-project">适用项目</Label>
+            <Select
+              value={project?.id ?? ''}
+              disabled={busy || !projects.length}
+              onValueChange={(value) => {
+                setSelection(value)
+                setError(null)
               }}
-            />
-          }
-        />
-      ))}
-      <p className="text-xs text-muted-foreground">
-        两项默认关闭。关闭后停止对应采集并隐藏统计，已有材料保留；版本、目标、任务、计划和人工验收继续可用。
-      </p>
-      {busy && (
-        <p className="text-xs text-muted-foreground" role="status">
-          正在保存…
-        </p>
-      )}
-      {error && (
-        <p className="text-xs text-destructive" role="alert">
-          {error}
-        </p>
-      )}
+            >
+              <SelectTrigger
+                id="overview-statistics-project"
+                aria-label="适用项目"
+                className="w-full max-w-sm"
+              >
+                <SelectValue placeholder="尚未添加项目" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((item) => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.displayName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {project
+                ? `仅在本机对「${project.displayName}」的所有版本生效。`
+                : '添加项目后可设置该项目的版本总览统计。'}
+            </p>
+          </div>
+          <div className="divide-y divide-border border-t border-border">
+            {overviewExperimentEntries.map((entry) => (
+              <SettingsRow
+                key={entry.key}
+                label={entry.title}
+                description={entry.description}
+                control={
+                  <SettingsSwitch
+                    checked={overviewExperimentEnabled(settings, project?.id, entry.key)}
+                    disabled={!settings || !project || busy}
+                    ariaLabel={entry.title}
+                    onChange={() => {
+                      void save(
+                        entry.key,
+                        !overviewExperimentEnabled(settings, project?.id, entry.key)
+                      )
+                    }}
+                  />
+                }
+              />
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            两项默认关闭。关闭后停止对应采集并隐藏统计，已有材料保留；版本、目标、任务、计划和人工验收继续可用。
+          </p>
+          {busy && (
+            <p className="text-xs text-muted-foreground" role="status">
+              正在保存…
+            </p>
+          )}
+          {error && (
+            <p className="text-xs text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </SearchableSetting>
   )
 }

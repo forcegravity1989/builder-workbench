@@ -18,19 +18,39 @@ export function SettingsIcon() {
   )
 }
 
-export function ExperimentalSettings({ value, onChange, onBack }) {
-  const rows = [
-    {
-      id: 'sdlc',
-      title: 'SDLC 实际过程统计',
-      description: '开启后读取本项目的阶段证据，在总览中显示特性历程与来源入口。'
-    },
-    {
-      id: 'ai',
-      title: 'AI 生产力统计',
-      description: '开启后读取本项目任务关联 PR 中的报告，在版本总览中显示生产力读数。'
-    }
-  ]
+function SettingToggle({ title, description, checked, onChange }) {
+  return (
+    <div className="set-row">
+      <div className="set-text">
+        <div className="set-title">{title}</div>
+        <div className="set-desc">{description}</div>
+      </div>
+      <label className="toggle">
+        <input
+          type="checkbox"
+          role="switch"
+          aria-label={title}
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+        />
+        <span className="knob" />
+      </label>
+    </div>
+  )
+}
+
+export function ExperimentalSettings({
+  value,
+  onChange,
+  sample,
+  onSampleChange,
+  pet,
+  onPetChange,
+  onBack
+}) {
+  const [project, setProject] = React.useState('Builder Workbench')
+  const active = project === 'Builder Workbench' ? value : sample
+  const save = project === 'Builder Workbench' ? onChange : onSampleChange
   return (
     <>
       <div className="ov-top">
@@ -44,49 +64,50 @@ export function ExperimentalSettings({ value, onChange, onBack }) {
         </button>
         <header className="ov-settings-heading">
           <h1>实验性功能</h1>
-          <p>按需开启，选择后立即生效。</p>
         </header>
         <section className="ov-experiment-section" aria-labelledby="experiment-project">
-          <h2 id="experiment-project">项目统计</h2>
-          <p className="ov-settings-scope">
-            适用项目 · <strong>Builder Workbench</strong>
-            <span>项目内所有版本</span>
-          </p>
+          <h2 id="experiment-project">按项目设置</h2>
           <div className="set-group">
-            {rows.map((row) => (
-              <div className="set-row" key={row.id}>
-                <div className="set-text">
-                  <div className="set-title" id={`experiment-${row.id}`}>
-                    {row.title}
-                    <span className="ov-chip">实验</span>
-                  </div>
-                  <div className="set-desc" id={`experiment-${row.id}-description`}>
-                    {row.description}
-                  </div>
-                </div>
-                <div className="set-ctl">
-                  <label className="toggle">
-                    <input
-                      type="checkbox"
-                      role="switch"
-                      aria-labelledby={`experiment-${row.id}`}
-                      aria-describedby={`experiment-${row.id}-description`}
-                      checked={value[row.id]}
-                      onChange={(event) => onChange({ ...value, [row.id]: event.target.checked })}
-                    />
-                    <span className="knob" />
-                  </label>
-                </div>
-              </div>
-            ))}
+            <div className="ov-project-scope">
+              <h3>版本总览统计</h3>
+              <label htmlFor="overview-project">适用项目</label>
+              <select
+                className="input"
+                id="overview-project"
+                value={project}
+                onChange={(event) => setProject(event.target.value)}
+              >
+                <option>Builder Workbench</option>
+                <option>示例项目</option>
+              </select>
+              <p className="set-desc">仅在本机对「{project}」的所有版本生效。</p>
+            </div>
+            <SettingToggle
+              title="SDLC 实际过程统计"
+              description="开启后读取本项目的阶段证据，在版本总览中显示特性历程与来源入口。"
+              checked={active.sdlc}
+              onChange={(sdlc) => save({ ...active, sdlc })}
+            />
+            <SettingToggle
+              title="AI 生产力统计"
+              description="开启后读取本项目任务关联 PR 中的报告，在版本总览中显示生产力读数。"
+              checked={active.ai}
+              onChange={(ai) => save({ ...active, ai })}
+            />
           </div>
-          <p className="ov-settings-help">
-            两项默认关闭。关闭后停止对应采集并隐藏统计，已有材料保留；版本、目标、任务、计划和人工验收继续可用。
-          </p>
+        </section>
+        <section className="ov-experiment-section" aria-labelledby="experiment-global">
+          <h2 id="experiment-global">全局设置</h2>
+          <p className="set-desc">以下设置适用于本机所有项目。</p>
+          <SettingToggle
+            title="宠物"
+            description="右下角漂浮的动画宠物。"
+            checked={pet}
+            onChange={onPetChange}
+          />
         </section>
         <p className="ov-note">
-          原型注释: 沿用 Orca「设置 → 实验性功能」入口与开关样式，新增条目按项目生效。这里仅通过 URL
-          保存当前预览，不写入真实设置，也不发起远端采集。开启后展示原有固定快照，生产实现与验证结论见本特性 STATUS。
+          原型注释: 版本总览使用 Builder Workbench 的固定快照。此处的设置只用于预览。
         </p>
       </div>
     </>

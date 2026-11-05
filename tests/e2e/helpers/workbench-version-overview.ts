@@ -12,7 +12,11 @@ import {
   snapshotOverviewMaterials,
   bindOverviewFlowsAndRead
 } from './workbench-version-overview-fixture'
-import { enableProjectStats, verifyOverviewRestart } from './workbench-overview-restart'
+import {
+  enableProjectStats,
+  verifyGoalTaskEntry,
+  verifyOverviewRestart
+} from './workbench-overview-restart'
 
 export async function verifyVersionOverview(
   page: Page,
@@ -136,13 +140,7 @@ export async function verifyVersionOverview(
     expect(await board.evaluate((node) => node.scrollWidth <= node.clientWidth + 1)).toBe(true)
   }
   await open(overviewVersions.current)
-  await goalTasks.click()
-  await expect(page.getByRole('button', { name: '移除目标筛选', exact: true })).toBeVisible()
-  await expect(page.getByText('目标 当前目标 · 版本总览开发', { exact: true })).toBeVisible()
-  await expect(page.getByText(provider.title, { exact: true }).last()).toBeVisible({
-    timeout: 90_000
-  })
-  console.info('[overview] native goal task filtering and actual Issue row verified')
+  await verifyGoalTaskEntry(page, goalTasks, overviewVersions.current, provider.title)
   await open(overviewVersions.current)
   await expect(feature).toContainText(provider.title, { timeout: 90_000 })
   await feature.getByRole('button', { name: overviewVersions.history, exact: true }).click()
@@ -259,9 +257,6 @@ async function verifyDraftAcceptanceSource(
       }),
       contentType: 'application/json'
     })
-    console.info(
-      '[overview] draft acceptance fixture verified: fixed plan is reachable only in its native acceptance scope'
-    )
     await open(version)
     const board = page.locator('.bwo-page')
     await expect(board.locator('.bwo-header .bwo-badge')).not.toHaveText('读取中', {
@@ -285,6 +280,13 @@ async function verifyDraftAcceptanceSource(
     await expect(board.getByRole('alert')).toHaveCount(0)
     await expect(board).not.toContainText('已有正式验收')
     await expect(board).not.toContainText('已归档')
+    await board.getByRole('button', { name: /目标任务 · 0 项/ }).click()
+    await expect(page.getByRole('group', { name: '任务范围' })).toBeVisible()
+    expect(
+      await page.evaluate(
+        () => window.__store?.getState().taskPageData.workbenchTaskScope?.references
+      )
+    ).toEqual([])
   } finally {
     const after = snapshotOverviewMaterials(root)
     await info.attach('draft-acceptance-independent-readback', {

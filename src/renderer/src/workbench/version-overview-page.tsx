@@ -7,7 +7,7 @@ import { useVersionCatalogForRepo } from './use-version-catalog'
 import type { VersionOverviewMaterials } from './version-overview-materials'
 import { navigateVersionWorkflow, openVersionTasks } from './version-nav-actions'
 import { openVersionOverview, type VersionOverviewOptions } from './project-page-state'
-import type { VersionGoal } from '../../../shared/workbench/version-material'
+import type { PlanningMaterial } from '../../../shared/workbench/version-material'
 import { DECISION_LABELS, goalOrdinal } from './version-labels'
 import { FeatureCard } from './version-overview/feature-card'
 import { useVersionFacts } from './version-overview/use-version-facts'
@@ -102,13 +102,8 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
   )
   const workflow = (kind: 'plan' | 'acceptance') =>
     navigateVersionWorkflow({ catalog, version, workflow: kind, projectKey: repoId })
-  const tasks = (goal?: VersionGoal) =>
-    void openVersionTasks({
-      catalog,
-      version,
-      entry,
-      goal: goal ? { goalId: goal.goalId, label: goal.title } : null
-    })
+  const tasks = (goal?: { goalId: string; label: string; references: PlanningMaterial['tasks'] }) =>
+    void openVersionTasks({ catalog, version, entry, goal })
   const materialErrors = [
     ...new Set([
       ...(materials.problems ?? []),
@@ -222,7 +217,16 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
               <h2>{goal.title}</h2>
               <div className="bwo-goal-meta">
                 <span>负责人 · {goal.owner || '未记录'}</span>
-                <button className="bwo-link" onClick={() => tasks(goal)}>
+                <button
+                  className="bwo-link"
+                  onClick={() =>
+                    tasks({
+                      goalId: goal.goalId,
+                      label: `${goalOrdinal(index)} · ${goal.title}`,
+                      references
+                    })
+                  }
+                >
                   目标任务 · {references.length} 项 ·{' '}
                   {unfinishedTaskLabel(references, taskReads.reads)} ↗
                 </button>

@@ -161,7 +161,9 @@ export function useTaskPageProviderState(model: TaskPageSourceAvailabilityModel)
     return gitlabItems
   }, [gitlabItems, gitlabView])
   const [codehubView, setCodehubView] = useState<'issues' | 'mrs'>('issues')
-  const [codehubState, setCodehubState] = useState<'opened' | 'closed' | 'merged' | 'all'>('opened')
+  const [codehubState, setCodehubState] = useState<'opened' | 'closed' | 'merged' | 'all'>(
+    workbenchTaskScope?.goalId ? 'all' : 'opened'
+  )
   const [codehubItems, setCodehubItems] = useState<CodeHubTaskItem[]>([])
   const [codehubLoading, setCodehubLoading] = useState(false)
   const [codehubError, setCodehubError] = useState<string | null>(null)

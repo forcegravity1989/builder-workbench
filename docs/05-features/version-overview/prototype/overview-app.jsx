@@ -78,6 +78,8 @@ function App() {
     const params = new URLSearchParams(location.search)
     return { sdlc: params.get('sdlc') === 'on', ai: params.get('ai') === 'on' }
   })
+  const [sampleExperiments, setSampleExperiments] = useState({ sdlc: false, ai: false })
+  const [pet, setPet] = useState(false)
   function changeExperiments(next) {
     setExperiments(next)
     const url = new URL(location.href)
@@ -391,6 +393,10 @@ function App() {
             <ExperimentalSettings
               value={experiments}
               onChange={changeExperiments}
+              sample={sampleExperiments}
+              onSampleChange={setSampleExperiments}
+              pet={pet}
+              onPetChange={setPet}
               onBack={() => navigateSettings(false)}
             />
           ) : (
@@ -612,7 +618,7 @@ function App() {
                       : dialog.route === '版本验收'
                         ? '验收短开始卡 → 候选与固定计划 → 一次正式人工验收 → 归档'
                         : dialog.route === '目标任务'
-                          ? '沿用本版本／目标的原生任务屏，目标上下文已带入；总览不重复维护任务列表。'
+                          ? '打开这份计划中该目标的全部任务，包括已关闭任务。任务范围显示当前版本和目标，进入后可再筛选。'
                           : '项目、版本、任务与工作会话沿现有壳导航。'}
                 </p>
               </div>

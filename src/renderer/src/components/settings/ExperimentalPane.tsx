@@ -8,7 +8,7 @@ import { SearchableSetting } from './SearchableSetting'
 import { matchesSettingsSearch } from './settings-search'
 import { getExperimentalPaneSearchEntries, getExperimentalSearchEntry } from './experimental-search'
 import { HiddenExperimentalGroup } from './HiddenExperimentalGroup'
-import { NumberField, SettingsSwitch } from './SettingsFormControls'
+import { NumberField, SettingsSubsectionHeader, SettingsSwitch } from './SettingsFormControls'
 import { translate } from '@/i18n/i18n'
 import { NativeChatExperimentalSetting } from './NativeChatExperimentalSetting'
 import { AgentDashboardExperimentalSetting } from './AgentDashboardExperimentalSetting'
@@ -63,7 +63,16 @@ export function ExperimentalPane({
 
   return (
     <div className="space-y-4">
-      {isWorkbenchShell() && <OverviewExperimentSettings />}
+      {isWorkbenchShell() && (
+        <>
+          <OverviewExperimentSettings />
+          <SettingsSubsectionHeader
+            title="全局设置"
+            description="以下设置适用于本机所有项目。"
+            className="border-t border-border pt-5 first:border-0 first:pt-0 last:hidden"
+          />
+        </>
+      )}
       {showAgentDashboard ? (
         <AgentDashboardExperimentalSetting settings={settings} updateSettings={updateSettings} />
       ) : null}

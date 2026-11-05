@@ -32,32 +32,29 @@
 .ov-settings-heading h1 {
   font-size: 24px;
 }
-.ov-settings-heading p {
-  color: var(--muted-foreground);
-  font-size: 13px;
+.ov-experiment-section {
+  margin-bottom: 28px;
 }
 .ov-experiment-section h2 {
+  margin-bottom: 10px;
   font-size: 14px;
 }
-.ov-settings-scope {
-  display: flex;
-  flex-wrap: wrap;
+.ov-project-scope {
+  display: grid;
   gap: 6px;
-  margin: 16px 0 12px;
-  color: var(--muted-foreground);
-  font-size: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
 }
-.ov-settings-scope strong {
-  color: var(--foreground);
-  font-weight: 500;
+.ov-project-scope h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
 }
-.ov-settings-scope > span {
-  margin-left: auto;
+.ov-project-scope label {
+  font-size: 13px;
 }
-.ov-settings-content .set-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.ov-project-scope select {
+  appearance: auto;
+  width: min(100%, 24rem);
 }
 .ov-settings-content .set-desc {
   max-width: 540px;
@@ -71,17 +68,8 @@
 .ov-settings-content .toggle input:focus-visible + .knob {
   outline-color: var(--ring);
 }
-.ov-settings-help {
-  color: var(--muted-foreground);
-  font-size: 12px;
-  line-height: 1.8;
-  margin: 14px 0 32px;
-}
 @media (max-width: 800px) {
   .ov-settings-content {
     padding: 20px;
-  }
-  .ov-settings-scope > span {
-    margin-left: 0;
   }
 }

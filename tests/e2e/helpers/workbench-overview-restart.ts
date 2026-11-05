@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { _electron as electron, expect, type ElectronApplication } from '@stablyai/playwright-test'
-import type { Page, TestInfo } from '@playwright/test'
+import type { Locator, Page, TestInfo } from '@playwright/test'
 import {
   createElectronHomeIsolation,
   assertElectronResolvedIsolatedHome
@@ -45,6 +45,45 @@ export async function enableProjectStats(page: Page, info: TestInfo, issueState:
   await page.evaluate(() => window.__store?.getState().closeSettingsPage())
   await expect(goalTasks).toBeVisible({ timeout: 90_000 })
   return { feature, productivity, goalTasks }
+}
+
+export async function verifyGoalTaskEntry(
+  page: Page,
+  goalTasks: Locator,
+  version: string,
+  title: string
+) {
+  const savedQuery = 'is:issue is:open label:bw:plan:v0.5'
+  await page.evaluate(
+    (query) =>
+      window.__store?.getState().setTaskResumeState({
+        githubMode: 'items',
+        githubItemsPreset: null,
+        githubItemsQuery: query
+      }),
+    savedQuery
+  )
+  await goalTasks.click()
+  const range = page.getByRole('group', { name: '任务范围', exact: true })
+  await expect(range.getByText(`版本 ${version}`, { exact: true })).toBeVisible()
+  const search = page.locator('[data-github-items-search-input]')
+  await expect(search).toHaveValue('')
+  await expect(page.getByRole('button', { name: '移除目标筛选', exact: true })).toBeVisible()
+  await expect(range.getByText('目标 G1 · 当前目标 · 版本总览开发', { exact: true })).toBeVisible()
+  await expect(page.getByText(title, { exact: true }).last()).toBeVisible({
+    timeout: 90_000
+  })
+  await search.fill('is:pr')
+  await search.press('Enter')
+  await expect(page.getByText(title, { exact: true }).last()).toHaveCount(0)
+  await search.fill('is:issue')
+  await search.press('Enter')
+  await expect(page.getByText(title, { exact: true }).last()).toBeVisible()
+  await expect(range).toBeVisible()
+  expect(
+    await page.evaluate(() => window.__store?.getState().taskResumeState?.githubItemsQuery)
+  ).toBe(savedQuery)
+  console.info('[overview] native goal task filtering and actual Issue row verified')
 }
 
 export async function verifyOverviewRestart(previous: ElectronApplication, info: TestInfo) {
