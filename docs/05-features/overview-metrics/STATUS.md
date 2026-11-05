@@ -4,11 +4,13 @@
 
 ## 里程碑认可与验证边界
 
-用户已确认[完整方案](spec.md#里程碑与版本联动)与[原高保真](prototype.html?review=551&revision=compare&example=dates)：默认两段、整段等比调整、条身换版与边缘伸缩分开、冲突时仅顺移自身 Maintain、旧规划可重排。实际采用同一版本头的日期对照和明确版本名的目标结果条，不绘制未采集的 SDLC。
+用户已确认[完整方案](spec.md#里程碑与版本联动)与原高保真的两段规划及实际对照交互：默认两段、整段等比调整、条身换版与边缘伸缩分开、冲突时仅顺移自身 Maintain、旧规划可重排。实际采用同一版本头的日期对照和明确版本名的目标结果条，不绘制未采集的 SDLC。
+
+[当前原型](prototype.html?review=551&revision=milestones&example=dates)的具体日期关键节点、上下日轴联动、长描述、操作说明与提交反馈待本轮评审。生产仍为月度节点，这轮不修改正式材料协议或实际结果读取；原型提交仅为模拟。
 
 配套范围已确认：里程碑预期与正式计划日期分开保存；计划助手将里程碑作为可选输入，并维护主单唯一关联、跨版复用及确认改名；计划/验收屏不新增 UI，版本总览仅适配共用匹配与读取，未匹配保持原默认规则。
 
-材料、事务及存量输入保留规则见 [milestone-design](milestone-design.md)。验收判据 MF01–MF08 和完整旅程以 spec 为准，当前交付的实现核对、独立检视及未验证项随 PR 记录。依用户要求，本次不运行本地 CI 或真机验证；静态检视、原型和指南生成不代替真实 Electron、provider、计划助手或重启旅程。
+材料、事务及存量输入保留规则见 [milestone-design](milestone-design.md)。验收判据 MF01–MF08 和完整旅程以 spec 为准，当前交付的实现核对、独立检视及未验证项随 PR 记录。生产真壳验证边界见 [PR #572 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/572#issuecomment-6633303328)；本轮仅更新原型，不运行本地 CI。原型浏览器验证不代替真实 Electron、provider、计划助手或重启旅程。
 
 既有 [PR #477](https://github.com/forcegravity1989/builder-workbench/pull/477) 包含隔离 Electron、新进程恢复及磁盘独立读回证据，只覆盖当时实现，不证明当前排期与结果投影已验。
 

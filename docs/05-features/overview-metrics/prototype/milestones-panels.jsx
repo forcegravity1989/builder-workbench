@@ -30,9 +30,30 @@ export function ReferencePanel({ close }) {
   return (
     <Modal title="设计依据" close={close}>
       <p className="muted">
-        原型注释: 2026-10-30
+        原型注释: 2026-11-05
         核对官方资料。本稿借鉴交互思路，产品规则以人工澄清与仓内原则为准；此入口仅供原型评审，不进入产品界面。
       </p>
+      <section className="ml-reference">
+        <h3>
+          <a href="https://linear.app/docs/project-milestones" target="_blank" rel="noreferrer">
+            Linear · Project milestones ↗
+          </a>
+        </h3>
+        <p>
+          借鉴：关键节点独立设置日期，可添加、编辑、删除，不限每月一个。BW
+          仅保留日期与预期成果，不加入依赖或任务绑定。
+        </p>
+        <p>
+          <a
+            href="https://help.asana.com/s/article/plan-and-execute-projects-with-timeline?language=en_US"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Asana · Timeline ↗
+          </a>
+          ：用菱形表示关键节点，持续工作仍用条形。
+        </p>
+      </section>
       <section className="ml-reference">
         <h3>
           <a

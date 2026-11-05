@@ -1,12 +1,11 @@
 import { MilestoneReviewNav } from './milestone-review-nav.jsx'
-import { InlineField } from './milestones-fields.jsx'
+import { MilestoneEditor, MilestoneGuide } from './milestones-roadmap.jsx'
 import { Timeline } from './milestones-timeline.jsx'
 import { defaultStages, laneConflict, settleWindows, editVersionName } from './milestones-sdlc.js'
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js'
 import Undo2 from 'lucide-react/dist/esm/icons/undo-2.js'
 import Redo2 from 'lucide-react/dist/esm/icons/redo-2.js'
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw.js'
-import Flag from 'lucide-react/dist/esm/icons/flag.js'
 import { newFeatureVersions, latestMonth, planWeek } from './milestones-calendar.js'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import {
@@ -39,88 +38,6 @@ const {
   CalendarRange,
   RefreshCw
 } = window.BWPrototypeDependencies
-function MilestoneAxis({ plan, planning, changeMilestone, navigate, navigation }) {
-  const scroll = useRef(null),
-    pan = useRef(null)
-  const months = React.useMemo(
-    () =>
-      plan.months
-        .filter((m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.month) && (planning || m.outcome.trim()))
-        .toSorted((a, b) => a.month.localeCompare(b.month)),
-    [plan.months, planning]
-  )
-  const monthKeys = months.map((m) => m.month).join(',')
-  useEffect(() => {
-    const keys = monthKeys.split(',').filter(Boolean)
-    const month = keys.find((key) => key >= navigation.date.slice(0, 7)) || keys.at(-1)
-    const point = month && scroll.current?.querySelector(`[data-month="${month}"]`)
-    if (point) {
-      scroll.current.scrollTo({
-        left: Math.max(
-          0,
-          point.offsetLeft - scroll.current.clientWidth / 2 + point.clientWidth / 2
-        ),
-        behavior: 'smooth'
-      })
-    }
-  }, [navigation, monthKeys])
-  if (!months.length) {
-    return null
-  }
-  return (
-    <nav
-      className="ml-roadmap-scroll"
-      aria-label="月度里程碑时间轴"
-      ref={scroll}
-      onPointerDown={(e) => {
-        if (e.button !== 0 || e.target.closest('button,input')) {
-          return
-        }
-        pan.current = { x: e.clientX, left: scroll.current.scrollLeft }
-        e.currentTarget.setPointerCapture(e.pointerId)
-      }}
-      onPointerMove={(e) => {
-        if (pan.current) {
-          scroll.current.scrollLeft = pan.current.left + pan.current.x - e.clientX
-        }
-      }}
-      onPointerUp={() => {
-        pan.current = null
-      }}
-      onPointerCancel={() => {
-        pan.current = null
-      }}
-    >
-      <div className="ml-roadmap-axis" style={{ minWidth: months.length * 240 }}>
-        {months.map((m) => (
-          <div className="ml-roadmap-month" key={m.month} data-month={m.month}>
-            <button
-              className="ml-roadmap-flag"
-              aria-label={`定位里程碑 ${m.month}`}
-              onClick={() => navigate(`${m.month}-01`)}
-            >
-              <Flag size={17} />
-              <span>{m.month.replace('-', ' 年 ')} 月</span>
-            </button>
-            <div className="ml-roadmap-caption" title={m.outcome}>
-              {planning ? (
-                <InlineField
-                  value={m.outcome}
-                  label={`${m.month} 阶段成果`}
-                  placeholder="一句阶段成果"
-                  required={false}
-                  change={(value) => changeMilestone(m.month, value)}
-                />
-              ) : (
-                <span>{m.outcome || '未填写阶段成果'}</span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </nav>
-  )
-}
 function App() {
   const [cases, setCases] = useState(loadCases),
     [caseId, setCaseId] = useState('existing'),
@@ -134,7 +51,11 @@ function App() {
     [theme, setTheme] = useState('light'),
     [notice, setNotice] = useState(''),
     [saveError, setSaveError] = useState(''),
-    [newFeature, setNewFeature] = useState(null)
+    [newFeature, setNewFeature] = useState(null),
+    [submitting, setSubmitting] = useState(false),
+    [submitError, setSubmitError] = useState(''),
+    [submitDemo, setSubmitDemo] = useState('success')
+  const submitLock = useRef(false)
   const board = useRef(null),
     state = cases[caseId],
     dirty = JSON.stringify(state.draft) !== JSON.stringify(state.submitted),
@@ -210,6 +131,7 @@ function App() {
     const selected = value === 'empty' ? cases.empty : cases.existing
     setCaseId(value === 'empty' ? 'empty' : 'existing')
     setPlanning(value === 'planning')
+    setSubmitError('')
     navigate(
       `${latestMonth(value === 'planning' ? selected.draft : selected.published || selected.draft)}-01`
     )
@@ -282,16 +204,37 @@ function App() {
     })
   }
   const restore = () => {
+    setSubmitError('')
     setState((s) => ({ ...s, draft: clone(s.submitted) }))
   }
-  const submit = () => {
-    if (!dirty || problem || state.review === 'merged') {
+  const submit = async () => {
+    if (submitLock.current || !dirty || problem || state.review === 'merged') {
       return
     }
-    setState((s) => ({ ...s, submitted: clone(s.draft), review: 'open' }))
-    history.past = []
-    history.future = []
-    history.field = null
+    submitLock.current = true
+    setSubmitting(true)
+    setSubmitError('')
+    setModal(null)
+    setNotice('正在提交评审…')
+    const snapshot = clone(state.draft),
+      submittedCase = caseId
+    // Demonstrates one background request; no Git or provider writes occur here.
+    await new Promise((resolve) => setTimeout(resolve, 1800))
+    if (submitDemo === 'failure') {
+      setSubmitError('暂时无法连接代码托管平台。请检查网络后重试。')
+      setNotice('提交失败，修改保留在当前页面，请重试')
+    } else {
+      setCases((all) => ({
+        ...all,
+        [submittedCase]: { ...all[submittedCase], submitted: snapshot, review: 'open' }
+      }))
+      history.past = []
+      history.future = []
+      history.field = null
+      setNotice(state.review === 'open' ? '评审已更新，待合入' : '评审已创建，待合入')
+    }
+    submitLock.current = false
+    setSubmitting(false)
   }
   const publish = () => {
     if (state.review !== 'merged') {
@@ -309,13 +252,19 @@ function App() {
     )
   }
   const info = (title, text) => setModal({ type: 'info', title, text })
-  const changeMilestone = (month, outcome) =>
-    editFieldPlan((p) => ({
+  const saveMilestone = (item) => {
+    const milestone = { ...item, id: item.id || crypto.randomUUID() }
+    editPlan((p) => ({
       ...p,
-      months: p.months.some((m) => m.month === month)
-        ? p.months.map((m) => (m.month === month ? { ...m, outcome } : m))
-        : [...p.months, { month, outcome }]
+      milestones: p.milestones.some((m) => m.id === milestone.id)
+        ? p.milestones.map((m) => (m.id === milestone.id ? milestone : m))
+        : [...p.milestones, milestone]
     }))
+    setModal(null)
+    if (milestone.date) {
+      navigate(milestone.date)
+    }
+  }
   const nameWeek = (week, name) => {
     if (state.draft.versions.some((v) => v.name === name)) {
       setNotice('版本名称已存在')
@@ -342,9 +291,19 @@ function App() {
             <option value="ambiguous">原型注释：名称匹配不唯一</option>
             <option value="error">原型注释：验收读取失败</option>
           </select>
+          <select
+            aria-label="原型注释：提交结果"
+            value={submitDemo}
+            disabled={submitting}
+            onChange={(e) => setSubmitDemo(e.target.value)}
+          >
+            <option value="success">提交演示：成功</option>
+            <option value="failure">提交演示：失败</option>
+          </select>
           <IconAction
             label="重置原型"
             icon={RefreshCw}
+            disabled={submitting}
             onClick={() => setModal({ type: 'reset' })}
           />
           <button
@@ -394,6 +353,7 @@ function App() {
                 <select
                   className="input"
                   aria-label="原型场景"
+                  disabled={submitting}
                   value={
                     planning
                       ? 'planning'
@@ -481,7 +441,9 @@ function App() {
                       ) : (
                         <button
                           className="btn btn-primary"
-                          disabled={state.review === 'none' && (!dirty || Boolean(problem))}
+                          disabled={
+                            submitting || (state.review === 'none' && (!dirty || Boolean(problem)))
+                          }
                           title={
                             dirty
                               ? problem || '核对本次变更'
@@ -491,13 +453,15 @@ function App() {
                           }
                           onClick={() => setModal({ type: 'review' })}
                         >
-                          {dirty
-                            ? state.review === 'open'
-                              ? '更新评审'
-                              : '提交评审'
-                            : state.review === 'open'
-                              ? '查看评审'
-                              : '提交评审'}
+                          {submitting
+                            ? '提交中…'
+                            : dirty
+                              ? state.review === 'open'
+                                ? '更新评审'
+                                : '提交评审'
+                              : state.review === 'open'
+                                ? '查看评审'
+                                : '提交评审'}
                         </button>
                       )}
                     </>
@@ -509,6 +473,7 @@ function App() {
                       {state.review !== 'none' && (
                         <button
                           className="btn btn-secondary"
+                          disabled={submitting}
                           onClick={() => setModal({ type: 'review', viewOnly: true })}
                         >
                           {state.review === 'merged' ? '更新正式安排' : '查看评审'}
@@ -518,6 +483,7 @@ function App() {
                   )}
                 </div>
               </div>
+              <MilestoneGuide />
               {planning && problem && (
                 <p className="ml-schedule-problem" role="alert">
                   {problem}
@@ -530,14 +496,10 @@ function App() {
                 </div>
               ) : (
                 <>
-                  <MilestoneAxis
-                    plan={plan}
-                    planning={planning}
-                    changeMilestone={changeMilestone}
-                    navigate={navigate}
-                    navigation={navigation}
-                  />
                   <Timeline
+                    onMilestone={(item, editable) =>
+                      setModal({ type: 'milestone', item, editable })
+                    }
                     actualScenario={actualScenario}
                     onActualScenario={setActualScenario}
                     rows={plan.features}
@@ -566,6 +528,24 @@ function App() {
                     onVersion={openVersion}
                     newFeature={newFeature}
                   />
+                  {submitError && (
+                    <div className="ml-submit-error" role="status">
+                      <span>提交失败</span>
+                      <button
+                        className="btn btn-ghost"
+                        disabled={submitting || Boolean(problem) || !dirty}
+                        onClick={submit}
+                      >
+                        重试
+                      </button>
+                      <button
+                        className="btn btn-ghost"
+                        onClick={() => info('提交失败', submitError)}
+                      >
+                        查看详情
+                      </button>
+                    </div>
+                  )}
                   <div className="ml-material-origin">
                     <span>{planning ? '规划编辑中' : '正式安排'}</span>
                     <button className="btn btn-ghost" onClick={() => setModal({ type: 'sources' })}>
@@ -579,6 +559,18 @@ function App() {
           </main>
         </div>
       </div>
+      {modal?.type === 'milestone' && (
+        <MilestoneEditor
+          item={modal.item}
+          planning={modal.editable}
+          save={saveMilestone}
+          remove={(id) => {
+            editPlan((p) => ({ ...p, milestones: p.milestones.filter((m) => m.id !== id) }))
+            setModal(null)
+          }}
+          close={() => setModal(null)}
+        />
+      )}
       {modal?.type === 'references' && <ReferencePanel close={() => setModal(null)} />}
       {modal?.type === 'version' && (
         <VersionBridge
@@ -594,7 +586,7 @@ function App() {
       {modal?.type === 'review' && (
         <PlanningReviewPanel
           viewOnly={modal.viewOnly}
-          invalid={Boolean(problem)}
+          invalid={submitting || Boolean(problem)}
           state={state}
           changes={changes}
           submit={submit}
@@ -671,7 +663,16 @@ function App() {
       )}
       {notice && (
         <div className="ml-toast" role="status">
+          {submitting && <RefreshCw size={14} className="ml-spinner" />}
           {notice}
+          {!submitting && notice.startsWith('评审已') && (
+            <button
+              className="btn btn-ghost"
+              onClick={() => setModal({ type: 'review', viewOnly: true })}
+            >
+              查看评审
+            </button>
+          )}
         </div>
       )}
       {saveError && (

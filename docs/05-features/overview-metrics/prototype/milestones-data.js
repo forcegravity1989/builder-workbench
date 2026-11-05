@@ -21,7 +21,15 @@ const placement = (i, maintain = false, end) => ({
     : defaultStages(fixedVersions[i], maintain)
 })
 const normalInitial = {
-  months: [{ month: '2026-11', outcome: '协作与工程能力形成可用闭环' }],
+  months: [],
+  milestones: [
+    { id: 'demo-launch', date: '2026-11-05', outcome: '发布 1.0，完成首次正式推广' },
+    {
+      id: 'demo-feedback',
+      date: '2026-11-18',
+      outcome: '完成首轮用户反馈回收，协作与工程能力形成可用闭环'
+    }
+  ],
   versions: fixedVersions,
   features: [
     {
@@ -193,7 +201,7 @@ export const clone = (value) => structuredClone(value)
 export const versionName = (plan, id) =>
   plan.versions.find((v) => v.id === id)?.name || '未命名版本'
 export function freshCases() {
-  const empty = { months: [{ month: '2026-11', outcome: '' }], versions: [], features: [] }
+  const empty = { months: [], milestones: [], versions: [], features: [] }
   return {
     existing: {
       draft: clone(initial),
@@ -207,6 +215,14 @@ export function freshCases() {
 export function validPlan(p) {
   return (
     p &&
+    (!p.milestones ||
+      (Array.isArray(p.milestones) &&
+        p.milestones.every(
+          (m) =>
+            m.id &&
+            typeof m.outcome === 'string' &&
+            (m.date ? Number.isFinite(Date.parse(m.date)) : /^\d{4}-\d{2}$/.test(m.month))
+        ))) &&
     Array.isArray(p.months) &&
     p.months.every(
       (m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.month) && typeof m.outcome === 'string'
@@ -254,6 +270,17 @@ export function loadCases() {
         )
       })
     ) {
+      for (const state of Object.values(saved)) {
+        for (const key of ['draft', 'submitted', 'published']) {
+          const plan = state[key]
+          if (plan && !plan.milestones) {
+            plan.milestones = plan.months
+              .filter((m) => m.outcome.trim())
+              .map((m) => ({ ...m, id: `month-${m.month}`, date: '' }))
+            plan.months = []
+          }
+        }
+      }
       return saved
     }
   } catch {
@@ -284,13 +311,18 @@ export function changesBetween(before, after) {
       detail: after.features.map((f) => f.title || '未命名特性').join(' → ')
     })
   }
-  for (const m of after.months) {
-    const old = before.months.find((item) => item.month === m.month)
-    if (!old || old.outcome !== m.outcome) {
+  for (const m of after.milestones) {
+    const old = before.milestones.find((item) => item.id === m.id)
+    if (!old || old.date !== m.date || old.outcome !== m.outcome) {
       changes.push({
-        title: `${m.month} 阶段成果`,
-        detail: `${old?.outcome || '未填写'} → ${m.outcome || '未填写'}`
+        title: old ? '调整里程碑' : '添加里程碑',
+        detail: `${old ? `${old.date || old.month} ${old.outcome} → ` : ''}${m.date || m.month} ${m.outcome}`
       })
+    }
+  }
+  for (const old of before.milestones) {
+    if (!after.milestones.some((m) => m.id === old.id)) {
+      changes.push({ title: '删除里程碑', detail: `${old.date || old.month} ${old.outcome}` })
     }
   }
   for (const v of after.versions) {

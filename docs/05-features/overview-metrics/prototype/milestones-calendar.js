@@ -12,7 +12,12 @@ const monthAt = (value, offset = 0) => {
   return date.getTime()
 }
 const recordedMonths = (plan) =>
-  plan.months.filter((m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.month)).map((m) => m.month)
+  [
+    ...plan.months,
+    ...(plan.milestones || []).map((m) => ({ month: m.date?.slice(0, 7) || m.month }))
+  ]
+    .filter((m) => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.month))
+    .map((m) => m.month)
 export function latestMonth(plan) {
   return (
     [
@@ -81,15 +86,11 @@ export function planWeek(plan, week, name) {
     next = `${prefix}${patch}`
   }
   const version = { ...week, name: next }
-  const month = week.start.slice(0, 7)
   return {
     version,
     plan: {
       ...plan,
-      versions: [...plan.versions, version],
-      months: plan.months.some((m) => m.month === month)
-        ? plan.months
-        : [...plan.months, { month, outcome: '' }]
+      versions: [...plan.versions, version]
     }
   }
 }

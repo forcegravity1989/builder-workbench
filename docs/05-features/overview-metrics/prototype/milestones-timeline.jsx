@@ -1,4 +1,5 @@
 import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.ts'
+import { MilestoneAxis } from './milestones-roadmap.jsx'
 import { InlineField, WeekName } from './milestones-fields.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import { calendarFor, dayWidth, labelWidth, planWeek, nextVersion } from './milestones-calendar.js'
@@ -34,7 +35,8 @@ export function Timeline({
   newFeature,
   onAdd,
   onNameWeek,
-  onApply
+  onApply,
+  onMilestone
 }) {
   const scroll = useRef(null),
     drag = useRef(null),
@@ -430,6 +432,16 @@ export function Timeline({
           e.currentTarget.setPointerCapture(e.pointerId)
         }}
       >
+        <MilestoneAxis
+          milestones={plan.milestones}
+          planning={canEdit}
+          start={start}
+          width={totalWidth}
+          onOpen={(item) => onMilestone(item, canEdit)}
+          visibleDate={() =>
+            dateOf(start + Math.floor((scroll.current?.scrollLeft || 0) / dayWidth) + 1)
+          }
+        />
         <div className="ml-timeline-canvas" style={{ width: totalWidth + labelWidth }}>
           <div
             className="ml-days-background"
