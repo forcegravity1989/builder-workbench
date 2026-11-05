@@ -731,86 +731,147 @@
 }
 .ml-roadmap {
   display: flex;
+  height: 88px;
   border-bottom: 1px solid var(--border);
   background: var(--background);
 }
 .ml-roadmap > .ml-sticky-label {
-  justify-content: flex-start;
-  padding-top: 17px;
-  gap: 8px;
-}
-.ml-roadmap .btn {
-  align-self: flex-start;
-  padding: 4px 0;
-  font-size: 11px;
+  justify-content: center;
+  gap: 7px;
 }
 .ml-roadmap-dates {
+  position: relative;
   flex: none;
-  padding: 12px 0;
 }
-.ml-roadmap-lane {
-  display: flex;
-  align-items: flex-start;
-  padding-bottom: 8px;
+.ml-roadmap-dates::before {
+  content: '';
+  position: absolute;
+  top: 32px;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--border);
 }
 .ml-milestone-node {
-  transform: translateX(-104px);
+  position: absolute;
+  top: 0;
+  height: 88px;
+}
+.ml-milestone-date {
+  position: absolute;
+  top: 7px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 25px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ml-milestone-date::after {
+  content: '';
+  position: absolute;
+  left: -2px;
+  bottom: -3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--foreground);
+}
+.ml-milestone-date svg {
   flex: none;
-  width: 208px;
-  padding: 0 8px 0 0;
+  margin-left: -3px;
+}
+.ml-milestone-date small {
+  border-radius: 8px;
+  background: var(--muted);
+  padding: 1px 5px;
+}
+.ml-milestone-caption {
+  position: absolute;
+  top: 42px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--background);
+}
+.ml-node-summary {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 7px;
   border: 0;
   background: transparent;
   color: var(--foreground);
   text-align: left;
+  font-size: 11px;
+  line-height: 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
   cursor: pointer;
 }
-.ml-milestone-date {
-  padding-left: 104px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  line-height: 24px;
-  font-weight: 500;
-}
-.ml-milestone-date i {
-  width: 7px;
-  height: 7px;
-  margin-left: -4px;
-  background: var(--foreground);
-  transform: rotate(45deg);
+.ml-node-more {
   flex: none;
-}
-.ml-milestone-outcome {
-  display: block;
-  padding: 4px 7px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  line-height: 1.65;
-  font-size: 12px;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-}
-.ml-milestone-node:hover .ml-milestone-outcome {
-  background: var(--muted);
-}
-.ml-roadmap-empty {
-  position: sticky;
-  left: 232px;
-  width: fit-content;
+  width: 24px;
+  height: 22px;
+  border: 0;
+  padding: 3px;
   color: var(--muted-foreground);
-  padding: 12px;
-  font-size: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+.ml-node-summary:hover,
+.ml-node-more:hover {
+  background: var(--muted);
 }
 .ml-undated {
   border: 0;
+  padding: 0;
   background: transparent;
   text-align: left;
-  font-size: 11px;
   color: var(--muted-foreground);
+  font-size: 11px;
+  cursor: pointer;
+}
+.ml-floating-panel {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: min(320px, calc(100vw - 24px));
+  max-height: min(420px, calc(100vh - 24px));
+  overflow-y: auto;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: var(--shadow-dialog);
+  font-size: 12px;
+}
+.ml-node-detail + .ml-node-detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.ml-node-detail small {
+  color: var(--muted-foreground);
+}
+.ml-node-detail p {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  cursor: pointer;
+  line-height: 1.7;
+  margin: 8px 0;
+}
+.ml-node-detail .ml-actions {
+  justify-content: flex-end;
 }
 .ml-milestone-field {
   display: flex;
@@ -829,30 +890,30 @@
   margin-right: auto;
   color: var(--destructive);
 }
-.ml-guide {
-  padding: 9px 14px;
-  border-bottom: 1px solid var(--border);
-  color: var(--muted-foreground);
-  font-size: 11px;
+.ml-help {
+  display: inline-flex;
 }
-.ml-guide summary {
-  width: fit-content;
-  cursor: pointer;
-}
-.ml-guide > div {
+.ml-tour-panel header,
+.ml-tour-panel footer {
   display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
-.ml-guide p {
-  flex: 1 1 180px;
-  margin: 8px 0 2px;
+.ml-tour-panel p {
   line-height: 1.7;
+  margin: 10px 0 16px;
 }
-.ml-guide strong {
-  display: block;
-  color: var(--foreground);
-  font-weight: 500;
+.ml-tour-panel footer span {
+  color: var(--muted-foreground);
+}
+.ml-tour-target {
+  outline: 2px solid var(--foreground);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.ml-toast[data-error='true'] {
+  border-color: var(--destructive);
 }
 .ml-submit-error {
   display: flex;

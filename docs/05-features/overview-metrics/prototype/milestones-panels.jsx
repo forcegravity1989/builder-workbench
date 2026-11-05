@@ -51,7 +51,7 @@ export function ReferencePanel({ close }) {
           >
             Asana · Timeline ↗
           </a>
-          ：用菱形表示关键节点，持续工作仍用条形。
+          ：借鉴关键节点与持续条形的区别；本稿保留 BW 原旗帜样式。
         </p>
       </section>
       <section className="ml-reference">

@@ -54,7 +54,7 @@ function App() {
     [newFeature, setNewFeature] = useState(null),
     [submitting, setSubmitting] = useState(false),
     [submitError, setSubmitError] = useState(''),
-    [submitDemo, setSubmitDemo] = useState('success')
+    [submitDemo, setSubmitDemo] = useState('')
   const submitLock = useRef(false)
   const board = useRef(null),
     state = cases[caseId],
@@ -207,12 +207,14 @@ function App() {
     setSubmitError('')
     setState((s) => ({ ...s, draft: clone(s.submitted) }))
   }
-  const submit = async () => {
-    if (submitLock.current || !dirty || problem || state.review === 'merged') {
+  const submit = async (demo) => {
+    const preview = ['success', 'failure'].includes(demo)
+    if (submitLock.current || (!preview && (!dirty || problem || state.review === 'merged'))) {
       return
     }
     submitLock.current = true
     setSubmitting(true)
+    setSubmitDemo(preview ? demo : '')
     setSubmitError('')
     setModal(null)
     setNotice('正在提交评审…')
@@ -220,9 +222,11 @@ function App() {
       submittedCase = caseId
     // Demonstrates one background request; no Git or provider writes occur here.
     await new Promise((resolve) => setTimeout(resolve, 1800))
-    if (submitDemo === 'failure') {
+    if (demo === 'failure') {
       setSubmitError('暂时无法连接代码托管平台。请检查网络后重试。')
-      setNotice('提交失败，修改保留在当前页面，请重试')
+      setNotice('演示：提交失败，修改保留在当前页面，请重试')
+    } else if (preview) {
+      setNotice('演示：评审已创建，待合入')
     } else {
       setCases((all) => ({
         ...all,
@@ -292,13 +296,16 @@ function App() {
             <option value="error">原型注释：验收读取失败</option>
           </select>
           <select
-            aria-label="原型注释：提交结果"
-            value={submitDemo}
+            aria-label="原型注释：播放提交反馈"
+            value=""
             disabled={submitting}
-            onChange={(e) => setSubmitDemo(e.target.value)}
+            onChange={(e) => submit(e.target.value)}
           >
-            <option value="success">提交演示：成功</option>
-            <option value="failure">提交演示：失败</option>
+            <option value="" disabled>
+              演示提交反馈
+            </option>
+            <option value="success">播放：提交成功</option>
+            <option value="failure">播放：提交失败</option>
           </select>
           <IconAction
             label="重置原型"
@@ -403,6 +410,7 @@ function App() {
                   <h2>项目里程碑</h2>
                 </div>
                 <div className="ml-actions">
+                  <MilestoneGuide planning={planning} />
                   {planning ? (
                     <>
                       <div className="ml-edit-actions" role="group" aria-label="规划编辑操作">
@@ -483,7 +491,6 @@ function App() {
                   )}
                 </div>
               </div>
-              <MilestoneGuide />
               {planning && problem && (
                 <p className="ml-schedule-problem" role="alert">
                   {problem}
@@ -497,6 +504,12 @@ function App() {
               ) : (
                 <>
                   <Timeline
+                    onRemoveMilestone={(id) =>
+                      editPlan((p) => ({
+                        ...p,
+                        milestones: p.milestones.filter((m) => m.id !== id)
+                      }))
+                    }
                     onMilestone={(item, editable) =>
                       setModal({ type: 'milestone', item, editable })
                     }
@@ -530,11 +543,11 @@ function App() {
                   />
                   {submitError && (
                     <div className="ml-submit-error" role="status">
-                      <span>提交失败</span>
+                      <span>{submitDemo ? '演示：提交失败' : '提交失败'}</span>
                       <button
                         className="btn btn-ghost"
-                        disabled={submitting || Boolean(problem) || !dirty}
-                        onClick={submit}
+                        disabled={submitting || (!submitDemo && (Boolean(problem) || !dirty))}
+                        onClick={() => submit(submitDemo ? 'success' : undefined)}
                       >
                         重试
                       </button>
@@ -662,7 +675,7 @@ function App() {
         </Modal>
       )}
       {notice && (
-        <div className="ml-toast" role="status">
+        <div className="ml-toast" role="status" data-error={notice.includes('失败')}>
           {submitting && <RefreshCw size={14} className="ml-spinner" />}
           {notice}
           {!submitting && notice.startsWith('评审已') && (

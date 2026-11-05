@@ -36,7 +36,8 @@ export function Timeline({
   onAdd,
   onNameWeek,
   onApply,
-  onMilestone
+  onMilestone,
+  onRemoveMilestone
 }) {
   const scroll = useRef(null),
     drag = useRef(null),
@@ -345,10 +346,29 @@ export function Timeline({
     <>
       <div className="ml-sdlc-toolbar">
         {canEdit && (
-          <button className="btn btn-ghost" onClick={onAdd}>
-            <Plus size={14} />
-            添加特性
-          </button>
+          <>
+            <button className="btn btn-ghost" onClick={onAdd}>
+              <Plus size={14} />
+              添加特性
+            </button>
+            <button
+              className="btn btn-ghost"
+              onClick={() =>
+                onMilestone(
+                  {
+                    date: dateOf(
+                      start + Math.floor((scroll.current?.scrollLeft || 0) / dayWidth) + 1
+                    ),
+                    outcome: ''
+                  },
+                  true
+                )
+              }
+            >
+              <Plus size={14} />
+              添加里程碑
+            </button>
+          </>
         )}
         <span className="ml-planning-count">
           {display.features.length} 个特性 ·{' '}
@@ -438,9 +458,7 @@ export function Timeline({
           start={start}
           width={totalWidth}
           onOpen={(item) => onMilestone(item, canEdit)}
-          visibleDate={() =>
-            dateOf(start + Math.floor((scroll.current?.scrollLeft || 0) / dayWidth) + 1)
-          }
+          onRemove={onRemoveMilestone}
         />
         <div className="ml-timeline-canvas" style={{ width: totalWidth + labelWidth }}>
           <div
