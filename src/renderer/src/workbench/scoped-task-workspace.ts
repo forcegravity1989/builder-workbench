@@ -13,6 +13,7 @@ import {
   findVersionTaskWorktrees
 } from '../../../shared/workbench/version-workspace-match'
 import { findGithubWorkItemWorkspaceAttachment } from '@/lib/github-work-item-workspace-attachment'
+import { findCrossHostIssueWorktrees } from '@/lib/cross-host-task-workspace'
 import { openWorkbenchWorkspaceChoice } from './version-workspace-choice-state'
 import { resolveReferenceRepo } from './task-port'
 import { activateVersionWorktree } from './version-worktree-host'
@@ -94,8 +95,10 @@ export function attachedCodeHubDetailWorkspace(args: {
 /**
  * 任务行的 Open/Start 判定（Rows / CodeHub ItemList 共用）：范围视图的 Issue
  * 按绑定解析；PR 行与无范围视图回落原生「首个未归档树」附件语义，逐字不变。
- * attached=唯一直开对象；hasWorkspace=按钮呈 Open 还是 Start（多候选也呈 Open，
- * 点击进选择器）。
+ * 传入 repos 时（仅任务屏）额外认跨主机候选：同项目在别的已连接主机上已有
+ * linked 该 Issue 的工作树，也呈 Open（#512）。
+ * candidates=全部可证明候选；attached=唯一直开对象；hasWorkspace=按钮呈 Open
+ * 还是 Start（多候选也呈 Open，点击进选择器）。
  */
 export function resolveTaskRowWorkspace<T extends Worktree>(args: {
   scope: WorkbenchTaskScope | null
@@ -103,8 +106,21 @@ export function resolveTaskRowWorkspace<T extends Worktree>(args: {
   provider: 'github' | 'codehub'
   item: { repoId?: string | null; type: string; number: number }
   sourceContext: TaskSourceContext | null
-}): { attached: T | null; hasWorkspace: boolean } {
-  const { scope, worktrees, provider, item, sourceContext } = args
+  /** 全量仓库登记（含其他主机的同项目记录）；不传时行为保持原生语义。 */
+  repos?: readonly Repo[]
+}): { attached: T | null; hasWorkspace: boolean; candidates: readonly T[] } {
+  const { scope, worktrees, provider, item, sourceContext, repos } = args
+  if (provider === 'github' && item.type === 'pr') {
+    // PR 行保持原生「首个未归档树」语义，不参与跨主机解析。
+    const attached = findGithubWorkItemWorkspaceAttachment(
+      worktrees,
+      item.repoId,
+      'pr',
+      item.number
+    ) as T | null
+    return { attached, hasWorkspace: attached !== null, candidates: attached ? [attached] : [] }
+  }
+  const candidates: T[] = []
   if (scope && item.type === 'issue') {
     const match = matchScopedTaskWorkspaces({
       scope,
@@ -115,23 +131,49 @@ export function resolveTaskRowWorkspace<T extends Worktree>(args: {
       repoId: item.repoId
     })
     if (match) {
-      return {
-        attached: match.kind === 'unique' ? (match.candidates[0] as T) : null,
-        hasWorkspace: match.candidates.length > 0
-      }
+      candidates.push(...match.candidates)
+    }
+  } else if (provider === 'github') {
+    const attached = findGithubWorkItemWorkspaceAttachment(
+      worktrees,
+      item.repoId,
+      'issue',
+      item.number
+    ) as T | null
+    if (attached) {
+      candidates.push(attached)
     }
   }
-  if (provider !== 'github') {
-    // 原生 CodeHub 行不呈现附件状态；无范围时保持 Start 语义。
-    return { attached: null, hasWorkspace: false }
+  if (repos && item.type === 'issue') {
+    const crossHost = findCrossHostIssueWorktrees({
+      worktrees,
+      repos,
+      provider,
+      issue: { repoId: item.repoId, number: item.number },
+      versionScope: scope
+    }) as T[]
+    candidates.push(...crossHost)
   }
-  const attached = findGithubWorkItemWorkspaceAttachment(
-    worktrees,
-    item.repoId,
-    item.type === 'pr' ? 'pr' : 'issue',
-    item.number
-  ) as T | null
-  return { attached, hasWorkspace: attached !== null }
+  const unique = dedupeById(candidates)
+  return {
+    attached: unique.length === 1 ? unique[0]! : null,
+    hasWorkspace: unique.length > 0,
+    candidates: unique
+  }
+}
+
+function dedupeById<T extends Worktree>(worktrees: readonly T[]): T[] {
+  const seen = new Set<string>()
+  const result: T[] = []
+  for (const worktree of worktrees) {
+    const key = `${worktree.hostId ?? ''}\n${worktree.id}`
+    if (seen.has(key)) {
+      continue
+    }
+    seen.add(key)
+    result.push(worktree)
+  }
+  return result
 }
 
 // 解析核在共享模块（协议单测看护）；此处转发保持 BW 单一导入面。
