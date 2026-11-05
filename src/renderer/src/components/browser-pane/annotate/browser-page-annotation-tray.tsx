@@ -239,7 +239,9 @@ export function BrowserPageAnnotationTray({
                       className="min-w-0 flex-1"
                       data-slot="annotation-edit"
                       onKeyDown={(event) => {
-                        if (isImeCompositionKeyDown(event)) return
+                        if (isImeCompositionKeyDown(event)) {
+                          return
+                        }
                         // Why: bail-out selector in useGrabMode lets this reach any focused child, not just the textarea.
                         if (
                           event.key === 'Escape' &&
@@ -265,7 +267,9 @@ export function BrowserPageAnnotationTray({
                           'Annotation comment'
                         )}
                         onKeyDown={(event) => {
-                          if (isImeCompositionKeyDown(event)) return
+                          if (isImeCompositionKeyDown(event)) {
+                            return
+                          }
                           if (isScreenSubmitShortcut(event)) {
                             event.preventDefault()
                             event.stopPropagation()

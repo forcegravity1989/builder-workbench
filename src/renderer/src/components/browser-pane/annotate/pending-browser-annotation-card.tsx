@@ -73,8 +73,9 @@ export function PendingBrowserAnnotationCard({
           if (
             event.target instanceof Element &&
             event.target.closest('[data-slot="dialog-content"], [data-slot="dialog-overlay"]')
-          )
+          ) {
             event.preventDefault()
+          }
         }}
         onEscapeKeyDown={(event) => {
           if (
@@ -114,7 +115,9 @@ export function PendingBrowserAnnotationCard({
           className="h-24 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
           autoFocus
           onKeyDown={(event) => {
-            if (isImeCompositionKeyDown(event)) return
+            if (isImeCompositionKeyDown(event)) {
+              return
+            }
             if (event.key === 'Escape') {
               event.preventDefault()
               event.stopPropagation()

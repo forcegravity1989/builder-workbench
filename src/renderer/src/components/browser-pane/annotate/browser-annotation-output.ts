@@ -193,10 +193,11 @@ export function formatBrowserAnnotationsAsMarkdown(
     if (includeDiagnostics && target.reactComponents) {
       lines.push(`**React:** ${inlineText(target.reactComponents)}`)
     }
-    if (includeDiagnostics)
+    if (includeDiagnostics) {
       lines.push(
         `**Bounds:** x=${Math.round(rect.x)}, y=${Math.round(rect.y)}, ${Math.round(rect.width)}x${Math.round(rect.height)}`
       )
+    }
     if (includeDiagnostics && target.cssClasses) {
       lines.push(`**Classes:** ${inlineCode(target.cssClasses)}`)
     }
@@ -231,7 +232,9 @@ export function formatBrowserAnnotationsAsMarkdown(
     lines.push(`**Feedback:** ${inlineText(annotation.comment)}`)
     if (annotation.imagePaths?.length) {
       lines.push('**Images (open these files):**')
-      for (const imagePath of annotation.imagePaths) lines.push(`- ${inlineCode(imagePath)}`)
+      for (const imagePath of annotation.imagePaths) {
+        lines.push(`- ${inlineCode(imagePath)}`)
+      }
     }
     lines.push('')
   })

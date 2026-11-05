@@ -121,7 +121,9 @@ export async function handleAppMenuPasteRequest({
     }
     return nativePasteIntoResolvedTarget('clipboard-read-failed')
   }
-  if (!text) return nativePasteIntoResolvedTarget('no-clipboard-text')
+  if (!text) {
+    return nativePasteIntoResolvedTarget('no-clipboard-text')
+  }
 
   const result = await pasteTextIntoTextControl(target, text, {
     source: 'app-menu',

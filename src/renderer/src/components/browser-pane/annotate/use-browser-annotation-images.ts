@@ -38,7 +38,9 @@ export function useBrowserAnnotationImages(worktreeId: string): {
   }, [images])
   useEffect(
     () => () => {
-      for (const url of previews.current.values()) URL.revokeObjectURL(url)
+      for (const url of previews.current.values()) {
+        URL.revokeObjectURL(url)
+      }
       previews.current.clear()
     },
     []

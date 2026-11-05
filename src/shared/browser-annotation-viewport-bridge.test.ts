@@ -5,14 +5,20 @@ import {
   isValidBrowserAnnotationViewportBridgeMarkers
 } from './browser-annotation-viewport-bridge'
 
+type BridgeState = {
+  requestUpdate: EventListener
+  markerElements: Map<string, HTMLElement>
+}
+type BridgeGlobal = { __orcaBrowserAnnotationViewportBridge?: BridgeState }
+
 afterEach(() => {
-  const state = (globalThis as Record<string, any>).__orcaBrowserAnnotationViewportBridge
+  const state = (globalThis as BridgeGlobal).__orcaBrowserAnnotationViewportBridge
   if (state?.requestUpdate) {
     window.removeEventListener('scroll', state.requestUpdate, true)
     document.removeEventListener('scroll', state.requestUpdate, true)
     window.removeEventListener('resize', state.requestUpdate, true)
   }
-  delete (globalThis as Record<string, any>).__orcaBrowserAnnotationViewportBridge
+  delete (globalThis as BridgeGlobal).__orcaBrowserAnnotationViewportBridge
   document.body.replaceChildren()
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
@@ -63,8 +69,8 @@ describe('annotation guest marker protocol', () => {
         token: 'annotationviewporttoken'
       })
     )()
-    const state = (globalThis as Record<string, any>).__orcaBrowserAnnotationViewportBridge
-    const badge = state.markerElements.get('note') as HTMLElement
+    const state = (globalThis as BridgeGlobal).__orcaBrowserAnnotationViewportBridge
+    const badge = state!.markerElements.get('note') as HTMLElement
     const flush = () => {
       const callback = frame
       frame = undefined
