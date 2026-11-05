@@ -57,6 +57,17 @@ jobs:
           src/relay/workbench
           src/shared/workbench
 
+      - name: Test native usage protocols and account integration
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/rate-limits
+          src/main/claude-accounts/keychain.test.ts
+          src/main/ipc/register-core-handlers/register-core-handlers.test.ts
+          src/shared/rate-limit-types.test.ts
+          src/renderer/src/components/status-bar/status-bar-provider-visibility.test.ts
+          src/renderer/src/store/slices/ui-hydration-workspace-preferences.test.ts
+          src/renderer/src/web/web-preload-api-composition.test.ts
+
       - name: Build desktop application
         run: pnpm run build:desktop
 

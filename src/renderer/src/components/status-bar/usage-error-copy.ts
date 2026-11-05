@@ -26,6 +26,9 @@ export function getProviderDisplayName(provider: ProviderRateLimits['provider'])
   if (provider === 'grok') {
     return 'Grok'
   }
+  if (provider === 'cursor') {
+    return 'Cursor'
+  }
   return provider
 }
 
@@ -116,6 +119,9 @@ export function getProviderUsageStatusLabel(p: ProviderRateLimits): string {
   if (p.provider === 'minimax' && p.usageMetadata?.failureKind === 'stale-token') {
     return translate('auto.components.status.bar.tooltip.minimax.expired.label', 'Sign-in expired')
   }
+  if (p.provider === 'cursor' && p.usageMetadata?.failureKind === 'stale-token') {
+    return translate('auto.components.status.bar.tooltip.cursor.expired.label', 'Sign-in expired')
+  }
   if (isUsageRateLimitError(p.error)) {
     return translate('auto.components.status.bar.tooltip.7ad719c4bf', 'Limited')
   }
@@ -141,6 +147,12 @@ export function getProviderUsageErrorMessage(p: ProviderRateLimits): string {
     return translate(
       'auto.components.status.bar.tooltip.a37e8c15d4',
       'Run kimi in a terminal on the computer running Orca and wait for it to start, then retry usage.'
+    )
+  }
+  if (p.provider === 'cursor' && p.usageMetadata?.failureKind === 'stale-token') {
+    return translate(
+      'auto.components.status.bar.tooltip.cursor.expired.message',
+      'Sign in with Cursor IDE or run cursor-agent login on the computer running Workbench, then retry usage.'
     )
   }
   if (p.provider === 'claude') {
