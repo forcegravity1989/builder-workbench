@@ -93,15 +93,13 @@ export async function viewCodeHubTaskByIid(
   deps: Pick<TaskPortDeps, 'viewCodeHubTask'>,
   repo: Repo,
   iid: number,
-  shouldRead?: () => boolean
+  beforeFallback?: () => void
 ): Promise<{ kind: 'issue' | 'mr'; detail: CodeHubTaskDetail }> {
   const args = { repoPath: repo.path, repoId: repo.id, iid }
   try {
     return { kind: 'issue', detail: await deps.viewCodeHubTask({ ...args, kind: 'issue' }) }
   } catch (issueError) {
-    if (shouldRead?.() === false) {
-      throw issueError
-    }
+    beforeFallback?.()
     try {
       return { kind: 'mr', detail: await deps.viewCodeHubTask({ ...args, kind: 'mr' }) }
     } catch (mrError) {

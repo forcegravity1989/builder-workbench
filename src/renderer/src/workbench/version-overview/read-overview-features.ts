@@ -10,8 +10,7 @@ import {
   featureNumber,
   pullPhase,
   validTime,
-  type FeatureData,
-  type FeaturePull
+  type FeatureData
 } from './feature-model'
 
 import { applyVersionEvidence, type OverviewVersionPlan } from './version-evidence'
@@ -60,9 +59,7 @@ export async function readOverviewFeatures(
   const identityFor = (ref: CycleTaskReference) =>
     identities.get(taskKey(ref)) ?? reads.get(taskKey(ref))
   async function readTasks(refs: CycleTaskReference[], required = false) {
-    signal?.throwIfAborted()
     const values = await nativeTaskReferenceReader.read(scope!, refs, force, signal)
-    signal?.throwIfAborted()
     values.forEach((value, i) => {
       const ref = refs[i]!,
         read = cycleTaskRead(ref, value)
@@ -246,23 +243,21 @@ export async function readOverviewFeatures(
         ...[...relatedKeys].flatMap((key) => (failures.has(key) ? [failures.get(key)!] : []))
       )
       const pulls = historical && !before ? [] : feature.pulls
-      feature.pulls = pulls
-        .filter((p): p is FeaturePull => Boolean(p))
-        .filter((p) => {
-          if (
-            !before ||
-            (p.state === 'merged' &&
-              validTime(p.mergedAt) &&
-              Date.parse(p.mergedAt) <= Date.parse(before))
-          ) {
-            return true
-          }
-          if (validTime(p.createdAt)) {
-            return Date.parse(p.createdAt) <= Date.parse(before)
-          }
-          feature.problems.push(`PR/MR #${p.number} 创建时间未记录，历史阶段待核对`)
+      feature.pulls = pulls.filter((p) => {
+        if (
+          !before ||
+          (p.state === 'merged' &&
+            validTime(p.mergedAt) &&
+            Date.parse(p.mergedAt) <= Date.parse(before))
+        ) {
           return true
-        })
+        }
+        if (validTime(p.createdAt)) {
+          return Date.parse(p.createdAt) <= Date.parse(before)
+        }
+        feature.problems.push(`PR/MR #${p.number} 创建时间未记录，历史阶段待核对`)
+        return true
+      })
       for (const pull of feature.pulls) {
         if (
           historical &&

@@ -137,10 +137,9 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
           }
           return { kind: 'github', item: { ...item, repoId: repo.id }, source, readAt: deps.now() }
         }
-        const { kind, detail } = await viewCodeHubTaskByIid(deps, repo, reference.number, () => {
+        const { kind, detail } = await viewCodeHubTaskByIid(deps, repo, reference.number, () =>
           requireJob(job)
-          return true
-        })
+        )
         if (!/^(open|opened|closed|merged)$/i.test(detail.state)) {
           throw new Error(`CodeHub 未返回可识别的任务状态：${detail.state}`)
         }
@@ -245,10 +244,7 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
     signal?.throwIfAborted()
     if (force) {
       // A click during a previous load requests another source check after it.
-      const pending = references
-        .map((reference) => locate(home, reference).entry.pending)
-        .filter((read) => read !== null)
-      await Promise.all(pending)
+      await Promise.all(references.map((reference) => locate(home, reference).entry.pending))
       signal?.throwIfAborted()
     }
     const jobs: Job[] = []
