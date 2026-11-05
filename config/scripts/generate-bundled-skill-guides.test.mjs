@@ -92,8 +92,7 @@ describe('bundled skill guide generator', () => {
       expect(projection.startsWith(frontmatterBlock(source, `${name}.md`))).toBe(true)
       // The stub is a thin hybrid pointer, not the full guide.
       expect(projection).not.toEqual(source)
-      const fullSource = source
-      expect(projection.length).toBeLessThan(fullSource.length)
+      expect(projection.length).toBeLessThan(source.length)
       expect(projection).toContain('discovery stub')
       expect(projection).toContain(`skills get ${name}`)
     }
