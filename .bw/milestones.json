@@ -368,6 +368,14 @@
       }
     },
     {
+      "version": "v1.1",
+      "cycleId": "c8b79976-aa06-40fc-b70d-5dba4ef7369c",
+      "timeWindow": {
+        "start": "2026-11-16",
+        "end": "2026-11-20"
+      }
+    },
+    {
       "version": "v0.4",
       "cycleId": "682dd484-2fe5-4409-a814-43011b1c4a08"
     },
@@ -378,14 +386,6 @@
     {
       "version": "v0.6",
       "cycleId": "d54e65f2-a5e9-45f5-8ffe-04de112ca9d8"
-    },
-    {
-      "version": "v1.1",
-      "cycleId": "c8b79976-aa06-40fc-b70d-5dba4ef7369c",
-      "timeWindow": {
-        "start": "2026-11-16",
-        "end": "2026-11-20"
-      }
     }
   ]
 }
