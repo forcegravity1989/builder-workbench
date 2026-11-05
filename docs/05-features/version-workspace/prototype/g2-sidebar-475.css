@@ -1,0 +1,174 @@
+/*
+ * #475 双列侧栏原型样式（仅 version-workspace-prototype-475.html 加载）。
+ * 窄 Rail 常驻 + 第二列对象面板；配色、行高、圆角沿用 g2-workspace.css 的变量。
+ */
+.rail-475 {
+  width: 64px;
+  min-width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 0 10px;
+  background: var(--worktree-sidebar, var(--sidebar));
+  border-right: 1px solid var(--border);
+}
+.rail-brand {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 15px;
+  font-weight: 700;
+}
+.rail-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.rail-button {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--foreground) 62%, transparent);
+}
+.rail-button:hover {
+  background: var(--worktree-sidebar-accent, var(--accent));
+}
+.rail-button.selected {
+  background: var(--worktree-sidebar-accent, var(--accent));
+  color: var(--foreground);
+}
+.rail-button.selected::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--foreground);
+}
+.rail-spacer {
+  flex: 1;
+}
+.rail-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--worktree-sidebar-accent, var(--accent));
+  color: var(--foreground);
+}
+
+.panel-475 {
+  width: 296px;
+  min-width: 296px;
+}
+.panel-seg-475 {
+  display: flex;
+  gap: 2px;
+  margin: 2px 4px 8px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--muted);
+}
+.seg-btn-475 {
+  flex: 1;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 5px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.seg-btn-475.selected {
+  background: var(--worktree-sidebar-accent, var(--accent));
+  color: var(--foreground);
+  font-weight: 600;
+}
+.hidden-475 {
+  display: none;
+}
+.panel-475 .native-projects.expanded-475 {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+.panel-475 .sidebar-divider {
+  margin-top: 10px;
+}
+
+.pinned-section-475 {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.pinned-section-475 .section-label {
+  margin-top: 6px;
+}
+.pinned-row-475 {
+  width: calc(100% - 8px);
+  margin: 0 4px;
+}
+.pinned-badge-475 {
+  flex-shrink: 0;
+  margin-left: 4px;
+  padding: 1px 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.pinned-note-475 {
+  margin: 2px 8px 4px;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+.review-actions button.variant-btn-475 {
+  min-width: 26px;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  text-decoration: none;
+}
+.review-actions button.variant-btn-475.selected {
+  background: var(--foreground);
+  border-color: var(--foreground);
+  color: var(--background);
+}
+.review-hint-475 {
+  color: var(--muted-foreground);
+}
+
+@media (max-width: 1280px) {
+  .panel-475 {
+    width: 276px;
+    min-width: 276px;
+  }
+}
+@media (max-width: 1000px) {
+  .panel-475 {
+    width: 258px;
+    min-width: 258px;
+  }
+}
