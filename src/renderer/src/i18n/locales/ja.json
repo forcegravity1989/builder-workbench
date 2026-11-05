@@ -14612,5 +14612,6 @@
   },
   "brand": {
     "workbench": "Workbench"
-  }
+  },
+  "auto.components.browser.pane.annotate.browser.page.annotation.tray.includePageDetails": "ページの詳細を含める"
 }

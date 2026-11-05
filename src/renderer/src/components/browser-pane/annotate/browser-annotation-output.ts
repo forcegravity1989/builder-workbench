@@ -152,7 +152,10 @@ function inlineCode(content: string): string {
   return `${marker}${padding}${content}${padding}${marker}`
 }
 
-export function formatBrowserAnnotationsAsMarkdown(annotations: BrowserPageAnnotation[]): string {
+export function formatBrowserAnnotationsAsMarkdown(
+  annotations: BrowserPageAnnotation[],
+  { includeDiagnostics = false }: { includeDiagnostics?: boolean } = {}
+): string {
   if (annotations.length === 0) {
     return ''
   }
@@ -163,8 +166,12 @@ export function formatBrowserAnnotationsAsMarkdown(annotations: BrowserPageAnnot
     `## Design Feedback: ${formatPageHeading(first)}`,
     '',
     `**URL:** ${first.page.sanitizedUrl}`,
-    `**Browser tab id:** ${firstAnnotation.browserPageId}`,
-    `**Viewport:** ${first.page.viewportWidth}x${first.page.viewportHeight}`,
+    ...(includeDiagnostics
+      ? [
+          `**Browser tab id:** ${firstAnnotation.browserPageId}`,
+          `**Viewport:** ${first.page.viewportWidth}x${first.page.viewportHeight}`
+        ]
+      : []),
     ''
   ]
 
@@ -177,19 +184,20 @@ export function formatBrowserAnnotationsAsMarkdown(annotations: BrowserPageAnnot
     lines.push(`### ${index + 1}. ${annotationElementLabel(payload)}`)
     lines.push(`**Intent:** ${annotation.intent}`)
     lines.push(`**Selector:** ${inlineCode(target.selector)}`)
-    if (target.elementPath) {
+    if (includeDiagnostics && target.elementPath) {
       lines.push(`**Location:** ${inlineCode(target.elementPath)}`)
     }
     if (target.sourceFile) {
       lines.push(`**Source:** ${inlineText(target.sourceFile)}`)
     }
-    if (target.reactComponents) {
+    if (includeDiagnostics && target.reactComponents) {
       lines.push(`**React:** ${inlineText(target.reactComponents)}`)
     }
-    lines.push(
-      `**Bounds:** x=${Math.round(rect.x)}, y=${Math.round(rect.y)}, ${Math.round(rect.width)}x${Math.round(rect.height)}`
-    )
-    if (target.cssClasses) {
+    if (includeDiagnostics)
+      lines.push(
+        `**Bounds:** x=${Math.round(rect.x)}, y=${Math.round(rect.y)}, ${Math.round(rect.width)}x${Math.round(rect.height)}`
+      )
+    if (includeDiagnostics && target.cssClasses) {
       lines.push(`**Classes:** ${inlineCode(target.cssClasses)}`)
     }
     if (target.selectedText) {
@@ -197,30 +205,34 @@ export function formatBrowserAnnotationsAsMarkdown(annotations: BrowserPageAnnot
     } else if (target.textSnippet) {
       lines.push(`**Text:** "${inlineText(target.textSnippet)}"`)
     }
-    if (payload.nearbyText.length > 0) {
+    if (includeDiagnostics && payload.nearbyText.length > 0) {
       lines.push('**Nearby text:**')
       for (const text of payload.nearbyText) {
         lines.push(`- ${inlineText(text)}`)
       }
     }
-    if (target.nearbyElements?.length) {
+    if (includeDiagnostics && target.nearbyElements?.length) {
       lines.push('**Nearby elements:**')
       for (const element of target.nearbyElements) {
         lines.push(`- ${inlineText(element)}`)
       }
     }
-    if (styleLines.length > 0) {
+    if (includeDiagnostics && styleLines.length > 0) {
       lines.push('**Computed styles:**')
       lines.push(...styleLines)
     }
-    if (target.fullPath) {
+    if (includeDiagnostics && target.fullPath) {
       lines.push(`**Full DOM path:** ${inlineCode(target.fullPath)}`)
     }
-    if (target.htmlSnippet) {
+    if (includeDiagnostics && target.htmlSnippet) {
       lines.push('**HTML:**')
       lines.push(...fence('html', target.htmlSnippet))
     }
     lines.push(`**Feedback:** ${inlineText(annotation.comment)}`)
+    if (annotation.imagePaths?.length) {
+      lines.push('**Images (open these files):**')
+      for (const imagePath of annotation.imagePaths) lines.push(`- ${inlineCode(imagePath)}`)
+    }
     lines.push('')
   })
 

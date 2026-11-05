@@ -21,6 +21,28 @@ permissions:
   contents: read
 
 jobs:
+  browser-annotations:
+    name: Browser annotation contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+      - name: Check annotation, clipboard and navigation contracts
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/shared/browser-annotation-viewport-bridge.test.ts
+          src/renderer/src/components/browser-pane/annotate/browser-annotation-output.test.ts
+          src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.test.tsx
+          src/renderer/src/components/browser-pane/annotate/BrowserAnnotationSendMenuContent.test.tsx
+          src/renderer/src/components/browser-pane/host-guest/browser-page-favicon-retention.test.ts
+          src/renderer/src/components/browser-pane/describe-page/browser-annotation-geometry.test.ts
+          src/renderer/src/store/slices/browser.test.ts
+          src/renderer/src/lib/app-menu-paste.test.ts
+          src/main/browser/browser-manager-annotation-bridge.test.ts
+
   verify:
     name: lint, typecheck, tests, build
     runs-on: ubuntu-latest

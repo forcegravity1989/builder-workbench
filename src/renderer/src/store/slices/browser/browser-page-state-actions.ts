@@ -188,7 +188,8 @@ export function createBrowserPageStateActions(
         // persistence, the publish boundary and the address bar, exactly as at the other two doors.
         const nextPageUrl = page.docLocation ? ORCA_BROWSER_BLANK_URL : nextUrl
         // Why: annotations point at DOM coords of the loaded document; a real URL change invalidates those markers.
-        const shouldClearAnnotations = normalizeUrl(page.url) !== nextPageUrl
+        const shouldClearAnnotations =
+          normalizeUrl(page.url).split('#')[0] !== nextPageUrl.split('#')[0]
         const nextPages = (s.browserPagesByWorkspace[workspace.id] ?? []).map((entry) =>
           entry.id === pageId
             ? {

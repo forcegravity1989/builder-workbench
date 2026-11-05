@@ -14751,5 +14751,6 @@
   },
   "brand": {
     "workbench": "Workbench"
-  }
+  },
+  "auto.components.browser.pane.annotate.browser.page.annotation.tray.includePageDetails": "페이지 세부정보 포함"
 }

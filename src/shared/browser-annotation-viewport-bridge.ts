@@ -1,4 +1,4 @@
-import type { BrowserGrabRect } from './browser-grab-types'
+import { GRAB_BUDGET, type BrowserGrabRect } from './browser-grab-types'
 
 export type BrowserAnnotationViewportBridgeMarker = {
   id: string
@@ -6,6 +6,7 @@ export type BrowserAnnotationViewportBridgeMarker = {
   rectPage: BrowserGrabRect
   rectViewport: BrowserGrabRect
   isFixed: boolean
+  selector?: string
 }
 
 export type BrowserSetAnnotationViewportBridgeArgs = {
@@ -67,6 +68,9 @@ export function isValidBrowserAnnotationViewportBridgeMarkers(
         Number.isInteger(candidate.index) &&
         (candidate.index as number) >= 0 &&
         (candidate.index as number) < 100 &&
+        (candidate.selector === undefined ||
+          (typeof candidate.selector === 'string' &&
+            candidate.selector.length <= GRAB_BUDGET.selectorMaxLength)) &&
         typeof candidate.isFixed === 'boolean' &&
         isValidBrowserGrabRect(candidate.rectPage) &&
         isValidBrowserGrabRect(candidate.rectViewport)
@@ -76,7 +80,7 @@ export function isValidBrowserAnnotationViewportBridgeMarkers(
 }
 
 // Why: persisted badges need to follow guest scroll without a React roundtrip;
-// the bridge mirrors only numeric marker geometry into a closed shadow overlay.
+// the bridge resolves captured selectors once and paints live element bounds in a closed shadow overlay.
 export function buildBrowserAnnotationViewportBridgeScript({
   emitViewport,
   enabled,
@@ -164,6 +168,7 @@ export function buildBrowserAnnotationViewportBridgeScript({
       state.host = null;
       state.shadowRoot = null;
       state.markerElements = new Map();
+      state.markerTargets = new Map();
       return;
     }
     const shadowRoot = ensureOverlay(state);
@@ -171,6 +176,15 @@ export function buildBrowserAnnotationViewportBridgeScript({
     const liveIds = new Set();
     state.markers.forEach((marker) => {
       liveIds.add(marker.id);
+      if (!state.markerTargets) state.markerTargets = new Map();
+      if (!state.markerTargets.has(marker.id) && marker.selector) {
+        let target = null;
+        try {
+          const matches = document.querySelectorAll(marker.selector);
+          if (matches.length === 1) target = matches[0];
+        } catch (e) {}
+        state.markerTargets.set(marker.id, target);
+      }
       let element = state.markerElements.get(marker.id);
       if (!element) {
         element = document.createElement('span');
@@ -184,6 +198,7 @@ export function buildBrowserAnnotationViewportBridgeScript({
       if (!liveIds.has(id)) {
         element.remove();
         state.markerElements.delete(id);
+        state.markerTargets?.delete(id);
       }
     });
   };
@@ -196,12 +211,29 @@ export function buildBrowserAnnotationViewportBridgeScript({
     state.markers.forEach((marker) => {
       const element = state.markerElements.get(marker.id);
       if (!element) return;
-      const sourceRect = marker.isFixed ? marker.rectViewport : marker.rectPage;
-      const x = marker.isFixed ? sourceRect.x : sourceRect.x - viewport.scrollX;
-      const y = marker.isFixed ? sourceRect.y : sourceRect.y - viewport.scrollY;
+      const target = state.markerTargets?.get(marker.id);
+      if (marker.selector && (!target || !target.isConnected || target.getClientRects().length === 0)) {
+        element.style.display = 'none';
+        return;
+      }
+      const sourceRect = target ? target.getBoundingClientRect() : (marker.isFixed ? marker.rectViewport : marker.rectPage);
+      const x = target || marker.isFixed ? sourceRect.x : sourceRect.x - viewport.scrollX;
+      const y = target || marker.isFixed ? sourceRect.y : sourceRect.y - viewport.scrollY;
       const width = toNumber(sourceRect.width, 0);
       const height = toNumber(sourceRect.height, 0);
-      const visible =
+      const anchorX = x + width / 2;
+      const anchorY = y + height;
+      let clipped = false;
+      for (let parent = target?.parentElement; parent; parent = parent.parentElement) {
+        const style = getComputedStyle(parent);
+        const bounds = parent.getBoundingClientRect();
+        if ((/(auto|scroll|hidden|clip)/.test(style.overflowX) && (anchorX < bounds.left || anchorX > bounds.right)) ||
+            (/(auto|scroll|hidden|clip)/.test(style.overflowY) && (anchorY < bounds.top || anchorY > bounds.bottom))) {
+          clipped = true;
+          break;
+        }
+      }
+      const visible = !clipped &&
         x + width >= 0 &&
         y + height >= 0 &&
         x <= viewportWidth &&

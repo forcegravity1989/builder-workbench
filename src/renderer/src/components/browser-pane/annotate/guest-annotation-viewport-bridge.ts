@@ -25,6 +25,7 @@ export function syncGuestAnnotationViewportBridge({
   const markers = annotations.map((annotation, index) => ({
     id: annotation.id,
     index,
+    selector: annotation.payload.target.selector,
     isFixed: annotation.payload.target.isFixed === true,
     rectPage: annotation.payload.target.rectPage,
     rectViewport: annotation.payload.target.rectViewport

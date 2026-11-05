@@ -64,6 +64,19 @@ git merge orca-upstream/main
 
 ## 2. BW 相对 Orca 的稳定边界记录
 
+### 本机网页批注的定向同步
+
+浏览器批注仍走原生工具栏、guest bridge、剪贴板保存和智能体发送入口，不复制浏览器。此处仅同步批注能力，不改变本篇的整仓 fork baseline。来源对照稳定版 [v1.4.250](https://github.com/stablyai/orca/releases/tag/v1.4.250)：
+
+- [#28138 / `c473aedd`](https://github.com/stablyai/orca/commit/c473aedd14632d76a7f9488cd1f435b78578379c)：原生 Collapsible 管理展开/收起，替代 BW #470 / PR #511 的独立折叠实现；保留挂载以保持未保存文字、意图与图片。
+- [#36004 / `cc6da802`](https://github.com/stablyai/orca/commit/cc6da802a57fa2f8ffef16b5197658faa123366f)：新建和编辑批注接受剪贴板截图，图片保存到工作树宿主；反馈包含要求智能体打开的文件路径。适配本基线现有 runtime owner 与图片预览接口，不迁入新版会话、浏览器或宿主协议。路径传递不代表模型已经实际读图。
+- [#35990 / `c3518250`](https://github.com/stablyai/orca/commit/c3518250c5a452603d3e373f58fdcedb568950c8)：默认发送和复制精简反馈，发送菜单可选页面详情；勾选同时更新已打开的智能体选择器提示。
+- [#34267 / `62d9eb63`](https://github.com/stablyai/orca/commit/62d9eb635bfc6a92c155d8a738b7da73e372b3d9)：移植 fragment-only 更新不清除批注的判据，文档加载清理移至主框非 in-place 导航。未带入上游跨文档保留意见与标记几何分离机制，真正导航及重载仍按本基线清除批注。hash 路由应用仍无法仅靠 fragment 判断是否换页。
+
+位置错位与 URL 锚点更新是不同问题。稳定版的已提交标记仍按捕获的页面坐标减 window 滚动量计算；BW 通过现有桥补充 selector，唯一匹配后缓存元素引用，滚动时读取实时边界；失联、歧义或锚点被滚动容器裁剪时隐藏标记。该补充针对内层滚动，不是 #34267 的覆盖。#509 原反馈没有页面样例，现场原因须按普通滚动、内层滚动和滚动改 hash 分别复验。
+
+这里只涉及本机单人批注。双桌面实时互见与共同写入由 #576 跟踪，完整评审及会后改稿旅程归 #447。行为等价与 Windows 真壳验证范围以关联 PR 的证据为准。
+
 ### 2.1 已删除或迁移的上游内容
 
 - **Orca Mobile 产品已删除**：`mobile/` Expo 客户端、桌面 Mobile 产品页、Mobile 导航和对应 CI 不应在同步时恢复。

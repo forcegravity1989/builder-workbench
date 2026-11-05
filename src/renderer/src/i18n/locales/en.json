@@ -17640,5 +17640,6 @@
   },
   "brand": {
     "workbench": "Workbench"
-  }
+  },
+  "auto.components.browser.pane.annotate.browser.page.annotation.tray.includePageDetails": "Include page details"
 }

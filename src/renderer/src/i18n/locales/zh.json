@@ -14733,5 +14733,6 @@
   },
   "brand": {
     "workbench": "Workbench"
-  }
+  },
+  "auto.components.browser.pane.annotate.browser.page.annotation.tray.includePageDetails": "包含页面详情"
 }

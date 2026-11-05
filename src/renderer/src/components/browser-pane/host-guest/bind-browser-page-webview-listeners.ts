@@ -105,11 +105,8 @@ export function bindBrowserPageWebviewListeners({
       trackNextLoadingEventRef,
       keepAddressBarFocusRef,
       recoveryNavigationValidationRef,
-      clearBrowserPageAnnotationsRef,
       onUpdatePageStateRef,
       onSetUrlRef,
-      setPendingAnnotationPayload,
-      setBrowserOverlayViewport,
       setAddressBarValue,
       focusAddressBarNow
     })
@@ -136,7 +133,9 @@ export function bindBrowserPageWebviewListeners({
     faviconUrlRef,
     setAddressBarValue,
     annotationViewportBridgeTokenRef,
-    setBrowserOverlayViewport
+    setBrowserOverlayViewport,
+    clearBrowserPageAnnotationsRef,
+    setPendingAnnotationPayload
   })
 
   const unsubscribeSystemResumed = subscribeBrowserSystemResume(guestRecovery.validateAfterResume)
