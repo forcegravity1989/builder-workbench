@@ -1,6 +1,7 @@
 # AGENTS.md — Workbench 开发约定
 
 > **本篇维护约定**
+>
 > - **读者与时机**：在本仓工作的模型与开发者；开始任务、修改文档、提交和开 PR 前读取。
 > - **职责与边界**：只写任务读取路径、开发硬约束、建跑测命令、文档维护与交付规则；不承载产品介绍、模块设计正文或变更流水。
 > - **结构**：按任务读取 → 文档维护 → 项目硬约束 → 构建验证 → 修改交付 → CodeGraph。
@@ -51,7 +52,7 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 | 完成永远由人确认，同一工作不重复记录完成结果 | Issue 关闭由人决定，关闭即计入完成（关闭原因不参与计数）；目标达成仍由人确认；自动化、agent、定时不得自行关闭或确认完成 |
 | 定时任务真实到点触发；自动创建的 Issue 不自动完成 | 调度在 Orca，到点开会话，不能替人确认 Done |
 
-- Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。提单格式与纳入计划时的补充见 [Issue 格式](standard/system-prompt/references/issue-state.md)，计划关联使用材料中的任务引用。不恢复已退役的状态标签或另造平行协议。工具与会话沿本机设置和原生入口。
+- Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。提单格式与纳入计划时的补充见 [Issue 格式](standard/references/issue-state.md)，计划关联使用材料中的任务引用。不恢复已退役的状态标签或另造平行协议。工具与会话沿本机设置和原生入口。
 - Workbench MVP 本地零业务数据库。用 `gh` / `codehub-cli` / `git` / 文件独立读回；不用 V3 的 `sqlite3` 路径。项目约定和指标资产的归属读 [architecture](docs/architecture.md)，不能将资产盘点变成代写项目开发规范。
 - 入口层不写业务正本；计划 JSON 保存版本/目标与任务关联，Issue 原生字段保存实际状态。
 - 日常 BW 工作先依据当前仓库的代码、调用链和现行正本选方案，不要求查询或等待 Orca 上游；按“先复用原生能力 → 再用 BW 薄挂载或自有模块接入 → 只有确实必须改变 Orca 核心、协议或宿主路由时才停在方案层交人决定”的顺序判断。优先复用原生执行核和薄挂载。只有会影响后续方案选择的稳定边界才写入对应正本；周期性上游核对由 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md) 承担，未被人采纳的候选不写入仓库。
@@ -74,14 +75,14 @@ pnpm run typecheck
 
 旧 Dioxus 壳的 `cargo run -p app-shell`、`bw-dev` 深链与 `.bw/release/pack` 出包协议针对已删除的三 crate，不能用来解释本分支。现有 Electron 构建入口以 SYNC 和 package.json 为准；BW 的 CI/CD、评审与正式出包链随迁移任务验证，不能据此宣称已完成 v0.5 交付。
 
-计划/验收工作流入口（已登记自动化；数据文件问题作为一次性上下文随手动运行递交，不单独渲染）与「配置指标」携带 SYSTEM + 对应 Skill 指针；普通原生新建会话不额外注入 BW 提示（`version-cycle/cycle-prompt.ts`，正源 `standard/`）；真实执行依赖本机设置的会话工具、固定工作树及仓库权限。路径与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。
+计划、验收和「配置指标」手动入口准备完整 Skill 包后打开原生会话草稿，用户发送后由模型完整读取 Skill 及其必读规范；定时运行仍沿原生自动化。普通原生新建会话不额外注入 BW 提示（`version-cycle/cycle-prompt.ts`，正源 `standard/`）。路径、宿主与失败处理见 [会话与执行](docs/06-module/会话与执行.md)。
 
 ### 提交前门禁
 
 每个 commit 前过 husky `lint-staged`（oxlint / oxfmt）。改叠层或注入逻辑时再跑受影响的 Vitest，例如：
 
 ```bash
-pnpm exec vitest run --config config/vitest.config.ts src/renderer/src/workbench/version-cycle/cycle-prompt.test.ts
+pnpm exec vitest run --config config/vitest.config.ts src/main/workbench/skill-install.test.ts
 ```
 
 PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行为正确性仍靠真壳（计划/验收两屏、会话注入、远端/Git/文件读回）及 code review；已有单测随改维护，不把新增回归大坝当交付物；新增单测按 [02 环 4](docs/01-principles/02-working-backwards.md) 测试用例规范只立两类看护——核心算法函数、与 E2E 强相关的数据协议（单特性新增默认 ≤10 例），UI/文案/装配不新增；用例跑失败先审视它在当前方案下是否仍有价值——该删的删、该改的改，都不是才按真回归修代码，不为变绿而变绿、不 skip 静音；叠层单测存量总量受执行例数 ratchet 约束（`pnpm run check:vitest-count-ratchet`，基线 `config/vitest-count-baseline.txt`，只减不增，新增须同一交付内对冲删除）；验收点与旅程 E2E 特性初期控量，稳定后专项回补。
@@ -97,7 +98,7 @@ PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行
 
 ### commit 与 PR
 
-**先有 Issue 再开工**：按 [Issue 格式](standard/system-prompt/references/issue-state.md) 先查同类单，能复用就沿用，没有就新建（只需问题描述）。PR 正文开头写 `关联 #<编号>` 挂上这条 Issue；不用 `Fixes` / `Closes` 等关闭关键字——合入不等于完成，Issue 关闭仍由人决定。
+**先有 Issue 再开工**：按 [Issue 格式](standard/references/issue-state.md) 先查同类单，能复用就沿用，没有就新建（只需问题描述）。PR 正文开头写 `关联 #<编号>` 挂上这条 Issue；不用 `Fixes` / `Closes` 等关闭关键字——合入不等于完成，Issue 关闭仍由人决定。
 
 每件独立提交、在分支和独立工作树上。**默认继续交付 PR**：完成门禁、对应 E2E 和推前 subagent 全方位检视（四维与 TODO 步骤见 [02 §6.2 横切站 B](docs/01-principles/02-working-backwards.md)）后，提交、push、开 PR 并补验证 Review；人明确说「只本地」时才停止在本地。不自动合入 PR、关闭 Issue 或正式发版本，除非人已明确授权该动作。标题应让人不查文档也懂改了什么，正文如实说明原因、取舍与偏差；变化与证据写进 commit/PR，当前知识写回正本。
 
