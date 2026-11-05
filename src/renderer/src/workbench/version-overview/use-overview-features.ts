@@ -30,7 +30,7 @@ export const featureFactsCache = createOverviewReadCache<FeatureRead>((result, p
 
 const disabledSnapshot: ReadSnapshot<FeatureRead> = { loading: false }
 
-export function useOverviewFeatures(args: {
+type FeatureSource = {
   catalog: VersionCatalogState
   plan: PlanningMaterial | null
   planSource: 'committed' | 'draft'
@@ -39,18 +39,16 @@ export function useOverviewFeatures(args: {
   historical: boolean
   refreshToken: number
   enabled?: boolean
-}) {
-  const {
-    catalog,
-    plan,
-    planSource,
-    version,
-    before,
-    historical,
-    refreshToken,
-    enabled = true
-  } = args
-  useAppStore((state) => state.repos)
+}
+
+function featureSourceKeys({
+  catalog,
+  plan,
+  planSource,
+  version,
+  before,
+  historical
+}: FeatureSource) {
   const references = [
     ...(plan?.tasks ?? []),
     ...(catalog.catalog?.entries.flatMap((entry) => entry.tasks) ?? [])
@@ -99,6 +97,24 @@ export function useOverviewFeatures(args: {
       ])
       .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
   ])
+  return { contextKey, materialState }
+}
+
+export function useOverviewFeatures(args: FeatureSource) {
+  const {
+    catalog,
+    plan,
+    planSource,
+    version,
+    before,
+    historical,
+    refreshToken,
+    enabled = true
+  } = args
+  useAppStore((state) => state.repos)
+  const { contextKey, materialState } = enabled
+    ? featureSourceKeys(args)
+    : { contextKey: '', materialState: '' }
   const key = JSON.stringify([contextKey, refreshToken, materialState])
   const lastRefresh = useRef(refreshToken)
   const needsRead = useRef(true)
@@ -120,7 +136,7 @@ export function useOverviewFeatures(args: {
     }
     const cached = featureFactsCache.get(contextKey)
     const force =
-      (args.enabled === true && needsRead.current) ||
+      (args.enabled === true && needsRead.current && Boolean(cached.value)) ||
       lastRefresh.current !== refreshToken ||
       cached.loading ||
       Boolean(cached.value && cached.value.materialState !== materialState)

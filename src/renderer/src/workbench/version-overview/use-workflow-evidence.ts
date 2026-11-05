@@ -27,8 +27,7 @@ export function useWorkflowEvidence(
   catalog: VersionCatalogState,
   plan: PlanningMaterial | null,
   version: string,
-  revision?: string,
-  sourceReady = true
+  revision?: string
 ) {
   useAppStore((state) => state.repos)
   const referenceSourceKey =
@@ -51,11 +50,11 @@ export function useWorkflowEvidence(
   )
   const state = useSyncExternalStore(subscribe, () => cache.get(scopeKey))
   useEffect(() => {
-    if (!plan || !catalog.scope || !sourceReady) {
+    if (!plan || !catalog.scope) {
       return
     }
     let cancelled = false
-    const force = firstRead.current || refreshToken > 0
+    const force = (firstRead.current && Boolean(cache.get(scopeKey).value)) || refreshToken > 0
     firstRead.current = false
     const running = cache.get(scopeKey).loading
     const load = (signal: AbortSignal) => readWorkflowEvidence(catalog, plan, force, signal)
@@ -72,7 +71,7 @@ export function useWorkflowEvidence(
     }
     // Source identity, revision and explicit refresh control reads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scopeKey, sourceReady, refreshToken])
+  }, [scopeKey, refreshToken])
   return {
     value: state.value,
     error: state.error,

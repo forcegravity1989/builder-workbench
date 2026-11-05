@@ -317,7 +317,6 @@ export function VersionOverviewPage({ options }: { options: VersionOverviewOptio
           version={version}
           revision={plan.kind === 'ready' ? (plan.sourceCommit ?? plan.revision) : undefined}
           planState={plan.kind}
-          sourceReady={plan.kind === 'ready'}
         />
       )}
     </main>
