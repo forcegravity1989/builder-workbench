@@ -7,23 +7,78 @@
     },
     {
       "month": "2026-11",
-      "outcome": "构建更多的项目上下文和任务多人协作并行执行旅程"
+      "outcome": "围绕项目管理与多人协作发布V1.0版本"
     }
   ],
   "features": [
     {
+      "id": "d2202d36-55fc-4ff3-82c9-4b73b0cc4909",
+      "month": "2026-11",
+      "title": "项目墙",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "c88e2433-2ef8-4786-a15b-cc711442e553",
+          "version": {
+            "version": "v1.0",
+            "cycleId": "11b09ce2-9bc4-43b8-98d1-575e79beb4ed"
+          },
+          "stages": [
+            {
+              "phase": "Plan",
+              "start": "2026-11-09T00:00",
+              "end": "2026-11-10T04:48"
+            },
+            {
+              "phase": "Design",
+              "start": "2026-11-10T04:48",
+              "end": "2026-11-12T14:24"
+            },
+            {
+              "phase": "Build",
+              "start": "2026-11-12T14:24",
+              "end": "2026-11-13T04:48"
+            },
+            {
+              "phase": "Test",
+              "start": "2026-11-13T04:48",
+              "end": "2026-11-14T09:36"
+            },
+            {
+              "phase": "Deploy",
+              "start": "2026-11-14T09:36",
+              "end": "2026-11-15T00:00"
+            }
+          ]
+        },
+        {
+          "id": "ab57f0de-416e-424b-8e8f-e47ad4bf4ae5",
+          "version": {
+            "version": "v1.1",
+            "cycleId": "c8b79976-aa06-40fc-b70d-5dba4ef7369c"
+          },
+          "stages": [
+            {
+              "phase": "Maintain",
+              "start": "2026-11-16T00:00",
+              "end": "2026-11-21T00:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "58eac73c-2132-4359-9a72-68bc94e54fcf",
       "month": "2026-11",
-      "title": "workflow",
-      "owner": "yuzhup",
+      "title": "消息通知",
+      "owner": "kanadead",
       "deliveries": [
         {
           "id": "f796d362-6aaf-4216-9ceb-93fdddaa2689",
           "version": {
-            "version": "v1.10",
+            "version": "v0.9",
             "cycleId": "c2af3cc8-f711-41f4-97cc-db37b6fa5157"
           },
-          "goalSlot": 2,
           "stages": [
             {
               "phase": "Plan",
@@ -55,15 +110,98 @@
         {
           "id": "c17d33e6-4fac-4c21-b999-dfa5559afc0f",
           "version": {
-            "version": "v1.20",
+            "version": "v1.0",
             "cycleId": "11b09ce2-9bc4-43b8-98d1-575e79beb4ed"
           },
-          "goalSlot": 2,
           "stages": [
             {
               "phase": "Maintain",
               "start": "2026-11-09T00:00",
               "end": "2026-11-14T00:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "october-version-overview",
+      "month": "2026-10",
+      "title": "版本总览",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "october-version-overview-v08",
+          "version": {
+            "version": "v0.8",
+            "cycleId": "228a67d9-49c0-4908-b595-e4475086288c"
+          },
+          "stages": [
+            {
+              "phase": "Plan",
+              "start": "2026-10-26T00:00",
+              "end": "2026-10-27T00:00"
+            },
+            {
+              "phase": "Design",
+              "start": "2026-10-27T00:00",
+              "end": "2026-10-29T00:00"
+            },
+            {
+              "phase": "Build",
+              "start": "2026-10-29T00:00",
+              "end": "2026-10-29T12:00"
+            },
+            {
+              "phase": "Test",
+              "start": "2026-10-29T12:00",
+              "end": "2026-10-30T12:00"
+            },
+            {
+              "phase": "Deploy",
+              "start": "2026-10-30T12:00",
+              "end": "2026-10-31T00:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "october-project-overview",
+      "month": "2026-10",
+      "title": "项目总览里程碑",
+      "owner": "yuzhup",
+      "deliveries": [
+        {
+          "id": "october-project-overview-v08",
+          "version": {
+            "version": "v0.8",
+            "cycleId": "228a67d9-49c0-4908-b595-e4475086288c"
+          },
+          "stages": [
+            {
+              "phase": "Plan",
+              "start": "2026-10-26T00:00",
+              "end": "2026-10-27T00:00"
+            },
+            {
+              "phase": "Design",
+              "start": "2026-10-27T00:00",
+              "end": "2026-10-29T00:00"
+            },
+            {
+              "phase": "Build",
+              "start": "2026-10-29T00:00",
+              "end": "2026-10-29T12:00"
+            },
+            {
+              "phase": "Test",
+              "start": "2026-10-29T12:00",
+              "end": "2026-10-30T12:00"
+            },
+            {
+              "phase": "Deploy",
+              "start": "2026-10-30T12:00",
+              "end": "2026-10-31T00:00"
             }
           ]
         }
@@ -81,8 +219,6 @@
             "version": "v0.7",
             "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286"
           },
-          "goalId": "G2",
-          "goalSlot": 2,
           "stages": [
             {
               "phase": "Plan",
@@ -125,8 +261,6 @@
             "version": "v0.7",
             "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286"
           },
-          "goalId": "G3",
-          "goalSlot": 3,
           "stages": [
             {
               "phase": "Plan",
@@ -169,8 +303,6 @@
             "version": "v0.7",
             "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286"
           },
-          "goalId": "G3",
-          "goalSlot": 3,
           "stages": [
             {
               "phase": "Plan",
@@ -200,93 +332,60 @@
           ]
         }
       ]
+    }
+  ],
+  "versionPlans": [
+    {
+      "version": "v0.7",
+      "cycleId": "91585e71-e3da-4b15-bd71-b28ba8f44286",
+      "timeWindow": {
+        "start": "2026-10-19",
+        "end": "2026-10-23"
+      }
     },
     {
-      "id": "october-project-overview",
-      "month": "2026-10",
-      "title": "项目总览里程碑",
-      "owner": "yuzhup",
-      "deliveries": [
-        {
-          "id": "october-project-overview-v08",
-          "version": {
-            "version": "v0.8",
-            "cycleId": "228a67d9-49c0-4908-b595-e4475086288c"
-          },
-          "goalId": "G2",
-          "goalSlot": 2,
-          "stages": [
-            {
-              "phase": "Plan",
-              "start": "2026-10-26T00:00",
-              "end": "2026-10-27T00:00"
-            },
-            {
-              "phase": "Design",
-              "start": "2026-10-27T00:00",
-              "end": "2026-10-29T00:00"
-            },
-            {
-              "phase": "Build",
-              "start": "2026-10-29T00:00",
-              "end": "2026-10-29T12:00"
-            },
-            {
-              "phase": "Test",
-              "start": "2026-10-29T12:00",
-              "end": "2026-10-30T12:00"
-            },
-            {
-              "phase": "Deploy",
-              "start": "2026-10-30T12:00",
-              "end": "2026-10-31T00:00"
-            }
-          ]
-        }
-      ]
+      "version": "v0.8",
+      "cycleId": "228a67d9-49c0-4908-b595-e4475086288c",
+      "timeWindow": {
+        "start": "2026-10-26",
+        "end": "2026-10-31"
+      }
     },
     {
-      "id": "october-version-overview",
-      "month": "2026-10",
-      "title": "版本总览",
-      "owner": "yuzhup",
-      "deliveries": [
-        {
-          "id": "october-version-overview-v08",
-          "version": {
-            "version": "v0.8",
-            "cycleId": "228a67d9-49c0-4908-b595-e4475086288c"
-          },
-          "goalId": "G5",
-          "stages": [
-            {
-              "phase": "Plan",
-              "start": "2026-10-26T00:00",
-              "end": "2026-10-27T00:00"
-            },
-            {
-              "phase": "Design",
-              "start": "2026-10-27T00:00",
-              "end": "2026-10-29T00:00"
-            },
-            {
-              "phase": "Build",
-              "start": "2026-10-29T00:00",
-              "end": "2026-10-29T12:00"
-            },
-            {
-              "phase": "Test",
-              "start": "2026-10-29T12:00",
-              "end": "2026-10-30T12:00"
-            },
-            {
-              "phase": "Deploy",
-              "start": "2026-10-30T12:00",
-              "end": "2026-10-31T00:00"
-            }
-          ]
-        }
-      ]
+      "version": "v0.9",
+      "cycleId": "c2af3cc8-f711-41f4-97cc-db37b6fa5157",
+      "timeWindow": {
+        "start": "2026-11-02",
+        "end": "2026-11-06"
+      }
+    },
+    {
+      "version": "v1.0",
+      "cycleId": "11b09ce2-9bc4-43b8-98d1-575e79beb4ed",
+      "timeWindow": {
+        "start": "2026-11-09",
+        "end": "2026-11-14"
+      }
+    },
+    {
+      "version": "v0.4",
+      "cycleId": "682dd484-2fe5-4409-a814-43011b1c4a08"
+    },
+    {
+      "version": "v0.5",
+      "cycleId": "664aa8c6-d407-43e7-9d60-e99096f1f2db"
+    },
+    {
+      "version": "v0.6",
+      "cycleId": "d54e65f2-a5e9-45f5-8ffe-04de112ca9d8"
+    },
+    {
+      "version": "v1.1",
+      "cycleId": "c8b79976-aa06-40fc-b70d-5dba4ef7369c",
+      "timeWindow": {
+        "start": "2026-11-16",
+        "end": "2026-11-20"
+      }
     }
   ]
 }
