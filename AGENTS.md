@@ -18,7 +18,8 @@
 | 叠层 / 与 Orca、旧 main 的差异 | 读 [ref/upstream.md](ref/upstream.md)。主干 `main` 即叠层（原 `bw-orca`）；Orca Mobile 产品已删；`standard/` 已从旧 main（现 `archive/main-pre-orca`）合入。叠层 UI 在 `src/renderer/src/workbench/` |
 | 叠层实现、运行或打包 | 读 [SYNC](src/renderer/src/workbench/SYNC.md) 的代码落点、开发命令与构建入口；产品行为读 [architecture](docs/architecture.md)，上游版本与同步取舍读 [ref/upstream.md](ref/upstream.md) |
 | 仓外 IDE 新会话 | 本篇 → [workbench-start](.claude/skills/workbench-start/SKILL.md)，按意图与影响分流开发、验证和交付；相关设计读 [architecture](docs/architecture.md)、术语读 [CONTEXT](CONTEXT.md)。Workbench 发起的项目执行会话读产品传入提示与被管项目的 AGENTS，不自动叠加本仓起手 Skill |
-| 特性级变更 | 对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，`plan.md` 仅大风险升 gate。交付按 02 §6.2 六环链，新工作先过 §6.3 带入三问；迁移在 Orca 上重新决策，按实际改动补链 |
+| 提单或维护 BW 自身 Issue | 创建、改写或关联前，完整读取[通用 Issue 规范](standard/references/issue-state.md)和[BW 特性矩阵](docs/05-features/README.md)，按主要用户结果选主归属。纳入版本计划时再执行[计划 Skill](standard/skills/week-planning/SKILL.md)的纳入要求。 |
+| 特性级变更 | 从[特性矩阵](docs/05-features/README.md)定位所属旅程，对齐 [03 产品主张与飞轮](docs/01-principles/03-press-release-faq-flywheel.md) → 按 [02 逆向工作法](docs/01-principles/02-working-backwards.md) 开/改 `docs/05-features/<id>/intent.md` 与带原型链接的 `spec.md`；二者由人确认，`plan.md` 仅大风险升 gate。交付按 02 §6.2 六环链，新工作先过 §6.3 带入三问；迁移在 Orca 上重新决策，按实际改动补链 |
 | 小 bug、文案、无新增用户价值的整理 | 先确认所属特性与已有行为依据；依据齐备则挂 Issue 直接修、验证、commit/PR 留痕，不为小修新立特性。所属独立特性的必要文档缺失时，按 [02 §6.3](docs/01-principles/02-working-backwards.md) 补齐本次定义并完成缺失决定的人确认，再改依赖这些决定的代码；粒度听 [01](docs/01-principles/01-document-organization.md) |
 | 改客群、飞轮或对外主张 | 先议再改 03；特性 intent 不得偷偷改写产品主张，不把草稿界面说成已交付 |
 | 改代码或现行设计 | 在 [architecture](docs/architecture.md) 定位用例哪一站 → §2 能力 → §3 Electron 叠层与数据流；模块取舍读 [06-module](docs/06-module/README.md)。影响使用方式或界面时同步相应特性资料；指南待旅程验证后补。视觉协同读 [设计系统](docs/04-design-system/README.md)/[高保真](docs/hifi/)，按文件归属与对应负责人协调 |
@@ -52,7 +53,7 @@ Superpowers / grill-me 可用于发散、质询和计划草稿，特性产出仍
 | 完成永远由人确认，同一工作不重复记录完成结果 | Issue 关闭由人决定，关闭即计入完成（关闭原因不参与计数）；目标达成仍由人确认；自动化、agent、定时不得自行关闭或确认完成 |
 | 定时任务真实到点触发；自动创建的 Issue 不自动完成 | 调度在 Orca，到点开会话，不能替人确认 Done |
 
-- Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。提单格式与纳入计划时的补充见 [Issue 格式](standard/references/issue-state.md)，计划关联使用材料中的任务引用。不恢复已退役的状态标签或另造平行协议。工具与会话沿本机设置和原生入口。
+- Issue 原生状态与关闭原因是处理结果的正本；仓文件产物通过分支和 PR/MR 评审。计划关联使用材料中的任务引用。不恢复已退役的状态标签或另造平行协议。工具与会话沿本机设置和原生入口。
 - Workbench MVP 本地零业务数据库。用 `gh` / `codehub-cli` / `git` / 文件独立读回；不用 V3 的 `sqlite3` 路径。项目约定和指标资产的归属读 [architecture](docs/architecture.md)，不能将资产盘点变成代写项目开发规范。
 - 入口层不写业务正本；计划 JSON 保存版本/目标与任务关联，Issue 原生字段保存实际状态。
 - 日常 BW 工作先依据当前仓库的代码、调用链和现行正本选方案，不要求查询或等待 Orca 上游；按“先复用原生能力 → 再用 BW 薄挂载或自有模块接入 → 只有确实必须改变 Orca 核心、协议或宿主路由时才停在方案层交人决定”的顺序判断。优先复用原生执行核和薄挂载。只有会影响后续方案选择的稳定边界才写入对应正本；周期性上游核对由 [orca-boundary-review](.claude/skills/orca-boundary-review/SKILL.md) 承担，未被人采纳的候选不写入仓库。
@@ -98,7 +99,7 @@ PR 检查以 [`.github/workflows/pr.yml`](.github/workflows/pr.yml) 为准。行
 
 ### commit 与 PR
 
-**先有 Issue 再开工**：按 [Issue 格式](standard/references/issue-state.md) 先查同类单，能复用就沿用，没有就新建（只需问题描述）。PR 正文开头写 `关联 #<编号>` 挂上这条 Issue；不用 `Fixes` / `Closes` 等关闭关键字——合入不等于完成，Issue 关闭仍由人决定。
+**先有 Issue 再开工**：按上表提单入口先查同类单，能复用就沿用，没有就新建（只需问题描述）。PR 正文开头写 `关联 #<编号>` 挂上这条 Issue；不用 `Fixes` / `Closes` 等关闭关键字——合入不等于完成，Issue 关闭仍由人决定。
 
 每件独立提交、在分支和独立工作树上。**默认继续交付 PR**：完成门禁、对应 E2E 和推前 subagent 全方位检视（四维与 TODO 步骤见 [02 §6.2 横切站 B](docs/01-principles/02-working-backwards.md)）后，提交、push、开 PR 并补验证 Review；人明确说「只本地」时才停止在本地。不自动合入 PR、关闭 Issue 或正式发版本，除非人已明确授权该动作。标题应让人不查文档也懂改了什么，正文如实说明原因、取舍与偏差；变化与证据写进 commit/PR，当前知识写回正本。
 

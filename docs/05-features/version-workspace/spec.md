@@ -1,10 +1,10 @@
-# 版本工作区规格
+# 版本会话管理规格
 
 > 给设计、实现与验收者读取；本文管目标行为与判据，工程边界见 [design](design.md)，价值见 [intent](intent.md)，执行证据见 [STATUS](STATUS.md)。行为变化时改对应主题，不记录开发流水。
 >
 > 状态：设计于 2026-10-20 评审定稿（修订 9 仅版本总览改表格周报风格，2026-10-22 人确认），[高保真修订 9](version-workspace-prototype.html?rev=9) 为形态依据；生产接线与真壳证据见 STATUS。计划/验收整屏复用边界见 [版本计划 spec](../version-planning/spec.md)。
 
-> 版本总览已独立为 [version-overview](../version-overview/spec.md)，本篇只维护版本导航、工作树和收尾边界。
+> 本篇承接整个侧栏的布局与交互，包括版本、目标和会话目录，原生项目与工作区的显示身份、绑定、置顶和展开收起，以及流程树准备、进入与清理。已定义的具体行为见下文；[版本总览](../version-overview/spec.md)承接版本结果回看。
 
 原型入口为 [version-workspace-prototype.html](version-workspace-prototype.html) 与 [旅程报告](version-workspace-journey.html)；可编辑源码在本特性 `prototype/` 下，共用 [version-planning 的冻结 vendor 包](../version-planning/prototype/vendor.js) 与设计系统资源。修改 JSX 后运行 `node docs/05-features/version-workspace/prototype/build-g2.cjs` 更新生成物；`--check` 只核对生成物一致性，不替代浏览器启动与视觉验看。
 
