@@ -3,7 +3,11 @@ import type { VersionCatalogState } from './use-version-catalog'
 import { milestoneSourceCache, milestoneSourceKey, readMilestones } from './milestone-port'
 
 /** Read the shared formal source only; local editing and recovery state never supply widths. */
-export function useMilestoneSource(catalog: VersionCatalogState, refreshToken: number) {
+export function useMilestoneSource(
+  catalog: VersionCatalogState,
+  refreshToken: number,
+  enabled = true
+) {
   const scope =
     catalog.scope && catalog.home ? { ...catalog.scope, worktreeId: catalog.home.id } : null
   const key = scope ? milestoneSourceKey(scope) : 'unavailable'
@@ -13,7 +17,7 @@ export function useMilestoneSource(catalog: VersionCatalogState, refreshToken: n
     () => milestoneSourceCache.get(key)
   )
   useEffect(() => {
-    if (!scope) {
+    if (!scope || !enabled) {
       return
     }
     const force = previous.current !== refreshToken
@@ -22,6 +26,6 @@ export function useMilestoneSource(catalog: VersionCatalogState, refreshToken: n
     void readMilestones(scope, force).catch(() => {})
     // The key includes repository, worktree and execution owner.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, refreshToken])
+  }, [key, refreshToken, enabled])
   return { formal: state.value?.formal, error: state.error, loading: state.loading }
 }

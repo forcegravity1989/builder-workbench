@@ -27,69 +27,78 @@ export function workflowReferences(plan: PlanningMaterial) {
 export async function readWorkflowEvidence(
   catalog: VersionCatalogState,
   plan: PlanningMaterial,
-  force: boolean
+  force: boolean,
+  signal?: AbortSignal
 ): Promise<WorkflowEvidence> {
   if (!catalog.scope) {
     throw new Error('项目来源未就绪')
   }
-  const provider = createOverviewProviderReader()
+  signal?.throwIfAborted()
+  const provider = createOverviewProviderReader(signal)
   const references = workflowReferences(plan)
-  const values = await nativeTaskReferenceReader.read(catalog.scope, references, force)
-  const tasks = await mapLimit(references, async (reference): Promise<WorkflowTaskReport> => {
-    const value = values[references.indexOf(reference)]
-    const result: WorkflowTaskReport = {
-      reference,
-      issueUrl: '',
-      feedback: null,
-      problems: []
-    }
-    if (!value) {
-      result.problems.push('Issue 读取未返回')
-      return result
-    }
-    const read = cycleTaskRead(reference, value)
-    if (read.kind !== 'ready' || value.kind === 'unavailable' || value.item.type !== 'issue') {
-      result.problems.push(read.kind === 'unavailable' ? read.error : '计划引用未读为 Issue')
-      return result
-    }
-    result.issueUrl = read.task.url
-    const evidence = await readFeatureEvidence(
-      read.task,
-      [read.task],
-      catalog,
-      [plan.version],
-      undefined,
-      provider
-    )
-    result.problems.push(...evidence.problems)
-    for (const pull of evidence.pulls) {
-      let comments: WorkflowCommentsResult
-      try {
-        comments = await provider.comments(catalog, read.task, pull.number, force)
-      } catch (reason) {
-        result.problems.push(
-          `PR #${pull.number} 指标评论：${reason instanceof Error ? reason.message : String(reason)}`
-        )
-        continue
+  const values = await nativeTaskReferenceReader.read(catalog.scope, references, force, signal)
+  const tasks = await mapLimit(
+    references,
+    async (reference): Promise<WorkflowTaskReport> => {
+      const value = values[references.indexOf(reference)]
+      const result: WorkflowTaskReport = {
+        reference,
+        issueUrl: '',
+        feedback: null,
+        problems: []
       }
-      for (const comment of comments.comments) {
-        const report = readWorkflowComment(comment)
-        if (report.kind !== 'ready' || !sameWorkflowIssue(report.issueUrl, result.issueUrl)) {
+      if (!value) {
+        result.problems.push('Issue 读取未返回')
+        return result
+      }
+      const read = cycleTaskRead(reference, value)
+      if (read.kind !== 'ready' || value.kind === 'unavailable' || value.item.type !== 'issue') {
+        result.problems.push(read.kind === 'unavailable' ? read.error : '计划引用未读为 Issue')
+        return result
+      }
+      result.issueUrl = read.task.url
+      const evidence = await readFeatureEvidence(
+        read.task,
+        [read.task],
+        catalog,
+        [plan.version],
+        undefined,
+        provider,
+        signal
+      )
+      result.problems.push(...evidence.problems)
+      for (const pull of evidence.pulls) {
+        let comments: WorkflowCommentsResult
+        try {
+          comments = await provider.comments(catalog, read.task, pull.number, force)
+        } catch (reason) {
+          result.problems.push(
+            `PR #${pull.number} 指标评论：${reason instanceof Error ? reason.message : String(reason)}`
+          )
           continue
         }
-        if (result.feedback) {
-          result.feedback = null
-          result.reportProblem = '交付报告不唯一，未计入指标；请在本次交付 PR 保留一份更新中的报告'
-          return result
-        }
-        result.feedback = {
-          report,
-          url: comment.url ?? pull.url
+        for (const comment of comments.comments) {
+          const report = readWorkflowComment(comment)
+          if (report.kind !== 'ready' || !sameWorkflowIssue(report.issueUrl, result.issueUrl)) {
+            continue
+          }
+          if (result.feedback) {
+            result.feedback = null
+            result.reportProblem =
+              '交付报告不唯一，未计入指标；请在本次交付 PR 保留一份更新中的报告'
+            return result
+          }
+          result.feedback = {
+            report,
+            url: comment.url ?? pull.url
+          }
         }
       }
-    }
-    return result
-  })
+      return result
+    },
+    4,
+    signal
+  )
   return {
     tasks,
     readAt: new Date().toISOString(),

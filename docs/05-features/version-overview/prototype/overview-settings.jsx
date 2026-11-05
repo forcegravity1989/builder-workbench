@@ -86,7 +86,7 @@ export function ExperimentalSettings({ value, onChange, onBack }) {
         </section>
         <p className="ov-note">
           原型注释: 沿用 Orca「设置 → 实验性功能」入口与开关样式，新增条目按项目生效。这里仅通过 URL
-          保存当前预览，不写入真实设置，也不发起远端采集。开启后展示原有固定快照，生产持久化与两屏采集控制尚未实现。
+          保存当前预览，不写入真实设置，也不发起远端采集。开启后展示原有固定快照，生产实现与验证结论见本特性 STATUS。
         </p>
       </div>
     </>

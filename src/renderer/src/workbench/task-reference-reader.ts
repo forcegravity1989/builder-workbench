@@ -102,11 +102,22 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
   }
   type Job = ReturnType<typeof locate> & {
     reference: CycleTaskReference
+    consumers: Set<AbortSignal | undefined>
+    needed(): boolean
     finish(value: TaskReferenceValue): void
+  }
+  const pendingJobs = new Map<string, Job>()
+  function requireJob(job: Job) {
+    if (!job.needed()) {
+      const reason = new DOMException('读取已取消', 'AbortError')
+      job.finish(unavailable(reason))
+      throw reason
+    }
   }
   async function single(job: Job): Promise<void> {
     try {
       const value = await limited(async (): Promise<ReadyValue> => {
+        requireJob(job)
         const { repo, source, reference } = job
         if (!repo) {
           throw new Error(`未在已登记项目中找到引用仓库 ${reference.repository}`)
@@ -126,7 +137,10 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
           }
           return { kind: 'github', item: { ...item, repoId: repo.id }, source, readAt: deps.now() }
         }
-        const { kind, detail } = await viewCodeHubTaskByIid(deps, repo, reference.number)
+        const { kind, detail } = await viewCodeHubTaskByIid(deps, repo, reference.number, () => {
+          requireJob(job)
+          return true
+        })
         if (!/^(open|opened|closed|merged)$/i.test(detail.state)) {
           throw new Error(`CodeHub 未返回可识别的任务状态：${detail.state}`)
         }
@@ -185,14 +199,18 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
       for (let start = 0; start < group.jobs.length; start += 20) {
         const chunk = group.jobs.slice(start, start + 20)
         reads.push(
-          limited(() =>
-            deps.lookupGitHubWorkItems!({
+          limited(() => {
+            const needed = chunk.filter((job) => job.needed())
+            if (!needed.length) {
+              return Promise.resolve({ items: [] })
+            }
+            return deps.lookupGitHubWorkItems!({
               host: group.host === 'github.com' ? null : group.host,
               owner: group.owner,
               repo: group.repo,
-              numbers: [...new Set(chunk.map((job) => job.reference.number))]
+              numbers: [...new Set(needed.map((job) => job.reference.number))]
             })
-          ).then(
+          }).then(
             async (result) => {
               const byNumber = new Map(result.items.map((item) => [item.number, item]))
               await Promise.all(
@@ -221,14 +239,17 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
   async function read(
     home: ReadHome,
     references: readonly CycleTaskReference[],
-    force = false
+    force = false,
+    signal?: AbortSignal
   ): Promise<TaskReferenceValue[]> {
+    signal?.throwIfAborted()
     if (force) {
       // A click during a previous load requests another source check after it.
       const pending = references
         .map((reference) => locate(home, reference).entry.pending)
         .filter((read) => read !== null)
       await Promise.all(pending)
+      signal?.throwIfAborted()
     }
     const jobs: Job[] = []
     const pending = references.map((reference) => {
@@ -240,19 +261,30 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
         entry.pending = new Promise<void>((resolve) => {
           complete = resolve
         })
-        jobs.push({
+        const consumers = new Set([signal])
+        const needed = () => [...consumers].some((consumer) => !consumer?.aborted)
+        const job: Job = {
           ...target,
           reference,
+          consumers,
+          needed,
           finish(value) {
             if (settled) {
               return
             }
             settled = true
-            entry.publish(value)
+            if (needed()) {
+              entry.publish(value)
+            }
+            pendingJobs.delete(target.key)
             entry.pending = null
             complete()
           }
-        })
+        }
+        pendingJobs.set(target.key, job)
+        jobs.push(job)
+      } else {
+        pendingJobs.get(target.key)?.consumers.add(signal)
       }
       return entry.pending.then(() => entry.read() ?? unavailable('未读取到任务'))
     })
@@ -263,7 +295,9 @@ export function createTaskReferenceReader(deps: TaskPortDeps) {
         }
       }
     })
-    return Promise.all(pending)
+    const values = await Promise.all(pending)
+    signal?.throwIfAborted()
+    return values
   }
   function cached(
     home: ReadHome,

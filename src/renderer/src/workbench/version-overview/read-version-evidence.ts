@@ -16,12 +16,14 @@ export type VersionEvidenceProblem = { version: string; message: string }
 export async function readVersionEvidence(
   catalog: VersionCatalogState,
   force = false,
-  workingPlan?: { document: PlanningMaterial; source: 'committed' | 'draft' }
+  workingPlan?: { document: PlanningMaterial; source: 'committed' | 'draft' },
+  signal?: AbortSignal
 ): Promise<{
   records: VersionEvidence[]
   plans: OverviewVersionPlan[]
   problems: VersionEvidenceProblem[]
 }> {
+  signal?.throwIfAborted()
   const records: VersionEvidence[] = [],
     plans: OverviewVersionPlan[] = [],
     problems: VersionEvidenceProblem[] = []
@@ -37,6 +39,7 @@ export async function readVersionEvidence(
   const archive = nativeArchivePrPort(catalog.scope.runtimeOwnerEnvironmentId)
   const reads = new Map<string, Promise<ArchivePrStatusResult>>()
   async function readArchive(document: PlanningMaterial | AcceptanceMaterial) {
+    signal?.throwIfAborted()
     const pr = document.workflow?.archivePr
     if (!pr) {
       return null
@@ -65,6 +68,7 @@ export async function readVersionEvidence(
     status: ArchivePrStatusResult | null,
     kind: 'plan' | 'acceptance'
   ) {
+    signal?.throwIfAborted()
     const pr = document.workflow?.archivePr
     if (!pr || !status) {
       return undefined
@@ -148,6 +152,7 @@ export async function readVersionEvidence(
           cycleId: ref.cycleId,
           workflow: 'acceptance'
         })
+        signal?.throwIfAborted()
         const acceptance = read.document as AcceptanceMaterial
         const plan = await history.readPlan({ scope, planRef: acceptance.planRef })
         await addPlan(plan.document, 'committed', acceptance.taskSnapshot)
@@ -170,7 +175,8 @@ export async function readVersionEvidence(
         })
       }
     },
-    2
+    2,
+    signal
   )
   const order = new Map(entries.map((entry, index) => [entry.version, index]))
   plans.sort((a, b) => (order.get(a.version) ?? Infinity) - (order.get(b.version) ?? Infinity))

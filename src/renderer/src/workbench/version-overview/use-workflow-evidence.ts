@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { VersionCatalogState } from '../use-version-catalog'
 import { readWorkflowEvidence, workflowReferences } from './read-workflow-evidence'
@@ -6,54 +6,23 @@ import type { WorkflowEvidence } from './workflow-evidence'
 import { nativeTaskReferenceReader } from '../native-task-port'
 import { useAppStore } from '@/store'
 import { taskKey } from './feature-model'
+import { createOverviewReadCache } from './overview-read-cache'
 
-const cache = new Map<string, WorkflowEvidence>()
-const requests = new Map<string, Promise<WorkflowEvidence>>()
-const generations = new Map<string, number>()
-
-function load(key: string, catalog: VersionCatalogState, plan: PlanningMaterial, force: boolean) {
-  if (!force && requests.has(key)) {
-    return requests.get(key)!
-  }
-  if (!force && cache.has(key)) {
-    return Promise.resolve(cache.get(key)!)
-  }
-  const generation = (generations.get(key) ?? 0) + 1
-  generations.set(key, generation)
-  const previous = cache.get(key)
-  const request = readWorkflowEvidence(catalog, plan, force)
-    .then((value) => {
-      const invalidReports = new Map(
-        value.tasks
-          .filter((task) => task.reportProblem)
-          .map((task) => [taskKey(task.reference), task])
-      )
-      const next =
-        value.problems.length && previous
-          ? {
-              ...previous,
-              tasks: previous.tasks.map(
-                (task) => invalidReports.get(taskKey(task.reference)) ?? task
-              ),
-              problems: value.problems,
-              stale: true
-            }
-          : value
-      if (generations.get(key) === generation) {
-        cache.set(key, next)
+const cache = createOverviewReadCache<WorkflowEvidence>((value, previous) => {
+  const invalidReports = new Map(
+    value.tasks.filter((task) => task.reportProblem).map((task) => [taskKey(task.reference), task])
+  )
+  return value.problems.length && previous
+    ? {
+        ...previous,
+        tasks: previous.tasks.map((task) => invalidReports.get(taskKey(task.reference)) ?? task),
+        problems: value.problems,
+        stale: true
       }
-      return next
-    })
-    .finally(() => {
-      if (generations.get(key) === generation) {
-        requests.delete(key)
-      }
-    })
-  requests.set(key, request)
-  return request
-}
+    : value
+}, true)
 
-/** Basic-data refresh does not reset this independent report read. */
+/** Mounted only while AI statistics are enabled; basic refresh stays independent. */
 export function useWorkflowEvidence(
   catalog: VersionCatalogState,
   plan: PlanningMaterial | null,
@@ -61,7 +30,6 @@ export function useWorkflowEvidence(
   revision?: string,
   sourceReady = true
 ) {
-  // Source registrations may move independently of the page's own project.
   useAppStore((state) => state.repos)
   const referenceSourceKey =
     plan && catalog.scope
@@ -76,57 +44,39 @@ export function useWorkflowEvidence(
     plan ? workflowReferences(plan) : null
   ])
   const [refreshToken, setRefreshToken] = useState(0)
-  const forceKey = useRef<string | null>(null)
-  const key = JSON.stringify([scopeKey, refreshToken])
-  const [state, setState] = useState<{
-    key: string
-    scopeKey: string
-    value?: WorkflowEvidence
-    error?: string
-  }>({ key: '', scopeKey: '' })
+  const firstRead = useRef(true)
+  const subscribe = useCallback(
+    (listener: () => void) => cache.subscribe(scopeKey, listener),
+    [scopeKey]
+  )
+  const state = useSyncExternalStore(subscribe, () => cache.get(scopeKey))
   useEffect(() => {
-    let cancelled = false
     if (!plan || !catalog.scope || !sourceReady) {
-      return () => {
-        cancelled = true
-      }
+      return
     }
-    const force = forceKey.current === key
-    if (force) {
-      forceKey.current = null
-    }
-    void load(scopeKey, catalog, plan, force)
-      .then((value) => {
+    let cancelled = false
+    const force = firstRead.current || refreshToken > 0
+    firstRead.current = false
+    const running = cache.get(scopeKey).loading
+    const load = (signal: AbortSignal) => readWorkflowEvidence(catalog, plan, force, signal)
+    const request = cache.read(scopeKey, load, force)
+    if (force && running) {
+      void request.then(() => {
         if (!cancelled) {
-          setState({ key, scopeKey, value })
+          void cache.read(scopeKey, load, true)
         }
       })
-      .catch((reason) => {
-        if (!cancelled) {
-          setState({
-            key,
-            scopeKey,
-            value: cache.get(scopeKey),
-            error: reason instanceof Error ? reason.message : String(reason)
-          })
-        }
-      })
+    }
     return () => {
       cancelled = true
     }
-    // Scope identity and revision, not unrelated store renders, control reads.
+    // Source identity, revision and explicit refresh control reads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, sourceReady])
-  const current =
-    state.scopeKey === scopeKey ? (state.value ?? cache.get(scopeKey)) : cache.get(scopeKey)
+  }, [scopeKey, sourceReady, refreshToken])
   return {
-    value: current,
-    error: state.key === key ? state.error : undefined,
-    loading: Boolean(plan) && state.key !== key,
-    refresh: () => {
-      const token = refreshToken + 1
-      forceKey.current = JSON.stringify([scopeKey, token])
-      setRefreshToken(token)
-    }
+    value: state.value,
+    error: state.error,
+    loading: Boolean(plan) && (state.loading || (!state.value && !state.error)),
+    refresh: () => setRefreshToken((token) => token + 1)
   }
 }
