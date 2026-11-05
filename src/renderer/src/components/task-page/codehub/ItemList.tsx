@@ -23,7 +23,8 @@ import {
   CircleDot,
   EllipsisVertical,
   ExternalLink,
-  GitPullRequest
+  GitPullRequest,
+  Plus
 } from 'lucide-react'
 import {
   formatRelativeTime,
@@ -64,7 +65,9 @@ export function TaskPageCodeHubItemList({
     selectedRepos,
     setCodehubDetailItem,
     handleUseCodeHubItem,
+    openComposerForCodeHubItem,
     setCodehubRefreshNonce,
+    repos,
     repoMap,
     allWorktrees
   } = model
@@ -186,7 +189,7 @@ export function TaskPageCodeHubItemList({
         {visibleItems.map((item) => {
           const key = `${item.repoId ?? ''}:${item.type}:${item.iid}`
           const repo = selectedRepos.find((candidate) => candidate.id === item.repoId)
-          // G2 (BW)：范围视图的 Issue 按明确绑定解析 Open/Start；无范围保持原 Start。
+          // G2 (BW)：Issue 行按明确绑定＋跨主机同项目工作树解析 Open/Start；MR 行不参与。
           const rowWorkspace = resolveTaskRowWorkspace({
             scope: model.workbenchScope,
             worktrees: allWorktrees,
@@ -195,7 +198,8 @@ export function TaskPageCodeHubItemList({
             sourceContext: getTaskPageRepoSourceContext(
               repoMap.get(item.repoId ?? '') ?? null,
               'codehub'
-            )
+            ),
+            repos
           })
           return (
             <div
@@ -363,6 +367,15 @@ export function TaskPageCodeHubItemList({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+                        {rowWorkspace.hasWorkspace ? (
+                          <DropdownMenuItem onSelect={() => openComposerForCodeHubItem(item)}>
+                            <Plus className="size-4" />
+                            {translate(
+                              'auto.components.TaskPage.b6329379ca',
+                              'Start new workspace'
+                            )}
+                          </DropdownMenuItem>
+                        ) : null}
                         <DropdownMenuItem onSelect={() => window.api.shell.openUrl(item.url)}>
                           <ExternalLink className="size-4" />
                           {translate('auto.components.TaskPage.c1d1600362', 'Open in browser')}

@@ -49,6 +49,7 @@ export function TaskPageGitHubRows({
   model: TaskPageComposerActionsModel
 }): React.JSX.Element | null {
   const {
+    repos,
     repoMap,
     allWorktrees,
     selectedRepos,
@@ -67,14 +68,15 @@ export function TaskPageGitHubRows({
       {!showGitHubTaskSkeletons &&
         filteredWorkItems.map((item) => {
           const itemRepo = repoMap.get(item.repoId) ?? null
-          // G2 (BW)：范围视图的 Issue 按明确绑定解析 Open/Start；PR 行与
-          // 无范围视图沿原生附件语义（helper 内回落），行为逐字不变。
+          // G2 (BW)：Issue 行按明确绑定＋跨主机同项目工作树解析 Open/Start；
+          // PR 行沿原生附件语义（helper 内回落），行为逐字不变。
           const { attached: attachedWorkspace, hasWorkspace } = resolveTaskRowWorkspace({
             scope: model.workbenchScope,
             worktrees: allWorktrees,
             provider: 'github',
             item,
-            sourceContext: getTaskPageRepoSourceContext(itemRepo, 'github')
+            sourceContext: getTaskPageRepoSourceContext(itemRepo, 'github'),
+            repos
           })
           const attachedWorkspaceLabel = attachedWorkspace
             ? getWorktreeAttachmentLabel(attachedWorkspace)
