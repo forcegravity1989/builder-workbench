@@ -30,7 +30,7 @@
 
 ### 规范来源与验收
 
-计划助手执行路径为 [week-planning](../../../standard/skills/week-planning/SKILL.md) 及其直接引用的材料/Issue 规范；[version-records](../../../standard/system-prompt/references/version-records.md#里程碑与版本排期) 定义可选数据源、日期分工、改名与评审边界，[issue-state](../../../standard/system-prompt/references/issue-state.md#特性主单与拆分任务) 定义完整名称、精确标签、主子引用及唯一目标。分发投影由生成脚本维护，不另立协议。
+计划助手执行路径为 [week-planning](../../../standard/skills/week-planning/SKILL.md) 及其直接引用的材料/Issue 规范；[version-records](../../../standard/references/version-records.md#里程碑与版本排期) 定义可选数据源、日期分工、改名与评审边界，[issue-state](../../../standard/references/issue-state.md#特性主单与拆分任务) 定义完整名称、精确标签、主子引用及唯一目标。分发投影由生成脚本维护，不另立协议。
 
 验证应通过真实助手生成/更新材料，再独立读回：无里程碑仍可制定、预期与采用日期独立、确认特性改名同步而普通目标编辑不触发、目标标题不同仍关联、只有子 Issue 不冒充已纳入主单、多执行 Issue 不重复、后版换目标沿用同一主单、无/多候选保持未知。静态原型仅展示既有操作位置，不证明模型已经遵守。
 
