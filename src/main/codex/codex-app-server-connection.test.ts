@@ -13,6 +13,24 @@ import {
 import { isCodexAppServerUnsupportedError } from './codex-app-server-session'
 import { PROVIDER_EXIT_OUTPUT_DRAIN_MS } from '../provider-process/provider-exit-output-drain'
 
+vi.mock('./codex-app-server-process-teardown', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./codex-app-server-process-teardown')>()
+  return {
+    ...actual,
+    terminateCodexAppServerProcessTree: (
+      ...args: Parameters<typeof actual.terminateCodexAppServerProcessTree>
+    ) => {
+      if (args[0].pid === 9_999_999) {
+        // The synthetic child has no OS tree. Keep fake-clock transport tests
+        // independent of taskkill/ps; real children still use real teardown.
+        args[0].kill('SIGKILL')
+        return Promise.resolve(true)
+      }
+      return actual.terminateCodexAppServerProcessTree(...args)
+    }
+  }
+})
+
 const originalCodexHome = process.env.CODEX_HOME
 
 afterEach(() => {
@@ -524,9 +542,7 @@ describe('openCodexAppServerConnection', () => {
     await vi.advanceTimersByTimeAsync(4_100)
 
     await expect(Promise.all([first, second])).resolves.toEqual([true, true])
-    expect(child.kill.mock.calls.map(([signal]) => signal)).toEqual(
-      process.platform === 'win32' ? ['SIGKILL'] : ['SIGSTOP', 'SIGKILL']
-    )
+    expect(child.kill.mock.calls.map(([signal]) => signal)).toEqual(['SIGKILL'])
   })
 
   it('allows a later close to observe exit after an unproven attempt', async () => {
