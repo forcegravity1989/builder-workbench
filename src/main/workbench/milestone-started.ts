@@ -1,9 +1,5 @@
-import { frozenMilestoneProblems } from '../../shared/workbench/milestone-freeze'
 import type { RuntimeWorktreeListResult } from '../../shared/runtime-worktree-contracts'
-import {
-  milestoneGoalProblems,
-  type MilestoneSubmit
-} from '../../shared/workbench/project-milestones'
+import type { MilestoneSubmit } from '../../shared/workbench/project-milestones'
 import { readMilestoneSnapshot } from './milestone-snapshot'
 
 export type MilestoneStartedRuntime = {
@@ -22,7 +18,7 @@ export async function readMilestoneStarted(runtime: MilestoneStartedRuntime, rep
   )
 }
 
-export async function recheckMilestoneStarted(
+export async function recheckMilestoneIdentities(
   runtime: MilestoneStartedRuntime,
   repo: { id: string; path: string },
   head: string,
@@ -34,18 +30,12 @@ export async function recheckMilestoneStarted(
   if (fresh.snapshot.problems.length) {
     throw new Error('版本开工材料未能完整核对；草案保留，没有写入文件')
   }
-  const frozen = [
-    ...frozenMilestoneProblems(fresh.snapshot, input, active),
-    ...milestoneGoalProblems(input, fresh.snapshot.versions)
-  ]
-  if (frozen.length) {
-    throw new Error(`${frozen.join('；')}；草案保留，没有写入文件`)
-  }
   for (const next of input.versions) {
     const old = fresh.plans.get(next.cycleId)
+    const registered = fresh.registeredVersions.find((v) => v.cycleId === next.cycleId)
     if (
       (!old || old.version !== next.version) &&
-      (active.has(next.version) || (old && active.has(old.version)))
+      (active.has(next.version) || registered?.started || (old && active.has(old.version)))
     ) {
       throw new Error('版本刚开始计划，请重新核对身份；没有写入文件')
     }

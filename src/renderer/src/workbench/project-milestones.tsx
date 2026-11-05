@@ -1,18 +1,17 @@
 import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
-import {
-  frozenMilestoneProblems,
-  restoreFrozenMilestones
-} from '../../../shared/workbench/milestone-freeze'
 import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
-import { MilestoneHistoryActions, MilestoneTitle } from './milestone-history-actions'
+import {
+  MilestoneGuide,
+  MilestoneHistoryActions,
+  MilestoneTitle
+} from './milestone-history-actions'
 import {
   ScheduledVersionSchema,
   milestoneDraft,
   milestoneProblems,
-  milestoneGoalProblems,
   type MilestoneFeature,
   type ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
@@ -22,17 +21,13 @@ import { useMilestonePlanning } from './use-milestone-planning'
 import { useVersionCatalogForRepo } from './use-version-catalog'
 import { MilestoneTimeline, type MilestoneLocation } from './milestone-timeline'
 import { createMilestoneFeature } from './milestone-add-feature'
-import {
-  fitMilestoneVersions,
-  milestoneLaneConflict
-} from '../../../shared/workbench/milestone-sdlc'
+import { milestoneLaneConflict } from '../../../shared/workbench/milestone-sdlc'
 import {
   materializeMilestoneWeek,
   editMilestoneVersionName,
   datedMilestoneVersions,
   type MilestoneWeek
 } from '../../../shared/workbench/milestone-calendar'
-import { MilestoneNavigation } from './milestone-navigation'
 import { MilestoneReviewButton } from './milestone-review-button'
 import { describeMilestoneChanges } from './milestone-change-summary'
 import { MilestoneIconButton } from './milestone-icon-button'
@@ -89,32 +84,24 @@ export function ProjectMilestones({
     )
   }
   const editing = state.editing
+  const hasReviewAction = editing || !!state.data.review.pr || !!state.data.mergedProposal
   const visible = editing ? state.draft : milestoneDraft(state.data.formal)
   const enabled = editing && !busy && !state.recoveryBlocked
-  const month = state.month
   const hasPlanning =
-    visible.material.months.some((m) => m.outcome.trim()) ||
+    visible.material.milestones.length > 0 ||
     visible.material.features.length > 0 ||
     datedMilestoneVersions(visible).length > 0
   const navigate = (date: string) => {
-    patch({ month: date.slice(0, 7) })
     setLocate((previous) => ({
       date,
       sequence: (previous?.sequence ?? 0) + 1,
       scope: restoreScope
     }))
   }
-  const frozenProblems = frozenMilestoneProblems(
-    state.data.proposal ?? state.data.formal,
-    state.draft
-  )
-  const versionFacts = (state.data.proposal ?? state.data.formal).versions
-  const registeredVersions = state.data.formal.versions.concat(state.data.proposal?.versions ?? [])
-  const problems = [
-    ...milestoneProblems(state.draft),
-    ...milestoneGoalProblems(state.draft, versionFacts),
-    ...frozenProblems
-  ]
+  const registeredVersions = (
+    state.data.formal.registeredVersions ?? state.data.formal.versions
+  ).concat(state.data.proposal?.registeredVersions ?? state.data.proposal?.versions ?? [])
+  const problems = milestoneProblems(state.draft)
   const changes = describeMilestoneChanges(state.baseline, state.draft)
   function begin() {
     if (state && !state.recoveryBlocked) {
@@ -134,18 +121,10 @@ export function ProjectMilestones({
     }
   }
   function remove(f: MilestoneFeature) {
-    edit((d) =>
-      fitMilestoneVersions(
-        {
-          ...d,
-          material: {
-            ...d.material,
-            features: d.material.features.filter((item) => item.id !== f.id)
-          }
-        },
-        new Set(f.deliveries.map((delivery) => delivery.version.cycleId))
-      )
-    )
+    edit((d) => ({
+      ...d,
+      material: { ...d.material, features: d.material.features.filter((item) => item.id !== f.id) }
+    }))
   }
   function registerWeek(week: MilestoneWeek, name: string) {
     if (!enabled) {
@@ -155,10 +134,19 @@ export function ProjectMilestones({
       toast('版本名称已存在')
       return
     }
-    const next = materializeMilestoneWeek(state!.draft, week, crypto.randomUUID(), name)
+    const next = materializeMilestoneWeek(
+      state!.draft,
+      week,
+      crypto.randomUUID(),
+      name,
+      registeredVersions
+    )
     if (!ScheduledVersionSchema.safeParse(next.version).success) {
       toast('版本名称无效，未登记')
       return
+    }
+    if (next.version.version !== name) {
+      toast(`该日期已有 ${next.version.version}，已复用现有版本纳入规划`)
     }
     edit(() => next.draft)
   }
@@ -166,13 +154,8 @@ export function ProjectMilestones({
     if (!enabled) {
       return
     }
-    const started = new Set(
-      (state!.data.proposal ?? state!.data.formal).versions
-        .filter((v) => v.started)
-        .map((v) => v.cycleId)
-    )
-    const { id, date, draft: candidate } = createMilestoneFeature(state!.draft, started)
-    const { draft, conflict } = settleMilestoneWindows(state!.draft, candidate, started)
+    const { id, date, draft: candidate } = createMilestoneFeature(state!.draft, registeredVersions)
+    const { draft, conflict } = settleMilestoneWindows(state!.draft, candidate)
     if (conflict) {
       toast(conflict)
       return
@@ -187,8 +170,11 @@ export function ProjectMilestones({
   }
   function open(version: ScheduledVersion) {
     if (
-      !state!.data.formal.versions.some(
-        (v) => v.version === version.version && v.cycleId === version.cycleId
+      !catalog.catalog?.entries.some(
+        (entry) =>
+          entry.version === version.version &&
+          (entry.material.plan?.cycleId === version.cycleId ||
+            entry.material.acceptance?.cycleId === version.cycleId)
       )
     ) {
       toast('该版本尚未进入正式材料，合入并更新后可进入')
@@ -215,7 +201,7 @@ export function ProjectMilestones({
               : 'idle'
       }
       onFocusCapture={(event) => {
-        if (event.target instanceof HTMLInputElement && event.target.matches('.wb-ml-inline')) {
+        if (event.target instanceof HTMLElement && event.target.matches('.wb-ml-inline')) {
           model.beginFieldEdit()
         }
       }}
@@ -240,6 +226,11 @@ export function ProjectMilestones({
       <header className="wb-ml-heading">
         <MilestoneTitle editing={editing} busy={busy} finishEditing={model.finishEditing} />
         <div className="wb-ml-actions">
+          <MilestoneGuide
+            editing={editing}
+            blocked={!!state.recoveryBlocked}
+            scopeKey={restoreScope}
+          />
           {editing && (
             <MilestoneHistoryActions
               dirty={dirty}
@@ -261,14 +252,18 @@ export function ProjectMilestones({
               size="xs"
               className="bg-foreground text-background hover:bg-foreground/90"
               disabled={busy || state.recoveryBlocked}
+              data-contextual-tour-target={
+                hasReviewAction ? 'milestone-start' : 'milestone-start milestone-submit'
+              }
               onClick={begin}
             >
               规划里程碑
             </Button>
           )}
-          {(editing || state.data.review.pr || state.data.mergedProposal) && (
+          {hasReviewAction && (
             <MilestoneReviewButton
-              busy={busy || updatingFormal}
+              writing={model.writing}
+              busy={busy || updatingFormal || !!state.recoveryBlocked}
               conflict={!!state.sourceConflict || !!state.data.review.queryFailed}
               dirty={editing && dirty}
               retry={state.retry}
@@ -310,6 +305,25 @@ export function ProjectMilestones({
           {model.persistenceError}
         </p>
       )}
+      {state.submitError && (
+        <details className="wb-ml-alert" role="status">
+          <summary>里程碑提交失败 · 查看详情</summary>
+          <p>{state.submitError}</p>
+          <Button
+            size="xs"
+            variant="outline"
+            disabled={
+              !enabled ||
+              !!state.sourceConflict ||
+              !!state.data.review.queryFailed ||
+              problems.length > 0
+            }
+            onClick={() => void model.submit()}
+          >
+            重试提交
+          </Button>
+        </details>
+      )}
       {error && (
         <p className="wb-ml-alert" role="alert">
           {error}
@@ -321,25 +335,6 @@ export function ProjectMilestones({
           {problems.length > 3 ? `（另有 ${problems.length - 3} 项）` : ''}
         </p>
       )}
-      {editing && !state.sourceConflict && frozenProblems.length > 0 && (
-        <div className="wb-ml-notice">
-          <span>
-            还原已锁定版本的改动；涉及这些版本的新增特性整行移除，已有特性的其他未来排期保留。可撤销。
-          </span>
-          <Button
-            variant="outline"
-            size="xs"
-            disabled={!enabled}
-            onClick={() =>
-              edit((draft) =>
-                restoreFrozenMilestones(state.data.proposal ?? state.data.formal, draft)
-              )
-            }
-          >
-            还原已锁定版本的改动
-          </Button>
-        </div>
-      )}
       {state.data.formal.problems.length > 0 && (
         <details className="wb-ml-alert">
           <summary>部分版本材料未读到</summary>
@@ -350,45 +345,41 @@ export function ProjectMilestones({
       )}
       {state.data.sourceNotice && <div className="wb-ml-notice">{state.data.sourceNotice}</div>}
       {!editing && !hasPlanning ? (
-        <div className="wb-ml-empty">还没有里程碑</div>
+        <div className="wb-ml-empty" data-contextual-tour-target="milestone-schedule">
+          还没有里程碑
+        </div>
       ) : (
-        <>
-          <MilestoneNavigation
-            visible={visible}
-            month={month}
-            editing={editing}
-            enabled={enabled}
-            navigate={(value) => navigate(`${value}-01`)}
-            editField={model.editField}
-          />
-          <MilestoneTimeline
-            catalog={catalog}
-            key={`${restoreScope}:${editing}:${restoreKey}`}
-            draft={visible}
-            versionFacts={versionFacts}
-            editField={model.editField}
-            registerWeek={registerWeek}
-            addFeature={addFeature}
-            newFeature={newFeature}
-            editing={editing}
-            busy={busy || !!state.recoveryBlocked}
-            edit={edit}
-            open={open}
-            remove={remove}
-            rename={renameVersion}
-            started={
-              new Set(
+        <MilestoneTimeline
+          catalog={catalog}
+          key={`${restoreScope}:${editing}:${restoreKey}`}
+          draft={visible}
+          registeredVersions={registeredVersions}
+          editField={model.editField}
+          registerWeek={registerWeek}
+          navigate={navigate}
+          addFeature={addFeature}
+          newFeature={newFeature}
+          editing={editing}
+          busy={busy || !!state.recoveryBlocked}
+          edit={edit}
+          open={open}
+          remove={remove}
+          rename={renameVersion}
+          started={
+            new Set(
+              (
+                (state.data.proposal ?? state.data.formal).registeredVersions ??
                 (state.data.proposal ?? state.data.formal).versions
-                  .filter((v) => v.started)
-                  .map((v) => v.cycleId)
               )
-            }
-            scrollX={state.scrollX}
-            scrollY={state.scrollY}
-            onScroll={(scrollX, scrollY) => patch({ scrollX, scrollY })}
-            locate={locate?.scope === restoreScope ? locate : null}
-          />
-        </>
+                .filter((v) => v.started)
+                .map((v) => v.cycleId)
+            )
+          }
+          scrollX={state.scrollX}
+          scrollY={state.scrollY}
+          onScroll={(scrollX, scrollY) => patch({ scrollX, scrollY })}
+          locate={locate?.scope === restoreScope ? locate : null}
+        />
       )}
     </section>
   )

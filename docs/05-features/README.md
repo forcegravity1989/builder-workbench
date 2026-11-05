@@ -21,7 +21,7 @@
 |---|---|---|---|:--:|:--:|:--:|:--:|:--:|:--:|
 | 1 | 版本计划 | [version-planning/](version-planning/) · [原型](version-planning/prototype.html) · [G3 旅程高保真](version-planning/planning-journey-prototype.html) | 在用·G3 基线；#439 启动/前版回顾/纪要已静态接线，真壳待验⁴ | ● | ● | ◐ | ◐ | ◐(P01–P10 未逐项) | ○(PJ01/PJ02 已定义) |
 | 2 | 版本验收 | [version-acceptance/](version-acceptance/) · [v9.5 旧稿](version-acceptance/prototype.html) · [v10 会议旅程高保真](version-acceptance/acceptance-journey-prototype.html) | 在用·v10 基线；#439 启动/结论/Issue/纪要已静态接线，真壳待验⁴ | ● | ● | ● | ◐ | ◐(A01–A13 代码已接入，真壳证据未取) | ○(AJ01 已定义未运行) |
-| 3   | 项目总览与指标                  | [overview-metrics/](overview-metrics/) · [里程碑原型](overview-metrics/prototype.html)                                                                                   | 记分牌沿 #411；#440 SDLC 排期已接线，本机恢复真壳通过；两屏实际事实已接线，联合旅程待验，见 STATUS | ●(本轮范围已确认) | ●(本轮范围已确认) |    ◐     | ◐(里程碑协议/写入定向通过) |      ◐(指标 M01–M10；SDLC 排期本地交互与恢复已验，实际事实/远端待验)       |                ◐(MJ01/MJ02 未验；规划 MPJ01 本地段通过，实际事实/远端待验)                 |
+| 3 | 项目总览与指标 | [overview-metrics/](overview-metrics/) · [里程碑原型](overview-metrics/prototype.html) | 记分牌沿既有行为；里程碑粗粒度规划、独立预期日期与目标结果投影已确认，证据见 STATUS | ● | ● | ◐ | ◐(既有指标证据；本次未运行) | ◐(既有指标 M01–M10；本次里程碑 MF01–MF08 未真机验证) | ◐(既有证据见 STATUS；本次规划到验收及重启旅程未验) |
 | 4 | PR 评审召唤制（reviewer-agent） | [reviewer-agent/](reviewer-agent/) | 开发方法资产·在用（正本随扶正在 main）¹ | ● | ● | ● | ◐¹ | ◐¹ | ○(台内路径 defer) |
 | 5 | 纳入项目与项目信息记录 | [project-intake/](project-intake/)² | 在用·补链中 | ● | ●(原型经拍板豁免) | ● | ● | ◐(配置验收已登记，结果见 STATUS；P-01–P14 注册暂缓) | ◐(配置子旅程已登记，结果见 STATUS；主旅程/跨主机/扫墙候选待建) |
 | 6 | CodeHub 适配 | [codehub/](codehub/)³ | 在用·补链中 | ◐ | ◐ | ◐ | ◐ | ○(C01–C08 已定义) | ○(CJ01 已定义) |
@@ -44,7 +44,7 @@
 
 ## 裁决与明细指引
 
-- 版本总览按用户明确决定独立承载于 [version-overview](version-overview/intent.md)。第 9 行只记录工作区既有能力；第 10 行接入六阶段横条来源与目标内 workflow 报告，读取、事实解析、缓存与展示分离；项目里程碑原泳道共用实际事实，规划正本保持独立。实现范围与各层验证证据见其 STATUS 和 PR 验证报告。
+- 版本总览按用户明确决定独立承载于 [version-overview](version-overview/intent.md)。第 9 行只记录工作区既有能力；第 10 行接入六阶段横条来源与目标内 workflow 报告，读取、事实解析、缓存与展示分离；项目里程碑独立读取正式版本周期与目标交付结果。实现范围与各层验证证据见其 STATUS 和 PR 验证报告。
 
 - 各特性链状态明细以其 `STATUS.md` 六环表与「验收点与旅程矩阵」小节为准（格式正本：[02 §6.2](../01-principles/02-working-backwards.md)「STATUS 格式」）；**本表是总览，冲突时以特性目录为准并回改本表**。
 - 1–3 行共同基线：设计 PR #264 已合入、用户授权实施；真壳 Playwright 烟测 `tests/e2e/workbench-cycle-smoke.spec.ts` 已编写，执行结果见对应 PR；SSH/WSL 实机、真实 provider 归档全链、真实到点自动化、真实出包/验包均未验证。逐条证据与缺口读各 STATUS，不在本表重复。
