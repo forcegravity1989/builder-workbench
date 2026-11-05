@@ -113,6 +113,17 @@ Issue [#516](https://github.com/forcegravity1989/builder-workbench/issues/516)�
 
 **验证状态**：门禁与 ratchet 见 PR 验证报告；CDP 驱动脚本本机 Edge 156 实测通过；`welink-cli im send-to-group` 命令面本机 1.0.18 已核实。**真壳未验**：纪要同步全流程（需真实 eMeeting 环境）、预订会议链（含向项目群发通知步）。原型欠账：acceptance-model.js 的聚合/预订 prompt 与注释仍为纯意图句，未跟生产注入句的 #516 后续形态（内嵌命令、子集口径句、通知半句），随高保真专项同步。
 
+## 2026-11-05 #422 证据报告待核对轮（生成口径收口）
+
+[#422](https://github.com/forcegravity1989/builder-workbench/issues/422) 承接自 [#516](https://github.com/forcegravity1989/builder-workbench/issues/516) 的生成质量优化，技能 `version-acceptance` 0.9.9 → 0.10.0：
+
+- **无截图逐单判断**：性质截不了图的（命令/配置/数据/接口类或改动不在界面）取 PR 上其他形式证据（日志、实数、单测/流水线链接、平台读回、修前修后对跑）并写明证据形态；证据不足或漏截图的列「待核对」，不自行判缺证放过、也不代补。
+- **生成与登记四步**：生成报告 → 逐条与人核对待核对项并回填处置（PR 补充后重新聚合 / 本次会话补充后加入报告 / 会上实机演示）→ 登记 → 读回告知。处置落定后保留决定：「会上演示」条目留到会后，经 PR/会话补充实体的移出待核对。缺口槽只记人确认后的结论。
+- **报告结构**：判据行新增「证据形态 + 证据内容」槽；模板新增待核对槽。聚合注入句同步新口径（无截图先逐单判断、先核对处置再登记）。
+- 同批同步 `standard/references/version-records.md`、spec 的聚合条款与 A04、intent 的目标体验句、design 的登记顺序。
+
+**验证状态**：`generate:workbench-skills --check`、`generate:skill-bundle-manifest`、`generate:bundled-skill-guides --check` 通过；`skill-install.test.ts` 5/5 通过。**未验**：真实验收会话中的「生成后逐条与人确认」可执行性、新注入句在模型会话中的实际效果；真壳旅程未跑。原型欠账延续：`acceptance-model.js` 的聚合 prompt 与注释仍为纯意图句，未跟本轮口径，随高保真专项同步。
+
 ## 当前验收点与旅程矩阵
 
 > 口径：○ = 未实现；◐ = 代码已接入但真实用户旅程未完整；● = 齐。协议测试、静态检查与原型结果不等同真壳 E2E。本轮全部为 ◐ 的原因见上「证据边界」——不是代码没写，是真壳证据没取。

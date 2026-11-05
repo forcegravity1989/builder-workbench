@@ -53,7 +53,7 @@ AcceptancePage 是 Workbench 业务页，复用 Orca 原生项目、工作树、
 
 `AcceptanceWorkflowStateSchema` 其余维持 `stage/updatedAt/archivePr`，`stage` 枚举维持 `preparation/showcase/archive` 三值（界面四步与材料三阶段不同名、不映射，界面不渲染灯）。
 
-**验收证据报告登记**：复用既有 `preparedArtifacts` 与 `Artifact.kind='verification'`（枚举与总览的「验证报告」渲染早已存在），不另立顶层字段。`Artifact.candidateRef` 必填，因此报告必须在候选固定之后生成——与技能 SOP 的顺序一致（固定候选 → 出包 → 部署 → 预订会议 → 聚合报告）。报告文件落 `.bw/planning/<版本>/`，`location` 存相对路径，截图落同目录 `shots/`。登记通道自 #516 起收拢为一条 CLI 动词：`ORCA bw materials add-artifact` 在拥有工作树的一侧一次完成读改存——文件必须真实存在（不存在如实报错、不登记幽灵制品）、mtime 作 `generatedAt`、`candidateRef` 复用材料现有值（候选未固定报错）、同 artifactId 覆盖而非追加、revision 冲突自动重读重试一次；板面不 stat 文件系统。location 围栏拒绝绝对路径与 `..` 穿越，绝对性按 posix 与 win32 双语义判定——围栏跑在拥有工作树的主机上（可能是 Linux SSH 宿主），平台本位的 isAbsolute 会把 `C:\x.html` 当合法相对名放行。
+**验收证据报告登记**：复用既有 `preparedArtifacts` 与 `Artifact.kind='verification'`（枚举与总览的「验证报告」渲染早已存在），不另立顶层字段。`Artifact.candidateRef` 必填，因此报告必须在候选固定之后生成——与技能 SOP 的顺序一致（固定候选 → 出包 → 部署 → 预订会议 → 聚合报告 → 逐条核对待核对项处置 → 登记）。报告文件落 `.bw/planning/<版本>/`，`location` 存相对路径，截图落同目录 `shots/`。登记通道自 #516 起收拢为一条 CLI 动词：`ORCA bw materials add-artifact` 在拥有工作树的一侧一次完成读改存——文件必须真实存在（不存在如实报错、不登记幽灵制品）、mtime 作 `generatedAt`、`candidateRef` 复用材料现有值（候选未固定报错）、同 artifactId 覆盖而非追加、revision 冲突自动重读重试一次；板面不 stat 文件系统。location 围栏拒绝绝对路径与 `..` 穿越，绝对性按 posix 与 win32 双语义判定——围栏跑在拥有工作树的主机上（可能是 Linux SSH 宿主），平台本位的 isAbsolute 会把 `C:\x.html` 当合法相对名放行。
 
 **沿用**：`candidateRef`、`preparedArtifacts`（`kind=package`，含 checksum/location/实际命令）、`taskSnapshot`、`results[].decision`、`results[].note`、`results[].nextStep`、`results[].issueNotes`、`results[].issueMarks.carry`、`planRef`、`workflow`。
 

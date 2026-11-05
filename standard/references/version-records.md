@@ -13,7 +13,7 @@
 | 指标          | 项目基线或包含该基线的维护提交中的 .bw/metrics.toml 及真实历史采集源                                         | 新采集固定本次采用的定义/脚本修订；旧 baseline 和归档证据保留，不以常驻树旧文件或旧引用锁住目录                                                                                                                         |
 | Issue/会话/PR | 原生 provider / Orca                                                                                         | 材料只存引用，不另建正文、聊天或状态正本                                                                                                                                                                                |
 | 纪要          | 计划与验收材料各自的 minutes 节                                                                              | 纪要正文由模型在未确认时撰写，人工确认只能由人标记，不另建第二份会议正文文件                                                                                                                                            |
-| 验收证据报告  | .bw/planning/<version>/ 下的报告文件，登记为 preparedArtifacts 的 verification 制品                          | 一个版本一份，按「目标 → Issue」聚合各 Issue/PR 合入时留下的验收件（有开发取 PR 验证评论，无开发直接关闭取 Issue 评论），由模型按 version-acceptance 技能模板生成，缺证如实标注；不是界面派生文本，也不代替项目发布总结 |
+| 验收证据报告  | .bw/planning/<version>/ 下的报告文件，登记为 preparedArtifacts 的 verification 制品                          | 一个版本一份，按「目标 → Issue」聚合各 Issue/PR 合入时留下的验收件（有开发取 PR 验证评论，无开发直接关闭取 Issue 评论），由模型按 version-acceptance 技能模板生成，无截图逐单判断证据形态、证据不足列待核对并经人确认处置后标注缺口；不是界面派生文本，也不代替项目发布总结 |
 
 计划/验收固定分支（绑定版本树为 bw/<版本>/plan、bw/<版本>/acceptance；旧无绑定固定树为 bw/week-plan、bw/week-acceptance）分别由原生项目/宿主/worktree 身份定位；物理目录由 Orca 原生创建和登记，不硬编码 .bw/worktrees 下的路径。冲突目录不得自动搬移/删除。同步基线前检查未归档修改，不 reset 脏树；跨树读取用固定提交，不把另一树的工作中草稿当正式材料。
 
