@@ -4,7 +4,7 @@ export const repository = snapshot.source.repository
 export const acceptanceForVersion = (version) =>
   snapshot.acceptance.version === version ? snapshot.acceptance : null
 export const baseline = snapshot.source.sourceCommit
-export const revision = '558-opt-in-1'
+export const revision = '558-opt-in-2'
 export const formatTime = (value) =>
   value && Number.isFinite(Date.parse(value))
     ? new Intl.DateTimeFormat('zh-CN', {
@@ -111,4 +111,24 @@ export function relatedVersions(featureId) {
       }
     ]
   })
+}
+
+export function unfinishedTaskLabel(tasks) {
+  const states = tasks.map(
+    (reference) =>
+      snapshot.taskStates?.tasks.find(
+        (task) =>
+          task.provider === reference.provider &&
+          task.repository === reference.repository &&
+          task.number === reference.number
+      )?.state
+  )
+  const unfinished = states.filter((state) => state === 'OPEN').length
+  const unknown = states.filter((state) => state !== 'OPEN' && state !== 'CLOSED').length
+  if (!unknown) {
+    return `未完成 ${unfinished} 项`
+  }
+  return unfinished
+    ? `已知未完成 ${unfinished} 项，另有 ${unknown} 项状态待确认`
+    : '未完成数量待确认'
 }

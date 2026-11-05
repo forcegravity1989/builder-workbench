@@ -1,5 +1,11 @@
 import { Feature, SectionTitle } from './overview-components.jsx'
-import { historicalFeatures, acceptanceForVersion } from './overview-data.js'
+import {
+  historicalFeatures,
+  acceptanceForVersion,
+  unfinishedTaskLabel,
+  snapshot,
+  formatTime
+} from './overview-data.js'
 import { WorkflowProductivity } from './overview-workflow.jsx'
 // eslint-disable-next-line no-unused-vars
 const { React } = window.BWPrototypeDependencies
@@ -56,7 +62,7 @@ export function OverviewSections({
                   <div className="ov-goal-meta">
                     <span>负责人 · {goal.owner}</span>
                     <button className="ov-link" onClick={() => native('目标任务', goal)}>
-                      目标任务 · {tasks.length} 项 ↗
+                      目标任务 · {tasks.length} 项 · {unfinishedTaskLabel(tasks)} ↗
                     </button>
                   </div>
                   <button
@@ -81,6 +87,13 @@ export function OverviewSections({
               </section>
             )
           })}
+          {snapshot.taskStates && (
+            <p className="ov-note">
+              原型注释: 未完成数量取自 {formatTime(snapshot.taskStates.checkedAt)}
+              （北京时间）采集的任务状态，
+              不是实时读数，也不是当时验收的任务状态；历史目标与人工结论仍沿原固定材料。
+            </p>
+          )}
           {experiments.sdlc && (
             <p className="ov-note">
               原型注释: 本静态原型未动态解析特性身份；本稿显式选取 #334／#440（v0.7 为
