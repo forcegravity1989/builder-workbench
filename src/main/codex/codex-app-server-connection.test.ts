@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { PassThrough } from 'node:stream'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { spawnProcess } from '../../shared/child-process/run-process'
+import type * as CodexProcessTeardown from './codex-app-server-process-teardown'
 import {
   isCodexAppServerRequestError,
   openCodexAppServerConnection,
@@ -14,7 +15,7 @@ import { isCodexAppServerUnsupportedError } from './codex-app-server-session'
 import { PROVIDER_EXIT_OUTPUT_DRAIN_MS } from '../provider-process/provider-exit-output-drain'
 
 vi.mock('./codex-app-server-process-teardown', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./codex-app-server-process-teardown')>()
+  const actual = await importOriginal<typeof CodexProcessTeardown>()
   return {
     ...actual,
     terminateCodexAppServerProcessTree: (
