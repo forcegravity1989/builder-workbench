@@ -44,6 +44,8 @@ describe('web preload API composition', () => {
       'emulator',
       'gh',
       'gl',
+      'codehub',
+      'milestoneRecovery',
       'hostedReview',
       'linear',
       'hooks',
