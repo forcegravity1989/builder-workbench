@@ -14595,7 +14595,7 @@
       "description": "你的所有智能体都会在这里一览无余。看板即将上线。"
     },
     "recoverableError": {
-      "title": "Orca 看板遇到错误。",
+      "title": "{{product}} 看板遇到错误。",
       "description": "看板未能完成渲染。请重试以重新挂载，或重新打开。"
     },
     "bucket": {

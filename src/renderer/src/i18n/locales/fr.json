@@ -16089,7 +16089,7 @@
       "description": "C'est ici que tous vos agents s'afficheront d'un coup d'œil. Le tableau arrive bientôt."
     },
     "recoverableError": {
-      "title": "Le tableau de bord Orca a rencontré une erreur.",
+      "title": "Le tableau de bord {{product}} a rencontré une erreur.",
       "description": "Le tableau de bord n'a pas pu terminer son rendu. Réessayez pour le recharger, ou rouvrez-le."
     },
     "bucket": {

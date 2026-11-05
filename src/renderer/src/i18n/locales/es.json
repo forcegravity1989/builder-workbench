@@ -14439,7 +14439,7 @@
       "description": "This is where all your agents will show up at a glance. The board is coming soon."
     },
     "recoverableError": {
-      "title": "Orca dashboard hit an error.",
+      "title": "{{product}} dashboard hit an error.",
       "description": "The dashboard could not finish rendering. Retry to remount it, or reopen it."
     },
     "bucket": {
