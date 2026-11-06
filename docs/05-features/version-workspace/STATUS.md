@@ -133,11 +133,13 @@ Lens8（提示词/SKILL 规范）：F1 中 version-records 运行身份段补绑
 
 ### 生产接线（2026-11-06，PR #523）
 
-**落点**：`WorkbenchRail.tsx`（64px 常驻 Rail）挂在 `AppWorkspaceShell` 左列、`titlebar-left` 36px 页头之下（保留 macOS 红绿灯与拖拽区）；第二列复用原生可缩放 `Sidebar`，仅对象上下文（terminal / artifacts / 版本总览 / 带版本的版本任务）挂载，判定在 `workbench-object-context.ts`。第二列内部由 `WorkbenchSidebarNav` 组织为「项目标题 → 已固定 → 版本块」单一滚动容器，Orca 原生工作区列表仍在其下。`WorkbenchPinnedSection` 复用 `getPinnedSectionWorktrees`（`isPinned` + 固定祖先带入）与 `VersionNativeTrees` 原生行渲染；BW 壳内 `buildRows` 传 `suppressPinnedSection`，避免原生列表再渲染第二个「已固定」。删除 `projectWorkbenchRows` / `useWorkbenchProjectFold` 与 `WORKBENCH_OTHER_PROJECTS_LABEL`，第二列按当前项目 `repoIds` 收口（含发现树）；`SidebarToolbar` 在 BW 壳只保留右侧两枚图标按钮，设置/帮助移至 Rail 底。
+**落点**：`WorkbenchRail.tsx`（64px 常驻 Rail）挂在 `AppWorkspaceShell` 左列、`titlebar-left` 36px 页头之下（保留 macOS 红绿灯与拖拽区）；第二列复用原生可缩放 `Sidebar`，仅对象上下文（terminal / artifacts / 版本总览 / 带版本的版本任务）挂载，判定在 `workbench-object-context.ts`。第二列内部由 `WorkbenchSidebarNav` 组织为固定项目标题；已固定、版本块与「Orca 项目工作区」标题作为 `scrollPrefix` 进入原生工作树列表自己的滚动容器（`data-worktree-sidebar` 为唯一滚动元素），TanStack 以实测前缀高度作 `scrollMargin` 对齐虚拟窗口。`WorkbenchPinnedSection` 复用 `getPinnedSectionWorktrees`（`isPinned` + 固定祖先带入）与 `VersionNativeTrees` 原生行渲染；BW 壳内 `buildRows` 传 `suppressPinnedSection`，避免原生列表再渲染第二个「已固定」。删除 `projectWorkbenchRows` / `useWorkbenchProjectFold` 与 `WORKBENCH_OTHER_PROJECTS_LABEL`，第二列按当前项目 `repoIds` 收口（含发现树）；`SidebarToolbar` 在 BW 壳只保留右侧两枚图标按钮，设置/帮助移至 Rail 底。
 
 **真壳验证（Playwright DOM 断言，隔离 profile，CDP 9338，截图未回读）全过**：Rail 8 个按钮（项目墙 / 版本工作区 / 项目总览 / 任务 / 自动化 / 知识库 / 设置 / 帮助）、项目墙为图标无首字母；项目总览 / 任务 / 自动化 / 知识库 / 项目墙均不渲染第二列，版本工作区渲染；第二列含「当前项目」标题与版本块；面板工具条仅 2 枚图标按钮；页面不出现「其他项目」；固定版本绑定树与普通树均出现在「已固定」且全层唯一一份、位于版本块之上；取消固定只撤栏目行、原树仍在工作区；版本块内层 overflow 为 `visible`、外层第二列为唯一 `auto` 滚动容器；console/page error 为空。
 
-**未验 / 差异**：Orca 原生工作区列表仍保留自身虚拟化滚动视口，未做到整列单一滚动条（合并需改 `VirtualizedWorktreeViewport` 的滚动核）；Rail 未放头像（原型中的演示头像无真实来源，生产不伪造）；原生列表行内固定/取消固定入口仍走原生右键菜单，未新增行内按钮；侧栏拖拽把手宽度、1280/1000 窄屏与暗色主题的视觉复核未做；跨宿主与远程主机的固定/绑定组合未验。
+**点击稳定性（2026-11-06，commit `3d6b8a88b5`）**：滚动锚点恢复在共享前缀下保留有符号偏移（首行位于视口顶部之下时不再被硬拽到顶部），用户输入期间解除待恢复锚点；版本展开态会话内沿用，切换项目不再自动展开版本。真壳 DOM 断言：项目切换 `aria-expanded` 集合不变、滚轮上滚后位置保持、无自动下拉写入。
+
+**未验 / 差异**：Rail 未放头像（原型中的演示头像无真实来源，生产不伪造）；原生列表行内固定/取消固定入口仍走原生右键菜单，未新增行内按钮；侧栏拖拽把手宽度、1280/1000 窄屏与暗色主题的视觉复核未做；跨宿主与远程主机的固定/绑定组合未验。
 
 ## 历史交付边界（截至 #437，非 #439 结果）
 
