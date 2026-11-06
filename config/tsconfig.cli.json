@@ -6,6 +6,7 @@
     "../src/shared/**/*",
     "../src/main/agent-state-file-reader.ts",
     "../src/main/agent-hooks/grok-replay-guard.ts",
+    "../src/main/agent-hooks/cursor-replay-guard.ts",
     "../src/main/claude/hook-script.ts",
     "../src/main/claude/claude-session-end-hook-capability.ts",
     "../src/main/agent-hooks/hook-stdin-contract.ts",
