@@ -1,3 +1,4 @@
+import { isDshNonInteractiveCommand } from './dsh-launch-command'
 import { isAnteHeadlessOneShotCommand } from './ante-headless-command'
 import { isPrimeAgentHeadlessOneShotCommand } from './prime-agent-headless-command'
 import { isPrintModeHeadlessOneShotCommand } from './print-mode-headless-command'
@@ -12,7 +13,8 @@ const HEADLESS_ONE_SHOT_MATCHERS: Partial<
   claude: isPrintModeHeadlessOneShotCommand,
   trae: isPrintModeHeadlessOneShotCommand,
   'prime-agent': isPrimeAgentHeadlessOneShotCommand,
-  ante: isAnteHeadlessOneShotCommand
+  ante: isAnteHeadlessOneShotCommand,
+  dsh: isDshNonInteractiveCommand
 }
 
 export function isHeadlessOneShotAgentCommand(agent: TuiAgent, tokens: readonly string[]): boolean {
