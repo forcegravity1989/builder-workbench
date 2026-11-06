@@ -16,18 +16,18 @@
 | 项               | 本次核对结果                                                       |
 | ---------------- | ------------------------------------------------------------------ |
 | Orca 仓库        | [stablyai/orca](https://github.com/stablyai/orca)                  |
-| 最近公开版本     | [v1.4.222](https://github.com/stablyai/orca/releases/tag/v1.4.222) |
-| 发布时间         | 2026-10-07                                                         |
-| 发布锚点         | `4bb6f20`（release 页面短 SHA）                                    |
-| 本次核对日期     | 2026-10-11                                                         |
+| 本次定向版本     | [v1.4.250](https://github.com/stablyai/orca/releases/tag/v1.4.250) |
+| 发布时间         | 2026-11-05                                                         |
+| 发布锚点         | `b98a0fba16561fadc06868fe3e8710781d705efd`                         |
+| 本次核对日期     | 2026-11-06                                                         |
 | BW fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`，2026-09-15             |
-| 本次核对范围     | 公开 release、仓库顶层目录、与 BW 边界直接相关的能力摘要           |
+| 本次核对范围     | 固定发布版的本机网页批注及直接依赖；非整仓升级或完整能力复核       |
 
 公开版本不是本仓当前同步基线；本仓的 fork baseline 仍是单独的历史锚点。没有完成一次实际代码比较时，不把“最新 release”写成“已同步”。
 
 ### 0.2 与 BW 边界直接相关的能力
 
-当前公开版本的变化重点涉及 agent/orchestration workers、workspaces/worktrees、terminal 与远程运行、native chat（实验能力）、编辑器/Markdown/search、provider/account 与 Windows/WSL。BW 只复用其中与自身旅程有关的 Orca 执行核；具体 BW 产品行为不在这里重复。
+本次只核对网页批注的折叠、图片路径和反馈输出，以及它们依赖的预览、发送与导航边界。模块继承和未迁入范围见下节；不据此判断该发布版全部能力或宣称整仓已同步。具体 BW 产品行为不在这里重复。
 
 BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、provider 与 `src/main` runtime。BW 不为这些能力另建平行实现。
 
