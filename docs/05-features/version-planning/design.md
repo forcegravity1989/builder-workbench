@@ -4,7 +4,6 @@
 >
 > 状态：已授权实施；详细设计未逐项细审，未决项须人工确认。已实现范围及证据见 STATUS，正文按当前接线回写；未标注落点的接口仍为设计。架构定位：§1 项目版本，§2 ①事实、②执行、③规范、⑤壳，§3 Orca 执行核与 BW 叠层。
 
-
 ## G3 计划屏实现边界(2026-10-21 落地)
 
 [计划旅程高保真](planning-journey-prototype.html)（`prototype/g3-*` 源码与生成物）沿用已认可的 G3 布局。#439 的短启动卡、紧邻前版回顾和纪要处理已同步到现行行为与源码；独立静态检视已完成，CI 补验结果见 [PR #441 验证报告](https://github.com/forcegravity1989/builder-workbench/pull/441)，真实用户旅程仍待验证，已接入三屏 Issue 共用读取、固定回顾复用和建版等待收窄；性能增量目前仅作静态检视，实际耗时仍待测。原型仅为设计资产，历史证据与未验边界见 [STATUS](STATUS.md)。
@@ -23,7 +22,7 @@
 | 会议纪要 | `PlanningMinutesSection.tsx`，材料可选 `minutes` 节；followups 保留稳定 id，正文写清已落实或真实跟进 Issue，不提供 closed 控件。`plan-human-guard.ts` 保留 confirmed/confirmedAt 与历史 closed 的人工归属，确认后整节冻结；模型只可改未确认正文。无 minutes 显示共识/遗留骨架，有计划才可整理；归档前的逐项核对归助手与 PR 人审。总览计划列读存储 minutes，无材料如实显示「纪要未记录」。 |
 | 在线批注 | 共享模块 `workbench/annotations/`(types / use-board-annotations / AnnotationPopover / AnnotationPanel / annotation-markers / annotation-markdown),BW 业务屏共用机制,本轮只接计划屏,内存态(重启丢失为设计内)。对象引用结构化 `{kind, goalId?, issueNumber?, label}`,DOM 挂载 `data-annotate-kind/-goal/-issue/-label`;捕获 = 滚动容器 onClickCapture + `closest('[data-annotate-kind]')`,纪要区排除;编号按记录顺序现算,角标与面板同号;Esc 只关小窗(#444 起退出统一走快捷键/页头按钮,2026-10-29 拍板);横幅用清单认可短文案(键位半段随 #444,见 spec)。**2026-10-22 真机反馈轮**:角标 `.g3-annot-marker/.g3-annot-num` 改显式高对比配色 `var(--color-accent, #d97757)` 底 + 白字(claude 皮肤 accent 即赭色;修复 foreground/background 变量对真壳解析失败回落继承色导致的黑底黑字);面板复制改 `window.api.ui.writeClipboardText`(Orca IPC,替换真壳不可靠的 `navigator.clipboard`)+ 按钮「已复制」1.4s 瞬态(对齐原生 Copy All)。**2026-10-22 第八轮**:批注入口从页头右上角移入「本版目标」区块头(用户反馈右上角不显眼;可批注对象全在该区块、纪要区不参与,入口贴着对象),改带文字标签按钮而非纯图标,挂未发送条数角标(面板关掉也可见待发批注),计划未建不渲染;同区块「配置指标」原误用批注图标,改回指标图标。**切屏保留未发送批注(2026-10-22 user feedback)**:同会话内看验收/任务屏再回来不得丢速记,范围超出正本「重启丢失为设计内」;第九轮拍板实现形态为屏路由之上的模块级会话 store、不用本地存储(重启也保留属改既定行为,需人另行拍板),对齐轮升级为按板面身份键控(见本格末)。**发送成功即清空已递交批注(accepted option A)**:对齐 Orca `onPromptDelivered` 成功门控,失败/Esc 不清;面板转「暂无批注」、板面回执明说清了几条。**2026-10-23 第九轮生产接线**：入口从页头 `extraActions` 移入 `PlanningGoals` 区块头 `.g3-title-actions`（`annotateEntry` prop，文字标签 + `.g3-annotate-count` 未发送角标，计划未建不渲染）；发送成功门控清空挂 `PlanningAnnotationOverlays` 的 onSent（`onPromptDelivered` 成功才回调），回执追加清空条数；切屏保留落模块级会话 store（见 spec 第 4 条）。**2026-10-23 验收对齐轮**：会话 store 改按板面身份键控（`useBoardAnnotations(boardId)`，`Map<boardId, session>`，boardId=scope+版本）——单一全局会话被验收屏 #394 遗留的挂载期 `clearAll` effect 击穿（切屏瞬间清空计划屏未发送批注，违反第 4 条），且两屏 goalId 相同会串角标；两屏的命令式 identity-clearAll effect 同批删除，切版=换 key 天然空会话，发送成功清空与重启清空不变。**#426 易用性收口轮（v0.7 验收会决议）**：入口从「本版目标」区块头移回页头右上角——`PlanningHeader` 增可选 `annotateEntry` prop（`PlanningBoard` 在计划已建时传入 `BoardActionButton`，渲染于分支名与「更新代码」之间），`PlanningGoals` 的 `annotateEntry` prop 与区块头槽位删除；依据：页头不随内容滚动，会中随时进出批注模式、未发送角标常驻可见，第八轮「入口贴对象」取舍经会决议废止。同轮旅程导航第一步「上版回顾」改名「计划准备」（`PLANNING_SECTIONS` 与高保真 `g3-model.js stages`，与验收屏「验收准备」口径一致；区块内容、「验收回顾」标题与 aria-label 不变）。 |
 | 与 Orca annotate 组件族的关系 | **不复用**原生浏览器捕获链(useGrabMode/viewport-bridge/pending-card 绑 webContents 注入与页面坐标,React 板面用不上);**复用**发送弹窗链路 `openAgentSendPopoverTargetMode`(source 沿用 `'browser-annotations'`,不扩 Orca union;埋点归因混入浏览器批注,要区分走 ref/upstream 接缝候选交人)与 Radix Tooltip(Esc 原生)。面板/小窗按 G3 形态自建:无意图分段与发送行,小窗只新增(× 只关窗),编辑/删除在面板卡片;Markdown 输出 `- [对象] 文本` 自建纯函数 |
-| 对象级动作 | `PlanSendMenu.tsx`(2026-10-22 新增,替换已删除的 `use-object-action-send.ts`——它只触发 target mode 高亮、漏掉弹窗本体):拆解 Issue、整理纪要、批注发送三个入口(「与计划助手基于纪要调整目标」按用户决定退役——整理纪要后 Skill SOP 自然引导调整)统一包装为 Radix DropdownMenu 触发器:open 时调 `openAgentSendPopoverTargetMode`(source 沿用 `'browser-annotations'`),菜单内容 = BW 指令预览区(只读一句话指令)+ 原生 `ReviewNotesSendMenuContent`(会话列表 + 快捷启动,不改 Orca 契约);close 时 `closeAgentSendPopoverTargetMode`;动作同时 `revealPlanChat()` 展开会话栏;发送成功经 `onPromptDelivered` 给板面瞬态反馈。动作点为图标 + 短动词文字按钮(`BoardActionButton`,替换纯 IconButton)。卸载时 close。贴草稿通道不恢复；`entry.start`（自动化手动运行）由未开始短卡「开始计划」调用，仅返回 true 后展开四区；对象发送仍沿原生运行会话列表与快捷新建，不另建会话路由。 |
+| 对象级动作 | `PlanSendMenu.tsx`(2026-10-22 新增,替换已删除的 `use-object-action-send.ts`——它只触发 target mode 高亮、漏掉弹窗本体):拆解 Issue、整理纪要、批注发送三个入口(「与计划助手基于纪要调整目标」按用户决定退役——整理纪要后 Skill SOP 自然引导调整)统一包装为 Radix DropdownMenu 触发器:open 时调 `openAgentSendPopoverTargetMode`(source 沿用 `'browser-annotations'`),菜单内容 = BW 指令预览区(只读一句话指令)+ 原生 `ReviewNotesSendMenuContent`(会话列表 + 快捷启动,不改 Orca 契约);close 时 `closeAgentSendPopoverTargetMode`;动作同时 `revealPlanChat()` 展开会话栏;发送成功经 `onPromptDelivered` 给板面瞬态反馈。动作点为图标 + 短动词文字按钮(`BoardActionButton`,替换纯 IconButton)。卸载时 close。`entry.start`（原生会话草稿）由未开始短卡「开始计划」调用，仅返回 true 后展开四区；对象发送仍沿原生运行会话列表与快捷新建，不另建会话路由。 |
 | 归档 PR | `PlanningArchiveCard.tsx`(计划屏专用;验收屏有自己的 `AcceptanceArchiveCard`,两屏独立演进。原共用 `CycleArchive.tsx` 在验收屏 v10 落地后失去最后一个消费方,已删除)+ `version-cycle/open-archive-pr.ts`(共用层,两屏都 import):resolveReferenceRepo → GitHub `lookupGitHubWorkItemForSource(type:'pr')` / CodeHub `viewTask(kind:'mr')` → `openTaskPage(returnToPreviousView)` 落原生 PullRequestPage/MR 详情,不跳外部浏览器;解析失败经 notice 如实提示,不外链兜底。状态读取链(use-archive-pr-status)不变;计划侧「查看评审」外链已删 |
 | 样式 | `version-planning.css` 整体换装 g3-planning.css 移植(作用域 .vp-board,fixed 浮层除外;窄板容器查询阈值 780/580/420 照原型);`--radius-lg: 10px` 补进 workbench-tokens.css(设计系统同值);planning-dialogs.css 并入后删除;**批注与板面基础件的样式不在本表**——随共用组件走 `annotations/annotations.css` 与 `board-ui.css`(由组件自己 import,两屏自动同源);planning-fields.css 已删除(其余 vp-metric* 规则随验收 AcceptanceMetrics 删除而失去消费方,唯一在用的 `.vp-metric-evidence` 消费方是计划屏 PlanGoalMetrics,已并回 version-planning.css);原型手写 tooltip 不移植(生产用 Orca Radix Tooltip) |
 
@@ -43,7 +42,7 @@ G3 向 G2 / Orca 提供完整任务引用与返回位置;侧栏、原生创建�
 | D8 | Issue 行不显示 assignee、标题去 `【…】` 前缀渲染 | 对齐高保真行内元素(编号/标题/角标/状态/批注/开工) |
 | D9 | 任务未 ready 行不渲染分类角标 | Unknown 铁律:无 labels 数据不冒充 Feature;高保真 fixture 全部有 labels 未覆盖此态 |
 | D10 | 总览历史版本纪要列对无存储纪要的版本显示「纪要未记录」 | 三节派生模板退役(两屏均已交付)的总览侧后果;如实不冒充 |
-| D11 | 材料读取问题随开始请求作为一次性上下文递交 | 短卡不堆内部问题详情；请求失败仍如实提示，不假装启动或初始化替代材料 |
+| D11 | 材料读取问题在用户发送后由助手通过工具读回 | 短卡不堆内部问题详情；请求失败仍如实提示，不假装启动或初始化替代材料 |
 | D12 | 批注横幅用清单认可短文案,不用原型长引导语 | spec 原型注释清单(引导语不进界面)与行为段(进入后有横幅提示)冲突,经人拍板 2026-10-21:横幅保留、文案用已认可短句 |
 | D13 | 面板提示行仅批注模式显示 | 原型面板提示常驻;退模式后经角标重开面板时该句为陈旧提示,按诚实呈现收敛 |
 | D14 | 批注面板 absolute 锚板面体(top:16,页头以下),开启时与顶部导航右段重叠(原型 fixed 视口 top:96 的遮挡效应相同);对象小窗经 createPortal 挂 document.body、fixed 贴被点元素 | 生产板面右侧还有 Orca 资源管理器列、页头为两行高于原型:fixed 视口坐标会遮右栏、板面 top:96 会压页头动作行(均真壳实测);portal 消除任何引擎下 container-type 包含块捕获小窗的风险;导航右段重叠为原型同有的瞬态遮挡,关面板即恢复 |
@@ -56,16 +55,16 @@ G3 向 G2 / Orca 提供完整任务引用与返回位置;侧栏、原生创建�
 
 本轮已完成入口切换：旧三屏链条（PlanJourneyShell / PlanWeekBoard / PlanWeekPlanChat / plan-week-* / workbench-plan.css）已退役删除，以下为当前接线。
 
-两屏以未开始短卡承载「开始计划 / 开始验收」，配置自动化留在页头。手动运行已登记自动化，经 oneShotPrompt 递交明确版本与材料读取问题，启动前用原生更新接口将条目的工具保存为 BW 当前默认智能体，保留提示、模型与会话复用配置。`entry.start` 仅在原生运行会话实际打开后返回 true；板面据此展开四区，并以 `cycleStartedViewKey` 按 workflow、版本、scope/owner、工作树保存渲染进程视图态，版本初读为空时用 boundVersion 稳定身份。普通 shell 不能证明流程已开始，已有有效材料独立恢复。
+“配置自动化”仍打开原生编辑器。定时运行沿原生调度；首次登记默认关闭定时、使用固定工作区且 reuseSession=false，按 creationKey 去重。登记时同步 BW 所有的短入口，保留用户的启用、触发时间、模型与会话复用设置；同步失败如实提示。手动启动不运行或改写自动化，普通原生新建及历史恢复不额外注入 BW 提示。
 
 | 落点 | 采用方式 |
 |---|---|
-| AppWorkspaceShell → CycleWorkspaceProvider / CycleWorkspaceShell | artifacts 只作固定树准备入口；ensureCycleWorktree 后正式选择并切到 terminal，paired 宿主先激活。terminal 当前树为 bw/week-plan 或 bw/week-acceptance 时，在唯一原生 Terminal 旁挂右板；不扩 TopLevelView |
+| AppWorkspaceShell → CycleWorkspaceProvider / CycleWorkspaceShell | artifacts 只作固定树准备入口；ensureCycleWorktree 后正式选择并切到 terminal，paired 宿主先激活。terminal 当前树为绑定流程树（bw/&lt;版本&gt;/plan|acceptance）或旧 bw/week-plan / bw/week-acceptance 树时，在唯一原生 Terminal 旁挂右板；不扩 TopLevelView |
 | 原生 Terminal / TabBar / RightSidebar | 完整复用会话、标签/分屏、资源管理器与历史；TabBar 不挂 BW 按钮（原 CycleStartButton 薄挂载已撤除），左侧项目列表在计划与验收同样显示。移除 CycleChat、历史嵌入、portal 重发布和 sessionStorage 会话绑定 |
 | main/workbench/version-document-store + `workbench.materials.*` RPC / `ORCA bw materials` CLI | 跨进程 CAS 统一写入；renderer 直接 writeFile 的旧链路已删除 |
 | TaskPageContent → GitHubItemDialog → ConversationTabDescription / GitHubMarkdownComposer | 直接复用页面、正文编辑及 runWorkItemBodyUpdate；BW 不复制详情组件 |
 | use-task-page-detail-routing 的 worktreeNavHistory / goBackWorktree | 导航历史携带 BW 来源；openTaskPage 新增 returnToPreviousView（跳过 tasks 哨兵，返回 BW 来源视图），BW 子视图与屏内滚动位置由 cycle-view-state 和 use-planning-view-memory 恢复。 |
-| shared/automations-types | 复用原生登记和运行记录；「配置自动化」按钮打开原生编辑器：host 按工作树宿主身份，首次登记 existing 固定树、reuseSession=false、prompt 不含 cycleId，后续尊重用户保存的配置。手动运行的一次性上下文走 automation.runNow 可选 oneShotPrompt（派发端合并、capability 门控），接缝登记见 [upstream](../../../ref/upstream.md) |
+| shared/automations-types | 复用原生登记和运行记录；「配置自动化」按钮打开原生编辑器：host 按工作树宿主身份，首次登记 existing 固定树、reuseSession=false、prompt 不含 cycleId，后续尊重用户保存的配置。手动开始使用原生新建会话的 draft 交付，不调用 automation.runNow |
 
 ## 共享边界
 
@@ -89,9 +88,9 @@ usePlanningMaterial 继续复用 MaterialDraftController 的本地草稿、远�
 
 保留 `.bw/planning/<version>/data.json`、schema_version=3 与现有目标/任务/workflow/minutes 契约。上版来源先以 `selectPriorVersionSource` 按目录既有排序定位紧邻前版，再查该版验收；已有 `summary.progressSource` 优先，缺验收不回退更早版本，不生成成绩。`planning-progress-source` 经 history.read/readPlan 按 version/cycleId/sourceCommit/revision 核验固定验收与计划，`use-prior-carryovers` 只投影延期/会议遗留；固定读取失败两行留空、不增独立错误或重试界面，实时 Issue 参考的错误/重试保留。「查看验收依据」复用既有只读材料页与 readonlyBrowse，进入同一固定修订整页，返回原计划，不建树、不读当前稿或初始化替代材料。加载失败不新建替代物；版本不由日期、标题或 mtime 推断。
 
-任务只保存 provider/repo/number 与 goalId 引用。三屏共用 task-reference-reader 的原生行结果及在途请求，按 provider、宿主、项目/登记仓、来源身份及编号隔离，复用 snapshot-cache 原语、限于渲染进程；各屏按当前引用投影，挂载先回显再后台更新，按钮强制重读。GitHub 支持域内沿原生 gh:workItemsBatch 每 20 号分片，保留成功片、只补失败或缺失项；environment runtime 保持原生单项路由，CodeHub 复用有界逐项 CLI。use-cycle-task-reads 保留整批发布和新鲜证据回调，缓存回显不写 taskSnapshot；固定回顾核验成功后沿完整来源身份复用，来源变化或手动刷新才重读，实时 Issue 独立更新。会议纪要存材料可选 minutes 节（共识/遗留/人工确认，模型只写未确认正文），不再存 live_notes、transcript，也不由目标派生三节模板。协议细节的唯一模型参考是 [version-records](../../../standard/system-prompt/references/version-records.md)。
+任务只保存 provider/repo/number 与 goalId 引用。三屏共用 task-reference-reader 的原生行结果及在途请求，按 provider、宿主、项目/登记仓、来源身份及编号隔离，复用 snapshot-cache 原语、限于渲染进程；各屏按当前引用投影，挂载先回显再后台更新，按钮强制重读。GitHub 支持域内沿原生 gh:workItemsBatch 每 20 号分片，保留成功片、只补失败或缺失项；environment runtime 保持原生单项路由，CodeHub 复用有界逐项 CLI。use-cycle-task-reads 保留整批发布和新鲜证据回调，缓存回显不写 taskSnapshot；固定回顾核验成功后沿完整来源身份复用，来源变化或手动刷新才重读，实时 Issue 独立更新。会议纪要存材料可选 minutes 节（共识/遗留/人工确认，模型只写未确认正文），不再存 live_notes、transcript，也不由目标派生三节模板。协议细节的唯一模型参考是 [version-records](../../../standard/references/version-records.md)。
 
-UI 与模型共用在文件所属宿主执行的版本材料写入核心；模型入口是宿主下发的 `ORCA bw materials` CLI 薄入口。写入含受信任项目根、版本路径校验、expectedRevision、跨进程互斥和原子替换；重读修订后再提交，锁范围只含本文件事务，不锁住模型对话。CLI 与 UI 不各自实现一次校验。planning.py、version-plan.html 模板与 data-template.json 已在消费方切换的同一交付内退役删除，旧 confirm / submit-confirmed 不再控制任何流程；check-week-comment.py 与 week-plan-comment.md 保留作历史评论修复协议。
+UI 与模型共用在文件所属宿主执行的版本材料写入核心；模型入口是宿主下发的 `ORCA bw materials` CLI 薄入口。写入含受信任项目根、版本路径校验、expectedRevision、跨进程互斥和原子替换；重读修订后再提交，锁范围只含本文件事务，不锁住模型对话。CLI 与 UI 不各自实现一次校验。
 
 材料事务核心位于 src/main/workbench/version-document-store.ts，共同身份与 read/save 类型位于 src/shared/workbench/version-document.ts。它只接受明确版本，读取不存在材料无副作用，修订按原始字节计算；复用 proper-lockfile 和 Orca durable-file-write。计划/验收结构由 shared/workbench/version-material.ts 校验，共同层验证 schema/version/cycleId。schema2 只报告需显式迁移；不做自动升级。
 
@@ -103,11 +102,11 @@ UI 与模型共用在文件所属宿主执行的版本材料写入核心；模�
 
 schema2 通过一次显式迁移转为新计划；原文件/提交保留来源，旧 results 导入验收草稿并记录其实际归属版本，旧 confirmation 只作历史证据，不生成新认可。所有消费者与写入者一起切换；不做永久双写或遇错静默退回旧界面。迁移失败保留原件并报告。
 
-通用 SYSTEM 同时服务有关联 Issue 与无 Issue 的原生项目任务；宿主为真实引用渲染 Issue 上下文；创建、改写与计划补充的格式见 [Issue 格式](../../../standard/system-prompt/references/issue-state.md)。指标配置加载 metrics-refresh，不自动加载 week-planning。开工提示由 `version-cycle/cycle-prompt.ts` 渲染 bundled SYSTEM.md.tmpl 并内嵌对应 Skill 发现 Stub（指南与 references 经 `ORCA skills get` 按需读取）；占位符未解析即抛错，不会把占位符当实际身份递交。
+创建、改写与计划补充的格式见 [Issue 格式](../../../standard/references/issue-state.md)，由 Skill 在对应动作前要求完整读取。指标配置加载 metrics-refresh，不加载计划 SOP。入口与完整包的实现见 [会话入口与 Skill 加载](../../06-module/系统提示词与渐进加载.md)。
 
 ## 会话、任务导航与自动化
 
-计划固定 bw/week-plan，验收固定 bw/week-acceptance，各复用一棵 Orca 登记工作树。项目未设置基址时先写入项目级 .bw/worktrees 并提示，用户已有设置保留；原生创建与默认分支规则不变。入口准备工作区后切到 terminal；进屏不触发任何 Git 动作。「更新代码」经 workbench.trunk.update 走三指令：解析基线（钉值 worktreeBaseRef 或主检出当前分支，不猜名）、fetch 书签、双向 rev-list 对比、merge --ff-only；本地宿主在 owner runtime 执行，快进复用原生工作树操作锁与 Git 读缓存失效。更新状态按项目、宿主、流程与固定树隔离，同树在途请求去重；执行中材料只读、计划自动保存暂停，完成后经现有读写接口重读材料与候选（无论快进成败都重读），脏草稿仍由 CAS 控制器保留并提示冲突。完成回调只刷新材料，不重选工作区或会话。快进不了（分叉、主检出有本地改动、分支失配、远端不可达）保持原样不换数据源，统一中文提示交会话处理；固定树纯草稿状态（有未合入提交、主干没前进）不是异常、不提示；远程 SSH 树暂不自动同步，属只读中继边界。看板与会话始终使用同一工作树的文件。切树离开即卸下对应业务板，不持续纠正原生选择。材料身份按项目、宿主、流程和固定树解析。版本仍由人明确选择，不跟会话标题或日期联动，绑定树直接采用绑定版本，旧无绑定树沿明确选版偏好，不自动开轮。
+每版计划固定 bw/<版本>/plan，验收固定 bw/<版本>/acceptance，各复用一棵 Orca 登记工作树；旧无绑定上下文仍用 bw/week-plan、bw/week-acceptance。项目未设置基址时先写入项目级 .bw/worktrees 并提示，用户已有设置保留；原生创建与默认分支规则不变。入口准备工作区后切到 terminal；进屏不触发任何 Git 动作。「更新代码」经 workbench.trunk.update 走三指令：解析基线（钉值 worktreeBaseRef 或主检出当前分支，不猜名）、fetch 书签、双向 rev-list 对比、merge --ff-only；本地宿主在 owner runtime 执行，快进复用原生工作树操作锁与 Git 读缓存失效。更新状态按项目、宿主、流程与固定树隔离，同树在途请求去重；执行中材料只读、计划自动保存暂停，完成后经现有读写接口重读材料与候选（无论快进成败都重读），脏草稿仍由 CAS 控制器保留并提示冲突。完成回调只刷新材料，不重选工作区或会话。快进不了（分叉、主检出有本地改动、分支失配、远端不可达）保持原样不换数据源，统一中文提示交会话处理；固定树纯草稿状态（有未合入提交、主干没前进）不是异常、不提示；远程 SSH 树暂不自动同步，属只读中继边界。历史材料按文件是否存在读取，不校验提交是否已合入主干：对应目录下有文件且能解析就正常显示，缺文件显示空态，格式或身份不一致在页面报错。看板与会话始终使用同一工作树的文件。切树离开即卸下对应业务板，不持续纠正原生选择。材料身份按项目、宿主、流程和固定树解析。版本仍由人明确选择，不跟会话标题或日期联动，绑定树直接采用绑定版本，旧无绑定树沿明确选版偏好，不自动开轮。
 
 计划与验收完整复用 Orca 原生会话工作区：顶部新建会话和 Agent 控件、标签/分屏、资源管理器、智能体历史、工具侧栏及原生滚动。BW 的开始按钮仅在未开始短卡；成功后四区共用当前原生会话，不另建聊天、历史或会话绑定。
 

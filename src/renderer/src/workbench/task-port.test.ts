@@ -20,6 +20,7 @@ vi.mock('@/lib/github-work-item-source-lookup', () => ({
 vi.mock('@/lib/codehub-api', () => ({ codehubApi: { viewTask: mocks.viewTask } }))
 
 import { createTaskPort } from './task-port'
+import { createTaskReferenceReader } from './task-reference-reader'
 
 const githubRepo = {
   id: 'repo-gh',
@@ -144,6 +145,38 @@ describe('createTaskPort reads', () => {
     expect(fresh?.kind === 'ready' && fresh.task.state).toBe('closed')
     expect(mocks.lookupGitHub).toHaveBeenCalledTimes(2)
     expect(port.cached?.(scope, [goalRef])?.[0]?.reference).toEqual(goalRef)
+
+    const releases: (() => void)[] = []
+    const lookup = vi.fn(({ number }: { number: number }) =>
+      number === 108
+        ? Promise.resolve({ ...ghItem, number })
+        : new Promise<typeof ghItem>((resolve) => {
+            releases.push(() => resolve({ ...ghItem, number }))
+          })
+    )
+    const reader = createTaskReferenceReader(makeDeps({ lookupGitHubWorkItem: lookup }))
+    const references = Array.from({ length: 8 }, (_, index) => ({
+      ...ghReference,
+      number: 101 + index
+    }))
+    const controller = new AbortController()
+    const optional = reader
+      .read(scope, references, false, controller.signal)
+      .catch((error) => error.name)
+    const shared = reader.read(scope, [references[7]!])
+    const queuedRefresh = reader
+      .read(scope, [references[0]!], true, controller.signal)
+      .catch((error) => error.name)
+    expect(lookup).toHaveBeenCalledTimes(6)
+    controller.abort()
+    releases.forEach((release) => release())
+    expect(await optional).toBe('AbortError')
+    expect(await queuedRefresh).toBe('AbortError')
+    expect((await shared)[0]?.kind).toBe('github')
+    expect(lookup.mock.calls.map(([args]) => args.number)).toEqual([
+      101, 102, 103, 104, 105, 106, 108
+    ])
+    expect(reader.cached(scope, [references[6]!])).toBeNull()
   })
 
   it('splits more than 200 references and only supplements a failed native query', async () => {

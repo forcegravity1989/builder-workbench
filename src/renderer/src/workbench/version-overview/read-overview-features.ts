@@ -10,8 +10,7 @@ import {
   featureNumber,
   pullPhase,
   validTime,
-  type FeatureData,
-  type FeaturePull
+  type FeatureData
 } from './feature-model'
 
 import { applyVersionEvidence, type OverviewVersionPlan } from './version-evidence'
@@ -27,7 +26,12 @@ export type OverviewFeatureArgs = {
   before?: string
   historical: boolean
 }
-export async function readOverviewFeatures(args: OverviewFeatureArgs, force: boolean) {
+export async function readOverviewFeatures(
+  args: OverviewFeatureArgs,
+  force: boolean,
+  signal?: AbortSignal
+) {
+  signal?.throwIfAborted()
   const { catalog, plan, planSource, version, before, historical } = args
   const scope = catalog.scope
   if (!scope) {
@@ -37,7 +41,7 @@ export async function readOverviewFeatures(args: OverviewFeatureArgs, force: boo
   const failures = new Map<string, string>()
   const problems: string[] = []
   const readVersions = () =>
-    readVersionEvidence(catalog, force, { document: plan, source: planSource })
+    readVersionEvidence(catalog, force, { document: plan, source: planSource }, signal)
   const history = historical ? await readVersions() : undefined
   const snapshots = history?.plans.find((entry) => entry.version === version)?.taskSnapshot
   const identities = new Map<string, Pick<CycleTaskSnapshot, 'iid' | 'title' | 'labels'>>()
@@ -55,7 +59,7 @@ export async function readOverviewFeatures(args: OverviewFeatureArgs, force: boo
   const identityFor = (ref: CycleTaskReference) =>
     identities.get(taskKey(ref)) ?? reads.get(taskKey(ref))
   async function readTasks(refs: CycleTaskReference[], required = false) {
-    const values = await nativeTaskReferenceReader.read(scope!, refs, force)
+    const values = await nativeTaskReferenceReader.read(scope!, refs, force, signal)
     values.forEach((value, i) => {
       const ref = refs[i]!,
         read = cycleTaskRead(ref, value)
@@ -152,93 +156,94 @@ export async function readOverviewFeatures(args: OverviewFeatureArgs, force: boo
       }))
     )
   ]
-  const provider = createOverviewProviderReader()
-  const features = await mapLimit(roots, async (ref): Promise<FeatureData> => {
-    const rootRead = reads.get(taskKey(ref))!
-    const root = {
-      ...rootRead,
-      ...identityFor(ref),
-      reference: referenceForPlan(rootRead.reference, plan.tasks)
-    }
-    const members = plan.tasks.flatMap((r) => {
-      const task = reads.get(taskKey(r))
-      const identity = identityFor(r)
-      return task &&
-        identity &&
-        taskKey({ ...r, number: featureNumber(identity) ?? -1 }) === taskKey(ref)
-        ? [{ ...task, ...identity, reference: r }]
-        : []
-    })
-    const relation = scopes.get(taskKey(ref))!
-    const relatedKeys = new Set([...relation.byVersion.values()].flatMap((keys) => [...keys]))
-    relatedKeys.add(taskKey(ref))
-    const scopedEntries = entries
-      .map((entry) => ({
-        ...entry,
-        tasks: entry.tasks.filter((r) => relation.byVersion.get(entry.version)?.has(taskKey(r)))
-      }))
-      .filter((entry) => entry.tasks.length)
-    const scopedRecords = versionEvidence.records
-      .map((record) => ({
-        ...record,
-        plan: {
-          ...record.plan,
-          tasks: record.plan.tasks.filter((r) =>
-            relation.byVersion.get(record.version)?.has(taskKey(r))
-          )
-        }
-      }))
-      .filter((record) => record.plan.tasks.length)
-    const relatedProblems = versionProblems
-      .filter((problem) => problem.version === version || relation.byVersion.has(problem.version))
-      .map((problem) => problem.message)
-    const feature: FeatureData = {
-      root,
-      body: '',
-      members,
-      pulls: [],
-      events: [],
-      problems: [],
-      versions: []
-    }
-    feature.versions = scopedEntries.flatMap((entry) => {
-      const matching = entry.tasks
-      return matching.length
-        ? [
-            {
-              version: entry.version,
-              scope:
-                (entry.source === 'draft' ? '计划草稿 · ' : '') +
-                  matching
-                    .map((r) => entry.goals.find((g) => g.goalId === r.goalId)?.title)
-                    .filter(Boolean)
-                    .join('；') || '计划未记录目标范围'
-            }
-          ]
-        : []
-    })
-    const associated = [...reads.values()].filter((task) =>
-      relatedKeys.has(taskKey(task.reference))
-    )
-    Object.assign(
-      feature,
-      await readFeatureEvidence(
+  const provider = createOverviewProviderReader(signal)
+  const features = await mapLimit(
+    roots,
+    async (ref): Promise<FeatureData> => {
+      const rootRead = reads.get(taskKey(ref))!
+      const root = {
+        ...rootRead,
+        ...identityFor(ref),
+        reference: referenceForPlan(rootRead.reference, plan.tasks)
+      }
+      const members = plan.tasks.flatMap((r) => {
+        const task = reads.get(taskKey(r))
+        const identity = identityFor(r)
+        return task &&
+          identity &&
+          taskKey({ ...r, number: featureNumber(identity) ?? -1 }) === taskKey(ref)
+          ? [{ ...task, ...identity, reference: r }]
+          : []
+      })
+      const relation = scopes.get(taskKey(ref))!
+      const relatedKeys = new Set([...relation.byVersion.values()].flatMap((keys) => [...keys]))
+      relatedKeys.add(taskKey(ref))
+      const scopedEntries = entries
+        .map((entry) => ({
+          ...entry,
+          tasks: entry.tasks.filter((r) => relation.byVersion.get(entry.version)?.has(taskKey(r)))
+        }))
+        .filter((entry) => entry.tasks.length)
+      const scopedRecords = versionEvidence.records
+        .map((record) => ({
+          ...record,
+          plan: {
+            ...record.plan,
+            tasks: record.plan.tasks.filter((r) =>
+              relation.byVersion.get(record.version)?.has(taskKey(r))
+            )
+          }
+        }))
+        .filter((record) => record.plan.tasks.length)
+      const relatedProblems = versionProblems
+        .filter((problem) => problem.version === version || relation.byVersion.has(problem.version))
+        .map((problem) => problem.message)
+      const feature: FeatureData = {
         root,
-        associated,
-        catalog,
-        [...new Set([version, ...feature.versions.map((item) => item.version)])],
-        before,
-        provider
+        body: '',
+        members,
+        pulls: [],
+        events: [],
+        problems: [],
+        versions: []
+      }
+      feature.versions = scopedEntries.flatMap((entry) => {
+        const matching = entry.tasks
+        return matching.length
+          ? [
+              {
+                version: entry.version,
+                scope:
+                  (entry.source === 'draft' ? '计划草稿 · ' : '') +
+                    matching
+                      .map((r) => entry.goals.find((g) => g.goalId === r.goalId)?.title)
+                      .filter(Boolean)
+                      .join('；') || '计划未记录目标范围'
+              }
+            ]
+          : []
+      })
+      const associated = [...reads.values()].filter((task) =>
+        relatedKeys.has(taskKey(task.reference))
       )
-    )
-    feature.problems.push(
-      ...relatedProblems,
-      ...[...relatedKeys].flatMap((key) => (failures.has(key) ? [failures.get(key)!] : []))
-    )
-    const pulls = historical && !before ? [] : feature.pulls
-    feature.pulls = pulls
-      .filter((p): p is FeaturePull => Boolean(p))
-      .filter((p) => {
+      Object.assign(
+        feature,
+        await readFeatureEvidence(
+          root,
+          associated,
+          catalog,
+          [...new Set([version, ...feature.versions.map((item) => item.version)])],
+          before,
+          provider,
+          signal
+        )
+      )
+      feature.problems.push(
+        ...relatedProblems,
+        ...[...relatedKeys].flatMap((key) => (failures.has(key) ? [failures.get(key)!] : []))
+      )
+      const pulls = historical && !before ? [] : feature.pulls
+      feature.pulls = pulls.filter((p) => {
         if (
           !before ||
           (p.state === 'merged' &&
@@ -253,30 +258,33 @@ export async function readOverviewFeatures(args: OverviewFeatureArgs, force: boo
         feature.problems.push(`PR/MR #${p.number} 创建时间未记录，历史阶段待核对`)
         return true
       })
-    for (const pull of feature.pulls) {
-      if (
-        historical &&
-        before &&
-        validTime(pull.mergedAt) &&
-        Date.parse(pull.mergedAt) > Date.parse(before)
-      ) {
-        pull.state = 'unknown'
-        pull.mergedAt = undefined
+      for (const pull of feature.pulls) {
+        if (
+          historical &&
+          before &&
+          validTime(pull.mergedAt) &&
+          Date.parse(pull.mergedAt) > Date.parse(before)
+        ) {
+          pull.state = 'unknown'
+          pull.mergedAt = undefined
+        }
+        pull.phase = pullPhase(pull.body, feature.body, pull.url)
       }
-      pull.phase = pullPhase(pull.body, feature.body, pull.url)
-    }
-    applyVersionEvidence(
-      feature,
-      scopedEntries,
-      scopedRecords,
-      relatedKeys,
-      historical,
-      before,
-      historyComplete && relation.complete && relatedProblems.length === 0,
-      version
-    )
-    return feature
-  })
+      applyVersionEvidence(
+        feature,
+        scopedEntries,
+        scopedRecords,
+        relatedKeys,
+        historical,
+        before,
+        historyComplete && relation.complete && relatedProblems.length === 0,
+        version
+      )
+      return feature
+    },
+    4,
+    signal
+  )
   for (const feature of features) {
     if (!feature.versions.some((v) => v.version === version)) {
       feature.versions.unshift({

@@ -1,21 +1,19 @@
 import { settleMilestoneWindows } from './milestone-window-order'
-import { frozenMilestoneProblems, restoreFrozenMilestones } from './milestone-freeze'
 import { expect, it } from 'vitest'
 import {
   defaultMilestoneStages,
   adjustMilestoneDelivery,
   adjustMilestoneVersion,
-  fitMilestoneVersions,
   milestoneLaneConflict,
   plannedDay
 } from './milestone-sdlc'
 import { workCalendarDay } from './work-calendar'
 import { PlanningMaterialSchema } from './version-planning-material'
 import {
+  MilestoneMaterialSchema,
+  upgradeMilestoneMaterial,
   milestoneDraft,
   milestoneProblems,
-  milestoneGoalProblems,
-  ScheduledVersionSchema,
   reorderMilestoneFeature,
   type MilestoneDraft
 } from './project-milestones'
@@ -24,50 +22,43 @@ import {
   milestoneDay,
   milestoneWeekAt,
   materializeMilestoneWeek,
-  editMilestoneVersionName
+  editMilestoneVersionName,
+  newFeatureMilestoneVersions
 } from './milestone-calendar'
 
-it('keeps planning dates, precise version identity and snapshots through scheduling and reordering', () => {
+it('preserves material identity and independent version windows through whole-delivery scheduling', () => {
   const draft: MilestoneDraft = {
     material: {
-      schema_version: 2,
-      months: [{ month: '2026-11', outcome: '可试用' }],
+      schema_version: 3,
+      milestones: [{ id: 'launch', date: '2026-11-05', outcome: '可试用' }],
       features: [
-        {
-          id: 'f1',
-          month: '2026-11',
-          title: '消息',
-          owner: 'alice',
-          deliveries: []
-        },
-        {
-          id: 'f2',
-          month: '2026-11',
-          title: '知识库',
-          owner: 'bob',
-          deliveries: []
-        }
+        { id: 'f1', month: '2026-11', title: '消息', owner: 'alice', deliveries: [] },
+        { id: 'f2', month: '2026-11', title: '知识库', owner: 'bob', deliveries: [] }
       ]
     },
     versions: [
-      { version: 'v1', cycleId: 'one', timeWindow: { start: '2026-11-01', end: '2026-11-28' } },
-      { version: 'v2', cycleId: 'two', timeWindow: { start: '2026-11-29', end: '2026-11-30' } }
+      { version: 'v1', cycleId: 'one', timeWindow: { start: '2026-11-02', end: '2026-11-06' } },
+      { version: 'v2', cycleId: 'two', timeWindow: { start: '2026-11-09', end: '2026-11-13' } },
+      { version: 'v3', cycleId: 'three', timeWindow: { start: '2026-11-16', end: '2026-11-20' } }
     ]
   }
-  draft.material.features.forEach((f) => {
-    f.deliveries = draft.versions.map((v, i) => ({
-      id: `${f.id}-${i}`,
-      version: { version: v.version, cycleId: v.cycleId },
-      stages: defaultMilestoneStages(v, i > 0)
+  draft.material.features.forEach((feature) => {
+    feature.deliveries = draft.versions.slice(0, 2).map((version, index) => ({
+      id: `${feature.id}-${index}`,
+      version: { version: version.version, cycleId: version.cycleId },
+      stages: defaultMilestoneStages(version, index > 0)
     }))
   })
   expect(
     draft.material.features[0].deliveries[0].stages.map(
-      (s) => plannedDay(s.end) - plannedDay(s.start)
+      (stage) => plannedDay(stage.end) - plannedDay(stage.start)
     )
   ).toEqual([1, 2, 0.5, 1, 0.5])
   expect(workCalendarDay('2026-11-14').working).toBe(false)
   expect(workCalendarDay('2026-11-16').working).toBe(true)
+  expect(workCalendarDay('2026-11-28')).toMatchObject({ working: true, badge: '班' })
+  expect(workCalendarDay('2026-09-26')).toMatchObject({ working: false, badge: '休' })
+  expect(workCalendarDay('2027-01-30').badge).toBeNull()
   const plan = {
     schema_version: 3,
     version: 'v1',
@@ -87,17 +78,27 @@ it('keeps planning dates, precise version identity and snapshots through schedul
     }).success
   ).toBe(false)
   expect(milestoneProblems(draft)).toEqual([])
+  const legacy = {
+    schema_version: 2,
+    months: [
+      { month: '2026-11', outcome: '保留月份' },
+      { month: '2026-12', outcome: '' }
+    ],
+    features: []
+  }
+  expect(MilestoneMaterialSchema.parse(upgradeMilestoneMaterial(legacy)).milestones).toEqual([
+    { id: 'month-2026-11', month: '2026-11', outcome: '保留月份' }
+  ])
   const historical = structuredClone(draft)
-  historical.material.features.forEach((f) =>
-    f.deliveries.forEach((d) => {
-      d.stages = []
+  historical.material.features.forEach((feature) =>
+    feature.deliveries.forEach((delivery) => {
+      delivery.stages = []
     })
   )
   expect(milestoneProblems(historical)).toEqual([])
   expect(milestoneLaneConflict(historical)).toBeUndefined()
-  expect(adjustMilestoneDelivery(historical, 'f1', 'f1-0', 'move', 0, 1)).toBe(historical)
-  expect(fitMilestoneVersions(historical, new Set(['one', 'two']))).toEqual(historical)
-  const overlappingHistory = adjustMilestoneVersion(historical, 'two', -1)
+  expect(adjustMilestoneDelivery(historical, 'f1', 'f1-0', 'move', 1)).toBe(historical)
+  const overlappingHistory = adjustMilestoneVersion(historical, 'two', 'move', -7)
   expect(milestoneLaneConflict(overlappingHistory)).toBe('f1')
   expect(milestoneProblems(overlappingHistory).join()).toContain('Maintain 不能早于')
   const undatedHistory = structuredClone(historical)
@@ -106,286 +107,146 @@ it('keeps planning dates, precise version identity and snapshots through schedul
   const invalidHistory = structuredClone(historical)
   invalidHistory.versions[0].timeWindow!.end = '2026-02-30'
   expect(milestoneProblems(invalidHistory).join()).toContain('请核对名称及起止日期')
+
   const before = milestoneDraft({
     ...draft,
+    material: { ...draft.material, versionPlans: draft.versions },
     head: 'a',
     revision: 'b',
     problems: [],
-    versions: draft.versions.map((v) => ({ ...v, started: false }))
+    versions: draft.versions.map((version) => ({ ...version, started: true }))
   })
-  expect(
-    frozenMilestoneProblems(
-      {
-        ...historical,
-        head: 'a',
-        revision: 'b',
-        problems: [],
-        versions: historical.versions.map((v) => ({ ...v, started: true }))
-      },
-      before
-    ).join()
-  ).toContain('原计划须保留')
+  expect(before.material).not.toHaveProperty('versionPlans')
   draft.material.features = reorderMilestoneFeature(draft.material.features, 'f2', 'f1', 'before')
-  expect(draft.material.features.map((f) => f.id)).toEqual(['f2', 'f1'])
-  expect(before.material.features.map((f) => f.id)).toEqual(['f1', 'f2'])
-  const third = { ...before.material.features[0], id: 'f3' }
-  const order = [...before.material.features, third]
-  expect(reorderMilestoneFeature(order, 'f1', 'f3', 'before').map((f) => f.id)).toEqual([
-    'f2',
-    'f1',
-    'f3'
-  ])
-  expect(reorderMilestoneFeature(order, 'f1', 'f3', 'after').map((f) => f.id)).toEqual([
+  expect(draft.material.features.map((feature) => feature.id)).toEqual(['f2', 'f1'])
+  expect(before.material.features.map((feature) => feature.id)).toEqual(['f1', 'f2'])
+  const order = [...before.material.features, { ...before.material.features[0], id: 'f3' }]
+  expect(reorderMilestoneFeature(order, 'f1', 'f3', 'after').map((feature) => feature.id)).toEqual([
     'f2',
     'f3',
     'f1'
   ])
-  const shifted = adjustMilestoneVersion(before, 'one', 1)
-  expect(shifted.versions[0].timeWindow?.start).toBe('2026-11-02')
-  expect(plannedDay(shifted.material.features[0].deliveries[0].stages[0].start)).toBe(
-    plannedDay(before.material.features[0].deliveries[0].stages[0].start) + 1
+  const shifted = adjustMilestoneVersion(before, 'one', 'move', 1)
+  expect(shifted.versions[0].timeWindow).toEqual({ start: '2026-11-03', end: '2026-11-07' })
+  expect(shifted.material.features[0].deliveries[0].stages[0].start).toBe('2026-11-03T00:00')
+  expect(shifted.material.features[1].deliveries[0].stages[0].start).toBe('2026-11-03T00:00')
+  expect(shifted.material.features[0].deliveries[1]).toEqual(
+    before.material.features[0].deliveries[1]
   )
-  const resized = adjustMilestoneDelivery(before, 'f1', 'f1-0', 'end', 0, 0.5)
-  expect(resized.material.features[0].deliveries[0].stages[0].end).toBe('2026-11-03T12:00')
-  expect(resized.material.features[0].deliveries[0].stages[1].start).toBe('2026-11-03T12:00')
-  expect(adjustMilestoneDelivery(before, 'f1', 'f1-0', 'end', 2, -0.5)).toBe(before)
-  const fitted = fitMilestoneVersions(before, new Set(['one']))
-  const longer = adjustMilestoneDelivery(fitted, 'f1', 'f1-0', 'end', 1, 5)
-  expect(longer.versions[0].timeWindow).toEqual({ start: '2026-11-02', end: '2026-11-11' })
-  expect(milestoneProblems(longer)).toEqual([])
-  expect(adjustMilestoneDelivery(longer, 'f1', 'f1-0', 'end', 1, -5).versions).toEqual(
-    fitted.versions
+  expect(milestoneProblems(shifted)).toEqual([])
+
+  const resized = adjustMilestoneDelivery(before, 'f1', 'f1-0', 'end', 0.5)
+  expect(resized.material.features[0].deliveries[0].stages[0].end).toBe('2026-11-03T02:24')
+  expect(resized.material.features[0].deliveries[0].stages.at(-1)?.end).toBe('2026-11-07T12:00')
+  expect(resized.versions[0].timeWindow).toEqual({ start: '2026-11-02', end: '2026-11-07' })
+  expect(resized.versions.slice(1)).toEqual(before.versions.slice(1))
+  expect(resized.material.features[1]).toEqual(before.material.features[1])
+  expect(milestoneProblems(resized)).toEqual([])
+  const shortened = adjustMilestoneDelivery(resized, 'f1', 'f1-0', 'end', -0.5)
+  expect(shortened.versions).toEqual(resized.versions)
+  expect(shortened.material.features[0].deliveries[0].stages.at(-1)?.end).toBe('2026-11-07T00:00')
+  const fractionalBoundary = structuredClone(resized)
+  fractionalBoundary.material.features[0].deliveries[0].stages.at(-1)!.end = '2026-11-07T12:01'
+  expect(milestoneProblems(fractionalBoundary).join()).toContain('对齐半天')
+  fractionalBoundary.material.features[0].deliveries[0].stages[0].end = '2026-11-03T24:00'
+  expect(MilestoneMaterialSchema.safeParse(fractionalBoundary.material).success).toBe(false)
+
+  const moved = adjustMilestoneDelivery(before, 'f1', 'f1-1', 'move', 7, before.versions[2])
+  expect(moved.versions).toEqual(before.versions)
+  expect(moved.material.features[0].deliveries[1].version).toEqual({
+    version: 'v3',
+    cycleId: 'three'
+  })
+  expect(moved.material.features[0].deliveries[1].stages).toEqual([
+    { phase: 'Maintain', start: '2026-11-16T00:00', end: '2026-11-21T00:00' }
+  ])
+  expect(moved.material.features[0].deliveries[0]).toEqual(
+    before.material.features[0].deliveries[0]
   )
-  expect(milestoneLaneConflict(fitted)).toBeUndefined()
-  expect(milestoneLaneConflict(adjustMilestoneVersion(fitted, 'one', 25))).toBe('f1')
-  const touching = adjustMilestoneVersion(fitted, 'two', -22)
-  expect(milestoneLaneConflict(touching)).toBeUndefined()
-  expect(milestoneLaneConflict(adjustMilestoneVersion(fitted, 'two', -23))).toBe('f1')
-  const withEmpty = {
-    ...fitted,
+  expect(moved.material.features[1]).toEqual(before.material.features[1])
+  expect(milestoneProblems(moved)).toEqual([])
+  expect(
+    adjustMilestoneDelivery(before, 'f1', 'f1-0', 'move', 7, {
+      ...before.versions[1],
+      timeWindow: { start: '2026-11-09', end: '2026-11-10' }
+    })
+  ).toBe(before)
+
+  const expandedVersion = adjustMilestoneVersion(before, 'one', 'end', 1)
+  expect(expandedVersion.material).toBe(before.material)
+  expect(settleMilestoneWindows(before, expandedVersion).conflict).toBeUndefined()
+  const narrowed = settleMilestoneWindows(before, adjustMilestoneVersion(before, 'one', 'end', -1))
+  expect(narrowed.conflict).toContain('整段计划超出')
+  expect(narrowed.draft).toBe(before)
+  const collision = settleMilestoneWindows(before, adjustMilestoneVersion(before, 'one', 'end', 3))
+  expect(collision.conflict).toContain('日期重叠')
+  expect(collision.draft).toBe(before)
+  const parallel = {
+    ...before,
     versions: [
-      ...fitted.versions,
-      { version: 'v3', cycleId: 'three', timeWindow: { start: '2026-11-09', end: '2026-11-13' } },
-      { version: 'v4', cycleId: 'four', timeWindow: { start: '2026-11-16', end: '2026-11-20' } }
+      ...before.versions,
+      {
+        version: 'parallel',
+        cycleId: 'parallel',
+        timeWindow: { start: '2026-11-04', end: '2026-11-08' }
+      }
     ]
   }
-  const expanded = adjustMilestoneDelivery(withEmpty, 'f1', 'f1-0', 'end', 1, 5)
-  const typingName = editMilestoneVersionName(withEmpty, 'three', '').draft
-  expect(typingName.versions).toHaveLength(4)
+  expect(
+    settleMilestoneWindows(parallel, adjustMilestoneVersion(parallel, 'one', 'end', 1)).conflict
+  ).toBeUndefined()
+
+  const typingName = editMilestoneVersionName(before, 'three', '').draft
+  expect(typingName.versions).toHaveLength(3)
   const clearedName = editMilestoneVersionName(typingName, 'three', '', {
+    previousName: 'v3',
+    registered: before.versions.slice(0, 2)
+  })
+  expect(clearedName.problem).toBeUndefined()
+  expect(clearedName.draft.versions.map((version) => version.cycleId)).toEqual(['one', 'two'])
+  const registeredName = editMilestoneVersionName(typingName, 'three', '', {
     previousName: 'v3',
     registered: before.versions
   })
-  expect(clearedName.problem).toBeUndefined()
-  expect(clearedName.draft.versions.map((v) => v.cycleId)).toEqual(['one', 'two', 'four'])
-  expect(clearedName.draft.material).toBe(typingName.material)
-  expect(withEmpty.versions[2].version).toBe('v3')
-  const registeredName = editMilestoneVersionName(typingName, 'three', '', {
-    previousName: 'v3',
-    registered: withEmpty.versions
-  })
   expect(registeredName.problem).toContain('已提交')
-  expect(registeredName.draft.versions).toEqual(withEmpty.versions)
-  const usedName = editMilestoneVersionName(withEmpty, 'one', '', {
+  expect(registeredName.draft.versions).toEqual(before.versions)
+  const usedName = editMilestoneVersionName(before, 'one', '', {
     previousName: 'v1',
     registered: []
   })
   expect(usedName.problem).toContain('仍有特性安排')
-  expect(usedName.draft).toEqual(withEmpty)
-  const editedName = editMilestoneVersionName(withEmpty, 'one', 'v1-next').draft
-  expect(editedName.material.features[0].deliveries[0].version).toEqual({
+  expect(usedName.draft).toEqual(before)
+  const renamed = editMilestoneVersionName(before, 'one', 'v1-next').draft
+  expect(renamed.material.features[0].deliveries[0].version).toEqual({
     version: 'v1-next',
     cycleId: 'one'
   })
-  const settled = settleMilestoneWindows(withEmpty, expanded, new Set())
-  expect(settled.conflict).toBeUndefined()
-  expect(settled.draft.versions.slice(2).map((v) => v.timeWindow)).toEqual([
-    { start: '2026-11-12', end: '2026-11-16' },
-    { start: '2026-11-17', end: '2026-11-21' }
+  const wrongIdentity = structuredClone(before)
+  wrongIdentity.material.features[0].deliveries[0].version.cycleId = 'wrong-cycle'
+  expect(milestoneProblems(wrongIdentity).join()).toContain('请安排有日期')
+  const defaults = newFeatureMilestoneVersions(before, '2026-11-04')
+  expect([defaults.first.cycleId, defaults.next.cycleId]).toEqual(['one', 'two'])
+  expect(defaults.draft.versions).toEqual(before.versions)
+
+  const registered = {
+    ...before.versions[2],
+    timeWindow: { start: '2026-11-16', end: '2026-11-20' }
+  }
+  const missingFromRoadmap = { ...before, versions: before.versions.slice(0, 2) }
+  const reused = newFeatureMilestoneVersions(missingFromRoadmap, '2026-11-17', [
+    registered,
+    registered
   ])
-  expect(settled.draft.material).toBe(expanded.material)
-  expect(withEmpty.versions[2].timeWindow?.start).toBe('2026-11-09')
-  expect(milestoneProblems(settled.draft)).toEqual([])
-  const shortened = settleMilestoneWindows(
-    settled.draft,
-    adjustMilestoneDelivery(settled.draft, 'f1', 'f1-0', 'end', 1, -5),
-    new Set()
-  )
-  expect(shortened.draft.versions.slice(2)).toEqual(settled.draft.versions.slice(2))
-  for (const frozenId of ['three', 'four']) {
-    const blocked = settleMilestoneWindows(withEmpty, expanded, new Set([frozenId]))
-    expect(blocked.conflict).toBeTruthy()
-    expect(blocked.draft).toBe(withEmpty)
-  }
-  const occupied = structuredClone(withEmpty)
-  occupied.material.features.push({
-    id: 'occupied',
-    month: '2026-11',
-    title: '已有排期',
-    owner: 'bob',
-    deliveries: [
-      {
-        id: 'occupied-0',
-        version: { version: 'v4', cycleId: 'four' },
-        stages: defaultMilestoneStages(occupied.versions[3])
-      }
-    ]
-  })
-  expect(
-    settleMilestoneWindows(
-      occupied,
-      adjustMilestoneDelivery(occupied, 'f1', 'f1-0', 'end', 1, 5),
-      new Set()
-    ).conflict
-  ).toBeTruthy()
-  const parallel = structuredClone(occupied)
-  parallel.versions[3].timeWindow = { start: '2026-11-02', end: '2026-11-06' }
-  parallel.material.features[2].deliveries[0].stages = defaultMilestoneStages(parallel.versions[3])
-  expect(
-    settleMilestoneWindows(
-      parallel,
-      adjustMilestoneDelivery(parallel, 'f1', 'f1-0', 'end', 1, 0.5),
-      new Set()
-    ).conflict
-  ).toBeUndefined()
-  const withEarlierEmpty = {
-    ...withEmpty,
-    versions: withEmpty.versions.map((v) =>
-      v.cycleId === 'three'
-        ? { ...v, timeWindow: { start: '2026-10-26', end: '2026-10-30' } }
-        : v.cycleId === 'four'
-          ? { ...v, timeWindow: { start: '2026-10-19', end: '2026-10-23' } }
-          : v
-    )
-  }
-  const expandedLeft = adjustMilestoneDelivery(withEarlierEmpty, 'f1', 'f1-0', 'start', 0, -5)
-  const settledLeft = settleMilestoneWindows(withEarlierEmpty, expandedLeft, new Set())
-  expect(settledLeft.conflict).toBeUndefined()
-  expect(settledLeft.draft.versions.slice(2).map((v) => v.timeWindow)).toEqual([
-    { start: '2026-10-23', end: '2026-10-27' },
-    { start: '2026-10-18', end: '2026-10-22' }
-  ])
-  expect(settledLeft.draft.versions.map((v) => v.cycleId)).toEqual(
-    withEarlierEmpty.versions.map((v) => v.cycleId)
-  )
-  expect(settledLeft.draft.material).toBe(expandedLeft.material)
-  expect(withEarlierEmpty.versions[2].timeWindow?.start).toBe('2026-10-26')
-  expect(milestoneProblems(settledLeft.draft)).toEqual([])
-  expect(
-    settleMilestoneWindows(
-      settledLeft.draft,
-      adjustMilestoneDelivery(settledLeft.draft, 'f1', 'f1-0', 'start', 0, 5),
-      new Set()
-    ).draft.versions.slice(2)
-  ).toEqual(settledLeft.draft.versions.slice(2))
-  for (const frozenId of ['three', 'four']) {
-    const blocked = settleMilestoneWindows(withEarlierEmpty, expandedLeft, new Set([frozenId]))
-    expect(blocked.conflict).toBeTruthy()
-    expect(blocked.draft).toBe(withEarlierEmpty)
-  }
-  const occupiedLeft = structuredClone(withEarlierEmpty)
-  occupiedLeft.material.features.push({
-    id: 'earlier-work',
-    month: '2026-11',
-    title: '前面的排期',
-    owner: 'bob',
-    deliveries: [
-      {
-        id: 'earlier-work-0',
-        version: { version: 'v4', cycleId: 'four' },
-        stages: defaultMilestoneStages(occupiedLeft.versions[3])
-      }
-    ]
-  })
-  expect(milestoneProblems(occupiedLeft)).toEqual([])
-  for (const delta of [-5, -14]) {
-    const blocked = settleMilestoneWindows(
-      occupiedLeft,
-      adjustMilestoneDelivery(occupiedLeft, 'f1', 'f1-0', 'start', 0, delta),
-      new Set()
-    )
-    expect(blocked.conflict).toBeTruthy()
-    expect(blocked.draft).toBe(occupiedLeft)
-  }
-  const parallelLeft = structuredClone(occupiedLeft)
-  parallelLeft.versions[3].timeWindow = { start: '2026-11-02', end: '2026-11-06' }
-  parallelLeft.material.features[2].deliveries[0].stages = defaultMilestoneStages(
-    parallelLeft.versions[3]
-  )
-  expect(
-    settleMilestoneWindows(
-      parallelLeft,
-      adjustMilestoneDelivery(parallelLeft, 'f1', 'f1-0', 'start', 0, -0.5),
-      new Set()
-    ).conflict
-  ).toBeUndefined()
-  const earlyMaintain = adjustMilestoneDelivery(before, 'f1', 'f1-1', 'move', 0, -25)
-  expect(milestoneProblems(earlyMaintain).join()).toContain('Maintain 不能早于')
-  const frozen = {
-    ...before,
-    head: 'a',
-    revision: 'b',
-    problems: [],
-    versions: before.versions.map((v) => ({ ...v, started: v.cycleId === 'one' }))
-  }
-  expect(frozenMilestoneProblems(frozen, before)).toEqual([])
-  expect(frozenMilestoneProblems(frozen, shifted).join()).toContain('日期已锁定')
-  expect(frozenMilestoneProblems(frozen, resized).join()).toContain('原计划须保留')
-  expect(frozenMilestoneProblems(frozen, earlyMaintain)).toEqual([])
-  const renamed = structuredClone(before)
-  renamed.material.features.reverse()
-  renamed.material.features[0].title = '新的宏观描述'
-  expect(frozenMilestoneProblems(frozen, renamed)).toEqual([])
-  renamed.material.features.pop()
-  expect(frozenMilestoneProblems(frozen, renamed).join()).toContain('不能新增、移除或调整阶段')
-  const mixed = adjustMilestoneDelivery(resized, 'f1', 'f1-1', 'end', 0, -1)
-  mixed.material.features[0].deliveries[0].goalSlot = 2
-  mixed.material.features[0].deliveries[0].goalId = 'goal-2'
-  const withGoals = {
-    ...frozen,
-    versions: frozen.versions.map((v) => ({ ...v, goals: [{ goalId: 'goal-2', title: '目标二' }] }))
-  }
-  expect(milestoneGoalProblems(mixed, withGoals.versions)).toEqual([])
-  expect(milestoneGoalProblems(mixed, frozen.versions)).toHaveLength(1)
-  mixed.material.features[0].owner = '新的负责人'
-  const restored = restoreFrozenMilestones(withGoals, mixed)
-  expect(restored.versions.every((v) => ScheduledVersionSchema.safeParse(v).success)).toBe(true)
-  expect(restored.material.features[0].deliveries[0].goalId).toBe('goal-2')
-  expect(frozenMilestoneProblems(frozen, restored)).toEqual([])
-  expect(restored.material.features[0].owner).toBe('新的负责人')
-  expect(restored.material.features[0].deliveries[1]).toEqual(
-    mixed.material.features[0].deliveries[1]
-  )
-  expect(restoreFrozenMilestones(frozen, renamed).material.features).toHaveLength(2)
-  const reassigned = structuredClone(before)
-  reassigned.material.features[0].deliveries[0].version = { version: 'v2', cycleId: 'two' }
-  reassigned.material.features[0].deliveries[1].version = { version: 'v1', cycleId: 'one' }
-  const restoredAssignment = restoreFrozenMilestones(frozen, reassigned)
-  expect(restoredAssignment.material.features[0].deliveries).toEqual(
-    before.material.features[0].deliveries
-  )
-  expect(milestoneProblems(restoredAssignment)).toEqual([])
-  expect(
-    restoreFrozenMilestones(frozen, earlyMaintain).material.features[0].deliveries[0].stages[0]
-      .phase
-  ).toBe('Plan')
-  const newMixed = structuredClone(before)
-  newMixed.material.features.push({ ...structuredClone(before.material.features[0]), id: 'new' })
-  expect(restoreFrozenMilestones(frozen, newMixed).material.features.map((f) => f.id)).toEqual([
-    'f1',
-    'f2'
-  ])
-  expect(
-    frozenMilestoneProblems(
-      { ...frozen, versions: frozen.versions.map((v) => ({ ...v, started: false })) },
-      resized,
-      new Set(['v1'])
-    ).join()
-  ).toContain('原计划须保留')
-  draft.material.features[0].deliveries[0].version.cycleId = 'wrong-cycle'
-  expect(milestoneProblems(draft).join()).toContain('请安排有日期')
+  expect(reused.first.cycleId).toBe('three')
+  expect(reused.draft.versions.filter((v) => v.cycleId === 'three')).toHaveLength(1)
+  expect(reused.next.version).not.toBe('v3')
+
   const empty: MilestoneDraft = {
-    material: { schema_version: 2, months: [{ month: '2026-07', outcome: '' }], features: [] },
+    material: {
+      schema_version: 3,
+      milestones: [{ id: 'kickoff', date: '2026-07-01', outcome: '立项' }],
+      features: []
+    },
     versions: [{ version: 'v0.7.0', cycleId: 'history' }]
   }
   const week = milestoneWeekAt(milestoneDay('2026-11-14'))

@@ -65,7 +65,13 @@ export function closeProjectPage(): void {
 
 useAppStore.subscribe((state, previous) => {
   if (state.activeView !== previous.activeView) {
-    closeProjectPage()
+    const overviewSettingsRoundTrip =
+      projectPage?.kind === 'version-overview' &&
+      ((previous.activeView === 'activity' && state.activeView === 'settings') ||
+        (previous.activeView === 'settings' && state.activeView === 'activity'))
+    if (!overviewSettingsRoundTrip) {
+      closeProjectPage()
+    }
   }
 })
 

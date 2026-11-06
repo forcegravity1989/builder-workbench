@@ -1,26 +1,26 @@
 import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.ts'
+import { MilestoneAxis } from './milestones-roadmap.jsx'
 import { InlineField, WeekName } from './milestones-fields.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
-import { calendarFor, dayWidth, labelWidth, planWeek } from './milestones-calendar.js'
-import { currentDay, sampleActual } from './milestones-data.js'
+import { calendarFor, dayWidth, labelWidth, planWeek, nextVersion } from './milestones-calendar.js'
+import { currentDay, sampleActual, actualVersions } from './milestones-data.js'
 import {
   day,
   dateOf,
   dayMs,
   phases,
-  actualDay,
-  actualAsOf,
   isRest,
   laneConflict,
   settleWindows,
   adjustVersion,
   adjustDelivery
 } from './milestones-sdlc.js'
+// eslint-disable-next-line no-unused-vars
 const { React, useState, useRef, useEffect, Plus, X, ExternalLink, RefreshCw } =
   window.BWPrototypeDependencies
 const short = (date) => date.slice(5).replace('-', '/')
-const plannedTime = (value) => `${short(dateOf(value))} ${value % 1 ? '12:00' : '00:00'}`
-const actualTime = (value) => (value ? value.slice(5, 16).replace('T', ' ') : '尚无完成记录')
+const plannedTime = (value) =>
+  `${short(dateOf(value))}${Math.abs((value % 1) - 0.5) < 1e-8 ? ' 下午' : ''}`
 export function Timeline({
   plan,
   planning,
@@ -35,7 +35,10 @@ export function Timeline({
   newFeature,
   onAdd,
   onNameWeek,
-  onApply
+  onApply,
+  onAddMilestone,
+  onRemoveMilestone,
+  onChangeMilestone
 }) {
   const scroll = useRef(null),
     drag = useRef(null),
@@ -43,27 +46,49 @@ export function Timeline({
     ordering = useRef(null)
   const [preview, setPreview] = useState(null),
     [dragWarning, setDragWarning] = useState(''),
-    [showPlan, setShowPlan] = useState(false),
+    [showActual, setShowActual] = useState(false),
     [dropRow, setDropRow] = useState(null)
-  const baseCalendar = calendarFor(plan)
+  const actualByFeature = new Map(
+    plan.features.map((feature) => [feature.id, sampleActual(feature, actualScenario)])
+  )
+  const canEdit = planning && !showActual
+  const versions = actualScenario === 'error' ? [] : actualVersions
+  const display = showActual
+    ? {
+        ...plan,
+        versions: [
+          ...plan.versions,
+          ...versions.filter((v) => !plan.versions.some((p) => p.id === v.id))
+        ]
+      }
+    : preview || plan
+  const actualVersionById = new Map(versions.map((v) => [v.id, v]))
+  // Keep the calendar scale and scroll position stable while changing the source.
+  const baseCalendar = calendarFor({ ...plan, versions: [...plan.versions, ...versions] })
   const start = baseCalendar.start / dayMs,
     end = baseCalendar.end / dayMs + 1
   const totalWidth = (end - start) * dayWidth
   const x = (value) => (value - start) * dayWidth
-  const display = preview || plan
   const days = Array.from({ length: end - start }, (_, i) => start + i)
   const versionById = new Map(display.versions.map((v) => [v.id, v]))
-  const laneEnds = [],
-    versionLanes = new Map()
-  for (const version of display.versions.toSorted((a, b) => a.start.localeCompare(b.start))) {
-    let lane = laneEnds.findIndex((end) => end < version.start)
-    if (lane === -1) {
-      lane = laneEnds.length
+  const lanesFor = (items) => {
+    const ends = [],
+      lanes = new Map()
+    for (const v of items.toSorted((a, b) => a.start.localeCompare(b.start))) {
+      let lane = ends.findIndex((end) => end < v.start)
+      if (lane === -1) {
+        lane = ends.length
+      }
+      ends[lane] = v.end
+      lanes.set(v.id, lane)
     }
-    laneEnds[lane] = version.end
-    versionLanes.set(version.id, lane)
+    return lanes
   }
-  const versionHeight = Math.max(1, laneEnds.length) * 52
+  const versionLanes = lanesFor(display.versions),
+    actualLanes = lanesFor(versions)
+  const headerHeight = showActual ? 68 : 52
+  const versionHeight =
+    Math.max(1, ...[...versionLanes.values()].map((lane) => lane + 1)) * headerHeight
   const blankWeeks = baseCalendar.weeks.filter(
     (w) => !display.versions.some((v) => v.start <= w.end && v.end >= w.start)
   )
@@ -74,21 +99,8 @@ export function Timeline({
         : navigation.date
     scroll.current?.scrollTo({ left: Math.max(0, (day(date) - start - 1) * dayWidth) })
   }, [navigation, start])
-  useEffect(() => {
-    const closeGoalPickers = () => {
-      scroll.current?.querySelectorAll('.ml-goal-picker[open]').forEach((node) => {
-        node.open = false
-      })
-    }
-    window.addEventListener('scroll', closeGoalPickers, true)
-    window.addEventListener('resize', closeGoalPickers)
-    return () => {
-      window.removeEventListener('scroll', closeGoalPickers, true)
-      window.removeEventListener('resize', closeGoalPickers)
-    }
-  }, [])
   const beginDrag = (event, gesture) => {
-    if (!planning || event.button !== 0) {
+    if (!canEdit || event.button !== 0) {
       return
     }
     event.preventDefault()
@@ -97,6 +109,13 @@ export function Timeline({
     drag.current = {
       ...gesture,
       originX: event.clientX,
+      grabDay:
+        start +
+        (event.clientX -
+          scroll.current.getBoundingClientRect().left -
+          labelWidth +
+          scroll.current.scrollLeft) /
+          dayWidth,
       left: scroll.current.scrollLeft,
       base: plan,
       next: plan
@@ -114,18 +133,16 @@ export function Timeline({
       return draft
     }
     if (gesture.mode === 'move' && delta) {
-      const targetDay = delivery.stages[0].start + delta
+      const targetDay =
+        (gesture.grabDay ?? (delivery.stages[0].start + delivery.stages.at(-1).end) / 2) + delta
       const candidates = draft.versions.filter(
         (v) => day(v.start) <= targetDay && day(v.end) + 1 > targetDay
       )
-      const current = candidates.find((v) => v.id === delivery.versionId)
-      if (!current && candidates.length > 1) {
-        return draft
+      if (candidates.length > 1) {
+        setDragWarning('此日期有多个版本，请拖至明确的版本范围')
+        return null
       }
-      const target = current || candidates[0]
-      if (target?.started) {
-        return draft
-      }
+      const target = candidates[0]
       targetId = target?.id
       if (!target) {
         const week = baseCalendar.weeks.find(
@@ -133,38 +150,62 @@ export function Timeline({
         )
         if (week) {
           const used = planWeek(draft, week)
-          if (used.version.started) {
-            return draft
-          }
           draft = used.plan
           targetId = used.version.id
         }
       }
     }
-    return adjustDelivery(
-      draft,
-      gesture.id,
-      gesture.index,
-      gesture.mode,
-      gesture.stage,
-      delta,
-      targetId
-    )
+    const target = draft.versions.find((v) => v.id === (targetId || delivery.versionId))
+    if (
+      gesture.mode === 'move' &&
+      delivery.stages.at(-1).end - delivery.stages[0].start >
+        day(target.end) + 1 - day(target.start)
+    ) {
+      setDragWarning(`${target.name} 放不下当前安排，请先拉长该版本或缩短本段`)
+      return null
+    }
+    let next = adjustDelivery(draft, gesture.id, gesture.index, gesture.mode, delta, targetId)
+    const moved = next.features.find((f) => f.id === gesture.id)
+    const first = moved.deliveries[0],
+      maintain = moved.deliveries[1]
+    if (
+      gesture.mode === 'move' &&
+      gesture.index === 0 &&
+      target.id !== delivery.versionId &&
+      maintain?.stages.length &&
+      (first.versionId === maintain.versionId || maintain.stages[0].start < first.stages.at(-1).end)
+    ) {
+      const following = nextVersion(next, target.end)
+      const duration = maintain.stages.at(-1).end - maintain.stages[0].start
+      if (duration > day(following.version.end) + 1 - day(following.version.start)) {
+        setDragWarning(`${following.version.name} 放不下维护段，请先调整该版本或维护时长`)
+        return null
+      }
+      next = adjustDelivery(
+        following.plan,
+        gesture.id,
+        1,
+        'move',
+        day(following.version.start) - maintain.stages[0].start,
+        following.version.id
+      )
+    }
+    return next
   }
-  const stepFor = (g) =>
-    g.kind === 'version' ||
-    plan.features.find((f) => f.id === g.id)?.deliveries[g.index]?.stages[0]?.phase === 'Maintain'
-      ? 1
-      : 0.5
+  const stepFor = (g) => (g.kind === 'version' ? 1 : 0.5)
   const checkedChange = (gesture, delta) => {
-    const settled = settleWindows(gesture.base, changed(gesture, delta))
+    const candidate = changed(gesture, delta)
+    if (!candidate) {
+      return null
+    }
+    const settled = settleWindows(gesture.base, candidate)
     if (settled.conflict) {
       setDragWarning(settled.conflict)
       return null
     }
     const next = settled.plan
     if (laneConflict(next)) {
-      setDragWarning('同一泳道不能重叠')
+      setDragWarning('本特性的另一段已在该版本，请先调整另一段')
       return null
     }
     setDragWarning('')
@@ -184,7 +225,7 @@ export function Timeline({
         Math.round(
           (event.clientX - g.originX + scroll.current.scrollLeft - g.left) / dayWidth / step
         ) * step
-      g.next = checkedChange(g, delta) || g.next
+      g.next = checkedChange(g, delta) || (g.mode === 'move' ? g.base : g.next)
       setPreview(g.next)
     } else if (pan.current) {
       scroll.current.scrollLeft = pan.current.left + pan.current.x - event.clientX
@@ -202,7 +243,7 @@ export function Timeline({
     }
   }
   const keyboardAdjust = (event, gesture) => {
-    if (!planning || !['ArrowLeft', 'ArrowRight'].includes(event.key)) {
+    if (!canEdit || !['ArrowLeft', 'ArrowRight'].includes(event.key)) {
       return
     }
     event.preventDefault()
@@ -222,71 +263,84 @@ export function Timeline({
       onKeyDown={(e) => keyboardAdjust(e, gesture)}
     />
   )
-  const plannedBar = (feature, delivery, index, ghost = false) => {
-    const version = versionById.get(delivery.versionId)
-    const editable = planning && !version.started && !ghost
+  const plannedBar = (feature, delivery, index) => {
+    const first = delivery.stages[0],
+      last = delivery.stages.at(-1)
+    if (!first) {
+      return null
+    }
+    const gesture = { kind: 'delivery', id: feature.id, index, mode: 'move' }
+    const label = `${feature.title} ${versionById.get(delivery.versionId)?.name} ${first.phase === 'Maintain' ? 'Maintain' : '上线'}整段 · ${plannedTime(first.start)}—${short(dateOf(Math.ceil(last.end) - 1))}${last.end % 1 === 0.5 ? ' 上午' : ''} · 计划`
     return (
       <div
-        className={`ml-phase-group ${ghost ? 'ghost' : ''}`}
-        key={`${delivery.stages[0].phase}-${ghost}`}
+        key={delivery.versionId}
+        className={`ml-delivery-bar ${canEdit ? 'editable' : ''}`}
+        style={{ left: x(first.start), width: (last.end - first.start) * dayWidth, top: 31 }}
       >
-        {delivery.stages.map((s, stage) => {
-          const gesture = { kind: 'delivery', id: feature.id, index, stage, mode: 'move' }
-          const move =
-            s.phase === 'Maintain' ? { kind: 'version', id: version.id, mode: 'move' } : gesture
-          const canResize =
-            editable &&
-            (s.phase !== 'Maintain' ||
-              !display.features.some((f) =>
-                f.deliveries.some(
-                  (d) => d.versionId === version.id && d.stages[0]?.phase === 'Plan'
-                )
-              ))
-          const label = `${s.phase} · ${plannedTime(s.start)} — ${plannedTime(s.end)} · ${ghost ? '原计划，只读' : '计划'}`
-          return (
-            <div
-              key={s.phase}
-              className={`ml-phase phase-${s.phase.toLowerCase()} ${editable ? 'editable' : ''}`}
+        <button
+          className="ml-delivery-body"
+          aria-label={label}
+          title={`${label}；内部为阶段比例示意`}
+          onPointerDown={canEdit ? (e) => beginDrag(e, gesture) : undefined}
+          onKeyDown={canEdit ? (e) => keyboardAdjust(e, gesture) : undefined}
+        >
+          {delivery.stages.map((stage) => (
+            <span
+              key={stage.phase}
+              className={`phase-${stage.phase.toLowerCase()}`}
               style={{
-                left: x(s.start),
-                width: (s.end - s.start) * dayWidth,
-                top: ghost ? 76 : 31
+                flex: `0 0 ${((stage.end - stage.start) / (last.end - first.start)) * 100}%`
               }}
             >
-              <button
-                className="ml-phase-body"
-                aria-label={label}
-                title={label}
-                onPointerDown={editable ? (e) => beginDrag(e, move) : undefined}
-                onKeyDown={editable ? (e) => keyboardAdjust(e, move) : undefined}
-              >
-                <span>
-                  {(s.end - s.start) * dayWidth >= 38
-                    ? s.phase
-                    : s.phase.slice(0, s.phase === 'Deploy' ? 2 : 1)}
-                </span>
-              </button>
-              {canResize &&
-                handle(
-                  { ...gesture, mode: 'start' },
-                  `${s.phase} 开始：拖动调整，方向键${s.phase === 'Maintain' ? '一天' : '半天'}`,
-                  'start'
-                )}
-              {canResize &&
-                handle(
-                  { ...gesture, mode: 'end' },
-                  `${s.phase} 结束：拖动调整，方向键${s.phase === 'Maintain' ? '一天' : '半天'}`,
-                  'end'
-                )}
-            </div>
-          )
-        })}
-        {ghost && (
-          <span className="ml-baseline-caption" style={{ left: x(delivery.stages[0].start) }}>
-            原计划
-          </span>
-        )}
+              {(stage.end - stage.start) * dayWidth >= 38
+                ? stage.phase
+                : stage.phase.slice(0, stage.phase === 'Deploy' ? 2 : 1)}
+            </span>
+          ))}
+        </button>
+        {canEdit &&
+          handle(
+            { ...gesture, mode: 'start' },
+            `${feature.title} ${versionById.get(delivery.versionId)?.name} 整段开始：拖动调整`,
+            'start'
+          )}
+        {canEdit &&
+          handle(
+            { ...gesture, mode: 'end' },
+            `${feature.title} ${versionById.get(delivery.versionId)?.name} 整段结束：拖动调整`,
+            'end'
+          )}
       </div>
+    )
+  }
+  const actualBar = (feature, result) => {
+    const v = result.version
+    const complete = result.outcome === 'met'
+    const status =
+      result.kind === 'Maintain'
+        ? complete
+          ? '维护完成'
+          : '维护未完成'
+        : complete
+          ? '已上线'
+          : '未上线'
+    const label = `${feature.title} ${v.name} · ${status}`
+    return (
+      <button
+        key={v.id}
+        className={`ml-result-bar ${complete ? 'met' : 'not-met'}`}
+        style={{
+          left: x(day(v.start)),
+          width: (day(v.end) - day(v.start) + 1) * dayWidth,
+          top: 31 + actualLanes.get(v.id) * 36
+        }}
+        aria-label={label}
+        title={`${label}；${short(v.start)}—${short(v.end)} 为版本周期，并非特性实测工期。原型样例：#${result.number} → ${result.goalId}，验收 PR 已合入。点击查看版本。`}
+        onClick={() => onVersion(v.id)}
+      >
+        <span aria-hidden="true">{complete ? '✓' : '○'}</span>
+        {v.name} · {status}
+      </button>
     )
   }
   return (
@@ -296,45 +350,53 @@ export function Timeline({
           {display.features.length} 个特性 ·{' '}
           {new Set(display.features.map((f) => f.owner.trim()).filter(Boolean)).size} 位负责人
         </span>
-        <div className="ml-stage-legend" aria-label="SDLC 阶段图例">
-          {phases.map((phase) => (
-            <span key={phase}>
-              <i className={`phase-${phase.toLowerCase()}`} />
-              {phase}
-            </span>
-          ))}
+        <div className="ml-stage-legend" aria-label={showActual ? '实际图例' : 'SDLC 阶段图例'}>
+          {showActual ? (
+            <span>条长：版本周期 · 点击查看版本</span>
+          ) : (
+            phases.map((phase) => (
+              <span key={phase}>
+                <i className={`phase-${phase.toLowerCase()}`} />
+                {phase}
+              </span>
+            ))
+          )}
         </div>
         {dragWarning && (
           <span className="ml-drag-warning" role="status">
             {dragWarning}
           </span>
         )}
-        <label className="ml-show-plan">
+        <label className="ml-show-actual">
           <input
             type="checkbox"
-            checked={showPlan}
-            onChange={(e) => setShowPlan(e.target.checked)}
+            checked={showActual}
+            onChange={(e) => setShowActual(e.target.checked)}
           />
-          显示计划
+          显示实际
         </label>
-        <div className="ml-actual-refresh" role="status">
-          <span className={actualScenario === 'error' ? 'ml-refresh-error' : ''}>
-            {actualScenario === 'error'
-              ? '本次未采集到 · 保留 11/11 15:30 数据，请到版本总览查看'
-              : '截至 11/11 15:30'}
-          </span>
-          <IconAction
-            label="刷新实际进度"
-            icon={RefreshCw}
-            onClick={() => onActualScenario('normal')}
-          />
-        </div>
+        {showActual && (
+          <div className="ml-actual-refresh" role="status">
+            <span>
+              {{
+                error: '验收读取失败',
+                unlinked: '未关联特性',
+                ambiguous: '特性匹配不唯一'
+              }[actualScenario] || '已归档验收结果'}
+            </span>
+            <IconAction
+              label="刷新验收结果"
+              icon={RefreshCw}
+              onClick={() => onActualScenario('normal')}
+            />
+          </div>
+        )}
       </div>
       <div
         className="ml-timeline-scroll"
         ref={scroll}
         tabIndex={0}
-        aria-label="SDLC 特性排期，每格一天"
+        aria-label="特性版本排期，每格一天"
         onPointerMove={movePointer}
         onPointerUp={() => finish()}
         onPointerCancel={() => finish(true)}
@@ -359,13 +421,27 @@ export function Timeline({
           }
         }}
         onPointerDown={(e) => {
-          if (e.button !== 0 || e.target.closest('button,input,a,label,summary,details')) {
+          if (e.button !== 0 || e.target.closest('button,input,textarea,a,label,summary,details')) {
             return
           }
           pan.current = { x: e.clientX, left: scroll.current.scrollLeft }
           e.currentTarget.setPointerCapture(e.pointerId)
         }}
       >
+        <MilestoneAxis
+          milestones={plan.milestones}
+          planning={canEdit}
+          start={start}
+          width={totalWidth}
+          onAdd={() =>
+            onAddMilestone({
+              date: dateOf(start + Math.floor((scroll.current?.scrollLeft || 0) / dayWidth) + 1),
+              outcome: ''
+            })
+          }
+          onChange={onChangeMilestone}
+          onRemove={onRemoveMilestone}
+        />
         <div className="ml-timeline-canvas" style={{ width: totalWidth + labelWidth }}>
           <div
             className="ml-days-background"
@@ -379,46 +455,72 @@ export function Timeline({
                 style={{ left: x(d), width: dayWidth }}
               />
             ))}
+            {!showActual &&
+              display.versions.map((version, index) => (
+                <div
+                  key={version.id}
+                  className="ml-version-boundary"
+                  data-alternate={index % 2}
+                  style={{
+                    left: x(day(version.start)),
+                    width: (day(version.end) - day(version.start) + 1) * dayWidth
+                  }}
+                />
+              ))}
           </div>
           <div className="ml-board-header">
             <div className="ml-version-row" style={{ height: versionHeight }}>
               <div className="ml-sticky-label">
-                特性 / 负责人<small>版本 · 日排期</small>
+                {canEdit && (
+                  <IconAction
+                    className="ml-cell-add"
+                    label="添加特性"
+                    icon={Plus}
+                    onClick={onAdd}
+                  />
+                )}
+                特性 / 负责人<small>{showActual ? '版本日期对照' : '计划 · 日排期'}</small>
               </div>
               <div className="ml-version-track" style={{ width: totalWidth }}>
-                {blankWeeks.map((w) => (
-                  <div
-                    className="ml-week-slot"
-                    key={w.id}
-                    style={{ left: x(day(w.start)), width: 5 * dayWidth }}
-                  >
-                    {planning ? (
-                      <WeekName week={w} commit={(name) => onNameWeek(w, name)} />
-                    ) : (
-                      <span>未规划</span>
-                    )}
-                    <small>
-                      {short(w.start)}—{short(w.end)}
-                    </small>
-                  </div>
-                ))}
+                {!showActual &&
+                  blankWeeks.map((w) => (
+                    <div
+                      className="ml-week-slot"
+                      key={w.id}
+                      style={{ left: x(day(w.start)), width: 5 * dayWidth }}
+                    >
+                      {canEdit ? (
+                        <WeekName week={w} commit={(name) => onNameWeek(w, name)} />
+                      ) : (
+                        <span>未规划</span>
+                      )}
+                      <small>
+                        {short(w.start)}—{short(w.end)}
+                      </small>
+                    </div>
+                  ))}
                 {display.versions.map((v) => {
-                  const editable = planning && !v.started
+                  const editable = canEdit
+                  const planned = plan.versions.find((p) => p.id === v.id)
+                  const actual = actualVersionById.get(v.id)
                   const gesture = { kind: 'version', id: v.id, mode: 'move' }
-                  const active = v.start <= currentDay && v.end >= currentDay
+                  const activeVersion = showActual ? actual : v
+                  const active =
+                    activeVersion?.start <= currentDay && activeVersion?.end >= currentDay
                   return (
                     <div
                       className={`ml-fixed-version ${active ? 'current' : ''}`}
                       key={v.id}
                       style={{
                         left: x(day(v.start)),
-                        top: versionLanes.get(v.id) * 52,
+                        top: versionLanes.get(v.id) * headerHeight,
+                        height: headerHeight,
                         width: (day(v.end) - day(v.start) + 1) * dayWidth
                       }}
                     >
                       {active && <span className="ml-current-version">当前</span>}
                       <div className="ml-version-title">
-                        {editable ? (
+                        {editable && !v.hasExecution ? (
                           <InlineField
                             value={v.name}
                             label={`版本名称 ${v.name}`}
@@ -436,18 +538,48 @@ export function Timeline({
                         />
                       </div>
                       <button
-                        className={`ml-version-dates ${editable ? 'editable' : ''}`}
+                        className={`ml-version-dates ${editable ? 'editable' : ''} ${showActual ? 'comparison' : ''}`}
                         title={
                           editable
-                            ? '拖动整体平移版本；时长随下方 SDLC 联动'
-                            : '版本已开始，日期只读'
+                            ? '拖动日期整体平移；拖版本两端调整起止'
+                            : showActual
+                              ? '表头按里程碑规划定位；实际日期来自正式版本计划，结果条按实际日期绘制'
+                              : '里程碑规划日期'
                         }
                         onPointerDown={editable ? (e) => beginDrag(e, gesture) : undefined}
                         onKeyDown={editable ? (e) => keyboardAdjust(e, gesture) : undefined}
                       >
-                        {short(v.start)}—{short(v.end)}
-                        {v.started && <span> · 已开始</span>}
+                        {showActual ? (
+                          <>
+                            <span>
+                              规划：
+                              {planned ? `${short(planned.start)}—${short(planned.end)}` : '未安排'}
+                            </span>
+                            <span>
+                              实际：
+                              {actual
+                                ? `${short(actual.start)}—${short(actual.end)}`
+                                : actualScenario === 'error'
+                                  ? '读取失败'
+                                  : '暂无正式计划'}
+                            </span>
+                          </>
+                        ) : (
+                          `${short(v.start)}—${short(v.end)}`
+                        )}
                       </button>
+                      {editable &&
+                        handle(
+                          { ...gesture, mode: 'start' },
+                          `${v.name} 版本开始：拖动调整，方向键一天`,
+                          'start'
+                        )}
+                      {editable &&
+                        handle(
+                          { ...gesture, mode: 'end' },
+                          `${v.name} 版本结束：拖动调整，方向键一天`,
+                          'end'
+                        )}
                     </div>
                   )
                 })}
@@ -456,7 +588,9 @@ export function Timeline({
             <div className="ml-day-row">
               <div className="ml-sticky-label">
                 {navigation.date.slice(0, 7).replace('-', ' 年 ')} 月
-                <small>每格一天 · 规划按半天调整</small>
+                <small>
+                  {showActual ? '每格一天 · 结果条按实际日期' : '每格一天 · 整段按半天调整'}
+                </small>
               </div>
               <div className="ml-day-track" style={{ width: totalWidth }}>
                 {days.map((d) => {
@@ -487,9 +621,24 @@ export function Timeline({
           {display.features.map((feature, index) => (
             <div
               key={feature.id}
-              className={`ml-timeline-row ${showPlan && feature.deliveries.some((d) => d.stages.length && versionById.get(d.versionId).started) ? 'with-baseline' : ''} ${dropRow?.id === feature.id ? `ml-row-drop-${dropRow.side}` : ''}`}
+              className={`ml-timeline-row ${dropRow?.id === feature.id ? `ml-row-drop-${dropRow.side}` : ''}`}
+              style={
+                showActual
+                  ? {
+                      minHeight:
+                        88 +
+                        Math.max(
+                          0,
+                          ...actualByFeature
+                            .get(feature.id)
+                            .rows.map((r) => actualLanes.get(r.versionId) || 0)
+                        ) *
+                          36
+                    }
+                  : undefined
+              }
               onDragOver={(e) => {
-                if (!ordering.current || !planning) {
+                if (!ordering.current || !canEdit) {
                   return
                 }
                 e.preventDefault()
@@ -517,7 +666,7 @@ export function Timeline({
             >
               <div className="ml-sticky-label">
                 <div className="ml-feature-heading">
-                  {planning && (
+                  {canEdit && (
                     <button
                       className="ml-order-handle"
                       draggable
@@ -548,7 +697,7 @@ export function Timeline({
                       ⠿
                     </button>
                   )}
-                  {planning ? (
+                  {canEdit ? (
                     <InlineField
                       value={feature.title}
                       label="特性名称"
@@ -563,7 +712,7 @@ export function Timeline({
                 </div>
                 <div className="ml-feature-meta">
                   <div className="ml-inline-owner">
-                    {planning ? (
+                    {canEdit ? (
                       <InlineField
                         value={feature.owner}
                         label={`${feature.title} 负责人`}
@@ -574,178 +723,48 @@ export function Timeline({
                       <small>{feature.owner}</small>
                     )}
                   </div>
-                  <div className="ml-feature-goals">
-                    {feature.deliveries.map((delivery, i) => {
-                      const v = versionById.get(delivery.versionId)
-                      return planning ? (
-                        <details
-                          key={i}
-                          className="ml-goal-picker"
-                          onToggle={(event) => {
-                            const node = event.currentTarget
-                            if (node.open) {
-                              const trigger = node.querySelector('summary').getBoundingClientRect()
-                              const menu = node.querySelector('.ml-goal-options')
-                              const height = menu.getBoundingClientRect().height
-                              menu.style.left = `${Math.max(8, Math.min(trigger.left, window.innerWidth - 76))}px`
-                              menu.style.top = `${Math.max(8, window.innerHeight - trigger.bottom < height + 8 ? trigger.top - height - 4 : trigger.bottom + 4)}px`
-                            }
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Escape') {
-                              event.currentTarget.open = false
-                              event.currentTarget.querySelector('summary').focus()
-                            }
-                          }}
-                          onBlur={(event) => {
-                            if (!event.currentTarget.contains(event.relatedTarget)) {
-                              event.currentTarget.open = false
-                            }
-                          }}
-                        >
-                          <summary
-                            aria-label={`${feature.title} ${v.name} 选择目标`}
-                            title={`${v.name} 的目标`}
-                          >
-                            <span className="ml-goal-version">{v.name} ·</span>
-                            <span>{delivery.goalSlot ? `G${delivery.goalSlot}` : '目标'}</span>
-                            <span>⌄</span>
-                          </summary>
-                          <div className="ml-goal-options">
-                            {[1, 2, 3, 4].map((slot) => (
-                              <button
-                                key={slot}
-                                aria-pressed={delivery.goalSlot === slot}
-                                onClick={(event) => {
-                                  event.currentTarget.closest('details').open = false
-                                  onApply({
-                                    ...plan,
-                                    features: plan.features.map((f) =>
-                                      f.id !== feature.id
-                                        ? f
-                                        : {
-                                            ...f,
-                                            deliveries: f.deliveries.map((d, index) =>
-                                              index !== i
-                                                ? d
-                                                : { ...d, goalSlot: slot, goalId: undefined }
-                                            )
-                                          }
-                                    )
-                                  })
-                                }}
-                              >
-                                G{slot}
-                              </button>
-                            ))}
-                          </div>
-                        </details>
-                      ) : (
-                        <span className="ml-goal-tag" key={i} title={`${v.name} 的目标`}>
-                          <span className="ml-goal-version">{v.name} ·</span>
-                          <span>{delivery.goalSlot ? `G${delivery.goalSlot}` : '目标'}</span>
-                        </span>
-                      )
-                    })}
-                  </div>
                 </div>
+                {showActual && (
+                  <small className="ml-result-caption">
+                    规划：
+                    {feature.deliveries
+                      .map(
+                        (d) =>
+                          `${versionById.get(d.versionId)?.name} ${d.stages[0]?.phase === 'Maintain' ? '维护' : '上线'}`
+                      )
+                      .join(' → ')}
+                  </small>
+                )}
+                {showActual && actualByFeature.get(feature.id).note && (
+                  <small className="ml-result-caption">
+                    {actualByFeature.get(feature.id).note}
+                  </small>
+                )}
               </div>
               <div className="ml-track" style={{ width: totalWidth }}>
-                <svg className="ml-sdlc-connection" aria-hidden="true">
-                  {feature.deliveries.slice(1).map((d, i) => {
-                    const previous = feature.deliveries[i]
-                    if (!previous.stages.length || !d.stages.length) {
-                      return null
-                    }
-                    const left = x(previous.stages.at(-1).end)
-                    const right = x(d.stages[0].start)
-                    return right > left ? (
-                      <path key={d.stages[0].phase} d={`M ${left} 45 H ${right}`} />
-                    ) : null
-                  })}
-                </svg>
-                {feature.deliveries.map((delivery, i) => {
-                  const v = versionById.get(delivery.versionId),
-                    first = delivery.stages[0],
-                    facts = sampleActual(delivery, actualScenario),
-                    actual = facts.actual || []
-                  const started = Boolean(v.started)
-                  if (!first) {
-                    return (
-                      <div
-                        key={delivery.versionId}
-                        className="ml-unrecorded"
-                        style={{
-                          left: x(day(v.start)),
-                          width: (day(v.end) - day(v.start) + 1) * dayWidth
-                        }}
-                        title={`${v.name} · 仅表示版本归属，未记录 SDLC 阶段时间`}
-                      >
-                        阶段未记录
-                      </div>
-                    )
-                  }
-                  return (
-                    <React.Fragment key={delivery.stages[0].phase}>
-                      {started ? (
-                        <>
-                          {!actual.length && (
-                            <span className="ml-actual-unknown" style={{ left: x(first.start) }}>
-                              {facts.note || '实际阶段未知'}
-                            </span>
-                          )}
-                          {actual.map((s) => {
-                            const left = x(actualDay(s.startAt)),
-                              width = Math.max(
-                                1,
-                                (actualDay(s.endAt || actualAsOf) - actualDay(s.startAt)) * dayWidth
-                              )
-                            return (
-                              <button
-                                key={s.phase}
-                                className={`ml-actual-phase ${!s.endAt ? 'ongoing' : ''}`}
-                                style={{ left, width: Math.max(width, 12) }}
-                                aria-label={`${s.phase} 实际记录`}
-                                title={`原型注释: 示例记录，非真实 PR。${s.phase} · ${actualTime(s.startAt)} → ${actualTime(s.endAt)}（北京时间）\n${s.source}${!s.endAt ? '\n进行中，截至 11/11 15:30；右端不是完成时间' : ''}`}
-                              >
-                                <i className={`phase-${s.phase.toLowerCase()}`} style={{ width }} />
-                                {width > 30 && (
-                                  <span>
-                                    {s.phase}
-                                    {!s.endAt && ' · 进行中'}
-                                  </span>
-                                )}
-                              </button>
-                            )
-                          })}
-                          {actual.some((s) => s.phase === 'Test' && s.endAt) && (
-                            <span
-                              className="ml-deploy-unknown"
-                              style={{
-                                left: x(actualDay(actual.find((s) => s.phase === 'Test').endAt)) + 7
-                              }}
-                            >
-                              Deploy · 未跟踪
-                            </span>
-                          )}
-                          {showPlan && plannedBar(feature, delivery, i, true)}
-                        </>
-                      ) : (
-                        plannedBar(feature, delivery, i)
-                      )}
-                    </React.Fragment>
-                  )
-                })}
+                {!showActual && (
+                  <svg className="ml-sdlc-connection" aria-hidden="true">
+                    {feature.deliveries.slice(1).map((d, i) => {
+                      const previous = feature.deliveries[i]
+                      if (!previous.stages.length || !d.stages.length) {
+                        return null
+                      }
+                      const left = x(previous.stages.at(-1).end)
+                      const right = x(d.stages[0].start)
+                      return right > left ? (
+                        <path key={d.versionId} d={`M ${left} 45 H ${right}`} />
+                      ) : null
+                    })}
+                  </svg>
+                )}
+                {showActual
+                  ? actualByFeature.get(feature.id).rows.map((result) => actualBar(feature, result))
+                  : feature.deliveries.map((delivery, i) => plannedBar(feature, delivery, i))}
               </div>
-              {planning && (
+              {canEdit && (
                 <div className="ml-row-actions">
                   <IconAction
-                    label={
-                      feature.deliveries.some((d) => versionById.get(d.versionId)?.started)
-                        ? '已开始制定计划，保留原计划'
-                        : `移除 ${feature.title || '特性'}`
-                    }
-                    disabled={feature.deliveries.some((d) => versionById.get(d.versionId)?.started)}
+                    label={`移除 ${feature.title || '特性'}`}
                     icon={X}
                     onClick={() => onDelete(feature)}
                   />
@@ -757,21 +776,13 @@ export function Timeline({
             <div className="ml-empty-lanes">
               <div className="ml-sticky-label">还没有特性</div>
               <div className="ml-empty-grid" style={{ width: totalWidth }}>
-                添加特性后，直接拖动阶段安排时间
+                添加特性后，整段安排上线版与 Maintain 版
               </div>
-            </div>
-          )}
-          {planning && (
-            <div className="ml-add-feature">
-              <button className="btn btn-ghost" onClick={() => onAdd()}>
-                <Plus size={14} />
-                添加特性
-              </button>
             </div>
           )}
           <div
             className="ml-now-line"
-            style={{ left: labelWidth + x(actualDay(actualAsOf)), top: versionHeight + 40 }}
+            style={{ left: labelWidth + x(day(currentDay) + 0.5), top: versionHeight + 40 }}
             aria-hidden="true"
           />
         </div>

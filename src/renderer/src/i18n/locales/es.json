@@ -5913,6 +5913,8 @@
           "dac08ec03e": "Trabajando..."
         },
         "ExperimentalPane": {
+          "globalScopeTitle": "Configuración global",
+          "globalScopeDescription": "Estos ajustes se aplican a todos los proyectos de este dispositivo.",
           "9762364929": "Usa APFS clone-copy en macOS cuando sea posible; si no, crea symlinks de las carpetas o archivos configurados en los worktrees creados.",
           "24416f42cd": "Rutas compartidas en worktrees",
           "fb82ea1d7a": "Materializa automáticamente archivos o carpetas configurados en worktrees recién creados.",

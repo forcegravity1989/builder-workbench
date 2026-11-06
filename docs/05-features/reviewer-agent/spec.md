@@ -11,8 +11,8 @@
 3. **评审产物唯一落点 = MR 评论**，由评审会话自己用 `gh pr comment` / `codehub-cli mr note` 发（成熟 CLI 为底座）；**Rust 层不新增 MR diff / MR 评论 API**——diff 也是会话自己 `gh pr diff` 拉。Workbench 只做入口、守卫、起会话三件事。
 4. **评审绝不推状态**：命令层守卫「Issue 必须处于待评审状态且 MR 开着」；评审路径没有任何状态写入；系统提示词与剧本三处（模板/剧本/阶段规范）都写死禁 merge、禁改状态、禁改实现代码。状态机（`can_transition_to`、Done 唯一入边）一条边不动。
 5. **三层落点**（对齐 architecture §2 三层模型）：
-   - 方法论：`standard/skills/mr-review/SKILL.md`（两轴评审：规矩轴对项目手册、意图轴对 Issue 正文；意见六段固定结构，首行机器可辨标记 `<!-- bw:review v1 … -->`）。
-   - 规范：`standard/system-prompt/references/review.md`（评审阶段规范）+ **评审主提示词外置** `standard/system-prompt/REVIEW.md.tmpl`（与 SYSTEM.md.tmpl 同机制：`{{...}}` 占位、编进二进制、改身份=改 md + 抬 `standard/VERSION`）。
+   - 历史方法论（执行资产已退役，以下仅说明原设计）：`standard/skills/mr-review/SKILL.md`（两轴评审：规矩轴对项目手册、意图轴对 Issue 正文；意见六段固定结构，首行机器可辨标记 `<!-- bw:review v1 … -->`）。
+   - 历史规范（文件已退役，不再作为读取入口）：`standard/system-prompt/references/review.md`（评审阶段规范）+ **评审主提示词外置** `standard/system-prompt/REVIEW.md.tmpl`（与 SYSTEM.md.tmpl 同机制：`{{...}}` 占位、编进二进制、改身份=改 md + 抬 `standard/VERSION`）。
    - 承载：新命令「请评审」；评审事件即 MR 评论（只追加，事后抹不掉）——不落本地库、不建评审台账。
 6. **MVP 不派生「已评审」信号**：界面不解析 MR 评论、不点评审灯——没读回的数据不装绿。人去 MR 上看意见（原型步 3 是评论在远端的样子）。
 7. **CI 层自动评审（2026-08-27 谈定补入）**：GitHub 仓的自动触发放在 CI 层——官方 `claude-code-action` 在 PR 打开/更新时自动 review（本仓落一份 workflow，认证走订阅 OAuth token，secret 由人配；配好前 workflow 如实不生效）。边界三条：只覆盖 GitHub 仓（codehub 仍靠内建「请评审」）；review 口径不另立第二份正本——action 每次自动读仓根 `CLAUDE.md`→`AGENTS.md`，与 `mr-review` 剧本同源于仓内规矩；CI 评论与评审会话评论共存，靠评审会话首行的机器可辨标记区分。
@@ -22,6 +22,7 @@
 **主路径**：Issue 处于待评审状态、MR 开着 → 会话屏动作条 / 计划详情点**「请评审」** → Workbench 查该 Issue 的分支确有开着的 MR（拿到号）→ 在这个 Issue 的 worktree 里起评审 PTY 会话（没有树就重新供给，评审只读不写）→ 评审会话读 Issue 正文与评论、`gh pr diff` 拉真实 diff、对照 `AGENTS.md` 与 `.bw/` 规范件、跑得动的只读检查真跑 → 意见按六段结构发到 MR 评论、地址打屏 → 人扫结论，在 Workbench 里点合入或打回（既有动作，不新增按钮）。
 
 **分支**：
+
 - Issue 不处于待评审状态 → 按钮不出现（会话屏/计划详情都按状态渲染）。
 - 处于待评审状态但查不到开着的 MR → toast 人话：「这个 Issue 没有开着的 MR，没有可评之物」，不起会话。
 - 评审会话还开着 → 拒绝重开，提示先停止（与写码会话同规矩）。
@@ -29,6 +30,7 @@
 - 人在会话里让它评别的 PR → 剧本内置，同一套规矩照评。
 
 **出错怎么办**：
+
 - claude CLI 工具检测失败 / PTY 不可用 → 原话进 toast，不假装开成。
 - 评论发不出去（网络/权限）→ 会话里如实说「意见没落上」并把意见原文打屏（剧本约束）；Workbench 界面本来就不显示「已评审」，无假绿可言。
 - 评审会话越权尝试 merge / 改状态 → 提示词与剧本双重禁令；且 Workbench 侧本来就没把这些命令给它（评审路径无状态写入，merge 只在人点的 `MergeAndSettle` 里）。

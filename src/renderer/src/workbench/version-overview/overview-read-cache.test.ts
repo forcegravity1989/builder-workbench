@@ -45,6 +45,31 @@ it('shares concurrent reads, notifies both screens and retains only same-source 
   offLeft()
   offRight()
 
+  const optional = createOverviewReadCache<number>((value) => value, true)
+  let signal!: AbortSignal
+  let completeOld!: (value: number) => void
+  const offOne = optional.subscribe('enabled', () => {})
+  const offTwo = optional.subscribe('enabled', () => {})
+  const old = optional.read('enabled', (readSignal) => {
+    signal = readSignal
+    return new Promise<number>((resolve) => {
+      completeOld = resolve
+    })
+  })
+  await Promise.resolve()
+  offOne()
+  await Promise.resolve()
+  expect(signal.aborted).toBe(false)
+  offTwo()
+  await Promise.resolve()
+  expect(signal.aborted).toBe(true)
+  const offReopened = optional.subscribe('enabled', () => {})
+  await optional.read('enabled', async () => 42, true)
+  completeOld(11)
+  await old
+  expect(optional.get('enabled')).toEqual({ value: 42, loading: false })
+  offReopened()
+
   const materials = (revision: string, number: number): VersionOverviewMaterials => {
     const plan = {
       schema_version: 3 as const,
