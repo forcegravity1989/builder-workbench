@@ -85,11 +85,11 @@ export function BrowserPageAnnotationTray({
         })
   const toggleLabel = !expanded
     ? translate(
-        'auto.components.browser.pane.annotate.browser.page.annotation.tray.expand',
+        'auto.components.browser.pane.annotate.browser.page.annotation.tray.9f209891a7',
         'Expand annotations'
       )
     : translate(
-        'auto.components.browser.pane.annotate.browser.page.annotation.tray.collapse',
+        'auto.components.browser.pane.annotate.browser.page.annotation.tray.38d320108c',
         'Collapse annotations'
       )
 
@@ -128,19 +128,18 @@ export function BrowserPageAnnotationTray({
   return (
     <Collapsible asChild open={expanded} onOpenChange={setExpanded}>
       <div className="absolute right-3 bottom-3 z-30 flex max-h-[45%] w-[min(20rem,calc(100%-1.5rem))] flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-[0_10px_24px_rgba(0,0,0,0.18)]">
-        <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+        <div className="flex items-center gap-2 px-3 py-2">
           <Tooltip>
             <TooltipTrigger asChild>
               <CollapsibleTrigger asChild>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  className="min-w-0 flex-1 shrink justify-start text-sm"
+                <button
+                  type="button"
+                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-sm text-left text-sm font-medium outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                   aria-label={`${annotationCountLabel}: ${toggleLabel}`}
                 >
-                  <ToggleChevron className="size-4" />
+                  <ToggleChevron className="size-4 shrink-0 text-muted-foreground" />
                   <span className="truncate">{annotationCountLabel}</span>
-                </Button>
+                </button>
               </CollapsibleTrigger>
             </TooltipTrigger>
             <TooltipContent side="top" sideOffset={6}>
@@ -222,8 +221,8 @@ export function BrowserPageAnnotationTray({
             </TooltipContent>
           </Tooltip>
         </div>
-        <CollapsibleContent forceMount hidden={!expanded} asChild>
-          <div className="scrollbar-sleek min-h-0 flex-1 overflow-auto p-1.5">
+        <CollapsibleContent asChild forceMount>
+          <div className="scrollbar-sleek min-h-0 flex-1 overflow-auto border-t border-border p-1.5 data-[state=closed]:hidden">
             {browserAnnotations.map((annotation, index) => {
               const isEditing = annotation.id === editingAnnotationId
               return (

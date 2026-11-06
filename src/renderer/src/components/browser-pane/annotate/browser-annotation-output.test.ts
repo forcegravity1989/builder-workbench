@@ -78,6 +78,22 @@ function makeAnnotation(overrides?: Partial<BrowserPageAnnotation>): BrowserPage
 }
 
 describe('formatBrowserAnnotationsAsMarkdown', () => {
+  it('keeps page identities when formatting feedback from multiple pages', () => {
+    const first = makeAnnotation()
+    const second = makeAnnotation({
+      id: 'annotation-2',
+      payload: {
+        ...first.payload,
+        page: { ...first.payload.page, sanitizedUrl: 'https://example.com/settings' }
+      }
+    })
+    const markdown = formatBrowserAnnotationsAsMarkdown([first, second])
+    expect(markdown).toContain('## Design Feedback across pages')
+    expect(markdown).toContain('## Design Feedback: /pricing')
+    expect(markdown).toContain('## Design Feedback: /settings')
+    expect(markdown).toContain('`https://example.com/settings`')
+  })
+
   it('sends compact feedback by default and image paths in both modes', () => {
     const annotation = makeAnnotation({ imagePaths: ['C:\\Temp\\shot.png', '/tmp/shot.png'] })
     const compact = formatBrowserAnnotationsAsMarkdown([annotation])

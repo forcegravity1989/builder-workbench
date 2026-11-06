@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { getConnectionId } from '@/lib/connection-context'
@@ -6,7 +6,11 @@ import { useMountedRef } from '@/hooks/useMountedRef'
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import { formatClipboardImagePasteError } from '@/components/terminal-pane/terminal-pane-paste-execution'
 import { getRuntimeEnvironmentIdForWorktree } from '@/lib/worktree-runtime-owner'
+import { clipboardEventImageFile } from '@/components/native-chat/native-chat-clipboard-image'
+import { useNativeChatComposerAttachmentPreviews } from '@/components/native-chat/use-native-chat-composer-attachment-previews'
 import type { NativeChatComposerImageAttachment } from '@/components/native-chat/NativeChatComposerField'
+
+const NO_PENDING: readonly NativeChatComposerImageAttachment[] = []
 
 /** Save where a terminal paste in this worktree would, so the agent can open the path. */
 function saveAnnotationClipboardImage(worktreeId: string): Promise<string | null> {
@@ -26,25 +30,8 @@ export function useBrowserAnnotationImages(worktreeId: string): {
 } {
   const mountedRef = useMountedRef()
   const [images, setImages] = useState<NativeChatComposerImageAttachment[]>([])
-  const previews = useRef(new Map<string, string>())
-  useEffect(() => {
-    const live = new Set(images.map((image) => image.id))
-    for (const [id, url] of previews.current) {
-      if (!live.has(id)) {
-        URL.revokeObjectURL(url)
-        previews.current.delete(id)
-      }
-    }
-  }, [images])
-  useEffect(
-    () => () => {
-      for (const url of previews.current.values()) {
-        URL.revokeObjectURL(url)
-      }
-      previews.current.clear()
-    },
-    []
-  )
+  // Releases each clipboard preview once its image leaves the list or the field unmounts.
+  const { previews, setPreview } = useNativeChatComposerAttachmentPreviews(images, NO_PENDING)
 
   const removeImage = useCallback((id: string): void => {
     setImages((current) => current.filter((image) => image.id !== id))
@@ -53,18 +40,14 @@ export function useBrowserAnnotationImages(worktreeId: string): {
   const handlePaste = useCallback(
     (event: React.ClipboardEvent): void => {
       // Text wins, as in a terminal: rich copies often carry an image rendition of their text.
-      const file = event.clipboardData.getData('text/plain')
-        ? null
-        : Array.from(event.clipboardData.items)
-            .find((item) => item.type.startsWith('image/'))
-            ?.getAsFile()
+      const file = event.clipboardData.getData('text/plain') ? null : clipboardEventImageFile(event)
       if (!file) {
         return
       }
       event.preventDefault()
       const id = createBrowserUuid()
       setImages((current) => [...current, { id, path: '', pending: true }])
-      previews.current.set(id, URL.createObjectURL(file))
+      setPreview(id, URL.createObjectURL(file))
       const settle = (path: string | null): void => {
         if (!mountedRef.current) {
           return
@@ -82,7 +65,7 @@ export function useBrowserAnnotationImages(worktreeId: string): {
         toast.error(formatClipboardImagePasteError(error))
       })
     },
-    [mountedRef, removeImage, worktreeId]
+    [mountedRef, removeImage, setPreview, worktreeId]
   )
 
   const resetImages = useCallback((paths: readonly string[] = []): void => {
@@ -91,9 +74,7 @@ export function useBrowserAnnotationImages(worktreeId: string): {
 
   return {
     images: images.map((image) =>
-      previews.current.has(image.id)
-        ? { ...image, previewUrl: previews.current.get(image.id) }
-        : image
+      previews.has(image.id) ? { ...image, previewUrl: previews.get(image.id) } : image
     ),
     imagePaths: images.flatMap((image) => (image.pending ? [] : [image.path])),
     saving: images.some((image) => image.pending),

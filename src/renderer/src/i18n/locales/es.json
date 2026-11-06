@@ -13354,8 +13354,9 @@
               "page": {
                 "annotation": {
                   "tray": {
-                    "collapse": "Contraer anotaciones",
-                    "expand": "Expandir anotaciones"
+                    "38d320108c": "Contraer anotaciones",
+                    "9f209891a7": "Expandir anotaciones",
+                    "includePageDetails": "Incluir detalles de la página"
                   }
                 }
               }
@@ -14577,6 +14578,5 @@
   },
   "brand": {
     "workbench": "Workbench"
-  },
-  "auto.components.browser.pane.annotate.browser.page.annotation.tray.includePageDetails": "Incluir detalles de la página"
+  }
 }

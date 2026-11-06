@@ -41,6 +41,8 @@ jobs:
           src/renderer/src/components/browser-pane/describe-page/browser-annotation-geometry.test.ts
           src/renderer/src/store/slices/browser.test.ts
           src/renderer/src/lib/app-menu-paste.test.ts
+          src/renderer/src/components/native-chat/use-native-chat-composer-paste.test.tsx
+          src/renderer/src/components/native-chat/use-native-chat-composer-attachments.test.tsx
           src/main/browser/browser-manager-annotation-bridge.test.ts
 
   verify:

@@ -73,7 +73,11 @@ git merge orca-upstream/main
 - [#35990 / `c3518250`](https://github.com/stablyai/orca/commit/c3518250c5a452603d3e373f58fdcedb568950c8)：默认发送和复制精简反馈，发送菜单可选页面详情；勾选同时更新已打开的智能体选择器提示。
 - [#34267 / `62d9eb63`](https://github.com/stablyai/orca/commit/62d9eb635bfc6a92c155d8a738b7da73e372b3d9)：移植 fragment-only 更新不清除批注的判据，文档加载清理移至主框非 in-place 导航。未带入上游跨文档保留意见与标记几何分离机制，真正导航及重载仍按本基线清除批注。hash 路由应用仍无法仅靠 fragment 判断是否换页。
 
-位置错位与 URL 锚点更新是不同问题。稳定版的已提交标记仍按捕获的页面坐标减 window 滚动量计算；BW 通过现有桥补充 selector，唯一匹配后缓存元素引用，滚动时读取实时边界；失联、歧义或锚点被滚动容器裁剪时隐藏标记。该补充针对内层滚动，不是 #34267 的覆盖。#509 原反馈没有页面样例，现场原因须按普通滚动、内层滚动和滚动改 hash 分别复验。
+继承以可闭合的模块为界：`browser-annotation-output.ts`、图片条和 `useNativeChatComposerAttachmentPreviews` 整模块沿用固定版本源码；`useBrowserAnnotationImages` 仅将 runtime resolver 接回本基线终端的 owner，并共用从既有原生 composer 提取的图片剪贴板判据。没有带入新版剪贴板 payload 模块中本基线缺少的复制文件 API。原 BW 折叠状态、外部 visibility flag、折叠翻译键及自写预览 URL 管理均已退役；折叠沿原生 Collapsible 和翻译键，保留数量及动作的可访问名称。
+
+发送 owner 保留本基线 `ReviewNotesSendMenuContent`、QuickLaunch 与侧栏 target mode，以同一 Markdown 交付图片路径和反馈。不单搬上游 async handoff、投递中去重或投递后删除 hook；这些依赖整条共用发送契约，会影响计划与验收的调用方，不是本次格式化和贴图的前置。未提交卡片的实时元素身份与定位机制亦未迁入，不把此定向同步说成整个批注子系统已升级。
+
+位置错位与 URL 锚点更新是不同问题。稳定版的已提交标记仍按捕获的页面坐标减 window 滚动量计算；BW 通过现有桥补充有界 selector，唯一匹配后缓存元素引用，滚动时读取实时边界。失联或歧义时隐藏，完全裁剪与 fixed 包含块关系交给浏览器 IntersectionObserver 判定，不手工模拟 CSS 裁剪规则；部分可见时仍按元素边界定位。原生展示型截断 selector 不作为元素身份传入桥，保留原坐标回退，避免一条长 selector 拒绝整组更新。该补充针对内层滚动，不是 #34267 的覆盖。#509 原反馈没有页面样例，现场原因须按普通滚动、内层滚动和滚动改 hash 分别复验。
 
 这里只涉及本机单人批注。双桌面实时互见与共同写入由 #576 跟踪，完整评审及会后改稿旅程归 #447。行为等价与 Windows 真壳验证范围以关联 PR 的证据为准。
 

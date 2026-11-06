@@ -2,6 +2,7 @@ import type {
   BrowserGrabPayload,
   BrowserPageAnnotation
 } from '../../../../../shared/browser-grab-types'
+import { browserAnnotationMarkerSelector } from '../../../../../shared/browser-annotation-viewport-bridge'
 
 /**
  * Push the current annotation set into the guest, where badges render in-page so they track scroll
@@ -25,7 +26,7 @@ export function syncGuestAnnotationViewportBridge({
   const markers = annotations.map((annotation, index) => ({
     id: annotation.id,
     index,
-    selector: annotation.payload.target.selector,
+    selector: browserAnnotationMarkerSelector(annotation.payload.target.selector),
     isFixed: annotation.payload.target.isFixed === true,
     rectPage: annotation.payload.target.rectPage,
     rectViewport: annotation.payload.target.rectViewport

@@ -13354,8 +13354,9 @@
               "page": {
                 "annotation": {
                   "tray": {
-                    "collapse": "注釈を折りたたむ",
-                    "expand": "注釈を展開"
+                    "38d320108c": "注釈を折りたたむ",
+                    "9f209891a7": "注釈を展開",
+                    "includePageDetails": "ページの詳細を含める"
                   }
                 }
               }
@@ -14612,6 +14613,5 @@
   },
   "brand": {
     "workbench": "Workbench"
-  },
-  "auto.components.browser.pane.annotate.browser.page.annotation.tray.includePageDetails": "ページの詳細を含める"
+  }
 }

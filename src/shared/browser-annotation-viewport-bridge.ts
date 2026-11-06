@@ -27,6 +27,15 @@ export type BrowserAnnotationViewportBridgeOptions = {
 export const BROWSER_ANNOTATION_VIEWPORT_BRIDGE_WORLD_ID = 1207
 export const BROWSER_ANNOTATION_VIEWPORT_MESSAGE_PREFIX = '__orca_annotation_viewport__:'
 
+export function browserAnnotationMarkerSelector(selector: string): string | undefined {
+  // Grab payloads may contain a display-only truncation suffix, never a DOM identity.
+  return selector.length > 0 &&
+    selector.length <= GRAB_BUDGET.selectorMaxLength &&
+    !selector.endsWith(' (truncated)')
+    ? selector
+    : undefined
+}
+
 export function isValidBrowserAnnotationViewportBridgeToken(value: unknown): value is string {
   return typeof value === 'string' && /^[a-zA-Z0-9_-]{16,80}$/.test(value)
 }
@@ -107,6 +116,7 @@ export function buildBrowserAnnotationViewportBridgeScript({
 
   const cleanup = (state) => {
     if (!state) return;
+    state.visibilityObserver?.disconnect();
     if (state.raf) {
       cancelAnimationFrame(state.raf);
     }
@@ -169,11 +179,23 @@ export function buildBrowserAnnotationViewportBridgeScript({
       state.shadowRoot = null;
       state.markerElements = new Map();
       state.markerTargets = new Map();
+      state.visibilityObserver?.disconnect();
+      state.observedTargets = new Set();
       return;
     }
     const shadowRoot = ensureOverlay(state);
     if (!shadowRoot) return;
     const liveIds = new Set();
+    const liveTargets = new Set();
+    if (!state.observedTargets) state.observedTargets = new Set();
+    if (!state.targetVisibility) state.targetVisibility = new WeakMap();
+    if (!state.visibilityObserver && typeof IntersectionObserver === 'function') {
+      // Let Chromium resolve clipping and fixed containing blocks instead of duplicating CSS rules.
+      state.visibilityObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => state.targetVisibility.set(entry.target, entry.isIntersecting));
+        state.requestUpdate?.();
+      });
+    }
     state.markers.forEach((marker) => {
       liveIds.add(marker.id);
       if (!state.markerTargets) state.markerTargets = new Map();
@@ -185,6 +207,8 @@ export function buildBrowserAnnotationViewportBridgeScript({
         } catch (e) {}
         state.markerTargets.set(marker.id, target);
       }
+      const target = state.markerTargets.get(marker.id);
+      if (target) liveTargets.add(target);
       let element = state.markerElements.get(marker.id);
       if (!element) {
         element = document.createElement('span');
@@ -199,6 +223,18 @@ export function buildBrowserAnnotationViewportBridgeScript({
         element.remove();
         state.markerElements.delete(id);
         state.markerTargets?.delete(id);
+      }
+    });
+    state.observedTargets.forEach((target) => {
+      if (!liveTargets.has(target)) {
+        state.visibilityObserver?.unobserve(target);
+        state.observedTargets.delete(target);
+      }
+    });
+    liveTargets.forEach((target) => {
+      if (!state.observedTargets.has(target)) {
+        state.visibilityObserver?.observe(target);
+        state.observedTargets.add(target);
       }
     });
   };
@@ -221,19 +257,7 @@ export function buildBrowserAnnotationViewportBridgeScript({
       const y = target || marker.isFixed ? sourceRect.y : sourceRect.y - viewport.scrollY;
       const width = toNumber(sourceRect.width, 0);
       const height = toNumber(sourceRect.height, 0);
-      const anchorX = x + width / 2;
-      const anchorY = y + height;
-      let clipped = false;
-      for (let parent = target?.parentElement; parent; parent = parent.parentElement) {
-        const style = getComputedStyle(parent);
-        const bounds = parent.getBoundingClientRect();
-        if ((/(auto|scroll|hidden|clip)/.test(style.overflowX) && (anchorX < bounds.left || anchorX > bounds.right)) ||
-            (/(auto|scroll|hidden|clip)/.test(style.overflowY) && (anchorY < bounds.top || anchorY > bounds.bottom))) {
-          clipped = true;
-          break;
-        }
-      }
-      const visible = !clipped &&
+      const visible = (!target || state.targetVisibility.get(target) !== false) &&
         x + width >= 0 &&
         y + height >= 0 &&
         x <= viewportWidth &&

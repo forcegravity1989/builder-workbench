@@ -15367,8 +15367,9 @@
                     "c16f932cb3": "Save",
                     "024467ceac": "Cancel",
                     "449d2c2629": "Annotation intent",
-                    "collapse": "Collapse annotations",
-                    "expand": "Expand annotations"
+                    "38d320108c": "Collapse annotations",
+                    "9f209891a7": "Expand annotations",
+                    "includePageDetails": "Include page details"
                   }
                 }
               }
@@ -17640,6 +17641,5 @@
   },
   "brand": {
     "workbench": "Workbench"
-  },
-  "auto.components.browser.pane.annotate.browser.page.annotation.tray.includePageDetails": "Include page details"
+  }
 }

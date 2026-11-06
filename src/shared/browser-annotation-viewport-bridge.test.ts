@@ -2,18 +2,21 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   buildBrowserAnnotationViewportBridgeScript,
+  browserAnnotationMarkerSelector,
   isValidBrowserAnnotationViewportBridgeMarkers
 } from './browser-annotation-viewport-bridge'
 
 type BridgeState = {
   requestUpdate: EventListener
   markerElements: Map<string, HTMLElement>
+  visibilityObserver?: IntersectionObserver
 }
 type BridgeGlobal = { __orcaBrowserAnnotationViewportBridge?: BridgeState }
 
 afterEach(() => {
   const state = (globalThis as BridgeGlobal).__orcaBrowserAnnotationViewportBridge
   if (state?.requestUpdate) {
+    state.visibilityObserver?.disconnect()
     window.removeEventListener('scroll', state.requestUpdate, true)
     document.removeEventListener('scroll', state.requestUpdate, true)
     window.removeEventListener('resize', state.requestUpdate, true)
@@ -27,6 +30,22 @@ afterEach(() => {
 describe('annotation guest marker protocol', () => {
   it('tracks live bounds on inner scroll and hides clipped or detached targets', () => {
     let frame: FrameRequestCallback | undefined
+    let reportVisibility: (target: Element, visible: boolean) => void = () => {}
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(callback: IntersectionObserverCallback) {
+          reportVisibility = (target, isIntersecting) =>
+            callback(
+              [{ target, isIntersecting } as IntersectionObserverEntry],
+              this as unknown as IntersectionObserver
+            )
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      }
+    )
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       frame = callback
       return 1
@@ -83,7 +102,13 @@ describe('annotation guest marker protocol', () => {
     flush()
     expect(badge.style.transform).toContain('38px')
     y = 190
+    // Native visibility may keep fixed descendants visible outside overflow ancestors.
+    target.style.position = 'fixed'
+    reportVisibility(target, true)
     scroller.dispatchEvent(new Event('scroll'))
+    flush()
+    expect(badge.style.display).toBe('flex')
+    reportVisibility(target, false)
     flush()
     expect(badge.style.display).toBe('none')
     target.remove()
@@ -106,5 +131,15 @@ describe('annotation guest marker protocol', () => {
         }
       ])
     ).toBe(false)
+    const nativeTruncatedSelector = `${'x'.repeat(700)} (truncated)`
+    const marker = { id: 'note', index: 0, isFixed: false, rectPage: rect, rectViewport: rect }
+    // An unusable display selector must not reject this note or the rest of the batch.
+    expect(
+      isValidBrowserAnnotationViewportBridgeMarkers([
+        { ...marker, selector: browserAnnotationMarkerSelector(nativeTruncatedSelector) },
+        { ...marker, id: 'other', selector: browserAnnotationMarkerSelector('#valid') }
+      ])
+    ).toBe(true)
+    expect(browserAnnotationMarkerSelector(nativeTruncatedSelector)).toBeUndefined()
   })
 })
