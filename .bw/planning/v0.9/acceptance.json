@@ -1,0 +1,531 @@
+{
+  "schema_version": 3,
+  "version": "v0.9",
+  "cycleId": "e325805e-3213-4661-868f-24d63a96cbd8",
+  "planRef": {
+    "kind": "committed",
+    "version": "v0.9",
+    "cycleId": "e325805e-3213-4661-868f-24d63a96cbd8",
+    "revision": "sha256:46053bd97d2d429a59da7bc9aa8097664e82cbe295f76cdae9c50fb44139c95e",
+    "sourceCommit": "32887b5e9e847fa8dcbb8d112a2ae34d071ceddc"
+  },
+  "preparedArtifacts": [],
+  "taskSnapshot": [
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 551,
+        "goalId": "G1"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 551,
+      "title": "【v0.9|G1】【项目总览】项目总览里程碑：拖动 Maintain 会平移整个版本，且无法按特性改版本归属",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/551",
+      "labels": [
+        "bug",
+        "bw:plan:v0.9"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-11-06T11:13:55.472Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 535,
+        "goalId": "G1"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 535,
+      "title": "【v0.9|G1】【项目总览】项目总览里程碑变更走 PR 提交，并评估比 welink 群空间内外更通的共享空间",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/535",
+      "labels": [
+        "enhancement",
+        "bw:plan:v0.9"
+      ],
+      "readAt": "2026-11-06T11:13:55.463Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 530,
+        "goalId": "G1"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 530,
+      "title": "【v0.9|G1】【项目总览】项目总览与版本总览遗留收口：CodeHub、华为工作日历与两屏联动",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/530",
+      "labels": [
+        "bw:plan:v0.8",
+        "bw:plan:v0.9"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-11-06T11:13:55.451Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 558,
+        "goalId": "G2"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 558,
+      "title": "【v0.9|G2】【版本总览】SDLC 实际过程统计默认关闭，支持按项目开启",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/558",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.9"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-11-06T11:13:55.484Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 568,
+        "goalId": "G3"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 568,
+      "title": "【v0.9|G3】【消息通知】以 PR 评审旅程落地消息通知基础能力",
+      "state": "open",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/568",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.9"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-11-06T11:13:56.521Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 450,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 450,
+      "title": "【v0.9|G4】【版本计划】计划屏上版验收来源按固定四元组读取：本地主分支落后时报「读取失败，结果未知」且错误原因被吞，会话抄写四元组存在时序悖论",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/450",
+      "labels": [
+        "bw:plan:v0.9"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-11-06T11:13:56.577Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 556,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 556,
+      "title": "【v0.9|G4】【任务管理】每特性单量统计口径与读回",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/556",
+      "labels": [
+        "Feature",
+        "bw:plan:v0.9"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-11-06T11:13:56.553Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 540,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 540,
+      "title": "【v0.9|G4】【任务管理】任务屏负责人下拉框选完负责人后不自动关闭",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/540",
+      "labels": [
+        "bug",
+        "bw:plan:v0.9"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-11-06T11:13:56.539Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 544,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 544,
+      "title": "【v0.9|G4】【项目总览】总览项目名片默认折叠，移除北极星卡片",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/544",
+      "labels": [
+        "bw:plan:v0.9"
+      ],
+      "assignee": "cfdcfd",
+      "readAt": "2026-11-06T11:13:57.722Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 443,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 443,
+      "title": "【v0.9|G4】【版本计划】计划屏/验收屏直接向用户展示助手注入提示词，应收敛为一句话 SOP 且两屏一致，支持开始即补充信息输入",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/443",
+      "labels": [
+        "bug",
+        "bw:plan:v0.8",
+        "bw:plan:v0.9"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-11-06T11:13:57.627Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 548,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 548,
+      "title": "【v0.9|G4】【版本计划】点「开始计划」报『此自动化的工作区已改变』：creationKey 认领不校验工作区，失配死条目无修复路径",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/548",
+      "labels": [
+        "bw:plan:v0.9"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-11-06T11:13:57.644Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 546,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 546,
+      "title": "【v0.9|G4】【版本会话管理】统一固定工作区复用，修复远端分支未检出时误建后缀树",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/546",
+      "labels": [
+        "bug",
+        "bw:plan:v0.9"
+      ],
+      "assignee": "yuzhup",
+      "readAt": "2026-11-06T11:13:57.637Z"
+    },
+    {
+      "kind": "ready",
+      "reference": {
+        "provider": "github",
+        "repository": "github.com/forcegravity1989/builder-workbench",
+        "number": 516,
+        "goalId": "G4"
+      },
+      "source": {
+        "kind": "task-source",
+        "provider": "github",
+        "projectId": "github:forcegravity1989/builder-workbench",
+        "hostId": "local",
+        "projectHostSetupId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "repoId": "10ef1187-cdc9-4c74-a05b-35f18006b33b",
+        "providerIdentity": {
+          "provider": "github",
+          "owner": "forcegravity1989",
+          "repo": "builder-workbench"
+        },
+        "accountLabel": null
+      },
+      "iid": 516,
+      "title": "【v0.9|G4】【版本验收】验收屏使用bug",
+      "state": "closed",
+      "url": "https://github.com/forcegravity1989/builder-workbench/issues/516",
+      "labels": [
+        "bw:plan:v0.8",
+        "bw:plan:v0.9"
+      ],
+      "assignee": "kanadead",
+      "readAt": "2026-11-06T11:13:58.687Z"
+    }
+  ],
+  "results": [
+    {
+      "goalId": "G1",
+      "readings": [],
+      "decision": {
+        "outcome": "met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-11-06T11:05:52.329Z",
+        "materialRevision": "sha256:fea1c5f93b1570f7e175ef2ca6f0e4d27d26eab9caadf55e37c933c915c10d74",
+        "reason": ""
+      },
+      "note": "",
+      "nextStep": "",
+      "issueNotes": {
+        "github:github.com/forcegravity1989/builder-workbench:535": "暂无很好方案，先遗留。要么内部不能访问外部，要么外部不能访问内部"
+      },
+      "issueMarks": {
+        "github:github.com/forcegravity1989/builder-workbench:535": {
+          "carry": true
+        }
+      }
+    },
+    {
+      "goalId": "G2",
+      "readings": [],
+      "decision": {
+        "outcome": "met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-11-06T11:05:51.400Z",
+        "materialRevision": "sha256:c75bd54e27f764c480aa6d2d504a8513c8f23ee73c9929feda488134fa8fb199",
+        "reason": ""
+      },
+      "note": "",
+      "nextStep": ""
+    },
+    {
+      "goalId": "G3",
+      "readings": [],
+      "decision": {
+        "outcome": "not-met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-11-06T11:05:48.457Z",
+        "materialRevision": "sha256:4a9d37bc2095dd0cb0a4a981de47515bbf078ed201cfe6dc77900087b3aa2281",
+        "reason": ""
+      },
+      "note": "",
+      "nextStep": "",
+      "issueMarks": {
+        "github:github.com/forcegravity1989/builder-workbench:568": {
+          "carry": true
+        }
+      }
+    },
+    {
+      "goalId": "G4",
+      "readings": [],
+      "decision": {
+        "outcome": "met",
+        "source": "验收界面人工确认",
+        "recordedAt": "2026-11-06T11:05:44.768Z",
+        "materialRevision": "sha256:d5b7c26fd71d4a70af5d914e6a78584b8736ee755e6b09acfba395c2173ed413",
+        "reason": ""
+      },
+      "note": "",
+      "nextStep": ""
+    }
+  ],
+  "minutes": {
+    "consensus": [
+      "G3 · 1. 左边栏做成两列，第二列共用一份滚动条 2. 恢复版本中固定的能力",
+      "G4 · 该目标下issue处理完成"
+    ],
+    "followups": [
+      {
+        "id": "11384848-5393-4254-8f19-12a431478db5",
+        "text": "G3 · 原型设计修改后再评审"
+      }
+    ],
+    "confirmed": false,
+    "updatedAt": "2026-11-06T11:28:15.268Z"
+  },
+  "workflow": {
+    "stage": "archive",
+    "updatedAt": "2026-11-06T11:36:25.935Z",
+    "archivePr": {
+      "provider": "github",
+      "repository": "github.com/forcegravity1989/builder-workbench",
+      "number": 591
+    }
+  }
+}
