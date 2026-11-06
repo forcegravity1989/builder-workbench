@@ -34,9 +34,8 @@ const {
   ClipboardList,
   RefreshCw
 } = window.BWPrototypeDependencies
-// v0.8 仅用于 #475 评审：演示「目标目录内置顶」与「隐藏/归档（类 Codex archive）」，
-// 两级都只是显示层排序/收拢，不复制工作树；新 Orca（v1.4.245–250）无原生 Archive UI，见 spec 待评审点。
-const v08Plan = { goals: [{ goalId: 'G1', title: '置顶与隐藏/归档' }], tasks: [], summary: {} }
+// v0.8 仅用于 #475 评审：演示版本块与原生「已固定」栏目的汇入关系。
+const v08Plan = { goals: [{ goalId: 'G1', title: '双列侧栏评审' }], tasks: [], summary: {} }
 const plans = { 'v0.7': snapshot, 'v0.6': snapshotV06, 'v0.8': v08Plan }
 const emptyPlan = { goals: [], tasks: [], summary: {} }
 const labels = {
@@ -84,17 +83,29 @@ const initialVersions = () => ({
       { id: 'plan', role: 'plan' },
       { id: 'acceptance', role: 'acceptance' },
       { id: 'goal-G1', role: 'goal', goal: 'G1' },
-      { id: 'issue-501', role: 'issue', goal: 'G1', issue: 501, parent: 'goal-G1', linkedTitle: '评审：#475 双列侧栏' },
-      { id: 'issue-520', role: 'issue', goal: 'G1', issue: 520, parent: 'goal-G1', linkedTitle: '目标目录内置顶演示' },
-      { id: 'issue-544', role: 'issue', goal: 'G1', issue: 544, parent: 'goal-G1', linkedTitle: '隐藏/归档演示' }
+      {
+        id: 'issue-501',
+        role: 'issue',
+        goal: 'G1',
+        issue: 501,
+        parent: 'goal-G1',
+        linkedTitle: '评审：#475 双列侧栏'
+      },
+      {
+        id: 'issue-520',
+        role: 'issue',
+        goal: 'G1',
+        issue: 520,
+        parent: 'goal-G1',
+        linkedTitle: '已固定栏目回显演示'
+      }
     ],
     sessions: [
       { id: 'p08', tree: 'plan', label: '计划讨论' },
       { id: 'a08', tree: 'acceptance', label: '验收讨论' },
       { id: 'g08', tree: 'goal-G1', label: 'G1 · 目标协作' },
       { id: 'i501', tree: 'issue-501', label: '#501 · 双列侧栏评审' },
-      { id: 'i520', tree: 'issue-520', label: '#520 · 目录置顶' },
-      { id: 'i544', tree: 'issue-544', label: '#544 · 归档' }
+      { id: 'i520', tree: 'issue-520', label: '#520 · 已固定回显' }
     ]
   }
 })
@@ -173,11 +184,17 @@ function NativeToolIcon({ kind, size = 16, strokeWidth = 1.7, ...props }) {
       'M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24',
       'M1 1l22 22'
     ],
-    restore: [
-      'M9 14 4 9l5-5',
-      'M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5 5.5 5.5 0 0 1-5.5 5.5H11'
-    ],
+    restore: ['M9 14 4 9l5-5', 'M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5 5.5 5.5 0 0 1-5.5 5.5H11'],
     wall: ['M3 3h7v7H3z', 'M14 3h7v7h-7z', 'M14 14h7v7h-7z', 'M3 14h7v7H3z'],
+    crosshair: [
+      'M22 12h-4',
+      'M6 12H2',
+      'M12 6V2',
+      'M12 22v-4',
+      'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z',
+      'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'
+    ],
+    kanban: ['M6 5v11', 'M12 5v6', 'M18 5v14'],
     settings: [
       'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z',
       'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'
@@ -288,23 +305,21 @@ function ReuseSurface({ title, scope, description, children }) {
   )
 }
 function App() {
-  // #475 双列侧栏评审：同一份 JSX 由 475 入口页打开，按 A/B/C/D 方案渲染。
+  // #475 双列侧栏评审：同一份 JSX 由 475 入口页打开，按 A 定稿（与生产实现一致）渲染。
   const is475 = !!window.__BW_PROTO_LAYOUT_475
   const [version, setVersion] = useState('v0.7'),
     // 475 页默认落在对象上下文（版本工作区），其余模块入口是整页、没有第二列。
     [screen, setScreen] = useState(is475 ? 'overview' : 'project')
-  const [variant475, setVariant475] = useState('a')
-  const [panel475, setPanel475] = useState('versions')
   const [versionOrder, setVersionOrder] = useState(['v0.7', 'v0.6', 'v0.8'])
   const [selectedTreeId, setSelectedTreeId] = useState(null)
   const [selectedSessionId, setSelectedSessionId] = useState(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [openVersions, setOpenVersions] = useState(['v0.7', 'v0.8']),
     [openGoals, setOpenGoals] = useState(['v0.7/G2', 'v0.8/G1'])
-  const [closedTrees, setClosedTrees] = useState(['v0.8/G1/hidden']),
+  const [closedTrees, setClosedTrees] = useState([]),
     [goalFilters, setGoalFilters] = useState({})
-  // #475 评审：隐藏/归档（类似 Codex archive，收拢到底部可还原）。
-  const [hiddenTrees, setHiddenTrees] = useState(() => new Set(['v0.8/issue-544']))
+  // 已固定栏目沿用原生分组的收起记忆（生产用 collapsedGroups 的 pinned 分组）。
+  const [pinnedCollapsed475, setPinnedCollapsed475] = useState(false)
   const [modal, setModal] = useState(null),
     [versionName, setVersionName] = useState(''),
     [versionError, setVersionError] = useState('')
@@ -315,11 +330,14 @@ function App() {
   const [taskEntry, setTaskEntry] = useState(0)
   const [nativeProjectOpen, setNativeProjectOpen] = useState(false)
   // Orca 原生固定（isPinned）：固定树在面板顶部「已固定」栏目多显示一份，原件留在原目标/工作区
-  // （BW 缺省开启 showPinnedWorktreesInGroups）。该栏目原常驻 Orca 项目工作区之下，A 定稿上移；
-  // 版本块内的树同样可固定，进入同一栏目，不再另造目标目录内置顶。
-  const [pinnedTrees, setPinnedTrees] = useState(
-    () => new Set(['v0.7/issue-383', 'remote/v0.7/plan', 'local/feature/notes', 'v0.8/issue-520'])
-  )
+  // （BW 缺省开启 showPinnedWorktreesInGroups）。该栏目原常驻 Orca 项目工作区之下，A 定稿上移。
+  // 固定/取消固定走原生右键菜单；本原型不另造目标目录内置顶与行内固定按钮。
+  const pinnedTrees = new Set([
+    'v0.7/issue-383',
+    'remote/v0.7/plan',
+    'local/feature/notes',
+    'v0.8/issue-520'
+  ])
   const versionRefs = useRef({})
   const bindingDemo = useBindingDemo({
     versionOrder,
@@ -359,15 +377,6 @@ function App() {
   }, [toast])
   function toggle(list, value, setter) {
     setter(list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
-  }
-  function toggleSet(set, value) {
-    const next = new Set(set)
-    if (next.has(value)) {
-      next.delete(value)
-    } else {
-      next.add(value)
-    }
-    return next
   }
   function go(v, next, goal) {
     setVersion(v)
@@ -587,12 +596,11 @@ function App() {
       (tree) => tree.role === 'issue' && tree.issue === reference.number
     )
   }
-  function nativeTree(v, tree, pool = bindingDemo.boundTrees(v), tools) {
+  function nativeTree(v, tree, pool = bindingDemo.boundTrees(v)) {
     const key = tree.id,
       expanded = !closedTrees.includes(key)
     const children = pool.filter((item) => item.parent === tree.id)
-    const sessions = tree.sessions,
-      pinned = tools?.isPinned?.(tree)
+    const sessions = tree.sessions
     return (
       <div className="native-worktree-card" data-branch={tree.branch} key={tree.id}>
         <div className="native-tree-row" {...bindingDemo.contextMenuProps(tree)}>
@@ -606,21 +614,11 @@ function App() {
           </button>
           <button
             className="native-worktree-heading"
-            title={`${treeTitle(tree)}\n分支：${tree.branch} · 右键管理版本绑定${pinned ? ' · 已固定' : ''}`}
+            title={`${treeTitle(tree)}\n分支：${tree.branch} · 右键管理版本绑定`}
             onClick={() => activateTree(tree.version, tree)}
           >
             <Icon icon={GitBranch} />
             <span>{treeTitle(tree)}</span>
-            {pinned && (
-              <span
-                className="goal-pinned-badge"
-                role="img"
-                aria-label="已固定"
-                title="已固定：顶部「已固定」栏目同样显示；原件仍在本目标内"
-              >
-                <NativeToolIcon kind="pin" size={10} />
-              </span>
-            )}
             {tree.owner === 'remote' && remoteDisconnected && (
               <span
                 className="disconnected-mark"
@@ -635,48 +633,6 @@ function App() {
               </span>
             )}
           </button>
-          {tools && (
-            <div className="goal-tree-tools">
-              {tools.onRestore ? (
-                <button
-                  className={`icon-action goal-tool-btn${is475 ? '' : ''}`}
-                  aria-label={`还原 ${treeTitle(tree)} 到目标目录`}
-                  title="还原：取消隐藏，回到目标目录内"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    tools.onRestore(tree)
-                  }}
-                >
-                  <NativeToolIcon kind="restore" size={13} />
-                </button>
-              ) : (
-                <>
-                  <button
-                    className={`icon-action goal-tool-btn${pinned ? ' goal-pin-active' : ''}`}
-                    aria-label={pinned ? `取消固定 ${treeTitle(tree)}` : `固定 ${treeTitle(tree)}`}
-                    title={pinned ? '取消固定' : '固定：Orca 原生固定，顶部「已固定」栏目多显示一份，原件不动'}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      tools.onTogglePin(tree)
-                    }}
-                  >
-                    <NativeToolIcon kind="pin" size={13} />
-                  </button>
-                  <button
-                    className="icon-action goal-tool-btn"
-                    aria-label={`隐藏 ${treeTitle(tree)}（归档）`}
-                    title="隐藏/归档：收拢到本目标底部「已隐藏」，可还原"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      tools.onHide(tree)
-                    }}
-                  >
-                    <NativeToolIcon kind="eyeoff" size={13} />
-                  </button>
-                </>
-              )}
-            </div>
-          )}
         </div>
         <div className="native-host-meta">
           <span>{tree.owner === 'remote' ? '配对机' : 'Local Windows'}</span>
@@ -703,7 +659,7 @@ function App() {
             {!sessions.length && <div className="tree-empty">暂无会话</div>}
             {children.map((child) => (
               <div className="native-child-tree" key={child.id}>
-                {nativeTree(v, child, pool, tools)}
+                {nativeTree(v, child, pool)}
               </div>
             ))}
           </div>
@@ -718,19 +674,7 @@ function App() {
       .boundTrees(v)
       .filter((tree) => ['goal', 'issue'].includes(tree.role) && tree.goal === goal.goalId)
     // 固定不改变本目录顺序，也不移走原件：固定树另在顶部「已固定」栏目多显示一份。
-    const visible = all.filter((tree) => !hiddenTrees.has(tree.id)),
-      archived = all.filter((tree) => hiddenTrees.has(tree.id))
-    const roots = visible.filter((tree) => !visible.some((parent) => parent.id === tree.parent))
-    const tools = is475
-      ? {
-          isPinned: (tree) => pinnedTrees.has(tree.id),
-          onTogglePin: (tree) => setPinnedTrees(toggleSet(pinnedTrees, tree.id)),
-          onHide: (tree) => setHiddenTrees(toggleSet(hiddenTrees, tree.id))
-        }
-      : null
-    const restoreTools = { onRestore: (tree) => setHiddenTrees(toggleSet(hiddenTrees, tree.id)) }
-    const hideKey = `${key}/hidden`,
-      hideOpen = !closedTrees.includes(hideKey)
+    const roots = all.filter((tree) => !all.some((parent) => parent.id === tree.parent))
     return (
       <div className="goal-directory" key={goal.goalId}>
         <div className="goal-directory-row">
@@ -765,28 +709,9 @@ function App() {
         {expanded && (
           <div className="goal-directory-body">
             {roots.length ? (
-              roots.map((tree) => nativeTree(v, tree, visible, tools))
+              roots.map((tree) => nativeTree(v, tree, all))
             ) : (
               <div className="tree-empty">尚无工作树</div>
-            )}
-            {archived.length > 0 && (
-              <div className="goal-hidden-section">
-                <button
-                  className="goal-hidden-toggle"
-                  aria-expanded={hideOpen}
-                  aria-label={`已隐藏 ${archived.length} 个工作树 展开或收起`}
-                  onClick={() => toggle(closedTrees, hideKey, setClosedTrees)}
-                >
-                  <Icon icon={hideOpen ? ChevronDown : ChevronRight} />
-                  <NativeToolIcon kind="eyeoff" size={12} />
-                  <span>已隐藏 {archived.length}</span>
-                </button>
-                {hideOpen && (
-                  <div className="goal-hidden-list">
-                    {archived.map((tree) => nativeTree(v, tree, visible, restoreTools))}
-                  </div>
-                )}
-              </div>
             )}
           </div>
         )}
@@ -1138,11 +1063,12 @@ function App() {
   )
   const versionsBlock475 = (
     <>
-      <div className="sidebar-divider" role="separator" />
-      <div className="section-label">
+      {/* 生产顺序：标题行（10px 大写「版本」+ 新建）在前，分隔线在后。 */}
+      <div className="versions-heading-475">
         <span>版本</span>
         <Button icon={Plus} label="新建版本" onClick={openVersionDialog} />
       </div>
+      <div className="sidebar-divider" role="separator" />
       {versionOrder.map(versionNav)}
     </>
   )
@@ -1150,76 +1076,42 @@ function App() {
   // 原常驻在 Orca 项目工作区之下，A 定稿上移到第二列最上方；栏目样式与分组语义照原生 Pinned。
   const pinnedRows475 = [...pinnedTrees]
     .map((id) => bindingDemo.trees.find((tree) => tree.id === id))
-    // 已隐藏的树不从「已固定」露出；还原后若仍固定会回到这里。
-    .filter((tree) => Boolean(tree) && !hiddenTrees.has(tree.id))
-  const pinnedSection475 = (
-    <div className="pinned-section-475">
-      <div className="section-label pinned-heading-475">
-        <NativeToolIcon kind="pin" size={11} />
-        <span>已固定</span>
-        <small>{pinnedRows475.length}</small>
-      </div>
-      {pinnedRows475.map((tree) => (
-        <div
-          key={tree.id}
-          className={`nav-row pinned-row-475${selectedTreeId === tree.id ? ' selected' : ''}`}
-          title={`${treeTitle(tree)}\n分支：${tree.branch}`}
-          onClick={() => activateTree(versionOrder.includes(tree.version) ? tree.version : null, tree)}
+    .filter(Boolean)
+  // 生产里没有固定树时整个栏目不渲染；行内也没有取消固定按钮，固定/取消固定走原生右键菜单。
+  const pinnedSection475 =
+    pinnedRows475.length === 0 ? null : (
+      <div className="pinned-section-475" data-pinned-475>
+        <button
+          type="button"
+          className="pinned-heading-475"
+          aria-expanded={!pinnedCollapsed475}
+          onClick={() => setPinnedCollapsed475(!pinnedCollapsed475)}
         >
-          <Icon icon={GitBranch} />
-          <span>{treeTitle(tree)}</span>
-          <button
-            className="icon-action pinned-unpin-475"
-            aria-label={`取消固定 ${treeTitle(tree)}`}
-            title="取消固定；原件仍在原目标或工作区中"
-            onClick={(e) => {
-              e.stopPropagation()
-              setPinnedTrees((prev) => {
-                const next = new Set(prev)
-                next.delete(tree.id)
-                return next
-              })
-            }}
-          >
-            <NativeToolIcon kind="pin" size={13} />
-          </button>
-        </div>
-      ))}
-    </div>
-  )
-  const seg475 = (
-    <div className="panel-seg-475" role="tablist" aria-label="第二列内容">
-      <button
-        role="tab"
-        aria-selected={panel475 === 'versions'}
-        className={`seg-btn-475${panel475 === 'versions' ? ' selected' : ''}`}
-        onClick={() => setPanel475('versions')}
-      >
-        <Icon icon={PackageCheck} size={13} />
-        版本
-      </button>
-      <button
-        role="tab"
-        aria-selected={panel475 === 'workspaces'}
-        className={`seg-btn-475${panel475 === 'workspaces' ? ' selected' : ''}`}
-        onClick={() => setPanel475('workspaces')}
-      >
-        <Icon icon={GitBranch} size={13} />
-        工作区
-      </button>
-    </div>
-  )
+          <NativeToolIcon kind="pin" size={12} />
+          <span>已固定</span>
+          <small>{pinnedRows475.length}</small>
+        </button>
+        {!pinnedCollapsed475 &&
+          pinnedRows475.map((tree) => (
+            <div
+              key={tree.id}
+              className={`nav-row pinned-row-475${selectedTreeId === tree.id ? ' selected' : ''}`}
+              title={`${treeTitle(tree)}\n分支：${tree.branch}`}
+              onClick={() =>
+                activateTree(versionOrder.includes(tree.version) ? tree.version : null, tree)
+              }
+            >
+              <Icon icon={GitBranch} />
+              <span>{treeTitle(tree)}</span>
+            </div>
+          ))}
+      </div>
+    )
   // 只有对象上下文（版本工作区）带第二列；模块入口是整页，第二列收起、内容区占满。
-  // D 是对照方案：Rail 只换主区，第二列始终是同一份对象面板（上一版行为）。
   const objectContext475 =
     isVersionScreen || screen === 'project-workspaces' || screen === 'private'
-  const showPanel475 = is475 && (objectContext475 || variant475 === 'd')
-  const variantText475 = {
-    a: 'A · 定稿：单滚动面板，Orca 原生「已固定」上移，版本与 Orca 工作区自上而下',
-    b: 'B · Rail 切换：版本工作区页签只列版本，Orca 工作区另有 Rail 入口',
-    c: 'C · 分段切换：面板顶部用「版本 / 工作区」切',
-    d: 'D · 独立（对照）：Rail 只换主区，第二列始终是同一份对象面板'
-  }
+  const showPanel475 = is475 && objectContext475
+  const panelText475 = '定稿：单滚动面板，Orca 原生「已固定」上移，版本与 Orca 工作区自上而下'
   function railButton475(label, icon, active, onClick) {
     return (
       <button
@@ -1229,14 +1121,11 @@ function App() {
         aria-current={active ? 'page' : undefined}
         onClick={onClick}
       >
-        <Icon icon={icon} size={19} />
+        <Icon icon={icon} size={18} />
       </button>
     )
   }
   function enterObjectContext475() {
-    if (variant475 === 'b') {
-      setPanel475('versions')
-    }
     if (objectContext475) {
       return
     }
@@ -1255,23 +1144,21 @@ function App() {
         aria-label="项目墙"
         onClick={() => setScreen('wall')}
       >
-        <NativeToolIcon kind="wall" size={17} />
+        <NativeToolIcon kind="wall" size={16} />
       </button>
       <div className="rail-group">
         {railButton475('版本工作区', PackageCheck, objectContext475, enterObjectContext475)}
-        {railButton475('项目总览', LayoutDashboard, screen === 'project', () => setScreen('project'))}
+        {railButton475('项目总览', LayoutDashboard, screen === 'project', () =>
+          setScreen('project')
+        )}
         {railButton475('任务', ListTodo, screen === 'tasks' && !taskVersion, openProjectTasks)}
         {railButton475('自动化', CalendarClock, screen === 'automations', () =>
           setScreen('automations')
         )}
         {railButton475('知识库', BookOpen, screen === 'knowledge', () => setScreen('knowledge'))}
-        {variant475 === 'b' &&
-          objectContext475 &&
-          railButton475('Orca 项目工作区', GitBranch, panel475 === 'workspaces', () =>
-            setPanel475('workspaces')
-          )}
       </div>
       <div className="rail-spacer" />
+      {/* 生产 Rail 底部只有设置/帮助两枚 24px 图标按钮，没有头像。 */}
       <div className="rail-foot-group">
         <button
           className="rail-foot"
@@ -1279,7 +1166,7 @@ function App() {
           aria-label="设置"
           onClick={() => setModal({ type: 'native-tool', title: '设置' })}
         >
-          <NativeToolIcon kind="settings" size={16} />
+          <NativeToolIcon kind="settings" size={14} />
         </button>
         <button
           className="rail-foot"
@@ -1287,15 +1174,12 @@ function App() {
           aria-label="帮助"
           onClick={() => setModal({ type: 'native-tool', title: '帮助' })}
         >
-          <NativeToolIcon kind="help" size={16} />
+          <NativeToolIcon kind="help" size={14} />
         </button>
       </div>
-      <span className="rail-avatar" title="yuzhup · 本地">
-        Y
-      </span>
     </aside>
   )
-  // 底部两枚沿用原生图标按钮形态：只有图标，名称走 aria/title。
+  // 生产底栏两枚原生图标按钮：Crosshair「显示活动工作区」+ Kanban「工作区板」，24px、右对齐。
   const panelFooter475 = (
     <div className="panel-footer-475">
       <button
@@ -1304,47 +1188,24 @@ function App() {
         aria-label="显示活动工作区"
         onClick={() => setModal({ type: 'native-tool', title: '显示活动工作区' })}
       >
-        <NativeToolIcon kind="activity" size={15} />
+        <NativeToolIcon kind="crosshair" size={14} />
       </button>
       <button
         className="icon-action"
-        title="工作区看板"
-        aria-label="工作区看板"
-        onClick={() => setModal({ type: 'native-tool', title: '工作区看板' })}
+        title="工作区板"
+        aria-label="工作区板"
+        onClick={() => setModal({ type: 'native-tool', title: '工作区板' })}
       >
-        <NativeToolIcon kind="wall" size={15} />
+        <NativeToolIcon kind="kanban" size={14} />
       </button>
     </div>
   )
   return (
     <div className="prototype">
       <div className="review-bar">
-        <strong>
-          {is475 ? '#475 双列侧栏 · #500 置顶' : '#439 既有能力修正 · 版本工作区'}
-        </strong>
-        <span>
-          {is475 ? variantText475[variant475] : '既有能力纠偏 · 数据与操作仅在本页演示'}
-        </span>
+        <strong>{is475 ? '#475 双列侧栏 · #500 置顶' : '#439 既有能力修正 · 版本工作区'}</strong>
+        <span>{is475 ? panelText475 : '既有能力纠偏 · 数据与操作仅在本页演示'}</span>
         <div className="review-actions" aria-label="原型评审工具">
-          {is475 && (
-            <>
-              <span className="review-hint-475">方案</span>
-              {['a', 'b', 'c', 'd'].map((key) => (
-                <button
-                  key={key}
-                  className={`variant-btn-475${variant475 === key ? ' selected' : ''}`}
-                  aria-pressed={variant475 === key}
-                  onClick={() => {
-                    setVariant475(key)
-                    // 切换方案时都回到版本面板，避免上一方案的归属状态带过来。
-                    setPanel475('versions')
-                  }}
-                >
-                  {key.toUpperCase()}
-                </button>
-              ))}
-            </>
-          )}
           <button onClick={() => setScreen('wall')}>从项目墙进入</button>
           <button onClick={() => go('v0.7', 'tasks')}>版本任务</button>
           <button onClick={() => go('v0.7', 'tasks', 'G2')}>目标任务</button>
@@ -1396,103 +1257,85 @@ function App() {
               </Nav>
             </>
           )}
-          {is475 && variant475 === 'c' && seg475}
+          {/* 生产把项目标题固定在第二列顶部（WorkbenchSidebarNav），不随下方内容滚动。 */}
+          {is475 && <div className="panel-heading-475">{projectHeading475}</div>}
           {/* #475 A 定稿：第二列只有一个滚动容器，版本块与 Orca 工作区共用同一滚动条。 */}
           <div className="sidebar-scroll scrollbar-sleek worktree-sidebar-scrollbar">
-            <div
-              className={`bw-section${is475 && panel475 === 'workspaces' ? ' hidden-475' : ''}`}
-            >
-              {projectHeading475}
+            <div className="bw-section">
+              {!is475 && projectHeading475}
               {is475 && pinnedSection475}
               {!is475 && moduleNavs475}
               {versionsBlock475}
             </div>
-            <div
-              className={`native-projects${is475 && (variant475 === 'b' || variant475 === 'c') && panel475 === 'versions' ? ' hidden-475' : ''}${is475 && panel475 === 'workspaces' ? ' expanded-475' : ''}${is475 ? ' merged-scroll-475' : ''}`}
-            >
-            <div className="section-label native-workspaces-heading">
-              <span>Orca 项目工作区</span>
-              <div className="native-workspaces-tools">
-                <Button
-                  icon={ChevronRight}
-                  label="全部收起"
-                  onClick={() => {
-                    setNativeProjectOpen(false)
-                    setClosedTrees((items) => [
-                      ...new Set([...items, ...nativeProjectTrees.map((tree) => tree.id)])
-                    ])
-                  }}
-                />
-                <Button
-                  icon={ChevronDown}
-                  label="全部展开"
-                  onClick={() => {
-                    setNativeProjectOpen(true)
-                    const ids = new Set(nativeProjectTrees.map((tree) => tree.id))
-                    setClosedTrees((items) => items.filter((id) => !ids.has(id)))
-                  }}
-                />
-                <Button
-                  icon={(props) => <NativeToolIcon kind="activity" {...props} />}
-                  label="活动"
-                  onClick={() => setModal({ type: 'native-tool', title: '活动' })}
-                />
-                <Button
-                  icon={(props) => <NativeToolIcon kind="options" {...props} />}
-                  label="工作区选项"
-                  onClick={() => setModal({ type: 'native-tool', title: '工作区选项' })}
-                />
-                <Button
-                  icon={(props) => <NativeToolIcon kind="add" {...props} />}
-                  label="添加项目"
-                  onClick={() => setModal({ type: 'native-tool', title: '添加项目' })}
-                />
-                <Button
-                  icon={Plus}
-                  label="新建工作区"
-                  onClick={() => setModal({ type: 'composer', kind: 'native' })}
-                />
+            <div className={`native-projects${is475 ? ' merged-scroll-475' : ''}`}>
+              <div className="section-label native-workspaces-heading">
+                <span>Orca 项目工作区</span>
+                {/* 生产标题行只有原生动作：活动(Bell)/工作区选项/添加项目/新建工作区，各 24px。
+                  全部收起、全部展开不在生产头部出现。 */}
+                <div className="native-workspaces-tools">
+                  <Button
+                    icon={(props) => <NativeToolIcon kind="activity" {...props} />}
+                    label="查看活动"
+                    onClick={() => setModal({ type: 'native-tool', title: '活动' })}
+                  />
+                  <Button
+                    icon={(props) => <NativeToolIcon kind="options" {...props} />}
+                    label="工作区选项"
+                    onClick={() => setModal({ type: 'native-tool', title: '工作区选项' })}
+                  />
+                  <Button
+                    icon={(props) => <NativeToolIcon kind="add" {...props} />}
+                    label="添加项目"
+                    onClick={() => setModal({ type: 'native-tool', title: '添加项目' })}
+                  />
+                  <Button
+                    icon={Plus}
+                    label="新建工作区"
+                    onClick={() => setModal({ type: 'composer', kind: 'native' })}
+                  />
+                </div>
               </div>
-            </div>
-            <div className="native-project-row">
-              <button
-                className="tree-chevron"
-                aria-label="当前原生项目展开或收起"
-                aria-expanded={nativeProjectOpen}
-                onClick={() => setNativeProjectOpen(!nativeProjectOpen)}
-              >
-                <Icon icon={nativeProjectOpen ? ChevronDown : ChevronRight} />
-              </button>
-              <button
-                className="native-project-title"
-                title="Builder Workbench · 本机与配对机"
-                onClick={() => setScreen('project-workspaces')}
-              >
-                <Icon icon={GitBranch} />
-                <span>Builder Workbench</span>
-              </button>
-              <div className="native-project-actions">
+              <div className="native-project-row">
                 <button
-                  className="icon-button"
-                  aria-label="Builder Workbench 项目菜单"
-                  onClick={() => setModal({ type: 'native-tool', title: '项目菜单' })}
+                  className="tree-chevron"
+                  aria-label="当前原生项目展开或收起"
+                  aria-expanded={nativeProjectOpen}
+                  onClick={() => setNativeProjectOpen(!nativeProjectOpen)}
                 >
-                  ···
+                  <Icon icon={nativeProjectOpen ? ChevronDown : ChevronRight} />
                 </button>
-                <Button
-                  icon={Plus}
-                  label="在 Builder Workbench 新建工作区"
-                  onClick={() => setModal({ type: 'composer', kind: 'native' })}
-                />
+                <button
+                  className="native-project-title"
+                  title="Builder Workbench · 本机与配对机"
+                  onClick={() => setScreen('project-workspaces')}
+                >
+                  <Icon icon={GitBranch} />
+                  <span>Builder Workbench</span>
+                </button>
+                <div className="native-project-actions">
+                  <button
+                    className="icon-button"
+                    aria-label="Builder Workbench 项目菜单"
+                    onClick={() => setModal({ type: 'native-tool', title: '项目菜单' })}
+                  >
+                    ···
+                  </button>
+                  <Button
+                    icon={Plus}
+                    label="在 Builder Workbench 新建工作区"
+                    onClick={() => setModal({ type: 'composer', kind: 'native' })}
+                  />
+                </div>
               </div>
-            </div>
-            {nativeProjectOpen && (
-              <div className="native-project-tree-list">
-                {nativeProjectTrees
-                  .filter((tree) => !nativeProjectTrees.some((parent) => parent.id === tree.parent))
-                  .map((tree) => nativeTree(tree.version, tree, nativeProjectTrees))}
-              </div>
-            )}
+              {nativeProjectOpen && (
+                <div className="native-project-tree-list">
+                  {nativeProjectTrees
+                    .filter(
+                      (tree) => !nativeProjectTrees.some((parent) => parent.id === tree.parent)
+                    )
+                    .map((tree) => nativeTree(tree.version, tree, nativeProjectTrees))}
+                </div>
+              )}
             </div>
           </div>
           {is475 && panelFooter475}

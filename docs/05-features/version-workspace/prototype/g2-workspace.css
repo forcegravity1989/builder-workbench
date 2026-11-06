@@ -213,12 +213,15 @@ button:disabled {
 .project-heading > span:nth-child(2) {
   min-width: 0;
   flex: 1;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 .project-heading small {
   display: block;
   margin-top: 1px;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted-foreground);
 }
 .project-avatar {
   display: inline-flex;
@@ -355,73 +358,6 @@ button:disabled {
   padding-left: 4px;
   border-left: 1px solid var(--border);
 }
-.goal-pinned-badge {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-.goal-tree-tools {
-  display: flex;
-  align-items: center;
-  gap: 1px;
-  flex-shrink: 0;
-  padding-right: 2px;
-}
-.icon-action.goal-tool-btn {
-  width: 22px;
-  height: 24px;
-  min-width: 22px;
-  border-radius: 5px;
-  color: var(--muted-foreground);
-}
-.icon-action.goal-tool-btn:hover {
-  color: var(--foreground);
-  background: var(--accent);
-}
-.icon-action.goal-pin-active {
-  background: var(--primary);
-  color: var(--primary-foreground);
-}
-.icon-action.goal-pin-active:hover {
-  background: var(--primary);
-  color: var(--primary-foreground);
-  opacity: 0.9;
-}
-.goal-hidden-section {
-  margin-top: 4px;
-  border-top: 1px dashed var(--border);
-  padding-top: 2px;
-}
-.goal-hidden-toggle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  width: 100%;
-  min-height: 26px;
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-size: 11px;
-  color: var(--muted-foreground);
-  text-align: left;
-}
-.goal-hidden-toggle .tree-chevron {
-  width: 18px;
-  height: 24px;
-}
-.goal-hidden-toggle:hover {
-  background: var(--accent);
-}
-.goal-hidden-list {
-  margin-left: 10px;
-  padding-left: 4px;
-  border-left: 1px dashed var(--border);
-}
 .tree-chevron {
   display: flex;
   align-items: center;
@@ -501,14 +437,14 @@ button:disabled {
 .native-projects .section-label {
   margin-top: 6px;
 }
+/* 生产标题行不吸顶：它跟着单一滚动容器一起滚，样式为 12px semibold、字色 80% 前景。 */
 .native-workspaces-heading {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: var(--worktree-sidebar, var(--sidebar));
-  margin: 0 3px 4px !important;
+  margin: 4px 3px 4px !important;
   padding: 5px 0;
   gap: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--foreground) 80%, transparent);
 }
 .native-workspaces-heading > span {
   white-space: nowrap;
@@ -518,8 +454,9 @@ button:disabled {
   gap: 1px;
 }
 .native-workspaces-tools .icon-action {
-  width: 23px;
-  height: 23px;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
 }
 .native-project-row {
   display: flex;

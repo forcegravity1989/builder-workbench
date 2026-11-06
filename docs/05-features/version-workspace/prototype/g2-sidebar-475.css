@@ -72,9 +72,9 @@
   padding-bottom: 6px;
 }
 .rail-foot {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   display: grid;
   place-items: center;
   color: color-mix(in srgb, var(--foreground) 62%, transparent);
@@ -83,60 +83,26 @@
   background: var(--worktree-sidebar-accent, var(--accent));
   color: var(--foreground);
 }
-.rail-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  font-weight: 600;
-  background: var(--worktree-sidebar-accent, var(--accent));
-  color: var(--foreground);
-}
 
+/* 生产第二列复用原生 Sidebar：默认宽 280px，可拖动 220–500px，不按视口再缩。 */
 .panel-475 {
-  width: 296px;
-  min-width: 296px;
+  width: 280px;
+  min-width: 280px;
 }
-.panel-seg-475 {
-  display: flex;
-  gap: 2px;
-  margin: 2px 4px 8px;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--muted);
-}
-.seg-btn-475 {
-  flex: 1;
-  min-height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  border-radius: 5px;
-  font-size: 11px;
-  color: var(--muted-foreground);
-}
-.seg-btn-475.selected {
-  background: var(--worktree-sidebar-accent, var(--accent));
-  color: var(--foreground);
-  font-weight: 600;
+/* 项目标题固定在滚动容器之外，与生产 WorkbenchSidebarNav 一致。 */
+.panel-475 .panel-heading-475 {
+  flex-shrink: 0;
+  padding: 8px 8px 6px;
 }
 .hidden-475 {
   display: none;
-}
-.panel-475 .native-projects.expanded-475 {
-  flex: 1;
-  min-height: 0;
-  max-height: none;
 }
 /* #475 A 定稿：第二列单一滚动条 —— 版本块与 Orca 工作区都在 sidebar-scroll 内共用滚动 */
 .panel-475 .native-projects.merged-scroll-475 {
   max-height: none;
   overflow: visible;
   flex: none;
+  border-top: none;
   padding-bottom: 12px;
 }
 .panel-475 .panel-footer-475 {
@@ -151,8 +117,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
   padding: 0;
   border-radius: 6px;
   color: var(--muted-foreground);
@@ -166,63 +133,52 @@
   align-items: center;
   gap: 6px;
 }
-.pinned-unpin-475 {
-  width: 22px;
-  height: 24px;
-  min-width: 22px;
-  margin-left: 2px;
-  border-radius: 5px;
-  color: var(--muted-foreground);
-}
-.pinned-unpin-475:hover {
-  background: var(--accent);
-  color: var(--foreground);
-}
 .panel-475 .sidebar-divider {
   margin-top: 10px;
 }
 
+/* 已固定：生产无边框，标题本身是可折叠按钮（Pin + 已固定 + 数量）。 */
 .pinned-section-475 {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
   margin-top: 2px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--border);
-}
-.pinned-section-475 .section-label {
-  margin-top: 4px;
 }
 .pinned-heading-475 {
-  gap: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: color-mix(in srgb, var(--foreground) 60%, transparent);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: left;
+}
+.pinned-heading-475:hover {
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+.pinned-heading-475 small {
+  font-size: 10px;
+  font-weight: 400;
+  color: color-mix(in srgb, var(--foreground) 40%, transparent);
 }
 .pinned-row-475 {
   width: calc(100% - 8px);
   margin: 0 4px;
 }
 
-.review-actions button.variant-btn-475 {
-  min-width: 26px;
-  padding: 2px 7px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  text-decoration: none;
+/* 版本标题行：生产是 10px 大写「版本」+ 右侧新建按钮，标题行在分隔线之上。 */
+.versions-heading-475 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 2px;
 }
-.review-actions button.variant-btn-475.selected {
-  background: var(--foreground);
-  border-color: var(--foreground);
-  color: var(--background);
-}
-.review-hint-475 {
-  color: var(--muted-foreground);
-}
-
-@media (max-width: 1280px) {
-  .panel-475 {
-    width: 276px;
-    min-width: 276px;
-  }
-}
-@media (max-width: 1000px) {
-  .panel-475 {
-    width: 258px;
-    min-width: 258px;
-  }
+.versions-heading-475 > span {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 45%, transparent);
 }
