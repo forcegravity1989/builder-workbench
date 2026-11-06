@@ -117,7 +117,7 @@ export {
   WINDOWS_POWERSHELL_HOOK_SWITCHES
 } from './windows-powershell-hook-launcher'
 
-export function wrapWindowsHookCommand(
+export function buildWindowsHookPowerShellCommand(
   scriptPath: string,
   env: Record<string, string> = {},
   // Why: POSIX wrap already answers missing-script with stdout; Windows must match so gate events cannot drift (#15462).
@@ -136,7 +136,17 @@ export function wrapWindowsHookCommand(
   // env guard, and only then own stdin — outside an Orca pane the caller may abandon the
   // pipe, and ReadToEnd would strand the launcher there forever (#11549).
   const command = `${envPrefix}if (Test-Path -LiteralPath ${quoted} -PathType Leaf) { & ${quoted}; exit $LASTEXITCODE }; ${fallback}${WINDOWS_POWERSHELL_HOOK_ENVIRONMENT_GUARD}; [Console]::In.ReadToEnd() | Out-Null; exit 0`
-  return wrapWindowsPowerShellEncodedCommand(command)
+  return command
+}
+
+export function wrapWindowsHookCommand(
+  scriptPath: string,
+  env: Record<string, string> = {},
+  options: { fallbackStdout?: string } = {}
+): string {
+  return wrapWindowsPowerShellEncodedCommand(
+    buildWindowsHookPowerShellCommand(scriptPath, env, options)
+  )
 }
 
 export const WINDOWS_CMD_SAFE_PATH = /^[A-Za-z0-9_.:\\~-]+$/

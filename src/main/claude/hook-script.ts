@@ -1,6 +1,10 @@
 /** The managed Claude-compatible hook script, built for local, POSIX-remote and Windows targets.
  *  Split from hook-service.ts so the service owns install/status and this owns script text,
  *  mirroring the same split under src/main/cursor/. */
+import {
+  buildPosixCursorReplayGuardLines,
+  buildWindowsCursorReplayGuardLines
+} from '../agent-hooks/cursor-replay-guard'
 import { buildWindowsAgentHookCurlPostCommand } from '../agent-hooks/installer-utils'
 import { buildPosixAgentHookPostCommand } from '../agent-hooks/hook-post-command'
 import {
@@ -20,6 +24,7 @@ export function getManagedScript(
   options: {
     skipWhenDevinImportsClaude?: boolean
     skipWhenGrokImportsClaude?: boolean
+    skipWhenCursorImportsClaude?: boolean
   } = {}
 ): string {
   if (target === 'local' && process.platform === 'win32') {
@@ -38,6 +43,7 @@ export function getManagedScript(
       // Why exit, not the drain label: the drain parks in more.com and a worker is outside
       // an Orca pane — the abandoned-stdin hang #11549 guards against.
       'if not "%CLAUDE_JOB_DIR%"=="" exit /b 0',
+      ...(options.skipWhenCursorImportsClaude ? buildWindowsCursorReplayGuardLines() : []),
       ...(options.skipWhenGrokImportsClaude ? buildWindowsGrokReplayGuardLines() : []),
       ...(options.skipWhenDevinImportsClaude
         ? [
@@ -58,6 +64,7 @@ export function getManagedScript(
     // Why: Claude-compatible permission hooks fail closed on empty stdout (#14818).
     'printf "{}\\n"',
     ...buildPosixHookPayloadCapture(),
+    ...(options.skipWhenCursorImportsClaude ? buildPosixCursorReplayGuardLines() : []),
     ...(options.skipWhenGrokImportsClaude ? buildPosixGrokReplayGuardLines() : []),
     ...buildPosixHookSpoolLines('claude'),
     ...(options.skipWhenDevinImportsClaude

@@ -263,6 +263,8 @@ describe('ClaudeHookService.install', () => {
       )
       expect(managedScript).toContain('DEVIN_PROJECT_DIR')
       expect(managedScript).toContain('GROK_HOOK_EVENT')
+      expect(managedScript).toContain('CURSOR_VERSION')
+      expect(managedScript).toContain('CURSOR_PROJECT_DIR')
       // Why: guard and Devin-skip paths must still return neutral JSON (#14818).
       expect(managedScript).toMatch(
         process.platform === 'win32'
@@ -713,6 +715,8 @@ describe('ClaudeHookService.installRemote', () => {
     expect(script).toContain('#!/bin/sh')
     expect(script).toContain('DEVIN_PROJECT_DIR')
     expect(script).toContain('GROK_HOOK_EVENT')
+    expect(script).toContain('CURSOR_VERSION')
+    expect(script).toContain('CURSOR_PROJECT_DIR')
     // Why: remote guard paths must still return neutral JSON (#14818).
     expect(script!.indexOf('printf "{}\\n"')).toBe(
       script!.indexOf('#!/bin/sh') + '#!/bin/sh\n'.length

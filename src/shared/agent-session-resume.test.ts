@@ -100,7 +100,19 @@ describe('agent session resume metadata', () => {
   })
 
   it('rejects unsupported sources and unsafe ids', () => {
+    expect(isResumableTuiAgent('cursor')).toBe(true)
     expect(extractAgentProviderSession('cursor', { session_id: 'cursor-session' })).toBeNull()
+    expect(extractAgentProviderSession('cursor', { conversation_id: 'cursor-chat' })).toEqual({
+      key: 'conversation_id',
+      id: 'cursor-chat'
+    })
+    expect(extractAgentProviderSession('cursor', { conversation_id: '--last' })).toBeNull()
+    expect(getAgentResumeArgv('cursor', { key: 'conversation_id', id: 'cursor-chat' })).toEqual([
+      'cursor-agent',
+      '--resume',
+      'cursor-chat'
+    ])
+    expect(getAgentResumeArgv('cursor', { key: 'session_id', id: 'cursor-chat' })).toBeNull()
     expect(normalizeAgentProviderSession({ key: 'session_id', id: 'bad\nid' })).toBeNull()
     expect(normalizeAgentProviderSession({ key: 'session_id', id: '--last' })).toBeNull()
     expect(extractAgentProviderSession('codex', { session_id: '--last' })).toBeNull()

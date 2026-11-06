@@ -3,9 +3,13 @@ import { fetchCodexRateLimits } from '../codex-fetcher'
 import { fetchGeminiRateLimits } from '../gemini-usage-fetcher'
 import { fetchGrokRateLimits } from '../grok-fetcher'
 import { readGrokAuthSession } from '../grok-auth'
+import { fetchCursorRateLimits } from '../cursor-fetcher'
+import { readCursorAuthSession } from '../cursor-auth'
+import { cursorAuthProvenance, previousCursorUsageForAccount } from '../cursor-usage-account-policy'
 import { fetchMiniMaxRateLimits } from '../minimax/minimax-fetcher'
 import { fetchOpenCodeGoRateLimits } from '../opencode-go-usage-fetcher'
 import { RateLimitServiceFetchPolicy } from './service-fetch-policy'
+import type { SettledProviderResult } from './service-sibling-provider-result'
 import type {
   ClaudeRuntimeAuthPreparation,
   InternalRateLimitState,
@@ -38,9 +42,8 @@ export type FetchAllCyclePrepared = {
     PromiseSettledResult<ProviderRateLimits>,
     PromiseSettledResult<ProviderRateLimits>
   ]
-  grokResultPromise: Promise<
-    { status: 'fulfilled'; value: ProviderRateLimits } | { status: 'rejected'; reason: unknown }
-  >
+  grokResultPromise: Promise<SettledProviderResult>
+  cursorResultPromise: Promise<SettledProviderResult>
 }
 
 export abstract class RateLimitServiceFullCyclePreparation extends RateLimitServiceFetchPolicy {
@@ -121,8 +124,32 @@ export abstract class RateLimitServiceFullCyclePreparation extends RateLimitServ
       minimax: miniMaxConfigChanged
         ? this.withFetchingStatus(null, 'minimax')
         : this.withFetchingStatus(previousState.minimax, 'minimax'),
-      grok: this.withFetchingStatus(previousState.grok, 'grok')
+      grok: this.withFetchingStatus(previousState.grok, 'grok'),
+      cursor: this.withFetchingStatus(previousState.cursor, 'cursor')
     })
+
+    // Why: the Cursor probe reads the macOS Keychain, so it is awaited inside the
+    // provider's own promise instead of blocking the rest of the cycle on it.
+    const cursorResultPromise = readCursorAuthSession()
+      .then((authReadResult) => {
+        if (signal.aborted) {
+          throw new Error('Cursor usage refresh cancelled')
+        }
+        this.cursorAuthConfigured = authReadResult.status === 'ok'
+        const previous = previousCursorUsageForAccount(
+          cursorAuthProvenance(authReadResult),
+          this.state.cursor
+        )
+        this.updateState({ ...this.state, cursor: previous })
+        if (!options?.force && this.isRetryAfterActive(previous)) {
+          return previous as ProviderRateLimits
+        }
+        return fetchCursorRateLimits({ signal, authReadResult })
+      })
+      .then(
+        (value) => ({ status: 'fulfilled', value }) as const,
+        (reason) => ({ status: 'rejected', reason }) as const
+      )
 
     const missingWslCodexHome =
       codexFetchGated || codexHomePath ? null : this.getMissingWslCodexHomeResult(codexTarget)
@@ -202,7 +229,8 @@ export abstract class RateLimitServiceFullCyclePreparation extends RateLimitServ
         kimiResult,
         miniMaxResult
       ],
-      grokResultPromise
+      grokResultPromise,
+      cursorResultPromise
     }
   }
 }
