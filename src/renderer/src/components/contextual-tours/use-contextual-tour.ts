@@ -14,6 +14,7 @@ const TOUR_SOURCES = {
   tasks: 'tasks_open',
   automations: 'automations_open',
   'floating-workspace': 'floating_workspace_visible',
+  'workbench-milestones': 'milestone_planning',
   'workspace-creation': 'workspace_creation_visible'
 } satisfies Record<ContextualTourId, string>
 

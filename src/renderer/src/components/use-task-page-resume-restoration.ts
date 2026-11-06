@@ -1,4 +1,4 @@
-import { seedWorkbenchTaskQuery } from '../../../shared/workbench/task-scope'
+import { workbenchTaskEntryQuery } from '../../../shared/workbench/task-scope'
 import type { TaskPageJiraListStateModel } from './use-task-page-jira-list-state'
 import { useEffect } from 'react'
 import { resolveVisibleTaskProvider } from '../../../shared/task-providers'
@@ -61,27 +61,20 @@ export function useTaskPageResumeRestoration(model: TaskPageJiraListStateModel) 
       )
     )
     setRepoSelection(resolvedInitialSelection)
-    const nextGithubMode = taskResumeState?.githubMode ?? 'items'
-    setGithubMode(nextGithubMode)
-    const preset = taskResumeState?.githubItemsPreset
-    if (preset === null) {
-      const query = seedWorkbenchTaskQuery(
-        taskResumeState?.githubItemsQuery ?? '',
-        pageData.workbenchTaskScope
-      )
-      setTaskSearchInput(query)
-      setAppliedTaskSearch(query)
-      setActiveTaskPreset(null)
-    } else {
-      const presetId = normalizeGitHubTaskPreset(preset ?? settings.defaultTaskViewPreset)
-      const query = seedWorkbenchTaskQuery(
-        getTaskPresetQuery(presetId),
-        pageData.workbenchTaskScope
-      )
-      setTaskSearchInput(query)
-      setAppliedTaskSearch(query)
-      setActiveTaskPreset(presetId)
-    }
+    const scope = pageData.workbenchTaskScope
+    setGithubMode(scope?.goalId ? 'items' : (taskResumeState?.githubMode ?? 'items'))
+    const savedPreset = taskResumeState?.githubItemsPreset
+    const preset =
+      scope?.goalId || savedPreset === null
+        ? null
+        : normalizeGitHubTaskPreset(savedPreset ?? settings.defaultTaskViewPreset)
+    const query = workbenchTaskEntryQuery(
+      preset ? getTaskPresetQuery(preset) : (taskResumeState?.githubItemsQuery ?? ''),
+      scope
+    )
+    setTaskSearchInput(query)
+    setAppliedTaskSearch(query)
+    setActiveTaskPreset(preset)
     const linearQuery = taskResumeState?.linearQuery ?? ''
     setLinearMode(taskResumeState?.linearMode ?? 'issues')
     setLinearSearchInput(linearQuery)

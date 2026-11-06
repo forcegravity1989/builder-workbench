@@ -7053,6 +7053,8 @@
           "connectionTestAction": "Test Connection"
         },
         "ExperimentalPane": {
+          "globalScopeTitle": "Global settings",
+          "globalScopeDescription": "These settings apply to all projects on this device.",
           "9762364929": "Uses APFS clone-copy on macOS when possible, otherwise symlinks configured folders or files into created worktrees.",
           "24416f42cd": "Shared paths on worktrees",
           "fb82ea1d7a": "Automatically materialize configured files or folders into newly created worktrees.",

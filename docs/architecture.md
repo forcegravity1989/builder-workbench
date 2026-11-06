@@ -15,7 +15,7 @@
 | 用户要做的事 | 当前承载 | 当前边界 |
 |---|---|---|
 | 打开或接入项目 | 项目墙、接入覆盖层与 Orca 仓库列表 | 接入名片保真合并只补空字段、坏文件不覆盖；墙卡图标打开右侧配置，日常编辑经原文冲突校验、字段对比与所属主机固定树 PR；SSH 配置只读，真实编辑远端与重启读回待验；经固定分支 `bw/project` PR 合入被管仓、克隆前远端预探测与同远端去重已实现（真实远端未验）。G3 跨主机：项目墙只上能读到 `.bw/project.toml` 的项目并按项目/主机稳定身份归并（同一项目多主机一张卡、重复添加不重复计数），「导入 Builder 主机」批量壳只调用 Orca 原生配对，Orca Projects 侧栏保持原生全量、不接受 BW 过滤（原叠层收窄过滤已回退）；行为判据见 [project-intake spec](05-features/project-intake/spec.md)「§5 跨主机与项目墙」；旧 Rust 的项目约定常驻 worktree + Issue 运作完整旅程不在范围 |
-| 核对结果、拟目标、拆版本工作 | 计划屏：原生 terminal 固定工作区 + 右侧材料单页 | 经材料 RPC 读写 `.bw/planning/<版本>/`；开工注入渲染后 SYSTEM 与 week-planning Skill 指针，来源和覆盖边界见 §2 ③ |
+| 核对结果、拟目标、拆版本工作 | 计划屏：原生 terminal 固定工作区 + 右侧材料单页 | 经材料 RPC 读写 `.bw/planning/<版本>/`；开工预填一句指向完整 week-planning Skill 的请求，由用户发送，来源和覆盖边界见 §2 ③ |
 | 核对交付、出包、逐目标验收、归档 | 验收屏：与计划共用容器，独立固定树 bw/week-acceptance；出包区块按项目远端自动对接出包流水线（CodeHub 执行面→cloudbuild CLI、制品面→CloudDragon 会话，GitHub→gh CLI），界面不区分宿主 | 界面不设灯：旅程/出包/归档灯随 v10 全部退役，状态以文字与 chip 如实读回，`workflow.stage` 降级为材料内部进度（供技能恢复校准与自动化）不由界面渲染；归档 PR 合入状态按 archivePr 薄读取，CodeHub 等读不到状态一律保持未知，正文编辑延期 |
 | 执行工作与管理任务 | Orca 终端、Tasks、worktree | 复用执行核；不能据规划会话可打开就认定所有 Issue 开工都已接 BW 纪律 |
 | 设置定时工作 | Orca Automations | 调度能力在执行核；「配置自动化」入口（右板页头）打开原生编辑器：已登记条目直接编辑，未登记预填创建；BW 提示词随进屏覆盖同步为当前版本、用户设置保留，启用与时间由人确认；真实到点触发与旧自动配置迁移须逐项验证 |
@@ -35,7 +35,7 @@ Issue 原生状态与关闭原因是处理结果正本，版本目标和任务�
 
 ### ② 会话与执行（执行层）
 
-计划与验收完整复用 Orca 原生会话、标签/分屏、历史、资源管理器和工具，BW 只挂右侧业务板。未开始时分别显示“开始计划 / 开始验收”短卡；专用入口手动运行已登记自动化，只有本次运行的原生会话实际打开成功才展示四区，失败留在短卡并回显原因。目标尚未形成也展示空目标区；已有有效材料独立恢复。启动视图仅在渲染进程内按流程、版本、项目/宿主/owner 和工作树隔离保存，切屏保留，不替代原生会话恢复。普通原生新会话不注入 BW 提示。验收计划未合入不阻断会话，助手先提醒并协助处理、不自动合入；没有可读 committed 固定计划时不创建验收材料。
+计划与验收完整复用 Orca 原生会话、标签/分屏、历史、资源管理器和工具，BW 只挂右侧业务板。未开始时分别显示“开始计划 / 开始验收”短卡；专用入口准备完整 Skill 并打开可编辑的原生会话草稿，只有会话实际打开成功才展示四区，失败留在短卡并回显原因。目标尚未形成也展示空目标区；已有有效材料独立恢复。启动视图仅在渲染进程内按流程、版本、项目/宿主/owner 和工作树隔离保存，切屏保留，不替代原生会话恢复。普通原生新会话不注入 BW 提示。验收计划未合入不阻断会话，助手先提醒并协助处理、不自动合入；没有可读 committed 固定计划时不创建验收材料。
 
 侧栏绑定决定流程版本与宿主，页头只读回显；旧无绑定固定树保留选版偏好，无绑定树也无旧固定树时只读回看主干材料。工作树显示不依赖会话恢复；全树原生右击菜单提供绑定、改绑与解绑，解绑只移除版本归属，保留稳定身份、父子关系、文件与会话，不设置版本级重复绑定按钮。断链沿原生图标和激活机制表达，点击保留现有内容与其他导航；侧栏滚动复用原生容器。
 
@@ -43,7 +43,7 @@ Issue 原生状态与关闭原因是处理结果正本，版本目标和任务�
 
 ### ③ 系统提示词与渐进加载（执行规范）
 
-`standard/` 保存 BW 的提示词、reference、技能与样例。`version-cycle/cycle-prompt.ts` 在计划/验收/指标配置开工时渲染内置 SYSTEM.md.tmpl 并内嵌对应 Skill 发现 Stub（week-planning / version-acceptance / metrics-refresh；Stub 投影位于根级 `skills/`，正源在 `standard/skills/`），完整指南与 reference 经 `ORCA skills get` 命令按需读取；模板占位符未解析即抛错。提示资产随产品打包，没有 `standard/` 的普通被管项目也能获得完整提示。路径存在、递交指针、模型读取正文和遵守规范是四种证据。
+开工提示由 `version-cycle/cycle-prompt.ts` 生成一句用户请求，指向执行宿主实际安装的完整 Skill。正源 `standard/skills/` 与公共 `standard/references/` 经构建组成自包含包，复用 Orca 原生安装服务；用户项目无需拥有 standard。模型发送后完整读取 Skill 与其指定必读规范，运行事实沿原生工具读回。安装与冲突边界见 [会话入口与 Skill 加载](06-module/系统提示词与渐进加载.md)。文件存在、安装成功、模型读取正文和遵守规范是不同证据。
 
 完整维护对照和缺口见 [系统提示词与渐进加载](06-module/系统提示词与渐进加载.md)；正文职责见 [standard/README](../standard/README.md)。修正文不等于修复运行时分发。
 
@@ -61,7 +61,7 @@ Issue 原生状态与关闭原因是处理结果正本，版本目标和任务�
 
 ### Orca 执行核与 BW 叠层
 
-Orca 执行核提供终端、会话、worktree、Tasks、Automations 和 Explorer。BW 叠层通过 `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` 启用。壳内槽位：总览=activity 槽 OverviewPage（真实数据），任务=tasks 槽原生 TaskPage，计划/验收=原生 terminal 固定工作区旁的 `CycleWorkspaceShell` 右板（artifacts 槽是旧固定树准备入口；G2 侧栏版本行对绑定流程树直接走原生激活，`cycle-view-state.ts` 仅指明准备流程，不扩 TopLevelView union），自动化/知识库照旧。G2 版本工作区（#383）：侧栏版本区=目录现算（材料∪绑定∪已提交目标回看）＋「＋新建版本」接 `workbench.versionWorkspace.prepare`；任务=同一原生 TaskPage 可选携带 `workbenchTaskScope`（版本/目标完整任务引用集，经原生 provider 物化，缺数据如实保留）；目标/Issue 开工复用同一原生创建器（预填名称/备注上下文/父级建议），版本绑定在真实创建结果处写入（instanceId 围栏）；绑定流程树的材料读写以绑定版本为限（跨版拒绝）；每版「总览」=activity 槽经 `project-page-state` 模块态挂载 VersionOverviewPage（与项目墙/名片页同机制，只读聚合正式材料、绑定工作稿及原生任务／PR 依据，历史沿验收 planRef 固定）。契约与边界见[版本工作区 design](05-features/version-workspace/design.md)；版本总览的用户行为与重设计资料独立见[版本总览 spec](05-features/version-overview/spec.md)。两屏共用版本材料、特性事实与来源限定缓存；项目里程碑保留宏观规划正本，原泳道呈现实际事实，不将其回写规划。叠层外改动保持明确钩子边界；上游身份和同步纪律见 [ref/upstream](../ref/upstream.md)，不要将 BW 的 `origin/main` 合并当作 Orca 升级。
+Orca 执行核提供终端、会话、worktree、Tasks、Automations 和 Explorer。BW 叠层通过 `WORKBENCH_SHELL=1` / `VITE_WORKBENCH_SHELL=1` 启用。壳内槽位：总览=activity 槽 OverviewPage（真实数据），任务=tasks 槽原生 TaskPage，计划/验收=原生 terminal 固定工作区旁的 `CycleWorkspaceShell` 右板（artifacts 槽是旧固定树准备入口；G2 侧栏版本行对绑定流程树直接走原生激活，`cycle-view-state.ts` 仅指明准备流程，不扩 TopLevelView union），自动化/知识库照旧。G2 版本工作区（#383）：侧栏版本区=目录现算（材料∪绑定∪已提交目标回看）＋「＋新建版本」接 `workbench.versionWorkspace.prepare`；任务=同一原生 TaskPage 可选携带 `workbenchTaskScope`（版本/目标完整任务引用集，经原生 provider 物化，缺数据如实保留）；目标/Issue 开工复用同一原生创建器（预填名称/备注上下文/父级建议），版本绑定在真实创建结果处写入（instanceId 围栏）；绑定流程树的材料读写以绑定版本为限（跨版拒绝）；每版「总览」=activity 槽经 `project-page-state` 模块态挂载 VersionOverviewPage（与项目墙/名片页同机制，只读聚合正式材料、绑定工作稿及原生任务／PR 依据，历史沿验收 planRef 固定）。契约与边界见[版本工作区 design](05-features/version-workspace/design.md)；版本总览的 SDLC 与 AI 统计沿 Orca 本机设置按原生项目身份独立选择、默认关闭；基础任务状态不依赖可选统计，项目总览与助手提示词不接入这些开关。版本总览的用户行为见[版本总览 spec](05-features/version-overview/spec.md)。两屏复用版本材料与原生任务缓存。里程碑独立对照规划、正式版本周期与目标交付结果；版本总览按开关读取 SDLC 阶段证据。叠层外改动保持明确钩子边界；上游身份和同步纪律见 [ref/upstream](../ref/upstream.md)，不要将 BW 的 `origin/main` 合并当作 Orca 升级。
 
 BW 的业务契约在 `src/shared/workbench/`，材料事务、指标与历史 runtime 及宿主适配在 `src/main/workbench/`，界面在 `src/renderer/src/workbench/`；`src/relay/workbench/` 只在原生 SSH relay 上调用同一材料事务。主 RPC 方法族为 `workbench.materials.*`（材料事务读写）与 `workbench.metrics.{list,read,refresh}`、`workbench.history.{list,read,readPlan}`、`workbench.versionBinding.{read,set}`（G2 版本绑定：原生身份定位、owner 验证、读回确认）、`workbench.versionWorkspace.prepare`（G2 新版本两棵流程树准备：宿主端预检、去重创建、绑定与空计划初始化）、`workbench.archive.prStatus`、`workbench.release.status`（#462 发布状态薄读回，注册在 `src/main/runtime/rpc/methods/workbench-*.ts`）；SSH 宿主的采集与历史命令走窄执行器 `workbench.metrics.execute` / `workbench.history.execute`，不扩 provider.exec 白名单。Orca RPC/CLI 注册处及 relay 组合入口保持薄挂载，工作树、连接、调度和会话内核不承载 BW 业务。Web/配对是访问方式，SSH/WSL 是执行位置，均复用原生身份与路由；不另加本机专属开关。
 

@@ -4,7 +4,7 @@
 
 ## 正本分工（引用不复制）
 
-- 定义与采集全协议：[指标协议](../../../../standard/system-prompt/references/metrics.md)（metrics.toml schema 2、脚本 stdout、窗口纪律、Unknown 语义）。
+- 定义与采集全协议：[指标协议](../../../../standard/references/metrics.md)（metrics.toml schema 2、脚本 stdout、窗口纪律、Unknown 语义）。
 - 口径卡 8 字段内容契约正本：project-knowledge 的 [特性证据连接](../../project-knowledge/references/feature-evidence.md)——本篇的口径卡即其盘点场景模板；「先定义可解释的结果，再找引领假设；没有可信引领指标就列待验证假设；不得拿 MD 数、提交数凑齐」等纪律以该正本为准。
 - 术语沿 [CONTEXT](../../../../CONTEXT.md)：引领/滞后、读数、Unknown、可回溯采集均为已登记词，不另造含义。
 
