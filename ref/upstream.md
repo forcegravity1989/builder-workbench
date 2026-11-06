@@ -27,8 +27,6 @@
 
 ### 0.2 与 BW 边界直接相关的能力
 
-本次只核对网页批注的折叠、图片路径和反馈输出，以及它们依赖的预览、发送与导航边界。模块继承和未迁入范围见下节；不据此判断该发布版全部能力或宣称整仓已同步。具体 BW 产品行为不在这里重复。
-
 BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、provider 与 `src/main` runtime。BW 不为这些能力另建平行实现。
 
 ### 0.3 上游目录定位
@@ -64,23 +62,6 @@ git merge orca-upstream/main
 
 ## 2. BW 相对 Orca 的稳定边界记录
 
-### 本机网页批注的定向同步
-
-浏览器批注仍走原生工具栏、guest bridge、剪贴板保存和智能体发送入口，不复制浏览器。此处仅同步批注能力，不改变本篇的整仓 fork baseline。来源对照稳定版 [v1.4.250](https://github.com/stablyai/orca/releases/tag/v1.4.250)：
-
-- [#28138 / `c473aedd`](https://github.com/stablyai/orca/commit/c473aedd14632d76a7f9488cd1f435b78578379c)：原生 Collapsible 管理展开/收起，替代 BW #470 / PR #511 的独立折叠实现；保留挂载以保持未保存文字、意图与图片。
-- [#36004 / `cc6da802`](https://github.com/stablyai/orca/commit/cc6da802a57fa2f8ffef16b5197658faa123366f)：新建和编辑批注接受剪贴板截图，图片保存到工作树宿主；反馈包含要求智能体打开的文件路径。适配本基线现有 runtime owner 与图片预览接口，不迁入新版会话、浏览器或宿主协议。路径传递不代表模型已经实际读图。
-- [#35990 / `c3518250`](https://github.com/stablyai/orca/commit/c3518250c5a452603d3e373f58fdcedb568950c8)：默认发送和复制精简反馈，发送菜单可选页面详情；勾选同时更新已打开的智能体选择器提示。
-- [#34267 / `62d9eb63`](https://github.com/stablyai/orca/commit/62d9eb635bfc6a92c155d8a738b7da73e372b3d9)：移植 fragment-only 更新不清除批注的判据，文档加载清理移至主框非 in-place 导航。未带入上游跨文档保留意见与标记几何分离机制，真正导航及重载仍按本基线清除批注。hash 路由应用仍无法仅靠 fragment 判断是否换页。
-
-继承以可闭合的模块为界：`browser-annotation-output.ts`、图片条和 `useNativeChatComposerAttachmentPreviews` 整模块沿用固定版本源码；`useBrowserAnnotationImages` 仅将 runtime resolver 接回本基线终端的 owner，并共用从既有原生 composer 提取的图片剪贴板判据。没有带入新版剪贴板 payload 模块中本基线缺少的复制文件 API。原 BW 折叠状态、外部 visibility flag、折叠翻译键及自写预览 URL 管理均已退役；折叠沿原生 Collapsible 和翻译键，保留数量及动作的可访问名称。
-
-发送 owner 保留本基线 `ReviewNotesSendMenuContent`、QuickLaunch 与侧栏 target mode，以同一 Markdown 交付图片路径和反馈。不单搬上游 async handoff、投递中去重或投递后删除 hook；这些依赖整条共用发送契约，会影响计划与验收的调用方，不是本次格式化和贴图的前置。未提交卡片的实时元素身份与定位机制亦未迁入，不把此定向同步说成整个批注子系统已升级。
-
-位置错位与 URL 锚点更新是不同问题。稳定版的已提交标记仍按捕获的页面坐标减 window 滚动量计算；BW 通过现有桥补充有界 selector，唯一匹配后缓存元素引用，滚动时读取实时边界。失联或歧义时隐藏，完全裁剪与 fixed 包含块关系交给浏览器 IntersectionObserver 判定，不手工模拟 CSS 裁剪规则；部分可见时仍按元素边界定位。原生展示型截断 selector 不作为元素身份传入桥，保留原坐标回退，避免一条长 selector 拒绝整组更新。该补充针对内层滚动，不是 #34267 的覆盖。#509 原反馈没有页面样例，现场原因须按普通滚动、内层滚动和滚动改 hash 分别复验。
-
-这里只涉及本机单人批注。双桌面实时互见与共同写入由 #576 跟踪，完整评审及会后改稿旅程归 #447。行为等价与 Windows 真壳验证范围以关联 PR 的证据为准。
-
 ### 2.1 已删除或迁移的上游内容
 
 - **Orca Mobile 产品已删除**：`mobile/` Expo 客户端、桌面 Mobile 产品页、Mobile 导航和对应 CI 不应在同步时恢复。
@@ -104,6 +85,7 @@ git merge orca-upstream/main
 
 只记录会影响 Orca 合并取舍的契约，不展开全部文件清单：
 
+- 网页批注继承 Orca v1.4.250 的相关模块，保留本基线必要适配与内层滚动标记修复；来源、取舍和验证见 [PR #579](https://github.com/forcegravity1989/builder-workbench/pull/579)。
 - `automation.runNow` 的可选 `oneShotPrompt`、capability 门控和 renderer/headless 两条派发语义；一次性上下文不写回保存的自动化提示。
 - 自动化编辑器的显式 `target/draft` 请求契约；BW 预填入口依赖该原生能力。
 - 任务详情的 source context、return-to-previous-view 和 worktree history replay；BW 不另建任务详情和历史系统。`openTaskPage({ preselectedRepoId })` 的预选优先级（显式预选 > 持久化 defaultRepoSelection > 全部项目）同为稳定契约：BW 侧栏任务入口靠它在 BW 壳内默认收窄到当前项目，页内筛选仍可改。
