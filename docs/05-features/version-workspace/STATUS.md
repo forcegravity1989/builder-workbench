@@ -141,6 +141,25 @@ Lens8（提示词/SKILL 规范）：F1 中 version-records 运行身份段补绑
 
 **未验 / 差异**：Rail 未放头像（原型中的演示头像无真实来源，生产不伪造）；原生列表行内固定/取消固定入口仍走原生右键菜单，未新增行内按钮；侧栏拖拽把手宽度、1280/1000 窄屏与暗色主题的视觉复核未做；跨宿主与远程主机的固定/绑定组合未验。
 
+### 遗留问题与交接（2026-11-06，点击跳列未收口）
+
+**状态**：原型与设计已入库并推送（`bf771aeb2c` 高保真与 A/B/C/D 对选、`27e608f340` A 定稿、`b241faf3ac` 生产接线、`3d6b8a88b5` 单滚动与点击跳列第一轮、`443653cd27` 本文档同步），分支 `kanadead/issue-500`，PR #523。工作区仅剩 `pnpm-lock.yaml` 行尾差异与未跟踪的 `.bw-tmp/`（探针、截图）、`.claude/` 会话文件，均不入库。
+
+**用户最新人工反馈（2026-11-06）**：真壳中仍会跳变且更明显——点击「已固定」中的工作树后，Orca 项目工作区看起来像被遮挡；点击 Orca 项目工作区中的工作树，版本区仍会展开。
+
+**已修复且有真壳证据**：整列单一滚动（`data-worktree-sidebar` 唯一滚动容器，前缀作 `scrollMargin`）；滚动锚点在共享前缀下保留有符号偏移；版本展开集合改为会话内沿用。探针覆盖过的路径（已固定跨项目点击、Orca 各工作树点击）`aria-expanded` 集合不变、滚轮上滚不被拉回。**这些证据不能推出用户所见路径已覆盖**，用户反馈视为冲突事实，以下疑点按证据强弱排列。
+
+**未解释疑点（均未证实/证伪，接手先取日志再动代码）**：
+1. `WorkbenchVersionNav` 的 `focusRequest` 副作用仍会「展开最新在制版本 + `scrollIntoView({block:'nearest'})`」。若点工作树会经 `switchActiveProject` / `enterObjectContext` 触发 focusRequest，这一条同时解释「版本被展开」与「滚动条被移动」两个现象。已验证点击路径未触发，但未穷尽（不同 activeView、目标目录、任务屏返回、跨项目已固定后再点等）。
+2. 切换活动项目会整块换版本清单：不同项目版本数/在制数不同，catalog 加载期还会先渲染「版本目录读取中…」再落清单，前缀高度先缩后长；`scrollMargin` 跟随变化，前缀以下全部内容位移。这是与展开态无关的结构性跳动来源，优先级最高。
+3. 「像被遮挡」最可能是第 2 条的一帧表现：前缀高度变化后，`scrollMargin` 要等 ResizeObserver 回调与下一次渲染才更新，中间帧行仍按旧 margin 定位而压到前缀底下；或前缀变高把 Orca 首行推出可视区。此前 rAF 探针（`.bw-tmp/probe-occlusion.mjs`）固定了容器高度、只覆盖已固定跨项目路径，未复现压行，不能排除加载窗口内的瞬时重叠。
+4. 锚点恢复与虚拟测量补偿在「前缀高度变化 + rows 变化」同时发生时是否收敛未验；`restoreSignal` 变化触发的恢复可能与新布局互拉。
+5. `VersionNavGroup` 展开内容是否有高度动画/多帧渐变，使前缀高度连续变化，未查。
+
+**建议顺序**：先用临时日志确认点击是否触发 focusRequest（疑点 1）；再对跨项目点击做每帧采样（前缀高度、scrollMargin、首行 top、scrollTop、`aria-expanded`、catalog loading 态）覆盖疑点 2/3；确认后优先做结构性修复——「切换项目期间前缀高度不得突变」（保留上一项目高度或固定骨架）——而不是继续在锚点恢复上打补丁。A 定稿的整列单一滚动条是硬约束，修复须守住。
+
+**环境与探针**：`export WORKBENCH_SHELL=1 VITE_WORKBENCH_SHELL=1 ORCA_PRODUCT_NAME=Workbench REMOTE_DEBUGGING_PORT=9338 ORCA_DEV_USER_DATA_PATH="$PWD/.bw-tmp/wb-profile-500"` 后执行 `node config/scripts/ensure-native-runtime.mjs --runtime=electron && node config/scripts/run-electron-vite-dev.mjs --workbench`（可见窗口，不带 `ORCA_BACKGROUND_LAUNCH`）；Playwright 连 `http://127.0.0.1:9338`，只做 DOM 断言，截图只存 `.bw-tmp/` 供人看、禁止回读。现有探针（未入库）`.bw-tmp/probe-pinned-workbench.mjs`（跨项目点已固定并读展开集合）、`probe-list-clicks.mjs`（逐项目点 Orca 工作树）、`probe-click-shift5.mjs`（scrollTop 写入追踪）、`probe-occlusion.mjs`（每帧前缀/首行重叠）。门禁：typecheck 0、改动文件 oxlint 0、受影响 vitest 11 文件 92 例通过。
+
 ## 历史交付边界（截至 #437，非 #439 结果）
 
 烟测延伸断言（重锚编辑链/清理单结构/总览挂载）已在 CI headless Electron 复核通过（run 39747900662，head 14f2ac399）；检视修正轮二＋merge main（#407）＋lint 与 typecheck 修正轮在 head 696c6d2ff 全链复核通过（run 39768520260）；merge main（#394/#409/#410/#414）＋验收侧尾巴＋裁定落地轮在 head 2f5d90185 全链复核通过（run 39885397115；期间 G2×v10 接缝 typecheck 两处随修于 edc40162e）。J1–J6、J9 清理执行链（Orca 确认单/force/他宿主实例共享通道删除与权限复核）、CodeHub 范围路径、侧栏/总览/只读回看视觉与明暗主题归人真壳；v10 验收板面×绑定回显、护栏撤除后绑定验收树的自动化登记（版本化 creationKey）与「与验收助手新建验收」注入链归人真壳（明早安装验证轮）；发布证据检索未接入（总览如实「未探测」）；总览任务完成数 live 读取未做（呈现引用数＋任务屏入口，墙卡读数仍承担 live 进展）；补绑定 issue 用途不提供（来源身份无法从登记完整推导）；补绑定死绑定就地预警=人裁定遗留、已转 Issue #419（见收尾合并节）；清理确认单勾选集为打开时快照（对话框打开后新出现的本机树不自动入列，重开即新）；只读回看停留期间树/绑定新出现不自动重定位（再次导航自愈）；history.read 返回的验收文档以类型断言收窄（main 侧已按 workflow 走 AcceptanceMaterialSchema.parse，实践安全）；WorktreeCardAgents 原生接口仅收裸 worktreeId（外层 key 已宿主限定；跨宿主同 id 时会话行本身可能挂错树，原生接口限制）；清理确认单 hostKey 折叠语义（null≡本机）与正牌身份 helper 的「未限定独立成桶」刻意不同（本机判定需要折叠，注释已说明）；compareMaterialVersions 无协议单测（裁定「不加测试用例」不加；四处消费方由 typecheck 与烟测兜底，缺口登记经检视轮三恢复）；侧栏两处同形分发壳（navigateVersionWorkflow、openGoalWorkspace）保持独立不共用 dispatchScopedWorktrees（候选来源与 none 分支语义不同：进屏/转开工，理由经检视轮三登记）；version-planning 正本两处「VersionGoalCard 只读骨架」声称为 main 侧陈旧（#394 已删该组件，已立 Issue #418）；总览遗留数据已适配 v10（2026-10-23 晨人裁定执行）：事实区纪要格增验收纪要行（文档级遗留计数＋确认状态如实，仅 v10 材料有该节）；周报表逐目标「待确认会议指导」计数保留给 v10 前 legacy 材料（v10 followups 为文档级、无 goalId，不做假归属）。轮四新增登记：跨 Builder 周期自动化提示词覆盖语义为「后到进屏者赢」而非「最新版赢」（共享轴 F4 残留，Issue #435）；relay 旧对端 strict schema 对绑定键 fail-closed 整条拒绝（不写坏、不静默丢字段，但报错为 zod parse 错误非人话、无能力探测，共享轴 F9，Issue #435）；CodeHub 来源身份收敛后存量简化形绑定降级为无候选回落创建器（恢复=补绑定/清理，CodeHub 轴 F1 兼容面，Issue #435）；CodeHub 详情按钮文案「Start workspace from issue」在范围态与真实行为（Open/选择器）不符，GitHub 详情面同 quirk（对等观察，Issue #435）；legacy 无版本后缀 creationKey 条目经 name 回退收编后清理单全键探测仍漏报（方向恒少报、不误删）；自动化「立即运行」真实会话轮今晚未执行（条目默认关闭/暂停，启用将挂周一 09:00 定时与人晨间验证冲突，留人裁定）；任务屏行 hydration 全量未等（gh 读回慢；板面侧 Issue live 状态已验）。J1–J6/J9 结构面部分已由收尾轮四真壳自验取代（存量双屏/总览/开工链端到端/v0.8 prepare/清理单结构/重启一致性，见「收尾轮四」节）；仍归人真壳：J9 执行面、配对宿主双机、CodeHub 真链、侧栏视觉与明暗主题。已完成项移出本节：验收 SKILL 正本同步与护栏撤除、版本排序统一、分发壳收敛、main 侧去前缀调查、原型事实区对齐——见「收尾合并与验收侧尾巴」节；P3a「未验证」段的清理占位/屏内选版仍在/总览行未渲染/只读回看未实现四条已被 P3b/P5/P6 交付取代。
