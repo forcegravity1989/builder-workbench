@@ -14,6 +14,7 @@ import { RightSidebarToggle, TitlebarMainStrip } from './TitlebarMainStrip'
 import type { AppChromeLayout } from './use-app-chrome-layout'
 import type { FloatingWorkspacePanelState } from './use-floating-workspace-panel'
 import { isWorkbenchShell } from '../workbench/is-workbench-shell'
+import { PrReviewNotifications } from '../workbench/pr-review-notifications/PrReviewNotifications'
 import { useProjectPage } from '../workbench/project-page-state'
 import { CycleWorkspaceProvider } from '../workbench/version-cycle/CycleWorkspaceProvider'
 import { useCycleWorkspace } from '../workbench/version-cycle/cycle-workspace-context'
@@ -124,6 +125,7 @@ export function AppWorkspaceShell(props: {
       <AppWorkspaceContent {...props} />
       <WorkbenchWorkspaceChoiceDialog />
       <WorkbenchVersionBindingDialog />
+      <PrReviewNotifications />
     </CycleWorkspaceProvider>
   )
 }

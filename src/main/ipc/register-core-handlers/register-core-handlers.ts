@@ -14,6 +14,7 @@ import { registerGitHubHandlers } from '../github'
 import { registerGitLabHandlers } from '../gitlab'
 import { registerCodeHubHandlers } from '../codehub'
 import { registerMilestoneRecoveryHandlers } from '../../workbench/milestone-recovery-ipc'
+import { registerReviewNotificationHandlers } from '../review-notification'
 import { registerHostedReviewHandlers } from '../hosted-review'
 import { registerLinearHandlers } from '../linear'
 import { registerJiraHandlers } from '../jira'
@@ -210,6 +211,7 @@ export function registerCoreHandlers(
   registerSessionHandlers(store)
   registerUIHandlers(store, { isDashboardPopoutRenderer })
   registerMilestoneRecoveryHandlers()
+  registerReviewNotificationHandlers()
   registerEmulatorFrameStreamHandlers()
   registerEmulatorVideoStreamHandlers()
   registerWorkspaceSpaceHandlers(store)
