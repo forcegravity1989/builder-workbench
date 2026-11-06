@@ -76,7 +76,13 @@ export function buildRows(
    * section. Why (#500): BW's version sidebar owns its bound trees and hides
    * them from the project list; pinning one must still surface it under 已固定.
    */
-  pinnedOnlyIdentities: ReadonlySet<string> = new Set<string>()
+  pinnedOnlyIdentities: ReadonlySet<string> = new Set<string>(),
+  /**
+   * Why (#475): BW's second column renders its own 已固定 column above the
+   * version block; the native list must not repeat it. Native shell keeps the
+   * upstream Pinned section.
+   */
+  suppressPinnedSection = false
 ): Row[] {
   const result: Row[] = []
   const projectIndex = buildProjectGroupingIndex(projectGrouping)
@@ -110,9 +116,7 @@ export function buildRows(
   const naturalSourceWorktrees =
     pinnedOnlyIdentities.size === 0
       ? worktrees
-      : worktrees.filter(
-          (worktree) => !pinnedOnlyIdentities.has(getWorktreeHostIdentity(worktree))
-        )
+      : worktrees.filter((worktree) => !pinnedOnlyIdentities.has(getWorktreeHostIdentity(worktree)))
   const naturalWorktrees =
     pinnedDisplayPolicy === 'duplicate-in-groups'
       ? naturalSourceWorktrees
@@ -149,22 +153,24 @@ export function buildRows(
     settings,
     projectGrouping
   })
-  emitPinnedGroup(
-    pinnedSectionWorktrees,
-    repoMap,
-    defaultHostId,
-    collapsedGroups,
-    renderedNaturalAnchorRepoIds,
-    importedWorktreesByRepo,
-    groupBy !== 'repo',
-    result,
-    lineageById,
-    worktreeMap,
-    nestLineage,
-    cyclicLineageIds,
-    noticeHostContextLabelByRepoId,
-    mixedWorktreeHostContextLabels
-  )
+  if (!suppressPinnedSection) {
+    emitPinnedGroup(
+      pinnedSectionWorktrees,
+      repoMap,
+      defaultHostId,
+      collapsedGroups,
+      renderedNaturalAnchorRepoIds,
+      importedWorktreesByRepo,
+      groupBy !== 'repo',
+      result,
+      lineageById,
+      worktreeMap,
+      nestLineage,
+      cyclicLineageIds,
+      noticeHostContextLabelByRepoId,
+      mixedWorktreeHostContextLabels
+    )
+  }
   if (groupBy === 'none') {
     // Why folder workspaces gate this too: an account with only folder
     // workspaces rendered nothing at all in flat mode before (#15362).

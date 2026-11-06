@@ -270,7 +270,8 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
         </p>
       ) : null}
 
-      <div className="worktree-sidebar-scrollbar flex min-h-0 min-w-0 flex-col gap-0.5 overflow-x-hidden overflow-y-auto overscroll-contain">
+      {/* #475 A 定稿：整列单一滚动——版本块不再自设滚动容器，交给第二列外层。 */}
+      <div className="flex min-w-0 flex-col gap-0.5">
         {entries.map((entry) => {
           const activeWorkflow: VersionWorkflow | null =
             activeBinding && activeBinding.version === entry.version

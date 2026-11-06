@@ -27,7 +27,7 @@
 | 6 | CodeHub 适配 | [codehub/](codehub/)³ | 在用·补链中 | ◐ | ◐ | ◐ | ◐ | ○(C01–C08 已定义) | ○(CJ01 已定义) |
 | 7 | Windows 出包与发布 | [workbench-release/](workbench-release/)³ | 开发方法资产·补链中 | ◐ | ◐ | ◐ | ◐ | ◐(R01/R02/R03/R05 v0.6.0 实走) | ◐(RJ01 走至读回) |
 | 8 | 集成页四卡收敛 | [connectors/](connectors/) · [原型](connectors/prototype.html)⁵ | 在用·补链中 | ● | ● | ● | ● | 待建(I01–I12 已定义) | 待建(IJ01 已定义) |
-| 9 | 版本工作区（侧边栏版本运作树） | [version-workspace/](version-workspace/) · [原型](version-workspace/version-workspace-prototype.html) · [双列侧栏 A 定稿](version-workspace/version-workspace-prototype-475.html)（#475，未接线） · [旅程](version-workspace/version-workspace-journey.html) | G2 基线；#546 四类固定工作区统一恢复，单测与本地真壳复验通过；#439 其余留白见 STATUS⁶ | ● | ● | ● | ◐(协议例；本轮用例净增 0) | ◐(headless 烟测主链，CI 随 push 复核) | ◐(绑定树旅程烟测；真壳归人) |
+| 9 | 版本工作区（侧边栏版本运作树） | [version-workspace/](version-workspace/) · [原型](version-workspace/version-workspace-prototype.html) · [双列侧栏 A 定稿](version-workspace/version-workspace-prototype-475.html)（#475，已接线） · [旅程](version-workspace/version-workspace-journey.html) | G2 基线；#546 四类固定工作区统一恢复，单测与本地真壳复验通过；#439 其余留白见 STATUS⁶ | ● | ● | ● | ◐(协议例；本轮用例净增 0) | ◐(headless 烟测主链，CI 随 push 复核) | ◐(绑定树旅程烟测；真壳归人) |
 | 10 | 版本总览 | [version-overview/](version-overview/) · [高保真](version-overview/prototype.html) · [旅程](version-overview/journey.html) | #334 目标内特性历程与 workflow；#530 共用事实及规划长度已接线 | ● | ●(三状态横轴、任务比例与独立次数已确认) | ●(共用事实/缓存与展示投影分离) | ●(核心身份/时间/布局/缓存协议) | ◐(结论见 STATUS 链接的 PR 验证报告) | ◐(各层运行证据见 PR，人工验收独立) |
 
 

@@ -19,6 +19,8 @@ import { useCycleWorkspace } from '../workbench/version-cycle/cycle-workspace-co
 import { usePlanColumnResize } from '../workbench/use-plan-column-resize'
 import { useMetricsWorkspaceOpen } from '../workbench/metrics-workspace-open'
 import { useMetricsBandResize } from '../workbench/use-metrics-band-resize'
+import { WorkbenchRail } from '../workbench/WorkbenchRail'
+import { useWorkbenchObjectContext } from '../workbench/workbench-object-context'
 
 const Landing = lazy(() => import('../components/Landing'))
 const WorktreeCreationPanel = lazy(
@@ -169,6 +171,7 @@ function AppWorkspaceContent(props: {
   const metricsOnly = metricsBoard && !cycle
   const band = useMetricsBandResize()
   const resize = usePlanColumnResize(Boolean(cycle?.context.worktreeId))
+  const showObjectPanel = useWorkbenchObjectContext()
   const titlebarLeftControls = <TitlebarLeftControls layout={layout} />
   const titlebarMainStrip = <TitlebarMainStrip layout={layout} />
   // Why: keep virtualized scroll memory above the sidebar's workspace/landing remount so the left list doesn't restart at scrollTop 0.
@@ -222,8 +225,19 @@ function AppWorkspaceContent(props: {
                   </div>
                   {/* Why: flex-1/min-h-0 slot needed under the fixed 36px header, else the sidebar collapses to content height and loses its scroll viewport. */}
                   <div className="flex min-h-0 flex-1">
-                    <WorktreeSidebar layout={layout} scrollRefs={sidebarScrollRefs} />
+                    {/* #475 A 定稿：窄 Rail 常驻；第二列只在对象上下文出现。 */}
+                    {layout.sidebarOpen ? <WorkbenchRail /> : null}
+                    {showObjectPanel ? (
+                      <WorktreeSidebar layout={layout} scrollRefs={sidebarScrollRefs} />
+                    ) : null}
                   </div>
+                </div>
+              ) : isWorkbenchShell() ? (
+                <div className="flex min-h-0 min-w-0">
+                  <WorkbenchRail />
+                  {showObjectPanel ? (
+                    <WorktreeSidebar layout={layout} scrollRefs={sidebarScrollRefs} />
+                  ) : null}
                 </div>
               ) : (
                 <WorktreeSidebar layout={layout} scrollRefs={sidebarScrollRefs} />

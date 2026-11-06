@@ -1,7 +1,5 @@
 import { useSyncExternalStore } from 'react'
 
-export const WORKBENCH_OTHER_PROJECTS_LABEL = '其他项目'
-
 export type VersionSidebarProjection = {
   repoId: string | null
   repoIds: readonly string[]

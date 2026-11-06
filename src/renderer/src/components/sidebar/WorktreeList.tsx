@@ -2,7 +2,6 @@ import React, { useCallback, useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { useVersionSidebarProjection } from '@/workbench/version-sidebar-state'
-import { getWorktreeHostIdentity } from '../../../../shared/worktree/host-qualified-identity'
 import { useShallow } from 'zustand/react/shallow'
 import {
   useAllWorktrees,
@@ -33,7 +32,10 @@ import { useSidebarExternalWorktreeCards } from './worktree-list/listing/use-ext
 import { useSidebarHostVisibleScope } from './worktree-list/listing/use-host-visible-scope'
 import { useSidebarRevealRequests } from './worktree-list/navigation/use-reveal-requests'
 import { useSidebarSectionRows } from './worktree-list/listing/use-section-rows'
-import { useVersionScopedWorktrees } from './worktree-list/listing/use-version-scoped-worktrees'
+import {
+  scopeDetectedWorktreesToProject,
+  useVersionScopedWorktrees
+} from './worktree-list/listing/use-version-scoped-worktrees'
 import { useSidebarWorktreeFilters } from './worktree-list/listing/use-filters'
 import { useSidebarWorktreeSelection } from './worktree-list/navigation/use-selection'
 import { useSidebarWorktreeSortOrder } from './worktree-list/listing/use-sort-order'
@@ -144,22 +146,10 @@ const WorktreeList = React.memo(function WorktreeList({
       worktreeLineageById,
       worktreeMap
     })
-  const nativeDetectedWorktrees = useMemo(() => {
-    if (!workbenchProject) {
-      return detectedWorktreesByRepo
-    }
-    return Object.fromEntries(
-      Object.entries(detectedWorktreesByRepo).map(([id, detected]) => [
-        id,
-        {
-          ...detected,
-          worktrees: detected.worktrees.filter(
-            (tree) => !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
-          )
-        }
-      ])
-    )
-  }, [detectedWorktreesByRepo, workbenchProject])
+  const nativeDetectedWorktrees = useMemo(
+    () => scopeDetectedWorktreesToProject(detectedWorktreesByRepo, workbenchProject),
+    [detectedWorktreesByRepo, workbenchProject]
+  )
   const effectiveCollapsedGroups = useEffectiveCollapsedGroups({
     collapsedGroups,
     agentSendTargetWorktreeId,
@@ -218,7 +208,8 @@ const WorktreeList = React.memo(function WorktreeList({
     filterRepoIds: filterState.filterRepoIds,
     visibleWorkspaceHostIds: filterState.visibleWorkspaceHostIds,
     workspaceHostScope: filterState.workspaceHostScope,
-    pinnedOnlyIdentities: versionBoundIdentities
+    pinnedOnlyIdentities: versionBoundIdentities,
+    suppressPinnedSection: isWorkbenchShell() && !!workbenchProject
   })
   const selection = useSidebarWorktreeSelection({
     sectionRows: rowModel.sectionRows,

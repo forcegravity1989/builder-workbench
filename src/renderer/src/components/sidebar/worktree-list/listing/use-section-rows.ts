@@ -20,8 +20,6 @@ import { addHostSectionRows } from '../../host-section-rows'
 import { orderHostSectionOptions } from '../../host-section-order'
 import { buildSidebarHostOptions } from '../../sidebar-host-options'
 import { selectPendingWorktreeCreationKeys } from './pending-worktree-creation-keys'
-import { projectWorkbenchRows } from './workbench-project-rows'
-import { useWorkbenchProjectFold } from './use-workbench-project-fold'
 
 type SectionRowsArgs = {
   workbenchProject?: { repoId: string; repoIds: readonly string[] }
@@ -49,6 +47,8 @@ type SectionRowsArgs = {
   workspaceHostScope: AppState['workspaceHostScope']
   /** Host-qualified identities excluded from natural groups but allowed in Pinned. */
   pinnedOnlyIdentities?: ReadonlySet<string>
+  /** BW second column renders 已固定 itself (#475); native list must not repeat it. */
+  suppressPinnedSection?: boolean
 }
 
 function collectRenderedSidebarRowKeys(sectionRows: ReturnType<typeof addHostSectionRows>) {
@@ -186,7 +186,8 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
         hostLabelById,
         defaultHostId,
         args.pinnedDisplayPolicy,
-        args.pinnedOnlyIdentities
+        args.pinnedOnlyIdentities,
+        args.suppressPinnedSection
       ),
     [
       args.groupBy,
@@ -210,7 +211,8 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
       pendingCreations,
       hostLabelById,
       args.pinnedDisplayPolicy,
-      args.pinnedOnlyIdentities
+      args.pinnedOnlyIdentities,
+      args.suppressPinnedSection
     ]
   )
   const orderedHostOptions = useMemo(
@@ -260,34 +262,11 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
       rows
     ]
   )
-  const otherProjects = useWorkbenchProjectFold(args.workbenchProject, args.worktreeMap)
-  const sectionRows = useMemo(
-    () =>
-      args.workbenchProject
-        ? projectWorkbenchRows({
-            rows: nativeSectionRows,
-            repoId: args.workbenchProject.repoId,
-            currentRepoIds: args.workbenchProject.repoIds,
-            repos: args.visibleReposForRows,
-            projectGroups: args.visibleProjectGroupsForRows,
-            worktrees,
-            expanded: otherProjects.expanded,
-            onToggle: otherProjects.toggle
-          })
-        : nativeSectionRows,
-    [
-      nativeSectionRows,
-      args.workbenchProject,
-      args.visibleReposForRows,
-      args.visibleProjectGroupsForRows,
-      worktrees,
-      otherProjects.expanded,
-      otherProjects.toggle
-    ]
-  )
+  // #475 A 定稿：第二列只服务当前项目，不再有「其他项目」分区；行模型即原生行。
+  const sectionRows = nativeSectionRows
   const renderedSidebarRowKeys = useMemo(
-    () => collectRenderedSidebarRowKeys(args.workbenchProject ? nativeSectionRows : sectionRows),
-    [args.workbenchProject, nativeSectionRows, sectionRows]
+    () => collectRenderedSidebarRowKeys(sectionRows),
+    [sectionRows]
   )
 
   return {
