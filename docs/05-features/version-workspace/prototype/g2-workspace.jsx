@@ -243,8 +243,13 @@ function ReuseSurface({ title, scope, description, children }) {
   )
 }
 function App() {
+  // #475 双列侧栏评审：同一份 JSX 由 475 入口页打开，按 A/B/C/D 方案渲染。
+  const is475 = !!window.__BW_PROTO_LAYOUT_475
   const [version, setVersion] = useState('v0.7'),
-    [screen, setScreen] = useState('project')
+    // 475 页默认落在对象上下文（版本工作区），其余模块入口是整页、没有第二列。
+    [screen, setScreen] = useState(is475 ? 'overview' : 'project')
+  const [variant475, setVariant475] = useState('a')
+  const [panel475, setPanel475] = useState('versions')
   const [versionOrder, setVersionOrder] = useState(['v0.7', 'v0.6'])
   const [selectedTreeId, setSelectedTreeId] = useState(null)
   const [selectedSessionId, setSelectedSessionId] = useState(null)
@@ -953,12 +958,199 @@ function App() {
       </div>
     )
   }
+  // #475 双列侧栏：把侧栏各段抽成变量，原布局与双列布局共用同一份内容。
+  const projectHeading475 = (
+    <div className="project-heading">
+      <span className="project-avatar">B</span>
+      <span>
+        Builder Workbench<small>当前项目</small>
+      </span>
+    </div>
+  )
+  const moduleNavs475 = (
+    <>
+      <Nav
+        icon={LayoutDashboard}
+        active={screen === 'project'}
+        onClick={() => setScreen('project')}
+      >
+        项目总览
+      </Nav>
+      <Nav icon={ListTodo} active={screen === 'tasks' && !taskVersion} onClick={openProjectTasks}>
+        任务
+      </Nav>
+      <Nav
+        icon={CalendarClock}
+        active={screen === 'automations'}
+        onClick={() => setScreen('automations')}
+      >
+        自动化
+      </Nav>
+      <Nav icon={BookOpen} active={screen === 'knowledge'} onClick={() => setScreen('knowledge')}>
+        知识库
+      </Nav>
+    </>
+  )
+  const versionsBlock475 = (
+    <>
+      <div className="sidebar-divider" role="separator" />
+      <div className="section-label">
+        <span>版本</span>
+        <Button icon={Plus} label="新建版本" onClick={openVersionDialog} />
+      </div>
+      {versionOrder.map(versionNav)}
+    </>
+  )
+  // #500：已固定作为对象面板顶部独立分组；固定只多显示一份，原位置不动。
+  const pinnedRows475 = ['v0.7/issue-383', 'remote/v0.7/plan', 'local/feature/notes']
+    .map((id) => bindingDemo.trees.find((tree) => tree.id === id))
+    .filter(Boolean)
+    .map((tree) => ({
+      tree,
+      meta: tree.owner === 'remote' ? `配对机 · ${tree.version || '未归版'}` : tree.version || '本机 · 未归版'
+    }))
+  const pinnedSection475 = (
+    <div className="pinned-section-475">
+      <div className="section-label">
+        <span>已固定</span>
+        <small>{pinnedRows475.length}</small>
+      </div>
+      {pinnedRows475.map(({ tree, meta }) => (
+        <button
+          key={tree.id}
+          className={`nav-row pinned-row-475${selectedTreeId === tree.id ? ' selected' : ''}`}
+          title={`${treeTitle(tree)} · ${meta}`}
+          onClick={() =>
+            activateTree(versionOrder.includes(tree.version) ? tree.version : null, tree)
+          }
+        >
+          <Icon icon={tree.owner === 'remote' ? MessageSquare : GitBranch} />
+          <span>{treeTitle(tree)}</span>
+          <small className="pinned-badge-475">{meta}</small>
+        </button>
+      ))}
+      <p className="pinned-note-475">固定只让这棵树在顶部多显示一份，原位置与版本区都不移动。</p>
+    </div>
+  )
+  const seg475 = (
+    <div className="panel-seg-475" role="tablist" aria-label="第二列内容">
+      <button
+        role="tab"
+        aria-selected={panel475 === 'versions'}
+        className={`seg-btn-475${panel475 === 'versions' ? ' selected' : ''}`}
+        onClick={() => setPanel475('versions')}
+      >
+        <Icon icon={PackageCheck} size={13} />
+        版本
+      </button>
+      <button
+        role="tab"
+        aria-selected={panel475 === 'workspaces'}
+        className={`seg-btn-475${panel475 === 'workspaces' ? ' selected' : ''}`}
+        onClick={() => setPanel475('workspaces')}
+      >
+        <Icon icon={GitBranch} size={13} />
+        工作区
+      </button>
+    </div>
+  )
+  // 只有对象上下文（版本工作区）带第二列；模块入口是整页，第二列收起、内容区占满。
+  // D 是对照方案：Rail 只换主区，第二列始终是同一份对象面板（上一版行为）。
+  const objectContext475 =
+    isVersionScreen || screen === 'project-workspaces' || screen === 'private'
+  const showPanel475 = is475 && (objectContext475 || variant475 === 'd')
+  const variantText475 = {
+    a: 'A · 单面板：已固定 / 版本 / Orca 工作区自上而下',
+    b: 'B · Rail 切换：版本工作区页签只列版本，Orca 工作区另有 Rail 入口',
+    c: 'C · 分段切换：面板顶部用「版本 / 工作区」切',
+    d: 'D · 独立（对照）：Rail 只换主区，第二列始终是同一份对象面板'
+  }
+  function railButton475(label, icon, active, onClick) {
+    return (
+      <button
+        className={`rail-button${active ? ' selected' : ''}`}
+        title={label}
+        aria-label={label}
+        aria-current={active ? 'page' : undefined}
+        onClick={onClick}
+      >
+        <Icon icon={icon} size={19} />
+      </button>
+    )
+  }
+  function enterObjectContext475() {
+    if (variant475 === 'b') {
+      setPanel475('versions')
+    }
+    if (objectContext475) {
+      return
+    }
+    const latest = versionOrder[0]
+    if (latest) {
+      go(latest, 'overview')
+    } else {
+      setScreen('project')
+    }
+  }
+  const rail475 = (
+    <aside className="rail-475" aria-label="全局导航">
+      <button
+        className="rail-brand"
+        title="项目墙"
+        aria-label="项目墙"
+        onClick={() => setScreen('wall')}
+      >
+        B
+      </button>
+      <div className="rail-group">
+        {railButton475('版本工作区', PackageCheck, objectContext475, enterObjectContext475)}
+        {railButton475('项目总览', LayoutDashboard, screen === 'project', () => setScreen('project'))}
+        {railButton475('任务', ListTodo, screen === 'tasks' && !taskVersion, openProjectTasks)}
+        {railButton475('自动化', CalendarClock, screen === 'automations', () =>
+          setScreen('automations')
+        )}
+        {railButton475('知识库', BookOpen, screen === 'knowledge', () => setScreen('knowledge'))}
+        {variant475 === 'b' &&
+          objectContext475 &&
+          railButton475('Orca 项目工作区', GitBranch, panel475 === 'workspaces', () =>
+            setPanel475('workspaces')
+          )}
+      </div>
+      <div className="rail-spacer" />
+      <span className="rail-avatar" title="yuzhup · 本地">
+        Y
+      </span>
+    </aside>
+  )
   return (
     <div className="prototype">
       <div className="review-bar">
-        <strong>#439 既有能力修正 · 版本工作区</strong>
-        <span>既有能力纠偏 · 数据与操作仅在本页演示</span>
+        <strong>
+          {is475 ? '#475 双列侧栏 · #500 置顶' : '#439 既有能力修正 · 版本工作区'}
+        </strong>
+        <span>
+          {is475 ? variantText475[variant475] : '既有能力纠偏 · 数据与操作仅在本页演示'}
+        </span>
         <div className="review-actions" aria-label="原型评审工具">
+          {is475 && (
+            <>
+              <span className="review-hint-475">方案</span>
+              {['a', 'b', 'c', 'd'].map((key) => (
+                <button
+                  key={key}
+                  className={`variant-btn-475${variant475 === key ? ' selected' : ''}`}
+                  aria-pressed={variant475 === key}
+                  onClick={() => {
+                    setVariant475(key)
+                    // 切换方案时都回到版本面板，避免上一方案的归属状态带过来。
+                    setPanel475('versions')
+                  }}
+                >
+                  {key.toUpperCase()}
+                </button>
+              ))}
+            </>
+          )}
           <button onClick={() => setScreen('wall')}>从项目墙进入</button>
           <button onClick={() => go('v0.7', 'tasks')}>版本任务</button>
           <button onClick={() => go('v0.7', 'tasks', 'G2')}>目标任务</button>
@@ -990,63 +1182,72 @@ function App() {
         </div>
       </div>
       <div className="shell">
-        <aside className="sidebar scrollbar-sleek-parent">
-          <div className="app-header">
-            <span className="brand-mark">B</span>
-            <strong>Workbench</strong>
-            <small>⌘ K</small>
-          </div>
-          <Nav icon={LayoutDashboard} active={screen === 'wall'} onClick={() => setScreen('wall')}>
-            项目墙
-          </Nav>
-          <div className="sidebar-scroll scrollbar-sleek worktree-sidebar-scrollbar">
-            <div className="bw-section">
-              <div className="project-heading">
-                <span className="project-avatar">B</span>
-                <span>
-                  Builder Workbench<small>当前项目</small>
-                </span>
+        {is475 && rail475}
+        <aside
+          className={`sidebar scrollbar-sleek-parent${is475 ? ' panel-475' : ''}${is475 && !showPanel475 ? ' hidden-475' : ''}`}
+        >
+          {!is475 && (
+            <>
+              <div className="app-header">
+                <span className="brand-mark">B</span>
+                <strong>Workbench</strong>
+                <small>⌘ K</small>
               </div>
               <Nav
                 icon={LayoutDashboard}
-                active={screen === 'project'}
-                onClick={() => setScreen('project')}
+                active={screen === 'wall'}
+                onClick={() => setScreen('wall')}
               >
-                项目总览
+                项目墙
               </Nav>
-              <Nav
-                icon={ListTodo}
-                active={screen === 'tasks' && !taskVersion}
-                onClick={openProjectTasks}
-              >
-                任务
-              </Nav>
-              <Nav
-                icon={CalendarClock}
-                active={screen === 'automations'}
-                onClick={() => setScreen('automations')}
-              >
-                自动化
-              </Nav>
-              <Nav
-                icon={BookOpen}
-                active={screen === 'knowledge'}
-                onClick={() => setScreen('knowledge')}
-              >
-                知识库
-              </Nav>
-              <div className="sidebar-divider" role="separator" />
-              <div className="section-label">
-                <span>版本</span>
-                <Button icon={Plus} label="新建版本" onClick={openVersionDialog} />
-              </div>
-              {versionOrder.map(versionNav)}
+            </>
+          )}
+          {is475 && variant475 === 'c' && seg475}
+          <div
+            className={`sidebar-scroll scrollbar-sleek worktree-sidebar-scrollbar${is475 && panel475 === 'workspaces' ? ' hidden-475' : ''}`}
+          >
+            <div className="bw-section">
+              {projectHeading475}
+              {is475 && pinnedSection475}
+              {!is475 && moduleNavs475}
+              {versionsBlock475}
             </div>
           </div>
-          <div className="native-projects scrollbar-sleek worktree-sidebar-scrollbar">
+          <div
+            className={`native-projects scrollbar-sleek worktree-sidebar-scrollbar${is475 && (variant475 === 'b' || variant475 === 'c') && panel475 === 'versions' ? ' hidden-475' : ''}${is475 && panel475 === 'workspaces' ? ' expanded-475' : ''}`}
+          >
+            {is475 && panel475 === 'workspaces' && (
+              <>
+                {projectHeading475}
+                {pinnedSection475}
+              </>
+            )}
             <div className="section-label native-workspaces-heading">
               <span>Orca 项目工作区</span>
               <div className="native-workspaces-tools">
+                <Button
+                  icon={ChevronRight}
+                  label="全部收起"
+                  onClick={() => {
+                    setNativeProjectOpen(false)
+                    setNativeOtherOpen(false)
+                    setOtherProjectsOpen(false)
+                    setClosedTrees((items) => [
+                      ...new Set([...items, ...nativeProjectTrees.map((tree) => tree.id)])
+                    ])
+                  }}
+                />
+                <Button
+                  icon={ChevronDown}
+                  label="全部展开"
+                  onClick={() => {
+                    setNativeProjectOpen(true)
+                    setNativeOtherOpen(true)
+                    setOtherProjectsOpen(true)
+                    const ids = new Set(nativeProjectTrees.map((tree) => tree.id))
+                    setClosedTrees((items) => items.filter((id) => !ids.has(id)))
+                  }}
+                />
                 <Button
                   icon={(props) => <NativeToolIcon kind="activity" {...props} />}
                   label="活动"
@@ -1161,9 +1362,11 @@ function App() {
               )}
             </div>
           </div>
-          <div className="sidebar-footer">
-            <span className="user-avatar">Y</span>yuzhup<span>本地</span>
-          </div>
+          {!is475 && (
+            <div className="sidebar-footer">
+              <span className="user-avatar">Y</span>yuzhup<span>本地</span>
+            </div>
+          )}
         </aside>
         <main className="workspace">
           <div className="workspace-header">

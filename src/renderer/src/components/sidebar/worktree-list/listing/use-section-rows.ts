@@ -47,6 +47,8 @@ type SectionRowsArgs = {
   filterRepoIds: readonly string[]
   visibleWorkspaceHostIds: readonly ExecutionHostId[] | null
   workspaceHostScope: AppState['workspaceHostScope']
+  /** Host-qualified identities excluded from natural groups but allowed in Pinned. */
+  pinnedOnlyIdentities?: ReadonlySet<string>
 }
 
 function collectRenderedSidebarRowKeys(sectionRows: ReturnType<typeof addHostSectionRows>) {
@@ -183,7 +185,8 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
         args.visibleFolderWorkspacesForRows,
         hostLabelById,
         defaultHostId,
-        args.pinnedDisplayPolicy
+        args.pinnedDisplayPolicy,
+        args.pinnedOnlyIdentities
       ),
     [
       args.groupBy,
@@ -206,7 +209,8 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
       args.newExternalWorktreesInboxByRepo,
       pendingCreations,
       hostLabelById,
-      args.pinnedDisplayPolicy
+      args.pinnedDisplayPolicy,
+      args.pinnedOnlyIdentities
     ]
   )
   const orderedHostOptions = useMemo(

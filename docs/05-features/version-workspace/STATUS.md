@@ -105,6 +105,34 @@ Lens8（提示词/SKILL 规范）：F1 中 version-records 运行身份段补绑
 
 人装机伴飞 v0.7 收尾＋v0.8 新建旅程，反馈 CF-1~CF-9 逐条 AskUser 拍板后本轮全部落地（设计面记 design「伴飞裁定落地」节）：P1 计划屏空计划态补「与计划助手新建计划」入口（`86369c06c`）；P2 任务屏范围读回批量化 `gh:workItemsBatch`（`b76968f9e`）；P3 初始化工作区旅程重排＋setup skip（与 P4 同 commit `37bd3f98e`）；P4 树行整行右击原生菜单去三点（同 `37bd3f98e`）；P5 开工入口预热（`df405f4c3`）；P6 Issue 开工预填名含号（`867cb865d`，plan 所指函数经源码核证不含号、按验收判据改取原生 intent 命名，偏差登记于 commit）；P7 两「任务」入口 tooltip（`93bcbfe9b`）。早轮已落：版本排序（`2d532dbfc`）、清理单文案（`b6afc2d9b`）、补绑定改造（`37976ee88`）、任务入口恢复（`299d118f7` revert `1c3c8e7d1`）。**验证方式**：本地无 node_modules——改动文件 npx oxlint --deny-warnings＋oxfmt 全过；typecheck/vitest/烟测交远端 CI（结论见 PR #437）；parity 测试两处清单同步（IPC 通道＋web 键集，既有测试最小修正非新增）。**未验证（归人真壳，明早临时包）**：初始化按钮秒级建两树无 Setup 窗口、树行右击菜单真壳形态、空计划态入口点击建会话、批量读回真网络耗时（result.timing 与 gh 信号量行为）、预热后开工创建耗时、intent 预填名端到端。**登记遗留**：codehub-cli 批量命令面待人内网 `codehub-cli --help` 复核（P2）；开工 10s 真壳 timing 归因（P5 预热后应显著改善）；OrcaYamlTrustDialog 文案「workbench」实为仓库名的 i18n 歧义归上游；任务屏范围态 SourceBar 手动切 provider 未锁死（调查发现小面）。
 
+## #500 置顶栏目（2026-11-04 重做）
+
+**设计变更（撤回 2026-10-30 旧方案）**：旧方案在目标目录内按 `isPinned` 自造排序、把 completed 树隐藏并加「含 N 已完成」计数展开、解绑时清 pin。经人确认整段撤除：置顶改为复用原生「已固定」栏目（位置在版本区之下、Orca 项目分组之上），完工隐藏与解绑清 pin 不做。旧节列出的五判据（排序、完工隐藏、计数展开、解绑清 pin）已不适用，不再作为现行行为证据。行为正本见 [spec](spec.md)「置顶栏目（#500）」。
+
+**验什么**：版本区行右键「固定」后，侧栏在版本区与 Orca 项目分组之间出现「已固定」栏目并含该树，版本区原件不动；「取消固定」后栏目消失、版本区仍不动。BW 壳默认 `showPinnedWorktreesInGroups=true`（duplicate-in-groups）：未绑定版本的原生树置顶后「已固定」多一份，项目分组原件仍在；显式关闭该设置回到原生 single-location。版本绑定树由版本区独占（BW 既有过滤，不进项目分组），置顶只进「已固定」。
+
+**命令与深链**：`pnpm run dev:workbench`（独立 profile `ORCA_DEV_USER_DATA_PATH`、`REMOTE_DEBUGGING_PORT=9342` 避单实例锁）；CDP 探针 `node .bw-tmp/issue500-e2e5.mjs`（全 DOM 断言；截图存 `.bw-tmp/` 供人查看，不回读）；深链：侧栏「版本工作区」v0.8 → G1 目标目录。版本绑定经生产端口 `nativeVersionBindingPort` 写入测试 profile，不落仓库文件。
+
+**门禁**：oxlint 改动文件 0 告警；`run-typecheck-projects-in-parallel` 0 错；`check-vitest-count-ratchet` 222 例在基线（BW 叠层零增删）；新增 1 例在 `components/sidebar/.../build-rows.test.ts`（不在叠层套件计数的目录内），覆盖「pinnedOnly 进已固定、不进自然分组」。
+
+**判据结果（S0–C5 全过，截图 `.bw-tmp/issue500-v5-*.png`）**：S0 设置缺省读回 true → S1 两棵真实树绑到 v0.8/G1 并在版本区可见、无已固定栏目 → C1 固定绑定树：已固定头 key `workbench:0:header::pinned`、文案「已固定」、索引在项目分组头之前，栏目内含该树且原生列表副本数 1（不重复渲染绑定树），版本区仍有原件 → C2 取消固定：栏目消失，版本区不动 → C3 显式关闭设置后固定另一棵：绑定树仍进已固定（single-location 只影响未绑定树的自然分组归属），版本区不动 → C4 未绑定树置顶：副本数由 1 变 2，已固定与项目分组各一份，取消固定回到 1 → C5 刷新后全程 console error / exception 为 0。
+
+**实现要点**：`showPinnedWorktreesInGroups` 的 BW 缺省经 `workbench-settings-defaults.ts` 同时补在「有状态文件」的 `normalizeLoadedGlobalSettings` 与「首次安装无状态文件」的 `loadedStateParsing` 两条载入路径，用户显式存 `false` 原样保留；`buildRows` 新增可选 `pinnedOnlyIdentities`（原 `WorktreeList` 把版本绑定树整棵过滤掉，导致固定后无栏目可进）；Cmd+1–9 的侧栏顺序回放路径（`computeRenderedSidebarWorktrees`）与 agent-send 展开逻辑同样接入该集合，避免绑定树按不存在的自然分组编号、或被收起的「已固定」栏目藏住；解绑只移除版本归属，不动 pin。
+
+**未验留白**：跨宿主 / 远程主机上写 pin 与绑定未验；「已固定」在收起状态下的拖放排序、折叠记忆未走人手工路径；版本绑定树若带固定后代（lineage）时子行是否随祖先进已固定未验；其他项目的固定树随「其他项目」分区呈现未经真壳；原生外观 → 侧栏设置对该策略的描述仍写「also appear in All, Project, Status, and PR」，与 BW 中绑定树只在版本区与「已固定」出现不一致（上游文案，本交付未改）；本机其余测试树（`e2e-500-p1/p2`）与测试 profile 的绑定属一次性验证数据，未并入仓库。
+
+## #475 双列侧栏设计（2026-11-05）
+
+响应 #523 评审意见：先按 #475 重做侧栏样式，再在新样式上呈现 #500 置顶。**状态：设计亮相与高保真已提交，A/B/C/D 选区待评审，未定稿、未开始生产接线。** 行为候选与评审要点见 [spec](spec.md)「双列侧栏（#475，评审中）」。
+
+**形态**：窄 Rail（64px，常驻：B 项目墙徽标 + 版本工作区 / 项目总览 / 任务 / 自动化 / 知识库 + 底部头像）＋第二列对象面板（296px，1280 屏 276、1000 屏 258）。第二列只有对象上下文出现；模块入口是整页，第二列收起、内容区占满（依据 Codex 的 library/images rail-only 反例，不假设「左列选域右列必显下级」）。版本工作区入口可在任意模块页点回。
+
+**A/B/C/D**：A 单面板（已固定/版本/Orca 工作区同列）；B 版本页签只列版本，Orca 工作区为 Rail 独立入口；C 面板顶「版本/工作区」分段切换；D 对照（Rail 只换主区，第二列不动=上一版）。#500 已固定作为对象面板顶部独立分组，固定只多显示一份、原件不动；B/C 工作区面板同样顶部已固定。#502 折叠按钮按方案落点（A/D 常驻、B 工作区页签、C 工作区分段），生产仍归 #502 自己的 PR。show more 未画。
+
+**验证（Playwright DOM 断言，截图 `.bw-tmp/shots475/` 供人看，不回读）**：原单列入口行为不变（sidebar/app-header/四模块导航/无已固定）；A/B/C/D 各自的 rail 入口数（4/5/4/4）、已固定 3 行且位于「版本」之前、面板宽度、无分段控件（A）、分段切换命中一个、点击已固定不删原树；D 切模块第二列仍在且内容未变、主区不占满（1080）；模块屏第二列收起、内容区 1376 占满、回版本工作区第二列回来（1080）；#502 折叠按钮 A 收起/展开生效、B/C 各按页签/分段出现与隐藏、D 任务屏仍常驻；布局 1440/1280/1000/900 无横向溢出；console/page error 双零。`build-g2.cjs --check` 一致，oxlint 0 告警。
+
+**待定与人评审点**：① A/B/C/D 选哪一版；② Rail 入口命名与图标（「版本工作区」PackageCheck）；③ 项目总览/任务/自动化/知识库将来是否需要各自第二列清单；④ 双列下原生侧栏设置、拖拽把手与响应式是否需要补充。未提交截图到 shots 分支（截图不入 feature commit）。
+
 ## 历史交付边界（截至 #437，非 #439 结果）
 
 烟测延伸断言（重锚编辑链/清理单结构/总览挂载）已在 CI headless Electron 复核通过（run 39747900662，head 14f2ac399）；检视修正轮二＋merge main（#407）＋lint 与 typecheck 修正轮在 head 696c6d2ff 全链复核通过（run 39768520260）；merge main（#394/#409/#410/#414）＋验收侧尾巴＋裁定落地轮在 head 2f5d90185 全链复核通过（run 39885397115；期间 G2×v10 接缝 typecheck 两处随修于 edc40162e）。J1–J6、J9 清理执行链（Orca 确认单/force/他宿主实例共享通道删除与权限复核）、CodeHub 范围路径、侧栏/总览/只读回看视觉与明暗主题归人真壳；v10 验收板面×绑定回显、护栏撤除后绑定验收树的自动化登记（版本化 creationKey）与「与验收助手新建验收」注入链归人真壳（明早安装验证轮）；发布证据检索未接入（总览如实「未探测」）；总览任务完成数 live 读取未做（呈现引用数＋任务屏入口，墙卡读数仍承担 live 进展）；补绑定 issue 用途不提供（来源身份无法从登记完整推导）；补绑定死绑定就地预警=人裁定遗留、已转 Issue #419（见收尾合并节）；清理确认单勾选集为打开时快照（对话框打开后新出现的本机树不自动入列，重开即新）；只读回看停留期间树/绑定新出现不自动重定位（再次导航自愈）；history.read 返回的验收文档以类型断言收窄（main 侧已按 workflow 走 AcceptanceMaterialSchema.parse，实践安全）；WorktreeCardAgents 原生接口仅收裸 worktreeId（外层 key 已宿主限定；跨宿主同 id 时会话行本身可能挂错树，原生接口限制）；清理确认单 hostKey 折叠语义（null≡本机）与正牌身份 helper 的「未限定独立成桶」刻意不同（本机判定需要折叠，注释已说明）；compareMaterialVersions 无协议单测（裁定「不加测试用例」不加；四处消费方由 typecheck 与烟测兜底，缺口登记经检视轮三恢复）；侧栏两处同形分发壳（navigateVersionWorkflow、openGoalWorkspace）保持独立不共用 dispatchScopedWorktrees（候选来源与 none 分支语义不同：进屏/转开工，理由经检视轮三登记）；version-planning 正本两处「VersionGoalCard 只读骨架」声称为 main 侧陈旧（#394 已删该组件，已立 Issue #418）；总览遗留数据已适配 v10（2026-10-23 晨人裁定执行）：事实区纪要格增验收纪要行（文档级遗留计数＋确认状态如实，仅 v10 材料有该节）；周报表逐目标「待确认会议指导」计数保留给 v10 前 legacy 材料（v10 followups 为文档级、无 goalId，不做假归属）。轮四新增登记：跨 Builder 周期自动化提示词覆盖语义为「后到进屏者赢」而非「最新版赢」（共享轴 F4 残留，Issue #435）；relay 旧对端 strict schema 对绑定键 fail-closed 整条拒绝（不写坏、不静默丢字段，但报错为 zod parse 错误非人话、无能力探测，共享轴 F9，Issue #435）；CodeHub 来源身份收敛后存量简化形绑定降级为无候选回落创建器（恢复=补绑定/清理，CodeHub 轴 F1 兼容面，Issue #435）；CodeHub 详情按钮文案「Start workspace from issue」在范围态与真实行为（Open/选择器）不符，GitHub 详情面同 quirk（对等观察，Issue #435）；legacy 无版本后缀 creationKey 条目经 name 回退收编后清理单全键探测仍漏报（方向恒少报、不误删）；自动化「立即运行」真实会话轮今晚未执行（条目默认关闭/暂停，启用将挂周一 09:00 定时与人晨间验证冲突，留人裁定）；任务屏行 hydration 全量未等（gh 读回慢；板面侧 Issue live 状态已验）。J1–J6/J9 结构面部分已由收尾轮四真壳自验取代（存量双屏/总览/开工链端到端/v0.8 prepare/清理单结构/重启一致性，见「收尾轮四」节）；仍归人真壳：J9 执行面、配对宿主双机、CodeHub 真链、侧栏视觉与明暗主题。已完成项移出本节：验收 SKILL 正本同步与护栏撤除、版本排序统一、分发壳收敛、main 侧去前缀调查、原型事实区对齐——见「收尾合并与验收侧尾巴」节；P3a「未验证」段的清理占位/屏内选版仍在/总览行未渲染/只读回看未实现四条已被 P3b/P5/P6 交付取代。

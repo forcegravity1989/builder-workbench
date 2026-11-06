@@ -33,6 +33,7 @@ import { useSidebarExternalWorktreeCards } from './worktree-list/listing/use-ext
 import { useSidebarHostVisibleScope } from './worktree-list/listing/use-host-visible-scope'
 import { useSidebarRevealRequests } from './worktree-list/navigation/use-reveal-requests'
 import { useSidebarSectionRows } from './worktree-list/listing/use-section-rows'
+import { useVersionScopedWorktrees } from './worktree-list/listing/use-version-scoped-worktrees'
 import { useSidebarWorktreeFilters } from './worktree-list/listing/use-filters'
 import { useSidebarWorktreeSelection } from './worktree-list/navigation/use-selection'
 import { useSidebarWorktreeSortOrder } from './worktree-list/listing/use-sort-order'
@@ -136,15 +137,13 @@ const WorktreeList = React.memo(function WorktreeList({
       defaultHostId,
       agentSendTargetWorktreeId
     })
-  const visibleWorktrees = useMemo(
-    () =>
-      workbenchProject
-        ? filteredWorktrees.filter(
-            (tree) => !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
-          )
-        : filteredWorktrees,
-    [filteredWorktrees, workbenchProject]
-  )
+  const { visibleWorktrees, pinnedOnlyIdentities: versionBoundIdentities } =
+    useVersionScopedWorktrees({
+      workbenchProject,
+      filteredWorktrees,
+      worktreeLineageById,
+      worktreeMap
+    })
   const nativeDetectedWorktrees = useMemo(() => {
     if (!workbenchProject) {
       return detectedWorktreesByRepo
@@ -176,7 +175,8 @@ const WorktreeList = React.memo(function WorktreeList({
     projectGroups,
     projectGrouping,
     folderWorkspaces,
-    defaultHostId
+    defaultHostId,
+    pinnedOnlyIdentities: versionBoundIdentities
   })
   const visibleScope = useSidebarHostVisibleScope({
     filterState,
@@ -217,7 +217,8 @@ const WorktreeList = React.memo(function WorktreeList({
     newExternalWorktreesInboxByRepo: externalWorktreeCards.newExternalWorktreesInboxByRepo,
     filterRepoIds: filterState.filterRepoIds,
     visibleWorkspaceHostIds: filterState.visibleWorkspaceHostIds,
-    workspaceHostScope: filterState.workspaceHostScope
+    workspaceHostScope: filterState.workspaceHostScope,
+    pinnedOnlyIdentities: versionBoundIdentities
   })
   const selection = useSidebarWorktreeSelection({
     sectionRows: rowModel.sectionRows,
