@@ -292,12 +292,12 @@ export function getAgentResumeArgv(
     // resume commands, so local and remote resumes agree on one spelling.
     case 'copilot':
       return providerSession.key === 'session_id' ? ['copilot', `--resume=${id}`] : null
-    // Why: Kimi resumes by id with --session; sessions are work-dir-scoped (enforced by callers).
     // Pin the backend: a remembered launchpad engine must not receive a DSH session id.
     case 'dsh':
       return providerSession.key === 'session_id'
         ? ['dsh-tui', '--backend=dsh', '--resume', id]
         : null
+    // Why: Kimi resumes by id with --session; sessions are work-dir-scoped (enforced by callers).
     case 'kimi':
       return providerSession.key === 'session_id' ? ['kimi', '--session', id] : null
   }

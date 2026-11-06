@@ -118,8 +118,7 @@ export const getAgentCatalog = createLocalizedCatalog((): AgentCatalogEntry[] =>
     id: 'dsh',
     label: translate('auto.lib.agent.catalog.dsh_label', 'DeepSeek Harness'),
     cmd: 'dsh-tui',
-    searchAliases: ['dsh', 'dst', 'DeepSeek Harness'],
-    faviconDomain: 'deepseek.com',
+    searchAliases: ['deepseek', 'dsh', 'dst', 'deepseek harness'],
     homepageUrl: 'https://github.com/deepseek-ai/deepseek-harness'
   },
   {
