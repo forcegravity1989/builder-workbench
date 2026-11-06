@@ -13449,8 +13449,9 @@
               "page": {
                 "annotation": {
                   "tray": {
-                    "collapse": "收起批注",
-                    "expand": "展开批注"
+                    "38d320108c": "收起批注",
+                    "9f209891a7": "展开批注",
+                    "includePageDetails": "包含页面详情"
                   }
                 }
               }

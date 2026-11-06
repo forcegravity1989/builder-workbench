@@ -1,3 +1,6 @@
+import { isImeCompositionKeyDown } from '@/lib/ime-composition-keyboard-event'
+import { useBrowserAnnotationImages } from './use-browser-annotation-images'
+import { BrowserAnnotationImageStrip } from './browser-annotation-image-strip'
 import { useState } from 'react'
 import { CornerDownLeft, MessageSquarePlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -18,20 +21,25 @@ import {
 
 export function PendingBrowserAnnotationCard({
   payload,
+  worktreeId,
   anchor,
   portalContainer,
   onAdd,
   onCancel
 }: {
   payload: BrowserGrabPayload
+  worktreeId: string
   anchor: BrowserOverlayAnchor
   portalContainer: HTMLElement | null
-  onAdd: (comment: string, intent: BrowserAnnotationIntent) => void
+  onAdd: (comment: string, intent: BrowserAnnotationIntent, imagePaths: string[]) => void
   onCancel: () => void
 }): React.JSX.Element {
   const [comment, setComment] = useState('')
   const [intent, setIntent] = useState<BrowserAnnotationIntent>('change')
+  const { images, imagePaths, saving, handlePaste, removeImage } =
+    useBrowserAnnotationImages(worktreeId)
   const trimmed = comment.trim()
+  const canAdd = Boolean(trimmed) && !saving
   const submitModifierLabel = getScreenSubmitModifierLabel()
 
   return (
@@ -61,7 +69,22 @@ export function PendingBrowserAnnotationCard({
           'auto.components.browser.pane.BrowserPane.b472c5fe03',
           'Add browser annotation'
         )}
+        onInteractOutside={(event) => {
+          if (
+            event.target instanceof Element &&
+            event.target.closest('[data-slot="dialog-content"], [data-slot="dialog-overlay"]')
+          ) {
+            event.preventDefault()
+          }
+        }}
         onEscapeKeyDown={(event) => {
+          if (
+            event.target instanceof Element &&
+            event.target.closest('[data-slot="dialog-content"]')
+          ) {
+            event.preventDefault()
+            return
+          }
           event.preventDefault()
           onCancel()
         }}
@@ -83,6 +106,7 @@ export function PendingBrowserAnnotationCard({
           id="browser-annotation-comment"
           value={comment}
           onChange={(event) => setComment(event.target.value)}
+          onPaste={handlePaste}
           placeholder={translate(
             'auto.components.browser.pane.BrowserPane.532bac48c5',
             'Describe what the agent should change here...'
@@ -91,6 +115,9 @@ export function PendingBrowserAnnotationCard({
           className="h-24 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
           autoFocus
           onKeyDown={(event) => {
+            if (isImeCompositionKeyDown(event)) {
+              return
+            }
             if (event.key === 'Escape') {
               event.preventDefault()
               event.stopPropagation()
@@ -100,12 +127,13 @@ export function PendingBrowserAnnotationCard({
             if (isScreenSubmitShortcut(event)) {
               event.preventDefault()
               event.stopPropagation()
-              if (trimmed) {
-                onAdd(trimmed, intent)
+              if (canAdd) {
+                onAdd(trimmed, intent, imagePaths)
               }
             }
           }}
         />
+        <BrowserAnnotationImageStrip images={images} onRemove={removeImage} />
         <div className="mt-2 min-w-0">
           <Label className="mb-1 block text-xs text-muted-foreground">
             {translate('auto.components.browser.pane.BrowserPane.8f87e6c2e5', 'Intent')}
@@ -149,8 +177,8 @@ export function PendingBrowserAnnotationCard({
           <Button
             size="sm"
             className="h-8 gap-1.5"
-            disabled={!trimmed}
-            onClick={() => onAdd(trimmed, intent)}
+            disabled={!canAdd}
+            onClick={() => onAdd(trimmed, intent, imagePaths)}
           >
             <MessageSquarePlus className="size-3.5" />
             {translate('auto.components.browser.pane.BrowserPane.90d021f2ad', 'Add')}
