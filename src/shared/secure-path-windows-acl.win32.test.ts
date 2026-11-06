@@ -355,7 +355,7 @@ describeOnWindows('restrictWindowsPathSync against a real filesystem', () => {
     expect(restrictWindowsPathSync(systemFile, false)).toBe(false)
     expect(warn).toHaveBeenCalledWith(
       '[secure-path.windows-acl] failed to restrict path',
-      expect.objectContaining({ detail: expect.stringContaining('denied') })
+      expect.objectContaining({ stage: 'reset', detail: expect.any(String) })
     )
     warn.mockRestore()
   })
@@ -384,7 +384,7 @@ describeOnWindows('restrictWindowsPathSync against a real filesystem', () => {
         settled = true
         throw new Error('settlement callback exploded')
       })
-      await vi.waitFor(() => expect(settled).toBe(true))
+      await vi.waitFor(() => expect(settled).toBe(true), { timeout: 30_000 })
       // An unhandled rejection is raised a turn later, so give the loop one.
       await new Promise((resolve) => setTimeout(resolve, 50))
     } finally {

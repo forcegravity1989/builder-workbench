@@ -6,10 +6,10 @@ import {
 } from '../../shared/child-process/__fixtures__/fake-spawned-child'
 import type * as WslModule from '../wsl'
 
-const { execFileSyncMock, spawnMock, getDefaultWslDistroMock } = vi.hoisted(() => ({
+const { execFileSyncMock, spawnMock, listWslDistrosAsyncMock } = vi.hoisted(() => ({
   execFileSyncMock: vi.fn(),
   spawnMock: vi.fn(),
-  getDefaultWslDistroMock: vi.fn()
+  listWslDistrosAsyncMock: vi.fn()
 }))
 
 vi.mock('child_process', () => ({
@@ -20,7 +20,7 @@ vi.mock('child_process', () => ({
 
 vi.mock('../wsl', async (importOriginal) => ({
   ...(await importOriginal<typeof WslModule>()),
-  getDefaultWslDistro: getDefaultWslDistroMock
+  listWslDistrosAsync: listWslDistrosAsyncMock
 }))
 
 import { ghExecFileAsync, glabExecFileAsync, setDefaultWslDistroOverride } from './runner'
@@ -42,8 +42,8 @@ describe('ghExecFileAsync WSL fallback', () => {
 
   beforeEach(() => {
     spawnMock.mockReset()
-    getDefaultWslDistroMock.mockReset()
-    getDefaultWslDistroMock.mockReturnValue(null)
+    listWslDistrosAsyncMock.mockReset()
+    listWslDistrosAsyncMock.mockResolvedValue([])
     setDefaultWslDistroOverride(null)
     _resetGhRateLimitBreaker()
     Object.defineProperty(process, 'platform', {
@@ -264,7 +264,7 @@ describe('ghExecFileAsync WSL fallback', () => {
   })
 
   it('retries cwd-less gh calls through the default WSL distro when host gh is missing', async () => {
-    getDefaultWslDistroMock.mockReturnValue('Ubuntu')
+    listWslDistrosAsyncMock.mockResolvedValue(['Ubuntu'])
     spawnMock
       .mockImplementationOnce(fakeSpawnReturning(spawnEnoent('gh')))
       .mockImplementationOnce(fakeSpawnReturning({ stdout: '{"resources":{}}' }))
@@ -287,7 +287,7 @@ describe('ghExecFileAsync WSL fallback', () => {
   })
 
   it('checks a blocked WSL scope before repeating a native-to-WSL fallback', async () => {
-    getDefaultWslDistroMock.mockReturnValue('Ubuntu')
+    listWslDistrosAsyncMock.mockResolvedValue(['Ubuntu'])
     spawnMock.mockImplementation(
       fakeSpawnDispatch((program) =>
         program === 'gh' ? spawnEnoent('gh') : { stderr: PRIMARY_RATE_LIMIT_STDERR, code: 1 }
@@ -351,7 +351,7 @@ describe('ghExecFileAsync WSL fallback', () => {
   })
 
   it('retries cwd-less glab calls through the default WSL distro when host glab is missing', async () => {
-    getDefaultWslDistroMock.mockReturnValue('Ubuntu')
+    listWslDistrosAsyncMock.mockResolvedValue(['Ubuntu'])
     spawnMock
       .mockImplementationOnce(fakeSpawnReturning(spawnEnoent('glab')))
       .mockImplementationOnce(fakeSpawnReturning({ stdout: '[]' }))
@@ -375,7 +375,7 @@ describe('ghExecFileAsync WSL fallback', () => {
 
   it('times out the default-WSL glab fallback and waits for full tree cleanup', async () => {
     vi.useFakeTimers()
-    getDefaultWslDistroMock.mockReturnValue('Ubuntu')
+    listWslDistrosAsyncMock.mockResolvedValue(['Ubuntu'])
     const wslChild = createFakeSpawnedChild(2400)
     const taskkill = createFakeSpawnedChild(3600)
     spawnMock
@@ -409,7 +409,7 @@ describe('ghExecFileAsync WSL fallback', () => {
   })
 
   it('aborts the default-WSL glab fallback with full process-tree cleanup', async () => {
-    getDefaultWslDistroMock.mockReturnValue('Ubuntu')
+    listWslDistrosAsyncMock.mockResolvedValue(['Ubuntu'])
     const wslChild = createFakeSpawnedChild(2400)
     const taskkill = createFakeSpawnedChild(3600)
     spawnMock
@@ -441,7 +441,7 @@ describe('ghExecFileAsync WSL fallback', () => {
   })
 
   it('does not wake the default WSL distro for host-only GitLab diagnostics', async () => {
-    getDefaultWslDistroMock.mockReturnValue('Ubuntu')
+    listWslDistrosAsyncMock.mockResolvedValue(['Ubuntu'])
     spawnMock
       .mockImplementationOnce(fakeSpawnReturning(spawnEnoent('glab')))
       .mockImplementationOnce(fakeSpawnReturning({ stdout: 'Logged in to gitlab.com' }))
@@ -475,7 +475,7 @@ describe('ghExecFileAsync WSL fallback', () => {
   it('resolves fallback to the overridden distro if configured, and falls back to default WSL distro otherwise', async () => {
     // 1) Test with override configured (should use 'Debian' override)
     setDefaultWslDistroOverride('Debian')
-    getDefaultWslDistroMock.mockReturnValue('Ubuntu')
+    listWslDistrosAsyncMock.mockResolvedValue(['Ubuntu'])
 
     spawnMock
       .mockImplementationOnce(fakeSpawnReturning(spawnEnoent('gh')))

@@ -172,12 +172,12 @@ describe('runtime metadata', () => {
 
   it.runIf(process.platform !== 'win32')(
     'uses hardened atomic writes for runtime credential stores on Unix',
-    () => {
+    async () => {
       const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-secure-files-'))
       tempDirs.push(userDataPath)
 
       new DeviceRegistry(userDataPath).addDevice('phone')
-      loadOrCreateE2EEKeypair(userDataPath)
+      await loadOrCreateE2EEKeypair(userDataPath)
       addEnvironmentFromPairingCode(userDataPath, {
         name: 'desk',
         pairingCode: encodePairingOffer({
@@ -202,7 +202,7 @@ describe('runtime metadata', () => {
 
   it.runIf(process.platform !== 'win32')(
     'hardens existing runtime credential stores before reading them on Unix',
-    () => {
+    async () => {
       const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-existing-secure-files-'))
       tempDirs.push(userDataPath)
       const keyMaterial = Buffer.from(new Uint8Array(32).fill(1)).toString('base64')
@@ -245,7 +245,7 @@ describe('runtime metadata', () => {
         token: 'token',
         scope: 'mobile'
       })
-      expect(loadOrCreateE2EEKeypair(userDataPath).publicKeyB64).toBe(keyMaterial)
+      expect((await loadOrCreateE2EEKeypair(userDataPath)).publicKeyB64).toBe(keyMaterial)
       expect(listEnvironments(userDataPath)[0]?.id).toBe(environment.id)
 
       for (const path of [devicesPath, keypairPath, environmentsPath]) {
@@ -255,13 +255,13 @@ describe('runtime metadata', () => {
     }
   )
 
-  it('replaces oversized E2EE keypair files instead of reading them as metadata', () => {
+  it('replaces oversized E2EE keypair files instead of reading them as metadata', async () => {
     const userDataPath = mkdtempSync(join(tmpdir(), 'orca-runtime-large-keypair-'))
     tempDirs.push(userDataPath)
     const keypairPath = join(userDataPath, 'orca-e2ee-keypair.json')
     writeFileSync(keypairPath, 'x'.repeat(9 * 1024))
 
-    const keypair = loadOrCreateE2EEKeypair(userDataPath)
+    const keypair = await loadOrCreateE2EEKeypair(userDataPath)
 
     expect(keypair.publicKey).toHaveLength(32)
     expect(statSync(keypairPath).size).toBeLessThan(1024)

@@ -94,7 +94,7 @@ export async function glabExecFileAsync(
         options.allowDefaultWslFallback !== false &&
         isHostCommandMissing(err, 'glab')
       ) {
-        const wslResolved = resolveDefaultWslCli('glab', args)
+        const wslResolved = await resolveDefaultWslCli('glab', args)
         if (wslResolved) {
           // Why: mirror gh's WSL-only fallback for global GitLab project/auth calls.
           resolved = wslResolved
