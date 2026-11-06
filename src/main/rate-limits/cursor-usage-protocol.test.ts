@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { net } from 'electron'
+import { setMainHttpClient } from '../network/http-client'
 import { fetchCursorRateLimits } from './cursor-fetcher'
 import {
   cursorSessionCookie,
@@ -47,7 +48,10 @@ const AUTH: Extract<CursorAuthReadResult, { status: 'ok' }> = {
 
 beforeEach(() => {
   vi.mocked(net.fetch).mockReset()
+  setMainHttpClient({ fetch: (url, init) => net.fetch(url, init), proxySession: () => null })
 })
+
+afterEach(() => setMainHttpClient(null))
 
 describe('Cursor quota data protocols', () => {
   it('rejects malformed JWT subjects and preserves cookie ownership and expiry boundaries', () => {
@@ -62,7 +66,7 @@ describe('Cursor quota data protocols', () => {
     expect(cursorSessionCookie(token)).toBe(`WorkosCursorSessionToken=auth0%7Cuser_a%3A%3A${token.raw}`)
   })
 
-  it('derives summary totals from amounts, keeps independent pools, and treats absent quotas as unknown', () => {
+  it('prefers reported plan totals and team member allowance without using team-wide spend', () => {
     const mapped = mapCursorUsageSummary(parseCursorUsageSummary({
       ...SUMMARY,
       individualUsage: {
@@ -73,13 +77,22 @@ describe('Cursor quota data protocols', () => {
         onDemand: null
       }
     }))
-    expect(mapped.monthly?.usedPercent).toBe(52.5)
+    expect(mapped.monthly?.usedPercent).toBe(53)
     expect(mapped.buckets.map(({ name, usedPercent }) => ({ name, usedPercent }))).toEqual([
       { name: 'Cursor Models', usedPercent: 12 }, { name: 'Other Models', usedPercent: 80 }
     ])
     expect(mapCursorUsageSummary(parseCursorUsageSummary(null))).toMatchObject({
       monthly: null, buckets: []
     })
+    for (const plan of [null, { enabled: false, totalPercentUsed: 0 }]) {
+      const team = mapCursorUsageSummary(parseCursorUsageSummary({
+        membershipType: 'team',
+        individualUsage: { plan, overall: { enabled: true, used: 10, limit: 100, totalPercentUsed: 64 } },
+        teamUsage: { onDemand: { enabled: true, used: 100, limit: 100 } }
+      }))
+      expect(team.monthly?.usedPercent).toBe(64)
+      expect(team.buckets).toEqual([])
+    }
     expect(mapCursorLegacyRequestQuota({
       'gpt-4': { numRequests: 25, maxRequestUsage: 50 }, startOfMonth: '2026-01-31T00:00:00Z'
     })).toMatchObject({ usedPercent: 50, resetsAt: Date.parse('2026-02-28T00:00:00Z') })
@@ -133,6 +146,7 @@ describe('Cursor quota data protocols', () => {
     const cases = [
       { status: 401, retryAfter: '60', delay: null },
       { status: 403, retryAfter: '60', delay: null },
+      { status: 302, retryAfter: '60', delay: null },
       { status: 429, retryAfter: '60', delay: 60_000 },
       { status: 429, retryAfter: date, delay: Date.parse(date) - now },
       { status: 429, retryAfter: '172800', delay: 86_400_000 },

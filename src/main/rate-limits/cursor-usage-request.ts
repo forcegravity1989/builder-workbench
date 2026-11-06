@@ -1,4 +1,5 @@
-import { net } from 'electron'
+import { getMainHttpClient } from '../network/http-client'
+import { abortSignalWithTimeout } from '../lib/abort-signal-with-timeout'
 import { parseUsageRetryAfterMs } from './usage-retry-after'
 import type { ProviderRateLimits, UsageRateLimitSource } from '../../shared/rate-limit-types'
 import type { CursorAuthSession } from './cursor-auth'
@@ -58,13 +59,9 @@ export async function fetchDashboardJson(
   // previous account's figures when the fresh result names an account, and a
   // switch whose first refresh 401s or 5xxs is exactly when it must.
   const provenance = cursorSessionProvenance(session)
-  const requestSignal = signal
-    ? AbortSignal.any([signal, AbortSignal.timeout(API_TIMEOUT_MS)])
-    : AbortSignal.timeout(API_TIMEOUT_MS)
-  const res = await net.fetch(url, {
-    // Why manual: the dashboard bounces an unusable session to /login, and
-    // 'error' would surface that as a generic network failure instead of the
-    // actionable sign-in message below.
+  const res = await getMainHttpClient().fetch(url, {
+    // Do not follow dashboard redirects with account credentials. Only an
+    // explicit 401 identifies a stale session; other HTTP failures stay unknown.
     redirect: 'manual',
     credentials: 'omit',
     headers: {
@@ -72,9 +69,9 @@ export async function fetchDashboardJson(
       ...(method === 'POST' ? { 'Content-Type': 'application/json' } : {})
     },
     ...(method === 'POST' ? { method, body: '{}' } : {}),
-    signal: requestSignal
+    signal: abortSignalWithTimeout(signal, API_TIMEOUT_MS)
   })
-  if (res.status === 401 || (res.status >= 300 && res.status < 400)) {
+  if (res.status === 401) {
     return {
       kind: 'result',
       result: cursorUsageResult('error', EXPIRED_MESSAGE, {
@@ -88,7 +85,8 @@ export async function fetchDashboardJson(
     }
   }
   if (res.status === 429) {
-    const retryAfterMs = parseUsageRetryAfterMs(res.headers.get('retry-after'))
+    const nowMs = Date.now()
+    const retryAfterMs = parseUsageRetryAfterMs(res.headers.get('retry-after'), nowMs)
     return {
       kind: 'result',
       result: cursorUsageResult('error', 'Cursor usage is rate limited right now', {
@@ -98,7 +96,7 @@ export async function fetchDashboardJson(
           authProvenance: provenance,
           failureKind: 'rate-limited',
           ...(retryAfterMs !== null
-            ? { retryAtMs: Date.now() + retryAfterMs }
+            ? { retryAtMs: nowMs + retryAfterMs }
             : {})
         }
       })
