@@ -69,12 +69,14 @@ await check('发送评审后：另一台主机收到通知，本机通知持续�
   assert.equal(await out.isVisible(), true)
   const text = await out.innerText()
   assert.match(text, /请求评审 PR #383 · 第 1 轮/)
-  assert.match(text, /自动同步 PR 动态/)
+  assert.match(text, /自动同步/)
+  assert.match(text, /开放/)
+  assert.match(text, /通过/)
   assert.equal(await page.locator('[data-testid="ct-outgoing-comments"]').count(), 0)
 })
 
 await check('本机悬浮球里的评审任务点击后进入对应 PR 详情页', async () => {
-  await page.locator('[data-testid="ct-panel"] .ct-item').first().click()
+  await page.locator('[data-testid="ct-panel"] .ct-item[data-item]').first().click()
   assert.equal(await page.locator('[data-testid="ct-panel"]').count(), 0)
   assert.equal(await page.locator('[data-testid="pr-page"]').isVisible(), true)
   assert.match(await page.locator('.pr-page h1').innerText(), /PR #378/)
@@ -106,7 +108,9 @@ await check('另一台主机打开评审请求并提交检视意见，本机通�
   assert.match(await page.locator('.pr-comments').innerText(), /重试上限/)
 
   await openLocalPanel()
-  assert.match(await page.locator('[data-testid="ct-outgoing-comments"]').innerText(), /检视意见 1 条/)
+  const comments = page.locator('[data-testid="ct-outgoing-comments"]')
+  assert.match(await comments.innerText(), /1/)
+  assert.match(await comments.getAttribute('title'), /未解决检视意见 1 条/)
   assert.equal(await page.locator('[data-testid="ct-resend"]').isVisible(), true)
 })
 
@@ -129,7 +133,7 @@ await check('评审人合入 PR 后，本机通知显示该 PR 已合入', async
   await page.locator('[data-testid="pr-merge"]').click()
   assert.match(await page.locator('[data-testid="pr-state"]').innerText(), /已合入/)
   await openLocalPanel()
-  assert.match(await page.locator('[data-testid="ct-outgoing-merged"]').innerText(), /该 PR 已合入/)
+  assert.match(await page.locator('[data-testid="ct-outgoing-merged"]').innerText(), /已合入/)
   assert.equal(await page.locator('[data-testid="ct-resend"]').count(), 0)
 })
 
@@ -157,7 +161,7 @@ await check('重置评审演示：清空两边的通知', async () => {
   assert.equal(await page.locator('[data-testid="pr-page"]').count(), 0)
 })
 
-await check('本机通知面板：六条待评审 PR 跨三个项目，宽 300px 且列表内滚动', async () => {
+await check('本机通知面板：六条待评审 PR 跨三个项目，宽 320px 且列表内滚动', async () => {
   await openLocalPanel()
   const head = await page.locator('[data-testid="ct-panel"] .ct-head').innerText()
   assert.match(head, /6 条/)
@@ -170,11 +174,18 @@ await check('本机通知面板：六条待评审 PR 跨三个项目，宽 300px
   assert.match(text, /PR #378/)
   assert.match(text, /林工/)
   assert.match(text, /14:32/)
+  assert.match(text, /开放/)
+  assert.match(text, /通过/)
   assert.doesNotMatch(text, /\d{1,2}:\d{2} 前|截止/)
   assert.equal(await first.locator('button').count(), 0)
 
+  const second = await page.locator('[data-item="pr112"]').innerText()
+  assert.match(second, /失败/)
+  assert.match(second, /第 2 轮/)
+  assert.match(second, /3/)
+
   const box = await page.locator('[data-testid="ct-panel"]').boundingBox()
-  assert.equal(Math.round(box.width), 300)
+  assert.equal(Math.round(box.width), 320)
   const list = page.locator('[data-testid="ct-panel"] .ct-list')
   const { scrollHeight, clientHeight } = await list.evaluate((el) => ({
     scrollHeight: el.scrollHeight,

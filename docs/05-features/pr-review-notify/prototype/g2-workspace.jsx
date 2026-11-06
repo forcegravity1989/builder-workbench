@@ -1845,46 +1845,203 @@ const CT_ITEMS = [
   {
     id: 'pr378',
     project: 'Builder Workbench',
-    title: '请求评审 PR #378',
+    number: 378,
+    title: '工作树右键菜单支持键盘导航',
     from: '林工',
-    time: '14:32'
+    time: '14:32',
+    state: 'open',
+    checks: 'success',
+    comments: 0
   },
   {
     id: 'pr412',
     project: 'Builder Workbench',
-    title: '请求评审 PR #412',
+    number: 412,
+    title: '版本计划导出保留自定义字段',
     from: '周工',
-    time: '今天 11:05'
+    time: '今天 11:05',
+    state: 'open',
+    checks: 'pending',
+    comments: 2
   },
   {
     id: 'pr112',
     project: '建木',
-    title: '请求评审 PR #112',
+    number: 112,
+    title: '流水线重试上限可配置',
     from: 'Leader',
-    time: '昨天 17:20'
+    time: '昨天 17:20',
+    state: 'open',
+    checks: 'failure',
+    comments: 3,
+    round: 2
   },
   {
     id: 'pr114',
     project: '建木',
-    title: '请求评审 PR #114',
+    number: 114,
+    title: '知识库索引增量更新',
     from: '陈工',
-    time: '昨天 15:40'
+    time: '昨天 15:40',
+    state: 'draft',
+    checks: 'success',
+    comments: 0
   },
   {
     id: 'pr58',
     project: '运维看板',
-    title: '请求评审 PR #58',
+    number: 58,
+    title: '告警静默规则支持时段',
     from: '王工',
-    time: '昨天 09:12'
+    time: '昨天 09:12',
+    state: 'open',
+    checks: 'neutral',
+    comments: 1
   },
   {
     id: 'pr371',
     project: 'Builder Workbench',
-    title: '请求评审 PR #371',
+    number: 371,
+    title: '会话注入失败时给出可读原因',
     from: '李工',
-    time: '11-02 16:20'
+    time: '11-02 16:20',
+    state: 'open',
+    checks: 'success',
+    comments: 0
   }
 ]
+
+// 原生 Lucide 路径。评审通知的视觉与 Orca 工作树悬浮窗里的 PR 段同口径。
+const CT_ICON_PATHS = {
+  bell: [
+    'M10.268 21a2 2 0 0 0 3.464 0',
+    'M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326'
+  ],
+  inbox: [
+    'M22 12h-6l-2 3h-4l-2-3H2',
+    'M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z'
+  ],
+  send: ['m22 2-7 20-4-9-9-4Z', 'M22 2 11 13'],
+  pr: ['M13 6h3a2 2 0 0 1 2 2v7', 'M6 9v12', 'M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z', 'M18 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z'],
+  external: [
+    'M15 3h6v6',
+    'M10 14 21 3',
+    'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'
+  ],
+  trash: [
+    'M3 6h18',
+    'M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6',
+    'M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2',
+    'M10 11v6',
+    'M14 11v6'
+  ],
+  refresh: [
+    'M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8',
+    'M21 3v5h-5',
+    'M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16',
+    'M8 16H3v5'
+  ],
+  comment: ['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'],
+  merge: ['M6 21V9a9 9 0 0 0 9 9', 'M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z', 'M18 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z'],
+  close: ['M18 6 6 18', 'm6 6 12 12'],
+  check: ['M20 6 9 17l-5-5'],
+  circleDot: [
+    'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z',
+    'M12 11a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z'
+  ],
+  clock: ['M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Z', 'M12 6v6l4 2']
+}
+
+// 与 WorktreeCardMetadataStatusBadges 同口径：图标 + 短标签，颜色取自原生状态色。
+const CT_STATE_BADGES = {
+  open: { kind: 'pr', label: '开放', tone: 'ok' },
+  draft: { kind: 'circleDot', label: '草稿', tone: '' },
+  merged: { kind: 'merge', label: '已合入', tone: 'merged' },
+  closed: { kind: 'close', label: '已关闭', tone: 'danger' }
+}
+
+const CT_CHECK_BADGES = {
+  success: { kind: 'check', label: '通过', tone: 'ok' },
+  failure: { kind: 'close', label: '失败', tone: 'danger' },
+  pending: { kind: 'clock', label: '等待', tone: 'warn' }
+}
+
+function CtStateBadge({ state, testId }) {
+  const badge = CT_STATE_BADGES[state]
+  if (!badge) {
+    return null
+  }
+  return (
+    <span
+      className={`ct-badge ${badge.tone}`}
+      data-testid={testId}
+      title={`PR 状态：${badge.label}`}
+    >
+      <CtIcon kind={badge.kind} />
+      {badge.label}
+    </span>
+  )
+}
+
+function CtChecksBadge({ status }) {
+  const badge = CT_CHECK_BADGES[status]
+  if (!badge) {
+    return null
+  }
+  return (
+    <span className={`ct-badge ${badge.tone}`} title={`Checks：${badge.label}`}>
+      <CtIcon kind={badge.kind} />
+      {badge.label}
+    </span>
+  )
+}
+
+function CtCommentBadge({ count, testId }) {
+  if (!count) {
+    return null
+  }
+  return (
+    <span
+      className="ct-badge"
+      data-testid={testId}
+      title={`未解决检视意见 ${count} 条`}
+    >
+      <CtIcon kind="comment" />
+      {count}
+    </span>
+  )
+}
+
+function CtRoundBadge({ round }) {
+  if (!round || round < 2) {
+    return null
+  }
+  return (
+    <span className="ct-badge" title={`第 ${round} 轮`}>
+      <CtIcon kind="refresh" />第 {round} 轮
+    </span>
+  )
+}
+
+function CtIcon({ kind, size = 12 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {CT_ICON_PATHS[kind].map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </svg>
+  )
+}
 
 function CollabTodo({
   outgoing,
@@ -1898,7 +2055,7 @@ function CollabTodo({
   const count = CT_ITEMS.length + (outgoing ? 1 : 0)
   const openIncoming = (item) => {
     setOpen(false)
-    onOpenPr(Number(item.title.match(/#(\d+)/)?.[1] || 0), 'inbox')
+    onOpenPr(item.number, 'inbox')
   }
   return (
     <>
@@ -1914,89 +2071,160 @@ function CollabTodo({
       {open && (
         <div className="ct-panel" data-testid="ct-panel" role="dialog" aria-label="PR 评审通知">
           <div className="ct-head">
+            <CtIcon kind="bell" />
             PR 评审
-            <small>{count} 条</small>
-            <button className="ct-close" aria-label="关闭" onClick={() => setOpen(false)}>
-              ✕
+            <span className="ct-count">{count} 条</span>
+            <button
+              type="button"
+              className="ct-icon-btn"
+              aria-label="关闭"
+              onClick={() => setOpen(false)}
+            >
+              <CtIcon kind="close" />
             </button>
           </div>
           <div className="ct-list">
             {outgoing && (
-              <>
-                <div className="ct-section">我发出的评审</div>
-                <div className="ct-out" data-testid="ct-outgoing">
-                  <div className="ct-out-top">
-                    <span className="ct-project">
-                      <span className="ct-pav" aria-hidden="true">B</span>
-                      <span className="ct-pname">Builder Workbench</span>
-                    </span>
-                    <span className="ct-time">{outgoing.sentAt}</span>
-                    <button
-                      className="ct-out-del"
-                      data-testid="ct-outgoing-delete"
-                      aria-label="删除这条评审通知"
-                      onClick={onDeleteOutgoing}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    className="ct-out-open"
-                    data-testid="ct-outgoing-open"
+              <section className="ct-section">
+                <div className="ct-section-head">
+                  <CtIcon kind="send" />
+                  我发出的评审
+                </div>
+                <div className="ct-items">
+                  <div
+                    className="ct-item"
+                    data-testid="ct-outgoing"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => {
                       setOpen(false)
                       onOpenPr(outgoing.number, 'local')
                     }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        setOpen(false)
+                        onOpenPr(outgoing.number, 'local')
+                      }
+                    }}
                   >
-                    <span className="ct-title">
-                      请求评审 PR #{outgoing.number} · 第 {outgoing.round} 轮
-                    </span>
-                    <span className="ct-scan">自动同步 PR 动态</span>
-                    {outgoingComments > 0 && !outgoingMerged && (
-                      <span className="ct-flag warn" data-testid="ct-outgoing-comments">
-                        检视意见 {outgoingComments} 条
+                    <div className="ct-item-head">
+                      <span className="ct-item-id">
+                        <CtIcon kind="pr" />
+                        PR #{outgoing.number}
                       </span>
-                    )}
-                    {outgoingMerged && (
-                      <span className="ct-flag ok" data-testid="ct-outgoing-merged">
-                        该 PR 已合入
+                      <span className="ct-actions">
+                        <button
+                          type="button"
+                          className="ct-icon-btn"
+                          data-testid="ct-outgoing-open"
+                          aria-label="打开 PR 详情"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            setOpen(false)
+                            onOpenPr(outgoing.number, 'local')
+                          }}
+                        >
+                          <CtIcon kind="external" />
+                        </button>
+                        <button
+                          type="button"
+                          className="ct-icon-btn"
+                          data-testid="ct-outgoing-delete"
+                          aria-label="删除这条评审通知"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            onDeleteOutgoing()
+                          }}
+                        >
+                          <CtIcon kind="trash" />
+                        </button>
                       </span>
-                    )}
-                  </button>
-                  {outgoingComments > 0 && !outgoingMerged && (
-                    <button
-                      type="button"
-                      className="ct-resend"
-                      data-testid="ct-resend"
-                      onClick={onResendReview}
-                    >
-                      解决检视意见后 · 再发起评审
-                    </button>
-                  )}
+                    </div>
+                    <div className="ct-item-body">
+                      <div className="ct-title">
+                        请求评审 PR #{outgoing.number} · 第 {outgoing.round} 轮
+                      </div>
+                      <div className="ct-badges">
+                        <CtStateBadge
+                          state={outgoingMerged ? 'merged' : 'open'}
+                          testId={outgoingMerged ? 'ct-outgoing-merged' : undefined}
+                        />
+                        <CtChecksBadge status="success" />
+                        {!outgoingMerged && (
+                          <CtCommentBadge
+                            count={outgoingComments}
+                            testId="ct-outgoing-comments"
+                          />
+                        )}
+                        <CtRoundBadge round={outgoing.round} />
+                      </div>
+                      <div className="ct-meta">
+                        <span>Builder Workbench</span>
+                        <span className="ct-sep">·</span>
+                        <span>发送于 {outgoing.sentAt}</span>
+                        <span className="ct-sep">·</span>
+                        <span>自动同步</span>
+                      </div>
+                      {outgoingComments > 0 && !outgoingMerged && (
+                        <button
+                          type="button"
+                          className="ct-resend"
+                          data-testid="ct-resend"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            onResendReview()
+                          }}
+                        >
+                          解决检视意见后 · 再发起评审
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </>
+              </section>
             )}
-            <div className="ct-section">待我评审</div>
-            {CT_ITEMS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="ct-item"
-                data-item={item.id}
-                onClick={() => openIncoming(item)}
-              >
-                <span className="ct-top">
-                  <span className="ct-project" data-project={item.project}>
-                    <span className="ct-pav" aria-hidden="true">{item.project.slice(0, 1)}</span>
-                    <span className="ct-pname">{item.project}</span>
-                  </span>
-                  <span className="ct-actor">{item.from}</span>
-                  <span className="ct-time">{item.time}</span>
-                </span>
-                <span className="ct-title">{item.title}</span>
-              </button>
-            ))}
+            <section className="ct-section">
+              <div className="ct-section-head">
+                <CtIcon kind="inbox" />
+                待我评审
+                <span className="ct-count">{CT_ITEMS.length}</span>
+              </div>
+              <div className="ct-items">
+                {CT_ITEMS.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="ct-item"
+                    data-item={item.id}
+                    onClick={() => openIncoming(item)}
+                  >
+                    <span className="ct-item-head">
+                      <span className="ct-item-id">
+                        <CtIcon kind="pr" />
+                        PR #{item.number}
+                      </span>
+                    </span>
+                    <span className="ct-item-body">
+                      <span className="ct-title">{item.title}</span>
+                      <span className="ct-badges">
+                        <CtStateBadge state={item.state} />
+                        <CtChecksBadge status={item.checks} />
+                        <CtCommentBadge count={item.comments} />
+                        <CtRoundBadge round={item.round} />
+                      </span>
+                      <span className="ct-meta">
+                        <span>{item.project}</span>
+                        <span className="ct-sep">·</span>
+                        <span>{item.from}</span>
+                        <span className="ct-sep">·</span>
+                        <span className="ct-time">{item.time}</span>
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </section>
           </div>
         </div>
       )}
@@ -2027,51 +2255,72 @@ function RemoteBall({ notes, live, onOpenPr }) {
           aria-label="另一台主机的通知"
         >
           <div className="ct-head">
+            <CtIcon kind="bell" />
             周工的 MacBook
-            <small>{notes.length} 条通知</small>
-            <button className="ct-close" aria-label="关闭" onClick={() => setOpen(false)}>
-              ✕
+            <span className="ct-count">{notes.length} 条通知</span>
+            <button
+              type="button"
+              className="ct-icon-btn"
+              aria-label="关闭"
+              onClick={() => setOpen(false)}
+            >
+              <CtIcon kind="close" />
             </button>
           </div>
           <div className="ct-list">
             {!notes.length && (
               <div className="rp-empty">暂无通知。本机发送评审后，这台主机会收到消息。</div>
             )}
-            {notes.map((note) => {
-              const state = live[note.number] || { comments: [], merged: false }
-              const openComments = state.comments.filter((comment) => !comment.resolved).length
-              return (
-                <button
-                  key={note.id}
-                  type="button"
-                  className="ct-item"
-                  data-testid={`remote-note-${note.round}`}
-                  onClick={() => {
-                    setOpen(false)
-                    onOpenPr(note.number, 'remote')
-                  }}
-                >
-                  <span className="ct-top">
-                    <span className="ct-project">
-                      <span className="ct-pav" aria-hidden="true">周</span>
-                      <span className="ct-pname">收到评审请求</span>
-                    </span>
-                    <span className="ct-time">{note.time}</span>
-                  </span>
-                  <span className="ct-title">
-                    PR #{note.number} · 第 {note.round} 轮
-                  </span>
-                  <span className="ct-scan">
-                    来自 {note.from}
-                    {state.merged
-                      ? ' · 已合入'
-                      : openComments
-                        ? ` · 已提 ${openComments} 条检视意见`
-                        : ' · 尚未评论或合入'}
-                  </span>
-                </button>
-              )
-            })}
+            <section className="ct-section">
+              <div className="ct-section-head">
+                <CtIcon kind="inbox" />
+                待我评审
+                {notes.length ? <span className="ct-count">{notes.length}</span> : null}
+              </div>
+              <div className="ct-items">
+                {notes.map((note) => {
+                  const state = live[note.number] || { comments: [], merged: false }
+                  const openComments = state.comments.filter(
+                    (comment) => !comment.resolved
+                  ).length
+                  return (
+                    <button
+                      key={note.id}
+                      type="button"
+                      className="ct-item"
+                      data-testid={`remote-note-${note.round}`}
+                      onClick={() => {
+                        setOpen(false)
+                        onOpenPr(note.number, 'remote')
+                      }}
+                    >
+                      <span className="ct-item-head">
+                        <span className="ct-item-id">
+                          <CtIcon kind="pr" />
+                          PR #{note.number}
+                        </span>
+                      </span>
+                      <span className="ct-item-body">
+                        <span className="ct-title">
+                          请求你评审 · PR #{note.number} · 第 {note.round} 轮
+                        </span>
+                        <span className="ct-badges">
+                          <CtStateBadge state={state.merged ? 'merged' : 'open'} />
+                          <CtChecksBadge status="success" />
+                          <CtCommentBadge count={openComments} />
+                          <CtRoundBadge round={note.round} />
+                        </span>
+                        <span className="ct-meta">
+                          <span>来自 {note.from}</span>
+                          <span className="ct-sep">·</span>
+                          <span className="ct-time">{note.time}</span>
+                        </span>
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
           </div>
         </div>
       )}
