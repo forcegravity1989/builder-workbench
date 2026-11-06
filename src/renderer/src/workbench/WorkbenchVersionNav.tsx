@@ -80,10 +80,28 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
   const versionElements = useRef(new Map<string, HTMLDivElement>())
 
   const expandedKey = repoId ? `workbench.version-expanded:${repoId}` : null
-  const [expandedOverride, setExpandedOverride] = useState<Set<string> | null>(null)
-  useEffect(() => {
-    setExpandedOverride(readExpandedStore(expandedKey))
-  }, [expandedKey])
+  // Why (#475): 展开/收起是用户在这一列里的显式操作。切换活动项目（点已固定或
+  // Orca 区里另一个项目的工作树）只应换掉版本清单，不应按新项目的存储或默认姿态
+  // 重新展开版本——那样每次点工作树版本块都会长高，整列上下跳。因此展开集合在
+  // 会话内沿用：首帧取当前项目记住的集合，之后只由用户点击改变；仍写回当前项目
+  // 的存储，重启后能恢复。
+  const [expandedOverride, setExpandedOverride] = useState<Set<string> | null>(() =>
+    readExpandedStore(expandedKey)
+  )
+  const setExpandedOverrideAndStore = useCallback(
+    (versions: Set<string>) => {
+      setExpandedOverride(versions)
+      if (!expandedKey) {
+        return
+      }
+      try {
+        window.localStorage.setItem(expandedKey, JSON.stringify([...versions]))
+      } catch {
+        // 存储被拒时本会话导航不受影响。
+      }
+    },
+    [expandedKey]
+  )
 
   const loaded = catalog.catalog
   // 显示序（#436 人裁定）：在制优先（在做的版本置顶）、组内版本号降序（新在前）、
@@ -110,6 +128,14 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
     }
     return seeded
   }, [expandedOverride, entries, browsedVersion])
+
+  // Why: 默认姿态只在会话首次有版本清单时落一次；否则切换项目时展开集合仍为
+  // null，会按新项目重新套默认展开，等于「点工作树就把版本展开」。
+  useEffect(() => {
+    if (expandedOverride === null && entries.length > 0) {
+      setExpandedOverride(new Set(expandedVersions))
+    }
+  }, [expandedOverride, entries.length, expandedVersions])
 
   useEffect(() => {
     const versions = new Set(entries.map((entry) => entry.version))
@@ -154,7 +180,7 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
     if (!latest) {
       return
     }
-    setExpandedOverride((current) => new Set([...(current ?? expandedVersions), latest.version]))
+    setExpandedOverrideAndStore(new Set([...expandedVersions, latest.version]))
     requestAnimationFrame(() => {
       if (useAppStore.getState().activeRepoId === repoId) {
         versionElements.current
@@ -170,7 +196,8 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
     catalog.error,
     catalog.materialError,
     entries,
-    expandedVersions
+    expandedVersions,
+    setExpandedOverrideAndStore
   ])
 
   const toggleVersion = useCallback(
@@ -181,16 +208,9 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
       } else {
         next.add(version)
       }
-      setExpandedOverride(next)
-      try {
-        if (expandedKey) {
-          window.localStorage.setItem(expandedKey, JSON.stringify([...next]))
-        }
-      } catch {
-        // 存储被拒时本会话导航不受影响。
-      }
+      setExpandedOverrideAndStore(next)
     },
-    [expandedVersions, expandedKey]
+    [expandedVersions, setExpandedOverrideAndStore]
   )
 
   const activeBinding = useMemo(

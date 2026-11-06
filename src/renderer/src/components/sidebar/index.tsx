@@ -18,6 +18,8 @@ import { useWorkspaceRevealBodyRedirect } from './use-workspace-reveal-body-redi
 import { resolveLeftSidebarStyleVariables } from '@/lib/left-sidebar-appearance'
 import { useSystemPrefersDark } from '@/components/terminal-pane/use-system-prefers-dark'
 import { lazyWithRetry } from '@/lib/lazy-with-retry'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { WorkbenchSidebarPinnedVersions } from '@/workbench/WorkbenchSidebarNav'
 
 // Why lazy: the Agents list pulls the whole activity pipeline (virtualizer, markdown
 // previews, thread derivation); users on the workspace view should not load or render any of it.
@@ -148,6 +150,33 @@ function Sidebar({
 
   useWorkspaceRevealBodyRedirect(sidebarOpen && sidebarBody === 'agents')
 
+  // #475：BW 第二列只在对象上下文出现；已固定与版本块随 Orca 工作区列表同滚。
+  const workbenchShell = isWorkbenchShell()
+  const sidebarHeader = (
+    <SidebarHeader
+      onWorkspaceBoardMenuOpenChange={setWorkspaceBoardMenuOpen}
+      activityOptionsTarget={setAgentOptionsTarget}
+    />
+  )
+  const worktreeList = (
+    <WorktreeList
+      scrollOffsetRef={worktreeScrollOffsetRef}
+      scrollAnchorRef={worktreeScrollAnchorRef}
+      workspaceBoardOpen={workspaceBoardOpen}
+      onWorkspaceBoardDragPreviewStart={previewWorkspaceBoardFromDrag}
+      onWorkspaceBoardDragPreviewCommit={solidifyWorkspaceBoardFromDrag}
+      onWorkspaceBoardDragPreviewCancel={cancelWorkspaceBoardDragPreview}
+      scrollPrefix={
+        workbenchShell ? (
+          <>
+            <WorkbenchSidebarPinnedVersions />
+            {sidebarHeader}
+          </>
+        ) : undefined
+      }
+    />
+  )
+
   return (
     <TooltipProvider delayDuration={400}>
       <div
@@ -161,10 +190,7 @@ function Sidebar({
           <>
             {/* Fixed controls */}
             <SidebarNav />
-            <SidebarHeader
-              onWorkspaceBoardMenuOpenChange={setWorkspaceBoardMenuOpen}
-              activityOptionsTarget={setAgentOptionsTarget}
-            />
+            {!workbenchShell || sidebarBody === 'agents' ? sidebarHeader : null}
             {sidebarBody === 'agents' ? (
               <React.Suspense fallback={<div className="min-h-0 flex-1" />}>
                 <ActivityThreadCollapseContext.Provider value={agentsCollapseState}>
@@ -181,14 +207,7 @@ function Sidebar({
                 </ActivityThreadCollapseContext.Provider>
               </React.Suspense>
             ) : (
-              <WorktreeList
-                scrollOffsetRef={worktreeScrollOffsetRef}
-                scrollAnchorRef={worktreeScrollAnchorRef}
-                workspaceBoardOpen={workspaceBoardOpen}
-                onWorkspaceBoardDragPreviewStart={previewWorkspaceBoardFromDrag}
-                onWorkspaceBoardDragPreviewCommit={solidifyWorkspaceBoardFromDrag}
-                onWorkspaceBoardDragPreviewCancel={cancelWorkspaceBoardDragPreview}
-              />
+              worktreeList
             )}
 
             <div className="relative shrink-0">

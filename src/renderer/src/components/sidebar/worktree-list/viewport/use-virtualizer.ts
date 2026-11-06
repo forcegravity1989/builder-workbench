@@ -30,8 +30,10 @@ export function useWorktreeListVirtualizer(args: {
   scrollRef: React.RefObject<HTMLDivElement | null>
   scrollOffsetRef: React.MutableRefObject<number>
   suppressMeasurementAdjustmentUntilRef: React.MutableRefObject<number>
+  /** Height of non-virtual content above the rows inside the same scroller (#475). */
+  scrollMargin?: number
 }) {
-  const { renderRows, firstHeaderIndex, scrollRef, scrollOffsetRef } = args
+  const { renderRows, firstHeaderIndex, scrollRef, scrollOffsetRef, scrollMargin = 0 } = args
   const stickyHeaderIndexes = useMemo(() => getStickyHeaderIndexes(renderRows), [renderRows])
   const activeStickyHeaderIndexRef = useRef<number | null>(null)
   const activeStickyHostIndexRef = useRef<number | null>(null)
@@ -106,6 +108,9 @@ export function useWorktreeListVirtualizer(args: {
   const virtualizer = useVirtualizer({
     count: renderRows.length,
     getScrollElement: () => scrollRef.current,
+    // Why (#475): the BW second column puts 已固定/版本 above the rows in the same
+    // scroller; TanStack needs that offset to window against the right scrollTop.
+    scrollMargin,
     estimateSize: (index) =>
       estimateRenderRowSize(
         renderRows,

@@ -56,6 +56,8 @@ export function renderFolderWorkspaceVirtualRow(args: {
   row: FolderWorkspaceItemRow
   vItem: VirtualItem
   measureVirtualRowElement: (element: HTMLDivElement | null) => void
+  /** #475: rows sit below the shared scroll prefix; item.start includes it. */
+  scrollMargin: number
 }): React.JSX.Element {
   const { ctx, row, vItem } = args
   const folderWorktree = folderWorkspaceToWorktree(row.folderWorkspace)
@@ -101,7 +103,7 @@ export function renderFolderWorkspaceVirtualRow(args: {
       data-index={vItem.index}
       ref={args.measureVirtualRowElement}
       className="absolute left-0 right-0 top-0"
-      style={{ transform: getVirtualRowTransform(vItem.start) }}
+      style={{ transform: getVirtualRowTransform(vItem.start - args.scrollMargin) }}
       onClickCapture={ctx.onRowClickCapture}
       onPointerDown={(event) => ctx.onRowPointerDown(event, folderWorktree, folderWorktree.id)}
     >

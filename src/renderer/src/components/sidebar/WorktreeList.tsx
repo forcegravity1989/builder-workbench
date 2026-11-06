@@ -47,6 +47,8 @@ import { buildWorktreeManualOrderCatalog } from './worktree-manual-order-catalog
 type WorktreeListProps = {
   scrollOffsetRef: React.MutableRefObject<number>
   scrollAnchorRef: React.MutableRefObject<VirtualizedScrollAnchor>
+  /** #475: BW second-column content sharing this list's single scroll container. */
+  scrollPrefix?: React.ReactNode
   workspaceBoardOpen?: boolean
   onWorkspaceBoardDragPreviewStart?: () => void
   onWorkspaceBoardDragPreviewCommit?: () => void
@@ -56,6 +58,7 @@ type WorktreeListProps = {
 const WorktreeList = React.memo(function WorktreeList({
   scrollOffsetRef,
   scrollAnchorRef,
+  scrollPrefix,
   workspaceBoardOpen = false,
   onWorkspaceBoardDragPreviewStart = NOOP_WORKSPACE_BOARD_DRAG_PREVIEW_CALLBACK,
   onWorkspaceBoardDragPreviewCommit = NOOP_WORKSPACE_BOARD_DRAG_PREVIEW_CALLBACK,
@@ -293,7 +296,13 @@ const WorktreeList = React.memo(function WorktreeList({
   })
   // Why: when active filters hide every row, the Clear Filters empty state must win over Project Group headers.
   if (rowModel.rows.length === 0 || filtersHideAllRows) {
-    return <SidebarWorktreeListEmptyState hasFilters={hasFilters} onClearFilters={clearFilters} />
+    return (
+      <SidebarWorktreeListEmptyState
+        hasFilters={hasFilters}
+        onClearFilters={clearFilters}
+        scrollPrefix={scrollPrefix}
+      />
+    )
   }
 
   return (
@@ -317,6 +326,7 @@ const WorktreeList = React.memo(function WorktreeList({
         onOpenWorktreeVisibility={handleOpenWorktreeVisibility}
       />
       <VirtualizedWorktreeViewport
+        scrollPrefix={scrollPrefix}
         // Why: status headers move during wake (inactive -> active); key only on grouping mode so row identity survives.
         key={`group:${groupBy}:host:${filterState.visibleWorkspaceHostIds?.join(',') ?? 'all'}:lineage`}
         rows={rowModel.sectionRows}

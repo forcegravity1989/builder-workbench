@@ -85,6 +85,8 @@ export function renderWorktreeSectionHeaderRow(args: {
   hasStickyHost: boolean
   hasHeaderTopSpacing: boolean
   measureVirtualRowElement: (element: HTMLDivElement | null) => void
+  /** #475: rows sit below the shared scroll prefix; item.start includes it. */
+  scrollMargin: number
 }): React.JSX.Element {
   const { ctx, row, vItem, isActiveStickyHeader } = args
   const { headerDrag } = ctx
@@ -201,7 +203,11 @@ export function renderWorktreeSectionHeaderRow(args: {
             )
           : 'absolute top-0'
       )}
-      style={isActiveStickyHeader ? undefined : { transform: getVirtualRowTransform(vItem.start) }}
+      style={
+        isActiveStickyHeader
+          ? undefined
+          : { transform: getVirtualRowTransform(vItem.start - args.scrollMargin) }
+      }
     >
       <div
         id={getWorktreeOptionId(row.presentationKey ?? row.key)}

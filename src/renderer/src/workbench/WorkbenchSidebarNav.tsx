@@ -7,9 +7,8 @@ import { WorkbenchWorkspaceChoiceDialog } from './WorkbenchWorkspaceChoiceDialog
 import { WorkbenchVersionBindingDialog } from './version-tree-bind-dialog'
 
 /**
- * #475 A 定稿：第二列（对象面板）＝项目标题 → 已固定 → 版本块，共用单一滚动容器；
- * Orca 原生项目工作区列表仍在其下（由原生虚拟化视图占用自己的滚动）。
- * 项目墙、项目总览、任务、自动化、知识库入口移入 Rail，不在第二列重复。
+ * #475 A 定稿：第二列的固定部分只留项目标题；已固定与版本块下移到 Orca 工作区
+ * 列表的同一滚动容器里（见 WorkbenchSidebarPinnedVersions），整列只有一个滚动条。
  */
 export function WorkbenchSidebarNav(): React.JSX.Element | null {
   const projectName = useAppStore((s) => {
@@ -22,10 +21,7 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
   }
 
   return (
-    <div
-      className="wb-nav flex max-h-[65%] min-h-0 min-w-0 shrink flex-col px-2 pt-2 pb-1"
-      data-workbench-nav
-    >
+    <div className="wb-nav flex min-w-0 shrink-0 flex-col px-2 pt-2" data-workbench-nav>
       <div className="wb-proj flex shrink-0 items-center gap-2 px-2 py-2" data-workbench-project>
         <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--color-accent)] text-xs font-semibold text-white">
           {(projectName ?? '项目墙').slice(0, 1).toUpperCase()}
@@ -40,15 +36,23 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
         </span>
       </div>
 
-      <div className="worktree-sidebar-scrollbar flex min-h-0 min-w-0 flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <WorkbenchPinnedSection />
-        <WorkbenchVersionNav />
-      </div>
-
       {/* G2 多候选工作区选择器挂在侧栏层：任务屏、侧栏目标菜单与流程行在任意
           视图触发选择时都可见（Radix portal，不受侧栏布局裁剪）。 */}
       <WorkbenchWorkspaceChoiceDialog />
       <WorkbenchVersionBindingDialog />
+    </div>
+  )
+}
+
+/**
+ * 已固定 + 版本块。由 Sidebar 作为 WorktreeList 的 scrollPrefix 传入，与 Orca 项目
+ * 工作区列表共享同一个滚动容器（#475 单一滚动条）。
+ */
+export function WorkbenchSidebarPinnedVersions(): React.JSX.Element {
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5 px-2 pb-1" data-workbench-scroll-prefix>
+      <WorkbenchPinnedSection />
+      <WorkbenchVersionNav />
     </div>
   )
 }

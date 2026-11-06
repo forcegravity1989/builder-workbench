@@ -18,6 +18,10 @@ import type { ProgrammaticScrollMarks } from './programmatic-scroll-marks'
 export type VirtualizedScrollAnchor = {
   fallbackKeys?: readonly string[]
   key: string
+  // Why: signed position of the anchored row relative to the viewport top.
+  // Positive means the row's top is hidden above it (normal case); negative
+  // means non-virtual content (a shared scroll prefix) sits above the rows, so
+  // restore targets the recorded viewport position instead of the viewport top.
   offset: number
   // Why: the scroll offset this anchor was derived from lets restore detect
   // that the viewport moved (user scroll or clamp) after the anchor was
@@ -286,10 +290,11 @@ export function useVirtualizedScrollAnchor<
       // disarm it via the scroll listener.
       pendingRestoreRef.current = true
     }
-    if (virtualizer.isScrolling && hasDirectScrollInputRef.current?.() === true) {
-      // Why: remeasurement during wheel scrolling can change totalSize. Restoring
-      // the anchor in that window writes scrollTop and fights the user's wheel.
-      // Programmatic scrolls during remount still need anchor correction.
+    if (hasDirectScrollInputRef.current?.() === true) {
+      // Why: wheel/touch input means the user owns the viewport. Skipping only
+      // would re-fire the armed restore once the input window lapses and snap
+      // them back; disarm instead so the position they scrolled to wins.
+      pendingRestoreRef.current = false
       return
     }
     if (shouldSkipRestore?.()) {
