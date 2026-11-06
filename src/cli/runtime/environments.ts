@@ -54,7 +54,7 @@ export function resolveEnvironmentPairingOffer(
 export function markEnvironmentUsed(
   userDataPath: string,
   selector: string,
-  args: { runtimeId?: string | null; now?: number } = {}
+  args: Parameters<typeof markEnvironmentUsedInStore>[2] = {}
 ): void {
   translateStoreError(() => markEnvironmentUsedInStore(userDataPath, selector, args))
 }

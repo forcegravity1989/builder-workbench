@@ -1,3 +1,4 @@
+import type { RemoteServerPairingFailureFields } from './remote-server-pairing-failure-copy'
 import { evaluateRuntimeCompat } from './protocol-compat'
 import { MIN_COMPATIBLE_RUNTIME_SERVER_VERSION, RUNTIME_PROTOCOL_VERSION } from './protocol-version'
 import type { PublicKnownRuntimeEnvironment } from './runtime-environments'
@@ -10,8 +11,9 @@ export type RemotePairingFailureKind =
   | 'protocol-incompatible'
   | 'connection-interrupted'
   | 'environment-save-failed'
+  | 'different-server'
 
-export type RemotePairingFailure = {
+export type RemotePairingFailure = Partial<RemoteServerPairingFailureFields> & {
   ok: false
   kind: RemotePairingFailureKind
   message: string
@@ -22,6 +24,7 @@ export type VerifyAndAddRuntimeEnvironmentResult =
       ok: true
       environment: PublicKnownRuntimeEnvironment
       runtimeStatus: RuntimeStatus
+      updatedExisting?: true
     }
   | RemotePairingFailure
 

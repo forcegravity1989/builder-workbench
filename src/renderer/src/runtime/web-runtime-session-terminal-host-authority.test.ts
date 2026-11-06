@@ -1,7 +1,7 @@
+import { createWebRuntimeSessionTerminalResult } from './web-runtime-terminal-create-operation'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  createWebRuntimeAgentSessionTerminal,
-  createWebRuntimeAgentSessionTerminalWithLaunchDraft,
+  deliverCreatedWebRuntimeAgentSessionPrompt,
   createWebRuntimeSessionTerminal
 } from './web-runtime-session'
 import { peekWebSessionFocusIntent } from './web-session-focus-intent'
@@ -550,16 +550,11 @@ describe('createWebRuntimeSessionTerminal', () => {
     })
 
     await expect(
-      createWebRuntimeAgentSessionTerminal({
-        worktreeId: WORKTREE_ID,
-        agentSessionKind: 'fresh',
-        agent: 'claude',
-        command: 'claude',
-        promptAfterReady: 'continue the unfinished task',
-        submitPrompt: true,
-        forcePromptPaste: true
-      })
-    ).resolves.toEqual({ outcome: { status: 'created' }, promptDelivered: true })
+      deliverCreatedWebRuntimeAgentSessionPrompt(
+        await createWebRuntimeSessionTerminalResult({ worktreeId: WORKTREE_ID, agentSessionKind: 'fresh', agent: 'claude', command: 'claude' }),
+        { agent: 'claude', promptAfterReady: 'continue the unfinished task', submitPrompt: true, forcePromptPaste: true }
+      )
+    ).resolves.toBe(true)
 
     const createRequest = runtimeCall.mock.calls.find(
       ([request]) => request.method === 'terminal.createAgentSession'
@@ -612,14 +607,11 @@ describe('createWebRuntimeSessionTerminal', () => {
     })
 
     await expect(
-      createWebRuntimeAgentSessionTerminalWithLaunchDraft({
-        worktreeId: WORKTREE_ID,
-        agentSessionKind: 'fresh',
-        agent: 'claude',
-        command: "claude --prefill 'https://github.com/o/r/issues/12'",
-        launchDraft: 'https://github.com/o/r/issues/12'
-      })
-    ).resolves.toEqual({ status: 'created' })
+      deliverCreatedWebRuntimeAgentSessionPrompt(
+        await createWebRuntimeSessionTerminalResult({ worktreeId: WORKTREE_ID, agentSessionKind: 'fresh', agent: 'claude', command: "claude --prefill 'https://github.com/o/r/issues/12'" }),
+        { agent: 'claude', launchDraft: 'https://github.com/o/r/issues/12' }
+      )
+    ).resolves.toBe(true)
 
     // No paste runs for an argv-prefill draft, so this is the only thing that
     // fills the mirrored tab's composer on this host class.

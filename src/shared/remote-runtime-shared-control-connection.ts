@@ -9,7 +9,7 @@ import * as sharedControlProtocol from './remote-runtime-shared-control-protocol
 import { SharedControlReconnectScheduler } from './remote-runtime-shared-control-reconnect'
 import { requestSharedControl } from './remote-runtime-shared-control-requests'
 import { SharedControlRetiredRequestIds } from './remote-runtime-shared-control-retired-request-ids'
-import { SharedControlReadyStableResetTimer } from './remote-runtime-shared-control-stability'
+import { SharedControlReadinessTimer } from './remote-runtime-shared-control-stability'
 import * as sharedControlState from './remote-runtime-shared-control-state'
 import { closeSharedControlSocket } from './remote-runtime-shared-control-socket-close'
 import { startSharedControlSubscription } from './remote-runtime-shared-control-subscription-start'
@@ -34,7 +34,7 @@ export class RemoteRuntimeSharedControlConnection {
   private sharedKey: Uint8Array | null = null
   private socketCleanup: (() => void) | null = null
   private readonly reconnect = new SharedControlReconnectScheduler()
-  private readonly readyStableReset: SharedControlReadyStableResetTimer
+  private readonly readiness: SharedControlReadinessTimer
   private intentionallyClosed = false
   private readonly diagnostics: SharedControlDiagnosticsTracker
   private readonly pendingRequests = new Map<string, PendingRequest>()
@@ -42,25 +42,30 @@ export class RemoteRuntimeSharedControlConnection {
   private readonly retiredRequestIds = new SharedControlRetiredRequestIds()
   private readonly readyWaiters: SharedControlTypes.SharedControlReadyWaiter[] = []
   private everReady = false
-  private readonly socketGeneration = new SharedControlSocketGeneration()
+  readonly socketGeneration = new SharedControlSocketGeneration()
 
   constructor(
     private readonly pairing: PairingOffer,
     private readonly options: SharedControlTypes.RemoteRuntimeSharedControlConnectionOptions = {}
   ) {
     this.diagnostics = new SharedControlDiagnosticsTracker(options)
-    this.readyStableReset = new SharedControlReadyStableResetTimer(
-      options.reconnectStableResetMs ?? 30_000
-    )
+    this.readiness = new SharedControlReadinessTimer(options, {
+      getState: () => this.state,
+      getSocket: () => this.ws,
+      resetAttempt: () => this.reconnect.resetAttempt(),
+      retire: (error, generation) => this.handleSocketClosed(error, generation)
+    })
   }
   request<TResult>(
     method: string,
     params: unknown,
     timeoutMs: number,
     envelope?: Parameters<typeof requestSharedControl>[0]['envelope'],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    beforeSend?: () => void
   ): ReturnType<typeof requestSharedControl<TResult>> {
     return requestSharedControl<TResult>({
+      beforeSend,
       pendingRequests: this.pendingRequests,
       deviceToken: this.pairing.deviceToken,
       method,
@@ -84,7 +89,8 @@ export class RemoteRuntimeSharedControlConnection {
     method: string,
     params: unknown,
     timeoutMs: number,
-    callbacks: SharedControlTypes.SharedControlSubscriptionCallbacks<TResult>
+    callbacks: SharedControlTypes.SharedControlSubscriptionCallbacks<TResult>,
+    signal?: AbortSignal
   ): Promise<SharedControlTypes.RemoteRuntimeSharedSubscription> {
     return startSharedControlSubscription({
       subscriptions: this.subscriptions,
@@ -92,7 +98,8 @@ export class RemoteRuntimeSharedControlConnection {
       method,
       params,
       callbacks,
-      ensureReady: () => this.ensureReadyWithTimeout(timeoutMs),
+      signal,
+      ensureReady: () => this.ensureReadyWithTimeout(timeoutMs, signal),
       sendSubscription: (subscription) =>
         sendSharedControlSubscription({
           subscriptions: this.subscriptions,
@@ -180,6 +187,8 @@ export class RemoteRuntimeSharedControlConnection {
     const socketGeneration = this.socketGeneration.begin()
     const opened = openSharedControlSocket(this.pairing, {
       getCurrentSocket: () => this.ws,
+      onOpened: () => this.readiness.armReadyDeadline(socketGeneration),
+      onActivity: this.options.onAnswered,
       onClose: (close, error) => {
         if (this.socketGeneration.isCurrent(socketGeneration)) {
           this.diagnostics.markClose(close)
@@ -228,11 +237,8 @@ export class RemoteRuntimeSharedControlConnection {
         // Why cleared here: these describe the attempt that just succeeded's predecessor.
         // Left set, a recovered host reads "Connected" next to a stale failure forever.
         this.publishDiagnostics()
-        this.readyStableReset.schedule({
-          getState: () => this.state,
-          getSocket: () => this.ws,
-          reset: () => this.reconnect.resetAttempt()
-        })
+        this.readiness.scheduleStableReset()
+        this.options.onReady?.()
       },
       replaySubscriptions: () => this.replaySubscriptions(),
       publishDiagnostics: () => this.publishDiagnostics()
@@ -302,7 +308,7 @@ export class RemoteRuntimeSharedControlConnection {
       ws: this.ws,
       error,
       preserveReadyWaitersAndPendingRequests,
-      clearReadyStableTimer: () => this.readyStableReset.clear()
+      clearReadyStableTimer: () => this.readiness.clear()
     })
     this.ws = this.sharedKey = null
     this.socketCleanup = null

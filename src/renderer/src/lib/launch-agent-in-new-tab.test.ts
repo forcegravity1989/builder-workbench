@@ -53,6 +53,7 @@ const store = {
       | { kind: 'wsl'; distro: string | null }
   }[],
   repos: [{ id: 'repo-1', connectionId: null as string | null, path: '/repo' }],
+  runtimeStatusByEnvironmentId: new Map(),
   sshConnectionStates: new Map([['ssh-a', { status: 'connected' }]]),
   transientClearedAgentStatusConnectionIds: {} as Record<string, true>,
   worktreesByRepo: {
@@ -126,13 +127,15 @@ vi.mock('@/lib/telemetry', () => ({
 }))
 
 const mockCreateWebRuntimeSessionTerminal = vi.fn()
-const mockCreateWebRuntimeAgentSessionTerminalWithLaunchDraft = vi.fn()
+const mockDeliverCreatedWebRuntimeAgentSessionPrompt = vi.fn()
 const mockIsWebRuntimeSessionActive = vi.fn(() => false)
 
+vi.mock('@/runtime/web-runtime-terminal-create-operation', () => ({
+  createWebRuntimeSessionTerminalResult: async (args: unknown) => ({ outcome: await mockCreateWebRuntimeSessionTerminal(args) })
+}))
 vi.mock('@/runtime/web-runtime-session', () => ({
   createWebRuntimeSessionTerminal: mockCreateWebRuntimeSessionTerminal,
-  createWebRuntimeAgentSessionTerminalWithLaunchDraft:
-    mockCreateWebRuntimeAgentSessionTerminalWithLaunchDraft,
+  deliverCreatedWebRuntimeAgentSessionPrompt: mockDeliverCreatedWebRuntimeAgentSessionPrompt,
   isWebRuntimeSessionActive: mockIsWebRuntimeSessionActive,
   isWebTerminalSurfaceTabId: vi.fn(() => false)
 }))
@@ -142,7 +145,7 @@ describe('launchAgentInNewTab', () => {
     vi.clearAllMocks()
     mockIsWebRuntimeSessionActive.mockReturnValue(false)
     mockCreateWebRuntimeSessionTerminal.mockResolvedValue({ status: 'created' })
-    mockCreateWebRuntimeAgentSessionTerminalWithLaunchDraft.mockResolvedValue({ status: 'created' })
+    mockDeliverCreatedWebRuntimeAgentSessionPrompt.mockResolvedValue(true)
     store.activeRepoId = 'repo-1'
     store.activeWorktreeId = 'wt-1'
     store.settings = {
@@ -455,7 +458,7 @@ describe('launchAgentInNewTab', () => {
     expect(mockSetTabViewMode).not.toHaveBeenCalled()
   })
 
-  it('preserves paired-host draft delivery and supported launch preferences', async () => {
+  it('preserves paired-host drafts and explicit arguments without desktop defaults', async () => {
     mockIsWebRuntimeSessionActive.mockReturnValue(true)
     store.settings = {
       agentCmdOverrides: {},
@@ -483,18 +486,21 @@ describe('launchAgentInNewTab', () => {
     })
 
     expect(result).toEqual(expect.objectContaining({ tabId: null, pasteDraftAfterLaunch: false }))
-    expect(mockCreateWebRuntimeAgentSessionTerminalWithLaunchDraft).toHaveBeenCalledWith(
+    expect(mockCreateWebRuntimeSessionTerminal).toHaveBeenCalledWith(
       expect.objectContaining({
         launchAgent: 'claude',
         prompt: 'review before sending',
         promptDelivery: 'draft',
         agentArgs: '--permission-mode plan',
-        launchPreferences: { model: 'opus', effort: 'high' },
         agent: 'claude',
-        launchDraft: 'review before sending'
+        legacyAgentLaunch: expect.any(Function)
       })
     )
-    expect(mockCreateWebRuntimeSessionTerminal).not.toHaveBeenCalled()
+    await result?.runtimeLaunch
+    expect(mockCreateWebRuntimeSessionTerminal.mock.calls.at(-1)?.[0]).not.toHaveProperty('launchPreferences')
+    expect(mockDeliverCreatedWebRuntimeAgentSessionPrompt).toHaveBeenCalledWith(
+      expect.any(Object), { agent: 'claude', launchDraft: 'review before sending' }
+    )
     expect(mockCreateTab).not.toHaveBeenCalled()
   })
 
@@ -564,12 +570,12 @@ describe('launchAgentInNewTab', () => {
     }
     const { launchAgentInNewTab } = await import('./launch-agent-in-new-tab')
 
-    launchAgentInNewTab({
+    const result = launchAgentInNewTab({
       agent: 'claude',
       worktreeId: 'wt-1'
     })
 
-    await Promise.resolve()
+    await result?.runtimeLaunch
     expect(mockToastError).toHaveBeenCalledWith(
       'Upgrade the remote Orca host before starting or resuming agent sessions.'
     )

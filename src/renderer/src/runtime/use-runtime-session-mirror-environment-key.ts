@@ -32,10 +32,17 @@ export function selectRuntimeSessionMirrorTargetInputs(
   }
 }
 
-export function buildRuntimeSessionMirrorEnvironmentKey(
+export type RuntimeSessionMirrorEnvironmentKeys = {
+  // All retained-state stamps derive from this identity; transport flaps must not invalidate it (#19647).
+  environmentKey: string
+  // Reconnect reinstalls dead-transport subscriptions without changing environmentKey or frame stamps.
+  resubscribeSignal: string
+}
+
+export function buildRuntimeSessionMirrorEnvironmentKeys(
   inputs: RuntimeSessionMirrorTargetInputs
-): string {
-  return getReachableRuntimeSessionMirrorTargets({
+): RuntimeSessionMirrorEnvironmentKeys {
+  const targets = getReachableRuntimeSessionMirrorTargets({
     settings: { activeRuntimeEnvironmentId: inputs.activeRuntimeEnvironmentId },
     repos: inputs.repos,
     worktreesByRepo: inputs.worktreesByRepo,
@@ -45,15 +52,21 @@ export function buildRuntimeSessionMirrorEnvironmentKey(
     runtimeEnvironments: inputs.runtimeEnvironments,
     runtimeStatusByEnvironmentId: inputs.runtimeStatusByEnvironmentId
   })
-    .map(
-      ({ environmentId, runtimeId, connectionGeneration, pairingRevision }) =>
-        `${environmentId}\u0001${runtimeId}\u0001${connectionGeneration}\u0001${pairingRevision}`
-    )
-    .join('\u0000')
+  return {
+    environmentKey: targets
+      .map(
+        ({ environmentId, runtimeId, connectionGeneration, pairingRevision }) =>
+          `${environmentId}\u0001${runtimeId}\u0001${connectionGeneration}\u0001${pairingRevision}`
+      )
+      .join('\u0000'),
+    resubscribeSignal: targets
+      .map(({ environmentId, hostContactEpoch }) => `${environmentId}\u0001${hostContactEpoch}`)
+      .join('\u0000')
+  }
 }
 
-export function useRuntimeSessionMirrorEnvironmentKey(): string {
-  // Why: agent/tab writes are hot; scan host ownership only when one of its sources changes.
+export function useRuntimeSessionMirrorEnvironmentKeys(): RuntimeSessionMirrorEnvironmentKeys {
+  // Agent/tab writes are hot; rescan ownership only when its sources change.
   const inputs = useAppStore(useShallow(selectRuntimeSessionMirrorTargetInputs))
   const {
     activeRuntimeEnvironmentId,
@@ -67,7 +80,7 @@ export function useRuntimeSessionMirrorEnvironmentKey(): string {
   } = inputs
   return useMemo(
     () =>
-      buildRuntimeSessionMirrorEnvironmentKey({
+      buildRuntimeSessionMirrorEnvironmentKeys({
         activeRuntimeEnvironmentId,
         repos,
         worktreesByRepo,

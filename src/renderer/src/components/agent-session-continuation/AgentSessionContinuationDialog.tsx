@@ -29,7 +29,8 @@ import {
   detectAgentSessionContinuationAgents,
   launchAgentSessionContinuation
 } from '@/lib/launch-agent-session-continuation'
-import { useAppStore } from '@/store'
+import { useAgentDetectionTargetForWorktree } from '@/hooks/useAgentDetectionTarget'
+import { useHostAgentLaunchPreferences } from '@/runtime/agent-launch-settings/use-host-agent-launch-preferences'
 import { isTuiAgentEnabled } from '../../../../shared/tui-agent-selection'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import { chooseInitialContinuationAgent } from './agent-session-continuation-selection'
@@ -47,7 +48,8 @@ export function AgentSessionContinuationDialog({
   request,
   onOpenChange
 }: AgentSessionContinuationDialogProps): React.JSX.Element {
-  const settings = useAppStore((state) => state.settings)
+  const target = useAgentDetectionTargetForWorktree(request?.worktreeId ?? null)
+  const settings = useHostAgentLaunchPreferences(target)
   const [detectedAgents, setDetectedAgents] = useState<TuiAgent[]>([])
   const [selectedAgent, setSelectedAgent] = useState<TuiAgent | null>(null)
   const [contextMode, setContextMode] = useState<AgentSessionContinuationContextMode>('focused')

@@ -4,7 +4,11 @@ import { isRuntimeSubscriptionReplayResponse } from '../../../../shared/runtime-
 import { useAppStore } from '../../store'
 import { getRuntimeEnvironmentRevision } from '../runtime-environment-revision'
 import { recoverWebSessionTerminalOrphansBeforeApply } from '../web-session-terminal-orphan-recovery'
-import { installWindowVisibilitySubscriptionParking } from '../window-visibility-subscription-parking'
+import {
+  installWindowVisibilitySubscriptionParking,
+  type WindowVisibilitySubscriptionParking
+} from '../window-visibility-subscription-parking'
+import { subscribeRuntimeEnvironment } from '../runtime-environment-pairing-refresh'
 import {
   beginWebSessionTabsSnapshotRecovery,
   recordReceivedWebSessionTabsSnapshot,
@@ -83,7 +87,7 @@ export function installActiveSessionTabsSubscription({
   visibilitySnapshotReceipt,
   visibilitySnapshotApply,
   visibilitySnapshotAccepted
-}: ActiveSubscriptionArgs): (() => void) | undefined {
+}: ActiveSubscriptionArgs): WindowVisibilitySubscriptionParking | undefined {
   const environmentId = activeWorktreeRuntimeEnvironmentId?.trim()
   if (
     !shouldSyncRuntimeSessionTabs({
@@ -215,8 +219,8 @@ export function installActiveSessionTabsSubscription({
 
   return installWindowVisibilitySubscriptionParking([
     {
-      subscribe: (isCurrent) =>
-        window.api.runtimeEnvironments.subscribe(
+      subscribe: (isCurrent, { ended }) =>
+        subscribeRuntimeEnvironment(
           {
             selector: environmentId,
             method: 'session.tabs.subscribe',
@@ -235,9 +239,14 @@ export function installActiveSessionTabsSubscription({
               }
               if (response.ok === false) {
                 console.warn('[web-session-tabs-sync] subscription failed:', response.error.message)
+                ended()
                 return
               }
               const event = response.result as SessionTabsStreamEvent
+              if (event.type === 'end') {
+                ended()
+                return
+              }
               if (event.type !== 'snapshot' && event.type !== 'updated') {
                 return
               }
@@ -274,6 +283,11 @@ export function installActiveSessionTabsSubscription({
             onError: (error) => {
               if (isCurrent()) {
                 console.warn('[web-session-tabs-sync] subscription error:', error.message)
+              }
+            },
+            onClose: () => {
+              if (isCurrent()) {
+                ended()
               }
             }
           }

@@ -1,3 +1,4 @@
+import type { TerminalTabCloseIntent } from '../terminal/terminal-tab-close-intent'
 import { useCallback, useImperativeHandle } from 'react'
 import { useAppStore } from '../../store'
 import type { PaneExternalDropTarget } from '@/lib/pane-manager/pane-manager'
@@ -33,13 +34,13 @@ export function useTerminalPaneCloseActions(controller: TerminalPaneBindingContr
     worktreeId
   } = controller
   const executeClosePane = useCallback(
-    (paneId: number) => {
+    (paneId: number, reason: TerminalTabCloseIntent) => {
       const manager = managerRef.current
       if (!manager) {
         return
       }
       if (manager.getPanes().length <= 1) {
-        onCloseTab()
+        onCloseTab(reason)
       } else {
         const ptyId = paneTransportsRef.current.get(paneId)?.getPtyId() ?? null
         closeWebRuntimeTerminal(ptyId)
@@ -75,13 +76,13 @@ export function useTerminalPaneCloseActions(controller: TerminalPaneBindingContr
   const handleRequestClosePane = useCallback(
     (paneId: number) => {
       if ((managerRef.current?.getPanes().length ?? 0) <= 1) {
-        executeClosePane(paneId)
+        executeClosePane(paneId, 'user')
         return
       }
       const transport = paneTransportsRef.current.get(paneId)
       const ptyId = transport?.getPtyId()
       if (!ptyId) {
-        executeClosePane(paneId)
+        executeClosePane(paneId, 'user')
         return
       }
       const settings = useAppStore.getState().settings
@@ -109,7 +110,7 @@ export function useTerminalPaneCloseActions(controller: TerminalPaneBindingContr
               probes[0]?.verdict !== 'live' ||
               settings?.skipCloseTerminalWithRunningProcessConfirm
             ) {
-              executeClosePane(paneId)
+              executeClosePane(paneId, 'user')
             } else {
               confirmClose()
             }
@@ -117,7 +118,7 @@ export function useTerminalPaneCloseActions(controller: TerminalPaneBindingContr
         })
         .catch(() => {
           clearTimeout(probeTimeout)
-          decide(() => executeClosePane(paneId))
+          decide(() => executeClosePane(paneId, 'user'))
         })
     },
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- Preserve the pre-split dependency contract.
@@ -153,7 +154,7 @@ export function useTerminalPaneCloseActions(controller: TerminalPaneBindingContr
           skipCloseTerminalWithRunningProcessConfirm: true
         })
       }
-      executeClosePane(paneId)
+      executeClosePane(paneId, 'user')
     },
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- Preserve the pre-split dependency contract.
     [executeClosePane, pendingCloseConfirmation, updateSettings]

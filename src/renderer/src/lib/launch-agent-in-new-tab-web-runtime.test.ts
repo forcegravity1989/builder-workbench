@@ -35,6 +35,7 @@ const store = {
   tabBarOrderByWorktree: {} as Record<string, string[]>,
   terminalLayoutsByTabId: {},
   ptyIdsByTabId: {},
+  runtimeStatusByEnvironmentId: new Map(),
   sshConnectionStates: new Map(),
   transientClearedAgentStatusConnectionIds: {},
   allWorktrees: vi.fn(() => store.worktreesByRepo['repo-1']),
@@ -56,8 +57,12 @@ vi.mock('@/lib/telemetry', () => ({
   track: vi.fn(),
   tuiAgentToAgentKind: (agent: string) => agent
 }))
+vi.mock('@/runtime/web-runtime-terminal-create-operation', () => ({
+  createWebRuntimeSessionTerminalResult: async (args: unknown) => ({ outcome: await mocks.createWebRuntimeSessionTerminal(args) })
+}))
 vi.mock('@/runtime/web-runtime-session', () => ({
   createWebRuntimeSessionTerminal: mocks.createWebRuntimeSessionTerminal,
+  deliverCreatedWebRuntimeAgentSessionPrompt: vi.fn(async () => true),
   isWebRuntimeSessionActive: vi.fn(() => true),
   isWebTerminalSurfaceTabId: vi.fn(() => false)
 }))
@@ -89,20 +94,23 @@ describe('launchAgentInNewTab paired web runtime', () => {
     expect(mocks.createWebRuntimeSessionTerminal).toHaveBeenCalledWith({
       worktreeId: 'wt-1',
       environmentId: 'web-runtime',
+      expectedEnvironmentRuntimeId: undefined,
+      legacyAgentLaunch: expect.any(Function),
       targetGroupId: 'group-1',
       activate: true,
       agentSessionKind: 'fresh',
       selectWorktree: true,
       agent: 'claude',
+      launchAgent: 'claude',
       viewMode: 'terminal'
     })
     expect(mocks.createTab).not.toHaveBeenCalled()
-    await Promise.resolve()
+    await result?.runtimeLaunch
     expect(mocks.setActiveTabType).toHaveBeenCalledWith('terminal')
     expect(mocks.closeTab).toHaveBeenCalledWith('stale-agent-tab', { reason: 'cleanup' })
   })
 
-  it('forwards prompt launch env and captured config to the host runtime', async () => {
+  it('leaves fresh host launch defaults on the execution host', async () => {
     store.settings.agentDefaultArgs = { codex: '--model gpt-5 --reasoning-effort high' }
     store.settings.agentDefaultEnv = { codex: { CODEX_PROFILE: 'captured' } }
     const { launchAgentInNewTab } = await import('./launch-agent-in-new-tab')
@@ -119,18 +127,13 @@ describe('launchAgentInNewTab paired web runtime', () => {
       worktreeId: 'wt-1',
       environmentId: 'web-runtime',
       targetGroupId: 'group-1',
+      expectedEnvironmentRuntimeId: undefined,
+      legacyAgentLaunch: expect.any(Function),
       activate: true,
       agentSessionKind: 'fresh',
       selectWorktree: true,
       launchAgent: 'codex',
-      command: "codex '--model' 'gpt-5' '--reasoning-effort' 'high' 'fix the spinner'",
-      env: { CODEX_PROFILE: 'captured' },
-      launchConfig: {
-        agentCommand: "codex '--model' 'gpt-5' '--reasoning-effort' 'high'",
-        agentArgs: '--model gpt-5 --reasoning-effort high',
-        agentEnv: { CODEX_PROFILE: 'captured' }
-      },
-      startupCommandDelivery: 'shell-ready',
+      agent: 'codex',
       prompt: 'fix the spinner',
       promptDelivery: 'auto-submit',
       viewMode: 'terminal'
