@@ -73,8 +73,9 @@ export class SharedControlReconnectScheduler {
     this.scheduleWithIdleBackoff(args.intentionallyClosed, args.open)
   }
 
-  // Why: OS resume / browser online should advance an already-scheduled reconnect, not start a new one.
+  // A network return resets accumulated backoff, even when no retry is currently queued.
   retryNow(): boolean {
+    this.resetAttempt()
     if (!this.timer || !this.pendingOpen) {
       return false
     }

@@ -82,11 +82,11 @@ export const TerminalOverlaySlot = memo(function TerminalOverlaySlot({
           onClosed: leaveWorktreeIfEmpty
         })
       }}
-      onCloseTab={() => {
+      onCloseTab={(reason) => {
         // Why: route through closeTerminalTab (not the raw store closeTab) so a
         // pinned tab hits the confirmation guard. The overlay's direct
         // store.closeTab was the path that closed pinned terminals silently.
-        closeTerminalTab(terminalTabId, { onClosed: leaveWorktreeIfEmpty })
+        closeTerminalTab(terminalTabId, { reason, onClosed: leaveWorktreeIfEmpty })
       }}
     />
   )

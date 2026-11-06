@@ -9,6 +9,7 @@ import { isTuiAgentEnabled } from '../../../shared/tui-agent-selection'
 import type { LaunchSource } from '../../../shared/telemetry-events'
 import type { TuiAgent } from '../../../shared/tui-agent'
 import { translate } from '@/i18n/i18n'
+import { ensureAgentLaunchPreferences } from '@/runtime/agent-launch-settings/use-host-agent-launch-preferences'
 
 type LaunchAgentSessionContinuationArgs = {
   agent: TuiAgent
@@ -34,9 +35,13 @@ export async function detectAgentSessionContinuationAgents(
 }
 
 async function ensureAgentAvailable(agent: TuiAgent, worktreeId: string): Promise<boolean> {
-  const state = useAppStore.getState()
   const label = getAgentLabel(agent)
-  if (!isTuiAgentEnabled(agent, state.settings?.disabledTuiAgents)) {
+  const preferences = await ensureAgentLaunchPreferences(worktreeId).catch((error: unknown) => {
+    if (error instanceof Error && error.name === 'AbortError') return null
+    throw error
+  })
+  if (!preferences) return false
+  if (!isTuiAgentEnabled(agent, preferences.disabledTuiAgents)) {
     toast.error(
       translate(
         'components.agentSessionContinuation.agentDisabled',

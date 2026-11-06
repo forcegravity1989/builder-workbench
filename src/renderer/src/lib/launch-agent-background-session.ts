@@ -33,7 +33,13 @@ import {
   sshBackgroundLaunchWaitsForShellReady
 } from '@/lib/ssh-background-startup-delivery'
 import { isMainTerminalSideEffectAuthorityForPty } from '@/components/terminal-pane/terminal-side-effect-facts-handler'
-import { resolveLocalWindowsAgentStartupShell } from '../../../shared/windows-terminal-shell'
+import {
+  resolveHostAgentStartupShell,
+  resolveLocalWindowsAgentStartupShell
+} from '../../../shared/windows-terminal-shell'
+import { lastVerifiedRuntimeStatus } from '../../../shared/runtime-host-status'
+import { readHostAgentStartupSettings } from '@/runtime/agent-launch-settings/agent-launch-settings-transport'
+import { getRuntimeEnvironmentRevision } from '@/runtime/runtime-environment-revision'
 import { runBestEffortAgentBackgroundCleanups } from '@/lib/agent-background-session-cleanup'
 import type { bindAutomationTerminal } from '@/lib/automation-terminal-ownership'
 import {
@@ -55,9 +61,29 @@ export async function launchAgentBackgroundSession(
   if (!worktree) {
     throw new Error('The target workspace is no longer available.')
   }
-  const cmdOverrides = store.settings?.agentCmdOverrides ?? {}
-  const agentArgs = resolveTuiAgentLaunchArgs(agent, store.settings?.agentDefaultArgs)
-  const agentEnv = resolveTuiAgentLaunchEnv(agent, store.settings?.agentDefaultEnv)
+  const runtimeTarget = getActiveRuntimeTarget(getSettingsForWorktreeRuntimeOwner(store, worktreeId))
+  const environmentId = runtimeTarget.kind === 'environment' ? runtimeTarget.environmentId : null
+  const pairingRevision = environmentId ? getRuntimeEnvironmentRevision(environmentId) : undefined
+  const hostStatus = environmentId
+    ? lastVerifiedRuntimeStatus(store.runtimeStatusByEnvironmentId.get(environmentId))
+    : null
+  const hostSettings = environmentId
+    ? await readHostAgentStartupSettings({
+        environmentId,
+        pairingRevision,
+        runtimeId: hostStatus?.runtimeId
+      }).catch((error: unknown) => {
+        if (error instanceof Error && error.name === 'AbortError') throw error
+        return null
+      })
+    : null
+  if (environmentId && getRuntimeEnvironmentRevision(environmentId) !== pairingRevision) {
+    throw new DOMException('Agent launch cancelled', 'AbortError')
+  }
+  const launchSettings = hostSettings ?? store.settings
+  const cmdOverrides = launchSettings?.agentCmdOverrides ?? {}
+  const agentArgs = resolveTuiAgentLaunchArgs(agent, launchSettings?.agentDefaultArgs)
+  const agentEnv = resolveTuiAgentLaunchEnv(agent, launchSettings?.agentDefaultEnv)
   // Folder launch ownership cannot be derived from a repo row (#2989).
   const launchHost = resolveAgentBackgroundLaunchHost({
     store,
@@ -77,12 +103,19 @@ export async function launchAgentBackgroundSession(
       // Best-effort: the user can still accept the trust prompt.
     }
   }
-  const { platform: launchPlatform, isRemote } = launchHost
-  const startupShell = resolveLocalWindowsAgentStartupShell({
-    platform: launchPlatform,
-    isRemote,
-    terminalWindowsShell: store.settings?.terminalWindowsShell
-  })
+  const { isRemote } = launchHost
+  const launchPlatform = hostSettings ? hostStatus?.hostPlatform ?? 'linux' : launchHost.platform
+  const startupShell = hostSettings
+    ? resolveHostAgentStartupShell({
+        platform: launchPlatform,
+        isRemote: true,
+        hostTerminalWindowsShell: hostStatus?.terminalWindowsShell
+      })
+    : resolveLocalWindowsAgentStartupShell({
+        platform: launchPlatform,
+        isRemote,
+        terminalWindowsShell: store.settings?.terminalWindowsShell
+      })
   const trimmedPrompt = prompt?.trim() ?? ''
   const hasPrompt = trimmedPrompt.length > 0
   const isFollowupPath = requireTuiAgentConfig(agent).promptInjectionMode === 'stdin-after-start'
@@ -121,9 +154,6 @@ export async function launchAgentBackgroundSession(
     write: (ptyId, data) => window.api.pty.write(ptyId, data)
   })
   // Route by the worktree's owner host, not the focused runtime.
-  const runtimeTarget = getActiveRuntimeTarget(
-    getSettingsForWorktreeRuntimeOwner(store, worktreeId)
-  )
   let ptyId = '',
     runtimeTerminalHandle: string | null = null
   // What the local spawn answered and later steps still need: which lifetime of `ptyId` this launch
@@ -176,12 +206,13 @@ export async function launchAgentBackgroundSession(
       // would silently run automation on the client for a remote workspace.
       const created = await createRuntimeAgentBackgroundTerminal({
         environmentId: runtimeTarget.environmentId,
+        expectedEnvironmentPairingRevision: pairingRevision,
+        expectedEnvironmentRuntimeId: hostStatus?.runtimeId,
         worktreeId,
         tabId: reservedTabId,
         leafId,
         agent,
         ...(hasPrompt && !isFollowupPath ? { prompt: trimmedPrompt } : {}),
-        ...(startupPlan.sessionOptions ? { sessionOptions: startupPlan.sessionOptions } : {}),
         legacy: {
           command: startupPlan.launchCommand,
           env: paneEnv,

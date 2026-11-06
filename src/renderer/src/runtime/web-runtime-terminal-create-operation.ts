@@ -63,7 +63,11 @@ export async function createWebRuntimeSessionTerminalResult(
     }
   }
   const intentOwner = captureWebSessionIntentOwner(environmentId)
-  const callEnvironment = captureRuntimeEnvironmentCall(environmentId, intentOwner.pairingRevision)
+  const callEnvironment = captureRuntimeEnvironmentCall(
+    environmentId,
+    intentOwner.pairingRevision,
+    args.expectedEnvironmentRuntimeId
+  )
 
   let workspaceSelectionRollback: WebRuntimeSessionWorkspaceSelectionRollback | null = null
   if (args.selectWorktree !== false) {
@@ -83,7 +87,11 @@ export async function createWebRuntimeSessionTerminalResult(
   try {
     const agent = args.launchAgent ?? args.agent
     const agentArgsOverride =
-      args.agentArgs !== undefined ? args.agentArgs : args.launchConfig?.agentArgs
+      args.agentArgs !== undefined
+        ? args.agentArgs
+        : args.agentSessionKind === 'resume'
+          ? args.launchConfig?.agentArgs
+          : undefined
     if (agent) {
       let legacyAlreadyPlacedInGroup = false
       // Why: structured creation cannot yet express afterTabId; keep the exact legacy placement contract until it can.
@@ -154,18 +162,23 @@ export async function createWebRuntimeSessionTerminalResult(
           ? { hostAuthorityCapability: resumeHostAuthorityCapability }
           : {}),
         legacy: async () => {
+          const legacyAgentLaunch = await args.legacyAgentLaunch?.()
+          const legacy = legacyAgentLaunch ?? args
           const response = await callEnvironment({
             method: 'session.tabs.createTerminal',
             params: {
               worktree: toRuntimeWorktreeSelector(args.worktreeId),
               afterTabId: args.afterTabId ? toHostSessionTabId(args.afterTabId) : undefined,
               targetGroupId: args.targetGroupId,
-              command: args.command,
+              ...(legacy.command ? { command: legacy.command } : {}),
               cwd: args.cwd,
-              ...(args.env ? { env: args.env } : {}),
+              ...(legacy.env ? { env: legacy.env } : {}),
               ...(args.envToDelete ? { envToDelete: args.envToDelete } : {}),
-              startupCommandDelivery: args.startupCommandDelivery,
-              ...(args.launchConfig ? { launchConfig: args.launchConfig } : {}),
+              startupCommandDelivery: legacy.startupCommandDelivery,
+              ...(legacy.launchConfig ? { launchConfig: legacy.launchConfig } : {}),
+              ...(legacyAgentLaunch?.agentPrompt
+                ? { agentPrompt: legacyAgentLaunch.agentPrompt }
+                : {}),
               ...(args.launchToken ? { launchToken: args.launchToken } : {}),
               ...(args.agent ? { agent: args.agent } : {}),
               ...(args.launchAgent ? { launchAgent: args.launchAgent } : {}),

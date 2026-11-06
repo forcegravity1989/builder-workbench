@@ -27,15 +27,25 @@ import { registerRuntimeEnvironmentBrowserClientHostHandler } from './runtime-en
 import { advanceRuntimeEnvironmentCapabilityIncarnation } from './runtime-environment-capability-evidence'
 
 type RetainedRemoteRuntimeSubscription = RemoteRuntimeSubscription & {
+  setupController: AbortController
   environmentId: string
   ownerWebContentsId: number
   removeDestroyedListener: () => void
   notifyClosed: () => void
 }
 const remoteRuntimeSubscriptions = new Map<string, RetainedRemoteRuntimeSubscription>()
+const pendingSubscriptions = new Map<
+  string,
+  { environmentId: string; ownerWebContentsId: number; close: () => void }
+>()
 const getUserDataPath = (): string => app.getPath('userData')
 
 function closeSubscriptionsForEnvironment(environmentId: string): void {
+  for (const pending of pendingSubscriptions.values()) {
+    if (pending.environmentId === environmentId) {
+      pending.close()
+    }
+  }
   // Why: removed runtimes must not retain terminal/browser WebSockets until renderer teardown.
   for (const [subscriptionId, subscription] of remoteRuntimeSubscriptions) {
     if (subscription.environmentId !== environmentId) {
@@ -121,7 +131,7 @@ export function registerRuntimeEnvironmentHandlers(store: Store): void {
         typeof args.subscriptionId === 'string' && args.subscriptionId.length > 0
           ? args.subscriptionId
           : randomUUID()
-      if (remoteRuntimeSubscriptions.has(subscriptionId)) {
+      if (remoteRuntimeSubscriptions.has(subscriptionId) || pendingSubscriptions.has(subscriptionId)) {
         throw new Error('Runtime environment subscription id already exists')
       }
       const environment = resolveEnvironment(getUserDataPath(), args.selector)
@@ -146,7 +156,9 @@ export function registerRuntimeEnvironmentHandlers(store: Store): void {
         getRuntimeEnvironmentTransportGeneration(environment.id) === transportGeneration
       const sender = event.sender
       const ownerWebContentsId = sender.id
+      const setupController = new AbortController()
       let senderDestroyed = sender.isDestroyed()
+      let transportClosed = false
       let subscription: RemoteRuntimeSubscription | null = null
       let destroyedListenerAttached = false
       const removeDestroyedListener = (): void => {
@@ -158,9 +170,13 @@ export function registerRuntimeEnvironmentHandlers(store: Store): void {
       }
       const closeSubscription = (): void => {
         senderDestroyed = true
+        setupController.abort()
+        if (pendingSubscriptions.get(subscriptionId) === pending) {
+          pendingSubscriptions.delete(subscriptionId)
+        }
         const retained = remoteRuntimeSubscriptions.get(subscriptionId) ?? null
-        remoteRuntimeSubscriptions.delete(subscriptionId)
-        if (retained) {
+        if (retained?.setupController === setupController) {
+          remoteRuntimeSubscriptions.delete(subscriptionId)
           retained.close()
           return
         }
@@ -182,8 +198,13 @@ export function registerRuntimeEnvironmentHandlers(store: Store): void {
           // The renderer is gone; there is no one left to tell.
         }
       }
+      const pending = { environmentId: environment.id, ownerWebContentsId, close: closeSubscription }
+      pendingSubscriptions.set(subscriptionId, pending)
       sender.once('destroyed', closeSubscription)
       destroyedListenerAttached = true
+      if (senderDestroyed) {
+        closeSubscription()
+      }
       try {
         subscription = await subscribeRuntimeEnvironment(
           getUserDataPath(),
@@ -193,6 +214,13 @@ export function registerRuntimeEnvironmentHandlers(store: Store): void {
           args.timeoutMs,
           {
             onEvent: (payload) => {
+              if (
+                senderDestroyed ||
+                (pendingSubscriptions.get(subscriptionId) !== pending &&
+                  remoteRuntimeSubscriptions.get(subscriptionId)?.setupController !== setupController)
+              ) {
+                return
+              }
               if (payload.type === 'close') {
                 // Why: retirement advances the generation before closing, so gating
                 // close on it stranded the renderer with a dead subscription.
@@ -207,36 +235,49 @@ export function registerRuntimeEnvironmentHandlers(store: Store): void {
               }
             },
             onClose: () => {
+              transportClosed = true
               const retained = remoteRuntimeSubscriptions.get(subscriptionId) ?? null
-              retained?.removeDestroyedListener()
-              remoteRuntimeSubscriptions.delete(subscriptionId)
+              if (retained?.setupController === setupController) {
+                retained.removeDestroyedListener()
+                remoteRuntimeSubscriptions.delete(subscriptionId)
+              }
             }
           },
-          transportIsCurrent
+          () => transportIsCurrent() && !setupController.signal.aborted,
+          setupController.signal
         )
       } catch (error) {
+        if (pendingSubscriptions.get(subscriptionId) === pending) {
+          pendingSubscriptions.delete(subscriptionId)
+        }
         removeDestroyedListener()
         throw error
       }
-      let pairingIsCurrent = false
+      if (pendingSubscriptions.get(subscriptionId) === pending) {
+        pendingSubscriptions.delete(subscriptionId)
+      }
+      let ownerIsCurrent = false
       try {
         const currentEnvironment = resolveEnvironment(getUserDataPath(), environment.id)
-        pairingIsCurrent =
-          (currentEnvironment.pairingRevision ?? currentEnvironment.createdAt) === pairingRevision
+        ownerIsCurrent =
+          (currentEnvironment.pairingRevision ?? currentEnvironment.createdAt) === pairingRevision &&
+          (!args.expectedEnvironmentRuntimeId ||
+            currentEnvironment.runtimeId === args.expectedEnvironmentRuntimeId)
       } catch {
-        pairingIsCurrent = false
+        ownerIsCurrent = false
       }
-      if (!transportIsCurrent() || !pairingIsCurrent) {
+      if (!transportIsCurrent() || !ownerIsCurrent) {
         removeDestroyedListener()
         subscription.close()
         throw new Error('Runtime environment pairing changed; refresh and try again')
       }
-      if (senderDestroyed || sender.isDestroyed()) {
+      if (senderDestroyed || sender.isDestroyed() || transportClosed) {
         removeDestroyedListener()
         subscription.close()
         return { subscriptionId, requestId: subscription.requestId }
       }
       remoteRuntimeSubscriptions.set(subscriptionId, {
+        setupController,
         requestId: subscription.requestId,
         environmentId: environment.id,
         ownerWebContentsId,
@@ -254,6 +295,11 @@ export function registerRuntimeEnvironmentHandlers(store: Store): void {
   ipcMain.handle(
     'runtimeEnvironments:unsubscribe',
     (event, args: { subscriptionId: string }): { unsubscribed: boolean } => {
+      const pending = pendingSubscriptions.get(args.subscriptionId)
+      if (pending?.ownerWebContentsId === event.sender.id) {
+        pending.close()
+        return { unsubscribed: true }
+      }
       const subscription = remoteRuntimeSubscriptions.get(args.subscriptionId)
       if (!subscription || subscription.ownerWebContentsId !== event.sender.id) {
         return { unsubscribed: false }

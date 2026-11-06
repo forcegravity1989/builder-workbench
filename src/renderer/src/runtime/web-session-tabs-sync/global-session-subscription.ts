@@ -5,6 +5,7 @@ import { clearWebSessionFocusIntentsForOwner } from '../web-session-focus-intent
 import { clearWebSessionReorderIntentsForOwner } from '../web-session-reorder-intent'
 import {
   installWindowVisibilitySubscriptionParking,
+  type WindowVisibilitySubscriptionParking,
   type WindowVisibilitySubscriptionSpec
 } from '../window-visibility-subscription-parking'
 import { shouldSyncAllRuntimeSessionTabs } from './tracking-decisions'
@@ -17,7 +18,8 @@ import { handleGlobalSessionEvent } from './global-session-events'
 import { VisibilityResumeCoordinator } from './visibility-resume-coordinator'
 import type { VisibilityResumeOmission, SessionTabsStreamEvent } from './state'
 import type { MirroredRuntimeEnvironment } from './visibility-resume-types'
-import { WEB_SESSION_TABS_VISIBILITY_RESUME_STAGGER_MS } from './state'
+import { WEB_SESSION_TABS_VISIBILITY_RESUME_STAGGER_MS, isSessionTabsStreamEnd } from './state'
+import { subscribeRuntimeEnvironment } from '../runtime-environment-pairing-refresh'
 
 type Ref<T> = { current: T }
 
@@ -80,7 +82,7 @@ export function installGlobalSessionTabsSubscriptions({
   runtimeSessionMirrorEnvironmentKey,
   workspaceSessionReady,
   refs
-}: GlobalSubscriptionInstallArgs): (() => void) | undefined {
+}: GlobalSubscriptionInstallArgs): WindowVisibilitySubscriptionParking | undefined {
   const environments = parseEnvironments(runtimeSessionMirrorEnvironmentKey)
   const ownerRevisions = new Map(
     (workspaceSessionReady ? environments : []).map(
@@ -142,7 +144,7 @@ export function installGlobalSessionTabsSubscriptions({
     const expectedTrackingGeneration = getWebSessionTabsTrackingGeneration(environmentId)
     environmentIdBySpec.push(environmentId)
     subscriptionSpecs.push({
-      subscribe: (isCurrent, { visibilityGeneration }) => {
+      subscribe: (isCurrent, { visibilityGeneration, ended }) => {
         const awaitingVisibilityResumeInventory = { value: visibilityGeneration > 0 }
         if (!requestedInitialLoad) {
           requestedInitialLoad = true
@@ -154,7 +156,7 @@ export function installGlobalSessionTabsSubscriptions({
             isCurrent
           })
         }
-        return window.api.runtimeEnvironments.subscribe(
+        return subscribeRuntimeEnvironment(
           {
             selector: environmentId,
             method: 'session.tabs.subscribeAll',
@@ -169,6 +171,9 @@ export function installGlobalSessionTabsSubscriptions({
                 getRuntimeEnvironmentRevision(environmentId) !== expectedEnvironmentPairingRevision
               ) {
                 return
+              }
+              if (!response.ok || isSessionTabsStreamEnd(response.result)) {
+                ended()
               }
               handleGlobalSessionEvent({
                 environmentId,
@@ -188,6 +193,11 @@ export function installGlobalSessionTabsSubscriptions({
             onError: (error) => {
               if (isCurrent()) {
                 console.warn('[web-session-tabs-sync] global subscription error:', error.message)
+              }
+            },
+            onClose: () => {
+              if (isCurrent()) {
+                ended()
               }
             }
           }
@@ -212,7 +222,7 @@ export function installGlobalSessionTabsSubscriptions({
     onVisibilityResume: ({ visibilityGeneration, restartingSpecIndexes }) =>
       coordinator.beginVisibilityResume(visibilityGeneration, restartingSpecIndexes)
   })
-  return () => {
+  const cleanup = (): void => {
     refs.snapshotReceipt.current = () => {}
     refs.snapshotApply.current = () => true
     refs.snapshotAccepted.current = () => {}
@@ -224,4 +234,5 @@ export function installGlobalSessionTabsSubscriptions({
       clearWebSessionReorderIntentsForOwner(owner)
     }
   }
+  return Object.assign(cleanup, { restartEnded: dispose.restartEnded })
 }
