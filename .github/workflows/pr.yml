@@ -51,6 +51,12 @@ jobs:
           src/main/codex/codex-structured-session-close.test.ts
           src/main/codex/codex-structured-session-cancel.test.ts
           src/main/codex/codex-structured-launch-resolution.test.ts
+          src/main/codex/codex-session-index-heal.test.ts
+          src/main/codex-accounts/codex-credential-absence-grace.test.ts
+          src/main/codex-accounts/codex-windows-interactive-login.test.ts
+          src/main/codex-accounts/service-login-process-teardown.test.ts
+          src/main/rate-limits/codex-fetcher.test.ts
+          src/main/rate-limits/codex-fetcher-process-contract.test.ts
 
   verify:
     name: lint, typecheck, tests, build
