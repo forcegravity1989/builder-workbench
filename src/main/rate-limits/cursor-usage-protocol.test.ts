@@ -126,23 +126,37 @@ describe('Cursor quota data protocols', () => {
     })
   })
 
-  it('propagates current-period auth, throttling and server failures instead of obsolete summary zeros', async () => {
-    for (const status of [401, 429, 503]) {
-      vi.mocked(net.fetch).mockReset().mockImplementation(async (url) => url === SUMMARY_URL
-        ? Response.json(SUMMARY)
-        : new Response(null, { status, headers: { 'retry-after': '60' } }))
-      const limits = await fetchCursorRateLimits({ authReadResult: AUTH })
-      expect(limits.status).toBe('error')
-      expect(limits.monthly).toBeUndefined()
-      expect(limits.buckets).toBeUndefined()
-      expect(limits.usageMetadata).toMatchObject({
-        authProvenance: cursorAuthProvenance(AUTH),
-        failureKind: status === 401 ? 'stale-token' : status === 429 ? 'rate-limited' : 'server'
-      })
-      if (status === 429) {
-        expect(limits.usageMetadata?.retryAtMs).toBeGreaterThan(Date.now())
+  it('propagates current-period failures and bounded Retry-After instead of obsolete summary zeros', async () => {
+    const now = Date.now()
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(now)
+    const date = new Date(Math.ceil(now / 1000) * 1000 + 90_000).toUTCString()
+    const cases = [
+      { status: 401, retryAfter: '60', delay: null },
+      { status: 403, retryAfter: '60', delay: null },
+      { status: 429, retryAfter: '60', delay: 60_000 },
+      { status: 429, retryAfter: date, delay: Date.parse(date) - now },
+      { status: 429, retryAfter: '172800', delay: 86_400_000 },
+      { status: 429, retryAfter: 'soon', delay: null },
+      { status: 503, retryAfter: '60', delay: null }
+    ]
+    try {
+      for (const { status, retryAfter, delay } of cases) {
+        vi.mocked(net.fetch).mockReset().mockImplementation(async (url) => url === SUMMARY_URL
+          ? Response.json(SUMMARY)
+          : new Response(null, { status, headers: { 'retry-after': retryAfter } }))
+        const limits = await fetchCursorRateLimits({ authReadResult: AUTH })
+        expect(limits.status).toBe('error')
+        expect(limits.monthly).toBeUndefined()
+        expect(limits.buckets).toBeUndefined()
+        expect(limits.usageMetadata).toMatchObject({
+          authProvenance: cursorAuthProvenance(AUTH),
+          failureKind: status === 401 ? 'stale-token' : status === 429 ? 'rate-limited' : 'server'
+        })
+        expect(limits.usageMetadata?.retryAtMs).toBe(delay === null ? undefined : now + delay)
+        expect(net.fetch).toHaveBeenCalledTimes(2)
       }
-      expect(net.fetch).toHaveBeenCalledTimes(2)
+    } finally {
+      clock.mockRestore()
     }
   })
 

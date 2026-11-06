@@ -1,4 +1,5 @@
 import { net } from 'electron'
+import { parseUsageRetryAfterMs } from './usage-retry-after'
 import type { ProviderRateLimits, UsageRateLimitSource } from '../../shared/rate-limit-types'
 import type { CursorAuthSession } from './cursor-auth'
 import { cursorSessionCookie } from './cursor-session-token'
@@ -73,7 +74,7 @@ export async function fetchDashboardJson(
     ...(method === 'POST' ? { method, body: '{}' } : {}),
     signal: requestSignal
   })
-  if (res.status === 401 || res.status === 403 || (res.status >= 300 && res.status < 400)) {
+  if (res.status === 401 || (res.status >= 300 && res.status < 400)) {
     return {
       kind: 'result',
       result: cursorUsageResult('error', EXPIRED_MESSAGE, {
@@ -87,7 +88,7 @@ export async function fetchDashboardJson(
     }
   }
   if (res.status === 429) {
-    const retryAfterSeconds = Number(res.headers.get('retry-after'))
+    const retryAfterMs = parseUsageRetryAfterMs(res.headers.get('retry-after'))
     return {
       kind: 'result',
       result: cursorUsageResult('error', 'Cursor usage is rate limited right now', {
@@ -96,8 +97,8 @@ export async function fetchDashboardJson(
           credentialSource: session.source,
           authProvenance: provenance,
           failureKind: 'rate-limited',
-          ...(Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
-            ? { retryAtMs: Date.now() + retryAfterSeconds * 1000 }
+          ...(retryAfterMs !== null
+            ? { retryAtMs: Date.now() + retryAfterMs }
             : {})
         }
       })
