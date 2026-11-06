@@ -34,7 +34,10 @@ const {
   ClipboardList,
   RefreshCw
 } = window.BWPrototypeDependencies
-const plans = { 'v0.7': snapshot, 'v0.6': snapshotV06 }
+// v0.8 仅用于 #475 评审：演示「目标目录内置顶」与「隐藏/归档（类 Codex archive）」，
+// 两级都只是显示层排序/收拢，不复制工作树；新 Orca（v1.4.245–250）无原生 Archive UI，见 spec 待评审点。
+const v08Plan = { goals: [{ goalId: 'G1', title: '置顶与隐藏/归档' }], tasks: [], summary: {} }
+const plans = { 'v0.7': snapshot, 'v0.6': snapshotV06, 'v0.8': v08Plan }
 const emptyPlan = { goals: [], tasks: [], summary: {} }
 const labels = {
   overview: '版本总览',
@@ -74,6 +77,24 @@ const initialVersions = () => ({
     sessions: [
       { id: 'p06', tree: 'plan', label: '计划讨论' },
       { id: 'a06', tree: 'acceptance', label: '验收讨论' }
+    ]
+  },
+  'v0.8': {
+    trees: [
+      { id: 'plan', role: 'plan' },
+      { id: 'acceptance', role: 'acceptance' },
+      { id: 'goal-G1', role: 'goal', goal: 'G1' },
+      { id: 'issue-501', role: 'issue', goal: 'G1', issue: 501, parent: 'goal-G1', linkedTitle: '评审：#475 双列侧栏' },
+      { id: 'issue-520', role: 'issue', goal: 'G1', issue: 520, parent: 'goal-G1', linkedTitle: '目标目录内置顶演示' },
+      { id: 'issue-544', role: 'issue', goal: 'G1', issue: 544, parent: 'goal-G1', linkedTitle: '隐藏/归档演示' }
+    ],
+    sessions: [
+      { id: 'p08', tree: 'plan', label: '计划讨论' },
+      { id: 'a08', tree: 'acceptance', label: '验收讨论' },
+      { id: 'g08', tree: 'goal-G1', label: 'G1 · 目标协作' },
+      { id: 'i501', tree: 'issue-501', label: '#501 · 双列侧栏评审' },
+      { id: 'i520', tree: 'issue-520', label: '#520 · 目录置顶' },
+      { id: 'i544', tree: 'issue-544', label: '#544 · 归档' }
     ]
   }
 })
@@ -141,6 +162,30 @@ function NativeToolIcon({ kind, size = 16, strokeWidth = 1.7, ...props }) {
       'M12 10v6',
       'M9 13h6',
       'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z'
+    ],
+    up: ['m5 12 7-7 7 7', 'M12 19V5'],
+    pin: [
+      'M12 17v5',
+      'M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z'
+    ],
+    eyeoff: [
+      'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94',
+      'M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24',
+      'M1 1l22 22'
+    ],
+    restore: [
+      'M9 14 4 9l5-5',
+      'M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5 5.5 5.5 0 0 1-5.5 5.5H11'
+    ],
+    wall: ['M3 3h7v7H3z', 'M14 3h7v7h-7z', 'M14 14h7v7h-7z', 'M3 14h7v7H3z'],
+    settings: [
+      'M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z',
+      'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'
+    ],
+    help: [
+      'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z',
+      'M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3',
+      'M12 17h.01'
     ]
   }
   return (
@@ -250,14 +295,16 @@ function App() {
     [screen, setScreen] = useState(is475 ? 'overview' : 'project')
   const [variant475, setVariant475] = useState('a')
   const [panel475, setPanel475] = useState('versions')
-  const [versionOrder, setVersionOrder] = useState(['v0.7', 'v0.6'])
+  const [versionOrder, setVersionOrder] = useState(['v0.7', 'v0.6', 'v0.8'])
   const [selectedTreeId, setSelectedTreeId] = useState(null)
   const [selectedSessionId, setSelectedSessionId] = useState(null)
   const [historyOpen, setHistoryOpen] = useState(false)
-  const [openVersions, setOpenVersions] = useState(['v0.7']),
-    [openGoals, setOpenGoals] = useState(['v0.7/G2'])
-  const [closedTrees, setClosedTrees] = useState([]),
+  const [openVersions, setOpenVersions] = useState(['v0.7', 'v0.8']),
+    [openGoals, setOpenGoals] = useState(['v0.7/G2', 'v0.8/G1'])
+  const [closedTrees, setClosedTrees] = useState(['v0.8/G1/hidden']),
     [goalFilters, setGoalFilters] = useState({})
+  // #475 评审：隐藏/归档（类似 Codex archive，收拢到底部可还原）。
+  const [hiddenTrees, setHiddenTrees] = useState(() => new Set(['v0.8/issue-544']))
   const [modal, setModal] = useState(null),
     [versionName, setVersionName] = useState(''),
     [versionError, setVersionError] = useState('')
@@ -266,9 +313,13 @@ function App() {
   const [remoteDisconnected, setRemoteDisconnected] = useState(false)
   const [taskVersion, setTaskVersion] = useState(null)
   const [taskEntry, setTaskEntry] = useState(0)
-  const [otherProjectsOpen, setOtherProjectsOpen] = useState(false)
   const [nativeProjectOpen, setNativeProjectOpen] = useState(false)
-  const [nativeOtherOpen, setNativeOtherOpen] = useState(false)
+  // Orca 原生固定（isPinned）：固定树在面板顶部「已固定」栏目多显示一份，原件留在原目标/工作区
+  // （BW 缺省开启 showPinnedWorktreesInGroups）。该栏目原常驻 Orca 项目工作区之下，A 定稿上移；
+  // 版本块内的树同样可固定，进入同一栏目，不再另造目标目录内置顶。
+  const [pinnedTrees, setPinnedTrees] = useState(
+    () => new Set(['v0.7/issue-383', 'remote/v0.7/plan', 'local/feature/notes', 'v0.8/issue-520'])
+  )
   const versionRefs = useRef({})
   const bindingDemo = useBindingDemo({
     versionOrder,
@@ -308,6 +359,15 @@ function App() {
   }, [toast])
   function toggle(list, value, setter) {
     setter(list.includes(value) ? list.filter((v) => v !== value) : [...list, value])
+  }
+  function toggleSet(set, value) {
+    const next = new Set(set)
+    if (next.has(value)) {
+      next.delete(value)
+    } else {
+      next.add(value)
+    }
+    return next
   }
   function go(v, next, goal) {
     setVersion(v)
@@ -527,11 +587,12 @@ function App() {
       (tree) => tree.role === 'issue' && tree.issue === reference.number
     )
   }
-  function nativeTree(v, tree, pool = bindingDemo.boundTrees(v)) {
+  function nativeTree(v, tree, pool = bindingDemo.boundTrees(v), tools) {
     const key = tree.id,
       expanded = !closedTrees.includes(key)
+    const children = pool.filter((item) => item.parent === tree.id)
     const sessions = tree.sessions,
-      children = pool.filter((item) => item.parent === tree.id)
+      pinned = tools?.isPinned?.(tree)
     return (
       <div className="native-worktree-card" data-branch={tree.branch} key={tree.id}>
         <div className="native-tree-row" {...bindingDemo.contextMenuProps(tree)}>
@@ -545,11 +606,21 @@ function App() {
           </button>
           <button
             className="native-worktree-heading"
-            title={`${treeTitle(tree)}\n分支：${tree.branch} · 右键管理版本绑定`}
+            title={`${treeTitle(tree)}\n分支：${tree.branch} · 右键管理版本绑定${pinned ? ' · 已固定' : ''}`}
             onClick={() => activateTree(tree.version, tree)}
           >
             <Icon icon={GitBranch} />
             <span>{treeTitle(tree)}</span>
+            {pinned && (
+              <span
+                className="goal-pinned-badge"
+                role="img"
+                aria-label="已固定"
+                title="已固定：顶部「已固定」栏目同样显示；原件仍在本目标内"
+              >
+                <NativeToolIcon kind="pin" size={10} />
+              </span>
+            )}
             {tree.owner === 'remote' && remoteDisconnected && (
               <span
                 className="disconnected-mark"
@@ -564,6 +635,48 @@ function App() {
               </span>
             )}
           </button>
+          {tools && (
+            <div className="goal-tree-tools">
+              {tools.onRestore ? (
+                <button
+                  className={`icon-action goal-tool-btn${is475 ? '' : ''}`}
+                  aria-label={`还原 ${treeTitle(tree)} 到目标目录`}
+                  title="还原：取消隐藏，回到目标目录内"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    tools.onRestore(tree)
+                  }}
+                >
+                  <NativeToolIcon kind="restore" size={13} />
+                </button>
+              ) : (
+                <>
+                  <button
+                    className={`icon-action goal-tool-btn${pinned ? ' goal-pin-active' : ''}`}
+                    aria-label={pinned ? `取消固定 ${treeTitle(tree)}` : `固定 ${treeTitle(tree)}`}
+                    title={pinned ? '取消固定' : '固定：Orca 原生固定，顶部「已固定」栏目多显示一份，原件不动'}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      tools.onTogglePin(tree)
+                    }}
+                  >
+                    <NativeToolIcon kind="pin" size={13} />
+                  </button>
+                  <button
+                    className="icon-action goal-tool-btn"
+                    aria-label={`隐藏 ${treeTitle(tree)}（归档）`}
+                    title="隐藏/归档：收拢到本目标底部「已隐藏」，可还原"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      tools.onHide(tree)
+                    }}
+                  >
+                    <NativeToolIcon kind="eyeoff" size={13} />
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
         <div className="native-host-meta">
           <span>{tree.owner === 'remote' ? '配对机' : 'Local Windows'}</span>
@@ -590,7 +703,7 @@ function App() {
             {!sessions.length && <div className="tree-empty">暂无会话</div>}
             {children.map((child) => (
               <div className="native-child-tree" key={child.id}>
-                {nativeTree(v, child, pool)}
+                {nativeTree(v, child, pool, tools)}
               </div>
             ))}
           </div>
@@ -601,10 +714,23 @@ function App() {
   function goalDirectory(v, goal) {
     const key = `${v}/${goal.goalId}`,
       expanded = openGoals.includes(key)
-    const group = bindingDemo
+    const all = bindingDemo
       .boundTrees(v)
       .filter((tree) => ['goal', 'issue'].includes(tree.role) && tree.goal === goal.goalId)
-    const roots = group.filter((tree) => !group.some((parent) => parent.id === tree.parent))
+    // 固定不改变本目录顺序，也不移走原件：固定树另在顶部「已固定」栏目多显示一份。
+    const visible = all.filter((tree) => !hiddenTrees.has(tree.id)),
+      archived = all.filter((tree) => hiddenTrees.has(tree.id))
+    const roots = visible.filter((tree) => !visible.some((parent) => parent.id === tree.parent))
+    const tools = is475
+      ? {
+          isPinned: (tree) => pinnedTrees.has(tree.id),
+          onTogglePin: (tree) => setPinnedTrees(toggleSet(pinnedTrees, tree.id)),
+          onHide: (tree) => setHiddenTrees(toggleSet(hiddenTrees, tree.id))
+        }
+      : null
+    const restoreTools = { onRestore: (tree) => setHiddenTrees(toggleSet(hiddenTrees, tree.id)) }
+    const hideKey = `${key}/hidden`,
+      hideOpen = !closedTrees.includes(hideKey)
     return (
       <div className="goal-directory" key={goal.goalId}>
         <div className="goal-directory-row">
@@ -639,9 +765,28 @@ function App() {
         {expanded && (
           <div className="goal-directory-body">
             {roots.length ? (
-              roots.map((tree) => nativeTree(v, tree, group))
+              roots.map((tree) => nativeTree(v, tree, visible, tools))
             ) : (
               <div className="tree-empty">尚无工作树</div>
+            )}
+            {archived.length > 0 && (
+              <div className="goal-hidden-section">
+                <button
+                  className="goal-hidden-toggle"
+                  aria-expanded={hideOpen}
+                  aria-label={`已隐藏 ${archived.length} 个工作树 展开或收起`}
+                  onClick={() => toggle(closedTrees, hideKey, setClosedTrees)}
+                >
+                  <Icon icon={hideOpen ? ChevronDown : ChevronRight} />
+                  <NativeToolIcon kind="eyeoff" size={12} />
+                  <span>已隐藏 {archived.length}</span>
+                </button>
+                {hideOpen && (
+                  <div className="goal-hidden-list">
+                    {archived.map((tree) => nativeTree(v, tree, visible, restoreTools))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -1001,35 +1146,45 @@ function App() {
       {versionOrder.map(versionNav)}
     </>
   )
-  // #500：已固定作为对象面板顶部独立分组；固定只多显示一份，原位置不动。
-  const pinnedRows475 = ['v0.7/issue-383', 'remote/v0.7/plan', 'local/feature/notes']
+  // Orca 原生「已固定」栏目：版本块与 Orca 工作区的固定树汇入这份唯一栏目（原件不动，仍在原处）。
+  // 原常驻在 Orca 项目工作区之下，A 定稿上移到第二列最上方；栏目样式与分组语义照原生 Pinned。
+  const pinnedRows475 = [...pinnedTrees]
     .map((id) => bindingDemo.trees.find((tree) => tree.id === id))
-    .filter(Boolean)
-    .map((tree) => ({
-      tree,
-      meta: tree.owner === 'remote' ? `配对机 · ${tree.version || '未归版'}` : tree.version || '本机 · 未归版'
-    }))
+    // 已隐藏的树不从「已固定」露出；还原后若仍固定会回到这里。
+    .filter((tree) => Boolean(tree) && !hiddenTrees.has(tree.id))
   const pinnedSection475 = (
     <div className="pinned-section-475">
-      <div className="section-label">
+      <div className="section-label pinned-heading-475">
+        <NativeToolIcon kind="pin" size={11} />
         <span>已固定</span>
         <small>{pinnedRows475.length}</small>
       </div>
-      {pinnedRows475.map(({ tree, meta }) => (
-        <button
+      {pinnedRows475.map((tree) => (
+        <div
           key={tree.id}
           className={`nav-row pinned-row-475${selectedTreeId === tree.id ? ' selected' : ''}`}
-          title={`${treeTitle(tree)} · ${meta}`}
-          onClick={() =>
-            activateTree(versionOrder.includes(tree.version) ? tree.version : null, tree)
-          }
+          title={`${treeTitle(tree)}\n分支：${tree.branch}`}
+          onClick={() => activateTree(versionOrder.includes(tree.version) ? tree.version : null, tree)}
         >
-          <Icon icon={tree.owner === 'remote' ? MessageSquare : GitBranch} />
+          <Icon icon={GitBranch} />
           <span>{treeTitle(tree)}</span>
-          <small className="pinned-badge-475">{meta}</small>
-        </button>
+          <button
+            className="icon-action pinned-unpin-475"
+            aria-label={`取消固定 ${treeTitle(tree)}`}
+            title="取消固定；原件仍在原目标或工作区中"
+            onClick={(e) => {
+              e.stopPropagation()
+              setPinnedTrees((prev) => {
+                const next = new Set(prev)
+                next.delete(tree.id)
+                return next
+              })
+            }}
+          >
+            <NativeToolIcon kind="pin" size={13} />
+          </button>
+        </div>
       ))}
-      <p className="pinned-note-475">固定只让这棵树在顶部多显示一份，原位置与版本区都不移动。</p>
     </div>
   )
   const seg475 = (
@@ -1060,7 +1215,7 @@ function App() {
     isVersionScreen || screen === 'project-workspaces' || screen === 'private'
   const showPanel475 = is475 && (objectContext475 || variant475 === 'd')
   const variantText475 = {
-    a: 'A · 单面板：已固定 / 版本 / Orca 工作区自上而下',
+    a: 'A · 定稿：单滚动面板，Orca 原生「已固定」上移，版本与 Orca 工作区自上而下',
     b: 'B · Rail 切换：版本工作区页签只列版本，Orca 工作区另有 Rail 入口',
     c: 'C · 分段切换：面板顶部用「版本 / 工作区」切',
     d: 'D · 独立（对照）：Rail 只换主区，第二列始终是同一份对象面板'
@@ -1100,7 +1255,7 @@ function App() {
         aria-label="项目墙"
         onClick={() => setScreen('wall')}
       >
-        B
+        <NativeToolIcon kind="wall" size={17} />
       </button>
       <div className="rail-group">
         {railButton475('版本工作区', PackageCheck, objectContext475, enterObjectContext475)}
@@ -1117,10 +1272,49 @@ function App() {
           )}
       </div>
       <div className="rail-spacer" />
+      <div className="rail-foot-group">
+        <button
+          className="rail-foot"
+          title="设置"
+          aria-label="设置"
+          onClick={() => setModal({ type: 'native-tool', title: '设置' })}
+        >
+          <NativeToolIcon kind="settings" size={16} />
+        </button>
+        <button
+          className="rail-foot"
+          title="帮助"
+          aria-label="帮助"
+          onClick={() => setModal({ type: 'native-tool', title: '帮助' })}
+        >
+          <NativeToolIcon kind="help" size={16} />
+        </button>
+      </div>
       <span className="rail-avatar" title="yuzhup · 本地">
         Y
       </span>
     </aside>
+  )
+  // 底部两枚沿用原生图标按钮形态：只有图标，名称走 aria/title。
+  const panelFooter475 = (
+    <div className="panel-footer-475">
+      <button
+        className="icon-action"
+        title="显示活动工作区"
+        aria-label="显示活动工作区"
+        onClick={() => setModal({ type: 'native-tool', title: '显示活动工作区' })}
+      >
+        <NativeToolIcon kind="activity" size={15} />
+      </button>
+      <button
+        className="icon-action"
+        title="工作区看板"
+        aria-label="工作区看板"
+        onClick={() => setModal({ type: 'native-tool', title: '工作区看板' })}
+      >
+        <NativeToolIcon kind="wall" size={15} />
+      </button>
+    </div>
   )
   return (
     <div className="prototype">
@@ -1203,25 +1397,19 @@ function App() {
             </>
           )}
           {is475 && variant475 === 'c' && seg475}
-          <div
-            className={`sidebar-scroll scrollbar-sleek worktree-sidebar-scrollbar${is475 && panel475 === 'workspaces' ? ' hidden-475' : ''}`}
-          >
-            <div className="bw-section">
+          {/* #475 A 定稿：第二列只有一个滚动容器，版本块与 Orca 工作区共用同一滚动条。 */}
+          <div className="sidebar-scroll scrollbar-sleek worktree-sidebar-scrollbar">
+            <div
+              className={`bw-section${is475 && panel475 === 'workspaces' ? ' hidden-475' : ''}`}
+            >
               {projectHeading475}
               {is475 && pinnedSection475}
               {!is475 && moduleNavs475}
               {versionsBlock475}
             </div>
-          </div>
-          <div
-            className={`native-projects scrollbar-sleek worktree-sidebar-scrollbar${is475 && (variant475 === 'b' || variant475 === 'c') && panel475 === 'versions' ? ' hidden-475' : ''}${is475 && panel475 === 'workspaces' ? ' expanded-475' : ''}`}
-          >
-            {is475 && panel475 === 'workspaces' && (
-              <>
-                {projectHeading475}
-                {pinnedSection475}
-              </>
-            )}
+            <div
+              className={`native-projects${is475 && (variant475 === 'b' || variant475 === 'c') && panel475 === 'versions' ? ' hidden-475' : ''}${is475 && panel475 === 'workspaces' ? ' expanded-475' : ''}${is475 ? ' merged-scroll-475' : ''}`}
+            >
             <div className="section-label native-workspaces-heading">
               <span>Orca 项目工作区</span>
               <div className="native-workspaces-tools">
@@ -1230,8 +1418,6 @@ function App() {
                   label="全部收起"
                   onClick={() => {
                     setNativeProjectOpen(false)
-                    setNativeOtherOpen(false)
-                    setOtherProjectsOpen(false)
                     setClosedTrees((items) => [
                       ...new Set([...items, ...nativeProjectTrees.map((tree) => tree.id)])
                     ])
@@ -1242,8 +1428,6 @@ function App() {
                   label="全部展开"
                   onClick={() => {
                     setNativeProjectOpen(true)
-                    setNativeOtherOpen(true)
-                    setOtherProjectsOpen(true)
                     const ids = new Set(nativeProjectTrees.map((tree) => tree.id))
                     setClosedTrees((items) => items.filter((id) => !ids.has(id)))
                   }}
@@ -1309,59 +1493,9 @@ function App() {
                   .map((tree) => nativeTree(tree.version, tree, nativeProjectTrees))}
               </div>
             )}
-            <div className="other-projects-section">
-              <button
-                className="other-projects-toggle"
-                aria-expanded={otherProjectsOpen}
-                onClick={() => setOtherProjectsOpen(!otherProjectsOpen)}
-              >
-                <Icon icon={otherProjectsOpen ? ChevronDown : ChevronRight} />
-                <span>其他项目</span>
-                <small>1</small>
-              </button>
-              {otherProjectsOpen && (
-                <>
-                  <div className="native-project-row">
-                    <button
-                      className="tree-chevron"
-                      aria-label="personal-notes 展开或收起"
-                      aria-expanded={nativeOtherOpen}
-                      onClick={() => setNativeOtherOpen(!nativeOtherOpen)}
-                    >
-                      <Icon icon={nativeOtherOpen ? ChevronDown : ChevronRight} />
-                    </button>
-                    <button className="native-project-title" onClick={() => setScreen('private')}>
-                      <Icon icon={GitBranch} />
-                      <span>personal-notes</span>
-                    </button>
-                    <div className="native-project-actions">
-                      <button
-                        className="icon-button"
-                        aria-label="personal-notes 项目菜单"
-                        onClick={() =>
-                          setModal({ type: 'native-tool', title: 'personal-notes 项目菜单' })
-                        }
-                      >
-                        ···
-                      </button>
-                      <Button
-                        icon={Plus}
-                        label="在 personal-notes 新建工作区"
-                        onClick={() =>
-                          setModal({ type: 'native-tool', title: 'personal-notes 新建工作区' })
-                        }
-                      />
-                    </div>
-                  </div>
-                  {nativeOtherOpen && (
-                    <Nav icon={MessageSquare} onClick={() => setScreen('private')}>
-                      个人笔记
-                    </Nav>
-                  )}
-                </>
-              )}
             </div>
           </div>
+          {is475 && panelFooter475}
           {!is475 && (
             <div className="sidebar-footer">
               <span className="user-avatar">Y</span>yuzhup<span>本地</span>

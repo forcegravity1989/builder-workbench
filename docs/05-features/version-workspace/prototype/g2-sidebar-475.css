@@ -63,6 +63,26 @@
 .rail-spacer {
   flex: 1;
 }
+.rail-foot-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding-bottom: 6px;
+}
+.rail-foot {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--foreground) 62%, transparent);
+}
+.rail-foot:hover {
+  background: var(--worktree-sidebar-accent, var(--accent));
+  color: var(--foreground);
+}
 .rail-avatar {
   width: 32px;
   height: 32px;
@@ -112,36 +132,70 @@
   min-height: 0;
   max-height: none;
 }
+/* #475 A 定稿：第二列单一滚动条 —— 版本块与 Orca 工作区都在 sidebar-scroll 内共用滚动 */
+.panel-475 .native-projects.merged-scroll-475 {
+  max-height: none;
+  overflow: visible;
+  flex: none;
+  padding-bottom: 12px;
+}
+.panel-475 .panel-footer-475 {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+  background: var(--worktree-sidebar, var(--sidebar));
+}
+.panel-475 .panel-footer-475 button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 6px;
+  color: var(--muted-foreground);
+}
+.panel-475 .panel-footer-475 button:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+.pinned-row-475 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pinned-unpin-475 {
+  width: 22px;
+  height: 24px;
+  min-width: 22px;
+  margin-left: 2px;
+  border-radius: 5px;
+  color: var(--muted-foreground);
+}
+.pinned-unpin-475:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
 .panel-475 .sidebar-divider {
   margin-top: 10px;
 }
 
 .pinned-section-475 {
-  margin-top: 6px;
-  padding-top: 4px;
-  border-top: 1px solid var(--border);
+  margin-top: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
 }
 .pinned-section-475 .section-label {
-  margin-top: 6px;
+  margin-top: 4px;
+}
+.pinned-heading-475 {
+  gap: 4px;
 }
 .pinned-row-475 {
   width: calc(100% - 8px);
   margin: 0 4px;
-}
-.pinned-badge-475 {
-  flex-shrink: 0;
-  margin-left: 4px;
-  padding: 1px 4px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  font-size: 10px;
-  color: var(--muted-foreground);
-}
-.pinned-note-475 {
-  margin: 2px 8px 4px;
-  font-size: 10px;
-  line-height: 1.45;
-  color: var(--muted-foreground);
 }
 
 .review-actions button.variant-btn-475 {
