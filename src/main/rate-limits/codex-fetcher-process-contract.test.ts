@@ -23,6 +23,12 @@ vi.mock('node-pty', () => ({
   spawn: ptySpawnMock
 }))
 
+vi.mock('node:fs/promises', () => ({
+  readFile: vi.fn(async () => {
+    throw new Error('no auth fixture')
+  })
+}))
+
 vi.mock('./codex-auth-presence', () => ({
   probeCodexAuthPresence: vi.fn(() => 'present')
 }))
@@ -125,7 +131,6 @@ describe('Codex rate-limit process contract', () => {
     await expect(
       fetchCodexRateLimits({
         codexHomePath: process.env.ORCA_EXPECTED_CODEX_HOME,
-        allowPtyFallback: false
       })
     ).resolves.toMatchObject({
       provider: 'codex',

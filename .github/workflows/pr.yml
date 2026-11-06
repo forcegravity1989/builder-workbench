@@ -55,8 +55,8 @@ jobs:
           src/main/codex-accounts/codex-credential-absence-grace.test.ts
           src/main/codex-accounts/codex-windows-interactive-login.test.ts
           src/main/codex-accounts/service-login-process-teardown.test.ts
-          src/main/rate-limits/codex-fetcher.test.ts
-          src/main/rate-limits/codex-fetcher-process-contract.test.ts
+          src/main/rate-limits/codex-
+          src/main/rate-limits/service-inactive-account-previews.test.ts
 
   verify:
     name: lint, typecheck, tests, build

@@ -154,7 +154,6 @@ export abstract class RateLimitServiceFullCyclePreparation extends RateLimitServ
           : (missingWslCodexHome ??
             fetchCodexRateLimits({
               codexHomePath,
-              allowPtyFallback: this.shouldAllowCodexPtyFallback(),
               signal
             })),
         fetchGeminiRateLimits(geminiCliOAuthEnabled),
