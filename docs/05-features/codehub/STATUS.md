@@ -10,7 +10,7 @@
 | 2 spec | ◐ | 草案 [spec.md](spec.md)。缺可点原型，规格 gate 未过 |
 | 3 实现设计 | ◐ | 行为散落在 [ref/upstream.md](../../../ref/upstream.md) CodeHub 节、[codehub-cli 指南](../../03-guide/codehub-cli.md)、验收规格里的版本目录规则。无特性级 design |
 | 4 TDD | ◐ | 存量单测文件在；2026-10-26 交付改断言/mock 后重跑通过。见下表 |
-| 5 验收点 E2E | ○ | C01–C12 已定义。上游写明平台请求用模拟边界，不能代替内部 CodeHub 实机 |
+| 5 验收点 E2E | ○ | 验收点见下表。上游写明平台请求用模拟边界，不能代替内部 CodeHub 实机 |
 | 6 用户旅程 E2E | ○ | CJ01 已定义，未执行 |
 
 ## 验收点与旅程矩阵

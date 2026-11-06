@@ -49,7 +49,7 @@ async function callProvider<T>(
 }
 
 /** One read batch shares native PRs/comments across planned Issues; refresh creates a new batch. */
-export function createOverviewProviderReader() {
+export function createOverviewProviderReader(signal?: AbortSignal) {
   const reads = new Map<string, Promise<unknown>>()
   function read<T>(
     method: Method,
@@ -58,6 +58,7 @@ export function createOverviewProviderReader() {
     number: number,
     force = false
   ): Promise<T> {
+    signal?.throwIfAborted()
     const key = JSON.stringify([
       method,
       task.source,

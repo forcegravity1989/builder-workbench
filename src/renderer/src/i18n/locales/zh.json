@@ -5974,6 +5974,8 @@
           "dac08ec03e": "处理中..."
         },
         "ExperimentalPane": {
+          "globalScopeTitle": "全局设置",
+          "globalScopeDescription": "以下设置适用于本机所有项目。",
           "9762364929": "在可能时在 macOS 上使用 APFS clone-copy；否则，将配置的文件夹或文件符号链接到创建的工作树中。",
           "24416f42cd": "工作树上的共享路径",
           "fb82ea1d7a": "自动将配置的文件或文件夹放入新创建的工作树中。",

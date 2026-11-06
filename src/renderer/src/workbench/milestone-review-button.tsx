@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 export function MilestoneReviewButton({
   busy,
+  writing,
   conflict,
   dirty,
   retry,
@@ -14,6 +15,7 @@ export function MilestoneReviewButton({
   updateFormal,
   submit
 }: {
+  writing: boolean
   busy: boolean
   conflict: boolean
   dirty: boolean
@@ -32,11 +34,19 @@ export function MilestoneReviewButton({
       void window.api.shell.openUrl(reviewUrl)
     }
   }
+  if (writing) {
+    return (
+      <Button size="xs" disabled aria-busy data-contextual-tour-target="milestone-submit">
+        提交中…
+      </Button>
+    )
+  }
   if (needsUpdate || (!dirty && !retry && (hasReview || reviewUrl))) {
     return (
       <Button
         size="xs"
         className="bg-foreground text-background hover:bg-foreground/90"
+        data-contextual-tour-target="milestone-submit"
         disabled={needsUpdate ? busy : !reviewUrl}
         title={!needsUpdate && !reviewUrl ? '评审链接尚未读到，请刷新后重试' : undefined}
         onClick={needsUpdate ? updateFormal : viewReview}
@@ -51,6 +61,7 @@ export function MilestoneReviewButton({
         <Button
           size="xs"
           className="bg-foreground text-background hover:bg-foreground/90"
+          data-contextual-tour-target="milestone-submit"
           disabled={!reviewUrl && (busy || conflict || (!dirty && !retry) || invalid)}
         >
           {retry ? '重试提交' : hasReview ? '更新评审' : '提交评审'}

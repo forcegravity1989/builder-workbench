@@ -171,9 +171,7 @@ function PlanningBoardContent({ context, prepareMetrics, entry }: PlanningBoardP
   const { startVersion, started, start } = usePlanningStart({
     context,
     entry,
-    material,
-    priorState: prior.state,
-    priorError
+    material
   })
   const annotateShortcut = useOptionalShortcutLabel('workbench.toggleAnnotationMode')
   // Why: same gate as the header entry button below — the chord must not exist

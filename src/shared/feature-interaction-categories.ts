@@ -44,6 +44,7 @@ export const FEATURE_INTERACTION_CATEGORY_BY_ID = {
   'browser-annotations-sent-to-agent': 'browser',
   'browser-grab': 'browser',
   'markdown-file-created': 'notes',
+  'workbench-milestones': 'workspace',
   'workspace-creation': 'workspace',
   'agent-browser-setup': 'setup',
   'agent-browser-use': 'agent',

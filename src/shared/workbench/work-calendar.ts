@@ -1,35 +1,21 @@
-export type WorkCalendarDay = { working: boolean; badge: '班' | '休' | null; preset: boolean }
-type AnnualCalendar = { workDays: readonly string[]; restDays: readonly string[] }
+import calendar2026 from './work-calendar-2026.json'
 
-// Internal calendar data can be supplied for a whole year at build time.
-const annualCalendars: Readonly<Record<string, AnnualCalendar>> = {}
-const yearIndexes = new Map<string, Map<string, WorkCalendarDay>>()
+export type WorkCalendarDay = { working: boolean; badge: '班' | '休' | null; preset: boolean }
+
+const workDays = new Set(calendar2026.workDays)
+const restDays = new Set(calendar2026.restDays)
 
 export function workCalendarDay(date: string): WorkCalendarDay {
-  const year = date.slice(0, 4)
-  if (!yearIndexes.has(year)) {
-    const calendar = annualCalendars[year]
-    const work = new Set(calendar?.workDays),
-      rest = new Set(calendar?.restDays)
-    const index = new Map<string, WorkCalendarDay>()
-    const cursor = new Date(`${year}-01-01T00:00:00Z`)
-    while (
-      Number.isFinite(cursor.getTime()) &&
-      String(cursor.getUTCFullYear()).padStart(4, '0') === year
-    ) {
-      const key = cursor.toISOString().slice(0, 10)
-      index.set(key, {
-        working: work.has(key) || (!rest.has(key) && ![0, 6].includes(cursor.getUTCDay())),
-        badge: work.has(key) ? '班' : rest.has(key) ? '休' : null,
-        preset: Boolean(calendar)
-      })
-      cursor.setUTCDate(cursor.getUTCDate() + 1)
-    }
-    yearIndexes.set(year, index)
-  }
-  const result = yearIndexes.get(year)!.get(date)
-  if (!result) {
+  const day = new Date(`${date}T00:00:00Z`)
+  if (!Number.isFinite(day.getTime()) || day.toISOString().slice(0, 10) !== date) {
     throw new Error(`工作日历日期无效：${date}`)
   }
-  return result
+  if (restDays.has(date)) {
+    return { working: false, badge: '休', preset: true }
+  }
+  if (workDays.has(date)) {
+    return { working: true, badge: '班', preset: true }
+  }
+  const weekday = day.getUTCDay()
+  return { working: weekday !== 0 && weekday !== 6, badge: null, preset: date.startsWith('2026-') }
 }

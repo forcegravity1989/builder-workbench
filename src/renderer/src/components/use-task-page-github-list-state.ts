@@ -29,7 +29,7 @@ export function useTaskPageGitHubListState(model: TaskPageProviderStateModel) {
   const [appliedTaskSearch, setAppliedTaskSearch] = useState(initialTaskQuery)
   const taskSearchInputRef = useRef<HTMLInputElement>(null)
   const [activeTaskPreset, setActiveTaskPreset] = useState<TaskViewPresetId | null>(
-    defaultTaskViewPreset
+    pageData.workbenchTaskScope?.goalId ? null : defaultTaskViewPreset
   )
   const [tasksLoading, setTasksLoading] = useState(false)
   const [tasksRefreshing, setTasksRefreshing] = useState(false)

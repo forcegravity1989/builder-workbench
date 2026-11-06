@@ -29,6 +29,8 @@ import {
 import type { TaskProvider } from '../../../shared/task-providers'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
+import { resolveReferenceRepo } from '@/workbench/task-reference-repo'
+import { getRepoExecutionHostId } from '../../../shared/execution-host'
 import { getTaskPageRepoSourceContext } from './task-page-source-context'
 export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
   const {
@@ -47,15 +49,36 @@ export function useTaskPageRepoSelection(model: TaskPageStoreBindingsModel) {
   // Why: initial selection precedence — explicit preselection > persisted defaultRepoSelection > all eligible; preselection wins so "open tasks for this repo" lands single-repo.
   const resolvedInitialSelection = useMemo<ReadonlySet<string>>(() => {
     const preferred = pageData.preselectedRepoId
-    if (preferred && eligibleRepos.some((repo) => repo.id === preferred)) {
-      return new Set([preferred])
+    const home = eligibleRepos.find((repo) => repo.id === preferred)
+    if (home) {
+      const goalScope = pageData.workbenchTaskScope
+      if (goalScope?.goalId) {
+        const target = { repoId: home.id, hostId: getRepoExecutionHostId(home) }
+        const deps = { repos: () => eligibleRepos }
+        const selected = new Set<string>()
+        for (const reference of goalScope.references) {
+          const repo = resolveReferenceRepo(deps, target, reference)
+          if (repo) {
+            selected.add(repo.id)
+          }
+        }
+        if (selected.size) {
+          return selected
+        }
+      }
+      return new Set([home.id])
     }
     const persisted = settings?.defaultRepoSelection
     if (Array.isArray(persisted)) {
       return normalizeTaskRepoSelection(eligibleRepos, new Set(persisted))
     }
     return getDefaultTaskRepoSelection(eligibleRepos)
-  }, [eligibleRepos, pageData.preselectedRepoId, settings?.defaultRepoSelection])
+  }, [
+    eligibleRepos,
+    pageData.preselectedRepoId,
+    pageData.workbenchTaskScope,
+    settings?.defaultRepoSelection
+  ])
   const [repoSelection, setRepoSelection] = useState<ReadonlySet<string>>(resolvedInitialSelection)
   const taskPickerGroups = useMemo(
     () => getTaskProjectPickerGroups(eligibleRepos, repoSelection),

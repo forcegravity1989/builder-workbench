@@ -1,3 +1,4 @@
+import { MilestoneReviewNav } from '../../overview-metrics/prototype/milestone-review-nav.jsx'
 const { React, createRoot, useState, useRef, useEffect } = window.BWPrototypeDependencies
 import {
   snapshot,
@@ -205,8 +206,7 @@ function App() {
   return (
     <div className={`g3-app ${compact ? 'constrained' : ''} ${annotating ? 'annotating' : ''}`}>
       <div className="g3-demo-bar">
-        <strong>#439 局部候选 · 计划</strong>
-        <span>沿用既有四区 · 场景与编辑仅在本页演示</span>
+        <MilestoneReviewNav screen="plan" />
         <label className="g3-scene">
           时期
           <select

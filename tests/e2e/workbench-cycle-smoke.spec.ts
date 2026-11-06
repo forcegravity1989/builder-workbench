@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { test, expect } from './helpers/workbench-app'
+import { test as baseTest, expect } from './helpers/workbench-app'
 import type { Page } from '@playwright/test'
 import {
   projectSettingsTest as isolatedProjectTest,
@@ -11,6 +11,8 @@ import { verifyMilestoneRestart } from './helpers/workbench-milestone-restart'
 import { fixedWorkspaceTest } from './helpers/workbench-fixed-workspace-fixture'
 import { verifyFixedWorkspaceRemoteReuse } from './helpers/workbench-fixed-workspace'
 import { recordWorkspaceInventory } from './helpers/workbench-fixed-workspace-readback'
+import { configureGoldenStubAgent, getGoldenStubAgentLaunchEnv } from './helpers/golden-stub-agent'
+import { verifyWorkflowDraft } from './helpers/workbench-workflow-draft'
 
 /**
  * BW main-chain smoke (G2 journey): the version workspace entry must prepare the
@@ -24,6 +26,8 @@ import { recordWorkspaceInventory } from './helpers/workbench-fixed-workspace-re
  * Requires a workbench build: VITE_WORKBENCH_SHELL=1 baked at `electron-vite
  * build` time (the E2E globalSetup build picks it up from the environment).
  */
+const test = baseTest.extend({ launchEnv: getGoldenStubAgentLaunchEnv() })
+
 test.use({
   workbenchAppExtraEnv: {
     WORKBENCH_SHELL: '1',
@@ -151,6 +155,9 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   // prepare 的空计划是 create-only 初始化；绑定树无屏内选版，页头只读回显绑定版本。
   await expect(workbenchPage.locator('.g3-version-bound')).toHaveText('v9.9', { timeout: 60_000 })
   await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'prepared')
+  await configureGoldenStubAgent(workbenchPage, { agentArgs: '--codex-draft' })
+  await workbenchPage.getByRole('button', { name: '开始计划', exact: true }).click()
+  await verifyWorkflowDraft(workbenchPage, 'week-planning', testInfo)
 
   // The conversation/CLI creates materials in product use. Seed only this test
   // version on the bound tree's real path; listing and editing remain UI work.
@@ -281,7 +288,7 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect
     .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))
     .toBe('terminal')
-  // 计划尚未合入也可开始会话；材料创建仍须核验固定计划，本用例不启动 agent。
+  // 计划尚未合入也可打开草稿；fixture agent 不执行模型动作，材料仍须核验固定计划。
   await expect(workbenchPage.locator('.acc-empty-board')).toBeVisible({ timeout: 60_000 })
   // 空板无批注入口，和弦无反应（条件可用性负例，#444）。
   await workbenchPage.keyboard.press('Alt+A')
@@ -291,6 +298,8 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     workbenchPage.getByRole('button', { name: '开始验收', exact: true }).first()
   ).toBeVisible({ timeout: 60_000 })
   await expect(workbenchPage.getByRole('button', { name: '开始验收', exact: true })).toBeEnabled()
+  await workbenchPage.getByRole('button', { name: '开始验收', exact: true }).click()
+  await verifyWorkflowDraft(workbenchPage, 'version-acceptance', testInfo)
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-acceptance-mounted.jpg') })
 
   // ---- 总览：项目名片可见，未配置保持 Unknown；北极星卡片已移除 ----
@@ -334,6 +343,10 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
     workbenchPage.getByRole('button', { name: '未记录验收 ↗', exact: true })
   ).toBeVisible()
   await workbenchPage.screenshot({ path: testInfo.outputPath('bw-version-overview.png') })
+
+  await workbenchPage.getByRole('button', { name: '项目总览', exact: true }).click()
+  await workbenchPage.getByRole('button', { name: '配置指标', exact: true }).first().click()
+  await verifyWorkflowDraft(workbenchPage, 'metrics-refresh', testInfo)
 
   // ---- 设置页 Shortcuts 收录与搜索（#444 走原生键位体系）----
   // 打开方式不是判据，走 store action 直达 shortcuts pane（与菜单/侧栏按钮同链切

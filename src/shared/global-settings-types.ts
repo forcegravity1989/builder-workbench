@@ -457,6 +457,8 @@ export type GlobalSettings = {
   agentHibernationIdleMs?: number
   /** Experimental: opt-in preview of the updated worktree-card layout and metadata behavior. */
   experimentalNewWorktreeCardStyle?: boolean
+  /** Local desktop preferences keyed by Orca project identity; absent flags are off. */
+  workbenchOverviewByProject?: Record<string, { sdlc?: boolean; ai?: boolean }>
   /** Experimental: per-workspace on-demand environment recipes and setup surface. */
   experimentalEphemeralVms?: boolean
   /** Compact worktree cards: hide the metadata row when title and branch say the same thing. */

@@ -1,10 +1,10 @@
 import {
   milestoneDraft,
   type MilestoneRead,
+  type MilestoneSubmitResult,
   type MilestoneDraft
 } from '../../../shared/workbench/project-milestones'
 import { MilestoneRecoveryRecordSchema } from '../../../shared/workbench/milestone-recovery'
-import { latestMilestoneMonth } from '../../../shared/workbench/milestone-calendar'
 import { milestoneRecoveryPayload, milestoneRecoverySchema } from './milestone-recovery'
 
 export type Session = {
@@ -14,7 +14,6 @@ export type Session = {
   expectedFormal: string
   expectedProposal: string | null
   editing: boolean
-  month: string
   scrollX: number | null
   scrollY: number
   pageY: number
@@ -61,7 +60,6 @@ export function fresh(data: MilestoneRead, previous?: Session): Session {
     expectedFormal: data.formal.revision,
     expectedProposal: data.branchHead,
     editing: previous?.editing ?? false,
-    month: previous?.month ?? latestMilestoneMonth(draft),
     scrollX: previous?.scrollX ?? null,
     scrollY: previous?.scrollY ?? 0,
     pageY: previous?.pageY ?? 0,
@@ -164,4 +162,35 @@ export function put(key: string, next: Session, save = true) {
     persist(key)
   }
   notify()
+}
+
+export function recordMilestoneSubmission(key: string, s: Session, result: MilestoneSubmitResult) {
+  const baseline = milestoneDraft(result.proposal)
+  const latest = sessions.get(key) ?? s
+  put(key, {
+    ...latest,
+    baseline,
+    draft:
+      JSON.stringify(latest.draft) === JSON.stringify(s.draft)
+        ? structuredClone(baseline)
+        : latest.draft,
+    expectedFormal: s.expectedFormal,
+    expectedProposal: result.proposal.head,
+    data: {
+      ...latest.data,
+      branchHead: result.proposal.head,
+      proposal: result.proposal,
+      review: {
+        ...latest.data.review,
+        ...(result.outcome.mode === 'pr'
+          ? { pr: { ...result.outcome.pr, state: 'open' as const } }
+          : {})
+      }
+    },
+    retry: result.outcome.mode === 'failed',
+    past: [],
+    future: [],
+    field: null,
+    submitError: result.outcome.mode === 'failed' ? result.outcome.error : undefined
+  })
 }

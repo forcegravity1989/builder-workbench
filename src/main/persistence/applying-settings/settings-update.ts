@@ -56,6 +56,17 @@ export function updateSettings(
   options: { notifyListeners?: boolean; originWebContentsId?: number } = {}
 ): GlobalSettings {
   const sanitizedUpdates = stripRetiredGlobalSettings(updates)
+  if (updates.workbenchOverviewByProject) {
+    const current = operations.state.settings.workbenchOverviewByProject ?? {}
+    sanitizedUpdates.workbenchOverviewByProject = { ...current }
+    for (const [projectId, flags] of Object.entries(updates.workbenchOverviewByProject)) {
+      sanitizedUpdates.workbenchOverviewByProject[projectId] = {
+        ...current[projectId],
+        ...(typeof flags?.sdlc === 'boolean' ? { sdlc: flags.sdlc } : {}),
+        ...(typeof flags?.ai === 'boolean' ? { ai: flags.ai } : {})
+      }
+    }
+  }
   if ('opencodeSessionCookie' in updates && !updates.opencodeSessionCookie) {
     operations.removeRetainedBlob(PROTECTED_SECRET_SLOT.opencodeSessionCookie)
   }

@@ -11,6 +11,7 @@ if (process.argv[2] === 'app-server') {
 
 const ESC = '\x1b'
 const keyboardProtocolMode = process.argv.includes('--keyboard-protocol')
+const codexDraftMode = process.argv.includes('--codex-draft')
 const keyboardProtocolAgent = process.argv.includes('--grok') ? 'Grok' : 'Codex'
 // Both match the bytes after ESC, so the control character stays out of the
 // pattern: a CSI/SS3 introducer still missing its final byte, and a complete
@@ -25,7 +26,9 @@ let exiting = false
 
 function render() {
   const lines = composer.split('\n')
-  const renderedComposer = lines.map((line, index) => `${index === 0 ? '> ' : '  '}${line}`)
+  const renderedComposer = lines.map(
+    (line, index) => `${index === 0 ? (codexDraftMode ? '› ' : '> ') : '  '}${line}`
+  )
   process.stdout.write(
     `${keyboardProtocolMode ? `\x1b]0;\u280b ${keyboardProtocolAgent} is thinking\x07\x1b[>1u` : '\x1b]0;Golden Stub Agent\x07'}${[
       '\x1b[H\x1b[2JGolden Stub Agent',
@@ -126,4 +129,7 @@ for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
 }
 
 process.stdout.write('\x1b[?1049h')
+if (codexDraftMode) {
+  process.stdout.write('\x1b[?2004h')
+}
 render()

@@ -23,6 +23,7 @@ export type FeatureInteractionId =
   | 'browser-annotations-sent-to-agent'
   | 'browser-grab'
   | 'markdown-file-created'
+  | 'workbench-milestones'
   | 'workspace-creation'
   | 'agent-browser-setup'
   | 'agent-browser-use'
@@ -95,6 +96,7 @@ export const FEATURE_INTERACTIONS = [
   },
   { id: 'browser-grab', interaction: 'browser element grab or screenshot used' },
   { id: 'markdown-file-created', interaction: 'untitled markdown file explicitly created' },
+  { id: 'workbench-milestones', interaction: 'project milestone planning opened' },
   { id: 'workspace-creation', interaction: 'workspace creation flow opened' },
   { id: 'agent-browser-setup', interaction: 'Agent Browser Use setup enabled or opened' },
   { id: 'agent-browser-use', interaction: 'agent browser runtime method used' },

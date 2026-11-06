@@ -3,7 +3,6 @@ import { withQualifier } from '../../../shared/task-query'
 import {
   matchesWorkbenchTaskQuery,
   hasUnsupportedWorkbenchTaskSearch,
-  seedWorkbenchTaskQuery,
   type WorkbenchTaskScope
 } from '../../../shared/workbench/task-scope'
 import type { TaskScopeLoadResult, TaskScopeMissingRow } from './task-scope-load'
@@ -51,15 +50,12 @@ export function resolveWorkbenchTaskScopeFilters({
   return { filterProblem }
 }
 
-export function buildCodeHubGoalQuery(
-  model: {
-    codehubState: string
-    codehubAuthor: string
-    codehubAssignee: string
-    codehubLabels: string[]
-  },
-  scope: WorkbenchTaskScope | null
-): string {
+export function buildCodeHubGoalQuery(model: {
+  codehubState: string
+  codehubAuthor: string
+  codehubAssignee: string
+  codehubLabels: string[]
+}): string {
   let query = withQualifier(
     '',
     'state',
@@ -67,12 +63,7 @@ export function buildCodeHubGoalQuery(
   )
   query = withQualifier(query, 'author', model.codehubAuthor.trim() || null)
   query = withQualifier(query, 'assignee', model.codehubAssignee.trim() || null)
-  query = withQualifier(
-    query,
-    'labels',
-    model.codehubLabels.length > 0 ? model.codehubLabels : null
-  )
-  return seedWorkbenchTaskQuery(query, scope)
+  return withQualifier(query, 'labels', model.codehubLabels.length > 0 ? model.codehubLabels : null)
 }
 
 /** Apply native criteria to the complete goal reference set before paging. */

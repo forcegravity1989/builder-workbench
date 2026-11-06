@@ -1,6 +1,5 @@
 import type { VersionCycleContext } from '../version-cycle/cycle-context'
 import type { CycleEntry } from '../version-cycle/cycle-workspace-context'
-import { materialProblemRequest } from '../version-cycle/cycle-start-request'
 import { AcceptanceHeader } from './AcceptanceSections'
 import { AcceptanceNotices } from './AcceptanceNotices'
 import type { useAcceptanceBoard } from './use-acceptance-board'
@@ -49,17 +48,7 @@ export function AcceptanceEmptyBoard({
           type="button"
           disabled={entry.busy || board.busy || Boolean(context.syncing)}
           onClick={async () => {
-            const opened = await entry.start(
-              [
-                version ? `本次验收版本：${version}。` : '',
-                '请先核对本版固定计划与计划归档状态；尚未合入或状态无法确认时，先在会话中提醒我，不要自动合入。没有可读固定计划时保持目标为空，不借用其他版本。',
-                board.materialProblems.length
-                  ? materialProblemRequest(board.materialProblems, 'acceptance', version)
-                  : ''
-              ]
-                .filter(Boolean)
-                .join('\n')
-            )
+            const opened = await entry.start(version)
             if (opened) {
               onStarted()
             }

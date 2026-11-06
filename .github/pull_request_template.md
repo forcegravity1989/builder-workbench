@@ -1,6 +1,6 @@
 关联 #
 
-<!-- 先有 Issue 再开 PR：按 standard/system-prompt/references/issue-state.md 先查同类单，没有就建。写「关联」，不写 Fixes / Closes：合入不等于完成，Issue 关闭由人决定。 -->
+<!-- 先有 Issue 再开 PR：按 standard/references/issue-state.md 先查同类单，没有就建。写「关联」，不写 Fixes / Closes：合入不等于完成，Issue 关闭由人决定。 -->
 
 ## 改了什么
 

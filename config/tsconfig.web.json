@@ -1,5 +1,6 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
+  "files": ["../src/shared/workbench/work-calendar-2026.json"],
   "include": [
     "../src/renderer/src/env.d.ts",
     "../src/renderer/src/**/*",

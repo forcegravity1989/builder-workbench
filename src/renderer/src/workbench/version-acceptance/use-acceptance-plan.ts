@@ -11,6 +11,7 @@ import type { nativeVersionMaterialPort } from '../version-material-port'
 import { MaterialVersion } from '../../../../shared/workbench/version-material'
 import type { CycleMaterialProblem } from '../version-cycle/cycle-start-request'
 import { compareMaterialVersions } from '../../../../shared/workbench/version-catalog'
+import { historyErrorCode } from '../version-history-port'
 
 /**
  * Names for the acceptance version menu: local acceptance files, plus version
@@ -116,7 +117,7 @@ export function useFixedAcceptancePlan(
   referenceRef.current = reference
   const [result, setResult] = useState<
     | { key: string; kind: 'verified'; plan: VersionHistoryPlan; checkedAt: string }
-    | { key: string; kind: 'mismatch' | 'unavailable'; reason: string }
+    | { key: string; kind: 'mismatch' | 'unavailable' | 'missing'; reason: string }
     | null
   >(null)
   useEffect(() => {
@@ -137,7 +138,14 @@ export function useFixedAcceptancePlan(
       })
       .catch((reason) => {
         if (current) {
-          setResult({ key, kind: sourceRead ? 'mismatch' : 'unavailable', reason: String(reason) })
+          // A missing file is an empty showcase, not an error; the user sees it
+          // after the plan is merged and the screen is refreshed.
+          const missing = historyErrorCode(reason) === 'history-unavailable'
+          setResult({
+            key,
+            kind: missing ? 'missing' : sourceRead ? 'mismatch' : 'unavailable',
+            reason: String(reason)
+          })
         }
       })
     return () => {
@@ -148,6 +156,9 @@ export function useFixedAcceptancePlan(
   return {
     refresh: () => setRefresh((value) => value + 1),
     plan: current?.kind === 'verified' ? current.plan : null,
-    error: current && current.kind !== 'verified' ? current.reason : null
+    error:
+      current && (current.kind === 'mismatch' || current.kind === 'unavailable')
+        ? current.reason
+        : null
   }
 }

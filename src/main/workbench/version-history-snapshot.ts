@@ -14,7 +14,7 @@ export class HistorySourceError extends Error {
   }
 }
 
-/** The one Git path a workflow's material lives at, shared by scans, reads and proof checks. */
+/** The one Git path a workflow's material lives at, shared by scans, reads and writes. */
 export function planningMaterialGitPath(version: string, workflow: 'plan' | 'acceptance'): string {
   return `.bw/planning/${version}/${workflow === 'plan' ? 'data' : 'acceptance'}.json`
 }

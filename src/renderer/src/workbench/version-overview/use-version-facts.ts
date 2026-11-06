@@ -6,7 +6,8 @@ import { useOverviewFeatures } from './use-overview-features'
 export function useVersionFacts(
   catalog: VersionCatalogState,
   version: string,
-  refreshToken: number
+  refreshToken: number,
+  sdlcEnabled?: boolean
 ) {
   const materials = useVersionOverviewMaterials({ catalog, version, refreshToken })
   const { plan, acceptance } = materials
@@ -18,7 +19,8 @@ export function useVersionFacts(
     version,
     before: historical ? acceptance.acceptedAt : undefined,
     historical,
-    refreshToken
+    refreshToken,
+    enabled: sdlcEnabled
   })
   return { materials, features }
 }

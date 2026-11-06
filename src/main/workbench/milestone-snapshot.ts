@@ -11,6 +11,7 @@ import {
   MILESTONES_PATH,
   MilestoneMaterialSchema,
   emptyMilestones,
+  upgradeMilestoneMaterial,
   type MilestoneSnapshot
 } from '../../shared/workbench/project-milestones'
 
@@ -66,10 +67,10 @@ export async function readMilestoneSnapshot(
     hash.update(JSON.stringify([path, raw]))
     if (path === MILESTONES_PATH) {
       try {
-        snapshot.material = MilestoneMaterialSchema.parse(JSON.parse(raw))
+        snapshot.material = MilestoneMaterialSchema.parse(upgradeMilestoneMaterial(JSON.parse(raw)))
       } catch {
         throw new Error(
-          `${MILESTONES_PATH} 的格式无法读取，原文件未改动。请让计划助手核对并迁移为 schema_version=2 的 SDLC 排期后刷新；不会自动补造阶段。`
+          `${MILESTONES_PATH} 的格式无法读取，原文件未改动。请核对里程碑、特性和版本排期后刷新。`
         )
       }
       continue
@@ -110,7 +111,6 @@ export async function readMilestoneSnapshot(
       snapshot.versions.push({
         version,
         cycleId: plan.cycleId,
-        goals: plan.goals.map(({ goalId, title }) => ({ goalId, title })),
         ...(plan.timeWindow ? { timeWindow: plan.timeWindow } : {}),
         started:
           prepared ||
@@ -130,11 +130,25 @@ export async function readMilestoneSnapshot(
       )
     }
   }
+  const registeredVersions = snapshot.versions
+  snapshot.registeredVersions = registeredVersions
+  if (snapshot.material.versionPlans) {
+    snapshot.versions = snapshot.material.versionPlans.flatMap((planned) => {
+      const version = registeredVersions.find((v) => v.cycleId === planned.cycleId)
+      if (!version || version.version !== planned.version) {
+        snapshot.problems.push(`${planned.version}：里程碑规划与版本计划身份不一致，请核对材料`)
+        return []
+      }
+      const scheduled = { ...version }
+      delete scheduled.timeWindow
+      return [{ ...scheduled, ...planned }]
+    })
+  }
   snapshot.revision = hash.digest('hex')
   snapshot.versions.sort(
     (a, b) =>
       (a.timeWindow?.start ?? '9999').localeCompare(b.timeWindow?.start ?? '9999') ||
       a.version.localeCompare(b.version)
   )
-  return { snapshot, plans, contents }
+  return { snapshot, plans, contents, registeredVersions }
 }

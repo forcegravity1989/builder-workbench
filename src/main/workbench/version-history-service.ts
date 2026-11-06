@@ -39,28 +39,6 @@ export type VersionHistoryHost = {
 }
 
 export function createVersionHistoryService(host: VersionHistoryHost): VersionHistoryPort {
-  async function verifySource(scope: MetricScope, sourceCommit: string, includeCycle = false) {
-    const baseline = await host.baseline(scope)
-    SourceCommit.parse(baseline.commit)
-    const tips = includeCycle
-      ? [SourceCommit.parse(await host.worktreeHead(scope)), baseline.commit]
-      : [baseline.commit]
-    for (const tip of tips) {
-      try {
-        await host.git(scope, ['merge-base', '--is-ancestor', sourceCommit, tip])
-        return baseline
-      } catch {
-        // not on this tip; the other one may still carry it
-      }
-    }
-    throw new HistorySourceError(
-      'unverified-source',
-      includeCycle
-        ? '材料提交不在本分支或主干基线历史上；没有改读最新材料'
-        : '无法证明材料提交已合入项目主干基线；没有改读最新材料'
-    )
-  }
-
   async function readSnapshot(
     scope: MetricScope,
     sourceCommit: string,
@@ -107,6 +85,11 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
           workflow: 'plan'
         })
       } catch (error) {
+        // A folder without data.json is simply not a plan; only unreadable
+        // material is a problem.
+        if (error instanceof HistorySourceError && error.code === 'history-unavailable') {
+          continue
+        }
         problems.push({
           version: name,
           code: error instanceof HistorySourceError ? error.code : 'history-unavailable',
@@ -236,7 +219,6 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     },
     async read(input) {
       const request = VersionHistoryReadSchema.parse(input)
-      await verifySource(request.scope, request.sourceCommit, request.source === 'cycle')
       const snapshot = await readSnapshot(
         request.scope,
         request.sourceCommit,
@@ -256,8 +238,9 @@ export function createVersionHistoryService(host: VersionHistoryHost): VersionHi
     },
     async readPlan(input) {
       const { scope, planRef } = VersionHistoryReadPlanSchema.parse(input)
-      const baseline =
-        planRef.kind === 'committed' ? await verifySource(scope, planRef.sourceCommit, true) : null
+      // The baseline is display metadata only; whether the plan commit is
+      // reachable from trunk decides nothing here.
+      const baseline = planRef.kind === 'committed' ? await host.baseline(scope) : null
       const snapshot =
         planRef.kind === 'committed'
           ? await readSnapshot(scope, planRef.sourceCommit, planRef.version, 'plan')

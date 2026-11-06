@@ -9,6 +9,7 @@ export type ContextualTourId =
   | 'automations'
   | 'floating-workspace'
   | 'workspace-creation'
+  | 'workbench-milestones'
 
 export type ContextualTourStepControl = {
   kind: 'auto-rename-branch-from-work'
@@ -221,6 +222,28 @@ export const CONTEXTUAL_TOURS = [
         title: 'Choose what agent starts the work',
         body: 'Pick the agent that should be opened when this worktree is created.',
         targetSelector: '[data-contextual-tour-target="workspace-creation-agent"]'
+      }
+    ]
+  },
+  {
+    id: 'workbench-milestones',
+    steps: [
+      {
+        title: '添加与编排',
+        body: '进入「规划里程碑」，点对应表头的＋添加关键日期或特性。点成果文字编辑，点 × 删除，误删可撤销。查看实际时，先取消「显示实际」。',
+        targetSelector: '[data-contextual-tour-target~="milestone-start"]',
+        requiredForStart: true,
+        preferredPlacement: 'bottom'
+      },
+      {
+        title: '调整时间',
+        body: '拖特性条身换版本，拉两端调时长；拖版本表头调整整版。',
+        targetSelector: '[data-contextual-tour-target="milestone-schedule"]'
+      },
+      {
+        title: '提交评审',
+        body: '修改先保存在本机。提交会生成或更新评审，合入后再更新正式安排。',
+        targetSelector: '[data-contextual-tour-target~="milestone-submit"]'
       }
     ]
   }

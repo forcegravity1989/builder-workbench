@@ -40,15 +40,24 @@ export function workbenchVersionTaskLabel(version: string): string {
   return `bw:plan:${version}`
 }
 
+/** Explicit goal navigation starts from its plan references, independent of a saved native search. */
+export function workbenchTaskEntryQuery(
+  query: string,
+  scope: WorkbenchTaskScope | null | undefined,
+  previousScope?: WorkbenchTaskScope | null
+): string {
+  return scope?.goalId ? '' : seedWorkbenchTaskQuery(query, scope, previousScope)
+}
+
 export function seedWorkbenchTaskQuery(
   query: string,
   scope: WorkbenchTaskScope | null | undefined,
   previousScope?: WorkbenchTaskScope | null
 ): string {
-  if (!scope) {
+  if (!scope || scope.goalId) {
     return query
   }
-  if (previousScope && previousScope.version !== scope.version) {
+  if (previousScope && !previousScope.goalId && previousScope.version !== scope.version) {
     query = removeWorkbenchVersionQuery(query, previousScope)
   }
   const labels = parseTaskQuery(query).labels

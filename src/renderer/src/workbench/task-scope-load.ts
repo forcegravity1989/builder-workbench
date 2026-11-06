@@ -28,6 +28,10 @@ export type TaskScopeLoadResult = {
 }
 type Home = { repoId: string; hostId: ExecutionHostId }
 
+export function versionTaskRepoProvider(repo?: Repo): 'github' | 'codehub' {
+  return isCodeHubGitRemote(repo?.gitRemoteIdentity) ? 'codehub' : 'github'
+}
+
 function viewProviderFor(references: readonly { provider: string }[]): 'github' | 'codehub' {
   return references.some((reference) => reference.provider === 'github') ||
     !references.some((reference) => reference.provider === 'codehub')
@@ -132,9 +136,7 @@ export function openVersionTasksPage(args: {
   const homeRepo = useAppStore.getState().repos.find((repo) => repo.id === args.homeRepoId)
   const provider = scope.references.length
     ? viewProviderFor(scope.references)
-    : isCodeHubGitRemote(homeRepo?.gitRemoteIdentity)
-      ? 'codehub'
-      : 'github'
+    : versionTaskRepoProvider(homeRepo)
   useAppStore.getState().openTaskPage({
     taskSource: provider,
     ...(args.homeRepoId ? { preselectedRepoId: args.homeRepoId } : {}),

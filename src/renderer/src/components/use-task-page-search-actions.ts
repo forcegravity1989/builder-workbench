@@ -36,7 +36,10 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
   } = model
   const applyPRFilterChange = useCallback(
     (change: PRFilterChange): void => {
-      let next = scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind)
+      let next =
+        model.workbenchScope?.goalId && !taskSearchInput.trim()
+          ? ''
+          : scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind)
       // Why: withQualifier round-trips through parseTaskQuery so each dropdown's patch preserves prior filters and free-text.
       if ('author' in change) {
         next = withQualifier(next, 'author', change.author ?? null)
@@ -78,8 +81,8 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
         githubItemsQuery: next
       })
       // Why: a filter change replaces every row's meaning; show the load skeleton so stale rows don't read as if the filter did nothing.
-      setTasksFiltering(true)
       if (!model.workbenchScope?.goalId) {
+        setTasksFiltering(true)
         setTaskRefreshNonce((current) => current + 1)
       }
     },
@@ -96,7 +99,10 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
     ]
   )
   const handleApplyTaskSearch = useCallback((): void => {
-    const scoped = scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind)
+    const scoped =
+      model.workbenchScope?.goalId && !taskSearchInput.trim()
+        ? ''
+        : scopeGitHubTaskSearch(taskSearchInput, activeGithubTaskKind)
     setTaskSearchInput(scoped)
     setAppliedTaskSearch(scoped)
     setActiveTaskPreset(null)
@@ -104,8 +110,8 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
       githubItemsPreset: null,
       githubItemsQuery: scoped
     })
-    setTasksFiltering(true)
     if (!model.workbenchScope?.goalId) {
+      setTasksFiltering(true)
       setTaskRefreshNonce((current) => current + 1)
     }
   }, [
@@ -164,8 +170,8 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
         githubItemsPreset: preset,
         githubItemsQuery: query
       })
-      setTasksFiltering(true)
       if (!model.workbenchScope?.goalId) {
+        setTasksFiltering(true)
         setTaskRefreshNonce((current) => current + 1)
       }
     },
@@ -182,13 +188,14 @@ export function useTaskPageSearchActions(model: TaskPageGitHubQuietRefreshModel)
   )
   const handleResetGithubTaskSearch = useCallback((): void => {
     if (model.workbenchScope) {
-      const next = seedWorkbenchTaskQuery(
-        getTaskPresetQuery(getDefaultPresetForGitHubTaskKind(activeGithubTaskKind)),
-        model.workbenchScope
-      )
+      const goalIssues = model.workbenchScope.goalId && activeGithubTaskKind === 'issues'
+      const preset = getDefaultPresetForGitHubTaskKind(activeGithubTaskKind)
+      const next = goalIssues
+        ? ''
+        : seedWorkbenchTaskQuery(getTaskPresetQuery(preset), model.workbenchScope)
       setTaskSearchInput(next)
       setAppliedTaskSearch(next)
-      setActiveTaskPreset(getDefaultPresetForGitHubTaskKind(activeGithubTaskKind))
+      setActiveTaskPreset(goalIssues ? null : preset)
       return
     }
     handleSelectGithubTaskKind(activeGithubTaskKind)

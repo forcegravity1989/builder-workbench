@@ -48,10 +48,14 @@ export function TaskPageScopeHeader({
   return (
     <div
       className="flex flex-wrap items-center gap-2 border-b border-border/50 px-3 py-1.5 text-[11px] text-muted-foreground"
-      aria-label="当前筛选条件"
+      role="group"
+      aria-label={workbenchScope.goalId ? '任务范围' : '当前筛选条件'}
     >
+      {workbenchScope.goalId && <span>任务范围</span>}
       <span className="rounded-full border border-border/40 bg-muted/30 px-2 py-0.5 font-medium text-foreground">
-        {workbenchVersionTaskLabel(workbenchScope.version)}
+        {workbenchScope.goalId
+          ? `版本 ${workbenchScope.version}`
+          : workbenchVersionTaskLabel(workbenchScope.version)}
         <button
           type="button"
           className="ml-1 align-middle"

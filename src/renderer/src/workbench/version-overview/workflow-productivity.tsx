@@ -13,17 +13,15 @@ export function WorkflowProductivity({
   plan,
   version,
   revision,
-  planState,
-  sourceReady
+  planState
 }: {
   catalog: VersionCatalogState
   plan: PlanningMaterial | null
   version: string
   revision?: string
   planState: 'ready' | 'missing' | 'loading' | 'error'
-  sourceReady: boolean
 }) {
-  const evidence = useWorkflowEvidence(catalog, plan, version, revision, sourceReady)
+  const evidence = useWorkflowEvidence(catalog, plan, version, revision)
   const empty = plan
     ? workflowReferences(plan).map((reference) => ({
         reference,
@@ -59,9 +57,7 @@ export function WorkflowProductivity({
         {evidence.value
           ? ` · ${readable.length} 项有报告`
           : evidence.loading
-            ? sourceReady
-              ? ' · 正在后台读取报告…'
-              : ' · 等待版本来源…'
+            ? ' · 正在后台读取报告…'
             : ''}
         {evidence.value && (
           <span title="北京时间 UTC+08:00"> · 读取于 {timeLabel(evidence.value.readAt)}</span>

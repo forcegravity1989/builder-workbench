@@ -20,18 +20,21 @@ const problemText = (e: unknown) => (e instanceof Error ? e.message : String(e))
 export async function mapLimit<T, R>(
   items: T[],
   run: (item: T) => Promise<R>,
-  limit = 4
+  limit = 4,
+  signal?: AbortSignal
 ): Promise<R[]> {
   const output: R[] = []
   let cursor = 0
   await Promise.all(
     Array.from({ length: Math.min(limit, items.length) }, async () => {
       while (cursor < items.length) {
+        signal?.throwIfAborted()
         const i = cursor++
         output[i] = await run(items[i]!)
       }
     })
   )
+  signal?.throwIfAborted()
   return output
 }
 
@@ -41,8 +44,10 @@ export async function readFeatureEvidence(
   catalog: VersionCatalogState,
   versions: string[],
   before?: string,
-  provider = createOverviewProviderReader()
+  provider = createOverviewProviderReader(),
+  signal?: AbortSignal
 ) {
+  signal?.throwIfAborted()
   const feature: Pick<FeatureData, 'body' | 'closedAt' | 'pulls' | 'problems'> = {
     body: '',
     pulls: [],
@@ -70,92 +75,98 @@ export async function readFeatureEvidence(
   }
   const addBodyLinks = (body: string, task: CycleTaskSnapshot) =>
     linkedPullNumbers(body, task.url).forEach((number) => addPull(number, task))
-  await mapLimit(associated, async (task) => {
-    try {
-      let missingAssociationReason: string | undefined
-      if (ref.provider === 'github') {
-        const detail = await lookupGitHubWorkItemDetailsForSource({
-          repoPath: repo.path,
-          repoId: repo.id,
-          sourceContext: task.source,
-          number: task.iid,
-          type: 'issue'
-        })
-        if (!detail) {
-          throw new Error('Issue 详情未返回')
-        }
-        addBodyLinks(detail.body, task)
-        for (const activity of detail.timelineItems ?? []) {
-          if (activity.source?.type === 'pr') {
-            linkedPullNumbers(activity.source.url, task.url).forEach((number) =>
-              addPull(number, task, false)
-            )
+  await mapLimit(
+    associated,
+    async (task) => {
+      try {
+        let missingAssociationReason: string | undefined
+        if (ref.provider === 'github') {
+          const detail = await lookupGitHubWorkItemDetailsForSource({
+            repoPath: repo.path,
+            repoId: repo.id,
+            sourceContext: task.source,
+            number: task.iid,
+            type: 'issue'
+          })
+          if (!detail) {
+            throw new Error('Issue 详情未返回')
+          }
+          addBodyLinks(detail.body, task)
+          for (const activity of detail.timelineItems ?? []) {
+            if (activity.source?.type === 'pr') {
+              linkedPullNumbers(activity.source.url, task.url).forEach((number) =>
+                addPull(number, task, false)
+              )
+            }
+          }
+          if (task.iid === root.iid) {
+            feature.body = detail.body
+            const stateEvents = (detail.timelineItems ?? [])
+              .filter(
+                (event) =>
+                  ['closed', 'reopened'].includes(event.event) && validTime(event.createdAt)
+              )
+              .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
+            const lastState = stateEvents.at(-1)
+            feature.closedAt =
+              detail.item.state === 'closed' && lastState?.event === 'closed'
+                ? lastState.createdAt
+                : undefined
+          }
+        } else if (ref.provider === 'codehub') {
+          const detail = await codehubApi.viewTask({
+            repoPath: repo.path,
+            repoId: repo.id,
+            kind: 'issue',
+            iid: task.iid
+          })
+          addBodyLinks(detail.description, task)
+          const related = readCodeHubIssuePulls(detail)
+          related.numbers.forEach((number) => addPull(number, task))
+          if (related.kind === 'unavailable') {
+            missingAssociationReason = related.reason
+          }
+          if (task.iid === root.iid) {
+            feature.body = detail.description
+            feature.closedAt =
+              detail.state === 'closed' && validTime(detail.closedAt) ? detail.closedAt : undefined
           }
         }
-        if (task.iid === root.iid) {
-          feature.body = detail.body
-          const stateEvents = (detail.timelineItems ?? [])
-            .filter(
-              (event) => ['closed', 'reopened'].includes(event.event) && validTime(event.createdAt)
-            )
-            .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
-          const lastState = stateEvents.at(-1)
-          feature.closedAt =
-            detail.item.state === 'closed' && lastState?.event === 'closed'
-              ? lastState.createdAt
-              : undefined
-        }
-      } else if (ref.provider === 'codehub') {
-        const detail = await codehubApi.viewTask({
-          repoPath: repo.path,
-          repoId: repo.id,
-          kind: 'issue',
-          iid: task.iid
-        })
-        addBodyLinks(detail.description, task)
-        const related = readCodeHubIssuePulls(detail)
-        related.numbers.forEach((number) => addPull(number, task))
-        if (related.kind === 'unavailable') {
-          missingAssociationReason = related.reason
-        }
-        if (task.iid === root.iid) {
-          feature.body = detail.description
-          feature.closedAt =
-            detail.state === 'closed' && validTime(detail.closedAt) ? detail.closedAt : undefined
-        }
-      }
-      const candidates = versions.flatMap((relatedVersion) =>
-        findVersionTaskWorktrees(catalog.worktrees, {
-          version: relatedVersion,
-          number: task.iid,
-          source: task.source,
-          provider: ref.provider as 'github' | 'codehub',
-          repoId: repo.id
-        })
-      )
-      for (const tree of candidates) {
-        if (ref.provider === 'github' && tree.linkedPR) {
-          addPull(tree.linkedPR, task)
+        const candidates = versions.flatMap((relatedVersion) =>
+          findVersionTaskWorktrees(catalog.worktrees, {
+            version: relatedVersion,
+            number: task.iid,
+            source: task.source,
+            provider: ref.provider as 'github' | 'codehub',
+            repoId: repo.id
+          })
+        )
+        for (const tree of candidates) {
+          if (ref.provider === 'github' && tree.linkedPR) {
+            addPull(tree.linkedPR, task)
+          }
+          if (
+            ref.provider === 'codehub' &&
+            tree.linkedWorkItem?.provider === 'codehub' &&
+            tree.linkedWorkItem.type === 'mr'
+          ) {
+            addPull(tree.linkedWorkItem.number, task)
+          }
         }
         if (
           ref.provider === 'codehub' &&
-          tree.linkedWorkItem?.provider === 'codehub' &&
-          tree.linkedWorkItem.type === 'mr'
+          missingAssociationReason &&
+          ![...pullTasks.values()].some((tasks) => tasks.has(taskKey(task.reference)))
         ) {
-          addPull(tree.linkedWorkItem.number, task)
+          feature.problems.push(`#${task.iid}：${missingAssociationReason}`)
         }
+      } catch (e) {
+        feature.problems.push(`#${task.iid}：${problemText(e)}`)
       }
-      if (
-        ref.provider === 'codehub' &&
-        missingAssociationReason &&
-        ![...pullTasks.values()].some((tasks) => tasks.has(taskKey(task.reference)))
-      ) {
-        feature.problems.push(`#${task.iid}：${missingAssociationReason}`)
-      }
-    } catch (e) {
-      feature.problems.push(`#${task.iid}：${problemText(e)}`)
-    }
-  })
+    },
+    4,
+    signal
+  )
   const pulls = await mapLimit(
     [...pullTasks.keys()],
     async (number): Promise<FeaturePull | null> => {
@@ -213,7 +224,9 @@ export async function readFeatureEvidence(
         feature.problems.push(`PR #${number}：${problemText(e)}`)
         return null
       }
-    }
+    },
+    4,
+    signal
   )
 
   feature.pulls = pulls.filter((pull): pull is FeaturePull => pull !== null)

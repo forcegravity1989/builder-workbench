@@ -10,6 +10,15 @@ import {
 } from '../../../shared/workbench/version-history'
 import { callMetricRuntime } from './metric-runtime-rpc'
 
+/** Error code of a failed history RPC; a plain Error (e.g. identity check) carries none. */
+export function historyErrorCode(reason: unknown): string | null {
+  if (!reason || typeof reason !== 'object' || !('code' in reason)) {
+    return null
+  }
+  const code = (reason as { code: unknown }).code
+  return typeof code === 'string' ? code : null
+}
+
 export function nativeVersionHistoryPort(runtimeOwnerEnvironmentId?: string): VersionHistoryPort {
   return {
     list(input) {
