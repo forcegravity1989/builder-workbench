@@ -7,7 +7,11 @@ const file = pathToFileURL(path.resolve('index.html')).href
 const browser = await chromium.launch({ channel: 'msedge' }).catch(() => chromium.launch())
 const page = await browser.newPage({ viewport: { width: 1440, height: 950 } })
 const errors = []
-page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
+page.on('console', (m) => {
+  if (m.type() === 'error') {
+    errors.push(m.text())
+  }
+})
 page.on('pageerror', (e) => errors.push(String(e)))
 
 const checks = []
@@ -197,4 +201,6 @@ await check('无 console / page error', async () => {
 
 await browser.close()
 console.log(`PASS ${checks.length} checks`)
-for (const c of checks) console.log(`  ✓ ${c}`)
+for (const c of checks) {
+  console.log(`  ✓ ${c}`)
+}

@@ -1247,10 +1247,9 @@ function App() {
           {journeySteps.map((label, index) => (
             <span
               key={label}
-              className={
-                'journey-step' +
-                (index + 1 === journeyStep ? ' active' : index + 1 < journeyStep ? ' done' : '')
-              }
+              className={`journey-step${
+                index + 1 === journeyStep ? ' active' : index + 1 < journeyStep ? ' done' : ''
+              }`}
             >
               {index + 1}. {label}
             </span>
