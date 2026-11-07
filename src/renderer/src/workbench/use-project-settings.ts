@@ -83,7 +83,7 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
         setError('SSH 来源暂不支持在此编辑')
       }
       if (read.raw === undefined) {
-        setError('更新该来源主机上的 Workbench 后再编辑项目信息')
+        setError('更新该来源主机上的 builder-workbench 后再编辑项目信息')
       }
     } catch (cause) {
       if (request === generation.current) {
@@ -181,7 +181,7 @@ export function useProjectSettings(repo: Repo, onChanged: () => void) {
         throw new Error(outcome.error)
       }
       if (outcome.mode === 'local-only' && !outcome.saved) {
-        throw new Error('此来源尚未支持保真编辑，更新 Workbench 后重试')
+        throw new Error('此来源尚未支持保真编辑，更新 builder-workbench 后重试')
       }
       if (outcome.mode === 'pr') {
         const next = { ...form, pending: true }

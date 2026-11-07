@@ -1,3 +1,4 @@
+import { DESKTOP_PRODUCT_NAME } from '../../../../shared/app-identity'
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -92,7 +93,8 @@ export function WorktreeVisibilitySourceAddForm({
         {inputError ??
           translate(
             'auto.components.sidebar.WorktreeVisibilitySourceList.rootHelp',
-            'Orca will recognize worktrees beneath this folder.'
+            '{{product}} will recognize worktrees beneath this folder.',
+            { product: DESKTOP_PRODUCT_NAME }
           )}
       </p>
     </form>

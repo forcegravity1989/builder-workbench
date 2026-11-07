@@ -1,21 +1,5 @@
-/** Compile-time flag from electron.vite `define` (packaged Workbench builds). */
-declare const WORKBENCH_SHELL: string | undefined
+export { isWorkbenchProduct, WORKBENCH_APP_NAME } from '../../shared/app-identity'
 
-/**
- * Workbench trial package must not share Orca's userData / single-instance lock.
- * Electron defaults userData from package.json `name` ("orca"); Workbench builds
- * override identity + path so a second click does not activate /Applications/Orca.app.
- */
-export function isWorkbenchProduct(env: NodeJS.ProcessEnv = process.env): boolean {
-  if (env.ORCA_PRODUCT_NAME === 'Workbench' || env.WORKBENCH_SHELL === '1') {
-    return true
-  }
-  // The build constant is absent in plain Node entry points and source-level tests.
-  // oxlint-disable-next-line unicorn/no-typeof-undefined
-  return typeof WORKBENCH_SHELL !== 'undefined' && WORKBENCH_SHELL === '1'
-}
-
-export const WORKBENCH_APP_NAME = 'Workbench'
 export const WORKBENCH_APP_USER_MODEL_ID = 'com.stablyai.workbench.dev'
 export const WORKBENCH_USER_DATA_DIR_NAME = 'workbench'
 /** Dev (`pnpm run dev:workbench`) profile — keeps ordinary `orca-dev` untouched. */

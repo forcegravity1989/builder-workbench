@@ -50,7 +50,7 @@ export function AcceptanceHeader({
     <header className="acc-header">
       <div>
         <div className="acc-breadcrumb">
-          Builder Workbench <span>/</span>
+          builder-workbench <span>/</span>
           {boundVersion ? (
             <span className="acc-version-bound" title="版本由流程树绑定决定，屏内不切换">
               {boundVersion}

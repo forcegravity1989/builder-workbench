@@ -50,7 +50,7 @@ export function PlanningHeader({
     <header className="vp-header">
       <div>
         <div className="g3-breadcrumb">
-          Builder Workbench <span>/</span>
+          builder-workbench <span>/</span>
           {boundVersion ? (
             /* G2（#383）：绑定树版本由绑定决定，屏内不再选版；旧无绑定固定树保留下拉。 */
             <span className="g3-version-bound" title="版本由流程树绑定决定，屏内不切换">

@@ -3,7 +3,7 @@
 用法：复制本文件 → 替换 <尖括号槽位>、删除本注释与「指引」注释 → 存为 release-notes.md
      → gh workflow run bw-release.yml --ref main -f version=<version> -F notes=@release-notes.md
 读者是升级试用的人与领导，不是开发：写人话，讲用户会用到的功能有什么变化。
-正文只有【这版有什么变化】一节，节名固定，不加节、不拆节；开头不加版本定位段（Release 标题已带 Workbench <version>）。
+正文只有【这版有什么变化】一节，节名固定，不加节、不拆节；开头不加版本定位段（Release 标题已带 builder-workbench <version>）。
 禁止进正文：旅程编号（PJ/AJ/MJ/RJ/CJ）、文件名（data.json 等）、逐条 issue/PR 号、六环矩阵与 ●◐○ 格值、内部黑话。
 诚实：没做到的写原因与下一步；缺数如实写，不填 0、不冒充绿。
 -->

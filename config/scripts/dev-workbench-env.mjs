@@ -10,7 +10,7 @@ export function isWorkbenchDevEnv(env = process.env) {
 }
 
 export function createDevDockTitle(branch, label, env = process.env) {
-  const product = isWorkbenchDevEnv(env) ? 'Workbench' : 'Orca'
+  const product = isWorkbenchDevEnv(env) ? 'builder-workbench' : 'Orca'
   return `${product}: ${branch || label || 'dev'}`
 }
 

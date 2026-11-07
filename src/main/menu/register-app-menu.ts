@@ -1,3 +1,4 @@
+import { isWorkbenchProduct } from '../../shared/app-identity'
 import { BrowserWindow, Menu, app } from 'electron'
 import {
   formatKeybindingList,
@@ -118,12 +119,16 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
   }
 
   const featureTourItem: Electron.MenuItemConstructorOptions = {
-    label: translateMain('menu.exploreOrca', 'Explore Orca'),
+    label: isWorkbenchProduct()
+      ? translateMain('menu.exploreWorkbench', 'Explore builder-workbench')
+      : translateMain('menu.exploreOrca', 'Explore Orca'),
     click: (_menuItem, window) => onOpenFeatureTour(window)
   }
 
   const setupGuideItem: Electron.MenuItemConstructorOptions = {
-    label: translateMain('menu.gettingStarted', 'Getting Started with Orca'),
+    label: isWorkbenchProduct()
+      ? translateMain('menu.gettingStartedWorkbench', 'Getting Started with builder-workbench')
+      : translateMain('menu.gettingStarted', 'Getting Started with Orca'),
     click: (_menuItem, window) => onOpenSetupGuide(window)
   }
 

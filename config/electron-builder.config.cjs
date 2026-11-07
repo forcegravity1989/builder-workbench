@@ -65,12 +65,12 @@ const devChannelRepo = isHourlyChannel
       ? 'orca-adhoc'
       : null
 const appId = process.env.ORCA_APP_ID || 'com.stablyai.orca'
-const productName = process.env.ORCA_PRODUCT_NAME || 'Orca'
-const macExecutableName = process.env.ORCA_PRODUCT_NAME || 'Orca'
+const isWorkbench = process.env.ORCA_PRODUCT_NAME === 'Workbench'
+const productName = isWorkbench ? 'builder-workbench' : process.env.ORCA_PRODUCT_NAME || 'Orca'
 const linuxExecutableName = process.env.ORCA_PRODUCT_NAME
   ? String(process.env.ORCA_PRODUCT_NAME).toLowerCase().replace(/\s+/g, '-')
   : 'orca-ide'
-const protocolScheme = process.env.ORCA_PRODUCT_NAME === 'Workbench' ? 'workbench' : 'orca'
+const protocolScheme = isWorkbench ? 'workbench' : 'orca'
 const featureWallResources = {
   from: 'resources/onboarding/feature-wall',
   to: 'onboarding/feature-wall'
@@ -172,7 +172,7 @@ module.exports = {
   toolsets: { appimage: '1.0.3' },
   // Why: Electron resolves default userData from package.json `name`. Workbench
   // must not inherit "orca" or it shares the single-instance lock with Orca.app.
-  ...(devChannelBuildVersion || localBuildVersion || productName === 'Workbench'
+  ...(devChannelBuildVersion || localBuildVersion || isWorkbench
     ? {
         extraMetadata: {
           ...(devChannelBuildVersion
@@ -180,7 +180,9 @@ module.exports = {
             : localBuildVersion
               ? { version: localBuildVersion }
               : {}),
-          ...(productName === 'Workbench' ? { name: 'workbench', productName: 'Workbench' } : {})
+          // Electron reads this before ready to select the existing macOS Safe Storage key.
+          // The ready handler applies the public name after the keychain identity is fixed.
+          ...(isWorkbench ? { name: 'workbench', productName: 'Workbench' } : {})
         }
       }
     : {}),
@@ -427,8 +429,8 @@ module.exports = {
     }
   },
   win: {
-    executableName: macExecutableName,
-    ...(productName === 'Workbench' ? { electronLanguages: ['zh-CN', 'en-US'] } : {}),
+    executableName: productName,
+    ...(isWorkbench ? { electronLanguages: ['zh-CN', 'en-US'] } : {}),
     // Why: Windows installers are signed after electron-builder packaging by
     // SignPath, so the packager cannot infer the updater publisherName.
     //
@@ -461,7 +463,7 @@ module.exports = {
       },
       {
         from:
-          productName === 'Workbench'
+          isWorkbench
             ? 'native/windows-cli-launcher/.build/workbench/orca.exe'
             : 'native/windows-cli-launcher/.build/orca.exe',
         to: 'bin/orca.exe'
@@ -478,11 +480,11 @@ module.exports = {
     ]
   },
   nsis: {
-    ...(productName === 'Workbench'
+    ...(isWorkbench
       ? { oneClick: false, allowToChangeInstallationDirectory: true }
       : {}),
     artifactName:
-      productName === 'Workbench' ? 'workbench-windows-setup.${ext}' : 'orca-windows-setup.${ext}',
+      isWorkbench ? 'builder-workbench-windows-setup.${ext}' : 'orca-windows-setup.${ext}',
     shortcutName: '${productName}',
     uninstallDisplayName: '${productName}',
     createDesktopShortcut: 'always',
@@ -509,19 +511,19 @@ module.exports = {
     entitlementsInherit: 'resources/build/entitlements.mac.plist',
     extendInfo: {
       NSAppleEventsUsageDescription:
-        'Orca allows terminal-launched developer tools to automate local apps when you request it.',
+        `${productName} allows terminal-launched developer tools to automate local apps when you request it.`,
       NSBluetoothAlwaysUsageDescription:
-        'Orca allows terminal-launched developer tools to access Bluetooth devices when you request it.',
+        `${productName} allows terminal-launched developer tools to access Bluetooth devices when you request it.`,
       NSBluetoothPeripheralUsageDescription:
-        'Orca allows terminal-launched developer tools to access Bluetooth devices when you request it.',
+        `${productName} allows terminal-launched developer tools to access Bluetooth devices when you request it.`,
       NSCameraUsageDescription: "Application requests access to the device's camera.",
       NSLocationUsageDescription:
-        'Orca allows terminal-launched developer tools to access location when you request it.',
+        `${productName} allows terminal-launched developer tools to access location when you request it.`,
       NSLocalNetworkUsageDescription:
-        'Orca allows terminal-launched developer tools to discover and connect to local development servers when you request it.',
+        `${productName} allows terminal-launched developer tools to discover and connect to local development servers when you request it.`,
       NSMicrophoneUsageDescription: "Application requests access to the device's microphone.",
       NSAudioCaptureUsageDescription:
-        'Orca allows terminal-launched developer tools to capture desktop audio when you request it.',
+        `${productName} allows terminal-launched developer tools to capture desktop audio when you request it.`,
       NSBonjourServices: ['_http._tcp', '_https._tcp'],
       NSDocumentsFolderUsageDescription:
         "Application requests access to the user's Documents folder.",
@@ -576,11 +578,11 @@ module.exports = {
       {
         target: 'dmg',
         // Why: Workbench trial packs are arm64-only (host natives); full Orca keeps both.
-        arch: process.env.ORCA_PRODUCT_NAME === 'Workbench' ? ['arm64'] : ['x64', 'arm64']
+        arch: isWorkbench ? ['arm64'] : ['x64', 'arm64']
       },
       {
         target: 'zip',
-        arch: process.env.ORCA_PRODUCT_NAME === 'Workbench' ? ['arm64'] : ['x64', 'arm64']
+        arch: isWorkbench ? ['arm64'] : ['x64', 'arm64']
       }
     ]
   },
@@ -589,8 +591,8 @@ module.exports = {
   forceCodeSigning: isMacRelease,
   dmg: {
     artifactName:
-      process.env.ORCA_PRODUCT_NAME === 'Workbench'
-        ? 'Workbench-${version}-${arch}.${ext}'
+      isWorkbench
+        ? '${productName}-${version}-${arch}.${ext}'
         : 'orca-macos-${arch}.${ext}'
   },
   linux: {
@@ -689,8 +691,8 @@ module.exports = {
   npmRebuild: true,
   publish: {
     provider: 'github',
-    owner: productName === 'Workbench' ? 'forcegravity1989' : 'stablyai',
-    repo: productName === 'Workbench' ? 'builder-workbench' : (devChannelRepo ?? 'orca'),
+    owner: isWorkbench ? 'forcegravity1989' : 'stablyai',
+    repo: isWorkbench ? 'builder-workbench' : (devChannelRepo ?? 'orca'),
     releaseType: devChannelRepo ? 'prerelease' : 'release'
   }
 }

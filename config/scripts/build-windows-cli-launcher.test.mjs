@@ -106,7 +106,7 @@ describe('Windows CLI launcher', () => {
       const cliPath = join(resourcesPath, 'app.asar.unpacked', 'out', 'cli', 'index.js')
       mkdirSync(join(resourcesPath, 'bin'), { recursive: true })
       mkdirSync(dirname(cliPath), { recursive: true })
-      copyFileSync(process.execPath, join(appRoot, 'Workbench.exe'))
+      copyFileSync(process.execPath, join(appRoot, 'builder-workbench.exe'))
       writeFileSync(
         cliPath,
         `process.stdout.write(JSON.stringify({

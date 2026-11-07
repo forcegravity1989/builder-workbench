@@ -1,3 +1,4 @@
+import { DESKTOP_PRODUCT_NAME } from '../../../../shared/app-identity'
 import { translate } from '@/i18n/i18n'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 import { getRendererAppPlatform } from '@/lib/renderer-app-platform'
@@ -13,7 +14,8 @@ const getSystemTrayEntryCatalog = createLocalizedCatalog((): SettingsSearchEntry
     ),
     description: translate(
       'auto.components.settings.appearance.search.4d5b9427b5',
-      'When enabled, closing the window keeps Orca running in the system tray instead of quitting.'
+      'When enabled, closing the window keeps {{product}} running in the system tray instead of quitting.',
+      { product: DESKTOP_PRODUCT_NAME }
     ),
     keywords: [
       ...translateSearchKeyword('auto.components.settings.appearance.search.tray.tray', 'tray', {

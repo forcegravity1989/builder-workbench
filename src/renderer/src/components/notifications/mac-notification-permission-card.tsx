@@ -159,7 +159,7 @@ export function MacNotificationPermissionCard({
               {isWorkbenchShell()
                 ? translate(
                     'auto.components.onboarding.NotificationStep.3f8a21c6d0',
-                    'Allow notifications for Workbench'
+                    'Allow notifications for builder-workbench'
                   )
                 : translate(
                     'auto.components.onboarding.NotificationStep.95d99b52fa',
@@ -204,7 +204,7 @@ export function MacNotificationPermissionCard({
               {isWorkbenchShell()
                 ? translate(
                     'auto.components.onboarding.NotificationStep.b7e94d02a1',
-                    'macOS is not delivering Workbench notifications'
+                    'macOS is not delivering builder-workbench notifications'
                   )
                 : translate(
                     'auto.components.onboarding.NotificationStep.90b5d2e363',
@@ -215,7 +215,7 @@ export function MacNotificationPermissionCard({
               {isWorkbenchShell()
                 ? translate(
                     'auto.components.onboarding.mac.notification.permission.card.c25d81f9e3',
-                    'Turn on Allow notifications for Workbench in System Settings.'
+                    'Turn on Allow notifications for builder-workbench in System Settings.'
                   )
                 : translate(
                     'auto.components.onboarding.mac.notification.permission.card.721d2bedb6',

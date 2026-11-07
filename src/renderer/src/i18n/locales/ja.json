@@ -1,8 +1,8 @@
 {
   "app": {
     "recoverableError": {
-      "rootTitle": "Orca でレンダラーエラーが発生しました。",
-      "rootDescription": "アプリシェルのレンダリングを完了できませんでした。再マウントを試すか、エラーが解決しない場合は Orca を再起動してください。",
+      "rootTitle": "{{product}} でレンダラーエラーが発生しました。",
+      "rootDescription": "アプリシェルのレンダリングを完了できませんでした。再マウントを試すか、エラーが解決しない場合は {{product}} を再起動してください。",
       "webTitle": "Orca Web でレンダラーエラーが発生しました。",
       "webDescription": "Web クライアントを再試行するか、ペアリングされたランタイムに再接続します。"
     }
@@ -46,7 +46,9 @@
     "checkForUpdates": "アップデートを確認…",
     "settings": "設定",
     "exploreOrca": "Orca を探索",
+    "exploreWorkbench": "builder-workbench を探索",
     "gettingStarted": "Orca を使い始める",
+    "gettingStartedWorkbench": "builder-workbench を使い始める",
     "reportCrash": "クラッシュを報告…",
     "file": "ファイル",
     "exit": "終了",
@@ -73,9 +75,11 @@
   },
   "tray": {
     "openOrca": "Orca を開く",
+    "openWorkbench": "builder-workbench を開く",
     "quit": "終了",
     "minimizeNotice": {
-      "body": "Orca はシステムトレイで実行中です"
+      "body": "Orca はシステムトレイで実行中です",
+      "workbenchBody": "builder-workbench はシステムトレイで実行中です"
     },
     "activityWaitingSuffix": "件のアクティビティが待機中"
   },
@@ -633,7 +637,7 @@
         "notification": {
           "fallback": {
             "de50bef680": "macOS が Orca の通知をブロックしています",
-            "8d4c07e6b5": "macOS が Workbench の通知をブロックしています"
+            "8d4c07e6b5": "macOS が builder-workbench の通知をブロックしています"
           }
         }
       },
@@ -4826,7 +4830,7 @@
           "addLocation": "場所を追加",
           "worktreeRoot": "ワークツリールート",
           "add": "追加",
-          "rootHelp": "Orca はこのフォルダー配下のワークツリーを認識します。",
+          "rootHelp": "{{product}} はこのフォルダー配下のワークツリーを認識します。",
           "visibility": "{{value0}} の表示設定",
           "show": "表示",
           "hide": "非表示",
@@ -5582,7 +5586,7 @@
           "workspaceCardLayoutGuidance": "ワークスペースサイドバーで管理されます。",
           "872af9556e": "システムトレイ",
           "2edf606c46": "閉じるときにトレイへ最小化",
-          "b707773a0d": "有効にすると、ウィンドウを閉じても Orca は終了せず、システムトレイで実行を続けます。",
+          "b707773a0d": "有効にすると、ウィンドウを閉じても {{product}} は終了せず、システムトレイで実行を続けます。",
           "interfaceDefaultFont": "デフォルトフォント",
           "terminalDefaultFont": "デフォルトフォント",
           "interfaceTitle": "インターフェース",
@@ -5769,7 +5773,7 @@
           "5dae812f50": "更新",
           "52e640f3a0": "CLI ステータスを更新する",
           "38edbb5721": "シェルコマンド",
-          "6930feda9e": "ターミナルから Orca を使用してアプリを開き、ワークツリーを管理し、Orca ターミナルと対話します。",
+          "6930feda9e": "orca コマンドで {{product}} を開き、ワークツリーを管理し、アプリ内のターミナルを操作できます。",
           "c5c0f2641d": "Orca CLI",
           "d77352f2df": "PATH から {{value0}} を削除できませんでした。",
           "af5540930c": "PATH から {{value0}} を削除しました。",
@@ -6053,7 +6057,7 @@
           "42717918f4": "アップデートのインストール (",
           "02dc082e70": "アップデートのダウンロードを開始できませんでした。",
           "e1a647adc5": "アップデートをチェックする",
-          "ceb579abaf": "アプリのアップデートを確認し、新規 Orca バージョンをインストールします。",
+          "ceb579abaf": "アプリのアップデートを確認し、新規 {{product}} バージョンをインストールします。",
           "d91ebfb87e": "現在のバージョン: {{value0}}",
           "f2b1ccc12a": "アップデート",
           "bd79d412f0": "更新チェックに失敗しました。 {{value0}}",
@@ -7866,7 +7870,7 @@
               "detailed": "詳細"
             },
             "9a115966d3": "閉じるときにトレイへ最小化",
-            "4d5b9427b5": "有効にすると、ウィンドウを閉じても Orca は終了せず、システムトレイで実行を続けます。",
+            "4d5b9427b5": "有効にすると、ウィンドウを閉じても {{product}} は終了せず、システムトレイで実行を続けます。",
             "showPinnedWorktreesInGroups": {
               "title": "ピン留めしたワークツリーを元のリストにも表示",
               "description": "ピン留めしたワークツリーを Pinned に残したまま、すべて、プロジェクト、ステータス、PR にも表示します。"
@@ -8238,7 +8242,7 @@
             "c9d8c1ce66": "リリースノート",
             "9e86ccd05c": "バージョン",
             "f89a94773c": "更新",
-            "79ff46776e": "アプリのアップデートを確認し、新規 Orca バージョンをインストールします。",
+            "79ff46776e": "アプリのアップデートを確認し、新規 {{product}} バージョンをインストールします。",
             "e15af4eb64": "アップデートをチェックする",
             "6382fe9724": "npx",
             "baa263d6d8": "Agent",
@@ -11479,7 +11483,7 @@
           "yoloPermissionsLabel": "Yolo / 危険: 権限チェックをスキップ",
           "yoloPermissionsInfo": "Agent 権限情報",
           "yoloPermissionsTooltip": "Agent の権限チェックをスキップして割り込みを減らす",
-          "0e00a37e49": "はまだ PATH にありません。Workbench がデフォルトに設定します。インストールはいつでもできます。"
+          "0e00a37e49": "はまだ PATH にありません。builder-workbench がデフォルトに設定します。インストールはいつでもできます。"
         },
         "FeatureSetupInlineTerminal": {
           "789b59936e": "Enter キーを押してコマンドを実行し、要求されたら npx を確認します。これは、後で [設定] で設定することもできます。",
@@ -11511,9 +11515,9 @@
           "0b4a7d23ab": "サインインする",
           "a74c6d6b18": "未インストール",
           "c773943637": "CodeHub のイシューまたはマージリクエストからワークスペースを開始。タイトルとコンテキストが事前入力されます",
-          "6d4596cdf7": "Workbench を離れずにタスクビューで CodeHub のイシューとマージリクエストを閲覧",
+          "6d4596cdf7": "builder-workbench を離れずにタスクビューで CodeHub のイシューとマージリクエストを閲覧",
           "c1ee44aa7a": "GitHub もサポート — GitHub CLI でイシュー、プルリクエスト、CI チェックを処理",
-          "09df324e47": "Workbench を離れずにプルリクエストやマージリクエストを読み、コメントし、マージ",
+          "09df324e47": "builder-workbench を離れずにプルリクエストやマージリクエストを読み、コメントし、マージ",
           "172af1b2c8": "CodeHub",
           "5b0e29617c": "イシューとマージリクエスト。",
           "10e495afa8": "CodeHub CLI をインストール",
@@ -11544,9 +11548,9 @@
           "4f6a1da718": "システム設定を開く",
           "90b5d2e363": "macOS が Orca の通知を配信していません",
           "2c47f5465f": "システム設定で Orca の通知を許可するをオンにします。有効になると、このステップは自動的に更新されます。",
-          "72256f6d85": "デスクトップ通知が届いた後に Workbench が再生するアラートを選択してください。",
-          "3f8a21c6d0": "Workbench の通知を許可",
-          "b7e94d02a1": "macOS が Workbench の通知を配信していません"
+          "72256f6d85": "デスクトップ通知が届いた後に builder-workbench が再生するアラートを選択してください。",
+          "3f8a21c6d0": "builder-workbench の通知を許可",
+          "b7e94d02a1": "macOS が builder-workbench の通知を配信していません"
         },
         "OnboardingFlow": {
           "1130745139": "タスクソースを設定",
@@ -11569,11 +11573,11 @@
           "c47e1bd149": "Agent",
           "windowsTerminalTitle": "Windows ターミナルの既定値を設定",
           "windowsTerminalSubtitle": "新規ペインで使う既定のシェルと、ターミナルでの右クリックの動作を選びます。",
-          "78d1d003d2": "Workbench",
-          "685d4ffbeb": "Workbench へようこそ",
-          "c64d33bfb8": "Workbench オンボーディング",
-          "43b8463d5c": "Workbench はすべての CLI Agent と連携します。最もよく使うものを選んでください。いつでも切り替えられます。",
-          "54fbfde99e": "Agent の完了やサポートが必要なときに Workbench が通知します。",
+          "78d1d003d2": "builder-workbench",
+          "685d4ffbeb": "builder-workbench へようこそ",
+          "c64d33bfb8": "builder-workbench オンボーディング",
+          "43b8463d5c": "builder-workbench はすべての CLI Agent と連携します。最もよく使うものを選んでください。いつでも切り替えられます。",
+          "54fbfde99e": "Agent の完了やサポートが必要なときに builder-workbench が通知します。",
           "9977a23fbe": "必要な CLI をインストールしましょう。CodeHub はイシューとマージリクエスト、GitHub はイシューとプルリクエストを扱います。どちらも任意です。"
         },
         "OnboardingFooter": {
@@ -11643,7 +11647,7 @@
           "windowsDefault": "Windows のデフォルト",
           "rightClickBehavior": "右クリックの動作",
           "rightClickBehaviorDescription": "Windows で慣れたターミナルのマウス操作に合うものを選びます。",
-          "184e11638a": "Workbench が新しい Windows ターミナルペインで開くシェルを選択してください。"
+          "184e11638a": "builder-workbench が新しい Windows ターミナルペインで開くシェルを選択してください。"
         },
         "mac": {
           "notification": {
@@ -11652,7 +11656,7 @@
                 "f696515944": "macOS のダイアログで許可をクリックします。",
                 "3d18cf71f9": "自動的に更新されます。",
                 "721d2bedb6": "システム設定で Orca の通知を許可するをオンにします。",
-                "c25d81f9e3": "システム設定で Workbench の通知を許可してください。"
+                "c25d81f9e3": "システム設定で builder-workbench の通知を許可してください。"
               }
             }
           }
@@ -14472,7 +14476,7 @@
       "description": "ここに、すべての Agent が一覧で表示されます。ボードは近日公開です。"
     },
     "recoverableError": {
-      "title": "Orca のダッシュボードでエラーが発生しました。",
+      "title": "{{product}} のダッシュボードでエラーが発生しました。",
       "description": "ダッシュボードのレンダリングを完了できませんでした。再マウントを試すか、開き直してください。"
     },
     "bucket": {
@@ -14611,6 +14615,6 @@
     }
   },
   "brand": {
-    "workbench": "Workbench"
+    "workbench": "builder-workbench"
   }
 }

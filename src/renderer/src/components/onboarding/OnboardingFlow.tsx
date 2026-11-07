@@ -33,7 +33,7 @@ const stepCopy = {
       return isWorkbenchShell()
         ? translate(
             'auto.components.onboarding.OnboardingFlow.43b8463d5c',
-            "Workbench works with every CLI agent. Choose the one you'll reach for most. Switch any time."
+            "builder-workbench works with every CLI agent. Choose the one you'll reach for most. Switch any time."
           )
         : translate(
             'auto.components.onboarding.OnboardingFlow.322fc50a18',
@@ -66,7 +66,7 @@ const stepCopy = {
       return isWorkbenchShell()
         ? translate(
             'auto.components.onboarding.OnboardingFlow.54fbfde99e',
-            'Workbench will notify you when agents are done or need help.'
+            'builder-workbench will notify you when agents are done or need help.'
           )
         : translate(
             'auto.components.onboarding.OnboardingFlow.ff92d15436',
@@ -237,7 +237,7 @@ export default function OnboardingFlow({
             isShell
               ? translate(
                   'auto.components.onboarding.OnboardingFlow.c64d33bfb8',
-                  'Workbench onboarding'
+                  'builder-workbench onboarding'
                 )
               : translate('auto.components.onboarding.OnboardingFlow.277ba45540', 'Orca onboarding')
           }
@@ -253,7 +253,10 @@ export default function OnboardingFlow({
               <img src={logo} alt="" aria-hidden="true" className="size-7 shrink-0" />
               <span>
                 {isShell
-                  ? translate('auto.components.onboarding.OnboardingFlow.78d1d003d2', 'Workbench')
+                  ? translate(
+                      'auto.components.onboarding.OnboardingFlow.78d1d003d2',
+                      'builder-workbench'
+                    )
                   : translate('auto.components.onboarding.OnboardingFlow.a249f81538', 'Orca')}
               </span>
             </div>
@@ -306,7 +309,7 @@ export default function OnboardingFlow({
                   {isShell
                     ? translate(
                         'auto.components.onboarding.OnboardingFlow.685d4ffbeb',
-                        'Welcome to Workbench'
+                        'Welcome to builder-workbench'
                       )
                     : translate(
                         'auto.components.onboarding.OnboardingFlow.1b5e182e9f',

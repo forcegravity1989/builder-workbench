@@ -146,7 +146,7 @@ export function VersionNavGroup({
           variant="ghost"
           size="icon-xs"
           aria-label={`清理 ${entry.version} 工作树`}
-          title={`清理 ${entry.version} 工作树（勾选后进入 Orca 删除确认）`}
+          title={`清理 ${entry.version} 工作树（勾选后确认删除）`}
           onClick={onCleanup}
           className="size-6 shrink-0 text-worktree-sidebar-foreground/40 hover:text-worktree-sidebar-foreground"
         >

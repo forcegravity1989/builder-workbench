@@ -4,6 +4,7 @@ import menuBarIconRetinaPath from '../../../resources/tray/workbench@2x.png?asse
 import { deferAppKitSceneMutation } from '../appkit-scene-mutation'
 import { createAppIconImage } from '../app-icon'
 import { translateMain } from '../i18n/main-i18n'
+import { DESKTOP_PRODUCT_NAME, isWorkbenchProduct } from '../../shared/app-identity'
 import { composeTrayAttentionIcon } from './tray-attention-icon'
 
 export type SystemTrayOptions = {
@@ -43,10 +44,11 @@ let devIndicator: { label: string | null } | null = null
 // Why: multiple dev instances can run side by side (one per worktree); the
 // tooltip carries the worktree/branch label so hovering tells them apart.
 function baseTooltip(): string {
+  const name = DESKTOP_PRODUCT_NAME
   if (!devIndicator) {
-    return 'Workbench'
+    return name
   }
-  return devIndicator.label ? `Workbench DEV (${devIndicator.label})` : 'Workbench DEV'
+  return devIndicator.label ? `${name} DEV (${devIndicator.label})` : `${name} DEV`
 }
 
 // Why: on Windows the notification area expects a 16px icon; the app icon PNG
@@ -197,7 +199,9 @@ export function createSystemTray(opts: SystemTrayOptions): Tray | null {
         ] as Electron.MenuItemConstructorOptions[])
       : []),
     {
-      label: translateMain('tray.openOrca', 'Open Orca'),
+      label: isWorkbenchProduct()
+        ? translateMain('tray.openWorkbench', 'Open builder-workbench')
+        : translateMain('tray.openOrca', 'Open Orca'),
       click: safeMenuAction(() => opts.onOpen())
     },
     { type: 'separator' },

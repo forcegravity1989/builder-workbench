@@ -189,7 +189,7 @@ export function NotificationStep({
             {isWorkbenchShell()
               ? translate(
                   'auto.components.onboarding.NotificationStep.72256f6d85',
-                  'Pick the alert Workbench plays after a desktop notification is delivered.'
+                  'Pick the alert builder-workbench plays after a desktop notification is delivered.'
                 )
               : translate(
                   'auto.components.onboarding.NotificationStep.0fe570690c',

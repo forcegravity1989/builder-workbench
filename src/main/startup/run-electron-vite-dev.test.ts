@@ -440,7 +440,7 @@ describe('run-electron-vite-dev', () => {
     // Why dockTitle: it is derived from isWorkbenchDevEnv(), so the Workbench prefix
     // is the observable that the runner actually set WORKBENCH_SHELL rather than
     // merely accepting the flag.
-    expect(envSnapshot.dockTitle).toBe('Workbench: feature/workbench-shell')
+    expect(envSnapshot.dockTitle).toBe('builder-workbench: feature/workbench-shell')
 
     await stopWrapperAndTrackedPids(wrapper, trackedPids)
   })

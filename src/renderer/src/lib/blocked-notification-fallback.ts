@@ -20,7 +20,7 @@ export function showBlockedNotificationFallbackToast(): void {
     isWorkbenchShell()
       ? translate(
           'auto.lib.blocked.notification.fallback.8d4c07e6b5',
-          'macOS is blocking Workbench notifications'
+          'macOS is blocking builder-workbench notifications'
         )
       : translate(
           'auto.lib.blocked.notification.fallback.de50bef680',
@@ -30,7 +30,7 @@ export function showBlockedNotificationFallbackToast(): void {
       description: isWorkbenchShell()
         ? translate(
             'auto.components.onboarding.mac.notification.permission.card.c25d81f9e3',
-            'Turn on Allow notifications for Workbench in System Settings.'
+            'Turn on Allow notifications for builder-workbench in System Settings.'
           )
         : translate(
             'auto.components.onboarding.mac.notification.permission.card.721d2bedb6',

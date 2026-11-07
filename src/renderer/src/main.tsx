@@ -9,6 +9,7 @@ import './workbench/workbench-tokens.css'
 import './workbench/workbench-terminal.css'
 
 import { StrictMode } from 'react'
+import { DESKTOP_PRODUCT_NAME } from '../../shared/app-identity'
 import { useTranslation } from 'react-i18next'
 import App from './App'
 import { RecoverableRenderErrorBoundary } from './components/error-boundaries/RecoverableRenderErrorBoundary'
@@ -59,10 +60,13 @@ function RendererRoot(): React.JSX.Element {
     <RecoverableRenderErrorBoundary
       boundaryId="app.root"
       surface="app-root"
-      title={translate('app.recoverableError.rootTitle', 'Orca hit a renderer error.')}
+      title={translate('app.recoverableError.rootTitle', '{{product}} hit a renderer error.', {
+        product: DESKTOP_PRODUCT_NAME
+      })}
       description={translate(
         'app.recoverableError.rootDescription',
-        'The app shell could not finish rendering. Retry to remount it, or relaunch Orca if the error persists.'
+        'The app shell could not finish rendering. Retry to remount it, or relaunch {{product}} if the error persists.',
+        { product: DESKTOP_PRODUCT_NAME }
       )}
     >
       <App />

@@ -1,3 +1,4 @@
+import { DESKTOP_PRODUCT_NAME } from '../../../../shared/app-identity'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FolderOpen, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
@@ -186,7 +187,8 @@ export function CliSection({
         <p className="text-xs text-muted-foreground">
           {translate(
             'auto.components.settings.CliSection.6930feda9e',
-            'Use Orca from your terminal to open the app, manage worktrees, and interact with Orca terminals.'
+            'Use the orca command to open {{product}}, manage worktrees, and interact with its terminals.',
+            { product: DESKTOP_PRODUCT_NAME }
           )}
         </p>
       </div>

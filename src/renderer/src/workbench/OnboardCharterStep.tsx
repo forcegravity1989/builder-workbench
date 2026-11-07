@@ -54,7 +54,7 @@ export function OnboardCharterStep({
             <input
               className="wb-ob-input"
               value={name}
-              placeholder="例如 Workbench"
+              placeholder="例如 builder-workbench"
               onChange={(e) => onName(e.target.value)}
             />
           </div>

@@ -1,4 +1,4 @@
-# Builders' Workbench — 领域词表
+# builder-workbench — 领域词表
 
 > **本篇维护约定**
 >
@@ -9,7 +9,7 @@
 
 ## 命名
 
-产品名用 **Builders' Workbench / Workbench / BW**，工程标识用 `bw`（`.bw/`、`bw:*`、`BW_*`）。不再用 buddy、loop-buddy。普通术语按通常含义，不另造隐喻；UI 与代码注释的写作规则在 [AGENTS](AGENTS.md)。
+安装包与界面使用产品名 **builder-workbench**，文档中简称 Workbench 或 BW，工程标识用 `bw`（`.bw/`、`bw:*`、`BW_*`）。不再用 buddy、loop-buddy。普通术语按通常含义，不另造隐喻；UI 与代码注释的写作规则在 [AGENTS](AGENTS.md)。
 
 ## 用户与执行工具
 

@@ -156,7 +156,7 @@ export const KB_GROUPS: KbGroup[] = [
     key: 'eng-bw',
     name: '项目约定',
     path: '.bw/',
-    who: 'Workbench 写，你合 MR',
+    who: 'builder-workbench 写，你合 MR',
     when: '接入 / 改名片',
     hint: '机器名片',
     role: 'side',

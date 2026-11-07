@@ -643,8 +643,8 @@
       },
       "onboarding": {
         "IntegrationsStep": {
-          "09df324e47": "Read, comment on, and merge pull requests or merge requests without leaving Workbench",
-          "6d4596cdf7": "Browse CodeHub issues and merge requests in the Tasks view without leaving Workbench",
+          "09df324e47": "Read, comment on, and merge pull requests or merge requests without leaving builder-workbench",
+          "6d4596cdf7": "Browse CodeHub issues and merge requests in the Tasks view without leaving builder-workbench",
           "93f0c49ad1": "not-authenticated",
           "a3bcf13694": "connected",
           "a74c6d6b18": "not-installed",

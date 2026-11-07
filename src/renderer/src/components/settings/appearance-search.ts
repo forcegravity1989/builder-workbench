@@ -179,7 +179,7 @@ export const getAppIconEntries = createLocalizedCatalog((): SettingsSearchEntry[
   {
     title: translate('auto.components.settings.appearance.search.2b313598c6', 'App Icon'),
     keywords: [
-      ...translateSearchKeyword('brand.workbench', 'Workbench'),
+      ...translateSearchKeyword('brand.workbench', 'builder-workbench'),
       ...translateSearchKeyword(
         'auto.components.settings.appearance.search.2cfb3420c0',
         'app icon'

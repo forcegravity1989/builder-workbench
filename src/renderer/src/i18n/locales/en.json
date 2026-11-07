@@ -9,8 +9,8 @@
   },
   "app": {
     "recoverableError": {
-      "rootTitle": "Orca hit a renderer error.",
-      "rootDescription": "The app shell could not finish rendering. Retry to remount it, or relaunch Orca if the error persists.",
+      "rootTitle": "{{product}} hit a renderer error.",
+      "rootDescription": "The app shell could not finish rendering. Retry to remount it, or relaunch {{product}} if the error persists.",
       "webTitle": "Orca web hit a renderer error.",
       "webDescription": "Retry the web client or reconnect to the paired runtime."
     }
@@ -189,7 +189,9 @@
     "checkForUpdates": "Check for Updates...",
     "settings": "Settings",
     "exploreOrca": "Explore Orca",
+    "exploreWorkbench": "Explore builder-workbench",
     "gettingStarted": "Getting Started with Orca",
+    "gettingStartedWorkbench": "Getting Started with builder-workbench",
     "reportCrash": "Report Crash...",
     "file": "File",
     "exit": "Exit",
@@ -216,9 +218,11 @@
   },
   "tray": {
     "openOrca": "Open Orca",
+    "openWorkbench": "Open builder-workbench",
     "quit": "Quit",
     "minimizeNotice": {
-      "body": "Orca is still running in the system tray"
+      "body": "Orca is still running in the system tray",
+      "workbenchBody": "builder-workbench is still running in the system tray"
     },
     "activityWaitingSuffix": "activity waiting"
   },
@@ -884,7 +888,7 @@
         "notification": {
           "fallback": {
             "de50bef680": "macOS is blocking Orca notifications",
-            "8d4c07e6b5": "macOS is blocking Workbench notifications"
+            "8d4c07e6b5": "macOS is blocking builder-workbench notifications"
           }
         }
       },
@@ -6333,7 +6337,7 @@
           "addLocation": "Add location",
           "worktreeRoot": "Worktree root",
           "add": "Add",
-          "rootHelp": "Orca will recognize worktrees beneath this folder.",
+          "rootHelp": "{{product}} will recognize worktrees beneath this folder.",
           "visibility": "Visibility for {{value0}}",
           "show": "Show",
           "hide": "Hide",
@@ -6660,7 +6664,7 @@
           "3057983501": "Unassigned",
           "872af9556e": "System Tray",
           "2edf606c46": "Minimize to Tray on Close",
-          "b707773a0d": "When enabled, closing the window keeps Orca running in the system tray instead of quitting.",
+          "b707773a0d": "When enabled, closing the window keeps {{product}} running in the system tray instead of quitting.",
           "ca1590d42f": "App Icon",
           "fa882a3e6b": "Show the Automations button at the top of the left sidebar.",
           "511f270ebb": "Show Automations Button",
@@ -6885,7 +6889,7 @@
           "5dae812f50": "Refresh",
           "52e640f3a0": "Refresh CLI status",
           "38edbb5721": "Shell command",
-          "6930feda9e": "Use Orca from your terminal to open the app, manage worktrees, and interact with Orca terminals.",
+          "6930feda9e": "Use the orca command to open {{product}}, manage worktrees, and interact with its terminals.",
           "c5c0f2641d": "Orca CLI",
           "d77352f2df": "Failed to remove `{{value0}}` from PATH.",
           "af5540930c": "Removed `{{value0}}` from PATH.",
@@ -7214,7 +7218,7 @@
           "42717918f4": "Download Update (",
           "02dc082e70": "Could not start the update download.",
           "e1a647adc5": "Check for Updates",
-          "ceb579abaf": "Check for app updates and install a newer Orca version.",
+          "ceb579abaf": "Check for app updates and install a newer {{product}} version.",
           "d91ebfb87e": "Current version: {{value0}}",
           "f2b1ccc12a": "Updates",
           "bd79d412f0": "Update check failed. {{value0}}",
@@ -7230,7 +7234,7 @@
           "3394d1f663": "checking",
           "d69a09b672": "Updates are checked automatically on launch.",
           "7173352632": "idle",
-          "e3b9d21c07": "is available. Update Orca through your system package manager — Orca cannot install this release itself."
+          "e3b9d21c07": "is available. Update {{product}} through your system package manager — {{product}} cannot install this release itself."
         },
         "GeneralWorkspaceSettingsSection": {
           "3d538a98f7": "Choose apps available from a workspace's Open in menu.",
@@ -8968,7 +8972,7 @@
         "appearance": {
           "search": {
             "9a115966d3": "Minimize to Tray on Close",
-            "4d5b9427b5": "When enabled, closing the window keeps Orca running in the system tray instead of quitting.",
+            "4d5b9427b5": "When enabled, closing the window keeps {{product}} running in the system tray instead of quitting.",
             "651f35b2c6": "switcher",
             "e5bc35d59e": "window",
             "d18b54ca90": "dock",
@@ -9523,7 +9527,7 @@
             "c9d8c1ce66": "release notes",
             "9e86ccd05c": "version",
             "f89a94773c": "update",
-            "79ff46776e": "Check for app updates and install a newer Orca version.",
+            "79ff46776e": "Check for app updates and install a newer {{product}} version.",
             "e15af4eb64": "Check for Updates",
             "6382fe9724": "npx",
             "baa263d6d8": "agents",
@@ -13352,7 +13356,7 @@
           "yoloPermissionsLabel": "Yolo / Dangerously skip permissions",
           "yoloPermissionsInfo": "Agent permission info",
           "yoloPermissionsTooltip": "Skip permission checks for agents for less interruptions",
-          "0e00a37e49": "isn't on your PATH yet. Workbench will set it as your default and you can install it any time."
+          "0e00a37e49": "isn't on your PATH yet. builder-workbench will set it as your default and you can install it any time."
         },
         "FeatureSetupInlineTerminal": {
           "789b59936e": "Press Enter to run the command and confirm npx if asked. You can also set this up later in Settings.",
@@ -13384,9 +13388,9 @@
           "0b4a7d23ab": "Signing in",
           "a74c6d6b18": "not-installed",
           "c773943637": "Start a workspace from any CodeHub issue or merge request, prefilled with its title and context",
-          "6d4596cdf7": "Browse CodeHub issues and merge requests in the Tasks view without leaving Workbench",
+          "6d4596cdf7": "Browse CodeHub issues and merge requests in the Tasks view without leaving builder-workbench",
           "c1ee44aa7a": "GitHub works too — issues, pull requests, and CI checks via the GitHub CLI",
-          "09df324e47": "Read, comment on, and merge pull requests or merge requests without leaving Workbench",
+          "09df324e47": "Read, comment on, and merge pull requests or merge requests without leaving builder-workbench",
           "172af1b2c8": "CodeHub",
           "5b0e29617c": "Issues and merge requests.",
           "10e495afa8": "Install CodeHub CLI",
@@ -13417,9 +13421,9 @@
           "4f6a1da718": "Open System Settings",
           "90b5d2e363": "macOS is not delivering Orca notifications",
           "2c47f5465f": "Turn on Allow notifications for Orca in System Settings. This step updates automatically once enabled.",
-          "72256f6d85": "Pick the alert Workbench plays after a desktop notification is delivered.",
-          "3f8a21c6d0": "Allow notifications for Workbench",
-          "b7e94d02a1": "macOS is not delivering Workbench notifications"
+          "72256f6d85": "Pick the alert builder-workbench plays after a desktop notification is delivered.",
+          "3f8a21c6d0": "Allow notifications for builder-workbench",
+          "b7e94d02a1": "macOS is not delivering builder-workbench notifications"
         },
         "OnboardingFlow": {
           "1130745139": "Set up task sources",
@@ -13442,11 +13446,11 @@
           "c47e1bd149": "agent",
           "windowsTerminalTitle": "Set Windows terminal defaults",
           "windowsTerminalSubtitle": "Choose the DEFAULT Shell for new panes and how right-click behaves in the terminal.",
-          "78d1d003d2": "Workbench",
-          "685d4ffbeb": "Welcome to Workbench",
-          "c64d33bfb8": "Workbench onboarding",
-          "43b8463d5c": "Workbench works with every CLI agent. Choose the one you'll reach for most. Switch any time.",
-          "54fbfde99e": "Workbench will notify you when agents are done or need help.",
+          "78d1d003d2": "builder-workbench",
+          "685d4ffbeb": "Welcome to builder-workbench",
+          "c64d33bfb8": "builder-workbench onboarding",
+          "43b8463d5c": "builder-workbench works with every CLI agent. Choose the one you'll reach for most. Switch any time.",
+          "54fbfde99e": "builder-workbench will notify you when agents are done or need help.",
           "9977a23fbe": "Install the CLIs you need — CodeHub for issues and merge requests, GitHub for issues and pull requests. Both are optional."
         },
         "OnboardingFooter": {
@@ -13516,7 +13520,7 @@
           "windowsDefault": "Windows default",
           "rightClickBehavior": "Right-click behavior",
           "rightClickBehaviorDescription": "Pick the terminal mouse behavior that matches your Windows muscle memory.",
-          "184e11638a": "Choose the shell Workbench opens for new Windows terminal panes."
+          "184e11638a": "Choose the shell builder-workbench opens for new Windows terminal panes."
         },
         "mac": {
           "notification": {
@@ -13525,7 +13529,7 @@
                 "f696515944": "Click Allow in the macOS dialog.",
                 "3d18cf71f9": "Updates automatically.",
                 "721d2bedb6": "Turn on Allow notifications for Orca in System Settings.",
-                "c25d81f9e3": "Turn on Allow notifications for Workbench in System Settings."
+                "c25d81f9e3": "Turn on Allow notifications for builder-workbench in System Settings."
               }
             }
           }
@@ -17464,7 +17468,7 @@
       "description": "This is where all your agents will show up at a glance. The board is coming soon."
     },
     "recoverableError": {
-      "title": "Orca dashboard hit an error.",
+      "title": "{{product}} dashboard hit an error.",
       "description": "The dashboard could not finish rendering. Retry to remount it, or reopen it."
     },
     "bucket": {
@@ -17639,6 +17643,6 @@
     "retry": "Retry"
   },
   "brand": {
-    "workbench": "Workbench"
+    "workbench": "builder-workbench"
   }
 }

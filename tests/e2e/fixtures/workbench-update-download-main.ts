@@ -14,7 +14,7 @@ mkdirSync(join(root, 'profile'), { recursive: true })
 app.setPath('userData', join(root, 'profile'))
 const payload = Buffer.from('Workbench real Electron transport verification\n'.repeat(32_768))
 const sha512 = createHash('sha512').update(payload).digest('base64')
-const filename = 'workbench-windows-setup.exe'
+const filename = 'builder-workbench-windows-setup.exe'
 const requests: { path: string; range: string | null }[] = []
 let interrupted = false
 let retireFeed: (() => void) | undefined

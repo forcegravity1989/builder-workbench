@@ -67,7 +67,7 @@ function projectScope(
   for (const reference of references) {
     let reason: string | null = null
     if (reference.provider !== 'github' && reference.provider !== 'codehub') {
-      reason = `provider ${reference.provider} 尚未接入 Workbench 任务范围读取`
+      reason = `provider ${reference.provider} 尚未接入 builder-workbench 任务范围读取`
     } else if (reference.provider !== viewProvider) {
       reason = `属 ${reference.provider} 来源，当前 ${viewProvider} 任务视图未展开`
     } else {
