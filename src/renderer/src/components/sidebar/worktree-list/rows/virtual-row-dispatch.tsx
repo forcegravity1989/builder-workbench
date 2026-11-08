@@ -35,8 +35,7 @@ import type { WorktreeRowDragState } from '../drag/row-state'
 export type WorktreeVirtualRowContext = {
   renderRows: RenderRow[]
   firstHeaderIndex: number
-  /** #475: rows sit below the shared scroll prefix; item.start includes it. */
-  scrollMargin: number
+
   activeStickyHeaderIndexRef: React.MutableRefObject<number | null>
   activeStickyHostIndexRef: React.MutableRefObject<number | null>
   measureVirtualRowElement: (element: HTMLDivElement | null) => void
@@ -90,11 +89,7 @@ function renderHostHeaderVirtualRow(
         hasHeaderTopSpacing && !isActiveStickyHost && 'pt-1',
         isActiveStickyHost ? 'sticky -top-px z-30 bg-worktree-sidebar' : 'absolute top-0'
       )}
-      style={
-        isActiveStickyHost
-          ? undefined
-          : { transform: getVirtualRowTransform(vItem.start - ctx.scrollMargin) }
-      }
+      style={isActiveStickyHost ? undefined : { transform: getVirtualRowTransform(vItem.start) }}
     >
       <HostSectionHeader
         row={row}
@@ -136,10 +131,7 @@ function renderLineageGroupVirtualRow(
           'transition-transform duration-150 ease-out will-change-transform'
       )}
       style={{
-        transform: getWorktreeVirtualRowTransform(
-          vItem.start - ctx.scrollMargin,
-          parentPreviewOffset
-        )
+        transform: getWorktreeVirtualRowTransform(vItem.start, parentPreviewOffset)
       }}
     >
       <div className="overflow-visible">
@@ -164,6 +156,22 @@ export function renderWorktreeVirtualRow(
   row: RenderRow,
   vItem: VirtualItem
 ): React.JSX.Element | null {
+  if (row.type === 'content') {
+    return (
+      <div
+        key={vItem.key}
+        role="presentation"
+        data-index={vItem.index}
+        data-worktree-virtual-row
+        data-worktree-virtual-row-key={String(vItem.key)}
+        ref={ctx.measureVirtualRowElement}
+        className="absolute left-0 right-0 top-0"
+        style={{ transform: getVirtualRowTransform(vItem.start) }}
+      >
+        {row.content}
+      </div>
+    )
+  }
   if (row.type === 'host-header') {
     return renderHostHeaderVirtualRow(ctx, row, vItem)
   }
@@ -177,7 +185,7 @@ export function renderWorktreeVirtualRow(
           data-index={vItem.index}
           ref={ctx.measureVirtualRowElement}
           className="absolute left-0 right-0 top-0 border-t border-worktree-sidebar-foreground/10"
-          style={{ transform: getVirtualRowTransform(vItem.start - ctx.scrollMargin) }}
+          style={{ transform: getVirtualRowTransform(vItem.start) }}
         >
           <button
             type="button"
@@ -197,7 +205,7 @@ export function renderWorktreeVirtualRow(
       row,
       vItem,
       isActiveStickyHeader: ctx.activeStickyHeaderIndexRef.current === vItem.index,
-      scrollMargin: ctx.scrollMargin,
+
       hasStickyHost: ctx.activeStickyHostIndexRef.current !== null,
       hasHeaderTopSpacing: shouldUseHeaderTopSpacing({
         rows: ctx.renderRows,
@@ -217,7 +225,7 @@ export function renderWorktreeVirtualRow(
       row,
       vItem,
       measureVirtualRowElement: ctx.measureVirtualRowElement,
-      scrollMargin: ctx.scrollMargin,
+
       actionState: ctx.importedWorktreeCardActionState.get(row.repo.id),
       onShow: ctx.onShowImportedWorktrees,
       onKeepHidden: ctx.onKeepImportedWorktreesHidden
@@ -229,7 +237,7 @@ export function renderWorktreeVirtualRow(
       row,
       vItem,
       measureVirtualRowElement: ctx.measureVirtualRowElement,
-      scrollMargin: ctx.scrollMargin,
+
       actionState: ctx.newExternalWorktreeInboxActionState.get(row.repo.id),
       onReview: ctx.onOpenWorktreeVisibility,
       onSuppress: ctx.onOpenSuppressExternalWorktreeInbox
@@ -240,8 +248,7 @@ export function renderWorktreeVirtualRow(
     return renderPendingCreationVirtualRow({
       row,
       vItem,
-      measureVirtualRowElement: ctx.measureVirtualRowElement,
-      scrollMargin: ctx.scrollMargin
+      measureVirtualRowElement: ctx.measureVirtualRowElement
     })
   }
 
@@ -250,8 +257,7 @@ export function renderWorktreeVirtualRow(
       ctx: ctx.folderWorkspace,
       row,
       vItem,
-      measureVirtualRowElement: ctx.measureVirtualRowElement,
-      scrollMargin: ctx.scrollMargin
+      measureVirtualRowElement: ctx.measureVirtualRowElement
     })
   }
 
@@ -280,7 +286,7 @@ export function renderWorktreeVirtualRow(
           'transition-transform duration-150 ease-out will-change-transform'
       )}
       style={{
-        transform: getWorktreeVirtualRowTransform(vItem.start - ctx.scrollMargin, itemPreviewOffset)
+        transform: getWorktreeVirtualRowTransform(vItem.start, itemPreviewOffset)
       }}
       onDragOver={
         itemWorkspaceStatus

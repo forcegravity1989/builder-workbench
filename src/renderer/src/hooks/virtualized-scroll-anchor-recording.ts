@@ -42,10 +42,7 @@ export function findVirtualizedDomScrollAnchor<TItemElement extends Element>({
   return {
     fallbackKeys: visibleItems.slice(1).map((item) => item.key),
     key: firstVisible.key,
-    // Why: 偏移可以为负——虚拟列表上方有非虚拟内容（#475 第二列共用滚动前缀）时，
-    // 首行位于视口顶部之下。截成 0 会让恢复把首行硬拽到视口顶部，用户滚回顶部后
-    // 又被拉下去；保留有符号距离才能按记录时的视口位置恢复。
-    offset: Math.min(firstVisible.rect.height, scrollRect.top - firstVisible.rect.top),
+    offset: Math.min(firstVisible.rect.height, Math.max(0, scrollRect.top - firstVisible.rect.top)),
     scrollTop: scrollElement.scrollTop
   }
 }
@@ -74,8 +71,7 @@ export function getVirtualizedScrollAnchorForOffset<TRow>({
       .filter((row): row is TRow => row != null)
       .map(getRowKey),
     key: getRowKey(row),
-    // Why: 同上，滚动前缀让首项可以整体位于 scrollTop 之下；负偏移恢复回原 scrollTop。
-    offset: scrollTop - firstVisible.start,
+    offset: Math.max(0, scrollTop - firstVisible.start),
     scrollTop
   }
 }

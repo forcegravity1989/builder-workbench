@@ -32,7 +32,7 @@ export type VirtualizedWorktreeViewportProps = {
    * (#475: the BW second column shares one scrollbar between 已固定/版本 and the
    * Orca project list). The virtualizer offsets by its measured height.
    */
-  scrollPrefix?: React.ReactNode
+  afterPinnedContent?: React.ReactNode
   activeWorktreeId: string | null
   activeWorkspaceExecutionHostId: ExecutionHostId | null
   currentWorktreeId: string | null

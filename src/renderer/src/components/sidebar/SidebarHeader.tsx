@@ -11,11 +11,13 @@ import { cn } from '@/lib/utils'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 type SidebarHeaderProps = {
+  controlsOnly?: boolean
   onWorkspaceBoardMenuOpenChange: (open: boolean) => void
   activityOptionsTarget?: React.Ref<HTMLDivElement>
 }
 
 const SidebarHeader = React.memo(function SidebarHeader({
+  controlsOnly = false,
   onWorkspaceBoardMenuOpenChange,
   activityOptionsTarget
 }: SidebarHeaderProps) {
@@ -38,7 +40,7 @@ const SidebarHeader = React.memo(function SidebarHeader({
     void updateSettings?.({ agentsSidebarIntroShown: true })
   }, [updateSettings])
   const sidebarTitle = isWorkbenchShell()
-    ? 'Orca 项目工作区'
+    ? '全部项目工作区'
     : groupBy === 'repo'
       ? translate('dashboard.sidebar.projects', 'Projects')
       : translate('dashboard.sidebar.workspaces', 'Workspaces')
@@ -49,17 +51,19 @@ const SidebarHeader = React.memo(function SidebarHeader({
 
   return (
     <div className="mt-2 flex h-8 min-w-0 items-center justify-between gap-1.5 px-2">
-      <div className="flex min-w-0 items-center gap-1">
-        <span
-          // Why truncate: the action cluster is shrink-0, so a long localized title
-          // (es "Espacios de trabajo") otherwise wraps out of the h-8 row.
-          className="min-w-0 truncate select-none pl-2 pr-0.5 text-xs font-semibold text-muted-foreground/80"
-          data-sidebar-section-title={groupBy === 'repo' ? 'projects' : 'workspaces'}
-        >
-          {sidebarTitle}
-        </span>
-      </div>
-      <div className="flex shrink-0 items-center gap-1">
+      {!controlsOnly && (
+        <div className="flex min-w-0 items-center gap-1">
+          <span
+            // Why truncate: the action cluster is shrink-0, so a long localized title
+            // (es "Espacios de trabajo") otherwise wraps out of the h-8 row.
+            className="min-w-0 truncate select-none pl-2 pr-0.5 text-xs font-semibold text-muted-foreground/80"
+            data-sidebar-section-title={groupBy === 'repo' ? 'projects' : 'workspaces'}
+          >
+            {sidebarTitle}
+          </span>
+        </div>
+      )}
+      <div className={cn('flex shrink-0 items-center gap-1', controlsOnly && 'ml-auto')}>
         <Popover
           open={introOpen}
           onOpenChange={(open) => {

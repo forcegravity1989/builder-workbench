@@ -62,6 +62,9 @@ export function estimateRenderRowSize(
   _activeStickyHeaderIndex: number | null
 ): number {
   const row = rows[index]
+  if (row?.type === 'content') {
+    return 400
+  }
   if (row?.type === 'host-header') {
     return (
       HOST_HEADER_ROW_HEIGHT +
@@ -185,6 +188,18 @@ export function getActiveStickyIndexesForScroll(args: {
   stickyHeaderIndexes: readonly number[]
   virtualItems: readonly VirtualItem[]
 }): ActiveStickyIndexes {
+  // A business-navigation section is a boundary, not a continuation of the pinned group.
+  const content = args.virtualItems.find((item) => args.rows[item.index]?.type === 'content')
+  if (content && args.scrollOffset >= content.start) {
+    const nextHeader = args.virtualItems.find(
+      (item) =>
+        item.index > content.index &&
+        (args.rows[item.index]?.type === 'header' || args.rows[item.index]?.type === 'host-header')
+    )
+    if (!nextHeader || args.scrollOffset < nextHeader.start) {
+      return { hostIndex: null, groupIndex: null }
+    }
+  }
   const hostIndexes = getHostStickyIndexes(args.rows, args.stickyHeaderIndexes)
 
   const resolveWithHandoff = (

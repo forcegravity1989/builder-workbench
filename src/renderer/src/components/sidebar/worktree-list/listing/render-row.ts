@@ -1,11 +1,16 @@
 import type { HostSectionRow } from '../../host-section-rows'
+import type { ReactNode } from 'react'
 
 type WorktreeItemRow = Extract<HostSectionRow, { type: 'item' }>
 export type RenderRow =
   | HostSectionRow
   | { type: 'lineage-group'; key: string; rows: WorktreeItemRow[] }
+  | { type: 'content'; key: string; content: ReactNode }
 
 export function getRenderRowKey(row: RenderRow): string {
+  if (row.type === 'content') {
+    return `content:${row.key}`
+  }
   if (row.type === 'host-header') {
     return row.presentationKey ?? `host:${row.hostId}`
   }

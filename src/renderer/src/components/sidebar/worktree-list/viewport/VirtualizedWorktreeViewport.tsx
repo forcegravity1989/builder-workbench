@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { WorktreeListScrollToTopButton } from '../../WorktreeListScrollToTopButton'
@@ -55,27 +55,6 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
   const scrollRef = useRef<HTMLDivElement>(null)
   // Why: callback-ref only mutates scrollRef; state re-runs the scroll-to-top listener attach.
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null)
-  // #475: BW renders 已固定/版本 above the rows inside the same scroll container, so
-  // the virtualizer offsets by that prefix's height (scrollMargin).
-  const prefixRef = useRef<HTMLDivElement>(null)
-  const [scrollMargin, setScrollMargin] = useState(0)
-  const hasScrollPrefix = props.scrollPrefix !== undefined
-  useLayoutEffect(() => {
-    const node = prefixRef.current
-    if (!node) {
-      setScrollMargin(0)
-      return
-    }
-    const update = (): void => {
-      const next = Math.round(node.getBoundingClientRect().height)
-      setScrollMargin((current) => (current === next ? current : next))
-    }
-    // Why: measure before paint so the first frame never renders rows on top of the prefix.
-    update()
-    const observer = new ResizeObserver(update)
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [hasScrollPrefix, scrollOffsetRef])
   const settings = useAppStore((s) => s.settings)
   const worktreeVisibilityDefaultsByHost = useAppStore((s) => s.worktreeVisibilityDefaultsByHost)
   const sshConnectionStates = useAppStore((s) => s.sshConnectionStates)
@@ -85,7 +64,10 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
   const scrollSuppression = useWorktreeSidebarScrollSuppression(scrollRef)
   const { markDirectScrollInput, markScrollMovement } = scrollSuppression
 
-  const renderRows = useMemo(() => buildRenderableRows(rows), [rows])
+  const renderRows = useMemo(
+    () => buildRenderableRows(rows, props.afterPinnedContent),
+    [rows, props.afterPinnedContent]
+  )
   const firstHeaderIndex = useMemo(
     () => renderRows.findIndex((row) => row.type === 'header' || row.type === 'host-header'),
     [renderRows]
@@ -100,10 +82,28 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
     [projectGroups]
   )
 
+  const virtualization = useWorktreeListVirtualizer({
+    renderRows,
+    firstHeaderIndex,
+    scrollRef,
+    scrollOffsetRef,
+    suppressMeasurementAdjustmentUntilRef: scrollSuppression.suppressMeasurementAdjustmentUntilRef
+  })
+  const measuredTotalSize = virtualization.virtualizer.getTotalSize()
+  const measurements = virtualization.virtualizer.measurementsCache
+  const measuredRowStarts = useMemo(
+    () =>
+      props.afterPinnedContent === undefined
+        ? undefined
+        : [...measurements.map((item) => item.start), measuredTotalSize],
+    [props.afterPinnedContent, measurements, measuredTotalSize]
+  )
+
   const headerDrag = useWorktreeSidebarHeaderDrag({
     rows,
     renderRows,
     firstHeaderIndex,
+    measuredRowStarts,
     allRepoIds: props.allRepoIds,
     repoMap,
     projectGroups,
@@ -148,15 +148,6 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
   const { showScrollToTop, scrollToTop } = useWorktreeListScrollToTop({
     scrollElement,
     onUserScrollIntent: markDirectScrollInput
-  })
-
-  const virtualization = useWorktreeListVirtualizer({
-    renderRows,
-    firstHeaderIndex,
-    scrollRef,
-    scrollOffsetRef,
-    scrollMargin,
-    suppressMeasurementAdjustmentUntilRef: scrollSuppression.suppressMeasurementAdjustmentUntilRef
   })
 
   usePendingSidebarReveal({
@@ -337,7 +328,7 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
     getCachedFolderWorkspacePathStatus,
     getLineageToggleHandler,
     toggleGroupWithScrollAnchor,
-    scrollMargin,
+
     onRowClickCapture: handleWorktreeRowClickCapture,
     onRowPointerDown: handleWorktreeRowPointerDown
   })
@@ -375,12 +366,6 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
         className="worktree-sidebar-scrollbar h-full overflow-y-auto overflow-x-hidden pl-1 scrollbar-sleek outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset pt-px"
         style={WORKTREE_SIDEBAR_SCROLL_STYLE}
       >
-        {/* #475：第二列共用同一个滚动条，前缀（已固定/版本）与虚拟行一起滚动。 */}
-        {hasScrollPrefix ? (
-          <div ref={prefixRef} data-worktree-sidebar-prefix="">
-            {props.scrollPrefix}
-          </div>
-        ) : null}
         <div
           role="presentation"
           className="relative w-full"
@@ -388,8 +373,7 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
         >
           {renderWorktreeSidebarDropIndicators({
             headerDrag,
-            worktreeDragState: runtime.worktreeDragState,
-            scrollMargin
+            worktreeDragState: runtime.worktreeDragState
           })}
           {virtualItems.map((vItem) => {
             const row = renderRows[vItem.index]

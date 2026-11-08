@@ -6,12 +6,11 @@ import { translate } from '@/i18n/i18n'
 export function SidebarWorktreeListEmptyState({
   hasFilters,
   onClearFilters,
-  scrollPrefix
+  children
 }: {
   hasFilters: boolean
   onClearFilters: () => void
-  /** #475: keep the BW second-column prefix inside the same scrollbar. */
-  scrollPrefix?: React.ReactNode
+  children?: React.ReactNode
 }): React.JSX.Element {
   return (
     <div
@@ -20,7 +19,7 @@ export function SidebarWorktreeListEmptyState({
       className="relative min-h-0 flex-1"
     >
       <div className="worktree-sidebar-scrollbar flex h-full flex-col overflow-y-auto overflow-x-hidden pl-1 scrollbar-sleek pt-px">
-        {scrollPrefix}
+        {children}
         <div className="flex flex-col items-center gap-2 px-4 py-6 text-center text-[11px] text-muted-foreground">
           <span>
             {translate('auto.components.sidebar.WorktreeList.b7acbf038b', 'No workspaces found')}

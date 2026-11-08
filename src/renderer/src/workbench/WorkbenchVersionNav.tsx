@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Layers, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { isVersionFlowWorkflow } from '../../../shared/workbench/version-workspace-prepare'
@@ -20,9 +20,11 @@ import { VersionNavGroup } from './version-nav-group'
 import { NewVersionDialog } from './NewVersionDialog'
 import { openGoalWorkspace } from './scoped-task-workspace'
 import { openVersionOverview, useProjectPage } from './project-page-state'
+import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { useCycleView } from './cycle-view-state'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
 import {
+  consumeVersionSidebarFocus,
   publishVersionSidebarProjection,
   useVersionSidebarFocusRequest
 } from './version-sidebar-state'
@@ -76,24 +78,21 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
   const [dialog, setDialog] = useState<DialogState>(null)
   const [busyKey, setBusyKey] = useState<string | null>(null)
   const focusRequest = useVersionSidebarFocusRequest()
-  const handledFocus = useRef(0)
   const versionElements = useRef(new Map<string, HTMLDivElement>())
 
   const expandedKey = repoId ? `workbench.version-expanded:${repoId}` : null
-  // Why (#475): 展开/收起是用户在这一列里的显式操作。切换活动项目（点已固定或
-  // Orca 区里另一个项目的工作树）只应换掉版本清单，不应按新项目的存储或默认姿态
-  // 重新展开版本——那样每次点工作树版本块都会长高，整列上下跳。因此展开集合在
-  // 会话内沿用：首帧取当前项目记住的集合，之后只由用户点击改变；仍写回当前项目
-  // 的存储，重启后能恢复。
-  const [expandedOverride, setExpandedOverride] = useState<Set<string> | null>(() =>
-    readExpandedStore(expandedKey)
+  // Expansion belongs to the project, including an explicitly collapsed empty set.
+  const [expandedByProject, setExpandedByProject] = useState<Record<string, Set<string>>>({})
+  const expandedOverride = useMemo(
+    () => (expandedKey ? (expandedByProject[expandedKey] ?? readExpandedStore(expandedKey)) : null),
+    [expandedByProject, expandedKey]
   )
   const setExpandedOverrideAndStore = useCallback(
     (versions: Set<string>) => {
-      setExpandedOverride(versions)
       if (!expandedKey) {
         return
       }
+      setExpandedByProject((current) => ({ ...current, [expandedKey]: versions }))
       try {
         window.localStorage.setItem(expandedKey, JSON.stringify([...versions]))
       } catch {
@@ -129,13 +128,11 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
     return seeded
   }, [expandedOverride, entries, browsedVersion])
 
-  // Why: 默认姿态只在会话首次有版本清单时落一次；否则切换项目时展开集合仍为
-  // null，会按新项目重新套默认展开，等于「点工作树就把版本展开」。
   useEffect(() => {
     if (expandedOverride === null && entries.length > 0) {
-      setExpandedOverride(new Set(expandedVersions))
+      setExpandedOverrideAndStore(new Set(expandedVersions))
     }
-  }, [expandedOverride, entries.length, expandedVersions])
+  }, [expandedOverride, entries.length, expandedVersions, setExpandedOverrideAndStore])
 
   useEffect(() => {
     const versions = new Set(entries.map((entry) => entry.version))
@@ -153,21 +150,10 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
     })
   }, [repoId, catalog.repoIds, catalog.worktrees, entries])
 
-  useEffect(
-    () => () =>
-      publishVersionSidebarProjection({
-        repoId: null,
-        repoIds: [],
-        worktreeIdentities: new Set()
-      }),
-    []
-  )
-
   useEffect(() => {
     if (
       !focusRequest ||
       focusRequest.repoId !== repoId ||
-      handledFocus.current === focusRequest.sequence ||
       (!entries.some((entry) => entry.state === 'working') &&
         !catalog.materialReady &&
         !catalog.error &&
@@ -175,7 +161,7 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
     ) {
       return
     }
-    handledFocus.current = focusRequest.sequence
+    consumeVersionSidebarFocus(focusRequest.sequence)
     const latest = entries.find((entry) => entry.state === 'working') ?? entries[0]
     if (!latest) {
       return
@@ -243,27 +229,24 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
 
   return (
     <div className="wb-versions flex min-h-0 min-w-0 flex-col" data-workbench-versions>
-      <div className="mt-2 flex items-center justify-between px-2 pb-1">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-worktree-sidebar-foreground/45">
-          版本
-        </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          aria-label="新建版本"
-          title="新建版本"
-          onClick={() => setDialog({ mode: 'create' })}
-          className="size-6 text-worktree-sidebar-foreground/55 hover:text-worktree-sidebar-foreground"
-        >
-          <Plus className="size-3.5" />
-        </Button>
-      </div>
-      <div
-        role="separator"
-        aria-orientation="horizontal"
-        className="mx-2 mb-1 border-t border-worktree-sidebar-foreground/10"
-      />
+      <WorkbenchSidebarSectionHeader
+        icon={Layers}
+        action={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="新建版本"
+            title="新建版本"
+            onClick={() => setDialog({ mode: 'create' })}
+            className="size-6"
+          >
+            <Plus className="size-3.5" />
+          </Button>
+        }
+      >
+        版本
+      </WorkbenchSidebarSectionHeader>
 
       {catalog.error ? (
         <div className="px-2 py-1 text-[11px] text-destructive">

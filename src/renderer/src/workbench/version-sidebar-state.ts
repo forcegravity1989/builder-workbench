@@ -13,6 +13,7 @@ let projection: VersionSidebarProjection = {
   worktreeIdentities: new Set()
 }
 let projectionKey = ''
+let focusSequence = 0
 let focusRequest: { repoId: string; sequence: number } | null = null
 
 function subscribe(listener: () => void): () => void {
@@ -41,7 +42,7 @@ export function publishVersionSidebarProjection(next: VersionSidebarProjection):
 }
 
 export function requestVersionSidebarFocus(repoId: string): void {
-  focusRequest = { repoId, sequence: (focusRequest?.sequence ?? 0) + 1 }
+  focusRequest = { repoId, sequence: ++focusSequence }
   emit()
 }
 
@@ -49,6 +50,13 @@ export function requestVersionSidebarFocus(repoId: string): void {
  * Non-React read for pipelines that run outside the sidebar tree (e.g. the
  * Cmd+1–9 ordering fallback); consumers still re-run on the next keystroke.
  */
+export function consumeVersionSidebarFocus(sequence: number): void {
+  if (focusRequest?.sequence === sequence) {
+    focusRequest = null
+    emit()
+  }
+}
+
 export function getVersionSidebarProjection(): VersionSidebarProjection {
   return projection
 }

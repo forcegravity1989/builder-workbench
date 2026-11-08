@@ -14,7 +14,6 @@ import { SidebarSettingsHelpMenu } from '@/components/sidebar/SidebarSettingsHel
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { isWorkbenchShell } from './is-workbench-shell'
 import { closeProjectPage, openProjectWall, useProjectPage } from './project-page-state'
-import { requestVersionSidebarFocus } from './version-sidebar-state'
 import { useWorkbenchObjectContext } from './workbench-object-context'
 
 // #475 A 定稿：窄 Rail（64px）承载全局入口，第二列只留对象上下文。
@@ -64,7 +63,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
   const openAutomationsPage = useAppStore((s) => s.openAutomationsPage)
   const openSpacePage = useAppStore((s) => s.openSpacePage)
   const openTaskPage = useAppStore((s) => s.openTaskPage)
-  const openArtifactsPage = useAppStore((s) => s.openArtifactsPage)
+  const setActiveView = useAppStore((s) => s.setActiveView)
   const projectPage = useProjectPage()
   const objectContext = useWorkbenchObjectContext()
 
@@ -93,13 +92,9 @@ export function WorkbenchRail(): React.JSX.Element | null {
   }
 
   const enterObjectContext = (): void => {
+    if (objectContext) return
     closeProjectPage()
-    if (activeView !== 'terminal' && activeView !== 'artifacts') {
-      openArtifactsPage()
-    }
-    if (activeRepoId) {
-      requestVersionSidebarFocus(activeRepoId)
-    }
+    setActiveView('terminal')
   }
 
   const entries: RailEntry[] = [

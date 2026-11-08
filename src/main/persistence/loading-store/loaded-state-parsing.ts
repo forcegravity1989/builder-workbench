@@ -41,7 +41,6 @@ import { hasStateBackup } from './backup-recovery-rotation'
 import { prepareLoadedTerminalSettings } from './prepare-loaded-terminal-settings'
 import { prepareLoadedProfileSettings } from './prepare-loaded-profile-settings'
 import { normalizeLoadedProfileState } from './normalize-loaded-profile-state'
-import { workbenchShowPinnedWorktreesInGroupsDefault } from './workbench-settings-defaults'
 
 type PersistenceStartupDetails = Record<string, unknown> | (() => Record<string, unknown>)
 
@@ -197,11 +196,6 @@ export class LoadedStateParsingOperations {
 
     if (result === null) {
       result = getDefaultPersistedState(homedir())
-      // Why (#500): 首次安装没有状态文件，不经 normalize；BW 的固定树展示缺省在这里补。
-      const pinnedDisplayDefault = workbenchShowPinnedWorktreesInGroupsDefault()
-      if (pinnedDisplayDefault !== undefined) {
-        result.settings.showPinnedWorktreesInGroups = pinnedDisplayDefault
-      }
     }
 
     const workspaceSession = pruneWorkspaceSessionBrowserHistory(

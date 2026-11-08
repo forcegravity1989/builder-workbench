@@ -7,6 +7,7 @@ import {
 } from '../../../../shared/execution-host'
 import { getRepoMapFromState, getWorktreeMapFromState } from '@/store/selectors'
 import { getProjectHostSetupProjectionFromState } from '@/store/project-host-setup-selector'
+import { buildWorkbenchSectionRows } from './worktree-list/listing/workbench-section-rows'
 import { buildRows } from './worktree-list/grouping/build-rows'
 import { getPinnedWorktreeDisplayPolicy } from './worktree-list/grouping/row-types'
 import { scopeWorktreesForVersionSidebar } from './worktree-list/listing/use-version-scoped-worktrees'
@@ -108,29 +109,44 @@ export function computeRenderedSidebarWorktrees(
   // Deliberately a superset of its internal guards — on <=1 host it still no-ops, wasting only the registry build.
   const needsHostSections =
     state.workspaceHostScope !== ALL_EXECUTION_HOSTS_SCOPE || state.visibleWorkspaceHostIds != null
-  const sectionRows = needsHostSections
-    ? addHostSectionRows({
-        rows,
-        hostOptions: orderHostSectionOptions(
-          buildSidebarHostOptions({
-            repos: state.repos,
-            sshTargetLabels: state.sshTargetLabels,
-            sshConnectionStates: state.sshConnectionStates,
-            settings: state.settings,
-            runtimeEnvironments: state.runtimeEnvironments,
-            runtimeStatusByEnvironmentId: state.runtimeStatusByEnvironmentId,
-            hostLabelOverrides: getHostDisplayLabelOverrides(state.settings)
-          }),
-          state.workspaceHostOrder
-        ),
-        workspaceHostScope: state.workspaceHostScope,
-        visibleWorkspaceHostIds: state.visibleWorkspaceHostIds,
-        defaultHostId,
-        collapsedHostKeys: state.collapsedGroups,
-        forceCollapseHosts: false,
-        preferProjectGrouping: true
-      })
-    : rows
+  const sectionRows = buildWorkbenchSectionRows({
+    rows,
+    workbench: isWorkbenchShell(),
+    groupBy: state.groupBy,
+    repoIds:
+      versionProjection.repoId === activeRepoId
+        ? versionProjection.repoIds
+        : activeRepoId
+          ? [activeRepoId]
+          : [],
+    repoMap: getRepoMapFromState(state),
+    projectGrouping: { projects: projection.projects, projectHostSetups: projection.setups },
+    projectGroups,
+    withHostSections: (naturalRows) =>
+      needsHostSections
+        ? addHostSectionRows({
+            rows: naturalRows,
+            hostOptions: orderHostSectionOptions(
+              buildSidebarHostOptions({
+                repos: state.repos,
+                sshTargetLabels: state.sshTargetLabels,
+                sshConnectionStates: state.sshConnectionStates,
+                settings: state.settings,
+                runtimeEnvironments: state.runtimeEnvironments,
+                runtimeStatusByEnvironmentId: state.runtimeStatusByEnvironmentId,
+                hostLabelOverrides: getHostDisplayLabelOverrides(state.settings)
+              }),
+              state.workspaceHostOrder
+            ),
+            workspaceHostScope: state.workspaceHostScope,
+            visibleWorkspaceHostIds: state.visibleWorkspaceHostIds,
+            defaultHostId,
+            collapsedHostKeys: state.collapsedGroups,
+            forceCollapseHosts: false,
+            preferProjectGrouping: true
+          })
+        : naturalRows
+  })
 
   return getRenderedWorktreesInSidebarOrder(sectionRows, pinnedDisplayPolicy)
 }

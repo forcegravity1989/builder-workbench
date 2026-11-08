@@ -86,8 +86,40 @@
 
 /* 生产第二列复用原生 Sidebar：默认宽 280px，可拖动 220–500px，不按视口再缩。 */
 .panel-475 {
+  position: relative;
   width: 280px;
   min-width: 280px;
+}
+.panel-resize-475 {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.panel-resize-475:hover,
+.panel-resize-475:focus-visible {
+  background: var(--border);
+}
+.review-bar {
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.review-actions {
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+.review-journey-523 {
+  padding-left: 20px;
+  line-height: 1.7;
+}
+.review-journey-523 li + li {
+  margin-top: 9px;
+}
+.native-worktree-heading.selected {
+  background: var(--worktree-sidebar-accent, var(--accent));
 }
 /* 项目标题固定在滚动容器之外，与生产 WorkbenchSidebarNav 一致。 */
 .panel-475 .panel-heading-475 {
@@ -128,57 +160,56 @@
   background: var(--accent);
   color: var(--foreground);
 }
-.pinned-row-475 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 .panel-475 .sidebar-divider {
   margin-top: 10px;
 }
 
-/* 已固定：生产无边框，标题本身是可折叠按钮（Pin + 已固定 + 数量）。 */
+/* Three section headings follow the native section header metrics. */
 .pinned-section-475 {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  margin-top: 2px;
 }
-.pinned-heading-475 {
+.panel-475 .bw-section,
+.panel-475 .native-projects {
+  padding: 0 0 8px;
+}
+.panel-475 .sidebar-section-heading-475 {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  height: 28px;
+  min-height: 28px;
+  margin: 4px 0;
+  padding: 0 8px 0 10px;
+  border: 0;
   border-radius: 6px;
-  color: color-mix(in srgb, var(--foreground) 60%, transparent);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
   text-align: left;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+.panel-475 .sidebar-section-heading-475 > svg {
+  width: 16px;
+  min-width: 16px;
+}
+.panel-475 .sidebar-section-heading-475 > span {
+  flex: 1;
+}
+.panel-475 .sidebar-section-heading-475 small {
+  font-size: 11px;
+  font-weight: 400;
 }
 .pinned-heading-475:hover {
-  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  background: var(--accent);
 }
-.pinned-heading-475 small {
-  font-size: 10px;
-  font-weight: 400;
-  color: color-mix(in srgb, var(--foreground) 40%, transparent);
-}
-.pinned-row-475 {
-  width: calc(100% - 8px);
-  margin: 0 4px;
-}
-
-/* 版本标题行：生产是 10px 大写「版本」+ 右侧新建按钮，标题行在分隔线之上。 */
-.versions-heading-475 {
+.native-toolbar-475 {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 8px 2px;
-}
-.versions-heading-475 > span {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--foreground) 45%, transparent);
+  justify-content: flex-end;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--border);
 }

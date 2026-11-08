@@ -19,7 +19,6 @@ import { resolveLeftSidebarStyleVariables } from '@/lib/left-sidebar-appearance'
 import { useSystemPrefersDark } from '@/components/terminal-pane/use-system-prefers-dark'
 import { lazyWithRetry } from '@/lib/lazy-with-retry'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { WorkbenchSidebarPinnedVersions } from '@/workbench/WorkbenchSidebarNav'
 
 // Why lazy: the Agents list pulls the whole activity pipeline (virtualizer, markdown
 // previews, thread derivation); users on the workspace view should not load or render any of it.
@@ -154,6 +153,7 @@ function Sidebar({
   const workbenchShell = isWorkbenchShell()
   const sidebarHeader = (
     <SidebarHeader
+      controlsOnly={workbenchShell}
       onWorkspaceBoardMenuOpenChange={setWorkspaceBoardMenuOpen}
       activityOptionsTarget={setAgentOptionsTarget}
     />
@@ -166,14 +166,6 @@ function Sidebar({
       onWorkspaceBoardDragPreviewStart={previewWorkspaceBoardFromDrag}
       onWorkspaceBoardDragPreviewCommit={solidifyWorkspaceBoardFromDrag}
       onWorkspaceBoardDragPreviewCancel={cancelWorkspaceBoardDragPreview}
-      scrollPrefix={
-        workbenchShell ? (
-          <>
-            <WorkbenchSidebarPinnedVersions />
-            {sidebarHeader}
-          </>
-        ) : undefined
-      }
     />
   )
 
@@ -190,7 +182,7 @@ function Sidebar({
           <>
             {/* Fixed controls */}
             <SidebarNav />
-            {!workbenchShell || sidebarBody === 'agents' ? sidebarHeader : null}
+            {sidebarHeader}
             {sidebarBody === 'agents' ? (
               <React.Suspense fallback={<div className="min-h-0 flex-1" />}>
                 <ActivityThreadCollapseContext.Provider value={agentsCollapseState}>

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { createContext, useContext, useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { useRepoMap, useWorktreeMap } from '@/store/selectors'
 import type { Worktree } from '../../../shared/worktree/types'
@@ -22,10 +22,17 @@ import {
 import { WORKTREE_ROW_DRAG_INITIAL_STATE } from '@/components/sidebar/worktree-list/drag/row-state'
 import { closeProjectPage } from './project-page-state'
 import { isVersionHostDisconnected } from './version-worktree-host'
+import { buildWorktreeComparator, sortWorktreesSmart } from '@/components/sidebar/smart-sort'
+import { getPinnedSectionWorktrees } from '@/components/sidebar/pinned-section-worktrees'
+import { getPinnedWorktreeDisplayPolicy } from '@/components/sidebar/worktree-list/grouping/row-types'
 
 const EMPTY_SET = new Set<string>()
 const EMPTY_MAP = new Map<string, never>()
 const NOOP = () => {}
+export const VersionTreeDisplayContext = createContext<{
+  visibleWorktrees: readonly Worktree[]
+  sortedIds: readonly string[]
+} | null>(null)
 
 /** Business directories only select members; native rows own cards, hosts and sessions. */
 export function VersionNativeTrees({
@@ -39,7 +46,37 @@ export function VersionNativeTrees({
   const worktreeMap = useWorktreeMap()
   const repos = useAppStore((state) => state.repos)
   const settings = useAppStore((state) => state.settings)
+  const nativeDisplay = useContext(VersionTreeDisplayContext)
+  const sortBy = useAppStore((state) => state.sortBy)
   const lineage = useAppStore((state) => state.worktreeLineageById)
+  const displayedTrees = useMemo(() => {
+    const source = nativeDisplay?.visibleWorktrees ?? trees
+    const pinned =
+      getPinnedWorktreeDisplayPolicy(settings) === 'single-location'
+        ? new Set(
+            getPinnedSectionWorktrees(source, lineage, worktreeMap).map(getWorktreeHostIdentity)
+          )
+        : new Set<string>()
+    const rank = new Map(nativeDisplay?.sortedIds.map((id, index) => [id, index]))
+    const state = useAppStore.getState()
+    const ordered =
+      sortBy === 'smart'
+        ? sortWorktreesSmart(
+            [...trees],
+            state.tabsByWorktree,
+            repoMap,
+            state.agentStatusByPaneKey,
+            state.runtimePaneTitlesByTabId,
+            state.ptyIdsByTabId,
+            state.migrationUnsupportedByPtyId,
+            state.terminalLayoutsByTabId
+          )
+        : [...trees].sort(buildWorktreeComparator(sortBy, repoMap, Date.now(), new Map()))
+    // Catalog membership includes detected/no-session trees; native visibility must not erase them.
+    return ordered
+      .filter((tree) => !pinned.has(getWorktreeHostIdentity(tree)))
+      .sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity) || 0)
+  }, [nativeDisplay, trees, settings, lineage, worktreeMap, sortBy, repoMap])
   const collapsedGroups = useAppStore((state) => state.collapsedGroups)
   const toggleGroup = useAppStore((state) => state.toggleCollapsedGroup)
   const activeWorktreeId = useAppStore((state) => state.activeWorktreeId)
@@ -73,14 +110,14 @@ export function VersionNativeTrees({
   )
   const rows = useMemo(() => {
     const result: Row[] = []
-    appendWorktreeRows(result, [...trees], repoMap, lineage, worktreeMap, {
+    appendWorktreeRows(result, [...displayedTrees], repoMap, lineage, worktreeMap, {
       nestLineage: true,
       collapsedGroups,
       groupDepth: 0,
       sectionKey,
       cyclicLineageIds: getCyclicProjectedWorktreeLineageIds(lineage, worktreeMap),
       hostContextLabelByWorktreeIdentity: new Map(
-        trees.map((tree) => [
+        displayedTrees.map((tree) => [
           getWorktreeHostIdentity(tree),
           getHostContextLabel(
             getWorktreeExecutionHostId(tree, repoMap.get(tree.repoId), defaultHostId),
@@ -91,7 +128,7 @@ export function VersionNativeTrees({
     })
     return settings?.experimentalNewWorktreeCardStyle ? buildRenderableRows(result) : result
   }, [
-    trees,
+    displayedTrees,
     repoMap,
     lineage,
     worktreeMap,

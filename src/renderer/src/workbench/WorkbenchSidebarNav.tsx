@@ -1,14 +1,16 @@
 import React from 'react'
 import { useAppStore } from '@/store'
 import { isWorkbenchShell } from './is-workbench-shell'
-import { WorkbenchPinnedSection } from './WorkbenchPinnedSection'
+import { FolderGit2 } from 'lucide-react'
+import type { Worktree } from '../../../shared/worktree/types'
+import { VersionTreeDisplayContext } from './VersionNativeTrees'
+import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { WorkbenchVersionNav } from './WorkbenchVersionNav'
 import { WorkbenchWorkspaceChoiceDialog } from './WorkbenchWorkspaceChoiceDialog'
 import { WorkbenchVersionBindingDialog } from './version-tree-bind-dialog'
 
 /**
- * #475 A 定稿：第二列的固定部分只留项目标题；已固定与版本块下移到 Orca 工作区
- * 列表的同一滚动容器里（见 WorkbenchSidebarPinnedVersions），整列只有一个滚动条。
+ * Project identity stays above the native toolbar; tree sections share the native scroller.
  */
 export function WorkbenchSidebarNav(): React.JSX.Element | null {
   const projectName = useAppStore((s) => {
@@ -45,14 +47,23 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
 }
 
 /**
- * 已固定 + 版本块。由 Sidebar 作为 WorktreeList 的 scrollPrefix 传入，与 Orca 项目
- * 工作区列表共享同一个滚动容器（#475 单一滚动条）。
+ * Only the business directory is inserted between native Pinned and native project groups.
  */
-export function WorkbenchSidebarPinnedVersions(): React.JSX.Element {
+export function WorkbenchSidebarVersions({
+  visibleWorktrees,
+  sortedIds
+}: {
+  visibleWorktrees: readonly Worktree[]
+  sortedIds: readonly string[]
+}): React.JSX.Element {
   return (
-    <div className="flex min-w-0 flex-col gap-0.5 px-2 pb-1" data-workbench-scroll-prefix>
-      <WorkbenchPinnedSection />
-      <WorkbenchVersionNav />
-    </div>
+    <VersionTreeDisplayContext.Provider value={{ visibleWorktrees, sortedIds }}>
+      <div className="flex min-w-0 flex-col gap-1 pb-1" data-workbench-version-section>
+        <WorkbenchVersionNav />
+        <WorkbenchSidebarSectionHeader icon={FolderGit2}>
+          全部项目工作区
+        </WorkbenchSidebarSectionHeader>
+      </div>
+    </VersionTreeDisplayContext.Provider>
   )
 }

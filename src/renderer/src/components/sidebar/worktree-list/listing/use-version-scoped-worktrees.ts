@@ -6,8 +6,6 @@ import { getPinnedSectionWorktrees } from '../../pinned-section-worktrees'
 
 type VersionSidebarScope = {
   worktreeIdentities: ReadonlySet<string>
-  /** Current project's repos; the second column no longer lists 其他项目 (#475). */
-  repoIds?: readonly string[]
 }
 
 type VersionScopedWorktreesArgs = {
@@ -33,15 +31,8 @@ export function scopeWorktreesForVersionSidebar(args: VersionScopedWorktreesArgs
   if (!workbenchProject) {
     return { visibleWorktrees: [...filteredWorktrees] }
   }
-  const projectRepoIds =
-    workbenchProject.repoIds && workbenchProject.repoIds.length > 0
-      ? new Set(workbenchProject.repoIds)
-      : null
-  const inProject = projectRepoIds
-    ? filteredWorktrees.filter((tree) => projectRepoIds.has(tree.repoId))
-    : [...filteredWorktrees]
   const pinnedIdentities = new Set(
-    getPinnedSectionWorktrees(inProject, worktreeLineageById, worktreeMap).map(
+    getPinnedSectionWorktrees(filteredWorktrees, worktreeLineageById, worktreeMap).map(
       getWorktreeHostIdentity
     )
   )
@@ -49,7 +40,7 @@ export function scopeWorktreesForVersionSidebar(args: VersionScopedWorktreesArgs
     [...pinnedIdentities].filter((identity) => workbenchProject.worktreeIdentities.has(identity))
   )
   return {
-    visibleWorktrees: inProject.filter(
+    visibleWorktrees: filteredWorktrees.filter(
       (tree) =>
         pinnedIdentities.has(getWorktreeHostIdentity(tree)) ||
         !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
@@ -59,33 +50,24 @@ export function scopeWorktreesForVersionSidebar(args: VersionScopedWorktreesArgs
 }
 
 /**
- * Keeps external detected trees of the current project only (other repos have no
- * section in the second column any more) and drops version-bound ones, which the
- * version block owns.
+ * Only the current version directory's trees are deduplicated; other projects stay native.
  */
-export function scopeDetectedWorktreesToProject<T extends { worktrees: readonly Worktree[] }>(
-  byRepo: Record<string, T>,
-  workbenchProject?: VersionSidebarScope
-): Record<string, T> {
+export function scopeDetectedWorktreesForVersionSidebar<
+  T extends { worktrees: readonly Worktree[] }
+>(byRepo: Record<string, T>, workbenchProject?: VersionSidebarScope): Record<string, T> {
   if (!workbenchProject) {
     return byRepo
   }
-  const repoIds =
-    workbenchProject.repoIds && workbenchProject.repoIds.length > 0
-      ? new Set(workbenchProject.repoIds)
-      : null
   return Object.fromEntries(
-    Object.entries(byRepo)
-      .filter(([id]) => !repoIds || repoIds.has(id))
-      .map(([id, detected]) => [
-        id,
-        {
-          ...detected,
-          worktrees: detected.worktrees.filter(
-            (tree) => !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
-          )
-        }
-      ])
+    Object.entries(byRepo).map(([id, detected]) => [
+      id,
+      {
+        ...detected,
+        worktrees: detected.worktrees.filter(
+          (tree) => !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
+        )
+      }
+    ])
   )
 }
 

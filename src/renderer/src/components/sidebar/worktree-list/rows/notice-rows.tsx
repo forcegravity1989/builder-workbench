@@ -18,7 +18,7 @@ export function canKeepImportedWorktreesHidden(
 type NoticeRowFrameProps = {
   vItem: VirtualItem
   measureVirtualRowElement: (element: HTMLDivElement | null) => void
-  scrollMargin: number
+
   className?: string
   children: React.ReactNode
 }
@@ -27,7 +27,7 @@ type NoticeRowFrameProps = {
 function NoticeRowFrame({
   vItem,
   measureVirtualRowElement,
-  scrollMargin,
+
   className = 'absolute left-0 right-0 top-0',
   children
 }: NoticeRowFrameProps): React.JSX.Element {
@@ -40,7 +40,7 @@ function NoticeRowFrame({
       data-index={vItem.index}
       ref={measureVirtualRowElement}
       className={className}
-      style={{ transform: getVirtualRowTransform(vItem.start - scrollMargin) }}
+      style={{ transform: getVirtualRowTransform(vItem.start) }}
     >
       {children}
     </div>
@@ -51,7 +51,7 @@ export function renderImportedWorktreesVirtualRow(args: {
   row: Extract<Row, { type: 'imported-worktrees-card' }>
   vItem: VirtualItem
   measureVirtualRowElement: (element: HTMLDivElement | null) => void
-  scrollMargin: number
+
   actionState: ImportedWorktreeCardActionState | undefined
   onShow: (projectId: string) => void
   onKeepHidden: (projectId: string) => void
@@ -62,7 +62,6 @@ export function renderImportedWorktreesVirtualRow(args: {
       key={args.vItem.key}
       vItem={args.vItem}
       measureVirtualRowElement={args.measureVirtualRowElement}
-      scrollMargin={args.scrollMargin}
     >
       <ImportedWorktreesVisibilityLine
         repoDisplayName={row.repo.displayName}
@@ -87,7 +86,7 @@ export function renderNewExternalWorktreesInboxVirtualRow(args: {
   row: Extract<Row, { type: 'new-external-worktrees-inbox' }>
   vItem: VirtualItem
   measureVirtualRowElement: (element: HTMLDivElement | null) => void
-  scrollMargin: number
+
   actionState: NewExternalWorktreesInboxActionState | undefined
   onReview: (repo: Extract<Row, { type: 'new-external-worktrees-inbox' }>['repo']) => void
   onSuppress: (projectId: string) => void
@@ -98,7 +97,6 @@ export function renderNewExternalWorktreesInboxVirtualRow(args: {
       key={args.vItem.key}
       vItem={args.vItem}
       measureVirtualRowElement={args.measureVirtualRowElement}
-      scrollMargin={args.scrollMargin}
     >
       <NewExternalWorktreesInboxLine
         repoDisplayName={row.repo.displayName}
@@ -118,14 +116,12 @@ export function renderPendingCreationVirtualRow(args: {
   row: Extract<Row, { type: 'pending-creation' }>
   vItem: VirtualItem
   measureVirtualRowElement: (element: HTMLDivElement | null) => void
-  scrollMargin: number
 }): React.JSX.Element {
   return (
     <NoticeRowFrame
       key={args.vItem.key}
       vItem={args.vItem}
       measureVirtualRowElement={args.measureVirtualRowElement}
-      scrollMargin={args.scrollMargin}
       className="absolute left-0 right-0 top-0 px-2 pb-1.5"
     >
       <PendingWorktreeRow creationId={args.row.creationId} />

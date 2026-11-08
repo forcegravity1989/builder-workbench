@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { WorkbenchSidebarVersions } from '@/workbench/WorkbenchSidebarNav'
 import { useVersionSidebarProjection } from '@/workbench/version-sidebar-state'
 import { useShallow } from 'zustand/react/shallow'
 import {
@@ -33,7 +34,7 @@ import { useSidebarHostVisibleScope } from './worktree-list/listing/use-host-vis
 import { useSidebarRevealRequests } from './worktree-list/navigation/use-reveal-requests'
 import { useSidebarSectionRows } from './worktree-list/listing/use-section-rows'
 import {
-  scopeDetectedWorktreesToProject,
+  scopeDetectedWorktreesForVersionSidebar,
   useVersionScopedWorktrees
 } from './worktree-list/listing/use-version-scoped-worktrees'
 import { useSidebarWorktreeFilters } from './worktree-list/listing/use-filters'
@@ -47,8 +48,6 @@ import { buildWorktreeManualOrderCatalog } from './worktree-manual-order-catalog
 type WorktreeListProps = {
   scrollOffsetRef: React.MutableRefObject<number>
   scrollAnchorRef: React.MutableRefObject<VirtualizedScrollAnchor>
-  /** #475: BW second-column content sharing this list's single scroll container. */
-  scrollPrefix?: React.ReactNode
   workspaceBoardOpen?: boolean
   onWorkspaceBoardDragPreviewStart?: () => void
   onWorkspaceBoardDragPreviewCommit?: () => void
@@ -58,7 +57,6 @@ type WorktreeListProps = {
 const WorktreeList = React.memo(function WorktreeList({
   scrollOffsetRef,
   scrollAnchorRef,
-  scrollPrefix,
   workspaceBoardOpen = false,
   onWorkspaceBoardDragPreviewStart = NOOP_WORKSPACE_BOARD_DRAG_PREVIEW_CALLBACK,
   onWorkspaceBoardDragPreviewCommit = NOOP_WORKSPACE_BOARD_DRAG_PREVIEW_CALLBACK,
@@ -150,7 +148,7 @@ const WorktreeList = React.memo(function WorktreeList({
       worktreeMap
     })
   const nativeDetectedWorktrees = useMemo(
-    () => scopeDetectedWorktreesToProject(detectedWorktreesByRepo, workbenchProject),
+    () => scopeDetectedWorktreesForVersionSidebar(detectedWorktreesByRepo, workbenchProject),
     [detectedWorktreesByRepo, workbenchProject]
   )
   const effectiveCollapsedGroups = useEffectiveCollapsedGroups({
@@ -211,8 +209,7 @@ const WorktreeList = React.memo(function WorktreeList({
     filterRepoIds: filterState.filterRepoIds,
     visibleWorkspaceHostIds: filterState.visibleWorkspaceHostIds,
     workspaceHostScope: filterState.workspaceHostScope,
-    pinnedOnlyIdentities: versionBoundIdentities,
-    suppressPinnedSection: isWorkbenchShell() && !!workbenchProject
+    pinnedOnlyIdentities: versionBoundIdentities
   })
   const selection = useSidebarWorktreeSelection({
     sectionRows: rowModel.sectionRows,
@@ -294,13 +291,16 @@ const WorktreeList = React.memo(function WorktreeList({
     placeholderRepoCount: rowModel.placeholderRepoIds.size,
     importedWorktreeCardCount: externalWorktreeCards.importedWorktreesByRepo.size
   })
+  const versionContent = isWorkbenchShell() ? (
+    <WorkbenchSidebarVersions visibleWorktrees={filteredWorktrees} sortedIds={sortedIds} />
+  ) : undefined
   // Why: when active filters hide every row, the Clear Filters empty state must win over Project Group headers.
   if (rowModel.rows.length === 0 || filtersHideAllRows) {
     return (
       <SidebarWorktreeListEmptyState
         hasFilters={hasFilters}
         onClearFilters={clearFilters}
-        scrollPrefix={scrollPrefix}
+        children={versionContent}
       />
     )
   }
@@ -326,7 +326,7 @@ const WorktreeList = React.memo(function WorktreeList({
         onOpenWorktreeVisibility={handleOpenWorktreeVisibility}
       />
       <VirtualizedWorktreeViewport
-        scrollPrefix={scrollPrefix}
+        afterPinnedContent={versionContent}
         // Why: status headers move during wake (inactive -> active); key only on grouping mode so row identity survives.
         key={`group:${groupBy}:host:${filterState.visibleWorkspaceHostIds?.join(',') ?? 'all'}:lineage`}
         rows={rowModel.sectionRows}

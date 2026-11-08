@@ -11,6 +11,8 @@ import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-
 import type { ExecutionHostId } from '../../../../../../shared/execution-host'
 import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { getHostDisplayLabelOverrides } from '../../../../../../shared/host-setting-overrides'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { buildWorkbenchSectionRows } from './workbench-section-rows'
 import { buildRows } from '../grouping/build-rows'
 import type { ProjectGroupingModel } from '../grouping/project-grouping'
 import type { PinnedWorktreeDisplayPolicy, Row, WorktreeGroupBy } from '../grouping/row-types'
@@ -47,8 +49,6 @@ type SectionRowsArgs = {
   workspaceHostScope: AppState['workspaceHostScope']
   /** Host-qualified identities excluded from natural groups but allowed in Pinned. */
   pinnedOnlyIdentities?: ReadonlySet<string>
-  /** BW second column renders 已固定 itself (#475); native list must not repeat it. */
-  suppressPinnedSection?: boolean
 }
 
 function collectRenderedSidebarRowKeys(sectionRows: ReturnType<typeof addHostSectionRows>) {
@@ -186,8 +186,7 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
         hostLabelById,
         defaultHostId,
         args.pinnedDisplayPolicy,
-        args.pinnedOnlyIdentities,
-        args.suppressPinnedSection
+        args.pinnedOnlyIdentities
       ),
     [
       args.groupBy,
@@ -211,8 +210,7 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
       pendingCreations,
       hostLabelById,
       args.pinnedDisplayPolicy,
-      args.pinnedOnlyIdentities,
-      args.suppressPinnedSection
+      args.pinnedOnlyIdentities
     ]
   )
   const orderedHostOptions = useMemo(
@@ -241,18 +239,33 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
   )
   const nativeSectionRows = useMemo(
     () =>
-      addHostSectionRows({
+      buildWorkbenchSectionRows({
         rows,
-        hostOptions: orderedHostOptions,
-        workspaceHostScope: args.workspaceHostScope,
-        visibleWorkspaceHostIds: args.visibleWorkspaceHostIds,
-        defaultHostId,
-        collapsedHostKeys: effectiveCollapsedGroups,
-        forceCollapseHosts: hostDragActive,
-        // Why: projects/workspaces are the primary sidebar object; host sections are only an explicit host-filter view.
-        preferProjectGrouping: true
+        workbench: isWorkbenchShell(),
+        groupBy: args.groupBy,
+        repoIds: args.workbenchProject?.repoIds ?? [],
+        repoMap,
+        projectGrouping: args.projectGrouping,
+        projectGroups: args.visibleProjectGroupsForRows,
+        withHostSections: (naturalRows) =>
+          addHostSectionRows({
+            rows: naturalRows,
+            hostOptions: orderedHostOptions,
+            workspaceHostScope: args.workspaceHostScope,
+            visibleWorkspaceHostIds: args.visibleWorkspaceHostIds,
+            defaultHostId,
+            collapsedHostKeys: effectiveCollapsedGroups,
+            forceCollapseHosts: hostDragActive,
+            // Why: projects/workspaces are the primary sidebar object; host sections are only an explicit host-filter view.
+            preferProjectGrouping: true
+          })
       }),
     [
+      args.groupBy,
+      args.workbenchProject,
+      args.projectGrouping,
+      args.visibleProjectGroupsForRows,
+      repoMap,
       args.visibleWorkspaceHostIds,
       args.workspaceHostScope,
       defaultHostId,
@@ -262,7 +275,6 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
       rows
     ]
   )
-  // #475 A 定稿：第二列只服务当前项目，不再有「其他项目」分区；行模型即原生行。
   const sectionRows = nativeSectionRows
   const renderedSidebarRowKeys = useMemo(
     () => collectRenderedSidebarRowKeys(sectionRows),
