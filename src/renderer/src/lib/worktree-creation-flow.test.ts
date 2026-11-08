@@ -528,11 +528,9 @@ describe('staged background worktree creation', () => {
     })
 
     expect(started).toBe(true)
-    await vi.waitFor(() =>
-      expect(store.removePendingWorktreeCreation).toHaveBeenCalledWith('creation-1', {
-        cleanupVm: false
-      })
-    )
+    await vi.waitFor(() => {
+      expect(store.removePendingWorktreeCreation).toHaveBeenCalledWith('creation-1', { cleanupVm: false })
+    })
     expect(activateAndRevealWorktree).not.toHaveBeenCalled()
     expect(ensureWorktreeHasInitialTerminal).toHaveBeenCalledWith(
       store,
