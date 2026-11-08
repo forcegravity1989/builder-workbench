@@ -122,7 +122,7 @@ export function MilestoneTimeline(props: Props) {
     if (
       !props.rangeOnly ||
       !f.title.trim() ||
-      (freezeOrder &&
+      (editing &&
         !showActual &&
         (f.id === props.newFeature || props.pinnedFeatures.includes(f.id)))
     ) {
