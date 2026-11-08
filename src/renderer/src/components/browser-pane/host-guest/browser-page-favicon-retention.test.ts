@@ -23,6 +23,7 @@ function createHarness(startUrl: string) {
     }
   }
   const ref = <T>(value: T) => ({ current: value })
+  const invalidateBrowserAnnotationDocument = vi.fn()
   const navigation = createBrowserPageWebviewNavigationHandlers({
     webview,
     browserTabId: TAB_ID,
@@ -39,8 +40,7 @@ function createHarness(startUrl: string) {
     faviconUrlRef,
     setAddressBarValue: vi.fn(),
     annotationViewportBridgeTokenRef: ref('token'),
-    clearBrowserPageAnnotationsRef: ref(vi.fn()),
-    setPendingAnnotationPayload: vi.fn(),
+    invalidateBrowserAnnotationDocumentRef: ref(invalidateBrowserAnnotationDocument),
     setBrowserOverlayViewport: vi.fn()
   })
   const loading = createBrowserPageWebviewLoadingHandlers({
@@ -71,7 +71,14 @@ function createHarness(startUrl: string) {
     committedUrl.current = url
   }
 
-  return { faviconUrlRef, updates, navigation, navigateTo, committedUrl }
+  return {
+    faviconUrlRef,
+    updates,
+    navigation,
+    navigateTo,
+    committedUrl,
+    invalidateBrowserAnnotationDocument
+  }
 }
 
 describe('favicon retention across navigations', () => {
@@ -81,10 +88,12 @@ describe('favicon retention across navigations', () => {
     expect(harness.faviconUrlRef.current).toBe(GITHUB_ICON)
 
     // Chromium emits no page-favicon-updated here: the icon URL list is unchanged.
+    harness.navigateTo('https://github.com/alibaba/jvm-sandbox')
     harness.navigateTo('https://github.com/btraceio/btrace')
 
     expect(harness.faviconUrlRef.current).toBe(GITHUB_ICON)
     expect(harness.updates.some((update) => update.faviconUrl === null)).toBe(false)
+    expect(harness.invalidateBrowserAnnotationDocument).toHaveBeenCalledTimes(2)
   })
 
   it('drops the icon when the navigation leaves the origin', () => {
@@ -123,6 +132,7 @@ describe('favicon retention across navigations', () => {
     } as Electron.DidStartNavigationEvent)
 
     expect(harness.faviconUrlRef.current).toBe(GITHUB_ICON)
+    expect(harness.invalidateBrowserAnnotationDocument).not.toHaveBeenCalled()
   })
 
   it('reports loading without touching the icon on did-start-loading', () => {

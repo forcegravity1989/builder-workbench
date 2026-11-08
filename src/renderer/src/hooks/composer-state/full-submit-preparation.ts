@@ -31,15 +31,14 @@ import { useAppStore } from '@/store'
 import type { SetupDecision } from '../../../../shared/worktree/create-types'
 import { resolveComposerBranchNameOverrideForCreate } from '../composer-branch-selection'
 import { buildAgentStartupPlan } from '@/lib/tui-agent-startup'
-import {
-  resolveTuiAgentLaunchArgs,
-  resolveTuiAgentLaunchEnv
-} from '../../../../shared/tui-agent-launch-defaults'
 import { resolveInitialNativeChatSessionOptions } from '@/components/native-chat/native-chat-launch-session-options'
 import { isNativeChatTranscriptLocalReadable } from '@/lib/native-chat-transcript-readability'
 import type { AgentStartedTelemetry } from '@/lib/worktree-startup-payload'
 import { tuiAgentToAgentKind } from '@/lib/telemetry'
 import type { PendingSmartGitHubSubmitResolution } from './source-selection-decisions'
+import { prepareHostAgentStartupInputs } from '@/lib/host-agent-startup-inputs'
+import { getSettingsForRepoRuntimeOwner } from '@/lib/repo-runtime-owner'
+import { getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 
 export function useFullSubmitPreparation(input: FullSubmitPreparationInput) {
   const {
@@ -182,28 +181,42 @@ export function useFullSubmitPreparation(input: FullSubmitPreparationInput) {
         !effectiveBranchNameOverride &&
         !createDisplayName
 
-      const startupPlan = buildAgentStartupPlan({
+      const runtimeTarget = getActiveRuntimeTarget(
+        getSettingsForRepoRuntimeOwner(
+          { repos: selectedRepo ? [selectedRepo] : [], settings },
+          repoId
+        )
+      )
+      const hostStartup = await prepareHostAgentStartupInputs({
+        environmentId: runtimeTarget.kind === 'environment' ? runtimeTarget.environmentId : null,
         agent: tuiAgent,
-        prompt: submitStartupPrompt,
-        cmdOverrides: settings?.agentCmdOverrides ?? {},
-        agentArgs: resolveTuiAgentLaunchArgs(tuiAgent, settings?.agentDefaultArgs),
-        agentEnv: resolveTuiAgentLaunchEnv(tuiAgent, settings?.agentDefaultEnv),
-        sessionOptions: resolveInitialNativeChatSessionOptions(
-          {
-            experimentalNativeChat: settings?.experimentalNativeChat,
-            openAgentTabsInChatByDefault: settings?.openAgentTabsInChatByDefault,
-            nativeChatSessionOptions: settings?.nativeChatSessionOptions
-          },
-          {
-            agent: tuiAgent,
-            nativeChatTranscriptIsLocalReadable: isNativeChatTranscriptLocalReadable(
-              selectedRepo?.connectionId
-            )
-          }
-        ),
+        settings,
         platform: selectedRepoAgentLaunchPlatform,
         shell: selectedRepoStartupShell,
         isRemote: selectedRepoIsRemote
+      })
+      if (isSubmissionCancelled()) {
+        return null
+      }
+      const startupPlan = buildAgentStartupPlan({
+        agent: tuiAgent,
+        prompt: submitStartupPrompt,
+        sessionOptions: hostStartup.hostOwned
+          ? undefined
+          : resolveInitialNativeChatSessionOptions(
+              {
+                experimentalNativeChat: settings?.experimentalNativeChat,
+                openAgentTabsInChatByDefault: settings?.openAgentTabsInChatByDefault,
+                nativeChatSessionOptions: settings?.nativeChatSessionOptions
+              },
+              {
+                agent: tuiAgent,
+                nativeChatTranscriptIsLocalReadable: isNativeChatTranscriptLocalReadable(
+                  selectedRepo?.connectionId
+                )
+              }
+            ),
+        ...hostStartup.inputs
       })
 
       const shouldSeedInitialAgentStatus =
@@ -241,6 +254,7 @@ export function useFullSubmitPreparation(input: FullSubmitPreparationInput) {
         createDisplayName,
         pendingFirstAgentMessageRename,
         startupPlan,
+        agentLaunchOwner: hostStartup.owner,
         shouldSeedInitialAgentStatus,
         composerTelemetry,
         backendStartup

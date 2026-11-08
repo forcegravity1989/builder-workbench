@@ -119,18 +119,21 @@ describe('buildDashboardWorktreeLaunchOptions', () => {
         } as unknown as LaunchState['worktreesByRepo'],
         detectedAgentIds: ['claude'],
         remoteDetectedAgentIds: { 'ssh-1': ['grok'] },
-        runtimeDetectedAgentIds: { 'hub-1': ['aider'] }
+        runtimeDetectedAgentIds: { 'hub-1': ['aider', 'codex'] },
+        settings: { defaultTuiAgent: 'codex', disabledTuiAgents: ['aider'] } as LaunchState['settings']
       }),
       [
         card({ repoId: 'repo-ssh', worktreeId: 'ssh-worktree', agentType: 'grok' }),
         card({ repoId: 'repo-runtime', worktreeId: 'runtime-worktree', agentType: 'aider' })
-      ]
+      ],
+      [],
+      new Map([['hub-1', { defaultTuiAgent: 'aider', disabledTuiAgents: ['codex'], isAvailable: true }]])
     )
 
     expect(options).toEqual({ 'ssh-worktree': ['grok'], 'runtime-worktree': ['aider'] })
   })
 
-  it('resolves folder workspace detection through its project host', () => {
+  it('resolves a folder workspace own runtime host before its project connection', () => {
     const worktreeId = folderWorkspaceKey('folder-1')
     const options = buildDashboardWorktreeLaunchOptions(
       state({
@@ -138,15 +141,19 @@ describe('buildDashboardWorktreeLaunchOptions', () => {
           {
             id: 'folder-1',
             projectGroupId: 'group-1',
-            connectionId: 'ssh-folder'
+            connectionId: 'ssh-folder',
+            executionHostId: 'runtime:hub-folder'
           } as FolderWorkspace
         ],
         projectGroups: [{ id: 'group-1' } as ProjectGroup],
-        remoteDetectedAgentIds: { 'ssh-folder': ['goose'] }
+        remoteDetectedAgentIds: { 'ssh-folder': ['claude'] },
+        runtimeDetectedAgentIds: { 'hub-folder': ['goose'] }
       }),
-      [card({ repoId: 'folder-workspace:group-1', worktreeId })]
+      [card({ repoId: 'folder-workspace:group-1', worktreeId })],
+      [],
+      new Map([['hub-folder', { defaultTuiAgent: 'goose', disabledTuiAgents: ['codex'], isAvailable: true }]])
     )
 
-    expect(options).toEqual({ [worktreeId]: ['codex', 'goose'] })
+    expect(options).toEqual({ [worktreeId]: ['goose'] })
   })
 })

@@ -59,10 +59,30 @@ jobs:
           src/renderer/src/components/terminal/terminal-close-confirm-keyboard-vs-mouse.test.ts
           src/renderer/src/components/terminal-workspace-keydown.test.ts
           src/renderer/src/components/settings/AgentsPane.test.tsx
+          src/renderer/src/components/agent/AgentSettingsDialog.test.tsx
+          src/renderer/src/components/agent-session-continuation/AgentSessionContinuationDialog.test.tsx
           src/renderer/src/components/tab-bar/QuickLaunchButton.test.ts
+          src/renderer/src/components/tab-bar/TabBar.windows-shell-remote-runtime.test.ts
           src/renderer/src/hooks/legacy-worker-terminal-recovery-event.test.ts
           src/renderer/src/lib/launch-agent-
           src/renderer/src/lib/runtime-session-mirror-targets.test.ts
+          src/renderer/src/hooks/composer-state
+          src/renderer/src/hooks/useComposerState
+          src/renderer/src/components/NewWorkspaceComposerCard
+          src/renderer/src/components/sidebar/folder-workspace-composer-submit.test.ts
+          src/renderer/src/lib/fix-checks-agent-launch.test.ts
+          src/renderer/src/lib/worktree-creation-flow
+          src/renderer/src/lib/worktree-activation
+          src/renderer/src/lib/worktree-creation-agent-seeding.test.ts
+          src/renderer/src/lib/worktree-creation-structured-session.test.ts
+          src/renderer/src/lib/pending-worktree-creation.test.ts
+          src/renderer/src/components/dashboard/launch-dashboard-agent.test.ts
+          src/renderer/src/components/dashboard/dashboard-worktree-launch-options.test.ts
+          src/renderer/src/components/dashboard/build-dashboard-snapshot
+          src/renderer/src/components/dashboard/useLiveDashboardSnapshot.test.ts
+          src/renderer/src/components/dashboard/useDashboardPopoutBridge.test.tsx
+          src/renderer/src/store/slices/worktrees-remote-runtime-create.test.ts
+          src/renderer/src/store/slices/repos-project-groups.test.ts
 
   browser-annotations:
     name: Browser annotation contracts
@@ -78,6 +98,7 @@ jobs:
           pnpm exec vitest run --config config/vitest.config.ts
           src/shared/browser-annotation-viewport-bridge.test.ts
           src/renderer/src/components/browser-pane/annotate/browser-annotation-output.test.ts
+          src/renderer/src/components/browser-pane/annotate/useGrabMode.test.ts
           src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.test.tsx
           src/renderer/src/components/browser-pane/annotate/BrowserAnnotationSendMenuContent.test.tsx
           src/renderer/src/components/browser-pane/host-guest/browser-page-favicon-retention.test.ts

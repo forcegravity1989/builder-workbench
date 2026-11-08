@@ -5,7 +5,6 @@ import {
   getAgentDetectionTargetKeyForWorktree,
   parseAgentDetectionTargetKey
 } from '@/hooks/useAgentDetectionTarget'
-import { lastVerifiedRuntimeStatus } from '../../../../shared/runtime-host-status'
 import { getRuntimeEnvironmentRevision } from '../runtime-environment-revision'
 import {
   readHostAgentStartupSettings,
@@ -14,40 +13,60 @@ import {
   type HostAgentStartupSettings
 } from './agent-launch-settings-transport'
 
-type Preferences = Pick<HostAgentStartupSettings, 'defaultTuiAgent' | 'disabledTuiAgents'>
-const UNKNOWN: Preferences = { defaultTuiAgent: null, disabledTuiAgents: [] }
+type Preferences = Pick<HostAgentStartupSettings, 'defaultTuiAgent' | 'disabledTuiAgents'> & {
+  isAvailable: boolean
+}
+export type HostAgentLaunchPreferences = Preferences & {
+  isLoading: boolean
+  owner: AgentLaunchSettingsOwner | null
+}
+const UNKNOWN: Preferences = { defaultTuiAgent: null, disabledTuiAgents: [], isAvailable: false }
 
 export async function readHostAgentLaunchPreferences(
   owner: AgentLaunchSettingsOwner,
   signal?: AbortSignal
 ): Promise<Preferences> {
+  if (
+    owner.pairingRevision === undefined ||
+    !owner.runtimeId ||
+    useAppStore.getState().runtimeStatusByEnvironmentId.get(owner.environmentId)?.status?.runtimeId !==
+      owner.runtimeId
+  ) {
+    return UNKNOWN
+  }
   const settings = await readHostAgentStartupSettings(owner, signal).catch((error: unknown) => {
     if (error instanceof Error && error.name === 'AbortError') {
       throw error
     }
     return null
   })
-  const status = lastVerifiedRuntimeStatus(
-    useAppStore.getState().runtimeStatusByEnvironmentId.get(owner.environmentId)
-  )
+  const status = useAppStore.getState().runtimeStatusByEnvironmentId.get(owner.environmentId)?.status
   if (
     getRuntimeEnvironmentRevision(owner.environmentId) !== owner.pairingRevision ||
     (owner.runtimeId && status?.runtimeId !== owner.runtimeId)
   ) {
     throw new DOMException('Agent settings owner changed', 'AbortError')
   }
-  return settings ?? UNKNOWN
+  return settings
+    ? {
+        defaultTuiAgent: settings.defaultTuiAgent,
+        disabledTuiAgents: settings.disabledTuiAgents,
+        isAvailable: true
+      }
+    : UNKNOWN
 }
 
 export async function ensureAgentLaunchPreferences(worktreeId: string): Promise<Preferences> {
   const state = useAppStore.getState()
   const target = parseAgentDetectionTargetKey(getAgentDetectionTargetKeyForWorktree(state, worktreeId))
   if (target?.kind !== 'runtime') {
-    return state.settings ?? UNKNOWN
+    return {
+      defaultTuiAgent: state.settings?.defaultTuiAgent,
+      disabledTuiAgents: state.settings?.disabledTuiAgents,
+      isAvailable: target !== undefined && state.settings !== null
+    }
   }
-  const status = lastVerifiedRuntimeStatus(
-    state.runtimeStatusByEnvironmentId.get(target.environmentId)
-  )
+  const status = state.runtimeStatusByEnvironmentId.get(target.environmentId)?.status
   return readHostAgentLaunchPreferences({
     environmentId: target.environmentId,
     pairingRevision: getRuntimeEnvironmentRevision(target.environmentId),
@@ -57,10 +76,11 @@ export async function ensureAgentLaunchPreferences(worktreeId: string): Promise<
 
 export function useHostAgentLaunchPreferences(
   target: AgentDetectionTarget | undefined
-): Preferences & { isLoading: boolean } {
+): HostAgentLaunchPreferences {
   const environmentId = target?.kind === 'runtime' ? target.environmentId : null
   const localDefault = useAppStore((state) => state.settings?.defaultTuiAgent)
   const localDisabled = useAppStore((state) => state.settings?.disabledTuiAgents)
+  const localAvailable = useAppStore((state) => state.settings !== null)
   const revision = useAppStore((state) => {
     if (!environmentId) {
       return undefined
@@ -70,7 +90,7 @@ export function useHostAgentLaunchPreferences(
   })
   const runtimeId = useAppStore((state) =>
     environmentId
-      ? lastVerifiedRuntimeStatus(state.runtimeStatusByEnvironmentId.get(environmentId))?.runtimeId
+      ? state.runtimeStatusByEnvironmentId.get(environmentId)?.status?.runtimeId
       : undefined
   )
   const contact = useAppStore((state) =>
@@ -78,13 +98,14 @@ export function useHostAgentLaunchPreferences(
       ? state.runtimeStatusByEnvironmentId.get(environmentId)?.hostContactEpoch
       : undefined
   )
-  const key = JSON.stringify([environmentId, revision, runtimeId])
+  const ownerVerified = revision !== undefined && runtimeId !== undefined
+  const key = JSON.stringify([environmentId, revision, runtimeId, contact])
   const [snapshot, setSnapshot] = useState<{
     key: string
     preferences: Preferences
   } | null>(null)
   useEffect(() => {
-    if (!environmentId) {
+    if (!environmentId || !ownerVerified) {
       return
     }
     let controller = new AbortController()
@@ -118,15 +139,18 @@ export function useHostAgentLaunchPreferences(
       controller.abort()
       unsubscribe()
     }
-  }, [environmentId, revision, runtimeId, contact, key])
+  }, [environmentId, revision, runtimeId, ownerVerified, key])
   return environmentId
     ? {
-        ...(snapshot?.key === key ? snapshot.preferences : UNKNOWN),
-        isLoading: snapshot?.key !== key
+        ...(ownerVerified && snapshot?.key === key ? snapshot.preferences : UNKNOWN),
+        isLoading: ownerVerified && snapshot?.key !== key,
+        owner: { environmentId, pairingRevision: revision, runtimeId }
       }
     : {
         defaultTuiAgent: localDefault,
         disabledTuiAgents: localDisabled,
-        isLoading: target === undefined
+        isAvailable: target !== undefined && localAvailable,
+        isLoading: target === undefined,
+        owner: null
       }
 }

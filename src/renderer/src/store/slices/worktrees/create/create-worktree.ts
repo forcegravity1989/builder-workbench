@@ -14,6 +14,7 @@ import {
 } from '../../../../runtime/runtime-rpc-client'
 import { WORKTREE_LINKED_WORK_ITEM_CONTEXT_RUNTIME_CAPABILITY } from '../../../../../../shared/protocol-version'
 import { showLocalBaseRefUpdateSuggestionToast } from '@/components/sidebar/local-base-ref-suggestion-toast'
+import { assertHostAgentStartupOwner } from '@/lib/host-agent-startup-inputs'
 import { requestWorktreeBaseFallbackNotice } from '@/components/worktree-base-fallback-notice'
 import { showLocalBaseRefRefreshToast } from './local-base-ref-refresh-toast'
 import { settingsForRepoOwner } from '../listing/worktree-owner-settings'
@@ -44,6 +45,8 @@ async function runCreateAttempt(
   attempt: WorktreeCreateAttempt,
   target: RuntimeTarget
 ): Promise<CreateAttemptOutcome> {
+  const owner = request.options?.agentLaunchOwner
+  assertHostAgentStartupOwner(owner, target.kind === 'environment' ? target.environmentId : '')
   const provisionedRoot = request.options?.provisionedRoot
   const create = async (
     parentWorkspace: WorktreeCreateAttempt['parentWorkspace']
@@ -62,7 +65,15 @@ async function runCreateAttempt(
             target,
             'worktree.create',
             buildRuntimeWorktreeCreateParams(request, { ...attempt, parentWorkspace }),
-            { timeoutMs: 10 * 60_000 }
+            {
+              timeoutMs: 10 * 60_000,
+              ...(owner
+                ? {
+                    expectedEnvironmentPairingRevision: owner.pairingRevision,
+                    expectedEnvironmentRuntimeId: owner.runtimeId
+                  }
+                : {})
+            }
           )
   try {
     return { result: await create(attempt.parentWorkspace), droppedParent: false }

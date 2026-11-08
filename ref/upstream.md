@@ -31,7 +31,7 @@ BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY�
 
 共享主机按上述固定 SHA 定向采用原生网络配对、同主机重新配对、连接与握手时限、唤醒探测、订阅取消与恢复、终端关闭意图、仓库目录清理及远端 Agent 启动配置。稳定版发布身份不等于功能已去除实验标记：上游 Remote Orca Servers 仍标为 Beta。文件继续放在 BW 已采用的原生目录，不随新版整仓目录重排。
 
-远端 Agent 沿宿主的 `settings.get` 和 `settings.getAgentLaunch/mutateAgentLaunch` 基础协议读取/修改命令、参数、环境、默认 Agent、启用与权限设置，只公布 `settings.agent-launch.v1`；未迁移 typed choices、新 native-chat 编译器和 create-options。旧宿主启动走上游 legacy 分支；读取不到宿主 recipe 时保留原兼容启动，不能声称该降级路径也保证使用远端默认值。BW 草稿入口保留 `draft` 和 `hostTabId` 回执。
+远端 Agent 沿宿主的 `settings.get` 和 `settings.getAgentLaunch/mutateAgentLaunch` 基础协议读取/修改命令、参数、环境、默认 Agent、启用与权限设置，只公布 `settings.agent-launch.v1`；未迁移 typed choices、新 native-chat 编译器和 create-options。现有快捷键、标签菜单、Dashboard、工作区创建与 BW 草稿入口共用宿主偏好和身份约束；新工作区准备宿主命令时读取失败则停止，已准备的命令随原配对版本和宿主实例约束发送。已有标签启动的旧宿主 legacy 分支保留原兼容启动，读取不到宿主 recipe 的降级仍不能保证使用远端默认值。BW 草稿入口保留 `draft` 和 `hostTabId` 回执。
 
 managed server 自动部署、SSH → managed server、WSL 生命周期、process-host 重构、Mobile 产品及无关 UI 不随本轮迁入。现有 SSH/CLI/结构化会话路由和 BW 材料执行器保持其已有边界；原生来源、必要接口适配与 BW 自有修正分别在 PR 中说明。代码采用不等于运行验收，运行验证与未验边界见交付 PR。
 
@@ -91,7 +91,7 @@ git merge orca-upstream/main
 
 只记录会影响 Orca 合并取舍的契约，不展开全部文件清单：
 
-- 网页批注继承 Orca v1.4.250 的相关模块，保留本基线必要适配与内层滚动标记修复；来源、取舍和验证见 [PR #579](https://github.com/forcegravity1989/builder-workbench/pull/579)。
+- 网页批注继承 Orca v1.4.250 的相关模块，保留本基线必要适配与内层滚动标记修复；来源、取舍和验证见 [PR #579](https://github.com/forcegravity1989/builder-workbench/pull/579)。共享主机恢复复核另按上述 v1.4.251 补入导航取消未完成截图及旧快照回写的约束，仍沿用本仓文档失效时清除批注的行为；不因此迁入批注留存改造或远程实时批注。
 - `automation.runNow` 的可选 `oneShotPrompt`、capability 门控和 renderer/headless 两条派发语义；一次性上下文不写回保存的自动化提示。
 - 自动化编辑器的显式 `target/draft` 请求契约；BW 预填入口依赖该原生能力。
 - 任务详情的 source context、return-to-previous-view 和 worktree history replay；BW 不另建任务详情和历史系统。`openTaskPage({ preselectedRepoId })` 的预选优先级（显式预选 > 持久化 defaultRepoSelection > 全部项目）同为稳定契约：BW 侧栏任务入口靠它在 BW 壳内默认收窄到当前项目，页内筛选仍可改。

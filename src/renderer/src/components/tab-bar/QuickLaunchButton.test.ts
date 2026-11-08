@@ -123,8 +123,10 @@ beforeEach(() => {
   openSettingsTargetMock.mockReset()
   storeState.settings.defaultTuiAgent = 'codex'
   storeState.settings.disabledTuiAgents = []
-  storeState.worktreesByRepo = {}
-  storeState.repos = []
+  storeState.worktreesByRepo = {
+    'repo-1': [{ id: 'worktree-1', repoId: 'repo-1', hostId: 'local' }]
+  }
+  storeState.repos = [{ id: 'repo-1' }]
   storeState.runtimeEnvironments = []
   storeState.runtimeStatusByEnvironmentId = new Map()
   storeState.openSettingsPage = openSettingsPageMock

@@ -10,16 +10,13 @@ export function useComposerExternalSync(target: ComposerTargetState): ComposerEx
     commitHookCheckIfCurrent: target.providerRuntimeSync.commitHookCheckIfCurrent,
     connectionId: target.workspaceIdentityState.connectionId,
     createGateMode: target.composerTargetStore.createGateMode,
-    disabledTuiAgents: target.workspaceIdentityState.disabledTuiAgents,
     enableIssueAutomation: target.composerTargetStore.enableIssueAutomation,
     ensureDetectedAgents: target.workspaceIdentityState.ensureDetectedAgents,
     ensureRemoteDetectedAgents: target.workspaceIdentityState.ensureRemoteDetectedAgents,
     ensureRuntimeDetectedAgents: target.workspaceIdentityState.ensureRuntimeDetectedAgents,
-    fallbackDefaultAgent: target.workspaceIdentityState.fallbackDefaultAgent,
     folderTargetConnectionId: target.runtimeTargetSelection.folderTargetConnectionId,
     isRemote: target.workspaceIdentityState.isRemote,
     loadHookCheckForRepo: target.providerRuntimeSync.loadHookCheckForRepo,
-    newWorkspaceDraft: target.composerTargetStore.newWorkspaceDraft,
     repoId: target.initialTargetState.repoId,
     repoIdRef: target.runtimeTargetSelection.repoIdRef,
     runtimeEnvironmentId: target.workspaceIdentityState.runtimeEnvironmentId,
@@ -29,10 +26,7 @@ export function useComposerExternalSync(target: ComposerTargetState): ComposerEx
     selectedRepoIsGit: target.runtimeTargetSelection.selectedRepoIsGit,
     selectedRepoSettingsRef: target.asyncComposerState.selectedRepoSettingsRef,
     selectedRepoSshStatus: target.runtimeTargetSelection.selectedRepoSshStatus,
-    setLoadedIssueCommand: target.asyncComposerState.setLoadedIssueCommand,
-    setTuiAgent: target.workspaceIdentityState.setTuiAgent,
-    settings: target.composerTargetStore.settings,
-    tuiAgent: target.workspaceIdentityState.tuiAgent
+    setLoadedIssueCommand: target.asyncComposerState.setLoadedIssueCommand
   })
   const linkedItemLookupEffects = useLinkedItemLookupEffects({
     baseBranch: target.workspaceIdentityState.baseBranch,

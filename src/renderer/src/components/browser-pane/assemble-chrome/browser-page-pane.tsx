@@ -223,7 +223,7 @@ export function BrowserPagePane({
     onUpdatePageState,
     onSetUrl,
     setAddressBarValue: nav.setAddressBarValue,
-    setPendingAnnotationPayload: grabAnnotations.setPendingAnnotationPayload,
+    cancelPendingBrowserCapture: grabAnnotations.cancelPendingBrowserCapture,
     setBrowserOverlayViewport,
     setFindOpen,
     focusAddressBarNow,

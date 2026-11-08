@@ -109,7 +109,7 @@ describe('createWebRuntimeSessionTerminal', () => {
         worktreeId: WORKTREE_ID,
         environmentId: ENVIRONMENT_ID
       })
-    ).resolves.toEqual({ status: 'created' })
+    ).resolves.toEqual({ status: 'created', hostTabId: 'host-tab-1' })
 
     expect(selectedHosts).toEqual([RUNTIME_EXECUTION_HOST_ID])
   })
@@ -174,7 +174,7 @@ describe('createWebRuntimeSessionTerminal', () => {
             : {}),
           activate
         })
-      ).resolves.toEqual({ status: 'created' })
+      ).resolves.toEqual({ status: 'created', hostTabId })
 
       const authorityMethod =
         sessionKind === 'resume' ? 'terminal.ensureAgentSession' : 'terminal.createAgentSession'
@@ -255,7 +255,7 @@ describe('createWebRuntimeSessionTerminal', () => {
           command: "kimi '--session' 'session_431324d7'",
           providerSession: { key: 'session_id', id: 'session_431324d7' }
         })
-      ).resolves.toEqual({ status: 'created' })
+      ).resolves.toEqual({ status: 'created', hostTabId: 'host-tab-kimi' })
 
       const methods = runtimeCall.mock.calls.map(([request]) => request.method)
       expect(methods.includes('terminal.ensureAgentSession')).toBe(authority)
@@ -351,7 +351,7 @@ describe('createWebRuntimeSessionTerminal', () => {
         viewMode: 'chat',
         activate: true
       })
-    ).resolves.toEqual({ status: 'created' })
+    ).resolves.toEqual({ status: 'created', hostTabId: 'host-tab-2' })
 
     expect(runtimeCall).toHaveBeenNthCalledWith(2, {
       selector: ENVIRONMENT_ID,
@@ -448,7 +448,7 @@ describe('createWebRuntimeSessionTerminal', () => {
           launchAgent: 'codex',
           activate: true
         })
-      ).resolves.toEqual({ status: 'created' })
+      ).resolves.toEqual({ status: 'created', hostTabId: 'host-tab-created' })
 
       expect(
         runtimeCall.mock.calls.filter(
@@ -507,7 +507,7 @@ describe('createWebRuntimeSessionTerminal', () => {
         launchAgent: 'codex',
         targetGroupId: 'group-left'
       })
-    ).resolves.toEqual({ status: 'created' })
+    ).resolves.toEqual({ status: 'created', hostTabId: 'host-tab-replayed' })
 
     expect(operationIds).toHaveLength(2)
     expect(operationIds[0]).toBe(operationIds[1])

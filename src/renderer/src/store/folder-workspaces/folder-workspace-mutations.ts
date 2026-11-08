@@ -16,6 +16,7 @@ import {
 } from '@/lib/folder-workspace-runtime-owner'
 import { FolderWorkspaceUpdateCoordinator } from '../slices/folder-workspace-update-coordinator'
 import type { FolderWorkspaceUpdates, RepoSlice } from '../repos/repo-state'
+import { assertHostAgentStartupOwner } from '@/lib/host-agent-startup-inputs'
 import { getRuntimeTargetHostId } from '../runtime-target-host'
 import {
   folderWorkspaceUpdateInvalidatesPathStatus,
@@ -64,6 +65,11 @@ export function createFolderWorkspaceMutationActions(
         const target = getActiveRuntimeTarget(
           getFolderWorkspacePathStatusRouteSettings(options, get().settings)
         )
+        const owner = options?.agentLaunchOwner
+        assertHostAgentStartupOwner(
+          owner,
+          target.kind === 'environment' ? target.environmentId : ''
+        )
         if (
           target.kind === 'environment' &&
           (args.linkedTask?.provider === 'jira' ||
@@ -83,7 +89,15 @@ export function createFolderWorkspaceMutationActions(
                   target,
                   'folderWorkspace.create',
                   args,
-                  { timeoutMs: 15_000 }
+                  {
+                    timeoutMs: 15_000,
+                    ...(owner
+                      ? {
+                          expectedEnvironmentPairingRevision: owner.pairingRevision,
+                          expectedEnvironmentRuntimeId: owner.runtimeId
+                        }
+                      : {})
+                  }
                 )
               ).folderWorkspace
         const ownedWorkspace = folderWorkspaceWithFetchedOwner(

@@ -1,4 +1,3 @@
-import type { BrowserGrabPayload } from '../../../../../shared/browser-grab-types'
 import type { Dispatch, MutableRefObject, RefObject, SetStateAction } from 'react'
 import { BROWSER_ANNOTATION_VIEWPORT_MESSAGE_PREFIX } from '../../../../../shared/browser-annotation-viewport-bridge'
 import {
@@ -41,8 +40,7 @@ export type BrowserPageWebviewNavigationHandlersArgs = {
   faviconUrlRef: MutableRefObject<string | null>
   setAddressBarValue: Dispatch<SetStateAction<string>>
   annotationViewportBridgeTokenRef: MutableRefObject<string>
-  clearBrowserPageAnnotationsRef: MutableRefObject<(pageId: string) => void>
-  setPendingAnnotationPayload: Dispatch<SetStateAction<BrowserGrabPayload | null>>
+  invalidateBrowserAnnotationDocumentRef: MutableRefObject<() => void>
   setBrowserOverlayViewport: Dispatch<SetStateAction<BrowserOverlayViewport>>
 }
 
@@ -71,8 +69,7 @@ export function createBrowserPageWebviewNavigationHandlers({
   setAddressBarValue,
   annotationViewportBridgeTokenRef,
   setBrowserOverlayViewport,
-  clearBrowserPageAnnotationsRef,
-  setPendingAnnotationPayload
+  invalidateBrowserAnnotationDocumentRef
 }: BrowserPageWebviewNavigationHandlersArgs): BrowserPageWebviewNavigationHandlers {
   const clearFaviconIfOriginChanges = (
     event: Electron.DidStartNavigationEvent | Electron.DidRedirectNavigationEvent
@@ -101,8 +98,7 @@ export function createBrowserPageWebviewNavigationHandlers({
       return
     }
     // Main-frame document starts include reloads; fragment-only updates keep annotations.
-    clearBrowserPageAnnotationsRef.current(browserTabId)
-    setPendingAnnotationPayload(null)
+    invalidateBrowserAnnotationDocumentRef.current()
     setBrowserOverlayViewport({ scrollX: 0, scrollY: 0, version: 0 })
     const pendingRecoveryNavigation = recoveryNavigationValidationRef.current
     const browserStartedUrl = redactKagiSessionToken(event.url)
@@ -136,7 +132,7 @@ export function createBrowserPageWebviewNavigationHandlers({
     const normalizedBrowserModelUrl =
       normalizeBrowserNavigationUrl(browserModelUrl) ?? browserModelUrl
     if (lastKnownWebviewUrlRef.current?.split('#')[0] !== normalizedBrowserModelUrl.split('#')[0]) {
-      setPendingAnnotationPayload(null)
+      invalidateBrowserAnnotationDocumentRef.current()
     }
     lastKnownWebviewUrlRef.current = normalizedBrowserModelUrl
     rememberLiveBrowserUrl(browserTabId, browserModelUrl)

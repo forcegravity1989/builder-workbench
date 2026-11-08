@@ -4,6 +4,7 @@ import type { ComposerModel } from './composer-model'
 export type DraftTargetSyncInput = Pick<
   ComposerModel,
   | 'agentPrompt'
+  | 'agentLaunchPreferences'
   | 'attachmentPaths'
   | 'baseBranch'
   | 'compareBaseRef'
@@ -34,6 +35,7 @@ export type DraftTargetSyncInput = Pick<
 export function useDraftTargetSync(state: DraftTargetSyncInput): void {
   const {
     agentPrompt,
+    agentLaunchPreferences,
     attachmentPaths,
     baseBranch,
     compareBaseRef,
@@ -63,7 +65,7 @@ export function useDraftTargetSync(state: DraftTargetSyncInput): void {
 
   // Persist draft whenever relevant fields change (full-page only).
   useEffect(() => {
-    if (!persistDraft) {
+    if (!persistDraft || !agentLaunchPreferences.isAvailable) {
       return
     }
     setNewWorkspaceDraft({
@@ -103,6 +105,7 @@ export function useDraftTargetSync(state: DraftTargetSyncInput): void {
     })
   }, [
     persistDraft,
+    agentLaunchPreferences.isAvailable,
     agentPrompt,
     attachmentPaths,
     baseBranch,

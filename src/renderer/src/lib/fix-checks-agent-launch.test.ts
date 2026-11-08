@@ -76,6 +76,16 @@ vi.mock('sonner', () => ({
 vi.mock('@/lib/connection-context', () => ({
   getConnectionId: mocks.getConnectionId
 }))
+vi.mock('@/runtime/agent-launch-settings/use-host-agent-launch-preferences', () => ({
+  ensureAgentLaunchPreferences: vi.fn(async () => ({ ...mocks.store.settings, isAvailable: true })),
+  readHostAgentLaunchPreferences: vi.fn()
+}))
+vi.mock('@/lib/worktree-runtime-owner', () => ({
+  getRuntimeEnvironmentIdForWorktree: () => null
+}))
+vi.mock('@/hooks/useAgentDetectionTarget', () => ({
+  getAgentDetectionTargetKeyForWorktree: () => 'local'
+}))
 
 vi.mock('@/lib/focus-terminal-tab-surface', () => ({
   focusTerminalTabSurface: mocks.focusTerminalTabSurface

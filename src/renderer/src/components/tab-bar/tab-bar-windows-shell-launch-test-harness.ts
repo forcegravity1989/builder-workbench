@@ -78,6 +78,11 @@ const useAppStoreMock = vi.fn(
       detectedAgentIds: string[] | null
       localDetectedAgentIdsByContext: Record<string, string[] | null>
       remoteDetectedAgentIds: Record<string, string[]>
+      runtimeEnvironments: []
+      runtimeStatusByEnvironmentId: Map<string, never>
+      runtimeDetectedAgentIds: Record<string, string[]>
+      isDetectingRuntimeAgents: Record<string, boolean>
+      isRefreshingRuntimeAgents: Record<string, boolean>
       isDetectingAgents: boolean
       isDetectingLocalAgentsByContext: Record<string, boolean>
       isRefreshingLocalAgentsByContext: Record<string, boolean>
@@ -107,6 +112,11 @@ const useAppStoreMock = vi.fn(
       detectedAgentIds: appStoreSnapshot.detectedAgentIds,
       localDetectedAgentIdsByContext: appStoreSnapshot.localDetectedAgentIdsByContext,
       remoteDetectedAgentIds: appStoreSnapshot.remoteDetectedAgentIds,
+      runtimeEnvironments: [],
+      runtimeStatusByEnvironmentId: new Map(),
+      runtimeDetectedAgentIds: {},
+      isDetectingRuntimeAgents: {},
+      isRefreshingRuntimeAgents: {},
       isDetectingAgents: appStoreSnapshot.isDetectingAgents,
       isDetectingLocalAgentsByContext: appStoreSnapshot.isDetectingLocalAgentsByContext,
       isRefreshingLocalAgentsByContext: appStoreSnapshot.isRefreshingLocalAgentsByContext,
@@ -139,6 +149,11 @@ useAppStoreExport.getState = vi.fn(() => ({
   detectedAgentIds: appStoreSnapshot.detectedAgentIds,
   localDetectedAgentIdsByContext: appStoreSnapshot.localDetectedAgentIdsByContext,
   remoteDetectedAgentIds: appStoreSnapshot.remoteDetectedAgentIds,
+  runtimeEnvironments: [],
+  runtimeStatusByEnvironmentId: new Map(),
+  runtimeDetectedAgentIds: {},
+  isDetectingRuntimeAgents: {},
+  isRefreshingRuntimeAgents: {},
   isDetectingAgents: appStoreSnapshot.isDetectingAgents,
   isDetectingLocalAgentsByContext: appStoreSnapshot.isDetectingLocalAgentsByContext,
   isRefreshingLocalAgentsByContext: appStoreSnapshot.isRefreshingLocalAgentsByContext,

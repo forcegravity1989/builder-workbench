@@ -138,8 +138,17 @@ describe('submitFolderWorkspaceCreate', () => {
       quickAgent: 'codex',
       autoRenameBranchFromWork: true,
       agentCmdOverrides: {},
-      agentArgs: '--model gpt-5.4',
-      agentEnv: { ORCA_AGENT_PROFILE: 'review' },
+      hostStartup: {
+        owner: { environmentId: 'env-1' },
+        hostOwned: true,
+        inputs: {
+          cmdOverrides: { codex: '/host/codex' },
+          agentArgs: '--model gpt-5.4',
+          agentEnv: { ORCA_AGENT_PROFILE: 'review' },
+          platform: 'linux',
+          isRemote: true
+        }
+      },
       launchSource: 'new_workspace_composer',
       runtimeEnvironmentId: 'env-1',
       createFolderWorkspace,
@@ -159,7 +168,7 @@ describe('submitFolderWorkspaceCreate', () => {
       expect.objectContaining({
         runtimeEnvironmentId: 'env-1',
         startup: expect.objectContaining({
-          command: expect.stringContaining('codex'),
+          command: expect.stringContaining('/host/codex'),
           env: { ORCA_AGENT_PROFILE: 'review' },
           telemetry: expect.objectContaining({
             launch_source: 'new_workspace_composer'

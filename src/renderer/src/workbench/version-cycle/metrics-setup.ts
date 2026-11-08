@@ -58,7 +58,7 @@ export function useMetricsSetupAgent(worktreeId: string | null): TuiAgent | null
   const detectionTarget = useAgentDetectionTargetForWorktree(worktreeId)
   const { detectedIds } = useDetectedAgents(detectionTarget)
   const preferences = useHostAgentLaunchPreferences(detectionTarget)
-  if (preferences.isLoading) {
+  if (!preferences.isAvailable) {
     return null
   }
   const defaultAgentSetting = preferences.defaultTuiAgent

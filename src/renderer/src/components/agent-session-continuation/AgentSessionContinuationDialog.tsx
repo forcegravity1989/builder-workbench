@@ -61,15 +61,17 @@ export function AgentSessionContinuationDialog({
 
   const agents = useMemo(
     () =>
-      getAgentCatalog().filter(
-        (agent) => detectedAgents.includes(agent.id) && isTuiAgentEnabled(agent.id, disabledAgents)
-      ),
-    [detectedAgents, disabledAgents]
+      settings.isAvailable
+        ? getAgentCatalog().filter(
+            (agent) => detectedAgents.includes(agent.id) && isTuiAgentEnabled(agent.id, disabledAgents)
+          )
+        : [],
+    [detectedAgents, disabledAgents, settings.isAvailable]
   )
   const hasFullContext = request ? hasFullAgentSessionContext(request.source) : false
 
   useEffect(() => {
-    if (!open || !request) {
+    if (!open || !request || !settings.isAvailable) {
       return
     }
     let cancelled = false
@@ -110,7 +112,7 @@ export function AgentSessionContinuationDialog({
     return () => {
       cancelled = true
     }
-  }, [disabledAgents, open, request, settings?.defaultTuiAgent])
+  }, [disabledAgents, open, request, settings.defaultTuiAgent, settings.isAvailable])
 
   useEffect(() => {
     if (!starting) {
@@ -123,7 +125,7 @@ export function AgentSessionContinuationDialog({
   }, [starting])
 
   const handleStart = async (): Promise<void> => {
-    if (!request || !selectedAgent || starting) {
+    if (!request || !selectedAgent || starting || !settings.isAvailable) {
       return
     }
     const prompt = buildAgentSessionContinuationPrompt(request.source, contextMode)
@@ -150,7 +152,8 @@ export function AgentSessionContinuationDialog({
   const sourceAgentLabel = request?.source.sourceAgent
     ? getAgentLabel(request.source.sourceAgent)
     : null
-  const startDisabled = detecting || starting || agents.length === 0 || !selectedAgent
+  const startDisabled =
+    !settings.isAvailable || detecting || starting || agents.length === 0 || !selectedAgent
 
   return (
     <Dialog
@@ -211,7 +214,14 @@ export function AgentSessionContinuationDialog({
               )}
               triggerClassName="min-w-0 w-full"
             />
-            {detecting ? (
+            {!settings.isLoading && !settings.isAvailable ? (
+              <p className="text-[11px] text-destructive">
+                {translate(
+                  'settings.agents.readFailed',
+                  'Couldn’t read agent settings. Check the host connection and try again.'
+                )}
+              </p>
+            ) : detecting || settings.isLoading ? (
               <p className="text-[11px] text-muted-foreground">
                 {translate(
                   'components.agentSessionContinuation.detectingAgents',
