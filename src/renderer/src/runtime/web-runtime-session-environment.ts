@@ -11,7 +11,8 @@ export function isWebRuntimeSessionActive(
 
 export function captureRuntimeEnvironmentCall(
   environmentId: string,
-  expectedEnvironmentPairingRevision = getRuntimeEnvironmentRevision(environmentId)
+  expectedEnvironmentPairingRevision = getRuntimeEnvironmentRevision(environmentId),
+  expectedEnvironmentRuntimeId?: string
 ): (args: {
   method: string
   params?: unknown
@@ -21,7 +22,8 @@ export function captureRuntimeEnvironmentCall(
     window.api.runtimeEnvironments.call({
       selector: environmentId,
       ...args,
-      expectedEnvironmentPairingRevision
+      expectedEnvironmentPairingRevision,
+      ...(expectedEnvironmentRuntimeId ? { expectedEnvironmentRuntimeId } : {})
     })
 }
 

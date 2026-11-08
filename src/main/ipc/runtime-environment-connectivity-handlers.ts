@@ -1,3 +1,6 @@
+import { registerRuntimeEnvironmentRepairHandler } from './runtime-environment-repair-handler'
+import { publishVerifiedPairing } from './runtime-environment-verified-pairing-publish'
+import { publicRuntimeEnvironmentWithHostKey } from './runtime-environment-host-key'
 import { ipcMain } from 'electron'
 import {
   addEnvironmentFromPairingCode,
@@ -62,11 +65,12 @@ export function registerRuntimeEnvironmentConnectivityHandlers({
   getUserDataPath,
   invalidateTransport
 }: ConnectivityHandlerOptions): void {
+  registerRuntimeEnvironmentRepairHandler({ getUserDataPath, invalidateTransport })
   ipcMain.handle('runtimeEnvironments:getStatusSnapshots', () =>
     getRuntimeEnvironmentStatusSnapshots()
   )
   ipcMain.handle('runtimeEnvironments:list', () =>
-    listEnvironments(getUserDataPath()).map(redactRuntimeEnvironment)
+    listEnvironments(getUserDataPath()).map(publicRuntimeEnvironmentWithHostKey)
   )
   ipcMain.handle(
     'runtimeEnvironments:addFromPairingCode',
@@ -84,13 +88,11 @@ export function registerRuntimeEnvironmentConnectivityHandlers({
     async (_event, args: { name: string; pairingCode: string; allowLoopback?: boolean }) => {
       const result = await verifyAndAddRuntimeEnvironmentFromPairingCode(getUserDataPath(), args)
       if (result.ok) {
-        clearRuntimeEnvironmentManualDisconnect(result.environment.id)
-        getRuntimeEnvironmentStatusOwner(getUserDataPath(), result.environment.id).acceptVerified({
-          id: 'status.get',
-          ok: true,
-          result: result.runtimeStatus,
-          _meta: { runtimeId: result.runtimeStatus.runtimeId }
-        })
+        await publishVerifiedPairing(
+          getUserDataPath(),
+          result,
+          result.updatedExisting ? { invalidateTransport } : null
+        )
       }
       return result
     }

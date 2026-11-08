@@ -2,6 +2,8 @@ import { useCallback, useState } from 'react'
 import { useAppStore } from '@/store'
 import { useAgentDetectionTargetForWorktree } from '@/hooks/useAgentDetectionTarget'
 import { useDetectedAgents } from '@/hooks/useDetectedAgents'
+import { useHostAgentLaunchPreferences } from '@/runtime/agent-launch-settings/use-host-agent-launch-preferences'
+import { filterEnabledTuiAgents, isTuiAgentEnabled } from '../../../../shared/tui-agent-selection'
 import { openWorkflowDraft } from '../open-workflow-draft'
 import { activateWebRuntimeSessionWorktree } from '@/runtime/web-runtime-worktree-activation'
 import type { TuiAgent } from '../../../../shared/tui-agent'
@@ -49,16 +51,26 @@ export async function prepareMetricsSession(args: {
 
 /**
  * Agent for metric setup on screens without a session-tool picker: the same
- * sources and precedence the cycle shell falls back to (configured default first,
- * then the first agent detected on the owning host).
+ * host preferences and precedence the cycle shell falls back to (enabled default first,
+ * then the first enabled agent detected on the owning host).
  */
 export function useMetricsSetupAgent(worktreeId: string | null): TuiAgent | null {
   const detectionTarget = useAgentDetectionTargetForWorktree(worktreeId)
   const { detectedIds } = useDetectedAgents(detectionTarget)
-  const defaultAgentSetting = useAppStore((s) => s.settings?.defaultTuiAgent)
+  const preferences = useHostAgentLaunchPreferences(detectionTarget)
+  if (!preferences.isAvailable) {
+    return null
+  }
+  const defaultAgentSetting = preferences.defaultTuiAgent
   const defaultAgent =
-    defaultAgentSetting && defaultAgentSetting !== 'blank' ? defaultAgentSetting : null
-  return defaultAgent ?? detectedIds?.[0] ?? null
+    defaultAgentSetting &&
+    defaultAgentSetting !== 'blank' &&
+    isTuiAgentEnabled(defaultAgentSetting, preferences.disabledTuiAgents)
+      ? defaultAgentSetting
+      : null
+  return (
+    defaultAgent ?? filterEnabledTuiAgents(detectedIds ?? [], preferences.disabledTuiAgents)[0] ?? null
+  )
 }
 
 export type MetricsSetupEntry = {

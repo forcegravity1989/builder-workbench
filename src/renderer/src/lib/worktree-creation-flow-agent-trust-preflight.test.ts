@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const FLOW_SOURCE = readFileSync(join(__dirname, 'worktree-creation-flow-execute.ts'), 'utf8')
+const STARTUP_SOURCE = readFileSync(join(__dirname, 'worktree-creation-flow-startup.ts'), 'utf8')
 const PREFLIGHT_SOURCE = readFileSync(join(__dirname, 'agent-trust-preflight.ts'), 'utf8')
 const STRUCTURED_SOURCE = readFileSync(
   join(__dirname, 'worktree-creation-structured-session.ts'),
@@ -21,11 +22,14 @@ describe('worktree creation flow agent trust preflight', () => {
   it('forwards the repo SSH connection id when pre-marking agent trust', () => {
     const preflight = PREFLIGHT_SOURCE
     const createFlow = sourceBetween(
-      FLOW_SOURCE,
+      STARTUP_SOURCE,
       'const backendSpawned = result.startupTerminal?.spawned === true',
-      '// `createWorktree` already inserted the real worktree row'
+      'return stopWorktreeCreationForChangedHost'
     )
 
+    expect(FLOW_SOURCE).toContain(
+      'await prepareWorktreeCreationStartup(creationId, preparedRequest, result)'
+    )
     expect(preflight).toContain('connectionId?: string | null')
     expect(preflight).toContain('...(args.connectionId ? { connectionId: args.connectionId } : {})')
     expect(createFlow).toContain('repoConnectionId')

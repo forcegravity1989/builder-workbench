@@ -11,13 +11,21 @@ import { mergeByIdentity } from '../catalog-identity'
 export function mergeFetchedReposForHost(
   previous: readonly Repo[],
   fetched: readonly Repo[],
-  hostId: string
+  hostId: string,
+  reposAtRequest: readonly Repo[] = previous
 ): readonly Repo[] {
   const fetchedWithProjectGroups = applyInheritedProjectGroups(previous, fetched)
   const fetchedIdentities = new Set(fetchedWithProjectGroups.map(getRepoHostIdentity))
+  const requestedIdentities = new Set(reposAtRequest.map(getRepoHostIdentity))
   const preserved = previous.filter((repo) => {
     const existingHostId = getRepoExecutionHostId(repo)
-    return existingHostId !== hostId || fetchedIdentities.has(getRepoHostIdentity(repo))
+    // A catalog answer cannot remove a registration added after its request snapshot.
+    const identity = getRepoHostIdentity(repo)
+    return (
+      existingHostId !== hostId ||
+      fetchedIdentities.has(identity) ||
+      !requestedIdentities.has(identity)
+    )
   })
   return reconcileFetchedRepos(
     previous,

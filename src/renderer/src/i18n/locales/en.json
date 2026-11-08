@@ -184,6 +184,24 @@
         "heading": "Remote browsing",
         "headingDescription": "Where remote workspace pages render, and where their network traffic leaves from."
       }
+    },
+    "agents": {
+      "detectionFailed": "Couldn’t detect agents on this host.",
+      "environmentName": "Environment variable name",
+      "environmentValue": "Value for {{name}}",
+      "hostDefaults": "Defaults for agents launched on this host.",
+      "loading": "Loading agent settings…",
+      "newEnvironment": "Value",
+      "readFailed": "Couldn’t read agent settings. Check the host connection and try again.",
+      "refresh": "Refresh",
+      "removeEnvironment": "Remove",
+      "save": "Save",
+      "savedEnvironment": "Saved value · enter to replace",
+      "saveFailed": "Couldn’t save agent settings. Check the host connection and try again.",
+      "updateHost": "Update this server to edit its agent launch settings."
+    },
+    "servers": {
+      "accessRevoked": "This client no longer has access. Use a new pairing link from this server to reconnect."
     }
   },
   "menu": {
@@ -341,7 +359,8 @@
         "loopbackPairingBlocked": "This access link points back to this device.",
         "remotePairingUnreachable": "Cannot reach Orca at {{endpoint}}.",
         "remotePairingInvalidDetails": "This access link contains invalid connection details.",
-        "remotePairingSaveFailed": "Orca verified the host but could not save it. Check browser storage and try again."
+        "remotePairingSaveFailed": "Orca verified the host but could not save it. Check browser storage and try again.",
+        "remotePairingRepairUnavailable": "Re-pairing is not available in the browser. Pair this browser with the server again."
       },
       "web": {
         "preload": {
@@ -8098,7 +8117,8 @@
           "troubleshootStepRegenerate": "Generate a new access link and use only the newest link here.",
           "troubleshootTunnel": "Using an SSH local forward? Return to Connect to a host, paste the loopback link, then enable “I am using an SSH tunnel” under Advanced.",
           "cloudVmWorkflow": "Cloud VM",
-          "cloudVmWorkflowHelp": "Manage recipe-created cloud machines"
+          "cloudVmWorkflowHelp": "Manage recipe-created cloud machines",
+          "serverAlreadyPaired": "This server is already paired as {{value0}}; updated its connection."
         },
         "RuntimePairingGeneratedUrlRows": {
           "0495f68959": "Copy {{value0}}"
@@ -11529,7 +11549,9 @@
           "networkConnection": "Network connection",
           "notAttempted": "Not attempted",
           "saveFailed": "Could not save the host",
-          "saveFailedHelp": "The host was verified, but Orca could not save it. Check the name and local settings storage, then try again."
+          "saveFailedHelp": "The host was verified, but Orca could not save it. Check the name and local settings storage, then try again.",
+          "differentServer": "This link is for a different server",
+          "differentServerHelp": "This pairing link is for a different server. Create the link on the server you are re-pairing."
         },
         "CloudVmSetupGuide": {
           "title": "Create a Cloud VM",
@@ -11801,6 +11823,13 @@
           "targetDescription": "Higher values increase contrast where possible. Background colors stay unchanged.",
           "subtle": "Subtle",
           "strong": "Strong"
+        },
+        "RuntimeRepairDialog": {
+          "descriptionShareComputer": "{{name}} no longer accepts this computer. On {{name}}, open Settings → Remote Orca Servers → Share this computer, create a link for another Orca, then paste it here.",
+          "failed": "Re-pair failed",
+          "submit": "Re-pair",
+          "success": "Re-paired with {{name}}",
+          "title": "Re-pair {{name}}"
         },
         "CursorAccountsSection": {
           "source": {
@@ -17701,5 +17730,19 @@
   },
   "brand": {
     "workbench": "Workbench"
+  },
+  "runtime": {
+    "remoteServerPairingErrors": {
+      "alreadyPairedAddAgain": "This server is already paired as \"{{name}}\". To update its connection, add it again under Settings > Remote Orca Servers.",
+      "alreadyPairedCloudIdentity": "This server is already paired as \"{{name}}\". The cloud workspace's server reuses that server's identity, so it was not saved.",
+      "alreadyPairedCloudWorkspace": "This server is already paired as \"{{name}}\". It belongs to a cloud workspace, which pairs it again when it resumes.",
+      "hostSaveFailed": "Orca verified the host but could not save it. Check local settings storage and try again.",
+      "idNeedsNewerOrca": "A server with this id already exists in a format that needs a newer version of Orca.",
+      "invalidPairingCode": "Invalid pairing code. Expected an orca://pair?... URL or bare pairing payload.",
+      "nameTaken": "A server named \"{{name}}\" already exists.",
+      "repairCloudWorkspace": "This server belongs to a cloud workspace, which pairs it again when it resumes.",
+      "repairSaveFailed": "Orca verified the server but could not save the new pairing. Check local settings storage and try again.",
+      "selfPairingCode": "This pairing code is for this Orca itself. Generate the code on the other computer instead."
+    }
   }
 }

@@ -12,7 +12,7 @@ describe('remote runtime socket liveness', () => {
 
   it('grants a fresh probe window after a suspended client resumes', async () => {
     let now = 1_000
-    const ping = vi.fn()
+    const ping = vi.fn(() => true)
     const onDead = vi.fn()
     const monitor = startRemoteRuntimeSocketLiveness({
       ping,
@@ -41,7 +41,7 @@ describe('remote runtime socket liveness', () => {
 
   it('clears the resumed probe when the socket answers', async () => {
     let now = 1_000
-    const ping = vi.fn()
+    const ping = vi.fn(() => true)
     const onDead = vi.fn()
     const monitor = startRemoteRuntimeSocketLiveness({
       ping,

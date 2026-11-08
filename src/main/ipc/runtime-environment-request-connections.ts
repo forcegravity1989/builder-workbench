@@ -1,3 +1,4 @@
+import { probeAllRemoteRuntimeSocketsNow } from '../../shared/remote-runtime-socket-liveness'
 import type { PairingOffer } from '../../shared/pairing'
 import { resolveEnvironment } from '../../shared/runtime-environment-store'
 import { getPreferredPairingOffer } from '../../shared/runtime-environments'
@@ -138,6 +139,48 @@ export function sendRemoteRuntimeSharedControlRequest<TResult>(
   )
 }
 
+/** Send only on the shared socket that proved expectedRuntimeId; return null if it changed or is unproven. */
+export async function sendRemoteRuntimeSharedControlRequestOnRuntime<TResult>(
+  environmentId: string,
+  pairedConnection: PairingOffer,
+  method: string,
+  params: unknown,
+  timeoutMs: number,
+  expectedRuntimeId: string,
+  envelope?: RuntimeOrchestrationEnvelope,
+  signal?: AbortSignal
+): Promise<RuntimeRpcResponse<TResult> | null> {
+  const shared = getSharedControlConnection(environmentId, pairedConnection)
+  let statusSocket: number | undefined
+  const status = await shared.request<RuntimeStatus>(
+    'status.get',
+    undefined,
+    timeoutMs,
+    undefined,
+    signal,
+    () => {
+      statusSocket = shared.socketGeneration.peek()
+    }
+  )
+  if (!status.ok || status.result.runtimeId !== expectedRuntimeId) {
+    return null
+  }
+  let socketChanged = false
+  try {
+    return await shared.request<TResult>(method, params, timeoutMs, envelope, signal, () => {
+      socketChanged = shared.socketGeneration.peek() !== statusSocket
+      if (socketChanged) {
+        throw new Error('Runtime connection changed before sending')
+      }
+    })
+  } catch (error) {
+    if (socketChanged) {
+      return null
+    }
+    throw error
+  }
+}
+
 export function subscribeRemoteRuntimeSharedControlRequest<TResult>(
   environmentId: string,
   pairing: PairingOffer,
@@ -149,13 +192,15 @@ export function subscribeRemoteRuntimeSharedControlRequest<TResult>(
     onBinary?: (bytes: Uint8Array<ArrayBufferLike>) => void
     onError: (error: { code: string; message: string }) => void
     onClose?: () => void
-  }
+  },
+  signal?: AbortSignal
 ): Promise<RemoteRuntimeSharedSubscription> {
   return getSharedControlConnection(environmentId, pairing).subscribe(
     method,
     params,
     timeoutMs,
-    callbacks
+    callbacks,
+    signal
   )
 }
 
@@ -193,6 +238,7 @@ export function ensureRemoteRuntimeSharedControlConnection(
 }
 
 export function retryRemoteRuntimeSharedControlConnectionsNow(): void {
+  probeAllRemoteRuntimeSocketsNow()
   for (const { connection } of sharedControlConnections.values()) {
     connection.retryNow()
   }

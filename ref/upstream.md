@@ -16,18 +16,24 @@
 | 项               | 本次核对结果                                                       |
 | ---------------- | ------------------------------------------------------------------ |
 | Orca 仓库        | [stablyai/orca](https://github.com/stablyai/orca)                  |
-| 本次定向版本     | [v1.4.250](https://github.com/stablyai/orca/releases/tag/v1.4.250) |
-| 发布时间         | 2026-11-05                                                         |
-| 发布锚点         | `b98a0fba16561fadc06868fe3e8710781d705efd`                         |
-| 本次核对日期     | 2026-11-06                                                         |
+| 共享主机定向版本 | [v1.4.251](https://github.com/stablyai/orca/releases/tag/v1.4.251) |
+| 发布时间         | 2026-11-06 06:31:44 UTC                                           |
+| 发布锚点         | `a162e08b29b2883b02d8a0dfcc99e26c80b2cfe7`                         |
+| 本次核对日期     | 2026-11-06                                                        |
 | BW fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`，2026-09-15             |
-| 本次核对范围     | 固定发布版的本机网页批注及直接依赖；非整仓升级或完整能力复核       |
+| 本次核对范围     | 固定 v251 共享主机调用链；网页批注沿已采纳的 v250（见 §2.3）；非整仓升级                    |
 
 公开版本不是本仓当前同步基线；本仓的 fork baseline 仍是单独的历史锚点。没有完成一次实际代码比较时，不把“最新 release”写成“已同步”。
 
 ### 0.2 与 BW 边界直接相关的能力
 
 BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、provider 与 `src/main` runtime。BW 不为这些能力另建平行实现。
+
+共享主机按上述固定 SHA 定向采用原生网络配对、同主机重新配对、连接与握手时限、唤醒探测、订阅取消与恢复、终端关闭意图、仓库目录清理及远端 Agent 启动配置。稳定版发布身份不等于功能已去除实验标记：上游 Remote Orca Servers 仍标为 Beta。文件继续放在 BW 已采用的原生目录，不随新版整仓目录重排。
+
+远端 Agent 沿宿主的 `settings.get` 和 `settings.getAgentLaunch/mutateAgentLaunch` 基础协议读取/修改命令、参数、环境、默认 Agent、启用与权限设置，只公布 `settings.agent-launch.v1`；未迁移 typed choices、新 native-chat 编译器和 create-options。现有快捷键、标签菜单、Dashboard、工作区创建与 BW 草稿入口共用宿主偏好和身份约束；新工作区准备宿主命令时读取失败则停止，已准备的命令随原配对版本和宿主实例约束发送。已有标签启动的旧宿主 legacy 分支保留原兼容启动，读取不到宿主 recipe 的降级仍不能保证使用远端默认值。BW 草稿入口保留 `draft` 和 `hostTabId` 回执。
+
+managed server 自动部署、SSH → managed server、WSL 生命周期、process-host 重构、Mobile 产品及无关 UI 不随本轮迁入。现有 SSH/CLI/结构化会话路由和 BW 材料执行器保持其已有边界；原生来源、必要接口适配与 BW 自有修正分别在 PR 中说明。代码采用不等于运行验收，运行验证与未验边界见交付 PR。
 
 ### 0.3 上游目录定位
 
@@ -85,7 +91,7 @@ git merge orca-upstream/main
 
 只记录会影响 Orca 合并取舍的契约，不展开全部文件清单：
 
-- 网页批注继承 Orca v1.4.250 的相关模块，保留本基线必要适配与内层滚动标记修复；来源、取舍和验证见 [PR #579](https://github.com/forcegravity1989/builder-workbench/pull/579)。
+- 网页批注继承 Orca v1.4.250 的相关模块，保留本基线必要适配与内层滚动标记修复；来源、取舍和验证见 [PR #579](https://github.com/forcegravity1989/builder-workbench/pull/579)。共享主机恢复复核另按上述 v1.4.251 补入导航取消未完成截图及旧快照回写的约束，仍沿用本仓文档失效时清除批注的行为；不因此迁入批注留存改造或远程实时批注。
 - `automation.runNow` 的可选 `oneShotPrompt`、capability 门控和 renderer/headless 两条派发语义；一次性上下文不写回保存的自动化提示。
 - 自动化编辑器的显式 `target/draft` 请求契约；BW 预填入口依赖该原生能力。
 - 任务详情的 source context、return-to-previous-view 和 worktree history replay；BW 不另建任务详情和历史系统。`openTaskPage({ preselectedRepoId })` 的预选优先级（显式预选 > 持久化 defaultRepoSelection > 全部项目）同为稳定契约：BW 侧栏任务入口靠它在 BW 壳内默认收窄到当前项目，页内筛选仍可改。
@@ -103,9 +109,10 @@ git merge orca-upstream/main
 - 原生 provider 标签和身份抽取保持单一实现；不要把已经去重的实现合回来。
 - 原生内置浏览器对普通 HTTPS 域名的 `ERR_CERT_AUTHORITY_INVALID` 也提供现有“仍然继续”入口（`browser-certificate-trust-controller.ts`），不恢复 localhost／回环地址限制。默认仍拒绝；沿用原生 renderer 按钮与 agent RPC `browser.certificate.proceed` 两条显式继续入口（RPC 不另设人工确认）。授权是会话级例外（Chrome SSL exception 语义）：同一应用会话内按端点＋叶子证书指纹放行全部标签页，跨域提交（如 SSO 往返）不吊销；不落盘，重启应用或端点换叶子证书都要重新确认，且换证书时拒绝并不再提供“继续”入口（fail closed）。其他证书错误、子帧与非 HTTPS 首次请求不扩大授权。上游同步时保留这项入口范围与会话级信任语义。
 - BW Skill 分发登记保持一致：`resources/skills/current-manifest.json` 与 `snapshot-registry.json` 必须继续登记 `bw-knowledge-docs`、`metrics-refresh`、`version-acceptance`、`week-planning`。manifest/registry 由 `config/scripts/generate-skill-bundle-manifest.mjs` 从根级 `skills/` 生成；三个产品流程的正文正源仍是 `standard/skills/`，运行时指南由 `config/scripts/generate-bundled-skill-guides.mjs` 生成，不手改生成物。
-- 跨主机项目墙（G3）依赖原生 runtime 配对链：BW「导入 Builder 主机」批量壳只调用 `runtimeEnvironments.verifyAndAddFromPairingCode`（与原生 AddRemoteHostDialog 同一 IPC）与环境列表/状态快照，不建平行配对存储；主机名唯一（大小写敏感）是重复导入幂等的判据。上游合并需保留该链的 renderer API。
+- 跨主机项目墙（G3）依赖原生 runtime 配对链：BW「导入 Builder 主机」批量壳只调用 `runtimeEnvironments.verifyAndAddFromPairingCode`（与原生 AddRemoteHostDialog 同一 IPC）与环境列表/状态快照，不建平行配对存储。同主机公钥经验证后原位更新凭据并保留 id、名称与历史；名称按原生去空白、外层引号及大小写归一后检测冲突，不按名称跳过重新配对。上游合并需保留该链的 renderer API。
 - 共享链接回显沿原生 `DeviceRegistry` 和 E2EE 身份：renderer 仅持久化公开引用，`mobile:restoreRuntimePairingUrl` 只读恢复同一链接，不创建/轮换授权，不改变监听范围；撤销或身份不匹配不恢复。同步时保留这条回显链，不能用生成接口替代读取。
-- runtime 配对 env id 每次配对随机新发（`addEnvironmentFromPairingCode` randomUUID）、runtime 主机仓不落本地盘、注册行身份为 (repoId, executionHostId)：**删除主机会留下残留注册行**（Orca 原生列表按项目身份分组故不受影响）。BW 项目墙以「只认当前配对目录内的行 + 稳定身份归并」构造性过滤；上游合并不得假定 env id 稳定或把残留行改成持久身份语义。
+- 共享会话快照保留 BW 浏览器防回显适配：文档浏览器页及活动页（缺失时取首页）已指向其他 runtime 的浏览器工作区，不回发成宿主自己的页面；客户端托管页仍由所属 runtime 的页面注册表发布。这是 BW 自有适配，不计为 Orca v1.4.251 原生同步。
+- runtime 新主机配对生成随机 env id；已验证同公钥重配保留原 id，删除后再次添加仍生成新 id。runtime 主机仓不落本地盘，注册行身份为 (repoId, executionHostId)。原生 catalog 按请求快照清理被移除仓库的工作树行，保留其他宿主及并发新增行；BW 项目墙仍只认当前配对目录内的行并按稳定身份归并，不能把删除后的旧 env id 当作持久主机身份。
 - 设置→集成页按 BW #323 收敛为 GitHub / CodeHub / WeLink / CloudBuild 四卡（代码托管 / 项目群 / 构建三组；CloudBuild 为 #366 增补，2026-10-19）：六张隐藏卡的组件、状态推导与词条保留在仓（人拍板 2026-10-16），但 `IntegrationsPane` 渲染名单与 `integrations-search` 目录是 BW 口径；preflight 增加 `welink-cli` / `cb` 探测与 codehub / welink / cb 的 `auth status` 读回（`PreflightStatus.welink` / `cloudbuild`、`codehub.authenticated`），welink 读回把 EXPIRED 判未登录（人拍板 2026-10-16，BW 口径），cb 存活探测用 `version` 子命令（`--version` 是未知旗标）、登录判定按输出标记（`Token Expires` 行且不带 `(expired)` 后缀，退出码恒 0 不可信，BW 口径照 welink EXPIRED 拍板），探测经 `command-path-resolver.ts` 的 `resolveCommandOnLocalPath` 解析真实文件、`.cmd` / `.bat` 经 `cmd.exe` 执行（`preflight-command-exec.ts`，修 npm 全局 CLI 装完仍报未安装的 Windows 盲区，BW 口径）。各卡登录按钮在卡内展开上游 `OnboardingInlineCommandTerminal` 内嵌终端（粘贴命令不回车、人按回车，OSC 133;D 感知命令结束自动复查；2026-10-19 人拍板，远端范围不给按钮）；该上游组件内 `TerminalPane` 改传 `isVisible={entered}`（BW 口径，2026-10-19 真壳白屏修复：组件在 0fr 展开动画容器内挂载终端，恒真 isVisible 使 WebGL 渲染器在无盒状态下解析 PTY 输出、展开时模型 diff 跳过预展开单元格导致画布空白；改随 `entered` 挂起渲染、动画完成翻可见走 TerminalPane 既有的 reveal-repaint 链从缓冲重绘，上游合并保留该传参）；codehub / welink 安装由应用后台执行各自自包含 npm 命令（含内网 registry 与 `--strict-ssl=false`，人确认 2026-10-16，不动机器 npm 配置，不占会话栏），cloudbuild 为**两步**（`npm config set @hw-cloudbuild:registry <内网源>` → `npm install -g @hw-cloudbuild/cloudbuild-cli`，人指定 2026-10-19，会写机器 npm 配置、不带 `--strict-ssl=false`，runner 按序执行、任一步失败即中止）；gh 安装保持外链。CodeHub / WeLink / CloudBuild 卡片共用一个 `BwCliIntegrationCard` 骨架（每卡为文案 / 探测字段 / 登录命令的薄配置），与本机范围判定因上游文件 max-lines 预算拆入 BW 自有新文件（`bw-cli-integration-cards.tsx`、`use-local-cli-scope.ts`，经 barrel 导出），codehub / welink / cloudbuild auth 读回与 BW 三 CLI 探测编排（`probeBwClis` / `readBwCliAuths`，回调注入探测函数避免循环依赖）在 `bw-cli-auth-status.ts`、安装链路（`bw-cli-install-commands.ts`、`bw-cli-install.ts`、preload `bw-cli-install-api.ts` / `cli-install-bridge.ts`、渲染端 `cli-install-action.ts`）同为 BW 自有文件（主进程模块由 agent-detection / register-core-handlers 直接引入，不经 renderer barrel）。上游合并保留该渲染名单、探测字段与 shim 路由、登录内嵌终端分支与 welink EXPIRED / cb 过期标记语义，不恢复六卡渲染，也不把 BW 卡合回上游卡模块。
 - BW 板面批注快捷键 `workbench.toggleAnnotationMode`（#444，2026-10-29）：注册表 seam 是 `shared/keybindings/types.ts` 的 `KeybindingScope` 新值 `'workbench'` 与 `KeybindingActionId` 新成员，加 `definitions-core-2.ts` 一条定义（默认 Alt+A、`conflictGroup: 'global'`）；渲染层零 native 改动——监听器为板面本地安装（仿 `editor.addReviewNote` 先例，入口不可用即不挂载），不进 `createAppCommandHandlers` Map、不进 `use-global-keybindings`、不进主进程 webview 白名单。上游合并保留这两个 union 扩点与定义条目即可，BW 计划/验收两板的快捷键随定义存在而存在。
 

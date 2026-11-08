@@ -21,6 +21,69 @@ permissions:
   contents: read
 
 jobs:
+  shared-host:
+    name: Shared host protocols and lifecycle
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+      # Exercise the native network owners as well as the BW overlay suites below.
+      # Fixtures cannot establish two-machine Windows acceptance or account access.
+      - name: Test shared host pairing, transport and subscription contracts
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/shared/remote-runtime-
+          src/shared/runtime-environment-store.test.ts
+          src/shared/runtime-client-export-parity.test.ts
+          src/main/ipc/runtime-environment
+          src/cli/runtime/environments.test.ts
+      - name: Test shared host recovery, launch and close contracts
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/renderer/src/store/repos/dropped-repo-worktree-rows.test.ts
+          src/renderer/src/store/slices/runtime-status
+          src/renderer/src/runtime/host-session-mirror-
+          src/renderer/src/runtime/restored-client-hosted-browser-host-restart-attach.test.ts
+          src/renderer/src/runtime/sync-runtime-graph-browser.test.ts
+          src/renderer/src/runtime/use-runtime-session-mirror-environment-key.test.ts
+          src/renderer/src/runtime/web-runtime-session-terminal-
+          src/renderer/src/runtime/web-session-tabs-sync-
+          src/renderer/src/components/terminal-pane/remote-runtime-pty-transport-
+          src/renderer/src/components/terminal-pane/use-terminal-pane-lifecycle.test.ts
+          src/renderer/src/components/terminal/terminal-tab-
+          src/renderer/src/components/terminal/terminal-close-confirm-keyboard-vs-mouse.test.ts
+          src/renderer/src/components/terminal-workspace-keydown.test.ts
+          src/renderer/src/components/settings/AgentsPane.test.tsx
+          src/renderer/src/components/agent/AgentSettingsDialog.test.tsx
+          src/renderer/src/components/agent-session-continuation/AgentSessionContinuationDialog.test.tsx
+          src/renderer/src/components/tab-bar/QuickLaunchButton.test.ts
+          src/renderer/src/components/tab-bar/TabBar.windows-shell-remote-runtime.test.ts
+          src/renderer/src/hooks/legacy-worker-terminal-recovery-event.test.ts
+          src/renderer/src/lib/launch-agent-
+          src/renderer/src/lib/runtime-session-mirror-targets.test.ts
+          src/renderer/src/hooks/composer-state
+          src/renderer/src/hooks/useComposerState
+          src/renderer/src/components/NewWorkspaceComposerCard
+          src/renderer/src/components/sidebar/folder-workspace-composer-submit.test.ts
+          src/renderer/src/lib/fix-checks-agent-launch.test.ts
+          src/renderer/src/lib/worktree-creation-flow
+          src/renderer/src/lib/worktree-activation
+          src/renderer/src/lib/worktree-creation-agent-seeding.test.ts
+          src/renderer/src/lib/worktree-creation-structured-session.test.ts
+          src/renderer/src/lib/pending-worktree-creation.test.ts
+          src/renderer/src/components/dashboard/launch-dashboard-agent.test.ts
+          src/renderer/src/components/dashboard/dashboard-worktree-launch-options.test.ts
+          src/renderer/src/components/dashboard/build-dashboard-snapshot
+          src/renderer/src/components/dashboard/useLiveDashboardSnapshot.test.ts
+          src/renderer/src/components/dashboard/useDashboardPopoutBridge.test.tsx
+          src/renderer/src/store/slices/worktrees-remote-runtime-create.test.ts
+          src/renderer/src/store/slices/repos-project-groups.test.ts
+
   browser-annotations:
     name: Browser annotation contracts
     runs-on: ubuntu-latest
@@ -35,6 +98,7 @@ jobs:
           pnpm exec vitest run --config config/vitest.config.ts
           src/shared/browser-annotation-viewport-bridge.test.ts
           src/renderer/src/components/browser-pane/annotate/browser-annotation-output.test.ts
+          src/renderer/src/components/browser-pane/annotate/useGrabMode.test.ts
           src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.test.tsx
           src/renderer/src/components/browser-pane/annotate/BrowserAnnotationSendMenuContent.test.tsx
           src/renderer/src/components/browser-pane/host-guest/browser-page-favicon-retention.test.ts

@@ -115,21 +115,21 @@ describe('#10142 close confirmation policy is the same for keyboard and mouse', 
     ]![0]!.isPinned = true
     getStateMock.mockReturnValue(state)
 
-    closeTerminalTab('tab-busy')
+    closeTerminalTab('tab-busy', { reason: 'user' })
 
     expect(requestPinnedTabCloseConfirmMock).toHaveBeenCalled()
     expect(closeTab).not.toHaveBeenCalled()
   })
 
   it('mouse close (X button / middle-click) consults the running-process probe', async () => {
-    closeTerminalTab('tab-busy')
+    closeTerminalTab('tab-busy', { reason: 'user' })
     await Promise.resolve()
 
     expect(inspectRuntimeTerminalProcessMock).toHaveBeenCalled()
   })
 
   it('mouse close (X button / middle-click) does not drop a busy tab without confirmation', async () => {
-    closeTerminalTab('tab-busy')
+    closeTerminalTab('tab-busy', { reason: 'user' })
     await Promise.resolve()
 
     expect(closeTab).not.toHaveBeenCalled()

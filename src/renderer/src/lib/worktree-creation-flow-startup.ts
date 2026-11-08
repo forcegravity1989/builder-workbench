@@ -1,6 +1,10 @@
 import { useAppStore } from '@/store'
 import { getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import type { WorktreeStartupPayload } from '@/lib/worktree-startup-payload'
+import type { CreateWorktreeResult } from '../../../shared/worktree/create-types'
+import { preflightAgentTrust } from '@/lib/agent-trust-preflight'
+import { createBrowserUuid } from '@/lib/browser-uuid'
+import { stopWorktreeCreationForChangedHost } from './worktree-creation-completion'
 import type {
   WorktreeCreationPhase,
   WorktreeCreationRequest
@@ -17,6 +21,7 @@ export function buildWorktreeCreationStartupOpt(
     return undefined
   }
   return {
+    ...(request.agentLaunchOwner ? { agentLaunchOwner: request.agentLaunchOwner } : {}),
     command: plan.launchCommand,
     ...(plan.env ? { env: plan.env } : {}),
     launchConfig: plan.launchConfig,
@@ -34,6 +39,43 @@ export function buildWorktreeCreationStartupOpt(
       : {}),
     ...(request.quickTelemetry ? { telemetry: request.quickTelemetry } : {})
   }
+}
+
+type PreparedWorktreeCreationStartup = {
+  backendSpawned: boolean
+  fallbackStartupOpt: WorktreeStartupPayload | undefined
+  startupOpt: WorktreeStartupPayload | undefined
+}
+
+export async function prepareWorktreeCreationStartup(
+  creationId: string,
+  request: WorktreeCreationRequest,
+  result: CreateWorktreeResult
+): Promise<PreparedWorktreeCreationStartup | null> {
+  if (stopWorktreeCreationForChangedHost(creationId, request)) {
+    return null
+  }
+  const backendSpawned = result.startupTerminal?.spawned === true
+  if (request.startupPlan && !backendSpawned && !request.startupPlan.launchToken) {
+    // Delayed delivery and the queued startup must identify the same newly spawned pane.
+    request.startupPlan.launchToken = createBrowserUuid()
+  }
+  const fallbackStartupOpt = buildWorktreeCreationStartupOpt(request, backendSpawned)
+  const structuredLaunch = request.agentLaunchRoute === 'structured-native-chat'
+  const startupOpt = structuredLaunch ? undefined : fallbackStartupOpt
+  const worktree = result.worktree
+  if (worktree.path && !structuredLaunch) {
+    const repoConnectionId =
+      useAppStore.getState().repos.find((repo) => repo.id === worktree.repoId)?.connectionId ?? null
+    await preflightAgentTrust({
+      agent: request.agent,
+      workspacePath: worktree.path,
+      connectionId: repoConnectionId
+    })
+  }
+  return stopWorktreeCreationForChangedHost(creationId, request)
+    ? null
+    : { backendSpawned, fallbackStartupOpt, startupOpt }
 }
 
 export function getWorktreeCreationIndeterminate(request: WorktreeCreationRequest): boolean {

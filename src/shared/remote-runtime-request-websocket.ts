@@ -1,3 +1,5 @@
+import { remoteRuntimeConnectOptions, remoteRuntimeConnectFailureMessage } from './remote-runtime-connect-bound'
+import { REMOTE_RUNTIME_MAX_WEBSOCKET_FRAME_BYTES } from './remote-runtime-memory-limits'
 import WebSocket from 'ws'
 import type { PairingOffer } from './pairing'
 import {
@@ -19,6 +21,7 @@ export type RemoteRuntimeWebSocket = {
 }
 
 export type RemoteRuntimeWebSocketCallbacks = {
+  onOpen?: (ws: WebSocket) => void
   onClose: (ws: WebSocket, code: number, reason: Buffer) => void
   onError: (ws: WebSocket, error: RemoteRuntimeClientError) => void
   onTextFrame: (ws: WebSocket, frame: string) => void
@@ -48,11 +51,12 @@ export function openRemoteRuntimeWebSocket(
         publicKeyB64: publicKeyToBase64(keyPair.publicKey)
       })
     )
+    callbacks.onOpen?.(ws)
   }
-  const onError = (): void => {
+  const onError = (error: Error): void => {
     callbacks.onError(
       ws,
-      remoteRuntimeUnavailableError('Could not connect to the remote Orca runtime.')
+      remoteRuntimeUnavailableError(remoteRuntimeConnectFailureMessage(error, pairing.endpoint))
     )
   }
   const onClose = (code: number, reason: Buffer): void => callbacks.onClose(ws, code, reason)
@@ -119,7 +123,14 @@ function createSocket(
     }
   }
   try {
-    return { ok: true, ws: new WebSocket(pairing.endpoint), keyPair }
+    return {
+      ok: true,
+      ws: new WebSocket(
+        pairing.endpoint,
+        remoteRuntimeConnectOptions({ maxPayload: REMOTE_RUNTIME_MAX_WEBSOCKET_FRAME_BYTES })
+      ),
+      keyPair
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     return {

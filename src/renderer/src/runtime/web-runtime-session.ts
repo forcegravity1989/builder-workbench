@@ -10,8 +10,7 @@ export { isWebRuntimeSessionActive } from './web-runtime-session-environment'
 export type { WebRuntimeTerminalCreateOutcome } from './web-runtime-session-types'
 export {
   createWebRuntimeSessionTerminal,
-  createWebRuntimeAgentSessionTerminal,
-  createWebRuntimeAgentSessionTerminalWithLaunchDraft
+  deliverCreatedWebRuntimeAgentSessionPrompt
 } from './web-runtime-terminal-creation'
 export { createWebRuntimeSessionBrowserTab } from './web-runtime-browser-creation'
 export { refreshWebRuntimeSessionTabsSnapshot } from './web-runtime-session-snapshot'

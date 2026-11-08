@@ -141,6 +141,7 @@ describe('registerRuntimeEnvironmentHandlers', () => {
     registerRuntimeEnvironmentHandlers(store as never)
 
     expect(handleMock.mock.calls.map((call) => call[0])).toEqual([
+      'runtimeEnvironments:repairFromPairingCode',
       'runtimeEnvironments:getStatusSnapshots',
       'runtimeEnvironments:list',
       'runtimeEnvironments:addFromPairingCode',
@@ -169,6 +170,7 @@ describe('registerRuntimeEnvironmentHandlers', () => {
       'runtimeEnvironments:list',
       'runtimeEnvironments:addFromPairingCode',
       'runtimeEnvironments:verifyAndAddFromPairingCode',
+      'runtimeEnvironments:repairFromPairingCode',
       'runtimeEnvironments:resolve',
       'runtimeEnvironments:remove',
       'runtimeEnvironments:disconnect',
@@ -413,7 +415,7 @@ describe('registerRuntimeEnvironmentHandlers', () => {
     await expect(
       verifyAndAdd(null, {
         name: 'desk',
-        pairingCode: pairingCode('ws://100.76.32.125:6768')
+        pairingCode: pairingCode('ws://100.76.32.125:6768', 2)
       })
     ).resolves.toMatchObject({
       ok: false,
