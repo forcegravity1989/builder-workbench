@@ -125,7 +125,11 @@ const WorktreeList = React.memo(function WorktreeList({
 
   const agentSendTargetWorktreeId = useAgentSendTargetWorktreeId()
   const { filterState, hasFilters, clearFilters } = useSidebarWorktreeFilters()
-  const sortedIds = useSidebarWorktreeSortOrder({ allWorktrees, repoMap, sortBy })
+  const { sortedIds, sampledAt: sortNow } = useSidebarWorktreeSortOrder({
+    allWorktrees,
+    repoMap,
+    sortBy
+  })
   const manualOrderCatalog = useMemo(
     () => buildWorktreeManualOrderCatalog({ worktrees: allWorktrees, folderWorkspaces }),
     [allWorktrees, folderWorkspaces]
@@ -292,7 +296,11 @@ const WorktreeList = React.memo(function WorktreeList({
     importedWorktreeCardCount: externalWorktreeCards.importedWorktreesByRepo.size
   })
   const versionContent = isWorkbenchShell() ? (
-    <WorkbenchSidebarVersions visibleWorktrees={filteredWorktrees} sortedIds={sortedIds} />
+    <WorkbenchSidebarVersions
+      visibleWorktrees={filteredWorktrees}
+      sortedIds={sortedIds}
+      sortNow={sortNow}
+    />
   ) : undefined
   // Why: when active filters hide every row, the Clear Filters empty state must win over Project Group headers.
   if (rowModel.rows.length === 0 || filtersHideAllRows) {

@@ -85,7 +85,7 @@ export function useSidebarWorktreeSortOrder(args: {
   allWorktrees: readonly Worktree[]
   repoMap: Map<string, Repo>
   sortBy: SortBy
-}): string[] {
+}): { sortedIds: string[]; sampledAt: number } {
   const { allWorktrees, repoMap, sortBy } = args
   // Non-archived count — detects structural changes (add/remove) so the debounce below can apply immediately.
   const worktreeCount = useMemo(() => {
@@ -130,7 +130,8 @@ export function useSidebarWorktreeSortOrder(args: {
         return {
           sortedIds: nonArchivedWorktrees.map((w) => w.id),
           attentionByWorktree: null,
-          detectedLiveSmartSignal: false
+          detectedLiveSmartSignal: false,
+          sampledAt: now
         }
       }
     }
@@ -155,7 +156,8 @@ export function useSidebarWorktreeSortOrder(args: {
     return {
       sortedIds: nonArchivedWorktrees.map((w) => w.id),
       attentionByWorktree: sortBy === 'smart' ? attentionByWorktree : null,
-      detectedLiveSmartSignal
+      detectedLiveSmartSignal,
+      sampledAt: now
     }
     // debouncedSortEpoch is an intentional trigger not read in the memo; its change (debounced) signals a recompute.
     // oxlint-disable-next-line react-hooks/exhaustive-deps
@@ -230,5 +232,5 @@ export function useSidebarWorktreeSortOrder(args: {
     persistWorktreeSortOrderByHost(useAppStore.getState(), sortedIds)
   }, [sortedIds, sortBy])
 
-  return sortedIds
+  return { sortedIds, sampledAt: recomputedSort.sampledAt }
 }

@@ -51,12 +51,17 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
  */
 export function WorkbenchSidebarVersions({
   visibleWorktrees,
-  sortedIds
+  sortedIds,
+  sortNow
 }: {
   visibleWorktrees: readonly Worktree[]
   sortedIds: readonly string[]
+  sortNow: number
 }): React.JSX.Element {
-  const display = useMemo(() => ({ visibleWorktrees, sortedIds }), [visibleWorktrees, sortedIds])
+  const display = useMemo(
+    () => ({ visibleWorktrees, sortedIds, sortNow }),
+    [visibleWorktrees, sortedIds, sortNow]
+  )
   return (
     <VersionTreeDisplayContext.Provider value={display}>
       <div className="flex min-w-0 flex-col gap-1 pb-1" data-workbench-version-section>

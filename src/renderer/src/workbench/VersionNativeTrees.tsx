@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useMemo } from 'react'
-import { getAgentStatusEpochNow } from '@/lib/agent-status-epoch-clock'
 import { useAppStore } from '@/store'
 import { useRepoMap, useWorktreeMap } from '@/store/selectors'
 import type { Worktree } from '../../../shared/worktree/types'
@@ -33,6 +32,7 @@ const NOOP = () => {}
 export const VersionTreeDisplayContext = createContext<{
   visibleWorktrees: readonly Worktree[]
   sortedIds: readonly string[]
+  sortNow: number
 } | null>(null)
 
 /** Business directories only select members; native rows own cards, hosts and sessions. */
@@ -49,18 +49,19 @@ export function VersionNativeTrees({
   const settings = useAppStore((state) => state.settings)
   const nativeDisplay = useContext(VersionTreeDisplayContext)
   const sortBy = useAppStore((state) => state.sortBy)
-  const agentStatusEpoch = useAppStore((state) => state.agentStatusEpoch)
-  const sortNow = getAgentStatusEpochNow(agentStatusEpoch)
   const lineage = useAppStore((state) => state.worktreeLineageById)
   const displayedTrees = useMemo(() => {
-    const source = nativeDisplay?.visibleWorktrees ?? trees
+    if (!nativeDisplay) {
+      return trees
+    }
+    const source = nativeDisplay.visibleWorktrees
     const pinned =
       getPinnedWorktreeDisplayPolicy(settings) === 'single-location'
         ? new Set(
             getPinnedSectionWorktrees(source, lineage, worktreeMap).map(getWorktreeHostIdentity)
           )
         : new Set<string>()
-    const rank = new Map(nativeDisplay?.sortedIds.map((id, index) => [id, index]))
+    const rank = new Map(nativeDisplay.sortedIds.map((id, index) => [id, index]))
     const state = useAppStore.getState()
     const ordered =
       sortBy === 'smart'
@@ -74,12 +75,14 @@ export function VersionNativeTrees({
             state.migrationUnsupportedByPtyId,
             state.terminalLayoutsByTabId
           )
-        : [...trees].sort(buildWorktreeComparator(sortBy, repoMap, sortNow, new Map()))
+        : [...trees].sort(
+            buildWorktreeComparator(sortBy, repoMap, nativeDisplay.sortNow, new Map())
+          )
     // Catalog membership includes detected/no-session trees; native visibility must not erase them.
     return ordered
       .filter((tree) => !pinned.has(getWorktreeHostIdentity(tree)))
       .sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity) || 0)
-  }, [nativeDisplay, trees, settings, lineage, worktreeMap, sortBy, repoMap, sortNow])
+  }, [nativeDisplay, trees, settings, lineage, worktreeMap, sortBy, repoMap])
   const collapsedGroups = useAppStore((state) => state.collapsedGroups)
   const toggleGroup = useAppStore((state) => state.toggleCollapsedGroup)
   const activeWorktreeId = useAppStore((state) => state.activeWorktreeId)
