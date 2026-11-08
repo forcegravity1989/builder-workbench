@@ -217,7 +217,7 @@ describe('startFixChecksAgent', () => {
     expect(mocks.launchAgentInNewTab).not.toHaveBeenCalled()
   })
 
-  it('rejects without launching when remote agent detection fails', async () => {
+  it('reports remote agent detection failure without activating or launching', async () => {
     mocks.getConnectionId.mockReturnValue('conn-1')
     mocks.store.ensureRemoteDetectedAgents.mockRejectedValue(new Error('detection failed'))
     const { startFixChecksAgent } = await import('./fix-checks-agent-launch')
@@ -229,9 +229,14 @@ describe('startFixChecksAgent', () => {
         basePrompt: 'Fix checks',
         launchSource: 'task_page'
       })
-    ).rejects.toThrow('detection failed')
+    ).resolves.toBe(false)
 
+    expect(mocks.store.ensureRemoteDetectedAgents).toHaveBeenCalledWith('conn-1')
+    expect(mocks.store.ensureDetectedAgents).not.toHaveBeenCalled()
+    expect(mocks.toastError).toHaveBeenCalledExactlyOnceWith('detection failed')
+    expect(mocks.activateAndRevealWorktree).not.toHaveBeenCalled()
     expect(mocks.launchAgentInNewTab).not.toHaveBeenCalled()
+    expect(mocks.focusTerminalTabSurface).not.toHaveBeenCalled()
   })
 
   it('falls back to the repo connection when an attached workspace lookup is unresolved', async () => {

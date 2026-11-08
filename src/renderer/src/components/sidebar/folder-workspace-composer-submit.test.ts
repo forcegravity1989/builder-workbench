@@ -233,7 +233,7 @@ describe('submitFolderWorkspaceCreate', () => {
 
     expect(createFolderWorkspace).toHaveBeenCalledWith({
       projectGroupId: 'group-1',
-      name: 'Restore checkout polish',
+      name: '#42 Restore checkout polish',
       connectionId: null,
       linkedTask: linkedWorkItem,
       createdWithAgent: 'codex'
@@ -537,7 +537,7 @@ describe('submitFolderWorkspaceCreate', () => {
 
     expect(createFolderWorkspace).toHaveBeenCalledWith({
       projectGroupId: 'group-1',
-      name: 'Restore checkout polish',
+      name: '#42 Restore checkout polish',
       connectionId: null,
       linkedTask: linkedWorkItem
     })

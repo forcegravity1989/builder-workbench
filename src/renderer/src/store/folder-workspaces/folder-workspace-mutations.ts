@@ -16,7 +16,7 @@ import {
 } from '@/lib/folder-workspace-runtime-owner'
 import { FolderWorkspaceUpdateCoordinator } from '../slices/folder-workspace-update-coordinator'
 import type { FolderWorkspaceUpdates, RepoSlice } from '../repos/repo-state'
-import { assertHostAgentStartupOwner } from '@/lib/host-agent-startup-inputs'
+import { assertAgentLaunchSettingsOwner } from '@/runtime/agent-launch-settings/agent-launch-settings-owner'
 import { getRuntimeTargetHostId } from '../runtime-target-host'
 import {
   folderWorkspaceUpdateInvalidatesPathStatus,
@@ -66,7 +66,8 @@ export function createFolderWorkspaceMutationActions(
           getFolderWorkspacePathStatusRouteSettings(options, get().settings)
         )
         const owner = options?.agentLaunchOwner
-        assertHostAgentStartupOwner(
+        assertAgentLaunchSettingsOwner(
+          get(),
           owner,
           target.kind === 'environment' ? target.environmentId : ''
         )

@@ -6,6 +6,7 @@ import {
   type HostAgentStartupSettings
 } from '@/runtime/agent-launch-settings/agent-launch-settings-transport'
 import { getRuntimeEnvironmentRevision } from '@/runtime/runtime-environment-revision'
+import { assertAgentLaunchSettingsOwner } from '@/runtime/agent-launch-settings/agent-launch-settings-owner'
 import { resolveHostAgentStartupShell } from '../../../shared/windows-terminal-shell'
 import {
   resolveTuiAgentLaunchArgs,
@@ -41,17 +42,7 @@ export function assertHostAgentStartupOwner(
   owner: AgentLaunchSettingsOwner | undefined,
   environmentId = owner?.environmentId
 ): void {
-  if (!owner) {
-    return
-  }
-  const status = useAppStore.getState().runtimeStatusByEnvironmentId.get(owner.environmentId)?.status
-  if (
-    environmentId !== owner.environmentId ||
-    getRuntimeEnvironmentRevision(owner.environmentId) !== owner.pairingRevision ||
-    (owner.runtimeId && status?.runtimeId !== owner.runtimeId)
-  ) {
-    throw new DOMException('Agent launch cancelled', 'AbortError')
-  }
+  assertAgentLaunchSettingsOwner(useAppStore.getState(), owner, environmentId)
 }
 
 /** The native legacy launch recipe, prepared for the selected paired host before creation. */

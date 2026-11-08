@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as WorktreeRuntimeOwner from '@/lib/worktree-runtime-owner'
 
 const launchAgentInNewTab = vi.hoisted(() => vi.fn())
 const connectionId = vi.hoisted(() => ({ value: null as string | null }))
@@ -22,7 +23,7 @@ vi.mock('@/lib/connection-context', () => ({
   getConnectionIdFromState: () => connectionId.value
 }))
 vi.mock('@/lib/worktree-runtime-owner', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/worktree-runtime-owner')>()),
+  ...(await importOriginal<typeof WorktreeRuntimeOwner>()),
   getRuntimeEnvironmentIdForWorktree: () => runtimeEnvironmentId.value
 }))
 vi.mock('sonner', () => ({ toast }))
