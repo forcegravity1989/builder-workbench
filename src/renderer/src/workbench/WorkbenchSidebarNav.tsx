@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { isWorkbenchShell } from './is-workbench-shell'
 import { FolderGit2 } from 'lucide-react'
@@ -56,8 +56,9 @@ export function WorkbenchSidebarVersions({
   visibleWorktrees: readonly Worktree[]
   sortedIds: readonly string[]
 }): React.JSX.Element {
+  const display = useMemo(() => ({ visibleWorktrees, sortedIds }), [visibleWorktrees, sortedIds])
   return (
-    <VersionTreeDisplayContext.Provider value={{ visibleWorktrees, sortedIds }}>
+    <VersionTreeDisplayContext.Provider value={display}>
       <div className="flex min-w-0 flex-col gap-1 pb-1" data-workbench-version-section>
         <WorkbenchVersionNav />
         <WorkbenchSidebarSectionHeader icon={FolderGit2}>

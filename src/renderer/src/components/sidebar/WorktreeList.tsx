@@ -297,11 +297,9 @@ const WorktreeList = React.memo(function WorktreeList({
   // Why: when active filters hide every row, the Clear Filters empty state must win over Project Group headers.
   if (rowModel.rows.length === 0 || filtersHideAllRows) {
     return (
-      <SidebarWorktreeListEmptyState
-        hasFilters={hasFilters}
-        onClearFilters={clearFilters}
-        children={versionContent}
-      />
+      <SidebarWorktreeListEmptyState hasFilters={hasFilters} onClearFilters={clearFilters}>
+        {versionContent}
+      </SidebarWorktreeListEmptyState>
     )
   }
 

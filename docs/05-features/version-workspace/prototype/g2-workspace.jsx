@@ -390,7 +390,6 @@ function App() {
   const [taskEntry, setTaskEntry] = useState(0)
   // 沿用 Orca 默认单位置展示；评审工具可切换原生的重复显示选项。
   const [panelWidth, setPanelWidth] = useState(280)
-  const [cycleView, setCycleView] = useState('plan')
   const sidebarScrollRef = useRef(null)
   const versionRefs = useRef({})
   const bindingDemo = useBindingDemo({
@@ -456,7 +455,6 @@ function App() {
   function go(v, next, goal) {
     setVersion(v)
     setScreen(next)
-    if (next === 'plan' || next === 'acceptance') setCycleView(next)
     setOpenVersions((prev) => (prev.includes(v) ? prev : [...prev, v]))
     if (next === 'tasks') {
       setTaskVersion(v)
@@ -517,12 +515,14 @@ function App() {
       ...trees,
       ...versionTrees(name).map((tree) => ({ ...tree, projectId: activeProjectId }))
     ])
-    if (activeProjectId === 'bw') setVersionOrder((prev) => [name, ...prev])
-    else
+    if (activeProjectId === 'bw') {
+      setVersionOrder((prev) => [name, ...prev])
+    } else {
       setOtherProjectVersions((prev) => ({
         ...prev,
         [activeProjectId]: [name, ...(prev[activeProjectId] || [])]
       }))
+    }
     go(name, 'plan')
     setModal(null)
     setToast('已创建版本')
@@ -584,7 +584,6 @@ function App() {
       setVersion(v)
       const next = tree.role === 'plan' || tree.role === 'acceptance' ? tree.role : 'work'
       setScreen(next)
-      if (next === 'plan' || next === 'acceptance') setCycleView(next)
     } else {
       setScreen('work')
     }
@@ -693,7 +692,9 @@ function App() {
     )
   }
   function nativeTree(v, tree, pool = bindingDemo.boundTrees(v), pinnedSection = false) {
-    if (is475 && !pinnedSection && !showPinnedInGroups && pinnedIds475.has(tree.id)) return null
+    if (is475 && !pinnedSection && !showPinnedInGroups && pinnedIds475.has(tree.id)) {
+      return null
+    }
     const key = tree.id,
       expanded = !closedTrees.includes(key)
     const children = pool.filter((item) => item.parent === tree.id)
@@ -990,7 +991,7 @@ function App() {
       return (
         <ReuseSurface
           title="沿用版本总览"
-          scope={activeProject.name + ' / ' + version}
+          scope={`${activeProject.name} / ${version}`}
           description="此处直接沿用版本总览特性的现有界面。本轮只调整侧栏布局，版本总览的内容、交互与样式保持原样。"
         />
       )
@@ -1250,7 +1251,9 @@ function App() {
     )
   }
   function enterObjectContext475() {
-    if (!objectContext475) setScreen(currentTree ? 'work' : 'project-workspaces')
+    if (!objectContext475) {
+      setScreen(currentTree ? 'work' : 'project-workspaces')
+    }
   }
   function resizePanel475(event) {
     const start = event.clientX
@@ -1321,7 +1324,9 @@ function App() {
           const rows = sidebarScrollRef.current?.querySelectorAll('[data-tree-id]') || []
           const target = [...rows].find((node) => node.dataset.treeId === selectedTreeId)
           target?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-          if (!target) setToast('先打开一棵工作区；折叠或未呈现的树定位行为待真壳验证。')
+          if (!target) {
+            setToast('先打开一棵工作区；折叠或未呈现的树定位行为待真壳验证。')
+          }
         }}
       >
         <NativeToolIcon kind="crosshair" size={14} />
@@ -1560,15 +1565,12 @@ function App() {
       {modal?.type === 'review-523' && (
         <Modal title="侧栏评审旅程" close={() => setModal(null)}>
           <p className="muted">
-            基于 PR #523 /
-            fa08630bf0 修订，已同步实现、规格与原型，真机待人决定。本页数据仅为内存演示，刷新复原。
+            基于 PR #523 / fa08630bf0
+            修订，已同步实现、规格与原型，真机待人决定。本页数据仅为内存演示，刷新复原。
           </p>
           <ol className="review-journey-523">
             <li>从项目墙进入项目总览，依次点任务、自动化、知识库，观察第二列收起与主区空间。</li>
-            <li>
-              点
-              Rail「版本工作区」返回现有工作区内容，不自动进入计划／验收，也不创建工作树。
-            </li>
+            <li>点 Rail「版本工作区」返回现有工作区内容，不自动进入计划／验收，也不创建工作树。</li>
             <li>
               展开版本与目标目录，右击一棵树「固定」。默认只在顶部显示；取消固定后回到所属目录。下方开关可对比原生的重复显示选项。
             </li>

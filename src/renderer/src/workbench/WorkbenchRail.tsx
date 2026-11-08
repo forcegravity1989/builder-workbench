@@ -92,7 +92,9 @@ export function WorkbenchRail(): React.JSX.Element | null {
   }
 
   const enterObjectContext = (): void => {
-    if (objectContext) return
+    if (objectContext) {
+      return
+    }
     closeProjectPage()
     setActiveView('terminal')
   }

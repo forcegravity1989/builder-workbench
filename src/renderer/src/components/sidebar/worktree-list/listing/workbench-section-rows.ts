@@ -26,15 +26,18 @@ export function buildWorkbenchSectionRows({
   projectGroups: readonly ProjectGroup[]
   withHostSections: (rows: Row[]) => HostSectionRow[]
 }): HostSectionRow[] {
-  if (!workbench) return withHostSections(rows)
+  if (!workbench) {
+    return withHostSections(rows)
+  }
   const pinnedStart = rows.findIndex((row) => row.type === 'header' && row.key === PINNED_GROUP_KEY)
   const nextHeader =
-    pinnedStart < 0
+    pinnedStart === -1
       ? -1
       : rows.findIndex((row, index) => index > pinnedStart && row.type === 'header')
-  const pinnedEnd = nextHeader < 0 ? rows.length : nextHeader
-  const pinned = pinnedStart < 0 ? [] : rows.slice(pinnedStart, pinnedEnd)
-  let natural = pinnedStart < 0 ? rows : [...rows.slice(0, pinnedStart), ...rows.slice(pinnedEnd)]
+  const pinnedEnd = nextHeader === -1 ? rows.length : nextHeader
+  const pinned = pinnedStart === -1 ? [] : rows.slice(pinnedStart, pinnedEnd)
+  let natural =
+    pinnedStart === -1 ? rows : [...rows.slice(0, pinnedStart), ...rows.slice(pinnedEnd)]
   if (groupBy === 'repo' && repoIds.length > 0) {
     const targetKeys = new Set(
       repoIds.map((id) => getProjectHeaderRevealTarget(id, repoMap, projectGrouping).key)
@@ -43,7 +46,9 @@ export function buildWorkbenchSectionRows({
     const groupById = new Map(projectGroups.map((group) => [group.id, group]))
     const rootGroupIds = new Set<string>()
     for (const id of repoIds) {
-      if (visibleKeys.has(getProjectHeaderRevealTarget(id, repoMap, projectGrouping).key)) continue
+      if (visibleKeys.has(getProjectHeaderRevealTarget(id, repoMap, projectGrouping).key)) {
+        continue
+      }
       let groupId = repoMap.get(id)?.projectGroupId
       const seen = new Set<string>()
       while (groupId && !seen.has(groupId)) {
@@ -55,10 +60,15 @@ export function buildWorkbenchSectionRows({
     const prefix: Row[] = []
     const blocks: Row[][] = []
     for (const row of natural) {
-      if (row.type === 'header' && (row.projectGroupDepth ?? 0) === 0) blocks.push([])
-      const block = blocks[blocks.length - 1]
-      if (block) block.push(row)
-      else prefix.push(row)
+      if (row.type === 'header' && (row.projectGroupDepth ?? 0) === 0) {
+        blocks.push([])
+      }
+      const block = blocks.at(-1)
+      if (block) {
+        block.push(row)
+      } else {
+        prefix.push(row)
+      }
     }
     const isCurrent = (block: Row[]) =>
       block.some(
