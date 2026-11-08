@@ -3,7 +3,6 @@ import type {
   PlanningMaterial
 } from '../../../shared/workbench/version-material'
 import type {
-  MilestoneDelivery,
   MilestoneFeature,
   MilestoneMaterial,
   MilestonePhase
@@ -176,61 +175,43 @@ export function resolveMilestoneFeature(
     : { note: '特性匹配不唯一' }
 }
 
-export function matchMilestoneFeature(
-  delivery: MilestoneDelivery,
-  facts: MilestoneVersionFacts | undefined,
-  material: MilestoneMaterial
-): MilestoneFeatureIdentity | undefined {
-  if (!facts?.plan || milestoneVersionKey(facts.plan) !== milestoneVersionKey(delivery.version)) {
-    return undefined
-  }
-  const rows = material.features.filter((row) =>
-    row.deliveries.some((item) => item.id === delivery.id)
-  )
-  if (rows.length !== 1) {
-    return undefined
-  }
-  const matched = resolveMilestoneFeature(rows[0]!, material, [facts]).feature
-  return matched && milestoneFeatureGoal(facts, taskKey(matched.root.reference))
-    ? matched
-    : undefined
-}
-
 export type PlannedStageHours = Partial<Record<MilestonePhase, number>>
 
-/** A unique name and planned main Issue supply the existing overview's planned stage widths. */
+/** Clip macro planning to the adopted version; formal membership still comes from its fixed plan. */
 export function milestoneStageHours(
   material: MilestoneMaterial | undefined,
   facts: MilestoneVersionFacts,
   feature: FeatureData
 ): PlannedStageHours {
-  if (!material) {
+  if (!material || !facts.formalPlan || !facts.plan?.timeWindow) {
     return {}
   }
-  const matches = material.features.flatMap((row) =>
-    row.deliveries.flatMap((delivery, index) => {
-      const matched = matchMilestoneFeature(delivery, facts, material)
-      return matched && taskKey(matched.root.reference) === taskKey(feature.root.reference)
-        ? [{ row, delivery, index }]
-        : []
-    })
-  )
-  if (matches.length !== 1) {
+  const key = taskKey(feature.root.reference)
+  if (!milestoneFeatureGoal(facts, key)) {
     return {}
   }
-  const { row, delivery, index } = matches[0]!
-  const stages = [...delivery.stages]
-  if (!stages.some((stage) => stage.phase === 'Maintain')) {
-    const next = row.deliveries
-      .slice(index + 1)
-      .find((item) => item.stages.some((stage) => stage.phase === 'Maintain'))
-    stages.push(...(next?.stages.filter((stage) => stage.phase === 'Maintain') ?? []))
+  const rows = material.features.filter((row) => {
+    const matched = resolveMilestoneFeature(row, material, [facts]).feature
+    return matched && taskKey(matched.root.reference) === key
+  })
+  if (rows.length !== 1) {
+    return {}
   }
+  const start = plannedDay(`${facts.plan.timeWindow.start}T00:00`),
+    end = plannedDay(`${facts.plan.timeWindow.end}T00:00`) + 1
   const result: PlannedStageHours = {}
-  for (const stage of stages) {
-    const hours = (plannedDay(stage.end) - plannedDay(stage.start)) * 24
+  for (const delivery of rows[0].deliveries) {
+    if (!delivery.timeWindow) {
+      continue
+    }
+    const hours =
+      Math.max(
+        0,
+        Math.min(end, plannedDay(delivery.timeWindow.end)) -
+          Math.max(start, plannedDay(delivery.timeWindow.start))
+      ) * 24
     if (Number.isFinite(hours) && hours > 0) {
-      result[stage.phase] = hours
+      result[delivery.phase] = (result[delivery.phase] ?? 0) + hours
     }
   }
   return result

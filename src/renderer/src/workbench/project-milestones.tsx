@@ -1,3 +1,4 @@
+import { focusMissingMilestoneField } from './milestone-field'
 import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
@@ -21,9 +22,10 @@ import { useMilestonePlanning } from './use-milestone-planning'
 import { useVersionCatalogForRepo } from './use-version-catalog'
 import { MilestoneTimeline, type MilestoneLocation } from './milestone-timeline'
 import { createMilestoneFeature } from './milestone-add-feature'
-import { milestoneLaneConflict } from '../../../shared/workbench/milestone-sdlc'
 import {
   materializeMilestoneWeek,
+  milestoneDay,
+  milestoneDate,
   editMilestoneVersionName,
   datedMilestoneVersions,
   type MilestoneWeek
@@ -48,6 +50,7 @@ export function ProjectMilestones({
   const root = useRef<HTMLElement>(null)
   const [locate, setLocate] = useState<(MilestoneLocation & { scope: string | null }) | null>(null)
   const [restoreKey, setRestoreKey] = useState(0)
+  const [validationAttempt, setValidationAttempt] = useState(false)
   const [newFeature, setNewFeature] = useState<string | null>(null)
   const [updatingFormal, setUpdatingFormal] = useState(false)
   const restored = useRef<string | null>(null)
@@ -101,13 +104,8 @@ export function ProjectMilestones({
   const registeredVersions = (
     state.data.formal.registeredVersions ?? state.data.formal.versions
   ).concat(state.data.proposal?.registeredVersions ?? state.data.proposal?.versions ?? [])
-  const problems = milestoneProblems(state.draft)
+  const problems = milestoneProblems(state.draft, state.baseline)
   const changes = describeMilestoneChanges(state.baseline, state.draft)
-  function begin() {
-    if (state && !state.recoveryBlocked) {
-      patch({ editing: true })
-    }
-  }
   function renameVersion(cycleId: string, version: string, previousName?: string) {
     const result = editMilestoneVersionName(
       state!.draft,
@@ -148,25 +146,38 @@ export function ProjectMilestones({
     if (next.version.version !== name) {
       toast(`该日期已有 ${next.version.version}，已复用现有版本纳入规划`)
     }
-    edit(() => next.draft)
+    const settled = settleMilestoneWindows(state!.draft, next.draft)
+    if (settled.conflict) {
+      toast.error(settled.conflict)
+      return
+    }
+    edit(() => settled.draft)
   }
-  function addFeature() {
+  function addFeature(viewDate: string, viewEnd: number) {
     if (!enabled) {
       return
     }
-    const { id, date, draft: candidate } = createMilestoneFeature(state!.draft, registeredVersions)
-    const { draft, conflict } = settleMilestoneWindows(state!.draft, candidate)
-    if (conflict) {
-      toast(conflict)
+    const created = createMilestoneFeature(state!.draft, viewDate)
+    if (!created) {
+      toast.error('超出可记录的日期范围')
       return
     }
-    if (milestoneLaneConflict(draft)) {
-      toast('同一泳道不能重叠，请先为后续版本留出时间。')
-      return
-    }
+    const { id, date, draft } = created
     edit(() => draft)
-    navigate(date)
+    if (milestoneDay(date) + 7 > viewEnd) {
+      navigate(milestoneDate(milestoneDay(date) - 3))
+    }
+    setValidationAttempt(false)
     setNewFeature(id)
+  }
+  function validate() {
+    if (!problems.length) {
+      return true
+    }
+    setValidationAttempt(true)
+    toast.error(problems[0])
+    focusMissingMilestoneField(root.current)
+    return false
   }
   function open(version: ScheduledVersion) {
     if (
@@ -191,6 +202,7 @@ export function ProjectMilestones({
     <section
       ref={root}
       className="wb-ml"
+      data-validation-attempt={validationAttempt || undefined}
       data-draft-persistence={
         model.persistenceError
           ? 'failed'
@@ -255,7 +267,7 @@ export function ProjectMilestones({
               data-contextual-tour-target={
                 hasReviewAction ? 'milestone-start' : 'milestone-start milestone-submit'
               }
-              onClick={begin}
+              onClick={model.beginEditing}
             >
               规划里程碑
             </Button>
@@ -267,7 +279,7 @@ export function ProjectMilestones({
               conflict={!!state.sourceConflict || !!state.data.review.queryFailed}
               dirty={editing && dirty}
               retry={state.retry}
-              invalid={problems.length > 0}
+              validate={validate}
               hasReview={state.data.review.pr?.state === 'open'}
               reviewUrl={state.data.review.pr?.url ?? undefined}
               needsUpdate={!!state.data.mergedProposal}
@@ -329,12 +341,6 @@ export function ProjectMilestones({
           {error}
         </p>
       )}
-      {editing && !state.sourceConflict && problems.length > 0 && (
-        <p className="wb-ml-alert" role="status">
-          {problems.slice(0, 3).join('；')}
-          {problems.length > 3 ? `（另有 ${problems.length - 3} 项）` : ''}
-        </p>
-      )}
       {state.data.formal.problems.length > 0 && (
         <details className="wb-ml-alert">
           <summary>部分版本材料未读到</summary>
@@ -353,7 +359,6 @@ export function ProjectMilestones({
           catalog={catalog}
           key={`${restoreScope}:${editing}:${restoreKey}`}
           draft={visible}
-          registeredVersions={registeredVersions}
           editField={model.editField}
           registerWeek={registerWeek}
           navigate={navigate}
@@ -375,9 +380,18 @@ export function ProjectMilestones({
                 .map((v) => v.cycleId)
             )
           }
+          viewDate={state.viewDate}
+          featureOrder={state.featureOrder ?? []}
+          pinnedFeatures={state.pinnedFeatures ?? []}
+          pinFeature={(id) =>
+            patch({ pinnedFeatures: [...new Set([...(state.pinnedFeatures ?? []), id])] })
+          }
+          rangeOnly={state.rangeOnly ?? true}
+          onRangeOnly={(rangeOnly) => patch({ rangeOnly })}
+          validationAttempt={validationAttempt}
           scrollX={state.scrollX}
           scrollY={state.scrollY}
-          onScroll={(scrollX, scrollY) => patch({ scrollX, scrollY })}
+          onScroll={(scrollX, scrollY, viewDate) => patch({ scrollX, scrollY, viewDate })}
           locate={locate?.scope === restoreScope ? locate : null}
         />
       )}

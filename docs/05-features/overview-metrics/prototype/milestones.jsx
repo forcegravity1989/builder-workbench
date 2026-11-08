@@ -1,12 +1,18 @@
 import { MilestoneReviewNav } from './milestone-review-nav.jsx'
 import { AddMilestone, MilestoneGuide } from './milestones-roadmap.jsx'
 import { Timeline } from './milestones-timeline.jsx'
-import { defaultStages, laneConflict, settleWindows, editVersionName } from './milestones-sdlc.js'
+import {
+  day,
+  dateOf,
+  latestFeatureEnd,
+  scheduleProblem,
+  editVersionName
+} from './milestones-sdlc.js'
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left.js'
 import Undo2 from 'lucide-react/dist/esm/icons/undo-2.js'
 import Redo2 from 'lucide-react/dist/esm/icons/redo-2.js'
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw.js'
-import { newFeatureVersions, latestMonth, planWeek } from './milestones-calendar.js'
+import { planWeek } from './milestones-calendar.js'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
 import {
   clone,
@@ -38,14 +44,15 @@ const {
   CalendarRange,
   RefreshCw
 } = window.BWPrototypeDependencies
-const calendarExample = new URLSearchParams(window.location.search).get('example') === 'calendar'
 function App() {
   const [cases, setCases] = useState(loadCases),
     [caseId, setCaseId] = useState('existing'),
-    [planning, setPlanning] = useState(false)
+    [planning, setPlanning] = useState(
+      new URLSearchParams(location.search).get('mode') === 'planning'
+    )
   const [actualScenario, setActualScenario] = useState('normal')
   const [navigation, setNavigation] = useState(() => ({
-      date: calendarExample ? '2026-11-25' : cases.existing.draft.versions[0]?.start || currentDay,
+      date: localStorage.getItem(`${storageKey}-date`) || dateOf(day(currentDay) - 10),
       sequence: 1
     })),
     [modal, setModal] = useState(null),
@@ -55,7 +62,8 @@ function App() {
     [newFeature, setNewFeature] = useState(null),
     [submitting, setSubmitting] = useState(false),
     [submitError, setSubmitError] = useState(''),
-    [submitDemo, setSubmitDemo] = useState('')
+    [submitDemo, setSubmitDemo] = useState(''),
+    [validationAttempt, setValidationAttempt] = useState(false)
   const submitLock = useRef(false)
   const board = useRef(null),
     state = cases[caseId],
@@ -63,7 +71,7 @@ function App() {
     current = planning ? state.draft : state.published,
     empty = !planning && !state.published
   useEffect(() => {
-    if (dateExample || calendarExample) {
+    if (new URLSearchParams(location.search).has('review')) {
       board.current?.scrollIntoView({ block: 'start' })
     }
   }, [])
@@ -74,7 +82,7 @@ function App() {
   const history = histories.current[caseId]
   const plan = current || state.draft,
     changes = changesBetween(state.submitted, state.draft),
-    problem = incomplete(state.draft)
+    problem = incomplete(state.draft, state.submitted)
   const setState = (updater) => setCases((all) => ({ ...all, [caseId]: updater(all[caseId]) }))
   const editPlan = (updater, fieldEdit = false) => {
     const draft = updater(state.draft)
@@ -129,18 +137,13 @@ function App() {
     setNavigation((n) => ({ date, sequence: n.sequence + 1 }))
   }
   const choose = (value) => {
-    const selected = value === 'empty' ? cases.empty : cases.existing
     setCaseId(value === 'empty' ? 'empty' : 'existing')
     setPlanning(value === 'planning')
     setSubmitError('')
-    navigate(
-      `${latestMonth(value === 'planning' ? selected.draft : selected.published || selected.draft)}-01`
-    )
     setModal(null)
   }
   const begin = () => {
     setPlanning(true)
-    navigate(state.draft.versions[0]?.start || `${latestMonth(state.draft)}-01`)
     requestAnimationFrame(() =>
       board.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
     )
@@ -150,59 +153,89 @@ function App() {
       ...p,
       features: p.features.map((f) => (f.id === id ? { ...f, ...patch } : f))
     }))
-  const remove = (item) => {
-    editPlan((p) => ({ ...p, features: p.features.filter((f) => f.id !== item.id) }))
+  const remove = (feature) => {
+    editPlan((p) => ({ ...p, features: p.features.filter((f) => f.id !== feature.id) }))
   }
-  const add = () => {
-    const id = `demo-${crypto.randomUUID()}`
-    const versions = newFeatureVersions(state.draft, currentDay)
-    const expanded = {
-      ...versions.plan,
+  const removeMaintenance = (featureId, deliveryId) => {
+    editPlan((p) => ({
+      ...p,
+      features: p.features.map((f) =>
+        f.id === featureId
+          ? {
+              ...f,
+              deliveries: f.deliveries.filter(
+                (d) => d.id !== deliveryId || d.stages.some((s) => s.phase !== 'Maintain')
+              )
+            }
+          : f
+      )
+    }))
+    setNotice('已删除此段 Maintain，可撤销')
+  }
+  const add = (viewDate = currentDay, viewEnd = day(viewDate) + 14) => {
+    const id = `demo-${crypto.randomUUID()}`,
+      start = Math.max(day(currentDay), day(viewDate))
+    if (start + 7 > viewEnd) {
+      navigate(dateOf(start - 3))
+    }
+    setValidationAttempt(false)
+    setNewFeature(id)
+    editPlan((p) => ({
+      ...p,
       features: [
         {
           id,
-          month: versions.first.start.slice(0, 7),
           title: '',
           owner: '',
           deliveries: [
+            { id: crypto.randomUUID(), stages: [{ phase: 'Build', start, end: start + 7 }] },
             {
-              versionId: versions.first.id,
-              stages: defaultStages(versions.first)
-            },
-            { versionId: versions.next.id, stages: defaultStages(versions.next, true) }
+              id: crypto.randomUUID(),
+              stages: [{ phase: 'Maintain', start: start + 7, end: start + 14 }]
+            }
           ]
         },
-        ...versions.plan.features
+        ...p.features
       ]
-    }
-    const settled = settleWindows(state.draft, expanded)
-    if (settled.conflict) {
-      setNotice(settled.conflict)
-      return
-    }
-    const candidate = settled.plan
-    if (laneConflict(candidate)) {
-      setNotice('同一泳道不能重叠，请先为后续版本留出时间。')
-      return
-    }
-    setNewFeature(id)
-    editPlan(() => candidate)
-    navigate(versions.first.start)
+    }))
   }
-  const reorder = (id, target, side) => {
-    if (id === target) {
+  const requestReview = () => {
+    if (problem) {
+      setValidationAttempt(true)
+      setNotice(problem)
+      requestAnimationFrame(() => {
+        const field = [...document.querySelectorAll('[data-required="true"]')].find(
+          (el) => !el.value.trim()
+        )
+        field?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+        field?.focus({ preventScroll: true })
+      })
       return
     }
-    editPlan((p) => {
-      const item = p.features.find((f) => f.id === id)
-      const features = p.features.filter((f) => f.id !== id)
-      const index = features.findIndex((f) => f.id === target)
-      if (!item || index === -1) {
-        return p
-      }
-      features.splice(index + (side === 'after' ? 1 : 0), 0, item)
-      return { ...p, features }
-    })
+    setModal({ type: 'review' })
+  }
+  const arrangeMaintenance = (feature, viewDate, viewEnd) => {
+    const start = Math.max(day(viewDate), day(currentDay), latestFeatureEnd(feature))
+    const delivery = {
+      id: crypto.randomUUID(),
+      stages: [{ phase: 'Maintain', start, end: start + 7 }]
+    }
+    const next = {
+      ...state.draft,
+      features: state.draft.features.map((f) =>
+        f.id === feature.id ? { ...f, deliveries: [...f.deliveries, delivery] } : f
+      )
+    }
+    const error = scheduleProblem(next, state.draft)
+    if (error) {
+      setNotice(error)
+      return
+    }
+    editPlan(() => next)
+    if (start + 7 > viewEnd) {
+      navigate(dateOf(start - 3))
+    }
+    setNotice('已追加一周维护，可拖动调整日期；误加可撤销')
   }
   const restore = () => {
     setSubmitError('')
@@ -446,9 +479,7 @@ function App() {
                       ) : (
                         <button
                           className="btn btn-primary"
-                          disabled={
-                            submitting || (state.review === 'none' && (!dirty || Boolean(problem)))
-                          }
+                          disabled={submitting || (state.review === 'none' && !dirty)}
                           title={
                             dirty
                               ? problem || '核对本次变更'
@@ -456,7 +487,7 @@ function App() {
                                 ? '没有未提交修改'
                                 : '查看已提交的评审'
                           }
-                          onClick={() => setModal({ type: 'review' })}
+                          onClick={requestReview}
                         >
                           {submitting
                             ? '提交中…'
@@ -488,11 +519,6 @@ function App() {
                   )}
                 </div>
               </div>
-              {planning && problem && (
-                <p className="ml-schedule-problem" role="alert">
-                  {problem}
-                </p>
-              )}
               {empty ? (
                 <div className="ml-first-plan">
                   <CalendarRange size={30} />
@@ -536,9 +562,23 @@ function App() {
                         setNotice(result.problem)
                       }
                     }}
+                    onMaintain={arrangeMaintenance}
+                    onRemoveMaintenance={removeMaintenance}
                     onDelete={remove}
-                    onReorder={reorder}
-                    onApply={(next) => editPlan(() => next)}
+                    onNavigate={navigate}
+                    onNotice={setNotice}
+                    validationAttempt={validationAttempt}
+                    onApply={(next) =>
+                      editPlan(() => ({
+                        ...next,
+                        features: next.features.map((f) => ({
+                          ...f,
+                          deliveries: f.deliveries.toSorted(
+                            (a, b) => a.stages[0].start - b.stages[0].start
+                          )
+                        }))
+                      }))
+                    }
                     onVersion={openVersion}
                     newFeature={newFeature}
                   />
@@ -640,7 +680,7 @@ function App() {
             </section>
           </div>
           <p className="ml-footnote">
-            原型注释: 11 月的特性、人员与排期均为样例；原型不会写入项目材料或提交评审。
+            原型注释: 特性、人员与日期排期均为样例；原型不会写入项目材料或提交评审。
           </p>
         </Modal>
       )}
