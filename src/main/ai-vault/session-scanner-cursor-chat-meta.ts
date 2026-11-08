@@ -68,6 +68,15 @@ export function wasCursorChatMetaRefused(transcriptPath: string): boolean {
   return scanScopedIndex.getStore()?.refusedTranscripts.has(transcriptPath) ?? false
 }
 
+/** A refused chats root cannot prove that this transcript has no metadata. */
+export function cursorChatMetaUnavailable(transcriptPath: string): boolean {
+  const chatsRoot = cursorChatsRootFromTranscriptPath(transcriptPath)
+  return (
+    wasCursorChatMetaRefused(transcriptPath) ||
+    (chatsRoot !== null && scanScopedIndex.getStore()?.refusals.has(chatsRoot) === true)
+  )
+}
+
 /** Chats roots the current scan was refused, for the caller to report as scan issues. */
 export function cursorChatMetaRefusals(): { chatsRoot: string; message: string }[] {
   const scan = scanScopedIndex.getStore()

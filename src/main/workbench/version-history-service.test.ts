@@ -286,9 +286,23 @@ it('lists one record per cycle round across no-ff, ff and rebase history while p
     workflow: 'plan'
   })
   expect(unverifiedRead.document.version).toBe('unverified')
+  // An unmerged branch commit is readable: the file exists and parses, and
+  // being reachable from trunk proves nothing about displaying it.
+  const unmergedRaw = git(['show', `${unmergedCommit}:.bw/planning/v1/data.json`])
+  const unmergedPlan = await port.readPlan({
+    scope,
+    planRef: {
+      ...planRef,
+      cycleId: 'unmerged-cycle',
+      revision: digest(unmergedRaw),
+      sourceCommit: unmergedCommit
+    }
+  })
+  expect(unmergedPlan.document.cycleId).toBe('unmerged-cycle')
+  // A missing material path is a missing source, not a format error.
   await expect(
-    port.readPlan({ scope, planRef: { ...planRef, sourceCommit: unmergedCommit } })
-  ).rejects.toMatchObject({ code: 'unverified-source' })
+    port.readPlan({ scope, planRef: { ...planRef, version: 'v9.9' } })
+  ).rejects.toMatchObject({ code: 'history-unavailable' })
   await expect(
     port.readPlan({ scope, planRef: { ...planRef, cycleId: 'second-cycle' } })
   ).rejects.toMatchObject({ code: 'history-identity-mismatch' })
@@ -297,7 +311,7 @@ it('lists one record per cycle round across no-ff, ff and rebase history while p
   ).rejects.toMatchObject({ code: 'history-identity-mismatch' })
 })
 
-it('reads reachable trunk and cycle revisions without losing same-cycle weeks or accepting unrelated branches', async () => {
+it('reads reachable trunk and cycle revisions without losing same-cycle weeks', async () => {
   const result = await service().read({
     scope,
     sourceCommit: ffMultiMaterialCommit,
@@ -343,25 +357,27 @@ it('reads reachable trunk and cycle revisions without losing same-cycle weeks or
     expectedRevision: catalog.records[1].revision
   }
   expect((await port.read(request)).document).toMatchObject({ cycleId: 'spanning-weeks' })
-  await expect(port.read({ ...request, source: 'trunk' })).rejects.toMatchObject({
-    code: 'unverified-source'
-  })
+  expect(
+    (await port.read({ ...request, source: 'trunk' })).document
+  ).toMatchObject({ cycleId: 'spanning-weeks' })
   await expect(port.read({ ...request, expectedRevision: firstRevision })).rejects.toMatchObject({
     code: 'history-identity-mismatch'
   })
   await expect(port.read({ ...request, cycleId: 'different-cycle' })).rejects.toMatchObject({
     code: 'history-identity-mismatch'
   })
-  await expect(
-    port.read({
-      scope,
-      source: 'cycle',
-      sourceCommit: unrelatedCommit,
-      version: 'v1',
-      cycleId: 'unrelated',
-      workflow: 'plan'
-    })
-  ).rejects.toMatchObject({ code: 'unverified-source' })
+  expect(
+    (
+      await port.read({
+        scope,
+        source: 'cycle',
+        sourceCommit: unrelatedCommit,
+        version: 'v1',
+        cycleId: 'unrelated',
+        workflow: 'plan'
+      })
+    ).document.cycleId
+  ).toBe('unrelated')
   expect(
     (
       await port.read({
@@ -420,7 +436,7 @@ it('lists version folders from data.json committed on the cycle branch itself', 
     workflow: 'plan'
   })
   expect(catalog.plans.some((item) => item.version === 'template')).toBe(false)
-  // 合规目录即候选；不合规目录不静默消失。
+  // 合规目录即候选；格式/身份问题目录不静默消失（缺 data.json 的目录静默跳过）。
   expect(catalog.plans.map((item) => item.version)).toEqual(
     expect.arrayContaining(['v1', 'unverified'])
   )

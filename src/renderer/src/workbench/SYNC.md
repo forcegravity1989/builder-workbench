@@ -46,6 +46,8 @@ ORCA_BACKGROUND_LAUNCH=1 REMOTE_DEBUGGING_PORT=9337 pnpm run dev:workbench
 $env:ORCA_BACKGROUND_LAUNCH = '1'; $env:REMOTE_DEBUGGING_PORT = '9337'; pnpm run dev:workbench
 ```
 
+开发实例和其中的终端只继承启动进程的环境变量：从 IDE、agent 等环境被收敛的进程起 dev 时，启动前要先补上本机需要的用户级变量（如内网 CA 的 `NODE_EXTRA_CA_CERTS`）；Windows 上 `dev:workbench` 会自动从用户环境补回该变量（清单见 `config/scripts/dev-workbench-env.mjs`）。
+
 打试用包仍用：`pnpm run build:mac:workbench`（签名 / 分发 / CDP smoke 前再打）。
 
 ## 品牌与开关

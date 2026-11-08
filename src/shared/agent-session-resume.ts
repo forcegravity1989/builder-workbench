@@ -16,7 +16,9 @@ export const RESUMABLE_TUI_AGENTS = [
   'omp',
   'prime-agent',
   'copilot',
-  'kimi'
+  'cursor',
+  'kimi',
+  'dsh'
 ] as const satisfies readonly TuiAgent[]
 
 export type ResumableTuiAgent = (typeof RESUMABLE_TUI_AGENTS)[number]
@@ -199,6 +201,12 @@ export function extractAgentProviderSession(
       const id = readSessionId(payload, ['session_id'])
       return id ? { key: 'session_id', id } : null
     }
+    // Why: DSH's hook bridge always sends an empty `transcript_path` (its persistence seam
+    // exposes no artifact path), so the session id alone carries the resume target.
+    case 'dsh': {
+      const id = readSessionId(payload, ['session_id'])
+      return id ? { key: 'session_id', id } : null
+    }
     case 'antigravity': {
       const id = readSessionId(payload, ['conversationId'])
       return id ? { key: 'conversation_id', id } : null
@@ -235,8 +243,11 @@ export function extractAgentProviderSession(
       const id = readSessionId(payload, ['session_id', 'sessionId'])
       return id ? { key: 'session_id', id } : null
     }
+    case 'cursor': {
+      const id = readSessionId(payload, ['conversation_id'])
+      return id ? { key: 'conversation_id', id } : null
+    }
     case 'amp':
-    case 'cursor':
     case 'command-code':
     case 'hermes':
       return null
@@ -252,6 +263,8 @@ export function getAgentResumeArgv(
   switch (agent) {
     case 'claude':
       return providerSession.key === 'session_id' ? ['claude', '--resume', id] : null
+    case 'cursor':
+      return providerSession.key === 'conversation_id' ? ['cursor-agent', '--resume', id] : null
     case 'codex':
       return providerSession.key === 'session_id' ? ['codex', 'resume', id] : null
     case 'gemini':
@@ -285,6 +298,11 @@ export function getAgentResumeArgv(
     // resume commands, so local and remote resumes agree on one spelling.
     case 'copilot':
       return providerSession.key === 'session_id' ? ['copilot', `--resume=${id}`] : null
+    // Pin the backend: a remembered launchpad engine must not receive a DSH session id.
+    case 'dsh':
+      return providerSession.key === 'session_id'
+        ? ['dsh-tui', '--backend=dsh', '--resume', id]
+        : null
     // Why: Kimi resumes by id with --session; sessions are work-dir-scoped (enforced by callers).
     case 'kimi':
       return providerSession.key === 'session_id' ? ['kimi', '--session', id] : null
