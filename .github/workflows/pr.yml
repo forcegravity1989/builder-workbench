@@ -21,6 +21,43 @@ permissions:
   contents: read
 
 jobs:
+  codex-windows:
+    name: Windows Codex protocol and lifecycle
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      # Keep native-addon intermediates below MAX_PATH while retaining the
+      # workspace's node-gyp resolution for rebuilds run from package dirs.
+      PNPM_CONFIG_VIRTUAL_STORE_DIR: '.p'
+      PNPM_CONFIG_VIRTUAL_STORE_DIR_MAX_LENGTH: '32'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install Node dependencies
+        uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+
+      # Account-free protocol checks; these do not launch Electron or prove
+      # that a signed-in Codex conversation works in the Windows Chat UI.
+      - name: Test Codex transport and session lifecycle
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/codex/codex-app-server-connection.test.ts
+          src/main/codex/codex-app-server-process-teardown.test.ts
+          src/main/codex/codex-structured-session-close.test.ts
+          src/main/codex/codex-structured-session-cancel.test.ts
+          src/main/codex/codex-structured-launch-resolution.test.ts
+          src/main/codex/codex-session-index-heal.test.ts
+          src/main/codex-accounts/codex-credential-absence-grace.test.ts
+          src/main/codex-accounts/codex-windows-interactive-login.test.ts
+          src/main/codex-accounts/service-login-process-teardown.test.ts
+          src/main/rate-limits/codex-
+          src/main/rate-limits/service-inactive-account-previews.test.ts
+
   verify:
     name: lint, typecheck, tests, build
     runs-on: ubuntu-latest
@@ -37,6 +74,18 @@ jobs:
         with:
           native-runtime: node
           cache-electron-package: 'true'
+
+      - name: Test DSH CLI integration contracts
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/dsh/dsh-integration.test.ts
+          src/main/dsh/dsh-hook-packages.test.ts
+          src/shared/agent-process-recognition.test.ts
+          src/shared/agent-session-resume.test.ts
+          src/shared/tui-agent-startup.test.ts
+          src/main/agent-hooks/managed-hook-script-refresh.test.ts
+          src/main/agent-hooks/managed-hook-command-contract.test.ts
+          src/main/agent-hooks/server-retired-pane-new-turn.test.ts
 
       - name: Lint
         run: pnpm run lint

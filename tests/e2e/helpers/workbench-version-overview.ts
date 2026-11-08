@@ -232,6 +232,8 @@ async function verifyDraftAcceptanceSource(
   expect(`sha256:${createHash('sha256').update(latestBytes).digest('hex')}`).not.toBe(
     acceptance.planRef.revision
   )
+  // Fixture property, not a system gate: the fixed plan commit is reachable only from the
+  // acceptance tree. Merge-proof gates are gone (#450) — display is "file exists and parses".
   const reachability = [root, flows.plan, flows.acceptance].map((directory) => ({
     directory,
     reachable:
@@ -243,10 +245,12 @@ async function verifyDraftAcceptanceSource(
   const before = snapshotOverviewMaterials(root)
   try {
     const nativeReads = await bindOverviewFlowsAndRead(page, root, acceptance.planRef)
-    expect(nativeReads.acceptance.ok).toBe(true)
-    expect(nativeReads.acceptance.value?.document.goals[0]?.title).toBe(overviewPinnedTitle)
-    expect(nativeReads.home.error?.code).toBe('unverified-source')
-    expect(nativeReads.plan.error?.code).toBe('unverified-source')
+    // The same pinned plan now reads successfully from every scope sharing the object
+    // store — home and plan included — with no "unverified-source" rejection.
+    for (const [name, read] of Object.entries(nativeReads)) {
+      expect(read.ok, `${name} scope reads the fixed plan without a merge proof`).toBe(true)
+      expect(read.value?.document.goals[0]?.title, `${name} sees pinned title`).toBe(overviewPinnedTitle)
+    }
     await info.attach('draft-acceptance-fixture-proof', {
       body: JSON.stringify({
         provider: 'not used in this scenario (no mock)',
