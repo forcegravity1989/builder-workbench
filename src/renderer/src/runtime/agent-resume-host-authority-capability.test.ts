@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { RESUMABLE_TUI_AGENTS } from '../../../shared/agent-session-resume'
 import {
   AGENT_SESSION_KIMI_RESUME_RUNTIME_CAPABILITY,
+  AGENT_SESSION_CURSOR_RESUME_RUNTIME_CAPABILITY,
+  AGENT_SESSION_DSH_RESUME_RUNTIME_CAPABILITY,
   AGENT_SESSION_OMP_RESUME_PATH_RUNTIME_CAPABILITY,
   RUNTIME_CAPABILITIES
 } from '../../../shared/protocol-version'
@@ -26,8 +28,16 @@ describe('agentResumeHostAuthorityCapability', () => {
     expect(agentResumeHostAuthorityCapability(undefined)).toBeUndefined()
   })
 
-  it('advertises the Kimi resume capability from the host', () => {
+  it('advertises agent-specific resume capabilities from the host', () => {
     expect(RUNTIME_CAPABILITIES).toContain(AGENT_SESSION_KIMI_RESUME_RUNTIME_CAPABILITY)
+    expect(RUNTIME_CAPABILITIES).toContain(AGENT_SESSION_CURSOR_RESUME_RUNTIME_CAPABILITY)
+    expect(RUNTIME_CAPABILITIES).toContain(AGENT_SESSION_DSH_RESUME_RUNTIME_CAPABILITY)
+    expect(agentResumeHostAuthorityCapability('cursor')).toBe(
+      AGENT_SESSION_CURSOR_RESUME_RUNTIME_CAPABILITY
+    )
+    expect(agentResumeHostAuthorityCapability('dsh')).toBe(
+      AGENT_SESSION_DSH_RESUME_RUNTIME_CAPABILITY
+    )
   })
 
   it('pins the gate for every resumable agent so a new member is a deliberate decision', () => {
@@ -50,8 +60,10 @@ describe('agentResumeHostAuthorityCapability', () => {
       devin: undefined,
       'prime-agent': undefined,
       copilot: undefined,
+      cursor: AGENT_SESSION_CURSOR_RESUME_RUNTIME_CAPABILITY,
       omp: AGENT_SESSION_OMP_RESUME_PATH_RUNTIME_CAPABILITY,
-      kimi: AGENT_SESSION_KIMI_RESUME_RUNTIME_CAPABILITY
+      kimi: AGENT_SESSION_KIMI_RESUME_RUNTIME_CAPABILITY,
+      dsh: AGENT_SESSION_DSH_RESUME_RUNTIME_CAPABILITY
     })
   })
 })

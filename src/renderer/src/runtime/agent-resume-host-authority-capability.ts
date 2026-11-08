@@ -2,6 +2,7 @@ import type { ResumableTuiAgent } from '../../../shared/agent-session-resume'
 import type { TuiAgent } from '../../../shared/tui-agent'
 import {
   AGENT_SESSION_KIMI_RESUME_RUNTIME_CAPABILITY,
+  AGENT_SESSION_CURSOR_RESUME_RUNTIME_CAPABILITY,
   AGENT_SESSION_DSH_RESUME_RUNTIME_CAPABILITY,
   AGENT_SESSION_OMP_RESUME_PATH_RUNTIME_CAPABILITY,
   type RuntimeCapability
@@ -30,6 +31,7 @@ const RESUME_HOST_AUTHORITY_CAPABILITY_BY_AGENT = {
   'prime-agent': undefined,
   // Ungated to match how main shipped copilot resume; gating it is its own change.
   copilot: undefined,
+  cursor: AGENT_SESSION_CURSOR_RESUME_RUNTIME_CAPABILITY,
   omp: AGENT_SESSION_OMP_RESUME_PATH_RUNTIME_CAPABILITY,
   kimi: AGENT_SESSION_KIMI_RESUME_RUNTIME_CAPABILITY,
   dsh: AGENT_SESSION_DSH_RESUME_RUNTIME_CAPABILITY

@@ -106,6 +106,33 @@ jobs:
           src/relay/workbench
           src/shared/workbench
 
+      - name: Test native usage protocols and account integration
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/rate-limits
+          src/main/claude-accounts/keychain.test.ts
+          src/main/ipc/register-core-handlers/register-core-handlers.test.ts
+          src/shared/rate-limit-types.test.ts
+          src/renderer/src/components/status-bar/status-bar-provider-visibility.test.ts
+          src/renderer/src/store/slices/ui-hydration-workspace-preferences.test.ts
+          src/renderer/src/web/web-preload-api-composition.test.ts
+
+      - name: Test Cursor hook and continuation protocols
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/cursor
+          src/main/claude/hook-service.test.ts
+          src/main/agent-hooks/windows-powershell-hook-launcher.test.ts
+          src/main/agent-hooks/installer-utils.test.ts
+          src/main/ai-vault/session-scanner-cursor-chat-meta.test.ts
+          src/shared/agent-session-option-catalog.test.ts
+          src/shared/agent-session-option-catalog-grok.test.ts
+          src/shared/tui-agent-startup-session-options.test.ts
+          src/shared/agent-session-resume.test.ts
+          src/shared/agent-resume-argv-drop.test.ts
+          src/shared/agent-resume-launch-command.test.ts
+          src/renderer/src/runtime/agent-resume-host-authority-capability.test.ts
+
       - name: Build desktop application
         run: pnpm run build:desktop
 
