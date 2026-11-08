@@ -1,4 +1,4 @@
-import type { BrowserGrabRect } from './browser-grab-types'
+import { GRAB_BUDGET, type BrowserGrabRect } from './browser-grab-types'
 
 export type BrowserAnnotationViewportBridgeMarker = {
   id: string
@@ -6,6 +6,7 @@ export type BrowserAnnotationViewportBridgeMarker = {
   rectPage: BrowserGrabRect
   rectViewport: BrowserGrabRect
   isFixed: boolean
+  selector?: string
 }
 
 export type BrowserSetAnnotationViewportBridgeArgs = {
@@ -25,6 +26,15 @@ export type BrowserAnnotationViewportBridgeOptions = {
 
 export const BROWSER_ANNOTATION_VIEWPORT_BRIDGE_WORLD_ID = 1207
 export const BROWSER_ANNOTATION_VIEWPORT_MESSAGE_PREFIX = '__orca_annotation_viewport__:'
+
+export function browserAnnotationMarkerSelector(selector: string): string | undefined {
+  // Grab payloads may contain a display-only truncation suffix, never a DOM identity.
+  return selector.length > 0 &&
+    selector.length <= GRAB_BUDGET.selectorMaxLength &&
+    !selector.endsWith(' (truncated)')
+    ? selector
+    : undefined
+}
 
 export function isValidBrowserAnnotationViewportBridgeToken(value: unknown): value is string {
   return typeof value === 'string' && /^[a-zA-Z0-9_-]{16,80}$/.test(value)
@@ -67,6 +77,9 @@ export function isValidBrowserAnnotationViewportBridgeMarkers(
         Number.isInteger(candidate.index) &&
         (candidate.index as number) >= 0 &&
         (candidate.index as number) < 100 &&
+        (candidate.selector === undefined ||
+          (typeof candidate.selector === 'string' &&
+            candidate.selector.length <= GRAB_BUDGET.selectorMaxLength)) &&
         typeof candidate.isFixed === 'boolean' &&
         isValidBrowserGrabRect(candidate.rectPage) &&
         isValidBrowserGrabRect(candidate.rectViewport)
@@ -76,7 +89,7 @@ export function isValidBrowserAnnotationViewportBridgeMarkers(
 }
 
 // Why: persisted badges need to follow guest scroll without a React roundtrip;
-// the bridge mirrors only numeric marker geometry into a closed shadow overlay.
+// the bridge resolves captured selectors once and paints live element bounds in a closed shadow overlay.
 export function buildBrowserAnnotationViewportBridgeScript({
   emitViewport,
   enabled,
@@ -103,6 +116,7 @@ export function buildBrowserAnnotationViewportBridgeScript({
 
   const cleanup = (state) => {
     if (!state) return;
+    state.visibilityObserver?.disconnect();
     if (state.raf) {
       cancelAnimationFrame(state.raf);
     }
@@ -164,13 +178,37 @@ export function buildBrowserAnnotationViewportBridgeScript({
       state.host = null;
       state.shadowRoot = null;
       state.markerElements = new Map();
+      state.markerTargets = new Map();
+      state.visibilityObserver?.disconnect();
+      state.observedTargets = new Set();
       return;
     }
     const shadowRoot = ensureOverlay(state);
     if (!shadowRoot) return;
     const liveIds = new Set();
+    const liveTargets = new Set();
+    if (!state.observedTargets) state.observedTargets = new Set();
+    if (!state.targetVisibility) state.targetVisibility = new WeakMap();
+    if (!state.visibilityObserver && typeof IntersectionObserver === 'function') {
+      // Let Chromium resolve clipping and fixed containing blocks instead of duplicating CSS rules.
+      state.visibilityObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => state.targetVisibility.set(entry.target, entry.isIntersecting));
+        state.requestUpdate?.();
+      });
+    }
     state.markers.forEach((marker) => {
       liveIds.add(marker.id);
+      if (!state.markerTargets) state.markerTargets = new Map();
+      if (!state.markerTargets.has(marker.id) && marker.selector) {
+        let target = null;
+        try {
+          const matches = document.querySelectorAll(marker.selector);
+          if (matches.length === 1) target = matches[0];
+        } catch (e) {}
+        state.markerTargets.set(marker.id, target);
+      }
+      const target = state.markerTargets.get(marker.id);
+      if (target) liveTargets.add(target);
       let element = state.markerElements.get(marker.id);
       if (!element) {
         element = document.createElement('span');
@@ -184,6 +222,19 @@ export function buildBrowserAnnotationViewportBridgeScript({
       if (!liveIds.has(id)) {
         element.remove();
         state.markerElements.delete(id);
+        state.markerTargets?.delete(id);
+      }
+    });
+    state.observedTargets.forEach((target) => {
+      if (!liveTargets.has(target)) {
+        state.visibilityObserver?.unobserve(target);
+        state.observedTargets.delete(target);
+      }
+    });
+    liveTargets.forEach((target) => {
+      if (!state.observedTargets.has(target)) {
+        state.visibilityObserver?.observe(target);
+        state.observedTargets.add(target);
       }
     });
   };
@@ -196,12 +247,17 @@ export function buildBrowserAnnotationViewportBridgeScript({
     state.markers.forEach((marker) => {
       const element = state.markerElements.get(marker.id);
       if (!element) return;
-      const sourceRect = marker.isFixed ? marker.rectViewport : marker.rectPage;
-      const x = marker.isFixed ? sourceRect.x : sourceRect.x - viewport.scrollX;
-      const y = marker.isFixed ? sourceRect.y : sourceRect.y - viewport.scrollY;
+      const target = state.markerTargets?.get(marker.id);
+      if (marker.selector && (!target || !target.isConnected || target.getClientRects().length === 0)) {
+        element.style.display = 'none';
+        return;
+      }
+      const sourceRect = target ? target.getBoundingClientRect() : (marker.isFixed ? marker.rectViewport : marker.rectPage);
+      const x = target || marker.isFixed ? sourceRect.x : sourceRect.x - viewport.scrollX;
+      const y = target || marker.isFixed ? sourceRect.y : sourceRect.y - viewport.scrollY;
       const width = toNumber(sourceRect.width, 0);
       const height = toNumber(sourceRect.height, 0);
-      const visible =
+      const visible = (!target || state.targetVisibility.get(target) !== false) &&
         x + width >= 0 &&
         y + height >= 0 &&
         x <= viewportWidth &&
