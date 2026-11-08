@@ -1,3 +1,4 @@
+import { latestFeatureEnd } from '../../../shared/workbench/milestone-sdlc'
 import {
   milestoneDraft,
   type MilestoneRead,
@@ -16,6 +17,8 @@ export type Session = {
   editing: boolean
   viewDate?: string
   rangeOnly?: boolean
+  featureOrder?: string[]
+  pinnedFeatures?: string[]
   scrollX: number | null
   scrollY: number
   pageY: number
@@ -63,6 +66,12 @@ export function fresh(data: MilestoneRead, previous?: Session): Session {
     editing: previous?.editing ?? false,
     viewDate: previous?.viewDate,
     rangeOnly: previous?.rangeOnly,
+    featureOrder:
+      previous?.featureOrder ??
+      draft.material.features
+        .toSorted((a, b) => latestFeatureEnd(b) - latestFeatureEnd(a))
+        .map((f) => f.id),
+    pinnedFeatures: previous?.pinnedFeatures ?? [],
     scrollX: previous?.scrollX ?? null,
     scrollY: previous?.scrollY ?? 0,
     pageY: previous?.pageY ?? 0,
@@ -196,4 +205,22 @@ export function recordMilestoneSubmission(key: string, s: Session, result: Miles
     field: null,
     submitError: result.outcome.mode === 'failed' ? result.outcome.error : undefined
   })
+}
+
+export function beginMilestoneEditing(key: string) {
+  const s = sessions.get(key)
+  if (s && !s.recoveryBlocked) {
+    put(
+      key,
+      {
+        ...s,
+        editing: true,
+        featureOrder: s.draft.material.features
+          .toSorted((a, b) => latestFeatureEnd(b) - latestFeatureEnd(a))
+          .map((f) => f.id),
+        pinnedFeatures: []
+      },
+      false
+    )
+  }
 }

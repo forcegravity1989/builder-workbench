@@ -55,6 +55,9 @@ type Props = {
   onScroll(x: number, y: number, date: string): void
   viewDate?: string
   rangeOnly: boolean
+  featureOrder: string[]
+  pinnedFeatures: string[]
+  pinFeature(id: string): void
   onRangeOnly(value: boolean): void
   validationAttempt: boolean
   scrollX: number | null
@@ -71,9 +74,11 @@ export function MilestoneTimeline(props: Props) {
   const enabled = editing && !props.busy && !showActual
   const today = milestoneDay(milestoneToday())
   const viewport = useRef<HTMLDivElement>(null)
-  const pins = useRef(new Set<string>())
-  const order = useRef<string[] | null>(null)
-  const touch = (id: string) => pins.current.add(id)
+  const touch = (id: string) => {
+    if (!props.pinnedFeatures.includes(id)) {
+      props.pinFeature(id)
+    }
+  }
   const gesture = useMilestoneGesture(draft, enabled, viewport, (next) => edit(() => next), touch)
   const { origin, end, weeks, canvasWidth, range, days, scrollProps } = useMilestoneViewport(
     props,
@@ -105,31 +110,21 @@ export function MilestoneTimeline(props: Props) {
   const chronological = visible.material.features.toSorted(
     (a, b) => latestFeatureEnd(b) - latestFeatureEnd(a)
   )
-  const freezeOrder = editing
-  if (!freezeOrder) {
-    order.current = null
-    pins.current.clear()
-  }
-  if (freezeOrder && !order.current) {
-    order.current = chronological.map((f) => f.id)
-  }
-  if (freezeOrder && order.current) {
-    order.current = [
-      ...visible.material.features.filter((f) => !order.current!.includes(f.id)).map((f) => f.id),
-      ...order.current
-    ]
-  }
+  const order = [
+    ...visible.material.features.filter((f) => !props.featureOrder.includes(f.id)).map((f) => f.id),
+    ...props.featureOrder
+  ]
   const ordered =
-    freezeOrder && !showActual
-      ? visible.material.features.toSorted(
-          (a, b) => order.current!.indexOf(a.id) - order.current!.indexOf(b.id)
-        )
+    editing && !showActual
+      ? visible.material.features.toSorted((a, b) => order.indexOf(a.id) - order.indexOf(b.id))
       : chronological
   const features = ordered.filter((f) => {
     if (
       !props.rangeOnly ||
       !f.title.trim() ||
-      (freezeOrder && !showActual && (f.id === props.newFeature || pins.current.has(f.id)))
+      (freezeOrder &&
+        !showActual &&
+        (f.id === props.newFeature || props.pinnedFeatures.includes(f.id)))
     ) {
       return true
     }

@@ -106,11 +106,6 @@ export function ProjectMilestones({
   ).concat(state.data.proposal?.registeredVersions ?? state.data.proposal?.versions ?? [])
   const problems = milestoneProblems(state.draft)
   const changes = describeMilestoneChanges(state.baseline, state.draft)
-  function begin() {
-    if (!state!.recoveryBlocked) {
-      patch({ editing: true })
-    }
-  }
   function renameVersion(cycleId: string, version: string, previousName?: string) {
     const result = editMilestoneVersionName(
       state!.draft,
@@ -272,7 +267,7 @@ export function ProjectMilestones({
               data-contextual-tour-target={
                 hasReviewAction ? 'milestone-start' : 'milestone-start milestone-submit'
               }
-              onClick={begin}
+              onClick={model.beginEditing}
             >
               规划里程碑
             </Button>
@@ -386,6 +381,11 @@ export function ProjectMilestones({
             )
           }
           viewDate={state.viewDate}
+          featureOrder={state.featureOrder ?? []}
+          pinnedFeatures={state.pinnedFeatures ?? []}
+          pinFeature={(id) =>
+            patch({ pinnedFeatures: [...new Set([...(state.pinnedFeatures ?? []), id])] })
+          }
           rangeOnly={state.rangeOnly ?? true}
           onRangeOnly={(rangeOnly) => patch({ rangeOnly })}
           validationAttempt={validationAttempt}

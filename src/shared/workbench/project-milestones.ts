@@ -232,6 +232,7 @@ export function milestoneVersionConflict(
       return `${dated[i - 1].version} 与 ${dated[i].version} 日期重叠，请调整相关版本`
     }
   }
+  return undefined
 }
 export function milestoneProblems(draft: MilestoneDraft): string[] {
   const parsed = MilestoneMaterialSchema.safeParse(draft.material)

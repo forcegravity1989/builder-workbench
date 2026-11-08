@@ -11,6 +11,7 @@ import { ensureNamedWorktree, nativeWorkspaceScopeKey } from './version-cycle/na
 import { readMilestones, submitMilestones, type MilestoneScope } from './milestone-port'
 import {
   sessions,
+  beginMilestoneEditing,
   recordMilestoneSubmission,
   submitting,
   notify,
@@ -252,14 +253,14 @@ export function useMilestonePlanning(
         void reload()
         return
       }
-      put(key, fresh(s.data, s))
+      put(key, fresh(s.data, { ...s, featureOrder: undefined, pinnedFeatures: [] }))
       setReadError(null)
     }
   }
   const finishEditing = () => {
     const s = sessions.get(key)
     if (s && !submitting.has(key) && !reading) {
-      put(key, { ...s, editing: false, field: null })
+      put(key, { ...s, editing: false, field: null, featureOrder: undefined, pinnedFeatures: [] })
     }
   }
   return {
@@ -279,6 +280,7 @@ export function useMilestonePlanning(
     finishEditing,
     undo: () => history('undo'),
     redo: () => history('redo'),
+    beginEditing: () => beginMilestoneEditing(key),
     beginFieldEdit: () => patch({ field: null }),
     canUndo: Boolean(state?.past.length),
     canRedo: Boolean(state?.future.length)

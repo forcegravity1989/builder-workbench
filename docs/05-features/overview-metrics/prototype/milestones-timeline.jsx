@@ -110,13 +110,13 @@ export function Timeline({
   const blankWeeks = baseCalendar.weeks.filter(
     (w) => !display.versions.some((v) => v.start <= w.end && v.end >= w.start)
   )
-  if (!canEdit) {
+  if (!planning) {
     editingPins.current.clear()
   }
   const chronological = display.features.toSorted(
     (a, b) => latestFeatureEnd(b) - latestFeatureEnd(a)
   )
-  if (!canEdit || !editingOrder.current) {
+  if (!planning || !editingOrder.current) {
     editingOrder.current = chronological.map((f) => f.id)
   }
   const newIds = display.features
