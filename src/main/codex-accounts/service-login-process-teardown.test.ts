@@ -71,6 +71,8 @@ describe('CodexAccountService config sync', () => {
       )
 
       await vi.advanceTimersByTimeAsync(120_000)
+      expect(child.kill).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(60_000)
 
       await rejection
       expect(child.kill).toHaveBeenCalledTimes(1)

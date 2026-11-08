@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { PassThrough } from 'node:stream'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { spawnProcess } from '../../shared/child-process/run-process'
+import type * as CodexProcessTeardown from './codex-app-server-process-teardown'
 import {
   isCodexAppServerRequestError,
   openCodexAppServerConnection,
@@ -11,6 +12,25 @@ import {
   type CodexAppServerConnectionHandlers
 } from './codex-app-server-connection'
 import { isCodexAppServerUnsupportedError } from './codex-app-server-session'
+import { PROVIDER_EXIT_OUTPUT_DRAIN_MS } from '../provider-process/provider-exit-output-drain'
+
+vi.mock('./codex-app-server-process-teardown', async (importOriginal) => {
+  const actual = await importOriginal<typeof CodexProcessTeardown>()
+  return {
+    ...actual,
+    terminateCodexAppServerProcessTree: (
+      ...args: Parameters<typeof actual.terminateCodexAppServerProcessTree>
+    ) => {
+      if (args[0].pid === 9_999_999) {
+        // The synthetic child has no OS tree. Keep fake-clock transport tests
+        // independent of taskkill/ps; real children still use real teardown.
+        args[0].kill('SIGKILL')
+        return Promise.resolve(true)
+      }
+      return actual.terminateCodexAppServerProcessTree(...args)
+    }
+  }
+})
 
 const originalCodexHome = process.env.CODEX_HOME
 
@@ -102,7 +122,12 @@ function stubChild(options: { exitOnStdinEnd?: boolean } = {}): {
     }
   })
   if (options.exitOnStdinEnd !== false) {
-    child.stdin.on('finish', () => child.emit('exit', 0, null))
+    child.stdin.on('finish', () => {
+      child.emit('exit', 0, null)
+      child.stdout.end()
+      child.stderr.end()
+      child.emit('close', 0, null)
+    })
   }
   return { child, spawnImpl: (() => child) as unknown as typeof spawnProcess, written }
 }
@@ -321,6 +346,96 @@ describe('openCodexAppServerConnection', () => {
     await connection.close()
   })
 
+  it.each(['result', 'error'] as const)(
+    'drains a final %s and completion before publishing exit or finishing close',
+    async (kind) => {
+      const { child, spawnImpl } = stubChild({ exitOnStdinEnd: false })
+      answerInitialize(child)
+      const events: string[] = []
+      const connection = await openCodexAppServerConnection(
+        { command: 'codex', args: ['app-server'] },
+        {
+          onNotification: (method) => events.push(method),
+          onExit: () => events.push('exit')
+        },
+        spawnImpl
+      )
+      const pending = connection.request('turn/start').then(
+        (value) => value,
+        (error: unknown) => error
+      )
+      child.emit('exit', 1, null)
+      expect(connection.closed).toBe(true)
+      await expect(connection.request('turn/start')).rejects.toThrow('ended')
+      let closeSettled = false
+      const closing = connection.close().then((closed) => {
+        closeSettled = true
+        return closed
+      })
+      await flushStreams()
+      expect(events).toEqual([])
+      expect(closeSettled).toBe(false)
+
+      const reply =
+        kind === 'result'
+          ? { result: { turn: { id: 'turn-last' } } }
+          : { error: { code: -32602, message: 'final provider refusal' } }
+      child.stdout.write(`${JSON.stringify({ id: 2, ...reply })}\n`)
+      child.stdout.write('{"method":"turn/completed","params":{"turn":{"id":"turn-last"}}}\n')
+      const outcome = await pending
+      if (kind === 'result') {
+        expect(outcome).toEqual(reply.result)
+      } else {
+        expect(isCodexAppServerRequestError(outcome)).toBe(true)
+        expect((outcome as Error).message).toContain('final provider refusal')
+      }
+      child.stdout.end()
+      await expect(closing).resolves.toBe(true)
+      child.emit('close', 1, null)
+      child.emit('exit', 1, null)
+      expect(events).toEqual(['turn/completed', 'exit'])
+    }
+  )
+
+  it('keeps the final initialize refusal when process exit arrives before its answer', async () => {
+    const { child, spawnImpl } = stubChild({ exitOnStdinEnd: false })
+    const opening = rejection(
+      openCodexAppServerConnection({ command: 'codex', args: ['app-server'] }, {}, spawnImpl)
+    )
+    child.emit('exit', 1, null)
+    child.stdout.end(
+      '{"id":1,"error":{"code":-32601,"message":"final initialize refusal"}}\n'
+    )
+    expect(isCodexAppServerUnsupportedError(await opening)).toBe(true)
+  })
+
+  it('bounds inherited stdout and removes drain listeners after duplicate exit signals', async () => {
+    vi.useFakeTimers()
+    const { child, spawnImpl } = stubChild({ exitOnStdinEnd: false })
+    answerInitialize(child)
+    const onExit = vi.fn()
+    const connection = await openCodexAppServerConnection(
+      { command: 'codex', args: ['app-server'] },
+      { onExit },
+      spawnImpl
+    )
+    const endListeners = child.stdout.listenerCount('end')
+    const closeListeners = child.listenerCount('close')
+    const pending = rejection(connection.request('turn/start'))
+    child.emit('exit', 1, null)
+    child.emit('exit', 1, null)
+    const closing = connection.close()
+    await vi.advanceTimersByTimeAsync(PROVIDER_EXIT_OUTPUT_DRAIN_MS - 1)
+    expect(onExit).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    expect((await pending).message).toContain('ended')
+    await expect(closing).resolves.toBe(true)
+    expect(onExit).toHaveBeenCalledTimes(1)
+    expect(child.stdout.listenerCount('end')).toBe(endListeners)
+    expect(child.listenerCount('close')).toBe(closeListeners)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('classifies a CLI without the app-server subcommand as unsupported', async () => {
     const { child, spawnImpl } = stubChild({ exitOnStdinEnd: false })
     const opening = openCodexAppServerConnection(
@@ -391,7 +506,7 @@ describe('openCodexAppServerConnection', () => {
     })
 
     const closing = connection.close()
-    await vi.advanceTimersByTimeAsync(2_000)
+    await vi.advanceTimersByTimeAsync(2_000 + PROVIDER_EXIT_OUTPUT_DRAIN_MS)
     await closing
 
     await vi.waitFor(() => expect(child.kill).toHaveBeenCalledWith('SIGKILL'))
@@ -428,7 +543,7 @@ describe('openCodexAppServerConnection', () => {
     await vi.advanceTimersByTimeAsync(4_100)
 
     await expect(Promise.all([first, second])).resolves.toEqual([true, true])
-    expect(child.kill.mock.calls.map(([signal]) => signal)).toEqual(['SIGSTOP', 'SIGKILL'])
+    expect(child.kill.mock.calls.map(([signal]) => signal)).toEqual(['SIGKILL'])
   })
 
   it('allows a later close to observe exit after an unproven attempt', async () => {
@@ -445,6 +560,7 @@ describe('openCodexAppServerConnection', () => {
     await vi.advanceTimersByTimeAsync(5_000)
     await expect(first).resolves.toBe(false)
     child.emit('exit', 0, null)
+    child.emit('close', 0, null)
 
     await expect(connection.close()).resolves.toBe(true)
   })

@@ -21,6 +21,43 @@ permissions:
   contents: read
 
 jobs:
+  codex-windows:
+    name: Windows Codex protocol and lifecycle
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      # Keep native-addon intermediates below MAX_PATH while retaining the
+      # workspace's node-gyp resolution for rebuilds run from package dirs.
+      PNPM_CONFIG_VIRTUAL_STORE_DIR: '.p'
+      PNPM_CONFIG_VIRTUAL_STORE_DIR_MAX_LENGTH: '32'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install Node dependencies
+        uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+
+      # Account-free protocol checks; these do not launch Electron or prove
+      # that a signed-in Codex conversation works in the Windows Chat UI.
+      - name: Test Codex transport and session lifecycle
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/codex/codex-app-server-connection.test.ts
+          src/main/codex/codex-app-server-process-teardown.test.ts
+          src/main/codex/codex-structured-session-close.test.ts
+          src/main/codex/codex-structured-session-cancel.test.ts
+          src/main/codex/codex-structured-launch-resolution.test.ts
+          src/main/codex/codex-session-index-heal.test.ts
+          src/main/codex-accounts/codex-credential-absence-grace.test.ts
+          src/main/codex-accounts/codex-windows-interactive-login.test.ts
+          src/main/codex-accounts/service-login-process-teardown.test.ts
+          src/main/rate-limits/codex-
+          src/main/rate-limits/service-inactive-account-previews.test.ts
+
   verify:
     name: lint, typecheck, tests, build
     runs-on: ubuntu-latest
@@ -68,6 +105,33 @@ jobs:
           src/renderer/src/workbench
           src/relay/workbench
           src/shared/workbench
+
+      - name: Test native usage protocols and account integration
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/rate-limits
+          src/main/claude-accounts/keychain.test.ts
+          src/main/ipc/register-core-handlers/register-core-handlers.test.ts
+          src/shared/rate-limit-types.test.ts
+          src/renderer/src/components/status-bar/status-bar-provider-visibility.test.ts
+          src/renderer/src/store/slices/ui-hydration-workspace-preferences.test.ts
+          src/renderer/src/web/web-preload-api-composition.test.ts
+
+      - name: Test Cursor hook and continuation protocols
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/cursor
+          src/main/claude/hook-service.test.ts
+          src/main/agent-hooks/windows-powershell-hook-launcher.test.ts
+          src/main/agent-hooks/installer-utils.test.ts
+          src/main/ai-vault/session-scanner-cursor-chat-meta.test.ts
+          src/shared/agent-session-option-catalog.test.ts
+          src/shared/agent-session-option-catalog-grok.test.ts
+          src/shared/tui-agent-startup-session-options.test.ts
+          src/shared/agent-session-resume.test.ts
+          src/shared/agent-resume-argv-drop.test.ts
+          src/shared/agent-resume-launch-command.test.ts
+          src/renderer/src/runtime/agent-resume-host-authority-capability.test.ts
 
       - name: Build desktop application
         run: pnpm run build:desktop
