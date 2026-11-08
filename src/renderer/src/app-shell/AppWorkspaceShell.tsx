@@ -20,6 +20,8 @@ import { usePlanColumnResize } from '../workbench/use-plan-column-resize'
 import { useMetricsWorkspaceOpen } from '../workbench/metrics-workspace-open'
 import { useMetricsBandResize } from '../workbench/use-metrics-band-resize'
 import { WorkbenchRail } from '../workbench/WorkbenchRail'
+import { WorkbenchWorkspaceChoiceDialog } from '../workbench/WorkbenchWorkspaceChoiceDialog'
+import { WorkbenchVersionBindingDialog } from '../workbench/version-tree-bind-dialog'
 import { useWorkbenchObjectContext } from '../workbench/workbench-object-context'
 
 const Landing = lazy(() => import('../components/Landing'))
@@ -157,6 +159,8 @@ export function AppWorkspaceShell(props: {
   return (
     <CycleWorkspaceProvider>
       <AppWorkspaceContent {...props} />
+      <WorkbenchWorkspaceChoiceDialog />
+      <WorkbenchVersionBindingDialog />
     </CycleWorkspaceProvider>
   )
 }

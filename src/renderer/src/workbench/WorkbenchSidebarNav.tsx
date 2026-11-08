@@ -6,8 +6,6 @@ import type { Worktree } from '../../../shared/worktree/types'
 import { VersionTreeDisplayContext } from './VersionNativeTrees'
 import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { WorkbenchVersionNav } from './WorkbenchVersionNav'
-import { WorkbenchWorkspaceChoiceDialog } from './WorkbenchWorkspaceChoiceDialog'
-import { WorkbenchVersionBindingDialog } from './version-tree-bind-dialog'
 
 /**
  * Project identity stays above the native toolbar; tree sections share the native scroller.
@@ -37,11 +35,6 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
           </span>
         </span>
       </div>
-
-      {/* G2 多候选工作区选择器挂在侧栏层：任务屏、侧栏目标菜单与流程行在任意
-          视图触发选择时都可见（Radix portal，不受侧栏布局裁剪）。 */}
-      <WorkbenchWorkspaceChoiceDialog />
-      <WorkbenchVersionBindingDialog />
     </div>
   )
 }

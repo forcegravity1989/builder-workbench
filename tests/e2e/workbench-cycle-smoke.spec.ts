@@ -15,7 +15,7 @@ import { configureGoldenStubAgent, getGoldenStubAgentLaunchEnv } from './helpers
 import { verifyWorkflowDraft } from './helpers/workbench-workflow-draft'
 
 /**
- * BW main-chain smoke (G2 journey): the version workspace entry must prepare the
+ * BW main-chain smoke (G2 journey): creating a version must prepare the
  * bound plan/acceptance flow trees through workbench.versionWorkspace.prepare,
  * mount the plan board beside the native terminal, keep material edits on the
  * bound tree's own disk path (binding-fenced authorization), survive a renderer
@@ -315,6 +315,9 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
 
   // ---- 版本级清理确认单：本机实例默认勾选；删除执行沿 Orca 原生确认单，
   // 破坏性步骤不进 CI（J9 归人验证），此处只核对清单结构与取消路径。----
+  await expect(workbenchPage.locator('[data-workbench-versions]')).toHaveCount(0)
+  await workbenchPage.getByRole('button', { name: '版本工作区', exact: true }).click()
+  await expect(workbenchPage.locator('[data-workbench-versions]')).toBeVisible()
   await workbenchPage.getByRole('button', { name: '清理 v9.9 工作树' }).click()
   const cleanup = workbenchPage.getByRole('dialog').filter({ hasText: '清理 v9.9 工作树' })
   await expect(cleanup.getByRole('checkbox')).toHaveCount(2, { timeout: 60_000 })
