@@ -117,7 +117,6 @@ export function renderWorktreeSectionHeaderRow(args: {
       ? headerDrag.projectGroupHeaderBucketByGroupId.get(projectGroupIdForHeader)
       : undefined
   const isDraggableRepoHeader = Boolean(
-    !row.partialPresentation &&
     headerDrag.canReorderRepoHeaders &&
     isRepoHeader &&
     projectIdForHeader &&
@@ -125,7 +124,6 @@ export function renderWorktreeSectionHeaderRow(args: {
     (headerDrag.sidebarRepoHeaderIdsByBucket.get(repoHeaderBucketKey)?.length ?? 0) > 1
   )
   const isDraggableProjectGroupHeader = Boolean(
-    !row.partialPresentation &&
     headerDrag.canReorderProjectGroupHeaders &&
     projectGroupIdForHeader &&
     projectGroupHeaderBucketKey &&
@@ -204,7 +202,7 @@ export function renderWorktreeSectionHeaderRow(args: {
       style={isActiveStickyHeader ? undefined : { transform: getVirtualRowTransform(vItem.start) }}
     >
       <div
-        id={getWorktreeOptionId(row.presentationKey ?? row.key)}
+        id={getWorktreeOptionId(row.key)}
         data-sidebar-original-row-key={row.key}
         role="button"
         tabIndex={0}
