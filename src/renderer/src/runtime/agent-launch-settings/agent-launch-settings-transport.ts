@@ -65,7 +65,9 @@ export async function mutateHostAgentLaunchSettings(
       timeoutMs: 15_000
     }
   )
-  for (const listener of settingsListeners) listener(owner)
+  for (const listener of settingsListeners) {
+    listener(owner)
+  }
   return result.settings
 }
 

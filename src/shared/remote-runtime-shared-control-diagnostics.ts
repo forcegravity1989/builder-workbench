@@ -6,13 +6,24 @@ import type {
 
 type DiagnosticClose = { code: number; reason: string } | null
 
+type SharedControlDiagnosticsCounts = {
+  state: SharedControlConnectionState
+  reconnecting: boolean
+  pendingRequestCount: number
+  subscriptionCount: number
+  reconnectAttempt: number
+}
+
 export class SharedControlDiagnosticsTracker {
   private lastConnectedAt: number | null = null
   private lastClose: DiagnosticClose = null
   private lastError: string | null = null
   private lastPublished: RemoteRuntimeSharedConnectionDiagnostics | null = null
 
-  constructor(private readonly options: RemoteRuntimeSharedControlConnectionOptions) {}
+  constructor(
+    private readonly options: RemoteRuntimeSharedControlConnectionOptions,
+    private readonly counts: () => SharedControlDiagnosticsCounts
+  ) {}
 
   markClose(close: DiagnosticClose): void {
     this.lastClose = close
@@ -28,13 +39,8 @@ export class SharedControlDiagnosticsTracker {
     this.lastError = error
   }
 
-  get(args: {
-    state: SharedControlConnectionState
-    reconnecting: boolean
-    pendingRequestCount: number
-    subscriptionCount: number
-    reconnectAttempt: number
-  }): RemoteRuntimeSharedConnectionDiagnostics {
+  get(): RemoteRuntimeSharedConnectionDiagnostics {
+    const args = this.counts()
     return {
       state: args.reconnecting ? 'reconnecting' : args.state,
       pendingRequestCount: args.pendingRequestCount,
@@ -46,8 +52,8 @@ export class SharedControlDiagnosticsTracker {
     }
   }
 
-  publish(args: Parameters<SharedControlDiagnosticsTracker['get']>[0]): void {
-    const diagnostics = this.get(args)
+  publish(): void {
+    const diagnostics = this.get()
     const previous = this.lastPublished
     const closeUnchanged =
       previous?.lastClose?.code === diagnostics.lastClose?.code &&

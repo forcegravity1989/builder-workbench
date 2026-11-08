@@ -71,7 +71,9 @@ export function HostAgentLaunchSettings({
         setRead(settings ? { kind: 'ready', settings } : { kind: 'unsupported' })
       }
     } catch {
-      if (!controller.signal.aborted) setRead({ kind: 'failed' })
+      if (!controller.signal.aborted) {
+        setRead({ kind: 'failed' })
+      }
     }
   }, [owner, setRead])
   useEffect(() => {
@@ -89,9 +91,13 @@ export function HostAgentLaunchSettings({
         setSaveFailed(false)
         try {
           const settings = await mutateHostAgentLaunchSettings(owner, mutation, controller.signal)
-          if (!controller.signal.aborted) setRead({ kind: 'ready', settings })
+          if (!controller.signal.aborted) {
+            setRead({ kind: 'ready', settings })
+          }
         } catch (error) {
-          if (!controller.signal.aborted) setSaveFailed(true)
+          if (!controller.signal.aborted) {
+            setSaveFailed(true)
+          }
           throw error
         }
       })

@@ -60,7 +60,9 @@ export function useHostAgentLaunchPreferences(target: AgentDetectionTarget | und
   const localDefault = useAppStore((state) => state.settings?.defaultTuiAgent)
   const localDisabled = useAppStore((state) => state.settings?.disabledTuiAgents)
   const revision = useAppStore((state) => {
-    if (!environmentId) return undefined
+    if (!environmentId) {
+      return undefined
+    }
     const environment = state.runtimeEnvironments.find((entry) => entry.id === environmentId)
     return environment ? environment.pairingRevision ?? environment.createdAt : undefined
   })
@@ -80,7 +82,9 @@ export function useHostAgentLaunchPreferences(target: AgentDetectionTarget | und
     preferences: Preferences
   } | null>(null)
   useEffect(() => {
-    if (!environmentId) return
+    if (!environmentId) {
+      return
+    }
     let controller = new AbortController()
     const refresh = (): void => {
       controller.abort()
@@ -91,16 +95,22 @@ export function useHostAgentLaunchPreferences(target: AgentDetectionTarget | und
         current.signal
       ).then(
         (preferences) => {
-          if (!current.signal.aborted) setSnapshot({ key, preferences })
+          if (!current.signal.aborted) {
+            setSnapshot({ key, preferences })
+          }
         },
         () => {
-          if (!current.signal.aborted) setSnapshot({ key, preferences: UNKNOWN })
+          if (!current.signal.aborted) {
+            setSnapshot({ key, preferences: UNKNOWN })
+          }
         }
       )
     }
     refresh()
     const unsubscribe = subscribeHostAgentLaunchSettings((owner) => {
-      if (owner.environmentId === environmentId) refresh()
+      if (owner.environmentId === environmentId) {
+        refresh()
+      }
     })
     return () => {
       controller.abort()

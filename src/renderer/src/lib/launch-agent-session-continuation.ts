@@ -37,10 +37,14 @@ export async function detectAgentSessionContinuationAgents(
 async function ensureAgentAvailable(agent: TuiAgent, worktreeId: string): Promise<boolean> {
   const label = getAgentLabel(agent)
   const preferences = await ensureAgentLaunchPreferences(worktreeId).catch((error: unknown) => {
-    if (error instanceof Error && error.name === 'AbortError') return null
+    if (error instanceof Error && error.name === 'AbortError') {
+      return null
+    }
     throw error
   })
-  if (!preferences) return false
+  if (!preferences) {
+    return false
+  }
   if (!isTuiAgentEnabled(agent, preferences.disabledTuiAgents)) {
     toast.error(
       translate(

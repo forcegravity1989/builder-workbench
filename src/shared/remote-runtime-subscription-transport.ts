@@ -10,7 +10,6 @@ import {
   publicKeyFromBase64,
   publicKeyToBase64
 } from './e2ee-crypto'
-import type { RuntimeCapability } from './protocol-version'
 import {
   formatRemoteRuntimeCloseMessage,
   ignoreSettledRemoteRuntimeSocketError
@@ -23,50 +22,19 @@ import {
   serializeRemoteRuntimeRpcRequest
 } from './remote-runtime-memory-limits'
 import { remoteRuntimeClientCapabilities } from './remote-runtime-client-capabilities'
-import type { RuntimeRpcResponse } from './runtime-rpc-envelope'
 import { RemoteRuntimeSubscriptionFrameRouter } from './remote-runtime-subscription-frame-router'
-import {
-  RemoteRuntimeSubscriptionOutbound,
-  type RemoteRuntimeOutboundMemoryBudget,
-  type RemoteRuntimeOutboundQueueOptions
-} from './remote-runtime-subscription-outbound'
+import { RemoteRuntimeSubscriptionOutbound } from './remote-runtime-subscription-outbound'
 import { RemoteRuntimeSubscriptionRequestChannel } from './remote-runtime-subscription-request-channel'
 import {
   startRemoteRuntimeSocketLiveness,
-  type RemoteRuntimeSocketLivenessMonitor,
-  type RemoteRuntimeSocketLivenessOptions
+  type RemoteRuntimeSocketLivenessMonitor
 } from './remote-runtime-socket-liveness'
 
-export type {
-  RemoteRuntimeOutboundMemoryBudget,
-  RemoteRuntimeOutboundSocketMemory
-} from './remote-runtime-subscription-outbound'
-
-export type RemoteRuntimeTransportSubscription = {
-  requestId: string
-  close: () => void
-  sendBinary: (bytes: Uint8Array<ArrayBufferLike>) => boolean
-  sendRequest?: (
-    method: string,
-    params: unknown,
-    timeoutMs: number
-  ) => Promise<RuntimeRpcResponse<unknown>>
-}
-
-export type RemoteRuntimeTransportSubscriptionCallbacks<TResult = unknown> = {
-  onResponse: (response: RuntimeRpcResponse<TResult>) => void
-  onBinary?: (bytes: Uint8Array<ArrayBufferLike>) => void
-  onError: (error: RemoteRuntimeClientError) => void
-  onClose?: () => void
-}
-
-export type RemoteRuntimeSubscriptionOptions = RemoteRuntimeSocketLivenessOptions & {
-  signal?: AbortSignal
-  clientCapabilities?: readonly RuntimeCapability[]
-  perMessageDeflate?: boolean
-  outboundQueue?: RemoteRuntimeOutboundQueueOptions
-  outboundMemoryBudget?: RemoteRuntimeOutboundMemoryBudget
-}
+import type {
+  RemoteRuntimeSubscriptionOptions,
+  RemoteRuntimeTransportSubscription,
+  RemoteRuntimeTransportSubscriptionCallbacks
+} from './remote-runtime-subscription-contract'
 
 export async function subscribeRemoteRuntimeTransport<TResult>(
   pairing: PairingOffer,

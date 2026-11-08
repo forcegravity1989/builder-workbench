@@ -4,7 +4,6 @@ import type {
   RuntimeCreateAgentSessionResult,
   RuntimeEnsureAgentSessionResult
 } from '../../../shared/agent-session-host-authority'
-import { toRuntimeExecutionHostId } from '../../../shared/execution-host'
 import { translate } from '../i18n/i18n'
 import { useAppStore } from '../store'
 import { agentResumeHostAuthorityCapability } from './agent-resume-host-authority-capability'
@@ -36,10 +35,8 @@ import type {
   CreateWebRuntimeSessionTerminalArgs
 } from './web-runtime-session-types'
 import {
-  readActiveWorkspaceSelection,
   restoreActiveWorkspaceSelection,
-  selectWebRuntimeSessionWorktree,
-  type WebRuntimeSessionWorkspaceSelectionRollback
+  selectWebRuntimeSessionWorktreeWithRollback
 } from './web-runtime-session-workspace-selection'
 import { createdTerminalLeafId } from './web-runtime-terminal-identity'
 import { settleWebRuntimeTerminalPlacement } from './web-runtime-terminal-placement-settlement'
@@ -69,18 +66,10 @@ export async function createWebRuntimeSessionTerminalResult(
     args.expectedEnvironmentRuntimeId
   )
 
-  let workspaceSelectionRollback: WebRuntimeSessionWorkspaceSelectionRollback | null = null
-  if (args.selectWorktree !== false) {
-    const previous = readActiveWorkspaceSelection()
-    selectWebRuntimeSessionWorktree(args.worktreeId, environmentId)
-    workspaceSelectionRollback = {
-      previous,
-      applied: {
-        worktreeId: args.worktreeId,
-        executionHostId: toRuntimeExecutionHostId(environmentId)
-      }
-    }
-  }
+  const workspaceSelectionRollback =
+    args.selectWorktree === false
+      ? null
+      : selectWebRuntimeSessionWorktreeWithRollback(args.worktreeId, environmentId)
   let hostCreated = false
   let createdTabId: string | undefined
   let createdLeafId: string | undefined
@@ -311,7 +300,9 @@ export async function createWebRuntimeSessionTerminalResult(
     // Why: once the host accepted creation, reporting failure invites the user
     // to retry with a new operation ID and can duplicate a fresh agent.
     return {
-      outcome: hostCreated ? { status: 'created', hostTabId: createdTabId } : { status: 'failed', message },
+      outcome: hostCreated
+        ? { status: 'created', hostTabId: createdTabId }
+        : { status: 'failed', message },
       ...(createdTabId ? { hostTabId: createdTabId } : {})
     }
   }

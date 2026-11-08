@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { GlobalSettings } from '../../../shared/global-settings-types'
 
 const mocks = vi.hoisted(() => ({
   createTab: vi.fn(),
   closeTab: vi.fn(),
   createWebRuntimeSessionTerminal: vi.fn(),
+  deliverCreatedWebRuntimeAgentSessionPrompt: vi.fn(),
   setActiveTabType: vi.fn()
 }))
 
@@ -14,7 +16,11 @@ const store = {
     agentCmdOverrides: {} as Record<string, string>,
     agentDefaultArgs: {} as Record<string, string>,
     agentDefaultEnv: {} as Record<string, Record<string, string>>,
-    activeRuntimeEnvironmentId: 'web-runtime' as string | null
+    activeRuntimeEnvironmentId: 'web-runtime' as string | null,
+    experimentalNativeChat: false,
+    experimentalStructuredNativeChat: false,
+    openAgentTabsInChatByDefault: false,
+    nativeChatSessionOptions: undefined as GlobalSettings['nativeChatSessionOptions']
   },
   projects: [{ id: 'repo-1', localWindowsRuntimePreference: { kind: 'inherit-global' as const } }],
   repos: [{ id: 'repo-1', connectionId: null, path: '/repo' }],
@@ -58,11 +64,13 @@ vi.mock('@/lib/telemetry', () => ({
   tuiAgentToAgentKind: (agent: string) => agent
 }))
 vi.mock('@/runtime/web-runtime-terminal-create-operation', () => ({
-  createWebRuntimeSessionTerminalResult: async (args: unknown) => ({ outcome: await mocks.createWebRuntimeSessionTerminal(args) })
+  createWebRuntimeSessionTerminalResult: async (args: unknown) => ({
+    outcome: await mocks.createWebRuntimeSessionTerminal(args)
+  })
 }))
 vi.mock('@/runtime/web-runtime-session', () => ({
   createWebRuntimeSessionTerminal: mocks.createWebRuntimeSessionTerminal,
-  deliverCreatedWebRuntimeAgentSessionPrompt: vi.fn(async () => true),
+  deliverCreatedWebRuntimeAgentSessionPrompt: mocks.deliverCreatedWebRuntimeAgentSessionPrompt,
   isWebRuntimeSessionActive: vi.fn(() => true),
   isWebTerminalSurfaceTabId: vi.fn(() => false)
 }))
@@ -74,10 +82,15 @@ describe('launchAgentInNewTab paired web runtime', () => {
       agentCmdOverrides: {},
       agentDefaultArgs: {},
       agentDefaultEnv: {},
-      activeRuntimeEnvironmentId: 'web-runtime'
+      activeRuntimeEnvironmentId: 'web-runtime',
+      experimentalNativeChat: false,
+      experimentalStructuredNativeChat: false,
+      openAgentTabsInChatByDefault: false,
+      nativeChatSessionOptions: undefined
     }
     store.tabsByWorktree = { 'wt-1': [{ id: 'tab-1' }] }
     mocks.createWebRuntimeSessionTerminal.mockResolvedValue({ status: 'created' })
+    mocks.deliverCreatedWebRuntimeAgentSessionPrompt.mockResolvedValue(true)
   })
 
   it('delegates agent quick launch to the host runtime', async () => {
@@ -138,6 +151,54 @@ describe('launchAgentInNewTab paired web runtime', () => {
       promptDelivery: 'auto-submit',
       viewMode: 'terminal'
     })
+    expect(mocks.createTab).not.toHaveBeenCalled()
+  })
+
+  it('preserves paired-host drafts and explicit arguments without desktop defaults', async () => {
+    store.settings = {
+      agentCmdOverrides: {},
+      agentDefaultArgs: {},
+      agentDefaultEnv: {},
+      activeRuntimeEnvironmentId: 'web-runtime',
+      experimentalNativeChat: true,
+      experimentalStructuredNativeChat: true,
+      openAgentTabsInChatByDefault: true,
+      nativeChatSessionOptions: {
+        claude: {
+          model: 'opus',
+          valuesByModel: { opus: { effort: 'high', fastMode: true } }
+        }
+      }
+    }
+    const { launchAgentInNewTab } = await import('./launch-agent-in-new-tab')
+
+    const result = launchAgentInNewTab({
+      agent: 'claude',
+      worktreeId: 'wt-1',
+      prompt: 'review before sending',
+      promptDelivery: 'draft',
+      agentArgs: '--permission-mode plan'
+    })
+
+    expect(result).toEqual(expect.objectContaining({ tabId: null, pasteDraftAfterLaunch: false }))
+    expect(mocks.createWebRuntimeSessionTerminal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        launchAgent: 'claude',
+        prompt: 'review before sending',
+        promptDelivery: 'draft',
+        agentArgs: '--permission-mode plan',
+        agent: 'claude',
+        legacyAgentLaunch: expect.any(Function)
+      })
+    )
+    await result?.runtimeLaunch
+    expect(mocks.createWebRuntimeSessionTerminal.mock.calls.at(-1)?.[0]).not.toHaveProperty(
+      'launchPreferences'
+    )
+    expect(mocks.deliverCreatedWebRuntimeAgentSessionPrompt).toHaveBeenCalledWith(
+      expect.any(Object),
+      { agent: 'claude', launchDraft: 'review before sending' }
+    )
     expect(mocks.createTab).not.toHaveBeenCalled()
   })
 })

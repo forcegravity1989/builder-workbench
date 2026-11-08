@@ -40,6 +40,24 @@
         "title": "显示菜单栏图标",
         "description": "在 macOS 菜单栏中保留 Orca 快捷方式和活动指示器。"
       }
+    },
+    "agents": {
+      "detectionFailed": "无法检测此主机上的智能体。",
+      "environmentName": "环境变量名称",
+      "environmentValue": "{{name}} 的值",
+      "hostDefaults": "在此主机上启动的智能体的默认设置。",
+      "loading": "正在加载智能体设置…",
+      "newEnvironment": "值",
+      "readFailed": "无法读取智能体设置。请检查主机连接并重试。",
+      "refresh": "刷新",
+      "removeEnvironment": "删除",
+      "save": "保存",
+      "savedEnvironment": "已保存的值 · 输入以替换",
+      "saveFailed": "无法保存智能体设置。请检查主机连接并重试。",
+      "updateHost": "请更新此服务器以编辑其智能体启动设置。"
+    },
+    "servers": {
+      "accessRevoked": "此客户端已无访问权限。请使用此服务器的新配对链接重新连接。"
     }
   },
   "menu": {
@@ -155,7 +173,8 @@
         "runtimeEnvironmentManuallyDisconnected": "运行时环境已手动断开连接。",
         "loopbackPairingBlocked": "此访问链接会指回此设备。",
         "remotePairingUnreachable": "无法连接 {{endpoint}} 上的 Orca。",
-        "remotePairingInvalidDetails": "此访问链接包含无效的连接信息。"
+        "remotePairingInvalidDetails": "此访问链接包含无效的连接信息。",
+        "remotePairingRepairUnavailable": "浏览器中无法重新配对。再次将此浏览器与服务器配对。"
       },
       "web": {
         "preload": {
@@ -6936,7 +6955,8 @@
           "troubleshootStepRegenerate": "生成新的访问链接，并仅在此处使用最新的链接。",
           "troubleshootTunnel": "正在使用 SSH 本地转发？返回“连接到主机”，粘贴环回链接，然后在“高级”下启用“我正在使用 SSH 隧道”。",
           "cloudVmWorkflow": "云虚拟机",
-          "cloudVmWorkflowHelp": "管理由配方创建的云端机器"
+          "cloudVmWorkflowHelp": "管理由配方创建的云端机器",
+          "serverAlreadyPaired": "此服务器已作为 {{value0}} 配对；已更新其连接。"
         },
         "RuntimePairingGeneratedUrlRows": {
           "0495f68959": "复制 {{value0}}"
@@ -10162,7 +10182,9 @@
           "connectionDetails": "连接详情",
           "endpointKind": "端点类型",
           "networkConnection": "网络连接",
-          "notAttempted": "未尝试"
+          "notAttempted": "未尝试",
+          "differentServer": "此链接适用于不同的服务器",
+          "differentServerHelp": "此配对链接属于另一台服务器。请在您要重新配对的服务器上创建链接。"
         },
         "CloudVmSetupGuide": {
           "title": "创建云虚拟机",
@@ -10183,6 +10205,13 @@
           "saveFailed": "无法保存可见性默认设置。",
           "updateServer": "请更新此服务器以配置来源默认设置。",
           "updateServerDefaults": "请更新此服务器以配置可见性默认设置。"
+        },
+        "RuntimeRepairDialog": {
+          "descriptionShareComputer": "{{name}} 不再接受此电脑。请在 {{name}} 上打开 设置 → 远程 Orca 服务器 → 共享此电脑，为另一个 Orca 创建链接，然后粘贴到这里。",
+          "failed": "重新配对失败",
+          "submit": "重新配对",
+          "success": "已与 {{name}} 重新配对",
+          "title": "重新配对 {{name}}"
         }
       },
       "right": {
@@ -14733,5 +14762,19 @@
   },
   "brand": {
     "workbench": "Workbench"
+  },
+  "runtime": {
+    "remoteServerPairingErrors": {
+      "alreadyPairedAddAgain": "此服务器已作为“{{name}}”配对。要更新其连接，请在设置 > 远程 Orca 服务器下重新添加。",
+      "alreadyPairedCloudIdentity": "此服务器已作为“{{name}}”配对。云工作区的服务器复用了该服务器的身份，因此未保存。",
+      "alreadyPairedCloudWorkspace": "此服务器已作为“{{name}}”配对。它属于一个云工作区，该工作区恢复运行时会再次与其配对。",
+      "hostSaveFailed": "Orca 已验证主机，但无法保存。请检查本地设置存储并重试。",
+      "idNeedsNewerOrca": "具有此 ID 的服务器已存在，其格式需要更新版本的 Orca。",
+      "invalidPairingCode": "配对码无效。需要 orca://pair?... URL 或原始配对数据。",
+      "nameTaken": "名为“{{name}}”的服务器已存在。",
+      "repairCloudWorkspace": "此服务器属于一个云工作区，该工作区恢复运行时会再次与其配对。",
+      "repairSaveFailed": "Orca 已验证服务器，但无法保存新的配对。请检查本地设置存储并重试。",
+      "selfPairingCode": "这是当前 Orca 的配对码。请改在另一台计算机上生成配对码。"
+    }
   }
 }

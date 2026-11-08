@@ -2,7 +2,7 @@ import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import {
   deliverCreatedWebRuntimeAgentSessionPrompt,
-  createWebRuntimeSessionTerminal,
+  type createWebRuntimeSessionTerminal,
   isWebTerminalSurfaceTabId
 } from '@/runtime/web-runtime-session'
 import type { Tab } from '../../../shared/tab-types'
@@ -116,7 +116,9 @@ export async function launchAgentInWebHostTab(args: {
       const hostSettings = environmentId
         ? await readHostAgentStartupSettings({ environmentId, pairingRevision, runtimeId }).catch(
             (error: unknown) => {
-              if (error instanceof Error && error.name === 'AbortError') throw error
+              if (error instanceof Error && error.name === 'AbortError') {
+                throw error
+              }
               return null
             }
           )
@@ -157,7 +159,9 @@ export async function launchAgentInWebHostTab(args: {
         startup = buildLegacyStartup()
       }
       const plan = startup.startupPlan
-      if (!plan) throw new Error('Could not prepare the remote agent command.')
+      if (!plan) {
+        throw new Error('Could not prepare the remote agent command.')
+      }
       return {
         command: plan.launchCommand,
         env: plan.env,

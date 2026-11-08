@@ -160,7 +160,9 @@ export class RuntimeClientSettingsController {
   }
 
   getAgentLaunch(): AgentLaunchSettings {
-    if (!this.store?.getSettings) throw new Error('runtime_unavailable')
+    if (!this.store?.getSettings) {
+      throw new Error('runtime_unavailable')
+    }
     return projectAgentLaunchSettings(this.store.getSettings())
   }
 

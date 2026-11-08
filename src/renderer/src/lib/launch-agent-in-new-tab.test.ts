@@ -131,7 +131,9 @@ const mockDeliverCreatedWebRuntimeAgentSessionPrompt = vi.fn()
 const mockIsWebRuntimeSessionActive = vi.fn(() => false)
 
 vi.mock('@/runtime/web-runtime-terminal-create-operation', () => ({
-  createWebRuntimeSessionTerminalResult: async (args: unknown) => ({ outcome: await mockCreateWebRuntimeSessionTerminal(args) })
+  createWebRuntimeSessionTerminalResult: async (args: unknown) => ({
+    outcome: await mockCreateWebRuntimeSessionTerminal(args)
+  })
 }))
 vi.mock('@/runtime/web-runtime-session', () => ({
   createWebRuntimeSessionTerminal: mockCreateWebRuntimeSessionTerminal,
@@ -456,52 +458,6 @@ describe('launchAgentInNewTab', () => {
       expect.objectContaining({ viewMode: 'chat' })
     )
     expect(mockSetTabViewMode).not.toHaveBeenCalled()
-  })
-
-  it('preserves paired-host drafts and explicit arguments without desktop defaults', async () => {
-    mockIsWebRuntimeSessionActive.mockReturnValue(true)
-    store.settings = {
-      agentCmdOverrides: {},
-      agentDefaultArgs: {},
-      agentDefaultEnv: {},
-      activeRuntimeEnvironmentId: 'web-runtime',
-      experimentalNativeChat: true,
-      experimentalStructuredNativeChat: true,
-      openAgentTabsInChatByDefault: true,
-      nativeChatSessionOptions: {
-        claude: {
-          model: 'opus',
-          valuesByModel: { opus: { effort: 'high', fastMode: true } }
-        }
-      }
-    }
-    const { launchAgentInNewTab } = await import('./launch-agent-in-new-tab')
-
-    const result = launchAgentInNewTab({
-      agent: 'claude',
-      worktreeId: 'wt-1',
-      prompt: 'review before sending',
-      promptDelivery: 'draft',
-      agentArgs: '--permission-mode plan'
-    })
-
-    expect(result).toEqual(expect.objectContaining({ tabId: null, pasteDraftAfterLaunch: false }))
-    expect(mockCreateWebRuntimeSessionTerminal).toHaveBeenCalledWith(
-      expect.objectContaining({
-        launchAgent: 'claude',
-        prompt: 'review before sending',
-        promptDelivery: 'draft',
-        agentArgs: '--permission-mode plan',
-        agent: 'claude',
-        legacyAgentLaunch: expect.any(Function)
-      })
-    )
-    await result?.runtimeLaunch
-    expect(mockCreateWebRuntimeSessionTerminal.mock.calls.at(-1)?.[0]).not.toHaveProperty('launchPreferences')
-    expect(mockDeliverCreatedWebRuntimeAgentSessionPrompt).toHaveBeenCalledWith(
-      expect.any(Object), { agent: 'claude', launchDraft: 'review before sending' }
-    )
-    expect(mockCreateTab).not.toHaveBeenCalled()
   })
 
   it('propagates the default chat mode to paired web runtime launches', async () => {

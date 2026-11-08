@@ -48,7 +48,13 @@ export class RemoteRuntimeSharedControlConnection {
     private readonly pairing: PairingOffer,
     private readonly options: SharedControlTypes.RemoteRuntimeSharedControlConnectionOptions = {}
   ) {
-    this.diagnostics = new SharedControlDiagnosticsTracker(options)
+    this.diagnostics = new SharedControlDiagnosticsTracker(options, () => ({
+      state: this.state,
+      reconnecting: this.reconnect.isScheduled,
+      pendingRequestCount: this.pendingRequests.size,
+      subscriptionCount: this.subscriptions.size,
+      reconnectAttempt: this.reconnect.attemptCount
+    }))
     this.readiness = new SharedControlReadinessTimer(options, {
       getState: () => this.state,
       getSocket: () => this.ws,
@@ -129,22 +135,10 @@ export class RemoteRuntimeSharedControlConnection {
   }
 
   private publishDiagnostics(): void {
-    this.diagnostics.publish({
-      state: this.state,
-      reconnecting: this.reconnect.isScheduled,
-      pendingRequestCount: this.pendingRequests.size,
-      subscriptionCount: this.subscriptions.size,
-      reconnectAttempt: this.reconnect.attemptCount
-    })
+    this.diagnostics.publish()
   }
   getDiagnostics(): SharedControlTypes.RemoteRuntimeSharedConnectionDiagnostics {
-    return this.diagnostics.get({
-      state: this.state,
-      reconnecting: this.reconnect.isScheduled,
-      pendingRequestCount: this.pendingRequests.size,
-      subscriptionCount: this.subscriptions.size,
-      reconnectAttempt: this.reconnect.attemptCount
-    })
+    return this.diagnostics.get()
   }
   reconnectNow(): void {
     refreshRemoteRuntimeSharedControl({

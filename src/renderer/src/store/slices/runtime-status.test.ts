@@ -750,18 +750,7 @@ describe('runtime-status slice', () => {
 
   it('hydrates saved environments through the single-environment refresh path', async () => {
     const getStatus = vi.fn().mockResolvedValue(createCompatibleRuntimeStatusResponse('runtime-a'))
-    const list = vi.fn().mockResolvedValue([
-      {
-        id: 'env-a',
-        name: 'Dev Box',
-        createdAt: 1,
-        updatedAt: 1,
-        lastUsedAt: null,
-        runtimeId: null,
-        endpoints: [{ id: 'ws-a', kind: 'websocket', label: 'WebSocket', endpoint: 'ws://x' }],
-        preferredEndpointId: 'ws-a'
-      }
-    ])
+    const list = vi.fn().mockResolvedValue([makeEnvironment()])
     stubRuntimeEnvironmentApi({ getStatus, list })
     const store = createSliceStore()
 
