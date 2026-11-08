@@ -1,33 +1,30 @@
-import type { MilestoneDraft, ScheduledVersion } from '../../../shared/workbench/project-milestones'
-import { newFeatureMilestoneVersions } from '../../../shared/workbench/milestone-calendar'
-import { defaultMilestoneStages } from '../../../shared/workbench/milestone-sdlc'
+import type { MilestoneDraft } from '../../../shared/workbench/project-milestones'
+import {
+  milestoneDay,
+  milestoneDate,
+  milestoneToday
+} from '../../../shared/workbench/milestone-calendar'
+import { newMilestoneDelivery } from '../../../shared/workbench/milestone-sdlc'
 
-export function createMilestoneFeature(
-  draft: MilestoneDraft,
-  registered: readonly ScheduledVersion[] = []
-) {
-  const selected = newFeatureMilestoneVersions(draft, undefined, registered)
-  const id = crypto.randomUUID(),
-    date = selected.first.timeWindow!.start,
-    month = date.slice(0, 7)
+export function createMilestoneFeature(draft: MilestoneDraft, viewDate = milestoneToday()) {
+  const start = Math.max(milestoneDay(milestoneToday()), milestoneDay(viewDate)),
+    id = crypto.randomUUID()
+  const build = newMilestoneDelivery('Build', start),
+    maintain = newMilestoneDelivery('Maintain', start + 7)
+  if (!build || !maintain) return null
   return {
     id,
-    date,
+    date: milestoneDate(start),
     draft: {
-      ...selected.draft,
+      ...draft,
       material: {
-        ...selected.draft.material,
+        ...draft.material,
         features: [
           {
             id,
-            month,
             title: '',
             owner: '',
-            deliveries: [selected.first, selected.next].map((v, index) => ({
-              id: crypto.randomUUID(),
-              version: { version: v.version, cycleId: v.cycleId },
-              stages: defaultMilestoneStages(v, index === 1)
-            }))
+            deliveries: [build, maintain]
           },
           ...draft.material.features
         ]

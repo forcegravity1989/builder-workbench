@@ -42,15 +42,6 @@
   border-left: 1px solid var(--border);
   margin: 0 2px;
 }
-.wb-ml-legend,
-.wb-ml-legend > span {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.wb-ml-legend {
-  gap: 16px;
-}
 .wb-ml-empty {
   min-height: 180px;
   display: grid;
@@ -181,8 +172,8 @@
   cursor: grab;
   touch-action: pan-y;
 }
-.wb-ml-scroll[data-segmented] > .wb-ml-canvas,
-.wb-ml-scroll[data-segmented] > .wb-ml-roadmap {
+.wb-ml-canvas,
+.wb-ml-roadmap {
   overflow-x: clip;
 }
 .wb-ml-canvas {
@@ -272,23 +263,6 @@
   min-height: 88px;
   position: relative;
 }
-.wb-ml-drop-before::after,
-.wb-ml-drop-after::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--ring);
-  z-index: 6;
-  pointer-events: none;
-}
-.wb-ml-drop-before::after {
-  top: 0;
-}
-.wb-ml-drop-after::after {
-  bottom: 0;
-}
 .wb-ml-feature {
   gap: 6px;
 }
@@ -302,14 +276,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.wb-ml-grip {
-  color: var(--muted-foreground);
-  cursor: grab;
-  flex-shrink: 0;
-  margin-left: -8px;
-  touch-action: none;
-  user-select: none;
 }
 .wb-ml-inline {
   min-width: 0;
@@ -328,36 +294,6 @@
   outline: 2px solid var(--ring);
   outline-offset: 1px;
   background: var(--card);
-}
-.wb-ml-connection {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  fill: none;
-  stroke: var(--border);
-  stroke-width: 1;
-}
-.wb-ml-row-actions {
-  position: sticky;
-  right: 0;
-  width: 40px;
-  margin-left: -40px;
-  flex: 0 0 40px;
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--card);
-  border-left: 1px solid var(--border);
-  cursor: default;
-}
-.wb-ml-row-actions button {
-  color: var(--muted-foreground);
-}
-.wb-ml-row-actions button:hover {
-  color: var(--foreground);
 }
 .wb-ml-today {
   position: absolute;
@@ -563,53 +499,21 @@
 .wb-ml-show-actual input {
   accent-color: var(--foreground);
 }
-.wb-phase-plan {
-  --phase-bg: #dce9ff;
-  --phase-fg: #254e8d;
-}
-.wb-phase-design {
-  --phase-bg: #eae1fa;
-  --phase-fg: #61418f;
-}
 .wb-phase-build {
-  --phase-bg: #d9eee3;
-  --phase-fg: #24634b;
-}
-.wb-phase-test {
-  --phase-bg: #f8ebcd;
-  --phase-fg: #806016;
-}
-.wb-phase-deploy {
-  --phase-bg: #f7ded9;
-  --phase-fg: #915043;
+  --phase-bg: #d6e5ff;
+  --phase-fg: #244a7c;
 }
 .wb-phase-maintain {
-  --phase-bg: #dcecef;
-  --phase-fg: #356671;
-}
-.dark .wb-phase-plan {
-  --phase-bg: #263d60;
-  --phase-fg: #c2d8ff;
-}
-.dark .wb-phase-design {
-  --phase-bg: #443156;
-  --phase-fg: #e0cafa;
+  --phase-bg: #ffedbf;
+  --phase-fg: #76570d;
 }
 .dark .wb-phase-build {
-  --phase-bg: #234638;
-  --phase-fg: #c0e8d2;
-}
-.dark .wb-phase-test {
-  --phase-bg: #4c4025;
-  --phase-fg: #eddaa9;
-}
-.dark .wb-phase-deploy {
-  --phase-bg: #51342d;
-  --phase-fg: #f1c5ba;
+  --phase-bg: #263e60;
+  --phase-fg: #c5dcff;
 }
 .dark .wb-phase-maintain {
-  --phase-bg: #2b434a;
-  --phase-fg: #c4e2e8;
+  --phase-bg: #554318;
+  --phase-fg: #ffe5a3;
 }
 
 .wb-ml-actual-refresh {
@@ -628,25 +532,6 @@
   white-space: nowrap;
   min-width: 0;
   overflow-x: auto;
-}
-
-.wb-ml-drag-warning {
-  color: var(--destructive);
-}
-
-.wb-ml-connection {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  color: var(--border);
-}
-.wb-ml-connection path {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
 }
 
 .wb-ml-version-title {
@@ -713,7 +598,7 @@
   height: 28px;
   border: 1px solid color-mix(in srgb, var(--foreground) 15%, transparent);
   border-radius: 3px;
-  overflow: hidden;
+  overflow: visible;
   z-index: 2;
 }
 .wb-ml-delivery-body {
@@ -723,21 +608,11 @@
   height: 100%;
   padding: 0;
   border: 0;
-  background: transparent;
-  text-align: left;
-}
-.wb-ml-delivery-body > span {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  overflow: hidden;
-  padding: 0 3px;
-  line-height: 26px;
-  font-size: 10px;
-  white-space: nowrap;
-  border-right: 1px solid color-mix(in srgb, var(--phase-fg) 20%, transparent);
-  color: var(--phase-fg);
   background: var(--phase-bg);
+  color: var(--phase-fg);
+  overflow: hidden;
+  border-radius: 2px;
+  text-align: left;
 }
 .wb-ml-delivery.editable .wb-ml-delivery-body {
   cursor: grab;
@@ -778,11 +653,91 @@
   box-shadow: 0 0 0 1px var(--border);
 }
 
-.wb-ml-delivery.unrecorded {
-  border-style: dashed;
+.wb-ml-range-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
 }
-.wb-ml-delivery-body > .wb-ml-unrecorded-label {
-  background: var(--muted);
-  color: var(--muted-foreground);
+.wb-ml-jump-date {
+  width: 142px;
+  height: 30px;
+  font-size: 12px;
+}
+.wb-ml-filter {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 6px 8px;
+  color: var(--foreground);
+  background: var(--card);
+  font-size: 12px;
+}
+.wb-ml-cell-add,
+.wb-ml-cell-button {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+}
+.wb-ml-feature-heading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.wb-ml-feature-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+.wb-ml-feature-heading > .wb-ml-inline {
+  flex: 1;
+}
+.wb-ml-inline[aria-invalid='true'],
+.wb-ml[data-validation-attempt] .wb-ml-inline[data-required][data-empty] {
+  border-color: var(--destructive);
+}
+.wb-ml-delivery-body.wb-phase-maintain {
+  box-shadow: inset 0 -2px var(--phase-fg);
+}
+.wb-ml-phase-label {
+  position: absolute;
+  top: 0;
+  line-height: 26px;
   text-align: center;
+  font-weight: 400;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.wb-ml-delivery-tools {
+  position: absolute;
+  top: -28px;
+  height: 28px;
+  padding-bottom: 4px;
+  margin-left: -13px;
+  opacity: 0;
+  pointer-events: none;
+}
+.wb-ml-delivery:hover .wb-ml-delivery-tools,
+.wb-ml-delivery:focus-within .wb-ml-delivery-tools {
+  opacity: 1;
+  pointer-events: auto;
+}
+.wb-ml-maintain-delete {
+  width: 26px;
+  height: 24px;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+.wb-ml-maintain-delete:hover {
+  color: var(--destructive);
+}
+.wb-ml-undated {
+  position: absolute;
+  top: 2px;
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--muted-foreground);
 }

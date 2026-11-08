@@ -1,18 +1,16 @@
 import { MilestoneNavigation, milestoneNodeActions } from './milestone-navigation'
-import { MilestoneRowGrip, type MilestoneRowDrop } from './milestone-row-grip'
-import { MilestoneDayAxis, MilestoneDayGrid } from './milestone-day-axis'
-import { useLayoutEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
+import { MilestoneDayAxis, MilestoneDayGrid, MilestoneRangeToolbar } from './milestone-day-axis'
+import { useEffect, useRef, useState } from 'react'
+import { useMilestoneViewport, type MilestoneLocation } from './use-milestone-viewport'
+export type { MilestoneLocation } from './use-milestone-viewport'
+import { X, Wrench } from 'lucide-react'
+import { toast } from 'sonner'
 import { MilestoneField } from './milestone-field'
 import { MilestoneActualBars } from './milestone-actual-bars'
 import { MilestoneIconButton } from './milestone-icon-button'
 import { MilestoneVersionRow, milestoneVersionLanes } from './milestone-version-row'
 import { MilestoneStageBars, MilestoneSdlcToolbar } from './milestone-stage-bars'
-import {
-  milestoneActualCalendar,
-  milestoneActualLayout,
-  milestoneVisibleActualVersions
-} from './milestone-actual-layout'
+import { milestoneActualLayout, milestoneVisibleActualVersions } from './milestone-actual-layout'
 import { useMilestoneFactReaders } from './milestone-fact-readers'
 import type { VersionCatalogState } from './use-version-catalog'
 import {
@@ -20,11 +18,19 @@ import {
   MILESTONE_DAY_WIDTH as width,
   MILESTONE_LABEL_WIDTH as labelWidth
 } from './use-milestone-gesture'
-import { workCalendarDay } from '../../../shared/workbench/work-calendar'
-import { actualDay } from '../../../shared/workbench/milestone-sdlc'
+import {
+  actualDay,
+  plannedDay,
+  latestFeatureEnd,
+  newMilestoneDelivery,
+  orderMilestoneDeliveries,
+  milestoneLaneConflict,
+  updateMilestoneFeature
+} from '../../../shared/workbench/milestone-sdlc'
 import type {
   MilestoneDraft,
   MilestoneFeature,
+  MilestoneDelivery,
   ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
 import {
@@ -35,7 +41,6 @@ import {
   type MilestoneWeek
 } from '../../../shared/workbench/milestone-calendar'
 
-export type MilestoneLocation = { date: string; sequence: number }
 type Props = {
   catalog: VersionCatalogState
   draft: MilestoneDraft
@@ -47,200 +52,184 @@ type Props = {
   remove(feature: MilestoneFeature): void
   rename(id: string, version: string, previousName?: string): void
   started: Set<string>
-  registeredVersions: readonly ScheduledVersion[]
-  onScroll(x: number, y: number): void
+  onScroll(x: number, y: number, date: string): void
+  viewDate?: string
+  rangeOnly: boolean
+  onRangeOnly(value: boolean): void
+  validationAttempt: boolean
   scrollX: number | null
   scrollY: number
   locate: MilestoneLocation | null
   registerWeek(week: MilestoneWeek, name: string): void
   navigate(date: string): void
-  addFeature(): void
+  addFeature(date: string, end: number): void
   newFeature: string | null
 }
 export function MilestoneTimeline(props: Props) {
   const { draft, editing, edit } = props
   const [showActual, setShowActual] = useState(false)
   const enabled = editing && !props.busy && !showActual
-  const facts = useMilestoneFactReaders(props.catalog)
-  const actualVersions = showActual ? milestoneVisibleActualVersions(draft, facts.values) : []
-  const initial = useRef({ x: props.scrollX, y: props.scrollY, locate: props.locate })
-  const requested = props.locate !== initial.current.locate ? props.locate : null
-  const calendar = milestoneActualCalendar(
-    draft,
-    facts.values,
-    actualVersions,
-    requested
-      ? { date: requested.date }
-      : initial.current.x !== null
-        ? { offset: initial.current.x / width }
-        : {}
-  )
-  const { weeks, start: origin, end } = calendar
-  const canvasWidth = (end - origin + 1) * width
+  const today = milestoneDay(milestoneToday())
   const viewport = useRef<HTMLDivElement>(null)
-  const pan = useRef<{ x: number; left: number } | null>(null)
-  const gesture = useMilestoneGesture(
-    draft,
-    enabled,
-    origin,
-    props.registeredVersions,
+  const pins = useRef(new Set<string>())
+  const order = useRef<string[] | null>(null)
+  const touch = (id: string) => pins.current.add(id)
+  const gesture = useMilestoneGesture(draft, enabled, viewport, (next) => edit(() => next), touch)
+  useEffect(() => {
+    if (gesture.warning && !gesture.active()) toast.error(gesture.warning)
+  }, [gesture.warning, gesture.preview])
+  const { origin, end, weeks, canvasWidth, range, days, scrollProps } = useMilestoneViewport(
+    props,
     viewport,
-    (next) => edit(() => next)
+    gesture
   )
   const visible = gesture.preview ?? draft
+  const facts = useMilestoneFactReaders(props.catalog)
+  const actualVersions = showActual ? milestoneVisibleActualVersions(draft, facts.values) : []
   const plannedVersions = datedMilestoneVersions(visible)
-  const versions = showActual
-    ? [
-        ...plannedVersions,
-        ...actualVersions.filter((v) => !plannedVersions.some((p) => p.cycleId === v.cycleId))
-      ].toSorted((a, b) => a.timeWindow!.start.localeCompare(b.timeWindow!.start))
-    : plannedVersions
-  const features = visible.material.features
-  const { lanes, versionHeight } = milestoneVersionLanes(versions, showActual ? 68 : 52)
-  const days = Array.from({ length: end - origin + 1 }, (_, i) => {
-    const day = origin + i,
-      date = milestoneDate(day)
-    return { day, date, ...workCalendarDay(date) }
+  const versions = (
+    showActual
+      ? [
+          ...plannedVersions,
+          ...actualVersions.filter((v) => !plannedVersions.some((p) => p.cycleId === v.cycleId))
+        ]
+      : plannedVersions
+  )
+    .filter(
+      (v) => milestoneDay(v.timeWindow!.start) <= end && milestoneDay(v.timeWindow!.end) >= origin
+    )
+    .toSorted((a, b) => a.timeWindow!.start.localeCompare(b.timeWindow!.start))
+  const layouts = new Map(
+    visible.material.features.map((f) => [
+      f.id,
+      showActual ? milestoneActualLayout(f, visible.material, facts.values) : null
+    ])
+  )
+  const chronological = visible.material.features.toSorted(
+    (a, b) => latestFeatureEnd(b) - latestFeatureEnd(a)
+  )
+  const freezeOrder = editing && !showActual
+  if (!freezeOrder) {
+    order.current = null
+    pins.current.clear()
+  }
+  if (freezeOrder && !order.current) order.current = chronological.map((f) => f.id)
+  if (freezeOrder && order.current)
+    order.current = [
+      ...visible.material.features.filter((f) => !order.current!.includes(f.id)).map((f) => f.id),
+      ...order.current
+    ]
+  const ordered = freezeOrder
+    ? visible.material.features.toSorted(
+        (a, b) => order.current!.indexOf(a.id) - order.current!.indexOf(b.id)
+      )
+    : chronological
+  const features = ordered.filter((f) => {
+    if (
+      !props.rangeOnly ||
+      !f.title.trim() ||
+      (freezeOrder && (f.id === props.newFeature || pins.current.has(f.id)))
+    )
+      return true
+    const actual = layouts.get(f.id)
+    if (
+      actual?.results.length &&
+      actual.results.some(
+        (r) =>
+          milestoneDay(r.version.timeWindow!.start) < range.end &&
+          milestoneDay(r.version.timeWindow!.end) + 1 > range.start
+      )
+    )
+      return true
+    if (actual?.results.length && !actual.note) return false
+    return (
+      !f.deliveries.some((d) => d.timeWindow) ||
+      f.deliveries.some(
+        (d) =>
+          d.timeWindow &&
+          plannedDay(d.timeWindow.start) < range.end &&
+          plannedDay(d.timeWindow.end) > range.start
+      )
+    )
   })
-  const [rowDrop, setRowDrop] = useState<MilestoneRowDrop>(null)
-  const previousOrigin = useRef<number | null>(null)
-  useLayoutEffect(() => {
-    const el = viewport.current
-    if (!el) {
+  const { lanes, versionHeight } = milestoneVersionLanes(versions, showActual ? 68 : 52)
+  function changeField(id: string, field: 'title' | 'owner', value: string) {
+    touch(id)
+    props.editField((d) => updateMilestoneFeature(d, id, (f) => ({ ...f, [field]: value })))
+  }
+  function removeMaintenance(feature: MilestoneFeature, id: string) {
+    touch(feature.id)
+    edit((d) =>
+      updateMilestoneFeature(d, feature.id, (f) => ({
+        ...f,
+        deliveries: f.deliveries.filter((p) => p.id !== id || p.phase !== 'Maintain')
+      }))
+    )
+    toast('已删除此段 Maintain，可撤销')
+  }
+  function arrange(feature: MilestoneFeature, undated?: MilestoneDelivery) {
+    if (!enabled) return
+    touch(feature.id)
+    const start = Math.max(today, Math.floor(range.start), latestFeatureEnd(feature))
+    const created = newMilestoneDelivery(undated?.phase ?? 'Maintain', start)
+    if (!created) {
+      toast.error('超出可记录的日期范围')
       return
     }
-    if (previousOrigin.current === null) {
-      el.scrollLeft = Math.max(
-        0,
-        (calendar.focusDay - origin) * width + ((initial.current.x ?? 0) % width)
+    const delivery = { ...created, ...(undated ? { id: undated.id } : {}) }
+    const next = updateMilestoneFeature(draft, feature.id, (f) => ({
+      ...f,
+      deliveries: orderMilestoneDeliveries(
+        undated
+          ? f.deliveries.map((p) => (p.id === undated.id ? delivery : p))
+          : [...f.deliveries, delivery]
       )
-      el.scrollTop = initial.current.y
-    } else if (previousOrigin.current !== origin) {
-      el.scrollLeft += (previousOrigin.current - origin) * width
-    }
-    previousOrigin.current = origin
-  }, [origin, calendar.focusDay])
-  const centerOnDate = useRef(false)
-  function navigateDate(date: string) {
-    centerOnDate.current = true
-    props.navigate(date)
-  }
-  const appliedLocation = useRef<MilestoneLocation | null>(props.locate)
-  useLayoutEffect(() => {
-    if (props.locate && props.locate !== appliedLocation.current && viewport.current) {
-      const space = centerOnDate.current
-        ? Math.max(0, (viewport.current.clientWidth - labelWidth - width) / 2)
-        : 0
-      viewport.current.scrollLeft = Math.max(
-        0,
-        (milestoneDay(props.locate.date) - origin) * width - space
-      )
-      centerOnDate.current = false
-      appliedLocation.current = props.locate
-    }
-  }, [props.locate, origin])
-  useLayoutEffect(() => {
-    const el = viewport.current
-    const row =
-      props.newFeature &&
-      el?.querySelector<HTMLElement>(`[data-milestone-feature="${CSS.escape(props.newFeature)}"]`)
-    if (el && row) {
-      el.scrollTop = 0
-    }
-  }, [props.newFeature])
-
-  function changeField(id: string, field: 'title' | 'owner', value: string) {
-    props.editField((d) => ({
-      ...d,
-      material: {
-        ...d.material,
-        features: d.material.features.map((f) => (f.id === id ? { ...f, [field]: value } : f))
-      }
     }))
+    if (milestoneLaneConflict(next)) {
+      toast.error('同一特性的安排不能重叠')
+      return
+    }
+    edit(() => next)
+    if (start + 7 > range.end) props.navigate(milestoneDate(start - 3))
   }
-  const stopPan = () => {
-    pan.current = null
-  }
-  const today = milestoneDay(milestoneToday())
   return (
     <>
       {showActual && facts.readers}
       <MilestoneSdlcToolbar
         actual={facts}
-        editing={props.editing}
+        editing={editing}
         showActual={showActual}
         onChange={setShowActual}
-        warning={gesture.warning}
         featureCount={features.length}
-        ownerCount={new Set(features.map((feature) => feature.owner.trim()).filter(Boolean)).size}
+        totalCount={visible.material.features.length}
+        ownerCount={new Set(features.map((f) => f.owner.trim()).filter(Boolean)).size}
+      />
+      <MilestoneRangeToolbar
+        range={range}
+        today={today}
+        navigate={props.navigate}
+        rangeOnly={props.rangeOnly}
+        onRangeOnly={props.onRangeOnly}
       />
       <div
-        data-segmented={calendar.yearTargets.size > 0 || undefined}
         ref={viewport}
         className="wb-ml-scroll"
         data-contextual-tour-target="milestone-schedule"
         aria-label="特性交付泳道"
-        onScroll={(e) =>
-          props.onScroll(
-            (origin - calendar.first) * width + e.currentTarget.scrollLeft,
-            e.currentTarget.scrollTop
-          )
-        }
-        onPointerDown={(e) => {
-          if (
-            e.button !== 0 ||
-            (e.target as HTMLElement).closest(
-              'button,input,textarea,select,label,[data-ml-stop-pan]'
-            )
-          ) {
-            return
-          }
-          pan.current = { x: e.clientX, left: e.currentTarget.scrollLeft }
-          e.currentTarget.setPointerCapture(e.pointerId)
-        }}
-        onPointerMove={(e) => {
-          if (gesture.move(e)) {
-            return
-          }
-          if (pan.current) {
-            e.currentTarget.scrollLeft = pan.current.left + pan.current.x - e.clientX
-          }
-        }}
-        onPointerUp={() => {
-          gesture.finish()
-          stopPan()
-        }}
-        onPointerCancel={() => {
-          gesture.finish(true)
-          stopPan()
-        }}
-        onLostPointerCapture={() => {
-          gesture.finish(true)
-          stopPan()
-        }}
-        onKeyDownCapture={(event) => {
-          if (
-            gesture.active() &&
-            (event.key === 'Escape' ||
-              ((event.ctrlKey || event.metaKey) && ['z', 'y'].includes(event.key.toLowerCase())))
-          ) {
-            event.preventDefault()
-            event.stopPropagation()
-            gesture.finish(true)
-          }
-        }}
+        {...scrollProps}
       >
         <MilestoneNavigation
           nodes={draft.material.milestones}
           origin={origin}
           width={canvasWidth}
           enabled={enabled}
-          visibleDate={() =>
-            milestoneDate(
-              Math.min(end, origin + Math.floor((viewport.current?.scrollLeft ?? 0) / width) + 1)
-            )
-          }
-          {...milestoneNodeActions(draft.material.milestones, edit, props.editField, navigateDate)}
+          visibleDate={() => milestoneDate(Math.max(today, Math.floor(range.start)))}
+          {...milestoneNodeActions(
+            draft.material.milestones,
+            edit,
+            props.editField,
+            props.navigate
+          )}
         />
         <div className="wb-ml-canvas" style={{ width: canvasWidth + labelWidth }}>
           <MilestoneDayGrid
@@ -252,7 +241,7 @@ export function MilestoneTimeline(props: Props) {
           />
           <div className="wb-ml-board-header">
             <MilestoneVersionRow
-              addFeature={props.addFeature}
+              addFeature={() => props.addFeature(milestoneDate(Math.floor(range.start)), range.end)}
               draft={visible}
               versions={versions}
               actualVersions={actualVersions}
@@ -276,47 +265,58 @@ export function MilestoneTimeline(props: Props) {
               days={days}
               today={today}
               canvasWidth={canvasWidth}
-              year={calendar.year}
-              yearTargets={calendar.yearTargets}
-              navigate={navigateDate}
+              year={milestoneDate(Math.floor(range.start)).slice(0, 4)}
             />
           </div>
-          {features.map((f, row) => {
-            const actual = showActual
-              ? milestoneActualLayout(f, visible.material, facts.values)
-              : null
+          {features.map((f) => {
+            const actual = layouts.get(f.id)
             return (
               <div
                 key={f.id}
-                className={`wb-ml-row${rowDrop?.id === f.id ? ` wb-ml-drop-${rowDrop.side}` : ''}`}
+                className="wb-ml-row"
                 style={actual ? { minHeight: 88 + (actual.lanes - 1) * 36 } : undefined}
                 data-milestone-feature={f.id}
               >
                 <div className="wb-ml-label wb-ml-feature" data-ml-stop-pan>
-                  {editing && !showActual && (
-                    <MilestoneRowGrip
-                      feature={f}
-                      index={row}
-                      features={features}
-                      enabled={enabled}
-                      viewport={viewport}
-                      edit={edit}
-                      onDrop={setRowDrop}
-                    />
-                  )}
-                  <div>
-                    <MilestoneField
-                      label="特性名称"
-                      autoFocus={f.id === props.newFeature}
-                      value={f.title}
-                      editable={enabled}
-                      onChange={(title) => changeField(f.id, 'title', title)}
-                    />
+                  <div className="wb-ml-feature-info">
+                    <div className="wb-ml-feature-heading">
+                      <MilestoneField
+                        label="特性名称"
+                        autoFocus={f.id === props.newFeature}
+                        value={f.title}
+                        editable={enabled}
+                        required
+                        validationAttempt={props.validationAttempt}
+                        maxLength={200}
+                        onChange={(title) => changeField(f.id, 'title', title)}
+                      />
+                      {editing && !showActual && (
+                        <div className="wb-ml-feature-actions">
+                          <MilestoneIconButton
+                            className="wb-ml-cell-button"
+                            label="添加 Maintain"
+                            disabled={!enabled}
+                            onClick={() => arrange(f)}
+                          >
+                            <Wrench size={14} />
+                          </MilestoneIconButton>
+                          <MilestoneIconButton
+                            label="删除特性"
+                            disabled={!enabled}
+                            onClick={() => props.remove(f)}
+                          >
+                            <X size={14} />
+                          </MilestoneIconButton>
+                        </div>
+                      )}
+                    </div>
                     <div className="wb-ml-feature-meta">
                       <MilestoneField
                         label="负责人"
+                        placeholder="负责人（选填）"
                         value={f.owner}
                         editable={enabled}
+                        maxLength={100}
                         onChange={(owner) => changeField(f.id, 'owner', owner)}
                       />
                     </div>
@@ -324,8 +324,17 @@ export function MilestoneTimeline(props: Props) {
                       <small className="wb-ml-plan-reference">
                         规划：
                         {f.deliveries
-                          .map((d, i) => `${d.version.version} ${i === 0 ? '上线' : '维护'}`)
-                          .join(' → ')}
+                          .map(
+                            (d) =>
+                              d.phase +
+                              ' ' +
+                              (d.timeWindow
+                                ? d.timeWindow.start.slice(0, 10) +
+                                  '—' +
+                                  d.timeWindow.end.slice(0, 10)
+                                : '未记录日期')
+                          )
+                          .join('；')}
                       </small>
                     )}
                     {actual?.note && <small className="wb-ml-result-note">{actual.note}</small>}
@@ -343,24 +352,16 @@ export function MilestoneTimeline(props: Props) {
                   ) : (
                     <MilestoneStageBars
                       feature={f}
-                      versions={visible.versions}
                       origin={origin}
+                      end={end}
+                      range={range}
                       enabled={enabled}
                       gesture={gesture}
+                      remove={(id) => removeMaintenance(f, id)}
+                      arrange={(d) => arrange(f, d)}
                     />
                   )}
                 </div>
-                {editing && !showActual && (
-                  <div className="wb-ml-row-actions" data-ml-stop-pan>
-                    <MilestoneIconButton
-                      label={`移除 ${f.title || '新特性'}`}
-                      disabled={!enabled}
-                      onClick={() => props.remove(f)}
-                    >
-                      <X size={14} />
-                    </MilestoneIconButton>
-                  </div>
-                )}
               </div>
             )
           })}

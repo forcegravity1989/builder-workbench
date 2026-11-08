@@ -113,7 +113,14 @@ export async function verifyMilestoneRestart(previous: ElectronApplication, info
     await expect(board.getByText('知识库', { exact: true })).toHaveCount(0)
     await expect(board.locator('.wb-ml-row')).toHaveCount(2)
     await expect
-      .poll(() => Object.values(readRecovery()).every((raw) => JSON.parse(raw).payload === null))
+      .poll(() =>
+        Object.values(readRecovery()).every((raw) => {
+          const payload = JSON.parse(raw).payload
+          if (!payload) return true
+          const saved = JSON.parse(payload)
+          return JSON.stringify(saved.draft) === JSON.stringify(saved.baseline) && !!saved.viewDate
+        })
+      )
       .toBe(true)
     await info.attach('milestone-process-restart', {
       body: JSON.stringify({

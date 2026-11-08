@@ -27,14 +27,14 @@ cycleId 标识同一版本同一流程的材料身份，不是自然周、原生
 
 两种日期分别保存：
 
-- `.bw/milestones.json` 使用 schema_version=3，可选 `versionPlans` 数组中每项为 `{version, cycleId, timeWindow: {start, end}}`，表示里程碑预期的版本窗口。
+- `.bw/milestones.json` 使用 schema_version=4，可选 `versionPlans` 数组中每项为 `{version, cycleId, timeWindow: {start, end}}`，表示里程碑预期的版本窗口。
 - `.bw/planning/<version>/data.json` 使用计划 schema 3，可选 `timeWindow: {start, end}`，表示本版计划实际采用的周期。两端均为包含当日的 ISO 日期，开始不得晚于结束。编辑其他字段原样保留日期；没有日期就是未登记，不从 Releases、验收或提交时间猜。
 
 首日 Plan 可以校准日期、目标和范围，与里程碑预期不同并不使计划失效。里程碑重新编排只更新预期，不覆盖已有版本计划的 timeWindow 或其他字段；计划改期也不自动重写里程碑。新版本可由里程碑登记身份及最小空计划，真正开工再创建对应工作树与会话。已有材料沿用 cycleId，不能重新初始化覆盖。
 
-里程碑还保存 milestones（id、outcome、date；仅有月份精度的成果保留 month 直至人工指定日期）与按显示顺序排列的 features（id/month/title/owner/deliveries）。每个 delivery 保存稳定 id、版本引用（version + cycleId）及 stages；阶段含 phase/start/end，使用北京时间民用时间 `YYYY-MM-DDTHH:mm`，结束边界不包含。首段为 Plan/Design/Build/Test/Deploy，后一段为 Maintain；整段外边界按半天调整，内部按比例生成分钟精度边界，只表达规划分配。里程碑不选择目标，行 id 也不是 Issue 身份；实际事件不回写为规划。
+里程碑还保存 milestones（id、outcome、date；仅有月份精度的成果保留 month 直至人工指定日期）与 features（id/title/owner/deliveries）。特性名称必填、负责人可空；每个 delivery 为稳定 id、phase（Build 或 Maintain）与可选 timeWindow（start/end）。日期使用北京时间民用时间 `YYYY-MM-DDTHH:mm`，结束边界不包含；未记录日期时省略 timeWindow。日期段独立于版本，可跨任意版本、多轮维护；日期相交只提供计划候选，不表示正式纳入。版本预期窗口不重叠；调整版本不带动特性。条长是自然日期跨度，不是工时。
 
-没有 versionPlans 的旧材料可借当前可读版本窗口展示，正常提交时才保存预期窗口；这不表示恢复了从未记录的原始计划日期。旧 goalSlot/goalId 在读取时归一化移除，不作为匹配或保存约束。历史 `stages: []` 保留已确认特性与版本归属，不补造阶段、工期或结果；人重新安排时才生成默认阶段。旧版与已开工版本也可重新编排，仍须通过来源修订、身份、并发和排期冲突校验；不修改固定验收来源，也不通过里程碑重命名已建立执行或归档身份的版本。
+读取 schema 2/3 时保留节点、特性及段的身份、名称和已记录日期；旧前五阶段按最早开始与最晚结束归为 Build，维护段归为 Maintain，空阶段保持未记录日期。旧 month、版本引用及 goalSlot/goalId 不再约束特性；没有 versionPlans 的旧材料可借当前可读版本窗口展示，正常提交才保存预期窗口，不宣称恢复了原始预期日期。正式材料、已提交提案和本机恢复草案采用同一迁移；不回写固定计划或验收。
 
 里程碑不创建或绑定特性 Issue。版内细化由计划助手按 [Issue 格式的特性主单与拆分任务](issue-state.md#特性主单与拆分任务)与人讨论；不得用目标标题猜特性身份。人明确确认特性改名时，助手同步主 Issue 标题和里程碑对应行的 title，保留特性行 id、主 Issue 身份、各版任务引用和历史归档。只改目标标题不触发特性改名；关联不唯一时先核对，不批量替换同名文本。
 

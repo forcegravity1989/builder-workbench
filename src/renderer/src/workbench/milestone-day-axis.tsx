@@ -1,5 +1,12 @@
+import { ChevronLeft, ChevronRight, LocateFixed } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { MilestoneIconButton } from './milestone-icon-button'
 import type { ScheduledVersion } from '../../../shared/workbench/project-milestones'
-import { milestoneDay } from '../../../shared/workbench/milestone-calendar'
+import {
+  milestoneDay,
+  milestoneDate,
+  withinCivilRange
+} from '../../../shared/workbench/milestone-calendar'
 import {
   MILESTONE_LABEL_WIDTH as labelWidth,
   MILESTONE_DAY_WIDTH as width
@@ -10,41 +17,17 @@ export function MilestoneDayAxis({
   days,
   today,
   canvasWidth,
-  year,
-  yearTargets,
-  navigate
+  year
 }: {
   days: MilestoneAxisDay[]
   today: number
   canvasWidth: number
   year: string
-  yearTargets: ReadonlyMap<string, string>
-  navigate(date: string): void
 }) {
   return (
     <div className="wb-ml-day-row">
       <div className="wb-ml-label">
-        {yearTargets.size ? (
-          <select
-            aria-label="跳转到年份"
-            value={year}
-            onChange={(event) => {
-              const date = yearTargets.get(event.currentTarget.value)
-              if (date) {
-                navigate(date)
-              }
-            }}
-          >
-            {[...yearTargets.keys()].sort().map((key) => (
-              <option key={key} value={key}>
-                {key} 年
-              </option>
-            ))}
-          </select>
-        ) : (
-          '日期'
-        )}
-        <small>每格一天 · 半天调整</small>
+        {year} 年<small>每格一天 · 半天调整</small>
       </div>
       <div className="wb-ml-day-track" style={{ width: canvasWidth }}>
         {days.map((d) => (
@@ -102,6 +85,66 @@ export function MilestoneDayGrid({
           style={{ left: (d.day - origin) * width, width }}
         />
       ))}
+    </div>
+  )
+}
+
+export function MilestoneRangeToolbar({
+  range,
+  today,
+  navigate,
+  rangeOnly,
+  onRangeOnly
+}: {
+  range: { start: number; end: number }
+  today: number
+  navigate(date: string): void
+  rangeOnly: boolean
+  onRangeOnly(value: boolean): void
+}) {
+  return (
+    <div className="wb-ml-range-toolbar">
+      <div className="wb-ml-actions">
+        <MilestoneIconButton
+          label="向前查看一周"
+          onClick={() => navigate(milestoneDate(withinCivilRange(Math.floor(range.start) - 7)))}
+        >
+          <ChevronLeft size={15} />
+        </MilestoneIconButton>
+        <Input
+          type="date"
+          min="0000-01-01"
+          max="9999-12-31"
+          aria-label="定位日期"
+          className="wb-ml-jump-date"
+          value={milestoneDate(Math.floor(range.start))}
+          onChange={(e) => {
+            if (e.target.validity.valid && e.target.value) navigate(e.target.value)
+          }}
+        />
+        <small>— {milestoneDate(withinCivilRange(Math.ceil(range.end) - 1))}</small>
+        <MilestoneIconButton
+          label="向后查看一周"
+          onClick={() => navigate(milestoneDate(withinCivilRange(Math.floor(range.start) + 7)))}
+        >
+          <ChevronRight size={15} />
+        </MilestoneIconButton>
+        <MilestoneIconButton
+          label="定位今天，保留前十天"
+          onClick={() => navigate(milestoneDate(today - 10))}
+        >
+          <LocateFixed size={15} />
+        </MilestoneIconButton>
+      </div>
+      <select
+        className="wb-ml-filter"
+        aria-label="特性显示范围"
+        value={rangeOnly ? 'range' : 'all'}
+        onChange={(e) => onRangeOnly(e.target.value === 'range')}
+      >
+        <option value="range">当前时间范围有安排</option>
+        <option value="all">全部特性</option>
+      </select>
     </div>
   )
 }

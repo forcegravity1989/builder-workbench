@@ -1,22 +1,29 @@
 import { workCalendarDay } from '../../../../src/shared/workbench/work-calendar.ts'
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left.js'
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right.js'
+import LocateFixed from 'lucide-react/dist/esm/icons/locate-fixed.js'
+import ListPlus from 'lucide-react/dist/esm/icons/list-plus.js'
+import Wrench from 'lucide-react/dist/esm/icons/wrench.js'
+import Trash2 from 'lucide-react/dist/esm/icons/trash-2.js'
+import X from 'lucide-react/dist/esm/icons/x.js'
 import { MilestoneAxis } from './milestones-roadmap.jsx'
 import { InlineField, WeekName } from './milestones-fields.jsx'
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
-import { calendarFor, dayWidth, labelWidth, planWeek, nextVersion } from './milestones-calendar.js'
-import { currentDay, sampleActual, actualVersions } from './milestones-data.js'
+import { calendarFor, dayWidth, labelWidth } from './milestones-calendar.js'
+import { currentDay, sampleActual, actualVersions, storageKey } from './milestones-data.js'
 import {
   day,
   dateOf,
   dayMs,
   phases,
   isRest,
-  laneConflict,
   settleWindows,
   adjustVersion,
-  adjustDelivery
+  adjustDelivery,
+  latestFeatureEnd
 } from './milestones-sdlc.js'
 // eslint-disable-next-line no-unused-vars
-const { React, useState, useRef, useEffect, Plus, X, ExternalLink, RefreshCw } =
+const { React, useState, useRef, useEffect, ExternalLink, RefreshCw } =
   window.BWPrototypeDependencies
 const short = (date) => date.slice(5).replace('-', '/')
 const plannedTime = (value) =>
@@ -29,9 +36,13 @@ export function Timeline({
   onActualScenario,
   onChangeFeature,
   onRenameVersion,
-  onDelete,
   onVersion,
-  onReorder,
+  onMaintain,
+  onRemoveMaintenance,
+  onDelete,
+  onNavigate,
+  onNotice,
+  validationAttempt,
   newFeature,
   onAdd,
   onNameWeek,
@@ -43,11 +54,16 @@ export function Timeline({
   const scroll = useRef(null),
     drag = useRef(null),
     pan = useRef(null),
-    ordering = useRef(null)
+    editingOrder = useRef(null),
+    editingPins = useRef(new Set())
   const [preview, setPreview] = useState(null),
     [dragWarning, setDragWarning] = useState(''),
     [showActual, setShowActual] = useState(false),
-    [dropRow, setDropRow] = useState(null)
+    [rangeOnly, setRangeOnly] = useState(true),
+    [visibleRange, setVisibleRange] = useState({
+      start: day(navigation.date),
+      end: day(navigation.date) + 28
+    })
   const actualByFeature = new Map(
     plan.features.map((feature) => [feature.id, sampleActual(feature, actualScenario)])
   )
@@ -64,13 +80,15 @@ export function Timeline({
     : preview || plan
   const actualVersionById = new Map(versions.map((v) => [v.id, v]))
   // Keep the calendar scale and scroll position stable while changing the source.
-  const baseCalendar = calendarFor({ ...plan, versions: [...plan.versions, ...versions] })
+  const baseCalendar = calendarFor(
+    { ...plan, versions: [...plan.versions, ...versions] },
+    navigation.date
+  )
   const start = baseCalendar.start / dayMs,
     end = baseCalendar.end / dayMs + 1
   const totalWidth = (end - start) * dayWidth
   const x = (value) => (value - start) * dayWidth
   const days = Array.from({ length: end - start }, (_, i) => start + i)
-  const versionById = new Map(display.versions.map((v) => [v.id, v]))
   const lanesFor = (items) => {
     const ends = [],
       lanes = new Map()
@@ -92,13 +110,69 @@ export function Timeline({
   const blankWeeks = baseCalendar.weeks.filter(
     (w) => !display.versions.some((v) => v.start <= w.end && v.end >= w.start)
   )
+  if (!canEdit) editingPins.current.clear()
+  const chronological = display.features.toSorted(
+    (a, b) => latestFeatureEnd(b) - latestFeatureEnd(a)
+  )
+  if (!canEdit || !editingOrder.current) editingOrder.current = chronological.map((f) => f.id)
+  const newIds = display.features
+    .filter((f) => !editingOrder.current.includes(f.id))
+    .map((f) => f.id)
+  if (newIds.length) editingOrder.current = [...newIds, ...editingOrder.current]
+  const ordered = canEdit
+    ? display.features.toSorted(
+        (a, b) => editingOrder.current.indexOf(a.id) - editingOrder.current.indexOf(b.id)
+      )
+    : chronological
+  const visibleFeatures = ordered.filter((feature) => {
+    if (
+      !rangeOnly ||
+      !feature.title.trim() ||
+      (canEdit && (feature.id === newFeature || editingPins.current.has(feature.id)))
+    )
+      return true
+    const results = actualByFeature.get(feature.id).rows
+    if (showActual && results.length)
+      return results.some(
+        (r) =>
+          day(r.version.start) < visibleRange.end && day(r.version.end) + 1 > visibleRange.start
+      )
+    return feature.deliveries.some((d) =>
+      d.stages.some((s) => s.start < visibleRange.end && s.end > visibleRange.start)
+    )
+  })
+  const readRange = () => {
+    const el = scroll.current
+    if (!el) return
+    const left = start + el.scrollLeft / dayWidth
+    const right = left + Math.max(1, (el.clientWidth - labelWidth) / dayWidth)
+    setVisibleRange((old) =>
+      old.start === left && old.end === right ? old : { start: left, end: right }
+    )
+    try {
+      localStorage.setItem(storageKey + '-date', dateOf(left))
+    } catch {
+      /* Optional view preference. */
+    }
+  }
+  const previousStart = useRef(start)
   useEffect(() => {
-    const date =
-      navigation.date.slice(0, 7) === currentDay.slice(0, 7) && navigation.sequence === 0
-        ? currentDay
-        : navigation.date
-    scroll.current?.scrollTo({ left: Math.max(0, (day(date) - start - 1) * dayWidth) })
-  }, [navigation, start])
+    if (scroll.current) scroll.current.scrollLeft += (previousStart.current - start) * dayWidth
+    previousStart.current = start
+    readRange()
+  }, [start])
+  useEffect(() => {
+    scroll.current?.scrollTo({ left: Math.max(0, (day(navigation.date) - start) * dayWidth) })
+    readRange()
+  }, [navigation])
+  useEffect(() => {
+    const observer = new ResizeObserver(readRange)
+    if (scroll.current) observer.observe(scroll.current)
+    return () => observer.disconnect()
+  }, [start])
+  useEffect(() => {
+    onNotice(dragWarning)
+  }, [dragWarning])
   const beginDrag = (event, gesture) => {
     if (!canEdit || event.button !== 0) {
       return
@@ -106,6 +180,7 @@ export function Timeline({
     event.preventDefault()
     event.stopPropagation()
     setDragWarning('')
+    if (gesture.kind === 'delivery') editingPins.current.add(gesture.id)
     drag.current = {
       ...gesture,
       originX: event.clientX,
@@ -126,71 +201,7 @@ export function Timeline({
     if (gesture.kind === 'version') {
       return adjustVersion(gesture.base, gesture.id, gesture.mode, delta)
     }
-    let draft = gesture.base,
-      targetId
-    const delivery = draft.features.find((f) => f.id === gesture.id).deliveries[gesture.index]
-    if (!delivery.stages.length) {
-      return draft
-    }
-    if (gesture.mode === 'move' && delta) {
-      const targetDay =
-        (gesture.grabDay ?? (delivery.stages[0].start + delivery.stages.at(-1).end) / 2) + delta
-      const candidates = draft.versions.filter(
-        (v) => day(v.start) <= targetDay && day(v.end) + 1 > targetDay
-      )
-      if (candidates.length > 1) {
-        setDragWarning('此日期有多个版本，请拖至明确的版本范围')
-        return null
-      }
-      const target = candidates[0]
-      targetId = target?.id
-      if (!target) {
-        const week = baseCalendar.weeks.find(
-          (w) => day(w.start) <= targetDay && day(w.start) + 7 > targetDay
-        )
-        if (week) {
-          const used = planWeek(draft, week)
-          draft = used.plan
-          targetId = used.version.id
-        }
-      }
-    }
-    const target = draft.versions.find((v) => v.id === (targetId || delivery.versionId))
-    if (
-      gesture.mode === 'move' &&
-      delivery.stages.at(-1).end - delivery.stages[0].start >
-        day(target.end) + 1 - day(target.start)
-    ) {
-      setDragWarning(`${target.name} 放不下当前安排，请先拉长该版本或缩短本段`)
-      return null
-    }
-    let next = adjustDelivery(draft, gesture.id, gesture.index, gesture.mode, delta, targetId)
-    const moved = next.features.find((f) => f.id === gesture.id)
-    const first = moved.deliveries[0],
-      maintain = moved.deliveries[1]
-    if (
-      gesture.mode === 'move' &&
-      gesture.index === 0 &&
-      target.id !== delivery.versionId &&
-      maintain?.stages.length &&
-      (first.versionId === maintain.versionId || maintain.stages[0].start < first.stages.at(-1).end)
-    ) {
-      const following = nextVersion(next, target.end)
-      const duration = maintain.stages.at(-1).end - maintain.stages[0].start
-      if (duration > day(following.version.end) + 1 - day(following.version.start)) {
-        setDragWarning(`${following.version.name} 放不下维护段，请先调整该版本或维护时长`)
-        return null
-      }
-      next = adjustDelivery(
-        following.plan,
-        gesture.id,
-        1,
-        'move',
-        day(following.version.start) - maintain.stages[0].start,
-        following.version.id
-      )
-    }
-    return next
+    return adjustDelivery(gesture.base, gesture.id, gesture.index, gesture.mode, delta)
   }
   const stepFor = (g) => (g.kind === 'version' ? 1 : 0.5)
   const checkedChange = (gesture, delta) => {
@@ -203,13 +214,8 @@ export function Timeline({
       setDragWarning(settled.conflict)
       return null
     }
-    const next = settled.plan
-    if (laneConflict(next)) {
-      setDragWarning('本特性的另一段已在该版本，请先调整另一段')
-      return null
-    }
     setDragWarning('')
-    return next
+    return settled.plan
   }
   const movePointer = (event) => {
     if (drag.current) {
@@ -247,6 +253,7 @@ export function Timeline({
       return
     }
     event.preventDefault()
+    if (gesture.kind === 'delivery') editingPins.current.add(gesture.id)
     const delta = (event.key === 'ArrowLeft' ? -1 : 1) * stepFor(gesture)
     const next = checkedChange({ ...gesture, base: plan }, delta)
     if (next) {
@@ -270,17 +277,18 @@ export function Timeline({
       return null
     }
     const gesture = { kind: 'delivery', id: feature.id, index, mode: 'move' }
-    const label = `${feature.title} ${versionById.get(delivery.versionId)?.name} ${first.phase === 'Maintain' ? 'Maintain' : '上线'}整段 · ${plannedTime(first.start)}—${short(dateOf(Math.ceil(last.end) - 1))}${last.end % 1 === 0.5 ? ' 上午' : ''} · 计划`
+    const label = `${feature.title} ${first.phase} · ${plannedTime(first.start)}—${short(dateOf(Math.ceil(last.end) - 1))}${last.end % 1 === 0.5 ? ' 上午' : ''} · 计划`
     return (
       <div
-        key={delivery.versionId}
+        key={delivery.id || index}
         className={`ml-delivery-bar ${canEdit ? 'editable' : ''}`}
+        data-delivery-id={delivery.id}
         style={{ left: x(first.start), width: (last.end - first.start) * dayWidth, top: 31 }}
       >
         <button
           className="ml-delivery-body"
           aria-label={label}
-          title={`${label}；内部为阶段比例示意`}
+          title={`${label}；拖动移动，两端调整日期，可跨版本`}
           onPointerDown={canEdit ? (e) => beginDrag(e, gesture) : undefined}
           onKeyDown={canEdit ? (e) => keyboardAdjust(e, gesture) : undefined}
         >
@@ -292,22 +300,65 @@ export function Timeline({
                 flex: `0 0 ${((stage.end - stage.start) / (last.end - first.start)) * 100}%`
               }}
             >
-              {(stage.end - stage.start) * dayWidth >= 38
-                ? stage.phase
-                : stage.phase.slice(0, stage.phase === 'Deploy' ? 2 : 1)}
+              <b
+                className="ml-phase-label"
+                style={{
+                  left: (Math.max(stage.start, visibleRange.start) - first.start) * dayWidth,
+                  width:
+                    Math.max(
+                      0,
+                      Math.min(stage.end, visibleRange.end) -
+                        Math.max(stage.start, visibleRange.start)
+                    ) * dayWidth
+                }}
+              >
+                {stage.phase}
+              </b>
             </span>
           ))}
         </button>
         {canEdit &&
+          first.phase === 'Maintain' &&
+          last.end > visibleRange.start &&
+          first.start < visibleRange.end && (
+            <div
+              className="ml-delivery-tools"
+              style={{
+                left:
+                  ((Math.max(first.start, visibleRange.start) +
+                    Math.min(last.end, visibleRange.end)) /
+                    2 -
+                    first.start) *
+                  dayWidth
+              }}
+            >
+              <IconAction
+                className="ml-maintain-delete"
+                label="删除此段 Maintain"
+                icon={Trash2}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  editingPins.current.add(feature.id)
+                  event.currentTarget
+                    .closest('[data-feature-id]')
+                    ?.querySelector('[aria-label="添加 Maintain"]')
+                    ?.focus({ preventScroll: true })
+                  onRemoveMaintenance(feature.id, delivery.id)
+                }}
+              />
+            </div>
+          )}
+        {canEdit &&
           handle(
             { ...gesture, mode: 'start' },
-            `${feature.title} ${versionById.get(delivery.versionId)?.name} 整段开始：拖动调整`,
+            `${feature.title} ${first.phase} 开始：拖动调整`,
             'start'
           )}
         {canEdit &&
           handle(
             { ...gesture, mode: 'end' },
-            `${feature.title} ${versionById.get(delivery.versionId)?.name} 整段结束：拖动调整`,
+            `${feature.title} ${first.phase} 结束：拖动调整`,
             'end'
           )}
       </div>
@@ -347,26 +398,24 @@ export function Timeline({
     <>
       <div className="ml-sdlc-toolbar">
         <span className="ml-planning-count">
-          {display.features.length} 个特性 ·{' '}
-          {new Set(display.features.map((f) => f.owner.trim()).filter(Boolean)).size} 位负责人
+          {visibleFeatures.length} / {display.features.length} 个特性 ·{' '}
+          {new Set(visibleFeatures.map((f) => f.owner.trim()).filter(Boolean)).size} 位负责人
         </span>
-        <div className="ml-stage-legend" aria-label={showActual ? '实际图例' : 'SDLC 阶段图例'}>
+        <div className="ml-stage-legend" aria-label={showActual ? '实际图例' : '工作阶段图例'}>
           {showActual ? (
             <span>条长：版本周期 · 点击查看版本</span>
           ) : (
-            phases.map((phase) => (
-              <span key={phase}>
-                <i className={`phase-${phase.toLowerCase()}`} />
-                {phase}
-              </span>
-            ))
+            [
+              <span key="planned">计划</span>,
+              ...phases.map((phase) => (
+                <span key={phase}>
+                  <i className={`phase-${phase.toLowerCase()}`} />
+                  {phase}
+                </span>
+              ))
+            ]
           )}
         </div>
-        {dragWarning && (
-          <span className="ml-drag-warning" role="status">
-            {dragWarning}
-          </span>
-        )}
         <label className="ml-show-actual">
           <input
             type="checkbox"
@@ -392,9 +441,46 @@ export function Timeline({
           </div>
         )}
       </div>
+      <div className="ml-range-toolbar">
+        <div className="ml-actions">
+          <IconAction
+            label="向前查看一周"
+            icon={ChevronLeft}
+            onClick={() => onNavigate(dateOf(visibleRange.start - 7))}
+          />
+          <input
+            className="input ml-jump-date"
+            type="date"
+            aria-label="定位日期"
+            value={dateOf(visibleRange.start)}
+            onChange={(e) => e.target.value && onNavigate(e.target.value)}
+          />
+          <span className="ml-visible-until">— {dateOf(Math.ceil(visibleRange.end) - 1)}</span>
+          <IconAction
+            label="向后查看一周"
+            icon={ChevronRight}
+            onClick={() => onNavigate(dateOf(visibleRange.start + 7))}
+          />
+          <IconAction
+            label="定位今天，保留前十天"
+            icon={LocateFixed}
+            onClick={() => onNavigate(dateOf(day(currentDay) - 10))}
+          />
+        </div>
+        <select
+          className="input"
+          aria-label="特性显示范围"
+          value={rangeOnly ? 'range' : 'all'}
+          onChange={(e) => setRangeOnly(e.target.value === 'range')}
+        >
+          <option value="range">当前时间范围有安排</option>
+          <option value="all">全部特性</option>
+        </select>
+      </div>
       <div
         className="ml-timeline-scroll"
         ref={scroll}
+        onScroll={readRange}
         tabIndex={0}
         aria-label="特性版本排期，每格一天"
         onPointerMove={movePointer}
@@ -435,7 +521,7 @@ export function Timeline({
           width={totalWidth}
           onAdd={() =>
             onAddMilestone({
-              date: dateOf(start + Math.floor((scroll.current?.scrollLeft || 0) / dayWidth) + 1),
+              date: dateOf(Math.max(day(currentDay), Math.floor(visibleRange.start))),
               outcome: ''
             })
           }
@@ -475,8 +561,8 @@ export function Timeline({
                   <IconAction
                     className="ml-cell-add"
                     label="添加特性"
-                    icon={Plus}
-                    onClick={onAdd}
+                    icon={ListPlus}
+                    onClick={() => onAdd(dateOf(Math.floor(visibleRange.start)), visibleRange.end)}
                   />
                 )}
                 特性 / 负责人<small>{showActual ? '版本日期对照' : '计划 · 日排期'}</small>
@@ -541,7 +627,7 @@ export function Timeline({
                         className={`ml-version-dates ${editable ? 'editable' : ''} ${showActual ? 'comparison' : ''}`}
                         title={
                           editable
-                            ? '拖动日期整体平移；拖版本两端调整起止'
+                            ? '拖动调整版本日期；特性排期独立保留'
                             : showActual
                               ? '表头按里程碑规划定位；实际日期来自正式版本计划，结果条按实际日期绘制'
                               : '里程碑规划日期'
@@ -587,7 +673,7 @@ export function Timeline({
             </div>
             <div className="ml-day-row">
               <div className="ml-sticky-label">
-                {navigation.date.slice(0, 7).replace('-', ' 年 ')} 月
+                {dateOf(visibleRange.start).slice(0, 4)} 年
                 <small>
                   {showActual ? '每格一天 · 结果条按实际日期' : '每格一天 · 整段按半天调整'}
                 </small>
@@ -618,10 +704,11 @@ export function Timeline({
               </div>
             </div>
           </div>
-          {display.features.map((feature, index) => (
+          {visibleFeatures.map((feature) => (
             <div
               key={feature.id}
-              className={`ml-timeline-row ${dropRow?.id === feature.id ? `ml-row-drop-${dropRow.side}` : ''}`}
+              className="ml-timeline-row"
+              data-feature-id={feature.id}
               style={
                 showActual
                   ? {
@@ -637,66 +724,32 @@ export function Timeline({
                     }
                   : undefined
               }
-              onDragOver={(e) => {
-                if (!ordering.current || !canEdit) {
-                  return
-                }
-                e.preventDefault()
-                const bounds = e.currentTarget.getBoundingClientRect()
-                setDropRow({
-                  id: feature.id,
-                  side: e.clientY < bounds.top + bounds.height / 2 ? 'before' : 'after'
-                })
-                const area = scroll.current.getBoundingClientRect()
-                if (e.clientY > area.bottom - 35) {
-                  scroll.current.scrollTop += 12
-                }
-                if (e.clientY < area.top + 130) {
-                  scroll.current.scrollTop -= 12
-                }
-              }}
-              onDrop={(e) => {
-                e.preventDefault()
-                if (ordering.current && dropRow) {
-                  onReorder(ordering.current, dropRow.id, dropRow.side)
-                }
-                ordering.current = null
-                setDropRow(null)
-              }}
             >
               <div className="ml-sticky-label">
+                {canEdit && (
+                  <div className="ml-feature-actions">
+                    <IconAction
+                      className="ml-cell-action"
+                      label="添加 Maintain"
+                      icon={Wrench}
+                      onClick={() => {
+                        editingPins.current.add(feature.id)
+                        onMaintain(
+                          feature,
+                          dateOf(Math.floor(visibleRange.start)),
+                          visibleRange.end
+                        )
+                      }}
+                    />
+                    <IconAction
+                      className="ml-feature-delete"
+                      label="删除特性"
+                      icon={X}
+                      onClick={() => onDelete(feature)}
+                    />
+                  </div>
+                )}
                 <div className="ml-feature-heading">
-                  {canEdit && (
-                    <button
-                      className="ml-order-handle"
-                      draggable
-                      title="拖动排序；Alt+上下键移动"
-                      aria-label={`调整 ${feature.title} 顺序`}
-                      onDragStart={(e) => {
-                        ordering.current = feature.id
-                        e.dataTransfer.setData('text/plain', feature.id)
-                      }}
-                      onDragEnd={() => {
-                        ordering.current = null
-                        setDropRow(null)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.altKey && ['ArrowUp', 'ArrowDown'].includes(e.key)) {
-                          e.preventDefault()
-                          const target = display.features[index + (e.key === 'ArrowUp' ? -1 : 1)]
-                          if (target) {
-                            onReorder(
-                              feature.id,
-                              target.id,
-                              e.key === 'ArrowUp' ? 'before' : 'after'
-                            )
-                          }
-                        }
-                      }}
-                    >
-                      ⠿
-                    </button>
-                  )}
                   {canEdit ? (
                     <InlineField
                       value={feature.title}
@@ -704,6 +757,7 @@ export function Timeline({
                       placeholder="特性名称"
                       autoFocus={newFeature === feature.id}
                       className="ml-feature-name"
+                      forceInvalid={validationAttempt}
                       change={(title) => onChangeFeature(feature.id, { title })}
                     />
                   ) : (
@@ -716,11 +770,12 @@ export function Timeline({
                       <InlineField
                         value={feature.owner}
                         label={`${feature.title} 负责人`}
-                        placeholder="负责人"
+                        placeholder="负责人（选填）"
+                        required={false}
                         change={(owner) => onChangeFeature(feature.id, { owner })}
                       />
                     ) : (
-                      <small>{feature.owner}</small>
+                      <small>{feature.owner || '未指定负责人'}</small>
                     )}
                   </div>
                 </div>
@@ -730,7 +785,7 @@ export function Timeline({
                     {feature.deliveries
                       .map(
                         (d) =>
-                          `${versionById.get(d.versionId)?.name} ${d.stages[0]?.phase === 'Maintain' ? '维护' : '上线'}`
+                          `${d.stages[0]?.phase} ${short(dateOf(d.stages[0].start))}—${short(dateOf(d.stages.at(-1).end - 1))}`
                       )
                       .join(' → ')}
                   </small>
@@ -742,41 +797,25 @@ export function Timeline({
                 )}
               </div>
               <div className="ml-track" style={{ width: totalWidth }}>
-                {!showActual && (
-                  <svg className="ml-sdlc-connection" aria-hidden="true">
-                    {feature.deliveries.slice(1).map((d, i) => {
-                      const previous = feature.deliveries[i]
-                      if (!previous.stages.length || !d.stages.length) {
-                        return null
-                      }
-                      const left = x(previous.stages.at(-1).end)
-                      const right = x(d.stages[0].start)
-                      return right > left ? (
-                        <path key={d.versionId} d={`M ${left} 45 H ${right}`} />
-                      ) : null
-                    })}
-                  </svg>
-                )}
                 {showActual
                   ? actualByFeature.get(feature.id).rows.map((result) => actualBar(feature, result))
                   : feature.deliveries.map((delivery, i) => plannedBar(feature, delivery, i))}
               </div>
-              {canEdit && (
-                <div className="ml-row-actions">
-                  <IconAction
-                    label={`移除 ${feature.title || '特性'}`}
-                    icon={X}
-                    onClick={() => onDelete(feature)}
-                  />
-                </div>
-              )}
             </div>
           ))}
-          {!display.features.length && (
+          {!visibleFeatures.length && (
             <div className="ml-empty-lanes">
-              <div className="ml-sticky-label">还没有特性</div>
+              <div className="ml-sticky-label">
+                {display.features.length ? '当前范围没有安排' : '还没有特性'}
+              </div>
               <div className="ml-empty-grid" style={{ width: totalWidth }}>
-                添加特性后，整段安排上线版与 Maintain 版
+                {display.features.length ? (
+                  <button className="btn btn-ghost" onClick={() => setRangeOnly(false)}>
+                    查看全部特性
+                  </button>
+                ) : (
+                  '添加特性后安排 Build 与 Maintain'
+                )}
               </div>
             </div>
           )}

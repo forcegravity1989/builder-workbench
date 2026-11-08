@@ -23,11 +23,11 @@ export function describeMilestoneChanges(before: MilestoneDraft, after: Mileston
     const old = before.material.features.find((item) => item.id === f.id)
     if (!old) {
       result.push(
-        `新增特性：${f.title} · ${f.owner} · ${f.deliveries.map((d) => `${d.version.version} ${d.stages[0]?.phase ?? '阶段未记录'}`).join(' → ')}`
+        `新增特性：${f.title} · ${f.owner} · ${f.deliveries.map((d) => d.phase + ' ' + (d.timeWindow ? d.timeWindow.start.replace('T', ' ') + '—' + d.timeWindow.end.replace('T', ' ') : '未记录日期')).join('；')}`
       )
     } else if (JSON.stringify(old) !== JSON.stringify(f)) {
       result.push(
-        `调整特性：${old.title} → ${f.title} · ${f.owner} · ${f.deliveries.map((d) => `${d.version.version} ${d.stages[0]?.phase ?? '阶段未记录'}`).join(' → ')}`
+        `调整特性：${old.title} → ${f.title} · ${f.owner} · ${f.deliveries.map((d) => d.phase + ' ' + (d.timeWindow ? d.timeWindow.start.replace('T', ' ') + '—' + d.timeWindow.end.replace('T', ' ') : '未记录日期')).join('；')}`
       )
     }
   }
@@ -35,23 +35,6 @@ export function describeMilestoneChanges(before: MilestoneDraft, after: Mileston
     if (!after.material.features.some((item) => item.id === f.id)) {
       result.push(`移除特性：${f.title}`)
     }
-  }
-  const common = new Set(
-    before.material.features
-      .map((f) => f.id)
-      .filter((id) => after.material.features.some((f) => f.id === id))
-  )
-  if (
-    before.material.features
-      .filter((f) => common.has(f.id))
-      .map((f) => f.id)
-      .join() !==
-    after.material.features
-      .filter((f) => common.has(f.id))
-      .map((f) => f.id)
-      .join()
-  ) {
-    result.push('调整特性顺序')
   }
   for (const v of after.versions) {
     const old = before.versions.find((item) => item.cycleId === v.cycleId)

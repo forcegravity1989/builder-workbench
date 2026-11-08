@@ -77,7 +77,7 @@ export function ReferencePanel({ close }) {
           >
             ECharts custom series ↗
           </a>{' '}
-          能绘制时间图形，但字段编辑、行排序、日粒度拖动和撤销仍需自行接入；本轮不替换编辑器。
+          能绘制时间图形，但字段编辑、日粒度拖动和撤销仍需自行接入；本轮不替换编辑器。
         </p>
         <p>
           <a
@@ -101,7 +101,7 @@ export function ReferencePanel({ close }) {
           </a>
         </h3>
         <p>
-          借鉴：在对象附近建立排期、直接改日期和拖动排序。BW
+          借鉴：在对象附近建立排期、直接改日期。BW
           在同一连续画布添加特性，空周在使用时登记；拖节点保持特性身份。
         </p>
       </section>
@@ -147,8 +147,8 @@ export function ReferencePanel({ close }) {
         </p>
       </section>
       <p>
-        原型注释: 本轮先安排上线版与 Maintain 版；整段伸缩保持阶段比例，旧规划可重排。
-        实际只读取已归档目标结论，区分上线与维护结果，保留规划日期和版本归属对照；不判断延期。
+        原型注释: #590 待评审。Build 与 Maintain
+        按日期跨版安排，同一特性可以再次维护。版本计划与人工验收独立；原型只使用模拟数据。
       </p>
       <footer>
         <a className="btn btn-secondary" href="spec.md" target="_blank" rel="noreferrer">
@@ -163,7 +163,24 @@ export function ReferencePanel({ close }) {
 }
 
 export function VersionBridge({ item, version, plan, close }) {
-  const delivery = item?.deliveries.find((d) => d.versionId === version)
+  const arrangements = plan.features.filter((f) =>
+    f.deliveries.some((d) =>
+      d.stages.some(
+        (s) =>
+          s.start <
+            Date.parse(
+              (plan.versions.find((v) => v.id === version)?.end || '2026-01-01') + 'T00:00:00Z'
+            ) /
+              86400000 +
+              1 &&
+          s.end >
+            Date.parse(
+              (plan.versions.find((v) => v.id === version)?.start || '2026-01-01') + 'T00:00:00Z'
+            ) /
+              86400000
+      )
+    )
+  )
   const v = plan.versions.find((entry) => entry.id === version) ||
     actualVersions.find((entry) => entry.id === version) || { name: version }
   return (
@@ -175,17 +192,16 @@ export function VersionBridge({ item, version, plan, close }) {
       <div className="ml-source-columns">
         <section>
           <h3>里程碑安排</h3>
-          {delivery ? (
-            <>
-              <p>{delivery.stages.map((s) => s.phase).join(' → ')}</p>
-              <p>
-                {v.start} — {v.end}
+          {arrangements.length ? (
+            arrangements.map((f) => (
+              <p key={f.id}>
+                {f.title} · {f.owner || '未指定负责人'}
               </p>
-              <p className="muted">负责人：{item.owner}</p>
-            </>
+            ))
           ) : (
-            <p>本版未关联当前特性。</p>
+            <p>该日期范围没有特性安排。</p>
           )}
+          <p className="muted">此处展示日期交集；本版正式纳入范围以版本计划为准。</p>
         </section>
         <section>
           <h3>版本计划与实际交付</h3>

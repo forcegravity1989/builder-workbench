@@ -134,6 +134,10 @@ export function useMilestonePlanning(
       window.removeEventListener('beforeunload', save)
     }
   }, [key])
+  useEffect(() => {
+    const timer = setTimeout(() => persist(key), 350)
+    return () => clearTimeout(timer)
+  }, [key, state?.viewDate, state?.rangeOnly, state?.scrollX, state?.scrollY])
   const patch = (update: Partial<Session>) => {
     const s = sessions.get(key)
     if (s) {

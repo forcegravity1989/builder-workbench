@@ -1,72 +1,83 @@
-import {
-  defaultStages,
-  proportionalStages,
-  day,
-  dateOf,
-  scheduleProblem
-} from './milestones-sdlc.js'
+import { defaultStages, day, dateOf, scheduleProblem } from './milestones-sdlc.js'
 export const dateExample = new URLSearchParams(window.location.search).get('example') === 'dates'
-export const storageKey = `bw-issue-551-simple-prototype-v1${dateExample ? '-dates' : ''}`
-export const currentDay = '2026-11-27'
+export const storageKey = `bw-issue-590-free-timeline-v1${dateExample ? '-dates' : ''}`
+export const currentDay = '2026-11-06'
 export const fixedVersions = [
   { id: 'v1.0.0', hasExecution: true, name: 'v1.0.0', start: '2026-11-02', end: '2026-11-11' },
   { id: 'v1.0.1', hasExecution: true, name: 'v1.0.1', start: '2026-11-12', end: '2026-11-18' },
   { id: 'v1.1.0', hasExecution: true, name: 'v1.1.0', start: '2026-11-19', end: '2026-11-25' },
   { id: 'v1.1.1', hasExecution: true, name: 'v1.1.1', start: '2026-11-26', end: '2026-12-02' }
 ]
-const placement = (i, maintain = false, end) => ({
-  versionId: fixedVersions[i].id,
-  stages: end
-    ? proportionalStages(day(fixedVersions[i].start), day(end) + 1, maintain)
-    : defaultStages(fixedVersions[i], maintain)
+const span = (phase, start, end) => ({
+  id: phase + '-' + start,
+  stages: [{ phase, start: day(start), end: day(end) + 1 }]
 })
 const normalInitial = {
   months: [],
   milestones: [
-    { id: 'demo-launch', date: '2026-11-05', outcome: '发布 1.0，完成首次正式推广' },
-    {
-      id: 'demo-feedback',
-      date: '2026-11-18',
-      outcome: '完成首轮用户反馈回收，协作与工程能力形成可用闭环'
-    }
+    { id: 'demo-feedback', date: '2026-10-30', outcome: '完成首轮用户反馈回收' },
+    { id: 'demo-launch', date: '2026-11-15', outcome: '发布 1.0，完成首次正式推广' }
   ],
-  versions: fixedVersions,
+  versions: [
+    { id: 'v0.9', name: 'v0.9', hasExecution: true, start: '2026-10-26', end: '2026-11-01' },
+    ...fixedVersions
+  ],
   features: [
     {
       id: 'demo-wall',
       title: '项目墙优化',
       owner: 'yuzhup',
-      deliveries: [placement(0), placement(1, true)]
+      deliveries: [
+        span('Build', '2026-10-19', '2026-11-10'),
+        span('Maintain', '2026-11-11', '2026-11-17')
+      ]
     },
     {
       id: 'demo-notification',
       title: '消息与通知',
       owner: 'kanadead',
-      deliveries: [placement(0, false, '2026-11-06'), placement(1, true, '2026-11-16')]
+      deliveries: [
+        span('Build', '2026-10-26', '2026-11-18'),
+        span('Maintain', '2026-11-19', '2026-11-25')
+      ]
     },
     {
       id: 'demo-metrics',
       title: '指标能力运维',
       owner: 'cfdcfd',
-      deliveries: [placement(1), placement(2, true)]
+      deliveries: [
+        span('Build', '2026-10-05', '2026-10-09'),
+        span('Maintain', '2026-10-12', '2026-10-16'),
+        span('Maintain', '2026-11-09', '2026-11-13')
+      ]
     },
     {
       id: 'demo-knowledge',
       title: '知识库',
-      owner: 'cfdcfd',
-      deliveries: [placement(2), placement(3, true)]
+      owner: '',
+      deliveries: [
+        span('Build', '2026-11-02', '2026-11-13'),
+        span('Maintain', '2026-11-14', '2026-11-20')
+      ]
     },
     {
       id: 'demo-engineering',
       title: '工程能力观测',
       owner: 'yuzhup',
-      deliveries: [placement(2), placement(3, true)]
+      deliveries: [
+        span('Build', '2026-10-05', '2026-10-16'),
+        span('Maintain', '2026-10-17', '2026-10-23'),
+        span('Maintain', '2026-11-02', '2026-11-08')
+      ]
     },
     {
       id: 'demo-workflow',
       title: 'AI workflow',
       owner: 'kanadead',
-      deliveries: [placement(2), placement(3, true)]
+      deliveries: [
+        span('Build', '2026-10-05', '2026-10-09'),
+        span('Maintain', '2026-10-12', '2026-10-16')
+      ]
     }
   ].map((f) => ({ ...f, month: '2026-11' }))
 }
@@ -84,7 +95,7 @@ export const initial = dateExample
       features: normalInitial.features.slice(0, 2).map((f) => ({
         ...f,
         deliveries: dateVersions.map((v, i) => ({
-          versionId: v.id,
+          id: 'dates-' + i,
           stages: defaultStages(v, i === 1)
         }))
       }))
@@ -198,8 +209,6 @@ export function sampleActual(feature, scenario = 'normal') {
   return { rows, note: rows.length ? '' : '暂无已归档结果' }
 }
 export const clone = (value) => structuredClone(value)
-export const versionName = (plan, id) =>
-  plan.versions.find((v) => v.id === id)?.name || '未命名版本'
 export function freshCases() {
   const empty = { months: [], milestones: [], versions: [], features: [] }
   return {
@@ -245,7 +254,6 @@ export function validPlan(p) {
         Array.isArray(f.deliveries) &&
         f.deliveries.every(
           (d) =>
-            p.versions.some((v) => v.id === d.versionId) &&
             Array.isArray(d.stages) &&
             d.stages.every(
               (s) => Number.isFinite(s.start) && Number.isFinite(s.end) && s.start < s.end
@@ -295,8 +303,8 @@ export function incomplete(plan) {
   if (plan.versions.some((v) => !v.name.trim())) {
     return '请补全版本名称'
   }
-  if (plan.features.some((f) => !f.title.trim() || !f.owner.trim())) {
-    return '请补全特性名称和负责人'
+  if (plan.features.some((f) => !f.title.trim())) {
+    return '填写特性名称后再提交评审'
   }
   return scheduleProblem(plan)
 }
@@ -354,7 +362,7 @@ export function changesBetween(before, after) {
     if (!old) {
       changes.push({
         title: `添加 ${f.title}`,
-        detail: `${f.owner} · ${f.deliveries.map((d) => versionName(after, d.versionId)).join(' → ')}`
+        detail: `${f.owner || '未指定负责人'} · ${f.deliveries.map((d) => d.stages[0].phase).join(' → ')}`
       })
       continue
     }
@@ -367,7 +375,7 @@ export function changesBetween(before, after) {
     }
     if (JSON.stringify(old.deliveries) !== JSON.stringify(f.deliveries)) {
       parts.push(
-        `版本安排：${f.deliveries.map((d) => `${versionName(after, d.versionId)} ${d.stages[0]?.phase === 'Maintain' ? 'Maintain' : '上线'} ${dateOf(d.stages[0].start)}—${dateOf(Math.ceil(d.stages.at(-1).end) - 1)}`).join('；')}`
+        `时间安排：${f.deliveries.map((d) => `${d.stages[0]?.phase} ${dateOf(d.stages[0].start)}—${dateOf(Math.ceil(d.stages.at(-1).end) - 1)}`).join('；')}`
       )
     }
     if (parts.length) {

@@ -1,11 +1,8 @@
 import { z } from 'zod'
 import { useState } from 'react'
-import { Flag, Plus, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Flag, X } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { MilestoneField } from './milestone-field'
 import { MilestoneIconButton } from './milestone-icon-button'
 import { milestoneDay } from '../../../shared/workbench/milestone-calendar'
@@ -32,6 +29,8 @@ function Caption({
     <div className="wb-ml-node-editor">
       <MilestoneField
         multiline
+        required
+        autoFocus={!node.outcome}
         editable
         value={node.outcome}
         label={`${node.date ?? node.month} 里程碑成果`}
@@ -160,8 +159,6 @@ export function MilestoneNavigation({
   visibleDate(): string
   add(node: MilestoneNode): void
 }) {
-  const [newDate, setNewDate] = useState<string | null>(null)
-  const [outcome, setOutcome] = useState('')
   const groups = new Map<string, MilestoneNode[]>()
   for (const node of nodes) {
     const key = node.date ?? ''
@@ -189,11 +186,10 @@ export function MilestoneNavigation({
             label="添加里程碑"
             data-contextual-tour-target="milestone-start"
             onClick={() => {
-              setNewDate(visibleDate())
-              setOutcome('')
+              add({ id: crypto.randomUUID(), date: visibleDate(), outcome: '' })
             }}
           >
-            <Plus size={16} />
+            <Flag size={16} />
           </MilestoneIconButton>
         )}
       </div>
@@ -219,64 +215,6 @@ export function MilestoneNavigation({
           )
         })}
       </div>
-      <Dialog
-        open={newDate !== null && actions.enabled}
-        onOpenChange={(open) => {
-          if (!open) {
-            setNewDate(null)
-          }
-        }}
-      >
-        <DialogContent data-ml-stop-pan aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>添加里程碑</DialogTitle>
-          </DialogHeader>
-          <form
-            className="grid gap-4"
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (
-                !newDate ||
-                !civilDate.safeParse(newDate).success ||
-                !outcome.trim() ||
-                !actions.enabled
-              ) {
-                return
-              }
-              add({ id: crypto.randomUUID(), date: newDate, outcome: outcome.trim() })
-              setNewDate(null)
-            }}
-          >
-            <label>
-              日期
-              <Input
-                type="date"
-                max="9999-12-31"
-                required
-                value={newDate ?? ''}
-                onChange={(e) => setNewDate(e.target.value)}
-              />
-            </label>
-            <label>
-              预期成果
-              <Textarea
-                required
-                maxLength={200}
-                value={outcome}
-                onChange={(e) => setOutcome(e.target.value)}
-              />
-            </label>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setNewDate(null)}>
-                取消
-              </Button>
-              <Button type="submit" disabled={!newDate || !outcome.trim()}>
-                添加
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

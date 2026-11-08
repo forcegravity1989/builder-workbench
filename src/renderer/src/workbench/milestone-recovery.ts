@@ -3,7 +3,6 @@ import {
   MilestoneFeatureSchema,
   MilestoneNodeSchema,
   upgradeMilestoneMaterial,
-  MilestoneDeliverySchema,
   ScheduledVersionSchema
 } from '../../../shared/workbench/project-milestones'
 import type { Session } from './milestone-planning-session'
@@ -13,17 +12,12 @@ const draftSchema = z.strictObject({
   material: z.preprocess(
     upgradeMilestoneMaterial,
     z.strictObject({
-      schema_version: z.literal(3),
+      schema_version: z.literal(4),
       milestones: z.array(MilestoneNodeSchema).max(2000),
       features: z.array(
         MilestoneFeatureSchema.extend({
           title: z.string(),
-          owner: z.string(),
-          deliveries: z.array(
-            MilestoneDeliverySchema.extend({
-              version: z.strictObject({ version: z.string(), cycleId: z.string().min(1) })
-            })
-          )
+          owner: z.string()
         })
       )
     })
@@ -41,6 +35,8 @@ export const milestoneRecoverySchema = z.strictObject({
     .string()
     .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
     .optional(),
+  viewDate: z.iso.date().optional(),
+  rangeOnly: z.boolean().optional(),
   scrollX: z.number().finite().nonnegative().nullable(),
   scrollY: z.number().finite().nonnegative(),
   pageY: z.number().finite().nonnegative(),
@@ -54,6 +50,8 @@ export function milestoneRecoveryPayload(value: Session): string {
     expectedFormal,
     expectedProposal,
     editing,
+    viewDate,
+    rangeOnly,
     scrollX,
     scrollY,
     pageY,
@@ -67,6 +65,8 @@ export function milestoneRecoveryPayload(value: Session): string {
     expectedFormal,
     expectedProposal,
     editing,
+    viewDate,
+    rangeOnly,
     scrollX,
     scrollY,
     pageY,
