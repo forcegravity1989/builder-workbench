@@ -5903,6 +5903,8 @@
           "dac08ec03e": "작업 중..."
         },
         "ExperimentalPane": {
+          "globalScopeTitle": "전역 설정",
+          "globalScopeDescription": "이 설정은 이 기기의 모든 프로젝트에 적용됩니다.",
           "9762364929": "가능하면 macOS에서 APFS clone-copy를 사용하고, 그렇지 않으면 구성된 폴더나 파일을 생성된 작업 트리에 심볼릭 링크합니다.",
           "24416f42cd": "작업 트리의 공유 경로",
           "fb82ea1d7a": "구성된 파일이나 폴더를 새로 생성된 작업 트리에 자동으로 배치합니다.",
@@ -13430,8 +13432,9 @@
               "page": {
                 "annotation": {
                   "tray": {
-                    "collapse": "주석 접기",
-                    "expand": "주석 펼치기"
+                    "38d320108c": "주석 접기",
+                    "9f209891a7": "주석 펼치기",
+                    "includePageDetails": "페이지 세부정보 포함"
                   }
                 }
               }

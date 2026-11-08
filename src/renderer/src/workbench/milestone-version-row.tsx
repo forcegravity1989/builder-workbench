@@ -1,5 +1,6 @@
+import { milestoneVersionKey, type MilestoneVersionFacts } from './milestone-feature-facts'
 import { useRef, useState } from 'react'
-import { ExternalLink } from 'lucide-react'
+import { ListPlus, ExternalLink } from 'lucide-react'
 import { MilestoneIconButton } from './milestone-icon-button'
 import { MILESTONE_DAY_WIDTH as dayWidth, type MilestoneGestureApi } from './use-milestone-gesture'
 import { MilestoneField } from './milestone-field'
@@ -13,7 +14,10 @@ import type { MilestoneDraft, ScheduledVersion } from '../../../shared/workbench
 
 export const MILESTONE_VERSION_HEIGHT = 52
 
-export function milestoneVersionLanes(versions: ScheduledVersion[]) {
+export function milestoneVersionLanes(
+  versions: ScheduledVersion[],
+  rowHeight = MILESTONE_VERSION_HEIGHT
+) {
   const ends: string[] = [],
     lanes = new Map<string, number>()
   for (const version of versions) {
@@ -24,7 +28,7 @@ export function milestoneVersionLanes(versions: ScheduledVersion[]) {
     ends[lane] = version.timeWindow!.end
     lanes.set(version.cycleId, lane)
   }
-  return { lanes, versionHeight: Math.max(1, ends.length) * MILESTONE_VERSION_HEIGHT }
+  return { lanes, versionHeight: Math.max(1, ends.length) * rowHeight }
 }
 
 function WeekName({
@@ -42,7 +46,7 @@ function WeekName({
     <input
       className="wb-ml-inline wb-ml-week-name"
       aria-label={`版本名称 ${week.start}`}
-      placeholder="版本名（自动）"
+      placeholder="版本名称"
       disabled={disabled}
       value={value}
       onFocus={() => {
@@ -73,8 +77,13 @@ function WeekName({
 }
 
 export function MilestoneVersionRow({
+  addFeature,
   draft,
   versions,
+  actualVersions,
+  actualState,
+  facts,
+  showActual,
   weeks,
   editing,
   disabled,
@@ -88,8 +97,13 @@ export function MilestoneVersionRow({
   lanes,
   height
 }: {
+  addFeature(): void
   draft: MilestoneDraft
   versions: ScheduledVersion[]
+  actualVersions: ScheduledVersion[]
+  actualState: { loading: boolean; failed: boolean }
+  facts: Record<string, MilestoneVersionFacts>
+  showActual: boolean
   weeks: MilestoneWeek[]
   editing: boolean
   disabled: boolean
@@ -103,82 +117,132 @@ export function MilestoneVersionRow({
   lanes: Map<string, number>
   height: number
 }) {
-  const today = milestoneToday()
+  const today = milestoneToday(),
+    rowHeight = showActual ? 68 : MILESTONE_VERSION_HEIGHT
   const position = (window: MilestoneWeek) => ({
     left: (milestoneDay(window.start) - origin) * dayWidth,
     width: (milestoneDay(window.end) - milestoneDay(window.start) + 1) * dayWidth,
-    height: MILESTONE_VERSION_HEIGHT
+    height: rowHeight
   })
+  const dates = (window: MilestoneWeek) => `${window.start.slice(5)} — ${window.end.slice(5)}`
+  const editable = editing && !disabled && !showActual
   return (
     <div className="wb-ml-version-row" style={{ height }}>
-      <div className="wb-ml-label">特性 / 负责人</div>
+      <div className="wb-ml-label">
+        <div>
+          {editable && (
+            <MilestoneIconButton className="wb-ml-cell-add" label="添加特性" onClick={addFeature}>
+              <ListPlus size={16} />
+            </MilestoneIconButton>
+          )}
+          特性 / 负责人<small>{showActual ? '规划 / 实际日期' : '计划 · 日排期'}</small>
+        </div>
+      </div>
       <div className="wb-ml-track" style={{ width: canvasWidth }}>
-        {weeks
-          .filter((week) => !versionInMilestoneWeek(draft, week))
-          .map((week) => (
-            <div className="wb-ml-window wb-ml-unused-week" key={week.start} style={position(week)}>
-              {editing && (
-                <WeekName
-                  week={week}
-                  disabled={disabled}
-                  commit={(name) => registerWeek(week, name)}
-                />
-              )}
-              <small>
-                {week.start.slice(5)} — {week.end.slice(5)}
-              </small>
-            </div>
-          ))}
-        {versions.map((v) => (
-          <div
-            className={`wb-ml-window${v.timeWindow!.start <= today && today <= v.timeWindow!.end ? ' wb-ml-current-window' : ''}`}
-            key={v.cycleId}
-            style={{
-              ...position(v.timeWindow!),
-              top: (lanes.get(v.cycleId) ?? 0) * MILESTONE_VERSION_HEIGHT
-            }}
-            title={started.has(v.cycleId) ? '已开始计划，名称沿真实版本' : undefined}
-          >
-            {v.timeWindow!.start <= today && today <= v.timeWindow!.end && (
-              <span className="wb-ml-current-marker" title={`今天 ${today} 在此排期内`}>
-                当前
-              </span>
-            )}
-            <div className="wb-ml-version-title">
-              <MilestoneField
-                label="版本名称"
-                value={v.version}
-                editable={editing && !disabled && !started.has(v.cycleId)}
-                onChange={(value) => rename(v.cycleId, value)}
-                onCommit={(value, previous) => rename(v.cycleId, value, previous)}
-              />
-              <MilestoneIconButton label={`进入 ${v.version} 版本总览`} onClick={() => open(v)}>
-                <ExternalLink size={13} />
-              </MilestoneIconButton>
-            </div>
-            <button
-              className="wb-ml-version-dates"
-              title={
-                started.has(v.cycleId)
-                  ? '已开始，原排期只读'
-                  : '拖动整体平移版本；时长随下方 SDLC 联动'
-              }
-              onPointerDown={
-                editing && !disabled && !started.has(v.cycleId)
-                  ? (e) => gesture.begin(e, { kind: 'version', id: v.cycleId, mode: 'move' })
-                  : undefined
-              }
-              onKeyDown={
-                editing && !disabled && !started.has(v.cycleId)
-                  ? (e) => gesture.keyboard(e, { kind: 'version', id: v.cycleId, mode: 'move' })
-                  : undefined
-              }
+        {!showActual &&
+          weeks
+            .filter((week) => !versionInMilestoneWeek(draft, week))
+            .map((week) => (
+              <div
+                className="wb-ml-window wb-ml-unused-week"
+                key={week.start}
+                style={position(week)}
+              >
+                {editing && (
+                  <WeekName
+                    week={week}
+                    disabled={disabled}
+                    commit={(name) => registerWeek(week, name)}
+                  />
+                )}
+                <small>{dates(week)}</small>
+              </div>
+            ))}
+        {versions.map((v) => {
+          const plan = draft.versions.find(
+            (p) => p.cycleId === v.cycleId && p.version === v.version
+          )
+          const actual = actualVersions.find(
+            (p) => p.cycleId === v.cycleId && p.version === v.version
+          )
+          const read = facts[milestoneVersionKey(v)]
+          const actualLabel = actual?.timeWindow
+            ? `实际 ${dates(actual.timeWindow)}`
+            : read?.failed || (!read && actualState.failed)
+              ? '未读到实际日期'
+              : read?.loading || (!read && actualState.loading)
+                ? '正在读取实际日期…'
+                : read?.formalPlan
+                  ? '实际日期未记录'
+                  : '暂无正式计划'
+          const currentWindow = showActual ? actual?.timeWindow : v.timeWindow
+          const current =
+            currentWindow && currentWindow.start <= today && today <= currentWindow.end
+          return (
+            <div
+              key={v.cycleId}
+              className={`wb-ml-window${current ? ' wb-ml-current-window' : ''}`}
+              style={{ ...position(v.timeWindow!), top: (lanes.get(v.cycleId) ?? 0) * rowHeight }}
             >
-              {v.timeWindow!.start.slice(5)} — {v.timeWindow!.end.slice(5)}
-              {started.has(v.cycleId) && ' · 已开始'}
-            </button>
-          </div>
-        ))}
+              {current && (
+                <span className="wb-ml-current-marker" title={`今天 ${today} 在此排期内`}>
+                  当前
+                </span>
+              )}
+              <div className="wb-ml-version-title">
+                <MilestoneField
+                  label="版本名称"
+                  value={v.version}
+                  editable={editable && !started.has(v.cycleId)}
+                  onChange={(value) => rename(v.cycleId, value)}
+                  onCommit={(value, previous) => rename(v.cycleId, value, previous)}
+                />
+                <MilestoneIconButton label={`进入 ${v.version} 版本总览`} onClick={() => open(v)}>
+                  <ExternalLink size={13} />
+                </MilestoneIconButton>
+              </div>
+              {showActual ? (
+                <>
+                  <small>
+                    {plan?.timeWindow ? `规划 ${dates(plan.timeWindow)}` : '规划未安排'}
+                  </small>
+                  <small>{actualLabel}</small>
+                </>
+              ) : (
+                <button
+                  className={`wb-ml-version-dates${editable ? ' editable' : ''}`}
+                  title="拖动调整版本日期；特性排期独立保留"
+                  onPointerDown={
+                    editable
+                      ? (e) => gesture.begin(e, { kind: 'version', id: v.cycleId, mode: 'move' })
+                      : undefined
+                  }
+                  onKeyDown={
+                    editable
+                      ? (e) => gesture.keyboard(e, { kind: 'version', id: v.cycleId, mode: 'move' })
+                      : undefined
+                  }
+                >
+                  {dates(v.timeWindow!)}
+                </button>
+              )}
+              {editable &&
+                (['start', 'end'] as const).map((edge) => (
+                  <button
+                    key={edge}
+                    className={`wb-ml-resize ${edge}`}
+                    aria-label={`${v.version} ${edge === 'start' ? '开始' : '结束'}日期：拖动或方向键调整一天`}
+                    onPointerDown={(e) =>
+                      gesture.begin(e, { kind: 'version', id: v.cycleId, mode: edge })
+                    }
+                    onKeyDown={(e) =>
+                      gesture.keyboard(e, { kind: 'version', id: v.cycleId, mode: edge })
+                    }
+                  />
+                ))}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

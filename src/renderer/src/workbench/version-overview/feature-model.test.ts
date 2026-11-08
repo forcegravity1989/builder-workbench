@@ -21,14 +21,15 @@ import { featureTimelineLayout } from './feature-timeline-layout'
 import { OverviewPullSchema } from '../../../../shared/workbench/overview-pull'
 import { materialSourceInputs } from './material-cache'
 import {
-  matchMilestoneFeature,
+  resolveMilestoneFeature,
+  milestoneMaterialFacts,
+  milestoneIssueFacts,
   milestoneStageHours,
   milestoneVersionKey,
   type MilestoneVersionFacts
 } from '../milestone-feature-facts'
 import type { MilestoneMaterial } from '../../../../shared/workbench/project-milestones'
-import { milestoneActualCalendar, milestoneActualLayout } from '../milestone-actual-layout'
-import { milestoneDay } from '../../../../shared/workbench/milestone-calendar'
+import { milestoneActualLayout } from '../milestone-actual-layout'
 
 it('projects scoped feature evidence without turning missing, later or unrelated records into delivery', () => {
   expect(sdlcProviderOf({ upstream: { owner: 'acme', repo: 'app' } })).toBe('github')
@@ -360,123 +361,247 @@ it('projects scoped feature evidence without turning missing, later or unrelated
       ...deliveries
     ]
   } as Parameters<typeof featureTimeline>[0]
-  const goalFeature = { ...timelineFeature, members: [timelineFeature.root] }
+  const goalFeature = {
+    ...timelineFeature,
+    root: { ...timelineFeature.root, title: '【v0.8|目标】项目墙', labels: ['特性'] }
+  }
   const facts: MilestoneVersionFacts = {
     plan: {
       version: 'v0.8',
       cycleId: 'cycle-eight',
-      goals: [{ goalId: 'g2', title: '目标', metricTargets: [] }]
+      timeWindow: { start: '2026-10-01', end: '2026-10-10' },
+      goals: [{ goalId: 'g2', title: '目标', metricTargets: [] }],
+      tasks: [reference]
     },
+    formalPlan: true,
+    acceptance: null,
     features: [goalFeature],
     loading: false,
     failed: false,
     stale: false
   }
+  const delivery = {
+    id: 'delivery',
+    phase: 'Build' as const,
+    timeWindow: { start: '2026-09-29T00:00', end: '2026-10-06T00:00' }
+  }
+  const plannedMaintenance = {
+    ...delivery,
+    id: 'later',
+    phase: 'Maintain' as const,
+    timeWindow: { start: '2026-10-08T00:00', end: '2026-11-06T12:00' }
+  }
   const material: MilestoneMaterial = {
-    schema_version: 2,
-    months: [{ month: '2026-10', outcome: '' }],
+    schema_version: 4,
+    milestones: [],
     features: [
       {
         id: 'planned',
-        month: '2026-10',
-        title: '任意标题',
+        title: ' 项目墙 ',
         owner: 'builder',
-        deliveries: [
-          {
-            id: 'delivery',
-            version: { version: 'v0.8', cycleId: 'cycle-eight' },
-            goalId: 'g2',
-            stages: [{ phase: 'Test', start: '2026-10-29T00:00', end: '2026-10-30T12:00' }]
-          }
-        ]
+        deliveries: [delivery, plannedMaintenance]
       }
     ]
   }
-  const delivery = material.features[0]!.deliveries[0]!
-  expect(matchMilestoneFeature(delivery, facts, material)).toBe(goalFeature)
-  expect(
-    matchMilestoneFeature(
-      { ...delivery, version: { ...delivery.version, cycleId: 'different' } },
-      facts,
-      material
-    )
-  ).toBeUndefined()
-  expect(
-    matchMilestoneFeature({ ...delivery, goalId: undefined, goalSlot: 2 }, facts, material)
-  ).toBeUndefined()
-  expect(matchMilestoneFeature(delivery, { ...facts, failed: true }, material)).toBeUndefined()
-  expect(
-    matchMilestoneFeature(
-      delivery,
-      {
-        ...facts,
-        features: [goalFeature, { ...goalFeature, root: { ...goalFeature.root, iid: 440 } }]
-      },
-      material
-    )
-  ).toBeUndefined()
-  expect(milestoneStageHours(material, facts, goalFeature)).toEqual({ Test: 36 })
-  const continuedMaterial = structuredClone(material)
-  const continued = {
-    ...delivery,
-    id: 'later',
-    version: { version: 'v0.9', cycleId: 'cycle-nine' },
-    stages: [{ phase: 'Maintain' as const, start: '2026-11-02T00:00', end: '2026-11-06T12:00' }]
-  }
-  continuedMaterial.features[0]!.deliveries.push(continued)
-  const finalFeature = {
+  const otherFeature = {
     ...goalFeature,
-    observedAt: '2027-01-07T08:00:00Z',
-    pulls: [
-      ...goalFeature.pulls,
-      { ...pull, number: 474, phase: 'development' as const, mergedAt: '2027-01-05T08:00:00Z' }
-    ],
-    events: [
-      intentEvent,
-      {
-        ...intentEvent,
-        id: 'first',
-        phase: 'version' as const,
-        delivered: true,
-        deliveryKind: 'first' as const,
-        at: '2027-01-06T08:00:00Z'
-      }
-    ]
+    root: { ...goalFeature.root, reference: { ...reference, number: 440 }, iid: 440 }
   }
-  const projectedFacts = {
-    [milestoneVersionKey(delivery.version)]: {
+  const duplicateFacts = {
+    ...facts,
+    plan: { ...facts.plan!, tasks: [reference, otherFeature.root.reference] },
+    features: [goalFeature, otherFeature]
+  }
+  for (const invalid of [
+    { ...facts, plan: { ...facts.plan!, tasks: [] } },
+    { ...facts, failed: true },
+    {
       ...facts,
-      features: [{ ...goalFeature, observedAt: '2026-10-02T08:00:00Z' }]
+      features: [{ ...goalFeature, root: { ...goalFeature.root, labels: ['特性扩展'] } }]
     },
-    [milestoneVersionKey(continued.version)]: {
-      ...facts,
-      plan: { ...facts.plan!, ...continued.version },
-      features: [finalFeature]
+    duplicateFacts,
+    {
+      ...duplicateFacts,
+      features: [
+        goalFeature,
+        { ...otherFeature, root: { ...otherFeature.root, title: '别的特性' } }
+      ]
+    }
+  ]) {
+    expect(milestoneStageHours(material, invalid, goalFeature)).toEqual({})
+  }
+  const plannedHours = milestoneStageHours(material, facts, goalFeature)
+  expect(plannedHours).toEqual({ Build: 120, Maintain: 72 })
+  const duplicateMaterial = {
+    ...material,
+    features: [...material.features, { ...material.features[0]!, id: 'another' }]
+  }
+  expect(milestoneStageHours(duplicateMaterial, facts, goalFeature)).toEqual({})
+  const accepted = (outcome: 'met' | 'not-met' | 'pending') => record('4', outcome).acceptance
+  const versionFacts = (
+    version: string,
+    cycleId: string,
+    start: string,
+    end: string,
+    outcome: 'met' | 'not-met'
+  ): MilestoneVersionFacts => ({
+    ...facts,
+    plan: { ...facts.plan!, version, cycleId, timeWindow: { start, end } },
+    acceptance: accepted(outcome)
+  })
+  const first = versionFacts('v0.8', 'cycle-eight', '2026-10-01', '2026-10-10', 'not-met')
+  const second = versionFacts('v0.9', 'cycle-nine', '2026-10-07', '2026-10-11', 'met')
+  const third = versionFacts('v0.10', 'cycle-ten', '2027-01-05', '2027-01-09', 'not-met')
+  const projection = (...reads: MilestoneVersionFacts[]) =>
+    Object.fromEntries(reads.map((read) => [milestoneVersionKey(read.plan ?? read.version!), read]))
+  const actualLayout = (...reads: MilestoneVersionFacts[]) =>
+    milestoneActualLayout(material.features[0]!, material, projection(...reads))
+  const labels = (...reads: MilestoneVersionFacts[]) =>
+    actualLayout(...reads).results.map((result) => result.label)
+  const actual = actualLayout(first, second, third)
+  expect(actual.results.map((result) => result.label)).toEqual(['未上线', '已上线', '维护未完成'])
+  expect(actual).toMatchObject({ lanes: 2, results: [{ lane: 0 }, { lane: 1 }, { lane: 0 }] })
+  expect(actual.results[0]?.version.timeWindow?.end).toBe('2026-10-10')
+  expect(
+    labels(first, { ...second, plan: { ...second.plan!, timeWindow: undefined } }, third)
+  ).toEqual(['未上线', '维护未完成'])
+  for (const acceptance of [null, accepted('pending')]) {
+    expect(actualLayout({ ...facts, acceptance }).results).toEqual([])
+  }
+  const firstMet = { ...first, acceptance: accepted('met') }
+  const secondNotMet = { ...second, acceptance: accepted('not-met') }
+  const pendingFirst = { ...facts, loading: true, features: [] }
+  const unresolvedFirst: MilestoneVersionFacts[] = [
+    { ...firstMet, failed: true, features: [] },
+    pendingFirst,
+    facts,
+    {
+      ...pendingFirst,
+      version: { version: facts.plan!.version, cycleId: facts.plan!.cycleId },
+      plan: null,
+      formalPlan: false
+    }
+  ]
+  for (const unresolved of unresolvedFirst) {
+    expect(actualLayout(unresolved, secondNotMet)).toMatchObject({
+      results: [],
+      note: '前序版本结果未确认'
+    })
+  }
+  expect(labels(unresolvedFirst[0]!, second, third)).toEqual(['维护未完成'])
+  const failedSecond = { ...second, failed: true, features: [] }
+  expect(labels(firstMet, failedSecond, third)).toEqual(['已上线', '维护未完成'])
+  expect(
+    labels(
+      { ...unresolvedFirst[0]!, plan: { ...facts.plan!, tasks: [{ ...reference, number: 999 }] } },
+      secondNotMet
+    )
+  ).toEqual(['未上线'])
+  // A single-version candidate must survive an unrelated goal's identity read failure.
+  for (const goalId of ['g2', 'unrelated']) {
+    const failedReference = { ...reference, number: 999, goalId }
+    const partial = {
+      ...firstMet,
+      plan: {
+        ...facts.plan!,
+        goals: [...facts.plan!.goals, { ...facts.plan!.goals[0]!, goalId: 'unrelated' }],
+        tasks: [reference, failedReference]
+      },
+      failed: true,
+      identityFailures: [failedReference]
+    }
+    expect(labels(partial)).toEqual(goalId === 'g2' ? [] : ['已上线'])
+    expect(labels(partial, secondNotMet)).toEqual(goalId === 'g2' ? [] : ['已上线', '维护未完成'])
+  }
+  const taskSnapshot = [{ kind: 'ready' as const, ...goalFeature.root }]
+  const snapshotAcceptance = { ...accepted('met'), taskSnapshot }
+  const unavailableIssue = {
+    kind: 'unavailable' as const,
+    reference,
+    readAt: '2026-10-12T00:00:00Z',
+    error: 'unavailable'
+  }
+  const archivedIdentity = milestoneIssueFacts(facts.plan, snapshotAcceptance, [unavailableIssue])
+  for (const snapshots of [taskSnapshot, taskSnapshot.concat(taskSnapshot)]) {
+    const read = { ...snapshotAcceptance, taskSnapshot: snapshots }
+    expect(milestoneIssueFacts(facts.plan, read, [unavailableIssue]).failed).toBe(
+      snapshots.length > 1
+    )
+  }
+  expect(
+    labels({ ...facts, ...archivedIdentity, acceptance: snapshotAcceptance }, secondNotMet)
+  ).toEqual(['已上线', '维护未完成'])
+  const renamedIdentity = milestoneIssueFacts(facts.plan, snapshotAcceptance, [
+    {
+      kind: 'ready',
+      reference,
+      task: { ...goalFeature.root, title: '【v0.9】新项目墙', labels: [] }
+    }
+  ])
+  const renamedMaterial = {
+    ...material,
+    features: [{ ...material.features[0]!, title: '新项目墙' }]
+  }
+  expect(
+    resolveMilestoneFeature(renamedMaterial.features[0], renamedMaterial, [
+      { ...facts, ...renamedIdentity }
+    ]).feature?.root.reference
+  ).toEqual(reference)
+  const fixedPlan = {
+    ...facts.plan!,
+    schema_version: 3 as const,
+    summary: { progress: '', risks: '' }
+  }
+  const fixed = {
+    kind: 'committed' as const,
+    version: fixedPlan.version,
+    cycleId: fixedPlan.cycleId,
+    sourceCommit: 'commit',
+    revision: 'revision'
+  }
+  const committed = {
+    kind: 'ready' as const,
+    source: 'committed' as const,
+    sourceCommit: 'commit',
+    revision: 'revision'
+  }
+  const archived = {
+    plan: { ...committed, document: fixedPlan },
+    acceptance: {
+      ...committed,
+      document: {
+        schema_version: 3 as const,
+        version: fixed.version,
+        cycleId: fixed.cycleId,
+        planRef: fixed,
+        preparedArtifacts: [],
+        ...accepted('met')
+      }
+    },
+    prStatuses: {
+      plan: null,
+      acceptance: {
+        state: 'merged' as const,
+        checkedAt: '2026-10-11T08:00:00Z',
+        mergedAt: '2026-10-11T08:00:00Z'
+      }
     }
   }
-  const started = new Set(['cycle-eight', 'cycle-nine'])
-  const actual = milestoneActualLayout(
-    continuedMaterial.features[0]!,
-    continuedMaterial,
-    projectedFacts,
-    started
-  )
-  expect(actual.stages.find((stage) => stage.id === 'Build')?.end).toBe('2027-01-05T08:00:00Z')
-  expect(actual.stages.filter((stage) => stage.id === 'Test')).toHaveLength(1)
+  expect(milestoneMaterialFacts(archived).acceptance).toBe(archived.acceptance.document)
   expect(
-    milestoneActualCalendar({ material: continuedMaterial, versions: [] }, projectedFacts, started)
-      .end
-  ).toBeGreaterThanOrEqual(milestoneDay('2027-01-06'))
-  expect(
-    milestoneStageHours(
-      {
-        ...material,
-        features: [...material.features, { ...material.features[0]!, id: 'another' }]
-      },
-      facts,
-      goalFeature
-    )
-  ).toEqual({})
+    milestoneMaterialFacts({
+      ...archived,
+      plan: { ...archived.plan, document: { ...fixedPlan, goals: [], tasks: [] } }
+    })
+  ).toMatchObject({ formalPlan: false, acceptance: null })
+  for (const unverified of [
+    { ...archived, acceptance: { ...archived.acceptance, source: 'draft' as const } },
+    { ...archived, prStatuses: { plan: null, acceptance: null } },
+    { ...archived, plan: { ...archived.plan, revision: 'changed' } }
+  ]) {
+    expect(milestoneMaterialFacts(unverified).acceptance).toBeNull()
+  }
+
   const futureFeature = { ...timelineFeature, pulls: [], events: [] }
   const plannedLayout = featureTimelineLayout(futureFeature, { Test: 36 })
   expect(plannedLayout.slots[3]).toMatchObject({

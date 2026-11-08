@@ -59,7 +59,7 @@ describe('structured session disposal from terminal close', () => {
       setActiveTab: vi.fn()
     })
 
-    closeTerminalTab('terminal-1')
+    closeTerminalTab('terminal-1', { reason: 'user' })
 
     await vi.waitFor(() =>
       expect(mocks.closeStructuredAgentSession).toHaveBeenCalledWith(
@@ -69,7 +69,7 @@ describe('structured session disposal from terminal close', () => {
     )
   })
 
-  it('keeps natural adopted-TUI exits on the ownership reconciliation path', () => {
+  it('keeps automatic adopted-TUI closes on the ownership reconciliation path', () => {
     mocks.getState.mockReturnValue({
       settings: { activeRuntimeEnvironmentId: null },
       tabsByWorktree: { 'wt-1': [{ id: 'terminal-1' }, { id: 'terminal-2' }] },
@@ -92,6 +92,8 @@ describe('structured session disposal from terminal close', () => {
     })
 
     closeTerminalTab('terminal-1', { reason: 'pty-exit' })
+    closeTerminalTab('terminal-1', { reason: 'cleanup' })
+    closeTerminalTab('terminal-1', { hostCloseReason: 'pty-exit' })
 
     expect(mocks.closeStructuredAgentSession).not.toHaveBeenCalled()
   })
@@ -123,7 +125,7 @@ describe('structured session disposal from terminal close', () => {
         setActiveTab: vi.fn()
       })
 
-      closeTerminalTab('terminal-1')
+      closeTerminalTab('terminal-1', { reason: 'user' })
       await vi.advanceTimersByTimeAsync(250)
       expect(mocks.closeStructuredAgentSession).toHaveBeenCalledTimes(2)
     } finally {

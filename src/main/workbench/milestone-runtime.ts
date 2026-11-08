@@ -1,4 +1,3 @@
-import { frozenMilestoneProblems } from '../../shared/workbench/milestone-freeze'
 import type { Repo } from '../../shared/repo-types'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../shared/execution-host'
 import { CHARTER_BRANCH } from '../../shared/workbench/project-charter'
@@ -6,7 +5,6 @@ import {
   MILESTONES_PATH,
   milestoneDraft,
   milestoneProblems,
-  milestoneGoalProblems,
   type MilestoneRead,
   type MilestoneSubmit,
   type MilestoneSubmitResult
@@ -25,7 +23,7 @@ import {
 import type { CharterRuntimeHost } from './charter-runtime'
 import {
   readMilestoneStarted,
-  recheckMilestoneStarted,
+  recheckMilestoneIdentities,
   type MilestoneStartedRuntime
 } from './milestone-started'
 import { resolveWorkbenchGitExecOptions } from './project-git-routing'
@@ -119,11 +117,7 @@ export function nativeMilestoneService(runtime: Runtime) {
         ) {
           throw new Error('发现已有项目材料草案，请刷新后核对；本次输入保留')
         }
-        const problems = [
-          ...milestoneProblems(input),
-          ...milestoneGoalProblems(input, source.snapshot.versions),
-          ...frozenMilestoneProblems(source.snapshot, input, c.started)
-        ]
+        const problems = milestoneProblems(input, milestoneDraft(source.snapshot))
         if (problems.length) {
           throw new Error(problems.join('；'))
         }
@@ -144,7 +138,7 @@ export function nativeMilestoneService(runtime: Runtime) {
               `${next.version} 已在版本计划开工，请先核对并合入该版本材料，不能重复登记`
             )
           }
-          const prior = source.snapshot.versions.find((v) => v.cycleId === next.cycleId)
+          const prior = source.registeredVersions.find((v) => v.cycleId === next.cycleId)
           if (old && old.version !== next.version) {
             if (old.version.toLowerCase() === next.version.toLowerCase()) {
               throw new Error('版本改名不能仅改变大小写，请保留实际版本名称')
@@ -163,7 +157,7 @@ export function nativeMilestoneService(runtime: Runtime) {
               )
             }
           }
-          const collision = source.snapshot.versions.find(
+          const collision = source.registeredVersions.find(
             (v) =>
               v.version.toLowerCase() === next.version.toLowerCase() && v.cycleId !== next.cycleId
           )
@@ -180,10 +174,9 @@ export function nativeMilestoneService(runtime: Runtime) {
                 goals: [],
                 tasks: []
               }
-          if (next.timeWindow) {
+          // Existing plan windows belong to the version plan, not roadmap edits.
+          if (!old && next.timeWindow) {
             document.timeWindow = next.timeWindow
-          } else {
-            delete document.timeWindow
           }
           PlanningMaterialSchema.parse(document)
           if (old && json(old) === json(document)) {
@@ -195,11 +188,9 @@ export function nativeMilestoneService(runtime: Runtime) {
             removals.push(`.bw/planning/${old.version}/data.json`)
           }
         }
-        if (
-          json(input.material) !== json(source.snapshot.material) ||
-          !source.contents.has(MILESTONES_PATH)
-        ) {
-          writes.set(MILESTONES_PATH, json(input.material))
+        const material = { ...input.material, versionPlans: input.versions }
+        if (json(material) !== source.contents.get(MILESTONES_PATH)) {
+          writes.set(MILESTONES_PATH, json(material))
         }
         const identity = await probeGitRemoteIdentity(
           c.repo.path,
@@ -216,7 +207,13 @@ export function nativeMilestoneService(runtime: Runtime) {
           contents: source.contents,
           recheck: async () => {
             await c.reauthorize()
-            await recheckMilestoneStarted(runtime, c.repo, source.snapshot.head, c.options, input)
+            await recheckMilestoneIdentities(
+              runtime,
+              c.repo,
+              source.snapshot.head,
+              c.options,
+              input
+            )
             const baseline = await runTrunkBaseline(
               c.repo.path,
               c.repo.worktreeBaseRef ?? null,
@@ -277,7 +274,7 @@ export function nativeMilestoneService(runtime: Runtime) {
           filled: paths,
           review: {
             title: '项目里程碑与版本排期',
-            body: '月度成果、特性 SDLC 阶段安排与版本排期调整。具体特性 Issue 和版内范围由版本计划继续收敛；合入不代表交付或验收完成。'
+            body: '关键里程碑、特性交付安排与版本排期调整。具体特性 Issue 和版内范围由版本计划继续收敛；合入不代表交付或验收完成。'
           }
         })
         return { proposal, outcome }

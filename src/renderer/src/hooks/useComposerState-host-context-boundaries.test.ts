@@ -283,7 +283,10 @@ describe('useComposerState host-context boundaries', () => {
     )
 
     expect(COMPOSER_SOURCE.workspaceIdentity).toContain(
-      'const runtimeEnvironmentId = selectedRepoSettings?.activeRuntimeEnvironmentId?.trim() || null'
+      'const repoRuntimeEnvironmentId = selectedRepoSettings?.activeRuntimeEnvironmentId?.trim() || null'
+    )
+    expect(selectorSection).toContain(
+      "detectionTarget?.kind === 'runtime' ? detectionTarget.environmentId : null"
     )
 
     // Detection effect fans out to the same three hosts in the same order and
@@ -297,7 +300,7 @@ describe('useComposerState host-context boundaries', () => {
     expect(detectSection).toContain('ensureRuntimeDetectedAgents(runtimeEnvironmentId)')
     expect(detectSection).toContain('ensureDetectedAgents()')
     expect(detectSection).toMatch(
-      /\}, \[\s*connectionId,\s*runtimeEnvironmentId,\s*isRemote,\s*selectedRepoSshStatus,\s*disabledTuiAgents/
+      /\}, \[\s*connectionId,\s*runtimeEnvironmentId,\s*isRemote,\s*selectedRepoSshStatus\s*\]/
     )
   })
 
@@ -678,19 +681,23 @@ describe('useComposerState host-context boundaries', () => {
 
     const fullStartupPlan = sourceBetween(
       COMPOSER_SOURCE.fullSubmitPreparation,
-      'const startupPlan = buildAgentStartupPlan({',
+      'const hostStartup = await prepareHostAgentStartupInputs({',
       'const shouldSeedInitialAgentStatus ='
     )
     expect(fullStartupPlan).toContain('platform: selectedRepoAgentLaunchPlatform')
+    expect(fullStartupPlan).toContain('...hostStartup.inputs')
     expect(fullStartupPlan).not.toContain('platform: CLIENT_PLATFORM')
     expect(COMPOSER_SOURCE.fullCreation).toContain('startupDraft: startupPlan.draftPrompt')
 
     const quickStartupPlan = sourceBetween(
       COMPOSER_SOURCE.quickCreation,
-      'buildQuickComposerStartup({',
+      'prepareQuickComposerStartup({',
       'const startupPolicySettlement ='
     )
     expect(quickStartupPlan).toContain('platform: selectedRepoAgentLaunchPlatform')
+    expect(quickStartupPlan).toContain(
+      'runtimeEnvironmentId: selectedRepoSettings?.activeRuntimeEnvironmentId'
+    )
     expect(quickStartupPlan).not.toContain('platform: CLIENT_PLATFORM')
   })
 

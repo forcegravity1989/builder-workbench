@@ -6689,6 +6689,8 @@
           "connectionTestAction": "Tester la connexion"
         },
         "ExperimentalPane": {
+          "globalScopeTitle": "Paramètres globaux",
+          "globalScopeDescription": "Ces paramètres s’appliquent à tous les projets sur cet appareil.",
           "9762364929": "Utilise le clonage APFS sur macOS quand c'est possible, sinon crée des liens symboliques vers les dossiers ou fichiers configurés dans les worktrees créés.",
           "24416f42cd": "Chemins partagés sur les worktrees",
           "fb82ea1d7a": "Matérialise automatiquement les fichiers ou dossiers configurés dans les worktrees nouvellement créés.",
@@ -14592,8 +14594,9 @@
               "page": {
                 "annotation": {
                   "tray": {
-                    "collapse": "Réduire les annotations",
-                    "expand": "Développer les annotations"
+                    "38d320108c": "Réduire les annotations",
+                    "9f209891a7": "Développer les annotations",
+                    "includePageDetails": "Inclure les détails de la page"
                   }
                 }
               }

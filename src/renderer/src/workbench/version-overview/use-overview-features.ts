@@ -1,4 +1,4 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import type { PlanningMaterial } from '../../../../shared/workbench/version-material'
 import type { VersionCatalogState } from '../use-version-catalog'
 import type { FeatureData } from './feature-model'
@@ -7,7 +7,7 @@ import { nativeTaskReferenceReader } from '../native-task-port'
 import { useAppStore } from '@/store'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../../shared/workbench/version-binding'
 import { taskKey, PARSER_REVISION } from './feature-model'
-import { createOverviewReadCache } from './overview-read-cache'
+import { createOverviewReadCache, type ReadSnapshot } from './overview-read-cache'
 
 type FeatureRead = {
   features: FeatureData[]
@@ -26,9 +26,11 @@ export const featureFactsCache = createOverviewReadCache<FeatureRead>((result, p
   return failures.length && previous && (!previous.problems.length || previous.stale)
     ? { ...previous, materialState: result.materialState, problems: failures, stale: true }
     : { ...result, problems: failures, readAt: new Date().toISOString() }
-})
+}, true)
 
-export function useOverviewFeatures(args: {
+const disabledSnapshot: ReadSnapshot<FeatureRead> = { loading: false }
+
+type FeatureSource = {
   catalog: VersionCatalogState
   plan: PlanningMaterial | null
   planSource: 'committed' | 'draft'
@@ -36,9 +38,17 @@ export function useOverviewFeatures(args: {
   before?: string
   historical: boolean
   refreshToken: number
-}) {
-  const { catalog, plan, planSource, version, before, historical, refreshToken } = args
-  useAppStore((state) => state.repos)
+  enabled?: boolean
+}
+
+function featureSourceKeys({
+  catalog,
+  plan,
+  planSource,
+  version,
+  before,
+  historical
+}: FeatureSource) {
   const references = [
     ...(plan?.tasks ?? []),
     ...(catalog.catalog?.entries.flatMap((entry) => entry.tasks) ?? [])
@@ -87,28 +97,58 @@ export function useOverviewFeatures(args: {
       ])
       .sort((a, b) => String(a[0]).localeCompare(String(b[0])))
   ])
+  return { contextKey, materialState }
+}
+
+export function useOverviewFeatures(args: FeatureSource) {
+  const {
+    catalog,
+    plan,
+    planSource,
+    version,
+    before,
+    historical,
+    refreshToken,
+    enabled = true
+  } = args
+  useAppStore((state) => state.repos)
+  const { contextKey, materialState } = enabled
+    ? featureSourceKeys(args)
+    : { contextKey: '', materialState: '' }
   const key = JSON.stringify([contextKey, refreshToken, materialState])
   const lastRefresh = useRef(refreshToken)
-  const state = useSyncExternalStore(
-    (listener) => featureFactsCache.subscribe(contextKey, listener),
-    () => featureFactsCache.get(contextKey)
+  const needsRead = useRef(true)
+  const subscribe = useCallback(
+    (listener: () => void) =>
+      enabled ? featureFactsCache.subscribe(contextKey, listener) : () => {},
+    [contextKey, enabled]
+  )
+  const state = useSyncExternalStore(subscribe, () =>
+    enabled ? featureFactsCache.get(contextKey) : disabledSnapshot
   )
   useEffect(() => {
+    if (!enabled) {
+      needsRead.current = true
+      return
+    }
     if (!plan || !catalog.scope) {
       return
     }
     const cached = featureFactsCache.get(contextKey)
     const force =
+      (args.enabled === true && needsRead.current && Boolean(cached.value)) ||
       lastRefresh.current !== refreshToken ||
       cached.loading ||
       Boolean(cached.value && cached.value.materialState !== materialState)
+    needsRead.current = false
     lastRefresh.current = refreshToken
     let cancelled = false
     const running = cached.loading
-    const load = async () => ({
+    const load = async (signal: AbortSignal) => ({
       ...(await readOverviewFeatures(
         { catalog, plan, planSource, version, before, historical },
-        force
+        force,
+        signal
       )),
       materialState
     })
@@ -126,13 +166,13 @@ export function useOverviewFeatures(args: {
     }
     // The key covers owner routing and source revisions, not unrelated catalog discovery.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key])
+  }, [key, enabled])
   return {
     features: state.value?.features ?? [],
     readAt: state.value?.readAt,
     problems: [...(state.value?.problems ?? []), ...(state.error ? [state.error] : [])],
     stale:
       state.value?.stale || Boolean(state.error && state.value && !state.value.problems.length),
-    loading: Boolean(plan) && (state.loading || (!state.value && !state.error))
+    loading: enabled && Boolean(plan) && (state.loading || (!state.value && !state.error))
   }
 }

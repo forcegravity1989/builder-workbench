@@ -1,3 +1,5 @@
+import { overviewExperimentEntries } from '@/workbench/version-overview/overview-experiments'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import type { SettingsSearchEntry } from './settings-search'
 import { createLocalizedCatalog } from '@/i18n/localized-catalog'
 import { translate } from '@/i18n/i18n'
@@ -8,6 +10,14 @@ import { getEphemeralVmsSearchEntry } from './ephemeral-vms-search'
 
 export const getExperimentalPaneSearchEntries = createLocalizedCatalog(
   (): SettingsSearchEntry[] => [
+    ...(isWorkbenchShell()
+      ? overviewExperimentEntries.map((entry) => ({
+          title: entry.title,
+          description: entry.description,
+          keywords: [...entry.keywords],
+          targetSectionId: 'workbench-overview-experiments'
+        }))
+      : []),
     {
       title: translate('auto.components.settings.experimental.search.87d99e634b', 'Pet'),
       description: translate(

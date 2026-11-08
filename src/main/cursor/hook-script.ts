@@ -1,7 +1,10 @@
+import { quoteStartupArg } from '../../shared/tui-agent-startup-shell'
+import { posixCurlCommand } from '../agent-hooks/hook-post-command'
 import {
   buildWindowsAgentHookPostCommand,
   wrapPosixHookCommand,
-  wrapWindowsHookCommand
+  buildWindowsHookPowerShellCommand,
+  wrapWindowsPowerShellEncodedCommand
 } from '../agent-hooks/installer-utils'
 import {
   buildPosixHookPayloadCapture,
@@ -27,14 +30,18 @@ export function getPosixManagedCommand(scriptPath: string, eventName: CursorEven
 }
 
 export function getManagedCommand(scriptPath: string, eventName: CursorEvent): string {
+  if (process.platform !== 'win32') {
+    return `/bin/sh -c ${quoteStartupArg(getPosixManagedCommand(scriptPath, eventName), 'posix')}`
+  }
   const response = getCursorHookResponse(eventName)
-  return process.platform === 'win32'
-    ? wrapWindowsHookCommand(
-        scriptPath,
-        { [CURSOR_HOOK_RESPONSE_ENV]: response },
-        { fallbackStdout: response }
-      )
-    : getPosixManagedCommand(scriptPath, eventName)
+  const command = buildWindowsHookPowerShellCommand(
+    scriptPath,
+    { [CURSOR_HOOK_RESPONSE_ENV]: response },
+    { fallbackStdout: response }
+  )
+  return wrapWindowsPowerShellEncodedCommand(
+    `[Console]::InputEncoding = New-Object System.Text.UTF8Encoding; $OutputEncoding = [Console]::InputEncoding; ${command}`
+  )
 }
 
 export function getManagedScript(target: 'local' | 'posix' = 'local'): string {
@@ -76,7 +83,7 @@ export function getManagedScript(target: 'local' | 'posix' = 'local'): string {
     'fi',
     // Why: post form fields because path-bearing worktree IDs are unsafe in hand-built JSON.
     // Why: pipe payload to curl stdin to keep large output off the command line.
-    'printf \'%s\' "$payload" | curl -sS -X POST "http://127.0.0.1:${ORCA_AGENT_HOOK_PORT}/hook/cursor" \\',
+    `printf '%s' "$payload" | ${posixCurlCommand()} -sS -X POST "http://127.0.0.1:\${ORCA_AGENT_HOOK_PORT}/hook/cursor" \\`,
     '  --connect-timeout 0.5 --max-time 1.5 \\',
     '  -H "Content-Type: application/x-www-form-urlencoded" \\',
     '  -H "X-Orca-Agent-Hook-Token: ${ORCA_AGENT_HOOK_TOKEN}" \\',

@@ -1,101 +1,43 @@
-import { milestoneDay, milestoneDate } from './milestone-calendar'
-import type { MilestoneDraft } from './project-milestones'
+import type { MilestoneDraft, ScheduledVersion } from './project-milestones'
 
-/** Move only unused, unstarted windows; a drag never reschedules someone else's work. */
 export function settleMilestoneWindows(
   before: MilestoneDraft,
-  candidate: MilestoneDraft,
-  started: ReadonlySet<string>
+  candidate: MilestoneDraft
 ): { draft: MilestoneDraft; conflict?: string } {
-  const original = new Map(before.versions.map((v) => [v.cycleId, v]))
-  const occupied = new Set(
-    candidate.material.features.flatMap((f) => f.deliveries.map((d) => d.version.cycleId))
-  )
-  const ordered = candidate.versions
+  const conflict = milestoneVersionConflict(candidate.versions, before.versions)
+  return { draft: conflict ? before : candidate, conflict }
+}
+
+export function milestoneVersionConflict(
+  versions: readonly ScheduledVersion[],
+  previous: readonly ScheduledVersion[] = []
+): string | undefined {
+  const prior = new Map(previous.map((v) => [v.cycleId, v.timeWindow]))
+  const dated = versions
     .filter((v) => v.timeWindow)
-    .toSorted((a, b) => {
-      const left = original.get(a.cycleId)?.timeWindow ?? a.timeWindow!
-      const right = original.get(b.cycleId)?.timeWindow ?? b.timeWindow!
-      return (
-        left.start.localeCompare(right.start) ||
-        left.end.localeCompare(right.end) ||
-        a.cycleId.localeCompare(b.cycleId)
-      )
-    })
-  const windows = new Map(ordered.map((v) => [v.cycleId, v.timeWindow!]))
-  const moving = new Set(
-    ordered
-      .filter((v) => {
-        const old = original.get(v.cycleId)?.timeWindow
-        return !old || old.start !== v.timeWindow!.start || old.end !== v.timeWindow!.end
-      })
-      .map((v) => v.cycleId)
-  )
-  let shifted = false
-  for (const direction of [1, -1] as const) {
-    const traversal = direction === 1 ? ordered : ordered.toReversed()
-    const reach: { start: string; end: string }[] = []
-    const action = direction === 1 ? '顺延' : '前移'
-    for (const [index, version] of traversal.entries()) {
-      const window = windows.get(version.cycleId)!
-      const old = original.get(version.cycleId)?.timeWindow
-      if (moving.has(version.cycleId)) {
-        if (!old || (direction === 1 ? window.end > old.end : window.start < old.start)) {
-          reach.push(window)
-        }
+    .toSorted((a, b) => a.timeWindow!.start.localeCompare(b.timeWindow!.start))
+  for (const [index, a] of dated.entries()) {
+    for (const b of dated.slice(index + 1)) {
+      if (b.timeWindow!.start > a.timeWindow!.end) {
+        break
+      }
+      const oldA = prior.get(a.cycleId),
+        oldB = prior.get(b.cycleId)
+      const start = b.timeWindow!.start,
+        end = [a.timeWindow!.end, b.timeWindow!.end].sort()[0]
+      // Existing parallel dates may remain or shrink; unrelated edits must not rewrite history.
+      if (
+        oldA &&
+        oldB &&
+        start >= oldA.start &&
+        start >= oldB.start &&
+        end <= oldA.end &&
+        end <= oldB.end
+      ) {
         continue
       }
-      if (occupied.has(version.cycleId)) {
-        continue
-      }
-      const collisions = reach.filter((r) => r.start <= window.end && window.start <= r.end)
-      if (!collisions.length) {
-        continue
-      }
-      if (started.has(version.cycleId)) {
-        return {
-          draft: before,
-          conflict: `${version.version} 已开始，不能${action}，请调整当前排期`
-        }
-      }
-      const delta =
-        direction === 1
-          ? Math.max(...collisions.map((r) => milestoneDay(r.end))) + 1 - milestoneDay(window.start)
-          : Math.min(...collisions.map((r) => milestoneDay(r.start))) - 1 - milestoneDay(window.end)
-      const next = {
-        start: milestoneDate(milestoneDay(window.start) + delta),
-        end: milestoneDate(milestoneDay(window.end) + delta)
-      }
-      // Check the swept interval so a large drag cannot jump an empty window past fixed work.
-      const blocked = traversal.slice(index + 1).find((v) => {
-        if (!started.has(v.cycleId) && !occupied.has(v.cycleId)) {
-          return false
-        }
-        const fixed = windows.get(v.cycleId)!
-        return direction === 1
-          ? fixed.start <= next.end && window.start <= fixed.end
-          : fixed.start <= window.end && next.start <= fixed.end
-      })
-      if (blocked) {
-        return {
-          draft: before,
-          conflict: `${version.version} ${action}会与 ${blocked.version} 重叠，请先调整相邻排期`
-        }
-      }
-      windows.set(version.cycleId, next)
-      reach.push(next)
-      shifted = true
+      return `${a.version} 与 ${b.version} 日期重叠，请调整相关版本`
     }
   }
-  return {
-    draft: shifted
-      ? {
-          ...candidate,
-          versions: candidate.versions.map((v) => {
-            const window = windows.get(v.cycleId)
-            return window && window !== v.timeWindow ? { ...v, timeWindow: window } : v
-          })
-        }
-      : candidate
-  }
+  return undefined
 }

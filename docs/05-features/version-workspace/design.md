@@ -21,7 +21,7 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。当前�
 - 项目墙进入保留项目总览，BW 侧栏定位最新在制版；复用原生激活时关闭原生区域 reveal，不改全局筛选。
 - 原生项目列表只调整展示投影：当前合并项目所有宿主成员置首，按宿主限定身份排除已挂到有效版本入口的树，避免侧栏重复；未归版或缺版本目录的树仍从原生区可达；缺目标但版本有效的树由版本未分组区承接，解绑后回到此处。仅作展示投影，隐藏父级下的可见子树不改真实 parentWorkspace。其他项目保留原生折叠记忆；沿用原生行、全局工具栏和项目菜单，不造新项目分组。
 - 版本树复用原生 WorktreeCard 与原生 row builder，主机标识、菜单、会话及子树不再由 BW 简化行重画。Issue 树名称统一自动名称判据与显示路径，复用已存 linkedWorkItem.title；显式手工命名优先，分支与目录不变。
-- 版本任务入口改为完整原生任务查询加可取消的版本标签初始条件；目标入口额外投影现有 goalId。保留全部原生控件、分页、详情与开工，不再锁定计划引用集；当前引用只有 Issue，目标 PR 不作推导。CodeHub 标签查询必须先核实实际 CLI 契约，不能猜参数或把有上限的结果过滤冒充完整范围。
+- 版本任务入口使用完整原生查询，预选可取消的版本标签。目标入口按该目标的完整 Issue 引用打开，首次不继承其他视图的筛选；进入后沿用原生筛选、分页、详情与开工。目标 PR 不作推导。CodeHub 标签查询必须先核实实际 CLI 契约，不能猜参数或把有上限的结果过滤冒充完整范围。
 - 目标开工删掉 buildGoalStartNote 及仅用于它的计划预读，保留原生备注、Issue 链接、宿主与绑定/父级规则。公共计划读取与 #449 缓存保留。
 
 下文保留有效的 P1–P6 机制；任务页锁定整版引用、隐藏原生控件及自动目标备注已由本轮方案替换，不能作为实现依据。
@@ -33,7 +33,7 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。当前�
 | [创建参数](../../../src/shared/worktree/create-types.ts)、[创建执行](../../../src/renderer/src/hooks/composer-state/full-creation-execution.ts)、[父级处理](../../../src/renderer/src/store/slices/worktrees/create/worktree-create-parent-pick.ts)                                        | 同一原生创建路径已有 baseBranch、parentWorkspace、linkedWorkItem、sparseCheckout。基线与父级分开确定；父关系不携带父树的未提交修改，也不决定合入路线。                                                                        |
 | [稀疏创建](../../../src/main/git/worktree-sparse-add.ts)、[高级创建选项](../../../src/renderer/src/components/new-workspace/NewWorkspaceComposerAdvancedSection.tsx)                                                                                                                       | 已有 no-checkout + cone sparse-checkout 及目录预设。计划/验收可考虑只检出必要资产，但需验证配置、Skill、材料、采集脚本及其依赖可读，不能默认所有仓库适用。                                                                    |
 | [AiVaultPanel](../../../src/renderer/src/components/right-sidebar/AiVaultPanel.tsx)、[会话记录](../../../src/shared/agent-session-record.ts)、[BW 会话身份](../../../src/renderer/src/workbench/version-cycle/native-session.ts)                                                           | 复用原生历史与继续行为。持久会话位置、宿主、原生会话标识保持原协议；终端 pane 与 provider 历史标识不能假定同一。按版本跨工作树聚合仍需适配与重启验证。                                                                        |
-| [versionSelection](../../../src/main/workbench/version-selection.ts)、[CycleWorkspaceProvider](../../../src/renderer/src/workbench/version-cycle/CycleWorkspaceProvider.tsx)、[自动化启动](../../../src/renderer/src/workbench/version-cycle/start-cycle-automation.ts)                    | 当前按固定分支定位，选版保存在工作树 metadata，自动化要求 existing workspace 匹配。只改侧栏筛选不足以实现两个版本独立运行；必须把运行归属与正在浏览的版本拆开。                                                               |
+| [versionSelection](../../../src/main/workbench/version-selection.ts)、[CycleWorkspaceProvider](../../../src/renderer/src/workbench/version-cycle/CycleWorkspaceProvider.tsx)、[手动会话启动](../../../src/renderer/src/workbench/version-cycle/start-cycle-session.ts) | 手动入口在当前流程树打开可编辑草稿；选版保存在工作树 metadata，定时自动化仍要求 existing workspace 匹配。只改侧栏筛选不足以实现两个版本独立运行；必须把运行归属与正在浏览的版本拆开。 |
 | [单树删除链](../../../src/renderer/src/components/sidebar/run-worktree-delete-with-toast.ts)、[删除预检与执行](../../../src/main/ipc/worktrees/removal/execute-worktree-removal.ts)、[工作区清理对话框](../../../src/renderer/src/components/workspace-cleanup/WorkspaceCleanupDialog.tsx) | 版本级清理复用与右击单树删除、状态栏清理对话框同一条删除链：预检（未提交修改/子树/归档 hook）、权限复核与失败提示全沿原生；BW 只加版本粒度的确认单聚合与 owner 标注。绑定挂在登记上、随删树消失，不另造删除路径或归档隐藏层。 |
 
 复用必须覆盖 UI 和调用链：
@@ -91,7 +91,7 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。当前�
 - **版本级清理（P3b④）**：确认单=版本语义清单层（本版全部存活绑定实例；本机 owned 默认勾选、他宿主列而不勾＋owner/预检/在跑会话标注；断链宿主不可勾选，执行也复核；显式勾选可达宿主才经共享通道在归属宿主删除）；预检状态与原生确认单同一 hydration 来源；执行交原生 `runWorktreeBatchDelete` 漏斗（Orca 确认单/预检/force/宿主路由全原生，批量必确认）。删除只改执行面，目录现算无悬空绑定；不改写自动化条目——本版已启用的版本化自动化按本机登记探测（creationKey 全键精确匹配）在确认单如实提示，他宿主 runtime 条目不跨机探测（留白）。P3a 占位对话框同交付删除。
 - **只读回看（P3b⑤）**：无绑定树且无旧固定树的版本，计划/验收屏挂 `VersionReadonlyMaterialView`——history RPC 按目录固定 sourceCommit/revision 读主干已提交材料，human-guard 字段只呈现状态不提供入口；工作树/会话不可用由登记缺失推导；缺材料/读取失败如实报，浏览不建树。
 - **P5 自动化身份版本化**：creationKey=`bw-cycle:<scope>:<workflow>[:<version>]`（绑定树加版本维度，每版独立登记）；条目名版本在前；提示词钉绑定树真实分支＋绑定版本（context.version=绑定版，「绑定即定、不切版不推断」文案）。计划、验收两侧 start/configure 护栏均已撤除（验收侧随 #394 合入、验收 Skill 正本 v0.7.1 绑定感知同步后放开；`useEnsureCycleAutomation` 的临时 skip 参数同轮删除，不留兼容层）。standard/ 两侧同步：week-planning SKILL 归档步绑定感知（0.6.1，随 #410 合并为 0.7.1）＋version-acceptance SKILL v0.7.1（恢复/归档步：绑定版本树 bw/<版本>/acceptance、旧无绑定树 bw/week-acceptance 逐字保留）＋version-records 命名与 v10 语义合并＋asset-audit 读取处；bundle/manifest/registry/stub 重生成 verify 双检通过。R9 墙读数：`resolvePlanContext`（拆出 `wall-plan-context.ts`）绑定优先——跨注册行恰一个绑定版本为正本；多在制版本如实「版本未定」，不猜不回落旧偏好。
-- **版本总览接入**：侧栏每版「总览」行调用 `openVersionOverview`，在 activity 槽通过 `project-page-state` 挂载既有版本总览页面；内容、交互与样式归 [version-overview](../version-overview/spec.md)，本特性不复制其设计或原型。
+- **版本总览接入**：侧栏每版「总览」行调用 `openVersionOverview`，在 activity 槽通过 `project-page-state` 挂载既有版本总览页面，从设置返回时保留原版本；内容、交互与样式归 [version-overview](../version-overview/spec.md)，本特性不复制其设计或原型。
 
 ### 伴飞裁定落地（2026-10-25 夜，#436 伴飞汇总 PR #437）
 

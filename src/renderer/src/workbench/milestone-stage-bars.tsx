@@ -1,16 +1,11 @@
-import { Fragment } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Trash2 } from 'lucide-react'
 import { MilestoneIconButton } from './milestone-icon-button'
 import { timeLabel } from './version-overview/overview-time'
-import { MilestoneActualBars } from './milestone-actual-bars'
-import type { MilestoneVersionFacts } from './milestone-feature-facts'
 import {
-  MilestonePhases,
+  MilestonePlanPhases,
   type MilestoneFeature,
-  type MilestoneMaterial,
-  type ScheduledVersion
+  type MilestoneDelivery
 } from '../../../shared/workbench/project-milestones'
-import { milestoneDeliveryWindow } from '../../../shared/workbench/milestone-delivery-window'
 import { plannedDay } from '../../../shared/workbench/milestone-sdlc'
 import {
   MILESTONE_DAY_WIDTH as width,
@@ -18,199 +13,190 @@ import {
   type MilestoneGesture
 } from './use-milestone-gesture'
 
-export function MilestoneLegend() {
-  return (
-    <div className="wb-ml-legend" aria-label="SDLC 阶段图例">
-      {MilestonePhases.map((phase) => (
-        <span key={phase}>
-          <i className={`wb-phase-${phase.toLowerCase()}`} />
-          {phase}
-        </span>
-      ))}
-    </div>
-  )
-}
-
 export function MilestoneSdlcToolbar({
-  showPlan,
+  showActual,
   onChange,
-  warning,
+  editing,
   featureCount,
   ownerCount,
+  totalCount,
   actual
 }: {
-  showPlan: boolean
+  editing: boolean
+  showActual: boolean
   onChange(value: boolean): void
-  warning?: string
   featureCount: number
   ownerCount: number
+  totalCount: number
   actual: { loading: boolean; failed: boolean; readAt?: string; refresh(): void }
 }) {
   return (
     <div className="wb-ml-sdlc-toolbar">
       <span className="wb-ml-counts">
-        {featureCount} 个特性 · {ownerCount} 位负责人
+        {featureCount} / {totalCount} 个特性 · {ownerCount} 位负责人
       </span>
-      {warning && (
-        <span className="wb-ml-drag-warning" role="status">
-          {warning}
-        </span>
-      )}
       <div className="wb-ml-sdlc-options">
-        <MilestoneLegend />
-        <label className="wb-ml-show-plan">
-          <input type="checkbox" checked={showPlan} onChange={(e) => onChange(e.target.checked)} />
-          显示计划
+        {!showActual && (
+          <div className="wb-ml-legend" aria-label="工作阶段图例">
+            {MilestonePlanPhases.map((phase) => (
+              <span key={phase}>
+                <i className={`wb-phase-${phase.toLowerCase()}`} />
+                {phase}
+              </span>
+            ))}
+          </div>
+        )}
+        <label
+          className="wb-ml-show-actual"
+          data-contextual-tour-target={editing && showActual ? 'milestone-start' : undefined}
+        >
+          <input
+            type="checkbox"
+            checked={showActual}
+            onChange={(e) => onChange(e.target.checked)}
+          />
+          显示实际
         </label>
-        <div className="wb-ml-actual-refresh" role="status">
-          <span>
-            {actual.failed
-              ? `本次未采集到${actual.readAt ? ` · 保留 ${timeLabel(actual.readAt)} 数据` : ''}，请到版本总览查看`
-              : actual.readAt
-                ? `截至 ${timeLabel(actual.readAt)}`
+        {showActual && (
+          <div className="wb-ml-actual-refresh" role="status">
+            <span>
+              {actual.failed
+                ? `本次未读取到${actual.readAt ? ` · 保留 ${timeLabel(actual.readAt)} 数据` : ''}，请到版本总览查看`
                 : actual.loading
-                  ? '正在采集…'
-                  : ''}
-          </span>
-          <MilestoneIconButton
-            label="刷新实际进度"
-            onClick={actual.refresh}
-            disabled={actual.loading}
-          >
-            <RefreshCw size={13} className={actual.loading ? 'animate-spin' : undefined} />
-          </MilestoneIconButton>
-        </div>
+                  ? '正在读取…'
+                  : '实际：已归档目标验收结果'}
+            </span>
+            <MilestoneIconButton
+              label="刷新实际结果"
+              onClick={actual.refresh}
+              disabled={actual.loading}
+            >
+              <RefreshCw size={13} className={actual.loading ? 'animate-spin' : undefined} />
+            </MilestoneIconButton>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 export function MilestoneStageBars({
-  material,
-  facts,
   feature,
-  versions,
   origin,
+  end,
+  range,
   enabled,
-  started,
-  showPlan,
-  gesture
+  gesture,
+  remove,
+  arrange
 }: {
-  material: MilestoneMaterial
-  facts: Record<string, MilestoneVersionFacts>
   feature: MilestoneFeature
-  versions: ScheduledVersion[]
   origin: number
+  end: number
+  range: { start: number; end: number }
   enabled: boolean
-  started: Set<string>
-  showPlan: boolean
   gesture: MilestoneGestureApi
+  remove(deliveryId: string): void
+  arrange(delivery: MilestoneDelivery): void
 }) {
-  const x = (time: string) => (plannedDay(time) - origin) * width
   return (
     <>
-      <MilestoneActualBars
-        feature={feature}
-        material={material}
-        facts={facts}
-        started={started}
-        origin={origin}
-      />
-      <svg className="wb-ml-connection" aria-hidden="true">
-        {feature.deliveries.slice(1).map((d, i) => {
-          if (!d.stages.length || !feature.deliveries[i].stages.length) {
-            return null
-          }
-          const previous = milestoneDeliveryWindow(feature.deliveries[i], versions),
-            current = milestoneDeliveryWindow(d, versions)
-          if (!previous || !current) {
-            return null
-          }
-          const left = x(previous.end),
-            right = x(current.start)
-          return right > left ? <path key={d.id} d={`M ${left} 45 H ${right}`} /> : null
-        })}
-      </svg>
+      <div className="wb-ml-undated" style={{ left: Math.max(0, range.start - origin) * width }}>
+        {feature.deliveries
+          .filter((d) => !d.timeWindow)
+          .map((d) => (
+            <span key={d.id} className="wb-ml-undated-period">
+              <button disabled={!enabled} title={`安排 ${d.phase}`} onClick={() => arrange(d)}>
+                {d.phase} · 未记录日期
+              </button>
+              {enabled && d.phase === 'Maintain' && (
+                <MilestoneIconButton label="删除此段 Maintain" onClick={() => remove(d.id)}>
+                  <Trash2 size={13} />
+                </MilestoneIconButton>
+              )}
+            </span>
+          ))}
+      </div>
       {feature.deliveries.map((delivery) => {
-        const window = milestoneDeliveryWindow(delivery, versions)
+        const window = delivery.timeWindow
         if (!window) {
           return null
         }
-        if (!delivery.stages.length) {
-          return (
-            <div
-              key={delivery.id}
-              className="wb-ml-unrecorded"
-              style={{ left: x(window.start), width: x(window.end) - x(window.start) }}
-              title={`${delivery.version.version} · 仅表示版本归属，未记录 SDLC 阶段时间`}
-            >
-              阶段未记录
-            </div>
-          )
+        const start = plannedDay(window.start),
+          finish = plannedDay(window.end)
+        const left = Math.max(start, origin),
+          right = Math.min(finish, end + 1)
+        if (right <= left) {
+          return null
         }
-        const frozen = started.has(delivery.version.cycleId),
-          editable = enabled && !frozen
-        const hasFirstDelivery = gesture.hasFirstDelivery(delivery.version.cycleId)
+        const operation: MilestoneGesture = {
+          kind: 'delivery',
+          id: feature.id,
+          deliveryId: delivery.id,
+          mode: 'move'
+        }
+        const label = `${feature.title} ${delivery.phase} · ${window.start.replace('T', ' ')} — ${window.end.replace('T', ' ')}`
+        const visibleStart = Math.max(left, range.start),
+          visibleEnd = Math.min(right, range.end)
         return (
-          <Fragment key={delivery.id}>
-            {(!frozen || showPlan) && (
-              <div className={`wb-ml-phase-group ${frozen ? 'ghost' : ''}`}>
-                {delivery.stages.map((s, index) => {
-                  const operation: MilestoneGesture = {
-                    kind: 'delivery',
-                    id: feature.id,
-                    deliveryId: delivery.id,
-                    stage: index,
-                    mode: 'move'
-                  }
-                  const pixels = x(s.end) - x(s.start)
-                  const move: MilestoneGesture =
-                    s.phase === 'Maintain'
-                      ? { kind: 'version', id: delivery.version.cycleId, mode: 'move' }
-                      : operation
-                  const label = `${s.phase} · ${s.start.replace('T', ' ')} — ${s.end.replace('T', ' ')} · ${frozen ? '原计划，只读' : '计划'}`
-                  return (
-                    <div
-                      key={s.phase}
-                      className={`wb-ml-phase wb-phase-${s.phase.toLowerCase()} ${editable ? 'editable' : ''}`}
-                      style={{ left: x(s.start), width: pixels, top: frozen ? 76 : 31 }}
-                    >
-                      <button
-                        className="wb-ml-phase-body"
-                        title={label}
-                        aria-label={label}
-                        onPointerDown={editable ? (e) => gesture.begin(e, move) : undefined}
-                        onKeyDown={editable ? (e) => gesture.keyboard(e, move) : undefined}
-                      >
-                        <span>
-                          {pixels >= 38 ? s.phase : s.phase.slice(0, s.phase === 'Deploy' ? 2 : 1)}
-                        </span>
-                      </button>
-                      {editable &&
-                        (s.phase !== 'Maintain' || !hasFirstDelivery) &&
-                        (['start', 'end'] as const).map((edge) => (
-                          <button
-                            key={edge}
-                            className={`wb-ml-resize ${edge}`}
-                            aria-label={`${s.phase} ${edge === 'start' ? '开始' : '结束'}：拖动或方向键调整${s.phase === 'Maintain' ? '一天' : '半天'}`}
-                            onPointerDown={(e) => gesture.begin(e, { ...operation, mode: edge })}
-                            onKeyDown={(e) => gesture.keyboard(e, { ...operation, mode: edge })}
-                          />
-                        ))}
-                    </div>
-                  )
-                })}
-                {frozen && (
-                  <span
-                    className="wb-ml-baseline-caption"
-                    style={{ left: x(delivery.stages[0].start) }}
-                  >
-                    原计划
-                  </span>
-                )}
+          <div
+            key={delivery.id}
+            className={`wb-ml-delivery${enabled ? ' editable' : ''}`}
+            data-delivery-id={delivery.id}
+            style={{ left: (left - origin) * width, width: (right - left) * width }}
+          >
+            <button
+              className={`wb-ml-delivery-body wb-phase-${delivery.phase.toLowerCase()}`}
+              aria-label={label}
+              title={label + (enabled ? '；拖动移动，两端调整日期，可跨版本' : '')}
+              onPointerDown={enabled ? (e) => gesture.begin(e, operation) : undefined}
+              onKeyDown={enabled ? (e) => gesture.keyboard(e, operation) : undefined}
+            >
+              <b
+                className="wb-ml-phase-label"
+                style={{
+                  left: (visibleStart - left) * width,
+                  width: Math.max(0, visibleEnd - visibleStart) * width
+                }}
+              >
+                {delivery.phase}
+              </b>
+            </button>
+            {enabled && delivery.phase === 'Maintain' && visibleEnd > visibleStart && (
+              <div
+                className="wb-ml-delivery-tools"
+                style={{ left: ((visibleStart + visibleEnd) / 2 - left) * width }}
+              >
+                <MilestoneIconButton
+                  label="删除此段 Maintain"
+                  className="wb-ml-maintain-delete"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    e.currentTarget
+                      .closest('[data-milestone-feature]')
+                      ?.querySelector<HTMLButtonElement>('[aria-label="添加 Maintain"]')
+                      ?.focus({ preventScroll: true })
+                    remove(delivery.id)
+                  }}
+                >
+                  <Trash2 size={13} />
+                </MilestoneIconButton>
               </div>
             )}
-          </Fragment>
+            {enabled &&
+              (['start', 'end'] as const)
+                .filter((edge) => (edge === 'start' ? start >= origin : finish <= end + 1))
+                .map((edge) => (
+                  <button
+                    key={edge}
+                    className={`wb-ml-resize ${edge}`}
+                    aria-label={`${feature.title} ${delivery.phase} ${edge === 'start' ? '开始' : '结束'}：拖动或方向键调整半天`}
+                    onPointerDown={(e) => gesture.begin(e, { ...operation, mode: edge })}
+                    onKeyDown={(e) => gesture.keyboard(e, { ...operation, mode: edge })}
+                  />
+                ))}
+          </div>
         )
       })}
     </>

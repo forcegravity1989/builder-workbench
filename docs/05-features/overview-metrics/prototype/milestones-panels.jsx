@@ -1,4 +1,5 @@
 import { IconAction } from '../../version-workspace/prototype/g2-icon-action.jsx'
+import { actualVersions } from './milestones-data.js'
 import { historicalRows, outcomeLabel, sourceUrl } from './milestones-history.js'
 // eslint-disable-next-line no-unused-vars
 const { React, useState, useRef, useEffect, X } = window.BWPrototypeDependencies
@@ -29,9 +30,30 @@ export function ReferencePanel({ close }) {
   return (
     <Modal title="设计依据" close={close}>
       <p className="muted">
-        原型注释: 2026-10-30
+        原型注释: 2026-11-05
         核对官方资料。本稿借鉴交互思路，产品规则以人工澄清与仓内原则为准；此入口仅供原型评审，不进入产品界面。
       </p>
+      <section className="ml-reference">
+        <h3>
+          <a href="https://linear.app/docs/project-milestones" target="_blank" rel="noreferrer">
+            Linear · Project milestones ↗
+          </a>
+        </h3>
+        <p>
+          借鉴：关键节点独立设置日期，可添加、编辑、删除，不限每月一个。BW
+          仅保留日期与预期成果，不加入依赖或任务绑定。
+        </p>
+        <p>
+          <a
+            href="https://help.asana.com/s/article/plan-and-execute-projects-with-timeline?language=en_US"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Asana · Timeline ↗
+          </a>
+          ：借鉴关键节点与持续条形的区别；本稿保留 BW 原旗帜样式。
+        </p>
+      </section>
       <section className="ml-reference">
         <h3>
           <a
@@ -42,10 +64,7 @@ export function ReferencePanel({ close }) {
             PR #320 · 日排期与预置工作日历 ↗
           </a>
         </h3>
-        <p>
-          原型注释:
-          借用等宽日轴、拖动两端调整和班/休标记。真实日历样本尚未提供，缺配置时使用普通周末，不推算加班日；本稿保留原有就地规划旅程。
-        </p>
+        <p>原型注释: 等宽日轴与正式里程碑共用 2026 年工作日历。</p>
       </section>
       <section className="ml-reference">
         <h3>时间轴组件取舍</h3>
@@ -58,7 +77,7 @@ export function ReferencePanel({ close }) {
           >
             ECharts custom series ↗
           </a>{' '}
-          能绘制时间图形，但字段编辑、行排序、日粒度拖动和撤销仍需自行接入；本轮不替换编辑器。
+          能绘制时间图形，但字段编辑、日粒度拖动和撤销仍需自行接入；本轮不替换编辑器。
         </p>
         <p>
           <a
@@ -82,7 +101,7 @@ export function ReferencePanel({ close }) {
           </a>
         </h3>
         <p>
-          借鉴：在对象附近建立排期、直接改日期和拖动排序。BW
+          借鉴：在对象附近建立排期、直接改日期。BW
           在同一连续画布添加特性，空周在使用时登记；拖节点保持特性身份。
         </p>
       </section>
@@ -128,8 +147,8 @@ export function ReferencePanel({ close }) {
         </p>
       </section>
       <p>
-        原型注释: 本轮旅程：月度选择 → 首版 Plan / Design / Build / Test / Deploy → 后续版本
-        Maintain；反馈统一进入 Issue。Deploy 实际时间暂未跟踪。
+        原型注释: #590 待评审。Build 与 Maintain
+        按日期跨版安排，同一特性可以再次维护。版本计划与人工验收独立；原型只使用模拟数据。
       </p>
       <footer>
         <a className="btn btn-secondary" href="spec.md" target="_blank" rel="noreferrer">
@@ -144,36 +163,51 @@ export function ReferencePanel({ close }) {
 }
 
 export function VersionBridge({ item, version, plan, close }) {
-  const delivery = item?.deliveries.find((d) => d.versionId === version)
-  const v = plan.versions.find((entry) => entry.id === version)
+  const arrangements = plan.features.filter((f) =>
+    f.deliveries.some((d) =>
+      d.stages.some(
+        (s) =>
+          s.start <
+            Date.parse(
+              `${plan.versions.find((v) => v.id === version)?.end || '2026-01-01'}T00:00:00Z`
+            ) /
+              86400000 +
+              1 &&
+          s.end >
+            Date.parse(
+              `${plan.versions.find((v) => v.id === version)?.start || '2026-01-01'}T00:00:00Z`
+            ) /
+              86400000
+      )
+    )
+  )
+  const v = plan.versions.find((entry) => entry.id === version) ||
+    actualVersions.find((entry) => entry.id === version) || { name: version }
   return (
     <Modal title={`${v.name || '未命名版本'} · 版本总览`} close={close} wide>
       <p className="ml-footnote">
-        原型注释: #334
-        衔接预览。真实特性对应关系、来源定位与返回字段仍待接入；原型返回保留当前草案和视口。
+        原型注释: #334 衔接预览。正式版本与验收读取仍待接入；原型返回保留当前草案和视口。
       </p>
       <h3>{item?.title || '版本工作'}</h3>
       <div className="ml-source-columns">
         <section>
           <h3>里程碑安排</h3>
-          {delivery ? (
-            <>
-              <p>{delivery.stages.map((s) => s.phase).join(' → ')}</p>
-              <p>
-                {v.start} — {v.end}
+          {arrangements.length ? (
+            arrangements.map((f) => (
+              <p key={f.id}>
+                {f.title} · {f.owner || '未指定负责人'}
               </p>
-              <p className="muted">负责人：{item.owner}</p>
-            </>
+            ))
           ) : (
-            <p>本版未关联当前特性。</p>
+            <p>该日期范围没有特性安排。</p>
           )}
+          <p className="muted">此处展示日期交集；本版正式纳入范围以版本计划为准。</p>
         </section>
         <section>
           <h3>版本计划与实际交付</h3>
           <p>尚未读取</p>
           <p className="muted">
-            本版范围、实际阶段与人工验收以版本材料为准。Deploy 尚未跟踪；Maintain
-            需有明确的后续版本安排。
+            本版范围与目标验收以版本材料为准。计划助手维护同一特性主单和本版目标关系。
           </p>
         </section>
       </div>

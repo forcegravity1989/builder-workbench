@@ -107,7 +107,7 @@ export function nativeVersionHistoryHost(runtime: HistoryRuntime): VersionHistor
   const resolver = createWorkbenchWorkspaceResolver(nativeWorkbenchWorkspaceHost(runtime))
   const materials = nativeVersionMaterialService(runtime)
   // One RPC request re-resolves the same registered identity many times (log,
-  // per-record snapshot, per-candidate proof); memoize it for the call only.
+  // per-record snapshot, per-record read); memoize it for the call only.
   const resolved = new Map<string, Promise<ResolvedWorkspace>>()
   function workspaceFor(scope: MetricScope): Promise<ResolvedWorkspace> {
     const key = JSON.stringify(scope)

@@ -1,35 +1,27 @@
 import { z } from 'zod'
 import {
   MilestoneFeatureSchema,
-  MilestoneDeliverySchema,
+  MilestoneNodeSchema,
+  upgradeMilestoneMaterial,
   ScheduledVersionSchema
 } from '../../../shared/workbench/project-milestones'
 import type { Session } from './milestone-planning-session'
 
 // Recovery accepts unfinished fields; submission still validates the business material schema.
 const draftSchema = z.strictObject({
-  material: z.strictObject({
-    schema_version: z.literal(2),
-    months: z
-      .array(
-        z.strictObject({
-          month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
-          outcome: z.string()
+  material: z.preprocess(
+    upgradeMilestoneMaterial,
+    z.strictObject({
+      schema_version: z.literal(4),
+      milestones: z.array(MilestoneNodeSchema).max(2000),
+      features: z.array(
+        MilestoneFeatureSchema.extend({
+          title: z.string(),
+          owner: z.string()
         })
       )
-      .max(240),
-    features: z.array(
-      MilestoneFeatureSchema.extend({
-        title: z.string(),
-        owner: z.string(),
-        deliveries: z.array(
-          MilestoneDeliverySchema.extend({
-            version: z.strictObject({ version: z.string(), cycleId: z.string().min(1) })
-          })
-        )
-      })
-    )
-  }),
+    })
+  ),
   versions: z.array(ScheduledVersionSchema.extend({ version: z.string() }))
 })
 export const milestoneRecoverySchema = z.strictObject({
@@ -39,7 +31,14 @@ export const milestoneRecoverySchema = z.strictObject({
   expectedFormal: z.string().min(1),
   expectedProposal: z.string().nullable(),
   editing: z.boolean(),
-  month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  month: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+    .optional(),
+  viewDate: z.iso.date().optional(),
+  rangeOnly: z.boolean().optional(),
+  featureOrder: z.array(z.string()).max(2000).optional(),
+  pinnedFeatures: z.array(z.string()).max(2000).optional(),
   scrollX: z.number().finite().nonnegative().nullable(),
   scrollY: z.number().finite().nonnegative(),
   pageY: z.number().finite().nonnegative(),
@@ -53,7 +52,10 @@ export function milestoneRecoveryPayload(value: Session): string {
     expectedFormal,
     expectedProposal,
     editing,
-    month,
+    viewDate,
+    rangeOnly,
+    featureOrder,
+    pinnedFeatures,
     scrollX,
     scrollY,
     pageY,
@@ -67,7 +69,10 @@ export function milestoneRecoveryPayload(value: Session): string {
     expectedFormal,
     expectedProposal,
     editing,
-    month,
+    viewDate,
+    rangeOnly,
+    featureOrder,
+    pinnedFeatures,
     scrollX,
     scrollY,
     pageY,

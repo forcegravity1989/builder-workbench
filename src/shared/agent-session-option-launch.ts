@@ -65,7 +65,7 @@ export function resolveAgentSessionOptionLaunch(
     : modelId
   const modelOverridden = catalog.modelApply.agentArgsOverride?.(trailingAgentArgs) === true
 
-  if (catalog.modelApply.launchArgs) {
+  if (catalog.modelApply.launchArgs && (agent !== 'cursor' || !modelOverridden)) {
     args.push(...catalog.modelApply.launchArgs(composedModelId))
     if (!modelOverridden) {
       appliedValues.model = modelId

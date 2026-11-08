@@ -1,3 +1,8 @@
+import { useState } from 'react'
+import { RuntimeRepairDialog } from '../runtime-access/RuntimeRepairDialog'
+import { runtimeHostConnectionStateForEntry } from '@/runtime/runtime-host-connection-state'
+import { isWebClientLocation } from '@/lib/web-client-location'
+import { isEphemeralVmRuntimeEnvironment } from '../../../../shared/runtime-environments'
 import { AlertTriangle, Loader2, Server, ServerOff, Trash2 } from 'lucide-react'
 import type { PublicKnownRuntimeEnvironment } from '../../../../shared/runtime-environments'
 import type { RemoteServerUpdateEntry } from '@/runtime/remote-server-update-coordinator'
@@ -53,6 +58,7 @@ export function RuntimeServerRow({
   onConnect,
   onRemove
 }: RuntimeServerRowProps): React.JSX.Element {
+  const [repairOpen, setRepairOpen] = useState(false)
   const runtimeStatusEntry = useAppStore((state) =>
     state.runtimeStatusByEnvironmentId.get(environment.id)
   )
@@ -73,9 +79,14 @@ export function RuntimeServerRow({
           runtimeStatusEntry.remoteControl ?? runtimeStatusEntry.status?.remoteControl ?? null
       }
     : details
-  const detailsDescription = getHostDetailsDescription(effectiveDetails)
+  const accessRevoked = runtimeStatusEntry?.snapshot?.verification === 'blocked' &&
+    runtimeStatusEntry.snapshot.blockedReason === 'access-revoked' && !runtimeStatusEntry.snapshot.retired
+  const detailsDescription = accessRevoked
+    ? translate('settings.servers.accessRevoked', 'This client no longer has access. Use a new pairing link from this server to reconnect.')
+    : getHostDetailsDescription(effectiveDetails)
   const connectionState =
-    details?.status === 'loading' && !runtimeStatusEntry?.status
+    runtimeStatusEntry?.snapshot ? runtimeHostConnectionStateForEntry(runtimeStatusEntry)
+    : details?.status === 'loading' && !runtimeStatusEntry?.status
       ? 'checking'
       : getRuntimeServerConnectionState(effectiveDetails)
   // A connected host exposes Disconnect; otherwise Connect.
@@ -97,7 +108,7 @@ export function RuntimeServerRow({
           <span className="text-[11px] text-muted-foreground">
             {getRuntimeServerConnectionLabel(connectionState)}
           </span>
-          {effectiveDetails?.compatibility?.kind === 'blocked' ? (
+          {accessRevoked || effectiveDetails?.compatibility?.kind === 'blocked' ? (
             <AlertTriangle className="size-3.5 shrink-0 text-destructive" />
           ) : effectiveDetails?.status === 'loading' ? (
             <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
@@ -155,6 +166,25 @@ export function RuntimeServerRow({
         ) : null}
       </div>
       <div className="flex shrink-0 items-center gap-1">
+        {!isWebClientLocation() && !isEphemeralVmRuntimeEnvironment(environment) ? (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              disabled={isBusy}
+              onClick={() => setRepairOpen(true)}
+            >
+              {translate('auto.components.settings.RuntimeRepairDialog.submit', 'Re-pair')}
+            </Button>
+            <RuntimeRepairDialog
+              open={repairOpen}
+              onOpenChange={setRepairOpen}
+              environmentId={environment.id}
+              name={environment.name}
+            />
+          </>
+        ) : null}
         {remoteUpdate?.phase === 'available' || remoteUpdate?.phase === 'failed' ? (
           <Button
             type="button"

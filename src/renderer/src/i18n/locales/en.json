@@ -141,7 +141,8 @@
         "resourceUsageToggleDescription": "Show the Resource Manager. Click it for CPU, memory, sessions, daemon controls, and workspace disk scans.",
         "portsToggleDescription": "Show live workspace ports. Click it for workspace-scoped ports and external listeners.",
         "antigravityToggleDescription": "Show Antigravity subscription usage for the active workspace.",
-        "grokToggleDescription": "Show Grok subscription credit usage when signed in via Grok CLI."
+        "grokToggleDescription": "Show Grok subscription credit usage when signed in via Grok CLI.",
+        "cursorToggleDescription": "Show Cursor plan usage when signed in through cursor-agent or Cursor IDE."
       },
       "menuBarIcon": {
         "title": "Show Menu Bar Icon",
@@ -183,6 +184,24 @@
         "heading": "Remote browsing",
         "headingDescription": "Where remote workspace pages render, and where their network traffic leaves from."
       }
+    },
+    "agents": {
+      "detectionFailed": "Couldn’t detect agents on this host.",
+      "environmentName": "Environment variable name",
+      "environmentValue": "Value for {{name}}",
+      "hostDefaults": "Defaults for agents launched on this host.",
+      "loading": "Loading agent settings…",
+      "newEnvironment": "Value",
+      "readFailed": "Couldn’t read agent settings. Check the host connection and try again.",
+      "refresh": "Refresh",
+      "removeEnvironment": "Remove",
+      "save": "Save",
+      "savedEnvironment": "Saved value · enter to replace",
+      "saveFailed": "Couldn’t save agent settings. Check the host connection and try again.",
+      "updateHost": "Update this server to edit its agent launch settings."
+    },
+    "servers": {
+      "accessRevoked": "This client no longer has access. Use a new pairing link from this server to reconnect."
     }
   },
   "menu": {
@@ -340,7 +359,8 @@
         "loopbackPairingBlocked": "This access link points back to this device.",
         "remotePairingUnreachable": "Cannot reach Orca at {{endpoint}}.",
         "remotePairingInvalidDetails": "This access link contains invalid connection details.",
-        "remotePairingSaveFailed": "Orca verified the host but could not save it. Check browser storage and try again."
+        "remotePairingSaveFailed": "Orca verified the host but could not save it. Check browser storage and try again.",
+        "remotePairingRepairUnavailable": "Re-pairing is not available in the browser. Pair this browser with the server again."
       },
       "web": {
         "preload": {
@@ -582,6 +602,7 @@
           "a5fc0cb622": "OpenClaude",
           "bf53f09bf8": "Claude Agent Teams",
           "0708ed89f1": "Claude",
+          "dsh_label": "DeepSeek Harness",
           "fc80296033": "Devin",
           "da41abbdd4": "Ante",
           "060d152fb5": "Trae",
@@ -3791,7 +3812,8 @@
             "grokUsageMenu": "Grok Usage",
             "floatingTerminalNewActivity": "{{label}}, new activity",
             "codexSignInSuccess": "Signed in to Codex",
-            "codexSignInError": "Codex sign-in failed. Please try again."
+            "codexSignInError": "Codex sign-in failed. Please try again.",
+            "cursorUsageMenu": "Cursor Usage"
           },
           "StatusBarUsageEmptyCta": {
             "828c764a79": "Connect an account",
@@ -3976,6 +3998,13 @@
                 "label": "Sign-in expired",
                 "apiKey": "MiniMax API key expired. Replace it in Settings.",
                 "cookie": "MiniMax session cookie expired. Replace it in Settings."
+              }
+            },
+            "cursor": {
+              "plan": "Plan",
+              "expired": {
+                "label": "Sign-in expired",
+                "message": "Sign in with Cursor IDE or run cursor-agent login on the computer running Workbench, then retry usage."
               }
             }
           },
@@ -7053,6 +7082,8 @@
           "connectionTestAction": "Test Connection"
         },
         "ExperimentalPane": {
+          "globalScopeTitle": "Global settings",
+          "globalScopeDescription": "These settings apply to all projects on this device.",
           "9762364929": "Uses APFS clone-copy on macOS when possible, otherwise symlinks configured folders or files into created worktrees.",
           "24416f42cd": "Shared paths on worktrees",
           "fb82ea1d7a": "Automatically materialize configured files or folders into newly created worktrees.",
@@ -8086,7 +8117,8 @@
           "troubleshootStepRegenerate": "Generate a new access link and use only the newest link here.",
           "troubleshootTunnel": "Using an SSH local forward? Return to Connect to a host, paste the loopback link, then enable “I am using an SSH tunnel” under Advanced.",
           "cloudVmWorkflow": "Cloud VM",
-          "cloudVmWorkflowHelp": "Manage recipe-created cloud machines"
+          "cloudVmWorkflowHelp": "Manage recipe-created cloud machines",
+          "serverAlreadyPaired": "This server is already paired as {{value0}}; updated its connection."
         },
         "RuntimePairingGeneratedUrlRows": {
           "0495f68959": "Copy {{value0}}"
@@ -8872,7 +8904,18 @@
             "b2c4e7f1a8": "endpoint",
             "3a9b6d2c4e": "api key",
             "5d8f1a3b7c": "china",
-            "7e2a4b8c1d": "overseas"
+            "7e2a4b8c1d": "overseas",
+            "cursor": {
+              "title": "Cursor Usage",
+              "description": "Plan usage read from the Cursor sign-in already on this computer (cursor-agent login).",
+              "kw": {
+                "cursor": "cursor",
+                "usage": "usage",
+                "spend": "spend",
+                "rateLimit": "rate limit",
+                "statusBar": "status bar"
+              }
+            }
           }
         },
         "advanced": {
@@ -9120,6 +9163,13 @@
               "close": "close",
               "notification": "notification area",
               "background": "background"
+            },
+            "cursor": {
+              "title": "Cursor Usage",
+              "description": "Show Cursor plan usage from the Cursor sign-in on this computer.",
+              "kw": {
+                "cursor": "cursor"
+              }
             }
           }
         },
@@ -11499,7 +11549,9 @@
           "networkConnection": "Network connection",
           "notAttempted": "Not attempted",
           "saveFailed": "Could not save the host",
-          "saveFailedHelp": "The host was verified, but Orca could not save it. Check the name and local settings storage, then try again."
+          "saveFailedHelp": "The host was verified, but Orca could not save it. Check the name and local settings storage, then try again.",
+          "differentServer": "This link is for a different server",
+          "differentServerHelp": "This pairing link is for a different server. Create the link on the server you are re-pairing."
         },
         "CloudVmSetupGuide": {
           "title": "Create a Cloud VM",
@@ -11771,6 +11823,38 @@
           "targetDescription": "Higher values increase contrast where possible. Background colors stay unchanged.",
           "subtle": "Subtle",
           "strong": "Strong"
+        },
+        "RuntimeRepairDialog": {
+          "descriptionShareComputer": "{{name}} no longer accepts this computer. On {{name}}, open Settings → Remote Orca Servers → Share this computer, create a link for another Orca, then paste it here.",
+          "failed": "Re-pair failed",
+          "submit": "Re-pair",
+          "success": "Re-paired with {{name}}",
+          "title": "Re-pair {{name}}"
+        },
+        "CursorAccountsSection": {
+          "source": {
+            "keychain": "macOS Keychain (cursor-agent)",
+            "cli": "Cursor CLI auth file",
+            "desktop": "Cursor IDE"
+          },
+          "title": "Cursor",
+          "subtitle": "Shows your Cursor plan usage from the sign-in already on this computer. Workbench only reads it — it never changes your Cursor login.",
+          "dashboardLink": "Cursor dashboard",
+          "loading": "Loading…",
+          "signedIn": "Signed in",
+          "signedInFrom": "Signed in. Workbench reads the session stored in {{source}}.",
+          "signedInGeneric": "Signed in. Workbench reads the Cursor session stored on this computer.",
+          "expired": "Sign-in expired — run cursor-agent login on the computer running Workbench, then click Refresh usage.",
+          "signedOut": "No Cursor sign-in found on this computer",
+          "signedOutHelp": "Sign in with Cursor IDE, or run cursor-agent login in a terminal, then click Refresh usage here.",
+          "refreshUsage": "Refresh usage",
+          "usageTitle": "Plan usage",
+          "usageDescription": "Cursor bills two pools that reset with your billing cycle, plus on-demand spend once they run out.",
+          "planTotal": "Plan",
+          "resets": "Resets {{when}}",
+          "staleUsage": "Last known usage — the latest refresh failed: {{reason}}",
+          "usageLabel": "Usage",
+          "unknownUsage": "Current usage is unavailable. Refresh usage to try again."
         }
       },
       "right": {
@@ -15365,8 +15449,9 @@
                     "c16f932cb3": "Save",
                     "024467ceac": "Cancel",
                     "449d2c2629": "Annotation intent",
-                    "collapse": "Collapse annotations",
-                    "expand": "Expand annotations"
+                    "38d320108c": "Collapse annotations",
+                    "9f209891a7": "Expand annotations",
+                    "includePageDetails": "Include page details"
                   }
                 }
               }
@@ -16647,6 +16732,13 @@
         "3d8e5f1b9c": "Share skills behind an unlisted link and install them on any machine you use.",
         "7e1a9c4d2f": "Signing in…",
         "c5b3e8a17d": "Sign in to Orca"
+      },
+      "web": {
+        "preloadApi": {
+          "cursorAccounts": {
+            "hostOnly": "Cursor sign-in details are only readable on the computer running Workbench."
+          }
+        }
       }
     },
     "i18n": {
@@ -17638,5 +17730,19 @@
   },
   "brand": {
     "workbench": "Workbench"
+  },
+  "runtime": {
+    "remoteServerPairingErrors": {
+      "alreadyPairedAddAgain": "This server is already paired as \"{{name}}\". To update its connection, add it again under Settings > Remote Orca Servers.",
+      "alreadyPairedCloudIdentity": "This server is already paired as \"{{name}}\". The cloud workspace's server reuses that server's identity, so it was not saved.",
+      "alreadyPairedCloudWorkspace": "This server is already paired as \"{{name}}\". It belongs to a cloud workspace, which pairs it again when it resumes.",
+      "hostSaveFailed": "Orca verified the host but could not save it. Check local settings storage and try again.",
+      "idNeedsNewerOrca": "A server with this id already exists in a format that needs a newer version of Orca.",
+      "invalidPairingCode": "Invalid pairing code. Expected an orca://pair?... URL or bare pairing payload.",
+      "nameTaken": "A server named \"{{name}}\" already exists.",
+      "repairCloudWorkspace": "This server belongs to a cloud workspace, which pairs it again when it resumes.",
+      "repairSaveFailed": "Orca verified the server but could not save the new pairing. Check local settings storage and try again.",
+      "selfPairingCode": "This pairing code is for this Orca itself. Generate the code on the other computer instead."
+    }
   }
 }

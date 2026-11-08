@@ -19,13 +19,19 @@ import { useWindowsTerminalCapabilityOwnerKey } from '@/hooks/useWindowsTerminal
 type AgentSettingsDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  runtimeEnvironmentId?: string | null
 }
 
 export default function AgentSettingsDialog({
   open,
-  onOpenChange
+  onOpenChange,
+  runtimeEnvironmentId
 }: AgentSettingsDialogProps): React.JSX.Element | null {
-  const settings = useAppStore((s) => s.settings)
+  const localSettings = useAppStore((s) => s.settings)
+  const settings =
+    localSettings && runtimeEnvironmentId !== undefined
+      ? { ...localSettings, activeRuntimeEnvironmentId: runtimeEnvironmentId }
+      : localSettings
   const updateSettings = useAppStore((s) => s.updateSettings)
   const isWindowsRenderer =
     typeof navigator !== 'undefined' && navigator.userAgent.includes('Windows')

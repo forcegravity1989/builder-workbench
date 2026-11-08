@@ -102,9 +102,16 @@ export function isMobilePublishableOpenFile(file: AppState['openFiles'][number])
  * navigation for a page that has no URL. Host and phone parity ships behind capability negotiation.
  */
 export function isMobilePublishableBrowserWorkspace(
-  workspace: NonNullable<AppState['browserTabsByWorktree'][string]>[number]
+  workspace: NonNullable<AppState['browserTabsByWorktree'][string]>[number],
+  pages: NonNullable<AppState['browserPagesByWorkspace'][string]>
 ): boolean {
-  return !workspace.docLocation
+  if (workspace.docLocation) {
+    return false
+  }
+  const activePage = pages.find((page) => page.id === workspace.activePageId) ?? pages[0]
+  // Publishing a peer's page back to it replaces its real guest with a mirror of this client.
+  // Client-hosted pages are published by their owning runtime's page registry instead.
+  return !activePage?.browserRuntimeEnvironmentId
 }
 
 export function isUnifiedTabActiveInActiveGroup(

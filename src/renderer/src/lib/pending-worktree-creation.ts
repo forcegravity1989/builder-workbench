@@ -15,6 +15,7 @@ import type { AgentStartedTelemetry } from '@/lib/worktree-startup-payload'
 import type { TaskSourceContext, WorkspaceRunContext } from '../../../shared/task-source-context'
 import type { AgentLaunchRoute } from '@/lib/agent-launch-routing'
 import type { WorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
+import type { AgentLaunchSettingsOwner } from '@/runtime/agent-launch-settings/agent-launch-settings-transport'
 
 /** Two-phase status reported by the main process while a worktree is created.
  *  `preparing` covers renderer-side preflight before `createWorktree` starts;
@@ -80,6 +81,8 @@ export type WorktreeCreationRequest = {
   agent: TuiAgent | null
   /** Renderer-owned route decision captured at submit time and reused on retry. */
   agentLaunchRoute?: AgentLaunchRoute
+  /** The paired runtime whose launch settings were read before this retriable create. */
+  agentLaunchOwner?: AgentLaunchSettingsOwner
   linkedLinearIssue?: string
   linkedLinearIssueWorkspaceId?: string | null
   linkedLinearIssueOrganizationUrlKey?: string | null

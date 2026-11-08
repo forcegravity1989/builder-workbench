@@ -1,5 +1,6 @@
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
+import type { CycleTaskReference } from './version-cycle/ports'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import { findVersionFlowWorktrees } from '../../../shared/workbench/version-workspace-match'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
@@ -99,7 +100,7 @@ export async function initializeVersionWorkspace(args: {
 export async function openVersionTasks(args: {
   catalog: VersionCatalogState
   version: string
-  goal?: { goalId: string; label: string } | null
+  goal?: { goalId: string; label: string; references?: readonly CycleTaskReference[] } | null
   entry: VersionCatalogEntry | null
 }): Promise<void> {
   const { catalog, version, goal, entry } = args
@@ -107,8 +108,13 @@ export async function openVersionTasks(args: {
     toast.error('项目工作区尚未就绪，请稍后再试')
     return
   }
-  if (!goal) {
-    openVersionTasksPage({ version, goal: null, references: [], homeRepoId: catalog.home.repoId })
+  if (!goal || goal.references) {
+    openVersionTasksPage({
+      version,
+      goal,
+      references: goal?.references ?? [],
+      homeRepoId: catalog.home.repoId
+    })
     closeProjectPage()
     return
   }

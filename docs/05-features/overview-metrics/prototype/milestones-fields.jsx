@@ -8,24 +8,33 @@ export function InlineField({
   commit,
   autoFocus = false,
   className = '',
-  required = true
+  required = true,
+  forceInvalid = false,
+  multiline = false,
+  maxLength
 }) {
+  const Field = multiline ? 'textarea' : 'input'
   const started = useRef(value)
   const cancelled = useRef(false)
+  const [touched, setTouched] = useState(false)
   return (
-    <input
+    <Field
+      rows={multiline ? 2 : undefined}
+      maxLength={maxLength}
       className={`ml-inline ${className}`}
       aria-label={label}
       placeholder={placeholder}
       value={value}
       autoFocus={autoFocus}
-      aria-invalid={required && !value.trim()}
+      data-required={required || undefined}
+      aria-invalid={required && !value.trim() && (touched || forceInvalid)}
       onFocus={() => {
         started.current = value
         cancelled.current = false
       }}
       onInput={(e) => change(e.currentTarget.value)}
       onBlur={(e) => {
+        setTouched(true)
         if (!cancelled.current) {
           if (commit) {
             commit(e.currentTarget.value.trim(), started.current)
@@ -39,7 +48,8 @@ export function InlineField({
         if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) {
           return
         }
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && (!multiline || e.ctrlKey || e.metaKey)) {
+          e.preventDefault()
           e.currentTarget.blur()
         }
         if (e.key === 'Escape') {
