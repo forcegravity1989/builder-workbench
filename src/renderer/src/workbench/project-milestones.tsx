@@ -104,7 +104,7 @@ export function ProjectMilestones({
   const registeredVersions = (
     state.data.formal.registeredVersions ?? state.data.formal.versions
   ).concat(state.data.proposal?.registeredVersions ?? state.data.proposal?.versions ?? [])
-  const problems = milestoneProblems(state.draft)
+  const problems = milestoneProblems(state.draft, state.baseline)
   const changes = describeMilestoneChanges(state.baseline, state.draft)
   function renameVersion(cycleId: string, version: string, previousName?: string) {
     const result = editMilestoneVersionName(

@@ -82,7 +82,7 @@ function App() {
   const history = histories.current[caseId]
   const plan = current || state.draft,
     changes = changesBetween(state.submitted, state.draft),
-    problem = incomplete(state.draft)
+    problem = incomplete(state.draft, state.submitted)
   const setState = (updater) => setCases((all) => ({ ...all, [caseId]: updater(all[caseId]) }))
   const editPlan = (updater, fieldEdit = false) => {
     const draft = updater(state.draft)
@@ -226,7 +226,7 @@ function App() {
         f.id === feature.id ? { ...f, deliveries: [...f.deliveries, delivery] } : f
       )
     }
-    const error = scheduleProblem(next)
+    const error = scheduleProblem(next, state.draft)
     if (error) {
       setNotice(error)
       return

@@ -4,6 +4,6 @@ export function settleMilestoneWindows(
   before: MilestoneDraft,
   candidate: MilestoneDraft
 ): { draft: MilestoneDraft; conflict?: string } {
-  const conflict = milestoneVersionConflict(candidate.versions)
+  const conflict = milestoneVersionConflict(candidate.versions, before.versions)
   return { draft: conflict ? before : candidate, conflict }
 }

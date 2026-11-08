@@ -296,7 +296,7 @@ export function loadCases() {
   }
   return freshCases()
 }
-export function incomplete(plan) {
+export function incomplete(plan, before) {
   if (plan.milestones.some((m) => !m.outcome.trim())) {
     return '请补全里程碑成果'
   }
@@ -306,7 +306,7 @@ export function incomplete(plan) {
   if (plan.features.some((f) => !f.title.trim())) {
     return '填写特性名称后再提交评审'
   }
-  return scheduleProblem(plan)
+  return scheduleProblem(plan, before)
 }
 export function changesBetween(before, after) {
   const changes = []

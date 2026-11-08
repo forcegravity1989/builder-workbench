@@ -8,7 +8,7 @@
 
 版本以 version + cycleId 标识。`.bw/milestones.json` 使用 schema_version=4，可选 versionPlans 保存预期版本日期；`.bw/planning/<version>/data.json.timeWindow` 保存正式采用日期，均为包含两端的 ISO 日期。里程碑重排不覆盖已有计划；新版本才登记最小空计划。验收按固定 planRef 读历史。
 
-节点按稳定 id 保存 outcome 和 date；仅有月份精度的成果保留 month，人工补日期后替换。特性保存 id、title、可空 owner 与 deliveries；每段为稳定 id、Build/Maintain 和可选 timeWindow，不含版本引用。时间为北京时间民用时间 `YYYY-MM-DDTHH:mm`，结束边界不包含。新安排默认值与拖动规则见 [日期编排](spec.md#日期编排与默认值)。版本窗口只按天修改、不得重叠；阶段按半天调整，Build 碰撞后续维护时保持维护时长顺延。预览保留段的 DOM 顺序，手势结束才按日期整理，避免自由换序中断指针捕获。
+节点按稳定 id 保存 outcome 和 date；仅有月份精度的成果保留 month，人工补日期后替换。特性保存 id、title、可空 owner 与 deliveries；每段为稳定 id、Build/Maintain 和可选 timeWindow，不含版本引用。时间为北京时间民用时间 `YYYY-MM-DDTHH:mm`，结束边界不包含。新安排默认值与拖动规则见 [日期编排](spec.md#日期编排与默认值)。版本窗口只按天修改；前后端共用基线比较，禁止新增或扩大版本交集，保留或缩小存量重叠不阻止提交；阶段按半天调整，Build 碰撞后续维护时保持维护时长顺延。预览保留段的 DOM 顺序，手势结束才按日期整理，避免自由换序中断指针捕获。
 
 编辑以 draft.versions 维护版本窗口，draft.material 不重复保存 versionPlans，提交时统一写回。读取 schema 2/3 时，保留节点、特性及段的身份与名称，已记录的前五阶段按外边界归为 Build，维护归为 Maintain；空阶段不造日期。特性旧月份、版本绑定和目标槽位在迁移后移除，当前正本只保存新格式。没有 versionPlans 时借当前可读版本窗口展示，正常提交才补存，不能称为原始预期日期。正式、提案和恢复草案走同一迁移；恢复允许字段尚未填完。
 

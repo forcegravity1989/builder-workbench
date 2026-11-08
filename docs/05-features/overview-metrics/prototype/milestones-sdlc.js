@@ -43,7 +43,7 @@ export function laneConflict(plan) {
   )?.id
 }
 export function settleWindows(before, candidate) {
-  const conflict = scheduleProblem(candidate)
+  const conflict = scheduleProblem(candidate, before)
   return { plan: conflict ? before : candidate, conflict }
 }
 export function adjustVersion(plan, id, mode, delta) {
@@ -111,11 +111,26 @@ export function adjustDelivery(plan, featureId, index, mode, delta) {
     features: plan.features.map((f) => (f.id === featureId ? { ...f, deliveries } : f))
   }
 }
-export function scheduleProblem(plan) {
+export function scheduleProblem(plan, before = { versions: [] }) {
+  const prior = new Map(before.versions.map((v) => [v.id, v]))
   for (let i = 0; i < plan.versions.length; i++) {
     for (const b of plan.versions.slice(i + 1)) {
       const a = plan.versions[i]
       if (a.start <= b.end && b.start <= a.end) {
+        const oldA = prior.get(a.id),
+          oldB = prior.get(b.id)
+        const start = [a.start, b.start].sort().at(-1),
+          end = [a.end, b.end].sort()[0]
+        if (
+          oldA &&
+          oldB &&
+          start >= oldA.start &&
+          start >= oldB.start &&
+          end <= oldA.end &&
+          end <= oldB.end
+        ) {
+          continue
+        }
         return '版本日期重叠，请调整相关版本'
       }
     }

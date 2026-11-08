@@ -12,7 +12,7 @@
 
 ## 计划助手与里程碑衔接
 
-[共同方案](../overview-metrics/spec.md#里程碑与版本联动)按 #590 收敛为自由日期排期，原型交互已获确认，实施前的重要逻辑继续逐项对齐；本节正式纳入与主单规则沿用，[原计划屏](planning-journey-prototype.html?review=551)继续沿用目标卡、Issue 行、原生计划助手及既有评审/归档；本轮不加周期差异面板、阶段配置、额外确认或绑定表单。助手规则以 `standard/` 中的计划 Skill、版本材料和 Issue 格式为正本。
+[共同方案](../overview-metrics/spec.md#里程碑与版本联动)采用已确认的自由日期排期；本节正式纳入与主单规则沿用，[原计划屏](planning-journey-prototype.html?review=551)继续沿用目标卡、Issue 行、原生计划助手及既有评审/归档；本轮不加周期差异面板、阶段配置、额外确认或绑定表单。助手规则以 `standard/` 中的计划 Skill、版本材料和 Issue 格式为正本。
 
 ### 助手需要执行的最小步骤
 

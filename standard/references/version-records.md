@@ -32,7 +32,7 @@ cycleId 标识同一版本同一流程的材料身份，不是自然周、原生
 
 首日 Plan 可以校准日期、目标和范围，与里程碑预期不同并不使计划失效。里程碑重新编排只更新预期，不覆盖已有版本计划的 timeWindow 或其他字段；计划改期也不自动重写里程碑。新版本可由里程碑登记身份及最小空计划，真正开工再创建对应工作树与会话。已有材料沿用 cycleId，不能重新初始化覆盖。
 
-里程碑还保存 milestones（id、outcome、date；仅有月份精度的成果保留 month 直至人工指定日期）与 features（id/title/owner/deliveries）。特性名称必填、负责人可空；每个 delivery 为稳定 id、phase（Build 或 Maintain）与可选 timeWindow（start/end）。日期使用北京时间民用时间 `YYYY-MM-DDTHH:mm`，结束边界不包含；未记录日期时省略 timeWindow。日期段独立于版本，可跨任意版本、多轮维护；日期相交只提供计划候选，不表示正式纳入。版本预期窗口不重叠；调整版本不带动特性。条长是自然日期跨度，不是工时。
+里程碑还保存 milestones（id、outcome、date；仅有月份精度的成果保留 month 直至人工指定日期）与 features（id/title/owner/deliveries）。特性名称必填、负责人可空；每个 delivery 为稳定 id、phase（Build 或 Maintain）与可选 timeWindow（start/end）。日期使用北京时间民用时间 `YYYY-MM-DDTHH:mm`，结束边界不包含；未记录日期时省略 timeWindow。日期段独立于版本，可跨任意版本、多轮维护；日期相交只提供计划候选，不表示正式纳入。版本预期窗口不新增或扩大重叠，存量交集可保留或缩小；调整版本不带动特性。条长是自然日期跨度，不是工时。
 
 读取 schema 2/3 时保留节点、特性及段的身份、名称和已记录日期；旧前五阶段按最早开始与最晚结束归为 Build，维护段归为 Maintain，空阶段保持未记录日期。旧 month、版本引用及 goalSlot/goalId 不再约束特性；没有 versionPlans 的旧材料可借当前可读版本窗口展示，正常提交才保存预期窗口，不宣称恢复了原始预期日期。正式材料、已提交提案和本机恢复草案采用同一迁移；不回写固定计划或验收。
 

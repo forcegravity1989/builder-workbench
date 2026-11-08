@@ -120,6 +120,28 @@ it('preserves identities through migration and free-date planning without moving
   expect(
     settleMilestoneWindows(draft, adjustMilestoneVersion(draft, 'one', 'end', -1)).conflict
   ).toBeUndefined()
+  const parallel: MilestoneDraft = {
+    ...draft,
+    versions: [
+      { version: 'v1', cycleId: 'one', timeWindow: { start: '2026-11-01', end: '2026-11-14' } },
+      { version: 'v2', cycleId: 'two', timeWindow: { start: '2026-11-10', end: '2026-11-24' } },
+      { version: 'v3', cycleId: 'three', timeWindow: { start: '2026-12-01', end: '2026-12-14' } },
+      { version: 'v4', cycleId: 'four', timeWindow: { start: '2026-12-10', end: '2026-12-24' } }
+    ]
+  }
+  const unrelatedEdit = adjustMilestoneDelivery(parallel, 'f', 'build', 'start', 0.5)
+  expect(milestoneProblems(unrelatedEdit, parallel)).toEqual([])
+  expect(settleMilestoneWindows(parallel, unrelatedEdit).conflict).toBeUndefined()
+  const reduced = adjustMilestoneVersion(parallel, 'one', 'end', -5)
+  expect(milestoneProblems(reduced, parallel)).toEqual([])
+  expect(settleMilestoneWindows(parallel, reduced).conflict).toBeUndefined()
+  expect(milestoneProblems(adjustMilestoneVersion(parallel, 'one', 'end', 1), parallel)).toContain(
+    'v1 与 v2 日期重叠，请调整相关版本'
+  )
+  expect(
+    settleMilestoneWindows(parallel, adjustMilestoneVersion(parallel, 'three', 'move', -30))
+      .conflict
+  ).toContain('日期重叠')
   expect(editMilestoneVersionName(draft, 'one', 'renamed').draft.material).toBe(draft.material)
   expect(
     editMilestoneVersionName(draft, 'one', '', { previousName: 'v1', registered: [] }).draft

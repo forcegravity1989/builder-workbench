@@ -194,7 +194,7 @@ export function useMilestonePlanning(
       s.data.review.queryFailed ||
       submitting.has(key) ||
       reading ||
-      milestoneProblems(s.draft).length
+      milestoneProblems(s.draft, s.baseline).length
     ) {
       return
     }
