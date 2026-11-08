@@ -116,7 +116,9 @@ export async function verifyMilestoneRestart(previous: ElectronApplication, info
       .poll(() =>
         Object.values(readRecovery()).every((raw) => {
           const payload = JSON.parse(raw).payload
-          if (!payload) return true
+          if (!payload) {
+            return true
+          }
           const saved = JSON.parse(payload)
           return JSON.stringify(saved.draft) === JSON.stringify(saved.baseline) && !!saved.viewDate
         })

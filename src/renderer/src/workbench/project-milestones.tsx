@@ -1,3 +1,4 @@
+import { focusMissingMilestoneField } from './milestone-field'
 import { settleMilestoneWindows } from '../../../shared/workbench/milestone-window-order'
 import { Button } from '@/components/ui/button'
 import { useEffect, useRef, useState } from 'react'
@@ -106,7 +107,9 @@ export function ProjectMilestones({
   const problems = milestoneProblems(state.draft)
   const changes = describeMilestoneChanges(state.baseline, state.draft)
   function begin() {
-    if (!state!.recoveryBlocked) patch({ editing: true })
+    if (!state!.recoveryBlocked) {
+      patch({ editing: true })
+    }
   }
   function renameVersion(cycleId: string, version: string, previousName?: string) {
     const result = editMilestoneVersionName(
@@ -166,23 +169,19 @@ export function ProjectMilestones({
     }
     const { id, date, draft } = created
     edit(() => draft)
-    if (milestoneDay(date) + 7 > viewEnd) navigate(milestoneDate(milestoneDay(date) - 3))
+    if (milestoneDay(date) + 7 > viewEnd) {
+      navigate(milestoneDate(milestoneDay(date) - 3))
+    }
     setValidationAttempt(false)
     setNewFeature(id)
   }
   function validate() {
-    if (!problems.length) return true
+    if (!problems.length) {
+      return true
+    }
     setValidationAttempt(true)
     toast.error(problems[0])
-    requestAnimationFrame(() => {
-      const field = [
-        ...(root.current?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
-          '[data-required="true"]'
-        ) ?? [])
-      ].find((el) => !el.value.trim())
-      field?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-      field?.focus({ preventScroll: true })
-    })
+    focusMissingMilestoneField(root.current)
     return false
   }
   function open(version: ScheduledVersion) {

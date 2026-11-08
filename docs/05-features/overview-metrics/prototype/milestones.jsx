@@ -52,7 +52,7 @@ function App() {
     )
   const [actualScenario, setActualScenario] = useState('normal')
   const [navigation, setNavigation] = useState(() => ({
-      date: localStorage.getItem(storageKey + '-date') || dateOf(day(currentDay) - 10),
+      date: localStorage.getItem(`${storageKey}-date`) || dateOf(day(currentDay) - 10),
       sequence: 1
     })),
     [modal, setModal] = useState(null),
@@ -173,9 +173,11 @@ function App() {
     setNotice('已删除此段 Maintain，可撤销')
   }
   const add = (viewDate = currentDay, viewEnd = day(viewDate) + 14) => {
-    const id = 'demo-' + crypto.randomUUID(),
+    const id = `demo-${crypto.randomUUID()}`,
       start = Math.max(day(currentDay), day(viewDate))
-    if (start + 7 > viewEnd) navigate(dateOf(start - 3))
+    if (start + 7 > viewEnd) {
+      navigate(dateOf(start - 3))
+    }
     setValidationAttempt(false)
     setNewFeature(id)
     editPlan((p) => ({
@@ -183,7 +185,6 @@ function App() {
       features: [
         {
           id,
-          month: viewDate.slice(0, 7),
           title: '',
           owner: '',
           deliveries: [
@@ -231,7 +232,9 @@ function App() {
       return
     }
     editPlan(() => next)
-    if (start + 7 > viewEnd) navigate(dateOf(start - 3))
+    if (start + 7 > viewEnd) {
+      navigate(dateOf(start - 3))
+    }
     setNotice('已追加一周维护，可拖动调整日期；误加可撤销')
   }
   const restore = () => {

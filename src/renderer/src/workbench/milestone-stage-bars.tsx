@@ -105,49 +105,48 @@ export function MilestoneStageBars({
         {feature.deliveries
           .filter((d) => !d.timeWindow)
           .map((d) => (
-            <button
-              key={d.id}
-              disabled={!enabled}
-              title={'安排 ' + d.phase}
-              onClick={() => arrange(d)}
-            >
-              {d.phase} · 未记录日期
-            </button>
+            <span key={d.id} className="wb-ml-undated-period">
+              <button disabled={!enabled} title={`安排 ${d.phase}`} onClick={() => arrange(d)}>
+                {d.phase} · 未记录日期
+              </button>
+              {enabled && d.phase === 'Maintain' && (
+                <MilestoneIconButton label="删除此段 Maintain" onClick={() => remove(d.id)}>
+                  <Trash2 size={13} />
+                </MilestoneIconButton>
+              )}
+            </span>
           ))}
       </div>
       {feature.deliveries.map((delivery) => {
         const window = delivery.timeWindow
-        if (!window) return null
+        if (!window) {
+          return null
+        }
         const start = plannedDay(window.start),
           finish = plannedDay(window.end)
         const left = Math.max(start, origin),
           right = Math.min(finish, end + 1)
-        if (right <= left) return null
+        if (right <= left) {
+          return null
+        }
         const operation: MilestoneGesture = {
           kind: 'delivery',
           id: feature.id,
           deliveryId: delivery.id,
           mode: 'move'
         }
-        const label =
-          feature.title +
-          ' ' +
-          delivery.phase +
-          ' · ' +
-          window.start.replace('T', ' ') +
-          ' — ' +
-          window.end.replace('T', ' ')
+        const label = `${feature.title} ${delivery.phase} · ${window.start.replace('T', ' ')} — ${window.end.replace('T', ' ')}`
         const visibleStart = Math.max(left, range.start),
           visibleEnd = Math.min(right, range.end)
         return (
           <div
             key={delivery.id}
-            className={'wb-ml-delivery' + (enabled ? ' editable' : '')}
+            className={`wb-ml-delivery${enabled ? ' editable' : ''}`}
             data-delivery-id={delivery.id}
             style={{ left: (left - origin) * width, width: (right - left) * width }}
           >
             <button
-              className={'wb-ml-delivery-body wb-phase-' + delivery.phase.toLowerCase()}
+              className={`wb-ml-delivery-body wb-phase-${delivery.phase.toLowerCase()}`}
               aria-label={label}
               title={label + (enabled ? '；拖动移动，两端调整日期，可跨版本' : '')}
               onPointerDown={enabled ? (e) => gesture.begin(e, operation) : undefined}
@@ -191,15 +190,8 @@ export function MilestoneStageBars({
                 .map((edge) => (
                   <button
                     key={edge}
-                    className={'wb-ml-resize ' + edge}
-                    aria-label={
-                      feature.title +
-                      ' ' +
-                      delivery.phase +
-                      ' ' +
-                      (edge === 'start' ? '开始' : '结束') +
-                      '：拖动或方向键调整半天'
-                    }
+                    className={`wb-ml-resize ${edge}`}
+                    aria-label={`${feature.title} ${delivery.phase} ${edge === 'start' ? '开始' : '结束'}：拖动或方向键调整半天`}
                     onPointerDown={(e) => gesture.begin(e, { ...operation, mode: edge })}
                     onKeyDown={(e) => gesture.keyboard(e, { ...operation, mode: edge })}
                   />

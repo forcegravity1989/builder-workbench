@@ -1,4 +1,5 @@
 import { useRef, useState, type RefObject, type PointerEvent, type KeyboardEvent } from 'react'
+import { toast } from 'sonner'
 import type { MilestoneDraft } from '../../../shared/workbench/project-milestones'
 import {
   adjustMilestoneDelivery,
@@ -23,7 +24,7 @@ export function useMilestoneGesture(
   touch: (id: string) => void
 ) {
   const [preview, setPreview] = useState<MilestoneDraft | null>(null)
-  const [warning, setWarning] = useState('')
+  const warning = useRef('')
   const gesture = useRef<{
     operation: MilestoneGesture
     base: MilestoneDraft
@@ -49,7 +50,7 @@ export function useMilestoneGesture(
     delta: number
   ): MilestoneDraft | null {
     if (!delta) {
-      setWarning('')
+      warning.current = ''
       return base
     }
     const candidate =
@@ -64,7 +65,7 @@ export function useMilestoneGesture(
           : milestoneLaneConflict(candidate)
             ? '同一特性的安排不能重叠'
             : undefined
-    setWarning(conflict ?? '')
+    warning.current = conflict ?? ''
     return conflict ? null : candidate
   }
   function begin(event: PointerEvent, operation: MilestoneGesture) {
@@ -74,8 +75,10 @@ export function useMilestoneGesture(
     }
     event.preventDefault()
     event.stopPropagation()
-    setWarning('')
-    if (operation.kind === 'delivery') touch(operation.id)
+    warning.current = ''
+    if (operation.kind === 'delivery') {
+      touch(operation.id)
+    }
     gesture.current = {
       operation,
       base: draft,
@@ -110,30 +113,45 @@ export function useMilestoneGesture(
     const current = gesture.current
     gesture.current = null
     setPreview(null)
+    if (!current) {
+      return
+    }
     if (cancel) {
-      setWarning('')
+      warning.current = ''
+    } else if (warning.current) {
+      toast.error(warning.current)
     }
     if (current && !cancel && enabled && current.next !== current.base) {
       apply(current.next)
     }
   }
   function keyboard(event: KeyboardEvent, operation: MilestoneGesture) {
-    if (!enabled || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return
+    if (!enabled || !['ArrowLeft', 'ArrowRight'].includes(event.key)) {
+      return
+    }
     event.preventDefault()
-    if (operation.kind === 'delivery') touch(operation.id)
+    if (operation.kind === 'delivery') {
+      touch(operation.id)
+    }
     const next = checked(
       draft,
       operation,
       (event.key === 'ArrowLeft' ? -1 : 1) * stepFor(operation)
     )
-    if (next && next !== draft) apply(next)
+    if (next && next !== draft) {
+      apply(next)
+    }
+    if (warning.current) {
+      toast.error(warning.current)
+    }
   }
   function shiftViewport(delta: number) {
-    if (gesture.current) gesture.current.left += delta
+    if (gesture.current) {
+      gesture.current.left += delta
+    }
   }
   return {
     preview,
-    warning,
     begin,
     move,
     finish,

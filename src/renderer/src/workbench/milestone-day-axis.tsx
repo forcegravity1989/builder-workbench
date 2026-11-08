@@ -119,7 +119,9 @@ export function MilestoneRangeToolbar({
           className="wb-ml-jump-date"
           value={milestoneDate(Math.floor(range.start))}
           onChange={(e) => {
-            if (e.target.validity.valid && e.target.value) navigate(e.target.value)
+            if (e.target.validity.valid && e.target.value) {
+              navigate(e.target.value)
+            }
           }}
         />
         <small>— {milestoneDate(withinCivilRange(Math.ceil(range.end) - 1))}</small>

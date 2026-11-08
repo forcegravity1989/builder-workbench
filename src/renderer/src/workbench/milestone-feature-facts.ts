@@ -183,27 +183,36 @@ export function milestoneStageHours(
   facts: MilestoneVersionFacts,
   feature: FeatureData
 ): PlannedStageHours {
-  if (!material || !facts.formalPlan || !facts.plan?.timeWindow) return {}
+  if (!material || !facts.formalPlan || !facts.plan?.timeWindow) {
+    return {}
+  }
   const key = taskKey(feature.root.reference)
-  if (!milestoneFeatureGoal(facts, key)) return {}
+  if (!milestoneFeatureGoal(facts, key)) {
+    return {}
+  }
   const rows = material.features.filter((row) => {
     const matched = resolveMilestoneFeature(row, material, [facts]).feature
     return matched && taskKey(matched.root.reference) === key
   })
-  if (rows.length !== 1) return {}
-  const start = plannedDay(facts.plan.timeWindow.start + 'T00:00'),
-    end = plannedDay(facts.plan.timeWindow.end + 'T00:00') + 1
+  if (rows.length !== 1) {
+    return {}
+  }
+  const start = plannedDay(`${facts.plan.timeWindow.start}T00:00`),
+    end = plannedDay(`${facts.plan.timeWindow.end}T00:00`) + 1
   const result: PlannedStageHours = {}
   for (const delivery of rows[0].deliveries) {
-    if (!delivery.timeWindow) continue
+    if (!delivery.timeWindow) {
+      continue
+    }
     const hours =
       Math.max(
         0,
         Math.min(end, plannedDay(delivery.timeWindow.end)) -
           Math.max(start, plannedDay(delivery.timeWindow.start))
       ) * 24
-    if (Number.isFinite(hours) && hours > 0)
+    if (Number.isFinite(hours) && hours > 0) {
       result[delivery.phase] = (result[delivery.phase] ?? 0) + hours
+    }
   }
   return result
 }

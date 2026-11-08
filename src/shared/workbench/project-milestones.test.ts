@@ -96,6 +96,10 @@ it('preserves identities through migration and free-date planning without moving
   expect(
     adjustMilestoneDelivery(extended, 'f', 'build', 'end', -20).material.features[0].deliveries[1]
   ).toEqual(extended.material.features[0].deliveries[1])
+  const jumped = adjustMilestoneDelivery(draft, 'f', 'build', 'move', 40)
+  expect(jumped.material.features[0].deliveries.slice(1)).toEqual(
+    draft.material.features[0].deliveries.slice(1)
+  )
   const moved = adjustMilestoneDelivery(draft, 'f', 'm1', 'move', 25)
   expect(milestoneLaneConflict(moved)).toBeUndefined()
   expect(orderMilestoneDeliveries(moved.material.features[0].deliveries).map((d) => d.id)).toEqual([

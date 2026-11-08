@@ -741,3 +741,9 @@
   font-size: 10px;
   color: var(--muted-foreground);
 }
+
+.wb-ml-undated-period {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}

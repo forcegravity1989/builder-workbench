@@ -1,6 +1,6 @@
 import { MilestoneNavigation, milestoneNodeActions } from './milestone-navigation'
 import { MilestoneDayAxis, MilestoneDayGrid, MilestoneRangeToolbar } from './milestone-day-axis'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useMilestoneViewport, type MilestoneLocation } from './use-milestone-viewport'
 export type { MilestoneLocation } from './use-milestone-viewport'
 import { X, Wrench } from 'lucide-react'
@@ -75,9 +75,6 @@ export function MilestoneTimeline(props: Props) {
   const order = useRef<string[] | null>(null)
   const touch = (id: string) => pins.current.add(id)
   const gesture = useMilestoneGesture(draft, enabled, viewport, (next) => edit(() => next), touch)
-  useEffect(() => {
-    if (gesture.warning && !gesture.active()) toast.error(gesture.warning)
-  }, [gesture.warning, gesture.preview])
   const { origin, end, weeks, canvasWidth, range, days, scrollProps } = useMilestoneViewport(
     props,
     viewport,
@@ -108,29 +105,34 @@ export function MilestoneTimeline(props: Props) {
   const chronological = visible.material.features.toSorted(
     (a, b) => latestFeatureEnd(b) - latestFeatureEnd(a)
   )
-  const freezeOrder = editing && !showActual
+  const freezeOrder = editing
   if (!freezeOrder) {
     order.current = null
     pins.current.clear()
   }
-  if (freezeOrder && !order.current) order.current = chronological.map((f) => f.id)
-  if (freezeOrder && order.current)
+  if (freezeOrder && !order.current) {
+    order.current = chronological.map((f) => f.id)
+  }
+  if (freezeOrder && order.current) {
     order.current = [
       ...visible.material.features.filter((f) => !order.current!.includes(f.id)).map((f) => f.id),
       ...order.current
     ]
-  const ordered = freezeOrder
-    ? visible.material.features.toSorted(
-        (a, b) => order.current!.indexOf(a.id) - order.current!.indexOf(b.id)
-      )
-    : chronological
+  }
+  const ordered =
+    freezeOrder && !showActual
+      ? visible.material.features.toSorted(
+          (a, b) => order.current!.indexOf(a.id) - order.current!.indexOf(b.id)
+        )
+      : chronological
   const features = ordered.filter((f) => {
     if (
       !props.rangeOnly ||
       !f.title.trim() ||
-      (freezeOrder && (f.id === props.newFeature || pins.current.has(f.id)))
-    )
+      (freezeOrder && !showActual && (f.id === props.newFeature || pins.current.has(f.id)))
+    ) {
       return true
+    }
     const actual = layouts.get(f.id)
     if (
       actual?.results.length &&
@@ -139,9 +141,12 @@ export function MilestoneTimeline(props: Props) {
           milestoneDay(r.version.timeWindow!.start) < range.end &&
           milestoneDay(r.version.timeWindow!.end) + 1 > range.start
       )
-    )
+    ) {
       return true
-    if (actual?.results.length && !actual.note) return false
+    }
+    if (actual?.results.length && !actual.note) {
+      return false
+    }
     return (
       !f.deliveries.some((d) => d.timeWindow) ||
       f.deliveries.some(
@@ -168,7 +173,9 @@ export function MilestoneTimeline(props: Props) {
     toast('已删除此段 Maintain，可撤销')
   }
   function arrange(feature: MilestoneFeature, undated?: MilestoneDelivery) {
-    if (!enabled) return
+    if (!enabled) {
+      return
+    }
     touch(feature.id)
     const start = Math.max(today, Math.floor(range.start), latestFeatureEnd(feature))
     const created = newMilestoneDelivery(undated?.phase ?? 'Maintain', start)
@@ -190,7 +197,9 @@ export function MilestoneTimeline(props: Props) {
       return
     }
     edit(() => next)
-    if (start + 7 > range.end) props.navigate(milestoneDate(start - 3))
+    if (start + 7 > range.end) {
+      props.navigate(milestoneDate(start - 3))
+    }
   }
   return (
     <>
@@ -326,13 +335,11 @@ export function MilestoneTimeline(props: Props) {
                         {f.deliveries
                           .map(
                             (d) =>
-                              d.phase +
-                              ' ' +
-                              (d.timeWindow
-                                ? d.timeWindow.start.slice(0, 10) +
-                                  '—' +
-                                  d.timeWindow.end.slice(0, 10)
-                                : '未记录日期')
+                              `${d.phase} ${
+                                d.timeWindow
+                                  ? `${d.timeWindow.start.slice(0, 10)}—${d.timeWindow.end.slice(0, 10)}`
+                                  : '未记录日期'
+                              }`
                           )
                           .join('；')}
                       </small>

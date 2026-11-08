@@ -59,7 +59,9 @@ export function MilestoneReviewButton({
     <Popover
       open={reviewOpen}
       onOpenChange={(open) => {
-        if (!open || validate()) setReviewOpen(open)
+        if (!open || validate()) {
+          setReviewOpen(open)
+        }
       }}
     >
       <PopoverTrigger asChild>

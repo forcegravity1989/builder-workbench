@@ -11,7 +11,9 @@ export function createMilestoneFeature(draft: MilestoneDraft, viewDate = milesto
     id = crypto.randomUUID()
   const build = newMilestoneDelivery('Build', start),
     maintain = newMilestoneDelivery('Maintain', start + 7)
-  if (!build || !maintain) return null
+  if (!build || !maintain) {
+    return null
+  }
   return {
     id,
     date: milestoneDate(start),

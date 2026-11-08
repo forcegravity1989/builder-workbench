@@ -1,7 +1,17 @@
-import type { MilestoneDraft } from '../../../shared/workbench/project-milestones'
+import type { MilestoneDraft, MilestoneFeature } from '../../../shared/workbench/project-milestones'
 
 export function describeMilestoneChanges(before: MilestoneDraft, after: MilestoneDraft): string[] {
   const result: string[] = []
+  const featureSummary = (f: MilestoneFeature) =>
+    [
+      f.title,
+      f.owner || '未指定负责人',
+      ...f.deliveries.map((d) =>
+        d.timeWindow
+          ? `${d.phase} ${d.timeWindow.start.replace('T', ' ')}—${d.timeWindow.end.replace('T', ' ')}`
+          : `${d.phase} · 未记录日期`
+      )
+    ].join(' · ')
   const describe = (m: MilestoneDraft['material']['milestones'][number]) => {
     const when = m.date ?? `${m.month} · 未指定日期`
     return `${when} ${m.outcome}`
@@ -22,13 +32,9 @@ export function describeMilestoneChanges(before: MilestoneDraft, after: Mileston
   for (const f of after.material.features) {
     const old = before.material.features.find((item) => item.id === f.id)
     if (!old) {
-      result.push(
-        `新增特性：${f.title} · ${f.owner} · ${f.deliveries.map((d) => d.phase + ' ' + (d.timeWindow ? d.timeWindow.start.replace('T', ' ') + '—' + d.timeWindow.end.replace('T', ' ') : '未记录日期')).join('；')}`
-      )
+      result.push(`新增特性：${featureSummary(f)}`)
     } else if (JSON.stringify(old) !== JSON.stringify(f)) {
-      result.push(
-        `调整特性：${old.title} → ${f.title} · ${f.owner} · ${f.deliveries.map((d) => d.phase + ' ' + (d.timeWindow ? d.timeWindow.start.replace('T', ' ') + '—' + d.timeWindow.end.replace('T', ' ') : '未记录日期')).join('；')}`
-      )
+      result.push(`调整特性：${featureSummary(old)} → ${featureSummary(f)}`)
     }
   }
   for (const f of before.material.features) {

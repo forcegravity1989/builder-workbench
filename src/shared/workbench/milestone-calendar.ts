@@ -9,8 +9,9 @@ export function editMilestoneVersionName(
   let problem: string | undefined
   if (commit && !name.trim()) {
     const registered = commit.registered.find((v) => v.cycleId === cycleId)
-    if (!registered)
+    if (!registered) {
       return { draft: { ...draft, versions: draft.versions.filter((v) => v.cycleId !== cycleId) } }
+    }
     name = commit.previousName || registered.version
     problem = '该版本已提交，不能通过清空名称移除'
   }
@@ -44,10 +45,6 @@ export const datedMilestoneVersions = (draft: MilestoneDraft) =>
     )
     .toSorted((a, b) => a.timeWindow!.start.localeCompare(b.timeWindow!.start))
 
-export function milestoneWeekAt(day: number): MilestoneWeek {
-  const monday = Math.floor(day) - ((new Date(Math.floor(day) * 86400000).getUTCDay() + 6) % 7)
-  return { start: milestoneDate(monday), end: milestoneDate(monday + 4) }
-}
 const firstCivilDay = milestoneDay('0000-01-01')
 const lastCivilDay = milestoneDay('9999-12-31')
 const mondayAt = (day: number) => day - ((new Date(day * 86400000).getUTCDay() + 6) % 7)
@@ -68,11 +65,12 @@ export function milestoneCalendar(
     end = withinCivilRange(focusDay + 365)
   const weeks: MilestoneWeek[] = []
   for (let day = mondayAt(start); day <= end; day += 7) {
-    if (day + 4 >= start)
+    if (day + 4 >= start) {
       weeks.push({
         start: milestoneDate(withinCivilRange(day)),
         end: milestoneDate(withinCivilRange(day + 4))
       })
+    }
   }
   return {
     start,
@@ -93,7 +91,7 @@ export function materializeMilestoneWeek(
   draft: MilestoneDraft,
   week: MilestoneWeek,
   cycleId: string,
-  name?: string,
+  name: string,
   registered: readonly ScheduledVersion[] = []
 ) {
   const candidates = availableMilestoneVersions(draft, registered)
@@ -103,17 +101,7 @@ export function materializeMilestoneWeek(
   if (existing) {
     return includeMilestoneVersion(draft, existing)
   }
-  let version = name?.trim()
-  if (!version) {
-    const last = datedMilestoneVersions(draft).at(-1)?.version ?? draft.versions.at(-1)?.version
-    const suffix = last?.match(/^(.*?)(\d+)$/)
-    const match = suffix && Number.isSafeInteger(Number(suffix[2]) + 2001) ? suffix : null
-    const prefix = match?.[1] ?? 'v1.0.'
-    let number = match ? Number(match[2]) + 1 : 0
-    do {
-      version = `${prefix}${number++}`
-    } while (candidates.some((v) => v.version.toLowerCase() === version!.toLowerCase()))
-  }
+  const version = name.trim()
   const next: ScheduledVersion = { version, cycleId, timeWindow: { ...week } }
   return {
     version: next,

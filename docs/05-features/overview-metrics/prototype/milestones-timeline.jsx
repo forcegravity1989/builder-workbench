@@ -110,15 +110,21 @@ export function Timeline({
   const blankWeeks = baseCalendar.weeks.filter(
     (w) => !display.versions.some((v) => v.start <= w.end && v.end >= w.start)
   )
-  if (!canEdit) editingPins.current.clear()
+  if (!canEdit) {
+    editingPins.current.clear()
+  }
   const chronological = display.features.toSorted(
     (a, b) => latestFeatureEnd(b) - latestFeatureEnd(a)
   )
-  if (!canEdit || !editingOrder.current) editingOrder.current = chronological.map((f) => f.id)
+  if (!canEdit || !editingOrder.current) {
+    editingOrder.current = chronological.map((f) => f.id)
+  }
   const newIds = display.features
     .filter((f) => !editingOrder.current.includes(f.id))
     .map((f) => f.id)
-  if (newIds.length) editingOrder.current = [...newIds, ...editingOrder.current]
+  if (newIds.length) {
+    editingOrder.current = [...newIds, ...editingOrder.current]
+  }
   const ordered = canEdit
     ? display.features.toSorted(
         (a, b) => editingOrder.current.indexOf(a.id) - editingOrder.current.indexOf(b.id)
@@ -129,35 +135,41 @@ export function Timeline({
       !rangeOnly ||
       !feature.title.trim() ||
       (canEdit && (feature.id === newFeature || editingPins.current.has(feature.id)))
-    )
+    ) {
       return true
+    }
     const results = actualByFeature.get(feature.id).rows
-    if (showActual && results.length)
+    if (showActual && results.length) {
       return results.some(
         (r) =>
           day(r.version.start) < visibleRange.end && day(r.version.end) + 1 > visibleRange.start
       )
+    }
     return feature.deliveries.some((d) =>
       d.stages.some((s) => s.start < visibleRange.end && s.end > visibleRange.start)
     )
   })
   const readRange = () => {
     const el = scroll.current
-    if (!el) return
+    if (!el) {
+      return
+    }
     const left = start + el.scrollLeft / dayWidth
     const right = left + Math.max(1, (el.clientWidth - labelWidth) / dayWidth)
     setVisibleRange((old) =>
       old.start === left && old.end === right ? old : { start: left, end: right }
     )
     try {
-      localStorage.setItem(storageKey + '-date', dateOf(left))
+      localStorage.setItem(`${storageKey}-date`, dateOf(left))
     } catch {
       /* Optional view preference. */
     }
   }
   const previousStart = useRef(start)
   useEffect(() => {
-    if (scroll.current) scroll.current.scrollLeft += (previousStart.current - start) * dayWidth
+    if (scroll.current) {
+      scroll.current.scrollLeft += (previousStart.current - start) * dayWidth
+    }
     previousStart.current = start
     readRange()
   }, [start])
@@ -167,7 +179,9 @@ export function Timeline({
   }, [navigation])
   useEffect(() => {
     const observer = new ResizeObserver(readRange)
-    if (scroll.current) observer.observe(scroll.current)
+    if (scroll.current) {
+      observer.observe(scroll.current)
+    }
     return () => observer.disconnect()
   }, [start])
   useEffect(() => {
@@ -180,7 +194,9 @@ export function Timeline({
     event.preventDefault()
     event.stopPropagation()
     setDragWarning('')
-    if (gesture.kind === 'delivery') editingPins.current.add(gesture.id)
+    if (gesture.kind === 'delivery') {
+      editingPins.current.add(gesture.id)
+    }
     drag.current = {
       ...gesture,
       originX: event.clientX,
@@ -253,7 +269,9 @@ export function Timeline({
       return
     }
     event.preventDefault()
-    if (gesture.kind === 'delivery') editingPins.current.add(gesture.id)
+    if (gesture.kind === 'delivery') {
+      editingPins.current.add(gesture.id)
+    }
     const delta = (event.key === 'ArrowLeft' ? -1 : 1) * stepFor(gesture)
     const next = checkedChange({ ...gesture, base: plan }, delta)
     if (next) {

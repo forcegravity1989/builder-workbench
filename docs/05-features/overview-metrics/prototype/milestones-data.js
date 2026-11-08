@@ -9,7 +9,7 @@ export const fixedVersions = [
   { id: 'v1.1.1', hasExecution: true, name: 'v1.1.1', start: '2026-11-26', end: '2026-12-02' }
 ]
 const span = (phase, start, end) => ({
-  id: phase + '-' + start,
+  id: `${phase}-${start}`,
   stages: [{ phase, start: day(start), end: day(end) + 1 }]
 })
 const normalInitial = {
@@ -79,7 +79,7 @@ const normalInitial = {
         span('Maintain', '2026-10-12', '2026-10-16')
       ]
     }
-  ].map((f) => ({ ...f, month: '2026-11' }))
+  ]
 }
 
 // A separate review fixture preserves the user's existing planning draft.
@@ -95,7 +95,7 @@ export const initial = dateExample
       features: normalInitial.features.slice(0, 2).map((f) => ({
         ...f,
         deliveries: dateVersions.map((v, i) => ({
-          id: 'dates-' + i,
+          id: `dates-${i}`,
           stages: defaultStages(v, i === 1)
         }))
       }))

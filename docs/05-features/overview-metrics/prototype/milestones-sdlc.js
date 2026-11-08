@@ -10,10 +10,14 @@ export const defaultStages = (version, maintain = false) => [
 ]
 export function editVersionName(plan, id, name, previousName, submitted) {
   const version = plan.versions.find((v) => v.id === id)
-  if (!version) return { plan }
-  if (version.hasExecution) return { plan, problem: '已建立执行记录的版本保留名称，排期仍可调整' }
+  if (!version) {
+    return { plan }
+  }
+  if (version.hasExecution) {
+    return { plan, problem: '已建立执行记录的版本保留名称，排期仍可调整' }
+  }
   if (previousName !== undefined && !name.trim()) {
-    if (submitted.versions.some((v) => v.id === id))
+    if (submitted.versions.some((v) => v.id === id)) {
       return {
         plan: {
           ...plan,
@@ -21,6 +25,7 @@ export function editVersionName(plan, id, name, previousName, submitted) {
         },
         problem: '该版本已提交，保留版本名称'
       }
+    }
     return { plan: { ...plan, versions: plan.versions.filter((v) => v.id !== id) } }
   }
   return {
@@ -43,10 +48,14 @@ export function settleWindows(before, candidate) {
 }
 export function adjustVersion(plan, id, mode, delta) {
   const version = plan.versions.find((v) => v.id === id)
-  if (!version || !Number.isInteger(delta)) return plan
+  if (!version || !Number.isInteger(delta)) {
+    return plan
+  }
   const start = day(version.start) + (mode !== 'end' ? delta : 0)
   const end = day(version.end) + (mode !== 'start' ? delta : 0)
-  if (start > end) return plan
+  if (start > end) {
+    return plan
+  }
   return {
     ...plan,
     versions: plan.versions.map((v) =>
@@ -57,25 +66,44 @@ export function adjustVersion(plan, id, mode, delta) {
 export function adjustDelivery(plan, featureId, index, mode, delta) {
   const feature = plan.features.find((f) => f.id === featureId)
   const delivery = feature?.deliveries[index]
-  if (!delivery?.stages.length || !Number.isInteger(delta * 2)) return plan
+  if (!delivery?.stages.length || !Number.isInteger(delta * 2)) {
+    return plan
+  }
   const first = delivery.stages[0],
     last = delivery.stages.at(-1)
   const start = first.start + (mode !== 'end' ? delta : 0)
   const end = last.end + (mode !== 'start' ? delta : 0)
-  if (end - start < 0.5) return plan
+  if (end - start < 0.5) {
+    return plan
+  }
   const deliveries = feature.deliveries.map((d, i) =>
     i === index ? { ...d, stages: [{ phase: first.phase, start, end }] } : d
   )
   // Extending Build carries following maintenance forward as one undoable edit.
-  if (first.phase === 'Build' && mode !== 'start') {
-    for (let i = index + 1; i < deliveries.length; i++) {
-      const next = deliveries[i],
-        offset = deliveries[i - 1].stages.at(-1).end - next.stages[0].start
-      if (offset <= 0) break
-      deliveries[i] = {
+  if (first.phase === 'Build' && end > last.end) {
+    let cursor = end
+    const later = feature.deliveries
+      .filter(
+        (d) =>
+          d.id !== delivery.id &&
+          d.stages[0].phase === 'Maintain' &&
+          d.stages[0].start >= first.start
+      )
+      .toSorted((a, b) => a.stages[0].start - b.stages[0].start)
+    for (const next of later) {
+      if (next.stages.at(-1).end <= start) {
+        continue
+      }
+      const offset = cursor - next.stages[0].start
+      if (offset <= 0) {
+        break
+      }
+      const shifted = {
         ...next,
         stages: next.stages.map((s) => ({ ...s, start: s.start + offset, end: s.end + offset }))
       }
+      deliveries[deliveries.findIndex((d) => d.id === next.id)] = shifted
+      cursor = shifted.stages.at(-1).end
     }
   }
   return {
@@ -87,7 +115,9 @@ export function scheduleProblem(plan) {
   for (let i = 0; i < plan.versions.length; i++) {
     for (const b of plan.versions.slice(i + 1)) {
       const a = plan.versions[i]
-      if (a.start <= b.end && b.start <= a.end) return '版本日期重叠，请调整相关版本'
+      if (a.start <= b.end && b.start <= a.end) {
+        return '版本日期重叠，请调整相关版本'
+      }
     }
   }
   for (const feature of plan.features) {

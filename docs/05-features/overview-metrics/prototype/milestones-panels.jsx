@@ -169,13 +169,13 @@ export function VersionBridge({ item, version, plan, close }) {
         (s) =>
           s.start <
             Date.parse(
-              (plan.versions.find((v) => v.id === version)?.end || '2026-01-01') + 'T00:00:00Z'
+              `${plan.versions.find((v) => v.id === version)?.end || '2026-01-01'}T00:00:00Z`
             ) /
               86400000 +
               1 &&
           s.end >
             Date.parse(
-              (plan.versions.find((v) => v.id === version)?.start || '2026-01-01') + 'T00:00:00Z'
+              `${plan.versions.find((v) => v.id === version)?.start || '2026-01-01'}T00:00:00Z`
             ) /
               86400000
       )

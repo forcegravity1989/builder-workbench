@@ -57,7 +57,9 @@ export function useMilestoneViewport(
   const pan = useRef<{ x: number; left: number } | null>(null)
   function readRange() {
     const el = viewport.current
-    if (!el) return
+    if (!el) {
+      return
+    }
     const start = origin + el.scrollLeft / width,
       endVisible = start + Math.max(1, (el.clientWidth - labelWidth) / width)
     setRange((old) =>
@@ -67,13 +69,16 @@ export function useMilestoneViewport(
     if (
       (origin > withinCivilRange(-Infinity) && start < origin + 35) ||
       (end < withinCivilRange(Infinity) && endVisible > end - 35)
-    )
+    ) {
       setAnchor(milestoneDate(Math.floor(start)))
+    }
   }
   const previousOrigin = useRef<number | null>(null)
   useLayoutEffect(() => {
     const el = viewport.current
-    if (!el) return
+    if (!el) {
+      return
+    }
     if (previousOrigin.current === null) {
       el.scrollLeft = Math.max(
         0,
@@ -84,19 +89,25 @@ export function useMilestoneViewport(
       const shift = (previousOrigin.current - origin) * width
       el.scrollLeft += shift
       gesture.shiftViewport(shift)
-      if (pan.current) pan.current.left += shift
+      if (pan.current) {
+        pan.current.left += shift
+      }
     }
     previousOrigin.current = origin
     readRange()
   }, [origin])
   useEffect(() => {
     const observer = new ResizeObserver(readRange)
-    if (viewport.current) observer.observe(viewport.current)
+    if (viewport.current) {
+      observer.observe(viewport.current)
+    }
     return () => observer.disconnect()
   }, [origin])
-  const appliedLocation = useRef<MilestoneLocation | null>(null)
+  const appliedLocation = useRef<MilestoneLocation | null>(props.locate)
   useLayoutEffect(() => {
-    if (!props.locate || props.locate === appliedLocation.current || !viewport.current) return
+    if (!props.locate || props.locate === appliedLocation.current || !viewport.current) {
+      return
+    }
     const day = milestoneDay(props.locate.date)
     if ((day < origin || day > end - 30) && anchor !== props.locate.date) {
       setAnchor(props.locate.date)
@@ -106,8 +117,12 @@ export function useMilestoneViewport(
     appliedLocation.current = props.locate
     readRange()
   }, [props.locate, origin, end])
+  const previousNewFeature = useRef(props.newFeature)
   useLayoutEffect(() => {
-    if (props.newFeature && viewport.current) viewport.current.scrollTop = 0
+    if (props.newFeature !== previousNewFeature.current && props.newFeature && viewport.current) {
+      viewport.current.scrollTop = 0
+    }
+    previousNewFeature.current = props.newFeature
   }, [props.newFeature])
 
   const scrollProps: HTMLAttributes<HTMLDivElement> = {
@@ -116,14 +131,19 @@ export function useMilestoneViewport(
       if (
         e.button !== 0 ||
         (e.target as HTMLElement).closest('button,input,textarea,select,label,[data-ml-stop-pan]')
-      )
+      ) {
         return
+      }
       pan.current = { x: e.clientX, left: e.currentTarget.scrollLeft }
       e.currentTarget.setPointerCapture(e.pointerId)
     },
     onPointerMove: (e) => {
-      if (gesture.move(e)) return
-      if (pan.current) e.currentTarget.scrollLeft = pan.current.left + pan.current.x - e.clientX
+      if (gesture.move(e)) {
+        return
+      }
+      if (pan.current) {
+        e.currentTarget.scrollLeft = pan.current.left + pan.current.x - e.clientX
+      }
     },
     onPointerUp: () => {
       gesture.finish()

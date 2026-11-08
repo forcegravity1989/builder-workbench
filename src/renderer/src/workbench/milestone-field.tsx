@@ -77,3 +77,15 @@ export function MilestoneField({
     <span>{value || '—'}</span>
   )
 }
+
+export function focusMissingMilestoneField(root: HTMLElement | null) {
+  requestAnimationFrame(() => {
+    const field = [
+      ...(root?.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+        '[data-required="true"]'
+      ) ?? [])
+    ].find((el) => !el.value.trim())
+    field?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+    field?.focus({ preventScroll: true })
+  })
+}

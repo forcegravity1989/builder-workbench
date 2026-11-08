@@ -1,7 +1,7 @@
 import { milestoneDay, milestoneDate } from './milestone-calendar'
 import type { MilestoneDraft, MilestoneDelivery, MilestoneFeature } from './project-milestones'
 
-export const plannedDay = (time: string) => Date.parse(time + ':00Z') / 86400000
+export const plannedDay = (time: string) => Date.parse(`${time}:00Z`) / 86400000
 export const plannedTime = (day: number) =>
   new Date(Math.round(day * 1440) * 60000).toISOString().slice(0, 16)
 export const actualDay = (timestamp: string) => (Date.parse(timestamp) + 8 * 3600000) / 86400000
@@ -34,7 +34,9 @@ export function newMilestoneDelivery(
   phase: MilestoneDelivery['phase'],
   start: number
 ): MilestoneDelivery | null {
-  if (!validSpan(start, start + 7, 0.5)) return null
+  if (!validSpan(start, start + 7, 0.5)) {
+    return null
+  }
   return {
     id: crypto.randomUUID(),
     phase,
@@ -48,10 +50,14 @@ export function adjustMilestoneVersion(
   delta: number
 ): MilestoneDraft {
   const version = draft.versions.find((v) => v.cycleId === id)
-  if (!version?.timeWindow || !Number.isInteger(delta) || !delta) return draft
+  if (!version?.timeWindow || !Number.isInteger(delta) || !delta) {
+    return draft
+  }
   const start = milestoneDay(version.timeWindow.start) + (mode !== 'end' ? delta : 0)
   const end = milestoneDay(version.timeWindow.end) + (mode !== 'start' ? delta : 0)
-  if (!validSpan(start, end, 0)) return draft
+  if (!validSpan(start, end, 0)) {
+    return draft
+  }
   return {
     ...draft,
     versions: draft.versions.map((v) =>
@@ -70,12 +76,16 @@ export function adjustMilestoneDelivery(
 ): MilestoneDraft {
   const feature = draft.material.features.find((f) => f.id === featureId)
   const delivery = feature?.deliveries.find((d) => d.id === deliveryId)
-  if (!feature || !delivery?.timeWindow || !Number.isInteger(delta * 2) || !delta) return draft
+  if (!feature || !delivery?.timeWindow || !Number.isInteger(delta * 2) || !delta) {
+    return draft
+  }
   const first = plannedDay(delivery.timeWindow.start),
     last = plannedDay(delivery.timeWindow.end)
   const start = first + (mode !== 'end' ? delta : 0),
     end = last + (mode !== 'start' ? delta : 0)
-  if (!validSpan(start, end, 0.5)) return draft
+  if (!validSpan(start, end, 0.5)) {
+    return draft
+  }
   const changed = new Map<string, MilestoneDelivery>([
     [delivery.id, { ...delivery, timeWindow: { start: plannedTime(start), end: plannedTime(end) } }]
   ])
@@ -90,9 +100,16 @@ export function adjustMilestoneDelivery(
     )) {
       const a = plannedDay(next.timeWindow!.start),
         b = plannedDay(next.timeWindow!.end)
-      if (a >= cursor) break
+      if (b <= start) {
+        continue
+      }
+      if (a >= cursor) {
+        break
+      }
       const shiftedEnd = cursor + b - a
-      if (!validSpan(cursor, shiftedEnd, 0.5)) return draft
+      if (!validSpan(cursor, shiftedEnd, 0.5)) {
+        return draft
+      }
       changed.set(next.id, {
         ...next,
         timeWindow: { start: plannedTime(cursor), end: plannedTime(shiftedEnd) }

@@ -106,7 +106,9 @@ export function upgradeMilestoneMaterial(value: unknown): unknown {
     })
     .passthrough()
     .safeParse(input)
-  if (!legacy.success) return input
+  if (!legacy.success) {
+    return input
+  }
   return {
     ...legacy.data,
     schema_version: 4,
@@ -226,8 +228,9 @@ export function milestoneVersionConflict(
     .filter((v) => v.timeWindow)
     .toSorted((a, b) => a.timeWindow!.start.localeCompare(b.timeWindow!.start))
   for (let i = 1; i < dated.length; i++) {
-    if (dated[i].timeWindow!.start <= dated[i - 1].timeWindow!.end)
-      return dated[i - 1].version + ' 与 ' + dated[i].version + ' 日期重叠，请调整相关版本'
+    if (dated[i].timeWindow!.start <= dated[i - 1].timeWindow!.end) {
+      return `${dated[i - 1].version} 与 ${dated[i].version} 日期重叠，请调整相关版本`
+    }
   }
 }
 export function milestoneProblems(draft: MilestoneDraft): string[] {
@@ -235,35 +238,48 @@ export function milestoneProblems(draft: MilestoneDraft): string[] {
   const problems = parsed.success
     ? []
     : parsed.error.issues.map((issue) => {
-        if (issue.code === 'custom') return issue.message
-        if (issue.path.at(-1) === 'title') return '请填写特性名称（最多 200 字）'
-        if (issue.path.at(-1) === 'owner') return '负责人最多 100 字'
+        if (issue.code === 'custom') {
+          return issue.message
+        }
+        if (issue.path.at(-1) === 'title') {
+          return '请填写特性名称（最多 200 字）'
+        }
+        if (issue.path.at(-1) === 'owner') {
+          return '负责人最多 100 字'
+        }
         return '请核对里程碑内容及排期日期'
       })
   const versions = draft.versions
   if (
     new Set(versions.map((v) => v.cycleId)).size !== versions.length ||
     new Set(versions.map((v) => v.version.toLowerCase())).size !== versions.length
-  )
+  ) {
     problems.push('版本名称或身份重复')
+  }
   for (const version of versions) {
-    if (!ScheduledVersionSchema.safeParse(version).success)
-      problems.push((version.version || '新版本') + '：请核对名称及起止日期')
+    if (!ScheduledVersionSchema.safeParse(version).success) {
+      problems.push(`${version.version || '新版本'}：请核对名称及起止日期`)
+    }
   }
   const conflict = milestoneVersionConflict(versions)
-  if (conflict) problems.push(conflict)
+  if (conflict) {
+    problems.push(conflict)
+  }
   for (const feature of draft.material.features) {
-    if (new Set(feature.deliveries.map((d) => d.id)).size !== feature.deliveries.length)
-      problems.push(feature.title + '：排期身份重复')
+    if (new Set(feature.deliveries.map((d) => d.id)).size !== feature.deliveries.length) {
+      problems.push(`${feature.title}：排期身份重复`)
+    }
     const dated = feature.deliveries
       .filter((d) => d.timeWindow)
       .toSorted((a, b) => a.timeWindow!.start.localeCompare(b.timeWindow!.start))
     for (const [index, delivery] of dated.entries()) {
       const window = delivery.timeWindow!
-      if (Date.parse(window.end + ':00Z') - Date.parse(window.start + ':00Z') < 43200000)
-        problems.push((feature.title || '新特性') + '：每段安排至少保留半天')
-      if (index && window.start < dated[index - 1].timeWindow!.end)
-        problems.push((feature.title || '新特性') + '：同一特性的安排不能重叠')
+      if (Date.parse(`${window.end}:00Z`) - Date.parse(`${window.start}:00Z`) < 43200000) {
+        problems.push(`${feature.title || '新特性'}：每段安排至少保留半天`)
+      }
+      if (index && window.start < dated[index - 1].timeWindow!.end) {
+        problems.push(`${feature.title || '新特性'}：同一特性的安排不能重叠`)
+      }
     }
   }
   return [...new Set(problems)]
