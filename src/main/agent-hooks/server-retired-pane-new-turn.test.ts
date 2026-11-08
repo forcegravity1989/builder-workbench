@@ -23,6 +23,7 @@ afterEach(() => vi.restoreAllMocks())
  *  mimo-code's boundary is an explicit-prompt MessagePart, which the gate handles separately. */
 const NEW_TURN_EVENT: Record<AgentHookSource, string | null> = {
   claude: 'SessionStart',
+  dsh: 'SessionStart',
   kimi: 'UserPromptSubmit',
   codex: 'SessionStart',
   gemini: 'BeforeAgent',
