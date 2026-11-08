@@ -59,7 +59,12 @@ export function mergeFetchedRepoCatalog(
   projectHostSetupCompatibility: ProjectHostSetupProjection
   hostId: ReturnType<typeof getRuntimeTargetHostId>
 } {
-  const repos = mergeFetchedReposForHost(currentRepos, catalog.repos, catalog.hostId)
+  const repos = mergeFetchedReposForHost(
+    currentRepos,
+    catalog.repos,
+    catalog.hostId,
+    catalog.reposAtRequest
+  )
   return {
     repos,
     projectHostSetupCompatibility: catalog.projectHostSetupCompatibility,

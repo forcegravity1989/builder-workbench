@@ -16,18 +16,16 @@
 | 项               | 本次核对结果                                                       |
 | ---------------- | ------------------------------------------------------------------ |
 | Orca 仓库        | [stablyai/orca](https://github.com/stablyai/orca)                  |
-| 最近核对公开版本 | [v1.4.251](https://github.com/stablyai/orca/releases/tag/v1.4.251) |
+| 共享主机定向版本 | [v1.4.251](https://github.com/stablyai/orca/releases/tag/v1.4.251) |
 | 发布时间         | 2026-11-06 06:31:44 UTC                                           |
 | 发布锚点         | `a162e08b29b2883b02d8a0dfcc99e26c80b2cfe7`                         |
 | 本次核对日期     | 2026-11-06                                                        |
 | BW fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`，2026-09-15             |
-| 本次核对范围     | 官方稳定 release 与共享主机调用链；不是整仓升级                    |
+| 本次核对范围     | 固定 v251 共享主机调用链；网页批注沿已采纳的 v250（见 §2.3）；非整仓升级                    |
 
 公开版本不是本仓当前同步基线；本仓的 fork baseline 仍是单独的历史锚点。没有完成一次实际代码比较时，不把“最新 release”写成“已同步”。
 
 ### 0.2 与 BW 边界直接相关的能力
-
-当前公开版本的变化重点涉及 agent/orchestration workers、workspaces/worktrees、terminal 与远程运行、native chat（实验能力）、编辑器/Markdown/search、provider/account 与 Windows/WSL。BW 只复用其中与自身旅程有关的 Orca 执行核；具体 BW 产品行为不在这里重复。
 
 BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY、worktree、Explorer/SC/Diff、provider 与 `src/main` runtime。BW 不为这些能力另建平行实现。
 
@@ -93,6 +91,7 @@ git merge orca-upstream/main
 
 只记录会影响 Orca 合并取舍的契约，不展开全部文件清单：
 
+- 网页批注继承 Orca v1.4.250 的相关模块，保留本基线必要适配与内层滚动标记修复；来源、取舍和验证见 [PR #579](https://github.com/forcegravity1989/builder-workbench/pull/579)。
 - `automation.runNow` 的可选 `oneShotPrompt`、capability 门控和 renderer/headless 两条派发语义；一次性上下文不写回保存的自动化提示。
 - 自动化编辑器的显式 `target/draft` 请求契约；BW 预填入口依赖该原生能力。
 - 任务详情的 source context、return-to-previous-view 和 worktree history replay；BW 不另建任务详情和历史系统。`openTaskPage({ preselectedRepoId })` 的预选优先级（显式预选 > 持久化 defaultRepoSelection > 全部项目）同为稳定契约：BW 侧栏任务入口靠它在 BW 壳内默认收窄到当前项目，页内筛选仍可改。

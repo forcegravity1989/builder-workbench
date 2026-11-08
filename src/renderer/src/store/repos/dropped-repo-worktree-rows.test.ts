@@ -115,11 +115,14 @@ describe('a fetched catalog that drops a repo registration', () => {
     expect(store.getState().worktreesByRepo.old).toEqual([])
   })
 
-  it('keeps the rows of a repo added while the catalog was in flight', async () => {
+  it('keeps a concurrently added repo and its rows, while dropping an old registration', async () => {
     const store = createTestStore()
     seedStore(store, {
-      repos: [serverRepo('kept')],
-      worktreesByRepo: { kept: [serverRow('kept')] }
+      repos: [serverRepo('kept'), serverRepo('removed', '/srv/removed')],
+      worktreesByRepo: {
+        kept: [serverRow('kept')],
+        removed: [serverRow('removed', '/srv/removed')]
+      }
     })
     serverRepos = [serverRepo('kept')]
     const { promise, resolve } = Promise.withResolvers<void>()
@@ -134,6 +137,8 @@ describe('a fetched catalog that drops a repo registration', () => {
     resolve()
     await fetching
 
+    expect(store.getState().repos.map((repo) => repo.id).sort()).toEqual(['added', 'kept'])
+    expect(store.getState().worktreesByRepo.removed).toEqual([])
     expect(store.getState().worktreesByRepo.added?.map((worktree) => worktree.id)).toEqual([
       'added::/srv/added'
     ])

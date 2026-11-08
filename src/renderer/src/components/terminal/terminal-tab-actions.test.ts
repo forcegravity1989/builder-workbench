@@ -359,7 +359,7 @@ describe('closeTerminalTab', () => {
       isWebRuntimeSessionActiveMock.mockReturnValue(true)
       resolveHostSessionTabIdForWebSessionTabMock.mockReturnValue('host-tab-1')
       getStateMock.mockReturnValue({
-        ...terminalOwnerRows('web-runtime'),
+        settings: { activeRuntimeEnvironmentId: 'web-runtime' },
         tabsByWorktree: { 'wt-1': [{ id: 'local-tab-1' }, { id: 'local-tab-2' }] },
         activeWorktreeId: 'wt-1',
         activeTabId: 'local-tab-1',

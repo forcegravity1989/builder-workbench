@@ -31,6 +31,19 @@ afterEach(() => {
 })
 
 describe('app menu paste', () => {
+  it('native-pastes an image-only clipboard into the resolved text control', async () => {
+    const target = appendTextarea()
+    target.focus()
+    const performNativePaste = vi.fn()
+    const result = await handleAppMenuPasteRequest({
+      readClipboardText: async () => '',
+      performNativePaste,
+      dispatchOwnedPasteEvent: () => false
+    })
+    expect(result).toEqual({ status: 'native-fallback', reason: 'no-clipboard-text' })
+    expect(performNativePaste).toHaveBeenCalledOnce()
+  })
+
   it('lets an owned terminal paste event claim the menu action synchronously', async () => {
     const readClipboardText = vi.fn(async () => 'secret')
     const performNativePaste = vi.fn()

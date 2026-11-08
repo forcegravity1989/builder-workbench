@@ -21,6 +21,110 @@ permissions:
   contents: read
 
 jobs:
+  shared-host:
+    name: Shared host protocols and lifecycle
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+      # Exercise the native network owners as well as the BW overlay suites below.
+      # Fixtures cannot establish two-machine Windows acceptance or account access.
+      - name: Test shared host pairing, transport and subscription contracts
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/shared/remote-runtime-
+          src/shared/runtime-environment-store.test.ts
+          src/shared/runtime-client-export-parity.test.ts
+          src/main/ipc/runtime-environment
+          src/cli/runtime/environments.test.ts
+      - name: Test shared host recovery, launch and close contracts
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/renderer/src/store/repos/dropped-repo-worktree-rows.test.ts
+          src/renderer/src/store/slices/runtime-status
+          src/renderer/src/runtime/host-session-mirror-
+          src/renderer/src/runtime/restored-client-hosted-browser-host-restart-attach.test.ts
+          src/renderer/src/runtime/sync-runtime-graph-browser.test.ts
+          src/renderer/src/runtime/use-runtime-session-mirror-environment-key.test.ts
+          src/renderer/src/runtime/web-runtime-session-terminal-
+          src/renderer/src/runtime/web-session-tabs-sync-
+          src/renderer/src/components/terminal-pane/remote-runtime-pty-transport-
+          src/renderer/src/components/terminal-pane/use-terminal-pane-lifecycle.test.ts
+          src/renderer/src/components/terminal/terminal-tab-
+          src/renderer/src/components/terminal/terminal-close-confirm-keyboard-vs-mouse.test.ts
+          src/renderer/src/components/terminal-workspace-keydown.test.ts
+          src/renderer/src/components/settings/AgentsPane.test.tsx
+          src/renderer/src/components/tab-bar/QuickLaunchButton.test.ts
+          src/renderer/src/hooks/legacy-worker-terminal-recovery-event.test.ts
+          src/renderer/src/lib/launch-agent-
+          src/renderer/src/lib/runtime-session-mirror-targets.test.ts
+
+  browser-annotations:
+    name: Browser annotation contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+      - name: Check annotation, clipboard and navigation contracts
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/shared/browser-annotation-viewport-bridge.test.ts
+          src/renderer/src/components/browser-pane/annotate/browser-annotation-output.test.ts
+          src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.test.tsx
+          src/renderer/src/components/browser-pane/annotate/BrowserAnnotationSendMenuContent.test.tsx
+          src/renderer/src/components/browser-pane/host-guest/browser-page-favicon-retention.test.ts
+          src/renderer/src/components/browser-pane/describe-page/browser-annotation-geometry.test.ts
+          src/renderer/src/store/slices/browser.test.ts
+          src/renderer/src/lib/app-menu-paste.test.ts
+          src/renderer/src/components/native-chat/use-native-chat-composer-paste.test.tsx
+          src/renderer/src/components/native-chat/use-native-chat-composer-attachments.test.tsx
+          src/main/browser/browser-manager-annotation-bridge.test.ts
+
+  codex-windows:
+    name: Windows Codex protocol and lifecycle
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      # Keep native-addon intermediates below MAX_PATH while retaining the
+      # workspace's node-gyp resolution for rebuilds run from package dirs.
+      PNPM_CONFIG_VIRTUAL_STORE_DIR: '.p'
+      PNPM_CONFIG_VIRTUAL_STORE_DIR_MAX_LENGTH: '32'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install Node dependencies
+        uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: node
+
+      # Account-free protocol checks; these do not launch Electron or prove
+      # that a signed-in Codex conversation works in the Windows Chat UI.
+      - name: Test Codex transport and session lifecycle
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/codex/codex-app-server-connection.test.ts
+          src/main/codex/codex-app-server-process-teardown.test.ts
+          src/main/codex/codex-structured-session-close.test.ts
+          src/main/codex/codex-structured-session-cancel.test.ts
+          src/main/codex/codex-structured-launch-resolution.test.ts
+          src/main/codex/codex-session-index-heal.test.ts
+          src/main/codex-accounts/codex-credential-absence-grace.test.ts
+          src/main/codex-accounts/codex-windows-interactive-login.test.ts
+          src/main/codex-accounts/service-login-process-teardown.test.ts
+          src/main/rate-limits/codex-
+          src/main/rate-limits/service-inactive-account-previews.test.ts
+
   verify:
     name: lint, typecheck, tests, build
     runs-on: ubuntu-latest
@@ -37,6 +141,18 @@ jobs:
         with:
           native-runtime: node
           cache-electron-package: 'true'
+
+      - name: Test DSH CLI integration contracts
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/dsh/dsh-integration.test.ts
+          src/main/dsh/dsh-hook-packages.test.ts
+          src/shared/agent-process-recognition.test.ts
+          src/shared/agent-session-resume.test.ts
+          src/shared/tui-agent-startup.test.ts
+          src/main/agent-hooks/managed-hook-script-refresh.test.ts
+          src/main/agent-hooks/managed-hook-command-contract.test.ts
+          src/main/agent-hooks/server-retired-pane-new-turn.test.ts
 
       - name: Lint
         run: pnpm run lint
@@ -56,6 +172,33 @@ jobs:
           src/renderer/src/workbench
           src/relay/workbench
           src/shared/workbench
+
+      - name: Test native usage protocols and account integration
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/rate-limits
+          src/main/claude-accounts/keychain.test.ts
+          src/main/ipc/register-core-handlers/register-core-handlers.test.ts
+          src/shared/rate-limit-types.test.ts
+          src/renderer/src/components/status-bar/status-bar-provider-visibility.test.ts
+          src/renderer/src/store/slices/ui-hydration-workspace-preferences.test.ts
+          src/renderer/src/web/web-preload-api-composition.test.ts
+
+      - name: Test Cursor hook and continuation protocols
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts
+          src/main/cursor
+          src/main/claude/hook-service.test.ts
+          src/main/agent-hooks/windows-powershell-hook-launcher.test.ts
+          src/main/agent-hooks/installer-utils.test.ts
+          src/main/ai-vault/session-scanner-cursor-chat-meta.test.ts
+          src/shared/agent-session-option-catalog.test.ts
+          src/shared/agent-session-option-catalog-grok.test.ts
+          src/shared/tui-agent-startup-session-options.test.ts
+          src/shared/agent-session-resume.test.ts
+          src/shared/agent-resume-argv-drop.test.ts
+          src/shared/agent-resume-launch-command.test.ts
+          src/renderer/src/runtime/agent-resume-host-authority-capability.test.ts
 
       - name: Build desktop application
         run: pnpm run build:desktop
