@@ -55,7 +55,9 @@ export async function ensureAgentLaunchPreferences(worktreeId: string): Promise<
   })
 }
 
-export function useHostAgentLaunchPreferences(target: AgentDetectionTarget | undefined): Preferences {
+export function useHostAgentLaunchPreferences(
+  target: AgentDetectionTarget | undefined
+): Preferences & { isLoading: boolean } {
   const environmentId = target?.kind === 'runtime' ? target.environmentId : null
   const localDefault = useAppStore((state) => state.settings?.defaultTuiAgent)
   const localDisabled = useAppStore((state) => state.settings?.disabledTuiAgents)
@@ -118,8 +120,13 @@ export function useHostAgentLaunchPreferences(target: AgentDetectionTarget | und
     }
   }, [environmentId, revision, runtimeId, contact, key])
   return environmentId
-    ? snapshot?.key === key
-      ? snapshot.preferences
-      : UNKNOWN
-    : { defaultTuiAgent: localDefault, disabledTuiAgents: localDisabled }
+    ? {
+        ...(snapshot?.key === key ? snapshot.preferences : UNKNOWN),
+        isLoading: snapshot?.key !== key
+      }
+    : {
+        defaultTuiAgent: localDefault,
+        disabledTuiAgents: localDisabled,
+        isLoading: target === undefined
+      }
 }
