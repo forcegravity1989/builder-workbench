@@ -7,7 +7,7 @@ export function MilestoneReviewButton({
   conflict,
   dirty,
   retry,
-  invalid,
+  validate,
   hasReview,
   reviewUrl,
   needsUpdate,
@@ -20,7 +20,7 @@ export function MilestoneReviewButton({
   conflict: boolean
   dirty: boolean
   retry: boolean
-  invalid: boolean
+  validate(): boolean
   hasReview: boolean
   reviewUrl?: string
   needsUpdate: boolean
@@ -56,13 +56,20 @@ export function MilestoneReviewButton({
     )
   }
   return (
-    <Popover open={reviewOpen} onOpenChange={setReviewOpen}>
+    <Popover
+      open={reviewOpen}
+      onOpenChange={(open) => {
+        if (!open || validate()) {
+          setReviewOpen(open)
+        }
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           size="xs"
           className="bg-foreground text-background hover:bg-foreground/90"
           data-contextual-tour-target="milestone-submit"
-          disabled={!reviewUrl && (busy || conflict || (!dirty && !retry) || invalid)}
+          disabled={!reviewUrl && (busy || conflict || (!dirty && !retry))}
         >
           {retry ? '重试提交' : hasReview ? '更新评审' : '提交评审'}
         </Button>
@@ -83,10 +90,12 @@ export function MilestoneReviewButton({
         <Button
           size="xs"
           className="bg-foreground text-background hover:bg-foreground/90"
-          disabled={busy || conflict || (!dirty && !retry) || invalid}
+          disabled={busy || conflict || (!dirty && !retry)}
           onClick={() => {
-            setReviewOpen(false)
-            submit()
+            if (validate()) {
+              setReviewOpen(false)
+              submit()
+            }
           }}
         >
           确认提交
