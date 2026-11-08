@@ -1,6 +1,8 @@
-import type { RuntimeHostStatusSnapshot } from '../../../../shared/runtime-host-status'
+import type {
+  RuntimeHostStatusSnapshot,
+  RuntimeEnvironmentStatus
+} from '../../../../shared/runtime-host-status'
 import type { PublicKnownRuntimeEnvironment } from '../../../../shared/runtime-environments'
-import type { RuntimeEnvironmentStatus } from '../../../../shared/runtime-host-status'
 
 export type { RuntimeEnvironmentStatus } from '../../../../shared/runtime-host-status'
 
