@@ -83,5 +83,9 @@ export async function resolveTerminalAgentForShortcut(
   if (shortcut.agent) {
     return isTuiAgentEnabled(shortcut.agent, preferences.disabledTuiAgents) ? shortcut.agent : null
   }
-  return resolveDefaultAgentForNewTab({ ...preferences, detectedAgentIds })
+  return resolveDefaultAgentForNewTab({
+    defaultTuiAgent: preferences.defaultTuiAgent,
+    disabledTuiAgents: preferences.disabledTuiAgents,
+    detectedAgentIds
+  })
 }

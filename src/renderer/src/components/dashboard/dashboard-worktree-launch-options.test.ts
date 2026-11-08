@@ -141,9 +141,20 @@ describe('buildDashboardWorktreeLaunchOptions', () => {
           {
             id: 'folder-1',
             projectGroupId: 'group-1',
+            name: 'Remote folder',
+            folderPath: '/workspace/folder-1',
             connectionId: 'ssh-folder',
-            executionHostId: 'runtime:hub-folder'
-          } as FolderWorkspace
+            executionHostId: 'runtime:hub-folder',
+            linkedTask: null,
+            comment: '',
+            isArchived: false,
+            isUnread: false,
+            isPinned: false,
+            sortOrder: 0,
+            lastActivityAt: 1,
+            createdAt: 1,
+            updatedAt: 1
+          } satisfies FolderWorkspace
         ],
         projectGroups: [{ id: 'group-1' } as ProjectGroup],
         remoteDetectedAgentIds: { 'ssh-folder': ['claude'] },

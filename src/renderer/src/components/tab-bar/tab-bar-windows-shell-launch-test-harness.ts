@@ -113,7 +113,7 @@ const useAppStoreMock = vi.fn(
       localDetectedAgentIdsByContext: appStoreSnapshot.localDetectedAgentIdsByContext,
       remoteDetectedAgentIds: appStoreSnapshot.remoteDetectedAgentIds,
       runtimeEnvironments: [],
-      runtimeStatusByEnvironmentId: new Map(),
+      runtimeStatusByEnvironmentId: new Map<string, never>(),
       runtimeDetectedAgentIds: {},
       isDetectingRuntimeAgents: {},
       isRefreshingRuntimeAgents: {},
