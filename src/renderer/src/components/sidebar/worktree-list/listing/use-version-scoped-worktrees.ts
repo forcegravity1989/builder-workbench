@@ -1,4 +1,7 @@
 import { useMemo } from 'react'
+import { useAppStore } from '@/store'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { useVersionSidebarProjection } from '@/workbench/version-sidebar-state'
 import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-types'
 import type { Worktree } from '../../../../../../shared/worktree/types'
 import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
@@ -13,6 +16,23 @@ type VersionScopedWorktreesArgs = {
   filteredWorktrees: readonly Worktree[]
   worktreeLineageById: Readonly<Record<string, WorktreeLineage>>
   worktreeMap: ReadonlyMap<string, Worktree>
+}
+
+export function useWorkbenchSidebarScope() {
+  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
+  const versionProjection = useVersionSidebarProjection()
+  const workbenchProject =
+    isWorkbenchShell() && versionProjection.repoId === activeRepoId && activeRepoId
+      ? versionProjection
+      : undefined
+  const workbenchScope = useMemo(
+    () =>
+      workbenchProject && activeRepoId
+        ? { repoId: activeRepoId, repoIds: workbenchProject.repoIds }
+        : undefined,
+    [workbenchProject, activeRepoId]
+  )
+  return { workbenchProject, workbenchScope }
 }
 
 /**

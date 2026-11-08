@@ -2,7 +2,6 @@ import React, { useCallback, useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { WorkbenchSidebarVersions } from '@/workbench/WorkbenchSidebarNav'
-import { useVersionSidebarProjection } from '@/workbench/version-sidebar-state'
 import { useShallow } from 'zustand/react/shallow'
 import {
   useAllWorktrees,
@@ -35,6 +34,7 @@ import { useSidebarRevealRequests } from './worktree-list/navigation/use-reveal-
 import { useSidebarSectionRows } from './worktree-list/listing/use-section-rows'
 import {
   scopeDetectedWorktreesForVersionSidebar,
+  useWorkbenchSidebarScope,
   useVersionScopedWorktrees
 } from './worktree-list/listing/use-version-scoped-worktrees'
 import { useSidebarWorktreeFilters } from './worktree-list/listing/use-filters'
@@ -67,19 +67,7 @@ const WorktreeList = React.memo(function WorktreeList({
   const repoMap = useRepoMap()
   const worktreeMap = useWorktreeMap()
   const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const versionProjection = useVersionSidebarProjection()
-  const workbenchProject =
-    isWorkbenchShell() && versionProjection.repoId === activeRepoId && activeRepoId
-      ? versionProjection
-      : undefined
-  const workbenchScope = useMemo(
-    () =>
-      workbenchProject && activeRepoId
-        ? { repoId: activeRepoId, repoIds: workbenchProject.repoIds }
-        : undefined,
-    [workbenchProject, activeRepoId]
-  )
+  const { workbenchProject, workbenchScope } = useWorkbenchSidebarScope()
   const worktreeLineageById = useAppStore((s) => s.worktreeLineageById)
   const workspaceLineageByChildKey = useAppStore((s) => s.workspaceLineageByChildKey)
   const detectedWorktreesByRepo = useAppStore((s) => s.detectedWorktreesByRepo)
