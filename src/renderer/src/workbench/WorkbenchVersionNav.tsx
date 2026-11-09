@@ -23,6 +23,7 @@ import { openVersionOverview, useProjectPage } from './project-page-state'
 import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { useCycleView } from './cycle-view-state'
 import { getWorktreeHostIdentity } from '../../../shared/worktree/host-qualified-identity'
+import { VersionTreeDisplayProvider, type VersionTreeDisplayInput } from './VersionNativeTrees'
 import {
   consumeVersionSidebarFocus,
   publishVersionSidebarProjection,
@@ -56,7 +57,11 @@ function readExpandedStore(key: string | null): Set<string> | null {
   }
 }
 
-export function WorkbenchVersionNav(): React.JSX.Element | null {
+export function WorkbenchVersionNav({
+  nativeDisplay
+}: {
+  nativeDisplay: VersionTreeDisplayInput
+}): React.JSX.Element | null {
   const repoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
   const projectName = useAppStore((s) => {
     const active = s.activeRepoId ?? s.repos[0]?.id ?? null
@@ -227,7 +232,7 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
 
   const problems = loaded?.problems ?? []
 
-  return (
+  const content = (
     <div className="wb-versions flex min-h-0 min-w-0 flex-col" data-workbench-versions>
       <WorkbenchSidebarSectionHeader
         icon={Layers}
@@ -386,5 +391,10 @@ export function WorkbenchVersionNav(): React.JSX.Element | null {
         />
       ) : null}
     </div>
+  )
+  return (
+    <VersionTreeDisplayProvider value={nativeDisplay} trees={catalog.worktrees}>
+      {content}
+    </VersionTreeDisplayProvider>
   )
 }

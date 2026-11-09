@@ -2,8 +2,7 @@ import React, { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { isWorkbenchShell } from './is-workbench-shell'
 import { FolderGit2 } from 'lucide-react'
-import type { Worktree } from '../../../shared/worktree/types'
-import { VersionTreeDisplayContext } from './VersionNativeTrees'
+import type { VersionTreeDisplayInput } from './VersionNativeTrees'
 import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { WorkbenchVersionNav } from './WorkbenchVersionNav'
 
@@ -44,25 +43,20 @@ export function WorkbenchSidebarNav(): React.JSX.Element | null {
  */
 export function WorkbenchSidebarVersions({
   visibleWorktrees,
+  filterOptions,
   sortedIds,
   sortNow
-}: {
-  visibleWorktrees: readonly Worktree[]
-  sortedIds: readonly string[]
-  sortNow: number
-}): React.JSX.Element {
+}: VersionTreeDisplayInput): React.JSX.Element {
   const display = useMemo(
-    () => ({ visibleWorktrees, sortedIds, sortNow }),
-    [visibleWorktrees, sortedIds, sortNow]
+    () => ({ visibleWorktrees, filterOptions, sortedIds, sortNow }),
+    [visibleWorktrees, filterOptions, sortedIds, sortNow]
   )
   return (
-    <VersionTreeDisplayContext.Provider value={display}>
-      <div className="flex min-w-0 flex-col gap-1 pb-1" data-workbench-version-section>
-        <WorkbenchVersionNav />
-        <WorkbenchSidebarSectionHeader icon={FolderGit2}>
-          全部项目工作区
-        </WorkbenchSidebarSectionHeader>
-      </div>
-    </VersionTreeDisplayContext.Provider>
+    <div className="flex min-w-0 flex-col gap-1 pb-1" data-workbench-version-section>
+      <WorkbenchVersionNav nativeDisplay={display} />
+      <WorkbenchSidebarSectionHeader icon={FolderGit2}>
+        全部项目工作区
+      </WorkbenchSidebarSectionHeader>
+    </div>
   )
 }

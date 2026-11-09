@@ -25,15 +25,53 @@ import { isVersionHostDisconnected } from './version-worktree-host'
 import { buildWorktreeComparator, sortWorktreesSmart } from '@/components/sidebar/smart-sort'
 import { getPinnedSectionWorktrees } from '@/components/sidebar/pinned-section-worktrees'
 import { getPinnedWorktreeDisplayPolicy } from '@/components/sidebar/worktree-list/grouping/row-types'
+import {
+  computeVisibleWorktrees,
+  type VisibleWorktreeOptions
+} from '@/components/sidebar/visible-worktrees'
 
 const EMPTY_SET = new Set<string>()
 const EMPTY_MAP = new Map<string, never>()
 const NOOP = () => {}
-export const VersionTreeDisplayContext = createContext<{
+export type VersionTreeDisplayInput = {
   visibleWorktrees: readonly Worktree[]
+  filterOptions: VisibleWorktreeOptions
   sortedIds: readonly string[]
   sortNow: number
-} | null>(null)
+}
+const VersionTreeDisplayContext = createContext<
+  (VersionTreeDisplayInput & { visibleIdentities: ReadonlySet<string> }) | null
+>(null)
+
+export function VersionTreeDisplayProvider({
+  value,
+  trees,
+  children
+}: {
+  value: VersionTreeDisplayInput
+  trees: readonly Worktree[]
+  children: React.ReactNode
+}): React.JSX.Element {
+  const display = useMemo(() => {
+    const worktreesByRepo: Record<string, Worktree[]> = {}
+    for (const tree of trees) {
+      const repoTrees = (worktreesByRepo[tree.repoId] ??= [])
+      repoTrees.push(tree)
+    }
+    // Filter the whole catalog so an active child can retain its ancestor across directories.
+    const visibleTrees = computeVisibleWorktrees(
+      worktreesByRepo,
+      value.sortedIds,
+      value.filterOptions
+    )
+    return { ...value, visibleIdentities: new Set(visibleTrees.map(getWorktreeHostIdentity)) }
+  }, [value, trees])
+  return (
+    <VersionTreeDisplayContext.Provider value={display}>
+      {children}
+    </VersionTreeDisplayContext.Provider>
+  )
+}
 
 /** Business directories only select members; native rows own cards, hosts and sessions. */
 export function VersionNativeTrees({
@@ -48,12 +86,15 @@ export function VersionNativeTrees({
   const repos = useAppStore((state) => state.repos)
   const settings = useAppStore((state) => state.settings)
   const nativeDisplay = useContext(VersionTreeDisplayContext)
+  if (!nativeDisplay) {
+    throw new Error('VersionNativeTrees requires the native sidebar display context')
+  }
   const sortBy = useAppStore((state) => state.sortBy)
   const lineage = useAppStore((state) => state.worktreeLineageById)
   const displayedTrees = useMemo(() => {
-    if (!nativeDisplay) {
-      return trees
-    }
+    const filteredTrees = trees.filter((tree) =>
+      nativeDisplay.visibleIdentities.has(getWorktreeHostIdentity(tree))
+    )
     const source = nativeDisplay.visibleWorktrees
     const pinned =
       getPinnedWorktreeDisplayPolicy(settings) === 'single-location'
@@ -66,7 +107,7 @@ export function VersionNativeTrees({
     const ordered =
       sortBy === 'smart'
         ? sortWorktreesSmart(
-            [...trees],
+            filteredTrees,
             state.tabsByWorktree,
             repoMap,
             state.agentStatusByPaneKey,
@@ -75,10 +116,9 @@ export function VersionNativeTrees({
             state.migrationUnsupportedByPtyId,
             state.terminalLayoutsByTabId
           )
-        : [...trees].sort(
+        : filteredTrees.sort(
             buildWorktreeComparator(sortBy, repoMap, nativeDisplay.sortNow, new Map())
           )
-    // Catalog membership includes detected/no-session trees; native visibility must not erase them.
     return ordered
       .filter((tree) => !pinned.has(getWorktreeHostIdentity(tree)))
       .sort((a, b) => (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity) || 0)

@@ -122,16 +122,19 @@ const WorktreeList = React.memo(function WorktreeList({
     () => buildWorktreeManualOrderCatalog({ worktrees: allWorktrees, folderWorkspaces }),
     [allWorktrees, folderWorkspaces]
   )
-  const { visibleWorktrees: filteredWorktrees, pairedDeviceIdsByEnvironment } =
-    useVisibleSidebarWorktrees({
-      filterState,
-      sortBy,
-      sortedIds,
-      repoMap,
-      worktreeLineageById,
-      defaultHostId,
-      agentSendTargetWorktreeId
-    })
+  const {
+    visibleWorktrees: filteredWorktrees,
+    pairedDeviceIdsByEnvironment,
+    filterOptions
+  } = useVisibleSidebarWorktrees({
+    filterState,
+    sortBy,
+    sortedIds,
+    repoMap,
+    worktreeLineageById,
+    defaultHostId,
+    agentSendTargetWorktreeId
+  })
   const { visibleWorktrees, pinnedOnlyIdentities: versionBoundIdentities } =
     useVersionScopedWorktrees({
       workbenchProject,
@@ -286,6 +289,7 @@ const WorktreeList = React.memo(function WorktreeList({
   const versionContent = isWorkbenchShell() ? (
     <WorkbenchSidebarVersions
       visibleWorktrees={filteredWorktrees}
+      filterOptions={filterOptions}
       sortedIds={sortedIds}
       sortNow={sortNow}
     />
