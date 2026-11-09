@@ -25,9 +25,11 @@ import {
   refreshAllOutgoingReviews,
   useReviewNotifications
 } from './store'
+import { usePrReviewTriggerPosition } from './use-pr-review-trigger-position'
 
 export function PrReviewNotifications(): React.JSX.Element | null {
   const notifications = useReviewNotifications()
+  const { position, dragHandlers } = usePrReviewTriggerPosition()
   const repos = useAppStore((state) => state.repos)
   const [open, setOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
@@ -79,9 +81,13 @@ export function PrReviewNotifications(): React.JSX.Element | null {
           type="button"
           variant="outline"
           size="icon"
-          className="fixed right-16 bottom-4 z-[47] rounded-lg border-transparent bg-card text-foreground shadow-[0_4px_12px_rgb(0_0_0_/_0.22),0_0_0_1px_color-mix(in_srgb,var(--foreground)_12%,transparent)] hover:-translate-y-0.5 hover:bg-accent dark:bg-accent dark:shadow-[0_6px_16px_rgb(0_0_0_/_0.55),0_0_0_1px_rgb(255_255_255_/_0.22)] dark:hover:bg-[color-mix(in_srgb,var(--accent)_82%,white)]"
+          // Why: 与原生浮动工作区入口同口径——位置由拖动状态驱动并锚定持久化，
+          // 复制一份逻辑，不改原生按钮的存储键与组件。
+          style={{ left: position.left, top: position.top }}
+          className="fixed z-[47] cursor-grab rounded-lg border-transparent bg-card text-foreground shadow-[0_4px_12px_rgb(0_0_0_/_0.22),0_0_0_1px_color-mix(in_srgb,var(--foreground)_12%,transparent)] hover:-translate-y-0.5 hover:bg-accent active:translate-y-0 active:cursor-grabbing dark:bg-accent dark:shadow-[0_6px_16px_rgb(0_0_0_/_0.55),0_0_0_1px_rgb(255_255_255_/_0.22)] dark:hover:bg-[color-mix(in_srgb,var(--accent)_82%,white)]"
           aria-label={open ? '收起评审通知' : `评审通知，共 ${badgeCount} 条`}
           title="评审通知"
+          {...dragHandlers}
         >
           <GitPullRequest className="size-4" />
           {badgeCount > 0 ? (
