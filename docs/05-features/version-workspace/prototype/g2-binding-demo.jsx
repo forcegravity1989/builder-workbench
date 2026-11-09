@@ -17,7 +17,8 @@ export function useBindingDemo({
   onBound,
   notify,
   disconnected,
-  initialTrees
+  initialTrees,
+  versionsForTree = () => versionOrder
 }) {
   const [trees, setTrees] = useState(initialTrees)
   const [menu, setMenu] = useState(null)
@@ -129,7 +130,7 @@ export function useBindingDemo({
           : tree
       )
     )
-    onBound(draft.version, draft.role, draft.goal)
+    onBound(draft.version, draft.role, draft.goal, draft)
     notify('已更新版本绑定')
     setDraft(null)
   }
@@ -146,7 +147,7 @@ export function useBindingDemo({
             className="binding-context-menu"
             ref={menuRef}
             role="menu"
-            aria-label="工作树版本绑定"
+            aria-label="工作树操作"
             style={{ left: Math.max(8, menu.x), top: Math.max(8, menu.y) }}
             onPointerDown={(event) => event.stopPropagation()}
           >
@@ -159,14 +160,31 @@ export function useBindingDemo({
             >
               打开工作区
             </button>
-            <div role="separator" />
             <button
               role="menuitem"
               disabled={menu.tree.owner === 'remote' && disconnected}
               onClick={() => {
+                setTrees((items) =>
+                  items.map((tree) =>
+                    tree.id === menu.tree.id ? { ...tree, isPinned: !tree.isPinned } : tree
+                  )
+                )
+                setMenu(null)
+              }}
+            >
+              {menu.tree.isPinned ? '取消固定' : '固定'}
+            </button>
+            <div role="separator" />
+            <button
+              role="menuitem"
+              disabled={
+                (menu.tree.owner === 'remote' && disconnected) || !versionsForTree(menu.tree).length
+              }
+              title={!versionsForTree(menu.tree).length ? '此项目暂无版本' : undefined}
+              onClick={() => {
                 setDraft({
                   ...menu.tree,
-                  version: menu.tree.version || versionOrder[0],
+                  version: menu.tree.version || versionsForTree(menu.tree)[0],
                   goal: menu.tree.goal || '',
                   issue: menu.tree.issue || ''
                 })
@@ -209,7 +227,7 @@ export function useBindingDemo({
                   setDraft({ ...draft, version: event.target.value, goal: '', issue: '' })
                 }
               >
-                {versionOrder.map((version) => (
+                {versionsForTree(draft).map((version) => (
                   <option key={version}>{version}</option>
                 ))}
               </select>

@@ -1,8 +1,7 @@
 import React, { useCallback, useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
-import { useVersionSidebarProjection } from '@/workbench/version-sidebar-state'
-import { getWorktreeHostIdentity } from '../../../../shared/worktree/host-qualified-identity'
+import { WorkbenchSidebarVersions } from '@/workbench/WorkbenchSidebarNav'
 import { useShallow } from 'zustand/react/shallow'
 import {
   useAllWorktrees,
@@ -33,6 +32,11 @@ import { useSidebarExternalWorktreeCards } from './worktree-list/listing/use-ext
 import { useSidebarHostVisibleScope } from './worktree-list/listing/use-host-visible-scope'
 import { useSidebarRevealRequests } from './worktree-list/navigation/use-reveal-requests'
 import { useSidebarSectionRows } from './worktree-list/listing/use-section-rows'
+import {
+  scopeDetectedWorktreesForVersionSidebar,
+  useWorkbenchSidebarScope,
+  useVersionScopedWorktrees
+} from './worktree-list/listing/use-version-scoped-worktrees'
 import { useSidebarWorktreeFilters } from './worktree-list/listing/use-filters'
 import { useSidebarWorktreeSelection } from './worktree-list/navigation/use-selection'
 import { useSidebarWorktreeSortOrder } from './worktree-list/listing/use-sort-order'
@@ -63,19 +67,7 @@ const WorktreeList = React.memo(function WorktreeList({
   const repoMap = useRepoMap()
   const worktreeMap = useWorktreeMap()
   const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
-  const versionProjection = useVersionSidebarProjection()
-  const workbenchProject =
-    isWorkbenchShell() && versionProjection.repoId === activeRepoId && activeRepoId
-      ? versionProjection
-      : undefined
-  const workbenchScope = useMemo(
-    () =>
-      workbenchProject && activeRepoId
-        ? { repoId: activeRepoId, repoIds: workbenchProject.repoIds }
-        : undefined,
-    [workbenchProject, activeRepoId]
-  )
+  const { workbenchProject, workbenchScope } = useWorkbenchSidebarScope()
   const worktreeLineageById = useAppStore((s) => s.worktreeLineageById)
   const workspaceLineageByChildKey = useAppStore((s) => s.workspaceLineageByChildKey)
   const detectedWorktreesByRepo = useAppStore((s) => s.detectedWorktreesByRepo)
@@ -121,46 +113,39 @@ const WorktreeList = React.memo(function WorktreeList({
 
   const agentSendTargetWorktreeId = useAgentSendTargetWorktreeId()
   const { filterState, hasFilters, clearFilters } = useSidebarWorktreeFilters()
-  const sortedIds = useSidebarWorktreeSortOrder({ allWorktrees, repoMap, sortBy })
+  const { sortedIds, sampledAt: sortNow } = useSidebarWorktreeSortOrder({
+    allWorktrees,
+    repoMap,
+    sortBy
+  })
   const manualOrderCatalog = useMemo(
     () => buildWorktreeManualOrderCatalog({ worktrees: allWorktrees, folderWorkspaces }),
     [allWorktrees, folderWorkspaces]
   )
-  const { visibleWorktrees: filteredWorktrees, pairedDeviceIdsByEnvironment } =
-    useVisibleSidebarWorktrees({
-      filterState,
-      sortBy,
-      sortedIds,
-      repoMap,
+  const {
+    visibleWorktrees: filteredWorktrees,
+    pairedDeviceIdsByEnvironment,
+    filterOptions
+  } = useVisibleSidebarWorktrees({
+    filterState,
+    sortBy,
+    sortedIds,
+    repoMap,
+    worktreeLineageById,
+    defaultHostId,
+    agentSendTargetWorktreeId
+  })
+  const { visibleWorktrees, pinnedOnlyIdentities: versionBoundIdentities } =
+    useVersionScopedWorktrees({
+      workbenchProject,
+      filteredWorktrees,
       worktreeLineageById,
-      defaultHostId,
-      agentSendTargetWorktreeId
+      worktreeMap
     })
-  const visibleWorktrees = useMemo(
-    () =>
-      workbenchProject
-        ? filteredWorktrees.filter(
-            (tree) => !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
-          )
-        : filteredWorktrees,
-    [filteredWorktrees, workbenchProject]
+  const nativeDetectedWorktrees = useMemo(
+    () => scopeDetectedWorktreesForVersionSidebar(detectedWorktreesByRepo, workbenchProject),
+    [detectedWorktreesByRepo, workbenchProject]
   )
-  const nativeDetectedWorktrees = useMemo(() => {
-    if (!workbenchProject) {
-      return detectedWorktreesByRepo
-    }
-    return Object.fromEntries(
-      Object.entries(detectedWorktreesByRepo).map(([id, detected]) => [
-        id,
-        {
-          ...detected,
-          worktrees: detected.worktrees.filter(
-            (tree) => !workbenchProject.worktreeIdentities.has(getWorktreeHostIdentity(tree))
-          )
-        }
-      ])
-    )
-  }, [detectedWorktreesByRepo, workbenchProject])
   const effectiveCollapsedGroups = useEffectiveCollapsedGroups({
     collapsedGroups,
     agentSendTargetWorktreeId,
@@ -176,7 +161,8 @@ const WorktreeList = React.memo(function WorktreeList({
     projectGroups,
     projectGrouping,
     folderWorkspaces,
-    defaultHostId
+    defaultHostId,
+    pinnedOnlyIdentities: versionBoundIdentities
   })
   const visibleScope = useSidebarHostVisibleScope({
     filterState,
@@ -217,7 +203,8 @@ const WorktreeList = React.memo(function WorktreeList({
     newExternalWorktreesInboxByRepo: externalWorktreeCards.newExternalWorktreesInboxByRepo,
     filterRepoIds: filterState.filterRepoIds,
     visibleWorkspaceHostIds: filterState.visibleWorkspaceHostIds,
-    workspaceHostScope: filterState.workspaceHostScope
+    workspaceHostScope: filterState.workspaceHostScope,
+    pinnedOnlyIdentities: versionBoundIdentities
   })
   const selection = useSidebarWorktreeSelection({
     sectionRows: rowModel.sectionRows,
@@ -299,9 +286,21 @@ const WorktreeList = React.memo(function WorktreeList({
     placeholderRepoCount: rowModel.placeholderRepoIds.size,
     importedWorktreeCardCount: externalWorktreeCards.importedWorktreesByRepo.size
   })
+  const versionContent = isWorkbenchShell() ? (
+    <WorkbenchSidebarVersions
+      visibleWorktrees={filteredWorktrees}
+      filterOptions={filterOptions}
+      sortedIds={sortedIds}
+      sortNow={sortNow}
+    />
+  ) : undefined
   // Why: when active filters hide every row, the Clear Filters empty state must win over Project Group headers.
   if (rowModel.rows.length === 0 || filtersHideAllRows) {
-    return <SidebarWorktreeListEmptyState hasFilters={hasFilters} onClearFilters={clearFilters} />
+    return (
+      <SidebarWorktreeListEmptyState hasFilters={hasFilters} onClearFilters={clearFilters}>
+        {versionContent}
+      </SidebarWorktreeListEmptyState>
+    )
   }
 
   return (
@@ -325,6 +324,7 @@ const WorktreeList = React.memo(function WorktreeList({
         onOpenWorktreeVisibility={handleOpenWorktreeVisibility}
       />
       <VirtualizedWorktreeViewport
+        afterPinnedContent={versionContent}
         // Why: status headers move during wake (inactive -> active); key only on grouping mode so row identity survives.
         key={`group:${groupBy}:host:${filterState.visibleWorkspaceHostIds?.join(',') ?? 'all'}:lineage`}
         rows={rowModel.sectionRows}

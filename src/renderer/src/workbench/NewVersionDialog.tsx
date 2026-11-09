@@ -24,23 +24,21 @@ import type { VersionCatalogState } from './use-version-catalog'
 import { closeProjectPage } from './project-page-state'
 
 /**
- * G2 「＋ 新建版本」轻表单（P3a，高保真修订 8 · Primer Create 口径）：只要一个
- * 必要输入；重名/非法名就地提示并保留输入；提交走归属宿主的
- * workbench.versionWorkspace.prepare——部分成功保留并逐步回报，重入即补齐；
- * 两树就绪不启动 agent、不启用自动化、不预建目标/任务树。
- * 已存在版本补准备不进本表单——版本行「初始化工作区」直接执行（#436 伴飞
- * 裁定：创建类动作不设确认单）。
+ * 只准备流程树，不启动会话、自动化或预建目标/任务树。
+ * 部分成功保留并逐步回报；已有版本从版本行补齐，不重复创建。
  */
 
 export function NewVersionDialog({
   catalog,
   projectKey,
   projectName,
+  onCreated,
   onClose
 }: {
   catalog: VersionCatalogState
   projectKey: string | null
   projectName: string | null
+  onCreated: (version: string) => void
   onClose: () => void
 }): React.JSX.Element {
   const [name, setName] = useState('')
@@ -99,6 +97,7 @@ export function NewVersionDialog({
       if (!failed) {
         const planStep = result.steps.find((step) => step.workflow === 'plan')
         setBrowsedVersion(projectKey, version)
+        onCreated(version)
         closeProjectPage()
         onClose()
         if (
