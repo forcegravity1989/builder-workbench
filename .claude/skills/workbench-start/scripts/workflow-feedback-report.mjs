@@ -14,6 +14,9 @@ export const feedbackSchema = {
   prUrl: 'https://github.com/OWNER/REPO/pull/NUMBER',
   workflowVersion: '实际读取的版本，未知填 unknown',
   sessionTitle: '可选，桌面会话名称',
+  prOnly: '同一 Issue 已有汇总报告时填 true，本报告只用于 PR 复盘',
+  taskStartId: '可选，与 taskEndId 一起填；本次交付的首条用户消息 ID',
+  taskEndId: '可选，与 taskStartId 一起填；核对到的末条消息 ID，含此条',
   firstDeliveryId: '模型首次明确交付供人验收的消息 ID；尚未交付填 null',
   coverage: { initialInput: false, preDelivery: false, review: false },
   userEvents: [
@@ -53,9 +56,29 @@ function webUrl(value) {
 }
 
 export function summarizeFeedback(transcript, annotations) {
-  const messages = transcript.messages
-  requireThat(Array.isArray(messages) && messages.length > 0, '提取结果缺消息')
+  const extracted = transcript.messages
+  requireThat(Array.isArray(extracted) && extracted.length > 0, '提取结果缺消息')
   requireThat(webUrl(annotations.issueUrl) && webUrl(annotations.prUrl), '需要实际 Issue 与 PR URL')
+  requireThat(
+    annotations.prOnly === undefined || typeof annotations.prOnly === 'boolean',
+    'prOnly 须为布尔值'
+  )
+  requireThat(
+    Boolean(annotations.taskStartId) === Boolean(annotations.taskEndId),
+    '交付范围须同时指定起点和末条消息'
+  )
+  const start = annotations.taskStartId
+    ? extracted.findIndex(({ id }) => id === annotations.taskStartId)
+    : 0
+  const end = annotations.taskEndId
+    ? extracted.findIndex(({ id }) => id === annotations.taskEndId)
+    : extracted.length - 1
+  requireThat(
+    !annotations.taskStartId || extracted[start]?.role === 'user',
+    '交付起点须引用本次开工的用户消息'
+  )
+  requireThat(end >= start, '交付范围末条消息缺失或早于起点')
+  const messages = extracted.slice(start, end + 1)
   const byId = new Map(messages.map((message, index) => [message.id, { ...message, index }]))
   requireThat(byId.size === messages.length, '提取消息 ID 重复')
   const users = annotations.userEvents ?? []
@@ -79,14 +102,18 @@ export function summarizeFeedback(transcript, annotations) {
   }
   validate(users, userTags, ['user'])
   validate(models, modelTags, ['assistant', 'question'])
+  const firstUserIndex = messages.findIndex((message) => message.role === 'user')
+  const firstUser = messages[firstUserIndex]
   const delivery = annotations.firstDeliveryId ? byId.get(annotations.firstDeliveryId) : null
   requireThat(
-    !annotations.firstDeliveryId || delivery?.role === 'assistant',
-    '首次交付必须引用模型消息'
+    !annotations.firstDeliveryId ||
+      (firstUser && delivery?.role === 'assistant' && delivery.index > firstUserIndex),
+    '首次交付必须引用开工后的模型消息'
   )
   const coverage = annotations.coverage ?? {}
   const issues = transcript.issues ?? []
   if (coverage.initialInput || coverage.preDelivery || coverage.review) {
+    requireThat(firstUser, '完整覆盖须有本次开工的用户消息')
     requireThat(issues.length === 0, '提取有缺口，不能声明完整覆盖；修复来源或保留未知')
     requireThat(
       users.length === messages.filter((message) => message.role === 'user').length,
@@ -94,7 +121,6 @@ export function summarizeFeedback(transcript, annotations) {
     )
   }
   requireThat(!coverage.preDelivery || delivery, '交付前完整口径需要首次交付证据')
-  const firstUser = messages.find((message) => message.role === 'user')
   const deduplicated = users.filter((event) => {
     if (!event.duplicateOf) {
       return true
@@ -128,7 +154,10 @@ export function summarizeFeedback(transcript, annotations) {
       '权限请求与业务 AskUser 分开标'
     )
   }
-  const before = (event) => delivery && byId.get(event.messageId).index < delivery.index
+  const before = (event) => {
+    const { index } = byId.get(event.messageId)
+    return delivery && index >= firstUserIndex && index < delivery.index
+  }
   const count = (events, tag) =>
     events.filter((event) => before(event) && event.tags.includes(tag)).length
   const review = annotations.review ?? { verdict: 'pending', evidenceIds: [] }
@@ -174,8 +203,11 @@ export function summarizeFeedback(transcript, annotations) {
     session: transcript.session,
     sessionTitle: annotations.sessionTitle,
     workflowVersion: annotations.workflowVersion ?? 'unknown',
+    prOnly: annotations.prOnly === true,
     coverage,
     issues,
+    taskStartId: annotations.taskStartId,
+    taskEndId: annotations.taskEndId,
     firstDeliveryId: annotations.firstDeliveryId,
     review,
     rawHumanMessages: messages.filter((message) => message.role === 'user').length,
@@ -230,6 +262,10 @@ function escape(value) {
 
 export function renderComment(report) {
   const m = report.metrics
+  const issueMarker = `<!-- bw-workflow-feedback:${escape(report.issueUrl)} -->`
+  const reportMarker = '<!-- bw-workflow-report:v1 -->'
+  // The overview recognizes only reports whose Issue marker is on the first line.
+  const markers = report.prOnly ? [reportMarker, issueMarker] : [issueMarker, reportMarker]
   const value = (number) => (number === null ? '未知' : String(number))
   const rounds = `退回 ${m.rejectionBatches} 批；完成返工 ${m.completedReworkRounds} 轮${m.completedReworkRounds < m.rejectionBatches ? '，尚未全部重交' : ''}`
   const rework =
@@ -238,10 +274,10 @@ export function renderComment(report) {
       : m.reworkOccurred
         ? `已${rounds}`
         : `首次人审通过${m.rejectionBatches ? `；后续${rounds}` : ''}`
-  return `<!-- bw-workflow-feedback:${escape(report.issueUrl)} -->
+  return `${markers.join('\n')}
 ## Workflow 会话反馈
 
-会话：${escape(report.sessionTitle ?? report.session?.id ?? '未知')} · 方法：${escape(report.workflowVersion)}。单任务计数。
+会话：${escape(report.sessionTitle ?? report.session?.id ?? '未知')} · 方法：${escape(report.workflowVersion)}。单任务计数。${report.prOnly ? '本报告用于 PR 复盘。' : ''}
 
 | 指标 | 本次记录 |
 |---|---|

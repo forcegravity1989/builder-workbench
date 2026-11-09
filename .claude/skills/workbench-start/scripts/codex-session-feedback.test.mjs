@@ -165,6 +165,39 @@ test('unknown coverage cannot become zero and pending reviews cannot become succ
   assert.equal(unannotated.normalizedHumanEvents, null)
 })
 
+test('separate deliveries in one transcript use only the selected input, questions and review', () => {
+  const transcript = { messages, issues: [] }
+  const second = {
+    ...annotations(),
+    taskStartId: 'u4',
+    taskEndId: 'a3',
+    firstDeliveryId: 'a3',
+    coverage: { initialInput: true, preDelivery: true },
+    userEvents: [{ messageId: 'u4', tags: ['initial_extra_input'], summary: '第二项开工' }],
+    modelEvents: [],
+    review: { verdict: 'pending', evidenceIds: [] }
+  }
+  const report = summarizeFeedback(transcript, second)
+  assert.equal(report.rawHumanMessages, 1)
+  assert.equal(report.metrics.initialExtraInput, 1)
+  assert.equal(report.metrics.permissionRounds, 0)
+  assert.equal(report.metrics.reworkOccurred, null)
+  assert.throws(() => summarizeFeedback(transcript, { ...second, taskStartId: null }), /同时指定/)
+  assert.throws(
+    () => summarizeFeedback(transcript, { ...second, taskStartId: 'a2' }),
+    /开工的用户消息/
+  )
+  assert.throws(() => summarizeFeedback(transcript, { ...second, taskEndId: 'a2' }), /早于起点/)
+  assert.throws(
+    () => summarizeFeedback(transcript, { ...second, firstDeliveryId: 'a2' }),
+    /首次交付/
+  )
+  assert.throws(
+    () => summarizeFeedback(transcript, { ...second, modelEvents: annotations().modelEvents }),
+    /无效消息/
+  )
+})
+
 test('annotations cannot invent evidence, omit user inputs, or count the same rework batch twice', () => {
   const invalid = annotations()
   invalid.userEvents[0].messageId = 'not-present'
@@ -172,6 +205,19 @@ test('annotations cannot invent evidence, omit user inputs, or count the same re
   const omitted = annotations()
   omitted.userEvents.pop()
   assert.throws(() => summarizeFeedback({ messages, issues: [] }, omitted), /逐条核对/)
+  assert.throws(
+    () =>
+      summarizeFeedback(
+        { messages: [messages[1]], issues: [] },
+        {
+          ...annotations(),
+          firstDeliveryId: null,
+          userEvents: [],
+          modelEvents: []
+        }
+      ),
+    /完整覆盖须有本次开工/
+  )
   const duplicate = annotations()
   duplicate.reDeliveries = [
     { messageId: 'a3', requestId: 'u4' },
@@ -183,9 +229,20 @@ test('annotations cannot invent evidence, omit user inputs, or count the same re
 test('published summaries escape markup and keep the rework-not-redelivered result visible', () => {
   const input = annotations()
   input.userEvents[0].summary = '<script> | 换行\n摘要'
+  assert.throws(
+    () => summarizeFeedback({ messages, issues: [] }, { ...input, prOnly: 'true' }),
+    /prOnly 须为布尔值/
+  )
   const comment = renderComment(summarizeFeedback({ messages, issues: [] }, input))
   assert.ok(comment.includes('&lt;script&gt; \\| 换行 摘要'))
   assert.ok(comment.includes('尚未全部重交'))
   assert.ok(comment.includes('bw-workflow-feedback:'))
+  assert.ok(comment.includes('<!-- bw-workflow-report:v1 -->'))
   assert.ok(!comment.includes('AGENTS instructions'))
+  assert.ok(comment.startsWith('<!-- bw-workflow-feedback:'))
+  const prOnly = renderComment(
+    summarizeFeedback({ messages, issues: [] }, { ...input, prOnly: true })
+  )
+  assert.ok(prOnly.startsWith('<!-- bw-workflow-report:v1 -->\n<!-- bw-workflow-feedback:'))
+  assert.ok(prOnly.includes('本报告用于 PR 复盘。'))
 })

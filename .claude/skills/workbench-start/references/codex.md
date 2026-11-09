@@ -55,14 +55,19 @@ node .claude/skills/workbench-start/scripts/codex-session-feedback.mjs schema
 
 提取优先用 `event_msg/item_completed` 的 UserMessage/AgentMessage，旧记录回退到有用户来源的 response_item 或旧事件。存储镜像只取一次，真实重复发送留给模型判断；AGENTS、环境注入、工具回显和子 agent 不算人的输入。正文不可读、损坏或截断保留缺口，不能生成零值。
 
-模型结合对应提问、实际 PR 评审和重新交付，逐条更新本地标注 JSON。字段与合法标签由 `schema` 给出；完整覆盖须核对全部用户输入，不能按关键词猜语义。首次交付引用真正完成回执，正常问答与范围纠正按原意区分；证据补修与产品代码返工保留不同原因。
+模型结合对应提问、实际 PR 评审和重新交付，逐条更新本地标注 JSON。字段与合法标签由 `schema` 给出。会话包含多次连续交付时，用 `taskStartId` 和 `taskEndId` 限定本次范围，两端都包含在内。完整覆盖须核对范围内的全部用户输入，原始提取有缺口时保留未知。交错、跨会话或仅在 GitHub 留下的评审，如果脚本无法关联到本次消息证据，相应指标保持未知。首次交付引用真正完成回执，区分正常问答、范围纠正、证据补修和代码返工。人工权限确认按实际询问批次另计，沙箱自动审核无需人工回答时不计。
+
+同一 Issue 已有一份进入版本总览的报告时，其他独立交付在标注中设置 `prOnly: true`。脚本把 PR 复盘标记放在首行，版本总览继续从首行为 Issue 标记的报告读取。两种报告都可按 `ai-workflow` 筛选。
 
 ```powershell
 node .claude/skills/workbench-start/scripts/codex-session-feedback.mjs report --input 提取.json --annotations 标注.json --out 评论.md --json 指标.json
-# 首次发布；已有反馈评论时按稳定标记找到自己的评论 ID，使用下面 PATCH 替换。
+# 首次发布。已有反馈评论时按开头两行的标记核对作者和 ID，再 PATCH 同一评论。
 gh pr comment PR编号 --body-file 评论.md
 @{body=(Get-Content 评论.md -Raw)} | ConvertTo-Json | Set-Content 更新.json -Encoding utf8
 gh api --method PATCH repos/OWNER/REPO/issues/comments/评论ID --input 更新.json
+# 读回脚本评论，核对 bw-workflow-report:v1 和指标覆盖。符合筛选条件时添加标签并读回。
+gh pr edit PR编号 --add-label ai-workflow
+gh pr view PR编号 --json labels,comments
 ```
 
-report 会重读原始来源核对用户输入；新增输入后旧快照不能生成报告。人审或返工后重跑 extract→标注→report，预览计数和摘要，再按当前授权更新原评论。合入不抹去此前返工；原文与提取产物留本地，脚本通过只证明计数与协议，不证明下一条任务的行为改善。
+`report` 会重读原始来源核对用户输入。新增输入后重跑 `extract`、标注和 `report`，按当前授权发布或更新原评论。补历史时若标记缺失或有歧义，先读正文核对具体指标评论，避免覆盖验证 Review。标签缺失时按仓库授权补建。发布后读回正文和标签，脚本通过只证明本次计数与协议。
