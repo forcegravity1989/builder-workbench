@@ -10,13 +10,13 @@ import { Sparkles, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type SidebarHeaderProps = {
-  controlsOnly?: boolean
+  titleContent?: React.ReactNode
   onWorkspaceBoardMenuOpenChange: (open: boolean) => void
   activityOptionsTarget?: React.Ref<HTMLDivElement>
 }
 
 const SidebarHeader = React.memo(function SidebarHeader({
-  controlsOnly = false,
+  titleContent,
   onWorkspaceBoardMenuOpenChange,
   activityOptionsTarget
 }: SidebarHeaderProps) {
@@ -48,8 +48,13 @@ const SidebarHeader = React.memo(function SidebarHeader({
   )
 
   return (
-    <div className="mt-2 flex h-8 min-w-0 items-center justify-between gap-1.5 px-2">
-      {!controlsOnly && (
+    <div
+      className={cn(
+        'flex min-w-0 items-center justify-between gap-1.5 px-2',
+        titleContent ? 'min-h-12 shrink-0 pt-2 pb-1 pl-4' : 'mt-2 h-8'
+      )}
+    >
+      {titleContent ?? (
         <div className="flex min-w-0 items-center gap-1">
           <span
             // Why truncate: the action cluster is shrink-0, so a long localized title
@@ -61,7 +66,7 @@ const SidebarHeader = React.memo(function SidebarHeader({
           </span>
         </div>
       )}
-      <div className={cn('flex shrink-0 items-center gap-1', controlsOnly && 'ml-auto')}>
+      <div className="flex shrink-0 items-center gap-1">
         <Popover
           open={introOpen}
           onOpenChange={(open) => {

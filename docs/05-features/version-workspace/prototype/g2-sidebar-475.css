@@ -121,10 +121,26 @@
 .native-worktree-heading.selected {
   background: var(--worktree-sidebar-accent, var(--accent));
 }
-/* 项目标题固定在滚动容器之外，与生产 WorkbenchSidebarNav 一致。 */
 .panel-475 .panel-heading-475 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
-  padding: 8px 8px 6px;
+  padding: 8px;
+}
+.panel-heading-475 .project-heading {
+  width: auto;
+  min-width: 0;
+  flex: 1;
+  padding-right: 0;
+}
+.panel-heading-475 .project-heading > span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.panel-heading-475 .native-workspaces-tools {
+  flex-shrink: 0;
 }
 .hidden-475 {
   display: none;
@@ -202,10 +218,4 @@
 }
 .pinned-heading-475:hover {
   background: var(--accent);
-}
-.native-toolbar-475 {
-  display: flex;
-  justify-content: flex-end;
-  padding: 0 0 8px;
-  border-bottom: 1px solid var(--border);
 }

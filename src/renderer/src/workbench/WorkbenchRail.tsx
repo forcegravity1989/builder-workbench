@@ -54,6 +54,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
   const openSpacePage = useAppStore((s) => s.openSpacePage)
   const setActiveView = useAppStore((s) => s.setActiveView)
   const setSidebarBody = useAppStore((s) => s.setSidebarBody)
+  const setSidebarOpen = useAppStore((s) => s.setSidebarOpen)
   const projectPage = useProjectPage()
   const objectContext = useWorkbenchObjectContext()
 
@@ -69,6 +70,7 @@ export function WorkbenchRail(): React.JSX.Element | null {
     }
 
   const enterObjectContext = (): void => {
+    setSidebarOpen(true)
     setSidebarBody('workspaces')
     if (objectContext) {
       return
