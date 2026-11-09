@@ -1,4 +1,5 @@
 import React from 'react'
+import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Why: desktop hover actions should not permanently reserve project-title width;
@@ -15,6 +16,23 @@ export const PROJECT_HEADER_ACTIONS_CLASS_NAME = cn(
   'has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100',
   'has-[button[data-state=open]]:pointer-events-auto has-[button[data-state=open]]:opacity-100'
 )
+
+export const SIDEBAR_GROUP_CHEVRON_SLOT_CLASS =
+  'flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground'
+
+export const SIDEBAR_GROUP_FIXED_CHEVRON_CLASS = cn(
+  SIDEBAR_GROUP_CHEVRON_SLOT_CLASS,
+  'absolute top-1/2 right-1 -translate-y-1/2'
+)
+
+export function SidebarGroupChevron({ expanded }: { expanded: boolean }): React.JSX.Element {
+  return (
+    <ChevronDown
+      aria-hidden
+      className={cn('size-3.5 transition-transform', !expanded && '-rotate-90')}
+    />
+  )
+}
 
 export function ProjectHeaderActions({
   className,

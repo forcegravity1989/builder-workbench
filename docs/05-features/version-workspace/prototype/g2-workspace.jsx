@@ -359,19 +359,22 @@ function App() {
   const [version, setVersion] = useState('v0.7'),
     // 475 页默认落在对象上下文（版本工作区），其余模块入口是整页、没有第二列。
     [screen, setScreen] = useState(is475 ? 'overview' : 'project')
-  const [versionOrder, setVersionOrder] = useState(['v0.8', 'v0.7', 'v0.6'])
+  const [versionOrder, setVersionOrder] = useState(
+    is475 ? ['v0.8', 'v0.7', 'v0.6', 'v0.5', 'v0.4'] : ['v0.8', 'v0.7', 'v0.6']
+  )
   const [otherProjectVersions, setOtherProjectVersions] = useState({ api: ['v1.0'], personal: [] })
   const [activeProjectId, setActiveProjectId] = useState('bw')
   const activeProject = demoProjects.find((project) => project.id === activeProjectId)
   const versionsForTree = (tree) =>
     treeProject(tree) === 'bw' ? versionOrder : otherProjectVersions[treeProject(tree)] || []
   const activeVersions = versionsForTree({ projectId: activeProjectId })
+  const [showMoreVersions, setShowMoreVersions] = useState(false)
   const [showPinnedInGroups, setShowPinnedInGroups] = useState(false)
   const [closedNativeProjects, setClosedNativeProjects] = useState(['bw'])
   const [selectedTreeId, setSelectedTreeId] = useState(null)
   const [selectedSessionId, setSelectedSessionId] = useState(null)
   const [historyOpen, setHistoryOpen] = useState(false)
-  const [openVersions, setOpenVersions] = useState(['v0.7', 'v0.8']),
+  const [openVersions, setOpenVersions] = useState(is475 ? [] : ['v0.7', 'v0.8']),
     [openGoals, setOpenGoals] = useState(['v0.7/G2', 'v0.8/G1'])
   const [closedTrees, setClosedTrees] = useState([]),
     [goalFilters, setGoalFilters] = useState({})
@@ -454,6 +457,10 @@ function App() {
     setVersion(v)
     setScreen(next)
     setOpenVersions((prev) => (prev.includes(v) ? prev : [...prev, v]))
+    if (is475 && activeVersions.indexOf(v) >= 3) {
+      setShowMoreVersions(true)
+      requestAnimationFrame(() => versionRefs.current[v]?.scrollIntoView({ block: 'nearest' }))
+    }
     if (next === 'tasks') {
       setTaskVersion(v)
       setTaskEntry((entry) => entry + 1)
@@ -462,6 +469,9 @@ function App() {
   }
   function enterProject(projectId = 'bw') {
     setActiveProjectId(projectId)
+    if (projectId !== activeProjectId) {
+      setShowMoreVersions(false)
+    }
     const latest = versionsForTree({ projectId })[0]
     setScreen('project')
     setSelectedTreeId(null)
@@ -893,10 +903,22 @@ function App() {
             aria-expanded={expanded}
             onClick={() => toggle(openVersions, v, setOpenVersions)}
           >
-            <Icon icon={expanded ? ChevronDown : ChevronRight} />
+            {!is475 && <Icon icon={expanded ? ChevronDown : ChevronRight} />}
             <Icon icon={PackageCheck} />
             <strong>{v}</strong>
+            {is475 && (
+              <span className="group-chevron-475">
+                <Icon icon={expanded ? ChevronDown : ChevronRight} size={14} />
+              </span>
+            )}
           </button>
+          {is475 && (
+            <Button
+              icon={(props) => <NativeToolIcon kind="add" {...props} />}
+              label={`初始化 ${v} 工作区`}
+              onClick={() => setModal({ type: 'native-tool', title: '初始化工作区' })}
+            />
+          )}
           <Button
             icon={X}
             label={`清理 ${v} 工作树`}
@@ -1204,7 +1226,22 @@ function App() {
         <span>版本</span>
         <Button icon={Plus} label="新建版本" onClick={openVersionDialog} />
       </div>
-      {activeVersions.map(versionNav)}
+      {(is475 ? activeVersions.slice(0, 3) : activeVersions).map(versionNav)}
+      {is475 && activeVersions.length > 3 && (
+        <button
+          className="more-versions-475"
+          aria-expanded={showMoreVersions}
+          aria-controls="more-versions-475"
+          onClick={() => setShowMoreVersions(!showMoreVersions)}
+        >
+          {showMoreVersions ? '收起更多版本' : `显示另外 ${activeVersions.length - 3} 个版本`}
+        </button>
+      )}
+      {is475 && activeVersions.length > 3 && (
+        <div id="more-versions-475" hidden={!showMoreVersions}>
+          {showMoreVersions && activeVersions.slice(3).map(versionNav)}
+        </div>
+      )}
       {!activeVersions.length && <div className="tree-empty">暂无版本</div>}
     </>
   )
@@ -1349,11 +1386,9 @@ function App() {
   return (
     <div className="prototype">
       <div className="review-bar">
-        <strong>{is475 ? 'PR #523 · 侧栏修订预览' : '#439 既有能力修正 · 版本工作区'}</strong>
+        <strong>{is475 ? '版本会话管理 · 双列侧栏' : '#439 既有能力修正 · 版本工作区'}</strong>
         <span>
-          {is475
-            ? 'PR #523 侧栏修订 · 静态交互原型，真机待验证'
-            : '既有能力纠偏 · 数据与操作仅在本页演示'}
+          {is475 ? '分区布局与更多版本 · 交互原型' : '既有能力纠偏 · 数据与操作仅在本页演示'}
         </span>
         <div className="review-actions" aria-label="原型评审工具">
           {is475 && (
@@ -1371,6 +1406,9 @@ function App() {
           <button onClick={() => setScreen('wall')}>从项目墙进入</button>
           <button onClick={() => go('v0.7', 'tasks')}>版本任务</button>
           <button onClick={() => go('v0.7', 'tasks', 'G2')}>目标任务</button>
+          {is475 && activeVersions.length > 3 && (
+            <button onClick={() => go(activeVersions[3], 'overview')}>从外部打开旧版总览</button>
+          )}
           <button onClick={() => setDark(!dark)}>{dark ? '浅色' : '深色'}</button>
           <button
             onClick={() => {
@@ -1453,16 +1491,18 @@ function App() {
                   return (
                     <React.Fragment key={project.id}>
                       <div className="native-project-row" data-project-id={project.id}>
-                        <button
-                          className="tree-chevron"
-                          aria-label={`${project.name} 原生项目展开或收起`}
-                          aria-expanded={expanded}
-                          onClick={() =>
-                            toggle(closedNativeProjects, project.id, setClosedNativeProjects)
-                          }
-                        >
-                          <Icon icon={expanded ? ChevronDown : ChevronRight} />
-                        </button>
+                        {!is475 && (
+                          <button
+                            className="tree-chevron"
+                            aria-label={`${project.name} 原生项目展开或收起`}
+                            aria-expanded={expanded}
+                            onClick={() =>
+                              toggle(closedNativeProjects, project.id, setClosedNativeProjects)
+                            }
+                          >
+                            <Icon icon={expanded ? ChevronDown : ChevronRight} />
+                          </button>
+                        )}
                         <button
                           className="native-project-title"
                           title={`${project.name} · ${project.onWall ? '已上项目墙' : '个人项目，未上墙'}`}
@@ -1473,6 +1513,11 @@ function App() {
                         >
                           <Icon icon={GitBranch} />
                           <span>{project.name}</span>
+                          {is475 && (
+                            <span className="group-chevron-475">
+                              <Icon icon={expanded ? ChevronDown : ChevronRight} size={14} />
+                            </span>
+                          )}
                         </button>
                         <div className="native-project-actions">
                           <button
