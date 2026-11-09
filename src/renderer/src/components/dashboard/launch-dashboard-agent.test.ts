@@ -4,7 +4,8 @@ const mocks = vi.hoisted(() => ({
   getKnownWorktreeById: vi.fn(),
   setActiveWorktree: vi.fn(),
   launchAgentInNewTab: vi.fn(),
-  getExecutionHostIdForWorktree: vi.fn()
+  getExecutionHostIdForWorktree: vi.fn(),
+  ensureAgentLaunchPreferences: vi.fn(async () => ({ disabledTuiAgents: [], isAvailable: true }))
 }))
 
 vi.mock('@/store', () => ({
@@ -22,6 +23,9 @@ vi.mock('@/lib/launch-agent-in-new-tab', () => ({
 vi.mock('@/lib/worktree-runtime-owner', () => ({
   getExecutionHostIdForWorktree: mocks.getExecutionHostIdForWorktree
 }))
+vi.mock('@/runtime/agent-launch-settings/use-host-agent-launch-preferences', () => ({
+  ensureAgentLaunchPreferences: mocks.ensureAgentLaunchPreferences
+}))
 
 import { launchDashboardAgent } from './launch-dashboard-agent'
 
@@ -33,8 +37,9 @@ describe('launchDashboardAgent', () => {
     mocks.launchAgentInNewTab.mockReturnValue({ tabId: 'tab-1' })
   })
 
-  it('activates a folder or git workspace on its execution host before launching', () => {
-    expect(launchDashboardAgent({ worktreeId: 'folder:docs', agent: 'codex' })).toBe(true)
+  it('activates a folder or git workspace on its execution host before launching', async () => {
+    await expect(launchDashboardAgent({ worktreeId: 'folder:docs', agent: 'codex' })).resolves.toBe(true)
+    expect(mocks.ensureAgentLaunchPreferences).toHaveBeenCalledWith('folder:docs')
     expect(mocks.getKnownWorktreeById).toHaveBeenCalledWith('folder:docs', 'ssh:docs')
     expect(mocks.setActiveWorktree).toHaveBeenCalledWith('folder:docs', 'ssh:docs')
     expect(mocks.launchAgentInNewTab).toHaveBeenCalledWith({

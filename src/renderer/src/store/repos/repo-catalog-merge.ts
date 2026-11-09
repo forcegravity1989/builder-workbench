@@ -1,3 +1,5 @@
+import { dropWorktreeRowsOfDroppedRepos } from './dropped-repo-worktree-rows'
+import { getRepoHostIdentity } from '../slices/repo-host-identity'
 import type { AppState } from '../types'
 import type { SshRepoReadoption } from '../../../../shared/ssh-types'
 import type { ProjectHostSetup } from '../../../../shared/project-types'
@@ -23,10 +25,13 @@ export type FetchedRepoCatalog = {
   repos: readonly Repo[]
   projectHostSetupCompatibility: ProjectHostSetupProjection
   hostId: ReturnType<typeof getRuntimeTargetHostId>
+  /** Repo registrations present when this catalog was requested. */
+  reposAtRequest: readonly Repo[]
 }
 
 export async function fetchRepoCatalogForTarget(
-  target: ReturnType<typeof getActiveRuntimeTarget>
+  target: ReturnType<typeof getActiveRuntimeTarget>,
+  reposAtRequest: readonly Repo[]
 ): Promise<FetchedRepoCatalog> {
   const fetchedRepos =
     target.kind === 'local'
@@ -41,7 +46,8 @@ export async function fetchRepoCatalogForTarget(
   return {
     repos,
     projectHostSetupCompatibility: await fetchProjectHostSetupCompatibility(target, repos),
-    hostId: getRuntimeTargetHostId(target)
+    hostId: getRuntimeTargetHostId(target),
+    reposAtRequest
   }
 }
 
@@ -53,7 +59,12 @@ export function mergeFetchedRepoCatalog(
   projectHostSetupCompatibility: ProjectHostSetupProjection
   hostId: ReturnType<typeof getRuntimeTargetHostId>
 } {
-  const repos = mergeFetchedReposForHost(currentRepos, catalog.repos, catalog.hostId)
+  const repos = mergeFetchedReposForHost(
+    currentRepos,
+    catalog.repos,
+    catalog.hostId,
+    catalog.reposAtRequest
+  )
   return {
     repos,
     projectHostSetupCompatibility: catalog.projectHostSetupCompatibility,
@@ -118,6 +129,26 @@ export function reconcileReadoptedSshWorktreeState(
     detectedWorktreesByRepo,
     sortEpoch: worktreesByRepo === state.worktreesByRepo ? state.sortEpoch : state.sortEpoch + 1
   }
+}
+
+/** The worktree rows a fetched catalog leaves: re-adopted SSH rows moved, dropped repos' rows gone. */
+export function reconcileFetchedCatalogWorktreeState(
+  state: Pick<
+    AppState,
+    | 'repos'
+    | 'pendingSshRepoReadoptions'
+    | 'worktreesByRepo'
+    | 'detectedWorktreesByRepo'
+    | 'sortEpoch'
+  >,
+  catalog: Pick<FetchedRepoCatalog, 'reposAtRequest'>,
+  nextRepos: readonly Repo[]
+): Pick<AppState, 'worktreesByRepo' | 'detectedWorktreesByRepo' | 'sortEpoch'> {
+  const readopted = reconcileReadoptedSshWorktreeState(state, state.pendingSshRepoReadoptions)
+  // Why: a catalog requested before an add may omit it; that add's rows are not this answer's to drop.
+  const requested = new Set(catalog.reposAtRequest.map(getRepoHostIdentity))
+  const previous = state.repos.filter((repo) => requested.has(getRepoHostIdentity(repo)))
+  return dropWorktreeRowsOfDroppedRepos(readopted, previous, nextRepos)
 }
 
 export function projectCompatibilityForReconciledRepos(

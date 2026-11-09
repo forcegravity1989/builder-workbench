@@ -1,3 +1,4 @@
+import { latestFeatureEnd } from '../../../shared/workbench/milestone-sdlc'
 import {
   milestoneDraft,
   type MilestoneRead,
@@ -14,6 +15,10 @@ export type Session = {
   expectedFormal: string
   expectedProposal: string | null
   editing: boolean
+  viewDate?: string
+  rangeOnly?: boolean
+  featureOrder?: string[]
+  pinnedFeatures?: string[]
   scrollX: number | null
   scrollY: number
   pageY: number
@@ -29,7 +34,7 @@ export type Session = {
   recoveryBlocked?: boolean
   persistenceError?: string
 }
-// The disk cache only recovers local edits; committed .bw materials remain authoritative.
+// Local drafts and viewport preferences never replace committed .bw materials.
 export const sessions = new Map<string, Session>()
 export const submitting = new Set<string>()
 const listeners = new Set<() => void>()
@@ -45,11 +50,10 @@ export const subscribe = (listener: () => void) => {
   }
 }
 export const changed = (s: Session) => JSON.stringify(s.draft) !== JSON.stringify(s.baseline)
+const recoveryPayload = (s: Session) =>
+  changed(s) || s.retry || s.viewDate !== undefined ? milestoneRecoveryPayload(s) : null
 export const recoverySaved = (s: Session) =>
-  !s.recoveryBlocked &&
-  !s.saving &&
-  !s.persistenceError &&
-  s.recoveryRaw === (changed(s) || s.retry ? milestoneRecoveryPayload(s) : null)
+  !s.recoveryBlocked && !s.saving && !s.persistenceError && s.recoveryRaw === recoveryPayload(s)
 export function fresh(data: MilestoneRead, previous?: Session): Session {
   const snapshot = data.proposal ?? data.formal
   const draft = milestoneDraft(snapshot)
@@ -60,6 +64,14 @@ export function fresh(data: MilestoneRead, previous?: Session): Session {
     expectedFormal: data.formal.revision,
     expectedProposal: data.branchHead,
     editing: previous?.editing ?? false,
+    viewDate: previous?.viewDate,
+    rangeOnly: previous?.rangeOnly,
+    featureOrder:
+      previous?.featureOrder ??
+      draft.material.features
+        .toSorted((a, b) => latestFeatureEnd(b) - latestFeatureEnd(a))
+        .map((f) => f.id),
+    pinnedFeatures: previous?.pinnedFeatures ?? [],
     scrollX: previous?.scrollX ?? null,
     scrollY: previous?.scrollY ?? 0,
     pageY: previous?.pageY ?? 0,
@@ -80,7 +92,7 @@ export function persist(key: string): void {
   if (!initial || initial.recoveryBlocked || pending.has(key)) {
     return
   }
-  const payload = (s: Session) => (changed(s) || s.retry ? milestoneRecoveryPayload(s) : null)
+  const payload = recoveryPayload
   if (payload(initial) === initial.recoveryRaw) {
     return
   }
@@ -193,4 +205,22 @@ export function recordMilestoneSubmission(key: string, s: Session, result: Miles
     field: null,
     submitError: result.outcome.mode === 'failed' ? result.outcome.error : undefined
   })
+}
+
+export function beginMilestoneEditing(key: string) {
+  const s = sessions.get(key)
+  if (s && !s.recoveryBlocked) {
+    put(
+      key,
+      {
+        ...s,
+        editing: true,
+        featureOrder: s.draft.material.features
+          .toSorted((a, b) => latestFeatureEnd(b) - latestFeatureEnd(a))
+          .map((f) => f.id),
+        pinnedFeatures: []
+      },
+      false
+    )
+  }
 }

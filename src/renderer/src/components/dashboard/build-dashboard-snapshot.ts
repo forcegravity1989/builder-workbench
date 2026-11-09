@@ -46,6 +46,7 @@ import { buildDashboardSnapshotFilterOptions } from './dashboard-snapshot-filter
 import { groupSubagentsByParentPaneKey } from './dashboard-subagent-cards'
 import { selectDashboardOrchestration } from './dashboard-orchestration-selection'
 import { dashboardRowBucketProjection } from './dashboard-row-bucket'
+import type { DashboardHostAgentPreferences } from './use-dashboard-host-agent-preferences'
 
 /** The store slices the snapshot builder reads. Kept as a Pick so unit tests
  *  can pass a partial store without constructing the whole AppState. */
@@ -89,6 +90,7 @@ export function buildDashboardSnapshot(
     rowsCache?: WorktreeAgentRowsCache
     /** Freshness token for rowsCache (agentStatusEpoch); required for the cache to be safe. */
     rowsGeneration?: unknown
+    hostAgentPreferences?: DashboardHostAgentPreferences
   } = {}
 ): DashboardSnapshot {
   const cards: DashboardCard[] = []
@@ -278,7 +280,8 @@ export function buildDashboardSnapshot(
           launchableAgentsByWorktreeId: buildDashboardWorktreeLaunchOptions(
             state,
             cards,
-            workspaces
+            workspaces,
+            options.hostAgentPreferences
           )
         }
       : {}),

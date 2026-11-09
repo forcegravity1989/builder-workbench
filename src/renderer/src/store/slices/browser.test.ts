@@ -164,7 +164,7 @@ describe('createBrowserSlice annotations', () => {
     })
   })
 
-  it('clears page annotations when the browser page URL changes', () => {
+  it('keeps annotations for fragment updates and clears them for a route change', () => {
     const store = createTestStore()
     const tab = store.getState().createBrowserTab('wt-1', 'https://example.com')
     const pageId = tab.activePageId
@@ -173,6 +173,9 @@ describe('createBrowserSlice annotations', () => {
     }
 
     store.getState().addBrowserPageAnnotation(makeAnnotation(pageId))
+    expect(store.getState().browserAnnotationsByPageId[pageId]).toHaveLength(1)
+
+    store.getState().setBrowserPageUrl(pageId, 'https://example.com/#section-2')
     expect(store.getState().browserAnnotationsByPageId[pageId]).toHaveLength(1)
 
     store.getState().setBrowserPageUrl(pageId, 'https://example.com/next')

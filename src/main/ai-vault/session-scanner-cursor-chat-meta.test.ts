@@ -435,6 +435,9 @@ describe('cursor chat meta scan failures', () => {
     const refused = await scanAiVaultSessions({ ...scanOptions, platform: 'darwin', limit: 20 })
     const refusedCursor = refused.sessions.filter((session) => session.agent === 'cursor')
     expect(refusedCursor).toHaveLength(2)
+    for (const session of refusedCursor) {
+      expect(getSessionParseCacheEntry(session.filePath)?.sidecar).toBe('unknown')
+    }
     expect(refusedCursor.map((session) => session.cwd)).toEqual([null, null])
     // One issue for the chats root, not one per transcript.
     expect(refused.issues).toHaveLength(1)

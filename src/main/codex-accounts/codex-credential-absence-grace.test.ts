@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   CODEX_CREDENTIAL_ABSENCE_GRACE_MS,
+  CODEX_CREDENTIAL_ABSENCE_MAX_TRACKED_PATHS,
   CodexCredentialAbsenceGrace
 } from './codex-credential-absence-grace'
 
@@ -70,6 +71,18 @@ describe('CodexCredentialAbsenceGrace', () => {
       state: 'unreadable',
       durable: true
     })
+  })
+
+  it('bounds tracked homes without treating an evicted absence as durable', () => {
+    const grace = new CodexCredentialAbsenceGrace()
+    for (let index = 0; index <= CODEX_CREDENTIAL_ABSENCE_MAX_TRACKED_PATHS; index += 1) {
+      grace.assess(join(dir, `missing-${index}.json`), 1_000)
+    }
+    expect(grace.trackedPathCountForTests()).toBe(CODEX_CREDENTIAL_ABSENCE_MAX_TRACKED_PATHS)
+    expect(
+      grace.assess(join(dir, 'missing-0.json'), 1_000 + CODEX_CREDENTIAL_ABSENCE_GRACE_MS)
+    ).toEqual({ state: 'missing', durable: false })
+    expect(grace.trackedPathCountForTests()).toBe(CODEX_CREDENTIAL_ABSENCE_MAX_TRACKED_PATHS)
   })
 
   it('reports settled credential-free JSON as durable immediately', () => {

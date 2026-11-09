@@ -1,7 +1,7 @@
+import { createWebRuntimeSessionTerminalResult } from './web-runtime-terminal-create-operation'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  createWebRuntimeAgentSessionTerminal,
-  createWebRuntimeAgentSessionTerminalWithLaunchDraft,
+  deliverCreatedWebRuntimeAgentSessionPrompt,
   createWebRuntimeSessionTerminal
 } from './web-runtime-session'
 import { peekWebSessionFocusIntent } from './web-session-focus-intent'
@@ -109,7 +109,7 @@ describe('createWebRuntimeSessionTerminal', () => {
         worktreeId: WORKTREE_ID,
         environmentId: ENVIRONMENT_ID
       })
-    ).resolves.toEqual({ status: 'created' })
+    ).resolves.toEqual({ status: 'created', hostTabId: 'host-tab-1' })
 
     expect(selectedHosts).toEqual([RUNTIME_EXECUTION_HOST_ID])
   })
@@ -174,7 +174,7 @@ describe('createWebRuntimeSessionTerminal', () => {
             : {}),
           activate
         })
-      ).resolves.toEqual({ status: 'created' })
+      ).resolves.toEqual({ status: 'created', hostTabId })
 
       const authorityMethod =
         sessionKind === 'resume' ? 'terminal.ensureAgentSession' : 'terminal.createAgentSession'
@@ -255,7 +255,7 @@ describe('createWebRuntimeSessionTerminal', () => {
           command: "kimi '--session' 'session_431324d7'",
           providerSession: { key: 'session_id', id: 'session_431324d7' }
         })
-      ).resolves.toEqual({ status: 'created' })
+      ).resolves.toEqual({ status: 'created', hostTabId: 'host-tab-kimi' })
 
       const methods = runtimeCall.mock.calls.map(([request]) => request.method)
       expect(methods.includes('terminal.ensureAgentSession')).toBe(authority)
@@ -351,7 +351,7 @@ describe('createWebRuntimeSessionTerminal', () => {
         viewMode: 'chat',
         activate: true
       })
-    ).resolves.toEqual({ status: 'created' })
+    ).resolves.toEqual({ status: 'created', hostTabId: 'host-tab-2' })
 
     expect(runtimeCall).toHaveBeenNthCalledWith(2, {
       selector: ENVIRONMENT_ID,
@@ -448,7 +448,7 @@ describe('createWebRuntimeSessionTerminal', () => {
           launchAgent: 'codex',
           activate: true
         })
-      ).resolves.toEqual({ status: 'created' })
+      ).resolves.toEqual({ status: 'created', hostTabId: 'host-tab-created' })
 
       expect(
         runtimeCall.mock.calls.filter(
@@ -507,7 +507,7 @@ describe('createWebRuntimeSessionTerminal', () => {
         launchAgent: 'codex',
         targetGroupId: 'group-left'
       })
-    ).resolves.toEqual({ status: 'created' })
+    ).resolves.toEqual({ status: 'created', hostTabId: 'host-tab-replayed' })
 
     expect(operationIds).toHaveLength(2)
     expect(operationIds[0]).toBe(operationIds[1])
@@ -550,16 +550,11 @@ describe('createWebRuntimeSessionTerminal', () => {
     })
 
     await expect(
-      createWebRuntimeAgentSessionTerminal({
-        worktreeId: WORKTREE_ID,
-        agentSessionKind: 'fresh',
-        agent: 'claude',
-        command: 'claude',
-        promptAfterReady: 'continue the unfinished task',
-        submitPrompt: true,
-        forcePromptPaste: true
-      })
-    ).resolves.toEqual({ outcome: { status: 'created' }, promptDelivered: true })
+      deliverCreatedWebRuntimeAgentSessionPrompt(
+        await createWebRuntimeSessionTerminalResult({ worktreeId: WORKTREE_ID, agentSessionKind: 'fresh', agent: 'claude', command: 'claude' }),
+        { agent: 'claude', promptAfterReady: 'continue the unfinished task', submitPrompt: true, forcePromptPaste: true }
+      )
+    ).resolves.toBe(true)
 
     const createRequest = runtimeCall.mock.calls.find(
       ([request]) => request.method === 'terminal.createAgentSession'
@@ -612,14 +607,11 @@ describe('createWebRuntimeSessionTerminal', () => {
     })
 
     await expect(
-      createWebRuntimeAgentSessionTerminalWithLaunchDraft({
-        worktreeId: WORKTREE_ID,
-        agentSessionKind: 'fresh',
-        agent: 'claude',
-        command: "claude --prefill 'https://github.com/o/r/issues/12'",
-        launchDraft: 'https://github.com/o/r/issues/12'
-      })
-    ).resolves.toEqual({ status: 'created' })
+      deliverCreatedWebRuntimeAgentSessionPrompt(
+        await createWebRuntimeSessionTerminalResult({ worktreeId: WORKTREE_ID, agentSessionKind: 'fresh', agent: 'claude', command: "claude --prefill 'https://github.com/o/r/issues/12'" }),
+        { agent: 'claude', launchDraft: 'https://github.com/o/r/issues/12' }
+      )
+    ).resolves.toBe(true)
 
     // No paste runs for an argv-prefill draft, so this is the only thing that
     // fills the mirrored tab's composer on this host class.

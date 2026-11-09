@@ -27,7 +27,7 @@ import {
 } from './tab-agent-types-by-tab-id'
 import { buildTabAgentLaunchOptions, orderTabLaunchAgents } from './tab-agent-launch-options'
 import type { TabAgentLaunchOption } from './tab-agent-launch-options'
-import { DEFAULT_DISABLED_TUI_AGENTS } from '../../../../shared/tui-agent-selection'
+import { useHostAgentLaunchPreferences } from '@/runtime/agent-launch-settings/use-host-agent-launch-preferences'
 import { shouldShowWindowsShellMenu } from './windows-shell-menu-visibility'
 import { createUnifiedTabLookup } from './tab-bar-item-model'
 import { getClientCreationActionPolicy } from '@/lib/client-creation-action-policy'
@@ -141,22 +141,34 @@ export function useTabBarRuntimeModel({
     }
     return s.sshConnectionStates.get(worktreeConnectionId)?.remotePlatform ?? null
   })
-  const defaultAgent = useAppStore((s) => s.settings?.defaultTuiAgent)
-  const disabledTuiAgents = useAppStore(
-    (s) => s.settings?.disabledTuiAgents ?? DEFAULT_DISABLED_TUI_AGENTS
-  )
   const agentCmdOverrides = useAppStore(
     (s) => s.settings?.agentCmdOverrides ?? EMPTY_AGENT_CMD_OVERRIDES
   )
   const agentDetectionTarget = useAgentDetectionTargetForWorktree(worktreeId)
+  const {
+    defaultTuiAgent: defaultAgent,
+    disabledTuiAgents,
+    isAvailable: preferencesAvailable,
+    isLoading: preferencesLoading
+  } = useHostAgentLaunchPreferences(agentDetectionTarget)
   const { detectedIds } = useDetectedAgents(agentDetectionTarget)
   const agentLaunchOptions = useMemo(
     () =>
-      buildTabAgentLaunchOptions(
-        orderTabLaunchAgents(defaultAgent, detectedIds ?? [], disabledTuiAgents),
-        agentCmdOverrides
-      ),
-    [agentCmdOverrides, defaultAgent, detectedIds, disabledTuiAgents]
+      preferencesLoading || !preferencesAvailable
+        ? []
+        : buildTabAgentLaunchOptions(
+            orderTabLaunchAgents(defaultAgent, detectedIds ?? [], disabledTuiAgents),
+            agentDetectionTarget?.kind === 'runtime' ? EMPTY_AGENT_CMD_OVERRIDES : agentCmdOverrides
+          ),
+    [
+      agentCmdOverrides,
+      agentDetectionTarget?.kind,
+      defaultAgent,
+      detectedIds,
+      disabledTuiAgents,
+      preferencesAvailable,
+      preferencesLoading
+    ]
   )
   const isWebClient = (globalThis as { __ORCA_WEB_CLIENT__?: boolean }).__ORCA_WEB_CLIENT__ === true
   const windowsTerminalCapabilityOwnerKey = getWindowsTerminalCapabilityOwnerKey(

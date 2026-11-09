@@ -1,6 +1,6 @@
 import { milestoneVersionKey, type MilestoneVersionFacts } from './milestone-feature-facts'
 import { useRef, useState } from 'react'
-import { Plus, ExternalLink } from 'lucide-react'
+import { ListPlus, ExternalLink } from 'lucide-react'
 import { MilestoneIconButton } from './milestone-icon-button'
 import { MILESTONE_DAY_WIDTH as dayWidth, type MilestoneGestureApi } from './use-milestone-gesture'
 import { MilestoneField } from './milestone-field'
@@ -46,7 +46,7 @@ function WeekName({
     <input
       className="wb-ml-inline wb-ml-week-name"
       aria-label={`版本名称 ${week.start}`}
-      placeholder="版本名（自动）"
+      placeholder="版本名称"
       disabled={disabled}
       value={value}
       onFocus={() => {
@@ -132,10 +132,10 @@ export function MilestoneVersionRow({
         <div>
           {editable && (
             <MilestoneIconButton className="wb-ml-cell-add" label="添加特性" onClick={addFeature}>
-              <Plus size={16} />
+              <ListPlus size={16} />
             </MilestoneIconButton>
           )}
-          特性 / 负责人<small>{showActual ? '规划 / 实际日期' : '版本 · 日排期'}</small>
+          特性 / 负责人<small>{showActual ? '规划 / 实际日期' : '计划 · 日排期'}</small>
         </div>
       </div>
       <div className="wb-ml-track" style={{ width: canvasWidth }}>
@@ -211,7 +211,7 @@ export function MilestoneVersionRow({
               ) : (
                 <button
                   className={`wb-ml-version-dates${editable ? ' editable' : ''}`}
-                  title="拖动整体平移版本，两端调整版本范围"
+                  title="拖动调整版本日期；特性排期独立保留"
                   onPointerDown={
                     editable
                       ? (e) => gesture.begin(e, { kind: 'version', id: v.cycleId, mode: 'move' })

@@ -79,14 +79,15 @@ export function useComposerTargetState(
     initialLinearBranchName: sourceContextState.initialLinearBranchName,
     initialLinkedWorkItem: composerTargetStore.initialLinkedWorkItem,
     initialParentWorktreeId: composerTargetStore.initialParentWorktreeId,
+    isProjectGroupTarget: runtimeTargetSelection.isProjectGroupTarget,
+    folderTargetAgentDetectionTarget: runtimeTargetSelection.folderTargetAgentDetectionTarget,
     linkedWorkItem: sourceContextState.linkedWorkItem,
     linkedWorkItemSeedIdentity: sourceContextState.linkedWorkItemSeedIdentity,
     name: sourceContextState.name,
     newWorkspaceDraft: composerTargetStore.newWorkspaceDraft,
     persistDraft: composerTargetStore.persistDraft,
     selectedRepoConnectionId: runtimeTargetSelection.selectedRepoConnectionId,
-    selectedRepoSettings: runtimeTargetSelection.selectedRepoSettings,
-    settings: composerTargetStore.settings
+    selectedRepoSettings: runtimeTargetSelection.selectedRepoSettings
   })
   const asyncComposerState = useComposerAsyncState({
     agentPrompt: sourceContextState.agentPrompt,
@@ -156,6 +157,7 @@ export function useComposerTargetState(
   })
   useDraftTargetSync({
     agentPrompt: sourceContextState.agentPrompt,
+    agentLaunchPreferences: workspaceIdentityState.agentLaunchPreferences,
     attachmentPaths: sourceContextState.attachmentPaths,
     baseBranch: workspaceIdentityState.baseBranch,
     compareBaseRef: workspaceIdentityState.compareBaseRef,

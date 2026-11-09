@@ -72,7 +72,7 @@ describe('quick composer creation request', () => {
     expect(request).not.toHaveProperty('launchDraftPrompt')
   })
 
-  it('keeps provider, branch, sparse, runtime, and startup fields in the quick wire payload', () => {
+  it('keeps provider, branch, sparse, runtime, and startup fields in the quick creation request', () => {
     const request = buildQuickCreationRequest(
       createInput({
         indeterminateProgress: true,
@@ -96,6 +96,7 @@ describe('quick composer creation request', () => {
         linkedGitLabIssue: 8,
         launchDraftPrompt: 'draft',
         promptDelivery: 'draft',
+        agentLaunchOwner: { environmentId: 'env-1', pairingRevision: 3, runtimeId: 'runtime-1' },
         suppressTerminalFocusOnCompletion: true
       })
     )
@@ -115,6 +116,7 @@ describe('quick composer creation request', () => {
       parentWorktreeId: 'repo-1::/worktrees/parent',
       launchDraftPrompt: 'draft',
       promptDelivery: 'draft',
+      agentLaunchOwner: { environmentId: 'env-1', pairingRevision: 3, runtimeId: 'runtime-1' },
       suppressTerminalFocusOnCompletion: true
     })
   })

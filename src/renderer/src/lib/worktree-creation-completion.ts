@@ -4,6 +4,27 @@ import { queueWorkspaceActivationTerminalFocus } from '@/lib/workspace-activatio
 import { seedAgentTabStateAfterWorktreeCreate } from '@/lib/worktree-creation-agent-seeds'
 import type { ActivateAndRevealResult } from '@/lib/worktree-activation'
 import type { WorktreeCreationRequest } from '@/lib/pending-worktree-creation'
+import { toast } from 'sonner'
+import { assertHostAgentStartupOwner } from '@/lib/host-agent-startup-inputs'
+import {
+  formatWorkspaceCreateError,
+  getWorkspaceCreateErrorToastMessage
+} from '@/lib/workspace-create-error-format'
+
+export function stopWorktreeCreationForChangedHost(
+  creationId: string,
+  request: WorktreeCreationRequest
+): boolean {
+  try {
+    assertHostAgentStartupOwner(request.agentLaunchOwner)
+    return false
+  } catch (error) {
+    // Creation has committed; abandoning the stale handoff must not offer a duplicate create.
+    useAppStore.getState().removePendingWorktreeCreation(creationId, { cleanupVm: false })
+    toast.error(getWorkspaceCreateErrorToastMessage(formatWorkspaceCreateError(error)))
+    return true
+  }
+}
 
 export async function completeWorktreeCreation(args: {
   creationId: string

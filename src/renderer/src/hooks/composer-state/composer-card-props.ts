@@ -1,4 +1,5 @@
 import { getAttachmentLabel } from '@/lib/new-workspace'
+import { translate } from '@/i18n/i18n'
 import {
   getFullComposerCreateDisabled,
   getQuickComposerCreateDisabled
@@ -10,6 +11,7 @@ export function buildComposerCardProps(state: ComposerModel) {
   const {
     advancedOpen,
     agentPrompt,
+    agentLaunchPreferences,
     attachmentPaths,
     baseBranch,
     branchNameOverride,
@@ -135,7 +137,9 @@ export function buildComposerCardProps(state: ComposerModel) {
     createGateMode === 'quick'
       ? getQuickComposerCreateDisabled(createGateInput)
       : getFullComposerCreateDisabled(createGateInput)
-  const createDisabled = isProjectGroupTarget ? folderCreateDisabled : repoCreateDisabled
+  const createDisabled =
+    !agentLaunchPreferences.isAvailable ||
+    (isProjectGroupTarget ? folderCreateDisabled : repoCreateDisabled)
   const cardProps: ComposerCardSourceProps & ComposerCardActionProps = {
     eligibleRepos: isProjectGroupTarget ? folderSourceRepos : eligibleRepos,
     repoId,
@@ -206,15 +210,27 @@ export function buildComposerCardProps(state: ComposerModel) {
     normalizedLinkQuery,
     onSelectLinkedItem: handleSelectLinkedItem,
     tuiAgent,
+    agentLaunchPreferences,
     onTuiAgentChange: setTuiAgent,
     detectedAgentIds: isProjectGroupTarget ? folderDetectedAgentIds : detectedAgentIds,
     onOpenAgentSettings: handleOpenAgentSettings,
     advancedOpen,
     onToggleAdvanced: () => setAdvancedOpen((current) => !current),
     createDisabled,
-    projectError: isProjectGroupTarget ? pathStatusProjectError : projectError,
+    projectError:
+      (isProjectGroupTarget ? pathStatusProjectError : projectError) ??
+      (!agentLaunchPreferences.isLoading && !agentLaunchPreferences.isAvailable
+        ? translate(
+            'settings.agents.readFailed',
+            'Couldn’t read agent settings. Check the host connection and try again.'
+          )
+        : null),
     creating,
-    onCreate: () => void submit(),
+    onCreate: () => {
+      if (!createDisabled) {
+        void submit()
+      }
+    },
     baseBranch: isProjectGroupTarget ? undefined : baseBranch,
     onBaseBranchChange: isProjectGroupTarget ? () => {} : handleBaseBranchChange,
     onBaseBranchPrSelect: isProjectGroupTarget ? () => {} : handleBaseBranchPrSelect,

@@ -1,4 +1,3 @@
-import { settleMilestoneWindows } from '../../shared/workbench/milestone-window-order'
 import type { Repo } from '../../shared/repo-types'
 import { getRepoExecutionHostId, parseExecutionHostId } from '../../shared/execution-host'
 import { CHARTER_BRANCH } from '../../shared/workbench/project-charter'
@@ -118,11 +117,7 @@ export function nativeMilestoneService(runtime: Runtime) {
         ) {
           throw new Error('发现已有项目材料草案，请刷新后核对；本次输入保留')
         }
-        const settled = settleMilestoneWindows(milestoneDraft(source.snapshot), input)
-        if (settled.conflict) {
-          throw new Error(settled.conflict)
-        }
-        const problems = milestoneProblems(input)
+        const problems = milestoneProblems(input, milestoneDraft(source.snapshot))
         if (problems.length) {
           throw new Error(problems.join('；'))
         }

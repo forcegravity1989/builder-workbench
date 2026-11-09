@@ -1,3 +1,4 @@
+import { AgentLaunchSettingsMutation } from '../../../../shared/rpc-contract/agent-launch-settings-params'
 import { omitPairingLocalUiFields } from '../../../../shared/pairing-local-ui-fields'
 import type { PersistedUIState } from '../../../../shared/persisted-ui-state-types'
 import { defineMethod } from '../core'
@@ -13,6 +14,18 @@ import { FeatureInteractionIdParam, UiUpdate } from './client-ui-schemas'
 import { TerminalQuickCommandsUpdate } from './terminal-quick-command-rpc-schema'
 
 export const CLIENT_UI_METHODS = [
+  defineMethod({
+    name: 'settings.getAgentLaunch',
+    params: null,
+    handler: (_params, { runtime }) => ({ settings: runtime.getClientAgentLaunchSettings() })
+  }),
+  defineMethod({
+    name: 'settings.mutateAgentLaunch',
+    params: AgentLaunchSettingsMutation,
+    handler: async (params, { runtime }) => ({
+      settings: await runtime.mutateClientAgentLaunchSettings(params)
+    })
+  }),
   defineMethod({
     name: 'settings.get',
     params: null,

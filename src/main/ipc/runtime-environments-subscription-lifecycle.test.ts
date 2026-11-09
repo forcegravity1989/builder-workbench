@@ -189,7 +189,10 @@ describe('registerRuntimeEnvironmentHandlers', () => {
       { terminal: 't1' },
       25,
       expect.any(Object),
-      { clientCapabilities: ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES }
+      {
+        clientCapabilities: ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES,
+        signal: expect.any(AbortSignal)
+      }
     )
     expect(sent).toEqual([
       expect.objectContaining({ subscriptionId: result.subscriptionId, type: 'response' }),

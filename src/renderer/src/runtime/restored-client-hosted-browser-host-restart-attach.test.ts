@@ -9,7 +9,7 @@ import {
 } from '../store/slices/runtime-status'
 import { createCompatibleRuntimeStatusResponse } from './runtime-compatibility-test-fixture'
 import {
-  ensureBrowserClientHostForRestartedRuntime,
+  ensureBrowserClientHostOnRuntimeContact,
   ensureBrowserClientHostsForRestoredPages,
   resetRestoredBrowserClientHostAttachForTests
 } from './restored-client-hosted-browser-host-attach'
@@ -60,7 +60,7 @@ function preparedEnvironmentIds(): string[] {
   return prepareBrowserClientHostPlacement.mock.calls.map((call) => call[0].selector)
 }
 
-describe('ensureBrowserClientHostForRestartedRuntime', () => {
+describe('ensureBrowserClientHostOnRuntimeContact', () => {
   beforeEach(() => {
     resetRestoredBrowserClientHostAttachForTests()
     prepareBrowserClientHostPlacement.mockClear()
@@ -75,7 +75,7 @@ describe('ensureBrowserClientHostForRestartedRuntime', () => {
   // Why: the guests are still alive in this desktop's webviews, so re-preparing drives the registry
   // down replaceAuthority and hands the replacement runtime an inventory it can adopt.
   it('prepares the host for an environment with a live client-placed page', async () => {
-    await ensureBrowserClientHostForRestartedRuntime(
+    await ensureBrowserClientHostOnRuntimeContact(
       stateWith({ 'page-1': { environmentId: 'env-a', placement: CLIENT_PLACEMENT } }),
       'env-a'
     )
@@ -89,7 +89,7 @@ describe('ensureBrowserClientHostForRestartedRuntime', () => {
 
   // Why: a staged page has no host-minted placement yet, but this desktop is already its host.
   it('prepares the host for a staged client-hosted page with no placement yet', async () => {
-    await ensureBrowserClientHostForRestartedRuntime(
+    await ensureBrowserClientHostOnRuntimeContact(
       stateWith({ 'page-1': { environmentId: 'env-a', staged: true, stagedClientHosted: true } }),
       'env-a'
     )
@@ -99,7 +99,7 @@ describe('ensureBrowserClientHostForRestartedRuntime', () => {
 
   // Why: a session-restored row that adoption has not spent yet is client-hosted just as surely.
   it('prepares the host for a restored client-hosted page with no placement yet', async () => {
-    await ensureBrowserClientHostForRestartedRuntime(
+    await ensureBrowserClientHostOnRuntimeContact(
       stateWith({
         'page-1': { environmentId: 'env-a', restoredFromSession: true, restoredClientHosted: true }
       }),
@@ -110,7 +110,7 @@ describe('ensureBrowserClientHostForRestartedRuntime', () => {
   })
 
   it('prepares no host when the environment has no handles at all', async () => {
-    await ensureBrowserClientHostForRestartedRuntime(stateWith({}), 'env-a')
+    await ensureBrowserClientHostOnRuntimeContact(stateWith({}), 'env-a')
 
     expect(prepareBrowserClientHostPlacement).not.toHaveBeenCalled()
   })
@@ -118,7 +118,7 @@ describe('ensureBrowserClientHostForRestartedRuntime', () => {
   // Why: a server-hosted-only environment loses nothing to a runtime restart, so claiming hosting
   // duty for it would be work this desktop was never asked to do.
   it('prepares no host when the environment only has server-hosted pages', async () => {
-    await ensureBrowserClientHostForRestartedRuntime(
+    await ensureBrowserClientHostOnRuntimeContact(
       stateWith({ 'page-1': { environmentId: 'env-a', placement: { kind: 'server' } } }),
       'env-a'
     )
@@ -128,7 +128,7 @@ describe('ensureBrowserClientHostForRestartedRuntime', () => {
 
   // Why: one runtime restarting must not start a host on every other environment this client knows.
   it('prepares no host when the only client-hosted page belongs to another environment', async () => {
-    await ensureBrowserClientHostForRestartedRuntime(
+    await ensureBrowserClientHostOnRuntimeContact(
       stateWith({ 'page-1': { environmentId: 'env-b', placement: CLIENT_PLACEMENT } }),
       'env-a'
     )
@@ -137,7 +137,7 @@ describe('ensureBrowserClientHostForRestartedRuntime', () => {
   })
 
   it('prepares only the restarted environment when several have client-hosted pages', async () => {
-    await ensureBrowserClientHostForRestartedRuntime(
+    await ensureBrowserClientHostOnRuntimeContact(
       stateWith({
         'page-1': { environmentId: 'env-a', placement: CLIENT_PLACEMENT },
         'page-2': { environmentId: 'env-b', placement: CLIENT_PLACEMENT }
@@ -155,7 +155,7 @@ describe('ensureBrowserClientHostForRestartedRuntime', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     await expect(
-      ensureBrowserClientHostForRestartedRuntime(
+      ensureBrowserClientHostOnRuntimeContact(
         stateWith({ 'page-1': { environmentId: 'env-a', placement: CLIENT_PLACEMENT } }),
         'env-a'
       )
@@ -168,7 +168,7 @@ describe('ensureBrowserClientHostForRestartedRuntime', () => {
 
   // Why: a restart can be observed before the browser slice has published any handle map.
   it('tolerates a state with no handle map at all', async () => {
-    await expect(ensureBrowserClientHostForRestartedRuntime({}, 'env-a')).resolves.toBeUndefined()
+    await expect(ensureBrowserClientHostOnRuntimeContact({}, 'env-a')).resolves.toBeUndefined()
 
     expect(prepareBrowserClientHostPlacement).not.toHaveBeenCalled()
   })
@@ -188,7 +188,7 @@ describe('ensureBrowserClientHostForRestartedRuntime', () => {
     const restored = ensureBrowserClientHostsForRestoredPages(
       stateWith({ 'page-1': { environmentId: 'env-a', restoredClientHosted: true } })
     )
-    const restarted = ensureBrowserClientHostForRestartedRuntime(state, 'env-a')
+    const restarted = ensureBrowserClientHostOnRuntimeContact(state, 'env-a')
     releaseFirst()
     await Promise.all([restored, restarted])
 

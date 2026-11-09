@@ -79,6 +79,12 @@ export type RemoteRuntimeSharedControlConnectionOptions = {
   isCapabilityPaused?: () => boolean
   /** Publishes local transport diagnostics after a meaningful state transition. */
   onDiagnosticsChanged?: (diagnostics: RemoteRuntimeSharedConnectionDiagnostics) => void
+  /** Any inbound frame, ping or pong on the current socket. */
+  onAnswered?: () => void
+  /** Each socket that becomes ready, including after every reconnect. */
+  onReady?: () => void
+  /** OPEN to ready bound before the socket is retired; defaults to 30s. */
+  readyDeadlineMs?: number
   reconnectStableResetMs?: number
   liveness?: RemoteRuntimeSocketLivenessOptions
 }

@@ -116,9 +116,10 @@ async function ensureRuntimeEnvironmentCompatible(
     statusCheckedAt: null
   }
   const check = (async () => {
-    const response = await window.api.runtimeEnvironments.call({
-      selector: environmentId,
+    const response = await callRuntimeEnvironmentWithRevision({
+      environmentId,
       method: 'status.get',
+      params: undefined,
       timeoutMs: options.timeoutMs,
       expectedEnvironmentPairingRevision: options.expectedEnvironmentPairingRevision
     })
