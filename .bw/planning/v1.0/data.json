@@ -96,7 +96,8 @@
         "closed": false
       }
     ],
-    "confirmed": false,
+    "confirmed": true,
+    "confirmedAt": "2026-11-09T11:47:11.740Z",
     "sources": "本会话板面批注 3 条；会议 ID 未提供，未读取 eMeeting 语音转写稿。",
     "updatedAt": "2026-11-09T11:33:08.538647Z"
   },
