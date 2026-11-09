@@ -72,7 +72,7 @@ export async function deliverReviewRequest(
   targets: ReviewPeerTarget[]
 ): Promise<ReviewSendResult> {
   const snapshots = await window.api.runtimeEnvironments.getStatusSnapshots()
-  const results = []
+  const results: ReviewSendResult['results'] = []
   for (const target of targets) {
     try {
       const snapshot = snapshots.find(
