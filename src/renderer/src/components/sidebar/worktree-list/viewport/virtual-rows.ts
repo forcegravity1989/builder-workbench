@@ -1,5 +1,6 @@
 import { defaultRangeExtractor } from '@tanstack/react-virtual'
 import type { Range, VirtualItem } from '@tanstack/react-virtual'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import { PINNED_GROUP_KEY, getWorktreeLineageGroupKey } from '../grouping/group-keys'
 import { getRenderRowKey } from '../listing/render-row'
 import type { RenderRow } from '../listing/render-row'
@@ -52,7 +53,22 @@ export function shouldUseHeaderTopSpacing(args: {
   const previousRenderRow = args.rows[args.index - 1]
   const followsCollapsedPinnedHeader =
     previousRenderRow?.type === 'header' && previousRenderRow.key === PINNED_GROUP_KEY
-  return args.index !== args.firstHeaderIndex && !followsCollapsedPinnedHeader
+  // The Workbench content row ends with its own section title. Adjacent project headers
+  // at the same depth also use the standard row gap without a second group inset.
+  const row = args.rows[args.index]
+  const followsSiblingProject =
+    isWorkbenchShell() &&
+    row?.type === 'header' &&
+    (row.repo || row.projectGroup) &&
+    previousRenderRow?.type === 'header' &&
+    (previousRenderRow.repo || previousRenderRow.projectGroup) &&
+    (row.projectGroupDepth ?? 0) === (previousRenderRow.projectGroupDepth ?? 0)
+  return (
+    args.index !== args.firstHeaderIndex &&
+    !followsCollapsedPinnedHeader &&
+    previousRenderRow?.type !== 'content' &&
+    !followsSiblingProject
+  )
 }
 
 export function estimateRenderRowSize(
