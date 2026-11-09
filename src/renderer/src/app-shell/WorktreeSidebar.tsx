@@ -4,6 +4,7 @@ import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/R
 import type { VirtualizedScrollAnchor } from '../hooks/useVirtualizedScrollAnchor'
 import { isWorkbenchShell } from '../workbench/is-workbench-shell'
 import { WORKBENCH_RAIL_WIDTH } from '../workbench/WorkbenchRail'
+import { WorkbenchSidebarNav } from '../workbench/WorkbenchSidebarNav'
 import type { AppChromeLayout } from './use-app-chrome-layout'
 
 type WorktreeSidebarScrollRefs = {
@@ -20,6 +21,7 @@ export function WorktreeSidebar({
   scrollRefs: WorktreeSidebarScrollRefs
   panelVisible?: boolean
 }): React.JSX.Element {
+  const workbenchShell = isWorkbenchShell()
   return (
     <RecoverableRenderErrorBoundary
       boundaryId="sidebar.worktrees"
@@ -39,8 +41,9 @@ export function WorktreeSidebar({
       }
     >
       <Sidebar
-        panelVisible={panelVisible}
-        leadingWidth={isWorkbenchShell() ? WORKBENCH_RAIL_WIDTH : 0}
+        panelVisible={panelVisible && (!workbenchShell || layout.sidebarOpen)}
+        leadingWidth={workbenchShell ? WORKBENCH_RAIL_WIDTH : 0}
+        workbenchTitle={workbenchShell ? <WorkbenchSidebarNav /> : undefined}
         worktreeScrollOffsetRef={scrollRefs.scrollOffsetRef}
         worktreeScrollAnchorRef={scrollRefs.scrollAnchorRef}
       />
