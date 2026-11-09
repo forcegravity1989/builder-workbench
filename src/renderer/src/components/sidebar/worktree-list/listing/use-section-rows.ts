@@ -11,6 +11,8 @@ import type { WorktreeLineage } from '../../../../../../shared/worktree/lineage-
 import type { ExecutionHostId } from '../../../../../../shared/execution-host'
 import { folderWorkspaceKey } from '../../../../../../shared/workspace-scope'
 import { getHostDisplayLabelOverrides } from '../../../../../../shared/host-setting-overrides'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
+import { buildWorkbenchSectionRows } from './workbench-section-rows'
 import { buildRows } from '../grouping/build-rows'
 import type { ProjectGroupingModel } from '../grouping/project-grouping'
 import type { PinnedWorktreeDisplayPolicy, Row, WorktreeGroupBy } from '../grouping/row-types'
@@ -20,8 +22,6 @@ import { addHostSectionRows } from '../../host-section-rows'
 import { orderHostSectionOptions } from '../../host-section-order'
 import { buildSidebarHostOptions } from '../../sidebar-host-options'
 import { selectPendingWorktreeCreationKeys } from './pending-worktree-creation-keys'
-import { projectWorkbenchRows } from './workbench-project-rows'
-import { useWorkbenchProjectFold } from './use-workbench-project-fold'
 
 type SectionRowsArgs = {
   workbenchProject?: { repoId: string; repoIds: readonly string[] }
@@ -47,6 +47,8 @@ type SectionRowsArgs = {
   filterRepoIds: readonly string[]
   visibleWorkspaceHostIds: readonly ExecutionHostId[] | null
   workspaceHostScope: AppState['workspaceHostScope']
+  /** Host-qualified identities excluded from natural groups but allowed in Pinned. */
+  pinnedOnlyIdentities?: ReadonlySet<string>
 }
 
 function collectRenderedSidebarRowKeys(sectionRows: ReturnType<typeof addHostSectionRows>) {
@@ -183,7 +185,8 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
         args.visibleFolderWorkspacesForRows,
         hostLabelById,
         defaultHostId,
-        args.pinnedDisplayPolicy
+        args.pinnedDisplayPolicy,
+        args.pinnedOnlyIdentities
       ),
     [
       args.groupBy,
@@ -206,7 +209,8 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
       args.newExternalWorktreesInboxByRepo,
       pendingCreations,
       hostLabelById,
-      args.pinnedDisplayPolicy
+      args.pinnedDisplayPolicy,
+      args.pinnedOnlyIdentities
     ]
   )
   const orderedHostOptions = useMemo(
@@ -235,18 +239,33 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
   )
   const nativeSectionRows = useMemo(
     () =>
-      addHostSectionRows({
+      buildWorkbenchSectionRows({
         rows,
-        hostOptions: orderedHostOptions,
-        workspaceHostScope: args.workspaceHostScope,
-        visibleWorkspaceHostIds: args.visibleWorkspaceHostIds,
-        defaultHostId,
-        collapsedHostKeys: effectiveCollapsedGroups,
-        forceCollapseHosts: hostDragActive,
-        // Why: projects/workspaces are the primary sidebar object; host sections are only an explicit host-filter view.
-        preferProjectGrouping: true
+        workbench: isWorkbenchShell(),
+        groupBy: args.groupBy,
+        repoIds: args.workbenchProject?.repoIds ?? [],
+        repoMap,
+        projectGrouping: args.projectGrouping,
+        projectGroups: args.visibleProjectGroupsForRows,
+        withHostSections: (naturalRows) =>
+          addHostSectionRows({
+            rows: naturalRows,
+            hostOptions: orderedHostOptions,
+            workspaceHostScope: args.workspaceHostScope,
+            visibleWorkspaceHostIds: args.visibleWorkspaceHostIds,
+            defaultHostId,
+            collapsedHostKeys: effectiveCollapsedGroups,
+            forceCollapseHosts: hostDragActive,
+            // Why: projects/workspaces are the primary sidebar object; host sections are only an explicit host-filter view.
+            preferProjectGrouping: true
+          })
       }),
     [
+      args.groupBy,
+      args.workbenchProject,
+      args.projectGrouping,
+      args.visibleProjectGroupsForRows,
+      repoMap,
       args.visibleWorkspaceHostIds,
       args.workspaceHostScope,
       defaultHostId,
@@ -256,34 +275,10 @@ export function useSidebarSectionRows(args: SectionRowsArgs) {
       rows
     ]
   )
-  const otherProjects = useWorkbenchProjectFold(args.workbenchProject, args.worktreeMap)
-  const sectionRows = useMemo(
-    () =>
-      args.workbenchProject
-        ? projectWorkbenchRows({
-            rows: nativeSectionRows,
-            repoId: args.workbenchProject.repoId,
-            currentRepoIds: args.workbenchProject.repoIds,
-            repos: args.visibleReposForRows,
-            projectGroups: args.visibleProjectGroupsForRows,
-            worktrees,
-            expanded: otherProjects.expanded,
-            onToggle: otherProjects.toggle
-          })
-        : nativeSectionRows,
-    [
-      nativeSectionRows,
-      args.workbenchProject,
-      args.visibleReposForRows,
-      args.visibleProjectGroupsForRows,
-      worktrees,
-      otherProjects.expanded,
-      otherProjects.toggle
-    ]
-  )
+  const sectionRows = nativeSectionRows
   const renderedSidebarRowKeys = useMemo(
-    () => collectRenderedSidebarRowKeys(args.workbenchProject ? nativeSectionRows : sectionRows),
-    [args.workbenchProject, nativeSectionRows, sectionRows]
+    () => collectRenderedSidebarRowKeys(sectionRows),
+    [sectionRows]
   )
 
   return {

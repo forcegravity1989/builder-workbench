@@ -1,6 +1,7 @@
 import { PINNED_GROUP_KEY, getWorktreeLineageGroupKey } from '../grouping/group-keys'
 import type { HostSectionRow } from '../../host-section-rows'
 import type { RenderRow } from './render-row'
+import type { ReactNode } from 'react'
 
 export type WorktreeItemRow = Extract<HostSectionRow, { type: 'item' }>
 export type FolderWorkspaceItemRow = Extract<HostSectionRow, { type: 'folder-workspace' }>
@@ -14,7 +15,10 @@ export function isPinnedWorktreeRow(row: WorktreeItemRow): boolean {
 }
 
 // Collapse a parent and its visible lineage descendants into one virtual row so the card renders them inline.
-export function buildRenderableRows(rows: HostSectionRow[]): RenderRow[] {
+export function buildRenderableRows(
+  rows: HostSectionRow[],
+  afterPinnedContent?: ReactNode
+): RenderRow[] {
   const renderRows: RenderRow[] = []
   for (let index = 0; index < rows.length; index++) {
     const row = rows[index]
@@ -45,6 +49,25 @@ export function buildRenderableRows(rows: HostSectionRow[]): RenderRow[] {
       rows: groupRows
     })
     index = cursor - 1
+  }
+  if (afterPinnedContent !== undefined) {
+    const pinnedFirst = renderRows[0]?.type === 'header' && renderRows[0].key === PINNED_GROUP_KEY
+    const nextSection = pinnedFirst
+      ? renderRows.findIndex(
+          (row, index) =>
+            index > 0 &&
+            !(
+              (row.type === 'item' && row.sectionKey === PINNED_GROUP_KEY) ||
+              (row.type === 'lineage-group' && row.rows[0]?.sectionKey === PINNED_GROUP_KEY) ||
+              (row.type === 'imported-worktrees-card' && row.placement === 'pinned-fallback')
+            )
+        )
+      : 0
+    renderRows.splice(nextSection < 0 ? renderRows.length : nextSection, 0, {
+      type: 'content',
+      key: 'after-pinned',
+      content: afterPinnedContent
+    })
   }
   return renderRows
 }

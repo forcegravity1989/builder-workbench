@@ -2,7 +2,8 @@ import { MilestoneVersionOrigin } from '../workbench/milestone-version-origin'
 import { Suspense, useRef } from 'react'
 import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { translate } from '@/i18n/i18n'
-import Sidebar from '../components/Sidebar'
+import { cn } from '@/lib/utils'
+import { WorktreeSidebar } from './WorktreeSidebar'
 import RightSidebar from '../components/right-sidebar'
 import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/RecoverableRenderErrorBoundary'
 import { FloatingTerminalToggleButton } from '../components/floating-terminal/FloatingTerminalToggleButton'
@@ -19,6 +20,10 @@ import { useCycleWorkspace } from '../workbench/version-cycle/cycle-workspace-co
 import { usePlanColumnResize } from '../workbench/use-plan-column-resize'
 import { useMetricsWorkspaceOpen } from '../workbench/metrics-workspace-open'
 import { useMetricsBandResize } from '../workbench/use-metrics-band-resize'
+import { WorkbenchRail } from '../workbench/WorkbenchRail'
+import { WorkbenchWorkspaceChoiceDialog } from '../workbench/WorkbenchWorkspaceChoiceDialog'
+import { WorkbenchVersionBindingDialog } from '../workbench/version-tree-bind-dialog'
+import { useWorkbenchObjectContext } from '../workbench/workbench-object-context'
 
 const Landing = lazy(() => import('../components/Landing'))
 const WorktreeCreationPanel = lazy(
@@ -55,44 +60,6 @@ const ProjectWallPage = lazy(() =>
 const OnboardProjectPage = lazy(() =>
   import('../workbench/OnboardProjectPage').then((m) => ({ default: m.OnboardProjectPage }))
 )
-
-type WorktreeSidebarScrollRefs = {
-  scrollOffsetRef: React.MutableRefObject<number>
-  scrollAnchorRef: React.MutableRefObject<VirtualizedScrollAnchor>
-}
-
-function WorktreeSidebar({
-  layout,
-  scrollRefs
-}: {
-  layout: AppChromeLayout
-  scrollRefs: WorktreeSidebarScrollRefs
-}): React.JSX.Element {
-  return (
-    <RecoverableRenderErrorBoundary
-      boundaryId="sidebar.worktrees"
-      surface="sidebar"
-      resetKey={layout.activeView}
-      title={translate('auto.App.1468601e7b', 'The workspace list hit an error.')}
-      description={
-        layout.leftTitlebarChromeLayout.shouldMount
-          ? translate(
-              'auto.App.bdc71dddc9',
-              'The active workspace remains open. Retry the list or switch views.'
-            )
-          : translate(
-              'auto.App.cba0fafda5',
-              'The active page remains open. Retry the list or switch views.'
-            )
-      }
-    >
-      <Sidebar
-        worktreeScrollOffsetRef={scrollRefs.scrollOffsetRef}
-        worktreeScrollAnchorRef={scrollRefs.scrollAnchorRef}
-      />
-    </RecoverableRenderErrorBoundary>
-  )
-}
 
 function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element {
   const { activeView, activeWorktreeId, activePendingCreationId, creationLayoutActive } = layout
@@ -155,6 +122,8 @@ export function AppWorkspaceShell(props: {
   return (
     <CycleWorkspaceProvider>
       <AppWorkspaceContent {...props} />
+      <WorkbenchWorkspaceChoiceDialog />
+      <WorkbenchVersionBindingDialog />
     </CycleWorkspaceProvider>
   )
 }
@@ -169,6 +138,8 @@ function AppWorkspaceContent(props: {
   const metricsOnly = metricsBoard && !cycle
   const band = useMetricsBandResize()
   const resize = usePlanColumnResize(Boolean(cycle?.context.worktreeId))
+  const workbenchShell = isWorkbenchShell()
+  const showObjectPanel = useWorkbenchObjectContext()
   const titlebarLeftControls = <TitlebarLeftControls layout={layout} />
   const titlebarMainStrip = <TitlebarMainStrip layout={layout} />
   // Why: keep virtualized scroll memory above the sidebar's workspace/landing remount so the left list doesn't restart at scrollTop 0.
@@ -201,9 +172,12 @@ function AppWorkspaceContent(props: {
           <div className="flex flex-row flex-1 min-h-0 overflow-hidden">
             {layout.showSidebar ? (
               layout.leftTitlebarChromeLayout.shouldMount ? (
-                /* Why: when the sidebar is collapsed, take this titlebar-height header out of flex layout so the terminal/editor reclaim the left edge. */
                 <div
-                  className={`flex min-h-0 flex-col shrink-0${layout.sidebarOpen ? '' : ' relative w-0 overflow-visible'}`}
+                  className={cn(
+                    'flex min-h-0 shrink-0 flex-col',
+                    !layout.sidebarOpen && 'relative overflow-visible',
+                    !layout.sidebarOpen && !workbenchShell && 'w-0'
+                  )}
                 >
                   <div
                     // Why: floating titlebar-left occludes the center column's border-l seam; border-r restores that line, w-max sizes it to its own controls.
@@ -221,9 +195,29 @@ function AppWorkspaceContent(props: {
                     {titlebarLeftControls}
                   </div>
                   {/* Why: flex-1/min-h-0 slot needed under the fixed 36px header, else the sidebar collapses to content height and loses its scroll viewport. */}
-                  <div className="flex min-h-0 flex-1">
-                    <WorktreeSidebar layout={layout} scrollRefs={sidebarScrollRefs} />
+                  <div
+                    className={cn(
+                      'flex min-h-0 flex-1',
+                      // The Rail stays below the 36px titlebar when the titlebar floats.
+                      workbenchShell && layout.leftTitlebarChromeLayout.isFloating && 'pt-9'
+                    )}
+                  >
+                    {workbenchShell ? <WorkbenchRail /> : null}
+                    <WorktreeSidebar
+                      layout={layout}
+                      scrollRefs={sidebarScrollRefs}
+                      panelVisible={showObjectPanel}
+                    />
                   </div>
+                </div>
+              ) : workbenchShell ? (
+                <div className="flex min-h-0 min-w-0">
+                  <WorkbenchRail />
+                  <WorktreeSidebar
+                    layout={layout}
+                    scrollRefs={sidebarScrollRefs}
+                    panelVisible={showObjectPanel}
+                  />
                 </div>
               ) : (
                 <WorktreeSidebar layout={layout} scrollRefs={sidebarScrollRefs} />
@@ -231,7 +225,7 @@ function AppWorkspaceContent(props: {
             ) : null}
             <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
               {layout.stackedSidebarOpen &&
-              (isWorkbenchShell() ||
+              (workbenchShell ||
                 (layout.activeView !== 'automations' && layout.activeView !== 'artifacts')) ? (
                 <div className="titlebar">{titlebarMainStrip}</div>
               ) : null}

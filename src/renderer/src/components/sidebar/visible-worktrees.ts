@@ -62,7 +62,7 @@ import { getWorktreeHostIdentity } from '../../../../shared/worktree/host-qualif
  * Why shared: the sidebar pipeline and the jump palette both apply this, and a
  * second copy is how the two surfaces drift.
  */
-type VisibleWorktreeOptions = {
+export type VisibleWorktreeOptions = {
   filterRepoIds: readonly string[]
   showSleepingWorkspaces: boolean
   tabsByWorktree: Record<string, Pick<TerminalTab, 'id'>[]> | null
@@ -87,7 +87,7 @@ type VisibleWorktreeOptions = {
 
 export function computeVisibleWorktrees(
   worktreesByRepo: Record<string, Worktree[]>,
-  sortedIds: string[],
+  sortedIds: readonly string[],
   opts: VisibleWorktreeOptions
 ): Worktree[] {
   let all: Worktree[] = getAllWorktreesFromState({ worktreesByRepo })
