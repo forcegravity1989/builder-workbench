@@ -354,14 +354,6 @@
       }
     },
     {
-      "version": "v0.9",
-      "cycleId": "c2af3cc8-f711-41f4-97cc-db37b6fa5157",
-      "timeWindow": {
-        "start": "2026-11-02",
-        "end": "2026-11-06"
-      }
-    },
-    {
       "version": "v1.0",
       "cycleId": "11b09ce2-9bc4-43b8-98d1-575e79beb4ed",
       "timeWindow": {
