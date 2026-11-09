@@ -423,10 +423,6 @@ button:disabled {
   color: var(--muted-foreground);
   padding: 6px 5px 8px;
 }
-.sidebar-divider {
-  border-top: 1px solid var(--border);
-  margin: 16px 4px 0;
-}
 .native-projects {
   border-top: 1px solid var(--border);
   padding: 4px 0 10px;

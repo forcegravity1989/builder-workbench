@@ -46,10 +46,6 @@ export function requestVersionSidebarFocus(repoId: string): void {
   emit()
 }
 
-/**
- * Non-React read for pipelines that run outside the sidebar tree (e.g. the
- * Cmd+1–9 ordering fallback); consumers still re-run on the next keystroke.
- */
 export function consumeVersionSidebarFocus(sequence: number): void {
   if (focusRequest?.sequence === sequence) {
     focusRequest = null
@@ -57,6 +53,7 @@ export function consumeVersionSidebarFocus(sequence: number): void {
   }
 }
 
+/** Non-React sidebar-order consumers read the latest projection on each keystroke. */
 export function getVersionSidebarProjection(): VersionSidebarProjection {
   return projection
 }

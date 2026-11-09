@@ -26,6 +26,9 @@ export async function verifyVersionOverview(
 ) {
   const materialsBefore = snapshotOverviewMaterials(root)
   const open = async (version: string, afterBackgroundReload = false) => {
+    await page.getByRole('button', { name: '版本工作区', exact: true }).click({
+      force: afterBackgroundReload
+    })
     const group = page.locator('.wb-version-group', {
       has: page.getByRole('button', { name: `${version} 展开或收起`, exact: true })
     })
@@ -44,7 +47,7 @@ export async function verifyVersionOverview(
       page.getByRole('heading', { name: `${version} 版本总览`, exact: true })
     ).toBeVisible()
   }
-  await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
+  await expect(page.locator('[data-workbench-rail]')).toBeVisible({ timeout: 180_000 })
   await verifyDraftAcceptanceSource(page, root, info, open)
   const provider = JSON.parse(
     execFileSync(
@@ -187,7 +190,7 @@ export async function verifyVersionOverview(
   console.info('[overview] version header navigation and milestone source return verified')
   await open(overviewVersions.current)
   await page.reload()
-  await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 120_000 })
+  await expect(page.locator('[data-workbench-rail]')).toBeVisible({ timeout: 120_000 })
   await open(overviewVersions.current, true)
   await expect(
     page.getByRole('heading', { name: '当前目标 · 版本总览开发', exact: true })
@@ -249,7 +252,9 @@ async function verifyDraftAcceptanceSource(
     // store — home and plan included — with no "unverified-source" rejection.
     for (const [name, read] of Object.entries(nativeReads)) {
       expect(read.ok, `${name} scope reads the fixed plan without a merge proof`).toBe(true)
-      expect(read.value?.document.goals[0]?.title, `${name} sees pinned title`).toBe(overviewPinnedTitle)
+      expect(read.value?.document.goals[0]?.title, `${name} sees pinned title`).toBe(
+        overviewPinnedTitle
+      )
     }
     await info.attach('draft-acceptance-fixture-proof', {
       body: JSON.stringify({

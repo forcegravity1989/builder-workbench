@@ -1,23 +1,15 @@
 import React from 'react'
-import {
-  BookOpen,
-  CalendarClock,
-  LayoutDashboard,
-  LayoutGrid,
-  ListTodo,
-  PackageCheck
-} from 'lucide-react'
+import { BookOpen, CalendarClock, LayoutDashboard, LayoutGrid, PackageCheck } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
-import { getTaskEligibleRepos } from '@/components/task-page-default-repo-selection'
 import { SidebarSettingsHelpMenu } from '@/components/sidebar/SidebarSettingsHelpMenu'
+import { SidebarTaskNavButton } from '@/components/sidebar/SidebarTaskNavButton'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { isWorkbenchShell } from './is-workbench-shell'
 import { closeProjectPage, openProjectWall, useProjectPage } from './project-page-state'
 import { useWorkbenchObjectContext } from './workbench-object-context'
 
-// #475 A 定稿：窄 Rail（64px）承载全局入口，第二列只留对象上下文。
-// 入口命名与图标沿用既有 BW 导航；项目墙按钮图标化，不再显示项目首字母。
+export const WORKBENCH_RAIL_WIDTH = 64
 
 type RailEntry = {
   id: string
@@ -56,14 +48,12 @@ function RailButton({ entry }: { entry: RailEntry }): React.JSX.Element {
 
 export function WorkbenchRail(): React.JSX.Element | null {
   const activeView = useAppStore((s) => s.activeView)
-  const repos = useAppStore((s) => s.repos)
-  const activeRepoId = useAppStore((s) => s.activeRepoId ?? s.repos[0]?.id ?? null)
   const taskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
   const openActivityPage = useAppStore((s) => s.openActivityPage)
   const openAutomationsPage = useAppStore((s) => s.openAutomationsPage)
   const openSpacePage = useAppStore((s) => s.openSpacePage)
-  const openTaskPage = useAppStore((s) => s.openTaskPage)
   const setActiveView = useAppStore((s) => s.setActiveView)
+  const setSidebarBody = useAppStore((s) => s.setSidebarBody)
   const projectPage = useProjectPage()
   const objectContext = useWorkbenchObjectContext()
 
@@ -78,20 +68,8 @@ export function WorkbenchRail(): React.JSX.Element | null {
       navigate()
     }
 
-  const openProjectTasks = (): void => {
-    closeProjectPage()
-    const repoId =
-      activeRepoId && getTaskEligibleRepos(repos).some((repo) => repo.id === activeRepoId)
-        ? activeRepoId
-        : null
-    if (repoId) {
-      openTaskPage({ preselectedRepoId: repoId })
-    } else {
-      openTaskPage()
-    }
-  }
-
   const enterObjectContext = (): void => {
+    setSidebarBody('workspaces')
     if (objectContext) {
       return
     }
@@ -115,13 +93,6 @@ export function WorkbenchRail(): React.JSX.Element | null {
       onSelect: leaveProjectPage(openActivityPage)
     },
     {
-      id: 'tasks',
-      label: '任务',
-      icon: ListTodo,
-      active: activeView === 'tasks' && !taskScope?.version,
-      onSelect: openProjectTasks
-    },
-    {
       id: 'automations',
       label: '自动化',
       icon: CalendarClock,
@@ -140,7 +111,8 @@ export function WorkbenchRail(): React.JSX.Element | null {
   return (
     <aside
       aria-label="Workbench 导航"
-      className="flex w-16 shrink-0 flex-col items-center border-r border-worktree-sidebar-border bg-worktree-sidebar py-2.5"
+      className="flex shrink-0 flex-col items-center border-r border-worktree-sidebar-border bg-worktree-sidebar py-2.5"
+      style={{ width: WORKBENCH_RAIL_WIDTH }}
       data-workbench-rail
     >
       <button
@@ -157,7 +129,15 @@ export function WorkbenchRail(): React.JSX.Element | null {
         aria-label="Workbench 导航"
         className="flex w-full flex-col items-center gap-1 border-t border-worktree-sidebar-border pt-2"
       >
-        {entries.map((entry) => (
+        {entries.slice(0, 2).map((entry) => (
+          <RailButton key={entry.id} entry={entry} />
+        ))}
+        <SidebarTaskNavButton
+          variant="rail"
+          active={activeView === 'tasks' && !taskScope?.version}
+          onBeforeNavigate={closeProjectPage}
+        />
+        {entries.slice(2).map((entry) => (
           <RailButton key={entry.id} entry={entry} />
         ))}
       </nav>

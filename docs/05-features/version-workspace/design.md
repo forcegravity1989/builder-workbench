@@ -12,9 +12,9 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。当前�
 
 原生 buildRows 继续构建固定栏与自然分组；buildWorkbenchSectionRows 只移动完整段：固定栏保持跨项目，当前项目完整顶层分组优先，自然分组继续交给宿主包装。快捷键的侧栏顺序回放复用同一投影。useVisibleSidebarWorktrees 提供同一份过滤输入，原生列表和版本目录候选均调用 computeVisibleWorktrees，不另写 BW 筛选规则。版本候选包含检测到但未进入会话投影的树；完整候选先过滤再按宿主限定身份投影到各目录，保留原生跨目录父子关系例外，不改变原绑定集合或流程存在性判断。实体行沿用原生排序，固定后的单位置或重复显示沿用 profile 的 showPinnedWorktreesInGroups 设置，默认只显示一处。
 
-从全局模块返回「版本工作区」仅切回原生 terminal 内容，不调用 artifacts 准备链；已在版本对象上下文时保留当前页面。版本展开集合以 repoId 分隔；项目墙触发的一次性定位由共享请求消费，重挂载不重放。工具栏、菜单和固定策略均沿原生实现，不提供 BW 专用默认或重复列表。
+从全局模块返回「版本工作区」仅切回原生 terminal 内容，不调用 artifacts 准备链；已在版本对象上下文时保留当前页面，并恢复工作区目录视图。版本展开集合以 repoId 分隔，默认展开不持久化为用户选择，新建成功回调展开新版本；项目墙触发的一次性定位由共享请求消费，重挂载不重放。原生列表的 Enter 处理只接管容器自身焦点，保留目录按钮的默认激活。工具栏、菜单和固定策略均沿原生实现，不提供 BW 专用默认或重复列表。Rail 任务入口挂载 SidebarTaskNavButton 的图标变体，预选和预取仍由原组件承担，离开项目页面由 BW 导航回调处理。
 
-工作区多候选选择器与版本绑定对话框挂载在 AppWorkspaceShell，不随对象侧栏卸载；普通任务等全页入口仍能复用这些对话框。
+全局页面通过 Sidebar 的 panelVisible 仅移除目录面板，原生对话框、工作区看板和 Agent Dashboard 抽屉继续由同一个 Sidebar 承载，确保任务创建与自动化的 hook 信任确认仍能完成。工作区多候选选择器与版本绑定对话框挂载在 AppWorkspaceShell；普通任务等全页入口仍能复用这些对话框。
 
 ## #439 真机反馈局部纠偏（2026-10-27，用户已确认）
 
@@ -35,7 +35,7 @@ Rail 承载全局导航；对象上下文挂载原生可缩放 Sidebar。当前�
 | [创建参数](../../../src/shared/worktree/create-types.ts)、[创建执行](../../../src/renderer/src/hooks/composer-state/full-creation-execution.ts)、[父级处理](../../../src/renderer/src/store/slices/worktrees/create/worktree-create-parent-pick.ts)                                        | 同一原生创建路径已有 baseBranch、parentWorkspace、linkedWorkItem、sparseCheckout。基线与父级分开确定；父关系不携带父树的未提交修改，也不决定合入路线。                                                                        |
 | [稀疏创建](../../../src/main/git/worktree-sparse-add.ts)、[高级创建选项](../../../src/renderer/src/components/new-workspace/NewWorkspaceComposerAdvancedSection.tsx)                                                                                                                       | 已有 no-checkout + cone sparse-checkout 及目录预设。计划/验收可考虑只检出必要资产，但需验证配置、Skill、材料、采集脚本及其依赖可读，不能默认所有仓库适用。                                                                    |
 | [AiVaultPanel](../../../src/renderer/src/components/right-sidebar/AiVaultPanel.tsx)、[会话记录](../../../src/shared/agent-session-record.ts)、[BW 会话身份](../../../src/renderer/src/workbench/version-cycle/native-session.ts)                                                           | 复用原生历史与继续行为。持久会话位置、宿主、原生会话标识保持原协议；终端 pane 与 provider 历史标识不能假定同一。按版本跨工作树聚合仍需适配与重启验证。                                                                        |
-| [versionSelection](../../../src/main/workbench/version-selection.ts)、[CycleWorkspaceProvider](../../../src/renderer/src/workbench/version-cycle/CycleWorkspaceProvider.tsx)、[手动会话启动](../../../src/renderer/src/workbench/version-cycle/start-cycle-session.ts) | 手动入口在当前流程树打开可编辑草稿；选版保存在工作树 metadata，定时自动化仍要求 existing workspace 匹配。只改侧栏筛选不足以实现两个版本独立运行；必须把运行归属与正在浏览的版本拆开。 |
+| [versionSelection](../../../src/main/workbench/version-selection.ts)、[CycleWorkspaceProvider](../../../src/renderer/src/workbench/version-cycle/CycleWorkspaceProvider.tsx)、[手动会话启动](../../../src/renderer/src/workbench/version-cycle/start-cycle-session.ts)                     | 手动入口在当前流程树打开可编辑草稿；选版保存在工作树 metadata，定时自动化仍要求 existing workspace 匹配。只改侧栏筛选不足以实现两个版本独立运行；必须把运行归属与正在浏览的版本拆开。                                         |
 | [单树删除链](../../../src/renderer/src/components/sidebar/run-worktree-delete-with-toast.ts)、[删除预检与执行](../../../src/main/ipc/worktrees/removal/execute-worktree-removal.ts)、[工作区清理对话框](../../../src/renderer/src/components/workspace-cleanup/WorkspaceCleanupDialog.tsx) | 版本级清理复用与右击单树删除、状态栏清理对话框同一条删除链：预检（未提交修改/子树/归档 hook）、权限复核与失败提示全沿原生；BW 只加版本粒度的确认单聚合与 owner 标注。绑定挂在登记上、随删树消失，不另造删除路径或归档隐藏层。 |
 
 复用必须覆盖 UI 和调用链：

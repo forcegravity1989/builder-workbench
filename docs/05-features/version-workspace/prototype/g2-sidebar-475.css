@@ -129,7 +129,7 @@
 .hidden-475 {
   display: none;
 }
-/* #475 A 定稿：第二列单一滚动条 —— 版本块与 Orca 工作区都在 sidebar-scroll 内共用滚动 */
+/* Version and native workspace sections share this single scroll container. */
 .panel-475 .native-projects.merged-scroll-475 {
   max-height: none;
   overflow: visible;
@@ -160,10 +160,6 @@
   background: var(--accent);
   color: var(--foreground);
 }
-.panel-475 .sidebar-divider {
-  margin-top: 10px;
-}
-
 /* Three section headings follow the native section header metrics. */
 .pinned-section-475 {
   display: flex;
@@ -190,7 +186,7 @@
   letter-spacing: normal;
   text-transform: none;
   text-align: left;
-  color: var(--muted-foreground);
+  color: var(--foreground);
   background: transparent;
 }
 .panel-475 .sidebar-section-heading-475 > svg {

@@ -41,11 +41,15 @@ export const WORKTREE_SIDEBAR_RESIZE_HANDLE_LINE_CLASS_NAME =
   'h-full w-px bg-transparent transition-colors group-hover:bg-ring/50 group-active:bg-ring'
 
 type SidebarProps = {
+  panelVisible?: boolean
+  leadingWidth?: number
   worktreeScrollOffsetRef: React.MutableRefObject<number>
   worktreeScrollAnchorRef: React.MutableRefObject<VirtualizedScrollAnchor>
 }
 
 function Sidebar({
+  panelVisible = true,
+  leadingWidth = 0,
   worktreeScrollOffsetRef,
   worktreeScrollAnchorRef
 }: SidebarProps): React.JSX.Element {
@@ -110,9 +114,17 @@ function Sidebar({
     cancelWorkspaceBoardDragPreview
   } = useWorkspaceBoardPanel()
 
-  const setLiveSidebarWidth = React.useCallback((width: number) => {
-    document.documentElement.style.setProperty('--workspace-sidebar-live-width', `${width}px`)
-  }, [])
+  const setLiveSidebarWidth = React.useCallback(
+    (width: number) => {
+      // Native portalled drawers need the full visible left edge, including the Rail.
+      const visibleWidth = leadingWidth + (panelVisible ? width : 0)
+      document.documentElement.style.setProperty(
+        '--workspace-sidebar-live-width',
+        `${visibleWidth}px`
+      )
+    },
+    [leadingWidth, panelVisible]
+  )
 
   const repoCount = repos.length
   const previousRepoCountRef = React.useRef(repoCount)
@@ -138,7 +150,7 @@ function Sidebar({
   }, [agentDashboardDrawerOpen, setAgentDashboardDrawerOpen, showAgentDashboard])
 
   const { containerRef, onResizeStart, isResizing } = useSidebarResize<HTMLDivElement>({
-    isOpen: sidebarOpen,
+    isOpen: sidebarOpen && panelVisible,
     width: sidebarWidth,
     minWidth: MIN_WIDTH,
     maxWidth: MAX_WIDTH,
@@ -147,9 +159,8 @@ function Sidebar({
     onDraftWidthChange: setLiveSidebarWidth
   })
 
-  useWorkspaceRevealBodyRedirect(sidebarOpen && sidebarBody === 'agents')
+  useWorkspaceRevealBodyRedirect(panelVisible && sidebarOpen && sidebarBody === 'agents')
 
-  // #475：BW 第二列只在对象上下文出现；已固定与版本块随 Orca 工作区列表同滚。
   const workbenchShell = isWorkbenchShell()
   const sidebarHeader = (
     <SidebarHeader
@@ -171,88 +182,89 @@ function Sidebar({
 
   return (
     <TooltipProvider delayDuration={400}>
-      <div
-        ref={containerRef}
-        data-native-file-drop-target={sidebarOpen ? nativeDropTarget : undefined}
-        className="relative min-h-0 flex-shrink-0 bg-worktree-sidebar flex flex-col overflow-hidden scrollbar-sleek-parent"
-        style={leftSidebarStyle}
-        {...dropHandlers}
-      >
-        {sidebarOpen && (
-          <>
-            {/* Fixed controls */}
-            <SidebarNav />
-            {sidebarHeader}
-            {sidebarBody === 'agents' ? (
-              <React.Suspense fallback={<div className="min-h-0 flex-1" />}>
-                <ActivityThreadCollapseContext.Provider value={agentsCollapseState}>
-                  <SidebarAgentsList
-                    readFilter={agentReadFilter}
-                    setReadFilter={setAgentReadFilter}
-                    groupBy={agentGroupBy}
-                    setGroupBy={setAgentGroupBy}
-                    query={agentQuery}
-                    setQuery={setAgentQuery}
-                    optionsTarget={agentOptionsTarget}
-                    scrollTopRef={agentsScrollTopRef}
-                  />
-                </ActivityThreadCollapseContext.Provider>
-              </React.Suspense>
-            ) : (
-              worktreeList
-            )}
+      {panelVisible ? (
+        <div
+          ref={containerRef}
+          data-native-file-drop-target={sidebarOpen ? nativeDropTarget : undefined}
+          className="relative min-h-0 flex-shrink-0 bg-worktree-sidebar flex flex-col overflow-hidden scrollbar-sleek-parent"
+          style={leftSidebarStyle}
+          {...dropHandlers}
+        >
+          {sidebarOpen && (
+            <>
+              {/* Fixed controls */}
+              <SidebarNav />
+              {sidebarHeader}
+              {sidebarBody === 'agents' ? (
+                <React.Suspense fallback={<div className="min-h-0 flex-1" />}>
+                  <ActivityThreadCollapseContext.Provider value={agentsCollapseState}>
+                    <SidebarAgentsList
+                      readFilter={agentReadFilter}
+                      setReadFilter={setAgentReadFilter}
+                      groupBy={agentGroupBy}
+                      setGroupBy={setAgentGroupBy}
+                      query={agentQuery}
+                      setQuery={setAgentQuery}
+                      optionsTarget={agentOptionsTarget}
+                      scrollTopRef={agentsScrollTopRef}
+                    />
+                  </ActivityThreadCollapseContext.Provider>
+                </React.Suspense>
+              ) : (
+                worktreeList
+              )}
 
-            <div className="relative shrink-0">
-              <SetupScriptPromptCard />
+              <div className="relative shrink-0">
+                <SetupScriptPromptCard />
 
-              {/* Fixed bottom toolbar */}
-              <SidebarToolbar
-                workspaceBoardOpen={workspaceBoardOpen}
-                workspaceBoardDragPreviewOpen={workspaceBoardDragPreviewOpen}
-                onWorkspaceBoardToggle={toggleWorkspaceBoard}
-              />
-            </div>
-          </>
-        )}
+                {/* Fixed bottom toolbar */}
+                <SidebarToolbar
+                  workspaceBoardOpen={workspaceBoardOpen}
+                  workspaceBoardDragPreviewOpen={workspaceBoardDragPreviewOpen}
+                  onWorkspaceBoardToggle={toggleWorkspaceBoard}
+                />
+              </div>
+            </>
+          )}
 
-        {sidebarOpen && affordance.visible ? (
-          <div
-            className={cn(
-              'pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-1.5 rounded-md border bg-worktree-sidebar-accent/95 px-4 text-center text-worktree-sidebar-accent-foreground shadow-xs',
-              affordance.tone === 'blocked'
-                ? 'border-destructive/70'
-                : 'border-worktree-sidebar-ring/70'
-            )}
-          >
-            {affordance.tone === 'busy' ? (
-              <Loader2 className="size-5 animate-spin text-muted-foreground" />
-            ) : (
-              <FolderPlus className="size-5 text-muted-foreground" />
-            )}
-            <div className="text-sm font-medium">{affordance.label}</div>
-            <div className="text-xs text-muted-foreground">{affordance.description}</div>
-          </div>
-        ) : null}
-
-        {/* Resize handle */}
-        {sidebarOpen && (
-          <div
-            data-sidebar-resize-handle=""
-            className={cn(WORKTREE_SIDEBAR_RESIZE_HANDLE_CLASS_NAME, isResizing && 'bg-ring/10')}
-            onMouseDown={onResizeStart}
-          >
+          {sidebarOpen && affordance.visible ? (
             <div
               className={cn(
-                WORKTREE_SIDEBAR_RESIZE_HANDLE_LINE_CLASS_NAME,
-                isResizing && 'bg-ring'
+                'pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-1.5 rounded-md border bg-worktree-sidebar-accent/95 px-4 text-center text-worktree-sidebar-accent-foreground shadow-xs',
+                affordance.tone === 'blocked'
+                  ? 'border-destructive/70'
+                  : 'border-worktree-sidebar-ring/70'
               )}
-            />
-          </div>
-        )}
-      </div>
+            >
+              {affordance.tone === 'busy' ? (
+                <Loader2 className="size-5 animate-spin text-muted-foreground" />
+              ) : (
+                <FolderPlus className="size-5 text-muted-foreground" />
+              )}
+              <div className="text-sm font-medium">{affordance.label}</div>
+              <div className="text-xs text-muted-foreground">{affordance.description}</div>
+            </div>
+          ) : null}
 
-      {/* Dialogs render outside sidebar to avoid clipping. Lazy-load them only
-      for the modal that needs their flow-specific hooks and UI. */}
+          {/* Resize handle */}
+          {sidebarOpen && (
+            <div
+              data-sidebar-resize-handle=""
+              className={cn(WORKTREE_SIDEBAR_RESIZE_HANDLE_CLASS_NAME, isResizing && 'bg-ring/10')}
+              onMouseDown={onResizeStart}
+            >
+              <div
+                className={cn(
+                  WORKTREE_SIDEBAR_RESIZE_HANDLE_LINE_CLASS_NAME,
+                  isResizing && 'bg-ring'
+                )}
+              />
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {/* Global pages still use these native dialogs and drawers when the panel is absent. */}
       <React.Suspense fallback={null}>
         {activeModal === 'edit-meta' ? <WorktreeMetaDialog /> : null}
         {activeModal === 'confirm-remove-folder' ? <RemoveFolderDialog /> : null}

@@ -206,6 +206,7 @@ function treeTitle(tree) {
 // Native Lucide paths, kept local so the shared frozen vendor remains unchanged.
 function NativeToolIcon({ kind, size = 16, strokeWidth = 1.7, ...props }) {
   const paths = {
+    tasks: ['M3 5h.01', 'M3 12h.01', 'M3 19h.01', 'M8 5h13', 'M8 12h13', 'M8 19h13'],
     activity: [
       'M10.268 21a2 2 0 0 0 3.464 0',
       'M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326'
@@ -226,17 +227,10 @@ function NativeToolIcon({ kind, size = 16, strokeWidth = 1.7, ...props }) {
       'M9 13h6',
       'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z'
     ],
-    up: ['m5 12 7-7 7 7', 'M12 19V5'],
     pin: [
       'M12 17v5',
       'M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z'
     ],
-    eyeoff: [
-      'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94',
-      'M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24',
-      'M1 1l22 22'
-    ],
-    restore: ['M9 14 4 9l5-5', 'M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5 5.5 5.5 0 0 1-5.5 5.5H11'],
     wall: ['M3 3h7v7H3z', 'M14 3h7v7h-7z', 'M14 14h7v7h-7z', 'M3 14h7v7H3z'],
     crosshair: [
       'M22 12h-4',
@@ -274,6 +268,9 @@ function NativeToolIcon({ kind, size = 16, strokeWidth = 1.7, ...props }) {
       ))}
     </svg>
   )
+}
+function NativeTaskIcon(props) {
+  return <NativeToolIcon kind="tasks" {...props} />
 }
 function Nav({ children, icon, active, onClick, title, className = '' }) {
   return (
@@ -357,7 +354,7 @@ function ReuseSurface({ title, scope, description, children }) {
   )
 }
 function App() {
-  // #475 双列侧栏评审：同一份 JSX 由 475 入口页打开，按 A 定稿（与生产实现一致）渲染。
+  // The current sidebar and historical business journey share the feature's prototype source.
   const is475 = !!window.__BW_PROTO_LAYOUT_475
   const [version, setVersion] = useState('v0.7'),
     // 475 页默认落在对象上下文（版本工作区），其余模块入口是整页、没有第二列。
@@ -1237,11 +1234,11 @@ function App() {
   const objectContext475 =
     isVersionScreen || screen === 'project-workspaces' || screen === 'private'
   const showPanel475 = is475 && objectContext475
-  function railButton475(label, icon, active, onClick) {
+  function railButton475(label, icon, active, onClick, title = label) {
     return (
       <button
         className={`rail-button${active ? ' selected' : ''}`}
-        title={label}
+        title={title}
         aria-label={label}
         aria-current={active ? 'page' : undefined}
         onClick={onClick}
@@ -1285,7 +1282,13 @@ function App() {
         {railButton475('项目总览', LayoutDashboard, screen === 'project', () =>
           setScreen('project')
         )}
-        {railButton475('任务', ListTodo, screen === 'tasks' && !taskVersion, openProjectTasks)}
+        {railButton475(
+          '任务',
+          NativeTaskIcon,
+          screen === 'tasks' && !taskVersion,
+          openProjectTasks,
+          '全部任务（含未入计划）'
+        )}
         {railButton475('自动化', CalendarClock, screen === 'automations', () =>
           setScreen('automations')
         )}
@@ -1413,7 +1416,6 @@ function App() {
               <div className="native-toolbar-475">{nativeWorkspaceTools}</div>
             </div>
           )}
-          {/* #475 A 定稿：第二列只有一个滚动容器，版本块与 Orca 工作区共用同一滚动条。 */}
           <div
             ref={sidebarScrollRef}
             className="sidebar-scroll scrollbar-sleek worktree-sidebar-scrollbar"
@@ -1453,10 +1455,10 @@ function App() {
                         <button
                           className="native-project-title"
                           title={`${project.name} · ${project.onWall ? '已上项目墙' : '个人项目，未上墙'}`}
-                          onClick={() => {
-                            setActiveProjectId(project.id)
-                            setScreen('project-workspaces')
-                          }}
+                          aria-expanded={expanded}
+                          onClick={() =>
+                            toggle(closedNativeProjects, project.id, setClosedNativeProjects)
+                          }
                         >
                           <Icon icon={GitBranch} />
                           <span>{project.name}</span>
@@ -1866,11 +1868,12 @@ function App() {
           </div>
           <h3>本轮调整范围</h3>
           <p>
-            只修正项目进入定位、原生项目区呈现、Issue
-            树标题、任务筛选与开工备注，不新增特性。任务控件和创建器受影响字段以可操作片段展示；既有版本总览、计划、验收和完整会话保持原有设计。
+            {is475
+              ? '调整全局导航与三段侧栏布局，工具栏、任务入口、固定、筛选和排序复用原生能力。版本总览、计划、验收和完整会话沿用既有界面。'
+              : '本入口保留版本业务旅程参考；当前侧栏以双列原型为准。任务控件和创建器受影响字段以可操作片段展示，其他整屏沿用。'}
           </p>
           <p>
-            当前项目已归版的树只在版本下显示，原生区保留未归版和旧树；解绑后回到原生区。仅对展示去重，不改变实际父子关系或登记。
+            当前项目已归版的树由版本目录承载；固定后默认只在顶部显示，开启原生重复显示设置后也保留原目录实例。全部项目工作区保留未归版、旧树及其他项目入口；解绑后回到原生区。显示筛选和去重不改变实际父子关系或绑定。
           </p>
           <h3>目标目录与工作树分开</h3>
           <p>

@@ -124,13 +124,38 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
   await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'initial')
 
+  await workbenchPage.evaluate(() => {
+    const state = window.__store?.getState()
+    const repoId = state?.activeRepoId ?? state?.repos[0]?.id
+    if (!repoId) {
+      throw new Error('active project unavailable')
+    }
+    localStorage.setItem(`workbench.version-expanded:${repoId}`, '[]')
+  })
+  await workbenchPage.reload()
+  await expect(workbenchPage.locator('[data-workbench-rail]')).toBeVisible({ timeout: 180_000 })
+  await workbenchPage.getByRole('button', { name: '版本工作区', exact: true }).click()
+  await workbenchPage.getByRole('button', { name: /^(查看活动|View activity)$/ }).click()
+  await expect(workbenchPage.locator('[data-workbench-versions]')).toHaveCount(0)
+  await workbenchPage.getByRole('button', { name: '版本工作区', exact: true }).click()
+  await expect(workbenchPage.locator('[data-workbench-versions]')).toBeVisible()
+
   // ---- 新建版本：轻表单 → prepare 两棵绑定流程树 → 进入计划屏 ----
-  await workbenchPage.getByRole('button', { name: '新建版本', exact: true }).click()
+  await workbenchPage.getByRole('button', { name: '新建版本', exact: true }).press('Enter')
   await workbenchPage.getByLabel('版本名').fill('v9.9')
   await workbenchPage.getByRole('button', { name: '创建版本', exact: true }).click()
   await expect(workbenchPage.getByRole('heading', { name: '版本计划' })).toBeVisible({
     timeout: 180_000
   })
+  const createdVersionToggle = workbenchPage.getByRole('button', {
+    name: 'v9.9 展开或收起',
+    exact: true
+  })
+  await expect(createdVersionToggle).toHaveAttribute('aria-expanded', 'true')
+  await createdVersionToggle.press('Enter')
+  await expect(createdVersionToggle).toHaveAttribute('aria-expanded', 'false')
+  await createdVersionToggle.press('Enter')
+  await expect(createdVersionToggle).toHaveAttribute('aria-expanded', 'true')
   const planTreePath = await waitForFixedWorktree(workbenchPage, 'bw/v9.9/plan')
   await expect
     .poll(() => workbenchPage.evaluate(() => window.__store?.getState().activeView))

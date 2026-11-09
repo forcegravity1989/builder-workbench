@@ -57,7 +57,15 @@ function TaskProviderShortcut({
   )
 }
 
-export function SidebarTaskNavButton(): React.JSX.Element | null {
+export function SidebarTaskNavButton({
+  variant = 'default',
+  active,
+  onBeforeNavigate
+}: {
+  variant?: 'default' | 'rail'
+  active?: boolean
+  onBeforeNavigate?: () => void
+} = {}): React.JSX.Element | null {
   const openTaskPage = useAppStore((s) => s.openTaskPage)
   const updateSettings = useAppStore((s) => s.updateSettings)
   const activeView = useAppStore((s) => s.activeView)
@@ -154,11 +162,11 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
     return null
   }
 
-  const tasksActive = activeView === 'tasks'
-  // BW 壳内任务入口默认带入项目墙当前项目(与验收/计划屏同一解析:activeRepoId ?? repos[0]),
-  // 复用原生 openTaskPage 的 preselectedRepoId 预选契约;页内项目筛选仍可改。
-  // 仅当前项目确属页面口径的合格仓(git + 远端身份未被判无)才传预选:预选落空时
-  // openTaskPage 的预取分支返回空集不回退,反而丢掉首屏预热;不合格按原样无参调用。
+  const tasksActive = active ?? activeView === 'tasks'
+  const label = isWorkbenchShell()
+    ? '任务'
+    : translate('auto.components.sidebar.SidebarNav.fee535205b', 'Tasks')
+  // An ineligible preselection prevents the native initial fetch from choosing a fallback repo.
   const currentProjectRepoId = activeRepoId ?? repos[0]?.id ?? null
   const workbenchProjectRepoId =
     isWorkbenchShell() &&
@@ -171,10 +179,9 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
     <div className="group relative">
       <button
         type="button"
-        // BW 挂载面（#436 CF-1 配套）：与版本内「任务」行 tooltip 区分两个入口；原生壳语义不变。
-        // 文案常量住 BW 豁免模块（version-labels），不在本地化审计面内联中文字面量。
         {...(isWorkbenchShell() ? { title: GLOBAL_TASKS_ENTRY_TITLE } : {})}
         onClick={() => {
+          onBeforeNavigate?.()
           if (workbenchProjectRepoId) {
             openTaskPage({ preselectedRepoId: workbenchProjectRepoId })
           } else {
@@ -183,24 +190,40 @@ export function SidebarTaskNavButton(): React.JSX.Element | null {
         }}
         onPointerEnter={handlePrefetch}
         onFocus={handlePrefetch}
+        aria-label={label}
         aria-current={tasksActive ? 'page' : undefined}
         data-contextual-tour-target="sidebar-tasks"
-        className={cn(
-          'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
-          tasksActive
-            ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
-            : 'text-worktree-sidebar-foreground/60 group-hover:bg-worktree-sidebar-foreground/8'
-        )}
+        className={
+          variant === 'rail'
+            ? cn(
+                'relative grid size-10 place-items-center rounded-lg transition-colors',
+                tasksActive
+                  ? 'bg-worktree-sidebar-accent text-worktree-sidebar-foreground'
+                  : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-accent'
+              )
+            : cn(
+                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium tracking-tight transition-colors',
+                tasksActive
+                  ? 'bg-worktree-sidebar-accent text-worktree-sidebar-accent-foreground'
+                  : 'text-worktree-sidebar-foreground/60 group-hover:bg-worktree-sidebar-foreground/8'
+              )
+        }
       >
+        {variant === 'rail' && tasksActive ? (
+          <span
+            aria-hidden
+            className="absolute top-2.5 -left-3 bottom-2.5 w-0.5 rounded-full bg-worktree-sidebar-foreground"
+          />
+        ) : null}
         <List
-          className={cn('size-4 shrink-0', !tasksActive && 'text-worktree-sidebar-foreground/30')}
+          className={cn(
+            'shrink-0',
+            variant === 'rail' ? 'size-4.5' : 'size-4',
+            variant !== 'rail' && !tasksActive && 'text-worktree-sidebar-foreground/30'
+          )}
           strokeWidth={tasksActive ? 2.25 : 1.75}
         />
-        <span className="flex-1">
-          {isWorkbenchShell()
-            ? '任务'
-            : translate('auto.components.sidebar.SidebarNav.fee535205b', 'Tasks')}
-        </span>
+        <span className={variant === 'rail' ? 'sr-only' : 'flex-1'}>{label}</span>
       </button>
       {isWorkbenchShell() ? null : (
         <span className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 can-hover:pointer-events-none can-hover:opacity-0 can-hover:group-hover:pointer-events-auto can-hover:group-hover:opacity-100 can-hover:group-focus-within:pointer-events-auto can-hover:group-focus-within:opacity-100">

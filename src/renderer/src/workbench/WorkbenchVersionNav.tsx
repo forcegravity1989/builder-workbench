@@ -30,13 +30,6 @@ import {
   useVersionSidebarFocusRequest
 } from './version-sidebar-state'
 
-/**
- * G2 侧栏版本区（P3a/P3b/P6，高保真修订 8/9）：版本平铺（旧版本默认收起即退休
- * 形态，可展开回看）；每版含总览/计划/任务/目标目录/验收行；「＋ 新建版本」轻
- * 表单接 workbench.versionWorkspace.prepare；版本行另有「初始化工作区」（流程树
- * 不齐时显示，点击直接执行）与「清理」确认单。绑定从工作树原生右键菜单进入。
- */
-
 type DialogState = { mode: 'create' } | { mode: 'cleanup'; version: string } | null
 
 function readExpandedStore(key: string | null): Set<string> | null {
@@ -108,8 +101,7 @@ export function WorkbenchVersionNav({
   )
 
   const loaded = catalog.catalog
-  // 显示序（#436 人裁定）：在制优先（在做的版本置顶）、组内版本号降序（新在前）、
-  // 归档沉底；目录契约仍升序，仅显示层排序。
+  // 目录契约保持升序；侧栏按在制优先、组内版本降序展示。
   const entries = useMemo(() => {
     const rows = loaded?.entries ?? []
     return [...rows].sort((a, b) => {
@@ -132,12 +124,6 @@ export function WorkbenchVersionNav({
     }
     return seeded
   }, [expandedOverride, entries, browsedVersion])
-
-  useEffect(() => {
-    if (expandedOverride === null && entries.length > 0) {
-      setExpandedOverrideAndStore(new Set(expandedVersions))
-    }
-  }, [expandedOverride, entries.length, expandedVersions, setExpandedOverrideAndStore])
 
   useEffect(() => {
     const versions = new Set(entries.map((entry) => entry.version))
@@ -278,7 +264,6 @@ export function WorkbenchVersionNav({
         </p>
       ) : null}
 
-      {/* #475 A 定稿：整列单一滚动——版本块不再自设滚动容器，交给第二列外层。 */}
       <div className="flex min-w-0 flex-col gap-0.5">
         {entries.map((entry) => {
           const activeWorkflow: VersionWorkflow | null =
@@ -387,6 +372,9 @@ export function WorkbenchVersionNav({
           catalog={catalog}
           projectKey={repoId}
           projectName={projectName}
+          onCreated={(version) =>
+            setExpandedOverrideAndStore(new Set([...expandedVersions, version]))
+          }
           onClose={() => setDialog(null)}
         />
       ) : null}

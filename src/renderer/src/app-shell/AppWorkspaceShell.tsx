@@ -19,7 +19,7 @@ import { useCycleWorkspace } from '../workbench/version-cycle/cycle-workspace-co
 import { usePlanColumnResize } from '../workbench/use-plan-column-resize'
 import { useMetricsWorkspaceOpen } from '../workbench/metrics-workspace-open'
 import { useMetricsBandResize } from '../workbench/use-metrics-band-resize'
-import { WorkbenchRail } from '../workbench/WorkbenchRail'
+import { WorkbenchRail, WORKBENCH_RAIL_WIDTH } from '../workbench/WorkbenchRail'
 import { WorkbenchWorkspaceChoiceDialog } from '../workbench/WorkbenchWorkspaceChoiceDialog'
 import { WorkbenchVersionBindingDialog } from '../workbench/version-tree-bind-dialog'
 import { useWorkbenchObjectContext } from '../workbench/workbench-object-context'
@@ -67,10 +67,12 @@ type WorktreeSidebarScrollRefs = {
 
 function WorktreeSidebar({
   layout,
-  scrollRefs
+  scrollRefs,
+  panelVisible = true
 }: {
   layout: AppChromeLayout
   scrollRefs: WorktreeSidebarScrollRefs
+  panelVisible?: boolean
 }): React.JSX.Element {
   return (
     <RecoverableRenderErrorBoundary
@@ -91,6 +93,8 @@ function WorktreeSidebar({
       }
     >
       <Sidebar
+        panelVisible={panelVisible}
+        leadingWidth={isWorkbenchShell() ? WORKBENCH_RAIL_WIDTH : 0}
         worktreeScrollOffsetRef={scrollRefs.scrollOffsetRef}
         worktreeScrollAnchorRef={scrollRefs.scrollAnchorRef}
       />
@@ -229,19 +233,22 @@ function AppWorkspaceContent(props: {
                   </div>
                   {/* Why: flex-1/min-h-0 slot needed under the fixed 36px header, else the sidebar collapses to content height and loses its scroll viewport. */}
                   <div className="flex min-h-0 flex-1">
-                    {/* #475 A 定稿：窄 Rail 常驻；第二列只在对象上下文出现。 */}
                     {layout.sidebarOpen ? <WorkbenchRail /> : null}
-                    {showObjectPanel ? (
-                      <WorktreeSidebar layout={layout} scrollRefs={sidebarScrollRefs} />
-                    ) : null}
+                    <WorktreeSidebar
+                      layout={layout}
+                      scrollRefs={sidebarScrollRefs}
+                      panelVisible={showObjectPanel}
+                    />
                   </div>
                 </div>
               ) : isWorkbenchShell() ? (
                 <div className="flex min-h-0 min-w-0">
                   <WorkbenchRail />
-                  {showObjectPanel ? (
-                    <WorktreeSidebar layout={layout} scrollRefs={sidebarScrollRefs} />
-                  ) : null}
+                  <WorktreeSidebar
+                    layout={layout}
+                    scrollRefs={sidebarScrollRefs}
+                    panelVisible={showObjectPanel}
+                  />
                 </div>
               ) : (
                 <WorktreeSidebar layout={layout} scrollRefs={sidebarScrollRefs} />

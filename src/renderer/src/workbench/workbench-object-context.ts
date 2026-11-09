@@ -2,11 +2,7 @@ import { useAppStore } from '@/store'
 import { isWorkbenchShell } from './is-workbench-shell'
 import { useProjectPage } from './project-page-state'
 
-/**
- * #475 A 定稿：第二列只服务对象上下文（版本工作区 / Orca 项目工作区）。
- * 项目总览、任务（未带版本）、自动化、知识库是整页入口，第二列收起、内容区占满。
- * 非 BW 壳始终保留原生侧栏。
- */
+/** Global pages use the full canvas; workspace and version pages retain the object sidebar. */
 export function useWorkbenchObjectContext(): boolean {
   const activeView = useAppStore((s) => s.activeView)
   const taskScope = useAppStore((s) => s.taskPageData.workbenchTaskScope ?? null)
