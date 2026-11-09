@@ -1,36 +1,36 @@
-/**
- * 评审通知入口的拖动与位置状态：pointer 阈值区分点击/拖动，拖动中实时
- * 预览，松手后锚定并持久化；窗口尺寸变化时按保存的锚点重新夹取。
- */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type React from 'react'
 
 import {
-  anchorPrReviewTriggerPosition,
-  clampPrReviewTriggerPosition,
-  getDefaultPrReviewTriggerCommittedPosition,
-  getDefaultPrReviewTriggerPosition,
-  persistPrReviewTriggerPosition,
-  readPersistedPrReviewTriggerPosition,
-  resolvePrReviewTriggerCommittedPosition,
-  resolvePrReviewTriggerPosition,
-  shouldReconcilePrReviewTriggerPosition,
-  type PrReviewTriggerCommittedPosition,
-  type PrReviewTriggerPosition,
-  type PrReviewTriggerPositionSource
-} from './pr-review-trigger-position'
+  anchorFloatingTerminalTriggerPosition,
+  clampFloatingTerminalTriggerPosition,
+  getDefaultFloatingTerminalTriggerCommittedPosition,
+  persistFloatingTerminalTriggerPosition,
+  readPersistedFloatingTerminalTriggerPosition,
+  resolveFloatingTerminalTriggerCommittedPosition,
+  shouldReconcileFloatingTerminalTriggerPosition,
+  type FloatingTerminalTriggerCommittedPosition,
+  type FloatingTerminalTriggerPosition,
+  type FloatingTerminalTriggerPositionSource
+} from './floating-terminal-trigger-position'
 
 const DRAG_THRESHOLD = 4
 
 type PositionState = {
-  committedPosition: PrReviewTriggerCommittedPosition
-  position: PrReviewTriggerPosition
-  source: PrReviewTriggerPositionSource
+  committedPosition: FloatingTerminalTriggerCommittedPosition
+  position: FloatingTerminalTriggerPosition
+  source: FloatingTerminalTriggerPositionSource
 }
 
-function readInitialPosition(): PositionState {
-  const defaultCommittedPosition = getDefaultPrReviewTriggerCommittedPosition()
-  const defaultPosition = getDefaultPrReviewTriggerPosition()
+type TriggerOptions = { storageKey?: string; rightGap?: number; bottomGap?: number }
+
+function readInitialPosition(options: TriggerOptions): PositionState {
+  const defaultCommittedPosition = getDefaultFloatingTerminalTriggerCommittedPosition()
+  defaultCommittedPosition.offsetX = options.rightGap ?? defaultCommittedPosition.offsetX
+  defaultCommittedPosition.offsetY = options.bottomGap ?? defaultCommittedPosition.offsetY
+  const defaultPosition = clampFloatingTerminalTriggerPosition(
+    resolveFloatingTerminalTriggerCommittedPosition(defaultCommittedPosition)
+  )
   if (typeof window === 'undefined') {
     return {
       committedPosition: defaultCommittedPosition,
@@ -38,18 +38,18 @@ function readInitialPosition(): PositionState {
       source: 'default'
     }
   }
-  const persistedPosition = readPersistedPrReviewTriggerPosition()
+  const persistedPosition = readPersistedFloatingTerminalTriggerPosition(options.storageKey)
   return persistedPosition
     ? {
         committedPosition: persistedPosition,
-        position: resolvePrReviewTriggerCommittedPosition(persistedPosition),
+        position: resolveFloatingTerminalTriggerCommittedPosition(persistedPosition),
         source: 'user'
       }
     : { committedPosition: defaultCommittedPosition, position: defaultPosition, source: 'default' }
 }
 
-export function usePrReviewTriggerPosition(): {
-  position: PrReviewTriggerPosition
+export function useFloatingTriggerPosition(options: TriggerOptions = {}): {
+  position: FloatingTerminalTriggerPosition
   dragHandlers: {
     onPointerDown: (event: React.PointerEvent<HTMLButtonElement>) => void
     onPointerMove: (event: React.PointerEvent<HTMLButtonElement>) => void
@@ -58,12 +58,15 @@ export function usePrReviewTriggerPosition(): {
     onClickCapture: (event: React.MouseEvent<HTMLButtonElement>) => void
   }
 } {
+  const { storageKey } = options
   const initialState = useRef<PositionState | null>(null)
   if (initialState.current === null) {
-    initialState.current = readInitialPosition()
+    initialState.current = readInitialPosition(options)
   }
-  const positionSourceRef = useRef<PrReviewTriggerPositionSource>(initialState.current.source)
-  const committedPositionRef = useRef<PrReviewTriggerCommittedPosition>(
+  const positionSourceRef = useRef<FloatingTerminalTriggerPositionSource>(
+    initialState.current.source
+  )
+  const committedPositionRef = useRef<FloatingTerminalTriggerCommittedPosition>(
     initialState.current.committedPosition
   )
   const [position, setPosition] = useState(initialState.current.position)
@@ -75,35 +78,40 @@ export function usePrReviewTriggerPosition(): {
     top: number
     moved: boolean
   } | null>(null)
-  const stagedPositionRef = useRef<PrReviewTriggerPosition | null>(null)
+  const stagedPositionRef = useRef<FloatingTerminalTriggerPosition | null>(null)
   const suppressClickRef = useRef(false)
 
-  const previewPosition = useCallback((nextPosition: PrReviewTriggerPosition): void => {
-    const clamped = clampPrReviewTriggerPosition(nextPosition)
+  const previewPosition = useCallback((nextPosition: FloatingTerminalTriggerPosition): void => {
+    const clamped = clampFloatingTerminalTriggerPosition(nextPosition)
     stagedPositionRef.current = clamped
     setPosition(clamped)
   }, [])
 
-  const commitPosition = useCallback((nextPosition: PrReviewTriggerPosition): void => {
-    stagedPositionRef.current = null
-    const clamped = clampPrReviewTriggerPosition(nextPosition)
-    setPosition(clamped)
-    const anchoredPosition = anchorPrReviewTriggerPosition(clamped)
-    if (!anchoredPosition) {
-      return
-    }
-    committedPositionRef.current = anchoredPosition
-    positionSourceRef.current = 'user'
-    persistPrReviewTriggerPosition(anchoredPosition)
-  }, [])
+  const commitPosition = useCallback(
+    (nextPosition: FloatingTerminalTriggerPosition): void => {
+      stagedPositionRef.current = null
+      const clamped = clampFloatingTerminalTriggerPosition(nextPosition)
+      setPosition(clamped)
+      const anchoredPosition = anchorFloatingTerminalTriggerPosition(clamped)
+      if (!anchoredPosition) {
+        return
+      }
+      committedPositionRef.current = anchoredPosition
+      positionSourceRef.current = 'user'
+      persistFloatingTerminalTriggerPosition(anchoredPosition, storageKey)
+    },
+    [storageKey]
+  )
 
   const reconcilePosition = useCallback((): void => {
     setPosition((current) => {
-      if (!shouldReconcilePrReviewTriggerPosition(positionSourceRef.current)) {
+      if (!shouldReconcileFloatingTerminalTriggerPosition(positionSourceRef.current)) {
         // Why: Electron 可能先以启动尺寸挂载；此时不要用安全夹取覆盖用户拖动位置。
         return current
       }
-      return resolvePrReviewTriggerPosition(committedPositionRef.current, positionSourceRef.current)
+      return clampFloatingTerminalTriggerPosition(
+        resolveFloatingTerminalTriggerCommittedPosition(committedPositionRef.current)
+      )
     })
   }, [])
 

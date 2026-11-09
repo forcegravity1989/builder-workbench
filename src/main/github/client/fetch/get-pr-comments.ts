@@ -14,7 +14,11 @@ import { REVIEW_THREADS_QUERY } from './pr-review-threads-query'
 export async function getPRComments(
   repoPath: string,
   prNumber: number,
-  options?: { noCache?: boolean; prRepo?: GitHubApiRepository | null },
+  options?: {
+    noCache?: boolean
+    prRepo?: GitHubApiRepository | null
+    requireCompleteThreads?: boolean
+  },
   connectionId?: string | null,
   localGitOptions: LocalGitExecOptions = {}
 ): Promise<PRComment[]> {
@@ -136,7 +140,10 @@ export async function getPRComments(
           data?: {
             repository?: {
               pullRequest?: {
-                reviewThreads?: { nodes?: GQLThread[] | null } | null
+                reviewThreads?: {
+                  nodes?: GQLThread[] | null
+                  pageInfo?: { hasNextPage: boolean }
+                } | null
                 comments?: { nodes?: GQLIssueComment[] | null } | null
                 reviews?: { nodes?: GQLIssueComment[] | null } | null
               } | null
@@ -146,6 +153,14 @@ export async function getPRComments(
         // Why: graphql can exit 0 with data.repository null plus an errors array (scopes, field-level denial);
         // dereferencing it would throw and drop the REST halves fetched alongside it.
         const pullRequest = threadsData.data?.repository?.pullRequest
+        if (
+          options?.requireCompleteThreads &&
+          (!pullRequest?.reviewThreads?.nodes ||
+            pullRequest.reviewThreads.pageInfo?.hasNextPage !== false ||
+            ('errors' in threadsData && threadsData.errors))
+        ) {
+          throw new Error('检视线程读取不完整，未解决意见数未知')
+        }
         if (!pullRequest) {
           console.warn('Review threads response missing pullRequest; keeping REST results')
         }
@@ -204,6 +219,7 @@ export async function getPRComments(
           }
         }
       } else {
+        if (options?.requireCompleteThreads) throw new Error('检视线程读取失败，未解决意见数未知')
         if (threadsResult.status === 'rejected') {
           console.warn('Failed to fetch review threads:', threadsResult.reason)
         }
@@ -242,6 +258,7 @@ export async function getPRComments(
       return all
     }
 
+    if (options?.requireCompleteThreads) throw new Error('此任务来源无法提供完整检视线程')
     // Fallback: non-GitHub remote — use gh pr view (only returns issue-level comments)
     const { stdout } = await ghExecFileAsync(
       ['pr', 'view', String(prNumber), '--json', 'comments'],
@@ -265,6 +282,7 @@ export async function getPRComments(
       url: c.url ?? ''
     }))
   } catch (err) {
+    if (options?.requireCompleteThreads) throw err
     console.warn('getPRComments failed:', err)
     return []
   } finally {

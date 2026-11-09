@@ -576,6 +576,7 @@ import {
   PackageLaunchSchema,
   PackagePipelineListSchema
 } from '../workbench/package-pipeline'
+import { ReviewRepoSchema, ReviewRequestSchema } from '../workbench/pr-review-request'
 import {
   MilestoneReadRequestSchema,
   MilestoneSubmitRequestSchema
@@ -1251,6 +1252,11 @@ export const RPC_PARAMS_BY_METHOD = {
   'workbench.package.launch': PackageLaunchSchema,
   'workbench.package.list': PackagePipelineListSchema,
   'workbench.release.status': ReleaseStatusRequestSchema,
+  'workbench.review.comments': PullRequest,
+  'workbench.review.identity': null,
+  'workbench.review.inbox': null,
+  'workbench.review.project': ReviewRepoSchema,
+  'workbench.review.receive': ReviewRequestSchema,
   'workbench.skills.prepare': WorkbenchSkillPrepareRequest,
   'workbench.trunk.update': TrunkUpdateSchema,
   'workbench.versionBinding.read': VersionBindingScopeSchema,

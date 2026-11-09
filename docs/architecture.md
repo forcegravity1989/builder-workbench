@@ -65,6 +65,8 @@ Orca 执行核提供终端、会话、worktree、Tasks、Automations 和 Explore
 
 BW 的业务契约在 `src/shared/workbench/`，材料事务、指标与历史 runtime 及宿主适配在 `src/main/workbench/`，界面在 `src/renderer/src/workbench/`；`src/relay/workbench/` 只在原生 SSH relay 上调用同一材料事务。主 RPC 方法族为 `workbench.materials.*`（材料事务读写）与 `workbench.metrics.{list,read,refresh}`、`workbench.history.{list,read,readPlan}`、`workbench.versionBinding.{read,set}`（G2 版本绑定：原生身份定位、owner 验证、读回确认）、`workbench.versionWorkspace.prepare`（G2 新版本两棵流程树准备：宿主端预检、去重创建、绑定与空计划初始化）、`workbench.archive.prStatus`、`workbench.release.status`（#462 发布状态薄读回，注册在 `src/main/runtime/rpc/methods/workbench-*.ts`）；SSH 宿主的采集与历史命令走窄执行器 `workbench.metrics.execute` / `workbench.history.execute`，不扩 provider.exec 白名单。Orca RPC/CLI 注册处及 relay 组合入口保持薄挂载，工作树、连接、调度和会话内核不承载 BW 业务。Web/配对是访问方式，SSH/WSL 是执行位置，均复用原生身份与路由；不另加本机专属开关。
 
+通知首期承接 PR 评审请求，收件对象为已连接且接入同项目的主机；通过 `workbench.review.*` 薄 RPC 复用原生配对连接与宿主路由，接收端写本机用户数据后确认送达。界面复用原生菜单、浮层、徽标和 PR 详情，不另建通信通道或成员系统。行为与验证边界见[通知](05-features/pr-review-notify/spec.md)。
+
 产品知识继续在 `docs/`，Orca 工程参考按需读 `ref/`。`ref/` 不覆盖产品原则；旧 `crates/` 不存在于现行分支。
 
 ### 版本材料与选版

@@ -1,17 +1,8 @@
-/**
- * 评审通知条目：沿用工作树悬浮窗 PR 段的排版与状态徽标，图标/配色与
- * WorktreeCardMetadataStatusBadges 同口径；数据不足时不显示徽标，不补绿灯。
- */
 import React, { useState } from 'react'
 import {
   AlertCircle,
   BellRing,
-  CircleCheck,
-  CircleDot,
-  CircleX,
-  Clock,
   ExternalLink,
-  GitMerge,
   GitPullRequest,
   Loader2,
   MessageSquare,
@@ -21,15 +12,13 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { MetadataActionIcon } from '@/components/sidebar/WorktreeCardMetadataControls'
-import { MetadataStatusBadge } from '@/components/sidebar/WorktreeCardMetadataStatusBadges'
-import type {
-  ReviewCheckState,
-  ReviewIncomingNote,
-  ReviewOutgoingNote,
-  ReviewPrState
-} from './model'
+import {
+  MetadataStatusBadge,
+  ReviewStateBadge,
+  ReviewChecksBadge
+} from '@/components/sidebar/WorktreeCardMetadataStatusBadges'
+import type { ReviewIncomingNote, ReviewOutgoingNote } from './model'
 import { deriveOutgoingStatus } from './model'
-import { deleteReviewNotification, sendReviewRequest } from './store'
 
 function formatTime(iso: string): string {
   const date = new Date(iso)
@@ -48,82 +37,6 @@ function ProjectLabel({ owner, name }: { owner: string; name: string }): React.J
   return (
     <span className="truncate text-[11px] text-muted-foreground">
       {owner}/{name}
-    </span>
-  )
-}
-
-const PR_STATE_BADGES: Record<
-  ReviewPrState,
-  { label: string; icon: React.ReactNode; className: string }
-> = {
-  open: {
-    label: '开放',
-    icon: <GitPullRequest />,
-    className: 'border-emerald-500/25 bg-emerald-500/5 text-emerald-600 dark:text-emerald-300'
-  },
-  merged: {
-    label: '已合入',
-    icon: <GitMerge />,
-    className: 'border-purple-500/25 bg-purple-500/5 text-purple-600 dark:text-purple-300'
-  },
-  closed: {
-    label: '已关闭',
-    icon: <CircleX />,
-    className: 'border-rose-500/25 bg-rose-500/5 text-rose-600 dark:text-rose-300'
-  },
-  draft: {
-    label: '草稿',
-    icon: <CircleDot />,
-    className: 'border-border bg-muted/30 text-muted-foreground'
-  }
-}
-
-const CHECK_BADGES: Record<
-  Exclude<ReviewCheckState, 'neutral'>,
-  { label: string; icon: React.ReactNode; className: string }
-> = {
-  success: {
-    label: '通过',
-    icon: <CircleCheck />,
-    className: 'border-emerald-500/25 bg-emerald-500/5 text-emerald-600 dark:text-emerald-300'
-  },
-  failure: {
-    label: '失败',
-    icon: <CircleX />,
-    className: 'border-rose-500/25 bg-rose-500/5 text-rose-600 dark:text-rose-300'
-  },
-  pending: {
-    label: '等待',
-    icon: <Clock />,
-    className: 'border-amber-500/25 bg-amber-500/5 text-amber-600 dark:text-amber-300'
-  }
-}
-
-function PrStateBadge({ state }: { state: ReviewPrState | null }): React.JSX.Element | null {
-  if (!state) {
-    return null
-  }
-  const badge = PR_STATE_BADGES[state]
-  return (
-    <span title={`PR 状态：${badge.label}`}>
-      <MetadataStatusBadge label={badge.label} className={badge.className}>
-        {badge.icon}
-      </MetadataStatusBadge>
-    </span>
-  )
-}
-
-function ChecksBadge({ status }: { status: ReviewCheckState | null }): React.JSX.Element | null {
-  // Why: 与 ReviewChecksBadge 一致，neutral/未读到不占位。
-  if (!status || status === 'neutral') {
-    return null
-  }
-  const badge = CHECK_BADGES[status]
-  return (
-    <span title={`Checks：${badge.label}`}>
-      <MetadataStatusBadge label={badge.label} className={badge.className}>
-        {badge.icon}
-      </MetadataStatusBadge>
     </span>
   )
 }
@@ -163,30 +76,23 @@ function RoundBadge({ round }: { round: number }): React.JSX.Element | null {
 export function OutgoingReviewItem({
   note,
   onOpen,
+  onResend,
+  onDelete,
   onError
 }: {
   note: ReviewOutgoingNote
   onOpen: () => void
+  onResend: () => Promise<void>
+  onDelete: () => void
   onError: (message: string) => void
 }): React.JSX.Element {
   const status = deriveOutgoingStatus(note)
   const [busy, setBusy] = useState(false)
-  const failedDeliveries = note.deliveries.filter((delivery) => !delivery.ok)
 
   async function reRequest(): Promise<void> {
     setBusy(true)
     try {
-      await sendReviewRequest(
-        {
-          repo: note.repo,
-          prNumber: note.prNumber,
-          title: note.title,
-          sourceBranch: note.sourceBranch,
-          targetBranch: note.targetBranch,
-          round: note.round + 1
-        },
-        note.round + 1
-      )
+      await onResend()
     } catch (error) {
       onError(error instanceof Error ? error.message : String(error))
     } finally {
@@ -210,10 +116,7 @@ export function OutgoingReviewItem({
           <MetadataActionIcon label="打开 PR 详情" onClick={onOpen}>
             <ExternalLink className="size-3" />
           </MetadataActionIcon>
-          <MetadataActionIcon
-            label="删除这条评审通知"
-            onClick={() => deleteReviewNotification(note.id)}
-          >
+          <MetadataActionIcon label="删除这条评审通知" onClick={onDelete}>
             <Trash2 className="size-3" />
           </MetadataActionIcon>
         </div>
@@ -226,9 +129,16 @@ export function OutgoingReviewItem({
         请求评审 PR #{note.prNumber} · 第 {note.round} 轮
       </button>
       <div className="flex flex-wrap gap-1">
-        <PrStateBadge state={status.merged ? 'merged' : status.prState} />
-        <ChecksBadge status={status.checksState} />
-        {status.merged ? null : <CommentCountBadge count={status.openCommentCount} />}
+        <ReviewStateBadge
+          label="PR"
+          state={
+            status.error ? undefined : ((status.merged ? 'merged' : status.prState) ?? undefined)
+          }
+        />
+        <ReviewChecksBadge status={status.error ? undefined : (status.checksState ?? undefined)} />
+        {status.merged || status.error ? null : (
+          <CommentCountBadge count={status.openCommentCount} />
+        )}
         <RoundBadge round={note.round} />
       </div>
       <div className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-muted-foreground">
@@ -249,11 +159,13 @@ export function OutgoingReviewItem({
       ) : note.readback === null ? (
         <span className="text-[11px] text-muted-foreground">状态读取中</span>
       ) : null}
-      {failedDeliveries.length > 0 ? (
-        <span className="text-[11px] text-destructive">
-          未送达：{failedDeliveries.map((entry) => entry.name || entry.host).join('、')}
-        </span>
-      ) : null}
+      <div className="space-y-1 text-[11px] text-muted-foreground">
+        {note.deliveries.map((delivery) => (
+          <p key={delivery.environmentId} className={delivery.ok ? '' : 'text-destructive'}>
+            {delivery.name} · {delivery.ok ? '已送达' : `未送达：${delivery.error ?? '未确认接收'}`}
+          </p>
+        ))}
+      </div>
       {status.canReRequest ? (
         <div>
           <Button variant="outline" size="xs" disabled={busy} onClick={() => void reRequest()}>
@@ -291,9 +203,14 @@ export function IncomingReviewItem({
         {note.title}
       </span>
       <span className="flex flex-wrap gap-1">
-        <PrStateBadge state={state} />
-        <ChecksBadge status={note.readback?.checksState ?? null} />
-        {state === 'merged' ? null : (
+        <ReviewStateBadge
+          label="PR"
+          state={note.readbackError ? undefined : (state ?? undefined)}
+        />
+        <ReviewChecksBadge
+          status={note.readbackError ? undefined : (note.readback?.checksState ?? undefined)}
+        />
+        {state === 'merged' || note.readbackError ? null : (
           <CommentCountBadge count={note.readback?.openCommentCount ?? null} />
         )}
         <RoundBadge round={note.round} />
@@ -305,6 +222,12 @@ export function IncomingReviewItem({
         <span>·</span>
         <span>{formatTime(note.receivedAt)}</span>
       </span>
+      {note.readbackError ? (
+        <span className="text-[11px] text-destructive">
+          {note.readbackError}
+          {note.readback?.checkedAt ? ` · 上次 ${formatTime(note.readback.checkedAt)}` : ''}
+        </span>
+      ) : null}
       {missingProject ? <span className="text-[10px] text-destructive">本机没有该项目</span> : null}
     </button>
   )

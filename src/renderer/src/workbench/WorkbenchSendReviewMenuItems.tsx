@@ -1,20 +1,25 @@
-/**
- * 工作树右键「发送评审」（pr-review-notify）：只有能定位到开放 PR 时可用，
- * 置灰时在菜单项上说明原因。点击即发送，不再要求打开面板或二次确认。
- * PR 定位与侧栏「已链接 PR」同口径——linkedPR 优先，缺失按分支补查。
- */
 import React, { useEffect, useState } from 'react'
-import { Send } from 'lucide-react'
 import { toast } from 'sonner'
-import { DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
+import { ReviewSendMenuItem } from './pr-review-notifications/ReviewSendMenuItem'
+import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import {
+  getGitHubRuntimeRepoId,
+  getGitHubSourceRuntimeTarget
+} from '@/lib/github-source-runtime-context'
+import { normalizeGitHubPRForBranchOutcome } from '../../../shared/github/pull-request-for-branch-outcome'
+import type { PRRefreshOutcome } from '../../../shared/github/pull-request-refresh-types'
+import type { PRInfo } from '../../../shared/github/pull-request-types'
 import { useRepoById } from '@/store/selectors'
 import { lookupGitHubWorkItemForSource } from '@/lib/github-work-item-source-lookup'
 import type { Repo } from '../../../shared/repo-types'
 import type { Worktree } from '../../../shared/worktree/types'
-import type { ReviewRepoIdentity } from '../../../shared/workbench/pr-review-request'
+import {
+  reviewRepoIdentity,
+  type ReviewRepoIdentity
+} from '../../../shared/workbench/pr-review-request'
 import { requireSourceContext } from './task-reference-repo'
 import { isWorkbenchShell } from './is-workbench-shell'
-import { nextReviewRound, sendReviewRequest } from './pr-review-notifications/store'
+import { sendReviewRequest } from './pr-review-notifications/store'
 
 type ReviewTarget = {
   repo: ReviewRepoIdentity
@@ -29,16 +34,6 @@ type TargetState =
   | { status: 'ready'; target: ReviewTarget }
   | { status: 'blocked'; reason: string }
 
-/** canonicalKey（github.com/owner/name）→ 仓库身份；无 GitHub 远端时返回 null。 */
-function reviewRepoIdentity(repo: Repo): ReviewRepoIdentity | null {
-  const source = repo.gitRemoteIdentity?.canonicalKey ?? repo.gitRemoteIdentity?.remoteUrl
-  if (!source) {
-    return null
-  }
-  const match = source.match(/github\.com\/([^/\s]+)\/([^/\s]+?)(?:\.git)?$/)
-  return match ? { owner: match[1]!, name: match[2]! } : null
-}
-
 type ReviewWorktreeRef = Pick<Worktree, 'branch' | 'head' | 'linkedPR'>
 
 async function resolveReviewTarget(repo: Repo, worktree: ReviewWorktreeRef): Promise<TargetState> {
@@ -48,7 +43,7 @@ async function resolveReviewTarget(repo: Repo, worktree: ReviewWorktreeRef): Pro
   }
   const branch = worktree.branch.replace(/^refs\/heads\//, '')
   // Why: 持久关联的 PR 优先按编号读状态，能区分「已合入/已关闭」与本分支
-  // 没有开放 PR，菜单置灰原因才准确（spec N02）。
+  // 没有开放 PR，菜单置灰原因才准确。
   if (worktree.linkedPR) {
     try {
       const item = await lookupGitHubWorkItemForSource({
@@ -81,15 +76,24 @@ async function resolveReviewTarget(repo: Repo, worktree: ReviewWorktreeRef): Pro
     }
   }
   try {
-    const pr = await window.api.gh.prForBranch({
-      repoPath: repo.path,
-      repoId: repo.id,
-      branch,
-      linkedPRNumber: worktree.linkedPR ?? null,
-      fallbackPRNumber: null,
-      acceptMergedFallbackPR: false,
-      currentHeadOid: worktree.head
-    })
+    const sourceContext = requireSourceContext(repo, 'github')
+    const outcome = normalizeGitHubPRForBranchOutcome(
+      await callRuntimeRpc<PRRefreshOutcome | PRInfo | null>(
+        getGitHubSourceRuntimeTarget(sourceContext),
+        'github.prForBranch',
+        {
+          repo: getGitHubRuntimeRepoId(sourceContext, repo.id),
+          branch,
+          linkedPRNumber: worktree.linkedPR ?? null,
+          fallbackPRNumber: null,
+          acceptMergedFallbackPR: false,
+          currentHeadOid: worktree.head
+        },
+        { timeoutMs: 30_000 }
+      )
+    )
+    if (outcome.kind === 'upstream-error') throw new Error(outcome.message)
+    const pr = outcome.kind === 'found' ? outcome.pr : null
     if (!pr) {
       return { status: 'blocked', reason: '分支没有关联的开放 PR' }
     }
@@ -141,9 +145,6 @@ export function WorkbenchSendReviewMenuItems({
 }): React.JSX.Element | null {
   const repo = useRepoById(worktree.repoId)
   const [targetState, setTargetState] = useState<TargetState>({ status: 'checking' })
-  const repoPath = repo?.path
-  const repoId = repo?.id
-  const worktreeId = worktree.id
   const worktreeBranch = worktree.branch
   const worktreeHead = worktree.head
   const linkedPR = worktree.linkedPR
@@ -172,8 +173,7 @@ export function WorkbenchSendReviewMenuItems({
     return () => {
       cancelled = true
     }
-    // Why: 菜单打开时只按工作树/仓库身份解析一次，避免每次渲染重复打 GitHub。
-  }, [repo, repoPath, repoId, worktreeId, worktreeBranch, worktreeHead, linkedPR])
+  }, [repo, worktreeBranch, worktreeHead, linkedPR])
 
   if (!isWorkbenchShell() || worktree.isMainWorktree || worktree.isArchived) {
     return null
@@ -185,37 +185,29 @@ export function WorkbenchSendReviewMenuItems({
     }
     const { target } = targetState
     try {
-      const round = nextReviewRound(target.repo, target.prNumber)
-      await sendReviewRequest(
-        {
-          repo: target.repo,
-          prNumber: target.prNumber,
-          title: target.title,
-          sourceBranch: target.sourceBranch,
-          targetBranch: target.targetBranch,
-          round
-        },
-        round
-      )
+      await sendReviewRequest({
+        repo: target.repo,
+        prNumber: target.prNumber,
+        title: target.title,
+        sourceBranch: target.sourceBranch,
+        targetBranch: target.targetBranch
+      })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error))
     }
   }
 
   return (
-    <>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem
-        disabled={disabled || targetState.status !== 'ready'}
-        onSelect={() => void sendReview()}
-      >
-        <Send className="size-3.5" />
-        {targetState.status === 'ready'
-          ? '发送评审'
-          : targetState.status === 'checking'
-            ? '发送评审（正在确认关联 PR…）'
-            : `发送评审（${targetState.reason}）`}
-      </DropdownMenuItem>
-    </>
+    <ReviewSendMenuItem
+      disabled={disabled || targetState.status !== 'ready'}
+      reason={
+        targetState.status === 'checking'
+          ? '正在确认关联 PR…'
+          : targetState.status === 'blocked'
+            ? targetState.reason
+            : undefined
+      }
+      onSend={() => void sendReview()}
+    />
   )
 }
