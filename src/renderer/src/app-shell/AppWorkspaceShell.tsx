@@ -2,7 +2,7 @@ import { MilestoneVersionOrigin } from '../workbench/milestone-version-origin'
 import { Suspense, useRef } from 'react'
 import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { translate } from '@/i18n/i18n'
-import Sidebar from '../components/Sidebar'
+import { WorktreeSidebar } from './WorktreeSidebar'
 import RightSidebar from '../components/right-sidebar'
 import { RecoverableRenderErrorBoundary } from '../components/error-boundaries/RecoverableRenderErrorBoundary'
 import { FloatingTerminalToggleButton } from '../components/floating-terminal/FloatingTerminalToggleButton'
@@ -19,7 +19,7 @@ import { useCycleWorkspace } from '../workbench/version-cycle/cycle-workspace-co
 import { usePlanColumnResize } from '../workbench/use-plan-column-resize'
 import { useMetricsWorkspaceOpen } from '../workbench/metrics-workspace-open'
 import { useMetricsBandResize } from '../workbench/use-metrics-band-resize'
-import { WorkbenchRail, WORKBENCH_RAIL_WIDTH } from '../workbench/WorkbenchRail'
+import { WorkbenchRail } from '../workbench/WorkbenchRail'
 import { WorkbenchWorkspaceChoiceDialog } from '../workbench/WorkbenchWorkspaceChoiceDialog'
 import { WorkbenchVersionBindingDialog } from '../workbench/version-tree-bind-dialog'
 import { useWorkbenchObjectContext } from '../workbench/workbench-object-context'
@@ -59,48 +59,6 @@ const ProjectWallPage = lazy(() =>
 const OnboardProjectPage = lazy(() =>
   import('../workbench/OnboardProjectPage').then((m) => ({ default: m.OnboardProjectPage }))
 )
-
-type WorktreeSidebarScrollRefs = {
-  scrollOffsetRef: React.MutableRefObject<number>
-  scrollAnchorRef: React.MutableRefObject<VirtualizedScrollAnchor>
-}
-
-function WorktreeSidebar({
-  layout,
-  scrollRefs,
-  panelVisible = true
-}: {
-  layout: AppChromeLayout
-  scrollRefs: WorktreeSidebarScrollRefs
-  panelVisible?: boolean
-}): React.JSX.Element {
-  return (
-    <RecoverableRenderErrorBoundary
-      boundaryId="sidebar.worktrees"
-      surface="sidebar"
-      resetKey={layout.activeView}
-      title={translate('auto.App.1468601e7b', 'The workspace list hit an error.')}
-      description={
-        layout.leftTitlebarChromeLayout.shouldMount
-          ? translate(
-              'auto.App.bdc71dddc9',
-              'The active workspace remains open. Retry the list or switch views.'
-            )
-          : translate(
-              'auto.App.cba0fafda5',
-              'The active page remains open. Retry the list or switch views.'
-            )
-      }
-    >
-      <Sidebar
-        panelVisible={panelVisible}
-        leadingWidth={isWorkbenchShell() ? WORKBENCH_RAIL_WIDTH : 0}
-        worktreeScrollOffsetRef={scrollRefs.scrollOffsetRef}
-        worktreeScrollAnchorRef={scrollRefs.scrollAnchorRef}
-      />
-    </RecoverableRenderErrorBoundary>
-  )
-}
 
 function ActivePage({ layout }: { layout: AppChromeLayout }): React.JSX.Element {
   const { activeView, activeWorktreeId, activePendingCreationId, creationLayoutActive } = layout

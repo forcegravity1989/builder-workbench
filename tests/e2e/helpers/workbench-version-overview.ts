@@ -15,7 +15,8 @@ import {
 import {
   enableProjectStats,
   verifyGoalTaskEntry,
-  verifyOverviewRestart
+  verifyOverviewRestart,
+  openVersionOverview
 } from './workbench-overview-restart'
 
 export async function verifyVersionOverview(
@@ -25,28 +26,8 @@ export async function verifyVersionOverview(
   info: TestInfo
 ) {
   const materialsBefore = snapshotOverviewMaterials(root)
-  const open = async (version: string, afterBackgroundReload = false) => {
-    await page.getByRole('button', { name: '版本工作区', exact: true }).click({
-      force: afterBackgroundReload
-    })
-    const group = page.locator('.wb-version-group', {
-      has: page.getByRole('button', { name: `${version} 展开或收起`, exact: true })
-    })
-    const overview = group.getByRole('button', { name: '总览', exact: true })
-    const toggle = group.getByRole('button', { name: `${version} 展开或收起`, exact: true })
-    await expect(toggle).toBeVisible()
-    if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
-      await toggle.click({ force: afterBackgroundReload })
-    }
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    await expect(overview).toBeVisible()
-    await expect(overview).toBeEnabled()
-    // A background reload has no animation frames for Playwright's stability check.
-    await overview.click({ force: afterBackgroundReload })
-    await expect(
-      page.getByRole('heading', { name: `${version} 版本总览`, exact: true })
-    ).toBeVisible()
-  }
+  const open = (version: string, afterBackgroundReload = false) =>
+    openVersionOverview(page, version, afterBackgroundReload)
   await expect(page.locator('[data-workbench-rail]')).toBeVisible({ timeout: 180_000 })
   await verifyDraftAcceptanceSource(page, root, info, open)
   const provider = JSON.parse(
