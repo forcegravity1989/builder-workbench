@@ -1,8 +1,14 @@
 import { goalOrdinal } from './version-labels'
 import React from 'react'
-import { ChevronDown, ChevronRight, FolderPlus, LoaderCircle, PackageCheck, X } from 'lucide-react'
+import { FolderPlus, LoaderCircle, PackageCheck, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import {
+  SIDEBAR_GROUP_FIXED_CHEVRON_CLASS,
+  SidebarGroupChevron
+} from '@/components/sidebar/ProjectHeaderActions'
+import { WORKTREE_SECTION_HEADER_PADDING_LEFT } from '@/components/sidebar/worktree-list/rows/indentation'
+import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-list/viewport/virtual-rows'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { VersionWorkflow } from '../../../shared/workbench/version-document'
 import type { VersionCatalogEntry } from '../../../shared/workbench/version-catalog'
@@ -87,7 +93,10 @@ export function VersionNavGroup({
   })
   return (
     <div className="wb-version-group min-w-0">
-      <div className="flex min-w-0 items-center gap-0.5 pr-0.5">
+      <div
+        className="relative flex h-7 min-w-0 items-center gap-0.5 pr-[26px]"
+        style={{ paddingLeft: WORKTREE_SECTION_HEADER_PADDING_LEFT }}
+      >
         <button
           type="button"
           onClick={onToggle}
@@ -97,15 +106,10 @@ export function VersionNavGroup({
             retired ? '无存活工作区绑定（已清理或未准备）；材料可回看' : '在制（有存活绑定工作区）'
           }
           className={cn(
-            'flex min-w-0 flex-1 items-center gap-1.5 rounded-md px-1 py-1 text-left text-[13px] tracking-tight transition-colors hover:bg-worktree-sidebar-foreground/8',
+            'flex h-full min-w-0 flex-1 items-center gap-1.5 rounded-md text-left text-[13px] leading-none transition-colors hover:bg-worktree-sidebar-foreground/8',
             browsed ? 'text-worktree-sidebar-foreground' : 'text-worktree-sidebar-foreground/70'
           )}
         >
-          {expanded ? (
-            <ChevronDown className="size-3.5 shrink-0 text-worktree-sidebar-foreground/45" />
-          ) : (
-            <ChevronRight className="size-3.5 shrink-0 text-worktree-sidebar-foreground/45" />
-          )}
           <PackageCheck
             className={cn(
               'size-4 shrink-0',
@@ -122,6 +126,9 @@ export function VersionNavGroup({
               历史
             </span>
           ) : null}
+          <span className={SIDEBAR_GROUP_FIXED_CHEVRON_CLASS} data-workbench-version-chevron="">
+            <SidebarGroupChevron expanded={expanded} />
+          </span>
         </button>
         {flowTreesComplete ? null : (
           <Button
@@ -132,7 +139,7 @@ export function VersionNavGroup({
             title="初始化工作区（创建本版计划与验收工作区）"
             disabled={busy}
             onClick={onInitialize}
-            className="size-6 shrink-0 text-worktree-sidebar-foreground/40 hover:text-worktree-sidebar-foreground"
+            className="size-5 shrink-0 text-worktree-sidebar-foreground/40 hover:text-worktree-sidebar-foreground"
           >
             {initializing ? (
               <LoaderCircle className="size-3.5 animate-spin" />
@@ -148,13 +155,16 @@ export function VersionNavGroup({
           aria-label={`清理 ${entry.version} 工作树`}
           title={`清理 ${entry.version} 工作树（勾选后进入 Orca 删除确认）`}
           onClick={onCleanup}
-          className="size-6 shrink-0 text-worktree-sidebar-foreground/40 hover:text-worktree-sidebar-foreground"
+          className="size-5 shrink-0 text-worktree-sidebar-foreground/40 hover:text-worktree-sidebar-foreground"
         >
           <X className="size-3.5" />
         </Button>
       </div>
       {expanded ? (
-        <div className="ml-[13px] flex flex-col gap-0.5 border-l border-worktree-sidebar-foreground/10 pl-1.5">
+        <div
+          className="ml-[13px] flex flex-col border-l border-worktree-sidebar-foreground/10 pl-1.5"
+          style={{ rowGap: WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP }}
+        >
           <OverviewRow active={activeOverview} onOpenOverview={onOverview} />
           <WorkflowRow
             version={entry.version}

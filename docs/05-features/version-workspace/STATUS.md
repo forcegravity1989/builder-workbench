@@ -1,6 +1,6 @@
 # 版本工作区状态
 
-> 现行双列侧栏已在 Windows Electron 开发壳核对。覆盖空白页与活跃工作区收起、两处恢复入口、终端标签、拖动中收起、220px 窄栏与原生工作区选项，以及底部四枚原生图标的尺寸。对照证据见 [#475](https://github.com/forcegravity1989/builder-workbench/issues/475) 关联的布局修订 PR。
+> Windows Electron 已用隔离项目核对三段标题及间距、版本与项目最右箭头、默认前三与手动展开，以及从固定区切换到同一旧版本的不同工作区时自动展开并定位。对照证据见 [#475](https://github.com/forcegravity1989/builder-workbench/issues/475) 关联的布局修订 PR。第二列开合、拖动中收起、工具同行和底部图标的前轮真壳证据见 [PR #597](https://github.com/forcegravity1989/builder-workbench/pull/597#issuecomment-6737204523)。
 
 > 版本总览现为独立特性，设计认可、实现与验证状态见 [version-overview STATUS](../version-overview/STATUS.md)。本文保留版本工作区的现行和历史证据，不用历史总览通过项证明新设计已认可。
 
@@ -125,4 +125,4 @@ Lens8（提示词/SKILL 规范）：F1 中 version-records 运行身份段补绑
 
 ## 历史原型的证据边界
 
-2026-10-20 的版本业务旅程确认与当时浏览器结果见 [PR #437](https://github.com/forcegravity1989/builder-workbench/pull/437) 及 Git 历史；原单列入口只作既有业务旅程参考。当前双列布局以上文 PR #523 与 spec 为准。版本总览设计及验证归独立特性，不以旧的表格总览原型或其通过项证明当前界面。
+2026-10-20 的版本业务旅程确认与当时浏览器结果见 [PR #437](https://github.com/forcegravity1989/builder-workbench/pull/437) 及 Git 历史；原单列入口只作既有业务旅程参考。现行双列布局见 [spec](spec.md)，PR #523 记录早期双列修订与当时的验证。版本总览设计及验证归独立特性，不以旧的表格总览原型或其通过项证明当前界面。

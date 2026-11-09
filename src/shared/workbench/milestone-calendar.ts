@@ -123,20 +123,18 @@ export function availableMilestoneVersions(
 }
 
 export function includeMilestoneVersion(draft: MilestoneDraft, version: ScheduledVersion) {
+  const scheduled: ScheduledVersion = {
+    version: version.version,
+    cycleId: version.cycleId,
+    ...(version.timeWindow ? { timeWindow: { ...version.timeWindow } } : {})
+  }
   return {
     draft: draft.versions.some((v) => v.cycleId === version.cycleId)
       ? draft
       : {
           ...draft,
-          versions: [
-            ...draft.versions,
-            {
-              version: version.version,
-              cycleId: version.cycleId,
-              ...(version.timeWindow ? { timeWindow: { ...version.timeWindow } } : {})
-            }
-          ]
+          versions: [...draft.versions, scheduled]
         },
-    version
+    version: scheduled
   }
 }
