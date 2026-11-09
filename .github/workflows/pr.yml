@@ -184,12 +184,15 @@ jobs:
       # Why these paths: the BW overlay unit-test scope is the four workbench
       # suite dirs capped by the vitest-count ratchet (AGENTS 提交前门禁,
       # 02 环 4), plus the repository integration code the shell depends on.
+      # The sidebar task-entry resolver is a single BW-side routing function
+      # outside the ratchet dirs; list its file so the guard actually runs in CI.
       - name: Test Workbench and repository integration code
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/workbench
           src/main/ipc/repos
           src/preload/api/platform-bridge.test.ts
+          src/renderer/src/components/sidebar/task-entry-project.test.ts
           src/renderer/src/workbench
           src/relay/workbench
           src/shared/workbench
