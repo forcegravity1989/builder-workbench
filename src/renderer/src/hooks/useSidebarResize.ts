@@ -67,19 +67,17 @@ export function useSidebarResize<T extends HTMLElement>({
   const overlayRef = useRef<HTMLDivElement | null>(null)
   const [isResizing, setIsResizing] = useState(false)
 
-  const removeDragOverlay = useCallback(() => {
-    const overlay = overlayRef.current
-    if (overlay && overlay.parentNode) {
-      overlay.parentNode.removeChild(overlay)
+  const clearResize = useCallback(() => {
+    isResizingRef.current = false
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current)
+      frameRef.current = null
     }
-    overlayRef.current = null
-  }, [])
-
-  const resetDocumentStyles = useCallback(() => {
     document.body.style.cursor = ''
     document.body.style.userSelect = ''
-    removeDragOverlay()
-  }, [removeDragOverlay])
+    overlayRef.current?.remove()
+    overlayRef.current = null
+  }, [])
 
   const applyRenderedWidth = useCallback(
     (nextWidth: number) => {
@@ -99,28 +97,26 @@ export function useSidebarResize<T extends HTMLElement>({
 
   useLayoutEffect(() => {
     if (isResizingRef.current) {
-      return
+      if (isOpen) {
+        return
+      }
+      // A keyboard toggle can close the sidebar before the mouse is released.
+      clearResize()
+      setIsResizing(false)
     }
 
     draftWidthRef.current = width
     applyRenderedWidth(width)
     onDraftWidthChange?.(width)
-  }, [applyRenderedWidth, onDraftWidthChange, width])
+  }, [applyRenderedWidth, clearResize, isOpen, onDraftWidthChange, width])
 
   const stopResize = useCallback(() => {
     if (!isResizingRef.current) {
       return
     }
 
-    isResizingRef.current = false
+    clearResize()
     setIsResizing(false)
-
-    if (frameRef.current !== null) {
-      cancelAnimationFrame(frameRef.current)
-      frameRef.current = null
-    }
-
-    resetDocumentStyles()
 
     const finalWidth = draftWidthRef.current
     applyRenderedWidth(finalWidth)
@@ -128,7 +124,7 @@ export function useSidebarResize<T extends HTMLElement>({
     if (finalWidth !== width) {
       setWidth(finalWidth)
     }
-  }, [applyRenderedWidth, onDraftWidthChange, resetDocumentStyles, setWidth, width])
+  }, [applyRenderedWidth, clearResize, onDraftWidthChange, setWidth, width])
 
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
@@ -172,15 +168,9 @@ export function useSidebarResize<T extends HTMLElement>({
       window.removeEventListener('mouseup', stopResize)
       window.removeEventListener('blur', stopResize)
 
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current)
-        frameRef.current = null
-      }
-
-      isResizingRef.current = false
-      resetDocumentStyles()
+      clearResize()
     }
-  }, [handleMouseMove, resetDocumentStyles, stopResize])
+  }, [clearResize, handleMouseMove, stopResize])
 
   const onResizeStart = useCallback(
     (event: React.MouseEvent) => {

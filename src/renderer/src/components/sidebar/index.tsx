@@ -18,7 +18,6 @@ import { useWorkspaceRevealBodyRedirect } from './use-workspace-reveal-body-redi
 import { resolveLeftSidebarStyleVariables } from '@/lib/left-sidebar-appearance'
 import { useSystemPrefersDark } from '@/components/terminal-pane/use-system-prefers-dark'
 import { lazyWithRetry } from '@/lib/lazy-with-retry'
-import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 
 // Why lazy: the Agents list pulls the whole activity pipeline (virtualizer, markdown
 // previews, thread derivation); users on the workspace view should not load or render any of it.
@@ -43,6 +42,7 @@ export const WORKTREE_SIDEBAR_RESIZE_HANDLE_LINE_CLASS_NAME =
 type SidebarProps = {
   panelVisible?: boolean
   leadingWidth?: number
+  workbenchTitle?: React.ReactNode
   worktreeScrollOffsetRef: React.MutableRefObject<number>
   worktreeScrollAnchorRef: React.MutableRefObject<VirtualizedScrollAnchor>
 }
@@ -50,6 +50,7 @@ type SidebarProps = {
 function Sidebar({
   panelVisible = true,
   leadingWidth = 0,
+  workbenchTitle,
   worktreeScrollOffsetRef,
   worktreeScrollAnchorRef
 }: SidebarProps): React.JSX.Element {
@@ -117,13 +118,13 @@ function Sidebar({
   const setLiveSidebarWidth = React.useCallback(
     (width: number) => {
       // Native portalled drawers need the full visible left edge, including the Rail.
-      const visibleWidth = leadingWidth + (panelVisible ? width : 0)
+      const visibleWidth = leadingWidth + (sidebarOpen && panelVisible ? width : 0)
       document.documentElement.style.setProperty(
         '--workspace-sidebar-live-width',
         `${visibleWidth}px`
       )
     },
-    [leadingWidth, panelVisible]
+    [leadingWidth, panelVisible, sidebarOpen]
   )
 
   const repoCount = repos.length
@@ -161,10 +162,9 @@ function Sidebar({
 
   useWorkspaceRevealBodyRedirect(panelVisible && sidebarOpen && sidebarBody === 'agents')
 
-  const workbenchShell = isWorkbenchShell()
   const sidebarHeader = (
     <SidebarHeader
-      controlsOnly={workbenchShell}
+      titleContent={workbenchTitle}
       onWorkspaceBoardMenuOpenChange={setWorkspaceBoardMenuOpen}
       activityOptionsTarget={setAgentOptionsTarget}
     />
@@ -193,7 +193,7 @@ function Sidebar({
           {sidebarOpen && (
             <>
               {/* Fixed controls */}
-              <SidebarNav />
+              {workbenchTitle ? null : <SidebarNav />}
               {sidebarHeader}
               {sidebarBody === 'agents' ? (
                 <React.Suspense fallback={<div className="min-h-0 flex-1" />}>
