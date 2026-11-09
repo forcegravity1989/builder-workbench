@@ -1,11 +1,3 @@
-/**
- * Workbench left-nav ids. Surfaces reuse existing Orca TopLevelView slots
- * so we do not extend the upstream union (see SYNC.md).
- *
- * 计划/验收 → artifacts 准备固定树 → terminal 原生工作区旁挂业务板
- * 任务 → tasks（完整 TaskPage）
- */
-import { getCycleView } from './cycle-view-state'
 import { branchName } from '@/lib/git-utils'
 import { normalizeStoredWorkbenchVersionBinding } from '../../../shared/workbench/version-binding'
 import {
@@ -13,16 +5,6 @@ import {
   LEGACY_PLAN_BRANCH
 } from '../../../shared/workbench/version-workspace-prepare'
 import type { Worktree } from '../../../shared/worktree/types'
-
-export type WorkbenchNavId =
-  | 'overview'
-  | 'plan'
-  | 'acceptance'
-  | 'tasks'
-  | 'automations'
-  | 'knowledge'
-
-export const WORKBENCH_PLAN_SLOT = 'artifacts' as const
 
 /**
  * 工作树的流程识别（G2 P3a）：绑定优先——已绑定树只按绑定点亮对应业务板
@@ -46,29 +28,4 @@ export function cycleWorkflowForWorktree(
     : branch === LEGACY_ACCEPTANCE_BRANCH
       ? 'acceptance'
       : null
-}
-
-export function resolveWorkbenchNav(
-  activeView: string,
-  worktree?: Pick<Worktree, 'branch'> | null
-): WorkbenchNavId | null {
-  if (activeView === 'terminal') {
-    return cycleWorkflowForWorktree(worktree)
-  }
-  if (activeView === 'activity') {
-    return 'overview'
-  }
-  if (activeView === WORKBENCH_PLAN_SLOT) {
-    return getCycleView() === 'acceptance' ? 'acceptance' : 'plan'
-  }
-  if (activeView === 'tasks') {
-    return 'tasks'
-  }
-  if (activeView === 'automations') {
-    return 'automations'
-  }
-  if (activeView === 'space') {
-    return 'knowledge'
-  }
-  return null
 }

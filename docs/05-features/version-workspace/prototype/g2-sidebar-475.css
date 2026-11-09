@@ -1,0 +1,211 @@
+/*
+ * #475 双列侧栏原型样式（仅 version-workspace-prototype-475.html 加载）。
+ * 窄 Rail 常驻 + 第二列对象面板；配色、行高、圆角沿用 g2-workspace.css 的变量。
+ */
+.rail-475 {
+  width: 64px;
+  min-width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 0 10px;
+  background: var(--worktree-sidebar, var(--sidebar));
+  border-right: 1px solid var(--border);
+}
+.rail-brand {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 15px;
+  font-weight: 700;
+}
+.rail-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.rail-button {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--foreground) 62%, transparent);
+}
+.rail-button:hover {
+  background: var(--worktree-sidebar-accent, var(--accent));
+}
+.rail-button.selected {
+  background: var(--worktree-sidebar-accent, var(--accent));
+  color: var(--foreground);
+}
+.rail-button.selected::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--foreground);
+}
+.rail-spacer {
+  flex: 1;
+}
+.rail-foot-group {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding-bottom: 6px;
+}
+.rail-foot {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--foreground) 62%, transparent);
+}
+.rail-foot:hover {
+  background: var(--worktree-sidebar-accent, var(--accent));
+  color: var(--foreground);
+}
+
+/* 生产第二列复用原生 Sidebar：默认宽 280px，可拖动 220–500px，不按视口再缩。 */
+.panel-475 {
+  position: relative;
+  width: 280px;
+  min-width: 280px;
+}
+.panel-resize-475 {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.panel-resize-475:hover,
+.panel-resize-475:focus-visible {
+  background: var(--border);
+}
+.review-bar {
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.review-actions {
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+.review-journey-523 {
+  padding-left: 20px;
+  line-height: 1.7;
+}
+.review-journey-523 li + li {
+  margin-top: 9px;
+}
+.native-worktree-heading.selected {
+  background: var(--worktree-sidebar-accent, var(--accent));
+}
+/* 项目标题固定在滚动容器之外，与生产 WorkbenchSidebarNav 一致。 */
+.panel-475 .panel-heading-475 {
+  flex-shrink: 0;
+  padding: 8px 8px 6px;
+}
+.hidden-475 {
+  display: none;
+}
+/* Version and native workspace sections share this single scroll container. */
+.panel-475 .native-projects.merged-scroll-475 {
+  max-height: none;
+  overflow: visible;
+  flex: none;
+  border-top: none;
+  padding-bottom: 12px;
+}
+.panel-475 .panel-footer-475 {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+  background: var(--worktree-sidebar, var(--sidebar));
+}
+.panel-475 .panel-footer-475 button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  color: var(--muted-foreground);
+}
+.panel-475 .panel-footer-475 button:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+/* Three section headings follow the native section header metrics. */
+.pinned-section-475 {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.panel-475 .bw-section,
+.panel-475 .native-projects {
+  padding: 0 0 8px;
+}
+.panel-475 .sidebar-section-heading-475 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  min-height: 28px;
+  margin: 4px 0;
+  padding: 0 8px 0 10px;
+  border: 0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  color: var(--foreground);
+  background: transparent;
+}
+.panel-475 .sidebar-section-heading-475 > svg {
+  width: 16px;
+  min-width: 16px;
+}
+.panel-475 .sidebar-section-heading-475 > span {
+  flex: 1;
+}
+.panel-475 .sidebar-section-heading-475 small {
+  font-size: 11px;
+  font-weight: 400;
+}
+.pinned-heading-475:hover {
+  background: var(--accent);
+}
+.native-toolbar-475 {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--border);
+}

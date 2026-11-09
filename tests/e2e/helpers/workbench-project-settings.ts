@@ -45,14 +45,14 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   execFileSync('git', ['add', '.bw/project.toml'], { cwd: repoPath })
   execFileSync('git', ['commit', '-m', 'seed project settings verification'], { cwd: repoPath })
   const openWall = async () => {
-    await page.locator('[data-workbench-project-wall]').click()
+    await page.getByRole('button', { name: '项目墙', exact: true }).click()
     await expect(page.getByRole('heading', { name: '项目墙', exact: true })).toBeVisible()
   }
   const openConfig = async () => {
     await page.getByRole('button', { name: `配置 ${name}`, exact: true }).click()
     await expect(page.getByRole('button', { name: '编辑项目信息', exact: true })).toBeEnabled()
   }
-  await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
+  await expect(page.locator('[data-workbench-rail]')).toBeVisible({ timeout: 180_000 })
   await openWall()
   const toolbar = page.getByRole('group', { name: '项目墙操作' })
   for (const label of ['刷新项目墙', '导入 Builder 主机', '接入项目', '关闭项目墙']) {
@@ -110,7 +110,7 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   expect(saved).not.toContain('opportunity =')
   await page.screenshot({ path: info.outputPath('bw-config-saved.jpg') })
   await page.reload()
-  await expect(page.locator('[data-workbench-nav]')).toBeVisible({ timeout: 180_000 })
+  await expect(page.locator('[data-workbench-rail]')).toBeVisible({ timeout: 180_000 })
   await openWall()
   await openConfig()
   await expect(page.locator('.wb-config-facts')).toContainText('新愿景')
