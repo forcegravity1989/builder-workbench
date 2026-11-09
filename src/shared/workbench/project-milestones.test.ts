@@ -8,6 +8,7 @@ import {
 } from './milestone-sdlc'
 import {
   MilestoneMaterialSchema,
+  ScheduledVersionSchema,
   upgradeMilestoneMaterial,
   milestoneDraft,
   milestoneProblems,
@@ -155,6 +156,19 @@ it('preserves identities through migration and free-date planning without moving
     materializeMilestoneWeek(draft, { start: '2026-12-07', end: '2026-12-11' }, 'new', 'v3').draft
       .versions
   ).toHaveLength(3)
+  const week = { start: '2026-12-07', end: '2026-12-11' }
+  const registeredVersion = { version: 'v0.9', cycleId: 'registered', timeWindow: week }
+  for (const started of [false, true]) {
+    const registered = [{ ...registeredVersion, started }]
+    const included = materializeMilestoneWeek(draft, week, 'unused', 'v0.9', registered)
+    expect(ScheduledVersionSchema.safeParse(included.version).success).toBe(true)
+    expect(included.version).toEqual(registeredVersion)
+    expect(included.draft.versions.at(-1)).toEqual(registeredVersion)
+    expect(milestoneProblems(included.draft)).toEqual([])
+    expect(materializeMilestoneWeek(included.draft, week, 'unused-again', 'v0.9').draft).toBe(
+      included.draft
+    )
+  }
   const snapshot = milestoneDraft({
     head: 'a',
     revision: 'b',

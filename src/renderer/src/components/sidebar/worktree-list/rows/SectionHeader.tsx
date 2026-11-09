@@ -1,5 +1,4 @@
 import React from 'react'
-import { ChevronDown } from 'lucide-react'
 import type { VirtualItem } from '@tanstack/react-virtual'
 import { cn } from '@/lib/utils'
 import type { AppState } from '@/store/types'
@@ -20,7 +19,13 @@ import { getWorkspaceStatusFromGroupKey } from '../../workspace-status'
 import { getVirtualRowTransform } from '../viewport/virtual-rows'
 import { resolveProjectGroupHeaderColor } from '../../project-header-color'
 import { getRepoHeaderCreateState } from '../../repo-header-create-state'
-import { ProjectHeaderActions } from '../../ProjectHeaderActions'
+import {
+  ProjectHeaderActions,
+  SIDEBAR_GROUP_CHEVRON_SLOT_CLASS,
+  SIDEBAR_GROUP_FIXED_CHEVRON_CLASS,
+  SidebarGroupChevron
+} from '../../ProjectHeaderActions'
+import { isWorkbenchShell } from '@/workbench/is-workbench-shell'
 import {
   getProjectGroupHeaderPaddingLeft,
   WORKTREE_SECTION_HEADER_PADDING_LEFT
@@ -176,6 +181,25 @@ export function renderWorktreeSectionHeaderRow(args: {
   const showHeaderCollapseAffordance =
     row.count > 0 &&
     (isRepoHeader || isProjectGroupHeader || headerWorkspaceStatus !== null || isPinnedHeader)
+  const fixedChevron =
+    isWorkbenchShell() && showHeaderCollapseAffordance && (isRepoHeader || isProjectGroupHeader)
+  const collapseAffordance = showHeaderCollapseAffordance ? (
+    <div
+      className={
+        fixedChevron ? SIDEBAR_GROUP_FIXED_CHEVRON_CLASS : SIDEBAR_GROUP_CHEVRON_SLOT_CLASS
+      }
+      data-repo-header-collapse-affordance=""
+      aria-hidden
+      onPointerDown={handleRepoHeaderCollapseAffordancePointerDown}
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        ctx.toggleGroupWithScrollAnchor(row.key)
+      }}
+    >
+      <SidebarGroupChevron expanded={!isHeaderCollapsed} />
+    </div>
+  ) : null
   return (
     <div
       key={vItem.key}
@@ -234,6 +258,7 @@ export function renderWorktreeSectionHeaderRow(args: {
           // Why: no row-level grab — only the title surface below shows the hand;
           // actions use cursor-pointer so … / + never look reorderable.
           'group relative flex h-7 w-full items-center gap-1.5 pr-2 text-left transition-all',
+          fixedChevron && 'pr-[26px]',
           !(isDraggableRepoHeader || isDraggableProjectGroupHeader) && 'cursor-pointer',
           ctx.highlightedRevealRowKey === row.key &&
             'rounded-md bg-worktree-sidebar-accent ring-1 ring-worktree-sidebar-ring/50',
@@ -341,24 +366,8 @@ export function renderWorktreeSectionHeaderRow(args: {
           </div>
         </div>
 
-        <ProjectHeaderActions>
-          {showHeaderCollapseAffordance ? (
-            <div
-              className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground"
-              data-repo-header-collapse-affordance=""
-              aria-hidden
-              onPointerDown={handleRepoHeaderCollapseAffordancePointerDown}
-              onClick={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-                ctx.toggleGroupWithScrollAnchor(row.key)
-              }}
-            >
-              <ChevronDown
-                className={cn('size-3.5 transition-transform', isHeaderCollapsed && '-rotate-90')}
-              />
-            </div>
-          ) : null}
+        <ProjectHeaderActions className={fixedChevron ? 'can-hover:right-[26px]' : undefined}>
+          {fixedChevron ? null : collapseAffordance}
 
           {isProjectGroupHeader && !row.repo && projectGroupIdForHeader ? (
             <ProjectGroupHeaderMenu
@@ -398,6 +407,7 @@ export function renderWorktreeSectionHeaderRow(args: {
             />
           ) : null}
         </ProjectHeaderActions>
+        {fixedChevron ? collapseAffordance : null}
       </div>
     </div>
   )

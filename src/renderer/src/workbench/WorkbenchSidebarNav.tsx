@@ -4,6 +4,7 @@ import { FolderGit2 } from 'lucide-react'
 import type { VersionTreeDisplayInput } from './VersionNativeTrees'
 import { WorkbenchSidebarSectionHeader } from './WorkbenchSidebarSectionHeader'
 import { WorkbenchVersionNav } from './WorkbenchVersionNav'
+import { WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP } from '@/components/sidebar/worktree-list/viewport/virtual-rows'
 
 /**
  * Project identity stays beside the native toolbar, outside the tree scroller.
@@ -52,7 +53,11 @@ export function WorkbenchSidebarVersions({
     [visibleWorktrees, filterOptions, sortedIds, sortNow]
   )
   return (
-    <div className="flex min-w-0 flex-col gap-1 pb-1" data-workbench-version-section>
+    <div
+      className="flex min-w-0 flex-col"
+      style={{ rowGap: WORKTREE_SIDEBAR_VIRTUAL_ROW_GAP }}
+      data-workbench-version-section
+    >
       <WorkbenchVersionNav nativeDisplay={display} />
       <WorkbenchSidebarSectionHeader icon={FolderGit2}>
         全部项目工作区
