@@ -16,12 +16,12 @@
 | 项               | 本次核对结果                                                       |
 | ---------------- | ------------------------------------------------------------------ |
 | Orca 仓库        | [stablyai/orca](https://github.com/stablyai/orca)                  |
-| 共享主机定向版本 | [v1.4.251](https://github.com/stablyai/orca/releases/tag/v1.4.251) |
+| 智能体 / 共享主机对照版本 | [v1.4.251](https://github.com/stablyai/orca/releases/tag/v1.4.251) |
 | 发布时间         | 2026-11-06 06:31:44 UTC                                           |
 | 发布锚点         | `a162e08b29b2883b02d8a0dfcc99e26c80b2cfe7`                         |
-| 本次核对日期     | 2026-11-06                                                        |
+| 本次核对日期     | 2026-11-09（已合入范围收尾，不重新声明最新 release）                |
 | BW fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`，2026-09-15             |
-| 本次核对范围     | 固定 v251 共享主机调用链；网页批注沿已采纳的 v250（见 §2.3）；非整仓升级                    |
+| 本次核对范围     | DSH、Cursor、Codex 六维同步索引及共享主机；网页批注采用 v250 并补 v251 导航截图取消；非整仓升级 |
 
 公开版本不是本仓当前同步基线；本仓的 fork baseline 仍是单独的历史锚点。没有完成一次实际代码比较时，不把“最新 release”写成“已同步”。
 
@@ -45,6 +45,34 @@ managed server 自动部署、SSH → managed server、WSL 生命周期、proces
 | 资源与 Skill | `resources/`、`skills/`、`skill-guides/`、`skill-stubs/`                           | 原生资源与能力分发；Workbench 自有 Skill 以本仓 `standard/` 为正源 |
 | 工程与验证   | `config/`、`tests/`、`docs/`、`.github/`、`.husky/`、`Casks/`、`examples/plugins/` | 构建、测试、参考和发布辅助；不因此把上游工程文档变成 BW 产品正本   |
 
+### 0.4 智能体同步矩阵
+
+维护对象为 Claude、Cursor、DSH、GitHub Copilot、Codex、OpenCode。按智能体及实际依赖同步，不能按目录覆盖；共享主机的宿主设置链已由 #592 更新，但不代表所有智能体的进程、模型、账号与统计框架都已升级。
+
+本表是**当前采用边界**，不是待办列表或验收结果。**采用**指本次接入的指定行为；**保留**指沿用 BW 已有实现；**未迁**指固定上游有、本轮未采用；**上游无**仅指固定版本没有相应原生 provider；**未专项核对**不能解读为无能力或已经对齐。详细源文件、剩余依赖和验证证据沿各行 PR 追溯。
+
+| 智能体 / 已合入依据 | 启动与交互 | 账号、服务商与模型 | 会话管理 | 套餐额度 | Token 与费用统计 | 执行环境 |
+| --- | --- | --- | --- | --- | --- | --- |
+| **DSH** · [#581](https://github.com/forcegravity1989/builder-workbench/pull/581) | 采用发现、工作区启动、首条输入及 hooks；启动/续接固定 DSH backend；新版启动页重试未迁 | 使用执行宿主的 DSH/profile/CLI 配置；未新增 BW 独立账号管理和模型目录 | 采用 hook session ID、休眠续接及宿主能力门控；无 ID 不承诺恢复；未接入压缩历史扫描 | **上游无 DSH 原生额度 provider**；BW 未接入 | **上游无 DSH 历史用量 provider**；BW 未接入 | 采用身份别名、WSL 透传和现有远端接线；CLI、账号及匹配 hooks 由实际宿主提供 |
+| **Cursor** · [#578](https://github.com/forcegravity1989/builder-workbench/pull/578) | 保留 TUI/输入；采用显式模型去重、hook 编码与防重复上报；通用输入框架未整体迁移 | 采用本机账号状态与凭据只读；登录/切号仍归 Cursor；保留模型选择，公共参数解析剩余差异未迁 | 采用 conversation ID 续接、能力门控及拒读元数据保持未知；通用历史框架未整体迁移 | 采用套餐/模型池/重置周期/团队个人额度；外部 SQLite worker 隔离未迁；其他宿主账号未接入 | **上游无 Cursor 每日 token provider**；套餐数字不等于每日 token/费用统计 | 保留既有宿主路由，改善 Windows/POSIX hooks；实际启动 HOME/信任上下文链未迁 |
+| **Codex** · [#577](https://github.com/forcegravity1989/builder-workbench/pull/577) | 保留 TUI/结构化会话；采用退出末尾回复排空、短时额度/索引探测禁插件；完整新启动/停止协议未迁 | 采用 180 秒登录等待及凭据暂缺跟踪容量；保留账号/模型配置；设备码/可取消登录、共享模型目录未迁 | 保留历史、恢复、审批及停止，采用索引探测与退出修复；新 reopen/catch-up/共享恢复协议未迁 | 采用 HTTP 替代隐藏交互终端、索引重建期额度读取、WSL 请求去重；会话固定账号用量/额外余额显示未迁 | 保留既有日志、每日聚合及成本估算；**上游有但未迁** v7 去重、长上下文计数、追加扫描/轮换识别和主会话上下文用量 | 保留既有账号/目录/宿主路由；Windows 异步命令解析、guest-only WSL CLI、process-host/sealed env 未迁 |
+| **Claude** | 未专项核对，沿用既有实现 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 |
+| **GitHub Copilot** | 未专项核对，沿用既有实现 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 |
+| **OpenCode** | 未专项核对，沿用既有实现 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 | 未专项核对 |
+
+来源边界：Cursor/Codex 对照上述 v251 SHA；DSH 采用的独立提交及排除范围见 [DSH 接入来源](dsh-harness-integration.md#上游来源)，本轮再用 v251 核对 provider 缺口。[固定版额度类型](https://github.com/stablyai/orca/blob/a162e08b29b2883b02d8a0dfcc99e26c80b2cfe7/src/shared/rate-limit-types.ts)没有 DSH；[历史用量 provider](https://github.com/stablyai/orca/blob/a162e08b29b2883b02d8a0dfcc99e26c80b2cfe7/src/main/usage/usage-provider-contract.ts)没有 DSH/Cursor。这不判断 CLI 自身或第三方插件是否有统计能力。Cursor 的每日 token 需求仍见 [#498](https://github.com/forcegravity1989/builder-workbench/issues/498)，不能用账号额度代替它。
+
+“未专项核对”的三个智能体可能受到公共依赖的必要适配；例如 Cursor 同步修正了 Claude hook 被导入时的重复上报，这不构成 Claude 六维专项升级。DSH 已有用户内部验证反馈，其覆盖以 #581 为准；其他真实账号、双机及跨宿主旅程按交付证据分别判断，不把代码合入或 CI 通过写成全部体验已验收。
+
+### 0.5 共享主机与网页批注采用索引
+
+| 模块 / 已合入依据 | 原生采用 | BW 改造取舍 | 未带入的边界 |
+| --- | --- | --- | --- |
+| 共享主机 · [#592](https://github.com/forcegravity1989/builder-workbench/pull/592) · v251 | 网络配对/重配、连接和订阅恢复、目录清理、关闭意图、宿主 Agent 配置及实际启动消费者 | 保留批量导入壳、材料草稿/回执、结构化会话关闭和浏览器防回显适配；必要接口适配单列于 PR | 不迁 managed server、WSL 生命周期、process-host 或 Mobile 产品；上游该功能仍为 Beta |
+| 网页批注 · [#579](https://github.com/forcegravity1989/builder-workbench/pull/579) · v250，#592 补 v251 导航截图取消 | 原生收起/展开、贴图/截图传递、精简/详情反馈、同文档 fragment 判据 | 删除 BW #470/#511 独立折叠状态、外部 tray flag、自写图片预览与重复读取；保留必要基线适配、内层滚动定位和跨文档清理规则 | 不代表整个浏览器同步；双人实时互见和共同批注另由 [#576](https://github.com/forcegravity1989/builder-workbench/issues/576) 跟踪 |
+
+后续同步用此索引定位当前实现，再阅读对应 PR 的固定来源和真实调用链；不以整版实验 PR #549 作为已采用基线。
+
 ## 1. 上游身份与 fork 基线
 
 | 项               | 值                                                                       |
@@ -55,16 +83,16 @@ managed server 自动部署、SSH → managed server、WSL 生命周期、proces
 | Orca 本地远程    | 建议名 `orca-upstream`；使用前必须核对 URL，不能把 `origin` 当 Orca 上游 |
 | fork baseline    | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`（2026-09-15）                 |
 
-执行实际 Orca 同步前，先在独立分支核对远程身份和当前主干：
+执行实际 Orca 同步前，先在独立工作树核对远程身份、当前主干和该模块的固定来源：
 
 ```bash
 git fetch origin main
 git remote get-url orca-upstream
-git fetch orca-upstream main
-git merge orca-upstream/main
+git fetch orca-upstream tag v1.4.251
+git rev-parse 'v1.4.251^{commit}'
 ```
 
-这些命令只适用于明确开展 Orca 升级；日常 BW 任务不因本篇而检查上游。旧 Rust main 只做定向迁移和重新决策，不整支合并。
+此 tag 仅示范本轮固定对照，下一轮须明确自己的目标 tag/SHA。取证后按 §0.4–0.5 的模块及必要依赖移植，不默认执行整支 merge，也不把 fetch 当作同步完成。日常 BW 任务不因本篇而检查上游。旧 Rust main 只做定向迁移和重新决策，不整支合并。
 
 ## 2. BW 相对 Orca 的稳定边界记录
 
@@ -133,13 +161,31 @@ CodeHub 是独立的 `TaskProvider`，不塞回 GitHub 的 `listWorkItems`，也
 - 旧 Orca CI/E2E 源保留在仓内不删：旧 workflow、`tests/e2e/` 用例与 helper、`config/scripts/` runner 与契约测试、`tests/tools/` 下 Windows 更新/崩溃 E2E 工具，便于对照 upstream 和后续按需迁移；它们不属于 Workbench 当前流水线的测试集合，冻结为归档源，不随本仓 pr.yml 演进更新（旧契约测试断言的是旧 workflow 结构，属历史身份）。
 - 29 个旧 workflow（含 `release-ref-validation.yml`、`track-community-prs.yaml`、`issue-os-labeler.yaml`；`skill-update-roundtrip.yml` 为 2026-10-14 补充降级，见下条）摘除 `pull_request` / `push` / `schedule` / `workflow_call` / `pull_request_target` / `issues` 自动触发，只留 `workflow_dispatch`。注意：`workflow_dispatch.inputs`、`env`、`permissions`、`concurrency` 已随自动触发一并精简，**手动入口不保证可运行**——它们是归档占位，不是维护好的手动链；恢复任何一条旧链必须单独评审其触发器、额度和对 Workbench 的实际价值。
 - 隔离后仍会自动触发的 legacy workflow 只剩本 fork 命不中或空转的：paths 门控的 `cloud-verify.yml`（`cloud/**`）、`docs.yml`（`docs/site/**`）；job 级门控空转的 `readme-downloads-badge` / `cloud-monitor-relay-clock-skew` / `cloud-power-relay-staging`（schedule，job 被 `github.repository == 'stablyai/orca'` 或 `vars.ORCA_CLOUD_OPERATIONS_ENABLED` 门控）、`cloud-recover-relay-staging-c4-image` / `cloud-requeue-relay-staging-c4-recovery`（`workflow_run`，同一 vars 门控）、`release-policy.yml`（release 事件，`stablyai/orca` 门控）。**补充（2026-10-14，PR #353）**：`skill-update-roundtrip.yml` 原列本条（假设 paths 命不中），但触及 `resources/skills/**` 的 PR 即触发且**结构性必红**——`verify-skill-update-roundtrip.mjs` 的 historicalRelease/seedPlacement 需物化 release-mapping 命名的 Orca v1.4.x release tag，本 fork 只有 `v0.4.0` 与三个 `v0.5.0-rc.*`（#352、#353 与 main push 09076a6e 各 13 检查全红实证）。经人拍板降级为 dispatch-only（第 29 个），矩阵收窄为 windows-latest（BW 只发 Windows 安装包，macOS/ubuntu 场景不需要），守护契约测试 `skill-update-roundtrip-workflow.test.mjs` 同步改写为钉住隔离状态与 Windows-only 矩阵。
-- Workbench 自动检查只有 `.github/workflows/pr.yml`（verify：lint / typecheck / 定向 vitest / build:desktop；e2e：`test:e2e:workbench` 单条 Electron 冒烟）；外部代码评审仍由 `.github/workflows/claude-code-review.yml` 召唤制承担。pr.yml 不用 `paths` 过滤——触发级过滤会让被排除的 PR 完全没有检查上报（旧 `code_paths` 探测器规避的正是这个坑）。
+- Workbench PR 门禁正源为 `.github/workflows/pr.yml`：通用 lint / typecheck / 定向 vitest / build:desktop、共享主机协议与生命周期、网页批注契约、Windows Codex 协议与生命周期，以及 Electron smoke；DSH/Cursor 的相关协议也在通用任务中执行。外部代码评审仍由 `.github/workflows/claude-code-review.yml` 召唤制承担。pr.yml 不用 `paths` 过滤，避免文档 PR 无检查上报；选中的原生用例是现行门禁，不能因其他旧 workflow 归档而一概视为冻结。CI 不替代真实账号与双机验收。
 - `tests/playwright.config.ts` 只发现 `tests/e2e/workbench-cycle-smoke.spec.ts`；`config/vitest.config.ts` 只 include `src/**/*.test.ts(x)`。`package.json` 不保留旧 E2E 专项入口；Workbench 壳是构建期烘焙（`isWorkbenchShell()` 读 `import.meta.env.VITE_WORKBENCH_SHELL`），所以 `tests/e2e/global-setup.ts` 在 `electron-vite build --mode e2e` 的子进程 env 里固定注入 `WORKBENCH_SHELL=1 VITE_WORKBENCH_SHELL=1 ORCA_PRODUCT_NAME=Workbench`——单一来源，Windows cmd、POSIX shell 与 CI 一致（不复用 `dev:workbench`——它注入的是 dev 进程 env，与这里的构建子进程 env 不是同一条路径；该入口 2026-10-22 前还是 POSIX env 前缀写法，在 Windows cmd 下不成立，见 Issue #404，现已改为 runner 的 `--workbench` 开关）。
 - `config/reliability-gates.jsonc` 只登记仍属当前 Workbench 检查范围的 gate（121→63）；`release-cut.yml` 不保留旧 E2E 发布证据 job。lint 与 reliability-gates 链暂保留在 verify 内，待 Workbench 专属质量门禁定义后再替换，避免在没有等价门禁时静默削弱检查。
 - 新链 helper 与保留源的配对关系（副本，不是共享；改保留源不会传导过来，需自觉防漂移）：`tests/e2e/helpers/workbench-app.ts` ↔ `orca-app.ts`；`tests/e2e/helpers/workbench-test-repo.ts` ↔ `seeded-test-repo.ts`。种子仓的持久化文件名与产品无关（`orca-data.json`，见 `src/main/persistence/loading-store/user-data-path.ts`）。
 - 本次隔离不表示 Orca runtime 源码已删除；保留的历史源文件也不表示它们仍属于当前交付门禁。
 
+### 2.7 本轮采用范围的场景与看护
+
+下表定位当前保留或已被原生替代的实现，供下一次同步检查同一行为；不是全仓差异普查，也不表示这些测试已覆盖真人体验。看护复用现有用例，执行结果归对应 PR；没有自动覆盖的部分明确留给人工验证。
+
+| 用户场景 | 归类与当前取舍 | 源码落点 | 现有看护及边界 |
+| --- | --- | --- | --- |
+| DSH 恢复到原会话和 backend，安装 hooks 不覆盖用户配置 | 原生接入及基线适配；保留 session ID 前提和托管配置边界 | [启动](../src/shared/dsh-launch-command.ts)、[配置补丁](../src/main/dsh/dsh-home-patch.ts) | [DSH 协议](../src/main/dsh/dsh-integration.test.ts)：backend、hook ID、用户配置保留；真实账号/宿主覆盖按 #581 的实测范围 |
+| Cursor 切号或登出后不显示上一个账号的额度 | BW 保留的账号归属保护，和原生额度映射一起维护 | [账号策略](../src/main/rate-limits/cursor-usage-account-policy.ts) | [切号/登出用例](../src/main/rate-limits/service-cursor-usage.test.ts)；真实 dashboard 对账仍需账号验证 |
+| Codex 进程退出时不丢最后一段回复，也不无限等待 | 原生排空 helper 加 BW 当前生命周期适配；不导入整个新进程框架 | [排空](../src/main/provider-process/provider-exit-output-drain.ts)、[连接 owner](../src/main/codex/codex-app-server-connection.ts) | [退出协议](../src/main/codex/codex-app-server-connection.test.ts)；不替代 Windows 实际模型会话 |
+| 共享目录刷新过程中新增项目，不被旧响应抹掉 | 原生目录清理及必要并发适配；旧注册仍清理、请求后新增项保留 | [目录合并](../src/renderer/src/store/repos/repo-catalog-merge.ts) | [仓库/工作树保留用例](../src/renderer/src/store/repos/dropped-repo-worktree-rows.test.ts)；双机刷新仍需实测 |
+| 看同事的托管网页，镜像页不再回发成自己的页面 | BW 浏览器防回显适配保留；不能因采用上游恢复链而删除 | [发布过滤](../src/renderer/src/runtime/sync-runtime-graph/mobile-session-surfaces.ts)、[两处快照投影](../src/renderer/src/runtime/sync-runtime-graph/mobile-session-snapshots.ts) | [普通/fallback 投影用例](../src/renderer/src/runtime/sync-runtime-graph-browser.test.ts)；真实两端页签操作待验 |
+| 网页内层容器滚动后，批注跟随原元素 | 基线上的定位修正保留；裁剪/卸载元素不显示错误标记 | [坐标桥](../src/shared/browser-annotation-viewport-bridge.ts) | [滚动和可见性协议](../src/shared/browser-annotation-viewport-bridge.test.ts)；真实网页布局仍需体验 |
+| 批注收起后再展开，草稿和贴图仍在 | **已由原生替代**：BW 独立折叠状态已删，只保留原生 tray | [批注 tray](../src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.tsx) | [现有 tray 用例](../src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.test.tsx)只覆盖编辑/保存/取消；收起展开、中文草稿及贴图保留按 #579 人工判据验证 |
+
 ## 3. 同步取舍
+
+按智能体或用户旅程模块定期比较固定上游版本，同一批可以一个 PR 分多个 commit，也可拆 PR；共享依赖只能有一处实现，并检查全部实际消费者。每次同步在同一 PR 覆盖更新 §0 的对应行，记录六维采用范围、上游版本/SHA、BW PR 和该行核对日期；本次三项专项对照日期均为 2026-11-09，后续部分更新须在相应行标日期，未重新核对的智能体不推进其状态。
+
+原生差异分为上游已一致、原生代码移植、必要基线适配、BW 产品挂载/保留修正、上游有而本次未迁、固定上游无及未核对。上游已覆盖 BW 修正时，核对同一用户行为及其看护后删除被替代实现，不留双路径；每个保留改造在 PR 指明人可理解的场景、代码落点、看护用例或未验项。当前稳定边界写回本篇，逐文件对照、测试结果与取舍过程留在 PR，不新增常驻流水。
 
 1. **产品文档冲突**：`docs/`、`AGENTS.md`、`CONTEXT.md`、`README.md`、`CLAUDE.md` 以 BW 正本为准；上游工程说明只进入 `ref/`。
 2. **上游参考文档**：`ref/` 可以按实际需要吸收 upstream `docs/reference/**` 或 `STYLEGUIDE.md`；不得把 `ref/` 再拷回 `docs/`。
