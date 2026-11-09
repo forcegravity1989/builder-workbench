@@ -36,8 +36,9 @@ export const WORKBENCH_REVIEW_NOTIFICATION_METHODS = [
     name: 'workbench.review.receive',
     params: ReviewRequestSchema,
     handler: async (request, { runtime, pairedDeviceId, authenticatedCallerFingerprint }) => {
-      if (!hasReviewProject(runtime.listRepos(), request.repo))
+      if (!hasReviewProject(runtime.listRepos(), request.repo)) {
         throw new Error('此主机没有接入该项目')
+      }
       await receiveReviewRequest({
         ...request,
         senderId: pairedDeviceId ?? authenticatedCallerFingerprint ?? 'local',

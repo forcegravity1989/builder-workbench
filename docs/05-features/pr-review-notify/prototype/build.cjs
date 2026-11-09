@@ -31,9 +31,13 @@ async function build() {
   })
   const candidates = new Set()
   for (const file of Object.keys(result.metafile.inputs)) {
-    if (!/\.(tsx?|jsx?)$/.test(file)) continue
+    if (!/\.(tsx?|jsx?)$/.test(file)) {
+      continue
+    }
     const content = fs.readFileSync(path.resolve(file), 'utf8')
-    for (const token of content.matchAll(/[^\s"'`<>]+/g)) candidates.add(token[0])
+    for (const token of content.matchAll(/[^\s"'`<>]+/g)) {
+      candidates.add(token[0])
+    }
   }
   const css = compiler
     .build([...candidates])

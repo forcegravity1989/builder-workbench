@@ -52,9 +52,13 @@ export async function readReviewTracking(
     { repo: getGitHubRuntimeRepoId(sourceContext, repo.id), prNumber, noCache: true },
     { timeoutMs: 30_000 }
   )
-  if (!result.complete) throw new Error('此主机无法确认检视线程完整性')
+  if (!result.complete) {
+    throw new Error('此主机无法确认检视线程完整性')
+  }
   const openCommentCount = countUnresolvedReviewCommentsSince(result.comments, roundStartedAt)
-  if (openCommentCount === null) throw new Error('检视线程数据不完整，意见数未知')
+  if (openCommentCount === null) {
+    throw new Error('检视线程数据不完整，意见数未知')
+  }
   return {
     merged: item.state === 'merged' || Boolean(item.mergedAt),
     openCommentCount,

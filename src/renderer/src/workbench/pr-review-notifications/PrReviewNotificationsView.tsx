@@ -9,7 +9,7 @@ import {
 } from '@/components/sidebar/WorktreeCardDetailSection'
 import { DetailHeader, MetadataActionIcon } from '@/components/sidebar/WorktreeCardMetadataControls'
 import type { ReviewIncomingNote, ReviewOutgoingNote, ReviewNotificationsState } from './model'
-import { totalUnreadBadgeCount } from './model'
+import { reviewNotificationCount } from './model'
 import { IncomingReviewItem, OutgoingReviewItem, SectionCount } from './PrReviewNotificationItems'
 import { useFloatingTriggerPosition } from '@/components/floating-terminal/use-floating-trigger-position'
 
@@ -40,11 +40,13 @@ export function PrReviewNotificationsView({
     bottomGap: 72
   })
   const [open, setOpen] = useState(false)
-  const badgeCount = totalUnreadBadgeCount(notifications)
+  const badgeCount = reviewNotificationCount(notifications)
   const hasAny = badgeCount > 0
   const handleOpenChange = (next: boolean): void => {
     setOpen(next)
-    if (next) onRefresh()
+    if (next) {
+      onRefresh()
+    }
   }
   async function openNote(identity: ReviewIncomingNote['repo'], prNumber: number): Promise<void> {
     setOpen(false)

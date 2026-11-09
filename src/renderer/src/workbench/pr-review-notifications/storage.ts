@@ -4,7 +4,6 @@ import { EMPTY_REVIEW_NOTIFICATIONS, reviewNoteId, type ReviewNotificationsState
 
 const STORAGE_KEY = 'bw.pr-review-notifications.v1'
 const StoredNote = ReviewRequestSchema.extend({
-  roundStartedAt: z.string().datetime(),
   deliveries: z.array(
     z.object({
       environmentId: z.string().min(1),
@@ -18,7 +17,9 @@ const StoredNote = ReviewRequestSchema.extend({
 
 export function readStoredReviewNotifications(): ReviewNotificationsState {
   const raw = window.localStorage.getItem(STORAGE_KEY)
-  if (!raw) return EMPTY_REVIEW_NOTIFICATIONS
+  if (!raw) {
+    return EMPTY_REVIEW_NOTIFICATIONS
+  }
   const parsed = z.object({ outgoing: z.array(StoredNote) }).parse(JSON.parse(raw))
   return {
     incoming: [],

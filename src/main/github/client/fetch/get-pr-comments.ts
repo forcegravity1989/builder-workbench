@@ -219,7 +219,9 @@ export async function getPRComments(
           }
         }
       } else {
-        if (options?.requireCompleteThreads) throw new Error('检视线程读取失败，未解决意见数未知')
+        if (options?.requireCompleteThreads) {
+          throw new Error('检视线程读取失败，未解决意见数未知')
+        }
         if (threadsResult.status === 'rejected') {
           console.warn('Failed to fetch review threads:', threadsResult.reason)
         }
@@ -258,7 +260,9 @@ export async function getPRComments(
       return all
     }
 
-    if (options?.requireCompleteThreads) throw new Error('此任务来源无法提供完整检视线程')
+    if (options?.requireCompleteThreads) {
+      throw new Error('此任务来源无法提供完整检视线程')
+    }
     // Fallback: non-GitHub remote — use gh pr view (only returns issue-level comments)
     const { stdout } = await ghExecFileAsync(
       ['pr', 'view', String(prNumber), '--json', 'comments'],
@@ -282,7 +286,9 @@ export async function getPRComments(
       url: c.url ?? ''
     }))
   } catch (err) {
-    if (options?.requireCompleteThreads) throw err
+    if (options?.requireCompleteThreads) {
+      throw err
+    }
     console.warn('getPRComments failed:', err)
     return []
   } finally {

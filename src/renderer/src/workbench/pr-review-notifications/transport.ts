@@ -32,8 +32,9 @@ export async function discoverReviewTargets(repo: ReviewRepoIdentity): Promise<R
       snapshot.verification !== 'verified' ||
       snapshot.transport !== 'ready' ||
       !snapshot.status?.runtimeId
-    )
+    ) {
       continue
+    }
     const target = {
       environmentId: environment.id,
       name: environment.name,
@@ -50,7 +51,9 @@ export async function discoverReviewTargets(repo: ReviewRepoIdentity): Promise<R
           expectedEnvironmentRuntimeId: snapshot.status?.runtimeId
         }
       )
-      if (result.available) targets.push(target)
+      if (result.available) {
+        targets.push(target)
+      }
     } catch (error) {
       failures.push(
         `${environment.name}: ${error instanceof Error ? error.message : String(error)}`
@@ -58,7 +61,9 @@ export async function discoverReviewTargets(repo: ReviewRepoIdentity): Promise<R
     }
   }
   // An incomplete recipient set must not silently become "all same-project hosts".
-  if (failures.length) throw new Error(`无法确认同项目主机，尚未发送：${failures.join('；')}`)
+  if (failures.length) {
+    throw new Error(`无法确认同项目主机，尚未发送：${failures.join('；')}`)
+  }
   return targets
 }
 
@@ -81,8 +86,9 @@ export async function deliverReviewRequest(
         snapshot.verification !== 'verified' ||
         snapshot.transport !== 'ready' ||
         !snapshot.status?.runtimeId
-      )
+      ) {
         throw new Error('主机未连接或配对已变更')
+      }
       const result = await callRuntimeRpc<{ accepted: boolean }>(
         { kind: 'environment', environmentId: target.environmentId },
         'workbench.review.receive',
@@ -93,7 +99,9 @@ export async function deliverReviewRequest(
           expectedEnvironmentRuntimeId: snapshot.status.runtimeId
         }
       )
-      if (!result.accepted) throw new Error('主机未确认保存通知')
+      if (!result.accepted) {
+        throw new Error('主机未确认保存通知')
+      }
       results.push({ ...target, ok: true })
     } catch (error) {
       results.push({

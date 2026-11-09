@@ -180,6 +180,7 @@
     }
   ],
   "ignorePatterns": [
+    "docs/05-features/pr-review-notify/prototype/preview.js",
     "src/shared/rpc-contract/rpc-params-catalog.generated.ts",
     "**/node_modules",
     "**/dist",

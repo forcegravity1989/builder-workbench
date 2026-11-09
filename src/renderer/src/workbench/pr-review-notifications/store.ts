@@ -39,13 +39,19 @@ const inFlightRefresh = new Set<string>()
 const sending = new Set<string>()
 
 function setState(next: ReviewNotificationsState, persist = false): void {
-  if (next === state) return
+  if (next === state) {
+    return
+  }
   if (persist) {
-    if (storageError) throw new Error(storageError)
+    if (storageError) {
+      throw new Error(storageError)
+    }
     writeStoredReviewNotifications(next)
   }
   state = next
-  for (const listener of listeners) listener()
+  for (const listener of listeners) {
+    listener()
+  }
 }
 export const getReviewNotifications = (): ReviewNotificationsState => state
 export function subscribeReviewNotifications(listener: () => void): () => void {
@@ -57,8 +63,12 @@ export function useReviewNotifications(): ReviewNotificationsState {
 }
 export async function sendReviewRequest(input: ReviewSendInput): Promise<ReviewSendResult> {
   const id = reviewNoteId(input.repo, input.prNumber)
-  if (sending.has(id)) throw new Error('这条评审请求正在发送')
-  if (storageError) throw new Error(storageError)
+  if (sending.has(id)) {
+    throw new Error('这条评审请求正在发送')
+  }
+  if (storageError) {
+    throw new Error(storageError)
+  }
   sending.add(id)
   try {
     writeStoredReviewNotifications(state)
@@ -66,7 +76,9 @@ export async function sendReviewRequest(input: ReviewSendInput): Promise<ReviewS
     const targets = previous
       ? previous.deliveries.map(({ ok: _ok, error: _error, ...target }) => target)
       : await discoverReviewTargets(input.repo)
-    if (!targets.length) throw new Error('没有已连接且接入同项目的主机，尚未发送')
+    if (!targets.length) {
+      throw new Error('没有已连接且接入同项目的主机，尚未发送')
+    }
     const { sender } = await readReviewSender()
     const sentAt = new Date().toISOString()
     const request = ReviewRequestSchema.parse({
@@ -87,15 +99,19 @@ export async function sendReviewRequest(input: ReviewSendInput): Promise<ReviewS
         )
       }
       const note = state.outgoing.find((item) => item.id === id)
-      if (note) void refreshOutgoingReview(note, { force: true })
+      if (note) {
+        void refreshOutgoingReview(note, { force: true })
+      }
     }
     const failed = result.results.filter((entry) => !entry.ok)
     const delivered = result.results.length - failed.length
-    if (failed.length)
+    if (failed.length) {
       toast.error(
         `评审请求送达 ${delivered}/${result.results.length}：${failed.map((entry) => `${entry.name}: ${entry.error}`).join('；')}`
       )
-    else toast.success(`评审请求已送达 ${delivered} 台主机`)
+    } else {
+      toast.success(`评审请求已送达 ${delivered} 台主机`)
+    }
     return result
   } finally {
     sending.delete(id)
@@ -123,13 +139,16 @@ async function refreshNoteReadback(
   if (
     inFlightRefresh.has(flightKey) ||
     (!options?.force && Date.now() - (lastRefreshAt.get(flightKey) ?? 0) < 30_000)
-  )
+  ) {
     return
+  }
   inFlightRefresh.add(flightKey)
   lastRefreshAt.set(flightKey, Date.now())
   try {
     const repo = findRegisteredReviewRepo(note.repo)
-    if (!repo) throw new Error('本机没有该项目')
+    if (!repo) {
+      throw new Error('本机没有该项目')
+    }
     const readback = await readReviewTracking(repo, note.prNumber, note.sentAt)
     setState(applyReviewReadback(state, direction, key, readback, null))
   } catch (error) {
@@ -144,7 +163,9 @@ async function refreshNoteReadback(
     )
   } finally {
     inFlightRefresh.delete(flightKey)
-    if (lastRefreshAt.size > 500) lastRefreshAt.delete(lastRefreshAt.keys().next().value!)
+    if (lastRefreshAt.size > 500) {
+      lastRefreshAt.delete(lastRefreshAt.keys().next().value!)
+    }
   }
 }
 export const refreshOutgoingReview = (note: ReviewOutgoingNote, options?: { force?: boolean }) =>
@@ -162,23 +183,33 @@ export function installReviewNotificationListeners(
   let stopped = false
   let reading = false
   const sync = async (): Promise<void> => {
-    if (reading) return
+    if (reading) {
+      return
+    }
     reading = true
     try {
       const requests = await readReviewInbox()
-      if (stopped) return
+      if (stopped) {
+        return
+      }
       onError(storageError)
       for (const request of requests) {
         const next = applyIncomingRequest(state, request)
-        if (next === state) continue
+        if (next === state) {
+          continue
+        }
         setState(next)
         const note = state.incoming.find(
           (item) => item.id === reviewNoteId(request.repo, request.prNumber)
         )
-        if (note) void refreshIncomingReview(note, { force: true })
+        if (note) {
+          void refreshIncomingReview(note, { force: true })
+        }
       }
     } catch (error) {
-      if (!stopped) onError(error instanceof Error ? error.message : String(error))
+      if (!stopped) {
+        onError(error instanceof Error ? error.message : String(error))
+      }
     } finally {
       reading = false
     }

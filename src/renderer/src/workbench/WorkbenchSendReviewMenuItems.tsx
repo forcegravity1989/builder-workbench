@@ -92,7 +92,9 @@ async function resolveReviewTarget(repo: Repo, worktree: ReviewWorktreeRef): Pro
         { timeoutMs: 30_000 }
       )
     )
-    if (outcome.kind === 'upstream-error') throw new Error(outcome.message)
+    if (outcome.kind === 'upstream-error') {
+      throw new Error(outcome.message)
+    }
     const pr = outcome.kind === 'found' ? outcome.pr : null
     if (!pr) {
       return { status: 'blocked', reason: '分支没有关联的开放 PR' }

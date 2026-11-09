@@ -21,7 +21,6 @@ export type ReviewIncomingNote = ReviewIncomingRequest & ReadbackState & { id: s
 export type ReviewOutgoingNote = ReviewRequestPayload &
   ReadbackState & {
     id: string
-    roundStartedAt: string
     deliveries: ReviewPeerDelivery[]
   }
 export type ReviewNotificationsState = {
@@ -42,7 +41,9 @@ export function applyIncomingRequest(
 ): ReviewNotificationsState {
   const id = reviewNoteId(request.repo, request.prNumber)
   const existing = state.incoming.find((note) => note.id === id)
-  if (existing?.cycleId === request.cycleId && existing.round >= request.round) return state
+  if (existing?.cycleId === request.cycleId && existing.round >= request.round) {
+    return state
+  }
   const next = { ...request, id, readback: null, readbackError: null }
   return {
     ...state,
@@ -56,12 +57,13 @@ export function recordSentReview(
   request: ReviewRequestPayload,
   deliveries: ReviewPeerDelivery[]
 ): ReviewNotificationsState {
-  if (!deliveries.some((delivery) => delivery.ok)) return state
+  if (!deliveries.some((delivery) => delivery.ok)) {
+    return state
+  }
   const id = reviewNoteId(request.repo, request.prNumber)
   const next = {
     ...request,
     id,
-    roundStartedAt: request.sentAt,
     deliveries,
     readback: null,
     readbackError: null
@@ -116,12 +118,18 @@ export function countUnresolvedReviewCommentsSince(
   sinceIso: string
 ): number | null {
   const since = Date.parse(sinceIso)
-  if (!Number.isFinite(since)) return null
+  if (!Number.isFinite(since)) {
+    return null
+  }
   const threads = new Map<string, { createdAt: number; resolved: boolean }>()
   for (const comment of comments) {
-    if (!comment.threadId) continue
+    if (!comment.threadId) {
+      continue
+    }
     const createdAt = Date.parse(comment.createdAt)
-    if (!Number.isFinite(createdAt) || typeof comment.isResolved !== 'boolean') return null
+    if (!Number.isFinite(createdAt) || typeof comment.isResolved !== 'boolean') {
+      return null
+    }
     const previous = threads.get(comment.threadId)
     threads.set(comment.threadId, {
       createdAt: Math.min(createdAt, previous?.createdAt ?? Infinity),
@@ -132,6 +140,6 @@ export function countUnresolvedReviewCommentsSince(
     .length
 }
 
-export function totalUnreadBadgeCount(state: ReviewNotificationsState): number {
+export function reviewNotificationCount(state: ReviewNotificationsState): number {
   return state.incoming.length + state.outgoing.length
 }
