@@ -25,6 +25,7 @@ import { extractHermesToolFields } from './providers/hermes-tool-fields'
 export function isNewTurnEvent(source: AgentHookSource, eventName: unknown): boolean {
   // Why: exhaustive switch so a new AgentHookSource fails typecheck here instead of falling through to false.
   switch (source) {
+    case 'dsh':
     case 'claude':
       // Why: SessionStart lands an idle row (STA-3386) and must also drop stale
       // tool/prompt caches left by the pane's previous session.
@@ -155,6 +156,7 @@ export function extractToolFields(
       return extractCopilotToolFields(normalizeCopilotEventName(eventName), hookPayload)
     case 'hermes':
       return extractHermesToolFields(eventName, hookPayload)
+    case 'dsh':
     case 'devin':
       return extractClaudeToolFields(eventName, hookPayload)
   }

@@ -15,10 +15,7 @@ import type {
 } from '../../../../../shared/browser-workspace-types'
 import type { WorkspaceSessionState } from '../../../../../shared/workspace-session-state-types'
 import type { WorkspaceDocHistoryEntry } from '../../../../../shared/workspace-doc-history'
-import type {
-  BrowserAnnotationIntent,
-  BrowserPageAnnotation
-} from '../../../../../shared/browser-grab-types'
+import type { BrowserPageAnnotation } from '../../../../../shared/browser-grab-types'
 import type {
   BrowserPageConversionLeg,
   BrowserPageConversionTarget
@@ -189,7 +186,7 @@ export type BrowserSlice = {
   updateBrowserPageAnnotation: (
     pageId: string,
     annotationId: string,
-    patch: { comment: string; intent: BrowserAnnotationIntent }
+    patch: Pick<BrowserPageAnnotation, 'comment' | 'intent' | 'imagePaths'>
   ) => void
   deleteBrowserPageAnnotation: (pageId: string, annotationId: string) => void
   clearBrowserPageAnnotations: (pageId: string) => void

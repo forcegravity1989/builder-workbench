@@ -5,9 +5,9 @@ import { InlineField } from './milestones-fields.jsx'
 import { day } from './milestones-sdlc.js'
 import { dayWidth, labelWidth } from './milestones-calendar.js'
 // eslint-disable-next-line no-unused-vars
-const { React, useState, useRef, useEffect, CircleHelp, Plus, X } = window.BWPrototypeDependencies
+const { React, useState, useRef, useEffect, CircleHelp, X } = window.BWPrototypeDependencies
 
-function FloatingPanel({ anchor, label, close, children, className = '' }) {
+export function FloatingPanel({ anchor, label, close, children, className = '' }) {
   const ref = useRef(null)
   useEffect(() => {
     const panel = ref.current
@@ -106,7 +106,7 @@ export function MilestoneAxis({ milestones, planning, start, width, onAdd, onCha
       >
         <div className="ml-sticky-label">
           {planning && (
-            <IconAction className="ml-cell-add" label="添加里程碑" icon={Plus} onClick={onAdd} />
+            <IconAction className="ml-cell-add" label="添加里程碑" icon={Flag} onClick={onAdd} />
           )}
           <strong>关键里程碑</strong>
           {undated.length > 0 && (
@@ -277,7 +277,7 @@ export function AddMilestone({ item, save, close }) {
 export function MilestoneGuide({ planning }) {
   const [step, setStep] = useState(null)
   const button = useRef(null)
-  const seenKey = 'bw-milestone-tour-seen'
+  const seenKey = 'bw-milestone-free-timeline-tour-seen'
   const close = () => {
     setStep(null)
     try {
@@ -307,9 +307,9 @@ export function MilestoneGuide({ planning }) {
     [
       '添加与编排',
       viewingActual
-        ? '取消「显示实际」回到计划，然后点对应表头的＋。'
+        ? '取消「显示实际」回到计划，左侧表头的旗帜和列表加号分别添加里程碑或特性。'
         : planning
-          ? '点左列表头的＋添加里程碑或特性。点成果文字编辑，点 X 删除，误删可撤销。'
+          ? '左侧表头的旗帜和列表加号分别添加里程碑和特性。新增从今天或正在浏览的未来日期开始，负责人选填。'
           : '点击「规划里程碑」开始编排，添加特性与关键日期。',
       viewingActual
         ? '.ml-show-actual'
@@ -319,7 +319,7 @@ export function MilestoneGuide({ planning }) {
     ],
     [
       '调整时间',
-      '在计划视图拖特性条身换版本，拉两端调时长；拖版本表头调整整版。',
+      '拖 Build 或 Maintain 调日期，两端可跨版本伸缩。扳手添加 Maintain，× 删除特性；悬停或聚焦 Maintain 时，上方的垃圾桶只删除这一段。误操作可撤销。',
       '.ml-delivery-bar'
     ],
     [

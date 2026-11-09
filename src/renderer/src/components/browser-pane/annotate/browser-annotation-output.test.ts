@@ -78,8 +78,42 @@ function makeAnnotation(overrides?: Partial<BrowserPageAnnotation>): BrowserPage
 }
 
 describe('formatBrowserAnnotationsAsMarkdown', () => {
+  it('keeps page identities when formatting feedback from multiple pages', () => {
+    const first = makeAnnotation()
+    const second = makeAnnotation({
+      id: 'annotation-2',
+      payload: {
+        ...first.payload,
+        page: { ...first.payload.page, sanitizedUrl: 'https://example.com/settings' }
+      }
+    })
+    const markdown = formatBrowserAnnotationsAsMarkdown([first, second])
+    expect(markdown).toContain('## Design Feedback across pages')
+    expect(markdown).toContain('## Design Feedback: /pricing')
+    expect(markdown).toContain('## Design Feedback: /settings')
+    expect(markdown).toContain('`https://example.com/settings`')
+  })
+
+  it('sends compact feedback by default and image paths in both modes', () => {
+    const annotation = makeAnnotation({ imagePaths: ['C:\\Temp\\shot.png', '/tmp/shot.png'] })
+    const compact = formatBrowserAnnotationsAsMarkdown([annotation])
+    expect(compact).toContain('**Feedback:**')
+    expect(compact).toContain('**Selector:**')
+    expect(compact).not.toContain('**Viewport:**')
+    expect(compact).not.toContain('**HTML:**')
+    expect(compact).not.toContain('**Computed styles:**')
+    for (const includeDiagnostics of [false, true]) {
+      const output = formatBrowserAnnotationsAsMarkdown([annotation], { includeDiagnostics })
+      expect(output).toContain('**Images (open these files):**')
+      expect(output).toContain('`C:\\Temp\\shot.png`')
+      expect(output).toContain('`/tmp/shot.png`')
+    }
+  })
+
   it('includes agent-useful selectors, source, react tree, styles, and feedback', () => {
-    const markdown = formatBrowserAnnotationsAsMarkdown([makeAnnotation()])
+    const markdown = formatBrowserAnnotationsAsMarkdown([makeAnnotation()], {
+      includeDiagnostics: true
+    })
 
     expect(markdown).toContain('## Design Feedback: /pricing')
     expect(markdown).toContain('**Browser tab id:** page-1')
@@ -101,18 +135,21 @@ describe('formatBrowserAnnotationsAsMarkdown', () => {
 
   it('uses longer inline code fences when selector content contains backticks', () => {
     const annotation = makeAnnotation()
-    const markdown = formatBrowserAnnotationsAsMarkdown([
-      makeAnnotation({
-        payload: {
-          ...annotation.payload,
-          target: {
-            ...annotation.payload.target,
-            selector: 'button[data-label="Save `draft`"]',
-            cssClasses: 'primary `generated`'
+    const markdown = formatBrowserAnnotationsAsMarkdown(
+      [
+        makeAnnotation({
+          payload: {
+            ...annotation.payload,
+            target: {
+              ...annotation.payload.target,
+              selector: 'button[data-label="Save `draft`"]',
+              cssClasses: 'primary `generated`'
+            }
           }
-        }
-      })
-    ])
+        })
+      ],
+      { includeDiagnostics: true }
+    )
 
     expect(markdown).toContain('**Selector:** ``button[data-label="Save `draft`"]``')
     expect(markdown).toContain('**Classes:** `` primary `generated` ``')
@@ -124,41 +161,47 @@ describe('formatBrowserAnnotationsAsMarkdown', () => {
     const manyBacktickRuns = Array.from({ length: 130_000 }, () => '`').join(' ')
 
     expect(() =>
-      formatBrowserAnnotationsAsMarkdown([
-        makeAnnotation({
-          payload: {
-            ...annotation.payload,
-            target: {
-              ...annotation.payload.target,
-              selector: `button[data-label="${manyBacktickRuns}"]`,
-              htmlSnippet: `<button>${manyBacktickRuns}</button>`
+      formatBrowserAnnotationsAsMarkdown(
+        [
+          makeAnnotation({
+            payload: {
+              ...annotation.payload,
+              target: {
+                ...annotation.payload.target,
+                selector: `button[data-label="${manyBacktickRuns}"]`,
+                htmlSnippet: `<button>${manyBacktickRuns}</button>`
+              }
             }
-          }
-        })
-      ])
+          })
+        ],
+        { includeDiagnostics: true }
+      )
     ).not.toThrow()
     expect(matchAll).not.toHaveBeenCalled()
   })
 
   it('collapses page-controlled newlines before putting text in headings and lists', () => {
     const annotation = makeAnnotation()
-    const markdown = formatBrowserAnnotationsAsMarkdown([
-      makeAnnotation({
-        comment: 'Keep this change scoped.\n## injected',
-        payload: {
-          ...annotation.payload,
-          target: {
-            ...annotation.payload.target,
-            accessibility: {
-              ...annotation.payload.target.accessibility,
-              accessibleName: 'Start\n## injected heading'
+    const markdown = formatBrowserAnnotationsAsMarkdown(
+      [
+        makeAnnotation({
+          comment: 'Keep this change scoped.\n## injected',
+          payload: {
+            ...annotation.payload,
+            target: {
+              ...annotation.payload.target,
+              accessibility: {
+                ...annotation.payload.target.accessibility,
+                accessibleName: 'Start\n## injected heading'
+              },
+              textSnippet: 'Start\n## injected text'
             },
-            textSnippet: 'Start\n## injected text'
-          },
-          nearbyText: ['Plan\n# injected']
-        }
-      })
-    ])
+            nearbyText: ['Plan\n# injected']
+          }
+        })
+      ],
+      { includeDiagnostics: true }
+    )
 
     expect(markdown).toContain('### 1. <App> <PricingCta> button "Start ## injected heading"')
     expect(markdown).toContain('- Plan # injected')
@@ -174,23 +217,26 @@ describe('formatBrowserAnnotationsAsMarkdown', () => {
     const largeInlineText = `Summary ${repeatedInlineText}SECRET_TAIL`
     const largeFeedback = `Feedback ${repeatedFeedback}SECRET_COMMENT`
 
-    const markdown = formatBrowserAnnotationsAsMarkdown([
-      makeAnnotation({
-        comment: largeFeedback,
-        payload: {
-          ...annotation.payload,
-          target: {
-            ...annotation.payload.target,
-            selectedText: largeInlineText,
-            accessibility: {
-              ...annotation.payload.target.accessibility,
-              accessibleName: largeInlineText
-            }
-          },
-          nearbyText: [largeInlineText]
-        }
-      })
-    ])
+    const markdown = formatBrowserAnnotationsAsMarkdown(
+      [
+        makeAnnotation({
+          comment: largeFeedback,
+          payload: {
+            ...annotation.payload,
+            target: {
+              ...annotation.payload.target,
+              selectedText: largeInlineText,
+              accessibility: {
+                ...annotation.payload.target.accessibility,
+                accessibleName: largeInlineText
+              }
+            },
+            nearbyText: [largeInlineText]
+          }
+        })
+      ],
+      { includeDiagnostics: true }
+    )
 
     expect(markdown).toContain('**Selected text:** "Summary x x')
     expect(markdown).not.toContain('SECRET_TAIL')
@@ -202,17 +248,20 @@ describe('formatBrowserAnnotationsAsMarkdown', () => {
     const annotation = makeAnnotation()
     const selectedText = `${'x'.repeat(BROWSER_ANNOTATION_INLINE_TEXT_MAX_LENGTH - 1)}😀tail`
 
-    const markdown = formatBrowserAnnotationsAsMarkdown([
-      makeAnnotation({
-        payload: {
-          ...annotation.payload,
-          target: {
-            ...annotation.payload.target,
-            selectedText
+    const markdown = formatBrowserAnnotationsAsMarkdown(
+      [
+        makeAnnotation({
+          payload: {
+            ...annotation.payload,
+            target: {
+              ...annotation.payload.target,
+              selectedText
+            }
           }
-        }
-      })
-    ])
+        })
+      ],
+      { includeDiagnostics: true }
+    )
 
     const selectedLabel = '**Selected text:**'
     const selectedLineStart = markdown.indexOf(selectedLabel)

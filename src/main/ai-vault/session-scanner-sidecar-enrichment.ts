@@ -1,7 +1,7 @@
 import type { AiVaultSession } from '../../shared/ai-vault-types'
 import { buildAiVaultResumeCommand } from '../../shared/ai-vault-resume-command'
 import { generatedSessionTitle } from './session-scanner-accumulator'
-import { readCursorChatMeta, wasCursorChatMetaRefused } from './session-scanner-cursor-chat-meta'
+import { readCursorChatMeta, cursorChatMetaUnavailable } from './session-scanner-cursor-chat-meta'
 import type { SessionFileCandidate } from './session-scanner-types'
 
 /**
@@ -36,7 +36,7 @@ export async function enrichSessionFromSidecar(
   }
   const meta = await readCursorChatMeta(candidate.file.path)
   if (!meta) {
-    return { session: foldSession, refused: wasCursorChatMetaRefused(candidate.file.path) }
+    return { session: foldSession, refused: cursorChatMetaUnavailable(candidate.file.path) }
   }
   return { session: mergeCursorChatMeta(foldSession, meta, platform), refused: false }
 }

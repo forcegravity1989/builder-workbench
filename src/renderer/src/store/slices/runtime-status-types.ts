@@ -1,15 +1,10 @@
-import type { RuntimeHostStatusSnapshot } from '../../../../shared/runtime-host-status'
+import type {
+  RuntimeHostStatusSnapshot,
+  RuntimeEnvironmentStatus
+} from '../../../../shared/runtime-host-status'
 import type { PublicKnownRuntimeEnvironment } from '../../../../shared/runtime-environments'
-import type { RuntimeStatus } from '../../../../shared/runtime-types'
 
-export type RuntimeEnvironmentStatus = {
-  snapshot?: RuntimeHostStatusSnapshot
-  status: RuntimeStatus | null
-  remoteControl?: RuntimeStatus['remoteControl'] | null
-  appVersion?: string | null
-  checkedAt: number
-  connectionGeneration?: number
-}
+export type { RuntimeEnvironmentStatus } from '../../../../shared/runtime-host-status'
 
 export type RuntimeStatusSlice = {
   readRuntimeHostStatusSnapshots: () => Promise<void>

@@ -25,6 +25,7 @@ import type {
   FolderWorkspacePathStatusRequest
 } from '../../../../shared/folder-workspace-path-status'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
+import type { AgentLaunchSettingsOwner } from '@/runtime/agent-launch-settings/agent-launch-settings-transport'
 
 export const ERROR_TOAST_DURATION = 60_000
 
@@ -205,7 +206,7 @@ export type RepoSlice = {
       createdWithAgent?: FolderWorkspace['createdWithAgent']
       pendingFirstAgentMessageRename?: boolean
     },
-    options?: FolderWorkspacePathStatusRouteOptions
+    options?: FolderWorkspacePathStatusRouteOptions & { agentLaunchOwner?: AgentLaunchSettingsOwner }
   ) => Promise<FolderWorkspace | null>
   getFolderWorkspacePathStatusCacheKey: (
     request: FolderWorkspacePathStatusRequest,

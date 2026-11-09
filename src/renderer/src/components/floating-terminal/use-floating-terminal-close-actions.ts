@@ -1,3 +1,4 @@
+import type { TerminalTabCloseIntent } from '../terminal/terminal-tab-close-intent'
 import { useCallback } from 'react'
 import { resolveGroupTabFromVisibleId } from '@/components/tab-group/tab-group-visible-id'
 import { closeTerminalTab } from '@/components/terminal/terminal-tab-actions'
@@ -74,7 +75,7 @@ export function useFloatingTerminalCloseActions({
   )
 
   const closeFloatingItemConfirmed = useCallback(
-    (visibleId: string, options?: { guestOwned?: boolean }) => {
+    (visibleId: string, options?: { guestOwned?: boolean; reason?: TerminalTabCloseIntent }) => {
       const item = resolveGroupTabFromVisibleId(groupTabs, visibleId)
       if (!item) {
         return
@@ -91,7 +92,7 @@ export function useFloatingTerminalCloseActions({
         }
       }
       if (item.contentType === 'terminal') {
-        closeTerminalTab(item.entityId, { onClosed: armIfEmptying })
+        closeTerminalTab(item.entityId, { reason: options?.reason ?? 'user', onClosed: armIfEmptying })
         return
       }
       const state = useAppStore.getState()

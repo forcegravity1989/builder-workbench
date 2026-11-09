@@ -40,6 +40,7 @@ export type BrowserPageWebviewNavigationHandlersArgs = {
   faviconUrlRef: MutableRefObject<string | null>
   setAddressBarValue: Dispatch<SetStateAction<string>>
   annotationViewportBridgeTokenRef: MutableRefObject<string>
+  invalidateBrowserAnnotationDocumentRef: MutableRefObject<() => void>
   setBrowserOverlayViewport: Dispatch<SetStateAction<BrowserOverlayViewport>>
 }
 
@@ -67,7 +68,8 @@ export function createBrowserPageWebviewNavigationHandlers({
   faviconUrlRef,
   setAddressBarValue,
   annotationViewportBridgeTokenRef,
-  setBrowserOverlayViewport
+  setBrowserOverlayViewport,
+  invalidateBrowserAnnotationDocumentRef
 }: BrowserPageWebviewNavigationHandlersArgs): BrowserPageWebviewNavigationHandlers {
   const clearFaviconIfOriginChanges = (
     event: Electron.DidStartNavigationEvent | Electron.DidRedirectNavigationEvent
@@ -95,6 +97,9 @@ export function createBrowserPageWebviewNavigationHandlers({
     if (!event.isMainFrame || event.isInPlace || !event.url) {
       return
     }
+    // Main-frame document starts include reloads; fragment-only updates keep annotations.
+    invalidateBrowserAnnotationDocumentRef.current()
+    setBrowserOverlayViewport({ scrollX: 0, scrollY: 0, version: 0 })
     const pendingRecoveryNavigation = recoveryNavigationValidationRef.current
     const browserStartedUrl = redactKagiSessionToken(event.url)
     const startedUrl = normalizeBrowserNavigationUrl(browserStartedUrl) ?? browserStartedUrl
@@ -126,6 +131,9 @@ export function createBrowserPageWebviewNavigationHandlers({
     const browserModelUrl = redactKagiSessionToken(currentUrl)
     const normalizedBrowserModelUrl =
       normalizeBrowserNavigationUrl(browserModelUrl) ?? browserModelUrl
+    if (lastKnownWebviewUrlRef.current?.split('#')[0] !== normalizedBrowserModelUrl.split('#')[0]) {
+      invalidateBrowserAnnotationDocumentRef.current()
+    }
     lastKnownWebviewUrlRef.current = normalizedBrowserModelUrl
     rememberLiveBrowserUrl(browserTabId, browserModelUrl)
     // Why: don't overwrite in-progress typing (see above).

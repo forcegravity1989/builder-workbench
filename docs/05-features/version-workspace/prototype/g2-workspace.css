@@ -213,12 +213,15 @@ button:disabled {
 .project-heading > span:nth-child(2) {
   min-width: 0;
   flex: 1;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
 }
 .project-heading small {
   display: block;
   margin-top: 1px;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted-foreground);
 }
 .project-avatar {
   display: inline-flex;
@@ -420,10 +423,6 @@ button:disabled {
   color: var(--muted-foreground);
   padding: 6px 5px 8px;
 }
-.sidebar-divider {
-  border-top: 1px solid var(--border);
-  margin: 16px 4px 0;
-}
 .native-projects {
   border-top: 1px solid var(--border);
   padding: 4px 0 10px;
@@ -434,14 +433,14 @@ button:disabled {
 .native-projects .section-label {
   margin-top: 6px;
 }
+/* Native section title; the current sidebar entry shares section-heading metrics. */
 .native-workspaces-heading {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: var(--worktree-sidebar, var(--sidebar));
-  margin: 0 3px 4px !important;
+  margin: 4px 0;
   padding: 5px 0;
   gap: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--foreground) 80%, transparent);
 }
 .native-workspaces-heading > span {
   white-space: nowrap;
@@ -451,8 +450,9 @@ button:disabled {
   gap: 1px;
 }
 .native-workspaces-tools .icon-action {
-  width: 23px;
-  height: 23px;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
 }
 .native-project-row {
   display: flex;
@@ -732,87 +732,6 @@ button:disabled {
   text-align: center;
   color: var(--muted-foreground);
 }
-.version-report-summary {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin: 24px 0 12px;
-}
-.version-report-summary > div {
-  padding: 17px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-.version-report-summary > div + div {
-  border-left: 1px solid var(--border);
-}
-.version-report-summary strong {
-  font-size: 15px;
-}
-.version-report-summary button {
-  text-align: left;
-  font-size: 11px;
-  color: var(--muted-foreground);
-  padding: 0;
-}
-/* 修订 9：目标周报表（表格周报风格，替代逐目标卡片；旧 .report-source-line/.report-goal 已退役删除）。 */
-.version-report-table {
-  width: 100%;
-  border-collapse: collapse;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 12px;
-  margin: 10px 0 6px;
-  text-align: left;
-}
-.version-report-table th {
-  font-size: 11px;
-  color: var(--muted-foreground);
-  font-weight: 600;
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--border);
-  background: var(--muted);
-}
-.version-report-table td {
-  padding: 11px 12px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
-.version-report-table tr:last-child td {
-  border-bottom: 0;
-}
-.version-report-table td small {
-  display: block;
-  color: var(--muted-foreground);
-  font-size: 10.5px;
-  margin-top: 3px;
-}
-/* 修订 9 事实区对齐生产：页头导航钮与五格中的长文案格。 */
-.report-nav {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: none;
-}
-.report-nav-btn {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 2px 8px;
-  font-size: 11.5px;
-  color: var(--foreground);
-  background: transparent;
-  cursor: pointer;
-}
-.report-nav-btn:hover {
-  background: var(--accent);
-}
-.version-report-summary strong.report-cell-note {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.45;
-}
 .overlay {
   position: fixed;
   inset: 0;
@@ -915,9 +834,6 @@ button:disabled {
     width: 260px;
     min-width: 260px;
   }
-  .report-bottom {
-    grid-template-columns: 1fr;
-  }
 }
 @media (max-width: 1000px) {
   .sidebar {
@@ -932,12 +848,6 @@ button:disabled {
   }
   .page-content {
     padding: 24px 20px;
-  }
-  .version-report-summary > div {
-    padding: 14px 10px;
-  }
-  .version-report-summary strong {
-    font-size: 12px;
   }
 }
 
@@ -1121,9 +1031,6 @@ button:disabled {
 }
 .review-bar > strong {
   white-space: nowrap;
-}
-.version-report-summary .icon-action {
-  margin-top: 8px;
 }
 .demo-settings {
   display: flex;

@@ -230,14 +230,14 @@ export const CONTEXTUAL_TOURS = [
     steps: [
       {
         title: '添加与编排',
-        body: '进入「规划里程碑」，点对应表头的＋添加关键日期或特性。点成果文字编辑，点 × 删除，误删可撤销。查看实际时，先取消「显示实际」。',
+        body: '进入「规划里程碑」，点表头旗帜添加里程碑、列表加号添加特性；特性旁的扳手添加 Maintain。点成果文字编辑，点 × 删除，误删可撤销。查看实际时，先取消「显示实际」。',
         targetSelector: '[data-contextual-tour-target~="milestone-start"]',
         requiredForStart: true,
         preferredPlacement: 'bottom'
       },
       {
         title: '调整时间',
-        body: '拖特性条身换版本，拉两端调时长；拖版本表头调整整版。',
+        body: '拖 Build / Maintain 条身移动日期，拉两端调时长，可跨任意版本。拖版本表头只调整版本日期；维护条上方的垃圾桶删除单段，误删可撤销。',
         targetSelector: '[data-contextual-tour-target="milestone-schedule"]'
       },
       {

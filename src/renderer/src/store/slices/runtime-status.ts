@@ -8,6 +8,7 @@ import {
   clearRuntimeCompatibilityCache
 } from '@/runtime/runtime-rpc-client'
 import { replaceRuntimeEnvironmentRevisions } from '@/runtime/runtime-environment-revision'
+import { classifyPeerReplacements } from './runtime-environment-peer-replacement'
 import { bumpProviderRuntimeSessionGeneration } from '@/lib/provider-runtime-context'
 import { evictInstalledAgentSkillDiscoveryForRuntimeEnvironments } from '@/hooks/installed-agent-skill-discovery'
 import {
@@ -20,10 +21,11 @@ import { refreshRuntimeEnvironmentStatus } from './runtime-status-refresh'
 import * as runtimeStatusConnectionGeneration from './runtime-status-connection-generation'
 import { replayClientHostedBrowserCloseIntents } from '@/runtime/client-hosted-browser-close-intent-replay'
 import {
-  ensureBrowserClientHostForRestartedRuntime,
+  ensureBrowserClientHostOnRuntimeContact,
   ensureBrowserClientHostsForRestoredPages
 } from '@/runtime/restored-client-hosted-browser-host-attach'
-import { applyRuntimeHostStatusSnapshot } from './runtime-status-snapshot'
+import { applyRuntimeHostStatusSnapshot, snapshotOutrunsCatalog } from './runtime-status-snapshot'
+import { refreshRuntimeEnvironmentCatalog } from '@/runtime/runtime-environment-pairing-refresh'
 
 export const clearRuntimeEnvironmentConnectionGenerationsForTests = (): void => {
   runtimeStatusConnectionGeneration.clearRuntimeEnvironmentConnectionGenerations()
@@ -69,7 +71,12 @@ export const createRuntimeStatusSlice: StateCreator<AppState, [], [], RuntimeSta
         )
       })
       .map((environment) => environment.id)
-    replaceRuntimeEnvironmentRevisions(environments)
+    const peerReplacement = classifyPeerReplacements(
+      get().runtimeEnvironments,
+      environments,
+      replacedEnvironmentIds
+    )
+    replaceRuntimeEnvironmentRevisions(environments, peerReplacement)
     // Why: diff against the accumulated in-memory saved list (not a second disk
     // read) so a main-initiated removal that never calls setRuntimeEnvironments
     // still enters the diff on the next list read. #8881.
@@ -145,10 +152,11 @@ export const createRuntimeStatusSlice: StateCreator<AppState, [], [], RuntimeSta
     get().retainEnvironmentSshState?.(environments.map((environment) => environment.id))
     for (const id of replacedEnvironmentIds) {
       clearRuntimeCompatibilityCache(id)
+      get().clearRuntimeDetectedAgents?.(id)
       get().markEnvironmentSshStateStale?.(id)
     }
-    // Why: same-id re-pair publications belong to the retired peer just as surely as removed ids.
-    const retiredEnvironmentIds = [...new Set([...removedIds, ...replacedEnvironmentIds])]
+    // Only a changed machine retires workspaces; same-key rotations keep their retained state.
+    const retiredEnvironmentIds = [...new Set([...removedIds, ...peerReplacement.retired])]
     if (retiredEnvironmentIds.length > 0) {
       evictInstalledAgentSkillDiscoveryForRuntimeEnvironments(retiredEnvironmentIds)
       get().purgeStaleRuntimeHostState?.(retiredEnvironmentIds)
@@ -156,15 +164,23 @@ export const createRuntimeStatusSlice: StateCreator<AppState, [], [], RuntimeSta
     }
   },
 
-  applyRuntimeHostStatusSnapshot: (snapshot) =>
-    applyRuntimeHostStatusSnapshot(snapshot, get(), (entry) => {
-      set((s) => ({
-        runtimeStatusByEnvironmentId: new Map(s.runtimeStatusByEnvironmentId).set(
-          snapshot.environmentId,
-          entry
-        )
-      }))
-    }),
+  applyRuntimeHostStatusSnapshot: (snapshot) => {
+    const apply = (): void =>
+      applyRuntimeHostStatusSnapshot(snapshot, get(), (entry) => {
+        set((s) => ({
+          runtimeStatusByEnvironmentId: new Map(s.runtimeStatusByEnvironmentId).set(
+            snapshot.environmentId,
+            entry
+          )
+        }))
+      })
+    if (snapshotOutrunsCatalog(snapshot, get())) {
+      // Applied once after the re-read; a catalog that is still behind drops it as before.
+      void refreshRuntimeEnvironmentCatalog().then(apply)
+      return
+    }
+    apply()
+  },
 
   setRuntimeEnvironmentStatus: (environmentId, status, options) => {
     const previous = get().runtimeStatusByEnvironmentId.get(environmentId)
@@ -173,6 +189,8 @@ export const createRuntimeStatusSlice: StateCreator<AppState, [], [], RuntimeSta
     }
     const previousVerifiedStatus = previous?.snapshot?.status ?? previous?.status
     const pairedDeviceId = status.status?.pairedDeviceId?.trim()
+    // Contact return can follow expiry of the browser-host lease without a runtime restart.
+    const contactRegained = previous?.status === null && status.status !== null
     // A new runtime id under a known previous one is a restart, not a first connect: the guests are
     // still ours to host, but only a fresh attach hands them back to the replacement runtime.
     const runtimeRestarted = Boolean(
@@ -215,7 +233,9 @@ export const createRuntimeStatusSlice: StateCreator<AppState, [], [], RuntimeSta
       if (activeEnvironmentId === environmentId && (sessionEnded || runtimeSessionStarted)) {
         bumpProviderRuntimeSessionGeneration()
       }
-      const nextEntry = { ...status, connectionGeneration }
+      const hostContactEpoch =
+        (previous?.hostContactEpoch ?? status.hostContactEpoch ?? 0) + (contactRegained ? 1 : 0)
+      const nextEntry = { ...status, connectionGeneration, hostContactEpoch }
       const currentEntry = s.runtimeStatusByEnvironmentId.get(environmentId)
       // Why: an unchanged re-probe must not invalidate every Map subscriber. Real
       // transitions change `status` or advance `connectionGeneration`, so they still write.
@@ -243,8 +263,8 @@ export const createRuntimeStatusSlice: StateCreator<AppState, [], [], RuntimeSta
         ...(environmentsChanged ? { runtimeEnvironments } : {})
       }
     })
-    if (runtimeRestarted) {
-      void ensureBrowserClientHostForRestartedRuntime(get(), environmentId)
+    if (runtimeRestarted || contactRegained) {
+      void ensureBrowserClientHostOnRuntimeContact(get(), environmentId)
     }
     if (options?.suppressDisconnectToast) {
       dismissRuntimeDisconnectedToast(environmentId)

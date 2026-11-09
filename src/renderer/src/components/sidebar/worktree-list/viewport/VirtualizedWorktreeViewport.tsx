@@ -64,7 +64,10 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
   const scrollSuppression = useWorktreeSidebarScrollSuppression(scrollRef)
   const { markDirectScrollInput, markScrollMovement } = scrollSuppression
 
-  const renderRows = useMemo(() => buildRenderableRows(rows), [rows])
+  const renderRows = useMemo(
+    () => buildRenderableRows(rows, props.afterPinnedContent),
+    [rows, props.afterPinnedContent]
+  )
   const firstHeaderIndex = useMemo(
     () => renderRows.findIndex((row) => row.type === 'header' || row.type === 'host-header'),
     [renderRows]
@@ -79,10 +82,28 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
     [projectGroups]
   )
 
+  const virtualization = useWorktreeListVirtualizer({
+    renderRows,
+    firstHeaderIndex,
+    scrollRef,
+    scrollOffsetRef,
+    suppressMeasurementAdjustmentUntilRef: scrollSuppression.suppressMeasurementAdjustmentUntilRef
+  })
+  const measuredTotalSize = virtualization.virtualizer.getTotalSize()
+  const measurements = virtualization.virtualizer.measurementsCache
+  const measuredRowStarts = useMemo(
+    () =>
+      props.afterPinnedContent === undefined
+        ? undefined
+        : [...measurements.map((item) => item.start), measuredTotalSize],
+    [props.afterPinnedContent, measurements, measuredTotalSize]
+  )
+
   const headerDrag = useWorktreeSidebarHeaderDrag({
     rows,
     renderRows,
     firstHeaderIndex,
+    measuredRowStarts,
     allRepoIds: props.allRepoIds,
     repoMap,
     projectGroups,
@@ -127,14 +148,6 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
   const { showScrollToTop, scrollToTop } = useWorktreeListScrollToTop({
     scrollElement,
     onUserScrollIntent: markDirectScrollInput
-  })
-
-  const virtualization = useWorktreeListVirtualizer({
-    renderRows,
-    firstHeaderIndex,
-    scrollRef,
-    scrollOffsetRef,
-    suppressMeasurementAdjustmentUntilRef: scrollSuppression.suppressMeasurementAdjustmentUntilRef
   })
 
   usePendingSidebarReveal({
@@ -315,6 +328,7 @@ export const VirtualizedWorktreeViewport = React.memo(function VirtualizedWorktr
     getCachedFolderWorkspacePathStatus,
     getLineageToggleHandler,
     toggleGroupWithScrollAnchor,
+
     onRowClickCapture: handleWorktreeRowClickCapture,
     onRowPointerDown: handleWorktreeRowPointerDown
   })

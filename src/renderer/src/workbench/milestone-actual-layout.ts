@@ -4,7 +4,7 @@ import type {
   MilestoneMaterial,
   ScheduledVersion
 } from '../../../shared/workbench/project-milestones'
-import { milestoneCalendar, milestoneDay } from '../../../shared/workbench/milestone-calendar'
+import { milestoneDay } from '../../../shared/workbench/milestone-calendar'
 import { compareMaterialVersions } from '../../../shared/workbench/version-catalog'
 import { taskKey } from './version-overview/feature-model'
 import {
@@ -199,14 +199,4 @@ export function milestoneVisibleActualVersions(
     keys.add(milestoneVersionKey(version))
   }
   return milestoneActualVersions(facts).filter((version) => keys.has(milestoneVersionKey(version)))
-}
-
-/** Expand only the calendar, never the saved roadmap or version windows. */
-export function milestoneActualCalendar(
-  draft: MilestoneDraft,
-  facts: Record<string, MilestoneVersionFacts>,
-  versions = milestoneVisibleActualVersions(draft, facts),
-  location?: { date?: string; offset?: number }
-) {
-  return milestoneCalendar(draft, undefined, versions, location)
 }

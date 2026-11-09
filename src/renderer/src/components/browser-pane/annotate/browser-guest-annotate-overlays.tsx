@@ -67,11 +67,12 @@ export function BrowserGuestAnnotateOverlays({
   const markupTarget = markupPortalContainer ?? containerRef.current
   const {
     browserAnnotations,
-    browserAnnotationTrayOpen,
     annotationTraySendOpen,
     handleAnnotationTraySendOpenChange,
     activeGroupId,
     browserAnnotationsPrompt,
+    includePageDetails,
+    handleIncludePageDetailsChange,
     handleBrowserAnnotationsSentToAgent,
     handleCopyBrowserAnnotations,
     browserAnnotationsCopied,
@@ -96,6 +97,7 @@ export function BrowserGuestAnnotateOverlays({
       {pendingAnnotationPayload ? (
         <PendingBrowserAnnotationCard
           payload={pendingAnnotationPayload}
+          worktreeId={worktreeId}
           anchor={getBrowserOverlayAnchor(
             pendingAnnotationPayload,
             containerRef.current,
@@ -107,7 +109,7 @@ export function BrowserGuestAnnotateOverlays({
           onCancel={handleCancelPendingBrowserAnnotation}
         />
       ) : null}
-      {browserAnnotations.length > 0 && browserAnnotationTrayOpen ? (
+      {browserAnnotations.length > 0 ? (
         <BrowserPageAnnotationTray
           browserAnnotations={browserAnnotations}
           annotationTraySendOpen={annotationTraySendOpen}
@@ -115,6 +117,8 @@ export function BrowserGuestAnnotateOverlays({
           worktreeId={worktreeId}
           activeGroupId={activeGroupId}
           browserAnnotationsPrompt={browserAnnotationsPrompt}
+          includePageDetails={includePageDetails}
+          handleIncludePageDetailsChange={handleIncludePageDetailsChange}
           handleBrowserAnnotationsSentToAgent={handleBrowserAnnotationsSentToAgent}
           handleCopyBrowserAnnotations={handleCopyBrowserAnnotations}
           browserAnnotationsCopied={browserAnnotationsCopied}

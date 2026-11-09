@@ -7,6 +7,7 @@ import {
   containsAgentSpinnerGlyph,
   isClaudeManagementTitle,
   isCursorAgentTitle,
+  isDshTerminalTitle,
   isGeminiTerminalTitle,
   isPiAgentTitle,
   titleHasAgentName
@@ -20,7 +21,12 @@ import { memoizeTitleClassification } from './terminal-title-classification-memo
  * Used to scope prompt-cache-timer behavior to Claude sessions only.
  */
 function computeIsClaudeAgent(title: string): boolean {
-  if (!title || isClaudeManagementTitle(title) || isOpenCodeNativeTitle(title)) {
+  if (
+    !title ||
+    isClaudeManagementTitle(title) ||
+    isOpenCodeNativeTitle(title) ||
+    isDshTerminalTitle(title)
+  ) {
     return false
   }
   const lower = title.toLowerCase()
@@ -74,6 +80,9 @@ function computeAgentLabel(title: string): string | null {
   }
   if (isGeminiTerminalTitle(title)) {
     return 'Gemini CLI'
+  }
+  if (isDshTerminalTitle(title)) {
+    return 'DeepSeek Harness'
   }
   // Why: Pi-compatible synthetic titles can carry braille spinners, which the
   // generic agent-title heuristics would otherwise claim first.

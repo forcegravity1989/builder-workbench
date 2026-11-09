@@ -23,7 +23,12 @@ import {
   isDevBundleInUse,
   selectStaleDevBundleDirs
 } from './dev-electron-bundle-cache.mjs'
-import { createDevDockTitle, getDevUserDataPath, isWorkbenchDevEnv } from './dev-workbench-env.mjs'
+import {
+  createDevDockTitle,
+  getDevUserDataPath,
+  inheritWindowsUserEnv,
+  isWorkbenchDevEnv
+} from './dev-workbench-env.mjs'
 import { copyPrivateTree } from './space-sharing-copy.mjs'
 import {
   DEV_BUNDLE_ID,
@@ -36,6 +41,14 @@ import {
 // the electron-vite spawn, the Electron binary boots as plain Node and
 // require('electron') returns the npm stub instead of the built-in API.
 delete process.env.ELECTRON_RUN_AS_NODE
+
+// Why: every PTY in the dev instance inherits this process's env. Launching from
+// an IDE/agent with a sanitized environment would otherwise hide user-level vars
+// (e.g. NODE_EXTRA_CA_CERTS for internal CAs) and terminals would fail on TLS.
+const restoredDevEnv = inheritWindowsUserEnv()
+if (restoredDevEnv.length > 0) {
+  console.log(`[orca-dev] Restored Windows user env: ${restoredDevEnv.join(', ')}`)
+}
 
 const require = createRequire(import.meta.url)
 const repoRoot = path.resolve(import.meta.dirname, '../..')

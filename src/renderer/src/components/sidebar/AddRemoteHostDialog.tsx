@@ -1,3 +1,4 @@
+import { remoteServerPairingFailureMessage } from '@/lib/remote-server-pairing-error-copy'
 import { useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -273,7 +274,7 @@ export function AddRemoteHostDialog({
       if (!result.ok) {
         toast.error(
           result.kind === 'environment-save-failed'
-            ? result.message
+            ? remoteServerPairingFailureMessage(result)
             : translateRemotePairingFailureDescription(
                 result.kind,
                 parsedServerLink.value.displayEndpoint
@@ -285,7 +286,13 @@ export function AddRemoteHostDialog({
       setRuntimeEnvironments(environments)
       await readRuntimeHostStatusSnapshots()
       toast.success(
-        translate('auto.components.sidebar.AddRemoteHostDialog.serverSaved', 'Remote server added.')
+        result.updatedExisting
+          ? translate(
+              'auto.components.settings.RuntimeEnvironmentsPane.serverAlreadyPaired',
+              'This server is already paired as {{value0}}; updated its connection.',
+              { value0: result.environment.name }
+            )
+          : translate('auto.components.sidebar.AddRemoteHostDialog.serverSaved', 'Remote server added.')
       )
       reset()
       onOpenChange(null)

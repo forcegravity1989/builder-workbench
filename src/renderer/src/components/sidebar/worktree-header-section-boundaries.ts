@@ -88,10 +88,12 @@ function findProjectGroupSectionEndIndex(
 export function getRepoHeaderSectionEndByRepoId(args: {
   rows: readonly RenderRow[]
   firstHeaderIndex: number
+  measuredRowStarts?: readonly number[]
   sidebarRepoHeaderIdsByBucket: ReadonlyMap<string, readonly string[]>
   repoHeaderBucketByRepoId: ReadonlyMap<string, string>
 }): Map<string, number> {
-  const rowStarts = getEstimatedRenderRowStarts(args.rows, args.firstHeaderIndex)
+  const rowStarts =
+    args.measuredRowStarts ?? getEstimatedRenderRowStarts(args.rows, args.firstHeaderIndex)
   const repoHeaderIndexByRepoId = indexHeaderRenderRows(args.rows, (row) => row.repo?.id)
   const repoSuccessorsByBucket = indexBucketSuccessors(args.sidebarRepoHeaderIdsByBucket)
   const sectionEndByRepoId = new Map<string, number>()
@@ -117,10 +119,12 @@ export function getRepoHeaderSectionEndByRepoId(args: {
 export function getProjectGroupHeaderSectionEndByGroupId(args: {
   rows: readonly RenderRow[]
   firstHeaderIndex: number
+  measuredRowStarts?: readonly number[]
   sidebarProjectGroupHeaderIdsByBucket: ReadonlyMap<string, readonly string[]>
   projectGroupHeaderBucketByGroupId: ReadonlyMap<string, string>
 }): Map<string, number> {
-  const rowStarts = getEstimatedRenderRowStarts(args.rows, args.firstHeaderIndex)
+  const rowStarts =
+    args.measuredRowStarts ?? getEstimatedRenderRowStarts(args.rows, args.firstHeaderIndex)
   const projectGroupHeaderIndexByGroupId = indexHeaderRenderRows(args.rows, (row) =>
     row.repo ? undefined : row.projectGroup?.id
   )

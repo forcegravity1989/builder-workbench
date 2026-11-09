@@ -39,6 +39,8 @@ export type KnownRuntimeEnvironment = z.infer<typeof KnownRuntimeEnvironmentSche
 
 export type PublicKnownRuntimeEnvironment = Omit<KnownRuntimeEnvironment, 'endpoints'> & {
   endpoints: PublicRuntimeAccessEndpoint[]
+  /** Digest of the persistent host key, for proving same-host pairing rotations. */
+  hostKeyFingerprint?: string
 }
 
 export function redactRuntimeEnvironment(

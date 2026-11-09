@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { useState } from 'react'
-import { Flag, Plus, X } from 'lucide-react'
+import { Flag, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -32,6 +32,7 @@ function Caption({
     <div className="wb-ml-node-editor">
       <MilestoneField
         multiline
+        required
         editable
         value={node.outcome}
         label={`${node.date ?? node.month} 里程碑成果`}
@@ -193,7 +194,7 @@ export function MilestoneNavigation({
               setOutcome('')
             }}
           >
-            <Plus size={16} />
+            <Flag size={16} />
           </MilestoneIconButton>
         )}
       </div>

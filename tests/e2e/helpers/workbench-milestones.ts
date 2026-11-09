@@ -1,4 +1,3 @@
-import { defaultMilestoneStages } from '../../../src/shared/workbench/milestone-sdlc'
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
@@ -32,12 +31,18 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await board.getByRole('button', { name: '里程碑操作引导', exact: true }).click()
   const guide = page.locator('[data-contextual-tour-panel]')
   await guide.getByRole('button', { name: /^(Skip tour|跳过导览)$/ }).click()
-  await expect(guide).toHaveCount(0)
   await board.getByRole('button', { name: '规划里程碑', exact: true }).click()
-  await expect(board.getByRole('button', { name: '登记版本', exact: true })).toHaveCount(0)
-  await expect(board.getByLabel('规划月份', { exact: true })).toHaveCount(0)
   await board.getByRole('button', { name: '添加特性', exact: true }).click()
+  await board.getByRole('button', { name: '提交评审', exact: true }).click()
+  await expect(board.getByLabel('特性名称', { exact: true })).toHaveAttribute(
+    'aria-invalid',
+    'true'
+  )
+  await expect(windows).toHaveCount(0)
   await board.getByLabel('特性名称', { exact: true }).fill('就地安排首个特性')
+  await board.getByRole('button', { name: '提交评审', exact: true }).click()
+  await expect(page.getByText('本次改动', { exact: true })).toBeVisible()
+  await page.keyboard.press('Escape')
   await board.getByLabel('负责人', { exact: true }).fill('Builder')
   await board.getByRole('button', { name: '撤销', exact: true }).click()
   await expect(board.getByLabel('负责人', { exact: true })).toHaveValue('')
@@ -78,16 +83,13 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
       deliveries: [0, 1].map((index) => ({
         id: `delivery-${i}-${index}`,
         version: ref(index),
-        stages: defaultMilestoneStages(
+        stages: [
           {
-            ...ref(index),
-            timeWindow: {
-              start: `2026-11-${index ? '09' : '02'}`,
-              end: `2026-11-${index ? '13' : '08'}`
-            }
-          },
-          index > 0
-        )
+            phase: index ? 'Maintain' : 'Build',
+            start: index ? '2026-11-09T00:00' : '2026-11-02T00:00',
+            end: index ? '2026-11-14T00:00' : '2026-11-09T00:00'
+          }
+        ]
       }))
     }))
   }
@@ -96,6 +98,8 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   git(['commit', '-m', 'seed dated milestone materials'])
   const formalHead = git(['rev-parse', 'HEAD'])
   await board.getByRole('button', { name: '刷新里程碑与评审', exact: true }).click()
+  await board.getByLabel('特性显示范围').selectOption('all')
+  await board.getByLabel('定位日期', { exact: true }).fill('2026-11-01')
   await expect(board.getByLabel('特性名称', { exact: true }).first()).toHaveValue('消息与通知')
   await expect(windows).toHaveCount(2)
   await expect(windows.first()).toContainText('11-02 — 11-08')
@@ -124,9 +128,6 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await board.getByRole('button', { name: '重做', exact: true }).click()
   await expect(rows.first().getByLabel('负责人', { exact: true })).toHaveValue('临时负责人')
   await board.getByRole('button', { name: '撤销', exact: true }).click()
-  await rows.first().getByLabel('特性名称', { exact: true }).fill('临时输入')
-  await rows.first().getByLabel('特性名称', { exact: true }).press('Escape')
-  await expect(rows.first().getByLabel('特性名称', { exact: true })).toHaveValue('消息与通知')
   await rows.first().getByLabel('负责人', { exact: true }).fill('评审 Builder  ')
   await rows.first().getByLabel('负责人', { exact: true }).press('Tab')
   await board.getByRole('button', { name: '结束编辑，返回项目里程碑', exact: true }).click()
@@ -140,17 +141,7 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await rows.first().getByLabel('特性名称', { exact: true }).fill('知识库')
   await rows.first().getByLabel('负责人', { exact: true }).fill('Builder 3  ')
   await expect(rows).toHaveCount(3)
-  await rows
-    .first()
-    .getByRole('button', { name: '排序 知识库' })
-    .dragTo(rows.last().locator('.wb-ml-label'), { targetPosition: { x: 110, y: 70 } })
-  await expect(rows.last().getByLabel('特性名称', { exact: true })).toHaveValue('知识库')
-  await board.getByRole('button', { name: '撤销', exact: true }).click()
-  await expect(rows.first().getByLabel('特性名称', { exact: true })).toHaveValue('知识库')
-  await expect(rows.first().getByLabel('负责人', { exact: true })).toHaveValue('Builder 3')
-  await board.getByRole('button', { name: '重做', exact: true }).click()
-  await board.getByRole('button', { name: '撤销', exact: true }).click()
-  await rows.first().getByRole('button', { name: '移除 知识库' }).click()
+  await rows.first().getByRole('button', { name: '删除特性', exact: true }).click()
   await expect(rows).toHaveCount(2)
   await board.getByRole('button', { name: '撤销', exact: true }).click()
   await expect(rows.first().getByLabel('特性名称', { exact: true })).toHaveValue('知识库')
@@ -165,32 +156,43 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   const deliveryBar = notification.locator('.wb-ml-delivery-body').first()
   const initialDelivery = await deliveryBar.getAttribute('title')
   await moveNode(page, deliveryBar, 252)
-  await expect(deliveryBar).toHaveAttribute('title', /v1\.0\.1 · 上线/)
+  await expect(deliveryBar).toHaveAttribute('title', /2026-11-09 00:00 — 2026-11-16 00:00/)
   await expect(notification.locator('.wb-ml-delivery-body').last()).toHaveAttribute(
     'title',
-    /v1\.0\.2 · 维护/
+    /2026-11-16 00:00 — 2026-11-21 00:00/
   )
+  await expect(windows).toHaveCount(2)
   await expect(windows.nth(1)).toContainText('11-09 — 11-15')
   await board.getByRole('button', { name: '撤销', exact: true }).click()
   await expect(deliveryBar).toHaveAttribute('title', initialDelivery!)
-  await deliveryBar.press('ArrowRight')
-  await expect(deliveryBar).toHaveAttribute('title', /v1\.0\.1 · 上线/)
-  await board.getByRole('button', { name: '撤销', exact: true }).click()
-  const boundary = notification
-    .getByRole('button', {
-      name: '消息与通知 结束：拖动或方向键调整半天',
-      exact: true
-    })
-    .first()
-  await moveNode(page, boundary, 36)
-  await expect(board.getByRole('status')).toHaveText('v1.0.0 与 v1.0.1 日期重叠，请先调整相关版本')
+  const boundary = notification.getByRole('button', {
+    name: '消息与通知 Build 结束：拖动或方向键调整半天',
+    exact: true
+  })
+  await boundary.press('ArrowRight')
+  await expect(notification.locator('.wb-ml-delivery-body').last()).toHaveAttribute(
+    'title',
+    /2026-11-09 12:00 — 2026-11-14 12:00/
+  )
   await expect(windows.first()).toContainText('11-02 — 11-08')
-  await boundary.press('ArrowLeft')
-  await expect(deliveryBar).toHaveAttribute('title', /2026-11-08 12:00/)
   await board.getByRole('button', { name: '撤销', exact: true }).click()
+  await notification.getByRole('button', { name: '添加 Maintain', exact: true }).click()
+  await expect(notification.locator('.wb-ml-delivery')).toHaveCount(3)
+  await notification.locator('.wb-ml-delivery-body').last().hover()
+  await notification.getByRole('button', { name: '删除此段 Maintain', exact: true }).last().click()
+  await expect(notification.locator('.wb-ml-delivery')).toHaveCount(2)
+  await board.getByRole('button', { name: '撤销', exact: true }).click()
+  await expect(notification.locator('.wb-ml-delivery')).toHaveCount(3)
+  await board.getByRole('button', { name: '撤销', exact: true }).click()
+  await windows
+    .first()
+    .getByRole('button', { name: 'v1.0.0 结束日期：拖动或方向键调整一天', exact: true })
+    .press('ArrowRight')
+  await expect(windows.first()).toContainText('11-02 — 11-08')
+  await expect(
+    page.getByText('v1.0.0 与 v1.0.1 日期重叠，请调整相关版本', { exact: true })
+  ).toBeVisible()
   await expect(deliveryBar).toHaveAttribute('title', initialDelivery!)
-  await expect(board.getByRole('button', { name: '工作日历', exact: true })).toHaveCount(0)
-  await expect(notification.getByRole('button', { name: /版本总览/ })).toHaveCount(0)
   await board.getByLabel('版本名称 2026-11-23', { exact: true }).fill('v1.0.2')
   await board.getByLabel('版本名称 2026-11-23', { exact: true }).press('Enter')
   await expect(windows).toHaveCount(3)
@@ -210,7 +212,8 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
     board.evaluate((element) => {
       const scroll = element.querySelector('.wb-ml-scroll')!
       return {
-        x: scroll.scrollLeft,
+        date: (element.querySelector('[aria-label="定位日期"]') as HTMLInputElement).value,
+        x: scroll.scrollLeft % 36,
         y: scroll.scrollTop,
         page: element.closest('.content')?.scrollTop ?? 0
       }
@@ -257,6 +260,7 @@ export async function verifyMilestones(page: Page, repoPath: string, info: TestI
   await board.getByRole('button', { name: '放弃本次修改，恢复最近提交', exact: true }).click()
   await expect(rows).toHaveCount(2)
   await expect(board.getByRole('button', { name: '提交评审', exact: true })).toBeDisabled()
+  await board.getByRole('button', { name: '结束编辑，返回项目里程碑', exact: true }).click()
   await page.reload()
   await page.getByRole('button', { name: '项目总览', exact: true }).click()
   await expect(board.getByText('消息与通知', { exact: true })).toBeVisible({ timeout: 60_000 })

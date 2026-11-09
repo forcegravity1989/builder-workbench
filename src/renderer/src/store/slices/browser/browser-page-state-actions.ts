@@ -10,6 +10,7 @@ import {
   normalizeUrl
 } from '../browser-page-records'
 import { normalizeBrowserHistoryUrl } from '../../../../../shared/workspace-session-browser-history'
+import { normalizeBrowserNavigationUrl } from '../../../../../shared/browser-url'
 
 export function createBrowserPageStateActions(
   set: BrowserSliceSet,
@@ -188,7 +189,10 @@ export function createBrowserPageStateActions(
         // persistence, the publish boundary and the address bar, exactly as at the other two doors.
         const nextPageUrl = page.docLocation ? ORCA_BROWSER_BLANK_URL : nextUrl
         // Why: annotations point at DOM coords of the loaded document; a real URL change invalidates those markers.
-        const shouldClearAnnotations = normalizeUrl(page.url) !== nextPageUrl
+        const previousDocumentUrl = normalizeBrowserNavigationUrl(page.url) ?? page.url
+        const nextDocumentUrl = normalizeBrowserNavigationUrl(nextPageUrl) ?? nextPageUrl
+        const shouldClearAnnotations =
+          previousDocumentUrl.split('#')[0] !== nextDocumentUrl.split('#')[0]
         const nextPages = (s.browserPagesByWorkspace[workspace.id] ?? []).map((entry) =>
           entry.id === pageId
             ? {

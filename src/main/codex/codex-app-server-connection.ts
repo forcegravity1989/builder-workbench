@@ -7,6 +7,7 @@ import { CodexAppServerHandshakeExitUnprovenError } from './codex-app-server-han
 import { terminateCodexAppServerProcessTree } from './codex-app-server-process-teardown'
 import { CODEX_SPAWN_TOKEN_ENV } from './codex-structured-owner-identity'
 import { waitForProcessExitUntil } from './codex-process-exit-deadline'
+import { afterProviderOutputDrains } from '../provider-process/provider-exit-output-drain'
 import {
   CodexAppServerTimeoutError,
   CodexAppServerUnsupportedError
@@ -78,6 +79,8 @@ export async function openCodexAppServerConnection(
   let exitObserved = false
   let closing = false
   let exitReported = false
+  let outputDrain: Promise<void> | null = null
+  let finishOutputDrain: (() => void) | undefined
   const exitProof = new RetryableProcessExitProof()
   /** First terminal cause, or null while the transport is still usable. Set once:
    *  a child that dies reaches us through several listeners, and the specific
@@ -97,8 +100,32 @@ export async function openCodexAppServerConnection(
 
   child.on('exit', () => {
     observeExit()
-    handleUnexpectedEnd()
+    void drainExitedOutput()
   })
+
+  // A root exit forbids new writes immediately, but its last RPC answer and
+  // turn completion may still be in stdout. Keep the session owner alive until
+  // those records drain, including when close() joins an already exited child.
+  function drainExitedOutput(): Promise<void> {
+    if (terminalError) {
+      handleUnexpectedEnd()
+      finishOutputDrain?.()
+      return outputDrain ?? Promise.resolve()
+    }
+    if (!outputDrain) {
+      outputDrain = new Promise<void>((resolve) => {
+        finishOutputDrain = afterProviderOutputDrains(
+          child.stdout,
+          () => {
+            handleUnexpectedEnd()
+            resolve()
+          },
+          child
+        )
+      })
+    }
+    return outputDrain
+  }
 
   function buildExitError(cause?: Error): Error {
     return buildCodexAppServerExitError(stderrTail, cause)
@@ -136,7 +163,8 @@ export async function openCodexAppServerConnection(
   })
   child.on('close', () => {
     observeExit()
-    handleUnexpectedEnd()
+    void drainExitedOutput()
+    finishOutputDrain?.()
   })
   child.stderr.setEncoding('utf8').on('data', (chunk: string) => {
     stderrTail = (stderrTail + chunk).slice(-STDERR_TAIL_MAX_BYTES)
@@ -239,7 +267,7 @@ export async function openCodexAppServerConnection(
 
   function close(): Promise<boolean> {
     if (exitObserved) {
-      return Promise.resolve(true)
+      return drainExitedOutput().then(() => true)
     }
     closing = true
     return exitProof.run(async () => {
@@ -258,6 +286,9 @@ export async function openCodexAppServerConnection(
           }
           await waitForProcessExitUntil(exitPromise, FORCED_EXIT_MS)
         }
+      }
+      if (exitObserved) {
+        await drainExitedOutput()
       }
       dispatcher.failPending(new Error('codex app-server connection closed'))
       return exitObserved
