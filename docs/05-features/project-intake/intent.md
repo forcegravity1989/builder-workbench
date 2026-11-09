@@ -1,8 +1,16 @@
 # intent — 纳入项目与项目信息记录（project-intake）
 
-> **状态：已 gate**（接入与名片 2026-09-29、跨主机项目墙 2026-10-13、墙卡读数 2026-10-15、承诺进展口径 2026-10-16）。行为细节与验收点见 [spec.md](spec.md)；当前配置设计见 [project-settings-prototype.html](project-settings-prototype.html)；既有高保真见 [project-wall-readings-prototype.html](project-wall-readings-prototype.html)（墙卡读数轮）与 [g3-project-wall-prototype.html](g3-project-wall-prototype.html)（跨主机纳入旅程，存档身份）；链状态在 [STATUS.md](STATUS.md)。
+> **状态：已 gate**（接入与名片 2026-09-29、跨主机项目墙 2026-10-13、墙卡读数 2026-10-15、承诺进展口径 2026-10-16）。行为细节与验收点见 [spec.md](spec.md)；当前重构候选见 [project-settings-prototype.html](project-settings-prototype.html)（#497 / #345，待评审；下文已确认基线不代表新候选已获认可）；既有高保真见 [project-wall-readings-prototype.html](project-wall-readings-prototype.html)（墙卡读数轮）与 [g3-project-wall-prototype.html](g3-project-wall-prototype.html)（跨主机纳入旅程，存档身份）；链状态在 [STATUS.md](STATUS.md)。
 >
 > **维护约定**：本篇管价值与范围（02 §3.1 骨架）；gate 结论改写正文，不追加聊天流水。
+
+## 添加与扫墙重构意图（待评审）
+
+本轮服务同一 Builder 的连续旅程：先把项目打开并开始工作，再按需要补业务信息、管理交付。用户明确三项结果：统一项目添加入口以降低门槛；个人项目和普通文件夹同样上墙；墙卡帮助看懂本版承诺与计划、开发、人工验收事实。
+
+推荐把项目存在与名片完整度分开，复用原生有效目录、添加事务与工作区；有版本的项目突出承诺及三阶段，日常项目保持轻量工作入口。缺数保持未知，PR 合入不代替人工验收；不为负责人展示另造人员来源或健康算法。价值假设是减少重复纳入与扫墙后仍需逐项目查证的操作，尚无效果数据。
+
+范围承接 #497 / #345；重构原有配置原型并吸收 #349 的有效证据边界。PR #523 的侧栏作为待合入参考，实际实施前核对最终基线。原型和操作逻辑见 [spec 重构候选](spec.md#添加项目与项目墙重构候选)，本次仅交付设计，后续业务确认和真实实现均未完成。
 
 ## 用户与问题
 
