@@ -387,6 +387,7 @@ function App() {
   const [taskEntry, setTaskEntry] = useState(0)
   // 沿用 Orca 默认单位置展示；评审工具可切换原生的重复显示选项。
   const [panelWidth, setPanelWidth] = useState(280)
+  const [panelCollapsed475, setPanelCollapsed475] = useState(false)
   const sidebarScrollRef = useRef(null)
   const versionRefs = useRef({})
   const bindingDemo = useBindingDemo({
@@ -1142,7 +1143,7 @@ function App() {
   const projectHeading475 = (
     <div className="project-heading">
       <span className="project-avatar">{activeProject.initials}</span>
-      <span>
+      <span title={is475 ? activeProject.name : undefined}>
         {activeProject.name}
         <small>当前项目</small>
       </span>
@@ -1233,7 +1234,7 @@ function App() {
   // 只有对象上下文（版本工作区）带第二列；模块入口是整页，第二列收起、内容区占满。
   const objectContext475 =
     isVersionScreen || screen === 'project-workspaces' || screen === 'private'
-  const showPanel475 = is475 && objectContext475
+  const showPanel475 = is475 && objectContext475 && !panelCollapsed475
   function railButton475(label, icon, active, onClick, title = label) {
     return (
       <button
@@ -1248,6 +1249,7 @@ function App() {
     )
   }
   function enterObjectContext475() {
+    setPanelCollapsed475(false)
     if (!objectContext475) {
       setScreen(currentTree ? 'work' : 'project-workspaces')
     }
@@ -1357,6 +1359,15 @@ function App() {
           {is475 && (
             <button onClick={() => setModal({ type: 'review-523' })}>操作旅程与已知差异</button>
           )}
+          {is475 && objectContext475 && (
+            <button
+              aria-controls="workspace-panel-475"
+              aria-expanded={showPanel475}
+              onClick={() => setPanelCollapsed475(!panelCollapsed475)}
+            >
+              {showPanel475 ? '收起工作区栏' : '展开工作区栏'}
+            </button>
+          )}
           <button onClick={() => setScreen('wall')}>从项目墙进入</button>
           <button onClick={() => go('v0.7', 'tasks')}>版本任务</button>
           <button onClick={() => go('v0.7', 'tasks', 'G2')}>目标任务</button>
@@ -1391,6 +1402,7 @@ function App() {
         {is475 && rail475}
         <aside
           className={`sidebar scrollbar-sleek-parent${is475 ? ' panel-475' : ''}${is475 && !showPanel475 ? ' hidden-475' : ''}`}
+          id={is475 ? 'workspace-panel-475' : undefined}
           style={is475 ? { width: panelWidth, minWidth: panelWidth } : undefined}
         >
           {!is475 && (
@@ -1409,11 +1421,10 @@ function App() {
               </Nav>
             </>
           )}
-          {/* 生产把项目标题固定在第二列顶部（WorkbenchSidebarNav），不随下方内容滚动。 */}
           {is475 && (
             <div className="panel-heading-475">
               {projectHeading475}
-              <div className="native-toolbar-475">{nativeWorkspaceTools}</div>
+              {nativeWorkspaceTools}
             </div>
           )}
           <div
