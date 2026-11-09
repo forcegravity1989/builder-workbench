@@ -19,7 +19,7 @@
 | 智能体 / 共享主机对照版本 | [v1.4.251](https://github.com/stablyai/orca/releases/tag/v1.4.251) |
 | 发布时间         | 2026-11-06 06:31:44 UTC                                           |
 | 发布锚点         | `a162e08b29b2883b02d8a0dfcc99e26c80b2cfe7`                         |
-| 本次核对日期     | 2026-11-09（已合入范围收尾，不重新声明最新 release）                |
+| 本次核对日期     | 2026-11-09                                                        |
 | BW fork baseline | `caa465d1da886b2697c85c18bf36f79f2d3b9e68`，2026-09-15             |
 | 本次核对范围     | DSH、Cursor、Codex 六维同步索引及共享主机；网页批注采用 v250 并补 v251 导航截图取消；非整仓升级 |
 
@@ -49,7 +49,7 @@ managed server 自动部署、SSH → managed server、WSL 生命周期、proces
 
 维护对象为 Claude、Cursor、DSH、GitHub Copilot、Codex、OpenCode。按智能体及实际依赖同步，不能按目录覆盖；共享主机的宿主设置链已由 #592 更新，但不代表所有智能体的进程、模型、账号与统计框架都已升级。
 
-本表是**当前采用边界**，不是待办列表或验收结果。**采用**指本次接入的指定行为；**保留**指沿用 BW 已有实现；**未迁**指固定上游有、本轮未采用；**上游无**仅指固定版本没有相应原生 provider；**未专项核对**不能解读为无能力或已经对齐。详细源文件、剩余依赖和验证证据沿各行 PR 追溯。
+本表记录**当前采用边界**。**采用**指已接入的指定行为；**保留**指沿用 BW 已有实现；**未迁**指固定上游有而未采用；**上游无**指固定版本没有相应原生 provider；**未专项核对**不代表无能力或已经对齐。DSH、Cursor、Codex 的核对日期均为 2026-11-09；源码对照与验证证据见各行 PR。
 
 | 智能体 / 已合入依据 | 启动与交互 | 账号、服务商与模型 | 会话管理 | 套餐额度 | Token 与费用统计 | 执行环境 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -62,7 +62,7 @@ managed server 自动部署、SSH → managed server、WSL 生命周期、proces
 
 来源边界：Cursor/Codex 对照上述 v251 SHA；DSH 采用的独立提交及排除范围见 [DSH 接入来源](dsh-harness-integration.md#上游来源)，本轮再用 v251 核对 provider 缺口。[固定版额度类型](https://github.com/stablyai/orca/blob/a162e08b29b2883b02d8a0dfcc99e26c80b2cfe7/src/shared/rate-limit-types.ts)没有 DSH；[历史用量 provider](https://github.com/stablyai/orca/blob/a162e08b29b2883b02d8a0dfcc99e26c80b2cfe7/src/main/usage/usage-provider-contract.ts)没有 DSH/Cursor。这不判断 CLI 自身或第三方插件是否有统计能力。Cursor 的每日 token 需求仍见 [#498](https://github.com/forcegravity1989/builder-workbench/issues/498)，不能用账号额度代替它。
 
-“未专项核对”的三个智能体可能受到公共依赖的必要适配；例如 Cursor 同步修正了 Claude hook 被导入时的重复上报，这不构成 Claude 六维专项升级。DSH 已有用户内部验证反馈，其覆盖以 #581 为准；其他真实账号、双机及跨宿主旅程按交付证据分别判断，不把代码合入或 CI 通过写成全部体验已验收。
+公共依赖适配不等于该智能体已专项同步；例如修正 Cursor 导入 Claude hook 时的重复上报，不构成 Claude 六维升级。
 
 ### 0.5 共享主机与网页批注采用索引
 
@@ -71,7 +71,7 @@ managed server 自动部署、SSH → managed server、WSL 生命周期、proces
 | 共享主机 · [#592](https://github.com/forcegravity1989/builder-workbench/pull/592) · v251 | 网络配对/重配、连接和订阅恢复、目录清理、关闭意图、宿主 Agent 配置及实际启动消费者 | 保留批量导入壳、材料草稿/回执、结构化会话关闭和浏览器防回显适配；必要接口适配单列于 PR | 不迁 managed server、WSL 生命周期、process-host 或 Mobile 产品；上游该功能仍为 Beta |
 | 网页批注 · [#579](https://github.com/forcegravity1989/builder-workbench/pull/579) · v250，#592 补 v251 导航截图取消 | 原生收起/展开、贴图/截图传递、精简/详情反馈、同文档 fragment 判据 | 删除 BW #470/#511 独立折叠状态、外部 tray flag、自写图片预览与重复读取；保留必要基线适配、内层滚动定位和跨文档清理规则 | 不代表整个浏览器同步；双人实时互见和共同批注另由 [#576](https://github.com/forcegravity1989/builder-workbench/issues/576) 跟踪 |
 
-后续同步用此索引定位当前实现，再阅读对应 PR 的固定来源和真实调用链；不以整版实验 PR #549 作为已采用基线。
+后续同步从此索引定位当前实现及其固定来源，再核对真实调用链。
 
 ## 1. 上游身份与 fork 基线
 
@@ -167,23 +167,23 @@ CodeHub 是独立的 `TaskProvider`，不塞回 GitHub 的 `listWorkItems`，也
 - 新链 helper 与保留源的配对关系（副本，不是共享；改保留源不会传导过来，需自觉防漂移）：`tests/e2e/helpers/workbench-app.ts` ↔ `orca-app.ts`；`tests/e2e/helpers/workbench-test-repo.ts` ↔ `seeded-test-repo.ts`。种子仓的持久化文件名与产品无关（`orca-data.json`，见 `src/main/persistence/loading-store/user-data-path.ts`）。
 - 本次隔离不表示 Orca runtime 源码已删除；保留的历史源文件也不表示它们仍属于当前交付门禁。
 
-### 2.7 本轮采用范围的场景与看护
+### 2.7 同步差异与看护
 
-下表定位当前保留或已被原生替代的实现，供下一次同步检查同一行为；不是全仓差异普查，也不表示这些测试已覆盖真人体验。看护复用现有用例，执行结果归对应 PR；没有自动覆盖的部分明确留给人工验证。
+下表记录当前同步模块中的差异及既有看护。协议用例不覆盖完整真人体验；实际验证结果和未验项只记入交付 PR。
 
 | 用户场景 | 归类与当前取舍 | 源码落点 | 现有看护及边界 |
 | --- | --- | --- | --- |
-| DSH 恢复到原会话和 backend，安装 hooks 不覆盖用户配置 | 原生接入及基线适配；保留 session ID 前提和托管配置边界 | [启动](../src/shared/dsh-launch-command.ts)、[配置补丁](../src/main/dsh/dsh-home-patch.ts) | [DSH 协议](../src/main/dsh/dsh-integration.test.ts)：backend、hook ID、用户配置保留；真实账号/宿主覆盖按 #581 的实测范围 |
-| Cursor 切号或登出后不显示上一个账号的额度 | BW 保留的账号归属保护，和原生额度映射一起维护 | [账号策略](../src/main/rate-limits/cursor-usage-account-policy.ts) | [切号/登出用例](../src/main/rate-limits/service-cursor-usage.test.ts)；真实 dashboard 对账仍需账号验证 |
-| Codex 进程退出时不丢最后一段回复，也不无限等待 | 原生排空 helper 加 BW 当前生命周期适配；不导入整个新进程框架 | [排空](../src/main/provider-process/provider-exit-output-drain.ts)、[连接 owner](../src/main/codex/codex-app-server-connection.ts) | [退出协议](../src/main/codex/codex-app-server-connection.test.ts)；不替代 Windows 实际模型会话 |
-| 共享目录刷新过程中新增项目，不被旧响应抹掉 | 原生目录清理及必要并发适配；旧注册仍清理、请求后新增项保留 | [目录合并](../src/renderer/src/store/repos/repo-catalog-merge.ts) | [仓库/工作树保留用例](../src/renderer/src/store/repos/dropped-repo-worktree-rows.test.ts)；双机刷新仍需实测 |
-| 看同事的托管网页，镜像页不再回发成自己的页面 | BW 浏览器防回显适配保留；不能因采用上游恢复链而删除 | [发布过滤](../src/renderer/src/runtime/sync-runtime-graph/mobile-session-surfaces.ts)、[两处快照投影](../src/renderer/src/runtime/sync-runtime-graph/mobile-session-snapshots.ts) | [普通/fallback 投影用例](../src/renderer/src/runtime/sync-runtime-graph-browser.test.ts)；真实两端页签操作待验 |
-| 网页内层容器滚动后，批注跟随原元素 | 基线上的定位修正保留；裁剪/卸载元素不显示错误标记 | [坐标桥](../src/shared/browser-annotation-viewport-bridge.ts) | [滚动和可见性协议](../src/shared/browser-annotation-viewport-bridge.test.ts)；真实网页布局仍需体验 |
+| DSH 恢复到原会话和 backend，安装 hooks 不覆盖用户配置 | 原生接入及基线适配；保留 session ID 前提和托管配置边界 | [启动](../src/shared/dsh-launch-command.ts)、[配置补丁](../src/main/dsh/dsh-home-patch.ts) | [DSH 协议](../src/main/dsh/dsh-integration.test.ts)：backend、hook ID、用户配置保留 |
+| Cursor 切号或登出后不显示上一个账号的额度 | BW 保留的账号归属保护，和原生额度映射一起维护 | [账号策略](../src/main/rate-limits/cursor-usage-account-policy.ts) | [切号/登出用例](../src/main/rate-limits/service-cursor-usage.test.ts) |
+| Codex 进程退出时不丢最后一段回复，也不无限等待 | 原生排空 helper 加 BW 当前生命周期适配；不导入整个新进程框架 | [排空](../src/main/provider-process/provider-exit-output-drain.ts)、[连接 owner](../src/main/codex/codex-app-server-connection.ts) | [退出协议](../src/main/codex/codex-app-server-connection.test.ts) |
+| 共享目录刷新过程中新增项目，不被旧响应抹掉 | 原生目录清理及必要并发适配；旧注册仍清理、请求后新增项保留 | [目录合并](../src/renderer/src/store/repos/repo-catalog-merge.ts) | [仓库/工作树保留用例](../src/renderer/src/store/repos/dropped-repo-worktree-rows.test.ts) |
+| 看同事的托管网页，镜像页不再回发成自己的页面 | BW 浏览器防回显适配保留；不能因采用上游恢复链而删除 | [发布过滤](../src/renderer/src/runtime/sync-runtime-graph/mobile-session-surfaces.ts)、[两处快照投影](../src/renderer/src/runtime/sync-runtime-graph/mobile-session-snapshots.ts) | [普通/fallback 投影用例](../src/renderer/src/runtime/sync-runtime-graph-browser.test.ts) |
+| 网页内层容器滚动后，批注跟随原元素 | 基线上的定位修正保留；裁剪/卸载元素不显示错误标记 | [坐标桥](../src/shared/browser-annotation-viewport-bridge.ts) | [滚动和可见性协议](../src/shared/browser-annotation-viewport-bridge.test.ts) |
 | 批注收起后再展开，草稿和贴图仍在 | **已由原生替代**：BW 独立折叠状态已删，只保留原生 tray | [批注 tray](../src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.tsx) | [现有 tray 用例](../src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.test.tsx)只覆盖编辑/保存/取消；收起展开、中文草稿及贴图保留按 #579 人工判据验证 |
 
 ## 3. 同步取舍
 
-按智能体或用户旅程模块定期比较固定上游版本，同一批可以一个 PR 分多个 commit，也可拆 PR；共享依赖只能有一处实现，并检查全部实际消费者。每次同步在同一 PR 覆盖更新 §0 的对应行，记录六维采用范围、上游版本/SHA、BW PR 和该行核对日期；本次三项专项对照日期均为 2026-11-09，后续部分更新须在相应行标日期，未重新核对的智能体不推进其状态。
+按智能体或用户旅程模块定期比较固定上游版本，同一批可以一个 PR 分多个 commit，也可拆 PR；共享依赖只保留一处实现，并检查全部消费者。每次同步覆盖更新 §0 对应行的采用范围、上游版本/SHA、BW PR 和核对日期；未重新核对的智能体保留原状态与日期。
 
 原生差异分为上游已一致、原生代码移植、必要基线适配、BW 产品挂载/保留修正、上游有而本次未迁、固定上游无及未核对。上游已覆盖 BW 修正时，核对同一用户行为及其看护后删除被替代实现，不留双路径；每个保留改造在 PR 指明人可理解的场景、代码落点、看护用例或未验项。当前稳定边界写回本篇，逐文件对照、测试结果与取舍过程留在 PR，不新增常驻流水。
 
