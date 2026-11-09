@@ -42,7 +42,7 @@
         "bw:plan:v0.9"
       ],
       "assignee": "yuzhup",
-      "readAt": "2026-11-06T11:13:55.472Z"
+      "readAt": "2026-11-09T09:30:14.714Z"
     },
     {
       "kind": "ready",
@@ -74,7 +74,7 @@
         "enhancement",
         "bw:plan:v0.9"
       ],
-      "readAt": "2026-11-06T11:13:55.463Z"
+      "readAt": "2026-11-09T09:30:14.727Z"
     },
     {
       "kind": "ready",
@@ -107,7 +107,7 @@
         "bw:plan:v0.9"
       ],
       "assignee": "yuzhup",
-      "readAt": "2026-11-06T11:13:55.451Z"
+      "readAt": "2026-11-09T09:30:15.028Z"
     },
     {
       "kind": "ready",
@@ -140,7 +140,7 @@
         "bw:plan:v0.9"
       ],
       "assignee": "yuzhup",
-      "readAt": "2026-11-06T11:13:55.484Z"
+      "readAt": "2026-11-09T09:30:15.010Z"
     },
     {
       "kind": "ready",
@@ -165,15 +165,16 @@
         "accountLabel": null
       },
       "iid": 568,
-      "title": "【v0.9|G3】【消息通知】以 PR 评审旅程落地消息通知基础能力",
+      "title": "【v1.0|G2】【消息通知】以 PR 评审旅程落地消息通知基础能力",
       "state": "open",
       "url": "https://github.com/forcegravity1989/builder-workbench/issues/568",
       "labels": [
         "Feature",
-        "bw:plan:v0.9"
+        "bw:plan:v0.9",
+        "bw:plan:v1.0"
       ],
       "assignee": "kanadead",
-      "readAt": "2026-11-06T11:13:56.521Z"
+      "readAt": "2026-11-09T09:30:15.795Z"
     },
     {
       "kind": "ready",
@@ -205,7 +206,7 @@
         "bw:plan:v0.9"
       ],
       "assignee": "kanadead",
-      "readAt": "2026-11-06T11:13:56.577Z"
+      "readAt": "2026-11-09T09:30:15.839Z"
     },
     {
       "kind": "ready",
@@ -238,7 +239,7 @@
         "bw:plan:v0.9"
       ],
       "assignee": "yuzhup",
-      "readAt": "2026-11-06T11:13:56.553Z"
+      "readAt": "2026-11-09T09:30:16.044Z"
     },
     {
       "kind": "ready",
@@ -271,7 +272,7 @@
         "bw:plan:v0.9"
       ],
       "assignee": "kanadead",
-      "readAt": "2026-11-06T11:13:56.539Z"
+      "readAt": "2026-11-09T09:30:16.102Z"
     },
     {
       "kind": "ready",
@@ -303,7 +304,7 @@
         "bw:plan:v0.9"
       ],
       "assignee": "cfdcfd",
-      "readAt": "2026-11-06T11:13:57.722Z"
+      "readAt": "2026-11-09T09:30:16.901Z"
     },
     {
       "kind": "ready",
@@ -337,7 +338,7 @@
         "bw:plan:v0.9"
       ],
       "assignee": "yuzhup",
-      "readAt": "2026-11-06T11:13:57.627Z"
+      "readAt": "2026-11-09T09:30:16.869Z"
     },
     {
       "kind": "ready",
@@ -369,7 +370,7 @@
         "bw:plan:v0.9"
       ],
       "assignee": "kanadead",
-      "readAt": "2026-11-06T11:13:57.644Z"
+      "readAt": "2026-11-09T09:30:17.111Z"
     },
     {
       "kind": "ready",
@@ -402,7 +403,7 @@
         "bw:plan:v0.9"
       ],
       "assignee": "yuzhup",
-      "readAt": "2026-11-06T11:13:57.637Z"
+      "readAt": "2026-11-09T09:30:17.166Z"
     },
     {
       "kind": "ready",
@@ -435,7 +436,7 @@
         "bw:plan:v0.9"
       ],
       "assignee": "kanadead",
-      "readAt": "2026-11-06T11:13:58.687Z"
+      "readAt": "2026-11-09T09:30:18.018Z"
     }
   ],
   "results": [
@@ -508,7 +509,8 @@
   "minutes": {
     "consensus": [
       "G3 · 1. 左边栏做成两列，第二列共用一份滚动条 2. 恢复版本中固定的能力",
-      "G4 · 该目标下issue处理完成"
+      "G4 · 该目标下issue处理完成",
+      "G1 · 里程碑泳道支持跨版本，任意拖动，且SDLC第一阶段简化标识为build"
     ],
     "followups": [
       {
@@ -517,7 +519,7 @@
       }
     ],
     "confirmed": false,
-    "updatedAt": "2026-11-06T11:28:15.268Z"
+    "updatedAt": "2026-11-09T01:45:38.561Z"
   },
   "workflow": {
     "stage": "archive",
