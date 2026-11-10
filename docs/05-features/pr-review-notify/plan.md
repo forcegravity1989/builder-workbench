@@ -2,7 +2,7 @@
 
 > 给本轮实现者与 reviewer 读取；维护收件人选择、项目访问和 CodeHub 接入的实现顺序、复用落点及验证边界，不承载施工流水。产品行为正本为 [spec](spec.md)，价值为 [intent](intent.md)，交付状态为 [STATUS](STATUS.md)。范围确认或实现依赖变化时更新，执行证据进入 PR。
 
-状态：owner 已通过本轮 AskUser 确认范围，实现和简单 CDP 已完成，正在交付 PR。以下是本轮交付目标；实际验证与未验边界以 STATUS 和 PR 证据为准。
+状态：owner 已通过本轮 AskUser 确认范围，实现、原型和文档已落地。实际验证、远程门禁与未验边界以 STATUS 和 PR 当前提交证据为准。
 
 关联 [Issue 199](https://github.com/forcegravity1989/builder-workbench/issues/199)，继续 [PR 478](https://github.com/forcegravity1989/builder-workbench/pull/478) 原分支 `kanadead/issue-199-v0.8-g3-welink`。工作树沿用主仓 E 盘 `.bw/worktrees/pr-478-review/builder-workbench`。
 
@@ -53,10 +53,10 @@
 
 ## 3. 验证与交付
 
-- [ ] 完成实际适用的验收与门禁：本机不运行 tests、lint、typecheck、完整构建或 CI；沿用已授权的必要原型生成及 dev 壳启动，通过 CDP 做简单验证，禁止 Computer Use。先检查 `.bw/runtime/verification` 的环境记录、进程和端口，确认加载本工作树源码，保留其他任务实例与用户数据。
+- [x] 完成本机授权范围的简单验证：本机不运行 tests、lint、typecheck、完整构建或 CI；沿用已授权的必要原型生成及 dev 壳启动，通过 CDP 做简单验证，禁止 Computer Use。先检查 `.bw/runtime/verification` 的环境记录、进程和端口，确认加载本工作树源码，保留其他任务实例与用户数据。
 - [x] 独立 subagent 全面 review：代码与协议正确性、原生能力和 UI 复用、原型与行为一致性、docs / 注释 / 废弃实现清理、算法及协议测试配比；简单 CDP 场景由测试 agent 在同一路径串行复验。
 - [x] 修正发现项并复验受影响路径；既有测试随行为更新，只补必要核心算法与数据协议用例，遵守例数预算，不增加 UI 文案测试或本地执行测试。
-- [ ] 在原 PR 分支提交、推送并读回远程 CI 和评审结果，补实际证据、截图及未验项。按用户禁本地 CI 的要求跳过本地提交钩子并如实说明，不自动合入或关闭 Issue。
+- [x] 在原 PR 分支提交、推送并读回远程 CI 和评审结果，补实际证据、截图及未验项。按用户禁本地 CI 的要求跳过本地提交钩子并如实说明，不自动合入或关闭 Issue。
 
 | 验证主题      | 本机简单 CDP / 静态覆盖                                                                 | 内部环境保留项                                           |
 | ------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------- |
