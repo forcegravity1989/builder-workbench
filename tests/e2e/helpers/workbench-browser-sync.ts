@@ -43,8 +43,10 @@ async function capture(page: Page, info: TestInfo, name: string): Promise<void> 
 }
 
 async function requireRealPasswordStorage(app: ElectronApplication, info: TestInfo): Promise<void> {
-  const storage = await app.evaluate(({ safeStorage }) => ({
+  const storage = await app.evaluate(({ app, safeStorage }) => ({
     available: safeStorage.isEncryptionAvailable(),
+    useMockKeychain: app.commandLine.hasSwitch('use-mock-keychain'),
+    passwordStore: app.commandLine.getSwitchValue('password-store'),
     backend:
       process.platform === 'linux' ? safeStorage.getSelectedStorageBackend() : process.platform,
     electronVersion: process.versions.electron,
@@ -54,6 +56,14 @@ async function requireRealPasswordStorage(app: ElectronApplication, info: TestIn
     body: JSON.stringify(storage),
     contentType: 'application/json'
   })
+  expect(
+    storage.useMockKeychain,
+    'Mock keychains cannot establish OS-backed password storage'
+  ).toBe(false)
+  expect(
+    storage.passwordStore,
+    'The basic password store cannot establish OS-backed storage'
+  ).not.toBe('basic')
   expect(storage.available, 'The runner must provide a real unlocked OS keyring').toBe(true)
   if (process.platform === 'linux') {
     expect(storage.backend).toBe('gnome_libsecret')
@@ -157,6 +167,41 @@ async function guestHeading(page: Page, id: string): Promise<string | null> {
   }, id)
 }
 
+async function expectBrowserInPane(page: Page, id: string, groupId: string): Promise<void> {
+  const pane = page.locator(`[data-tab-group-body-id="${groupId}"]`)
+  const overlay = slot(page, id)
+  const viewport = overlay.locator('[data-browser-page-viewport-id]')
+  const guest = overlay.locator('webview')
+  await expect(overlay).toBeVisible()
+  await expect(overlay).toHaveCSS('opacity', '1')
+  await expect(overlay).toHaveCSS('pointer-events', 'auto')
+  await expect(viewport).toBeVisible()
+  await expect(viewport).toHaveCSS('opacity', '1')
+  await expect(viewport).toHaveCSS('pointer-events', 'auto')
+  await expect(viewport).not.toHaveAttribute('aria-hidden', 'true')
+  await expect(guest).toBeVisible()
+  await expect(guest).toHaveCSS('visibility', 'visible')
+  await expect(guest).toHaveCSS('pointer-events', 'auto')
+  await expect(async () => {
+    const body = await pane.boundingBox()
+    const browser = await overlay.boundingBox()
+    const content = await guest.boundingBox()
+    if (!body || !browser || !content) {
+      throw new Error('A browser split lost its visible pane or guest')
+    }
+    // The native overlay anchors to the entire TabGroupPanel body; its guest sits below the chrome.
+    for (const dimension of ['x', 'y', 'width', 'height'] as const) {
+      expect(Math.abs(browser[dimension] - body[dimension])).toBeLessThanOrEqual(2)
+    }
+    expect(content.width).toBeGreaterThan(100)
+    expect(content.height).toBeGreaterThan(100)
+    expect(content.x).toBeGreaterThanOrEqual(body.x - 2)
+    expect(content.y).toBeGreaterThanOrEqual(body.y - 2)
+    expect(content.x + content.width).toBeLessThanOrEqual(body.x + body.width + 2)
+    expect(content.y + content.height).toBeLessThanOrEqual(body.y + body.height + 2)
+  }).toPass({ timeout: 10_000 })
+}
+
 export async function verifyBrowserSync(
   page: Page,
   app: ElectronApplication,
@@ -192,6 +237,8 @@ export async function verifyBrowserSync(
       expect(right).not.toBeNull()
       expect(right!.x).toBeGreaterThan(left!.x + left!.width - 2)
     }).toPass()
+    await expectBrowserInPane(page, first.id, first.groupId)
+    await expectBrowserInPane(page, second.id, second.groupId)
     await capture(page, info, 'browser-approved-session-split')
 
     const beforePid = app.process().pid
