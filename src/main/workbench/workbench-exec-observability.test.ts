@@ -83,7 +83,7 @@ describe('BW exec wrappers', () => {
     expect(collectorInterpreterLabel('weird interpreter!')).toBe('other')
   })
 
-  it('records exit code and timeout flags on failure, stderr only in the cause', async () => {
+  it('records exit code and killed flags on failure, stderr only in the cause', async () => {
     const failure = Object.assign(new Error('Command failed: gh api\nrate limited'), {
       code: 2,
       timedOut: false,
@@ -102,10 +102,16 @@ describe('BW exec wrappers', () => {
     expect(records[0].exit.cause).toContain('rate limited')
     expect(records[0].attributes).not.toHaveProperty('stderr')
 
-    const timeout = Object.assign(new Error('timed out'), { code: null, timedOut: true })
-    commandExecMock.mockRejectedValue(timeout)
-    await expect(bwCommandExecFileAsync('cb', ['run'], {})).rejects.toThrow('timed out')
-    expect(records[1].attributes).toMatchObject({ status: 'failed', timedOut: true })
+    // Real timeout shape from exec-file-capture: a killed flag and no numeric
+    // exit code. (timedOut stays a defensive attribute for result-shaped
+    // collector errors; exec error objects carry killed instead.)
+    const killed = Object.assign(new Error('Command killed: cb run'), {
+      code: null,
+      killed: true
+    })
+    commandExecMock.mockRejectedValue(killed)
+    await expect(bwCommandExecFileAsync('cb', ['run'], {})).rejects.toThrow('killed')
+    expect(records[1].attributes).toMatchObject({ status: 'failed', killed: true })
     expect(records[1].attributes).not.toHaveProperty('exitCode')
   })
 })
