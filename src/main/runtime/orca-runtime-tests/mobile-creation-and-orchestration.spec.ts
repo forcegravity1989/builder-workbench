@@ -254,7 +254,11 @@ describe('OrcaRuntimeService', () => {
     const runtime = new OrcaRuntimeService(store)
     runtime.syncWindowGraph(0, { tabs: [], leaves: [] })
     const createTab = vi.fn(async () => ({ browserPageId: 'page-headless' }))
-    runtime.setOffscreenBrowserBackend({ createTab, closeTab: vi.fn() })
+    runtime.setOffscreenBrowserBackend({
+      createTab,
+      closeTab: vi.fn(),
+      ownsTab: (pageId) => pageId === 'page-headless'
+    })
 
     await expect(
       runtime.browserTabCreate({ worktree: `id:${TEST_WORKTREE_ID}`, url: 'https://example.com' })

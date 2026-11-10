@@ -25,7 +25,7 @@ function createStore(
     remove: async ({ relativePath }) => {
       removed.push(relativePath)
     },
-    ensureDirectory: async () => {},
+    prepareDirectory: async () => ({ expectedExecutionHostId: 'local' }),
     exists: async ({ relativePath }) => existing.has(relativePath),
     ...overrides
   }
@@ -237,7 +237,7 @@ describe('BrowserClientDownloadTransferStore', () => {
       writeChunk: vi.fn().mockResolvedValue(undefined),
       commit: vi.fn().mockResolvedValue(undefined),
       remove: vi.fn().mockResolvedValue(undefined),
-      ensureDirectory: vi.fn().mockResolvedValue(undefined),
+      prepareDirectory: vi.fn().mockResolvedValue({ expectedExecutionHostId: 'local' }),
       exists: vi.fn().mockResolvedValue(false)
     }
     const store = new BrowserClientDownloadTransferStore(dependencies, 1)

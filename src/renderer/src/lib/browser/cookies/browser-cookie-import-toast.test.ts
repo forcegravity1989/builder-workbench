@@ -47,9 +47,11 @@ describe('emitBrowserCookieImportToast', () => {
     emitBrowserCookieImportToast(
       {
         ...summary,
+        importedCookies: 0,
+        skippedCookies: 3,
         warning: {
-          code: 'restart-fallback-unavailable',
-          loadedCookies: 0,
+          code: 'cookies-undecryptable',
+          reason: 'unknown',
           failedCookies: 3
         }
       },
@@ -58,7 +60,7 @@ describe('emitBrowserCookieImportToast', () => {
     )
 
     expect(warningToastMock).toHaveBeenCalledWith(
-      'None of the 3 cookies could be loaded, and the restart fallback was unavailable. The previous cookies for this profile were replaced. Try the import again.'
+      '3 cookies could not be decrypted and were skipped. Close the source browser completely and try the import again.'
     )
     expect(successToastMock).not.toHaveBeenCalled()
   })
@@ -175,7 +177,7 @@ describe('emitBrowserCookieImportToast', () => {
       localExecution
     )
 
-    expect(successToastMock).toHaveBeenCalledWith('Imported 2 cookies.')
+    expect(successToastMock).toHaveBeenCalledWith('Imported 2 cookies. 1 cookies skipped.')
     expect(warningToastMock).not.toHaveBeenCalled()
   })
 
@@ -259,7 +261,7 @@ describe('emitBrowserCookieImportToast', () => {
     expect(message).not.toBe('')
   })
 
-  it('keeps both applicable warnings when restart fallback is unavailable', () => {
+  it('keeps both applicable warnings when encrypted cookies are skipped', () => {
     emitBrowserCookieImportToast(
       {
         ...summary,
@@ -267,8 +269,8 @@ describe('emitBrowserCookieImportToast', () => {
         skippedCookies: 2,
         googleCookiesSkipped: 1,
         warning: {
-          code: 'restart-fallback-unavailable',
-          loadedCookies: 1,
+          code: 'cookies-undecryptable',
+          reason: 'unknown',
           failedCookies: 1
         }
       },
@@ -279,7 +281,7 @@ describe('emitBrowserCookieImportToast', () => {
     expect(successToastMock).not.toHaveBeenCalled()
     expect(warningToastMock.mock.calls).toEqual([
       [
-        'Imported 1 of 2 cookies. The rest could not be loaded, and the restart fallback was unavailable. Try the import again.'
+        '1 cookies could not be decrypted and were skipped. Close the source browser completely and try the import again.'
       ],
       [
         'Google cookies were not imported. Open a browser tab in the Remote Mac workspace with this profile, then sign into Google.',

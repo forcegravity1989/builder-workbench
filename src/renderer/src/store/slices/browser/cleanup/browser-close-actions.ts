@@ -119,9 +119,7 @@ export function createBrowserCloseActions(
           if (!isCleanup) {
             const existingSnapshots =
               nextRecentlyClosedBrowserTabsByWorktree[owningWorktreeId] ?? []
-            const position = drawn
-              ? drawn.position
-              : getRecentlyClosedTabPosition(s, owningWorktreeId, tabId)
+            const position = getRecentlyClosedTabPosition(s, owningWorktreeId, tabId)
             nextRecentlyClosedBrowserTabsByWorktree[owningWorktreeId] = [
               {
                 workspace: closedWorkspace,
@@ -191,8 +189,7 @@ export function createBrowserCloseActions(
           releaseDocPreviewGrant(docPageId)
         }
 
-        // Main's frame already dropped a drawn tab's entry.
-        for (const tabs of drawn ? [] : Object.values(get().unifiedTabsByWorktree)) {
+        for (const tabs of Object.values(get().unifiedTabsByWorktree)) {
           const workspaceItem = tabs.find(
             (entry) => entry.contentType === 'browser' && entry.entityId === tabId
           )

@@ -274,10 +274,12 @@ describe('createBrowserSlice annotations', () => {
   it('uses local browser profile defaults for client-local fallback pages', () => {
     const store = createTestStore()
     store.setState({
-      settings: settingsWithRuntime('env-1'),
-      defaultBrowserSessionProfileIdByHostId: {
-        local: 'local-profile',
-        'runtime:env-1': 'runtime-profile'
+      settings: {
+        ...settingsWithRuntime('env-1')!,
+        browserDefaultProfileIdByHostId: {
+          local: 'local-profile',
+          'runtime:env-1': 'runtime-profile'
+        }
       }
     })
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   isPermanentRemoteBrowserStreamFailure,
   remoteBrowserStreamUnsupportedError,
-  resolveRemoteBrowserStreamRestartFailure
+  resolveRemoteBrowserStreamFailure
 } from './remote-browser-stream-errors'
 
 function rpcError(code: string, message = 'boom'): Error {
@@ -30,9 +30,7 @@ describe('remote browser stream failure classification', () => {
   // stopped retries on a blip and stranded the pane, which is the bug this area exists to prevent.
   it('does not treat an unresolved selector as proof the target is gone', () => {
     expect(isPermanentRemoteBrowserStreamFailure(rpcError('selector_not_found'))).toBe(false)
-    expect(
-      resolveRemoteBrowserStreamRestartFailure(rpcError('selector_not_found')).shouldRetry
-    ).toBe(true)
+    expect(resolveRemoteBrowserStreamFailure(rpcError('selector_not_found')).shouldRetry).toBe(true)
   })
 
   it('keeps unknown and transport failures retryable', () => {
@@ -44,7 +42,7 @@ describe('remote browser stream failure classification', () => {
   })
 
   it('keeps a permanent failure specific and replaces only raw transient text', () => {
-    const permanent = resolveRemoteBrowserStreamRestartFailure(
+    const permanent = resolveRemoteBrowserStreamFailure(
       rpcError('worktree_not_found_on_server', 'worktree is gone')
     )
     // Its own message says something true that a generic "lost connection" would not.
@@ -52,7 +50,7 @@ describe('remote browser stream failure classification', () => {
     expect(permanent.shouldRetry).toBe(false)
     expect(permanent.logRawError).toBe(false)
 
-    const transient = resolveRemoteBrowserStreamRestartFailure(
+    const transient = resolveRemoteBrowserStreamFailure(
       rpcError('runtime_unavailable', 'Runtime environment is manually disconnected.')
     )
     expect(transient.message).toBe('Lost connection to the remote server.')
@@ -62,7 +60,7 @@ describe('remote browser stream failure classification', () => {
   })
 
   it('uses localized copy for permanent failures without an Error message', () => {
-    const failure = resolveRemoteBrowserStreamRestartFailure({
+    const failure = resolveRemoteBrowserStreamFailure({
       code: 'worktree_not_found_on_server'
     })
 

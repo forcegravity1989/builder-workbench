@@ -39,6 +39,7 @@ import { createSeededTestRepo, isValidGitRepo } from './workbench-test-repo'
 
 type WorkbenchTestFixtures = {
   electronApp: ElectronApplication
+  restartWorkbenchApp: () => Promise<{ electronApp: ElectronApplication; page: Page }>
   registerPostElectronShutdownCleanup: (cleanup: () => Promise<void>) => void
   sharedPage: Page
   workbenchPage: Page
@@ -74,6 +75,11 @@ type WorkbenchWorkerFixtures = {
 
 // Why: parse + warn at module scope so a bad ORCA_E2E_SLOWMO_MS value logs once
 // per worker instead of once per test (otherwise hundreds of lines per CI run).
+const restartActions = new WeakMap<
+  ElectronApplication,
+  () => Promise<{ electronApp: ElectronApplication; page: Page }>
+>()
+
 const ORCA_E2E_SLOWMO_MS_RAW = process.env.ORCA_E2E_SLOWMO_MS
 const ORCA_E2E_SLOWMO_MS = ((): number => {
   if (ORCA_E2E_SLOWMO_MS_RAW === undefined) {
@@ -232,7 +238,7 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
     // a bare env-less launch would re-enable the window.show() /
     // app.focus({ steal: true }) paths).
     const showOnVirtualDisplay = !headful && runsOnCiVirtualDisplay()
-    const app = await electron.launch({
+    const launchOptions: Parameters<typeof electron.launch>[0] = {
       args: [...workbenchAppExtraArgs, ...getWorkbenchElectronLaunchArgs(mainPath, headful)],
       ...(slowMo > 0 ? { slowMo } : {}),
       ...(recordVideoDir ? { recordVideo: { dir: recordVideoDir } } : {}),
@@ -246,7 +252,8 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
           ? { ORCA_E2E_HEADFUL: '1' }
           : { ORCA_E2E_HEADLESS: '1' })
       }
-    })
+    }
+    const app = await electron.launch(launchOptions)
     forwardElectronProcessLogs(app, testInfo)
     // A force-quit disposes Playwright's process handle; retain this fixture's owned child.
     const ownedProcess = app.process()
@@ -261,12 +268,45 @@ export const test = base.extend<WorkbenchTestFixtures, WorkbenchWorkerFixtures>(
       await removeUserDataDirAfterShutdown(userDataDir)
       throw error
     }
-    await provideFixture(app)
-    // Why: the Playwright close promise can settle before all Electron and PTY
-    // descendants are gone in CI; worker teardown then hangs on open handles.
-    await closeElectronAppForE2E(app, ownedProcess)
-    await cleanupE2EDaemons(userDataDir)
-    await removeUserDataDirAfterShutdown(userDataDir)
+    let currentApp = app
+    let currentOwnedProcess = ownedProcess
+    restartActions.set(app, async () => {
+      await closeElectronAppForE2E(currentApp, currentOwnedProcess)
+      currentApp = await electron.launch(launchOptions)
+      currentOwnedProcess = currentApp.process()
+      forwardElectronProcessLogs(currentApp, testInfo)
+      assertElectronResolvedIsolatedHome(
+        await retryTransientMainEvaluate(() =>
+          currentApp.evaluate(({ app }) => app.getPath('home'))
+        ),
+        homeIsolation
+      )
+      const page = await currentApp.firstWindow({ timeout: 120_000 })
+      await page.waitForFunction(
+        () => window.__store?.getState().workspaceSessionReady === true,
+        null,
+        { timeout: 60_000 }
+      )
+      await playwrightExpect(page.locator('[data-workbench-rail]')).toBeVisible({ timeout: 30_000 })
+      return { electronApp: currentApp, page }
+    })
+    try {
+      await provideFixture(app)
+    } finally {
+      restartActions.delete(app)
+      // The fixture owns both launches and keeps the same isolated profile until final teardown.
+      await closeElectronAppForE2E(currentApp, currentOwnedProcess)
+      await cleanupE2EDaemons(userDataDir)
+      await removeUserDataDirAfterShutdown(userDataDir)
+    }
+  },
+
+  restartWorkbenchApp: async ({ electronApp }, provideFixture) => {
+    const restart = restartActions.get(electronApp)
+    if (!restart) {
+      throw new Error('Workbench restart requires the fixture-owned Electron app')
+    }
+    await provideFixture(restart)
   },
 
   // Default: dismiss the onboarding overlay so it doesn't intercept clicks.

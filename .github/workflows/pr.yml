@@ -99,28 +99,30 @@ jobs:
       - name: Install Electron for browser wire probes
         run: node node_modules/electron/install.js
       - name: Check browser, password, process and host protocols
+        id: browser-protocols
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
           src/main/browser/
           src/main/browser-passwords/
+          src/main/ipc/browser/
           src/shared/child-process/
           src/shared/browser
           src/main/runtime/browser/
           src/main/runtime/browser-host/
+          src/main/runtime/browser-
+          src/main/runtime/orca-runtime-browser
           src/main/runtime/runtime-browser-
           src/main/runtime/rpc/methods/session-tab-file-host-projection.test.ts
           src/main/runtime/rpc/methods/session-tab-browser-placement-projection.test.ts
           src/main/ipc/filesystem.test.ts
       - name: Check annotation, clipboard and navigation contracts
+        if: ${{ !cancelled() && (success() || steps.browser-protocols.outcome == 'failure') }}
         run: >-
           pnpm exec vitest run --config config/vitest.config.ts
-          src/renderer/src/components/browser-pane/annotate/browser-annotation-output.test.ts
-          src/renderer/src/components/browser-pane/annotate/useGrabMode.test.ts
-          src/renderer/src/components/browser-pane/annotate/browser-page-annotation-tray.test.tsx
-          src/renderer/src/components/browser-pane/annotate/BrowserAnnotationSendMenuContent.test.tsx
-          src/renderer/src/components/browser-pane/host-guest/browser-page-favicon-retention.test.ts
-          src/renderer/src/components/browser-pane/describe-page/browser-annotation-geometry.test.ts
-          src/renderer/src/store/slices/browser/browser.test.ts
+          src/renderer/src/components/browser-pane/
+          src/renderer/src/components/settings/browser/
+          src/renderer/src/lib/browser/
+          src/renderer/src/store/slices/browser/
           src/renderer/src/store/slices/tabs-browser-placement.test.ts
           src/renderer/src/lib/app-menu-paste.test.ts
           src/renderer/src/components/native-chat/use-native-chat-composer-paste.test.tsx
@@ -274,10 +276,10 @@ jobs:
           # 该源与 CJK 字体无关，更新前先移除，其余源的失败仍会阻断本步骤。
           sudo rm -f /etc/apt/sources.list.d/microsoft*
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk dbus gnome-keyring libsecret-tools
 
       - name: Run Workbench smoke
-        run: xvfb-run --auto-servernum pnpm run test:e2e:workbench
+        run: xvfb-run --auto-servernum dbus-run-session -- bash .github/scripts/workbench-smoke-keyring.sh
 
       # Preserve successful journey screenshots as well as failure diagnostics.
       - name: Upload Workbench smoke evidence

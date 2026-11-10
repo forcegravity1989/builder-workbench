@@ -511,6 +511,7 @@
     "python": "C:\\Users\\xiaoduo\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
     "standalone_static_library": 1,
     "msbuild_path": "E:\\zhuyu\\software\\VSBuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe",
-    "user_agent": "pnpm/12.0.0 npm/? node/? win32 x64"
+    "user_agent": "pnpm/12.0.0 npm/? node/? win32 x64",
+    "ignore_scripts": "true"
   }
 }

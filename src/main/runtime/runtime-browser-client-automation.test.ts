@@ -9,6 +9,7 @@ describe('runtime browser client automation routing', () => {
   it('routes an explicit client page and returns its exact command result', async () => {
     const fixture = await createFixture()
     const routing = routeRuntimeBrowserClientAutomation({
+      caller: undefined,
       method: 'browser.click',
       params: { page: 'page-a', x: 10, y: 20 },
       pages: fixture.pages,
@@ -33,6 +34,7 @@ describe('runtime browser client automation routing', () => {
   it('routes the active client page in an explicit folder or worktree workspace', async () => {
     const fixture = await createFixture()
     const routing = routeRuntimeBrowserClientAutomation({
+      caller: undefined,
       method: 'browser.snapshot',
       params: { worktree: 'id:folder:folder-a' },
       pages: fixture.pages,
@@ -54,6 +56,7 @@ describe('runtime browser client automation routing', () => {
 
     await expect(
       routeRuntimeBrowserClientAutomation({
+        caller: undefined,
         method: 'browser.click',
         params: { page: 'server-page', x: 10 },
         pages: fixture.pages,
@@ -63,6 +66,7 @@ describe('runtime browser client automation routing', () => {
     ).resolves.toEqual({ handled: false })
     await expect(
       routeRuntimeBrowserClientAutomation({
+        caller: undefined,
         method: 'browser.tabList',
         params: { page: 'page-a' },
         pages: fixture.pages,
@@ -77,6 +81,7 @@ describe('runtime browser client automation routing', () => {
     const legacy = await createFixture({ automation: false })
     await expect(
       routeRuntimeBrowserClientAutomation({
+        caller: undefined,
         method: 'browser.click',
         params: { page: 'page-a', x: 10 },
         pages: legacy.pages,
@@ -87,6 +92,7 @@ describe('runtime browser client automation routing', () => {
 
     const failed = await createFixture()
     const routing = routeRuntimeBrowserClientAutomation({
+      caller: undefined,
       method: 'browser.click',
       params: { page: 'page-a', x: 10 },
       pages: failed.pages,

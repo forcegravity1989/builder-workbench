@@ -59,6 +59,167 @@
     },
     "servers": {
       "accessRevoked": "此客户端已无访问权限。请使用此服务器的新配对链接重新连接。"
+    },
+    "browser": {
+      "extensions": {
+        "description": "所选本地浏览器配置文件的 Chrome 扩展程序。",
+        "empty": "未安装任何扩展程序。请从上方的 Chrome 应用商店添加。",
+        "heldUpdate": "版本 {{version}} 正在等待更多访问权限。",
+        "keywordChrome": "chrome",
+        "keywordExtension": "扩展程序",
+        "keywordPassword": "密码管理器",
+        "keywordUnpacked": "已解压",
+        "loadError": "无法启动：{{error}}",
+        "loadUnpacked": "加载已解压的扩展程序…",
+        "options": "选项",
+        "profileDescription": "在此处启用的扩展程序会在使用 {{profile}} 配置文件的标签页中运行。",
+        "reload": "从文件夹重新加载",
+        "remove": "移除",
+        "removeDescription": "它会连同已保存的数据一起从所有 Orca 浏览器配置文件中移除。",
+        "removeTitle": "移除 {{name}}？",
+        "removeUnpackedDescription": "它会连同已保存的数据一起从所有 Orca 浏览器配置文件中移除。磁盘上的文件夹会保留原位。",
+        "reviewAccess": "查看访问权限",
+        "sourceUnpacked": "已解压",
+        "sourceWebStore": "Chrome 应用商店",
+        "title": "扩展程序",
+        "toggleLabel": "启用或停用 {{name}}",
+        "webStore": {
+          "add": "添加",
+          "added": "已添加 {{name}}",
+          "adding": "正在添加…",
+          "browse": "浏览 Chrome 应用商店",
+          "inputLabel": "从 Chrome 应用商店添加",
+          "openFailed": "请打开一个工作区以浏览 Chrome 应用商店。",
+          "placeholder": "Chrome 应用商店链接或扩展程序 ID"
+        }
+      },
+      "passwords": {
+        "account": "{{site}} 上的 {{username}}",
+        "accountCount": "{{count}} 个账号",
+        "add": "添加",
+        "authFailed": "无法确认你的身份",
+        "copied": "密码已复制。Orca 会在 2 分钟后将其从剪贴板中清除。",
+        "copy": "复制密码",
+        "copyFor": "复制 {{account}} 的密码",
+        "delete": "删除…",
+        "deleteAll": "删除数据",
+        "deleteAllAction": "删除…",
+        "deleteAllConfirmDescription": "将永久删除 {{profile}} 配置文件中的所有已保存密码。此操作无法撤销。",
+        "deleteAllConfirmTitle": "删除所有密码数据？",
+        "deleteAllDescription": "{{profile}} 配置文件中的所有已保存密码、备注和不保存密码的网站。",
+        "deleteAllTitle": "删除所有密码数据",
+        "deleteConfirm": "删除",
+        "deleteConfirmDescription": "Orca 将不再填入此密码。此操作无法撤销。",
+        "deleteConfirmTitle": "删除 {{site}} 上 {{username}} 的密码？",
+        "deletedAll": "密码数据已删除",
+        "description": "管理 Orca 浏览器中已保存的登录信息：添加、导入、编辑和删除。",
+        "edit": "编辑",
+        "editFor": "编辑 {{account}}",
+        "empty": "在网站登录后，Orca 会提示保存登录信息。你也可以从其他浏览器或 CSV 文件导入。",
+        "emptyTitle": "尚未保存密码",
+        "fillReauth": "填入前要求通过 Touch ID 验证",
+        "fillReauthDescription": "适用于共用电脑。查看或复制密码时已会要求验证。",
+        "form": {
+          "addNote": "添加备注",
+          "addTitle": "添加密码",
+          "cancel": "取消",
+          "currentHint": "保存你目前在此网站使用的密码。",
+          "description": "在此网站的登录输入框下选择该账号后，Orca 会填入其密码。",
+          "duplicate": "此网站已保存该用户名的密码。",
+          "editTitle": "编辑密码",
+          "invalidPassword": "请输入密码。",
+          "invalidSite": "请输入网站地址，例如 example.com。",
+          "note": "备注",
+          "password": "密码",
+          "save": "保存",
+          "site": "网站",
+          "sitePlaceholder": "example.com",
+          "unavailable": "无法保存此密码。",
+          "username": "用户名",
+          "usernamePlaceholder": "邮箱或用户名"
+        },
+        "hide": "隐藏密码",
+        "httpSuffix": " · http",
+        "import": "导入",
+        "importConflicts": "{{count}} 项与已保存的密码不同，已保留原密码",
+        "importCsv": "从 CSV 文件导入…",
+        "importDuplicates": "{{count}} 项已保存",
+        "imported": "已导入 {{count}} 个密码",
+        "importFailed": "无法导入密码",
+        "importInvalid": "{{count}} 行无法读取",
+        "importUndecryptable": "{{count}} 项受浏览器保护；请从该浏览器导出 CSV 后导入",
+        "lastUsed": "使用于{{when}}",
+        "moreActions": "{{account}} 的更多操作",
+        "neverHeading": "不保存密码的网站（{{count}} 个）",
+        "noMatches": "没有匹配的已保存密码。",
+        "noReauth": "此电脑无法通过 Touch ID 确认你的身份，因此查看和填入密码时不会进行验证。",
+        "noUsername": "（无用户名）",
+        "offerToSave": "提示保存密码",
+        "offerToSaveDescription": "在 Orca 浏览器中登录网站后，提示保存登录信息。",
+        "profileDescription": "{{profile}} 配置文件中已保存的登录信息。只有在登录输入框下选择账号时，Orca 才会填入密码。",
+        "reauthUnavailable": "目前无法使用 Touch ID，因此 Orca 不会显示、复制或填入需要验证的密码。",
+        "removeNever": "移除",
+        "search": "搜索 {{count}} 个密码",
+        "searchKeywords": {
+          "autofill": "自动填充",
+          "csv": "CSV",
+          "import": "导入",
+          "logins": "登录信息",
+          "passwords": "密码",
+          "touchId": "Touch ID",
+          "vault": "密码库"
+        },
+        "searchLabel": "搜索密码",
+        "show": "显示密码",
+        "title": "密码",
+        "unavailableTitle": "此电脑未启用已保存密码功能"
+      },
+      "profileScope": {
+        "description": "在所有位置共享默认配置文件，或为每个仓库或工作区分配独立的 Cookie 和存储空间，避免本地开发服务器共用登录状态。",
+        "keywordIsolate": "隔离",
+        "keywordRepo": "仓库",
+        "optionRepo": "按仓库",
+        "optionRepoTooltip": "每个仓库的所有工作区共享同一个配置文件，在首次使用时创建。",
+        "optionShared": "共享",
+        "optionSharedTooltip": "新标签页使用默认配置文件（或在“会话和 Cookie”中选择的配置文件）。",
+        "optionWorktree": "按工作区",
+        "optionWorktreeTooltip": "每个工作区都有自己的配置文件，并随工作区一起删除。",
+        "repoProfileLabel": "仓库：{{name}}",
+        "title": "新标签页使用的配置文件",
+        "worktreeProfileLabel": "工作区：{{name}}"
+      },
+      "sitePermissions": {
+        "allow": "允许",
+        "ask": "再次询问",
+        "block": "阻止",
+        "description": "网站在使用摄像头、麦克风、位置等资源前会请求您的许可。您可以更改对各个网站允许或阻止的权限。",
+        "empty": "尚未允许或阻止任何网站。",
+        "profile": "浏览器配置文件",
+        "search": {
+          "camera": "摄像头",
+          "clipboard": "剪贴板",
+          "localNetwork": "本地网络",
+          "location": "位置",
+          "microphone": "麦克风",
+          "notifications": "通知",
+          "permissions": "权限"
+        },
+        "title": "站点权限"
+      },
+      "userAgent": {
+        "description": "为每个浏览器配置文件和页面选择用户代理。更改在重新启动后生效。",
+        "loading": "加载中…",
+        "optionClean": "已清理",
+        "optionCleanTooltip": "删除 Orca 和 Electron 令牌以匹配导入的 Chrome 会话。",
+        "optionNative": "原生",
+        "optionNativeTooltip": "对于拒绝清理身份的站点，保留 Electron 的内置身份。",
+        "remoteUnsupported": "使用 Orca CLI 管理远程主机上的浏览器身份。",
+        "resetRequired": "身份数据必须在更改之前显式重置。",
+        "resetRequiredCommand": "从命令行重置它：orca browser identity set --mode <mode> --reset",
+        "restartRequired": "需要重新启动",
+        "title": "浏览器身份",
+        "unavailable": "浏览器身份不可用。"
+      }
     }
   },
   "menu": {
@@ -701,7 +862,13 @@
           "import": {
             "toast": {
               "restartFallbackUnavailableNone": "{{value0}} 个 Cookie 均无法加载，且重启回退不可用。此配置文件的旧 Cookie 已被替换。请重试导入。",
-              "restartFallbackUnavailablePartial": "已导入 {{value1}} 个 Cookie 中的 {{value0}} 个。其余无法加载，且重启回退不可用。请重试导入。"
+              "restartFallbackUnavailablePartial": "已导入 {{value1}} 个 Cookie 中的 {{value0}} 个。其余无法加载，且重启回退不可用。请重试导入。",
+              "cookieKeyLocked": "Orca 无法读取 {{browser}} 的 {{count}} 个加密 Cookie，因为系统密钥环已锁定或拒绝访问。请解锁你的登录密钥环，并在提示时允许访问，然后重新导入。",
+              "cookieKeyUnavailable": "Orca 无法读取 {{browser}} 的 {{count}} 个加密 Cookie，因为无法读取 Cookie 加密密钥。请重试导入、使用“从文件…”导入 Cookie，或直接在 Orca 中登录。",
+              "cookiesSkipped": "已跳过 {{value0}} 个 Cookie。",
+              "otherUndecryptableCookies": "另有 {{count}} 个 Cookie 因其他原因无法解密。",
+              "partitionSkippedCounts": "无法读取网站分区的 Cookie：{{value0}}。同时跳过的相关 Cookie：{{value1}}。再次登录前，请在此配置文件中检查这些网站。",
+              "secretToolMissing": "Orca 无法读取 {{browser}} 的 {{count}} 个加密 Cookie，因为未安装 secret-tool。请安装 libsecret-tools（或你的发行版的等效软件包）后重新导入。"
             }
           }
         }
@@ -2930,6 +3097,12 @@
             "retryingBody": "Orca 正在自动重试。如果连接恢复，此终端将恢复。",
             "disconnectedBody": "自动重试已停止。重新连接以恢复此终端会话。",
             "reconnectButton": "重新连接"
+          },
+          "TerminalLinkActionPopover": {
+            "openInNewTab": "在新标签页中打开",
+            "openLink": "打开链接",
+            "orcaBrowser": "Orca 浏览器",
+            "systemBrowser": "系统浏览器"
           }
         }
       },
@@ -5761,7 +5934,8 @@
         "BrowserDefaultZoomSetting": {
           "2622126877": "缩放级别应用于新打开的浏览器选项卡。",
           "bbeec087d3": "应用于新打开的浏览器选项卡。",
-          "265597101f": "默认缩放"
+          "265597101f": "默认缩放",
+          "siteDefault": "未单独设置缩放的网站使用的缩放级别。"
         },
         "BrowserHomePageSetting": {
           "d4ddcd0056": "保存",
@@ -5854,7 +6028,8 @@
           "0289434ed6": "启用",
           "8b3054dac7": "注册...",
           "8f2675c2f3": "已从文件导入 {{value0}} 个 Cookie。",
-          "5301857d88": "从 {{value0}}"
+          "5301857d88": "从 {{value0}}",
+          "finishSteps": "让编程智能体使用你的登录状态操作此浏览器。请完成以下步骤。"
         },
         "BrowserUseSkillStep": {
           "0871b6998d": "使智能体能够在 Orca 浏览器中导航和验证页面。",
@@ -6054,6 +6229,10 @@
             "modeAriaLabel": "智能体仪表盘打开模式",
             "modeInWindow": "窗口内",
             "modePopout": "弹出窗口"
+          },
+          "browserExtensions": {
+            "copy": "为本地浏览器配置文件添加“设置 › 浏览器 › 扩展程序”。",
+            "toggleLabel": "切换浏览器扩展程序"
           }
         },
         "FloatingWorkspacePane": {
@@ -8054,7 +8233,19 @@
             "a942905148": "创建新浏览器选项卡时打开的 URL。留空以打开空白选项卡。",
             "c3903322d2": "默认主页",
             "19ea5607cf": "本地主机工作区标签",
-            "4e0fdf0a3f": "将工作区端口打开为特定于工作区的 Orca localhost URL，便于区分浏览器标签页。"
+            "4e0fdf0a3f": "将工作区端口打开为特定于工作区的 Orca localhost URL，便于区分浏览器标签页。",
+            "linkRoutingBackground": {
+              "background": "后台",
+              "focus": "焦点",
+              "tab": "标签页"
+            },
+            "userAgent": {
+              "cleaned": "清洁过的",
+              "identity": "身份",
+              "native": "原生",
+              "restart": "重新启动",
+              "userAgent": "用户代理"
+            }
           },
           "use": {
             "search": {
@@ -8267,6 +8458,13 @@
               "title": "智能体仪表盘",
               "description": "用于监控跨工作树的智能体的看板，支持窗口内或弹出窗口显示。",
               "dashboard": "仪表盘"
+            },
+            "browserExtensions": {
+              "chrome": "chrome",
+              "description": "在 Orca 浏览器标签页中运行 Chrome 扩展程序，例如密码管理器。",
+              "extension": "扩展程序",
+              "password": "密码管理器",
+              "title": "浏览器扩展程序"
             }
           }
         },
@@ -10256,6 +10454,22 @@
             "cli": "Cursor CLI 登录文件",
             "desktop": "Cursor IDE"
           }
+        },
+        "BrowserLinkRoutingBackgroundSetting": {
+          "description": "终端、聊天和 Markdown 中的链接会在浏览器中打开，焦点仍停留在你点击的位置。",
+          "title": "在后台打开链接"
+        },
+        "BrowserTerminalLinkActionsSetting": {
+          "actionsLabel": "操作",
+          "descriptionV2": "控制点击终端窗格和聊天记录中打印的已检测的 URL。",
+          "leaveToTerminalLabel": "交给终端",
+          "middleClickAriaLabel": "中键单击",
+          "middleClickDescription": "选择鼠标滚轮单击对已检测的终端 URL 执行的操作。",
+          "middleClickLabel": "中键单击",
+          "openUrlLabel": "打开网址",
+          "plainClickAriaLabel": "普通点击 URL 行为",
+          "plainClickDescription": "选择左键单击是显示操作、打开 URL 还是将其留给终端。 Cmd/Ctrl-单击始终直接打开。",
+          "plainClickLabel": "简单的点击"
         }
       },
       "right": {
@@ -13465,7 +13679,27 @@
             "6e776f9ef9": "下载失败",
             "756bfc25c9": "打开",
             "09a9489aa5": "显示",
-            "2a4c4b8e1f": "复制"
+            "2a4c4b8e1f": "复制",
+            "addToDictionary": "添加到词典",
+            "cc4a071d3a": "注释页面元素 ({{value0}})",
+            "copyImage": "复制图片",
+            "copyImageAddress": "复制图片地址",
+            "cut": "剪切",
+            "devToolsClose": "关闭 DevTools",
+            "devToolsDockBottom": "停靠到底部",
+            "devToolsDockRight": "停靠到右侧",
+            "devToolsTitle": "DevTools",
+            "devToolsUndock": "在单独窗口中打开",
+            "inspect": "检查",
+            "openImageInNewTab": "在新标签页中打开图片",
+            "paste": "粘贴",
+            "pasteAndMatchStyle": "粘贴并匹配样式",
+            "pasteAsPlainText": "粘贴为纯文本",
+            "redo": "重做",
+            "saveImage": "保存图片",
+            "searchSelection": "使用 {{value0}} 搜索“{{value1}}”",
+            "selectAll": "全选",
+            "undo": "撤销"
           },
           "BrowserToolbarMenu": {
             "429ef481f9": "取消",
@@ -13490,7 +13724,16 @@
             "bf648471c5": "创建中…",
             "53bbe3dab4": "已从文件导入 {{value0}} 个 Cookie。",
             "c5f0e4d3b2a1": "已从 {{value1}} ({{value2}}) 导入 {{value0}} 个 Cookie。",
-            "d6a1f5e4c3b2": "已从 {{value1}} 导入 {{value0}} 个 Cookie。"
+            "d6a1f5e4c3b2": "已从 {{value1}} 导入 {{value0}} 个 Cookie。",
+            "appearance": "外观",
+            "appearanceDark": "深色",
+            "appearanceLight": "浅色",
+            "appearanceMatchOrca": "与 Orca 一致",
+            "resetZoom": "重置缩放",
+            "zoom": "缩放",
+            "zoomIn": "放大",
+            "zoomOut": "缩小",
+            "zoomPercent": "缩放 {{value0}}%"
           },
           "GrabConfirmationSheet": {
             "314a0aaa5b": "附加到 AI",
@@ -13506,14 +13749,16 @@
             "9c6ce0632a": "所选元素屏幕截图",
             "50f7114f99": "附加前请先检查。捕获的页面上下文可以包括可见的站点内容。",
             "f3575229df": "抓住",
-            "405bb315da": "无题"
+            "405bb315da": "无题",
+            "accessibleNameOpenQuote": "“"
           },
           "browser": {
             "address": {
               "bar": {
                 "suggestions": {
                   "87fcdd0da9": "{{value0}} 搜索"
-                }
+                },
+                "placeholder": "搜索或输入网址"
               }
             }
           },
@@ -13524,7 +13769,20 @@
                   "tray": {
                     "38d320108c": "收起批注",
                     "9f209891a7": "展开批注",
-                    "includePageDetails": "包含页面详情"
+                    "includePageDetails": "包含页面详情",
+                    "copyFeedback": "复制反馈",
+                    "copyFeedbackWithPageDetails": "复制反馈及页面详情"
+                  }
+                }
+              }
+            },
+            "use": {
+              "browser": {
+                "page": {
+                  "grab": {
+                    "annotations": {
+                      "limitReached": "已达到 {{limit}} 条注释的上限。请发送、删除或清除一些后再添加。"
+                    }
                   }
                 }
               }
@@ -14294,7 +14552,8 @@
             "highlight": "高亮",
             "pen": "画笔",
             "rect": "矩形",
-            "text": "文字"
+            "text": "文字",
+            "eraser": "橡皮擦"
           },
           "undo": "撤销",
           "widthOption": "{{value0}} px"
@@ -14333,6 +14592,9 @@
           "deleteTitle": "删除工件？",
           "deleteDescription": "“{{name}}” 将无法再通过其公共链接访问。",
           "delete": "删除"
+        },
+        "ArtifactPublishButton": {
+          "a4a49da6af": "分享为工件"
         }
       },
       "ComposerParentWorktreePicker": {
@@ -14348,6 +14610,67 @@
             "hostOnly": "只能在运行 Workbench 的电脑上读取 Cursor 登录详情。"
           }
         }
+      },
+      "browserPane": {
+        "externalApp": {
+          "anonymousDescription": "浏览器中的页面想要打开另一个应用程序。",
+          "cancel": "取消",
+          "confirm": "打开{{app}}",
+          "confirmLink": "打开链接",
+          "description": "{{origin}} 想要打开另一个应用程序。",
+          "launchFailed": "无法打开处理此 {{scheme}} 链接的应用。该应用可能尚未安装。",
+          "schemeTitle": "打开这个 {{scheme}} 链接？",
+          "title": "打开{{app}}？"
+        },
+        "httpAuth": {
+          "cancel": "取消",
+          "confirm": "登录",
+          "description": "{{origin}} 要求输入用户名和密码。",
+          "insecure": "您与此网站的连接不是私密的。",
+          "password": "密码",
+          "retry": "该用户名或密码无效。",
+          "title": "登录",
+          "username": "用户名"
+        },
+        "javaScriptDialog": {
+          "anonymousTitle": "此网页显示",
+          "answer": "回答",
+          "cancel": "取消",
+          "confirm": "确定",
+          "title": "{{origin}} 显示"
+        },
+        "sitePermission": {
+          "allow": "允许",
+          "ask": {
+            "camera": "使用摄像头",
+            "clipboard": "查看复制到剪贴板的文本和图像",
+            "idleDetection": "检测您是否正在使用此设备",
+            "localNetwork": "访问此设备上的应用和本地网络中的设备",
+            "location": "获取位置信息",
+            "microphone": "使用麦克风",
+            "midi": "使用 MIDI 设备",
+            "notifications": "显示通知",
+            "windowManagement": "管理所有显示器上的窗口"
+          },
+          "block": "阻止",
+          "fileTitle": "此文件请求执行以下操作",
+          "label": {
+            "camera": "摄像头",
+            "clipboard": "剪贴板",
+            "idleDetection": "设备使用",
+            "localNetwork": "本地网络",
+            "location": "位置",
+            "microphone": "麦克风",
+            "midi": "MIDI 设备",
+            "notifications": "通知",
+            "windowManagement": "窗口管理"
+          },
+          "localFiles": "本地文件",
+          "title": "{{site}} 请求执行以下操作"
+        }
+      },
+      "BrowserPane": {
+        "streamBrowserUnavailable": "远程浏览器不可用。请检查其在服务器上的设置。"
       }
     },
     "i18n": {
@@ -14770,7 +15093,175 @@
       "certificateChallengeExpired": "此证书审批已过期。请重试该页面以请求新的审批。",
       "certificateChallengeChanged": "证书请求已更改。请重试该页面并查看新的警告。",
       "certificateChallengeUnavailable": "此证书请求已不可用。请重试该页面以重新请求。",
-      "certificateProceedFailed": "Orca 无法批准此证书请求。请重试该页面后再试。"
+      "certificateProceedFailed": "Orca 无法批准此证书请求。请重试该页面后再试。",
+      "blockedDescription": "某个扩展程序阻止了此页面。要打开它，请在该扩展程序中允许此网站，然后重试。",
+      "blockedTitle": "{{host}} 已被阻止",
+      "dnsDescription": "请检查地址是否有拼写错误。",
+      "dnsTitle": "找不到 {{host}}",
+      "notRunningDescription": "请启动此地址的开发服务器。",
+      "notRunningSshDescription": "请在工作区的 SSH 主机上启动开发服务器。",
+      "notRunningTitle": "{{host}} 上还没有运行任何服务",
+      "offlineTitle": "你已离线",
+      "refusedDescription": "网站可能已关闭，或地址有误。",
+      "refusedTitle": "{{host}} 拒绝了连接",
+      "resetTitle": "与 {{host}} 的连接已中断",
+      "routeDownDescription": "此页面通过工作区的 SSH 主机加载，但该主机当前未连接。",
+      "routeDownTitle": "无法连接到 SSH 主机",
+      "timeoutTitle": "{{host}} 响应时间过长",
+      "waiting": "服务器响应后将重新加载",
+      "waitingForHost": "SSH 主机重新连接后将重新加载",
+      "waitingForNetwork": "恢复联网后将重新加载",
+      "waitingForServer": "服务器启动后将重新加载"
+    },
+    "clientHosted": {
+      "unavailableHostOfflineDescription": "{{host}} 已离线。重新连接后，此页面将在此处重新加载。",
+      "unavailableOtherDesktopDescription": "此页面已在另一台桌面上打开。"
+    },
+    "cookieImport": {
+      "errors": {
+        "allCookiesExpired": "{{browser}} 的所有 Cookie 均已过期。",
+        "browserNotFound": "在此系统上未找到浏览器。",
+        "browserProfileDatabaseMissing": "未找到配置文件“{{profile}}”的 Cookie 数据库。",
+        "connectionEnded": "导入期间与此服务器的连接已断开。请重新连接后重试。",
+        "databaseCopyFailed": "无法复制 {{browser}} 的 Cookie 数据库。请先尝试关闭 {{browser}}。",
+        "databaseNotFound": "未找到 {{browser}} 的 Cookie 数据库。",
+        "encryptionKeyDenied": "无法访问 {{browser}} 的加密密钥。操作系统可能拒绝了访问。",
+        "fileEmpty": "Cookie 文件为空。",
+        "fileInvalidJson": "文件不是有效的 JSON。",
+        "fileNotArray": "需要包含 Cookie 对象的 JSON 数组。",
+        "fileNoValidCookies": "未找到有效的 Cookie。由于字段缺失或无效，已跳过 {{count}} 条记录。",
+        "fileNoValidCookies_other": "未找到有效的 Cookie。由于字段缺失或无效，已跳过 {{count}} 条记录。",
+        "fileUnreadable": "无法读取所选文件。",
+        "importFailed": "无法从 {{browser}} 导入 Cookie。",
+        "importFailedTryClosing": "无法从 {{browser}} 导入 Cookie。请先尝试关闭 {{browser}}。",
+        "importFailedWithLog": "无法从 {{browser}} 导入 Cookie：{{detail}}。详细信息已写入 {{logPath}}。",
+        "invalidBrowserProfile": "浏览器配置文件名称无效。",
+        "macFullDiskAccess": "macOS 拒绝访问 {{browser}} Cookie。请在“系统设置”→“隐私与安全性”→“完全磁盘访问权限”中授予 Orca 权限，然后重启 Orca。",
+        "noCookies": "在 {{browser}} 中未找到 Cookie。",
+        "notAuthorized": "未获授权",
+        "noValidCookies": "在 {{browser}} 中未找到有效的 Cookie。",
+        "profileNotFound": "未找到会话配置文件。",
+        "readFailed": "无法读取 {{browser}} 的 Cookie。",
+        "safariFullDiskAccess": "macOS 拒绝访问 Safari 的 Cookie。请在系统设置 → 隐私与安全 → 完全磁盘访问权限中授予 Orca 完全磁盘访问权限。",
+        "serverRepaired": "此服务器在导入期间已重新配对。请重试。"
+      },
+      "notice": {
+        "failed": "Cookie 导入失败：{{reason}}",
+        "imported": "已为 {{domains}} 导入 {{count}} 个 Cookie。请重新加载页面以使用它们。",
+        "imported_other": "已为 {{domains}} 导入 {{count}} 个 Cookie。请重新加载页面以使用它们。",
+        "importedMore": "已为 {{domains}} 及其他 {{more}} 个域名导入 {{count}} 个 Cookie。请重新加载页面以使用它们。",
+        "importedMore_other": "已为 {{domains}} 及其他 {{more}} 个域名导入 {{count}} 个 Cookie。请重新加载页面以使用它们。"
+      }
+    },
+    "extensions": {
+      "empty": "此配置文件未启用任何扩展程序",
+      "manage": "管理扩展程序",
+      "menu": "扩展程序",
+      "open": "打开",
+      "pin": "固定到工具栏",
+      "remove": "移除…",
+      "unpin": "从工具栏取消固定",
+      "visitWebStore": "访问 Chrome 应用商店"
+    },
+    "googleCookieClear": {
+      "action": "清除 Google Cookie…",
+      "cancel": "取消",
+      "clear": "清除",
+      "cleared": "已清除 {{profile}} 中的 Google Cookie。",
+      "confirmDescription": "此配置文件在 Orca 浏览器中的 Google 账号将退出登录。其他网站的登录状态不受影响。",
+      "confirmTitle": "清除 {{profile}} 中的 Google Cookie？",
+      "empty": "{{profile}} 中没有可清除的 Google Cookie。",
+      "explanation": "Google 会将登录状态绑定到最初登录的浏览器，因此 Orca 不会从其他浏览器导入 Google Cookie。如果 Google 总是停留在错误的账号，或反复退出登录，请清除当前配置文件中的 Google Cookie，然后在 Orca 中重新登录 Google。其他网站的登录状态不受影响。",
+      "heading": "Google Cookie",
+      "remaining": "未能清除 {{profile}} 中的部分 Google Cookie。请重试。",
+      "signInKeyword": "登录",
+      "unavailable": "所选宿主上的此配置文件无法使用该功能。",
+      "unverified": "无法检查 {{profile}} 中的 Google Cookie。请重试。"
+    },
+    "history": {
+      "clear": "清除浏览记录",
+      "clearAllTime": "所有时间",
+      "cleared": "已清除浏览记录",
+      "clearLastHour": "过去一小时",
+      "clearRange": "清除以下时间之后的历史记录",
+      "clearToday": "今天",
+      "close": "关闭",
+      "description": "搜索和管理浏览记录",
+      "empty": "您访问的页面将显示在这里",
+      "enterKey": "Enter",
+      "escKey": "Esc",
+      "menuItem": "历史记录",
+      "noMatches": "没有页面与您的搜索匹配",
+      "open": "打开",
+      "remove": "从历史记录中移除",
+      "removeShort": "移除",
+      "search": "搜索历史记录",
+      "title": "历史记录",
+      "today": "今天",
+      "yesterday": "昨天"
+    },
+    "managedProfile": {
+      "createFailed": "无法创建此工作区的浏览器配置文件。关闭此选项卡并打开一个新选项卡以重试。"
+    },
+    "newTab": {
+      "checks": {
+        "failing": "检查失败",
+        "passing": "检查通过",
+        "pending": "检查待定"
+      },
+      "emptyHint": "在上方搜索或输入网址。你访问过的网站、此工作区中运行的开发服务器，以及它的 PR 和议题会显示在这里。",
+      "openServerFailed": "无法打开 {{address}}",
+      "removedFromHistory": "已从历史记录中移除“{{title}}”",
+      "removeSuggestion": "从历史记录中移除",
+      "runningElsewhere": "{{count}} 个正在其他工作区中运行",
+      "state": {
+        "closed": "已关闭",
+        "draft": "草稿",
+        "merged": "已合并",
+        "open": "打开"
+      },
+      "suggested": "建议",
+      "thisWorkspace": "此工作区",
+      "undo": "撤销"
+    },
+    "passwords": {
+      "fill": {
+        "noUsername": "（无用户名）",
+        "otherLogins": "此网站的其他登录账号",
+        "title": "已保存的登录信息"
+      },
+      "savePrompt": {
+        "never": "不为此网站保存",
+        "notNow": "暂不",
+        "open": "密码保存提示",
+        "password": "密码",
+        "save": "保存",
+        "saveTitle": "保存密码？",
+        "update": "更新",
+        "updateTitle": "更新密码？",
+        "username": "用户名"
+      }
+    },
+    "remote": {
+      "selectionTooLargeToCopy": "所选内容太大，无法从远程主机流式传输的页面中复制。"
+    },
+    "request": {
+      "pairedServerWorkspace": "此工作区在配对服务器上运行。请使用该服务器的浏览器标签页。"
+    },
+    "userAgentMigration": {
+      "degradedDescription": "无法检查旧的浏览器身份选择。在浏览器设置中选择 Cleaned 或 Native；更改在重新启动后生效。",
+      "description": "每个配置文件的用户代理设置已被删除。在浏览器设置中选择 Cleaned 或 Native；更改在重新启动后生效。",
+      "openSettings": "打开设置",
+      "title": "浏览器身份现在是应用程序范围内的"
+    },
+    "viewport": {
+      "desktop": "桌面电脑 — 1920 × 1080",
+      "laptop": "笔记本电脑 — 1024 × 768",
+      "laptop-l": "大屏笔记本电脑 — 1440 × 900",
+      "mobile-l": "大屏手机 — 425 × 812",
+      "mobile-m": "中屏手机 — 375 × 667",
+      "mobile-s": "小屏手机 — 320 × 568",
+      "tablet": "平板电脑 — 768 × 1024"
     }
   },
   "runtimeRpc": {
@@ -14828,5 +15319,70 @@
       "repairSaveFailed": "Orca 已验证服务器，但无法保存新的配对。请检查本地设置存储并重试。",
       "selfPairingCode": "这是当前 Orca 的配对码。请改在另一台计算机上生成配对码。"
     }
+  },
+  "browserExtensions": {
+    "install": {
+      "cancel": "取消",
+      "canHeading": "它可以：",
+      "confirm": "添加扩展程序",
+      "description": "它会在 Orca 浏览器标签页中运行。",
+      "noAccess": "它不会请求读取或更改网站上的数据。",
+      "profileDescription": "它会在使用 {{profile}} 配置文件的标签页中运行。",
+      "title": "添加 {{name}}？"
+    },
+    "permission": {
+      "allSites": "读取和更改你在所有网站上的数据",
+      "blockContent": "屏蔽任意网页上的内容",
+      "bookmarks": "读取和更改你的书签",
+      "clipboardRead": "读取你复制和粘贴的数据",
+      "clipboardWrite": "修改你复制和粘贴的数据",
+      "contentSettings": "更改哪些网站可以使用 Cookie、JavaScript、摄像头、麦克风和位置信息",
+      "debugger": "访问页面调试器后端",
+      "downloads": "管理你的下载内容",
+      "email": "获取你的电子邮件地址",
+      "geolocation": "检测你的实际位置",
+      "history": "读取你的浏览历史记录",
+      "historyWrite": "读取和更改你的浏览历史记录",
+      "management": "管理你的其他扩展程序",
+      "manyOtherSites": "读取和更改你在 {{hosts}} 及其他 {{count}} 个网站上的数据",
+      "manyOtherSites_other": "读取和更改你在 {{hosts}} 及其他 {{count}} 个网站上的数据",
+      "nativeMessaging": "与协作的本地应用程序通信",
+      "notifications": "显示通知",
+      "privacy": "更改你的隐私相关设置",
+      "proxy": "更改你的代理设置",
+      "screenCapture": "捕获你的屏幕内容",
+      "someSites": "读取和更改你在 {{hosts}} 上的数据",
+      "topSites": "读取你最常访问的网站列表"
+    },
+    "permissions": {
+      "confirm": "允许",
+      "deny": "拒绝",
+      "description": "它正在请求添加时未拥有的访问权限。",
+      "title": "允许 {{name}} 获得更多访问权限？"
+    },
+    "uninstall": {
+      "confirm": "移除",
+      "title": "移除 {{name}}？"
+    },
+    "unsupported": {
+      "identity": "扩展程序登录",
+      "line": "Orca 暂不支持：{{features}}。"
+    }
+  },
+  "native": {
+    "dialog": {
+      "allFiles": "所有文件",
+      "cookieFiles": "Cookie 文件",
+      "importCookies": "导入 Cookie"
+    }
+  },
+  "remoteHostBrowserControl": {
+    "description": "此 SSH 主机上的智能体可以打开并使用其工作区中的 Orca 浏览器标签页。它控制的标签页会显示其名称。你可以在“设置 > SSH”中更改此项。",
+    "disallow": "不允许",
+    "disallowed": "{{host}} 已无法控制浏览器标签页。可在“设置 > SSH”中重新开启。",
+    "failed": "无法停止 {{host}}。请在“设置 > SSH”中关闭其浏览器控制。",
+    "stop": "停止",
+    "stopped": "在 Orca 重启之前，{{host}} 将不再控制浏览器标签页。",
+    "title": "{{host}} 正在控制一个浏览器标签页"
   }
 }

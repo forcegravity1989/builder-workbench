@@ -168,7 +168,9 @@ describe('guest policy profiles', () => {
 
     function registerBrowsingGuest(id = 400): GuestFake {
       const guest = createGuest(id, 'https://example.com/')
-      browserMocks.webContentsFromIdMock.mockReturnValue(guest)
+      browserMocks.webContentsFromIdMock.mockImplementation((webContentsId) =>
+        webContentsId === host.id ? host : webContentsId === guest.id ? guest : null
+      )
       browserManager.attachGuestPolicies(guest as never)
       browserManager.registerGuest({
         browserPageId: BROWSING_PAGE_ID,

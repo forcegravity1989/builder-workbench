@@ -70,11 +70,11 @@ function createRuntimeBinarySender() {
 }
 
 describe('sendRemoteBrowserScreencastFrame', () => {
-  it('reports an over-limit frame as handled so the producer does not retry it', () => {
+  it('reports an over-limit frame as dropped so the producer does not retry it', () => {
     const sendBinary = vi.fn(() => true)
     const oversized = new Uint8Array(REMOTE_RUNTIME_MAX_OUTBOUND_BINARY_FRAME_BYTES + 1)
 
-    expect(sendRemoteBrowserScreencastFrame(sendBinary, oversized)).toBe(true)
+    expect(sendRemoteBrowserScreencastFrame(sendBinary, oversized)).toBe('dropped')
     expect(sendBinary).not.toHaveBeenCalled()
   })
 
@@ -86,14 +86,20 @@ describe('sendRemoteBrowserScreencastFrame', () => {
         vi.fn(() => false),
         withinLimit
       )
-    ).toBe(false)
+    ).toBe('refused')
     expect(
       sendRemoteBrowserScreencastFrame(
         vi.fn(() => true),
         withinLimit
       )
-    ).toBe(true)
-    expect(sendRemoteBrowserScreencastFrame(vi.fn(), withinLimit)).toBe(true)
+    ).toBe('handled')
+    expect(sendRemoteBrowserScreencastFrame(vi.fn(), withinLimit)).toBe('handled')
+    expect(
+      sendRemoteBrowserScreencastFrame(
+        vi.fn(() => 'backlogged' as const),
+        withinLimit
+      )
+    ).toBe('backlogged')
   })
 
   it('drops an oversized encoded frame without closing or stalling the paired stream', async () => {
@@ -107,7 +113,10 @@ describe('sendRemoteBrowserScreencastFrame', () => {
       maxHeight: 2160,
       everyNthFrame: 1,
       minFrameIntervalMs: 0,
-      onFrame: (bytes) => sendRemoteBrowserScreencastFrame(transport.sendBinary, bytes)
+      onFrame: (bytes) => {
+        const outcome = sendRemoteBrowserScreencastFrame(transport.sendBinary, bytes)
+        return outcome !== 'backlogged' && outcome !== 'refused'
+      }
     })
 
     try {

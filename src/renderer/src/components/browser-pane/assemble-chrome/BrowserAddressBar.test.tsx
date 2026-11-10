@@ -8,6 +8,8 @@ import BrowserAddressBar from './BrowserAddressBar'
 
 const mocks = vi.hoisted(() => ({
   browserUrlHistory: [] as BrowserHistoryEntry[],
+  workspaceDocHistory: [],
+  browserPagesByWorkspace: {},
   browserDefaultSearchEngine: null as string | null,
   browserKagiSessionLink: null as string | null
 }))
@@ -67,6 +69,7 @@ function AddressBarHarness({
   return (
     <>
       <BrowserAddressBar
+        pageId="page-1"
         value={value}
         onChange={setValue}
         onSubmit={onSubmit}

@@ -1,5 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
+import {
+  ORCA_CLI_SKILL_INSTALL_COMMAND,
+  ORCA_CLI_SKILL_UPDATE_COMMAND
+} from '@/lib/agent-feature-install-commands'
 import { BrowserUseSkillStep } from './BrowserUseSkillStep'
 
 const capturedPanel = vi.hoisted(() => ({
@@ -13,16 +17,18 @@ vi.mock('../../AgentSkillSetupPanel', () => ({
   }
 }))
 
-describe('BrowserUseSkillStep', () => {
-  it('forwards a single-skill installed command even when setup installs a bundle', () => {
-    const bundleInstallCommand =
-      'npx skills add https://github.com/stablyai/orca --skill orca-cli --skill orchestration --global'
-    const updateCommand = 'npx skills update orca-cli --global'
+vi.mock('@/hooks/useActiveProjectSkillRuntime', () => ({
+  useActiveProjectSkillRuntime: () => ({
+    installDisabledReason: null,
+    agentRuntime: { runtime: 'wsl', label: 'WSL' },
+    terminalShellOverride: undefined
+  })
+}))
 
+describe('BrowserUseSkillStep', () => {
+  it('offers the native install and single-skill update commands for the selected runtime', () => {
     renderToStaticMarkup(
       <BrowserUseSkillStep
-        command={bundleInstallCommand}
-        installedCommand={updateCommand}
         skillDetected
         skillLoading={false}
         skillError={null}
@@ -32,8 +38,8 @@ describe('BrowserUseSkillStep', () => {
 
     expect(capturedPanel.props).toEqual(
       expect.objectContaining({
-        command: bundleInstallCommand,
-        installedCommand: updateCommand,
+        command: ORCA_CLI_SKILL_INSTALL_COMMAND,
+        installedCommand: ORCA_CLI_SKILL_UPDATE_COMMAND,
         installed: true
       })
     )

@@ -34,7 +34,7 @@ BW 依赖的稳定 Orca 原生能力是：TaskPage、Automations、terminal/PTY�
 
 远端 Agent 沿宿主的 `settings.get` 和 `settings.getAgentLaunch/mutateAgentLaunch` 基础协议读取/修改命令、参数、环境、默认 Agent、启用与权限设置，只公布 `settings.agent-launch.v1`；未迁移 typed choices、新 native-chat 编译器和 create-options。现有快捷键、标签菜单、Dashboard、工作区创建与 BW 草稿入口共用宿主偏好和身份约束；新工作区准备宿主命令时读取失败则停止，已准备的命令随原配对版本和宿主实例约束发送。已有标签启动的旧宿主 legacy 分支保留原兼容启动，读取不到宿主 recipe 的降级仍不能保证使用远端默认值。BW 草稿入口保留 `draft` 和 `hostTabId` 回执。
 
-浏览器同步采用所需的原生 RPC、宿主路由、连接合同、公共进程 runner 与 Windows 文件保护接口；这些依赖接回 BW 既有 owner。浏览器桥接复用既有在线配对和重连入口，不引入离线服务自动启动。共享主机专项同步未包含的 managed server 自动部署/迁移 UI、完整 WSL 生命周期、Mobile 产品及无关 UI 仍不因此启用。BW 材料执行器与智能体产品行为沿既有定义。代码采用不等于运行验收，运行验证与未验边界见交付 PR。
+浏览器运行时与 v255 对齐为 Electron 43.8.6，以承接网页查找、弹窗会话继承及证书校验等原生修复。浏览器同步采用所需的原生 RPC、宿主路由、连接合同、公共进程 runner 与 Windows 文件保护接口；这些依赖接回 BW 既有 owner。浏览器桥接复用既有在线配对和重连入口，不引入离线服务自动启动。共享主机专项同步未包含的 managed server 自动部署/迁移 UI、完整 WSL 生命周期、Mobile 产品及无关 UI 仍不因此启用。BW 材料执行器与智能体产品行为沿既有定义。代码采用不等于运行验收，运行验证与未验边界见交付 PR。
 
 ### 0.3 上游目录定位
 

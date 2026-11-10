@@ -58,6 +58,10 @@ vi.mock('../browser/cdp/screencast/browser-screencast-stream', () => ({
   startBrowserScreencast: startBrowserScreencastMock
 }))
 
+vi.mock('../browser/guest-lifecycle/browser-main-window-readiness', () => ({
+  whenBrowserMainWindowReady: vi.fn(async () => null)
+}))
+
 vi.mock('../ipc/browser/browser-tab-registration-wait', () => ({
   waitForTabRegistration: waitForTabRegistrationMock,
   waitForWorktreeTabRegistration: waitForWorktreeTabRegistrationMock
@@ -97,7 +101,7 @@ function createHost(overrides: Partial<RuntimeBrowserCommandHost> = {}): Runtime
         }))
       } as unknown as AgentBrowserBridge)
   return {
-    resolveWorktreeSelector: async (selector) => ({ id: selector.replace(/^id:/, '') }),
+    resolveWorkspaceSelector: async (selector) => ({ id: selector.replace(/^id:/, '') }),
     resolveBrowserWorkspace: async (selector) => ({ id: selector.replace(/^id:/, '') }),
     getRuntimeBrowserPageRegistry: () => runtimeBrowserPages,
     getAuthoritativeWindow: vi.fn(),
@@ -138,15 +142,14 @@ describe('RuntimeBrowserCommands browser screencast', () => {
     browserSessionRegistryMock.createProfile.mockReset()
   })
 
-  it('creates profiles with the requested user-agent mode', async () => {
+  it('creates profiles with the requested label and scope', async () => {
     const { RuntimeBrowserCommands } = await import('./orca-runtime-browser')
     const profile = {
       id: 'profile-google',
       scope: 'isolated',
       partition: 'persist:orca-browser-session-profile-google',
       label: 'Google',
-      source: null,
-      userAgentMode: 'native'
+      source: null
     }
     browserSessionRegistryMock.createProfile.mockReturnValue(profile)
     const commands = new RuntimeBrowserCommands(createHost())
@@ -154,13 +157,10 @@ describe('RuntimeBrowserCommands browser screencast', () => {
     await expect(
       commands.browserProfileCreate({
         label: 'Google',
-        scope: 'isolated',
-        userAgentMode: 'native'
+        scope: 'isolated'
       })
     ).resolves.toEqual({ profile })
-    expect(browserSessionRegistryMock.createProfile).toHaveBeenCalledWith('isolated', 'Google', {
-      userAgentMode: 'native'
-    })
+    expect(browserSessionRegistryMock.createProfile).toHaveBeenCalledWith('isolated', 'Google')
   })
 
   it('waits for explicit worktree browser registration after requesting a hidden mount', async () => {
@@ -483,7 +483,10 @@ describe('RuntimeBrowserCommands browser screencast', () => {
     })
     expect(waitForTabRegistrationMock).toHaveBeenCalledWith('page-target')
     expect(waitForWorktreeTabRegistrationMock).not.toHaveBeenCalled()
-    expect(snapshot).toHaveBeenCalledWith('wt-1', 'page-target')
+    expect(snapshot).toHaveBeenCalledWith('wt-1', 'page-target', {
+      worktree: 'id:wt-1',
+      page: 'page-target'
+    })
   })
 
   it('wakes the requested page before showing page-scoped tab metadata', async () => {
@@ -638,7 +641,11 @@ describe('RuntimeBrowserCommands browser screencast', () => {
 
   it('fans one page screencast out to multiple subscribers', async () => {
     const { RuntimeBrowserCommands } = await import('./orca-runtime-browser')
-    webContentsFromIdMock.mockReturnValue({ isDestroyed: () => false })
+    webContentsFromIdMock.mockReturnValue({
+      isDestroyed: () => false,
+      setBackgroundThrottling: vi.fn(),
+      capturePage: vi.fn(async () => undefined)
+    })
     const done = deferred<void>()
     const stop = vi.fn(() => done.resolve())
     const updateViewport = vi.fn(async () => {})
@@ -672,8 +679,8 @@ describe('RuntimeBrowserCommands browser screencast', () => {
     expect(first.subscriptionId).not.toBe(second.subscriptionId)
     const frame = new Uint8Array([1, 2, 3])
     expect(startBrowserScreencastMock.mock.calls[0][1].onFrame(frame)).toBe(true)
-    expect(firstSend).toHaveBeenCalledWith(frame)
-    expect(secondSend).toHaveBeenCalledWith(frame)
+    expect(firstSend).toHaveBeenCalledWith(frame, { dropWhenBacklogged: true })
+    expect(secondSend).toHaveBeenCalledWith(frame, { dropWhenBacklogged: true })
     expect(updateViewport).toHaveBeenLastCalledWith(
       expect.objectContaining({ viewportWidth: 800, viewportHeight: 600 })
     )
@@ -687,7 +694,11 @@ describe('RuntimeBrowserCommands browser screencast', () => {
 
   it('admits screencast frames through the paired-runtime size guard', async () => {
     const { RuntimeBrowserCommands } = await import('./orca-runtime-browser')
-    webContentsFromIdMock.mockReturnValue({ isDestroyed: () => false })
+    webContentsFromIdMock.mockReturnValue({
+      isDestroyed: () => false,
+      setBackgroundThrottling: vi.fn(),
+      capturePage: vi.fn(async () => undefined)
+    })
     const done = deferred<void>()
     startBrowserScreencastMock.mockResolvedValue({
       stop: vi.fn(() => done.resolve()),
@@ -735,7 +746,11 @@ describe('RuntimeBrowserCommands headless offscreen routing', () => {
       createHost({
         getAgentBrowserBridge: () => bridge,
         getAvailableAuthoritativeWindow: vi.fn(() => null),
-        getOffscreenBrowserBackend: vi.fn(() => ({ createTab, closeTab: vi.fn() }))
+        getOffscreenBrowserBackend: vi.fn(() => ({
+          createTab,
+          closeTab: vi.fn(),
+          ownsTab: (pageId: string) => pageId === 'page-offscreen'
+        }))
       })
     )
 

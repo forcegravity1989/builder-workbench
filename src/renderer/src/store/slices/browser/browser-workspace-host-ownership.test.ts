@@ -36,7 +36,13 @@ describe('createBrowserSlice runtime guard', () => {
   it('uses the target worktree host default profile when creating a browser tab', () => {
     const store = createTestStore()
     store.setState({
-      settings: { activeRuntimeEnvironmentId: null } as AppState['settings'],
+      settings: {
+        activeRuntimeEnvironmentId: null,
+        browserDefaultProfileIdByHostId: {
+          local: 'local-default',
+          'runtime:env-1': 'remote-default'
+        }
+      } as AppState['settings'],
       repos: [
         {
           id: 'repo-1',
@@ -70,11 +76,6 @@ describe('createBrowserSlice runtime guard', () => {
             lastActivityAt: 1
           }
         ]
-      },
-      defaultBrowserSessionProfileId: 'local-default',
-      defaultBrowserSessionProfileIdByHostId: {
-        local: 'local-default',
-        'runtime:env-1': 'remote-default'
       }
     })
 

@@ -2,134 +2,116 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   openHttpLink,
   registerHttpLinkStoreAccessor,
-  registerWorkspaceHttpLinkBrowserOpener,
-  resolveModifierRouting
+  registerWorkspaceHttpLinkBrowserOpener
 } from './browser/navigation/http-link-routing'
 
-describe('resolveModifierRouting', () => {
+const openUrl = vi.fn(async () => {})
+const openBrowser = vi.fn(async () => 'opened-page')
+const state = {
+  settings: {} as {
+    openLinksInApp?: boolean
+    openLinksInAppModifierInverts?: boolean
+    activeRuntimeEnvironmentId?: string | null
+  },
+  setActiveWorktree: vi.fn(),
+  createBrowserTab: vi.fn()
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  registerHttpLinkStoreAccessor(() => state)
+  registerWorkspaceHttpLinkBrowserOpener(openBrowser)
+  vi.stubGlobal('window', { api: { shell: { openUrl } } })
+})
+afterEach(() => {
+  registerWorkspaceHttpLinkBrowserOpener(null)
+  vi.unstubAllGlobals()
+})
+
+function destination(modifierHeld: boolean, openLinksInApp: boolean, inverts: boolean): string {
+  openUrl.mockClear()
+  openBrowser.mockClear()
+  state.settings = { openLinksInApp, openLinksInAppModifierInverts: inverts }
+  openHttpLink('https://example.com/', {
+    worktreeId: 'wt-1',
+    modifierHeld,
+    sourceOwner: { kind: 'local' }
+  })
+  expect(openUrl.mock.calls.length + openBrowser.mock.calls.length).toBe(1)
+  return openBrowser.mock.calls.length ? 'in-app' : 'system'
+}
+
+describe('modifier routing through openHttpLink', () => {
   it('is inert without the modifier regardless of settings', () => {
-    for (const openLinksInApp of [true, false]) {
-      for (const inverts of [true, false]) {
-        expect(resolveModifierRouting(false, openLinksInApp, inverts)).toEqual({
-          wantsOrca: false,
-          wantsSystemBrowser: false
-        })
-      }
+    for (const inverts of [true, false]) {
+      expect(destination(false, true, inverts)).toBe('in-app')
+      expect(destination(false, false, inverts)).toBe('system')
     }
   })
-
-  // Why: the setting ships off, so the historical one-way escape hatch must be
-  // byte-for-byte unchanged for every existing user.
   it('always forces the system browser when inverting is off', () => {
-    expect(resolveModifierRouting(true, true, false)).toEqual({
-      wantsOrca: false,
-      wantsSystemBrowser: true
-    })
-    expect(resolveModifierRouting(true, false, false)).toEqual({
-      wantsOrca: false,
-      wantsSystemBrowser: true
-    })
+    expect(destination(true, true, false)).toBe('system')
+    expect(destination(true, false, false)).toBe('system')
   })
-
   it('still reaches the system browser when inverting and links open in Orca', () => {
-    expect(resolveModifierRouting(true, true, true)).toEqual({
-      wantsOrca: false,
-      wantsSystemBrowser: true
-    })
+    expect(destination(true, true, true)).toBe('system')
   })
-
   it('reaches Orca when inverting and links open in the system browser', () => {
-    expect(resolveModifierRouting(true, false, true)).toEqual({
-      wantsOrca: true,
-      wantsSystemBrowser: false
-    })
+    expect(destination(true, false, true)).toBe('in-app')
   })
-
   it('only diverges from the legacy behavior when links open externally', () => {
-    expect(resolveModifierRouting(true, true, true)).toEqual(
-      resolveModifierRouting(true, true, false)
-    )
-    expect(resolveModifierRouting(true, false, true)).not.toEqual(
-      resolveModifierRouting(true, false, false)
-    )
+    expect(destination(true, true, true)).toBe(destination(true, true, false))
+    expect(destination(true, false, true)).not.toBe(destination(true, false, false))
   })
 })
 
 describe('modifier routing across link source owners', () => {
-  const openUrlMock = vi.fn()
-  const setActiveWorktreeMock = vi.fn()
-  const createBrowserTabMock = vi.fn()
-  const openRuntimeBrowserTabMock = vi.fn(() => Promise.resolve())
-  const storeState = {
-    settings: {} as {
-      openLinksInApp?: boolean
-      openLinksInAppModifierInverts?: boolean
-      activeRuntimeEnvironmentId?: string | null
-    },
-    setActiveWorktree: setActiveWorktreeMock,
-    createBrowserTab: createBrowserTabMock
-  }
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-    registerHttpLinkStoreAccessor(() => storeState)
-    registerWorkspaceHttpLinkBrowserOpener(openRuntimeBrowserTabMock)
-    vi.stubGlobal('window', { api: { shell: { openUrl: openUrlMock } } })
-  })
-
-  afterEach(() => {
-    registerWorkspaceHttpLinkBrowserOpener(null)
-    vi.unstubAllGlobals()
-  })
-
   it('still lets the inverting modifier pull a local link into Orca', () => {
-    storeState.settings = { openLinksInApp: false, openLinksInAppModifierInverts: true }
-
+    state.settings = { openLinksInApp: false, openLinksInAppModifierInverts: true }
     openHttpLink('https://example.com/', {
       worktreeId: 'wt-1',
       modifierHeld: true,
       sourceOwner: { kind: 'local' }
     })
-
-    expect(createBrowserTabMock).toHaveBeenCalledWith('wt-1', 'https://example.com/', {
-      activate: true
-    })
+    expect(openBrowser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'wt-1',
+        url: 'https://example.com/',
+        intent: { kind: 'url' }
+      })
+    )
+    expect(openUrl).not.toHaveBeenCalled()
   })
-
   it('lets an inverting modifier reach Orca on the owning runtime', () => {
-    storeState.settings = {
+    state.settings = {
       openLinksInApp: false,
       openLinksInAppModifierInverts: true,
       activeRuntimeEnvironmentId: null
     }
-
     openHttpLink('https://example.com/', {
       allowRemoteInApp: true,
       worktreeId: 'wt-1',
       modifierHeld: true,
       sourceOwner: { kind: 'runtime', runtimeEnvironmentId: 'env-1' }
     })
-
-    expect(openRuntimeBrowserTabMock).toHaveBeenCalledWith(
-      expect.objectContaining({ expectedRuntimeEnvironmentId: 'env-1' })
+    expect(openBrowser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        expectedRuntimeEnvironmentId: 'env-1'
+      })
     )
-    expect(openUrlMock).not.toHaveBeenCalled()
+    expect(openUrl).not.toHaveBeenCalled()
   })
-
   it('keeps the legacy modifier on the system browser when inversion is off', () => {
-    storeState.settings = {
+    state.settings = {
       openLinksInApp: false,
       openLinksInAppModifierInverts: false,
       activeRuntimeEnvironmentId: null
     }
-
     openHttpLink('https://example.com/', {
       worktreeId: 'wt-1',
       modifierHeld: true,
       sourceOwner: { kind: 'runtime', runtimeEnvironmentId: 'env-1' }
     })
-
-    expect(openUrlMock).toHaveBeenCalledWith('https://example.com/')
-    expect(openRuntimeBrowserTabMock).not.toHaveBeenCalled()
+    expect(openUrl).toHaveBeenCalledWith('https://example.com/')
+    expect(openBrowser).not.toHaveBeenCalled()
   })
 })

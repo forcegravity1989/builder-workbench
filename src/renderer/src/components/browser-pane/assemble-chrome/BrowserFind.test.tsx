@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import BrowserFind from './BrowserFind'
 
 function createWebviewRef(): {
@@ -31,13 +31,20 @@ function createWebviewRef(): {
 function openFindWithQuery(query: string): ReturnType<typeof createWebviewRef> {
   const webview = createWebviewRef()
   vi.useFakeTimers()
-  render(<BrowserFind isOpen onClose={vi.fn()} webviewRef={webview.ref} />)
+  render(<BrowserFind browserPageId="page-1" isOpen onClose={vi.fn()} webviewRef={webview.ref} />)
   fireEvent.change(screen.getByPlaceholderText('Find in page...'), { target: { value: query } })
   act(() => {
     vi.advanceTimersByTime(250)
   })
   return webview
 }
+
+beforeEach(() => {
+  Object.defineProperty(window, 'api', {
+    configurable: true,
+    value: { browser: { onGuestEscape: vi.fn(() => () => {}) } }
+  })
+})
 
 afterEach(() => {
   cleanup()
@@ -92,7 +99,7 @@ describe('BrowserFind session flags', () => {
   it('starts the new query when Enter is pressed before its debounce settles', () => {
     const webview = createWebviewRef()
     vi.useFakeTimers()
-    render(<BrowserFind isOpen onClose={vi.fn()} webviewRef={webview.ref} />)
+    render(<BrowserFind browserPageId="page-1" isOpen onClose={vi.fn()} webviewRef={webview.ref} />)
     const input = screen.getByPlaceholderText('Find in page...')
 
     fireEvent.change(input, { target: { value: 'needle' } })
@@ -116,7 +123,13 @@ describe('BrowserFind listener rebinding', () => {
   it('moves the found-in-page listener onto a guest swapped in under the same mount', () => {
     const first = createWebviewRef()
     const { rerender } = render(
-      <BrowserFind isOpen onClose={vi.fn()} webviewRef={first.ref} guestGeneration={1} />
+      <BrowserFind
+        browserPageId="page-1"
+        isOpen
+        onClose={vi.fn()}
+        webviewRef={first.ref}
+        guestGeneration={1}
+      />
     )
     const staleListener = first.addEventListener.mock.calls.find(
       (call) => call[0] === 'found-in-page'
@@ -125,7 +138,15 @@ describe('BrowserFind listener rebinding', () => {
 
     const second = createWebviewRef()
     first.ref.current = second.ref.current
-    rerender(<BrowserFind isOpen onClose={vi.fn()} webviewRef={first.ref} guestGeneration={2} />)
+    rerender(
+      <BrowserFind
+        browserPageId="page-1"
+        isOpen
+        onClose={vi.fn()}
+        webviewRef={first.ref}
+        guestGeneration={2}
+      />
+    )
 
     expect(second.addEventListener).toHaveBeenCalledWith('found-in-page', expect.any(Function))
     // Why the old guest is asserted too: the pane no longer owns it, but the host may still hold it

@@ -9,6 +9,8 @@ const { handleMock, removeHandlerMock, createProfileMock, routeIdentityMock, det
     detectBrowsersMock: vi.fn(() => [])
   }))
 
+vi.mock('./browser-passwords-ipc', () => ({ registerBrowserPasswordsHandlers: vi.fn() }))
+
 vi.mock('electron', () => ({
   BrowserWindow: { fromWebContents: vi.fn() },
   ipcMain: { handle: handleMock, removeHandler: removeHandlerMock },
@@ -33,10 +35,10 @@ vi.mock('../../browser/client-hosts/lifecycle/paired-runtime-browser-client-host
 }))
 
 vi.mock('../../browser/cookies/browser-cookie-import', () => ({
+  importCookiesFromBrowser: vi.fn()
+}))
+vi.mock('../../browser/cookies/sources/browser-cookie-detection', () => ({
   detectInstalledBrowsers: detectBrowsersMock,
-  importCookiesFromBrowser: vi.fn(),
-  importCookiesFromFile: vi.fn(),
-  pickCookieFile: vi.fn(),
   selectBrowserProfile: vi.fn()
 }))
 
@@ -51,7 +53,7 @@ describe('browser session profile IPC', () => {
     routeIdentityMock.mockReset()
     detectBrowsersMock.mockReset()
     detectBrowsersMock.mockReturnValue([])
-    setTrustedBrowserRendererWebContentsId(null)
+    setTrustedBrowserRendererWebContentsId(91)
   })
 
   function trustedSender(): Electron.WebContents {
@@ -67,7 +69,7 @@ describe('browser session profile IPC', () => {
     event: { sender: Electron.WebContents },
     args: { environmentId: string }
   ) => unknown {
-    registerBrowserHandlers()
+    registerBrowserHandlers({ getSettings: () => ({}) })
     return handleMock.mock.calls.find(
       ([channel]) => channel === 'browser:session:detectBrowsersForClientHost'
     )?.[1]
@@ -111,22 +113,21 @@ describe('browser session profile IPC', () => {
     expect(detectBrowsersMock).not.toHaveBeenCalled()
   })
 
-  it('forwards the user-agent mode from a trusted renderer', async () => {
+  it('creates a profile with the label and scope from a trusted renderer', async () => {
     const profile = {
       id: 'profile-google',
       scope: 'isolated',
       partition: 'persist:orca-browser-session-profile-google',
       label: 'Google',
-      source: null,
-      userAgentMode: 'native'
+      source: null
     }
     createProfileMock.mockReturnValue(profile)
-    registerBrowserHandlers()
+    registerBrowserHandlers({ getSettings: () => ({}) })
     const createHandler = handleMock.mock.calls.find(
       ([channel]) => channel === 'browser:session:createProfile'
     )?.[1] as (
       event: { sender: Electron.WebContents },
-      args: { scope: 'isolated'; label: string; userAgentMode: 'native' }
+      args: { scope: 'isolated'; label: string }
     ) => unknown
     const sender = {
       id: 91,
@@ -136,10 +137,8 @@ describe('browser session profile IPC', () => {
     } as Electron.WebContents
 
     await expect(
-      createHandler({ sender }, { scope: 'isolated', label: 'Google', userAgentMode: 'native' })
+      createHandler({ sender }, { scope: 'isolated', label: 'Google' })
     ).resolves.toEqual(profile)
-    expect(createProfileMock).toHaveBeenCalledWith('isolated', 'Google', {
-      userAgentMode: 'native'
-    })
+    expect(createProfileMock).toHaveBeenCalledWith('isolated', 'Google')
   })
 })

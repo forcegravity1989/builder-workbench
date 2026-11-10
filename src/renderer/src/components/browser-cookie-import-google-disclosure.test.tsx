@@ -53,6 +53,16 @@ describe('cookie-import Google disclosure footer', () => {
       () => (
         <BrowserToolbarMenuDropdown
           menuOpen
+          browserPageId="page-1"
+          siteDisplay={null}
+          onZoomPage={vi.fn()}
+          onSetSiteColorScheme={vi.fn()}
+          overflow={{
+            triggerRef: { current: null },
+            tools: [],
+            deferUntilClose: (action) => action(),
+            onMenuCloseAutoFocus: vi.fn()
+          }}
           onMenuOpenChange={vi.fn()}
           allProfiles={[]}
           effectiveProfileId="default"
@@ -75,7 +85,6 @@ describe('cookie-import Google disclosure footer', () => {
         <BrowserUseCookieImportStep
           cookiesImported={false}
           isImportingDefault={false}
-          step3Blocked={false}
           sourceLabel={null}
         />
       )
@@ -141,6 +150,7 @@ function dropdownMenuStubs(): Record<string, unknown> {
     ),
     DropdownMenuPortal: passthrough,
     DropdownMenuRadioGroup: passthrough,
+    DropdownMenuShortcut: passthrough,
     DropdownMenuRadioItem: block,
     DropdownMenuSeparator: () => <hr />,
     DropdownMenuSub: passthrough,
@@ -158,6 +168,7 @@ function popoverStubs(): Record<string, unknown> {
 
 function appStoreStub(): unknown {
   const state = {
+    keybindings: {},
     browserImportHintHidden: false,
     browserSessionImportState: null,
     detectedBrowsers: [

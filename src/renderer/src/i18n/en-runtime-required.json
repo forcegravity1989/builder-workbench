@@ -181,7 +181,6 @@
         "closeAsDuplicateSubmit": "Close duplicate",
         "closeAsNotPlannedDescription": "Won't fix, can't repro, stale",
         "codehubAssign": "Assign",
-        "codehubAssigned": "Assignee updated",
         "codehubAutoMerge": "Merge when the pipeline succeeds",
         "codehubAutoMergeButton": "Auto-merge",
         "codehubChecks": "Pipelines",
@@ -337,16 +336,19 @@
             "5f66313863": "annotation",
             "8aec5bc044": "idle",
             "8b6fab9ffa": "Save",
+            "8f87e6c2e5": "Intent",
             "93be92f8d1": "Copy Address",
             "a3508d7e6e": "{{value0}} annotation{{value1}} ready. Select another element or copy all feedback.",
             "a5dcd0fd1d": "confirming",
+            "a8f37f70c3": "Inspect Page",
             "b2856516e2": "Can't load this page",
             "c6be71329e": "Refresh",
             "c8bc7f1f9e": "requested",
             "da68d35f7b": "Open failed page in default browser",
             "db325a7eeb": "Can't reach {{value0}}",
             "e72dfa268a": "annotate",
-            "e7ca5a098c": "success"
+            "e7ca5a098c": "success",
+            "f796c774a4": "Type a URL above to start browsing."
           },
           "BrowserToolbarMenu": {
             "6aa42813e4": "Imported {{value0}} cookies from {{value1}}{{value2}}."
@@ -1124,15 +1126,42 @@
           "af2d9a2cc6": ". Orca generates only the final segment, like",
           "ebb942a2ec": "fix-login-flow"
         },
+        "BrowserDefaultZoomSetting": {
+          "2622126877": "Zoom level applied to newly opened browser tabs.",
+          "bbeec087d3": "Applied to newly opened browser tabs."
+        },
+        "BrowserLinkRoutingSetting": {
+          "description": "Open http(s) links in Orca's built-in browser — from the terminal, markdown, and the editor. {{shortcut}} always uses your system browser.",
+          "descriptionBase": "Open http(s) links in Orca's built-in browser — from the terminal, markdown, and the editor."
+        },
         "BrowserPane": {
           "4af9a17947": "kagi"
         },
         "BrowserProfileRow": {
           "7df818977e": "From",
+          "b5c0479e21": "Unmodified user agent",
           "d420c43729": "Imported {{value0}} cookies from {{value1}}{{value2}} into {{value3}}."
         },
+        "BrowserTerminalLinkActionsSetting": {
+          "description": "Show available actions when you click a link in the terminal or a chat transcript. Turn this off to require {{modifier}}-click in the terminal.",
+          "title": "Show link actions"
+        },
+        "BrowserUseComputerUseNotice": {
+          "79209b37b9": "If cookie import is not the right fit, Computer Use can control local apps and may use existing logged-in browser sessions where applicable. Install the Computer Use skill; macOS also requires privacy permissions."
+        },
         "BrowserUsePane": {
-          "e44c5d681e": "From"
+          "0289434ed6": "Enabled",
+          "180a9abf3a": "Failed to load CLI status.",
+          "702488a5f7": "Let coding agents drive this browser with your logins. Finish the three steps below.",
+          "721aee31b4": "Registered the Orca CLI in PATH.",
+          "8b3054dac7": "Registering...",
+          "9fca1f7f5d": "Registers the Orca CLI command so agents can orchestrate the browser from their shell.",
+          "ad8cb0ee22": "Fix PATH",
+          "c6065d205d": "Enable Orca CLI",
+          "c79eff0213": "Register the Orca CLI so agents can drive the browser.",
+          "de9b2f32f3": "Enable",
+          "e44c5d681e": "From",
+          "e9f3f3b488": "Installed at"
         },
         "CliSection": {
           "4c7e3e4c5f": "install",
@@ -1377,6 +1406,7 @@
           "1826bd0608": "Saved Servers",
           "54ebacc600": "Server name",
           "55fcc964cd": "on the server and paste the printed pairing URL.",
+          "5ef712f407": "A server named \"{{value0}}\" already exists.",
           "7b5986c8df": "Saved {{value0}}. Use Active Server to switch when ready.",
           "8cf8790697": "Saved servers route this browser through a paired Orca runtime.",
           "960e901ae4": "orca serve --pairing-address <host>",
@@ -1388,8 +1418,7 @@
           "f3a3d6d834": "{{value0}} capabilities",
           "f75ce1c7a5": "Local keeps today's desktop behavior. Saved servers route supported client calls through the remote runtime.",
           "updateAvailableOne": "1 update available",
-          "updatesAvailable": "{{value0}} updates available",
-          "5ef712f407": "A server named \"{{value0}}\" already exists."
+          "updatesAvailable": "{{value0}} updates available"
         },
         "RuntimePairingUrlGenerator": {
           "279e0dcb57": "127.0.0.1 only works on this computer. Use a LAN, Tailscale, or custom address for another device.",
@@ -1565,6 +1594,22 @@
           "credentials": {
             "dialog": {
               "remoteRuntime": "Bitbucket credentials saved here are stored on this local machine only. Set ORCA_BITBUCKET_* environment variables on the remote runtime instead."
+            }
+          }
+        },
+        "browser": {
+          "use": {
+            "search": {
+              "034c5e8d7f": "enable",
+              "30c74aaa1f": "path",
+              "3ffafc9b95": "command",
+              "50f0860e18": "Enable Orca CLI",
+              "6ea88e5206": "npx",
+              "7e0dcb257a": "shell",
+              "85fab5e12c": "cli",
+              "890ddf943d": "Register the Orca CLI so agents can drive the browser.",
+              "e56c7b55c9": "setup",
+              "ff05cbc344": "orca"
             }
           }
         },
@@ -2532,6 +2577,13 @@
       }
     },
     "hooks": {
+      "ipc": {
+        "events": {
+          "browserStateIpcBridge": {
+            "docPreviewLinkFailed": "Could not open this link in Orca Browser."
+          }
+        }
+      },
       "useComposerState": {
         "attachSkipMissing": "No longer at its original path.",
         "attachSkipPermissionDenied": "Permission denied.",
@@ -2542,8 +2594,10 @@
       },
       "useIpcEvents": {
         "11992d0337": "If this was your phone or another Orca client, re-pair it from Settings → Mobile.",
+        "291c8ed902": "Browser tabs are unavailable while a remote runtime is active",
         "60428567b4": "Local terminal reveal is unavailable while a remote runtime is active",
         "6573cfe955": "Open Mobile Settings",
+        "f45fa2b03c": "Browser profiles are unavailable while a remote runtime is active",
         "f6300deb8b": "New Browser Tab"
       },
       "useSettingsNavigationMetadata": {
@@ -2555,7 +2609,9 @@
         "cookie": {
           "import": {
             "toast": {
-              "googleCookiesSkipped": "Google cookies were not imported. Open a browser in Orca on {{value0}} with this profile, then sign into Google."
+              "googleCookiesSkipped": "Google cookies were not imported. Open a browser in Orca on {{value0}} with this profile, then sign into Google.",
+              "restartFallbackUnavailableNone": "None of the {{value0}} cookies could be loaded, and the restart fallback was unavailable. The previous cookies for this profile were replaced. Try the import again.",
+              "restartFallbackUnavailablePartial": "Imported {{value0}} of {{value1}} cookies. The rest could not be loaded, and the restart fallback was unavailable. Try the import again."
             }
           }
         }
@@ -2606,13 +2662,81 @@
   },
   "browser": {
     "clientHosted": {
-      "popupBlocked": "Popup blocked: {{origin}}"
+      "popupBlocked": "Popup blocked: {{origin}}",
+      "unavailableDescription": "This page is attached to a different desktop or is no longer available."
+    },
+    "cookieImport": {
+      "errors": {
+        "allCookiesExpired": "All {{browser}} cookies are expired.",
+        "browserNotFound": "Browser not found on this system.",
+        "browserProfileDatabaseMissing": "No cookies database found for profile \"{{profile}}\".",
+        "connectionEnded": "The connection to this server ended during the import. Reconnect and try again.",
+        "databaseCopyFailed": "Could not copy {{browser}} cookies database. Try closing {{browser}} first.",
+        "databaseNotFound": "{{browser}} cookies database not found.",
+        "encryptionKeyDenied": "Could not access {{browser}} encryption key. The OS may have denied access.",
+        "fileEmpty": "Cookie file is empty.",
+        "fileInvalidJson": "File is not valid JSON.",
+        "fileNoValidCookies": "No valid cookies found. {{count}} entries were skipped due to missing or invalid fields.",
+        "fileNoValidCookies_one": "No valid cookies found. {{count}} entry was skipped due to missing or invalid fields.",
+        "fileNoValidCookies_other": "No valid cookies found. {{count}} entries were skipped due to missing or invalid fields.",
+        "fileNotArray": "Expected a JSON array of cookie objects.",
+        "fileUnreadable": "Could not read the selected file.",
+        "importFailed": "Could not import cookies from {{browser}}.",
+        "importFailedTryClosing": "Could not import cookies from {{browser}}. Try closing {{browser}} first.",
+        "importFailedWithLog": "Could not import cookies from {{browser}}: {{detail}}. Details were written to {{logPath}}.",
+        "invalidBrowserProfile": "Invalid browser profile name.",
+        "macFullDiskAccess": "macOS denied access to {{browser}} cookies. Grant Full Disk Access to Orca in System Settings → Privacy & Security → Full Disk Access, then restart Orca.",
+        "noCookies": "No cookies found in {{browser}}.",
+        "noValidCookies": "No valid cookies found in {{browser}}.",
+        "notAuthorized": "Not authorized",
+        "profileNotFound": "Session profile not found.",
+        "readFailed": "Could not read {{browser}} cookies.",
+        "safariFullDiskAccess": "macOS denied access to Safari cookies. Grant Full Disk Access to Orca in System Settings → Privacy & Security → Full Disk Access.",
+        "serverRepaired": "This server was re-paired during the import. Try again."
+      },
+      "notice": {
+        "importedMore_one": "Imported {{count}} cookie for {{domains}} +{{more}} more. Reload the page to use them.",
+        "importedMore_other": "Imported {{count}} cookies for {{domains}} +{{more}} more. Reload the page to use them.",
+        "imported_one": "Imported {{count}} cookie for {{domains}}. Reload the page to use them.",
+        "imported_other": "Imported {{count}} cookies for {{domains}}. Reload the page to use them."
+      }
+    },
+    "loadFailure": {
+      "addressCopied": "Copied the current page address.",
+      "blockedDescription": "An extension blocked this page. To open it, allow this site in the extension, then retry.",
+      "blockedTitle": "{{host}} is blocked",
+      "cantLoadPage": "Can't load this page",
+      "copyAddress": "Copy Address",
+      "dnsDescription": "Check the address for typos.",
+      "dnsTitle": "Couldn't find {{host}}",
+      "notRunningDescription": "Start the dev server for this address.",
+      "notRunningSshDescription": "Start the dev server on the workspace's SSH host.",
+      "notRunningTitle": "Nothing is running on {{host}} yet",
+      "offlineTitle": "You're offline",
+      "refusedDescription": "The site may be down, or the address may be wrong.",
+      "refusedTitle": "{{host}} refused to connect",
+      "resetTitle": "The connection to {{host}} was interrupted",
+      "routeDownDescription": "This page loads through the workspace's SSH host, which isn't connected right now.",
+      "routeDownTitle": "Can't reach the SSH host",
+      "timeoutTitle": "{{host}} took too long to respond",
+      "trustedCertificateGuidance": "For local development, use a trusted local certificate when possible.",
+      "tryHttps": "Try HTTPS",
+      "waiting": "Reloads when the server responds",
+      "waitingForHost": "Reloads when the SSH host reconnects",
+      "waitingForNetwork": "Reloads when you're back online",
+      "waitingForServer": "Reloads when the server starts"
     },
     "sshEgress": {
       "localChip": "This device"
     },
     "sshRoute": {
       "errorDescription": "Pages in this workspace browse through its SSH host, and that connection is not available right now."
+    }
+  },
+  "browserExtensions": {
+    "permission": {
+      "manyOtherSites_one": "Read and change your data on {{hosts}} and {{count}} other site",
+      "manyOtherSites_other": "Read and change your data on {{hosts}} and {{count}} other sites"
     }
   },
   "components": {
@@ -2741,6 +2865,20 @@
       "map": "Agent Map"
     }
   },
+  "runtime": {
+    "remoteServerPairingErrors": {
+      "alreadyPairedAddAgain": "This server is already paired as \"{{name}}\". To update its connection, add it again under Settings > Remote Orca Servers.",
+      "alreadyPairedCloudIdentity": "This server is already paired as \"{{name}}\". The cloud workspace's server reuses that server's identity, so it was not saved.",
+      "alreadyPairedCloudWorkspace": "This server is already paired as \"{{name}}\". It belongs to a cloud workspace, which pairs it again when it resumes.",
+      "hostSaveFailed": "Orca verified the host but could not save it. Check local settings storage and try again.",
+      "idNeedsNewerOrca": "A server with this id already exists in a format that needs a newer version of Orca.",
+      "invalidPairingCode": "Invalid pairing code. Expected an orca://pair?... URL or bare pairing payload.",
+      "nameTaken": "A server named \"{{name}}\" already exists.",
+      "repairCloudWorkspace": "This server belongs to a cloud workspace, which pairs it again when it resumes.",
+      "repairSaveFailed": "Orca verified the server but could not save the new pairing. Check local settings storage and try again.",
+      "selfPairingCode": "This pairing code is for this Orca itself. Generate the code on the other computer instead."
+    }
+  },
   "runtimeRpc": {
     "startupFailure": {
       "guidance": {
@@ -2776,20 +2914,6 @@
     },
     "matchLabel": {
       "automation": "Run"
-    }
-  },
-  "runtime": {
-    "remoteServerPairingErrors": {
-      "alreadyPairedAddAgain": "This server is already paired as \"{{name}}\". To update its connection, add it again under Settings > Remote Orca Servers.",
-      "alreadyPairedCloudIdentity": "This server is already paired as \"{{name}}\". The cloud workspace's server reuses that server's identity, so it was not saved.",
-      "alreadyPairedCloudWorkspace": "This server is already paired as \"{{name}}\". It belongs to a cloud workspace, which pairs it again when it resumes.",
-      "hostSaveFailed": "Orca verified the host but could not save it. Check local settings storage and try again.",
-      "idNeedsNewerOrca": "A server with this id already exists in a format that needs a newer version of Orca.",
-      "invalidPairingCode": "Invalid pairing code. Expected an orca://pair?... URL or bare pairing payload.",
-      "nameTaken": "A server named \"{{name}}\" already exists.",
-      "repairCloudWorkspace": "This server belongs to a cloud workspace, which pairs it again when it resumes.",
-      "repairSaveFailed": "Orca verified the server but could not save the new pairing. Check local settings storage and try again.",
-      "selfPairingCode": "This pairing code is for this Orca itself. Generate the code on the other computer instead."
     }
   }
 }

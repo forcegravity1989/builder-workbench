@@ -32,6 +32,8 @@ const {
   registrationWaitSpy: vi.fn()
 }))
 
+vi.mock('./browser-passwords-ipc', () => ({ registerBrowserPasswordsHandlers: vi.fn() }))
+
 vi.mock('electron', () => ({
   BrowserWindow: { fromWebContents: vi.fn() },
   ipcMain: { removeHandler: removeHandlerMock, handle: handleMock },
@@ -87,6 +89,7 @@ vi.mock('./browser-tab-registration-wait', async (importOriginal) => {
 })
 
 import { registerBrowserHandlers } from './browser'
+import { setTrustedBrowserRendererWebContentsId } from './browser-renderer-trust'
 import { browserManager } from '../../browser/guest-lifecycle/manager/browser-manager'
 import {
   getWorkspaceDocPageGuest,
@@ -125,19 +128,36 @@ const BROWSER_PAGE_CHANNELS = [
   'browser:isGuestRegistered',
   'browser:unregisterGuest',
   'browser:respondWebAuthnAccount',
+  'browser:respondPagePrompt',
   'browser:proceedCertificate',
   'browser:activeTabChanged',
   'browser:openDevTools',
+  'browser:closeDevTools',
+  'browser:setDevToolsDockBounds',
+  'browser:addWordToDictionary',
+  'browser:copyImageAt',
+  'browser:getPageSiteDisplay',
+  'browser:zoomPage',
+  'browser:setPageSiteColorScheme',
+  'browser:setPageAudioMuted',
   'browser:setViewportOverride',
   'browser:publishClientPageMetadata',
   'browser:cancelDownload',
   'browser:session:listProfiles',
   'browser:session:createProfile',
+  'browser:session:ensureManagedProfile',
+  'browser:identity:get',
+  'browser:identity:set',
+  'browser:sitePermissions:list',
+  'browser:sitePermissions:set',
   'browser:session:deleteProfile',
   'browser:session:importCookies',
   'browser:session:resolvePartition',
   'browser:session:clearDefaultCookies',
+  'browser:session:googleCookieClearTarget',
+  'browser:session:clearGoogleCookies',
   'browser:session:importFromBrowserForClientHost',
+  'browser:session:importCookiesForClientHost',
   'browser:session:clientRouteImportSources',
   'browser:session:detectBrowsers',
   'browser:session:detectBrowsersForClientHost',
@@ -149,7 +169,9 @@ type Handler = (event: { sender: Electron.WebContents }, args: unknown) => unkno
 function registeredHandlers(): Map<string, Handler> {
   const handlers = new Map<string, Handler>()
   for (const [channel, handler] of handleMock.mock.calls as [string, Handler][]) {
-    handlers.set(channel, handler)
+    if (channel.startsWith('browser:')) {
+      handlers.set(channel, handler)
+    }
   }
   return handlers
 }
@@ -270,6 +292,7 @@ const GUEST_RECEIVING_MOCKS = [
 
 beforeEach(() => {
   vi.stubEnv('ELECTRON_RENDERER_URL', '')
+  setTrustedBrowserRendererWebContentsId(HOST_RENDERER_ID)
   // Why before clearing: revoking the previous test's grants disposes their page state through the
   // mocked manager, and those calls belong to that test, not this one.
   revokeAllDocPreviewGrants()
@@ -285,7 +308,7 @@ beforeEach(() => {
   captureSelectionScreenshotMock.mockResolvedValue(null)
   extractHoverPayloadMock.mockResolvedValue(null)
   setAnnotationViewportBridgeMock.mockResolvedValue(true)
-  registerBrowserHandlers()
+  registerBrowserHandlers({ getSettings: () => ({}) })
   // Why fake timers for the whole file: a tool asking for a page whose guest has not attached parks
   // in the registration wait, and several cases here are exactly the ones that never attach. Real
   // time would spend that wait for each of them.
@@ -293,6 +316,8 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  setTrustedBrowserRendererWebContentsId(null)
+  vi.unstubAllEnvs()
   vi.useRealTimers()
 })
 
@@ -347,6 +372,7 @@ describe('doc preview tool authorization', () => {
   it.each(TOOL_CHANNELS)(
     'refuses %s from a renderer that does not host the preview',
     async (channel) => {
+      setTrustedBrowserRendererWebContentsId(OTHER_RENDERER_ID)
       const preview = liveRenderedPreview()
       const handler = registeredHandlers().get(channel)
 

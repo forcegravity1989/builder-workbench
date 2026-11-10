@@ -87,9 +87,7 @@ export class Ssh2PortForwardProvider implements SshPortForwardProvider {
       close,
       dispose: () => {
         void close()
-      },
-      // Reconnect replaces client identity; this forward belongs to its original client.
-      isLive: (current) => !closed && current.getClient() === client
+      }
     }
   }
 }

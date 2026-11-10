@@ -187,7 +187,8 @@ export function ShortcutsPane(): React.JSX.Element {
         ? removeBindingOverride(keybindings, actionId)
         : { ...keybindings, [actionId]: normalizedResult }
     const blockingConflict = findKeybindingConflictsForDefinitions(definitions, platform, next, {
-      ignoredActionIds: ignoredConflictActionIds
+      ignoredActionIds: ignoredConflictActionIds,
+      includeMainProcessInterception: true
     }).find((conflict) => conflict.actionIds.includes(actionId))
     if (blockingConflict) {
       const labels = blockingConflict.actionIds

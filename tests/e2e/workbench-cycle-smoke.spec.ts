@@ -1,3 +1,4 @@
+import { browserSyncTest, verifyBrowserSync } from './helpers/workbench-browser-sync'
 import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { test as baseTest, expect } from './helpers/workbench-app'
@@ -390,3 +391,11 @@ test('BW cycle main chain: bound flow trees via new-version prepare, material sa
   await expect(workbenchPage.getByRole('heading', { name: 'Workbench' })).toBeVisible()
   await recordWorkspaceInventory(workbenchPage, seededRepoPath, testInfo, 'final')
 })
+
+browserSyncTest(
+  'BW browser: CSV vault, profile persistence, split and session-only certificate approval',
+  async ({ workbenchPage, electronApp, restartWorkbenchApp }, testInfo) => {
+    browserSyncTest.setTimeout(300_000)
+    await verifyBrowserSync(workbenchPage, electronApp, restartWorkbenchApp, testInfo)
+  }
+)

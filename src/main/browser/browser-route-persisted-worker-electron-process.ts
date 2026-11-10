@@ -1,4 +1,5 @@
-import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
+import { spawnProcess, runProcessSync } from '../../shared/child-process/run-process'
+import type { ChildProcessHandle as ChildProcess } from '../../shared/child-process/process-spec'
 import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
@@ -28,11 +29,12 @@ export async function runPersistedWorkerElectron(
     platform: process.platform,
     display: env.DISPLAY
   })
-  const child = spawn(executable, args, {
+  const child = spawnProcess({
+    program: executable,
+    args,
     detached: true,
     env,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    windowsHide: true
+    stdio: ['ignore', 'pipe', 'pipe']
   })
   const exit = waitForExit(child)
   let timedOut = false
@@ -96,9 +98,10 @@ async function terminateProcessTree(child: ChildProcess): Promise<void> {
     return
   }
   if (process.platform === 'win32') {
-    spawnSync('taskkill', ['/pid', String(child.pid), '/t', '/f'], {
-      stdio: 'ignore',
-      windowsHide: true
+    runProcessSync({
+      program: 'taskkill',
+      args: ['/pid', String(child.pid), '/t', '/f'],
+      stdio: 'ignore'
     })
     await waitForTermination(child, 5_000)
     return

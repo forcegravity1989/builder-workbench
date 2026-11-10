@@ -6,9 +6,19 @@ import {
 } from './terminal-clipboard-event-paste'
 
 function makeKeyEvent(
-  overrides: Partial<Pick<KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'>>
-): Pick<KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'> {
-  return { key: '', metaKey: false, ctrlKey: false, altKey: false, shiftKey: false, ...overrides }
+  overrides: Partial<
+    Pick<KeyboardEvent, 'key' | 'code' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'>
+  >
+): Pick<KeyboardEvent, 'key' | 'code' | 'metaKey' | 'ctrlKey' | 'altKey' | 'shiftKey'> {
+  return {
+    key: '',
+    code: '',
+    metaKey: false,
+    ctrlKey: false,
+    altKey: false,
+    shiftKey: false,
+    ...overrides
+  }
 }
 
 function makeClipboardEvent(text: string | null): ClipboardEvent {
@@ -57,26 +67,43 @@ describe('getClipboardEventText', () => {
 
 describe('firesNativePasteEvent', () => {
   it('recognizes the default native paste chords on macOS', () => {
-    expect(firesNativePasteEvent(makeKeyEvent({ key: 'v', metaKey: true }), true)).toBe(true)
+    expect(
+      firesNativePasteEvent(makeKeyEvent({ key: 'v', code: 'KeyV', metaKey: true }), true)
+    ).toBe(true)
   })
 
   it('recognizes the default native paste chords on Windows/Linux', () => {
-    expect(firesNativePasteEvent(makeKeyEvent({ key: 'v', ctrlKey: true }), false)).toBe(true)
+    expect(
+      firesNativePasteEvent(makeKeyEvent({ key: 'v', code: 'KeyV', ctrlKey: true }), false)
+    ).toBe(true)
     // Ctrl+Shift+V is the default terminal paste and still dispatches a native event.
     expect(
-      firesNativePasteEvent(makeKeyEvent({ key: 'v', ctrlKey: true, shiftKey: true }), false)
+      firesNativePasteEvent(
+        makeKeyEvent({ key: 'v', code: 'KeyV', ctrlKey: true, shiftKey: true }),
+        false
+      )
     ).toBe(true)
-    expect(firesNativePasteEvent(makeKeyEvent({ key: 'Insert', shiftKey: true }), false)).toBe(true)
+    expect(
+      firesNativePasteEvent(makeKeyEvent({ key: 'Insert', code: 'Insert', shiftKey: true }), false)
+    ).toBe(true)
   })
 
   it('does not treat a remapped non-clipboard chord as a native paste event', () => {
     // A custom terminal.paste binding like Ctrl+Y fires no native paste event and
     // must stay consumed so it is not encoded to the PTY as a control char.
-    expect(firesNativePasteEvent(makeKeyEvent({ key: 'y', ctrlKey: true }), false)).toBe(false)
-    expect(firesNativePasteEvent(makeKeyEvent({ key: 'd', ctrlKey: true }), false)).toBe(false)
+    expect(
+      firesNativePasteEvent(makeKeyEvent({ key: 'y', code: 'KeyY', ctrlKey: true }), false)
+    ).toBe(false)
+    expect(
+      firesNativePasteEvent(makeKeyEvent({ key: 'd', code: 'KeyD', ctrlKey: true }), false)
+    ).toBe(false)
     // Cmd+V does not fire a native paste event on Windows/Linux.
-    expect(firesNativePasteEvent(makeKeyEvent({ key: 'v', metaKey: true }), false)).toBe(false)
+    expect(
+      firesNativePasteEvent(makeKeyEvent({ key: 'v', code: 'KeyV', metaKey: true }), false)
+    ).toBe(false)
     // Ctrl+V does not fire a native paste event on macOS (readline quote-insert).
-    expect(firesNativePasteEvent(makeKeyEvent({ key: 'v', ctrlKey: true }), true)).toBe(false)
+    expect(
+      firesNativePasteEvent(makeKeyEvent({ key: 'v', code: 'KeyV', ctrlKey: true }), true)
+    ).toBe(false)
   })
 })

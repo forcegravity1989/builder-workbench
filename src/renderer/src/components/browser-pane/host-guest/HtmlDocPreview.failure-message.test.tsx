@@ -13,6 +13,7 @@ import type * as WebviewRegistryModule from './webview-registry'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { ConfirmationDialogProvider } from '@/components/confirmation-dialog'
 import type { DocPreviewFailure } from '../../../../../shared/doc-preview-scheme'
 
 const GRANT_ID = 'a'.repeat(32)
@@ -41,7 +42,21 @@ vi.mock('@/lib/doc-preview-grants', () => ({
     grantRuntime.mints += 1
     // Why a fresh id per mint: a re-mint after a reconnect must bind the guest to the new grant.
     const grantId = grantRuntime.mints === 1 ? GRANT_ID : REMINTED_GRANT_ID
-    return Promise.resolve({ grantId, url: `orca-preview://${grantId}/${ENTRY_RELATIVE_PATH}` })
+    return Promise.resolve({
+      grantId,
+      url: `orca-preview://${grantId}/${ENTRY_RELATIVE_PATH}`,
+      location: {
+        owner: {
+          kind: 'runtime',
+          environmentId: 'env-1',
+          worktreeSelector: 'id:wt-1',
+          worktreeRoot: '/repo'
+        },
+        requestBase: '/repo',
+        root: '/repo/docs',
+        entryRelativePath: ENTRY_RELATIVE_PATH
+      }
+    })
   },
   releaseDocPreviewGrant: (previewId: string) => {
     grantRuntime.released.push(previewId)
@@ -58,6 +73,8 @@ const storeState = {
   persistedUIReady: true,
   settings: {},
   keybindings: {},
+  browserPagesByWorkspace: {},
+  unifiedTabsByWorktree: {},
   browserAnnotationsByPageId: {} as Record<string, unknown[]>,
   activeGroupIdByWorktree: {} as Record<string, string>,
   agentSendPopoverTargetMode: null,
@@ -97,12 +114,15 @@ async function renderPreview(container: HTMLDivElement, root: Root): Promise<voi
   await act(async () => {
     root.render(
       <TooltipProvider>
-        <HtmlDocPreview
-          previewId="preview-1"
-          filePath="/repo/docs/doc.html"
-          relativePath="docs/doc.html"
-          worktreeId="wt-1"
-        />
+        <ConfirmationDialogProvider>
+          <HtmlDocPreview
+            browserWorkspaceId="browser-workspace-1"
+            previewId="preview-1"
+            filePath="/repo/docs/doc.html"
+            relativePath="docs/doc.html"
+            worktreeId="wt-1"
+          />
+        </ConfirmationDialogProvider>
       </TooltipProvider>
     )
   })

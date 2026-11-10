@@ -7,6 +7,7 @@ function createRuntime() {
   const removed: string[] = []
   const runtime = {
     getRuntimeId: () => 'runtime-a',
+    resolveRuntimeFileTarget: vi.fn(async () => ({ executionHostId: 'local' as const })),
     writeFileExplorerFileBase64Chunk: vi.fn().mockResolvedValue(undefined),
     commitFileExplorerUpload: vi.fn().mockResolvedValue(undefined),
     deleteFileExplorerPath: vi.fn(async (_worktree: string, relativePath: string) => {
@@ -21,7 +22,7 @@ function createRuntime() {
 type FakeRuntime = ReturnType<typeof createRuntime>['runtime']
 
 async function stageTransfer(runtime: FakeRuntime, browserPageId: string): Promise<void> {
-  await getBrowserClientDownloadTransferStore(runtime as never).accept({
+  await getBrowserClientDownloadTransferStore(runtime).accept({
     transferId: `transfer-${browserPageId}`,
     browserPageId,
     pageHostGeneration: 1,

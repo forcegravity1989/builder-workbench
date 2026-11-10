@@ -90,7 +90,7 @@ describe('CdpBridgeState reverse tab lookup', () => {
       getRegisteredTabs,
       (webContentsId) => tabIdByWebContentsId.get(webContentsId) ?? null
     )
-    const commands = new CdpTabCommands(state, {} as never, {} as never, {} as never)
+    const commands = new CdpTabCommands(state, {} as never)
 
     state.activeWebContentsId = 101
     expect(commands.getActivePageId()).toBe('tab-a')

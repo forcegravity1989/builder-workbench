@@ -54,6 +54,11 @@ export const uiTabAndBrowserCommandsApi = {
     ipcRenderer.on('ui:newTerminalTab', listener)
     return () => ipcRenderer.removeListener('ui:newTerminalTab', listener)
   },
+  onToggleProjectsCollapse: (callback: () => void): (() => void) => {
+    const listener = () => callback()
+    ipcRenderer.on('ui:toggleProjectsCollapse', listener)
+    return () => ipcRenderer.removeListener('ui:toggleProjectsCollapse', listener)
+  },
   onFocusBrowserAddressBar: (
     callback: (target: BrowserPageCommandTarget) => void
   ): (() => void) => {

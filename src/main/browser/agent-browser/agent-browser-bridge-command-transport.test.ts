@@ -151,7 +151,8 @@ describe('AgentBrowserBridge', () => {
     const options = execFileMock.mock.calls.at(-1)![2] as { timeout?: number; env?: unknown }
     expect(args).toContain('wait')
     expect(args).toContain('#ready')
-    expect(options.timeout).toBe(2200)
+    // The helper gets five seconds to report its own conditional-wait timeout.
+    expect(options.timeout).toBe(6200)
     // Why not toBe(process.env): the bridge hands the daemon an idle-lifetime bound (#16367).
     const env = options.env as NodeJS.ProcessEnv
     expect(env.PATH).toBe(process.env.PATH)

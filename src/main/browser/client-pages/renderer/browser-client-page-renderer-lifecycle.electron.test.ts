@@ -37,6 +37,8 @@ async function buildFixtureBundle(options: {
   await buildVite({
     configFile: false,
     logLevel: 'silent',
+    define:
+      options.format === 'iife' ? { 'process.env.NODE_ENV': JSON.stringify('production') } : {},
     resolve: { alias: { '@': join(process.cwd(), 'src/renderer/src') } },
     build: {
       emptyOutDir: false,
@@ -106,7 +108,8 @@ async function waitForRendererReady(contents) {
     if (await contents.executeJavaScript('window.__browserClientPageFixtureReady === true')) return
     await new Promise((resolve) => setTimeout(resolve, 25))
   }
-  throw new Error('renderer fixture did not become ready')
+  const errors = await contents.executeJavaScript('window.fixtureErrors || []')
+  throw new Error('renderer fixture did not become ready: ' + JSON.stringify(errors))
 }
 
 async function waitForGuestUrl(guest) {
@@ -136,6 +139,8 @@ async function run() {
     }
   })
   let attachedGuest = null
+  window.webContents.on('preload-error', (_event, _path, error) => console.error(error))
+  window.webContents.on('console-message', (_event, details) => console.error(details.message))
   let destroyed = false
   window.webContents.on('will-attach-webview', (event, webPreferences, params) => {
     const partition = typeof webPreferences.partition === 'string' ? webPreferences.partition : ''
@@ -240,7 +245,10 @@ async function runFixture(): Promise<FixtureResult> {
       )
     )
   )
-  writeFileSync(htmlPath, '<!doctype html><body><script src="./renderer.js"></script></body>')
+  writeFileSync(
+    htmlPath,
+    '<!doctype html><body><script>window.fixtureErrors=[];window.addEventListener("error",event=>window.fixtureErrors.push(String(event.error?.stack||event.message)))</script><script src="./renderer.js"></script></body>'
+  )
   await Promise.all([
     buildFixtureBundle({
       entry: join(

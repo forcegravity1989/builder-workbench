@@ -15,9 +15,14 @@ import type {
   BrowserDownloadProgressEvent,
   BrowserDownloadRequestedEvent
 } from '../../../../shared/browser-guest-events'
-import { TooltipProvider } from '@/components/ui/tooltip'
+import type { RemoteBrowserPageHandle } from '@/store/slices/browser/browser-slice-contract'
+
+const store = vi.hoisted(() => ({ handles: {} as Record<string, RemoteBrowserPageHandle> }))
+vi.mock('@/store', () => ({
+  useAppStore: { getState: () => ({ remoteBrowserPageHandlesByPageId: store.handles }) }
+}))
 import { installClientHostedPaneApi, paneChannel } from './client-hosted-browser-pane-test-rig'
-import { ClientHostedBrowserPagePane } from './ClientHostedBrowserPagePane'
+import { useBrowserClientHostedDownloadNotices } from './browser-client-hosted-download-notices'
 
 let requested = paneChannel<BrowserDownloadRequestedEvent>()
 let progress = paneChannel<BrowserDownloadProgressEvent>()
@@ -27,6 +32,8 @@ beforeEach(() => {
   requested = paneChannel<BrowserDownloadRequestedEvent>()
   progress = paneChannel<BrowserDownloadProgressEvent>()
   finished = paneChannel<BrowserDownloadFinishedEvent>()
+  vi.spyOn(requested, 'subscribe')
+  vi.spyOn(finished, 'subscribe')
   // Only the preload boundary is faked: the pane subscribes through the real window.api surface.
   installClientHostedPaneApi({
     browser: {
@@ -42,36 +49,24 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-function renderPane(browserPageId = 'page-a'): void {
-  render(
-    <TooltipProvider>
-      <ClientHostedBrowserPagePane
-        browserTab={
-          {
-            id: browserPageId,
-            url: 'https://example.internal/reports',
-            title: 'Reports',
-            loading: false,
-            canGoBack: false,
-            canGoForward: false
-          } as never
-        }
-        workspaceId="workspace-a"
-        chromeShortcutScope="focused"
-        runtimeEnvironmentId="environment-a"
-        worktreeId="worktree-a"
-        placement={{
-          kind: 'client',
-          browserHostClientId: 'client-a',
-          browserHostGeneration: 3,
-          pageHostGeneration: 7
-        }}
-        isActive
-        onUpdatePageState={vi.fn()}
-        onSetUrl={vi.fn()}
-      />
-    </TooltipProvider>
-  )
+function renderNotices(browserPageId = 'page-a'): void {
+  store.handles = {
+    [browserPageId]: {
+      environmentId: 'environment-a',
+      remotePageId: browserPageId,
+      placement: {
+        kind: 'client',
+        browserHostClientId: 'client-a',
+        browserHostGeneration: 3,
+        pageHostGeneration: 7
+      }
+    }
+  }
+  function AppDownloadNotices(): null {
+    useBrowserClientHostedDownloadNotices()
+    return null
+  }
+  render(<AppDownloadNotices />)
 }
 
 function emitRequested(overrides: Partial<BrowserDownloadRequestedEvent> = {}): void {
@@ -112,22 +107,24 @@ function emitProgress(overrides: Partial<BrowserDownloadProgressEvent> = {}): vo
   act(() => progress.emit(event))
 }
 
-describe('ClientHostedBrowserPagePane download notices', () => {
-  it('subscribes to the download lifecycle for the page it renders', () => {
-    renderPane()
+describe('app-scope client-hosted download notices', () => {
+  it('subscribes once to the client-hosted download lifecycle', () => {
+    renderNotices()
 
-    expect(requested.listenerCount()).toBe(1)
-    expect(finished.listenerCount()).toBe(1)
+    expect(requested.subscribe).toHaveBeenCalledOnce()
+    expect(finished.subscribe).toHaveBeenCalledOnce()
   })
 
   it('names the remote workspace destination when the download lands there', () => {
-    renderPane()
+    renderNotices()
 
     emitRequested()
     expect(toastMocks.loading).toHaveBeenCalledWith('Downloading report.pdf…', {
       id: 'browser-download:download-1'
     })
 
+    // Completion is still owned after the page or pane has closed.
+    store.handles = {}
     emitFinished({
       remoteDestination: {
         workspaceRelativePath: '.orca/browser-downloads/report.pdf',
@@ -142,7 +139,7 @@ describe('ClientHostedBrowserPagePane download notices', () => {
   })
 
   it('surfaces the fail-closed remote error instead of dropping it', () => {
-    renderPane()
+    renderNotices()
     emitRequested()
 
     emitFinished({
@@ -157,7 +154,7 @@ describe('ClientHostedBrowserPagePane download notices', () => {
   })
 
   it('reports a canceled download rather than leaving the spinner running', () => {
-    renderPane()
+    renderNotices()
     emitRequested()
 
     emitFinished({ status: 'canceled' })
@@ -167,8 +164,8 @@ describe('ClientHostedBrowserPagePane download notices', () => {
     })
   })
 
-  it('ignores downloads belonging to another page', () => {
-    renderPane('page-a')
+  it('ignores downloads without a client-hosted page owner', () => {
+    renderNotices('page-a')
 
     emitRequested({ browserPageId: 'page-b', downloadId: 'download-2' })
     emitFinished({ browserPageId: 'page-b', downloadId: 'download-2' })
@@ -180,7 +177,7 @@ describe('ClientHostedBrowserPagePane download notices', () => {
   // Why: bytes for a client-hosted page land on the remote workspace, so this toast is the only
   // place a long download shows any movement at all.
   it('moves the toast forward as bytes arrive', () => {
-    renderPane()
+    renderNotices()
     emitRequested()
     toastMocks.loading.mockClear()
 
@@ -192,7 +189,7 @@ describe('ClientHostedBrowserPagePane download notices', () => {
   })
 
   it('keeps the plain line when the server never reported a size', () => {
-    renderPane()
+    renderNotices()
     emitRequested()
     toastMocks.loading.mockClear()
 
@@ -204,7 +201,7 @@ describe('ClientHostedBrowserPagePane download notices', () => {
   })
 
   it('ignores progress for a download this pane never started', () => {
-    renderPane()
+    renderNotices()
     toastMocks.loading.mockClear()
 
     emitProgress()

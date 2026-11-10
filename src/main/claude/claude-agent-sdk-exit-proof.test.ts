@@ -106,8 +106,12 @@ function spawnScript(script: string): ReturnType<typeof spawnProcess> {
 }
 
 function firstStdoutLine(child: ReturnType<typeof spawnProcess>): Promise<string> {
+  const stdout = child.stdout
+  if (!stdout) {
+    throw new Error('Expected piped stdout from the exit-proof child')
+  }
   return new Promise((resolve) => {
-    child.stdout.setEncoding('utf8').once('data', (chunk: string) => resolve(chunk.trim()))
+    stdout.setEncoding('utf8').once('data', (chunk: string) => resolve(chunk.trim()))
   })
 }
 
