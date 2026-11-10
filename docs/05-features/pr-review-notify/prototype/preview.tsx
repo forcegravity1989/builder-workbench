@@ -95,7 +95,7 @@ function Preview() {
     }))
     if (!results.some((target) => target.ok)) {
       setAuthor((current) => ({ ...current, pending: [{ request, targets: selected }] }))
-      setSendError(results.map((target) => target.name + '：' + target.error).join('；'))
+      setSendError(results.map((target) => `${target.name}：${target.error}`).join('；'))
       return
     }
     setAuthor((current) => {
