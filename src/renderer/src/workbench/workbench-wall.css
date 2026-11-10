@@ -114,7 +114,12 @@
   height: 28px;
   min-height: 28px;
 }
-.pcard-actions [data-repo-header-action] {
+.pcard [data-repo-header-action] {
+  width: 27px;
+  min-width: 27px;
+  max-width: 27px;
+  height: 28px;
+  margin-left: 0;
   opacity: 1;
 }
 .pcard-identity {

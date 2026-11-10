@@ -9,9 +9,12 @@ import { test } from './workbench-app'
 export const projectSettingsTest = test.extend({
   minimumSeededWorktreeCount: 1,
   seededRepoPath: async ({ registerPostElectronShutdownCleanup }, provideFixture) => {
-    const repoPath = mkdtempSync(path.join(os.tmpdir(), 'bw-config-e2e-'))
+    const fixtureRoot = mkdtempSync(path.join(os.tmpdir(), 'bw-config-e2e-'))
+    const repoPath = path.join(fixtureRoot, 'app')
+    mkdirSync(repoPath)
+    mkdirSync(path.join(fixtureRoot, 'notes'))
     registerPostElectronShutdownCleanup(async () => {
-      rmSync(repoPath, { recursive: true, force: true })
+      rmSync(fixtureRoot, { recursive: true, force: true })
     })
     const git = (args: string[]) => execFileSync('git', args, { cwd: repoPath })
     git(['init', '--initial-branch=main'])
@@ -67,6 +70,11 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   expect(existsSync(file)).toBe(false)
   await expect(card.locator('.pcard-name')).toHaveText(registered!.displayName)
   await expect(card.locator('.pcard-owner')).toContainText('—')
+  await expect(card.locator('[data-repo-header-action]')).toBeVisible()
+  await card.locator('[data-repo-header-action]').click()
+  await expect(page.getByRole('menu')).toBeVisible()
+  await page.screenshot({ path: info.outputPath('bw-wall-native-menu.jpg') })
+  await page.keyboard.press('Escape')
   const previousWorkspace = await page.evaluate((id) => {
     const state = window.__store!.getState()
     const tree = state.worktreesByRepo[id].find((item) => item.isMainWorktree)!
@@ -98,6 +106,14 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   execFileSync('git', ['commit', '-m', 'seed project settings verification'], { cwd: repoPath })
   await toolbar.getByRole('button', { name: '刷新项目目录和墙卡信息', exact: true }).click()
   await openConfig()
+  const gitBeforeType = execFileSync('git', ['status', '--porcelain'], {
+    cwd: repoPath,
+    encoding: 'utf8'
+  })
+  const headBeforeType = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: repoPath,
+    encoding: 'utf8'
+  })
   await expect(page.locator('#project-visibility')).toHaveText('个人项目')
   await page.locator('#project-visibility').click()
   await page.getByRole('option', { name: '团队项目', exact: true }).click()
@@ -112,7 +128,10 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
     .toBe('team')
   expect(readFileSync(file, 'utf8')).toBe(original)
   expect(execFileSync('git', ['status', '--porcelain'], { cwd: repoPath, encoding: 'utf8' })).toBe(
-    ''
+    gitBeforeType
+  )
+  expect(execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoPath, encoding: 'utf8' })).toBe(
+    headBeforeType
   )
   await page.screenshot({ path: info.outputPath('bw-config-sidebar.jpg') })
   await page.getByRole('button', { name: '编辑项目信息', exact: true }).click()
@@ -189,4 +208,53 @@ export async function verifyProjectSettings(page: Page, repoPath: string, info: 
   await expect(page.locator('.wb-project-settings')).toBeVisible()
   await expect(page.locator('.wb-config-facts')).toContainText('负责人甲')
   await page.screenshot({ path: info.outputPath('bw-overview-shared-editor.jpg') })
+  await page.getByRole('button', { name: '关闭项目设置', exact: true }).click()
+  const folderPath = path.join(path.dirname(repoPath), 'notes')
+  const folderId = await page.evaluate(async (folderPath) => {
+    const result = await window.api.repos.add({
+      path: folderPath,
+      kind: 'folder',
+      displayName: '普通文件夹'
+    })
+    if ('error' in result) {
+      throw new Error(result.error)
+    }
+    return result.repo.id
+  }, folderPath)
+  await openWall()
+  const folderCard = page.locator(`[data-workbench-project-id="${folderId}"]`)
+  await expect(folderCard.locator('.pcard-name')).toHaveText('普通文件夹')
+  await expect(folderCard.locator('[data-workbench-open-overview]')).toHaveCount(0)
+  await folderCard.locator('[data-workbench-edit-charter]').click()
+  await expect(page.locator('.wb-project-settings')).toBeVisible()
+  await expect(
+    page.locator('.wb-project-settings').getByRole('button', { name: '编辑项目信息', exact: true })
+  ).toHaveCount(0)
+  await page.locator('#project-visibility').click()
+  await page.getByRole('option', { name: '团队项目', exact: true }).click()
+  await expect
+    .poll(() =>
+      page.evaluate(
+        async (id) =>
+          (await window.api.repos.list()).find((repo) => repo.id === id)?.projectVisibility,
+        folderId
+      )
+    )
+    .toBe('team')
+  expect(existsSync(path.join(folderPath, '.bw', 'project.toml'))).toBe(false)
+  await page.screenshot({ path: info.outputPath('bw-folder-native-settings.jpg') })
+  await page.getByRole('button', { name: '关闭项目设置', exact: true }).click()
+  await folderCard.locator('.pcard-name').click()
+  await expect(page.locator('[data-screen="wall"]')).toHaveCount(0)
+  await page.waitForFunction((id) => {
+    const state = window.__store?.getState()
+    return (
+      state?.activeRepoId === id &&
+      state.activeView === 'terminal' &&
+      state.worktreesByRepo[id]?.some((tree) => tree.id === state.activeWorktreeId)
+    )
+  }, folderId)
+  expect(existsSync(path.join(folderPath, '.git'))).toBe(false)
+  expect(existsSync(path.join(folderPath, '.bw', 'project.toml'))).toBe(false)
+  await page.screenshot({ path: info.outputPath('bw-folder-continued.jpg') })
 }
